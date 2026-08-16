@@ -1,0 +1,111 @@
+/* SSMPD — شاشة إدارة المحتوى (مسؤول الاعتماد) — Kanban بـ٧ مراحل */
+(function () {
+  "use strict";
+  var W = window.SSMPDWorkflow;
+
+  function escapeHtml(s) {
+    return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  function render(container) {
+    container.innerHTML = '<div class="loading">بيحمّل…</div>';
+    Promise.all([window.SSMPDDb.listContentItems({}), window.SSMPDDb.listAdmins()])
+      .then(function (res) {
+        var items = res[0], admins = res[1];
+        var adminsById = {}; admins.forEach(function (a) { adminsById[a.id] = a; });
+
+        var html = '<h2 style="margin-bottom:16px;">إدارة المحتوى</h2><div class="kanban">';
+        W.STAGES.forEach(function (s) {
+          var colItems = items.filter(function (i) { return i.stage === s.key; });
+          html += '<div class="kanban-col"><h4>' + s.label + '<span class="count">' + colItems.length + '</span></h4>';
+          colItems.forEach(function (i) {
+            var ownerName = (adminsById[i.created_by] || {}).name || "—";
+            var designerName = i.assigned_designer ? ((adminsById[i.assigned_designer] || {}).name || "—") : "";
+            html += '<div class="kanban-card" data-id="' + i.id + '"><div class="title">' + escapeHtml(i.title) + '</div>' +
+              '<div class="meta">بواسطة: ' + escapeHtml(ownerName) + (designerName ? " · مصمم: " + escapeHtml(designerName) : "") + '</div></div>';
+          });
+          if (!colItems.length) html += '<div style="text-align:center;color:var(--c-muted);font-size:11px;padding:10px 0;">فارغ</div>';
+          html += '</div>';
+        });
+        html += '</div>';
+
+        container.innerHTML = html;
+        container.querySelectorAll("[data-id]").forEach(function (el) {
+          el.onclick = function () { openReviewModal(el.getAttribute("data-id"), items, admins); };
+        });
+      }).catch(function (e) {
+        container.innerHTML = '<div class="err-msg">خطأ: ' + e.message + '</div>';
+      });
+  }
+
+  function openReviewModal(id, items, admins) {
+    var item = items.filter(function (i) { return i.id === id; })[0];
+    if (!item) return;
+    var designers = admins.filter(function (a) { return a.role === "designer" && a.active; });
+
+    var backdrop = document.createElement("div");
+    backdrop.className = "modal-backdrop";
+    var actionsHtml = "";
+
+    if (item.stage === "initial_approval") {
+      actionsHtml = '<div class="field"><label>اختر المصمم</label><select id="rv-designer">' +
+        '<option value="">— اختر —</option>' +
+        designers.map(function (d) { return '<option value="' + d.id + '">' + escapeHtml(d.name || d.email) + '</option>'; }).join("") +
+        '</select></div>' +
+        '<div style="display:flex;gap:8px;"><button class="btn" id="rv-approve">اعتماد أولي — أرسل للتصميم</button>' +
+        '<button class="btn danger" id="rv-reject">طلب تعديل</button></div>';
+    } else if (item.stage === "final_approval") {
+      actionsHtml = '<div style="display:flex;gap:8px;"><button class="btn" id="rv-approve">اعتماد نهائي — جاهز للنشر</button>' +
+        '<button class="btn danger" id="rv-reject">طلب تعديل</button></div>';
+    } else {
+      actionsHtml = '<p style="color:var(--c-muted);font-size:12px;">لا يوجد إجراء اعتماد على هذه المرحلة حالياً.</p>';
+    }
+
+    backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>' + escapeHtml(item.title) + '</h3>' +
+      '<button class="modal-close">×</button></div>' +
+      '<div class="status-pill approval" style="margin-bottom:12px;">' + W.stageLabel(item.stage) + '</div>' +
+      '<p style="white-space:pre-wrap;">' + escapeHtml(item.body || "") + '</p>' +
+      (item.design_file_url ? '<p><a href="' + item.design_file_url + '" target="_blank" class="btn ghost sm">فتح ملف التصميم</a></p>' : '') +
+      '<div style="margin:14px 0;">' + actionsHtml + '</div>' +
+      '<div id="comments-slot"></div></div>';
+    document.body.appendChild(backdrop);
+    backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
+    backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
+
+    var adminsById = {}; admins.forEach(function (a) { adminsById[a.id] = a; });
+    window.SSMPDComments.render(document.getElementById("comments-slot"), item.id, adminsById);
+
+    var approveBtn = document.getElementById("rv-approve");
+    var rejectBtn = document.getElementById("rv-reject");
+    var me = window.SSMPDAuth.currentAdmin;
+
+    if (approveBtn) approveBtn.onclick = function () {
+      var patch = {};
+      if (item.stage === "initial_approval") {
+        var designerId = document.getElementById("rv-designer").value;
+        if (!designerId) { alert("اختر مصمم الأول"); return; }
+        patch = { stage: "in_design", assigned_designer: designerId };
+      } else {
+        patch = { stage: "ready_to_publish" };
+      }
+      window.SSMPDDb.updateContentItem(item.id, patch).then(function () {
+        return window.SSMPDDb.logActivity({ content_id: item.id, actor_id: me.id, action: "اعتماد", from_stage: item.stage, to_stage: patch.stage });
+      }).then(function () { backdrop.remove(); render(document.getElementById("view-container")); })
+        .catch(function (e) { alert("خطأ: " + e.message); });
+    };
+
+    if (rejectBtn) rejectBtn.onclick = function () {
+      var box = document.getElementById("new-comment-box");
+      var note = box ? box.value.trim() : "";
+      if (!note) { alert("لازم تكتب كومنت التعديل المطلوب في مربع الكومنتات تحت قبل الرفض"); return; }
+      window.SSMPDDb.addComment({ content_id: item.id, author_id: me.id, body: "طلب تعديل: " + note }).then(function () {
+        return window.SSMPDDb.updateContentItem(item.id, { stage: "needs_revision" });
+      }).then(function () {
+        return window.SSMPDDb.logActivity({ content_id: item.id, actor_id: me.id, action: "طلب تعديل", from_stage: item.stage, to_stage: "needs_revision" });
+      }).then(function () { backdrop.remove(); render(document.getElementById("view-container")); })
+        .catch(function (e) { alert("خطأ: " + e.message); });
+    };
+  }
+
+  window.SSMPDRenderReview = { render: render };
+})();

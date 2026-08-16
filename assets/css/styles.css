@@ -1,0 +1,251 @@
+/* ===========================================================
+   SSMPD — Swnw Social Media Production Dashboard
+   Design tokens: هوية Swnw الرسمية (لا تغيّرها بلا رجوع لملف الهوية)
+   =========================================================== */
+
+@font-face{
+  font-family:"BigVesta Arabic";
+  src:url("../fonts/BigVesta-Regular.woff2") format("woff2");
+  font-weight:400; font-style:normal; font-display:swap;
+}
+@font-face{
+  font-family:"BigVesta Arabic";
+  src:url("../fonts/BigVesta-Bold.woff2") format("woff2");
+  font-weight:700; font-style:normal; font-display:swap;
+}
+@font-face{
+  font-family:"Hiragino Kaku";
+  src:url("../fonts/Hiragino-W3.woff2") format("woff2");
+  font-weight:300; font-style:normal; font-display:swap;
+}
+@font-face{
+  font-family:"Hiragino Kaku";
+  src:url("../fonts/Hiragino-W6.woff2") format("woff2");
+  font-weight:600; font-style:normal; font-display:swap;
+}
+@font-face{
+  font-family:"Hiragino Kaku";
+  src:url("../fonts/Hiragino-W8.woff2") format("woff2");
+  font-weight:800; font-style:normal; font-display:swap;
+}
+
+:root{
+  --c-primary:#0F369D;
+  --c-primary-d:#0B2A7A;
+  --c-alert:#F15A22;
+  --c-dark:#16212E;
+  --c-positive:#2F7D5C;
+  --c-negative:#D0402A;
+  --c-bg:#F4F6FB;
+  --c-card:#FFFFFF;
+  --c-border:#E3E8F2;
+  --c-muted:#6B7688;
+  --radius:14px;
+  --shadow:0 1px 3px rgba(22,33,46,.06), 0 8px 24px rgba(22,33,46,.05);
+  --font:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;
+}
+
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  font-family:var(--font);
+  background:var(--c-bg);
+  color:var(--c-dark);
+  direction:rtl;
+  font-size:15px;
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4{font-weight:700; margin:0 0 8px;}
+a{color:inherit;}
+button{font-family:inherit; cursor:pointer;}
+input,select,textarea{font-family:inherit; font-size:14px;}
+
+/* ---------- شاشة الدخول ---------- */
+.auth-screen{
+  min-height:100vh;
+  display:flex; align-items:center; justify-content:center;
+  padding:24px;
+}
+.auth-box{
+  width:100%; max-width:380px;
+  background:var(--c-card);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  padding:32px 28px;
+  text-align:center;
+}
+.auth-box img.logo{height:44px; margin-bottom:20px;}
+.auth-box h1{font-size:18px; margin-bottom:4px;}
+.auth-box p.sub{color:var(--c-muted); font-size:13px; margin-bottom:22px;}
+.field{text-align:right; margin-bottom:14px;}
+.field label{display:block; font-size:12px; color:var(--c-muted); margin-bottom:6px;}
+.field input{
+  width:100%; padding:10px 12px; border-radius:10px;
+  border:1px solid var(--c-border); background:#FAFBFD;
+}
+.field input:focus{outline:2px solid var(--c-primary); border-color:transparent;}
+.btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:6px;
+  padding:10px 18px; border-radius:10px; border:none;
+  background:var(--c-primary); color:#fff; font-weight:700; font-size:14px;
+  transition:.15s;
+}
+.btn:hover{background:var(--c-primary-d);}
+.btn:disabled{opacity:.5; cursor:not-allowed;}
+.btn.block{width:100%;}
+.btn.alert{background:var(--c-alert);}
+.btn.ghost{background:transparent; color:var(--c-primary); border:1px solid var(--c-border);}
+.btn.danger{background:var(--c-negative);}
+.btn.sm{padding:6px 12px; font-size:12px;}
+.err-msg{background:#FDECEA; color:var(--c-negative); border-radius:8px; padding:8px 10px; font-size:12px; margin-bottom:12px;}
+
+/* ---------- الشِل العام ---------- */
+.app-shell{min-height:100vh; display:flex; flex-direction:column;}
+.topbar{
+  background:var(--c-card); border-bottom:1px solid var(--c-border);
+  display:flex; align-items:center; justify-content:space-between;
+  padding:10px 20px; position:sticky; top:0; z-index:30;
+}
+.topbar .brand{display:flex; align-items:center; gap:10px;}
+.topbar .brand img{height:26px;}
+.topbar .brand span{font-weight:800; font-size:14px; color:var(--c-primary);}
+.topbar .who{display:flex; align-items:center; gap:12px; font-size:13px; color:var(--c-muted);}
+.topbar .who b{color:var(--c-dark);}
+.role-badge{
+  background:var(--c-primary); color:#fff; font-size:11px; font-weight:700;
+  padding:3px 9px; border-radius:999px;
+}
+
+.tabs{
+  display:flex; gap:4px; padding:8px 20px; background:var(--c-card);
+  border-bottom:1px solid var(--c-border); overflow-x:auto;
+}
+.tab-btn{
+  background:transparent; border:none; padding:9px 16px; border-radius:9px;
+  font-size:13.5px; font-weight:700; color:var(--c-muted); white-space:nowrap;
+}
+.tab-btn.active{background:var(--c-primary); color:#fff;}
+.tab-btn:hover:not(.active){background:var(--c-bg);}
+
+main.view{flex:1; padding:22px; max-width:1400px; margin:0 auto; width:100%;}
+
+/* ---------- بطاقات ومؤشرات ---------- */
+.kpi-grid{
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+  gap:14px; margin-bottom:22px;
+}
+.kpi-card{
+  background:var(--c-card); border-radius:var(--radius); box-shadow:var(--shadow);
+  padding:16px 18px;
+}
+.kpi-card .label{font-size:12px; color:var(--c-muted); margin-bottom:8px;}
+.kpi-card .value{font-size:26px; font-weight:800; color:var(--c-primary);}
+.kpi-card .value.small{font-size:20px;}
+.kpi-card .delta{font-size:11px; margin-top:4px;}
+.kpi-card .delta.up{color:var(--c-positive);}
+.kpi-card .delta.down{color:var(--c-negative);}
+
+.section{
+  background:var(--c-card); border-radius:var(--radius); box-shadow:var(--shadow);
+  padding:20px; margin-bottom:18px;
+}
+.section h3{font-size:15px; margin-bottom:14px;}
+
+/* ---------- جدول عام ---------- */
+table.simple{width:100%; border-collapse:collapse; font-size:13px;}
+table.simple th{
+  text-align:right; color:var(--c-muted); font-weight:700; font-size:11.5px;
+  padding:8px 10px; border-bottom:1px solid var(--c-border);
+}
+table.simple td{padding:10px; border-bottom:1px solid var(--c-border); vertical-align:middle;}
+table.simple tr:last-child td{border-bottom:none;}
+table.simple tr:hover{background:var(--c-bg);}
+
+.status-pill{
+  display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:700;
+  padding:4px 10px; border-radius:999px;
+}
+.status-pill.received{background:#E7ECFA; color:var(--c-primary);}
+.status-pill.approval{background:#FFF1E6; color:var(--c-alert);}
+.status-pill.revision{background:#FDECEA; color:var(--c-negative);}
+.status-pill.approved{background:#E6F4EE; color:var(--c-positive);}
+.status-pill.draft{background:#EEF0F4; color:var(--c-muted);}
+.status-pill.published{background:#E6F4EE; color:var(--c-positive);}
+
+/* ---------- Kanban ---------- */
+.kanban{display:flex; gap:12px; overflow-x:auto; padding-bottom:8px;}
+.kanban-col{
+  flex:0 0 260px; background:#EEF1F8; border-radius:12px; padding:10px;
+  min-height:200px;
+}
+.kanban-col h4{
+  font-size:12.5px; display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:10px; color:var(--c-dark);
+}
+.kanban-col h4 .count{
+  background:var(--c-primary); color:#fff; font-size:10.5px; border-radius:999px;
+  padding:1px 8px;
+}
+.kanban-card{
+  background:#fff; border-radius:10px; box-shadow:var(--shadow); padding:10px 12px;
+  margin-bottom:8px; cursor:pointer; border:1px solid transparent;
+}
+.kanban-card:hover{border-color:var(--c-primary);}
+.kanban-card .title{font-weight:700; font-size:13px; margin-bottom:4px;}
+.kanban-card .meta{font-size:11px; color:var(--c-muted);}
+
+/* ---------- مودال ---------- */
+.modal-backdrop{
+  position:fixed; inset:0; background:rgba(22,33,46,.5); z-index:100;
+  display:flex; align-items:center; justify-content:center; padding:16px;
+}
+.modal{
+  background:#fff; border-radius:16px; width:100%; max-width:640px;
+  max-height:90vh; overflow-y:auto; padding:22px;
+}
+.modal-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;}
+.modal-head h3{margin:0;}
+.modal-close{background:none; border:none; font-size:20px; color:var(--c-muted);}
+.modal textarea{
+  width:100%; min-height:110px; padding:10px 12px; border-radius:10px;
+  border:1px solid var(--c-border); background:#FAFBFD; resize:vertical;
+}
+
+/* ---------- كومنتات ---------- */
+.comment-thread{border-top:1px solid var(--c-border); margin-top:14px; padding-top:14px;}
+.comment{background:var(--c-bg); border-radius:10px; padding:10px 12px; margin-bottom:8px;}
+.comment .head{display:flex; justify-content:space-between; font-size:11px; color:var(--c-muted); margin-bottom:4px;}
+.comment .head b{color:var(--c-dark);}
+
+/* ---------- كالندر الأرشيف ---------- */
+.calendar-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:6px;}
+.calendar-cell{
+  background:var(--c-card); border-radius:10px; min-height:90px; padding:6px;
+  border:1px solid var(--c-border); font-size:11px;
+}
+.calendar-cell .day-num{font-weight:800; color:var(--c-muted); margin-bottom:4px;}
+.calendar-cell .item{
+  background:#E7ECFA; color:var(--c-primary); border-radius:6px; padding:2px 6px;
+  margin-bottom:3px; font-size:10.5px; cursor:pointer; white-space:nowrap;
+  overflow:hidden; text-overflow:ellipsis;
+}
+
+/* ---------- عام ---------- */
+.empty-state{text-align:center; padding:40px 10px; color:var(--c-muted); font-size:13px;}
+.loading{text-align:center; padding:30px; color:var(--c-muted); font-size:13px;}
+.toast{
+  position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+  background:var(--c-dark); color:#fff; padding:10px 20px; border-radius:10px;
+  font-size:13px; z-index:200; box-shadow:var(--shadow);
+}
+.upload-box{
+  border:2px dashed var(--c-border); border-radius:12px; padding:22px;
+  text-align:center; color:var(--c-muted); font-size:13px; margin:14px 0;
+}
+.upload-box.drag{border-color:var(--c-primary); color:var(--c-primary); background:#F0F4FE;}
+
+@media (max-width:720px){
+  .kanban-col{flex-basis:80vw;}
+  main.view{padding:14px;}
+}
