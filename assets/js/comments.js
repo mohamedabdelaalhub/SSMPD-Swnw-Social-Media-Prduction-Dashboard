@@ -89,7 +89,7 @@
       var cls = unread > 0 ? "unread" : "read";
       var n = unread > 0 ? unread : total;
       var badge = '<span class="comment-badge ' + cls + '">' + n + '</span>';
-      return '<button class="btn ghost sm" data-comment="' + id + '">تعليق جديد' + badge + '</button>';
+      return '<button class="btn ghost sm" data-comment="' + id + '">تعليقات' + badge + '</button>';
     }
   };
 
