@@ -130,6 +130,9 @@
     backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>' + escapeHtml(item.title) + W.brandBadgeHtml(item.brand) + '</h3>' +
       '<button class="modal-close">×</button></div>' +
       '<div class="status-pill approval" style="margin-bottom:12px;">' + W.stageLabel(item.stage) + '</div>' +
+      '<div class="field" style="display:flex;align-items:flex-end;gap:8px;max-width:280px;">' +
+      '<div style="flex:1;"><label>المادة دي لصفحة</label>' + W.brandSelectHtml("rv-brand", item.brand || "") + '</div>' +
+      '<button class="btn ghost sm" id="rv-save-brand" style="margin-bottom:1px;">حفظ</button></div>' +
       '<p style="white-space:pre-wrap;">' + escapeHtml(item.body || "") + '</p>' +
       (item.design_file_url ? '<p><a href="' + item.design_file_url + '" target="_blank" class="btn ghost sm">فتح ملف التصميم</a></p>' : '') +
       '<div style="margin:14px 0;">' + actionsHtml + '</div>' +
@@ -140,6 +143,15 @@
 
     var adminsById = {}; admins.forEach(function (a) { adminsById[a.id] = a; });
     window.SSMPDComments.render(document.getElementById("comments-slot"), item.id, adminsById);
+
+    // تعديل الصفحة (سونو/د.دينا) في أي وقت من هنا لو حصل غلط عند الإنشاء
+    document.getElementById("rv-save-brand").onclick = function () {
+      var newBrand = document.getElementById("rv-brand").value;
+      if (!newBrand) { alert("اختر المادة دي لصفحة سونو ولا د.دينا"); return; }
+      window.SSMPDDb.updateContentItem(item.id, { brand: newBrand })
+        .then(function () { backdrop.remove(); render(document.getElementById("view-container")); })
+        .catch(function (e) { alert("خطأ: " + e.message); });
+    };
 
     var approveBtn = document.getElementById("rv-approve");
     var rejectBtn = document.getElementById("rv-reject");
