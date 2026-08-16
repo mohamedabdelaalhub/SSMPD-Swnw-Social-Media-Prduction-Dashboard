@@ -83,7 +83,7 @@
     return window.SSMPDAuth.getSession().then(function (session) {
       if (!session) { showAuthScreen("login"); return; }
       window.SSMPDAuth.currentUser = session.user;
-      return window.SSMPDAuth.loadCurrentAdmin(session.user.id).then(function () {
+      return window.SSMPDAuth.loadCurrentAdmin(session.user.id, session.user.email).then(function () {
         renderShell();
       });
     }).catch(function (err) {

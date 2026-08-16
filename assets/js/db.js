@@ -22,8 +22,10 @@
       return handle(client.from("admins").select("*").eq("user_id", userId).maybeSingle());
     },
     // دعوة معلّقة (user_id لسه فاضي) بنفس البريد — لأول مرة يعمل فيها المستخدم حساب
+    // مقارنة case-insensitive (ilike من غير % بيبقى مطابقة تامة بس مش حساس لحالة الحروف)
+    // عشان تتطابق مع سياسة RLS في setup.sql اللي بتقارن lower(email)
     getPendingInviteByEmail: function (email) {
-      return handle(client.from("admins").select("*").is("user_id", null).eq("email", email).maybeSingle());
+      return handle(client.from("admins").select("*").is("user_id", null).ilike("email", email).maybeSingle());
     },
     // يربط الدعوة المعلّقة بالحساب اللي اتعمل دلوقتي
     claimInvite: function (adminRowId, userId) {

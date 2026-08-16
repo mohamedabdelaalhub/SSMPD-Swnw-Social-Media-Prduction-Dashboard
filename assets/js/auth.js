@@ -34,13 +34,25 @@
       return client.auth.getSession().then(function (res) { return res.data.session; });
     },
 
-    // يجيب صف admins المرتبط بالمستخدم الحالي، ويتأكد إنه مفعّل
-    loadCurrentAdmin: function (userId) {
+    // يجيب صف admins المرتبط بالمستخدم الحالي، ويتأكد إنه مفعّل.
+    // لو أول مرة يدخل فيها بعد التسجيل، وصفه لسه معلّق (user_id فاضي —
+    // اتضاف بالإيميل بس من السوبر أدمن قبل ما يعمل حساب)، بنربطه تلقائياً هنا.
+    loadCurrentAdmin: function (userId, email) {
       return window.SSMPDDb.getMyAdminRow(userId).then(function (row) {
-        if (!row) throw new Error("NOT_INVITED");
-        if (!row.active) throw new Error("INACTIVE");
-        Auth.currentAdmin = row;
-        return row;
+        if (row) {
+          if (!row.active) throw new Error("INACTIVE");
+          Auth.currentAdmin = row;
+          return row;
+        }
+        if (!email) throw new Error("NOT_INVITED");
+        return window.SSMPDDb.getPendingInviteByEmail(email).then(function (invite) {
+          if (!invite) throw new Error("NOT_INVITED");
+          return window.SSMPDDb.claimInvite(invite.id, userId).then(function (claimed) {
+            if (!claimed.active) throw new Error("INACTIVE");
+            Auth.currentAdmin = claimed;
+            return claimed;
+          });
+        });
       });
     },
 
