@@ -81,15 +81,14 @@
     },
 
     // زرار "تعليق جديد" + العداد — أحمر لو فيه جديد، رمادي لو اتقرا
+    // لو مفيش كومنتات خالص على المادة دي، الزرار نفسه ميظهرش (مفيش داعي له)
     commentButtonHtml: function (id, stats) {
       var total = (stats.total && stats.total[id]) || 0;
+      if (total === 0) return "";
       var unread = (stats.unread && stats.unread[id]) || 0;
-      var badge = "";
-      if (total > 0) {
-        var cls = unread > 0 ? "unread" : "read";
-        var n = unread > 0 ? unread : total;
-        badge = '<span class="comment-badge ' + cls + '">' + n + '</span>';
-      }
+      var cls = unread > 0 ? "unread" : "read";
+      var n = unread > 0 ? unread : total;
+      var badge = '<span class="comment-badge ' + cls + '">' + n + '</span>';
       return '<button class="btn ghost sm" data-comment="' + id + '">تعليق جديد' + badge + '</button>';
     }
   };

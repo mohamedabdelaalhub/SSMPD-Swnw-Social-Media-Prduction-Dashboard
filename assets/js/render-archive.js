@@ -25,6 +25,7 @@
   }
 
   function renderCalendar(container, items, adminsById) {
+    var W = window.SSMPDWorkflow;
     var byDay = {};
     items.forEach(function (i) {
       if (!i.published_at) return;
@@ -78,7 +79,7 @@
       var dayItems = byDay[k] || [];
       html += '<div class="calendar-cell"><div class="day-num">' + d.getDate() + '</div>';
       dayItems.forEach(function (it) {
-        html += '<div class="item" data-open="' + it.id + '" title="' + escapeHtml(it.title) + '">' + escapeHtml(it.title) + '</div>';
+        html += '<div class="item" data-open="' + it.id + '" title="' + escapeHtml(it.title) + '">' + escapeHtml(it.title) + W.brandBadgeHtml(it.brand) + '</div>';
       });
       html += '</div>';
     });
@@ -103,19 +104,21 @@
   }
 
   function openDetail(id, items, adminsById) {
+    var W = window.SSMPDWorkflow;
     var item = items.filter(function (i) { return i.id === id; })[0];
     if (!item) return;
     var publisher = adminsById[item.published_by] ? adminsById[item.published_by].name : "—";
     var backdrop = document.createElement("div");
     backdrop.className = "modal-backdrop";
-    backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>' + escapeHtml(item.title) + '</h3>' +
+    backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>' + escapeHtml(item.title) + W.brandBadgeHtml(item.brand) + '</h3>' +
       '<button class="modal-close">×</button></div>' +
       '<p style="white-space:pre-wrap;">' + escapeHtml(item.body || "") + '</p>' +
       (item.design_file_url ? '<p><a href="' + item.design_file_url + '" target="_blank" class="btn ghost sm">التصميم</a></p>' : '') +
       (item.published_url ? '<p><a href="' + item.published_url + '" target="_blank" class="btn ghost sm">رابط المنشور</a></p>' : '') +
       '<table class="simple" style="margin-top:12px;"><tr><th>تاريخ النشر</th><td>' +
       (item.published_at ? new Date(item.published_at).toLocaleString("ar-EG") : "—") + '</td></tr>' +
-      '<tr><th>نُشر بواسطة</th><td>' + escapeHtml(publisher) + '</td></tr></table></div>';
+      '<tr><th>نُشر بواسطة</th><td>' + escapeHtml(publisher) + '</td></tr>' +
+      '<tr><th>المنصة</th><td>' + (W.PLATFORMS[item.publish_platform] ? W.PLATFORMS[item.publish_platform].label : "—") + '</td></tr></table></div>';
     document.body.appendChild(backdrop);
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
     backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };

@@ -35,10 +35,17 @@
         html += '<table class="simple"><thead><tr><th>العنوان</th><th>الحالة</th><th></th></tr></thead><tbody>';
         actionable.forEach(function (i) {
           var ds = W.designStatusFor(i);
-          var statusCell = ds === "pending"
-            ? '<button class="btn sm" data-receive="' + i.id + '">استلام</button>'
-            : '<span class="status-pill ' + W.DESIGN_STATUS[ds].pillClass + '">' + W.DESIGN_STATUS[ds].label + '</span>';
-          html += '<tr><td><span class="link-open" data-open="' + i.id + '">' + escapeHtml(i.title) + '</span></td>' +
+          var statusCell;
+          if (ds === "pending") {
+            statusCell = '<button class="btn sm" data-receive="' + i.id + '">استلام</button>';
+          } else if (ds === "received") {
+            // ضغط "استلام" بالغلط؟ رجّعها تاني لحالة "في انتظار الاستلام"
+            statusCell = '<span class="status-pill ' + W.DESIGN_STATUS[ds].pillClass + '">' + W.DESIGN_STATUS[ds].label + '</span> ' +
+              '<button class="btn ghost sm" data-undo-receive="' + i.id + '" title="لو ضغطت استلام بالغلط">تراجع</button>';
+          } else {
+            statusCell = '<span class="status-pill ' + W.DESIGN_STATUS[ds].pillClass + '">' + W.DESIGN_STATUS[ds].label + '</span>';
+          }
+          html += '<tr><td><span class="link-open" data-open="' + i.id + '">' + escapeHtml(i.title) + '</span>' + W.brandBadgeHtml(i.brand) + '</td>' +
             '<td>' + statusCell + '</td>' +
             '<td><button class="btn ghost sm" data-open="' + i.id + '">فتح</button> ' + C.commentButtonHtml(i.id, stats) + '</td></tr>';
         });
@@ -52,7 +59,7 @@
       } else {
         html += '<table class="simple"><thead><tr><th>العنوان</th><th>الحالة</th></tr></thead><tbody>';
         done.forEach(function (i) {
-          html += '<tr><td><span class="link-open" data-open="' + i.id + '">' + escapeHtml(i.title) + '</span></td>' +
+          html += '<tr><td><span class="link-open" data-open="' + i.id + '">' + escapeHtml(i.title) + '</span>' + W.brandBadgeHtml(i.brand) + '</td>' +
             '<td><span class="status-pill approved">' + W.stageLabel(i.stage) + '</span></td></tr>';
         });
         html += '</tbody></table>';
@@ -72,6 +79,12 @@
           handleReceive(btn.getAttribute("data-receive"));
         };
       });
+      container.querySelectorAll("[data-undo-receive]").forEach(function (btn) {
+        btn.onclick = function (e) {
+          e.stopPropagation();
+          handleUndoReceive(btn.getAttribute("data-undo-receive"));
+        };
+      });
     }).catch(function (e) {
       container.innerHTML = '<div class="err-msg">خطأ: ' + e.message + '</div>';
     });
@@ -88,11 +101,23 @@
       .catch(function (e) { alert("خطأ: " + e.message); });
   }
 
+  // تراجع عن "استلام" لو المصمم ضغط عليها بالغلط — بترجّع الحالة لـ "في انتظار الاستلام"
+  function handleUndoReceive(id) {
+    if (!confirm("متأكد إنك عايز ترجّع الحالة لـ\"في انتظار الاستلام\"؟")) return;
+    var me = window.SSMPDAuth.currentAdmin;
+    window.SSMPDDb.updateContentItem(id, { design_received_at: null })
+      .then(function () {
+        return window.SSMPDDb.logActivity({ content_id: id, actor_id: me.id, action: "تراجع عن استلام التصميم", from_stage: "in_design", to_stage: "in_design" });
+      })
+      .then(function () { render(document.getElementById("view-container")); })
+      .catch(function (e) { alert("خطأ: " + e.message); });
+  }
+
   function openDesignModal(id) {
     window.SSMPDDb.getContentItem(id).then(function (item) {
       var backdrop = document.createElement("div");
       backdrop.className = "modal-backdrop";
-      backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>' + escapeHtml(item.title) + '</h3>' +
+      backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>' + escapeHtml(item.title) + W.brandBadgeHtml(item.brand) + '</h3>' +
         '<button class="modal-close">×</button></div>' +
         '<p style="white-space:pre-wrap;">' + escapeHtml(item.body || "") + '</p>' +
         (item.design_file_url ? '<p><a href="' + item.design_file_url + '" target="_blank" class="btn ghost sm">فتح آخر تصميم مرفوع</a></p>' : '') +

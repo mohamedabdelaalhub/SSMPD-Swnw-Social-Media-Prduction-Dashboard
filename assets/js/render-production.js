@@ -36,7 +36,7 @@
         html += '<div class="section"><h3>جاهز للنشر (' + ready.length + ')</h3><table class="simple"><thead><tr>' +
           '<th>العنوان</th><th>تاريخ الاعتماد</th><th></th></tr></thead><tbody>';
         ready.forEach(function (i) {
-          html += '<tr><td><span class="link-open" data-open="' + i.id + '">' + escapeHtml(i.title) + '</span></td>' +
+          html += '<tr><td><span class="link-open" data-open="' + i.id + '">' + escapeHtml(i.title) + '</span>' + W.brandBadgeHtml(i.brand) + '</td>' +
             '<td>' + new Date(i.updated_at).toLocaleDateString("ar-EG") + '</td>' +
             '<td><button class="btn sm" data-publish="' + i.id + '">تم النشر — أدخل الرابط</button></td></tr>';
         });
@@ -49,7 +49,7 @@
       } else {
         html += '<table class="simple"><thead><tr><th>العنوان</th><th>الحالة</th><th>آخر تحديث</th><th></th></tr></thead><tbody>';
         items.forEach(function (i) {
-          html += '<tr><td><span class="link-open" data-open="' + i.id + '">' + escapeHtml(i.title) + '</span></td>' +
+          html += '<tr><td><span class="link-open" data-open="' + i.id + '">' + escapeHtml(i.title) + '</span>' + W.brandBadgeHtml(i.brand) + '</td>' +
             '<td><span class="status-pill ' + stagePillClass(i.stage) + '">' + W.stageLabel(i.stage) + '</span></td>' +
             '<td>' + new Date(i.updated_at).toLocaleDateString("ar-EG") + '</td>' +
             '<td><button class="btn ghost sm" data-open="' + i.id + '">فتح</button> ' + C.commentButtonHtml(i.id, stats) + '</td></tr>';
@@ -81,6 +81,7 @@
     backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>فكرة/محتوى جديد</h3>' +
       '<button class="modal-close">×</button></div>' +
       '<div class="field"><label>العنوان</label><input id="cf-title" placeholder="عنوان المحتوى"></div>' +
+      '<div class="field"><label>المادة دي لصفحة</label>' + W.brandSelectHtml("cf-brand", "") + '</div>' +
       '<div class="field"><label>نص المحتوى</label><textarea id="cf-body" placeholder="اكتب الفكرة والنص..."></textarea></div>' +
       '<div style="text-align:left;margin-top:10px;"><button class="btn" id="cf-submit">إرسال للاعتماد الأولي</button> ' +
       '<button class="btn ghost" id="cf-draft">حفظ كمسودة</button></div></div>';
@@ -91,9 +92,11 @@
     function submit(stage) {
       var title = document.getElementById("cf-title").value.trim();
       var body = document.getElementById("cf-body").value.trim();
+      var brand = document.getElementById("cf-brand").value;
       if (!title) { alert("اكتب عنوان الأول"); return; }
+      if (!brand) { alert("اختر المادة دي لصفحة سونو ولا د.دينا"); return; }
       var me = window.SSMPDAuth.currentAdmin;
-      window.SSMPDDb.createContentItem({ title: title, body: body, stage: stage, created_by: me.id })
+      window.SSMPDDb.createContentItem({ title: title, body: body, stage: stage, created_by: me.id, brand: brand })
         .then(function (row) {
           window.SSMPDDrive.logIdea(row.id, title).catch(function () {});
           return window.SSMPDDb.logActivity({ content_id: row.id, actor_id: me.id, action: "إنشاء", from_stage: null, to_stage: stage });
@@ -110,7 +113,7 @@
     window.SSMPDDb.getContentItem(id).then(function (item) {
       var backdrop = document.createElement("div");
       backdrop.className = "modal-backdrop";
-      backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>' + escapeHtml(item.title) + '</h3>' +
+      backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>' + escapeHtml(item.title) + W.brandBadgeHtml(item.brand) + '</h3>' +
         '<button class="modal-close">×</button></div>' +
         '<div class="status-pill ' + stagePillClass(item.stage) + '" style="margin-bottom:12px;">' + W.stageLabel(item.stage) + '</div>' +
         '<p style="white-space:pre-wrap;">' + escapeHtml(item.body || "") + '</p>' +
@@ -128,29 +131,39 @@
   }
 
   function openPublishModal(id) {
-    var backdrop = document.createElement("div");
-    backdrop.className = "modal-backdrop";
-    backdrop.innerHTML = '<div class="modal" style="max-width:420px;"><div class="modal-head"><h3>تأكيد النشر</h3>' +
-      '<button class="modal-close">×</button></div>' +
-      '<div class="field"><label>رابط المنشور</label><input id="pub-url" placeholder="https://..."></div>' +
-      '<div style="text-align:left;"><button class="btn" id="pub-confirm">تأكيد</button></div></div>';
-    document.body.appendChild(backdrop);
-    backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
+    window.SSMPDDb.getContentItem(id).then(function (item) {
+      var backdrop = document.createElement("div");
+      backdrop.className = "modal-backdrop";
+      backdrop.innerHTML = '<div class="modal" style="max-width:420px;"><div class="modal-head"><h3>تأكيد النشر</h3>' +
+        '<button class="modal-close">×</button></div>' +
+        '<div class="field"><label>المادة دي لصفحة</label>' + W.brandSelectHtml("pub-brand", item.brand || "") + '</div>' +
+        '<div class="field"><label>هيتنشر على</label>' + W.platformSelectHtml("pub-platform", item.publish_platform || "") + '</div>' +
+        '<div class="field"><label>رابط المنشور</label><input id="pub-url" placeholder="https://..."></div>' +
+        '<div style="text-align:left;"><button class="btn" id="pub-confirm">تأكيد</button></div></div>';
+      document.body.appendChild(backdrop);
+      backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
+      backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
 
-    document.getElementById("pub-confirm").onclick = function () {
-      var url = document.getElementById("pub-url").value.trim();
-      if (!url) { alert("حط الرابط الأول"); return; }
-      var me = window.SSMPDAuth.currentAdmin;
-      window.SSMPDDb.updateContentItem(id, {
-        stage: "published", published_url: url, published_by: me.id, published_at: new Date().toISOString()
-      }).then(function (updated) {
-        window.SSMPDDrive.logPublished(id, updated.title, url, updated.stage_history).catch(function () {});
-        return window.SSMPDDb.logActivity({ content_id: id, actor_id: me.id, action: "نشر", from_stage: "ready_to_publish", to_stage: "published" });
-      }).then(function () {
-        backdrop.remove();
-        render(document.getElementById("view-container"));
-      }).catch(function (e) { alert("خطأ: " + e.message); });
-    };
+      document.getElementById("pub-confirm").onclick = function () {
+        var url = document.getElementById("pub-url").value.trim();
+        var brand = document.getElementById("pub-brand").value;
+        var platform = document.getElementById("pub-platform").value;
+        if (!url) { alert("حط الرابط الأول"); return; }
+        if (!brand) { alert("اختر المادة دي لصفحة سونو ولا د.دينا"); return; }
+        if (!platform) { alert("اختر هتتنشر على أنهي منصة"); return; }
+        var me = window.SSMPDAuth.currentAdmin;
+        window.SSMPDDb.updateContentItem(id, {
+          stage: "published", published_url: url, published_by: me.id, published_at: new Date().toISOString(),
+          brand: brand, publish_platform: platform
+        }).then(function (updated) {
+          window.SSMPDDrive.logPublished(id, updated.title, url, updated.stage_history).catch(function () {});
+          return window.SSMPDDb.logActivity({ content_id: id, actor_id: me.id, action: "نشر", from_stage: "ready_to_publish", to_stage: "published" });
+        }).then(function () {
+          backdrop.remove();
+          render(document.getElementById("view-container"));
+        }).catch(function (e) { alert("خطأ: " + e.message); });
+      };
+    });
   }
 
   window.SSMPDRenderProduction = { render: render };

@@ -22,6 +22,21 @@
     approved:  { label: "تم الاعتماد للنشر",    pillClass: "approved" }
   };
 
+  // تمييز المحتوى بين الصفحتين — يحدده منشئ المحتوى، ويظهر لكل الأدوار في كل المراحل
+  var BRANDS = {
+    sono:    { label: "سونو" },
+    dr_dina: { label: "د.دينا" }
+  };
+
+  // منصة النشر — تُختار عند النشر (زي ما يُختار البراند تاني في نفس اللحظة)
+  var PLATFORMS = {
+    facebook:  { label: "فيسبوك" },
+    instagram: { label: "انستجرام" },
+    tiktok:    { label: "تيكتوك" },
+    youtube:   { label: "قناة يوتيوب" },
+    website:   { label: "الموقع الإلكتروني" }
+  };
+
   function stageLabel(key) {
     var s = STAGES.filter(function (x) { return x.key === key; })[0];
     return s ? s.label : key;
@@ -44,11 +59,38 @@
     }
   }
 
+  // بادچ صغير يظهر جنب العنوان في كل الشاشات — فاضي لو المادة لسه بلا براند محدد
+  function brandBadgeHtml(brand) {
+    if (!brand || !BRANDS[brand]) return "";
+    return '<span class="brand-badge ' + brand + '">' + BRANDS[brand].label + "</span>";
+  }
+
+  // دروب داون اختيار البراند — بيُستخدم عند إنشاء المحتوى وعند إعادة الاختيار وقت النشر
+  function brandSelectHtml(id, selected) {
+    var opts = Object.keys(BRANDS).map(function (k) {
+      return '<option value="' + k + '"' + (selected === k ? " selected" : "") + '>' + BRANDS[k].label + "</option>";
+    }).join("");
+    return '<select id="' + id + '"><option value="">— اختر —</option>' + opts + "</select>";
+  }
+
+  // دروب داون اختيار منصة النشر
+  function platformSelectHtml(id, selected) {
+    var opts = Object.keys(PLATFORMS).map(function (k) {
+      return '<option value="' + k + '"' + (selected === k ? " selected" : "") + '>' + PLATFORMS[k].label + "</option>";
+    }).join("");
+    return '<select id="' + id + '"><option value="">— اختر —</option>' + opts + "</select>";
+  }
+
   window.SSMPDWorkflow = {
     STAGES: STAGES,
     DESIGN_STATUS: DESIGN_STATUS,
+    BRANDS: BRANDS,
+    PLATFORMS: PLATFORMS,
     stageLabel: stageLabel,
     stageIndex: stageIndex,
-    designStatusFor: designStatusFor
+    designStatusFor: designStatusFor,
+    brandBadgeHtml: brandBadgeHtml,
+    brandSelectHtml: brandSelectHtml,
+    platformSelectHtml: platformSelectHtml
   };
 })();
