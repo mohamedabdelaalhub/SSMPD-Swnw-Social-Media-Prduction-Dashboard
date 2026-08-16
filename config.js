@@ -15,7 +15,7 @@ window.SSMPD_CONFIG = {
 
   // جسر أرشيف Google Drive — رابط Web App بعد نشر السكريبت من حساب المركز
   driveBridge: {
-    webAppUrl: "REPLACE_AFTER_APPS_SCRIPT_DEPLOY",
+    webAppUrl: "https://script.google.com/macros/s/AKfycbyTg8uqckj3ttdCS5rV32jzAjpdtTt74XKYaxNZH1tSQ3ESqR63dASUvsjbU0T_BFBl/exec",
     rootFolderName: "أرشيف SSMPD"
   },
 
