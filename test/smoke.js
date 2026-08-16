@@ -18,8 +18,9 @@ const DESIGNER = { id: "admin-2", user_id: "user-2", email: "designer@test.com",
 const TABLES = {
   admins: [ME, DESIGNER],
   content_items: [
-    { id: "c1", title: "بوست تجريبي", body: "نص تجريبي", stage: "idea_selection", created_by: ME.id, assigned_designer: null, design_file_url: null, design_received_at: null, stage_history: [{ stage: "idea_selection", at: now }], published_url: null, published_by: null, published_at: null, created_at: now, updated_at: now },
-    { id: "c2", title: "بوست منشور", body: "نص", stage: "published", created_by: ME.id, assigned_designer: DESIGNER.id, design_file_url: "https://drive.google.com/x", design_received_at: now, stage_history: [{ stage: "idea_selection", at: now }, { stage: "published", at: now }], published_url: "https://instagram.com/p/x", published_by: ME.id, published_at: now, created_at: now, updated_at: now }
+    { id: "c1", title: "بوست تجريبي", body: "نص تجريبي", stage: "idea_selection", created_by: ME.id, assigned_designer: null, design_file_url: null, design_received_at: null, brand: "sono", publish_platform: null, stage_history: [{ stage: "idea_selection", at: now }], published_url: null, published_by: null, published_at: null, created_at: now, updated_at: now },
+    { id: "c2", title: "بوست منشور", body: "نص", stage: "published", created_by: ME.id, assigned_designer: DESIGNER.id, design_file_url: "https://drive.google.com/x", design_received_at: now, brand: "dr_dina", publish_platform: "instagram", stage_history: [{ stage: "idea_selection", at: now }, { stage: "published", at: now }], published_url: "https://instagram.com/p/x", published_by: ME.id, published_at: now, created_at: now, updated_at: now },
+    { id: "c3", title: "بوست جاهز للنشر", body: "نص", stage: "ready_to_publish", created_by: ME.id, assigned_designer: DESIGNER.id, design_file_url: "https://drive.google.com/y", design_received_at: now, brand: "sono", publish_platform: null, stage_history: [{ stage: "idea_selection", at: now }, { stage: "ready_to_publish", at: now }], published_url: null, published_by: null, published_at: null, created_at: now, updated_at: now }
   ],
   comments: [],
   comment_reads: [],
@@ -154,6 +155,11 @@ setTimeout(() => {
       setTimeout(() => {
         assert(rootEl.querySelectorAll(".kanban-col").length === 7, "٧ أعمدة Kanban ظاهرة في شاشة إدارة المحتوى");
         assert(/بوست تجريبي/.test(view.innerHTML), "المادة في مرحلة اختيار الفكرة ظاهرة في العمود الصحيح");
+        assert(/سونو/.test(view.innerHTML) && /د\.دينا/.test(view.innerHTML), "بادچ تمييز سونو/د.دينا ظاهر في شاشة إدارة المحتوى");
+        assert(/جاهز للنشر/.test(view.innerHTML), "سكشن \"جاهز للنشر\" ظاهر في شاشة إدارة المحتوى");
+        assert(/بوست جاهز للنشر/.test(view.innerHTML), "المادة اللي في مرحلة جاهز للنشر ظاهرة في السكشن الجديد");
+        assert(rootEl.querySelectorAll('[id^="ready-brand-"]').length >= 1, "دروب داون اختيار الصفحة ظاهر في سكشن جاهز للنشر");
+        assert(rootEl.querySelectorAll('[id^="ready-platform-"]').length >= 1, "دروب داون اختيار المنصة ظاهر في سكشن جاهز للنشر");
 
         console.log(process.exitCode ? "\n--- في أخطاء فوق ---" : "\n✅ كل اختبارات الدخان عدّت بنجاح");
       }, 150);
