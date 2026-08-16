@@ -174,10 +174,11 @@ table.simple tr:hover{background:var(--c-bg);}
 .status-pill.published{background:#E6F4EE; color:var(--c-positive);}
 
 /* ---------- Kanban ---------- */
-.kanban{display:flex; gap:12px; overflow-x:auto; padding-bottom:8px;}
+/* flex-wrap عشان كل الأعمدة السبعة (بما فيها "تم النشر") تظهر دايماً من غير سكرول أفقي مخفي */
+.kanban{display:flex; flex-wrap:wrap; gap:12px; padding-bottom:8px;}
 .kanban-col{
-  flex:0 0 260px; background:#EEF1F8; border-radius:12px; padding:10px;
-  min-height:200px;
+  flex:0 0 210px; background:#EEF1F8; border-radius:12px; padding:10px;
+  min-height:160px;
 }
 .kanban-col h4{
   font-size:12.5px; display:flex; align-items:center; justify-content:space-between;
@@ -217,6 +218,23 @@ table.simple tr:hover{background:var(--c-bg);}
 .comment{background:var(--c-bg); border-radius:10px; padding:10px 12px; margin-bottom:8px;}
 .comment .head{display:flex; justify-content:space-between; font-size:11px; color:var(--c-muted); margin-bottom:4px;}
 .comment .head b{color:var(--c-dark);}
+.comment-status-select{
+  font-size:11px; padding:3px 8px; border-radius:8px; border:1px solid var(--c-border);
+  background:#fff; color:var(--c-dark);
+}
+
+/* عداد "تعليق جديد": أحمر لسه مقروش، رمادي بعد ما يتقرا */
+.comment-badge{
+  display:inline-flex; align-items:center; justify-content:center;
+  min-width:16px; height:16px; padding:0 5px; border-radius:999px;
+  font-size:10px; font-weight:800; margin-inline-start:5px;
+}
+.comment-badge.unread{background:var(--c-negative); color:#fff;}
+.comment-badge.read{background:#D7DCE6; color:var(--c-muted);}
+
+/* عنوان قابل للضغط يفتح تفاصيل المادة */
+.link-open{cursor:pointer; color:var(--c-primary); font-weight:700;}
+.link-open:hover{text-decoration:underline;}
 
 /* ---------- كالندر الأرشيف ---------- */
 .calendar-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:6px;}
