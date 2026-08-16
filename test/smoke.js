@@ -14,9 +14,11 @@ function assert(cond, msg) {
 const now = new Date().toISOString();
 const ME = { id: "admin-1", user_id: "user-1", email: "mohamadmh32@gmail.com", name: "محمد عبدالعال", role: "super_admin", active: true, created_at: now };
 const DESIGNER = { id: "admin-2", user_id: "user-2", email: "designer@test.com", name: "مصمم تجريبي", role: "designer", active: true, created_at: now };
+// دعوة معلّقة — السوبر أدمن ضافها بالإيميل بس، لسه محدش عمل حساب بيها (user_id فاضي)
+const PENDING = { id: "admin-3", user_id: null, email: "pending@test.com", name: "موظف جديد", role: "page_manager", active: true, created_at: now };
 
 const TABLES = {
-  admins: [ME, DESIGNER],
+  admins: [ME, DESIGNER, PENDING],
   content_items: [
     { id: "c1", title: "بوست تجريبي", body: "نص تجريبي", stage: "idea_selection", created_by: ME.id, assigned_designer: null, design_file_url: null, design_received_at: null, brand: "sono", publish_platform: null, stage_history: [{ stage: "idea_selection", at: now }], published_url: null, published_by: null, published_at: null, created_at: now, updated_at: now },
     { id: "c2", title: "بوست منشور", body: "نص", stage: "published", created_by: ME.id, assigned_designer: DESIGNER.id, design_file_url: "https://drive.google.com/x", design_received_at: now, brand: "dr_dina", publish_platform: "instagram", stage_history: [{ stage: "idea_selection", at: now }, { stage: "published", at: now }], published_url: "https://instagram.com/p/x", published_by: ME.id, published_at: now, created_at: now, updated_at: now },
@@ -31,7 +33,10 @@ const TABLES = {
 };
 
 function matchFilters(row, filters) {
-  return filters.every(([col, val]) => row[col] === val);
+  return filters.every(([col, val, op]) => {
+    if (op === "ilike") return String(row[col] == null ? "" : row[col]).toLowerCase() === String(val).toLowerCase();
+    return row[col] === val;
+  });
 }
 
 class FakeQuery {
@@ -39,6 +44,7 @@ class FakeQuery {
   select() { return this; }
   eq(col, val) { this._filters.push([col, val]); return this; }
   is(col, val) { this._filters.push([col, val]); return this; }
+  ilike(col, val) { this._filters.push([col, val, "ilike"]); return this; }
   order(col, opts) { this._order = { col, asc: !opts || opts.ascending !== false }; return this; }
   limit(n) { this._limit = n; return this; }
   single() { this._single = true; return this; }
@@ -161,7 +167,17 @@ setTimeout(() => {
         assert(rootEl.querySelectorAll('[id^="ready-brand-"]').length >= 1, "دروب داون اختيار الصفحة ظاهر في سكشن جاهز للنشر");
         assert(rootEl.querySelectorAll('[id^="ready-platform-"]').length >= 1, "دروب داون اختيار المنصة ظاهر في سكشن جاهز للنشر");
 
-        console.log(process.exitCode ? "\n--- في أخطاء فوق ---" : "\n✅ كل اختبارات الدخان عدّت بنجاح");
+        // موظف جديد اتضاف بالإيميل بس من السوبر أدمن (دعوة معلّقة user_id=null)،
+        // وبعدين عمل حساب لأول مرة — لازم يترّبط تلقائياً بصف الدعوة المعلّقة (claimInvite)
+        window.SSMPDAuth.loadCurrentAdmin("user-3", "PENDING@Test.com").then((claimed) => {
+          assert(claimed && claimed.user_id === "user-3", "الدعوة المعلّقة اترّبطت تلقائياً بالحساب الجديد بعد التسجيل (claimInvite)");
+          assert(claimed.role === "page_manager", "دور الموظف اتحفظ صح بعد الربط");
+
+          console.log(process.exitCode ? "\n--- في أخطاء فوق ---" : "\n✅ كل اختبارات الدخان عدّت بنجاح");
+        }).catch((e) => {
+          assert(false, "ربط الدعوة المعلّقة اتنفذ من غير أخطاء: " + e.message);
+          console.log("\n--- في أخطاء فوق ---");
+        });
       }, 150);
     }, 150);
   }, 150);
