@@ -110,9 +110,28 @@ create table if not exists public.content_items (
   published_url      text,
   published_by       uuid references public.admins(id),
   published_at       timestamptz,
+  -- وقت ما المصمم دوس "استلام" فعلياً (يميّز "في انتظار الاستلام" عن "تم الاستلام" في شاشة التصميم)
+  design_received_at timestamptz,
+  -- سجل تلقائي بكل انتقالة مرحلة [{stage,at},...] — بيُستخدم لحساب مدة رحلة الفكرة للنشر ومدة كل مرحلة في تقرير الأرشيف
+  stage_history       jsonb not null default '[]'::jsonb,
+  -- تمييز المحتوى: سونو أو د. دينا — بيحدده منشئ المحتوى، ويظهر لكل الأدوار في كل مرحلة
+  brand               text check (brand in ('sono','dr_dina')),
+  -- المنصة اللي اتنشر عليها (بتتحدد وقت النشر)
+  publish_platform    text check (publish_platform in ('facebook','instagram','tiktok','youtube','website')),
   created_at         timestamptz not null default now(),
   updated_at         timestamptz not null default now()
 );
+
+-- ترقية جدول قديم كان قبل إضافة الأعمدة دي
+alter table public.content_items add column if not exists design_received_at timestamptz;
+alter table public.content_items add column if not exists stage_history jsonb not null default '[]'::jsonb;
+alter table public.content_items add column if not exists brand text;
+alter table public.content_items drop constraint if exists content_items_brand_check;
+alter table public.content_items add constraint content_items_brand_check check (brand in ('sono','dr_dina'));
+alter table public.content_items add column if not exists publish_platform text;
+alter table public.content_items drop constraint if exists content_items_publish_platform_check;
+alter table public.content_items add constraint content_items_publish_platform_check
+  check (publish_platform in ('facebook','instagram','tiktok','youtube','website'));
 
 create index if not exists content_items_stage_idx on public.content_items (stage);
 create index if not exists content_items_created_by_idx on public.content_items (created_by);
@@ -124,6 +143,22 @@ begin new.updated_at = now(); return new; end $$;
 drop trigger if exists content_items_touch on public.content_items;
 create trigger content_items_touch before update on public.content_items
   for each row execute function public.touch_updated_at();
+
+-- يسجّل تلقائياً كل مرة الـ stage يتغيّر (أو أول إنشاء) في stage_history — مصدر الحقيقة لحساب أوقات المراحل
+create or replace function public.track_stage_history()
+returns trigger language plpgsql as $$
+begin
+  if tg_op = 'INSERT' then
+    new.stage_history = jsonb_build_array(jsonb_build_object('stage', new.stage, 'at', now()));
+  elsif new.stage is distinct from old.stage then
+    new.stage_history = coalesce(old.stage_history, '[]'::jsonb) || jsonb_build_object('stage', new.stage, 'at', now());
+  end if;
+  return new;
+end $$;
+
+drop trigger if exists content_items_stage_history on public.content_items;
+create trigger content_items_stage_history before insert or update on public.content_items
+  for each row execute function public.track_stage_history();
 
 alter table public.content_items enable row level security;
 
@@ -197,11 +232,12 @@ begin
     return new;
   end if;
 
-  -- مسؤول الاعتماد: يعتمد أو يطلب تعديل في نقطتي الاعتماد، ويسند مصمم
+  -- مسؤول الاعتماد: يعتمد أو يطلب تعديل في نقطتي الاعتماد، ويسند مصمم، وينشر برضه من شاشة إدارة المحتوى
   if r = 'approver' then
     if not (
       (old.stage = 'initial_approval' and new.stage in ('in_design','needs_revision'))
       or (old.stage = 'final_approval' and new.stage in ('ready_to_publish','needs_revision'))
+      or (old.stage = 'ready_to_publish' and new.stage = 'published')
       or (old.stage = new.stage)
     ) then
       raise exception 'انتقال مرحلة غير مسموح لمسؤول الاعتماد';
@@ -224,15 +260,22 @@ create table if not exists public.comments (
   content_id  uuid not null references public.content_items(id) on delete cascade,
   author_id   uuid references public.admins(id),
   body        text not null,
+  status      text not null default 'pending' check (status in ('pending','done')),
   created_at  timestamptz not null default now()
 );
+
+-- ترقية جدول قديم كان قبل إضافة status
+alter table public.comments add column if not exists status text not null default 'pending';
+alter table public.comments drop constraint if exists comments_status_check;
+alter table public.comments add constraint comments_status_check check (status in ('pending','done'));
 
 create index if not exists comments_content_idx on public.comments (content_id);
 
 alter table public.comments enable row level security;
 
-drop policy if exists "active admins read comments"  on public.comments;
-drop policy if exists "active admins write comments" on public.comments;
+drop policy if exists "active admins read comments"   on public.comments;
+drop policy if exists "active admins write comments"  on public.comments;
+drop policy if exists "active admins update comments" on public.comments;
 
 create policy "active admins read comments"
   on public.comments for select to authenticated
@@ -241,6 +284,47 @@ create policy "active admins read comments"
 create policy "active admins write comments"
   on public.comments for insert to authenticated
   with check (public.my_admin_id() is not null and author_id = public.my_admin_id());
+
+-- تحديث الحالة (في انتظار التعديل / تم التعديل) مسموح لأي موظف نشط،
+-- والحارس تحت بيمنع تعديل نص الكومنت أو صاحبه إلا للسوبر أدمن
+create policy "active admins update comments"
+  on public.comments for update to authenticated
+  using (public.my_admin_id() is not null)
+  with check (public.my_admin_id() is not null);
+
+create or replace function public.guard_comment_changes()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if public.is_super() then return new; end if;
+  if new.body is distinct from old.body
+     or new.author_id is distinct from old.author_id
+     or new.content_id is distinct from old.content_id then
+    raise exception 'غير مسموح بتعديل نص الكومنت أو صاحبه — بس حالة الكومنت';
+  end if;
+  return new;
+end $$;
+
+drop trigger if exists comments_guard on public.comments;
+create trigger comments_guard before update on public.comments
+  for each row execute function public.guard_comment_changes();
+
+-- ============================================================
+--  3ب) تتبّع قراءة الكومنتات — لعداد "تعليق جديد" (أحمر/رمادي) في الواجهة
+-- ============================================================
+create table if not exists public.comment_reads (
+  admin_id     uuid not null references public.admins(id) on delete cascade,
+  content_id   uuid not null references public.content_items(id) on delete cascade,
+  last_read_at timestamptz not null default now(),
+  primary key (admin_id, content_id)
+);
+
+alter table public.comment_reads enable row level security;
+
+drop policy if exists "own comment reads" on public.comment_reads;
+create policy "own comment reads"
+  on public.comment_reads for all to authenticated
+  using (admin_id = public.my_admin_id())
+  with check (admin_id = public.my_admin_id());
 
 -- ============================================================
 --  4) سجل النشاط (Activity Log)
