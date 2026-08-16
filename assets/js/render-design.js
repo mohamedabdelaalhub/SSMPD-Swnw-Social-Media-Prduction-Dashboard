@@ -2,6 +2,7 @@
 (function () {
   "use strict";
   var W = window.SSMPDWorkflow;
+  var C = window.SSMPDComments;
 
   function escapeHtml(s) {
     return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -11,7 +12,14 @@
     var me = window.SSMPDAuth.currentAdmin;
     container.innerHTML = '<div class="loading">بيحمّل…</div>';
 
-    window.SSMPDDb.listContentItems({ assignedDesigner: me.id }).then(function (items) {
+    Promise.all([
+      window.SSMPDDb.listContentItems({ assignedDesigner: me.id }),
+      window.SSMPDDb.listAllComments(),
+      window.SSMPDDb.listMyCommentReads(me.id)
+    ]).then(function (res) {
+      var items = res[0];
+      var stats = C.computeCommentStats(res[1], res[2], me.id);
+
       var actionable = items.filter(function (i) {
         return ["in_design", "needs_revision", "final_approval"].indexOf(i.stage) !== -1;
       });
@@ -27,21 +35,25 @@
         html += '<table class="simple"><thead><tr><th>العنوان</th><th>الحالة</th><th></th></tr></thead><tbody>';
         actionable.forEach(function (i) {
           var ds = W.designStatusFor(i);
-          html += '<tr><td>' + escapeHtml(i.title) + '</td>' +
-            '<td><span class="status-pill ' + W.DESIGN_STATUS[ds].pillClass + '">' + W.DESIGN_STATUS[ds].label + '</span></td>' +
-            '<td><button class="btn ghost sm" data-open="' + i.id + '">فتح</button></td></tr>';
+          var statusCell = ds === "pending"
+            ? '<button class="btn sm" data-receive="' + i.id + '">استلام</button>'
+            : '<span class="status-pill ' + W.DESIGN_STATUS[ds].pillClass + '">' + W.DESIGN_STATUS[ds].label + '</span>';
+          html += '<tr><td><span class="link-open" data-open="' + i.id + '">' + escapeHtml(i.title) + '</span></td>' +
+            '<td>' + statusCell + '</td>' +
+            '<td><button class="btn ghost sm" data-open="' + i.id + '">فتح</button> ' + C.commentButtonHtml(i.id, stats) + '</td></tr>';
         });
         html += '</tbody></table>';
       }
       html += '</div>';
 
-      html += '<div class="section"><h3>اتاعتمدت (' + done.length + ')</h3>';
+      html += '<div class="section"><h3>المواد المعتمدة (' + done.length + ')</h3>';
       if (!done.length) {
         html += '<div class="empty-state">لسه مفيش</div>';
       } else {
         html += '<table class="simple"><thead><tr><th>العنوان</th><th>الحالة</th></tr></thead><tbody>';
         done.forEach(function (i) {
-          html += '<tr><td>' + escapeHtml(i.title) + '</td><td><span class="status-pill approved">' + W.stageLabel(i.stage) + '</span></td></tr>';
+          html += '<tr><td><span class="link-open" data-open="' + i.id + '">' + escapeHtml(i.title) + '</span></td>' +
+            '<td><span class="status-pill approved">' + W.stageLabel(i.stage) + '</span></td></tr>';
         });
         html += '</tbody></table>';
       }
@@ -51,9 +63,29 @@
       container.querySelectorAll("[data-open]").forEach(function (btn) {
         btn.onclick = function () { openDesignModal(btn.getAttribute("data-open")); };
       });
+      container.querySelectorAll("[data-comment]").forEach(function (btn) {
+        btn.onclick = function () { openDesignModal(btn.getAttribute("data-comment")); };
+      });
+      container.querySelectorAll("[data-receive]").forEach(function (btn) {
+        btn.onclick = function (e) {
+          e.stopPropagation();
+          handleReceive(btn.getAttribute("data-receive"));
+        };
+      });
     }).catch(function (e) {
       container.innerHTML = '<div class="err-msg">خطأ: ' + e.message + '</div>';
     });
+  }
+
+  // المصمم يدوس "استلام" فيتحول الحالة من "في انتظار الاستلام" لـ "تم الاستلام والعمل عليه"
+  function handleReceive(id) {
+    var me = window.SSMPDAuth.currentAdmin;
+    window.SSMPDDb.updateContentItem(id, { design_received_at: new Date().toISOString() })
+      .then(function () {
+        return window.SSMPDDb.logActivity({ content_id: id, actor_id: me.id, action: "استلام التصميم", from_stage: "in_design", to_stage: "in_design" });
+      })
+      .then(function () { render(document.getElementById("view-container")); })
+      .catch(function (e) { alert("خطأ: " + e.message); });
   }
 
   function openDesignModal(id) {
@@ -105,7 +137,8 @@
           design_file_url: res.fileUrl,
           design_drive_folder: res.folderUrl,
           stage: newStage
-        }).then(function () {
+        }).then(function (updated) {
+          window.SSMPDDrive.logDesignUploaded(item.id, updated.title).catch(function () {});
           return window.SSMPDDb.logActivity({ content_id: item.id, actor_id: me.id, action: "رفع تصميم", from_stage: item.stage, to_stage: newStage });
         });
       }).then(function () {

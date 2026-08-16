@@ -74,6 +74,70 @@
     });
   }
 
+  // ---------- استيراد CSV من Meta Business Suite / Meta Ads / Google Ads ----------
+  // أعمدة الملفات دي بتختلف بحسب المصدر، فبنعمل مطابقة بالكلمات المفتاحية (عربي/إنجليزي)
+  // بدل الاعتماد على شكل ملف واحد بعينه.
+  var REACH_KEYS = ["reach", "الوصول", "impressions", "ظهور"];
+  var ENGAGE_KEYS = ["engagement rate", "engagement", "نسبة التفاعل", "تفاعل"];
+  var FOLLOWERS_KEYS = ["new followers", "followers", "متابعين جدد", "متابعين"];
+
+  function splitCsvLine(line) {
+    var out = [], cur = "", inQ = false;
+    for (var i = 0; i < line.length; i++) {
+      var ch = line[i];
+      if (ch === '"') { inQ = !inQ; continue; }
+      if (ch === "," && !inQ) { out.push(cur); cur = ""; continue; }
+      cur += ch;
+    }
+    out.push(cur);
+    return out;
+  }
+
+  function toNumber(s) {
+    if (s == null) return null;
+    var n = Number(String(s).replace(/[,%\s]/g, ""));
+    return isNaN(n) ? null : n;
+  }
+
+  function matchCol(header, keys) {
+    var h = String(header || "").toLowerCase();
+    for (var i = 0; i < keys.length; i++) {
+      if (h.indexOf(keys[i].toLowerCase()) !== -1) return true;
+    }
+    return false;
+  }
+
+  // بيرجع { reach, engagement, followers } — أي قيمة معرفناش نلاقيها بترجع null وتفضل الخانة يدوية
+  function parseMetricsCsv(text) {
+    var lines = text.split(/\r?\n/).filter(function (l) { return l.trim().length; });
+    if (lines.length < 2) throw new Error("الملف فاضي أو مش بصيغة CSV مفهومة");
+    var headers = splitCsvLine(lines[0]);
+    var reachIdx = -1, engageIdx = -1, followersIdx = -1;
+    headers.forEach(function (h, idx) {
+      if (reachIdx === -1 && matchCol(h, REACH_KEYS)) reachIdx = idx;
+      if (engageIdx === -1 && matchCol(h, ENGAGE_KEYS)) engageIdx = idx;
+      if (followersIdx === -1 && matchCol(h, FOLLOWERS_KEYS)) followersIdx = idx;
+    });
+    var dataLines = lines.slice(1).map(splitCsvLine);
+    var result = { reach: null, engagement: null, followers: null };
+
+    if (reachIdx !== -1) {
+      var sumReach = 0, gotReach = false;
+      dataLines.forEach(function (r) { var n = toNumber(r[reachIdx]); if (n != null) { sumReach += n; gotReach = true; } });
+      if (gotReach) result.reach = sumReach;
+    }
+    if (followersIdx !== -1) {
+      var sumF = 0, gotF = false;
+      dataLines.forEach(function (r) { var n = toNumber(r[followersIdx]); if (n != null) { sumF += n; gotF = true; } });
+      if (gotF) result.followers = sumF;
+    }
+    if (engageIdx !== -1) {
+      var vals = dataLines.map(function (r) { return toNumber(r[engageIdx]); }).filter(function (n) { return n != null; });
+      if (vals.length) result.engagement = Math.round((vals.reduce(function (a, b) { return a + b; }, 0) / vals.length) * 10) / 10;
+    }
+    return result;
+  }
+
   function openMetricsModal() {
     var backdrop = document.createElement("div");
     backdrop.className = "modal-backdrop";
@@ -83,6 +147,9 @@
     backdrop.innerHTML = '<div class="modal" style="max-width:420px;"><div class="modal-head"><h3>بيانات الأسبوع</h3>' +
       '<button class="modal-close">×</button></div>' +
       '<div class="field"><label>بداية الأسبوع</label><input type="date" id="wm-week" value="' + iso + '"></div>' +
+      '<div class="field"><label>أو ارفع تقرير CSV (Meta Business Suite / Meta Ads / Google Ads)</label>' +
+      '<input type="file" id="wm-csv-file" accept=".csv,text/csv"></div>' +
+      '<div id="wm-csv-status" style="font-size:11px;color:var(--c-muted);margin-bottom:10px;"></div>' +
       '<div class="field"><label>الوصول (Reach)</label><input type="number" id="wm-reach"></div>' +
       '<div class="field"><label>نسبة التفاعل %</label><input type="number" step="0.1" id="wm-eng"></div>' +
       '<div class="field"><label>متابعين جدد</label><input type="number" id="wm-followers"></div>' +
@@ -90,6 +157,30 @@
     document.body.appendChild(backdrop);
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
     backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
+
+    var csvInput = document.getElementById("wm-csv-file");
+    var csvStatus = document.getElementById("wm-csv-status");
+    csvInput.onchange = function () {
+      var file = csvInput.files[0];
+      if (!file) return;
+      csvStatus.textContent = "بيقرأ الملف…";
+      var reader = new FileReader();
+      reader.onload = function () {
+        try {
+          var parsed = parseMetricsCsv(String(reader.result));
+          var found = [];
+          if (parsed.reach != null) { document.getElementById("wm-reach").value = parsed.reach; found.push("الوصول"); }
+          if (parsed.engagement != null) { document.getElementById("wm-eng").value = parsed.engagement; found.push("نسبة التفاعل"); }
+          if (parsed.followers != null) { document.getElementById("wm-followers").value = parsed.followers; found.push("متابعين جدد"); }
+          csvStatus.textContent = found.length
+            ? "اتقرا من الملف: " + found.join("، ") + " — راجع الأرقام تحت قبل الحفظ"
+            : "معرفناش نلاقي أعمدة معروفة في الملف — أدخل الأرقام يدوي أو جرّب تصدير تاني";
+        } catch (e) {
+          csvStatus.textContent = "تعذّر قراءة الملف: " + e.message;
+        }
+      };
+      reader.readAsText(file);
+    };
 
     document.getElementById("wm-save").onclick = function () {
       var me = window.SSMPDAuth.currentAdmin;

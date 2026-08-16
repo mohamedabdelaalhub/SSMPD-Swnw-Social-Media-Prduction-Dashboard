@@ -21,6 +21,14 @@
     getMyAdminRow: function (userId) {
       return handle(client.from("admins").select("*").eq("user_id", userId).maybeSingle());
     },
+    // دعوة معلّقة (user_id لسه فاضي) بنفس البريد — لأول مرة يعمل فيها المستخدم حساب
+    getPendingInviteByEmail: function (email) {
+      return handle(client.from("admins").select("*").is("user_id", null).eq("email", email).maybeSingle());
+    },
+    // يربط الدعوة المعلّقة بالحساب اللي اتعمل دلوقتي
+    claimInvite: function (adminRowId, userId) {
+      return handle(client.from("admins").update({ user_id: userId }).eq("id", adminRowId).select().single());
+    },
     listAdmins: function () {
       return handle(client.from("admins").select("*").order("created_at", { ascending: true }));
     },
@@ -56,8 +64,27 @@
     listComments: function (contentId) {
       return handle(client.from("comments").select("*").eq("content_id", contentId).order("created_at", { ascending: true }));
     },
+    // كل الكومنتات في النظام — تُستخدم لحساب عداد "تعليق جديد" في الشاشات
+    listAllComments: function () {
+      return handle(client.from("comments").select("*").order("created_at", { ascending: true }));
+    },
     addComment: function (row) {
       return handle(client.from("comments").insert(row).select().single());
+    },
+    // تحديث حالة الكومنت فقط: في انتظار التعديل (pending) / تم التعديل (done)
+    updateComment: function (id, patch) {
+      return handle(client.from("comments").update(patch).eq("id", id).select().single());
+    },
+
+    // ---------- comment_reads (تتبّع القراءة لعدّاد الكومنتات) ----------
+    listMyCommentReads: function (adminId) {
+      return handle(client.from("comment_reads").select("*").eq("admin_id", adminId));
+    },
+    markCommentsRead: function (adminId, contentId) {
+      return handle(client.from("comment_reads").upsert(
+        { admin_id: adminId, content_id: contentId, last_read_at: new Date().toISOString() },
+        { onConflict: "admin_id,content_id" }
+      ));
     },
 
     // ---------- activity_log ----------

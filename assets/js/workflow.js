@@ -13,8 +13,9 @@
     { key: "published",        label: "تم النشر" }
   ];
 
-  // حالة عرض المصمم (أيقونة) — مشتقة من stage + assigned_designer
+  // حالة عرض المصمم (أيقونة) — مشتقة من stage + design_received_at + assigned_designer
   var DESIGN_STATUS = {
+    pending:   { label: "في انتظار الاستلام",   pillClass: "draft" },
     received:  { label: "تم الاستلام",        pillClass: "received" },
     approval:  { label: "في الاعتماد",         pillClass: "approval" },
     revision:  { label: "مطلوب التعديل",       pillClass: "revision" },
@@ -31,15 +32,15 @@
     return -1;
   }
 
-  // يحدد حالة الأيقونة في شاشة المصمم بناءً على stage الحالية
+  // يحدد حالة الأيقونة في شاشة المصمم بناءً على stage + هل المصمم دوس "استلام" ولا لسه
   function designStatusFor(item) {
     switch (item.stage) {
-      case "in_design": return "received";
+      case "in_design": return item.design_received_at ? "received" : "pending";
       case "final_approval": return "approval";
       case "needs_revision": return "revision";
       case "ready_to_publish":
       case "published": return "approved";
-      default: return "received";
+      default: return "pending";
     }
   }
 

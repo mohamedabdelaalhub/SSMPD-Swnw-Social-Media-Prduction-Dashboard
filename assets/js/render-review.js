@@ -2,16 +2,23 @@
 (function () {
   "use strict";
   var W = window.SSMPDWorkflow;
+  var C = window.SSMPDComments;
 
   function escapeHtml(s) {
     return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
 
   function render(container) {
+    var me = window.SSMPDAuth.currentAdmin;
     container.innerHTML = '<div class="loading">بيحمّل…</div>';
-    Promise.all([window.SSMPDDb.listContentItems({}), window.SSMPDDb.listAdmins()])
-      .then(function (res) {
+    Promise.all([
+      window.SSMPDDb.listContentItems({}),
+      window.SSMPDDb.listAdmins(),
+      window.SSMPDDb.listAllComments(),
+      window.SSMPDDb.listMyCommentReads(me.id)
+    ]).then(function (res) {
         var items = res[0], admins = res[1];
+        var stats = C.computeCommentStats(res[2], res[3], me.id);
         var adminsById = {}; admins.forEach(function (a) { adminsById[a.id] = a; });
 
         var html = '<h2 style="margin-bottom:16px;">إدارة المحتوى</h2><div class="kanban">';
@@ -21,7 +28,7 @@
           colItems.forEach(function (i) {
             var ownerName = (adminsById[i.created_by] || {}).name || "—";
             var designerName = i.assigned_designer ? ((adminsById[i.assigned_designer] || {}).name || "—") : "";
-            html += '<div class="kanban-card" data-id="' + i.id + '"><div class="title">' + escapeHtml(i.title) + '</div>' +
+            html += '<div class="kanban-card" data-id="' + i.id + '"><div class="title">' + escapeHtml(i.title) + C.commentButtonHtml(i.id, stats) + '</div>' +
               '<div class="meta">بواسطة: ' + escapeHtml(ownerName) + (designerName ? " · مصمم: " + escapeHtml(designerName) : "") + '</div></div>';
           });
           if (!colItems.length) html += '<div style="text-align:center;color:var(--c-muted);font-size:11px;padding:10px 0;">فارغ</div>';
@@ -31,7 +38,16 @@
 
         container.innerHTML = html;
         container.querySelectorAll("[data-id]").forEach(function (el) {
-          el.onclick = function () { openReviewModal(el.getAttribute("data-id"), items, admins); };
+          el.onclick = function (e) {
+            if (e.target.closest("[data-comment]")) return; // زرار الكومنت له نفس أثر فتح المودال أصلاً
+            openReviewModal(el.getAttribute("data-id"), items, admins);
+          };
+        });
+        container.querySelectorAll("[data-comment]").forEach(function (btn) {
+          btn.onclick = function (e) {
+            e.stopPropagation();
+            openReviewModal(btn.getAttribute("data-comment"), items, admins);
+          };
         });
       }).catch(function (e) {
         container.innerHTML = '<div class="err-msg">خطأ: ' + e.message + '</div>';
@@ -81,14 +97,16 @@
 
     if (approveBtn) approveBtn.onclick = function () {
       var patch = {};
-      if (item.stage === "initial_approval") {
+      var wasInitialApproval = item.stage === "initial_approval";
+      if (wasInitialApproval) {
         var designerId = document.getElementById("rv-designer").value;
         if (!designerId) { alert("اختر مصمم الأول"); return; }
         patch = { stage: "in_design", assigned_designer: designerId };
       } else {
         patch = { stage: "ready_to_publish" };
       }
-      window.SSMPDDb.updateContentItem(item.id, patch).then(function () {
+      window.SSMPDDb.updateContentItem(item.id, patch).then(function (updated) {
+        if (wasInitialApproval) window.SSMPDDrive.logDesignSent(item.id, updated.title).catch(function () {});
         return window.SSMPDDb.logActivity({ content_id: item.id, actor_id: me.id, action: "اعتماد", from_stage: item.stage, to_stage: patch.stage });
       }).then(function () { backdrop.remove(); render(document.getElementById("view-container")); })
         .catch(function (e) { alert("خطأ: " + e.message); });

@@ -4,7 +4,7 @@
 
   var ROLES = {
     page_manager: "موظف صفحات",
-    designer: "مصمم",
+    designer: "مصمم جرافيك",
     approver: "مسؤول اعتماد",
     super_admin: "سوبر أدمن"
   };

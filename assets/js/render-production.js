@@ -2,6 +2,7 @@
 (function () {
   "use strict";
   var W = window.SSMPDWorkflow;
+  var C = window.SSMPDComments;
 
   function escapeHtml(s) {
     return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -19,7 +20,14 @@
     var me = window.SSMPDAuth.currentAdmin;
     container.innerHTML = '<div class="loading">بيحمّل…</div>';
 
-    window.SSMPDDb.listContentItems({ createdBy: me.id }).then(function (items) {
+    Promise.all([
+      window.SSMPDDb.listContentItems({ createdBy: me.id }),
+      window.SSMPDDb.listAllComments(),
+      window.SSMPDDb.listMyCommentReads(me.id)
+    ]).then(function (res) {
+      var items = res[0];
+      var stats = C.computeCommentStats(res[1], res[2], me.id);
+
       var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">' +
         '<h2>إنتاج المحتوى</h2><button class="btn" id="new-content-btn">+ فكرة/محتوى جديد</button></div>';
 
@@ -28,7 +36,8 @@
         html += '<div class="section"><h3>جاهز للنشر (' + ready.length + ')</h3><table class="simple"><thead><tr>' +
           '<th>العنوان</th><th>تاريخ الاعتماد</th><th></th></tr></thead><tbody>';
         ready.forEach(function (i) {
-          html += '<tr><td>' + escapeHtml(i.title) + '</td><td>' + new Date(i.updated_at).toLocaleDateString("ar-EG") + '</td>' +
+          html += '<tr><td><span class="link-open" data-open="' + i.id + '">' + escapeHtml(i.title) + '</span></td>' +
+            '<td>' + new Date(i.updated_at).toLocaleDateString("ar-EG") + '</td>' +
             '<td><button class="btn sm" data-publish="' + i.id + '">تم النشر — أدخل الرابط</button></td></tr>';
         });
         html += '</tbody></table></div>';
@@ -40,10 +49,10 @@
       } else {
         html += '<table class="simple"><thead><tr><th>العنوان</th><th>الحالة</th><th>آخر تحديث</th><th></th></tr></thead><tbody>';
         items.forEach(function (i) {
-          html += '<tr><td>' + escapeHtml(i.title) + '</td>' +
+          html += '<tr><td><span class="link-open" data-open="' + i.id + '">' + escapeHtml(i.title) + '</span></td>' +
             '<td><span class="status-pill ' + stagePillClass(i.stage) + '">' + W.stageLabel(i.stage) + '</span></td>' +
             '<td>' + new Date(i.updated_at).toLocaleDateString("ar-EG") + '</td>' +
-            '<td><button class="btn ghost sm" data-open="' + i.id + '">فتح</button></td></tr>';
+            '<td><button class="btn ghost sm" data-open="' + i.id + '">فتح</button> ' + C.commentButtonHtml(i.id, stats) + '</td></tr>';
         });
         html += '</tbody></table>';
       }
@@ -54,6 +63,9 @@
       document.getElementById("new-content-btn").onclick = openCreateModal;
       container.querySelectorAll("[data-open]").forEach(function (btn) {
         btn.onclick = function () { openViewModal(btn.getAttribute("data-open")); };
+      });
+      container.querySelectorAll("[data-comment]").forEach(function (btn) {
+        btn.onclick = function () { openViewModal(btn.getAttribute("data-comment")); };
       });
       container.querySelectorAll("[data-publish]").forEach(function (btn) {
         btn.onclick = function () { openPublishModal(btn.getAttribute("data-publish")); };
@@ -83,6 +95,7 @@
       var me = window.SSMPDAuth.currentAdmin;
       window.SSMPDDb.createContentItem({ title: title, body: body, stage: stage, created_by: me.id })
         .then(function (row) {
+          window.SSMPDDrive.logIdea(row.id, title).catch(function () {});
           return window.SSMPDDb.logActivity({ content_id: row.id, actor_id: me.id, action: "إنشاء", from_stage: null, to_stage: stage });
         }).then(function () {
           backdrop.remove();
@@ -130,7 +143,8 @@
       var me = window.SSMPDAuth.currentAdmin;
       window.SSMPDDb.updateContentItem(id, {
         stage: "published", published_url: url, published_by: me.id, published_at: new Date().toISOString()
-      }).then(function () {
+      }).then(function (updated) {
+        window.SSMPDDrive.logPublished(id, updated.title, url, updated.stage_history).catch(function () {});
         return window.SSMPDDb.logActivity({ content_id: id, actor_id: me.id, action: "نشر", from_stage: "ready_to_publish", to_stage: "published" });
       }).then(function () {
         backdrop.remove();
