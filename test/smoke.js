@@ -18,10 +18,11 @@ const DESIGNER = { id: "admin-2", user_id: "user-2", email: "designer@test.com",
 const TABLES = {
   admins: [ME, DESIGNER],
   content_items: [
-    { id: "c1", title: "بوست تجريبي", body: "نص تجريبي", stage: "idea_selection", created_by: ME.id, assigned_designer: null, design_file_url: null, published_url: null, published_by: null, published_at: null, created_at: now, updated_at: now },
-    { id: "c2", title: "بوست منشور", body: "نص", stage: "published", created_by: ME.id, assigned_designer: DESIGNER.id, design_file_url: "https://drive.google.com/x", published_url: "https://instagram.com/p/x", published_by: ME.id, published_at: now, created_at: now, updated_at: now }
+    { id: "c1", title: "بوست تجريبي", body: "نص تجريبي", stage: "idea_selection", created_by: ME.id, assigned_designer: null, design_file_url: null, design_received_at: null, stage_history: [{ stage: "idea_selection", at: now }], published_url: null, published_by: null, published_at: null, created_at: now, updated_at: now },
+    { id: "c2", title: "بوست منشور", body: "نص", stage: "published", created_by: ME.id, assigned_designer: DESIGNER.id, design_file_url: "https://drive.google.com/x", design_received_at: now, stage_history: [{ stage: "idea_selection", at: now }, { stage: "published", at: now }], published_url: "https://instagram.com/p/x", published_by: ME.id, published_at: now, created_at: now, updated_at: now }
   ],
   comments: [],
+  comment_reads: [],
   activity_log: [],
   weekly_social_metrics: [
     { id: "w1", week_start: "2026-08-10", reach: 1200, engagement_rate: 3.4, new_followers: 22, entered_by: ME.id, created_at: now }
@@ -36,6 +37,7 @@ class FakeQuery {
   constructor(table) { this.table = table; this._filters = []; this._order = null; this._limit = null; this._single = false; this._maybeSingle = false; this._op = "select"; this._payload = null; }
   select() { return this; }
   eq(col, val) { this._filters.push([col, val]); return this; }
+  is(col, val) { this._filters.push([col, val]); return this; }
   order(col, opts) { this._order = { col, asc: !opts || opts.ascending !== false }; return this; }
   limit(n) { this._limit = n; return this; }
   single() { this._single = true; return this; }
@@ -43,7 +45,7 @@ class FakeQuery {
   insert(row) { this._op = "insert"; this._payload = row; return this; }
   update(patch) { this._op = "update"; this._payload = patch; return this; }
   delete() { this._op = "delete"; return this; }
-  upsert(row) { this._op = "upsert"; this._payload = row; return this; }
+  upsert(row, opts) { this._op = "upsert"; this._payload = row; this._upsertOpts = opts || {}; return this; }
   _exec() {
     return new Promise((resolve) => {
       try {
@@ -62,8 +64,8 @@ class FakeQuery {
           rows.forEach(r => { const i = store.indexOf(r); if (i > -1) store.splice(i, 1); });
           result = rows;
         } else if (this._op === "upsert") {
-          const key = this._payload.week_start;
-          let row = store.find(r => r.week_start === key);
+          const keyCols = ((this._upsertOpts && this._upsertOpts.onConflict) || "id").split(",").map(s => s.trim());
+          let row = store.find(r => keyCols.every(k => r[k] === this._payload[k]));
           if (row) Object.assign(row, this._payload);
           else { row = Object.assign({ id: "gen-" + Math.random().toString(36).slice(2), created_at: now }, this._payload); store.push(row); }
           result = row;
