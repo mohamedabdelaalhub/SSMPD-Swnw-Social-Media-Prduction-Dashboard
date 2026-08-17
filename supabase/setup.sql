@@ -18,10 +18,15 @@ create table if not exists public.admins (
   email       text not null unique,
   name        text,
   role        text not null default 'page_manager'
-              check (role in ('page_manager','designer','approver','super_admin')),
+              check (role in ('page_manager','designer','approver','general_manager','super_admin')),
   active      boolean not null default true,
   created_at  timestamptz not null default now()
 );
+
+-- ترقية جدول قديم كان قبل إضافة دور "مدير عام"
+alter table public.admins drop constraint if exists admins_role_check;
+alter table public.admins add constraint admins_role_check
+  check (role in ('page_manager','designer','approver','general_manager','super_admin'));
 
 create index if not exists admins_email_idx on public.admins (lower(email));
 
@@ -48,6 +53,18 @@ returns text language sql security definer stable set search_path = public as $$
 $$;
 revoke all on function public.my_role() from public;
 grant execute on function public.my_role() to authenticated;
+
+-- المدير العام له كل صلاحيات المحتوى زي السوبر أدمن (تخطي مراحل، حذف مواد)،
+-- لكن **بدون** إدارة المستخدمين — سياسات جدول admins تحت دي بتستخدم is_super() لوحدها عمداً
+create or replace function public.can_manage_all_content()
+returns boolean language sql security definer stable set search_path = public as $$
+  select exists (
+    select 1 from public.admins
+    where user_id = auth.uid() and active and role in ('super_admin','general_manager')
+  );
+$$;
+revoke all on function public.can_manage_all_content() from public;
+grant execute on function public.can_manage_all_content() to authenticated;
 
 alter table public.admins enable row level security;
 
@@ -172,11 +189,11 @@ create policy "active admins read content"
   on public.content_items for select to authenticated
   using (public.my_admin_id() is not null);
 
--- الإنشاء: موظف صفحات أو سوبر أدمن، وباسمه هو فقط
+-- الإنشاء: موظف صفحات أو سوبر أدمن أو مدير عام، وباسمه هو فقط
 create policy "page_manager inserts content"
   on public.content_items for insert to authenticated
   with check (
-    (public.my_role() in ('page_manager','super_admin'))
+    (public.my_role() in ('page_manager','general_manager','super_admin'))
     and created_by = public.my_admin_id()
   );
 
@@ -188,14 +205,14 @@ create policy "active admins update content"
 
 create policy "super deletes content"
   on public.content_items for delete to authenticated
-  using (public.is_super());
+  using (public.can_manage_all_content());
 
 -- حارس انتقالات المراحل — يمنع أي دور من تخطي دوره في سير العمل
 create or replace function public.guard_content_transition()
 returns trigger language plpgsql security definer set search_path = public as $$
 declare r text; me uuid;
 begin
-  if public.is_super() then return new; end if;
+  if public.can_manage_all_content() then return new; end if;
   r := public.my_role();
   me := public.my_admin_id();
 
@@ -379,8 +396,8 @@ create policy "active admins read metrics"
 
 create policy "approver writes metrics"
   on public.weekly_social_metrics for all to authenticated
-  using (public.my_role() in ('approver','super_admin'))
-  with check (public.my_role() in ('approver','super_admin'));
+  using (public.my_role() in ('approver','general_manager','super_admin'))
+  with check (public.my_role() in ('approver','general_manager','super_admin'));
 
 -- ============================================================
 --  6) تفعيل Realtime على الجداول التفاعلية
