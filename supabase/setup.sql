@@ -118,7 +118,7 @@ create table if not exists public.content_items (
   stage              text not null default 'idea_selection'
                      check (stage in (
                        'idea_selection','initial_approval','in_design',
-                       'final_approval','needs_revision','ready_to_publish','published'
+                       'final_approval','needs_revision','ready_to_publish','scheduled','published'
                      )),
   created_by         uuid references public.admins(id),
   assigned_designer  uuid references public.admins(id),
@@ -127,6 +127,9 @@ create table if not exists public.content_items (
   published_url      text,
   published_by       uuid references public.admins(id),
   published_at       timestamptz,
+  -- معاد النشر المجدول ومين حددّه — تاب "النشر" بيستخدمهم لحالة "مجدولة للنشر" (قبل التأكيد الفعلي)
+  scheduled_publish_at timestamptz,
+  scheduled_by        uuid references public.admins(id),
   -- وقت ما المصمم دوس "استلام" فعلياً (يميّز "في انتظار الاستلام" عن "تم الاستلام" في شاشة التصميم)
   design_received_at timestamptz,
   -- سجل تلقائي بكل انتقالة مرحلة [{stage,at},...] — بيُستخدم لحساب مدة رحلة الفكرة للنشر ومدة كل مرحلة في تقرير الأرشيف
@@ -149,6 +152,15 @@ alter table public.content_items add column if not exists publish_platform text;
 alter table public.content_items drop constraint if exists content_items_publish_platform_check;
 alter table public.content_items add constraint content_items_publish_platform_check
   check (publish_platform in ('facebook','instagram','tiktok','youtube','website'));
+-- ترقية جدول قديم كان قبل إضافة مرحلة "مجدولة للنشر" (تاب النشر)
+alter table public.content_items add column if not exists scheduled_publish_at timestamptz;
+alter table public.content_items add column if not exists scheduled_by uuid references public.admins(id);
+alter table public.content_items drop constraint if exists content_items_stage_check;
+alter table public.content_items add constraint content_items_stage_check
+  check (stage in (
+    'idea_selection','initial_approval','in_design',
+    'final_approval','needs_revision','ready_to_publish','scheduled','published'
+  ));
 
 create index if not exists content_items_stage_idx on public.content_items (stage);
 create index if not exists content_items_created_by_idx on public.content_items (created_by);
@@ -224,6 +236,10 @@ begin
     if not (
       (old.stage = 'idea_selection' and new.stage = 'initial_approval')
       or (old.stage = 'ready_to_publish' and new.stage = 'published')
+      -- تاب النشر: جدولة مادة جاهزة، تأكيد نشر مادة مجدولة، أو إلغاء الجدولة
+      or (old.stage = 'ready_to_publish' and new.stage = 'scheduled')
+      or (old.stage = 'scheduled' and new.stage = 'published')
+      or (old.stage = 'scheduled' and new.stage = 'ready_to_publish')
       -- رفض قبل ما التصميم يبدأ (لسه مفيش مصمم مسند) بيرجع لموظف الصفحات
       or (old.stage = 'needs_revision' and old.assigned_designer is null and new.stage = 'initial_approval')
       or (old.stage = new.stage) -- تعديل نص قبل الإرسال
@@ -255,6 +271,10 @@ begin
       (old.stage = 'initial_approval' and new.stage in ('in_design','needs_revision'))
       or (old.stage = 'final_approval' and new.stage in ('ready_to_publish','needs_revision'))
       or (old.stage = 'ready_to_publish' and new.stage = 'published')
+      -- تاب النشر: جدولة مادة جاهزة، تأكيد نشر مادة مجدولة، أو إلغاء الجدولة
+      or (old.stage = 'ready_to_publish' and new.stage = 'scheduled')
+      or (old.stage = 'scheduled' and new.stage = 'published')
+      or (old.stage = 'scheduled' and new.stage = 'ready_to_publish')
       or (old.stage = new.stage)
     ) then
       raise exception 'انتقال مرحلة غير مسموح لمسؤول الاعتماد';
