@@ -123,8 +123,8 @@ const files = [
   "config.js", "assets/js/db.js", "assets/js/roles.js", "assets/js/workflow.js",
   "assets/js/auth.js", "assets/js/drive.js", "assets/js/comments.js",
   "assets/js/render-summary.js", "assets/js/render-production.js", "assets/js/render-review.js",
-  "assets/js/render-design.js", "assets/js/render-archive.js", "assets/js/render-admin.js",
-  "assets/js/app.js"
+  "assets/js/render-design.js", "assets/js/render-publish.js", "assets/js/render-archive.js",
+  "assets/js/render-admin.js", "assets/js/app.js"
 ];
 
 files.forEach(f => {
@@ -141,7 +141,7 @@ setTimeout(() => {
 
   assert(/SSMPD/.test(text), "الشِل العام اترسم (لوجو SSMPD ظاهر)");
   assert(/سوبر أدمن/.test(text), "بادچ الدور ظاهر (سوبر أدمن)");
-  assert(rootEl.querySelectorAll(".tab-btn").length === 6, "كل الـ 6 تابات ظاهرة للسوبر أدمن");
+  assert(rootEl.querySelectorAll(".tab-btn").length === 7, "كل الـ 7 تابات ظاهرة للسوبر أدمن (بما فيهم تاب النشر الجديد)");
 
   setTimeout(() => {
     const view = window.document.getElementById("view-container");
@@ -160,13 +160,10 @@ setTimeout(() => {
       const reviewBtn = [...rootEl.querySelectorAll(".tab-btn")].find(b => b.getAttribute("data-tab") === "review");
       reviewBtn.click();
       setTimeout(() => {
-        assert(rootEl.querySelectorAll(".kanban-col").length === 7, "٧ أعمدة Kanban ظاهرة في شاشة إدارة المحتوى");
+        assert(rootEl.querySelectorAll(".kanban-col").length === 8, "٨ أعمدة Kanban ظاهرة في شاشة إدارة المحتوى (بعد إضافة مرحلة مجدولة للنشر)");
         assert(/بوست تجريبي/.test(view.innerHTML), "المادة في مرحلة اختيار الفكرة ظاهرة في العمود الصحيح");
         assert(/سونو/.test(view.innerHTML) && /د\.دينا/.test(view.innerHTML), "بادچ تمييز سونو/د.دينا ظاهر في شاشة إدارة المحتوى");
-        assert(/جاهز للنشر/.test(view.innerHTML), "سكشن \"جاهز للنشر\" ظاهر في شاشة إدارة المحتوى");
-        assert(/بوست جاهز للنشر/.test(view.innerHTML), "المادة اللي في مرحلة جاهز للنشر ظاهرة في السكشن الجديد");
-        assert(rootEl.querySelectorAll('[id^="ready-brand-"]').length >= 1, "دروب داون اختيار الصفحة ظاهر في سكشن جاهز للنشر");
-        assert(rootEl.querySelectorAll('[id^="ready-platform-"]').length >= 1, "دروب داون اختيار المنصة ظاهر في سكشن جاهز للنشر");
+        assert(!/جاهز للنشر<\/h3>/.test(view.innerHTML), "سكشن \"جاهز للنشر\" القديم اتشال من شاشة إدارة المحتوى (اتنقل لتاب النشر)");
 
         // تعديل/حذف المادة — السوبر أدمن لازم يشوف زرار "تعديل" و"حذف" في مودال المراجعة
         const firstCard = rootEl.querySelector(".kanban-card[data-id]");
@@ -186,19 +183,56 @@ setTimeout(() => {
           assert(RolesMod.canApprove("general_manager") && RolesMod.canDesign("general_manager") && RolesMod.canCreateContent("general_manager"),
             "المدير العام له صلاحيات الاعتماد/التصميم/إنشاء المحتوى زي السوبر أدمن");
 
-          // موظف جديد اتضاف بالإيميل بس من السوبر أدمن (دعوة معلّقة user_id=null)،
-          // وبعدين عمل حساب لأول مرة — لازم يترّبط تلقائياً بصف الدعوة المعلّقة (claimInvite)
-          window.SSMPDAuth.loadCurrentAdmin("user-3", "PENDING@Test.com").then((claimed) => {
-            assert(claimed && claimed.user_id === "user-3", "الدعوة المعلّقة اترّبطت تلقائياً بالحساب الجديد بعد التسجيل (claimInvite)");
-            assert(claimed.role === "page_manager", "دور الموظف اتحفظ صح بعد الربط");
+          // تاب النشر الجديد — المصمم ممنوع، والباقي (موظف صفحات/مسؤول اعتماد/مدير عام/سوبر أدمن) مسموح
+          assert(!RolesMod.canSeeTab("designer", "publish"), "المصمم ممنوع من تاب النشر (زي ما طلب المستخدم بالظبط)");
+          assert(RolesMod.canSeeTab("page_manager", "publish"), "موظف الصفحات يشوف تاب النشر");
+          assert(RolesMod.canSeeTab("approver", "publish"), "مسؤول الاعتماد يشوف تاب النشر");
+          assert(RolesMod.canSeeTab("general_manager", "publish"), "المدير العام يشوف تاب النشر");
+          assert(RolesMod.canSeeTab("super_admin", "publish"), "السوبر أدمن يشوف تاب النشر");
 
-            console.log(process.exitCode ? "\n--- في أخطاء فوق ---" : "\n✅ كل اختبارات الدخان عدّت بنجاح");
-            process.exit(process.exitCode || 0);
-          }).catch((e) => {
-            assert(false, "ربط الدعوة المعلّقة اتنفذ من غير أخطاء: " + e.message);
-            console.log("\n--- في أخطاء فوق ---");
-            process.exit(1);
-          });
+          // اختبار تاب النشر نفسه — المادة c3 (جاهزة للنشر) لازم تظهر بمحتواها وتصميمها المعتمد
+          const publishBtn = [...rootEl.querySelectorAll(".tab-btn")].find(b => b.getAttribute("data-tab") === "publish");
+          publishBtn.click();
+          setTimeout(() => {
+            assert(/النشر<\/h2>/.test(view.innerHTML), "تاب النشر اترسم");
+            assert(/بوست جاهز للنشر/.test(view.innerHTML), "المادة الجاهزة للنشر (c3) ظاهرة في تاب النشر");
+            assert(/فتح ملف التصميم المعتمد/.test(view.innerHTML), "لينك التصميم المعتمد ظاهر مع المادة");
+            assert(!!window.document.getElementById("pb-brand-c3"), "دروب داون اختيار الصفحة ظاهر لمادة جاهزة للنشر");
+            assert(!!window.document.getElementById("pb-platform-c3"), "دروب داون اختيار المنصة ظاهر لمادة جاهزة للنشر");
+            assert(!!window.document.getElementById("pb-when-c3"), "خانة معاد النشر المجدول ظاهرة لمادة جاهزة للنشر");
+            assert(!!window.document.querySelector('[data-schedule="c3"]'), "زرار \"جدولة\" ظاهر لمادة جاهزة للنشر");
+
+            // محاكاة عملية جدولة كاملة
+            const brandSel = window.document.getElementById("pb-brand-c3");
+            brandSel.value = "sono";
+            const platformSel = window.document.getElementById("pb-platform-c3");
+            platformSel.value = "instagram";
+            const whenInput = window.document.getElementById("pb-when-c3");
+            whenInput.value = "2026-09-01T10:00";
+            window.document.querySelector('[data-schedule="c3"]').click();
+
+            setTimeout(() => {
+              const c3 = TABLES.content_items.find(i => i.id === "c3");
+              assert(c3.stage === "scheduled", "المادة c3 بقت في حالة \"مجدولة\" في قاعدة البيانات المموّهة بعد الجدولة");
+              assert(!!c3.scheduled_publish_at, "معاد النشر المجدول اتسجّل على المادة");
+              assert(!!window.document.querySelector('[data-confirm-publish="c3"]'), "زرار \"تأكيد النشر\" ظهر للمادة بعد ما بقت مجدولة");
+              assert(!!window.document.querySelector('[data-cancel-schedule="c3"]'), "زرار \"إلغاء الجدولة\" ظهر للمادة بعد ما بقت مجدولة");
+
+              // موظف جديد اتضاف بالإيميل بس من السوبر أدمن (دعوة معلّقة user_id=null)،
+              // وبعدين عمل حساب لأول مرة — لازم يترّبط تلقائياً بصف الدعوة المعلّقة (claimInvite)
+              window.SSMPDAuth.loadCurrentAdmin("user-3", "PENDING@Test.com").then((claimed) => {
+                assert(claimed && claimed.user_id === "user-3", "الدعوة المعلّقة اترّبطت تلقائياً بالحساب الجديد بعد التسجيل (claimInvite)");
+                assert(claimed.role === "page_manager", "دور الموظف اتحفظ صح بعد الربط");
+
+                console.log(process.exitCode ? "\n--- في أخطاء فوق ---" : "\n✅ كل اختبارات الدخان عدّت بنجاح");
+                process.exit(process.exitCode || 0);
+              }).catch((e) => {
+                assert(false, "ربط الدعوة المعلّقة اتنفذ من غير أخطاء: " + e.message);
+                console.log("\n--- في أخطاء فوق ---");
+                process.exit(1);
+              });
+            }, 150);
+          }, 150);
         }, 150);
       }, 150);
     }, 150);
