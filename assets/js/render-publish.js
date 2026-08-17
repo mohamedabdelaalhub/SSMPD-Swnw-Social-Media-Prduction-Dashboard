@@ -112,8 +112,15 @@
       btn.onclick = function () { confirmPublish(btn.getAttribute("data-confirm-publish")); };
     });
     container.querySelectorAll("[data-cancel-schedule]").forEach(function (btn) {
-      btn.onclick = function () { cancelSchedule(btn.getAttribute("data-cancel-schedule")); };
+      btn.onclick = function () { cancelSchedule(btn.getAttribute("data-cancel-schedule"), btn); };
     });
+  }
+
+  // بديل alert() — رسالة toast مش بلوكينج (alert() ممكن يتمنع/يتجاهل جوه متصفحات
+  // مدمجة في تطبيقات الموبايل زي واتساب/ماسنجر، فيبان للمستخدم إن الزرار "ماعملش حاجة")
+  function notify(msg, type) {
+    if (window.SSMPDToast) window.SSMPDToast.show(msg, type);
+    else alert(msg);
   }
 
   // جدولة مادة "جاهزة للنشر" لمعاد محدد — بتنقلها لحالة "مجدولة للنشر" لحد ما حد يأكد إنها اتنشرت فعلاً
@@ -121,9 +128,9 @@
     var brand = valueOf("pb-brand-" + id);
     var platform = valueOf("pb-platform-" + id);
     var when = valueOf("pb-when-" + id);
-    if (!brand) { alert("اختر المادة دي لصفحة سونو ولا د.دينا الأول"); return; }
-    if (!platform) { alert("اختر هتتنشر على أنهي منصة"); return; }
-    if (!when) { alert("حدد معاد النشر المجدول"); return; }
+    if (!brand) { notify("اختر المادة دي لصفحة سونو ولا د.دينا الأول", "error"); return; }
+    if (!platform) { notify("اختر هتتنشر على أنهي منصة", "error"); return; }
+    if (!when) { notify("حدد معاد النشر المجدول", "error"); return; }
     var me = window.SSMPDAuth.currentAdmin;
     window.SSMPDDb.updateContentItem(id, {
       stage: "scheduled", brand: brand, publish_platform: platform,
@@ -131,8 +138,9 @@
     }).then(function () {
       return window.SSMPDDb.logActivity({ content_id: id, actor_id: me.id, action: "جدولة للنشر", from_stage: "ready_to_publish", to_stage: "scheduled" });
     }).then(function () {
+      notify("تمت الجدولة");
       render(document.getElementById("view-container"));
-    }).catch(function (e) { alert("خطأ: " + e.message); });
+    }).catch(function (e) { notify("خطأ: " + e.message, "error"); });
   }
 
   // نشر فوري من غير جدولة — لمادة اتنشرت فعلاً ومحتاجين بس نسجل الرابط
@@ -140,9 +148,9 @@
     var brand = valueOf("pb-brand-" + id);
     var platform = valueOf("pb-platform-" + id);
     var url = valueOf("pb-url-" + id);
-    if (!brand) { alert("اختر المادة دي لصفحة سونو ولا د.دينا الأول"); return; }
-    if (!platform) { alert("اختر هتتنشر على أنهي منصة"); return; }
-    if (!url) { alert("حط رابط المنشور الأول"); return; }
+    if (!brand) { notify("اختر المادة دي لصفحة سونو ولا د.دينا الأول", "error"); return; }
+    if (!platform) { notify("اختر هتتنشر على أنهي منصة", "error"); return; }
+    if (!url) { notify("حط رابط المنشور الأول", "error"); return; }
     var me = window.SSMPDAuth.currentAdmin;
     window.SSMPDDb.updateContentItem(id, {
       stage: "published", published_url: url, published_by: me.id, published_at: new Date().toISOString(),
@@ -151,14 +159,15 @@
       window.SSMPDDrive.logPublished(id, updated.title, url, updated.stage_history).catch(function () {});
       return window.SSMPDDb.logActivity({ content_id: id, actor_id: me.id, action: "نشر", from_stage: "ready_to_publish", to_stage: "published" });
     }).then(function () {
+      notify("اتنشرت — هتظهر في الملخص والأرشيف دلوقتي");
       render(document.getElementById("view-container"));
-    }).catch(function (e) { alert("خطأ: " + e.message); });
+    }).catch(function (e) { notify("خطأ: " + e.message, "error"); });
   }
 
   // تأكيد إن المادة المجدولة اتنشرت فعلاً — بيقفل الحلقة ويحفظ رابط المنشور
   function confirmPublish(id) {
     var url = valueOf("pb-url-" + id);
-    if (!url) { alert("حط رابط المنشور الأول"); return; }
+    if (!url) { notify("حط رابط المنشور الأول", "error"); return; }
     var me = window.SSMPDAuth.currentAdmin;
     window.SSMPDDb.updateContentItem(id, {
       stage: "published", published_url: url, published_by: me.id, published_at: new Date().toISOString()
@@ -166,20 +175,34 @@
       window.SSMPDDrive.logPublished(id, updated.title, url, updated.stage_history).catch(function () {});
       return window.SSMPDDb.logActivity({ content_id: id, actor_id: me.id, action: "تأكيد نشر مجدول", from_stage: "scheduled", to_stage: "published" });
     }).then(function () {
+      notify("اتأكد النشر — هتظهر في الملخص والأرشيف دلوقتي");
       render(document.getElementById("view-container"));
-    }).catch(function (e) { alert("خطأ: " + e.message); });
+    }).catch(function (e) { notify("خطأ: " + e.message, "error"); });
   }
 
-  // إلغاء الجدولة — بترجّع المادة لـ"جاهزة للنشر" في حالة اتغير الرأي أو حصل غلط
-  function cancelSchedule(id) {
-    if (!confirm("متأكد إنك عايز تلغي جدولة النشر وترجّع المادة لـ\"جاهزة للنشر\"؟")) return;
+  // إلغاء الجدولة — تأكيد بضغطة تانية على نفس الزرار بدل نافذة confirm() المتصفح
+  // (زي alert()، confirm() ممكن يتمنع جوه متصفحات مدمجة في تطبيقات الموبايل)
+  function cancelSchedule(id, btn) {
+    if (btn && !btn.classList.contains("confirm-pending")) {
+      btn.classList.add("confirm-pending");
+      btn.textContent = "متأكد؟ دوس تاني للإلغاء";
+      btn._cancelTimer = setTimeout(function () {
+        btn.classList.remove("confirm-pending");
+        btn.textContent = "إلغاء الجدولة";
+      }, 4000);
+      return;
+    }
+    if (btn && btn._cancelTimer) clearTimeout(btn._cancelTimer);
     var me = window.SSMPDAuth.currentAdmin;
     window.SSMPDDb.updateContentItem(id, { stage: "ready_to_publish", scheduled_publish_at: null, scheduled_by: null })
       .then(function () {
         return window.SSMPDDb.logActivity({ content_id: id, actor_id: me.id, action: "إلغاء جدولة النشر", from_stage: "scheduled", to_stage: "ready_to_publish" });
       })
-      .then(function () { render(document.getElementById("view-container")); })
-      .catch(function (e) { alert("خطأ: " + e.message); });
+      .then(function () {
+        notify("اتلغت الجدولة");
+        render(document.getElementById("view-container"));
+      })
+      .catch(function (e) { notify("خطأ: " + e.message, "error"); });
   }
 
   window.SSMPDRenderPublish = { render: render };

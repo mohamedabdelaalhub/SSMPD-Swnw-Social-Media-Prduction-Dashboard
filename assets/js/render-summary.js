@@ -8,8 +8,9 @@
     return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
 
+  // بالإنجليزي دايماً (حتى لو الصفحة عربي) — طلب صريح من المستخدم لأرقام سكشن الإعلانات المدفوعة
   function fmtNum(n) {
-    return Number(n || 0).toLocaleString("ar-EG");
+    return Number(n || 0).toLocaleString("en-US");
   }
 
   // نص عربي مبسّط لمؤشر النتيجة الخام من تقرير Meta Ads (زي "reach" أو
