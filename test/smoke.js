@@ -16,9 +16,10 @@ const ME = { id: "admin-1", user_id: "user-1", email: "mohamadmh32@gmail.com", n
 const DESIGNER = { id: "admin-2", user_id: "user-2", email: "designer@test.com", name: "مصمم تجريبي", role: "designer", active: true, created_at: now };
 // دعوة معلّقة — السوبر أدمن ضافها بالإيميل بس، لسه محدش عمل حساب بيها (user_id فاضي)
 const PENDING = { id: "admin-3", user_id: null, email: "pending@test.com", name: "موظف جديد", role: "page_manager", active: true, created_at: now };
+const GM = { id: "admin-4", user_id: "user-4", email: "gm@test.com", name: "مدير عام تجريبي", role: "general_manager", active: true, created_at: now };
 
 const TABLES = {
-  admins: [ME, DESIGNER, PENDING],
+  admins: [ME, DESIGNER, PENDING, GM],
   content_items: [
     { id: "c1", title: "بوست تجريبي", body: "نص تجريبي", stage: "idea_selection", created_by: ME.id, assigned_designer: null, design_file_url: null, design_received_at: null, brand: "sono", publish_platform: null, stage_history: [{ stage: "idea_selection", at: now }], published_url: null, published_by: null, published_at: null, created_at: now, updated_at: now },
     { id: "c2", title: "بوست منشور", body: "نص", stage: "published", created_by: ME.id, assigned_designer: DESIGNER.id, design_file_url: "https://drive.google.com/x", design_received_at: now, brand: "dr_dina", publish_platform: "instagram", stage_history: [{ stage: "idea_selection", at: now }, { stage: "published", at: now }], published_url: "https://instagram.com/p/x", published_by: ME.id, published_at: now, created_at: now, updated_at: now },
@@ -167,17 +168,38 @@ setTimeout(() => {
         assert(rootEl.querySelectorAll('[id^="ready-brand-"]').length >= 1, "دروب داون اختيار الصفحة ظاهر في سكشن جاهز للنشر");
         assert(rootEl.querySelectorAll('[id^="ready-platform-"]').length >= 1, "دروب داون اختيار المنصة ظاهر في سكشن جاهز للنشر");
 
-        // موظف جديد اتضاف بالإيميل بس من السوبر أدمن (دعوة معلّقة user_id=null)،
-        // وبعدين عمل حساب لأول مرة — لازم يترّبط تلقائياً بصف الدعوة المعلّقة (claimInvite)
-        window.SSMPDAuth.loadCurrentAdmin("user-3", "PENDING@Test.com").then((claimed) => {
-          assert(claimed && claimed.user_id === "user-3", "الدعوة المعلّقة اترّبطت تلقائياً بالحساب الجديد بعد التسجيل (claimInvite)");
-          assert(claimed.role === "page_manager", "دور الموظف اتحفظ صح بعد الربط");
+        // تعديل/حذف المادة — السوبر أدمن لازم يشوف زرار "تعديل" و"حذف" في مودال المراجعة
+        const firstCard = rootEl.querySelector(".kanban-card[data-id]");
+        if (firstCard) firstCard.click();
+        setTimeout(() => {
+          assert(!!window.document.querySelector('[data-edit-item]'), "زرار \"تعديل\" ظاهر للسوبر أدمن في مودال المراجعة");
+          assert(!!window.document.querySelector('[data-delete-item]'), "زرار \"حذف\" ظاهر للسوبر أدمن في مودال المراجعة");
+          const closeBtn = window.document.querySelector(".modal-close");
+          if (closeBtn) closeBtn.click();
 
-          console.log(process.exitCode ? "\n--- في أخطاء فوق ---" : "\n✅ كل اختبارات الدخان عدّت بنجاح");
-        }).catch((e) => {
-          assert(false, "ربط الدعوة المعلّقة اتنفذ من غير أخطاء: " + e.message);
-          console.log("\n--- في أخطاء فوق ---");
-        });
+          // دور "مدير عام" الجديد — يشوف كل التابات ما عدا تاب المستخدمين، وله كل صلاحيات المحتوى
+          const RolesMod = window.SSMPDRoles;
+          assert(RolesMod.canSeeTab("general_manager", "review") && RolesMod.canSeeTab("general_manager", "design") &&
+            RolesMod.canSeeTab("general_manager", "production") && RolesMod.canSeeTab("general_manager", "archive") &&
+            RolesMod.canSeeTab("general_manager", "summary"), "المدير العام يشوف كل التابات الوظيفية");
+          assert(!RolesMod.canSeeTab("general_manager", "admin"), "المدير العام ممنوع من تاب المستخدمين");
+          assert(RolesMod.canApprove("general_manager") && RolesMod.canDesign("general_manager") && RolesMod.canCreateContent("general_manager"),
+            "المدير العام له صلاحيات الاعتماد/التصميم/إنشاء المحتوى زي السوبر أدمن");
+
+          // موظف جديد اتضاف بالإيميل بس من السوبر أدمن (دعوة معلّقة user_id=null)،
+          // وبعدين عمل حساب لأول مرة — لازم يترّبط تلقائياً بصف الدعوة المعلّقة (claimInvite)
+          window.SSMPDAuth.loadCurrentAdmin("user-3", "PENDING@Test.com").then((claimed) => {
+            assert(claimed && claimed.user_id === "user-3", "الدعوة المعلّقة اترّبطت تلقائياً بالحساب الجديد بعد التسجيل (claimInvite)");
+            assert(claimed.role === "page_manager", "دور الموظف اتحفظ صح بعد الربط");
+
+            console.log(process.exitCode ? "\n--- في أخطاء فوق ---" : "\n✅ كل اختبارات الدخان عدّت بنجاح");
+            process.exit(process.exitCode || 0);
+          }).catch((e) => {
+            assert(false, "ربط الدعوة المعلّقة اتنفذ من غير أخطاء: " + e.message);
+            console.log("\n--- في أخطاء فوق ---");
+            process.exit(1);
+          });
+        }, 150);
       }, 150);
     }, 150);
   }, 150);
