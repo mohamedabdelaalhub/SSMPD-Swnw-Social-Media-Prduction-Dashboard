@@ -133,6 +133,31 @@ input,select,textarea{font-family:inherit; font-size:14px;}
 .tab-btn.active{background:var(--c-primary); color:#fff;}
 .tab-btn:hover:not(.active){background:var(--c-bg);}
 
+/* ---------- زرار القائمة (اسم + سهم) اللي بيظهر بدل الاسم/الشريط على الموبايل والتابلت ---------- */
+.menu-toggle{
+  display:none; align-items:center; gap:8px;
+  background:transparent; border:1px solid var(--c-border); border-radius:10px;
+  padding:7px 12px; font-size:13px; color:var(--c-dark);
+}
+.menu-toggle b{font-weight:700;}
+.menu-toggle .mt-arrow{font-size:10px; color:var(--c-muted);}
+
+/* القائمة المنسدلة: الاسم، ثم الدور، ثم قائمة التابات، ثم خروج — بالترتيب ده بالظبط */
+.mobile-menu{
+  display:none; position:fixed; top:58px; inset-inline-end:12px; z-index:40;
+  background:var(--c-card); border:1px solid var(--c-border); border-radius:var(--radius);
+  box-shadow:var(--shadow); padding:14px; min-width:220px; max-width:82vw;
+}
+.mobile-menu.open{display:block;}
+.mobile-menu .mm-name{font-weight:800; font-size:14px; margin-bottom:6px;}
+.mobile-menu .mm-role{margin-bottom:10px;}
+.mobile-menu .mm-tabs{
+  display:flex; flex-direction:column; gap:3px; margin-bottom:10px;
+  border-top:1px solid var(--c-border); border-bottom:1px solid var(--c-border); padding:8px 0;
+}
+.mobile-menu .mm-tabs .tab-btn{text-align:right; width:100%; padding:9px 10px;}
+.mobile-menu .mm-logout{width:100%;}
+
 main.view{flex:1; padding:22px; max-width:1400px; margin:0 auto; width:100%;}
 
 /* ---------- بطاقات ومؤشرات ---------- */
@@ -153,12 +178,13 @@ main.view{flex:1; padding:22px; max-width:1400px; margin:0 auto; width:100%;}
 
 .section{
   background:var(--c-card); border-radius:var(--radius); box-shadow:var(--shadow);
-  padding:20px; margin-bottom:18px;
+  padding:20px; margin-bottom:18px; overflow-x:auto;
 }
 .section h3{font-size:15px; margin-bottom:14px;}
 
 /* ---------- جدول عام ---------- */
-table.simple{width:100%; border-collapse:collapse; font-size:13px;}
+/* min-width عشان الجدول يعمل سكرول أفقي جوه الـ .section نفسه على الشاشات الضيقة بدل ما يتكسر */
+table.simple{width:100%; min-width:520px; border-collapse:collapse; font-size:13px;}
 table.simple th{
   text-align:right; color:var(--c-muted); font-weight:700; font-size:11.5px;
   padding:8px 10px; border-bottom:1px solid var(--c-border);
@@ -268,15 +294,42 @@ table.simple tr:hover{background:var(--c-bg);}
 .toast{
   position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
   background:var(--c-dark); color:#fff; padding:10px 20px; border-radius:10px;
-  font-size:13px; z-index:200; box-shadow:var(--shadow);
+  font-size:13px; z-index:200; box-shadow:var(--shadow); max-width:90vw; text-align:center;
 }
+.toast.toast-error{background:var(--c-negative);}
+
+/* زرار في وضع "متأكد؟" — تأكيد بضغطة تانية بدل نافذة confirm() المتصفح (ممكن تتمنع على الموبايل) */
+.btn.confirm-pending{background:var(--c-alert); color:#fff; border-color:transparent;}
 .upload-box{
   border:2px dashed var(--c-border); border-radius:12px; padding:22px;
   text-align:center; color:var(--c-muted); font-size:13px; margin:14px 0;
 }
 .upload-box.drag{border-color:var(--c-primary); color:var(--c-primary); background:#F0F4FE;}
 
+/* ---------- استجابة الموبايل والتابلت (بما فيها الآيباد بالوضع الرأسي) ---------- */
+@media (max-width:860px){
+  .topbar .who{display:none;}
+  #tabs-bar{display:none;}
+  .menu-toggle{display:flex;}
+}
+
 @media (max-width:720px){
   .kanban-col{flex-basis:80vw;}
   main.view{padding:14px;}
+  .topbar{padding:8px 12px;}
+  .topbar .brand span{font-size:12px;}
+  .kpi-grid{grid-template-columns:repeat(auto-fit,minmax(135px,1fr)); gap:10px; margin-bottom:16px;}
+  .kpi-card{padding:12px 14px;}
+  .kpi-card .value{font-size:21px;}
+  .section{padding:14px;}
+  .modal{padding:16px; max-width:94vw;}
+  .calendar-grid{gap:3px;}
+  .calendar-cell{min-height:64px; padding:4px; font-size:10px;}
+}
+
+@media (max-width:480px){
+  .auth-box{padding:24px 18px;}
+  .kpi-grid{grid-template-columns:repeat(auto-fit,minmax(120px,1fr));}
+  .calendar-grid{grid-template-columns:repeat(7,minmax(0,1fr));}
+  .calendar-cell .item{font-size:9.5px;}
 }
