@@ -61,7 +61,7 @@
         html += '</div><p style="font-size:11px;color:var(--c-muted);margin-top:8px;">آخر أسبوع مُدخَل: ' + current.week_start + '</p>';
       }
       var role = window.SSMPDAuth.currentAdmin.role;
-      if (role === "approver" || role === "super_admin") {
+      if (role === "approver" || role === "general_manager" || role === "super_admin") {
         html += '<div style="text-align:left;margin-top:10px;"><button class="btn ghost sm" id="add-week-metrics-btn">+ إدخال بيانات أسبوع جديد</button></div>';
       }
       html += '</div>';

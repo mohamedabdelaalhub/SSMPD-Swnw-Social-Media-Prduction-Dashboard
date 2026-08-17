@@ -88,16 +88,16 @@
     return escapeHtml(s).replace(/"/g, "&quot;");
   }
 
-  // مين يقدر يعدّل المادة: السوبر أدمن دايماً، أو منشئ المادة نفسه
+  // مين يقدر يعدّل المادة: السوبر أدمن والمدير العام دايماً، أو منشئ المادة نفسه
   function canEditItem(me, item) {
     if (!me || !item) return false;
-    if (me.role === "super_admin") return true;
+    if (me.role === "super_admin" || me.role === "general_manager") return true;
     return item.created_by === me.id;
   }
 
-  // الحذف مقصور على السوبر أدمن فقط (زي ما هو محدد في صلاحيات القاعدة RLS)
+  // الحذف مقصور على السوبر أدمن والمدير العام (زي ما هو محدد في صلاحيات القاعدة RLS)
   function canDeleteItem(me) {
-    return !!(me && me.role === "super_admin");
+    return !!(me && (me.role === "super_admin" || me.role === "general_manager"));
   }
 
   // زراير تعديل/حذف — بتظهر حسب صلاحية الشخص الحالي، تُستخدم في كل شاشات عرض المادة

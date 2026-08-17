@@ -6,16 +6,17 @@
     page_manager: "موظف صفحات",
     designer: "مصمم جرافيك",
     approver: "مسؤول اعتماد",
+    general_manager: "مدير عام",
     super_admin: "سوبر أدمن"
   };
 
-  // كل تاب: مين يشوفه
+  // كل تاب: مين يشوفه — المدير العام يشوف كل حاجة زي السوبر أدمن ما عدا تاب المستخدمين
   var TAB_ACCESS = {
-    summary: ["page_manager", "designer", "approver", "super_admin"],
-    production: ["page_manager", "super_admin"],
-    review: ["approver", "super_admin"],
-    design: ["designer", "super_admin"],
-    archive: ["page_manager", "designer", "approver", "super_admin"],
+    summary: ["page_manager", "designer", "approver", "general_manager", "super_admin"],
+    production: ["page_manager", "general_manager", "super_admin"],
+    review: ["approver", "general_manager", "super_admin"],
+    design: ["designer", "general_manager", "super_admin"],
+    archive: ["page_manager", "designer", "approver", "general_manager", "super_admin"],
     admin: ["super_admin"]
   };
 
@@ -42,16 +43,17 @@
       return role === "super_admin";
     },
 
+    // المدير العام له كل صلاحيات المحتوى زي السوبر أدمن، بس من غير إدارة المستخدمين
     canApprove: function (role) {
-      return role === "approver" || role === "super_admin";
+      return role === "approver" || role === "general_manager" || role === "super_admin";
     },
 
     canDesign: function (role) {
-      return role === "designer" || role === "super_admin";
+      return role === "designer" || role === "general_manager" || role === "super_admin";
     },
 
     canCreateContent: function (role) {
-      return role === "page_manager" || role === "super_admin";
+      return role === "page_manager" || role === "general_manager" || role === "super_admin";
     }
   };
 
