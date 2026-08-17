@@ -125,7 +125,7 @@ window.supabase = { createClient: () => fakeClient };
 window.fetch = () => Promise.resolve({ json: () => Promise.resolve({ ok: true }) });
 
 const files = [
-  "config.js", "assets/js/db.js", "assets/js/roles.js", "assets/js/workflow.js",
+  "config.js", "assets/js/toast.js", "assets/js/db.js", "assets/js/roles.js", "assets/js/workflow.js",
   "assets/js/auth.js", "assets/js/drive.js", "assets/js/comments.js",
   "assets/js/render-summary.js", "assets/js/render-production.js", "assets/js/render-review.js",
   "assets/js/render-design.js", "assets/js/render-publish.js", "assets/js/render-archive.js",
@@ -146,7 +146,11 @@ setTimeout(() => {
 
   assert(/SSMPD/.test(text), "الشِل العام اترسم (لوجو SSMPD ظاهر)");
   assert(/سوبر أدمن/.test(text), "بادچ الدور ظاهر (سوبر أدمن)");
-  assert(rootEl.querySelectorAll(".tab-btn").length === 7, "كل الـ 7 تابات ظاهرة للسوبر أدمن (بما فيهم تاب النشر الجديد)");
+  // .tab-btn دلوقتي بتتكرر مرتين (شريط التابات العادي + نسخة جوه قائمة الموبايل المنسدلة الجديدة)
+  assert(rootEl.querySelectorAll("#tabs-bar .tab-btn").length === 7, "كل الـ 7 تابات ظاهرة للسوبر أدمن (بما فيهم تاب النشر الجديد)");
+  assert(rootEl.querySelectorAll("#mobile-menu .tab-btn").length === 7, "نسخة التابات جوه قائمة الموبايل المنسدلة كمان كاملة (٧)");
+  assert(rootEl.querySelector(".menu-toggle") != null, "زرار القائمة المنسدلة (اسم+سهم) للموبايل ظاهر في الشِل");
+  assert(rootEl.querySelector("#mobile-menu .mm-name") != null && rootEl.querySelector("#mobile-menu .mm-role") != null, "القائمة المنسدلة فيها الاسم والدور بالترتيب المطلوب");
 
   setTimeout(() => {
     const view = window.document.getElementById("view-container");
