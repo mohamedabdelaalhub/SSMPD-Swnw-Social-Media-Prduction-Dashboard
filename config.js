@@ -20,5 +20,5 @@ window.SSMPD_CONFIG = {
   },
 
   // بصمة الكاش — ترفع مع أي تعديل على JS/CSS
-  cacheVersion: 9
+  cacheVersion: 10
 };
