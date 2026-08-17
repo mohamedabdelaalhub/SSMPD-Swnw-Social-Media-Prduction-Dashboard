@@ -482,7 +482,127 @@ begin
 end $$;
 
 -- ============================================================
---  7) أول سوبر أدمن
+--  7) جدول المرضى المشترك (Patients) — موديولي أرشيف المرضى وإدارة الليدز
+-- ============================================================
+
+-- توسعة الأدوار: رولين جداد لموديول الليدز + علم صلاحية أرشيف منفصل
+alter table public.admins drop constraint if exists admins_role_check;
+alter table public.admins add constraint admins_role_check
+  check (role in ('page_manager','designer','approver','general_manager','super_admin','reception','customer_service'));
+
+alter table public.admins add column if not exists has_archive_access boolean not null default false;
+
+create sequence if not exists public.patient_code_seq;
+
+create table if not exists public.patients (
+  id                 uuid primary key default gen_random_uuid(),
+  -- رقم تعريف قصير قابل للقراءة (مش الـ UUID الداخلي) — يُستخدم في اسم فولدر الدرايف وفي الواجهة
+  patient_code       text not null unique default (
+                       'P-' || to_char(now(), 'YYYY') || '-' ||
+                       lpad(nextval('public.patient_code_seq')::text, 6, '0')
+                     ),
+  national_id_hash   text, -- هاش SHA-256 (+ pepper سري من الـ Edge Function) — الرقم الخام ميتخزنش أبداً
+  full_name          text not null,
+  phone              text,               -- الرقم زي ما اتكتب
+  phone_normalized   text,               -- بعد التطبيع — يُستخدم للمطابقة مع جدول leads
+  status             text not null default 'active' check (status in ('active','archived')),
+  created_by         uuid references public.admins(id),
+  created_at         timestamptz not null default now(),
+  updated_at         timestamptz not null default now()
+);
+create index if not exists patients_phone_normalized_idx on public.patients (phone_normalized);
+create index if not exists patients_national_id_hash_idx on public.patients (national_id_hash);
+
+create table if not exists public.patient_files (
+  id            uuid primary key default gen_random_uuid(),
+  patient_id    uuid not null references public.patients(id) on delete cascade,
+  category      text not null check (category in ('id_document','insurance','radiology','lab_result','other')),
+  drive_file_id text not null,
+  file_name     text not null,
+  file_size     bigint,
+  mime_type     text,
+  checksum      text, -- SHA-256 للملف
+  uploaded_by   uuid references public.admins(id),
+  uploaded_at   timestamptz not null default now(),
+  is_encrypted  boolean not null default false
+);
+create index if not exists patient_files_patient_id_idx on public.patient_files (patient_id);
+
+create table if not exists public.archive_access_log (
+  id           uuid primary key default gen_random_uuid(),
+  file_id      uuid references public.patient_files(id) on delete set null,
+  patient_id   uuid references public.patients(id) on delete set null,
+  employee_id  uuid references public.admins(id),
+  action       text not null check (action in ('view','download','upload','delete')),
+  created_at   timestamptz not null default now()
+);
+create index if not exists archive_access_log_patient_id_idx on public.archive_access_log (patient_id);
+
+-- ---------- دوال صلاحية مساعدة ----------
+create or replace function public.has_archive_access()
+returns boolean language sql security definer stable set search_path = public as $$
+  select coalesce((
+    select has_archive_access or role in ('super_admin')
+    from public.admins where user_id = auth.uid() and active limit 1
+  ), false);
+$$;
+revoke all on function public.has_archive_access() from public;
+grant execute on function public.has_archive_access() to authenticated;
+
+create or replace function public.can_access_leads()
+returns boolean language sql security definer stable set search_path = public as $$
+  select coalesce((
+    select role in ('reception','customer_service','general_manager','super_admin')
+    from public.admins where user_id = auth.uid() and active limit 1
+  ), false);
+$$;
+revoke all on function public.can_access_leads() from public;
+grant execute on function public.can_access_leads() to authenticated;
+
+-- ---------- RLS: patients (جدول مشترك — مقروء ومكتوب من الموديولين) ----------
+alter table public.patients enable row level security;
+drop policy if exists "archive or leads read patients" on public.patients;
+create policy "archive or leads read patients" on public.patients
+  for select using (public.has_archive_access() or public.can_access_leads());
+drop policy if exists "archive or leads write patients" on public.patients;
+create policy "archive or leads write patients" on public.patients
+  for insert with check (public.has_archive_access() or public.can_access_leads());
+drop policy if exists "archive or leads update patients" on public.patients;
+create policy "archive or leads update patients" on public.patients
+  for update using (public.has_archive_access() or public.can_access_leads());
+
+-- ---------- RLS: patient_files + archive_access_log (أرشيف بس — أكثر حساسية) ----------
+alter table public.patient_files enable row level security;
+drop policy if exists "archive access reads files" on public.patient_files;
+create policy "archive access reads files" on public.patient_files
+  for select using (public.has_archive_access());
+drop policy if exists "archive access writes files" on public.patient_files;
+create policy "archive access writes files" on public.patient_files
+  for insert with check (public.has_archive_access());
+drop policy if exists "archive access deletes files" on public.patient_files;
+create policy "archive access deletes files" on public.patient_files
+  for delete using (public.has_archive_access());
+
+alter table public.archive_access_log enable row level security;
+drop policy if exists "archive access reads log" on public.archive_access_log;
+create policy "archive access reads log" on public.archive_access_log
+  for select using (public.has_archive_access());
+drop policy if exists "archive access writes log" on public.archive_access_log;
+create policy "archive access writes log" on public.archive_access_log
+  for insert with check (public.has_archive_access());
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and schemaname='public' and tablename='patients'
+  ) then
+    alter publication supabase_realtime add table public.patients;
+  end if;
+end $$;
+
+-- ============================================================
+--  8) أول سوبر أدمن
 -- ============================================================
 -- الخطوة أ) Authentication → Users → Add user → Create new user
 --            ضع بريدك وكلمة السر، وفعّل «Auto Confirm User».
