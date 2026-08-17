@@ -56,6 +56,7 @@ assets/js/
   render-production.js     شاشة إنتاج المحتوى (موظف الصفحات)
   render-review.js         شاشة إدارة المحتوى — Kanban (مسؤول الاعتماد)
   render-design.js         شاشة التصميم (المصمم) + رفع Drive
+  render-publish.js        تاب النشر — المواد المعتمدة (محتوى+تصميم)، جدولة/نشر
   render-archive.js        شاشة الأرشيف — كالندر شهري
   render-admin.js          لوحة المستخدمين والصلاحيات (سوبر أدمن)
   app.js                   Bootstrap + الشِل العام + التنقّل + Realtime
@@ -78,21 +79,26 @@ test/smoke.js              اختبار jsdom — Supabase مموّه بالكا
 
 | الجدول | الوظيفة |
 |---|---|
-| `admins` | المستخدمين والأدوار (`page_manager`/`designer`/`approver`/`super_admin`) |
-| `content_items` | كل مادة محتوى — العنوان والنص والمرحلة (`stage`)، `design_received_at` (وقت ضغط المصمم "استلام")، `stage_history` (jsonb — سجل كل انتقالة مرحلة، أساس حساب أوقات الرحلة في تقرير الأرشيف) |
+| `admins` | المستخدمين والأدوار (`page_manager`/`designer`/`approver`/`general_manager`/`super_admin`) |
+| `content_items` | كل مادة محتوى — العنوان والنص والمرحلة (`stage`)، `design_received_at` (وقت ضغط المصمم "استلام")، `scheduled_publish_at`/`scheduled_by` (معاد النشر المجدول ومين حددّه — تاب النشر)، `stage_history` (jsonb — سجل كل انتقالة مرحلة، أساس حساب أوقات الرحلة في تقرير الأرشيف) |
 | `comments` | كومنتات التعديل، مرتبطة بالمادة كـ thread، وفيها `status` (`pending`/`done` — "في انتظار التعديل"/"تم التعديل") |
 | `comment_reads` | آخر وقت قرا فيه كل مستخدم كومنتات كل مادة — أساس عداد "تعليق جديد" (أحمر/رمادي) |
 | `activity_log` | سجل كل تغيير حالة (Audit trail) |
 | `weekly_social_metrics` | إدخال يدوي أسبوعي لمؤشرات السوشيال ميديا (أو استيراد CSV من Meta Business Suite/Meta Ads/Google Ads عبر مطابقة أعمدة تلقائية في `render-summary.js`) |
 
-**سبع مراحل Kanban** (`content_items.stage`) — المفاتيح مخزّنة في القاعدة،
+**ثمان مراحل Kanban** (`content_items.stage`) — المفاتيح مخزّنة في القاعدة،
 **لا تُغيَّر** بلا Migration:
 
 ```
 idea_selection → initial_approval → in_design → final_approval
               → needs_revision (يرجع لـ initial_approval أو final_approval)
-              → ready_to_publish → published
+              → ready_to_publish → scheduled (اختياري — تاب النشر) → published
 ```
+
+مرحلة `scheduled` اختيارية: من `ready_to_publish` ممكن تتنشر مباشرة
+(تروح لـ`published`)، أو تتجدول الأول (تروح لـ`scheduled` بمعاد نشر
+محدد `scheduled_publish_at`) ولحد ما حد يأكد إنها اتنشرت فعلاً (تتحول
+لـ`published`)، أو تتلغي جدولتها (ترجع لـ`ready_to_publish`).
 
 الحارس `guard_content_transition()` في `setup.sql` يمنع كل دور من تخطي
 حدوده (مثلاً مصمم مايقدرش يعتمد نفسه، وموظف صفحات مايقدرش يلمس مادة
@@ -186,8 +192,8 @@ SSMPD - Swnw Social Media Prduction Dashboard/   (الفولدر الجذر — 
 1. **`config.js` لا تُعِد كتابته بالكامل** — فيه مفاتيح Supabase الحقيقية.
    عدّل سطراً بعينه فقط.
 2. **بصمة الكاش `?v=N`** على كل `<script>`/`<link>` في `index.html` —
-   ترفع مع أي تعديل JS/CSS، وإلا المستخدم هيشوف نسخة قديمة. الرقم الحالي: `10`.
-3. **مفاتيح `stage` السبعة ثابتة** — أي تغيير يكسر الحارس في SQL وكل
+   ترفع مع أي تعديل JS/CSS، وإلا المستخدم هيشوف نسخة قديمة. الرقم الحالي: `11`.
+3. **مفاتيح `stage` الثمانية ثابتة** — أي تغيير يكسر الحارس في SQL وكل
    منطق العرض.
 4. **`guard_content_transition()`** هو مصدر الحقيقة لصلاحيات الانتقال —
    عدّله في `setup.sql` وطبّقه فعلياً في القاعدة، مش بس في الواجهة.
@@ -317,6 +323,32 @@ invite` في `setup.sql`) كانوا مُجهّزين من الأول لدعم "
     لوحدها **عمداً** عشان المدير العام ميقدرش يلمس المستخدمين. لازم
     السوبر أدمن يشغّل `setup.sql` تاني في Supabase SQL Editor عشان
     الدور الجديد يتفعّل في القاعدة (آمن للتشغيل أكتر من مرة).
+
+**تم أيضاً** (٢٠٢٦-٠٨-١٧ — `?v=11`):
+- **تاب جديد "النشر"** — كل مادة خلصت اعتماد نهائي وتصميم (محتوى معتمد +
+  تصميم معتمد سوا في نفس الكارت) بتظهر هنا بدل ما تتفرق بين شاشتين.
+  الوصول: موظف الصفحات، مسؤول الاعتماد، المدير العام، السوبر أدمن —
+  **المصمم ممنوع** (زي ما طلب المستخدم بالظبط، `roles.js → TAB_ACCESS`)
+- **مرحلة Kanban جديدة `scheduled`** ("مجدولة للنشر") بين `ready_to_publish`
+  و`published` — جدولة حقيقية بتاريخ ومعاد (`content_items.scheduled_publish_at`
+  + `scheduled_by`)، مش مجرد قائمة نشر فوري:
+  - من تاب النشر: مادة "جاهزة للنشر" ممكن تتجدول (تختار الصفحة/المنصة/معاد
+    النشر → تروح لحالة "مجدولة") أو تتنشر فوراً من غير جدولة (تدخل رابط
+    المنشور مباشرة)
+  - مادة "مجدولة" ممكن "تأكيد النشر" (تدخل رابط المنشور، تتحول لـ`published`)
+    أو "إلغاء الجدولة" (ترجع لـ`ready_to_publish` وتتمسح بيانات الجدولة)
+  - `guard_content_transition()` في `setup.sql` اتحدّث (لموظف الصفحات
+    ومسؤول الاعتماد) يسمح بالانتقالات: `ready_to_publish→scheduled`،
+    `scheduled→published`، `scheduled→ready_to_publish`
+- **اتشالت السكشنات القديمة "جاهز للنشر"** من شاشتي "إدارة المحتوى"
+  (`render-review.js`) و"إنتاج المحتوى" (`render-production.js`) نهائياً
+  — بقت كلها مجمّعة في تاب "النشر" الجديد بس (مفيش تكرار)
+- **إصلاح باگ في `comments.js`**: كان بيستخدم `id` ثابت غير فريد
+  (`new-comment-box`/`send-comment-btn`) بيتلاقى بـ`document.getElementById`
+  — كان شغال تمام لما شاشة واحدة بتفتح ثريد كومنتات واحد بس في مودال،
+  لكن تاب النشر الجديد بيعرض عدة كروت مواد في نفس الوقت وكل واحد له
+  ثريد كومنتات مفتوح جنبه (مش في مودال) — فبقى لازم `class` بدل `id`
+  مع `container.querySelector(...)` عشان كل ثريد يشتغل صح لوحده
 
 **ملاحظة مش باگ**: لو ظهرت رسالة "جسر Google Drive لسه مش متظبط" رغم إن
 `config.js` فيه رابط حقيقي — هي غالباً تبويب/صفحة قديمة لسه فاتحة من قبل
