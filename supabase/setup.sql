@@ -420,6 +420,43 @@ create policy "approver writes metrics"
   with check (public.my_role() in ('approver','general_manager','super_admin'));
 
 -- ============================================================
+--  5-ب) الإعلانات المدفوعة (تقرير حملات Meta Ads مستورد يدوياً من CSV)
+--  كل استيراد جديد بيستبدل التقرير القديم بالكامل (مش تراكمي أسبوعي
+--  زي weekly_social_metrics) — الصفوف مُجمّعة لكل حملة (campaign_name)
+-- ============================================================
+create table if not exists public.ad_campaigns (
+  id               uuid primary key default gen_random_uuid(),
+  campaign_name    text not null,
+  objective        text,
+  amount_spent     numeric(12,2) default 0,
+  impressions      bigint default 0,
+  reach            bigint default 0,
+  results          numeric default 0,
+  result_indicator text,
+  cost_per_result  numeric(12,2),
+  link_clicks      bigint default 0,
+  ctr              numeric(8,3),
+  reporting_start  date,
+  reporting_end    date,
+  imported_by      uuid references public.admins(id),
+  created_at       timestamptz not null default now()
+);
+
+alter table public.ad_campaigns enable row level security;
+
+drop policy if exists "active admins read ad campaigns" on public.ad_campaigns;
+drop policy if exists "approver writes ad campaigns"    on public.ad_campaigns;
+
+create policy "active admins read ad campaigns"
+  on public.ad_campaigns for select to authenticated
+  using (public.my_admin_id() is not null);
+
+create policy "approver writes ad campaigns"
+  on public.ad_campaigns for all to authenticated
+  using (public.my_role() in ('approver','general_manager','super_admin'))
+  with check (public.my_role() in ('approver','general_manager','super_admin'));
+
+-- ============================================================
 --  6) تفعيل Realtime على الجداول التفاعلية
 -- ============================================================
 do $$
