@@ -602,7 +602,219 @@ begin
 end $$;
 
 -- ============================================================
---  8) أول سوبر أدمن
+--  8) موديول إدارة الليدز والتواصل مع العملاء (Leads Module)
+-- ============================================================
+-- ملاحظة: جدول patients اتبنى بالفعل في المرحلة السابقة (القسم 7) وبيُستخدم هنا كـ FK فقط، من غير أي تكرار.
+
+-- ---------- جدول الليدز الأساسي ----------
+create table if not exists public.leads (
+  id                   uuid primary key default gen_random_uuid(),
+  customer_name        text not null,
+  phone_raw            text,
+  phone_normalized     text,                 -- نفس منطق التطبيع المستخدم في patients.phone_normalized
+  source               text not null check (source in ('whatsapp','messenger')),
+  message_text         text,
+  attachment_url       text,
+  received_at          timestamptz not null default now(),
+  received_by          uuid references public.admins(id),
+  interested_service   text check (interested_service in ('consultation','radiology','lab','nursing','physiotherapy','treatment','other')),
+  requested_department text,
+  patient_id           uuid references public.patients(id),
+  patient_type         text check (patient_type in ('new','existing')),
+  current_status       text not null default 'new' check (current_status in
+                          ('new','in_progress','booked','interested_undecided','rejected','no_response','invalid_number')),
+  priority             text not null default 'normal' check (priority in ('high','medium','normal')),
+  do_not_contact       boolean not null default false,
+  assigned_to          uuid references public.admins(id),
+  booking_reference    text,
+  next_follow_up_date  date,
+  closed_at            timestamptz,
+  created_at           timestamptz not null default now(),
+  updated_at           timestamptz not null default now()
+);
+create index if not exists leads_phone_normalized_idx on public.leads (phone_normalized);
+create index if not exists leads_current_status_idx on public.leads (current_status);
+create index if not exists leads_assigned_to_idx on public.leads (assigned_to);
+create index if not exists leads_patient_id_idx on public.leads (patient_id);
+create index if not exists leads_next_follow_up_date_idx on public.leads (next_follow_up_date);
+
+-- ---------- سجل محاولات التواصل (متعدد لكل ليد) ----------
+create table if not exists public.lead_attempts (
+  id                   uuid primary key default gen_random_uuid(),
+  lead_id              uuid not null references public.leads(id) on delete cascade,
+  employee_id          uuid references public.admins(id),
+  attempt_date         timestamptz not null default now(),
+  result               text check (result in ('answered','no_answer','busy','call_back_later','other')),
+  next_follow_up_date  date,
+  notes                text
+);
+create index if not exists lead_attempts_lead_id_idx on public.lead_attempts (lead_id);
+
+-- ---------- سجل تغييرات الحالة (audit trail) ----------
+create table if not exists public.lead_status_log (
+  id           uuid primary key default gen_random_uuid(),
+  lead_id      uuid not null references public.leads(id) on delete cascade,
+  changed_by   uuid references public.admins(id),
+  old_status   text,
+  new_status   text,
+  changed_at   timestamptz not null default now()
+);
+create index if not exists lead_status_log_lead_id_idx on public.lead_status_log (lead_id);
+
+-- ---------- تصنيف الملاحظات كتقييم خدمة (اختياري لكل ليد أو محاولة) ----------
+create table if not exists public.lead_feedback_tags (
+  id           uuid primary key default gen_random_uuid(),
+  lead_id      uuid references public.leads(id) on delete cascade,
+  attempt_id   uuid references public.lead_attempts(id) on delete cascade,
+  sentiment    text not null check (sentiment in ('positive','negative','neutral')),
+  created_at   timestamptz not null default now(),
+  constraint lead_feedback_tags_target_chk check (
+    (lead_id is not null and attempt_id is null) or (lead_id is null and attempt_id is not null)
+  )
+);
+create index if not exists lead_feedback_tags_lead_id_idx on public.lead_feedback_tags (lead_id);
+create index if not exists lead_feedback_tags_attempt_id_idx on public.lead_feedback_tags (attempt_id);
+
+-- ---------- تريجر: تسجيل تلقائي في lead_status_log عند تغيير current_status ----------
+create or replace function public.log_lead_status_change()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if new.current_status is distinct from old.current_status then
+    insert into public.lead_status_log (lead_id, changed_by, old_status, new_status)
+    values (new.id, public.my_admin_id(), old.current_status, new.current_status);
+  end if;
+  new.updated_at := now();
+  return new;
+end;
+$$;
+drop trigger if exists trg_log_lead_status_change on public.leads;
+create trigger trg_log_lead_status_change
+  before update on public.leads
+  for each row execute function public.log_lead_status_change();
+
+-- ---------- RLS: leads ----------
+-- الاستقبال: يضيف ليدز بس (ومعاه قراءة محدودة لازمة لكشف التكرار وقت الإدخال)
+-- خدمة العملاء: يشوف ويعدّل بس الليدز المُسندة له
+-- المدير/الأدمن: يشوف ويعدّل كل حاجة
+alter table public.leads enable row level security;
+
+drop policy if exists "leads select" on public.leads;
+create policy "leads select" on public.leads
+  for select using (
+    public.is_super()
+    or public.my_role() in ('general_manager','reception')
+    or (public.my_role() = 'customer_service' and assigned_to = public.my_admin_id())
+  );
+
+drop policy if exists "leads insert" on public.leads;
+create policy "leads insert" on public.leads
+  for insert with check (
+    public.is_super() or public.my_role() in ('reception','customer_service','general_manager')
+  );
+
+drop policy if exists "leads update" on public.leads;
+create policy "leads update" on public.leads
+  for update using (
+    public.is_super()
+    or public.my_role() = 'general_manager'
+    or (public.my_role() = 'customer_service' and assigned_to = public.my_admin_id())
+  );
+
+-- ---------- RLS: lead_attempts ----------
+alter table public.lead_attempts enable row level security;
+
+drop policy if exists "lead_attempts select" on public.lead_attempts;
+create policy "lead_attempts select" on public.lead_attempts
+  for select using (
+    public.is_super()
+    or public.my_role() = 'general_manager'
+    or exists (
+      select 1 from public.leads l
+      where l.id = lead_attempts.lead_id
+        and public.my_role() = 'customer_service'
+        and l.assigned_to = public.my_admin_id()
+    )
+  );
+
+drop policy if exists "lead_attempts insert" on public.lead_attempts;
+create policy "lead_attempts insert" on public.lead_attempts
+  for insert with check (
+    public.is_super()
+    or public.my_role() = 'general_manager'
+    or exists (
+      select 1 from public.leads l
+      where l.id = lead_attempts.lead_id
+        and public.my_role() = 'customer_service'
+        and l.assigned_to = public.my_admin_id()
+    )
+  );
+
+-- ---------- RLS: lead_status_log (قراءة فقط — بيتسجل تلقائي بالتريجر) ----------
+alter table public.lead_status_log enable row level security;
+
+drop policy if exists "lead_status_log select" on public.lead_status_log;
+create policy "lead_status_log select" on public.lead_status_log
+  for select using (
+    public.is_super()
+    or public.my_role() = 'general_manager'
+    or exists (
+      select 1 from public.leads l
+      where l.id = lead_status_log.lead_id
+        and public.my_role() = 'customer_service'
+        and l.assigned_to = public.my_admin_id()
+    )
+  );
+
+drop policy if exists "lead_status_log insert" on public.lead_status_log;
+create policy "lead_status_log insert" on public.lead_status_log
+  for insert with check (true); -- التريجر بيشتغل بصلاحية security definer، السطر ده لأي إدراج مباشر احتياطي بنفس شرط التعديل على leads
+
+-- ---------- RLS: lead_feedback_tags ----------
+alter table public.lead_feedback_tags enable row level security;
+
+drop policy if exists "lead_feedback_tags select" on public.lead_feedback_tags;
+create policy "lead_feedback_tags select" on public.lead_feedback_tags
+  for select using (
+    public.is_super()
+    or public.my_role() = 'general_manager'
+    or exists (
+      select 1 from public.leads l
+      where l.id = coalesce(lead_feedback_tags.lead_id, (select lead_id from public.lead_attempts where id = lead_feedback_tags.attempt_id))
+        and public.my_role() = 'customer_service'
+        and l.assigned_to = public.my_admin_id()
+    )
+  );
+
+drop policy if exists "lead_feedback_tags insert" on public.lead_feedback_tags;
+create policy "lead_feedback_tags insert" on public.lead_feedback_tags
+  for insert with check (
+    public.is_super()
+    or public.my_role() in ('general_manager','customer_service')
+  );
+
+-- ---------- Realtime (نفس النمط الآمن للتكرار المستخدم سابقاً) ----------
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and schemaname='public' and tablename='leads'
+  ) then
+    alter publication supabase_realtime add table public.leads;
+  end if;
+end $$;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and schemaname='public' and tablename='lead_attempts'
+  ) then
+    alter publication supabase_realtime add table public.lead_attempts;
+  end if;
+end $$;
+
+-- ============================================================
+--  9) أول سوبر أدمن
 -- ============================================================
 -- الخطوة أ) Authentication → Users → Add user → Create new user
 --            ضع بريدك وكلمة السر، وفعّل «Auto Confirm User».
