@@ -30,12 +30,16 @@ const TABLES = {
   activity_log: [],
   weekly_social_metrics: [
     { id: "w1", week_start: "2026-08-10", reach: 1200, engagement_rate: 3.4, new_followers: 22, entered_by: ME.id, created_at: now }
+  ],
+  ad_campaigns: [
+    { id: "ad1", campaign_name: "New Traffic Campaign", amount_spent: 1421.99, impressions: 83943, reach: 52634, results: 4992, result_indicator: "actions:link_click", cost_per_result: 0.28, link_clicks: 254, ctr: 5.95, reporting_start: "2025-01-01", reporting_end: "2026-08-02", imported_by: ME.id, created_at: now }
   ]
 };
 
 function matchFilters(row, filters) {
   return filters.every(([col, val, op]) => {
     if (op === "ilike") return String(row[col] == null ? "" : row[col]).toLowerCase() === String(val).toLowerCase();
+    if (op === "neq") return row[col] !== val;
     return row[col] === val;
   });
 }
@@ -45,6 +49,7 @@ class FakeQuery {
   select() { return this; }
   eq(col, val) { this._filters.push([col, val]); return this; }
   is(col, val) { this._filters.push([col, val]); return this; }
+  neq(col, val) { this._filters.push([col, val, "neq"]); return this; }
   ilike(col, val) { this._filters.push([col, val, "ilike"]); return this; }
   order(col, opts) { this._order = { col, asc: !opts || opts.ascending !== false }; return this; }
   limit(n) { this._limit = n; return this; }
@@ -147,6 +152,10 @@ setTimeout(() => {
     const view = window.document.getElementById("view-container");
     assert(/الملخص العام/.test(view.innerHTML), "تاب الملخص العام هو الافتراضي واترسم");
     assert(/إجمالي المحتوى/.test(view.innerHTML), "مؤشرات إنتاج المحتوى ظاهرة");
+    assert(/الإعلانات المدفوعة/.test(view.innerHTML), "سكشن الإعلانات المدفوعة ظاهر في الملخص العام");
+    assert(/New Traffic Campaign/.test(view.innerHTML), "اسم الحملة المستوردة ظاهر في جدول الإعلانات المدفوعة");
+    assert(/إجمالي المبلغ المُنفق/.test(view.innerHTML), "مؤشر إجمالي المبلغ المُنفق ظاهر");
+    assert(!!window.document.getElementById("import-ads-btn"), "زرار استيراد تقرير حملات إعلانات ظاهر للسوبر أدمن");
 
     // اختبار التنقل لتاب الأرشيف
     const archiveBtn = [...rootEl.querySelectorAll(".tab-btn")].find(b => b.getAttribute("data-tab") === "archive");
