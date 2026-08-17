@@ -36,12 +36,14 @@
           });
         }
         html += '<div style="margin-top:10px;display:flex;gap:8px;">' +
-          '<textarea id="new-comment-box" placeholder="اكتب كومنت..." style="flex:1;min-height:44px;"></textarea>' +
-          '</div><div style="text-align:left;margin-top:6px;"><button class="btn sm" id="send-comment-btn">إرسال</button></div></div>';
+          '<textarea class="new-comment-box" placeholder="اكتب كومنت..." style="flex:1;min-height:44px;"></textarea>' +
+          '</div><div style="text-align:left;margin-top:6px;"><button class="btn sm send-comment-btn">إرسال</button></div></div>';
         container.innerHTML = html;
 
-        document.getElementById("send-comment-btn").onclick = function () {
-          var box = document.getElementById("new-comment-box");
+        // استخدام querySelector على الـ container نفسه (مش document) عشان الكومبوننت ده يشتغل صح
+        // حتى لو أكتر من مادة عندها تريد كومنتات ظاهر في نفس الصفحة في نفس الوقت (زي تاب النشر)
+        container.querySelector(".send-comment-btn").onclick = function () {
+          var box = container.querySelector(".new-comment-box");
           var body = box.value.trim();
           if (!body) return;
           var authorId = window.SSMPDAuth.currentAdmin.id;

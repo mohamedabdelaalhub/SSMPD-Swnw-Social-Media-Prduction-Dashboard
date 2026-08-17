@@ -2,7 +2,7 @@
 (function () {
   "use strict";
 
-  // ٧ مراحل Kanban بالترتيب — لا تُغيَّر المفاتيح (stage) لأنها مخزّنة في القاعدة
+  // ٨ مراحل Kanban بالترتيب — لا تُغيَّر المفاتيح (stage) لأنها مخزّنة في القاعدة
   var STAGES = [
     { key: "idea_selection",   label: "اختيار الفكرة" },
     { key: "initial_approval", label: "اعتماد أولي" },
@@ -10,6 +10,7 @@
     { key: "final_approval",   label: "في الاعتماد النهائي" },
     { key: "needs_revision",   label: "مطلوب تعديل" },
     { key: "ready_to_publish", label: "جاهز للنشر" },
+    { key: "scheduled",        label: "مجدولة للنشر" },
     { key: "published",        label: "تم النشر" }
   ];
 

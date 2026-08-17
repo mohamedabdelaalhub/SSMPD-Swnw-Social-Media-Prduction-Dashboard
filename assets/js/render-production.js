@@ -11,6 +11,7 @@
   function stagePillClass(stage) {
     if (stage === "published") return "published";
     if (stage === "needs_revision") return "revision";
+    if (stage === "scheduled") return "received";
     if (stage === "ready_to_publish") return "approved";
     if (stage === "idea_selection") return "draft";
     return "approval";
@@ -30,18 +31,6 @@
 
       var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">' +
         '<h2>إنتاج المحتوى</h2><button class="btn" id="new-content-btn">+ فكرة/محتوى جديد</button></div>';
-
-      var ready = items.filter(function (i) { return i.stage === "ready_to_publish"; });
-      if (ready.length) {
-        html += '<div class="section"><h3>جاهز للنشر (' + ready.length + ')</h3><table class="simple"><thead><tr>' +
-          '<th>العنوان</th><th>تاريخ الاعتماد</th><th></th></tr></thead><tbody>';
-        ready.forEach(function (i) {
-          html += '<tr><td><span class="link-open" data-open="' + i.id + '">' + escapeHtml(i.title) + '</span>' + W.brandBadgeHtml(i.brand) + '</td>' +
-            '<td>' + new Date(i.updated_at).toLocaleDateString("ar-EG") + '</td>' +
-            '<td><button class="btn sm" data-publish="' + i.id + '">تم النشر — أدخل الرابط</button></td></tr>';
-        });
-        html += '</tbody></table></div>';
-      }
 
       html += '<div class="section"><h3>كل المواد بتاعتي (' + items.length + ')</h3>';
       if (!items.length) {
@@ -66,9 +55,6 @@
       });
       container.querySelectorAll("[data-comment]").forEach(function (btn) {
         btn.onclick = function () { openViewModal(btn.getAttribute("data-comment")); };
-      });
-      container.querySelectorAll("[data-publish]").forEach(function (btn) {
-        btn.onclick = function () { openPublishModal(btn.getAttribute("data-publish")); };
       });
     }).catch(function (e) {
       container.innerHTML = '<div class="err-msg">خطأ: ' + e.message + '</div>';
@@ -130,42 +116,6 @@
         var map = {}; admins.forEach(function (a) { map[a.id] = a; });
         window.SSMPDComments.render(document.getElementById("comments-slot"), item.id, map);
       });
-    });
-  }
-
-  function openPublishModal(id) {
-    window.SSMPDDb.getContentItem(id).then(function (item) {
-      var backdrop = document.createElement("div");
-      backdrop.className = "modal-backdrop";
-      backdrop.innerHTML = '<div class="modal" style="max-width:420px;"><div class="modal-head"><h3>تأكيد النشر</h3>' +
-        '<button class="modal-close">×</button></div>' +
-        '<div class="field"><label>المادة دي لصفحة</label>' + W.brandSelectHtml("pub-brand", item.brand || "") + '</div>' +
-        '<div class="field"><label>هيتنشر على</label>' + W.platformSelectHtml("pub-platform", item.publish_platform || "") + '</div>' +
-        '<div class="field"><label>رابط المنشور</label><input id="pub-url" placeholder="https://..."></div>' +
-        '<div style="text-align:left;"><button class="btn" id="pub-confirm">تأكيد</button></div></div>';
-      document.body.appendChild(backdrop);
-      backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
-      backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
-
-      document.getElementById("pub-confirm").onclick = function () {
-        var url = document.getElementById("pub-url").value.trim();
-        var brand = document.getElementById("pub-brand").value;
-        var platform = document.getElementById("pub-platform").value;
-        if (!url) { alert("حط الرابط الأول"); return; }
-        if (!brand) { alert("اختر المادة دي لصفحة سونو ولا د.دينا"); return; }
-        if (!platform) { alert("اختر هتتنشر على أنهي منصة"); return; }
-        var me = window.SSMPDAuth.currentAdmin;
-        window.SSMPDDb.updateContentItem(id, {
-          stage: "published", published_url: url, published_by: me.id, published_at: new Date().toISOString(),
-          brand: brand, publish_platform: platform
-        }).then(function (updated) {
-          window.SSMPDDrive.logPublished(id, updated.title, url, updated.stage_history).catch(function () {});
-          return window.SSMPDDb.logActivity({ content_id: id, actor_id: me.id, action: "نشر", from_stage: "ready_to_publish", to_stage: "published" });
-        }).then(function () {
-          backdrop.remove();
-          render(document.getElementById("view-container"));
-        }).catch(function (e) { alert("خطأ: " + e.message); });
-      };
     });
   }
 

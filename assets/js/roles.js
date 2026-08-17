@@ -11,11 +11,13 @@
   };
 
   // كل تاب: مين يشوفه — المدير العام يشوف كل حاجة زي السوبر أدمن ما عدا تاب المستخدمين
+  // تاب "النشر" يشوفه الكل ما عدا المصمم (مش شغلته)
   var TAB_ACCESS = {
     summary: ["page_manager", "designer", "approver", "general_manager", "super_admin"],
     production: ["page_manager", "general_manager", "super_admin"],
     review: ["approver", "general_manager", "super_admin"],
     design: ["designer", "general_manager", "super_admin"],
+    publish: ["page_manager", "approver", "general_manager", "super_admin"],
     archive: ["page_manager", "designer", "approver", "general_manager", "super_admin"],
     admin: ["super_admin"]
   };

@@ -1,4 +1,4 @@
-/* SSMPD — شاشة إدارة المحتوى (مسؤول الاعتماد) — Kanban بـ٧ مراحل */
+/* SSMPD — شاشة إدارة المحتوى (مسؤول الاعتماد) — Kanban بـ٨ مراحل */
 (function () {
   "use strict";
   var W = window.SSMPDWorkflow;
@@ -22,25 +22,6 @@
         var adminsById = {}; admins.forEach(function (a) { adminsById[a.id] = a; });
 
         var html = '<h2 style="margin-bottom:16px;">إدارة المحتوى</h2>';
-
-        // سكشن "جاهز للنشر" — المواد اللي خلصت تصميم واعتماد نهائي، مع اختيار الصفحة والمنصة وقت النشر
-        var ready = items.filter(function (i) { return i.stage === "ready_to_publish"; });
-        html += '<div class="section"><h3>جاهز للنشر (' + ready.length + ')</h3>';
-        if (!ready.length) {
-          html += '<div class="empty-state">مفيش مواد جاهزة للنشر دلوقتي</div>';
-        } else {
-          html += '<table class="simple"><thead><tr><th>العنوان</th><th>الصفحة</th><th>المنصة</th><th>رابط النشر</th><th></th></tr></thead><tbody>';
-          ready.forEach(function (i) {
-            html += '<tr>' +
-              '<td><span class="link-open" data-open="' + i.id + '">' + escapeHtml(i.title) + '</span></td>' +
-              '<td>' + W.brandSelectHtml("ready-brand-" + i.id, i.brand || "") + '</td>' +
-              '<td>' + W.platformSelectHtml("ready-platform-" + i.id, i.publish_platform || "") + '</td>' +
-              '<td><input id="ready-url-' + i.id + '" placeholder="https://..." style="width:100%;padding:8px 10px;border-radius:9px;border:1px solid var(--c-border);background:#FAFBFD;"></td>' +
-              '<td><button class="btn sm" data-ready-publish="' + i.id + '">نشر</button></td></tr>';
-          });
-          html += '</tbody></table>';
-        }
-        html += '</div>';
 
         html += '<div class="kanban">';
         W.STAGES.forEach(function (s) {
@@ -73,35 +54,9 @@
         container.querySelectorAll("[data-open]").forEach(function (el) {
           el.onclick = function () { openReviewModal(el.getAttribute("data-open"), items, admins); };
         });
-        container.querySelectorAll("[data-ready-publish]").forEach(function (btn) {
-          btn.onclick = function () { publishFromReady(btn.getAttribute("data-ready-publish")); };
-        });
       }).catch(function (e) {
         container.innerHTML = '<div class="err-msg">خطأ: ' + e.message + '</div>';
       });
-  }
-
-  // نشر مباشر من سكشن "جاهز للنشر" — يطلب اختيار الصفحة والمنصة ورابط النشر
-  function publishFromReady(id) {
-    var brandSel = document.getElementById("ready-brand-" + id);
-    var platformSel = document.getElementById("ready-platform-" + id);
-    var urlInput = document.getElementById("ready-url-" + id);
-    var brand = brandSel ? brandSel.value : "";
-    var platform = platformSel ? platformSel.value : "";
-    var url = urlInput ? urlInput.value.trim() : "";
-    if (!brand) { alert("اختر المادة دي لصفحة سونو ولا د.دينا الأول"); return; }
-    if (!platform) { alert("اختر هتتنشر على أنهي منصة"); return; }
-    if (!url) { alert("حط رابط المنشور الأول"); return; }
-    var me = window.SSMPDAuth.currentAdmin;
-    window.SSMPDDb.updateContentItem(id, {
-      stage: "published", published_url: url, published_by: me.id, published_at: new Date().toISOString(),
-      brand: brand, publish_platform: platform
-    }).then(function (updated) {
-      window.SSMPDDrive.logPublished(id, updated.title, url, updated.stage_history).catch(function () {});
-      return window.SSMPDDb.logActivity({ content_id: id, actor_id: me.id, action: "نشر", from_stage: "ready_to_publish", to_stage: "published" });
-    }).then(function () {
-      render(document.getElementById("view-container"));
-    }).catch(function (e) { alert("خطأ: " + e.message); });
   }
 
   function openReviewModal(id, items, admins) {
@@ -177,7 +132,7 @@
     };
 
     if (rejectBtn) rejectBtn.onclick = function () {
-      var box = document.getElementById("new-comment-box");
+      var box = backdrop.querySelector(".new-comment-box");
       var note = box ? box.value.trim() : "";
       if (!note) { alert("لازم تكتب كومنت التعديل المطلوب في مربع الكومنتات تحت قبل الرفض"); return; }
       window.SSMPDDb.addComment({ content_id: item.id, author_id: me.id, body: "طلب تعديل: " + note }).then(function () {

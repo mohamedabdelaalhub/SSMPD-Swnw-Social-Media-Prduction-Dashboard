@@ -13,6 +13,7 @@
     production: window.SSMPDRenderProduction,
     review: window.SSMPDRenderReview,
     design: window.SSMPDRenderDesign,
+    publish: window.SSMPDRenderPublish,
     archive: window.SSMPDRenderArchive,
     admin: window.SSMPDRenderAdmin
   };
@@ -21,6 +22,7 @@
     production: "إنتاج المحتوى",
     review: "إدارة المحتوى",
     design: "شاشة التصميم",
+    publish: "النشر",
     archive: "الأرشيف",
     admin: "⚙ المستخدمون"
   };
@@ -129,7 +131,7 @@
 
   // تحديث لحظي بسيط: أعد رسم التاب الحالي لو بيعرض بيانات محتوى، وما فيش مودال مفتوح دلوقتي
   function refreshCurrentTab() {
-    if (["summary", "production", "review", "design", "archive"].indexOf(currentTab) !== -1) {
+    if (["summary", "production", "review", "design", "publish", "archive"].indexOf(currentTab) !== -1) {
       var el = document.getElementById("view-container");
       if (el && !document.querySelector(".modal-backdrop")) {
         RENDERERS[currentTab].render(el);
