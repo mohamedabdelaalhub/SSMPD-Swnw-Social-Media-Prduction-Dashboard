@@ -79,13 +79,16 @@ test/smoke.js              اختبار jsdom — Supabase مموّه بالكا
 
 | الجدول | الوظيفة |
 |---|---|
-| `admins` | المستخدمين والأدوار (`page_manager`/`designer`/`approver`/`general_manager`/`super_admin`) |
+| `admins` | المستخدمين والأدوار (`page_manager`/`designer`/`approver`/`general_manager`/`super_admin`/`reception`/`customer_service`) + عمود `has_archive_access` (boolean منفصل عن الرول، بيفعّل الوصول لموديول أرشيف المرضى لأي رول) |
 | `content_items` | كل مادة محتوى — العنوان والنص والمرحلة (`stage`)، `design_received_at` (وقت ضغط المصمم "استلام")، `scheduled_publish_at`/`scheduled_by` (معاد النشر المجدول ومين حددّه — تاب النشر)، `stage_history` (jsonb — سجل كل انتقالة مرحلة، أساس حساب أوقات الرحلة في تقرير الأرشيف) |
 | `comments` | كومنتات التعديل، مرتبطة بالمادة كـ thread، وفيها `status` (`pending`/`done` — "في انتظار التعديل"/"تم التعديل") |
 | `comment_reads` | آخر وقت قرا فيه كل مستخدم كومنتات كل مادة — أساس عداد "تعليق جديد" (أحمر/رمادي) |
 | `activity_log` | سجل كل تغيير حالة (Audit trail) |
 | `weekly_social_metrics` | إدخال يدوي أسبوعي لمؤشرات السوشيال ميديا (أو استيراد CSV من Meta Business Suite/Meta Ads/Google Ads عبر مطابقة أعمدة تلقائية في `render-summary.js`) |
 | `ad_campaigns` | تقرير حملات إعلانات مدفوعة (Meta Ads Manager) مستورد يدوياً من CSV — كل استيراد جديد بيستبدل القديم بالكامل، صف واحد لكل حملة (مجمّع) |
+| `patients` | **جدول مشترك** بين موديول "أرشيف المرضى" وموديول "إدارة الليدز" (قيد الإنشاء) — `patient_code` رقم تعريف قصير قابل للقراءة (`P-YYYY-000001`)، `national_id_hash` (هاش SHA-256+pepper بس، مش الرقم الخام)، `phone_normalized` للمطابقة مع الليدز |
+| `patient_files` | metadata ملفات المرضى (الملف الفعلي على Google Drive عبر Service Account، مش هنا) — `category` (`id_document`/`insurance`/`radiology`/`lab_result`/`other`)، `checksum`، `drive_file_id` |
+| `archive_access_log` | سجل كل عملية (`view`/`download`/`upload`/`delete`) على ملفات/بيانات المرضى — مين عملها وامتى |
 
 **ثمان مراحل Kanban** (`content_items.stage`) — المفاتيح مخزّنة في القاعدة،
 **لا تُغيَّر** بلا Migration:
@@ -403,6 +406,41 @@ invite` في `setup.sql`) كانوا مُجهّزين من الأول لدعم "
   عن طريق تكرار فعلي على الموقع المنشور: النشر والجدولة فعلياً بيوصلوا
   للملخص والأرشيف صح لما الفورم بيتعبّى كامل — الباگ كان في وضوح رسالة
   التحقق مش في عدم وصول البيانات)
+
+## موديولين جداد قيد الإنشاء (٢٠٢٦-٠٨-١٧ وما بعدها): أرشيف المرضى + إدارة الليدز
+
+بدأنا بناء قطاعين كاملين جداد جنب SSMPD (وصول مقصور على مستخدمين محددين لكل
+قطاع، بنفس نظام الأدوار/الصلاحيات الحالي مش نظام منفصل):
+
+- **أرشيف المرضى**: رفع/إدارة ملفات المرضى (تحقيق شخصية/تأمين/أشعة/تحاليل)
+  على Google Drive عبر Service Account، مقصور على `has_archive_access = true`.
+- **إدارة الليدز والتواصل مع العملاء**: تحويل دورة استقبال رسائل واتساب/ماسنجر
+  اليدوية (إكسيل) لنظام آلي، برولين جداد `reception`/`customer_service`.
+
+**قرار معماري مهم**: الداشبورد كانت لحد دلوقتي static بالكامل (GitHub Pages)
+من غير أي backend — بس المتطلبات الأمنية للموديولين دول (مفتاح Google Service
+Account، والتحقق من JWT قبل أي عملية) محتاجة backend حقيقي. **القرار: Supabase
+Edge Functions** (بدل سيرفر Node منفصل) — نفس المنصة المستخدمة بالفعل،
+الـ secrets بتتدار رسمياً (`supabase secrets set`)، ومفيش استضافة إضافية.
+الفرونت‌إند هيفضل static زي ما هو وبس هيكلم روابط `https://<project>.supabase.co/functions/v1/...`.
+
+**أمان — درس اتعلمناه من "SSMPD Bridge"**: ممنوع تماماً نفس نمط "رابط بدون
+auth" (`Anyone with the link`). كل اتصال بـ Google Drive للموديولين دول لازم
+يعدّي من Edge Function بتتحقق من JWT بتاع Supabase Auth ومن الصلاحية المناسبة
+(`has_archive_access` أو رول من رولات الليدز) قبل أي عملية. مفتاح الـ Service
+Account **ميظهرش في أي كود frontend إطلاقاً**، وبيتخزن كـ Supabase secret بس.
+
+**المرحلة اللي خلصت (schema فقط، لسه مفيش Edge Functions ولا شاشات)**:
+- جدول `patients` المشترك بين الموديولين + `patient_files` + `archive_access_log`
+  (تفاصيلهم في جدول الجداول فوق)
+- رولين جداد `reception`/`customer_service` في `admins.role`
+- عمود `admins.has_archive_access` منفصل عن الرول
+- دالتين صلاحية جداد: `public.has_archive_access()` و`public.can_access_leads()`
+  (بنفس أسلوب `my_role()`/`is_super()` الموجودين)، مستخدمين في RLS الجداول التلاتة
+
+**المراحل الجاية** (كل مرحلة بعد تأكيد): schema تفصيلي لموديول الليدز
+(`leads`/`lead_attempts`/`lead_status_log`/`lead_feedback_tags`) → إعداد Edge
+Functions (رفع/تنزيل ملفات، تطبيع أرقام، تصدير تقارير) → الشاشات → التحليلات.
 
 **ملاحظة مش باگ**: لو ظهرت رسالة "جسر Google Drive لسه مش متظبط" رغم إن
 `config.js` فيه رابط حقيقي — هي غالباً تبويب/صفحة قديمة لسه فاتحة من قبل
