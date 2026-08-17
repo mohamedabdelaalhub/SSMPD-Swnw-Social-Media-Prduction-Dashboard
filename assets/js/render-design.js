@@ -121,6 +121,7 @@
         '<button class="modal-close">×</button></div>' +
         '<p style="white-space:pre-wrap;">' + escapeHtml(item.body || "") + '</p>' +
         (item.design_file_url ? '<p><a href="' + item.design_file_url + '" target="_blank" class="btn ghost sm">فتح آخر تصميم مرفوع</a></p>' : '') +
+        '<div style="margin:10px 0;">' + W.itemActionsHtml(item, window.SSMPDAuth.currentAdmin) + '</div>' +
         '<div class="upload-box" id="upload-box">اسحب ملف التصميم هنا أو اضغط للاختيار<br>' +
         '<input type="file" id="design-file-input" style="display:none;"></div>' +
         '<div id="upload-status" style="font-size:12px;color:var(--c-muted);"></div>' +
@@ -128,6 +129,7 @@
       document.body.appendChild(backdrop);
       backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
       backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
+      W.wireItemActions(backdrop, item, function () { render(document.getElementById("view-container")); });
 
       window.SSMPDDb.listAdmins().then(function (admins) {
         var map = {}; admins.forEach(function (a) { map[a.id] = a; });

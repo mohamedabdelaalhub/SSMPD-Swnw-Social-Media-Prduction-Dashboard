@@ -61,6 +61,10 @@
     updateContentItem: function (id, patch) {
       return handle(client.from("content_items").update(patch).eq("id", id).select().single());
     },
+    // حذف نهائي — مقصور على السوبر أدمن حسب صلاحيات RLS "super deletes content"
+    deleteContentItem: function (id) {
+      return handle(client.from("content_items").delete().eq("id", id));
+    },
 
     // ---------- comments ----------
     listComments: function (contentId) {

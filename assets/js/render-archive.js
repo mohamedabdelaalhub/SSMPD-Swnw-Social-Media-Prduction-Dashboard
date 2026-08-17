@@ -118,10 +118,12 @@
       '<table class="simple" style="margin-top:12px;"><tr><th>تاريخ النشر</th><td>' +
       (item.published_at ? new Date(item.published_at).toLocaleString("ar-EG") : "—") + '</td></tr>' +
       '<tr><th>نُشر بواسطة</th><td>' + escapeHtml(publisher) + '</td></tr>' +
-      '<tr><th>المنصة</th><td>' + (W.PLATFORMS[item.publish_platform] ? W.PLATFORMS[item.publish_platform].label : "—") + '</td></tr></table></div>';
+      '<tr><th>المنصة</th><td>' + (W.PLATFORMS[item.publish_platform] ? W.PLATFORMS[item.publish_platform].label : "—") + '</td></tr></table>' +
+      '<div style="margin-top:12px;">' + W.itemActionsHtml(item, window.SSMPDAuth.currentAdmin) + '</div></div>';
     document.body.appendChild(backdrop);
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
     backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
+    W.wireItemActions(backdrop, item, function () { render(document.getElementById("view-container")); });
   }
 
   window.SSMPDRenderArchive = { render: render };

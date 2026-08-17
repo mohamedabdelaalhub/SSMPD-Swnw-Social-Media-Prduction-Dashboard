@@ -135,11 +135,13 @@
       '<button class="btn ghost sm" id="rv-save-brand" style="margin-bottom:1px;">حفظ</button></div>' +
       '<p style="white-space:pre-wrap;">' + escapeHtml(item.body || "") + '</p>' +
       (item.design_file_url ? '<p><a href="' + item.design_file_url + '" target="_blank" class="btn ghost sm">فتح ملف التصميم</a></p>' : '') +
+      '<div style="margin:6px 0 14px;">' + W.itemActionsHtml(item, window.SSMPDAuth.currentAdmin) + '</div>' +
       '<div style="margin:14px 0;">' + actionsHtml + '</div>' +
       '<div id="comments-slot"></div></div>';
     document.body.appendChild(backdrop);
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
     backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
+    W.wireItemActions(backdrop, item, function () { render(document.getElementById("view-container")); });
 
     var adminsById = {}; admins.forEach(function (a) { adminsById[a.id] = a; });
     window.SSMPDComments.render(document.getElementById("comments-slot"), item.id, adminsById);

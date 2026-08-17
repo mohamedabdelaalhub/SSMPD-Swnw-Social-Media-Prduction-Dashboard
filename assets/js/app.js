@@ -5,6 +5,8 @@
   var R = window.SSMPDRoles;
   var currentTab = null;
   var realtimeChannel = null;
+  var commentsChannel = null;
+  var pollTimer = null;
 
   var RENDERERS = {
     summary: window.SSMPDRenderSummary,
@@ -125,17 +127,25 @@
     if (renderer) renderer.render(document.getElementById("view-container"));
   }
 
+  // تحديث لحظي بسيط: أعد رسم التاب الحالي لو بيعرض بيانات محتوى، وما فيش مودال مفتوح دلوقتي
+  function refreshCurrentTab() {
+    if (["summary", "production", "review", "design", "archive"].indexOf(currentTab) !== -1) {
+      var el = document.getElementById("view-container");
+      if (el && !document.querySelector(".modal-backdrop")) {
+        RENDERERS[currentTab].render(el);
+      }
+    }
+  }
+
   function setupRealtime() {
     if (realtimeChannel) window.SSMPDDb.unsubscribe(realtimeChannel);
-    realtimeChannel = window.SSMPDDb.subscribeTable("content_items", function () {
-      // تحديث لحظي بسيط: أعد رسم التاب الحالي لو بيعرض بيانات محتوى
-      if (["summary", "production", "review", "design", "archive"].indexOf(currentTab) !== -1) {
-        var el = document.getElementById("view-container");
-        if (el && !document.querySelector(".modal-backdrop")) {
-          RENDERERS[currentTab].render(el);
-        }
-      }
-    });
+    if (commentsChannel) window.SSMPDDb.unsubscribe(commentsChannel);
+    realtimeChannel = window.SSMPDDb.subscribeTable("content_items", refreshCurrentTab);
+    commentsChannel = window.SSMPDDb.subscribeTable("comments", refreshCurrentTab);
+
+    // نسخة احتياطية: ريفريش تلقائي دوري لو الاتصال اللحظي (WebSocket) انقطع أو اتأخر
+    if (pollTimer) clearInterval(pollTimer);
+    pollTimer = setInterval(refreshCurrentTab, 45000);
   }
 
   function escapeHtml(s) {
