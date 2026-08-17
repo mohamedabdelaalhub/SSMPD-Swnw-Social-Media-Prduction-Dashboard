@@ -89,6 +89,10 @@ test/smoke.js              اختبار jsdom — Supabase مموّه بالكا
 | `patients` | **جدول مشترك** بين موديول "أرشيف المرضى" وموديول "إدارة الليدز" (قيد الإنشاء) — `patient_code` رقم تعريف قصير قابل للقراءة (`P-YYYY-000001`)، `national_id_hash` (هاش SHA-256+pepper بس، مش الرقم الخام)، `phone_normalized` للمطابقة مع الليدز |
 | `patient_files` | metadata ملفات المرضى (الملف الفعلي على Google Drive عبر Service Account، مش هنا) — `category` (`id_document`/`insurance`/`radiology`/`lab_result`/`other`)، `checksum`، `drive_file_id` |
 | `archive_access_log` | سجل كل عملية (`view`/`download`/`upload`/`delete`) على ملفات/بيانات المرضى — مين عملها وامتى |
+| `leads` | (قيد الإنشاء) ليدز موديول "إدارة الليدز" — بيانات الرسالة الخام، الحالة (`current_status`)، التوزيع (`assigned_to`)، ربط اختياري بـ`patients` عبر `patient_id` |
+| `lead_attempts` | (قيد الإنشاء) سجل كل محاولة تواصل مع الليد (متعدد لكل ليد) |
+| `lead_status_log` | (قيد الإنشاء) سجل تغييرات `current_status` تلقائياً (بتريجر `trg_log_lead_status_change`) — أساس مؤشرات الأداء |
+| `lead_feedback_tags` | (قيد الإنشاء) تصنيف اختياري (إيجابي/سلبي/محايد) لكل ليد أو محاولة تواصل |
 
 **ثمان مراحل Kanban** (`content_items.stage`) — المفاتيح مخزّنة في القاعدة،
 **لا تُغيَّر** بلا Migration:
@@ -430,7 +434,7 @@ auth" (`Anyone with the link`). كل اتصال بـ Google Drive للموديو
 (`has_archive_access` أو رول من رولات الليدز) قبل أي عملية. مفتاح الـ Service
 Account **ميظهرش في أي كود frontend إطلاقاً**، وبيتخزن كـ Supabase secret بس.
 
-**المرحلة اللي خلصت (schema فقط، لسه مفيش Edge Functions ولا شاشات)**:
+**المرحلة ١ اللي خلصت — الجدول المشترك (schema فقط)**:
 - جدول `patients` المشترك بين الموديولين + `patient_files` + `archive_access_log`
   (تفاصيلهم في جدول الجداول فوق)
 - رولين جداد `reception`/`customer_service` في `admins.role`
@@ -438,9 +442,22 @@ Account **ميظهرش في أي كود frontend إطلاقاً**، وبيتخز
 - دالتين صلاحية جداد: `public.has_archive_access()` و`public.can_access_leads()`
   (بنفس أسلوب `my_role()`/`is_super()` الموجودين)، مستخدمين في RLS الجداول التلاتة
 
-**المراحل الجاية** (كل مرحلة بعد تأكيد): schema تفصيلي لموديول الليدز
-(`leads`/`lead_attempts`/`lead_status_log`/`lead_feedback_tags`) → إعداد Edge
-Functions (رفع/تنزيل ملفات، تطبيع أرقام، تصدير تقارير) → الشاشات → التحليلات.
+**المرحلة ٢ اللي خلصت — schema تفصيلي لموديول الليدز (٢٠٢٦-٠٨-١٧)**:
+- 4 جداول جداد: `leads`، `lead_attempts` (سجل محاولات تواصل متعدد)،
+  `lead_status_log` (سجل تغييرات حالة تلقائي)، `lead_feedback_tags` (تقييم خدمة)
+- تريجر `trg_log_lead_status_change` بيسجل أي تغيير في `leads.current_status`
+  في `lead_status_log` تلقائياً (`security definer`) — بدون الاعتماد على إن
+  الموظف يسجله يدوياً
+- RLS دقيقة على مستوى الصف: خدمة العملاء تشوف/تعدّل بس الليدز المُسندة لها
+  (`assigned_to = my_admin_id()`)، الاستقبال قراءة كاملة + إضافة بس (لازمة
+  لكشف التكرار وقت الإدخال)، المدير/السوبر أدمن كل حاجة — حسب قرار الصلاحيات
+  المُتفق عليه في السبيسيفيكيشن الأصلية
+- منطق التطبيق نفسه (تطبيع الأرقام، كشف التكرار، الربط التلقائي بـ`patients`،
+  التوزيع التلقائي، تنبيهات SLA) **لسه مش متنفذ** — دي مسؤولية مرحلة Edge
+  Functions الجاية، السكيما هنا جهزت بس الأرضية
+
+**المراحل الجاية** (كل مرحلة بعد تأكيد): إعداد Edge Functions (رفع/تنزيل
+ملفات الأرشيف، منطق موديول الليدز، تصدير تقارير) → الشاشات → التحليلات.
 
 **ملاحظة مش باگ**: لو ظهرت رسالة "جسر Google Drive لسه مش متظبط" رغم إن
 `config.js` فيه رابط حقيقي — هي غالباً تبويب/صفحة قديمة لسه فاتحة من قبل
