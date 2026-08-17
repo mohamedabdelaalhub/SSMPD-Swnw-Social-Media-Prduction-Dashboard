@@ -4,6 +4,28 @@
 
   function pct(a, b) { return b > 0 ? Math.round((a / b) * 100) : 0; }
 
+  function escapeHtml(s) {
+    return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  function fmtNum(n) {
+    return Number(n || 0).toLocaleString("ar-EG");
+  }
+
+  // نص عربي مبسّط لمؤشر النتيجة الخام من تقرير Meta Ads (زي "reach" أو
+  // "actions:onsite_conversion.messaging_conversation_started_7d")
+  function resultLabel(indicator) {
+    var s = String(indicator || "").toLowerCase();
+    if (!s) return "نتائج";
+    if (s.indexOf("reach") !== -1) return "وصول";
+    if (s.indexOf("thruplay") !== -1 || s.indexOf("video") !== -1) return "مشاهدات فيديو";
+    if (s.indexOf("messaging") !== -1) return "محادثات ماسنجر";
+    if (s.indexOf("link_click") !== -1) return "نقرات على الرابط";
+    if (s.indexOf("purchase") !== -1) return "عمليات شراء";
+    if (s.indexOf("lead") !== -1) return "بيانات تواصل (Leads)";
+    return "نتائج";
+  }
+
   function kpiCard(label, value, extra) {
     return '<div class="kpi-card"><div class="label">' + label + '</div>' +
       '<div class="value' + (extra && extra.small ? ' small' : '') + '">' + value + '</div>' +
@@ -16,9 +38,10 @@
 
     Promise.all([
       window.SSMPDDb.listContentItems({}),
-      window.SSMPDDb.listWeeklyMetrics(2)
+      window.SSMPDDb.listWeeklyMetrics(2),
+      window.SSMPDDb.listAdCampaigns()
     ]).then(function (res) {
-      var items = res[0], metrics = res[1];
+      var items = res[0], metrics = res[1], ads = res[2];
 
       var total = items.length;
       var planned = items.filter(function (i) { return i.stage === "idea_selection" || i.stage === "initial_approval"; }).length;
@@ -66,9 +89,57 @@
       }
       html += '</div>';
 
+      html += '<div class="section"><h3>الإعلانات المدفوعة (Meta Ads)</h3>';
+      if (!ads.length) {
+        html += '<div class="empty-state">لسه مفيش تقرير حملات إعلانات مستورد.</div>';
+      } else {
+        var totalSpent = 0, totalReach = 0, totalClicks = 0, totalImpressions = 0, ctrSum = 0, ctrCount = 0;
+        var minStart = null, maxEnd = null;
+        ads.forEach(function (a) {
+          totalSpent += Number(a.amount_spent || 0);
+          totalReach += Number(a.reach || 0);
+          totalClicks += Number(a.link_clicks || 0);
+          totalImpressions += Number(a.impressions || 0);
+          if (a.ctr != null) { ctrSum += Number(a.ctr); ctrCount++; }
+          if (a.reporting_start && (!minStart || a.reporting_start < minStart)) minStart = a.reporting_start;
+          if (a.reporting_end && (!maxEnd || a.reporting_end > maxEnd)) maxEnd = a.reporting_end;
+        });
+        var avgCtr = ctrCount ? Math.round((ctrSum / ctrCount) * 100) / 100 : 0;
+
+        html += '<div class="kpi-grid">';
+        html += kpiCard("إجمالي المبلغ المُنفق", fmtNum(totalSpent) + " ج.م", { small: true });
+        html += kpiCard("إجمالي الوصول", fmtNum(totalReach));
+        html += kpiCard("إجمالي النقرات", fmtNum(totalClicks));
+        html += kpiCard("متوسط نسبة النقر", avgCtr + "%");
+        html += '</div>';
+
+        html += '<table class="simple" style="margin-top:12px;"><thead><tr>' +
+          '<th>الحملة</th><th>المبلغ المُنفق</th><th>النتائج</th><th>تكلفة النتيجة</th><th>الوصول</th><th>النقرات</th><th>نسبة النقر</th>' +
+          '</tr></thead><tbody>';
+        ads.forEach(function (a) {
+          html += '<tr><td>' + escapeHtml(a.campaign_name) + '</td>' +
+            '<td>' + fmtNum(a.amount_spent) + ' ج.م</td>' +
+            '<td>' + fmtNum(a.results) + ' ' + resultLabel(a.result_indicator) + '</td>' +
+            '<td>' + (a.cost_per_result != null ? fmtNum(a.cost_per_result) + ' ج.م' : '—') + '</td>' +
+            '<td>' + fmtNum(a.reach) + '</td>' +
+            '<td>' + fmtNum(a.link_clicks) + '</td>' +
+            '<td>' + (a.ctr != null ? a.ctr + '%' : '—') + '</td></tr>';
+        });
+        html += '</tbody></table>';
+        if (minStart && maxEnd) {
+          html += '<p style="font-size:11px;color:var(--c-muted);margin-top:8px;">بيانات التقرير من ' + minStart + ' لحد ' + maxEnd + '</p>';
+        }
+      }
+      if (role === "approver" || role === "general_manager" || role === "super_admin") {
+        html += '<div style="text-align:left;margin-top:10px;"><button class="btn ghost sm" id="import-ads-btn">+ استيراد تقرير حملات إعلانات</button></div>';
+      }
+      html += '</div>';
+
       container.innerHTML = html;
       var btn = document.getElementById("add-week-metrics-btn");
       if (btn) btn.onclick = openMetricsModal;
+      var adsBtn = document.getElementById("import-ads-btn");
+      if (adsBtn) adsBtn.onclick = openAdImportModal;
     }).catch(function (e) {
       container.innerHTML = '<div class="err-msg">تعذّر تحميل الملخص: ' + e.message + '</div>';
     });
@@ -136,6 +207,142 @@
       if (vals.length) result.engagement = Math.round((vals.reduce(function (a, b) { return a + b; }, 0) / vals.length) * 10) / 10;
     }
     return result;
+  }
+
+  // ---------- استيراد تقرير حملات إعلانات مدفوعة (Meta Ads Manager — Campaigns export) ----------
+  // مختلف عن استيراد المؤشرات الأسبوعية فوق: أعمدة ثابتة معروفة (تصدير Meta Ads نفسه)،
+  // فبنعتمد على تطابق تام لاسم العمود (مش كلمات مفتاحية) لتفادي أي لخبطة.
+  // بيدوّر على أول candidate (بالترتيب — الأولوية للأول) له تطابق تام مع عمود في الهيدر.
+  // مهم إن الدور يبقى على الـ candidates مش على أعمدة الهيدر، عشان مثلاً "CTR (all)"
+  // ظاهر في الملف قبل "CTR (link click-through rate)" بس إحنا عايزين التاني بالأولوية.
+  function findExactCol(headers, candidates) {
+    var lowerHeaders = headers.map(function (h) { return String(h || "").trim().toLowerCase(); });
+    for (var c = 0; c < candidates.length; c++) {
+      var i = lowerHeaders.indexOf(candidates[c]);
+      if (i !== -1) return i;
+    }
+    return -1;
+  }
+
+  // بيرجع مصفوفة صفوف — صف واحد لكل حملة (campaign_name)، الأرقام مجمّعة (sum) لو
+  // نفس الحملة ظهرت أكتر من مرة في الملف (بيحصل لأن التصدير بيبقى على مستوى مجموعة الإعلان)
+  function parseAdCampaignsCsv(text) {
+    var lines = text.split(/\r?\n/).filter(function (l) { return l.trim().length; });
+    if (lines.length < 2) throw new Error("الملف فاضي أو مش بصيغة CSV مفهومة");
+    var headers = splitCsvLine(lines[0]);
+    var idx = {
+      name: findExactCol(headers, ["campaign name"]),
+      spent: findExactCol(headers, ["amount spent (egp)", "amount spent"]),
+      impressions: findExactCol(headers, ["impressions"]),
+      reach: findExactCol(headers, ["reach"]),
+      results: findExactCol(headers, ["results"]),
+      resultIndicator: findExactCol(headers, ["result indicator"]),
+      linkClicks: findExactCol(headers, ["link clicks"]),
+      ctr: findExactCol(headers, ["ctr (link click-through rate)", "ctr (all)"]),
+      reportStart: findExactCol(headers, ["reporting starts"]),
+      reportEnd: findExactCol(headers, ["reporting ends"])
+    };
+    if (idx.name === -1) throw new Error('معرفناش نلاقي عمود "Campaign name" في الملف — تأكد إنه تصدير حملات من Meta Ads Manager');
+
+    var byName = {}, order = [];
+    lines.slice(1).map(splitCsvLine).forEach(function (r) {
+      var name = (r[idx.name] || "").trim();
+      if (!name) return;
+      var spent = idx.spent !== -1 ? (toNumber(r[idx.spent]) || 0) : 0;
+      var impressions = idx.impressions !== -1 ? (toNumber(r[idx.impressions]) || 0) : 0;
+      var reach = idx.reach !== -1 ? (toNumber(r[idx.reach]) || 0) : 0;
+      if (!spent && !impressions && !reach) return; // تجاهل صفوف إعلانات مش شغالة (كل الأرقام صفر)
+
+      if (!byName[name]) {
+        byName[name] = {
+          campaign_name: name, amount_spent: 0, impressions: 0, reach: 0, results: 0,
+          result_indicator: idx.resultIndicator !== -1 ? (r[idx.resultIndicator] || null) : null,
+          link_clicks: 0, ctrSum: 0, ctrCount: 0, reporting_start: null, reporting_end: null
+        };
+        order.push(name);
+      }
+      var row = byName[name];
+      row.amount_spent += spent;
+      row.impressions += impressions;
+      row.reach += reach;
+      if (idx.results !== -1) row.results += (toNumber(r[idx.results]) || 0);
+      if (idx.linkClicks !== -1) row.link_clicks += (toNumber(r[idx.linkClicks]) || 0);
+      if (idx.ctr !== -1) { var c = toNumber(r[idx.ctr]); if (c != null) { row.ctrSum += c; row.ctrCount++; } }
+      if (idx.reportStart !== -1 && r[idx.reportStart] && (!row.reporting_start || r[idx.reportStart] < row.reporting_start)) row.reporting_start = r[idx.reportStart];
+      if (idx.reportEnd !== -1 && r[idx.reportEnd] && (!row.reporting_end || r[idx.reportEnd] > row.reporting_end)) row.reporting_end = r[idx.reportEnd];
+    });
+
+    return order.map(function (name) {
+      var row = byName[name];
+      return {
+        campaign_name: row.campaign_name,
+        amount_spent: Math.round(row.amount_spent * 100) / 100,
+        impressions: row.impressions,
+        reach: row.reach,
+        results: row.results,
+        result_indicator: row.result_indicator,
+        cost_per_result: row.results > 0 ? Math.round((row.amount_spent / row.results) * 100) / 100 : null,
+        link_clicks: row.link_clicks,
+        ctr: row.ctrCount ? Math.round((row.ctrSum / row.ctrCount) * 1000) / 1000 : null,
+        reporting_start: row.reporting_start,
+        reporting_end: row.reporting_end
+      };
+    });
+  }
+
+  function openAdImportModal() {
+    var backdrop = document.createElement("div");
+    backdrop.className = "modal-backdrop";
+    backdrop.innerHTML = '<div class="modal" style="max-width:460px;"><div class="modal-head"><h3>استيراد تقرير حملات إعلانات</h3>' +
+      '<button class="modal-close">×</button></div>' +
+      '<p style="font-size:12px;color:var(--c-muted);">ارفع ملف CSV تصدير الحملات من Meta Ads Manager — هيستبدل أي تقرير قديم بالكامل بالتقرير الجديد.</p>' +
+      '<div class="field"><input type="file" id="ad-csv-file" accept=".csv,text/csv"></div>' +
+      '<div id="ad-csv-status" style="font-size:11px;color:var(--c-muted);margin-bottom:10px;"></div>' +
+      '<div style="text-align:left;"><button class="btn" id="ad-csv-save" disabled>حفظ واستبدال</button></div></div>';
+    document.body.appendChild(backdrop);
+    backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
+    backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
+
+    var parsedRows = null;
+    var fileInput = document.getElementById("ad-csv-file");
+    var status = document.getElementById("ad-csv-status");
+    var saveBtn = document.getElementById("ad-csv-save");
+
+    fileInput.onchange = function () {
+      var file = fileInput.files[0];
+      if (!file) return;
+      status.textContent = "بيقرأ الملف…";
+      saveBtn.disabled = true;
+      var reader = new FileReader();
+      reader.onload = function () {
+        try {
+          parsedRows = parseAdCampaignsCsv(String(reader.result));
+          if (!parsedRows.length) {
+            status.textContent = "معرفناش نلاقي بيانات حملات شغالة في الملف";
+            return;
+          }
+          status.textContent = "لقينا " + parsedRows.length + " حملة — اضغط حفظ عشان تستبدل التقرير القديم";
+          saveBtn.disabled = false;
+        } catch (e) {
+          status.textContent = "تعذّر قراءة الملف: " + e.message;
+        }
+      };
+      reader.readAsText(file);
+    };
+
+    saveBtn.onclick = function () {
+      if (!parsedRows || !parsedRows.length) return;
+      var me = window.SSMPDAuth.currentAdmin;
+      saveBtn.disabled = true;
+      window.SSMPDDb.clearAdCampaigns().then(function () {
+        return window.SSMPDDb.insertAdCampaigns(parsedRows.map(function (r) {
+          return Object.assign({}, r, { imported_by: me.id });
+        }));
+      }).then(function () {
+        backdrop.remove();
+        render(document.getElementById("view-container"));
+      }).catch(function (e) { alert("خطأ: " + e.message); saveBtn.disabled = false; });
+    };
   }
 
   function openMetricsModal() {

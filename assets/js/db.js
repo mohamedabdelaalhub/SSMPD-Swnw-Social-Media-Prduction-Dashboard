@@ -109,6 +109,18 @@
       return handle(client.from("weekly_social_metrics").upsert(row, { onConflict: "week_start" }).select().single());
     },
 
+    // ---------- ad_campaigns (تقرير حملات إعلانات مدفوعة مستورد من CSV) ----------
+    listAdCampaigns: function () {
+      return handle(client.from("ad_campaigns").select("*").order("amount_spent", { ascending: false }));
+    },
+    // بيمسح التقرير القديم بالكامل — كل استيراد جديد بيستبدل القديم (مش تراكمي)
+    clearAdCampaigns: function () {
+      return handle(client.from("ad_campaigns").delete().neq("id", "00000000-0000-0000-0000-000000000000"));
+    },
+    insertAdCampaigns: function (rows) {
+      return handle(client.from("ad_campaigns").insert(rows));
+    },
+
     // ---------- realtime ----------
     subscribeTable: function (table, onChange) {
       var channel = client
