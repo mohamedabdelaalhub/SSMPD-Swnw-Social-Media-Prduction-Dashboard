@@ -147,8 +147,8 @@ setTimeout(() => {
   assert(/SSMPD/.test(text), "الشِل العام اترسم (لوجو SSMPD ظاهر)");
   assert(/سوبر أدمن/.test(text), "بادچ الدور ظاهر (سوبر أدمن)");
   // .tab-btn دلوقتي بتتكرر مرتين (شريط التابات العادي + نسخة جوه قائمة الموبايل المنسدلة الجديدة)
-  assert(rootEl.querySelectorAll("#tabs-bar .tab-btn").length === 7, "كل الـ 7 تابات ظاهرة للسوبر أدمن (بما فيهم تاب النشر الجديد)");
-  assert(rootEl.querySelectorAll("#mobile-menu .tab-btn").length === 7, "نسخة التابات جوه قائمة الموبايل المنسدلة كمان كاملة (٧)");
+  assert(rootEl.querySelectorAll("#tabs-bar .tab-btn").length === 9, "كل الـ 9 تابات ظاهرة للسوبر أدمن (بما فيهم أرشيف المرضى وإدارة الليدز)");
+  assert(rootEl.querySelectorAll("#mobile-menu .tab-btn").length === 9, "نسخة التابات جوه قائمة الموبايل المنسدلة كمان كاملة (٩)");
   assert(rootEl.querySelector(".menu-toggle") != null, "زرار القائمة المنسدلة (اسم+سهم) للموبايل ظاهر في الشِل");
   assert(rootEl.querySelector("#mobile-menu .mm-name") != null && rootEl.querySelector("#mobile-menu .mm-role") != null, "القائمة المنسدلة فيها الاسم والدور بالترتيب المطلوب");
 
