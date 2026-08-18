@@ -210,6 +210,17 @@ setTimeout(() => {
           assert(RolesMod.canSeeTab("general_manager", "publish"), "المدير العام يشوف تاب النشر");
           assert(RolesMod.canSeeTab("super_admin", "publish"), "السوبر أدمن يشوف تاب النشر");
 
+          // تعدد الأدوار: مستخدم روله الأساسي customer_service ومعاه رول إضافي
+          // reception (زي مثال المستخدم بالظبط) لازم يشوف صلاحيات الاتنين مع بعض
+          const multiRoleAdmin = { role: "customer_service", roles: ["customer_service", "reception"] };
+          assert(RolesMod.hasRole(multiRoleAdmin, "reception"), "hasRole بتلاقي الرول الإضافي");
+          assert(RolesMod.hasAnyRole(multiRoleAdmin, ["reception", "designer"]), "hasAnyRole بتشتغل مع رول إضافي واحد بس من القائمة");
+          assert(RolesMod.canSeeTab(multiRoleAdmin, "leads"), "مستخدم متعدد الأدوار (خدمة عملاء + استقبال) يشوف تاب الليدز");
+          assert(!RolesMod.hasRole(multiRoleAdmin, "designer"), "hasRole بترجع false لرول مش موجود عند المستخدم");
+          const singleRoleFallback = { role: "designer" }; // من غير .roles خالص — توافق قديم
+          assert(RolesMod.hasRole(singleRoleFallback, "designer") && !RolesMod.hasRole(singleRoleFallback, "approver"),
+            "لو مفيش .roles أصلاً، rolesOf بترجع [role] بس (توافق قديم)");
+
           // اختبار تاب النشر نفسه — المادة c3 (جاهزة للنشر) لازم تظهر بمحتواها وتصميمها المعتمد
           const publishBtn = [...rootEl.querySelectorAll(".tab-btn")].find(b => b.getAttribute("data-tab") === "publish");
           publishBtn.click();
