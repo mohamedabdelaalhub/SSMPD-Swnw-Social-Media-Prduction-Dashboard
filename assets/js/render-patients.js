@@ -70,8 +70,7 @@
       state.subTab = subs[0] ? subs[0].key : "dashboard";
     }
 
-    var html = '<div class="module-brand"><img src="assets/img/mark.svg" alt=""><span>أرشيف المرضى</span></div>';
-    html += '<div class="tabs" style="margin-bottom:16px;">' +
+    var html = '<div class="tabs" style="margin-bottom:16px;">' +
       subs.map(function (s) {
         return '<button class="tab-btn ' + (state.subTab === s.key ? "active" : "") + '" data-sub="' + s.key + '">' + s.label + '</button>';
       }).join("") + '</div>';

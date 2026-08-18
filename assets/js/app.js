@@ -131,7 +131,7 @@
     // شريط تابات عادي على الشاشات الكبيرة + زرار قائمة منسدلة (اسم + سهم) يظهر بدل الشريط على الموبايل/التابلت
     // ترتيب محتوى القائمة المنسدلة زي ما طلب المستخدم بالظبط: الاسم، ثم الدور، ثم قائمة التابات، ثم خروج
     var html = '<div class="app-shell"><div class="topbar">' +
-      '<div class="brand"><img src="assets/img/mark.svg" alt=""><span>SSMPD</span></div>' +
+      '<div class="brand"><img src="assets/img/mark.svg" alt=""><span id="brand-section-name">مركز عيادات سونو التخصصية</span></div>' +
       '<div class="who"><span class="role-badge">' + roleLabel + '</span> <b>' + displayName + '</b>' +
       '<button class="user-menu-icon" id="user-menu-btn" type="button" title="القائمة" aria-label="القائمة">☰</button>' +
       ' <button class="btn ghost sm" id="logout-btn">خروج</button></div>' +
@@ -245,6 +245,21 @@
     document.querySelectorAll(".tab-btn").forEach(function (b) {
       b.classList.toggle("active", b.getAttribute("data-tab") === tab);
     });
+
+    // اسم الشعار بيتغيّر حسب السكشن المفتوح دلوقتي: اسم المركز + اسم السكشن
+    var brandName = document.getElementById("brand-section-name");
+    if (brandName) {
+      brandName.textContent = "مركز عيادات سونو التخصصية" + (TAB_LABELS[tab] ? " | " + TAB_LABELS[tab] : "");
+    }
+
+    // فصل بصري: تابات السويت الرئيسي (SSMPD) بتتخفي تماماً لما نكون جوه موديول
+    // منفصل (أرشيف المرضى / الليدز / لوحة التحكم) عشان ميظهرش هيدر حاجتين مع بعض
+    var isSeparateModule = ["patients", "leads", "admin"].indexOf(tab) !== -1;
+    var tabsBar = document.getElementById("tabs-bar");
+    if (tabsBar) tabsBar.style.display = isSeparateModule ? "none" : "";
+    var mmTabs = document.querySelector("#mobile-menu .mm-tabs");
+    if (mmTabs) mmTabs.style.display = isSeparateModule ? "none" : "";
+
     var renderer = RENDERERS[tab];
     if (renderer) renderer.render(document.getElementById("view-container"));
   }
