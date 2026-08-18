@@ -18,7 +18,9 @@ function json(body: unknown, status = 200) {
   });
 }
 
-const CLOSED_STATUSES = ["booked", "rejected", "no_response", "invalid_number"];
+// "booked"/"booked_on_system" بقوا حالات "لسه شغالة" بعد إضافة خطوة الاستقبال —
+// الإقفال الفعلي بقى بس عند "تم إجراء الخدمة" أو أي حالة رفض/عدم رد
+const CLOSED_STATUSES = ["service_done", "rejected", "no_response", "invalid_number"];
 
 async function getCallerAdmin(req: Request) {
   const authHeader = req.headers.get("Authorization");
@@ -35,7 +37,14 @@ async function getCallerAdmin(req: Request) {
     .eq("user_id", user.id)
     .eq("active", true)
     .maybeSingle();
-  return row ?? null;
+  if (!row) return null;
+  const { data: extra } = await admin.from("admin_extra_roles").select("role").eq("admin_id", row.id);
+  return { ...row, extra_roles: (extra ?? []).map((r: { role: string }) => r.role) };
+}
+
+// true لو الرول الأساسي أو أي من الأدوار الإضافية موجود في القائمة
+function roleIn(caller: { role: string; extra_roles?: string[] }, roles: string[]): boolean {
+  return roles.includes(caller.role) || (caller.extra_roles ?? []).some((r) => roles.includes(r));
 }
 
 Deno.serve(async (req) => {
@@ -44,7 +53,7 @@ Deno.serve(async (req) => {
 
   const caller = await getCallerAdmin(req);
   if (!caller) return json({ error: "غير مصرح — سجّل دخولك تاني" }, 401);
-  const allowed = ["reception", "customer_service", "general_manager", "super_admin"].includes(caller.role);
+  const allowed = roleIn(caller, ["reception", "customer_service", "general_manager", "super_admin"]);
   if (!allowed) return json({ error: "مفيش صلاحية موديول الليدز" }, 403);
 
   const url = new URL(req.url);
@@ -62,27 +71,59 @@ Deno.serve(async (req) => {
     return json({ employees: employees ?? [] });
   }
 
-  // داشبورد الإدارة: إجماليات مفتوح/مغلق + توزيع حسب الحالة
+  // داشبورد الإدارة: إجماليات مفتوح/مغلق + توزيع حسب الحالة + الدخل من الفواتير
+  // مجمّع حسب الموظف اللي أنهى الحجز (booked_by) — طلب المستخدم
   if (url.searchParams.get("stats") === "1") {
-    if (!["general_manager", "super_admin"].includes(caller.role)) {
+    if (!roleIn(caller, ["general_manager", "super_admin"])) {
       return json({ error: "داشبورد الإدارة مقصور على المدير العام/السوبر أدمن" }, 403);
     }
     const admin1 = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
-    const [{ count: totalOpen }, { count: totalClosed }, { count: totalBooked }, byStatus] = await Promise.all([
+    const [{ count: totalOpen }, { count: totalClosed }, { count: totalBooked }, byStatus, invoicesRes] = await Promise.all([
       admin1.from("leads").select("id", { count: "exact", head: true }).not("current_status", "in", `(${CLOSED_STATUSES.join(",")})`),
       admin1.from("leads").select("id", { count: "exact", head: true }).in("current_status", CLOSED_STATUSES),
       admin1.from("leads").select("id", { count: "exact", head: true }).eq("current_status", "booked"),
       admin1.from("leads").select("current_status"),
+      admin1.from("lead_invoices").select("amount, lead:leads!inner(booked_by)"),
     ]);
     const statusCounts: Record<string, number> = {};
     (byStatus.data ?? []).forEach((r: { current_status: string }) => {
       statusCounts[r.current_status] = (statusCounts[r.current_status] ?? 0) + 1;
     });
+
+    // إجمالي الدخل + تجميعه حسب الموظف المسؤول عن إتمام الحجز (booked_by)
+    let totalIncome = 0;
+    const incomeByEmployee: Record<string, { total: number; count: number }> = {};
+    type InvoiceRow = { amount: number; lead: { booked_by: string | null } | { booked_by: string | null }[] | null };
+    (invoicesRes.data as InvoiceRow[] | null ?? []).forEach((r) => {
+      const amount = Number(r.amount) || 0;
+      totalIncome += amount;
+      const leadRel = Array.isArray(r.lead) ? r.lead[0] : r.lead;
+      const bookedBy = leadRel?.booked_by ?? "unknown";
+      if (!incomeByEmployee[bookedBy]) incomeByEmployee[bookedBy] = { total: 0, count: 0 };
+      incomeByEmployee[bookedBy].total += amount;
+      incomeByEmployee[bookedBy].count += 1;
+    });
+    const employeeIds = Object.keys(incomeByEmployee).filter((id) => id !== "unknown");
+    let employeeNames: Record<string, string> = {};
+    if (employeeIds.length) {
+      const { data: names } = await admin1.from("admins").select("id, name").in("id", employeeIds);
+      (names ?? []).forEach((n: { id: string; name: string }) => { employeeNames[n.id] = n.name; });
+    }
+    const incomeByEmployeeArr = Object.keys(incomeByEmployee).map((id) => ({
+      employee_id: id === "unknown" ? null : id,
+      employee_name: id === "unknown" ? "غير معروف" : (employeeNames[id] || "—"),
+      total: incomeByEmployee[id].total,
+      invoices_count: incomeByEmployee[id].count,
+    })).sort((a, b) => b.total - a.total);
+
     return json({
       open: totalOpen ?? 0,
       closed: totalClosed ?? 0,
       booked: totalBooked ?? 0,
       by_status: statusCounts,
+      total_income: totalIncome,
+      invoices_count: (invoicesRes.data ?? []).length,
+      income_by_employee: incomeByEmployeeArr,
     });
   }
 
@@ -104,7 +145,9 @@ Deno.serve(async (req) => {
     .order("created_at", { ascending: false });
 
   // خدمة العملاء تشوف بس الليدز المُسندة لها (RLS بتفرضها أصلاً، بس بنفلتر هنا كمان للوضوح)
-  if (caller.role === "customer_service") {
+  // — إلا لو عنده رول تاني بيديه صلاحية أوسع (استقبال/مدير عام/سوبر أدمن)
+  const hasWiderAccess = roleIn(caller, ["reception", "general_manager", "super_admin"]);
+  if (!hasWiderAccess && roleIn(caller, ["customer_service"])) {
     query = query.eq("assigned_to", caller.id);
   }
 
