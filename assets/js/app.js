@@ -107,7 +107,7 @@
     var admin = window.SSMPDAuth.currentAdmin;
     var tabs = Object.keys(TAB_LABELS).filter(function (t) { return R.canSeeTab(admin, t); });
     var displayName = escapeHtml(admin.name || admin.email);
-    var roleLabel = R.label(admin.role);
+    var roleLabel = R.labelAll(admin);
 
     // قائمة منسدلة موحّدة (أيقونة بجانب الاسم) — بالترتيب اللي طلبه المستخدم بالظبط:
     // الاسم، ثم الدور، ثم SSMPD، ثم أرشيف المرضى، ثم إدارة الليدز والتواصل، ثم تغيير كلمة السر،
@@ -205,7 +205,7 @@
     // — كده الريفريش/رجوع للصفحة (F5) ما يرجعش المستخدم للرئيسية من غير داعي
     var savedTab = null;
     try { savedTab = sessionStorage.getItem(ACTIVE_TAB_KEY); } catch (e) {}
-    var startTab = (savedTab && tabs.indexOf(savedTab) !== -1) ? savedTab : R.defaultTab(admin.role);
+    var startTab = (savedTab && tabs.indexOf(savedTab) !== -1) ? savedTab : R.defaultTab(admin);
     switchTab(startTab);
     setupRealtime();
   }

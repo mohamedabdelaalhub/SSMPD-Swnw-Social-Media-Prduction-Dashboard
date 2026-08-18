@@ -7,14 +7,20 @@
 
   var STATUS_LABELS = {
     new: "جديد", in_progress: "قيد المتابعة", booked: "تم الحجز",
+    booked_on_system: "تم الحجز على سيستم المركز", service_done: "تم إجراء الخدمة",
     interested_undecided: "مهتم لسه مقررش", rejected: "مرفوض",
     no_response: "لا يوجد رد", invalid_number: "رقم غير صحيح"
   };
   var STATUS_PILL_CLASS = {
     new: "received", in_progress: "approval", booked: "approved",
+    booked_on_system: "approved", service_done: "approved",
     interested_undecided: "approval", rejected: "revision",
     no_response: "draft", invalid_number: "revision"
   };
+  // الليدز اللي في مرحلة "شغالة" مع الاستقبال (بعد ما خدمة العملاء تخلص وقبل ما
+  // الخدمة تتم فعلياً) — رفع فاتورة الخدمة متاح خلالها (نفس ALLOWED_STATUSES_FOR_INVOICE
+  // في lead-invoice-upload Edge Function)
+  var INVOICE_ALLOWED_STATUSES = ["booked", "booked_on_system", "service_done"];
   var SOURCE_LABELS = { whatsapp: "واتساب", messenger: "ماسنجر" };
   var SERVICE_LABELS = {
     checkup: "كشف", consultation: "استشارة", radiology: "أشعة", lab: "تحاليل", nursing: "تمريض",
@@ -22,7 +28,9 @@
   };
   var PRIORITY_LABELS = { high: "عالية", medium: "متوسطة", normal: "عادية" };
   var RESULT_LABELS = { answered: "تم الرد", no_answer: "لا يوجد رد", busy: "مشغول", call_back_later: "اتصال لاحقاً", other: "أخرى" };
-  var CLOSED_STATUSES = ["booked", "rejected", "no_response", "invalid_number"];
+  // "booked"/"booked_on_system" بقوا حالات "لسه شغالة" (مش مغلقة) بعد إضافة خطوة
+  // الاستقبال — الإقفال الفعلي بقى بس عند "تم إجراء الخدمة" أو أي حالة رفض/عدم رد
+  var CLOSED_STATUSES = ["service_done", "rejected", "no_response", "invalid_number"];
 
   function escapeHtml(s) {
     return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -40,9 +48,9 @@
   function fmtNum(n) { return (n || 0).toLocaleString("en-US"); }
 
   var me = null; // window.SSMPDAuth.currentAdmin
-  function isManager() { return !!(me && (me.role === "general_manager" || me.role === "super_admin")); }
-  function isReception() { return !!(me && (me.role === "reception" || isManager())); }
-  function isCS() { return !!(me && (me.role === "customer_service" || isManager())); }
+  function isManager() { return !!(me && window.SSMPDRoles.hasAnyRole(me, ["general_manager", "super_admin"])); }
+  function isReception() { return !!(me && (window.SSMPDRoles.hasRole(me, "reception") || isManager())); }
+  function isCS() { return !!(me && (window.SSMPDRoles.hasRole(me, "customer_service") || isManager())); }
 
   var SUB_SCREENS = [
     { key: "reception", label: "الاستقبال" },
@@ -266,6 +274,7 @@
         '<div class="kpi-card"><div class="label">ليدز مفتوحة</div><div class="value">' + fmtNum(res.open) + '</div></div>' +
         '<div class="kpi-card"><div class="label">ليدز مغلقة</div><div class="value">' + fmtNum(res.closed) + '</div></div>' +
         '<div class="kpi-card"><div class="label">تم الحجز</div><div class="value small">' + fmtNum(res.booked) + '</div></div>' +
+        '<div class="kpi-card"><div class="label">إجمالي دخل الفواتير</div><div class="value small">' + fmtNum(res.total_income) + ' ج.م</div></div>' +
         '</div>';
 
       html += '<div class="section"><h3>توزيع حسب الحالة</h3>';
@@ -276,6 +285,20 @@
         html += '<tr><td><span class="status-pill ' + (STATUS_PILL_CLASS[k] || "draft") + '">' + STATUS_LABELS[k] + '</span></td><td>' + fmtNum(byStatus[k] || 0) + '</td></tr>';
       });
       html += '</tbody></table></div>';
+
+      // الدخل من فواتير الليدز مجمّع حسب الموظف اللي أنهى الحجز (booked_by)
+      html += '<div class="section"><h3>الدخل حسب الموظف المسؤول عن إتمام الحجز</h3>';
+      var byEmp = res.income_by_employee || [];
+      if (!byEmp.length) {
+        html += '<p style="font-size:13px;color:var(--c-muted);">مفيش فواتير مرفوعة لسه.</p>';
+      } else {
+        html += '<table class="simple"><thead><tr><th>الموظف</th><th>عدد الفواتير</th><th>إجمالي الدخل</th></tr></thead><tbody>';
+        byEmp.forEach(function (e) {
+          html += '<tr><td>' + escapeHtml(e.employee_name) + '</td><td>' + fmtNum(e.invoices_count) + '</td><td>' + fmtNum(e.total) + ' ج.م</td></tr>';
+        });
+        html += '</tbody></table>';
+      }
+      html += '</div>';
 
       view.innerHTML = html;
     }).catch(function (e) { view.innerHTML = '<div class="err-msg">خطأ: ' + e.message + '</div>'; });
@@ -472,7 +495,7 @@
         if (res.error) throw res.error;
         var lead = res.data;
         var calls = [window.SSMPDDb.listLeadAttempts(leadId), window.SSMPDDb.listLeadStatusLog(leadId)];
-        if (lead.current_status === "booked") calls.push(window.SSMPDDb.listLeadInvoices(leadId));
+        if (INVOICE_ALLOWED_STATUSES.indexOf(lead.current_status) !== -1) calls.push(window.SSMPDDb.listLeadInvoices(leadId));
         return Promise.all(calls).then(function (r) {
           return { lead: lead, attempts: r[0] || [], statusLog: r[1] || [], invoices: r[2] || [] };
         });
@@ -506,7 +529,7 @@
         '<div><label>الأولوية</label><select id="lm-priority">' +
         Object.keys(PRIORITY_LABELS).map(function (k) { return '<option value="' + k + '" ' + (k === lead.priority ? "selected" : "") + '>' + PRIORITY_LABELS[k] + '</option>'; }).join("") +
         '</select></div>' +
-        '<div id="lm-booking-wrap" style="display:' + (lead.current_status === "booked" ? "flex" : "none") + ';gap:8px;">' +
+        '<div id="lm-booking-wrap" style="display:' + (INVOICE_ALLOWED_STATUSES.indexOf(lead.current_status) !== -1 ? "flex" : "none") + ';gap:8px;">' +
         '<div><label>رقم/مرجع الحجز</label><input id="lm-booking" value="' + escapeHtml(lead.booking_reference || "") + '" style="width:140px;"></div>' +
         '<div><label>تاريخ الحجز</label><input id="lm-booking-date" type="date" value="' + (lead.booking_date || "") + '"></div></div>' +
         '<button class="btn ghost sm" id="lm-save-status">حفظ</button></div>' +
@@ -548,9 +571,14 @@
       }
       html += '</div>';
 
-      // فاتورة الخدمة (لو الليد حجز فعلاً)
-      if (lead.current_status === "booked") {
+      // فاتورة الخدمة (متاحة من "تم الحجز" لحد "تم إجراء الخدمة") — رفعها هو نفسه
+      // اللي بيعمل التحويل التلقائي لملف مريض في الأرشيف (مطابقة بالتليفون وإلا
+      // إنشاء مريض جديد) وبيقفل الليد بـ"تم إجراء الخدمة" تلقائياً
+      if (INVOICE_ALLOWED_STATUSES.indexOf(lead.current_status) !== -1) {
         html += '<div style="border-top:1px solid var(--c-border);padding-top:14px;margin-top:6px;"><label style="font-size:12px;color:var(--c-muted);display:block;margin-bottom:8px;">فاتورة الخدمة (' + invoices.length + ')</label>';
+        if (lead.patient_id) {
+          html += '<p style="font-size:12px;color:var(--c-muted);margin-bottom:8px;">✓ اتحوّل لملف مريض في الأرشيف (' + (lead.patient_type === "existing" ? "مريض قديم" : "مريض جديد") + ')</p>';
+        }
         if (invoices.length) {
           invoices.forEach(function (inv) {
             html += '<div style="font-size:12px;padding:6px 0;border-bottom:1px solid var(--c-border);">' +
@@ -564,7 +592,7 @@
           '<div><label>المبلغ</label><input id="iv-amount" type="number" min="0" step="0.01" style="width:100px;"></div>' +
           '<div><label>اسم الخدمة</label><input id="iv-service" style="width:140px;"></div>' +
           '<div><label>الملف (صورة / PDF / إكسيل)</label><input type="file" id="iv-file" accept="image/*,.pdf,.xlsx,.xls"></div>' +
-          '<button class="btn sm" id="iv-save">رفع الفاتورة</button></div>' +
+          '<button class="btn sm" id="iv-save">رفع الفاتورة (وإقفال الخدمة)</button></div>' +
           '<div id="iv-status" style="font-size:12px;color:var(--c-muted);margin-top:6px;"></div></div>';
       }
 
@@ -574,7 +602,7 @@
 
       var statusSelect = document.getElementById("lm-status");
       var bookingWrap = document.getElementById("lm-booking-wrap");
-      statusSelect.onchange = function () { bookingWrap.style.display = statusSelect.value === "booked" ? "flex" : "none"; };
+      statusSelect.onchange = function () { bookingWrap.style.display = INVOICE_ALLOWED_STATUSES.indexOf(statusSelect.value) !== -1 ? "flex" : "none"; };
 
       document.getElementById("lm-save-status").onclick = function () {
         var errBox = document.getElementById("lm-status-err");

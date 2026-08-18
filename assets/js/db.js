@@ -114,8 +114,21 @@
     claimInvite: function (adminRowId, userId) {
       return handle(client.from("admins").update({ user_id: userId }).eq("id", adminRowId).select().single());
     },
+    // بيرجع كل المستخدمين ومعاهم .extra_roles (مصفوفة أسماء الأدوار الإضافية،
+    // من جدول admin_extra_roles) — عشان لوحة "المستخدمون والصلاحيات" تقدر تعرض/تدير
+    // تعدد الأدوار. لو التحديث القديم للقاعدة (setup.sql الجديد) لسه ما اتشغّلش،
+    // الجدول ممكن ميبقاش موجود — بنتعامل مع الخطأ بهدوء ونرجّع extra_roles: [] للكل.
     listAdmins: function () {
-      return handle(client.from("admins").select("*").order("created_at", { ascending: true }));
+      return handle(client.from("admins").select("*").order("created_at", { ascending: true })).then(function (admins) {
+        return client.from("admin_extra_roles").select("admin_id, role").then(function (res) {
+          var byAdmin = {};
+          (res && !res.error && res.data ? res.data : []).forEach(function (r) {
+            (byAdmin[r.admin_id] = byAdmin[r.admin_id] || []).push(r.role);
+          });
+          admins.forEach(function (a) { a.extra_roles = byAdmin[a.id] || []; a.roles = [a.role].concat(a.extra_roles); });
+          return admins;
+        });
+      });
     },
     inviteAdmin: function (email, name, role) {
       return handle(client.from("admins").insert({ email: email, name: name, role: role, active: true }));
@@ -125,6 +138,16 @@
     },
     deleteAdmin: function (id) {
       return handle(client.from("admins").delete().eq("id", id));
+    },
+    // ---------- تعدد الأدوار (admin_extra_roles) ----------
+    listAdminExtraRoles: function (adminId) {
+      return handle(client.from("admin_extra_roles").select("*").eq("admin_id", adminId));
+    },
+    addAdminExtraRole: function (adminId, role, addedBy) {
+      return handle(client.from("admin_extra_roles").insert({ admin_id: adminId, role: role, added_by: addedBy || null }));
+    },
+    removeAdminExtraRole: function (adminId, role) {
+      return handle(client.from("admin_extra_roles").delete().eq("admin_id", adminId).eq("role", role));
     },
 
     // ---------- content_items ----------

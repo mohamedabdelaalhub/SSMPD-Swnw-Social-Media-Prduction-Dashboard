@@ -1,4 +1,4 @@
-/* SSMPD — الأدوار والصلاحيات */
+/* SSMPD — الأدوار والصلاحيات (بتدعم أكتر من رول لنفس المستخدم — admin.roles) */
 (function () {
   "use strict";
 
@@ -28,6 +28,11 @@
     admin: ["super_admin"]
   };
 
+  // بياخد صف admin كامل أو رول كـ string لوحده (توافق مع كود/اختبارات قديمة)
+  function normalizeAdmin(adminOrRole) {
+    return (typeof adminOrRole === "string") ? { role: adminOrRole } : (adminOrRole || {});
+  }
+
   var Roles = {
     ALL: ROLES,
 
@@ -35,42 +40,64 @@
       return ROLES[role] || role;
     },
 
-    // بياخد صف admin كامل (مش بس الرول) عشان تاب "أرشيف المرضى" بيتفحص بصلاحية
-    // has_archive_access المنفصلة عن الرول — لسه بيقبل الرول كـ string لوحده كمان
-    // (توافق مع كود/اختبارات قديمة كانت بتنادي canSeeTab(role, tab))
-    canSeeTab: function (adminOrRole, tab) {
-      var admin = (typeof adminOrRole === "string") ? { role: adminOrRole } : (adminOrRole || {});
-      if (tab === "patients") {
-        return !!admin.has_archive_access || admin.role === "super_admin";
-      }
-      var list = TAB_ACCESS[tab];
-      return !!list && list.indexOf(admin.role) !== -1;
+    // كل أدوار المستخدم الفعلية (الأساسي + الإضافية) — بتدعم admin.roles (مصفوفة،
+    // من auth.js بعد الدخول) ولو مش موجودة بترجع [admin.role] بس (توافق قديم)
+    rolesOf: function (adminOrRole) {
+      var admin = normalizeAdmin(adminOrRole);
+      if (Array.isArray(admin.roles) && admin.roles.length) return admin.roles;
+      return admin.role ? [admin.role] : [];
     },
 
-    defaultTab: function (role) {
-      if (role === "reception" || role === "customer_service") return "leads";
-      if (role === "nursing") return "patients";
-      if (role === "approver") return "review";
-      if (role === "designer") return "design";
-      if (role === "page_manager") return "production";
+    hasRole: function (adminOrRole, role) {
+      return Roles.rolesOf(adminOrRole).indexOf(role) !== -1;
+    },
+
+    hasAnyRole: function (adminOrRole, rolesList) {
+      var mine = Roles.rolesOf(adminOrRole);
+      return rolesList.some(function (r) { return mine.indexOf(r) !== -1; });
+    },
+
+    // كل أسماء أدوار المستخدم مجمّعة لعرض بادچ الدور — "خدمة عملاء، استقبال" مثلاً
+    labelAll: function (adminOrRole) {
+      return Roles.rolesOf(adminOrRole).map(Roles.label).join("، ");
+    },
+
+    // بياخد صف admin كامل (مش بس الرول) عشان تاب "أرشيف المرضى" بيتفحص بصلاحية
+    // has_archive_access المنفصلة عن الرول — لسه بيقبل الرول كـ string لوحده كمان
+    canSeeTab: function (adminOrRole, tab) {
+      var admin = normalizeAdmin(adminOrRole);
+      if (tab === "patients") {
+        return !!admin.has_archive_access || Roles.hasRole(admin, "super_admin");
+      }
+      var list = TAB_ACCESS[tab];
+      return !!list && Roles.hasAnyRole(admin, list);
+    },
+
+    defaultTab: function (adminOrRole) {
+      var admin = normalizeAdmin(adminOrRole);
+      if (Roles.hasRole(admin, "reception") || Roles.hasRole(admin, "customer_service")) return "leads";
+      if (Roles.hasRole(admin, "nursing")) return "patients";
+      if (Roles.hasRole(admin, "approver")) return "review";
+      if (Roles.hasRole(admin, "designer")) return "design";
+      if (Roles.hasRole(admin, "page_manager")) return "production";
       return "summary";
     },
 
-    isSuperAdmin: function (role) {
-      return role === "super_admin";
+    isSuperAdmin: function (adminOrRole) {
+      return Roles.hasRole(adminOrRole, "super_admin");
     },
 
     // المدير العام له كل صلاحيات المحتوى زي السوبر أدمن، بس من غير إدارة المستخدمين
-    canApprove: function (role) {
-      return role === "approver" || role === "general_manager" || role === "super_admin";
+    canApprove: function (adminOrRole) {
+      return Roles.hasAnyRole(adminOrRole, ["approver", "general_manager", "super_admin"]);
     },
 
-    canDesign: function (role) {
-      return role === "designer" || role === "general_manager" || role === "super_admin";
+    canDesign: function (adminOrRole) {
+      return Roles.hasAnyRole(adminOrRole, ["designer", "general_manager", "super_admin"]);
     },
 
-    canCreateContent: function (role) {
-      return role === "page_manager" || role === "general_manager" || role === "super_admin";
+    canCreateContent: function (adminOrRole) {
+      return Roles.hasAnyRole(adminOrRole, ["page_manager", "general_manager", "super_admin"]);
     }
   };
 

@@ -92,13 +92,13 @@
   // مين يقدر يعدّل المادة: السوبر أدمن والمدير العام دايماً، أو منشئ المادة نفسه
   function canEditItem(me, item) {
     if (!me || !item) return false;
-    if (me.role === "super_admin" || me.role === "general_manager") return true;
+    if (window.SSMPDRoles.hasAnyRole(me, ["super_admin", "general_manager"])) return true;
     return item.created_by === me.id;
   }
 
   // الحذف مقصور على السوبر أدمن والمدير العام (زي ما هو محدد في صلاحيات القاعدة RLS)
   function canDeleteItem(me) {
-    return !!(me && (me.role === "super_admin" || me.role === "general_manager"));
+    return !!(me && window.SSMPDRoles.hasAnyRole(me, ["super_admin", "general_manager"]));
   }
 
   // زراير تعديل/حذف — بتظهر حسب صلاحية الشخص الحالي، تُستخدم في كل شاشات عرض المادة

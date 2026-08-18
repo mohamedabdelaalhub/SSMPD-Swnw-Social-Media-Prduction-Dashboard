@@ -84,8 +84,8 @@
         html += kpiCard("متابعين جدد", current.new_followers || 0, dF);
         html += '</div><p style="font-size:11px;color:var(--c-muted);margin-top:8px;">آخر أسبوع مُدخَل: ' + current.week_start + '</p>';
       }
-      var role = window.SSMPDAuth.currentAdmin.role;
-      if (role === "approver" || role === "general_manager" || role === "super_admin") {
+      var me = window.SSMPDAuth.currentAdmin;
+      if (window.SSMPDRoles.hasAnyRole(me, ["approver", "general_manager", "super_admin"])) {
         html += '<div style="text-align:left;margin-top:10px;"><button class="btn ghost sm" id="add-week-metrics-btn">+ إدخال بيانات أسبوع جديد</button></div>';
       }
       html += '</div>';
@@ -131,7 +131,7 @@
           html += '<p style="font-size:11px;color:var(--c-muted);margin-top:8px;">بيانات التقرير من ' + minStart + ' لحد ' + maxEnd + '</p>';
         }
       }
-      if (role === "approver" || role === "general_manager" || role === "super_admin") {
+      if (window.SSMPDRoles.hasAnyRole(me, ["approver", "general_manager", "super_admin"])) {
         html += '<div style="text-align:left;margin-top:10px;"><button class="btn ghost sm" id="import-ads-btn">+ استيراد تقرير حملات إعلانات</button></div>';
       }
       html += '</div>';

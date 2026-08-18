@@ -38,8 +38,8 @@
   function fmtNum(n) { return (n || 0).toLocaleString("en-US"); }
 
   var me = null; // window.SSMPDAuth.currentAdmin
-  function canReview() { return !!(me && (me.has_archive_review_access || me.role === "super_admin")); }
-  function canUpload() { return !!(me && (me.has_archive_access || me.role === "super_admin")); }
+  function canReview() { return !!(me && (me.has_archive_review_access || window.SSMPDRoles.hasRole(me, "super_admin"))); }
+  function canUpload() { return !!(me && (me.has_archive_access || window.SSMPDRoles.hasRole(me, "super_admin"))); }
 
   var SUB_SCREENS = [
     { key: "dashboard", label: "الداشبورد العام" },

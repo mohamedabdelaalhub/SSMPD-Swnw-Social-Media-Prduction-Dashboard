@@ -24,15 +24,20 @@
         '<p style="font-size:11px;color:var(--c-muted);margin-top:8px;">هو اللي هيفتح رابط اللوحة ويعمل "حساب جديد" بنفس البريد ده وينشئ كلمة سره — إنت مش بتحط له كلمة سر.</p></div>';
 
       html += '<div class="section"><h3>كل المستخدمين (' + admins.length + ')</h3>' +
-        '<table class="simple"><thead><tr><th>الاسم</th><th>البريد</th><th>الدور</th><th>أرشيف المرضى</th><th>الحالة</th><th></th></tr></thead><tbody>';
+        '<table class="simple"><thead><tr><th>الاسم</th><th>البريد</th><th>الدور الأساسي</th><th>أدوار إضافية</th><th>أرشيف المرضى</th><th>الحالة</th><th></th></tr></thead><tbody>';
 
       admins.forEach(function (a) {
         var lastSuper = a.role === "super_admin" && a.active && activeSupers.length === 1;
+        var extraRoles = a.extra_roles || [];
         html += '<tr><td>' + escapeHtml(a.name || "—") + '</td><td>' + escapeHtml(a.email) + '</td>' +
           '<td><select data-role="' + a.id + '" ' + (lastSuper ? "disabled" : "") + '>' +
           Object.keys(R.ALL).map(function (k) {
             return '<option value="' + k + '" ' + (k === a.role ? "selected" : "") + '>' + R.label(k) + '</option>';
           }).join("") + '</select></td>' +
+          '<td>' + Object.keys(R.ALL).filter(function (k) { return k !== a.role; }).map(function (k) {
+            return '<label style="display:inline-flex;align-items:center;gap:3px;font-size:11px;margin-inline-end:8px;white-space:nowrap;">' +
+              '<input type="checkbox" data-extra-role="' + a.id + '" data-extra-role-value="' + k + '" ' + (extraRoles.indexOf(k) !== -1 ? "checked" : "") + '>' + R.label(k) + '</label>';
+          }).join("") + '</td>' +
           '<td style="text-align:center;"><input type="checkbox" data-archive="' + a.id + '" ' + (a.has_archive_access ? "checked" : "") + '></td>' +
           '<td>' + (a.user_id ? '<span class="status-pill approved">مفعّل</span>' : '<span class="status-pill draft">بانتظار إنشاء الحساب</span>') + '</td>' +
           '<td>' +
@@ -41,7 +46,8 @@
           '</td></tr>';
       });
       html += '</tbody></table>' +
-        '<p style="font-size:11px;color:var(--c-muted);margin-top:8px;">"أرشيف المرضى" صلاحية منفصلة عن الرول — أي مستخدم مفعّلة عنده بيقدر يوصل لتاب أرشيف المرضى مهما كان روله.</p></div>';
+        '<p style="font-size:11px;color:var(--c-muted);margin-top:8px;">"الدور الأساسي" بيتحكم في الشاشة الافتراضية وبادچ الدور. "أدوار إضافية" بتضيف صلاحيات دور تاني للمستخدم نفسه من غير ما تغيّر دوره الأساسي — مثلاً موظف خدمة عملاء تحب يبقى ليه كمان صلاحية الاستقبال أو إدارة المحتوى.</p>' +
+        '<p style="font-size:11px;color:var(--c-muted);margin-top:4px;">"أرشيف المرضى" صلاحية منفصلة عن الرول — أي مستخدم مفعّلة عنده بيقدر يوصل لتاب أرشيف المرضى مهما كان روله.</p></div>';
 
       container.innerHTML = html;
 
@@ -58,6 +64,16 @@
       container.querySelectorAll("[data-role]").forEach(function (sel) {
         sel.onchange = function () {
           window.SSMPDDb.updateAdmin(sel.getAttribute("data-role"), { role: sel.value }).catch(function (e) { alert("خطأ: " + e.message); render(container); });
+        };
+      });
+      container.querySelectorAll("[data-extra-role]").forEach(function (cb) {
+        cb.onchange = function () {
+          var adminId = cb.getAttribute("data-extra-role");
+          var role = cb.getAttribute("data-extra-role-value");
+          var action = cb.checked
+            ? window.SSMPDDb.addAdminExtraRole(adminId, role, myId)
+            : window.SSMPDDb.removeAdminExtraRole(adminId, role);
+          action.then(function () { render(container); }, function (e) { alert("خطأ: " + e.message); render(container); });
         };
       });
       container.querySelectorAll("[data-archive]").forEach(function (cb) {
