@@ -115,6 +115,11 @@ input,select,textarea{font-family:inherit; font-size:14px;}
 .topbar .brand{display:flex; align-items:center; gap:10px;}
 .topbar .brand img{height:26px;}
 .topbar .brand span{font-weight:800; font-size:14px; color:var(--c-primary);}
+
+/* رأس موحّد لكل موديول منفصل (أرشيف المرضى / إدارة الليدز) — نفس شكل .topbar .brand بالظبط */
+.module-brand{display:flex; align-items:center; gap:10px; margin-bottom:14px;}
+.module-brand img{height:26px;}
+.module-brand span{font-weight:800; font-size:18px; color:var(--c-primary);}
 .topbar .who{display:flex; align-items:center; gap:12px; font-size:13px; color:var(--c-muted);}
 .topbar .who b{color:var(--c-dark);}
 .role-badge{
@@ -141,6 +146,34 @@ input,select,textarea{font-family:inherit; font-size:14px;}
 }
 .menu-toggle b{font-weight:700;}
 .menu-toggle .mt-arrow{font-size:10px; color:var(--c-muted);}
+
+/* أيقونة القائمة المنسدلة الموحّدة بجانب الاسم (كل الشاشات) */
+.user-menu-icon{
+  background:transparent; border:1px solid var(--c-border); border-radius:8px;
+  width:30px; height:30px; font-size:14px; color:var(--c-dark); line-height:1; cursor:pointer;
+}
+.user-menu-icon:hover{background:var(--c-bg);}
+
+/* القائمة المنسدلة الموحّدة: الاسم، الدور، SSMPD، أرشيف المرضى، إدارة الليدز،
+   تغيير كلمة السر، لوحة التحكم، خروج — بالترتيب ده بالظبط */
+.user-dropdown{
+  display:none; position:fixed; top:58px; inset-inline-end:12px; z-index:45;
+  background:var(--c-card); border:1px solid var(--c-border); border-radius:var(--radius);
+  box-shadow:var(--shadow); padding:14px; min-width:230px; max-width:82vw;
+}
+.user-dropdown.open{display:block;}
+.user-dropdown .mm-name{font-weight:800; font-size:14px; margin-bottom:6px;}
+.user-dropdown .mm-role{margin-bottom:10px;}
+.user-dropdown .ud-items{
+  display:flex; flex-direction:column; gap:3px; margin-bottom:10px;
+  border-top:1px solid var(--c-border); border-bottom:1px solid var(--c-border); padding:8px 0;
+}
+.user-dropdown .ud-item{
+  background:transparent; border:none; padding:9px 10px; border-radius:8px; text-align:right;
+  width:100%; font-size:13px; font-weight:700; color:var(--c-dark);
+}
+.user-dropdown .ud-item:hover{background:var(--c-bg);}
+.user-dropdown .mm-logout{width:100%;}
 
 /* القائمة المنسدلة: الاسم، ثم الدور، ثم قائمة التابات، ثم خروج — بالترتيب ده بالظبط */
 .mobile-menu{
