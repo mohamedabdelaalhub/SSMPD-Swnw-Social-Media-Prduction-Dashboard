@@ -24,6 +24,8 @@ const CATEGORY_FOLDER_NAMES: Record<string, string> = {
   insurance: "Insurance",
   radiology: "Radiology",
   lab_result: "Lab_Results",
+  prescription: "Prescriptions",
+  eeg: "EEG_Brain_Scans",
   other: "Other",
 };
 
@@ -180,11 +182,15 @@ Deno.serve(async (req) => {
 
   const patientId = form.get("patient_id")?.toString();
   const category = form.get("category")?.toString();
+  const otherDescription = form.get("other_description")?.toString().trim() || null;
   const file = form.get("file");
 
   if (!patientId) return json({ error: "patient_id مطلوب" }, 400);
   if (!category || !CATEGORY_FOLDER_NAMES[category]) {
-    return json({ error: "category غير صالحة (id_document/insurance/radiology/lab_result/other)" }, 400);
+    return json({ error: "category غير صالحة (id_document/insurance/radiology/lab_result/prescription/eeg/other)" }, 400);
+  }
+  if (category === "other" && !otherDescription) {
+    return json({ error: "لازم توصف نوع الملف لما الفئة تكون \"أخرى\"" }, 400);
   }
   if (!(file instanceof File)) return json({ error: "الملف مطلوب" }, 400);
 
@@ -218,6 +224,7 @@ Deno.serve(async (req) => {
       .insert({
         patient_id: patientId,
         category,
+        other_description: otherDescription,
         drive_file_id: uploaded.id,
         file_name: file.name,
         file_size: bytes.byteLength,
@@ -225,7 +232,7 @@ Deno.serve(async (req) => {
         checksum,
         uploaded_by: caller.id,
       })
-      .select("id, category, file_name, file_size, mime_type, uploaded_at")
+      .select("id, category, other_description, file_name, file_size, mime_type, uploaded_at")
       .single();
 
     if (insertErr) return json({ error: insertErr.message }, 500);
