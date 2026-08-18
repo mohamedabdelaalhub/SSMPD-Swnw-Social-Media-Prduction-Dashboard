@@ -18,7 +18,9 @@ function json(body: unknown, status = 200) {
   });
 }
 
-const CLOSED_STATUSES = ["booked", "rejected", "no_response", "invalid_number"];
+// "booked"/"booked_on_system" بقوا حالات "لسه شغالة" بعد إضافة خطوة الاستقبال —
+// الإقفال الفعلي بقى بس عند "تم إجراء الخدمة" أو أي حالة رفض/عدم رد
+const CLOSED_STATUSES = ["service_done", "rejected", "no_response", "invalid_number"];
 
 // تطبيع رقم التليفون — نفس منطق موديول الأرشيف بالضبط عشان المطابقة تشتغل بين الجدولين
 function normalizePhone(raw: string): string {
@@ -46,7 +48,17 @@ async function getCallerAdmin(req: Request) {
     .eq("user_id", user.id)
     .eq("active", true)
     .maybeSingle();
-  return row ?? null;
+  if (!row) return null;
+  const { data: extra } = await admin
+    .from("admin_extra_roles")
+    .select("role")
+    .eq("admin_id", row.id);
+  return { ...row, extra_roles: (extra ?? []).map((r: { role: string }) => r.role) };
+}
+
+// true لو الرول الأساسي أو أي من الأدوار الإضافية موجود في القائمة
+function roleIn(caller: { role: string; extra_roles?: string[] }, roles: string[]): boolean {
+  return roles.includes(caller.role) || (caller.extra_roles ?? []).some((r) => roles.includes(r));
 }
 
 Deno.serve(async (req) => {
@@ -55,7 +67,7 @@ Deno.serve(async (req) => {
 
   const caller = await getCallerAdmin(req);
   if (!caller) return json({ error: "غير مصرح — سجّل دخولك تاني" }, 401);
-  const allowed = ["reception", "customer_service", "general_manager", "super_admin"].includes(caller.role);
+  const allowed = roleIn(caller, ["reception", "customer_service", "general_manager", "super_admin"]);
   if (!allowed) return json({ error: "مفيش صلاحية موديول الليدز" }, 403);
 
   let body: any;
@@ -130,12 +142,16 @@ Deno.serve(async (req) => {
     .maybeSingle();
   const patientType = matchedPatient ? "existing" : "new";
 
-  // 4) توزيع تلقائي: موظف customer_service الأقل عدد ليدز مفتوحة حالياً
-  const { data: csAdmins } = await admin
-    .from("admins")
-    .select("id")
-    .eq("role", "customer_service")
-    .eq("active", true);
+  // 4) توزيع تلقائي: موظف customer_service الأقل عدد ليدز مفتوحة حالياً — بيشمل
+  // برضه أي موظف عنده customer_service كرول إضافي (مش بس أساسي)، من غير تكرار
+  const [{ data: csPrimary }, { data: csExtra }] = await Promise.all([
+    admin.from("admins").select("id").eq("role", "customer_service").eq("active", true),
+    admin.from("admin_extra_roles").select("admin_id, admins!inner(active)").eq("role", "customer_service").eq("admins.active", true),
+  ]);
+  const csIds = new Set<string>();
+  (csPrimary ?? []).forEach((a: { id: string }) => csIds.add(a.id));
+  (csExtra ?? []).forEach((r: { admin_id: string }) => csIds.add(r.admin_id));
+  const csAdmins = Array.from(csIds).map((id) => ({ id }));
 
   let assignedTo: string | null = null;
   if (csAdmins && csAdmins.length > 0) {
