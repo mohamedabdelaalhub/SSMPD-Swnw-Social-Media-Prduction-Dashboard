@@ -814,7 +814,292 @@ begin
 end $$;
 
 -- ============================================================
---  9) أول سوبر أدمن
+--  9) مراجعة ملفات أرشيف المرضى (اعتماد قبل ما تبقى رسمية) — ٢٠٢٦-٠٨-١٨
+-- ============================================================
+-- قرار: الرفع لوحده مش كافي — لازم مسؤول تاني (صلاحية منفصلة عن صلاحية
+-- الرفع نفسها) يراجع ويعتمد الملف قبل ما يبقى جزء رسمي من ملف المريض.
+-- الملف بيدخل الحالة "pending" أول ما يترفع، ومحتاج اعتماد/رفض صريح.
+
+alter table public.admins add column if not exists has_archive_review_access boolean not null default false;
+
+alter table public.patient_files add column if not exists review_status text not null default 'pending';
+alter table public.patient_files drop constraint if exists patient_files_review_status_check;
+alter table public.patient_files add constraint patient_files_review_status_check
+  check (review_status in ('pending','approved','rejected'));
+alter table public.patient_files add column if not exists reviewed_by uuid references public.admins(id);
+alter table public.patient_files add column if not exists reviewed_at timestamptz;
+alter table public.patient_files add column if not exists review_notes text;
+
+alter table public.archive_access_log drop constraint if exists archive_access_log_action_check;
+alter table public.archive_access_log add constraint archive_access_log_action_check
+  check (action in ('view','download','upload','delete','review_approve','review_reject'));
+
+-- خدمة "كشف" جديدة في قائمة اهتمامات الليد (طلب المستخدم) — فوق "استشارة" في ترتيب الواجهة
+alter table public.leads drop constraint if exists leads_interested_service_check;
+alter table public.leads add constraint leads_interested_service_check
+  check (interested_service in ('checkup','consultation','radiology','lab','nursing','physiotherapy','treatment','other'));
+
+create or replace function public.has_archive_review_access()
+returns boolean language sql security definer stable set search_path = public as $$
+  select coalesce((
+    select has_archive_review_access or role in ('super_admin')
+    from public.admins where user_id = auth.uid() and active limit 1
+  ), false);
+$$;
+revoke all on function public.has_archive_review_access() from public;
+grant execute on function public.has_archive_review_access() to authenticated;
+
+-- تحديث/اعتماد الملف (تغيير review_status) مقصور على صاحب صلاحية المراجعة —
+-- منفصل تماماً عن سياسة "archive access writes files" اللي بتحكم الإدراج الأولي بس
+drop policy if exists "archive review updates files" on public.patient_files;
+create policy "archive review updates files" on public.patient_files
+  for update using (public.has_archive_review_access())
+  with check (public.has_archive_review_access());
+
+-- توسعة سياسات القراءة عشان مراجع عنده has_archive_review_access بس (من غير
+-- has_archive_access) يقدر يشوف المرضى/الملفات/اللوج برضه — مش لازم يكون رافع
+drop policy if exists "archive or leads read patients" on public.patients;
+create policy "archive or leads read patients" on public.patients
+  for select using (public.has_archive_access() or public.has_archive_review_access() or public.can_access_leads());
+
+drop policy if exists "archive access reads files" on public.patient_files;
+create policy "archive access reads files" on public.patient_files
+  for select using (public.has_archive_access() or public.has_archive_review_access());
+
+drop policy if exists "archive access reads log" on public.archive_access_log;
+create policy "archive access reads log" on public.archive_access_log
+  for select using (public.has_archive_access() or public.has_archive_review_access());
+
+-- ---------- سجل تعديلات حقول الليد (طلب المستخدم: شاشة الإدارة تعرف مين عدّل
+-- وعدّل إيه وامتى) — منفصل عن lead_status_log اللي مقصور على current_status بس ----------
+create table if not exists public.lead_field_changes (
+  id           uuid primary key default gen_random_uuid(),
+  lead_id      uuid not null references public.leads(id) on delete cascade,
+  changed_by   uuid references public.admins(id),
+  field_name   text not null,
+  old_value    text,
+  new_value    text,
+  changed_at   timestamptz not null default now()
+);
+create index if not exists lead_field_changes_lead_id_idx on public.lead_field_changes (lead_id);
+
+alter table public.lead_field_changes enable row level security;
+drop policy if exists "lead_field_changes select" on public.lead_field_changes;
+create policy "lead_field_changes select" on public.lead_field_changes
+  for select using (
+    public.is_super()
+    or public.my_role() in ('general_manager','reception')
+    or (public.my_role() = 'customer_service' and exists (
+      select 1 from public.leads l where l.id = lead_field_changes.lead_id and l.assigned_to = public.my_admin_id()
+    ))
+  );
+-- الإدراج بس من الـ Edge Function (service role) — مفيش سياسة insert للمستخدمين العاديين
+
+-- تريجر تسجيل تعديل priority/booking_reference/do_not_contact/assigned_to تلقائياً
+-- (current_status لوحده مغطى بالفعل بتريجر log_lead_status_change القديم)
+create or replace function public.log_lead_field_changes()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if new.priority is distinct from old.priority then
+    insert into public.lead_field_changes (lead_id, changed_by, field_name, old_value, new_value)
+    values (new.id, public.my_admin_id(), 'priority', old.priority, new.priority);
+  end if;
+  if new.booking_reference is distinct from old.booking_reference then
+    insert into public.lead_field_changes (lead_id, changed_by, field_name, old_value, new_value)
+    values (new.id, public.my_admin_id(), 'booking_reference', old.booking_reference, new.booking_reference);
+  end if;
+  if new.do_not_contact is distinct from old.do_not_contact then
+    insert into public.lead_field_changes (lead_id, changed_by, field_name, old_value, new_value)
+    values (new.id, public.my_admin_id(), 'do_not_contact', old.do_not_contact::text, new.do_not_contact::text);
+  end if;
+  if new.assigned_to is distinct from old.assigned_to then
+    insert into public.lead_field_changes (lead_id, changed_by, field_name, old_value, new_value)
+    values (new.id, public.my_admin_id(), 'assigned_to', old.assigned_to::text, new.assigned_to::text);
+  end if;
+  return new;
+end;
+$$;
+drop trigger if exists trg_log_lead_field_changes on public.leads;
+create trigger trg_log_lead_field_changes
+  before update on public.leads
+  for each row execute function public.log_lead_field_changes();
+
+-- ---------- الحجز الفعلي: تفاصيل إضافية + نقل تلقائي لقائمة "الحجوزات الفعلية" ----------
+-- (طلب المستخدم: لما الحالة توصل "booked" لازم تتسجل تفاصيل الحجز، والليد يظهر
+-- في قائمة منفصلة "الحجوزات الفعلية"، وأرشيف الليدز يقدر يفلتر بمين أنهى الحجز)
+alter table public.leads add column if not exists booking_date date;
+alter table public.leads add column if not exists booked_by uuid references public.admins(id);
+
+create or replace function public.stamp_lead_booking()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if new.current_status = 'booked' and (old.current_status is distinct from 'booked') then
+    new.booked_by := coalesce(new.booked_by, public.my_admin_id());
+    new.booking_date := coalesce(new.booking_date, current_date);
+  end if;
+  return new;
+end;
+$$;
+drop trigger if exists trg_stamp_lead_booking on public.leads;
+create trigger trg_stamp_lead_booking
+  before update on public.leads
+  for each row execute function public.stamp_lead_booking();
+
+create index if not exists leads_booked_by_idx on public.leads (booked_by);
+
+-- ---------- فواتير الليدز اللي حجزت وأخدت خدمة فعلاً (طلب المستخدم: تحليل
+-- الدخل الحقيقي القادم من الليدز لاحقاً) — الملف نفسه هيترفع Drive عبر
+-- نفس أسلوب أرشيف المرضى (Service Account، مش رابط مباشر) ----------
+create table if not exists public.lead_invoices (
+  id             uuid primary key default gen_random_uuid(),
+  lead_id        uuid not null references public.leads(id) on delete cascade,
+  amount         numeric(12,2) not null,
+  service_name   text,
+  drive_file_id  text,
+  file_name      text,
+  uploaded_by    uuid references public.admins(id),
+  uploaded_at    timestamptz not null default now(),
+  notes          text
+);
+create index if not exists lead_invoices_lead_id_idx on public.lead_invoices (lead_id);
+
+alter table public.lead_invoices enable row level security;
+drop policy if exists "lead_invoices select" on public.lead_invoices;
+create policy "lead_invoices select" on public.lead_invoices
+  for select using (
+    public.is_super()
+    or public.my_role() in ('general_manager','reception')
+    or (public.my_role() = 'customer_service' and exists (
+      select 1 from public.leads l where l.id = lead_invoices.lead_id and l.assigned_to = public.my_admin_id()
+    ))
+  );
+-- الإدراج بس من الـ Edge Function (service role) — بعد رفع الملف الفعلي على Drive بنجاح
+
+-- ---------- فئتين جداد لملفات المريض: وصفة طبية (روشتة) + رسم مخ، وحقل وصف حر
+-- لما الفئة تبقى "أخرى" (طلب المستخدم) ----------
+alter table public.patient_files drop constraint if exists patient_files_category_check;
+alter table public.patient_files add constraint patient_files_category_check
+  check (category in ('id_document','insurance','radiology','lab_result','prescription','eeg','other'));
+alter table public.patient_files add column if not exists other_description text;
+
+-- ---------- دور جديد "تمريض" (طلب المستخدم) — بدون تاب افتراضي، زي الاستقبال/خدمة
+-- العملاء بيتفعّل وصوله لأرشيف المرضى بس عن طريق has_archive_access من لوحة الأدمن ----------
+alter table public.admins drop constraint if exists admins_role_check;
+alter table public.admins add constraint admins_role_check
+  check (role in ('page_manager','designer','approver','general_manager','super_admin','reception','customer_service','nursing'));
+
+-- ---------- سجل المحاولات: نحفظ حالة الليد وقت المحاولة نفسها (طلب المستخدم:
+-- "لازم نوضح الحالة هنا في السجل") — بتتسجل من leads-attempt Edge Function ----------
+alter table public.lead_attempts add column if not exists status_at_attempt text;
+
+-- ---------- تصحيح: changed_by/booked_by كانوا دايماً فاضيين لما التحديث بيحصل من
+-- Edge Function (service role) — my_admin_id() بيعتمد على auth.uid() اللي مش موجود
+-- في سياق service role. الحل: GUC محلي للترانزاكشن (app.caller_admin_id) بيتحدد من
+-- leads-update-status عن طريق rpc_update_lead، و effective_admin_id() بيرجع له أول
+-- ما يلاقيه قبل ما يرجع لـ my_admin_id() العادي (تفضل شغالة زي ما هي لأي تحديث مباشر
+-- من عميل مسجّل دخول عادي) ----------
+create or replace function public.effective_admin_id()
+returns uuid language plpgsql stable as $$
+declare
+  v_setting text;
+begin
+  v_setting := nullif(current_setting('app.caller_admin_id', true), '');
+  if v_setting is not null then
+    return v_setting::uuid;
+  end if;
+  return public.my_admin_id();
+end;
+$$;
+
+create or replace function public.log_lead_status_change()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if new.current_status is distinct from old.current_status then
+    insert into public.lead_status_log (lead_id, changed_by, old_status, new_status)
+    values (new.id, public.effective_admin_id(), old.current_status, new.current_status);
+  end if;
+  new.updated_at := now();
+  return new;
+end;
+$$;
+
+create or replace function public.log_lead_field_changes()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if new.priority is distinct from old.priority then
+    insert into public.lead_field_changes (lead_id, changed_by, field_name, old_value, new_value)
+    values (new.id, public.effective_admin_id(), 'priority', old.priority, new.priority);
+  end if;
+  if new.booking_reference is distinct from old.booking_reference then
+    insert into public.lead_field_changes (lead_id, changed_by, field_name, old_value, new_value)
+    values (new.id, public.effective_admin_id(), 'booking_reference', old.booking_reference, new.booking_reference);
+  end if;
+  if new.do_not_contact is distinct from old.do_not_contact then
+    insert into public.lead_field_changes (lead_id, changed_by, field_name, old_value, new_value)
+    values (new.id, public.effective_admin_id(), 'do_not_contact', old.do_not_contact::text, new.do_not_contact::text);
+  end if;
+  if new.assigned_to is distinct from old.assigned_to then
+    insert into public.lead_field_changes (lead_id, changed_by, field_name, old_value, new_value)
+    values (new.id, public.effective_admin_id(), 'assigned_to', old.assigned_to::text, new.assigned_to::text);
+  end if;
+  return new;
+end;
+$$;
+
+create or replace function public.stamp_lead_booking()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if new.current_status = 'booked' and (old.current_status is distinct from 'booked') then
+    new.booked_by := coalesce(new.booked_by, public.effective_admin_id());
+    new.booking_date := coalesce(new.booking_date, current_date);
+  end if;
+  return new;
+end;
+$$;
+
+-- rpc_update_lead: نفس تحديثات leads-update-status Edge Function بالظبط، لكن جوّه
+-- ترانزاكشن واحدة بتحدد app.caller_admin_id الأول عشان التريجرز فوق تعرف "مين" فعلياً
+-- عمل التحديث حتى لو الاتصال بالكامل بـ service role (مفيش auth.uid() في السياق ده)
+create or replace function public.rpc_update_lead(
+  p_lead_id uuid,
+  p_caller_id uuid,
+  p_current_status text default null,
+  p_booking_reference text default null,
+  p_clear_booking_reference boolean default false,
+  p_booking_date date default null,
+  p_priority text default null,
+  p_do_not_contact boolean default null,
+  p_closed_at timestamptz default null,
+  p_clear_closed_at boolean default false
+) returns public.leads
+language plpgsql security definer set search_path = public as $$
+declare
+  v_row public.leads;
+begin
+  perform set_config('app.caller_admin_id', p_caller_id::text, true);
+
+  update public.leads set
+    current_status    = coalesce(p_current_status, current_status),
+    booking_reference  = case when p_clear_booking_reference then null
+                              when p_booking_reference is not null then p_booking_reference
+                              else booking_reference end,
+    booking_date       = coalesce(p_booking_date, booking_date),
+    priority            = coalesce(p_priority, priority),
+    do_not_contact      = coalesce(p_do_not_contact, do_not_contact),
+    closed_at            = case when p_clear_closed_at then null
+                              when p_closed_at is not null then p_closed_at
+                              else closed_at end
+  where id = p_lead_id
+  returning * into v_row;
+
+  return v_row;
+end;
+$$;
+revoke all on function public.rpc_update_lead from public;
+grant execute on function public.rpc_update_lead to authenticated, service_role;
+
+-- ============================================================
+--  10) أول سوبر أدمن
 -- ============================================================
 -- الخطوة أ) Authentication → Users → Add user → Create new user
 --            ضع بريدك وكلمة السر، وفعّل «Auto Confirm User».
