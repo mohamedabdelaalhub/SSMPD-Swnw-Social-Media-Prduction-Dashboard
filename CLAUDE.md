@@ -456,8 +456,55 @@ Account **ميظهرش في أي كود frontend إطلاقاً**، وبيتخز
   التوزيع التلقائي، تنبيهات SLA) **لسه مش متنفذ** — دي مسؤولية مرحلة Edge
   Functions الجاية، السكيما هنا جهزت بس الأرضية
 
-**المراحل الجاية** (كل مرحلة بعد تأكيد): إعداد Edge Functions (رفع/تنزيل
-ملفات الأرشيف، منطق موديول الليدز، تصدير تقارير) → الشاشات → التحليلات.
+**المرحلة ٣ اللي خلصت — Edge Functions لموديولين (٢٠٢٦-٠٨-١٨)**:
+
+كل الـ Edge Functions اتكتبت ونُشرت فعلياً على Supabase (`supabase/functions/`)
+وبتشتغل حالياً — مفيش أي حاجة "شغالة نظرياً بس". النمط المشترك بين كل
+دوال الموديولين: تحقق من JWT بتاع Supabase Auth، تحقق من صلاحية/رول
+المستخدم، عملية على القاعدة أو Google Drive، رجوع JSON. مفيش أي مسار
+عام (public) بدون auth.
+
+*أرشيف المرضى* (مقصور على `has_archive_access` أو `super_admin`):
+- `patients-create`: إنشاء مريض جديد — تطبيع الهاتف، هاش الرقم القومي
+  (SHA-256 + `NATIONAL_ID_PEPPER`)، `patient_code` تلقائي من القاعدة
+- `patient-files-upload`: رفع ملف مريض لـ Google Drive عبر Service
+  Account (`GOOGLE_SERVICE_ACCOUNT_KEY`) بـ resumable upload حقيقي (مش
+  base64) — بينشئ فولدر المريض وفولدر الفئة تلقائياً، بيحسب checksum،
+  وبيسجل `archive_access_log`
+- `patient-files-list`: بحث/قائمة مرضى (صفحات)، أو ملفات مريض بعينه
+  (`?patient_id=`) مع تسجيل "view" في اللوج
+- `patient-files-download`: تنزيل ملف عبر بروكسي من السيرفر (مش رابط
+  درايف مباشر) — الموظف مايشوفش أي share link خالص
+- `patient-files-delete`: حذف ملف من Drive + القاعدة، مقصور على
+  `super_admin`/صاحب صلاحية الأرشيف الكاملة
+
+*إدارة الليدز* (لـ`reception`/`customer_service`/`general_manager`/`super_admin`):
+- `leads-create`: إنشاء ليد من رسالة واتساب/ماسنجر — نفس منطق تطبيع
+  الهاتف بالظبط زي `patients-create` (عشان المطابقة تشتغل)، كشف تكرار
+  (ليد مفتوح بنفس الرقم → 409 إلا لو `confirm_duplicate:true` أو
+  `link_to_lead_id` للربط بدل الإنشاء)، مطابقة تلقائية مع `patients`
+  (جديد/قديم)، توزيع تلقائي على أقل موظف `customer_service` عدد ليدز
+  مفتوحة حالياً
+- `leads-list`: قائمة ليدز مع فلترة/بحث/صفحات — خدمة العملاء تشوف بس
+  الليدز المُسندة لها (فلتر إضافي فوق RLS)
+- `leads-attempt`: تسجيل محاولة تواصل (`lead_attempts` — القيم المسموحة
+  `answered`/`no_answer`/`busy`/`call_back_later`/`other` زي الـ check
+  constraint بالظبط)، بيرقّي الحالة تلقائياً من `new` لـ`in_progress`
+  عند أول محاولة، وبيحدّث `next_follow_up_date` لو اتبعت
+- `leads-update-status`: تغيير `current_status`/`priority`/
+  `booking_reference`/`do_not_contact` — تريجر `trg_log_lead_status_change`
+  الموجود بالفعل بيسجل أي تغيير حالة تلقائياً في `lead_status_log`،
+  مفيش داعي نسجله يدوي في الدالة
+
+**Secrets المُدخلة في Supabase** (Edge Function Secrets — المستخدم
+دخلهم بنفسه، محدش شافهم في أي كود أو شات): `GOOGLE_SERVICE_ACCOUNT_KEY`،
+`NATIONAL_ID_PEPPER`. + `DRIVE_PATIENT_ARCHIVE_FOLDER_ID` و
+`DRIVE_LEADS_REPORTS_FOLDER_ID` (IDs فولدرات عادية، مش سرية).
+
+**المراحل الجاية** (كل مرحلة بعد تأكيد): الشاشات الحقيقية بكامل وظائفها
+لموديولي أرشيف المرضى وإدارة الليدز (مش mockup — طلب صريح من المستخدم) →
+ربطهم بالتنقّل الرئيسي بصلاحيات محسوبة من الباك إند مش بس إخفاء واجهة →
+اختبار شامل → نشر نهائي → التحليلات.
 
 **ملاحظة مش باگ**: لو ظهرت رسالة "جسر Google Drive لسه مش متظبط" رغم إن
 `config.js` فيه رابط حقيقي — هي غالباً تبويب/صفحة قديمة لسه فاتحة من قبل
