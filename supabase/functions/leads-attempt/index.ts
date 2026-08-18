@@ -87,8 +87,9 @@ Deno.serve(async (req) => {
       result,
       notes,
       next_follow_up_date: nextFollowUpDate,
+      status_at_attempt: lead.current_status,
     })
-    .select("id, lead_id, result, notes, next_follow_up_date, attempt_date")
+    .select("id, lead_id, employee_id, result, notes, next_follow_up_date, attempt_date, status_at_attempt")
     .single();
   if (attErr) return json({ error: attErr.message }, 500);
 
