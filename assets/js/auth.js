@@ -56,6 +56,13 @@
       });
     },
 
+    changePassword: function (newPassword) {
+      return client.auth.updateUser({ password: newPassword }).then(function (res) {
+        if (res.error) throw res.error;
+        return res.data;
+      });
+    },
+
     onAuthChange: function (cb) {
       client.auth.onAuthStateChange(function (event, session) {
         cb(event, session);

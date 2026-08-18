@@ -70,7 +70,7 @@
       state.subTab = subs[0] ? subs[0].key : "dashboard";
     }
 
-    var html = '<h2 style="margin-bottom:10px;">أرشيف المرضى</h2>';
+    var html = '<div class="module-brand"><img src="assets/img/mark.svg" alt=""><span>أرشيف المرضى</span></div>';
     html += '<div class="tabs" style="margin-bottom:16px;">' +
       subs.map(function (s) {
         return '<button class="tab-btn ' + (state.subTab === s.key ? "active" : "") + '" data-sub="' + s.key + '">' + s.label + '</button>';
@@ -403,9 +403,20 @@
       '<button class="modal-close">×</button></div>' +
       '<p style="font-size:12px;color:var(--c-muted);margin-bottom:14px;">الهاتف: ' + escapeHtml(patient.phone || "—") + '</p>';
 
+    var canUp = canUpload();
     CATEGORIES.forEach(function (c) {
       var list = byCategory[c.key] || [];
-      html += '<div class="section" style="padding:12px 14px;"><h3 style="font-size:13px;margin-bottom:10px;">' + c.label + ' (' + list.length + ')</h3>';
+      html += '<div class="section" style="padding:12px 14px;">' +
+        '<h3 style="font-size:13px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
+        '<span>' + c.label + ' (' + list.length + ')</span>' +
+        (canUp ? '<span><button class="btn ghost sm" data-upload-cat="' + c.key + '">+ رفع</button>' +
+          '<input type="file" accept="image/*,application/pdf" data-file-input-cat="' + c.key + '" style="display:none;"></span>' : '') +
+        '</h3>';
+      if (canUp && c.key === "other") {
+        html += '<div class="field" data-other-wrap-cat style="display:none;margin-bottom:8px;">' +
+          '<label>وصف نوع الملف</label><input data-other-desc-cat placeholder="اكتب نوع الملف"></div>';
+      }
+      html += '<div data-cat-status style="font-size:11px;color:var(--c-muted);margin-bottom:6px;"></div>';
       if (!list.length) {
         html += '<p style="font-size:12px;color:var(--c-muted);">مفيش ملفات.</p>';
       } else {
@@ -427,6 +438,51 @@
     html += '</div>';
     backdrop.innerHTML = html;
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
+
+    // ---------- زرار الرفع المستقل لكل تصنيف مستند ----------
+    backdrop.querySelectorAll("[data-upload-cat]").forEach(function (btn) {
+      var catKey = btn.getAttribute("data-upload-cat");
+      var section = btn.closest(".section");
+      var fileInput = section.querySelector('[data-file-input-cat="' + catKey + '"]');
+      var otherWrap = section.querySelector("[data-other-wrap-cat]");
+      var statusEl = section.querySelector("[data-cat-status]");
+
+      btn.onclick = function () {
+        if (catKey === "other" && otherWrap && otherWrap.style.display === "none") {
+          otherWrap.style.display = "";
+          return;
+        }
+        fileInput.click();
+      };
+
+      fileInput.onchange = function () {
+        var file = fileInput.files[0];
+        if (!file) return;
+        var otherDesc = "";
+        if (catKey === "other") {
+          otherDesc = (section.querySelector("[data-other-desc-cat]") || {}).value || "";
+          otherDesc = otherDesc.trim();
+          if (!otherDesc) { statusEl.textContent = "اكتب وصف نوع الملف الأول"; fileInput.value = ""; return; }
+        }
+        var fd = new FormData();
+        fd.append("patient_id", patient.id);
+        fd.append("category", catKey);
+        if (catKey === "other") fd.append("other_description", otherDesc);
+        fd.append("file", file);
+        statusEl.textContent = "بيرفع…";
+        btn.disabled = true;
+        window.SSMPDDb.uploadPatientFile(fd).then(function () {
+          T.show("اترفع الملف بنجاح، وهيبقى قيد المراجعة لحد ما مسؤول تاني يعتمده");
+          window.SSMPDDb.getPatientFiles(patient.id).then(function (res) {
+            renderPatientModal(backdrop, view, container, res.patient, res.files || []);
+          });
+        }).catch(function (e) {
+          statusEl.textContent = "خطأ: " + e.message;
+          btn.disabled = false;
+          fileInput.value = "";
+        });
+      };
+    });
 
     backdrop.querySelectorAll("[data-dl]").forEach(function (btn) {
       btn.onclick = function () {

@@ -29,7 +29,7 @@
     archive: "الأرشيف",
     patients: "أرشيف المرضى",
     leads: "إدارة الليدز والتواصل",
-    admin: "⚙ المستخدمون"
+    admin: "لوحة التحكم"
   };
 
   function root() { return document.getElementById("app-root"); }
@@ -113,13 +113,31 @@
       return tabs.map(function (t) { return '<button class="tab-btn" data-tab="' + t + '">' + TAB_LABELS[t] + '</button>'; }).join("");
     }
 
+    // قائمة منسدلة موحّدة (أيقونة بجانب الاسم) — بالترتيب اللي طلبه المستخدم بالظبط:
+    // الاسم، ثم الدور، ثم SSMPD، ثم أرشيف المرضى، ثم إدارة الليدز والتواصل، ثم تغيير كلمة السر،
+    // ثم لوحة التحكم (لو سوبر أدمن)، ثم خروج
+    var mainSuiteTabs = tabs.filter(function (t) { return ["patients", "leads", "admin"].indexOf(t) === -1; });
+    var ddItems = '';
+    if (mainSuiteTabs.length) ddItems += '<button class="ud-item" data-goto="' + mainSuiteTabs[0] + '">SSMPD</button>';
+    if (tabs.indexOf("patients") !== -1) ddItems += '<button class="ud-item" data-goto="patients">أرشيف المرضى</button>';
+    if (tabs.indexOf("leads") !== -1) ddItems += '<button class="ud-item" data-goto="leads">إدارة الليدز والتواصل</button>';
+    ddItems += '<button class="ud-item" id="ud-change-pass">تغيير كلمة السر</button>';
+    if (tabs.indexOf("admin") !== -1) ddItems += '<button class="ud-item" data-goto="admin">لوحة التحكم</button>';
+
     // شريط تابات عادي على الشاشات الكبيرة + زرار قائمة منسدلة (اسم + سهم) يظهر بدل الشريط على الموبايل/التابلت
     // ترتيب محتوى القائمة المنسدلة زي ما طلب المستخدم بالظبط: الاسم، ثم الدور، ثم قائمة التابات، ثم خروج
     var html = '<div class="app-shell"><div class="topbar">' +
       '<div class="brand"><img src="assets/img/mark.svg" alt=""><span>SSMPD</span></div>' +
       '<div class="who"><span class="role-badge">' + roleLabel + '</span> <b>' + displayName + '</b>' +
+      '<button class="user-menu-icon" id="user-menu-btn" type="button" title="القائمة" aria-label="القائمة">☰</button>' +
       ' <button class="btn ghost sm" id="logout-btn">خروج</button></div>' +
       '<button class="menu-toggle" id="menu-toggle-btn" type="button"><b>' + displayName + '</b><span class="mt-arrow">▾</span></button>' +
+      '</div>' +
+      '<div class="user-dropdown" id="user-dropdown">' +
+      '<div class="mm-name">' + displayName + '</div>' +
+      '<div class="mm-role"><span class="role-badge">' + roleLabel + '</span></div>' +
+      '<div class="ud-items">' + ddItems + '</div>' +
+      '<button class="btn ghost sm mm-logout" id="logout-btn-dropdown">خروج</button>' +
       '</div>' +
       '<div class="tabs" id="tabs-bar">' + tabButtonsHtml() + '</div>' +
       '<div class="mobile-menu" id="mobile-menu">' +
@@ -133,6 +151,8 @@
 
     var mobileMenu = document.getElementById("mobile-menu");
     var menuToggleBtn = document.getElementById("menu-toggle-btn");
+    var userDropdown = document.getElementById("user-dropdown");
+    var userMenuBtn = document.getElementById("user-menu-btn");
 
     function doLogout() {
       try { sessionStorage.removeItem(ACTIVE_TAB_KEY); } catch (e) {}
@@ -140,15 +160,34 @@
     }
     document.getElementById("logout-btn").onclick = doLogout;
     document.getElementById("logout-btn-mobile").onclick = doLogout;
+    document.getElementById("logout-btn-dropdown").onclick = doLogout;
 
     menuToggleBtn.onclick = function (e) {
       e.stopPropagation();
       mobileMenu.classList.toggle("open");
     };
+    userMenuBtn.onclick = function (e) {
+      e.stopPropagation();
+      userDropdown.classList.toggle("open");
+    };
     document.addEventListener("click", function (e) {
       if (mobileMenu.classList.contains("open") && !mobileMenu.contains(e.target) && e.target !== menuToggleBtn && !menuToggleBtn.contains(e.target)) {
         mobileMenu.classList.remove("open");
       }
+      if (userDropdown.classList.contains("open") && !userDropdown.contains(e.target) && e.target !== userMenuBtn && !userMenuBtn.contains(e.target)) {
+        userDropdown.classList.remove("open");
+      }
+    });
+
+    document.getElementById("ud-change-pass").onclick = function () {
+      userDropdown.classList.remove("open");
+      openChangePasswordModal();
+    };
+    userDropdown.querySelectorAll("[data-goto]").forEach(function (btn) {
+      btn.onclick = function () {
+        switchTab(btn.getAttribute("data-goto"));
+        userDropdown.classList.remove("open");
+      };
     });
 
     document.querySelectorAll(".tab-btn").forEach(function (btn) {
@@ -165,6 +204,35 @@
     var startTab = (savedTab && tabs.indexOf(savedTab) !== -1) ? savedTab : R.defaultTab(admin.role);
     switchTab(startTab);
     setupRealtime();
+  }
+
+  function openChangePasswordModal() {
+    var backdrop = document.createElement("div");
+    backdrop.className = "modal-backdrop";
+    backdrop.innerHTML = '<div class="modal" style="max-width:420px;">' +
+      '<div class="modal-head"><h3>تغيير كلمة السر</h3><button class="modal-close">×</button></div>' +
+      '<div class="field"><label>كلمة السر الجديدة</label><input id="cp-pass1" type="password"></div>' +
+      '<div class="field"><label>تأكيد كلمة السر</label><input id="cp-pass2" type="password"></div>' +
+      '<button class="btn block" id="cp-save" style="margin-top:10px;">حفظ</button>' +
+      '</div>';
+    document.body.appendChild(backdrop);
+
+    function close() { backdrop.remove(); }
+    backdrop.querySelector(".modal-close").onclick = close;
+    backdrop.addEventListener("click", function (e) { if (e.target === backdrop) close(); });
+
+    backdrop.querySelector("#cp-save").onclick = function () {
+      var p1 = document.getElementById("cp-pass1").value;
+      var p2 = document.getElementById("cp-pass2").value;
+      if (!p1 || p1.length < 6) { window.SSMPDToast.show("كلمة السر لازم تكون ٦ حروف/أرقام على الأقل", "error"); return; }
+      if (p1 !== p2) { window.SSMPDToast.show("كلمة السر وتأكيدها مش متطابقين", "error"); return; }
+      window.SSMPDAuth.changePassword(p1).then(function () {
+        window.SSMPDToast.show("اتغيّرت كلمة السر بنجاح");
+        close();
+      }).catch(function (err) {
+        window.SSMPDToast.show("خطأ: " + (err && err.message ? err.message : err), "error");
+      });
+    };
   }
 
   function switchTab(tab) {
