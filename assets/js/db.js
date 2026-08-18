@@ -14,6 +14,89 @@
     });
   }
 
+  // ---------- Edge Functions (أرشيف المرضى + إدارة الليدز) ----------
+  // كل الاتصال بموديولي أرشيف المرضى والليدز بيعدّي من Supabase Edge Functions
+  // (مش استعلام مباشر على القاعدة زي باقي db.js) عشان التحقق من الصلاحيات
+  // والمنطق الحساس (كشف تكرار، توزيع تلقائي، رفع Drive) يفضل سيرفر-سايد بالكامل
+  var EDGE_BASE = cfg.url.replace(/\/+$/, "") + "/functions/v1/";
+
+  function qs(params) {
+    if (!params) return "";
+    var parts = [];
+    Object.keys(params).forEach(function (k) {
+      var v = params[k];
+      if (v === undefined || v === null || v === "") return;
+      parts.push(encodeURIComponent(k) + "=" + encodeURIComponent(v));
+    });
+    return parts.length ? "?" + parts.join("&") : "";
+  }
+
+  function getAccessToken() {
+    return client.auth.getSession().then(function (res) {
+      return res.data.session ? res.data.session.access_token : null;
+    });
+  }
+
+  // JSON in / JSON out
+  function edgeFetch(path, opts) {
+    opts = opts || {};
+    return getAccessToken().then(function (token) {
+      var headers = { Authorization: "Bearer " + token };
+      var body;
+      if (opts.json !== undefined) {
+        headers["Content-Type"] = "application/json";
+        body = JSON.stringify(opts.json);
+      }
+      return fetch(EDGE_BASE + path, { method: opts.method || "GET", headers: headers, body: body });
+    }).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (data) {
+        if (!r.ok) {
+          var err = new Error(data && data.error ? data.error : "HTTP " + r.status);
+          err.status = r.status; err.data = data;
+          throw err;
+        }
+        return data;
+      });
+    });
+  }
+
+  // multipart/form-data in (رفع ملفات) / JSON out
+  function edgeFetchForm(path, formData) {
+    return getAccessToken().then(function (token) {
+      return fetch(EDGE_BASE + path, {
+        method: "POST",
+        headers: { Authorization: "Bearer " + token },
+        body: formData
+      });
+    }).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (data) {
+        if (!r.ok) {
+          var err = new Error(data && data.error ? data.error : "HTTP " + r.status);
+          err.status = r.status; err.data = data;
+          throw err;
+        }
+        return data;
+      });
+    });
+  }
+
+  // JSON/GET in / binary blob out (تنزيل ملفات — بروكسي من السيرفر بدون أي رابط Drive مباشر)
+  function edgeFetchBlob(path) {
+    return getAccessToken().then(function (token) {
+      return fetch(EDGE_BASE + path, { headers: { Authorization: "Bearer " + token } });
+    }).then(function (r) {
+      if (!r.ok) {
+        return r.json().catch(function () { return {}; }).then(function (data) {
+          throw new Error(data && data.error ? data.error : "HTTP " + r.status);
+        });
+      }
+      var disposition = r.headers.get("Content-Disposition") || "";
+      var m = /filename\*=UTF-8''([^;]+)/.exec(disposition);
+      var filename = m ? decodeURIComponent(m[1]) : "file";
+      return r.blob().then(function (blob) { return { blob: blob, filename: filename }; });
+    });
+  }
+
   var Db = {
     client: client,
 
@@ -119,6 +202,47 @@
     },
     insertAdCampaigns: function (rows) {
       return handle(client.from("ad_campaigns").insert(rows));
+    },
+
+    // ---------- أرشيف المرضى (Edge Functions) ----------
+    createPatientArchive: function (payload) {
+      return edgeFetch("patients-create", { method: "POST", json: payload });
+    },
+    listPatientsArchive: function (params) {
+      return edgeFetch("patient-files-list" + qs(params));
+    },
+    getPatientFiles: function (patientId) {
+      return edgeFetch("patient-files-list" + qs({ patient_id: patientId }));
+    },
+    uploadPatientFile: function (formData) {
+      return edgeFetchForm("patient-files-upload", formData);
+    },
+    deletePatientFile: function (fileId) {
+      return edgeFetch("patient-files-delete", { method: "POST", json: { file_id: fileId } });
+    },
+    downloadPatientFile: function (fileId) {
+      return edgeFetchBlob("patient-files-download" + qs({ file_id: fileId }));
+    },
+
+    // ---------- إدارة الليدز (Edge Functions) ----------
+    createLead: function (payload) {
+      return edgeFetch("leads-create", { method: "POST", json: payload });
+    },
+    listLeads: function (params) {
+      return edgeFetch("leads-list" + qs(params));
+    },
+    logLeadAttempt: function (payload) {
+      return edgeFetch("leads-attempt", { method: "POST", json: payload });
+    },
+    updateLeadStatus: function (payload) {
+      return edgeFetch("leads-update-status", { method: "POST", json: payload });
+    },
+    // قراءة مباشرة (محكومة بـ RLS) — مفيش منطق حساس هنا، غير محتاجة Edge Function
+    listLeadAttempts: function (leadId) {
+      return handle(client.from("lead_attempts").select("*").eq("lead_id", leadId).order("attempt_date", { ascending: false }));
+    },
+    listLeadStatusLog: function (leadId) {
+      return handle(client.from("lead_status_log").select("*").eq("lead_id", leadId).order("changed_at", { ascending: false }));
     },
 
     // ---------- realtime ----------

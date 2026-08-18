@@ -6,6 +6,7 @@
   var currentTab = null;
   var realtimeChannel = null;
   var commentsChannel = null;
+  var leadsChannel = null;
   var pollTimer = null;
 
   var RENDERERS = {
@@ -15,6 +16,8 @@
     design: window.SSMPDRenderDesign,
     publish: window.SSMPDRenderPublish,
     archive: window.SSMPDRenderArchive,
+    patients: window.SSMPDRenderPatients,
+    leads: window.SSMPDRenderLeads,
     admin: window.SSMPDRenderAdmin
   };
   var TAB_LABELS = {
@@ -24,6 +27,8 @@
     design: "شاشة التصميم",
     publish: "النشر",
     archive: "الأرشيف",
+    patients: "أرشيف المرضى",
+    leads: "إدارة الليدز والتواصل",
     admin: "⚙ المستخدمون"
   };
 
@@ -100,7 +105,7 @@
 
   function renderShell() {
     var admin = window.SSMPDAuth.currentAdmin;
-    var tabs = Object.keys(TAB_LABELS).filter(function (t) { return R.canSeeTab(admin.role, t); });
+    var tabs = Object.keys(TAB_LABELS).filter(function (t) { return R.canSeeTab(admin, t); });
     var displayName = escapeHtml(admin.name || admin.email);
     var roleLabel = R.label(admin.role);
 
@@ -195,7 +200,7 @@
   // تحديث لحظي: أعد رسم التاب الحالي لو بيعرض بيانات محتوى، وما فيش مودال مفتوح، ومفيش
   // إجراء/بيانات لسه المستخدم شغال عليها (كتابة كومنت، فورم جدولة، ...) دلوقتي
   function refreshCurrentTab() {
-    if (["summary", "production", "review", "design", "publish", "archive"].indexOf(currentTab) !== -1) {
+    if (["summary", "production", "review", "design", "publish", "archive", "patients", "leads"].indexOf(currentTab) !== -1) {
       var el = document.getElementById("view-container");
       if (el && !document.querySelector(".modal-backdrop") && !isUserEditing()) {
         RENDERERS[currentTab].render(el);
@@ -206,8 +211,10 @@
   function setupRealtime() {
     if (realtimeChannel) window.SSMPDDb.unsubscribe(realtimeChannel);
     if (commentsChannel) window.SSMPDDb.unsubscribe(commentsChannel);
+    if (leadsChannel) window.SSMPDDb.unsubscribe(leadsChannel);
     realtimeChannel = window.SSMPDDb.subscribeTable("content_items", refreshCurrentTab);
     commentsChannel = window.SSMPDDb.subscribeTable("comments", refreshCurrentTab);
+    leadsChannel = window.SSMPDDb.subscribeTable("leads", refreshCurrentTab);
 
     // نسخة احتياطية: ريفريش تلقائي دوري لو الاتصال اللحظي (WebSocket) انقطع أو اتأخر
     if (pollTimer) clearInterval(pollTimer);
