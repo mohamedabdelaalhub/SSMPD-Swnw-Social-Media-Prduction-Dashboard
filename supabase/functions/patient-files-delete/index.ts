@@ -33,7 +33,13 @@ async function getCallerAdmin(req: Request) {
     .eq("user_id", user.id)
     .eq("active", true)
     .maybeSingle();
-  return row ?? null;
+  if (!row) return null;
+  const { data: extra } = await admin.from("admin_extra_roles").select("role").eq("admin_id", row.id);
+  return { ...row, extra_roles: (extra ?? []).map((r: { role: string }) => r.role) };
+}
+
+function isSuperAdmin(caller: { role: string; extra_roles?: string[] }): boolean {
+  return caller.role === "super_admin" || (caller.extra_roles ?? []).includes("super_admin");
 }
 
 function base64url(input: Uint8Array | string): string {
@@ -98,7 +104,7 @@ Deno.serve(async (req) => {
   const caller = await getCallerAdmin(req);
   if (!caller) return json({ error: "غير مصرح — سجّل دخولك تاني" }, 401);
   // الحذف مقصور على السوبر أدمن أو صاحب صلاحية الأرشيف الكاملة — نفس شرط باقي عمليات الموديول
-  const allowed = caller.has_archive_access || caller.role === "super_admin";
+  const allowed = caller.has_archive_access || isSuperAdmin(caller);
   if (!allowed) return json({ error: "مفيش صلاحية أرشيف المرضى" }, 403);
 
   let body: any;
