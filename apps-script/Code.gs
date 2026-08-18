@@ -19,12 +19,22 @@
  *
  * كل فولدر نوع فيه كمان ملف إكسيل تتبّع واحد ثابت (بيتحدّث تلقائياً مع
  * كل حدث من الداشبورد: فكرة جديدة / اعتماد / رفع تصميم / نشر).
+ *
+ * ⚠️ فولدرين إضافيين — أرشيف المرضى وفواتير الليدز — بيُستخدموا بس من
+ * Edge Functions على السيرفر (مش من الفرونت‌إند مباشرة زي التلاتة فوق)،
+ * عشان نتجنّب مشكلة "Service Account مفيش عنده مساحة تخزين" (الحل موثّق
+ * في CLAUDE.md). الفولدرين دول **مقفولين** (Restricted، مش "Anyone with
+ * the link")، وبيوصلهم غير التوثيق/الصلاحية بتاعت الـ Edge Function نفسها:
+ *   - أرشيف المرضى (فولدر مريض/فئة متداخل) → category: "patient_archive"
+ *   - فواتير حجوزات الليدز (فولدر واحد مسطّح) → category: "leads_invoice"
  */
 
 var CATEGORY_FOLDER_IDS = {
   content: "1dYiejCkw31-DP6SnWBo4KSOP1oRY3Wzq", // إنتاج المحتوى
   design:  "1E9OsjadaOUGc8asCzscrVHG5OFP_HVaS", // التصميمات
-  archive: "1xghscimJG2f8CB2N3I0lC3fHrhZk2aMO"  // الأرشيف
+  archive: "1xghscimJG2f8CB2N3I0lC3fHrhZk2aMO", // الأرشيف
+  patient_archive: "1T7DkhF0aIpJ2Qix0ahukcAe1RAEFSp5Y", // أرشيف المرضى (مقفول)
+  leads_invoice:   "1SIILJdTq4p4ZOcfiIwGhKMdXoNkIDdCP"  // فواتير حجوزات الليدز (مقفول)
 };
 
 var TRACKING_SHEET_NAMES = {
@@ -55,15 +65,18 @@ function doGet() {
   return jsonOut({ ok: true, message: "SSMPD Drive Bridge شغّال" });
 }
 
-// ---------- رفع ملفات (تصميم / محتوى / أرشيف) ----------
+// ---------- رفع ملفات (تصميم / محتوى / أرشيف / أرشيف مرضى / فواتير ليدز) ----------
 function handleUpload_(payload) {
+  var category = payload.category || "design";
+  if (!CATEGORY_FOLDER_IDS[category]) return jsonOut({ ok: false, error: "نوع فولدر غير معروف: " + category });
+  if (!payload.base64) return jsonOut({ ok: false, error: "لا يوجد محتوى ملف" });
+
+  if (category === "patient_archive") return handlePatientArchiveUpload_(payload);
+  if (category === "leads_invoice") return handleLeadsInvoiceUpload_(payload);
+
   var fileName = payload.fileName || ("file-" + new Date().getTime());
   var mimeType = payload.mimeType || "application/octet-stream";
   var base64 = payload.base64;
-  var category = payload.category || "design";
-
-  if (!base64) return jsonOut({ ok: false, error: "لا يوجد محتوى ملف" });
-  if (!CATEGORY_FOLDER_IDS[category]) return jsonOut({ ok: false, error: "نوع فولدر غير معروف: " + category });
 
   var dayFolder = getOrCreateTodayFolder_(category);
   var bytes = Utilities.base64Decode(base64);
@@ -77,6 +90,42 @@ function handleUpload_(payload) {
     folderUrl: dayFolder.getUrl(),
     fileId: file.getId()
   });
+}
+
+// أرشيف المرضى: Patient_<code>/<فئة المستند> — نفس تسمية الفولدرات اللي
+// كانت شغالة قبل كده بالـ Service Account (ID_Documents/Insurance/...)
+// عشان الملفات القديمة والجديدة تفضل منظّمة في نفس المكان
+function handlePatientArchiveUpload_(payload) {
+  var patientCode = payload.patientCode;
+  var docFolderName = payload.docFolderName;
+  if (!patientCode) return jsonOut({ ok: false, error: "لا يوجد كود مريض" });
+  if (!docFolderName) return jsonOut({ ok: false, error: "لا يوجد تصنيف مستند" });
+
+  var root = DriveApp.getFolderById(CATEGORY_FOLDER_IDS.patient_archive);
+  var patientFolder = getOrCreateFolder_(root, "Patient_" + patientCode);
+  var categoryFolder = getOrCreateFolder_(patientFolder, docFolderName);
+
+  var fileName = payload.fileName || ("file-" + new Date().getTime());
+  var mimeType = payload.mimeType || "application/octet-stream";
+  var bytes = Utilities.base64Decode(payload.base64);
+  var blob = Utilities.newBlob(bytes, mimeType, fileName);
+  var file = categoryFolder.createFile(blob);
+
+  return jsonOut({ ok: true, fileUrl: file.getUrl(), folderUrl: categoryFolder.getUrl(), fileId: file.getId() });
+}
+
+// فواتير حجوزات الليدز: فولدر واحد مسطّح (بدون سنة/شهر/يوم) — العدد المتوقع
+// صغير، والفلترة الفعلية بتتم من جدول lead_invoices في القاعدة مش من الدرايف
+function handleLeadsInvoiceUpload_(payload) {
+  var root = DriveApp.getFolderById(CATEGORY_FOLDER_IDS.leads_invoice);
+  var fileName = payload.fileName || ("invoice-" + new Date().getTime());
+  var mimeType = payload.mimeType || "application/octet-stream";
+  var bytes = Utilities.base64Decode(payload.base64);
+  var blob = Utilities.newBlob(bytes, mimeType, fileName);
+  var file = root.createFile(blob);
+  file.setDescription("SSMPD Leads — leadId: " + (payload.leadId || ""));
+
+  return jsonOut({ ok: true, fileUrl: file.getUrl(), folderUrl: root.getUrl(), fileId: file.getId() });
 }
 
 // ---------- تسجيل حدث في ملف التتبع (Excel) المناسب ----------
