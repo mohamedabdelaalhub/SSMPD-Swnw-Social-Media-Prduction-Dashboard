@@ -3,13 +3,14 @@
   "use strict";
 
   var ROLES = {
-    page_manager: "موظف صفحات",
+    page_manager: "مسؤول المحتوى",
     designer: "مصمم جرافيك",
     approver: "مسؤول اعتماد",
     general_manager: "مدير عام",
     super_admin: "سوبر أدمن",
     reception: "استقبال",
-    customer_service: "خدمة عملاء"
+    customer_service: "خدمة عملاء",
+    nursing: "تمريض"
   };
 
   // كل تاب: مين يشوفه — المدير العام يشوف كل حاجة زي السوبر أدمن ما عدا تاب المستخدمين
@@ -48,6 +49,7 @@
 
     defaultTab: function (role) {
       if (role === "reception" || role === "customer_service") return "leads";
+      if (role === "nursing") return "patients";
       if (role === "approver") return "review";
       if (role === "designer") return "design";
       if (role === "page_manager") return "production";
