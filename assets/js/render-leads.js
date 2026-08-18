@@ -563,7 +563,7 @@
         html += '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-top:8px;">' +
           '<div><label>المبلغ</label><input id="iv-amount" type="number" min="0" step="0.01" style="width:100px;"></div>' +
           '<div><label>اسم الخدمة</label><input id="iv-service" style="width:140px;"></div>' +
-          '<div><label>الملف</label><input type="file" id="iv-file"></div>' +
+          '<div><label>الملف (صورة / PDF / إكسيل)</label><input type="file" id="iv-file" accept="image/*,.pdf,.xlsx,.xls"></div>' +
           '<button class="btn sm" id="iv-save">رفع الفاتورة</button></div>' +
           '<div id="iv-status" style="font-size:12px;color:var(--c-muted);margin-top:6px;"></div></div>';
       }
