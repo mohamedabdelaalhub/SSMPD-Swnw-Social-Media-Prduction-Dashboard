@@ -19,16 +19,21 @@ function json(body: unknown, status = 200) {
 }
 
 // نفس القيم المسموحة في check constraint بتاع leads.current_status في setup.sql
+// (بعد إضافة "تم الحجز على سيستم المركز" و"تم إجراء الخدمة")
 const VALID_STATUSES = [
   "new",
   "in_progress",
   "booked",
+  "booked_on_system",
+  "service_done",
   "interested_undecided",
   "rejected",
   "no_response",
   "invalid_number",
 ];
-const CLOSED_STATUSES = ["booked", "rejected", "no_response", "invalid_number"];
+// "booked"/"booked_on_system" بقوا حالات "لسه شغالة" (مش مغلقة) بعد إضافة
+// خطوة الاستقبال — الإقفال الفعلي بقى بس عند "تم إجراء الخدمة" أو أي حالة رفض/عدم رد
+const CLOSED_STATUSES = ["service_done", "rejected", "no_response", "invalid_number"];
 
 async function getCallerAdmin(req: Request) {
   const authHeader = req.headers.get("Authorization");
@@ -45,7 +50,19 @@ async function getCallerAdmin(req: Request) {
     .eq("user_id", user.id)
     .eq("active", true)
     .maybeSingle();
-  return row ?? null;
+  if (!row) return null;
+  // تعدد الأدوار: نجيب الأدوار الإضافية (admin_extra_roles) عشان الفحص يقبل
+  // مستخدم الرول الأساسي بتاعه حاجة تانية بس عنده صلاحية إضافية لموديول الليدز
+  const { data: extra } = await admin
+    .from("admin_extra_roles")
+    .select("role")
+    .eq("admin_id", row.id);
+  return { ...row, extra_roles: (extra ?? []).map((r: { role: string }) => r.role) };
+}
+
+// true لو الرول الأساسي أو أي من الأدوار الإضافية موجود في القائمة
+function roleIn(caller: { role: string; extra_roles?: string[] }, roles: string[]): boolean {
+  return roles.includes(caller.role) || (caller.extra_roles ?? []).some((r) => roles.includes(r));
 }
 
 Deno.serve(async (req) => {
@@ -54,7 +71,7 @@ Deno.serve(async (req) => {
 
   const caller = await getCallerAdmin(req);
   if (!caller) return json({ error: "غير مصرح — سجّل دخولك تاني" }, 401);
-  const allowed = ["reception", "customer_service", "general_manager", "super_admin"].includes(caller.role);
+  const allowed = roleIn(caller, ["reception", "customer_service", "general_manager", "super_admin"]);
   if (!allowed) return json({ error: "مفيش صلاحية موديول الليدز" }, 403);
 
   let body: any;
@@ -92,8 +109,9 @@ Deno.serve(async (req) => {
     .maybeSingle();
   if (leadErr || !lead) return json({ error: "الليد غير موجود" }, 404);
 
-  // خدمة العملاء تعدّل بس الليدز المُسندة ليها
-  if (caller.role === "customer_service" && lead.assigned_to !== caller.id) {
+  // خدمة العملاء تعدّل بس الليدز المُسندة ليها (إلا لو عنده رول تاني بيديه صلاحية أوسع)
+  const hasWiderAccess = roleIn(caller, ["reception", "general_manager", "super_admin"]);
+  if (!hasWiderAccess && roleIn(caller, ["customer_service"]) && lead.assigned_to !== caller.id) {
     return json({ error: "الليد ده مش مُسند لك" }, 403);
   }
 
