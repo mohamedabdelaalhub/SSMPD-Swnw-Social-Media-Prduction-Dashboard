@@ -29,11 +29,17 @@ async function getCallerAdmin(req: Request) {
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
   const { data: row } = await admin
     .from("admins")
-    .select("id, role, has_archive_access, active")
+    .select("id, role, has_archive_access, has_archive_review_access, active")
     .eq("user_id", user.id)
     .eq("active", true)
     .maybeSingle();
-  return row ?? null;
+  if (!row) return null;
+  const { data: extra } = await admin.from("admin_extra_roles").select("role").eq("admin_id", row.id);
+  return { ...row, extra_roles: (extra ?? []).map((r: { role: string }) => r.role) };
+}
+
+function isSuperAdmin(caller: { role: string; extra_roles?: string[] }): boolean {
+  return caller.role === "super_admin" || (caller.extra_roles ?? []).includes("super_admin");
 }
 
 Deno.serve(async (req) => {
@@ -42,7 +48,9 @@ Deno.serve(async (req) => {
 
   const caller = await getCallerAdmin(req);
   if (!caller) return json({ error: "غير مصرح — سجّل دخولك تاني" }, 401);
-  const canReview = caller.has_archive_review_access || caller.role === "super_admin";
+  // ملاحظة: has_archive_review_access مكانتش متجابة من قبل هنا (select ماكانش شامله)
+  // فكانت بترجع undefined دايماً — تم تصحيحها هنا كجزء من نفس التعديل (select فوق).
+  const canReview = caller.has_archive_review_access || isSuperAdmin(caller);
   const allowed = caller.has_archive_access || canReview;
   if (!allowed) return json({ error: "مفيش صلاحية أرشيف المرضى" }, 403);
 
