@@ -1099,7 +1099,308 @@ revoke all on function public.rpc_update_lead from public;
 grant execute on function public.rpc_update_lead to authenticated, service_role;
 
 -- ============================================================
---  10) أول سوبر أدمن
+--  10) تعدد الأدوار لكل مستخدم (Multi-Role Support) — ٢٠٢٦-٠٨-١٨
+-- ============================================================
+-- طلب المستخدم: مستخدم واحد ممكن يبقى له أكتر من دور في نفس الوقت (مثلاً
+-- خدمة عملاء + إدارة محتوى، أو خدمة عملاء + استقبال). القرار: admins.role
+-- بيفضل "الرول الأساسي" (بيتحكم في التاب الافتراضي وبادچ الدور)، وأي أدوار
+-- إضافية بتتسجل في جدول جديد admin_extra_roles. أي فحص صلاحية (RLS أو Edge
+-- Function) لازم يستخدم has_role()/الأدوار مجتمعة بدل my_role() المباشرة.
+create table if not exists public.admin_extra_roles (
+  admin_id  uuid not null references public.admins(id) on delete cascade,
+  role      text not null,
+  added_at  timestamptz not null default now(),
+  added_by  uuid references public.admins(id),
+  primary key (admin_id, role)
+);
+alter table public.admin_extra_roles drop constraint if exists admin_extra_roles_role_check;
+alter table public.admin_extra_roles add constraint admin_extra_roles_role_check
+  check (role in ('page_manager','designer','approver','general_manager','super_admin','reception','customer_service','nursing'));
+create index if not exists admin_extra_roles_admin_id_idx on public.admin_extra_roles (admin_id);
+
+alter table public.admin_extra_roles enable row level security;
+drop policy if exists "read own extra roles" on public.admin_extra_roles;
+create policy "read own extra roles" on public.admin_extra_roles
+  for select using (admin_id = public.my_admin_id() or public.is_super());
+drop policy if exists "super manages extra roles" on public.admin_extra_roles;
+create policy "super manages extra roles" on public.admin_extra_roles
+  for all using (public.is_super()) with check (public.is_super());
+
+-- has_role: true لو الرول ده هو الرول الأساسي للمستخدم الحالي أو من ضمن أدواره
+-- الإضافية. الاستخدام من دلوقتي: استبدال "my_role() = 'x'" بـ "has_role('x')"،
+-- و"my_role() in ('a','b')" بـ "(has_role('a') or has_role('b'))".
+create or replace function public.has_role(p_role text)
+returns boolean language sql security definer stable set search_path = public as $$
+  select exists (
+    select 1 from public.admins
+    where user_id = auth.uid() and active and role = p_role
+  ) or exists (
+    select 1 from public.admin_extra_roles r
+    join public.admins a on a.id = r.admin_id
+    where a.user_id = auth.uid() and a.active and r.role = p_role
+  );
+$$;
+revoke all on function public.has_role(text) from public;
+grant execute on function public.has_role(text) to authenticated;
+
+-- my_roles: كل أدوار المستخدم الحالي (الأساسي + الإضافية) كمصفوفة — الواجهة
+-- بتجيبها مرة واحدة بعد الدخول بدل ما تفحص كل رول لوحده
+create or replace function public.my_roles()
+returns text[] language sql security definer stable set search_path = public as $$
+  select coalesce(array_agg(distinct role), array[]::text[]) from (
+    select role from public.admins where user_id = auth.uid() and active
+    union
+    select r.role from public.admin_extra_roles r
+    join public.admins a on a.id = r.admin_id
+    where a.user_id = auth.uid() and a.active
+  ) x;
+$$;
+revoke all on function public.my_roles() from public;
+grant execute on function public.my_roles() to authenticated;
+
+-- has_role_for: نسخة بتاخد admin_id صريح — تُستخدم من Edge Functions (بمفتاح
+-- service_role، مفيش auth.uid() في السياق بتاعها) للتحقق من أدوار أي موظف
+create or replace function public.has_role_for(p_admin_id uuid, p_role text)
+returns boolean language sql security definer stable set search_path = public as $$
+  select exists (select 1 from public.admins where id = p_admin_id and role = p_role)
+      or exists (select 1 from public.admin_extra_roles where admin_id = p_admin_id and role = p_role);
+$$;
+revoke all on function public.has_role_for(uuid, text) from public;
+grant execute on function public.has_role_for(uuid, text) to authenticated, service_role;
+
+-- ---------- إعادة تعريف الدوال المساعدة العامة عشان تحسب الأدوار الإضافية برضه ----------
+create or replace function public.is_super()
+returns boolean language sql security definer stable set search_path = public as $$
+  select public.has_role('super_admin');
+$$;
+
+create or replace function public.can_manage_all_content()
+returns boolean language sql security definer stable set search_path = public as $$
+  select public.has_role('super_admin') or public.has_role('general_manager');
+$$;
+
+create or replace function public.has_archive_access()
+returns boolean language sql security definer stable set search_path = public as $$
+  select coalesce((
+    select has_archive_access from public.admins where user_id = auth.uid() and active limit 1
+  ), false) or public.has_role('super_admin');
+$$;
+
+create or replace function public.can_access_leads()
+returns boolean language sql security definer stable set search_path = public as $$
+  select public.has_role('reception') or public.has_role('customer_service')
+      or public.has_role('general_manager') or public.has_role('super_admin');
+$$;
+
+create or replace function public.has_archive_review_access()
+returns boolean language sql security definer stable set search_path = public as $$
+  select coalesce((
+    select has_archive_review_access from public.admins where user_id = auth.uid() and active limit 1
+  ), false) or public.has_role('super_admin');
+$$;
+
+-- ---------- تحديث سياسات RLS القديمة اللي كانت بتفحص my_role() مباشرة عشان
+-- تشتغل صح لو المستخدم عنده أكتر من رول ----------
+
+drop policy if exists "page_manager inserts content" on public.content_items;
+create policy "page_manager inserts content"
+  on public.content_items for insert to authenticated
+  with check (
+    (public.has_role('page_manager') or public.has_role('general_manager') or public.has_role('super_admin'))
+    and created_by = public.my_admin_id()
+  );
+
+drop policy if exists "approver writes metrics" on public.weekly_social_metrics;
+create policy "approver writes metrics"
+  on public.weekly_social_metrics for all to authenticated
+  using (public.has_role('approver') or public.has_role('general_manager') or public.has_role('super_admin'))
+  with check (public.has_role('approver') or public.has_role('general_manager') or public.has_role('super_admin'));
+
+drop policy if exists "approver writes ad campaigns" on public.ad_campaigns;
+create policy "approver writes ad campaigns"
+  on public.ad_campaigns for all to authenticated
+  using (public.has_role('approver') or public.has_role('general_manager') or public.has_role('super_admin'))
+  with check (public.has_role('approver') or public.has_role('general_manager') or public.has_role('super_admin'));
+
+drop policy if exists "leads select" on public.leads;
+create policy "leads select" on public.leads
+  for select using (
+    public.is_super()
+    or public.has_role('general_manager') or public.has_role('reception')
+    or (public.has_role('customer_service') and assigned_to = public.my_admin_id())
+  );
+
+drop policy if exists "leads insert" on public.leads;
+create policy "leads insert" on public.leads
+  for insert with check (
+    public.is_super() or public.has_role('reception') or public.has_role('customer_service') or public.has_role('general_manager')
+  );
+
+drop policy if exists "leads update" on public.leads;
+create policy "leads update" on public.leads
+  for update using (
+    public.is_super()
+    or public.has_role('general_manager')
+    or (public.has_role('customer_service') and assigned_to = public.my_admin_id())
+  );
+
+drop policy if exists "lead_attempts select" on public.lead_attempts;
+create policy "lead_attempts select" on public.lead_attempts
+  for select using (
+    public.is_super()
+    or public.has_role('general_manager')
+    or exists (
+      select 1 from public.leads l
+      where l.id = lead_attempts.lead_id
+        and public.has_role('customer_service')
+        and l.assigned_to = public.my_admin_id()
+    )
+  );
+
+drop policy if exists "lead_attempts insert" on public.lead_attempts;
+create policy "lead_attempts insert" on public.lead_attempts
+  for insert with check (
+    public.is_super()
+    or public.has_role('general_manager')
+    or exists (
+      select 1 from public.leads l
+      where l.id = lead_attempts.lead_id
+        and public.has_role('customer_service')
+        and l.assigned_to = public.my_admin_id()
+    )
+  );
+
+drop policy if exists "lead_status_log select" on public.lead_status_log;
+create policy "lead_status_log select" on public.lead_status_log
+  for select using (
+    public.is_super()
+    or public.has_role('general_manager')
+    or exists (
+      select 1 from public.leads l
+      where l.id = lead_status_log.lead_id
+        and public.has_role('customer_service')
+        and l.assigned_to = public.my_admin_id()
+    )
+  );
+
+drop policy if exists "lead_feedback_tags select" on public.lead_feedback_tags;
+create policy "lead_feedback_tags select" on public.lead_feedback_tags
+  for select using (
+    public.is_super()
+    or public.has_role('general_manager')
+    or exists (
+      select 1 from public.leads l
+      where l.id = coalesce(lead_feedback_tags.lead_id, (select lead_id from public.lead_attempts where id = lead_feedback_tags.attempt_id))
+        and public.has_role('customer_service')
+        and l.assigned_to = public.my_admin_id()
+    )
+  );
+
+drop policy if exists "lead_feedback_tags insert" on public.lead_feedback_tags;
+create policy "lead_feedback_tags insert" on public.lead_feedback_tags
+  for insert with check (
+    public.is_super()
+    or public.has_role('general_manager') or public.has_role('customer_service')
+  );
+
+drop policy if exists "lead_field_changes select" on public.lead_field_changes;
+create policy "lead_field_changes select" on public.lead_field_changes
+  for select using (
+    public.is_super()
+    or public.has_role('general_manager') or public.has_role('reception')
+    or (public.has_role('customer_service') and exists (
+      select 1 from public.leads l where l.id = lead_field_changes.lead_id and l.assigned_to = public.my_admin_id()
+    ))
+  );
+
+drop policy if exists "lead_invoices select" on public.lead_invoices;
+create policy "lead_invoices select" on public.lead_invoices
+  for select using (
+    public.is_super()
+    or public.has_role('general_manager') or public.has_role('reception')
+    or (public.has_role('customer_service') and exists (
+      select 1 from public.leads l where l.id = lead_invoices.lead_id and l.assigned_to = public.my_admin_id()
+    ))
+  );
+
+-- ---------- guard_content_transition: بقى بيفحص "اتحاد" أدوار المستخدم بدل رول
+-- واحد بس — أي دور من أدواره يسمح بالانتقال يخليه مسموح (نفس منطق كل رول
+-- بالظبط زي ما كان، بس بقى ممكن يبقى عند المستخدم أكتر من واحد منهم) ----------
+create or replace function public.guard_content_transition()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare me uuid; allowed boolean := false;
+begin
+  if public.can_manage_all_content() then return new; end if;
+  me := public.my_admin_id();
+
+  if public.has_role('page_manager') and old.created_by = me and (
+    (old.stage = 'idea_selection' and new.stage = 'initial_approval')
+    or (old.stage = 'ready_to_publish' and new.stage = 'published')
+    or (old.stage = 'ready_to_publish' and new.stage = 'scheduled')
+    or (old.stage = 'scheduled' and new.stage = 'published')
+    or (old.stage = 'scheduled' and new.stage = 'ready_to_publish')
+    or (old.stage = 'needs_revision' and old.assigned_designer is null and new.stage = 'initial_approval')
+    or (old.stage = new.stage)
+  ) then
+    allowed := true;
+  end if;
+
+  if not allowed and public.has_role('designer') and (old.assigned_designer is null or old.assigned_designer = me) and (
+    (old.stage = 'in_design' and new.stage = 'final_approval')
+    or (old.stage = 'needs_revision' and old.assigned_designer is not null and new.stage = 'final_approval')
+    or (old.stage = new.stage)
+  ) then
+    allowed := true;
+  end if;
+
+  if not allowed and public.has_role('approver') and (
+    (old.stage = 'initial_approval' and new.stage in ('in_design','needs_revision'))
+    or (old.stage = 'final_approval' and new.stage in ('ready_to_publish','needs_revision'))
+    or (old.stage = 'ready_to_publish' and new.stage = 'published')
+    or (old.stage = 'ready_to_publish' and new.stage = 'scheduled')
+    or (old.stage = 'scheduled' and new.stage = 'published')
+    or (old.stage = 'scheduled' and new.stage = 'ready_to_publish')
+    or (old.stage = new.stage)
+  ) then
+    allowed := true;
+  end if;
+
+  if allowed then return new; end if;
+  raise exception 'انتقال مرحلة غير مسموح لدورك الحالي';
+end $$;
+
+-- ============================================================
+--  11) استكمال سير عمل الحجز: "تم الحجز على سيستم المركز" + "تم إجراء
+--  الخدمة" + التحويل التلقائي لأرشيف المرضى + إحصائيات دخل الفواتير — ٢٠٢٦-٠٨-١٨
+-- ============================================================
+-- طلب المستخدم بالظبط: بعد ما خدمة العملاء تخلص تواصل وتقفل الليد بحالة
+-- "تم الحجز" (booked — موجودة بالفعل)، الليد بيروح للاستقبال يكمّل الحجز
+-- فعلياً على سيستم المركز → حالة جديدة "تم الحجز على سيستم المركز". وبعد ما
+-- الخدمة تتم فعلياً، الاستقبال بيقفل بحالة "تم إجراء الخدمة" ويرفع فاتورة
+-- المريض — رفع الفاتورة (Edge Function lead-invoice-upload) هو نفسه اللي
+-- بيعمل التحويل التلقائي لأرشيف المرضى (مطابقة بالتليفون المُطبَّع، وإلا
+-- إنشاء مريض جديد) عشان محدش يعمل الخطوتين يدوي وينسى واحدة فيهم.
+
+alter table public.leads drop constraint if exists leads_current_status_check;
+alter table public.leads add constraint leads_current_status_check
+  check (current_status in
+    ('new','in_progress','booked','booked_on_system','service_done',
+     'interested_undecided','rejected','no_response','invalid_number'));
+
+-- فئة جديدة لملفات المريض: فاتورة/إيصال خدمة (بتترفع تلقائياً هنا عند إقفال
+-- الليد بـ"تم إجراء الخدمة" — بتظهر في ملف المريض زي أي مستند تاني)
+alter table public.patient_files drop constraint if exists patient_files_category_check;
+alter table public.patient_files add constraint patient_files_category_check
+  check (category in ('id_document','insurance','radiology','lab_result','prescription','eeg','invoice','other'));
+
+-- ربط فاتورة الليد بملف المريض المقابل لها بعد التحويل (لو اتحول) — مفيد
+-- للتتبّع، مش شرط أساسي (ممكن يفضل null لو الرفع حصل قبل ما نضيف العمود ده)
+alter table public.lead_invoices add column if not exists patient_file_id uuid references public.patient_files(id);
+
+create index if not exists lead_invoices_uploaded_by_idx on public.lead_invoices (uploaded_by);
+
+-- ============================================================
+--  12) أول سوبر أدمن
 -- ============================================================
 -- الخطوة أ) Authentication → Users → Add user → Create new user
 --            ضع بريدك وكلمة السر، وفعّل «Auto Confirm User».
