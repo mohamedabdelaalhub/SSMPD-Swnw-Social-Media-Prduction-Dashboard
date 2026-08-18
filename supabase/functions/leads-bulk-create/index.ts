@@ -18,7 +18,8 @@ function json(body: unknown, status = 200) {
   });
 }
 
-const CLOSED_STATUSES = ["booked", "rejected", "no_response", "invalid_number"];
+// "booked"/"booked_on_system" بقوا حالات "لسه شغالة" بعد إضافة خطوة الاستقبال
+const CLOSED_STATUSES = ["service_done", "rejected", "no_response", "invalid_number"];
 const MAX_ROWS = 500;
 
 // نفس منطق تطبيع الهاتف بالظبط زي leads-create/patients-create
@@ -47,7 +48,13 @@ async function getCallerAdmin(req: Request) {
     .eq("user_id", user.id)
     .eq("active", true)
     .maybeSingle();
-  return row ?? null;
+  if (!row) return null;
+  const { data: extra } = await admin.from("admin_extra_roles").select("role").eq("admin_id", row.id);
+  return { ...row, extra_roles: (extra ?? []).map((r: { role: string }) => r.role) };
+}
+
+function roleIn(caller: { role: string; extra_roles?: string[] }, roles: string[]): boolean {
+  return roles.includes(caller.role) || (caller.extra_roles ?? []).some((r) => roles.includes(r));
 }
 
 // موديول الرفع الجماعي: بياخد مصفوفة صفوف (الفرونت إند بيقرأ ملف الإكسيل بمكتبة
@@ -61,7 +68,7 @@ Deno.serve(async (req) => {
 
   const caller = await getCallerAdmin(req);
   if (!caller) return json({ error: "غير مصرح — سجّل دخولك تاني" }, 401);
-  const allowed = ["reception", "customer_service", "general_manager", "super_admin"].includes(caller.role);
+  const allowed = roleIn(caller, ["reception", "customer_service", "general_manager", "super_admin"]);
   if (!allowed) return json({ error: "مفيش صلاحية موديول الليدز" }, 403);
 
   let body: any;
