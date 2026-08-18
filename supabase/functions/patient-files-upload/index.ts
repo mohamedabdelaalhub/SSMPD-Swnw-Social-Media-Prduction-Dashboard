@@ -4,7 +4,13 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
-const ARCHIVE_FOLDER_ID = Deno.env.get("DRIVE_PATIENT_ARCHIVE_FOLDER_ID")!;
+
+// جسر Google Apps Script (نفس اللي بيستخدمه الفرونت‌إند في drive.js) — بيرفع
+// الملف وهو شغّال بحساب المركز نفسه (swnwclinics@gmail.com) عشان نتجنب مشكلة
+// "Service Account مفيش عنده مساحة تخزين" (403 storageQuotaExceeded) اللي كانت
+// بتحصل مع الرفع المباشر بالـ Service Account. موثّق في CLAUDE.md.
+const DRIVE_BRIDGE_URL =
+  "https://script.google.com/macros/s/AKfycbyTg8uqckj3ttdCS5rV32jzAjpdtTt74XKYaxNZH1tSQ3ESqR63dASUvsjbU0T_BFBl/exec";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -48,120 +54,41 @@ async function getCallerAdmin(req: Request) {
   return row ?? null;
 }
 
-// ---------- Google Service Account OAuth (بدون أي مكتبة خارجية — Web Crypto فقط) ----------
-function base64url(input: Uint8Array | string): string {
-  const bytes = typeof input === "string" ? new TextEncoder().encode(input) : input;
-  let str = "";
-  bytes.forEach((b) => (str += String.fromCharCode(b)));
-  return btoa(str).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+function bytesToBase64(bytes: Uint8Array): string {
+  let binary = "";
+  const chunkSize = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  }
+  return btoa(binary);
 }
 
-async function importPrivateKey(pem: string): Promise<CryptoKey> {
-  const pemContents = pem
-    .replace(/-----BEGIN PRIVATE KEY-----/, "")
-    .replace(/-----END PRIVATE KEY-----/, "")
-    .replace(/\s/g, "");
-  const binaryDer = Uint8Array.from(atob(pemContents), (c) => c.charCodeAt(0));
-  return crypto.subtle.importKey(
-    "pkcs8",
-    binaryDer.buffer,
-    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
-    false,
-    ["sign"],
-  );
-}
-
-async function getDriveAccessToken(): Promise<string> {
-  const key = JSON.parse(Deno.env.get("GOOGLE_SERVICE_ACCOUNT_KEY")!);
-  const now = Math.floor(Date.now() / 1000);
-  const header = { alg: "RS256", typ: "JWT" };
-  const claim = {
-    iss: key.client_email,
-    scope: "https://www.googleapis.com/auth/drive",
-    aud: "https://oauth2.googleapis.com/token",
-    exp: now + 3600,
-    iat: now,
-  };
-  const signingInput = `${base64url(JSON.stringify(header))}.${base64url(JSON.stringify(claim))}`;
-  const cryptoKey = await importPrivateKey(key.private_key);
-  const signature = await crypto.subtle.sign(
-    "RSASSA-PKCS1-v1_5",
-    cryptoKey,
-    new TextEncoder().encode(signingInput),
-  );
-  const jwt = `${signingInput}.${base64url(new Uint8Array(signature))}`;
-
-  const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
-      assertion: jwt,
-    }),
-  });
-  const tokenJson = await tokenRes.json();
-  if (!tokenRes.ok) throw new Error("فشل توليد Google access token: " + JSON.stringify(tokenJson));
-  return tokenJson.access_token as string;
-}
-
-// ---------- Drive helpers ----------
-async function findOrCreateFolder(name: string, parentId: string, token: string): Promise<string> {
-  const q = encodeURIComponent(
-    `name = '${name.replace(/'/g, "\\'")}' and '${parentId}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
-  );
-  const searchRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name)`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  const searchJson = await searchRes.json();
-  if (!searchRes.ok) throw new Error("فشل البحث في Drive: " + JSON.stringify(searchJson));
-  if (searchJson.files && searchJson.files.length > 0) return searchJson.files[0].id;
-
-  const createRes = await fetch("https://www.googleapis.com/drive/v3/files?fields=id", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ name, mimeType: "application/vnd.google-apps.folder", parents: [parentId] }),
-  });
-  const createJson = await createRes.json();
-  if (!createRes.ok) throw new Error("فشل إنشاء فولدر في Drive: " + JSON.stringify(createJson));
-  return createJson.id as string;
-}
-
-// رفع resumable حقيقي: بدء جلسة ثم PUT للبايتات الخام (من غير base64) — مناسب للملفات الكبيرة (أشعة/PDF)
-async function uploadFileResumable(
-  token: string,
+// ---------- رفع عبر جسر Apps Script (category: "patient_archive") ----------
+async function uploadViaBridge(
+  patientCode: string,
+  docFolderName: string,
   fileName: string,
   mimeType: string,
-  parentId: string,
-  fileBytes: Uint8Array,
-): Promise<{ id: string }> {
-  const initRes = await fetch(
-    "https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&fields=id",
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json; charset=UTF-8",
-        "X-Upload-Content-Type": mimeType || "application/octet-stream",
-        "X-Upload-Content-Length": String(fileBytes.byteLength),
-      },
-      body: JSON.stringify({ name: fileName, parents: [parentId] }),
-    },
-  );
-  if (!initRes.ok) throw new Error("فشل بدء جلسة الرفع: " + (await initRes.text()));
-  const uploadUrl = initRes.headers.get("Location");
-  if (!uploadUrl) throw new Error("مفيش Location header من Google لبدء الرفع");
-
-  const putRes = await fetch(uploadUrl, {
-    method: "PUT",
-    headers: {
-      "Content-Type": mimeType || "application/octet-stream",
-      "Content-Length": String(fileBytes.byteLength),
-    },
-    body: fileBytes,
+  bytes: Uint8Array,
+): Promise<{ fileUrl: string; folderUrl: string; fileId: string }> {
+  const payload = {
+    category: "patient_archive",
+    patientCode,
+    docFolderName,
+    fileName,
+    mimeType: mimeType || "application/octet-stream",
+    base64: bytesToBase64(bytes),
+  };
+  const res = await fetch(DRIVE_BRIDGE_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" }, // يتفادى preflight CORS مع Apps Script
+    body: JSON.stringify(payload),
   });
-  const putJson = await putRes.json();
-  if (!putRes.ok) throw new Error("فشل رفع الملف: " + JSON.stringify(putJson));
-  return putJson;
+  const resJson = await res.json();
+  if (!res.ok || !resJson || !resJson.ok) {
+    throw new Error((resJson && resJson.error) || "فشل الرفع لجوجل درايف عبر الجسر");
+  }
+  return { fileUrl: resJson.fileUrl, folderUrl: resJson.folderUrl, fileId: resJson.fileId };
 }
 
 Deno.serve(async (req) => {
@@ -202,22 +129,18 @@ Deno.serve(async (req) => {
     .maybeSingle();
   if (patientErr || !patient) return json({ error: "المريض غير موجود" }, 404);
 
-  let token: string;
   try {
-    token = await getDriveAccessToken();
-  } catch (e) {
-    return json({ error: "فشل الاتصال بـ Google Drive: " + (e as Error).message }, 502);
-  }
-
-  try {
-    const patientFolderId = await findOrCreateFolder(`Patient_${patient.patient_code}`, ARCHIVE_FOLDER_ID, token);
-    const categoryFolderId = await findOrCreateFolder(CATEGORY_FOLDER_NAMES[category], patientFolderId, token);
-
     const bytes = new Uint8Array(await file.arrayBuffer());
     const checksumBuf = await crypto.subtle.digest("SHA-256", bytes);
     const checksum = Array.from(new Uint8Array(checksumBuf)).map((b) => b.toString(16).padStart(2, "0")).join("");
 
-    const uploaded = await uploadFileResumable(token, file.name, file.type, categoryFolderId, bytes);
+    const uploaded = await uploadViaBridge(
+      patient.patient_code,
+      CATEGORY_FOLDER_NAMES[category],
+      file.name,
+      file.type,
+      bytes,
+    );
 
     const { data: fileRow, error: insertErr } = await admin
       .from("patient_files")
@@ -225,7 +148,7 @@ Deno.serve(async (req) => {
         patient_id: patientId,
         category,
         other_description: otherDescription,
-        drive_file_id: uploaded.id,
+        drive_file_id: uploaded.fileId,
         file_name: file.name,
         file_size: bytes.byteLength,
         mime_type: file.type || null,
