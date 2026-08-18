@@ -223,6 +223,17 @@
     downloadPatientFile: function (fileId) {
       return edgeFetchBlob("patient-files-download" + qs({ file_id: fileId }));
     },
+    // داشبورد عام: إجماليات + آخر إضافات
+    getPatientArchiveStats: function () {
+      return edgeFetch("patient-files-list" + qs({ stats: 1 }));
+    },
+    // طابور المراجعة: ملفات بحالة مراجعة معينة عبر كل المرضى (لصاحب صلاحية المراجعة)
+    listFilesForReview: function (params) {
+      return edgeFetch("patient-files-list" + qs(params));
+    },
+    reviewPatientFile: function (payload) {
+      return edgeFetch("patient-files-review", { method: "POST", json: payload });
+    },
 
     // ---------- إدارة الليدز (Edge Functions) ----------
     createLead: function (payload) {
@@ -243,6 +254,25 @@
     },
     listLeadStatusLog: function (leadId) {
       return handle(client.from("lead_status_log").select("*").eq("lead_id", leadId).order("changed_at", { ascending: false }));
+    },
+    listLeadFieldChanges: function (leadId) {
+      return handle(client.from("lead_field_changes").select("*").eq("lead_id", leadId).order("changed_at", { ascending: false }));
+    },
+    // قائمة موظفين خفيفة (اسم فقط) — لعرض أسماء "مين رفع/عدّل" ولفلتر "الموظف اللي أنهى الحجز"
+    listEmployees: function () {
+      return edgeFetch("leads-list" + qs({ list_employees: 1 }));
+    },
+    getLeadsStats: function () {
+      return edgeFetch("leads-list" + qs({ stats: 1 }));
+    },
+    bulkCreateLeads: function (rows) {
+      return edgeFetch("leads-bulk-create", { method: "POST", json: { leads: rows } });
+    },
+    uploadLeadInvoice: function (formData) {
+      return edgeFetchForm("lead-invoice-upload", formData);
+    },
+    listLeadInvoices: function (leadId) {
+      return handle(client.from("lead_invoices").select("*").eq("lead_id", leadId).order("uploaded_at", { ascending: false }));
     },
 
     // ---------- realtime ----------
