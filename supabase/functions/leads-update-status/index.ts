@@ -67,12 +67,17 @@ Deno.serve(async (req) => {
   const leadId = body.lead_id?.toString();
   const newStatus = (body.current_status ?? "").toString().trim();
   const bookingReference = body.booking_reference?.toString().trim() || null;
+  const bookingDate = body.booking_date?.toString().trim() || null;
   const priority = body.priority?.toString().trim() || null;
   const doNotContact = typeof body.do_not_contact === "boolean" ? body.do_not_contact : null;
 
   if (!leadId) return json({ error: "lead_id مطلوب" }, 400);
   if (newStatus && !VALID_STATUSES.includes(newStatus)) {
     return json({ error: `current_status لازم يكون واحد من: ${VALID_STATUSES.join(", ")}` }, 400);
+  }
+  // طلب المستخدم: لما الحالة تبقى "تم الحجز" لازم تفاصيل الحجز (رقم الحجز على الأقل)
+  if (newStatus === "booked" && !bookingReference) {
+    return json({ error: "رقم/مرجع الحجز مطلوب لما الحالة تبقى \"تم الحجز\"" }, 400);
   }
   if (priority && !["high", "medium", "normal"].includes(priority)) {
     return json({ error: "priority لازم يكون high أو medium أو normal" }, 400);
@@ -92,26 +97,32 @@ Deno.serve(async (req) => {
     return json({ error: "الليد ده مش مُسند لك" }, 403);
   }
 
-  const updates: Record<string, unknown> = {};
+  const hasUpdate = !!(newStatus || bookingReference !== null || bookingDate !== null || priority || doNotContact !== null);
+  if (!hasUpdate) return json({ error: "مفيش أي تحديث اتبعت" }, 400);
+
+  var closedAt: string | null = null;
+  var clearClosedAt = false;
   if (newStatus) {
-    updates.current_status = newStatus;
-    if (CLOSED_STATUSES.includes(newStatus)) updates.closed_at = new Date().toISOString();
-    else updates.closed_at = null;
+    if (CLOSED_STATUSES.includes(newStatus)) closedAt = new Date().toISOString();
+    else clearClosedAt = true;
   }
-  if (bookingReference !== null) updates.booking_reference = bookingReference;
-  if (priority) updates.priority = priority;
-  if (doNotContact !== null) updates.do_not_contact = doNotContact;
-  updates.updated_at = new Date().toISOString();
 
-  if (Object.keys(updates).length === 0) return json({ error: "مفيش أي تحديث اتبعت" }, 400);
-
-  const { data: updated, error: updErr } = await admin
-    .from("leads")
-    .update(updates)
-    .eq("id", leadId)
-    .select("id, customer_name, current_status, priority, do_not_contact, booking_reference, closed_at, updated_at")
-    .single();
-  // ملاحظة: تريجر trg_log_lead_status_change بيسجل التغيير تلقائياً في lead_status_log — مفيش داعي نسجله يدوي هنا
+  // ملاحظة: التحديث بيعدّي من rpc_update_lead (مش .update() مباشرة) عشان يحدد
+  // app.caller_admin_id جوّه نفس الترانزاكشن — التريجرز في القاعدة (تسجيل تغيير
+  // الحالة/الحقول + توثيق مين أنهى الحجز) بتعتمد على القيمة دي لما الاتصال بيحصل
+  // بالـ service role زي هنا (my_admin_id() العادي بيرجع فاضي في السياق ده)
+  const { data: updated, error: updErr } = await admin.rpc("rpc_update_lead", {
+    p_lead_id: leadId,
+    p_caller_id: caller.id,
+    p_current_status: newStatus || null,
+    p_booking_reference: bookingReference,
+    p_clear_booking_reference: false,
+    p_booking_date: bookingDate,
+    p_priority: priority,
+    p_do_not_contact: doNotContact,
+    p_closed_at: closedAt,
+    p_clear_closed_at: clearClosedAt,
+  }).single();
   if (updErr) return json({ error: updErr.message }, 500);
 
   return json({ lead: updated });
