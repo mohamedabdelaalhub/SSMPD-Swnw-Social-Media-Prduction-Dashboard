@@ -4,7 +4,13 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
-const REPORTS_FOLDER_ID = Deno.env.get("DRIVE_LEADS_REPORTS_FOLDER_ID")!;
+
+// جسر Google Apps Script (نفس اللي بيستخدمه الفرونت‌إند في drive.js) — بيرفع
+// الملف وهو شغّال بحساب المركز نفسه (swnwclinics@gmail.com) عشان نتجنب مشكلة
+// "Service Account مفيش عنده مساحة تخزين" (403 storageQuotaExceeded) اللي كانت
+// بتحصل مع الرفع المباشر بالـ Service Account. موثّق في CLAUDE.md.
+const DRIVE_BRIDGE_URL =
+  "https://script.google.com/macros/s/AKfycbyTg8uqckj3ttdCS5rV32jzAjpdtTt74XKYaxNZH1tSQ3ESqR63dASUvsjbU0T_BFBl/exec";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -37,97 +43,53 @@ async function getCallerAdmin(req: Request) {
   return row ?? null;
 }
 
-// ---------- Google Service Account OAuth (نفس أسلوب patient-files-upload بالظبط) ----------
-function base64url(input: Uint8Array | string): string {
-  const bytes = typeof input === "string" ? new TextEncoder().encode(input) : input;
-  let str = "";
-  bytes.forEach((b) => (str += String.fromCharCode(b)));
-  return btoa(str).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+function bytesToBase64(bytes: Uint8Array): string {
+  let binary = "";
+  const chunkSize = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  }
+  return btoa(binary);
 }
 
-async function importPrivateKey(pem: string): Promise<CryptoKey> {
-  const pemContents = pem
-    .replace(/-----BEGIN PRIVATE KEY-----/, "")
-    .replace(/-----END PRIVATE KEY-----/, "")
-    .replace(/\s/g, "");
-  const binaryDer = Uint8Array.from(atob(pemContents), (c) => c.charCodeAt(0));
-  return crypto.subtle.importKey(
-    "pkcs8",
-    binaryDer.buffer,
-    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
-    false,
-    ["sign"],
-  );
+// أنواع الملفات المسموحة لفاتورة/إيصال الحجز — صور + PDF + إكسيل (مش صور بس)
+const ALLOWED_MIME_PREFIXES = ["image/"];
+const ALLOWED_MIME_EXACT = new Set([
+  "application/pdf",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+]);
+function isAllowedMime(mimeType: string, fileName: string): boolean {
+  if (ALLOWED_MIME_PREFIXES.some((p) => mimeType.startsWith(p))) return true;
+  if (ALLOWED_MIME_EXACT.has(mimeType)) return true;
+  // بعض المتصفحات بتبعت mimeType فاضي لملفات الإكسيل/PDF أحياناً — رجوع لامتداد الملف
+  return /\.(pdf|xlsx?)$/i.test(fileName);
 }
 
-async function getDriveAccessToken(): Promise<string> {
-  const key = JSON.parse(Deno.env.get("GOOGLE_SERVICE_ACCOUNT_KEY")!);
-  const now = Math.floor(Date.now() / 1000);
-  const header = { alg: "RS256", typ: "JWT" };
-  const claim = {
-    iss: key.client_email,
-    scope: "https://www.googleapis.com/auth/drive",
-    aud: "https://oauth2.googleapis.com/token",
-    exp: now + 3600,
-    iat: now,
-  };
-  const signingInput = `${base64url(JSON.stringify(header))}.${base64url(JSON.stringify(claim))}`;
-  const cryptoKey = await importPrivateKey(key.private_key);
-  const signature = await crypto.subtle.sign(
-    "RSASSA-PKCS1-v1_5",
-    cryptoKey,
-    new TextEncoder().encode(signingInput),
-  );
-  const jwt = `${signingInput}.${base64url(new Uint8Array(signature))}`;
-
-  const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
-      assertion: jwt,
-    }),
-  });
-  const tokenJson = await tokenRes.json();
-  if (!tokenRes.ok) throw new Error("فشل توليد Google access token: " + JSON.stringify(tokenJson));
-  return tokenJson.access_token as string;
-}
-
-async function uploadFileResumable(
-  token: string,
+// ---------- رفع عبر جسر Apps Script (category: "leads_invoice") ----------
+async function uploadViaBridge(
+  leadId: string,
   fileName: string,
   mimeType: string,
-  parentId: string,
-  fileBytes: Uint8Array,
-): Promise<{ id: string }> {
-  const initRes = await fetch(
-    "https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&fields=id",
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json; charset=UTF-8",
-        "X-Upload-Content-Type": mimeType || "application/octet-stream",
-        "X-Upload-Content-Length": String(fileBytes.byteLength),
-      },
-      body: JSON.stringify({ name: fileName, parents: [parentId] }),
-    },
-  );
-  if (!initRes.ok) throw new Error("فشل بدء جلسة الرفع: " + (await initRes.text()));
-  const uploadUrl = initRes.headers.get("Location");
-  if (!uploadUrl) throw new Error("مفيش Location header من Google لبدء الرفع");
-
-  const putRes = await fetch(uploadUrl, {
-    method: "PUT",
-    headers: {
-      "Content-Type": mimeType || "application/octet-stream",
-      "Content-Length": String(fileBytes.byteLength),
-    },
-    body: fileBytes,
+  bytes: Uint8Array,
+): Promise<{ fileUrl: string; folderUrl: string; fileId: string }> {
+  const payload = {
+    category: "leads_invoice",
+    leadId,
+    fileName,
+    mimeType: mimeType || "application/octet-stream",
+    base64: bytesToBase64(bytes),
+  };
+  const res = await fetch(DRIVE_BRIDGE_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" }, // يتفادى preflight CORS مع Apps Script
+    body: JSON.stringify(payload),
   });
-  const putJson = await putRes.json();
-  if (!putRes.ok) throw new Error("فشل رفع الملف: " + JSON.stringify(putJson));
-  return putJson;
+  const resJson = await res.json();
+  if (!res.ok || !resJson || !resJson.ok) {
+    throw new Error((resJson && resJson.error) || "فشل الرفع لجوجل درايف عبر الجسر");
+  }
+  return { fileUrl: resJson.fileUrl, folderUrl: resJson.folderUrl, fileId: resJson.fileId };
 }
 
 // فاتورة/إيصال لليد اتحجز وأخد خدمة فعلاً — طلب المستخدم: تحليل الدخل الحقيقي
@@ -158,6 +120,9 @@ Deno.serve(async (req) => {
   const amount = Number(amountStr);
   if (!amountStr || !isFinite(amount) || amount <= 0) return json({ error: "amount لازم يكون رقم أكبر من صفر" }, 400);
   if (!(file instanceof File)) return json({ error: "الملف مطلوب" }, 400);
+  if (!isAllowedMime(file.type || "", file.name || "")) {
+    return json({ error: "نوع الملف غير مدعوم — لازم يكون صورة أو PDF أو إكسيل" }, 400);
+  }
 
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
   const { data: lead, error: leadErr } = await admin
@@ -174,16 +139,9 @@ Deno.serve(async (req) => {
     return json({ error: "رفع الفاتورة متاح بس للليدز اللي حالتها \"تم الحجز\"" }, 409);
   }
 
-  let token: string;
-  try {
-    token = await getDriveAccessToken();
-  } catch (e) {
-    return json({ error: "فشل الاتصال بـ Google Drive: " + (e as Error).message }, 502);
-  }
-
   try {
     const bytes = new Uint8Array(await file.arrayBuffer());
-    const uploaded = await uploadFileResumable(token, file.name, file.type, REPORTS_FOLDER_ID, bytes);
+    const uploaded = await uploadViaBridge(leadId, file.name, file.type, bytes);
 
     const { data: invoice, error: insertErr } = await admin
       .from("lead_invoices")
@@ -191,7 +149,7 @@ Deno.serve(async (req) => {
         lead_id: leadId,
         amount,
         service_name: serviceName,
-        drive_file_id: uploaded.id,
+        drive_file_id: uploaded.fileId,
         file_name: file.name,
         uploaded_by: caller.id,
         notes,
