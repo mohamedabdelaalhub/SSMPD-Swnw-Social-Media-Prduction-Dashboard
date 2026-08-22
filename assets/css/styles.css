@@ -340,10 +340,17 @@ table.simple tr:hover{background:var(--c-bg);}
 .upload-box.drag{border-color:var(--c-primary); color:var(--c-primary); background:#F0F4FE;}
 
 /* ---------- استجابة الموبايل والتابلت (بما فيها الآيباد بالوضع الرأسي) ---------- */
+/* إصلاح: أيقونة القائمة المنسدلة الموحّدة (.user-menu-icon) كانت بتتخفي بالكامل على
+   الموبايل/التابلت لأنها جوه .who واللي كان بيتخفي بالكامل هنا — يعني أرشيف المرضى/
+   إدارة الليدز/لوحة التحكم كانوا مش قابلين للوصول خالص من الموبايل. الحل: نخفي بس
+   بادچ الدور/الاسم/زرار الخروج (موجودين أصلاً جوه القائمة المنسدلة) ونسيب الأيقونة
+   ظاهرة، وشريط التابات العادي (#tabs-bar) بيفضل ظاهر وقابل للسكرول الأفقي بدل ما
+   يتخفي (كان ليه بديل قائمة موبايل قديمة ناقصة أرشيف المرضى/الليدز، اتشالت). */
 @media (max-width:860px){
-  .topbar .who{display:none;}
-  #tabs-bar{display:none;}
-  .menu-toggle{display:flex;}
+  .topbar .who .role-badge,
+  .topbar .who > b,
+  .topbar .who #logout-btn{display:none;}
+  .topbar .who{gap:8px;}
 }
 
 @media (max-width:720px){
