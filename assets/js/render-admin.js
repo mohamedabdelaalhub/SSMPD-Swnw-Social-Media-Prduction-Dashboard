@@ -24,7 +24,7 @@
         '<p style="font-size:11px;color:var(--c-muted);margin-top:8px;">هو اللي هيفتح رابط اللوحة ويعمل "حساب جديد" بنفس البريد ده وينشئ كلمة سره — إنت مش بتحط له كلمة سر.</p></div>';
 
       html += '<div class="section"><h3>كل المستخدمين (' + admins.length + ')</h3>' +
-        '<table class="simple"><thead><tr><th>الاسم</th><th>البريد</th><th>الدور الأساسي</th><th>أدوار إضافية</th><th>أرشيف المرضى</th><th>الحالة</th><th></th></tr></thead><tbody>';
+        '<table class="simple"><thead><tr><th>الاسم</th><th>البريد</th><th>الدور الأساسي</th><th>أدوار إضافية</th><th>أرشيف المرضى</th><th>معاينة الأرشيف فقط</th><th>الحالة</th><th></th></tr></thead><tbody>';
 
       admins.forEach(function (a) {
         var lastSuper = a.role === "super_admin" && a.active && activeSupers.length === 1;
@@ -39,6 +39,7 @@
               '<input type="checkbox" data-extra-role="' + a.id + '" data-extra-role-value="' + k + '" ' + (extraRoles.indexOf(k) !== -1 ? "checked" : "") + '>' + R.label(k) + '</label>';
           }).join("") + '</td>' +
           '<td style="text-align:center;"><input type="checkbox" data-archive="' + a.id + '" ' + (a.has_archive_access ? "checked" : "") + '></td>' +
+          '<td style="text-align:center;"><input type="checkbox" data-archive-view-only="' + a.id + '" ' + (a.has_archive_view_only ? "checked" : "") + '></td>' +
           '<td>' + (a.user_id ? '<span class="status-pill approved">مفعّل</span>' : '<span class="status-pill draft">بانتظار إنشاء الحساب</span>') + '</td>' +
           '<td>' +
           '<button class="btn ghost sm" data-toggle="' + a.id + '" ' + (lastSuper ? "disabled" : "") + '>' + (a.active ? "إيقاف" : "تفعيل") + '</button> ' +
@@ -47,7 +48,8 @@
       });
       html += '</tbody></table>' +
         '<p style="font-size:11px;color:var(--c-muted);margin-top:8px;">"الدور الأساسي" بيتحكم في الشاشة الافتراضية وبادچ الدور. "أدوار إضافية" بتضيف صلاحيات دور تاني للمستخدم نفسه من غير ما تغيّر دوره الأساسي — مثلاً موظف خدمة عملاء تحب يبقى ليه كمان صلاحية الاستقبال أو إدارة المحتوى.</p>' +
-        '<p style="font-size:11px;color:var(--c-muted);margin-top:4px;">"أرشيف المرضى" صلاحية منفصلة عن الرول — أي مستخدم مفعّلة عنده بيقدر يوصل لتاب أرشيف المرضى مهما كان روله.</p></div>';
+        '<p style="font-size:11px;color:var(--c-muted);margin-top:4px;">"أرشيف المرضى" صلاحية منفصلة عن الرول — أي مستخدم مفعّلة عنده بيقدر يوصل لتاب أرشيف المرضى مهما كان روله.</p>' +
+        '<p style="font-size:11px;color:var(--c-muted);margin-top:4px;">"معاينة الأرشيف فقط" لمين محتاج يتصفح ملفات المرضى بس (مثال: طبيب سونو) — بيقدر يشوف ويفتح الملفات، من غير رفع أو حذف أو مراجعة.</p></div>';
 
       container.innerHTML = html;
 
@@ -79,6 +81,12 @@
       container.querySelectorAll("[data-archive]").forEach(function (cb) {
         cb.onchange = function () {
           window.SSMPDDb.updateAdmin(cb.getAttribute("data-archive"), { has_archive_access: cb.checked })
+            .catch(function (e) { alert("خطأ: " + e.message); render(container); });
+        };
+      });
+      container.querySelectorAll("[data-archive-view-only]").forEach(function (cb) {
+        cb.onchange = function () {
+          window.SSMPDDb.updateAdmin(cb.getAttribute("data-archive-view-only"), { has_archive_view_only: cb.checked })
             .catch(function (e) { alert("خطأ: " + e.message); render(container); });
         };
       });

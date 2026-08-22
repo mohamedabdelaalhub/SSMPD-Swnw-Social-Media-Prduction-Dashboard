@@ -428,7 +428,7 @@
             (f.reviewed_by_name ? ' · راجعه: ' + escapeHtml(f.reviewed_by_name) : '') + '</span></div>' +
             '<div style="display:flex;gap:6px;flex-shrink:0;">' +
             '<button class="btn ghost sm" data-dl="' + f.id + '">تنزيل</button>' +
-            '<button class="btn danger sm" data-del-file="' + f.id + '">حذف</button></div></div>';
+            (canUp ? '<button class="btn danger sm" data-del-file="' + f.id + '">حذف</button>' : '') + '</div></div>';
         });
       }
       html += '</div>';

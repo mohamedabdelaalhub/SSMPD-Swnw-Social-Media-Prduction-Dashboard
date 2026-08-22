@@ -10,7 +10,8 @@
     super_admin: "سوبر أدمن",
     reception: "استقبال",
     customer_service: "خدمة عملاء",
-    nursing: "تمريض"
+    nursing: "تمريض",
+    sono_doctor: "طبيب سونو"
   };
 
   // كل تاب: مين يشوفه — المدير العام يشوف كل حاجة زي السوبر أدمن ما عدا تاب المستخدمين
@@ -67,7 +68,7 @@
     canSeeTab: function (adminOrRole, tab) {
       var admin = normalizeAdmin(adminOrRole);
       if (tab === "patients") {
-        return !!admin.has_archive_access || Roles.hasRole(admin, "super_admin");
+        return !!admin.has_archive_access || !!admin.has_archive_view_only || Roles.hasRole(admin, "super_admin");
       }
       var list = TAB_ACCESS[tab];
       return !!list && Roles.hasAnyRole(admin, list);
@@ -77,6 +78,7 @@
       var admin = normalizeAdmin(adminOrRole);
       if (Roles.hasRole(admin, "reception") || Roles.hasRole(admin, "customer_service")) return "leads";
       if (Roles.hasRole(admin, "nursing")) return "patients";
+      if (Roles.hasRole(admin, "sono_doctor")) return "patients";
       if (Roles.hasRole(admin, "approver")) return "review";
       if (Roles.hasRole(admin, "designer")) return "design";
       if (Roles.hasRole(admin, "page_manager")) return "production";
