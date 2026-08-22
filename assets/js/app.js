@@ -40,8 +40,8 @@
       '<img class="logo" src="assets/img/logo.svg" alt="Swnw">' +
       '<h1>لوحة إنتاج المحتوى</h1><p class="sub">' + window.SSMPD_CONFIG.centerName + '</p>' +
       (errorMsg ? '<div class="err-msg">' + errorMsg + '</div>' : '') +
-      '<div class="field"><label>البريد الإلكتروني</label><input id="auth-email" type="email"></div>' +
-      '<div class="field"><label>كلمة السر</label><input id="auth-pass" type="password"></div>';
+      '<div class="field"><label>البريد الإلكتروني</label><input id="auth-email" type="email" autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false"></div>' +
+      '<div class="field"><label>كلمة السر</label><input id="auth-pass" type="password" autocomplete="current-password" autocapitalize="off" autocorrect="off" spellcheck="false"></div>';
 
     if (mode === "signup") {
       html += '<div class="field"><label>الاسم</label><input id="auth-name"></div>' +
@@ -61,7 +61,9 @@
 
     document.getElementById("auth-submit").onclick = function () {
       var email = document.getElementById("auth-email").value.trim();
-      var pass = document.getElementById("auth-pass").value;
+      // تريم زي الإيميل بالظبط — بيمنع مسافة/سطر جديد مخفي (شائع لو الباسورد
+      // اتنسخ من رسالة واتساب/ماسنجر) يسبب "الباسورد غلط" وهو أصلاً صح
+      var pass = document.getElementById("auth-pass").value.trim();
       if (!email || !pass) { showAuthScreen(mode, "اكتب البريد وكلمة السر"); return; }
 
       var action;
@@ -215,8 +217,8 @@
     backdrop.className = "modal-backdrop";
     backdrop.innerHTML = '<div class="modal" style="max-width:420px;">' +
       '<div class="modal-head"><h3>تغيير كلمة السر</h3><button class="modal-close">×</button></div>' +
-      '<div class="field"><label>كلمة السر الجديدة</label><input id="cp-pass1" type="password"></div>' +
-      '<div class="field"><label>تأكيد كلمة السر</label><input id="cp-pass2" type="password"></div>' +
+      '<div class="field"><label>كلمة السر الجديدة</label><input id="cp-pass1" type="password" autocomplete="new-password" autocapitalize="off" autocorrect="off" spellcheck="false"></div>' +
+      '<div class="field"><label>تأكيد كلمة السر</label><input id="cp-pass2" type="password" autocomplete="new-password" autocapitalize="off" autocorrect="off" spellcheck="false"></div>' +
       '<button class="btn block" id="cp-save" style="margin-top:10px;">حفظ</button>' +
       '</div>';
     document.body.appendChild(backdrop);
@@ -226,8 +228,8 @@
     backdrop.addEventListener("click", function (e) { if (e.target === backdrop) close(); });
 
     backdrop.querySelector("#cp-save").onclick = function () {
-      var p1 = document.getElementById("cp-pass1").value;
-      var p2 = document.getElementById("cp-pass2").value;
+      var p1 = document.getElementById("cp-pass1").value.trim();
+      var p2 = document.getElementById("cp-pass2").value.trim();
       if (!p1 || p1.length < 6) { window.SSMPDToast.show("كلمة السر لازم تكون ٦ حروف/أرقام على الأقل", "error"); return; }
       if (p1 !== p2) { window.SSMPDToast.show("كلمة السر وتأكيدها مش متطابقين", "error"); return; }
       window.SSMPDAuth.changePassword(p1).then(function () {
