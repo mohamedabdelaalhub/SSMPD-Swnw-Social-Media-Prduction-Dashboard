@@ -33,12 +33,12 @@ async function getCallerAdmin(req: Request) {
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
   const { data: row } = await admin
     .from("admins")
-    .select("id, role, active")
+    .select("id, role, active, admin_extra_roles(role)")
     .eq("user_id", user.id)
     .eq("active", true)
     .maybeSingle();
   if (!row) return null;
-  const { data: extra } = await admin.from("admin_extra_roles").select("role").eq("admin_id", row.id);
+  const extra = (row as unknown as { admin_extra_roles?: { role: string }[] }).admin_extra_roles;
   return { ...row, extra_roles: (extra ?? []).map((r: { role: string }) => r.role) };
 }
 
