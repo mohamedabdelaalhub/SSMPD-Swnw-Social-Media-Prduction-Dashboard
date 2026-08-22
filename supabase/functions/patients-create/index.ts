@@ -50,12 +50,14 @@ async function getCallerAdmin(req: Request) {
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
   const { data: row } = await admin
     .from("admins")
-    .select("id, role, has_archive_access, active")
+    .select("id, role, has_archive_access, active, admin_extra_roles(role)")
     .eq("user_id", user.id)
     .eq("active", true)
     .maybeSingle();
   if (!row) return null;
-  const { data: extra } = await admin.from("admin_extra_roles").select("role").eq("admin_id", row.id);
+  // تعدد الأدوار: مضمومة في نفس استعلام admins فوق (join) بدل نداء منفصل —
+  // أسرع (رحلة شبكة واحدة بدل اتنين) لكل استدعاء للدالة دي
+  const extra = (row as unknown as { admin_extra_roles?: { role: string }[] }).admin_extra_roles;
   return { ...row, extra_roles: (extra ?? []).map((r: { role: string }) => r.role) };
 }
 
