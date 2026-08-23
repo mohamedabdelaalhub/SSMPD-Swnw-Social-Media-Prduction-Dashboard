@@ -1400,7 +1400,52 @@ alter table public.lead_invoices add column if not exists patient_file_id uuid r
 create index if not exists lead_invoices_uploaded_by_idx on public.lead_invoices (uploaded_by);
 
 -- ============================================================
---  12) أول سوبر أدمن
+--  13) دور "طبيب سونو" — معاينة أرشيف المرضى فقط (٢٠٢٦-٠٨-٢٢)
+-- ============================================================
+-- طلب المستخدم: دور جديد بيتبعتله ملفات المرضى من الأرشيف يتصفحها بس —
+-- من غير رفع/حذف/مراجعة. القرار المعماري: نفس نمط `has_archive_access`/
+-- `has_archive_review_access` الموجودين بالفعل (صلاحية منفصلة عن الرول)،
+-- عشان أي مستخدم (مهما كان روله الأساسي) يقدر ياخد "معاينة فقط" لو احتاج.
+-- الرول `sono_doctor` نفسه بس تسمية/بادچ في الواجهة — التحكم الفعلي في
+-- الوصول عن طريق العمود `has_archive_view_only` (زي `has_archive_access`
+-- بالظبط)، وده اللي بيتفحص في RLS والـ Edge Functions.
+
+alter table public.admins drop constraint if exists admins_role_check;
+alter table public.admins add constraint admins_role_check
+  check (role in ('page_manager','designer','approver','general_manager','super_admin','reception','customer_service','nursing','sono_doctor'));
+
+alter table public.admin_extra_roles drop constraint if exists admin_extra_roles_role_check;
+alter table public.admin_extra_roles add constraint admin_extra_roles_role_check
+  check (role in ('page_manager','designer','approver','general_manager','super_admin','reception','customer_service','nursing','sono_doctor'));
+
+alter table public.admins add column if not exists has_archive_view_only boolean not null default false;
+
+create or replace function public.has_archive_view_only()
+returns boolean language sql security definer stable set search_path = public as $$
+  select coalesce((
+    select has_archive_view_only from public.admins where user_id = auth.uid() and active limit 1
+  ), false) or public.has_role('super_admin');
+$$;
+revoke all on function public.has_archive_view_only() from public;
+grant execute on function public.has_archive_view_only() to authenticated;
+
+-- توسعة سياسات القراءة (بس) عشان صاحب "معاينة فقط" يشوف المرضى/الملفات/اللوج
+-- — بدون أي صلاحية رفع/حذف/مراجعة (سياسات الكتابة فضلت زي ما هي بالظبط،
+-- مربوطة بـ has_archive_access()/has_archive_review_access() لوحدهم)
+drop policy if exists "archive or leads read patients" on public.patients;
+create policy "archive or leads read patients" on public.patients
+  for select using (public.has_archive_access() or public.has_archive_review_access() or public.has_archive_view_only() or public.can_access_leads());
+
+drop policy if exists "archive access reads files" on public.patient_files;
+create policy "archive access reads files" on public.patient_files
+  for select using (public.has_archive_access() or public.has_archive_review_access() or public.has_archive_view_only());
+
+drop policy if exists "archive access reads log" on public.archive_access_log;
+create policy "archive access reads log" on public.archive_access_log
+  for select using (public.has_archive_access() or public.has_archive_review_access() or public.has_archive_view_only());
+
+-- ============================================================
+--  14) أول سوبر أدمن
 -- ============================================================
 -- الخطوة أ) Authentication → Users → Add user → Create new user
 --            ضع بريدك وكلمة السر، وفعّل «Auto Confirm User».
