@@ -29,7 +29,7 @@ async function getCallerAdmin(req: Request) {
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
   const { data: row } = await admin
     .from("admins")
-    .select("id, role, has_archive_access, has_archive_review_access, active, admin_extra_roles!admin_id(role)")
+    .select("id, role, has_archive_access, has_archive_review_access, has_archive_view_only, active, admin_extra_roles!admin_id(role)")
     .eq("user_id", user.id)
     .eq("active", true)
     .maybeSingle();
@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
   // ملاحظة: has_archive_review_access مكانتش متجابة من قبل هنا (select ماكانش شامله)
   // فكانت بترجع undefined دايماً — تم تصحيحها هنا كجزء من نفس التعديل (select فوق).
   const canReview = caller.has_archive_review_access || isSuperAdmin(caller);
-  const allowed = caller.has_archive_access || canReview;
+  const allowed = caller.has_archive_access || canReview || caller.has_archive_view_only;
   if (!allowed) return json({ error: "مفيش صلاحية أرشيف المرضى" }, 403);
 
   const url = new URL(req.url);
@@ -108,7 +108,7 @@ Deno.serve(async (req) => {
       reviewer: undefined,
     }));
 
-    if (caller.has_archive_access) {
+    if (caller.has_archive_access || caller.has_archive_view_only) {
       await admin.from("archive_access_log").insert({
         patient_id: patientId,
         employee_id: caller.id,
