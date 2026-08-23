@@ -72,28 +72,51 @@ Deno.serve(async (req) => {
   }
 
   // داشبورد الإدارة: إجماليات مفتوح/مغلق + توزيع حسب الحالة + الدخل من الفواتير
-  // مجمّع حسب الموظف اللي أنهى الحجز (booked_by) — طلب المستخدم
+  // مجمّع حسب الموظف اللي أنهى الحجز (booked_by) وحسب القسم المطلوب
+  // (requested_department) + تصنيف عضوي/إعلان — كل ده بيقبل فلتر تاريخ اختياري
+  // (from/to) على تاريخ رفع الفاتورة (لدخل) وتاريخ استلام الليد (لتصنيف عضوي/إعلان)
   if (url.searchParams.get("stats") === "1") {
     if (!roleIn(caller, ["general_manager", "super_admin"])) {
       return json({ error: "داشبورد الإدارة مقصور على المدير العام/السوبر أدمن" }, 403);
     }
+    const fromDate = url.searchParams.get("from")?.trim() || null;
+    const toDate = url.searchParams.get("to")?.trim() || null;
+
     const admin1 = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
-    const [{ count: totalOpen }, { count: totalClosed }, { count: totalBooked }, byStatus, invoicesRes] = await Promise.all([
+
+    let leadsQuery = admin1.from("leads").select("current_status, acquisition_type");
+    if (fromDate) leadsQuery = leadsQuery.gte("created_at", fromDate);
+    if (toDate) leadsQuery = leadsQuery.lte("created_at", toDate + "T23:59:59");
+
+    let invoicesQuery = admin1.from("lead_invoices").select("amount, uploaded_at, lead:leads!inner(booked_by, requested_department)");
+    if (fromDate) invoicesQuery = invoicesQuery.gte("uploaded_at", fromDate);
+    if (toDate) invoicesQuery = invoicesQuery.lte("uploaded_at", toDate + "T23:59:59");
+
+    const [{ count: totalOpen }, { count: totalClosed }, { count: totalBooked }, leadsRes, invoicesRes] = await Promise.all([
       admin1.from("leads").select("id", { count: "exact", head: true }).not("current_status", "in", `(${CLOSED_STATUSES.join(",")})`),
       admin1.from("leads").select("id", { count: "exact", head: true }).in("current_status", CLOSED_STATUSES),
       admin1.from("leads").select("id", { count: "exact", head: true }).eq("current_status", "booked"),
-      admin1.from("leads").select("current_status"),
-      admin1.from("lead_invoices").select("amount, lead:leads!inner(booked_by)"),
+      leadsQuery,
+      invoicesQuery,
     ]);
     const statusCounts: Record<string, number> = {};
-    (byStatus.data ?? []).forEach((r: { current_status: string }) => {
+    const acquisitionCounts: Record<string, number> = { organic: 0, ad: 0, unknown: 0 };
+    (leadsRes.data as { current_status: string; acquisition_type: string | null }[] | null ?? []).forEach((r) => {
       statusCounts[r.current_status] = (statusCounts[r.current_status] ?? 0) + 1;
+      const key = r.acquisition_type === "organic" || r.acquisition_type === "ad" ? r.acquisition_type : "unknown";
+      acquisitionCounts[key] += 1;
     });
 
     // إجمالي الدخل + تجميعه حسب الموظف المسؤول عن إتمام الحجز (booked_by)
+    // وحسب القسم المطلوب (requested_department) — نفس بيانات الفواتير، تجميعين مختلفين
     let totalIncome = 0;
     const incomeByEmployee: Record<string, { total: number; count: number }> = {};
-    type InvoiceRow = { amount: number; lead: { booked_by: string | null } | { booked_by: string | null }[] | null };
+    const incomeByDept: Record<string, { total: number; count: number }> = {};
+    type InvoiceRow = {
+      amount: number;
+      lead: { booked_by: string | null; requested_department: string | null }
+        | { booked_by: string | null; requested_department: string | null }[] | null;
+    };
     (invoicesRes.data as InvoiceRow[] | null ?? []).forEach((r) => {
       const amount = Number(r.amount) || 0;
       totalIncome += amount;
@@ -102,6 +125,10 @@ Deno.serve(async (req) => {
       if (!incomeByEmployee[bookedBy]) incomeByEmployee[bookedBy] = { total: 0, count: 0 };
       incomeByEmployee[bookedBy].total += amount;
       incomeByEmployee[bookedBy].count += 1;
+      const dept = (leadRel?.requested_department ?? "").trim() || "غير محدد";
+      if (!incomeByDept[dept]) incomeByDept[dept] = { total: 0, count: 0 };
+      incomeByDept[dept].total += amount;
+      incomeByDept[dept].count += 1;
     });
     const employeeIds = Object.keys(incomeByEmployee).filter((id) => id !== "unknown");
     let employeeNames: Record<string, string> = {};
@@ -115,15 +142,24 @@ Deno.serve(async (req) => {
       total: incomeByEmployee[id].total,
       invoices_count: incomeByEmployee[id].count,
     })).sort((a, b) => b.total - a.total);
+    const incomeByDeptArr = Object.keys(incomeByDept).map((dept) => ({
+      department: dept,
+      total: incomeByDept[dept].total,
+      invoices_count: incomeByDept[dept].count,
+    })).sort((a, b) => b.total - a.total);
 
     return json({
       open: totalOpen ?? 0,
       closed: totalClosed ?? 0,
       booked: totalBooked ?? 0,
       by_status: statusCounts,
+      by_acquisition_type: acquisitionCounts,
       total_income: totalIncome,
       invoices_count: (invoicesRes.data ?? []).length,
       income_by_employee: incomeByEmployeeArr,
+      income_by_department: incomeByDeptArr,
+      filter_from: fromDate,
+      filter_to: toDate,
     });
   }
 
