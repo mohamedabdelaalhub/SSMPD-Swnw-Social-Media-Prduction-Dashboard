@@ -1445,6 +1445,99 @@ create policy "archive access reads log" on public.archive_access_log
   for select using (public.has_archive_access() or public.has_archive_review_access() or public.has_archive_view_only());
 
 -- ============================================================
+--  15) إحالة مرضى لـ"طبيب سونو" — يشوف بس المحالين ليه، مش الأرشيف كله (٢٠٢٦-٠٨-٢٣)
+-- ============================================================
+-- تعديل على قرار القسم ١٣: "معاينة فقط" كانت بتدّي وصول لكل الأرشيف، والمستخدم
+-- طلب تضييقها — الدكتور يشوف بس الحالات اللي التمريض حوّلها له، ولما يخلص
+-- الكشف يعمل "تم الكشف" فتختفي من عنده. التمريض (أو أي حد عنده has_archive_access)
+-- هو اللي بيحوّل.
+
+create table if not exists public.patient_doctor_assignments (
+  id            uuid primary key default gen_random_uuid(),
+  patient_id    uuid not null references public.patients(id) on delete cascade,
+  doctor_id     uuid not null references public.admins(id),
+  assigned_by   uuid references public.admins(id),
+  assigned_at   timestamptz not null default now(),
+  status        text not null default 'pending' check (status in ('pending','done')),
+  completed_at  timestamptz
+);
+create index if not exists pda_doctor_pending_idx on public.patient_doctor_assignments (doctor_id, status);
+create index if not exists pda_patient_idx on public.patient_doctor_assignments (patient_id);
+
+alter table public.patient_doctor_assignments enable row level security;
+
+drop policy if exists "pda select"  on public.patient_doctor_assignments;
+drop policy if exists "pda insert"  on public.patient_doctor_assignments;
+drop policy if exists "pda update"  on public.patient_doctor_assignments;
+drop policy if exists "pda delete"  on public.patient_doctor_assignments;
+
+create policy "pda select" on public.patient_doctor_assignments
+  for select using (
+    doctor_id = public.my_admin_id()
+    or public.has_archive_access() or public.has_archive_review_access()
+    or public.my_role() = 'nursing' or public.can_manage_all_content()
+  );
+
+create policy "pda insert" on public.patient_doctor_assignments
+  for insert with check (
+    (public.my_role() = 'nursing' or public.has_archive_access() or public.can_manage_all_content())
+    and assigned_by = public.my_admin_id()
+    and exists (select 1 from public.admins d where d.id = doctor_id and d.has_archive_view_only and d.active)
+  );
+
+create policy "pda update" on public.patient_doctor_assignments
+  for update
+  using (doctor_id = public.my_admin_id() or public.has_archive_access() or public.can_manage_all_content())
+  with check (doctor_id = public.my_admin_id() or public.has_archive_access() or public.can_manage_all_content());
+
+create policy "pda delete" on public.patient_doctor_assignments
+  for delete using (public.has_archive_access() or public.can_manage_all_content());
+
+-- بيتفحص من RLS مباشرة (تصفح المريض المحال في شاشة الدكتور) ومن الـ Edge Functions
+-- (اللي بتستخدم service role وبتفحص الصلاحية بنفسها يدوياً، مش عن طريق RLS)
+create or replace function public.is_assigned_doctor_for_patient(p_patient_id uuid)
+returns boolean language sql security definer stable set search_path = public as $$
+  select exists (
+    select 1 from public.patient_doctor_assignments
+    where patient_id = p_patient_id and doctor_id = public.my_admin_id() and status = 'pending'
+  );
+$$;
+revoke all on function public.is_assigned_doctor_for_patient(uuid) from public;
+grant execute on function public.is_assigned_doctor_for_patient(uuid) to authenticated;
+
+-- قايمة "طبيب سونو" النشطين — عشان شاشة الإحالة تعرض الأسماء من غير ما نفتح
+-- جدول admins كله لكل الموظفين (RLS الأساسية بتديك صفك إنت بس أو لو سوبر أدمن)
+create or replace function public.list_active_sono_doctors()
+returns table(id uuid, name text, email text)
+language sql security definer stable set search_path = public as $$
+  select id, name, email from public.admins where has_archive_view_only and active order by name;
+$$;
+revoke all on function public.list_active_sono_doctors() from public;
+grant execute on function public.list_active_sono_doctors() to authenticated;
+
+-- تضييق سياسات القراءة على patients/patient_files: بدل "معاينة فقط" تدّي وصول
+-- لكل الأرشيف، بقت تدّي وصول بس للمريض اللي فيه إحالة pending للدكتور ده تحديداً
+drop policy if exists "archive or leads read patients" on public.patients;
+create policy "archive or leads read patients" on public.patients
+  for select using (
+    public.has_archive_access() or public.has_archive_review_access() or public.can_access_leads()
+    or public.is_assigned_doctor_for_patient(id)
+  );
+
+drop policy if exists "archive access reads files" on public.patient_files;
+create policy "archive access reads files" on public.patient_files
+  for select using (
+    public.has_archive_access() or public.has_archive_review_access()
+    or public.is_assigned_doctor_for_patient(patient_id)
+  );
+
+-- سجل الوصول (archive_access_log) رجع لصلاحيتي الأرشيف الكاملتين بس — مش محتاج
+-- الدكتور المحال له يشوفه
+drop policy if exists "archive access reads log" on public.archive_access_log;
+create policy "archive access reads log" on public.archive_access_log
+  for select using (public.has_archive_access() or public.has_archive_review_access());
+
+-- ============================================================
 --  14) أول سوبر أدمن
 -- ============================================================
 -- الخطوة أ) Authentication → Users → Add user → Create new user
