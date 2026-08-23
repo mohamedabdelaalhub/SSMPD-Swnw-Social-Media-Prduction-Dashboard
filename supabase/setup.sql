@@ -1692,6 +1692,27 @@ alter table public.leads add constraint leads_interested_service_check
   check (interested_service in ('checkup','consultation','radiology','lab','nursing','physiotherapy','treatment','dental','speech_therapy','psychiatry','cosmetic_laser','emergency','other'));
 
 -- ============================================================
+--  21) داشبورد الإدارة: فلتر تاريخ + دخل حسب القسم + تصنيف عضوي/إعلان
+--      (٢٠٢٦-٠٨-٢٣، v32 — مرحلة ٧ من طلب تعديلات الفريق)
+-- ============================================================
+-- عمود جديد لتصنيف مصدر اهتمام الليد: عضوي (وصل من نفسه) مقابل إعلان
+-- مدفوع — مختلف عن "source" (قناة التواصل واتساب/ماسنجر) الموجودة أصلاً.
+-- اختياري (nullable) عشان الليدز القديمة تفضل شغالة من غير قيمة.
+alter table public.leads
+  add column if not exists acquisition_type text;
+alter table public.leads drop constraint if exists leads_acquisition_type_check;
+alter table public.leads add constraint leads_acquisition_type_check
+  check (acquisition_type is null or acquisition_type in ('organic','ad'));
+
+-- ملحوظة: "الدخل حسب القسم" في الداشبورد بيتجمّع من عمود requested_department
+-- الموجود بالفعل على leads (مفيش عمود جديد لازم له) عن طريق join مع
+-- lead_invoices — نفس نمط "الدخل حسب الموظف" (booked_by) الموجود أصلاً.
+-- فلتر التاريخ (from/to) بيتطبّق على uploaded_at للفواتير (للدخل) وعلى
+-- created_at لليدز (لتوزيع الحالة وتصنيف عضوي/إعلان) — أما إجماليات
+-- "مفتوحة/مغلقة/تم الحجز" فبتفضل الحالة اللحظية دايماً (مش متأثرة
+-- بالفلتر) لأنها بتعبّر عن الوضع الحالي مش سجل تاريخي.
+
+-- ============================================================
 --  14) أول سوبر أدمن
 -- ============================================================
 -- الخطوة أ) Authentication → Users → Add user → Create new user
