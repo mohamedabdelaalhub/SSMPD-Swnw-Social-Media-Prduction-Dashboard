@@ -17,6 +17,18 @@
   var REVIEW_LABELS = { pending: "قيد المراجعة", approved: "معتمد", rejected: "مرفوض" };
   var REVIEW_PILL = { pending: "approval", approved: "approved", rejected: "revision" };
 
+  // قائمة الأمراض المزمنة الثابتة من نماذج الفايلنج الورقية (كبار/اطفال/تجميل/كماوي) —
+  // مخزنة jsonb في patient_medical_profile.chronic_conditions كـ [{name:key, has, medication}]
+  var CHRONIC_CONDITIONS = [
+    { key: "smoking", label: "التدخين" },
+    { key: "blood_pressure", label: "الضغط" },
+    { key: "diabetes", label: "السكر" },
+    { key: "thyroid", label: "الغدة الدرقية" },
+    { key: "kidney_disease", label: "أمراض الكلي" },
+    { key: "tumors", label: "أورام" },
+    { key: "drug_allergies", label: "حساسية من الأدوية" }
+  ];
+
   function categoryLabel(key) {
     var c = CATEGORIES.filter(function (c) { return c.key === key; })[0];
     return c ? c.label : key;
@@ -297,6 +309,158 @@
     };
   }
 
+  // ---------- تعديل البيانات الطبية (طبيب معالج/تخصص/علامات حيوية/أمراض مزمنة/عمليات/تاريخ عائلي) ----------
+  function openEditMedicalProfileModal(patient, profile, onSaved) {
+    profile = profile || {};
+    var chronicByKey = {};
+    (profile.chronic_conditions || []).forEach(function (c) { chronicByKey[c.name] = c; });
+    var surgeries = (profile.surgeries || []).filter(function (s) { return s.has; }).map(function (s) { return { name: s.name || "", notes: s.notes || "" }; });
+    var family = (profile.family_history || []).filter(function (f) { return f.has; }).map(function (f) { return { disease: f.disease || "" }; });
+
+    var backdrop = document.createElement("div");
+    backdrop.className = "modal-backdrop";
+    var html = '<div class="modal"><div class="modal-head"><h3>تعديل البيانات الطبية</h3><button class="modal-close">×</button></div>';
+
+    html += '<div class="field"><label>الطبيب المعالج</label><input id="mp-doctor" value="' + escapeHtml(profile.treating_doctor || "") + '"></div>';
+    html += '<div class="field"><label>التخصص</label><input id="mp-specialty" value="' + escapeHtml(profile.specialty || "") + '"></div>';
+    html += '<div style="display:flex;gap:8px;flex-wrap:wrap;">' +
+      '<div class="field" style="flex:1;min-width:120px;"><label>ضغط الدم</label><input id="mp-bp" value="' + escapeHtml(profile.blood_pressure || "") + '"></div>' +
+      '<div class="field" style="flex:1;min-width:120px;"><label>سكر الدم</label><input id="mp-sugar" value="' + escapeHtml(profile.blood_sugar || "") + '"></div>' +
+      '<div class="field" style="flex:1;min-width:120px;"><label>الوزن</label><input id="mp-weight" value="' + escapeHtml(profile.weight || "") + '"></div>' +
+      '<div class="field" style="flex:1;min-width:120px;"><label>النبض</label><input id="mp-pulse" value="' + escapeHtml(profile.pulse || "") + '"></div>' +
+      '<div class="field" style="flex:1;min-width:120px;"><label>نسبة الأكسجين</label><input id="mp-oxygen" value="' + escapeHtml(profile.oxygen_percent || "") + '"></div>' +
+      '</div>';
+
+    html += '<div class="field"><label>الأمراض المزمنة</label>';
+    CHRONIC_CONDITIONS.forEach(function (cc) {
+      var existing = chronicByKey[cc.key];
+      html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">' +
+        '<label style="display:flex;align-items:center;gap:4px;min-width:130px;font-size:12px;">' +
+        '<input type="checkbox" data-chronic-check="' + cc.key + '" ' + (existing ? "checked" : "") + '> ' + cc.label + '</label>' +
+        '<input data-chronic-med="' + cc.key + '" placeholder="الدواء (اختياري)" style="flex:1;" value="' + escapeHtml(existing ? existing.medication || "" : "") + '">' +
+        '</div>';
+    });
+    html += '</div>';
+
+    html += '<div class="field"><label>العمليات الجراحية</label><div data-surgeries-list></div>' +
+      '<button type="button" class="btn ghost sm" data-add-surgery-row="1">+ إضافة عملية</button></div>';
+
+    html += '<div class="field"><label>تاريخ مرضي بالعائلة</label><div data-family-list></div>' +
+      '<button type="button" class="btn ghost sm" data-add-family-row="1">+ إضافة</button></div>';
+
+    html += '<button class="btn block" id="mp-save">حفظ</button></div>';
+    backdrop.innerHTML = html;
+    document.body.appendChild(backdrop);
+    backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
+    backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
+
+    var surgeriesList = backdrop.querySelector("[data-surgeries-list]");
+    var familyList = backdrop.querySelector("[data-family-list]");
+
+    function addSurgeryRow(name, notes) {
+      var row = document.createElement("div");
+      row.style.cssText = "display:flex;gap:6px;margin-bottom:4px;";
+      row.innerHTML = '<input data-surgery-name placeholder="اسم العملية" style="flex:1;" value="' + escapeHtml(name || "") + '">' +
+        '<input data-surgery-notes placeholder="ملاحظات" style="flex:1;" value="' + escapeHtml(notes || "") + '">' +
+        '<button type="button" class="btn danger sm" data-remove-row="1">حذف</button>';
+      row.querySelector("[data-remove-row]").onclick = function () { row.remove(); };
+      surgeriesList.appendChild(row);
+    }
+    function addFamilyRow(disease) {
+      var row = document.createElement("div");
+      row.style.cssText = "display:flex;gap:6px;margin-bottom:4px;";
+      row.innerHTML = '<input data-family-disease placeholder="المرض" style="flex:1;" value="' + escapeHtml(disease || "") + '">' +
+        '<button type="button" class="btn danger sm" data-remove-row="1">حذف</button>';
+      row.querySelector("[data-remove-row]").onclick = function () { row.remove(); };
+      familyList.appendChild(row);
+    }
+    surgeries.forEach(function (s) { addSurgeryRow(s.name, s.notes); });
+    family.forEach(function (f) { addFamilyRow(f.disease); });
+    backdrop.querySelector("[data-add-surgery-row]").onclick = function () { addSurgeryRow("", ""); };
+    backdrop.querySelector("[data-add-family-row]").onclick = function () { addFamilyRow(""); };
+
+    document.getElementById("mp-save").onclick = function () {
+      var chronic_conditions = CHRONIC_CONDITIONS.map(function (cc) {
+        var checked = backdrop.querySelector('[data-chronic-check="' + cc.key + '"]').checked;
+        var med = backdrop.querySelector('[data-chronic-med="' + cc.key + '"]').value.trim();
+        return { name: cc.key, has: checked, medication: checked ? med : "" };
+      });
+      var surgeriesOut = [];
+      surgeriesList.querySelectorAll("div").forEach(function (row) {
+        var name = row.querySelector("[data-surgery-name]").value.trim();
+        var notes = row.querySelector("[data-surgery-notes]").value.trim();
+        if (name) surgeriesOut.push({ name: name, notes: notes, has: true });
+      });
+      var familyOut = [];
+      familyList.querySelectorAll("div").forEach(function (row) {
+        var disease = row.querySelector("[data-family-disease]").value.trim();
+        if (disease) familyOut.push({ disease: disease, has: true });
+      });
+      var patch = {
+        treating_doctor: document.getElementById("mp-doctor").value.trim() || null,
+        specialty: document.getElementById("mp-specialty").value.trim() || null,
+        blood_pressure: document.getElementById("mp-bp").value.trim() || null,
+        blood_sugar: document.getElementById("mp-sugar").value.trim() || null,
+        weight: document.getElementById("mp-weight").value.trim() || null,
+        pulse: document.getElementById("mp-pulse").value.trim() || null,
+        oxygen_percent: document.getElementById("mp-oxygen").value.trim() || null,
+        chronic_conditions: chronic_conditions,
+        surgeries: surgeriesOut,
+        family_history: familyOut
+      };
+      window.SSMPDDb.savePatientMedicalProfile(patient.id, patch, me && me.id).then(function () {
+        T.show("اتحدثت البيانات الطبية");
+        backdrop.remove();
+        if (onSaved) onSaved();
+      }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
+    };
+  }
+
+  // ---------- إضافة زيارة جديدة لسجل الزيارات ----------
+  function openAddVisitModal(patient, onSaved) {
+    var backdrop = document.createElement("div");
+    backdrop.className = "modal-backdrop";
+    backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>زيارة جديدة</h3><button class="modal-close">×</button></div>' +
+      '<div class="field"><label>تاريخ الزيارة</label><input id="vs-date" type="date" value="' + new Date().toISOString().slice(0, 10) + '"></div>' +
+      '<div class="field"><label>رقم الزيارة</label><input id="vs-number"></div>' +
+      '<div class="field"><label>الشكوى</label><input id="vs-complaint"></div>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;">' +
+      '<div class="field" style="flex:1;min-width:110px;"><label>ضغط الدم</label><input id="vs-bp"></div>' +
+      '<div class="field" style="flex:1;min-width:110px;"><label>سكر الدم</label><input id="vs-sugar"></div>' +
+      '<div class="field" style="flex:1;min-width:110px;"><label>النبض</label><input id="vs-pulse"></div>' +
+      '</div>' +
+      '<div class="field"><label>الأدوية</label><input id="vs-meds"></div>' +
+      '<div class="field"><label>الأشعة</label><input id="vs-xrays"></div>' +
+      '<div class="field"><label>التحاليل</label><input id="vs-labs"></div>' +
+      '<div class="field"><label>توصيات أخرى</label><input id="vs-other"></div>' +
+      '<div class="field"><label>تاريخ المتابعة</label><input id="vs-followup" type="date"></div>' +
+      '<button class="btn block" id="vs-save">حفظ</button></div>';
+    document.body.appendChild(backdrop);
+    backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
+    backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
+
+    document.getElementById("vs-save").onclick = function () {
+      var visit = {
+        visit_date: document.getElementById("vs-date").value || new Date().toISOString().slice(0, 10),
+        visit_number: document.getElementById("vs-number").value.trim() || null,
+        complaint: document.getElementById("vs-complaint").value.trim() || null,
+        blood_pressure: document.getElementById("vs-bp").value.trim() || null,
+        blood_sugar: document.getElementById("vs-sugar").value.trim() || null,
+        pulse: document.getElementById("vs-pulse").value.trim() || null,
+        medications: document.getElementById("vs-meds").value.trim() || null,
+        xrays: document.getElementById("vs-xrays").value.trim() || null,
+        labs: document.getElementById("vs-labs").value.trim() || null,
+        other_recommendations: document.getElementById("vs-other").value.trim() || null,
+        follow_up_date: document.getElementById("vs-followup").value || null
+      };
+      window.SSMPDDb.addPatientVisit(patient.id, visit, me && me.id).then(function () {
+        T.show("اتضافت الزيارة");
+        backdrop.remove();
+        if (onSaved) onSaved();
+      }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
+    };
+  }
+
   // ============ ٣) شاشة المراجعة ============
   function renderReviewScreen(view, container) {
     view.innerHTML = '<div class="loading">بيحمّل…</div>';
@@ -537,8 +701,13 @@
     backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
 
     function reload() {
-      window.SSMPDDb.getPatientFiles(patientId).then(function (res) {
-        renderPatientModal(backdrop, view, container, res.patient, res.files || []);
+      Promise.all([
+        window.SSMPDDb.getPatientFiles(patientId),
+        window.SSMPDDb.getPatientMedicalProfile(patientId).catch(function () { return null; }),
+        window.SSMPDDb.listPatientVisits(patientId).catch(function () { return []; }),
+      ]).then(function (results) {
+        var res = results[0], profile = results[1], visits = results[2] || [];
+        renderPatientModal(backdrop, view, container, res.patient, res.files || [], profile, visits);
       }).catch(function (e) {
         backdrop.querySelector(".modal").innerHTML = '<div class="err-msg">خطأ: ' + e.message + '</div>';
       });
@@ -546,16 +715,19 @@
     reload();
   }
 
-  function renderPatientModal(backdrop, view, container, patient, files) {
+  function renderPatientModal(backdrop, view, container, patient, files, profile, visits) {
     var byCategory = {};
     CATEGORIES.forEach(function (c) { byCategory[c.key] = []; });
     files.forEach(function (f) { (byCategory[f.category] || (byCategory[f.category] = [])).push(f); });
+    profile = profile || null;
+    visits = visits || [];
 
     var html = '<div class="modal"><div class="modal-head"><h3>' + escapeHtml(patient.full_name) +
       ' <span style="font-size:12px;color:var(--c-muted);">(' + escapeHtml(patient.patient_code || "") + ')</span></h3>' +
       '<button class="modal-close">×</button></div>';
 
     var canUp = canUpload();
+    var canEditMedical = canUp; // نفس صلاحية الأرشيف — "طبيب سونو" معاينة فقط، مفيش زرار تعديل/إضافة يظهر له
     html += '<div class="section" style="padding:12px 14px;">' +
       '<h3 style="font-size:13px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
       '<span>البيانات الشخصية</span>' +
@@ -568,6 +740,61 @@
       'الرقم الطبي: ' + escapeHtml(patient.medical_record_no || "—") + '<br>' +
       'تاريخ آخر زيارة: ' + fmtDate(patient.last_visit_date) +
       '</p></div>';
+
+    // ---------- البيانات الطبية ----------
+    var activeChronic = (profile && Array.isArray(profile.chronic_conditions)) ?
+      profile.chronic_conditions.filter(function (c) { return c.has; }) : [];
+    var activeSurgeries = (profile && Array.isArray(profile.surgeries)) ?
+      profile.surgeries.filter(function (s) { return s.has; }) : [];
+    var activeFamily = (profile && Array.isArray(profile.family_history)) ?
+      profile.family_history.filter(function (f) { return f.has; }) : [];
+
+    html += '<div class="section" style="padding:12px 14px;">' +
+      '<h3 style="font-size:13px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
+      '<span>البيانات الطبية</span>' +
+      (canEditMedical ? '<button class="btn ghost sm" data-edit-medical="1">تعديل</button>' : '') +
+      '</h3>';
+    if (!profile) {
+      html += '<p style="font-size:12px;color:var(--c-muted);">مفيش بيانات طبية مسجّلة لسه.</p>';
+    } else {
+      html += '<p style="font-size:12px;color:var(--c-muted);line-height:1.9;">' +
+        'الطبيب المعالج: ' + escapeHtml(profile.treating_doctor || "—") + '<br>' +
+        'التخصص: ' + escapeHtml(profile.specialty || "—") + '<br>' +
+        'ضغط الدم: ' + escapeHtml(profile.blood_pressure || "—") + ' · سكر الدم: ' + escapeHtml(profile.blood_sugar || "—") + '<br>' +
+        'الوزن: ' + escapeHtml(profile.weight || "—") + ' · النبض: ' + escapeHtml(profile.pulse || "—") + ' · الأكسجين: ' + escapeHtml(profile.oxygen_percent || "—") +
+        '</p>';
+      html += '<p style="font-size:12px;margin-top:8px;"><b>الأمراض المزمنة: </b>' +
+        (activeChronic.length ? activeChronic.map(function (c) {
+          var lbl = (CHRONIC_CONDITIONS.filter(function (x) { return x.key === c.name; })[0] || {}).label || c.name;
+          return escapeHtml(lbl) + (c.medication ? ' (' + escapeHtml(c.medication) + ')' : '');
+        }).join('، ') : 'لا يوجد') + '</p>';
+      html += '<p style="font-size:12px;margin-top:4px;"><b>العمليات الجراحية: </b>' +
+        (activeSurgeries.length ? activeSurgeries.map(function (s) {
+          return escapeHtml(s.name || "") + (s.notes ? ' (' + escapeHtml(s.notes) + ')' : '');
+        }).join('، ') : 'لا يوجد') + '</p>';
+      html += '<p style="font-size:12px;margin-top:4px;"><b>تاريخ مرضي بالعائلة: </b>' +
+        (activeFamily.length ? activeFamily.map(function (f) { return escapeHtml(f.disease || ""); }).join('، ') : 'لا يوجد') + '</p>';
+    }
+
+    html += '<div style="margin-top:12px;display:flex;align-items:center;justify-content:space-between;">' +
+      '<b style="font-size:12px;">سجل الزيارات (' + visits.length + ')</b>' +
+      (canEditMedical ? '<button class="btn ghost sm" data-add-visit="1">+ زيارة جديدة</button>' : '') + '</div>';
+    if (!visits.length) {
+      html += '<p style="font-size:12px;color:var(--c-muted);margin-top:6px;">مفيش زيارات مسجّلة.</p>';
+    } else {
+      html += '<table class="simple" style="margin-top:8px;font-size:12px;"><thead><tr><th>التاريخ</th><th>رقم الزيارة</th><th>الشكوى</th><th>خطة العلاج</th><th>متابعة</th>' + (canEditMedical ? '<th></th>' : '') + '</tr></thead><tbody>';
+      visits.forEach(function (v) {
+        var plan = [v.medications ? 'أدوية: ' + v.medications : '', v.xrays ? 'أشعة: ' + v.xrays : '', v.labs ? 'تحاليل: ' + v.labs : '', v.other_recommendations ? v.other_recommendations : '']
+          .filter(Boolean).join(' · ');
+        html += '<tr><td>' + fmtDate(v.visit_date) + '</td><td>' + escapeHtml(v.visit_number || '—') + '</td>' +
+          '<td>' + escapeHtml(v.complaint || '—') + '</td><td>' + escapeHtml(plan || '—') + '</td>' +
+          '<td>' + (v.follow_up_date ? fmtDate(v.follow_up_date) : '—') + '</td>' +
+          (canEditMedical ? '<td><button class="btn danger sm" data-del-visit="' + v.id + '">حذف</button></td>' : '') + '</tr>';
+      });
+      html += '</tbody></table>';
+    }
+    html += '</div>';
+
     CATEGORIES.forEach(function (c) {
       var list = byCategory[c.key] || [];
       html += '<div class="section" style="padding:12px 14px;">' +
@@ -603,16 +830,37 @@
     backdrop.innerHTML = html;
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
 
+    function reloadModal() {
+      Promise.all([
+        window.SSMPDDb.getPatientFiles(patient.id),
+        window.SSMPDDb.getPatientMedicalProfile(patient.id).catch(function () { return null; }),
+        window.SSMPDDb.listPatientVisits(patient.id).catch(function () { return []; }),
+      ]).then(function (results) {
+        renderPatientModal(backdrop, view, container, results[0].patient, results[0].files || [], results[1], results[2] || []);
+      });
+    }
+
     var editPersonalBtn = backdrop.querySelector("[data-edit-personal]");
     if (editPersonalBtn) {
-      editPersonalBtn.onclick = function () {
-        openEditPatientModal(patient, function () {
-          window.SSMPDDb.getPatientFiles(patient.id).then(function (res) {
-            renderPatientModal(backdrop, view, container, res.patient, res.files || []);
-          });
-        });
-      };
+      editPersonalBtn.onclick = function () { openEditPatientModal(patient, reloadModal); };
     }
+    var editMedicalBtn = backdrop.querySelector("[data-edit-medical]");
+    if (editMedicalBtn) {
+      editMedicalBtn.onclick = function () { openEditMedicalProfileModal(patient, profile, reloadModal); };
+    }
+    var addVisitBtn = backdrop.querySelector("[data-add-visit]");
+    if (addVisitBtn) {
+      addVisitBtn.onclick = function () { openAddVisitModal(patient, reloadModal); };
+    }
+    backdrop.querySelectorAll("[data-del-visit]").forEach(function (btn) {
+      btn.onclick = function () {
+        var visitId = btn.getAttribute("data-del-visit");
+        window.SSMPDDb.deletePatientVisit(visitId).then(function () {
+          T.show("اتحذفت الزيارة");
+          reloadModal();
+        }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
+      };
+    });
 
     // ---------- زرار الرفع المستقل لكل تصنيف مستند ----------
     backdrop.querySelectorAll("[data-upload-cat]").forEach(function (btn) {

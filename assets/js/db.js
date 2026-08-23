@@ -237,6 +237,26 @@
     updatePatientRecord: function (id, patch) {
       return handle(client.from("patients").update(patch).eq("id", id).select().single());
     },
+    getPatientMedicalProfile: function (patientId) {
+      return handle(client.from("patient_medical_profile").select("*").eq("patient_id", patientId).maybeSingle());
+    },
+    savePatientMedicalProfile: function (patientId, patch, updatedBy) {
+      var row = Object.assign({}, patch, { patient_id: patientId, updated_by: updatedBy, updated_at: new Date().toISOString() });
+      return handle(client.from("patient_medical_profile").upsert(row, { onConflict: "patient_id" }).select().single());
+    },
+    listPatientVisits: function (patientId) {
+      return handle(client.from("patient_visits").select("*").eq("patient_id", patientId).order("visit_date", { ascending: false }));
+    },
+    addPatientVisit: function (patientId, visit, createdBy) {
+      var row = Object.assign({}, visit, { patient_id: patientId, created_by: createdBy });
+      return handle(client.from("patient_visits").insert(row).select().single());
+    },
+    updatePatientVisit: function (visitId, patch) {
+      return handle(client.from("patient_visits").update(patch).eq("id", visitId).select().single());
+    },
+    deletePatientVisit: function (visitId) {
+      return handle(client.from("patient_visits").delete().eq("id", visitId));
+    },
     getPatientFiles: function (patientId) {
       return edgeFetch("patient-files-list" + qs({ patient_id: patientId }));
     },
