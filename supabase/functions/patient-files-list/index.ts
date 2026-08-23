@@ -178,8 +178,11 @@ Deno.serve(async (req) => {
     .order("created_at", { ascending: false });
 
   if (search) {
+    // ملحوظة: template literal هنا كان بيفشل نشر Edge Function بخطأ "Expected unicode
+    // escape" من bundler دينو (على الأغلب بسبب الـ backtick المتداخل) — استُبدل
+    // بـ concatenation عادي كإصلاح مطابق للنسخة المنشورة فعلياً (٢٠٢٦-٠٨-٢٣).
     query = query.or(
-      `full_name.ilike.%${search}%,phone.ilike.%${search}%,phone_normalized.ilike.%${search}%,patient_code.ilike.%${search}%`,
+      "full_name.ilike.%" + search + "%,phone.ilike.%" + search + "%,phone_normalized.ilike.%" + search + "%,patient_code.ilike.%" + search + "%",
     );
   }
 
