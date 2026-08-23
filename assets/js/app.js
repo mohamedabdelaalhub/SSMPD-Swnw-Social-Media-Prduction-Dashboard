@@ -49,7 +49,8 @@
         '<p style="margin-top:14px;font-size:12px;"><a href="#" id="switch-mode">عندك حساب؟ سجّل الدخول</a></p>';
     } else {
       html += '<button class="btn block" id="auth-submit">دخول</button>' +
-        '<p style="margin-top:14px;font-size:12px;"><a href="#" id="switch-mode">حساب جديد؟ اضغط هنا (لو اتضفت من الأدمن)</a></p>';
+        '<p style="margin-top:14px;font-size:12px;"><a href="#" id="forgot-pass">نسيت كلمة السر؟</a></p>' +
+        '<p style="margin-top:6px;font-size:12px;"><a href="#" id="switch-mode">حساب جديد؟ اضغط هنا (لو اتضفت من الأدمن)</a></p>';
     }
     html += '</div></div>';
     root().innerHTML = html;
@@ -58,6 +59,14 @@
       e.preventDefault();
       showAuthScreen(mode === "login" ? "signup" : "login");
     };
+
+    var forgotLink = document.getElementById("forgot-pass");
+    if (forgotLink) {
+      forgotLink.onclick = function (e) {
+        e.preventDefault();
+        openForgotPasswordModal();
+      };
+    }
 
     document.getElementById("auth-submit").onclick = function () {
       var email = document.getElementById("auth-email").value.trim();
@@ -212,6 +221,39 @@
     setupRealtime();
   }
 
+  // مودال "نسيت كلمة السر؟" — بيبعت لينك استرجاع للإيميل (متاح من شاشة الدخول
+  // من غير ما يحتاج المستخدم يكون داخل أصلاً). الرسالة عامة بتفضل زي ما هي
+  // سواء الإيميل مسجل أو لأ (نفس مبدأ الأمان: مانقولش للمستخدم إيميلات مين
+  // مسجلة عندنا).
+  function openForgotPasswordModal() {
+    var backdrop = document.createElement("div");
+    backdrop.className = "modal-backdrop";
+    backdrop.innerHTML = '<div class="modal" style="max-width:420px;">' +
+      '<div class="modal-head"><h3>نسيت كلمة السر؟</h3><button class="modal-close">×</button></div>' +
+      '<p style="font-size:12px;color:var(--c-muted);margin-bottom:10px;">اكتب بريدك الإلكتروني المسجل، وهيوصلك رابط لتغيير كلمة السر.</p>' +
+      '<div class="field"><label>البريد الإلكتروني</label><input id="fp-email" type="email" autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false"></div>' +
+      '<button class="btn block" id="fp-send">إرسال الرابط</button>' +
+      '</div>';
+    document.body.appendChild(backdrop);
+
+    function close() { backdrop.remove(); }
+    backdrop.querySelector(".modal-close").onclick = close;
+    backdrop.addEventListener("click", function (e) { if (e.target === backdrop) close(); });
+
+    backdrop.querySelector("#fp-send").onclick = function () {
+      var email = document.getElementById("fp-email").value.trim();
+      if (!email) { window.SSMPDToast.show("اكتب البريد الإلكتروني", "error"); return; }
+      window.SSMPDAuth.resetPasswordForEmail(email).then(function () {
+        window.SSMPDToast.show("لو البريد ده مسجل عندنا، هيوصلك رابط تغيير كلمة السر خلال دقايق");
+        close();
+      }).catch(function () {
+        // نفس الرسالة العامة حتى لو حصل خطأ — عشان منكشفش إيميلات مسجلة من عدمها
+        window.SSMPDToast.show("لو البريد ده مسجل عندنا، هيوصلك رابط تغيير كلمة السر خلال دقايق");
+        close();
+      });
+    };
+  }
+
   function openChangePasswordModal() {
     var backdrop = document.createElement("div");
     backdrop.className = "modal-backdrop";
@@ -316,6 +358,11 @@
 
   // ---------- تشغيل ----------
   document.addEventListener("DOMContentLoaded", function () {
+    // لينك "نسيت كلمة السر" بيرجّع المستخدم هنا بجلسة مؤقتة تلقائية —
+    // Supabase بيطلق الحدث ده، فبنفتحله مودال "تغيير كلمة السر" مباشرة
+    window.SSMPDAuth.onAuthChange(function (event) {
+      if (event === "PASSWORD_RECOVERY") openChangePasswordModal();
+    });
     window.SSMPDAuth.getSession().then(function (session) {
       if (session) return bootAfterAuth();
       showAuthScreen("login");

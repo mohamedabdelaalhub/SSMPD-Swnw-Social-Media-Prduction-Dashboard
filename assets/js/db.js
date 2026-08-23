@@ -139,6 +139,9 @@
     deleteAdmin: function (id) {
       return handle(client.from("admins").delete().eq("id", id));
     },
+    adminSetUserPassword: function (adminId, newPassword) {
+      return edgeFetch("admin-set-password", { method: "POST", json: { admin_id: adminId, new_password: newPassword } });
+    },
     // ---------- تعدد الأدوار (admin_extra_roles) ----------
     listAdminExtraRoles: function (adminId) {
       return handle(client.from("admin_extra_roles").select("*").eq("admin_id", adminId));

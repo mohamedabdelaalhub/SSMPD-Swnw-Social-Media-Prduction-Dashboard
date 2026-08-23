@@ -43,6 +43,7 @@
           '<td>' + (a.user_id ? '<span class="status-pill approved">مفعّل</span>' : '<span class="status-pill draft">بانتظار إنشاء الحساب</span>') + '</td>' +
           '<td>' +
           '<button class="btn ghost sm" data-toggle="' + a.id + '" ' + (lastSuper ? "disabled" : "") + '>' + (a.active ? "إيقاف" : "تفعيل") + '</button> ' +
+          '<button class="btn ghost sm" data-set-pass="' + a.id + '" ' + (a.user_id ? "" : "disabled") + '>تغيير كلمة السر</button> ' +
           '<button class="btn danger sm" data-del="' + a.id + '" ' + (lastSuper || a.id === myId ? "disabled" : "") + '>حذف</button>' +
           '</td></tr>';
       });
@@ -98,6 +99,13 @@
             .catch(function (e) { alert("خطأ: " + e.message); });
         };
       });
+      container.querySelectorAll("[data-set-pass]").forEach(function (btn) {
+        btn.onclick = function () {
+          var id = btn.getAttribute("data-set-pass");
+          var row = admins.filter(function (a) { return a.id === id; })[0];
+          openSetPasswordModal(row);
+        };
+      });
       container.querySelectorAll("[data-del]").forEach(function (btn) {
         btn.onclick = function () {
           if (!confirm("متأكد من حذف هذا المستخدم نهائياً؟")) return;
@@ -108,6 +116,35 @@
     }).catch(function (e) {
       container.innerHTML = '<div class="err-msg">خطأ: ' + e.message + '</div>';
     });
+  }
+
+  // مودال السوبر أدمن لتغيير كلمة سر مستخدم تاني مباشرة (بدون معرفة كلمة سره
+  // القديمة) — عن طريق admin-set-password Edge Function (service role).
+  function openSetPasswordModal(admin) {
+    var backdrop = document.createElement("div");
+    backdrop.className = "modal-backdrop";
+    backdrop.innerHTML = '<div class="modal" style="max-width:420px;">' +
+      '<div class="modal-head"><h3>تغيير كلمة سر: ' + escapeHtml(admin.name || admin.email) + '</h3><button class="modal-close">×</button></div>' +
+      '<div class="field"><label>كلمة السر الجديدة</label><input id="sp-pass1" type="password" autocomplete="new-password" autocapitalize="off" autocorrect="off" spellcheck="false"></div>' +
+      '<div class="field"><label>تأكيد كلمة السر</label><input id="sp-pass2" type="password" autocomplete="new-password" autocapitalize="off" autocorrect="off" spellcheck="false"></div>' +
+      '<button class="btn block" id="sp-save">حفظ</button>' +
+      '</div>';
+    document.body.appendChild(backdrop);
+
+    function close() { backdrop.remove(); }
+    backdrop.querySelector(".modal-close").onclick = close;
+    backdrop.addEventListener("click", function (e) { if (e.target === backdrop) close(); });
+
+    backdrop.querySelector("#sp-save").onclick = function () {
+      var p1 = document.getElementById("sp-pass1").value.trim();
+      var p2 = document.getElementById("sp-pass2").value.trim();
+      if (!p1 || p1.length < 6) { window.SSMPDToast.show("كلمة السر لازم تكون ٦ حروف/أرقام على الأقل", "error"); return; }
+      if (p1 !== p2) { window.SSMPDToast.show("كلمة السر وتأكيدها مش متطابقين", "error"); return; }
+      window.SSMPDDb.adminSetUserPassword(admin.id, p1).then(function () {
+        window.SSMPDToast.show("اتغيّرت كلمة السر بنجاح");
+        close();
+      }).catch(function (e) { window.SSMPDToast.show("خطأ: " + e.message, "error"); });
+    };
   }
 
   window.SSMPDRenderAdmin = { render: render };

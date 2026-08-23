@@ -86,6 +86,18 @@
       });
     },
 
+    // "نسيت كلمة السر؟" في شاشة الدخول — بيبعت لينك استرجاع للإيميل (لو مسجل
+    // عندنا). الرابط بيرجّع المستخدم لنفس صفحة الداشبورد، وSupabase بينشئ
+    // جلسة مؤقتة تلقائياً وبيطلق حدث "PASSWORD_RECOVERY" — مضبوط في app.js
+    // إنه يفتح مودال "تغيير كلمة السر" الموجود بالفعل تلقائياً.
+    resetPasswordForEmail: function (email) {
+      var redirectTo = window.location.href.split("#")[0].split("?")[0];
+      return client.auth.resetPasswordForEmail(email, { redirectTo: redirectTo }).then(function (res) {
+        if (res.error) throw res.error;
+        return res.data;
+      });
+    },
+
     onAuthChange: function (cb) {
       client.auth.onAuthStateChange(function (event, session) {
         cb(event, session);
