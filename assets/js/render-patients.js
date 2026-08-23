@@ -11,6 +11,8 @@
     { key: "radiology", label: "أشعة" },
     { key: "lab_result", label: "تحاليل" },
     { key: "prescription", label: "وصفة طبية (روشتة)" },
+    { key: "physical_therapy", label: "علاج طبيعي" },
+    { key: "medical_report", label: "تقرير طبي" },
     { key: "eeg", label: "رسم مخ" },
     { key: "other", label: "أخرى" }
   ];
