@@ -62,7 +62,7 @@
 
   var SUB_SCREENS = [
     { key: "dashboard", label: "الداشبورد العام" },
-    { key: "upload", label: "رفع ملف" },
+    { key: "upload", label: "الاستقبال" },
     { key: "review", label: "مراجعة قبل الاعتماد" },
     { key: "browse", label: "تصفح وفلترة" }
   ];
@@ -192,15 +192,69 @@
     function selectPatientForUpload(patient) {
       state.uploadPatient = patient;
       var wrap = document.getElementById("up-form-wrap");
-      wrap.innerHTML = '<div class="section"><h3>رفع ملف لـ ' + escapeHtml(patient.full_name) + ' (' + escapeHtml(patient.patient_code || "—") + ')</h3>' +
-        '<div class="field" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">' +
+      var sentToNursing = !!patient.sent_to_nursing_at;
+      wrap.innerHTML = '<div class="section"><h3>ملف جديد — ' + escapeHtml(patient.full_name) + ' (' + escapeHtml(patient.patient_code || "—") + ')</h3>' +
+        (sentToNursing ? '<p style="font-size:12px;color:var(--c-primary,#0a7);margin:0 0 8px;">✓ اتبعت للتمريض (' + fmtDate(patient.sent_to_nursing_at) + ')</p>' : '') +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">' +
+        '<button class="btn ghost sm" id="np-edit-btn">تعديل بيانات</button>' +
+        '<button class="btn ghost sm" id="np-upload-btn">رفع مستندات</button>' +
+        '<button class="btn ghost sm" id="np-nursing-btn">إرسال للتمريض</button>' +
+        '<button class="btn ghost sm" id="np-delete-btn" style="color:var(--c-danger,#c33);">حذف</button>' +
+        '</div>' +
+        '<div id="np-upload-form-wrap"></div>' +
+        '<div id="np-action-status" style="font-size:12px;color:var(--c-muted);"></div></div>';
+
+      var statusEl = document.getElementById("np-action-status");
+
+      document.getElementById("np-edit-btn").onclick = function () {
+        openEditPatientModal(patient, function () {
+          selectPatientForUpload(patient);
+        });
+      };
+
+      document.getElementById("np-upload-btn").onclick = function () {
+        var formWrap = document.getElementById("np-upload-form-wrap");
+        if (formWrap.innerHTML) { formWrap.innerHTML = ""; return; }
+        renderUploadForm(formWrap, patient);
+      };
+
+      document.getElementById("np-nursing-btn").onclick = function () {
+        statusEl.textContent = "بيتبعت…";
+        window.SSMPDDb.sendPatientToNursing(patient.id).then(function (updated) {
+          T.show("اتبعت للتمريض بنجاح");
+          state.uploadPatient = updated || patient;
+          statusEl.textContent = "";
+          selectPatientForUpload(state.uploadPatient);
+        }).catch(function (e) { statusEl.textContent = "خطأ: " + e.message; });
+      };
+
+      document.getElementById("np-delete-btn").onclick = function () {
+        if (!window.confirm("متأكد إنك عايز تمسح ملف " + patient.full_name + "؟ الإجراء ده مش هيترجع.")) return;
+        statusEl.textContent = "بيتمسح…";
+        window.SSMPDDb.deletePatientRecord(patient.id).then(function () {
+          T.show("اتمسح الملف بنجاح");
+          state.uploadPatient = null;
+          wrap.innerHTML = "";
+        }).catch(function (e) {
+          var msg = e && e.message ? e.message : "";
+          if (msg.indexOf("foreign key") !== -1 || msg.indexOf("violates") !== -1 || (e && e.code === "23503")) {
+            statusEl.textContent = "متقدرش تمسح المريض ده — ليه بيانات مرتبطة (زي عملاء محتملين/leads) لازم تتشال الأول.";
+          } else {
+            statusEl.textContent = "خطأ: " + msg;
+          }
+        });
+      };
+    }
+
+    function renderUploadForm(wrap, patient) {
+      wrap.innerHTML = '<div class="field" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-top:8px;">' +
         '<div style="flex:1;min-width:140px;"><label>الفئة</label><select id="uf-category">' +
         CATEGORIES.map(function (c) { return '<option value="' + c.key + '">' + c.label + '</option>'; }).join("") +
         '</select></div>' +
         '<div style="flex:2;min-width:180px;"><label>الملف</label><input type="file" id="uf-file"></div>' +
         '<button class="btn sm" id="uf-btn">رفع</button></div>' +
         '<div class="field" id="uf-other-wrap" style="display:none;"><label>وصف نوع الملف</label><input id="uf-other-desc" placeholder="اكتب نوع الملف"></div>' +
-        '<div id="uf-status" style="font-size:12px;color:var(--c-muted);"></div></div>';
+        '<div id="uf-status" style="font-size:12px;color:var(--c-muted);"></div>';
 
       var catSelect = document.getElementById("uf-category");
       var otherWrap = document.getElementById("uf-other-wrap");
@@ -223,7 +277,8 @@
         statusEl.textContent = "بيرفع…";
         window.SSMPDDb.uploadPatientFile(fd).then(function () {
           T.show("اترفع الملف بنجاح، وهيبقى قيد المراجعة لحد ما مسؤول تاني يعتمده");
-          selectPatientForUpload(patient);
+          wrap.innerHTML = "";
+          renderUploadForm(wrap, patient);
         }).catch(function (e) { statusEl.textContent = "خطأ: " + e.message; });
       };
     }
@@ -239,6 +294,8 @@
       '<div class="field"><label>السن</label><input id="np-age" type="number" min="0"></div>' +
       '<div class="field"><label>النوع</label><select id="np-gender"><option value="">—</option><option value="male">ذكر</option><option value="female">أنثى</option></select></div>' +
       '<div class="field"><label>الرقم الطبي (اختياري)</label><input id="np-mrn"></div>' +
+      '<div class="field"><label>الطبيب المعالج (اختياري)</label><input id="np-doctor"></div>' +
+      '<div class="field"><label>التخصص (اختياري)</label><input id="np-specialty" placeholder="مثلاً: عام / اطفال / تجميل / كماوي"></div>' +
       '<button class="btn block" id="np-save">حفظ</button></div>';
     document.body.appendChild(backdrop);
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
@@ -251,6 +308,8 @@
       var age = document.getElementById("np-age").value.trim();
       var gender = document.getElementById("np-gender").value;
       var medical_record_no = document.getElementById("np-mrn").value.trim();
+      var treating_doctor = document.getElementById("np-doctor").value.trim();
+      var specialty = document.getElementById("np-specialty").value.trim();
       if (!full_name) { T.show("اكتب اسم المريض", "error"); return; }
       if (!phone) { T.show("اكتب رقم الهاتف", "error"); return; }
       window.SSMPDDb.createPatientArchive({
@@ -260,7 +319,12 @@
         .then(function (res) {
           T.show("اتضاف المريض بكود " + (res.patient_code || ""));
           backdrop.remove();
-          if (onCreated) onCreated({ id: res.id, full_name: full_name, patient_code: res.patient_code });
+          var created = { id: res.id, full_name: full_name, patient_code: res.patient_code };
+          if (treating_doctor || specialty) {
+            window.SSMPDDb.savePatientMedicalProfile(res.id, { treating_doctor: treating_doctor || null, specialty: specialty || null }, me && me.id)
+              .catch(function () { /* البيانات الطبية اختيارية عند الإنشاء — مفيش داعي نوقف الفلو لو فشلت */ });
+          }
+          if (onCreated) onCreated(created);
         }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
     };
   }

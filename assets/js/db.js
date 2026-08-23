@@ -237,6 +237,12 @@
     updatePatientRecord: function (id, patch) {
       return handle(client.from("patients").update(patch).eq("id", id).select().single());
     },
+    sendPatientToNursing: function (id) {
+      return handle(client.from("patients").update({ sent_to_nursing_at: new Date().toISOString() }).eq("id", id).select().single());
+    },
+    deletePatientRecord: function (id) {
+      return handle(client.from("patients").delete().eq("id", id));
+    },
     getPatientMedicalProfile: function (patientId) {
       return handle(client.from("patient_medical_profile").select("*").eq("patient_id", patientId).maybeSingle());
     },
