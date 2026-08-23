@@ -83,6 +83,8 @@ Deno.serve(async (req) => {
   const attachmentUrl = (body.attachment_url ?? "").toString().trim() || null;
   const interestedService = (body.interested_service ?? "").toString().trim() || null;
   const requestedDepartment = (body.requested_department ?? "").toString().trim() || null;
+  const acquisitionTypeRaw = (body.acquisition_type ?? "").toString().trim().toLowerCase();
+  const acquisitionType = ["organic", "ad"].includes(acquisitionTypeRaw) ? acquisitionTypeRaw : null;
   const confirmDuplicate = body.confirm_duplicate === true;
   const linkToLeadId = body.link_to_lead_id?.toString();
 
@@ -180,6 +182,7 @@ Deno.serve(async (req) => {
       received_by: caller.id,
       interested_service: interestedService,
       requested_department: requestedDepartment,
+      acquisition_type: acquisitionType,
       patient_id: matchedPatient?.id ?? null,
       patient_type: patientType,
       assigned_to: assignedTo,
