@@ -84,6 +84,11 @@ Deno.serve(async (req) => {
   const fullName = (body.full_name ?? "").toString().trim();
   const phoneRaw = (body.phone ?? "").toString().trim();
   const nationalId = (body.national_id ?? "").toString().trim();
+  const genderRaw = (body.gender ?? "").toString().trim();
+  const gender = genderRaw === "male" || genderRaw === "female" ? genderRaw : null;
+  const ageRaw = body.age;
+  const age = ageRaw === undefined || ageRaw === null || ageRaw === "" ? null : Number(ageRaw);
+  const medicalRecordNo = (body.medical_record_no ?? "").toString().trim() || null;
 
   if (!fullName) return json({ error: "الاسم مطلوب" }, 400);
 
@@ -98,9 +103,13 @@ Deno.serve(async (req) => {
       phone: phoneRaw || null,
       phone_normalized: phoneNormalized,
       national_id_hash: nationalIdHash,
+      gender: gender,
+      age: age !== null && !Number.isNaN(age) ? age : null,
+      medical_record_no: medicalRecordNo,
+      last_visit_date: new Date().toISOString().slice(0, 10),
       created_by: caller.id,
     })
-    .select("id, patient_code, full_name, phone, status, created_at")
+    .select("id, patient_code, full_name, phone, status, gender, age, medical_record_no, last_visit_date, created_at")
     .single();
 
   if (error) return json({ error: error.message }, 500);
