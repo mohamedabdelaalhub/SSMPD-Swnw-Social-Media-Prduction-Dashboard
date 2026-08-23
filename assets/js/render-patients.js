@@ -482,31 +482,34 @@
     };
   }
 
-  // ---------- إضافة زيارة جديدة لسجل الزيارات ----------
-  function openAddVisitModal(patient, onSaved) {
+  // ---------- إضافة/تعديل زيارة في سجل الزيارات ----------
+  // existingVisit فاضي = وضع "إضافة"، وموجود = وضع "تعديل" (بيتعبّى بالقيم الحالية)
+  function openVisitFormModal(patient, existingVisit, onSaved) {
+    var v = existingVisit || {};
+    var isEdit = !!existingVisit;
     var backdrop = document.createElement("div");
     backdrop.className = "modal-backdrop";
-    backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>زيارة جديدة</h3><button class="modal-close">×</button></div>' +
-      '<div class="field"><label>تاريخ الزيارة</label><input id="vs-date" type="date" value="' + new Date().toISOString().slice(0, 10) + '"></div>' +
-      '<div class="field"><label>رقم الزيارة</label><input id="vs-number"></div>' +
-      '<div class="field"><label>الشكوى</label><input id="vs-complaint"></div>' +
+    backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>' + (isEdit ? "تعديل الزيارة" : "زيارة جديدة") + '</h3><button class="modal-close">×</button></div>' +
+      '<div class="field"><label>تاريخ الزيارة</label><input id="vs-date" type="date" value="' + (v.visit_date || new Date().toISOString().slice(0, 10)) + '"></div>' +
+      '<div class="field"><label>رقم الزيارة</label><input id="vs-number" value="' + escapeHtml(v.visit_number || '') + '"></div>' +
+      '<div class="field"><label>الشكوى</label><input id="vs-complaint" value="' + escapeHtml(v.complaint || '') + '"></div>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap;">' +
-      '<div class="field" style="flex:1;min-width:110px;"><label>ضغط الدم</label><input id="vs-bp"></div>' +
-      '<div class="field" style="flex:1;min-width:110px;"><label>سكر الدم</label><input id="vs-sugar"></div>' +
-      '<div class="field" style="flex:1;min-width:110px;"><label>النبض</label><input id="vs-pulse"></div>' +
+      '<div class="field" style="flex:1;min-width:110px;"><label>ضغط الدم</label><input id="vs-bp" value="' + escapeHtml(v.blood_pressure || '') + '"></div>' +
+      '<div class="field" style="flex:1;min-width:110px;"><label>سكر الدم</label><input id="vs-sugar" value="' + escapeHtml(v.blood_sugar || '') + '"></div>' +
+      '<div class="field" style="flex:1;min-width:110px;"><label>النبض</label><input id="vs-pulse" value="' + escapeHtml(v.pulse || '') + '"></div>' +
       '</div>' +
-      '<div class="field"><label>الأدوية</label><input id="vs-meds"></div>' +
-      '<div class="field"><label>الأشعة</label><input id="vs-xrays"></div>' +
-      '<div class="field"><label>التحاليل</label><input id="vs-labs"></div>' +
-      '<div class="field"><label>توصيات أخرى</label><input id="vs-other"></div>' +
-      '<div class="field"><label>تاريخ المتابعة</label><input id="vs-followup" type="date"></div>' +
+      '<div class="field"><label>الأدوية</label><input id="vs-meds" value="' + escapeHtml(v.medications || '') + '"></div>' +
+      '<div class="field"><label>الأشعة</label><input id="vs-xrays" value="' + escapeHtml(v.xrays || '') + '"></div>' +
+      '<div class="field"><label>التحاليل</label><input id="vs-labs" value="' + escapeHtml(v.labs || '') + '"></div>' +
+      '<div class="field"><label>توصيات أخرى</label><input id="vs-other" value="' + escapeHtml(v.other_recommendations || '') + '"></div>' +
+      '<div class="field"><label>تاريخ المتابعة</label><input id="vs-followup" type="date" value="' + (v.follow_up_date || '') + '"></div>' +
       '<button class="btn block" id="vs-save">حفظ</button></div>';
     document.body.appendChild(backdrop);
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
     backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
 
     document.getElementById("vs-save").onclick = function () {
-      var visit = {
+      var patch = {
         visit_date: document.getElementById("vs-date").value || new Date().toISOString().slice(0, 10),
         visit_number: document.getElementById("vs-number").value.trim() || null,
         complaint: document.getElementById("vs-complaint").value.trim() || null,
@@ -519,12 +522,35 @@
         other_recommendations: document.getElementById("vs-other").value.trim() || null,
         follow_up_date: document.getElementById("vs-followup").value || null
       };
-      window.SSMPDDb.addPatientVisit(patient.id, visit, me && me.id).then(function () {
-        T.show("اتضافت الزيارة");
+      var req = isEdit ?
+        window.SSMPDDb.updatePatientVisit(existingVisit.id, patch) :
+        window.SSMPDDb.addPatientVisit(patient.id, patch, me && me.id);
+      req.then(function () {
+        T.show(isEdit ? "اتحدثت الزيارة" : "اتضافت الزيارة");
         backdrop.remove();
         if (onSaved) onSaved();
       }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
     };
+  }
+
+  // ---------- عرض تفاصيل زيارة (قراءة فقط) ----------
+  function openViewVisitModal(v) {
+    var plan = [v.medications ? 'الأدوية: ' + v.medications : '', v.xrays ? 'الأشعة: ' + v.xrays : '', v.labs ? 'التحاليل: ' + v.labs : '', v.other_recommendations ? 'توصيات أخرى: ' + v.other_recommendations : '']
+      .filter(Boolean).join('<br>');
+    var backdrop = document.createElement("div");
+    backdrop.className = "modal-backdrop";
+    backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>تفاصيل الزيارة</h3><button class="modal-close">×</button></div>' +
+      '<div style="font-size:13px;line-height:1.9;">' +
+      '<p><b>التاريخ: </b>' + fmtDate(v.visit_date) + '</p>' +
+      '<p><b>رقم الزيارة: </b>' + escapeHtml(v.visit_number || '—') + '</p>' +
+      '<p><b>الشكوى: </b>' + escapeHtml(v.complaint || '—') + '</p>' +
+      '<p><b>ضغط الدم: </b>' + escapeHtml(v.blood_pressure || '—') + ' &nbsp; <b>سكر الدم: </b>' + escapeHtml(v.blood_sugar || '—') + ' &nbsp; <b>النبض: </b>' + escapeHtml(v.pulse || '—') + '</p>' +
+      '<p><b>خطة العلاج: </b><br>' + (plan || '—') + '</p>' +
+      '<p><b>تاريخ المتابعة: </b>' + (v.follow_up_date ? fmtDate(v.follow_up_date) : '—') + '</p>' +
+      '</div></div>';
+    document.body.appendChild(backdrop);
+    backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
+    backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
   }
 
   // ============ ٣) شاشة المراجعة ============
@@ -877,7 +903,10 @@
         html += '<tr><td>' + fmtDate(v.visit_date) + '</td><td>' + escapeHtml(v.visit_number || '—') + '</td>' +
           '<td>' + escapeHtml(v.complaint || '—') + '</td><td>' + escapeHtml(plan || '—') + '</td>' +
           '<td>' + (v.follow_up_date ? fmtDate(v.follow_up_date) : '—') + '</td>' +
-          (canEditMedical ? '<td><button class="btn danger sm" data-del-visit="' + v.id + '">حذف</button></td>' : '') + '</tr>';
+          (canEditMedical ? '<td style="white-space:nowrap;">' +
+            '<button class="btn ghost sm" data-view-visit="' + v.id + '">عرض</button> ' +
+            '<button class="btn ghost sm" data-edit-visit="' + v.id + '">تعديل</button> ' +
+            '<button class="btn danger sm" data-del-visit="' + v.id + '">حذف</button></td>' : '') + '</tr>';
       });
       html += '</tbody></table>';
     }
@@ -938,7 +967,7 @@
     }
     var addVisitBtn = backdrop.querySelector("[data-add-visit]");
     if (addVisitBtn) {
-      addVisitBtn.onclick = function () { openAddVisitModal(patient, reloadModal); };
+      addVisitBtn.onclick = function () { openVisitFormModal(patient, null, reloadModal); };
     }
     backdrop.querySelectorAll("[data-del-visit]").forEach(function (btn) {
       btn.onclick = function () {
@@ -947,6 +976,18 @@
           T.show("اتحذفت الزيارة");
           reloadModal();
         }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
+      };
+    });
+    backdrop.querySelectorAll("[data-view-visit]").forEach(function (btn) {
+      btn.onclick = function () {
+        var v = visits.filter(function (x) { return String(x.id) === btn.getAttribute("data-view-visit"); })[0];
+        if (v) openViewVisitModal(v);
+      };
+    });
+    backdrop.querySelectorAll("[data-edit-visit]").forEach(function (btn) {
+      btn.onclick = function () {
+        var v = visits.filter(function (x) { return String(x.id) === btn.getAttribute("data-edit-visit"); })[0];
+        if (v) openVisitFormModal(patient, v, reloadModal);
       };
     });
 
