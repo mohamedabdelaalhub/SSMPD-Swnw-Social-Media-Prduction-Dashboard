@@ -103,6 +103,8 @@ Deno.serve(async (req) => {
     const source = (r.source ?? r["المصدر"] ?? "whatsapp").toString().trim().toLowerCase();
     const messageText = (r.message_text ?? r["نص الرسالة"] ?? "").toString().trim() || null;
     const interestedService = (r.interested_service ?? r["الخدمة"] ?? "").toString().trim() || null;
+    const acquisitionTypeRaw = (r.acquisition_type ?? r["مصدر الاهتمام"] ?? "").toString().trim().toLowerCase();
+    const acquisitionType = ["organic", "ad"].includes(acquisitionTypeRaw) ? acquisitionTypeRaw : null;
 
     if (!customerName || !phoneRaw) {
       skipped.push({ row: i + 1, reason: "اسم العميل أو رقم الهاتف ناقص", data: r });
@@ -165,6 +167,7 @@ Deno.serve(async (req) => {
         message_text: messageText,
         received_by: caller.id,
         interested_service: interestedService,
+        acquisition_type: acquisitionType,
         patient_id: matchedPatient?.id ?? null,
         patient_type: matchedPatient ? "existing" : "new",
         assigned_to: assignedTo,
