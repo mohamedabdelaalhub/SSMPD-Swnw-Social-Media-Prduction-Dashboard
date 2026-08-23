@@ -673,6 +673,7 @@
           html += '<p style="color:var(--c-muted);font-size:13px;">مفيش مرضى مطابقين.</p>';
         } else {
           var canAssign = canAssignDoctor();
+          var canEditBrowse = canUpload();
           html += '<table class="simple"><thead><tr><th>كود المريض</th><th>الاسم</th><th>الهاتف</th><th>السن</th><th>النوع</th><th>الرقم الطبي</th><th>آخر زيارة</th><th>الحالة</th><th></th></tr></thead><tbody>';
           patients.forEach(function (p) {
             html += '<tr><td>' + escapeHtml(p.patient_code || "—") + '</td><td>' + escapeHtml(p.full_name) + '</td>' +
@@ -683,7 +684,7 @@
               '<td>' + fmtDate(p.last_visit_date) + '</td>' +
               '<td>' + (p.status === "archived" ? '<span class="status-pill draft">مؤرشف</span>' : '<span class="status-pill approved">نشط</span>') + '</td>' +
               '<td style="display:flex;gap:6px;"><button class="btn ghost sm" data-open="' + p.id + '">فتح</button>' +
-              '<button class="btn ghost sm" data-edit="' + p.id + '">تعديل البيانات</button>' +
+              (canEditBrowse ? '<button class="btn ghost sm" data-edit="' + p.id + '">تعديل البيانات</button>' : '') +
               (canAssign ? '<button class="btn ghost sm" data-assign="' + p.id + '" data-assign-name="' + escapeHtml(p.full_name) + '">تحويل لطبيب سونو</button>' : '') +
               '</td></tr>';
           });
