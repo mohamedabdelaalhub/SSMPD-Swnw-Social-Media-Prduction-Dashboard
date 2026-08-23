@@ -105,7 +105,9 @@ Deno.serve(async (req) => {
 
   const caller = await getCallerAdmin(req);
   if (!caller) return json({ error: "غير مصرح — سجّل دخولك تاني" }, 401);
-  const allowed = caller.has_archive_access || isSuperAdmin(caller) || caller.has_archive_view_only;
+  const canReviewOrFull = caller.has_archive_access || isSuperAdmin(caller);
+  const doctorOnly = caller.has_archive_view_only && !canReviewOrFull;
+  const allowed = canReviewOrFull || caller.has_archive_view_only;
   if (!allowed) return json({ error: "مفيش صلاحية أرشيف المرضى" }, 403);
 
   const url = new URL(req.url);
@@ -119,6 +121,18 @@ Deno.serve(async (req) => {
     .eq("id", fileId)
     .maybeSingle();
   if (error || !fileRow) return json({ error: "الملف غير موجود" }, 404);
+
+  // "طبيب سونو" (معاينة محالة فقط) — لازم يكون فيه إحالة pending للمريض ده تحديداً
+  if (doctorOnly) {
+    const { data: assignment } = await admin
+      .from("patient_doctor_assignments")
+      .select("id")
+      .eq("patient_id", fileRow.patient_id)
+      .eq("doctor_id", caller.id)
+      .eq("status", "pending")
+      .maybeSingle();
+    if (!assignment) return json({ error: "المريض ده مش محال لك" }, 403);
+  }
 
   let token: string;
   try {
