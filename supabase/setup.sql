@@ -1563,6 +1563,92 @@ alter table public.patients
   add column if not exists last_visit_date date;
 
 -- ============================================================
+--  17) تقسيم ملف المريض: بيانات طبية (منفصلة عن البيانات الشخصية)
+--      (٢٠٢٦-٠٨-٢٣، v27 — مرحلة ٢ من طلب تعديلات الفريق)
+-- ============================================================
+-- مبني على ٤ نماذج فايلنج ورقية بعتها المستخدم (كبار/اطفال/تجميل/كماوي):
+-- كل نموذج فيه (أ) بيانات ثابتة عن حالة المريض الطبية (طبيب معالج/تخصص/
+-- علامات حيوية حالية/أمراض مزمنة/عمليات جراحية/تاريخ مرضي بالعائلة) —
+-- وده اللي بنخزنه في patient_medical_profile (صف واحد لكل مريض، بيتحدّث)،
+-- و(ب) سجل زيارات متكرر (تاريخ/شكوى/خطة علاجية) — وده patient_visits
+-- (صف لكل زيارة). القوائم المتغيرة (أمراض مزمنة/عمليات/تاريخ عائلي)
+-- اتخزنت jsonb بدل أعمدة منفصلة لكل حالة — عشان تختلف حسب التخصص
+-- (كبار/اطفال/تجميل/كماوي) من غير ما نحتاج تعديل SQL في كل مرة.
+
+create table if not exists public.patient_medical_profile (
+  patient_id        uuid primary key references public.patients(id) on delete cascade,
+  treating_doctor   text,
+  specialty         text,
+  blood_pressure    text,
+  blood_sugar       text,
+  weight            text,
+  pulse             text,
+  oxygen_percent    text,
+  chronic_conditions jsonb not null default '[]'::jsonb, -- [{name,has,medication}]
+  surgeries         jsonb not null default '[]'::jsonb,  -- [{name,has,notes}]
+  family_history    jsonb not null default '[]'::jsonb,  -- [{disease,has}]
+  updated_by        uuid references public.admins(id),
+  updated_at        timestamptz not null default now()
+);
+
+create table if not exists public.patient_visits (
+  id                  uuid primary key default gen_random_uuid(),
+  patient_id          uuid not null references public.patients(id) on delete cascade,
+  visit_number        text,
+  visit_date          date not null default current_date,
+  complaint           text,
+  medications         text,
+  xrays               text,
+  labs                text,
+  other_recommendations text,
+  follow_up_date      date,
+  blood_pressure      text,
+  blood_sugar         text,
+  pulse               text,
+  created_by          uuid references public.admins(id),
+  created_at          timestamptz not null default now()
+);
+create index if not exists patient_visits_patient_idx on public.patient_visits (patient_id, visit_date desc);
+
+alter table public.patient_medical_profile enable row level security;
+alter table public.patient_visits enable row level security;
+
+-- قراءة: نفس دائرة قراءة patients (أرشيف/مراجعة/leads/الدكتور المحال له) —
+-- الدكتور محتاج يشوف البيانات الطبية أصلاً (ده الهدف من الإحالة)
+drop policy if exists "medical profile read" on public.patient_medical_profile;
+create policy "medical profile read" on public.patient_medical_profile
+  for select using (
+    public.has_archive_access() or public.has_archive_review_access() or public.can_access_leads()
+    or public.is_assigned_doctor_for_patient(patient_id)
+  );
+
+drop policy if exists "visits read" on public.patient_visits;
+create policy "visits read" on public.patient_visits
+  for select using (
+    public.has_archive_access() or public.has_archive_review_access() or public.can_access_leads()
+    or public.is_assigned_doctor_for_patient(patient_id)
+  );
+
+-- كتابة: أرشيف/سوبر أدمن بس — الدكتور "معاينة فقط" (قرار مرحلة ٥ الجاية،
+-- بس هنا بنأكد من الأول إنه مايقدرش يعدّل حتى لو اتنسي تقييد في الواجهة)
+drop policy if exists "medical profile write" on public.patient_medical_profile;
+create policy "medical profile write" on public.patient_medical_profile
+  for insert with check (public.has_archive_access() or public.can_manage_all_content());
+drop policy if exists "medical profile update" on public.patient_medical_profile;
+create policy "medical profile update" on public.patient_medical_profile
+  for update using (public.has_archive_access() or public.can_manage_all_content());
+
+drop policy if exists "visits write" on public.patient_visits;
+create policy "visits write" on public.patient_visits
+  for insert with check (public.has_archive_access() or public.can_manage_all_content());
+drop policy if exists "visits update" on public.patient_visits;
+create policy "visits update" on public.patient_visits
+  for update using (public.has_archive_access() or public.can_manage_all_content());
+drop policy if exists "visits delete" on public.patient_visits;
+create policy "visits delete" on public.patient_visits
+  for delete using (public.has_archive_access() or public.can_manage_all_content());
+
+-- ============================================================
 --  14) أول سوبر أدمن
 -- ============================================================
 -- الخطوة أ) Authentication → Users → Add user → Create new user
