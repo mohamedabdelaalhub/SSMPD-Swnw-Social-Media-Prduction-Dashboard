@@ -938,3 +938,56 @@ some row` — رغم إن فحص مباشر لجدول `admins` أثبت إن م
     Activity Log بالتغيير.
   - مفيش تعديل في RLS/SQL — الصلاحية الموجودة أصلاً كافية.
 - بصمة الكاش اترفعت لـ `?v=24` في `index.html`.
+
+## "طبيب سونو" بقى نظام إحالة، مش أرشيف كامل للمعاينة (`?v=25` — ٢٠٢٦-٠٨-٢٣)
+
+- طلب المستخدم بعد تجربة الرول: مش عايز "طبيب سونو" يشوف أرشيف المرضى كله
+  حتى معاينة — عايزه يشوف بس الحالات اللي التمريض حوّلها له، ولما يخلص
+  الكشف يعمل "تم الكشف" فتختفي من عنده. هيدّي تعديل معماري على قرار
+  `?v=23` (كان `has_archive_view_only` = وصول قراءة لكل الأرشيف).
+- `setup.sql` قسم ١٥ (بعد قسم ١٣ بتاع الرول الأساسي):
+  - جدول جديد `patient_doctor_assignments` (patient_id, doctor_id,
+    assigned_by, status pending/done, assigned_at, completed_at) — RLS:
+    الدكتور يشوف/يعدّل بس اللي ليه، والتمريض/صاحب أرشيف كامل يقدر
+    يعمل insert (بشرط الدكتور المُسنَد فعلاً `has_archive_view_only=true`
+    و`active`) ويشوف/يعدّل الكل.
+  - دالة `is_assigned_doctor_for_patient(patient_id)` — بتتفحص من RLS
+    على `patients`/`patient_files` (سياستي القراءة اتعدّلوا: بدل
+    `has_archive_view_only()` البلانكت، بقى `is_assigned_doctor_for_patient(id)`
+    — يعني الدكتور بس يقدر يقرا صف المريض/الملف لو فيه إحالة `pending` ليه).
+  - دالة `list_active_sono_doctors()` — عشان شاشة الإحالة تجيب أسماء
+    الأطباء النشطين من غير ما نفتح جدول `admins` كله لكل الموظفين (سياسة
+    `admins` الأساسية بتدّي كل حد صفه بس أو لو سوبر أدمن يشوف الكل —
+    فضلت زي ما هي عمداً، الدالة دي بديل أضيق وأأمن).
+  - `archive_access_log` رجع لصلاحيتي الأرشيف الكاملتين بس (مش محتاج
+    الدكتور يشوف سجل الوصول).
+- **مهم**: أرشيف المرضى/الملفات (`patients`/`patient_files`) بيتقرا من
+  التطبيق دايماً عن طريق Edge Functions (`patient-files-list`/`download`)
+  اللي بتستخدم service role وبتتخطى RLS بالكامل — فالـ RLS فوق دفاع إضافي
+  بس، مش نقطة التحقق الحقيقية. التحقق الفعلي اتضاف يدوي جوه الـ Edge
+  Functions نفسها:
+  - `patient-files-list/index.ts`: متغير `doctorOnly` (عنده
+    `has_archive_view_only` بس، من غير أرشيف كامل ولا مراجعة). لو
+    `patient_id` متبعت، بيتفحص وجود إحالة `pending` قبل ما يرجّع الملفات.
+    الداشبورد العام (`stats=1`) بقى 403 للدكتور (مش محتاجه). قائمة
+    المرضى من غير `patient_id`/`review_status` بقت — للدكتور بس — بترجع
+    المرضى المحالين له `pending` فقط (join على `patient_doctor_assignments`)
+    بدل بحث/تصفح كل الأرشيف.
+  - `patient-files-download/index.ts`: اتعمل reorder — بيجيب صف الملف
+    الأول (`patient_id` بتاعه) قبل ما يقرر `allowed`، عشان يقدر يتحقق من
+    الإحالة لنفس المريض ده تحديداً قبل السماح بالتنزيل.
+- `db.js`: دوال جديدة `listActiveSonoDoctors` (rpc)، `assignPatientToDoctor`،
+  `listMyDoctorAssignments`، `completeDoctorAssignment` — الإحالة/الإتمام
+  بيعدّوا مباشرة على الجدول (مش عن طريق Edge Function) لأنهم مش محتاجين
+  Google Drive، فبيتبعوا نفس نمط `content_items`/`comments` في الملف ده.
+- `render-patients.js`:
+  - `isDoctorOnly()`: `has_archive_view_only` بس من غير أرشيف كامل/مراجعة
+    → `render()` بيحوّل بالكامل لشاشة مختلفة `renderDoctorQueue` (طابور
+    "الحالات المحالة لك" — فتح ملفات + زرار "تم الكشف")، بدل التابات
+    الأربعة العادية (داشبورد/رفع/مراجعة/تصفح).
+  - `canAssignDoctor()`: تمريض، أو صاحب أرشيف كامل، أو سوبر أدمن — بيظهر
+    زرار "تحويل لطبيب سونو" جنب كل مريض في شاشة "تصفح وفلترة"، بيفتح
+    مودال صغير لاختيار الطبيب (من `list_active_sono_doctors()`) والتأكيد.
+  - "تم الكشف" بيعمل `completeDoctorAssignment` (status → done) وبيعيد
+    رسم الطابور فوراً فتختفي الحالة من عند الدكتور.
+- بصمة الكاش اترفعت لـ `?v=25` في `index.html`.
