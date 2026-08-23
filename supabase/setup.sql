@@ -1668,6 +1668,17 @@ create policy "archive or leads delete patients" on public.patients
   for delete using (public.has_archive_access() or public.can_manage_all_content());
 
 -- ============================================================
+--  19) تصنيفات رفع المستندات: علاج طبيعي + تقرير طبي
+--      (٢٠٢٦-٠٨-٢٣، v29 — مرحلة ٤ من طلب تعديلات الفريق)
+-- ============================================================
+-- إضافة تصنيفين جديدين لملفات المرضى المرفوعة (طلب الفريق: تحاليل/أشعة/
+-- روشتة موجودين بالفعل بأسماء مختلفة قليلاً lab_result/radiology/
+-- prescription — العلاج الطبيعي والتقرير الطبي مكانوش موجودين فاتضافوا).
+alter table public.patient_files drop constraint if exists patient_files_category_check;
+alter table public.patient_files add constraint patient_files_category_check
+  check (category in ('id_document','insurance','radiology','lab_result','prescription','physical_therapy','medical_report','eeg','invoice','other'));
+
+-- ============================================================
 --  14) أول سوبر أدمن
 -- ============================================================
 -- الخطوة أ) Authentication → Users → Add user → Create new user
