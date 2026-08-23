@@ -40,6 +40,13 @@
   var me = null; // window.SSMPDAuth.currentAdmin
   function canReview() { return !!(me && (me.has_archive_review_access || window.SSMPDRoles.hasRole(me, "super_admin"))); }
   function canUpload() { return !!(me && (me.has_archive_access || window.SSMPDRoles.hasRole(me, "super_admin"))); }
+  // "طبيب سونو" (معاينة محالة فقط): عنده has_archive_view_only بس، من غير أرشيف كامل
+  // ولا مراجعة — بيشوف شاشة مختلفة تماماً (طابور الإحالات) بدل الأرشيف العادي
+  function isDoctorOnly() { return !!(me && me.has_archive_view_only && !canUpload() && !canReview()); }
+  // مين يقدر يحيل مريض لطبيب سونو: التمريض، أو أي حد عنده أرشيف كامل، أو سوبر أدمن
+  function canAssignDoctor() {
+    return !!(me && (window.SSMPDRoles.hasRole(me, "nursing") || canUpload() || window.SSMPDRoles.hasRole(me, "super_admin")));
+  }
 
   var SUB_SCREENS = [
     { key: "dashboard", label: "الداشبورد العام" },
@@ -65,6 +72,7 @@
 
   function render(container) {
     me = window.SSMPDAuth.currentAdmin;
+    if (isDoctorOnly()) { renderDoctorQueue(container); return; }
     var subs = visibleSubScreens();
     if (subs.indexOf(state.subTab) === -1 && !subs.some(function (s) { return s.key === state.subTab; })) {
       state.subTab = subs[0] ? subs[0].key : "dashboard";
@@ -323,6 +331,47 @@
       });
   }
 
+  // ============ شاشة "طبيب سونو" — طابور الحالات المحالة له بس ============
+  function renderDoctorQueue(container) {
+    container.innerHTML = '<div class="loading">بيحمّل…</div>';
+    window.SSMPDDb.listMyDoctorAssignments(me.id).then(function (rows) {
+      var html = '<h2 style="margin-bottom:16px;">الحالات المحالة لك</h2>';
+      html += '<div class="section">';
+      if (!rows.length) {
+        html += '<div class="empty-state">مفيش حالات محالة لك دلوقتي</div>';
+      } else {
+        html += '<table class="simple"><thead><tr><th>كود المريض</th><th>الاسم</th><th>الهاتف</th><th>وقت الإحالة</th><th></th></tr></thead><tbody>';
+        rows.forEach(function (r) {
+          var p = r.patients;
+          if (!p) return;
+          html += '<tr><td>' + escapeHtml(p.patient_code || "—") + '</td><td>' + escapeHtml(p.full_name) + '</td>' +
+            '<td>' + escapeHtml(p.phone || "—") + '</td><td>' + fmtDate(r.assigned_at) + '</td>' +
+            '<td style="display:flex;gap:6px;">' +
+            '<button class="btn ghost sm" data-open="' + p.id + '">فتح الملفات</button>' +
+            '<button class="btn sm" data-done="' + r.id + '">تم الكشف</button></td></tr>';
+        });
+        html += '</tbody></table>';
+      }
+      html += '</div>';
+      container.innerHTML = html;
+
+      container.querySelectorAll("[data-open]").forEach(function (btn) {
+        btn.onclick = function () { openPatientModal(container, container, btn.getAttribute("data-open")); };
+      });
+      container.querySelectorAll("[data-done]").forEach(function (btn) {
+        btn.onclick = function () {
+          btn.disabled = true;
+          window.SSMPDDb.completeDoctorAssignment(btn.getAttribute("data-done")).then(function () {
+            T.show("تم تسجيل الكشف");
+            renderDoctorQueue(container);
+          }).catch(function (e) { T.show("خطأ: " + e.message, "error"); btn.disabled = false; });
+        };
+      });
+    }).catch(function (e) {
+      container.innerHTML = '<div class="err-msg">خطأ: ' + e.message + '</div>';
+    });
+  }
+
   // ============ ٤) شاشة تصفح وفلترة ============
   function renderBrowseScreen(view, container) {
     view.innerHTML = '<div class="loading">بيحمّل…</div>';
@@ -340,12 +389,15 @@
         if (!patients.length) {
           html += '<p style="color:var(--c-muted);font-size:13px;">مفيش مرضى مطابقين.</p>';
         } else {
+          var canAssign = canAssignDoctor();
           html += '<table class="simple"><thead><tr><th>كود المريض</th><th>الاسم</th><th>الهاتف</th><th>الحالة</th><th></th></tr></thead><tbody>';
           patients.forEach(function (p) {
             html += '<tr><td>' + escapeHtml(p.patient_code || "—") + '</td><td>' + escapeHtml(p.full_name) + '</td>' +
               '<td>' + escapeHtml(p.phone || "—") + '</td>' +
               '<td>' + (p.status === "archived" ? '<span class="status-pill draft">مؤرشف</span>' : '<span class="status-pill approved">نشط</span>') + '</td>' +
-              '<td><button class="btn ghost sm" data-open="' + p.id + '">فتح</button></td></tr>';
+              '<td style="display:flex;gap:6px;"><button class="btn ghost sm" data-open="' + p.id + '">فتح</button>' +
+              (canAssign ? '<button class="btn ghost sm" data-assign="' + p.id + '" data-assign-name="' + escapeHtml(p.full_name) + '">تحويل لطبيب سونو</button>' : '') +
+              '</td></tr>';
           });
           html += '</tbody></table>';
           html += '<div style="display:flex;gap:8px;align-items:center;justify-content:center;margin-top:14px;">' +
@@ -370,9 +422,47 @@
         view.querySelectorAll("[data-open]").forEach(function (btn) {
           btn.onclick = function () { openPatientModal(view, container, btn.getAttribute("data-open")); };
         });
+        view.querySelectorAll("[data-assign]").forEach(function (btn) {
+          btn.onclick = function () { openAssignDoctorModal(btn.getAttribute("data-assign"), btn.getAttribute("data-assign-name")); };
+        });
       }).catch(function (e) {
         view.innerHTML = '<div class="err-msg">خطأ: ' + e.message + '</div>';
       });
+  }
+
+  // ---------- إحالة مريض لـ"طبيب سونو" ----------
+  function openAssignDoctorModal(patientId, patientName) {
+    var backdrop = document.createElement("div");
+    backdrop.className = "modal-backdrop";
+    backdrop.innerHTML = '<div class="modal"><div class="loading">بيحمّل…</div></div>';
+    document.body.appendChild(backdrop);
+    backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
+
+    window.SSMPDDb.listActiveSonoDoctors().then(function (doctors) {
+      var html = '<div class="modal"><div class="modal-head"><h3>تحويل "' + escapeHtml(patientName) + '" لطبيب سونو</h3>' +
+        '<button class="modal-close">×</button></div>';
+      if (!doctors.length) {
+        html += '<p style="color:var(--c-muted);font-size:13px;">مفيش حالياً أي حساب مفعّل عليه دور "طبيب سونو". فعّله من شاشة المستخدمين والصلاحيات الأول.</p>';
+      } else {
+        html += '<div class="field"><label>اختر الطبيب</label><select id="ad-doctor">' +
+          doctors.map(function (d) { return '<option value="' + d.id + '">' + escapeHtml(d.name || d.email) + '</option>'; }).join("") +
+          '</select></div><button class="btn" id="ad-confirm">تحويل</button>';
+      }
+      html += '</div>';
+      backdrop.innerHTML = html;
+      backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
+      var confirmBtn = document.getElementById("ad-confirm");
+      if (confirmBtn) confirmBtn.onclick = function () {
+        var doctorId = document.getElementById("ad-doctor").value;
+        confirmBtn.disabled = true;
+        window.SSMPDDb.assignPatientToDoctor(patientId, doctorId, me.id).then(function () {
+          T.show("اتحوّلت الحالة للطبيب");
+          backdrop.remove();
+        }).catch(function (e) { T.show("خطأ: " + e.message, "error"); confirmBtn.disabled = false; });
+      };
+    }).catch(function (e) {
+      backdrop.querySelector(".modal").innerHTML = '<div class="err-msg">خطأ: ' + e.message + '</div>';
+    });
   }
 
   function openPatientModal(view, container, patientId) {

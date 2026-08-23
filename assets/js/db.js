@@ -258,6 +258,29 @@
       return edgeFetch("patient-files-review", { method: "POST", json: payload });
     },
 
+    // ---------- إحالة مريض لـ"طبيب سونو" (patient_doctor_assignments — جدول عادي، مش Edge Function) ----------
+    listActiveSonoDoctors: function () {
+      return handle(client.rpc("list_active_sono_doctors"));
+    },
+    assignPatientToDoctor: function (patientId, doctorId, assignedBy) {
+      return handle(client.from("patient_doctor_assignments").insert({
+        patient_id: patientId, doctor_id: doctorId, assigned_by: assignedBy
+      }).select().single());
+    },
+    // قايمة الحالات المحالة للدكتور الحالي ولسه قيد الكشف (pending) — بترجع بيانات
+    // المريض متضمّنة (embed) عشان شاشة الدكتور تعرضها من غير نداء تاني
+    listMyDoctorAssignments: function (doctorId) {
+      return handle(client.from("patient_doctor_assignments")
+        .select("id, assigned_at, patients(id, patient_code, full_name, phone, status)")
+        .eq("doctor_id", doctorId).eq("status", "pending")
+        .order("assigned_at", { ascending: true }));
+    },
+    completeDoctorAssignment: function (assignmentId) {
+      return handle(client.from("patient_doctor_assignments")
+        .update({ status: "done", completed_at: new Date().toISOString() })
+        .eq("id", assignmentId));
+    },
+
     // ---------- إدارة الليدز (Edge Functions) ----------
     createLead: function (payload) {
       return edgeFetch("leads-create", { method: "POST", json: payload });
