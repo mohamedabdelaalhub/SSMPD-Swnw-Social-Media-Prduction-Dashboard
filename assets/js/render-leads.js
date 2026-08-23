@@ -24,7 +24,8 @@
   var SOURCE_LABELS = { whatsapp: "واتساب", messenger: "ماسنجر" };
   var SERVICE_LABELS = {
     checkup: "كشف", consultation: "استشارة", radiology: "أشعة", lab: "تحاليل", nursing: "تمريض",
-    physiotherapy: "علاج طبيعي", treatment: "علاج", other: "أخرى"
+    physiotherapy: "علاج طبيعي", treatment: "علاج", dental: "أسنان", speech_therapy: "تخاطب",
+    psychiatry: "نفسية", cosmetic_laser: "ليزر تجميل", emergency: "طوارئ", other: "أخرى"
   };
   var PRIORITY_LABELS = { high: "عالية", medium: "متوسطة", normal: "عادية" };
   var RESULT_LABELS = { answered: "تم الرد", no_answer: "لا يوجد رد", busy: "مشغول", call_back_later: "اتصال لاحقاً", other: "أخرى" };
