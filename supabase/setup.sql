@@ -1478,11 +1478,26 @@ create policy "pda select" on public.patient_doctor_assignments
     or public.my_role() = 'nursing' or public.can_manage_all_content()
   );
 
+-- ملحوظة (٢٠٢٦-٠٨-٢٣): الـ exists الأصلية هنا كانت بتقرا من admins مباشرة، لكن
+-- RLS الأساسية لجدول admins بتدّي كل مستخدم صفه بس — فالـ subquery ده كان بيرجع
+-- false دايماً لأي حد مش super_admin (حتى لو مؤهل)، فكانت "تحويل لطبيب سونو"
+-- بتفشل بـ RLS error لكل التمريض/الأرشيف. الحل: دالة SECURITY DEFINER بتتخطى
+-- RLS بتاعة admins عمداً وبأمان للفحص الضيق ده بس (نفس نمط my_role()/has_archive_access()).
+create or replace function public.is_active_sono_doctor(p_doctor_id uuid)
+returns boolean language sql security definer stable set search_path = public as $$
+  select exists (
+    select 1 from public.admins d
+    where d.id = p_doctor_id and d.has_archive_view_only and d.active
+  );
+$$;
+revoke all on function public.is_active_sono_doctor(uuid) from public;
+grant execute on function public.is_active_sono_doctor(uuid) to authenticated;
+
 create policy "pda insert" on public.patient_doctor_assignments
   for insert with check (
     (public.my_role() = 'nursing' or public.has_archive_access() or public.can_manage_all_content())
     and assigned_by = public.my_admin_id()
-    and exists (select 1 from public.admins d where d.id = doctor_id and d.has_archive_view_only and d.active)
+    and public.is_active_sono_doctor(doctor_id)
   );
 
 create policy "pda update" on public.patient_doctor_assignments
@@ -1536,6 +1551,16 @@ create policy "archive access reads files" on public.patient_files
 drop policy if exists "archive access reads log" on public.archive_access_log;
 create policy "archive access reads log" on public.archive_access_log
   for select using (public.has_archive_access() or public.has_archive_review_access());
+
+-- ============================================================
+--  16) أعمدة إضافية على ملف المريض — العمر/النوع/تاريخ الزيارة/الرقم
+--      الطبي (٢٠٢٦-٠٨-٢٣، v26 — مرحلة ١ من طلب تعديلات الفريق)
+-- ============================================================
+alter table public.patients
+  add column if not exists gender text check (gender in ('male', 'female')),
+  add column if not exists age int,
+  add column if not exists medical_record_no text,
+  add column if not exists last_visit_date date;
 
 -- ============================================================
 --  14) أول سوبر أدمن
