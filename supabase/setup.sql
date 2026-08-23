@@ -1679,6 +1679,19 @@ alter table public.patient_files add constraint patient_files_category_check
   check (category in ('id_document','insurance','radiology','lab_result','prescription','physical_therapy','medical_report','eeg','invoice','other'));
 
 -- ============================================================
+--  20) توسيع قائمة "الخدمة" باهتمامات الليدز
+--      (٢٠٢٦-٠٨-٢٣، v31 — مرحلة ٦ من طلب تعديلات الفريق)
+-- ============================================================
+-- طلب الفريق (سكرين شوتس واتساب): كشف/أشعة/معمل/علاج طبيعي/أسنان/تخاطب/
+-- نفسية/ليزر تجميل/تمريض تحويل/طوارئ. بمراجعة SERVICE_LABELS الحالية في
+-- render-leads.js: كشف/أشعة/تمريض/علاج طبيعي موجودين بالفعل، و"معمل"
+-- اتعتبر مرادف لـ "تحاليل" (lab) الموجودة أصلاً فما اتضافش تكرار. اتضافت
+-- الخدمات الناقصة الواضحة بس: أسنان/تخاطب/نفسية/ليزر تجميل/طوارئ.
+alter table public.leads drop constraint if exists leads_interested_service_check;
+alter table public.leads add constraint leads_interested_service_check
+  check (interested_service in ('checkup','consultation','radiology','lab','nursing','physiotherapy','treatment','dental','speech_therapy','psychiatry','cosmetic_laser','emergency','other'));
+
+-- ============================================================
 --  14) أول سوبر أدمن
 -- ============================================================
 -- الخطوة أ) Authentication → Users → Add user → Create new user
