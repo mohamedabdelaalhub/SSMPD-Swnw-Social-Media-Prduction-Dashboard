@@ -82,6 +82,19 @@
       actionsHtml = '<p style="color:var(--c-muted);font-size:12px;">لا يوجد إجراء اعتماد على هذه المرحلة حالياً.</p>';
     }
 
+    // تغيير المصمم المسؤول — متاح في أي مرحلة بعد ما يتحدد مصمم (حتى لو الشغل بدأ)
+    var reassignHtml = "";
+    if (item.assigned_designer) {
+      reassignHtml = '<div class="field" style="margin-top:10px;"><label>المصمم المسؤول</label>' +
+        '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">' +
+        '<select id="rv-reassign">' +
+        designers.map(function (d) {
+          return '<option value="' + d.id + '" ' + (d.id === item.assigned_designer ? "selected" : "") + '>' + escapeHtml(d.name || d.email) + '</option>';
+        }).join("") +
+        '</select>' +
+        '<button class="btn ghost sm" id="rv-reassign-btn">تغيير المصمم</button></div></div>';
+    }
+
     backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>' + escapeHtml(item.title) + W.brandBadgeHtml(item.brand) + '</h3>' +
       '<button class="modal-close">×</button></div>' +
       '<div class="status-pill approval" style="margin-bottom:12px;">' + W.stageLabel(item.stage) + '</div>' +
@@ -91,6 +104,7 @@
       '<p style="white-space:pre-wrap;">' + escapeHtml(item.body || "") + '</p>' +
       (item.design_file_url ? '<p><a href="' + item.design_file_url + '" target="_blank" class="btn ghost sm">فتح ملف التصميم</a></p>' : '') +
       '<div style="margin:6px 0 14px;">' + W.itemActionsHtml(item, window.SSMPDAuth.currentAdmin) + '</div>' +
+      reassignHtml +
       '<div style="margin:14px 0;">' + actionsHtml + '</div>' +
       '<div id="comments-slot"></div></div>';
     document.body.appendChild(backdrop);
@@ -112,7 +126,24 @@
 
     var approveBtn = document.getElementById("rv-approve");
     var rejectBtn = document.getElementById("rv-reject");
+    var reassignBtn = document.getElementById("rv-reassign-btn");
     var me = window.SSMPDAuth.currentAdmin;
+
+    if (reassignBtn) reassignBtn.onclick = function () {
+      var newDesignerId = document.getElementById("rv-reassign").value;
+      if (!newDesignerId) { alert("اختر مصمم"); return; }
+      if (newDesignerId === item.assigned_designer) { backdrop.remove(); return; }
+      var oldDesignerName = (adminsById[item.assigned_designer] || {}).name || "—";
+      var newDesignerName = (adminsById[newDesignerId] || {}).name || "—";
+      if (!confirm("تأكيد نقل المادة من \"" + oldDesignerName + "\" إلى \"" + newDesignerName + "\"؟")) return;
+      var patch = { assigned_designer: newDesignerId };
+      // لو الشغل لسه في التصميم، صفّر وقت الاستلام عشان المصمم الجديد يشوفها "في انتظار الاستلام"
+      if (item.stage === "in_design" || item.stage === "needs_revision") patch.design_received_at = null;
+      window.SSMPDDb.updateContentItem(item.id, patch).then(function () {
+        return window.SSMPDDb.logActivity({ content_id: item.id, actor_id: me.id, action: "تغيير المصمم: " + oldDesignerName + " ← " + newDesignerName, from_stage: item.stage, to_stage: item.stage });
+      }).then(function () { backdrop.remove(); render(document.getElementById("view-container")); })
+        .catch(function (e) { alert("خطأ: " + e.message); });
+    };
 
     if (approveBtn) approveBtn.onclick = function () {
       var patch = {};
