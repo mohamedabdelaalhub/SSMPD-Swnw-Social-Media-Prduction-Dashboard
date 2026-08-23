@@ -103,7 +103,7 @@ Deno.serve(async (req) => {
     }
     const { data: patient, error: pErr } = await admin
       .from("patients")
-      .select("id, patient_code, full_name, phone, status, created_at")
+      .select("id, patient_code, full_name, phone, status, gender, age, medical_record_no, last_visit_date, created_at")
       .eq("id", patientId)
       .maybeSingle();
     if (pErr || !patient) return json({ error: "المريض غير موجود" }, 404);
@@ -174,7 +174,7 @@ Deno.serve(async (req) => {
   // من غير patient_id: قائمة/بحث المرضى (اسم أو رقم أو patient_code)
   let query = admin
     .from("patients")
-    .select("id, patient_code, full_name, phone, status, created_at", { count: "exact" })
+    .select("id, patient_code, full_name, phone, status, gender, age, medical_record_no, last_visit_date, created_at", { count: "exact" })
     .order("created_at", { ascending: false });
 
   if (search) {
