@@ -22,6 +22,9 @@
   // في lead-invoice-upload Edge Function)
   var INVOICE_ALLOWED_STATUSES = ["booked", "booked_on_system", "service_done"];
   var SOURCE_LABELS = { whatsapp: "واتساب", messenger: "ماسنجر" };
+  // تصنيف مصدر اهتمام الليد: عضوي (وصل من نفسه) مقابل إعلان مدفوع — مختلف عن
+  // "source" (قناة التواصل واتساب/ماسنجر)، وطلب الفريق عرضه بشكل واضح بالداشبورد
+  var ACQUISITION_LABELS = { organic: "عضوي", ad: "إعلان" };
   var SERVICE_LABELS = {
     checkup: "كشف", consultation: "استشارة", radiology: "أشعة", lab: "تحاليل", nursing: "تمريض",
     physiotherapy: "علاج طبيعي", treatment: "علاج", dental: "أسنان", speech_therapy: "تخاطب",
@@ -68,7 +71,8 @@
     cs: { status: "", search: "", openOnly: false, page: 1, pageSize: 20 },
     archive: { status: "", search: "", bookedBy: "", page: 1, pageSize: 20 },
     booked: { search: "", bookedBy: "", page: 1, pageSize: 20 },
-    bulk: { rows: [], fileName: "", result: null }
+    bulk: { rows: [], fileName: "", result: null },
+    dashboard: { from: "", to: "" }
   };
 
   function visibleSubScreens() {
@@ -136,6 +140,8 @@
       '<div class="field"><label>نص الرسالة (اختياري)</label><textarea id="nl-message" rows="2"></textarea></div>' +
       '<div class="field"><label>الخدمة المهتم بيها (اختياري)</label><select id="nl-service"><option value="">— بدون —</option>' +
       Object.keys(SERVICE_LABELS).map(function (k) { return '<option value="' + k + '">' + SERVICE_LABELS[k] + '</option>'; }).join("") + '</select></div>' +
+      '<div class="field"><label>مصدر الاهتمام (اختياري)</label><select id="nl-acquisition"><option value="">— بدون —</option>' +
+      Object.keys(ACQUISITION_LABELS).map(function (k) { return '<option value="' + k + '">' + ACQUISITION_LABELS[k] + '</option>'; }).join("") + '</select></div>' +
       '<div id="nl-dup-box"></div>';
   }
 
@@ -167,7 +173,8 @@
         phone: document.getElementById("nl-phone").value.trim(),
         source: document.getElementById("nl-source").value,
         message_text: document.getElementById("nl-message").value.trim() || undefined,
-        interested_service: document.getElementById("nl-service").value || undefined
+        interested_service: document.getElementById("nl-service").value || undefined,
+        acquisition_type: document.getElementById("nl-acquisition").value || undefined
       };
       if (extra) Object.keys(extra).forEach(function (k) { payload[k] = extra[k]; });
       if (!payload.customer_name) { T.show("اكتب اسم العميل", "error"); return; }
@@ -180,6 +187,7 @@
         document.getElementById("nl-phone").value = "";
         document.getElementById("nl-message").value = "";
         document.getElementById("nl-service").value = "";
+        document.getElementById("nl-acquisition").value = "";
         document.getElementById("nl-dup-box").innerHTML = "";
         loadRecent();
       }).catch(function (e) {
@@ -268,13 +276,41 @@
 
   // ============ ٣) داشبورد الإدارة ============
   function renderDashboardScreen(view, container) {
-    view.innerHTML = '<div class="loading">بيحمّل…</div>';
-    window.SSMPDDb.getLeadsStats().then(function (res) {
+    var d = state.dashboard;
+    view.innerHTML = '<div class="section" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px;">' +
+      '<div class="field" style="margin:0;"><label>من تاريخ</label><input type="date" id="ld-dash-from" value="' + escapeHtml(d.from) + '"></div>' +
+      '<div class="field" style="margin:0;"><label>إلى تاريخ</label><input type="date" id="ld-dash-to" value="' + escapeHtml(d.to) + '"></div>' +
+      '<button class="btn sm" id="ld-dash-apply">تطبيق</button>' +
+      (d.from || d.to ? '<button class="btn ghost sm" id="ld-dash-clear">مسح الفلتر</button>' : '') +
+      '<span style="font-size:11px;color:var(--c-muted);">الفلتر بيأثر على: توزيع الحالة، تصنيف عضوي/إعلان، والدخل. أما "مفتوحة/مغلقة/تم الحجز" فبتفضل الحالة اللحظية دايماً.</span>' +
+      '</div><div id="ld-dash-body"><div class="loading">بيحمّل…</div></div>';
+
+    document.getElementById("ld-dash-apply").onclick = function () {
+      d.from = document.getElementById("ld-dash-from").value;
+      d.to = document.getElementById("ld-dash-to").value;
+      renderDashboardScreen(view, container);
+    };
+    var clearBtn = document.getElementById("ld-dash-clear");
+    if (clearBtn) clearBtn.onclick = function () { d.from = ""; d.to = ""; renderDashboardScreen(view, container); };
+
+    var body = document.getElementById("ld-dash-body");
+    window.SSMPDDb.getLeadsStats({ from: d.from, to: d.to }).then(function (res) {
       var html = '<div class="kpi-grid">' +
         '<div class="kpi-card"><div class="label">ليدز مفتوحة</div><div class="value">' + fmtNum(res.open) + '</div></div>' +
         '<div class="kpi-card"><div class="label">ليدز مغلقة</div><div class="value">' + fmtNum(res.closed) + '</div></div>' +
         '<div class="kpi-card"><div class="label">تم الحجز</div><div class="value small">' + fmtNum(res.booked) + '</div></div>' +
         '<div class="kpi-card"><div class="label">إجمالي دخل الفواتير</div><div class="value small">' + fmtNum(res.total_income) + ' ج.م</div></div>' +
+        '</div>';
+
+      // تصنيف مصدر الليدز: عضوي مقابل إعلان — عرض بارز زي ما طلب الفريق
+      var acq = res.by_acquisition_type || {};
+      var acqTotal = (acq.organic || 0) + (acq.ad || 0) + (acq.unknown || 0);
+      html += '<div class="kpi-grid" style="margin-top:10px;">' +
+        '<div class="kpi-card"><div class="label">' + ACQUISITION_LABELS.organic + '</div><div class="value">' + fmtNum(acq.organic || 0) +
+        (acqTotal ? ' <span style="font-size:12px;color:var(--c-muted);">(' + Math.round((acq.organic || 0) / acqTotal * 100) + '%)</span>' : '') + '</div></div>' +
+        '<div class="kpi-card"><div class="label">' + ACQUISITION_LABELS.ad + '</div><div class="value">' + fmtNum(acq.ad || 0) +
+        (acqTotal ? ' <span style="font-size:12px;color:var(--c-muted);">(' + Math.round((acq.ad || 0) / acqTotal * 100) + '%)</span>' : '') + '</div></div>' +
+        '<div class="kpi-card"><div class="label">غير مصنّف</div><div class="value small">' + fmtNum(acq.unknown || 0) + '</div></div>' +
         '</div>';
 
       html += '<div class="section"><h3>توزيع حسب الحالة</h3>';
@@ -290,7 +326,7 @@
       html += '<div class="section"><h3>الدخل حسب الموظف المسؤول عن إتمام الحجز</h3>';
       var byEmp = res.income_by_employee || [];
       if (!byEmp.length) {
-        html += '<p style="font-size:13px;color:var(--c-muted);">مفيش فواتير مرفوعة لسه.</p>';
+        html += '<p style="font-size:13px;color:var(--c-muted);">مفيش فواتير مرفوعة ' + (d.from || d.to ? "في الفترة دي" : "لسه") + '.</p>';
       } else {
         html += '<table class="simple"><thead><tr><th>الموظف</th><th>عدد الفواتير</th><th>إجمالي الدخل</th></tr></thead><tbody>';
         byEmp.forEach(function (e) {
@@ -300,8 +336,22 @@
       }
       html += '</div>';
 
-      view.innerHTML = html;
-    }).catch(function (e) { view.innerHTML = '<div class="err-msg">خطأ: ' + e.message + '</div>'; });
+      // الدخل نفسه مجمّع حسب "القسم المطلوب" (requested_department) بدل الموظف
+      html += '<div class="section"><h3>الدخل حسب القسم</h3>';
+      var byDept = res.income_by_department || [];
+      if (!byDept.length) {
+        html += '<p style="font-size:13px;color:var(--c-muted);">مفيش فواتير مرفوعة ' + (d.from || d.to ? "في الفترة دي" : "لسه") + '.</p>';
+      } else {
+        html += '<table class="simple"><thead><tr><th>القسم</th><th>عدد الفواتير</th><th>إجمالي الدخل</th></tr></thead><tbody>';
+        byDept.forEach(function (r) {
+          html += '<tr><td>' + escapeHtml(r.department) + '</td><td>' + fmtNum(r.invoices_count) + '</td><td>' + fmtNum(r.total) + ' ج.م</td></tr>';
+        });
+        html += '</tbody></table>';
+      }
+      html += '</div>';
+
+      body.innerHTML = html;
+    }).catch(function (e) { body.innerHTML = '<div class="err-msg">خطأ: ' + e.message + '</div>'; });
   }
 
   // ============ ٤) الحجوزات الفعلية ============
@@ -516,6 +566,7 @@
         'المصدر: ' + (SOURCE_LABELS[lead.source] || lead.source) + '<br>' +
         'مريض: ' + (lead.patient_type === "existing" ? "قديم" : "جديد") + '<br>' +
         (lead.interested_service ? ('مهتم بـ: ' + (SERVICE_LABELS[lead.interested_service] || lead.interested_service) + '<br>') : '') +
+        (lead.acquisition_type ? ('مصدر الاهتمام: ' + (ACQUISITION_LABELS[lead.acquisition_type] || lead.acquisition_type) + '<br>') : '') +
         (lead.message_text ? ('الرسالة: ' + escapeHtml(lead.message_text) + '<br>') : '') +
         (lead.assigned_to ? ('مُسند لـ: ' + escapeHtml(employeeName(lead.assigned_to)) + '<br>') : '') +
         'تاريخ الاستلام: ' + fmtDate(lead.created_at) +

@@ -553,7 +553,7 @@
               '<td style="font-size:11px;">' + escapeHtml(f.uploaded_by_name || "—") + '</td>' +
               '<td style="font-size:11px;color:var(--c-muted);">' + fmtDate(f.uploaded_at) + '</td>' +
               '<td>' + (state.reviewFilter === "pending" ?
-                '<button class="btn sm" data-approve="' + f.id + '">اعتماد</button> <button class="btn danger sm" data-reject="' + f.id + '">رفض</button>' :
+                '<button class="btn ghost sm" data-view="' + f.id + '">عرض</button> <button class="btn sm" data-approve="' + f.id + '">اعتماد</button> <button class="btn danger sm" data-reject="' + f.id + '">رفض</button>' :
                 '<span class="status-pill ' + (REVIEW_PILL[f.review_status] || "draft") + '">' + (REVIEW_LABELS[f.review_status] || f.review_status) + '</span>') +
               '</td></tr>';
           });
@@ -573,6 +573,27 @@
         var nextBtn = document.getElementById("rv-next");
         if (prevBtn) prevBtn.onclick = function () { if (state.reviewPage > 1) { state.reviewPage--; renderReviewScreen(view, container); } };
         if (nextBtn) nextBtn.onclick = function () { state.reviewPage++; renderReviewScreen(view, container); };
+
+        view.querySelectorAll("[data-view]").forEach(function (btn) {
+          btn.onclick = function () {
+            var fileId = btn.getAttribute("data-view");
+            // فتح تاب جديد فوراً (قبل الـ fetch) عشان متتحجبش من مانع النوافذ المنبثقة
+            // في المتصفح — بعدين نحط رابط الملف فيها لما يوصل
+            var win = window.open("", "_blank");
+            btn.disabled = true;
+            window.SSMPDDb.downloadPatientFile(fileId).then(function (res) {
+              var url = URL.createObjectURL(res.blob);
+              if (win) win.location.href = url;
+              else { var a = document.createElement("a"); a.href = url; a.target = "_blank"; a.click(); }
+              btn.disabled = false;
+              setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
+            }).catch(function (e) {
+              if (win) win.close();
+              T.show("خطأ: " + e.message, "error");
+              btn.disabled = false;
+            });
+          };
+        });
 
         view.querySelectorAll("[data-approve]").forEach(function (btn) {
           btn.onclick = function () { doReview(btn.getAttribute("data-approve"), "approve"); };

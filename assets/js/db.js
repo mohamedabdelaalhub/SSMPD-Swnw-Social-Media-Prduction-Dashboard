@@ -337,8 +337,9 @@
     listEmployees: function () {
       return edgeFetch("leads-list" + qs({ list_employees: 1 }));
     },
-    getLeadsStats: function () {
-      return edgeFetch("leads-list" + qs({ stats: 1 }));
+    getLeadsStats: function (filters) {
+      var f = filters || {};
+      return edgeFetch("leads-list" + qs({ stats: 1, from: f.from || undefined, to: f.to || undefined }));
     },
     bulkCreateLeads: function (rows) {
       return edgeFetch("leads-bulk-create", { method: "POST", json: { leads: rows } });
