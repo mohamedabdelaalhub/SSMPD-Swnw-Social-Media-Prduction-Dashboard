@@ -53,6 +53,9 @@ Deno.serve(async (req) => {
   const canReview = caller.has_archive_review_access || isSuperAdmin(caller);
   const allowed = caller.has_archive_access || canReview || caller.has_archive_view_only;
   if (!allowed) return json({ error: "مفيش صلاحية أرشيف المرضى" }, 403);
+  // "طبيب سونو" بمعاينة فقط (من غير أرشيف كامل/مراجعة) — يشوف بس المرضى
+  // المحالين له (patient_doctor_assignments)، مش الأرشيف كله
+  const doctorOnly = caller.has_archive_view_only && !caller.has_archive_access && !canReview;
 
   const url = new URL(req.url);
   const patientId = url.searchParams.get("patient_id");
@@ -63,6 +66,9 @@ Deno.serve(async (req) => {
   const pageSize = Math.min(50, Math.max(1, Number(url.searchParams.get("page_size") ?? "20") || 20));
 
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+
+  // الداشبورد العام مش موجه لدكتور "معاينة محالة فقط" — مفيش له داعي
+  if (statsMode && doctorOnly) return json({ error: "مفيش صلاحية" }, 403);
 
   // داشبورد عام: إجماليات + آخر الإضافات
   if (statsMode) {
@@ -85,6 +91,16 @@ Deno.serve(async (req) => {
 
   // لو patient_id متبعت، رجّع بيانات المريض + كل ملفاته مصنّفة
   if (patientId) {
+    if (doctorOnly) {
+      const { data: assignment } = await admin
+        .from("patient_doctor_assignments")
+        .select("id")
+        .eq("patient_id", patientId)
+        .eq("doctor_id", caller.id)
+        .eq("status", "pending")
+        .maybeSingle();
+      if (!assignment) return json({ error: "المريض ده مش محال لك" }, 403);
+    }
     const { data: patient, error: pErr } = await admin
       .from("patients")
       .select("id, patient_code, full_name, phone, status, created_at")
@@ -137,6 +153,22 @@ Deno.serve(async (req) => {
       uploader: undefined,
     }));
     return json({ files: files, total: count ?? 0, page, page_size: pageSize });
+  }
+
+  // "طبيب سونو" (معاينة محالة فقط): بس المرضى المحالين له وقيد الكشف —
+  // مش أرشيف كل المرضى، ومفيش بحث/صفحات هنا (طابور يومي صغير عادةً)
+  if (doctorOnly) {
+    const { data: rows, error } = await admin
+      .from("patient_doctor_assignments")
+      .select("id, assigned_at, patients(id, patient_code, full_name, phone, status, created_at)")
+      .eq("doctor_id", caller.id)
+      .eq("status", "pending")
+      .order("assigned_at", { ascending: true });
+    if (error) return json({ error: error.message }, 500);
+    const patients = (rows ?? [])
+      .filter((r: any) => r.patients)
+      .map((r: any) => ({ ...r.patients, assignment_id: r.id, assigned_at: r.assigned_at }));
+    return json({ patients, total: patients.length, page: 1, page_size: patients.length });
   }
 
   // من غير patient_id: قائمة/بحث المرضى (اسم أو رقم أو patient_code)
