@@ -224,6 +224,9 @@
       '<div class="field"><label>الاسم بالكامل</label><input id="np-name"></div>' +
       '<div class="field"><label>رقم الهاتف</label><input id="np-phone" placeholder="01xxxxxxxxx"></div>' +
       '<div class="field"><label>الرقم القومي (اختياري)</label><input id="np-nid" maxlength="14"></div>' +
+      '<div class="field"><label>السن</label><input id="np-age" type="number" min="0"></div>' +
+      '<div class="field"><label>النوع</label><select id="np-gender"><option value="">—</option><option value="male">ذكر</option><option value="female">أنثى</option></select></div>' +
+      '<div class="field"><label>الرقم الطبي (اختياري)</label><input id="np-mrn"></div>' +
       '<button class="btn block" id="np-save">حفظ</button></div>';
     document.body.appendChild(backdrop);
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
@@ -233,13 +236,63 @@
       var full_name = document.getElementById("np-name").value.trim();
       var phone = document.getElementById("np-phone").value.trim();
       var national_id = document.getElementById("np-nid").value.trim();
+      var age = document.getElementById("np-age").value.trim();
+      var gender = document.getElementById("np-gender").value;
+      var medical_record_no = document.getElementById("np-mrn").value.trim();
       if (!full_name) { T.show("اكتب اسم المريض", "error"); return; }
       if (!phone) { T.show("اكتب رقم الهاتف", "error"); return; }
-      window.SSMPDDb.createPatientArchive({ full_name: full_name, phone: phone, national_id: national_id || undefined })
+      window.SSMPDDb.createPatientArchive({
+        full_name: full_name, phone: phone, national_id: national_id || undefined,
+        age: age || undefined, gender: gender || undefined, medical_record_no: medical_record_no || undefined
+      })
         .then(function (res) {
           T.show("اتضاف المريض بكود " + (res.patient_code || ""));
           backdrop.remove();
           if (onCreated) onCreated({ id: res.id, full_name: full_name, patient_code: res.patient_code });
+        }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
+    };
+  }
+
+  function openEditPatientModal(patient, onSaved) {
+    var backdrop = document.createElement("div");
+    backdrop.className = "modal-backdrop";
+    backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>تعديل بيانات المريض</h3><button class="modal-close">×</button></div>' +
+      '<div class="field"><label>الاسم بالكامل</label><input id="ep-name" value="' + escapeHtml(patient.full_name || "") + '"></div>' +
+      '<div class="field"><label>رقم الهاتف</label><input id="ep-phone" value="' + escapeHtml(patient.phone || "") + '"></div>' +
+      '<div class="field"><label>السن</label><input id="ep-age" type="number" min="0" value="' + escapeHtml(patient.age != null ? String(patient.age) : "") + '"></div>' +
+      '<div class="field"><label>النوع</label><select id="ep-gender">' +
+        '<option value="" ' + (!patient.gender ? "selected" : "") + '>—</option>' +
+        '<option value="male" ' + (patient.gender === "male" ? "selected" : "") + '>ذكر</option>' +
+        '<option value="female" ' + (patient.gender === "female" ? "selected" : "") + '>أنثى</option>' +
+      '</select></div>' +
+      '<div class="field"><label>الرقم الطبي</label><input id="ep-mrn" value="' + escapeHtml(patient.medical_record_no || "") + '"></div>' +
+      '<div class="field"><label>تاريخ آخر زيارة</label><input id="ep-visit" type="date" value="' + escapeHtml(patient.last_visit_date || "") + '"></div>' +
+      '<button class="btn block" id="ep-save">حفظ</button></div>';
+    document.body.appendChild(backdrop);
+    backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
+    backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
+
+    document.getElementById("ep-save").onclick = function () {
+      var full_name = document.getElementById("ep-name").value.trim();
+      var phone = document.getElementById("ep-phone").value.trim();
+      var age = document.getElementById("ep-age").value.trim();
+      var gender = document.getElementById("ep-gender").value;
+      var medical_record_no = document.getElementById("ep-mrn").value.trim();
+      var last_visit_date = document.getElementById("ep-visit").value;
+      if (!full_name) { T.show("اكتب اسم المريض", "error"); return; }
+      var patch = {
+        full_name: full_name,
+        phone: phone || null,
+        age: age ? Number(age) : null,
+        gender: gender || null,
+        medical_record_no: medical_record_no || null,
+        last_visit_date: last_visit_date || null
+      };
+      window.SSMPDDb.updatePatientRecord(patient.id, patch)
+        .then(function () {
+          T.show("اتحدثت بيانات المريض");
+          backdrop.remove();
+          if (onSaved) onSaved();
         }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
     };
   }
@@ -390,12 +443,17 @@
           html += '<p style="color:var(--c-muted);font-size:13px;">مفيش مرضى مطابقين.</p>';
         } else {
           var canAssign = canAssignDoctor();
-          html += '<table class="simple"><thead><tr><th>كود المريض</th><th>الاسم</th><th>الهاتف</th><th>الحالة</th><th></th></tr></thead><tbody>';
+          html += '<table class="simple"><thead><tr><th>كود المريض</th><th>الاسم</th><th>الهاتف</th><th>السن</th><th>النوع</th><th>الرقم الطبي</th><th>آخر زيارة</th><th>الحالة</th><th></th></tr></thead><tbody>';
           patients.forEach(function (p) {
             html += '<tr><td>' + escapeHtml(p.patient_code || "—") + '</td><td>' + escapeHtml(p.full_name) + '</td>' +
               '<td>' + escapeHtml(p.phone || "—") + '</td>' +
+              '<td>' + escapeHtml(p.age != null ? String(p.age) : "—") + '</td>' +
+              '<td>' + (p.gender === "male" ? "ذكر" : p.gender === "female" ? "أنثى" : "—") + '</td>' +
+              '<td>' + escapeHtml(p.medical_record_no || "—") + '</td>' +
+              '<td>' + fmtDate(p.last_visit_date) + '</td>' +
               '<td>' + (p.status === "archived" ? '<span class="status-pill draft">مؤرشف</span>' : '<span class="status-pill approved">نشط</span>') + '</td>' +
               '<td style="display:flex;gap:6px;"><button class="btn ghost sm" data-open="' + p.id + '">فتح</button>' +
+              '<button class="btn ghost sm" data-edit="' + p.id + '">تعديل البيانات</button>' +
               (canAssign ? '<button class="btn ghost sm" data-assign="' + p.id + '" data-assign-name="' + escapeHtml(p.full_name) + '">تحويل لطبيب سونو</button>' : '') +
               '</td></tr>';
           });
@@ -421,6 +479,12 @@
 
         view.querySelectorAll("[data-open]").forEach(function (btn) {
           btn.onclick = function () { openPatientModal(view, container, btn.getAttribute("data-open")); };
+        });
+        view.querySelectorAll("[data-edit]").forEach(function (btn) {
+          btn.onclick = function () {
+            var p = patients.filter(function (x) { return String(x.id) === btn.getAttribute("data-edit"); })[0];
+            if (p) openEditPatientModal(p, function () { renderBrowseScreen(view, container); });
+          };
         });
         view.querySelectorAll("[data-assign]").forEach(function (btn) {
           btn.onclick = function () { openAssignDoctorModal(btn.getAttribute("data-assign"), btn.getAttribute("data-assign-name")); };
@@ -489,10 +553,21 @@
 
     var html = '<div class="modal"><div class="modal-head"><h3>' + escapeHtml(patient.full_name) +
       ' <span style="font-size:12px;color:var(--c-muted);">(' + escapeHtml(patient.patient_code || "") + ')</span></h3>' +
-      '<button class="modal-close">×</button></div>' +
-      '<p style="font-size:12px;color:var(--c-muted);margin-bottom:14px;">الهاتف: ' + escapeHtml(patient.phone || "—") + '</p>';
+      '<button class="modal-close">×</button></div>';
 
     var canUp = canUpload();
+    html += '<div class="section" style="padding:12px 14px;">' +
+      '<h3 style="font-size:13px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
+      '<span>البيانات الشخصية</span>' +
+      (canUp ? '<button class="btn ghost sm" data-edit-personal="1">تعديل</button>' : '') +
+      '</h3>' +
+      '<p style="font-size:12px;color:var(--c-muted);line-height:1.9;">' +
+      'الهاتف: ' + escapeHtml(patient.phone || "—") + '<br>' +
+      'السن: ' + escapeHtml(patient.age != null ? String(patient.age) : "—") + '<br>' +
+      'النوع: ' + (patient.gender === "male" ? "ذكر" : patient.gender === "female" ? "أنثى" : "—") + '<br>' +
+      'الرقم الطبي: ' + escapeHtml(patient.medical_record_no || "—") + '<br>' +
+      'تاريخ آخر زيارة: ' + fmtDate(patient.last_visit_date) +
+      '</p></div>';
     CATEGORIES.forEach(function (c) {
       var list = byCategory[c.key] || [];
       html += '<div class="section" style="padding:12px 14px;">' +
@@ -527,6 +602,17 @@
     html += '</div>';
     backdrop.innerHTML = html;
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
+
+    var editPersonalBtn = backdrop.querySelector("[data-edit-personal]");
+    if (editPersonalBtn) {
+      editPersonalBtn.onclick = function () {
+        openEditPatientModal(patient, function () {
+          window.SSMPDDb.getPatientFiles(patient.id).then(function (res) {
+            renderPatientModal(backdrop, view, container, res.patient, res.files || []);
+          });
+        });
+      };
+    }
 
     // ---------- زرار الرفع المستقل لكل تصنيف مستند ----------
     backdrop.querySelectorAll("[data-upload-cat]").forEach(function (btn) {
