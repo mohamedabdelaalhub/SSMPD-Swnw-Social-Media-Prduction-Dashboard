@@ -1649,6 +1649,25 @@ create policy "visits delete" on public.patient_visits
   for delete using (public.has_archive_access() or public.can_manage_all_content());
 
 -- ============================================================
+--  18) شاشة الاستقبال: صندوق "ملف جديد" (تعديل/رفع/إرسال للتمريض/حذف)
+--      (٢٠٢٦-٠٨-٢٣، v28 — مرحلة ٣ من طلب تعديلات الفريق)
+-- ============================================================
+-- عمود بسيط لتتبّع "اتبعت للتمريض" — مفيش جدول workflow منفصل، الهدف بس
+-- إن الاستقبال يقدر يعلّم إن الملف جاهز وبيتنقل لمرحلة التمريض (اللي بعد
+-- كده بتحوّل المريض لطبيب سونو زي ما هو موجود بالفعل في قسم ١٥).
+alter table public.patients
+  add column if not exists sent_to_nursing_at timestamptz;
+
+-- حذف المريض: بس لأصحاب أرشيف كامل/سوبر أدمن (نفس دائرة الكتابة/التعديل) —
+-- patient_files/patient_medical_profile/patient_visits/patient_doctor_assignments
+-- كلهم on delete cascade، فبيتشالوا تلقائي. leads.patient_id من غير cascade
+-- عمداً (قرار تصميم أصلي) — يعني لو فيه ليدز مرتبطة، الحذف هيفشل بخطأ FK
+-- والواجهة لازم تعرض رسالة واضحة بدل ما تفشل صامتة.
+drop policy if exists "archive or leads delete patients" on public.patients;
+create policy "archive or leads delete patients" on public.patients
+  for delete using (public.has_archive_access() or public.can_manage_all_content());
+
+-- ============================================================
 --  14) أول سوبر أدمن
 -- ============================================================
 -- الخطوة أ) Authentication → Users → Add user → Create new user
