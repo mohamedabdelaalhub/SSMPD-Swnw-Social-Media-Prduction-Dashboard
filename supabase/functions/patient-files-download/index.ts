@@ -29,7 +29,7 @@ async function getCallerAdmin(req: Request) {
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
   const { data: row } = await admin
     .from("admins")
-    .select("id, role, has_archive_access, has_archive_view_only, active, admin_extra_roles!admin_id(role)")
+    .select("id, role, has_archive_access, has_archive_review_access, has_archive_view_only, active, admin_extra_roles!admin_id(role)")
     .eq("user_id", user.id)
     .eq("active", true)
     .maybeSingle();
@@ -105,7 +105,10 @@ Deno.serve(async (req) => {
 
   const caller = await getCallerAdmin(req);
   if (!caller) return json({ error: "غير مصرح — سجّل دخولك تاني" }, 401);
-  const canReviewOrFull = caller.has_archive_access || isSuperAdmin(caller);
+  // صاحب "مراجعة الأرشيف" بس (has_archive_review_access، من غير أرشيف كامل) لازم يقدر يفتح
+  // الملف قبل ما يقرر يعتمد أو يرفض — كان ناقص هنا قبل كده (كان بيقدر يشوف طابور المراجعة
+  // بس مش يفتح الملف نفسه، لأن الدالة دي ماكانتش بتفحص الصلاحية دي خالص)
+  const canReviewOrFull = caller.has_archive_access || caller.has_archive_review_access || isSuperAdmin(caller);
   const doctorOnly = caller.has_archive_view_only && !canReviewOrFull;
   const allowed = canReviewOrFull || caller.has_archive_view_only;
   if (!allowed) return json({ error: "مفيش صلاحية أرشيف المرضى" }, 403);
