@@ -80,6 +80,7 @@
       if (s.key === "reception") return isReception();
       if (s.key === "cs") return isCS();
       if (s.key === "bulk") return isReception();
+      if (s.key === "dashboard") return isManager() || isCS();
       return isManager();
     });
   }
