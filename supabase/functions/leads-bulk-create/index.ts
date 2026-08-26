@@ -93,8 +93,28 @@ Deno.serve(async (req) => {
     .eq("active", true);
 
   const created: unknown[] = [];
+  const missingData: unknown[] = [];
   const skipped: { row: number; reason: string; data: unknown }[] = [];
   const seenInBatch = new Set<string>();
+
+  // نفس منطق "أقل موظف خدمة عملاء عنده ليدز مفتوحة" — بيتنادى لكل صف عادي أو
+  // ناقص بيانات على حد سواء، عشان الصف الناقص برضه يتسند لموظف يقدر يشوفه/يكمله
+  // (سياسة RLS بتاعة تحديث leads مقصورة على assigned_to = المستخدم نفسه)
+  async function pickAssignee(): Promise<string | null> {
+    if (!csAdmins || csAdmins.length === 0) return null;
+    const counts = await Promise.all(
+      csAdmins.map(async (a) => {
+        const { count } = await admin
+          .from("leads")
+          .select("id", { count: "exact", head: true })
+          .eq("assigned_to", a.id)
+          .not("current_status", "in", `(${CLOSED_STATUSES.join(",")})`);
+        return { id: a.id, count: count ?? 0 };
+      }),
+    );
+    counts.sort((a, b) => a.count - b.count);
+    return counts[0].id;
+  }
 
   for (let i = 0; i < rows.length; i++) {
     const r = rows[i] ?? {};
@@ -105,35 +125,61 @@ Deno.serve(async (req) => {
     const interestedService = (r.interested_service ?? r["الخدمة"] ?? "").toString().trim() || null;
     const acquisitionTypeRaw = (r.acquisition_type ?? r["مصدر الاهتمام"] ?? "").toString().trim().toLowerCase();
     const acquisitionType = ["organic", "ad"].includes(acquisitionTypeRaw) ? acquisitionTypeRaw : null;
+    const sourceValid = ["whatsapp", "messenger"].includes(source) ? source : "whatsapp";
 
-    if (!customerName || !phoneRaw) {
-      skipped.push({ row: i + 1, reason: "اسم العميل أو رقم الهاتف ناقص", data: r });
-      continue;
-    }
-    if (!["whatsapp", "messenger"].includes(source)) {
-      skipped.push({ row: i + 1, reason: "المصدر لازم يكون whatsapp أو messenger", data: r });
-      continue;
-    }
-
-    const phoneNormalized = normalizePhone(phoneRaw);
-    if (seenInBatch.has(phoneNormalized)) {
-      skipped.push({ row: i + 1, reason: "رقم مكرر جوه نفس الملف", data: r });
+    // اسم أو تليفون ناقص (مش الاتنين مع بعض) — بيتحفظ في قائمة "عملاء ناقصين
+    // بيانات" بدل ما يتجاهل، عشان الموظف يكلم العميل ويكمل الناقص. لو الاتنين
+    // ناقصين مفيش أي حاجة تحدد العميل بيها، فبيتخطى زي الأول بالظبط.
+    if (!customerName && !phoneRaw) {
+      skipped.push({ row: i + 1, reason: "اسم العميل ورقم الهاتف ناقصين مع بعض", data: r });
       continue;
     }
 
-    const { data: dup } = await admin
-      .from("leads")
-      .select("id")
-      .eq("phone_normalized", phoneNormalized)
-      .not("current_status", "in", `(${CLOSED_STATUSES.join(",")})`)
-      .limit(1)
-      .maybeSingle();
-    if (dup) {
-      skipped.push({ row: i + 1, reason: "فيه ليد مفتوح بالفعل بنفس الرقم", data: r });
-      continue;
+    const phoneNormalized = phoneRaw ? normalizePhone(phoneRaw) : null;
+    if (phoneNormalized) {
+      if (seenInBatch.has(phoneNormalized)) {
+        skipped.push({ row: i + 1, reason: "رقم مكرر جوه نفس الملف", data: r });
+        continue;
+      }
+      const { data: dup } = await admin
+        .from("leads")
+        .select("id")
+        .eq("phone_normalized", phoneNormalized)
+        .not("current_status", "in", `(${CLOSED_STATUSES.join(",")})`)
+        .limit(1)
+        .maybeSingle();
+      if (dup) {
+        skipped.push({ row: i + 1, reason: "فيه ليد مفتوح بالفعل بنفس الرقم", data: r });
+        continue;
+      }
+      seenInBatch.add(phoneNormalized);
     }
 
-    seenInBatch.add(phoneNormalized);
+    if (!customerName || !phoneNormalized) {
+      const assignedTo = await pickAssignee();
+      const { data: lead, error } = await admin
+        .from("leads")
+        .insert({
+          customer_name: customerName || "بدون اسم",
+          phone_raw: phoneRaw || null,
+          phone_normalized: phoneNormalized,
+          source: sourceValid,
+          message_text: messageText,
+          received_by: caller.id,
+          interested_service: interestedService,
+          acquisition_type: acquisitionType,
+          assigned_to: assignedTo,
+          current_status: "missing_data",
+        })
+        .select("id, customer_name, phone_normalized")
+        .single();
+      if (error) {
+        skipped.push({ row: i + 1, reason: error.message, data: r });
+        continue;
+      }
+      missingData.push(lead);
+      continue;
+    }
 
     const { data: matchedPatient } = await admin
       .from("patients")
@@ -141,21 +187,7 @@ Deno.serve(async (req) => {
       .eq("phone_normalized", phoneNormalized)
       .maybeSingle();
 
-    let assignedTo: string | null = null;
-    if (csAdmins && csAdmins.length > 0) {
-      const counts = await Promise.all(
-        csAdmins.map(async (a) => {
-          const { count } = await admin
-            .from("leads")
-            .select("id", { count: "exact", head: true })
-            .eq("assigned_to", a.id)
-            .not("current_status", "in", `(${CLOSED_STATUSES.join(",")})`);
-          return { id: a.id, count: count ?? 0 };
-        }),
-      );
-      counts.sort((a, b) => a.count - b.count);
-      assignedTo = counts[0].id;
-    }
+    const assignedTo = await pickAssignee();
 
     const { data: lead, error } = await admin
       .from("leads")
@@ -163,7 +195,7 @@ Deno.serve(async (req) => {
         customer_name: customerName,
         phone_raw: phoneRaw,
         phone_normalized: phoneNormalized,
-        source: ["whatsapp", "messenger"].includes(source) ? source : "whatsapp",
+        source: sourceValid,
         message_text: messageText,
         received_by: caller.id,
         interested_service: interestedService,
@@ -182,5 +214,12 @@ Deno.serve(async (req) => {
     created.push(lead);
   }
 
-  return json({ created_count: created.length, skipped_count: skipped.length, created, skipped });
+  return json({
+    created_count: created.length,
+    missing_data_count: missingData.length,
+    skipped_count: skipped.length,
+    created,
+    missing_data: missingData,
+    skipped,
+  });
 });
