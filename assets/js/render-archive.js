@@ -15,7 +15,7 @@
   function render(container) {
     container.innerHTML = '<div class="loading">بيحمّل الأرشيف…</div>';
     window.SSMPDDb.listContentItems({ stage: "published" }).then(function (items) {
-      window.SSMPDDb.listAdmins().then(function (admins) {
+      window.SSMPDDb.listAdminsBasic().then(function (admins) {
         var map = {}; admins.forEach(function (a) { map[a.id] = a; });
         renderCalendar(container, items, map);
       });

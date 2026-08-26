@@ -291,6 +291,12 @@
     },
 
     // ---------- إحالة مريض لـ"طبيب سونو" (patient_doctor_assignments — جدول عادي، مش Edge Function) ----------
+    // أسماء كل الموظفين النشطين بس (id/name/role/active) — من غير بيانات حساسة،
+    // متاحة لأي مستخدم مسجّل (مش بس السوبر أدمن زي listAdmins()). استخدمها لأي
+    // عرض اسم بس (بواسطة/صاحب كومنت/مصمم مسؤول)، مش لشاشة إدارة المستخدمين نفسها.
+    listAdminsBasic: function () {
+      return handle(client.rpc("list_admins_basic"));
+    },
     listActiveSonoDoctors: function () {
       return handle(client.rpc("list_active_sono_doctors"));
     },

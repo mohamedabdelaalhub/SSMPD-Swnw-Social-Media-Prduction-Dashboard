@@ -112,7 +112,7 @@
       backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
       W.wireItemActions(backdrop, item, function () { render(document.getElementById("view-container")); });
 
-      window.SSMPDDb.listAdmins().then(function (admins) {
+      window.SSMPDDb.listAdminsBasic().then(function (admins) {
         var map = {}; admins.forEach(function (a) { map[a.id] = a; });
         window.SSMPDComments.render(document.getElementById("comments-slot"), item.id, map);
       });

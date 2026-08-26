@@ -13,7 +13,7 @@
     container.innerHTML = '<div class="loading">بيحمّل…</div>';
     Promise.all([
       window.SSMPDDb.listContentItems({}),
-      window.SSMPDDb.listAdmins(),
+      window.SSMPDDb.listAdminsBasic(),
       window.SSMPDDb.listAllComments(),
       window.SSMPDDb.listMyCommentReads(me.id)
     ]).then(function (res) {
