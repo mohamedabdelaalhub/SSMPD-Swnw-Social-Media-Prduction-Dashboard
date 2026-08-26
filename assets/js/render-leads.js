@@ -9,13 +9,13 @@
     new: "جديد", in_progress: "قيد المتابعة", booked: "تم الحجز",
     booked_on_system: "تم الحجز على سيستم المركز", service_done: "تم إجراء الخدمة",
     interested_undecided: "مهتم لسه مقررش", rejected: "مرفوض",
-    no_response: "لا يوجد رد", invalid_number: "رقم غير صحيح"
+    no_response: "لا يوجد رد", invalid_number: "رقم غير صحيح", missing_data: "ناقص بيانات"
   };
   var STATUS_PILL_CLASS = {
     new: "received", in_progress: "approval", booked: "approved",
     booked_on_system: "approved", service_done: "approved",
     interested_undecided: "approval", rejected: "revision",
-    no_response: "draft", invalid_number: "revision"
+    no_response: "draft", invalid_number: "revision", missing_data: "draft"
   };
   // الليدز اللي في مرحلة "شغالة" مع الاستقبال (بعد ما خدمة العملاء تخلص وقبل ما
   // الخدمة تتم فعلياً) — رفع فاتورة الخدمة متاح خلالها (نفس ALLOWED_STATUSES_FOR_INVOICE
@@ -62,6 +62,7 @@
     { key: "dashboard", label: "داشبورد الإدارة" },
     { key: "booked", label: "الحجوزات الفعلية" },
     { key: "archive", label: "أرشيف الليدز" },
+    { key: "missing_data", label: "عملاء ناقصين بيانات" },
     { key: "bulk", label: "رفع ملف إكسيل" }
   ];
 
@@ -81,6 +82,7 @@
       if (s.key === "cs") return isCS();
       if (s.key === "bulk") return isReception();
       if (s.key === "dashboard") return isManager() || isCS();
+      if (s.key === "missing_data") return isReception() || isCS() || isManager();
       return isManager();
     });
   }
@@ -129,6 +131,7 @@
       else if (state.subTab === "dashboard") renderDashboardScreen(subView, container);
       else if (state.subTab === "booked") renderBookedScreen(subView, container);
       else if (state.subTab === "archive") renderArchiveScreen(subView, container);
+      else if (state.subTab === "missing_data") renderMissingDataScreen(subView, container);
       else renderBulkScreen(subView, container);
     });
   }
@@ -459,7 +462,78 @@
     }).catch(function (e) { view.innerHTML = '<div class="err-msg">خطأ: ' + e.message + '</div>'; });
   }
 
-  // ============ ٦) رفع ملف إكسيل جماعي ============
+  // ============ ٦) عملاء ناقصين بيانات (اسم أو تليفون ناقص وقت رفع الإكسيل) ============
+  function renderMissingDataScreen(view, container) {
+    view.innerHTML = '<div class="loading">بيحمّل…</div>';
+    var dayAgo = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+    Promise.all([
+      window.SSMPDDb.listLeads({ status: "missing_data", page_size: 50 }),
+      window.SSMPDDb.listLeads({ completed_missing_data: 1, page_size: 1 })
+    ]).then(function (res) {
+      var pending = res[0].leads || [];
+      var pendingTotal = res[0].total || 0;
+      var completedTotal = res[1].total || 0;
+      var newCount = pending.filter(function (l) { return l.created_at >= dayAgo; }).length;
+
+      var html = '<div class="section"><h3>مؤشرات عملاء ناقصين بيانات</h3><div class="kpi-grid">';
+      html += '<div class="kpi-card"><div class="label">عملاء جدد (آخر ٢٤ ساعة)</div><div class="value">' + newCount + '</div></div>';
+      html += '<div class="kpi-card"><div class="label">إجمالي العملاء</div><div class="value">' + (pendingTotal + completedTotal) + '</div></div>';
+      html += '<div class="kpi-card"><div class="label">تم استكمال بياناتهم</div><div class="value">' + completedTotal + '</div></div>';
+      html += '<div class="kpi-card"><div class="label">لسه محتاجين استكمال</div><div class="value">' + pendingTotal + '</div></div>';
+      html += '</div></div>';
+
+      html += '<div class="section"><h3>قائمة الانتظار</h3>';
+      if (!pending.length) {
+        html += '<p style="color:var(--c-muted);font-size:13px;">مفيش عملاء ناقصين بيانات حالياً.</p>';
+      } else {
+        html += '<table class="simple"><thead><tr><th>الاسم</th><th>الهاتف</th><th>المصدر</th><th>تاريخ الإضافة</th><th></th></tr></thead><tbody>';
+        pending.forEach(function (l) {
+          html += '<tr><td>' + escapeHtml(l.customer_name) + '</td><td>' + escapeHtml(l.phone_raw || l.phone_normalized || "—") + '</td>' +
+            '<td>' + (SOURCE_LABELS[l.source] || l.source) + '</td>' +
+            '<td style="font-size:11px;color:var(--c-muted);">' + fmtDate(l.created_at) + '</td>' +
+            '<td><button class="btn ghost sm" data-complete="' + l.id + '">استكمال بيانات</button></td></tr>';
+        });
+        html += '</tbody></table>';
+      }
+      html += '</div>';
+      view.innerHTML = html;
+
+      view.querySelectorAll("[data-complete]").forEach(function (btn) {
+        btn.onclick = function () {
+          var id = btn.getAttribute("data-complete");
+          var l = pending.filter(function (x) { return x.id === id; })[0];
+          openCompleteMissingDataModal(l, function () { renderMissingDataScreen(view, container); });
+        };
+      });
+    }).catch(function (e) { view.innerHTML = '<div class="err-msg">خطأ: ' + e.message + '</div>'; });
+  }
+
+  function openCompleteMissingDataModal(lead, onSaved) {
+    var backdrop = document.createElement("div");
+    backdrop.className = "modal-backdrop";
+    backdrop.innerHTML = '<div class="modal" style="max-width:400px;"><div class="modal-head"><h3>استكمال بيانات العميل</h3>' +
+      '<button class="modal-close">×</button></div>' +
+      '<div class="field"><label>اسم العميل</label><input id="cmd-name" value="' + escapeHtml(lead.customer_name === "بدون اسم" ? "" : lead.customer_name) + '"></div>' +
+      '<div class="field"><label>رقم الهاتف</label><input id="cmd-phone" placeholder="01xxxxxxxxx" value="' + escapeHtml(lead.phone_raw || "") + '"></div>' +
+      '<div style="text-align:left;"><button class="btn" id="cmd-save">حفظ</button></div></div>';
+    document.body.appendChild(backdrop);
+    backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
+    backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
+
+    document.getElementById("cmd-save").onclick = function () {
+      var name = document.getElementById("cmd-name").value.trim();
+      var phone = document.getElementById("cmd-phone").value.trim();
+      if (!name) { T.show("اكتب اسم العميل", "error"); return; }
+      if (!phone) { T.show("اكتب رقم الهاتف", "error"); return; }
+      window.SSMPDDb.completeMissingDataLead(lead.id, name, phone).then(function () {
+        T.show("اتحفظت بيانات العميل");
+        backdrop.remove();
+        onSaved();
+      }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
+    };
+  }
+
+  // ============ ٧) رفع ملف إكسيل جماعي ============
   function renderBulkScreen(view, container) {
     var html = '<div class="section"><h3>رفع مجموعة ليدز من ملف إكسيل</h3>' +
       '<p style="font-size:12px;color:var(--c-muted);margin-bottom:12px;">الأعمدة المتوقعة: اسم العميل، رقم الهاتف، المصدر (واتساب/ماسنجر)، الخدمة (اختياري)، ملاحظات (اختياري). أول صف لازم يكون عناوين الأعمدة.</p>' +
@@ -514,7 +588,7 @@
           state.bulk.result = res;
           var resBox = document.getElementById("bk-result");
           var html3 = '<div class="section"><h3>النتيجة</h3>' +
-            '<p>تم إنشاء <b>' + fmtNum(res.created_count) + '</b> ليد، وتم تخطي <b>' + fmtNum(res.skipped_count) + '</b> صف.</p>';
+            '<p>تم إنشاء <b>' + fmtNum(res.created_count) + '</b> ليد، وتحويل <b>' + fmtNum(res.missing_data_count || 0) + '</b> صف ناقص بيانات لقائمة "عملاء ناقصين بيانات"، وتم تخطي <b>' + fmtNum(res.skipped_count) + '</b> صف.</p>';
           if (res.skipped && res.skipped.length) {
             html3 += '<table class="simple"><thead><tr><th>الصف</th><th>السبب</th></tr></thead><tbody>' +
               res.skipped.map(function (sk) { return '<tr><td>' + fmtNum(sk.row) + '</td><td>' + escapeHtml(sk.reason) + '</td></tr>'; }).join("") +

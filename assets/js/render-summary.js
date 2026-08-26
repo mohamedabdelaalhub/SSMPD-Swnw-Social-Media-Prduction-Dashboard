@@ -13,6 +13,12 @@
     return Number(n || 0).toLocaleString("en-US");
   }
 
+  function fmtDate(iso) {
+    if (!iso) return "—";
+    try { return new Date(iso).toLocaleDateString("en-US", { day: "2-digit", month: "2-digit", year: "numeric" }); }
+    catch (e) { return iso; }
+  }
+
   // نص عربي مبسّط لمؤشر النتيجة الخام من تقرير Meta Ads (زي "reach" أو
   // "actions:onsite_conversion.messaging_conversation_started_7d")
   function resultLabel(indicator) {
@@ -34,12 +40,16 @@
       '</div>';
   }
 
+  // اختيارات مقارنة الأرشيف (أسابيع المؤشرات / دفعات تقارير الإعلانات) — محفوظة
+  // على مستوى الموديول عشان تفضل زي ما هي بين كل إعادة رسم للشاشة
+  var cmp = { weekA: null, weekB: null, batchA: null, batchB: null };
+
   function render(container) {
     container.innerHTML = '<div class="loading">بيحمّل المؤشرات…</div>';
 
     Promise.all([
       window.SSMPDDb.listContentItems({}),
-      window.SSMPDDb.listWeeklyMetrics(2),
+      window.SSMPDDb.listWeeklyMetrics(500),
       window.SSMPDDb.listAdCampaigns()
     ]).then(function (res) {
       var items = res[0], metrics = res[1], ads = res[2];
@@ -85,39 +95,106 @@
         html += '</div><p style="font-size:11px;color:var(--c-muted);margin-top:8px;">آخر أسبوع مُدخَل: ' + current.week_start + '</p>';
       }
       var me = window.SSMPDAuth.currentAdmin;
-      if (window.SSMPDRoles.hasAnyRole(me, ["approver", "general_manager", "super_admin"])) {
+      var canManageMetrics = window.SSMPDRoles.hasAnyRole(me, ["approver", "general_manager", "super_admin"]);
+      if (canManageMetrics) {
         html += '<div style="text-align:left;margin-top:10px;"><button class="btn ghost sm" id="add-week-metrics-btn">+ إدخال بيانات أسبوع جديد</button></div>';
       }
       html += '</div>';
 
+      // ---------- أرشيف + مقارنة + إجماليات مؤشرات السوشيال ميديا الأسبوعية ----------
+      html += '<div class="section"><h3>أرشيف مؤشرات السوشيال ميديا</h3>';
+      if (metrics.length < 2) {
+        html += '<div class="empty-state">محتاج بيانات أسبوعين على الأقل عشان يظهر أرشيف/مقارنة.</div>';
+      } else {
+        var wTotalReach = 0, wTotalFollowers = 0, wEngSum = 0, wEngCount = 0;
+        metrics.forEach(function (m) {
+          wTotalReach += Number(m.reach || 0);
+          wTotalFollowers += Number(m.new_followers || 0);
+          if (m.engagement_rate != null) { wEngSum += Number(m.engagement_rate); wEngCount++; }
+        });
+        html += '<div class="kpi-grid">';
+        html += kpiCard("إجمالي الوصول (كل الأسابيع)", fmtNum(wTotalReach));
+        html += kpiCard("إجمالي متابعين جدد (كل الأسابيع)", fmtNum(wTotalFollowers));
+        html += kpiCard("متوسط نسبة التفاعل", (wEngCount ? Math.round((wEngSum / wEngCount) * 10) / 10 : 0) + "%");
+        html += kpiCard("عدد الأسابيع المُدخَلة", metrics.length);
+        html += '</div>';
+
+        if (!cmp.weekA) cmp.weekA = metrics[1].week_start;
+        if (!cmp.weekB) cmp.weekB = metrics[0].week_start;
+        var wOptions = metrics.map(function (m) { return '<option value="' + m.week_start + '">' + m.week_start + '</option>'; }).join("");
+        html += '<h4 style="margin-top:16px;font-size:13px;">مقارنة بين أسبوعين</h4>' +
+          '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">' +
+          '<select id="wcmp-a">' + wOptions + '</select><span style="font-size:12px;color:var(--c-muted);">مقابل</span>' +
+          '<select id="wcmp-b">' + wOptions + '</select></div>';
+        var mA = metrics.filter(function (m) { return m.week_start === cmp.weekA; })[0];
+        var mB = metrics.filter(function (m) { return m.week_start === cmp.weekB; })[0];
+        if (mA && mB) {
+          html += '<table class="simple"><thead><tr><th>المؤشر</th><th>' + mA.week_start + '</th><th>' + mB.week_start + '</th><th>الفرق</th></tr></thead><tbody>';
+          [
+            { k: "reach", label: "الوصول" },
+            { k: "engagement_rate", label: "نسبة التفاعل %" },
+            { k: "new_followers", label: "متابعين جدد" }
+          ].forEach(function (f) {
+            var va = Number(mA[f.k] || 0), vb = Number(mB[f.k] || 0), diff = vb - va;
+            html += '<tr><td>' + f.label + '</td><td>' + fmtNum(va) + '</td><td>' + fmtNum(vb) + '</td>' +
+              '<td class="' + (diff > 0 ? "up" : diff < 0 ? "down" : "") + '">' + (diff > 0 ? "▲ " : diff < 0 ? "▼ " : "") + fmtNum(Math.abs(diff)) + '</td></tr>';
+          });
+          html += '</tbody></table>';
+        }
+
+        html += '<h4 style="margin-top:16px;font-size:13px;">كل الأسابيع</h4>' +
+          '<div style="max-height:260px;overflow:auto;"><table class="simple"><thead><tr><th>الأسبوع</th><th>الوصول</th><th>نسبة التفاعل</th><th>متابعين جدد</th></tr></thead><tbody>' +
+          metrics.map(function (m) {
+            return '<tr><td>' + m.week_start + '</td><td>' + fmtNum(m.reach) + '</td><td>' + (m.engagement_rate || 0) + '%</td><td>' + fmtNum(m.new_followers) + '</td></tr>';
+          }).join("") + '</tbody></table></div>';
+      }
+      html += '</div>';
+
+      // ---------- الإعلانات المدفوعة (Meta Ads) — دفعة حالية + أرشيف دفعات + مقارنة ----------
+      var batchesMap = {};
+      var batchOrder = [];
+      ads.forEach(function (a) {
+        var bid = a.report_batch_id || "بدون دفعة";
+        if (!batchesMap[bid]) { batchesMap[bid] = { id: bid, rows: [], createdAt: a.created_at }; batchOrder.push(bid); }
+        batchesMap[bid].rows.push(a);
+        if (a.created_at && a.created_at > batchesMap[bid].createdAt) batchesMap[bid].createdAt = a.created_at;
+      });
+      var batches = batchOrder.map(function (id) { return batchesMap[id]; })
+        .sort(function (x, y) { return (y.createdAt || "").localeCompare(x.createdAt || ""); });
+
+      function batchTotals(rows) {
+        var t = { spent: 0, reach: 0, clicks: 0, impressions: 0, ctrSum: 0, ctrCount: 0, minStart: null, maxEnd: null };
+        rows.forEach(function (a) {
+          t.spent += Number(a.amount_spent || 0);
+          t.reach += Number(a.reach || 0);
+          t.clicks += Number(a.link_clicks || 0);
+          t.impressions += Number(a.impressions || 0);
+          if (a.ctr != null) { t.ctrSum += Number(a.ctr); t.ctrCount++; }
+          if (a.reporting_start && (!t.minStart || a.reporting_start < t.minStart)) t.minStart = a.reporting_start;
+          if (a.reporting_end && (!t.maxEnd || a.reporting_end > t.maxEnd)) t.maxEnd = a.reporting_end;
+        });
+        t.avgCtr = t.ctrCount ? Math.round((t.ctrSum / t.ctrCount) * 100) / 100 : 0;
+        return t;
+      }
+
       html += '<div class="section"><h3>الإعلانات المدفوعة (Meta Ads)</h3>';
-      if (!ads.length) {
+      if (!batches.length) {
         html += '<div class="empty-state">لسه مفيش تقرير حملات إعلانات مستورد.</div>';
       } else {
-        var totalSpent = 0, totalReach = 0, totalClicks = 0, totalImpressions = 0, ctrSum = 0, ctrCount = 0;
-        var minStart = null, maxEnd = null;
-        ads.forEach(function (a) {
-          totalSpent += Number(a.amount_spent || 0);
-          totalReach += Number(a.reach || 0);
-          totalClicks += Number(a.link_clicks || 0);
-          totalImpressions += Number(a.impressions || 0);
-          if (a.ctr != null) { ctrSum += Number(a.ctr); ctrCount++; }
-          if (a.reporting_start && (!minStart || a.reporting_start < minStart)) minStart = a.reporting_start;
-          if (a.reporting_end && (!maxEnd || a.reporting_end > maxEnd)) maxEnd = a.reporting_end;
-        });
-        var avgCtr = ctrCount ? Math.round((ctrSum / ctrCount) * 100) / 100 : 0;
-
+        var latest = batches[0];
+        var lt = batchTotals(latest.rows);
+        html += '<p style="font-size:12px;color:var(--c-muted);">آخر تقرير مستورد — ' + fmtDate(latest.createdAt) + '</p>';
         html += '<div class="kpi-grid">';
-        html += kpiCard("إجمالي المبلغ المُنفق", fmtNum(totalSpent) + " ج.م", { small: true });
-        html += kpiCard("إجمالي الوصول", fmtNum(totalReach));
-        html += kpiCard("إجمالي النقرات", fmtNum(totalClicks));
-        html += kpiCard("متوسط نسبة النقر", avgCtr + "%");
+        html += kpiCard("إجمالي المبلغ المُنفق", fmtNum(lt.spent) + " ج.م", { small: true });
+        html += kpiCard("إجمالي الوصول", fmtNum(lt.reach));
+        html += kpiCard("إجمالي النقرات", fmtNum(lt.clicks));
+        html += kpiCard("متوسط نسبة النقر", lt.avgCtr + "%");
         html += '</div>';
 
         html += '<table class="simple" style="margin-top:12px;"><thead><tr>' +
           '<th>الحملة</th><th>المبلغ المُنفق</th><th>النتائج</th><th>تكلفة النتيجة</th><th>الوصول</th><th>النقرات</th><th>نسبة النقر</th>' +
           '</tr></thead><tbody>';
-        ads.forEach(function (a) {
+        latest.rows.forEach(function (a) {
           html += '<tr><td>' + escapeHtml(a.campaign_name) + '</td>' +
             '<td>' + fmtNum(a.amount_spent) + ' ج.م</td>' +
             '<td>' + fmtNum(a.results) + ' ' + resultLabel(a.result_indicator) + '</td>' +
@@ -127,11 +204,53 @@
             '<td>' + (a.ctr != null ? a.ctr + '%' : '—') + '</td></tr>';
         });
         html += '</tbody></table>';
-        if (minStart && maxEnd) {
-          html += '<p style="font-size:11px;color:var(--c-muted);margin-top:8px;">بيانات التقرير من ' + minStart + ' لحد ' + maxEnd + '</p>';
+        if (lt.minStart && lt.maxEnd) {
+          html += '<p style="font-size:11px;color:var(--c-muted);margin-top:8px;">بيانات التقرير من ' + lt.minStart + ' لحد ' + lt.maxEnd + '</p>';
         }
+
+        // إجمالي كل التقارير من أول استيراد لحد دلوقتي (كل الدفعات مع بعض)
+        var allTotals = batchTotals(ads);
+        html += '<h4 style="margin-top:16px;font-size:13px;">إجمالي كل التقارير (' + batches.length + ' تقرير)</h4><div class="kpi-grid">';
+        html += kpiCard("إجمالي الإنفاق الكلي", fmtNum(allTotals.spent) + " ج.م", { small: true });
+        html += kpiCard("إجمالي الوصول الكلي", fmtNum(allTotals.reach));
+        html += kpiCard("إجمالي النقرات الكلي", fmtNum(allTotals.clicks));
+        html += '</div>';
+
+        if (batches.length >= 2) {
+          if (!cmp.batchA) cmp.batchA = batches[1].id;
+          if (!cmp.batchB) cmp.batchB = batches[0].id;
+          var bOptions = batches.map(function (b) {
+            return '<option value="' + escapeHtml(b.id) + '">' + fmtDate(b.createdAt) + ' (' + b.rows.length + ' حملة)</option>';
+          }).join("");
+          html += '<h4 style="margin-top:16px;font-size:13px;">مقارنة بين تقريرين</h4>' +
+            '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">' +
+            '<select id="acmp-a">' + bOptions + '</select><span style="font-size:12px;color:var(--c-muted);">مقابل</span>' +
+            '<select id="acmp-b">' + bOptions + '</select></div>';
+          var bA = batchesMap[cmp.batchA], bB = batchesMap[cmp.batchB];
+          if (bA && bB) {
+            var tA = batchTotals(bA.rows), tB = batchTotals(bB.rows);
+            html += '<table class="simple"><thead><tr><th>المؤشر</th><th>' + fmtDate(bA.createdAt) + '</th><th>' + fmtDate(bB.createdAt) + '</th><th>الفرق</th></tr></thead><tbody>';
+            [
+              { a: tA.spent, b: tB.spent, label: "المبلغ المُنفق (ج.م)" },
+              { a: tA.reach, b: tB.reach, label: "الوصول" },
+              { a: tA.clicks, b: tB.clicks, label: "النقرات" }
+            ].forEach(function (f) {
+              var diff = f.b - f.a;
+              html += '<tr><td>' + f.label + '</td><td>' + fmtNum(f.a) + '</td><td>' + fmtNum(f.b) + '</td>' +
+                '<td class="' + (diff > 0 ? "up" : diff < 0 ? "down" : "") + '">' + (diff > 0 ? "▲ " : diff < 0 ? "▼ " : "") + fmtNum(Math.abs(diff)) + '</td></tr>';
+            });
+            html += '</tbody></table>';
+          }
+        }
+
+        html += '<h4 style="margin-top:16px;font-size:13px;">أرشيف التقارير</h4>' +
+          '<table class="simple"><thead><tr><th>تاريخ الاستيراد</th><th>عدد الحملات</th><th>الإنفاق</th><th>الوصول</th></tr></thead><tbody>' +
+          batches.map(function (b) {
+            var t = batchTotals(b.rows);
+            return '<tr><td>' + fmtDate(b.createdAt) + '</td><td>' + b.rows.length + '</td><td>' + fmtNum(t.spent) + ' ج.م</td><td>' + fmtNum(t.reach) + '</td></tr>';
+          }).join("") + '</tbody></table>';
       }
-      if (window.SSMPDRoles.hasAnyRole(me, ["approver", "general_manager", "super_admin"])) {
+      if (canManageMetrics) {
         html += '<div style="text-align:left;margin-top:10px;"><button class="btn ghost sm" id="import-ads-btn">+ استيراد تقرير حملات إعلانات</button></div>';
       }
       html += '</div>';
@@ -141,6 +260,13 @@
       if (btn) btn.onclick = openMetricsModal;
       var adsBtn = document.getElementById("import-ads-btn");
       if (adsBtn) adsBtn.onclick = openAdImportModal;
+
+      var wcmpA = document.getElementById("wcmp-a"), wcmpB = document.getElementById("wcmp-b");
+      if (wcmpA) { wcmpA.value = cmp.weekA; wcmpA.onchange = function () { cmp.weekA = wcmpA.value; render(container); }; }
+      if (wcmpB) { wcmpB.value = cmp.weekB; wcmpB.onchange = function () { cmp.weekB = wcmpB.value; render(container); }; }
+      var acmpA = document.getElementById("acmp-a"), acmpB = document.getElementById("acmp-b");
+      if (acmpA) { acmpA.value = cmp.batchA; acmpA.onchange = function () { cmp.batchA = acmpA.value; render(container); }; }
+      if (acmpB) { acmpB.value = cmp.batchB; acmpB.onchange = function () { cmp.batchB = acmpB.value; render(container); }; }
     }).catch(function (e) {
       container.innerHTML = '<div class="err-msg">تعذّر تحميل الملخص: ' + e.message + '</div>';
     });
@@ -296,10 +422,10 @@
     backdrop.className = "modal-backdrop";
     backdrop.innerHTML = '<div class="modal" style="max-width:460px;"><div class="modal-head"><h3>استيراد تقرير حملات إعلانات</h3>' +
       '<button class="modal-close">×</button></div>' +
-      '<p style="font-size:12px;color:var(--c-muted);">ارفع ملف CSV تصدير الحملات من Meta Ads Manager — هيستبدل أي تقرير قديم بالكامل بالتقرير الجديد.</p>' +
+      '<p style="font-size:12px;color:var(--c-muted);">ارفع ملف CSV تصدير الحملات من Meta Ads Manager — هيتحفظ كتقرير جديد في الأرشيف من غير ما يمسح التقارير القديمة.</p>' +
       '<div class="field"><input type="file" id="ad-csv-file" accept=".csv,text/csv"></div>' +
       '<div id="ad-csv-status" style="font-size:11px;color:var(--c-muted);margin-bottom:10px;"></div>' +
-      '<div style="text-align:left;"><button class="btn" id="ad-csv-save" disabled>حفظ واستبدال</button></div></div>';
+      '<div style="text-align:left;"><button class="btn" id="ad-csv-save" disabled>حفظ كتقرير جديد</button></div></div>';
     document.body.appendChild(backdrop);
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
     backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
@@ -322,7 +448,7 @@
             status.textContent = "معرفناش نلاقي بيانات حملات شغالة في الملف";
             return;
           }
-          status.textContent = "لقينا " + parsedRows.length + " حملة — اضغط حفظ عشان تستبدل التقرير القديم";
+          status.textContent = "لقينا " + parsedRows.length + " حملة — اضغط حفظ عشان يتضاف كتقرير جديد في الأرشيف";
           saveBtn.disabled = false;
         } catch (e) {
           status.textContent = "تعذّر قراءة الملف: " + e.message;
@@ -334,12 +460,14 @@
     saveBtn.onclick = function () {
       if (!parsedRows || !parsedRows.length) return;
       var me = window.SSMPDAuth.currentAdmin;
+      var batchId = (window.crypto && window.crypto.randomUUID) ? window.crypto.randomUUID() :
+        "b-" + Date.now() + "-" + Math.random().toString(16).slice(2);
       saveBtn.disabled = true;
-      window.SSMPDDb.clearAdCampaigns().then(function () {
-        return window.SSMPDDb.insertAdCampaigns(parsedRows.map(function (r) {
-          return Object.assign({}, r, { imported_by: me.id });
-        }));
-      }).then(function () {
+      // كل استيراد بقى دفعة (report_batch_id) جديدة منفصلة في الأرشيف — مفيش
+      // مسح للتقارير القديمة بعد كده (كانت clearAdCampaigns() بتمسح كل حاجة قبل الحفظ)
+      window.SSMPDDb.insertAdCampaigns(parsedRows.map(function (r) {
+        return Object.assign({}, r, { imported_by: me.id, report_batch_id: batchId });
+      })).then(function () {
         backdrop.remove();
         render(document.getElementById("view-container"));
       }).catch(function (e) { alert("خطأ: " + e.message); saveBtn.disabled = false; });

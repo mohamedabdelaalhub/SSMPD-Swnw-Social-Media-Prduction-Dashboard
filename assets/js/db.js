@@ -332,6 +332,10 @@
     updateLeadStatus: function (payload) {
       return edgeFetch("leads-update-status", { method: "POST", json: payload });
     },
+    // استكمال بيانات عميل "ناقص بيانات" (اسم/تليفون كان ناقص وقت الرفع بالإكسيل)
+    completeMissingDataLead: function (leadId, customerName, phone) {
+      return edgeFetch("leads-complete-missing-data", { method: "POST", json: { lead_id: leadId, customer_name: customerName, phone: phone } });
+    },
     // قراءة مباشرة (محكومة بـ RLS) — مفيش منطق حساس هنا، غير محتاجة Edge Function
     listLeadAttempts: function (leadId) {
       return handle(client.from("lead_attempts").select("*").eq("lead_id", leadId).order("attempt_date", { ascending: false }));
