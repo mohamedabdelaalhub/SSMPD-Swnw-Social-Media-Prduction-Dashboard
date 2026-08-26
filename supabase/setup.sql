@@ -1715,6 +1715,21 @@ alter table public.leads add constraint leads_acquisition_type_check
 -- ============================================================
 --  14) أول سوبر أدمن
 -- ============================================================
+-- قسم ٢٠: list_admins_basic() — أسماء كل الموظفين النشطين (id/name/role/active)
+-- بدون بيانات حساسة (إيميل/user_id)، عشان شاشات النشر/الإدارة/الأرشيف/الكومنتات
+-- تقدر تعرض "بواسطة"/اسم صاحب الكومنت/المصمم المسؤول لأي مستخدم مش بس السوبر
+-- أدمن — RLS الأصلية على admins ("read own or pending") كانت بتخلي listAdmins()
+-- المباشرة ترجع صف المستخدم نفسه بس لأي حد غير سوبر أدمن، فالأسماء كانت بتظهر
+-- "—"/"مستخدم محذوف" لأي حد تاني غير سوبر أدمن.
+create or replace function public.list_admins_basic()
+returns table(id uuid, name text, role text, active boolean)
+language sql security definer stable set search_path = public as $$
+  select id, name, role, active from public.admins order by name;
+$$;
+revoke all on function public.list_admins_basic() from public;
+grant execute on function public.list_admins_basic() to authenticated;
+
+-- ============================================================
 -- الخطوة أ) Authentication → Users → Add user → Create new user
 --            ضع بريدك وكلمة السر، وفعّل «Auto Confirm User».
 -- الخطوة ب) عدّل البريد والاسم تحت لو مختلفين ثم شغّل السطر:
