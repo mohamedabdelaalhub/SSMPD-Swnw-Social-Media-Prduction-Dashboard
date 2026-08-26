@@ -167,6 +167,7 @@ Deno.serve(async (req) => {
   const search = url.searchParams.get("search")?.trim();
   const openOnly = url.searchParams.get("open_only") === "true";
   const bookedBy = url.searchParams.get("booked_by")?.trim(); // فلتر أرشيف الليدز: الموظف اللي أنهى الحجز
+  const completedMissingData = url.searchParams.get("completed_missing_data") === "1";
   const page = Math.max(1, Number(url.searchParams.get("page") ?? "1") || 1);
   const pageSize = Math.min(50, Math.max(1, Number(url.searchParams.get("page_size") ?? "20") || 20));
 
@@ -175,7 +176,7 @@ Deno.serve(async (req) => {
   let query = admin
     .from("leads")
     .select(
-      "id, customer_name, phone_raw, phone_normalized, source, current_status, patient_type, assigned_to, interested_service, requested_department, priority, booking_reference, booking_date, booked_by, created_at, closed_at",
+      "id, customer_name, phone_raw, phone_normalized, source, current_status, patient_type, assigned_to, interested_service, requested_department, priority, booking_reference, booking_date, booked_by, created_at, closed_at, missing_data_completed_at",
       { count: "exact" },
     )
     .order("created_at", { ascending: false });
@@ -195,6 +196,10 @@ Deno.serve(async (req) => {
 
   if (bookedBy) {
     query = query.eq("booked_by", bookedBy);
+  }
+
+  if (completedMissingData) {
+    query = query.not("missing_data_completed_at", "is", null);
   }
 
   if (search) {
