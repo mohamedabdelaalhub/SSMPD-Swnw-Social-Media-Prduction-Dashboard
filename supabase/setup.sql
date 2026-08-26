@@ -1730,6 +1730,29 @@ revoke all on function public.list_admins_basic() from public;
 grant execute on function public.list_admins_basic() to authenticated;
 
 -- ============================================================
+-- قسم ٢١: عملاء ناقصين بيانات (بعد رفع إكسيل فيه اسم أو تليفون ناقص) +
+-- أرشيف تراكمي لتقارير الإعلانات المدفوعة (بدل الاستبدال الكامل كل استيراد)
+-- ============================================================
+
+-- عميل "ناقص بيانات": صف leads عادي بحالة جديدة current_status='missing_data'
+-- (بدل ما يتجاهل تماماً زي ما كان قبل كده) — لحد ما موظف يكمل الاسم/التليفون
+-- الناقص ويحوّله لحالة 'new' العادية. missing_data_completed_at بيتسجل وقت
+-- الإكمال ده عشان نقدر نحسب "تم استكمال البيانات" حتى بعد ما الحالة تتغيّر.
+alter table public.leads drop constraint if exists leads_current_status_check;
+alter table public.leads add constraint leads_current_status_check
+  check (current_status in
+    ('new','in_progress','booked','booked_on_system','service_done',
+     'interested_undecided','rejected','no_response','invalid_number','missing_data'));
+
+alter table public.leads add column if not exists missing_data_completed_at timestamptz;
+
+-- تقارير الإعلانات المدفوعة بقت أرشيف تراكمي: كل استيراد بيتحط في دفعة
+-- (report_batch_id) منفصلة بدل ما يمسح القديم — عشان يبقى فيه أرشيف/مقارنة/
+-- إجماليات بين التقارير المختلفة عبر الوقت.
+alter table public.ad_campaigns add column if not exists report_batch_id uuid;
+create index if not exists ad_campaigns_batch_idx on public.ad_campaigns (report_batch_id);
+
+-- ============================================================
 -- الخطوة أ) Authentication → Users → Add user → Create new user
 --            ضع بريدك وكلمة السر، وفعّل «Auto Confirm User».
 -- الخطوة ب) عدّل البريد والاسم تحت لو مختلفين ثم شغّل السطر:
