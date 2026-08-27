@@ -61,14 +61,22 @@ Deno.serve(async (req) => {
 
   // وضع خفيف: قائمة أسماء الموظفين لملء فلتر "الموظف اللي أنهى الحجز" في أرشيف الليدز
   if (url.searchParams.get("list_employees") === "1") {
-    const { data: employees, error: empErr } = await admin0
+    // بيشمل الرول الأساسي أو أي رول إضافي — عشان موظف عنده الرول كإضافي
+    // (مش أساسي) يظهر برضه في أسماء "بواسطة"/سجل المحاولات/تغييرات الحالة
+    const allowedRoles = ["reception", "customer_service", "general_manager", "super_admin"];
+    const { data: allAdmins, error: empErr } = await admin0
       .from("admins")
-      .select("id, name, role")
-      .in("role", ["reception", "customer_service", "general_manager", "super_admin"])
+      .select("id, name, role, admin_extra_roles!admin_id(role)")
       .eq("active", true)
       .order("name");
     if (empErr) return json({ error: empErr.message }, 500);
-    return json({ employees: employees ?? [] });
+    const employees = (allAdmins ?? [])
+      .filter((a: any) => {
+        const extra = ((a.admin_extra_roles ?? []) as { role: string }[]).map((r) => r.role);
+        return allowedRoles.includes(a.role) || extra.some((r: string) => allowedRoles.includes(r));
+      })
+      .map((a: any) => ({ id: a.id, name: a.name, role: a.role }));
+    return json({ employees });
   }
 
   // داشبورد الإدارة: إجماليات مفتوح/مغلق + توزيع حسب الحالة + الدخل من الفواتير
