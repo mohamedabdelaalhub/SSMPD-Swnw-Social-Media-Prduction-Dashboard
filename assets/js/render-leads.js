@@ -26,7 +26,7 @@
   // تصنيف مصدر اهتمام الليد: طبيعي (وصل من نفسه) مقابل إعلان مدفوع — مختلف عن
   // "source" (قناة التواصل واتساب/ماسنجر/تليفون/عيادة)، وطلب الفريق عرضه بشكل
   // واضح بالداشبورد. ("طبيعي" هو المصطلح التسويقي الصحيح المقابل لـ organic)
-  var ACQUISITION_LABELS = { organic: "طبيعي", ad: "إعلان" };
+  var ACQUISITION_LABELS = { organic: "حالة المركز", ad: "إعلان" };
   var SERVICE_LABELS = {
     checkup: "كشف", consultation: "استشارة", radiology: "أشعة", lab: "تحاليل", nursing: "تمريض",
     physiotherapy: "علاج طبيعي", treatment: "علاج", dental: "أسنان", speech_therapy: "تخاطب",
