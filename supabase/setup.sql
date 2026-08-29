@@ -1753,6 +1753,36 @@ alter table public.ad_campaigns add column if not exists report_batch_id uuid;
 create index if not exists ad_campaigns_batch_idx on public.ad_campaigns (report_batch_id);
 
 -- ============================================================
+-- قسم ٢٢: مصادر ليدز إضافية (تليفون/عيادة) + صلاحية حذف الليدز
+-- ============================================================
+
+-- طلب الفريق: إضافة "تليفون" و"عيادة" كمصدر استلام ليد، بجانب واتساب/ماسنجر
+-- الموجودين أصلاً.
+alter table public.leads drop constraint if exists leads_source_check;
+alter table public.leads add constraint leads_source_check
+  check (source in ('whatsapp','messenger','phone','clinic'));
+
+-- صلاحية حذف الليدز: مقصورة على السوبر أدمن دايماً، أو أي مستخدم تاني
+-- السوبر أدمن يفعّلها له صراحة (نفس نمط has_archive_access — صلاحية منفصلة
+-- عن الرول الأساسي، تتفعّل من تشيك بوكس في لوحة "المستخدمون والصلاحيات").
+alter table public.admins add column if not exists can_delete_leads boolean not null default false;
+
+create or replace function public.can_delete_leads()
+returns boolean
+language sql security definer stable set search_path = public as $$
+  select public.is_super() or coalesce(
+    (select can_delete_leads from public.admins where user_id = auth.uid() and active limit 1),
+    false
+  );
+$$;
+revoke all on function public.can_delete_leads() from public;
+grant execute on function public.can_delete_leads() to authenticated;
+
+drop policy if exists "leads delete" on public.leads;
+create policy "leads delete" on public.leads
+  for delete using (public.can_delete_leads());
+
+-- ============================================================
 -- الخطوة أ) Authentication → Users → Add user → Create new user
 --            ضع بريدك وكلمة السر، وفعّل «Auto Confirm User».
 -- الخطوة ب) عدّل البريد والاسم تحت لو مختلفين ثم شغّل السطر:
