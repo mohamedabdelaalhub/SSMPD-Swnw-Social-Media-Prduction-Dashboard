@@ -90,8 +90,8 @@ Deno.serve(async (req) => {
 
   if (!customerName) return json({ error: "اسم العميل مطلوب" }, 400);
   if (!phoneRaw) return json({ error: "رقم التليفون مطلوب" }, 400);
-  if (!["whatsapp", "messenger"].includes(source)) {
-    return json({ error: "source لازم يكون whatsapp أو messenger" }, 400);
+  if (!["whatsapp", "messenger", "phone", "clinic"].includes(source)) {
+    return json({ error: "source لازم يكون whatsapp أو messenger أو phone أو clinic" }, 400);
   }
 
   const phoneNormalized = normalizePhone(phoneRaw);
