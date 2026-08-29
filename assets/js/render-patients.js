@@ -255,12 +255,14 @@
         '</select></div>' +
         '<div style="flex:2;min-width:180px;"><label>الملف</label><input type="file" id="uf-file"></div>' +
         '<button class="btn sm" id="uf-btn">رفع</button></div>' +
-        '<div class="field" id="uf-other-wrap" style="display:none;"><label>وصف نوع الملف</label><input id="uf-other-desc" placeholder="اكتب نوع الملف"></div>' +
+        '<div class="field" id="uf-other-wrap"><label id="uf-other-label">ملاحظات / تفاصيل الملف (اختياري)</label><input id="uf-other-desc" placeholder="اكتب أي تفاصيل تخص الملف"></div>' +
         '<div id="uf-status" style="font-size:12px;color:var(--c-muted);"></div>';
 
       var catSelect = document.getElementById("uf-category");
-      var otherWrap = document.getElementById("uf-other-wrap");
-      function syncOther() { otherWrap.style.display = catSelect.value === "other" ? "" : "none"; }
+      var otherLabel = document.getElementById("uf-other-label");
+      // كل الفئات بقى معاها بوكس تكست اختياري لملاحظات/تفاصيل الملف — فئة "أخرى"
+      // بس اللي بتحتاجه إجباري (بيوضّح نوع الملف نفسه)
+      function syncOther() { otherLabel.textContent = catSelect.value === "other" ? "وصف نوع الملف" : "ملاحظات / تفاصيل الملف (اختياري)"; }
       catSelect.onchange = syncOther;
       syncOther();
 
@@ -274,7 +276,7 @@
         var fd = new FormData();
         fd.append("patient_id", patient.id);
         fd.append("category", category);
-        if (category === "other") fd.append("other_description", otherDesc);
+        if (otherDesc) fd.append("other_description", otherDesc);
         fd.append("file", file);
         statusEl.textContent = "بيرفع…";
         window.SSMPDDb.uploadPatientFile(fd).then(function () {
@@ -574,7 +576,7 @@
           html += '<table class="simple"><thead><tr><th>المريض</th><th>الملف</th><th>الفئة</th><th>رافع الملف</th><th>تاريخ الرفع</th><th></th></tr></thead><tbody>';
           files.forEach(function (f) {
             html += '<tr><td>' + escapeHtml((f.patients && f.patients.full_name) || "—") + '</td>' +
-              '<td>' + escapeHtml(f.file_name) + (f.category === "other" && f.other_description ? ' — ' + escapeHtml(f.other_description) : '') + '</td>' +
+              '<td>' + escapeHtml(f.file_name) + (f.other_description ? ' — ' + escapeHtml(f.other_description) : '') + '</td>' +
               '<td>' + categoryLabel(f.category) + '</td>' +
               '<td style="font-size:11px;">' + escapeHtml(f.uploaded_by_name || "—") + '</td>' +
               '<td style="font-size:11px;color:var(--c-muted);">' + fmtDate(f.uploaded_at) + '</td>' +
@@ -920,9 +922,10 @@
         (canUp ? '<span><button class="btn ghost sm" data-upload-cat="' + c.key + '">+ رفع</button>' +
           '<input type="file" accept="image/*,application/pdf" data-file-input-cat="' + c.key + '" style="display:none;"></span>' : '') +
         '</h3>';
-      if (canUp && c.key === "other") {
+      if (canUp) {
         html += '<div class="field" data-other-wrap-cat style="display:none;margin-bottom:8px;">' +
-          '<label>وصف نوع الملف</label><input data-other-desc-cat placeholder="اكتب نوع الملف"></div>';
+          '<label>' + (c.key === "other" ? "وصف نوع الملف" : "ملاحظات / تفاصيل الملف (اختياري)") + '</label>' +
+          '<input data-other-desc-cat placeholder="' + (c.key === "other" ? "اكتب نوع الملف" : "اكتب أي تفاصيل تخص الملف") + '"></div>';
       }
       html += '<div data-cat-status style="font-size:11px;color:var(--c-muted);margin-bottom:6px;"></div>';
       if (!list.length) {
@@ -930,7 +933,7 @@
       } else {
         list.forEach(function (f) {
           html += '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--c-border);font-size:12px;">' +
-            '<div><b>' + escapeHtml(f.file_name) + '</b>' + (f.category === "other" && f.other_description ? ' — ' + escapeHtml(f.other_description) : '') +
+            '<div><b>' + escapeHtml(f.file_name) + '</b>' + (f.other_description ? ' — ' + escapeHtml(f.other_description) : '') +
             ' <span class="status-pill ' + (REVIEW_PILL[f.review_status] || "draft") + '" style="font-size:10px;">' + (REVIEW_LABELS[f.review_status] || f.review_status) + '</span>' +
             '<br><span style="color:var(--c-muted);">' + fmtBytes(f.file_size) + ' · ' + fmtDate(f.uploaded_at) +
             (f.uploaded_by_name ? ' · رفعه: ' + escapeHtml(f.uploaded_by_name) : '') +
@@ -1000,7 +1003,7 @@
       var statusEl = section.querySelector("[data-cat-status]");
 
       btn.onclick = function () {
-        if (catKey === "other" && otherWrap && otherWrap.style.display === "none") {
+        if (otherWrap && otherWrap.style.display === "none") {
           otherWrap.style.display = "";
           return;
         }
@@ -1010,16 +1013,12 @@
       fileInput.onchange = function () {
         var file = fileInput.files[0];
         if (!file) return;
-        var otherDesc = "";
-        if (catKey === "other") {
-          otherDesc = (section.querySelector("[data-other-desc-cat]") || {}).value || "";
-          otherDesc = otherDesc.trim();
-          if (!otherDesc) { statusEl.textContent = "اكتب وصف نوع الملف الأول"; fileInput.value = ""; return; }
-        }
+        var otherDesc = ((section.querySelector("[data-other-desc-cat]") || {}).value || "").trim();
+        if (catKey === "other" && !otherDesc) { statusEl.textContent = "اكتب وصف نوع الملف الأول"; fileInput.value = ""; return; }
         var fd = new FormData();
         fd.append("patient_id", patient.id);
         fd.append("category", catKey);
-        if (catKey === "other") fd.append("other_description", otherDesc);
+        if (otherDesc) fd.append("other_description", otherDesc);
         fd.append("file", file);
         statusEl.textContent = "بيرفع…";
         btn.disabled = true;

@@ -332,6 +332,12 @@
     updateLeadStatus: function (payload) {
       return edgeFetch("leads-update-status", { method: "POST", json: payload });
     },
+    // حذف نهائي لليد — مقصور على السوبر أدمن أو أي مستخدم عنده صلاحية
+    // can_delete_leads مفعّلة (RLS "leads delete" في setup.sql هي الحارس
+    // الحقيقي، الزرار في الواجهة بيتخفي بس لغير المصرح له)
+    deleteLead: function (id) {
+      return handle(client.from("leads").delete().eq("id", id));
+    },
     // استكمال بيانات عميل "ناقص بيانات" (اسم/تليفون كان ناقص وقت الرفع بالإكسيل)
     completeMissingDataLead: function (leadId, customerName, phone) {
       return edgeFetch("leads-complete-missing-data", { method: "POST", json: { lead_id: leadId, customer_name: customerName, phone: phone } });

@@ -21,10 +21,12 @@
   // الخدمة تتم فعلياً) — رفع فاتورة الخدمة متاح خلالها (نفس ALLOWED_STATUSES_FOR_INVOICE
   // في lead-invoice-upload Edge Function)
   var INVOICE_ALLOWED_STATUSES = ["booked", "booked_on_system", "service_done"];
-  var SOURCE_LABELS = { whatsapp: "واتساب", messenger: "ماسنجر" };
-  // تصنيف مصدر اهتمام الليد: عضوي (وصل من نفسه) مقابل إعلان مدفوع — مختلف عن
-  // "source" (قناة التواصل واتساب/ماسنجر)، وطلب الفريق عرضه بشكل واضح بالداشبورد
-  var ACQUISITION_LABELS = { organic: "عضوي", ad: "إعلان" };
+  // طلب الفريق: إضافة "تليفون"/"عيادة" كمصدر استلام ليد بجانب واتساب/ماسنجر
+  var SOURCE_LABELS = { whatsapp: "واتساب", messenger: "ماسنجر", phone: "تليفون", clinic: "عيادة" };
+  // تصنيف مصدر اهتمام الليد: طبيعي (وصل من نفسه) مقابل إعلان مدفوع — مختلف عن
+  // "source" (قناة التواصل واتساب/ماسنجر/تليفون/عيادة)، وطلب الفريق عرضه بشكل
+  // واضح بالداشبورد. ("طبيعي" هو المصطلح التسويقي الصحيح المقابل لـ organic)
+  var ACQUISITION_LABELS = { organic: "طبيعي", ad: "إعلان" };
   var SERVICE_LABELS = {
     checkup: "كشف", consultation: "استشارة", radiology: "أشعة", lab: "تحاليل", nursing: "تمريض",
     physiotherapy: "علاج طبيعي", treatment: "علاج", dental: "أسنان", speech_therapy: "تخاطب",
@@ -55,6 +57,9 @@
   function isManager() { return !!(me && window.SSMPDRoles.hasAnyRole(me, ["general_manager", "super_admin"])); }
   function isReception() { return !!(me && (window.SSMPDRoles.hasRole(me, "reception") || isManager())); }
   function isCS() { return !!(me && (window.SSMPDRoles.hasRole(me, "customer_service") || isManager())); }
+  // صلاحية حذف الليد: سوبر أدمن دايماً، أو أي مستخدم مفعّلة له can_delete_leads
+  // صراحة من لوحة "المستخدمون والصلاحيات" (نفس نمط has_archive_access)
+  function canDeleteLead() { return !!(me && (window.SSMPDRoles.isSuperAdmin(me) || me.can_delete_leads)); }
 
   var SUB_SCREENS = [
     { key: "reception", label: "الاستقبال" },
@@ -140,7 +145,8 @@
   function newLeadFormHtml() {
     return '<div class="field"><label>اسم العميل</label><input id="nl-name"></div>' +
       '<div class="field"><label>رقم الهاتف</label><input id="nl-phone" placeholder="01xxxxxxxxx"></div>' +
-      '<div class="field"><label>المصدر</label><select id="nl-source"><option value="whatsapp">واتساب</option><option value="messenger">ماسنجر</option></select></div>' +
+      '<div class="field"><label>المصدر</label><select id="nl-source">' +
+      Object.keys(SOURCE_LABELS).map(function (k) { return '<option value="' + k + '">' + SOURCE_LABELS[k] + '</option>'; }).join("") + '</select></div>' +
       '<div class="field"><label>نص الرسالة (اختياري)</label><textarea id="nl-message" rows="2"></textarea></div>' +
       '<div class="field"><label>الخدمة المهتم بيها (اختياري)</label><select id="nl-service"><option value="">— بدون —</option>' +
       Object.keys(SERVICE_LABELS).map(function (k) { return '<option value="' + k + '">' + SERVICE_LABELS[k] + '</option>'; }).join("") + '</select></div>' +
@@ -634,7 +640,9 @@
 
     function renderLeadModal(backdrop, view, container, data, onChange) {
       var lead = data.lead, attempts = data.attempts, statusLog = data.statusLog, invoices = data.invoices;
-      var html = '<div class="modal"><div class="modal-head"><h3>' + escapeHtml(lead.customer_name) + '</h3><button class="modal-close">×</button></div>';
+      var html = '<div class="modal"><div class="modal-head"><h3>' + escapeHtml(lead.customer_name) + '</h3>' +
+        (canDeleteLead() ? '<button class="btn danger sm" id="lm-delete" style="margin-inline-end:8px;">حذف الليد</button>' : '') +
+        '<button class="modal-close">×</button></div>';
       html += '<div class="status-pill ' + (STATUS_PILL_CLASS[lead.current_status] || "draft") + '" id="lm-pill" style="margin-bottom:12px;">' + (STATUS_LABELS[lead.current_status] || lead.current_status) + '</div>';
       html += '<p style="font-size:13px;line-height:1.9;">' +
         'الهاتف: <b>' + escapeHtml(lead.phone_raw || lead.phone_normalized || "—") + '</b><br>' +
@@ -725,6 +733,18 @@
       html += '</div>';
       backdrop.innerHTML = html;
       backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
+
+      var deleteBtn = document.getElementById("lm-delete");
+      if (deleteBtn) {
+        deleteBtn.onclick = function () {
+          if (deleteBtn.textContent === "حذف الليد") { deleteBtn.textContent = "تأكيد الحذف؟"; return; }
+          window.SSMPDDb.deleteLead(lead.id).then(function () {
+            T.show("اتمسح الليد بنجاح");
+            backdrop.remove();
+            if (onChange) onChange();
+          }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
+        };
+      }
 
       var statusSelect = document.getElementById("lm-status");
       var bookingWrap = document.getElementById("lm-booking-wrap");
