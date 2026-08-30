@@ -254,6 +254,7 @@
         CATEGORIES.map(function (c) { return '<option value="' + c.key + '">' + c.label + '</option>'; }).join("") +
         '</select></div>' +
         '<div style="flex:2;min-width:180px;"><label>الملف</label><input type="file" id="uf-file"></div>' +
+        '<div style="min-width:150px;"><label>تاريخ إصدار المستند (اختياري)</label><input type="date" id="uf-issued-at"></div>' +
         '<button class="btn sm" id="uf-btn">رفع</button></div>' +
         '<div class="field" id="uf-other-wrap"><label id="uf-other-label">ملاحظات / تفاصيل الملف (اختياري)</label><input id="uf-other-desc" placeholder="اكتب أي تفاصيل تخص الملف"></div>' +
         '<div id="uf-status" style="font-size:12px;color:var(--c-muted);"></div>';
@@ -273,10 +274,12 @@
         var statusEl = document.getElementById("uf-status");
         if (!file) { statusEl.textContent = "اختار ملف الأول"; return; }
         if (category === "other" && !otherDesc) { statusEl.textContent = "اكتب وصف نوع الملف"; return; }
+        var issuedAt = (document.getElementById("uf-issued-at") || {}).value || "";
         var fd = new FormData();
         fd.append("patient_id", patient.id);
         fd.append("category", category);
         if (otherDesc) fd.append("other_description", otherDesc);
+        if (issuedAt) fd.append("issued_at", issuedAt);
         fd.append("file", file);
         statusEl.textContent = "بيرفع…";
         window.SSMPDDb.uploadPatientFile(fd).then(function () {
@@ -569,20 +572,21 @@
     win.document.write('<p style="font-family:sans-serif;padding:20px;">بيجهّز الملفات للطباعة…</p>');
     Promise.all(fileList.map(function (f) {
       return window.SSMPDDb.downloadPatientFile(f.id).then(function (res) {
-        return { name: f.file_name, url: URL.createObjectURL(res.blob), type: res.blob.type || "" };
+        return { name: f.file_name, url: URL.createObjectURL(res.blob), type: res.blob.type || "", category: f.category, issuedAt: f.issued_at, uploadedAt: f.uploaded_at };
       });
     })).then(function (items) {
       var body = items.map(function (it) {
+        var header = filePrintHeaderHtml(it);
         if (it.type === "application/pdf") {
-          return '<div style="page-break-after:always;"><embed src="' + it.url + '" type="application/pdf" style="width:100%;height:96vh;"></div>';
+          return '<div style="page-break-after:always;">' + header + '<embed src="' + it.url + '" type="application/pdf" style="width:100%;height:90vh;"></div>';
         }
         if (it.type.indexOf("image/") === 0) {
-          return '<div style="page-break-after:always;text-align:center;padding:10px;"><img src="' + it.url + '" style="max-width:100%;"></div>';
+          return '<div style="page-break-after:always;text-align:center;padding:10px;">' + header + '<img src="' + it.url + '" style="max-width:100%;"></div>';
         }
-        return '<div style="page-break-after:always;padding:20px;font-family:sans-serif;">تعذّرت معاينة الملف "' + escapeHtml(it.name) + '" — نوعه غير مدعوم للطباعة المباشرة.</div>';
+        return '<div style="page-break-after:always;padding:20px;">' + header + '<p>تعذّرت معاينة الملف "' + escapeHtml(it.name) + '" — نوعه غير مدعوم للطباعة المباشرة.</p></div>';
       }).join("");
       win.document.open();
-      win.document.write('<!doctype html><html><head><meta charset="utf-8"><title>طباعة الملفات</title><style>' + PRINT_FONT_FACE_CSS + '</style></head><body style="margin:0;">' + body + '</body></html>');
+      win.document.write('<!doctype html><html><head><meta charset="utf-8"><title>طباعة الملفات</title><style>' + PRINT_FONT_FACE_CSS + '</style></head><body style="margin:0;">' + body + PRINT_FOOTER_HTML + '</body></html>');
       win.document.close();
       setTimeout(function () { win.focus(); win.print(); }, 600);
     }).catch(function (e) {
@@ -599,6 +603,16 @@
     "@font-face{font-family:'BigVesta Arabic';src:url('" + PRINT_SITE_BASE + "assets/fonts/BigVesta-Regular.woff2') format('woff2');font-weight:400;}" +
     "@font-face{font-family:'BigVesta Arabic';src:url('" + PRINT_SITE_BASE + "assets/fonts/BigVesta-Bold.woff2') format('woff2');font-weight:700;}" +
     "body{font-family:'BigVesta Arabic','Hiragino Kaku',system-ui,Tahoma,sans-serif;}";
+  // فوتر ثابت (fixed) بيتكرر في أسفل كل صفحة مطبوعة — بديل عملي جوه محتوى الصفحة
+  // نفسها لأن هيدر/فوتر المتصفح الافتراضي (اللي فيه "about:blank"/الرابط) إعداد
+  // متصفح مش متاح التحكم فيه من الصفحة، فده تكملة داخل الصفحة مش استبدال له
+  var PRINT_FOOTER_HTML = '<div style="position:fixed;bottom:0;left:0;right:0;text-align:center;font-size:10px;color:#888;padding:6px 0;border-top:1px solid #ddd;background:#fff;">التقرير صادر من مركز عيادات سونو التخصصية</div>';
+
+  function filePrintHeaderHtml(it) {
+    var dateLabel = it.issuedAt ? ('تاريخ الإصدار: ' + fmtDate(it.issuedAt)) : ('تاريخ الرفع: ' + fmtDate(it.uploadedAt));
+    return '<div style="padding:8px 14px;background:#f5f5f5;border-bottom:2px solid #0F369D;font-weight:700;font-size:13px;display:flex;justify-content:space-between;">' +
+      '<span>' + escapeHtml(categoryLabel(it.category)) + '</span><span style="font-weight:400;">' + dateLabel + '</span></div>';
+  }
 
   // ---------- طباعة بروفايل المريض كامل: صفحة بيانات شخصية/طبية + كل المرفقات كصفحات داخلية ----------
   function buildProfileCoverHtml(patient, profile, visits) {
@@ -671,20 +685,21 @@
 
     Promise.all(files.map(function (f) {
       return window.SSMPDDb.downloadPatientFile(f.id).then(function (res) {
-        return { name: f.file_name, url: URL.createObjectURL(res.blob), type: res.blob.type || "" };
+        return { name: f.file_name, url: URL.createObjectURL(res.blob), type: res.blob.type || "", category: f.category, issuedAt: f.issued_at, uploadedAt: f.uploaded_at };
       });
     })).then(function (items) {
       var filesBody = items.map(function (it) {
+        var header = filePrintHeaderHtml(it);
         if (it.type === "application/pdf") {
-          return '<div style="page-break-after:always;"><embed src="' + it.url + '" type="application/pdf" style="width:100%;height:96vh;"></div>';
+          return '<div style="page-break-after:always;">' + header + '<embed src="' + it.url + '" type="application/pdf" style="width:100%;height:90vh;"></div>';
         }
         if (it.type.indexOf("image/") === 0) {
-          return '<div style="page-break-after:always;text-align:center;padding:10px;"><img src="' + it.url + '" style="max-width:100%;"></div>';
+          return '<div style="page-break-after:always;text-align:center;padding:10px;">' + header + '<img src="' + it.url + '" style="max-width:100%;"></div>';
         }
-        return '<div style="page-break-after:always;padding:20px;font-family:sans-serif;">تعذّرت معاينة الملف "' + escapeHtml(it.name) + '" — نوعه غير مدعوم للطباعة المباشرة.</div>';
+        return '<div style="page-break-after:always;padding:20px;">' + header + '<p>تعذّرت معاينة الملف "' + escapeHtml(it.name) + '" — نوعه غير مدعوم للطباعة المباشرة.</p></div>';
       }).join("");
       win.document.open();
-      win.document.write('<!doctype html><html><head><meta charset="utf-8"><title>ملف المريض — ' + escapeHtml(patient.full_name) + '</title><style>' + PRINT_FONT_FACE_CSS + '</style></head><body style="margin:0;">' + coverHtml + filesBody + '</body></html>');
+      win.document.write('<!doctype html><html><head><meta charset="utf-8"><title>ملف المريض — ' + escapeHtml(patient.full_name) + '</title><style>' + PRINT_FONT_FACE_CSS + '</style></head><body style="margin:0;">' + coverHtml + filesBody + PRINT_FOOTER_HTML + '</body></html>');
       win.document.close();
       setTimeout(function () { win.focus(); win.print(); }, 600);
     }).catch(function (e) {
@@ -1090,7 +1105,9 @@
       if (canUp) {
         html += '<div class="field" data-other-wrap-cat style="display:none;margin-bottom:8px;">' +
           '<label>' + (c.key === "other" ? "وصف نوع الملف" : "ملاحظات / تفاصيل الملف (اختياري)") + '</label>' +
-          '<input data-other-desc-cat placeholder="' + (c.key === "other" ? "اكتب نوع الملف" : "اكتب أي تفاصيل تخص الملف") + '"></div>';
+          '<input data-other-desc-cat placeholder="' + (c.key === "other" ? "اكتب نوع الملف" : "اكتب أي تفاصيل تخص الملف") + '">' +
+          '<label style="margin-top:6px;">تاريخ إصدار المستند (اختياري)</label>' +
+          '<input type="date" data-issued-at-cat></div>';
       }
       html += '<div data-cat-status style="font-size:11px;color:var(--c-muted);margin-bottom:6px;"></div>';
       if (!list.length) {
@@ -1181,11 +1198,13 @@
         var file = fileInput.files[0];
         if (!file) return;
         var otherDesc = ((section.querySelector("[data-other-desc-cat]") || {}).value || "").trim();
+        var issuedAt = ((section.querySelector("[data-issued-at-cat]") || {}).value || "").trim();
         if (catKey === "other" && !otherDesc) { statusEl.textContent = "اكتب وصف نوع الملف الأول"; fileInput.value = ""; return; }
         var fd = new FormData();
         fd.append("patient_id", patient.id);
         fd.append("category", catKey);
         if (otherDesc) fd.append("other_description", otherDesc);
+        if (issuedAt) fd.append("issued_at", issuedAt);
         fd.append("file", file);
         statusEl.textContent = "بيرفع…";
         btn.disabled = true;
