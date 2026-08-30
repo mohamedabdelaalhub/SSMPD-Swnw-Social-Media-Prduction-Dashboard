@@ -591,6 +591,98 @@
     });
   }
 
+  // ---------- طباعة بروفايل المريض كامل: صفحة بيانات شخصية/طبية + كل المرفقات كصفحات داخلية ----------
+  function buildProfileCoverHtml(patient, profile, visits) {
+    visits = visits || [];
+    var activeChronic = (profile && Array.isArray(profile.chronic_conditions)) ?
+      profile.chronic_conditions.filter(function (c) { return c.has; }) : [];
+    var activeSurgeries = (profile && Array.isArray(profile.surgeries)) ?
+      profile.surgeries.filter(function (s) { return s.has; }) : [];
+    var activeFamily = (profile && Array.isArray(profile.family_history)) ?
+      profile.family_history.filter(function (f) { return f.has; }) : [];
+
+    var html = '<div style="page-break-after:always;padding:28px;font-family:sans-serif;direction:rtl;font-size:13px;line-height:1.9;">';
+    html += '<h1 style="font-size:19px;margin-bottom:2px;">مركز عيادات Swnw التخصصية</h1>';
+    html += '<h2 style="font-size:15px;color:#444;margin-top:0;">ملف المريض — ' + escapeHtml(patient.full_name) +
+      ' (' + escapeHtml(patient.patient_code || "") + ')</h2>';
+
+    html += '<h3 style="font-size:14px;border-bottom:1px solid #ccc;padding-bottom:4px;">البيانات الشخصية</h3>';
+    html += '<p>الهاتف: ' + escapeHtml(patient.phone || "—") + '<br>' +
+      'السن: ' + escapeHtml(patient.age != null ? String(patient.age) : "—") + '<br>' +
+      'النوع: ' + (patient.gender === "male" ? "ذكر" : patient.gender === "female" ? "أنثى" : "—") + '<br>' +
+      'الرقم الطبي: ' + escapeHtml(patient.medical_record_no || "—") + '<br>' +
+      'تاريخ آخر زيارة: ' + fmtDate(patient.last_visit_date) + '</p>';
+
+    html += '<h3 style="font-size:14px;border-bottom:1px solid #ccc;padding-bottom:4px;">البيانات الطبية</h3>';
+    if (!profile) {
+      html += '<p>مفيش بيانات طبية مسجّلة.</p>';
+    } else {
+      html += '<p>الطبيب المعالج: ' + escapeHtml(profile.treating_doctor || "—") + '<br>' +
+        'التخصص: ' + escapeHtml(profile.specialty || "—") + '<br>' +
+        'ضغط الدم: ' + escapeHtml(profile.blood_pressure || "—") + ' · سكر الدم: ' + escapeHtml(profile.blood_sugar || "—") + '<br>' +
+        'الوزن: ' + escapeHtml(profile.weight || "—") + ' · النبض: ' + escapeHtml(profile.pulse || "—") + ' · الأكسجين: ' + escapeHtml(profile.oxygen_percent || "—") + '</p>';
+      html += '<p><b>الأمراض المزمنة: </b>' + (activeChronic.length ? activeChronic.map(function (c) {
+        var lbl = (CHRONIC_CONDITIONS.filter(function (x) { return x.key === c.name; })[0] || {}).label || c.name;
+        return escapeHtml(lbl) + (c.medication ? ' (' + escapeHtml(c.medication) + ')' : '');
+      }).join('، ') : 'لا يوجد') + '</p>';
+      html += '<p><b>العمليات الجراحية: </b>' + (activeSurgeries.length ? activeSurgeries.map(function (s) {
+        return escapeHtml(s.name || "") + (s.notes ? ' (' + escapeHtml(s.notes) + ')' : '');
+      }).join('، ') : 'لا يوجد') + '</p>';
+      html += '<p><b>تاريخ مرضي بالعائلة: </b>' + (activeFamily.length ? activeFamily.map(function (f) { return escapeHtml(f.disease || ""); }).join('، ') : 'لا يوجد') + '</p>';
+    }
+
+    html += '<h3 style="font-size:14px;border-bottom:1px solid #ccc;padding-bottom:4px;">سجل الزيارات (' + visits.length + ')</h3>';
+    if (!visits.length) {
+      html += '<p>مفيش زيارات مسجّلة.</p>';
+    } else {
+      html += '<table style="width:100%;border-collapse:collapse;font-size:12px;"><thead><tr>' +
+        '<th style="border:1px solid #ccc;padding:5px;">التاريخ</th><th style="border:1px solid #ccc;padding:5px;">الشكوى</th>' +
+        '<th style="border:1px solid #ccc;padding:5px;">خطة العلاج</th><th style="border:1px solid #ccc;padding:5px;">متابعة</th></tr></thead><tbody>';
+      visits.forEach(function (v) {
+        var plan = [v.medications ? 'أدوية: ' + v.medications : '', v.xrays ? 'أشعة: ' + v.xrays : '', v.labs ? 'تحاليل: ' + v.labs : '', v.other_recommendations || '']
+          .filter(Boolean).join(' · ');
+        html += '<tr><td style="border:1px solid #ccc;padding:5px;">' + fmtDate(v.visit_date) + '</td>' +
+          '<td style="border:1px solid #ccc;padding:5px;">' + escapeHtml(v.complaint || '—') + '</td>' +
+          '<td style="border:1px solid #ccc;padding:5px;">' + escapeHtml(plan || '—') + '</td>' +
+          '<td style="border:1px solid #ccc;padding:5px;">' + (v.follow_up_date ? fmtDate(v.follow_up_date) : '—') + '</td></tr>';
+      });
+      html += '</tbody></table>';
+    }
+    html += '</div>';
+    return html;
+  }
+
+  function printPatientProfile(patient, profile, visits, files) {
+    files = files || [];
+    var win = window.open("", "_blank");
+    if (!win) { T.show("المتصفح منع فتح نافذة الطباعة — سمح بالنوافذ المنبثقة وحاول تاني", "error"); return; }
+    win.document.write('<p style="font-family:sans-serif;padding:20px;">بيجهّز الملف للطباعة…</p>');
+    var coverHtml = buildProfileCoverHtml(patient, profile, visits);
+
+    Promise.all(files.map(function (f) {
+      return window.SSMPDDb.downloadPatientFile(f.id).then(function (res) {
+        return { name: f.file_name, url: URL.createObjectURL(res.blob), type: res.blob.type || "" };
+      });
+    })).then(function (items) {
+      var filesBody = items.map(function (it) {
+        if (it.type === "application/pdf") {
+          return '<div style="page-break-after:always;"><embed src="' + it.url + '" type="application/pdf" style="width:100%;height:96vh;"></div>';
+        }
+        if (it.type.indexOf("image/") === 0) {
+          return '<div style="page-break-after:always;text-align:center;padding:10px;"><img src="' + it.url + '" style="max-width:100%;"></div>';
+        }
+        return '<div style="page-break-after:always;padding:20px;font-family:sans-serif;">تعذّرت معاينة الملف "' + escapeHtml(it.name) + '" — نوعه غير مدعوم للطباعة المباشرة.</div>';
+      }).join("");
+      win.document.open();
+      win.document.write('<!doctype html><html><head><meta charset="utf-8"><title>ملف المريض — ' + escapeHtml(patient.full_name) + '</title></head><body style="margin:0;">' + coverHtml + filesBody + '</body></html>');
+      win.document.close();
+      setTimeout(function () { win.focus(); win.print(); }, 600);
+    }).catch(function (e) {
+      T.show("خطأ: " + e.message, "error");
+      win.close();
+    });
+  }
+
   // ---------- عرض تفاصيل زيارة (قراءة فقط) ----------
   function openViewVisitModal(v) {
     var plan = [v.medications ? 'الأدوية: ' + v.medications : '', v.xrays ? 'الأشعة: ' + v.xrays : '', v.labs ? 'التحاليل: ' + v.labs : '', v.other_recommendations ? 'توصيات أخرى: ' + v.other_recommendations : '']
@@ -897,6 +989,7 @@
 
     var html = '<div class="modal"><div class="modal-head"><h3>' + escapeHtml(patient.full_name) +
       ' <span style="font-size:12px;color:var(--c-muted);">(' + escapeHtml(patient.patient_code || "") + ')</span></h3>' +
+      '<button class="btn ghost sm" data-print-profile="1" style="margin-inline-end:8px;">🖨 طباعة البروفايل</button>' +
       '<button class="modal-close">×</button></div>';
 
     var canUp = canUpload();
@@ -1102,6 +1195,10 @@
     var printAllBtn = backdrop.querySelector("[data-print-all]");
     if (printAllBtn) {
       printAllBtn.onclick = function () { printPatientFiles(files); };
+    }
+    var printProfileBtn = backdrop.querySelector("[data-print-profile]");
+    if (printProfileBtn) {
+      printProfileBtn.onclick = function () { printPatientProfile(patient, profile, visits, files); };
     }
     backdrop.querySelectorAll("[data-print-file]").forEach(function (btn) {
       btn.onclick = function () {

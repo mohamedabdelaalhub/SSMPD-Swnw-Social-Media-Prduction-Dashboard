@@ -308,7 +308,10 @@
 
     var body = document.getElementById("ld-dash-body");
     window.SSMPDDb.getLeadsStats({ from: d.from, to: d.to }).then(function (res) {
-      var html = '<div class="kpi-grid">' +
+      var html = '<div style="text-align:left;margin-bottom:10px;">' +
+        '<button class="btn ghost sm" id="ld-export-xlsx">⬇ تصدير إكسيل</button> ' +
+        '<button class="btn ghost sm" id="ld-export-pdf">🖨 تصدير PDF</button></div>';
+      html += '<div class="kpi-grid">' +
         '<div class="kpi-card"><div class="label">ليدز مفتوحة</div><div class="value">' + fmtNum(res.open) + '</div></div>' +
         '<div class="kpi-card"><div class="label">ليدز مغلقة</div><div class="value">' + fmtNum(res.closed) + '</div></div>' +
         '<div class="kpi-card"><div class="label">تم الحجز</div><div class="value small">' + fmtNum(res.booked) + '</div></div>' +
@@ -364,7 +367,75 @@
       html += '</div>';
 
       body.innerHTML = html;
+      document.getElementById("ld-export-xlsx").onclick = function () { exportDashboardExcel(res, d); };
+      document.getElementById("ld-export-pdf").onclick = function () { exportDashboardPdf(res, d); };
     }).catch(function (e) { body.innerHTML = '<div class="err-msg">خطأ: ' + e.message + '</div>'; });
+  }
+
+  // ---------- تصدير داشبورد الليدز: إكسيل (SheetJS) أو PDF (نافذة طباعة) ----------
+  function exportDashboardExcel(res, d) {
+    if (typeof XLSX === "undefined") { T.show("مكتبة الإكسيل لسه مش متحمّلة — جرب ريفريش للصفحة", "error"); return; }
+    var wb = XLSX.utils.book_new();
+    var acq = res.by_acquisition_type || {};
+    var summary = [
+      ["المؤشر", "القيمة"],
+      ["ليدز مفتوحة", res.open || 0],
+      ["ليدز مغلقة", res.closed || 0],
+      ["تم الحجز", res.booked || 0],
+      ["إجمالي دخل الفواتير", res.total_income || 0],
+      [ACQUISITION_LABELS.organic, acq.organic || 0],
+      [ACQUISITION_LABELS.ad, acq.ad || 0],
+      ["غير مصنّف", acq.unknown || 0]
+    ];
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(summary), "ملخص");
+
+    var statusRows = [["الحالة", "العدد"]];
+    Object.keys(STATUS_LABELS).forEach(function (k) { statusRows.push([STATUS_LABELS[k], (res.by_status || {})[k] || 0]); });
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(statusRows), "توزيع الحالة");
+
+    var empRows = [["الموظف", "عدد الفواتير", "إجمالي الدخل"]];
+    (res.income_by_employee || []).forEach(function (e) { empRows.push([e.employee_name, e.invoices_count, e.total]); });
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(empRows), "الدخل حسب الموظف");
+
+    var deptRows = [["القسم", "عدد الفواتير", "إجمالي الدخل"]];
+    (res.income_by_department || []).forEach(function (r) { deptRows.push([r.department, r.invoices_count, r.total]); });
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(deptRows), "الدخل حسب القسم");
+
+    var fname = "تقرير_الليدز" + (d.from || d.to ? "_" + (d.from || "") + "_" + (d.to || "") : "") + ".xlsx";
+    XLSX.writeFile(wb, fname);
+  }
+
+  function exportDashboardPdf(res, d) {
+    var win = window.open("", "_blank");
+    if (!win) { T.show("المتصفح منع فتح نافذة الطباعة — سمح بالنوافذ المنبثقة وحاول تاني", "error"); return; }
+    var acq = res.by_acquisition_type || {};
+    var html = '<!doctype html><html><head><meta charset="utf-8"><title>تقرير الليدز</title>' +
+      '<style>body{font-family:sans-serif;padding:24px;direction:rtl;}table{width:100%;border-collapse:collapse;margin:12px 0 24px;}' +
+      'td,th{border:1px solid #ccc;padding:6px 10px;text-align:right;font-size:13px;}h1{font-size:20px;}h2{font-size:15px;margin-top:20px;}</style></head><body>';
+    html += '<h1>تقرير داشبورد الليدز — مركز عيادات Swnw</h1>';
+    html += '<p>تاريخ التقرير: ' + new Date().toLocaleDateString("ar-EG") + (d.from || d.to ? ' — الفترة: ' + (d.from || "—") + ' إلى ' + (d.to || "—") : '') + '</p>';
+    html += '<table><tr><td>ليدز مفتوحة</td><td>' + (res.open || 0) + '</td></tr>' +
+      '<tr><td>ليدز مغلقة</td><td>' + (res.closed || 0) + '</td></tr>' +
+      '<tr><td>تم الحجز</td><td>' + (res.booked || 0) + '</td></tr>' +
+      '<tr><td>إجمالي دخل الفواتير</td><td>' + (res.total_income || 0) + ' ج.م</td></tr>' +
+      '<tr><td>' + ACQUISITION_LABELS.organic + '</td><td>' + (acq.organic || 0) + '</td></tr>' +
+      '<tr><td>' + ACQUISITION_LABELS.ad + '</td><td>' + (acq.ad || 0) + '</td></tr></table>';
+
+    html += '<h2>توزيع حسب الحالة</h2><table><tr><th>الحالة</th><th>العدد</th></tr>';
+    Object.keys(STATUS_LABELS).forEach(function (k) { html += '<tr><td>' + STATUS_LABELS[k] + '</td><td>' + ((res.by_status || {})[k] || 0) + '</td></tr>'; });
+    html += '</table>';
+
+    html += '<h2>الدخل حسب الموظف</h2><table><tr><th>الموظف</th><th>عدد الفواتير</th><th>الإجمالي (ج.م)</th></tr>';
+    (res.income_by_employee || []).forEach(function (e) { html += '<tr><td>' + escapeHtml(e.employee_name) + '</td><td>' + e.invoices_count + '</td><td>' + e.total + '</td></tr>'; });
+    html += '</table>';
+
+    html += '<h2>الدخل حسب القسم</h2><table><tr><th>القسم</th><th>عدد الفواتير</th><th>الإجمالي (ج.م)</th></tr>';
+    (res.income_by_department || []).forEach(function (r) { html += '<tr><td>' + escapeHtml(r.department) + '</td><td>' + r.invoices_count + '</td><td>' + r.total + '</td></tr>'; });
+    html += '</table></body></html>';
+
+    win.document.write(html);
+    win.document.close();
+    setTimeout(function () { win.print(); }, 500);
   }
 
   // ============ ٤) الحجوزات الفعلية ============
