@@ -1477,3 +1477,25 @@ some row` — رغم إن فحص مباشر لجدول `admins` أثبت إن م
   render-leads.js).
 - **لازم**: تشغيل قسم ٢٣ من `setup.sql` في Supabase SQL Editor، ونشر
   `leads-list` Edge Function المحدّثة.
+
+## التمريض بقى تشوف ملفات الأرشيف (قراءة فقط) + طباعة الملفات (`?v=45` — ٢٠٢٦-٠٨-٣٠)
+
+- بلاغ المستخدم: التمريض معندهاش وصول فعلي لتاب "أرشيف المرضى" رغم إنها
+  الشاشة الافتراضية ليها (`defaultTab`) — السبب: `canSeeTab("patients")`
+  في `roles.js` كان بيشترط `has_archive_access`/`has_archive_view_only`/
+  `super_admin` بس، ورول `nursing` المجرد مش من ضمنهم، فالتاب كان بيتخبّى
+  عنها تماماً. نفس القصور موجود في `patient-files-list`/
+  `patient-files-download` Edge Functions (شرط `allowed`). الحل: أضيف
+  `nursing` كشرط قراءة إضافي في التلاتة أماكن (بدون أي تعديل على
+  `has_archive_access` نفسه) — التمريض بتشوف/تتصفح/تنزّل الملفات زي أي
+  حد عنده أرشيف كامل، لكن من غير رفع/تعديل/حذف (زرارات دي لسه مقصورة على
+  `canUpload()` في الفرونت‌إند و`has_archive_access` في باقي الـ Edge
+  Functions زي الأول تماماً).
+- **طباعة الملفات**: زرار "🖨 طباعة" لكل ملف على حدة + زرار "🖨 طباعة كل
+  الملفات" أعلى قسم الملفات في مودال المريض — بيفتحوا تاب جديد فيه كل
+  ملف (صورة/PDF) في صفحة مستقلة (`page-break-after`) وبينادي
+  `window.print()` تلقائي. مفيش SQL/Edge Function جديدة — بيستخدم
+  `downloadPatientFile` الموجودة بالفعل، بس بيعرض الملف بدل ما ينزّله.
+- بصمة الكاش اترفعت لـ `?v=45` في `index.html` (roles.js/render-patients.js).
+- **لازم**: نشر `patient-files-list` و`patient-files-download` Edge
+  Functions يدوياً على Supabase (مفيش تعديل SQL مطلوب).
