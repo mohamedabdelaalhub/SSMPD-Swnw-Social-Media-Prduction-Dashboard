@@ -141,7 +141,7 @@
           var box = document.getElementById("usage-report-box");
           Promise.all([window.SSMPDDb.listLoginSessions(200), window.SSMPDDb.listUsageActivity(200)])
             .then(function (results) {
-              box.innerHTML = renderUsageReportHtml(results[0] || [], results[1] || []);
+              box.innerHTML = renderUsageReportHtml(results[0] || [], results[1] || [], admins);
             })
             .catch(function (e) { box.innerHTML = '<div class="err-msg">خطأ: ' + e.message + '</div>'; })
             .then(function () { usageBtn.disabled = false; usageBtn.textContent = "تحميل تقرير الاستخدام"; });
@@ -166,8 +166,73 @@
     return Math.floor(mins / 60) + " س " + (mins % 60) + " د";
   }
 
-  function renderUsageReportHtml(sessions, activity) {
-    var html = '<h4 style="margin-bottom:8px;">سجل الجلسات (' + sessions.length + ')</h4>' +
+  // لوحة نشاط الفريق: ملخص ذكي فوق السجلات الخام — الأكثر نشاطاً، مين مبيدخلش
+  // من فترة، ومتوسط وقت الجلسة لكل مستخدم. بيتحسب من نفس البيانات المُحمّلة
+  // بالفعل (200 آخر جلسة/نشاط) — من غير أي نداء إضافي للسيرفر.
+  function sessionDurationMins(s) {
+    var end = s.logout_at || s.last_seen_at;
+    if (!s.login_at || !end) return 0;
+    var mins = (new Date(end) - new Date(s.login_at)) / 60000;
+    return mins > 0 ? mins : 0;
+  }
+
+  function fmtMinsPlain(mins) {
+    mins = Math.round(mins);
+    if (mins < 1) return "أقل من دقيقة";
+    if (mins < 60) return mins + " دقيقة";
+    return Math.floor(mins / 60) + " س " + (mins % 60) + " د";
+  }
+
+  function renderUsageSummaryHtml(admins, sessions, activity) {
+    var byAdmin = {};
+    (admins || []).forEach(function (a) {
+      byAdmin[a.id] = { admin: a, sessionsCount: 0, totalMins: 0, activityCount: 0, lastLoginAt: null };
+    });
+    sessions.forEach(function (s) {
+      var row = byAdmin[s.admin_id];
+      if (!row) return;
+      row.sessionsCount++;
+      row.totalMins += sessionDurationMins(s);
+      if (!row.lastLoginAt || new Date(s.login_at) > new Date(row.lastLoginAt)) row.lastLoginAt = s.login_at;
+    });
+    activity.forEach(function (a) {
+      var row = byAdmin[a.admin_id];
+      if (row) row.activityCount++;
+    });
+
+    var rows = Object.keys(byAdmin).map(function (id) { return byAdmin[id]; })
+      .filter(function (r) { return r.admin.active; });
+
+    var mostActive = rows.slice().sort(function (a, b) { return b.totalMins - a.totalMins; }).filter(function (r) { return r.totalMins > 0; }).slice(0, 5);
+    var neverLoggedIn = rows.filter(function (r) { return !r.lastLoginAt; });
+
+    var html = '<h4 style="margin-bottom:8px;">لوحة نشاط الفريق</h4>';
+    html += '<table class="simple"><thead><tr><th>المستخدم</th><th>عدد الجلسات</th><th>إجمالي وقت الاستخدام</th><th>متوسط الجلسة</th><th>عدد الأنشطة</th><th>آخر دخول</th></tr></thead><tbody>';
+    if (!mostActive.length) {
+      html += '<tr><td colspan="6" style="color:var(--c-muted);">مفيش بيانات كفاية للترتيب — حمّل التقرير الأول.</td></tr>';
+    } else {
+      mostActive.forEach(function (r) {
+        var avg = r.sessionsCount ? r.totalMins / r.sessionsCount : 0;
+        html += '<tr><td>' + escapeHtml(r.admin.name || r.admin.email) + '</td>' +
+          '<td>' + r.sessionsCount + '</td>' +
+          '<td>' + fmtMinsPlain(r.totalMins) + '</td>' +
+          '<td>' + fmtMinsPlain(avg) + '</td>' +
+          '<td>' + r.activityCount + '</td>' +
+          '<td>' + fmtDateTime(r.lastLoginAt) + '</td></tr>';
+      });
+    }
+    html += '</tbody></table>';
+
+    if (neverLoggedIn.length) {
+      html += '<p style="font-size:12px;color:var(--c-muted);margin-top:10px;">مستخدمين مفعّلين بس مسجّلش أي جلسة (ضمن آخر ٢٠٠ جلسة): ' +
+        neverLoggedIn.map(function (r) { return escapeHtml(r.admin.name || r.admin.email); }).join("، ") + '</p>';
+    }
+    return html;
+  }
+
+  function renderUsageReportHtml(sessions, activity, admins) {
+    var html = renderUsageSummaryHtml(admins || [], sessions, activity);
+    html += '<h4 style="margin:16px 0 8px;">سجل الجلسات (' + sessions.length + ')</h4>' +
       '<table class="simple"><thead><tr><th>المستخدم</th><th>وقت الدخول</th><th>وقت الخروج</th><th>المدة</th></tr></thead><tbody>';
     if (!sessions.length) {
       html += '<tr><td colspan="4" style="color:var(--c-muted);">مفيش جلسات مسجّلة.</td></tr>';
