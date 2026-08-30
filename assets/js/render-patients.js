@@ -680,7 +680,7 @@
         function doReview(fileId, decision, notes) {
           window.SSMPDDb.reviewPatientFile({ file_id: fileId, decision: decision, notes: notes || undefined })
             .then(function () {
-              T.show(decision === "approve" ? "اتاعتمد الملف" : "اترفض الملف");
+              T.show(decision === "approve" ? "تم اعتماد الملف" : "تم رفض الملف");
               renderReviewScreen(view, container);
             }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
         }
