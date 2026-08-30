@@ -1832,6 +1832,14 @@ revoke all on function public.create_doctor_referral_lead(uuid, text) from publi
 grant execute on function public.create_doctor_referral_lead(uuid, text) to authenticated;
 
 -- ============================================================
+--  ٢٤) تخصص/قسم طبي لكل مادة محتوى (٢٠٢٦-٠٨-٣٠)
+-- ============================================================
+-- عمود اختياري بس — لتصنيف المحتوى حسب القسم الطبي وعرض إحصائيات الداشبورد
+-- بالتخصص. مفيش check constraint هنا عمداً (القائمة معرّفة في الفرونت‌إند
+-- workflow.js → SPECIALTIES بس، زي ما البراند مقيّد في الواجهة مش في القاعدة).
+alter table public.content_items add column if not exists specialty text;
+
+-- ============================================================
 -- الخطوة أ) Authentication → Users → Add user → Create new user
 --            ضع بريدك وكلمة السر، وفعّل «Auto Confirm User».
 -- الخطوة ب) عدّل البريد والاسم تحت لو مختلفين ثم شغّل السطر:
