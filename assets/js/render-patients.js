@@ -582,7 +582,7 @@
         return '<div style="page-break-after:always;padding:20px;font-family:sans-serif;">تعذّرت معاينة الملف "' + escapeHtml(it.name) + '" — نوعه غير مدعوم للطباعة المباشرة.</div>';
       }).join("");
       win.document.open();
-      win.document.write('<!doctype html><html><head><meta charset="utf-8"><title>طباعة الملفات</title></head><body style="margin:0;">' + body + '</body></html>');
+      win.document.write('<!doctype html><html><head><meta charset="utf-8"><title>طباعة الملفات</title><style>' + PRINT_FONT_FACE_CSS + '</style></head><body style="margin:0;">' + body + '</body></html>');
       win.document.close();
       setTimeout(function () { win.focus(); win.print(); }, 600);
     }).catch(function (e) {
@@ -590,6 +590,15 @@
       win.close();
     });
   }
+
+  // ---------- خط وشعار المركز في صفحات الطباعة — نفس ملفات الهوية البصرية المستخدمة
+  //            في الداشبورد نفسه (مفيش داعي المستخدم يبعتهم، موجودين بالفعل في الريبو)
+  var PRINT_SITE_BASE = "https://mohamedabdelaalhub.github.io/SSMPD-Swnw-Social-Media-Prduction-Dashboard/";
+  var PRINT_LOGO_URL = PRINT_SITE_BASE + "assets/img/logo.svg";
+  var PRINT_FONT_FACE_CSS =
+    "@font-face{font-family:'BigVesta Arabic';src:url('" + PRINT_SITE_BASE + "assets/fonts/BigVesta-Regular.woff2') format('woff2');font-weight:400;}" +
+    "@font-face{font-family:'BigVesta Arabic';src:url('" + PRINT_SITE_BASE + "assets/fonts/BigVesta-Bold.woff2') format('woff2');font-weight:700;}" +
+    "body{font-family:'BigVesta Arabic','Hiragino Kaku',system-ui,Tahoma,sans-serif;}";
 
   // ---------- طباعة بروفايل المريض كامل: صفحة بيانات شخصية/طبية + كل المرفقات كصفحات داخلية ----------
   function buildProfileCoverHtml(patient, profile, visits) {
@@ -601,9 +610,10 @@
     var activeFamily = (profile && Array.isArray(profile.family_history)) ?
       profile.family_history.filter(function (f) { return f.has; }) : [];
 
-    var html = '<div style="page-break-after:always;padding:28px;font-family:sans-serif;direction:rtl;font-size:13px;line-height:1.9;">';
-    html += '<h1 style="font-size:19px;margin-bottom:2px;">مركز عيادات Swnw التخصصية</h1>';
-    html += '<h2 style="font-size:15px;color:#444;margin-top:0;">ملف المريض — ' + escapeHtml(patient.full_name) +
+    var html = '<div style="page-break-after:always;padding:28px;direction:rtl;font-size:13px;line-height:1.9;">';
+    html += '<div style="text-align:center;margin-bottom:10px;"><img src="' + PRINT_LOGO_URL + '" alt="مركز عيادات Swnw" style="height:64px;"></div>';
+    html += '<h1 style="font-size:19px;margin-bottom:2px;text-align:center;">مركز عيادات Swnw التخصصية</h1>';
+    html += '<h2 style="font-size:15px;color:#444;margin-top:0;text-align:center;">ملف المريض — ' + escapeHtml(patient.full_name) +
       ' (' + escapeHtml(patient.patient_code || "") + ')</h2>';
 
     html += '<h3 style="font-size:14px;border-bottom:1px solid #ccc;padding-bottom:4px;">البيانات الشخصية</h3>';
@@ -674,7 +684,7 @@
         return '<div style="page-break-after:always;padding:20px;font-family:sans-serif;">تعذّرت معاينة الملف "' + escapeHtml(it.name) + '" — نوعه غير مدعوم للطباعة المباشرة.</div>';
       }).join("");
       win.document.open();
-      win.document.write('<!doctype html><html><head><meta charset="utf-8"><title>ملف المريض — ' + escapeHtml(patient.full_name) + '</title></head><body style="margin:0;">' + coverHtml + filesBody + '</body></html>');
+      win.document.write('<!doctype html><html><head><meta charset="utf-8"><title>ملف المريض — ' + escapeHtml(patient.full_name) + '</title><style>' + PRINT_FONT_FACE_CSS + '</style></head><body style="margin:0;">' + coverHtml + filesBody + '</body></html>');
       win.document.close();
       setTimeout(function () { win.focus(); win.print(); }, 600);
     }).catch(function (e) {
