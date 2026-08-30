@@ -240,37 +240,24 @@
     setupRealtime();
   }
 
-  // مودال "نسيت كلمة السر؟" — بيبعت لينك استرجاع للإيميل (متاح من شاشة الدخول
-  // من غير ما يحتاج المستخدم يكون داخل أصلاً). الرسالة عامة بتفضل زي ما هي
-  // سواء الإيميل مسجل أو لأ (نفس مبدأ الأمان: مانقولش للمستخدم إيميلات مين
-  // مسجلة عندنا).
+  // مودال "نسيت كلمة السر؟" — بدون أي اعتماد على إيميل Supabase (القرار:
+  // التحكم بالكامل عن طريق السوبر أدمن، مش عن طريق خدمة إيميل خارجية).
+  // بيوضح للموظف إنه يتواصل مع السوبر أدمن، اللي عنده زرار "تغيير كلمة
+  // السر" مباشر لأي مستخدم من لوحة "المستخدمون والصلاحيات" (`?v=35`).
   function openForgotPasswordModal() {
     var backdrop = document.createElement("div");
     backdrop.className = "modal-backdrop";
     backdrop.innerHTML = '<div class="modal" style="max-width:420px;">' +
       '<div class="modal-head"><h3>نسيت كلمة السر؟</h3><button class="modal-close">×</button></div>' +
-      '<p style="font-size:12px;color:var(--c-muted);margin-bottom:10px;">اكتب بريدك الإلكتروني المسجل، وهيوصلك رابط لتغيير كلمة السر.</p>' +
-      '<div class="field"><label>البريد الإلكتروني</label><input id="fp-email" type="email" autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false"></div>' +
-      '<button class="btn block" id="fp-send">إرسال الرابط</button>' +
+      '<p style="font-size:13px;color:var(--c-text);line-height:1.7;">كلمة السر بتتغيّر بس عن طريق السوبر أدمن — تواصل معاه وهيغيّرها لك مباشرة من لوحة التحكم.</p>' +
+      '<button class="btn block" id="fp-ok">تمام</button>' +
       '</div>';
     document.body.appendChild(backdrop);
 
     function close() { backdrop.remove(); }
     backdrop.querySelector(".modal-close").onclick = close;
+    backdrop.querySelector("#fp-ok").onclick = close;
     backdrop.addEventListener("click", function (e) { if (e.target === backdrop) close(); });
-
-    backdrop.querySelector("#fp-send").onclick = function () {
-      var email = document.getElementById("fp-email").value.trim();
-      if (!email) { window.SSMPDToast.show("اكتب البريد الإلكتروني", "error"); return; }
-      window.SSMPDAuth.resetPasswordForEmail(email).then(function () {
-        window.SSMPDToast.show("لو البريد ده مسجل عندنا، هيوصلك رابط تغيير كلمة السر خلال دقايق");
-        close();
-      }).catch(function () {
-        // نفس الرسالة العامة حتى لو حصل خطأ — عشان منكشفش إيميلات مسجلة من عدمها
-        window.SSMPDToast.show("لو البريد ده مسجل عندنا، هيوصلك رابط تغيير كلمة السر خلال دقايق");
-        close();
-      });
-    };
   }
 
   function openChangePasswordModal() {
