@@ -81,6 +81,34 @@
       html += kpiCard("نسبة الإنجاز", completion + "%");
       html += '</div></div>';
 
+      // ---------- المحتوى حسب التخصص ----------
+      var W = window.SSMPDWorkflow;
+      var specialtyCounts = {};
+      items.forEach(function (i) {
+        var key = i.specialty && W.SPECIALTIES[i.specialty] ? i.specialty : "__none__";
+        specialtyCounts[key] = (specialtyCounts[key] || 0) + 1;
+      });
+      var specialtyKeysOrdered = Object.keys(W.SPECIALTIES).filter(function (k) { return specialtyCounts[k]; })
+        .sort(function (a, b) { return specialtyCounts[b] - specialtyCounts[a]; });
+
+      html += '<div class="section"><h3>المحتوى حسب التخصص</h3>';
+      html += '<div class="field" style="max-width:260px;"><label>فلترة المؤشرات بتخصص معيّن</label>' +
+        W.specialtySelectHtml("sm-specialty-filter", "") + '</div>';
+      html += '<div class="kpi-grid" id="sm-specialty-kpis"></div>';
+      if (!specialtyKeysOrdered.length && !specialtyCounts.__none__) {
+        html += '<div class="empty-state">لسه مفيش مواد متصنّفة بتخصص</div>';
+      } else {
+        html += '<table class="simple"><thead><tr><th>التخصص</th><th>عدد المواد</th></tr></thead><tbody>';
+        specialtyKeysOrdered.forEach(function (k) {
+          html += '<tr><td>' + W.SPECIALTIES[k].label + '</td><td>' + specialtyCounts[k] + '</td></tr>';
+        });
+        if (specialtyCounts.__none__) {
+          html += '<tr><td>بدون تخصص</td><td>' + specialtyCounts.__none__ + '</td></tr>';
+        }
+        html += '</tbody></table>';
+      }
+      html += '</div>';
+
       html += '<div class="section"><h3>مؤشرات السوشيال ميديا (آخر تحديث أسبوعي)</h3>';
       if (!current) {
         html += '<div class="empty-state">لسه مفيش بيانات مُدخَلة — مسؤول الاعتماد يقدر يضيفها من هنا لاحقاً.</div>';
@@ -256,6 +284,25 @@
       html += '</div>';
 
       container.innerHTML = html;
+
+      // مؤشرات جودة/نوعية مفلترة بتخصص معيّن — بتتحدّث لحظياً مع تغيير الفلتر من غير إعادة رسم الشاشة كلها
+      function renderSpecialtyKpis(specialty) {
+        var kpisEl = document.getElementById("sm-specialty-kpis");
+        if (!kpisEl) return;
+        var filtered = specialty ? items.filter(function (i) { return i.specialty === specialty; }) : items;
+        var fTotal = filtered.length;
+        var fPlanned = filtered.filter(function (i) { return i.stage === "idea_selection" || i.stage === "initial_approval"; }).length;
+        var fInDesign = filtered.filter(function (i) { return ["in_design", "final_approval", "needs_revision"].indexOf(i.stage) !== -1; }).length;
+        var fPublished = filtered.filter(function (i) { return i.stage === "published"; }).length;
+        var fCompletion = pct(fPublished, fTotal);
+        kpisEl.innerHTML = kpiCard("إجمالي المحتوى" + (specialty ? " (" + W.SPECIALTIES[specialty].label + ")" : ""), fTotal) +
+          kpiCard("مخطط له", fPlanned) + kpiCard("قيد التصميم/الاعتماد", fInDesign) +
+          kpiCard("تم النشر", fPublished) + kpiCard("نسبة الإنجاز", fCompletion + "%");
+      }
+      renderSpecialtyKpis("");
+      var specialtyFilterEl = document.getElementById("sm-specialty-filter");
+      if (specialtyFilterEl) specialtyFilterEl.onchange = function () { renderSpecialtyKpis(specialtyFilterEl.value); };
+
       var btn = document.getElementById("add-week-metrics-btn");
       if (btn) btn.onclick = openMetricsModal;
       var adsBtn = document.getElementById("import-ads-btn");

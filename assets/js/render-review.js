@@ -30,7 +30,7 @@
           colItems.forEach(function (i) {
             var ownerName = (adminsById[i.created_by] || {}).name || "—";
             var designerName = i.assigned_designer ? ((adminsById[i.assigned_designer] || {}).name || "—") : "";
-            html += '<div class="kanban-card" data-id="' + i.id + '"><div class="title">' + escapeHtml(i.title) + W.brandBadgeHtml(i.brand) + C.commentButtonHtml(i.id, stats) + '</div>' +
+            html += '<div class="kanban-card" data-id="' + i.id + '"><div class="title">' + escapeHtml(i.title) + W.brandBadgeHtml(i.brand) + W.specialtyBadgeHtml(i.specialty) + C.commentButtonHtml(i.id, stats) + '</div>' +
               '<div class="meta">بواسطة: ' + escapeHtml(ownerName) + (designerName ? " · مصمم: " + escapeHtml(designerName) : "") + '</div></div>';
           });
           if (!colItems.length) html += '<div style="text-align:center;color:var(--c-muted);font-size:11px;padding:10px 0;">فارغ</div>';
@@ -95,11 +95,12 @@
         '<button class="btn ghost sm" id="rv-reassign-btn">تغيير المصمم</button></div></div>';
     }
 
-    backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>' + escapeHtml(item.title) + W.brandBadgeHtml(item.brand) + '</h3>' +
+    backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>' + escapeHtml(item.title) + W.brandBadgeHtml(item.brand) + W.specialtyBadgeHtml(item.specialty) + '</h3>' +
       '<button class="modal-close">×</button></div>' +
       '<div class="status-pill approval" style="margin-bottom:12px;">' + W.stageLabel(item.stage) + '</div>' +
-      '<div class="field" style="display:flex;align-items:flex-end;gap:8px;max-width:280px;">' +
-      '<div style="flex:1;"><label>المادة دي لصفحة</label>' + W.brandSelectHtml("rv-brand", item.brand || "") + '</div>' +
+      '<div class="field" style="display:flex;align-items:flex-end;gap:8px;max-width:400px;flex-wrap:wrap;">' +
+      '<div style="flex:1;min-width:140px;"><label>المادة دي لصفحة</label>' + W.brandSelectHtml("rv-brand", item.brand || "") + '</div>' +
+      '<div style="flex:1;min-width:140px;"><label>التخصص</label>' + W.specialtySelectHtml("rv-specialty", item.specialty || "") + '</div>' +
       '<button class="btn ghost sm" id="rv-save-brand" style="margin-bottom:1px;">حفظ</button></div>' +
       '<p style="white-space:pre-wrap;">' + escapeHtml(item.body || "") + '</p>' +
       (item.design_file_url ? '<p><a href="' + item.design_file_url + '" target="_blank" class="btn ghost sm">فتح ملف التصميم</a></p>' : '') +
@@ -118,8 +119,9 @@
     // تعديل الصفحة (سونو/د.دينا) في أي وقت من هنا لو حصل غلط عند الإنشاء
     document.getElementById("rv-save-brand").onclick = function () {
       var newBrand = document.getElementById("rv-brand").value;
+      var newSpecialty = document.getElementById("rv-specialty").value;
       if (!newBrand) { alert("اختر المادة دي لصفحة سونو ولا د.دينا"); return; }
-      window.SSMPDDb.updateContentItem(item.id, { brand: newBrand })
+      window.SSMPDDb.updateContentItem(item.id, { brand: newBrand, specialty: newSpecialty || null })
         .then(function () { backdrop.remove(); render(document.getElementById("view-container")); })
         .catch(function (e) { alert("خطأ: " + e.message); });
     };

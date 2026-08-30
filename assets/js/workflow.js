@@ -29,6 +29,31 @@
     dr_dina: { label: "د.دينا" }
   };
 
+  // التخصص/القسم الطبي اللي المادة بتخص — اختياري، لأغراض تصنيف وإحصائيات
+  // الداشبورد بس (مش جزء من سير عمل الاعتماد ولا بيأثر فيه)
+  var SPECIALTIES = {
+    neurology:      { label: "المخ والأعصاب" },
+    internal:       { label: "الباطنة" },
+    orthopedics:    { label: "العظام" },
+    surgery:        { label: "الجراحة" },
+    dermatology:    { label: "الجلدية" },
+    ent:            { label: "الأنف والأذن" },
+    obgyn:          { label: "النساء والتوليد" },
+    psychiatry:     { label: "النفسية والإدمان" },
+    pediatrics:     { label: "الأطفال" },
+    physio_nutrition: { label: "العلاج الطبيعي والتغذية" },
+    oncology:       { label: "الأورام" },
+    cardiology:     { label: "القلب" },
+    vascular:       { label: "الأوعية الدموية" },
+    dental:         { label: "الأسنان" },
+    cosmetic_laser: { label: "التجميل والليزر" },
+    emergency:      { label: "الطوارئ" },
+    radiology:      { label: "أشعة" },
+    lab:            { label: "تحاليل" },
+    nursing_services: { label: "خدمات التمريض" },
+    internal_services: { label: "خدمات داخل المركز" }
+  };
+
   // منصة النشر — تُختار عند النشر (زي ما يُختار البراند تاني في نفس اللحظة)
   var PLATFORMS = {
     facebook:  { label: "فيسبوك" },
@@ -74,6 +99,20 @@
     return '<select id="' + id + '"><option value="">— اختر —</option>' + opts + "</select>";
   }
 
+  // بادچ صغير للتخصص — فاضي لو مفيش تخصص محدد
+  function specialtyBadgeHtml(specialty) {
+    if (!specialty || !SPECIALTIES[specialty]) return "";
+    return '<span class="brand-badge" style="background:var(--c-primary,#0F369D);">' + SPECIALTIES[specialty].label + "</span>";
+  }
+
+  // دروب داون اختيار التخصص — اختياري (فيه "بدون تخصص")
+  function specialtySelectHtml(id, selected) {
+    var opts = Object.keys(SPECIALTIES).map(function (k) {
+      return '<option value="' + k + '"' + (selected === k ? " selected" : "") + '>' + SPECIALTIES[k].label + "</option>";
+    }).join("");
+    return '<select id="' + id + '"><option value="">— بدون تخصص —</option>' + opts + "</select>";
+  }
+
   // دروب داون اختيار منصة النشر
   function platformSelectHtml(id, selected) {
     var opts = Object.keys(PLATFORMS).map(function (k) {
@@ -117,6 +156,7 @@
       '<button class="modal-close">×</button></div>' +
       '<div class="field"><label>العنوان</label><input id="ed-title" value="' + escapeAttr(item.title) + '"></div>' +
       '<div class="field"><label>المادة دي لصفحة</label>' + brandSelectHtml("ed-brand", item.brand || "") + '</div>' +
+      '<div class="field"><label>التخصص</label>' + specialtySelectHtml("ed-specialty", item.specialty || "") + '</div>' +
       '<div class="field"><label>نص المحتوى</label><textarea id="ed-body">' + escapeHtml(item.body || "") + '</textarea></div>' +
       '<div style="text-align:left;margin-top:10px;"><button class="btn" id="ed-save">حفظ التعديلات</button></div></div>';
     document.body.appendChild(backdrop);
@@ -127,9 +167,10 @@
       var title = document.getElementById("ed-title").value.trim();
       var body = document.getElementById("ed-body").value.trim();
       var brand = document.getElementById("ed-brand").value;
+      var specialty = document.getElementById("ed-specialty").value;
       if (!title) { alert("اكتب عنوان"); return; }
       if (!brand) { alert("اختر المادة دي لصفحة سونو ولا د.دينا"); return; }
-      window.SSMPDDb.updateContentItem(item.id, { title: title, body: body, brand: brand })
+      window.SSMPDDb.updateContentItem(item.id, { title: title, body: body, brand: brand, specialty: specialty || null })
         .then(function (updated) {
           backdrop.remove();
           if (onSaved) onSaved(updated);
@@ -167,12 +208,15 @@
     STAGES: STAGES,
     DESIGN_STATUS: DESIGN_STATUS,
     BRANDS: BRANDS,
+    SPECIALTIES: SPECIALTIES,
     PLATFORMS: PLATFORMS,
     stageLabel: stageLabel,
     stageIndex: stageIndex,
     designStatusFor: designStatusFor,
     brandBadgeHtml: brandBadgeHtml,
     brandSelectHtml: brandSelectHtml,
+    specialtyBadgeHtml: specialtyBadgeHtml,
+    specialtySelectHtml: specialtySelectHtml,
     platformSelectHtml: platformSelectHtml,
     canEditItem: canEditItem,
     canDeleteItem: canDeleteItem,
