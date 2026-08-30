@@ -515,6 +515,7 @@
       window.SSMPDDb.insertAdCampaigns(parsedRows.map(function (r) {
         return Object.assign({}, r, { imported_by: me.id, report_batch_id: batchId });
       })).then(function () {
+        window.SSMPDDb.logUsageActivity(me.id, "استيراد تقرير حملات إعلانات", parsedRows.length + " حملة (Meta Ads)").catch(function () {});
         backdrop.remove();
         render(document.getElementById("view-container"));
       }).catch(function (e) { alert("خطأ: " + e.message); saveBtn.disabled = false; });
@@ -574,6 +575,7 @@
         new_followers: Number(document.getElementById("wm-followers").value) || 0,
         entered_by: me.id
       }).then(function () {
+        window.SSMPDDb.logUsageActivity(me.id, "إدخال/رفع بيانات أسبوع", document.getElementById("wm-week").value).catch(function () {});
         backdrop.remove();
         render(document.getElementById("view-container"));
       }).catch(function (e) { alert("خطأ: " + e.message); });

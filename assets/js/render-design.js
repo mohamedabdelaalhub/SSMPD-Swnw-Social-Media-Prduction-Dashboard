@@ -166,6 +166,7 @@
           stage: newStage
         }).then(function (updated) {
           window.SSMPDDrive.logDesignUploaded(item.id, updated.title).catch(function () {});
+          window.SSMPDDb.logUsageActivity(me.id, "رفع تصميم", file.name + " — " + item.title).catch(function () {});
           return window.SSMPDDb.logActivity({ content_id: item.id, actor_id: me.id, action: "رفع تصميم", from_stage: item.stage, to_stage: newStage });
         });
       }).then(function () {

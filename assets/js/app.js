@@ -8,6 +8,8 @@
   var commentsChannel = null;
   var leadsChannel = null;
   var pollTimer = null;
+  var usageSessionId = null;
+  var usageHeartbeatTimer = null;
 
   var RENDERERS = {
     summary: window.SSMPDRenderSummary,
@@ -105,11 +107,26 @@
       window.SSMPDAuth.currentUser = session.user;
       return window.SSMPDAuth.loadCurrentAdmin(session.user.id, session.user.email).then(function () {
         renderShell();
+        startUsageSession();
       });
     }).catch(function (err) {
       window.SSMPDAuth.signOut();
       showAuthScreen("login", translateAuthError(err));
     });
+  }
+
+  // ---------- تقرير الاستخدام: جلسة واحدة = من تحميل الداشبورد لحد الخروج/آخر نبضة ----------
+  // (تقرير الاستخدام نفسه بيتعرض في لوحة التحكم — render-admin.js)
+  function startUsageSession() {
+    var admin = window.SSMPDAuth.currentAdmin;
+    if (!admin || !admin.id) return;
+    window.SSMPDDb.startLoginSession(admin.id).then(function (row) {
+      usageSessionId = row.id;
+      if (usageHeartbeatTimer) clearInterval(usageHeartbeatTimer);
+      usageHeartbeatTimer = setInterval(function () {
+        if (usageSessionId) window.SSMPDDb.touchLoginSession(usageSessionId).catch(function () {});
+      }, 120000);
+    }).catch(function () {});
   }
 
   var ACTIVE_TAB_KEY = "ssmpd_active_tab";
@@ -171,7 +188,9 @@
 
     function doLogout() {
       try { sessionStorage.removeItem(ACTIVE_TAB_KEY); } catch (e) {}
-      window.SSMPDAuth.signOut().then(function () { location.reload(); });
+      if (usageHeartbeatTimer) { clearInterval(usageHeartbeatTimer); usageHeartbeatTimer = null; }
+      var finish = function () { window.SSMPDAuth.signOut().then(function () { location.reload(); }); };
+      if (usageSessionId) { window.SSMPDDb.endLoginSession(usageSessionId).then(finish, finish); } else { finish(); }
     }
     document.getElementById("logout-btn").onclick = doLogout;
     document.getElementById("logout-btn-mobile").onclick = doLogout;

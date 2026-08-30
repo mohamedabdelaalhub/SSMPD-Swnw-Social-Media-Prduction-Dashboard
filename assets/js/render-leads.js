@@ -752,6 +752,8 @@
         var btn = document.getElementById("bk-submit");
         btn.disabled = true; btn.textContent = "بيرفع…";
         window.SSMPDDb.bulkCreateLeads(rows).then(function (res) {
+          var meBulk = window.SSMPDAuth.currentAdmin;
+          window.SSMPDDb.logUsageActivity(meBulk.id, "رفع إكسيل ليدز جماعي", state.bulk.fileName + " (" + fmtNum(res.created_count) + " ليد)").catch(function () {});
           state.bulk.result = res;
           var resBox = document.getElementById("bk-result");
           var html3 = '<div class="section"><h3>النتيجة</h3>' +
@@ -963,6 +965,7 @@
           fd.append("file", file);
           statusEl.textContent = "بيرفع…";
           window.SSMPDDb.uploadLeadInvoice(fd).then(function () {
+            window.SSMPDDb.logUsageActivity(window.SSMPDAuth.currentAdmin.id, "رفع فاتورة حجز", (lead.customer_name || "") + (serviceName ? " — " + serviceName : "")).catch(function () {});
             T.show("اترفعت الفاتورة");
             reload();
           }).catch(function (e) { statusEl.textContent = "خطأ: " + e.message; });

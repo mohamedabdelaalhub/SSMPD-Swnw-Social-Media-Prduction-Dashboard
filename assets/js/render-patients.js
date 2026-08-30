@@ -283,6 +283,7 @@
         fd.append("file", file);
         statusEl.textContent = "بيرفع…";
         window.SSMPDDb.uploadPatientFile(fd).then(function () {
+          if (me) window.SSMPDDb.logUsageActivity(me.id, "رفع مستند مريض", file.name + " (" + categoryLabel(category) + ")").catch(function () {});
           T.show("اترفع الملف بنجاح، وهيبقى قيد المراجعة لحد ما مسؤول تاني يعتمده");
           wrap.innerHTML = "";
           renderUploadForm(wrap, patient);
@@ -1231,6 +1232,7 @@
         statusEl.textContent = "بيرفع…";
         btn.disabled = true;
         window.SSMPDDb.uploadPatientFile(fd).then(function () {
+          if (me) window.SSMPDDb.logUsageActivity(me.id, "رفع مستند مريض", file.name + " (" + categoryLabel(catKey) + ")").catch(function () {});
           T.show("اترفع الملف بنجاح، وهيبقى قيد المراجعة لحد ما مسؤول تاني يعتمده");
           window.SSMPDDb.getPatientFiles(patient.id).then(function (res) {
             renderPatientModal(backdrop, view, container, res.patient, res.files || []);

@@ -142,6 +142,26 @@
     adminSetUserPassword: function (adminId, newPassword) {
       return edgeFetch("admin-set-password", { method: "POST", json: { admin_id: adminId, new_password: newPassword } });
     },
+    // ---------- تقرير الاستخدام: جلسات + أنشطة مهمة (رفع/إنشاء) ----------
+    startLoginSession: function (adminId) {
+      return handle(client.from("login_sessions").insert({ admin_id: adminId }).select("id").single());
+    },
+    touchLoginSession: function (sessionId) {
+      return handle(client.from("login_sessions").update({ last_seen_at: new Date().toISOString() }).eq("id", sessionId));
+    },
+    endLoginSession: function (sessionId) {
+      var now = new Date().toISOString();
+      return handle(client.from("login_sessions").update({ logout_at: now, last_seen_at: now }).eq("id", sessionId));
+    },
+    logUsageActivity: function (adminId, actionType, reportName) {
+      return handle(client.from("usage_activity_log").insert({ admin_id: adminId, action_type: actionType, report_name: reportName || null }));
+    },
+    listLoginSessions: function (limit) {
+      return handle(client.from("login_sessions").select("id, admin_id, login_at, last_seen_at, logout_at, admins(name)").order("login_at", { ascending: false }).limit(limit || 200));
+    },
+    listUsageActivity: function (limit) {
+      return handle(client.from("usage_activity_log").select("id, admin_id, action_type, report_name, created_at, admins(name)").order("created_at", { ascending: false }).limit(limit || 200));
+    },
     // ---------- تعدد الأدوار (admin_extra_roles) ----------
     listAdminExtraRoles: function (adminId) {
       return handle(client.from("admin_extra_roles").select("*").eq("admin_id", adminId));

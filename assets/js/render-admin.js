@@ -54,6 +54,11 @@
         '<p style="font-size:11px;color:var(--c-muted);margin-top:4px;">"معاينة الأرشيف فقط" لمين محتاج يتصفح ملفات المرضى بس (مثال: طبيب سونو) — بيقدر يشوف ويفتح الملفات، من غير رفع أو حذف أو مراجعة.</p>' +
         '<p style="font-size:11px;color:var(--c-muted);margin-top:4px;">"حذف الليدز" صلاحية حذف نهائي لأي ليد من موديول إدارة الليدز — متاحة تلقائياً للسوبر أدمن، وممكن تتفعّل لأي مستخدم تاني هنا.</p></div>';
 
+      html += '<div class="section"><h3>تقرير الاستخدام</h3>' +
+        '<p style="font-size:11px;color:var(--c-muted);margin-bottom:8px;">كل مرة حد بيفتح الداشبورد بيتسجّل كجلسة (وقت الدخول/الخروج والمدة)، وكل عملية رفع/إنشاء مهمة (تصميم، مادة محتوى، مستند مريض، تقرير مؤشرات/إعلانات، إكسيل ليدز، فاتورة حجز) بتتسجّل باسمها في سجل الأنشطة.</p>' +
+        '<button class="btn ghost sm" id="usage-load-btn">تحميل تقرير الاستخدام</button>' +
+        '<div id="usage-report-box" style="margin-top:12px;"></div></div>';
+
       container.innerHTML = html;
 
       document.getElementById("add-admin-btn").onclick = function () {
@@ -128,9 +133,69 @@
             });
         };
       });
+      var usageBtn = document.getElementById("usage-load-btn");
+      if (usageBtn) {
+        usageBtn.onclick = function () {
+          usageBtn.disabled = true;
+          usageBtn.textContent = "بيحمّل…";
+          var box = document.getElementById("usage-report-box");
+          Promise.all([window.SSMPDDb.listLoginSessions(200), window.SSMPDDb.listUsageActivity(200)])
+            .then(function (results) {
+              box.innerHTML = renderUsageReportHtml(results[0] || [], results[1] || []);
+            })
+            .catch(function (e) { box.innerHTML = '<div class="err-msg">خطأ: ' + e.message + '</div>'; })
+            .then(function () { usageBtn.disabled = false; usageBtn.textContent = "تحميل تقرير الاستخدام"; });
+        };
+      }
     }).catch(function (e) {
       container.innerHTML = '<div class="err-msg">خطأ: ' + e.message + '</div>';
     });
+  }
+
+  function fmtDateTime(iso) {
+    if (!iso) return "—";
+    var d = new Date(iso);
+    return d.toLocaleDateString("ar-EG") + " " + d.toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" });
+  }
+
+  function fmtDurationMins(startIso, endIso) {
+    if (!startIso || !endIso) return "—";
+    var mins = Math.round((new Date(endIso) - new Date(startIso)) / 60000);
+    if (mins < 1) return "أقل من دقيقة";
+    if (mins < 60) return mins + " دقيقة";
+    return Math.floor(mins / 60) + " س " + (mins % 60) + " د";
+  }
+
+  function renderUsageReportHtml(sessions, activity) {
+    var html = '<h4 style="margin-bottom:8px;">سجل الجلسات (' + sessions.length + ')</h4>' +
+      '<table class="simple"><thead><tr><th>المستخدم</th><th>وقت الدخول</th><th>وقت الخروج</th><th>المدة</th></tr></thead><tbody>';
+    if (!sessions.length) {
+      html += '<tr><td colspan="4" style="color:var(--c-muted);">مفيش جلسات مسجّلة.</td></tr>';
+    } else {
+      sessions.forEach(function (s) {
+        var endRef = s.logout_at || s.last_seen_at;
+        html += '<tr><td>' + escapeHtml((s.admins && s.admins.name) || "—") + '</td>' +
+          '<td>' + fmtDateTime(s.login_at) + '</td>' +
+          '<td>' + (s.logout_at ? fmtDateTime(s.logout_at) : '<span style="color:var(--c-muted);">جلسة مفتوحة</span>') + '</td>' +
+          '<td>' + fmtDurationMins(s.login_at, endRef) + '</td></tr>';
+      });
+    }
+    html += '</tbody></table>';
+
+    html += '<h4 style="margin:16px 0 8px;">سجل الأنشطة المهمة (' + activity.length + ')</h4>' +
+      '<table class="simple"><thead><tr><th>المستخدم</th><th>النشاط</th><th>اسم التقرير/الملف</th><th>الوقت</th></tr></thead><tbody>';
+    if (!activity.length) {
+      html += '<tr><td colspan="4" style="color:var(--c-muted);">مفيش أنشطة مسجّلة.</td></tr>';
+    } else {
+      activity.forEach(function (a) {
+        html += '<tr><td>' + escapeHtml((a.admins && a.admins.name) || "—") + '</td>' +
+          '<td>' + escapeHtml(a.action_type) + '</td>' +
+          '<td>' + escapeHtml(a.report_name || "—") + '</td>' +
+          '<td>' + fmtDateTime(a.created_at) + '</td></tr>';
+      });
+    }
+    html += '</tbody></table>';
+    return html;
   }
 
   // مودال السوبر أدمن لتغيير كلمة سر مستخدم تاني مباشرة (بدون معرفة كلمة سره
