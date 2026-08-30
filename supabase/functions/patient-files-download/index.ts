@@ -44,6 +44,10 @@ function isSuperAdmin(caller: { role: string; extra_roles?: string[] }): boolean
   return caller.role === "super_admin" || (caller.extra_roles ?? []).includes("super_admin");
 }
 
+function isNursing(caller: { role: string; extra_roles?: string[] }): boolean {
+  return caller.role === "nursing" || (caller.extra_roles ?? []).includes("nursing");
+}
+
 function base64url(input: Uint8Array | string): string {
   const bytes = typeof input === "string" ? new TextEncoder().encode(input) : input;
   let str = "";
@@ -110,7 +114,7 @@ Deno.serve(async (req) => {
   // بس مش يفتح الملف نفسه، لأن الدالة دي ماكانتش بتفحص الصلاحية دي خالص)
   const canReviewOrFull = caller.has_archive_access || caller.has_archive_review_access || isSuperAdmin(caller);
   const doctorOnly = caller.has_archive_view_only && !canReviewOrFull;
-  const allowed = canReviewOrFull || caller.has_archive_view_only;
+  const allowed = canReviewOrFull || caller.has_archive_view_only || isNursing(caller);
   if (!allowed) return json({ error: "مفيش صلاحية أرشيف المرضى" }, 403);
 
   const url = new URL(req.url);
