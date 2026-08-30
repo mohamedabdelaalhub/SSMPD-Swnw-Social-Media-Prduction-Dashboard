@@ -68,7 +68,8 @@
     canSeeTab: function (adminOrRole, tab) {
       var admin = normalizeAdmin(adminOrRole);
       if (tab === "patients") {
-        return !!admin.has_archive_access || !!admin.has_archive_view_only || Roles.hasRole(admin, "super_admin");
+        return !!admin.has_archive_access || !!admin.has_archive_view_only ||
+          Roles.hasRole(admin, "super_admin") || Roles.hasRole(admin, "nursing");
       }
       var list = TAB_ACCESS[tab];
       return !!list && Roles.hasAnyRole(admin, list);

@@ -560,6 +560,37 @@
     };
   }
 
+  // ---------- طباعة ملف/ملفات المريض دفعة واحدة (نافذة معاينة بتفتح مربع طباعة المتصفح تلقائي) ----------
+  function printPatientFiles(fileList) {
+    fileList = fileList || [];
+    if (!fileList.length) { T.show("مفيش ملفات للطباعة", "error"); return; }
+    var win = window.open("", "_blank");
+    if (!win) { T.show("المتصفح منع فتح نافذة الطباعة — سمح بالنوافذ المنبثقة وحاول تاني", "error"); return; }
+    win.document.write('<p style="font-family:sans-serif;padding:20px;">بيجهّز الملفات للطباعة…</p>');
+    Promise.all(fileList.map(function (f) {
+      return window.SSMPDDb.downloadPatientFile(f.id).then(function (res) {
+        return { name: f.file_name, url: URL.createObjectURL(res.blob), type: res.blob.type || "" };
+      });
+    })).then(function (items) {
+      var body = items.map(function (it) {
+        if (it.type === "application/pdf") {
+          return '<div style="page-break-after:always;"><embed src="' + it.url + '" type="application/pdf" style="width:100%;height:96vh;"></div>';
+        }
+        if (it.type.indexOf("image/") === 0) {
+          return '<div style="page-break-after:always;text-align:center;padding:10px;"><img src="' + it.url + '" style="max-width:100%;"></div>';
+        }
+        return '<div style="page-break-after:always;padding:20px;font-family:sans-serif;">تعذّرت معاينة الملف "' + escapeHtml(it.name) + '" — نوعه غير مدعوم للطباعة المباشرة.</div>';
+      }).join("");
+      win.document.open();
+      win.document.write('<!doctype html><html><head><meta charset="utf-8"><title>طباعة الملفات</title></head><body style="margin:0;">' + body + '</body></html>');
+      win.document.close();
+      setTimeout(function () { win.focus(); win.print(); }, 600);
+    }).catch(function (e) {
+      T.show("خطأ: " + e.message, "error");
+      win.close();
+    });
+  }
+
   // ---------- عرض تفاصيل زيارة (قراءة فقط) ----------
   function openViewVisitModal(v) {
     var plan = [v.medications ? 'الأدوية: ' + v.medications : '', v.xrays ? 'الأشعة: ' + v.xrays : '', v.labs ? 'التحاليل: ' + v.labs : '', v.other_recommendations ? 'توصيات أخرى: ' + v.other_recommendations : '']
@@ -940,6 +971,11 @@
     }
     html += '</div>';
 
+    html += '<div class="section" style="padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
+      '<b style="font-size:13px;">كل الملفات المرفوعة (' + files.length + ')</b>' +
+      (files.length ? '<button class="btn ghost sm" data-print-all="1">🖨 طباعة كل الملفات</button>' : '') +
+      '</div>';
+
     CATEGORIES.forEach(function (c) {
       var list = byCategory[c.key] || [];
       html += '<div class="section" style="padding:12px 14px;">' +
@@ -966,6 +1002,7 @@
             (f.reviewed_by_name ? ' · راجعه: ' + escapeHtml(f.reviewed_by_name) : '') + '</span></div>' +
             '<div style="display:flex;gap:6px;flex-shrink:0;">' +
             '<button class="btn ghost sm" data-dl="' + f.id + '">تنزيل</button>' +
+            '<button class="btn ghost sm" data-print-file="' + f.id + '">🖨 طباعة</button>' +
             (canUp ? '<button class="btn danger sm" data-del-file="' + f.id + '">حذف</button>' : '') + '</div></div>';
         });
       }
@@ -1058,6 +1095,18 @@
           btn.disabled = false;
           fileInput.value = "";
         });
+      };
+    });
+
+    var printAllBtn = backdrop.querySelector("[data-print-all]");
+    if (printAllBtn) {
+      printAllBtn.onclick = function () { printPatientFiles(files); };
+    }
+    backdrop.querySelectorAll("[data-print-file]").forEach(function (btn) {
+      btn.onclick = function () {
+        var fileId = btn.getAttribute("data-print-file");
+        var f = files.filter(function (x) { return String(x.id) === fileId; })[0];
+        if (f) printPatientFiles([f]);
       };
     });
 
