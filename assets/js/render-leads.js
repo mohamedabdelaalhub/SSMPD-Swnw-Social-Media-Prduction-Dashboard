@@ -509,7 +509,8 @@
         '<select id="ar-employee"><option value="">كل الموظفين (آخر رد)</option>' +
         state.employees.map(function (e) { return '<option value="' + e.id + '" ' + (s.bookedBy === e.id ? "selected" : "") + '>' + escapeHtml(e.name) + '</option>'; }).join("") +
         '</select>' +
-        '<button class="btn ghost sm" id="ar-search-btn">بحث</button></div>';
+        '<button class="btn ghost sm" id="ar-search-btn">بحث</button>' +
+        '<button class="btn ghost sm" id="ar-export-xlsx">⬇ تصدير إكسيل (' + total + ')</button></div>';
 
       if (!leads.length) {
         html += '<p style="color:var(--c-muted);font-size:13px;">مفيش ليدز مطابقة.</p>';
@@ -539,7 +540,39 @@
       view.querySelectorAll("[data-open]").forEach(function (btn) {
         btn.onclick = function () { openLeadModal(view, container, btn.getAttribute("data-open"), function () { renderArchiveScreen(view, container); }); };
       });
+      var exportBtn = document.getElementById("ar-export-xlsx");
+      if (exportBtn) exportBtn.onclick = function () {
+        exportBtn.disabled = true; exportBtn.textContent = "بيجهّز…";
+        exportLeadsArchiveExcel({ status: s.status || undefined, search: s.search || undefined, assigned_to: s.bookedBy || undefined }, total)
+          .then(function () { exportBtn.disabled = false; exportBtn.textContent = "⬇ تصدير إكسيل (" + total + ")"; })
+          .catch(function (e) { T.show("خطأ: " + e.message, "error"); exportBtn.disabled = false; exportBtn.textContent = "⬇ تصدير إكسيل (" + total + ")"; });
+      };
     }).catch(function (e) { view.innerHTML = '<div class="err-msg">خطأ: ' + e.message + '</div>'; });
+  }
+
+  // ---------- تصدير كل الليدز المطابقة لفلتر أرشيف الليدز (بيدور على كل الصفحات، ٥٠ في المرة) ----------
+  function exportLeadsArchiveExcel(filters, total) {
+    if (typeof XLSX === "undefined") { T.show("مكتبة الإكسيل لسه مش متحمّلة — جرب ريفريش للصفحة", "error"); return Promise.reject(new Error("XLSX غير متاحة")); }
+    var pageSize = 50;
+    var totalPages = Math.max(1, Math.ceil((total || 0) / pageSize));
+    var pagePromises = [];
+    for (var p = 1; p <= totalPages; p++) {
+      pagePromises.push(window.SSMPDDb.listLeads(Object.assign({}, filters, { page: p, page_size: pageSize })));
+    }
+    return Promise.all(pagePromises).then(function (results) {
+      var allLeads = [];
+      results.forEach(function (r) { allLeads = allLeads.concat(r.leads || []); });
+      var rows = [["العميل", "الهاتف", "المصدر", "الحالة", "تاريخ الإضافة", "رقم الحجز"]];
+      allLeads.forEach(function (l) {
+        rows.push([
+          l.customer_name, l.phone_raw || l.phone_normalized || "", (SOURCE_LABELS[l.source] || l.source),
+          (STATUS_LABELS[l.current_status] || l.current_status), fmtDate(l.created_at), l.booking_reference || ""
+        ]);
+      });
+      var wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), "أرشيف الليدز");
+      XLSX.writeFile(wb, "أرشيف_الليدز_" + new Date().toISOString().slice(0, 10) + ".xlsx");
+    });
   }
 
   // ============ تحويلات الأطباء (نفس تصميم أرشيف الليدز، مفلترة على
