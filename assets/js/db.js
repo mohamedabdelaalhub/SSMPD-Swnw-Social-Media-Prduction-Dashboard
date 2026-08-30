@@ -263,6 +263,11 @@
     updatePatientVisit: function (visitId, patch) {
       return handle(client.from("patient_visits").update(patch).eq("id", visitId).select().single());
     },
+    // تحويل مريض لطبيب آخر (من داخل فورم الزيارة) → بيعمل ليد جديد بمصدر
+    // "تحويل من طبيب العيادة" عشان الريسبشن/خدمة العملاء يحجزوا معاد جديد
+    createDoctorReferralLead: function (patientId, doctorName) {
+      return handle(client.rpc("create_doctor_referral_lead", { p_patient_id: patientId, p_doctor_name: doctorName }));
+    },
     deletePatientVisit: function (visitId) {
       return handle(client.from("patient_visits").delete().eq("id", visitId));
     },

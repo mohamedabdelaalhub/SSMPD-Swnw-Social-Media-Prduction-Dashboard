@@ -22,7 +22,7 @@
   // في lead-invoice-upload Edge Function)
   var INVOICE_ALLOWED_STATUSES = ["booked", "booked_on_system", "service_done"];
   // طلب الفريق: إضافة "تليفون"/"عيادة" كمصدر استلام ليد بجانب واتساب/ماسنجر
-  var SOURCE_LABELS = { whatsapp: "واتساب", messenger: "ماسنجر", phone: "تليفون", clinic: "عيادة" };
+  var SOURCE_LABELS = { whatsapp: "واتساب", messenger: "ماسنجر", phone: "تليفون", clinic: "عيادة", doctor_referral: "تحويل من طبيب العيادة" };
   // تصنيف مصدر اهتمام الليد: طبيعي (وصل من نفسه) مقابل إعلان مدفوع — مختلف عن
   // "source" (قناة التواصل واتساب/ماسنجر/تليفون/عيادة)، وطلب الفريق عرضه بشكل
   // واضح بالداشبورد. ("طبيعي" هو المصطلح التسويقي الصحيح المقابل لـ organic)
@@ -67,6 +67,7 @@
     { key: "dashboard", label: "داشبورد الإدارة" },
     { key: "booked", label: "الحجوزات الفعلية" },
     { key: "archive", label: "أرشيف الليدز" },
+    { key: "referrals", label: "تحويلات الأطباء" },
     { key: "missing_data", label: "عملاء ناقصين بيانات" },
     { key: "bulk", label: "رفع ملف إكسيل" }
   ];
@@ -76,6 +77,7 @@
     employees: [], employeesLoaded: false,
     cs: { status: "", search: "", openOnly: false, page: 1, pageSize: 20 },
     archive: { status: "", search: "", bookedBy: "", page: 1, pageSize: 20 },
+    referrals: { status: "", search: "", bookedBy: "", page: 1, pageSize: 20 },
     booked: { search: "", bookedBy: "", page: 1, pageSize: 20 },
     bulk: { rows: [], fileName: "", result: null },
     dashboard: { from: "", to: "" }
@@ -136,6 +138,7 @@
       else if (state.subTab === "dashboard") renderDashboardScreen(subView, container);
       else if (state.subTab === "booked") renderBookedScreen(subView, container);
       else if (state.subTab === "archive") renderArchiveScreen(subView, container);
+      else if (state.subTab === "referrals") renderReferralsScreen(subView, container);
       else if (state.subTab === "missing_data") renderMissingDataScreen(subView, container);
       else renderBulkScreen(subView, container);
     });
@@ -146,7 +149,7 @@
     return '<div class="field"><label>اسم العميل</label><input id="nl-name"></div>' +
       '<div class="field"><label>رقم الهاتف</label><input id="nl-phone" placeholder="01xxxxxxxxx"></div>' +
       '<div class="field"><label>المصدر</label><select id="nl-source">' +
-      Object.keys(SOURCE_LABELS).map(function (k) { return '<option value="' + k + '">' + SOURCE_LABELS[k] + '</option>'; }).join("") + '</select></div>' +
+      Object.keys(SOURCE_LABELS).filter(function (k) { return k !== "doctor_referral"; }).map(function (k) { return '<option value="' + k + '">' + SOURCE_LABELS[k] + '</option>'; }).join("") + '</select></div>' +
       '<div class="field"><label>نص الرسالة (اختياري)</label><textarea id="nl-message" rows="2"></textarea></div>' +
       '<div class="field"><label>الخدمة المهتم بيها (اختياري)</label><select id="nl-service"><option value="">— بدون —</option>' +
       Object.keys(SERVICE_LABELS).map(function (k) { return '<option value="' + k + '">' + SERVICE_LABELS[k] + '</option>'; }).join("") + '</select></div>' +
@@ -464,6 +467,60 @@
       wirePager(view, "ar", s, totalPages, function () { renderArchiveScreen(view, container); });
       view.querySelectorAll("[data-open]").forEach(function (btn) {
         btn.onclick = function () { openLeadModal(view, container, btn.getAttribute("data-open"), function () { renderArchiveScreen(view, container); }); };
+      });
+    }).catch(function (e) { view.innerHTML = '<div class="err-msg">خطأ: ' + e.message + '</div>'; });
+  }
+
+  // ============ تحويلات الأطباء (نفس تصميم أرشيف الليدز، مفلترة على
+  //              مصدر "تحويل من طبيب العيادة" بس) ============
+  function renderReferralsScreen(view, container) {
+    view.innerHTML = '<div class="loading">بيحمّل…</div>';
+    var s = state.referrals;
+    window.SSMPDDb.listLeads({
+      status: s.status || undefined, search: s.search || undefined, source: "doctor_referral",
+      assigned_to: s.bookedBy || undefined, page: s.page, page_size: s.pageSize
+    }).then(function (res) {
+      var leads = res.leads || [];
+      var total = res.total || 0;
+      var totalPages = Math.max(1, Math.ceil(total / s.pageSize));
+
+      var html = '<div class="section">';
+      html += '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">' +
+        '<input id="rf-search" placeholder="بحث بالاسم / الهاتف" value="' + escapeHtml(s.search) + '" style="flex:1;min-width:200px;padding:9px 12px;border-radius:10px;border:1px solid var(--c-border);">' +
+        '<select id="rf-status"><option value="">كل الحالات</option>' +
+        Object.keys(STATUS_LABELS).map(function (k) { return '<option value="' + k + '" ' + (s.status === k ? "selected" : "") + '>' + STATUS_LABELS[k] + '</option>'; }).join("") +
+        '</select>' +
+        '<select id="rf-employee"><option value="">كل الموظفين (آخر رد)</option>' +
+        state.employees.map(function (e) { return '<option value="' + e.id + '" ' + (s.bookedBy === e.id ? "selected" : "") + '>' + escapeHtml(e.name) + '</option>'; }).join("") +
+        '</select>' +
+        '<button class="btn ghost sm" id="rf-search-btn">بحث</button></div>';
+
+      if (!leads.length) {
+        html += '<p style="color:var(--c-muted);font-size:13px;">مفيش تحويلات مطابقة.</p>';
+      } else {
+        html += '<table class="simple"><thead><tr><th>العميل</th><th>الهاتف</th><th>الحالة</th><th>تاريخ التحويل</th><th></th></tr></thead><tbody>';
+        leads.forEach(function (l) {
+          html += '<tr><td>' + escapeHtml(l.customer_name) + '</td><td>' + escapeHtml(l.phone_raw || l.phone_normalized || "—") + '</td>' +
+            '<td><span class="status-pill ' + (STATUS_PILL_CLASS[l.current_status] || "draft") + '">' + (STATUS_LABELS[l.current_status] || l.current_status) + '</span></td>' +
+            '<td style="font-size:11px;color:var(--c-muted);">' + fmtDate(l.created_at) + '</td>' +
+            '<td><button class="btn ghost sm" data-open="' + l.id + '">فتح</button></td></tr>';
+        });
+        html += '</tbody></table>';
+        html += pagerHtml("rf", s.page, totalPages, total, "تحويلة");
+      }
+      html += '</div>';
+      view.innerHTML = html;
+
+      document.getElementById("rf-search-btn").onclick = function () {
+        s.search = document.getElementById("rf-search").value.trim();
+        s.status = document.getElementById("rf-status").value;
+        s.bookedBy = document.getElementById("rf-employee").value;
+        s.page = 1; renderReferralsScreen(view, container);
+      };
+      document.getElementById("rf-search").onkeydown = function (e) { if (e.key === "Enter") document.getElementById("rf-search-btn").click(); };
+      wirePager(view, "rf", s, totalPages, function () { renderReferralsScreen(view, container); });
+      view.querySelectorAll("[data-open]").forEach(function (btn) {
+        btn.onclick = function () { openLeadModal(view, container, btn.getAttribute("data-open"), function () { renderReferralsScreen(view, container); }); };
       });
     }).catch(function (e) { view.innerHTML = '<div class="err-msg">خطأ: ' + e.message + '</div>'; });
   }

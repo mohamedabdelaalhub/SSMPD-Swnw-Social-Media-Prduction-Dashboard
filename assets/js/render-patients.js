@@ -505,12 +505,22 @@
       '<div class="field"><label>التحاليل</label><input id="vs-labs" value="' + escapeHtml(v.labs || '') + '"></div>' +
       '<div class="field"><label>توصيات أخرى</label><input id="vs-other" value="' + escapeHtml(v.other_recommendations || '') + '"></div>' +
       '<div class="field"><label>تاريخ المتابعة</label><input id="vs-followup" type="date" value="' + (v.follow_up_date || '') + '"></div>' +
+      '<div class="field" style="border-top:1px solid var(--c-border);padding-top:10px;">' +
+      '<label style="display:flex;align-items:center;gap:8px;font-weight:normal;"><input type="checkbox" id="vs-referred" ' + (v.referred_to_other_doctor ? "checked" : "") + '> محوّل لطبيب آخر</label>' +
+      '<input id="vs-referred-doctor" placeholder="اسم الطبيب المحوّل له" value="' + escapeHtml(v.referred_doctor_name || '') + '" style="margin-top:8px;' + (v.referred_to_other_doctor ? "" : "display:none;") + '"></div>' +
       '<button class="btn block" id="vs-save">حفظ</button></div>';
     document.body.appendChild(backdrop);
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
     backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
 
+    var referredBox = document.getElementById("vs-referred");
+    var referredDoctorInput = document.getElementById("vs-referred-doctor");
+    referredBox.onchange = function () { referredDoctorInput.style.display = referredBox.checked ? "" : "none"; };
+
     document.getElementById("vs-save").onclick = function () {
+      var referred = referredBox.checked;
+      var referredDoctorName = referredDoctorInput.value.trim();
+      if (referred && !referredDoctorName) { T.show("اكتب اسم الطبيب المحوّل له", "error"); return; }
       var patch = {
         visit_date: document.getElementById("vs-date").value || new Date().toISOString().slice(0, 10),
         visit_number: document.getElementById("vs-number").value.trim() || null,
@@ -522,13 +532,28 @@
         xrays: document.getElementById("vs-xrays").value.trim() || null,
         labs: document.getElementById("vs-labs").value.trim() || null,
         other_recommendations: document.getElementById("vs-other").value.trim() || null,
-        follow_up_date: document.getElementById("vs-followup").value || null
+        follow_up_date: document.getElementById("vs-followup").value || null,
+        referred_to_other_doctor: referred,
+        referred_doctor_name: referred ? referredDoctorName : null
       };
+      // لو "محوّل لطبيب آخر" اتفعّل جديد في الزيارة دي (مكانش مفعّل قبل كده) —
+      // بنعمل ليد جديد بمصدر "تحويل من طبيب العيادة" عشان الريسبشن/خدمة
+      // العملاء يحجزوا معاد جديد. لو الزيارة كانت أصلاً محوّلة (تعديل)، مش
+      // بنكرر إنشاء الليد تاني.
+      var shouldCreateReferralLead = referred && !(isEdit && v.referred_to_other_doctor);
       var req = isEdit ?
         window.SSMPDDb.updatePatientVisit(existingVisit.id, patch) :
         window.SSMPDDb.addPatientVisit(patient.id, patch, me && me.id);
       req.then(function () {
+        if (shouldCreateReferralLead) {
+          return window.SSMPDDb.createDoctorReferralLead(patient.id, referredDoctorName).then(function () {
+            T.show(isEdit ? "اتحدثت الزيارة، واتعمل ليد تحويل جديد" : "اتضافت الزيارة، واتعمل ليد تحويل جديد");
+          }).catch(function () {
+            T.show(isEdit ? "اتحدثت الزيارة، بس فشل إنشاء ليد التحويل" : "اتضافت الزيارة، بس فشل إنشاء ليد التحويل", "error");
+          });
+        }
         T.show(isEdit ? "اتحدثت الزيارة" : "اتضافت الزيارة");
+      }).then(function () {
         backdrop.remove();
         if (onSaved) onSaved();
       }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
@@ -549,6 +574,7 @@
       '<p><b>ضغط الدم: </b>' + escapeHtml(v.blood_pressure || '—') + ' &nbsp; <b>سكر الدم: </b>' + escapeHtml(v.blood_sugar || '—') + ' &nbsp; <b>النبض: </b>' + escapeHtml(v.pulse || '—') + '</p>' +
       '<p><b>خطة العلاج: </b><br>' + (plan || '—') + '</p>' +
       '<p><b>تاريخ المتابعة: </b>' + (v.follow_up_date ? fmtDate(v.follow_up_date) : '—') + '</p>' +
+      (v.referred_to_other_doctor ? '<p style="color:var(--c-accent2, #F15A22);"><b>تم التحويل لطبيب آخر: </b>' + escapeHtml(v.referred_doctor_name || '—') + '</p>' : '') +
       '</div></div>';
     document.body.appendChild(backdrop);
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
@@ -903,7 +929,7 @@
         var plan = [v.medications ? 'أدوية: ' + v.medications : '', v.xrays ? 'أشعة: ' + v.xrays : '', v.labs ? 'تحاليل: ' + v.labs : '', v.other_recommendations ? v.other_recommendations : '']
           .filter(Boolean).join(' · ');
         html += '<tr><td>' + fmtDate(v.visit_date) + '</td><td>' + escapeHtml(v.visit_number || '—') + '</td>' +
-          '<td>' + escapeHtml(v.complaint || '—') + '</td><td>' + escapeHtml(plan || '—') + '</td>' +
+          '<td>' + escapeHtml(v.complaint || '—') + (v.referred_to_other_doctor ? '<br><span style="color:var(--c-accent2, #F15A22);">محوّل لـ' + escapeHtml(v.referred_doctor_name || 'طبيب آخر') + '</span>' : '') + '</td><td>' + escapeHtml(plan || '—') + '</td>' +
           '<td>' + (v.follow_up_date ? fmtDate(v.follow_up_date) : '—') + '</td>' +
           (canEditMedical ? '<td style="white-space:nowrap;">' +
             '<button class="btn ghost sm" data-view-visit="' + v.id + '">عرض</button> ' +
