@@ -1783,6 +1783,55 @@ create policy "leads delete" on public.leads
   for delete using (public.can_delete_leads());
 
 -- ============================================================
+--  ٢٣) تحويل مريض لطبيب آخر من داخل سجل الزيارة → بيتحوّل لـ"ليد" جديد
+--      (٢٠٢٦-٠٨-٣٠)
+-- ============================================================
+-- چيكبوكس "محوّل لطبيب آخر" + اسم الطبيب داخل فورم الزيارة نفسها (كل
+-- زيارة زيارة، ممكن يتكرر لنفس المريض في زيارات مختلفة)
+alter table public.patient_visits add column if not exists referred_to_other_doctor boolean not null default false;
+alter table public.patient_visits add column if not exists referred_doctor_name text;
+
+-- مصدر ليد جديد: تحويل من طبيب العيادة (بيظهر كبادچ/فلتر باسمه في شاشة الليدز)
+alter table public.leads drop constraint if exists leads_source_check;
+alter table public.leads add constraint leads_source_check
+  check (source in ('whatsapp','messenger','phone','clinic','doctor_referral'));
+
+-- دالة SECURITY DEFINER: بتعمل ليد جديد من بيانات المريض لما الطبيب يحوّله —
+-- لازم SECURITY DEFINER عشان مين بيعدّل الزيارات (تمريض/أرشيف) مش بالضرورة
+-- عنده صلاحية "leads insert" الأساسية (مقصورة على استقبال/خدمة عملاء/مدير)
+create or replace function public.create_doctor_referral_lead(p_patient_id uuid, p_doctor_name text)
+returns uuid
+language plpgsql security definer set search_path = public as $$
+declare
+  v_patient record;
+  v_lead_id uuid;
+begin
+  if not (public.has_archive_access() or public.can_manage_all_content()) then
+    raise exception 'غير مصرح';
+  end if;
+
+  select full_name, phone, phone_normalized into v_patient
+  from public.patients where id = p_patient_id;
+
+  if v_patient is null then
+    raise exception 'المريض غير موجود';
+  end if;
+
+  insert into public.leads (customer_name, phone_raw, phone_normalized, source, message_text, patient_id, patient_type, received_by)
+  values (
+    v_patient.full_name, v_patient.phone, v_patient.phone_normalized, 'doctor_referral',
+    'محوّل من د. ' || coalesce(nullif(trim(p_doctor_name), ''), '—'),
+    p_patient_id, 'existing', public.my_admin_id()
+  )
+  returning id into v_lead_id;
+
+  return v_lead_id;
+end;
+$$;
+revoke all on function public.create_doctor_referral_lead(uuid, text) from public;
+grant execute on function public.create_doctor_referral_lead(uuid, text) to authenticated;
+
+-- ============================================================
 -- الخطوة أ) Authentication → Users → Add user → Create new user
 --            ضع بريدك وكلمة السر، وفعّل «Auto Confirm User».
 -- الخطوة ب) عدّل البريد والاسم تحت لو مختلفين ثم شغّل السطر:
