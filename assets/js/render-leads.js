@@ -432,7 +432,7 @@
         '<select id="ar-status"><option value="">كل الحالات</option>' +
         Object.keys(STATUS_LABELS).map(function (k) { return '<option value="' + k + '" ' + (s.status === k ? "selected" : "") + '>' + STATUS_LABELS[k] + '</option>'; }).join("") +
         '</select>' +
-        '<select id="ar-employee"><option value="">كل الموظفين (المُسند لهم)</option>' +
+        '<select id="ar-employee"><option value="">كل الموظفين (آخر رد)</option>' +
         state.employees.map(function (e) { return '<option value="' + e.id + '" ' + (s.bookedBy === e.id ? "selected" : "") + '>' + escapeHtml(e.name) + '</option>'; }).join("") +
         '</select>' +
         '<button class="btn ghost sm" id="ar-search-btn">بحث</button></div>';
