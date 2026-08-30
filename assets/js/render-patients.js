@@ -1001,6 +1001,7 @@
             (f.uploaded_by_name ? ' · رفعه: ' + escapeHtml(f.uploaded_by_name) : '') +
             (f.reviewed_by_name ? ' · راجعه: ' + escapeHtml(f.reviewed_by_name) : '') + '</span></div>' +
             '<div style="display:flex;gap:6px;flex-shrink:0;">' +
+            '<button class="btn ghost sm" data-view-file="' + f.id + '">عرض</button>' +
             '<button class="btn ghost sm" data-dl="' + f.id + '">تنزيل</button>' +
             '<button class="btn ghost sm" data-print-file="' + f.id + '">🖨 طباعة</button>' +
             (canUp ? '<button class="btn danger sm" data-del-file="' + f.id + '">حذف</button>' : '') + '</div></div>';
@@ -1107,6 +1108,26 @@
         var fileId = btn.getAttribute("data-print-file");
         var f = files.filter(function (x) { return String(x.id) === fileId; })[0];
         if (f) printPatientFiles([f]);
+      };
+    });
+
+    backdrop.querySelectorAll("[data-view-file]").forEach(function (btn) {
+      btn.onclick = function () {
+        var fileId = btn.getAttribute("data-view-file");
+        // فتح تاب جديد فوراً (قبل الـ fetch) عشان متتحجبش من مانع النوافذ المنبثقة
+        var win = window.open("", "_blank");
+        btn.disabled = true;
+        window.SSMPDDb.downloadPatientFile(fileId).then(function (res) {
+          var url = URL.createObjectURL(res.blob);
+          if (win) win.location.href = url;
+          else { var a = document.createElement("a"); a.href = url; a.target = "_blank"; a.click(); }
+          btn.disabled = false;
+          setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
+        }).catch(function (e) {
+          if (win) win.close();
+          T.show("خطأ: " + e.message, "error");
+          btn.disabled = false;
+        });
       };
     });
 
