@@ -118,7 +118,14 @@
         btn.onclick = function () {
           if (!confirm("متأكد من حذف هذا المستخدم نهائياً؟")) return;
           window.SSMPDDb.deleteAdmin(btn.getAttribute("data-del")).then(function () { render(container); })
-            .catch(function (e) { alert("خطأ: " + e.message); });
+            .catch(function (e) {
+              var msg = e && e.message ? e.message : "";
+              if (msg.indexOf("foreign key") !== -1 || msg.indexOf("violates") !== -1 || (e && e.code === "23503")) {
+                alert("متقدرش تمسح المستخدم ده نهائياً — ليه سجلات مرتبطة بيه (مواد محتوى/تعليقات/ملفات مرضى/ليدز... إلخ) لازم تتشال أو تتنقل الأول. استخدم زرار \"إيقاف\" بدل الحذف — بيمنعه من الدخول من غير ما يمسح تاريخه.");
+              } else {
+                alert("خطأ: " + msg);
+              }
+            });
         };
       });
     }).catch(function (e) {
