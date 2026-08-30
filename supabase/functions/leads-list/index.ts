@@ -176,6 +176,7 @@ Deno.serve(async (req) => {
   const openOnly = url.searchParams.get("open_only") === "true";
   const bookedBy = url.searchParams.get("booked_by")?.trim(); // فلتر "الحجوزات الفعلية": الموظف اللي أنهى الحجز
   const assignedTo = url.searchParams.get("assigned_to")?.trim(); // فلتر أرشيف الليدز: الموظف المُسند له الليد
+  const source = url.searchParams.get("source")?.trim(); // فلتر "تحويلات الأطباء": source = doctor_referral
   const completedMissingData = url.searchParams.get("completed_missing_data") === "1";
   const page = Math.max(1, Number(url.searchParams.get("page") ?? "1") || 1);
   const pageSize = Math.min(50, Math.max(1, Number(url.searchParams.get("page_size") ?? "20") || 20));
@@ -205,6 +206,10 @@ Deno.serve(async (req) => {
 
   if (bookedBy) {
     query = query.eq("booked_by", bookedBy);
+  }
+
+  if (source) {
+    query = query.eq("source", source);
   }
 
   if (assignedTo) {
