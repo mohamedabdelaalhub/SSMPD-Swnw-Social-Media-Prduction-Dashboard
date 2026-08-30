@@ -208,7 +208,18 @@ Deno.serve(async (req) => {
   }
 
   if (assignedTo) {
-    query = query.eq("assigned_to", assignedTo);
+    // فلتر أرشيف الليدز: بيعتمد على مين سجّل آخر محاولة تواصل/رد على الليد
+    // (مش على عمود assigned_to الثابت اللي بيتحدد مرة واحدة عند إنشاء الليد وما بيتغيرش)
+    const { data: allAttempts } = await admin
+      .from("lead_attempts")
+      .select("lead_id, employee_id, attempt_date")
+      .order("attempt_date", { ascending: false });
+    const latestByLead: Record<string, string> = {};
+    (allAttempts ?? []).forEach((a: { lead_id: string; employee_id: string }) => {
+      if (!(a.lead_id in latestByLead)) latestByLead[a.lead_id] = a.employee_id;
+    });
+    const matchingLeadIds = Object.keys(latestByLead).filter((id) => latestByLead[id] === assignedTo);
+    query = query.in("id", matchingLeadIds.length ? matchingLeadIds : ["00000000-0000-0000-0000-000000000000"]);
   }
 
   if (completedMissingData) {
