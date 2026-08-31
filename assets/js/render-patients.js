@@ -1315,5 +1315,12 @@
     });
   }
 
-  window.SSMPDRenderPatients = { render: render };
+  // بيستخدمها البحث الموحّد في الشريط العلوي (مرحلة ٦): بتحضّر شاشة "تصفح
+  // وفلترة" بمصطلح البحث قبل أول رسم.
+  function openSearch(term) {
+    state.subTab = "browse";
+    state.browseSearch = term;
+  }
+
+  window.SSMPDRenderPatients = { render: render, openSearch: openSearch };
 })();

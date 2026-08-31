@@ -72,6 +72,13 @@
         container.querySelectorAll("[data-open]").forEach(function (el) {
           el.onclick = function () { openReviewModal(el.getAttribute("data-open"), items, admins); };
         });
+
+        // فتح تلقائي لو المستخدم جاي من البحث الموحّد في الشريط العلوي (مرحلة ٦)
+        if (window.SSMPDPendingOpenContentId) {
+          var pendingId = window.SSMPDPendingOpenContentId;
+          window.SSMPDPendingOpenContentId = null;
+          if (items.some(function (i) { return i.id === pendingId; })) openReviewModal(pendingId, items, admins);
+        }
       }).catch(function (e) {
         container.innerHTML = '<div class="err-msg">خطأ: ' + e.message + '</div>';
       });

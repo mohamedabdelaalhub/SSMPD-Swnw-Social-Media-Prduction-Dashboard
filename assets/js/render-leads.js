@@ -998,5 +998,13 @@
     }
   }
 
-  window.SSMPDRenderLeads = { render: render };
+  // بيستخدمها البحث الموحّد في الشريط العلوي (مرحلة ٦): بتحضّر شاشة أرشيف
+  // الليدز بمصطلح البحث قبل أول رسم — لو "archive" مش متاحة لدور المستخدم،
+  // الحارس جوه render() بيرجّعها تلقائياً لأول تاب مسموح له.
+  function openSearch(term) {
+    state.subTab = "archive";
+    state.archive.search = term;
+  }
+
+  window.SSMPDRenderLeads = { render: render, openSearch: openSearch };
 })();

@@ -184,6 +184,12 @@
     getContentItem: function (id) {
       return handle(client.from("content_items").select("*").eq("id", id).single());
     },
+    // بحث سريع بالعنوان/النص — للبحث الموحّد في الشريط العلوي (مرحلة ٦)
+    searchContentItems: function (term) {
+      return handle(client.from("content_items").select("id, title, stage")
+        .or("title.ilike.%" + term + "%,body.ilike.%" + term + "%")
+        .order("created_at", { ascending: false }).limit(6));
+    },
     createContentItem: function (row) {
       return handle(client.from("content_items").insert(row).select().single());
     },

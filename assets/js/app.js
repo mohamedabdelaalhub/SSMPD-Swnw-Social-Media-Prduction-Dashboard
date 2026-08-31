@@ -160,6 +160,10 @@
     // ترتيب محتوى القائمة المنسدلة زي ما طلب المستخدم بالظبط: الاسم، ثم الدور، ثم قائمة التابات، ثم خروج
     var html = '<div class="app-shell"><div class="topbar">' +
       '<div class="brand"><img src="assets/img/mark.svg" alt=""><span id="brand-section-name">مركز عيادات سونو التخصصية</span></div>' +
+      '<div style="position:relative;flex:1;max-width:280px;margin:0 10px;">' +
+      '<input id="global-search-input" type="search" placeholder="بحث (Ctrl+K)…" autocomplete="off" style="width:100%;padding:7px 10px;border-radius:10px;border:1px solid var(--c-border);font-size:12px;">' +
+      '<div id="global-search-results" hidden style="position:absolute;top:100%;right:0;left:0;background:var(--c-card);border:1px solid var(--c-border);border-radius:10px;margin-top:4px;max-height:340px;overflow:auto;z-index:50;box-shadow:0 6px 18px rgba(0,0,0,.12);"></div>' +
+      '</div>' +
       '<div class="who"><span class="role-badge">' + roleLabel + '</span> <b>' + displayName + '</b>' +
       '<button class="user-menu-icon" id="user-menu-btn" type="button" title="القائمة" aria-label="القائمة">☰</button>' +
       ' <button class="btn ghost sm" id="logout-btn">خروج</button></div>' +
@@ -231,6 +235,8 @@
       };
     });
 
+    setupGlobalSearch(admin, tabs);
+
     // نرجّع آخر تاب كان مفتوح (لو لسه موجود ومسموح للدور ده) بدل ما نرجع دايماً للشاشة الافتراضية
     // — كده الريفريش/رجوع للصفحة (F5) ما يرجعش المستخدم للرئيسية من غير داعي
     var savedTab = null;
@@ -238,6 +244,90 @@
     var startTab = (savedTab && tabs.indexOf(savedTab) !== -1) ? savedTab : R.defaultTab(admin);
     switchTab(startTab);
     setupRealtime();
+  }
+
+  // بحث موحّد في الشريط العلوي (مرحلة ٦): بيدوّر بالتوازي في المحتوى/الليدز/
+  // أرشيف المرضى — كل واحد بس لو الدور عنده وصول للتاب المقابل (تكلفة صفر
+  // على أي حد مش هيستخدمه). Ctrl+K/⌘K يفوكّس الحقل، Enter يبحث، Escape يقفل.
+  function setupGlobalSearch(admin, tabs) {
+    var input = document.getElementById("global-search-input");
+    var resultsBox = document.getElementById("global-search-results");
+    if (!input || !resultsBox) return;
+
+    function escapeHtml(s) {
+      return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+    function hideResults() { resultsBox.hidden = true; resultsBox.innerHTML = ""; }
+    function itemBtn(type, id, label) {
+      return '<button type="button" class="gsearch-item" data-type="' + type + '" data-id="' + (id || "") + '" ' +
+        'style="display:block;width:100%;text-align:right;padding:7px 10px;border:none;background:none;font-size:12px;cursor:pointer;">' +
+        escapeHtml(label) + '</button>';
+    }
+
+    function runSearch(term) {
+      term = term.trim();
+      if (term.length < 2) { hideResults(); return; }
+      var canContent = tabs.indexOf("review") !== -1 || tabs.indexOf("production") !== -1;
+      var canLeads = tabs.indexOf("leads") !== -1;
+      var canPatients = tabs.indexOf("patients") !== -1;
+
+      Promise.all([
+        canContent ? window.SSMPDDb.searchContentItems(term) : Promise.resolve([]),
+        canLeads ? window.SSMPDDb.listLeads({ search: term, page_size: 6 }) : Promise.resolve(null),
+        canPatients ? window.SSMPDDb.listPatientsArchive({ search: term, page_size: 6 }) : Promise.resolve(null)
+      ]).then(function (res) {
+        var contentItems = res[0] || [];
+        var leadsItems = (res[1] && res[1].leads) || [];
+        var patientsItems = (res[2] && res[2].patients) || [];
+
+        var html = "";
+        if (contentItems.length) {
+          html += '<div style="padding:6px 10px;font-size:11px;color:var(--c-muted);">المحتوى</div>';
+          contentItems.forEach(function (i) { html += itemBtn("content", i.id, i.title); });
+        }
+        if (leadsItems.length) {
+          html += '<div style="padding:6px 10px;font-size:11px;color:var(--c-muted);">الليدز</div>';
+          leadsItems.forEach(function (l) { html += itemBtn("leads", "", l.customer_name || l.phone_raw || "—"); });
+        }
+        if (patientsItems.length) {
+          html += '<div style="padding:6px 10px;font-size:11px;color:var(--c-muted);">أرشيف المرضى</div>';
+          patientsItems.forEach(function (p) { html += itemBtn("patients", "", p.full_name || p.phone || "—"); });
+        }
+        if (!html) html = '<div style="padding:10px;font-size:12px;color:var(--c-muted);">مفيش نتائج</div>';
+        resultsBox.innerHTML = html;
+        resultsBox.hidden = false;
+
+        resultsBox.querySelectorAll(".gsearch-item").forEach(function (btn) {
+          btn.onclick = function () {
+            var type = btn.getAttribute("data-type");
+            hideResults();
+            input.value = "";
+            if (type === "content") {
+              window.SSMPDPendingOpenContentId = btn.getAttribute("data-id");
+              switchTab(tabs.indexOf("review") !== -1 ? "review" : "production");
+            } else if (type === "leads") {
+              window.SSMPDRenderLeads.openSearch(term);
+              switchTab("leads");
+            } else if (type === "patients") {
+              window.SSMPDRenderPatients.openSearch(term);
+              switchTab("patients");
+            }
+          };
+        });
+      }).catch(function () { hideResults(); });
+    }
+
+    input.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") { e.preventDefault(); runSearch(input.value); }
+      else if (e.key === "Escape") { input.blur(); hideResults(); }
+    });
+    document.addEventListener("click", function (e) {
+      if (!resultsBox.contains(e.target) && e.target !== input) hideResults();
+    });
+    document.addEventListener("keydown", function (e) {
+      var mod = e.ctrlKey || e.metaKey;
+      if (mod && e.key.toLowerCase() === "k") { e.preventDefault(); input.focus(); input.select(); }
+    });
   }
 
   // مودال "نسيت كلمة السر؟" — بدون أي اعتماد على إيميل Supabase (القرار:
