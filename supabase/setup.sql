@@ -1968,3 +1968,22 @@ drop policy if exists "app_settings write" on public.app_settings;
 create policy "app_settings write" on public.app_settings for update
   using (public.is_super() or public.can_manage_all_content())
   with check (public.is_super() or public.can_manage_all_content());
+
+-- ============================================================
+-- إضافة: مركز إشعارات للأدمن/الإدارة (بجانب اسم المستخدم في الهيدر)
+-- (٢٠٢٦-٠٨-٣١)
+-- ============================================================
+-- بيعيد استخدام activity_log (أحداث المحتوى) وusage_activity_log
+-- (رفع مستندات/ملفات) الموجودين بالفعل — مفيش تسجيل أحداث جديد، بس
+-- جدول صغير لتخزين "آخر وقت اطّلاع" لكل مستخدم عشان نحسب منه إيه اللي
+-- جديد (نفس نمط comment_reads بالظبط).
+create table if not exists public.notification_reads (
+  admin_id     uuid primary key references public.admins(id) on delete cascade,
+  last_seen_at timestamptz not null default now()
+);
+alter table public.notification_reads enable row level security;
+drop policy if exists "own notification reads" on public.notification_reads;
+create policy "own notification reads" on public.notification_reads
+  for all to authenticated
+  using (admin_id = public.my_admin_id())
+  with check (admin_id = public.my_admin_id());
