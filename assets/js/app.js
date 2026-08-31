@@ -273,19 +273,37 @@
   function notifDefaultSince() {
     return new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   }
+  function notifMapItems(res) {
+    var items = (res[0] || []).map(function (r) {
+      return { at: r.created_at, text: ((r.admins && r.admins.name) || "مستخدم") + " — " + r.action };
+    }).concat((res[1] || []).map(function (r) {
+      return { at: r.created_at, text: ((r.admins && r.admins.name) || "مستخدم") + " — " + r.action_type + (r.report_name ? ": " + r.report_name : "") };
+    }));
+    items.sort(function (a, b) { return new Date(b.at) - new Date(a.at); });
+    return items;
+  }
+  // إشعارات بعد وقت معيّن (badge/وضع "أيام")
   function fetchNotifItems(sinceIso, limit) {
     return Promise.all([
       window.SSMPDDb.listRecentContentActivity(sinceIso, limit).catch(function () { return []; }),
       window.SSMPDDb.listUsageActivitySince(sinceIso, limit).catch(function () { return []; })
+    ]).then(notifMapItems);
+  }
+  // آخر عدد إشعارات من غير فلترة تاريخ (الجرس/وضع "عدد") — بتفضل موجودة حتى لو
+  // اتشافت قبل كده، وبس بتاخد شكل باهت (نفس طلب المستخدم)
+  function fetchNotifItemsRecent(limit) {
+    return Promise.all([
+      window.SSMPDDb.listContentActivityRecent(limit).catch(function () { return []; }),
+      window.SSMPDDb.listUsageActivity(limit).catch(function () { return []; })
     ]).then(function (res) {
-      var items = (res[0] || []).map(function (r) {
-        return { at: r.created_at, text: ((r.admins && r.admins.name) || "مستخدم") + " — " + r.action };
-      }).concat((res[1] || []).map(function (r) {
-        return { at: r.created_at, text: ((r.admins && r.admins.name) || "مستخدم") + " — " + r.action_type + (r.report_name ? ": " + r.report_name : "") };
-      }));
-      items.sort(function (a, b) { return new Date(b.at) - new Date(a.at); });
-      return items;
+      var items = notifMapItems(res);
+      return items.slice(0, limit);
     });
+  }
+  function notifItemHtml(it, seenBefore) {
+    var unread = new Date(it.at) > new Date(seenBefore);
+    return '<div style="padding:8px 10px;border-bottom:1px solid var(--c-border);font-size:12px;' + (unread ? "" : "opacity:.5;") + '">' + notifEscHtml(it.text) +
+      '<div style="color:var(--c-muted);font-size:10px;margin-top:2px;">' + notifRelTime(it.at) + '</div></div>';
   }
   function refreshNotifBadge() {
     var admin = window.SSMPDAuth.currentAdmin;
@@ -302,30 +320,92 @@
       else { badge.hidden = true; }
     }).catch(function () {});
   }
+  // الإشعارات بتفضل ظاهرة في القايمة دايماً (مش بتختفي لما تتفتح) — بس اللي
+  // اتشاف قبل كده بيبقى شكله باهت (opacity) عن اللي لسه جديد، زي ما طلب المستخدم
   function openNotifPanel() {
     var admin = window.SSMPDAuth.currentAdmin;
     var panel = document.getElementById("notif-panel");
-    var badge = document.getElementById("notif-badge");
     if (!panel || !admin) return;
     panel.innerHTML = '<div style="padding:12px;font-size:12px;color:var(--c-muted);">بيحمّل…</div>';
     window.SSMPDDb.getNotificationLastSeen(admin.id).then(function (row) {
-      var since = (row && row.last_seen_at) || notifDefaultSince();
-      return fetchNotifItems(since, 15);
-    }).then(function (items) {
-      if (!items.length) {
-        panel.innerHTML = '<div style="padding:14px;font-size:12px;color:var(--c-muted);text-align:center;">مفيش إشعارات جديدة</div>';
-      } else {
-        panel.innerHTML = '<div style="padding:6px 10px;font-weight:bold;font-size:12px;border-bottom:1px solid var(--c-border);">آخر الأنشطة</div>' +
-          items.map(function (it) {
-            return '<div style="padding:8px 10px;border-bottom:1px solid var(--c-border);font-size:12px;">' + notifEscHtml(it.text) +
-              '<div style="color:var(--c-muted);font-size:10px;margin-top:2px;">' + notifRelTime(it.at) + '</div></div>';
-          }).join("");
-      }
+      var seenBefore = (row && row.last_seen_at) || notifDefaultSince();
+      return fetchNotifItemsRecent(20).then(function (items) { return { items: items, seenBefore: seenBefore }; });
+    }).then(function (res) {
+      var items = res.items;
+      var body = !items.length
+        ? '<div style="padding:14px;font-size:12px;color:var(--c-muted);text-align:center;">مفيش إشعارات</div>'
+        : items.map(function (it) { return notifItemHtml(it, res.seenBefore); }).join("");
+      panel.innerHTML = '<div style="padding:6px 10px;font-weight:bold;font-size:12px;border-bottom:1px solid var(--c-border);">آخر الأنشطة</div>' + body +
+        '<button type="button" id="notif-see-all-btn" style="display:block;width:100%;text-align:center;padding:9px;border:none;background:none;color:var(--c-primary,#0F369D);font-size:12px;cursor:pointer;">كل الإشعارات</button>';
+      var seeAllBtn = document.getElementById("notif-see-all-btn");
+      if (seeAllBtn) seeAllBtn.onclick = function () { panel.hidden = true; openNotifFullPage(); };
       return window.SSMPDDb.markNotificationsSeen(admin.id);
-    }).then(function () {
-      if (badge) badge.hidden = true;
     }).catch(function () {
       panel.innerHTML = '<div style="padding:10px;font-size:12px;color:#D0402A;">تعذّر تحميل الإشعارات</div>';
+    });
+  }
+
+  // صفحة "كل الإشعارات" — قايمة أطول + التحكم في دورية العرض (عدد أو أيام) بيحددها المستخدم بنفسه
+  function openNotifFullPage() {
+    var admin = window.SSMPDAuth.currentAdmin;
+    if (!admin) return;
+    var old = document.getElementById("notif-fullpage-backdrop");
+    if (old) old.remove();
+    var backdrop = document.createElement("div");
+    backdrop.id = "notif-fullpage-backdrop";
+    backdrop.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;display:flex;align-items:center;justify-content:center;";
+    backdrop.innerHTML = '<div style="background:var(--c-card);border-radius:12px;width:420px;max-width:92vw;max-height:82vh;display:flex;flex-direction:column;overflow:hidden;">' +
+      '<div style="padding:10px 14px;border-bottom:1px solid var(--c-border);display:flex;justify-content:space-between;align-items:center;"><b style="font-size:13px;">كل الإشعارات</b><button type="button" id="notif-fp-close" style="border:none;background:none;font-size:18px;cursor:pointer;">×</button></div>' +
+      '<div id="notif-fp-settings" style="padding:10px 14px;border-bottom:1px solid var(--c-border);font-size:12px;"></div>' +
+      '<div id="notif-fp-list" style="overflow:auto;flex:1;"></div>' +
+      '</div>';
+    document.body.appendChild(backdrop);
+    backdrop.addEventListener("click", function (e) { if (e.target === backdrop) backdrop.remove(); });
+    document.getElementById("notif-fp-close").onclick = function () { backdrop.remove(); };
+
+    function loadList(settings) {
+      var listEl = document.getElementById("notif-fp-list");
+      if (!listEl) return;
+      listEl.innerHTML = '<div style="padding:14px;font-size:12px;color:var(--c-muted);">بيحمّل…</div>';
+      var seenBefore = settings.last_seen_at || notifDefaultSince();
+      var p = settings.clear_mode === "days"
+        ? fetchNotifItems(new Date(Date.now() - settings.clear_value * 86400000).toISOString(), 300)
+        : fetchNotifItemsRecent(settings.clear_value);
+      p.then(function (items) {
+        listEl.innerHTML = items.length
+          ? items.map(function (it) { return notifItemHtml(it, seenBefore); }).join("")
+          : '<div style="padding:14px;font-size:12px;color:var(--c-muted);text-align:center;">مفيش إشعارات</div>';
+        window.SSMPDDb.markNotificationsSeen(admin.id).catch(function () {});
+      }).catch(function () {
+        listEl.innerHTML = '<div style="padding:10px;font-size:12px;color:#D0402A;">تعذّر التحميل</div>';
+      });
+    }
+
+    function renderSettings(settings) {
+      var box = document.getElementById("notif-fp-settings");
+      if (!box) return;
+      box.innerHTML = 'اعرض آخر: ' +
+        '<label style="margin-inline-start:6px;"><input type="radio" name="notif-clear-mode" value="count"' + (settings.clear_mode !== "days" ? " checked" : "") + '> عدد</label>' +
+        '<label style="margin-inline-start:10px;"><input type="radio" name="notif-clear-mode" value="days"' + (settings.clear_mode === "days" ? " checked" : "") + '> يوم</label>' +
+        '<input type="number" min="1" id="notif-clear-value" value="' + (settings.clear_value || 50) + '" style="width:70px;margin-inline-start:10px;padding:3px 6px;border:1px solid var(--c-border);border-radius:6px;">' +
+        '<button type="button" id="notif-clear-save" class="btn ghost sm" style="margin-inline-start:8px;">حفظ</button>';
+      document.getElementById("notif-clear-save").onclick = function () {
+        var mode = box.querySelector('input[name="notif-clear-mode"]:checked').value;
+        var val = parseInt(document.getElementById("notif-clear-value").value, 10) || 50;
+        window.SSMPDDb.updateNotificationSettings(admin.id, { clear_mode: mode, clear_value: val }).then(function () {
+          settings.clear_mode = mode; settings.clear_value = val;
+          loadList(settings);
+        }).catch(function () {});
+      };
+    }
+
+    window.SSMPDDb.getNotificationSettings(admin.id).then(function (row) {
+      var settings = row || { last_seen_at: null, clear_mode: "count", clear_value: 50 };
+      renderSettings(settings);
+      loadList(settings);
+    }).catch(function () {
+      renderSettings({ clear_mode: "count", clear_value: 50 });
+      loadList({ clear_mode: "count", clear_value: 50, last_seen_at: null });
     });
   }
   function setupNotifications(admin) {

@@ -169,8 +169,20 @@
     listUsageActivitySince: function (sinceIso, limit) {
       return handle(client.from("usage_activity_log").select("id, admin_id, action_type, report_name, created_at, admins(name)").gt("created_at", sinceIso).order("created_at", { ascending: false }).limit(limit || 20));
     },
+    listContentActivityRecent: function (limit) {
+      return handle(client.from("activity_log").select("id, actor_id, action, created_at, admins!actor_id(name)").order("created_at", { ascending: false }).limit(limit || 20));
+    },
     getNotificationLastSeen: function (adminId) {
       return handle(client.from("notification_reads").select("last_seen_at").eq("admin_id", adminId).maybeSingle());
+    },
+    getNotificationSettings: function (adminId) {
+      return handle(client.from("notification_reads").select("last_seen_at, clear_mode, clear_value").eq("admin_id", adminId).maybeSingle());
+    },
+    updateNotificationSettings: function (adminId, patch) {
+      var row = { admin_id: adminId };
+      if (patch.clear_mode) row.clear_mode = patch.clear_mode;
+      if (patch.clear_value) row.clear_value = patch.clear_value;
+      return handle(client.from("notification_reads").upsert(row));
     },
     markNotificationsSeen: function (adminId) {
       return handle(client.from("notification_reads").upsert({ admin_id: adminId, last_seen_at: new Date().toISOString() }));
