@@ -1840,6 +1840,74 @@ grant execute on function public.create_doctor_referral_lead(uuid, text) to auth
 alter table public.content_items add column if not exists specialty text;
 
 -- ============================================================
+--  ٢٥) تاريخ إصدار المستند (يُدخل عند رفع الملف) (٢٠٢٦-٠٨-٣٠)
+-- ============================================================
+-- تاريخ إصدار المستند الفعلي (مختلف عن uploaded_at اللي هو وقت رفع الملف
+-- على النظام) — اختياري، بيتسجل من الموظف وقت الرفع لو متاح، ومستخدم في
+-- طباعة بروفايل المريض لعرض تاريخ كل مستند.
+alter table public.patient_files add column if not exists issued_at date;
+
+-- ============================================================
+--  ٢٦) تقرير الاستخدام: سجل جلسات الدخول + سجل الأنشطة المهمة (٢٠٢٦-٠٨-٣٠)
+-- ============================================================
+-- جلسة استخدام واحدة = من فتح/تحميل الداشبورد (bootAfterAuth في app.js)
+-- لحد الخروج الصريح (زرار خروج) أو آخر "نبضة" (heartbeat كل دقيقتين) لو
+-- المستخدم قفل التاب من غير ما يعمل خروج — عشان كده last_seen_at منفصل عن
+-- logout_at، والمدة بتتحسب في الواجهة: logout_at لو موجود، وإلا last_seen_at.
+create table if not exists public.login_sessions (
+  id           uuid primary key default gen_random_uuid(),
+  admin_id     uuid not null references public.admins(id) on delete cascade,
+  login_at     timestamptz not null default now(),
+  last_seen_at timestamptz not null default now(),
+  logout_at    timestamptz
+);
+create index if not exists login_sessions_admin_idx on public.login_sessions (admin_id);
+create index if not exists login_sessions_login_idx on public.login_sessions (login_at desc);
+
+alter table public.login_sessions enable row level security;
+drop policy if exists "own insert session" on public.login_sessions;
+drop policy if exists "own update session" on public.login_sessions;
+drop policy if exists "super reads sessions" on public.login_sessions;
+
+create policy "own insert session"
+  on public.login_sessions for insert to authenticated
+  with check (admin_id = public.my_admin_id());
+
+create policy "own update session"
+  on public.login_sessions for update to authenticated
+  using (admin_id = public.my_admin_id())
+  with check (admin_id = public.my_admin_id());
+
+create policy "super reads sessions"
+  on public.login_sessions for select to authenticated
+  using (public.is_super() or public.can_manage_all_content());
+
+-- سجل الأنشطة المهمة: كل عملية "رفع/إنشاء" ليها اسم تقرير/ملف واضح —
+-- استيراد مؤشرات أسبوعية، تقرير حملات إعلانات، رفع تصميم، إنشاء مادة
+-- محتوى، رفع مستند مريض، رفع إكسيل ليدز جماعي، رفع فاتورة حجز.
+create table if not exists public.usage_activity_log (
+  id           uuid primary key default gen_random_uuid(),
+  admin_id     uuid not null references public.admins(id) on delete cascade,
+  action_type  text not null,
+  report_name  text,
+  created_at   timestamptz not null default now()
+);
+create index if not exists usage_activity_admin_idx on public.usage_activity_log (admin_id);
+create index if not exists usage_activity_created_idx on public.usage_activity_log (created_at desc);
+
+alter table public.usage_activity_log enable row level security;
+drop policy if exists "own insert activity" on public.usage_activity_log;
+drop policy if exists "super reads activity" on public.usage_activity_log;
+
+create policy "own insert activity"
+  on public.usage_activity_log for insert to authenticated
+  with check (admin_id = public.my_admin_id());
+
+create policy "super reads activity"
+  on public.usage_activity_log for select to authenticated
+  using (public.is_super() or public.can_manage_all_content());
+
+-- ============================================================
 -- الخطوة أ) Authentication → Users → Add user → Create new user
 --            ضع بريدك وكلمة السر، وفعّل «Auto Confirm User».
 -- الخطوة ب) عدّل البريد والاسم تحت لو مختلفين ثم شغّل السطر:
@@ -1859,3 +1927,44 @@ on conflict (email) do update
 -- ============================================================
 -- select email, name, role, active, (user_id is not null) as حساب_مفعل
 -- from public.admins order by created_at;
+
+-- ============================================================
+-- إضافة: قائمة المصممين تشمل الرول الإضافي + إعدادات SLA قابلة للتعديل
+-- (٢٠٢٦-٠٨-٣١)
+-- ============================================================
+
+-- list_designers_all(): id/name لكل موظف نشط عنده رول "designer" أساسي
+-- أو إضافي — بديل لفلترة admins.role='designer' المباشرة اللي كانت بتفوت
+-- المصمم لو الرول ده إضافي مش أساسي (فجوة معروفة موثّقة من دفعة تعدد
+-- الأدوار v19).
+create or replace function public.list_designers_all()
+returns table(id uuid, name text)
+language sql security definer stable set search_path = public as $$
+  select distinct a.id, a.name
+  from public.admins a
+  left join public.admin_extra_roles e on e.admin_id = a.id
+  where a.active = true and (a.role = 'designer' or e.role = 'designer')
+  order by a.name;
+$$;
+revoke all on function public.list_designers_all() from public;
+grant execute on function public.list_designers_all() to authenticated;
+
+-- app_settings: صف واحد بس (id=1) لإعدادات عامة قابلة للتعديل من لوحة
+-- الأدمن — حالياً حدود SLA للتنبيهات (مواد اعتماد متأخرة / ليدز من غير
+-- رد) بدل ما تكون أرقام ثابتة في كود الواجهة.
+create table if not exists public.app_settings (
+  id int primary key default 1,
+  content_sla_hours int not null default 48,
+  leads_sla_hours int not null default 24,
+  updated_at timestamptz not null default now(),
+  updated_by uuid references public.admins(id)
+);
+insert into public.app_settings (id) values (1) on conflict (id) do nothing;
+alter table public.app_settings enable row level security;
+drop policy if exists "app_settings read" on public.app_settings;
+create policy "app_settings read" on public.app_settings for select
+  using (public.my_admin_id() is not null);
+drop policy if exists "app_settings write" on public.app_settings;
+create policy "app_settings write" on public.app_settings for update
+  using (public.is_super() or public.can_manage_all_content())
+  with check (public.is_super() or public.can_manage_all_content());
