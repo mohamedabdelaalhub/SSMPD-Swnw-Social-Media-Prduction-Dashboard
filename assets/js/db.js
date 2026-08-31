@@ -162,6 +162,19 @@
     listUsageActivity: function (limit) {
       return handle(client.from("usage_activity_log").select("id, admin_id, action_type, report_name, created_at, admins(name)").order("created_at", { ascending: false }).limit(limit || 200));
     },
+    // ---------- مركز إشعارات الأدمن/الإدارة (بيعيد استخدام activity_log + usage_activity_log الموجودين) ----------
+    listRecentContentActivity: function (sinceIso, limit) {
+      return handle(client.from("activity_log").select("id, actor_id, action, created_at, admins!actor_id(name)").gt("created_at", sinceIso).order("created_at", { ascending: false }).limit(limit || 20));
+    },
+    listUsageActivitySince: function (sinceIso, limit) {
+      return handle(client.from("usage_activity_log").select("id, admin_id, action_type, report_name, created_at, admins(name)").gt("created_at", sinceIso).order("created_at", { ascending: false }).limit(limit || 20));
+    },
+    getNotificationLastSeen: function (adminId) {
+      return handle(client.from("notification_reads").select("last_seen_at").eq("admin_id", adminId).maybeSingle());
+    },
+    markNotificationsSeen: function (adminId) {
+      return handle(client.from("notification_reads").upsert({ admin_id: adminId, last_seen_at: new Date().toISOString() }));
+    },
     // ---------- تعدد الأدوار (admin_extra_roles) ----------
     listAdminExtraRoles: function (adminId) {
       return handle(client.from("admin_extra_roles").select("*").eq("admin_id", adminId));

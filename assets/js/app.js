@@ -164,6 +164,11 @@
       '<input id="global-search-input" type="search" placeholder="بحث (Ctrl+K)…" autocomplete="off" style="width:100%;padding:7px 10px;border-radius:10px;border:1px solid var(--c-border);font-size:12px;">' +
       '<div id="global-search-results" hidden style="position:absolute;top:100%;right:0;left:0;background:var(--c-card);border:1px solid var(--c-border);border-radius:10px;margin-top:4px;max-height:340px;overflow:auto;z-index:50;box-shadow:0 6px 18px rgba(0,0,0,.12);"></div>' +
       '</div>' +
+      '<div style="position:relative;">' +
+      '<button class="btn ghost sm" id="notif-bell-btn" type="button" title="الإشعارات" hidden style="position:relative;">🔔' +
+      '<span id="notif-badge" hidden style="position:absolute;top:-6px;left:-6px;background:#D0402A;color:#fff;border-radius:10px;font-size:10px;padding:1px 5px;line-height:1.4;">0</span></button>' +
+      '<div id="notif-panel" hidden style="position:absolute;top:100%;left:0;width:300px;background:var(--c-card);border:1px solid var(--c-border);border-radius:10px;margin-top:4px;max-height:360px;overflow:auto;z-index:60;box-shadow:0 6px 18px rgba(0,0,0,.12);"></div>' +
+      '</div>' +
       '<div class="who"><span class="role-badge">' + roleLabel + '</span> <b>' + displayName + '</b>' +
       '<button class="user-menu-icon" id="user-menu-btn" type="button" title="القائمة" aria-label="القائمة">☰</button>' +
       ' <button class="btn ghost sm" id="logout-btn">خروج</button></div>' +
@@ -236,6 +241,7 @@
     });
 
     setupGlobalSearch(admin, tabs);
+    setupNotifications(admin);
 
     // نرجّع آخر تاب كان مفتوح (لو لسه موجود ومسموح للدور ده) بدل ما نرجع دايماً للشاشة الافتراضية
     // — كده الريفريش/رجوع للصفحة (F5) ما يرجعش المستخدم للرئيسية من غير داعي
@@ -244,6 +250,99 @@
     var startTab = (savedTab && tabs.indexOf(savedTab) !== -1) ? savedTab : R.defaultTab(admin);
     switchTab(startTab);
     setupRealtime();
+  }
+
+  // ---------- مركز إشعارات الأدمن/الإدارة (بجانب اسم المستخدم) ----------
+  // بيعيد استخدام activity_log/usage_activity_log الموجودين — مفيش تسجيل
+  // أحداث جديد، بس جدول notification_reads لتخزين "آخر وقت اطّلاع" لكل مستخدم
+  // (نفس نمط comment_reads). ظاهر بس للمدير العام/السوبر أدمن زي ما طلب المستخدم.
+  function notifEscHtml(s) {
+    return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+  function notifRelTime(iso) {
+    var diffMin = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
+    if (diffMin < 1) return "الآن";
+    if (diffMin < 60) return "من " + diffMin + " دقيقة";
+    var h = Math.round(diffMin / 60);
+    if (h < 24) return "من " + h + " ساعة";
+    return "من " + Math.round(h / 24) + " يوم";
+  }
+  function canSeeNotifications(admin) {
+    return !!admin && (R.isSuperAdmin(admin) || R.hasRole(admin, "general_manager"));
+  }
+  function notifDefaultSince() {
+    return new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  }
+  function fetchNotifItems(sinceIso, limit) {
+    return Promise.all([
+      window.SSMPDDb.listRecentContentActivity(sinceIso, limit).catch(function () { return []; }),
+      window.SSMPDDb.listUsageActivitySince(sinceIso, limit).catch(function () { return []; })
+    ]).then(function (res) {
+      var items = (res[0] || []).map(function (r) {
+        return { at: r.created_at, text: ((r.admins && r.admins.name) || "مستخدم") + " — " + r.action };
+      }).concat((res[1] || []).map(function (r) {
+        return { at: r.created_at, text: ((r.admins && r.admins.name) || "مستخدم") + " — " + r.action_type + (r.report_name ? ": " + r.report_name : "") };
+      }));
+      items.sort(function (a, b) { return new Date(b.at) - new Date(a.at); });
+      return items;
+    });
+  }
+  function refreshNotifBadge() {
+    var admin = window.SSMPDAuth.currentAdmin;
+    var badge = document.getElementById("notif-badge");
+    var bellBtn = document.getElementById("notif-bell-btn");
+    if (!bellBtn || !canSeeNotifications(admin)) return;
+    bellBtn.hidden = false;
+    window.SSMPDDb.getNotificationLastSeen(admin.id).then(function (row) {
+      var since = (row && row.last_seen_at) || notifDefaultSince();
+      return fetchNotifItems(since, 21);
+    }).then(function (items) {
+      if (!badge) return;
+      if (items.length) { badge.hidden = false; badge.textContent = items.length > 20 ? "20+" : String(items.length); }
+      else { badge.hidden = true; }
+    }).catch(function () {});
+  }
+  function openNotifPanel() {
+    var admin = window.SSMPDAuth.currentAdmin;
+    var panel = document.getElementById("notif-panel");
+    var badge = document.getElementById("notif-badge");
+    if (!panel || !admin) return;
+    panel.innerHTML = '<div style="padding:12px;font-size:12px;color:var(--c-muted);">بيحمّل…</div>';
+    window.SSMPDDb.getNotificationLastSeen(admin.id).then(function (row) {
+      var since = (row && row.last_seen_at) || notifDefaultSince();
+      return fetchNotifItems(since, 15);
+    }).then(function (items) {
+      if (!items.length) {
+        panel.innerHTML = '<div style="padding:14px;font-size:12px;color:var(--c-muted);text-align:center;">مفيش إشعارات جديدة</div>';
+      } else {
+        panel.innerHTML = '<div style="padding:6px 10px;font-weight:bold;font-size:12px;border-bottom:1px solid var(--c-border);">آخر الأنشطة</div>' +
+          items.map(function (it) {
+            return '<div style="padding:8px 10px;border-bottom:1px solid var(--c-border);font-size:12px;">' + notifEscHtml(it.text) +
+              '<div style="color:var(--c-muted);font-size:10px;margin-top:2px;">' + notifRelTime(it.at) + '</div></div>';
+          }).join("");
+      }
+      return window.SSMPDDb.markNotificationsSeen(admin.id);
+    }).then(function () {
+      if (badge) badge.hidden = true;
+    }).catch(function () {
+      panel.innerHTML = '<div style="padding:10px;font-size:12px;color:#D0402A;">تعذّر تحميل الإشعارات</div>';
+    });
+  }
+  function setupNotifications(admin) {
+    var bellBtn = document.getElementById("notif-bell-btn");
+    var panel = document.getElementById("notif-panel");
+    if (!bellBtn || !panel || !canSeeNotifications(admin)) return;
+    bellBtn.hidden = false;
+    refreshNotifBadge();
+    bellBtn.onclick = function (e) {
+      e.stopPropagation();
+      var opening = panel.hidden;
+      panel.hidden = !opening;
+      if (opening) openNotifPanel();
+    };
+    document.addEventListener("click", function (e) {
+      if (!panel.hidden && !panel.contains(e.target) && e.target !== bellBtn && !bellBtn.contains(e.target)) panel.hidden = true;
+    });
   }
 
   // بحث موحّد في الشريط العلوي (مرحلة ٦): بيدوّر بالتوازي في المحتوى/الليدز/
@@ -452,6 +551,7 @@
         RENDERERS[currentTab].render(el);
       }
     }
+    refreshNotifBadge();
   }
 
   function setupRealtime() {

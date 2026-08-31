@@ -709,6 +709,16 @@
     });
   }
 
+  // ---------- طباعة البيانات الشخصية/الطبية فقط كتقرير نصي (بدون أي مرفقات/صور) ----------
+  function printPatientProfileTextOnly(patient, profile, visits) {
+    var win = window.open("", "_blank");
+    if (!win) { T.show("المتصفح منع فتح نافذة الطباعة — سمح بالنوافذ المنبثقة وحاول تاني", "error"); return; }
+    var coverHtml = buildProfileCoverHtml(patient, profile, visits);
+    win.document.write('<!doctype html><html><head><meta charset="utf-8"><title>بيانات المريض — ' + escapeHtml(patient.full_name) + '</title><style>' + PRINT_FONT_FACE_CSS + '</style></head><body style="margin:0;">' + coverHtml + PRINT_FOOTER_HTML + '</body></html>');
+    win.document.close();
+    setTimeout(function () { win.focus(); win.print(); }, 400);
+  }
+
   // ---------- عرض تفاصيل زيارة (قراءة فقط) ----------
   function openViewVisitModal(v) {
     var plan = [v.medications ? 'الأدوية: ' + v.medications : '', v.xrays ? 'الأشعة: ' + v.xrays : '', v.labs ? 'التحاليل: ' + v.labs : '', v.other_recommendations ? 'توصيات أخرى: ' + v.other_recommendations : '']
@@ -1038,6 +1048,7 @@
     var html = '<div class="modal"><div class="modal-head"><h3>' + escapeHtml(patient.full_name) +
       ' <span style="font-size:12px;color:var(--c-muted);">(' + escapeHtml(patient.patient_code || "") + ')</span></h3>' +
       '<button class="btn ghost sm" data-print-profile="1" style="margin-inline-end:8px;">🖨 طباعة البروفايل</button>' +
+      '<button class="btn ghost sm" data-print-profile-text="1" style="margin-inline-end:8px;">🖨 طباعة البيانات فقط (بدون صور)</button>' +
       '<button class="modal-close">×</button></div>';
 
     var canUp = canUpload();
@@ -1252,6 +1263,10 @@
     var printProfileBtn = backdrop.querySelector("[data-print-profile]");
     if (printProfileBtn) {
       printProfileBtn.onclick = function () { printPatientProfile(patient, profile, visits, files); };
+    }
+    var printProfileTextBtn = backdrop.querySelector("[data-print-profile-text]");
+    if (printProfileTextBtn) {
+      printProfileTextBtn.onclick = function () { printPatientProfileTextOnly(patient, profile, visits); };
     }
     backdrop.querySelectorAll("[data-print-file]").forEach(function (btn) {
       btn.onclick = function () {
