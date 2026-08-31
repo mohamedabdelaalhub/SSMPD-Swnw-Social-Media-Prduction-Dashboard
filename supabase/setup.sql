@@ -1987,3 +1987,12 @@ create policy "own notification reads" on public.notification_reads
   for all to authenticated
   using (admin_id = public.my_admin_id())
   with check (admin_id = public.my_admin_id());
+
+-- تعديل: دورية "مسح" الإشعارات (فعلياً: حد عرض) قابلة لكل مستخدم يحددها
+-- بنفسه — إما بالعدد أو بعدد الأيام (٢٠٢٦-٠٨-٣١)
+alter table public.notification_reads
+  add column if not exists clear_mode  text not null default 'count',
+  add column if not exists clear_value int  not null default 50;
+alter table public.notification_reads drop constraint if exists notification_reads_clear_mode_check;
+alter table public.notification_reads
+  add constraint notification_reads_clear_mode_check check (clear_mode in ('count', 'days'));
