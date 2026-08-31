@@ -23,6 +23,24 @@
 
         var html = '<h2 style="margin-bottom:16px;">إدارة المحتوى</h2>';
 
+        // تنبيه SLA: مواد واقفة في مرحلة اعتماد (أولي أو نهائي) من غير حركة
+        // لأكتر من ٤٨ ساعة — بيتحسب من نفس الـ items المُحمّلة بالفعل، من
+        // غير أي نداء إضافي للسيرفر (`updated_at` بيتحدّث تلقائياً مع كل
+        // تغيير في المادة، بما فيها انتقال المرحلة).
+        var slaMs = 48 * 60 * 60 * 1000;
+        var nowTs = Date.now();
+        var stuckItems = items.filter(function (i) {
+          return (i.stage === "initial_approval" || i.stage === "final_approval") &&
+            i.updated_at && (nowTs - new Date(i.updated_at).getTime()) > slaMs;
+        });
+        if (stuckItems.length) {
+          html += '<div class="section" style="border-inline-start:3px solid var(--c-negative);">' +
+            '<h3 style="color:var(--c-negative);">⚠ مواد متأخرة في الاعتماد (' + stuckItems.length + ')</h3>' +
+            '<p style="font-size:12px;color:var(--c-muted);margin-bottom:8px;">من غير حركة لأكتر من ٤٨ ساعة:</p><ul style="margin:0;padding-inline-start:18px;font-size:13px;">' +
+            stuckItems.map(function (i) { return '<li>' + escapeHtml(i.title) + '</li>'; }).join("") +
+            '</ul></div>';
+        }
+
         html += '<div class="kanban">';
         W.STAGES.forEach(function (s) {
           var colItems = items.filter(function (i) { return i.stage === s.key; });

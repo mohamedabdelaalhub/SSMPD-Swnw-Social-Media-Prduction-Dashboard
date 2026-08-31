@@ -307,10 +307,34 @@
     if (clearBtn) clearBtn.onclick = function () { d.from = ""; d.to = ""; renderDashboardScreen(view, container); };
 
     var body = document.getElementById("ld-dash-body");
-    window.SSMPDDb.getLeadsStats({ from: d.from, to: d.to }).then(function (res) {
+    Promise.all([
+      window.SSMPDDb.getLeadsStats({ from: d.from, to: d.to }),
+      window.SSMPDDb.listLeads({ status: "new", page_size: 50 })
+    ]).then(function (results) {
+      var res = results[0];
+      var newLeads = (results[1] && results[1].leads) || [];
+      var slaMs = 24 * 60 * 60 * 1000;
+      var nowTs = Date.now();
+      var overdueLeads = newLeads.filter(function (l) {
+        return l.created_at && (nowTs - new Date(l.created_at).getTime()) > slaMs;
+      });
+
       var html = '<div style="text-align:left;margin-bottom:10px;">' +
         '<button class="btn ghost sm" id="ld-export-xlsx">⬇ تصدير إكسيل</button> ' +
         '<button class="btn ghost sm" id="ld-export-pdf">🖨 تصدير PDF</button></div>';
+
+      // تنبيه SLA: ليدز جديدة (لسه من غير أي محاولة تواصل — الحالة بترقّي
+      // تلقائياً من "جديد" لـ"قيد المتابعة" عند أول محاولة) من غير رد
+      // لأكتر من ٢٤ ساعة.
+      if (overdueLeads.length) {
+        html += '<div class="section" style="border-inline-start:3px solid var(--c-negative);">' +
+          '<h3 style="color:var(--c-negative);">⚠ ليدز محتاجة متابعة عاجلة (' + overdueLeads.length + ')</h3>' +
+          '<p style="font-size:12px;color:var(--c-muted);margin-bottom:8px;">جديدة من غير أي رد لأكتر من ٢٤ ساعة:</p>' +
+          '<ul style="margin:0;padding-inline-start:18px;font-size:13px;">' +
+          overdueLeads.map(function (l) { return '<li>' + escapeHtml(l.customer_name || l.phone_raw || "—") + '</li>'; }).join("") +
+          '</ul></div>';
+      }
+
       html += '<div class="kpi-grid">' +
         '<div class="kpi-card"><div class="label">ليدز مفتوحة</div><div class="value">' + fmtNum(res.open) + '</div></div>' +
         '<div class="kpi-card"><div class="label">ليدز مغلقة</div><div class="value">' + fmtNum(res.closed) + '</div></div>' +
