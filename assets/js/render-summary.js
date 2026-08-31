@@ -56,10 +56,11 @@
       window.SSMPDDb.listAdCampaigns(),
       isManager ? window.SSMPDDb.getLeadsStats({}) : Promise.resolve(null),
       isManager ? window.SSMPDDb.listLeads({ status: "new", page_size: 50 }) : Promise.resolve(null),
-      isManager ? window.SSMPDDb.getPatientArchiveStats().catch(function () { return null; }) : Promise.resolve(null)
+      isManager ? window.SSMPDDb.getPatientArchiveStats().catch(function () { return null; }) : Promise.resolve(null),
+      isManager ? window.SSMPDDb.getAppSettings().catch(function () { return null; }) : Promise.resolve(null)
     ]).then(function (res) {
       var items = res[0], metrics = res[1], ads = res[2];
-      var leadsStats = res[3], newLeadsRes = res[4], patientStats = res[5];
+      var leadsStats = res[3], newLeadsRes = res[4], patientStats = res[5], appSettings = res[6];
 
       var total = items.length;
       var planned = items.filter(function (i) { return i.stage === "idea_selection" || i.stage === "initial_approval"; }).length;
@@ -84,7 +85,9 @@
       // لوحده عشان يتابع. بيجمع نفس تنبيهات SLA الموجودة أصلاً في الشاشتين
       // المتخصصتين (إدارة المحتوى وداشبورد الليدز) هنا في مكان واحد.
       if (isManager) {
-        var slaMs48 = 48 * 60 * 60 * 1000, slaMs24 = 24 * 60 * 60 * 1000, nowTs = Date.now();
+        var contentSlaHours = (appSettings && appSettings.content_sla_hours) || 48;
+        var leadsSlaHours = (appSettings && appSettings.leads_sla_hours) || 24;
+        var slaMs48 = contentSlaHours * 60 * 60 * 1000, slaMs24 = leadsSlaHours * 60 * 60 * 1000, nowTs = Date.now();
         var stuckContent = items.filter(function (i) {
           return (i.stage === "initial_approval" || i.stage === "final_approval") &&
             i.updated_at && (nowTs - new Date(i.updated_at).getTime()) > slaMs48;
@@ -109,7 +112,7 @@
             '<strong style="color:var(--c-negative);">⚠ يحتاج متابعة:</strong> ';
           var alerts = [];
           if (stuckContent) alerts.push(stuckContent + ' مادة متأخرة في الاعتماد (تاب "إدارة المحتوى")');
-          if (overdueLeads) alerts.push(overdueLeads + ' ليد من غير رد لأكتر من ٢٤ ساعة (موديول إدارة الليدز)');
+          if (overdueLeads) alerts.push(overdueLeads + ' ليد من غير رد لأكتر من ' + leadsSlaHours + ' ساعة (موديول إدارة الليدز)');
           html += alerts.join(" — ") + '</div>';
         } else {
           html += '<p style="font-size:12px;color:var(--c-positive);margin-top:8px;">✓ مفيش تنبيهات متأخرة دلوقتي.</p>';

@@ -309,11 +309,13 @@
     var body = document.getElementById("ld-dash-body");
     Promise.all([
       window.SSMPDDb.getLeadsStats({ from: d.from, to: d.to }),
-      window.SSMPDDb.listLeads({ status: "new", page_size: 50 })
+      window.SSMPDDb.listLeads({ status: "new", page_size: 50 }),
+      window.SSMPDDb.getAppSettings().catch(function () { return null; })
     ]).then(function (results) {
       var res = results[0];
       var newLeads = (results[1] && results[1].leads) || [];
-      var slaMs = 24 * 60 * 60 * 1000;
+      var slaHours = (results[2] && results[2].leads_sla_hours) || 24;
+      var slaMs = slaHours * 60 * 60 * 1000;
       var nowTs = Date.now();
       var overdueLeads = newLeads.filter(function (l) {
         return l.created_at && (nowTs - new Date(l.created_at).getTime()) > slaMs;
@@ -329,7 +331,7 @@
       if (overdueLeads.length) {
         html += '<div class="section" style="border-inline-start:3px solid var(--c-negative);">' +
           '<h3 style="color:var(--c-negative);">⚠ ليدز محتاجة متابعة عاجلة (' + overdueLeads.length + ')</h3>' +
-          '<p style="font-size:12px;color:var(--c-muted);margin-bottom:8px;">جديدة من غير أي رد لأكتر من ٢٤ ساعة:</p>' +
+          '<p style="font-size:12px;color:var(--c-muted);margin-bottom:8px;">جديدة من غير أي رد لأكتر من ' + slaHours + ' ساعة:</p>' +
           '<ul style="margin:0;padding-inline-start:18px;font-size:13px;">' +
           overdueLeads.map(function (l) { return '<li>' + escapeHtml(l.customer_name || l.phone_raw || "—") + '</li>'; }).join("") +
           '</ul></div>';

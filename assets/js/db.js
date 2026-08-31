@@ -328,6 +328,18 @@
     listAdminsBasic: function () {
       return handle(client.rpc("list_admins_basic"));
     },
+    // مصممين نشطين — يشمل رول "designer" الأساسي أو الإضافي، بديل أدق من
+    // فلترة admins.role مباشرة (كانت بتفوت مصمم لو الرول ده إضافي بس).
+    listDesignersAll: function () {
+      return handle(client.rpc("list_designers_all"));
+    },
+    // إعدادات عامة قابلة للتعديل (حدود SLA حالياً) — صف واحد id=1.
+    getAppSettings: function () {
+      return handle(client.from("app_settings").select("*").eq("id", 1).single());
+    },
+    updateAppSettings: function (patch) {
+      return handle(client.from("app_settings").update(patch).eq("id", 1));
+    },
     listActiveSonoDoctors: function () {
       return handle(client.rpc("list_active_sono_doctors"));
     },

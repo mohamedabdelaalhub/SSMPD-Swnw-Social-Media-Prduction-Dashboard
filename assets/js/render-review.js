@@ -15,19 +15,24 @@
       window.SSMPDDb.listContentItems({}),
       window.SSMPDDb.listAdminsBasic(),
       window.SSMPDDb.listAllComments(),
-      window.SSMPDDb.listMyCommentReads(me.id)
+      window.SSMPDDb.listMyCommentReads(me.id),
+      window.SSMPDDb.listDesignersAll().catch(function () { return []; }),
+      window.SSMPDDb.getAppSettings().catch(function () { return null; })
     ]).then(function (res) {
         var items = res[0], admins = res[1];
         var stats = C.computeCommentStats(res[2], res[3], me.id);
+        var designersAll = res[4] || [];
+        var settings = res[5];
         var adminsById = {}; admins.forEach(function (a) { adminsById[a.id] = a; });
 
         var html = '<h2 style="margin-bottom:16px;">إدارة المحتوى</h2>';
 
         // تنبيه SLA: مواد واقفة في مرحلة اعتماد (أولي أو نهائي) من غير حركة
-        // لأكتر من ٤٨ ساعة — بيتحسب من نفس الـ items المُحمّلة بالفعل، من
-        // غير أي نداء إضافي للسيرفر (`updated_at` بيتحدّث تلقائياً مع كل
-        // تغيير في المادة، بما فيها انتقال المرحلة).
-        var slaMs = 48 * 60 * 60 * 1000;
+        // لأكتر من حد SLA (قابل للتعديل من لوحة الأدمن، افتراضي ٤٨ ساعة) —
+        // بيتحسب من نفس الـ items المُحمّلة بالفعل، من غير أي نداء إضافي
+        // للسيرفر (`updated_at` بيتحدّث تلقائياً مع كل تغيير في المادة).
+        var slaHours = (settings && settings.content_sla_hours) || 48;
+        var slaMs = slaHours * 60 * 60 * 1000;
         var nowTs = Date.now();
         var stuckItems = items.filter(function (i) {
           return (i.stage === "initial_approval" || i.stage === "final_approval") &&
@@ -36,7 +41,7 @@
         if (stuckItems.length) {
           html += '<div class="section" style="border-inline-start:3px solid var(--c-negative);">' +
             '<h3 style="color:var(--c-negative);">⚠ مواد متأخرة في الاعتماد (' + stuckItems.length + ')</h3>' +
-            '<p style="font-size:12px;color:var(--c-muted);margin-bottom:8px;">من غير حركة لأكتر من ٤٨ ساعة:</p><ul style="margin:0;padding-inline-start:18px;font-size:13px;">' +
+            '<p style="font-size:12px;color:var(--c-muted);margin-bottom:8px;">من غير حركة لأكتر من ' + slaHours + ' ساعة:</p><ul style="margin:0;padding-inline-start:18px;font-size:13px;">' +
             stuckItems.map(function (i) { return '<li>' + escapeHtml(i.title) + '</li>'; }).join("") +
             '</ul></div>';
         }
@@ -60,34 +65,37 @@
         container.querySelectorAll("[data-id]").forEach(function (el) {
           el.onclick = function (e) {
             if (e.target.closest("[data-comment]")) return; // زرار الكومنت له نفس أثر فتح المودال أصلاً
-            openReviewModal(el.getAttribute("data-id"), items, admins);
+            openReviewModal(el.getAttribute("data-id"), items, admins, designersAll);
           };
         });
         container.querySelectorAll("[data-comment]").forEach(function (btn) {
           btn.onclick = function (e) {
             e.stopPropagation();
-            openReviewModal(btn.getAttribute("data-comment"), items, admins);
+            openReviewModal(btn.getAttribute("data-comment"), items, admins, designersAll);
           };
         });
         container.querySelectorAll("[data-open]").forEach(function (el) {
-          el.onclick = function () { openReviewModal(el.getAttribute("data-open"), items, admins); };
+          el.onclick = function () { openReviewModal(el.getAttribute("data-open"), items, admins, designersAll); };
         });
 
         // فتح تلقائي لو المستخدم جاي من البحث الموحّد في الشريط العلوي (مرحلة ٦)
         if (window.SSMPDPendingOpenContentId) {
           var pendingId = window.SSMPDPendingOpenContentId;
           window.SSMPDPendingOpenContentId = null;
-          if (items.some(function (i) { return i.id === pendingId; })) openReviewModal(pendingId, items, admins);
+          if (items.some(function (i) { return i.id === pendingId; })) openReviewModal(pendingId, items, admins, designersAll);
         }
       }).catch(function (e) {
         container.innerHTML = '<div class="err-msg">خطأ: ' + e.message + '</div>';
       });
   }
 
-  function openReviewModal(id, items, admins) {
+  function openReviewModal(id, items, admins, designersAll) {
     var item = items.filter(function (i) { return i.id === id; })[0];
     if (!item) return;
-    var designers = admins.filter(function (a) { return a.role === "designer" && a.active; });
+    // designersAll (list_designers_all RPC) بيشمل الرول الأساسي والإضافي —
+    // fallback لفلترة admins القديمة (رول أساسي بس) لو الدالة لسه مش
+    // منشورة على القاعدة الحية.
+    var designers = (designersAll && designersAll.length) ? designersAll : admins.filter(function (a) { return a.role === "designer" && a.active; });
 
     var backdrop = document.createElement("div");
     backdrop.className = "modal-backdrop";

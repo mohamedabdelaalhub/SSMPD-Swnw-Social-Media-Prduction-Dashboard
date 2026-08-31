@@ -9,7 +9,11 @@
 
   function render(container) {
     container.innerHTML = '<div class="loading">بيحمّل…</div>';
-    window.SSMPDDb.listAdmins().then(function (admins) {
+    Promise.all([
+      window.SSMPDDb.listAdmins(),
+      window.SSMPDDb.getAppSettings().catch(function () { return null; })
+    ]).then(function (res) {
+      var admins = res[0], appSettings = res[1];
       var myId = window.SSMPDAuth.currentAdmin.id;
       var activeSupers = admins.filter(function (a) { return a.role === "super_admin" && a.active; });
 
@@ -53,6 +57,13 @@
         '<p style="font-size:11px;color:var(--c-muted);margin-top:4px;">"أرشيف المرضى" صلاحية منفصلة عن الرول — أي مستخدم مفعّلة عنده بيقدر يوصل لتاب أرشيف المرضى مهما كان روله.</p>' +
         '<p style="font-size:11px;color:var(--c-muted);margin-top:4px;">"معاينة الأرشيف فقط" لمين محتاج يتصفح ملفات المرضى بس (مثال: طبيب سونو) — بيقدر يشوف ويفتح الملفات، من غير رفع أو حذف أو مراجعة.</p>' +
         '<p style="font-size:11px;color:var(--c-muted);margin-top:4px;">"حذف الليدز" صلاحية حذف نهائي لأي ليد من موديول إدارة الليدز — متاحة تلقائياً للسوبر أدمن، وممكن تتفعّل لأي مستخدم تاني هنا.</p></div>';
+
+      html += '<div class="section"><h3>إعدادات التنبيهات (SLA)</h3>' +
+        '<p style="font-size:11px;color:var(--c-muted);margin-bottom:8px;">بعد كام ساعة تظهر تنبيهات "متأخر" في إدارة المحتوى وداشبورد الليدز والنظرة العامة — قابلة للتعديل بدل ما تكون ثابتة في الكود.</p>' +
+        '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">' +
+        '<div class="field" style="margin:0;"><label>مواد المحتوى (ساعة)</label><input type="number" min="1" id="sla-content-hours" value="' + ((appSettings && appSettings.content_sla_hours) || 48) + '" style="width:100px;"></div>' +
+        '<div class="field" style="margin:0;"><label>ليدز جديدة من غير رد (ساعة)</label><input type="number" min="1" id="sla-leads-hours" value="' + ((appSettings && appSettings.leads_sla_hours) || 24) + '" style="width:100px;"></div>' +
+        '<button class="btn sm" id="sla-save-btn">حفظ</button></div></div>';
 
       html += '<div class="section"><h3>أداء الموظفين</h3>' +
         '<p style="font-size:11px;color:var(--c-muted);margin-bottom:8px;">ملخص إنتاجية كل موظف في موديول المحتوى (إنشاء/تصميم/نشر) في مكان واحد — بدل ما تتجمع يدوياً من شاشات متفرقة.</p>' +
@@ -138,6 +149,20 @@
             });
         };
       });
+      var slaSaveBtn = document.getElementById("sla-save-btn");
+      if (slaSaveBtn) {
+        slaSaveBtn.onclick = function () {
+          var c = parseInt(document.getElementById("sla-content-hours").value, 10);
+          var l = parseInt(document.getElementById("sla-leads-hours").value, 10);
+          if (!c || c < 1 || !l || l < 1) { alert("اكتب عدد ساعات صحيح لكل خانة."); return; }
+          slaSaveBtn.disabled = true; slaSaveBtn.textContent = "بيحفظ…";
+          window.SSMPDDb.updateAppSettings({ content_sla_hours: c, leads_sla_hours: l, updated_by: myId })
+            .then(function () { window.SSMPDToast.show("اتحفظ"); })
+            .catch(function (e) { alert("خطأ: " + e.message); })
+            .then(function () { slaSaveBtn.disabled = false; slaSaveBtn.textContent = "حفظ"; });
+        };
+      }
+
       var perfBtn = document.getElementById("perf-load-btn");
       if (perfBtn) {
         perfBtn.onclick = function () {
@@ -145,7 +170,11 @@
           perfBtn.textContent = "بيحمّل…";
           var box = document.getElementById("perf-report-box");
           window.SSMPDDb.listContentItems().then(function (items) {
-            box.innerHTML = renderPerformanceReportHtml(items || [], admins);
+            var rows = computePerformanceRows(items || [], admins);
+            box.innerHTML = '<div style="text-align:left;margin-bottom:6px;"><button class="btn ghost sm" id="perf-export-xlsx">⬇ تصدير Excel</button></div>' +
+              renderPerformanceReportHtml(rows);
+            var exBtn = document.getElementById("perf-export-xlsx");
+            if (exBtn) exBtn.onclick = function () { exportPerformanceExcel(rows); };
           }).catch(function (e) {
             box.innerHTML = '<div class="err-msg">خطأ: ' + e.message + '</div>';
           }).then(function () { perfBtn.disabled = false; perfBtn.textContent = "تحميل تقرير الأداء"; });
@@ -285,7 +314,7 @@
   // بتتحمّل مرة واحدة عند الضغط على الزرار (نداء واحد للسيرفر بس، زي نمط
   // تقرير الاستخدام). بيغطي موديول المحتوى (إنشاء/تصميم/نشر) — موديول
   // الليدز عنده داشبورد دخل/أداء منفصل بالفعل (تاب "داشبورد الإدارة").
-  function renderPerformanceReportHtml(items, admins) {
+  function computePerformanceRows(items, admins) {
     var byAdmin = {};
     (admins || []).forEach(function (a) {
       if (!a.active) return;
@@ -297,10 +326,23 @@
       if (it.published_by && byAdmin[it.published_by]) byAdmin[it.published_by].published++;
     });
 
-    var rows = Object.keys(byAdmin).map(function (id) { return byAdmin[id]; })
+    return Object.keys(byAdmin).map(function (id) { return byAdmin[id]; })
       .filter(function (r) { return r.created || r.designed || r.published; })
       .sort(function (a, b) { return (b.created + b.designed + b.published) - (a.created + a.designed + a.published); });
+  }
 
+  // تصدير تقرير الأداء الموحّد كملف Excel — بيستخدم مكتبة SheetJS المُحمّلة
+  // بالفعل في index.html لموديول الليدز، من غير أي مكتبة/نداء إضافي.
+  function exportPerformanceExcel(rows) {
+    if (typeof XLSX === "undefined") { alert("مكتبة الإكسيل لسه مش متحمّلة — جرب ريفريش للصفحة."); return; }
+    var aoa = [["الموظف", "مواد أنشأها", "مواد صممها (استلمها)", "مواد نشرها"]];
+    rows.forEach(function (r) { aoa.push([r.admin.name || r.admin.email, r.created, r.designed, r.published]); });
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), "أداء الموظفين");
+    XLSX.writeFile(wb, "تقرير_أداء_الموظفين_" + new Date().toISOString().slice(0, 10) + ".xlsx");
+  }
+
+  function renderPerformanceReportHtml(rows) {
     var html = '<table class="simple"><thead><tr><th>الموظف</th><th>مواد أنشأها</th><th>مواد صممها (استلمها)</th><th>مواد نشرها</th></tr></thead><tbody>';
     if (!rows.length) {
       html += '<tr><td colspan="4" style="color:var(--c-muted);">مفيش بيانات كفاية.</td></tr>';
