@@ -564,6 +564,23 @@
     };
   }
 
+  // بيستنى الصور تخلص تحميل فعلياً قبل ما يفتح مربع الطباعة (بدل تأخير ثابت
+  // بس) — سبب معروف لظهور الصور فاضية/ناقصة في الطباعة لو المتصفح فتح مربع
+  // الطباعة قبل ما الصورة تخلص تحميل من الـ blob URL. فيه سقف أقصى للانتظار
+  // عشان النافذة متفضلش عالقة لو صورة فشلت تحميل.
+  function waitForImagesThenPrint(win, maxWaitMs) {
+    var done = false;
+    function go() { if (done) return; done = true; win.focus(); win.print(); }
+    var imgs = (win.document.images ? Array.prototype.slice.call(win.document.images) : []).filter(function (img) { return !img.complete; });
+    if (!imgs.length) { setTimeout(go, 200); return; }
+    var remaining = imgs.length;
+    imgs.forEach(function (img) {
+      img.addEventListener("load", function () { if (--remaining <= 0) go(); });
+      img.addEventListener("error", function () { if (--remaining <= 0) go(); });
+    });
+    setTimeout(go, maxWaitMs || 3000);
+  }
+
   // ---------- طباعة ملف/ملفات المريض دفعة واحدة (نافذة معاينة بتفتح مربع طباعة المتصفح تلقائي) ----------
   function printPatientFiles(fileList) {
     fileList = fileList || [];
@@ -589,7 +606,7 @@
       win.document.open();
       win.document.write('<!doctype html><html><head><meta charset="utf-8"><title>طباعة الملفات</title><style>' + PRINT_FONT_FACE_CSS + '</style></head><body style="margin:0;">' + body + PRINT_FOOTER_HTML + '</body></html>');
       win.document.close();
-      setTimeout(function () { win.focus(); win.print(); }, 600);
+      waitForImagesThenPrint(win, 3000);
     }).catch(function (e) {
       T.show("خطأ: " + e.message, "error");
       win.close();
@@ -702,7 +719,7 @@
       win.document.open();
       win.document.write('<!doctype html><html><head><meta charset="utf-8"><title>ملف المريض — ' + escapeHtml(patient.full_name) + '</title><style>' + PRINT_FONT_FACE_CSS + '</style></head><body style="margin:0;">' + coverHtml + filesBody + PRINT_FOOTER_HTML + '</body></html>');
       win.document.close();
-      setTimeout(function () { win.focus(); win.print(); }, 600);
+      waitForImagesThenPrint(win, 3000);
     }).catch(function (e) {
       T.show("خطأ: " + e.message, "error");
       win.close();
