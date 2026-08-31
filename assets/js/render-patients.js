@@ -1047,8 +1047,7 @@
 
     var html = '<div class="modal"><div class="modal-head"><h3>' + escapeHtml(patient.full_name) +
       ' <span style="font-size:12px;color:var(--c-muted);">(' + escapeHtml(patient.patient_code || "") + ')</span></h3>' +
-      '<button class="btn ghost sm" data-print-profile="1" style="margin-inline-end:8px;">🖨 طباعة البروفايل</button>' +
-      '<button class="btn ghost sm" data-print-profile-text="1" style="margin-inline-end:8px;">🖨 طباعة البيانات فقط (بدون صور)</button>' +
+      '<button class="btn ghost sm" data-print-profile-text="1" style="margin-inline-end:8px;">🖨 طباعة البيانات</button>' +
       '<button class="modal-close">×</button></div>';
 
     var canUp = canUpload();
@@ -1259,10 +1258,6 @@
     var printAllBtn = backdrop.querySelector("[data-print-all]");
     if (printAllBtn) {
       printAllBtn.onclick = function () { printPatientFiles(files); };
-    }
-    var printProfileBtn = backdrop.querySelector("[data-print-profile]");
-    if (printProfileBtn) {
-      printProfileBtn.onclick = function () { printPatientProfile(patient, profile, visits, files); };
     }
     var printProfileTextBtn = backdrop.querySelector("[data-print-profile-text]");
     if (printProfileTextBtn) {
