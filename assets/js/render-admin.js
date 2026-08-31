@@ -54,6 +54,11 @@
         '<p style="font-size:11px;color:var(--c-muted);margin-top:4px;">"معاينة الأرشيف فقط" لمين محتاج يتصفح ملفات المرضى بس (مثال: طبيب سونو) — بيقدر يشوف ويفتح الملفات، من غير رفع أو حذف أو مراجعة.</p>' +
         '<p style="font-size:11px;color:var(--c-muted);margin-top:4px;">"حذف الليدز" صلاحية حذف نهائي لأي ليد من موديول إدارة الليدز — متاحة تلقائياً للسوبر أدمن، وممكن تتفعّل لأي مستخدم تاني هنا.</p></div>';
 
+      html += '<div class="section"><h3>أداء الموظفين</h3>' +
+        '<p style="font-size:11px;color:var(--c-muted);margin-bottom:8px;">ملخص إنتاجية كل موظف في موديول المحتوى (إنشاء/تصميم/نشر) في مكان واحد — بدل ما تتجمع يدوياً من شاشات متفرقة.</p>' +
+        '<button class="btn ghost sm" id="perf-load-btn">تحميل تقرير الأداء</button>' +
+        '<div id="perf-report-box" style="margin-top:12px;"></div></div>';
+
       html += '<div class="section"><h3>تقرير الاستخدام</h3>' +
         '<p style="font-size:11px;color:var(--c-muted);margin-bottom:8px;">كل مرة حد بيفتح الداشبورد بيتسجّل كجلسة (وقت الدخول/الخروج والمدة)، وكل عملية رفع/إنشاء مهمة (تصميم، مادة محتوى، مستند مريض، تقرير مؤشرات/إعلانات، إكسيل ليدز، فاتورة حجز) بتتسجّل باسمها في سجل الأنشطة.</p>' +
         '<button class="btn ghost sm" id="usage-load-btn">تحميل تقرير الاستخدام</button>' +
@@ -133,6 +138,19 @@
             });
         };
       });
+      var perfBtn = document.getElementById("perf-load-btn");
+      if (perfBtn) {
+        perfBtn.onclick = function () {
+          perfBtn.disabled = true;
+          perfBtn.textContent = "بيحمّل…";
+          var box = document.getElementById("perf-report-box");
+          window.SSMPDDb.listContentItems().then(function (items) {
+            box.innerHTML = renderPerformanceReportHtml(items || [], admins);
+          }).catch(function (e) {
+            box.innerHTML = '<div class="err-msg">خطأ: ' + e.message + '</div>';
+          }).then(function () { perfBtn.disabled = false; perfBtn.textContent = "تحميل تقرير الأداء"; });
+        };
+      }
       var usageBtn = document.getElementById("usage-load-btn");
       if (usageBtn) {
         usageBtn.onclick = function () {
@@ -260,6 +278,40 @@
       });
     }
     html += '</tbody></table>';
+    return html;
+  }
+
+  // تقرير أداء موحّد — بيتحسب في المتصفح من نفس مصفوفة content_items اللي
+  // بتتحمّل مرة واحدة عند الضغط على الزرار (نداء واحد للسيرفر بس، زي نمط
+  // تقرير الاستخدام). بيغطي موديول المحتوى (إنشاء/تصميم/نشر) — موديول
+  // الليدز عنده داشبورد دخل/أداء منفصل بالفعل (تاب "داشبورد الإدارة").
+  function renderPerformanceReportHtml(items, admins) {
+    var byAdmin = {};
+    (admins || []).forEach(function (a) {
+      if (!a.active) return;
+      byAdmin[a.id] = { admin: a, created: 0, designed: 0, published: 0 };
+    });
+    items.forEach(function (it) {
+      if (it.created_by && byAdmin[it.created_by]) byAdmin[it.created_by].created++;
+      if (it.assigned_designer && byAdmin[it.assigned_designer] && it.design_received_at) byAdmin[it.assigned_designer].designed++;
+      if (it.published_by && byAdmin[it.published_by]) byAdmin[it.published_by].published++;
+    });
+
+    var rows = Object.keys(byAdmin).map(function (id) { return byAdmin[id]; })
+      .filter(function (r) { return r.created || r.designed || r.published; })
+      .sort(function (a, b) { return (b.created + b.designed + b.published) - (a.created + a.designed + a.published); });
+
+    var html = '<table class="simple"><thead><tr><th>الموظف</th><th>مواد أنشأها</th><th>مواد صممها (استلمها)</th><th>مواد نشرها</th></tr></thead><tbody>';
+    if (!rows.length) {
+      html += '<tr><td colspan="4" style="color:var(--c-muted);">مفيش بيانات كفاية.</td></tr>';
+    } else {
+      rows.forEach(function (r) {
+        html += '<tr><td>' + escapeHtml(r.admin.name || r.admin.email) + '</td>' +
+          '<td>' + r.created + '</td><td>' + r.designed + '</td><td>' + r.published + '</td></tr>';
+      });
+    }
+    html += '</tbody></table>' +
+      '<p style="font-size:11px;color:var(--c-muted);margin-top:8px;">مؤشرات موديول الليدز (الدخل/الحجوزات حسب الموظف) موجودة في تاب "داشبورد الإدارة" داخل موديول إدارة الليدز.</p>';
     return html;
   }
 
