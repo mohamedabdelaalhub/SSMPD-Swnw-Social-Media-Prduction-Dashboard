@@ -47,12 +47,19 @@
   function render(container) {
     container.innerHTML = '<div class="loading">بيحمّل المؤشرات…</div>';
 
+    var me0 = window.SSMPDAuth.currentAdmin;
+    var isManager = window.SSMPDRoles.hasAnyRole(me0, ["general_manager", "super_admin"]);
+
     Promise.all([
       window.SSMPDDb.listContentItems({}),
       window.SSMPDDb.listWeeklyMetrics(500),
-      window.SSMPDDb.listAdCampaigns()
+      window.SSMPDDb.listAdCampaigns(),
+      isManager ? window.SSMPDDb.getLeadsStats({}) : Promise.resolve(null),
+      isManager ? window.SSMPDDb.listLeads({ status: "new", page_size: 50 }) : Promise.resolve(null),
+      isManager ? window.SSMPDDb.getPatientArchiveStats().catch(function () { return null; }) : Promise.resolve(null)
     ]).then(function (res) {
       var items = res[0], metrics = res[1], ads = res[2];
+      var leadsStats = res[3], newLeadsRes = res[4], patientStats = res[5];
 
       var total = items.length;
       var planned = items.filter(function (i) { return i.stage === "idea_selection" || i.stage === "initial_approval"; }).length;
@@ -71,6 +78,44 @@
       }
 
       var html = '<h2 style="margin-bottom:16px;">الملخص العام</h2>';
+
+      // نظرة عامة على النظام كله — للمدير العام/السوبر أدمن بس: نبضة واحدة
+      // عبر الموديولات التلاتة (محتوى/ليدز/أرشيف مرضى) بدل ما يفتح كل شاشة
+      // لوحده عشان يتابع. بيجمع نفس تنبيهات SLA الموجودة أصلاً في الشاشتين
+      // المتخصصتين (إدارة المحتوى وداشبورد الليدز) هنا في مكان واحد.
+      if (isManager) {
+        var slaMs48 = 48 * 60 * 60 * 1000, slaMs24 = 24 * 60 * 60 * 1000, nowTs = Date.now();
+        var stuckContent = items.filter(function (i) {
+          return (i.stage === "initial_approval" || i.stage === "final_approval") &&
+            i.updated_at && (nowTs - new Date(i.updated_at).getTime()) > slaMs48;
+        }).length;
+        var newLeads = (newLeadsRes && newLeadsRes.leads) || [];
+        var overdueLeads = newLeads.filter(function (l) {
+          return l.created_at && (nowTs - new Date(l.created_at).getTime()) > slaMs24;
+        }).length;
+        var pendingFiles = patientStats ? (patientStats.pending_review || 0) : null;
+        var openLeads = leadsStats ? (leadsStats.open || 0) : 0;
+        var awaitingApproval = items.filter(function (i) {
+          return i.stage === "initial_approval" || i.stage === "final_approval";
+        }).length;
+
+        html += '<div class="section"><h3>نظرة عامة على النظام</h3><div class="kpi-grid">';
+        html += kpiCard("مواد قيد الاعتماد", awaitingApproval);
+        html += kpiCard("ليدز مفتوحة", openLeads);
+        if (pendingFiles != null) html += kpiCard("ملفات مرضى قيد المراجعة", pendingFiles);
+        html += '</div>';
+        if (stuckContent || overdueLeads) {
+          html += '<div style="margin-top:10px;border-inline-start:3px solid var(--c-negative);padding-inline-start:10px;">' +
+            '<strong style="color:var(--c-negative);">⚠ يحتاج متابعة:</strong> ';
+          var alerts = [];
+          if (stuckContent) alerts.push(stuckContent + ' مادة متأخرة في الاعتماد (تاب "إدارة المحتوى")');
+          if (overdueLeads) alerts.push(overdueLeads + ' ليد من غير رد لأكتر من ٢٤ ساعة (موديول إدارة الليدز)');
+          html += alerts.join(" — ") + '</div>';
+        } else {
+          html += '<p style="font-size:12px;color:var(--c-positive);margin-top:8px;">✓ مفيش تنبيهات متأخرة دلوقتي.</p>';
+        }
+        html += '</div>';
+      }
 
       html += '<div class="section"><h3>إنتاج المحتوى</h3><div class="kpi-grid">';
       html += kpiCard("إجمالي المحتوى", total);
