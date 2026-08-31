@@ -317,9 +317,28 @@
       }).catch(function () { hideResults(); });
     }
 
+    // تنقّل بالكيبورد (↑/↓) بين نتائج البحث + Enter لاختيار النتيجة المظلّلة
+    function moveActive(dir) {
+      var items = resultsBox.querySelectorAll(".gsearch-item");
+      if (!items.length) return;
+      var cur = -1;
+      items.forEach(function (b, i) { if (b.classList.contains("active")) cur = i; });
+      items.forEach(function (b) { b.classList.remove("active"); b.style.background = "none"; });
+      var next = cur + dir;
+      if (next < 0) next = items.length - 1;
+      if (next >= items.length) next = 0;
+      items[next].classList.add("active");
+      items[next].style.background = "var(--c-bg, rgba(0,0,0,.05))";
+      items[next].scrollIntoView({ block: "nearest" });
+    }
     input.addEventListener("keydown", function (e) {
-      if (e.key === "Enter") { e.preventDefault(); runSearch(input.value); }
-      else if (e.key === "Escape") { input.blur(); hideResults(); }
+      if (e.key === "Enter") {
+        var active = resultsBox.querySelector(".gsearch-item.active");
+        if (active && !resultsBox.hidden) { e.preventDefault(); active.click(); return; }
+        e.preventDefault(); runSearch(input.value);
+      } else if (e.key === "Escape") { input.blur(); hideResults(); }
+      else if (e.key === "ArrowDown") { if (!resultsBox.hidden) { e.preventDefault(); moveActive(1); } }
+      else if (e.key === "ArrowUp") { if (!resultsBox.hidden) { e.preventDefault(); moveActive(-1); } }
     });
     document.addEventListener("click", function (e) {
       if (!resultsBox.contains(e.target) && e.target !== input) hideResults();
