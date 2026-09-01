@@ -95,6 +95,7 @@
           };
         }),
         transactions: data.transactions || [],
+        otherExpensesItems: data.otherExpensesItems || [],
         lastRecordAt: data.lastRecordAt || null
       };
     });
@@ -111,10 +112,14 @@
 
   // بيرجع حركات سجل الحركات الخاصة بشهر وعمود معيّن من جدول الإقفال الشهري —
   // سحوبات فيسبوك بتتفلتر بنوع "سحب" بالظبط، المسدد بنوع "سداد" بالظبط.
-  // "مصروفات أخرى" و"الرصيد الختامي" مفيش ليهم تفصيل حركات مستقل: الأول رقم
-  // بييجي جاهز من شيت "الإقفال الشهري" نفسه (مش من سجل الحركات)، والتاني
-  // رصيد تراكمي مش عملية واحدة — فمعالجهم بيرجعوا null (مفيش جدول، رسالة بس)
+  // "مصروفات أخرى" بقى ليها تفصيل من شيت "اشتراكات ومصروفات أخرى" المنفصل
+  // (بنود زي Google One/Claude/ChatGPT). "الرصيد الختامي" لسه رصيد تراكمي
+  // مش عملية واحدة — فمعالجه بيرجع null (مفيش جدول، رسالة بس)
   function filterTransactionsForCell(month, field) {
+    if (field === "otherExpenses") {
+      var allOe = (adsExpensesCache && adsExpensesCache.otherExpensesItems) || [];
+      return allOe.filter(function (t) { return String(t.month) === String(month); });
+    }
     var all = (adsExpensesCache && adsExpensesCache.transactions) || [];
     var monthTx = all.filter(function (t) { return String(t.month) === String(month); });
     if (field === "fbSpend") return monthTx.filter(function (t) { return t.type === "سحب"; });
@@ -124,7 +129,6 @@
 
   var CELL_FIELD_LABELS = { fbSpend: "سحوبات فيسبوك", paid: "المسدد", otherExpenses: "مصروفات أخرى", closingBalance: "الرصيد الختامي" };
   var CELL_FIELD_NOTES = {
-    otherExpenses: "رقم «مصروفات أخرى» بييجي جاهز من شيت «الإقفال الشهري» في ملف الإكسل مباشرة (رسوم بنكية/تعديلات يدوية غالباً) — مش مبني على حركات فردية في «سجل الحركات»، فمفيش تفصيل نعرضه هنا.",
     closingBalance: "«الرصيد الختامي» رصيد تراكمي (كل السحوبات والمسدد من أول الملف لحد آخر الشهر ده) — مش قيمة عملية واحدة، فمفيش «حركة» بعينها تتربط بيه. لتفاصيل حركات الشهر ده استخدم عمودي «سحوبات فيسبوك» و«المسدد» فوق."
   };
 
@@ -137,6 +141,14 @@
       bodyHtml = '<p style="font-size:12px;color:var(--c-muted);">' + escapeHtml(CELL_FIELD_NOTES[field] || "") + '</p>';
     } else if (!rows.length) {
       bodyHtml = '<div class="empty-state">مفيش حركات مسجّلة لهذا البند في هذا الشهر.</div>';
+    } else if (field === "otherExpenses") {
+      var sumOe = rows.reduce(function (s, t) { return s + Number(t.amount || 0); }, 0);
+      bodyHtml = '<p style="font-size:12px;color:var(--c-muted);">عدد البنود: ' + rows.length + ' — الإجمالي: ' + fmtNum(sumOe) + ' ج.م</p>' +
+        '<div style="max-height:360px;overflow:auto;"><table class="simple"><thead><tr><th>التاريخ</th><th>الجهة أو الاشتراك</th><th>القيمة</th><th>البيان</th></tr></thead><tbody>' +
+        rows.map(function (t) {
+          return '<tr><td>' + fmtTxDate(t.date) + '</td><td>' + escapeHtml(t.vendor || "—") + '</td>' +
+            '<td>' + fmtNum(t.amount) + '</td><td>' + escapeHtml(t.description || "—") + '</td></tr>';
+        }).join("") + '</tbody></table></div>';
     } else {
       var sum = rows.reduce(function (s, t) { return s + Number(t.amount || 0); }, 0);
       bodyHtml = '<p style="font-size:12px;color:var(--c-muted);">عدد الحركات: ' + rows.length + ' — الإجمالي: ' + fmtNum(sum) + ' ج.م</p>' +
