@@ -564,6 +564,104 @@
     };
   }
 
+  // ---------- فورم "تقرير طبي" (إنشاء/تعديل) — نص حر، بيتطبع بشكل الفورم الرسمي ----------
+  function openMedicalReportFormModal(patient, existingReport, onSaved) {
+    var r = existingReport || {};
+    var isEdit = !!existingReport;
+    var backdrop = document.createElement("div");
+    backdrop.className = "modal-backdrop";
+    backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>' + (isEdit ? "تعديل التقرير الطبي" : "تقرير طبي جديد") + '</h3><button class="modal-close">×</button></div>' +
+      '<p style="font-size:12px;color:var(--c-muted);margin:-6px 0 10px;">المريض: ' + escapeHtml(patient.full_name) + (patient.age != null ? (' — ' + patient.age + ' عام') : '') + '</p>' +
+      '<div class="field"><label>تاريخ التقرير</label><input id="mr-date" type="date" value="' + (r.report_date || new Date().toISOString().slice(0, 10)) + '"></div>' +
+      '<div class="field"><label>نص التقرير</label><textarea id="mr-body" rows="10" placeholder="اكتب نص التقرير كامل زي ما هيتطبع بالظبط...">' + escapeHtml(r.body_text || '') + '</textarea></div>' +
+      '<p style="font-size:11px;color:var(--c-muted);">هيتطبع باسم "المدير الطبي: ' + escapeHtml(r.doctor_name || 'د.دينا حسني') + '" تلقائي في نهاية التقرير.</p>' +
+      '<button class="btn block" id="mr-save">حفظ</button></div>';
+    document.body.appendChild(backdrop);
+    backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
+    backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
+
+    document.getElementById("mr-save").onclick = function () {
+      var body = document.getElementById("mr-body").value.trim();
+      if (!body) { T.show("اكتب نص التقرير الأول", "error"); return; }
+      var patch = {
+        report_date: document.getElementById("mr-date").value || new Date().toISOString().slice(0, 10),
+        body_text: body,
+        doctor_name: r.doctor_name || "د.دينا حسني"
+      };
+      if (isEdit) patch.id = existingReport.id;
+      window.SSMPDDb.saveMedicalReport(patient.id, patch, me && me.id).then(function () {
+        T.show(isEdit ? "اتحدث التقرير" : "اتحفظ التقرير");
+        backdrop.remove();
+        if (onSaved) onSaved();
+      }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
+    };
+  }
+
+  // ---------- فورم Echocardiography Report (إنشاء/تعديل) ----------
+  var ECHO_DIMENSIONS = [
+    { key: "lvedd", label: "LVEDD", ref: "3.5 -5.6 cm" },
+    { key: "lvesd", label: "LVESD", ref: "" },
+    { key: "lv_swt", label: "LV SWT", ref: "0.7 – 1.1 cm" },
+    { key: "lv_pwt", label: "LV PWT", ref: "0.7 – 1.1 cm" },
+    { key: "ef", label: "EF", ref: ">50%" },
+    { key: "left_atrium", label: "Left Atrium", ref: "1.9 – 4.0 cm" },
+    { key: "ao_root", label: "Ao Root", ref: "2.0 - 3.7 cm" },
+    { key: "ao_excursion", label: "Ao Excursion", ref: "1.6 -2.6 cm" },
+    { key: "rt_ventricle", label: "Rt. Ventricle", ref: "0.7 – 2.7 cm" },
+    { key: "fs", label: "FS", ref: "25 – 45 %" }
+  ];
+  function openEchoReportFormModal(patient, existingReport, onSaved) {
+    var r = existingReport || {};
+    var dims = r.dimensions || {};
+    var isEdit = !!existingReport;
+    var backdrop = document.createElement("div");
+    backdrop.className = "modal-backdrop";
+    var html = '<div class="modal"><div class="modal-head"><h3>' + (isEdit ? "تعديل تقرير Echo" : "تقرير Echo جديد") + '</h3><button class="modal-close">×</button></div>' +
+      '<div class="field"><label>الاسم زي ما هيتطبع</label><input id="er-name" value="' + escapeHtml(r.patient_label || patient.full_name || '') + '"></div>' +
+      '<div style="display:flex;gap:8px;">' +
+      '<div class="field" style="flex:1;"><label>التاريخ</label><input id="er-date" type="date" value="' + (r.report_date || new Date().toISOString().slice(0, 10)) + '"></div>' +
+      '<div class="field" style="flex:1;"><label>Referred By</label><input id="er-referred" value="' + escapeHtml(r.referred_by || '') + '"></div>' +
+      '</div>' +
+      '<div class="field"><label>Dimensions</label><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;">';
+    ECHO_DIMENSIONS.forEach(function (d) {
+      html += '<div style="display:flex;align-items:center;gap:6px;font-size:12px;">' +
+        '<span style="flex:0 0 90px;">' + d.label + (d.ref ? ' <span style="color:var(--c-muted);font-size:10px;">(' + d.ref + ')</span>' : '') + '</span>' +
+        '<input data-echo-dim="' + d.key + '" value="' + escapeHtml(dims[d.key] || '') + '" style="flex:1;padding:4px 6px;"></div>';
+    });
+    html += '</div></div>' +
+      '<div class="field"><label>Summary</label><textarea id="er-summary" rows="8" placeholder="سطر لكل بند، زي ما هيتطبع...">' + escapeHtml(r.summary_text || '') + '</textarea></div>' +
+      '<div class="field"><label>Conclusion</label><textarea id="er-conclusion" rows="4">' + escapeHtml(r.conclusion_text || '') + '</textarea></div>' +
+      '<div class="field"><label>اسم الطبيب الموقّع</label><input id="er-doctor" value="' + escapeHtml(r.doctor_name || 'Dr. Haytham Shaaban (MSc)') + '"></div>' +
+      '<button class="btn block" id="er-save">حفظ</button></div>';
+    backdrop.innerHTML = html;
+    document.body.appendChild(backdrop);
+    backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
+    backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
+
+    document.getElementById("er-save").onclick = function () {
+      var newDims = {};
+      backdrop.querySelectorAll("[data-echo-dim]").forEach(function (inp) {
+        var v = inp.value.trim();
+        if (v) newDims[inp.getAttribute("data-echo-dim")] = v;
+      });
+      var patch = {
+        patient_label: document.getElementById("er-name").value.trim() || patient.full_name,
+        report_date: document.getElementById("er-date").value || new Date().toISOString().slice(0, 10),
+        referred_by: document.getElementById("er-referred").value.trim() || null,
+        dimensions: newDims,
+        summary_text: document.getElementById("er-summary").value.trim(),
+        conclusion_text: document.getElementById("er-conclusion").value.trim(),
+        doctor_name: document.getElementById("er-doctor").value.trim() || "Dr. Haytham Shaaban (MSc)"
+      };
+      if (isEdit) patch.id = existingReport.id;
+      window.SSMPDDb.saveEchoReport(patient.id, patch, me && me.id).then(function () {
+        T.show(isEdit ? "اتحدث التقرير" : "اتحفظ التقرير");
+        backdrop.remove();
+        if (onSaved) onSaved();
+      }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
+    };
+  }
+
   // بيستنى الصور تخلص تحميل فعلياً قبل ما يفتح مربع الطباعة (بدل تأخير ثابت
   // بس) — سبب معروف لظهور الصور فاضية/ناقصة في الطباعة لو المتصفح فتح مربع
   // الطباعة قبل ما الصورة تخلص تحميل من الـ blob URL. فيه سقف أقصى للانتظار
@@ -617,6 +715,11 @@
   //            في الداشبورد نفسه (مفيش داعي المستخدم يبعتهم، موجودين بالفعل في الريبو)
   var PRINT_SITE_BASE = "https://mohamedabdelaalhub.github.io/SSMPD-Swnw-Social-Media-Prduction-Dashboard/";
   var PRINT_LOGO_URL = PRINT_SITE_BASE + "assets/img/logo.svg";
+  // هيدر/فوتر فورم "التقرير الطبي"/Echo الرسمي — مقصوصين من نفس الفورم المطبوع
+  // اللي المركز بيستخدمه فعلياً (بادج ورقي أزرق/برتقالي + QR)، عشان الطباعة
+  // من الداشبورد تطلع بنفس الشكل بالظبط بدل ما حد يطبعها يدوي على الوورد
+  var PRINT_LETTERHEAD_HEADER_URL = PRINT_SITE_BASE + "assets/img/report-letterhead-header.jpg";
+  var PRINT_LETTERHEAD_FOOTER_URL = PRINT_SITE_BASE + "assets/img/report-letterhead-footer.jpg";
   var PRINT_FONT_FACE_CSS =
     "@font-face{font-family:'BigVesta Arabic';src:url('" + PRINT_SITE_BASE + "assets/fonts/BigVesta-Regular.woff2') format('woff2');font-weight:400;}" +
     "@font-face{font-family:'BigVesta Arabic';src:url('" + PRINT_SITE_BASE + "assets/fonts/BigVesta-Bold.woff2') format('woff2');font-weight:700;}" +
@@ -630,6 +733,89 @@
     var dateLabel = it.issuedAt ? ('تاريخ الإصدار: ' + fmtDate(it.issuedAt)) : ('تاريخ الرفع: ' + fmtDate(it.uploadedAt));
     return '<div style="padding:8px 14px;background:#f5f5f5;border-bottom:2px solid #0F369D;font-weight:700;font-size:13px;display:flex;justify-content:space-between;">' +
       '<span>' + escapeHtml(categoryLabel(it.category)) + '</span><span style="font-weight:400;">' + dateLabel + '</span></div>';
+  }
+
+  // إطار صفحة A4 بالهيدر/الفوتر الرسمي (نفس صورة الفورم المطبوع بتاع المركز)،
+  // مشترك بين تقرير طبي وEcho — المحتوى بيتحط في المنطقة البيضا النص بينهم
+  // الفوتر صورة رسمية جاهزة (بيانات التواصل + الأيقونات مرسومة جوه الصورة نفسها)
+  function letterheadPageHtml(dir, bodyHtml) {
+    return '<div style="position:relative;width:210mm;min-height:297mm;margin:0 auto;">' +
+      '<img src="' + PRINT_LETTERHEAD_HEADER_URL + '" style="position:absolute;top:0;left:0;width:100%;display:block;">' +
+      '<img src="' + PRINT_LETTERHEAD_FOOTER_URL + '" style="position:absolute;bottom:0;left:0;width:100%;display:block;">' +
+      '<div dir="' + dir + '" style="position:relative;padding:64mm 15mm 45mm;box-sizing:border-box;">' + bodyHtml + '</div>' +
+      '</div>';
+  }
+
+  // ---------- طباعة "تقرير طبي" (نص حر) بشكل الفورم الرسمي ----------
+  function printMedicalReport(patient, report) {
+    var win = window.open("", "_blank");
+    if (!win) { T.show("المتصفح منع فتح نافذة الطباعة — سمح بالنوافذ المنبثقة وحاول تاني", "error"); return; }
+    var bodyParagraphs = (report.body_text || "").split(/\n{2,}/).map(function (p) {
+      return '<p style="margin:0 0 14px;">' + escapeHtml(p).replace(/\n/g, "<br>") + '</p>';
+    }).join("");
+    var body =
+      '<h1 style="font-size:28px;color:#0F369D;text-align:right;margin:0 0 4px;">تقرير طبي</h1>' +
+      '<div style="color:#F15A22;font-size:13px;text-align:right;border-bottom:1px solid #ccc;padding-bottom:10px;margin-bottom:22px;font-style:italic;">Medical Report</div>' +
+      '<p style="margin:0 0 4px;"><b>المريض:</b> ' + escapeHtml(patient.full_name) + '</p>' +
+      (patient.age != null ? '<p style="margin:0 0 4px;"><b>العمر:</b> ' + escapeHtml(String(patient.age)) + ' عام</p>' : '') +
+      '<p style="margin:0 0 22px;"><b>التاريخ:</b> ' + fmtDate(report.report_date) + '</p>' +
+      bodyParagraphs +
+      '<p style="margin:22px 0;">وتفضلوا بقبول فائق الاحترام والتقدير</p>' +
+      '<div style="margin-top:50px;"><div>المدير الطبي:</div><div style="font-weight:700;margin-top:4px;">' + escapeHtml(report.doctor_name || "د.دينا حسني") + '</div></div>';
+    win.document.open();
+    win.document.write('<!doctype html><html><head><meta charset="utf-8"><title>تقرير طبي — ' + escapeHtml(patient.full_name) + '</title>' +
+      '<style>' + PRINT_FONT_FACE_CSS + '@page{size:A4;margin:0;}body{margin:0;font-size:14px;line-height:1.9;}</style></head>' +
+      '<body>' + letterheadPageHtml("rtl", body) + '</body></html>');
+    win.document.close();
+    waitForImagesThenPrint(win, 3000);
+  }
+
+  // ---------- طباعة Echocardiography Report بشكل الفورم الرسمي ----------
+  function printEchoReport(patient, report) {
+    var win = window.open("", "_blank");
+    if (!win) { T.show("المتصفح منع فتح نافذة الطباعة — سمح بالنوافذ المنبثقة وحاول تاني", "error"); return; }
+    var dims = report.dimensions || {};
+    var left = ["lvedd", "lvesd", "lv_swt", "lv_pwt", "ef"];
+    var right = ["left_atrium", "ao_root", "ao_excursion", "rt_ventricle", "fs"];
+    var byKey = {};
+    ECHO_DIMENSIONS.forEach(function (d) { byKey[d.key] = d; });
+    var rows = "";
+    for (var i = 0; i < 5; i++) {
+      var l = byKey[left[i]], rt = byKey[right[i]];
+      rows += '<tr>' +
+        '<td style="border:1px solid #999;padding:4px 8px;font-weight:700;">' + l.label + '</td>' +
+        '<td style="border:1px solid #999;padding:4px 8px;text-align:center;">' + escapeHtml(dims[l.key] || "") + '</td>' +
+        '<td style="border:1px solid #999;padding:4px 8px;font-style:italic;color:#333;background:#f2f2f2;">' + (l.ref || "") + '</td>' +
+        '<td style="border:1px solid #999;padding:4px 8px;font-weight:700;">' + rt.label + '</td>' +
+        '<td style="border:1px solid #999;padding:4px 8px;text-align:center;">' + escapeHtml(dims[rt.key] || "") + '</td>' +
+        '<td style="border:1px solid #999;padding:4px 8px;font-style:italic;color:#333;background:#f2f2f2;">' + (rt.ref || "") + '</td>' +
+        '</tr>';
+    }
+    function linesHtml(text) {
+      return (text || "").split(/\n/).filter(function (l) { return l.trim(); }).map(function (l) {
+        return '<div style="margin:0 0 4px;">• ' + escapeHtml(l.trim()) + '</div>';
+      }).join("");
+    }
+    var body =
+      '<h1 style="font-size:20px;text-align:center;text-decoration:underline;font-style:italic;margin:0 0 18px;">Echocardiography Report</h1>' +
+      '<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;"><b>Name: ' + escapeHtml(report.patient_label || patient.full_name) + '</b><b>Date: ' + fmtDate(report.report_date) + '</b></div>' +
+      (report.referred_by ? '<div style="font-size:13px;margin-bottom:10px;"><b>Referred By: ' + escapeHtml(report.referred_by) + '</b></div>' : '<div style="margin-bottom:10px;"></div>') +
+      '<div style="text-align:center;text-decoration:underline;font-size:12px;margin-bottom:6px;">Dimensions:</div>' +
+      '<table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:16px;">' +
+      '<tr><td style="border:1px solid #999;padding:4px 8px;font-style:italic;">Items</td><td style="border:1px solid #999;"></td><td style="border:1px solid #999;padding:4px 8px;font-style:italic;">Normal reference</td>' +
+      '<td style="border:1px solid #999;padding:4px 8px;font-style:italic;">Items</td><td style="border:1px solid #999;"></td><td style="border:1px solid #999;padding:4px 8px;font-style:italic;">Normal reference</td></tr>' +
+      rows + '</table>' +
+      '<div style="text-align:center;text-decoration:underline;font-size:12px;margin-bottom:6px;">Summary</div>' +
+      '<div style="font-size:12px;margin-bottom:16px;">' + linesHtml(report.summary_text) + '</div>' +
+      '<div style="text-decoration:underline;font-size:12px;margin-bottom:6px;">Conclusion:</div>' +
+      '<div style="font-size:12px;margin-bottom:30px;">' + linesHtml(report.conclusion_text) + '</div>' +
+      '<div style="text-align:center;font-weight:700;font-size:13px;">' + escapeHtml(report.doctor_name || "Dr. Haytham Shaaban (MSc)") + '</div>';
+    win.document.open();
+    win.document.write('<!doctype html><html><head><meta charset="utf-8"><title>Echocardiography Report — ' + escapeHtml(patient.full_name) + '</title>' +
+      '<style>' + PRINT_FONT_FACE_CSS + '@page{size:A4;margin:0;}body{margin:0;font-family:Georgia,\'Times New Roman\',serif;}</style></head>' +
+      '<body>' + letterheadPageHtml("ltr", body) + '</body></html>');
+    win.document.close();
+    waitForImagesThenPrint(win, 3000);
   }
 
   // ---------- طباعة بروفايل المريض كامل: صفحة بيانات شخصية/طبية + كل المرفقات كصفحات داخلية ----------
@@ -1045,9 +1231,11 @@
         window.SSMPDDb.getPatientFiles(patientId),
         window.SSMPDDb.getPatientMedicalProfile(patientId).catch(function () { return null; }),
         window.SSMPDDb.listPatientVisits(patientId).catch(function () { return []; }),
+        window.SSMPDDb.listMedicalReports(patientId).catch(function () { return []; }),
+        window.SSMPDDb.listEchoReports(patientId).catch(function () { return []; }),
       ]).then(function (results) {
         var res = results[0], profile = results[1], visits = results[2] || [];
-        renderPatientModal(backdrop, view, container, res.patient, res.files || [], profile, visits);
+        renderPatientModal(backdrop, view, container, res.patient, res.files || [], profile, visits, results[3] || [], results[4] || []);
       }).catch(function (e) {
         backdrop.querySelector(".modal").innerHTML = '<div class="err-msg">خطأ: ' + e.message + '</div>';
       });
@@ -1055,12 +1243,14 @@
     reload();
   }
 
-  function renderPatientModal(backdrop, view, container, patient, files, profile, visits) {
+  function renderPatientModal(backdrop, view, container, patient, files, profile, visits, reports, echoReports) {
     var byCategory = {};
     CATEGORIES.forEach(function (c) { byCategory[c.key] = []; });
     files.forEach(function (f) { (byCategory[f.category] || (byCategory[f.category] = [])).push(f); });
     profile = profile || null;
     visits = visits || [];
+    reports = reports || [];
+    echoReports = echoReports || [];
 
     var html = '<div class="modal"><div class="modal-head"><h3>' + escapeHtml(patient.full_name) +
       ' <span style="font-size:12px;color:var(--c-muted);">(' + escapeHtml(patient.patient_code || "") + ')</span></h3>' +
@@ -1151,6 +1341,7 @@
         '<h3 style="font-size:13px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
         '<span>' + c.label + ' (' + list.length + ')</span>' +
         (canUp ? '<span><button class="btn ghost sm" data-upload-cat="' + c.key + '">+ رفع</button>' +
+          (c.key === "medical_report" ? ' <button class="btn ghost sm" data-new-medical-report="1">+ إنشاء جديد</button>' : '') +
           '<input type="file" accept="image/*,application/pdf" data-file-input-cat="' + c.key + '" style="display:none;"></span>' : '') +
         '</h3>';
       if (canUp) {
@@ -1178,8 +1369,47 @@
             (canUp ? '<button class="btn danger sm" data-del-file="' + f.id + '">حذف</button>' : '') + '</div></div>';
         });
       }
+      if (c.key === "medical_report") {
+        html += '<div style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--c-border);">' +
+          '<b style="font-size:12px;">التقارير المُنشأة من الداشبورد (' + reports.length + ')</b>';
+        if (!reports.length) {
+          html += '<p style="font-size:12px;color:var(--c-muted);margin-top:6px;">مفيش تقارير مُنشأة لسه.</p>';
+        } else {
+          reports.forEach(function (r) {
+            html += '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--c-border);font-size:12px;">' +
+              '<div><b>تقرير طبي</b> — ' + fmtDate(r.report_date) + '<br>' +
+              '<span style="color:var(--c-muted);">' + escapeHtml((r.body_text || "").slice(0, 60)) + ((r.body_text || "").length > 60 ? "…" : "") + '</span></div>' +
+              '<div style="display:flex;gap:6px;flex-shrink:0;">' +
+              '<button class="btn ghost sm" data-edit-medical-report="' + r.id + '">تعديل</button>' +
+              '<button class="btn ghost sm" data-print-medical-report="' + r.id + '">🖨 طباعة</button>' +
+              (canUp ? '<button class="btn danger sm" data-del-medical-report="' + r.id + '">حذف</button>' : '') + '</div></div>';
+          });
+        }
+        html += '</div>';
+      }
       html += '</div>';
     });
+
+    // ---------- Echocardiography Report ----------
+    html += '<div class="section" style="padding:12px 14px;">' +
+      '<h3 style="font-size:13px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
+      '<span>Echocardiography Report (' + echoReports.length + ')</span>' +
+      (canUp ? '<button class="btn ghost sm" data-new-echo-report="1">+ إنشاء جديد</button>' : '') +
+      '</h3>';
+    if (!echoReports.length) {
+      html += '<p style="font-size:12px;color:var(--c-muted);">مفيش تقارير Echo مُنشأة لسه.</p>';
+    } else {
+      echoReports.forEach(function (r) {
+        html += '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--c-border);font-size:12px;">' +
+          '<div><b>' + escapeHtml(r.patient_label || patient.full_name) + '</b> — ' + fmtDate(r.report_date) +
+          (r.conclusion_text ? '<br><span style="color:var(--c-muted);">' + escapeHtml(r.conclusion_text.slice(0, 60)) + (r.conclusion_text.length > 60 ? "…" : "") + '</span>' : '') + '</div>' +
+          '<div style="display:flex;gap:6px;flex-shrink:0;">' +
+          '<button class="btn ghost sm" data-edit-echo-report="' + r.id + '">تعديل</button>' +
+          '<button class="btn ghost sm" data-print-echo-report="' + r.id + '">🖨 طباعة</button>' +
+          (canUp ? '<button class="btn danger sm" data-del-echo-report="' + r.id + '">حذف</button>' : '') + '</div></div>';
+      });
+    }
+    html += '</div>';
 
     html += '</div>';
     backdrop.innerHTML = html;
@@ -1190,8 +1420,10 @@
         window.SSMPDDb.getPatientFiles(patient.id),
         window.SSMPDDb.getPatientMedicalProfile(patient.id).catch(function () { return null; }),
         window.SSMPDDb.listPatientVisits(patient.id).catch(function () { return []; }),
+        window.SSMPDDb.listMedicalReports(patient.id).catch(function () { return []; }),
+        window.SSMPDDb.listEchoReports(patient.id).catch(function () { return []; }),
       ]).then(function (results) {
-        renderPatientModal(backdrop, view, container, results[0].patient, results[0].files || [], results[1], results[2] || []);
+        renderPatientModal(backdrop, view, container, results[0].patient, results[0].files || [], results[1], results[2] || [], results[3] || [], results[4] || []);
       });
     }
 
@@ -1285,6 +1517,60 @@
     if (printProfileTextBtn) {
       printProfileTextBtn.onclick = function () { printPatientProfileTextOnly(patient, profile, visits); };
     }
+
+    // ---------- تقرير طبي (إنشاء/تعديل/طباعة/حذف) ----------
+    var newMedicalReportBtn = backdrop.querySelector("[data-new-medical-report]");
+    if (newMedicalReportBtn) {
+      newMedicalReportBtn.onclick = function () { openMedicalReportFormModal(patient, null, reloadModal); };
+    }
+    backdrop.querySelectorAll("[data-edit-medical-report]").forEach(function (btn) {
+      btn.onclick = function () {
+        var r = reports.filter(function (x) { return String(x.id) === btn.getAttribute("data-edit-medical-report"); })[0];
+        if (r) openMedicalReportFormModal(patient, r, reloadModal);
+      };
+    });
+    backdrop.querySelectorAll("[data-print-medical-report]").forEach(function (btn) {
+      btn.onclick = function () {
+        var r = reports.filter(function (x) { return String(x.id) === btn.getAttribute("data-print-medical-report"); })[0];
+        if (r) printMedicalReport(patient, r);
+      };
+    });
+    backdrop.querySelectorAll("[data-del-medical-report]").forEach(function (btn) {
+      btn.onclick = function () {
+        if (!confirm("حذف التقرير الطبي ده؟")) return;
+        window.SSMPDDb.deleteMedicalReport(btn.getAttribute("data-del-medical-report")).then(function () {
+          T.show("اتحذف التقرير");
+          reloadModal();
+        }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
+      };
+    });
+
+    // ---------- Echocardiography Report (إنشاء/تعديل/طباعة/حذف) ----------
+    var newEchoReportBtn = backdrop.querySelector("[data-new-echo-report]");
+    if (newEchoReportBtn) {
+      newEchoReportBtn.onclick = function () { openEchoReportFormModal(patient, null, reloadModal); };
+    }
+    backdrop.querySelectorAll("[data-edit-echo-report]").forEach(function (btn) {
+      btn.onclick = function () {
+        var r = echoReports.filter(function (x) { return String(x.id) === btn.getAttribute("data-edit-echo-report"); })[0];
+        if (r) openEchoReportFormModal(patient, r, reloadModal);
+      };
+    });
+    backdrop.querySelectorAll("[data-print-echo-report]").forEach(function (btn) {
+      btn.onclick = function () {
+        var r = echoReports.filter(function (x) { return String(x.id) === btn.getAttribute("data-print-echo-report"); })[0];
+        if (r) printEchoReport(patient, r);
+      };
+    });
+    backdrop.querySelectorAll("[data-del-echo-report]").forEach(function (btn) {
+      btn.onclick = function () {
+        if (!confirm("حذف تقرير الـEcho ده؟")) return;
+        window.SSMPDDb.deleteEchoReport(btn.getAttribute("data-del-echo-report")).then(function () {
+          T.show("اتحذف التقرير");
+          reloadModal();
+        }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
+      };
+    });
     backdrop.querySelectorAll("[data-print-file]").forEach(function (btn) {
       btn.onclick = function () {
         var fileId = btn.getAttribute("data-print-file");

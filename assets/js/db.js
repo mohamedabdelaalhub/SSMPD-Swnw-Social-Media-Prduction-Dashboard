@@ -322,6 +322,41 @@
     deletePatientVisit: function (visitId) {
       return handle(client.from("patient_visits").delete().eq("id", visitId));
     },
+    // ---------- تقارير مُنشأة من الداشبورد: تقرير طبي + Echocardiography ----------
+    listMedicalReports: function (patientId) {
+      return handle(client.from("patient_medical_reports").select("*").eq("patient_id", patientId).order("report_date", { ascending: false }));
+    },
+    saveMedicalReport: function (patientId, patch, createdBy) {
+      var row = Object.assign({}, patch, { patient_id: patientId });
+      if (patch && patch.id) {
+        var id = patch.id;
+        delete row.id;
+        row.updated_at = new Date().toISOString();
+        return handle(client.from("patient_medical_reports").update(row).eq("id", id).select().single());
+      }
+      row.created_by = createdBy;
+      return handle(client.from("patient_medical_reports").insert(row).select().single());
+    },
+    deleteMedicalReport: function (id) {
+      return handle(client.from("patient_medical_reports").delete().eq("id", id));
+    },
+    listEchoReports: function (patientId) {
+      return handle(client.from("patient_echo_reports").select("*").eq("patient_id", patientId).order("report_date", { ascending: false }));
+    },
+    saveEchoReport: function (patientId, patch, createdBy) {
+      var row = Object.assign({}, patch, { patient_id: patientId });
+      if (patch && patch.id) {
+        var id = patch.id;
+        delete row.id;
+        row.updated_at = new Date().toISOString();
+        return handle(client.from("patient_echo_reports").update(row).eq("id", id).select().single());
+      }
+      row.created_by = createdBy;
+      return handle(client.from("patient_echo_reports").insert(row).select().single());
+    },
+    deleteEchoReport: function (id) {
+      return handle(client.from("patient_echo_reports").delete().eq("id", id));
+    },
     getPatientFiles: function (patientId) {
       return edgeFetch("patient-files-list" + qs({ patient_id: patientId }));
     },
