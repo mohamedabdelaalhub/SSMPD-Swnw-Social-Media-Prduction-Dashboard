@@ -212,8 +212,10 @@
         html += '<div class="empty-state">مفيش بيانات لشهور فاتت أو الشهر الحالي — الملف فيه بس شهور مستقبلية لسه معلّقة.</div>';
       } else {
         var lastMonth = pastAndCurrent[0];
+        var totalFbSpendAllMonths = pastAndCurrent.reduce(function (s, m) { return s + m.fbSpend; }, 0);
         html += '<div class="kpi-grid">' +
           kpiCard("إجمالي سحوبات فيسبوك (" + escapeHtml(String(lastMonth.month)) + ")", fmtNum(lastMonth.fbSpend) + " ج.م", { small: true }) +
+          kpiCard("إجمالي المصروفات الكلي", fmtNum(totalFbSpendAllMonths) + " ج.م", { small: true }) +
           kpiCard("الرصيد الختامي", '<span style="color:' + (lastMonth.closingBalance < 0 ? "var(--c-negative)" : lastMonth.closingBalance > 0 ? "var(--c-positive)" : "inherit") + ';">' + fmtNum(lastMonth.closingBalance) + " ج.م</span>") +
           '</div>';
         if (latestAdsBatchTotals && lastMonth.fbSpend) {
