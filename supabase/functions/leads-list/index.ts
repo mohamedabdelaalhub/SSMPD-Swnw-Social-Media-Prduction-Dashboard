@@ -178,6 +178,9 @@ Deno.serve(async (req) => {
   const assignedTo = url.searchParams.get("assigned_to")?.trim(); // فلتر أرشيف الليدز: الموظف المُسند له الليد
   const source = url.searchParams.get("source")?.trim(); // فلتر "تحويلات الأطباء": source = doctor_referral
   const completedMissingData = url.searchParams.get("completed_missing_data") === "1";
+  // فلتر فترة زمنية (من - إلي) على تاريخ إضافة الليد — لأرشيف الليدز (طلب المستخدم)
+  const dateFrom = url.searchParams.get("date_from")?.trim() || null;
+  const dateTo = url.searchParams.get("date_to")?.trim() || null;
   const page = Math.max(1, Number(url.searchParams.get("page") ?? "1") || 1);
   const pageSize = Math.min(50, Math.max(1, Number(url.searchParams.get("page_size") ?? "20") || 20));
 
@@ -230,6 +233,9 @@ Deno.serve(async (req) => {
   if (completedMissingData) {
     query = query.not("missing_data_completed_at", "is", null);
   }
+
+  if (dateFrom) query = query.gte("created_at", dateFrom);
+  if (dateTo) query = query.lte("created_at", dateTo + "T23:59:59");
 
   if (search) {
     query = query.or(
