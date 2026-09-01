@@ -72,50 +72,31 @@
       '</div>';
   }
 
-  // ---------- مصروفات الإعلانات الفعلية — قراءة مباشرة من ملف Google Drive (xlsx) ----------
-  // بيتقرا من المتصفح مباشرة عن طريق Google Drive API v3 (مفتاح API مقيّد
-  // بدومين الداشبورد بس — راجع config.js → adsExpensesSheet)، وبيتفسّر
-  // بمكتبة SheetJS المُحمّلة بالفعل في index.html. بيتحدّث تلقائياً كل ما
-  // حد يفتح شاشة "الملخص العام" — مفيش تخزين وسيط في Supabase.
+  // ---------- مصروفات الإعلانات الفعلية — Apps Script Web App (JSON جاهز) ----------
+  // كانت بتتقرا مباشرة من ملف Google Drive (xlsx) بمفتاح API مقيّد — استُبدلت
+  // لأن قراءة alt=media بمفتاح API بس (من غير OAuth) كانت بترجع 503 بشكل
+  // متكرر مش مضمون. دلوقتي بتتقرا عن طريق Apps Script Web App منشور من حساب
+  // المركز (OAuth، Execute as: Me) وبيرجّع الملخص الشهري جاهز كـJSON مباشرة —
+  // راجع config.js → adsExpensesWebAppUrl و apps-script/ads-expenses-bridge.gs
   var adsExpensesCache = null; // { monthly: [...], lastRecordAt: iso, error: null }
 
-  function fetchAdsExpensesWorkbook() {
-    var cfg = (window.SSMPD_CONFIG || {}).adsExpensesSheet;
-    if (!cfg || !cfg.fileId || !cfg.apiKey) return Promise.reject(new Error("ملف المصروفات مش متظبط في config.js"));
-    var url = "https://www.googleapis.com/drive/v3/files/" + encodeURIComponent(cfg.fileId) + "?alt=media&key=" + encodeURIComponent(cfg.apiKey);
+  function fetchAdsExpensesData() {
+    var url = (window.SSMPD_CONFIG || {}).adsExpensesWebAppUrl;
+    if (!url) return Promise.reject(new Error("رابط جسر مصروفات الإعلانات مش متظبط في config.js"));
     return fetch(url).then(function (res) {
-      if (!res.ok) throw new Error("تعذّر الوصول لملف Drive (" + res.status + ")");
-      return res.arrayBuffer();
-    }).then(function (buf) {
-      return XLSX.read(new Uint8Array(buf), { type: "array", cellDates: true });
+      if (!res.ok) throw new Error("تعذّر الوصول لجسر مصروفات الإعلانات (" + res.status + ")");
+      return res.json();
+    }).then(function (data) {
+      return {
+        monthly: (data.monthly || []).map(function (m) {
+          return {
+            month: m.month, fbSpend: Number(m.fbSpend || 0), paid: Number(m.paid || 0),
+            otherExpenses: Number(m.otherExpenses || 0), closingBalance: Number(m.closingBalance || 0)
+          };
+        }),
+        lastRecordAt: data.lastRecordAt || null
+      };
     });
-  }
-
-  // بيقرا شيت "الإقفال الشهري" (إجمالي سحوبات فيسبوك/مسدد/رصيد لكل شهر)
-  // + آخر صف في "سجل الحركات" لمعرفة آخر تحديث فعلي للملف
-  function parseAdsExpensesWorkbook(wb) {
-    var out = { monthly: [], lastRecordAt: null };
-    var closing = wb.Sheets["الإقفال الشهري"];
-    if (closing) {
-      var rows = XLSX.utils.sheet_to_json(closing, { header: 1, raw: true, defval: null });
-      // الصف الأول عناوين — الشهر/إجمالي سحوبات فيسبوك/إجمالي المسدد/.../الرصيد الختامي
-      for (var i = 1; i < rows.length; i++) {
-        var r = rows[i];
-        if (!r || !r[0] || String(r[0]).indexOf("رصيد افتتاحي") !== -1) continue;
-        out.monthly.push({
-          month: r[0], fbSpend: Number(r[1] || 0), paid: Number(r[2] || 0),
-          otherExpenses: Number(r[3] || 0), net: Number(r[4] || 0), closingBalance: Number(r[6] || 0)
-        });
-      }
-    }
-    var log = wb.Sheets["سجل الحركات"];
-    if (log) {
-      var logRows = XLSX.utils.sheet_to_json(log, { header: 1, raw: true, defval: null });
-      for (var j = logRows.length - 1; j >= 1; j--) {
-        if (logRows[j] && logRows[j][0]) { out.lastRecordAt = logRows[j][0]; break; }
-      }
-    }
-    return out;
   }
 
   function fmtMonthDate(v) {
@@ -127,8 +108,7 @@
   function loadAdsExpenses(latestAdsBatchTotals) {
     var body = document.getElementById("ads-expenses-body");
     if (!body) return;
-    fetchAdsExpensesWorkbook().then(function (wb) {
-      var data = parseAdsExpensesWorkbook(wb);
+    fetchAdsExpensesData().then(function (data) {
       adsExpensesCache = data;
       var html = "";
       if (data.lastRecordAt) {
