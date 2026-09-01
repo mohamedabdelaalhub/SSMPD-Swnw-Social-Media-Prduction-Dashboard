@@ -19,6 +19,14 @@ window.SSMPD_CONFIG = {
     rootFolderName: "أرشيف SSMPD"
   },
 
+  // ملف مصروفات الإعلانات (Google Drive، xlsx) — بيتقرا مباشرة من المتصفح
+  // بمفتاح API مقيّد بـGoogle Drive API + دومين الداشبورد بس (آمن للنشر
+  // العلني، مش OAuth كامل). راجع render-summary.js → loadAdsExpenses
+  adsExpensesSheet: {
+    fileId: "1MGDJe3Jn3fRcthqq7-264l5PzsA6c6Nr",
+    apiKey: "AIzaSyBpc8Vg0I6TLy9Xfu2YBoFaIPzcipJMOB4"
+  },
+
   // بصمة الكاش — ترفع مع أي تعديل على JS/CSS
   cacheVersion: 14
 };
