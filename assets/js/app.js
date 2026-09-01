@@ -661,9 +661,11 @@
         '<div class="field"><label>الموظف</label><select id="kudos-to"><option value="">— اختر —</option>' +
         others.map(function (a) { return '<option value="' + a.id + '">' + escapeHtml(a.name) + '</option>'; }).join("") + '</select></div>' +
         '<div class="field"><label>رسالة الشكر</label><textarea id="kudos-msg" placeholder="مثال: شكراً على المجهود الرائع في حملة الأسبوع ده!"></textarea></div>' +
-        '<div style="text-align:left;margin-top:10px;display:flex;gap:8px;justify-content:space-between;">' +
+        '<div style="text-align:left;margin-top:10px;display:flex;gap:8px;justify-content:space-between;align-items:center;">' +
         '<a href="#" id="kudos-view-history" style="font-size:12px;">📜 آخر الشكر</a>' +
-        '<button class="btn" id="kudos-save">ابعت الشكر</button></div>' +
+        '<span style="display:flex;gap:8px;">' +
+        '<button class="btn ghost" id="kudos-preview">👁 معاينة</button>' +
+        '<button class="btn" id="kudos-save">ابعت الشكر</button></span></div>' +
         '<div id="kudos-history-box" hidden style="margin-top:12px;max-height:220px;overflow:auto;border-top:1px solid var(--c-border);padding-top:10px;"></div></div>';
       document.body.appendChild(backdrop);
       backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
@@ -683,6 +685,14 @@
           }).join("") : '<div style="font-size:12px;color:var(--c-muted);">مفيش شكر اتبعت لسه</div>';
         }).catch(function () { box.innerHTML = '<div style="font-size:12px;color:#D0402A;">تعذّر التحميل</div>'; });
       };
+      document.getElementById("kudos-preview").onclick = function () {
+        var toSel = document.getElementById("kudos-to");
+        var toName = toSel.selectedIndex > 0 ? toSel.options[toSel.selectedIndex].text : "موظف";
+        var msg = document.getElementById("kudos-msg").value.trim();
+        if (!msg) { alert("اكتب رسالة الشكر الأول عشان تعاينها"); return; }
+        // معاينة محلية بس — من غير أي حفظ في القاعدة ولا ظهور عند حد تاني
+        renderKudosBannerEl(toName, admin.name || admin.email, msg, true);
+      };
       document.getElementById("kudos-save").onclick = function () {
         var to = document.getElementById("kudos-to").value;
         var msg = document.getElementById("kudos-msg").value.trim();
@@ -694,20 +704,27 @@
       };
     });
   }
-  // بانر الشكر — بيظهر لايف لكل الناس (كل الشاشات) لما حد يبعت شكر جديد، وبيختفي تلقائي
+  // البانر الفعلي — مشترك بين المعاينة المحلية (isPreview=true) والبانر الحقيقي
+  // اللي بيوصل لايف لكل الناس عن طريق Realtime. المعاينة معلّم عليها بوضوح
+  // "معاينة" عشان محدش يلخبط بينها وبين شكر حقيقي اتبعت فعلاً.
+  function renderKudosBannerEl(toName, fromName, message, isPreview) {
+    var el = document.createElement("div");
+    el.style.cssText = "position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:500;" +
+      "background:linear-gradient(90deg,#F5B301,#F15A22);color:#fff;padding:14px 22px;border-radius:14px;" +
+      "box-shadow:0 8px 24px rgba(0,0,0,.25);font-size:14px;text-align:center;max-width:90vw;" +
+      (isPreview ? "outline:2px dashed #fff;outline-offset:3px;" : "");
+    el.innerHTML = (isPreview ? '<div style="font-size:10px;opacity:.85;margin-bottom:2px;">👁 معاينة — الشكل ده لسه ماوصلش لحد</div>' : "") +
+      '🎉 <b>' + escapeHtml(toName) + '</b> استلم شكر من ' + escapeHtml(fromName) +
+      '<div style="font-size:12px;margin-top:4px;opacity:.95;">' + escapeHtml(message) + '</div>';
+    document.body.appendChild(el);
+    setTimeout(function () { el.remove(); }, 8000);
+  }
+  // بانر الشكر الحقيقي — بيظهر لايف لكل الناس (كل الشاشات) لما حد يبعت شكر
+  // فعلي جديد، وبيختفي تلقائي (بيوصل من Realtime subscription على جدول kudos)
   function showKudosBanner(row) {
     window.SSMPDDb.listAdminsBasic().then(function (admins) {
       var map = {}; (admins || []).forEach(function (a) { map[a.id] = a.name; });
-      var toName = map[row.given_to] || "موظف";
-      var fromName = map[row.given_by] || "الإدارة";
-      var el = document.createElement("div");
-      el.style.cssText = "position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:500;" +
-        "background:linear-gradient(90deg,#F5B301,#F15A22);color:#fff;padding:14px 22px;border-radius:14px;" +
-        "box-shadow:0 8px 24px rgba(0,0,0,.25);font-size:14px;text-align:center;max-width:90vw;";
-      el.innerHTML = '🎉 <b>' + escapeHtml(toName) + '</b> استلم شكر من ' + escapeHtml(fromName) +
-        '<div style="font-size:12px;margin-top:4px;opacity:.95;">' + escapeHtml(row.message) + '</div>';
-      document.body.appendChild(el);
-      setTimeout(function () { el.remove(); }, 8000);
+      renderKudosBannerEl(map[row.given_to] || "موظف", map[row.given_by] || "الإدارة", row.message, false);
     }).catch(function () {});
   }
 
