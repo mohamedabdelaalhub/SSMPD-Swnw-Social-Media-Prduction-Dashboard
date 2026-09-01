@@ -438,6 +438,20 @@
       return handle(client.from("lead_invoices").select("*").eq("lead_id", leadId).order("uploaded_at", { ascending: false }));
     },
 
+    // ---------- لوحة الشكر (kudos) ----------
+    // بعت شكر لموظف — الصلاحية بتتفحص فعلياً في RLS (can_manage_all_content)
+    sendKudos: function (givenBy, givenTo, message) {
+      return handle(client.from("kudos").insert({ given_by: givenBy, given_to: givenTo, message: message }).select().single());
+    },
+    // آخر رسائل الشكر (لوحة الشرف) — أسماء المرسِل/المستلم عن طريق FK صريح
+    // (نفس درس admin_extra_roles: أي embed لجدول admins محتاج اسم الـFK لأنه متكرر)
+    listRecentKudos: function (limit) {
+      return handle(client.from("kudos")
+        .select("id, message, created_at, from_admin:admins!given_by(name), to_admin:admins!given_to(name)")
+        .order("created_at", { ascending: false })
+        .limit(limit || 20));
+    },
+
     // ---------- realtime ----------
     subscribeTable: function (table, onChange) {
       var channel = client

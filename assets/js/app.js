@@ -7,6 +7,7 @@
   var realtimeChannel = null;
   var commentsChannel = null;
   var leadsChannel = null;
+  var kudosChannel = null;
   var pollTimer = null;
   var usageSessionId = null;
   var usageHeartbeatTimer = null;
@@ -164,6 +165,7 @@
       '<input id="global-search-input" type="search" placeholder="بحث (Ctrl+K)…" autocomplete="off" style="width:100%;padding:7px 10px;border-radius:10px;border:1px solid var(--c-border);font-size:12px;">' +
       '<div id="global-search-results" hidden style="position:absolute;top:100%;right:0;left:0;background:var(--c-card);border:1px solid var(--c-border);border-radius:10px;margin-top:4px;max-height:340px;overflow:auto;z-index:50;box-shadow:0 6px 18px rgba(0,0,0,.12);"></div>' +
       '</div>' +
+      '<button class="btn ghost sm" id="kudos-send-btn" type="button" title="ابعت شكر" hidden>🎉 شكر</button>' +
       '<div style="position:relative;">' +
       '<button class="btn ghost sm" id="notif-bell-btn" type="button" title="الإشعارات" hidden style="position:relative;">🔔' +
       '<span id="notif-badge" hidden style="position:absolute;top:-6px;left:-6px;background:#D0402A;color:#fff;border-radius:10px;font-size:10px;padding:1px 5px;line-height:1.4;">0</span></button>' +
@@ -243,6 +245,7 @@
 
     setupGlobalSearch(admin, tabs);
     setupNotifications(admin);
+    setupKudos(admin);
 
     // نرجّع آخر تاب كان مفتوح (لو لسه موجود ومسموح للدور ده) بدل ما نرجع دايماً للشاشة الافتراضية
     // — كده الريفريش/رجوع للصفحة (F5) ما يرجعش المستخدم للرئيسية من غير داعي
@@ -635,13 +638,91 @@
     refreshNotifBadge();
   }
 
+  // ---------- لوحة الشكر (Kudos) ----------
+  // بعت شكر مقصور على المدير العام/السوبر أدمن (نفس دائرة صلاحية الإشعارات) —
+  // الصلاحية الحقيقية متفروضة في RLS (can_manage_all_content)، ده بس إخفاء واجهة.
+  function canSendKudos(admin) {
+    return canSeeNotifications(admin);
+  }
+  function setupKudos(admin) {
+    var btn = document.getElementById("kudos-send-btn");
+    if (!btn) return;
+    if (!canSendKudos(admin)) return;
+    btn.hidden = false;
+    btn.onclick = openSendKudosModal;
+  }
+  function openSendKudosModal() {
+    var admin = window.SSMPDAuth.currentAdmin;
+    window.SSMPDDb.listAdminsBasic().then(function (admins) {
+      var others = (admins || []).filter(function (a) { return a.id !== admin.id && a.active; });
+      var backdrop = document.createElement("div");
+      backdrop.className = "modal-backdrop";
+      backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>🎉 ابعت شكر لموظف</h3><button class="modal-close">×</button></div>' +
+        '<div class="field"><label>الموظف</label><select id="kudos-to"><option value="">— اختر —</option>' +
+        others.map(function (a) { return '<option value="' + a.id + '">' + escapeHtml(a.name) + '</option>'; }).join("") + '</select></div>' +
+        '<div class="field"><label>رسالة الشكر</label><textarea id="kudos-msg" placeholder="مثال: شكراً على المجهود الرائع في حملة الأسبوع ده!"></textarea></div>' +
+        '<div style="text-align:left;margin-top:10px;display:flex;gap:8px;justify-content:space-between;">' +
+        '<a href="#" id="kudos-view-history" style="font-size:12px;">📜 آخر الشكر</a>' +
+        '<button class="btn" id="kudos-save">ابعت الشكر</button></div>' +
+        '<div id="kudos-history-box" hidden style="margin-top:12px;max-height:220px;overflow:auto;border-top:1px solid var(--c-border);padding-top:10px;"></div></div>';
+      document.body.appendChild(backdrop);
+      backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
+      backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
+      document.getElementById("kudos-view-history").onclick = function (e) {
+        e.preventDefault();
+        var box = document.getElementById("kudos-history-box");
+        box.hidden = !box.hidden;
+        if (box.hidden) return;
+        box.innerHTML = '<div style="font-size:12px;color:var(--c-muted);">بيحمّل…</div>';
+        window.SSMPDDb.listRecentKudos(15).then(function (rows) {
+          box.innerHTML = (rows || []).length ? rows.map(function (r) {
+            return '<div style="padding:6px 0;border-bottom:1px solid var(--c-border);font-size:12px;">' +
+              '<b>' + escapeHtml((r.to_admin && r.to_admin.name) || "—") + '</b>' +
+              ' — ' + escapeHtml(r.message) +
+              '<div style="color:var(--c-muted);font-size:10px;margin-top:2px;">بواسطة ' + escapeHtml((r.from_admin && r.from_admin.name) || "—") + '</div></div>';
+          }).join("") : '<div style="font-size:12px;color:var(--c-muted);">مفيش شكر اتبعت لسه</div>';
+        }).catch(function () { box.innerHTML = '<div style="font-size:12px;color:#D0402A;">تعذّر التحميل</div>'; });
+      };
+      document.getElementById("kudos-save").onclick = function () {
+        var to = document.getElementById("kudos-to").value;
+        var msg = document.getElementById("kudos-msg").value.trim();
+        if (!to) { alert("اختر الموظف"); return; }
+        if (!msg) { alert("اكتب رسالة الشكر"); return; }
+        window.SSMPDDb.sendKudos(admin.id, to, msg).then(function () {
+          backdrop.remove();
+        }).catch(function (e) { alert("خطأ: " + e.message); });
+      };
+    });
+  }
+  // بانر الشكر — بيظهر لايف لكل الناس (كل الشاشات) لما حد يبعت شكر جديد، وبيختفي تلقائي
+  function showKudosBanner(row) {
+    window.SSMPDDb.listAdminsBasic().then(function (admins) {
+      var map = {}; (admins || []).forEach(function (a) { map[a.id] = a.name; });
+      var toName = map[row.given_to] || "موظف";
+      var fromName = map[row.given_by] || "الإدارة";
+      var el = document.createElement("div");
+      el.style.cssText = "position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:500;" +
+        "background:linear-gradient(90deg,#F5B301,#F15A22);color:#fff;padding:14px 22px;border-radius:14px;" +
+        "box-shadow:0 8px 24px rgba(0,0,0,.25);font-size:14px;text-align:center;max-width:90vw;";
+      el.innerHTML = '🎉 <b>' + escapeHtml(toName) + '</b> استلم شكر من ' + escapeHtml(fromName) +
+        '<div style="font-size:12px;margin-top:4px;opacity:.95;">' + escapeHtml(row.message) + '</div>';
+      document.body.appendChild(el);
+      setTimeout(function () { el.remove(); }, 8000);
+    }).catch(function () {});
+  }
+
   function setupRealtime() {
     if (realtimeChannel) window.SSMPDDb.unsubscribe(realtimeChannel);
     if (commentsChannel) window.SSMPDDb.unsubscribe(commentsChannel);
     if (leadsChannel) window.SSMPDDb.unsubscribe(leadsChannel);
+    if (kudosChannel) window.SSMPDDb.unsubscribe(kudosChannel);
     realtimeChannel = window.SSMPDDb.subscribeTable("content_items", refreshCurrentTab);
     commentsChannel = window.SSMPDDb.subscribeTable("comments", refreshCurrentTab);
     leadsChannel = window.SSMPDDb.subscribeTable("leads", refreshCurrentTab);
+    // لوحة الشكر: بانر ظاهر لايف لكل الناس (مش بس اللي بعتها) لما حد يبعت شكر جديد
+    kudosChannel = window.SSMPDDb.subscribeTable("kudos", function (payload) {
+      if (payload.eventType === "INSERT") showKudosBanner(payload.new);
+    });
 
     // نسخة احتياطية: ريفريش تلقائي دوري لو الاتصال اللحظي (WebSocket) انقطع أو اتأخر
     if (pollTimer) clearInterval(pollTimer);
