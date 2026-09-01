@@ -54,7 +54,7 @@
         '<p style="margin-top:14px;font-size:12px;"><a href="#" id="forgot-pass">نسيت كلمة السر؟</a></p>' +
         '<p style="margin-top:6px;font-size:12px;"><a href="#" id="switch-mode">حساب جديد؟ اضغط هنا (لو اتضفت من الأدمن)</a></p>';
     }
-    html += '</div></div>';
+    html += '</div><footer style="text-align:center;font-size:11px;color:var(--c-muted);padding:14px 0;">© جميع الحقوق محفوظة لشركة دار النقاهة الطبية</footer></div>';
     root().innerHTML = html;
 
     document.getElementById("switch-mode").onclick = function (e) {
@@ -187,7 +187,8 @@
       '<div class="mm-tabs">' + tabButtonsHtml() + '</div>' +
       '<button class="btn ghost sm mm-logout" id="logout-btn-mobile">خروج</button>' +
       '</div>' +
-      '<main class="view" id="view-container"></main></div>';
+      '<main class="view" id="view-container"></main>' +
+      '<footer style="text-align:center;font-size:11px;color:var(--c-muted);padding:14px 0;">© جميع الحقوق محفوظة لشركة دار النقاهة الطبية</footer></div>';
     root().innerHTML = html;
 
     var mobileMenu = document.getElementById("mobile-menu");

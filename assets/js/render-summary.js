@@ -94,9 +94,86 @@
             otherExpenses: Number(m.otherExpenses || 0), closingBalance: Number(m.closingBalance || 0)
           };
         }),
+        transactions: data.transactions || [],
         lastRecordAt: data.lastRecordAt || null
       };
     });
+  }
+
+  // نص تاريخ حركة سجل الحركات — بيتقرا من قيمة تاريخ خام (ممكن تيجي بأي صيغة
+  // من Apps Script) وبيتحول لصيغة يوم/شهر/سنة مقروءة، أو "—" لو فاضي/مش مفهوم
+  function fmtTxDate(v) {
+    if (!v) return "—";
+    var d = new Date(v);
+    if (isNaN(d.getTime())) return String(v);
+    return d.toLocaleDateString("en-US", { day: "2-digit", month: "2-digit", year: "numeric" });
+  }
+
+  // بيرجع حركات سجل الحركات الخاصة بشهر وعمود معيّن من جدول الإقفال الشهري —
+  // سحوبات فيسبوك بتتفلتر بنوع "سحب"، المسدد بنوع "سداد"، وأي عمود تاني
+  // (مصروفات أخرى / الرصيد الختامي) بيعرض كل حركات الشهر لأن مفيش تصنيف
+  // منفصل ليها في سجل الحركات
+  function filterTransactionsForCell(month, field) {
+    var all = (adsExpensesCache && adsExpensesCache.transactions) || [];
+    var monthTx = all.filter(function (t) { return String(t.month) === String(month); });
+    if (field === "fbSpend") return monthTx.filter(function (t) { return t.type === "سحب"; });
+    if (field === "paid") return monthTx.filter(function (t) { return t.type === "سداد"; });
+    return monthTx;
+  }
+
+  var CELL_FIELD_LABELS = { fbSpend: "سحوبات فيسبوك", paid: "المسدد", otherExpenses: "مصروفات أخرى", closingBalance: "الرصيد الختامي" };
+
+  function openTransactionsModal(month, field) {
+    var rows = filterTransactionsForCell(month, field);
+    var backdrop = document.createElement("div");
+    backdrop.className = "modal-backdrop";
+    var sum = rows.reduce(function (s, t) { return s + Number(t.amount || 0); }, 0);
+    var noteHtml = (field === "otherExpenses" || field === "closingBalance")
+      ? '<p style="font-size:11px;color:var(--c-muted);">مفيش تصنيف منفصل لبند «' + escapeHtml(CELL_FIELD_LABELS[field] || "") + '» في سجل الحركات — الجدول بيعرض كل حركات الشهر ده.</p>' : '';
+    backdrop.innerHTML = '<div class="modal" style="max-width:640px;"><div class="modal-head"><h3>حركات ' + escapeHtml(CELL_FIELD_LABELS[field] || "") + ' — ' + escapeHtml(String(month)) + '</h3>' +
+      '<button class="modal-close">×</button></div>' + noteHtml +
+      (!rows.length ? '<div class="empty-state">مفيش حركات مسجّلة لهذا البند في هذا الشهر.</div>' :
+        '<p style="font-size:12px;color:var(--c-muted);">عدد الحركات: ' + rows.length + ' — الإجمالي: ' + fmtNum(sum) + ' ج.م</p>' +
+        '<div style="max-height:360px;overflow:auto;"><table class="simple"><thead><tr><th>التاريخ</th><th>الوقت</th><th>النوع</th><th>القيمة</th><th>البيان</th><th>الكود</th></tr></thead><tbody>' +
+        rows.map(function (t) {
+          return '<tr><td>' + fmtTxDate(t.date) + '</td><td>' + escapeHtml(t.time || "—") + '</td><td>' + escapeHtml(t.type || "—") + '</td>' +
+            '<td>' + fmtNum(t.amount) + '</td><td>' + escapeHtml(t.description || "—") + '</td><td>' + escapeHtml(t.opCode || "—") + '</td></tr>';
+        }).join("") + '</tbody></table></div>') +
+      '</div>';
+    document.body.appendChild(backdrop);
+    backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
+    backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
+  }
+
+  // بيبني جدول/ملخص شهور الإقفال حسب الفلتر المختار: "" (كل الشهور)، اسم شهر
+  // بعينه، أو "__total__" (إجمالي كل المصروفات المعروضة). الخلايا الرقمية
+  // كليكابل (data-month/data-field) وبتتوصّل بمعالج نقر واحد على مستوى الـ body
+  function monthlyRowHtml(m) {
+    var cbColor = m.closingBalance < 0 ? "var(--c-negative)" : m.closingBalance > 0 ? "var(--c-positive)" : "inherit";
+    var pointer = "cursor:pointer;text-decoration:underline dotted;";
+    return '<tr><td>' + escapeHtml(String(m.month)) + '</td>' +
+      '<td data-month="' + escapeHtml(String(m.month)) + '" data-field="fbSpend" style="' + pointer + '">' + fmtNum(m.fbSpend) + '</td>' +
+      '<td data-month="' + escapeHtml(String(m.month)) + '" data-field="paid" style="' + pointer + '">' + fmtNum(m.paid) + '</td>' +
+      '<td data-month="' + escapeHtml(String(m.month)) + '" data-field="otherExpenses" style="' + pointer + '">' + fmtNum(m.otherExpenses) + '</td>' +
+      '<td data-month="' + escapeHtml(String(m.month)) + '" data-field="closingBalance" style="' + pointer + 'color:' + cbColor + ';font-weight:600;">' + fmtNum(m.closingBalance) + '</td></tr>';
+  }
+
+  function buildMonthlySectionHtml(months, filterVal) {
+    if (filterVal === "__total__") {
+      var sumFb = 0, sumPaid = 0, sumOther = 0;
+      months.forEach(function (m) { sumFb += m.fbSpend; sumPaid += m.paid; sumOther += m.otherExpenses; });
+      var latestCb = months.length ? months[0].closingBalance : 0;
+      return '<div class="kpi-grid">' +
+        kpiCard("إجمالي سحوبات فيسبوك (كل الشهور)", fmtNum(sumFb) + " ج.م") +
+        kpiCard("إجمالي المسدد (كل الشهور)", fmtNum(sumPaid) + " ج.م") +
+        kpiCard("إجمالي مصروفات أخرى (كل الشهور)", fmtNum(sumOther) + " ج.م") +
+        kpiCard("الرصيد الختامي الحالي", '<span style="color:' + (latestCb < 0 ? "var(--c-negative)" : latestCb > 0 ? "var(--c-positive)" : "inherit") + ';">' + fmtNum(latestCb) + " ج.م</span>") +
+        '</div>';
+    }
+    var shown = filterVal ? months.filter(function (m) { return String(m.month) === filterVal; }) : months;
+    if (!shown.length) return '<div class="empty-state">مفيش بيانات لهذا الشهر.</div>';
+    return '<table class="simple"><thead><tr><th>الشهر</th><th>سحوبات فيسبوك</th><th>المسدد</th><th>مصروفات أخرى</th><th>الرصيد الختامي</th></tr></thead><tbody>' +
+      shown.map(monthlyRowHtml).join("") + '</tbody></table>';
   }
 
   function fmtMonthDate(v) {
@@ -142,11 +219,13 @@
             '<p style="font-size:11px;color:var(--c-muted);margin-top:6px;">لو الفرق كبير، السبب غالباً اختلاف فترة تقرير Meta Ads عن الشهر البنكي، أو رسوم/عمولات إضافية على السحب.</p>';
         }
         html += '<h4 style="margin-top:14px;font-size:13px;">الإقفال الشهري (الحاضر فوق، الماضي تحته)</h4>' +
-          '<table class="simple"><thead><tr><th>الشهر</th><th>سحوبات فيسبوك</th><th>المسدد</th><th>مصروفات أخرى</th><th>الرصيد الختامي</th></tr></thead><tbody>' +
-          pastAndCurrent.map(function (m) {
-            var cbColor = m.closingBalance < 0 ? "var(--c-negative)" : m.closingBalance > 0 ? "var(--c-positive)" : "inherit";
-            return '<tr><td>' + escapeHtml(String(m.month)) + '</td><td>' + fmtNum(m.fbSpend) + '</td><td>' + fmtNum(m.paid) + '</td><td>' + fmtNum(m.otherExpenses) + '</td><td style="color:' + cbColor + ';font-weight:600;">' + fmtNum(m.closingBalance) + '</td></tr>';
-          }).join("") + '</tbody></table>';
+          '<p style="font-size:11px;color:var(--c-muted);">دوس على أي رقم في الجدول عشان تشوف الحركات التفصيلية بتاعته.</p>' +
+          '<div class="field" style="max-width:260px;margin-bottom:8px;"><label>فلترة بالشهر</label><select id="ads-month-filter">' +
+          '<option value="">كل الشهور</option>' +
+          pastAndCurrent.map(function (m) { return '<option value="' + escapeHtml(String(m.month)) + '">' + escapeHtml(String(m.month)) + '</option>'; }).join("") +
+          '<option value="__total__">إجمالي كل المصروفات</option>' +
+          '</select></div>' +
+          '<div id="ads-monthly-wrap">' + buildMonthlySectionHtml(pastAndCurrent, "") + '</div>';
         if (futureCount > 0) {
           html += '<p style="font-size:11px;color:var(--c-muted);margin-top:6px;">فيه ' + futureCount + ' شهر مستقبلي مجهّز مسبقاً في الملف (لسه من غير بيانات) — مش معروض هنا لحد ما ييجي وقته.</p>';
         }
@@ -155,6 +234,21 @@
       body.innerHTML = html;
       var refreshBtn = document.getElementById("ads-expenses-refresh-btn");
       if (refreshBtn) refreshBtn.onclick = function () { body.innerHTML = '<div class="loading" style="font-size:13px;">بيتحمّل من Google Drive…</div>'; loadAdsExpenses(latestAdsBatchTotals); };
+      var monthFilterEl = document.getElementById("ads-month-filter");
+      if (monthFilterEl) monthFilterEl.onchange = function () {
+        var wrap = document.getElementById("ads-monthly-wrap");
+        if (wrap) wrap.innerHTML = buildMonthlySectionHtml(pastAndCurrent, monthFilterEl.value);
+      };
+      // معالج نقر واحد على مستوى صندوق مصروفات الإعلانات كله — بيغطي أي جدول
+      // شهري بيتبني بعد كده كمان (بعد تغيير الفلتر) لأن body نفسه مش بيتغيّر
+      if (!body.dataset.txClickBound) {
+        body.dataset.txClickBound = "1";
+        body.addEventListener("click", function (e) {
+          var cell = e.target.closest("[data-field]");
+          if (!cell) return;
+          openTransactionsModal(cell.getAttribute("data-month"), cell.getAttribute("data-field"));
+        });
+      }
     }).catch(function (e) {
       body.innerHTML = '<div class="err-msg">تعذّر تحميل ملف المصروفات: ' + escapeHtml(e.message) + '</div>' +
         '<div style="text-align:left;margin-top:6px;"><button class="btn ghost sm" id="ads-expenses-refresh-btn">↻ إعادة محاولة</button></div>';
