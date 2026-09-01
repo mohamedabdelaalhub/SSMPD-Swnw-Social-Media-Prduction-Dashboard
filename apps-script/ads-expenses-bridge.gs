@@ -2,7 +2,7 @@
    جسر مصروفات الإعلانات الفعلية — SWNW Ads Expenses Bridge
    مشروع Apps Script منفصل تماماً عن Code.gs (جسر أرشيف Drive) —
    Web App مستقل بيرجّع ملخص "الإقفال الشهري" + سجل الحركات التفصيلي
-   جاهزين كـJSON.
+   + بنود "مصروفات أخرى" التفصيلية جاهزين كـJSON.
 
    ليه موجود: قراءة ملف xlsx على Drive بـ`alt=media` + مفتاح API بس
    (من غير OAuth) كانت بترجع 503 بشكل متكرر مش مضمون. الحل: Apps
@@ -16,6 +16,14 @@
    شيت "سجل الحركات" (التاريخ/الوقت/النوع/القيمة/كود العملية/البيان/الشهر
    بصيغة yyyy-MM/ملاحظات/المصدر) — بيُستخدم في الداشبورد عشان لما حد يدوس
    على رقم في جدول الإقفال الشهري يشوف الحركات التفصيلية اللي جمّعت الرقم ده.
+
+   إضافة بنود "مصروفات أخرى" التفصيلية (٢٠٢٦-٠٩-٠١): كان عمود "مصروفات أخرى"
+   في شيت "الإقفال الشهري" بيرجع رقم إجمالي بس من غير أي تفصيل — مع إن ملف
+   الإكسل فعلياً فيه شيت منفصل "اشتراكات ومصروفات أخرى" بيسجّل كل بند لوحده
+   (اسم الجهة/الاشتراك، القيمة، البيان). بترجّع دلوقتي `otherExpensesItems` —
+   كل صف من الشيت ده (التاريخ/الوقت/الجهة أو الاشتراك/القيمة/كود العملية/
+   البيان/الشهر بصيغة yyyy-MM/ملاحظات/المصدر) — عشان تبقى متاحة في مودال
+   تفاصيل "مصروفات أخرى" في الداشبورد بدل ملاحظة عامة بدون تفصيل.
    =========================================================== */
 function doGet(e) {
   var ss = SpreadsheetApp.openById('1MGDJe3Jn3fRcthqq7-264l5PzsA6c6Nr');
@@ -45,6 +53,19 @@ function doGet(e) {
       description: String(t[5] || ''), month: String(t[6]), notes: String(t[7] || ''), source: String(t[8] || '')
     });
   }
-  var out = { lastRecordAt: new Date().toISOString(), monthly: monthly, transactions: transactions };
+  var oeSheet = ss.getSheetByName('اشتراكات ومصروفات أخرى');
+  var oeData = oeSheet ? oeSheet.getDataRange().getValues() : [];
+  var otherExpensesItems = [];
+  for (var k = 1; k < oeData.length; k++) {
+    var o = oeData[k];
+    if (!o[6]) continue;
+    otherExpensesItems.push({
+      date: o[0] instanceof Date ? Utilities.formatDate(o[0], 'GMT+2', 'yyyy-MM-dd') : String(o[0]),
+      time: o[1] instanceof Date ? Utilities.formatDate(o[1], 'GMT+2', 'HH:mm') : String(o[1]),
+      vendor: String(o[2] || ''), amount: Number(o[3]) || 0, opCode: String(o[4] || ''),
+      description: String(o[5] || ''), month: String(o[6]), notes: String(o[7] || ''), source: String(o[8] || '')
+    });
+  }
+  var out = { lastRecordAt: new Date().toISOString(), monthly: monthly, transactions: transactions, otherExpensesItems: otherExpensesItems };
   return ContentService.createTextOutput(JSON.stringify(out)).setMimeType(ContentService.MimeType.JSON);
 }
