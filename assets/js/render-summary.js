@@ -110,36 +110,44 @@
   }
 
   // بيرجع حركات سجل الحركات الخاصة بشهر وعمود معيّن من جدول الإقفال الشهري —
-  // سحوبات فيسبوك بتتفلتر بنوع "سحب"، المسدد بنوع "سداد"، وأي عمود تاني
-  // (مصروفات أخرى / الرصيد الختامي) بيعرض كل حركات الشهر لأن مفيش تصنيف
-  // منفصل ليها في سجل الحركات
+  // سحوبات فيسبوك بتتفلتر بنوع "سحب" بالظبط، المسدد بنوع "سداد" بالظبط.
+  // "مصروفات أخرى" و"الرصيد الختامي" مفيش ليهم تفصيل حركات مستقل: الأول رقم
+  // بييجي جاهز من شيت "الإقفال الشهري" نفسه (مش من سجل الحركات)، والتاني
+  // رصيد تراكمي مش عملية واحدة — فمعالجهم بيرجعوا null (مفيش جدول، رسالة بس)
   function filterTransactionsForCell(month, field) {
     var all = (adsExpensesCache && adsExpensesCache.transactions) || [];
     var monthTx = all.filter(function (t) { return String(t.month) === String(month); });
     if (field === "fbSpend") return monthTx.filter(function (t) { return t.type === "سحب"; });
     if (field === "paid") return monthTx.filter(function (t) { return t.type === "سداد"; });
-    return monthTx;
+    return null;
   }
 
   var CELL_FIELD_LABELS = { fbSpend: "سحوبات فيسبوك", paid: "المسدد", otherExpenses: "مصروفات أخرى", closingBalance: "الرصيد الختامي" };
+  var CELL_FIELD_NOTES = {
+    otherExpenses: "رقم «مصروفات أخرى» بييجي جاهز من شيت «الإقفال الشهري» في ملف الإكسل مباشرة (رسوم بنكية/تعديلات يدوية غالباً) — مش مبني على حركات فردية في «سجل الحركات»، فمفيش تفصيل نعرضه هنا.",
+    closingBalance: "«الرصيد الختامي» رصيد تراكمي (كل السحوبات والمسدد من أول الملف لحد آخر الشهر ده) — مش قيمة عملية واحدة، فمفيش «حركة» بعينها تتربط بيه. لتفاصيل حركات الشهر ده استخدم عمودي «سحوبات فيسبوك» و«المسدد» فوق."
+  };
 
   function openTransactionsModal(month, field) {
     var rows = filterTransactionsForCell(month, field);
     var backdrop = document.createElement("div");
     backdrop.className = "modal-backdrop";
-    var sum = rows.reduce(function (s, t) { return s + Number(t.amount || 0); }, 0);
-    var noteHtml = (field === "otherExpenses" || field === "closingBalance")
-      ? '<p style="font-size:11px;color:var(--c-muted);">مفيش تصنيف منفصل لبند «' + escapeHtml(CELL_FIELD_LABELS[field] || "") + '» في سجل الحركات — الجدول بيعرض كل حركات الشهر ده.</p>' : '';
-    backdrop.innerHTML = '<div class="modal" style="max-width:640px;"><div class="modal-head"><h3>حركات ' + escapeHtml(CELL_FIELD_LABELS[field] || "") + ' — ' + escapeHtml(String(month)) + '</h3>' +
-      '<button class="modal-close">×</button></div>' + noteHtml +
-      (!rows.length ? '<div class="empty-state">مفيش حركات مسجّلة لهذا البند في هذا الشهر.</div>' :
-        '<p style="font-size:12px;color:var(--c-muted);">عدد الحركات: ' + rows.length + ' — الإجمالي: ' + fmtNum(sum) + ' ج.م</p>' +
+    var bodyHtml;
+    if (rows === null) {
+      bodyHtml = '<p style="font-size:12px;color:var(--c-muted);">' + escapeHtml(CELL_FIELD_NOTES[field] || "") + '</p>';
+    } else if (!rows.length) {
+      bodyHtml = '<div class="empty-state">مفيش حركات مسجّلة لهذا البند في هذا الشهر.</div>';
+    } else {
+      var sum = rows.reduce(function (s, t) { return s + Number(t.amount || 0); }, 0);
+      bodyHtml = '<p style="font-size:12px;color:var(--c-muted);">عدد الحركات: ' + rows.length + ' — الإجمالي: ' + fmtNum(sum) + ' ج.م</p>' +
         '<div style="max-height:360px;overflow:auto;"><table class="simple"><thead><tr><th>التاريخ</th><th>الوقت</th><th>النوع</th><th>القيمة</th><th>البيان</th><th>الكود</th></tr></thead><tbody>' +
         rows.map(function (t) {
           return '<tr><td>' + fmtTxDate(t.date) + '</td><td>' + escapeHtml(t.time || "—") + '</td><td>' + escapeHtml(t.type || "—") + '</td>' +
             '<td>' + fmtNum(t.amount) + '</td><td>' + escapeHtml(t.description || "—") + '</td><td>' + escapeHtml(t.opCode || "—") + '</td></tr>';
-        }).join("") + '</tbody></table></div>') +
-      '</div>';
+        }).join("") + '</tbody></table></div>';
+    }
+    backdrop.innerHTML = '<div class="modal" style="max-width:640px;"><div class="modal-head"><h3>' + (rows === null ? "" : "حركات ") + escapeHtml(CELL_FIELD_LABELS[field] || "") + ' — ' + escapeHtml(String(month)) + '</h3>' +
+      '<button class="modal-close">×</button></div>' + bodyHtml + '</div>';
     document.body.appendChild(backdrop);
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
     backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
