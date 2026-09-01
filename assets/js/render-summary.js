@@ -129,7 +129,7 @@
         var lastMonth = pastAndCurrent[0];
         html += '<div class="kpi-grid">' +
           kpiCard("إجمالي سحوبات فيسبوك (" + escapeHtml(String(lastMonth.month)) + ")", fmtNum(lastMonth.fbSpend) + " ج.م", { small: true }) +
-          kpiCard("الرصيد الختامي", fmtNum(lastMonth.closingBalance) + " ج.م") +
+          kpiCard("الرصيد الختامي", '<span style="color:' + (lastMonth.closingBalance < 0 ? "var(--c-negative)" : lastMonth.closingBalance > 0 ? "var(--c-positive)" : "inherit") + ';">' + fmtNum(lastMonth.closingBalance) + " ج.م</span>") +
           '</div>';
         if (latestAdsBatchTotals && lastMonth.fbSpend) {
           var diff = lastMonth.fbSpend - latestAdsBatchTotals.spent;
@@ -144,7 +144,8 @@
         html += '<h4 style="margin-top:14px;font-size:13px;">الإقفال الشهري (الحاضر فوق، الماضي تحته)</h4>' +
           '<table class="simple"><thead><tr><th>الشهر</th><th>سحوبات فيسبوك</th><th>المسدد</th><th>مصروفات أخرى</th><th>الرصيد الختامي</th></tr></thead><tbody>' +
           pastAndCurrent.map(function (m) {
-            return '<tr><td>' + escapeHtml(String(m.month)) + '</td><td>' + fmtNum(m.fbSpend) + '</td><td>' + fmtNum(m.paid) + '</td><td>' + fmtNum(m.otherExpenses) + '</td><td>' + fmtNum(m.closingBalance) + '</td></tr>';
+            var cbColor = m.closingBalance < 0 ? "var(--c-negative)" : m.closingBalance > 0 ? "var(--c-positive)" : "inherit";
+            return '<tr><td>' + escapeHtml(String(m.month)) + '</td><td>' + fmtNum(m.fbSpend) + '</td><td>' + fmtNum(m.paid) + '</td><td>' + fmtNum(m.otherExpenses) + '</td><td style="color:' + cbColor + ';font-weight:600;">' + fmtNum(m.closingBalance) + '</td></tr>';
           }).join("") + '</tbody></table>';
         if (futureCount > 0) {
           html += '<p style="font-size:11px;color:var(--c-muted);margin-top:6px;">فيه ' + futureCount + ' شهر مستقبلي مجهّز مسبقاً في الملف (لسه من غير بيانات) — مش معروض هنا لحد ما ييجي وقته.</p>';
