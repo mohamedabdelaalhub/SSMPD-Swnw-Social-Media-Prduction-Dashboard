@@ -8,6 +8,21 @@
     return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
 
+  // نص "من قد ايه" مبسّط بالعربي — بيتحول لعدد الأيام/الساعات من وقت معيّن
+  // لحد دلوقتي، يستخدم في كروت الـKanban عشان يوضّح المادة اتحطت في
+  // المرحلة الحالية إمتى (مطلوب المستخدم: معرفة قد ايه وهي عند المصمم)
+  function timeAgo(iso) {
+    if (!iso) return null;
+    var ms = Date.now() - new Date(iso).getTime();
+    if (isNaN(ms) || ms < 0) return null;
+    var mins = Math.floor(ms / 60000);
+    if (mins < 60) return mins <= 1 ? "من دقيقة" : "من " + mins + " دقيقة";
+    var hours = Math.floor(mins / 60);
+    if (hours < 24) return hours === 1 ? "من ساعة" : "من " + hours + " ساعة";
+    var days = Math.floor(hours / 24);
+    return days === 1 ? "من يوم" : "من " + days + " يوم";
+  }
+
   function render(container) {
     var me = window.SSMPDAuth.currentAdmin;
     container.innerHTML = '<div class="loading">بيحمّل…</div>';
@@ -53,8 +68,13 @@
           colItems.forEach(function (i) {
             var ownerName = (adminsById[i.created_by] || {}).name || "—";
             var designerName = i.assigned_designer ? ((adminsById[i.assigned_designer] || {}).name || "—") : "";
+            // وقت دخول المادة للمرحلة الحالية: لو عند المصمم بنستخدم وقت
+            // الاستلام الفعلي (design_received_at) لو موجود، وإلا آخر تحديث عام
+            var stageTimeIso = (i.stage === "in_design" && i.design_received_at) ? i.design_received_at : i.updated_at;
+            var agoLabel = timeAgo(stageTimeIso);
             html += '<div class="kanban-card" data-id="' + i.id + '"><div class="title">' + escapeHtml(i.title) + W.brandBadgeHtml(i.brand) + W.specialtyBadgeHtml(i.specialty) + C.commentButtonHtml(i.id, stats) + '</div>' +
-              '<div class="meta">بواسطة: ' + escapeHtml(ownerName) + (designerName ? " · مصمم: " + escapeHtml(designerName) : "") + '</div></div>';
+              '<div class="meta">بواسطة: ' + escapeHtml(ownerName) + (designerName ? " · مصمم: " + escapeHtml(designerName) : "") + '</div>' +
+              (agoLabel ? '<div class="meta" style="color:var(--c-muted);">في المرحلة دي ' + agoLabel + '</div>' : '') + '</div>';
           });
           if (!colItems.length) html += '<div style="text-align:center;color:var(--c-muted);font-size:11px;padding:10px 0;">فارغ</div>';
           html += '</div>';

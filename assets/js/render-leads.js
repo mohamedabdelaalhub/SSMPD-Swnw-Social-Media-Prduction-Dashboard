@@ -520,6 +520,7 @@
     var s = state.archive;
     window.SSMPDDb.listLeads({
       status: s.status || undefined, search: s.search || undefined, assigned_to: s.bookedBy || undefined,
+      date_from: s.dateFrom || undefined, date_to: s.dateTo || undefined,
       page: s.page, page_size: s.pageSize
     }).then(function (res) {
       var leads = res.leads || [];
@@ -535,7 +536,10 @@
         '<select id="ar-employee"><option value="">كل الموظفين (آخر رد)</option>' +
         state.employees.map(function (e) { return '<option value="' + e.id + '" ' + (s.bookedBy === e.id ? "selected" : "") + '>' + escapeHtml(e.name) + '</option>'; }).join("") +
         '</select>' +
+        '<label style="font-size:11px;color:var(--c-muted);">من <input type="date" id="ar-date-from" value="' + escapeHtml(s.dateFrom || "") + '" style="padding:6px 8px;border-radius:8px;border:1px solid var(--c-border);"></label>' +
+        '<label style="font-size:11px;color:var(--c-muted);">إلى <input type="date" id="ar-date-to" value="' + escapeHtml(s.dateTo || "") + '" style="padding:6px 8px;border-radius:8px;border:1px solid var(--c-border);"></label>' +
         '<button class="btn ghost sm" id="ar-search-btn">بحث</button>' +
+        (s.dateFrom || s.dateTo ? '<button class="btn ghost sm" id="ar-date-clear">✕ مسح الفترة</button>' : '') +
         '<button class="btn ghost sm" id="ar-export-xlsx">⬇ تصدير إكسيل (' + total + ')</button></div>';
 
       if (!leads.length) {
@@ -559,9 +563,13 @@
         s.search = document.getElementById("ar-search").value.trim();
         s.status = document.getElementById("ar-status").value;
         s.bookedBy = document.getElementById("ar-employee").value;
+        s.dateFrom = document.getElementById("ar-date-from").value;
+        s.dateTo = document.getElementById("ar-date-to").value;
         s.page = 1; renderArchiveScreen(view, container);
       };
       document.getElementById("ar-search").onkeydown = function (e) { if (e.key === "Enter") document.getElementById("ar-search-btn").click(); };
+      var dateClearBtn = document.getElementById("ar-date-clear");
+      if (dateClearBtn) dateClearBtn.onclick = function () { s.dateFrom = ""; s.dateTo = ""; s.page = 1; renderArchiveScreen(view, container); };
       wirePager(view, "ar", s, totalPages, function () { renderArchiveScreen(view, container); });
       view.querySelectorAll("[data-open]").forEach(function (btn) {
         btn.onclick = function () { openLeadModal(view, container, btn.getAttribute("data-open"), function () { renderArchiveScreen(view, container); }); };
@@ -569,7 +577,7 @@
       var exportBtn = document.getElementById("ar-export-xlsx");
       if (exportBtn) exportBtn.onclick = function () {
         exportBtn.disabled = true; exportBtn.textContent = "بيجهّز…";
-        exportLeadsArchiveExcel({ status: s.status || undefined, search: s.search || undefined, assigned_to: s.bookedBy || undefined }, total)
+        exportLeadsArchiveExcel({ status: s.status || undefined, search: s.search || undefined, assigned_to: s.bookedBy || undefined, date_from: s.dateFrom || undefined, date_to: s.dateTo || undefined }, total)
           .then(function () { exportBtn.disabled = false; exportBtn.textContent = "⬇ تصدير إكسيل (" + total + ")"; })
           .catch(function (e) { T.show("خطأ: " + e.message, "error"); exportBtn.disabled = false; exportBtn.textContent = "⬇ تصدير إكسيل (" + total + ")"; });
       };

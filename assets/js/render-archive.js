@@ -38,7 +38,7 @@
     var monthLabel = cursor.toLocaleDateString("ar-EG", { month: "long", year: "numeric" });
 
     var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">' +
-      '<h2>الأرشيف — ' + monthLabel + '</h2>' +
+      '<h2>' + monthLabel + '</h2>' +
       '<div style="display:flex;gap:6px;">' +
       '<button class="btn ghost sm" id="arch-prev">‹ السابق</button>' +
       '<button class="btn ghost sm" id="arch-next">التالي ›</button>' +

@@ -31,27 +31,29 @@
 
   // التخصص/القسم الطبي اللي المادة بتخص — اختياري، لأغراض تصنيف وإحصائيات
   // الداشبورد بس (مش جزء من سير عمل الاعتماد ولا بيأثر فيه)
+  // كل تخصص له لون مميز خاص بيه (خلفية البادچ) — النص دايماً أبيض عشان
+  // التباين يفضل واضح مهما كان لون التخصص (طلب المستخدم صراحة)
   var SPECIALTIES = {
-    neurology:      { label: "المخ والأعصاب" },
-    internal:       { label: "الباطنة" },
-    orthopedics:    { label: "العظام" },
-    surgery:        { label: "الجراحة" },
-    dermatology:    { label: "الجلدية" },
-    ent:            { label: "الأنف والأذن" },
-    obgyn:          { label: "النساء والتوليد" },
-    psychiatry:     { label: "النفسية والإدمان" },
-    pediatrics:     { label: "الأطفال" },
-    physio_nutrition: { label: "العلاج الطبيعي والتغذية" },
-    oncology:       { label: "الأورام" },
-    cardiology:     { label: "القلب" },
-    vascular:       { label: "الأوعية الدموية" },
-    dental:         { label: "الأسنان" },
-    cosmetic_laser: { label: "التجميل والليزر" },
-    emergency:      { label: "الطوارئ" },
-    radiology:      { label: "أشعة" },
-    lab:            { label: "تحاليل" },
-    nursing_services: { label: "خدمات التمريض" },
-    internal_services: { label: "خدمات داخل المركز" }
+    neurology:      { label: "المخ والأعصاب",        color: "#6A4FB6" },
+    internal:       { label: "الباطنة",              color: "#0F369D" },
+    orthopedics:    { label: "العظام",               color: "#8A6D3B" },
+    surgery:        { label: "الجراحة",               color: "#D0402A" },
+    dermatology:    { label: "الجلدية",               color: "#C2679A" },
+    ent:            { label: "الأنف والأذن",           color: "#2E8B8B" },
+    obgyn:          { label: "النساء والتوليد",        color: "#E0559C" },
+    psychiatry:     { label: "النفسية والإدمان",       color: "#5C5C8A" },
+    pediatrics:     { label: "الأطفال",               color: "#3AA6D9" },
+    physio_nutrition: { label: "العلاج الطبيعي والتغذية", color: "#2F7D5C" },
+    oncology:       { label: "الأورام",               color: "#7A2E8A" },
+    cardiology:     { label: "القلب",                 color: "#C0293A" },
+    vascular:       { label: "الأوعية الدموية",        color: "#B23A5E" },
+    dental:         { label: "الأسنان",               color: "#3E8FB0" },
+    cosmetic_laser: { label: "التجميل والليزر",        color: "#B0779A" },
+    emergency:      { label: "الطوارئ",               color: "#F15A22" },
+    radiology:      { label: "أشعة",                  color: "#546E7A" },
+    lab:            { label: "تحاليل",                color: "#4C6B3A" },
+    nursing_services: { label: "خدمات التمريض",        color: "#1F8A70" },
+    internal_services: { label: "خدمات داخل المركز",   color: "#4A5568" }
   };
 
   // منصة النشر — تُختار عند النشر (زي ما يُختار البراند تاني في نفس اللحظة)
@@ -102,7 +104,8 @@
   // بادچ صغير للتخصص — فاضي لو مفيش تخصص محدد
   function specialtyBadgeHtml(specialty) {
     if (!specialty || !SPECIALTIES[specialty]) return "";
-    return '<span class="brand-badge" style="background:var(--c-primary,#0F369D);">' + SPECIALTIES[specialty].label + "</span>";
+    var color = SPECIALTIES[specialty].color || "#0F369D";
+    return '<span class="brand-badge" style="background:' + color + ';color:#fff;">' + SPECIALTIES[specialty].label + "</span>";
   }
 
   // دروب داون اختيار التخصص — اختياري (فيه "بدون تخصص")
