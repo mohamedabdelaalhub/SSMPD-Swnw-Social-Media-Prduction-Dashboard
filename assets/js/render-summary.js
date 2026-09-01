@@ -44,6 +44,132 @@
   // على مستوى الموديول عشان تفضل زي ما هي بين كل إعادة رسم للشاشة
   var cmp = { weekA: null, weekB: null, batchA: null, batchB: null };
 
+  // ---------- فلتر مؤشرات عمود في جدول حملات Meta Ads ----------
+  // بيتنادى لما حد يدوس على رأس عمود في جدول الحملات — بيحسب إجمالي/متوسط/
+  // أعلى/أقل حملة لنفس العمود، كله من البيانات المُحمّلة بالفعل (بدون أي
+  // نداء إضافي للسيرفر)
+  function renderAdsColumnStats(col, label, unit, rows) {
+    var box = document.getElementById("ads-col-stats");
+    if (!box) return;
+    if (col === "campaign_name") {
+      box.innerHTML = '<div class="kpi-card"><div class="label">عدد الحملات</div><div class="value small">' + rows.length + '</div></div>';
+      return;
+    }
+    var vals = rows.map(function (r) { return { name: r.campaign_name, v: Number(r[col]) }; })
+      .filter(function (x) { return !isNaN(x.v); });
+    if (!vals.length) { box.innerHTML = '<p style="font-size:12px;color:var(--c-muted);">لا توجد بيانات رقمية لعمود «' + escapeHtml(label) + '»</p>'; return; }
+    var sum = vals.reduce(function (s, x) { return s + x.v; }, 0);
+    var avg = Math.round((sum / vals.length) * 100) / 100;
+    var max = vals.reduce(function (m, x) { return x.v > m.v ? x : m; }, vals[0]);
+    var min = vals.reduce(function (m, x) { return x.v < m.v ? x : m; }, vals[0]);
+    box.innerHTML = '<h4 style="font-size:13px;margin-bottom:8px;">مؤشرات عمود «' + escapeHtml(label) + '»</h4><div class="kpi-grid">' +
+      kpiCard("الإجمالي", fmtNum(sum) + " " + unit, { small: true }) +
+      kpiCard("المتوسط", fmtNum(avg) + " " + unit) +
+      kpiCard("الأعلى", fmtNum(max.v) + " " + unit) +
+      kpiCard("أعلى حملة", escapeHtml(max.name)) +
+      kpiCard("الأقل", fmtNum(min.v) + " " + unit) +
+      kpiCard("أقل حملة", escapeHtml(min.name)) +
+      '</div>';
+  }
+
+  // ---------- مصروفات الإعلانات الفعلية — قراءة مباشرة من ملف Google Drive (xlsx) ----------
+  // بيتقرا من المتصفح مباشرة عن طريق Google Drive API v3 (مفتاح API مقيّد
+  // بدومين الداشبورد بس — راجع config.js → adsExpensesSheet)، وبيتفسّر
+  // بمكتبة SheetJS المُحمّلة بالفعل في index.html. بيتحدّث تلقائياً كل ما
+  // حد يفتح شاشة "الملخص العام" — مفيش تخزين وسيط في Supabase.
+  var adsExpensesCache = null; // { monthly: [...], lastRecordAt: iso, error: null }
+
+  function fetchAdsExpensesWorkbook() {
+    var cfg = (window.SSMPD_CONFIG || {}).adsExpensesSheet;
+    if (!cfg || !cfg.fileId || !cfg.apiKey) return Promise.reject(new Error("ملف المصروفات مش متظبط في config.js"));
+    var url = "https://www.googleapis.com/drive/v3/files/" + encodeURIComponent(cfg.fileId) + "?alt=media&key=" + encodeURIComponent(cfg.apiKey);
+    return fetch(url).then(function (res) {
+      if (!res.ok) throw new Error("تعذّر الوصول لملف Drive (" + res.status + ")");
+      return res.arrayBuffer();
+    }).then(function (buf) {
+      return XLSX.read(new Uint8Array(buf), { type: "array", cellDates: true });
+    });
+  }
+
+  // بيقرا شيت "الإقفال الشهري" (إجمالي سحوبات فيسبوك/مسدد/رصيد لكل شهر)
+  // + آخر صف في "سجل الحركات" لمعرفة آخر تحديث فعلي للملف
+  function parseAdsExpensesWorkbook(wb) {
+    var out = { monthly: [], lastRecordAt: null };
+    var closing = wb.Sheets["الإقفال الشهري"];
+    if (closing) {
+      var rows = XLSX.utils.sheet_to_json(closing, { header: 1, raw: true, defval: null });
+      // الصف الأول عناوين — الشهر/إجمالي سحوبات فيسبوك/إجمالي المسدد/.../الرصيد الختامي
+      for (var i = 1; i < rows.length; i++) {
+        var r = rows[i];
+        if (!r || !r[0] || String(r[0]).indexOf("رصيد افتتاحي") !== -1) continue;
+        out.monthly.push({
+          month: r[0], fbSpend: Number(r[1] || 0), paid: Number(r[2] || 0),
+          otherExpenses: Number(r[3] || 0), net: Number(r[4] || 0), closingBalance: Number(r[6] || 0)
+        });
+      }
+    }
+    var log = wb.Sheets["سجل الحركات"];
+    if (log) {
+      var logRows = XLSX.utils.sheet_to_json(log, { header: 1, raw: true, defval: null });
+      for (var j = logRows.length - 1; j >= 1; j--) {
+        if (logRows[j] && logRows[j][0]) { out.lastRecordAt = logRows[j][0]; break; }
+      }
+    }
+    return out;
+  }
+
+  function fmtMonthDate(v) {
+    if (v == null) return "—";
+    if (v instanceof Date) return v.toLocaleDateString("en-US", { day: "2-digit", month: "2-digit", year: "numeric" });
+    return String(v);
+  }
+
+  function loadAdsExpenses(latestAdsBatchTotals) {
+    var body = document.getElementById("ads-expenses-body");
+    if (!body) return;
+    fetchAdsExpensesWorkbook().then(function (wb) {
+      var data = parseAdsExpensesWorkbook(wb);
+      adsExpensesCache = data;
+      var html = "";
+      if (data.lastRecordAt) {
+        html += '<p style="font-size:11px;color:var(--c-muted);">آخر حركة مسجّلة في الملف — ' + fmtMonthDate(data.lastRecordAt) + '</p>';
+      }
+      if (!data.monthly.length) {
+        html += '<div class="empty-state">لسه مفيش إقفال شهري متسجل في الملف.</div>';
+      } else {
+        var lastMonth = data.monthly[data.monthly.length - 1];
+        html += '<div class="kpi-grid">' +
+          kpiCard("إجمالي سحوبات فيسبوك (" + escapeHtml(String(lastMonth.month)) + ")", fmtNum(lastMonth.fbSpend) + " ج.م", { small: true }) +
+          kpiCard("الرصيد الختامي", fmtNum(lastMonth.closingBalance) + " ج.م") +
+          '</div>';
+        if (latestAdsBatchTotals && lastMonth.fbSpend) {
+          var diff = lastMonth.fbSpend - latestAdsBatchTotals.spent;
+          html += '<h4 style="margin-top:14px;font-size:13px;">مقارنة مع آخر تقرير Meta Ads مستورد</h4>' +
+            '<table class="simple"><thead><tr><th>المصدر</th><th>المبلغ</th></tr></thead><tbody>' +
+            '<tr><td>سحوبات البنك الفعلية (' + escapeHtml(String(lastMonth.month)) + ')</td><td>' + fmtNum(lastMonth.fbSpend) + ' ج.م</td></tr>' +
+            '<tr><td>المبلغ المُنفق حسب تقرير Meta Ads</td><td>' + fmtNum(latestAdsBatchTotals.spent) + ' ج.م</td></tr>' +
+            '<tr><td>الفرق</td><td class="' + (diff > 0 ? "up" : diff < 0 ? "down" : "") + '">' + (diff > 0 ? "▲ " : diff < 0 ? "▼ " : "") + fmtNum(Math.abs(diff)) + ' ج.م</td></tr>' +
+            '</tbody></table>' +
+            '<p style="font-size:11px;color:var(--c-muted);margin-top:6px;">لو الفرق كبير، السبب غالباً اختلاف فترة تقرير Meta Ads عن الشهر البنكي، أو رسوم/عمولات إضافية على السحب.</p>';
+        }
+        html += '<h4 style="margin-top:14px;font-size:13px;">الإقفال الشهري بالكامل</h4>' +
+          '<table class="simple"><thead><tr><th>الشهر</th><th>سحوبات فيسبوك</th><th>المسدد</th><th>مصروفات أخرى</th><th>الرصيد الختامي</th></tr></thead><tbody>' +
+          data.monthly.slice().reverse().map(function (m) {
+            return '<tr><td>' + escapeHtml(String(m.month)) + '</td><td>' + fmtNum(m.fbSpend) + '</td><td>' + fmtNum(m.paid) + '</td><td>' + fmtNum(m.otherExpenses) + '</td><td>' + fmtNum(m.closingBalance) + '</td></tr>';
+          }).join("") + '</tbody></table>';
+      }
+      html += '<div style="text-align:left;margin-top:10px;"><button class="btn ghost sm" id="ads-expenses-refresh-btn">↻ تحديث الآن</button></div>';
+      body.innerHTML = html;
+      var refreshBtn = document.getElementById("ads-expenses-refresh-btn");
+      if (refreshBtn) refreshBtn.onclick = function () { body.innerHTML = '<div class="loading" style="font-size:13px;">بيتحمّل من Google Drive…</div>'; loadAdsExpenses(latestAdsBatchTotals); };
+    }).catch(function (e) {
+      body.innerHTML = '<div class="err-msg">تعذّر تحميل ملف المصروفات: ' + escapeHtml(e.message) + '</div>' +
+        '<div style="text-align:left;margin-top:6px;"><button class="btn ghost sm" id="ads-expenses-refresh-btn">↻ إعادة محاولة</button></div>';
+      var retryBtn = document.getElementById("ads-expenses-refresh-btn");
+      if (retryBtn) retryBtn.onclick = function () { body.innerHTML = '<div class="loading" style="font-size:13px;">بيتحمّل من Google Drive…</div>'; loadAdsExpenses(latestAdsBatchTotals); };
+    });
+  }
+
   function render(container) {
     container.innerHTML = '<div class="loading">بيحمّل المؤشرات…</div>';
 
@@ -267,8 +393,15 @@
         html += kpiCard("متوسط نسبة النقر", lt.avgCtr + "%");
         html += '</div>';
 
-        html += '<table class="simple" style="margin-top:12px;"><thead><tr>' +
-          '<th>الحملة</th><th>المبلغ المُنفق</th><th>النتائج</th><th>تكلفة النتيجة</th><th>الوصول</th><th>النقرات</th><th>نسبة النقر</th>' +
+        html += '<p style="font-size:11px;color:var(--c-muted);margin:8px 0 0;">دوس على اسم أي عمود في الجدول تحت عشان تشوف مؤشراته (الإجمالي/المتوسط/الأعلى/الأقل حملة).</p>';
+        html += '<table class="simple ads-col-table" style="margin-top:6px;"><thead><tr>' +
+          '<th data-col="campaign_name">الحملة</th>' +
+          '<th data-col="amount_spent" data-unit="ج.م">المبلغ المُنفق</th>' +
+          '<th data-col="results">النتائج</th>' +
+          '<th data-col="cost_per_result" data-unit="ج.م">تكلفة النتيجة</th>' +
+          '<th data-col="reach">الوصول</th>' +
+          '<th data-col="link_clicks">النقرات</th>' +
+          '<th data-col="ctr" data-unit="%">نسبة النقر</th>' +
           '</tr></thead><tbody>';
         latest.rows.forEach(function (a) {
           html += '<tr><td>' + escapeHtml(a.campaign_name) + '</td>' +
@@ -280,6 +413,7 @@
             '<td>' + (a.ctr != null ? a.ctr + '%' : '—') + '</td></tr>';
         });
         html += '</tbody></table>';
+        html += '<div id="ads-col-stats" style="margin-top:8px;"></div>';
         if (lt.minStart && lt.maxEnd) {
           html += '<p style="font-size:11px;color:var(--c-muted);margin-top:8px;">بيانات التقرير من ' + lt.minStart + ' لحد ' + lt.maxEnd + '</p>';
         }
@@ -331,7 +465,17 @@
       }
       html += '</div>';
 
+      // ---------- مصروفات الإعلانات الفعلية (من كشف الحساب البنكي — ملف Google Drive) ----------
+      html += '<div class="section" id="ads-expenses-section">' +
+        '<h3>💰 مصروفات الإعلانات الفعلية (من كشف الحساب البنكي)</h3>' +
+        '<div id="ads-expenses-body"><div class="loading" style="font-size:13px;">بيتحمّل من Google Drive…</div></div>' +
+        '</div>';
+
       container.innerHTML = html;
+
+      // إجمالي آخر تقرير Meta Ads مستورد — يُستخدم في المقارنة مع المصروفات الفعلية
+      var latestAdsBatch = batches.length ? batchTotals(batches[0].rows) : null;
+      loadAdsExpenses(latestAdsBatch);
 
       // مؤشرات جودة/نوعية مفلترة بتخصص معيّن — بتتحدّث لحظياً مع تغيير الفلتر من غير إعادة رسم الشاشة كلها
       function renderSpecialtyKpis(specialty) {
@@ -355,6 +499,17 @@
       if (btn) btn.onclick = openMetricsModal;
       var adsBtn = document.getElementById("import-ads-btn");
       if (adsBtn) adsBtn.onclick = openAdImportModal;
+
+      // فلتر مؤشرات لكل عمود في جدول الحملات — دوس على رأس أي عمود يطلعلك
+      // إجمالي/متوسط/أعلى/أقل حملة لنفس العمود ده (latest.rows من الإغلاق فوق)
+      var adsTable = container.querySelector(".ads-col-table");
+      if (adsTable && typeof latest !== "undefined") {
+        adsTable.querySelectorAll("th[data-col]").forEach(function (th) {
+          th.style.cursor = "pointer";
+          th.title = "دوس لعرض مؤشرات العمود ده";
+          th.onclick = function () { renderAdsColumnStats(th.getAttribute("data-col"), th.textContent, th.getAttribute("data-unit") || "", latest.rows); };
+        });
+      }
 
       var wcmpA = document.getElementById("wcmp-a"), wcmpB = document.getElementById("wcmp-b");
       if (wcmpA) { wcmpA.value = cmp.weekA; wcmpA.onchange = function () { cmp.weekA = wcmpA.value; render(container); }; }
