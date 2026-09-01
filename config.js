@@ -19,13 +19,10 @@ window.SSMPD_CONFIG = {
     rootFolderName: "أرشيف SSMPD"
   },
 
-  // ملف مصروفات الإعلانات (Google Drive، xlsx) — بيتقرا مباشرة من المتصفح
-  // بمفتاح API مقيّد بـGoogle Drive API + دومين الداشبورد بس (آمن للنشر
-  // العلني، مش OAuth كامل). راجع render-summary.js → loadAdsExpenses
-  adsExpensesSheet: {
-    fileId: "1MGDJe3Jn3fRcthqq7-264l5PzsA6c6Nr",
-    apiKey: "AIzaSyDuCD9gHPO_1AeWjwURlWbhqPAb7OxLOSM"
-  },
+  // مصروفات الإعلانات الفعلية — Apps Script Web App (OAuth، حساب المركز)
+  // بيرجّع ملخص شهري جاهز كـJSON مباشرة (مفيش قراءة Drive API بمفتاح من
+  // المتصفح تاني — كانت بتفشل بـ503 على alt=media). راجع render-summary.js → loadAdsExpenses
+  adsExpensesWebAppUrl: "https://script.google.com/macros/s/AKfycbzkks4u3SUsQBLtIzN5o091dBANRA7Or1xm5KCBfG8ms1NyOhRAUG6mtZCcz51jlJrM3g/exec",
 
   // بصمة الكاش — ترفع مع أي تعديل على JS/CSS
   cacheVersion: 14
