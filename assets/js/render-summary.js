@@ -134,10 +134,19 @@
       if (data.lastRecordAt) {
         html += '<p style="font-size:11px;color:var(--c-muted);">آخر حركة مسجّلة في الملف — ' + fmtMonthDate(data.lastRecordAt) + '</p>';
       }
+      // الملف فيه صفوف شهور مجهّزة مسبقاً لسنين قدام (لسه مالهاش بيانات) — بنعرض
+      // بس الشهر الحالي وما قبله (الحاضر فوق)، والشهور القادمة (المستقبل) مش
+      // معروضة في الجدول الرئيسي خالص لحد ما ييجي وقتها
+      var nowStr = new Date().toISOString().slice(0, 7); // "YYYY-MM"
+      var pastAndCurrent = data.monthly.filter(function (m) { return String(m.month) <= nowStr; })
+        .sort(function (a, b) { return String(b.month).localeCompare(String(a.month)); });
+      var futureCount = data.monthly.length - pastAndCurrent.length;
       if (!data.monthly.length) {
         html += '<div class="empty-state">لسه مفيش إقفال شهري متسجل في الملف.</div>';
+      } else if (!pastAndCurrent.length) {
+        html += '<div class="empty-state">مفيش بيانات لشهور فاتت أو الشهر الحالي — الملف فيه بس شهور مستقبلية لسه معلّقة.</div>';
       } else {
-        var lastMonth = data.monthly[data.monthly.length - 1];
+        var lastMonth = pastAndCurrent[0];
         html += '<div class="kpi-grid">' +
           kpiCard("إجمالي سحوبات فيسبوك (" + escapeHtml(String(lastMonth.month)) + ")", fmtNum(lastMonth.fbSpend) + " ج.م", { small: true }) +
           kpiCard("الرصيد الختامي", fmtNum(lastMonth.closingBalance) + " ج.م") +
@@ -152,11 +161,14 @@
             '</tbody></table>' +
             '<p style="font-size:11px;color:var(--c-muted);margin-top:6px;">لو الفرق كبير، السبب غالباً اختلاف فترة تقرير Meta Ads عن الشهر البنكي، أو رسوم/عمولات إضافية على السحب.</p>';
         }
-        html += '<h4 style="margin-top:14px;font-size:13px;">الإقفال الشهري بالكامل</h4>' +
+        html += '<h4 style="margin-top:14px;font-size:13px;">الإقفال الشهري (الحاضر فوق، الماضي تحته)</h4>' +
           '<table class="simple"><thead><tr><th>الشهر</th><th>سحوبات فيسبوك</th><th>المسدد</th><th>مصروفات أخرى</th><th>الرصيد الختامي</th></tr></thead><tbody>' +
-          data.monthly.slice().reverse().map(function (m) {
+          pastAndCurrent.map(function (m) {
             return '<tr><td>' + escapeHtml(String(m.month)) + '</td><td>' + fmtNum(m.fbSpend) + '</td><td>' + fmtNum(m.paid) + '</td><td>' + fmtNum(m.otherExpenses) + '</td><td>' + fmtNum(m.closingBalance) + '</td></tr>';
           }).join("") + '</tbody></table>';
+        if (futureCount > 0) {
+          html += '<p style="font-size:11px;color:var(--c-muted);margin-top:6px;">فيه ' + futureCount + ' شهر مستقبلي مجهّز مسبقاً في الملف (لسه من غير بيانات) — مش معروض هنا لحد ما ييجي وقته.</p>';
+        }
       }
       html += '<div style="text-align:left;margin-top:10px;"><button class="btn ghost sm" id="ads-expenses-refresh-btn">↻ تحديث الآن</button></div>';
       body.innerHTML = html;
