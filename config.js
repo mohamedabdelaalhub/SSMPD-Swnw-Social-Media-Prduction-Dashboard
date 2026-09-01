@@ -24,7 +24,7 @@ window.SSMPD_CONFIG = {
   // العلني، مش OAuth كامل). راجع render-summary.js → loadAdsExpenses
   adsExpensesSheet: {
     fileId: "1MGDJe3Jn3fRcthqq7-264l5PzsA6c6Nr",
-    apiKey: "AIzaSyBpc8Vg0I6TLy9Xfu2YBoFaIPzcipJMOB4"
+    apiKey: "AIzaSyDuCD9gHPO_1AeWjwURlWbhqPAb7OxLOSM"
   },
 
   // بصمة الكاش — ترفع مع أي تعديل على JS/CSS
