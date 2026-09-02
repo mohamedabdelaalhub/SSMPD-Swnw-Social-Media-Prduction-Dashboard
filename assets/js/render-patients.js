@@ -876,13 +876,15 @@
   // مشترك بين تقرير طبي وEcho — المحتوى بيتحط في المنطقة البيضا النص بينهم
   // الفوتر صورة رسمية جاهزة (بيانات التواصل + الأيقونات مرسومة جوه الصورة نفسها)
   function letterheadPageHtml(dir, bodyHtml) {
-    // الفوتر position:fixed (مش absolute) عشان يتكرر تلقائيًا أسفل كل صفحة
-    // مطبوعة لو المحتوى طويل وامتد لصفحة تانية (سلوك موثّق لعناصر fixed عند
-    // الطباعة في Chrome) — الهيدر فاضل absolute (أول صفحة بس، ده كافي).
+    // الهيدر والفوتر الاتنين position:fixed (مش absolute) عشان يتكرروا
+    // تلقائيًا أعلى/أسفل كل صفحة مطبوعة لو المحتوى طويل وامتد لأكتر من
+    // صفحة، مهما كان عدد الصفحات (سلوك موثّق لعناصر fixed عند الطباعة في
+    // Chrome). padding-top مضبوط قد ارتفاع صورة الهيدر (~56mm عند عرض
+    // 210mm) عشان النص يبدأ فورًا تحته من غير فراغ.
     return '<div style="position:relative;width:210mm;min-height:297mm;margin:0 auto;">' +
-      '<img src="' + PRINT_LETTERHEAD_HEADER_URL + '" style="position:absolute;top:0;left:0;width:100%;display:block;">' +
+      '<img src="' + PRINT_LETTERHEAD_HEADER_URL + '" style="position:fixed;top:0;left:0;width:210mm;display:block;">' +
       '<img src="' + PRINT_LETTERHEAD_FOOTER_URL + '" style="position:fixed;bottom:0;left:0;width:210mm;display:block;">' +
-      '<div dir="' + dir + '" style="position:relative;padding:58mm 15mm 45mm;box-sizing:border-box;' + (dir === "ltr" ? "text-align:left;" : "") + '">' + bodyHtml + '</div>' +
+      '<div dir="' + dir + '" style="position:relative;padding:56mm 15mm 45mm;box-sizing:border-box;' + (dir === "ltr" ? "text-align:left;" : "") + '">' + bodyHtml + '</div>' +
       '</div>';
   }
 
