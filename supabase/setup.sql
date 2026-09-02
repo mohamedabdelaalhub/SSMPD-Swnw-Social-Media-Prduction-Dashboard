@@ -2153,3 +2153,89 @@ create policy "echo report images write" on public.patient_echo_report_images
 drop policy if exists "echo report images delete" on public.patient_echo_report_images;
 create policy "echo report images delete" on public.patient_echo_report_images
   for delete using (public.has_archive_access() or public.can_manage_all_content());
+
+-- ============================================================
+--  27) تقريرين جدد قابلين للطباعة: أسنان + علاج طبيعي، بنفس نمط
+--      patient_medical_reports/patient_echo_reports (٢٠٢٦-٠٩-٠٢)
+-- ============================================================
+-- طلب الفريق: نموذجين ورقيين (أسنان + علاج طبيعي) بعتهم المستخدم فيهم
+-- خلايا Word معقدة/مكررة — تم تبسيطهم لخانات حرة + جدول جلسات غير محدود
+-- (بدل جداول ثابتة العدد زي الأصل)، بموافقة المستخدم على التبسيط.
+
+create table if not exists public.patient_dental_reports (
+  id                 uuid primary key default gen_random_uuid(),
+  patient_id         uuid not null references public.patients(id) on delete cascade,
+  report_date        date not null default current_date,
+  doctor_name        text not null default '',
+  chief_complaint    text not null default '',
+  chronic_condition  text not null default '',
+  previous_treatment text not null default '',
+  treatment_plan     text not null default '',
+  prosthesis_type    text not null default '',
+  chronic_illnesses  text not null default '',
+  -- [{date, tooth, service, notes}, ...] جدول جلسات غير محدود
+  sessions           jsonb not null default '[]'::jsonb,
+  created_by         uuid references public.admins(id),
+  created_at         timestamptz not null default now(),
+  updated_at         timestamptz not null default now()
+);
+create index if not exists patient_dental_reports_patient_idx
+  on public.patient_dental_reports (patient_id, report_date desc);
+
+create table if not exists public.patient_physio_reports (
+  id               uuid primary key default gen_random_uuid(),
+  patient_id       uuid not null references public.patients(id) on delete cascade,
+  visit_date       date not null default current_date,
+  specialty        text not null default 'علاج طبيعي',
+  doctor_name      text not null default '',
+  visit_reason     text not null default '',
+  -- {weight, blood_pressure, blood_sugar, pulse}
+  vitals           jsonb not null default '{}'::jsonb,
+  chronic_diseases text not null default '',
+  surgeries        text not null default '',
+  family_history   text not null default '',
+  -- نقاط الألم على الرسم التوضيحي — [{x, y, side, note}, ...] (x/y نسبة مئوية)
+  pain_points      jsonb not null default '[]'::jsonb,
+  -- [{date, treatments:["Cryo",...], duration, notes}, ...] جدول جلسات غير محدود
+  sessions         jsonb not null default '[]'::jsonb,
+  created_by       uuid references public.admins(id),
+  created_at       timestamptz not null default now(),
+  updated_at       timestamptz not null default now()
+);
+create index if not exists patient_physio_reports_patient_idx
+  on public.patient_physio_reports (patient_id, visit_date desc);
+
+alter table public.patient_dental_reports enable row level security;
+alter table public.patient_physio_reports enable row level security;
+
+drop policy if exists "dental reports read" on public.patient_dental_reports;
+create policy "dental reports read" on public.patient_dental_reports
+  for select using (
+    public.has_archive_access() or public.has_archive_review_access() or public.can_access_leads()
+    or public.is_assigned_doctor_for_patient(patient_id)
+  );
+drop policy if exists "dental reports write" on public.patient_dental_reports;
+create policy "dental reports write" on public.patient_dental_reports
+  for insert with check (public.has_archive_access() or public.can_manage_all_content());
+drop policy if exists "dental reports update" on public.patient_dental_reports;
+create policy "dental reports update" on public.patient_dental_reports
+  for update using (public.has_archive_access() or public.can_manage_all_content());
+drop policy if exists "dental reports delete" on public.patient_dental_reports;
+create policy "dental reports delete" on public.patient_dental_reports
+  for delete using (public.has_archive_access() or public.can_manage_all_content());
+
+drop policy if exists "physio reports read" on public.patient_physio_reports;
+create policy "physio reports read" on public.patient_physio_reports
+  for select using (
+    public.has_archive_access() or public.has_archive_review_access() or public.can_access_leads()
+    or public.is_assigned_doctor_for_patient(patient_id)
+  );
+drop policy if exists "physio reports write" on public.patient_physio_reports;
+create policy "physio reports write" on public.patient_physio_reports
+  for insert with check (public.has_archive_access() or public.can_manage_all_content());
+drop policy if exists "physio reports update" on public.patient_physio_reports;
+create policy "physio reports update" on public.patient_physio_reports
+  for update using (public.has_archive_access() or public.can_manage_all_content());
+drop policy if exists "physio reports delete" on public.patient_physio_reports;
+create policy "physio reports delete" on public.patient_physio_reports
+  for delete using (public.has_archive_access() or public.can_manage_all_content());
