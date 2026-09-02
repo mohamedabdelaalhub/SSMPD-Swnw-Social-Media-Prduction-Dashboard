@@ -2239,3 +2239,10 @@ create policy "physio reports update" on public.patient_physio_reports
 drop policy if exists "physio reports delete" on public.patient_physio_reports;
 create policy "physio reports delete" on public.patient_physio_reports
   for delete using (public.has_archive_access() or public.can_manage_all_content());
+
+-- ============================================================
+--  28) تخصص لتقرير طبي (تمييز أكتر من تقرير لنفس المريض) + نقاط تحديد
+--      على رسم الأسنان لتقرير الأسنان (٢٠٢٦-٠٩-٠٣)
+-- ============================================================
+alter table public.patient_medical_reports add column if not exists specialty text not null default '';
+alter table public.patient_dental_reports add column if not exists tooth_marks jsonb not null default '[]'::jsonb; -- [{x, y, note}]
