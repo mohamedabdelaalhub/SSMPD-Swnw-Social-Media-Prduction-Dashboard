@@ -2111,3 +2111,45 @@ create policy "echo reports update" on public.patient_echo_reports
 drop policy if exists "echo reports delete" on public.patient_echo_reports;
 create policy "echo reports delete" on public.patient_echo_reports
   for delete using (public.has_archive_access() or public.can_manage_all_content());
+
+-- ============================================================
+--  23) صور مرفقة بتقرير Echo (أشعة القلب) — عدد غير محدود لكل تقرير
+--      (٢٠٢٦-٠٩-٠٢)
+-- ============================================================
+-- مجرد جدول ربط: الملف الفعلي بيترفع ويتخزن زي أي ملف مريض عادي (نفس
+-- patient-files-upload Edge Function، فئة "radiology")، والصف هنا بس بيربط
+-- الملف بتقرير Echo معيّن بدل ما يفضل عائم على مستوى المريض ككل. حذف الملف
+-- (عبر patient-files-delete الموجودة بالفعل) بيمسح صف الربط ده تلقائي
+-- (on delete cascade) — مفيش داعي endpoint حذف منفصل.
+create table if not exists public.patient_echo_report_images (
+  id              uuid primary key default gen_random_uuid(),
+  echo_report_id  uuid not null references public.patient_echo_reports(id) on delete cascade,
+  patient_file_id uuid not null references public.patient_files(id) on delete cascade,
+  created_at      timestamptz not null default now()
+);
+create index if not exists patient_echo_report_images_report_idx
+  on public.patient_echo_report_images (echo_report_id);
+create unique index if not exists patient_echo_report_images_unique
+  on public.patient_echo_report_images (echo_report_id, patient_file_id);
+
+alter table public.patient_echo_report_images enable row level security;
+
+drop policy if exists "echo report images read" on public.patient_echo_report_images;
+create policy "echo report images read" on public.patient_echo_report_images
+  for select using (
+    exists (
+      select 1 from public.patient_echo_reports er
+      where er.id = echo_report_id
+        and (
+          public.has_archive_access() or public.has_archive_review_access() or public.can_access_leads()
+          or public.is_assigned_doctor_for_patient(er.patient_id)
+        )
+    )
+  );
+
+drop policy if exists "echo report images write" on public.patient_echo_report_images;
+create policy "echo report images write" on public.patient_echo_report_images
+  for insert with check (public.has_archive_access() or public.can_manage_all_content());
+drop policy if exists "echo report images delete" on public.patient_echo_report_images;
+create policy "echo report images delete" on public.patient_echo_report_images
+  for delete using (public.has_archive_access() or public.can_manage_all_content());
