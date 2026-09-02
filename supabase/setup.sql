@@ -2246,3 +2246,40 @@ create policy "physio reports delete" on public.patient_physio_reports
 -- ============================================================
 alter table public.patient_medical_reports add column if not exists specialty text not null default '';
 alter table public.patient_dental_reports add column if not exists tooth_marks jsonb not null default '[]'::jsonb; -- [{x, y, note}]
+
+-- ============================================================
+--  29) صور أشعة أسنان مرفقة بتقرير الأسنان — نفس نمط صور Echo
+--      (٢٠٢٦-٠٩-٠٢)
+-- ============================================================
+create table if not exists public.patient_dental_report_images (
+  id               uuid primary key default gen_random_uuid(),
+  dental_report_id uuid not null references public.patient_dental_reports(id) on delete cascade,
+  patient_file_id  uuid not null references public.patient_files(id) on delete cascade,
+  created_at       timestamptz not null default now()
+);
+create index if not exists patient_dental_report_images_report_idx
+  on public.patient_dental_report_images (dental_report_id);
+create unique index if not exists patient_dental_report_images_unique
+  on public.patient_dental_report_images (dental_report_id, patient_file_id);
+
+alter table public.patient_dental_report_images enable row level security;
+
+drop policy if exists "dental report images read" on public.patient_dental_report_images;
+create policy "dental report images read" on public.patient_dental_report_images
+  for select using (
+    exists (
+      select 1 from public.patient_dental_reports dr
+      where dr.id = dental_report_id
+        and (
+          public.has_archive_access() or public.has_archive_review_access() or public.can_access_leads()
+          or public.is_assigned_doctor_for_patient(dr.patient_id)
+        )
+    )
+  );
+
+drop policy if exists "dental report images write" on public.patient_dental_report_images;
+create policy "dental report images write" on public.patient_dental_report_images
+  for insert with check (public.has_archive_access() or public.can_manage_all_content());
+drop policy if exists "dental report images delete" on public.patient_dental_report_images;
+create policy "dental report images delete" on public.patient_dental_report_images
+  for delete using (public.has_archive_access() or public.can_manage_all_content());
