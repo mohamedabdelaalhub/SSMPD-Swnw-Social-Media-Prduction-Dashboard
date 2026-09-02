@@ -1270,8 +1270,53 @@
     return '<div style="position:relative;width:210mm;min-height:297mm;margin:0 auto;">' +
       '<img src="' + PRINT_LETTERHEAD_HEADER_URL + '" style="position:fixed;top:0;left:0;width:210mm;display:block;">' +
       '<img src="' + PRINT_LETTERHEAD_FOOTER_URL + '" style="position:fixed;bottom:0;left:0;width:210mm;display:block;">' +
-      '<div dir="' + dir + '" style="position:relative;padding:56mm 15mm 45mm;box-sizing:border-box;line-height:2.2;' + (dir === "ltr" ? "text-align:left;" : "") + '">' + bodyHtml + '</div>' +
+      '<div dir="' + dir + '" style="position:relative;padding:56mm 15mm 58mm;box-sizing:border-box;line-height:1.7;' + (dir === "ltr" ? "text-align:left;" : "") + '">' + bodyHtml + '</div>' +
       '</div>';
+  }
+
+  // صور الأشعة المرفقة بتقرير (Echo/أسنان) في صفحات طباعة منفصلة — شبكة
+  // ٤ أو ٦ صور في الصفحة (يختارها المستخدم)، كل صورة كـdata URL (مفيش
+  // اعتماد على blob: قد ميتفتحش صح في نافذة الطباعة المنفصلة)
+  var XRAY_PER_PAGE_KEY = "ssmpd_xray_per_page";
+  function promptXrayPerPage() {
+    var def = localStorage.getItem(XRAY_PER_PAGE_KEY) || "4";
+    var v = window.prompt("كام صورة أشعة في الصفحة الواحدة؟ اكتب 4 أو 6 (سيب الخانة فاضية عشان متطبعش الصور)", def);
+    if (v === null || v.trim() === "") return 0;
+    v = parseInt(v, 10);
+    v = v >= 5 ? 6 : 4;
+    localStorage.setItem(XRAY_PER_PAGE_KEY, String(v));
+    return v;
+  }
+  function fetchImagesAsDataUrls(images) {
+    return Promise.all(images.map(function (im) {
+      var f = im.patient_files || {};
+      return window.SSMPDDb.downloadPatientFile(f.id).then(function (res) {
+        return new Promise(function (resolve) {
+          var reader = new FileReader();
+          reader.onload = function () { resolve(reader.result); };
+          reader.onerror = function () { resolve(null); };
+          reader.readAsDataURL(res.blob);
+        });
+      }).catch(function () { return null; });
+    })).then(function (urls) { return urls.filter(Boolean); });
+  }
+  function buildXrayImagesPagesHtml(dataUrls, perPage) {
+    if (!dataUrls.length || !perPage) return "";
+    var rows = Math.ceil(perPage / 2);
+    var gapMM = 6;
+    var cellH = ((183 - (rows - 1) * gapMM) / rows).toFixed(1);
+    var pages = "";
+    for (var i = 0; i < dataUrls.length; i += perPage) {
+      var chunk = dataUrls.slice(i, i + perPage);
+      var cellsHtml = chunk.map(function (src) {
+        return '<div style="height:' + cellH + 'mm;display:flex;align-items:center;justify-content:center;border:1px solid #ddd;border-radius:4px;overflow:hidden;">' +
+          '<img src="' + src + '" style="max-width:100%;max-height:100%;object-fit:contain;"></div>';
+      }).join("");
+      var grid = '<div style="text-align:center;font-size:13px;font-weight:700;margin-bottom:8mm;">صور الأشعة المرفقة</div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:' + gapMM + 'mm;">' + cellsHtml + '</div>';
+      pages += '<div style="page-break-before:always;">' + letterheadPageHtml("rtl", grid) + '</div>';
+    }
+    return pages;
   }
 
   // ---------- طباعة "تقرير طبي" (نص حر) بشكل الفورم الرسمي ----------
@@ -1301,6 +1346,7 @@
 
   // ---------- طباعة Echocardiography Report بشكل الفورم الرسمي ----------
   function printEchoReport(patient, report) {
+    var perPage = promptXrayPerPage();
     var win = window.open("", "_blank");
     if (!win) { T.show("المتصفح منع فتح نافذة الطباعة — سمح بالنوافذ المنبثقة وحاول تاني", "error"); return; }
     var dims = report.dimensions || {};
@@ -1350,16 +1396,28 @@
       '<div style="text-decoration:underline;font-size:12px;margin-bottom:6px;">Conclusion:</div>' +
       '<div style="font-size:12px;margin-bottom:30px;">' + conclusionLinesHtml(report.conclusion_text) + '</div>' +
       '<div style="text-align:center;font-weight:700;font-size:13px;">' + escapeHtml(report.doctor_name || "Dr. Haytham Shaaban (MSc)") + '</div>';
-    win.document.open();
-    win.document.write('<!doctype html><html><head><meta charset="utf-8"><title>Echocardiography Report — ' + escapeHtml(patient.full_name) + '</title>' +
-      '<style>' + PRINT_FONT_FACE_CSS + '@page{size:A4;margin:0;}html,body{direction:ltr;text-align:left;}body{margin:0;font-family:Georgia,\'Times New Roman\',serif;}</style></head>' +
-      '<body>' + letterheadPageHtml("ltr", body) + '</body></html>');
-    win.document.close();
-    waitForImagesThenPrint(win, 3000);
+    var finishEcho = function (imagesHtml) {
+      win.document.open();
+      win.document.write('<!doctype html><html><head><meta charset="utf-8"><title>Echocardiography Report — ' + escapeHtml(patient.full_name) + '</title>' +
+        '<style>' + PRINT_FONT_FACE_CSS + '@page{size:A4;margin:0;}html,body{direction:ltr;text-align:left;}body{margin:0;font-family:Georgia,\'Times New Roman\',serif;}*{-webkit-print-color-adjust:exact;print-color-adjust:exact;}</style></head>' +
+        '<body>' + letterheadPageHtml("ltr", body) + imagesHtml + '</body></html>');
+      win.document.close();
+      waitForImagesThenPrint(win, 4000);
+    };
+    if (perPage) {
+      window.SSMPDDb.listEchoReportImages(report.id).then(function (images) {
+        return fetchImagesAsDataUrls(images || []);
+      }).then(function (urls) {
+        finishEcho(buildXrayImagesPagesHtml(urls, perPage));
+      }).catch(function () { finishEcho(""); });
+    } else {
+      finishEcho("");
+    }
   }
 
   // ---------- طباعة "تقرير أسنان" بشكل الفورم الرسمي ----------
   function printDentalReport(patient, report) {
+    var perPage = promptXrayPerPage();
     var win = window.open("", "_blank");
     if (!win) { T.show("المتصفح منع فتح نافذة الطباعة — سمح بالنوافذ المنبثقة وحاول تاني", "error"); return; }
     var sessions = report.sessions || [];
@@ -1377,7 +1435,7 @@
     var toothMarksHtml = toothMarks.length ?
       '<div style="text-align:center;margin:16px 0;">' +
       '<div style="position:relative;display:inline-block;">' +
-      '<img src="' + PRINT_SITE_BASE + 'assets/img/dental-teeth-chart.png" style="width:520px;display:block;">' +
+      '<img src="' + PRINT_SITE_BASE + 'assets/img/dental-teeth-chart.png" style="width:420px;display:block;">' +
       toothMarks.map(function (p) {
         return '<div style="position:absolute;width:14px;height:14px;border-radius:50%;background:#0F369D;-webkit-print-color-adjust:exact;print-color-adjust:exact;border:2px solid #fff;transform:translate(-50%,-50%);left:' + p.x + '%;top:' + p.y + '%;"></div>';
       }).join("") +
@@ -1403,12 +1461,23 @@
       rows + '</table>' +
       '<p style="margin:24px 0 0;font-size:13px;">وتفضلوا بقبول فائق الاحترام والتقدير</p>' +
       (report.doctor_name ? '<p style="text-align:left;margin-top:24px;font-weight:700;font-size:13px;">' + escapeHtml(report.doctor_name) + '</p>' : '');
-    win.document.open();
-    win.document.write('<!doctype html><html><head><meta charset="utf-8"><title>تقرير أسنان — ' + escapeHtml(patient.full_name) + '</title>' +
-      '<style>' + PRINT_FONT_FACE_CSS + '@page{size:A4;margin:0;}body{margin:0;}*{-webkit-print-color-adjust:exact;print-color-adjust:exact;}</style></head>' +
-      '<body>' + letterheadPageHtml("rtl", body) + '</body></html>');
-    win.document.close();
-    waitForImagesThenPrint(win, 3000);
+    var finishDental = function (imagesHtml) {
+      win.document.open();
+      win.document.write('<!doctype html><html><head><meta charset="utf-8"><title>تقرير أسنان — ' + escapeHtml(patient.full_name) + '</title>' +
+        '<style>' + PRINT_FONT_FACE_CSS + '@page{size:A4;margin:0;}body{margin:0;}*{-webkit-print-color-adjust:exact;print-color-adjust:exact;}tr,table{page-break-inside:avoid;}</style></head>' +
+        '<body>' + letterheadPageHtml("rtl", body) + imagesHtml + '</body></html>');
+      win.document.close();
+      waitForImagesThenPrint(win, 4000);
+    };
+    if (perPage) {
+      window.SSMPDDb.listDentalReportImages(report.id).then(function (images) {
+        return fetchImagesAsDataUrls(images || []);
+      }).then(function (urls) {
+        finishDental(buildXrayImagesPagesHtml(urls, perPage));
+      }).catch(function () { finishDental(""); });
+    } else {
+      finishDental("");
+    }
   }
 
   // ---------- طباعة "تقرير علاج طبيعي" بشكل الفورم الرسمي ----------
@@ -1432,7 +1501,7 @@
     var painPointsHtml = painPoints.length ?
       '<div style="text-align:center;margin:16px 0;">' +
       '<div style="position:relative;display:inline-block;">' +
-      '<img src="' + PRINT_SITE_BASE + 'assets/img/physio-body-diagram.png" style="width:360px;display:block;">' +
+      '<img src="' + PRINT_SITE_BASE + 'assets/img/physio-body-diagram.png" style="width:300px;display:block;">' +
       painPoints.map(function (p) {
         return '<div style="position:absolute;width:14px;height:14px;border-radius:50%;background:#D0402A;-webkit-print-color-adjust:exact;print-color-adjust:exact;border:2px solid #fff;transform:translate(-50%,-50%);left:' + p.x + '%;top:' + p.y + '%;"></div>';
       }).join("") +
@@ -1459,7 +1528,7 @@
       rows + '</table>';
     win.document.open();
     win.document.write('<!doctype html><html><head><meta charset="utf-8"><title>تقرير علاج طبيعي — ' + escapeHtml(patient.full_name) + '</title>' +
-      '<style>' + PRINT_FONT_FACE_CSS + '@page{size:A4;margin:0;}body{margin:0;}*{-webkit-print-color-adjust:exact;print-color-adjust:exact;}</style></head>' +
+      '<style>' + PRINT_FONT_FACE_CSS + '@page{size:A4;margin:0;}body{margin:0;}*{-webkit-print-color-adjust:exact;print-color-adjust:exact;}tr,table{page-break-inside:avoid;}</style></head>' +
       '<body>' + letterheadPageHtml("rtl", body) + '</body></html>');
     win.document.close();
     waitForImagesThenPrint(win, 3000);
