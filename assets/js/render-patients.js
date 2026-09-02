@@ -72,6 +72,7 @@
   var state = {
     subTab: "dashboard",
     browseSearch: "", browsePage: 1, browsePageSize: 20,
+    browseDateField: "created_at", browseDateFrom: "", browseDateTo: "",
     reviewFilter: "pending", reviewPage: 1,
     uploadPatient: null, uploadSearch: "", uploadResults: []
   };
@@ -799,6 +800,213 @@
     };
   }
 
+  // ---------- جدول جلسات ديناميكي (إضافة/حذف صف) — مشترك بين تقرير الأسنان والعلاج الطبيعي ----------
+  function addSessionRowHtml(rowHtml, container) {
+    var row = document.createElement("div");
+    row.innerHTML = rowHtml;
+    row = row.firstElementChild;
+    container.appendChild(row);
+    row.querySelector("[data-remove-session]").onclick = function () { row.remove(); };
+    return row;
+  }
+
+  // ---------- فورم "تقرير أسنان" (إنشاء/تعديل) ----------
+  function dentalSessionRowHtml(s) {
+    s = s || {};
+    return '<div class="session-row" style="display:flex;gap:6px;margin-bottom:6px;align-items:center;">' +
+      '<input type="date" data-sess-date value="' + escapeHtml(s.date || '') + '" style="flex:1;">' +
+      '<input data-sess-tooth placeholder="رقم السن" value="' + escapeHtml(s.tooth || '') + '" style="flex:1;">' +
+      '<input data-sess-service placeholder="الخدمة اللي اتعملت" value="' + escapeHtml(s.service || '') + '" style="flex:2;">' +
+      '<input data-sess-notes placeholder="ملاحظات" value="' + escapeHtml(s.notes || '') + '" style="flex:2;">' +
+      '<button type="button" class="btn danger sm" data-remove-session>حذف</button></div>';
+  }
+
+  function openDentalReportFormModal(patient, existingReport, onSaved) {
+    var r = existingReport || {};
+    var isEdit = !!existingReport;
+    var backdrop = document.createElement("div");
+    backdrop.className = "modal-backdrop";
+    backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>' + (isEdit ? "تعديل تقرير الأسنان" : "تقرير أسنان جديد") + '</h3><button class="modal-close">×</button></div>' +
+      '<p style="font-size:12px;color:var(--c-muted);margin:-6px 0 10px;">المريض: ' + escapeHtml(patient.full_name) + '</p>' +
+      '<div style="display:flex;gap:8px;">' +
+      '<div class="field" style="flex:1;"><label>التاريخ</label><input id="dr-date" type="date" value="' + (r.report_date || new Date().toISOString().slice(0, 10)) + '"></div>' +
+      '<div class="field" style="flex:1;"><label>اسم الطبيب</label><input id="dr-doctor" value="' + escapeHtml(r.doctor_name || '') + '"></div>' +
+      '</div>' +
+      '<div class="field"><label>الشكوى (Chief Complaint)</label><textarea id="dr-complaint" rows="2">' + escapeHtml(r.chief_complaint || '') + '</textarea></div>' +
+      '<div class="field"><label>الحالة المزمنة</label><input id="dr-chronic-cond" value="' + escapeHtml(r.chronic_condition || '') + '"></div>' +
+      '<div class="field"><label>علاج الأسنان السابق</label><input id="dr-prev-treatment" value="' + escapeHtml(r.previous_treatment || '') + '"></div>' +
+      '<div class="field"><label>خطة العلاج المقترحة</label><textarea id="dr-plan" rows="2">' + escapeHtml(r.treatment_plan || '') + '</textarea></div>' +
+      '<div class="field"><label>التركيبة (ثابتة / متحركة)</label><input id="dr-prosthesis" value="' + escapeHtml(r.prosthesis_type || '') + '"></div>' +
+      '<div class="field"><label>الأمراض المزمنة</label><input id="dr-illnesses" value="' + escapeHtml(r.chronic_illnesses || '') + '"></div>' +
+      '<div class="field"><label>جدول الجلسات</label><div id="dr-sessions"></div>' +
+      '<button type="button" class="btn ghost sm" id="dr-add-session">+ إضافة جلسة</button></div>' +
+      '<button class="btn block" id="dr-save">حفظ</button></div>';
+    document.body.appendChild(backdrop);
+    backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
+    backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
+
+    var sessionsContainer = document.getElementById("dr-sessions");
+    (r.sessions && r.sessions.length ? r.sessions : []).forEach(function (s) { addSessionRowHtml(dentalSessionRowHtml(s), sessionsContainer); });
+    document.getElementById("dr-add-session").onclick = function () { addSessionRowHtml(dentalSessionRowHtml(), sessionsContainer); };
+
+    document.getElementById("dr-save").onclick = function () {
+      var sessions = Array.prototype.slice.call(sessionsContainer.querySelectorAll(".session-row")).map(function (row) {
+        return {
+          date: row.querySelector("[data-sess-date]").value,
+          tooth: row.querySelector("[data-sess-tooth]").value.trim(),
+          service: row.querySelector("[data-sess-service]").value.trim(),
+          notes: row.querySelector("[data-sess-notes]").value.trim()
+        };
+      }).filter(function (s) { return s.date || s.tooth || s.service || s.notes; });
+      var patch = {
+        report_date: document.getElementById("dr-date").value || new Date().toISOString().slice(0, 10),
+        doctor_name: document.getElementById("dr-doctor").value.trim(),
+        chief_complaint: document.getElementById("dr-complaint").value.trim(),
+        chronic_condition: document.getElementById("dr-chronic-cond").value.trim(),
+        previous_treatment: document.getElementById("dr-prev-treatment").value.trim(),
+        treatment_plan: document.getElementById("dr-plan").value.trim(),
+        prosthesis_type: document.getElementById("dr-prosthesis").value.trim(),
+        chronic_illnesses: document.getElementById("dr-illnesses").value.trim(),
+        sessions: sessions
+      };
+      if (isEdit) patch.id = existingReport.id;
+      window.SSMPDDb.saveDentalReport(patient.id, patch, me && me.id).then(function () {
+        T.show(isEdit ? "اتحدث التقرير" : "اتحفظ التقرير");
+        backdrop.remove();
+        if (onSaved) onSaved();
+      }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
+    };
+  }
+
+  // ---------- فورم "تقرير علاج طبيعي" (إنشاء/تعديل) ----------
+  var PHYSIO_TREATMENTS = ["Cryo", "Tense", "RF", "Manual", "حجامة (Cupping)", "Recovery", "Laser", "Compression"];
+
+  function physioSessionRowHtml(s) {
+    s = s || {};
+    var treatments = s.treatments || [];
+    return '<div class="session-row" style="border:1px solid var(--c-border);border-radius:8px;padding:8px;margin-bottom:8px;">' +
+      '<div style="display:flex;gap:6px;margin-bottom:6px;">' +
+      '<input type="date" data-sess-date value="' + escapeHtml(s.date || '') + '" style="flex:1;">' +
+      '<input data-sess-duration placeholder="المدة (Time)" value="' + escapeHtml(s.duration || '') + '" style="flex:1;">' +
+      '<button type="button" class="btn danger sm" data-remove-session>حذف الجلسة</button></div>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:8px;font-size:12px;margin-bottom:6px;">' +
+      PHYSIO_TREATMENTS.map(function (t) {
+        return '<label style="display:flex;align-items:center;gap:3px;"><input type="checkbox" data-sess-treatment value="' + t + '"' + (treatments.indexOf(t) !== -1 ? " checked" : "") + '> ' + t + '</label>';
+      }).join("") +
+      '</div>' +
+      '<input data-sess-notes placeholder="ملاحظات" value="' + escapeHtml(s.notes || '') + '" style="width:100%;"></div>';
+  }
+
+  function openPhysioReportFormModal(patient, existingReport, onSaved) {
+    var r = existingReport || {};
+    var vitals = r.vitals || {};
+    var isEdit = !!existingReport;
+    var painPoints = (r.pain_points || []).slice();
+    var backdrop = document.createElement("div");
+    backdrop.className = "modal-backdrop";
+    backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>' + (isEdit ? "تعديل تقرير العلاج الطبيعي" : "تقرير علاج طبيعي جديد") + '</h3><button class="modal-close">×</button></div>' +
+      '<p style="font-size:12px;color:var(--c-muted);margin:-6px 0 10px;">المريض: ' + escapeHtml(patient.full_name) + '</p>' +
+      '<div style="display:flex;gap:8px;">' +
+      '<div class="field" style="flex:1;"><label>تاريخ الزيارة</label><input id="pr-date" type="date" value="' + (r.visit_date || new Date().toISOString().slice(0, 10)) + '"></div>' +
+      '<div class="field" style="flex:1;"><label>التخصص</label><input id="pr-specialty" value="' + escapeHtml(r.specialty || 'علاج طبيعي') + '"></div>' +
+      '<div class="field" style="flex:1;"><label>الطبيب المعالج</label><input id="pr-doctor" value="' + escapeHtml(r.doctor_name || '') + '"></div>' +
+      '</div>' +
+      '<div class="field"><label>سبب الزيارة</label><textarea id="pr-reason" rows="2">' + escapeHtml(r.visit_reason || '') + '</textarea></div>' +
+      '<div class="field"><label>القياسات الحيوية</label><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;">' +
+      '<input id="pr-weight" placeholder="الوزن" value="' + escapeHtml(vitals.weight || '') + '">' +
+      '<input id="pr-pulse" placeholder="النبض" value="' + escapeHtml(vitals.pulse || '') + '">' +
+      '<input id="pr-bp" placeholder="ضغط الدم" value="' + escapeHtml(vitals.blood_pressure || '') + '">' +
+      '<input id="pr-sugar" placeholder="سكر الدم" value="' + escapeHtml(vitals.blood_sugar || '') + '"></div></div>' +
+      '<div class="field"><label>هل تعاني من أمراض مزمنة؟</label><textarea id="pr-chronic" rows="2" placeholder="ضغط/سكر/غدة درقية/كلى/أورام/تنفسية/أخرى...">' + escapeHtml(r.chronic_diseases || '') + '</textarea></div>' +
+      '<div class="field"><label>العمليات الجراحية</label><input id="pr-surgeries" value="' + escapeHtml(r.surgeries || '') + '"></div>' +
+      '<div class="field"><label>تاريخ مرضي بالعائلة</label><input id="pr-family" value="' + escapeHtml(r.family_history || '') + '"></div>' +
+      '<div class="field"><label>نقاط الألم (اضغط على الرسم لتحديد مكان الألم)</label>' +
+      '<div id="pp-canvas" style="position:relative;display:inline-block;border:1px solid var(--c-border);border-radius:8px;overflow:hidden;cursor:crosshair;">' +
+      '<img id="pp-img" src="assets/img/physio-body-diagram.png" style="display:block;width:340px;max-width:100%;" draggable="false"></div>' +
+      '<div id="pp-list" style="margin-top:8px;"></div></div>' +
+      '<div class="field"><label>جدول الجلسات</label><div id="pr-sessions"></div>' +
+      '<button type="button" class="btn ghost sm" id="pr-add-session">+ إضافة جلسة</button></div>' +
+      '<button class="btn block" id="pr-save">حفظ</button></div>';
+    document.body.appendChild(backdrop);
+    backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
+    backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
+
+    var sessionsContainer = document.getElementById("pr-sessions");
+    (r.sessions && r.sessions.length ? r.sessions : []).forEach(function (s) { addSessionRowHtml(physioSessionRowHtml(s), sessionsContainer); });
+    document.getElementById("pr-add-session").onclick = function () { addSessionRowHtml(physioSessionRowHtml(), sessionsContainer); };
+
+    // ---------- نقاط الألم: تحديد بالضغط على الرسم بدل صورة ثابتة غير تفاعلية ----------
+    var ppCanvas = document.getElementById("pp-canvas");
+    var ppList = document.getElementById("pp-list");
+    function renderPainPoints() {
+      ppCanvas.querySelectorAll(".pp-dot").forEach(function (d) { d.remove(); });
+      painPoints.forEach(function (p, i) {
+        var dot = document.createElement("div");
+        dot.className = "pp-dot";
+        dot.title = p.note || "";
+        dot.style.cssText = "position:absolute;width:12px;height:12px;border-radius:50%;background:#D0402A;border:2px solid #fff;box-shadow:0 0 2px rgba(0,0,0,.5);transform:translate(-50%,-50%);cursor:pointer;left:" + p.x + "%;top:" + p.y + "%;";
+        dot.setAttribute("data-pp-idx", i);
+        ppCanvas.appendChild(dot);
+      });
+      ppList.innerHTML = painPoints.length ? painPoints.map(function (p, i) {
+        return '<div style="display:flex;gap:6px;align-items:center;margin-bottom:4px;">' +
+          '<span style="font-size:11px;color:var(--c-danger,#c0392b);">● نقطة ' + (i + 1) + '</span>' +
+          '<input data-pp-note="' + i + '" placeholder="ملاحظة (اختياري)" value="' + escapeHtml(p.note || '') + '" style="flex:1;font-size:12px;padding:3px 6px;">' +
+          '<button type="button" class="btn danger sm" data-pp-remove="' + i + '">حذف</button></div>';
+      }).join("") : '<p style="font-size:11px;color:var(--c-muted);">مفيش نقاط ألم متحددة لسه.</p>';
+      ppList.querySelectorAll("[data-pp-remove]").forEach(function (btn) {
+        btn.onclick = function () { painPoints.splice(Number(btn.getAttribute("data-pp-remove")), 1); renderPainPoints(); };
+      });
+      ppList.querySelectorAll("[data-pp-note]").forEach(function (inp) {
+        inp.oninput = function () { painPoints[Number(inp.getAttribute("data-pp-note"))].note = inp.value; };
+      });
+    }
+    ppCanvas.onclick = function (e) {
+      if (e.target !== ppCanvas && e.target.id !== "pp-img") return; // كليك على نقطة موجودة مش هيضيف نقطة جديدة
+      var rect = ppCanvas.getBoundingClientRect();
+      var x = ((e.clientX - rect.left) / rect.width) * 100;
+      var y = ((e.clientY - rect.top) / rect.height) * 100;
+      painPoints.push({ x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10, note: "" });
+      renderPainPoints();
+    };
+    renderPainPoints();
+
+    document.getElementById("pr-save").onclick = function () {
+      var sessions = Array.prototype.slice.call(sessionsContainer.querySelectorAll(".session-row")).map(function (row) {
+        var treatments = Array.prototype.slice.call(row.querySelectorAll("[data-sess-treatment]:checked")).map(function (c) { return c.value; });
+        return {
+          date: row.querySelector("[data-sess-date]").value,
+          duration: row.querySelector("[data-sess-duration]").value.trim(),
+          treatments: treatments,
+          notes: row.querySelector("[data-sess-notes]").value.trim()
+        };
+      }).filter(function (s) { return s.date || s.duration || s.treatments.length || s.notes; });
+      var patch = {
+        visit_date: document.getElementById("pr-date").value || new Date().toISOString().slice(0, 10),
+        specialty: document.getElementById("pr-specialty").value.trim() || "علاج طبيعي",
+        doctor_name: document.getElementById("pr-doctor").value.trim(),
+        visit_reason: document.getElementById("pr-reason").value.trim(),
+        vitals: {
+          weight: document.getElementById("pr-weight").value.trim(),
+          pulse: document.getElementById("pr-pulse").value.trim(),
+          blood_pressure: document.getElementById("pr-bp").value.trim(),
+          blood_sugar: document.getElementById("pr-sugar").value.trim()
+        },
+        chronic_diseases: document.getElementById("pr-chronic").value.trim(),
+        surgeries: document.getElementById("pr-surgeries").value.trim(),
+        family_history: document.getElementById("pr-family").value.trim(),
+        pain_points: painPoints,
+        sessions: sessions
+      };
+      if (isEdit) patch.id = existingReport.id;
+      window.SSMPDDb.savePhysioReport(patient.id, patch, me && me.id).then(function () {
+        T.show(isEdit ? "اتحدث التقرير" : "اتحفظ التقرير");
+        backdrop.remove();
+        if (onSaved) onSaved();
+      }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
+    };
+  }
+
   // بيستنى الصور تخلص تحميل فعلياً قبل ما يفتح مربع الطباعة (بدل تأخير ثابت
   // بس) — سبب معروف لظهور الصور فاضية/ناقصة في الطباعة لو المتصفح فتح مربع
   // الطباعة قبل ما الصورة تخلص تحميل من الـ blob URL. فيه سقف أقصى للانتظار
@@ -967,6 +1175,98 @@
     win.document.write('<!doctype html><html><head><meta charset="utf-8"><title>Echocardiography Report — ' + escapeHtml(patient.full_name) + '</title>' +
       '<style>' + PRINT_FONT_FACE_CSS + '@page{size:A4;margin:0;}html,body{direction:ltr;text-align:left;}body{margin:0;font-family:Georgia,\'Times New Roman\',serif;}</style></head>' +
       '<body>' + letterheadPageHtml("ltr", body) + '</body></html>');
+    win.document.close();
+    waitForImagesThenPrint(win, 3000);
+  }
+
+  // ---------- طباعة "تقرير أسنان" بشكل الفورم الرسمي ----------
+  function printDentalReport(patient, report) {
+    var win = window.open("", "_blank");
+    if (!win) { T.show("المتصفح منع فتح نافذة الطباعة — سمح بالنوافذ المنبثقة وحاول تاني", "error"); return; }
+    var sessions = report.sessions || [];
+    var rows = sessions.length ? sessions.map(function (s) {
+      return '<tr>' +
+        '<td style="border:1px solid #999;padding:5px 8px;">' + fmtDate(s.date) + '</td>' +
+        '<td style="border:1px solid #999;padding:5px 8px;text-align:center;">' + escapeHtml(s.tooth || "") + '</td>' +
+        '<td style="border:1px solid #999;padding:5px 8px;">' + escapeHtml(s.service || "") + '</td>' +
+        '<td style="border:1px solid #999;padding:5px 8px;">' + escapeHtml(s.notes || "") + '</td></tr>';
+    }).join("") : '<tr><td colspan="4" style="border:1px solid #999;padding:8px;text-align:center;color:#888;">لا توجد جلسات مسجّلة</td></tr>';
+    var field = function (label, value) {
+      return '<p style="margin:0 0 8px;font-size:13px;"><b>' + label + ': </b>' + escapeHtml(value || "—") + '</p>';
+    };
+    var body =
+      '<h1 style="font-size:24px;color:#0F369D;text-align:right;margin:0 0 4px;">تقرير أسنان</h1>' +
+      '<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:14px;color:#555;"><span>' + escapeHtml(patient.full_name) + '</span><span>' + fmtDate(report.report_date) + '</span></div>' +
+      field("الشكوى", report.chief_complaint) +
+      field("الحالة المزمنة", report.chronic_condition) +
+      field("علاج الأسنان السابق", report.previous_treatment) +
+      field("خطة العلاج المقترحة", report.treatment_plan) +
+      field("التركيبة (ثابتة/متحركة)", report.prosthesis_type) +
+      field("الأمراض المزمنة", report.chronic_illnesses) +
+      '<div style="text-align:center;text-decoration:underline;font-size:13px;margin:16px 0 8px;">جدول الجلسات</div>' +
+      '<table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:20px;" dir="rtl">' +
+      '<tr><th style="border:1px solid #999;padding:5px 8px;background:#f2f2f2;">التاريخ</th><th style="border:1px solid #999;padding:5px 8px;background:#f2f2f2;">رقم السن</th><th style="border:1px solid #999;padding:5px 8px;background:#f2f2f2;">الخدمة</th><th style="border:1px solid #999;padding:5px 8px;background:#f2f2f2;">ملاحظات</th></tr>' +
+      rows + '</table>' +
+      '<p style="margin:24px 0 0;font-size:13px;">وتفضلوا بقبول فائق الاحترام والتقدير</p>' +
+      (report.doctor_name ? '<p style="text-align:left;margin-top:24px;font-weight:700;font-size:13px;">' + escapeHtml(report.doctor_name) + '</p>' : '');
+    win.document.open();
+    win.document.write('<!doctype html><html><head><meta charset="utf-8"><title>تقرير أسنان — ' + escapeHtml(patient.full_name) + '</title>' +
+      '<style>' + PRINT_FONT_FACE_CSS + '@page{size:A4;margin:0;}body{margin:0;}</style></head>' +
+      '<body>' + letterheadPageHtml("rtl", body) + '</body></html>');
+    win.document.close();
+    waitForImagesThenPrint(win, 3000);
+  }
+
+  // ---------- طباعة "تقرير علاج طبيعي" بشكل الفورم الرسمي ----------
+  function printPhysioReport(patient, report) {
+    var win = window.open("", "_blank");
+    if (!win) { T.show("المتصفح منع فتح نافذة الطباعة — سمح بالنوافذ المنبثقة وحاول تاني", "error"); return; }
+    var vitals = report.vitals || {};
+    var sessions = report.sessions || [];
+    var painPoints = report.pain_points || [];
+    var field = function (label, value) {
+      return '<p style="margin:0 0 8px;font-size:13px;"><b>' + label + ': </b>' + escapeHtml(value || "—") + '</p>';
+    };
+    var rows = sessions.length ? sessions.map(function (s, i) {
+      return '<tr>' +
+        '<td style="border:1px solid #999;padding:5px 8px;text-align:center;">' + (i + 1) + '</td>' +
+        '<td style="border:1px solid #999;padding:5px 8px;">' + fmtDate(s.date) + '</td>' +
+        '<td style="border:1px solid #999;padding:5px 8px;">' + escapeHtml((s.treatments || []).join(", ")) + '</td>' +
+        '<td style="border:1px solid #999;padding:5px 8px;text-align:center;">' + escapeHtml(s.duration || "") + '</td>' +
+        '<td style="border:1px solid #999;padding:5px 8px;">' + escapeHtml(s.notes || "") + '</td></tr>';
+    }).join("") : '<tr><td colspan="5" style="border:1px solid #999;padding:8px;text-align:center;color:#888;">لا توجد جلسات مسجّلة</td></tr>';
+    var painPointsHtml = painPoints.length ?
+      '<div style="text-align:center;margin:16px 0;">' +
+      '<div style="position:relative;display:inline-block;">' +
+      '<img src="' + PRINT_SITE_BASE + 'assets/img/physio-body-diagram.png" style="width:180px;display:block;">' +
+      painPoints.map(function (p) {
+        return '<div style="position:absolute;width:8px;height:8px;border-radius:50%;background:#D0402A;border:1.5px solid #fff;transform:translate(-50%,-50%);left:' + p.x + '%;top:' + p.y + '%;"></div>';
+      }).join("") +
+      '</div>' +
+      (painPoints.some(function (p) { return p.note; }) ?
+        '<div style="text-align:right;font-size:11px;margin-top:6px;">' +
+        painPoints.filter(function (p) { return p.note; }).map(function (p, i) { return '<div>● ' + escapeHtml(p.note) + '</div>'; }).join("") +
+        '</div>' : '') +
+      '</div>' : '';
+    var body =
+      '<h1 style="font-size:24px;color:#0F369D;text-align:right;margin:0 0 4px;">تقرير علاج طبيعي</h1>' +
+      '<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:14px;color:#555;"><span>' + escapeHtml(patient.full_name) + '</span><span>' + fmtDate(report.visit_date) + '</span></div>' +
+      field("التخصص", report.specialty) +
+      field("الطبيب المعالج", report.doctor_name) +
+      field("سبب الزيارة", report.visit_reason) +
+      '<p style="margin:0 0 8px;font-size:13px;"><b>القياسات الحيوية: </b>الوزن ' + escapeHtml(vitals.weight || "—") + ' · النبض ' + escapeHtml(vitals.pulse || "—") + ' · ضغط الدم ' + escapeHtml(vitals.blood_pressure || "—") + ' · سكر الدم ' + escapeHtml(vitals.blood_sugar || "—") + '</p>' +
+      field("أمراض مزمنة", report.chronic_diseases) +
+      field("العمليات الجراحية", report.surgeries) +
+      field("تاريخ مرضي بالعائلة", report.family_history) +
+      painPointsHtml +
+      '<div style="text-align:center;text-decoration:underline;font-size:13px;margin:16px 0 8px;">جدول الجلسات</div>' +
+      '<table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:20px;" dir="rtl">' +
+      '<tr><th style="border:1px solid #999;padding:5px 8px;background:#f2f2f2;">#</th><th style="border:1px solid #999;padding:5px 8px;background:#f2f2f2;">التاريخ</th><th style="border:1px solid #999;padding:5px 8px;background:#f2f2f2;">نوع العلاج</th><th style="border:1px solid #999;padding:5px 8px;background:#f2f2f2;">المدة</th><th style="border:1px solid #999;padding:5px 8px;background:#f2f2f2;">ملاحظات</th></tr>' +
+      rows + '</table>';
+    win.document.open();
+    win.document.write('<!doctype html><html><head><meta charset="utf-8"><title>تقرير علاج طبيعي — ' + escapeHtml(patient.full_name) + '</title>' +
+      '<style>' + PRINT_FONT_FACE_CSS + '@page{size:A4;margin:0;}body{margin:0;}</style></head>' +
+      '<body>' + letterheadPageHtml("rtl", body) + '</body></html>');
     win.document.close();
     waitForImagesThenPrint(win, 3000);
   }
@@ -1246,18 +1546,92 @@
   }
 
   // ============ ٤) شاشة تصفح وفلترة ============
+  // ---------- فلتر قائمة المرضى بفترة تاريخ (نفس الفلاتر بتاعة listPatientsArchive) ----------
+  function browseDateFilterParams() {
+    var p = {};
+    if (state.browseDateFrom || state.browseDateTo) p.date_field = state.browseDateField;
+    if (state.browseDateFrom) p.date_from = state.browseDateFrom;
+    if (state.browseDateTo) p.date_to = state.browseDateTo;
+    return p;
+  }
+
+  // ---------- تصدير قائمة المرضى المفلترة (Excel / PDF) — بيجيب كل النتائج المطابقة مش صفحة واحدة بس ----------
+  function fetchAllFilteredPatients() {
+    var params = Object.assign({ search: state.browseSearch || undefined, page: 1, page_size: 2000 }, browseDateFilterParams());
+    return window.SSMPDDb.listPatientsArchive(params).then(function (res) { return res.patients || []; });
+  }
+
+  function exportBrowseExcel() {
+    T.show("بيجهّز ملف Excel…");
+    fetchAllFilteredPatients().then(function (patients) {
+      if (!patients.length) { T.show("مفيش نتائج للتصدير", "error"); return; }
+      var rows = patients.map(function (p) {
+        return {
+          "كود المريض": p.patient_code || "", "الاسم": p.full_name || "", "الهاتف": p.phone || "",
+          "السن": p.age != null ? p.age : "", "النوع": p.gender === "male" ? "ذكر" : p.gender === "female" ? "أنثى" : "",
+          "الرقم الطبي": p.medical_record_no || "", "تاريخ الإضافة": p.created_at ? p.created_at.slice(0, 10) : "",
+          "آخر زيارة": p.last_visit_date || "", "الحالة": p.status === "archived" ? "مؤرشف" : "نشط"
+        };
+      });
+      var ws = XLSX.utils.json_to_sheet(rows);
+      var wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "المرضى");
+      XLSX.writeFile(wb, "قائمة_المرضى.xlsx");
+    }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
+  }
+
+  function exportBrowsePdf() {
+    T.show("بيجهّز ملف PDF…");
+    fetchAllFilteredPatients().then(function (patients) {
+      if (!patients.length) { T.show("مفيش نتائج للتصدير", "error"); return; }
+      var win = window.open("", "_blank");
+      if (!win) { T.show("المتصفح منع فتح نافذة الطباعة — سمح بالنوافذ المنبثقة وحاول تاني", "error"); return; }
+      var rows = patients.map(function (p) {
+        return '<tr><td style="border:1px solid #999;padding:5px 8px;">' + escapeHtml(p.patient_code || "—") + '</td>' +
+          '<td style="border:1px solid #999;padding:5px 8px;">' + escapeHtml(p.full_name || "") + '</td>' +
+          '<td style="border:1px solid #999;padding:5px 8px;">' + escapeHtml(p.phone || "—") + '</td>' +
+          '<td style="border:1px solid #999;padding:5px 8px;text-align:center;">' + escapeHtml(p.age != null ? String(p.age) : "—") + '</td>' +
+          '<td style="border:1px solid #999;padding:5px 8px;">' + fmtDate(p.created_at) + '</td>' +
+          '<td style="border:1px solid #999;padding:5px 8px;">' + fmtDate(p.last_visit_date) + '</td></tr>';
+      }).join("");
+      var body = '<h2 style="font-size:18px;color:#0F369D;margin:0 0 4px;">قائمة المرضى</h2>' +
+        '<p style="font-size:12px;color:#666;margin:0 0 14px;">إجمالي: ' + patients.length + ' مريض' + (state.browseDateFrom || state.browseDateTo ? (' — فلتر تاريخ: ' + (state.browseDateFrom || "…") + ' إلى ' + (state.browseDateTo || "…")) : '') + '</p>' +
+        '<table style="width:100%;border-collapse:collapse;font-size:12px;" dir="rtl">' +
+        '<tr><th style="border:1px solid #999;padding:5px 8px;background:#f2f2f2;">كود المريض</th><th style="border:1px solid #999;padding:5px 8px;background:#f2f2f2;">الاسم</th><th style="border:1px solid #999;padding:5px 8px;background:#f2f2f2;">الهاتف</th><th style="border:1px solid #999;padding:5px 8px;background:#f2f2f2;">السن</th><th style="border:1px solid #999;padding:5px 8px;background:#f2f2f2;">تاريخ الإضافة</th><th style="border:1px solid #999;padding:5px 8px;background:#f2f2f2;">آخر زيارة</th></tr>' +
+        rows + '</table>';
+      win.document.open();
+      win.document.write('<!doctype html><html><head><meta charset="utf-8"><title>قائمة المرضى</title>' +
+        '<style>' + PRINT_FONT_FACE_CSS + '@page{size:A4;margin:14mm;}body{margin:0;}</style></head><body>' + body + '</body></html>');
+      win.document.close();
+      waitForImagesThenPrint(win, 500);
+    }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
+  }
+
   function renderBrowseScreen(view, container) {
     view.innerHTML = '<div class="loading">بيحمّل…</div>';
-    window.SSMPDDb.listPatientsArchive({ search: state.browseSearch || undefined, page: state.browsePage, page_size: state.browsePageSize })
+    window.SSMPDDb.listPatientsArchive(Object.assign({ search: state.browseSearch || undefined, page: state.browsePage, page_size: state.browsePageSize }, browseDateFilterParams()))
       .then(function (res) {
         var patients = res.patients || [];
         var total = res.total || 0;
         var totalPages = Math.max(1, Math.ceil(total / state.browsePageSize));
 
         var html = '<div class="section">';
-        html += '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">' +
+        html += '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px;">' +
           '<input id="pt-search" placeholder="بحث بالاسم / الهاتف / كود المريض" value="' + escapeHtml(state.browseSearch) + '" style="flex:1;min-width:220px;padding:9px 12px;border-radius:10px;border:1px solid var(--c-border);">' +
           '<button class="btn ghost sm" id="pt-search-btn">بحث</button></div>';
+        html += '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px;padding:10px;background:var(--c-bg-alt,#f7f8fa);border-radius:10px;">' +
+          '<span style="font-size:12px;color:var(--c-muted);">فلترة بالتاريخ:</span>' +
+          '<select id="pt-date-field" style="padding:6px 8px;border-radius:8px;border:1px solid var(--c-border);">' +
+          '<option value="created_at"' + (state.browseDateField === "created_at" ? " selected" : "") + '>تاريخ إضافة المريض</option>' +
+          '<option value="last_visit_date"' + (state.browseDateField === "last_visit_date" ? " selected" : "") + '>تاريخ آخر زيارة</option>' +
+          '</select>' +
+          '<span style="font-size:11px;color:var(--c-muted);">من</span><input id="pt-date-from" type="date" value="' + escapeHtml(state.browseDateFrom) + '" style="padding:6px 8px;border-radius:8px;border:1px solid var(--c-border);">' +
+          '<span style="font-size:11px;color:var(--c-muted);">إلى</span><input id="pt-date-to" type="date" value="' + escapeHtml(state.browseDateTo) + '" style="padding:6px 8px;border-radius:8px;border:1px solid var(--c-border);">' +
+          '<button class="btn ghost sm" id="pt-date-apply">تطبيق</button>' +
+          (state.browseDateFrom || state.browseDateTo ? '<button class="btn ghost sm" id="pt-date-clear">مسح الفلتر</button>' : '') +
+          '<span style="flex:1;"></span>' +
+          '<select id="pt-export-select" style="padding:6px 8px;border-radius:8px;border:1px solid var(--c-border);"><option value="">⬇ تصدير النتائج...</option><option value="excel">ملف Excel</option><option value="pdf">ملف PDF</option></select>' +
+          '</div>';
 
         if (!patients.length) {
           html += '<p style="color:var(--c-muted);font-size:13px;">مفيش مرضى مطابقين.</p>';
@@ -1295,6 +1669,24 @@
           renderBrowseScreen(view, container);
         };
         document.getElementById("pt-search").onkeydown = function (e) { if (e.key === "Enter") document.getElementById("pt-search-btn").click(); };
+        document.getElementById("pt-date-apply").onclick = function () {
+          state.browseDateField = document.getElementById("pt-date-field").value;
+          state.browseDateFrom = document.getElementById("pt-date-from").value;
+          state.browseDateTo = document.getElementById("pt-date-to").value;
+          state.browsePage = 1;
+          renderBrowseScreen(view, container);
+        };
+        var dateClearBtn = document.getElementById("pt-date-clear");
+        if (dateClearBtn) dateClearBtn.onclick = function () {
+          state.browseDateFrom = ""; state.browseDateTo = ""; state.browsePage = 1;
+          renderBrowseScreen(view, container);
+        };
+        document.getElementById("pt-export-select").onchange = function (e) {
+          var v = e.target.value;
+          e.target.value = "";
+          if (v === "excel") exportBrowseExcel();
+          else if (v === "pdf") exportBrowsePdf();
+        };
         var prevBtn = document.getElementById("pt-prev");
         var nextBtn = document.getElementById("pt-next");
         if (prevBtn) prevBtn.onclick = function () { if (state.browsePage > 1) { state.browsePage--; renderBrowseScreen(view, container); } };
@@ -1386,9 +1778,11 @@
         window.SSMPDDb.listPatientVisits(patientId).catch(function () { return []; }),
         window.SSMPDDb.listMedicalReports(patientId).catch(function () { return []; }),
         window.SSMPDDb.listEchoReports(patientId).catch(function () { return []; }),
+        window.SSMPDDb.listDentalReports(patientId).catch(function () { return []; }),
+        window.SSMPDDb.listPhysioReports(patientId).catch(function () { return []; }),
       ]).then(function (results) {
         var res = results[0], profile = results[1], visits = results[2] || [];
-        renderPatientModal(backdrop, view, container, res.patient, res.files || [], profile, visits, results[3] || [], results[4] || []);
+        renderPatientModal(backdrop, view, container, res.patient, res.files || [], profile, visits, results[3] || [], results[4] || [], results[5] || [], results[6] || []);
       }).catch(function (e) {
         backdrop.querySelector(".modal").innerHTML = '<div class="err-msg">خطأ: ' + e.message + '</div>';
       });
@@ -1396,7 +1790,7 @@
     reload();
   }
 
-  function renderPatientModal(backdrop, view, container, patient, files, profile, visits, reports, echoReports) {
+  function renderPatientModal(backdrop, view, container, patient, files, profile, visits, reports, echoReports, dentalReports, physioReports) {
     var byCategory = {};
     CATEGORIES.forEach(function (c) { byCategory[c.key] = []; });
     files.forEach(function (f) { (byCategory[f.category] || (byCategory[f.category] = [])).push(f); });
@@ -1404,6 +1798,8 @@
     visits = visits || [];
     reports = reports || [];
     echoReports = echoReports || [];
+    dentalReports = dentalReports || [];
+    physioReports = physioReports || [];
 
     var html = '<div class="modal"><div class="modal-head"><h3>' + escapeHtml(patient.full_name) +
       ' <span style="font-size:12px;color:var(--c-muted);">(' + escapeHtml(patient.patient_code || "") + ')</span></h3>' +
@@ -1564,6 +1960,48 @@
     }
     html += '</div>';
 
+    // ---------- تقرير أسنان ----------
+    html += '<div class="section" style="padding:12px 14px;">' +
+      '<h3 style="font-size:13px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
+      '<span>تقرير أسنان (' + dentalReports.length + ')</span>' +
+      (canUp ? '<button class="btn ghost sm" data-new-dental-report="1">+ إنشاء جديد</button>' : '') +
+      '</h3>';
+    if (!dentalReports.length) {
+      html += '<p style="font-size:12px;color:var(--c-muted);">مفيش تقارير أسنان مُنشأة لسه.</p>';
+    } else {
+      dentalReports.forEach(function (r) {
+        html += '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--c-border);font-size:12px;">' +
+          '<div><b>تقرير أسنان</b> — ' + fmtDate(r.report_date) +
+          (r.chief_complaint ? '<br><span style="color:var(--c-muted);">' + escapeHtml(r.chief_complaint.slice(0, 60)) + (r.chief_complaint.length > 60 ? "…" : "") + '</span>' : '') + '</div>' +
+          '<div style="display:flex;gap:6px;flex-shrink:0;">' +
+          '<button class="btn ghost sm" data-edit-dental-report="' + r.id + '">تعديل</button>' +
+          '<button class="btn ghost sm" data-print-dental-report="' + r.id + '">🖨 طباعة</button>' +
+          (canUp ? '<button class="btn danger sm" data-del-dental-report="' + r.id + '">حذف</button>' : '') + '</div></div>';
+      });
+    }
+    html += '</div>';
+
+    // ---------- تقرير علاج طبيعي ----------
+    html += '<div class="section" style="padding:12px 14px;">' +
+      '<h3 style="font-size:13px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
+      '<span>تقرير علاج طبيعي (' + physioReports.length + ')</span>' +
+      (canUp ? '<button class="btn ghost sm" data-new-physio-report="1">+ إنشاء جديد</button>' : '') +
+      '</h3>';
+    if (!physioReports.length) {
+      html += '<p style="font-size:12px;color:var(--c-muted);">مفيش تقارير علاج طبيعي مُنشأة لسه.</p>';
+    } else {
+      physioReports.forEach(function (r) {
+        html += '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--c-border);font-size:12px;">' +
+          '<div><b>تقرير علاج طبيعي</b> — ' + fmtDate(r.visit_date) +
+          (r.visit_reason ? '<br><span style="color:var(--c-muted);">' + escapeHtml(r.visit_reason.slice(0, 60)) + (r.visit_reason.length > 60 ? "…" : "") + '</span>' : '') + '</div>' +
+          '<div style="display:flex;gap:6px;flex-shrink:0;">' +
+          '<button class="btn ghost sm" data-edit-physio-report="' + r.id + '">تعديل</button>' +
+          '<button class="btn ghost sm" data-print-physio-report="' + r.id + '">🖨 طباعة</button>' +
+          (canUp ? '<button class="btn danger sm" data-del-physio-report="' + r.id + '">حذف</button>' : '') + '</div></div>';
+      });
+    }
+    html += '</div>';
+
     html += '</div>';
     backdrop.innerHTML = html;
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
@@ -1575,8 +2013,10 @@
         window.SSMPDDb.listPatientVisits(patient.id).catch(function () { return []; }),
         window.SSMPDDb.listMedicalReports(patient.id).catch(function () { return []; }),
         window.SSMPDDb.listEchoReports(patient.id).catch(function () { return []; }),
+        window.SSMPDDb.listDentalReports(patient.id).catch(function () { return []; }),
+        window.SSMPDDb.listPhysioReports(patient.id).catch(function () { return []; }),
       ]).then(function (results) {
-        renderPatientModal(backdrop, view, container, results[0].patient, results[0].files || [], results[1], results[2] || [], results[3] || [], results[4] || []);
+        renderPatientModal(backdrop, view, container, results[0].patient, results[0].files || [], results[1], results[2] || [], results[3] || [], results[4] || [], results[5] || [], results[6] || []);
       });
     }
 
@@ -1724,6 +2164,61 @@
         }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
       };
     });
+
+    // ---------- تقرير أسنان (إنشاء/تعديل/طباعة/حذف) ----------
+    var newDentalReportBtn = backdrop.querySelector("[data-new-dental-report]");
+    if (newDentalReportBtn) {
+      newDentalReportBtn.onclick = function () { openDentalReportFormModal(patient, null, reloadModal); };
+    }
+    backdrop.querySelectorAll("[data-edit-dental-report]").forEach(function (btn) {
+      btn.onclick = function () {
+        var r = dentalReports.filter(function (x) { return String(x.id) === btn.getAttribute("data-edit-dental-report"); })[0];
+        if (r) openDentalReportFormModal(patient, r, reloadModal);
+      };
+    });
+    backdrop.querySelectorAll("[data-print-dental-report]").forEach(function (btn) {
+      btn.onclick = function () {
+        var r = dentalReports.filter(function (x) { return String(x.id) === btn.getAttribute("data-print-dental-report"); })[0];
+        if (r) printDentalReport(patient, r);
+      };
+    });
+    backdrop.querySelectorAll("[data-del-dental-report]").forEach(function (btn) {
+      btn.onclick = function () {
+        if (!confirm("حذف تقرير الأسنان ده؟")) return;
+        window.SSMPDDb.deleteDentalReport(btn.getAttribute("data-del-dental-report")).then(function () {
+          T.show("اتحذف التقرير");
+          reloadModal();
+        }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
+      };
+    });
+
+    // ---------- تقرير علاج طبيعي (إنشاء/تعديل/طباعة/حذف) ----------
+    var newPhysioReportBtn = backdrop.querySelector("[data-new-physio-report]");
+    if (newPhysioReportBtn) {
+      newPhysioReportBtn.onclick = function () { openPhysioReportFormModal(patient, null, reloadModal); };
+    }
+    backdrop.querySelectorAll("[data-edit-physio-report]").forEach(function (btn) {
+      btn.onclick = function () {
+        var r = physioReports.filter(function (x) { return String(x.id) === btn.getAttribute("data-edit-physio-report"); })[0];
+        if (r) openPhysioReportFormModal(patient, r, reloadModal);
+      };
+    });
+    backdrop.querySelectorAll("[data-print-physio-report]").forEach(function (btn) {
+      btn.onclick = function () {
+        var r = physioReports.filter(function (x) { return String(x.id) === btn.getAttribute("data-print-physio-report"); })[0];
+        if (r) printPhysioReport(patient, r);
+      };
+    });
+    backdrop.querySelectorAll("[data-del-physio-report]").forEach(function (btn) {
+      btn.onclick = function () {
+        if (!confirm("حذف تقرير العلاج الطبيعي ده؟")) return;
+        window.SSMPDDb.deletePhysioReport(btn.getAttribute("data-del-physio-report")).then(function () {
+          T.show("اتحذف التقرير");
+          reloadModal();
+        }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
+      };
+    });
+
     backdrop.querySelectorAll("[data-print-file]").forEach(function (btn) {
       btn.onclick = function () {
         var fileId = btn.getAttribute("data-print-file");

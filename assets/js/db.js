@@ -369,6 +369,41 @@
         .insert({ echo_report_id: echoReportId, patient_file_id: patientFileId })
         .select().single());
     },
+    // ---------- تقرير الأسنان + تقرير العلاج الطبيعي ----------
+    listDentalReports: function (patientId) {
+      return handle(client.from("patient_dental_reports").select("*").eq("patient_id", patientId).order("report_date", { ascending: false }));
+    },
+    saveDentalReport: function (patientId, patch, createdBy) {
+      var row = Object.assign({}, patch, { patient_id: patientId });
+      if (patch && patch.id) {
+        var id = patch.id;
+        delete row.id;
+        row.updated_at = new Date().toISOString();
+        return handle(client.from("patient_dental_reports").update(row).eq("id", id).select().single());
+      }
+      row.created_by = createdBy;
+      return handle(client.from("patient_dental_reports").insert(row).select().single());
+    },
+    deleteDentalReport: function (id) {
+      return handle(client.from("patient_dental_reports").delete().eq("id", id));
+    },
+    listPhysioReports: function (patientId) {
+      return handle(client.from("patient_physio_reports").select("*").eq("patient_id", patientId).order("visit_date", { ascending: false }));
+    },
+    savePhysioReport: function (patientId, patch, createdBy) {
+      var row = Object.assign({}, patch, { patient_id: patientId });
+      if (patch && patch.id) {
+        var id = patch.id;
+        delete row.id;
+        row.updated_at = new Date().toISOString();
+        return handle(client.from("patient_physio_reports").update(row).eq("id", id).select().single());
+      }
+      row.created_by = createdBy;
+      return handle(client.from("patient_physio_reports").insert(row).select().single());
+    },
+    deletePhysioReport: function (id) {
+      return handle(client.from("patient_physio_reports").delete().eq("id", id));
+    },
     getPatientFiles: function (patientId) {
       return edgeFetch("patient-files-list" + qs({ patient_id: patientId }));
     },
