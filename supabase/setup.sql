@@ -1996,3 +1996,118 @@ alter table public.notification_reads
 alter table public.notification_reads drop constraint if exists notification_reads_clear_mode_check;
 alter table public.notification_reads
   add constraint notification_reads_clear_mode_check check (clear_mode in ('count', 'days'));
+
+-- ============================================================
+-- إضافة: لوحة شكر (Kudos) — تقدير علني لإنجاز موظف، ظاهرة لايف لكل الناس
+-- (٢٠٢٦-٠٩-٠١)
+-- ============================================================
+-- الإرسال مقصور على المدير العام/السوبر أدمن. القراءة متاحة لأي مستخدم
+-- مسجّل دخول (اللوحة المفروض تبان للكل). التحديث عن طريق Realtime
+-- الموجود بالفعل (subscribeTable) — مفيش داعي لجدول قراءة/تتبع منفصل.
+create table if not exists public.kudos (
+  id         uuid primary key default gen_random_uuid(),
+  given_by   uuid not null references public.admins(id) on delete cascade,
+  given_to   uuid not null references public.admins(id) on delete cascade,
+  message    text not null,
+  created_at timestamptz not null default now()
+);
+alter table public.kudos enable row level security;
+drop policy if exists "kudos read" on public.kudos;
+create policy "kudos read" on public.kudos for select
+  using (public.my_admin_id() is not null);
+drop policy if exists "kudos insert" on public.kudos;
+create policy "kudos insert" on public.kudos for insert to authenticated
+  with check (
+    given_by = public.my_admin_id()
+    and public.can_manage_all_content()
+  );
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and schemaname='public' and tablename='kudos'
+  ) then
+    alter publication supabase_realtime add table public.kudos;
+  end if;
+end $$;
+
+-- ============================================================
+--  22) تقارير مُنشأة من داخل الداشبورد: تقرير طبي + Echocardiography
+--      (٢٠٢٦-٠٩-٠١)
+-- ============================================================
+-- طلب الفريق: بدل ما يطبعوا التقرير الطبي يدوي على الوورد ويرفعوه سكان،
+-- عايزين يكتبوا التفاصيل جوه الداشبورد ويطلعلهم فورم قابل للطباعة بنفس
+-- شكل الفورم الرسمي بتاعهم (هيدر/فوتر عيادات سونو). جدولين منفصلين لأن
+-- شكل كل تقرير مختلف تمامًا عن التاني (تقرير طبي = نص حر، Echo = جدول
+-- قياسات + ملخص + خلاصة).
+
+create table if not exists public.patient_medical_reports (
+  id          uuid primary key default gen_random_uuid(),
+  patient_id  uuid not null references public.patients(id) on delete cascade,
+  report_date date not null default current_date,
+  body_text   text not null default '',
+  doctor_name text not null default 'د.دينا حسني',
+  created_by  uuid references public.admins(id),
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now()
+);
+create index if not exists patient_medical_reports_patient_idx
+  on public.patient_medical_reports (patient_id, report_date desc);
+
+create table if not exists public.patient_echo_reports (
+  id              uuid primary key default gen_random_uuid(),
+  patient_id      uuid not null references public.patients(id) on delete cascade,
+  report_date     date not null default current_date,
+  patient_label   text, -- الاسم زي ما بيتطبع (ممكن يتسبق بـ Mr./Mrs.)
+  referred_by     text,
+  -- {lvedd, lvesd, lv_swt, lv_pwt, ef, left_atrium, ao_root, ao_excursion, rt_ventricle, fs}
+  -- المدى الطبيعي لكل قيمة ثابت ومكتوب في الفورم نفسه، مش متخزن هنا
+  dimensions      jsonb not null default '{}'::jsonb,
+  summary_text    text not null default '',
+  conclusion_text text not null default '',
+  doctor_name     text not null default 'Dr. Haytham Shaaban (MSc)',
+  created_by      uuid references public.admins(id),
+  created_at      timestamptz not null default now(),
+  updated_at      timestamptz not null default now()
+);
+create index if not exists patient_echo_reports_patient_idx
+  on public.patient_echo_reports (patient_id, report_date desc);
+
+alter table public.patient_medical_reports enable row level security;
+alter table public.patient_echo_reports enable row level security;
+
+-- قراءة: نفس دائرة قراءة patient_medical_profile بالظبط
+drop policy if exists "medical reports read" on public.patient_medical_reports;
+create policy "medical reports read" on public.patient_medical_reports
+  for select using (
+    public.has_archive_access() or public.has_archive_review_access() or public.can_access_leads()
+    or public.is_assigned_doctor_for_patient(patient_id)
+  );
+drop policy if exists "echo reports read" on public.patient_echo_reports;
+create policy "echo reports read" on public.patient_echo_reports
+  for select using (
+    public.has_archive_access() or public.has_archive_review_access() or public.can_access_leads()
+    or public.is_assigned_doctor_for_patient(patient_id)
+  );
+
+-- كتابة: أرشيف/سوبر أدمن بس — نفس دائرة كتابة patient_medical_profile/patient_visits
+drop policy if exists "medical reports write" on public.patient_medical_reports;
+create policy "medical reports write" on public.patient_medical_reports
+  for insert with check (public.has_archive_access() or public.can_manage_all_content());
+drop policy if exists "medical reports update" on public.patient_medical_reports;
+create policy "medical reports update" on public.patient_medical_reports
+  for update using (public.has_archive_access() or public.can_manage_all_content());
+drop policy if exists "medical reports delete" on public.patient_medical_reports;
+create policy "medical reports delete" on public.patient_medical_reports
+  for delete using (public.has_archive_access() or public.can_manage_all_content());
+
+drop policy if exists "echo reports write" on public.patient_echo_reports;
+create policy "echo reports write" on public.patient_echo_reports
+  for insert with check (public.has_archive_access() or public.can_manage_all_content());
+drop policy if exists "echo reports update" on public.patient_echo_reports;
+create policy "echo reports update" on public.patient_echo_reports
+  for update using (public.has_archive_access() or public.can_manage_all_content());
+drop policy if exists "echo reports delete" on public.patient_echo_reports;
+create policy "echo reports delete" on public.patient_echo_reports
+  for delete using (public.has_archive_access() or public.can_manage_all_content());
