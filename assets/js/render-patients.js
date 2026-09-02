@@ -876,10 +876,13 @@
   // مشترك بين تقرير طبي وEcho — المحتوى بيتحط في المنطقة البيضا النص بينهم
   // الفوتر صورة رسمية جاهزة (بيانات التواصل + الأيقونات مرسومة جوه الصورة نفسها)
   function letterheadPageHtml(dir, bodyHtml) {
+    // الفوتر position:fixed (مش absolute) عشان يتكرر تلقائيًا أسفل كل صفحة
+    // مطبوعة لو المحتوى طويل وامتد لصفحة تانية (سلوك موثّق لعناصر fixed عند
+    // الطباعة في Chrome) — الهيدر فاضل absolute (أول صفحة بس، ده كافي).
     return '<div style="position:relative;width:210mm;min-height:297mm;margin:0 auto;">' +
       '<img src="' + PRINT_LETTERHEAD_HEADER_URL + '" style="position:absolute;top:0;left:0;width:100%;display:block;">' +
-      '<img src="' + PRINT_LETTERHEAD_FOOTER_URL + '" style="position:absolute;bottom:0;left:0;width:100%;display:block;">' +
-      '<div dir="' + dir + '" style="position:relative;padding:64mm 15mm 45mm;box-sizing:border-box;">' + bodyHtml + '</div>' +
+      '<img src="' + PRINT_LETTERHEAD_FOOTER_URL + '" style="position:fixed;bottom:0;left:0;width:210mm;display:block;">' +
+      '<div dir="' + dir + '" style="position:relative;padding:58mm 15mm 45mm;box-sizing:border-box;' + (dir === "ltr" ? "text-align:left;" : "") + '">' + bodyHtml + '</div>' +
       '</div>';
   }
 
@@ -960,7 +963,7 @@
       '<div style="text-align:center;font-weight:700;font-size:13px;">' + escapeHtml(report.doctor_name || "Dr. Haytham Shaaban (MSc)") + '</div>';
     win.document.open();
     win.document.write('<!doctype html><html><head><meta charset="utf-8"><title>Echocardiography Report — ' + escapeHtml(patient.full_name) + '</title>' +
-      '<style>' + PRINT_FONT_FACE_CSS + '@page{size:A4;margin:0;}body{margin:0;font-family:Georgia,\'Times New Roman\',serif;}</style></head>' +
+      '<style>' + PRINT_FONT_FACE_CSS + '@page{size:A4;margin:0;}html,body{direction:ltr;text-align:left;}body{margin:0;font-family:Georgia,\'Times New Roman\',serif;}</style></head>' +
       '<body>' + letterheadPageHtml("ltr", body) + '</body></html>');
     win.document.close();
     waitForImagesThenPrint(win, 3000);
