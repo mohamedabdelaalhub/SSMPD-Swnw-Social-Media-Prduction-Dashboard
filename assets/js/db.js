@@ -387,6 +387,18 @@
     deleteDentalReport: function (id) {
       return handle(client.from("patient_dental_reports").delete().eq("id", id));
     },
+    // صور أشعة أسنان مرفقة بتقرير الأسنان — نفس نمط صور Echo
+    listDentalReportImages: function (dentalReportId) {
+      return handle(client.from("patient_dental_report_images")
+        .select("id, created_at, patient_files(id, file_name, file_size, mime_type, uploaded_at)")
+        .eq("dental_report_id", dentalReportId)
+        .order("created_at", { ascending: true }));
+    },
+    linkDentalReportImage: function (dentalReportId, patientFileId) {
+      return handle(client.from("patient_dental_report_images")
+        .insert({ dental_report_id: dentalReportId, patient_file_id: patientFileId })
+        .select().single());
+    },
     listPhysioReports: function (patientId) {
       return handle(client.from("patient_physio_reports").select("*").eq("patient_id", patientId).order("visit_date", { ascending: false }));
     },

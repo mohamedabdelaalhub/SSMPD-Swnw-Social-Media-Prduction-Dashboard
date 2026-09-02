@@ -823,6 +823,81 @@
       '<button type="button" class="btn danger sm" data-remove-session>حذف</button></div>';
   }
 
+  // صور أشعة الأسنان المرفقة بتقرير الأسنان — نفس نمط صور Echo تمامًا
+  function renderDentalImagesList(container, images) {
+    if (!images.length) {
+      container.innerHTML = '<p style="font-size:12px;color:var(--c-muted);">مفيش صور مرفقة لسه.</p>';
+      return;
+    }
+    var html = "";
+    images.forEach(function (im) {
+      var f = im.patient_files || {};
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--c-border);font-size:12px;">' +
+        '<div><b>' + escapeHtml(f.file_name || "—") + '</b><br>' +
+        '<span style="color:var(--c-muted);">' + fmtBytes(f.file_size) + ' · ' + fmtDate(f.uploaded_at) + '</span></div>' +
+        '<div style="display:flex;gap:6px;flex-shrink:0;">' +
+        '<button class="btn ghost sm" data-dental-img-view="' + f.id + '">عرض</button>' +
+        '<button class="btn ghost sm" data-dental-img-dl="' + f.id + '" data-dental-img-name="' + escapeHtml(f.file_name || "") + '">تنزيل</button>' +
+        '<button class="btn danger sm" data-dental-img-del="' + f.id + '">حذف</button></div></div>';
+    });
+    container.innerHTML = html;
+    container.querySelectorAll("[data-dental-img-view]").forEach(function (btn) {
+      btn.onclick = function () {
+        var fileId = btn.getAttribute("data-dental-img-view");
+        var win = window.open("", "_blank");
+        btn.disabled = true;
+        window.SSMPDDb.downloadPatientFile(fileId).then(function (res) {
+          var url = URL.createObjectURL(res.blob);
+          if (win) win.location.href = url;
+          else { var a = document.createElement("a"); a.href = url; a.target = "_blank"; a.click(); }
+          btn.disabled = false;
+          setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
+        }).catch(function (e) {
+          if (win) win.close();
+          T.show("خطأ: " + e.message, "error");
+          btn.disabled = false;
+        });
+      };
+    });
+    container.querySelectorAll("[data-dental-img-dl]").forEach(function (btn) {
+      btn.onclick = function () {
+        var fileId = btn.getAttribute("data-dental-img-dl");
+        btn.disabled = true;
+        window.SSMPDDb.downloadPatientFile(fileId).then(function (res) {
+          var url = URL.createObjectURL(res.blob);
+          var a = document.createElement("a");
+          a.href = url; a.download = res.filename || btn.getAttribute("data-dental-img-name") || "image";
+          document.body.appendChild(a); a.click(); a.remove();
+          setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+          btn.disabled = false;
+        }).catch(function (e) { T.show("خطأ: " + e.message, "error"); btn.disabled = false; });
+      };
+    });
+    container.querySelectorAll("[data-dental-img-del]").forEach(function (btn) {
+      btn.onclick = function () {
+        if (btn.classList.contains("confirm-pending")) {
+          var fileId = btn.getAttribute("data-dental-img-del");
+          btn.disabled = true;
+          window.SSMPDDb.deletePatientFile(fileId).then(function () {
+            T.show("اتحذفت الصورة");
+            btn.closest("div[style*='justify-content:space-between']").remove();
+          }).catch(function (e) { T.show("خطأ: " + e.message, "error"); btn.disabled = false; btn.classList.remove("confirm-pending"); btn.textContent = "حذف"; });
+          return;
+        }
+        btn.classList.add("confirm-pending");
+        btn.textContent = "تأكيد الحذف؟";
+        setTimeout(function () { btn.classList.remove("confirm-pending"); btn.textContent = "حذف"; }, 3000);
+      };
+    });
+  }
+
+  function loadDentalImages(reportId, container) {
+    container.innerHTML = '<p style="font-size:12px;color:var(--c-muted);">بيحمّل…</p>';
+    window.SSMPDDb.listDentalReportImages(reportId).then(function (images) {
+      renderDentalImagesList(container, images || []);
+    }).catch(function (e) { container.innerHTML = '<p style="font-size:12px;color:var(--c-danger,#c0392b);">خطأ: ' + escapeHtml(e.message) + '</p>'; });
+  }
+
   function openDentalReportFormModal(patient, existingReport, onSaved) {
     var r = existingReport || {};
     var isEdit = !!existingReport;
@@ -843,14 +918,65 @@
       '<div class="field"><label>الأمراض المزمنة</label><input id="dr-illnesses" value="' + escapeHtml(r.chronic_illnesses || '') + '"></div>' +
       '<div class="field"><label>مخطط الأسنان (اضغط على السن لتحديد مكانه)</label>' +
       '<div id="td-canvas" style="position:relative;display:inline-block;border:1px solid var(--c-border);border-radius:8px;overflow:hidden;cursor:crosshair;">' +
-      '<img id="td-img" src="assets/img/dental-teeth-chart.png" style="display:block;width:340px;max-width:100%;" draggable="false"></div>' +
+      '<img id="td-img" src="assets/img/dental-teeth-chart.png" style="display:block;width:680px;max-width:100%;" draggable="false"></div>' +
       '<div id="td-list" style="margin-top:8px;"></div></div>' +
+      '<div class="field" style="margin-top:6px;"><label>أشعة الأسنان المرفقة (عدد مفتوح — اختار كذا صورة مرة واحدة)</label>' +
+      (isEdit ?
+        '<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">' +
+        '<input type="file" id="dr-images-input" accept="image/*" multiple style="flex:1;">' +
+        '<button class="btn ghost sm" id="dr-images-add">إضافة</button></div>' +
+        '<div id="dr-images-status" style="font-size:11px;color:var(--c-muted);margin-bottom:6px;"></div>' +
+        '<div id="dr-images-list"></div>'
+        : '<p style="font-size:12px;color:var(--c-muted);">احفظ التقرير الأول، وبعدين هيظهر لك اختيار إضافة صور الأشعة.</p>') +
+      '</div>' +
       '<div class="field"><label>جدول الجلسات</label><div id="dr-sessions"></div>' +
       '<button type="button" class="btn ghost sm" id="dr-add-session">+ إضافة جلسة</button></div>' +
       '<button class="btn block" id="dr-save">حفظ</button></div>';
     document.body.appendChild(backdrop);
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
     backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
+
+    if (isEdit) {
+      loadDentalImages(existingReport.id, document.getElementById("dr-images-list"));
+      document.getElementById("dr-images-add").onclick = function () {
+        var input = document.getElementById("dr-images-input");
+        var files = Array.prototype.slice.call(input.files || []);
+        if (!files.length) { T.show("اختار صورة أو أكتر الأول", "error"); return; }
+        var statusEl = document.getElementById("dr-images-status");
+        var addBtn = document.getElementById("dr-images-add");
+        addBtn.disabled = true;
+        var done = 0;
+        statusEl.textContent = "بيرفع 0/" + files.length + "…";
+        var chain = Promise.resolve();
+        files.forEach(function (file) {
+          chain = chain.then(function () {
+            var fd = new FormData();
+            fd.append("patient_id", patient.id);
+            fd.append("category", "radiology");
+            fd.append("other_description", "أشعة أسنان مرفقة بتقرير الأسنان — " + (r.report_date || existingReport.report_date || ""));
+            fd.append("file", file);
+            return window.SSMPDDb.uploadPatientFile(fd).then(function (res) {
+              return window.SSMPDDb.linkDentalReportImage(existingReport.id, res.file.id);
+            }).then(function () {
+              done++;
+              statusEl.textContent = "بيرفع " + done + "/" + files.length + "…";
+            });
+          });
+        });
+        chain.then(function () {
+          statusEl.textContent = "";
+          addBtn.disabled = false;
+          input.value = "";
+          T.show("اتضافت الصور");
+          loadDentalImages(existingReport.id, document.getElementById("dr-images-list"));
+        }).catch(function (e) {
+          statusEl.textContent = "";
+          addBtn.disabled = false;
+          T.show("خطأ في رفع الصور: " + e.message, "error");
+          loadDentalImages(existingReport.id, document.getElementById("dr-images-list"));
+        });
+      };
+    }
 
     var sessionsContainer = document.getElementById("dr-sessions");
     (r.sessions && r.sessions.length ? r.sessions : []).forEach(function (s) { addSessionRowHtml(dentalSessionRowHtml(s), sessionsContainer); });
@@ -865,7 +991,7 @@
         var dot = document.createElement("div");
         dot.className = "td-dot";
         dot.title = p.note || "";
-        dot.style.cssText = "position:absolute;width:12px;height:12px;border-radius:50%;background:#0F369D;border:2px solid #fff;box-shadow:0 0 2px rgba(0,0,0,.5);transform:translate(-50%,-50%);cursor:pointer;left:" + p.x + "%;top:" + p.y + "%;";
+        dot.style.cssText = "position:absolute;width:16px;height:16px;border-radius:50%;background:#0F369D;border:2px solid #fff;box-shadow:0 0 2px rgba(0,0,0,.5);transform:translate(-50%,-50%);cursor:pointer;left:" + p.x + "%;top:" + p.y + "%;";
         dot.setAttribute("data-td-idx", i);
         tdCanvas.appendChild(dot);
       });
@@ -914,10 +1040,18 @@
         sessions: sessions
       };
       if (isEdit) patch.id = existingReport.id;
-      window.SSMPDDb.saveDentalReport(patient.id, patch, me && me.id).then(function () {
-        T.show(isEdit ? "اتحدث التقرير" : "اتحفظ التقرير");
-        backdrop.remove();
+      window.SSMPDDb.saveDentalReport(patient.id, patch, me && me.id).then(function (saved) {
         if (onSaved) onSaved();
+        if (!isEdit) {
+          // تقرير جديد: بدل ما نقفل المودال، نفتحه تاني في وضع التعديل فورًا
+          // عشان يقدر يضيف صور أشعة من غير ما يدوّر على زرار "تعديل" تاني
+          T.show("اتحفظ التقرير — تقدر تضيف صور أشعة دلوقتي");
+          backdrop.remove();
+          openDentalReportFormModal(patient, saved, onSaved);
+        } else {
+          T.show("اتحدث التقرير");
+          backdrop.remove();
+        }
       }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
     };
   }
@@ -966,7 +1100,7 @@
       '<div class="field"><label>تاريخ مرضي بالعائلة</label><input id="pr-family" value="' + escapeHtml(r.family_history || '') + '"></div>' +
       '<div class="field"><label>نقاط الألم (اضغط على الرسم لتحديد مكان الألم)</label>' +
       '<div id="pp-canvas" style="position:relative;display:inline-block;border:1px solid var(--c-border);border-radius:8px;overflow:hidden;cursor:crosshair;">' +
-      '<img id="pp-img" src="assets/img/physio-body-diagram.png" style="display:block;width:340px;max-width:100%;" draggable="false"></div>' +
+      '<img id="pp-img" src="assets/img/physio-body-diagram.png" style="display:block;width:680px;max-width:100%;" draggable="false"></div>' +
       '<div id="pp-list" style="margin-top:8px;"></div></div>' +
       '<div class="field"><label>جدول الجلسات</label><div id="pr-sessions"></div>' +
       '<button type="button" class="btn ghost sm" id="pr-add-session">+ إضافة جلسة</button></div>' +
@@ -988,7 +1122,7 @@
         var dot = document.createElement("div");
         dot.className = "pp-dot";
         dot.title = p.note || "";
-        dot.style.cssText = "position:absolute;width:12px;height:12px;border-radius:50%;background:#D0402A;border:2px solid #fff;box-shadow:0 0 2px rgba(0,0,0,.5);transform:translate(-50%,-50%);cursor:pointer;left:" + p.x + "%;top:" + p.y + "%;";
+        dot.style.cssText = "position:absolute;width:16px;height:16px;border-radius:50%;background:#D0402A;border:2px solid #fff;box-shadow:0 0 2px rgba(0,0,0,.5);transform:translate(-50%,-50%);cursor:pointer;left:" + p.x + "%;top:" + p.y + "%;";
         dot.setAttribute("data-pp-idx", i);
         ppCanvas.appendChild(dot);
       });
@@ -1136,7 +1270,7 @@
     return '<div style="position:relative;width:210mm;min-height:297mm;margin:0 auto;">' +
       '<img src="' + PRINT_LETTERHEAD_HEADER_URL + '" style="position:fixed;top:0;left:0;width:210mm;display:block;">' +
       '<img src="' + PRINT_LETTERHEAD_FOOTER_URL + '" style="position:fixed;bottom:0;left:0;width:210mm;display:block;">' +
-      '<div dir="' + dir + '" style="position:relative;padding:56mm 15mm 45mm;box-sizing:border-box;' + (dir === "ltr" ? "text-align:left;" : "") + '">' + bodyHtml + '</div>' +
+      '<div dir="' + dir + '" style="position:relative;padding:56mm 15mm 45mm;box-sizing:border-box;line-height:2.2;' + (dir === "ltr" ? "text-align:left;" : "") + '">' + bodyHtml + '</div>' +
       '</div>';
   }
 
@@ -1243,9 +1377,9 @@
     var toothMarksHtml = toothMarks.length ?
       '<div style="text-align:center;margin:16px 0;">' +
       '<div style="position:relative;display:inline-block;">' +
-      '<img src="' + PRINT_SITE_BASE + 'assets/img/dental-teeth-chart.png" style="width:260px;display:block;">' +
+      '<img src="' + PRINT_SITE_BASE + 'assets/img/dental-teeth-chart.png" style="width:520px;display:block;">' +
       toothMarks.map(function (p) {
-        return '<div style="position:absolute;width:8px;height:8px;border-radius:50%;background:#0F369D;border:1.5px solid #fff;transform:translate(-50%,-50%);left:' + p.x + '%;top:' + p.y + '%;"></div>';
+        return '<div style="position:absolute;width:14px;height:14px;border-radius:50%;background:#0F369D;-webkit-print-color-adjust:exact;print-color-adjust:exact;border:2px solid #fff;transform:translate(-50%,-50%);left:' + p.x + '%;top:' + p.y + '%;"></div>';
       }).join("") +
       '</div>' +
       (toothMarks.some(function (p) { return p.note; }) ?
@@ -1271,7 +1405,7 @@
       (report.doctor_name ? '<p style="text-align:left;margin-top:24px;font-weight:700;font-size:13px;">' + escapeHtml(report.doctor_name) + '</p>' : '');
     win.document.open();
     win.document.write('<!doctype html><html><head><meta charset="utf-8"><title>تقرير أسنان — ' + escapeHtml(patient.full_name) + '</title>' +
-      '<style>' + PRINT_FONT_FACE_CSS + '@page{size:A4;margin:0;}body{margin:0;}</style></head>' +
+      '<style>' + PRINT_FONT_FACE_CSS + '@page{size:A4;margin:0;}body{margin:0;}*{-webkit-print-color-adjust:exact;print-color-adjust:exact;}</style></head>' +
       '<body>' + letterheadPageHtml("rtl", body) + '</body></html>');
     win.document.close();
     waitForImagesThenPrint(win, 3000);
@@ -1298,9 +1432,9 @@
     var painPointsHtml = painPoints.length ?
       '<div style="text-align:center;margin:16px 0;">' +
       '<div style="position:relative;display:inline-block;">' +
-      '<img src="' + PRINT_SITE_BASE + 'assets/img/physio-body-diagram.png" style="width:180px;display:block;">' +
+      '<img src="' + PRINT_SITE_BASE + 'assets/img/physio-body-diagram.png" style="width:360px;display:block;">' +
       painPoints.map(function (p) {
-        return '<div style="position:absolute;width:8px;height:8px;border-radius:50%;background:#D0402A;border:1.5px solid #fff;transform:translate(-50%,-50%);left:' + p.x + '%;top:' + p.y + '%;"></div>';
+        return '<div style="position:absolute;width:14px;height:14px;border-radius:50%;background:#D0402A;-webkit-print-color-adjust:exact;print-color-adjust:exact;border:2px solid #fff;transform:translate(-50%,-50%);left:' + p.x + '%;top:' + p.y + '%;"></div>';
       }).join("") +
       '</div>' +
       (painPoints.some(function (p) { return p.note; }) ?
@@ -1325,7 +1459,7 @@
       rows + '</table>';
     win.document.open();
     win.document.write('<!doctype html><html><head><meta charset="utf-8"><title>تقرير علاج طبيعي — ' + escapeHtml(patient.full_name) + '</title>' +
-      '<style>' + PRINT_FONT_FACE_CSS + '@page{size:A4;margin:0;}body{margin:0;}</style></head>' +
+      '<style>' + PRINT_FONT_FACE_CSS + '@page{size:A4;margin:0;}body{margin:0;}*{-webkit-print-color-adjust:exact;print-color-adjust:exact;}</style></head>' +
       '<body>' + letterheadPageHtml("rtl", body) + '</body></html>');
     win.document.close();
     waitForImagesThenPrint(win, 3000);
