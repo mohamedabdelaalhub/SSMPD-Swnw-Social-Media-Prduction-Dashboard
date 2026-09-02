@@ -574,6 +574,7 @@
     backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>' + (isEdit ? "تعديل التقرير الطبي" : "تقرير طبي جديد") + '</h3><button class="modal-close">×</button></div>' +
       '<p style="font-size:12px;color:var(--c-muted);margin:-6px 0 10px;">المريض: ' + escapeHtml(patient.full_name) + (patient.age != null ? (' — ' + patient.age + ' عام') : '') + '</p>' +
       '<div class="field"><label>تاريخ التقرير</label><input id="mr-date" type="date" value="' + (r.report_date || new Date().toISOString().slice(0, 10)) + '"></div>' +
+      '<div class="field"><label>التخصص (اختياري — لتمييز التقارير لو أكتر من تقرير لنفس المريض)</label><input id="mr-specialty" type="text" placeholder="مثال: عظام" value="' + escapeHtml(r.specialty || '') + '"></div>' +
       '<div class="field"><label>نص التقرير</label><textarea id="mr-body" rows="10" placeholder="اكتب نص التقرير كامل زي ما هيتطبع بالظبط...">' + escapeHtml(r.body_text || '') + '</textarea></div>' +
       '<p style="font-size:11px;color:var(--c-muted);">هيتطبع باسم "المدير الطبي: ' + escapeHtml(r.doctor_name || 'د.دينا حسني') + '" تلقائي في نهاية التقرير.</p>' +
       '<button class="btn block" id="mr-save">حفظ</button></div>';
@@ -586,6 +587,7 @@
       if (!body) { T.show("اكتب نص التقرير الأول", "error"); return; }
       var patch = {
         report_date: document.getElementById("mr-date").value || new Date().toISOString().slice(0, 10),
+        specialty: document.getElementById("mr-specialty").value.trim(),
         body_text: body,
         doctor_name: r.doctor_name || "د.دينا حسني"
       };
@@ -824,6 +826,7 @@
   function openDentalReportFormModal(patient, existingReport, onSaved) {
     var r = existingReport || {};
     var isEdit = !!existingReport;
+    var toothMarks = (r.tooth_marks || []).slice();
     var backdrop = document.createElement("div");
     backdrop.className = "modal-backdrop";
     backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>' + (isEdit ? "تعديل تقرير الأسنان" : "تقرير أسنان جديد") + '</h3><button class="modal-close">×</button></div>' +
@@ -838,6 +841,10 @@
       '<div class="field"><label>خطة العلاج المقترحة</label><textarea id="dr-plan" rows="2">' + escapeHtml(r.treatment_plan || '') + '</textarea></div>' +
       '<div class="field"><label>التركيبة (ثابتة / متحركة)</label><input id="dr-prosthesis" value="' + escapeHtml(r.prosthesis_type || '') + '"></div>' +
       '<div class="field"><label>الأمراض المزمنة</label><input id="dr-illnesses" value="' + escapeHtml(r.chronic_illnesses || '') + '"></div>' +
+      '<div class="field"><label>مخطط الأسنان (اضغط على السن لتحديد مكانه)</label>' +
+      '<div id="td-canvas" style="position:relative;display:inline-block;border:1px solid var(--c-border);border-radius:8px;overflow:hidden;cursor:crosshair;">' +
+      '<img id="td-img" src="assets/img/dental-teeth-chart.png" style="display:block;width:340px;max-width:100%;" draggable="false"></div>' +
+      '<div id="td-list" style="margin-top:8px;"></div></div>' +
       '<div class="field"><label>جدول الجلسات</label><div id="dr-sessions"></div>' +
       '<button type="button" class="btn ghost sm" id="dr-add-session">+ إضافة جلسة</button></div>' +
       '<button class="btn block" id="dr-save">حفظ</button></div>';
@@ -848,6 +855,42 @@
     var sessionsContainer = document.getElementById("dr-sessions");
     (r.sessions && r.sessions.length ? r.sessions : []).forEach(function (s) { addSessionRowHtml(dentalSessionRowHtml(s), sessionsContainer); });
     document.getElementById("dr-add-session").onclick = function () { addSessionRowHtml(dentalSessionRowHtml(), sessionsContainer); };
+
+    // ---------- تحديد مكان السن: نفس نمط نقاط الألم في تقرير العلاج الطبيعي ----------
+    var tdCanvas = document.getElementById("td-canvas");
+    var tdList = document.getElementById("td-list");
+    function renderToothMarks() {
+      tdCanvas.querySelectorAll(".td-dot").forEach(function (d) { d.remove(); });
+      toothMarks.forEach(function (p, i) {
+        var dot = document.createElement("div");
+        dot.className = "td-dot";
+        dot.title = p.note || "";
+        dot.style.cssText = "position:absolute;width:12px;height:12px;border-radius:50%;background:#0F369D;border:2px solid #fff;box-shadow:0 0 2px rgba(0,0,0,.5);transform:translate(-50%,-50%);cursor:pointer;left:" + p.x + "%;top:" + p.y + "%;";
+        dot.setAttribute("data-td-idx", i);
+        tdCanvas.appendChild(dot);
+      });
+      tdList.innerHTML = toothMarks.length ? toothMarks.map(function (p, i) {
+        return '<div style="display:flex;gap:6px;align-items:center;margin-bottom:4px;">' +
+          '<span style="font-size:11px;color:#0F369D;">● سن ' + (i + 1) + '</span>' +
+          '<input data-td-note="' + i + '" placeholder="ملاحظة (اختياري)" value="' + escapeHtml(p.note || '') + '" style="flex:1;font-size:12px;padding:3px 6px;">' +
+          '<button type="button" class="btn danger sm" data-td-remove="' + i + '">حذف</button></div>';
+      }).join("") : '<p style="font-size:11px;color:var(--c-muted);">مفيش أسنان متحددة لسه.</p>';
+      tdList.querySelectorAll("[data-td-remove]").forEach(function (btn) {
+        btn.onclick = function () { toothMarks.splice(Number(btn.getAttribute("data-td-remove")), 1); renderToothMarks(); };
+      });
+      tdList.querySelectorAll("[data-td-note]").forEach(function (inp) {
+        inp.oninput = function () { toothMarks[Number(inp.getAttribute("data-td-note"))].note = inp.value; };
+      });
+    }
+    tdCanvas.onclick = function (e) {
+      if (e.target !== tdCanvas && e.target.id !== "td-img") return;
+      var rect = tdCanvas.getBoundingClientRect();
+      var x = ((e.clientX - rect.left) / rect.width) * 100;
+      var y = ((e.clientY - rect.top) / rect.height) * 100;
+      toothMarks.push({ x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10, note: "" });
+      renderToothMarks();
+    };
+    renderToothMarks();
 
     document.getElementById("dr-save").onclick = function () {
       var sessions = Array.prototype.slice.call(sessionsContainer.querySelectorAll(".session-row")).map(function (row) {
@@ -867,6 +910,7 @@
         treatment_plan: document.getElementById("dr-plan").value.trim(),
         prosthesis_type: document.getElementById("dr-prosthesis").value.trim(),
         chronic_illnesses: document.getElementById("dr-illnesses").value.trim(),
+        tooth_marks: toothMarks,
         sessions: sessions
       };
       if (isEdit) patch.id = existingReport.id;
@@ -1103,8 +1147,9 @@
     var bodyParagraphs = (report.body_text || "").split(/\n{2,}/).map(function (p) {
       return '<p style="margin:0 0 14px;">' + escapeHtml(p).replace(/\n/g, "<br>") + '</p>';
     }).join("");
+    var reportTitle = "تقرير طبي" + (report.specialty ? (" - " + report.specialty) : "");
     var body =
-      '<h1 style="font-size:28px;color:#0F369D;text-align:right;margin:0 0 4px;">تقرير طبي</h1>' +
+      '<h1 style="font-size:28px;color:#0F369D;text-align:right;margin:0 0 4px;">' + escapeHtml(reportTitle) + '</h1>' +
       '<div style="color:#F15A22;font-size:13px;text-align:right;border-bottom:1px solid #ccc;padding-bottom:10px;margin-bottom:22px;font-style:italic;">Medical Report</div>' +
       '<p style="margin:0 0 4px;"><b>المريض:</b> ' + escapeHtml(patient.full_name) + '</p>' +
       (patient.age != null ? '<p style="margin:0 0 4px;"><b>العمر:</b> ' + escapeHtml(String(patient.age)) + ' عام</p>' : '') +
@@ -1113,7 +1158,7 @@
       '<p style="margin:22px 0;">وتفضلوا بقبول فائق الاحترام والتقدير</p>' +
       '<div style="margin-top:50px;"><div>المدير الطبي:</div><div style="font-weight:700;margin-top:4px;">' + escapeHtml(report.doctor_name || "د.دينا حسني") + '</div></div>';
     win.document.open();
-    win.document.write('<!doctype html><html><head><meta charset="utf-8"><title>تقرير طبي — ' + escapeHtml(patient.full_name) + '</title>' +
+    win.document.write('<!doctype html><html><head><meta charset="utf-8"><title>' + escapeHtml(reportTitle) + ' — ' + escapeHtml(patient.full_name) + '</title>' +
       '<style>' + PRINT_FONT_FACE_CSS + '@page{size:A4;margin:0;}body{margin:0;font-size:14px;line-height:1.9;}</style></head>' +
       '<body>' + letterheadPageHtml("rtl", body) + '</body></html>');
     win.document.close();
@@ -1194,6 +1239,20 @@
     var field = function (label, value) {
       return '<p style="margin:0 0 8px;font-size:13px;"><b>' + label + ': </b>' + escapeHtml(value || "—") + '</p>';
     };
+    var toothMarks = report.tooth_marks || [];
+    var toothMarksHtml = toothMarks.length ?
+      '<div style="text-align:center;margin:16px 0;">' +
+      '<div style="position:relative;display:inline-block;">' +
+      '<img src="' + PRINT_SITE_BASE + 'assets/img/dental-teeth-chart.png" style="width:260px;display:block;">' +
+      toothMarks.map(function (p) {
+        return '<div style="position:absolute;width:8px;height:8px;border-radius:50%;background:#0F369D;border:1.5px solid #fff;transform:translate(-50%,-50%);left:' + p.x + '%;top:' + p.y + '%;"></div>';
+      }).join("") +
+      '</div>' +
+      (toothMarks.some(function (p) { return p.note; }) ?
+        '<div style="text-align:right;font-size:11px;margin-top:6px;">' +
+        toothMarks.filter(function (p) { return p.note; }).map(function (p, i) { return '<div>● ' + escapeHtml(p.note) + '</div>'; }).join("") +
+        '</div>' : '') +
+      '</div>' : '';
     var body =
       '<h1 style="font-size:24px;color:#0F369D;text-align:right;margin:0 0 4px;">تقرير أسنان</h1>' +
       '<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:14px;color:#555;"><span>' + escapeHtml(patient.full_name) + '</span><span>' + fmtDate(report.report_date) + '</span></div>' +
@@ -1203,6 +1262,7 @@
       field("خطة العلاج المقترحة", report.treatment_plan) +
       field("التركيبة (ثابتة/متحركة)", report.prosthesis_type) +
       field("الأمراض المزمنة", report.chronic_illnesses) +
+      toothMarksHtml +
       '<div style="text-align:center;text-decoration:underline;font-size:13px;margin:16px 0 8px;">جدول الجلسات</div>' +
       '<table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:20px;" dir="rtl">' +
       '<tr><th style="border:1px solid #999;padding:5px 8px;background:#f2f2f2;">التاريخ</th><th style="border:1px solid #999;padding:5px 8px;background:#f2f2f2;">رقم السن</th><th style="border:1px solid #999;padding:5px 8px;background:#f2f2f2;">الخدمة</th><th style="border:1px solid #999;padding:5px 8px;background:#f2f2f2;">ملاحظات</th></tr>' +
@@ -1885,6 +1945,7 @@
       '</div>';
 
     CATEGORIES.forEach(function (c) {
+      if (c.key === "medical_report") return; // بيتعرض جوه سكشن "التقارير الطبية" الموحّد تحت
       var list = byCategory[c.key] || [];
       html += '<div class="section" style="padding:12px 14px;">' +
         '<h3 style="font-size:13px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
@@ -1904,6 +1965,10 @@
       if (!list.length) {
         html += '<p style="font-size:12px;color:var(--c-muted);">مفيش ملفات.</p>';
       } else {
+        html += '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
+          '<span style="font-size:12px;color:var(--c-muted);">' + list.length + ' مستند مرفوع</span>' +
+          '<button class="btn ghost sm" data-toggle-files-cat="' + c.key + '">عرض المستندات ▾</button></div>' +
+          '<div data-files-list-cat="' + c.key + '" style="display:none;margin-top:8px;">';
         list.forEach(function (f) {
           html += '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--c-border);font-size:12px;">' +
             '<div><b>' + escapeHtml(f.file_name) + '</b>' + (f.other_description ? ' — ' + escapeHtml(f.other_description) : '') +
@@ -1917,27 +1982,67 @@
             '<button class="btn ghost sm" data-print-file="' + f.id + '">🖨 طباعة</button>' +
             (canUp ? '<button class="btn danger sm" data-del-file="' + f.id + '">حذف</button>' : '') + '</div></div>';
         });
-      }
-      if (c.key === "medical_report") {
-        html += '<div style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--c-border);">' +
-          '<b style="font-size:12px;">التقارير المُنشأة من الداشبورد (' + reports.length + ')</b>';
-        if (!reports.length) {
-          html += '<p style="font-size:12px;color:var(--c-muted);margin-top:6px;">مفيش تقارير مُنشأة لسه.</p>';
-        } else {
-          reports.forEach(function (r) {
-            html += '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--c-border);font-size:12px;">' +
-              '<div><b>تقرير طبي</b> — ' + fmtDate(r.report_date) + '<br>' +
-              '<span style="color:var(--c-muted);">' + escapeHtml((r.body_text || "").slice(0, 60)) + ((r.body_text || "").length > 60 ? "…" : "") + '</span></div>' +
-              '<div style="display:flex;gap:6px;flex-shrink:0;">' +
-              '<button class="btn ghost sm" data-edit-medical-report="' + r.id + '">تعديل</button>' +
-              '<button class="btn ghost sm" data-print-medical-report="' + r.id + '">🖨 طباعة</button>' +
-              (canUp ? '<button class="btn danger sm" data-del-medical-report="' + r.id + '">حذف</button>' : '') + '</div></div>';
-          });
-        }
         html += '</div>';
       }
       html += '</div>';
     });
+
+    // ---------- سكشن موحّد "التقارير الطبية" (تقرير طبي + Echo + أسنان + علاج طبيعي) ----------
+    html += '<div class="section" style="padding:12px 14px 4px;">' +
+      '<h2 style="font-size:15px;margin:0;">📋 التقارير الطبية</h2>' +
+      '<p style="font-size:11px;color:var(--c-muted);margin:4px 0 0;">كل التقارير الطبية القابلة للطباعة لهذا المريض في مكان واحد.</p></div>';
+
+    // -- تقرير طبي (نص حر) --
+    var mrCat = CATEGORIES.filter(function (x) { return x.key === "medical_report"; })[0];
+    var mrList = byCategory.medical_report || [];
+    html += '<div class="section" style="padding:12px 14px;">' +
+      '<h3 style="font-size:13px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
+      '<span>تقرير طبي (' + (mrList.length + reports.length) + ')</span>' +
+      (canUp ? '<span><button class="btn ghost sm" data-upload-cat="medical_report">+ رفع مستند</button> ' +
+        '<button class="btn ghost sm" data-new-medical-report="1">+ إنشاء جديد</button>' +
+        '<input type="file" accept="image/*,application/pdf" data-file-input-cat="medical_report" style="display:none;"></span>' : '') +
+      '</h3>';
+    if (canUp) {
+      html += '<div class="field" data-other-wrap-cat style="display:none;margin-bottom:8px;">' +
+        '<label>ملاحظات / تفاصيل الملف (اختياري)</label>' +
+        '<input data-other-desc-cat placeholder="اكتب أي تفاصيل تخص الملف">' +
+        '<label style="margin-top:6px;">تاريخ إصدار المستند (اختياري)</label>' +
+        '<input type="date" data-issued-at-cat></div>';
+    }
+    html += '<div data-cat-status style="font-size:11px;color:var(--c-muted);margin-bottom:6px;"></div>';
+    if (!mrList.length) {
+      html += '<p style="font-size:12px;color:var(--c-muted);">مفيش مستندات مرفوعة.</p>';
+    } else {
+      mrList.forEach(function (f) {
+        html += '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--c-border);font-size:12px;">' +
+          '<div><b>' + escapeHtml(f.file_name) + '</b>' + (f.other_description ? ' — ' + escapeHtml(f.other_description) : '') +
+          ' <span class="status-pill ' + (REVIEW_PILL[f.review_status] || "draft") + '" style="font-size:10px;">' + (REVIEW_LABELS[f.review_status] || f.review_status) + '</span>' +
+          '<br><span style="color:var(--c-muted);">' + fmtBytes(f.file_size) + ' · ' + fmtDate(f.uploaded_at) +
+          (f.uploaded_by_name ? ' · رفعه: ' + escapeHtml(f.uploaded_by_name) : '') +
+          (f.reviewed_by_name ? ' · راجعه: ' + escapeHtml(f.reviewed_by_name) : '') + '</span></div>' +
+          '<div style="display:flex;gap:6px;flex-shrink:0;">' +
+          '<button class="btn ghost sm" data-view-file="' + f.id + '">عرض</button>' +
+          '<button class="btn ghost sm" data-dl="' + f.id + '">تنزيل</button>' +
+          '<button class="btn ghost sm" data-print-file="' + f.id + '">🖨 طباعة</button>' +
+          (canUp ? '<button class="btn danger sm" data-del-file="' + f.id + '">حذف</button>' : '') + '</div></div>';
+      });
+    }
+    html += '<div style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--c-border);">' +
+      '<b style="font-size:12px;">التقارير المُنشأة من الداشبورد (' + reports.length + ')</b>';
+    if (!reports.length) {
+      html += '<p style="font-size:12px;color:var(--c-muted);margin-top:6px;">مفيش تقارير مُنشأة لسه.</p>';
+    } else {
+      reports.forEach(function (r) {
+        html += '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--c-border);font-size:12px;">' +
+          '<div><b>' + escapeHtml("تقرير طبي" + (r.specialty ? (" - " + r.specialty) : "")) + '</b> — ' + fmtDate(r.report_date) + '<br>' +
+          '<span style="color:var(--c-muted);">' + escapeHtml((r.body_text || "").slice(0, 60)) + ((r.body_text || "").length > 60 ? "…" : "") + '</span></div>' +
+          '<div style="display:flex;gap:6px;flex-shrink:0;">' +
+          '<button class="btn ghost sm" data-edit-medical-report="' + r.id + '">تعديل</button>' +
+          '<button class="btn ghost sm" data-print-medical-report="' + r.id + '">🖨 طباعة</button>' +
+          (canUp ? '<button class="btn danger sm" data-del-medical-report="' + r.id + '">حذف</button>' : '') + '</div></div>';
+      });
+    }
+    html += '</div></div>';
 
     // ---------- Echocardiography Report ----------
     html += '<div class="section" style="padding:12px 14px;">' +
@@ -2051,6 +2156,18 @@
       btn.onclick = function () {
         var v = visits.filter(function (x) { return String(x.id) === btn.getAttribute("data-edit-visit"); })[0];
         if (v) openVisitFormModal(patient, v, reloadModal);
+      };
+    });
+
+    // ---------- طي/عرض قائمة مستندات كل تصنيف ----------
+    backdrop.querySelectorAll("[data-toggle-files-cat]").forEach(function (btn) {
+      btn.onclick = function () {
+        var catKey = btn.getAttribute("data-toggle-files-cat");
+        var list = btn.closest(".section").querySelector('[data-files-list-cat="' + catKey + '"]');
+        if (!list) return;
+        var open = list.style.display !== "none";
+        list.style.display = open ? "none" : "block";
+        btn.textContent = open ? "عرض المستندات ▾" : "إخفاء المستندات ▴";
       };
     });
 
