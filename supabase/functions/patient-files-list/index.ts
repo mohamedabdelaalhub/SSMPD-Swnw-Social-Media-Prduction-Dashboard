@@ -68,7 +68,14 @@ Deno.serve(async (req) => {
   const reviewStatus = url.searchParams.get("review_status"); // pending/approved/rejected — للمراجع بس
   const statsMode = url.searchParams.get("stats") === "1";
   const page = Math.max(1, Number(url.searchParams.get("page") ?? "1") || 1);
-  const pageSize = Math.min(50, Math.max(1, Number(url.searchParams.get("page_size") ?? "20") || 20));
+  // سقف أعلى (2000) لازم لدعم "تصدير الكل" (Excel/PDF) لقائمة مرضى مفلترة —
+  // الافتراضي العادي (20) زي ما هو، الرفع بس لو الواجهة طلبته صراحة وقت التصدير
+  const pageSize = Math.min(2000, Math.max(1, Number(url.searchParams.get("page_size") ?? "20") || 20));
+  // فلتر تاريخ اختياري لقائمة/بحث المرضى — created_at (تاريخ إضافة المريض)
+  // أو last_visit_date (تاريخ آخر زيارة) حسب اختيار المستخدم، مش الاتنين مع بعض
+  const dateField = url.searchParams.get("date_field") === "last_visit_date" ? "last_visit_date" : "created_at";
+  const dateFrom = url.searchParams.get("date_from")?.trim();
+  const dateTo = url.searchParams.get("date_to")?.trim();
 
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
@@ -190,6 +197,8 @@ Deno.serve(async (req) => {
       "full_name.ilike.%" + search + "%,phone.ilike.%" + search + "%,phone_normalized.ilike.%" + search + "%,patient_code.ilike.%" + search + "%",
     );
   }
+  if (dateFrom) query = query.gte(dateField, dateFrom);
+  if (dateTo) query = query.lte(dateField, dateTo);
 
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
