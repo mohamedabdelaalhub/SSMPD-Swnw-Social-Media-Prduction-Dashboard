@@ -707,7 +707,7 @@
         '<input data-echo-dim="' + d.key + '" value="' + escapeHtml(dims[d.key] || '') + '" style="flex:1;padding:4px 6px;"></div>';
     });
     html += '</div></div>' +
-      '<div class="field"><label>Summary</label><textarea id="er-summary" rows="8" placeholder="سطر لكل بند، زي ما هيتطبع...">' + escapeHtml(r.summary_text || '') + '</textarea></div>' +
+      '<div class="field"><label>Summary</label><textarea id="er-summary" rows="8" placeholder="سطر من غير مسافة في الأول = عنوان بولد (➢)، وسطر يبدأ بمسافة/Tab = تفصيل تحته (•)">' + escapeHtml(r.summary_text || '') + '</textarea></div>' +
       '<div class="field"><label>Conclusion</label><textarea id="er-conclusion" rows="4">' + escapeHtml(r.conclusion_text || '') + '</textarea></div>' +
       '<div class="field"><label>اسم الطبيب الموقّع</label><input id="er-doctor" value="' + escapeHtml(r.doctor_name || 'Dr. Haytham Shaaban (MSc)') + '"></div>' +
       '<div class="field" style="margin-top:6px;"><label>صور الأشعة المرفقة (عدد مفتوح — اختار كذا صورة مرة واحدة)</label>' +
@@ -928,9 +928,19 @@
         '<td style="border:1px solid #999;padding:4px 8px;font-style:italic;color:#333;background:#f2f2f2;">' + (rt.ref || "") + '</td>' +
         '</tr>';
     }
-    function linesHtml(text) {
+    function summaryLinesHtml(text) {
       return (text || "").split(/\n/).filter(function (l) { return l.trim(); }).map(function (l) {
-        return '<div style="margin:0 0 4px;">• ' + escapeHtml(l.trim()) + '</div>';
+        var indented = /^[ \t]/.test(l);
+        var t = escapeHtml(l.trim());
+        if (indented) {
+          return '<div style="margin:0 0 4px 22px;">• ' + t + '</div>';
+        }
+        return '<div style="margin:0 0 4px;font-weight:700;">➢ ' + t + '</div>';
+      }).join("");
+    }
+    function conclusionLinesHtml(text) {
+      return (text || "").split(/\n/).filter(function (l) { return l.trim(); }).map(function (l) {
+        return '<div style="margin:0 0 4px;font-weight:700;text-align:center;">' + escapeHtml(l.trim()) + '</div>';
       }).join("");
     }
     var body =
@@ -943,9 +953,9 @@
       '<td style="border:1px solid #999;padding:4px 8px;font-style:italic;">Items</td><td style="border:1px solid #999;"></td><td style="border:1px solid #999;padding:4px 8px;font-style:italic;">Normal reference</td></tr>' +
       rows + '</table>' +
       '<div style="text-align:center;text-decoration:underline;font-size:12px;margin-bottom:6px;">Summary</div>' +
-      '<div style="font-size:12px;margin-bottom:16px;">' + linesHtml(report.summary_text) + '</div>' +
+      '<div style="font-size:12px;margin-bottom:16px;">' + summaryLinesHtml(report.summary_text) + '</div>' +
       '<div style="text-decoration:underline;font-size:12px;margin-bottom:6px;">Conclusion:</div>' +
-      '<div style="font-size:12px;margin-bottom:30px;">' + linesHtml(report.conclusion_text) + '</div>' +
+      '<div style="font-size:12px;margin-bottom:30px;">' + conclusionLinesHtml(report.conclusion_text) + '</div>' +
       '<div style="text-align:center;font-weight:700;font-size:13px;">' + escapeHtml(report.doctor_name || "Dr. Haytham Shaaban (MSc)") + '</div>';
     win.document.open();
     win.document.write('<!doctype html><html><head><meta charset="utf-8"><title>Echocardiography Report — ' + escapeHtml(patient.full_name) + '</title>' +
