@@ -707,7 +707,7 @@
         '<input data-echo-dim="' + d.key + '" value="' + escapeHtml(dims[d.key] || '') + '" style="flex:1;padding:4px 6px;"></div>';
     });
     html += '</div></div>' +
-      '<div class="field"><label>Summary</label><textarea id="er-summary" rows="8" placeholder="سطر من غير مسافة في الأول = عنوان بولد (➢)، وسطر يبدأ بمسافة/Tab = تفصيل تحته (•)">' + escapeHtml(r.summary_text || '') + '</textarea></div>' +
+      '<div class="field"><label>Summary</label><textarea id="er-summary" rows="8" placeholder="سطر عادي = عنوان بولد (➢)، وسطر يبدأ بـ - = تفصيل تحته (•)">' + escapeHtml(r.summary_text || '') + '</textarea></div>' +
       '<div class="field"><label>Conclusion</label><textarea id="er-conclusion" rows="4">' + escapeHtml(r.conclusion_text || '') + '</textarea></div>' +
       '<div class="field"><label>اسم الطبيب الموقّع</label><input id="er-doctor" value="' + escapeHtml(r.doctor_name || 'Dr. Haytham Shaaban (MSc)') + '"></div>' +
       '<div class="field" style="margin-top:6px;"><label>صور الأشعة المرفقة (عدد مفتوح — اختار كذا صورة مرة واحدة)</label>' +
@@ -930,9 +930,10 @@
     }
     function summaryLinesHtml(text) {
       return (text || "").split(/\n/).filter(function (l) { return l.trim(); }).map(function (l) {
-        var indented = /^[ \t]/.test(l);
-        var t = escapeHtml(l.trim());
-        if (indented) {
+        var trimmed = l.trim();
+        var sub = /^-\s*/.test(trimmed);
+        var t = escapeHtml(sub ? trimmed.replace(/^-\s*/, "") : trimmed);
+        if (sub) {
           return '<div style="margin:0 0 4px 22px;">• ' + t + '</div>';
         }
         return '<div style="margin:0 0 4px;font-weight:700;">➢ ' + t + '</div>';
