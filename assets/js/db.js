@@ -357,6 +357,18 @@
     deleteEchoReport: function (id) {
       return handle(client.from("patient_echo_reports").delete().eq("id", id));
     },
+    // صور مرفقة بتقرير Echo — عدد غير محدود، كل صورة صف مستقل، مفيش سقف ثابت
+    listEchoReportImages: function (echoReportId) {
+      return handle(client.from("patient_echo_report_images")
+        .select("id, created_at, patient_files(id, file_name, file_size, mime_type, uploaded_at)")
+        .eq("echo_report_id", echoReportId)
+        .order("created_at", { ascending: true }));
+    },
+    linkEchoReportImage: function (echoReportId, patientFileId) {
+      return handle(client.from("patient_echo_report_images")
+        .insert({ echo_report_id: echoReportId, patient_file_id: patientFileId })
+        .select().single());
+    },
     getPatientFiles: function (patientId) {
       return edgeFetch("patient-files-list" + qs({ patient_id: patientId }));
     },

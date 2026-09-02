@@ -610,6 +610,84 @@
     { key: "rt_ventricle", label: "Rt. Ventricle", ref: "0.7 – 2.7 cm" },
     { key: "fs", label: "FS", ref: "25 – 45 %" }
   ];
+  // صور الأشعة المرفقة بتقرير Echo — عدد غير محدود (مش سقف ثابت زي 2 أو 10)،
+  // كل صورة بتترفع زي أي ملف مريض عادي (فئة "أشعة") وبتترتبط بالتقرير ده
+  // تحديداً عن طريق صف ربط. الصور بتتحمّل من السيرفر مرة واحدة لما المودال
+  // يتفتح — مفيش استعلام متكرر كل تفاعل.
+  function renderEchoImagesList(container, images) {
+    if (!images.length) {
+      container.innerHTML = '<p style="font-size:12px;color:var(--c-muted);">مفيش صور مرفقة لسه.</p>';
+      return;
+    }
+    var html = "";
+    images.forEach(function (im) {
+      var f = im.patient_files || {};
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--c-border);font-size:12px;">' +
+        '<div><b>' + escapeHtml(f.file_name || "—") + '</b><br>' +
+        '<span style="color:var(--c-muted);">' + fmtBytes(f.file_size) + ' · ' + fmtDate(f.uploaded_at) + '</span></div>' +
+        '<div style="display:flex;gap:6px;flex-shrink:0;">' +
+        '<button class="btn ghost sm" data-echo-img-view="' + f.id + '">عرض</button>' +
+        '<button class="btn ghost sm" data-echo-img-dl="' + f.id + '" data-echo-img-name="' + escapeHtml(f.file_name || "") + '">تنزيل</button>' +
+        '<button class="btn danger sm" data-echo-img-del="' + f.id + '">حذف</button></div></div>';
+    });
+    container.innerHTML = html;
+    container.querySelectorAll("[data-echo-img-view]").forEach(function (btn) {
+      btn.onclick = function () {
+        var fileId = btn.getAttribute("data-echo-img-view");
+        var win = window.open("", "_blank");
+        btn.disabled = true;
+        window.SSMPDDb.downloadPatientFile(fileId).then(function (res) {
+          var url = URL.createObjectURL(res.blob);
+          if (win) win.location.href = url;
+          else { var a = document.createElement("a"); a.href = url; a.target = "_blank"; a.click(); }
+          btn.disabled = false;
+          setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
+        }).catch(function (e) {
+          if (win) win.close();
+          T.show("خطأ: " + e.message, "error");
+          btn.disabled = false;
+        });
+      };
+    });
+    container.querySelectorAll("[data-echo-img-dl]").forEach(function (btn) {
+      btn.onclick = function () {
+        var fileId = btn.getAttribute("data-echo-img-dl");
+        btn.disabled = true;
+        window.SSMPDDb.downloadPatientFile(fileId).then(function (res) {
+          var url = URL.createObjectURL(res.blob);
+          var a = document.createElement("a");
+          a.href = url; a.download = res.filename || btn.getAttribute("data-echo-img-name") || "image";
+          document.body.appendChild(a); a.click(); a.remove();
+          setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+          btn.disabled = false;
+        }).catch(function (e) { T.show("خطأ: " + e.message, "error"); btn.disabled = false; });
+      };
+    });
+    container.querySelectorAll("[data-echo-img-del]").forEach(function (btn) {
+      btn.onclick = function () {
+        if (btn.classList.contains("confirm-pending")) {
+          var fileId = btn.getAttribute("data-echo-img-del");
+          btn.disabled = true;
+          window.SSMPDDb.deletePatientFile(fileId).then(function () {
+            T.show("اتحذفت الصورة");
+            btn.closest("div[style*='justify-content:space-between']").remove();
+          }).catch(function (e) { T.show("خطأ: " + e.message, "error"); btn.disabled = false; btn.classList.remove("confirm-pending"); btn.textContent = "حذف"; });
+          return;
+        }
+        btn.classList.add("confirm-pending");
+        btn.textContent = "تأكيد الحذف؟";
+        setTimeout(function () { btn.classList.remove("confirm-pending"); btn.textContent = "حذف"; }, 3000);
+      };
+    });
+  }
+
+  function loadEchoImages(reportId, container) {
+    container.innerHTML = '<p style="font-size:12px;color:var(--c-muted);">بيحمّل…</p>';
+    window.SSMPDDb.listEchoReportImages(reportId).then(function (images) {
+      renderEchoImagesList(container, images || []);
+    }).catch(function (e) { container.innerHTML = '<p style="font-size:12px;color:var(--c-danger,#c0392b);">خطأ: ' + escapeHtml(e.message) + '</p>'; });
+  }
+
   function openEchoReportFormModal(patient, existingReport, onSaved) {
     var r = existingReport || {};
     var dims = r.dimensions || {};
@@ -632,11 +710,62 @@
       '<div class="field"><label>Summary</label><textarea id="er-summary" rows="8" placeholder="سطر لكل بند، زي ما هيتطبع...">' + escapeHtml(r.summary_text || '') + '</textarea></div>' +
       '<div class="field"><label>Conclusion</label><textarea id="er-conclusion" rows="4">' + escapeHtml(r.conclusion_text || '') + '</textarea></div>' +
       '<div class="field"><label>اسم الطبيب الموقّع</label><input id="er-doctor" value="' + escapeHtml(r.doctor_name || 'Dr. Haytham Shaaban (MSc)') + '"></div>' +
+      '<div class="field" style="margin-top:6px;"><label>صور الأشعة المرفقة (عدد مفتوح — اختار كذا صورة مرة واحدة)</label>' +
+      (isEdit ?
+        '<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">' +
+        '<input type="file" id="er-images-input" accept="image/*" multiple style="flex:1;">' +
+        '<button class="btn ghost sm" id="er-images-add">إضافة</button></div>' +
+        '<div id="er-images-status" style="font-size:11px;color:var(--c-muted);margin-bottom:6px;"></div>' +
+        '<div id="er-images-list"></div>'
+        : '<p style="font-size:12px;color:var(--c-muted);">احفظ التقرير الأول، وبعدين هيظهر لك اختيار إضافة صور.</p>') +
+      '</div>' +
       '<button class="btn block" id="er-save">حفظ</button></div>';
     backdrop.innerHTML = html;
     document.body.appendChild(backdrop);
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
     backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
+
+    if (isEdit) {
+      loadEchoImages(existingReport.id, document.getElementById("er-images-list"));
+      document.getElementById("er-images-add").onclick = function () {
+        var input = document.getElementById("er-images-input");
+        var files = Array.prototype.slice.call(input.files || []);
+        if (!files.length) { T.show("اختار صورة أو أكتر الأول", "error"); return; }
+        var statusEl = document.getElementById("er-images-status");
+        var addBtn = document.getElementById("er-images-add");
+        addBtn.disabled = true;
+        var done = 0;
+        statusEl.textContent = "بيرفع 0/" + files.length + "…";
+        var chain = Promise.resolve();
+        files.forEach(function (file) {
+          chain = chain.then(function () {
+            var fd = new FormData();
+            fd.append("patient_id", patient.id);
+            fd.append("category", "radiology");
+            fd.append("other_description", "صورة مرفقة بتقرير Echo — " + (r.report_date || existingReport.report_date || ""));
+            fd.append("file", file);
+            return window.SSMPDDb.uploadPatientFile(fd).then(function (res) {
+              return window.SSMPDDb.linkEchoReportImage(existingReport.id, res.file.id);
+            }).then(function () {
+              done++;
+              statusEl.textContent = "بيرفع " + done + "/" + files.length + "…";
+            });
+          });
+        });
+        chain.then(function () {
+          statusEl.textContent = "";
+          addBtn.disabled = false;
+          input.value = "";
+          T.show("اتضافت الصور");
+          loadEchoImages(existingReport.id, document.getElementById("er-images-list"));
+        }).catch(function (e) {
+          statusEl.textContent = "";
+          addBtn.disabled = false;
+          T.show("خطأ في رفع الصور: " + e.message, "error");
+          loadEchoImages(existingReport.id, document.getElementById("er-images-list"));
+        });
+      };
+    }
 
     document.getElementById("er-save").onclick = function () {
       var newDims = {};
@@ -654,10 +783,18 @@
         doctor_name: document.getElementById("er-doctor").value.trim() || "Dr. Haytham Shaaban (MSc)"
       };
       if (isEdit) patch.id = existingReport.id;
-      window.SSMPDDb.saveEchoReport(patient.id, patch, me && me.id).then(function () {
-        T.show(isEdit ? "اتحدث التقرير" : "اتحفظ التقرير");
-        backdrop.remove();
+      window.SSMPDDb.saveEchoReport(patient.id, patch, me && me.id).then(function (saved) {
         if (onSaved) onSaved();
+        if (!isEdit) {
+          // تقرير جديد: بدل ما نقفل المودال، نفتحه تاني في وضع التعديل فورًا
+          // عشان يقدر يضيف صور من غير ما يدوّر على زرار "تعديل" تاني
+          T.show("اتحفظ التقرير — تقدر تضيف صور دلوقتي");
+          backdrop.remove();
+          openEchoReportFormModal(patient, saved, onSaved);
+        } else {
+          T.show("اتحدث التقرير");
+          backdrop.remove();
+        }
       }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
     };
   }
