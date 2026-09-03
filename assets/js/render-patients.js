@@ -600,6 +600,68 @@
     };
   }
 
+  // ---------- فورم روشتة (Prescription) — إنشاء/تعديل، نفس نمط تقرير طبي ----------
+  function openPrescriptionFormModal(patient, existingRx, onSaved) {
+    var r = existingRx || {};
+    var isEdit = !!existingRx;
+    var backdrop = document.createElement("div");
+    backdrop.className = "modal-backdrop";
+    backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>' + (isEdit ? "تعديل الروشتة" : "روشتة جديدة") + '</h3><button class="modal-close">×</button></div>' +
+      '<p style="font-size:12px;color:var(--c-muted);margin:-6px 0 10px;">المريض: ' + escapeHtml(patient.full_name) + (patient.age != null ? (' — ' + patient.age + ' عام') : '') + '</p>' +
+      '<div class="field"><label>تاريخ الروشتة</label><input id="rx-date" type="date" value="' + (r.report_date || new Date().toISOString().slice(0, 10)) + '"></div>' +
+      '<div class="field"><label>اسم الطبيب</label><input id="rx-doctor" type="text" placeholder="اسم الطبيب" value="' + escapeHtml(r.doctor_name || '') + '"></div>' +
+      '<div class="field"><label>التخصص (اختياري)</label><input id="rx-specialty" type="text" placeholder="مثال: عظام" value="' + escapeHtml(r.specialty || '') + '"></div>' +
+      '<div class="field"><label>التشخيص (اختياري)</label><input id="rx-diagnosis" type="text" placeholder="التشخيص" value="' + escapeHtml(r.diagnosis || '') + '"></div>' +
+      '<div class="field"><label>الروشتة</label><textarea id="rx-body" rows="10" placeholder="اكتب تفاصيل الروشتة كاملة زي ما هتتطبع بالظبط...">' + escapeHtml(r.rx_text || '') + '</textarea></div>' +
+      '<button class="btn block" id="rx-save">حفظ</button></div>';
+    document.body.appendChild(backdrop);
+    backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
+    backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
+
+    document.getElementById("rx-save").onclick = function () {
+      var body = document.getElementById("rx-body").value.trim();
+      if (!body) { T.show("اكتب تفاصيل الروشتة الأول", "error"); return; }
+      var patch = {
+        report_date: document.getElementById("rx-date").value || new Date().toISOString().slice(0, 10),
+        doctor_name: document.getElementById("rx-doctor").value.trim(),
+        specialty: document.getElementById("rx-specialty").value.trim(),
+        diagnosis: document.getElementById("rx-diagnosis").value.trim(),
+        rx_text: body
+      };
+      if (isEdit) patch.id = existingRx.id;
+      window.SSMPDDb.savePrescription(patient.id, patch, me && me.id).then(function () {
+        T.show(isEdit ? "اتحدثت الروشتة" : "اتحفظت الروشتة");
+        backdrop.remove();
+        if (onSaved) onSaved();
+      }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
+    };
+  }
+
+  // ---------- طباعة الروشتة بشكل الفورم الرسمي ----------
+  function printPrescription(patient, rx) {
+    var win = window.open("", "_blank");
+    if (!win) { T.show("المتصفح منع فتح نافذة الطباعة — سمح بالنوافذ المنبثقة وحاول تاني", "error"); return; }
+    var rxParagraphs = (rx.rx_text || "").split(/\n{2,}/).map(function (p) {
+      return '<p style="margin:0 0 14px;">' + escapeHtml(p).replace(/\n/g, "<br>") + '</p>';
+    }).join("");
+    var title = "روشتة" + (rx.specialty ? (" - " + rx.specialty) : "");
+    var body =
+      '<h1 style="font-size:28px;color:#0F369D;text-align:right;margin:0 0 4px;">' + escapeHtml(title) + '</h1>' +
+      '<div style="color:#F15A22;font-size:13px;text-align:right;border-bottom:1px solid #ccc;padding-bottom:10px;margin-bottom:22px;font-style:italic;">Prescription</div>' +
+      '<p style="margin:0 0 4px;"><b>المريض:</b> ' + escapeHtml(patient.full_name) + '</p>' +
+      (patient.age != null ? '<p style="margin:0 0 4px;"><b>العمر:</b> ' + escapeHtml(String(patient.age)) + ' عام</p>' : '') +
+      '<p style="margin:0 0 4px;"><b>التاريخ:</b> ' + fmtDate(rx.report_date) + '</p>' +
+      (rx.diagnosis ? '<p style="margin:0 0 22px;"><b>التشخيص:</b> ' + escapeHtml(rx.diagnosis) + '</p>' : '<div style="margin-bottom:22px;"></div>') +
+      rxParagraphs +
+      '<div style="margin-top:50px;"><div>الطبيب المعالج:</div><div style="font-weight:700;margin-top:4px;">' + escapeHtml(rx.doctor_name || "") + '</div></div>';
+    win.document.open();
+    win.document.write('<!doctype html><html><head><meta charset="utf-8"><title>' + escapeHtml(title) + ' — ' + escapeHtml(patient.full_name) + '</title>' +
+      '<style>' + PRINT_FONT_FACE_CSS + '@page{size:A4;margin:0;}body{margin:0;font-size:14px;line-height:1.9;}</style></head>' +
+      '<body>' + letterheadPageHtml("rtl", body) + '</body></html>');
+    win.document.close();
+    waitForImagesThenPrint(win, 3000);
+  }
+
   // ---------- فورم Echocardiography Report (إنشاء/تعديل) ----------
   var ECHO_DIMENSIONS = [
     { key: "lvedd", label: "LVEDD", ref: "3.5 -5.6 cm" },
@@ -2207,9 +2269,10 @@
         window.SSMPDDb.listEchoReports(patientId).catch(function () { return []; }),
         window.SSMPDDb.listDentalReports(patientId).catch(function () { return []; }),
         window.SSMPDDb.listPhysioReports(patientId).catch(function () { return []; }),
+        window.SSMPDDb.listPrescriptions(patientId).catch(function () { return []; }),
       ]).then(function (results) {
         var res = results[0], profile = results[1], visits = results[2] || [];
-        renderPatientModal(backdrop, view, container, res.patient, res.files || [], profile, visits, results[3] || [], results[4] || [], results[5] || [], results[6] || []);
+        renderPatientModal(backdrop, view, container, res.patient, res.files || [], profile, visits, results[3] || [], results[4] || [], results[5] || [], results[6] || [], results[7] || []);
       }).catch(function (e) {
         backdrop.querySelector(".modal").innerHTML = '<div class="err-msg">خطأ: ' + e.message + '</div>';
       });
@@ -2217,7 +2280,7 @@
     reload();
   }
 
-  function renderPatientModal(backdrop, view, container, patient, files, profile, visits, reports, echoReports, dentalReports, physioReports) {
+  function renderPatientModal(backdrop, view, container, patient, files, profile, visits, reports, echoReports, dentalReports, physioReports, prescriptions) {
     var byCategory = {};
     CATEGORIES.forEach(function (c) { byCategory[c.key] = []; });
     files.forEach(function (f) { (byCategory[f.category] || (byCategory[f.category] = [])).push(f); });
@@ -2227,6 +2290,7 @@
     echoReports = echoReports || [];
     dentalReports = dentalReports || [];
     physioReports = physioReports || [];
+    prescriptions = prescriptions || [];
 
     var html = '<div class="modal"><div class="modal-head"><h3>' + escapeHtml(patient.full_name) +
       ' <span style="font-size:12px;color:var(--c-muted);">(' + escapeHtml(patient.patient_code || "") + ')</span></h3>' +
@@ -2411,6 +2475,27 @@
     }
     html += '</div></div>';
 
+    // ---------- روشتة (Prescription) ----------
+    html += '<div class="section" style="padding:12px 14px;">' +
+      '<h3 style="font-size:13px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
+      '<span>روشتة (' + prescriptions.length + ')</span>' +
+      (canUp ? '<button class="btn ghost sm" data-new-prescription="1">+ إنشاء جديد</button>' : '') +
+      '</h3>';
+    if (!prescriptions.length) {
+      html += '<p style="font-size:12px;color:var(--c-muted);">مفيش روشتات مُنشأة لسه.</p>';
+    } else {
+      prescriptions.forEach(function (r) {
+        html += '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--c-border);font-size:12px;">' +
+          '<div><b>' + escapeHtml("روشتة" + (r.specialty ? (" - " + r.specialty) : "")) + '</b> — ' + fmtDate(r.report_date) +
+          (r.doctor_name ? '<br><span style="color:var(--c-muted);">د. ' + escapeHtml(r.doctor_name) + '</span>' : '') + '</div>' +
+          '<div style="display:flex;gap:6px;flex-shrink:0;">' +
+          '<button class="btn ghost sm" data-edit-prescription="' + r.id + '">تعديل</button>' +
+          '<button class="btn ghost sm" data-print-prescription="' + r.id + '">🖨 طباعة</button>' +
+          (canUp ? '<button class="btn danger sm" data-del-prescription="' + r.id + '">حذف</button>' : '') + '</div></div>';
+      });
+    }
+    html += '</div>';
+
     // ---------- Echocardiography Report ----------
     html += '<div class="section" style="padding:12px 14px;">' +
       '<h3 style="font-size:13px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
@@ -2487,8 +2572,9 @@
         window.SSMPDDb.listEchoReports(patient.id).catch(function () { return []; }),
         window.SSMPDDb.listDentalReports(patient.id).catch(function () { return []; }),
         window.SSMPDDb.listPhysioReports(patient.id).catch(function () { return []; }),
+        window.SSMPDDb.listPrescriptions(patient.id).catch(function () { return []; }),
       ]).then(function (results) {
-        renderPatientModal(backdrop, view, container, results[0].patient, results[0].files || [], results[1], results[2] || [], results[3] || [], results[4] || [], results[5] || [], results[6] || []);
+        renderPatientModal(backdrop, view, container, results[0].patient, results[0].files || [], results[1], results[2] || [], results[3] || [], results[4] || [], results[5] || [], results[6] || [], results[7] || []);
       });
     }
 
@@ -2617,6 +2703,33 @@
         if (!confirm("حذف التقرير الطبي ده؟")) return;
         window.SSMPDDb.deleteMedicalReport(btn.getAttribute("data-del-medical-report")).then(function () {
           T.show("اتحذف التقرير");
+          reloadModal();
+        }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
+      };
+    });
+
+    // ---------- روشتة (إنشاء/تعديل/طباعة/حذف) ----------
+    var newPrescriptionBtn = backdrop.querySelector("[data-new-prescription]");
+    if (newPrescriptionBtn) {
+      newPrescriptionBtn.onclick = function () { openPrescriptionFormModal(patient, null, reloadModal); };
+    }
+    backdrop.querySelectorAll("[data-edit-prescription]").forEach(function (btn) {
+      btn.onclick = function () {
+        var r = prescriptions.filter(function (x) { return String(x.id) === btn.getAttribute("data-edit-prescription"); })[0];
+        if (r) openPrescriptionFormModal(patient, r, reloadModal);
+      };
+    });
+    backdrop.querySelectorAll("[data-print-prescription]").forEach(function (btn) {
+      btn.onclick = function () {
+        var r = prescriptions.filter(function (x) { return String(x.id) === btn.getAttribute("data-print-prescription"); })[0];
+        if (r) printPrescription(patient, r);
+      };
+    });
+    backdrop.querySelectorAll("[data-del-prescription]").forEach(function (btn) {
+      btn.onclick = function () {
+        if (!confirm("حذف الروشتة دي؟")) return;
+        window.SSMPDDb.deletePrescription(btn.getAttribute("data-del-prescription")).then(function () {
+          T.show("اتحذفت الروشتة");
           reloadModal();
         }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
       };

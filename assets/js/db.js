@@ -340,6 +340,24 @@
     deleteMedicalReport: function (id) {
       return handle(client.from("patient_medical_reports").delete().eq("id", id));
     },
+    // ---------- روشتة (Prescription) ----------
+    listPrescriptions: function (patientId) {
+      return handle(client.from("patient_prescriptions").select("*").eq("patient_id", patientId).order("report_date", { ascending: false }));
+    },
+    savePrescription: function (patientId, patch, createdBy) {
+      var row = Object.assign({}, patch, { patient_id: patientId });
+      if (patch && patch.id) {
+        var id = patch.id;
+        delete row.id;
+        row.updated_at = new Date().toISOString();
+        return handle(client.from("patient_prescriptions").update(row).eq("id", id).select().single());
+      }
+      row.created_by = createdBy;
+      return handle(client.from("patient_prescriptions").insert(row).select().single());
+    },
+    deletePrescription: function (id) {
+      return handle(client.from("patient_prescriptions").delete().eq("id", id));
+    },
     listEchoReports: function (patientId) {
       return handle(client.from("patient_echo_reports").select("*").eq("patient_id", patientId).order("report_date", { ascending: false }));
     },
