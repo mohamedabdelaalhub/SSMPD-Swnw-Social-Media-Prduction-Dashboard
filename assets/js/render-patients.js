@@ -662,6 +662,206 @@
     waitForImagesThenPrint(win, 3000);
   }
 
+  // ---------- فورم طلب تحاليل (Lab Request) — تشيك ليست قابلة للطباعة ----------
+  var LAB_CATEGORIES = [
+    { key: "general_chemistry", label: "General Chemistry", items: ["Glucose FBS/2HPP", "Glucose T.Curve", "HbA1c", "Urea", "Creatinine", "Uric Acid", "eGFR", "Creat.Clearance", "Na, k", "Iron", "TIBC", "Calcium (T&I)", "Phosphor", "Chloride", "Magnesium", "AL.K.Phosphatase", "ALT", "AST", "GGT", "Bilirubin (T&D)", "T.Protein", "Albumin", "Cholestrol", "Triglycerides", "HDL-LDL Cholest", "Amylase", "Lipase"] },
+    { key: "microbiology", label: "Microbiology", items: ["Urine ex.", "Stool ex.", "Culture", "ZN for TB", "Stool Occult Blood", "Semen Analaysis"] },
+    { key: "cardiac_markers", label: "Cardiac Markers", items: ["CKMB", "CK Total", "Troponin", "LDH"] },
+    { key: "blood_coagulation", label: "Blood & Coagulation", items: ["CBC", "ESR", "Retics", "Coombos Direct", "Coombos Indirect", "G6PD", "PT", "PTT"] },
+    { key: "serology", label: "Serology", items: ["Herpes II Ab", "CMV M&G", "Toxo M&G", "Helicobacter Ab", "Helicobacter Ag", "Widal & Burcella"] },
+    { key: "hormones", label: "Hormones", items: ["B-HCG (Blood)", "Progesterone", "Prolactin", "FSH", "LH", "Anti-Mullerian (AMH)", "E2", "Testosterone (F&T)", "Cortisol", "ACTH"] },
+    { key: "tumour_markers", label: "Tumour Markers", items: ["PSA (T&F)", "CA 15.3", "CEA", "AFP", "CA 19.9", "CA 125"] },
+    { key: "immunology", label: "Immunology", items: ["Rhumatoid", "Anti-CCP", "ASOT", "CRP", "C3, C4"] },
+    { key: "thyroid_study", label: "Thyroid Study", items: ["T3 & T4", "Free T3 & T4", "TSH"] }
+  ];
+
+  function openLabRequestFormModal(patient, existingLr, onSaved) {
+    var r = existingLr || {};
+    var isEdit = !!existingLr;
+    var selected = {};
+    (r.tests || []).forEach(function (t) { selected[t] = true; });
+    var backdrop = document.createElement("div");
+    backdrop.className = "modal-backdrop";
+    var html = '<div class="modal"><div class="modal-head"><h3>' + (isEdit ? "تعديل طلب التحاليل" : "طلب تحاليل جديد") + '</h3><button class="modal-close">×</button></div>' +
+      '<p style="font-size:12px;color:var(--c-muted);margin:-6px 0 10px;">المريض: ' + escapeHtml(patient.full_name) + (patient.age != null ? (' — ' + patient.age + ' عام') : '') + '</p>' +
+      '<div class="field"><label>تاريخ الطلب</label><input id="lr-date" type="date" value="' + (r.report_date || new Date().toISOString().slice(0, 10)) + '"></div>' +
+      '<div class="field"><label>اسم الطبيب</label><input id="lr-doctor" type="text" placeholder="اسم الطبيب" value="' + escapeHtml(r.doctor_name || '') + '"></div>' +
+      '<div class="field"><label>التشخيص (اختياري)</label><input id="lr-diagnosis" type="text" placeholder="التشخيص" value="' + escapeHtml(r.diagnosis || '') + '"></div>';
+    LAB_CATEGORIES.forEach(function (cat) {
+      html += '<div style="margin-top:12px;"><b style="font-size:12px;color:#0F369D;">' + cat.label + '</b>' +
+        '<div style="display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:6px;">';
+      cat.items.forEach(function (item) {
+        var id = "lr-item-" + cat.key + "-" + cat.items.indexOf(item);
+        html += '<label style="font-size:12px;display:flex;align-items:center;gap:4px;"><input type="checkbox" data-lr-item="' + escapeHtml(item) + '"' + (selected[item] ? ' checked' : '') + '> ' + escapeHtml(item) + '</label>';
+      });
+      html += '</div></div>';
+    });
+    html += '<div class="field" style="margin-top:12px;"><label>Others (اختياري)</label><textarea id="lr-others" rows="2" placeholder="تحاليل تانية غير موجودة في القائمة">' + escapeHtml(r.others_text || '') + '</textarea></div>' +
+      '<button class="btn block" id="lr-save" style="margin-top:10px;">حفظ</button></div>';
+    backdrop.innerHTML = html;
+    document.body.appendChild(backdrop);
+    backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
+    backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
+
+    document.getElementById("lr-save").onclick = function () {
+      var tests = [];
+      backdrop.querySelectorAll("[data-lr-item]").forEach(function (cb) {
+        if (cb.checked) tests.push(cb.getAttribute("data-lr-item"));
+      });
+      var patch = {
+        report_date: document.getElementById("lr-date").value || new Date().toISOString().slice(0, 10),
+        doctor_name: document.getElementById("lr-doctor").value.trim(),
+        diagnosis: document.getElementById("lr-diagnosis").value.trim(),
+        tests: tests,
+        others_text: document.getElementById("lr-others").value.trim()
+      };
+      if (isEdit) patch.id = existingLr.id;
+      window.SSMPDDb.saveLabRequest(patient.id, patch, me && me.id).then(function () {
+        T.show(isEdit ? "اتحدث طلب التحاليل" : "اتحفظ طلب التحاليل");
+        backdrop.remove();
+        if (onSaved) onSaved();
+      }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
+    };
+  }
+
+  function printLabRequest(patient, lr) {
+    var win = window.open("", "_blank");
+    if (!win) { T.show("المتصفح منع فتح نافذة الطباعة — سمح بالنوافذ المنبثقة وحاول تاني", "error"); return; }
+    var selected = {};
+    (lr.tests || []).forEach(function (t) { selected[t] = true; });
+    var catsHtml = "";
+    LAB_CATEGORIES.forEach(function (cat) {
+      var itemsHtml = cat.items.map(function (item) {
+        var mark = selected[item] ? "☑" : "☐";
+        return '<div style="font-size:12px;margin:0 0 3px;">' + mark + ' ' + escapeHtml(item) + '</div>';
+      }).join("");
+      catsHtml += '<div style="break-inside:avoid;margin-bottom:10px;">' +
+        '<div style="font-size:12px;font-weight:700;background:#0F369D;color:#fff;padding:3px 8px;border-radius:4px;margin-bottom:4px;">' + cat.label + '</div>' +
+        itemsHtml + '</div>';
+    });
+    var body =
+      '<h1 style="font-size:26px;color:#0F369D;text-align:right;margin:0 0 4px;">Lab Request</h1>' +
+      '<div style="border-bottom:1px solid #ccc;padding-bottom:10px;margin-bottom:16px;"></div>' +
+      '<p style="margin:0 0 4px;"><b>المريض:</b> ' + escapeHtml(patient.full_name) + '</p>' +
+      (patient.age != null ? '<p style="margin:0 0 4px;"><b>العمر:</b> ' + escapeHtml(String(patient.age)) + ' عام</p>' : '') +
+      '<p style="margin:0 0 4px;"><b>التاريخ:</b> ' + fmtDate(lr.report_date) + '</p>' +
+      (lr.doctor_name ? '<p style="margin:0 0 4px;"><b>الطبيب:</b> ' + escapeHtml(lr.doctor_name) + '</p>' : '') +
+      (lr.diagnosis ? '<p style="margin:0 0 16px;"><b>التشخيص:</b> ' + escapeHtml(lr.diagnosis) + '</p>' : '<div style="margin-bottom:16px;"></div>') +
+      '<div style="columns:3;column-gap:16px;direction:ltr;text-align:left;">' + catsHtml + '</div>' +
+      (lr.others_text ? '<div style="margin-top:14px;direction:rtl;text-align:right;"><b>Others:</b> ' + escapeHtml(lr.others_text) + '</div>' : '');
+    win.document.open();
+    win.document.write('<!doctype html><html><head><meta charset="utf-8"><title>Lab Request — ' + escapeHtml(patient.full_name) + '</title>' +
+      '<style>' + PRINT_FONT_FACE_CSS + '@page{size:A4;margin:0;}body{margin:0;font-size:14px;line-height:1.5;}</style></head>' +
+      '<body>' + letterheadPageHtml("rtl", body) + '</body></html>');
+    win.document.close();
+    waitForImagesThenPrint(win, 3000);
+  }
+
+  // ---------- فورم طلب أشعة (Radiology/Imaging Request) — تشيك ليست قابلة للطباعة ----------
+  var RADIOLOGY_CATEGORIES = [
+    { key: "mri", label: "MRI", items: ["Brain", "MRA Brain", "MRA Neck", "Soft Tissue Neck", "Cervical Spine", "Thoracic Spine", "Lumber Spine", "Abdomen", "MRA Abdomen", "Pelvis", "With contrast"], lrItems: ["Shoulder", "Elbow", "Wrist", "Hip", "Knee", "Ankle", "Arthrogram"] },
+    { key: "ct", label: "CT", items: ["Brain", "Sinus", "Soft Tissue Neck", "Cervical Spine", "Thoracic Spine", "Lumber Spine", "Urogram", "Renal Stone", "Angio", "Chest", "Abdomen", "Pelvis", "Abdomen/Pelvis", "Chest/Abdomen/Pelvis", "Add 3D Images", "With Contrast"] },
+    { key: "breast_imaging", label: "Breast Imaging", items: ["Screening Mammogram", "Diagnostic Mammogram", "Localization - Seed", "Localization - Wire", "Localization - Mammography", "Localization - Ultrasound", "Localization - MRI", "Localization - US Axillary Lymph node", "Biopsy - Mammography", "Biopsy - Ultrasound", "Biopsy - MRI", "Cyst Aspiration"] },
+    { key: "ultrasound", label: "Ultrasound", items: ["Abdomen", "Pelvis", "OBST & GYN", "Scrotal", "Appendix", "Thyroid", "Lymph node Mapping"] },
+    { key: "nuclear_medicine", label: "Nuclear Medicine", items: ["Cardiac - Myocardial Perfusion Imaging", "Cardiac - Treadmill", "Cardiac - Pharmacological", "Cardiac - MUGA", "Bone Scan - Whole Body", "Bone Scan - SPSCT", "Bone Scan - Multiple Area", "PET/CT - Skull Base To Mid Thigh", "PET/CT - Whole Body", "PET/CT - Brain"] },
+    { key: "radiology", label: "Radiology", items: ["Esophagram", "Upper GIT", "Small Bowel Follow Through", "Barium Enema", "Abdomen Supine", "Abdomen Supine and Upright", "Pelvis", "Chest X-Ray", "Ribs", "Cervical Spine"], lrItems: ["Shoulder", "Humerus", "Elbow", "Forearm", "Wrist", "Hand", "Finger", "Femur", "Hip", "Knee", "Tibia/Fibula", "Ankle", "Foot", "Toe"] }
+  ];
+
+  function openRadiologyRequestFormModal(patient, existingRr, onSaved) {
+    var r = existingRr || {};
+    var isEdit = !!existingRr;
+    var selected = {};
+    (r.items || []).forEach(function (t) { selected[t] = true; });
+    var backdrop = document.createElement("div");
+    backdrop.className = "modal-backdrop";
+    var html = '<div class="modal"><div class="modal-head"><h3>' + (isEdit ? "تعديل طلب الأشعة" : "طلب أشعة جديد") + '</h3><button class="modal-close">×</button></div>' +
+      '<p style="font-size:12px;color:var(--c-muted);margin:-6px 0 10px;">المريض: ' + escapeHtml(patient.full_name) + (patient.age != null ? (' — ' + patient.age + ' عام') : '') + '</p>' +
+      '<div class="field"><label>تاريخ الطلب</label><input id="rr-date" type="date" value="' + (r.report_date || new Date().toISOString().slice(0, 10)) + '"></div>' +
+      '<div class="field"><label>اسم الطبيب</label><input id="rr-doctor" type="text" placeholder="اسم الطبيب" value="' + escapeHtml(r.doctor_name || '') + '"></div>' +
+      '<div class="field"><label>التشخيص المبدئي (اختياري)</label><input id="rr-diagnosis" type="text" placeholder="التشخيص" value="' + escapeHtml(r.diagnosis || '') + '"></div>';
+    RADIOLOGY_CATEGORIES.forEach(function (cat) {
+      html += '<div style="margin-top:12px;"><b style="font-size:12px;color:#0F369D;">' + cat.label + '</b>' +
+        '<div style="display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:6px;">';
+      cat.items.forEach(function (item) {
+        html += '<label style="font-size:12px;display:flex;align-items:center;gap:4px;"><input type="checkbox" data-rr-item="' + escapeHtml(item) + '"' + (selected[item] ? ' checked' : '') + '> ' + escapeHtml(item) + '</label>';
+      });
+      if (cat.lrItems) {
+        cat.lrItems.forEach(function (item) {
+          html += '<label style="font-size:12px;display:flex;align-items:center;gap:4px;background:#f2f2f2;border-radius:4px;padding:2px 6px;">' + escapeHtml(item) + ':' +
+            '<span style="display:flex;align-items:center;gap:2px;"><input type="checkbox" data-rr-item="' + escapeHtml(item + " - L") + '"' + (selected[item + " - L"] ? ' checked' : '') + '> L</span>' +
+            '<span style="display:flex;align-items:center;gap:2px;"><input type="checkbox" data-rr-item="' + escapeHtml(item + " - R") + '"' + (selected[item + " - R"] ? ' checked' : '') + '> R</span></label>';
+        });
+      }
+      html += '</div></div>';
+    });
+    html += '<div class="field" style="margin-top:12px;"><label>Others (اختياري)</label><textarea id="rr-others" rows="2" placeholder="أشعة تانية غير موجودة في القائمة">' + escapeHtml(r.others_text || '') + '</textarea></div>' +
+      '<button class="btn block" id="rr-save" style="margin-top:10px;">حفظ</button></div>';
+    backdrop.innerHTML = html;
+    document.body.appendChild(backdrop);
+    backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
+    backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
+
+    document.getElementById("rr-save").onclick = function () {
+      var items = [];
+      backdrop.querySelectorAll("[data-rr-item]").forEach(function (cb) {
+        if (cb.checked) items.push(cb.getAttribute("data-rr-item"));
+      });
+      var patch = {
+        report_date: document.getElementById("rr-date").value || new Date().toISOString().slice(0, 10),
+        doctor_name: document.getElementById("rr-doctor").value.trim(),
+        diagnosis: document.getElementById("rr-diagnosis").value.trim(),
+        items: items,
+        others_text: document.getElementById("rr-others").value.trim()
+      };
+      if (isEdit) patch.id = existingRr.id;
+      window.SSMPDDb.saveRadiologyRequest(patient.id, patch, me && me.id).then(function () {
+        T.show(isEdit ? "اتحدث طلب الأشعة" : "اتحفظ طلب الأشعة");
+        backdrop.remove();
+        if (onSaved) onSaved();
+      }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
+    };
+  }
+
+  function printRadiologyRequest(patient, rr) {
+    var win = window.open("", "_blank");
+    if (!win) { T.show("المتصفح منع فتح نافذة الطباعة — سمح بالنوافذ المنبثقة وحاول تاني", "error"); return; }
+    var selected = {};
+    (rr.items || []).forEach(function (t) { selected[t] = true; });
+    var catsHtml = "";
+    RADIOLOGY_CATEGORIES.forEach(function (cat) {
+      var itemsHtml = cat.items.map(function (item) {
+        var mark = selected[item] ? "☑" : "☐";
+        return '<div style="font-size:11px;margin:0 0 3px;">' + mark + ' ' + escapeHtml(item) + '</div>';
+      }).join("");
+      if (cat.lrItems) {
+        itemsHtml += cat.lrItems.map(function (item) {
+          var lMark = selected[item + " - L"] ? "☑" : "☐";
+          var rMark = selected[item + " - R"] ? "☑" : "☐";
+          return '<div style="font-size:11px;margin:0 0 3px;">' + escapeHtml(item) + ' — L:' + lMark + ' R:' + rMark + '</div>';
+        }).join("");
+      }
+      catsHtml += '<div style="break-inside:avoid;margin-bottom:10px;">' +
+        '<div style="font-size:12px;font-weight:700;background:#0F369D;color:#fff;padding:3px 8px;border-radius:4px;margin-bottom:4px;">' + cat.label + '</div>' +
+        itemsHtml + '</div>';
+    });
+    var body =
+      '<h1 style="font-size:24px;color:#0F369D;text-align:right;margin:0 0 4px;">Diagnostic Imaging Request</h1>' +
+      '<div style="border-bottom:1px solid #ccc;padding-bottom:10px;margin-bottom:16px;"></div>' +
+      '<p style="margin:0 0 4px;"><b>المريض:</b> ' + escapeHtml(patient.full_name) + '</p>' +
+      (patient.age != null ? '<p style="margin:0 0 4px;"><b>العمر:</b> ' + escapeHtml(String(patient.age)) + ' عام</p>' : '') +
+      '<p style="margin:0 0 4px;"><b>التاريخ:</b> ' + fmtDate(rr.report_date) + '</p>' +
+      (rr.doctor_name ? '<p style="margin:0 0 4px;"><b>الطبيب:</b> ' + escapeHtml(rr.doctor_name) + '</p>' : '') +
+      (rr.diagnosis ? '<p style="margin:0 0 16px;"><b>التشخيص:</b> ' + escapeHtml(rr.diagnosis) + '</p>' : '<div style="margin-bottom:16px;"></div>') +
+      '<div style="columns:3;column-gap:16px;direction:ltr;text-align:left;">' + catsHtml + '</div>' +
+      (rr.others_text ? '<div style="margin-top:14px;direction:rtl;text-align:right;"><b>Others:</b> ' + escapeHtml(rr.others_text) + '</div>' : '');
+    win.document.open();
+    win.document.write('<!doctype html><html><head><meta charset="utf-8"><title>Diagnostic Imaging Request — ' + escapeHtml(patient.full_name) + '</title>' +
+      '<style>' + PRINT_FONT_FACE_CSS + '@page{size:A4;margin:0;}body{margin:0;font-size:14px;line-height:1.5;}</style></head>' +
+      '<body>' + letterheadPageHtml("rtl", body) + '</body></html>');
+    win.document.close();
+    waitForImagesThenPrint(win, 3000);
+  }
+
   // ---------- فورم Echocardiography Report (إنشاء/تعديل) ----------
   var ECHO_DIMENSIONS = [
     { key: "lvedd", label: "LVEDD", ref: "3.5 -5.6 cm" },
@@ -2270,9 +2470,11 @@
         window.SSMPDDb.listDentalReports(patientId).catch(function () { return []; }),
         window.SSMPDDb.listPhysioReports(patientId).catch(function () { return []; }),
         window.SSMPDDb.listPrescriptions(patientId).catch(function () { return []; }),
+        window.SSMPDDb.listLabRequests(patientId).catch(function () { return []; }),
+        window.SSMPDDb.listRadiologyRequests(patientId).catch(function () { return []; }),
       ]).then(function (results) {
         var res = results[0], profile = results[1], visits = results[2] || [];
-        renderPatientModal(backdrop, view, container, res.patient, res.files || [], profile, visits, results[3] || [], results[4] || [], results[5] || [], results[6] || [], results[7] || []);
+        renderPatientModal(backdrop, view, container, res.patient, res.files || [], profile, visits, results[3] || [], results[4] || [], results[5] || [], results[6] || [], results[7] || [], results[8] || [], results[9] || []);
       }).catch(function (e) {
         backdrop.querySelector(".modal").innerHTML = '<div class="err-msg">خطأ: ' + e.message + '</div>';
       });
@@ -2280,7 +2482,7 @@
     reload();
   }
 
-  function renderPatientModal(backdrop, view, container, patient, files, profile, visits, reports, echoReports, dentalReports, physioReports, prescriptions) {
+  function renderPatientModal(backdrop, view, container, patient, files, profile, visits, reports, echoReports, dentalReports, physioReports, prescriptions, labRequests, radiologyRequests) {
     var byCategory = {};
     CATEGORIES.forEach(function (c) { byCategory[c.key] = []; });
     files.forEach(function (f) { (byCategory[f.category] || (byCategory[f.category] = [])).push(f); });
@@ -2291,6 +2493,8 @@
     dentalReports = dentalReports || [];
     physioReports = physioReports || [];
     prescriptions = prescriptions || [];
+    labRequests = labRequests || [];
+    radiologyRequests = radiologyRequests || [];
 
     var html = '<div class="modal"><div class="modal-head"><h3>' + escapeHtml(patient.full_name) +
       ' <span style="font-size:12px;color:var(--c-muted);">(' + escapeHtml(patient.patient_code || "") + ')</span></h3>' +
@@ -2496,6 +2700,48 @@
     }
     html += '</div>';
 
+    // ---------- طلب تحاليل (Lab Request) ----------
+    html += '<div class="section" style="padding:12px 14px;">' +
+      '<h3 style="font-size:13px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
+      '<span>طلب تحاليل (' + labRequests.length + ')</span>' +
+      (canUp ? '<button class="btn ghost sm" data-new-lab-request="1">+ إنشاء جديد</button>' : '') +
+      '</h3>';
+    if (!labRequests.length) {
+      html += '<p style="font-size:12px;color:var(--c-muted);">مفيش طلبات تحاليل مُنشأة لسه.</p>';
+    } else {
+      labRequests.forEach(function (r) {
+        html += '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--c-border);font-size:12px;">' +
+          '<div><b>طلب تحاليل</b> — ' + fmtDate(r.report_date) + ' — ' + (r.tests || []).length + ' تحليل' +
+          (r.doctor_name ? '<br><span style="color:var(--c-muted);">د. ' + escapeHtml(r.doctor_name) + '</span>' : '') + '</div>' +
+          '<div style="display:flex;gap:6px;flex-shrink:0;">' +
+          '<button class="btn ghost sm" data-edit-lab-request="' + r.id + '">تعديل</button>' +
+          '<button class="btn ghost sm" data-print-lab-request="' + r.id + '">🖨 طباعة</button>' +
+          (canUp ? '<button class="btn danger sm" data-del-lab-request="' + r.id + '">حذف</button>' : '') + '</div></div>';
+      });
+    }
+    html += '</div>';
+
+    // ---------- طلب أشعة (Radiology Request) ----------
+    html += '<div class="section" style="padding:12px 14px;">' +
+      '<h3 style="font-size:13px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
+      '<span>طلب أشعة (' + radiologyRequests.length + ')</span>' +
+      (canUp ? '<button class="btn ghost sm" data-new-radiology-request="1">+ إنشاء جديد</button>' : '') +
+      '</h3>';
+    if (!radiologyRequests.length) {
+      html += '<p style="font-size:12px;color:var(--c-muted);">مفيش طلبات أشعة مُنشأة لسه.</p>';
+    } else {
+      radiologyRequests.forEach(function (r) {
+        html += '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--c-border);font-size:12px;">' +
+          '<div><b>طلب أشعة</b> — ' + fmtDate(r.report_date) + ' — ' + (r.items || []).length + ' بند' +
+          (r.doctor_name ? '<br><span style="color:var(--c-muted);">د. ' + escapeHtml(r.doctor_name) + '</span>' : '') + '</div>' +
+          '<div style="display:flex;gap:6px;flex-shrink:0;">' +
+          '<button class="btn ghost sm" data-edit-radiology-request="' + r.id + '">تعديل</button>' +
+          '<button class="btn ghost sm" data-print-radiology-request="' + r.id + '">🖨 طباعة</button>' +
+          (canUp ? '<button class="btn danger sm" data-del-radiology-request="' + r.id + '">حذف</button>' : '') + '</div></div>';
+      });
+    }
+    html += '</div>';
+
     // ---------- Echocardiography Report ----------
     html += '<div class="section" style="padding:12px 14px;">' +
       '<h3 style="font-size:13px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
@@ -2573,8 +2819,10 @@
         window.SSMPDDb.listDentalReports(patient.id).catch(function () { return []; }),
         window.SSMPDDb.listPhysioReports(patient.id).catch(function () { return []; }),
         window.SSMPDDb.listPrescriptions(patient.id).catch(function () { return []; }),
+        window.SSMPDDb.listLabRequests(patient.id).catch(function () { return []; }),
+        window.SSMPDDb.listRadiologyRequests(patient.id).catch(function () { return []; }),
       ]).then(function (results) {
-        renderPatientModal(backdrop, view, container, results[0].patient, results[0].files || [], results[1], results[2] || [], results[3] || [], results[4] || [], results[5] || [], results[6] || [], results[7] || []);
+        renderPatientModal(backdrop, view, container, results[0].patient, results[0].files || [], results[1], results[2] || [], results[3] || [], results[4] || [], results[5] || [], results[6] || [], results[7] || [], results[8] || [], results[9] || []);
       });
     }
 
@@ -2730,6 +2978,60 @@
         if (!confirm("حذف الروشتة دي؟")) return;
         window.SSMPDDb.deletePrescription(btn.getAttribute("data-del-prescription")).then(function () {
           T.show("اتحذفت الروشتة");
+          reloadModal();
+        }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
+      };
+    });
+
+    // ---------- طلب تحاليل (إنشاء/تعديل/طباعة/حذف) ----------
+    var newLabRequestBtn = backdrop.querySelector("[data-new-lab-request]");
+    if (newLabRequestBtn) {
+      newLabRequestBtn.onclick = function () { openLabRequestFormModal(patient, null, reloadModal); };
+    }
+    backdrop.querySelectorAll("[data-edit-lab-request]").forEach(function (btn) {
+      btn.onclick = function () {
+        var r = labRequests.filter(function (x) { return String(x.id) === btn.getAttribute("data-edit-lab-request"); })[0];
+        if (r) openLabRequestFormModal(patient, r, reloadModal);
+      };
+    });
+    backdrop.querySelectorAll("[data-print-lab-request]").forEach(function (btn) {
+      btn.onclick = function () {
+        var r = labRequests.filter(function (x) { return String(x.id) === btn.getAttribute("data-print-lab-request"); })[0];
+        if (r) printLabRequest(patient, r);
+      };
+    });
+    backdrop.querySelectorAll("[data-del-lab-request]").forEach(function (btn) {
+      btn.onclick = function () {
+        if (!confirm("حذف طلب التحاليل ده؟")) return;
+        window.SSMPDDb.deleteLabRequest(btn.getAttribute("data-del-lab-request")).then(function () {
+          T.show("اتحذف طلب التحاليل");
+          reloadModal();
+        }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
+      };
+    });
+
+    // ---------- طلب أشعة (إنشاء/تعديل/طباعة/حذف) ----------
+    var newRadiologyRequestBtn = backdrop.querySelector("[data-new-radiology-request]");
+    if (newRadiologyRequestBtn) {
+      newRadiologyRequestBtn.onclick = function () { openRadiologyRequestFormModal(patient, null, reloadModal); };
+    }
+    backdrop.querySelectorAll("[data-edit-radiology-request]").forEach(function (btn) {
+      btn.onclick = function () {
+        var r = radiologyRequests.filter(function (x) { return String(x.id) === btn.getAttribute("data-edit-radiology-request"); })[0];
+        if (r) openRadiologyRequestFormModal(patient, r, reloadModal);
+      };
+    });
+    backdrop.querySelectorAll("[data-print-radiology-request]").forEach(function (btn) {
+      btn.onclick = function () {
+        var r = radiologyRequests.filter(function (x) { return String(x.id) === btn.getAttribute("data-print-radiology-request"); })[0];
+        if (r) printRadiologyRequest(patient, r);
+      };
+    });
+    backdrop.querySelectorAll("[data-del-radiology-request]").forEach(function (btn) {
+      btn.onclick = function () {
+        if (!confirm("حذف طلب الأشعة ده؟")) return;
+        window.SSMPDDb.deleteRadiologyRequest(btn.getAttribute("data-del-radiology-request")).then(function () {
+          T.show("اتحذف طلب الأشعة");
           reloadModal();
         }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
       };

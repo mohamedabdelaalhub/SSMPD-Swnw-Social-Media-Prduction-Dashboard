@@ -358,6 +358,42 @@
     deletePrescription: function (id) {
       return handle(client.from("patient_prescriptions").delete().eq("id", id));
     },
+    // ---------- فورم طلب تحاليل (Lab Request) ----------
+    listLabRequests: function (patientId) {
+      return handle(client.from("patient_lab_requests").select("*").eq("patient_id", patientId).order("report_date", { ascending: false }));
+    },
+    saveLabRequest: function (patientId, patch, createdBy) {
+      var row = Object.assign({}, patch, { patient_id: patientId });
+      if (patch && patch.id) {
+        var id = patch.id;
+        delete row.id;
+        row.updated_at = new Date().toISOString();
+        return handle(client.from("patient_lab_requests").update(row).eq("id", id).select().single());
+      }
+      row.created_by = createdBy;
+      return handle(client.from("patient_lab_requests").insert(row).select().single());
+    },
+    deleteLabRequest: function (id) {
+      return handle(client.from("patient_lab_requests").delete().eq("id", id));
+    },
+    // ---------- فورم طلب أشعة (Radiology Request) ----------
+    listRadiologyRequests: function (patientId) {
+      return handle(client.from("patient_radiology_requests").select("*").eq("patient_id", patientId).order("report_date", { ascending: false }));
+    },
+    saveRadiologyRequest: function (patientId, patch, createdBy) {
+      var row = Object.assign({}, patch, { patient_id: patientId });
+      if (patch && patch.id) {
+        var id = patch.id;
+        delete row.id;
+        row.updated_at = new Date().toISOString();
+        return handle(client.from("patient_radiology_requests").update(row).eq("id", id).select().single());
+      }
+      row.created_by = createdBy;
+      return handle(client.from("patient_radiology_requests").insert(row).select().single());
+    },
+    deleteRadiologyRequest: function (id) {
+      return handle(client.from("patient_radiology_requests").delete().eq("id", id));
+    },
     listEchoReports: function (patientId) {
       return handle(client.from("patient_echo_reports").select("*").eq("patient_id", patientId).order("report_date", { ascending: false }));
     },
