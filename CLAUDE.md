@@ -2253,3 +2253,30 @@ some row` — رغم إن فحص مباشر لجدول `admins` أثبت إن م
 - **لازم**: تشغيل قسم ٣٠ من `setup.sql` في Supabase SQL Editor (جدول
   جديد `patient_physio_report_images` + RLS — آمن للتشغيل، ومفيش Edge
   Function مطلوب نشرها).
+
+## روشتة (Prescription) قابلة للطباعة (`?v=55`/`?v=72` — مرحلة ١ من ٥ — ٢٠٢٦-٠٩-٠٣)
+
+المستخدم بعت ٤ نماذج مرجعية (روشتة/طلب تحاليل/طلب أشعة/استبيان سعادة
+الزوار) وطلب ٥ فيتشرز جداد. المرحلة الأولى المُنفَّذة هنا (الأبسط):
+- **روشتة**: سكشن جديد "روشتة" في مودال ملف المريض (بعد سكشن "تقرير طبي"
+  مباشرة، جوه المجموعة الموحّدة "📋 التقارير الطبية") — بنفس نمط تقرير طبي
+  بالظبط (نص حر قابل للطباعة، مش تشيك ليست): تاريخ، اسم الطبيب، تخصص
+  (اختياري)، تشخيص (اختياري)، نص الروشتة. طباعة بنفس شكل letterhead الرسمي.
+- `setup.sql` قسم ٣١: جدول جديد `patient_prescriptions` (مطابق تمامًا لبنية
+  `patient_medical_reports` + RLS نفس الدائرة). **كتابة مباشرة من الفرونت
+  إند عن طريق `db.js`** — مفيش Edge Function جديدة.
+- `db.js`: `listPrescriptions`/`savePrescription`/`deletePrescription`
+  (نفس نمط `saveMedicalReport` بالظبط).
+- `render-patients.js`: `openPrescriptionFormModal`/`printPrescription`
+  (نسخة طبق الأصل من `openMedicalReportFormModal`/`printMedicalReport`)،
+  + سكشن العرض/التعديل/الطباعة/الحذف في `renderPatientModal`، + `prescriptions`
+  اتضافت كـparameter جديد في `renderPatientModal`/`openPatientModal`/
+  `reloadModal` (نداء `listPrescriptions` بالتوازي مع باقي التقارير).
+- بصمة الكاش اترفعت لـ `db.js?v=55`، `render-patients.js?v=72` في
+  `index.html`.
+- **لازم**: تشغيل قسم ٣١ من `setup.sql` في Supabase SQL Editor (جدول
+  جديد فقط — آمن للتشغيل، مفيش Edge Function مطلوب نشرها).
+- **الباقي من الطلب (مؤجّل للمراحل الجاية توفيرًا للكوتا)**: فورم طلب
+  تحاليل (checklist)، فورم طلب أشعة (checklist)، تقييم تجربة المريض
+  (تكرارى لكل زيارة + إدخال من خدمة العملاء)، تصدير جماعي لتقييم التجربة
+  + مؤشر رئيسي.
