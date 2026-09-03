@@ -2283,3 +2283,40 @@ create policy "dental report images write" on public.patient_dental_report_image
 drop policy if exists "dental report images delete" on public.patient_dental_report_images;
 create policy "dental report images delete" on public.patient_dental_report_images
   for delete using (public.has_archive_access() or public.can_manage_all_content());
+
+-- ============================================================
+--  30) صور أشعة/فحوصات مرفقة بتقرير العلاج الطبيعي — نفس نمط صور
+--      Echo/الأسنان بالظبط (٢٠٢٦-٠٩-٠٢)
+-- ============================================================
+create table if not exists public.patient_physio_report_images (
+  id               uuid primary key default gen_random_uuid(),
+  physio_report_id uuid not null references public.patient_physio_reports(id) on delete cascade,
+  patient_file_id  uuid not null references public.patient_files(id) on delete cascade,
+  created_at       timestamptz not null default now()
+);
+create index if not exists patient_physio_report_images_report_idx
+  on public.patient_physio_report_images (physio_report_id);
+create unique index if not exists patient_physio_report_images_unique
+  on public.patient_physio_report_images (physio_report_id, patient_file_id);
+
+alter table public.patient_physio_report_images enable row level security;
+
+drop policy if exists "physio report images read" on public.patient_physio_report_images;
+create policy "physio report images read" on public.patient_physio_report_images
+  for select using (
+    exists (
+      select 1 from public.patient_physio_reports pr
+      where pr.id = physio_report_id
+        and (
+          public.has_archive_access() or public.has_archive_review_access() or public.can_access_leads()
+          or public.is_assigned_doctor_for_patient(pr.patient_id)
+        )
+    )
+  );
+
+drop policy if exists "physio report images write" on public.patient_physio_report_images;
+create policy "physio report images write" on public.patient_physio_report_images
+  for insert with check (public.has_archive_access() or public.can_manage_all_content());
+drop policy if exists "physio report images delete" on public.patient_physio_report_images;
+create policy "physio report images delete" on public.patient_physio_report_images
+  for delete using (public.has_archive_access() or public.can_manage_all_content());
