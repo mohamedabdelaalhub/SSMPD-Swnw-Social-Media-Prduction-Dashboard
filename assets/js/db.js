@@ -399,6 +399,17 @@
         .insert({ dental_report_id: dentalReportId, patient_file_id: patientFileId })
         .select().single());
     },
+    listPhysioReportImages: function (physioReportId) {
+      return handle(client.from("patient_physio_report_images")
+        .select("id, created_at, patient_files(id, file_name, file_size, mime_type, uploaded_at)")
+        .eq("physio_report_id", physioReportId)
+        .order("created_at", { ascending: true }));
+    },
+    linkPhysioReportImage: function (physioReportId, patientFileId) {
+      return handle(client.from("patient_physio_report_images")
+        .insert({ physio_report_id: physioReportId, patient_file_id: patientFileId })
+        .select().single());
+    },
     listPhysioReports: function (patientId) {
       return handle(client.from("patient_physio_reports").select("*").eq("patient_id", patientId).order("visit_date", { ascending: false }));
     },

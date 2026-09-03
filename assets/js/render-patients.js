@@ -898,6 +898,81 @@
     }).catch(function (e) { container.innerHTML = '<p style="font-size:12px;color:var(--c-danger,#c0392b);">خطأ: ' + escapeHtml(e.message) + '</p>'; });
   }
 
+  // صور مرفقة بتقرير العلاج الطبيعي — نفس نمط صور الأسنان/Echo تمامًا
+  function renderPhysioImagesList(container, images) {
+    if (!images.length) {
+      container.innerHTML = '<p style="font-size:12px;color:var(--c-muted);">مفيش صور مرفقة لسه.</p>';
+      return;
+    }
+    var html = "";
+    images.forEach(function (im) {
+      var f = im.patient_files || {};
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--c-border);font-size:12px;">' +
+        '<div><b>' + escapeHtml(f.file_name || "—") + '</b><br>' +
+        '<span style="color:var(--c-muted);">' + fmtBytes(f.file_size) + ' · ' + fmtDate(f.uploaded_at) + '</span></div>' +
+        '<div style="display:flex;gap:6px;flex-shrink:0;">' +
+        '<button class="btn ghost sm" data-physio-img-view="' + f.id + '">عرض</button>' +
+        '<button class="btn ghost sm" data-physio-img-dl="' + f.id + '" data-physio-img-name="' + escapeHtml(f.file_name || "") + '">تنزيل</button>' +
+        '<button class="btn danger sm" data-physio-img-del="' + f.id + '">حذف</button></div></div>';
+    });
+    container.innerHTML = html;
+    container.querySelectorAll("[data-physio-img-view]").forEach(function (btn) {
+      btn.onclick = function () {
+        var fileId = btn.getAttribute("data-physio-img-view");
+        var win = window.open("", "_blank");
+        btn.disabled = true;
+        window.SSMPDDb.downloadPatientFile(fileId).then(function (res) {
+          var url = URL.createObjectURL(res.blob);
+          if (win) win.location.href = url;
+          else { var a = document.createElement("a"); a.href = url; a.target = "_blank"; a.click(); }
+          btn.disabled = false;
+          setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
+        }).catch(function (e) {
+          if (win) win.close();
+          T.show("خطأ: " + e.message, "error");
+          btn.disabled = false;
+        });
+      };
+    });
+    container.querySelectorAll("[data-physio-img-dl]").forEach(function (btn) {
+      btn.onclick = function () {
+        var fileId = btn.getAttribute("data-physio-img-dl");
+        btn.disabled = true;
+        window.SSMPDDb.downloadPatientFile(fileId).then(function (res) {
+          var url = URL.createObjectURL(res.blob);
+          var a = document.createElement("a");
+          a.href = url; a.download = res.filename || btn.getAttribute("data-physio-img-name") || "image";
+          document.body.appendChild(a); a.click(); a.remove();
+          setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+          btn.disabled = false;
+        }).catch(function (e) { T.show("خطأ: " + e.message, "error"); btn.disabled = false; });
+      };
+    });
+    container.querySelectorAll("[data-physio-img-del]").forEach(function (btn) {
+      btn.onclick = function () {
+        if (btn.classList.contains("confirm-pending")) {
+          var fileId = btn.getAttribute("data-physio-img-del");
+          btn.disabled = true;
+          window.SSMPDDb.deletePatientFile(fileId).then(function () {
+            T.show("اتحذفت الصورة");
+            btn.closest("div[style*='justify-content:space-between']").remove();
+          }).catch(function (e) { T.show("خطأ: " + e.message, "error"); btn.disabled = false; btn.classList.remove("confirm-pending"); btn.textContent = "حذف"; });
+          return;
+        }
+        btn.classList.add("confirm-pending");
+        btn.textContent = "تأكيد الحذف؟";
+        setTimeout(function () { btn.classList.remove("confirm-pending"); btn.textContent = "حذف"; }, 3000);
+      };
+    });
+  }
+
+  function loadPhysioImages(reportId, container) {
+    container.innerHTML = '<p style="font-size:12px;color:var(--c-muted);">بيحمّل…</p>';
+    window.SSMPDDb.listPhysioReportImages(reportId).then(function (images) {
+      renderPhysioImagesList(container, images || []);
+    }).catch(function (e) { container.innerHTML = '<p style="font-size:12px;color:var(--c-danger,#c0392b);">خطأ: ' + escapeHtml(e.message) + '</p>'; });
+  }
+
   function openDentalReportFormModal(patient, existingReport, onSaved) {
     var r = existingReport || {};
     var isEdit = !!existingReport;
@@ -1062,6 +1137,7 @@
   function physioSessionRowHtml(s) {
     s = s || {};
     var treatments = s.treatments || [];
+    var v = s.vitals || {};
     return '<div class="session-row" style="border:1px solid var(--c-border);border-radius:8px;padding:8px;margin-bottom:8px;">' +
       '<div style="display:flex;gap:6px;margin-bottom:6px;">' +
       '<input type="date" data-sess-date value="' + escapeHtml(s.date || '') + '" style="flex:1;">' +
@@ -1072,12 +1148,17 @@
         return '<label style="display:flex;align-items:center;gap:3px;"><input type="checkbox" data-sess-treatment value="' + t + '"' + (treatments.indexOf(t) !== -1 ? " checked" : "") + '> ' + t + '</label>';
       }).join("") +
       '</div>' +
+      '<div style="font-size:11px;color:var(--c-muted);margin-bottom:3px;">القياسات الحيوية وقت الجلسة دي:</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:6px;">' +
+      '<input data-sess-weight placeholder="الوزن" value="' + escapeHtml(v.weight || '') + '">' +
+      '<input data-sess-pulse placeholder="النبض" value="' + escapeHtml(v.pulse || '') + '">' +
+      '<input data-sess-bp placeholder="ضغط الدم" value="' + escapeHtml(v.blood_pressure || '') + '">' +
+      '<input data-sess-sugar placeholder="سكر الدم" value="' + escapeHtml(v.blood_sugar || '') + '"></div>' +
       '<input data-sess-notes placeholder="ملاحظات" value="' + escapeHtml(s.notes || '') + '" style="width:100%;"></div>';
   }
 
   function openPhysioReportFormModal(patient, existingReport, onSaved) {
     var r = existingReport || {};
-    var vitals = r.vitals || {};
     var isEdit = !!existingReport;
     var painPoints = (r.pain_points || []).slice();
     var backdrop = document.createElement("div");
@@ -1090,11 +1171,7 @@
       '<div class="field" style="flex:1;"><label>الطبيب المعالج</label><input id="pr-doctor" value="' + escapeHtml(r.doctor_name || '') + '"></div>' +
       '</div>' +
       '<div class="field"><label>سبب الزيارة</label><textarea id="pr-reason" rows="2">' + escapeHtml(r.visit_reason || '') + '</textarea></div>' +
-      '<div class="field"><label>القياسات الحيوية</label><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;">' +
-      '<input id="pr-weight" placeholder="الوزن" value="' + escapeHtml(vitals.weight || '') + '">' +
-      '<input id="pr-pulse" placeholder="النبض" value="' + escapeHtml(vitals.pulse || '') + '">' +
-      '<input id="pr-bp" placeholder="ضغط الدم" value="' + escapeHtml(vitals.blood_pressure || '') + '">' +
-      '<input id="pr-sugar" placeholder="سكر الدم" value="' + escapeHtml(vitals.blood_sugar || '') + '"></div></div>' +
+      '<p style="font-size:11px;color:var(--c-muted);margin:-4px 0 8px;">القياسات الحيوية (وزن/نبض/ضغط/سكر) بقت خانة في كل جلسة جوه "جدول الجلسات" تحت، لأنها بتتغيّر من زيارة للتانية.</p>' +
       '<div class="field"><label>هل تعاني من أمراض مزمنة؟</label><textarea id="pr-chronic" rows="2" placeholder="ضغط/سكر/غدة درقية/كلى/أورام/تنفسية/أخرى...">' + escapeHtml(r.chronic_diseases || '') + '</textarea></div>' +
       '<div class="field"><label>العمليات الجراحية</label><input id="pr-surgeries" value="' + escapeHtml(r.surgeries || '') + '"></div>' +
       '<div class="field"><label>تاريخ مرضي بالعائلة</label><input id="pr-family" value="' + escapeHtml(r.family_history || '') + '"></div>' +
@@ -1102,12 +1179,63 @@
       '<div id="pp-canvas" style="position:relative;display:inline-block;border:1px solid var(--c-border);border-radius:8px;overflow:hidden;cursor:crosshair;">' +
       '<img id="pp-img" src="assets/img/physio-body-diagram.png" style="display:block;width:680px;max-width:100%;" draggable="false"></div>' +
       '<div id="pp-list" style="margin-top:8px;"></div></div>' +
+      '<div class="field" style="margin-top:6px;"><label>صور أشعة/فحوصات مرفقة (عدد مفتوح — اختار كذا صورة مرة واحدة)</label>' +
+      (isEdit ?
+        '<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">' +
+        '<input type="file" id="pr-images-input" accept="image/*" multiple style="flex:1;">' +
+        '<button class="btn ghost sm" id="pr-images-add">إضافة</button></div>' +
+        '<div id="pr-images-status" style="font-size:11px;color:var(--c-muted);margin-bottom:6px;"></div>' +
+        '<div id="pr-images-list"></div>'
+        : '<p style="font-size:12px;color:var(--c-muted);">احفظ التقرير الأول، وبعدين هيظهر لك اختيار إضافة الصور.</p>') +
+      '</div>' +
       '<div class="field"><label>جدول الجلسات</label><div id="pr-sessions"></div>' +
       '<button type="button" class="btn ghost sm" id="pr-add-session">+ إضافة جلسة</button></div>' +
       '<button class="btn block" id="pr-save">حفظ</button></div>';
     document.body.appendChild(backdrop);
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
     backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
+
+    if (isEdit) {
+      loadPhysioImages(existingReport.id, document.getElementById("pr-images-list"));
+      document.getElementById("pr-images-add").onclick = function () {
+        var input = document.getElementById("pr-images-input");
+        var files = Array.prototype.slice.call(input.files || []);
+        if (!files.length) { T.show("اختار صورة أو أكتر الأول", "error"); return; }
+        var statusEl = document.getElementById("pr-images-status");
+        var addBtn = document.getElementById("pr-images-add");
+        addBtn.disabled = true;
+        var done = 0;
+        statusEl.textContent = "بيرفع 0/" + files.length + "…";
+        var chain = Promise.resolve();
+        files.forEach(function (file) {
+          chain = chain.then(function () {
+            var fd = new FormData();
+            fd.append("patient_id", patient.id);
+            fd.append("category", "radiology");
+            fd.append("other_description", "صور مرفقة بتقرير العلاج الطبيعي — " + (r.visit_date || existingReport.visit_date || ""));
+            fd.append("file", file);
+            return window.SSMPDDb.uploadPatientFile(fd).then(function (res) {
+              return window.SSMPDDb.linkPhysioReportImage(existingReport.id, res.file.id);
+            }).then(function () {
+              done++;
+              statusEl.textContent = "بيرفع " + done + "/" + files.length + "…";
+            });
+          });
+        });
+        chain.then(function () {
+          statusEl.textContent = "";
+          addBtn.disabled = false;
+          input.value = "";
+          T.show("اتضافت الصور");
+          loadPhysioImages(existingReport.id, document.getElementById("pr-images-list"));
+        }).catch(function (e) {
+          statusEl.textContent = "";
+          addBtn.disabled = false;
+          T.show("خطأ في رفع الصور: " + e.message, "error");
+          loadPhysioImages(existingReport.id, document.getElementById("pr-images-list"));
+        });
+      };
+    }
 
     var sessionsContainer = document.getElementById("pr-sessions");
     (r.sessions && r.sessions.length ? r.sessions : []).forEach(function (s) { addSessionRowHtml(physioSessionRowHtml(s), sessionsContainer); });
@@ -1152,24 +1280,28 @@
     document.getElementById("pr-save").onclick = function () {
       var sessions = Array.prototype.slice.call(sessionsContainer.querySelectorAll(".session-row")).map(function (row) {
         var treatments = Array.prototype.slice.call(row.querySelectorAll("[data-sess-treatment]:checked")).map(function (c) { return c.value; });
+        var vitals = {
+          weight: row.querySelector("[data-sess-weight]").value.trim(),
+          pulse: row.querySelector("[data-sess-pulse]").value.trim(),
+          blood_pressure: row.querySelector("[data-sess-bp]").value.trim(),
+          blood_sugar: row.querySelector("[data-sess-sugar]").value.trim()
+        };
         return {
           date: row.querySelector("[data-sess-date]").value,
           duration: row.querySelector("[data-sess-duration]").value.trim(),
           treatments: treatments,
+          vitals: vitals,
           notes: row.querySelector("[data-sess-notes]").value.trim()
         };
-      }).filter(function (s) { return s.date || s.duration || s.treatments.length || s.notes; });
+      }).filter(function (s) {
+        return s.date || s.duration || s.treatments.length || s.notes ||
+          s.vitals.weight || s.vitals.pulse || s.vitals.blood_pressure || s.vitals.blood_sugar;
+      });
       var patch = {
         visit_date: document.getElementById("pr-date").value || new Date().toISOString().slice(0, 10),
         specialty: document.getElementById("pr-specialty").value.trim() || "علاج طبيعي",
         doctor_name: document.getElementById("pr-doctor").value.trim(),
         visit_reason: document.getElementById("pr-reason").value.trim(),
-        vitals: {
-          weight: document.getElementById("pr-weight").value.trim(),
-          pulse: document.getElementById("pr-pulse").value.trim(),
-          blood_pressure: document.getElementById("pr-bp").value.trim(),
-          blood_sugar: document.getElementById("pr-sugar").value.trim()
-        },
         chronic_diseases: document.getElementById("pr-chronic").value.trim(),
         surgeries: document.getElementById("pr-surgeries").value.trim(),
         family_history: document.getElementById("pr-family").value.trim(),
@@ -1177,10 +1309,18 @@
         sessions: sessions
       };
       if (isEdit) patch.id = existingReport.id;
-      window.SSMPDDb.savePhysioReport(patient.id, patch, me && me.id).then(function () {
-        T.show(isEdit ? "اتحدث التقرير" : "اتحفظ التقرير");
-        backdrop.remove();
+      window.SSMPDDb.savePhysioReport(patient.id, patch, me && me.id).then(function (saved) {
         if (onSaved) onSaved();
+        if (!isEdit) {
+          // تقرير جديد: بدل ما نقفل المودال، نفتحه تاني في وضع التعديل فورًا
+          // عشان يقدر يضيف صور من غير ما يدوّر على زرار "تعديل" تاني
+          T.show("اتحفظ التقرير — تقدر تضيف صور دلوقتي");
+          backdrop.remove();
+          openPhysioReportFormModal(patient, saved, onSaved);
+        } else {
+          T.show("اتحدث التقرير");
+          backdrop.remove();
+        }
       }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
     };
   }
@@ -1482,56 +1622,80 @@
 
   // ---------- طباعة "تقرير علاج طبيعي" بشكل الفورم الرسمي ----------
   function printPhysioReport(patient, report) {
+    var perPage = promptXrayPerPage();
     var win = window.open("", "_blank");
     if (!win) { T.show("المتصفح منع فتح نافذة الطباعة — سمح بالنوافذ المنبثقة وحاول تاني", "error"); return; }
-    var vitals = report.vitals || {};
     var sessions = report.sessions || [];
     var painPoints = report.pain_points || [];
     var field = function (label, value) {
       return '<p style="margin:0 0 8px;font-size:13px;"><b>' + label + ': </b>' + escapeHtml(value || "—") + '</p>';
     };
+    var vitalsStr = function (v) {
+      v = v || {};
+      var parts = [];
+      if (v.weight) parts.push("و " + v.weight);
+      if (v.pulse) parts.push("ن " + v.pulse);
+      if (v.blood_pressure) parts.push("ض " + v.blood_pressure);
+      if (v.blood_sugar) parts.push("س " + v.blood_sugar);
+      return parts.length ? escapeHtml(parts.join(" · ")) : "—";
+    };
     var rows = sessions.length ? sessions.map(function (s, i) {
       return '<tr>' +
-        '<td style="border:1px solid #999;padding:5px 8px;text-align:center;">' + (i + 1) + '</td>' +
-        '<td style="border:1px solid #999;padding:5px 8px;">' + fmtDate(s.date) + '</td>' +
-        '<td style="border:1px solid #999;padding:5px 8px;">' + escapeHtml((s.treatments || []).join(", ")) + '</td>' +
-        '<td style="border:1px solid #999;padding:5px 8px;text-align:center;">' + escapeHtml(s.duration || "") + '</td>' +
-        '<td style="border:1px solid #999;padding:5px 8px;">' + escapeHtml(s.notes || "") + '</td></tr>';
-    }).join("") : '<tr><td colspan="5" style="border:1px solid #999;padding:8px;text-align:center;color:#888;">لا توجد جلسات مسجّلة</td></tr>';
+        '<td style="border:1px solid #999;padding:4px 6px;text-align:center;">' + (i + 1) + '</td>' +
+        '<td style="border:1px solid #999;padding:4px 6px;">' + fmtDate(s.date) + '</td>' +
+        '<td style="border:1px solid #999;padding:4px 6px;">' + escapeHtml((s.treatments || []).join(", ")) + '</td>' +
+        '<td style="border:1px solid #999;padding:4px 6px;text-align:center;">' + escapeHtml(s.duration || "") + '</td>' +
+        '<td style="border:1px solid #999;padding:4px 6px;font-size:10px;">' + vitalsStr(s.vitals) + '</td>' +
+        '<td style="border:1px solid #999;padding:4px 6px;">' + escapeHtml(s.notes || "") + '</td></tr>';
+    }).join("") : '<tr><td colspan="6" style="border:1px solid #999;padding:8px;text-align:center;color:#888;">لا توجد جلسات مسجّلة</td></tr>';
     var painPointsHtml = painPoints.length ?
-      '<div style="text-align:center;margin:16px 0;">' +
+      '<div style="text-align:center;">' +
       '<div style="position:relative;display:inline-block;">' +
-      '<img src="' + PRINT_SITE_BASE + 'assets/img/physio-body-diagram.png" style="width:300px;display:block;">' +
+      '<img src="' + PRINT_SITE_BASE + 'assets/img/physio-body-diagram.png" style="width:210px;display:block;">' +
       painPoints.map(function (p) {
-        return '<div style="position:absolute;width:14px;height:14px;border-radius:50%;background:#D0402A;-webkit-print-color-adjust:exact;print-color-adjust:exact;border:2px solid #fff;transform:translate(-50%,-50%);left:' + p.x + '%;top:' + p.y + '%;"></div>';
+        return '<div style="position:absolute;width:11px;height:11px;border-radius:50%;background:#D0402A;-webkit-print-color-adjust:exact;print-color-adjust:exact;border:2px solid #fff;transform:translate(-50%,-50%);left:' + p.x + '%;top:' + p.y + '%;"></div>';
       }).join("") +
       '</div>' +
       (painPoints.some(function (p) { return p.note; }) ?
-        '<div style="text-align:right;font-size:11px;margin-top:6px;">' +
+        '<div style="text-align:right;font-size:10px;margin-top:6px;">' +
         painPoints.filter(function (p) { return p.note; }).map(function (p, i) { return '<div>● ' + escapeHtml(p.note) + '</div>'; }).join("") +
         '</div>' : '') +
       '</div>' : '';
+    var sessionsTableHtml =
+      '<div style="text-align:center;text-decoration:underline;font-size:13px;margin:0 0 8px;">جدول الجلسات</div>' +
+      '<table style="width:100%;border-collapse:collapse;font-size:11px;" dir="rtl">' +
+      '<tr><th style="border:1px solid #999;padding:4px 6px;background:#f2f2f2;">#</th><th style="border:1px solid #999;padding:4px 6px;background:#f2f2f2;">التاريخ</th><th style="border:1px solid #999;padding:4px 6px;background:#f2f2f2;">نوع العلاج</th><th style="border:1px solid #999;padding:4px 6px;background:#f2f2f2;">المدة</th><th style="border:1px solid #999;padding:4px 6px;background:#f2f2f2;">القياسات الحيوية</th><th style="border:1px solid #999;padding:4px 6px;background:#f2f2f2;">ملاحظات</th></tr>' +
+      rows + '</table>';
     var body =
       '<h1 style="font-size:24px;color:#0F369D;text-align:right;margin:0 0 4px;">تقرير علاج طبيعي</h1>' +
       '<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:14px;color:#555;"><span>' + escapeHtml(patient.full_name) + '</span><span>' + fmtDate(report.visit_date) + '</span></div>' +
       field("التخصص", report.specialty) +
       field("الطبيب المعالج", report.doctor_name) +
       field("سبب الزيارة", report.visit_reason) +
-      '<p style="margin:0 0 8px;font-size:13px;"><b>القياسات الحيوية: </b>الوزن ' + escapeHtml(vitals.weight || "—") + ' · النبض ' + escapeHtml(vitals.pulse || "—") + ' · ضغط الدم ' + escapeHtml(vitals.blood_pressure || "—") + ' · سكر الدم ' + escapeHtml(vitals.blood_sugar || "—") + '</p>' +
       field("أمراض مزمنة", report.chronic_diseases) +
       field("العمليات الجراحية", report.surgeries) +
       field("تاريخ مرضي بالعائلة", report.family_history) +
-      painPointsHtml +
-      '<div style="text-align:center;text-decoration:underline;font-size:13px;margin:16px 0 8px;">جدول الجلسات</div>' +
-      '<table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:20px;" dir="rtl">' +
-      '<tr><th style="border:1px solid #999;padding:5px 8px;background:#f2f2f2;">#</th><th style="border:1px solid #999;padding:5px 8px;background:#f2f2f2;">التاريخ</th><th style="border:1px solid #999;padding:5px 8px;background:#f2f2f2;">نوع العلاج</th><th style="border:1px solid #999;padding:5px 8px;background:#f2f2f2;">المدة</th><th style="border:1px solid #999;padding:5px 8px;background:#f2f2f2;">ملاحظات</th></tr>' +
-      rows + '</table>';
-    win.document.open();
-    win.document.write('<!doctype html><html><head><meta charset="utf-8"><title>تقرير علاج طبيعي — ' + escapeHtml(patient.full_name) + '</title>' +
-      '<style>' + PRINT_FONT_FACE_CSS + '@page{size:A4;margin:0;}body{margin:0;}*{-webkit-print-color-adjust:exact;print-color-adjust:exact;}tr,table{page-break-inside:avoid;}</style></head>' +
-      '<body>' + letterheadPageHtml("rtl", body) + '</body></html>');
-    win.document.close();
-    waitForImagesThenPrint(win, 3000);
+      '<div style="display:flex;gap:14px;align-items:flex-start;margin-top:12px;">' +
+      '<div style="flex:1;min-width:0;">' + sessionsTableHtml + '</div>' +
+      (painPointsHtml ? '<div style="flex:0 0 220px;">' + painPointsHtml + '</div>' : '') +
+      '</div>';
+    var finishPhysio = function (imagesHtml) {
+      win.document.open();
+      win.document.write('<!doctype html><html><head><meta charset="utf-8"><title>تقرير علاج طبيعي — ' + escapeHtml(patient.full_name) + '</title>' +
+        '<style>' + PRINT_FONT_FACE_CSS + '@page{size:A4;margin:0;}body{margin:0;}*{-webkit-print-color-adjust:exact;print-color-adjust:exact;}tr,table{page-break-inside:avoid;}</style></head>' +
+        '<body>' + letterheadPageHtml("rtl", body) + imagesHtml + '</body></html>');
+      win.document.close();
+      waitForImagesThenPrint(win, 4000);
+    };
+    if (perPage) {
+      window.SSMPDDb.listPhysioReportImages(report.id).then(function (images) {
+        return fetchImagesAsDataUrls(images || []);
+      }).then(function (urls) {
+        finishPhysio(buildXrayImagesPagesHtml(urls, perPage));
+      }).catch(function () { finishPhysio(""); });
+    } else {
+      finishPhysio("");
+    }
   }
 
   // ---------- طباعة بروفايل المريض كامل: صفحة بيانات شخصية/طبية + كل المرفقات كصفحات داخلية ----------
