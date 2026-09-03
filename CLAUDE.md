@@ -2280,3 +2280,41 @@ some row` — رغم إن فحص مباشر لجدول `admins` أثبت إن م
   تحاليل (checklist)، فورم طلب أشعة (checklist)، تقييم تجربة المريض
   (تكرارى لكل زيارة + إدخال من خدمة العملاء)، تصدير جماعي لتقييم التجربة
   + مؤشر رئيسي.
+
+## طلب تحاليل + طلب أشعة — تشيك ليست قابلة للطباعة (`?v=56`/`?v=73` — مرحلة ٢+٣ من ٥ — ٢٠٢٦-٠٩-٠٣)
+
+استكمالاً لطلب المستخدم الأخير (٥ فيتشرز، ٤ نماذج مرجعية) — المرحلتين ٢ و٣:
+
+- **طلب تحاليل**: سكشن "طلب تحاليل" جديد جوه "📋 التقارير الطبية" — تشيك ليست
+  مطابقة لنموذج "Lab Request" الرسمي بالحرف (٩ فئات: General Chemistry،
+  Microbiology، Cardiac Markers، Blood & Coagulation، Serology، Hormones،
+  Tumour Markers، Immunology، Thyroid Study + خانة Others حرة). القائمة
+  مُعرَّفة كمصفوفة بيانات `LAB_CATEGORIES` (نمط `CATEGORIES` الموجود بالفعل)
+  بدل HTML مكرر. الاختيارات بتتسجل تلقائي كـ`tests` (jsonb array) لما تحفظ،
+  وقابلة للتعديل والطباعة (بشكل letterhead رسمي، البنود المختارة بعلامة ☑
+  والباقي ☐) — المتصفح بيسمح بالحفظ كـPDF من نافذة الطباعة زي باقي التقارير
+  بالظبط.
+  `setup.sql` قسم ٣٢: جدول `patient_lab_requests` (نفس نمط `patient_prescriptions`
+  RLS بالظبط). `db.js`: `listLabRequests`/`saveLabRequest`/`deleteLabRequest`.
+- **طلب أشعة**: سكشن "طلب أشعة" جديد بنفس المكان — تشيك ليست مطابقة لنموذج
+  "Diagnostic Imaging Request" (٦ فئات: MRI، CT، Breast Imaging، Ultrasound،
+  Nuclear Medicine، Radiology). بنود الأطراف اللي فيها يمين/شمال في النموذج
+  الأصلي (مفاصل MRI: كتف/كوع/رسغ/حوض/ركبة/كاحل/Arthrogram، وعظام Radiology:
+  كتف/عضد/كوع/ساعد/رسغ/كف/إصبع/فخذ/حوض/ركبة/الظنبوب والشظية/كاحل/قدم/إصبع
+  قدم) اتضافت كتشيك بوكس مزدوج (L/R) منفصل لكل بند، والاختيار بيتسجل كنص
+  "البند - L"/"البند - R" جوه نفس مصفوفة `items`. بنود Breast Imaging/Nuclear
+  Medicine المتداخلة في النموذج الأصلي (Localization/Biopsy، Cardiac/Bone
+  Scan/PET-CT) اتبسّطت لبنود مسطحة بأسماء مركّبة (مثال: "Localization -
+  Wire"، "Cardiac - MUGA") بدل تعشيش هرمي كامل — تبسيط مقصود لتقليل التعقيد
+  والكوتا مع الحفاظ على كل البنود الأصلية.
+  `setup.sql` قسم ٣٣: جدول `patient_radiology_requests` (نفس النمط بالظبط).
+  `db.js`: `listRadiologyRequests`/`saveRadiologyRequest`/`deleteRadiologyRequest`.
+- **كتابة مباشرة من الفرونت إند لكل الفيتشرين عن طريق `db.js`** — مفيش Edge
+  Function جديدة أو معدّلة.
+- بصمة الكاش اترفعت لـ `db.js?v=56`، `render-patients.js?v=73` في
+  `index.html`.
+- **لازم**: تشغيل قسم ٣٢ وقسم ٣٣ من `setup.sql` في Supabase SQL Editor
+  (جدولين جداد فقط — آمن للتشغيل، ومفيش Edge Function مطلوب نشرها).
+- **الباقي من الطلب (مؤجّل للمرحلة الجاية)**: تقييم تجربة المريض (تكراري
+  لكل زيارة + إدخال من خدمة العملاء) + تصدير جماعي لتقييم التجربة + مؤشر
+  رئيسي.
