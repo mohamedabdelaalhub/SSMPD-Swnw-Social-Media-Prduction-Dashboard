@@ -2827,6 +2827,49 @@ UNKNOWN" — مش قابل للاستخدام فعليًا. **تحسين client-
 - ملفات اتغيرت: `assets/js/workflow.js` بس. بصمة الكاش: `workflow.js?v=52`.
   **مفيش تعديل SQL ولا على أي شاشة تانية.**
 
+## Content Intelligence V4.2 — حارس أداء عالمي (يمنع عنصر ضعيف عالميًا من الظهور كـ"أفضل" محليًا) (٢٠٢٦-٠٩-٠٤)
+
+باگ حقيقي واحد فضل بعد V4.1 في سيناريو Neurology الحي — **إصلاح client-side
+بالكامل تاني، بدون أي تعديل SQL، وبدون مساس بمراحل المحتوى/الاعتماد/التصميم/
+النشر**.
+
+- **السبب الجذري**: `ciAssignRankStatus(arr)` بتحسب `x.status`/`x.ratio` بالنسبة
+  لـ`bestMetric = arr[0].metric` — أفضل عنصر **جوه نفس الـpool اللي اتبعتلها
+  بس** (patterns لوحدهم، أو ads لوحدهم، منفصلين). لو pool الإعلانات
+  (`exPool`) فيه عنصر واحد بس بعد استبعاد الإعلانات التقنية (زي 530.20 EGP)،
+  بيبقى `idx===0`/`ratio=1` → `status="best_available"` **محليًا**، حتى لو
+  ده أسوأ بـ~٥٠× من أفضل نمط تاريخي فعلي في `pPool` (10.48 EGP). ده اللي كان
+  بيخلي 530.20 يظهر كـOPTION #2 في الـSmart Brief وكـ"#1 أفضل خيار متاح" في
+  قسم "أمثلة تاريخية للمقارنة" — رغم إصلاحات V4.1 (اللي كانت بتعتمد على
+  `x.status` نفسه كمرجع "عالمي"، وهو مش عالمي فعليًا).
+- **الحل — دالة جديدة `ciApplyGlobalWeakGuard(pool, globalBestMetric)`**:
+  بتتنادى على `pPool` و`exPool` الاتنين **بعد** ما يتبنوا وقبل أي فلترة على
+  `x.status.key`، بمرجع أداء عالمي واحد (`globalBestMetric` = أقل قيمة بين
+  أول عنصر في `pPool` وأول عنصر في `exPool` — يعني نفس المرجع اللي `bestPerf`
+  بيستخدمه أصلاً). أي عنصر نسبته (`metric / globalBestMetric`) أكبر من ٣×
+  (نفس عتبة "ضعيف" الموجودة أصلاً في `ciClassifyStatus`) بتتفرض عليه حالة
+  `weak` مباشرة (`status` و`aStatus` الاتنين، على نفس الـobject reference) —
+  بغض النظر عن رانكه المحلي جوه الـpool بتاعه.
+  التعديل على الـobject reference نفسه بيضمن الاتساق تلقائيًا في كل مكان
+  (كروت الترشيح، `workedPatterns`/`workedExamples` (بيستبعدوه صح دلوقتي)،
+  قسم "أمثلة أداء ضعيف تاريخيًا"، والـSmart Brief) من غير ما نحتاج نلمس أي
+  مكان تاني بيقرا `x.status`.
+- **النتيجة على Neurology**: 10.48 EGP يفضل "أفضل أداء تاريخي" (Benchmark
+  only). 18.47 EGP (Direct Response + WhatsApp) يفضل BEST ACTIONABLE CONTENT
+  PATTERN. 530.20 EGP (global_ratio ≈ ٥٠.٦×) بقى مصنّف "ضعيف" **عالميًا** —
+  بيختفي تمامًا من `actionableCombined`، فـ`secondActionable` بيبقى `null`
+  ومفيش OPTION #2 خالص في الـBrief، ويظهر بس تحت "🔴 أداء ضعيف تاريخيًا" في
+  قسم المقارنة التاريخية وفي "WEAK EXAMPLE" بالـBrief — بنفس الحالة في
+  المكانين، مفيش تناقض.
+- **كل إصلاحات V4.1 محفوظة بدون تغيير**: إخفاء UNKNOWN/N/A من الملخصات،
+  10.48 كـbenchmark بس، Direct Response+WhatsApp كاتجاه قابل للاستخدام،
+  الإعلانات التقنية تحت إشارة CTA بس، قائمة CTA بدون N/A، تعليمات عدم اختراع
+  مواعيد/بيانات، تعليمات لغة الأدلة، Format لوحده مش كافي للأهلية.
+- ملفات اتغيرت: `assets/js/workflow.js` بس (`ciApplyGlobalWeakGuard` جديدة
+  + استدعاؤها في `renderCiResults` بعد بناء `pPool`/`exPool` وقبل حساب
+  `avoidPatterns`/`exWeak`). بصمة الكاش: `workflow.js?v=55`. **مفيش تعديل
+  SQL ولا على `render-production.js` ولا على أي شاشة تانية.**
+
 ## Content Intelligence V4.1 — تنظيف نهائي للتناسق (إخفاء UNKNOWN + استبعاد الضعيف + CTA نضيف) (٢٠٢٦-٠٩-٠٤)
 
 بعد اختبار حي لـV4 (النتيجة كانت "صحيحة مفاهيميًا" لكن فيها ٤ مشاكل تناسق/UX)
