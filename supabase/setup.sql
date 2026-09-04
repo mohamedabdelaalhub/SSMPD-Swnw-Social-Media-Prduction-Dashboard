@@ -3043,3 +3043,46 @@ create policy "managers update media_buyer_actions" on public.media_buyer_action
 --   Supabase بيتخزنوا server-side بس (Edge Function secret) — الداشبورد/
 --   العميل (frontend) ميحملش أي منهم أبدًا، زي نفس نمط Google Service
 --   Account المستخدم فعلاً في موديولي أرشيف المرضى/الليدز.
+
+-- ============================================================
+--  ٣٩) Media Buyer — idempotency (external_request_id) + توصيات غير-تنفيذية
+--  (recommendation_type) — دعم Edge Function جديدة media-buyer-propose
+--  (machine-to-machine، توكن منفصل، بدون أي اتصال بـMeta API خالص).
+-- ============================================================
+
+-- (أ) idempotency: نفس external_request_id من الوكيل الخارجي ميعملش صف
+-- تاني لو اتكرر الطلب (retry) — فهرس unique جزئي (مش عمود NOT NULL، عشان
+-- أي صف قديم أو مُدخل يدويًا من غيره يفضل شغال عادي).
+alter table public.media_buyer_plans add column if not exists external_request_id text;
+alter table public.media_buyer_actions add column if not exists external_request_id text;
+
+create unique index if not exists media_buyer_plans_external_request_id_uniq
+  on public.media_buyer_plans (external_request_id) where external_request_id is not null;
+create unique index if not exists media_buyer_actions_external_request_id_uniq
+  on public.media_buyer_actions (external_request_id) where external_request_id is not null;
+
+-- (ب) recommendation_type: HOLD/RETEST توصيات استشارية بس (مفيش Meta mutation
+-- تقابلها) — مش منطقي نمثّلها بـaction_type تنفيذي وهمي (زي pause_ad لتوصية
+-- HOLD). القرار المعماري (بعد تقييم الأثر): action_type اتغيّر لـnullable —
+-- ده تغيير آمن ومتوافق للخلف لأن check constraint بتاعه (`action_type in
+-- (...)`) أصلاً بيسيب أي قيمة NULL تعدي من غير ما تتفحص (سلوك NULL القياسي
+-- في check constraints)، وكل الصفوف الحالية عندها action_type مليان أصلاً
+-- فمالهاش أي تأثير عليهم. recommendation_type عمود استشاري منفصل تمامًا —
+-- ممكن يتواجد مع action_type (لتوصية قابلة للتنفيذ زي SCALE/PAUSE) أو
+-- لوحده بس (لتوصية غير تنفيذية زي HOLD/RETEST، وقتها action_type بيفضل
+-- NULL). قيد جديد بيضمن إن الصف عنده على الأقل واحد من الاتنين — مفيش صف
+-- "فاضي" تمامًا.
+alter table public.media_buyer_actions alter column action_type drop not null;
+alter table public.media_buyer_actions add column if not exists recommendation_type text;
+
+do $$ begin
+  alter table public.media_buyer_actions
+    add constraint media_buyer_actions_recommendation_type_chk
+    check (recommendation_type is null or recommendation_type in ('scale','hold','retest','pause','create'));
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  alter table public.media_buyer_actions
+    add constraint media_buyer_actions_type_presence_chk
+    check (action_type is not null or recommendation_type is not null);
+exception when duplicate_object then null; end $$;
