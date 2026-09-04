@@ -476,6 +476,28 @@
     return { key: "weak", emoji: "🔴", label: "ضعيف / أعد الاختبار (WEAK)" };
   }
 
+  // V4.2: حارس أداء عالمي — ciAssignRankStatus بتحسب ratio/status بالنسبة
+  // لأفضل عنصر جوه نفس الـpool بس (patterns لوحدهم، أو ads لوحدهم) — لو
+  // pool الإعلانات مثلاً فيه عنصر واحد بس (زي إعلان 530.20 بعد استبعاد
+  // التقنيين)، بيبقى idx=0/ratio=1 "أفضل خيار محليًا" حتى لو كان أسوأ بكتير
+  // من أفضل نمط تاريخي في patterns pool. الحارس ده بيقارن كل عنصر بأفضل
+  // أداء تاريخي عالمي (عبر النمطين مع بعض) ولو أغلى منه بأكتر من 3× (نفس
+  // عتبة "ضعيف" الموجودة أصلاً) بيفرض عليه حالة "ضعيف" بغض النظر عن رانكه
+  // المحلي — تعديل مباشر على نفس الـobject reference فبيأثر تلقائيًا على
+  // status وaStatus معًا في كل مكان (كروت/Brief/قسم المقارنة التاريخية).
+  function ciApplyGlobalWeakGuard(pool, globalBestMetric) {
+    if (!globalBestMetric || globalBestMetric <= 0) return;
+    pool.forEach(function (x) {
+      var globalRatio = x.metric / globalBestMetric;
+      if (globalRatio > 3) {
+        var weakStatus = { key: "weak", emoji: "🔴", label: "ضعيف / أعد الاختبار (WEAK)" };
+        x.status = weakStatus;
+        x.ratio = globalRatio;
+        if (x.aStatus) { x.aStatus = weakStatus; x.aRatio = globalRatio; }
+      }
+    });
+  }
+
   function ciItemConfidenceLabel(x, poolConfidence) {
     var ownStrong = (x.sample || 0) >= 5 || (x.spend || 0) >= 300 || (x.runs || 1) >= 2;
     var lvl = ownStrong ? poolConfidence : (poolConfidence === "high" ? "medium" : poolConfidence);
@@ -772,10 +794,18 @@
 
     var pPool = patternInfo.pool, pConf = patternInfo.confidence;
     var pActionable = patternInfo.actionablePool, pActConf = patternInfo.actionableConfidence;
-    var avoidPatterns = pPool.filter(function (x) { return x.status.key === "weak"; });
 
     var exPool = examplesInfo.pool, exConf = examplesInfo.confidence;
     var exActionable = examplesInfo.actionablePool, exActConf = examplesInfo.actionableConfidence;
+
+    // V4.2 (حارس الأداء العالمي) — لازم يتطبّق قبل أي فلترة على x.status.key
+    var globalBestMetric = null;
+    if (pPool.length) globalBestMetric = pPool[0].metric;
+    if (exPool.length && (globalBestMetric == null || exPool[0].metric < globalBestMetric)) globalBestMetric = exPool[0].metric;
+    ciApplyGlobalWeakGuard(pPool, globalBestMetric);
+    ciApplyGlobalWeakGuard(exPool, globalBestMetric);
+
+    var avoidPatterns = pPool.filter(function (x) { return x.status.key === "weak"; });
     var exWeak = exPool.filter(function (x) { return x.status.key === "weak"; });
 
     // V3 — فصل "أفضل أداء رقمي" عن "أفضل Pattern محتوى قابل للاستخدام":
