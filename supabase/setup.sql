@@ -2492,3 +2492,247 @@ end;
 $$;
 revoke all on function public.search_patients_basic(text) from public;
 grant execute on function public.search_patients_basic(text) to authenticated;
+
+-- ============================================================
+--  ٣٥) جداول Meta Ads المُطبّعة (Backfill من مشروع منفصل) + Views
+--  لوحة "طبيب سونو" — لا تمس ad_campaigns القديم ولا سلوك الليدز/المرضى
+--  الحالي. جداول جديدة بالكامل + أعمدة nullable اختيارية على leads.
+-- ============================================================
+
+create table if not exists public.meta_campaigns (
+  id                  uuid primary key default gen_random_uuid(),
+  platform_campaign_id text not null unique,
+  campaign_name       text,
+  account_id          text,
+  account_name        text,
+  objective           text,
+  start_date          date,
+  created_at          timestamptz not null default now(),
+  updated_at          timestamptz not null default now()
+);
+
+create table if not exists public.meta_adsets (
+  id                 uuid primary key default gen_random_uuid(),
+  platform_adset_id  text not null unique,
+  campaign_id        uuid references public.meta_campaigns(id) on delete set null,
+  adset_name         text,
+  account_id         text,
+  created_at         timestamptz not null default now(),
+  updated_at         timestamptz not null default now()
+);
+
+create table if not exists public.meta_creatives (
+  id                          uuid primary key default gen_random_uuid(),
+  platform_creative_id        text not null unique,
+  effective_object_story_id   text,
+  page_id                     text,
+  page_name                   text,
+  post_id                     text,
+  body                        text,
+  title                       text,
+  description                 text,
+  cta                         text,
+  cta_raw                     text,
+  link_url                    text,
+  whatsapp_dest               text,
+  format                      text,
+  video_id                    text,
+  image_id                    text,
+  preview_url                 text,
+  creative_type               text,
+  cta_type                    text,
+  creative_group_id           text,
+  created_at                  timestamptz not null default now(),
+  updated_at                  timestamptz not null default now()
+);
+
+create table if not exists public.meta_ads (
+  id                          uuid primary key default gen_random_uuid(),
+  platform_ad_id              text not null unique,
+  adset_id                    uuid references public.meta_adsets(id) on delete set null,
+  campaign_id                 uuid references public.meta_campaigns(id) on delete set null,
+  creative_id                 uuid references public.meta_creatives(id) on delete set null,
+  ad_name                     text,
+  effective_object_story_id   text,
+  page_id                     text,
+  post_id                     text,
+  specialty                   text,
+  content_angle                text,
+  hook_type                   text,
+  creative_type               text,
+  cta_type                    text,
+  objective                   text,
+  status                      text,
+  start_date                  date,
+  end_date                    date,
+  creative_group_id           text,
+  created_at                  timestamptz not null default now(),
+  updated_at                  timestamptz not null default now()
+);
+
+create table if not exists public.meta_ad_performance_lifetime (
+  id                  uuid primary key default gen_random_uuid(),
+  ad_id               uuid not null unique references public.meta_ads(id) on delete cascade,
+  spend               numeric,
+  reach               numeric,
+  impressions         numeric,
+  frequency           numeric,
+  clicks              numeric,
+  link_clicks         numeric,
+  ctr                 numeric,
+  cpc                 numeric,
+  cpm                 numeric,
+  post_engagements    numeric,
+  reactions           numeric,
+  comments            numeric,
+  shares              numeric,
+  video_views         numeric,
+  video_3s_views      numeric,
+  thruplay            numeric,
+  msg_conv            numeric,
+  cost_per_msg_conv   numeric,
+  leads               numeric,
+  cost_per_lead       numeric,
+  calls               numeric,
+  landing_page_views  numeric,
+  cost_per_result     numeric,
+  results             numeric,
+  confidence          text,
+  notes               text,
+  updated_at          timestamptz not null default now()
+);
+
+-- فهارس لسرعة استعلامات اللوحة
+create index if not exists meta_campaigns_platform_id_idx on public.meta_campaigns (platform_campaign_id);
+create index if not exists meta_adsets_platform_id_idx on public.meta_adsets (platform_adset_id);
+create index if not exists meta_adsets_campaign_id_idx on public.meta_adsets (campaign_id);
+create index if not exists meta_ads_platform_id_idx on public.meta_ads (platform_ad_id);
+create index if not exists meta_ads_campaign_id_idx on public.meta_ads (campaign_id);
+create index if not exists meta_ads_adset_id_idx on public.meta_ads (adset_id);
+create index if not exists meta_ads_creative_id_idx on public.meta_ads (creative_id);
+create index if not exists meta_ads_specialty_idx on public.meta_ads (specialty);
+create index if not exists meta_ads_objective_idx on public.meta_ads (objective);
+create index if not exists meta_ads_start_date_idx on public.meta_ads (start_date);
+create index if not exists meta_ads_creative_group_id_idx on public.meta_ads (creative_group_id);
+create index if not exists meta_creatives_platform_id_idx on public.meta_creatives (platform_creative_id);
+create index if not exists meta_creatives_group_id_idx on public.meta_creatives (creative_group_id);
+create index if not exists meta_ad_performance_lifetime_ad_id_idx on public.meta_ad_performance_lifetime (ad_id);
+
+-- RLS: نفس نمط ad_campaigns الحالي — أي أدمن نشط يقرأ، والكتابة/الاستيراد لأصحاب صلاحية التسويق فقط
+alter table public.meta_campaigns enable row level security;
+alter table public.meta_adsets enable row level security;
+alter table public.meta_creatives enable row level security;
+alter table public.meta_ads enable row level security;
+alter table public.meta_ad_performance_lifetime enable row level security;
+
+drop policy if exists "active admins read meta_campaigns" on public.meta_campaigns;
+create policy "active admins read meta_campaigns" on public.meta_campaigns for select to authenticated using (public.my_admin_id() is not null);
+drop policy if exists "approver writes meta_campaigns" on public.meta_campaigns;
+create policy "approver writes meta_campaigns" on public.meta_campaigns for all to authenticated
+  using (public.my_role() in ('approver','general_manager','super_admin')) with check (public.my_role() in ('approver','general_manager','super_admin'));
+
+drop policy if exists "active admins read meta_adsets" on public.meta_adsets;
+create policy "active admins read meta_adsets" on public.meta_adsets for select to authenticated using (public.my_admin_id() is not null);
+drop policy if exists "approver writes meta_adsets" on public.meta_adsets;
+create policy "approver writes meta_adsets" on public.meta_adsets for all to authenticated
+  using (public.my_role() in ('approver','general_manager','super_admin')) with check (public.my_role() in ('approver','general_manager','super_admin'));
+
+drop policy if exists "active admins read meta_creatives" on public.meta_creatives;
+create policy "active admins read meta_creatives" on public.meta_creatives for select to authenticated using (public.my_admin_id() is not null);
+drop policy if exists "approver writes meta_creatives" on public.meta_creatives;
+create policy "approver writes meta_creatives" on public.meta_creatives for all to authenticated
+  using (public.my_role() in ('approver','general_manager','super_admin')) with check (public.my_role() in ('approver','general_manager','super_admin'));
+
+drop policy if exists "active admins read meta_ads" on public.meta_ads;
+create policy "active admins read meta_ads" on public.meta_ads for select to authenticated using (public.my_admin_id() is not null);
+drop policy if exists "approver writes meta_ads" on public.meta_ads;
+create policy "approver writes meta_ads" on public.meta_ads for all to authenticated
+  using (public.my_role() in ('approver','general_manager','super_admin')) with check (public.my_role() in ('approver','general_manager','super_admin'));
+
+drop policy if exists "active admins read meta_ad_performance_lifetime" on public.meta_ad_performance_lifetime;
+create policy "active admins read meta_ad_performance_lifetime" on public.meta_ad_performance_lifetime for select to authenticated using (public.my_admin_id() is not null);
+drop policy if exists "approver writes meta_ad_performance_lifetime" on public.meta_ad_performance_lifetime;
+create policy "approver writes meta_ad_performance_lifetime" on public.meta_ad_performance_lifetime for all to authenticated
+  using (public.my_role() in ('approver','general_manager','super_admin')) with check (public.my_role() in ('approver','general_manager','super_admin'));
+
+-- إسناد الليدز لإعلانات Meta — أعمدة nullable فقط، بدون أي تعديل على سلوك الليدز الحالي
+alter table public.leads add column if not exists meta_campaign_id text;
+alter table public.leads add column if not exists meta_adset_id text;
+alter table public.leads add column if not exists meta_ad_id text;
+alter table public.leads add column if not exists meta_creative_id text;
+alter table public.leads add column if not exists utm_source text;
+alter table public.leads add column if not exists utm_medium text;
+alter table public.leads add column if not exists utm_campaign text;
+alter table public.leads add column if not exists utm_content text;
+create index if not exists leads_meta_ad_id_idx on public.leads (meta_ad_id);
+create index if not exists leads_meta_campaign_id_idx on public.leads (meta_campaign_id);
+
+-- ============================================================
+--  Views للقراءة السريعة في اللوحة
+-- ============================================================
+
+create or replace view public.vw_meta_ad_performance as
+select
+  a.id as ad_id, a.platform_ad_id, a.ad_name, a.specialty, a.content_angle, a.hook_type,
+  a.creative_type, a.cta_type, a.objective, a.status, a.start_date, a.end_date, a.creative_group_id,
+  ads_.id as adset_id, ads_.platform_adset_id, ads_.adset_name,
+  c.id as campaign_id, c.platform_campaign_id, c.campaign_name, c.account_id, c.account_name,
+  cr.id as creative_id, cr.platform_creative_id, cr.title as creative_title, cr.body as creative_body,
+  cr.preview_url, cr.format as creative_format,
+  p.spend, p.reach, p.impressions, p.frequency, p.clicks, p.link_clicks, p.ctr, p.cpc, p.cpm,
+  p.post_engagements, p.reactions, p.comments, p.shares, p.video_views, p.thruplay,
+  p.msg_conv, p.cost_per_msg_conv, p.leads, p.cost_per_lead, p.calls, p.landing_page_views,
+  p.cost_per_result, p.results, p.confidence, p.notes
+from public.meta_ads a
+left join public.meta_adsets ads_ on ads_.id = a.adset_id
+left join public.meta_campaigns c on c.id = a.campaign_id
+left join public.meta_creatives cr on cr.id = a.creative_id
+left join public.meta_ad_performance_lifetime p on p.ad_id = a.id;
+
+create or replace view public.vw_meta_specialty_performance as
+select
+  a.specialty, a.objective,
+  count(distinct a.id) as ads,
+  sum(p.spend) as spend,
+  sum(p.reach) as reach,
+  sum(p.impressions) as impressions,
+  sum(p.clicks) as clicks,
+  sum(p.msg_conv) as msg_conv,
+  sum(p.leads) as leads,
+  case when sum(p.msg_conv) > 0 then round((sum(p.spend) / sum(p.msg_conv))::numeric, 2) else null end as weighted_cost_per_msg_conv,
+  case when sum(p.leads) > 0 then round((sum(p.spend) / sum(p.leads))::numeric, 2) else null end as weighted_cost_per_lead,
+  case when sum(p.impressions) > 0 then round((sum(p.clicks)::numeric / sum(p.impressions) * 100), 2) else null end as ctr_pct,
+  case when sum(p.clicks) > 0 then round((sum(p.spend) / sum(p.clicks))::numeric, 2) else null end as cpc,
+  case when sum(p.impressions) > 0 then round((sum(p.spend) / sum(p.impressions) * 1000)::numeric, 2) else null end as cpm
+from public.meta_ads a
+left join public.meta_ad_performance_lifetime p on p.ad_id = a.id
+group by a.specialty, a.objective;
+
+create or replace view public.vw_meta_creative_performance as
+select
+  a.creative_group_id,
+  max(a.specialty) as specialty,
+  max(a.hook_type) as hook_type,
+  max(a.content_angle) as content_angle,
+  max(a.creative_type) as creative_type,
+  count(distinct a.id) as runs,
+  sum(p.spend) as spend,
+  sum(p.results) as results,
+  sum(p.msg_conv) as msg_conv,
+  sum(p.leads) as leads,
+  case when sum(p.results) > 0 then round((sum(p.spend) / sum(p.results))::numeric, 2) else null end as weighted_cost_per_result,
+  case when sum(p.leads) > 0 then round((sum(p.spend) / sum(p.leads))::numeric, 2) else null end as weighted_cost_per_lead
+from public.meta_ads a
+left join public.meta_ad_performance_lifetime p on p.ad_id = a.id
+where a.creative_group_id is not null
+group by a.creative_group_id;
+
+create or replace view public.vw_lead_meta_attribution as
+select
+  l.id as lead_id, l.customer_name, l.phone_normalized, l.source, l.current_status, l.received_at,
+  l.meta_ad_id, l.meta_campaign_id, l.utm_source, l.utm_medium, l.utm_campaign, l.utm_content,
+  a.id as matched_meta_ad_id, a.ad_name as matched_ad_name, a.specialty as matched_specialty,
+  c.campaign_name as matched_campaign_name
+from public.leads l
+left join public.meta_ads a on a.platform_ad_id = l.meta_ad_id
+left join public.meta_campaigns c on c.id = a.campaign_id;
