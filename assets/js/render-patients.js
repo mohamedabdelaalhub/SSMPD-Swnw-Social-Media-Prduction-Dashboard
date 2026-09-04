@@ -1807,7 +1807,16 @@
     if (!dataUrls.length || !perPage) return "";
     var rows = Math.ceil(perPage / 2);
     var gapMM = 6;
-    var cellH = ((183 - (rows - 1) * gapMM) / rows).toFixed(1);
+    // المساحة المتاحة فعليًا جوه letterheadPageHtml هي 297 - 56 (padding-top) -
+    // 58 (padding-bottom) = 183mm — لكن دي كانت بتتحسب كأنها كلها للشبكة، من
+    // غير ما تاخد بالها من عنوان "صور الأشعة المرفقة" (+ الهامش تحته) اللي
+    // بيقعد فوق الشبكة في نفس المساحة دي. الفرق ده (~15mm) كان بيخلي آخر صف
+    // يفيض لصفحة تانية، وبما إن الهيدر/الفوتر position:fixed (بيتكرروا في كل
+    // صفحة) الصورة الفايضة كانت بتظهر متراكبة فوق الهيدر بالظبط زي ما اتبلّغ.
+    // اتحط رقم تحفظي (160mm بدل 183mm) للشبكة نفسها + `overflow:hidden` على
+    // إطار بارتفاع ثابت كطبقة حماية إضافية تمنع أي فيضان يدفع لصفحة تانية.
+    var gridAreaMM = 160;
+    var cellH = ((gridAreaMM - (rows - 1) * gapMM) / rows).toFixed(1);
     var pages = "";
     for (var i = 0; i < dataUrls.length; i += perPage) {
       var chunk = dataUrls.slice(i, i + perPage);
@@ -1815,9 +1824,9 @@
         return '<div style="height:' + cellH + 'mm;display:flex;align-items:center;justify-content:center;border:1px solid #ddd;border-radius:4px;overflow:hidden;">' +
           '<img src="' + src + '" style="max-width:100%;max-height:100%;object-fit:contain;"></div>';
       }).join("");
-      var grid = '<div style="text-align:center;font-size:13px;font-weight:700;margin-bottom:8mm;">صور الأشعة المرفقة</div>' +
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:' + gapMM + 'mm;">' + cellsHtml + '</div>';
-      pages += '<div style="page-break-before:always;">' + letterheadPageHtml("rtl", grid) + '</div>';
+      var grid = '<div style="text-align:center;font-size:13px;font-weight:700;margin-bottom:6mm;">صور الأشعة المرفقة</div>' +
+        '<div style="height:' + gridAreaMM + 'mm;overflow:hidden;display:grid;grid-template-columns:1fr 1fr;gap:' + gapMM + 'mm;">' + cellsHtml + '</div>';
+      pages += '<div style="page-break-before:always;page-break-inside:avoid;">' + letterheadPageHtml("rtl", grid) + '</div>';
     }
     return pages;
   }
