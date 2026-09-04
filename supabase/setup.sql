@@ -2320,3 +2320,175 @@ create policy "physio report images write" on public.patient_physio_report_image
 drop policy if exists "physio report images delete" on public.patient_physio_report_images;
 create policy "physio report images delete" on public.patient_physio_report_images
   for delete using (public.has_archive_access() or public.can_manage_all_content());
+
+-- ============================================================
+--  31) روشتة (Prescription) قابلة للطباعة — نفس نمط patient_medical_reports
+--      بالظبط (٢٠٢٦-٠٩-٠٣)
+-- ============================================================
+create table if not exists public.patient_prescriptions (
+  id           uuid primary key default gen_random_uuid(),
+  patient_id   uuid not null references public.patients(id) on delete cascade,
+  report_date  date not null default current_date,
+  doctor_name  text not null default '',
+  specialty    text not null default '',
+  diagnosis    text not null default '',
+  rx_text      text not null default '',
+  created_by   uuid references public.admins(id),
+  created_at   timestamptz not null default now(),
+  updated_at   timestamptz not null default now()
+);
+create index if not exists patient_prescriptions_patient_idx
+  on public.patient_prescriptions (patient_id, report_date desc);
+
+alter table public.patient_prescriptions enable row level security;
+
+drop policy if exists "prescriptions read" on public.patient_prescriptions;
+create policy "prescriptions read" on public.patient_prescriptions
+  for select using (
+    public.has_archive_access() or public.has_archive_review_access() or public.can_access_leads()
+    or public.is_assigned_doctor_for_patient(patient_id)
+  );
+
+drop policy if exists "prescriptions write" on public.patient_prescriptions;
+create policy "prescriptions write" on public.patient_prescriptions
+  for insert with check (public.has_archive_access() or public.can_manage_all_content());
+drop policy if exists "prescriptions update" on public.patient_prescriptions;
+create policy "prescriptions update" on public.patient_prescriptions
+  for update using (public.has_archive_access() or public.can_manage_all_content());
+drop policy if exists "prescriptions delete" on public.patient_prescriptions;
+create policy "prescriptions delete" on public.patient_prescriptions
+  for delete using (public.has_archive_access() or public.can_manage_all_content());
+
+-- ============================================================
+--  32) فورم طلب تحاليل (Lab Request) — تشيك ليست قابلة للطباعة
+--      (٢٠٢٦-٠٩-٠٣)
+-- ============================================================
+create table if not exists public.patient_lab_requests (
+  id           uuid primary key default gen_random_uuid(),
+  patient_id   uuid not null references public.patients(id) on delete cascade,
+  report_date  date not null default current_date,
+  doctor_name  text not null default '',
+  diagnosis    text not null default '',
+  tests        jsonb not null default '[]'::jsonb, -- array of selected test labels
+  others_text  text not null default '',
+  created_by   uuid references public.admins(id),
+  created_at   timestamptz not null default now(),
+  updated_at   timestamptz not null default now()
+);
+create index if not exists patient_lab_requests_patient_idx
+  on public.patient_lab_requests (patient_id, report_date desc);
+
+alter table public.patient_lab_requests enable row level security;
+
+drop policy if exists "lab requests read" on public.patient_lab_requests;
+create policy "lab requests read" on public.patient_lab_requests
+  for select using (
+    public.has_archive_access() or public.has_archive_review_access() or public.can_access_leads()
+    or public.is_assigned_doctor_for_patient(patient_id)
+  );
+
+drop policy if exists "lab requests write" on public.patient_lab_requests;
+create policy "lab requests write" on public.patient_lab_requests
+  for insert with check (public.has_archive_access() or public.can_manage_all_content());
+drop policy if exists "lab requests update" on public.patient_lab_requests;
+create policy "lab requests update" on public.patient_lab_requests
+  for update using (public.has_archive_access() or public.can_manage_all_content());
+drop policy if exists "lab requests delete" on public.patient_lab_requests;
+create policy "lab requests delete" on public.patient_lab_requests
+  for delete using (public.has_archive_access() or public.can_manage_all_content());
+
+-- ============================================================
+--  33) فورم طلب أشعة (Radiology/Imaging Request) — تشيك ليست قابلة للطباعة
+--      (٢٠٢٦-٠٩-٠٣)
+-- ============================================================
+create table if not exists public.patient_radiology_requests (
+  id           uuid primary key default gen_random_uuid(),
+  patient_id   uuid not null references public.patients(id) on delete cascade,
+  report_date  date not null default current_date,
+  doctor_name  text not null default '',
+  diagnosis    text not null default '',
+  items        jsonb not null default '[]'::jsonb, -- array of selected item labels (L/R items suffixed " - L"/" - R")
+  others_text  text not null default '',
+  created_by   uuid references public.admins(id),
+  created_at   timestamptz not null default now(),
+  updated_at   timestamptz not null default now()
+);
+create index if not exists patient_radiology_requests_patient_idx
+  on public.patient_radiology_requests (patient_id, report_date desc);
+
+alter table public.patient_radiology_requests enable row level security;
+
+drop policy if exists "radiology requests read" on public.patient_radiology_requests;
+create policy "radiology requests read" on public.patient_radiology_requests
+  for select using (
+    public.has_archive_access() or public.has_archive_review_access() or public.can_access_leads()
+    or public.is_assigned_doctor_for_patient(patient_id)
+  );
+
+drop policy if exists "radiology requests write" on public.patient_radiology_requests;
+create policy "radiology requests write" on public.patient_radiology_requests
+  for insert with check (public.has_archive_access() or public.can_manage_all_content());
+drop policy if exists "radiology requests update" on public.patient_radiology_requests;
+create policy "radiology requests update" on public.patient_radiology_requests
+  for update using (public.has_archive_access() or public.can_manage_all_content());
+drop policy if exists "radiology requests delete" on public.patient_radiology_requests;
+create policy "radiology requests delete" on public.patient_radiology_requests
+  for delete using (public.has_archive_access() or public.can_manage_all_content());
+
+-- ============================================================
+--  34) تقييم تجربة المريض (Patient Experience Rating) — تكراري لكل زيارة
+--      + بحث آمن عن المرضى لخدمة العملاء (٢٠٢٦-٠٩-٠٣)
+-- ============================================================
+create table if not exists public.patient_experience_ratings (
+  id          uuid primary key default gen_random_uuid(),
+  patient_id  uuid not null references public.patients(id) on delete cascade,
+  visit_date  date not null default current_date,
+  ratings     jsonb not null default '[]'::jsonb, -- array of 6 ints (1-5), نفس ترتيب أسئلة الاستبيان الرسمي
+  comment     text not null default '',
+  created_by  uuid references public.admins(id),
+  created_at  timestamptz not null default now()
+);
+create index if not exists patient_experience_ratings_patient_idx
+  on public.patient_experience_ratings (patient_id, visit_date desc);
+create index if not exists patient_experience_ratings_created_idx
+  on public.patient_experience_ratings (created_at desc);
+
+alter table public.patient_experience_ratings enable row level security;
+
+drop policy if exists "experience ratings read" on public.patient_experience_ratings;
+create policy "experience ratings read" on public.patient_experience_ratings
+  for select using (
+    public.has_archive_access() or public.has_archive_review_access() or public.can_access_leads()
+    or public.is_assigned_doctor_for_patient(patient_id)
+  );
+
+drop policy if exists "experience ratings write" on public.patient_experience_ratings;
+create policy "experience ratings write" on public.patient_experience_ratings
+  for insert with check (public.has_archive_access() or public.can_access_leads() or public.can_manage_all_content());
+drop policy if exists "experience ratings update" on public.patient_experience_ratings;
+create policy "experience ratings update" on public.patient_experience_ratings
+  for update using (public.has_archive_access() or public.can_access_leads() or public.can_manage_all_content());
+drop policy if exists "experience ratings delete" on public.patient_experience_ratings;
+create policy "experience ratings delete" on public.patient_experience_ratings
+  for delete using (public.has_archive_access() or public.can_manage_all_content());
+
+-- بحث آمن ومحدود عن المرضى (اسم/هاتف/كود بس، من غير بيانات طبية) — عشان خدمة
+-- العملاء تقدر تدوّر على مريض تربط بيه تقييم تجربة من تاب "تقييمات العملاء"
+-- من غير ما نديها وصول لـpatient-files-list الكامل (بيانات أرشيف طبية)
+create or replace function public.search_patients_basic(p_term text)
+returns table(id uuid, full_name text, phone text, patient_code text)
+language plpgsql security definer stable set search_path = public as $$
+begin
+  if not (public.has_archive_access() or public.has_archive_review_access() or public.can_access_leads() or public.has_role('nursing')) then
+    raise exception 'not allowed';
+  end if;
+  return query
+    select p.id, p.full_name, p.phone, p.patient_code
+    from public.patients p
+    where p.full_name ilike '%'||p_term||'%' or p.phone ilike '%'||p_term||'%' or p.patient_code ilike '%'||p_term||'%'
+    order by p.full_name
+    limit 20;
+end;
+$$;
+revoke all on function public.search_patients_basic(text) from public;
+grant execute on function public.search_patients_basic(text) to authenticated;
