@@ -2736,3 +2736,71 @@ select
 from public.leads l
 left join public.meta_ads a on a.platform_ad_id = l.meta_ad_id
 left join public.meta_campaigns c on c.id = a.campaign_id;
+
+-- ============================================================
+--  ٣٦) content_meta_links — ربط اختياري بين المحتوى وإعلانات Meta
+--  إضافي بالكامل: مفيش أي تعديل على content_items/comments/activity_log
+--  ولا على جداول meta_* الحالية. الربط يدوي دايمًا (مفيش auto-match).
+-- ============================================================
+
+create table if not exists public.content_meta_links (
+  id                uuid primary key default gen_random_uuid(),
+  content_id        uuid not null references public.content_items(id) on delete cascade,
+  meta_ad_id        uuid references public.meta_ads(id) on delete cascade,
+  creative_group_id text,
+  linked_by         uuid references public.admins(id) on delete set null,
+  confidence        text not null default 'manual_confirmed',
+  notes             text,
+  linked_at         timestamptz not null default now(),
+  constraint content_meta_links_target_chk check (meta_ad_id is not null or creative_group_id is not null)
+);
+
+-- منع تكرار نفس رابط المحتوى↔الإعلان، ونفس رابط المحتوى↔مجموعة الكرييتف
+create unique index if not exists content_meta_links_content_ad_uniq
+  on public.content_meta_links (content_id, meta_ad_id) where meta_ad_id is not null;
+create unique index if not exists content_meta_links_content_group_uniq
+  on public.content_meta_links (content_id, creative_group_id) where meta_ad_id is null and creative_group_id is not null;
+
+create index if not exists content_meta_links_content_id_idx on public.content_meta_links (content_id);
+create index if not exists content_meta_links_meta_ad_id_idx on public.content_meta_links (meta_ad_id);
+create index if not exists content_meta_links_group_id_idx on public.content_meta_links (creative_group_id);
+
+alter table public.content_meta_links enable row level security;
+
+-- القراءة: نفس نمط content_items — أي أدمن نشط
+drop policy if exists "active admins read content_meta_links" on public.content_meta_links;
+create policy "active admins read content_meta_links"
+  on public.content_meta_links for select to authenticated
+  using (public.my_admin_id() is not null);
+
+-- الكتابة (ربط/فك ربط): نفس أصحاب صلاحية إدارة المحتوى الحاليين
+-- (page_manager بيدير الإنتاج، approver بيراجع، أو can_manage_all_content
+-- زي باقي سياسات content_items) — مفيش صلاحية أوسع من موديول إنتاج المحتوى الحالي
+drop policy if exists "content managers write content_meta_links" on public.content_meta_links;
+create policy "content managers write content_meta_links"
+  on public.content_meta_links for all to authenticated
+  using (public.has_role('page_manager') or public.has_role('approver') or public.can_manage_all_content())
+  with check (public.has_role('page_manager') or public.has_role('approver') or public.can_manage_all_content());
+
+-- ============================================================
+--  View: أداء الإعلانات المرتبطة بالمحتوى — security_invoker عشان تحترم
+--  RLS بتاعة المستخدم الفعلي اللي بيستعلم، مش صاحب الـview
+-- ============================================================
+create or replace view public.vw_content_meta_performance
+with (security_invoker = true) as
+select
+  ci.id as content_id, ci.title as content_title, ci.brand as content_brand, ci.specialty as content_specialty,
+  a.id as meta_ad_id, a.platform_ad_id, a.ad_name,
+  a.campaign_id, c.campaign_name,
+  coalesce(cml.creative_group_id, a.creative_group_id) as creative_group_id,
+  a.specialty as meta_specialty, a.hook_type, a.content_angle, a.creative_type, a.objective, a.status,
+  p.spend, p.reach, p.impressions, p.clicks, p.ctr, p.cpc, p.cpm, p.msg_conv, p.cost_per_msg_conv,
+  p.leads, p.cost_per_lead, p.results,
+  cml.id as link_id, cml.linked_at, cml.linked_by, cml.confidence, cml.notes
+from public.content_meta_links cml
+join public.content_items ci on ci.id = cml.content_id
+left join public.meta_ads a
+  on a.id = cml.meta_ad_id
+  or (cml.meta_ad_id is null and cml.creative_group_id is not null and a.creative_group_id = cml.creative_group_id)
+left join public.meta_campaigns c on c.id = a.campaign_id
+left join public.meta_ad_performance_lifetime p on p.ad_id = a.id;
