@@ -2826,3 +2826,44 @@ UNKNOWN" — مش قابل للاستخدام فعليًا. **تحسين client-
   production.js` ماتغيرش خالص.
 - ملفات اتغيرت: `assets/js/workflow.js` بس. بصمة الكاش: `workflow.js?v=52`.
   **مفيش تعديل SQL ولا على أي شاشة تانية.**
+
+## Content Intelligence V4 — إصلاح أهلية الـPattern القابل للاستخدام + ترتيب فحص الإعلانات التقنية + تناقض الرانك (٢٠٢٦-٠٩-٠٤)
+
+بناءً على اختبار حي لـV3: باگين ونقطة تناسق واحدة ظهروا فعليًا، **إصلاح
+client-side بالكامل تاني، بدون أي تعديل SQL، وبدون مساس بمراحل المحتوى/
+الاعتماد/التصميم/النشر**.
+
+- **باگ ١ — `ciIsActionable`**: كان بيعتبر `creative_type` (Format) لوحده
+  كافي لأهلية الـPattern، فنمط بـHook=UNKNOWN/Angle=UNKNOWN/CTA=N/A لكن
+  `Format="Existing post"` كان بيدخل غلط كـPattern قابل للاستخدام. **الإصلاح**:
+  الـFormat اتشال نهائيًا من شروط الأهلية — الأهلية دلوقتي بس لو فيه Hook أو
+  Angle أو CTA ذو معنى (للأنماط)، أو عنوان/نص كرييتف حقيقي (للإعلانات). زودنا
+  كمان شرط صريح: أي إعلان `ciIsTechnical` بيرجع `false` (غير مؤهل) فورًا مهما
+  كانت باقي بياناته، حتى لو الفحص القديم كان هيسمح له.
+- **باگ ٢ — `ciIsTechnical`**: كان بيفحص طول `creative_title`/`creative_body`
+  الأول ويرجع `false` (مش تقني) لو فيه نص، **قبل** ما يشوف `ad_name`/
+  `campaign_name` خالص — فإعلان زي "Promoting Website:
+  https://api.whatsapp.com/send" ومعاه نص كرييتف حقيقي كان بيفلت من التصنيف
+  التقني. **الإصلاح**: الدالة بقت تفحص `ad_name`/`campaign_name` **الأول**
+  (نمط "Promoting Website"، رابط `whatsapp.com/send`، أو أي رابط خام) وترجع
+  `true` فورًا لو اتلاقى، قبل ما توصل لفحص العنوان/النص الاحتياطي.
+- **تناقض "OPTION #2 / RANK: #1" في الـSmart Brief**: `ciBriefCardLines` كانت
+  بتعرض `x.aRank` (رانك العنصر جوه سب-بوول نوعه بس — أنماط لوحدهم أو إعلانات
+  لوحدهم) بدل ترتيبه الفعلي في الاختيار المُجمَّع (`actionableCombined`) اللي
+  بيختار منه `bestActionable`/`secondActionable`. **الإصلاح**: باراميتر جديد
+  اختياري `displayRank` في `ciBriefCardLines` — `ciCopyBrief` بقى يمرره صراحة
+  (`1` لـ`bestActionable`، `2` لـ`secondActionable`) عشان الرانك المعروض
+  يطابق دايمًا رقم الـOPTION في العنوان، بدل ما يعتمد على رانك داخلي منفصل.
+- **النتيجة على سيناريو Neurology الحي**: 10.48 ج.م (Hook/Angle=UNKNOWN،
+  CTA=N/A) يفضل غير مؤهل تمامًا — مش هيدخل `actionablePool` خالص، ويظهر بس
+  كـ"أفضل أداء تاريخي" بتحذير بيانات ناقصة. 18.47 ج.م (Angle=Direct
+  Response، CTA=WhatsApp) بيبقى BEST ACTIONABLE CONTENT PATTERN (OPTION #1)
+  فعليًا. 530.20 ج.م يفضل في قسم "🔴 أنماط/أمثلة أداء ضعيف تاريخيًا" برانك
+  متسق. إعلان "Promoting Website: https://api.whatsapp.com/send" يفضل
+  مستبعد بالكامل من كل قوائم الترشيح (كان كذلك أصلاً من مرحلة فلترة
+  `technical`/`creative` في `ciBuildExamplePool` — الإصلاحين هنا بيأكدوا/
+  يقووا نفس الاستبعاد بس مش بيغيروه) ويظهر بس كـ"📌 إشارة أداء للـCTA".
+- ملفات اتغيرت: `assets/js/workflow.js` بس (`ciIsActionable`،
+  `ciIsTechnical`، `ciBriefCardLines`، `ciCopyBrief`). بصمة الكاش:
+  `workflow.js?v=53`. **مفيش تعديل SQL ولا على `render-production.js` ولا
+  على أي شاشة تانية.**
