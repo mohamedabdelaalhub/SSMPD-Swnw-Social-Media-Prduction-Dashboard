@@ -2640,3 +2640,80 @@ some row` — رغم إن فحص مباشر لجدول `admins` أثبت إن م
   خامس). بصمات الكاش: `db.js?v=59`, `workflow.js?v=49`,
   `render-production.js?v=49`, `render-review.js?v=52`,
   `render-design.js?v=43`, `render-metaads.js?v=2`, `app.js?v=53`.
+
+## Content Intelligence + بانل ذكاء المحتوى + وكيل GPT خارجي (قسم ٣٧ — ٢٠٢٦-٠٩-٠٤)
+
+- **mapping تخصصات متحكَّم فيه**: جدول جديد `content_meta_specialty_map`
+  (`content_specialty_key` PK → `meta_specialty_label`) — **مفيش fuzzy
+  matching خالص**، تعبئة يدوية بس لـ٨ تخصصات واضحة بدون لبس (neurology،
+  dermatology، cosmetic_laser، obgyn، dental، physio_nutrition، lab،
+  emergency → نظرائهم في `meta_ads.specialty` الفعليين). باقي تخصصات
+  `content_items` (orthopedics/surgery/ent/psychiatry/pediatrics/oncology/
+  cardiology/vascular/radiology/nursing_services/internal_services/internal)
+  اتسابت من غير mapping عمدًا — مفيش نظير واضح في بيانات Meta الحالية.
+  `content_items.specialty` نفسه **لم يتغيّر** — الـmapping دا بس أداة
+  فلترة لذكاء المحتوى.
+- **View جديد `vw_content_intelligence_patterns`** (`security_invoker=true`)
+  — بيجمّع `meta_ads` + `meta_ad_performance_lifetime` حسب specialty+
+  objective+hook_type+content_angle+creative_type+cta_type (منفصلين عشان
+  الـobjectives المختلفة ميتخلطوش)، بيرجّع تكاليف موزونة من الإجمالي (مش
+  متوسط بسيط: `spend÷messages`، `spend÷leads`، `clicks÷impressions×100`،
+  إلخ) + عمود `confidence` بعتبات محافظة وموثّقة في الكود نفسه (HIGH: ≥٥
+  إعلانات و(≥٢٠٠٠ج إنفاق أو ≥٢٠ نتيجة)، MEDIUM: ≥٢ إعلان و(≥٣٠٠ج أو ≥٥
+  نتائج)، وإلا LOW). صفوف `specialty='UNKNOWN'` مُستبعدة.
+- **تم التحقق محليًا** (Postgres 16 مؤقت في الـsandbox): مجموعة ٦ إعلانات
+  بنفس النمط اترجعت `confidence='high'` صح، إعلان لوحده اترجع `low` صح،
+  UNKNOWN اتستبعد صح، mapping اترجع ٨ صفوف صح، إعادة تشغيل القسم مرتين
+  متتاليين بتدي نفس العدد بالظبط (rerunnable, no duplicates).
+- **رابط وكيل إنشاء المحتوى (Custom GPT)**: عمود جديد
+  `app_settings.content_agent_gpt_url` (نفس نمط `content_sla_hours`
+  الموجود بالفعل — صف إعدادات واحد id=1، مش جدول key/value منفصل، لأن
+  `app_settings` أصلاً بنفس البنية دي) — متعبّى مسبقًا بالرابط اللي طلبه
+  المستخدم بالظبط (`https://chatgpt.com/g/g-6a7e56daf7f08191b02d1164cd120136-mnshy-mhtw-ydt-swnw`)،
+  فالفيتشر شغال فورًا بعد تشغيل قسم ٣٧ من غير أي إعداد يدوي إضافي. قابل
+  للتعديل لاحقًا من نفس مكان إعدادات SLA لو الرابط اتغيّر.
+- **بانل "✨ ذكاء المحتوى"** — سكشن اختياري قابل للطي جديد في مودال "فكرة/
+  محتوى جديد" (`render-production.js → openCreateModal`، شاشة "إنتاج
+  المحتوى" بس — نفس الشاشة اللي فيها زرار "+ فكرة/محتوى جديد" الأصلي).
+  بيتفعّل لما المستخدم يختار التخصص (الحقل الموجود بالفعل) + الهدف
+  الإعلاني (حقل جديد داخل البانل، من Meta objectives الفعلية: رسائل/
+  ليدز/تفاعل/وصول/مبيعات/زيارات رابط/إعجاب صفحة) — شكل المحتوى اختياري.
+  بيعرض: إشارة الثقة (بيانات قوية/متوسطة/محدودة)، "✅ ما نجح" (أفضل ٣
+  أنماط بثقة كافية مرتبة بأفضل مقياس حسب الهدف — تكلفة/محادثة للرسائل،
+  CPL لليدز، CPM لباقي الأهداف)، "🧪 جرّب" (أنماط واعدة بثقة متوسطة)،
+  "⚠️ تجنب/أعد الاختبار" (أضعف الأنماط، بيظهر بس لو فيه ≥٥ أنماط مؤهلة —
+  مفيش حكم على نمط واحد صغير)، و"🏆 أمثلة ناجحة" (أفضل ٥ مجموعات كرييتف
+  تاريخية من `vw_meta_ad_performance`، كل مجموعة مرة واحدة + عدد
+  التكرارات، قابلة للتوسيع لقراءة نص الإعلان الأصلي كامل).
+  **لو مفيش mapping/بيانات للتخصص**: رسالة "لا توجد بيانات تاريخية كافية
+  لهذا التخصص" + قسم منفصل موسوم بوضوح "أفضل الأنماط العامة عبر الحساب
+  (GENERAL ACCOUNT INSIGHTS)" — مش معروض كأدلة خاصة بالتخصص.
+- **زرار "نسخ Brief للوكيل"**: بيبني نص structured محليًا (Brand/Specialty/
+  Objective/Format + الأنماط الناجحة/الواعدة/الضعيفة + ملخص أفضل ٣ أمثلة
+  + تعليمات صريحة للوكيل "استخدم النتائج كمرجع استراتيجي وليس كنص للنسخ"
+  + طلب ٨ عناصر: أفكار/hook/angle/format/سكريبت/كابشن/CTA/سبب المناسبة)
+  وينسخه للـclipboard (`navigator.clipboard`، مع fallback
+  `execCommand("copy")`) — **مفيش أي نداء API خارجي أو OpenAI خالص**، كله
+  محلي من البيانات المُحمّلة بالفعل. توست تأكيد "تم نسخ الـBrief — افتح
+  وكيل إنشاء المحتوى".
+- **زرار "وكيل إنشاء المحتوى ↗"**: بيقرا `content_agent_gpt_url` من
+  `app_settings` (نداء موجود بالفعل `getAppSettings()`) ويفتحه
+  `window.open(url, "_blank", "noopener,noreferrer")` — لو الرابط فاضي
+  (مش متوقع بعد التعبئة المسبقة، لكن fallback آمن) بيعرض توست "رابط وكيل
+  إنشاء المحتوى غير مُعد بعد" من غير أي كراش.
+- **الموظف بيرجع يدوي**: مفيش أي أتمتة لقراءة الـclipboard من ChatGPT —
+  الموظف بيفتح الـGPT، يلصق الـBrief، ياخد الناتج، يرجع يدوي يلصقه في
+  خانات العنوان/النص العادية — نفس تدفق العمل الحالي (اعتماد/تصميم/نشر)
+  من غير أي تغيير.
+- **مفيش أعمدة AI جديدة على `content_items`** — البانل استشاري بالكامل،
+  ومفيش أي إجبار لاستخدامه: مادة اتعملت من غير البانل سلوكها **بدون أي
+  تغيير** عن قبل كده.
+- ملفات اتغيرت: `supabase/setup.sql` (قسم ٣٧)، `assets/js/db.js` (دالتين
+  جداد: `listContentSpecialtyMap`/`listContentIntelligencePatterns`)،
+  `assets/js/workflow.js` (بانل ذكاء المحتوى كامل)،
+  `assets/js/render-production.js` (إدراج البانل في `openCreateModal` بس
+  — مفيش تعديل في شاشات تانية). بصمات الكاش: `db.js?v=60`,
+  `workflow.js?v=50`, `render-production.js?v=50`.
+- **لازم**: تشغيل قسم ٣٧ من `setup.sql` في Supabase SQL Editor (جدول
+  mapping جديد + view جديد + عمود جديد على `app_settings` — آمن للتشغيل،
+  ومفيش Edge Function مطلوب نشرها).
