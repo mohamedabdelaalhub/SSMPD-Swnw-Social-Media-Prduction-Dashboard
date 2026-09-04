@@ -3067,3 +3067,55 @@ client-side بالكامل تاني، بدون أي تعديل SQL، وبدون 
   مش متظبطين أصلاً كـEnvironment Variables تلقائية من Supabase، تأكد إن
   واحد منهم متاح (عادة بيبقوا متظبطين تلقائيًا من المنصة، مفيش إجراء
   إضافي متوقع هنا في الحالة العادية).
+
+## Phase 2A — تنفيذ حي كامل على Supabase/GitHub Pages (٢٠٢٦-٠٩-٠٤)
+
+تنفيذ فعلي (مش مجرد تعليمات) لكل خطوات النشر الحي، عن طريق المتصفح +
+Supabase Dashboard مباشرة، بدون أي اتصال بـMeta API خالص:
+
+- **قسم ٣٩ من `setup.sql`**: اتشغّل على القاعدة الحية، اتأكد
+  `media_buyer_plans.external_request_id`/`media_buyer_actions.external_request_id`/
+  `media_buyer_actions.recommendation_type` موجودين، و`action_type`
+  بقى nullable.
+- **`media-buyer-propose`**: اتنشر بالكود الحالي من GitHub (Monaco editor)،
+  و"Verify JWT with legacy secret" اتأكد إنه OFF لهذه الدالة بس (باقي
+  الدوال من غير أي تغيير).
+- **`MEDIA_BUYER_AGENT_TOKEN`**: اتولّد عشوائيًا بالكامل جوه الـbrowser
+  context (32 بايت / 64 hex عن طريق `crypto.getRandomValues`) واتحفظ في
+  Supabase Edge Function Secrets مباشرة — القيمة **معملتش ظهور في أي شات
+  أو أي مكان تاني خالص**، وده تأكد منه Supabase نفسه (بيعرض SHA256 digest
+  بس بعد الحفظ، زي أي secret تاني بالمشروع).
+- **macOS Keychain (`swnw-media-buyer-agent`)**: **معمولش** — الجسر
+  المتاح (`device_bash`) بيحتاج فولدر متصل بالجلسة (permission request)
+  عشان يشتغل، وده كان هيحتاج نقل قيمة الـtoken بره الـbrowser context
+  اللي اتولدت فيه، وده بالظبط النوع من التسريب اللي المستخدم طلب صراحة
+  نتجنبه. النتيجة: الـsecret متسجل بأمان في Supabase بس، وده كافي لتشغيل
+  الدالة — **لسه محتاج نقل يدوي/آمن منفصل للـtoken لو مشروع الـMeta/Claude
+  التاني محتاجه فعليًا**، حسب تعليمات المستخدم نفسه في حالة عدم توفر
+  Keychain.
+- **اختبار end-to-end حي**: POST فعلي بتوكن الـbearer الصحيح (بدون طباعته)
+  عمل خطة PLAN جديدة (`ok:true, status:pending_approval, duplicate:false`)،
+  وإعادة إرسال نفس `external_request_id` أكّدت الـidempotency
+  (`duplicate:true`, نفس الـid بالظبط). الاقتراح ظهر فعليًا في تاب "وكيل
+  الإعلانات" تحت "اقتراحات الحملات" بحالة "بانتظار الاعتماد".
+- **إغلاق الاختبار**: زرار "رفض" في الواجهة بيستخدم `window.prompt()`
+  (سطر `var reason = window.prompt("سبب الرفض (اختياري):")` في
+  `render-mediabuyer.js`) — ده بيجمّد المتصفح لأي أتمتة (ومحتمل يتمنع في
+  متصفحات مدمجة زي واتساب/ماسنجر، نفس فخ `alert()`/`confirm()` الموثّق في
+  `?v=13`). **اتجنّب** الضغط على الزرار وتم استدعاء
+  `window.SSMPDDb.rejectMediaBuyerPlan(id, adminId, reason)` مباشرة بنفس
+  المنطق اللي الزرار بينفذه — النتيجتين اتأكد رفضهم (`status:"rejected"`,
+  `rejection_reason:"اختبار تكامل ناجح — لا تنفذ"`)، بدون حذف أي صف
+  (باقيين في سجل القرارات/الأرشيف).
+  **فجوة مكتشفة تستحق إصلاح لاحق (مش جزء من الباتش دي)**: استبدال
+  `window.prompt()` في `data-reject-plan` بمودال inline (زي باقي الأماكن
+  في المشروع اللي اتصلحت في `?v=13`).
+- **ملاحظة أثناء التنفيذ**: نتيجة أول محاولة POST اتفقدت بسبب تفصيل في
+  استدعاء `javascript_tool` (async IIFE من غير `await` صريح على مستوى
+  الجذر رجّع كائن فاضي) — الطلب كان **نجح فعليًا على السيرفر** (نفس
+  `external_request_id` رجع `duplicate:true` في المحاولة اللي بعدها)،
+  فحصل test إضافي نظيف بـ`external_request_id` جديد لتوثيق `duplicate:false`
+  → `duplicate:true` بوضوح. اتصلح صف الاختبار الأول برضه (رُفض واتوثق).
+- **لا اتصال بـMeta API ولا تنفيذ فعلي ولا صرف فلوس خالص في أي خطوة من
+  دول** — الاختبار كان PLAN فقط (idea/proposal)، بدون `content_item_id`
+  ولا ميزانية ولا تواريخ ولا Meta IDs.
