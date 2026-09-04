@@ -13,6 +13,10 @@
     pause_campaign: "🔴 إيقاف حملة", pause_adset: "🔴 إيقاف مجموعة إعلانية", pause_ad: "🔴 إيقاف إعلان",
     resume_campaign: "🟢 استئناف حملة", resume_adset: "🟢 استئناف مجموعة إعلانية", resume_ad: "🟢 استئناف إعلان"
   };
+  var RECOMMENDATION_LABELS = {
+    scale: "🟢 SCALE — توسيع", hold: "🟡 HOLD — استمرار بدون تغيير",
+    retest: "🧪 RETEST — إعادة اختبار", pause: "🔴 PAUSE — إيقاف مقترح", create: "🆕 CREATE — إنشاء"
+  };
   var STATUS_LABELS = {
     draft: "مسودة", pending_approval: "بانتظار الاعتماد", approved: "معتمدة", rejected: "مرفوضة",
     executing: "جاري التنفيذ", live: "شغّالة", paused: "متوقفة", completed: "مكتملة", failed: "فشلت",
@@ -113,12 +117,20 @@
     var payload = a.proposed_payload || {};
     var budgetChange = (payload.new_budget != null) ? ("الميزانية الجديدة المقترحة: " + fmtMoney(payload.new_budget)) :
       (payload.budget_change_pct != null ? ("نسبة التغيير: " + payload.budget_change_pct + "%") : "");
+    // العنوان: recommendation_type (SCALE/HOLD/RETEST/PAUSE/CREATE) لو موجود، وإلا اسم action_type التنفيذي القديم
+    var titleHtml = a.recommendation_type
+      ? (RECOMMENDATION_LABELS[a.recommendation_type] || escapeHtml(a.recommendation_type))
+      : (ACTION_LABELS[a.action_type] || escapeHtml(a.action_type));
+    // HOLD/RETEST توصيات استشارية بس (مفيش action_type تنفيذي معاها) — نوضح ده صراحة، الاعتماد هنا معناه "اتفقنا على التوصية" مش تنفيذ فعلي
+    var isAdvisoryOnly = !a.action_type && a.recommendation_type;
     return '<div class="section" style="margin-bottom:10px;">' +
       '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;">' +
-      '<div><strong>' + (ACTION_LABELS[a.action_type] || escapeHtml(a.action_type)) + '</strong> — <span style="font-size:11px;color:var(--c-muted);">' + statusLabel(a.status) + '</span></div>' +
+      '<div><strong>' + titleHtml + '</strong>' + (a.action_type ? ' <span style="font-size:11px;color:var(--c-muted);">(' + (ACTION_LABELS[a.action_type] || escapeHtml(a.action_type)) + ')</span>' : '') +
+      ' — <span style="font-size:11px;color:var(--c-muted);">' + statusLabel(a.status) + '</span></div>' +
       (canAct ? '<div><button class="btn sm" data-approve-action="' + a.id + '">اعتماد</button> ' +
         '<button class="btn ghost sm" data-reject-action="' + a.id + '">رفض</button></div>' : '') +
       '</div>' +
+      (isAdvisoryOnly ? '<div style="font-size:11px;color:var(--c-muted);margin-top:4px;">توصية استشارية بس — مفيش تعديل فعلي على Meta مرتبط بيها.</div>' : '') +
       '<div style="font-size:12px;color:var(--c-muted);margin-top:4px;">الهدف: ' + escapeHtml(a.target_type || "—") +
       (a.target_platform_id ? " (" + escapeHtml(a.target_platform_id) + ")" : "") + '</div>' +
       (budgetChange ? '<div style="margin-top:6px;font-size:13px;">' + escapeHtml(budgetChange) + '</div>' : "") +
@@ -126,7 +138,8 @@
       '</div>';
   }
   function agentRecommendationsHtml() {
-    var recs = actions.filter(function (a) { return a.target_type; }); // actions على حملات/مجموعات/إعلانات قائمة فعلاً (مش إنشاء جديد)
+    // actions على حملات/مجموعات/إعلانات قائمة فعلاً (target_type)، أو أي توصية استشارية (recommendation_type — بما فيها HOLD/RETEST من غير target_type)
+    var recs = actions.filter(function (a) { return a.target_type || a.recommendation_type; });
     if (!recs.length) return '<p style="color:var(--c-muted);font-size:13px;">لا توجد توصيات حالياً.</p>';
     return recs.map(actionCardHtml).join("");
   }
