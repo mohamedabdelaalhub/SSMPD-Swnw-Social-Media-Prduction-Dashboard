@@ -281,6 +281,20 @@
       return handle(client.from("ad_campaigns").insert(rows));
     },
 
+    // ---------- Meta Ads المُطبّعة (قسم ٣٥ — جداول + Views جديدة، ad_campaigns فوق فضل زي ما هو) ----------
+    listMetaAdPerformance: function () {
+      return handle(client.from("vw_meta_ad_performance").select("*").order("spend", { ascending: false, nullsFirst: false }));
+    },
+    listMetaSpecialtyPerformance: function () {
+      return handle(client.from("vw_meta_specialty_performance").select("*").order("spend", { ascending: false, nullsFirst: false }));
+    },
+    listMetaCreativePerformance: function () {
+      return handle(client.from("vw_meta_creative_performance").select("*").order("spend", { ascending: false, nullsFirst: false }));
+    },
+    listMetaLeadAttribution: function () {
+      return handle(client.from("vw_lead_meta_attribution").select("*").order("received_at", { ascending: false }));
+    },
+
     // ---------- أرشيف المرضى (Edge Functions) ----------
     createPatientArchive: function (payload) {
       return edgeFetch("patients-create", { method: "POST", json: payload });

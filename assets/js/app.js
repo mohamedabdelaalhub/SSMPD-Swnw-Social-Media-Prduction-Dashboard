@@ -21,7 +21,8 @@
     archive: window.SSMPDRenderArchive,
     patients: window.SSMPDRenderPatients,
     leads: window.SSMPDRenderLeads,
-    admin: window.SSMPDRenderAdmin
+    admin: window.SSMPDRenderAdmin,
+    metaads: window.SSMPDRenderMetaAds
   };
   var TAB_LABELS = {
     summary: "الملخص العام",
@@ -32,7 +33,8 @@
     archive: "الأرشيف",
     patients: "أرشيف المرضى",
     leads: "إدارة الليدز والتواصل",
-    admin: "لوحة التحكم"
+    admin: "لوحة التحكم",
+    metaads: "إعلانات Meta Ads"
   };
 
   function root() { return document.getElementById("app-root"); }
