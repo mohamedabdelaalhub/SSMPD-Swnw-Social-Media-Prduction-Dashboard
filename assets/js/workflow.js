@@ -482,23 +482,45 @@
     return CONFIDENCE_LABELS[lvl] || CONFIDENCE_LABELS.low;
   }
 
-  function ciWhyText(status, x, metricLabel) {
+  function ciWhyText(status, ratio, runs, metricLabel) {
     switch (status.key) {
       case "best_proven": return "أقل " + metricLabel + " بين الخيارات القابلة للمقارنة، مع حجم نتائج/تكرار أفضل من البدائل.";
       case "best_available": return "أفضل " + metricLabel + " متاح حاليًا ضمن بيانات محدودة — يستاهل التجربة، مش دليل نهائي.";
-      case "strong": return "قريب من الأفضل بأدلة معقولة" + ((x.runs || 1) > 1 ? "، وحقق أداء جيدًا عبر أكتر من تشغيل لنفس Creative Group." : ".");
+      case "strong": return "قريب من الأفضل بأدلة معقولة" + ((runs || 1) > 1 ? "، وحقق أداء جيدًا عبر أكتر من تشغيل لنفس Creative Group." : ".");
       case "promising": return "النتيجة مقبولة، لكن العينة صغيرة أو الإعلان اتشغّل مرة واحدة بس — محتاج اختبار أكتر.";
-      case "weak": return metricLabel + " أعلى بكتير من البدائل التاريخية (~" + (x.ratio || 1).toFixed(1) + "× الأفضل).";
+      case "weak": return metricLabel + " أعلى بكتير من البدائل التاريخية (~" + (ratio || 1).toFixed(1) + "× الأفضل).";
       default: return "";
     }
   }
 
-  function ciHowToUseText(x, status, isTechnical) {
+  // قيمة "بلا معنى" (UNKNOWN/N/A/فاضي) — أساس تمييز أداء رقمي عن Pattern فعلي قابل للاستخدام (V3)
+  function ciIsMeaningful(v) {
+    if (v == null) return false;
+    var s = String(v).trim();
+    if (!s) return false;
+    return !/^(unknown|n\/a|na|null|none|--+|—+|-)$/i.test(s);
+  }
+
+  // مؤهل كـ"Pattern محتوى" (وليس مجرد رقم أداء) لو عنده أي إشارة إبداعية مفيدة —
+  // Hook أو Angle أو CTA أو Format، أو (للإعلانات) عنوان/نص كرييتف حقيقي (بند ٣)
+  function ciIsActionable(p, kind) {
+    var hasHook = ciIsMeaningful(p.hook_type);
+    var hasAngle = ciIsMeaningful(p.content_angle);
+    var hasCta = ciIsMeaningful(p.cta_type);
+    var hasFormat = ciIsMeaningful(p.creative_type);
+    var hasCreative = kind === "ad" && (ciIsMeaningful(p.creative_title) || (p.creative_body && String(p.creative_body).trim().length > 15));
+    return hasHook || hasAngle || hasCta || hasFormat || hasCreative;
+  }
+
+  function ciHowToUseText(p, status, isTechnical) {
     if (isTechnical) return "استفد بس من أداء الـCTA/الهدف، مش من الـCreative نفسه (ده إعلان تقني/رابط بس).";
     if (status.key === "weak") return "لا تكرر نفس التنفيذ. لو هتختبر الفكرة، غيّر الـHook أو الـAngle.";
-    var p = x.raw;
-    return "ابدأ بـ" + (p.hook_type || "Hook مشابه") + " عن " + (p.content_angle || "المشكلة/الخدمة") +
-      "، بعدين قدّم معلومة قصيرة، وقفل بـCTA " + (p.cta_type || "واضح") + ".";
+    var parts = [];
+    if (ciIsMeaningful(p.hook_type)) parts.push("ابدأ بـ" + p.hook_type);
+    if (ciIsMeaningful(p.content_angle)) parts.push("عن " + p.content_angle);
+    var lead = parts.length ? parts.join(" ") + "، بعدين قدّم معلومة قصيرة" : "قدّم معلومة قصيرة ومباشرة تخص المشكلة/الخدمة";
+    var cta = ciIsMeaningful(p.cta_type) ? "، وقفل بـCTA " + p.cta_type + "." : "، وقفل بدعوة واضحة للتواصل.";
+    return lead + cta;
   }
 
   // إعلان تقني/رابط بس (بدون عنوان/نص كرييتف حقيقي) — مش مصدر إلهام إبداعي (بند ٧)
@@ -521,13 +543,8 @@
     return { count: list.length, avgMetric: n ? sum / n : null, ctas: Object.keys(ctas) };
   }
 
-  // بناء pool مُصنَّف من أنماط vw_content_intelligence_patterns
-  function ciBuildPatternPool(matchedPatterns, metricKey) {
-    var valid = matchedPatterns.filter(function (p) { return p[metricKey] != null; });
-    var arr = valid.map(function (p) {
-      return { raw: p, metric: Number(p[metricKey]), sample: Number(p.total_messages || 0) + Number(p.total_leads || 0), spend: Number(p.total_spend || 0), runs: Number(p.ads_count || 1) };
-    });
-    arr = ciSortComparable(arr);
+  // ترتيب+تصنيف عام: بيحسب rank/ratio/status على مصفوفة مرتبة بالفعل، ويرجّع ثقة المجموعة
+  function ciAssignRankStatus(arr) {
     var poolConfidence = ciAggregateConfidence(arr);
     var bestMetric = arr.length ? arr[0].metric : null;
     arr.forEach(function (x, idx) {
@@ -535,7 +552,36 @@
       x.ratio = bestMetric > 0 ? x.metric / bestMetric : 1;
       x.status = ciClassifyStatus(x, idx, poolConfidence, bestMetric);
     });
-    return { pool: arr, confidence: poolConfidence };
+    return poolConfidence;
+  }
+
+  // نفس الفكرة بس لمجموعة العناصر المؤهلة كـ"Pattern محتوى" (actionable) —
+  // بيتخزن في حقول منفصلة (aRank/aRatio/aStatus) عشان الرانك الأصلي (أداء
+  // رقمي بحت) يفضل موجود ومستقل — بند ٢/٧ (فصل الأداء عن الإلهام الإبداعي)
+  function ciAssignActionableRank(arr) {
+    var poolConfidence = ciAggregateConfidence(arr);
+    var bestMetric = arr.length ? arr[0].metric : null;
+    arr.forEach(function (x, idx) {
+      x.aRank = idx + 1;
+      x.aRatio = bestMetric > 0 ? x.metric / bestMetric : 1;
+      x.aStatus = ciClassifyStatus(x, idx, poolConfidence, bestMetric);
+    });
+    return poolConfidence;
+  }
+
+  // بناء pool مُصنَّف من أنماط vw_content_intelligence_patterns —
+  // pool = ترتيب أداء رقمي بحت، actionablePool = بس اللي فيهم إشارة إبداعية مفيدة (V3)
+  function ciBuildPatternPool(matchedPatterns, metricKey) {
+    var valid = matchedPatterns.filter(function (p) { return p[metricKey] != null; });
+    var arr = valid.map(function (p) {
+      return { raw: p, metric: Number(p[metricKey]), sample: Number(p.total_messages || 0) + Number(p.total_leads || 0), spend: Number(p.total_spend || 0), runs: Number(p.ads_count || 1) };
+    });
+    arr = ciSortComparable(arr);
+    arr.forEach(function (x) { x.actionable = ciIsActionable(x.raw, "pattern"); });
+    var poolConfidence = ciAssignRankStatus(arr);
+    var actionableArr = arr.filter(function (x) { return x.actionable; });
+    var actionableConfidence = actionableArr.length ? ciAssignActionableRank(actionableArr) : "low";
+    return { pool: arr, confidence: poolConfidence, actionablePool: actionableArr, actionableConfidence: actionableConfidence };
   }
 
   // بناء pool مُصنَّف من إعلانات vw_meta_ad_performance — مُستبعد منه الإعلانات
@@ -567,14 +613,11 @@
     });
 
     var pool = ciSortComparable(deduped);
-    var poolConfidence = ciAggregateConfidence(pool);
-    var bestMetric = pool.length ? pool[0].metric : null;
-    pool.forEach(function (x, idx) {
-      x.rank = idx + 1;
-      x.ratio = bestMetric > 0 ? x.metric / bestMetric : 1;
-      x.status = ciClassifyStatus(x, idx, poolConfidence, bestMetric);
-    });
-    return { pool: pool, confidence: poolConfidence, technical: ciTechnicalSummary(technical, metricField), metricField: metricField };
+    pool.forEach(function (x) { x.actionable = ciIsActionable(x.raw, "ad"); });
+    var poolConfidence = ciAssignRankStatus(pool);
+    var actionablePool = pool.filter(function (x) { return x.actionable; });
+    var actionableConfidence = actionablePool.length ? ciAssignActionableRank(actionablePool) : "low";
+    return { pool: pool, confidence: poolConfidence, actionablePool: actionablePool, actionableConfidence: actionableConfidence, technical: ciTechnicalSummary(technical, metricField), metricField: metricField };
   }
 
   function ciSignalHtml(confidence) {
@@ -584,15 +627,22 @@
   }
 
   // كارت موحّد لعنصر مُصنَّف (نمط أو إعلان فردي) — رانك + حالة + ثقة + ليه/إزاي
-  function ciCardHtml(x, objKey, poolConfidence, kind) {
+  // mode: "perf" (رانك أداء رقمي بحت، الافتراضي) أو "actionable" (رانك بين
+  // الـPatterns القابلة للاستخدام بس — بيستخدم aRank/aRatio/aStatus)
+  function ciCardHtml(x, objKey, poolConfidence, kind, mode) {
+    mode = mode || "perf";
     var metricLabel = ciMetricLabel(objKey);
     var p = x.raw;
+    var rank = mode === "actionable" ? x.aRank : x.rank;
+    var status = mode === "actionable" ? x.aStatus : x.status;
+    var ratio = mode === "actionable" ? x.aRatio : x.ratio;
     var confLabel = ciItemConfidenceLabel(x, poolConfidence);
-    var why = ciWhyText(x.status, x, metricLabel);
-    var how = ciHowToUseText(x, x.status, false);
+    var why = ciWhyText(status, ratio, x.runs, metricLabel);
+    var how = ciHowToUseText(p, status, false);
+    var incomplete = !x.actionable ? '<div style="color:var(--c-negative);margin-top:2px;">⚠️ بيانات التنفيذ الإبداعي غير مكتملة لهذا الإعلان — مفيد كإشارة أداء بس، مش مرجع كافٍ لصناعة محتوى جديد.</div>' : "";
     var html = '<div style="border:1px solid var(--c-border,#e3e3e3);border-radius:6px;padding:8px 10px;margin-bottom:6px;font-size:12px;">';
-    html += '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px;"><b>#' + x.rank + ' ' + x.status.emoji + ' ' + escapeHtml(x.status.label) + '</b>' +
-      '<span class="status-pill ' + confLabel.cls + '" style="font-size:10px;">ثقة: ' + confLabel.label + '</span></div>';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px;"><b>#' + rank + ' ' + status.emoji + ' ' + escapeHtml(status.label) + '</b>' +
+      '<span class="status-pill ' + confLabel.cls + '" style="font-size:10px;">ثقة: ' + confLabel.label + '</span></div>' + incomplete;
     if (kind === "ad") {
       html += '<div style="margin-top:4px;"><b>' + escapeHtml(p.ad_name || p.campaign_name || "—") + '</b>' +
         (x.runs > 1 ? ' <span style="color:var(--c-muted);">(' + x.runs + ' تكرار)</span>' : '') + '</div>';
@@ -616,13 +666,13 @@
     return html;
   }
 
-  function ciCardsHtml(title, items, objKey, poolConfidence, kind, emptyMsg) {
+  function ciCardsHtml(title, items, objKey, poolConfidence, kind, emptyMsg, mode) {
     var html = '<h4 style="font-size:12px;margin:10px 0 6px;">' + title + '</h4>';
     if (!items.length) {
       html += '<div class="empty-state" style="font-size:11px;">' + (emptyMsg || "لا يوجد") + '</div>';
       return html;
     }
-    items.forEach(function (x) { html += ciCardHtml(x, objKey, poolConfidence, kind); });
+    items.forEach(function (x) { html += ciCardHtml(x, objKey, poolConfidence, kind, mode); });
     return html;
   }
 
@@ -701,42 +751,70 @@
     }
 
     var pPool = patternInfo.pool, pConf = patternInfo.confidence;
-    var worked = pPool.filter(function (x) { return x.status.key !== "weak"; }).slice(0, 3);
+    var pActionable = patternInfo.actionablePool, pActConf = patternInfo.actionableConfidence;
     var avoidPatterns = pPool.filter(function (x) { return x.status.key === "weak"; });
 
     var exPool = examplesInfo.pool, exConf = examplesInfo.confidence;
-    var exStrong = exPool.filter(function (x) { return x.status.key !== "weak"; });
+    var exActionable = examplesInfo.actionablePool, exActConf = examplesInfo.actionableConfidence;
     var exWeak = exPool.filter(function (x) { return x.status.key === "weak"; });
-    var exSectionTitle = (exConf === "high" || exConf === "medium") ? "🏆 أمثلة ناجحة" : "📚 أمثلة تاريخية للمقارنة";
 
-    var overallConfidence = ciBetterConf(matched.length ? pConf : null, exPool.length ? exConf : null);
+    // V3 — فصل "أفضل أداء رقمي" عن "أفضل Pattern محتوى قابل للاستخدام":
+    // أداء البسط (worked/exStrong) دلوقتي بيتحسب بس من العناصر المؤهلة
+    // إبداعيًا (actionable) — أداء رقمي بحت بمتاداتا ناقصة (Hook=UNKNOWN...)
+    // يفضل يظهر كـ"أفضل أداء تاريخي" بس، مش كـPattern موصى بيه (بند ١/٢/٣)
+    var workedPatterns = pActionable.filter(function (x) { return x.status.key !== "weak"; }).slice(0, 3);
+    var workedExamples = exActionable.filter(function (x) { return x.status.key !== "weak"; });
+    var exSectionTitle = (exActConf === "high" || exActConf === "medium") ? "🏆 أمثلة ناجحة" : "📚 أمثلة تاريخية للمقارنة";
 
-    // أفضل خيار وثاني أفضل (نمط أو إعلان فردي، أيهما أقوى) — للملخص وللـBrief
-    var strongCombined = worked.map(function (x) { return { x: x, kind: "pattern", kindLabel: "نمط", conf: pConf }; })
-      .concat(exStrong.map(function (x) { return { x: x, kind: "ad", kindLabel: "إعلان تاريخي", conf: exConf }; }));
-    var best = strongCombined[0] || null;
-    var second = strongCombined[1] || null;
+    var overallConfidence = ciBetterConf(pActionable.length ? pActConf : null, exActionable.length ? exActConf : null);
+
+    // أ) أفضل أداء تاريخي (رقم بحت، بغض النظر عن اكتمال البيانات الإبداعية)
+    var perfCandidates = [];
+    if (pPool.length) perfCandidates.push({ x: pPool[0], kind: "pattern", kindLabel: "نمط", conf: pConf });
+    if (exPool.length) perfCandidates.push({ x: exPool[0], kind: "ad", kindLabel: "إعلان تاريخي", conf: exConf });
+    perfCandidates.sort(function (a, b) { return a.x.metric - b.x.metric; });
+    var bestPerf = perfCandidates[0] || null;
+
+    // ب) أفضل Pattern محتوى قابل فعلاً للاستخدام (قد لا يكون أرخص إعلان)
+    var actionableCombined = workedPatterns.map(function (x) { return { x: x, kind: "pattern", kindLabel: "نمط", conf: pActConf }; })
+      .concat(workedExamples.map(function (x) { return { x: x, kind: "ad", kindLabel: "إعلان تاريخي", conf: exActConf }; }));
+    actionableCombined.sort(function (a, b) { return a.x.metric - b.x.metric; });
+    var bestActionable = actionableCombined[0] || null;
+    var secondActionable = actionableCombined[1] || null;
+
     var weakPick = exWeak[0] ? { x: exWeak[0], kind: "ad", kindLabel: "إعلان تاريخي", conf: exConf } :
       (avoidPatterns[0] ? { x: avoidPatterns[0], kind: "pattern", kindLabel: "نمط", conf: pConf } : null);
 
     var html = "";
-    // ملخص أعلى البانل (بند ١٥)
-    if (best) {
+    // ملخصين أعلى البانل — أداء رقمي منفصل عن اتجاه محتوى قابل للاستخدام (بند ٥)
+    if (bestPerf) {
+      var perfIncomplete = !bestPerf.x.actionable;
+      html += '<div style="background:var(--c-bg-alt,#f6f6f6);border-radius:6px;padding:8px 10px;margin-bottom:6px;font-size:12px;">' +
+        '<div><b>📊 أفضل أداء تاريخي:</b> ' + fmtMoneyW(bestPerf.x.metric) + ' (' + ciMetricLabel(objKey) + ')</div>' +
+        (perfIncomplete
+          ? '<div style="color:var(--c-negative);">⚠️ بيانات التنفيذ الإبداعي غير مكتملة لهذا الإعلان — Performance benchmark only.</div>'
+          : '<div>' + escapeHtml((bestPerf.x.raw.hook_type || "—") + " + " + (bestPerf.x.raw.content_angle || "—") + " + " + (bestPerf.x.raw.cta_type || "—")) + '</div>') +
+        '</div>';
+    }
+    if (bestActionable) {
       html += '<div style="background:var(--c-bg-alt,#f6f6f6);border-radius:6px;padding:8px 10px;margin-bottom:8px;font-size:12px;">' +
-        '<div><b>أفضل اتجاه متاح حاليًا:</b> ' + escapeHtml((best.x.raw.hook_type || "—") + " + " + (best.x.raw.content_angle || "—") + " + " + (best.x.raw.cta_type || "—")) + '</div>' +
-        '<div>Confidence: ' + ciItemConfidenceLabel(best.x, best.conf).label + '</div>' +
-        '<div>Reason: ' + escapeHtml(ciWhyText(best.x.status, best.x, ciMetricLabel(objKey))) + '</div>' +
+        '<div><b>✨ أفضل اتجاه قابل للاستخدام في المحتوى حاليًا:</b> ' + escapeHtml((bestActionable.x.raw.hook_type || "—") + " + " + (bestActionable.x.raw.content_angle || "—") + " + " + (bestActionable.x.raw.cta_type || "—")) + '</div>' +
+        '<div>' + ciMetricLabel(objKey) + ': ' + fmtMoneyW(bestActionable.x.metric) + '</div>' +
+        '<div>Confidence: ' + ciItemConfidenceLabel(bestActionable.x, bestActionable.conf).label + '</div>' +
+        '<div>Reason: ' + escapeHtml(ciWhyText(bestActionable.x.aStatus, bestActionable.x.aRatio, bestActionable.x.runs, ciMetricLabel(objKey))) + '</div>' +
         (overallConfidence === "low" ? '<div style="color:var(--c-negative);">أفضل اتجاه متاح حاليًا، لكن الأدلة محدودة ويحتاج اختبار.</div>' : "") +
         '</div>';
+    } else {
+      html += '<div style="background:var(--c-bg-alt,#f6f6f6);border-radius:6px;padding:8px 10px;margin-bottom:8px;font-size:12px;">لا توجد بيانات Creative كافية حاليًا لاستخراج اتجاه محتوى موثوق.</div>';
     }
 
     html += ciSignalHtml(overallConfidence);
     var workedHeading = overallConfidence === "low" ? "🧪 فرضيات تستحق الاختبار — أدلة محدودة" : "✅ ما نجح والأنماط القوية";
-    html += ciCardsHtml(workedHeading, worked, objKey, pConf, "pattern", "لسه معندناش أنماط بثقة كافية لهذا التخصص/الهدف.");
-    if (avoidPatterns.length) html += ciCardsHtml("🔴 أنماط أداء ضعيف تاريخيًا", avoidPatterns, objKey, pConf, "pattern", "");
+    html += ciCardsHtml(workedHeading, workedPatterns, objKey, pActConf, "pattern", "لسه معندناش أنماط بثقة كافية لهذا التخصص/الهدف.", "actionable");
+    if (avoidPatterns.length) html += ciCardsHtml("🔴 أنماط أداء ضعيف تاريخيًا", avoidPatterns, objKey, pConf, "pattern", "", "perf");
 
-    html += ciCardsHtml(exSectionTitle, exStrong, objKey, exConf, "ad", "لا توجد أمثلة تاريخية مطابقة كافية.");
-    if (exWeak.length) html += ciCardsHtml("🔴 أمثلة أداء ضعيف تاريخيًا", exWeak, objKey, exConf, "ad", "");
+    html += ciCardsHtml(exSectionTitle, workedExamples, objKey, exActConf, "ad", "لا توجد أمثلة تاريخية مطابقة كافية.", "actionable");
+    if (exWeak.length) html += ciCardsHtml("🔴 أمثلة أداء ضعيف تاريخيًا", exWeak, objKey, exConf, "ad", "", "perf");
     html += ciTechnicalHtml(examplesInfo.technical);
 
     html += '<div style="text-align:left;margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;">' +
@@ -750,7 +828,7 @@
       briefCopyBtn.onclick = function () {
         ciCopyBrief(out, {
           specialtyKey: specialtyKey, metaLabel: metaLabel, objKey: objKey, fmtKey: fmtKey, topicText: topicText,
-          overallConfidence: overallConfidence, best: best, second: second, weak: weakPick
+          overallConfidence: overallConfidence, bestPerf: bestPerf, bestActionable: bestActionable, secondActionable: secondActionable, weak: weakPick
         });
       };
     }
@@ -758,19 +836,25 @@
     if (agentBtn) { agentBtn.onclick = function () { ciOpenAgent(); }; }
   }
 
-  function ciBriefCardLines(x, objKey, poolConfidence, kind) {
+  // mode: "perf" (رانك أداء رقمي، الافتراضي) أو "actionable"
+  function ciBriefCardLines(x, objKey, poolConfidence, kind, mode) {
+    mode = mode || "perf";
     var p = x.raw, metricLabel = ciMetricLabel(objKey), lines = [];
-    lines.push("RANK: #" + x.rank);
-    lines.push("STATUS: " + x.status.label);
+    var rank = mode === "actionable" ? x.aRank : x.rank;
+    var status = mode === "actionable" ? x.aStatus : x.status;
+    var ratio = mode === "actionable" ? x.aRatio : x.ratio;
+    lines.push("RANK: #" + rank);
+    lines.push("STATUS: " + status.label);
     lines.push("CONFIDENCE: " + ciItemConfidenceLabel(x, poolConfidence).label);
+    if (!x.actionable) lines.push("NOTE: Creative metadata incomplete for this ad.");
     if (kind === "ad") {
-      if (p.creative_title) lines.push("Creative Title: " + p.creative_title);
-      if (p.creative_body) lines.push("Body excerpt: " + String(p.creative_body).slice(0, 140));
+      if (ciIsMeaningful(p.creative_title)) lines.push("Creative Title: " + p.creative_title);
+      if (p.creative_body && String(p.creative_body).trim().length > 15) lines.push("Body excerpt: " + String(p.creative_body).slice(0, 140));
     }
-    lines.push("Hook: " + (p.hook_type || "—"));
-    lines.push("Angle: " + (p.content_angle || "—"));
-    lines.push("Format: " + (p.creative_type || "—"));
-    lines.push("CTA: " + (p.cta_type || "—"));
+    if (ciIsMeaningful(p.hook_type)) lines.push("Hook: " + p.hook_type);
+    if (ciIsMeaningful(p.content_angle)) lines.push("Angle: " + p.content_angle);
+    if (ciIsMeaningful(p.creative_type)) lines.push("Format: " + p.creative_type);
+    if (ciIsMeaningful(p.cta_type)) lines.push("CTA: " + p.cta_type);
     if (kind === "ad") {
       lines.push("Spend: " + fmtMoneyW(p.spend));
       lines.push("Messages: " + fmtNumW(p.msg_conv));
@@ -785,8 +869,12 @@
       lines.push(metricLabel + ": " + fmtMoneyW(x.metric));
       lines.push("Ads count: " + fmtNumW(p.ads_count));
     }
-    lines.push("WHY: " + ciWhyText(x.status, x, metricLabel));
-    lines.push("HOW TO USE: " + ciHowToUseText(x, x.status, false));
+    if (x.actionable) {
+      lines.push("WHY: " + ciWhyText(status, ratio, x.runs, metricLabel));
+      lines.push("HOW TO USE: " + ciHowToUseText(p, status, false));
+    } else {
+      lines.push("USE: Performance benchmark only. Do NOT derive Hook/Angle from this ad.");
+    }
     return lines;
   }
 
@@ -801,23 +889,28 @@
     lines.push("Preferred Format: " + (CONTENT_FORMATS[ctx.fmtKey] ? CONTENT_FORMATS[ctx.fmtKey].label : "أي شكل"));
     lines.push("Evidence level: " + (CONFIDENCE_LABELS[ctx.overallConfidence] || CONFIDENCE_LABELS.low).label);
     lines.push("");
-    if (!ctx.best) {
-      lines.push("لا توجد Winning Patterns مؤكدة لهذا التخصص/الهدف.");
+    if (ctx.bestPerf) {
+      lines.push("BEST HISTORICAL PERFORMANCE:");
+      ciBriefCardLines(ctx.bestPerf.x, ctx.objKey, ctx.bestPerf.conf, ctx.bestPerf.kind, "perf").forEach(function (l) { lines.push(l); });
+      lines.push("");
+    }
+    if (!ctx.bestActionable) {
+      lines.push("لا توجد Winning Patterns مؤكدة لهذا التخصص/الهدف. لا توجد بيانات Creative كافية حاليًا لاستخراج اتجاه محتوى موثوق.");
       lines.push("استخدم الأمثلة التالية للمقارنة وصياغة فرضيات اختبار، وليس كدليل نهائي.");
       lines.push("");
     } else {
-      lines.push("BEST AVAILABLE OPTION (RECOMMENDED OPTION #1 — " + ctx.best.kindLabel + "):");
-      ciBriefCardLines(ctx.best.x, ctx.objKey, ctx.best.conf, ctx.best.kind).forEach(function (l) { lines.push(l); });
+      lines.push("BEST ACTIONABLE CONTENT PATTERN (RECOMMENDED OPTION #1 — " + ctx.bestActionable.kindLabel + "):");
+      ciBriefCardLines(ctx.bestActionable.x, ctx.objKey, ctx.bestActionable.conf, ctx.bestActionable.kind, "actionable").forEach(function (l) { lines.push(l); });
       lines.push("");
     }
-    if (ctx.second) {
+    if (ctx.secondActionable) {
       lines.push("OPTION #2:");
-      ciBriefCardLines(ctx.second.x, ctx.objKey, ctx.second.conf, ctx.second.kind).forEach(function (l) { lines.push(l); });
+      ciBriefCardLines(ctx.secondActionable.x, ctx.objKey, ctx.secondActionable.conf, ctx.secondActionable.kind, "actionable").forEach(function (l) { lines.push(l); });
       lines.push("");
     }
     if (ctx.weak) {
       lines.push("WEAK EXAMPLE (لا تكرره — للمقارنة بس):");
-      ciBriefCardLines(ctx.weak.x, ctx.objKey, ctx.weak.conf, ctx.weak.kind).forEach(function (l) { lines.push(l); });
+      ciBriefCardLines(ctx.weak.x, ctx.objKey, ctx.weak.conf, ctx.weak.kind, "perf").forEach(function (l) { lines.push(l); });
       lines.push("");
     }
     lines.push("استخدم النتائج كمرجع استراتيجي وليس كنص للنسخ. هذا نمط استراتيجي وليس نص للنسخ الحرفي.");
