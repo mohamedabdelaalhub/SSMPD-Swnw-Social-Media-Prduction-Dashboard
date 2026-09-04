@@ -1,0 +1,13 @@
+# Supabase project config — currently only used to declare per-function
+# settings that the CLI/Dashboard read (this repo is NOT deployed via
+# `supabase functions deploy`; deployment stays manual via the Dashboard's
+# Monaco editor per CLAUDE.md — see note in project changelog for the exact
+# manual toggle needed alongside this file).
+
+[functions.media-buyer-propose]
+# This function is called machine-to-machine by an external agent using a
+# static bearer secret (MEDIA_BUYER_AGENT_TOKEN), not a Supabase Auth user
+# session — so it must NOT go through platform JWT verification. The
+# function's own code still rejects every request without a valid
+# MEDIA_BUYER_AGENT_TOKEN (see supabase/functions/media-buyer-propose/index.ts).
+verify_jwt = false
