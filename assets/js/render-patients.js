@@ -637,36 +637,32 @@
     };
   }
 
-  // ---------- طباعة الروشتة — فورم مخصص يطابق نموذج "الروشتة" الرسمي بالحرف
-  //            (هيدر مضغوط بخانات + علامة Rx + مساحة كتابة + شريط فوتر نصي)،
-  //            مختلف عن letterheadPageHtml المشترك (اللي بيستخدم صورة هيدر/فوتر
-  //            منحنية مختلفة الشكل تمامًا عن فورم الروشتة الأصلي) ----------
+  // ---------- طباعة الروشتة — نفس نموذج الروشتة الرسمي اللي بعته المستخدم
+  //            بالحرف (صورة واحدة هيدر فيها الشعار + خانات التنقيط + علامة Rx،
+  //            وصورة فوتر) — القيم بتتحط فوق أماكن الخانات بالظبط بإحداثيات
+  //            محسوبة من الصورة الأصلية (مفيش أي تعديل في شكل النموذج نفسه) ----------
+  function rxFieldValueHtml(topMm, leftMm, widthMm, value) {
+    return '<div style="position:absolute;top:' + topMm + 'mm;left:' + leftMm + 'mm;width:' + widthMm + 'mm;font-size:13px;font-weight:700;color:#16212E;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escapeHtml(value || "") + '</div>';
+  }
   function printPrescription(patient, rx) {
     var win = window.open("", "_blank");
     if (!win) { T.show("المتصفح منع فتح نافذة الطباعة — سمح بالنوافذ المنبثقة وحاول تاني", "error"); return; }
     var rxParagraphs = (rx.rx_text || "").split(/\n{2,}/).map(function (p) {
       return '<p style="margin:0 0 14px;">' + escapeHtml(p).replace(/\n/g, "<br>") + '</p>';
     }).join("");
+    var fields =
+      rxFieldValueHtml(44.5, 10.7, 37.3, fmtDate(rx.report_date)) +
+      rxFieldValueHtml(44.5, 96.8, 72, rx.doctor_name) +
+      rxFieldValueHtml(54.7, 10.7, 37.3, rx.specialty) +
+      rxFieldValueHtml(54.7, 96.8, 72, patient.full_name) +
+      rxFieldValueHtml(64.4, 11.6, 148.3, rx.diagnosis);
     var body =
-      '<div style="width:210mm;min-height:297mm;margin:0 auto;padding:16mm 16mm 34mm;box-sizing:border-box;position:relative;">' +
-      '<div style="display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #0F369D;padding-bottom:10px;margin-bottom:18px;">' +
-      '<img src="' + PRINT_LOGO_URL + '" style="height:44px;">' +
-      '<div style="text-align:right;"><div style="font-weight:700;font-size:17px;color:#0F369D;">عيادات سونو التخصصية</div>' +
-      '<div style="font-size:11px;color:#F15A22;">SWNW Specialized Clinics</div></div></div>' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;font-size:13px;margin-bottom:14px;">' +
-      '<div>الطبيب: <b>' + escapeHtml(rx.doctor_name || "") + '</b></div>' +
-      '<div>التاريخ: <b>' + fmtDate(rx.report_date) + '</b></div>' +
-      '<div>المريض: <b>' + escapeHtml(patient.full_name) + '</b></div>' +
-      '<div>التخصص: <b>' + escapeHtml(rx.specialty || "") + '</b></div>' +
-      '</div>' +
-      (rx.diagnosis ? '<div style="font-size:13px;margin-bottom:16px;">التشخيص: <b>' + escapeHtml(rx.diagnosis) + '</b></div>' : '<div style="margin-bottom:16px;"></div>') +
-      '<div style="font-size:34px;font-weight:700;color:#0F369D;font-style:italic;margin-bottom:14px;">℞</div>' +
-      '<div style="font-size:14px;line-height:2;">' + rxParagraphs + '</div>' +
-      '<div style="position:absolute;bottom:14mm;left:16mm;right:16mm;">' +
-      '<div style="text-align:center;background:#0F369D;color:#fff;font-size:11px;padding:5px;border-radius:16px;margin-bottom:6px;">خدمات طبية متميزة على مدار الساعة</div>' +
-      '<div style="text-align:center;font-size:11px;color:#333;margin-bottom:4px;">متاح لدينا جميع التخصصات وخدمات المعمل والأشعة والعلاج الطبيعي</div>' +
-      '<div style="text-align:center;font-size:11px;color:#333;">01010686264 | 01154542191 | 45 ع - شارع الخزان - حدائق الأهرام</div>' +
-      '</div></div>';
+      '<div style="position:relative;width:210mm;min-height:297mm;margin:0 auto;">' +
+      '<img src="' + PRINT_RX_HEADER_URL + '" style="position:fixed;top:0;left:0;width:210mm;display:block;">' +
+      '<img src="' + PRINT_RX_FOOTER_URL + '" style="position:fixed;bottom:0;left:0;width:210mm;display:block;">' +
+      fields +
+      '<div dir="rtl" style="position:relative;padding:103mm 16mm 50mm;box-sizing:border-box;font-size:14px;line-height:2;">' + rxParagraphs + '</div>' +
+      '</div>';
     win.document.open();
     win.document.write('<!doctype html><html><head><meta charset="utf-8"><title>روشتة — ' + escapeHtml(patient.full_name) + '</title>' +
       '<style>' + PRINT_FONT_FACE_CSS + '@page{size:A4;margin:0;}body{margin:0;font-size:14px;}</style></head>' +
@@ -904,11 +900,14 @@
     window.SSMPDExperienceQuestions.forEach(function (q, i) {
       html += '<div style="margin-top:14px;">' +
         '<div style="font-size:13px;font-weight:700;margin-bottom:6px;">' + (i + 1) + '. ' + escapeHtml(q) + '</div>' +
-        '<div style="display:flex;gap:10px;">' +
+        '<div style="display:flex;gap:22px;">' +
         [1, 2, 3, 4, 5].map(function (n) {
-          return '<label style="font-size:12px;display:flex;flex-direction:column;align-items:center;gap:3px;"><input type="radio" name="er-q' + i + '" value="' + n + '"><span>' + n + '</span></label>';
+          return '<label style="font-size:12px;display:flex;flex-direction:column;align-items:center;gap:3px;width:34px;"><input type="radio" name="er-q' + i + '" value="' + n + '"><span>' + n + '</span>' +
+            (n === 1 ? '<span style="font-size:10px;color:var(--c-muted);white-space:nowrap;">غير راضٍ</span>' : '') +
+            (n === 5 ? '<span style="font-size:10px;color:var(--c-muted);white-space:nowrap;">راضٍ جدًا</span>' : '') +
+            '</label>';
         }).join("") +
-        '</div><div style="display:flex;justify-content:space-between;font-size:10px;color:var(--c-muted);margin-top:2px;"><span>غير راضٍ</span><span>راضٍ جدًا</span></div>' +
+        '</div>' +
         '</div>';
     });
     html += '<div class="field" style="margin-top:14px;"><label>كومنت العميل (اختياري)</label><textarea id="er-comment" rows="2" placeholder="أي ملاحظات من العميل"></textarea></div>' +
@@ -1742,6 +1741,11 @@
   // من الداشبورد تطلع بنفس الشكل بالظبط بدل ما حد يطبعها يدوي على الوورد
   var PRINT_LETTERHEAD_HEADER_URL = PRINT_SITE_BASE + "assets/img/report-letterhead-header.jpg";
   var PRINT_LETTERHEAD_FOOTER_URL = PRINT_SITE_BASE + "assets/img/report-letterhead-footer.jpg";
+  // نموذج الروشتة الرسمي (خانات بالتنقيط + شعار RX) — نفس صورة النموذج اللي
+  // بعتها المستخدم بالحرف (بدون أي تعديل)، القيم بتتحط فوقها في نفس أماكن
+  // الخانات بالظبط (إحداثيات محسوبة من الصورة الأصلية)
+  var PRINT_RX_HEADER_URL = PRINT_SITE_BASE + "assets/img/prescription-header.jpg";
+  var PRINT_RX_FOOTER_URL = PRINT_SITE_BASE + "assets/img/prescription-footer.jpg";
   var PRINT_FONT_FACE_CSS =
     "@font-face{font-family:'BigVesta Arabic';src:url('" + PRINT_SITE_BASE + "assets/fonts/BigVesta-Regular.woff2') format('woff2');font-weight:400;}" +
     "@font-face{font-family:'BigVesta Arabic';src:url('" + PRINT_SITE_BASE + "assets/fonts/BigVesta-Bold.woff2') format('woff2');font-weight:700;}" +
@@ -2602,6 +2606,10 @@
     if (!uploadedList.length) {
       html += '<p style="font-size:12px;color:var(--c-muted);">مفيش مستندات مرفوعة.</p>';
     } else {
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
+        '<span style="font-size:12px;color:var(--c-muted);">' + uploadedList.length + ' مستند مرفوع</span>' +
+        '<button class="btn ghost sm" data-toggle-files-cat="' + catKey + '">عرض المستندات ▾</button></div>' +
+        '<div data-files-list-cat="' + catKey + '" style="display:none;margin-top:8px;">';
       uploadedList.forEach(function (f) {
         html += '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--c-border);font-size:12px;">' +
           '<div><b>' + escapeHtml(f.file_name) + '</b>' + (f.other_description ? ' — ' + escapeHtml(f.other_description) : '') +
@@ -2615,6 +2623,7 @@
           '<button class="btn ghost sm" data-print-file="' + f.id + '">🖨 طباعة</button>' +
           (canUp ? '<button class="btn danger sm" data-del-file="' + f.id + '">حذف</button>' : '') + '</div></div>';
       });
+      html += '</div>';
     }
     html += '<div style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--c-border);">' +
       '<b style="font-size:12px;">' + catLabel + ' المُنشأة من الداشبورد (' + createdList.length + ')</b>';
