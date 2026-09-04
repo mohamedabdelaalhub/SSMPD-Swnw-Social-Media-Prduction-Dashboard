@@ -70,11 +70,17 @@
       '<div class="field"><label>المادة دي لصفحة</label>' + W.brandSelectHtml("cf-brand", "") + '</div>' +
       '<div class="field"><label>التخصص</label>' + W.specialtySelectHtml("cf-specialty", "") + '</div>' +
       '<div class="field"><label>نص المحتوى</label><textarea id="cf-body" placeholder="اكتب الفكرة والنص..."></textarea></div>' +
+      W.contentIntelligencePanelHtml() +
       '<div style="text-align:left;margin-top:10px;"><button class="btn" id="cf-submit">إرسال للاعتماد الأولي</button> ' +
       '<button class="btn ghost" id="cf-draft">حفظ كمسودة</button></div></div>';
     document.body.appendChild(backdrop);
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
     backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
+
+    W.wireContentIntelligence(backdrop, function () { return document.getElementById("cf-specialty").value; });
+    document.getElementById("cf-specialty").addEventListener("change", function () {
+      W.refreshContentIntelligence(backdrop, function () { return document.getElementById("cf-specialty").value; });
+    });
 
     function submit(stage) {
       var title = document.getElementById("cf-title").value.trim();

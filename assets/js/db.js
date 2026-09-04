@@ -308,6 +308,13 @@
     deleteContentMetaLink: function (id) {
       return handle(client.from("content_meta_links").delete().eq("id", id));
     },
+    // ---------- Content Intelligence (قسم ٣٧ — أنماط أداء تاريخية + mapping تخصصات) ----------
+    listContentSpecialtyMap: function () {
+      return handle(client.from("content_meta_specialty_map").select("*").eq("active", true));
+    },
+    listContentIntelligencePatterns: function () {
+      return handle(client.from("vw_content_intelligence_patterns").select("*"));
+    },
 
     // ---------- أرشيف المرضى (Edge Functions) ----------
     createPatientArchive: function (payload) {

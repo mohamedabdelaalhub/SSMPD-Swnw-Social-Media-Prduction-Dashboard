@@ -366,6 +366,362 @@
     });
   }
 
+  // ============================================================
+  // Content Intelligence (قسم ٣٧) — بانل استشاري وقت إنشاء محتوى جديد.
+  // بيقرا بس من vw_content_intelligence_patterns/content_meta_specialty_map/
+  // vw_meta_ad_performance — مفيش أي تعديل على سلوك إنشاء المحتوى الحالي،
+  // والبانل اختياري بالكامل (قابل للطي، ومفيش إجبار لاستخدامه).
+  // ============================================================
+
+  var CONTENT_OBJECTIVES = {
+    messages:        { label: "رسائل واتساب/ماسنجر (Messages)", meta: "MESSAGES" },
+    lead_generation: { label: "توليد ليدز (Lead Generation)",   meta: "LEAD_GENERATION" },
+    engagement:      { label: "تفاعل (Engagement)",             meta: "OUTCOME_ENGAGEMENT" },
+    reach:           { label: "وصول (Reach)",                   meta: "REACH" },
+    sales:           { label: "مبيعات (Sales)",                 meta: "OUTCOME_SALES" },
+    link_clicks:     { label: "زيارات رابط (Link Clicks)",      meta: "LINK_CLICKS" },
+    page_likes:      { label: "إعجاب الصفحة (Page Likes)",      meta: "PAGE_LIKES" }
+  };
+  var CONTENT_FORMATS = {
+    video:      { label: "فيديو",             meta: "Video" },
+    image_post: { label: "بوست صورة/نص",       meta: "Existing post (Static image/text)" },
+    link_post:  { label: "بوست رابط",          meta: "Existing post (Shared link)" }
+  };
+  var CONFIDENCE_LABELS = {
+    high:   { label: "قوي (High)", cls: "approved" },
+    medium: { label: "متوسط (Medium)", cls: "received" },
+    low:    { label: "محدود (Low)", cls: "draft" }
+  };
+
+  function ciObjectiveSelectHtml(id) {
+    var html = '<select id="' + id + '"><option value="">— اختر الهدف —</option>';
+    Object.keys(CONTENT_OBJECTIVES).forEach(function (k) {
+      html += '<option value="' + k + '">' + escapeHtml(CONTENT_OBJECTIVES[k].label) + '</option>';
+    });
+    return html + '</select>';
+  }
+  function ciFormatSelectHtml(id) {
+    var html = '<select id="' + id + '"><option value="">— كل الأشكال —</option>';
+    Object.keys(CONTENT_FORMATS).forEach(function (k) {
+      html += '<option value="' + k + '">' + escapeHtml(CONTENT_FORMATS[k].label) + '</option>';
+    });
+    return html + '</select>';
+  }
+  function ciMetricFor(objKey) {
+    if (objKey === "messages") return "weighted_cost_per_message";
+    if (objKey === "lead_generation") return "weighted_cost_per_lead";
+    return "weighted_cpm"; // وعي/تفاعل/وصول/مبيعات/زيارات — نحكم بتكلفة الظهور مش تكلفة نتيجة رسائل/ليدز
+  }
+  function ciMetricLabel(objKey) {
+    if (objKey === "messages") return "تكلفة/محادثة";
+    if (objKey === "lead_generation") return "تكلفة/ليد";
+    return "CPM (تكلفة الألف ظهور)";
+  }
+
+  var _ciDataPromise = null;
+  function ciLoadData() {
+    if (_ciDataPromise) return _ciDataPromise;
+    _ciDataPromise = Promise.all([
+      window.SSMPDDb.listContentIntelligencePatterns(),
+      window.SSMPDDb.listContentSpecialtyMap(),
+      window.SSMPDDb.listMetaAdPerformance()
+    ]).then(function (res) {
+      return { patterns: res[0] || [], map: res[1] || [], ads: res[2] || [] };
+    }).catch(function (e) { _ciDataPromise = null; throw e; });
+    return _ciDataPromise;
+  }
+
+  function ciSignalHtml(confidence) {
+    if (confidence === "high") return '<p style="font-size:12px;color:var(--c-positive);margin:4px 0;">📊 لدينا بيانات قوية لهذا التخصص والهدف.</p>';
+    if (confidence === "medium") return '<p style="font-size:12px;color:var(--c-muted);margin:4px 0;">📊 بيانات متوسطة — نتايج مبدئية مفيدة لكن لسه محتاجة تجربة أكتر.</p>';
+    return '<p style="font-size:12px;color:var(--c-muted);margin:4px 0;">📊 العينة محدودة — تعامل مع النتائج كتجربة وليست قاعدة مؤكدة.</p>';
+  }
+
+  function ciPatternRowHtml(p, metricKey, objKey) {
+    var v = p[metricKey];
+    var vHtml = metricKey === "weighted_cpm" ? fmtMoneyW(v) : fmtMoneyW(v);
+    var conf = CONFIDENCE_LABELS[p.confidence] || CONFIDENCE_LABELS.low;
+    return '<div style="border:1px solid var(--c-border,#e3e3e3);border-radius:6px;padding:8px 10px;margin-bottom:6px;font-size:12px;">' +
+      '<div><b>Hook:</b> ' + escapeHtml(p.hook_type || "—") + ' &nbsp; <b>Angle:</b> ' + escapeHtml(p.content_angle || "—") + '</div>' +
+      '<div><b>Format:</b> ' + escapeHtml(p.creative_type || "—") + ' &nbsp; <b>CTA:</b> ' + escapeHtml(p.cta_type || "—") + '</div>' +
+      '<div>' + ciMetricLabel(objKey) + ': <b>' + vHtml + '</b> &nbsp; إعلانات: ' + fmtNumW(p.ads_count) +
+      ' &nbsp; <span class="status-pill ' + conf.cls + '" style="font-size:10px;">' + conf.label + '</span></div>' +
+      '</div>';
+  }
+
+  function ciGroupHtml(title, rows, metricKey, objKey, emptyMsg) {
+    var html = '<h4 style="font-size:12px;margin:10px 0 6px;">' + title + '</h4>';
+    if (!rows.length) {
+      html += '<div class="empty-state" style="font-size:11px;">' + (emptyMsg || "لا يوجد") + '</div>';
+      return html;
+    }
+    rows.forEach(function (p) { html += ciPatternRowHtml(p, metricKey, objKey); });
+    return html;
+  }
+
+  // أمثلة تاريخية ناجحة — من vw_meta_ad_performance، مرتبة بأفضل مقياس،
+  // ومُختصرة (مجموعة كرييتف واحدة = مثال واحد + عدد الإعادات تحته)
+  function ciWinningExamples(ads, metaLabel, objMeta, metricKey) {
+    var filtered = ads.filter(function (a) { return a.specialty === metaLabel && a.objective === objMeta; });
+    var sortKey = metricKey === "weighted_cost_per_message" ? "cost_per_msg_conv" :
+      metricKey === "weighted_cost_per_lead" ? "cost_per_lead" : "cpm";
+    filtered = filtered.filter(function (a) { return a[sortKey] != null; })
+      .sort(function (a, b) { return Number(a[sortKey]) - Number(b[sortKey]); });
+    var seenGroups = {}; var out = [];
+    filtered.forEach(function (a) {
+      var key = a.creative_group_id || a.ad_id;
+      if (seenGroups[key]) { seenGroups[key].runs += 1; return; }
+      seenGroups[key] = { ad: a, runs: 1 };
+      out.push(seenGroups[key]);
+    });
+    return out.slice(0, 5);
+  }
+
+  function ciExamplesHtml(examples) {
+    var html = '<h4 style="font-size:12px;margin:10px 0 6px;">🏆 أمثلة ناجحة</h4>';
+    if (!examples.length) {
+      html += '<div class="empty-state" style="font-size:11px;">لا توجد أمثلة تاريخية مطابقة.</div>';
+      return html;
+    }
+    examples.forEach(function (ex, idx) {
+      var a = ex.ad;
+      html += '<details style="border:1px solid var(--c-border,#e3e3e3);border-radius:6px;padding:6px 10px;margin-bottom:6px;font-size:12px;">' +
+        '<summary style="cursor:pointer;"><b>مثال ' + (idx + 1) + ':</b> ' + escapeHtml(a.ad_name || a.campaign_name || "—") +
+        (ex.runs > 1 ? ' <span style="color:var(--c-muted);">(' + ex.runs + ' تكرار)</span>' : '') + '</summary>' +
+        '<div style="margin-top:6px;">' +
+        (a.creative_title ? '<div><b>العنوان:</b> ' + escapeHtml(a.creative_title) + '</div>' : '') +
+        (a.creative_body ? '<div><b>النص:</b> ' + escapeHtml(a.creative_body) + '</div>' : '') +
+        '<div><b>Hook:</b> ' + escapeHtml(a.hook_type || "—") + ' | <b>Angle:</b> ' + escapeHtml(a.content_angle || "—") +
+        ' | <b>CTA:</b> ' + escapeHtml(a.cta_type || "—") + '</div>' +
+        '<div>إنفاق: ' + fmtMoneyW(a.spend) + ' | محادثات: ' + fmtNumW(a.msg_conv) + ' | تكلفة/محادثة: ' + fmtMoneyW(a.cost_per_msg_conv) +
+        ' | Leads: ' + fmtNumW(a.leads) + ' | CPL: ' + fmtMoneyW(a.cost_per_lead) + ' | CTR: ' + (a.ctr != null ? Number(a.ctr).toFixed(2) + '%' : '—') + '</div>' +
+        (a.preview_url ? '<div><a href="' + a.preview_url + '" target="_blank" rel="noopener noreferrer">معاينة الإعلان الأصلي</a></div>' : '') +
+        '</div></details>';
+    });
+    return html;
+  }
+
+  function contentIntelligencePanelHtml() {
+    return '<div class="section ci-panel" style="margin-top:14px;">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" id="ci-toggle-head">' +
+      '<h3 style="margin:0;font-size:14px;">✨ ذكاء المحتوى</h3><span id="ci-toggle-arrow">▾</span></div>' +
+      '<div id="ci-body" style="margin-top:10px;">' +
+      '<div class="field"><label>الهدف الإعلاني</label>' + ciObjectiveSelectHtml("ci-objective") + '</div>' +
+      '<div class="field"><label>شكل المحتوى (اختياري)</label>' + ciFormatSelectHtml("ci-format") + '</div>' +
+      '<div id="ci-output"><div class="empty-state" style="font-size:12px;">اختر التخصص فوق ثم الهدف الإعلاني لعرض التوصيات</div></div>' +
+      '</div></div>';
+  }
+
+  function ciCurrentState(container) {
+    var objSel = container.querySelector("#ci-objective");
+    var fmtSel = container.querySelector("#ci-format");
+    return { objKey: objSel ? objSel.value : "", fmtKey: fmtSel ? fmtSel.value : "" };
+  }
+
+  function renderCiOutput(container, getSpecialtyKey) {
+    var out = container.querySelector("#ci-output");
+    if (!out) return;
+    var specialtyKey = getSpecialtyKey();
+    var st = ciCurrentState(container);
+    if (!specialtyKey) { out.innerHTML = '<div class="empty-state" style="font-size:12px;">اختر التخصص فوق الأول</div>'; return; }
+    if (!st.objKey) { out.innerHTML = '<div class="empty-state" style="font-size:12px;">اختر الهدف الإعلاني لعرض التوصيات</div>'; return; }
+    out.innerHTML = '<div class="loading" style="font-size:12px;">بيحمّل بيانات ذكاء المحتوى…</div>';
+    ciLoadData().then(function (data) {
+      renderCiResults(out, data, specialtyKey, st.objKey, st.fmtKey);
+    }).catch(function (e) {
+      out.innerHTML = '<div class="err-msg">تعذّر تحميل بيانات ذكاء المحتوى: ' + escapeHtml(e.message || e) + '</div>';
+    });
+  }
+
+  function ciGeneralFallbackHtml(patterns, objKey) {
+    if (!patterns.length) return '';
+    var metricKey = ciMetricFor(objKey);
+    var top = patterns.slice().sort(function (a, b) {
+      var av = a[metricKey] == null ? Infinity : Number(a[metricKey]);
+      var bv = b[metricKey] == null ? Infinity : Number(b[metricKey]);
+      return av - bv;
+    }).slice(0, 3);
+    var html = '<h4 style="font-size:12px;margin:10px 0 6px;color:var(--c-muted);">أفضل الأنماط العامة عبر الحساب (GENERAL ACCOUNT INSIGHTS — مش خاصة بالتخصص ده)</h4>';
+    top.forEach(function (p) { html += ciPatternRowHtml(p, metricKey, objKey); });
+    return html;
+  }
+
+  function renderCiResults(out, data, specialtyKey, objKey, fmtKey) {
+    var mapRow = data.map.filter(function (m) { return m.content_specialty_key === specialtyKey; })[0];
+    var metaLabel = mapRow ? mapRow.meta_specialty_label : null;
+    var objMeta = CONTENT_OBJECTIVES[objKey] ? CONTENT_OBJECTIVES[objKey].meta : null;
+
+    if (!metaLabel) {
+      var generalNoMap = data.patterns.filter(function (p) { return p.objective === objMeta && p.confidence !== "low"; });
+      out.innerHTML = '<div class="empty-state" style="font-size:12px;">لا توجد بيانات تاريخية كافية لهذا التخصص.</div>' + ciGeneralFallbackHtml(generalNoMap, objKey);
+      out.dataset.ciBrief = "";
+      return;
+    }
+
+    var matched = data.patterns.filter(function (p) { return p.specialty === metaLabel && p.objective === objMeta; });
+    if (!matched.length) {
+      var general = data.patterns.filter(function (p) { return p.objective === objMeta && p.confidence !== "low"; });
+      out.innerHTML = '<div class="empty-state" style="font-size:12px;">لا توجد بيانات تاريخية كافية لهذا التخصص مع الهدف ده.</div>' + ciGeneralFallbackHtml(general, objKey);
+      out.dataset.ciBrief = "";
+      return;
+    }
+
+    var metricKey = ciMetricFor(objKey);
+    function metricVal(p) { var v = p[metricKey]; return (v == null) ? Infinity : Number(v); }
+
+    var qualifying = matched.filter(function (p) { return p.confidence !== "low"; })
+      .slice().sort(function (a, b) { return metricVal(a) - metricVal(b); });
+    var worked = qualifying.slice(0, 3);
+    var tested = qualifying.slice(3, 6).filter(function (p) { return p.confidence === "medium"; });
+    var avoid = [];
+    if (qualifying.length >= 5) {
+      avoid = qualifying.slice().sort(function (a, b) { return metricVal(b) - metricVal(a); })
+        .slice(0, 2).filter(function (p) { return worked.indexOf(p) === -1; });
+    }
+
+    var bestConfidence = matched.reduce(function (acc, p) {
+      if (p.confidence === "high") return "high";
+      if (p.confidence === "medium" && acc !== "high") return "medium";
+      return acc;
+    }, "low");
+
+    var html = ciSignalHtml(bestConfidence);
+    html += ciGroupHtml("✅ ما نجح", worked, metricKey, objKey, "لسه معندناش نتائج بثقة كافية لهذا التخصص/الهدف.");
+    html += ciGroupHtml("🧪 جرّب", tested, metricKey, objKey, "");
+    if (avoid.length) html += ciGroupHtml("⚠️ تجنب / أعد الاختبار", avoid, metricKey, objKey, "");
+
+    var examples = ciWinningExamples(data.ads, metaLabel, objMeta, metricKey);
+    html += ciExamplesHtml(examples);
+
+    html += '<div style="text-align:left;margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;">' +
+      '<button class="btn ghost sm" id="ci-copy-brief">نسخ Brief للوكيل</button>' +
+      '<button class="btn ghost sm" id="ci-open-agent">وكيل إنشاء المحتوى ↗</button></div>';
+
+    out.innerHTML = html;
+
+    var briefCopyBtn = out.querySelector("#ci-copy-brief");
+    if (briefCopyBtn) {
+      briefCopyBtn.onclick = function () {
+        ciCopyBrief(out, { specialtyKey: specialtyKey, metaLabel: metaLabel, objKey: objKey, fmtKey: fmtKey, worked: worked, tested: tested, avoid: avoid, examples: examples, metricKey: metricKey });
+      };
+    }
+    var agentBtn = out.querySelector("#ci-open-agent");
+    if (agentBtn) { agentBtn.onclick = function () { ciOpenAgent(); }; }
+  }
+
+  function ciPatternBriefLine(p, metricKey, objKey) {
+    return "- Hook: " + (p.hook_type || "—") + " | Angle: " + (p.content_angle || "—") + " | Format: " + (p.creative_type || "—") +
+      " | CTA: " + (p.cta_type || "—") + " | " + ciMetricLabel(objKey) + ": " + fmtMoneyW(p[metricKey]) +
+      " | إعلانات: " + fmtNumW(p.ads_count) + " | ثقة: " + (CONFIDENCE_LABELS[p.confidence] || CONFIDENCE_LABELS.low).label;
+  }
+
+  function ciCopyBrief(out, ctx) {
+    var brand = document.getElementById("cf-brand");
+    var lines = [];
+    lines.push("=== Brief للوكيل — إنشاء محتوى جديد ===");
+    lines.push("Brand: " + (brand && brand.value ? brand.value : "—"));
+    lines.push("Specialty: " + (SPECIALTIES[ctx.specialtyKey] ? SPECIALTIES[ctx.specialtyKey].label : ctx.specialtyKey));
+    lines.push("Advertising Objective: " + (CONTENT_OBJECTIVES[ctx.objKey] ? CONTENT_OBJECTIVES[ctx.objKey].label : ctx.objKey));
+    lines.push("Preferred Format: " + (CONTENT_FORMATS[ctx.fmtKey] ? CONTENT_FORMATS[ctx.fmtKey].label : "أي شكل"));
+    lines.push("");
+    lines.push("HISTORICAL INSIGHTS:");
+    if (ctx.worked.length) {
+      lines.push("Best evidence-backed patterns:");
+      ctx.worked.forEach(function (p) { lines.push(ciPatternBriefLine(p, ctx.metricKey, ctx.objKey)); });
+    } else {
+      lines.push("لا توجد أنماط بثقة كافية بعد.");
+    }
+    if (ctx.tested.length) {
+      lines.push("Promising (test more):");
+      ctx.tested.forEach(function (p) { lines.push(ciPatternBriefLine(p, ctx.metricKey, ctx.objKey)); });
+    }
+    lines.push("");
+    lines.push("WINNING EXAMPLES:");
+    if (ctx.examples.length) {
+      ctx.examples.slice(0, 3).forEach(function (ex, i) {
+        var a = ex.ad;
+        lines.push((i + 1) + ") " + (a.ad_name || a.campaign_name || "—") + " — " +
+          ciMetricLabel(ctx.objKey) + ": " + fmtMoneyW(a[ctx.metricKey === "weighted_cost_per_message" ? "cost_per_msg_conv" : ctx.metricKey === "weighted_cost_per_lead" ? "cost_per_lead" : "cpm"]));
+      });
+    } else {
+      lines.push("لا توجد أمثلة تاريخية مطابقة.");
+    }
+    lines.push("");
+    lines.push("AVOID / RETEST:");
+    if (ctx.avoid.length) {
+      ctx.avoid.forEach(function (p) { lines.push(ciPatternBriefLine(p, ctx.metricKey, ctx.objKey)); });
+    } else {
+      lines.push("مفيش أنماط ضعيفة بأدلة كافية لسه.");
+    }
+    lines.push("");
+    lines.push("استخدم النتائج كمرجع استراتيجي وليس كنص للنسخ.");
+    lines.push("من فضلك رجّعلي:");
+    lines.push("1. 3-5 أفكار محتوى جديدة");
+    lines.push("2. Hook لكل فكرة");
+    lines.push("3. الـAngle المقترح");
+    lines.push("4. الشكل المقترح (فيديو/بوست/إلخ)");
+    lines.push("5. سكريبت/نص كامل");
+    lines.push("6. كابشن للنشر");
+    lines.push("7. CTA");
+    lines.push("8. ليه كل فكرة مناسبة للبيانات التاريخية دي");
+    lines.push("مهم: متنسخش الإعلانات القديمة حرفيًا — استخدمها كمرجع بس.");
+
+    var text = lines.join("\n");
+    var done = function () {
+      if (window.SSMPDToast) window.SSMPDToast.show("تم نسخ الـBrief — افتح وكيل إنشاء المحتوى", "success");
+      else alert("تم نسخ الـBrief");
+    };
+    var fail = function () {
+      if (window.SSMPDToast) window.SSMPDToast.show("تعذّر النسخ التلقائي — انسخ يدويًا من النافذة", "error");
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done).catch(fail);
+    } else {
+      try {
+        var ta = document.createElement("textarea");
+        ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+        document.body.appendChild(ta); ta.select();
+        document.execCommand("copy"); document.body.removeChild(ta);
+        done();
+      } catch (e) { fail(); }
+    }
+  }
+
+  function ciOpenAgent() {
+    window.SSMPDDb.getAppSettings().then(function (s) {
+      var url = s && s.content_agent_gpt_url;
+      if (!url) {
+        if (window.SSMPDToast) window.SSMPDToast.show("رابط وكيل إنشاء المحتوى غير مُعد بعد", "error");
+        return;
+      }
+      window.open(url, "_blank", "noopener,noreferrer");
+    }).catch(function () {
+      if (window.SSMPDToast) window.SSMPDToast.show("تعذّر تحميل إعدادات وكيل المحتوى", "error");
+    });
+  }
+
+  function wireContentIntelligence(container, getSpecialtyKey) {
+    var head = container.querySelector("#ci-toggle-head");
+    var body = container.querySelector("#ci-body");
+    var arrow = container.querySelector("#ci-toggle-arrow");
+    if (head && body && arrow) {
+      head.onclick = function () {
+        var collapsed = body.style.display === "none";
+        body.style.display = collapsed ? "" : "none";
+        arrow.textContent = collapsed ? "▾" : "▸";
+      };
+    }
+    function refresh() { renderCiOutput(container, getSpecialtyKey); }
+    var objSel = container.querySelector("#ci-objective");
+    var fmtSel = container.querySelector("#ci-format");
+    if (objSel) objSel.onchange = refresh;
+    if (fmtSel) fmtSel.onchange = refresh;
+    refresh();
+  }
+  function refreshContentIntelligence(container, getSpecialtyKey) {
+    renderCiOutput(container, getSpecialtyKey);
+  }
+
   window.SSMPDWorkflow = {
     STAGES: STAGES,
     metaLinksSectionHtml: metaLinksSectionHtml,
@@ -387,6 +743,9 @@
     itemActionsHtml: itemActionsHtml,
     openEditContentModal: openEditContentModal,
     deleteContentItemWithConfirm: deleteContentItemWithConfirm,
-    wireItemActions: wireItemActions
+    wireItemActions: wireItemActions,
+    contentIntelligencePanelHtml: contentIntelligencePanelHtml,
+    wireContentIntelligence: wireContentIntelligence,
+    refreshContentIntelligence: refreshContentIntelligence
   };
 })();
