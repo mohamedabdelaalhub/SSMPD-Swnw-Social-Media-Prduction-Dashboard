@@ -2994,9 +2994,20 @@ drop policy if exists "active admins read media_buyer_plans" on public.media_buy
 create policy "active admins read media_buyer_plans" on public.media_buyer_plans
   for select to authenticated using (public.my_admin_id() is not null);
 
+-- (تصحيح أمني) "managers write ..." القديمة كانت FOR ALL — بتسمح بالـDELETE
+-- ضمنيًا، وده يتعارض مع مطلب إن سجل الاعتماد يفضل auditable من غير حذف من
+-- الداشبورد. اتقسمت لسياستين صريحتين (INSERT/UPDATE) من غير أي سياسة DELETE
+-- خالص — الحذف مش متاح لمستخدم الداشبورد نهائيًا على الجدولين دول، لا
+-- general_manager ولا super_admin. الـexecution backend المستقبلي هيستخدم
+-- service_role (بيتخطى RLS بالكامل) لو احتاج يحدّث نتيجة التنفيذ.
 drop policy if exists "managers write media_buyer_plans" on public.media_buyer_plans;
-create policy "managers write media_buyer_plans" on public.media_buyer_plans
-  for all to authenticated
+drop policy if exists "managers insert media_buyer_plans" on public.media_buyer_plans;
+create policy "managers insert media_buyer_plans" on public.media_buyer_plans
+  for insert to authenticated
+  with check (public.has_role('general_manager') or public.has_role('super_admin'));
+drop policy if exists "managers update media_buyer_plans" on public.media_buyer_plans;
+create policy "managers update media_buyer_plans" on public.media_buyer_plans
+  for update to authenticated
   using (public.has_role('general_manager') or public.has_role('super_admin'))
   with check (public.has_role('general_manager') or public.has_role('super_admin'));
 
@@ -3005,8 +3016,13 @@ create policy "active admins read media_buyer_actions" on public.media_buyer_act
   for select to authenticated using (public.my_admin_id() is not null);
 
 drop policy if exists "managers write media_buyer_actions" on public.media_buyer_actions;
-create policy "managers write media_buyer_actions" on public.media_buyer_actions
-  for all to authenticated
+drop policy if exists "managers insert media_buyer_actions" on public.media_buyer_actions;
+create policy "managers insert media_buyer_actions" on public.media_buyer_actions
+  for insert to authenticated
+  with check (public.has_role('general_manager') or public.has_role('super_admin'));
+drop policy if exists "managers update media_buyer_actions" on public.media_buyer_actions;
+create policy "managers update media_buyer_actions" on public.media_buyer_actions
+  for update to authenticated
   using (public.has_role('general_manager') or public.has_role('super_admin'))
   with check (public.has_role('general_manager') or public.has_role('super_admin'));
 
