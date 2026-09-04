@@ -661,7 +661,7 @@
       '<div style="position:relative;width:210mm;min-height:297mm;margin:0 auto;">' +
       '<img src="' + PRINT_RX_FULL_URL + '" style="position:fixed;top:0;left:0;width:210mm;display:block;">' +
       fields +
-      '<div dir="rtl" style="position:relative;padding:103mm 16mm 50mm;box-sizing:border-box;font-size:16px;line-height:2.1;">' + rxParagraphs + '</div>' +
+      '<div dir="rtl" style="position:relative;padding:103mm 16mm 50mm;box-sizing:border-box;font-size:19px;line-height:2.2;">' + rxParagraphs + '</div>' +
       '</div>';
     win.document.open();
     win.document.write('<!doctype html><html><head><meta charset="utf-8"><title>روشتة — ' + escapeHtml(patient.full_name) + '</title>' +
