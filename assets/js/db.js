@@ -316,6 +316,35 @@
       return handle(client.from("vw_content_intelligence_patterns").select("*"));
     },
 
+    // ---------- Media Buyer Control Center (قسم ٣٨ — Phase 1، مفيش اتصال بـMeta API خالص) ----------
+    listMediaBuyerPlans: function () {
+      return handle(client.from("media_buyer_plans").select("*").order("created_at", { ascending: false }));
+    },
+    updateMediaBuyerPlan: function (id, patch) {
+      return handle(client.from("media_buyer_plans").update(patch).eq("id", id).select().single());
+    },
+    approveMediaBuyerPlan: function (id, adminId) {
+      return handle(client.from("media_buyer_plans")
+        .update({ status: "approved", approved_by: adminId, approved_at: new Date().toISOString() })
+        .eq("id", id).select().single());
+    },
+    rejectMediaBuyerPlan: function (id, adminId, reason) {
+      return handle(client.from("media_buyer_plans")
+        .update({ status: "rejected", rejected_by: adminId, rejected_at: new Date().toISOString(), rejection_reason: reason || null })
+        .eq("id", id).select().single());
+    },
+    listMediaBuyerActions: function () {
+      return handle(client.from("media_buyer_actions").select("*").order("created_at", { ascending: false }));
+    },
+    approveMediaBuyerAction: function (id, adminId) {
+      return handle(client.from("media_buyer_actions")
+        .update({ status: "approved", approved_by: adminId, approved_at: new Date().toISOString() })
+        .eq("id", id).select().single());
+    },
+    rejectMediaBuyerAction: function (id) {
+      return handle(client.from("media_buyer_actions").update({ status: "rejected" }).eq("id", id).select().single());
+    },
+
     // ---------- أرشيف المرضى (Edge Functions) ----------
     createPatientArchive: function (payload) {
       return edgeFetch("patients-create", { method: "POST", json: payload });
