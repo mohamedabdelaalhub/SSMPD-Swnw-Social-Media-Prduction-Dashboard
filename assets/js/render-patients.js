@@ -638,17 +638,18 @@
   }
 
   // ---------- طباعة الروشتة — نفس نموذج الروشتة الرسمي اللي بعته المستخدم
-  //            بالحرف (صورة واحدة هيدر فيها الشعار + خانات التنقيط + علامة Rx،
-  //            وصورة فوتر) — القيم بتتحط فوق أماكن الخانات بالظبط بإحداثيات
-  //            محسوبة من الصورة الأصلية (مفيش أي تعديل في شكل النموذج نفسه) ----------
+  //            بالحرف (صورة واحدة كاملة للصفحة — هيدر+خانات+علامة Rx+الرسمة
+  //            الشفافة في النص+فوتر — بدل ما تتقص هيدر/فوتر منفصلين اللي كان
+  //            بيسيب المنتصف فاضي من غير الرسمة). القيم/النص بتتحط كـlayer
+  //            شفاف فوق الصورة مباشرة (مفيش أي بوكس أبيض بيغطي أي جزء منها) ----------
   function rxFieldValueHtml(topMm, leftMm, widthMm, value) {
-    return '<div style="position:absolute;top:' + topMm + 'mm;left:' + leftMm + 'mm;width:' + widthMm + 'mm;font-size:13px;font-weight:700;color:#16212E;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escapeHtml(value || "") + '</div>';
+    return '<div style="position:absolute;top:' + topMm + 'mm;left:' + leftMm + 'mm;width:' + widthMm + 'mm;font-size:15px;font-weight:700;color:#16212E;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escapeHtml(value || "") + '</div>';
   }
   function printPrescription(patient, rx) {
     var win = window.open("", "_blank");
     if (!win) { T.show("المتصفح منع فتح نافذة الطباعة — سمح بالنوافذ المنبثقة وحاول تاني", "error"); return; }
     var rxParagraphs = (rx.rx_text || "").split(/\n{2,}/).map(function (p) {
-      return '<p style="margin:0 0 14px;">' + escapeHtml(p).replace(/\n/g, "<br>") + '</p>';
+      return '<p style="margin:0 0 16px;">' + escapeHtml(p).replace(/\n/g, "<br>") + '</p>';
     }).join("");
     var fields =
       rxFieldValueHtml(44.5, 10.7, 37.3, fmtDate(rx.report_date)) +
@@ -658,14 +659,13 @@
       rxFieldValueHtml(64.4, 11.6, 148.3, rx.diagnosis);
     var body =
       '<div style="position:relative;width:210mm;min-height:297mm;margin:0 auto;">' +
-      '<img src="' + PRINT_RX_HEADER_URL + '" style="position:fixed;top:0;left:0;width:210mm;display:block;">' +
-      '<img src="' + PRINT_RX_FOOTER_URL + '" style="position:fixed;bottom:0;left:0;width:210mm;display:block;">' +
+      '<img src="' + PRINT_RX_FULL_URL + '" style="position:fixed;top:0;left:0;width:210mm;display:block;">' +
       fields +
-      '<div dir="rtl" style="position:relative;padding:103mm 16mm 50mm;box-sizing:border-box;font-size:14px;line-height:2;">' + rxParagraphs + '</div>' +
+      '<div dir="rtl" style="position:relative;padding:103mm 16mm 50mm;box-sizing:border-box;font-size:16px;line-height:2.1;">' + rxParagraphs + '</div>' +
       '</div>';
     win.document.open();
     win.document.write('<!doctype html><html><head><meta charset="utf-8"><title>روشتة — ' + escapeHtml(patient.full_name) + '</title>' +
-      '<style>' + PRINT_FONT_FACE_CSS + '@page{size:A4;margin:0;}body{margin:0;font-size:14px;}</style></head>' +
+      '<style>' + PRINT_FONT_FACE_CSS + '@page{size:A4;margin:0;}body{margin:0;font-size:16px;}</style></head>' +
       '<body dir="rtl">' + body + '</body></html>');
     win.document.close();
     waitForImagesThenPrint(win, 3000);
@@ -1744,8 +1744,7 @@
   // نموذج الروشتة الرسمي (خانات بالتنقيط + شعار RX) — نفس صورة النموذج اللي
   // بعتها المستخدم بالحرف (بدون أي تعديل)، القيم بتتحط فوقها في نفس أماكن
   // الخانات بالظبط (إحداثيات محسوبة من الصورة الأصلية)
-  var PRINT_RX_HEADER_URL = PRINT_SITE_BASE + "assets/img/prescription-header.jpg";
-  var PRINT_RX_FOOTER_URL = PRINT_SITE_BASE + "assets/img/prescription-footer.jpg";
+  var PRINT_RX_FULL_URL = PRINT_SITE_BASE + "assets/img/prescription-full.jpg";
   var PRINT_FONT_FACE_CSS =
     "@font-face{font-family:'BigVesta Arabic';src:url('" + PRINT_SITE_BASE + "assets/fonts/BigVesta-Regular.woff2') format('woff2');font-weight:400;}" +
     "@font-face{font-family:'BigVesta Arabic';src:url('" + PRINT_SITE_BASE + "assets/fonts/BigVesta-Bold.woff2') format('woff2');font-weight:700;}" +
@@ -1806,27 +1805,39 @@
   function buildXrayImagesPagesHtml(dataUrls, perPage) {
     if (!dataUrls.length || !perPage) return "";
     var rows = Math.ceil(perPage / 2);
-    var gapMM = 6;
-    // المساحة المتاحة فعليًا جوه letterheadPageHtml هي 297 - 56 (padding-top) -
-    // 58 (padding-bottom) = 183mm — لكن دي كانت بتتحسب كأنها كلها للشبكة، من
-    // غير ما تاخد بالها من عنوان "صور الأشعة المرفقة" (+ الهامش تحته) اللي
-    // بيقعد فوق الشبكة في نفس المساحة دي. الفرق ده (~15mm) كان بيخلي آخر صف
-    // يفيض لصفحة تانية، وبما إن الهيدر/الفوتر position:fixed (بيتكرروا في كل
-    // صفحة) الصورة الفايضة كانت بتظهر متراكبة فوق الهيدر بالظبط زي ما اتبلّغ.
-    // اتحط رقم تحفظي (160mm بدل 183mm) للشبكة نفسها + `overflow:hidden` على
-    // إطار بارتفاع ثابت كطبقة حماية إضافية تمنع أي فيضان يدفع لصفحة تانية.
-    var gridAreaMM = 160;
+    var gapMM = 5;
+    // المساحة المتاحة جوه هيدر/فوتر letterheadPageHtml هي 297 - 56 (بادينج
+    // علوي) - 58 (بادينج سفلي) = 183mm، ناقص مساحة عنوان "صور الأشعة
+    // المرفقة" وهامشه (~10mm) = ~171mm فعليًا. اتحط 168mm (هامش أمان 3mm)
+    // بدل الرقم القديم (160mm) عشان الصور تاخد مساحة أكبر رأسيًا زي ما طلب
+    // المستخدم، مع `overflow:hidden` كطبقة حماية تمنع أي فيضان بسيط يدفع
+    // لصفحة تانية. هوامش الصفحة الجانبية هنا مخصوصة (8mm بدل 15mm الافتراضية
+    // في letterheadPageHtml) عشان الصور تاخد عرض أكبر برضه.
+    var gridAreaMM = 168;
+    var sideMM = 8;
     var cellH = ((gridAreaMM - (rows - 1) * gapMM) / rows).toFixed(1);
     var pages = "";
+    var chunkIndex = 0;
     for (var i = 0; i < dataUrls.length; i += perPage) {
       var chunk = dataUrls.slice(i, i + perPage);
       var cellsHtml = chunk.map(function (src) {
         return '<div style="height:' + cellH + 'mm;display:flex;align-items:center;justify-content:center;border:1px solid #ddd;border-radius:4px;overflow:hidden;">' +
           '<img src="' + src + '" style="max-width:100%;max-height:100%;object-fit:contain;"></div>';
       }).join("");
-      var grid = '<div style="text-align:center;font-size:13px;font-weight:700;margin-bottom:6mm;">صور الأشعة المرفقة</div>' +
+      var grid = '<div style="text-align:center;font-size:13px;font-weight:700;margin-bottom:5mm;">صور الأشعة المرفقة</div>' +
         '<div style="height:' + gridAreaMM + 'mm;overflow:hidden;display:grid;grid-template-columns:1fr 1fr;gap:' + gapMM + 'mm;">' + cellsHtml + '</div>';
-      pages += '<div style="page-break-before:always;page-break-inside:avoid;">' + letterheadPageHtml("rtl", grid) + '</div>';
+      var page = '<div style="position:relative;width:210mm;min-height:297mm;margin:0 auto;">' +
+        '<img src="' + PRINT_LETTERHEAD_HEADER_URL + '" style="position:fixed;top:0;left:0;width:210mm;display:block;">' +
+        '<img src="' + PRINT_LETTERHEAD_FOOTER_URL + '" style="position:fixed;bottom:0;left:0;width:210mm;display:block;">' +
+        '<div dir="rtl" style="position:relative;padding:56mm ' + sideMM + 'mm 58mm;box-sizing:border-box;">' + grid + '</div>' +
+        '</div>';
+      // أول شنك صور مالوش page-break-before إجباري — بيتسيب يكمل تلقائي بعد
+      // آخر التقرير (لو التقرير امتد لصفحة تانية زيادة عن المتوقع، إجبار فاصل
+      // صفحة هنا كان بيسيب صفحة شبه فاضية (باقي التقرير القليل) قبل ما الصور
+      // تبدأ في صفحة تالتة منفصلة). الشناكات اللي بعد كده (لو الصور كتير
+      // ومحتاجة أكتر من صفحة) بتفضل كل واحدة في صفحة جديدة زي المتوقع.
+      pages += '<div style="' + (chunkIndex > 0 ? "page-break-before:always;" : "") + 'page-break-inside:avoid;">' + page + '</div>';
+      chunkIndex++;
     }
     return pages;
   }
