@@ -4,13 +4,37 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 // Media Buyer proposal intake — machine-to-machine ONLY (external Claude Media
 // Buyer agent → media_buyer_plans/media_buyer_actions). Auth is a static
 // bearer secret (MEDIA_BUYER_AGENT_TOKEN), NOT a dashboard user session —
-// there is no human sitting behind this call. This function may ONLY insert
-// rows for human review; it never calls Meta, never executes anything, and
-// never returns/logs any secret.
+// there is no human sitting behind this call, so platform JWT verification
+// must be OFF for this function (see supabase/config.toml) and this file's
+// own token check is what actually gates access. This function may ONLY
+// insert rows for human review; it never calls Meta, never executes
+// anything, and never returns/logs any secret.
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const AGENT_TOKEN = Deno.env.get("MEDIA_BUYER_AGENT_TOKEN");
+
+// مفتاح الأدمن السيرفري: نفضّل ميكانيزم الـsecret keys الحالي
+// (SUPABASE_SECRET_KEYS — JSON فيها {"default": "..."}) لو موجود، ولو مش
+// موجود نرجع للمفتاح القديم SUPABASE_SERVICE_ROLE_KEY (توافق قديم). لو
+// الاتنين مش موجودين، الدالة تفشل بأمان (fail closed) بدل ما تكسر بغموض.
+// السر ده أبدًا ميتسجلش ولا يترجع في أي رد.
+function getServiceRoleKey(): string | null {
+  const secretKeysRaw = Deno.env.get("SUPABASE_SECRET_KEYS");
+  if (secretKeysRaw) {
+    try {
+      const parsed = JSON.parse(secretKeysRaw);
+      if (parsed && typeof parsed === "object" && typeof parsed["default"] === "string" && parsed["default"]) {
+        return parsed["default"];
+      }
+    } catch {
+      // JSON غير صالح — نتجاهله ونكمل على المفتاح القديم بدل ما نرمي خطأ غامض
+    }
+  }
+  const legacy = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (legacy) return legacy;
+  return null;
+}
+const SERVICE_ROLE_KEY = getServiceRoleKey();
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -43,11 +67,48 @@ const REQUIRES_TARGET_ID = [
   "resume_campaign", "resume_adset", "resume_ad",
 ];
 const CREATE_TYPES = ["create_campaign", "create_adset", "create_ad"];
+// target_type لازم يطابق نوع الكائن اللي action_type بيتحكم فيه فعليًا —
+// مفيش تناقض زي pause_ad + target_type=campaign. بالنسبة لـincrease/decrease
+// budget مفيش قيمة واحدة ثابتة (ميزانية ممكن تتضبط على مستوى campaign أو
+// adset) فهي متعالجة بمنطق منفصل تحت.
+const TARGET_TYPE_FOR_ACTION: Record<string, string> = {
+  create_campaign: "campaign", create_adset: "adset", create_ad: "ad",
+  pause_campaign: "campaign", resume_campaign: "campaign",
+  pause_adset: "adset", resume_adset: "adset",
+  pause_ad: "ad", resume_ad: "ad",
+};
+const BUDGET_ACTION_TYPES = ["increase_budget", "decrease_budget"];
+
+// السماحية الصريحة للحقول اللي الوكيل الخارجي يقدر يبعتها — أي حقل تاني
+// (بما فيه أي حقل محمي زي status/proposed_by/approved_by/...) بيترفض
+// فورًا بـVALIDATION_ERROR قبل حتى ما نوصله. الحقول المحمية أصلاً مش متضمنة
+// هنا، فمفيش داعي نستثنيها صراحة.
+const ALLOWED_PLAN_KEYS = new Set([
+  "type", "external_request_id", "title", "objective", "brand", "specialty",
+  "content_item_id", "creative_group_id", "daily_budget", "total_budget",
+  "currency", "start_date", "end_date", "targeting_summary", "strategy_summary",
+  "rationale", "agent_confidence",
+]);
+const ALLOWED_ACTION_KEYS = new Set([
+  "type", "external_request_id", "action_type", "recommendation_type",
+  "target_type", "target_platform_id", "proposed_payload", "reason",
+  "metrics_snapshot", "plan_id",
+]);
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function isStr(v: unknown): v is string { return typeof v === "string"; }
 function strOk(v: unknown, maxLen: number): boolean { return v == null || (isStr(v) && v.length <= maxLen); }
 function numOk(v: unknown): boolean { return v == null || (typeof v === "number" && isFinite(v)); }
 function dateOk(v: unknown): boolean { return v == null || (isStr(v) && /^\d{4}-\d{2}-\d{2}$/.test(v)); }
+function isUuid(v: unknown): boolean { return isStr(v) && UUID_RE.test(v); }
+
+function findUnknownKey(body: Record<string, unknown>, allowed: Set<string>): string | null {
+  for (const k of Object.keys(body)) {
+    if (!allowed.has(k)) return k;
+  }
+  return null;
+}
 
 function logSafe(entry: Record<string, unknown>) {
   // بس metadata تشغيلية آمنة — أبدًا التوكن/الـservice_role/أي secret
@@ -59,9 +120,12 @@ Deno.serve(async (req: Request) => {
   if (req.method !== "POST") return fail("METHOD_NOT_ALLOWED", "POST only", 405);
 
   // ---------- Auth: static bearer secret، مش جلسة مستخدم دashboard ----------
+  // ملحوظة نشر: لازم verify_jwt=false على مستوى المنصة لهذه الدالة (راجع
+  // supabase/config.toml) — بدون كده Supabase هيرفض الطلب قبل ما يوصل هنا
+  // خالص لأنه مش JWT حقيقي. التحقق الفعلي من الهوية لسه بيحصل هنا بالكامل.
   if (!AGENT_TOKEN) {
     // السر مش متظبط في Supabase أصلاً — نرفض بأمان بدل ما نقبل أي حد
-    logSafe({ event: "media_buyer_propose_misconfigured" });
+    logSafe({ event: "media_buyer_propose_misconfigured", reason: "no_agent_token" });
     return fail("MISCONFIGURED", "Agent token not configured", 401);
   }
   const authHeader = req.headers.get("Authorization") || "";
@@ -69,6 +133,13 @@ Deno.serve(async (req: Request) => {
   if (!m || m[1] !== AGENT_TOKEN) {
     logSafe({ event: "media_buyer_propose_unauthorized" });
     return new Response(null, { status: 401, headers: CORS });
+  }
+
+  // مفتاح الأدمن السيرفري لازم يكون موجود قبل أي عملية قاعدة بيانات —
+  // fail closed لو مفيش، مش نكمل بمفتاح فاضي/undefined
+  if (!SERVICE_ROLE_KEY) {
+    logSafe({ event: "media_buyer_propose_misconfigured", reason: "no_admin_key" });
+    return fail("MISCONFIGURED", "Server database key not configured", 500);
   }
 
   let body: Record<string, unknown>;
@@ -86,6 +157,13 @@ Deno.serve(async (req: Request) => {
   const externalRequestId = body.external_request_id;
   if (!isStr(externalRequestId) || !externalRequestId.trim() || externalRequestId.length > MAX_SHORT) {
     return fail("VALIDATION_ERROR", "external_request_id is required (non-empty string)");
+  }
+
+  // سماحية صريحة لحقول الطلب — أي حقل غير متوقع (بما فيه أي محاولة لبعت
+  // حقل محمي زي status/proposed_by/approved_by/...) بيترفض هنا قبل أي شغل تاني
+  const badKey = findUnknownKey(body, type === "plan" ? ALLOWED_PLAN_KEYS : ALLOWED_ACTION_KEYS);
+  if (badKey) {
+    return fail("VALIDATION_ERROR", `Unknown or unsupported field: ${badKey}`);
   }
 
   const db = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
@@ -141,10 +219,13 @@ async function handlePlan(db: ReturnType<typeof createClient>, body: Record<stri
     return fail("VALIDATION_ERROR", "agent_confidence must be low/medium/high");
   }
 
-  // مفيش تخمين — content_item_id لازم يتفحص وجوده فعليًا لو اتبعت، وإلا الخطة ترفض بالكامل
+  // مفيش تخمين — content_item_id لازم يكون UUID صالح الشكل ويتفحص وجوده
+  // فعليًا لو اتبعت، وإلا الخطة ترفض بالكامل. شكل غلط (مش UUID) بيترفض
+  // فورًا بـ400 VALIDATION_ERROR من غير ما نوصل لاستعلام قاعدة بيانات
+  // (ده كان ممكن يرمي خطأ Postgres/500 بدل رد واضح).
   const contentItemId = body.content_item_id;
   if (contentItemId != null) {
-    if (!isStr(contentItemId)) return fail("VALIDATION_ERROR", "content_item_id must be a string uuid");
+    if (!isUuid(contentItemId)) return fail("VALIDATION_ERROR", "content_item_id must be a valid UUID");
     const { data: ci, error: ciErr } = await db.from("content_items").select("id").eq("id", contentItemId).maybeSingle();
     if (ciErr) return fail("SERVER_ERROR", "content_item lookup failed", 500);
     if (!ci) return fail("VALIDATION_ERROR", "content_item_id does not exist");
@@ -202,12 +283,35 @@ async function handleAction(db: ReturnType<typeof createClient>, body: Record<st
     return fail("VALIDATION_ERROR", "hold/retest recommendations must not carry an executable action_type");
   }
 
-  const targetType = body.target_type;
+  let targetType = body.target_type;
   if (targetType != null && !TARGET_TYPES.includes(targetType as string)) {
     return fail("VALIDATION_ERROR", "target_type must be campaign/adset/ad");
   }
   const targetPlatformId = body.target_platform_id;
   if (!strOk(targetPlatformId, MAX_SHORT)) return fail("VALIDATION_ERROR", "target_platform_id too long");
+
+  // كل action_type بيعدّل/بينشئ كائن Meta لازم target_type متسق معاه —
+  // مفيش تناقض زي pause_ad + target_type=campaign. لو target_type مش
+  // متبعت، نستنتجه سيرفريًا من action_type (create_*/pause_*/resume_*)
+  // بدل ما نرفض — لكن لو اتبعت وبيتعارض مع الـaction_type بنرفض فورًا.
+  if (actionType != null) {
+    if (BUDGET_ACTION_TYPES.includes(actionType as string)) {
+      // ميزانية ممكن تتضبط campaign أو adset — مفيش قيمة واحدة تُستنتج
+      if (targetType == null) {
+        return fail("VALIDATION_ERROR", `${actionType} requires target_type (campaign or adset)`);
+      }
+      if (targetType !== "campaign" && targetType !== "adset") {
+        return fail("VALIDATION_ERROR", `${actionType} target_type must be campaign or adset`);
+      }
+    } else if (TARGET_TYPE_FOR_ACTION[actionType as string]) {
+      const expected = TARGET_TYPE_FOR_ACTION[actionType as string];
+      if (targetType == null) {
+        targetType = expected; // استنتاج سيرفري (مثال: create_ad → ad)
+      } else if (targetType !== expected) {
+        return fail("VALIDATION_ERROR", `${actionType} requires target_type=${expected}, got ${targetType}`);
+      }
+    }
+  }
 
   // كل action_type بيعدّل كائن Meta موجود بالفعل لازم target_platform_id حقيقي —
   // مفيش تنفيذ فعلي هنا خالص، بس لازم نمنع اقتراح "عدّل حاجة" من غير تحديد الحاجة دي
@@ -233,9 +337,11 @@ async function handleAction(db: ReturnType<typeof createClient>, body: Record<st
     return fail("VALIDATION_ERROR", "metrics_snapshot must be a JSON object");
   }
 
+  // plan_id لازم يكون UUID صالح الشكل قبل ما نستخدمه في استعلام — شكل غلط
+  // بيترفض بـ400 VALIDATION_ERROR بدل خطأ Postgres/500
   const planId = body.plan_id;
   if (planId != null) {
-    if (!isStr(planId)) return fail("VALIDATION_ERROR", "plan_id must be a string uuid");
+    if (!isUuid(planId)) return fail("VALIDATION_ERROR", "plan_id must be a valid UUID");
     const { data: p, error: pErr } = await db.from("media_buyer_plans").select("id").eq("id", planId).maybeSingle();
     if (pErr) return fail("SERVER_ERROR", "plan lookup failed", 500);
     if (!p) return fail("VALIDATION_ERROR", "plan_id does not exist");
