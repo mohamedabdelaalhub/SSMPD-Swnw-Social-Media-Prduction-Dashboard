@@ -295,6 +295,20 @@
       return handle(client.from("vw_lead_meta_attribution").select("*").order("received_at", { ascending: false }));
     },
 
+    // ---------- content_meta_links (قسم ٣٦ — ربط يدوي بين المحتوى وإعلانات Meta) ----------
+    // من غير contentId بيرجع كل الروابط (بيُستخدم في تاب Meta Ads للربط العكسي)
+    listContentMetaPerformance: function (contentId) {
+      var q = client.from("vw_content_meta_performance").select("*");
+      if (contentId) q = q.eq("content_id", contentId);
+      return handle(q.order("linked_at", { ascending: false }));
+    },
+    createContentMetaLink: function (row) {
+      return handle(client.from("content_meta_links").insert(row));
+    },
+    deleteContentMetaLink: function (id) {
+      return handle(client.from("content_meta_links").delete().eq("id", id));
+    },
+
     // ---------- أرشيف المرضى (Edge Functions) ----------
     createPatientArchive: function (payload) {
       return edgeFetch("patients-create", { method: "POST", json: payload });

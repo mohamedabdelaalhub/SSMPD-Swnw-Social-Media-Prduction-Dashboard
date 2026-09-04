@@ -608,6 +608,13 @@
     if (renderer) renderer.render(document.getElementById("view-container"));
   }
 
+  // جسر تنقّل بسيط للربط العكسي (تاب Meta Ads → فتح المادة المرتبطة) — بيستخدم
+  // نفس آلية البحث الموحّد أعلاه (SSMPDPendingOpenContentId + تاب المراجعة)
+  window.SSMPDGotoContent = function (contentId) {
+    window.SSMPDPendingOpenContentId = contentId;
+    switchTab("review");
+  };
+
   // بيتحقق إن مفيش المستخدم بيكتب/مختار حاجة دلوقتي في الشاشة الحالية (كومنت لسه ما اتبعتش،
   // فورم جدولة نشر لسه مليان...) عشان الريفريش التلقائي ميمسحوش من تحته
   function isUserEditing() {

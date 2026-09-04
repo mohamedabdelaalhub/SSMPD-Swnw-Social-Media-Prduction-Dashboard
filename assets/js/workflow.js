@@ -207,8 +207,169 @@
     };
   }
 
+  // ---------- ربط المحتوى بإعلانات Meta (قسم ٣٦) — يدوي بالكامل، مفيش auto-link ----------
+  // نفس صلاحية RLS لجدول content_meta_links بالظبط (page_manager/approver/can_manage_all_content)
+  function canManageMetaLinks(me) {
+    return !!(me && (window.SSMPDRoles.hasAnyRole(me, ["page_manager", "approver", "super_admin", "general_manager"])));
+  }
+
+  function fmtMoneyW(n) { return n == null || isNaN(n) ? "—" : Number(n).toLocaleString("en-US", { maximumFractionDigits: 2 }) + " ج.م"; }
+  function fmtNumW(n) { return n == null || isNaN(n) ? "—" : Number(n).toLocaleString("en-US", { maximumFractionDigits: 0 }); }
+
+  // مكان الحجز في المودال — بيتملى async بعد ما المودال يتضاف للصفحة
+  function metaLinksSectionHtml(item) {
+    return '<div class="section" style="margin-top:10px;"><h4 style="font-size:13px;margin-bottom:8px;">أداء إعلانات Meta</h4>' +
+      '<div id="meta-links-' + item.id + '"><div class="loading">بيحمّل…</div></div></div>';
+  }
+
+  // بيتنادى بعد إضافة المودال للـDOM — بيحمّل الروابط الحالية ويرسم الملخص
+  function wireMetaLinksSection(container, item, me) {
+    var box = container.querySelector("#meta-links-" + item.id);
+    if (!box) return;
+    window.SSMPDDb.listContentMetaPerformance(item.id).then(function (rows) {
+      renderMetaLinksBox(box, item, me, rows || []);
+    }).catch(function (e) {
+      box.innerHTML = '<p style="font-size:12px;color:var(--c-negative);">تعذّر تحميل روابط Meta: ' + escapeHtml(e.message || e) + '</p>';
+    });
+  }
+
+  function renderMetaLinksBox(box, item, me, rows) {
+    var canManage = canManageMetaLinks(me);
+    var linkBtnHtml = canManage ? '<button class="btn ghost sm" data-link-meta-ad="' + item.id + '">ربط إعلان Meta</button>' : "";
+
+    if (!rows.length) {
+      box.innerHTML = '<p style="font-size:12px;color:var(--c-muted);">مفيش إعلان Meta مرتبط بالمادة دي.</p>' + linkBtnHtml;
+      wireLinkButton(box, item, me);
+      return;
+    }
+
+    // تجميع الروابط المحفوظة (content_meta_links) بمعرّفها — كل رابط ممكن يفنّح لأكتر من إعلان لو كان رابط مجموعة كرييتف
+    var linksById = {};
+    rows.forEach(function (r) {
+      if (!linksById[r.link_id]) linksById[r.link_id] = { link_id: r.link_id, creative_group_id: r.creative_group_id, ads: [], linked_at: r.linked_at, confidence: r.confidence };
+      if (r.meta_ad_id) linksById[r.link_id].ads.push(r);
+    });
+
+    // تجميع الأداء: dedup حسب meta_ad_id عشان إعلان اترتبط بيه مباشرة وبرضه جوه مجموعة كرييتف ما يتحسبش مرتين
+    var uniqueAds = {};
+    rows.forEach(function (r) { if (r.meta_ad_id && !uniqueAds[r.meta_ad_id]) uniqueAds[r.meta_ad_id] = r; });
+    var adsList = Object.keys(uniqueAds).map(function (k) { return uniqueAds[k]; });
+
+    var sum = function (k) { return adsList.reduce(function (s, r) { return s + (Number(r[k]) || 0); }, 0); };
+    var spend = sum("spend"), msgConv = sum("msg_conv"), leads = sum("leads"), clicks = sum("clicks"), impressions = sum("impressions"), reach = sum("reach");
+    var costPerMsg = msgConv ? spend / msgConv : null;
+    var costPerLead = leads ? spend / leads : null;
+    var ctrPct = impressions ? (clicks / impressions * 100) : null;
+    var cpc = clicks ? spend / clicks : null;
+    var statuses = {}; adsList.forEach(function (r) { if (r.status) statuses[r.status] = true; });
+    var statusStr = Object.keys(statuses).join("، ") || "—";
+
+    var html = '<div class="kpi-grid">' +
+      '<div class="kpi-card"><div class="label">الإنفاق</div><div class="value small">' + fmtMoneyW(spend) + '</div></div>' +
+      '<div class="kpi-card"><div class="label">محادثات</div><div class="value small">' + fmtNumW(msgConv) + '</div></div>' +
+      '<div class="kpi-card"><div class="label">تكلفة المحادثة</div><div class="value small">' + (costPerMsg == null ? "—" : fmtMoneyW(costPerMsg)) + '</div></div>' +
+      '<div class="kpi-card"><div class="label">Leads</div><div class="value small">' + fmtNumW(leads) + '</div></div>' +
+      '<div class="kpi-card"><div class="label">CPL</div><div class="value small">' + (costPerLead == null ? "—" : fmtMoneyW(costPerLead)) + '</div></div>' +
+      '<div class="kpi-card"><div class="label">الوصول</div><div class="value small">' + fmtNumW(reach) + '</div></div>' +
+      '<div class="kpi-card"><div class="label">CTR</div><div class="value small">' + (ctrPct == null ? "—" : ctrPct.toFixed(2) + "%") + '</div></div>' +
+      '<div class="kpi-card"><div class="label">CPC</div><div class="value small">' + (cpc == null ? "—" : fmtMoneyW(cpc)) + '</div></div>' +
+      '<div class="kpi-card"><div class="label">الحالة</div><div class="value small">' + escapeHtml(statusStr) + '</div></div>' +
+      '</div>';
+
+    if (adsList.length > 1) {
+      html += '<div style="max-height:200px;overflow:auto;margin-top:8px;"><table class="simple"><thead><tr><th>الإعلان</th><th>مجموعة الكرييتف</th><th>الحالة</th><th>الإنفاق</th><th>Leads</th></tr></thead><tbody>' +
+        adsList.map(function (r) {
+          return '<tr><td style="font-size:11px;">' + escapeHtml(r.ad_name) + '</td><td style="font-size:11px;">' + escapeHtml(r.creative_group_id) + '</td>' +
+            '<td>' + escapeHtml(r.status) + '</td><td>' + fmtMoneyW(r.spend) + '</td><td>' + fmtNumW(r.leads) + '</td></tr>';
+        }).join("") + '</tbody></table></div>';
+    }
+
+    html += '<div style="margin-top:8px;">' + Object.keys(linksById).map(function (k) {
+      var l = linksById[k];
+      var desc = l.ads.length && !l.creative_group_id ? "إعلان: " + escapeHtml(l.ads[0].ad_name)
+        : l.creative_group_id ? "مجموعة كرييتف: " + escapeHtml(l.creative_group_id) + " (" + l.ads.length + " إعلان)"
+        : "رابط";
+      return '<span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;background:var(--c-card);border:1px solid var(--c-border);border-radius:8px;padding:3px 8px;margin:2px;">' +
+        desc + (canManage ? ' <button class="btn ghost sm" data-unlink-meta="' + l.link_id + '" style="padding:1px 6px;">فك الربط</button>' : '') + '</span>';
+    }).join("") + '</div>';
+
+    html += '<div style="margin-top:8px;">' + linkBtnHtml + '</div>';
+    box.innerHTML = html;
+    wireLinkButton(box, item, me);
+    box.querySelectorAll("[data-unlink-meta]").forEach(function (btn) {
+      btn.onclick = function () {
+        if (!confirm("فك ربط الإعلان ده عن المادة؟")) return;
+        window.SSMPDDb.deleteContentMetaLink(btn.getAttribute("data-unlink-meta")).then(function () {
+          wireMetaLinksSection(box.parentElement, item, me);
+        }).catch(function (e) { alert("خطأ: " + e.message); });
+      };
+    });
+  }
+
+  function wireLinkButton(box, item, me) {
+    var btn = box.querySelector("[data-link-meta-ad]");
+    if (btn) btn.onclick = function () {
+      openLinkMetaAdModal(item, me, function () { wireMetaLinksSection(box.parentElement, item, me); });
+    };
+  }
+
+  // مودال البحث عن إعلان Meta وربطه — اختيار يدوي صريح دايمًا، مفيش auto-match
+  function openLinkMetaAdModal(item, me, onLinked) {
+    var backdrop = document.createElement("div");
+    backdrop.className = "modal-backdrop";
+    backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>ربط إعلان Meta بـ«' + escapeHtml(item.title) + '»</h3>' +
+      '<button class="modal-close">×</button></div>' +
+      '<input id="lma-search" placeholder="دوّر بالاسم / اسم الحملة / رقم الإعلان / مجموعة الكرييتف / التخصص" style="width:100%;padding:9px 12px;border-radius:10px;border:1px solid var(--c-border);margin-bottom:10px;">' +
+      '<div id="lma-results" style="max-height:360px;overflow:auto;"><div class="loading">بيحمّل الإعلانات…</div></div></div>';
+    document.body.appendChild(backdrop);
+    backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
+    backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
+
+    window.SSMPDDb.listMetaAdPerformance().then(function (ads) {
+      var resultsBox = document.getElementById("lma-results");
+      function renderResults(term) {
+        term = (term || "").toLowerCase();
+        var filtered = !term ? ads : ads.filter(function (a) {
+          return [a.ad_name, a.campaign_name, a.platform_ad_id, a.creative_group_id, a.specialty].some(function (v) {
+            return v && String(v).toLowerCase().indexOf(term) !== -1;
+          });
+        });
+        if (!filtered.length) { resultsBox.innerHTML = '<p style="font-size:12px;color:var(--c-muted);">مفيش نتائج.</p>'; return; }
+        resultsBox.innerHTML = '<table class="simple"><thead><tr><th>الإعلان</th><th>الحملة</th><th>التخصص</th><th>الحالة</th><th>الإنفاق</th><th></th></tr></thead><tbody>' +
+          filtered.slice(0, 100).map(function (a) {
+            return '<tr><td style="font-size:11px;">' + escapeHtml(a.ad_name) + '<div style="color:var(--c-muted);font-size:10px;">' + escapeHtml(a.platform_ad_id) + ' — ' + escapeHtml(a.creative_group_id) + '</div></td>' +
+              '<td style="font-size:11px;">' + escapeHtml(a.campaign_name) + '</td><td>' + escapeHtml(a.specialty) + '</td>' +
+              '<td>' + escapeHtml(a.status) + '</td><td>' + fmtMoneyW(a.spend) + '</td>' +
+              '<td><button class="btn ghost sm" data-pick-ad="' + a.ad_id + '">ربط هذا الإعلان</button>' +
+              (a.creative_group_id ? ' <button class="btn ghost sm" data-pick-group="' + escapeAttr(a.creative_group_id) + '">ربط كل المجموعة</button>' : '') + '</td></tr>';
+          }).join("") + '</tbody></table>';
+        resultsBox.querySelectorAll("[data-pick-ad]").forEach(function (btn) {
+          btn.onclick = function () { doLink({ content_id: item.id, meta_ad_id: btn.getAttribute("data-pick-ad"), linked_by: me.id }); };
+        });
+        resultsBox.querySelectorAll("[data-pick-group]").forEach(function (btn) {
+          btn.onclick = function () { doLink({ content_id: item.id, creative_group_id: btn.getAttribute("data-pick-group"), linked_by: me.id }); };
+        });
+      }
+      function doLink(row) {
+        window.SSMPDDb.createContentMetaLink(row).then(function () {
+          backdrop.remove();
+          if (onLinked) onLinked();
+        }).catch(function (e) {
+          if (e && e.code === "23505") alert("الإعلان/المجموعة دي مرتبطة بالفعل بالمادة دي.");
+          else alert("خطأ: " + e.message);
+        });
+      }
+      renderResults("");
+      document.getElementById("lma-search").oninput = function (e) { renderResults(e.target.value); };
+    }).catch(function (e) {
+      document.getElementById("lma-results").innerHTML = '<p style="color:var(--c-negative);font-size:12px;">تعذّر تحميل الإعلانات: ' + escapeHtml(e.message || e) + '</p>';
+    });
+  }
+
   window.SSMPDWorkflow = {
     STAGES: STAGES,
+    metaLinksSectionHtml: metaLinksSectionHtml,
+    wireMetaLinksSection: wireMetaLinksSection,
     DESIGN_STATUS: DESIGN_STATUS,
     BRANDS: BRANDS,
     SPECIALTIES: SPECIALTIES,

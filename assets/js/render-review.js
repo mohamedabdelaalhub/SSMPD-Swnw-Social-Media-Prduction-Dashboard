@@ -160,11 +160,13 @@
       '<div style="margin:6px 0 14px;">' + W.itemActionsHtml(item, window.SSMPDAuth.currentAdmin) + '</div>' +
       reassignHtml +
       '<div style="margin:14px 0;">' + actionsHtml + '</div>' +
+      W.metaLinksSectionHtml(item) +
       '<div id="comments-slot"></div></div>';
     document.body.appendChild(backdrop);
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
     backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
     W.wireItemActions(backdrop, item, function () { render(document.getElementById("view-container")); });
+    W.wireMetaLinksSection(backdrop, item, window.SSMPDAuth.currentAdmin);
 
     var adminsById = {}; admins.forEach(function (a) { adminsById[a.id] = a; });
     window.SSMPDComments.render(document.getElementById("comments-slot"), item.id, adminsById);

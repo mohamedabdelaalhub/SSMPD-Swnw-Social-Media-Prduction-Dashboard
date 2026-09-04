@@ -20,8 +20,35 @@
   }
 
   // بيانات محمّلة مرة واحدة وبتتفلتر في المتصفح (الداتا كلها ~110 إعلان، فمفيش داعي لأي fetch إضافي عند تغيير فلتر)
-  var adRows = [], specialtyRows = [], creativeRows = [], leadRows = [];
+  var adRows = [], specialtyRows = [], creativeRows = [], leadRows = [], contentLinkRows = [];
+  var contentByAdId = {}, contentByGroupId = {};
   var filters = { account: "", campaign: "", specialty: "", objective: "", status: "", fromDate: "" };
+
+  // ربط عكسي (قسم ٣٦): لكل إعلان/مجموعة كرييتف مرتبطة بمحتوى، بنبني خريطة id → أسماء المواد
+  function buildContentLinkMaps() {
+    contentByAdId = {}; contentByGroupId = {};
+    contentLinkRows.forEach(function (r) {
+      if (r.meta_ad_id) {
+        contentByAdId[r.meta_ad_id] = contentByAdId[r.meta_ad_id] || { id: r.content_id, titles: {} };
+        contentByAdId[r.meta_ad_id].titles[r.content_title] = true;
+      }
+      if (r.creative_group_id) {
+        contentByGroupId[r.creative_group_id] = contentByGroupId[r.creative_group_id] || { id: r.content_id, titles: {} };
+        contentByGroupId[r.creative_group_id].titles[r.content_title] = true;
+      }
+    });
+  }
+  function contentLinkCellHtml(entry) {
+    if (!entry) return "—";
+    var titles = Object.keys(entry.titles).join("، ");
+    return '<button class="btn ghost sm" data-goto-content="' + entry.id + '" style="font-size:10px;padding:2px 6px;">' + escapeHtml(titles) + '</button>';
+  }
+  function wireGotoContentButtons(root) {
+    if (!window.SSMPDGotoContent) return;
+    root.querySelectorAll("[data-goto-content]").forEach(function (btn) {
+      btn.onclick = function () { window.SSMPDGotoContent(btn.getAttribute("data-goto-content")); };
+    });
+  }
 
   function applyFilters(rows) {
     return rows.filter(function (r) {
@@ -107,13 +134,14 @@
     if (!creativeRows.length) return '<p style="color:var(--c-muted);font-size:13px;">لا توجد بيانات.</p>';
     var html = '<div style="max-height:360px;overflow:auto;"><table class="simple"><thead><tr>' +
       '<th>Creative Group</th><th>التخصص</th><th>Hook</th><th>الزاوية</th><th>النوع</th><th>مرّات التشغيل</th>' +
-      '<th>الإنفاق</th><th>النتائج</th><th>محادثات</th><th>Leads</th><th>تكلفة النتيجة</th></tr></thead><tbody>';
+      '<th>الإنفاق</th><th>النتائج</th><th>محادثات</th><th>Leads</th><th>تكلفة النتيجة</th><th>المحتوى المرتبط</th></tr></thead><tbody>';
     creativeRows.forEach(function (r) {
       html += '<tr><td style="font-size:11px;">' + escapeHtml(r.creative_group_id) + '</td><td>' + escapeHtml(r.specialty) + '</td>' +
         '<td>' + escapeHtml(r.hook_type) + '</td><td>' + escapeHtml(r.content_angle) + '</td><td>' + escapeHtml(r.creative_type) + '</td>' +
         '<td>' + fmtNum(r.runs) + '</td><td>' + fmtMoney(r.spend) + '</td><td>' + fmtNum(r.results) + '</td>' +
         '<td>' + fmtNum(r.msg_conv) + '</td><td>' + fmtNum(r.leads) + '</td>' +
-        '<td>' + (r.weighted_cost_per_result == null ? "—" : fmtMoney(r.weighted_cost_per_result)) + '</td></tr>';
+        '<td>' + (r.weighted_cost_per_result == null ? "—" : fmtMoney(r.weighted_cost_per_result)) + '</td>' +
+        '<td>' + contentLinkCellHtml(contentByGroupId[r.creative_group_id]) + '</td></tr>';
     });
     html += '</tbody></table></div>';
     return html;
@@ -124,7 +152,7 @@
     var html = '<div style="max-height:460px;overflow:auto;"><table class="simple"><thead><tr>' +
       '<th>الحملة</th><th>المجموعة الإعلانية</th><th>الإعلان</th><th>الكرييتف</th><th>التخصص</th><th>الهدف</th>' +
       '<th>الإنفاق</th><th>الوصول</th><th>الظهور</th><th>النقرات</th><th>CTR</th><th>CPC</th><th>CPM</th>' +
-      '<th>محادثات</th><th>تكلفة المحادثة</th><th>Leads</th><th>CPL</th><th>الحالة</th></tr></thead><tbody>';
+      '<th>محادثات</th><th>تكلفة المحادثة</th><th>Leads</th><th>CPL</th><th>الحالة</th><th>المحتوى المرتبط</th></tr></thead><tbody>';
     rows.forEach(function (r) {
       html += '<tr><td style="font-size:11px;">' + escapeHtml(r.campaign_name) + '</td><td style="font-size:11px;">' + escapeHtml(r.adset_name) + '</td>' +
         '<td style="font-size:11px;">' + escapeHtml(r.ad_name) + '</td><td style="font-size:11px;">' + escapeHtml(r.creative_title) + '</td>' +
@@ -133,7 +161,7 @@
         '<td>' + fmtPct(r.ctr) + '</td><td>' + (r.cpc == null ? "—" : fmtMoney(r.cpc)) + '</td><td>' + (r.cpm == null ? "—" : fmtMoney(r.cpm)) + '</td>' +
         '<td>' + fmtNum(r.msg_conv) + '</td><td>' + (r.cost_per_msg_conv == null ? "—" : fmtMoney(r.cost_per_msg_conv)) + '</td>' +
         '<td>' + fmtNum(r.leads) + '</td><td>' + (r.cost_per_lead == null ? "—" : fmtMoney(r.cost_per_lead)) + '</td>' +
-        '<td>' + escapeHtml(r.status) + '</td></tr>';
+        '<td>' + escapeHtml(r.status) + '</td><td>' + contentLinkCellHtml(contentByAdId[r.ad_id]) + '</td></tr>';
     });
     html += '</tbody></table></div>';
     return html;
@@ -167,7 +195,7 @@
     var kpiBox = document.getElementById("ma-kpis");
     var tableBox = document.getElementById("ma-ads-table");
     if (kpiBox) kpiBox.innerHTML = kpiSectionHtml(computeKpis(filtered));
-    if (tableBox) tableBox.innerHTML = adsTableHtml(filtered);
+    if (tableBox) { tableBox.innerHTML = adsTableHtml(filtered); wireGotoContentButtons(tableBox); }
   }
 
   function wireFilters() {
@@ -193,11 +221,12 @@
       '<div class="section"><h3>أداء الكرييتف (حسب Creative Group)</h3>' + creativeTableHtml() + '</div>' +
       '<div class="section"><h3>تفاصيل الإعلانات</h3><div id="ma-ads-table">' + adsTableHtml(filtered) + '</div></div>' +
       '<div class="section"><h3>إسناد الليدز لإعلانات Meta</h3>' + leadAttributionHtml() + '</div>' +
-      '<div class="section"><h3>الربط بالمحتوى (قريبًا)</h3>' +
-      '<p style="font-size:12px;color:var(--c-muted);">الخطوة الجاية: ربط المحتوى (content_items) بالكرييتف والإعلان والإنفاق والليدز والفواتير — ' +
-      'من غير أي تغيير في الشاشات الحالية. القسم ده هيتفعّل لما نوصل عمود الربط.</p></div>';
+      '<div class="section"><h3>الربط بالمحتوى</h3>' +
+      '<p style="font-size:12px;color:var(--c-muted);">الربط بيتم يدويًا من مودال المادة نفسها (تابات إنتاج المحتوى/إدارة المحتوى/التصميم — قسم «أداء إعلانات Meta»). ' +
+      'لما مادة تبقى مرتبطة، اسمها بيظهر في عمود «المحتوى المرتبط» بجداول الكرييتف والإعلانات فوق — دوس عليه للفتح.</p></div>';
     el.innerHTML = html;
     wireFilters();
+    wireGotoContentButtons(el);
   }
 
   function render(el) {
@@ -206,9 +235,11 @@
       window.SSMPDDb.listMetaAdPerformance(),
       window.SSMPDDb.listMetaSpecialtyPerformance(),
       window.SSMPDDb.listMetaCreativePerformance(),
-      window.SSMPDDb.listMetaLeadAttribution()
+      window.SSMPDDb.listMetaLeadAttribution(),
+      window.SSMPDDb.listContentMetaPerformance()
     ]).then(function (res) {
       adRows = res[0] || []; specialtyRows = res[1] || []; creativeRows = res[2] || []; leadRows = res[3] || [];
+      contentLinkRows = res[4] || []; buildContentLinkMaps();
       renderAll(el);
     }).catch(function (e) {
       el.innerHTML = '<div class="section"><p style="color:var(--c-negative);">تعذّر تحميل بيانات Meta Ads: ' + escapeHtml(e.message || e) + '</p></div>';
