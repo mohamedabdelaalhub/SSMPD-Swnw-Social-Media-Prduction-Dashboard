@@ -2902,3 +2902,128 @@ alter table public.app_settings add column if not exists content_agent_gpt_url t
 update public.app_settings
   set content_agent_gpt_url = 'https://chatgpt.com/g/g-6a7e56daf7f08191b02d1164cd120136-mnshy-mhtw-ydt-swnw'
   where id = 1 and (content_agent_gpt_url is null or content_agent_gpt_url = '');
+
+-- ============================================================
+--  ٣٨) Media Buyer Control Center — طبقة تحكم واعتماد بشري (Phase 1)
+--  اللوحة/Supabase هنا هي control plane وconsumer للبيانات بس. مشروع
+--  Meta/Claude منفصل هيبقى لاحقًا execution/data-producer agent. الباتش
+--  دي إضافية بالكامل — مفيش أي لمس لـmeta_*/ad_campaigns/leads/
+--  content_meta_links الحاليين، ومفيش أي اتصال بـMeta API ولا تخزين
+--  أي secret (Meta access token/Supabase service role) في الجداول دي.
+-- ============================================================
+
+create table if not exists public.media_buyer_plans (
+  id                   uuid primary key default gen_random_uuid(),
+  title                text not null,
+  brand                text,
+  specialty            text,
+  objective            text not null,
+  content_item_id      uuid references public.content_items(id) on delete set null,
+  creative_group_id    text,
+  daily_budget         numeric,
+  total_budget         numeric,
+  currency             text not null default 'EGP',
+  start_date           date,
+  end_date             date,
+  targeting_summary    text,
+  strategy_summary     text,
+  rationale            text,
+  agent_confidence     text,
+  status               text not null default 'draft',
+  proposed_by          text not null default 'claude_media_buyer',
+  created_by           uuid references public.admins(id) on delete set null,
+  approved_by          uuid references public.admins(id) on delete set null,
+  approved_at          timestamptz,
+  rejected_by          uuid references public.admins(id) on delete set null,
+  rejected_at          timestamptz,
+  rejection_reason     text,
+  platform_campaign_id text,
+  created_at           timestamptz not null default now(),
+  updated_at           timestamptz not null default now(),
+  constraint media_buyer_plans_status_chk check (status in (
+    'draft','pending_approval','approved','rejected','executing','live',
+    'paused','completed','failed'
+  ))
+);
+
+create index if not exists media_buyer_plans_status_idx on public.media_buyer_plans (status);
+create index if not exists media_buyer_plans_content_item_idx on public.media_buyer_plans (content_item_id);
+create index if not exists media_buyer_plans_creative_group_idx on public.media_buyer_plans (creative_group_id);
+
+create table if not exists public.media_buyer_actions (
+  id                 uuid primary key default gen_random_uuid(),
+  plan_id            uuid references public.media_buyer_plans(id) on delete cascade,
+  action_type        text not null,
+  target_type        text,
+  target_platform_id text,
+  proposed_payload   jsonb,
+  reason             text,
+  metrics_snapshot   jsonb,
+  status             text not null default 'proposed',
+  proposed_by        text not null default 'claude_media_buyer',
+  approved_by        uuid references public.admins(id) on delete set null,
+  approved_at        timestamptz,
+  executed_at        timestamptz,
+  execution_result   jsonb,
+  error_message      text,
+  created_at         timestamptz not null default now(),
+  updated_at         timestamptz not null default now(),
+  constraint media_buyer_actions_action_type_chk check (action_type in (
+    'create_campaign','create_adset','create_ad',
+    'increase_budget','decrease_budget',
+    'pause_campaign','pause_adset','pause_ad',
+    'resume_campaign','resume_adset','resume_ad'
+  )),
+  constraint media_buyer_actions_target_type_chk check (target_type is null or target_type in ('campaign','adset','ad')),
+  constraint media_buyer_actions_status_chk check (status in (
+    'proposed','approved','rejected','executing','executed','failed','cancelled'
+  ))
+);
+
+create index if not exists media_buyer_actions_plan_idx on public.media_buyer_actions (plan_id);
+create index if not exists media_buyer_actions_status_idx on public.media_buyer_actions (status);
+
+-- RLS: القراءة لأي أدمن نشط (نفس نمط meta_*/content_items) — الاعتماد/الرفض
+-- (فعليًا أي كتابة على الجدولين دول في V1) مقصور على general_manager/
+-- super_admin بس — مفيش تنفيذ فعلي على Meta هنا خالص، القرار البشري هو
+-- بوابة الاعتماد الوحيدة.
+alter table public.media_buyer_plans enable row level security;
+alter table public.media_buyer_actions enable row level security;
+
+drop policy if exists "active admins read media_buyer_plans" on public.media_buyer_plans;
+create policy "active admins read media_buyer_plans" on public.media_buyer_plans
+  for select to authenticated using (public.my_admin_id() is not null);
+
+drop policy if exists "managers write media_buyer_plans" on public.media_buyer_plans;
+create policy "managers write media_buyer_plans" on public.media_buyer_plans
+  for all to authenticated
+  using (public.has_role('general_manager') or public.has_role('super_admin'))
+  with check (public.has_role('general_manager') or public.has_role('super_admin'));
+
+drop policy if exists "active admins read media_buyer_actions" on public.media_buyer_actions;
+create policy "active admins read media_buyer_actions" on public.media_buyer_actions
+  for select to authenticated using (public.my_admin_id() is not null);
+
+drop policy if exists "managers write media_buyer_actions" on public.media_buyer_actions;
+create policy "managers write media_buyer_actions" on public.media_buyer_actions
+  for all to authenticated
+  using (public.has_role('general_manager') or public.has_role('super_admin'))
+  with check (public.has_role('general_manager') or public.has_role('super_admin'));
+
+-- ⚠️ عقد التنفيذ المستقبلي (Future Execution Contract) — توثيق بس، مفيش
+-- worker بيتنفّذ هنا خالص:
+-- الـexecution backend المستقبلي (خارج هذا المشروع) المفروض بس:
+--   1) يقرا الصفوف اللي status='approved' في media_buyer_actions
+--      (أو media_buyer_plans لإنشاء حملة جديدة كاملة)
+--   2) بعد التنفيذ الفعلي على Meta Marketing API، يحدّث بمفتاح service_role:
+--        status ('executing'→'executed' أو 'failed')
+--        execution_result (jsonb — رد Meta الخام أو ملخصه)
+--        platform_campaign_id/platform_adset_id/platform_ad_id (على media_buyer_plans/الجدول المناسب)
+--        error_message (لو فشل)
+--        executed_at
+--   مفيش أي CREATE/BUDGET CHANGE/PAUSE/RESUME يتنفذ من غير status='approved'
+--   أولًا. DELETE **معطّل تمامًا** في V1 — مفيش action_type اسمه delete
+--   أصلاً في الـcheck constraint فوق. مفتاح Meta وmفتاح service_role
+--   Supabase بيتخزنوا server-side بس (Edge Function secret) — الداشبورد/
+--   العميل (frontend) ميحملش أي منهم أبدًا، زي نفس نمط Google Service
+--   Account المستخدم فعلاً في موديولي أرشيف المرضى/الليدز.
