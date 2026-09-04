@@ -501,6 +501,14 @@
     return !/^(unknown|n\/a|na|null|none|--+|—+|-)$/i.test(s);
   }
 
+  // V4.1 (بند ١): يجمع بس القيم اللي ليها معنى فعلي (يتجاهل UNKNOWN/N/A تمامًا
+  // بدل ما يطبعها) — أساس أي ملخص/عنوان يواجه المستخدم (لا يظهر أبدًا "UNKNOWN").
+  function ciMeaningfulJoin(vals, sep) {
+    var parts = [];
+    (vals || []).forEach(function (v) { if (ciIsMeaningful(v)) parts.push(v); });
+    return parts.join(sep || " + ");
+  }
+
   // مؤهل كـ"Pattern محتوى" (وليس مجرد رقم أداء) لو عنده أي إشارة إبداعية مفيدة —
   // Hook أو Angle أو CTA أو Format، أو (للإعلانات) عنوان/نص كرييتف حقيقي (بند ٣)
   function ciIsActionable(p, kind) {
@@ -544,7 +552,7 @@
     var sum = 0, n = 0, ctas = {};
     list.forEach(function (a) {
       if (a[metricField] != null) { sum += Number(a[metricField]); n++; }
-      if (a.cta_type) ctas[a.cta_type] = true;
+      if (ciIsMeaningful(a.cta_type)) ctas[a.cta_type] = true; // V4.1 (بند ٤): تجاهل قيم CTA اللي مالهاش معنى (UNKNOWN/N/A)
     });
     return { count: list.length, avgMetric: n ? sum / n : null, ctas: Object.keys(ctas) };
   }
@@ -571,6 +579,12 @@
       x.aRank = idx + 1;
       x.aRatio = bestMetric > 0 ? x.metric / bestMetric : 1;
       x.aStatus = ciClassifyStatus(x, idx, poolConfidence, bestMetric);
+      // V4.1 (بند ٢/٣): الحالة العالمية (x.status، محسوبة على المجموعة الكاملة)
+      // هي المرجع الحقيقي للأداء — لو العنصر ده "ضعيف" عالميًا، ما ينفعش يظهر
+      // كـ"أفضل خيار متاح" جوه الـsubset القابل للاستخدام لمجرد إنه idx=0 هناك.
+      if (x.status && x.status.key === "weak") {
+        x.aStatus = x.status;
+      }
     });
     return poolConfidence;
   }
@@ -799,12 +813,12 @@
         '<div><b>📊 أفضل أداء تاريخي:</b> ' + fmtMoneyW(bestPerf.x.metric) + ' (' + ciMetricLabel(objKey) + ')</div>' +
         (perfIncomplete
           ? '<div style="color:var(--c-negative);">⚠️ بيانات التنفيذ الإبداعي غير مكتملة لهذا الإعلان — Performance benchmark only.</div>'
-          : '<div>' + escapeHtml((bestPerf.x.raw.hook_type || "—") + " + " + (bestPerf.x.raw.content_angle || "—") + " + " + (bestPerf.x.raw.cta_type || "—")) + '</div>') +
+          : '<div>' + escapeHtml(ciMeaningfulJoin([bestPerf.x.raw.hook_type, bestPerf.x.raw.content_angle, bestPerf.x.raw.cta_type]) || "—") + '</div>') +
         '</div>';
     }
     if (bestActionable) {
       html += '<div style="background:var(--c-bg-alt,#f6f6f6);border-radius:6px;padding:8px 10px;margin-bottom:8px;font-size:12px;">' +
-        '<div><b>✨ أفضل اتجاه قابل للاستخدام في المحتوى حاليًا:</b> ' + escapeHtml((bestActionable.x.raw.hook_type || "—") + " + " + (bestActionable.x.raw.content_angle || "—") + " + " + (bestActionable.x.raw.cta_type || "—")) + '</div>' +
+        '<div><b>✨ أفضل اتجاه قابل للاستخدام في المحتوى حاليًا:</b> ' + escapeHtml(ciMeaningfulJoin([bestActionable.x.raw.hook_type, bestActionable.x.raw.content_angle, bestActionable.x.raw.cta_type]) || "—") + '</div>' +
         '<div>' + ciMetricLabel(objKey) + ': ' + fmtMoneyW(bestActionable.x.metric) + '</div>' +
         '<div>Confidence: ' + ciItemConfidenceLabel(bestActionable.x, bestActionable.conf).label + '</div>' +
         '<div>Reason: ' + escapeHtml(ciWhyText(bestActionable.x.aStatus, bestActionable.x.aRatio, bestActionable.x.runs, ciMetricLabel(objKey))) + '</div>' +
@@ -927,6 +941,22 @@
       ciBriefCardLines(ctx.weak.x, ctx.objKey, ctx.weak.conf, ctx.weak.kind, "perf").forEach(function (l) { lines.push(l); });
       lines.push("");
     }
+    // V4.1 (بند ٩): تنبيه صريح — OPTION #2 ميظهرش أصلاً لو مفيش عنصر تاني
+    // مؤهل غير ضعيف (workedPatterns/workedExamples بيستبعدوا weak بالفعل قبل
+    // ما يوصلوا هنا)، والتعليمات دي بتأكد للوكيل إنه ميعتبرش أي عنصر ضعيف
+    // خيار موصى بيه حتى لو ظهر في قسم "WEAK EXAMPLE" فوق.
+    lines.push("Do NOT output OPTION #2 if the only remaining actionable item is classified weak. A weak-performing item must never be treated as a recommended option, even if it has usable creative metadata.");
+    lines.push("");
+    // V4.1 (بند ٥/٦/٧): تعليمات صريحة للوكيل الخارجي عشان يحافظ على لغة الأدلة
+    // ومايخترعش جداول نشر أو بيانات مش موجودة في الـBrief.
+    lines.push("EVIDENCE LANGUAGE:");
+    lines.push("- Do not describe Medium/Low evidence as a proven winner.");
+    lines.push("- Use phrases like 'أفضل اتجاه متاح حاليًا' or 'فرضية تستحق الاختبار'.");
+    lines.push("- Only use 'winner/proven' language if the evidence level above is explicitly High/Proven.");
+    lines.push("");
+    lines.push("Do not recommend posting times/days unless time-of-day/day-of-week performance data is explicitly provided in this Brief.");
+    lines.push("Do not invent benchmarks, contact details, doctor names, medical service claims, offers, or historical performance facts that are not supplied by this Brief or already part of the Content Agent's approved business knowledge.");
+    lines.push("");
     lines.push("استخدم النتائج كمرجع استراتيجي وليس كنص للنسخ. هذا نمط استراتيجي وليس نص للنسخ الحرفي.");
     lines.push("من فضلك رجّعلي:");
     lines.push("1. 3-5 أفكار محتوى جديدة");
