@@ -507,9 +507,11 @@
     var hasHook = ciIsMeaningful(p.hook_type);
     var hasAngle = ciIsMeaningful(p.content_angle);
     var hasCta = ciIsMeaningful(p.cta_type);
-    var hasFormat = ciIsMeaningful(p.creative_type);
     var hasCreative = kind === "ad" && (ciIsMeaningful(p.creative_title) || (p.creative_body && String(p.creative_body).trim().length > 15));
-    return hasHook || hasAngle || hasCta || hasFormat || hasCreative;
+    // ملحوظة (V4): الـFormat/creative_type اتشال نهائيًا من شروط الأهلية —
+    // الشكل (صورة/فيديو) لوحده مش إشارة إبداعية كافية عشان نرشّح الـPattern.
+    if (kind === "ad" && ciIsTechnical(p)) return false; // إعلان تقني/رابط بس مش مؤهل أبدًا
+    return hasHook || hasAngle || hasCta || hasCreative;
   }
 
   function ciHowToUseText(p, status, isTechnical) {
@@ -525,12 +527,16 @@
 
   // إعلان تقني/رابط بس (بدون عنوان/نص كرييتف حقيقي) — مش مصدر إلهام إبداعي (بند ٧)
   function ciIsTechnical(a) {
+    // V4: أول حاجة نفحص اسم الإعلان/الحملة — لو واضح إنه إعلان تقني/رابط
+    // (Promoting Website / رابط whatsapp.com/send / رابط خام)، يتصنّف تقني
+    // فورًا حتى لو عنده creative_body (النص ممكن يفضل متاح في التقارير، بس
+    // الإعلان نفسه مش مصدر إلهام إبداعي).
+    var name = String(a.ad_name || "") + " " + String(a.campaign_name || "");
+    if (/promoting\s*website|whatsapp\.com\/send|https?:\/\//i.test(name)) return true;
     var title = String(a.creative_title || "").trim();
     var body = String(a.creative_body || "").trim();
     if (title || body.length > 15) return false;
-    var name = String(a.ad_name || "") + " " + String(a.campaign_name || "");
-    if (/promoting|whatsapp\.com\/send|https?:\/\//i.test(name)) return true;
-    return true; // مفيش عنوان ولا نص كرييتف مفيد
+    return true; // مفيش عنوان ولا نص كرييتف مفيد، ولا اسم تقني واضح
   }
 
   function ciTechnicalSummary(list, metricField) {
@@ -837,10 +843,14 @@
   }
 
   // mode: "perf" (رانك أداء رقمي، الافتراضي) أو "actionable"
-  function ciBriefCardLines(x, objKey, poolConfidence, kind, mode) {
+  // displayRank (اختياري): V4 — يفرض رقم الرانك المعروض ليطابق موضع العنصر
+  // الفعلي في الاختيار المُجمَّع (OPTION #1/#2)، بدل رانكه جوه سب-بوول نوعه
+  // بس (patterns لوحدهم أو ads لوحدهم) — ده اللي كان بيسبب تناقض زي
+  // "OPTION #2" مع "RANK: #1". لو مش متبعت، بيرجع لسلوك x.aRank/x.rank القديم.
+  function ciBriefCardLines(x, objKey, poolConfidence, kind, mode, displayRank) {
     mode = mode || "perf";
     var p = x.raw, metricLabel = ciMetricLabel(objKey), lines = [];
-    var rank = mode === "actionable" ? x.aRank : x.rank;
+    var rank = displayRank != null ? displayRank : (mode === "actionable" ? x.aRank : x.rank);
     var status = mode === "actionable" ? x.aStatus : x.status;
     var ratio = mode === "actionable" ? x.aRatio : x.ratio;
     lines.push("RANK: #" + rank);
@@ -900,12 +910,16 @@
       lines.push("");
     } else {
       lines.push("BEST ACTIONABLE CONTENT PATTERN (RECOMMENDED OPTION #1 — " + ctx.bestActionable.kindLabel + "):");
-      ciBriefCardLines(ctx.bestActionable.x, ctx.objKey, ctx.bestActionable.conf, ctx.bestActionable.kind, "actionable").forEach(function (l) { lines.push(l); });
+      // V4: displayRank=1 يفرض "RANK: #1" هنا مهما كان رانك العنصر جوه سب-بوول
+      // نوعه بس — عشان يفضل متسق مع "OPTION #1" في العنوان دايمًا.
+      ciBriefCardLines(ctx.bestActionable.x, ctx.objKey, ctx.bestActionable.conf, ctx.bestActionable.kind, "actionable", 1).forEach(function (l) { lines.push(l); });
       lines.push("");
     }
     if (ctx.secondActionable) {
       lines.push("OPTION #2:");
-      ciBriefCardLines(ctx.secondActionable.x, ctx.objKey, ctx.secondActionable.conf, ctx.secondActionable.kind, "actionable").forEach(function (l) { lines.push(l); });
+      // V4: displayRank=2 (بدل x.aRank الخام) — يحل تناقض "OPTION #2 / RANK: #1"
+      // المُبلَّغ عنه، بخلي الرانك المعروض يطابق ترتيب الاختيار الفعلي دايمًا.
+      ciBriefCardLines(ctx.secondActionable.x, ctx.objKey, ctx.secondActionable.conf, ctx.secondActionable.kind, "actionable", 2).forEach(function (l) { lines.push(l); });
       lines.push("");
     }
     if (ctx.weak) {
