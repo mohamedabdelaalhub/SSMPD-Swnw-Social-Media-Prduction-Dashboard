@@ -898,7 +898,8 @@
     backdrop.className = "modal-backdrop";
     var scoreLabels = { 1: "غير راضٍ", 2: "2", 3: "3", 4: "4", 5: "راضٍ جدًا" };
     var html = '<div class="modal"><div class="modal-head"><h3>تقييم تجربة جديد</h3><button class="modal-close">×</button></div>' +
-      '<p style="font-size:12px;color:var(--c-muted);margin:-6px 0 10px;">المريض: ' + escapeHtml(patient.full_name) + '</p>' +
+      '<p style="font-size:14px;font-weight:700;margin:-6px 0 2px;">' + escapeHtml(patient.full_name) + '</p>' +
+      '<p style="font-size:12px;color:var(--c-muted);margin:0 0 12px;line-height:1.7;">نسعى دائماً إلى تحسين جودة الخدمة إلى المستوى الذي تستحقونه.<br>هذا الاستبيان سوف يساعدنا في تحقيق ذلك.</p>' +
       '<div class="field"><label>تاريخ الزيارة</label><input id="er-date" type="date" value="' + new Date().toISOString().slice(0, 10) + '"></div>';
     window.SSMPDExperienceQuestions.forEach(function (q, i) {
       html += '<div style="margin-top:14px;">' +
@@ -931,9 +932,23 @@
       };
       var curAdmin = (window.SSMPDAuth && window.SSMPDAuth.currentAdmin) || me;
       window.SSMPDDb.saveExperienceRating(patient.id, patch, curAdmin && curAdmin.id).then(function () {
-        T.show("اتحفظ التقييم");
-        backdrop.remove();
-        if (onSaved) onSaved();
+        // البيانات اتحفظت خلاص في قاعدة البيانات — دلوقتي بس بنعرض رسالة شكر
+        // ثم نقفل الشاشة تلقائيًا (أو المستخدم يقفلها بنفسه بالضغط على "إغلاق")
+        backdrop.querySelector(".modal").innerHTML =
+          '<div style="padding:40px 20px;text-align:center;">' +
+          '<div style="font-size:40px;margin-bottom:14px;">🎉</div>' +
+          '<h3 style="margin-bottom:8px;">نشكركم على تعاونكم معنا</h3>' +
+          '<button class="btn" id="er-close-thanks" style="margin-top:16px;">إغلاق</button></div>';
+        var closed = false;
+        var closeNow = function () {
+          if (closed) return;
+          closed = true;
+          if (document.body.contains(backdrop)) backdrop.remove();
+          if (onSaved) onSaved();
+        };
+        document.getElementById("er-close-thanks").onclick = closeNow;
+        backdrop.onclick = function (e) { if (e.target === backdrop) closeNow(); };
+        setTimeout(closeNow, 4000);
       }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
     };
   }
