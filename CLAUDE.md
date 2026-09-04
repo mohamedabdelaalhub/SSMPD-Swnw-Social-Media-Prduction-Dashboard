@@ -2960,3 +2960,25 @@ client-side بالكامل تاني، بدون أي تعديل SQL، وبدون 
   `ciIsTechnical`، `ciBriefCardLines`، `ciCopyBrief`). بصمة الكاش:
   `workflow.js?v=53`. **مفيش تعديل SQL ولا على `render-production.js` ولا
   على أي شاشة تانية.**
+
+## تصحيح أمني — قسم ٣٨ (Media Buyer Control Center): منع DELETE من الداشبورد (٢٠٢٦-٠٩-٠٤)
+
+- بلاغ قبل تشغيل قسم ٣٨ على LIVE: سياستَي `"managers write media_buyer_plans"`/
+  `"managers write media_buyer_actions"` كانتا `for all` — بتسمح ضمنيًا بالـ
+  DELETE لـ`general_manager`/`super_admin`، وده يتعارض مع مطلب إن سجل
+  اعتماد/تنفيذ Media Buyer يفضل auditable (مفيش حذف من الداشبورد خالص).
+- **الإصلاح**: السياستين اتقسموا لسياسات صريحة على الجدولين (`media_buyer_plans`/
+  `media_buyer_actions`) — `select` (أي أدمن نشط، زي ما كانت)، `insert`
+  و`update` منفصلين (`general_manager`/`super_admin` بس) — **مفيش أي سياسة
+  DELETE خالص** على الجدولين، فمستخدم الداشبورد (حتى سوبر أدمن) مايقدرش
+  يحذف خطة أو action من الواجهة أو أي نداء مباشر بجلسته. الـexecution
+  backend المستقبلي هيستخدم مفتاح `service_role` (بيتخطى RLS بالكامل) لو
+  احتاج يحدّث نتيجة التنفيذ — مش محتاج سياسة DELETE أصلاً.
+  `media_buyer_actions.plan_id` فضل `on delete cascade` زي ما هو (خاص
+  بحذف الـplan على مستوى القاعدة لو حصل مستقبلاً من مصدر تاني، مش بديل
+  لسياسة RLS).
+- مفيش تعديل على الجداول نفسها ولا على الواجهة (`render-mediabuyer.js`) ولا
+  على منطق Meta — تعديل RLS في قسم ٣٨ بس، والقسم لسه rerunnable (كل
+  `drop policy if exists` قبل `create policy`).
+- **لازم**: تشغيل قسم ٣٨ (النسخة المحدّثة) في Supabase SQL Editor — لسه ما
+  اتشغّلش على LIVE خالص، فمفيش drift.
