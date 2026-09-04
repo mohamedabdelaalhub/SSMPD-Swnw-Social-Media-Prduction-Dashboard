@@ -2587,3 +2587,56 @@ some row` — رغم إن فحص مباشر لجدول `admins` أثبت إن م
   (صلاحية التاب)، `app.js` (تسجيل التاب في `RENDERERS`/`TAB_LABELS`)،
   ملف جديد `render-metaads.js`. بصمات الكاش اترفعت:
   `db.js?v=58`, `roles.js?v=46`, `app.js?v=52`, `render-metaads.js?v=1`.
+
+## content_meta_links: ربط يدوي بين المحتوى وإعلانات Meta (قسم ٣٦ — ٢٠٢٦-٠٩-٠٤)
+
+- جدول جديد `content_meta_links` (id, content_id → content_items، meta_ad_id
+  → meta_ads اختياري، creative_group_id text اختياري، linked_by، confidence،
+  notes، linked_at). لازم واحد على الأقل من meta_ad_id/creative_group_id
+  (check constraint). فهرسين unique جزئيين بيمنعوا تكرار نفس رابط
+  المحتوى↔الإعلان أو المحتوى↔مجموعة الكرييتف. الربط **يدوي بالكامل** —
+  مفيش أي auto-match ولا تعديل على content_items/comments/activity_log ولا
+  على أي جدول meta_* قديم.
+- RLS: القراءة لأي أدمن نشط (نفس نمط content_items)، الكتابة (ربط/فك ربط)
+  لـ `page_manager`/`approver`/`can_manage_all_content()` بس — نفس أصحاب
+  صلاحية إدارة المحتوى الحاليين، مفيش صلاحية أوسع من الموديول الحالي.
+- View جديد `vw_content_meta_performance` بـ`security_invoker=true` (بيحترم
+  RLS بتاع المستخدم الفعلي مش صاحب الـview) — بيربط content_items →
+  content_meta_links → meta_ads → meta_campaigns → meta_ad_performance_lifetime.
+  رابط بمجموعة كرييتف بيتفنّح لكل الإعلانات اللي تحت نفس المجموعة (زي ما
+  طلب المستخدم: "الإعلانات المعاد ترويجها runs منفصلة لكن بتمثل نفس
+  المحتوى").
+- **تم التحقق محليًا بالكامل قبل التسليم** (Postgres 16 مؤقت في
+  الـsandbox، منفصل عن Supabase الحقيقي): check constraint بيرفض صف من
+  غير meta_ad_id ولا creative_group_id، الفهارس الـunique بترفض التكرار
+  (نفس المحتوى+نفس الإعلان، ونفس المحتوى+نفس المجموعة)، والـview بيفنّح
+  صح لما الربط يكون بمجموعة كرييتف فيها أكتر من إعلان.
+- **UI**: قسم جديد "أداء إعلانات Meta" في مودال المادة في ٣ تابات
+  (إنتاج المحتوى، إدارة المحتوى، شاشة التصميم — `workflow.js` helper
+  مشترك `metaLinksSectionHtml`/`wireMetaLinksSection` عشان ميتكررش الكود).
+  لو مفيش ربط: زرار "ربط إعلان Meta" (لأصحاب الصلاحية بس) بيفتح مودال بحث
+  (بالاسم/اسم الحملة/رقم الإعلان/مجموعة الكرييتف/التخصص) — اختيار صريح
+  بس، مفيش auto-link. لو فيه ربط: KPIs (إنفاق/محادثات/تكلفة المحادثة/
+  Leads/CPL/وصول/CTR/CPC/الحالة) — الأرقام مُجمّعة بعد dedup حسب
+  meta_ad_id (عشان إعلان مرتبط مباشرة وبرضه جوه مجموعة كرييتف ما يتحسبش
+  مرتين)، وتكاليف الوزن (CPL/تكلفة المحادثة/CTR) بتتحسب من الإجمالي
+  (إنفاق÷محادثات) مش متوسط بسيط. لو أكتر من إعلان مرتبط: جدول تفصيلي
+  للـruns الفردية تحت الملخص. فك الربط بزرار لكل رابط محفوظ (مش لكل
+  إعلان مفنّح).
+  publish tab (بطاقات مش مودال) اتسابت زي ما هي — مفيش تغيير في نمطها.
+- **ربط عكسي في تاب Meta Ads**: عمود جديد "المحتوى المرتبط" في جدولي
+  تفاصيل الإعلانات وأداء الكرييتف — بيظهر اسم المادة لو مرتبطة، ودوس
+  عليه بيودّي لتاب "إدارة المحتوى" ويفتح المودال بتاعها (نفس آلية
+  `SSMPDPendingOpenContentId` المستخدمة في البحث الموحّد أعلاه — جسر
+  جديد بسيط `window.SSMPDGotoContent` في `app.js`؛ بيشتغل لو المادة في
+  مرحلة تظهر في تاب المراجعة، زي أي فتح من البحث الموحّد بالظبط).
+- **مفيش أي ربط تلقائي بين `content_items.specialty` و`meta_ads.specialty`**
+  — المفردات مختلفة (كودات زي `dermatology` مقابل نصوص زي "Dermatology &
+  Cosmetics")، هيتأجل لجدول mapping مُتحكَّم فيه لاحقًا لو المستخدم طلب.
+- ملفات اتغيرت: `db.js` (3 دوال جديدة)، `workflow.js` (قسم ربط
+  Meta كامل)، `app.js` (`window.SSMPDGotoContent`)، `render-production.js`
+  /`render-review.js`/`render-design.js` (سطرين لكل واحد لإدراج القسم
+  الجديد في المودال)، `render-metaads.js` (عمود الربط العكسي + fetch
+  خامس). بصمات الكاش: `db.js?v=59`, `workflow.js?v=49`,
+  `render-production.js?v=49`, `render-review.js?v=52`,
+  `render-design.js?v=43`, `render-metaads.js?v=2`, `app.js?v=53`.
