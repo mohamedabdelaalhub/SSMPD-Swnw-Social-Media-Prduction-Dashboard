@@ -2804,3 +2804,101 @@ left join public.meta_ads a
   or (cml.meta_ad_id is null and cml.creative_group_id is not null and a.creative_group_id = cml.creative_group_id)
 left join public.meta_campaigns c on c.id = a.campaign_id
 left join public.meta_ad_performance_lifetime p on p.ad_id = a.id;
+
+-- ============================================================
+--  ٣٧) Content Intelligence: mapping تخصصات متحكَّم فيه + أنماط أداء
+--  تاريخية من Meta Ads — إضافي بالكامل. مفيش تعديل على content_items/
+--  meta_*/content_meta_links الموجودين. الهدف: مصدر بيانات لبانل
+--  "ذكاء المحتوى" الاستشاري وقت إنشاء محتوى جديد، مش تغيير في سلوك
+--  الإنشاء الحالي.
+-- ============================================================
+
+-- (أ) mapping مُتحكَّم فيه بين specialty الكود الداخلي لـcontent_items
+-- ومفردات meta_ads.specialty النصية — مفيش fuzzy matching، إدخال يدوي
+-- بس للحالات الواضحة بدون لبس (راجع CLAUDE.md لتفسير كل قرار).
+create table if not exists public.content_meta_specialty_map (
+  content_specialty_key text primary key,
+  meta_specialty_label   text not null,
+  active                 boolean not null default true,
+  created_at             timestamptz not null default now(),
+  updated_at             timestamptz not null default now()
+);
+
+alter table public.content_meta_specialty_map enable row level security;
+
+drop policy if exists "active admins read specialty map" on public.content_meta_specialty_map;
+create policy "active admins read specialty map"
+  on public.content_meta_specialty_map for select to authenticated
+  using (public.my_admin_id() is not null);
+
+drop policy if exists "content managers write specialty map" on public.content_meta_specialty_map;
+create policy "content managers write specialty map"
+  on public.content_meta_specialty_map for all to authenticated
+  using (public.has_role('page_manager') or public.has_role('approver') or public.can_manage_all_content())
+  with check (public.has_role('page_manager') or public.has_role('approver') or public.can_manage_all_content());
+
+-- تعبئة أولية — مطابقات واضحة بدون لبس فقط (مقارنة بين مفاتيح
+-- SPECIALTIES في workflow.js ومفردات meta_ads.specialty الفعلية).
+-- تخصصات content_items اللي مالهاش نظير واضح في Meta (orthopedics,
+-- surgery, ent, psychiatry, pediatrics, oncology, cardiology, vascular,
+-- radiology, nursing_services, internal_services, internal) اتسابت
+-- عمدًا من غير mapping — أفضل من تخمين غلط.
+insert into public.content_meta_specialty_map (content_specialty_key, meta_specialty_label) values
+  ('neurology',       'Neurology'),
+  ('dermatology',     'Dermatology & Cosmetics'),
+  ('cosmetic_laser',  'Dermatology & Cosmetics'),
+  ('obgyn',           'OBGYN / Women''s Health'),
+  ('dental',          'Dental'),
+  ('physio_nutrition','Physiotherapy & Rehabilitation'),
+  ('lab',             'Laboratory'),
+  ('emergency',       'Emergency / General Medicine')
+on conflict (content_specialty_key) do nothing;
+
+-- (ب) أنماط أداء تاريخية من Meta Ads — مجمّعة حسب specialty+objective+
+-- hook_type+content_angle+creative_type+cta_type، عشان الـobjectives
+-- المختلفة (رسائل مقابل ليدز مقابل وعي) ميتخلطوش في نفس الصف. مصدرها
+-- meta_ads + meta_ad_performance_lifetime بس (زي ما طلب المستخدم).
+create or replace view public.vw_content_intelligence_patterns
+with (security_invoker = true) as
+select
+  a.specialty, a.objective, a.hook_type, a.content_angle, a.creative_type, a.cta_type,
+  count(distinct a.id)                       as ads_count,
+  sum(coalesce(p.spend, 0))                  as total_spend,
+  sum(coalesce(p.impressions, 0))            as total_impressions,
+  sum(coalesce(p.clicks, 0))                 as total_clicks,
+  sum(coalesce(p.msg_conv, 0))               as total_messages,
+  sum(coalesce(p.leads, 0))                  as total_leads,
+  -- تكاليف موزونة من الإجمالي (مش متوسط بسيط) — nullif يمنع القسمة على صفر
+  round(sum(coalesce(p.spend,0)) / nullif(sum(coalesce(p.msg_conv,0)), 0), 2)  as weighted_cost_per_message,
+  round(sum(coalesce(p.spend,0)) / nullif(sum(coalesce(p.leads,0)), 0), 2)    as weighted_cost_per_lead,
+  round(sum(coalesce(p.clicks,0))::numeric * 100 / nullif(sum(coalesce(p.impressions,0)), 0), 2) as weighted_ctr,
+  round(sum(coalesce(p.spend,0)) / nullif(sum(coalesce(p.clicks,0)), 0), 2)   as weighted_cpc,
+  round(sum(coalesce(p.spend,0)) * 1000 / nullif(sum(coalesce(p.impressions,0)), 0), 2) as weighted_cpm,
+  min(a.start_date) as first_run_date,
+  max(a.start_date) as last_run_date,
+  -- عتبات ثقة صريحة ومحافظة (موثّقة هنا عشان أي تعديل مستقبلي يبقى واعي):
+  --   HIGH:   ≥5 إعلانات منفصلة و(≥2000 جنيه إنفاق أو ≥20 نتيجة رسائل/ليدز)
+  --   MEDIUM: ≥2 إعلان و(≥300 جنيه إنفاق أو ≥5 نتائج) — مش HIGH
+  --   LOW:    أي حاجة أقل من كده — عينة صغيرة جدًا يُعتمد عليها كتجربة بس
+  case
+    when count(distinct a.id) >= 5
+      and (sum(coalesce(p.spend,0)) >= 2000 or sum(coalesce(p.msg_conv,0)) + sum(coalesce(p.leads,0)) >= 20)
+      then 'high'
+    when count(distinct a.id) >= 2
+      and (sum(coalesce(p.spend,0)) >= 300 or sum(coalesce(p.msg_conv,0)) + sum(coalesce(p.leads,0)) >= 5)
+      then 'medium'
+    else 'low'
+  end as confidence
+from public.meta_ads a
+left join public.meta_ad_performance_lifetime p on p.ad_id = a.id
+where a.specialty is not null and a.specialty <> 'UNKNOWN'
+group by a.specialty, a.objective, a.hook_type, a.content_angle, a.creative_type, a.cta_type;
+
+-- (ج) رابط وكيل إنشاء المحتوى الخارجي (Custom GPT) — يتبع نمط الإعداد
+-- العام الموجود بالفعل في app_settings (صف واحد id=1)، مش جدول
+-- key/value منفصل، لأن app_settings أصلاً بنفس النمط ده (أعمدة ثابتة
+-- قابلة للتعديل من لوحة الأدمن).
+alter table public.app_settings add column if not exists content_agent_gpt_url text;
+update public.app_settings
+  set content_agent_gpt_url = 'https://chatgpt.com/g/g-6a7e56daf7f08191b02d1164cd120136-mnshy-mhtw-ydt-swnw'
+  where id = 1 and (content_agent_gpt_url is null or content_agent_gpt_url = '');
