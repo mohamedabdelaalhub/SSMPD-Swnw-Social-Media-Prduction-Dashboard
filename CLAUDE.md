@@ -2525,3 +2525,39 @@ some row` — رغم إن فحص مباشر لجدول `admins` أثبت إن م
   15px زي ما هي من غير أي تغيير.
 - بصمة الكاش اترفعت لـ `render-patients.js?v=81` في `index.html`. مفيش
   تعديل SQL/Edge Function.
+
+## Meta Ads → Supabase Backfill: جداول منفصلة + Views (قسم ٣٥ — ٢٠٢٦-٠٩-٠٤)
+
+- استيراد بيانات تاريخية من مشروع Meta Ads منفصل (93 حملة / 105 مجموعة
+  إعلانية / 110 إعلان / 110 كرييتف / 110 صف أداء lifetime) في جداول جديدة
+  بالكامل: `meta_campaigns`, `meta_adsets`, `meta_creatives`, `meta_ads`,
+  `meta_ad_performance_lifetime`. الجدول القديم `ad_campaigns` **لم
+  يُمس** (لا حذف ولا تعديل)، وكل الليدز/المرضى/المحتوى الحالي زي ما هو.
+- مفاتيح داخلية `uuid` (`gen_random_uuid()`) + `platform_*_id text unique`
+  كمفتاح خارجي، نفس نمط الجداول الحالية. RLS: قراءة لأي أدمن نشط، كتابة
+  لـ`approver`/`general_manager`/`super_admin` فقط (نفس سياسة `ad_campaigns`).
+- فهارس على كل أعمدة الربط (`campaign_id`/`adset_id`/`creative_id`)
+  والفلترة (`specialty`/`objective`/`start_date`/`creative_group_id`).
+- إسناد الليدز: أعمدة **nullable** جديدة بس على `leads`
+  (`meta_campaign_id`, `meta_adset_id`, `meta_ad_id`, `meta_creative_id`,
+  `utm_source`, `utm_medium`, `utm_campaign`, `utm_content`) — من غير أي
+  تعبئة تلقائية أو تغيير في سلوك الليدز الحالي.
+- 4 Views جاهزة للوحة: `vw_meta_ad_performance` (join كامل)،
+  `vw_meta_specialty_performance` (تجميع specialty+objective، منفصلين
+  عشان ما نخلطش objectives مختلفة)، `vw_meta_creative_performance`
+  (تجميع حسب `creative_group_id`)، `vw_lead_meta_attribution` (LEFT JOIN
+  — الليدز القديمة من غير إسناد تفضل ظاهرة).
+- بيانات الاستيراد نفسها (INSERT...ON CONFLICT قابلة لإعادة التشغيل من
+  غير تكرار) في ملف منفصل `supabase/meta_ads_backfill_data.sql` (مش
+  جوه `setup.sql` علشان يفضل خفيف) — لازم يتشغّل **بعد** قسم ٣٥.
+- **تم التحقق محليًا بالكامل قبل التسليم**: اتبنى Postgres 16 مؤقت في
+  الـsandbox (منفصل تمامًا عن Supabase الحقيقي)، اتشغّل عليه قسم ٣٥ +
+  ملف الاستيراد، واتأكد: كل الأعداد مطابقة (93/105/110/110/110)، صفر
+  IDs مكررة، صفر صفوف يتيمة (كل adset/ad/performance بيرجع لأصله)،
+  إجمالي الإنفاق = 122,112.13 جنيه بالظبط، الحساب المغلق
+  `314050351162766` مش موجود في أي جدول، وإعادة تشغيل ملف الاستيراد
+  مرتين متتاليين بيدي نفس العدد بالظبط (rerunnable, no duplicates).
+- **لازم**: تشغيل قسم ٣٥ من `setup.sql` في Supabase SQL Editor أول
+  حاجة، وبعده تشغيل `supabase/meta_ads_backfill_data.sql` كامل (نفس
+  المحرر). مفيش تعديل على `render-*.js` ولا `index.html` في الباتش دي —
+  السكيما والاستيراد والـViews بس، تصميم اللوحة نفسها هيبقى باتش تاني.
