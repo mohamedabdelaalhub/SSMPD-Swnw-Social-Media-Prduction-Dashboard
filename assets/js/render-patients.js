@@ -637,27 +637,40 @@
     };
   }
 
-  // ---------- طباعة الروشتة بشكل الفورم الرسمي ----------
+  // ---------- طباعة الروشتة — فورم مخصص يطابق نموذج "الروشتة" الرسمي بالحرف
+  //            (هيدر مضغوط بخانات + علامة Rx + مساحة كتابة + شريط فوتر نصي)،
+  //            مختلف عن letterheadPageHtml المشترك (اللي بيستخدم صورة هيدر/فوتر
+  //            منحنية مختلفة الشكل تمامًا عن فورم الروشتة الأصلي) ----------
   function printPrescription(patient, rx) {
     var win = window.open("", "_blank");
     if (!win) { T.show("المتصفح منع فتح نافذة الطباعة — سمح بالنوافذ المنبثقة وحاول تاني", "error"); return; }
     var rxParagraphs = (rx.rx_text || "").split(/\n{2,}/).map(function (p) {
       return '<p style="margin:0 0 14px;">' + escapeHtml(p).replace(/\n/g, "<br>") + '</p>';
     }).join("");
-    var title = "روشتة" + (rx.specialty ? (" - " + rx.specialty) : "");
     var body =
-      '<h1 style="font-size:28px;color:#0F369D;text-align:right;margin:0 0 4px;">' + escapeHtml(title) + '</h1>' +
-      '<div style="color:#F15A22;font-size:13px;text-align:right;border-bottom:1px solid #ccc;padding-bottom:10px;margin-bottom:22px;font-style:italic;">Prescription</div>' +
-      '<p style="margin:0 0 4px;"><b>المريض:</b> ' + escapeHtml(patient.full_name) + '</p>' +
-      (patient.age != null ? '<p style="margin:0 0 4px;"><b>العمر:</b> ' + escapeHtml(String(patient.age)) + ' عام</p>' : '') +
-      '<p style="margin:0 0 4px;"><b>التاريخ:</b> ' + fmtDate(rx.report_date) + '</p>' +
-      (rx.diagnosis ? '<p style="margin:0 0 22px;"><b>التشخيص:</b> ' + escapeHtml(rx.diagnosis) + '</p>' : '<div style="margin-bottom:22px;"></div>') +
-      rxParagraphs +
-      '<div style="margin-top:50px;"><div>الطبيب المعالج:</div><div style="font-weight:700;margin-top:4px;">' + escapeHtml(rx.doctor_name || "") + '</div></div>';
+      '<div style="width:210mm;min-height:297mm;margin:0 auto;padding:16mm 16mm 34mm;box-sizing:border-box;position:relative;">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #0F369D;padding-bottom:10px;margin-bottom:18px;">' +
+      '<img src="' + PRINT_LOGO_URL + '" style="height:44px;">' +
+      '<div style="text-align:right;"><div style="font-weight:700;font-size:17px;color:#0F369D;">عيادات سونو التخصصية</div>' +
+      '<div style="font-size:11px;color:#F15A22;">SWNW Specialized Clinics</div></div></div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;font-size:13px;margin-bottom:14px;">' +
+      '<div>الطبيب: <b>' + escapeHtml(rx.doctor_name || "") + '</b></div>' +
+      '<div>التاريخ: <b>' + fmtDate(rx.report_date) + '</b></div>' +
+      '<div>المريض: <b>' + escapeHtml(patient.full_name) + '</b></div>' +
+      '<div>التخصص: <b>' + escapeHtml(rx.specialty || "") + '</b></div>' +
+      '</div>' +
+      (rx.diagnosis ? '<div style="font-size:13px;margin-bottom:16px;">التشخيص: <b>' + escapeHtml(rx.diagnosis) + '</b></div>' : '<div style="margin-bottom:16px;"></div>') +
+      '<div style="font-size:34px;font-weight:700;color:#0F369D;font-style:italic;margin-bottom:14px;">℞</div>' +
+      '<div style="font-size:14px;line-height:2;">' + rxParagraphs + '</div>' +
+      '<div style="position:absolute;bottom:14mm;left:16mm;right:16mm;">' +
+      '<div style="text-align:center;background:#0F369D;color:#fff;font-size:11px;padding:5px;border-radius:16px;margin-bottom:6px;">خدمات طبية متميزة على مدار الساعة</div>' +
+      '<div style="text-align:center;font-size:11px;color:#333;margin-bottom:4px;">متاح لدينا جميع التخصصات وخدمات المعمل والأشعة والعلاج الطبيعي</div>' +
+      '<div style="text-align:center;font-size:11px;color:#333;">01010686264 | 01154542191 | 45 ع - شارع الخزان - حدائق الأهرام</div>' +
+      '</div></div>';
     win.document.open();
-    win.document.write('<!doctype html><html><head><meta charset="utf-8"><title>' + escapeHtml(title) + ' — ' + escapeHtml(patient.full_name) + '</title>' +
-      '<style>' + PRINT_FONT_FACE_CSS + '@page{size:A4;margin:0;}body{margin:0;font-size:14px;line-height:1.9;}</style></head>' +
-      '<body>' + letterheadPageHtml("rtl", body) + '</body></html>');
+    win.document.write('<!doctype html><html><head><meta charset="utf-8"><title>روشتة — ' + escapeHtml(patient.full_name) + '</title>' +
+      '<style>' + PRINT_FONT_FACE_CSS + '@page{size:A4;margin:0;}body{margin:0;font-size:14px;}</style></head>' +
+      '<body dir="rtl">' + body + '</body></html>');
     win.document.close();
     waitForImagesThenPrint(win, 3000);
   }
@@ -724,6 +737,9 @@
     };
   }
 
+  // بيطبع البنود المختارة (اللي عليها تشيك) بس — مش القائمة كاملة — عشان
+  // المحتوى يفضل قصير وميعديش صفحة واحدة (لو القائمة كاملة اتطبعت، البنود
+  // بتفيض لصفحة تانية وبتتراكب مع صورة الهيدر المتكررة تلقائيًا فوق كل صفحة)
   function printLabRequest(patient, lr) {
     var win = window.open("", "_blank");
     if (!win) { T.show("المتصفح منع فتح نافذة الطباعة — سمح بالنوافذ المنبثقة وحاول تاني", "error"); return; }
@@ -731,9 +747,10 @@
     (lr.tests || []).forEach(function (t) { selected[t] = true; });
     var catsHtml = "";
     LAB_CATEGORIES.forEach(function (cat) {
-      var itemsHtml = cat.items.map(function (item) {
-        var mark = selected[item] ? "☑" : "☐";
-        return '<div style="font-size:12px;margin:0 0 3px;">' + mark + ' ' + escapeHtml(item) + '</div>';
+      var chosen = cat.items.filter(function (item) { return selected[item]; });
+      if (!chosen.length) return;
+      var itemsHtml = chosen.map(function (item) {
+        return '<div style="font-size:12px;margin:0 0 3px;">☑ ' + escapeHtml(item) + '</div>';
       }).join("");
       catsHtml += '<div style="break-inside:avoid;margin-bottom:10px;">' +
         '<div style="font-size:12px;font-weight:700;background:#0F369D;color:#fff;padding:3px 8px;border-radius:4px;margin-bottom:4px;">' + cat.label + '</div>' +
@@ -747,7 +764,7 @@
       '<p style="margin:0 0 4px;"><b>التاريخ:</b> ' + fmtDate(lr.report_date) + '</p>' +
       (lr.doctor_name ? '<p style="margin:0 0 4px;"><b>الطبيب:</b> ' + escapeHtml(lr.doctor_name) + '</p>' : '') +
       (lr.diagnosis ? '<p style="margin:0 0 16px;"><b>التشخيص:</b> ' + escapeHtml(lr.diagnosis) + '</p>' : '<div style="margin-bottom:16px;"></div>') +
-      '<div style="columns:3;column-gap:16px;direction:ltr;text-align:left;">' + catsHtml + '</div>' +
+      (catsHtml ? '<div style="columns:2;column-gap:16px;direction:ltr;text-align:left;">' + catsHtml + '</div>' : '<p style="font-size:12px;color:#888;">مفيش تحاليل متعلّم عليها.</p>') +
       (lr.others_text ? '<div style="margin-top:14px;direction:rtl;text-align:right;"><b>Others:</b> ' + escapeHtml(lr.others_text) + '</div>' : '');
     win.document.open();
     win.document.write('<!doctype html><html><head><meta charset="utf-8"><title>Lab Request — ' + escapeHtml(patient.full_name) + '</title>' +
@@ -822,6 +839,8 @@
     };
   }
 
+  // بيطبع البنود المختارة (اللي عليها تشيك) بس — نفس سبب طلب التحاليل بالظبط
+  // (تفادي فيضان المحتوى لصفحة تانية وتراكبه مع الهيدر المتكرر)
   function printRadiologyRequest(patient, rr) {
     var win = window.open("", "_blank");
     if (!win) { T.show("المتصفح منع فتح نافذة الطباعة — سمح بالنوافذ المنبثقة وحاول تاني", "error"); return; }
@@ -829,17 +848,21 @@
     (rr.items || []).forEach(function (t) { selected[t] = true; });
     var catsHtml = "";
     RADIOLOGY_CATEGORIES.forEach(function (cat) {
-      var itemsHtml = cat.items.map(function (item) {
-        var mark = selected[item] ? "☑" : "☐";
-        return '<div style="font-size:11px;margin:0 0 3px;">' + mark + ' ' + escapeHtml(item) + '</div>';
+      var chosen = cat.items.filter(function (item) { return selected[item]; });
+      var itemsHtml = chosen.map(function (item) {
+        return '<div style="font-size:11px;margin:0 0 3px;">☑ ' + escapeHtml(item) + '</div>';
       }).join("");
       if (cat.lrItems) {
-        itemsHtml += cat.lrItems.map(function (item) {
-          var lMark = selected[item + " - L"] ? "☑" : "☐";
-          var rMark = selected[item + " - R"] ? "☑" : "☐";
-          return '<div style="font-size:11px;margin:0 0 3px;">' + escapeHtml(item) + ' — L:' + lMark + ' R:' + rMark + '</div>';
+        itemsHtml += cat.lrItems.filter(function (item) {
+          return selected[item + " - L"] || selected[item + " - R"];
+        }).map(function (item) {
+          var sides = [];
+          if (selected[item + " - L"]) sides.push("L");
+          if (selected[item + " - R"]) sides.push("R");
+          return '<div style="font-size:11px;margin:0 0 3px;">☑ ' + escapeHtml(item) + ' (' + sides.join("، ") + ')</div>';
         }).join("");
       }
+      if (!itemsHtml) return;
       catsHtml += '<div style="break-inside:avoid;margin-bottom:10px;">' +
         '<div style="font-size:12px;font-weight:700;background:#0F369D;color:#fff;padding:3px 8px;border-radius:4px;margin-bottom:4px;">' + cat.label + '</div>' +
         itemsHtml + '</div>';
@@ -852,7 +875,7 @@
       '<p style="margin:0 0 4px;"><b>التاريخ:</b> ' + fmtDate(rr.report_date) + '</p>' +
       (rr.doctor_name ? '<p style="margin:0 0 4px;"><b>الطبيب:</b> ' + escapeHtml(rr.doctor_name) + '</p>' : '') +
       (rr.diagnosis ? '<p style="margin:0 0 16px;"><b>التشخيص:</b> ' + escapeHtml(rr.diagnosis) + '</p>' : '<div style="margin-bottom:16px;"></div>') +
-      '<div style="columns:3;column-gap:16px;direction:ltr;text-align:left;">' + catsHtml + '</div>' +
+      (catsHtml ? '<div style="columns:2;column-gap:16px;direction:ltr;text-align:left;">' + catsHtml + '</div>' : '<p style="font-size:12px;color:#888;">مفيش بنود أشعة متعلّم عليها.</p>') +
       (rr.others_text ? '<div style="margin-top:14px;direction:rtl;text-align:right;"><b>Others:</b> ' + escapeHtml(rr.others_text) + '</div>' : '');
     win.document.open();
     win.document.write('<!doctype html><html><head><meta charset="utf-8"><title>Diagnostic Imaging Request — ' + escapeHtml(patient.full_name) + '</title>' +
@@ -860,6 +883,65 @@
       '<body>' + letterheadPageHtml("rtl", body) + '</body></html>');
     win.document.close();
     waitForImagesThenPrint(win, 3000);
+  }
+
+  // ---------- فورم "تقييم تجربة المريض" — نفس نص/ترتيب استبيان "سعادة الزوار"
+  //            الرسمي بالحرف (٦ أسئلة × مقياس ١-٥ + كومنت اختياري). تكراري لكل
+  //            زيارة (مش upsert لصف واحد) — كل حفظ بيضيف تقييم جديد. الفورم ده
+  //            مشترك بين ملف المريض (render-patients.js) وتاب "تقييمات العملاء"
+  //            (render-leads.js) عن طريق window.SSMPDRenderPatients — نفس
+  //            الفورم بالحرف زي ما طلب المستخدم، فرق الاستخدام بس إن خدمة
+  //            العملاء بتدوّر على المريض الأول (search_patients_basic) قبل ما
+  //            تفتحه ----------
+  function openExperienceRatingFormModal(patient, onSaved) {
+    var backdrop = document.createElement("div");
+    backdrop.className = "modal-backdrop";
+    var scoreLabels = { 1: "غير راضٍ", 2: "2", 3: "3", 4: "4", 5: "راضٍ جدًا" };
+    var html = '<div class="modal"><div class="modal-head"><h3>تقييم تجربة جديد</h3><button class="modal-close">×</button></div>' +
+      '<p style="font-size:12px;color:var(--c-muted);margin:-6px 0 10px;">المريض: ' + escapeHtml(patient.full_name) + '</p>' +
+      '<div class="field"><label>تاريخ الزيارة</label><input id="er-date" type="date" value="' + new Date().toISOString().slice(0, 10) + '"></div>';
+    window.SSMPDExperienceQuestions.forEach(function (q, i) {
+      html += '<div style="margin-top:14px;">' +
+        '<div style="font-size:13px;font-weight:700;margin-bottom:6px;">' + (i + 1) + '. ' + escapeHtml(q) + '</div>' +
+        '<div style="display:flex;gap:10px;">' +
+        [1, 2, 3, 4, 5].map(function (n) {
+          return '<label style="font-size:12px;display:flex;flex-direction:column;align-items:center;gap:3px;"><input type="radio" name="er-q' + i + '" value="' + n + '"><span>' + n + '</span></label>';
+        }).join("") +
+        '</div><div style="display:flex;justify-content:space-between;font-size:10px;color:var(--c-muted);margin-top:2px;"><span>غير راضٍ</span><span>راضٍ جدًا</span></div>' +
+        '</div>';
+    });
+    html += '<div class="field" style="margin-top:14px;"><label>كومنت العميل (اختياري)</label><textarea id="er-comment" rows="2" placeholder="أي ملاحظات من العميل"></textarea></div>' +
+      '<button class="btn block" id="er-save" style="margin-top:12px;">حفظ التقييم</button></div>';
+    backdrop.innerHTML = html;
+    document.body.appendChild(backdrop);
+    backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
+    backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
+
+    document.getElementById("er-save").onclick = function () {
+      var ratings = [];
+      for (var i = 0; i < window.SSMPDExperienceQuestions.length; i++) {
+        var checked = backdrop.querySelector('input[name="er-q' + i + '"]:checked');
+        if (!checked) { T.show("جاوب على كل الأسئلة الأول", "error"); return; }
+        ratings.push(Number(checked.value));
+      }
+      var patch = {
+        visit_date: document.getElementById("er-date").value || new Date().toISOString().slice(0, 10),
+        ratings: ratings,
+        comment: document.getElementById("er-comment").value.trim()
+      };
+      var curAdmin = (window.SSMPDAuth && window.SSMPDAuth.currentAdmin) || me;
+      window.SSMPDDb.saveExperienceRating(patient.id, patch, curAdmin && curAdmin.id).then(function () {
+        T.show("اتحفظ التقييم");
+        backdrop.remove();
+        if (onSaved) onSaved();
+      }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
+    };
+  }
+
+  function experienceRatingAvg(r) {
+    var arr = r.ratings || [];
+    if (!arr.length) return null;
+    return (arr.reduce(function (a, b) { return a + b; }, 0) / arr.length);
   }
 
   // ---------- فورم Echocardiography Report (إنشاء/تعديل) ----------
@@ -2472,9 +2554,10 @@
         window.SSMPDDb.listPrescriptions(patientId).catch(function () { return []; }),
         window.SSMPDDb.listLabRequests(patientId).catch(function () { return []; }),
         window.SSMPDDb.listRadiologyRequests(patientId).catch(function () { return []; }),
+        window.SSMPDDb.listPatientExperienceRatings(patientId).catch(function () { return []; }),
       ]).then(function (results) {
         var res = results[0], profile = results[1], visits = results[2] || [];
-        renderPatientModal(backdrop, view, container, res.patient, res.files || [], profile, visits, results[3] || [], results[4] || [], results[5] || [], results[6] || [], results[7] || [], results[8] || [], results[9] || []);
+        renderPatientModal(backdrop, view, container, res.patient, res.files || [], profile, visits, results[3] || [], results[4] || [], results[5] || [], results[6] || [], results[7] || [], results[8] || [], results[9] || [], results[10] || []);
       }).catch(function (e) {
         backdrop.querySelector(".modal").innerHTML = '<div class="err-msg">خطأ: ' + e.message + '</div>';
       });
@@ -2482,7 +2565,56 @@
     reload();
   }
 
-  function renderPatientModal(backdrop, view, container, patient, files, profile, visits, reports, echoReports, dentalReports, physioReports, prescriptions, labRequests, radiologyRequests) {
+  // سكشن مدموج: مستندات مرفوعة لفئة معيّنة (روشتة/تحاليل/أشعة) + قائمة
+  // الفورمات المُنشأة من الداشبورد لنفس الفئة — نفس نمط سكشن "تقرير طبي" بالظبط،
+  // عشان الفئة توصف في مكان واحد بدل ما تتكرر في السكشن العام وسكشن منفصل
+  function mergedDocSectionHtml(catKey, catLabel, uploadedList, createdCount, canUp, newBtnAttr, createdList, createdEmptyNoun, createdItemHtml) {
+    var html = '<div class="section" style="padding:12px 14px;">' +
+      '<h3 style="font-size:13px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
+      '<span>' + catLabel + ' (' + (uploadedList.length + createdCount) + ')</span>' +
+      (canUp ? '<span><button class="btn ghost sm" data-upload-cat="' + catKey + '">+ رفع مستند</button> ' +
+        '<button class="btn ghost sm" ' + newBtnAttr + '>+ إنشاء جديد</button>' +
+        '<input type="file" accept="image/*,application/pdf" data-file-input-cat="' + catKey + '" style="display:none;"></span>' : '') +
+      '</h3>';
+    if (canUp) {
+      html += '<div class="field" data-other-wrap-cat style="display:none;margin-bottom:8px;">' +
+        '<label>ملاحظات / تفاصيل الملف (اختياري)</label>' +
+        '<input data-other-desc-cat placeholder="اكتب أي تفاصيل تخص الملف">' +
+        '<label style="margin-top:6px;">تاريخ إصدار المستند (اختياري)</label>' +
+        '<input type="date" data-issued-at-cat></div>';
+    }
+    html += '<div data-cat-status style="font-size:11px;color:var(--c-muted);margin-bottom:6px;"></div>';
+    if (!uploadedList.length) {
+      html += '<p style="font-size:12px;color:var(--c-muted);">مفيش مستندات مرفوعة.</p>';
+    } else {
+      uploadedList.forEach(function (f) {
+        html += '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--c-border);font-size:12px;">' +
+          '<div><b>' + escapeHtml(f.file_name) + '</b>' + (f.other_description ? ' — ' + escapeHtml(f.other_description) : '') +
+          ' <span class="status-pill ' + (REVIEW_PILL[f.review_status] || "draft") + '" style="font-size:10px;">' + (REVIEW_LABELS[f.review_status] || f.review_status) + '</span>' +
+          '<br><span style="color:var(--c-muted);">' + fmtBytes(f.file_size) + ' · ' + fmtDate(f.uploaded_at) +
+          (f.uploaded_by_name ? ' · رفعه: ' + escapeHtml(f.uploaded_by_name) : '') +
+          (f.reviewed_by_name ? ' · راجعه: ' + escapeHtml(f.reviewed_by_name) : '') + '</span></div>' +
+          '<div style="display:flex;gap:6px;flex-shrink:0;">' +
+          '<button class="btn ghost sm" data-view-file="' + f.id + '">عرض</button>' +
+          '<button class="btn ghost sm" data-dl="' + f.id + '">تنزيل</button>' +
+          '<button class="btn ghost sm" data-print-file="' + f.id + '">🖨 طباعة</button>' +
+          (canUp ? '<button class="btn danger sm" data-del-file="' + f.id + '">حذف</button>' : '') + '</div></div>';
+      });
+    }
+    html += '<div style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--c-border);">' +
+      '<b style="font-size:12px;">' + catLabel + ' المُنشأة من الداشبورد (' + createdList.length + ')</b>';
+    if (!createdList.length) {
+      html += '<p style="font-size:12px;color:var(--c-muted);margin-top:6px;">مفيش ' + createdEmptyNoun + ' مُنشأة لسه.</p>';
+    } else {
+      createdList.forEach(function (r) {
+        html += '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--c-border);font-size:12px;">' + createdItemHtml(r) + '</div>';
+      });
+    }
+    html += '</div></div>';
+    return html;
+  }
+
+  function renderPatientModal(backdrop, view, container, patient, files, profile, visits, reports, echoReports, dentalReports, physioReports, prescriptions, labRequests, radiologyRequests, experienceRatings) {
     var byCategory = {};
     CATEGORIES.forEach(function (c) { byCategory[c.key] = []; });
     files.forEach(function (f) { (byCategory[f.category] || (byCategory[f.category] = [])).push(f); });
@@ -2495,6 +2627,7 @@
     prescriptions = prescriptions || [];
     labRequests = labRequests || [];
     radiologyRequests = radiologyRequests || [];
+    experienceRatings = experienceRatings || [];
 
     var html = '<div class="modal"><div class="modal-head"><h3>' + escapeHtml(patient.full_name) +
       ' <span style="font-size:12px;color:var(--c-muted);">(' + escapeHtml(patient.patient_code || "") + ')</span></h3>' +
@@ -2580,7 +2713,9 @@
       '</div>';
 
     CATEGORIES.forEach(function (c) {
-      if (c.key === "medical_report") return; // بيتعرض جوه سكشن "التقارير الطبية" الموحّد تحت
+      // البنود دي بتتعرض جوه سكشن "التقارير الطبية" الموحّد تحت (مدموجة مع
+      // التقارير/الفورمات المُنشأة من الداشبورد لنفس الفئة) بدل ما تتكرر هنا كمان
+      if (c.key === "medical_report" || c.key === "prescription" || c.key === "lab_result" || c.key === "radiology") return;
       var list = byCategory[c.key] || [];
       html += '<div class="section" style="padding:12px 14px;">' +
         '<h3 style="font-size:13px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
@@ -2679,67 +2814,38 @@
     }
     html += '</div></div>';
 
-    // ---------- روشتة (Prescription) ----------
-    html += '<div class="section" style="padding:12px 14px;">' +
-      '<h3 style="font-size:13px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
-      '<span>روشتة (' + prescriptions.length + ')</span>' +
-      (canUp ? '<button class="btn ghost sm" data-new-prescription="1">+ إنشاء جديد</button>' : '') +
-      '</h3>';
-    if (!prescriptions.length) {
-      html += '<p style="font-size:12px;color:var(--c-muted);">مفيش روشتات مُنشأة لسه.</p>';
-    } else {
-      prescriptions.forEach(function (r) {
-        html += '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--c-border);font-size:12px;">' +
-          '<div><b>' + escapeHtml("روشتة" + (r.specialty ? (" - " + r.specialty) : "")) + '</b> — ' + fmtDate(r.report_date) +
+    // -- روشتة (مدموجة مع فئة رفع "وصفة طبية (روشتة)") --
+    html += mergedDocSectionHtml("prescription", "روشتة", byCategory.prescription || [], prescriptions.length, canUp, 'data-new-prescription="1"',
+      prescriptions, "روشتات", function (r) {
+        return '<div><b>' + escapeHtml("روشتة" + (r.specialty ? (" - " + r.specialty) : "")) + '</b> — ' + fmtDate(r.report_date) +
           (r.doctor_name ? '<br><span style="color:var(--c-muted);">د. ' + escapeHtml(r.doctor_name) + '</span>' : '') + '</div>' +
           '<div style="display:flex;gap:6px;flex-shrink:0;">' +
           '<button class="btn ghost sm" data-edit-prescription="' + r.id + '">تعديل</button>' +
           '<button class="btn ghost sm" data-print-prescription="' + r.id + '">🖨 طباعة</button>' +
-          (canUp ? '<button class="btn danger sm" data-del-prescription="' + r.id + '">حذف</button>' : '') + '</div></div>';
+          (canUp ? '<button class="btn danger sm" data-del-prescription="' + r.id + '">حذف</button>' : '') + '</div>';
       });
-    }
-    html += '</div>';
 
-    // ---------- طلب تحاليل (Lab Request) ----------
-    html += '<div class="section" style="padding:12px 14px;">' +
-      '<h3 style="font-size:13px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
-      '<span>طلب تحاليل (' + labRequests.length + ')</span>' +
-      (canUp ? '<button class="btn ghost sm" data-new-lab-request="1">+ إنشاء جديد</button>' : '') +
-      '</h3>';
-    if (!labRequests.length) {
-      html += '<p style="font-size:12px;color:var(--c-muted);">مفيش طلبات تحاليل مُنشأة لسه.</p>';
-    } else {
-      labRequests.forEach(function (r) {
-        html += '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--c-border);font-size:12px;">' +
-          '<div><b>طلب تحاليل</b> — ' + fmtDate(r.report_date) + ' — ' + (r.tests || []).length + ' تحليل' +
+    // -- طلب تحاليل (مدموجة مع فئة رفع "تحاليل") --
+    html += mergedDocSectionHtml("lab_result", "تحاليل", byCategory.lab_result || [], labRequests.length, canUp, 'data-new-lab-request="1"',
+      labRequests, "طلبات تحاليل", function (r) {
+        return '<div><b>طلب تحاليل</b> — ' + fmtDate(r.report_date) + ' — ' + (r.tests || []).length + ' تحليل' +
           (r.doctor_name ? '<br><span style="color:var(--c-muted);">د. ' + escapeHtml(r.doctor_name) + '</span>' : '') + '</div>' +
           '<div style="display:flex;gap:6px;flex-shrink:0;">' +
           '<button class="btn ghost sm" data-edit-lab-request="' + r.id + '">تعديل</button>' +
           '<button class="btn ghost sm" data-print-lab-request="' + r.id + '">🖨 طباعة</button>' +
-          (canUp ? '<button class="btn danger sm" data-del-lab-request="' + r.id + '">حذف</button>' : '') + '</div></div>';
+          (canUp ? '<button class="btn danger sm" data-del-lab-request="' + r.id + '">حذف</button>' : '') + '</div>';
       });
-    }
-    html += '</div>';
 
-    // ---------- طلب أشعة (Radiology Request) ----------
-    html += '<div class="section" style="padding:12px 14px;">' +
-      '<h3 style="font-size:13px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
-      '<span>طلب أشعة (' + radiologyRequests.length + ')</span>' +
-      (canUp ? '<button class="btn ghost sm" data-new-radiology-request="1">+ إنشاء جديد</button>' : '') +
-      '</h3>';
-    if (!radiologyRequests.length) {
-      html += '<p style="font-size:12px;color:var(--c-muted);">مفيش طلبات أشعة مُنشأة لسه.</p>';
-    } else {
-      radiologyRequests.forEach(function (r) {
-        html += '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--c-border);font-size:12px;">' +
-          '<div><b>طلب أشعة</b> — ' + fmtDate(r.report_date) + ' — ' + (r.items || []).length + ' بند' +
+    // -- طلب أشعة (مدموجة مع فئة رفع "أشعة") --
+    html += mergedDocSectionHtml("radiology", "أشعة", byCategory.radiology || [], radiologyRequests.length, canUp, 'data-new-radiology-request="1"',
+      radiologyRequests, "طلبات أشعة", function (r) {
+        return '<div><b>طلب أشعة</b> — ' + fmtDate(r.report_date) + ' — ' + (r.items || []).length + ' بند' +
           (r.doctor_name ? '<br><span style="color:var(--c-muted);">د. ' + escapeHtml(r.doctor_name) + '</span>' : '') + '</div>' +
           '<div style="display:flex;gap:6px;flex-shrink:0;">' +
           '<button class="btn ghost sm" data-edit-radiology-request="' + r.id + '">تعديل</button>' +
           '<button class="btn ghost sm" data-print-radiology-request="' + r.id + '">🖨 طباعة</button>' +
-          (canUp ? '<button class="btn danger sm" data-del-radiology-request="' + r.id + '">حذف</button>' : '') + '</div></div>';
+          (canUp ? '<button class="btn danger sm" data-del-radiology-request="' + r.id + '">حذف</button>' : '') + '</div>';
       });
-    }
     html += '</div>';
 
     // ---------- Echocardiography Report ----------
@@ -2806,6 +2912,25 @@
     html += '</div>';
 
     html += '</div>';
+
+    // ---------- تقييم تجربة المريض ----------
+    html += '<div class="section" style="padding:12px 14px;">' +
+      '<h3 style="font-size:13px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
+      '<span>تقييم تجربة المريض (' + experienceRatings.length + ')</span>' +
+      (canUp ? '<button class="btn ghost sm" data-new-experience-rating="1">+ تقييم جديد</button>' : '') +
+      '</h3>';
+    if (!experienceRatings.length) {
+      html += '<p style="font-size:12px;color:var(--c-muted);">مفيش تقييمات مُسجّلة لسه.</p>';
+    } else {
+      experienceRatings.forEach(function (r) {
+        var avg = experienceRatingAvg(r);
+        html += '<div style="padding:6px 0;border-bottom:1px solid var(--c-border);font-size:12px;">' +
+          '<b>' + fmtDate(r.visit_date) + '</b> — متوسط التقييم: <b>' + (avg != null ? avg.toFixed(1) : "—") + '/5</b>' +
+          (r.comment ? '<br><span style="color:var(--c-muted);">💬 ' + escapeHtml(r.comment) + '</span>' : '') + '</div>';
+      });
+    }
+    html += '</div>';
+
     backdrop.innerHTML = html;
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
 
@@ -2821,8 +2946,9 @@
         window.SSMPDDb.listPrescriptions(patient.id).catch(function () { return []; }),
         window.SSMPDDb.listLabRequests(patient.id).catch(function () { return []; }),
         window.SSMPDDb.listRadiologyRequests(patient.id).catch(function () { return []; }),
+        window.SSMPDDb.listPatientExperienceRatings(patient.id).catch(function () { return []; }),
       ]).then(function (results) {
-        renderPatientModal(backdrop, view, container, results[0].patient, results[0].files || [], results[1], results[2] || [], results[3] || [], results[4] || [], results[5] || [], results[6] || [], results[7] || [], results[8] || [], results[9] || []);
+        renderPatientModal(backdrop, view, container, results[0].patient, results[0].files || [], results[1], results[2] || [], results[3] || [], results[4] || [], results[5] || [], results[6] || [], results[7] || [], results[8] || [], results[9] || [], results[10] || []);
       });
     }
 
@@ -2955,6 +3081,12 @@
         }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
       };
     });
+
+    // ---------- تقييم تجربة المريض (إنشاء بس — استبيان تكراري لكل زيارة) ----------
+    var newExperienceRatingBtn = backdrop.querySelector("[data-new-experience-rating]");
+    if (newExperienceRatingBtn) {
+      newExperienceRatingBtn.onclick = function () { openExperienceRatingFormModal(patient, reloadModal); };
+    }
 
     // ---------- روشتة (إنشاء/تعديل/طباعة/حذف) ----------
     var newPrescriptionBtn = backdrop.querySelector("[data-new-prescription]");
@@ -3187,5 +3319,9 @@
     state.browseSearch = term;
   }
 
-  window.SSMPDRenderPatients = { render: render, openSearch: openSearch };
+  window.SSMPDRenderPatients = {
+    render: render, openSearch: openSearch,
+    openExperienceRatingFormModal: openExperienceRatingFormModal,
+    experienceRatingAvg: experienceRatingAvg
+  };
 })();

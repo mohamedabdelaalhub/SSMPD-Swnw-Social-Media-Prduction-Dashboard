@@ -64,6 +64,7 @@
   var SUB_SCREENS = [
     { key: "reception", label: "الاستقبال" },
     { key: "cs", label: "خدمة العملاء" },
+    { key: "experience_ratings", label: "تقييمات العملاء" },
     { key: "dashboard", label: "داشبورد الإدارة" },
     { key: "booked", label: "الحجوزات الفعلية" },
     { key: "archive", label: "أرشيف الليدز" },
@@ -80,13 +81,15 @@
     referrals: { status: "", search: "", bookedBy: "", page: 1, pageSize: 20 },
     booked: { search: "", bookedBy: "", page: 1, pageSize: 20 },
     bulk: { rows: [], fileName: "", result: null },
-    dashboard: { from: "", to: "" }
+    dashboard: { from: "", to: "" },
+    experience_ratings: { from: "", to: "", searchTerm: "", searchResults: [] }
   };
 
   function visibleSubScreens() {
     return SUB_SCREENS.filter(function (s) {
       if (s.key === "reception") return isReception();
       if (s.key === "cs") return isCS();
+      if (s.key === "experience_ratings") return isCS() || isManager();
       if (s.key === "bulk") return isReception();
       if (s.key === "dashboard") return isManager() || isCS();
       if (s.key === "missing_data") return isReception() || isCS() || isManager();
@@ -135,6 +138,7 @@
     ensureEmployees(function () {
       if (state.subTab === "reception") renderReceptionScreen(subView, container);
       else if (state.subTab === "cs") renderCsScreen(subView, container);
+      else if (state.subTab === "experience_ratings") renderExperienceRatingsScreen(subView, container);
       else if (state.subTab === "dashboard") renderDashboardScreen(subView, container);
       else if (state.subTab === "booked") renderBookedScreen(subView, container);
       else if (state.subTab === "archive") renderArchiveScreen(subView, container);
@@ -285,6 +289,154 @@
     var nextBtn = document.getElementById(prefix + "-next");
     if (prevBtn) prevBtn.onclick = function () { if (s.page > 1) { s.page--; rerender(); } };
     if (nextBtn) nextBtn.onclick = function () { if (s.page < totalPages) { s.page++; rerender(); } };
+  }
+
+  // ============ تقييمات العملاء (تقييم تجربة المريض) ============
+  // نفس الفورم المستخدم في بروفايل المريض (window.SSMPDRenderPatients.openExperienceRatingFormModal)
+  // بيتفتح من هنا كمان علشان نضمن نفس الأسئلة بالظبط زي ما طلب الفريق.
+  function renderExperienceRatingsScreen(view, container) {
+    var s = state.experience_ratings;
+    view.innerHTML = '<div class="loading">بيحمّل…</div>';
+    window.SSMPDDb.listAllExperienceRatings({}).then(function (all) {
+      var todayStr = new Date().toISOString().slice(0, 10);
+      var todayRatings = all.filter(function (r) { return r.visit_date === todayStr; });
+      var overallAvgs = all.map(function (r) { return window.SSMPDRenderPatients.experienceRatingAvg(r); }).filter(function (v) { return v != null; });
+      var overallAvg = overallAvgs.length ? (overallAvgs.reduce(function (a, b) { return a + b; }, 0) / overallAvgs.length) : null;
+
+      var html = '<div class="section"><h3>+ تقييم جديد</h3>' +
+        '<p style="font-size:12px;color:var(--c-muted);margin-bottom:8px;">دوّر بالاسم / رقم الهاتف / كود المريض علشان تفتح فورم تقييم تجربته.</p>' +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap;">' +
+        '<input id="er-search" placeholder="بحث عن مريض…" value="' + escapeHtml(s.searchTerm) + '" style="flex:1;min-width:200px;padding:9px 12px;border-radius:10px;border:1px solid var(--c-border);">' +
+        '<button class="btn sm" id="er-search-btn">بحث</button></div>' +
+        '<div id="er-search-results" style="margin-top:10px;"></div></div>';
+
+      html += '<div class="kpi-grid">' +
+        '<div class="kpi-card"><div class="label">إجمالي التقييمات</div><div class="value">' + fmtNum(all.length) + '</div></div>' +
+        '<div class="kpi-card"><div class="label">تقييمات اليوم</div><div class="value">' + fmtNum(todayRatings.length) + '</div></div>' +
+        '<div class="kpi-card"><div class="label">متوسط الرضا العام</div><div class="value small">' + (overallAvg == null ? "—" : overallAvg.toFixed(1) + " / 5") + '</div></div>' +
+        '</div>';
+
+      html += '<div class="section"><h3>تقييمات اليوم (' + fmtNum(todayRatings.length) + ')</h3>' +
+        experienceRatingsTableHtml(todayRatings, "مفيش تقييمات النهاردة لسه.") + '</div>';
+
+      html += '<div class="section"><h3>أرشيف التقييمات الكامل</h3>' +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px;">' +
+        '<div class="field" style="margin:0;"><label>من تاريخ</label><input type="date" id="er-from" value="' + escapeHtml(s.from) + '"></div>' +
+        '<div class="field" style="margin:0;"><label>إلى تاريخ</label><input type="date" id="er-to" value="' + escapeHtml(s.to) + '"></div>' +
+        '<button class="btn ghost sm" id="er-filter-apply">تطبيق</button>' +
+        (s.from || s.to ? '<button class="btn ghost sm" id="er-filter-clear">مسح الفلتر</button>' : '') +
+        '<span style="flex:1;"></span>' +
+        '<button class="btn ghost sm" id="er-export-xlsx">⬇ تصدير إكسيل</button>' +
+        '<button class="btn ghost sm" id="er-export-pdf">🖨 تصدير PDF</button>' +
+        '</div>' +
+        experienceRatingsTableHtml(all, "مفيش تقييمات مطابقة للفلتر.") + '</div>';
+
+      view.innerHTML = html;
+
+      document.getElementById("er-search-btn").onclick = function () { runExperienceRatingsSearch(view); };
+      document.getElementById("er-search").onkeydown = function (e) { if (e.key === "Enter") runExperienceRatingsSearch(view); };
+      if (s.searchResults.length) renderExperienceSearchResults(view);
+
+      document.getElementById("er-filter-apply").onclick = function () {
+        s.from = document.getElementById("er-from").value;
+        s.to = document.getElementById("er-to").value;
+        renderExperienceRatingsScreen(view, container);
+      };
+      var clearBtn = document.getElementById("er-filter-clear");
+      if (clearBtn) clearBtn.onclick = function () { s.from = ""; s.to = ""; renderExperienceRatingsScreen(view, container); };
+      document.getElementById("er-export-xlsx").onclick = function () { exportExperienceRatingsExcel(all); };
+      document.getElementById("er-export-pdf").onclick = function () { exportExperienceRatingsPdf(all); };
+    }).catch(function (e) { view.innerHTML = '<div class="err-msg">خطأ: ' + e.message + '</div>'; });
+  }
+
+  function experienceRatingsTableHtml(rows, emptyMsg) {
+    if (!rows.length) return '<p style="font-size:13px;color:var(--c-muted);">' + emptyMsg + '</p>';
+    var html = '<table class="simple"><thead><tr><th>المريض</th><th>الهاتف</th><th>التاريخ</th><th>متوسط التقييم</th><th>ملاحظات</th></tr></thead><tbody>';
+    rows.forEach(function (r) {
+      var avg = window.SSMPDRenderPatients.experienceRatingAvg(r);
+      var p = r.patients || {};
+      html += '<tr><td>' + escapeHtml(p.full_name || "—") + '</td><td>' + escapeHtml(p.phone || "—") + '</td>' +
+        '<td style="font-size:11px;color:var(--c-muted);">' + fmtDateOnly(r.visit_date) + '</td>' +
+        '<td>' + (avg == null ? "—" : avg.toFixed(1) + " / 5") + '</td>' +
+        '<td style="font-size:12px;">' + (r.comment ? escapeHtml(r.comment) : "—") + '</td></tr>';
+    });
+    html += '</tbody></table>';
+    return html;
+  }
+
+  function runExperienceRatingsSearch(view) {
+    var s = state.experience_ratings;
+    var term = document.getElementById("er-search").value.trim();
+    s.searchTerm = term;
+    if (!term) { s.searchResults = []; renderExperienceSearchResults(view); return; }
+    window.SSMPDDb.searchPatientsBasic(term).then(function (rows) {
+      s.searchResults = rows || [];
+      renderExperienceSearchResults(view);
+    }).catch(function (e) { T.show("خطأ في البحث: " + e.message, "error"); });
+  }
+
+  function renderExperienceSearchResults(view) {
+    var s = state.experience_ratings;
+    var box = document.getElementById("er-search-results");
+    if (!box) return;
+    if (s.searchTerm && !s.searchResults.length) {
+      box.innerHTML = '<p style="font-size:12px;color:var(--c-muted);">مفيش مرضى مطابقين.</p>';
+      return;
+    }
+    box.innerHTML = s.searchResults.map(function (p) {
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border:1px solid var(--c-border);border-radius:8px;margin-bottom:6px;">' +
+        '<span>' + escapeHtml(p.full_name) + ' <span style="color:var(--c-muted);font-size:11px;">' + escapeHtml(p.phone || "") + '</span></span>' +
+        '<button class="btn sm" data-er-open="' + p.id + '">+ تقييم</button></div>';
+    }).join("");
+    box.querySelectorAll("[data-er-open]").forEach(function (btn) {
+      btn.onclick = function () {
+        var p = s.searchResults.filter(function (x) { return x.id === btn.getAttribute("data-er-open"); })[0];
+        if (!p) return;
+        window.SSMPDRenderPatients.openExperienceRatingFormModal(p, function () { renderExperienceRatingsScreen(view, view.parentNode); });
+      };
+    });
+  }
+
+  function exportExperienceRatingsExcel(rows) {
+    if (typeof XLSX === "undefined") { T.show("مكتبة الإكسيل لسه مش متحمّلة — جرب ريفريش للصفحة", "error"); return; }
+    var questions = window.SSMPDExperienceQuestions || [];
+    var header = ["المريض", "الهاتف", "التاريخ"].concat(questions).concat(["المتوسط", "ملاحظات"]);
+    var aoa = [header];
+    rows.forEach(function (r) {
+      var p = r.patients || {};
+      var avg = window.SSMPDRenderPatients.experienceRatingAvg(r);
+      var ratings = r.ratings || [];
+      var row = [p.full_name || "—", p.phone || "—", r.visit_date || "—"];
+      questions.forEach(function (q, i) { row.push(ratings[i] != null ? ratings[i] : "—"); });
+      row.push(avg == null ? "—" : avg.toFixed(1));
+      row.push(r.comment || "");
+      aoa.push(row);
+    });
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), "تقييمات العملاء");
+    XLSX.writeFile(wb, "تقييمات_تجربة_المريض_" + new Date().toISOString().slice(0, 10) + ".xlsx");
+  }
+
+  function exportExperienceRatingsPdf(rows) {
+    var win = window.open("", "_blank");
+    if (!win) { T.show("المتصفح منع فتح نافذة الطباعة — سمح بالنوافذ المنبثقة وحاول تاني", "error"); return; }
+    var html = '<!doctype html><html><head><meta charset="utf-8"><title>تقييمات تجربة المريض</title>' +
+      '<style>body{font-family:sans-serif;padding:24px;direction:rtl;}table{width:100%;border-collapse:collapse;margin:12px 0 24px;}' +
+      'td,th{border:1px solid #ccc;padding:6px 10px;text-align:right;font-size:12px;}h1{font-size:20px;}</style></head><body>';
+    html += '<h1>تقييمات تجربة المريض — مركز عيادات Swnw</h1>';
+    html += '<p>تاريخ التقرير: ' + new Date().toLocaleDateString("ar-EG") + ' — إجمالي التقييمات: ' + rows.length + '</p>';
+    html += '<table><tr><th>المريض</th><th>الهاتف</th><th>التاريخ</th><th>المتوسط</th><th>ملاحظات</th></tr>';
+    rows.forEach(function (r) {
+      var p = r.patients || {};
+      var avg = window.SSMPDRenderPatients.experienceRatingAvg(r);
+      html += '<tr><td>' + escapeHtml(p.full_name || "—") + '</td><td>' + escapeHtml(p.phone || "—") + '</td>' +
+        '<td>' + fmtDateOnly(r.visit_date) + '</td><td>' + (avg == null ? "—" : avg.toFixed(1) + " / 5") + '</td>' +
+        '<td>' + (r.comment ? escapeHtml(r.comment) : "—") + '</td></tr>';
+    });
+    html += '</table></body></html>';
+    win.document.write(html);
+    win.document.close();
+    setTimeout(function () { win.print(); }, 500);
   }
 
   // ============ ٣) داشبورد الإدارة ============

@@ -394,6 +394,31 @@
     deleteRadiologyRequest: function (id) {
       return handle(client.from("patient_radiology_requests").delete().eq("id", id));
     },
+    // ---------- تقييم تجربة المريض (Patient Experience Rating) — تكراري لكل زيارة ----------
+    listPatientExperienceRatings: function (patientId) {
+      return handle(client.from("patient_experience_ratings").select("*").eq("patient_id", patientId).order("visit_date", { ascending: false }));
+    },
+    saveExperienceRating: function (patientId, patch, createdBy) {
+      var row = Object.assign({}, patch, { patient_id: patientId, created_by: createdBy });
+      return handle(client.from("patient_experience_ratings").insert(row).select().single());
+    },
+    deleteExperienceRating: function (id) {
+      return handle(client.from("patient_experience_ratings").delete().eq("id", id));
+    },
+    // قائمة كل التقييمات عبر كل المرضى (لتاب "تقييمات العملاء" في خدمة العملاء) —
+    // مع اسم/هاتف المريض عن طريق join، وفلتر تاريخ اختياري (from/to على visit_date)
+    listAllExperienceRatings: function (params) {
+      params = params || {};
+      var q = client.from("patient_experience_ratings").select("*, patients(full_name, phone)").order("visit_date", { ascending: false });
+      if (params.from) q = q.gte("visit_date", params.from);
+      if (params.to) q = q.lte("visit_date", params.to);
+      return handle(q);
+    },
+    // بحث آمن ومحدود عن المرضى (اسم/هاتف/كود بس) — لخدمة العملاء لما تحتاج
+    // تلاقي مريض تربط بيه تقييم تجربة جديد
+    searchPatientsBasic: function (term) {
+      return handle(client.rpc("search_patients_basic", { p_term: term }));
+    },
     listEchoReports: function (patientId) {
       return handle(client.from("patient_echo_reports").select("*").eq("patient_id", patientId).order("report_date", { ascending: false }));
     },
@@ -625,4 +650,16 @@
   };
 
   window.SSMPDDb = Db;
+
+  // أسئلة استبيان "تقييم تجربة المريض" الرسمي — نفس الترتيب والنص بالحرف من
+  // نموذج "استبيان سعادة الزوار" الورقي، مستخدمة في render-patients.js
+  // (سكشن ملف المريض) وrender-leads.js (تاب "تقييمات العملاء") الاتنين
+  window.SSMPDExperienceQuestions = [
+    "كيف كانت تجربتك في التعامل مع طاقم الاستقبال؟",
+    "كيف تقيم تواصل الطبيب واحترافيته؟",
+    "هل شرح لك الطبيب حالتك والعلاج بشكل واضح؟",
+    "ما مدى رضاك عن جودة الخدمة بشكل عام؟",
+    "من وجهة نظرك هل كانت تكلفة الخدمة مناسبة؟",
+    "إلى أي مدى قد ترشح عيادات سونو لعائلتك وأصدقائك؟"
+  ];
 })();
