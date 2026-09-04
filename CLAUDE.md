@@ -2982,3 +2982,37 @@ client-side بالكامل تاني، بدون أي تعديل SQL، وبدون 
   `drop policy if exists` قبل `create policy`).
 - **لازم**: تشغيل قسم ٣٨ (النسخة المحدّثة) في Supabase SQL Editor — لسه ما
   اتشغّلش على LIVE خالص، فمفيش drift.
+
+## Phase 2A — Edge Function آمنة لاستقبال مقترحات Media Buyer (`media-buyer-propose`) (٢٠٢٦-٠٩-٠٤)
+
+- Edge Function جديدة `supabase/functions/media-buyer-propose/index.ts` —
+  المسار الآمن الوحيد اللي وكيل Media Buyer خارجي (Claude Media Buyer
+  Agent) يقدر يقترح بيه خطط/actions في `media_buyer_plans`/
+  `media_buyer_actions`. **مفيش تنفيذ على Meta خالص هنا** — الدالة بترجع
+  فقط INSERT بحالة `pending_review` (يعتمدها بشر من تاب "وكيل الإعلانات").
+- **المصادقة**: bearer token ثابت (`MEDIA_BUYER_AGENT_TOKEN` — سر جديد في
+  Supabase Edge Function Secrets، مختلف عن مصادقة JWT بتاعة مستخدمي
+  الداشبورد العاديين) — مناسب لأنه اتصال آلة-لآلة (الوكيل) مش جلسة مستخدم.
+- **Idempotency**: عمود `external_request_id` (nullable) + unique index
+  جزئي على الجدولين (قسم ٣٩ في `setup.sql`) — نفس الطلب المكرر (نفس
+  `external_request_id`) بيرجّع الصف الموجود (`duplicate:true`) بدل ما
+  يعمل إدخال تاني، مع معالجة race condition (كود `23505`).
+  قسم ٣٩ برضه بيسمح `action_type` يكون NULL (كان `NOT NULL`) وبيضيف عمود
+  `recommendation_type` (`scale`/`hold`/`retest`/`pause`/`create`) —
+  عشان توصيات HOLD/RETEST تتسجل كـ*توصية* بدون action تنفيذي وهمي.
+  `render-mediabuyer.js` اتحدّث ليعرض `recommendation_type` (مع
+  `action_type` كتوضيح ثانوي لو الاتنين موجودين).
+- **Validation صارمة**: allow-list لحقول الخطة/الـaction (السيرفر بيفرض
+  `status`/`proposed_by` — الوكيل مايقدرش يتخطى الاعتماد)، `target_platform_id`
+  إجباري لـactions التنفيذية، `proposed_payload` هيكلي إجباري لـ`create_*`،
+  `content_item_id` بيتفحص وجوده فعليًا (مفيش تخمين)، حدود أمان على الأطوال/
+  الميزانيات (>=0)/ترتيب التواريخ/enum الثقة.
+- بصمة الكاش اترفعت لـ `render-mediabuyer.js?v=2` في `index.html`.
+- **لازم** (لسه ما اتعملش، خطوات المستخدم):
+  ١) تشغيل قسم ٣٩ من `setup.sql` في Supabase SQL Editor.
+  ٢) نشر الدالة `media-buyer-propose` (Monaco editor، نفس طريقة نشر باقي
+     Edge Functions الموثّقة في المشروع ده).
+  ٣) ضبط السر `MEDIA_BUYER_AGENT_TOKEN`: Supabase Dashboard → Project
+     Settings → Edge Functions → Secrets (أو Manage secrets) → Add new
+     secret → الاسم `MEDIA_BUYER_AGENT_TOKEN` → القيمة: قيمة عشوائية آمنة
+     تولّدها بنفسك (**متبعتهاش هنا في الشات**) → Save.
