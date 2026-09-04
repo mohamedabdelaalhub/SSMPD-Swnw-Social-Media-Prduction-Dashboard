@@ -3016,3 +3016,54 @@ client-side بالكامل تاني، بدون أي تعديل SQL، وبدون 
      Settings → Edge Functions → Secrets (أو Manage secrets) → Add new
      secret → الاسم `MEDIA_BUYER_AGENT_TOKEN` → القيمة: قيمة عشوائية آمنة
      تولّدها بنفسك (**متبعتهاش هنا في الشات**) → Save.
+
+## Phase 2A — تصليب أمني قبل النشر الحي (`media-buyer-propose`) (٢٠٢٦-٠٩-٠٤)
+
+مراجعة قبل النشر على LIVE كشفت ٦ نقاط تصليب — اتنفذوا كلهم من غير أي تغيير
+في منطق قسم ٣٩ نفسه ولا أي فيتشر جديد ولا أي اتصال بـMeta:
+
+- **`supabase/config.toml` جديد**: `[functions.media-buyer-propose]
+  verify_jwt = false` — الدالة دي بتتفعّل بـbearer token ثابت
+  (`MEDIA_BUYER_AGENT_TOKEN`) مش جلسة Supabase Auth حقيقية، فلازم نطفّي
+  تحقق الـJWT بتاع المنصة نفسها وإلا الطلب هيترفض قبل ما يوصل لكود الدالة
+  خالص. **ملحوظة نشر مهمة**: الملف ده بيتوثّق بس — النشر في المشروع ده
+  يدوي عن طريق GitHub Web UI + لصق الكود في Monaco editor بداشبورد
+  Supabase (مفيش `supabase functions deploy` بالـCLI)، فلازم تتأكد يدويًا
+  إن خيار "Verify JWT" مقفول من إعدادات الدالة نفسها في الداشبورد بعد
+  النشر (checkbox في صفحة الدالة، عادة تحت Details/Settings) — ملف
+  الـconfig.toml وحده مش كافي في مسار النشر اليدوي ده.
+- **مفتاح الأدمن السيرفري**: بدل الاعتماد على `SUPABASE_SERVICE_ROLE_KEY`
+  بس، الدالة بقت تفضّل `SUPABASE_SECRET_KEYS` (JSON فيها `{"default":
+  "..."}`) لو موجودة، وترجع للمفتاح القديم كـfallback، وتفشل بأمان
+  (`MISCONFIGURED`, 500) لو الاتنين مش موجودين — **قبل** أي عملية قاعدة
+  بيانات. مفيش أي مفتاح بيتسجل أو يترجع في أي رد أبدًا.
+- **UUID validation**: `content_item_id`/`plan_id` بقوا يتفحصوا بـregex
+  UUID صريح قبل أي استعلام قاعدة بيانات — قيمة شكلها غلط بترجع `400
+  VALIDATION_ERROR` فورًا بدل ما تسبب خطأ Postgres غامض/500.
+- **اتساق `target_type` مع `action_type`**: خريطة صريحة (`pause_ad`/
+  `resume_ad`→`ad`، `pause_adset`/`resume_adset`→`adset`،
+  `pause_campaign`/`resume_campaign`→`campaign`، `create_*`→نوعه) —
+  تناقض زي `pause_ad` + `target_type=campaign` بيترفض فورًا. لو
+  `target_type` مش متبعت، بتُستنتج سيرفريًا من `action_type`. أفعال
+  الميزانية (`increase_budget`/`decrease_budget`) ليها قاعدة منفصلة:
+  `target_type` إجباري ولازم يكون `campaign` أو `adset` (مفيش قيمة واحدة
+  تُستنتج، لأن الميزانية ممكن تتظبط على أي من المستويين).
+- **سماحية صريحة لحقول الطلب (allow-list)**: أي حقل top-level مش من
+  ضمن القائمة المسموحة لنوع الطلب (`plan`/`action`) بيترفض بـ
+  `VALIDATION_ERROR` فورًا — تصليب إضافي فوق البناء الآمن للصف اللي كان
+  موجود بالفعل (كان بيتجاهل الحقول المحمية صمتًا، دلوقتي بيرفض أي حقل
+  غريب صراحة قبل ما يوصل لمنطق البناء أصلاً).
+- **كل الحماية القديمة محفوظة زي ما هي**: bearer auth، idempotency،
+  فرض `status`/`proposed_by` سيرفريًا، سلوك HOLD/RETEST الاستشاري، مفيش
+  اتصال/تنفيذ على Meta، مفيش أسرار في الفرونت إند، مفيش DELETE.
+- بصمة الكاش: **مفيش تغيير في `index.html`** — الملف ده Edge Function
+  بحتة، مالهاش أي تحميل من الفرونت إند.
+- ملفات اتغيرت: `supabase/functions/media-buyer-propose/index.ts`،
+  `supabase/config.toml` (جديد).
+- **لازم**: (١) إعادة نشر كود الدالة المحدّث في Monaco editor بداشبورد
+  Supabase، (٢) التأكد يدويًا إن "Verify JWT" مقفول لهذه الدالة تحديدًا
+  من إعداداتها في الداشبورد (`config.toml` بس توثيق، مش كفاية في مسار
+  النشر اليدوي)، (٣) لو `SUPABASE_SECRET_KEYS`/`SUPABASE_SERVICE_ROLE_KEY`
+  مش متظبطين أصلاً كـEnvironment Variables تلقائية من Supabase، تأكد إن
+  واحد منهم متاح (عادة بيبقوا متظبطين تلقائيًا من المنصة، مفيش إجراء
+  إضافي متوقع هنا في الحالة العادية).
