@@ -2861,7 +2861,6 @@
           '<button class="btn ghost sm" data-print-radiology-request="' + r.id + '">🖨 طباعة</button>' +
           (canUp ? '<button class="btn danger sm" data-del-radiology-request="' + r.id + '">حذف</button>' : '') + '</div>';
       });
-    html += '</div>';
 
     // ---------- Echocardiography Report ----------
     html += '<div class="section" style="padding:12px 14px;">' +
@@ -2924,8 +2923,6 @@
           (canUp ? '<button class="btn danger sm" data-del-physio-report="' + r.id + '">حذف</button>' : '') + '</div></div>';
       });
     }
-    html += '</div>';
-
     html += '</div>';
 
     // ---------- تقييم تجربة المريض ----------
