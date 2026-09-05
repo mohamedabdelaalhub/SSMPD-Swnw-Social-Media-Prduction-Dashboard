@@ -3169,3 +3169,40 @@ Supabase Dashboard مباشرة، بدون أي اتصال بـMeta API خالص
   الخارجي الفعلي. **مفيش أي مفتاح خاص (private key) اتفبرك أو اتخزن في
   أي مكان في الباتش دي** — التسجيل الحقيقي (register_agent) لسه هيحصل من
   مشروع Meta/Claude الحقيقي، مش من الشات ده.
+
+## تبسيط ربط وكيل Meta: زرار "نسخ حزمة الربط" بروابط حية + سياسة المفتاح الخاص (`?v=4` render-mediabuyer.js — ٢٠٢٦-٠٩-٠٥)
+
+- **الطلب**: نظام الربط بالمفتاح العام (Ed25519) شغال لايف بالفعل من Phase 2B
+  — التبسيط ده UI/UX بس، **مفيش أي بنية backend جديدة**. المشكلة: بيئة Meta
+  Claude الحقيقية مش عندها macOS Keychain ومش عارفة رابط Supabase أصلاً، فكل
+  خطوة يدوية إضافية بتعقّد الربط.
+- **الحل**: بعد "إنشاء كود ربط"، زرار جديد "نسخ حزمة الربط" — بينسخ نص واحد
+  بس فيه ٤ أسطر: `PAIRING_CODE`، `PAIRING_EXPIRES_AT`، `PAIRING_ENDPOINT`،
+  `PROPOSAL_ENDPOINT` — الرابطين مبنيين ديناميكيًا من `window.SSMPD_CONFIG
+  .supabase.url` (نفس مصدر `EDGE_BASE` في `db.js`)، مش مكتوبين يدويًا. **صفر
+  أسرار في الحزمة**: مفيش service_role، مفيش anon key، مفيش
+  `MEDIA_BUYER_AGENT_TOKEN`، مفيش باسورد قاعدة بيانات، مفيش مفتاح خاص —
+  الروابط والكود المؤقت مش أسرار أصلاً (الكود بيصلح مرة واحدة و١٠ دقايق بس).
+  سير العمل بقى: (١) إنشاء كود ربط، (٢) نسخ حزمة الربط، (٣) لصقها في شات
+  Meta Claude، (٤) الوكيل يكمل بنفسه.
+- **سياسة المفتاح الخاص (توثيق بس، مفيش تغيير كود)**: وكيل Meta مش محتاج
+  macOS Keychain — لو مش متاح عنده، يقدر يولّد مفتاحه الخاص Ed25519 جوه
+  فولدر مشروعه في ملف سر محلي: `chmod 600`، مُستبعد صراحة من git
+  (`.gitignore`)، ميتعملهوش commit أبدًا، وميتطبعش في أي شات أبدًا — المسار
+  المقترح `.claude/secrets/media-buyer-ed25519-private.key`. المفتاح العام
+  بس هو اللي بيتبعت لـ`register_agent` عن طريق `PAIRING_ENDPOINT`.
+- **النموذج الأمني لم يتغيّر خالص**: كود ربط لمرة واحدة، انتهاء ١٠ دقايق،
+  تخزين الكود بالهاش بس، مصادقة Ed25519 موقّعة لطلبات `media-buyer-propose`،
+  حماية replay/timestamp (تفاوت ±٥ دقايق)، المفتاح العام بس في Supabase،
+  المفتاح الخاص أبدًا مش بيتخزن في Supabase.
+- **مفيش SQL جديد** — الميزة دي واجهة بس، بتستخدم استجابة `create_pairing_code`
+  الموجودة بالفعل (`pairing_code`/`expires_at`) وقيمة `window.SSMPD_CONFIG
+  .supabase.url` الموجودة بالفعل في `config.js`.
+- `render-mediabuyer.js`: `lastPairing` (متغيّر مغلق يحتفظ بآخر استجابة كود
+  ربط)، `realEdgeUrl(fnName)` (بناء رابط حي من الإعداد الحقيقي)،
+  `copyToClipboard` (نفس نمط `navigator.clipboard.writeText` + fallback
+  `execCommand("copy")` المستخدم في باقي المشروع)، وزرار
+  `data-copy-pairing-package` جديد يظهر بعد كل إنشاء كود.
+- بصمة الكاش اترفعت لـ `render-mediabuyer.js?v=4` في `index.html`.
+- **لازم**: رفع `render-mediabuyer.js` و`index.html` عن طريق GitHub Web UI
+  (مفيش Edge Function ولا SQL يحتاج نشر في الدفعة دي).
