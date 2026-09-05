@@ -3086,3 +3086,61 @@ do $$ begin
     add constraint media_buyer_actions_type_presence_chk
     check (action_type is not null or recommendation_type is not null);
 exception when duplicate_object then null; end $$;
+
+-- ============================================================
+--  ٤٠) Media Buyer — Zero-Secret Meta Agent Pairing (Ed25519)
+--  الهدف: الوكيل الخارجي (Claude Media Buyer على مشروع Meta منفصل) يوقّع كل
+--  طلب بمفتاحه الخاص (يفضل عنده هو بس، مخزّن في macOS Keychain عنده) —
+--  Supabase بتخزّن بس المفتاح العام. مفيش أي سر مشترك طويل العمر لازم
+--  ينتقل بين البيئتين. التوكن القديم (MEDIA_BUYER_AGENT_TOKEN) فاضل شغال
+--  مؤقتًا كـfallback بس (راجع media-buyer-propose) لحد ما التوقيع يتثبت في
+--  الإنتاج.
+-- ============================================================
+
+-- الوكلاء المُسجَّلين (كل واحد له مفتاح عام Ed25519 بس — أبدًا أي مفتاح خاص)
+create table if not exists public.media_buyer_agents (
+  id uuid primary key default gen_random_uuid(),
+  key_id text unique not null,
+  name text,
+  public_key text not null,
+  status text not null default 'active',
+  paired_at timestamptz not null default now(),
+  last_seen_at timestamptz,
+  revoked_at timestamptz
+);
+
+do $$ begin
+  alter table public.media_buyer_agents
+    add constraint media_buyer_agents_status_chk
+    check (status in ('active', 'revoked'));
+exception when duplicate_object then null; end $$;
+
+-- أكواد الربط لمرة واحدة — النص الصريح للكود ما بيتخزنش خالص، هاش SHA-256
+-- بس (نفس فلسفة national_id_hash في patients — القيمة الخام أبدًا في القاعدة)
+create table if not exists public.media_buyer_pairing_codes (
+  id uuid primary key default gen_random_uuid(),
+  code_hash text not null,
+  expires_at timestamptz not null,
+  used_at timestamptz,
+  created_by uuid references public.admins(id),
+  created_at timestamptz not null default now()
+);
+
+create index if not exists media_buyer_pairing_codes_hash_idx
+  on public.media_buyer_pairing_codes (code_hash);
+
+alter table public.media_buyer_agents enable row level security;
+alter table public.media_buyer_pairing_codes enable row level security;
+
+-- قراءة بس للمديرين (نفس دائرة اعتماد Media Buyer الموجودة أصلاً) — الكتابة
+-- (تسجيل وكيل جديد / إنشاء كود ربط / تعليم كود كمُستخدم) بتحصل حصريًا عن
+-- طريق Edge Functions بمفتاح service_role (بيتخطى RLS بالكامل)، فمفيش أي
+-- policy للـinsert/update/delete هنا عمدًا — حتى المدير العام نفسه من
+-- جلسته العادية مايقدرش يعدّل الجدولين دول مباشرة.
+drop policy if exists "managers read media_buyer_agents" on public.media_buyer_agents;
+create policy "managers read media_buyer_agents" on public.media_buyer_agents
+  for select using (public.can_manage_all_content());
+
+drop policy if exists "managers read pairing_codes" on public.media_buyer_pairing_codes;
+create policy "managers read pairing_codes" on public.media_buyer_pairing_codes
+  for select using (public.can_manage_all_content());

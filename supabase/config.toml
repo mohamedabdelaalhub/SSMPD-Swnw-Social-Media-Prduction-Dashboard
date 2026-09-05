@@ -11,3 +11,14 @@
 # function's own code still rejects every request without a valid
 # MEDIA_BUYER_AGENT_TOKEN (see supabase/functions/media-buyer-propose/index.ts).
 verify_jwt = false
+
+[functions.media-buyer-pair]
+# Phase 2B pairing bridge: serves TWO callers on one endpoint —
+# create_pairing_code (a logged-in dashboard manager, real Supabase Auth JWT)
+# and register_agent (the external agent itself, no dashboard session at all,
+# authenticated only via the one-time pairing code). Since the second caller
+# has no platform JWT, this function must NOT go through platform JWT
+# verification either — create_pairing_code validates the manager's JWT
+# manually inside the function (see getCallerManager in
+# supabase/functions/media-buyer-pair/index.ts).
+verify_jwt = false
