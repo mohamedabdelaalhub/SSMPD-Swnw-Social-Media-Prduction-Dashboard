@@ -206,6 +206,19 @@ const ALLOWED_ACTION_KEYS = new Set([
   "target_type", "target_platform_id", "proposed_payload", "reason",
   "metrics_snapshot", "plan_id",
 ]);
+// Phase 3D — سجل تشغيل الـWorker المحلي + تصعيدات تحتاج مراجعة بشرية/Claude.
+// مفيش تنفيذ Meta هنا خالص، ومفيش أي حقل توكن/سر مسموح به عمدًا.
+const ALLOWED_WORKER_RUN_KEYS = new Set([
+  "type", "external_request_id", "worker_id", "started_at", "finished_at",
+  "dry_run", "status", "campaigns_checked", "adsets_checked", "ads_checked",
+  "insight_rows", "recommendations_created", "recommendations_skipped_duplicate",
+  "escalations_created", "meta_account_id", "error_code", "error_message",
+]);
+const ALLOWED_ESCALATION_KEYS = new Set([
+  "type", "external_request_id", "worker_id", "target_type", "target_platform_id",
+  "objective", "kpi_candidate", "reason", "metrics_snapshot", "historical_evidence",
+]);
+const WORKER_RUN_STATUSES = ["success", "partial", "failed"];
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -214,6 +227,7 @@ function strOk(v: unknown, maxLen: number): boolean { return v == null || (isStr
 function numOk(v: unknown): boolean { return v == null || (typeof v === "number" && isFinite(v)); }
 function dateOk(v: unknown): boolean { return v == null || (isStr(v) && /^\d{4}-\d{2}-\d{2}$/.test(v)); }
 function isUuid(v: unknown): boolean { return isStr(v) && UUID_RE.test(v); }
+function isoTsOk(v: unknown): boolean { return v == null || (isStr(v) && !isNaN(Date.parse(v))); }
 
 function findUnknownKey(body: Record<string, unknown>, allowed: Set<string>): string | null {
   for (const k of Object.keys(body)) {
@@ -290,8 +304,8 @@ Deno.serve(async (req: Request) => {
   }
 
   const type = body.type;
-  if (type !== "plan" && type !== "action") {
-    return fail("VALIDATION_ERROR", 'type must be "plan" or "action"');
+  if (type !== "plan" && type !== "action" && type !== "worker_run" && type !== "escalation") {
+    return fail("VALIDATION_ERROR", 'type must be "plan", "action", "worker_run" or "escalation"');
   }
 
   const externalRequestId = body.external_request_id;
@@ -301,16 +315,24 @@ Deno.serve(async (req: Request) => {
 
   // سماحية صريحة لحقول الطلب — أي حقل غير متوقع (بما فيه أي محاولة لبعت
   // حقل محمي زي status/proposed_by/approved_by/...) بيترفض هنا قبل أي شغل تاني
-  const badKey = findUnknownKey(body, type === "plan" ? ALLOWED_PLAN_KEYS : ALLOWED_ACTION_KEYS);
+  const ALLOWED_KEYS_BY_TYPE: Record<string, Set<string>> = {
+    plan: ALLOWED_PLAN_KEYS, action: ALLOWED_ACTION_KEYS,
+    worker_run: ALLOWED_WORKER_RUN_KEYS, escalation: ALLOWED_ESCALATION_KEYS,
+  };
+  const badKey = findUnknownKey(body, ALLOWED_KEYS_BY_TYPE[type as string]);
   if (badKey) {
     return fail("VALIDATION_ERROR", `Unknown or unsupported field: ${badKey}`);
   }
 
   const db = db0;
 
-  // نفس الحقل external_request_id بيبقى unique بين النوعين (فهرسين منفصلين
-  // على الجدولين) — نتأكد الأول لو الطلب ده اتعمل قبل كده (idempotency)
-  const table = type === "plan" ? "media_buyer_plans" : "media_buyer_actions";
+  // نفس الحقل external_request_id بيبقى unique جوه كل نوع (فهرس منفصل لكل
+  // جدول) — نتأكد الأول لو الطلب ده اتعمل قبل كده (idempotency)
+  const TABLE_BY_TYPE: Record<string, string> = {
+    plan: "media_buyer_plans", action: "media_buyer_actions",
+    worker_run: "media_buyer_worker_runs", escalation: "media_buyer_escalations",
+  };
+  const table = TABLE_BY_TYPE[type as string];
   const { data: existing, error: existingErr } = await db
     .from(table).select("id, status").eq("external_request_id", externalRequestId).maybeSingle();
   if (existingErr) {
@@ -323,7 +345,9 @@ Deno.serve(async (req: Request) => {
   }
 
   if (type === "plan") return handlePlan(db, body, externalRequestId);
-  return handleAction(db, body, externalRequestId);
+  if (type === "action") return handleAction(db, body, externalRequestId);
+  if (type === "worker_run") return handleWorkerRun(db, body, externalRequestId);
+  return handleEscalation(db, body, externalRequestId);
 });
 
 async function handlePlan(db: ReturnType<typeof createClient>, body: Record<string, unknown>, externalRequestId: string) {
@@ -512,4 +536,114 @@ async function handleAction(db: ReturnType<typeof createClient>, body: Record<st
   }
   logSafe({ event: "media_buyer_propose_inserted", type: "action", external_request_id: externalRequestId, id: data.id });
   return json({ ok: true, type: "action", id: data.id, status: data.status, duplicate: false });
+}
+
+// Phase 3D — سجل تشغيل واحد للـWorker المحلي بعد كل دورة launchd. observability
+// بس، مفيش أي اتصال/تنفيذ Meta هنا. ممنوع تخزين توكنات/تواقيع/مفاتيح خاصة.
+async function handleWorkerRun(db: ReturnType<typeof createClient>, body: Record<string, unknown>, externalRequestId: string) {
+  const startedAt = body.started_at;
+  if (!isoTsOk(startedAt) || startedAt == null) {
+    return fail("VALIDATION_ERROR", "started_at is required (ISO timestamp)");
+  }
+  if (!isoTsOk(body.finished_at)) return fail("VALIDATION_ERROR", "finished_at must be an ISO timestamp");
+  const status = body.status;
+  if (!isStr(status) || !WORKER_RUN_STATUSES.includes(status)) {
+    return fail("VALIDATION_ERROR", `status must be one of: ${WORKER_RUN_STATUSES.join(", ")}`);
+  }
+  const intFields = [
+    "campaigns_checked", "adsets_checked", "ads_checked", "insight_rows",
+    "recommendations_created", "recommendations_skipped_duplicate", "escalations_created",
+  ];
+  for (const f of intFields) {
+    const v = (body as Record<string, unknown>)[f];
+    if (v != null && (typeof v !== "number" || !Number.isFinite(v) || !Number.isInteger(v) || v < 0)) {
+      return fail("VALIDATION_ERROR", `${f} must be a non-negative integer`);
+    }
+  }
+  if (!strOk(body.worker_id, MAX_SHORT)) return fail("VALIDATION_ERROR", "worker_id too long");
+  if (!strOk(body.meta_account_id, MAX_SHORT)) return fail("VALIDATION_ERROR", "meta_account_id too long");
+  if (!strOk(body.error_code, MAX_SHORT)) return fail("VALIDATION_ERROR", "error_code too long");
+  if (!strOk(body.error_message, MAX_LONG)) return fail("VALIDATION_ERROR", "error_message too long");
+  if (body.dry_run != null && typeof body.dry_run !== "boolean") {
+    return fail("VALIDATION_ERROR", "dry_run must be boolean");
+  }
+
+  const row: Record<string, unknown> = {
+    external_request_id: externalRequestId,
+    worker_id: (isStr(body.worker_id) && body.worker_id.trim()) ? body.worker_id : "swnw_local_worker",
+    started_at: startedAt,
+    finished_at: body.finished_at ?? null,
+    dry_run: body.dry_run ?? false,
+    status,
+    campaigns_checked: body.campaigns_checked ?? null,
+    adsets_checked: body.adsets_checked ?? null,
+    ads_checked: body.ads_checked ?? null,
+    insight_rows: body.insight_rows ?? null,
+    recommendations_created: body.recommendations_created ?? 0,
+    recommendations_skipped_duplicate: body.recommendations_skipped_duplicate ?? 0,
+    escalations_created: body.escalations_created ?? 0,
+    meta_account_id: body.meta_account_id ?? null,
+    error_code: body.error_code ?? null,
+    error_message: body.error_message ?? null,
+  };
+
+  const { data, error } = await db.from("media_buyer_worker_runs").insert(row).select("id, status").single();
+  if (error) {
+    if ((error as { code?: string }).code === "23505") {
+      const { data: again } = await db.from("media_buyer_worker_runs").select("id, status").eq("external_request_id", externalRequestId).maybeSingle();
+      if (again) return json({ ok: true, type: "worker_run", id: again.id, status: again.status, duplicate: true });
+    }
+    logSafe({ event: "media_buyer_propose_insert_error", type: "worker_run" });
+    return fail("SERVER_ERROR", "Insert failed", 500);
+  }
+  logSafe({ event: "media_buyer_propose_inserted", type: "worker_run", external_request_id: externalRequestId, id: data.id });
+  return json({ ok: true, type: "worker_run", id: data.id, status: data.status, duplicate: false });
+}
+
+// Phase 3D — تصعيد يحتاج مراجعة بشرية/Claude. status دايمًا "open" وقت
+// الإنشاء (مفروض سيرفريًا — مش حقل مسموح للوكيل يبعته، مستبعد من
+// ALLOWED_ESCALATION_KEYS عمدًا). مفيش أي تنفيذ Meta هنا خالص.
+async function handleEscalation(db: ReturnType<typeof createClient>, body: Record<string, unknown>, externalRequestId: string) {
+  const reason = body.reason;
+  if (!isStr(reason) || !reason.trim() || reason.length > MAX_LONG) {
+    return fail("VALIDATION_ERROR", "reason is required (non-empty string)");
+  }
+  if (!strOk(body.worker_id, MAX_SHORT)) return fail("VALIDATION_ERROR", "worker_id too long");
+  if (!strOk(body.target_type, MAX_SHORT)) return fail("VALIDATION_ERROR", "target_type too long");
+  if (!strOk(body.target_platform_id, MAX_SHORT)) return fail("VALIDATION_ERROR", "target_platform_id too long");
+  if (!strOk(body.objective, MAX_SHORT)) return fail("VALIDATION_ERROR", "objective too long");
+  if (!strOk(body.kpi_candidate, MAX_SHORT)) return fail("VALIDATION_ERROR", "kpi_candidate too long");
+  const metricsSnapshot = body.metrics_snapshot;
+  if (metricsSnapshot != null && (typeof metricsSnapshot !== "object" || Array.isArray(metricsSnapshot))) {
+    return fail("VALIDATION_ERROR", "metrics_snapshot must be a JSON object");
+  }
+  const historicalEvidence = body.historical_evidence;
+  if (historicalEvidence != null && (typeof historicalEvidence !== "object" || Array.isArray(historicalEvidence))) {
+    return fail("VALIDATION_ERROR", "historical_evidence must be a JSON object");
+  }
+
+  const row: Record<string, unknown> = {
+    external_request_id: externalRequestId,
+    worker_id: (isStr(body.worker_id) && body.worker_id.trim()) ? body.worker_id : "swnw_local_worker",
+    target_type: body.target_type ?? null,
+    target_platform_id: body.target_platform_id ?? null,
+    objective: body.objective ?? null,
+    kpi_candidate: body.kpi_candidate ?? null,
+    reason,
+    metrics_snapshot: metricsSnapshot ?? null,
+    historical_evidence: historicalEvidence ?? null,
+    status: "open",
+  };
+
+  const { data, error } = await db.from("media_buyer_escalations").insert(row).select("id, status").single();
+  if (error) {
+    if ((error as { code?: string }).code === "23505") {
+      const { data: again } = await db.from("media_buyer_escalations").select("id, status").eq("external_request_id", externalRequestId).maybeSingle();
+      if (again) return json({ ok: true, type: "escalation", id: again.id, status: again.status, duplicate: true });
+    }
+    logSafe({ event: "media_buyer_propose_insert_error", type: "escalation" });
+    return fail("SERVER_ERROR", "Insert failed", 500);
+  }
+  logSafe({ event: "media_buyer_propose_inserted", type: "escalation", external_request_id: externalRequestId, id: data.id });
+  return json({ ok: true, type: "escalation", id: data.id, status: data.status, duplicate: false });
 }
