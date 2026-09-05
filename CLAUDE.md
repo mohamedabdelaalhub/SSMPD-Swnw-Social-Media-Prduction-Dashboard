@@ -3170,6 +3170,61 @@ Supabase Dashboard مباشرة، بدون أي اتصال بـMeta API خالص
   أي مكان في الباتش دي** — التسجيل الحقيقي (register_agent) لسه هيحصل من
   مشروع Meta/Claude الحقيقي، مش من الشات ده.
 
+## Phase 3D — صحة الـWorker المحلي + تصعيدات تحتاج مراجعة (قسم ٤١ — ٢٠٢٦-٠٩-٠٥)
+
+الـMedia Buyer Worker المحلي بقى شغّال فعليًا على الـMac (Meta read-only،
+كل ٣ ساعات عن طريق launchd، مفيش أي Meta write). الباتش دي بتخلي الداشبورد
+تعرض صحة تشغيله وطابور التصعيدات — **observability بس، مفيش أي تنفيذ Meta
+ولا `ads_management` هنا خالص**.
+
+- **قسم ٤١ في `setup.sql`**: جدولين جداد —
+  - `media_buyer_worker_runs`: سجل تشغيل واحد لكل دورة (started_at/finished_at/
+    dry_run/status[success|partial|failed]/campaigns_checked/adsets_checked/
+    ads_checked/insight_rows/recommendations_created/
+    recommendations_skipped_duplicate/escalations_created/meta_account_id/
+    error_code/error_message). **ممنوع تخزين توكنات/تواقيع/مفاتيح خاصة/
+    Authorization headers فيه أبدًا** — metadata تشغيلية بس.
+  - `media_buyer_escalations`: تصعيد لحالة محتاجة مراجعة بشرية/Claude
+    (target_type/target_platform_id/objective/kpi_candidate/reason/
+    metrics_snapshot/historical_evidence/status[open|reviewing|resolved|
+    dismissed]/resolution_notes/resolved_by→admins/resolved_at).
+  - RLS: قراءة لأي أدمن نشط على الجدولين، تحديث حالة التصعيد (reviewing/
+    resolved/dismissed) مقصور على `general_manager`/`super_admin` بس (نفس
+    `canApproveMediaBuyer()` الموجودة أصلاً في `roles.js` — مفيش تعديل
+    مطلوب فيها). **مفيش أي policy INSERT للـauthenticated ولا أي policy
+    DELETE خالص على الجدولين** — الكتابة حصريًا عن طريق Edge Function
+    بمفتاح service_role (بيتخطى RLS)، نفس نمط `media_buyer_agents`/
+    `pairing_codes` بالظبط.
+- **`media-buyer-propose` Edge Function اتوسّعت بنوعين جداد** (`worker_run`،
+  `escalation`) — نفس المصادقة الموجودة بالضبط (توقيع Ed25519 أو bearer
+  token fallback، **مفيش سر جديد ولا Edge Function جديدة**)، نفس نمط
+  allow-list الحقول (`ALLOWED_WORKER_RUN_KEYS`/`ALLOWED_ESCALATION_KEYS`)،
+  نفس idempotency عن طريق `external_request_id` (عمود+فهرس unique جزئي
+  جديد على الجدولين، قسم ٤١)، ونفس فرض الحقول المحمية سيرفريًا
+  (`status: "open"` للتصعيدات مفروض دايمًا، مش حقل مسموح للوكيل يبعته).
+- `db.js`: `listMediaBuyerWorkerRuns`، `listMediaBuyerEscalations`،
+  `setMediaBuyerEscalationStatus` (reviewing/resolved/dismissed —
+  resolution_notes/resolved_by/resolved_at بتتسجل بس مع resolved/dismissed).
+- `render-mediabuyer.js` (تاب "وكيل الإعلانات"):
+  - سكشن جديد "حالة وكيل الإعلانات" أعلى الشاشة — 🟢/🟡/🔴 محسوبة من آخر
+    تشغيل ناجح (GREEN ≤٤ ساعات، YELLOW ٤-٧ ساعات، RED >٧ ساعات أو آخر
+    تشغيل فشل)، معنونة "آخر اتصال ناجح" (مش ادعاء إن launchd نفسه شغّال —
+    إحنا عارفين بس آخر heartbeat ناجح وصلنا)، + وقت التشغيل القادم التقديري
+    (آخر نجاح + ٣ ساعات) + كل العدادات المطلوبة (campaigns/adsets/ads/
+    insight rows/توصيات/مكرّرة/تصعيدات).
+  - سكشن جديد "حالات تحتاج مراجعة" — بيعرض التصعيدات المفتوحة/قيد المراجعة
+    فقط (**من سجلات حقيقية بس، مفيش أي بيانات وهمية مُدرجة في الكود**)،
+    مع أزرار "تحت المراجعة"/"حل"/"رفض" (لأصحاب صلاحية `canApproveMediaBuyer`
+    بس) — خانة ملاحظات نصية مضمّنة (مش `prompt()`) إجبارية قبل الحل/الرفض.
+    الحل/الرفض **لا يحوّل التصعيد تلقائيًا لأي Meta action** — مجرد تحديث حالة.
+  - ملخص تنفيذي القديم اتحافظ عليه بالكامل + ٤ KPIs مختصرة جداد (آخر اتصال
+    ناجح، ads اتفحصت، توصيات جديدة، تصعيدات مفتوحة، حالة الـWorker).
+- بصمة الكاش اترفعت لـ `db.js?v=63`، `render-mediabuyer.js?v=5` في
+  `index.html`.
+- **لازم**: تشغيل قسم ٤١ من `setup.sql` في Supabase SQL Editor، وإعادة نشر
+  `media-buyer-propose` Edge Function المحدّثة (Monaco editor) — نفس إعداد
+  "Verify JWT" الحالي (OFF) يفضل زي ما هو، مفيش تغيير مطلوب فيه.
+
 ## تبسيط ربط وكيل Meta: زرار "نسخ حزمة الربط" بروابط حية + سياسة المفتاح الخاص (`?v=4` render-mediabuyer.js — ٢٠٢٦-٠٩-٠٥)
 
 - **الطلب**: نظام الربط بالمفتاح العام (Ed25519) شغال لايف بالفعل من Phase 2B
