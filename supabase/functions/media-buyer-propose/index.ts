@@ -13,6 +13,118 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const AGENT_TOKEN = Deno.env.get("MEDIA_BUYER_AGENT_TOKEN");
 
+// ---------- Phase 2B: مصادقة موقّعة Ed25519 (zero-shared-secret) ----------
+// شكل التوقيع القانوني (canonical signing format) — لازم يتوثق هنا حرفيًا
+// عشان المشروع الخارجي (Meta/Claude) يقدر يطابقه بالظبط:
+//
+//   canonical_message = "<timestamp>." + sha256_hex(raw_request_body_bytes)
+//
+// - <timestamp>: ثانية Unix (integer كـstring)، لازم يكون في نطاق ±300
+//   ثانية (٥ دقايق) من وقت السيرفر وقت الاستلام.
+// - raw_request_body_bytes: البايتات الخام بالظبط للـbody اللي هيتبعت في
+//   الـPOST (نفس الترتيب/المسافات اللي هيتحسب بيها الهاش لازم تتبعت
+//   بالظبط، من غير أي إعادة تنسيق JSON بعد الحساب).
+// - sha256_hex: هاش SHA-256 لبايتات الـbody، مُمثّل كـhex lowercase (64
+//   حرف).
+// - التوقيع نفسه: Ed25519 signature على بايتات UTF-8 لنص canonical_message
+//   ده بالكامل (النص كنص، مش الهاش وحده)، مُرمّز base64 قياسي في الهيدر.
+//
+// Headers المطلوبة على الطلب الموقّع (بديل الـBearer، مش بالإضافة له):
+//   X-Media-Buyer-Key-Id:    key_id اللي رجع من media-buyer-pair (register_agent)
+//   X-Media-Buyer-Timestamp: نفس الـ<timestamp> المستخدم في canonical_message
+//   X-Media-Buyer-Signature: التوقيع base64
+//
+// لو الهيدرز دي التلاتة موجودة، بيتم التحقق بيها (ويتجاهل أي Authorization
+// header تماماً). لو مش موجودة، بيرجع للمسار القديم (Bearer token ثابت) —
+// التوكن القديم فاضل شغال كـfallback مؤقت زي ما طلب المستخدم، لحد ما
+// التوقيع يتثبت في الإنتاج من المشروع الخارجي الحقيقي.
+const SIGNATURE_CLOCK_TOLERANCE_SECONDS = 300; // ±5 دقايق
+
+async function sha256Hex(bytes: Uint8Array): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+function base64ToBytes(b64: string): Uint8Array | null {
+  try {
+    const bin = atob(b64.trim());
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return bytes;
+  } catch {
+    return null;
+  }
+}
+
+// بيتحقق من توقيع Ed25519 لطلب واحد — بيرجع {ok:true, agentId, keyId} أو
+// {ok:false, code, error} — أبدًا ميرميش استثناء، عشان الاستدعاء الرئيسي
+// يقدر يرجع رد HTTP نضيف في كل الحالات
+async function verifySignedRequest(
+  req: Request,
+  rawBodyBytes: Uint8Array,
+  db: ReturnType<typeof createClient>,
+): Promise<{ ok: true; agentId: string; keyId: string } | { ok: false; code: string; error: string }> {
+  const keyId = req.headers.get("X-Media-Buyer-Key-Id");
+  const timestamp = req.headers.get("X-Media-Buyer-Timestamp");
+  const signatureB64 = req.headers.get("X-Media-Buyer-Signature");
+
+  if (!keyId || !timestamp || !signatureB64) {
+    return { ok: false, code: "MISSING_SIGNATURE_HEADERS", error: "Signature headers incomplete" };
+  }
+
+  const tsNum = Number(timestamp);
+  if (!Number.isFinite(tsNum) || !/^\d+$/.test(timestamp)) {
+    return { ok: false, code: "INVALID_TIMESTAMP", error: "X-Media-Buyer-Timestamp must be a unix-seconds integer string" };
+  }
+  const nowSeconds = Date.now() / 1000;
+  if (Math.abs(nowSeconds - tsNum) > SIGNATURE_CLOCK_TOLERANCE_SECONDS) {
+    return { ok: false, code: "TIMESTAMP_OUT_OF_RANGE", error: "Timestamp outside allowed clock window (±5 minutes)" };
+  }
+
+  const signatureBytes = base64ToBytes(signatureB64);
+  if (!signatureBytes) {
+    return { ok: false, code: "INVALID_SIGNATURE_ENCODING", error: "X-Media-Buyer-Signature must be valid base64" };
+  }
+
+  const { data: agent, error: agentErr } = await db
+    .from("media_buyer_agents")
+    .select("id, public_key, status")
+    .eq("key_id", keyId)
+    .maybeSingle();
+  if (agentErr) return { ok: false, code: "SERVER_ERROR", error: "Agent lookup failed" };
+  if (!agent) return { ok: false, code: "UNKNOWN_AGENT", error: "No agent registered for this key_id" };
+  if (agent.status !== "active") return { ok: false, code: "AGENT_REVOKED", error: "Agent is not active" };
+
+  const publicKeyBytes = base64ToBytes(agent.public_key as string);
+  if (!publicKeyBytes || publicKeyBytes.length !== 32) {
+    return { ok: false, code: "SERVER_ERROR", error: "Stored public key is malformed" };
+  }
+  let publicKey: CryptoKey;
+  try {
+    publicKey = await crypto.subtle.importKey("raw", publicKeyBytes, { name: "Ed25519" }, false, ["verify"]);
+  } catch {
+    return { ok: false, code: "SERVER_ERROR", error: "Stored public key could not be imported" };
+  }
+
+  const bodyHashHex = await sha256Hex(rawBodyBytes);
+  const canonicalMessage = timestamp + "." + bodyHashHex;
+  const canonicalBytes = new TextEncoder().encode(canonicalMessage);
+
+  let valid = false;
+  try {
+    valid = await crypto.subtle.verify("Ed25519", publicKey, signatureBytes, canonicalBytes);
+  } catch {
+    valid = false;
+  }
+  if (!valid) return { ok: false, code: "INVALID_SIGNATURE", error: "Signature verification failed" };
+
+  // تحديث last_seen_at — best-effort، فشلها ميمنعش الطلب من النجاح
+  db.from("media_buyer_agents").update({ last_seen_at: new Date().toISOString() }).eq("id", agent.id)
+    .then(() => {}, () => {});
+
+  return { ok: true, agentId: agent.id as string, keyId };
+}
+
 // مفتاح الأدمن السيرفري: نفضّل ميكانيزم الـsecret keys الحالي
 // (SUPABASE_SECRET_KEYS — JSON فيها {"default": "..."}) لو موجود، ولو مش
 // موجود نرجع للمفتاح القديم SUPABASE_SERVICE_ROLE_KEY (توافق قديم). لو
@@ -119,32 +231,60 @@ Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS });
   if (req.method !== "POST") return fail("METHOD_NOT_ALLOWED", "POST only", 405);
 
-  // ---------- Auth: static bearer secret، مش جلسة مستخدم دashboard ----------
-  // ملحوظة نشر: لازم verify_jwt=false على مستوى المنصة لهذه الدالة (راجع
-  // supabase/config.toml) — بدون كده Supabase هيرفض الطلب قبل ما يوصل هنا
-  // خالص لأنه مش JWT حقيقي. التحقق الفعلي من الهوية لسه بيحصل هنا بالكامل.
-  if (!AGENT_TOKEN) {
-    // السر مش متظبط في Supabase أصلاً — نرفض بأمان بدل ما نقبل أي حد
-    logSafe({ event: "media_buyer_propose_misconfigured", reason: "no_agent_token" });
-    return fail("MISCONFIGURED", "Agent token not configured", 401);
-  }
-  const authHeader = req.headers.get("Authorization") || "";
-  const m = /^Bearer\s+(.+)$/.exec(authHeader);
-  if (!m || m[1] !== AGENT_TOKEN) {
-    logSafe({ event: "media_buyer_propose_unauthorized" });
-    return new Response(null, { status: 401, headers: CORS });
-  }
-
   // مفتاح الأدمن السيرفري لازم يكون موجود قبل أي عملية قاعدة بيانات —
   // fail closed لو مفيش، مش نكمل بمفتاح فاضي/undefined
   if (!SERVICE_ROLE_KEY) {
     logSafe({ event: "media_buyer_propose_misconfigured", reason: "no_admin_key" });
     return fail("MISCONFIGURED", "Server database key not configured", 500);
   }
+  const db0 = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+
+  // ---------- Auth: توقيع Ed25519 (Phase 2B) أو bearer secret ثابت (fallback) ----------
+  // ملحوظة نشر: لازم verify_jwt=false على مستوى المنصة لهذه الدالة (راجع
+  // supabase/config.toml) — بدون كده Supabase هيرفض الطلب قبل ما يوصل هنا
+  // خالص لأنه مش JWT حقيقي. التحقق الفعلي من الهوية لسه بيحصل هنا بالكامل.
+  //
+  // بنقرا الـbody كـraw text مرة واحدة بس (لازم للتحقق من التوقيع، اللي
+  // بيهاش بايتات الـbody الخام بالظبط) — الـJSON.parse بيحصل بعد كده على
+  // نفس النص، مش على body تاني.
+  let rawBodyText: string;
+  try {
+    rawBodyText = await req.text();
+  } catch {
+    return fail("VALIDATION_ERROR", "Could not read request body");
+  }
+  const rawBodyBytes = new TextEncoder().encode(rawBodyText);
+
+  const hasSignatureHeaders = !!(
+    req.headers.get("X-Media-Buyer-Key-Id") &&
+    req.headers.get("X-Media-Buyer-Timestamp") &&
+    req.headers.get("X-Media-Buyer-Signature")
+  );
+
+  if (hasSignatureHeaders) {
+    const verified = await verifySignedRequest(req, rawBodyBytes, db0);
+    if (!verified.ok) {
+      logSafe({ event: "media_buyer_propose_signature_rejected", code: verified.code });
+      return fail(verified.code, verified.error, 401);
+    }
+    logSafe({ event: "media_buyer_propose_signature_ok", key_id: verified.keyId });
+  } else {
+    if (!AGENT_TOKEN) {
+      // السر مش متظبط في Supabase أصلاً — نرفض بأمان بدل ما نقبل أي حد
+      logSafe({ event: "media_buyer_propose_misconfigured", reason: "no_agent_token" });
+      return fail("MISCONFIGURED", "Agent token not configured", 401);
+    }
+    const authHeader = req.headers.get("Authorization") || "";
+    const m = /^Bearer\s+(.+)$/.exec(authHeader);
+    if (!m || m[1] !== AGENT_TOKEN) {
+      logSafe({ event: "media_buyer_propose_unauthorized" });
+      return new Response(null, { status: 401, headers: CORS });
+    }
+  }
 
   let body: Record<string, unknown>;
   try {
-    body = await req.json();
+    body = JSON.parse(rawBodyText);
   } catch {
     return fail("VALIDATION_ERROR", "Invalid JSON body");
   }
@@ -166,7 +306,7 @@ Deno.serve(async (req: Request) => {
     return fail("VALIDATION_ERROR", `Unknown or unsupported field: ${badKey}`);
   }
 
-  const db = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+  const db = db0;
 
   // نفس الحقل external_request_id بيبقى unique بين النوعين (فهرسين منفصلين
   // على الجدولين) — نتأكد الأول لو الطلب ده اتعمل قبل كده (idempotency)
