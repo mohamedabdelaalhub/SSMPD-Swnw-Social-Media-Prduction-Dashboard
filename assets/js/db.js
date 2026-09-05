@@ -349,6 +349,23 @@
     createMediaBuyerPairingCode: function () {
       return edgeFetch("media-buyer-pair", { method: "POST", json: { op: "create_pairing_code" } });
     },
+    // Phase 3D — صحة الـWorker المحلي + طابور التصعيدات (observability بس،
+    // مفيش أي كتابة من هنا — الكتابة حصريًا عن طريق media-buyer-propose بمفتاح service_role)
+    listMediaBuyerWorkerRuns: function () {
+      return handle(client.from("media_buyer_worker_runs").select("*").order("started_at", { ascending: false }).limit(20));
+    },
+    listMediaBuyerEscalations: function () {
+      return handle(client.from("media_buyer_escalations").select("*").order("created_at", { ascending: false }));
+    },
+    setMediaBuyerEscalationStatus: function (id, status, adminId, notes) {
+      var patch = { status: status, updated_at: new Date().toISOString() };
+      if (status === "resolved" || status === "dismissed") {
+        patch.resolution_notes = notes || null;
+        patch.resolved_by = adminId;
+        patch.resolved_at = new Date().toISOString();
+      }
+      return handle(client.from("media_buyer_escalations").update(patch).eq("id", id).select().single());
+    },
 
     // ---------- أرشيف المرضى (Edge Functions) ----------
     createPatientArchive: function (payload) {

@@ -38,7 +38,118 @@
     return '<div class="kpi-card"><div class="label">' + label + '</div><div class="value small">' + value + '</div></div>';
   }
 
-  var plans = [], actions = [], contentItems = [], contentById = {};
+  var plans = [], actions = [], contentItems = [], contentById = {}, workerRuns = [], escalations = [];
+
+  // ---------- Phase 3D: صحة الـWorker المحلي ----------
+  // GREEN: آخر اتصال ناجح خلال ٤ ساعات | YELLOW: >٤ و<=٧ ساعات | RED: >٧
+  // ساعات أو آخر تشغيل فشل. "آخر اتصال ناجح" مش ادعاء إن launchd نفسه شغّال —
+  // إحنا عارفين بس آخر مرة الـWorker بعت لنا heartbeat ناجح.
+  function workerHealth() {
+    var lastRun = workerRuns[0] || null;
+    var lastSuccess = null;
+    for (var i = 0; i < workerRuns.length; i++) {
+      if (workerRuns[i].status === "success") { lastSuccess = workerRuns[i]; break; }
+    }
+    var hoursSince = lastSuccess ? (Date.now() - new Date(lastSuccess.started_at).getTime()) / 3600000 : Infinity;
+    var color = "red", label = "🔴 متوقف/خطأ";
+    if (lastRun && lastRun.status === "failed" && lastRun.id === (workerRuns[0] && workerRuns[0].id)) {
+      color = "red"; label = "🔴 متوقف/خطأ";
+    }
+    if (hoursSince <= 4) { color = "green"; label = "🟢 يعمل"; }
+    else if (hoursSince <= 7) { color = "yellow"; label = "🟡 متأخر"; }
+    else { color = "red"; label = "🔴 متوقف/خطأ"; }
+    if (lastRun && lastRun.status === "failed") { color = "red"; label = "🔴 متوقف/خطأ"; }
+    var nextEstimate = lastSuccess ? new Date(new Date(lastSuccess.started_at).getTime() + 3 * 3600000) : null;
+    return { lastRun: lastRun, lastSuccess: lastSuccess, color: color, label: label, nextEstimate: nextEstimate };
+  }
+
+  function workerHealthSectionHtml() {
+    var h = workerHealth();
+    var colorVar = h.color === "green" ? "var(--c-positive,#2F7D5C)" : h.color === "yellow" ? "#c98a00" : "var(--c-negative,#D0402A)";
+    var lr = h.lastRun, ls = h.lastSuccess;
+    return '<div class="section"><h3>حالة وكيل الإعلانات</h3>' +
+      '<div style="font-size:16px;font-weight:bold;color:' + colorVar + ';margin-bottom:8px;">' + h.label + '</div>' +
+      '<div class="kpi-grid">' +
+      kpiCard("آخر تشغيل", lr ? fmtDateTime(lr.started_at) : "—") +
+      kpiCard("آخر اتصال ناجح", ls ? fmtDateTime(ls.started_at) : "—") +
+      kpiCard("وقت التشغيل القادم (تقديري)", h.nextEstimate ? fmtDateTime(h.nextEstimate) : "—") +
+      kpiCard("Campaigns", ls ? fmtNum(ls.campaigns_checked) : "—") +
+      kpiCard("Adsets", ls ? fmtNum(ls.adsets_checked) : "—") +
+      kpiCard("Ads", ls ? fmtNum(ls.ads_checked) : "—") +
+      kpiCard("Insight rows", ls ? fmtNum(ls.insight_rows) : "—") +
+      kpiCard("توصيات جديدة", ls ? fmtNum(ls.recommendations_created) : "—") +
+      kpiCard("مكرّرة (اتخطّت)", ls ? fmtNum(ls.recommendations_skipped_duplicate) : "—") +
+      kpiCard("تصعيدات", fmtNum(escalations.filter(function (e) { return e.status === "open"; }).length)) +
+      '</div>' +
+      (lr && lr.status === "failed" ? '<div style="margin-top:8px;font-size:12px;color:var(--c-negative);">آخر تشغيل فشل: ' + escapeHtml(lr.error_code || "") + (lr.error_message ? (" — " + escapeHtml(lr.error_message)) : "") + '</div>' : "") +
+      '</div>';
+  }
+
+  // ---------- Phase 3D: حالات تحتاج مراجعة (تصعيدات) ----------
+  var ESCALATION_STATUS_LABELS = { open: "مفتوحة", reviewing: "قيد المراجعة", resolved: "تم الحل", dismissed: "مرفوضة" };
+  function escalationsSectionHtml() {
+    var open = escalations.filter(function (e) { return e.status === "open" || e.status === "reviewing"; });
+    if (!open.length) return '<div class="section"><h3>حالات تحتاج مراجعة</h3><p style="color:var(--c-muted);font-size:13px;">لا يوجد حالات مفتوحة حاليًا.</p></div>';
+    var can = canApprove();
+    var html = '<div class="section"><h3>حالات تحتاج مراجعة</h3>';
+    open.forEach(function (e) {
+      html += '<div style="border:1px solid var(--c-border);border-radius:8px;padding:10px;margin-bottom:10px;">' +
+        '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;">' +
+        '<div><strong>' + escapeHtml(e.objective || "—") + '</strong> — Meta ID: ' + escapeHtml(e.target_platform_id || "—") + '</div>' +
+        '<div style="font-size:12px;color:var(--c-muted);">' + fmtDateTime(e.created_at) + ' — ' + (ESCALATION_STATUS_LABELS[e.status] || e.status) + '</div>' +
+        '</div>' +
+        '<div style="font-size:13px;margin-top:6px;">KPI مرشّح: ' + escapeHtml(e.kpi_candidate || "—") + '</div>' +
+        '<div style="font-size:13px;margin-top:4px;">السبب: ' + escapeHtml(e.reason) + '</div>' +
+        (e.metrics_snapshot ? '<div style="font-size:12px;color:var(--c-muted);margin-top:4px;">المؤشرات: ' + escapeHtml(JSON.stringify(e.metrics_snapshot)) + '</div>' : "") +
+        (e.historical_evidence ? '<div style="font-size:12px;color:var(--c-muted);margin-top:4px;">الدليل التاريخي: ' + escapeHtml(JSON.stringify(e.historical_evidence)) + '</div>' : "") +
+        (can ? (
+          '<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;">' +
+          (e.status === "open" ? '<button class="btn ghost sm" data-esc-reviewing="' + e.id + '">تحت المراجعة</button>' : "") +
+          '<input type="text" class="esc-notes" data-esc-notes-for="' + e.id + '" placeholder="ملاحظات الحل (مطلوبة للحل/الرفض)" style="flex:1;min-width:180px;">' +
+          '<button class="btn sm" data-esc-resolve="' + e.id + '">حل</button>' +
+          '<button class="btn ghost sm" data-esc-dismiss="' + e.id + '">رفض</button>' +
+          '</div>'
+        ) : "") +
+        '</div>';
+    });
+    html += '</div>';
+    return html;
+  }
+
+  function wireEscalationsActions(el) {
+    var me = window.SSMPDAuth.currentAdmin;
+    el.querySelectorAll("[data-esc-reviewing]").forEach(function (btn) {
+      btn.onclick = function () {
+        window.SSMPDDb.setMediaBuyerEscalationStatus(btn.getAttribute("data-esc-reviewing"), "reviewing", me.id, null).then(function () {
+          render(document.getElementById("view-container"));
+        }).catch(function (e) { window.SSMPDToast.show("تعذّر التحديث: " + (e.message || e), "error"); });
+      };
+    });
+    el.querySelectorAll("[data-esc-resolve]").forEach(function (btn) {
+      btn.onclick = function () {
+        var id = btn.getAttribute("data-esc-resolve");
+        var notesInput = el.querySelector('[data-esc-notes-for="' + id + '"]');
+        var notes = notesInput ? notesInput.value.trim() : "";
+        if (!notes) { window.SSMPDToast.show("لازم تكتب ملاحظات الحل الأول", "error"); return; }
+        window.SSMPDDb.setMediaBuyerEscalationStatus(id, "resolved", me.id, notes).then(function () {
+          window.SSMPDToast.show("تم حل الحالة");
+          render(document.getElementById("view-container"));
+        }).catch(function (e) { window.SSMPDToast.show("تعذّر الحفظ: " + (e.message || e), "error"); });
+      };
+    });
+    el.querySelectorAll("[data-esc-dismiss]").forEach(function (btn) {
+      btn.onclick = function () {
+        var id = btn.getAttribute("data-esc-dismiss");
+        var notesInput = el.querySelector('[data-esc-notes-for="' + id + '"]');
+        var notes = notesInput ? notesInput.value.trim() : "";
+        if (!notes) { window.SSMPDToast.show("لازم تكتب سبب الرفض الأول", "error"); return; }
+        window.SSMPDDb.setMediaBuyerEscalationStatus(id, "dismissed", me.id, notes).then(function () {
+          window.SSMPDToast.show("تم رفض الحالة");
+          render(document.getElementById("view-container"));
+        }).catch(function (e) { window.SSMPDToast.show("تعذّر الحفظ: " + (e.message || e), "error"); });
+      };
+    });
+  }
 
   function canApprove() {
     var me = window.SSMPDAuth.currentAdmin;
@@ -66,6 +177,7 @@
     var recommendedPauses = actions.filter(function (a) { return /pause/.test(a.action_type) && a.status === "proposed"; }).length;
     var recommendedScales = actions.filter(function (a) { return /increase_budget|resume/.test(a.action_type) && a.status === "proposed"; }).length;
     var totalSpendPlanned = plans.reduce(function (s, p) { return s + (Number(p.total_budget) || 0); }, 0);
+    var h = workerHealth();
     return '<div class="kpi-grid">' +
       kpiCard("خطط نشطة", fmtNum(activePlans)) +
       kpiCard("بانتظار الاعتماد", fmtNum(pendingApprovals)) +
@@ -74,6 +186,11 @@
       kpiCard("موصى بإيقافها", fmtNum(recommendedPauses)) +
       kpiCard("موصى بتوسيعها", fmtNum(recommendedScales)) +
       kpiCard("إجمالي الميزانيات المخططة", fmtMoney(totalSpendPlanned)) +
+      kpiCard("آخر اتصال ناجح للـWorker", h.lastSuccess ? fmtDateTime(h.lastSuccess.started_at) : "—") +
+      kpiCard("Ads اتفحصت (آخر تشغيل)", h.lastSuccess ? fmtNum(h.lastSuccess.ads_checked) : "—") +
+      kpiCard("توصيات جديدة (آخر تشغيل)", h.lastSuccess ? fmtNum(h.lastSuccess.recommendations_created) : "—") +
+      kpiCard("تصعيدات مفتوحة", fmtNum(escalations.filter(function (e) { return e.status === "open"; }).length)) +
+      kpiCard("حالة الـWorker", h.label) +
       '</div>';
   }
 
@@ -333,7 +450,9 @@
   }
 
   function renderAll(el, adRows) {
-    var html = '<div class="section"><h3>وكيل الإعلانات — ملخص تنفيذي</h3>' + execSummaryHtml() + '</div>' +
+    var html = workerHealthSectionHtml() +
+      escalationsSectionHtml() +
+      '<div class="section"><h3>وكيل الإعلانات — ملخص تنفيذي</h3>' + execSummaryHtml() + '</div>' +
       '<div class="section"><h3>اقتراحات الحملات</h3>' + planProposalsHtml() + '</div>' +
       '<div class="section"><h3>توصيات الوكيل (Scale / Hold / Retest / Pause)</h3>' + agentRecommendationsHtml() + '</div>' +
       '<div class="section"><h3>المراقبة الحية</h3>' + liveMonitoringHtml(adRows) + '</div>' +
@@ -342,6 +461,7 @@
       '<p style="font-size:11px;color:var(--c-muted);">مرحلة ١: مفيش أي اتصال بـMeta API ولا تنفيذ فعلي هنا — "اعتماد" بيغيّر حالة الاعتماد في Supabase بس، وينتظر تنفيذ لاحق من backend تنفيذي منفصل (مش جزء من الباتش دي).</p>';
     el.innerHTML = html;
     wireActions(el);
+    wireEscalationsActions(el);
     wirePairingSection(el);
   }
 
@@ -351,12 +471,15 @@
       window.SSMPDDb.listMediaBuyerPlans(),
       window.SSMPDDb.listMediaBuyerActions(),
       window.SSMPDDb.listMetaAdPerformance().catch(function () { return []; }),
-      window.SSMPDDb.listContentItems().catch(function () { return []; })
+      window.SSMPDDb.listContentItems().catch(function () { return []; }),
+      window.SSMPDDb.listMediaBuyerWorkerRuns().catch(function () { return []; }),
+      window.SSMPDDb.listMediaBuyerEscalations().catch(function () { return []; })
     ]).then(function (res) {
       plans = res[0] || []; actions = res[1] || [];
       contentItems = res[3] || [];
       contentById = {};
       contentItems.forEach(function (c) { contentById[c.id] = c; });
+      workerRuns = res[4] || []; escalations = res[5] || [];
       renderAll(el, res[2] || []);
     }).catch(function (e) {
       el.innerHTML = '<div class="section"><p style="color:var(--c-negative);">تعذّر تحميل وكيل الإعلانات: ' + escapeHtml(e.message || e) + '</p></div>';
