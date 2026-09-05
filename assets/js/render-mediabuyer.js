@@ -259,15 +259,46 @@
     wireGotoContentButtons(el);
   }
 
+  // ---------- Phase 2B: ربط وكيل Meta الخارجي (Ed25519 zero-secret pairing) ----------
+  function pairingSectionHtml() {
+    if (!canApprove()) return "";
+    return '<div class="section"><h3>ربط وكيل Meta</h3>' +
+      '<p style="font-size:12px;color:var(--c-muted);">كود ربط لمرة واحدة صالح ١٠ دقايق بس — الوكيل الخارجي بيستخدمه مرة واحدة عشان يسجّل مفتاحه العام (Ed25519). الكود بيظهر هنا مرة واحدة بس ومش متخزن كنص صريح في القاعدة (هاش بس).</p>' +
+      '<button class="btn primary sm" data-create-pairing-code>إنشاء كود ربط</button>' +
+      '<div id="pairing-code-result" style="margin-top:10px;"></div>' +
+      '</div>';
+  }
+  function wirePairingSection(el) {
+    var btn = el.querySelector("[data-create-pairing-code]");
+    if (!btn) return;
+    btn.onclick = function () {
+      btn.disabled = true;
+      window.SSMPDDb.createMediaBuyerPairingCode().then(function (res) {
+        btn.disabled = false;
+        var out = el.querySelector("#pairing-code-result");
+        if (!out) return;
+        out.innerHTML = '<div style="background:var(--c-bg-soft,#f3f3f3);border:1px solid var(--c-border,#ddd);border-radius:6px;padding:10px;">' +
+          '<div style="font-family:monospace;font-size:14px;font-weight:bold;user-select:all;">' + escapeHtml(res.pairing_code) + '</div>' +
+          '<div style="font-size:11px;color:var(--c-negative);margin-top:6px;">⚠️ الكود ده بيظهر مرة واحدة بس دلوقتي — انسخه فورًا. صالح ' + (res.expires_in_minutes || 10) + ' دقايق ومرة استخدام واحدة بس.</div>' +
+          '</div>';
+      }).catch(function (e) {
+        btn.disabled = false;
+        window.SSMPDToast.show("تعذّر إنشاء كود الربط: " + (e.message || e), "error");
+      });
+    };
+  }
+
   function renderAll(el, adRows) {
     var html = '<div class="section"><h3>وكيل الإعلانات — ملخص تنفيذي</h3>' + execSummaryHtml() + '</div>' +
       '<div class="section"><h3>اقتراحات الحملات</h3>' + planProposalsHtml() + '</div>' +
       '<div class="section"><h3>توصيات الوكيل (Scale / Hold / Retest / Pause)</h3>' + agentRecommendationsHtml() + '</div>' +
       '<div class="section"><h3>المراقبة الحية</h3>' + liveMonitoringHtml(adRows) + '</div>' +
       '<div class="section"><h3>سجل القرارات</h3>' + decisionHistoryHtml() + '</div>' +
+      pairingSectionHtml() +
       '<p style="font-size:11px;color:var(--c-muted);">مرحلة ١: مفيش أي اتصال بـMeta API ولا تنفيذ فعلي هنا — "اعتماد" بيغيّر حالة الاعتماد في Supabase بس، وينتظر تنفيذ لاحق من backend تنفيذي منفصل (مش جزء من الباتش دي).</p>';
     el.innerHTML = html;
     wireActions(el);
+    wirePairingSection(el);
   }
 
   function render(el) {

@@ -344,6 +344,11 @@
     rejectMediaBuyerAction: function (id) {
       return handle(client.from("media_buyer_actions").update({ status: "rejected" }).eq("id", id).select().single());
     },
+    // Phase 2B: كود ربط مؤقت (10 دقايق) للوكيل الخارجي — النص الصريح بيترجع
+    // مرة واحدة بس من الدالة، القاعدة عندها الهاش بس (media-buyer-pair)
+    createMediaBuyerPairingCode: function () {
+      return edgeFetch("media-buyer-pair", { method: "POST", json: { op: "create_pairing_code" } });
+    },
 
     // ---------- أرشيف المرضى (Edge Functions) ----------
     createPatientArchive: function (payload) {
