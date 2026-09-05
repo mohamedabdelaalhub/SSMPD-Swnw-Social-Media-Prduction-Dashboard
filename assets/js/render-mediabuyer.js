@@ -268,6 +268,26 @@
       '<div id="pairing-code-result" style="margin-top:10px;"></div>' +
       '</div>';
   }
+  var lastPairing = null; // {pairing_code, expires_at} — للاستخدام في "نسخ حزمة الربط" بس، مش متخزن
+
+  // الروابط الحقيقية الحية بس — من نفس مصدر إعداد Supabase المستخدم فعليًا في
+  // db.js (window.SSMPD_CONFIG.supabase.url)، أبدًا مش مكتوبة/متخمّنة يدويًا
+  function realEdgeUrl(fnName) {
+    var base = (window.SSMPD_CONFIG && window.SSMPD_CONFIG.supabase && window.SSMPD_CONFIG.supabase.url) || "";
+    return base.replace(/\/+$/, "") + "/functions/v1/" + fnName;
+  }
+
+  function copyToClipboard(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text);
+    }
+    var ta = document.createElement("textarea");
+    ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); } finally { document.body.removeChild(ta); }
+    return Promise.resolve();
+  }
+
   function wirePairingSection(el) {
     var btn = el.querySelector("[data-create-pairing-code]");
     if (!btn) return;
@@ -275,15 +295,39 @@
       btn.disabled = true;
       window.SSMPDDb.createMediaBuyerPairingCode().then(function (res) {
         btn.disabled = false;
+        lastPairing = res;
         var out = el.querySelector("#pairing-code-result");
         if (!out) return;
         out.innerHTML = '<div style="background:var(--c-bg-soft,#f3f3f3);border:1px solid var(--c-border,#ddd);border-radius:6px;padding:10px;">' +
           '<div style="font-family:monospace;font-size:14px;font-weight:bold;user-select:all;">' + escapeHtml(res.pairing_code) + '</div>' +
           '<div style="font-size:11px;color:var(--c-negative);margin-top:6px;">⚠️ الكود ده بيظهر مرة واحدة بس دلوقتي — انسخه فورًا. صالح ' + (res.expires_in_minutes || 10) + ' دقايق ومرة استخدام واحدة بس.</div>' +
+          '<button class="btn ghost sm" data-copy-pairing-package style="margin-top:8px;">نسخ حزمة الربط</button>' +
           '</div>';
+        wireCopyPackageButton(el);
       }).catch(function (e) {
         btn.disabled = false;
         window.SSMPDToast.show("تعذّر إنشاء كود الربط: " + (e.message || e), "error");
+      });
+    };
+    wireCopyPackageButton(el);
+  }
+
+  function wireCopyPackageButton(el) {
+    var copyBtn = el.querySelector("[data-copy-pairing-package]");
+    if (!copyBtn) return;
+    copyBtn.onclick = function () {
+      if (!lastPairing) return;
+      // النص بيتضمن بس: كود الربط + انتهاؤه + رابطَي الدالتين الحقيقيَين
+      // (مش سرّيين) — أبدًا أي service_role/anon key/MEDIA_BUYER_AGENT_TOKEN/
+      // مفتاح خاص
+      var pkg = "PAIRING_CODE=" + lastPairing.pairing_code + "\n" +
+        "PAIRING_EXPIRES_AT=" + lastPairing.expires_at + "\n" +
+        "PAIRING_ENDPOINT=" + realEdgeUrl("media-buyer-pair") + "\n" +
+        "PROPOSAL_ENDPOINT=" + realEdgeUrl("media-buyer-propose");
+      copyToClipboard(pkg).then(function () {
+        window.SSMPDToast.show("تم نسخ حزمة الربط — الصقها في شات Meta Claude");
+      }).catch(function () {
+        window.SSMPDToast.show("تعذّر النسخ — انسخ الكود يدويًا", "error");
       });
     };
   }
