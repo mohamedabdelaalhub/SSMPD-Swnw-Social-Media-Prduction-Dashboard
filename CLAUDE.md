@@ -3119,3 +3119,53 @@ Supabase Dashboard مباشرة، بدون أي اتصال بـMeta API خالص
 - **لا اتصال بـMeta API ولا تنفيذ فعلي ولا صرف فلوس خالص في أي خطوة من
   دول** — الاختبار كان PLAN فقط (idea/proposal)، بدون `content_item_id`
   ولا ميزانية ولا تواريخ ولا Meta IDs.
+
+## Phase 2B — إتمام: نشر media-buyer-pair + التوقيع Ed25519 في media-buyer-propose + واجهة الربط (٢٠٢٦-٠٩-٠٥)
+
+استكمالاً لـPhase 2A (bearer token + استقبال مقترحات) وPhase 2B (السكيما +
+الدالة `media-buyer-pair` اللي اتكتبت قبل كده) — النشر الفعلي والواجهة:
+
+- **قسم ٤٠ من `setup.sql` اتشغّل على القاعدة الحية**: جدولين جداد
+  `media_buyer_agents` (وكلاء مسجّلين — مفتاح عام Ed25519 بس، أبدًا أي
+  مفتاح خاص) و`media_buyer_pairing_codes` (أكواد ربط لمرة واحدة — هاش
+  SHA-256 بس، النص الصريح أبدًا مش بيتخزن)، RLS قراءة بس للمديرين، مفيش
+  أي policy للكتابة (الكتابة حصريًا عن طريق Edge Function بمفتاح
+  service_role).
+- **`media-buyer-pair` Edge Function اتنشرت لأول مرة** (Monaco editor) —
+  عمليتين: `create_pairing_code` (مدير لوحة مُسجَّل دخول بس) و
+  `register_agent` (الوكيل الخارجي، بكود الربط). "Verify JWT with legacy
+  secret" اتأكد إنه OFF لهذه الدالة تحديدًا من إعداداتها في الداشبورد.
+- **`media-buyer-propose` اتحدّثت بالكامل بمصادقة موقّعة Ed25519
+  (zero-shared-secret)** وأُعيد نشرها — شكل التوقيع القانوني الموثّق حرفيًا
+  في كود الدالة نفسها: `canonical_message = "<timestamp>." +
+  sha256_hex(raw_request_body_bytes)`، والتوقيع Ed25519 على بايتات UTF-8
+  للنص ده كامل، base64 في هيدر `X-Media-Buyer-Signature` (مع
+  `X-Media-Buyer-Key-Id`/`X-Media-Buyer-Timestamp`، تفاوت ساعة ±٥ دقايق).
+  لو الهيدرز التلاتة موجودة بيتحقق بالتوقيع حصريًا (يتجاهل أي
+  `Authorization`)؛ لو مش موجودة بيرجع للمسار القديم (bearer token ثابت،
+  فاضل شغال كـfallback مؤقت زي ما طلب المستخدم — `MEDIA_BUYER_AGENT_TOKEN`
+  **لم تُحذف**). الـbody بيتقرا كـraw text مرة واحدة بس (`req.text()`) عشان
+  الهاش يتحسب على البايتات الخام بالظبط قبل `JSON.parse()`.
+- **`supabase/config.toml`**: قسم جديد `[functions.media-buyer-pair]
+  verify_jwt = false` (توثيق — التفعيل الفعلي يدوي من إعدادات الدالة في
+  الداشبورد، نفس ملاحظة `media-buyer-propose` الموجودة أصلاً).
+- **واجهة "ربط وكيل Meta"**: سكشن جديد في تاب "وكيل الإعلانات"
+  (`render-mediabuyer.js`) — ظاهر لمين عنده صلاحية اعتماد Media Buyer بس،
+  زرار "إنشاء كود ربط" بينادي `db.js → createMediaBuyerPairingCode()`
+  (`edgeFetch("media-buyer-pair", {op:"create_pairing_code"})`)، وبيعرض
+  الكود مرة واحدة بس مع تحذير صريح إنه صالح ١٠ دقايق ومرة استخدام واحدة.
+- **اختبار أمني دخاني على القاعدة الحية (بدون فبركة تسجيل وكيل حقيقي)**:
+  `DO` block في SQL Editor بعمل insert فعلي في `media_buyer_pairing_codes`
+  بهاش SHA-256 لكود اختباري، وبيتأكد بـassertions: الهاش المخزَّن يطابق
+  المتوقع، النص الصريح **لم يُخزَّن أبدًا** كقيمة raw، `expires_at` في
+  المستقبل، و`used_at` فاضي لكود جديد — ثم الصف الاختباري بيتشال فورًا
+  (`delete`) وتم التأكد بعدها إن الجدول رجع لصفر صفوف. القاعدة نجحت من
+  غير أي استثناء (`Success. No rows returned` — أي فشل في الـassertions
+  كان هيرمي exception ويوقف الـblock).
+- بصمة الكاش اترفعت لـ `db.js?v=62`، `render-mediabuyer.js?v=3` في
+  `index.html`.
+- **`MEDIA_BUYER_AGENT_TOKEN` فاضل موجود كـfallback مؤقت عمدًا** — لسه
+  معتمَد كطلب صريح من المستخدم لحد ما التوقيع الحقيقي يتثبت من المشروع
+  الخارجي الفعلي. **مفيش أي مفتاح خاص (private key) اتفبرك أو اتخزن في
+  أي مكان في الباتش دي** — التسجيل الحقيقي (register_agent) لسه هيحصل من
+  مشروع Meta/Claude الحقيقي، مش من الشات ده.
