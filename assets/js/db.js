@@ -731,6 +731,32 @@
         .limit(limit || 20));
     },
 
+    // ---------- Meta Auto Publisher (قسم ٤٣) ----------
+    // إنشاء job نشر (مجدول أو فوري لو scheduledAt=الآن) — الـstatus بيتفرض
+    // 'pending' سيرفريًا عن طريق RLS، مش من هنا. الـEdge Function
+    // meta-publish-process (بمفتاح service_role، عن طريق pg_cron كل دقيقة)
+    // هي الوحيدة اللي بتحدّث status/نتائج Meta بعد كده.
+    createMetaPublishJob: function (payload) {
+      return handle(client.from("meta_publish_jobs").insert({
+        content_id: payload.contentId,
+        brand: payload.brand,
+        scheduled_at: payload.scheduledAt,
+        publish_facebook: !!payload.publishFacebook,
+        publish_instagram: !!payload.publishInstagram,
+        created_by: payload.createdBy || null
+      }).select().single());
+    },
+    // أحدث job لكل مادة من مجموعة IDs — للعرض في تاب النشر (حالة/نتيجة/خطأ)
+    listMetaPublishJobsForContent: function (contentIds) {
+      if (!contentIds || !contentIds.length) return Promise.resolve([]);
+      return handle(client.from("meta_publish_jobs").select("*")
+        .in("content_id", contentIds).order("created_at", { ascending: false }));
+    },
+    // إلغاء job لسه pending — الـRLS بتمنع أي حالة تانية غير 'cancelled' هنا
+    cancelMetaPublishJob: function (id) {
+      return handle(client.from("meta_publish_jobs").update({ status: "cancelled" }).eq("id", id).select().single());
+    },
+
     // ---------- realtime ----------
     subscribeTable: function (table, onChange) {
       var channel = client

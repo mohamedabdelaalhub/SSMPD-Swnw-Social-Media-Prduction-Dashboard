@@ -1,8 +1,22 @@
-/* SSMPD — تاب النشر: المواد المعتمدة (محتوى + تصميم) بتتجدول أو تتنشر من هنا */
+/* SSMPD — تاب النشر: المواد المعتمدة (محتوى + تصميم) بتتجدول أو تتنشر من هنا
+   قسم ٤٣: فيسبوك/انستجرام بقوا بينشروا فعليًا (Meta Auto Publisher — خلفية
+   عن طريق meta_publish_jobs + Edge Function + pg_cron) بدل تأكيد رابط يدوي.
+   تيكتوك/يوتيوب/الموقع الإلكتروني لسه نشر يدوي زي الأول بالظبط. */
 (function () {
   "use strict";
   var W = window.SSMPDWorkflow;
   var C = window.SSMPDComments;
+
+  var META_PLATFORMS = ["facebook", "instagram"];
+
+  var JOB_STATUS_LABELS = {
+    pending: { label: "في الانتظار", cls: "draft" },
+    processing: { label: "جاري النشر", cls: "received" },
+    published: { label: "تم النشر", cls: "approved" },
+    partial: { label: "نشر جزئي", cls: "revision" },
+    failed: { label: "فشل", cls: "rejected" },
+    cancelled: { label: "أُلغي", cls: "draft" }
+  };
 
   function escapeHtml(s) {
     return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -11,6 +25,10 @@
   function valueOf(id) {
     var el = document.getElementById(id);
     return el ? el.value.trim() : "";
+  }
+
+  function hasMetaPlatform(platforms) {
+    return platforms.some(function (p) { return META_PLATFORMS.indexOf(p) !== -1; });
   }
 
   function render(container) {
@@ -32,62 +50,112 @@
       });
       var ready = items.filter(function (i) { return i.stage === "ready_to_publish"; });
 
-      var html = '<h2 style="margin-bottom:16px;">النشر</h2>' +
-        '<p style="color:var(--c-muted);font-size:12px;margin-top:-10px;margin-bottom:16px;">هنا كل مادة خلصت اعتماد نهائي وتصميم — جاهزة تتجدول أو تتنشر مباشرة.</p>';
+      var contentIds = scheduled.concat(ready).map(function (i) { return i.id; });
+      return window.SSMPDDb.listMetaPublishJobsForContent(contentIds).catch(function () { return []; }).then(function (jobs) {
+        // أحدث job لكل مادة (الاستعلام مرتب created_at desc بالفعل)
+        var jobByContent = {};
+        jobs.forEach(function (j) { if (!jobByContent[j.content_id]) jobByContent[j.content_id] = j; });
 
-      html += '<div class="section"><h3>مجدولة للنشر (' + scheduled.length + ')</h3>';
-      if (!scheduled.length) {
-        html += '<div class="empty-state">مفيش مواد مجدولة دلوقتي</div>';
-      } else {
-        scheduled.forEach(function (i) { html += renderCard(i, adminsById, stats, "scheduled"); });
-      }
-      html += '</div>';
+        var html = '<h2 style="margin-bottom:16px;">النشر</h2>' +
+          '<p style="color:var(--c-muted);font-size:12px;margin-top:-10px;margin-bottom:16px;">هنا كل مادة خلصت اعتماد نهائي وتصميم — جاهزة تتجدول أو تتنشر مباشرة. فيسبوك/انستجرام بينشروا تلقائيًا، وباقي المنصات (تيكتوك/يوتيوب/الموقع) لسه بتحتاج تأكيد يدوي.</p>';
 
-      html += '<div class="section"><h3>جاهزة للنشر (' + ready.length + ')</h3>';
-      if (!ready.length) {
-        html += '<div class="empty-state">مفيش مواد جاهزة للنشر دلوقتي</div>';
-      } else {
-        ready.forEach(function (i) { html += renderCard(i, adminsById, stats, "ready"); });
-      }
-      html += '</div>';
+        html += '<div class="section"><h3>مجدولة للنشر (' + scheduled.length + ')</h3>';
+        if (!scheduled.length) {
+          html += '<div class="empty-state">مفيش مواد مجدولة دلوقتي</div>';
+        } else {
+          scheduled.forEach(function (i) { html += renderCard(i, adminsById, "scheduled", jobByContent[i.id]); });
+        }
+        html += '</div>';
 
-      container.innerHTML = html;
-      wire(container);
-      scheduled.concat(ready).forEach(function (i) {
-        var slot = document.getElementById("comments-slot-" + i.id);
-        if (slot) window.SSMPDComments.render(slot, i.id, adminsById);
+        html += '<div class="section"><h3>جاهزة للنشر (' + ready.length + ')</h3>';
+        if (!ready.length) {
+          html += '<div class="empty-state">مفيش مواد جاهزة للنشر دلوقتي</div>';
+        } else {
+          ready.forEach(function (i) { html += renderCard(i, adminsById, "ready", jobByContent[i.id]); });
+        }
+        html += '</div>';
+
+        container.innerHTML = html;
+        wire(container);
+        scheduled.concat(ready).forEach(function (i) {
+          var slot = document.getElementById("comments-slot-" + i.id);
+          if (slot) window.SSMPDComments.render(slot, i.id, adminsById);
+        });
       });
     }).catch(function (e) {
       container.innerHTML = '<div class="err-msg">خطأ: ' + e.message + '</div>';
     });
   }
 
-  function renderCard(i, adminsById, stats, mode) {
+  // حالة/نتيجة job النشر التلقائي (فيسبوك/انستجرام) — بند ٨: عرض حقيقي
+  // بدل رابط يدوي، بروابط فعلية للمنشورات لو نجح.
+  function jobStatusHtml(job) {
+    if (!job) return "";
+    var st = JOB_STATUS_LABELS[job.status] || { label: job.status, cls: "draft" };
+    var html = '<div style="margin-top:8px;padding:8px 10px;border:1px solid var(--c-border);border-radius:8px;font-size:12px;">' +
+      '<div><b>نشر Meta التلقائي:</b> <span class="status-pill ' + st.cls + '">' + escapeHtml(st.label) + '</span>' +
+      (job.last_attempt_at ? ' <span style="color:var(--c-muted);">— آخر محاولة: ' + new Date(job.last_attempt_at).toLocaleString("ar-EG") + '</span>' : '') + '</div>';
+    if (job.publish_facebook) {
+      html += '<div>فيسبوك: ' + (job.facebook_permalink
+        ? '<a href="' + job.facebook_permalink + '" target="_blank" rel="noopener noreferrer">فتح المنشور ↗</a>'
+        : (job.status === "failed" || job.status === "partial" ? 'لسه متنشرش' : 'قيد الانتظار')) + '</div>';
+    }
+    if (job.publish_instagram) {
+      html += '<div>انستجرام: ' + (job.instagram_permalink
+        ? '<a href="' + job.instagram_permalink + '" target="_blank" rel="noopener noreferrer">فتح المنشور ↗</a>'
+        : (job.status === "failed" || job.status === "partial" ? 'لسه متنشرش' : 'قيد الانتظار')) + '</div>';
+    }
+    if (job.error_message && (job.status === "failed" || job.status === "partial")) {
+      html += '<div style="color:var(--c-negative);">سبب المشكلة: ' + escapeHtml(job.error_message) + '</div>';
+    }
+    if (job.status === "pending") {
+      html += '<div style="margin-top:4px;"><button class="btn ghost sm" data-cancel-meta-job="' + job.id + '">إلغاء النشر التلقائي</button></div>';
+    }
+    html += '</div>';
+    return html;
+  }
+
+  function renderCard(i, adminsById, mode, job) {
     var ownerName = (adminsById[i.created_by] || {}).name || "—";
     var designerName = i.assigned_designer ? ((adminsById[i.assigned_designer] || {}).name || "—") : "—";
     var scheduledLine = (mode === "scheduled" && i.scheduled_publish_at)
       ? '<div class="meta">معاد النشر: <b>' + new Date(i.scheduled_publish_at).toLocaleString("ar-EG") + '</b></div>'
       : "";
 
+    // لو فيه job نشر تلقائي (شغّال أو خلص)، منمنعش المستخدم من العرض — بس
+    // بنخفي زرار "تأكيد النشر"/"نشر الآن" اليدوي القديم لمنصات فيسبوك/انستجرام
+    // (المنطق ده لسه بيغطي منصات تانية غير Meta لو موجودة، وبيفضل الاعتماد
+    // الأساسي على الجدولة/النشر التلقائي بدل تكرار الإدخال).
+    var jobHtml = jobStatusHtml(job);
+    var jobIsLive = job && ["pending", "processing", "published", "partial"].indexOf(job.status) !== -1;
+
     var actionsHtml;
     if (mode === "ready") {
       actionsHtml =
         '<div class="field"><label>المادة دي لصفحة</label>' + W.brandSelectHtml("pb-brand-" + i.id, i.brand || "") + '</div>' +
         '<div class="field"><label>هتتنشر على (تقدر تختار أكتر من منصة)</label><div id="pb-platform-' + i.id + '">' + W.platformCheckboxesHtml("pb-platform-" + i.id, i.publish_platforms || i.publish_platform || []) + '</div></div>' +
-        '<div class="field"><label>معاد النشر المجدول</label><input type="datetime-local" id="pb-when-' + i.id + '"></div>' +
+        '<div class="field"><label>معاد النشر المجدول (فيسبوك/انستجرام هينشروا تلقائيًا في المعاد ده)</label><input type="datetime-local" id="pb-when-' + i.id + '"></div>' +
         '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px;">' +
         '<button class="btn" data-schedule="' + i.id + '">جدولة</button>' +
-        '<span style="color:var(--c-muted);font-size:11px;">أو لو اتنشرت فعلاً دلوقتي:</span>' +
-        '<input placeholder="https://... رابط المنشور" id="pb-url-' + i.id + '" style="flex:1;min-width:180px;padding:8px 10px;border-radius:9px;border:1px solid var(--c-border);background:#FAFBFD;">' +
+        '<span style="color:var(--c-muted);font-size:11px;">فيسبوك/انستجرام: نشر فوري تلقائي — منصات تانية: رابط يدوي:</span>' +
+        '<input placeholder="https://... رابط منشور تيكتوك/يوتيوب/الموقع" id="pb-url-' + i.id + '" style="flex:1;min-width:180px;padding:8px 10px;border-radius:9px;border:1px solid var(--c-border);background:#FAFBFD;">' +
         '<button class="btn ghost" data-publish-now="' + i.id + '">نشر الآن</button>' +
-        '</div>';
+        '</div>' + jobHtml;
     } else {
-      actionsHtml =
-        '<div class="field"><label>رابط المنشور</label><input placeholder="https://..." id="pb-url-' + i.id + '"></div>' +
-        '<div style="display:flex;gap:8px;margin-top:6px;">' +
-        '<button class="btn" data-confirm-publish="' + i.id + '">تأكيد النشر</button>' +
-        '<button class="btn ghost" data-cancel-schedule="' + i.id + '">إلغاء الجدولة</button>' +
-        '</div>';
+      actionsHtml = jobHtml;
+      if (!jobIsLive) {
+        actionsHtml +=
+          '<div class="field"><label>رابط المنشور (لمنصات غير فيسبوك/انستجرام)</label><input placeholder="https://..." id="pb-url-' + i.id + '"></div>' +
+          '<div style="display:flex;gap:8px;margin-top:6px;">' +
+          '<button class="btn" data-confirm-publish="' + i.id + '">تأكيد النشر يدويًا</button>' +
+          '<button class="btn ghost" data-cancel-schedule="' + i.id + '">إلغاء الجدولة</button>' +
+          '</div>';
+      } else if (job.status !== "pending" && job.status !== "processing") {
+        // خلص (published/partial/failed) — سيب زرار إلغاء الجدولة متاح لو فشل بالكامل
+        actionsHtml += '<div style="display:flex;gap:8px;margin-top:6px;">' +
+          '<button class="btn ghost" data-cancel-schedule="' + i.id + '">إلغاء الجدولة والرجوع لجاهزة للنشر</button>' +
+          '</div>';
+      }
     }
 
     return '<div class="section" style="border:1px solid var(--c-border);border-radius:12px;padding:14px;margin-bottom:12px;">' +
@@ -114,6 +182,9 @@
     container.querySelectorAll("[data-cancel-schedule]").forEach(function (btn) {
       btn.onclick = function () { cancelSchedule(btn.getAttribute("data-cancel-schedule"), btn); };
     });
+    container.querySelectorAll("[data-cancel-meta-job]").forEach(function (btn) {
+      btn.onclick = function () { cancelMetaJob(btn.getAttribute("data-cancel-meta-job")); };
+    });
   }
 
   // بديل alert() — رسالة toast مش بلوكينج (alert() ممكن يتمنع/يتجاهل جوه متصفحات
@@ -123,7 +194,21 @@
     else alert(msg);
   }
 
-  // جدولة مادة "جاهزة للنشر" لمعاد محدد — بتنقلها لحالة "مجدولة للنشر" لحد ما حد يأكد إنها اتنشرت فعلاً
+  // بيعمل meta_publish_job لو من ضمن المنصات المختارة فيسبوك/انستجرام —
+  // بيتنفّذ فعليًا بواسطة Edge Function meta-publish-process (كل دقيقة).
+  function maybeCreateMetaJob(id, brand, platforms, scheduledAtIso) {
+    if (!hasMetaPlatform(platforms)) return Promise.resolve(null);
+    var me = window.SSMPDAuth.currentAdmin;
+    return window.SSMPDDb.createMetaPublishJob({
+      contentId: id, brand: brand, scheduledAt: scheduledAtIso,
+      publishFacebook: platforms.indexOf("facebook") !== -1,
+      publishInstagram: platforms.indexOf("instagram") !== -1,
+      createdBy: me.id
+    });
+  }
+
+  // جدولة مادة "جاهزة للنشر" لمعاد محدد — بتنقلها لحالة "مجدولة للنشر"، وبتعمل
+  // job نشر تلقائي لو من ضمن المنصات المختارة فيسبوك/انستجرام
   function schedule(id) {
     var brand = valueOf("pb-brand-" + id);
     var platforms = W.readPlatformCheckboxes("pb-platform-" + id);
@@ -132,28 +217,58 @@
     if (!platforms.length) { notify("اختر هتتنشر على أنهي منصة (تقدر تختار أكتر من واحدة)", "error"); return; }
     if (!when) { notify("حدد معاد النشر المجدول", "error"); return; }
     var me = window.SSMPDAuth.currentAdmin;
+    var whenIso = new Date(when).toISOString();
     window.SSMPDDb.updateContentItem(id, {
       stage: "scheduled", brand: brand, publish_platform: platforms[0], publish_platforms: platforms,
-      scheduled_publish_at: new Date(when).toISOString(), scheduled_by: me.id
+      scheduled_publish_at: whenIso, scheduled_by: me.id
     }).then(function () {
       return window.SSMPDDb.logActivity({ content_id: id, actor_id: me.id, action: "جدولة للنشر", from_stage: "ready_to_publish", to_stage: "scheduled" });
     }).then(function () {
-      notify("تمت الجدولة");
+      return maybeCreateMetaJob(id, brand, platforms, whenIso);
+    }).then(function () {
+      notify(hasMetaPlatform(platforms) ? "تمت الجدولة — فيسبوك/انستجرام هينشروا تلقائيًا في المعاد ده" : "تمت الجدولة");
       render(document.getElementById("view-container"));
     }).catch(function (e) { notify("خطأ: " + e.message, "error"); });
   }
 
-  // نشر فوري من غير جدولة — لمادة اتنشرت فعلاً ومحتاجين بس نسجل الرابط
+  // نشر فوري — لو من ضمن المنصات فيسبوك/انستجرام، بيعمل job نشر تلقائي فوري
+  // (scheduled_at = الآن، الـEdge Function هتاخده في تشغيلة الدقيقة الجاية).
+  // لمنصات تانية (تيكتوك/يوتيوب/الموقع) لازم رابط يدوي زي ما كان.
   function publishNow(id) {
     var brand = valueOf("pb-brand-" + id);
     var platforms = W.readPlatformCheckboxes("pb-platform-" + id);
     var url = valueOf("pb-url-" + id);
+    var metaSelected = hasMetaPlatform(platforms);
+    var others = platforms.filter(function (p) { return META_PLATFORMS.indexOf(p) === -1; });
     if (!brand) { notify("اختر المادة دي لصفحة سونو ولا د.دينا الأول", "error"); return; }
     if (!platforms.length) { notify("اختر هتتنشر على أنهي منصة (تقدر تختار أكتر من واحدة)", "error"); return; }
-    if (!url) { notify("حط رابط المنشور الأول", "error"); return; }
+    if (others.length && !url) { notify("حط رابط المنشور للمنصات غير فيسبوك/انستجرام", "error"); return; }
+    if (!others.length && !metaSelected) { notify("مفيش منصة مختارة", "error"); return; }
+
     var me = window.SSMPDAuth.currentAdmin;
+    var nowIso = new Date().toISOString();
+
+    if (metaSelected) {
+      // فيسبوك/انستجرام: جدولة فورية (stage="scheduled" بمعاد = الآن) —
+      // بتتحول لـ"published" تلقائيًا بعد ما الـEdge Function تنشر فعليًا.
+      window.SSMPDDb.updateContentItem(id, {
+        stage: "scheduled", brand: brand, publish_platform: platforms[0], publish_platforms: platforms,
+        scheduled_publish_at: nowIso, scheduled_by: me.id,
+        published_url: others.length ? url : null
+      }).then(function () {
+        return window.SSMPDDb.logActivity({ content_id: id, actor_id: me.id, action: "نشر فوري (تلقائي)", from_stage: "ready_to_publish", to_stage: "scheduled" });
+      }).then(function () {
+        return maybeCreateMetaJob(id, brand, platforms, nowIso);
+      }).then(function () {
+        notify("هينشر تلقائيًا خلال دقيقة تقريبًا — تقدر تتابع الحالة هنا");
+        render(document.getElementById("view-container"));
+      }).catch(function (e) { notify("خطأ: " + e.message, "error"); });
+      return;
+    }
+
+    // مفيش فيسبوك/انستجرام مختارين — نفس السلوك اليدوي القديم بالكامل
     window.SSMPDDb.updateContentItem(id, {
-      stage: "published", published_url: url, published_by: me.id, published_at: new Date().toISOString(),
+      stage: "published", published_url: url, published_by: me.id, published_at: nowIso,
       brand: brand, publish_platform: platforms[0], publish_platforms: platforms
     }).then(function (updated) {
       window.SSMPDDrive.logPublished(id, updated.title, url, updated.stage_history).catch(function () {});
@@ -164,7 +279,8 @@
     }).catch(function (e) { notify("خطأ: " + e.message, "error"); });
   }
 
-  // تأكيد إن المادة المجدولة اتنشرت فعلاً — بيقفل الحلقة ويحفظ رابط المنشور
+  // تأكيد يدوي إن المادة المجدولة اتنشرت (لمنصات غير فيسبوك/انستجرام بس —
+  // لو فيه job نشر تلقائي شغّال، الزرار ده مبيظهرش خالص).
   function confirmPublish(id) {
     var url = valueOf("pb-url-" + id);
     if (!url) { notify("حط رابط المنشور الأول", "error"); return; }
@@ -203,6 +319,15 @@
         render(document.getElementById("view-container"));
       })
       .catch(function (e) { notify("خطأ: " + e.message, "error"); });
+  }
+
+  // إلغاء job النشر التلقائي (فيسبوك/انستجرام) لسه pending — الـRLS بتمنع
+  // إلغاء job خلص معالجة (processing/published/...) عن قصد.
+  function cancelMetaJob(jobId) {
+    window.SSMPDDb.cancelMetaPublishJob(jobId).then(function () {
+      notify("اتلغى النشر التلقائي لهذه المادة");
+      render(document.getElementById("view-container"));
+    }).catch(function (e) { notify("خطأ: " + e.message, "error"); });
   }
 
   window.SSMPDRenderPublish = { render: render };
