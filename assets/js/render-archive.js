@@ -118,7 +118,7 @@
       '<table class="simple" style="margin-top:12px;"><tr><th>تاريخ النشر</th><td>' +
       (item.published_at ? new Date(item.published_at).toLocaleString("ar-EG") : "—") + '</td></tr>' +
       '<tr><th>نُشر بواسطة</th><td>' + escapeHtml(publisher) + '</td></tr>' +
-      '<tr><th>المنصة</th><td>' + (W.PLATFORMS[item.publish_platform] ? W.PLATFORMS[item.publish_platform].label : "—") + '</td></tr></table>' +
+      '<tr><th>المنصة</th><td>' + W.platformsLabel(item.publish_platforms && item.publish_platforms.length ? item.publish_platforms : item.publish_platform) + '</td></tr></table>' +
       '<div style="margin-top:12px;">' + W.itemActionsHtml(item, window.SSMPDAuth.currentAdmin) + '</div></div>';
     document.body.appendChild(backdrop);
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };

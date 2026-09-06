@@ -656,6 +656,15 @@
         .update({ status: "done", completed_at: new Date().toISOString() })
         .eq("id", assignmentId));
     },
+    // كل الإحالات لسه "قيد الكشف" (pending) — مستخدمة في شاشة "تصفح وفلترة" عشان
+    // تعرض "تم التحويل للطبيب فلان" بدل زرار "تحويل لطبيب سونو" العادي. من غير
+    // embed لجدول admins (فيه FK مزدوج doctor_id/assigned_by — نفس فخ ?v=22) —
+    // الاسم بيتجاب منفصل عن طريق listAdminsBasic() في الواجهة.
+    listPendingDoctorAssignments: function () {
+      return handle(client.from("patient_doctor_assignments")
+        .select("id, patient_id, doctor_id, assigned_at")
+        .eq("status", "pending"));
+    },
 
     // ---------- إدارة الليدز (Edge Functions) ----------
     createLead: function (payload) {

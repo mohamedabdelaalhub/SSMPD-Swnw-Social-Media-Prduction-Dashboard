@@ -116,12 +116,41 @@
     return '<select id="' + id + '"><option value="">— بدون تخصص —</option>' + opts + "</select>";
   }
 
-  // دروب داون اختيار منصة النشر
+  // دروب داون اختيار منصة النشر (اختيار واحد — قديم، فاضل للتوافق)
   function platformSelectHtml(id, selected) {
     var opts = Object.keys(PLATFORMS).map(function (k) {
       return '<option value="' + k + '"' + (selected === k ? " selected" : "") + '>' + PLATFORMS[k].label + "</option>";
     }).join("");
     return '<select id="' + id + '"><option value="">— اختر —</option>' + opts + "</select>";
+  }
+
+  // تشيك بوكسات اختيار أكتر من منصة نشر مرة واحدة — بديل جديد لـplatformSelectHtml
+  // selected: مصفوفة قيم (مثال: ["facebook","instagram"])
+  function platformCheckboxesHtml(idPrefix, selected) {
+    var sel = Array.isArray(selected) ? selected : (selected ? [selected] : []);
+    return Object.keys(PLATFORMS).map(function (k) {
+      var checked = sel.indexOf(k) !== -1 ? " checked" : "";
+      return '<label style="display:inline-flex;align-items:center;gap:4px;margin-inline-end:10px;font-weight:400;">' +
+        '<input type="checkbox" class="platform-cb" id="' + idPrefix + '-' + k + '" value="' + k + '"' + checked + '> ' +
+        PLATFORMS[k].label + '</label>';
+    }).join("");
+  }
+
+  // بيرجع مصفوفة المنصات المختارة من تشيك بوكسات platformCheckboxesHtml
+  function readPlatformCheckboxes(idPrefix) {
+    var out = [];
+    Object.keys(PLATFORMS).forEach(function (k) {
+      var el = document.getElementById(idPrefix + "-" + k);
+      if (el && el.checked) out.push(k);
+    });
+    return out;
+  }
+
+  // تسمية عرض لمصفوفة/قيمة منصات — تستخدم في عرض الأرشيف بدل W.PLATFORMS[x] المباشرة
+  function platformsLabel(platforms) {
+    var arr = Array.isArray(platforms) ? platforms : (platforms ? [platforms] : []);
+    if (!arr.length) return "—";
+    return arr.map(function (k) { return PLATFORMS[k] ? PLATFORMS[k].label : k; }).join("، ");
   }
 
   function escapeHtml(s) {
@@ -1071,6 +1100,9 @@
     specialtyBadgeHtml: specialtyBadgeHtml,
     specialtySelectHtml: specialtySelectHtml,
     platformSelectHtml: platformSelectHtml,
+    platformCheckboxesHtml: platformCheckboxesHtml,
+    readPlatformCheckboxes: readPlatformCheckboxes,
+    platformsLabel: platformsLabel,
     canEditItem: canEditItem,
     canDeleteItem: canDeleteItem,
     itemActionsHtml: itemActionsHtml,

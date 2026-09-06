@@ -2419,8 +2419,19 @@
 
   function renderBrowseScreen(view, container) {
     view.innerHTML = '<div class="loading">بيحمّل…</div>';
-    window.SSMPDDb.listPatientsArchive(Object.assign({ search: state.browseSearch || undefined, page: state.browsePage, page_size: state.browsePageSize }, browseDateFilterParams()))
-      .then(function (res) {
+    var canAssignPreload = canAssignDoctor();
+    Promise.all([
+      window.SSMPDDb.listPatientsArchive(Object.assign({ search: state.browseSearch || undefined, page: state.browsePage, page_size: state.browsePageSize }, browseDateFilterParams())),
+      canAssignPreload ? window.SSMPDDb.listPendingDoctorAssignments().catch(function () { return []; }) : Promise.resolve([]),
+      canAssignPreload ? window.SSMPDDb.listAdminsBasic().catch(function () { return []; }) : Promise.resolve([])
+    ])
+      .then(function (results) {
+        var res = results[0];
+        var pendingAssignments = results[1] || [];
+        var adminsBasic = results[2] || [];
+        var adminsByIdLocal = {}; adminsBasic.forEach(function (a) { adminsByIdLocal[a.id] = a; });
+        var pendingByPatient = {};
+        pendingAssignments.forEach(function (a) { pendingByPatient[a.patient_id] = a; });
         var patients = res.patients || [];
         var total = res.total || 0;
         var totalPages = Math.max(1, Math.ceil(total / state.browsePageSize));
@@ -2458,9 +2469,16 @@
               '<td>' + escapeHtml(p.medical_record_no || "—") + '</td>' +
               '<td>' + fmtDate(p.last_visit_date) + '</td>' +
               '<td>' + (p.status === "archived" ? '<span class="status-pill draft">مؤرشف</span>' : '<span class="status-pill approved">نشط</span>') + '</td>' +
-              '<td style="display:flex;gap:6px;"><button class="btn ghost sm" data-open="' + p.id + '">فتح</button>' +
+              '<td style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;"><button class="btn ghost sm" data-open="' + p.id + '">فتح</button>' +
               (canEditBrowse ? '<button class="btn ghost sm" data-edit="' + p.id + '">تعديل البيانات</button>' : '') +
-              (canAssign ? '<button class="btn ghost sm" data-assign="' + p.id + '" data-assign-name="' + escapeHtml(p.full_name) + '">تحويل لطبيب سونو</button>' : '') +
+              (canAssign ? (function () {
+                var pend = pendingByPatient[p.id];
+                if (pend) {
+                  var docName = (adminsByIdLocal[pend.doctor_id] || {}).name || "—";
+                  return '<span class="status-pill approved" style="font-size:11px;">تم التحويل للطبيب ' + escapeHtml(docName) + '</span>';
+                }
+                return '<button class="btn ghost sm" data-assign="' + p.id + '" data-assign-name="' + escapeHtml(p.full_name) + '">تحويل لطبيب سونو</button>';
+              })() : '') +
               (canDeleteBrowse ? '<button class="btn ghost sm" data-delete-patient="' + p.id + '" data-delete-name="' + escapeHtml(p.full_name) + '" style="color:var(--c-danger,#c33);">حذف</button>' : '') +
               '</td></tr>';
           });
@@ -2607,13 +2625,14 @@
   // سكشن مدموج: مستندات مرفوعة لفئة معيّنة (روشتة/تحاليل/أشعة) + قائمة
   // الفورمات المُنشأة من الداشبورد لنفس الفئة — نفس نمط سكشن "تقرير طبي" بالظبط،
   // عشان الفئة توصف في مكان واحد بدل ما تتكرر في السكشن العام وسكشن منفصل
-  function mergedDocSectionHtml(catKey, catLabel, uploadedList, createdCount, canUp, newBtnAttr, createdList, createdEmptyNoun, createdItemHtml) {
+  function mergedDocSectionHtml(catKey, catLabel, uploadedList, createdCount, canUp, newBtnAttr, createdList, createdEmptyNoun, createdItemHtml, canCreate) {
+    if (canCreate === undefined) canCreate = canUp; // افتراضيًا نفس صلاحية الرفع — إلا لو اتحدد صراحة (زي الروشتة للطبيب)
     var html = '<div class="section" style="padding:12px 14px;">' +
       '<h3 style="font-size:13px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
       '<span>' + catLabel + ' (' + (uploadedList.length + createdCount) + ')</span>' +
-      (canUp ? '<span><button class="btn ghost sm" data-upload-cat="' + catKey + '">+ رفع مستند</button> ' +
-        '<button class="btn ghost sm" ' + newBtnAttr + '>+ إنشاء جديد</button>' +
-        '<input type="file" accept="image/*,application/pdf" data-file-input-cat="' + catKey + '" style="display:none;"></span>' : '') +
+      '<span>' + (canUp ? '<button class="btn ghost sm" data-upload-cat="' + catKey + '">+ رفع مستند</button> ' : '') +
+      (canCreate ? '<button class="btn ghost sm" ' + newBtnAttr + '>+ إنشاء جديد</button>' : '') +
+      (canUp ? '<input type="file" accept="image/*,application/pdf" data-file-input-cat="' + catKey + '" style="display:none;"></span>' : '</span>') +
       '</h3>';
     if (canUp) {
       html += '<div class="field" data-other-wrap-cat style="display:none;margin-bottom:8px;">' +
@@ -2680,7 +2699,13 @@
       '<button class="modal-close">×</button></div>';
 
     var canUp = canUpload();
-    var canEditMedical = canUp; // نفس صلاحية الأرشيف — "طبيب سونو" معاينة فقط، مفيش زرار تعديل/إضافة يظهر له
+    var canEditMedical = canUp; // البروفايل الطبي وبيانات المريض الأساسية — أرشيف كامل بس، الطبيب معاينة فقط
+    // "طبيب سونو" (isDoctorOnly) بقى يقدر يضيف/يعدّل زيارة ويضيف روشتة (طلب المستخدم)،
+    // لكن من غير حذف زيارة ومن غير لمس البيانات الأساسية/البروفايل الطبي — دول فاضلين canUp بس
+    var canDoctor = isDoctorOnly();
+    var canVisitWrite = canUp || canDoctor;   // إضافة/تعديل زيارة
+    var canVisitDelete = canUp;               // حذف زيارة — أرشيف كامل بس
+    var canRxWrite = canUp || canDoctor;      // إضافة روشتة (تعديل/حذف روشتة فاضلين أرشيف كامل بس تحت)
     html += '<div class="section" style="padding:12px 14px;">' +
       '<h3 style="font-size:13px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
       '<span>البيانات الشخصية</span>' +
@@ -2731,21 +2756,21 @@
 
     html += '<div style="margin-top:12px;display:flex;align-items:center;justify-content:space-between;">' +
       '<b style="font-size:12px;">سجل الزيارات (' + visits.length + ')</b>' +
-      (canEditMedical ? '<button class="btn ghost sm" data-add-visit="1">+ زيارة جديدة</button>' : '') + '</div>';
+      (canVisitWrite ? '<button class="btn ghost sm" data-add-visit="1">+ زيارة جديدة</button>' : '') + '</div>';
     if (!visits.length) {
       html += '<p style="font-size:12px;color:var(--c-muted);margin-top:6px;">مفيش زيارات مسجّلة.</p>';
     } else {
-      html += '<table class="simple" style="margin-top:8px;font-size:12px;"><thead><tr><th>التاريخ</th><th>رقم الزيارة</th><th>الشكوى</th><th>خطة العلاج</th><th>متابعة</th>' + (canEditMedical ? '<th></th>' : '') + '</tr></thead><tbody>';
+      html += '<table class="simple" style="margin-top:8px;font-size:12px;"><thead><tr><th>التاريخ</th><th>رقم الزيارة</th><th>الشكوى</th><th>خطة العلاج</th><th>متابعة</th>' + (canVisitWrite ? '<th></th>' : '') + '</tr></thead><tbody>';
       visits.forEach(function (v) {
         var plan = [v.medications ? 'أدوية: ' + v.medications : '', v.xrays ? 'أشعة: ' + v.xrays : '', v.labs ? 'تحاليل: ' + v.labs : '', v.other_recommendations ? v.other_recommendations : '']
           .filter(Boolean).join(' · ');
         html += '<tr><td>' + fmtDate(v.visit_date) + '</td><td>' + escapeHtml(v.visit_number || '—') + '</td>' +
           '<td>' + escapeHtml(v.complaint || '—') + (v.referred_to_other_doctor ? '<br><span style="color:var(--c-accent2, #F15A22);">محوّل لـ' + escapeHtml(v.referred_doctor_name || 'طبيب آخر') + '</span>' : '') + '</td><td>' + escapeHtml(plan || '—') + '</td>' +
           '<td>' + (v.follow_up_date ? fmtDate(v.follow_up_date) : '—') + '</td>' +
-          (canEditMedical ? '<td style="white-space:nowrap;">' +
+          (canVisitWrite ? '<td style="white-space:nowrap;">' +
             '<button class="btn ghost sm" data-view-visit="' + v.id + '">عرض</button> ' +
             '<button class="btn ghost sm" data-edit-visit="' + v.id + '">تعديل</button> ' +
-            '<button class="btn danger sm" data-del-visit="' + v.id + '">حذف</button></td>' : '') + '</tr>';
+            (canVisitDelete ? '<button class="btn danger sm" data-del-visit="' + v.id + '">حذف</button>' : '') + '</td>' : '') + '</tr>';
       });
       html += '</tbody></table>';
     }
@@ -2867,7 +2892,7 @@
           '<button class="btn ghost sm" data-edit-prescription="' + r.id + '">تعديل</button>' +
           '<button class="btn ghost sm" data-print-prescription="' + r.id + '">🖨 طباعة</button>' +
           (canUp ? '<button class="btn danger sm" data-del-prescription="' + r.id + '">حذف</button>' : '') + '</div>';
-      });
+      }, canRxWrite);
 
     // -- طلب تحاليل (مدموجة مع فئة رفع "تحاليل") --
     html += mergedDocSectionHtml("lab_result", "تحاليل", byCategory.lab_result || [], labRequests.length, canUp, 'data-new-lab-request="1"',

@@ -73,7 +73,7 @@
     if (mode === "ready") {
       actionsHtml =
         '<div class="field"><label>المادة دي لصفحة</label>' + W.brandSelectHtml("pb-brand-" + i.id, i.brand || "") + '</div>' +
-        '<div class="field"><label>هتتنشر على</label>' + W.platformSelectHtml("pb-platform-" + i.id, i.publish_platform || "") + '</div>' +
+        '<div class="field"><label>هتتنشر على (تقدر تختار أكتر من منصة)</label><div id="pb-platform-' + i.id + '">' + W.platformCheckboxesHtml("pb-platform-" + i.id, i.publish_platforms || i.publish_platform || []) + '</div></div>' +
         '<div class="field"><label>معاد النشر المجدول</label><input type="datetime-local" id="pb-when-' + i.id + '"></div>' +
         '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px;">' +
         '<button class="btn" data-schedule="' + i.id + '">جدولة</button>' +
@@ -126,14 +126,14 @@
   // جدولة مادة "جاهزة للنشر" لمعاد محدد — بتنقلها لحالة "مجدولة للنشر" لحد ما حد يأكد إنها اتنشرت فعلاً
   function schedule(id) {
     var brand = valueOf("pb-brand-" + id);
-    var platform = valueOf("pb-platform-" + id);
+    var platforms = W.readPlatformCheckboxes("pb-platform-" + id);
     var when = valueOf("pb-when-" + id);
     if (!brand) { notify("اختر المادة دي لصفحة سونو ولا د.دينا الأول", "error"); return; }
-    if (!platform) { notify("اختر هتتنشر على أنهي منصة", "error"); return; }
+    if (!platforms.length) { notify("اختر هتتنشر على أنهي منصة (تقدر تختار أكتر من واحدة)", "error"); return; }
     if (!when) { notify("حدد معاد النشر المجدول", "error"); return; }
     var me = window.SSMPDAuth.currentAdmin;
     window.SSMPDDb.updateContentItem(id, {
-      stage: "scheduled", brand: brand, publish_platform: platform,
+      stage: "scheduled", brand: brand, publish_platform: platforms[0], publish_platforms: platforms,
       scheduled_publish_at: new Date(when).toISOString(), scheduled_by: me.id
     }).then(function () {
       return window.SSMPDDb.logActivity({ content_id: id, actor_id: me.id, action: "جدولة للنشر", from_stage: "ready_to_publish", to_stage: "scheduled" });
@@ -146,15 +146,15 @@
   // نشر فوري من غير جدولة — لمادة اتنشرت فعلاً ومحتاجين بس نسجل الرابط
   function publishNow(id) {
     var brand = valueOf("pb-brand-" + id);
-    var platform = valueOf("pb-platform-" + id);
+    var platforms = W.readPlatformCheckboxes("pb-platform-" + id);
     var url = valueOf("pb-url-" + id);
     if (!brand) { notify("اختر المادة دي لصفحة سونو ولا د.دينا الأول", "error"); return; }
-    if (!platform) { notify("اختر هتتنشر على أنهي منصة", "error"); return; }
+    if (!platforms.length) { notify("اختر هتتنشر على أنهي منصة (تقدر تختار أكتر من واحدة)", "error"); return; }
     if (!url) { notify("حط رابط المنشور الأول", "error"); return; }
     var me = window.SSMPDAuth.currentAdmin;
     window.SSMPDDb.updateContentItem(id, {
       stage: "published", published_url: url, published_by: me.id, published_at: new Date().toISOString(),
-      brand: brand, publish_platform: platform
+      brand: brand, publish_platform: platforms[0], publish_platforms: platforms
     }).then(function (updated) {
       window.SSMPDDrive.logPublished(id, updated.title, url, updated.stage_history).catch(function () {});
       return window.SSMPDDb.logActivity({ content_id: id, actor_id: me.id, action: "نشر", from_stage: "ready_to_publish", to_stage: "published" });
