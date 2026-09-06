@@ -72,7 +72,10 @@
             // الاستلام الفعلي (design_received_at) لو موجود، وإلا آخر تحديث عام
             var stageTimeIso = (i.stage === "in_design" && i.design_received_at) ? i.design_received_at : i.updated_at;
             var agoLabel = timeAgo(stageTimeIso);
-            html += '<div class="kanban-card" data-id="' + i.id + '"><div class="title">' + escapeHtml(i.title) + W.brandBadgeHtml(i.brand) + W.specialtyBadgeHtml(i.specialty) + C.commentButtonHtml(i.id, stats) + '</div>' +
+            var titleHtml = i.stage === "published"
+              ? '<span class="link-open" data-published-open="' + i.id + '">' + escapeHtml(i.title) + '</span>'
+              : escapeHtml(i.title);
+            html += '<div class="kanban-card" data-id="' + i.id + '"><div class="title">' + titleHtml + W.brandBadgeHtml(i.brand) + W.specialtyBadgeHtml(i.specialty) + C.commentButtonHtml(i.id, stats) + '</div>' +
               '<div class="meta">بواسطة: ' + escapeHtml(ownerName) + (designerName ? " · مصمم: " + escapeHtml(designerName) : "") + '</div>' +
               (agoLabel ? '<div class="meta" style="color:var(--c-muted);">في المرحلة دي ' + agoLabel + '</div>' : '') + '</div>';
           });
@@ -84,8 +87,17 @@
         container.innerHTML = html;
         container.querySelectorAll("[data-id]").forEach(function (el) {
           el.onclick = function (e) {
-            if (e.target.closest("[data-comment]")) return; // زرار الكومنت له نفس أثر فتح المودال أصلاً
+            if (e.target.closest("[data-comment]") || e.target.closest("[data-published-open]")) return; // العنوان المنشور له اختيار منصة مستقل
             openReviewModal(el.getAttribute("data-id"), items, admins, designersAll);
+          };
+        });
+        container.querySelectorAll("[data-published-open]").forEach(function (el) {
+          el.onclick = function (e) {
+            e.stopPropagation();
+            var id = el.getAttribute("data-published-open");
+            var item = items.filter(function (x) { return x.id === id; })[0];
+            if (!item) return;
+            W.openPublishedPostOptions(item, function () { openReviewModal(id, items, admins, designersAll); });
           };
         });
         container.querySelectorAll("[data-comment]").forEach(function (btn) {
