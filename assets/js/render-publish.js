@@ -93,7 +93,7 @@
     if (!job) return "";
     var st = JOB_STATUS_LABELS[job.status] || { label: job.status, cls: "draft" };
     var html = '<div style="margin-top:8px;padding:8px 10px;border:1px solid var(--c-border);border-radius:8px;font-size:12px;">' +
-      '<div><b>نشر Meta التلقائي:</b> <span class="status-pill ' + st.cls + '">' + escapeHtml(st.label) + '</span>' +
+      '<div><b>حالة النشر التلقائي:</b> <span class="status-pill ' + st.cls + '">' + escapeHtml(st.label) + '</span>' +
       (job.last_attempt_at ? ' <span style="color:var(--c-muted);">— آخر محاولة: ' + new Date(job.last_attempt_at).toLocaleString("ar-EG") + '</span>' : '') + '</div>';
     if (job.publish_facebook) {
       html += '<div>فيسبوك: ' + (job.facebook_permalink
@@ -115,17 +115,32 @@
     return html;
   }
 
+  function itemPlatforms(i) {
+    var p = i.publish_platforms || i.publish_platform || [];
+    return Array.isArray(p) ? p : (p ? [p] : []);
+  }
+
+  function nonMetaPlatforms(platforms) {
+    return (platforms || []).filter(function (p) { return META_PLATFORMS.indexOf(p) === -1; });
+  }
+
+  function updateManualLinkVisibility(id) {
+    var platforms = W.readPlatformCheckboxes("pb-platform-" + id);
+    var manualWrap = document.getElementById("pb-manual-wrap-" + id);
+    var metaHint = document.getElementById("pb-meta-hint-" + id);
+    if (manualWrap) manualWrap.style.display = nonMetaPlatforms(platforms).length ? "block" : "none";
+    if (metaHint) metaHint.style.display = hasMetaPlatform(platforms) ? "block" : "none";
+  }
+
   function renderCard(i, adminsById, mode, job) {
     var ownerName = (adminsById[i.created_by] || {}).name || "—";
     var designerName = i.assigned_designer ? ((adminsById[i.assigned_designer] || {}).name || "—") : "—";
     var scheduledLine = (mode === "scheduled" && i.scheduled_publish_at)
-      ? '<div class="meta">معاد النشر: <b>' + new Date(i.scheduled_publish_at).toLocaleString("ar-EG") + '</b></div>'
+      ? '<span style="color:var(--c-muted);font-size:12px;">ميعاد النشر: <b>' + new Date(i.scheduled_publish_at).toLocaleString("ar-EG") + '</b></span>'
       : "";
+    var platformsNow = itemPlatforms(i);
+    var manualScheduled = nonMetaPlatforms(platformsNow);
 
-    // لو فيه job نشر تلقائي (شغّال أو خلص)، منمنعش المستخدم من العرض — بس
-    // بنخفي زرار "تأكيد النشر"/"نشر الآن" اليدوي القديم لمنصات فيسبوك/انستجرام
-    // (المنطق ده لسه بيغطي منصات تانية غير Meta لو موجودة، وبيفضل الاعتماد
-    // الأساسي على الجدولة/النشر التلقائي بدل تكرار الإدخال).
     var jobHtml = jobStatusHtml(job);
     var jobIsLive = job && ["pending", "processing", "published", "partial"].indexOf(job.status) !== -1;
 
@@ -134,42 +149,80 @@
       actionsHtml =
         '<div class="field"><label>المادة دي لصفحة</label>' + W.brandSelectHtml("pb-brand-" + i.id, i.brand || "") + '</div>' +
         '<div class="field"><label>هتتنشر على (تقدر تختار أكتر من منصة)</label><div id="pb-platform-' + i.id + '">' + W.platformCheckboxesHtml("pb-platform-" + i.id, i.publish_platforms || i.publish_platform || []) + '</div></div>' +
-        '<div class="field"><label>معاد النشر المجدول (فيسبوك/انستجرام هينشروا تلقائيًا في المعاد ده)</label><input type="datetime-local" id="pb-when-' + i.id + '"></div>' +
+        '<div id="pb-meta-hint-' + i.id + '" style="display:none;margin:6px 0 10px;padding:8px 10px;border:1px solid var(--c-border);border-radius:8px;color:var(--c-muted);font-size:12px;">فيسبوك/انستجرام: رابط المنشور بيتسجل تلقائيًا بعد نجاح النشر.</div>' +
+        '<div class="field"><label>معاد النشر المجدول</label><input type="datetime-local" id="pb-when-' + i.id + '"></div>' +
+        '<div id="pb-manual-wrap-' + i.id + '" style="display:none;">' +
+          '<div class="field"><label>رابط المنشور للمنصات اليدوية فقط (تيكتوك/يوتيوب/الموقع)</label>' +
+          '<input placeholder="https://..." id="pb-url-' + i.id + '"></div>' +
+        '</div>' +
         '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px;">' +
-        '<button class="btn" data-schedule="' + i.id + '">جدولة</button>' +
-        '<span style="color:var(--c-muted);font-size:11px;">فيسبوك/انستجرام: نشر فوري تلقائي — منصات تانية: رابط يدوي:</span>' +
-        '<input placeholder="https://... رابط منشور تيكتوك/يوتيوب/الموقع" id="pb-url-' + i.id + '" style="flex:1;min-width:180px;padding:8px 10px;border-radius:9px;border:1px solid var(--c-border);background:#FAFBFD;">' +
-        '<button class="btn ghost" data-publish-now="' + i.id + '">نشر الآن</button>' +
+          '<button class="btn" data-schedule="' + i.id + '">جدولة</button>' +
+          '<button class="btn ghost" data-publish-now="' + i.id + '">نشر الآن</button>' +
         '</div>' + jobHtml;
     } else {
       actionsHtml = jobHtml;
       if (!jobIsLive) {
-        actionsHtml +=
-          '<div class="field"><label>رابط المنشور (لمنصات غير فيسبوك/انستجرام)</label><input placeholder="https://..." id="pb-url-' + i.id + '"></div>' +
-          '<div style="display:flex;gap:8px;margin-top:6px;">' +
-          '<button class="btn" data-confirm-publish="' + i.id + '">تأكيد النشر يدويًا</button>' +
-          '<button class="btn ghost" data-cancel-schedule="' + i.id + '">إلغاء الجدولة</button>' +
-          '</div>';
+        if (manualScheduled.length) {
+          actionsHtml +=
+            '<div class="field"><label>رابط المنشور للمنصات اليدوية فقط</label><input placeholder="https://..." id="pb-url-' + i.id + '"></div>' +
+            '<div style="display:flex;gap:8px;margin-top:6px;">' +
+              '<button class="btn" data-confirm-publish="' + i.id + '">تأكيد النشر يدويًا</button>' +
+              '<button class="btn ghost" data-cancel-schedule="' + i.id + '">إلغاء الجدولة</button>' +
+            '</div>';
+        } else {
+          actionsHtml +=
+            '<div style="margin-top:8px;padding:8px 10px;border:1px solid var(--c-border);border-radius:8px;color:var(--c-muted);font-size:12px;">روابط Facebook/Instagram هتتسجل تلقائيًا بعد نجاح النشر.</div>' +
+            '<div style="display:flex;gap:8px;margin-top:6px;">' +
+              '<button class="btn ghost" data-cancel-schedule="' + i.id + '">إلغاء الجدولة</button>' +
+            '</div>';
+        }
       } else if (job.status !== "pending" && job.status !== "processing") {
-        // خلص (published/partial/failed) — سيب زرار إلغاء الجدولة متاح لو فشل بالكامل
         actionsHtml += '<div style="display:flex;gap:8px;margin-top:6px;">' +
           '<button class="btn ghost" data-cancel-schedule="' + i.id + '">إلغاء الجدولة والرجوع لجاهزة للنشر</button>' +
           '</div>';
       }
     }
 
-    return '<div class="section" style="border:1px solid var(--c-border);border-radius:12px;padding:14px;margin-bottom:12px;">' +
-      '<div class="title" style="font-weight:800;margin-bottom:4px;">' + escapeHtml(i.title) + W.brandBadgeHtml(i.brand) + '</div>' +
-      '<div class="meta">بواسطة: ' + escapeHtml(ownerName) + ' · مصمم: ' + escapeHtml(designerName) + '</div>' +
-      scheduledLine +
-      (i.body ? '<p style="white-space:pre-wrap;margin:8px 0;">' + escapeHtml(i.body) + '</p>' : '') +
-      (i.design_file_url ? '<p><a href="' + i.design_file_url + '" target="_blank" class="btn ghost sm">فتح ملف التصميم المعتمد</a></p>' : '<p style="color:var(--c-muted);font-size:12px;">مفيش ملف تصميم مرفوع</p>') +
-      actionsHtml +
-      '<div id="comments-slot-' + i.id + '" style="margin-top:10px;"></div>' +
-      '</div>';
+    var statusLabel = mode === "scheduled" ? "مجدولة" : "جاهزة للنشر";
+    return '<div class="section" style="border:1px solid var(--c-border);border-radius:12px;padding:12px 14px;margin-bottom:10px;">' +
+      '<div style="display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;">' +
+        '<div style="min-width:0;flex:1;">' +
+          '<div class="title" style="font-weight:800;margin-bottom:4px;">' + escapeHtml(i.title) + W.brandBadgeHtml(i.brand) + '</div>' +
+          '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">' +
+            '<span class="status-pill ' + (mode === "scheduled" ? "received" : "approved") + '">' + statusLabel + '</span>' +
+            scheduledLine +
+          '</div>' +
+        '</div>' +
+        '<button class="btn ghost sm" data-toggle-publish-details="' + i.id + '">فتح التفاصيل</button>' +
+      '</div>' +
+      '<div id="publish-details-' + i.id + '" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--c-border);">' +
+        '<div class="meta">بواسطة: ' + escapeHtml(ownerName) + ' · مصمم: ' + escapeHtml(designerName) + '</div>' +
+        (i.body ? '<p style="white-space:pre-wrap;margin:8px 0;">' + escapeHtml(i.body) + '</p>' : '') +
+        (i.design_file_url ? '<p><a href="' + i.design_file_url + '" target="_blank" class="btn ghost sm">فتح ملف التصميم المعتمد</a></p>' : '<p style="color:var(--c-muted);font-size:12px;">مفيش ملف تصميم مرفوع</p>') +
+        actionsHtml +
+        '<div id="comments-slot-' + i.id + '" style="margin-top:10px;"></div>' +
+      '</div>' +
+    '</div>';
   }
 
   function wire(container) {
+    container.querySelectorAll("[data-toggle-publish-details]").forEach(function (btn) {
+      btn.onclick = function () {
+        var id = btn.getAttribute("data-toggle-publish-details");
+        var box = document.getElementById("publish-details-" + id);
+        if (!box) return;
+        var open = box.style.display !== "none";
+        box.style.display = open ? "none" : "block";
+        btn.textContent = open ? "فتح التفاصيل" : "إخفاء التفاصيل";
+        if (!open) updateManualLinkVisibility(id);
+      };
+    });
+    container.querySelectorAll(".platform-cb").forEach(function (cb) {
+      cb.addEventListener("change", function () {
+        var m = (cb.id || "").match(/^pb-platform-(.+?)-(facebook|instagram|tiktok|youtube|website|email)$/);
+        if (m) updateManualLinkVisibility(m[1]);
+      });
+    });
     container.querySelectorAll("[data-schedule]").forEach(function (btn) {
       btn.onclick = function () { schedule(btn.getAttribute("data-schedule")); };
     });
