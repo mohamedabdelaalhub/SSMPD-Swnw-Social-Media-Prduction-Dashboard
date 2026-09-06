@@ -3485,3 +3485,70 @@ revoke all on function public.claim_due_meta_publish_jobs(int) from public;
 --   );
 --   $cron$
 -- );
+
+
+-- ============================================================
+-- 44) AI Customer Agent Booking Sync — WhatsApp bookings → Dashboard
+-- ============================================================
+-- Read-only mirror inside SSMPD. The official booking backend remains the
+-- source of truth; this table is for dashboard visibility/audit only.
+create table if not exists public.customer_bookings (
+  id                    uuid primary key default gen_random_uuid(),
+  booking_request_id    text not null unique,
+  booking_flow_id       text,
+  official_booking_id   text,
+  booking_reference     text,
+  tenant_id             text not null default 'swnw',
+  channel               text not null default 'whatsapp'
+                        check (channel in ('whatsapp','messenger','instagram','facebook','other')),
+  wa_id                 text,
+  customer_name         text,
+  phone                 text,
+  specialty_id          text,
+  specialty_name        text,
+  doctor_id             text,
+  doctor_name           text,
+  appointment_date      date,
+  appointment_time      text,
+  price                 numeric(12,2),
+  currency              text not null default 'EGP',
+  status                text not null default 'confirmed'
+                        check (status in ('confirmed','rescheduled','cancelled','arrived','completed','no_show')),
+  confirmed_at          timestamptz,
+  last_synced_at        timestamptz not null default now(),
+  created_at            timestamptz not null default now(),
+  updated_at            timestamptz not null default now()
+);
+
+create index if not exists customer_bookings_date_idx
+  on public.customer_bookings (appointment_date, appointment_time);
+create index if not exists customer_bookings_status_idx
+  on public.customer_bookings (status);
+create index if not exists customer_bookings_phone_idx
+  on public.customer_bookings (phone);
+create index if not exists customer_bookings_wa_id_idx
+  on public.customer_bookings (wa_id);
+create index if not exists customer_bookings_reference_idx
+  on public.customer_bookings (booking_reference);
+
+alter table public.customer_bookings enable row level security;
+
+drop policy if exists "booking staff read customer bookings" on public.customer_bookings;
+create policy "booking staff read customer bookings"
+  on public.customer_bookings for select to authenticated
+  using (public.can_access_leads());
+
+-- Dashboard users are intentionally read-only here. Writes come only from the
+-- server-side booking-sync-ingest Edge Function using service_role.
+revoke insert, update, delete on public.customer_bookings from authenticated;
+grant select on public.customer_bookings to authenticated;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname='supabase_realtime' and schemaname='public' and tablename='customer_bookings'
+  ) then
+    alter publication supabase_realtime add table public.customer_bookings;
+  end if;
+end $$;
