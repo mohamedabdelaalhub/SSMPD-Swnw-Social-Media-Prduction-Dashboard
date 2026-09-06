@@ -3322,10 +3322,145 @@ Supabase Dashboard مباشرة، بدون أي اتصال بـMeta API خالص
   + توسعة سياستين على كل من `patient_visits`/`patient_prescriptions` —
   آمن للتشغيل، ومفيش Edge Function مطلوب نشرها).
 
+## Content Intelligence: Brief للوكيل + الزرارين متاحين دايمًا حتى بدون بيانات تخصص (`?v=57` — ٢٠٢٦-٠٩-٠٦)
 
-## Content Intelligence fallback fix — 2026-09-06
-- `assets/js/workflow.js`: تخصصات بدون mapping أو بدون بيانات تاريخية خاصة بالتخصص/الهدف لم تعد تقفل مسار الوكيل؛ زراير **نسخ Brief للوكيل** و**وكيل إنشاء المحتوى** تظهر دائمًا بعد اختيار التخصص والهدف.
-- fallback brief يوسم البيانات صراحةً كـ **GENERAL ACCOUNT INSIGHTS** و**TESTING HYPOTHESIS**، ولا يدّعي أنها Winner خاصة بالتخصص.
-- لو مفيش حتى بيانات عامة موثوقة، يتم إنشاء Brief أساسي بدون اختراع أي تاريخ أداء.
-- المسار القوي الحالي V4.2 للتخصصات التي لديها بيانات خاصة لم يتغير.
-- بصمة الكاش: `workflow.js?v=57`.
+- **المشكلة**: `renderCiResults` (`workflow.js`) كانت في حالتين (مفيش mapping
+  للتخصص، أو فيه mapping لكن مفيش بيانات تاريخية للتخصص+الهدف) بترجع بدري
+  (`out.dataset.ciBrief=""; return;`) **قبل** ما ترسم زراري "نسخ Brief
+  للوكيل"/"وكيل إنشاء المحتوى ↗" — يعني بعض تركيبات التخصص/الهدف كانت بتخلي
+  وكيل إنشاء المحتوى غير قابل للوصول تمامًا من غير أي بديل.
+- **الحل**: دالة جديدة `renderCiFallback(out, opts)` — بترسم رسالة التحذير
+  المناسبة (نص مختلف شوية حسب الحالتين: "مفيش mapping خالص" مقابل "فيه
+  mapping بس مفيش بيانات كافية")، وبعدها الأنماط العامة عبر الحساب (لو
+  موجودة) بلغة محايدة صراحة — بطاقات الفولباك (`ciCardHtml(..., true)`)
+  بتستبدل أي لابل "أفضل خيار (BEST OPTION)"/"مثبت (PROVEN)" بلابل ثابت
+  "🧪 نمط عام من الحساب — فرضية اختبار (GENERAL ACCOUNT PATTERN / TESTING
+  HYPOTHESIS)" — بغض النظر عن `status.key` الحقيقي المحسوب على مستوى الحساب
+  ككل (مش خاص بالتخصص). **الزرارين بيتعرضوا دايمًا** في نهاية `renderCiFallback`
+  ومربوطين بـ`ciFallbackBriefText`/`ciOpenAgent` (نفس `ciOpenAgent` الموجودة
+  أصلاً، من غير أي تعديل فيها).
+- **`ciFallbackBriefText(ctx)`**: Brief منفصل بالكامل عن `ciCopyBrief` العادي
+  — يوضح صراحة `DATA SCOPE: GENERAL ACCOUNT INSIGHTS` و
+  `SPECIALTY-SPECIFIC HISTORICAL DATA: NOT AVAILABLE` + تحذير أدلة صريح
+  (الأنماط دي من الحساب ككل، مش دليل إنها هتشتغل بنفس الكفاءة للتخصص ده)،
+  وبيحافظ على بيانات المستخدم (Brand/Specialty/Topic/Objective/Format) كاملة.
+  لو مفيش حتى بيانات عامة كافية عن الحساب لنفس الهدف، بيرجع لـ
+  `ciMinimalBriefText(ctx)` (بند ٦ — طلب صريح: "ولّد ٣-٥ فرضيات من غير أي
+  اختراع بيانات أداء تاريخية"). تعليمات "EVIDENCE LANGUAGE" في الفولباك
+  بتمنع صراحة عبارات زي "BEST WINNING PATTERN FOR THIS SPECIALTY"/"PROVEN
+  WINNER"/"BEST OPTION FOR THIS SPECIALTY".
+- **الحالة القوية (فيه بيانات تاريخية فعلية للتخصص+الهدف) لم تتغيّر إطلاقًا**
+  — نفس منطق V4.2 (أفضل أداء تاريخي/Pattern قابل للاستخدام/حارس الأداء
+  العالمي/كل قواعد اللغة) زي ما هو بالحرف، الملف اللي اتغيّر فيه بس إضافة
+  دوال جديدة + استبدال الـ`return` المبكر في الحالتين الضعيفتين.
+- **تشخيص mapping (بدون أي تعديل SQL)**: بمراجعة توثيق قسم ٣٧ (`content_meta_specialty_map`)
+  الموجود بالفعل في هذا الملف — ٨ تخصصات ليها mapping فعلي (neurology،
+  dermatology، cosmetic_laser، obgyn، dental، physio_nutrition، lab،
+  emergency)، والباقي (orthopedics/surgery/ent/psychiatry/pediatrics/
+  oncology/cardiology/vascular/radiology/nursing_services/internal_services/
+  internal) من غير mapping عمدًا (مفيش نظير واضح في بيانات Meta الحالية) —
+  دول هيدخلوا مسار "مفيش mapping" الجديد ويشوفوا الفولباك بدل ما يتوقفوا.
+  تخصصات ليها mapping لكن ممكن يفضل معاها صفر صفوف تاريخية فعلية (حسب
+  الهدف الإعلاني المختار) بتتحدد ديناميكيًا وقت الاستخدام (بتعتمد على
+  بيانات `vw_content_intelligence_patterns`/`vw_meta_ad_performance` الحية
+  وقت كل استعلام) — مش قائمة ثابتة نقدر نحددها من الكود بس.
+- ملفات اتغيرت: `assets/js/workflow.js` بس. بصمة الكاش: `workflow.js?v=57`.
+  **مفيش تعديل SQL ولا Edge Function ولا أي شاشة تانية.**
+
+## Phase 43 — Meta Auto Publisher: نشر تلقائي حقيقي لفيسبوك/انستجرام (قسم ٤٣ — ٢٠٢٦-٠٩-٠٦)
+
+طلب المستخدم: تحويل سير عمل الجدولة الحالي (تاب "النشر") لنشر تلقائي فعلي على
+Facebook Page + Instagram Professional Account — سيرفر-سايد بالكامل (الماك
+مش لازم يفضل شغّال، والفرونت إند أبدًا ميشوفش أي Meta access token).
+
+- **المعمارية**: `pg_cron` (كل دقيقة) → `net.http_post` بهيدر `X-Cron-Secret`
+  ثابت (سر جديد `META_PUBLISH_CRON_SECRET`، **مش** مفتاح service_role) →
+  Edge Function جديدة `meta-publish-process` (بمفتاح service_role) → Meta
+  Graph API. نفس فلسفة فصل الأمان المستخدمة فعليًا في `media-buyer-propose`/
+  `media-buyer-pair` (قسم ٣٩/٤٠) — سر مخصص للاتصال الآلي، صفر توكنات في أي
+  جدول يقدر يوصله الفرونت إند.
+- **قسم ٤٣ في `setup.sql`**:
+  - `guard_content_transition()` — إضافة سطر واحد بس فوق كل حاجة: `if
+    auth.role() = 'service_role' then return new; end if;` — من غير السطر ده،
+    الـEdge Function (بتحدّث `content_items.stage → 'published'` بمفتاح
+    service_role) كانت هترفضها الدالة نفسها (مش RLS — التريجر بيتنفذ لأي
+    كاتب بغض النظر عن RLS)، لأن `can_manage_all_content()`/`has_role()`
+    بيرجعوا `false` لما مفيش `auth.uid()` (سياق service_role). باقي منطق
+    الحارس **زي ما هو بالحرف من غير أي تغيير**.
+  - `meta_brand_config` (brand PK `sono`/`dr_dina` → `facebook_page_id`/
+    `instagram_business_account_id`) — **صفر أسرار، صفر RLS policies خالص**
+    (مقروءة بس من Edge Function بمفتاح service_role) — التعبئة الأولية
+    (صفين) يدوية من SQL Editor.
+  - `meta_publish_jobs` (id/content_id/brand/scheduled_at/publish_facebook/
+    publish_instagram/status/facebook_post_id/facebook_permalink/
+    instagram_container_id/instagram_media_id/instagram_permalink/
+    attempt_count/last_attempt_at/published_at/error_code/error_message/
+    created_by/created_at/updated_at) — فهرس `unique` جزئي (بند ٣: idempotency)
+    يمنع أكتر من job "شغّال" (pending/processing) لنفس المادة في نفس اللحظة.
+    RLS: القراءة/الإنشاء لنفس أدوار تاب "النشر" (page_manager/approver/
+    can_manage_all_content)، الإلغاء مقصور على تحويل job **pending** لـ
+    **cancelled** بس، **مفيش أي policy DELETE خالص** — سجل محاولات النشر
+    auditable للأبد. أي تحديث تاني (نتائج Meta/processing/failed/...) مقصور
+    فعليًا على service_role (بيتخطى RLS بالكامل، نفس نمط `media_buyer_*`).
+  - `claim_due_meta_publish_jobs(p_limit)` — دالة `SECURITY DEFINER` بتاخد
+    الـjobs المستحقة (`pending` + `scheduled_at<=now()`) بـ`FOR UPDATE SKIP
+    LOCKED` (بند ٧: claiming ذري يمنع نفس الـjob يتنشر مرتين لو تشغيلتين
+    اتزامنوا بالغلط) — مفيش `grant` لـ`authenticated` عمدًا.
+  - تعليق SQL جاهز (معطّل بـ`--`) لـ`cron.schedule(...)` كل دقيقة — المستخدم
+    لازم يستبدل `<PROJECT_REF>`/`<CRON_SECRET>` بنفسه ويشغّله بعد ما يفعّل
+    إكستنشنز `pg_cron`/`pg_net` من Database → Extensions.
+- **Edge Function جديدة `meta-publish-process`**: بتتحقق من `X-Cron-Secret`
+  (مش JWT دashboard، `verify_jwt=false` زي `media-buyer-propose`)، بتنادي
+  `claim_due_meta_publish_jobs`، وبعدين لكل job:
+  - **بند ٤ (الوسائط)**: `design_file_url` (رابط Google Drive viewer عادي،
+    مش رابط تحميل مباشر مضمون) بيتحوّل لرابط `uc?export=download` مؤقتًا،
+    البايتات بتترفع لـbucket عام جديد على Supabase Storage اسمه
+    `meta-publish-assets` (**لازم يتعمل يدويًا** — مش موجود تلقائيًا)، وده
+    اللي بيتبعت لـMeta كـ`image_url`/`url` — الرابط الأصلي (`design_file_url`)
+    فاضل زي ما هو على `content_items` (بند ١٤: يفضل قابل للربط لاحقًا).
+  - **فيسبوك**: صورة+نص عن طريق `/{page-id}/photos`، أو نص بس عن طريق
+    `/{page-id}/feed` لو مفيش صورة متاحة (بند ٥ب).
+  - **انستجرام**: `/{ig-id}/media` (container) → polling لحد ٢٠ ثانية على
+    `status_code` → `/{ig-id}/media_publish` (بند ٦) — صورة واحدة بس، لو
+    مفيش صورة الـjob بيفشل بوضوح (`IG requires image`) من غير أي محاولة.
+  - النتيجة بتتسجل في `meta_publish_jobs` (status: published/partial/failed)
+    + `content_items.stage='published'` + `published_url` (بمفتاح
+    service_role، بيعدّي الحارس المُعدّل فوق) — بس لو نجح جزء على الأقل.
+  - **مفيش أي طباعة/log لأي Meta token أو Supabase key في أي مكان.**
+- **`render-publish.js`**: نفس الشاشة (مجدولة/جاهزة للنشر) لسه موجودة —
+  "جدولة"/"نشر الآن" بقوا بيعملوا `meta_publish_jobs` تلقائيًا لو من ضمن
+  المنصات المختارة فيسبوك أو انستجرام (النشر الفوري = job بـ`scheduled_at`=
+  الآن، هينفّذ في تشغيلة الدقيقة الجاية). كل كارت بيعرض حالة الـjob بالعربي
+  (في الانتظار/جاري النشر/تم النشر/نشر جزئي/فشل) + رابط فعلي لكل منصة نجحت
+  + رسالة الخطأ لو فشل + زرار "إلغاء النشر التلقائي" (لسه `pending` بس).
+  **منصات تانية (تيكتوك/يوتيوب/الموقع) لسه بتحتاج رابط يدوي بالظبط زي الأول**
+  — لو مادة عليها فيسبوك/انستجرام + منصة يدوية مع بعض في نفس الكارت، الرابط
+  اليدوي (لو اتحط) بيتسجل في `published_url` وقت الجدولة، لكن بيتكتب فوقه
+  بعدين برابط Meta الفعلي لو الـjob نجح — **قيد معروف** (عمود `published_url`
+  واحد بس على `content_items`، مش متعدد المنصات — خارج نطاق أول إصدار).
+- `db.js`: `createMetaPublishJob`/`listMetaPublishJobsForContent`/
+  `cancelMetaPublishJob` (استعلام مباشر على `meta_publish_jobs`، نفس نمط
+  `listMediaBuyerPlans`/`approveMediaBuyerPlan`).
+- بصمة الكاش اترفعت لـ `db.js?v=65`، `render-publish.js?v=43` في `index.html`.
+- **لازم (خطوات المستخدم، ولا واحدة منها اتعملت من الشات — أسرار/دashboard access)**:
+  ١) تشغيل قسم ٤٣ من `setup.sql` في Supabase SQL Editor.
+  ٢) نشر `meta-publish-process` Edge Function (Monaco editor) + التأكد إن
+     "Verify JWT" مقفول لها من إعداداتها في الداشبورد (زي `media-buyer-propose`).
+  ٣) إنشاء bucket عام جديد اسمه `meta-publish-assets` في Supabase Storage.
+  ٤) إدخال صفين في `meta_brand_config` (`sono`/`dr_dina` + `facebook_page_id`/
+     `instagram_business_account_id` بتوعهم) عن طريق SQL Editor.
+  ٥) ضبط أسرار Edge Function جديدة: `META_PAGE_TOKEN_SONO`،
+     `META_PAGE_TOKEN_DR_DINA` (Page Access Token طويل العمر لكل صفحة —
+     محتاج صلاحيات `pages_manage_posts`/`pages_read_engagement`/
+     `instagram_content_publish` وربط IG Business Account بالصفحة)، و
+     `META_PUBLISH_CRON_SECRET` (قيمة عشوائية جديدة يولّدها المستخدم بنفسه).
+  ٦) تفعيل إكستنشنز `pg_cron`/`pg_net` (Database → Extensions) وتشغيل
+     `cron.schedule(...)` المُعلَّق في نهاية قسم ٤٣ بعد تعبئة القيم الحقيقية.
+  ٧) قرار تطبيق Meta (بند ١١): **يُنصح بتطبيق منفصل** "SwnW Social Publisher"
+     بدل توسيع تطبيق خدمة العملاء (WhatsApp) الحالي — عزل صلاحيات النشر
+     (`pages_manage_posts`/`instagram_content_publish`) عن التطبيق اللي شغّال
+     عليه الوكيل الحي (WhatsApp Cloud API webhook) بيقلل مخاطرة أي مراجعة/
+     تعليق من Meta على تطبيق واحد يأثر على الاتنين مع بعض.
+  ٨) **اختبار حي حقيقي (بند ١٣) لسه ما اتعملش خالص** — أول ما الخطوات فوق
+     تخلص، لازم يتحدد مادة واحدة تجريبية واضحة ويتوقف الشات يسأل موافقة
+     صريحة قبل أي منشور فعلي عام على فيسبوك/انستجرام.
