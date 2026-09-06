@@ -3261,3 +3261,63 @@ Supabase Dashboard مباشرة، بدون أي اتصال بـMeta API خالص
 - بصمة الكاش اترفعت لـ `render-mediabuyer.js?v=4` في `index.html`.
 - **لازم**: رفع `render-mediabuyer.js` و`index.html` عن طريق GitHub Web UI
   (مفيش Edge Function ولا SQL يحتاج نشر في الدفعة دي).
+
+## نشر لأكتر من منصة + صلاحيات "طبيب سونو" لإضافة زيارة/روشتة (قسم ٤٢ — ٢٠٢٦-٠٩-٠٦)
+
+طلب المستخدم (٤ نقاط):
+
+- **(أ) نشر المادة الواحدة على أكتر من منصة**: `content_items` بقى فيه عمود
+  إضافي جديد `publish_platforms jsonb` (مصفوفة قيم) — العمود القديم
+  `publish_platform` (نص واحد، مع CHECK constraint) **فاضل زي ما هو من غير
+  أي حذف/تعديل** (بيتخزّن فيه أول منصة مختارة بس، للتوافق الخلفي مع أي كود/
+  عرض قديم بيعتمد عليه، زي `render-archive.js`). `workflow.js`:
+  `platformCheckboxesHtml`/`readPlatformCheckboxes`/`platformsLabel` جداد
+  (تشيك بوكسات بدل دروب داون واحد) — `platformSelectHtml` القديمة فاضلة
+  للتوافق بس مش بتُستخدم في تاب النشر تاني. `render-publish.js` (كارت
+  "جاهزة للنشر" في `schedule()`/`publishNow()`) بقى بيقرا/يكتب المصفوفة
+  الجديدة. `render-archive.js` (عرض تفاصيل مادة منشورة) بقى بيستخدم
+  `W.platformsLabel(...)` بدل اللوك أب المباشر القديم `W.PLATFORMS[x]`
+  (اللي كان هيرجع "—" لأي قيمة متعددة).
+- **(ب) "تم التحويل للطبيب <الاسم>" بدل زرار "تحويل لطبيب سونو"**: شاشة
+  "تصفح وفلترة" (`renderBrowseScreen`) بقت بتجيب كل الإحالات "قيد الكشف"
+  (`status='pending'`) مرة واحدة (دالة جديدة `db.js → listPendingDoctorAssignments()`
+  — بترجع `patient_id`/`doctor_id` بس، من غير embed لجدول `admins` تجنبًا
+  لفخ الـFK المزدوج الموثّق في `?v=22`) + `listAdminsBasic()` لأسماء
+  الأطباء — مربوطين ببعض في المتصفح. لو المريض عليه إحالة pending، بيظهر
+  بادچ "تم التحويل للطبيب فلان" بدل زرار "تحويل لطبيب سونو". لما الطبيب
+  يضغط "تم الكشف" (بيغيّر `status` لـ`done` عن طريق `completeDoctorAssignment`
+  الموجودة بالفعل)، الإحالة مبقتش pending، فأي فتح جديد لشاشة "تصفح
+  وفلترة" (بيانات بتتجاب من جديد كل مرة، مفيش تخزين مؤقت) بيرجّع الزرار
+  تلقائيًا لحالته العادية — من غير أي منطق "ريست" إضافي مطلوب.
+- **(ج/د) "طبيب سونو" بقى يقدر يضيف زيارة جديدة/يعدّل زيارة/يضيف روشتة**،
+  لكن من غير حذف زيارة سابقة ومن غير أي لمس لبيانات المريض الأساسية
+  (الاسم/الهاتف) ولا للبروفايل الطبي نفسه — دول فاضلين مقصورين على
+  `has_archive_access()`/`can_manage_all_content()` بس (`canUpload()`
+  في الواجهة) زي ما كانوا بالظبط، تمشيًا مع تصميم "معاينة فقط" الموثّق في
+  `?v=25`/`?v=30`. `render-patients.js → renderPatientModal`: العلم القديم
+  `canEditMedical` (اللي كان بيتحكم في كل حاجة مرة واحدة) اتقسّم لثلاثة:
+  `canEditMedical` (تعديل البروفايل الطبي — أرشيف كامل بس، زي الأول)،
+  `canVisitWrite` (إضافة/تعديل زيارة — أرشيف كامل **أو** طبيب سونو
+  `isDoctorOnly()`)، `canVisitDelete` (حذف زيارة — أرشيف كامل بس). زرار
+  "+ زيارة جديدة" وزرارَي "عرض"/"تعديل" في صف كل زيارة بقوا يظهروا
+  لـ`canVisitWrite`، وزرار "حذف" بس فاضل مقصور على `canVisitDelete`. سكشن
+  "روشتة" (`mergedDocSectionHtml`) بقى فيه باراميتر جديد اختياري `canCreate`
+  (افتراضيًا نفس `canUp` لباقي الفئات) — لروشتة بس بيتبعت `canRxWrite`
+  (`canUp || isDoctorOnly()`) عشان زرار "+ إنشاء جديد" يظهر للطبيب من غير
+  ما يظهرله زرار "+ رفع مستند" (لسه مقصور على `canUp` بس، الطبيب برضه
+  مايقدرش يرفع مستندات — نفس تصميم `?v=25`).
+- `setup.sql` قسم ٤٢: عمود `content_items.publish_platforms` جديد، وسياسات
+  `"visits write"`/`"visits update"` على `patient_visits` و`"prescriptions
+  write"`/`"prescriptions update"` على `patient_prescriptions` اتوسّعت
+  بـ`or public.is_assigned_doctor_for_patient(patient_id)` — نفس دالة
+  `SECURITY DEFINER` الموجودة بالفعل من `?v=25` لقراءة/إحالة المرضى،
+  مفيش دالة SQL جديدة مطلوبة. سياسات `"visits delete"`/`"prescriptions
+  delete"` **فاضلة زي ما هي بالحرف** (has_archive_access()/
+  can_manage_all_content() بس) — الطبيب ميقدرش يحذف حتى لو تخطى الواجهة
+  بنداء API مباشر.
+- بصمة الكاش اترفعت لـ `db.js?v=64`، `workflow.js?v=56`،
+  `render-publish.js?v=42`، `render-archive.js?v=43`،
+  `render-patients.js?v=82` في `index.html`.
+- **لازم**: تشغيل قسم ٤٢ من `setup.sql` في Supabase SQL Editor (عمود جديد
+  + توسعة سياستين على كل من `patient_visits`/`patient_prescriptions` —
+  آمن للتشغيل، ومفيش Edge Function مطلوب نشرها).
