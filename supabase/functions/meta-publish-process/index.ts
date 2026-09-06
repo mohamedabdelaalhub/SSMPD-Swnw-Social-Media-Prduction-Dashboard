@@ -51,17 +51,17 @@ async function getGoogleDriveAccessToken(): Promise<string> {
     return googleTokenCache.token;
   }
 
-  const raw = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_KEY");
-  if (!raw) throw new Error("GOOGLE_SERVICE_ACCOUNT_KEY secret is missing");
+  const raw = Deno.env.get("META_PUBLISH_GOOGLE_SERVICE_ACCOUNT_KEY");
+  if (!raw) throw new Error("META_PUBLISH_GOOGLE_SERVICE_ACCOUNT_KEY secret is missing");
 
   let sa: GoogleServiceAccount;
   try {
     sa = JSON.parse(raw);
   } catch {
-    throw new Error("GOOGLE_SERVICE_ACCOUNT_KEY is not valid JSON");
+    throw new Error("META_PUBLISH_GOOGLE_SERVICE_ACCOUNT_KEY is not valid JSON");
   }
   if (!sa.client_email || !sa.private_key) {
-    throw new Error("GOOGLE_SERVICE_ACCOUNT_KEY is missing client_email/private_key");
+    throw new Error("META_PUBLISH_GOOGLE_SERVICE_ACCOUNT_KEY is missing client_email/private_key");
   }
 
   const tokenUri = sa.token_uri || "https://oauth2.googleapis.com/token";
