@@ -7,6 +7,7 @@
   var realtimeChannel = null;
   var commentsChannel = null;
   var leadsChannel = null;
+  var bookingsChannel = null;
   var kudosChannel = null;
   var pollTimer = null;
   var usageSessionId = null;
@@ -21,6 +22,7 @@
     archive: window.SSMPDRenderArchive,
     patients: window.SSMPDRenderPatients,
     leads: window.SSMPDRenderLeads,
+    bookings: window.SSMPDRenderBookings,
     admin: window.SSMPDRenderAdmin,
     metaads: window.SSMPDRenderMetaAds,
     mediabuyer: window.SSMPDRenderMediaBuyer
@@ -34,6 +36,7 @@
     archive: "الأرشيف",
     patients: "أرشيف المرضى",
     leads: "إدارة الليدز والتواصل",
+    bookings: "حجوزات الوكيل",
     admin: "لوحة التحكم",
     metaads: "إعلانات Meta Ads",
     mediabuyer: "وكيل الإعلانات"
@@ -149,7 +152,7 @@
     // القائمة المنسدلة فقط — اتشالوا من شريط التابات العادي (وقائمة الموبايل
     // القديمة) عشان ميبقوش متكررين في مكانين، ويبانوا بس في المكان اللي
     // المستخدم طلبه (جوه القائمة المنسدلة).
-    var mainSuiteTabs = tabs.filter(function (t) { return ["patients", "leads", "admin"].indexOf(t) === -1; });
+    var mainSuiteTabs = tabs.filter(function (t) { return ["patients", "leads", "bookings", "admin"].indexOf(t) === -1; });
 
     function tabButtonsHtml() {
       return mainSuiteTabs.map(function (t) { return '<button class="tab-btn" data-tab="' + t + '">' + TAB_LABELS[t] + '</button>'; }).join("");
@@ -158,6 +161,7 @@
     if (mainSuiteTabs.length) ddItems += '<button class="ud-item" data-goto="' + mainSuiteTabs[0] + '">SSMPD</button>';
     if (tabs.indexOf("patients") !== -1) ddItems += '<button class="ud-item" data-goto="patients">أرشيف المرضى</button>';
     if (tabs.indexOf("leads") !== -1) ddItems += '<button class="ud-item" data-goto="leads">إدارة الليدز والتواصل</button>';
+    if (tabs.indexOf("bookings") !== -1) ddItems += '<button class="ud-item" data-goto="bookings">حجوزات الوكيل</button>';
     ddItems += '<button class="ud-item" id="ud-change-pass">تغيير كلمة السر</button>';
     if (tabs.indexOf("admin") !== -1) ddItems += '<button class="ud-item" data-goto="admin">لوحة التحكم</button>';
 
@@ -600,7 +604,7 @@
 
     // فصل بصري: تابات السويت الرئيسي (SSMPD) بتتخفي تماماً لما نكون جوه موديول
     // منفصل (أرشيف المرضى / الليدز / لوحة التحكم) عشان ميظهرش هيدر حاجتين مع بعض
-    var isSeparateModule = ["patients", "leads", "admin"].indexOf(tab) !== -1;
+    var isSeparateModule = ["patients", "leads", "bookings", "admin"].indexOf(tab) !== -1;
     var tabsBar = document.getElementById("tabs-bar");
     if (tabsBar) tabsBar.style.display = isSeparateModule ? "none" : "";
     var mmTabs = document.querySelector("#mobile-menu .mm-tabs");
@@ -640,7 +644,7 @@
   // تحديث لحظي: أعد رسم التاب الحالي لو بيعرض بيانات محتوى، وما فيش مودال مفتوح، ومفيش
   // إجراء/بيانات لسه المستخدم شغال عليها (كتابة كومنت، فورم جدولة، ...) دلوقتي
   function refreshCurrentTab() {
-    if (["summary", "production", "review", "design", "publish", "archive", "patients", "leads"].indexOf(currentTab) !== -1) {
+    if (["summary", "production", "review", "design", "publish", "archive", "patients", "leads", "bookings"].indexOf(currentTab) !== -1) {
       var el = document.getElementById("view-container");
       if (el && !document.querySelector(".modal-backdrop") && !isUserEditing()) {
         RENDERERS[currentTab].render(el);
@@ -743,10 +747,12 @@
     if (realtimeChannel) window.SSMPDDb.unsubscribe(realtimeChannel);
     if (commentsChannel) window.SSMPDDb.unsubscribe(commentsChannel);
     if (leadsChannel) window.SSMPDDb.unsubscribe(leadsChannel);
+    if (bookingsChannel) window.SSMPDDb.unsubscribe(bookingsChannel);
     if (kudosChannel) window.SSMPDDb.unsubscribe(kudosChannel);
     realtimeChannel = window.SSMPDDb.subscribeTable("content_items", refreshCurrentTab);
     commentsChannel = window.SSMPDDb.subscribeTable("comments", refreshCurrentTab);
     leadsChannel = window.SSMPDDb.subscribeTable("leads", refreshCurrentTab);
+    bookingsChannel = window.SSMPDDb.subscribeTable("customer_bookings", refreshCurrentTab);
     // لوحة الشكر: بانر ظاهر لايف لكل الناس (مش بس اللي بعتها) لما حد يبعت شكر جديد
     kudosChannel = window.SSMPDDb.subscribeTable("kudos", function (payload) {
       if (payload.eventType === "INSERT") showKudosBanner(payload.new);
