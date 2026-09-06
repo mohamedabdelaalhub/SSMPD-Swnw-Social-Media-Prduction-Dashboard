@@ -3144,3 +3144,137 @@ create policy "managers read media_buyer_agents" on public.media_buyer_agents
 drop policy if exists "managers read pairing_codes" on public.media_buyer_pairing_codes;
 create policy "managers read pairing_codes" on public.media_buyer_pairing_codes
   for select using (public.can_manage_all_content());
+
+-- ==================================================================
+-- ٤١) Media Buyer Worker Health + Escalations (Phase 3D — observability
+-- بس، مفيش أي Meta write/execution هنا خالص). سجل تشغيل الـWorker المحلي
+-- على الـMac (كل ٣ ساعات عن طريق launchd) + طابور تصعيدات تحتاج مراجعة
+-- بشرية/Claude. الكتابة حصريًا عن طريق Edge Function بمفتاح service_role
+-- (زي media_buyer_agents/pairing_codes بالظبط) — مفيش أي policy insert
+-- للـauthenticated على الجدولين دول عمدًا.
+-- ==================================================================
+
+create table if not exists public.media_buyer_worker_runs (
+  id uuid primary key default gen_random_uuid(),
+  external_request_id text null,
+  worker_id text not null default 'swnw_local_worker',
+  started_at timestamptz not null,
+  finished_at timestamptz null,
+  dry_run boolean not null default false,
+  status text not null check (status in ('success', 'partial', 'failed')),
+  campaigns_checked integer null,
+  adsets_checked integer null,
+  ads_checked integer null,
+  insight_rows integer null,
+  recommendations_created integer not null default 0,
+  recommendations_skipped_duplicate integer not null default 0,
+  escalations_created integer not null default 0,
+  meta_account_id text null,
+  error_code text null,
+  error_message text null,
+  created_at timestamptz not null default now()
+);
+-- ملحوظة أمان مقصودة: ممنوع تخزين توكنات/تواقيع/مفاتيح خاصة/Authorization
+-- headers في هذا الجدول أبدًا — الأعمدة دي كلها metadata تشغيلية بس.
+
+create index if not exists idx_mb_worker_runs_started_at
+  on public.media_buyer_worker_runs (started_at desc);
+create index if not exists idx_mb_worker_runs_status
+  on public.media_buyer_worker_runs (status);
+create unique index if not exists uq_mb_worker_runs_external_request_id
+  on public.media_buyer_worker_runs (external_request_id) where external_request_id is not null;
+
+create table if not exists public.media_buyer_escalations (
+  id uuid primary key default gen_random_uuid(),
+  external_request_id text null,
+  worker_id text not null default 'swnw_local_worker',
+  target_type text null,
+  target_platform_id text null,
+  objective text null,
+  kpi_candidate text null,
+  reason text not null,
+  metrics_snapshot jsonb null,
+  historical_evidence jsonb null,
+  status text not null default 'open' check (status in ('open', 'reviewing', 'resolved', 'dismissed')),
+  resolution_notes text null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  resolved_by uuid null references public.admins(id) on delete set null,
+  resolved_at timestamptz null
+);
+
+create index if not exists idx_mb_escalations_status
+  on public.media_buyer_escalations (status);
+create index if not exists idx_mb_escalations_created_at
+  on public.media_buyer_escalations (created_at desc);
+create unique index if not exists uq_mb_escalations_external_request_id
+  on public.media_buyer_escalations (external_request_id) where external_request_id is not null;
+
+alter table public.media_buyer_worker_runs enable row level security;
+alter table public.media_buyer_escalations enable row level security;
+
+-- قراءة بس لأي أدمن نشط (نفس دائرة قراءة media_buyer_plans/actions) —
+-- الكتابة (insert) حصريًا عن طريق Edge Function بمفتاح service_role،
+-- فمفيش أي policy insert للـauthenticated هنا عمدًا. مفيش أي policy
+-- DELETE خالص على الجدولين (سجل تدقيق، زي باقي جداول Media Buyer).
+drop policy if exists "active admins read worker_runs" on public.media_buyer_worker_runs;
+create policy "active admins read worker_runs" on public.media_buyer_worker_runs
+  for select to authenticated using (public.my_admin_id() is not null);
+
+drop policy if exists "active admins read escalations" on public.media_buyer_escalations;
+create policy "active admins read escalations" on public.media_buyer_escalations
+  for select to authenticated using (public.my_admin_id() is not null);
+
+-- تحديث حالة التصعيد (reviewing/resolved/dismissed) مقصور على المدير
+-- العام/السوبر أدمن بس — نفس دائرة "managers update media_buyer_plans".
+drop policy if exists "managers update escalations" on public.media_buyer_escalations;
+create policy "managers update escalations" on public.media_buyer_escalations
+  for update to authenticated
+  using (public.has_role('general_manager') or public.has_role('super_admin'))
+  with check (public.has_role('general_manager') or public.has_role('super_admin'));
+
+-- ==========================================================================
+-- قسم ٤٢ (٢٠٢٦-٠٩-٠٦): نشر لأكتر من منصة + صلاحيات "طبيب سونو" لإضافة
+-- زيارة/روشتة (من غير تعديل بيانات أساسية ولا حذف زيارة)
+-- ==========================================================================
+
+-- (أ) نشر المادة الواحدة على أكتر من منصة مرة واحدة — عمود جديد إضافي
+-- (jsonb array من نفس قيم CHECK الأصلية)، العمود القديم publish_platform
+-- فاضل زي ما هو (بيتخزّن فيه أول منصة مختارة، للتوافق مع أي كود/تقرير قديم
+-- بيعتمد عليه) — مفيش أي حذف/تعديل على القيد القديم.
+alter table public.content_items add column if not exists publish_platforms jsonb;
+
+-- (ب) "طبيب سونو" (is_assigned_doctor_for_patient) بيقدر يضيف زيارة جديدة/
+-- يعدّل زيارة موجودة، ويضيف روشتة جديدة — لكن من غير حذف زيارة، ومن غير أي
+-- لمس لبيانات المريض الأساسية (الاسم/الهاتف) ولا لملف المريض الطبي نفسه —
+-- ده كله فاضل مقصور على has_archive_access()/can_manage_all_content() بس.
+drop policy if exists "visits write" on public.patient_visits;
+create policy "visits write" on public.patient_visits
+  for insert with check (
+    public.has_archive_access() or public.can_manage_all_content()
+    or public.is_assigned_doctor_for_patient(patient_id)
+  );
+
+drop policy if exists "visits update" on public.patient_visits;
+create policy "visits update" on public.patient_visits
+  for update using (
+    public.has_archive_access() or public.can_manage_all_content()
+    or public.is_assigned_doctor_for_patient(patient_id)
+  );
+-- "visits delete" فاضلة زي ما هي (has_archive_access()/can_manage_all_content()
+-- بس) — الطبيب ميقدرش يحذف زيارة سابقة عمدًا، زي ما طلب المستخدم بالظبط.
+
+drop policy if exists "prescriptions write" on public.patient_prescriptions;
+create policy "prescriptions write" on public.patient_prescriptions
+  for insert with check (
+    public.has_archive_access() or public.can_manage_all_content()
+    or public.is_assigned_doctor_for_patient(patient_id)
+  );
+
+drop policy if exists "prescriptions update" on public.patient_prescriptions;
+create policy "prescriptions update" on public.patient_prescriptions
+  for update using (
+    public.has_archive_access() or public.can_manage_all_content()
+    or public.is_assigned_doctor_for_patient(patient_id)
+  );
+-- "prescriptions delete" فاضلة زي ما هي — الطبيب ميقدرش يحذف روشتة.
