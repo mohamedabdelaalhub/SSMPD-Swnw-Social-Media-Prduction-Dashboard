@@ -30,3 +30,10 @@ verify_jwt = false
 # request whose X-Cron-Secret header doesn't match META_PUBLISH_CRON_SECRET
 # (see supabase/functions/meta-publish-process/index.ts).
 verify_jwt = false
+
+
+[functions.booking-sync-ingest]
+# Machine-to-machine endpoint called by the AI Customer Agent after a
+# deterministic booking lifecycle event. It authenticates with its own
+# BOOKING_SYNC_SECRET header; no dashboard user JWT is involved.
+verify_jwt = false
