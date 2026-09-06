@@ -731,6 +731,21 @@
         .limit(limit || 20));
     },
 
+    // ---------- AI Customer Agent Bookings (قسم ٤٤) ----------
+    // Read-only mirror. Writes arrive through booking-sync-ingest server-side.
+    listCustomerBookings: function (params) {
+      params = params || {};
+      var q = client.from("customer_bookings").select("*")
+        .order("appointment_date", { ascending: true, nullsFirst: false })
+        .order("appointment_time", { ascending: true, nullsFirst: false })
+        .order("created_at", { ascending: false });
+      if (params.status) q = q.eq("status", params.status);
+      if (params.from) q = q.gte("appointment_date", params.from);
+      if (params.to) q = q.lte("appointment_date", params.to);
+      if (params.limit) q = q.limit(params.limit);
+      return handle(q);
+    },
+
     // ---------- Meta Auto Publisher (قسم ٤٣) ----------
     // إنشاء job نشر (مجدول أو فوري لو scheduledAt=الآن) — الـstatus بيتفرض
     // 'pending' سيرفريًا عن طريق RLS، مش من هنا. الـEdge Function
