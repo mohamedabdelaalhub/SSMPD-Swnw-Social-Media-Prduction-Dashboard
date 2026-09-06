@@ -3321,3 +3321,11 @@ Supabase Dashboard مباشرة، بدون أي اتصال بـMeta API خالص
 - **لازم**: تشغيل قسم ٤٢ من `setup.sql` في Supabase SQL Editor (عمود جديد
   + توسعة سياستين على كل من `patient_visits`/`patient_prescriptions` —
   آمن للتشغيل، ومفيش Edge Function مطلوب نشرها).
+
+
+## Content Intelligence fallback fix — 2026-09-06
+- `assets/js/workflow.js`: تخصصات بدون mapping أو بدون بيانات تاريخية خاصة بالتخصص/الهدف لم تعد تقفل مسار الوكيل؛ زراير **نسخ Brief للوكيل** و**وكيل إنشاء المحتوى** تظهر دائمًا بعد اختيار التخصص والهدف.
+- fallback brief يوسم البيانات صراحةً كـ **GENERAL ACCOUNT INSIGHTS** و**TESTING HYPOTHESIS**، ولا يدّعي أنها Winner خاصة بالتخصص.
+- لو مفيش حتى بيانات عامة موثوقة، يتم إنشاء Brief أساسي بدون اختراع أي تاريخ أداء.
+- المسار القوي الحالي V4.2 للتخصصات التي لديها بيانات خاصة لم يتغير.
+- بصمة الكاش: `workflow.js?v=57`.
