@@ -38,7 +38,8 @@
       } else {
         html += '<table class="simple"><thead><tr><th>العنوان</th><th>الحالة</th><th>آخر تحديث</th><th></th></tr></thead><tbody>';
         items.forEach(function (i) {
-          html += '<tr><td><span class="link-open" data-open="' + i.id + '">' + escapeHtml(i.title) + '</span>' + W.brandBadgeHtml(i.brand) + W.specialtyBadgeHtml(i.specialty) + '</td>' +
+          var titleOpenAttr = i.stage === "published" ? 'data-published-open="' + i.id + '"' : 'data-open="' + i.id + '"';
+          html += '<tr><td><span class="link-open" ' + titleOpenAttr + '>' + escapeHtml(i.title) + '</span>' + W.brandBadgeHtml(i.brand) + W.specialtyBadgeHtml(i.specialty) + '</td>' +
             '<td><span class="status-pill ' + stagePillClass(i.stage) + '">' + W.stageLabel(i.stage) + '</span></td>' +
             '<td>' + new Date(i.updated_at).toLocaleDateString("ar-EG") + '</td>' +
             '<td><button class="btn ghost sm" data-open="' + i.id + '">فتح</button> ' + C.commentButtonHtml(i.id, stats) + '</td></tr>';
@@ -50,6 +51,14 @@
       container.innerHTML = html;
 
       document.getElementById("new-content-btn").onclick = openCreateModal;
+      container.querySelectorAll("[data-published-open]").forEach(function (btn) {
+        btn.onclick = function () {
+          var id = btn.getAttribute("data-published-open");
+          var item = items.filter(function (x) { return x.id === id; })[0];
+          if (!item) return;
+          W.openPublishedPostOptions(item, function () { openViewModal(id); });
+        };
+      });
       container.querySelectorAll("[data-open]").forEach(function (btn) {
         btn.onclick = function () { openViewModal(btn.getAttribute("data-open")); };
       });
