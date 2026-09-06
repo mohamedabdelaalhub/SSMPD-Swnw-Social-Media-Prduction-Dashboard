@@ -26,6 +26,7 @@
     publish: ["page_manager", "approver", "general_manager", "super_admin"],
     archive: ["page_manager", "designer", "approver", "general_manager", "super_admin"],
     leads: ["reception", "customer_service", "general_manager", "super_admin"],
+    bookings: ["reception", "customer_service", "general_manager", "super_admin"],
     admin: ["super_admin"],
     metaads: ["page_manager", "approver", "general_manager", "super_admin"],
     mediabuyer: ["page_manager", "approver", "general_manager", "super_admin"]
