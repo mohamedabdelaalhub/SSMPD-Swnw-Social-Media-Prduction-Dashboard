@@ -22,3 +22,11 @@ verify_jwt = false
 # manually inside the function (see getCallerManager in
 # supabase/functions/media-buyer-pair/index.ts).
 verify_jwt = false
+
+[functions.meta-publish-process]
+# This function is called machine-to-machine every minute by pg_cron (via
+# net.http_post), not a Supabase Auth user session — so it must NOT go
+# through platform JWT verification. The function's own code rejects every
+# request whose X-Cron-Secret header doesn't match META_PUBLISH_CRON_SECRET
+# (see supabase/functions/meta-publish-process/index.ts).
+verify_jwt = false

@@ -3278,3 +3278,210 @@ create policy "prescriptions update" on public.patient_prescriptions
     or public.is_assigned_doctor_for_patient(patient_id)
   );
 -- "prescriptions delete" فاضلة زي ما هي — الطبيب ميقدرش يحذف روشتة.
+
+-- ==========================================================================
+-- قسم ٤٣ (٢٠٢٦-٠٩-٠٦): Meta Auto Publisher — نشر تلقائي حقيقي لفيسبوك/انستجرام
+-- (Facebook Page + Instagram Business — صورة واحدة بس في أول إصدار)
+-- ==========================================================================
+-- المعمارية: Postgres (pg_cron) → Edge Function (meta-publish-process) →
+-- Meta Graph API. الماك مش لازم يفضل شغّال (بعكس Media Buyer Worker) —
+-- كله سيرفر-سايد على Supabase. التوكنات أبدًا مش بتتخزن في أي جدول بيوصله
+-- الفرونت إند — Edge Function Secrets بس (زي GOOGLE_SERVICE_ACCOUNT_KEY).
+
+-- ---------- (١) bypass لـ guard_content_transition() لما الكاتب service_role ----------
+-- Edge Function الجديدة بتحدّث content_items.stage → 'published' بمفتاح
+-- service_role (بيتخطى RLS بالكامل، لكن الـtrigger ده بيتنفذ لأي كاتب —
+-- الـRLS مش هو اللي بيمنعه). service_role مفيش له auth.uid()، فـ
+-- can_manage_all_content()/has_role() بيرجعوا false دايمًا له، وكانت هتفشل
+-- بـ"انتقال مرحلة غير مسموح". السطر الجديد بس بيسمح صراحة لـauth.role()=
+-- 'service_role' (نفس مستوى الثقة اللي service_role أصلاً بيتخطى بيه RLS
+-- في كل جدول تاني بالمشروع) — باقي منطق الحارس **زي ما هو بالحرف من غير
+-- أي تغيير**.
+create or replace function public.guard_content_transition()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare me uuid; allowed boolean := false;
+begin
+  if auth.role() = 'service_role' then return new; end if;
+  if public.can_manage_all_content() then return new; end if;
+  me := public.my_admin_id();
+
+  if public.has_role('page_manager') and old.created_by = me and (
+    (old.stage = 'idea_selection' and new.stage = 'initial_approval')
+    or (old.stage = 'ready_to_publish' and new.stage = 'published')
+    or (old.stage = 'ready_to_publish' and new.stage = 'scheduled')
+    or (old.stage = 'scheduled' and new.stage = 'published')
+    or (old.stage = 'scheduled' and new.stage = 'ready_to_publish')
+    or (old.stage = 'needs_revision' and old.assigned_designer is null and new.stage = 'initial_approval')
+    or (old.stage = new.stage)
+  ) then
+    allowed := true;
+  end if;
+
+  if not allowed and public.has_role('designer') and (old.assigned_designer is null or old.assigned_designer = me) and (
+    (old.stage = 'in_design' and new.stage = 'final_approval')
+    or (old.stage = 'needs_revision' and old.assigned_designer is not null and new.stage = 'final_approval')
+    or (old.stage = new.stage)
+  ) then
+    allowed := true;
+  end if;
+
+  if not allowed and public.has_role('approver') and (
+    (old.stage = 'initial_approval' and new.stage in ('in_design','needs_revision'))
+    or (old.stage = 'final_approval' and new.stage in ('ready_to_publish','needs_revision'))
+    or (old.stage = 'ready_to_publish' and new.stage = 'published')
+    or (old.stage = 'ready_to_publish' and new.stage = 'scheduled')
+    or (old.stage = 'scheduled' and new.stage = 'published')
+    or (old.stage = 'scheduled' and new.stage = 'ready_to_publish')
+    or (old.stage = new.stage)
+  ) then
+    allowed := true;
+  end if;
+
+  if allowed then return new; end if;
+  raise exception 'انتقال مرحلة غير مسموح لدورك الحالي';
+end $$;
+
+-- ---------- (٢) meta_brand_config — mapping بس، صفر أسرار ----------
+-- لا access token هنا خالص — بس الـIDs العامة (Page ID / IG Business ID)
+-- اللي Edge Function محتاجاها تعرف تنشر فين. التوكنات نفسها Edge Function
+-- Secrets منفصلة (META_PAGE_TOKEN_SONO / META_PAGE_TOKEN_DR_DINA وهكذا).
+create table if not exists public.meta_brand_config (
+  brand                          text primary key check (brand in ('sono','dr_dina')),
+  facebook_page_id               text,
+  instagram_business_account_id  text,
+  updated_at                     timestamptz not null default now()
+);
+drop trigger if exists trg_meta_brand_config_updated on public.meta_brand_config;
+create trigger trg_meta_brand_config_updated before update on public.meta_brand_config
+  for each row execute function public.touch_updated_at();
+
+-- RLS: تفعيل بس، **مفيش أي policy خالص** — الجدول ده بيتقرا بس من Edge
+-- Function بمفتاح service_role (بيتخطى RLS تلقائيًا)، مفيش داعي الفرونت
+-- إند يعرف Page ID/IG ID أصلاً. التعبئة الأولية بتتم يدويًا من SQL Editor
+-- (insert مباشر لصفين sono/dr_dina) — مش من أي شاشة في الداشبورد.
+alter table public.meta_brand_config enable row level security;
+
+-- ---------- (٣) meta_publish_jobs ----------
+create table if not exists public.meta_publish_jobs (
+  id                      uuid primary key default gen_random_uuid(),
+  content_id              uuid not null references public.content_items(id),
+  brand                   text not null check (brand in ('sono','dr_dina')),
+  scheduled_at            timestamptz not null,
+  publish_facebook        boolean not null default false,
+  publish_instagram       boolean not null default false,
+  status                  text not null default 'pending' check (status in
+                            ('pending','processing','published','partial','failed','cancelled')),
+  facebook_post_id        text,
+  facebook_permalink      text,
+  instagram_container_id  text,
+  instagram_media_id      text,
+  instagram_permalink     text,
+  attempt_count           integer not null default 0,
+  last_attempt_at         timestamptz,
+  published_at            timestamptz,
+  error_code              text,
+  error_message           text,
+  created_by              uuid references public.admins(id),
+  created_at              timestamptz not null default now(),
+  updated_at              timestamptz not null default now(),
+  constraint meta_publish_jobs_at_least_one_platform check (publish_facebook or publish_instagram)
+);
+
+create index if not exists meta_publish_jobs_status_idx on public.meta_publish_jobs (status, scheduled_at);
+create index if not exists meta_publish_jobs_content_idx on public.meta_publish_jobs (content_id);
+
+-- Idempotency (بند ٣): مفيش أكتر من job واحد "شغّال" (pending/processing) لنفس
+-- المادة في نفس اللحظة — النشر الفعلي بيغطي المنصتين في job واحد، فمفيش داعي
+-- لـper-platform rows زي ما اقترح البرومبت، القيد ده كافي يمنع تكرار حقيقي.
+create unique index if not exists meta_publish_jobs_one_active_per_content
+  on public.meta_publish_jobs (content_id)
+  where status in ('pending','processing');
+
+drop trigger if exists trg_meta_publish_jobs_updated on public.meta_publish_jobs;
+create trigger trg_meta_publish_jobs_updated before update on public.meta_publish_jobs
+  for each row execute function public.touch_updated_at();
+
+-- ---------- (٤) RLS meta_publish_jobs ----------
+-- القراءة: نفس أدوار تاب "النشر" الحالي (page_manager/approver/
+-- general_manager/super_admin) — roles.js → TAB_ACCESS.publish.
+alter table public.meta_publish_jobs enable row level security;
+
+drop policy if exists "publish roles read meta_publish_jobs" on public.meta_publish_jobs;
+create policy "publish roles read meta_publish_jobs" on public.meta_publish_jobs
+  for select to authenticated using (
+    public.has_role('page_manager') or public.has_role('approver') or public.can_manage_all_content()
+  );
+
+-- الإنشاء: نفس الأدوار بس — job جديد لازم يتولد pending دايمًا (الوكيل مش
+-- بيقدر يفرض حالة تانية عن طريق الفرونت إند).
+drop policy if exists "publish roles insert meta_publish_jobs" on public.meta_publish_jobs;
+create policy "publish roles insert meta_publish_jobs" on public.meta_publish_jobs
+  for insert to authenticated with check (
+    (public.has_role('page_manager') or public.has_role('approver') or public.can_manage_all_content())
+    and status = 'pending'
+  );
+
+-- الإلغاء: بس لـjob لسه pending (لسه ما اتشالتش بواسطة الـscheduler)، وبس
+-- تحويلها لـcancelled — أي تحديث تاني (نتائج Meta/الحالات الأخرى) مقصور
+-- على service_role (بيتخطى RLS بالكامل، زي نفس نمط media_buyer_* بالظبط).
+drop policy if exists "publish roles cancel meta_publish_jobs" on public.meta_publish_jobs;
+create policy "publish roles cancel meta_publish_jobs" on public.meta_publish_jobs
+  for update to authenticated
+  using (
+    (public.has_role('page_manager') or public.has_role('approver') or public.can_manage_all_content())
+    and status = 'pending'
+  )
+  with check (status = 'cancelled');
+-- **مفيش أي policy DELETE خالص** — سجل محاولات النشر يفضل auditable للأبد.
+
+-- ---------- (٥) claim atomically — بيتنادى من Edge Function بمفتاح service_role ----------
+-- FOR UPDATE SKIP LOCKED يمنع نفس الـjob يتاخد مرتين لو الـscheduler اشتغل
+-- مرتين متزامنين بالغلط (تداخل تشغيلتين). SECURITY DEFINER + search_path
+-- ثابت (نفس نمط كل الدوال التانية في المشروع).
+create or replace function public.claim_due_meta_publish_jobs(p_limit int default 5)
+returns setof public.meta_publish_jobs
+language plpgsql security definer set search_path = public as $$
+begin
+  return query
+  update public.meta_publish_jobs j
+  set status = 'processing', attempt_count = j.attempt_count + 1, last_attempt_at = now()
+  where j.id in (
+    select id from public.meta_publish_jobs
+    where status = 'pending' and scheduled_at <= now()
+    order by scheduled_at asc
+    limit p_limit
+    for update skip locked
+  )
+  returning j.*;
+end $$;
+revoke all on function public.claim_due_meta_publish_jobs(int) from public;
+-- Edge Function بتنادي الدالة دي بمفتاح service_role (postgres role عندها
+-- تلقائيًا EXECUTE على أي دالة SECURITY DEFINER في public) — مفيش grant
+-- لـauthenticated عمدًا، عشان مستخدم الداشبورد العادي ميقدرش "يسرق"
+-- الـjobs بنفسه عن طريق RPC مباشر.
+
+-- ---------- (٦) pg_cron — كل دقيقة (بند ٧) ----------
+-- ⚠️ لازم يتشغّل يدويًا في Supabase SQL Editor **بعد** ما الإكستنشنز تتفعّل
+-- (Database → Extensions → pg_cron وpg_net)، ولازم تستبدل <PROJECT_REF> و
+-- <CRON_SECRET> بقيمهم الحقيقيين بنفسك وقت التشغيل — الملف ده جزء من الريبو
+-- العام، فمفيش أي سر حقيقي مكتوب هنا. <CRON_SECRET> **مش** مفتاح
+-- service_role — قيمة عشوائية جديدة تولّدها بنفسك وتحطها في Edge Function
+-- Secret اسمها META_PUBLISH_CRON_SECRET (نفس نمط MEDIA_BUYER_AGENT_TOKEN)،
+-- عشان لو حد عرف رابط الدالة بالصدفة (verify_jwt=false ليها) مايقدرش يشغّلها.
+-- القيمة دي هتتخزن في cron.job (مرئية بس لـpostgres superuser)، مش لأي
+-- مستخدم دashboard — أخف بكتير من تسريب مفتاح service_role الكامل.
+--
+-- select cron.schedule(
+--   'meta-publish-tick',
+--   '* * * * *',
+--   $cron$
+--   select net.http_post(
+--     url := 'https://<PROJECT_REF>.supabase.co/functions/v1/meta-publish-process',
+--     headers := jsonb_build_object(
+--       'X-Cron-Secret', '<CRON_SECRET>',
+--       'Content-Type', 'application/json'
+--     ),
+--     body := '{}'::jsonb
+--   );
+--   $cron$
+-- );
