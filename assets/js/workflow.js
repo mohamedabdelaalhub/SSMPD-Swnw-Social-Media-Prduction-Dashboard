@@ -788,13 +788,122 @@
     });
   }
 
-  function ciGeneralFallbackHtml(patterns, objKey) {
+  function ciGeneralFallbackHtml(patterns, objKey, fallbackMode) {
     if (!patterns.length) return "";
     var metricKey = ciMetricFor(objKey);
     var info = ciBuildPatternPool(patterns, metricKey);
-    var html = '<h4 style="font-size:12px;margin:10px 0 6px;color:var(--c-muted);">أفضل الأنماط العامة عبر الحساب (GENERAL ACCOUNT INSIGHTS — مش خاصة بالتخصص ده)</h4>';
-    info.pool.slice(0, 3).forEach(function (x) { html += ciCardHtml(x, objKey, info.confidence, "pattern"); });
+    var items = info.actionablePool.filter(function (x) { return x.aStatus.key !== "weak"; });
+    if (!items.length) items = info.pool.filter(function (x) { return x.status.key !== "weak"; });
+    if (!items.length) items = info.pool;
+    var title = fallbackMode
+      ? "أفضل الإشارات العامة عبر الحساب (GENERAL ACCOUNT INSIGHTS — فرضيات اختبار فقط، مش خاصة بالتخصص ده)"
+      : "أفضل الأنماط العامة عبر الحساب (GENERAL ACCOUNT INSIGHTS — مش خاصة بالتخصص ده)";
+    var html = '<h4 style="font-size:12px;margin:10px 0 6px;color:var(--c-muted);">' + title + '</h4>';
+    items.slice(0, 3).forEach(function (x) {
+      html += ciCardHtml(x, objKey, info.confidence, "pattern", x.actionable ? "actionable" : "perf");
+    });
     return html;
+  }
+
+  function ciCopyFallbackBrief(ctx) {
+    var brand = document.getElementById("cf-brand");
+    var generalInfo = ciBuildPatternPool(ctx.generalPatterns || [], ciMetricFor(ctx.objKey));
+    var generalItems = generalInfo.actionablePool.filter(function (x) { return x.aStatus.key !== "weak"; });
+    if (!generalItems.length) generalItems = generalInfo.pool.filter(function (x) { return x.status.key !== "weak"; });
+    if (!generalItems.length) generalItems = generalInfo.pool;
+
+    var lines = [];
+    lines.push("=== Brief للوكيل — إنشاء محتوى جديد ===");
+    lines.push("Brand: " + (brand && brand.value ? brand.value : "—"));
+    lines.push("Specialty: " + (SPECIALTIES[ctx.specialtyKey] ? SPECIALTIES[ctx.specialtyKey].label : ctx.specialtyKey));
+    lines.push("Topic/Service: " + (ctx.topicText || "—"));
+    lines.push("Advertising Objective: " + (CONTENT_OBJECTIVES[ctx.objKey] ? CONTENT_OBJECTIVES[ctx.objKey].label : ctx.objKey));
+    lines.push("Preferred Format: " + (CONTENT_FORMATS[ctx.fmtKey] ? CONTENT_FORMATS[ctx.fmtKey].label : "أي شكل"));
+    lines.push("Evidence level: Low / fallback");
+    lines.push("");
+    lines.push("DATA SCOPE: GENERAL ACCOUNT INSIGHTS");
+    lines.push("SPECIALTY-SPECIFIC HISTORICAL DATA: NOT AVAILABLE");
+    lines.push("EVIDENCE WARNING: These patterns are from the overall account and are NOT evidence that they will perform the same way for this specialty.");
+    lines.push("Use them only to generate testing hypotheses. Do not describe them as proven winners for this specialty.");
+    lines.push("");
+
+    if (generalItems.length) {
+      generalItems.slice(0, 3).forEach(function (x, idx) {
+        var p = x.raw || {};
+        lines.push("GENERAL ACCOUNT PATTERN #" + (idx + 1) + " — TESTING HYPOTHESIS");
+        if (ciIsMeaningful(p.hook_type)) lines.push("Hook: " + p.hook_type);
+        if (ciIsMeaningful(p.content_angle)) lines.push("Angle: " + p.content_angle);
+        if (ciIsMeaningful(p.creative_type)) lines.push("Format: " + p.creative_type);
+        if (ciIsMeaningful(p.cta_type)) lines.push("CTA: " + p.cta_type);
+        if (x.metric != null) lines.push(ciMetricLabel(ctx.objKey) + ": " + fmtMoneyW(x.metric));
+        lines.push("NOTE: Account-level signal only — not specialty-specific proof.");
+        lines.push("");
+      });
+    } else {
+      lines.push("No reliable historical performance data is available for this specialty/objective.");
+      lines.push("Generate 3-5 content hypotheses based on the specialty, topic, objective and format.");
+      lines.push("Do not invent historical performance evidence.");
+      lines.push("");
+    }
+
+    lines.push("من فضلك رجّعلي:");
+    lines.push("1. 3-5 أفكار محتوى جديدة");
+    lines.push("2. Hook لكل فكرة");
+    lines.push("3. الـAngle المقترح");
+    lines.push("4. الشكل المقترح (فيديو/بوست/إلخ)");
+    lines.push("5. سكريبت/نص كامل");
+    lines.push("6. كابشن للنشر");
+    lines.push("7. CTA");
+    lines.push("8. ليه كل فكرة مناسبة كفرضية اختبار مع توضيح إن الأدلة عامة وليست خاصة بالتخصص");
+    lines.push("مهم: متنسخش الإعلانات القديمة حرفيًا، ومتخترعش أرقام أداء أو ادعاءات طبية.");
+
+    var text = lines.join("\n");
+    var done = function () {
+      if (window.SSMPDToast) window.SSMPDToast.show("تم نسخ الـBrief — افتح وكيل إنشاء المحتوى", "success");
+      else alert("تم نسخ الـBrief");
+    };
+    var fail = function () {
+      if (window.SSMPDToast) window.SSMPDToast.show("تعذّر النسخ التلقائي — انسخ يدويًا", "error");
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done).catch(fail);
+    } else {
+      try {
+        var ta = document.createElement("textarea");
+        ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+        document.body.appendChild(ta); ta.select();
+        document.execCommand("copy"); document.body.removeChild(ta);
+        done();
+      } catch (e) { fail(); }
+    }
+  }
+
+  function renderCiFallback(out, data, specialtyKey, objKey, fmtKey, topicText, warningText) {
+    var objMeta = CONTENT_OBJECTIVES[objKey] ? CONTENT_OBJECTIVES[objKey].meta : null;
+    var general = data.patterns.filter(function (p) { return p.objective === objMeta && p.confidence !== "low"; });
+    var html = '<div class="empty-state" style="font-size:12px;">' + escapeHtml(warningText) + '</div>';
+    if (general.length) {
+      html += ciGeneralFallbackHtml(general, objKey, true);
+    } else {
+      html += '<div class="empty-state" style="font-size:11px;margin-top:8px;">لا توجد بيانات أداء عامة موثوقة لهذا الهدف حاليًا — الوكيل سيولّد فرضيات اختبار بدون اختراع تاريخ أداء.</div>';
+    }
+    html += '<div style="text-align:left;margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;">' +
+      '<button class="btn ghost sm" id="ci-copy-brief">نسخ Brief للوكيل</button>' +
+      '<button class="btn ghost sm" id="ci-open-agent">وكيل إنشاء المحتوى ↗</button></div>';
+    out.innerHTML = html;
+
+    var copyBtn = out.querySelector("#ci-copy-brief");
+    if (copyBtn) copyBtn.onclick = function () {
+      ciCopyFallbackBrief({
+        specialtyKey: specialtyKey,
+        objKey: objKey,
+        fmtKey: fmtKey,
+        topicText: topicText,
+        generalPatterns: general
+      });
+    };
+    var agentBtn = out.querySelector("#ci-open-agent");
+    if (agentBtn) agentBtn.onclick = function () { ciOpenAgent(); };
   }
 
   function renderCiResults(out, data, specialtyKey, objKey, fmtKey, topicText) {
@@ -803,9 +912,10 @@
     var objMeta = CONTENT_OBJECTIVES[objKey] ? CONTENT_OBJECTIVES[objKey].meta : null;
 
     if (!metaLabel) {
-      var generalNoMap = data.patterns.filter(function (p) { return p.objective === objMeta && p.confidence !== "low"; });
-      out.innerHTML = '<div class="empty-state" style="font-size:12px;">لا توجد بيانات تاريخية كافية لهذا التخصص.</div>' + ciGeneralFallbackHtml(generalNoMap, objKey);
-      out.dataset.ciBrief = "";
+      renderCiFallback(
+        out, data, specialtyKey, objKey, fmtKey, topicText,
+        "لا توجد بيانات تاريخية خاصة بهذا التخصص حاليًا. سيتم استخدام أنماط عامة من الحساب كمرجع اختبار فقط."
+      );
       return;
     }
 
@@ -815,9 +925,10 @@
     var examplesInfo = ciBuildExamplePool(data.ads, metaLabel, objMeta, objKey);
 
     if (!matched.length && !examplesInfo.pool.length) {
-      var general = data.patterns.filter(function (p) { return p.objective === objMeta && p.confidence !== "low"; });
-      out.innerHTML = '<div class="empty-state" style="font-size:12px;">لا توجد بيانات تاريخية كافية لهذا التخصص مع الهدف ده.</div>' + ciGeneralFallbackHtml(general, objKey);
-      out.dataset.ciBrief = "";
+      renderCiFallback(
+        out, data, specialtyKey, objKey, fmtKey, topicText,
+        "لا توجد بيانات تاريخية كافية لهذا التخصص مع الهدف ده. سيتم استخدام أفضل الإشارات العامة المتاحة من الحساب كفرضيات اختبار."
+      );
       return;
     }
 
