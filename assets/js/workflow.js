@@ -236,6 +236,60 @@
     };
   }
 
+  // ---------- فتح المنشور المنشور على المنصة المناسبة ----------
+  // بعد النشر التلقائي بنجمع أحدث روابط Facebook/Instagram من meta_publish_jobs.
+  // لو المنصتين موجودين بنعرض اختيار، ولو مفيش روابط Meta بنرجع لـpublished_url القديم.
+  function openPublishedPostOptions(item, onDetails) {
+    if (!item || !item.id) return;
+    window.SSMPDDb.listMetaPublishJobsForContent([item.id]).then(function (jobs) {
+      var fb = null, ig = null;
+      (jobs || []).forEach(function (j) {
+        if (!fb && j.facebook_permalink) fb = j.facebook_permalink;
+        if (!ig && j.instagram_permalink) ig = j.instagram_permalink;
+      });
+
+      var backdrop = document.createElement("div");
+      backdrop.className = "modal-backdrop";
+
+      var links = "";
+      if (fb) {
+        links += '<a class="btn" href="' + escapeAttr(fb) + '" target="_blank" rel="noopener noreferrer">فتح على Facebook ↗</a>';
+      }
+      if (ig) {
+        links += '<a class="btn" href="' + escapeAttr(ig) + '" target="_blank" rel="noopener noreferrer">فتح على Instagram ↗</a>';
+      }
+      if (!fb && !ig && item.published_url) {
+        links += '<a class="btn" href="' + escapeAttr(item.published_url) + '" target="_blank" rel="noopener noreferrer">فتح رابط المنشور ↗</a>';
+      }
+      if (!links) {
+        links = '<div style="color:var(--c-muted);font-size:12px;">مفيش رابط منشور مسجل للمادة دي لسه.</div>';
+      }
+
+      backdrop.innerHTML = '<div class="modal" style="max-width:460px;">' +
+        '<div class="modal-head"><h3>فتح المنشور</h3><button class="modal-close">×</button></div>' +
+        '<p style="margin-top:0;font-weight:700;">' + escapeHtml(item.title || "") + '</p>' +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0;">' + links + '</div>' +
+        (onDetails ? '<button class="btn ghost" data-open-content-details>فتح تفاصيل المادة</button>' : '') +
+        '</div>';
+
+      document.body.appendChild(backdrop);
+      backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
+      backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
+      var detailsBtn = backdrop.querySelector("[data-open-content-details]");
+      if (detailsBtn) detailsBtn.onclick = function () {
+        backdrop.remove();
+        onDetails();
+      };
+    }).catch(function () {
+      // fallback آمن لو استعلام jobs فشل لأي سبب
+      if (item.published_url) {
+        window.open(item.published_url, "_blank", "noopener");
+      } else if (onDetails) {
+        onDetails();
+      }
+    });
+  }
+
   // ---------- ربط المحتوى بإعلانات Meta (قسم ٣٦) — يدوي بالكامل، مفيش auto-link ----------
   // نفس صلاحية RLS لجدول content_meta_links بالظبط (page_manager/approver/can_manage_all_content)
   function canManageMetaLinks(me) {
@@ -1220,6 +1274,7 @@
     openEditContentModal: openEditContentModal,
     deleteContentItemWithConfirm: deleteContentItemWithConfirm,
     wireItemActions: wireItemActions,
+    openPublishedPostOptions: openPublishedPostOptions,
     contentIntelligencePanelHtml: contentIntelligencePanelHtml,
     wireContentIntelligence: wireContentIntelligence,
     refreshContentIntelligence: refreshContentIntelligence
