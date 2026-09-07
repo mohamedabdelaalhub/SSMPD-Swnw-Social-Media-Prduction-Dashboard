@@ -147,8 +147,8 @@
   function identifyAgentLabel(line) {
     var clean = String(line || "")
       .replace(/^\s*#{1,6}\s*/, "")
-      .replace(/^\s*[-*]\s*/, "")
       .replace(/\*\*/g, "")
+      .replace(/^\s*[-*]\s*/, "")
       .trim();
     for (var i = 0; i < AGENT_LABELS.length; i++) {
       var m = clean.match(AGENT_LABELS[i].re);
