@@ -190,6 +190,23 @@
       '<div class="field"><label>المادة دي لصفحة</label>' + brandSelectHtml("ed-brand", item.brand || "") + '</div>' +
       '<div class="field"><label>التخصص</label>' + specialtySelectHtml("ed-specialty", item.specialty || "") + '</div>' +
       '<div class="field"><label>نص المحتوى</label><textarea id="ed-body">' + escapeHtml(item.body || "") + '</textarea></div>' +
+      '<details style="margin-top:12px;"><summary style="cursor:pointer;font-weight:700;">بيانات المحتوى / الفيديو</summary><div style="margin-top:10px;">' +
+      '<div class="field"><label>الهدف الإعلاني</label>' + ciObjectiveSelectHtml("ed-objective", item.advertising_objective || "") + '</div>' +
+      '<div class="field"><label>شكل المحتوى</label>' + ciFormatSelectHtml("ed-format", item.content_format || "") + '</div>' +
+      '<div class="field"><label>الموضوع / الخدمة</label><input id="ed-topic" value="' + escapeAttr(item.topic_service || "") + '"></div>' +
+      '<div class="field"><label>Hook</label><textarea id="ed-hook">' + escapeHtml(item.hook_text || "") + '</textarea></div>' +
+      '<div class="field"><label>Angle</label><input id="ed-angle" value="' + escapeAttr(item.content_angle || "") + '"></div>' +
+      '<div class="field"><label>سكريبت / Voice-over</label><textarea id="ed-script">' + escapeHtml(item.script_text || "") + '</textarea></div>' +
+      '<div class="field"><label>كابشن النشر</label><textarea id="ed-caption">' + escapeHtml(item.caption_text || "") + '</textarea></div>' +
+      '<div class="field"><label>نوع CTA</label><input id="ed-cta-type" value="' + escapeAttr(item.cta_type || "") + '"></div>' +
+      '<div class="field"><label>نص CTA</label><input id="ed-cta-text" value="' + escapeAttr(item.cta_text || "") + '"></div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
+      '<div class="field"><label>أقل مدة (ث)</label><input id="ed-duration-min" type="number" min="0" step="1" value="' + escapeAttr(item.target_duration_min_seconds == null ? "" : item.target_duration_min_seconds) + '"></div>' +
+      '<div class="field"><label>أقصى مدة (ث)</label><input id="ed-duration-max" type="number" min="0" step="1" value="' + escapeAttr(item.target_duration_max_seconds == null ? "" : item.target_duration_max_seconds) + '"></div>' +
+      '</div>' +
+      '<div class="field"><label>Video Template</label><input id="ed-video-template" value="' + escapeAttr(item.video_template || "") + '"></div>' +
+      '<div class="field"><label>سبب الفرضية / Evidence note</label><textarea id="ed-hypothesis">' + escapeHtml(item.hypothesis_reason || "") + '</textarea></div>' +
+      '</div></details>' +
       '<div style="text-align:left;margin-top:10px;"><button class="btn" id="ed-save">حفظ التعديلات</button></div></div>';
     document.body.appendChild(backdrop);
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
@@ -200,9 +217,35 @@
       var body = document.getElementById("ed-body").value.trim();
       var brand = document.getElementById("ed-brand").value;
       var specialty = document.getElementById("ed-specialty").value;
+      var minEl = document.getElementById("ed-duration-min");
+      var maxEl = document.getElementById("ed-duration-max");
+      var durationMin = minEl && minEl.value !== "" ? parseInt(minEl.value, 10) : null;
+      var durationMax = maxEl && maxEl.value !== "" ? parseInt(maxEl.value, 10) : null;
+      if (durationMin != null && durationMax != null && durationMax < durationMin) {
+        alert("أقصى مدة لازم تكون أكبر من أو تساوي أقل مدة");
+        return;
+      }
       if (!title) { alert("اكتب عنوان"); return; }
       if (!brand) { alert("اختر المادة دي لصفحة سونو ولا د.دينا"); return; }
-      window.SSMPDDb.updateContentItem(item.id, { title: title, body: body, brand: brand, specialty: specialty || null })
+      window.SSMPDDb.updateContentItem(item.id, {
+        title: title,
+        body: body,
+        brand: brand,
+        specialty: specialty || null,
+        advertising_objective: document.getElementById("ed-objective").value || null,
+        content_format: document.getElementById("ed-format").value || null,
+        topic_service: document.getElementById("ed-topic").value.trim() || null,
+        hook_text: document.getElementById("ed-hook").value.trim() || null,
+        content_angle: document.getElementById("ed-angle").value.trim() || null,
+        script_text: document.getElementById("ed-script").value.trim() || null,
+        caption_text: document.getElementById("ed-caption").value.trim() || null,
+        cta_type: document.getElementById("ed-cta-type").value.trim() || null,
+        cta_text: document.getElementById("ed-cta-text").value.trim() || null,
+        target_duration_min_seconds: isNaN(durationMin) ? null : durationMin,
+        target_duration_max_seconds: isNaN(durationMax) ? null : durationMax,
+        video_template: document.getElementById("ed-video-template").value.trim() || null,
+        hypothesis_reason: document.getElementById("ed-hypothesis").value.trim() || null
+      })
         .then(function (updated) {
           backdrop.remove();
           if (onSaved) onSaved(updated);
@@ -476,17 +519,17 @@
     low:    { label: "محدود (Low)", cls: "draft" }
   };
 
-  function ciObjectiveSelectHtml(id) {
+  function ciObjectiveSelectHtml(id, selected) {
     var html = '<select id="' + id + '"><option value="">— اختر الهدف —</option>';
     Object.keys(CONTENT_OBJECTIVES).forEach(function (k) {
-      html += '<option value="' + k + '">' + escapeHtml(CONTENT_OBJECTIVES[k].label) + '</option>';
+      html += '<option value="' + k + '"' + (selected === k ? " selected" : "") + '>' + escapeHtml(CONTENT_OBJECTIVES[k].label) + '</option>';
     });
     return html + '</select>';
   }
-  function ciFormatSelectHtml(id) {
+  function ciFormatSelectHtml(id, selected) {
     var html = '<select id="' + id + '"><option value="">— كل الأشكال —</option>';
     Object.keys(CONTENT_FORMATS).forEach(function (k) {
-      html += '<option value="' + k + '">' + escapeHtml(CONTENT_FORMATS[k].label) + '</option>';
+      html += '<option value="' + k + '"' + (selected === k ? " selected" : "") + '>' + escapeHtml(CONTENT_FORMATS[k].label) + '</option>';
     });
     return html + '</select>';
   }
