@@ -24,8 +24,8 @@ fi
 
 security add-generic-password -U -s "$SERVICE" -a "supabase_url" -w "$PROJECT_URL" >/dev/null
 
-echo "الصق Supabase service_role key هنا."
-echo "المفتاح لن يظهر على الشاشة ولن يتم حفظه في ملف."
+echo "الصق Supabase Secret API key هنا (يبدأ عادةً بـ sb_secret_)."
+echo "المفتاح لن يظهر على الشاشة وسيُحفظ فقط في macOS Keychain."
 read -s SERVICE_KEY
 echo
 
