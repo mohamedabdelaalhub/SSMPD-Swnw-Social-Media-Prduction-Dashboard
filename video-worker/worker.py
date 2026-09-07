@@ -25,6 +25,7 @@ KEYCHAIN_KEY_ACCOUNT = "service_role_key"
 KEYCHAIN_AZURE_TTS_KEY_ACCOUNT = "azure_speech_key"
 KEYCHAIN_AZURE_TTS_REGION_ACCOUNT = "azure_speech_region"
 KEYCHAIN_AZURE_TTS_VOICE_ACCOUNT = "azure_speech_voice"
+KEYCHAIN_MEDIA_ROOT_ACCOUNT = "media_root"
 
 DEFAULT_FFMPEG = "/opt/homebrew/opt/ffmpeg-full/bin/ffmpeg"
 DEFAULT_FFPROBE = "/opt/homebrew/opt/ffmpeg-full/bin/ffprobe"
@@ -32,6 +33,8 @@ POLL_SECONDS = int(os.environ.get("SSMPD_VIDEO_POLL_SECONDS", "10"))
 WORK_ROOT = Path(os.environ.get("SSMPD_VIDEO_WORK_ROOT", str(Path.home() / "SSMPDVideoWorker" / "jobs")))
 WORKER_ID = os.environ.get("SSMPD_VIDEO_WORKER_ID", socket.gethostname())
 
+IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".heic"}
+VIDEO_EXTENSIONS = {".mp4", ".mov", ".m4v", ".webm"}
 
 class WorkerError(RuntimeError):
     pass
@@ -71,6 +74,49 @@ def azure_tts_config() -> tuple[str, str, str]:
     if bool(key) != bool(region):
         raise WorkerError("Azure Speech key and region must both be configured.")
     return key, region, voice
+
+
+def media_root() -> Path:
+    configured = os.environ.get("SSMPD_MEDIA_ROOT", "").strip() or keychain_get(KEYCHAIN_MEDIA_ROOT_ACCOUNT)
+    if configured:
+        return Path(configured).expanduser()
+    return Path.home() / "SSMPDVideoWorker" / "Media Library"
+
+
+def media_files(root: Path) -> list[Path]:
+    if not root.exists():
+        return []
+    files: list[Path] = []
+    for path in root.rglob("*"):
+        if path.is_file() and path.suffix.lower() in IMAGE_EXTENSIONS.union(VIDEO_EXTENSIONS):
+            files.append(path)
+    return sorted(files, key=lambda p: str(p).lower())
+
+
+def media_keywords(job: dict[str, Any]) -> list[str]:
+    specialty = str(job.get("specialty") or "").lower()
+    script = str(job.get("script_text") or "").lower()
+    joined = specialty + " " + script
+    words = ["medical", "doctor", "clinic", "health"]
+    if any(x in joined for x in ["مخ", "أعصاب", "اعصاب", "صداع", "brain", "neuro", "headache"]):
+        words += ["neurology", "brain", "head", "headache", "neuro", "صداع", "مخ", "اعصاب", "أعصاب"]
+    return words
+
+
+def discover_media_assets(job: dict[str, Any]) -> list[Path]:
+    root = media_root()
+    files = media_files(root)
+    if not files:
+        return []
+
+    keywords = media_keywords(job)
+
+    def score(path: Path) -> tuple[int, str]:
+        p = str(path).lower()
+        hits = sum(1 for kw in keywords if kw.lower() in p)
+        return (-hits, p)
+
+    return sorted(files, key=score)
 
 
 def api_headers(key: str, *, json_content: bool = True) -> dict[str, str]:
@@ -341,6 +387,83 @@ def filter_path(path: Path) -> str:
     return s.replace("\\", r"\\").replace(":", r"\:").replace("'", r"\'")
 
 
+def render_visual_background(ffmpeg: str, job: dict[str, Any], job_dir: Path, target: float) -> Path | None:
+    assets = discover_media_assets(job)
+    if not assets:
+        return None
+
+    scene_count = max(3, min(7, int(round(target / 4.5))))
+    overlap = 0.35
+    scene_duration = (target + overlap * (scene_count - 1)) / scene_count
+    selected = [assets[i % len(assets)] for i in range(scene_count)]
+    scene_paths: list[Path] = []
+
+    for idx, asset in enumerate(selected):
+        scene = job_dir / f"scene-{idx:02d}.mp4"
+        ext = asset.suffix.lower()
+        common_vf = (
+            "scale=1080:1920:force_original_aspect_ratio=increase,"
+            "crop=1080:1920,fps=30,format=yuv420p"
+        )
+
+        if ext in IMAGE_EXTENSIONS:
+            vf = (
+                "scale=1080:1920:force_original_aspect_ratio=increase,"
+                "crop=1080:1920,"
+                "zoompan=z='min(zoom+0.0007,1.06)':d=1:s=1080x1920:fps=30,"
+                "format=yuv420p"
+            )
+            cmd = [
+                ffmpeg, "-y", "-loop", "1", "-t", f"{scene_duration:.3f}",
+                "-i", str(asset), "-vf", vf, "-an",
+                "-c:v", "libx264", "-preset", "veryfast", "-crf", "23",
+                "-pix_fmt", "yuv420p", str(scene),
+            ]
+        else:
+            cmd = [
+                ffmpeg, "-y", "-stream_loop", "-1", "-i", str(asset),
+                "-t", f"{scene_duration:.3f}", "-vf", common_vf, "-an",
+                "-c:v", "libx264", "-preset", "veryfast", "-crf", "23",
+                "-pix_fmt", "yuv420p", str(scene),
+            ]
+
+        p = run(cmd, check=False)
+        if p.returncode != 0 or not scene.exists():
+            raise WorkerError("Scene render failed for " + asset.name + ": " + p.stderr[-1200:])
+        scene_paths.append(scene)
+
+    if len(scene_paths) == 1:
+        return scene_paths[0]
+
+    background = job_dir / "background.mp4"
+    cmd: list[str] = [ffmpeg, "-y"]
+    for scene in scene_paths:
+        cmd += ["-i", str(scene)]
+
+    filters: list[str] = []
+    previous = "0:v"
+    for idx in range(1, len(scene_paths)):
+        out_label = f"vx{idx}"
+        offset = idx * (scene_duration - overlap)
+        filters.append(
+            f"[{previous}][{idx}:v]xfade=transition=fade:duration={overlap:.3f}:offset={offset:.3f}[{out_label}]"
+        )
+        previous = out_label
+
+    cmd += [
+        "-filter_complex", ";".join(filters),
+        "-map", f"[{previous}]",
+        "-an", "-t", f"{target:.3f}",
+        "-c:v", "libx264", "-preset", "veryfast", "-crf", "22",
+        "-pix_fmt", "yuv420p", str(background),
+    ]
+
+    p = run(cmd, check=False)
+    if p.returncode != 0 or not background.exists():
+        raise WorkerError("Visual background render failed: " + p.stderr[-1500:])
+    return background
+
+
 def render(job: dict[str, Any], job_dir: Path) -> tuple[Path, str]:
     ffmpeg, ffprobe = ffmpeg_paths()
     script = str(job.get("script_text") or "").strip()
@@ -366,12 +489,16 @@ def render(job: dict[str, Any], job_dir: Path) -> tuple[Path, str]:
     out = job_dir / "output.mp4"
     ass_filter = "ass=filename='" + filter_path(ass) + "'"
 
-    cmd = [
-        ffmpeg, "-y",
-        "-f", "lavfi",
-        "-i", f"color=c=0x102A43:s=1080x1920:r=30:d={target:.3f}",
-        "-i", str(voice_path),
-    ]
+    visual_background = render_visual_background(ffmpeg, job, job_dir, target)
+    if visual_background:
+        cmd = [ffmpeg, "-y", "-i", str(visual_background), "-i", str(voice_path)]
+    else:
+        cmd = [
+            ffmpeg, "-y",
+            "-f", "lavfi",
+            "-i", f"color=c=0x102A43:s=1080x1920:r=30:d={target:.3f}",
+            "-i", str(voice_path),
+        ]
 
     if speed > 1.0001:
         cmd += [
@@ -478,6 +605,10 @@ def check_environment() -> int:
     except Exception as e:
         ok = False
         print("Azure TTS: FAIL -", e)
+
+    root = media_root()
+    print("Media library:", root)
+    print("Visual assets found:", len(media_files(root)))
 
     return 0 if ok else 1
 
