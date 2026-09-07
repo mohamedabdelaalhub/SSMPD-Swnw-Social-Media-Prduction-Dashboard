@@ -902,7 +902,60 @@
     return html;
   }
 
-  function ciCopyFallbackBrief(ctx) {
+  function ciAppendAgentOutputContract(lines, fmtKey) {
+    lines.push("");
+    lines.push("=== OUTPUT CONTRACT — MANDATORY ===");
+    lines.push("Generate 3-5 ideas. EVERY idea must contain ALL required fields below. Do not omit a field.");
+    lines.push("");
+    lines.push("REQUIRED FIELDS FOR EVERY IDEA:");
+    lines.push("1. title — short publishable title");
+    lines.push("2. idea — one concise paragraph describing the concept");
+    lines.push("3. hook — one strong opening sentence only");
+    lines.push("4. angle — concise strategic angle");
+    lines.push("5. format — exactly one of: video, image_post, link_post");
+    lines.push("6. script — mandatory for video; pure spoken Voice-over text only, no labels or directions");
+    lines.push("7. caption — mandatory, publish-ready, and not a copy of the script");
+    lines.push("8. cta_type — mandatory");
+    lines.push("9. cta_text — mandatory and written exactly as it should appear/publish");
+    lines.push("10. duration_min_seconds / duration_max_seconds — mandatory numeric range for video; null otherwise");
+    lines.push("11. video_template — mandatory for video; choose the closest of medical_educational, doctor_talking, quick_tips");
+    lines.push("12. hypothesis_reason — mandatory; explain why this is a useful test given the evidence level");
+    lines.push("");
+    lines.push("QUALITY RULES:");
+    lines.push("- Never leave caption, CTA, hook, angle, or hypothesis_reason blank.");
+    lines.push("- For video, never leave script or duration blank.");
+    lines.push("- The script must be natural spoken Arabic suitable for the requested duration. Do not include headings such as Hook/Angle/CTA inside the script.");
+    lines.push("- The caption must be ready to publish, concise, medically responsible, and should complement rather than repeat the script verbatim.");
+    lines.push("- CTA must match the creative purpose and medical safety. If the content describes urgent/red-flag symptoms, patient safety overrides Sales: use an emergency/safety CTA, never a booking CTA.");
+    lines.push("- If the objective is Sales/Messages but a booking CTA would be medically inappropriate, choose the safe CTA and explain that in hypothesis_reason.");
+    lines.push("- Do not invent prices, offers, contact details, doctor credentials, benchmarks, or medical claims not supplied by the Brief or approved business knowledge.");
+    lines.push("- Do not use fearmongering, guaranteed outcomes, or diagnosis-by-content language.");
+    lines.push("- Keep evidence language calibrated: Medium/Low = hypothesis/test, not proven winner.");
+    lines.push("- No Markdown code fences inside field values. No 'svg' labels. No placeholder text.");
+    lines.push("");
+    lines.push("CTA TYPES:");
+    lines.push('Use one of: "save_share", "whatsapp", "book", "message", "call", "learn_more", "comment", "emergency_action", "custom".');
+    lines.push("");
+    lines.push("SELF-CHECK BEFORE FINAL ANSWER:");
+    lines.push("Before sending the answer, verify every idea has all mandatory fields. If any required field is missing or empty, fix it before you answer.");
+    lines.push("");
+    lines.push("HUMAN-READABLE OUTPUT:");
+    lines.push("For each idea, show: Title, Idea, Hook, Angle, Format, Script, Caption, CTA Type, CTA Text, Duration, Video Template, Hypothesis Reason.");
+    lines.push("");
+    lines.push("IMPORTANT FOR DASHBOARD IMPORT:");
+    lines.push("After the human-readable section, add ONE structured block at the very end and nothing after it:");
+    lines.push("SSMPD_STRUCTURED_JSON");
+    lines.push("\`\`\`json");
+    lines.push('{"ideas":[{"number":1,"title":"","idea":"","hook":"","angle":"","format":"video","script":"","caption":"","cta_type":"save_share","cta_text":"","duration_min_seconds":25,"duration_max_seconds":30,"video_template":"medical_educational","hypothesis_reason":""}]}');
+    lines.push("\`\`\`");
+    lines.push("SSMPD_STRUCTURED_JSON_END");
+    lines.push("Repeat one object per idea. Use exactly these keys.");
+    lines.push('format must be exactly one of: "video", "image_post", "link_post".');
+    lines.push("For non-video ideas set script, duration_min_seconds, duration_max_seconds, and video_template to null where not applicable.");
+    lines.push("All JSON values must be plain text with valid JSON escaping.");
+  }
+
+function ciCopyFallbackBrief(ctx) {
     var brand = document.getElementById("cf-brand");
     var generalInfo = ciBuildPatternPool(ctx.generalPatterns || [], ciMetricFor(ctx.objKey));
     var generalItems = generalInfo.actionablePool.filter(function (x) { return x.aStatus.key !== "weak"; });
@@ -943,29 +996,7 @@
       lines.push("");
     }
 
-    lines.push("من فضلك رجّعلي:");
-    lines.push("1. 3-5 أفكار محتوى جديدة");
-    lines.push("2. Hook لكل فكرة");
-    lines.push("3. الـAngle المقترح");
-    lines.push("4. الشكل المقترح (فيديو/بوست/إلخ)");
-    lines.push("5. سكريبت/نص كامل");
-    lines.push("6. كابشن للنشر");
-    lines.push("7. CTA");
-    lines.push("8. ليه كل فكرة مناسبة كفرضية اختبار مع توضيح إن الأدلة عامة وليست خاصة بالتخصص");
-    lines.push("مهم: متنسخش الإعلانات القديمة حرفيًا، ومتخترعش أرقام أداء أو ادعاءات طبية.");
-    lines.push("");
-    lines.push("IMPORTANT FOR DASHBOARD IMPORT:");
-    lines.push("بعد الجزء المقروء للبشر، أضف في آخر الرد كتلة واحدة فقط بالصيغة التالية حرفيًا، من غير أي شرح بعدها:");
-    lines.push("SSMPD_STRUCTURED_JSON");
-    lines.push("\`\`\`json");
-    lines.push('{"ideas":[{"number":1,"title":"","idea":"","hook":"","angle":"","format":"video","script":"","caption":"","cta_type":"save_share","cta_text":"","duration_min_seconds":25,"duration_max_seconds":30,"video_template":"medical_educational","hypothesis_reason":""}]}');
-    lines.push("\`\`\`");
-    lines.push("SSMPD_STRUCTURED_JSON_END");
-    lines.push("كرّر object لكل فكرة من 3-5 أفكار. استخدم نفس المفاتيح بالضبط.");
-    lines.push('format يجب أن يكون واحدًا من: "video", "image_post", "link_post".');
-    lines.push('cta_type استخدم واحدًا من: "save_share", "whatsapp", "book", "message", "call", "custom".');
-    lines.push("duration_min_seconds و duration_max_seconds أرقام فقط للفيديو، أو null لو غير مناسب.");
-    lines.push("كل قيم JSON تكون plain text بدون Markdown وبدون code fences داخل القيم.");
+    ciAppendAgentOutputContract(lines, ctx.fmtKey);
 
 
     var text = lines.join("\n");
@@ -1239,29 +1270,7 @@
     lines.push("Do not invent benchmarks, contact details, doctor names, medical service claims, offers, or historical performance facts that are not supplied by this Brief or already part of the Content Agent's approved business knowledge.");
     lines.push("");
     lines.push("استخدم النتائج كمرجع استراتيجي وليس كنص للنسخ. هذا نمط استراتيجي وليس نص للنسخ الحرفي.");
-    lines.push("من فضلك رجّعلي:");
-    lines.push("1. 3-5 أفكار محتوى جديدة");
-    lines.push("2. Hook لكل فكرة");
-    lines.push("3. الـAngle المقترح");
-    lines.push("4. الشكل المقترح (فيديو/بوست/إلخ)");
-    lines.push("5. سكريبت/نص كامل");
-    lines.push("6. كابشن للنشر");
-    lines.push("7. CTA");
-    lines.push("8. ليه كل فكرة مناسبة للبيانات التاريخية دي");
-    lines.push("مهم: متنسخش الإعلانات القديمة حرفيًا — استخدمها كمرجع بس.");
-    lines.push("");
-    lines.push("IMPORTANT FOR DASHBOARD IMPORT:");
-    lines.push("بعد الجزء المقروء للبشر، أضف في آخر الرد كتلة واحدة فقط بالصيغة التالية حرفيًا، من غير أي شرح بعدها:");
-    lines.push("SSMPD_STRUCTURED_JSON");
-    lines.push("\`\`\`json");
-    lines.push('{"ideas":[{"number":1,"title":"","idea":"","hook":"","angle":"","format":"video","script":"","caption":"","cta_type":"save_share","cta_text":"","duration_min_seconds":25,"duration_max_seconds":30,"video_template":"medical_educational","hypothesis_reason":""}]}');
-    lines.push("\`\`\`");
-    lines.push("SSMPD_STRUCTURED_JSON_END");
-    lines.push("كرّر object لكل فكرة من 3-5 أفكار. استخدم نفس المفاتيح بالضبط.");
-    lines.push('format يجب أن يكون واحدًا من: "video", "image_post", "link_post".');
-    lines.push('cta_type استخدم واحدًا من: "save_share", "whatsapp", "book", "message", "call", "custom".');
-    lines.push("duration_min_seconds و duration_max_seconds أرقام فقط للفيديو، أو null لو غير مناسب.");
-    lines.push("كل قيم JSON تكون plain text بدون Markdown وبدون code fences داخل القيم.");
+    ciAppendAgentOutputContract(lines, ctx.fmtKey);
 
 
     var text = lines.join("\n");
