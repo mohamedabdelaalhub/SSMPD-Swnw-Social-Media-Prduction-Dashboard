@@ -447,6 +447,9 @@ function openAgentImportModal(parentBackdrop) {
 
         if (latest.status === "ready" && latest.output_video_url) {
           html += '<a class="btn sm" target="_blank" href="' + escapeHtml(latest.output_video_url) + '">▶️ فتح الفيديو النهائي</a>';
+          if (!missing.length) {
+            html += ' <button class="btn ghost sm" id="create-video-job-btn">🔁 إعادة إنتاج الفيديو</button>';
+          }
         } else if (latest.status === "failed") {
           html += '<div class="err-msg">فشل الإنتاج' +
             (latest.error_message ? ': ' + escapeHtml(latest.error_message) : '') + '</div>';
