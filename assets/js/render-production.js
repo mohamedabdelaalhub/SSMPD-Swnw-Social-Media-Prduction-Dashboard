@@ -186,6 +186,7 @@
   function inferCtaType(cta) {
     var s = String(cta || "").toLowerCase();
     if (!s) return "";
+    if (/طوارئ|الطوارئ|توج.?ه.*طوارئ|اذهب.*طوارئ|emergency|urgent/.test(s)) return "emergency_action";
     if (/احفظ|احتفظ|شارك|share|save/.test(s)) return "save_share";
     if (/واتساب|whatsapp/.test(s)) return "whatsapp";
     if (/احجز|حجز|book/.test(s)) return "book";
@@ -277,7 +278,27 @@
     return out.filter(function (x) { return x.title || x.idea || x.hook || x.script; });
   }
 
-  function openAgentImportModal(parentBackdrop) {
+  function importMissingFields(h) {
+    var missing = [];
+    var selectedFmtEl = document.getElementById("ci-format");
+    var effectiveFormat = h.formatKey || (selectedFmtEl ? selectedFmtEl.value : "");
+    if (!h.title) missing.push("Title");
+    if (!h.idea) missing.push("Idea");
+    if (!h.hook) missing.push("Hook");
+    if (!h.angle) missing.push("Angle");
+    if (!effectiveFormat) missing.push("Format");
+    if (!h.caption) missing.push("Caption");
+    if (!h.cta) missing.push("CTA");
+    if (!h.why) missing.push("Hypothesis Reason");
+    if (effectiveFormat === "video") {
+      if (!h.script) missing.push("Script");
+      if (h.durationMin == null || h.durationMax == null) missing.push("Duration");
+      if (!h.videoTemplate) missing.push("Video Template");
+    }
+    return { missing: missing, effectiveFormat: effectiveFormat };
+  }
+
+function openAgentImportModal(parentBackdrop) {
     var importBackdrop = document.createElement("div");
     importBackdrop.className = "modal-backdrop";
     importBackdrop.style.zIndex = "9999";
@@ -303,14 +324,11 @@
       }
 
       slot.innerHTML = hypotheses.map(function (h, i) {
-        var missing = [];
-        if (!h.hook) missing.push("Hook");
-        if (h.formatKey === "video" && !h.script) missing.push("Script");
-        if (!h.caption) missing.push("Caption");
-        if (!h.cta) missing.push("CTA");
+        var validation = importMissingFields(h);
+        var missing = validation.missing;
         var status = missing.length
-          ? '<div style="font-size:11px;color:var(--c-negative);margin:6px 0;">⚠️ ناقص: ' + escapeHtml(missing.join("، ")) + '</div>'
-          : '<div style="font-size:11px;color:var(--c-positive,#2f7d5c);margin:6px 0;">✅ الحقول الأساسية مكتملة</div>';
+          ? '<div style="font-size:11px;color:var(--c-negative);margin:6px 0;">⚠️ ناقص: ' + escapeHtml(missing.join("، ")) + ' — لا يمكن اعتماد الفكرة قبل اكتمالها.</div>'
+          : '<div style="font-size:11px;color:var(--c-positive,#2f7d5c);margin:6px 0;">✅ كل الحقول المطلوبة مكتملة</div>';
         return '<div class="section" style="margin-bottom:10px;">' +
           '<h4 style="margin:0 0 6px;">فكرة ' + escapeHtml(h.number) + ': ' + escapeHtml(h.title) + '</h4>' +
           (h.hook ? '<div style="font-size:12px;margin-bottom:4px;"><b>Hook:</b> ' + escapeHtml(h.hook) + '</div>' : '') +
@@ -321,7 +339,9 @@
           (h.format ? '<div style="font-size:12px;margin-bottom:4px;"><b>الشكل:</b> ' + escapeHtml(h.format) + '</div>' : '') +
           ((h.durationMin != null || h.durationMax != null) ? '<div style="font-size:12px;margin-bottom:4px;"><b>المدة:</b> ' + escapeHtml((h.durationMin == null ? "—" : h.durationMin) + "–" + (h.durationMax == null ? "—" : h.durationMax) + " ث") + '</div>' : '') +
           status +
-          '<button class="btn sm" data-agent-pick="' + i + '">✅ اعتماد هذه الفكرة</button>' +
+          (missing.length
+            ? '<button class="btn ghost sm" type="button" disabled style="opacity:.55;cursor:not-allowed;">⚠️ الفكرة غير مكتملة</button>'
+            : '<button class="btn sm" data-agent-pick="' + i + '">✅ اعتماد هذه الفكرة</button>') +
           '</div>';
       }).join("");
 
