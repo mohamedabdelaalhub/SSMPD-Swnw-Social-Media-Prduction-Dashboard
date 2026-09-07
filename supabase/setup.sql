@@ -3781,3 +3781,66 @@ begin
   end if;
 end $$;
 
+-- ============================================================
+-- 47) Mac Video Worker — atomic claim + public marketing-video output bucket
+-- ============================================================
+-- العامل المحلي يستخدم service_role فقط. لا نمنح authenticated حق تنفيذ
+-- claim_next_video_job ولا الكتابة المباشرة على video_jobs.
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'video-outputs',
+  'video-outputs',
+  true,
+  157286400,
+  array['video/mp4']
+)
+on conflict (id) do update
+set public = excluded.public,
+    file_size_limit = excluded.file_size_limit,
+    allowed_mime_types = excluded.allowed_mime_types;
+
+create or replace function public.claim_next_video_job(p_worker_id text)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  claimed public.video_jobs%rowtype;
+begin
+  if coalesce(auth.role(), '') <> 'service_role' then
+    raise exception 'service_role required';
+  end if;
+
+  with next_job as (
+    select id
+    from public.video_jobs
+    where status = 'pending'
+    order by created_at asc
+    for update skip locked
+    limit 1
+  )
+  update public.video_jobs v
+  set status = 'preparing',
+      worker_id = nullif(btrim(p_worker_id), ''),
+      attempt_count = v.attempt_count + 1,
+      error_message = null,
+      render_started_at = coalesce(v.render_started_at, now())
+  from next_job
+  where v.id = next_job.id
+  returning v.* into claimed;
+
+  if not found then
+    return null;
+  end if;
+
+  return to_jsonb(claimed);
+end;
+$$;
+
+revoke all on function public.claim_next_video_job(text) from public;
+revoke all on function public.claim_next_video_job(text) from anon;
+revoke all on function public.claim_next_video_job(text) from authenticated;
+grant execute on function public.claim_next_video_job(text) to service_role;
+
