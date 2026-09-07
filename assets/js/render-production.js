@@ -17,6 +17,62 @@
     return "approval";
   }
 
+  function structuredFieldsHtml() {
+    return '<details style="margin-top:12px;"><summary style="cursor:pointer;font-weight:700;">بيانات التنفيذ / الفيديو (اختياري)</summary>' +
+      '<div style="margin-top:10px;">' +
+      '<div class="field"><label>Hook</label><textarea id="cf-hook" placeholder="الجملة الافتتاحية"></textarea></div>' +
+      '<div class="field"><label>Angle</label><input id="cf-angle" placeholder="مثال: Medical authority + patient safety"></div>' +
+      '<div class="field"><label>سكريبت / Voice-over</label><textarea id="cf-script" placeholder="النص اللي هيتقال في الفيديو"></textarea></div>' +
+      '<div class="field"><label>كابشن النشر</label><textarea id="cf-caption" placeholder="Caption"></textarea></div>' +
+      '<div class="field"><label>نوع CTA</label><input id="cf-cta-type" placeholder="مثال: save_share / whatsapp / book"></div>' +
+      '<div class="field"><label>نص CTA</label><input id="cf-cta-text" placeholder="الجملة النهائية"></div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
+        '<div class="field"><label>أقل مدة (ث)</label><input id="cf-duration-min" type="number" min="0" step="1"></div>' +
+        '<div class="field"><label>أقصى مدة (ث)</label><input id="cf-duration-max" type="number" min="0" step="1"></div>' +
+      '</div>' +
+      '<div class="field"><label>Video Template</label><input id="cf-video-template" placeholder="مثال: medical_educational"></div>' +
+      '<div class="field"><label>سبب الفرضية / Evidence note</label><textarea id="cf-hypothesis" placeholder="ليه الفكرة تستحق الاختبار"></textarea></div>' +
+      '<div class="field"><label>الناتج الخام من الوكيل (اختياري)</label><textarea id="cf-agent-raw" placeholder="احتفظ بالرد الكامل للرجوع إليه لاحقًا"></textarea></div>' +
+      '</div></details>';
+  }
+
+  function intOrNull(id) {
+    var el = document.getElementById(id);
+    if (!el || el.value === "") return null;
+    var n = parseInt(el.value, 10);
+    return isNaN(n) ? null : n;
+  }
+
+  function valueOrNull(id) {
+    var el = document.getElementById(id);
+    if (!el) return null;
+    var v = String(el.value || "").trim();
+    return v || null;
+  }
+
+  function structuredDetailsHtml(item) {
+    var rows = [];
+    function add(label, value) {
+      if (value == null || value === "") return;
+      rows.push('<div style="margin-bottom:8px;"><b>' + escapeHtml(label) + ':</b><div style="white-space:pre-wrap;">' + escapeHtml(value) + '</div></div>');
+    }
+    add("Hook", item.hook_text);
+    add("Angle", item.content_angle);
+    add("Script / Voice-over", item.script_text);
+    add("Caption", item.caption_text);
+    add("CTA Type", item.cta_type);
+    add("CTA", item.cta_text);
+    if (item.target_duration_min_seconds != null || item.target_duration_max_seconds != null) {
+      var d = (item.target_duration_min_seconds != null ? item.target_duration_min_seconds : "—") +
+        "–" + (item.target_duration_max_seconds != null ? item.target_duration_max_seconds : "—") + " ثانية";
+      add("المدة المستهدفة", d);
+    }
+    add("Video Template", item.video_template);
+    add("سبب الفرضية", item.hypothesis_reason);
+    if (!rows.length) return "";
+    return '<details style="margin:12px 0;"><summary style="cursor:pointer;font-weight:700;">بيانات التنفيذ المنظمة</summary><div style="margin-top:10px;">' + rows.join("") + '</div></details>';
+  }
+
   function render(container) {
     var me = window.SSMPDAuth.currentAdmin;
     container.innerHTML = '<div class="loading">بيحمّل…</div>';
@@ -80,6 +136,7 @@
       '<div class="field"><label>التخصص</label>' + W.specialtySelectHtml("cf-specialty", "") + '</div>' +
       '<div class="field"><label>نص المحتوى</label><textarea id="cf-body" placeholder="اكتب الفكرة والنص..."></textarea></div>' +
       W.contentIntelligencePanelHtml() +
+      structuredFieldsHtml() +
       '<div style="text-align:left;margin-top:10px;"><button class="btn" id="cf-submit">إرسال للاعتماد الأولي</button> ' +
       '<button class="btn ghost" id="cf-draft">حفظ كمسودة</button></div></div>';
     document.body.appendChild(backdrop);
@@ -96,10 +153,40 @@
       var body = document.getElementById("cf-body").value.trim();
       var brand = document.getElementById("cf-brand").value;
       var specialty = document.getElementById("cf-specialty").value;
+      var advertisingObjective = valueOrNull("ci-objective");
+      var contentFormat = valueOrNull("ci-format");
+      var topicService = valueOrNull("ci-topic");
+      var durationMin = intOrNull("cf-duration-min");
+      var durationMax = intOrNull("cf-duration-max");
+      if (durationMin != null && durationMax != null && durationMax < durationMin) {
+        alert("أقصى مدة لازم تكون أكبر من أو تساوي أقل مدة");
+        return;
+      }
       if (!title) { alert("اكتب عنوان الأول"); return; }
       if (!brand) { alert("اختر المادة دي لصفحة سونو ولا د.دينا"); return; }
       var me = window.SSMPDAuth.currentAdmin;
-      window.SSMPDDb.createContentItem({ title: title, body: body, stage: stage, created_by: me.id, brand: brand, specialty: specialty || null })
+      window.SSMPDDb.createContentItem({
+        title: title,
+        body: body,
+        stage: stage,
+        created_by: me.id,
+        brand: brand,
+        specialty: specialty || null,
+        advertising_objective: advertisingObjective,
+        content_format: contentFormat,
+        topic_service: topicService,
+        hook_text: valueOrNull("cf-hook"),
+        content_angle: valueOrNull("cf-angle"),
+        script_text: valueOrNull("cf-script"),
+        caption_text: valueOrNull("cf-caption"),
+        cta_type: valueOrNull("cf-cta-type"),
+        cta_text: valueOrNull("cf-cta-text"),
+        target_duration_min_seconds: durationMin,
+        target_duration_max_seconds: durationMax,
+        video_template: valueOrNull("cf-video-template"),
+        hypothesis_reason: valueOrNull("cf-hypothesis"),
+        agent_raw_output: valueOrNull("cf-agent-raw")
+      })
         .then(function (row) {
           window.SSMPDDrive.logIdea(row.id, title).catch(function () {});
           window.SSMPDDb.logUsageActivity(me.id, "إنشاء مادة محتوى", title).catch(function () {});
@@ -122,6 +209,7 @@
         '<button class="modal-close">×</button></div>' +
         '<div class="status-pill ' + stagePillClass(item.stage) + '" style="margin-bottom:12px;">' + W.stageLabel(item.stage) + '</div>' +
         '<p style="white-space:pre-wrap;">' + escapeHtml(item.body || "") + '</p>' +
+        structuredDetailsHtml(item) +
         (item.design_file_url ? '<p><a href="' + item.design_file_url + '" target="_blank" class="btn ghost sm">فتح ملف التصميم</a></p>' : '') +
         '<div style="margin:10px 0;">' + W.itemActionsHtml(item, me) + '</div>' +
         W.metaLinksSectionHtml(item) +

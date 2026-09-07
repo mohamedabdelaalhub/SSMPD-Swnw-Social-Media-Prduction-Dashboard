@@ -3552,3 +3552,61 @@ begin
     alter publication supabase_realtime add table public.customer_bookings;
   end if;
 end $$;
+
+
+-- ============================================================
+-- 45) Structured Content Production Fields — AI Agent → Video-ready content
+-- ============================================================
+-- يحافظ على body كالفكرة/الوصف العام، ويخزن عناصر التنفيذ والتحليل بشكل
+-- منفصل عشان وكيل الفيديو وMeta analytics ما يضطروش يعيدوا parsing للنص.
+-- الإضافة backward-compatible: كل الأعمدة nullable ومفيش أي تغيير في
+-- stage/permissions الحالية.
+
+alter table public.content_items add column if not exists advertising_objective text;
+alter table public.content_items add column if not exists content_format text;
+alter table public.content_items add column if not exists topic_service text;
+alter table public.content_items add column if not exists hook_text text;
+alter table public.content_items add column if not exists content_angle text;
+alter table public.content_items add column if not exists script_text text;
+alter table public.content_items add column if not exists caption_text text;
+alter table public.content_items add column if not exists cta_type text;
+alter table public.content_items add column if not exists cta_text text;
+alter table public.content_items add column if not exists target_duration_min_seconds integer;
+alter table public.content_items add column if not exists target_duration_max_seconds integer;
+alter table public.content_items add column if not exists video_template text;
+alter table public.content_items add column if not exists hypothesis_reason text;
+alter table public.content_items add column if not exists agent_raw_output text;
+
+alter table public.content_items drop constraint if exists content_items_advertising_objective_check;
+alter table public.content_items add constraint content_items_advertising_objective_check
+  check (
+    advertising_objective is null or advertising_objective in (
+      'messages','lead_generation','engagement','reach','sales','link_clicks','page_likes'
+    )
+  );
+
+alter table public.content_items drop constraint if exists content_items_content_format_check;
+alter table public.content_items add constraint content_items_content_format_check
+  check (
+    content_format is null or content_format in ('video','image_post','link_post')
+  );
+
+alter table public.content_items drop constraint if exists content_items_duration_min_check;
+alter table public.content_items add constraint content_items_duration_min_check
+  check (target_duration_min_seconds is null or target_duration_min_seconds >= 0);
+
+alter table public.content_items drop constraint if exists content_items_duration_max_check;
+alter table public.content_items add constraint content_items_duration_max_check
+  check (
+    target_duration_max_seconds is null
+    or target_duration_max_seconds >= 0
+    and (
+      target_duration_min_seconds is null
+      or target_duration_max_seconds >= target_duration_min_seconds
+    )
+  );
+
+create index if not exists content_items_advertising_objective_idx
+  on public.content_items (advertising_objective);
+create index if not exists content_items_content_format_idx
+  on public.content_items (content_format);
