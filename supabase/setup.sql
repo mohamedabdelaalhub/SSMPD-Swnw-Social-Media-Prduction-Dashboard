@@ -3610,3 +3610,174 @@ create index if not exists content_items_advertising_objective_idx
   on public.content_items (advertising_objective);
 create index if not exists content_items_content_format_idx
   on public.content_items (content_format);
+
+-- ============================================================
+-- 46) Video Jobs — Content Draft → Mac Video Worker
+-- ============================================================
+-- كل Job يحتفظ Snapshot من بيانات المحتوى وقت إنشائه حتى يظل الـrender
+-- ثابتًا لو تم تعديل المادة لاحقًا. عامل الفيديو على الماك سيكتب النتائج
+-- لاحقًا باستخدام service_role؛ مستخدمو الداشبورد ينشئون الـJob فقط عبر RPC.
+
+create table if not exists public.video_jobs (
+  id                    uuid primary key default gen_random_uuid(),
+  content_id            uuid not null references public.content_items(id) on delete cascade,
+  created_by            uuid not null references public.admins(id),
+
+  status                text not null default 'pending'
+                        check (status in (
+                          'pending','preparing','rendering','uploading',
+                          'ready','failed','cancelled'
+                        )),
+
+  -- Snapshot من المادة وقت إنشاء الـJob
+  title                 text not null,
+  brand                 text,
+  specialty             text,
+  script_text           text not null,
+  caption_text          text,
+  cta_type              text,
+  cta_text              text,
+  duration_min_seconds  integer not null check (duration_min_seconds >= 0),
+  duration_max_seconds  integer not null check (
+                          duration_max_seconds >= duration_min_seconds
+                        ),
+  video_template        text not null
+                        check (video_template in (
+                          'medical_educational','doctor_talking','quick_tips'
+                        )),
+
+  -- حقول التنفيذ التي سيملؤها Video Worker لاحقًا
+  scene_plan            jsonb not null default '[]'::jsonb,
+  input_assets          jsonb not null default '[]'::jsonb,
+  voiceover_url         text,
+  subtitles_url         text,
+  output_video_url      text,
+  cover_url             text,
+  worker_id             text,
+  attempt_count         integer not null default 0 check (attempt_count >= 0),
+  error_message         text,
+  render_started_at     timestamptz,
+  render_finished_at    timestamptz,
+
+  created_at            timestamptz not null default now(),
+  updated_at            timestamptz not null default now()
+);
+
+create index if not exists video_jobs_content_idx
+  on public.video_jobs (content_id, created_at desc);
+create index if not exists video_jobs_status_idx
+  on public.video_jobs (status, created_at);
+
+drop trigger if exists video_jobs_touch on public.video_jobs;
+create trigger video_jobs_touch before update on public.video_jobs
+  for each row execute function public.touch_updated_at();
+
+alter table public.video_jobs enable row level security;
+
+drop policy if exists "active admins read video jobs" on public.video_jobs;
+create policy "active admins read video jobs"
+  on public.video_jobs for select to authenticated
+  using (public.my_admin_id() is not null);
+
+-- لا توجد سياسة INSERT/UPDATE مباشرة للمستخدمين.
+-- الإنشاء يتم عبر create_video_job() للتحقق من اكتمال الفيديو وملكية المادة.
+grant select on public.video_jobs to authenticated;
+
+create or replace function public.create_video_job(p_content_id uuid)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  me uuid;
+  r text;
+  item public.content_items%rowtype;
+  existing_job public.video_jobs%rowtype;
+  created_job public.video_jobs%rowtype;
+begin
+  me := public.my_admin_id();
+  r := public.my_role();
+
+  if me is null then
+    raise exception 'غير مسموح: المستخدم غير مسجل كموظف نشط';
+  end if;
+
+  if r not in ('page_manager','general_manager','super_admin') then
+    raise exception 'غير مسموح بإنشاء Video Job لهذا الدور';
+  end if;
+
+  select * into item
+  from public.content_items
+  where id = p_content_id;
+
+  if not found then
+    raise exception 'المادة غير موجودة';
+  end if;
+
+  if not public.can_manage_all_content() and item.created_by is distinct from me then
+    raise exception 'غير مسموح: هذه المادة ليست لك';
+  end if;
+
+  if item.content_format is distinct from 'video' then
+    raise exception 'لا يمكن إنشاء Video Job لمادة ليست Video';
+  end if;
+
+  if nullif(btrim(item.script_text), '') is null then
+    raise exception 'السكريبت مطلوب قبل إنشاء Video Job';
+  end if;
+
+  if item.target_duration_min_seconds is null
+     or item.target_duration_max_seconds is null then
+    raise exception 'مدة الفيديو المطلوبة غير مكتملة';
+  end if;
+
+  if nullif(btrim(item.video_template), '') is null then
+    raise exception 'Video Template مطلوب قبل إنشاء Video Job';
+  end if;
+
+  -- Idempotent: لو فيه Job شغال بالفعل لنفس المادة رجّعه بدل التكرار.
+  select * into existing_job
+  from public.video_jobs
+  where content_id = p_content_id
+    and status in ('pending','preparing','rendering','uploading')
+  order by created_at desc
+  limit 1;
+
+  if found then
+    return to_jsonb(existing_job);
+  end if;
+
+  insert into public.video_jobs (
+    content_id, created_by, status,
+    title, brand, specialty,
+    script_text, caption_text, cta_type, cta_text,
+    duration_min_seconds, duration_max_seconds, video_template
+  ) values (
+    item.id, me, 'pending',
+    item.title, item.brand, item.specialty,
+    item.script_text, item.caption_text, item.cta_type, item.cta_text,
+    item.target_duration_min_seconds, item.target_duration_max_seconds,
+    item.video_template
+  )
+  returning * into created_job;
+
+  return to_jsonb(created_job);
+end;
+$$;
+
+revoke all on function public.create_video_job(uuid) from public;
+grant execute on function public.create_video_job(uuid) to authenticated;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname='supabase_realtime'
+      and schemaname='public'
+      and tablename='video_jobs'
+  ) then
+    alter publication supabase_realtime add table public.video_jobs;
+  end if;
+end $$;
+
