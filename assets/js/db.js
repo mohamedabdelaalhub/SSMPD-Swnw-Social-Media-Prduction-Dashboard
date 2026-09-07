@@ -226,6 +226,16 @@
       return handle(client.from("content_items").delete().eq("id", id));
     },
 
+    // ---------- video_jobs ----------
+    listVideoJobsForContent: function (contentId) {
+      return handle(client.from("video_jobs").select("*")
+        .eq("content_id", contentId)
+        .order("created_at", { ascending: false }));
+    },
+    createVideoJob: function (contentId) {
+      return handle(client.rpc("create_video_job", { p_content_id: contentId }));
+    },
+
     // ---------- comments ----------
     listComments: function (contentId) {
       return handle(client.from("comments").select("*").eq("content_id", contentId).order("created_at", { ascending: true }));
