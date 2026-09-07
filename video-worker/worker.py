@@ -22,6 +22,9 @@ from typing import Any
 KEYCHAIN_SERVICE = "SSMPD Video Worker"
 KEYCHAIN_URL_ACCOUNT = "supabase_url"
 KEYCHAIN_KEY_ACCOUNT = "service_role_key"
+KEYCHAIN_AZURE_TTS_KEY_ACCOUNT = "azure_speech_key"
+KEYCHAIN_AZURE_TTS_REGION_ACCOUNT = "azure_speech_region"
+KEYCHAIN_AZURE_TTS_VOICE_ACCOUNT = "azure_speech_voice"
 
 DEFAULT_FFMPEG = "/opt/homebrew/opt/ffmpeg-full/bin/ffmpeg"
 DEFAULT_FFPROBE = "/opt/homebrew/opt/ffmpeg-full/bin/ffprobe"
@@ -55,6 +58,19 @@ def config() -> tuple[str, str]:
     if not key:
         raise WorkerError("Supabase service_role key is not configured in Keychain.")
     return url.rstrip("/"), key
+
+
+def azure_tts_config() -> tuple[str, str, str]:
+    key = os.environ.get("SSMPD_AZURE_SPEECH_KEY", "").strip() or keychain_get(KEYCHAIN_AZURE_TTS_KEY_ACCOUNT)
+    region = os.environ.get("SSMPD_AZURE_SPEECH_REGION", "").strip() or keychain_get(KEYCHAIN_AZURE_TTS_REGION_ACCOUNT)
+    voice = (
+        os.environ.get("SSMPD_AZURE_TTS_VOICE", "").strip()
+        or keychain_get(KEYCHAIN_AZURE_TTS_VOICE_ACCOUNT)
+        or "ar-EG-SalmaNeural"
+    )
+    if bool(key) != bool(region):
+        raise WorkerError("Azure Speech key and region must both be configured.")
+    return key, region, voice
 
 
 def api_headers(key: str, *, json_content: bool = True) -> dict[str, str]:
@@ -161,7 +177,45 @@ def choose_voice() -> str:
     return voices[0]
 
 
-def synthesize(script: str, out_aiff: Path) -> str:
+def azure_synthesize(script: str, out_mp3: Path, key: str, region: str, voice: str) -> str:
+    import html
+
+    ssml = (
+        '<speak version="1.0" xml:lang="ar-EG">'
+        f'<voice name="{html.escape(voice, quote=True)}">'
+        '<prosody rate="-4%">'
+        f'{html.escape(script)}'
+        '</prosody>'
+        '</voice>'
+        '</speak>'
+    ).encode("utf-8")
+
+    endpoint = f"https://{region}.tts.speech.microsoft.com/cognitiveservices/v1"
+    req = urllib.request.Request(
+        endpoint,
+        data=ssml,
+        headers={
+            "Ocp-Apim-Subscription-Key": key,
+            "Content-Type": "application/ssml+xml",
+            "X-Microsoft-OutputFormat": "audio-24khz-96kbitrate-mono-mp3",
+            "User-Agent": "SSMPDVideoWorker",
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=90) as resp:
+            audio = resp.read()
+    except urllib.error.HTTPError as e:
+        body = e.read().decode("utf-8", "replace")
+        raise WorkerError(f"Azure TTS failed HTTP {e.code}: {body[:800]}") from e
+
+    if not audio:
+        raise WorkerError("Azure TTS returned empty audio.")
+    out_mp3.write_bytes(audio)
+    return voice
+
+
+def macos_synthesize(script: str, out_aiff: Path) -> str:
     say = shutil.which("say")
     if not say:
         raise WorkerError("macOS 'say' command was not found.")
@@ -173,6 +227,17 @@ def synthesize(script: str, out_aiff: Path) -> str:
         raise WorkerError("TTS failed: " + (p.stderr.strip() or "unknown error"))
     return voice
 
+
+def synthesize(script: str, job_dir: Path) -> tuple[Path, str]:
+    azure_key, azure_region, azure_voice = azure_tts_config()
+    if azure_key and azure_region:
+        out_mp3 = job_dir / "voice.mp3"
+        voice = azure_synthesize(script, out_mp3, azure_key, azure_region, azure_voice)
+        return out_mp3, "Azure " + voice
+
+    out_aiff = job_dir / "voice.aiff"
+    voice = macos_synthesize(script, out_aiff)
+    return out_aiff, "macOS " + voice
 
 def probe_duration(ffprobe: str, media: Path) -> float:
     p = run([
@@ -287,9 +352,8 @@ def render(job: dict[str, Any], job_dir: Path) -> tuple[Path, str]:
     if min_s <= 0 or max_s < min_s:
         raise WorkerError("Invalid video duration in job.")
 
-    voice_aiff = job_dir / "voice.aiff"
-    voice = synthesize(script, voice_aiff)
-    audio_dur = probe_duration(ffprobe, voice_aiff)
+    voice_path, voice = synthesize(script, job_dir)
+    audio_dur = probe_duration(ffprobe, voice_path)
 
     target = max(float(min_s), min(float(max_s), audio_dur + 2.5))
     voice_target = max(1.0, target - 2.5)
@@ -306,7 +370,7 @@ def render(job: dict[str, Any], job_dir: Path) -> tuple[Path, str]:
         ffmpeg, "-y",
         "-f", "lavfi",
         "-i", f"color=c=0x102A43:s=1080x1920:r=30:d={target:.3f}",
-        "-i", str(voice_aiff),
+        "-i", str(voice_path),
     ]
 
     if speed > 1.0001:
@@ -398,12 +462,22 @@ def check_environment() -> int:
         ok = False
         print("FFmpeg: FAIL -", e)
 
-    voices = arabic_voices()
-    if voices:
-        print("Arabic macOS voices:", ", ".join(voices))
-    else:
+    try:
+        azure_key, azure_region, azure_voice = azure_tts_config()
+        if azure_key and azure_region:
+            print("Azure TTS: configured")
+            print("Azure region:", azure_region)
+            print("Azure voice:", azure_voice)
+        else:
+            voices = arabic_voices()
+            if voices:
+                print("Azure TTS: not configured — macOS fallback:", ", ".join(voices))
+            else:
+                ok = False
+                print("Azure TTS: not configured and no Arabic macOS fallback voice found")
+    except Exception as e:
         ok = False
-        print("Arabic macOS voices: NONE")
+        print("Azure TTS: FAIL -", e)
 
     return 0 if ok else 1
 
