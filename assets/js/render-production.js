@@ -395,6 +395,92 @@ function openAgentImportModal(parentBackdrop) {
     return '<details style="margin:12px 0;"><summary style="cursor:pointer;font-weight:700;">بيانات التنفيذ المنظمة</summary><div style="margin-top:10px;">' + rows.join("") + '</div></details>';
   }
 
+  function videoJobStatusLabel(status) {
+    var labels = {
+      pending: "في انتظار عامل الفيديو",
+      preparing: "تجهيز المواد",
+      rendering: "جاري الرندر",
+      uploading: "جاري رفع الفيديو",
+      ready: "الفيديو جاهز",
+      failed: "فشل الإنتاج",
+      cancelled: "ملغي"
+    };
+    return labels[status] || status || "—";
+  }
+
+  function videoJobMissingFields(item) {
+    var missing = [];
+    if (item.content_format !== "video") missing.push("Format = video");
+    if (!item.script_text) missing.push("Script");
+    if (item.target_duration_min_seconds == null || item.target_duration_max_seconds == null) missing.push("Duration");
+    if (!item.video_template) missing.push("Video Template");
+    return missing;
+  }
+
+  function renderVideoJobSection(slot, item) {
+    if (!slot || item.content_format !== "video") return;
+
+    slot.innerHTML = '<div class="section"><h4 style="margin:0;">🎬 إنتاج الفيديو</h4><div class="loading" style="margin-top:8px;">بيحمّل حالة الإنتاج…</div></div>';
+
+    window.SSMPDDb.listVideoJobsForContent(item.id).then(function (jobs) {
+      jobs = jobs || [];
+      var latest = jobs.length ? jobs[0] : null;
+      var missing = videoJobMissingFields(item);
+      var html = '<div class="section"><h4 style="margin:0 0 8px;">🎬 إنتاج الفيديو</h4>';
+
+      if (!latest) {
+        html += '<div style="font-size:12px;color:var(--c-muted);margin-bottom:8px;">حوّل المسودة إلى Video Job مستقل ليقرأه عامل الفيديو على الماك لاحقًا.</div>';
+        if (missing.length) {
+          html += '<div class="err-msg">⚠️ لا يمكن إنشاء Video Job قبل اكتمال: ' + escapeHtml(missing.join("، ")) + '</div>';
+        } else {
+          html += '<div style="font-size:12px;margin-bottom:10px;"><b>القالب:</b> ' + escapeHtml(item.video_template) +
+            ' &nbsp; <b>المدة:</b> ' + escapeHtml(item.target_duration_min_seconds + "–" + item.target_duration_max_seconds + " ث") + '</div>' +
+            '<button class="btn sm" id="create-video-job-btn">🎬 إنشاء Video Job</button>';
+        }
+      } else {
+        html += '<div style="font-size:12px;margin-bottom:6px;"><b>الحالة:</b> ' + escapeHtml(videoJobStatusLabel(latest.status)) + '</div>' +
+          '<div style="font-size:12px;margin-bottom:6px;"><b>القالب:</b> ' + escapeHtml(latest.video_template || "—") +
+          ' &nbsp; <b>المدة:</b> ' + escapeHtml((latest.duration_min_seconds == null ? "—" : latest.duration_min_seconds) + "–" +
+          (latest.duration_max_seconds == null ? "—" : latest.duration_max_seconds) + " ث") + '</div>' +
+          '<div style="font-size:11px;color:var(--c-muted);margin-bottom:8px;">تم إنشاء الـJob: ' +
+          escapeHtml(new Date(latest.created_at).toLocaleString("ar-EG")) + '</div>';
+
+        if (latest.status === "ready" && latest.output_video_url) {
+          html += '<a class="btn sm" target="_blank" href="' + escapeHtml(latest.output_video_url) + '">▶️ فتح الفيديو النهائي</a>';
+        } else if (latest.status === "failed") {
+          html += '<div class="err-msg">فشل الإنتاج' +
+            (latest.error_message ? ': ' + escapeHtml(latest.error_message) : '') + '</div>';
+          if (!missing.length) html += '<button class="btn sm" id="create-video-job-btn">🔁 إنشاء محاولة جديدة</button>';
+        } else if (latest.status === "cancelled" && !missing.length) {
+          html += '<button class="btn sm" id="create-video-job-btn">🔁 إنشاء Video Job جديد</button>';
+        } else {
+          html += '<div style="font-size:12px;color:var(--c-muted);">الـJob محفوظ في الطابور وجاهز للمرحلة التالية: ربط Mac Video Worker.</div>';
+        }
+      }
+
+      html += '</div>';
+      slot.innerHTML = html;
+
+      var createBtn = slot.querySelector("#create-video-job-btn");
+      if (createBtn) {
+        createBtn.onclick = function () {
+          createBtn.disabled = true;
+          createBtn.textContent = "جاري إنشاء الـJob…";
+          window.SSMPDDb.createVideoJob(item.id).then(function () {
+            if (window.SSMPDToast) window.SSMPDToast.show("تم إنشاء Video Job — جاهز لطابور عامل الفيديو", "success");
+            renderVideoJobSection(slot, item);
+          }).catch(function (e) {
+            createBtn.disabled = false;
+            createBtn.textContent = "🎬 إنشاء Video Job";
+            alert("خطأ: " + e.message);
+          });
+        };
+      }
+    }).catch(function (e) {
+      slot.innerHTML = '<div class="err-msg">تعذر تحميل Video Jobs: ' + escapeHtml(e.message) + '</div>';
+    });
+  }
+
   function render(container) {
     var me = window.SSMPDAuth.currentAdmin;
     container.innerHTML = '<div class="loading">بيحمّل…</div>';
@@ -534,6 +620,7 @@ function openAgentImportModal(parentBackdrop) {
         '<div class="status-pill ' + stagePillClass(item.stage) + '" style="margin-bottom:12px;">' + W.stageLabel(item.stage) + '</div>' +
         '<p style="white-space:pre-wrap;">' + escapeHtml(item.body || "") + '</p>' +
         structuredDetailsHtml(item) +
+        (item.content_format === "video" ? '<div id="video-job-slot"></div>' : '') +
         (item.design_file_url ? '<p><a href="' + item.design_file_url + '" target="_blank" class="btn ghost sm">فتح ملف التصميم</a></p>' : '') +
         '<div style="margin:10px 0;">' + W.itemActionsHtml(item, me) + '</div>' +
         W.metaLinksSectionHtml(item) +
@@ -543,6 +630,7 @@ function openAgentImportModal(parentBackdrop) {
       backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
       W.wireItemActions(backdrop, item, function () { render(document.getElementById("view-container")); });
       W.wireMetaLinksSection(backdrop, item, me);
+      renderVideoJobSection(backdrop.querySelector("#video-job-slot"), item);
 
       window.SSMPDDb.listAdminsBasic().then(function (admins) {
         var map = {}; admins.forEach(function (a) { map[a.id] = a; });
