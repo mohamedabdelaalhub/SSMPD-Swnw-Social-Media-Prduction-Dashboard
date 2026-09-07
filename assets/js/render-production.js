@@ -20,6 +20,7 @@
   function structuredFieldsHtml() {
     return '<details style="margin-top:12px;"><summary style="cursor:pointer;font-weight:700;">بيانات التنفيذ / الفيديو (اختياري)</summary>' +
       '<div style="margin-top:10px;">' +
+      '<div style="margin-bottom:12px;"><button class="btn ghost" id="cf-import-agent" type="button">✨ استيراد نتيجة الوكيل</button></div>' +
       '<div class="field"><label>Hook</label><textarea id="cf-hook" placeholder="الجملة الافتتاحية"></textarea></div>' +
       '<div class="field"><label>Angle</label><input id="cf-angle" placeholder="مثال: Medical authority + patient safety"></div>' +
       '<div class="field"><label>سكريبت / Voice-over</label><textarea id="cf-script" placeholder="النص اللي هيتقال في الفيديو"></textarea></div>' +
@@ -48,6 +49,193 @@
     if (!el) return null;
     var v = String(el.value || "").trim();
     return v || null;
+  }
+
+
+  function cleanAgentBlock(s) {
+    return String(s || "")
+      .replace(/\r/g, "")
+      .replace(/^```[^\n]*$/gim, "")
+      .replace(/^```$/gim, "")
+      .replace(/^\s*svg\s*$/gim, "")
+      .replace(/^[\s\n]+|[\s\n]+$/g, "");
+  }
+
+  function stripMd(s) {
+    return cleanAgentBlock(s)
+      .replace(/^\s*[-*]\s+/gm, "")
+      .replace(/\*\*/g, "")
+      .trim();
+  }
+
+  function sectionValue(text, labelPattern, nextLabels) {
+    var next = nextLabels.join("|");
+    var re = new RegExp("(?:^|\\n)\\s*(?:\\*\\*)?" + labelPattern + "\\s*:?\\s*(?:\\*\\*)?\\s*([\\s\\S]*?)(?=\\n\\s*(?:\\*\\*)?(?:" + next + ")\\s*:|$)", "i");
+    var m = text.match(re);
+    return m ? stripMd(m[1]) : "";
+  }
+
+  function inferCtaType(cta) {
+    var s = String(cta || "").toLowerCase();
+    if (!s) return "";
+    if (/احفظ|احتفظ|شارك|share|save/.test(s)) return "save_share";
+    if (/واتساب|whatsapp/.test(s)) return "whatsapp";
+    if (/احجز|حجز|book/.test(s)) return "book";
+    if (/رسالة|message/.test(s)) return "message";
+    if (/اتصل|call/.test(s)) return "call";
+    return "custom";
+  }
+
+  function parseDuration(text) {
+    var s = String(text || "");
+    var range = s.match(/(\d{1,3})\s*(?:-|–|—|إلى|الى)\s*(\d{1,3})\s*(?:ث|ثانية|ثواني)/);
+    if (range) return { min: parseInt(range[1], 10), max: parseInt(range[2], 10) };
+    var one = s.match(/(\d{1,3})\s*(?:ث|ثانية|ثواني)/);
+    if (one) {
+      var n = parseInt(one[1], 10);
+      return { min: n, max: n };
+    }
+    return { min: null, max: null };
+  }
+
+  function parseAgentHypotheses(raw) {
+    var text = cleanAgentBlock(raw);
+    if (!text) return [];
+
+    var headingRe = /(?:^|\n)\s*(?:#{1,6}\s*)?الفرضية\s*(\d+)\s*:\s*([^\n]+)/gim;
+    var matches = [], m;
+    while ((m = headingRe.exec(text))) matches.push({ index: m.index, end: headingRe.lastIndex, number: m[1], title: stripMd(m[2]).replace(/^[«"']|[»"']$/g, "") });
+
+    if (!matches.length) matches.push({ index: 0, end: 0, number: "1", title: "" });
+
+    var out = [];
+    matches.forEach(function (h, idx) {
+      var start = h.end;
+      var end = idx + 1 < matches.length ? matches[idx + 1].index : text.length;
+      var block = text.slice(start, end);
+
+      var idea = sectionValue(block, "الفكرة", ["Hook","Angle","الشكل المقترح","كابشن النشر","CTA","لماذا تصلح للاختبار","لماذا هذه الفكرة","ليه"]);
+      var hook = sectionValue(block, "Hook", ["Angle","الشكل المقترح","كابشن النشر","CTA","لماذا تصلح للاختبار","لماذا هذه الفكرة","ليه"]);
+      var angle = sectionValue(block, "Angle", ["الشكل المقترح","كابشن النشر","CTA","لماذا تصلح للاختبار","لماذا هذه الفكرة","ليه"]);
+      var format = sectionValue(block, "الشكل المقترح", ["كابشن النشر","CTA","لماذا تصلح للاختبار","لماذا هذه الفكرة","ليه"]);
+      var caption = sectionValue(block, "كابشن النشر", ["CTA","لماذا تصلح للاختبار","لماذا هذه الفكرة","ليه"]);
+      var cta = sectionValue(block, "CTA", ["لماذا تصلح للاختبار","لماذا هذه الفكرة","ليه"]);
+      var why = sectionValue(block, "لماذا تصلح للاختبار", ["$"]);
+      if (!why) why = sectionValue(block, "لماذا هذه الفكرة", ["$"]);
+
+      var script = sectionValue(block, "(?:سكريبت(?:\\s*\\/\\s*نص كامل)?|النص الكامل|Script)", ["كابشن النشر","CTA","لماذا تصلح للاختبار","لماذا هذه الفكرة","ليه"]);
+
+      if (!script) {
+        var scriptStart = 0;
+        var formatLabel = block.search(/(?:^|\n)\s*(?:\*\*)?الشكل المقترح\s*:/i);
+        if (formatLabel >= 0) {
+          var afterFormat = block.slice(formatLabel);
+          var firstNl = afterFormat.indexOf("\n");
+          if (firstNl >= 0) scriptStart = formatLabel + firstNl + 1;
+        } else {
+          var angleLabel = block.search(/(?:^|\n)\s*(?:\*\*)?Angle\s*:/i);
+          if (angleLabel >= 0) {
+            var afterAngle = block.slice(angleLabel);
+            var firstAngleNl = afterAngle.indexOf("\n");
+            if (firstAngleNl >= 0) scriptStart = angleLabel + firstAngleNl + 1;
+          }
+        }
+        var captionPos = block.search(/(?:^|\n)\s*(?:\*\*)?كابشن النشر\s*:/i);
+        var scriptChunk = block.slice(scriptStart, captionPos >= 0 ? captionPos : block.length);
+        scriptChunk = scriptChunk
+          .replace(/(?:^|\n)\s*(?:\*\*)?(?:الفكرة|Hook|Angle|الشكل المقترح)\s*:[^\n]*/gim, "")
+          .replace(/^\s*Reel[^\n]*$/gim, "")
+          .replace(/^\s*فيديو[^\n]*$/gim, "");
+        script = stripMd(scriptChunk);
+      }
+
+      var duration = parseDuration(format + "\n" + block);
+      var fmtKey = /reel|فيديو/i.test(format) ? "video" : (/صورة|بوست/i.test(format) ? "image_post" : "");
+      var title = h.title || hook || idea.split("\n")[0] || ("فرضية " + h.number);
+      var template = fmtKey === "video" ? "medical_educational" : "";
+
+      out.push({
+        number: h.number,
+        title: title,
+        idea: idea,
+        hook: hook,
+        angle: angle,
+        format: format,
+        formatKey: fmtKey,
+        script: script,
+        caption: caption,
+        cta: cta,
+        ctaType: inferCtaType(cta),
+        why: why,
+        durationMin: duration.min,
+        durationMax: duration.max,
+        videoTemplate: template
+      });
+    });
+
+    return out.filter(function (x) { return x.title || x.idea || x.hook || x.script; });
+  }
+
+  function openAgentImportModal(parentBackdrop) {
+    var importBackdrop = document.createElement("div");
+    importBackdrop.className = "modal-backdrop";
+    importBackdrop.style.zIndex = "9999";
+    importBackdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>✨ استيراد نتيجة الوكيل</h3>' +
+      '<button class="modal-close">×</button></div>' +
+      '<p style="font-size:12px;color:var(--c-muted);">الصق رد الوكيل كاملًا كما هو. هنقسّمه لفرضيات وتختار واحدة لملء الحقول تلقائيًا.</p>' +
+      '<div class="field"><textarea id="agent-import-text" style="min-height:260px;" placeholder="الصق هنا رد الوكيل الكامل..."></textarea></div>' +
+      '<div style="text-align:left;margin-bottom:12px;"><button class="btn" id="agent-import-parse">تحليل الرد</button></div>' +
+      '<div id="agent-import-results"></div></div>';
+    document.body.appendChild(importBackdrop);
+
+    function close() { importBackdrop.remove(); }
+    importBackdrop.querySelector(".modal-close").onclick = close;
+    importBackdrop.onclick = function (e) { if (e.target === importBackdrop) close(); };
+
+    document.getElementById("agent-import-parse").onclick = function () {
+      var raw = document.getElementById("agent-import-text").value;
+      var hypotheses = parseAgentHypotheses(raw);
+      var slot = document.getElementById("agent-import-results");
+      if (!hypotheses.length) {
+        slot.innerHTML = '<div class="err-msg">مقدرتش أتعرف على فرضيات واضحة. تأكد إن الرد فيه عناوين زي "الفرضية 1".</div>';
+        return;
+      }
+
+      slot.innerHTML = hypotheses.map(function (h, i) {
+        return '<div class="section" style="margin-bottom:10px;">' +
+          '<h4 style="margin:0 0 6px;">فرضية ' + escapeHtml(h.number) + ': ' + escapeHtml(h.title) + '</h4>' +
+          (h.hook ? '<div style="font-size:12px;margin-bottom:4px;"><b>Hook:</b> ' + escapeHtml(h.hook) + '</div>' : '') +
+          (h.angle ? '<div style="font-size:12px;margin-bottom:4px;"><b>Angle:</b> ' + escapeHtml(h.angle) + '</div>' : '') +
+          (h.format ? '<div style="font-size:12px;margin-bottom:6px;"><b>الشكل:</b> ' + escapeHtml(h.format) + '</div>' : '') +
+          '<button class="btn sm" data-agent-pick="' + i + '">✅ اعتماد هذه الفكرة</button>' +
+          '</div>';
+      }).join("");
+
+      slot.querySelectorAll("[data-agent-pick]").forEach(function (btn) {
+        btn.onclick = function () {
+          var h = hypotheses[parseInt(btn.getAttribute("data-agent-pick"), 10)];
+          document.getElementById("cf-title").value = h.title || "";
+          document.getElementById("cf-body").value = h.idea || h.hook || "";
+          document.getElementById("cf-hook").value = h.hook || "";
+          document.getElementById("cf-angle").value = h.angle || "";
+          document.getElementById("cf-script").value = h.script || "";
+          document.getElementById("cf-caption").value = h.caption || "";
+          document.getElementById("cf-cta-type").value = h.ctaType || "";
+          document.getElementById("cf-cta-text").value = h.cta || "";
+          document.getElementById("cf-duration-min").value = h.durationMin == null ? "" : h.durationMin;
+          document.getElementById("cf-duration-max").value = h.durationMax == null ? "" : h.durationMax;
+          document.getElementById("cf-video-template").value = h.videoTemplate || "";
+          document.getElementById("cf-hypothesis").value = h.why || "";
+          document.getElementById("cf-agent-raw").value = raw;
+
+          var fmt = document.getElementById("ci-format");
+          if (fmt && h.formatKey) fmt.value = h.formatKey;
+
+          if (window.SSMPDToast) window.SSMPDToast.show("تم ملء بيانات الفكرة من رد الوكيل", "success");
+          close();
+        };
+      });
+    };
   }
 
   function structuredDetailsHtml(item) {
@@ -144,6 +332,8 @@
     backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
 
     W.wireContentIntelligence(backdrop, function () { return document.getElementById("cf-specialty").value; });
+    var importAgentBtn = document.getElementById("cf-import-agent");
+    if (importAgentBtn) importAgentBtn.onclick = function () { openAgentImportModal(backdrop); };
     document.getElementById("cf-specialty").addEventListener("change", function () {
       W.refreshContentIntelligence(backdrop, function () { return document.getElementById("cf-specialty").value; });
     });
