@@ -953,6 +953,20 @@
     lines.push("7. CTA");
     lines.push("8. ليه كل فكرة مناسبة كفرضية اختبار مع توضيح إن الأدلة عامة وليست خاصة بالتخصص");
     lines.push("مهم: متنسخش الإعلانات القديمة حرفيًا، ومتخترعش أرقام أداء أو ادعاءات طبية.");
+    lines.push("");
+    lines.push("IMPORTANT FOR DASHBOARD IMPORT:");
+    lines.push("بعد الجزء المقروء للبشر، أضف في آخر الرد كتلة واحدة فقط بالصيغة التالية حرفيًا، من غير أي شرح بعدها:");
+    lines.push("SSMPD_STRUCTURED_JSON");
+    lines.push("\`\`\`json");
+    lines.push('{"ideas":[{"number":1,"title":"","idea":"","hook":"","angle":"","format":"video","script":"","caption":"","cta_type":"save_share","cta_text":"","duration_min_seconds":25,"duration_max_seconds":30,"video_template":"medical_educational","hypothesis_reason":""}]}');
+    lines.push("\`\`\`");
+    lines.push("SSMPD_STRUCTURED_JSON_END");
+    lines.push("كرّر object لكل فكرة من 3-5 أفكار. استخدم نفس المفاتيح بالضبط.");
+    lines.push('format يجب أن يكون واحدًا من: "video", "image_post", "link_post".');
+    lines.push('cta_type استخدم واحدًا من: "save_share", "whatsapp", "book", "message", "call", "custom".');
+    lines.push("duration_min_seconds و duration_max_seconds أرقام فقط للفيديو، أو null لو غير مناسب.");
+    lines.push("كل قيم JSON تكون plain text بدون Markdown وبدون code fences داخل القيم.");
+
 
     var text = lines.join("\n");
     var done = function () {
@@ -1235,6 +1249,20 @@
     lines.push("7. CTA");
     lines.push("8. ليه كل فكرة مناسبة للبيانات التاريخية دي");
     lines.push("مهم: متنسخش الإعلانات القديمة حرفيًا — استخدمها كمرجع بس.");
+    lines.push("");
+    lines.push("IMPORTANT FOR DASHBOARD IMPORT:");
+    lines.push("بعد الجزء المقروء للبشر، أضف في آخر الرد كتلة واحدة فقط بالصيغة التالية حرفيًا، من غير أي شرح بعدها:");
+    lines.push("SSMPD_STRUCTURED_JSON");
+    lines.push("\`\`\`json");
+    lines.push('{"ideas":[{"number":1,"title":"","idea":"","hook":"","angle":"","format":"video","script":"","caption":"","cta_type":"save_share","cta_text":"","duration_min_seconds":25,"duration_max_seconds":30,"video_template":"medical_educational","hypothesis_reason":""}]}');
+    lines.push("\`\`\`");
+    lines.push("SSMPD_STRUCTURED_JSON_END");
+    lines.push("كرّر object لكل فكرة من 3-5 أفكار. استخدم نفس المفاتيح بالضبط.");
+    lines.push('format يجب أن يكون واحدًا من: "video", "image_post", "link_post".');
+    lines.push('cta_type استخدم واحدًا من: "save_share", "whatsapp", "book", "message", "call", "custom".');
+    lines.push("duration_min_seconds و duration_max_seconds أرقام فقط للفيديو، أو null لو غير مناسب.");
+    lines.push("كل قيم JSON تكون plain text بدون Markdown وبدون code fences داخل القيم.");
+
 
     var text = lines.join("\n");
     var done = function () {
