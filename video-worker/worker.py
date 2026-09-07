@@ -58,10 +58,12 @@ def config() -> tuple[str, str]:
 
 
 def api_headers(key: str, *, json_content: bool = True) -> dict[str, str]:
-    h = {
-        "apikey": key,
-        "Authorization": "Bearer " + key,
-    }
+    # New Supabase Secret API keys (sb_secret_...) are opaque, not JWTs.
+    # Send them in the apikey header only. Legacy service_role JWTs still
+    # receive Authorization: Bearer for backward compatibility.
+    h = {"apikey": key}
+    if key.startswith("eyJ"):
+        h["Authorization"] = "Bearer " + key
     if json_content:
         h["Content-Type"] = "application/json"
     return h
