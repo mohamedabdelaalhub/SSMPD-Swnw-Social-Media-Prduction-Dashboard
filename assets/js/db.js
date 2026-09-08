@@ -867,6 +867,56 @@
     },
     unsubscribe: function (channel) {
       if (channel) client.removeChannel(channel);
+    },
+
+    // ---------- الحسابات (Accounting): تسعير الخدمات + الباكجز ----------
+    listPricingSupplies: function () {
+      return handle(client.from("pricing_supplies").select("*").order("name", { ascending: true }));
+    },
+    savePricingSupply: function (patch, createdBy) {
+      var row = Object.assign({}, patch, { updated_at: new Date().toISOString() });
+      if (patch && patch.id) {
+        var id = patch.id;
+        delete row.id;
+        return handle(client.from("pricing_supplies").update(row).eq("id", id).select().single());
+      }
+      row.created_by = createdBy;
+      return handle(client.from("pricing_supplies").insert(row).select().single());
+    },
+    deletePricingSupply: function (id) {
+      return handle(client.from("pricing_supplies").delete().eq("id", id));
+    },
+    listPricingServices: function () {
+      return handle(client.from("pricing_services").select("*").order("name", { ascending: true }));
+    },
+    savePricingService: function (patch, createdBy) {
+      var row = Object.assign({}, patch, { updated_at: new Date().toISOString() });
+      if (patch && patch.id) {
+        var id = patch.id;
+        delete row.id;
+        return handle(client.from("pricing_services").update(row).eq("id", id).select().single());
+      }
+      row.created_by = createdBy;
+      return handle(client.from("pricing_services").insert(row).select().single());
+    },
+    deletePricingService: function (id) {
+      return handle(client.from("pricing_services").delete().eq("id", id));
+    },
+    listPricingPackages: function () {
+      return handle(client.from("pricing_packages").select("*").order("name", { ascending: true }));
+    },
+    savePricingPackage: function (patch, createdBy) {
+      var row = Object.assign({}, patch, { updated_at: new Date().toISOString() });
+      if (patch && patch.id) {
+        var id = patch.id;
+        delete row.id;
+        return handle(client.from("pricing_packages").update(row).eq("id", id).select().single());
+      }
+      row.created_by = createdBy;
+      return handle(client.from("pricing_packages").insert(row).select().single());
+    },
+    deletePricingPackage: function (id) {
+      return handle(client.from("pricing_packages").delete().eq("id", id));
     }
   };
 

@@ -26,10 +26,10 @@
     publish: ["page_manager", "approver", "general_manager", "super_admin"],
     archive: ["page_manager", "designer", "approver", "general_manager", "super_admin"],
     leads: ["reception", "customer_service", "general_manager", "super_admin"],
-    bookings: ["reception", "customer_service", "general_manager", "super_admin"],
     admin: ["super_admin"],
     metaads: ["page_manager", "approver", "general_manager", "super_admin"],
-    mediabuyer: ["page_manager", "approver", "general_manager", "super_admin"]
+    mediabuyer: ["page_manager", "approver", "general_manager", "super_admin"],
+    accounting: ["general_manager", "super_admin"]
   };
 
   // بياخد صف admin كامل أو رول كـ string لوحده (توافق مع كود/اختبارات قديمة)
