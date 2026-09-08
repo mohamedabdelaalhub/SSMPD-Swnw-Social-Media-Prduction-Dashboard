@@ -3582,3 +3582,48 @@ Facebook Page + Instagram Professional Account — سيرفر-سايد بالك�
 باگ الهيدر/الفوتر، إلخ). النقاط الخمسة فوق تبسيطات مقصودة موجودة أصلاً أو
 خطوات نشر معلّقة على المستخدم — مش أخطاء في الكود. **لم يتم أي تنفيذ لأي من
 النقاط دي** — تقرير فقط، بانتظار توجيه المستخدم لأي منها.
+
+## تنفيذ بند ١ من المراجعة المعمارية — `published_urls` (قسم ٥٠) + درس حرج عن
+## Staleness للريبو المحلي (٢٠٢٦-٠٩-٠٩)
+
+- **تنفيذ بند ١** (الحل العملي الأقل تغييرًا اللي المستخدم طلبه — "اعملهم
+  كلهم ما عدا رقم ٤"): عمود جديد `content_items.published_urls jsonb` (قسم
+  ٥٠ في `setup.sql`) — بيسجّل رابط منشور منفصل لكل منصة (`published_urls
+  [platform] = url`) من غير ما يمسح رابط منصة تانية. العمود القديم
+  `published_url` **فاضل زي ما هو** (توافق خلفي) وبيتحدّث بس لو كان فاضي —
+  أول رابط بيتسجّل (تلقائي أو يدوي) هو اللي بيوصفه، وأي رابط تاني بيروح
+  لـ`published_urls` بس.
+  - `meta-publish-process/index.ts`: بعد نجاح نشر Meta، بيعمل merge على
+    `published_urls` (facebook/instagram) بدل استبدال `published_url`
+    مباشرة — `published_url` بيتحدّث بس لو كان `null`.
+  - `render-publish.js`: `publishNow()` (فرع Meta) بيسجّل روابط المنصات
+    التانية المختارة في `published_urls[platform]` بدل `published_url`
+    (لو فيه منصات غير Meta مختارة مع بعض)، و`confirmPublish()` بقى بيجيب
+    حالة المادة الحالية الأول (`getContentItem`) ويعمل merge على
+    `published_urls[platform]` بدل الكتابة المباشرة فوق `published_url`.
+- **درس حرج اتعلّم أثناء التنفيذ — staleness للريبو المحلي**: نسخة الريبو
+  المحلي (`/home/claude/repo_push`) لـ`assets/js/render-publish.js` و
+  `supabase/functions/meta-publish-process/index.ts` كانت قديمة عن المحتوى
+  الحي فعليًا على GitHub (حد تاني عدّل الملفين بعد آخر مزامنة — تحديثات
+  Sep 6 لواجهة كروت النشر، وتحديث OAuth لـGoogle Drive rehosting في
+  Edge Function). أول محاولة رفع كانت هتمسح تعديلات حقيقية موجودة لايف —
+  فعلاً حصل مسح جزئي مؤقت لملف `meta-publish-process/index.ts` (commit
+  `9e0b681`، مسح ~١٦٥ سطر كود OAuth) قبل ما يتصحّح فورًا برفع نسخة مبنية
+  على المحتوى الحي الصحيح (fetch من `raw.githubusercontent.com` عند الـ
+  commit السابق مباشرة) + إعادة تطبيق التعديل المطلوب فوقها.
+  **قاعدة جديدة لازم تتحترم من دلوقتي**: قبل رفع/استبدال أي ملف عن طريق
+  GitHub Web UI (خصوصًا لو محتمل حد/شات تاني اشتغل على نفس الريبو من وقت
+  آخر مزامنة محلية)، *لازم* نتأكد من المحتوى الحي الفعلي أولاً — إما بفحص
+  `https://github.com/<owner>/<repo>/commits/main/<path>` (سريع، بيوضح لو
+  فيه commit حديث للملف مش موجود محليًا)، أو بجلب المحتوى الخام من
+  `raw.githubusercontent.com/<owner>/<repo>/main/<path>` ومقارنته بالنسخة
+  المحلية قبل الاستبدال. تجاهل الخطوة دي ممكن يمسح شغل حقيقي بصمت.
+- **درس تاني اتأكد منه هنا كمان**: الضغط على "Commit changes" في GitHub Web
+  UI عن طريق `ref` من `find` ممكن يفشل بصمت (الصفحة تفضل على "Upload files"
+  من غير أي commit يحصل فعليًا). الطريقة الموثوقة: `screenshot` بعد اختيار
+  الملف، scroll لو الزرار مش ظاهر، click بالإحداثيات الدقيقة (بالنسبة لهذا
+  الريبو: `[280, 631]` بعد scroll)، وتأكيد فوري بـ`get_page_text` (لازم
+  يظهر "Processing your files…" مش نفس صفحة "Upload files").
+- **لازم**: تشغيل قسم ٥٠ من `setup.sql` في Supabase SQL Editor (عمود جديد
+  فقط — آمن للتشغيل)، ونشر `meta-publish-process` Edge Function المحدّثة
+  يدويًا على Supabase Dashboard (Monaco editor — رفع GitHub وحده لا ينشرها).
