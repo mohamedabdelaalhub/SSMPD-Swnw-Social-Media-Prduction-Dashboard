@@ -54,6 +54,7 @@ function doPost(e) {
   try {
     var payload = JSON.parse(e.postData.contents);
     var action = payload.action || "upload";
+    if (action === "video_archive") return handleVideoArchive_(payload);
     if (action === "log") return handleLog_(payload);
     return handleUpload_(payload);
   } catch (err) {
@@ -277,4 +278,45 @@ function upsertTrackingRow_(sheet, headers, keyVal, dataObj) {
 function jsonOut(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+
+// Video outputs reuse the design archive root, without changing existing uploads.
+function handleVideoArchive_(p) {
+  var uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuid.test(p.jobId || "") || !uuid.test(p.contentId || "")) throw new Error("Invalid video identity");
+  if (p.kind !== "video" && p.kind !== "cover" && !/^cover_[1-5]$/.test(p.kind)) throw new Error("Invalid archive kind");
+  if (!/^[a-f0-9]{64}$/.test(p.sha256 || "")) throw new Error("Invalid checksum");
+  var date = new Date(p.createdAt);
+  if (isNaN(date.getTime())) throw new Error("Invalid job date");
+  if (!p.base64 || p.base64.length > 48933548) throw new Error("Video bridge file limit is 35 MiB");
+  var bytes = Utilities.base64Decode(p.base64);
+  if (!bytes.length || bytes.length > 35 * 1024 * 1024) throw new Error("Invalid file size");
+  var checksum = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, bytes).map(function (b) {
+    return ("0" + ((b + 256) % 256).toString(16)).slice(-2);
+  }).join("");
+  if (checksum !== p.sha256) throw new Error("Checksum mismatch");
+  var lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    var root = getOrCreateFolder_(DriveApp.getFolderById(CATEGORY_FOLDER_IDS.design), "Videos");
+    var brand = String(p.brand || "unassigned").replace(/[\/\\\x00-\x1f]/g, "-").slice(0, 100);
+    var folder = getOrCreateFolder_(root, brand);
+    folder = getOrCreateFolder_(folder, Utilities.formatDate(date, "UTC", "yyyy"));
+    folder = getOrCreateFolder_(folder, Utilities.formatDate(date, "UTC", "MM"));
+    folder = getOrCreateFolder_(folder, p.contentId + "_" + p.jobId);
+    var name = p.kind === "video" ? "final.mp4" : (p.kind === "cover" ? "cover.jpg" : p.kind + ".jpg");
+    var existing = folder.getFilesByName(name);
+    var file;
+    if (existing.hasNext()) {
+      file = existing.next();
+      if (file.getDescription().indexOf("sha256=" + checksum) < 0) throw new Error("Archive checksum conflict; create a new Video Job");
+    } else {
+      file = folder.createFile(Utilities.newBlob(bytes, p.kind === "video" ? "video/mp4" : "image/jpeg", name));
+      file.setDescription("SSMPD Video | sha256=" + checksum + " | " + String(p.contentTitle || ""));
+    }
+    return jsonOut({ok: true, archiveVersion: 1, fileId: file.getId(), fileUrl: file.getUrl(), folderUrl: folder.getUrl()});
+  } finally {
+    lock.releaseLock();
+  }
 }

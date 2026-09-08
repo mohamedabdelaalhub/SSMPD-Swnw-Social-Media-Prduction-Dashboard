@@ -235,6 +235,13 @@
     createVideoJob: function (contentId) {
       return handle(client.rpc("create_video_job", { p_content_id: contentId }));
     },
+    listVideoCoverCandidates: function (jobId) {
+      return handle(client.from("video_cover_candidates").select("*")
+        .eq("job_id", jobId).order("candidate_index", { ascending: true }));
+    },
+    selectVideoCover: function (jobId, candidateId) {
+      return handle(client.rpc("select_video_cover", { p_job_id: jobId, p_candidate_id: candidateId }));
+    },
     listVideoAssetsForContent: function (contentId) {
       return handle(client.from("video_assets").select("*")
         .eq("content_id", contentId)

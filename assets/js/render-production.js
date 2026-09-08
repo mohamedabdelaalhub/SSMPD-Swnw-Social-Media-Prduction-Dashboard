@@ -443,6 +443,46 @@ function openAgentImportModal(parentBackdrop) {
     return missing;
   }
 
+  function coverSettingsHtml(item, assets) {
+    var c = item.cover_settings || {};
+    var images = assets.filter(function (a) { return a.asset_type === "image"; });
+    return '<details style="margin:12px 0;"><summary>اقتراحات كفر الفيديو</summary>' +
+      '<label style="display:block;margin:12px 0;"><input type="checkbox" id="cover-enabled"' + (c.enabled ? ' checked' : '') + '> جهّز 5 كفرات للاختيار منها</label>' +
+      '<div class="field"><label for="cover-title">عنوان الكفر</label><input id="cover-title" maxlength="80" value="' + escapeHtml(c.title || item.title || '') + '"></div>' +
+      '<div class="field"><label for="cover-position">مكان العنوان</label><select id="cover-position"><option value="bottom"' + (c.position !== 'top' ? ' selected' : '') + '>أسفل الصورة</option><option value="top"' + (c.position === 'top' ? ' selected' : '') + '>أعلى الصورة</option></select></div>' +
+      '<div class="field"><label for="cover-logo">لوجو البراند</label><select id="cover-logo"><option value="">اختر صورة اللوجو من المواد المرفوعة</option>' +
+      images.map(function (a) { return '<option value="' + escapeHtml(a.id) + '"' + (c.logo_asset_id === a.id ? ' selected' : '') + '>' + escapeHtml(a.file_name) + '</option>'; }).join('') + '</select></div>' +
+      '<p>ارفع اللوجو ضمن الصور وحدده هنا. الإعدادات تُستخدم مع الإنتاج القادم، واللوجو لا يُستخدم كلقطة داخل الفيديو.</p>' +
+      '<button class="btn sm" id="save-cover-settings">حفظ إعدادات الكفر</button><span id="cover-settings-feedback" role="status"></span></details>';
+  }
+
+  function loadCoverChoices(host, job, refresh) {
+    window.SSMPDDb.listVideoCoverCandidates(job.id).then(function (rows) {
+      if (!host.isConnected || !rows.length) return;
+      host.innerHTML = '<h4>اختار كفر الفيديو</h4><p>الكفر المختار محفوظ على Google Drive. تقدر تغيّره من هنا.</p>' +
+        '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:12px;">' + rows.map(function (c) {
+          return '<div><img data-cover-preview="' + escapeHtml(c.id) + '" alt="اقتراح الكفر ' + c.candidate_index + '" style="width:100%;aspect-ratio:9/16;object-fit:contain;background:#132636;border-radius:8px;">' +
+            '<button class="btn sm" style="width:100%;margin-top:6px;" data-select-cover="' + escapeHtml(c.id) + '"' + (job.selected_cover_id === c.id ? ' disabled' : '') + '>' +
+            (job.selected_cover_id === c.id ? 'الكفر المختار' : 'اختيار الكفر ' + c.candidate_index) + '</button></div>';
+        }).join('') + '</div><p data-cover-feedback role="status"></p>';
+      rows.forEach(function (c) {
+        window.SSMPDDb.getVideoAssetSignedUrl(c.storage_path).then(function (url) {
+          var img = host.querySelector('[data-cover-preview="' + c.id + '"]');
+          if (img && url) img.src = url;
+        }).catch(function () { host.querySelector('[data-cover-feedback]').textContent = 'تعذر تحميل إحدى المعاينات. أعد فتح المادة.'; });
+      });
+      host.querySelectorAll('[data-select-cover]').forEach(function (btn) {
+        btn.onclick = function () {
+          host.querySelectorAll('[data-select-cover]').forEach(function (b) { b.disabled = true; });
+          window.SSMPDDb.selectVideoCover(job.id, btn.getAttribute('data-select-cover')).then(refresh).catch(function (e) {
+            host.querySelector('[data-cover-feedback]').textContent = e.message;
+            host.querySelectorAll('[data-select-cover]').forEach(function (b) { b.disabled = b.getAttribute('data-select-cover') === job.selected_cover_id; });
+          });
+        };
+      });
+    }).catch(function (e) { if (host.isConnected) host.textContent = 'تعذر تحميل اقتراحات الكفر: ' + e.message; });
+  }
+
   function renderVideoJobSection(slot, item) {
     if (!slot || item.content_format !== "video") return;
 
@@ -501,6 +541,8 @@ function openAgentImportModal(parentBackdrop) {
       }
       html += '</div>';
 
+      html += coverSettingsHtml(item, assets);
+
       if (!latest) {
         html += '<div style="font-size:12px;color:var(--c-muted);margin-bottom:8px;">حوّل المسودة إلى Video Job مستقل ليقرأه عامل الفيديو على الماك لاحقًا.</div>';
         if (missing.length) {
@@ -518,13 +560,15 @@ function openAgentImportModal(parentBackdrop) {
           '<div style="font-size:11px;color:var(--c-muted);margin-bottom:8px;">تم إنشاء الـJob: ' +
           escapeHtml(new Date(latest.created_at).toLocaleString("ar-EG")) + '</div>';
 
-        if (latest.status === "ready" && latest.output_video_url) {
-          html += '<a class="btn sm" target="_blank" href="' + escapeHtml(latest.output_video_url) + '">▶️ فتح الفيديو النهائي</a>';
+        if (latest.status === "ready" && (latest.drive_video_url || latest.output_video_url)) {
+          html += '<a class="btn sm" target="_blank" href="' + escapeHtml(latest.drive_video_url || latest.output_video_url) + '">▶️ فتح الفيديو النهائي</a>';
+          if (latest.drive_folder_url) html += ' <a class="btn ghost sm" target="_blank" rel="noopener" href="' + escapeHtml(latest.drive_folder_url) + '">أرشيف Google Drive</a>';
+          if (latest.cover_url) html += ' <a class="btn ghost sm" target="_blank" rel="noopener" href="' + escapeHtml(latest.cover_url) + '">فتح الغلاف</a>';
           if (!missing.length) {
             html += ' <button class="btn ghost sm" id="create-video-job-btn">🔁 إعادة إنتاج الفيديو</button>';
           }
         } else if (latest.status === "failed") {
-          html += '<div class="err-msg">فشل الإنتاج' +
+          html += '<div class="err-msg">' + (latest.archive_status === "failed" ? "اكتمل الرندر وتعطلت الأرشفة" : "فشل الإنتاج") +
             (latest.error_message ? ': ' + escapeHtml(latest.error_message) : '') + '</div>';
           if (!missing.length) html += '<button class="btn sm" id="create-video-job-btn">🔁 إنشاء محاولة جديدة</button>';
         } else if (latest.status === "cancelled" && !missing.length) {
@@ -535,7 +579,34 @@ function openAgentImportModal(parentBackdrop) {
       }
 
       html += '</div>';
+      html += '<div id="video-cover-choices"></div>';
       slot.innerHTML = html;
+      if (latest && latest.status === "ready" && latest.cover_settings && latest.cover_settings.enabled) {
+        loadCoverChoices(slot.querySelector('#video-cover-choices'), latest, function () { renderVideoJobSection(slot, item); });
+      }
+      var saveCover = slot.querySelector('#save-cover-settings');
+      saveCover.onclick = function () {
+        var settings = {
+          enabled: slot.querySelector('#cover-enabled').checked,
+          title: slot.querySelector('#cover-title').value.trim(),
+          position: slot.querySelector('#cover-position').value,
+          logo_asset_id: slot.querySelector('#cover-logo').value || null
+        };
+        var feedback = slot.querySelector('#cover-settings-feedback');
+        if (settings.enabled && (!settings.title || !settings.logo_asset_id)) {
+          feedback.textContent = 'اكتب العنوان واختر اللوجو.'; return;
+        }
+        saveCover.disabled = true;
+        var createJobButton = slot.querySelector('#create-video-job-btn');
+        if (createJobButton) createJobButton.disabled = true;
+        window.SSMPDDb.updateContentItem(item.id, { cover_settings: settings }).then(function () {
+          item.cover_settings = settings;
+          feedback.textContent = 'تم حفظ إعدادات الكفر للإنتاج القادم.';
+        }).catch(function (e) { feedback.textContent = e.message; }).then(function () {
+          saveCover.disabled = false;
+          if (createJobButton) createJobButton.disabled = false;
+        });
+      };
 
       var mediaModeSelect = slot.querySelector("#video-media-mode");
       if (mediaModeSelect) {
@@ -804,3 +875,4 @@ function openAgentImportModal(parentBackdrop) {
 
   window.SSMPDRenderProduction = { render: render };
 })();
+
