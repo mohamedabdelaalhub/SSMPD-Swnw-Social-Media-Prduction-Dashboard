@@ -4791,3 +4791,15 @@ create policy "accounting update packages" on public.pricing_packages
 drop policy if exists "accounting delete packages" on public.pricing_packages;
 create policy "accounting delete packages" on public.pricing_packages
   for delete using (public.can_manage_all_content());
+
+-- ============================================================
+-- قسم ٥٠: عمود منفصل لروابط النشر لكل منصة (published_urls) —
+-- حل فجوة "رابط نشر يدوي بيتكتب فوقه برابط Meta التلقائي" — مراجعة
+-- معمارية ٢٠٢٦-٠٩-٠٨، بند ١. published_url القديم فاضل زي ما هو
+-- (للتوافق الخلفي مع أي عرض قديم)، وبقى بيتحدّث بس لو فاضي أصلاً —
+-- أول رابط بيتسجّل (يدوي أو Meta) هو اللي بيوصف published_url،
+-- وأي رابط تاني (منصة تانية) بيتسجّل في published_urls[platform]
+-- من غير ما يمسح القديم.
+-- ============================================================
+alter table public.content_items
+  add column if not exists published_urls jsonb not null default '{}'::jsonb;
