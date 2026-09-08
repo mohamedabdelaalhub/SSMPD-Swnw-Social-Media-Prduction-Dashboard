@@ -711,7 +711,7 @@
       html += '</div>';
       view.innerHTML = html;
 
-      document.getElementById("ar-search-btn").onclick = function () {
+      var arApplyFilters = function () {
         s.search = document.getElementById("ar-search").value.trim();
         s.status = document.getElementById("ar-status").value;
         s.bookedBy = document.getElementById("ar-employee").value;
@@ -719,7 +719,13 @@
         s.dateTo = document.getElementById("ar-date-to").value;
         s.page = 1; renderArchiveScreen(view, container);
       };
-      document.getElementById("ar-search").onkeydown = function (e) { if (e.key === "Enter") document.getElementById("ar-search-btn").click(); };
+      document.getElementById("ar-search-btn").onclick = arApplyFilters;
+      document.getElementById("ar-search").onkeydown = function (e) { if (e.key === "Enter") arApplyFilters(); };
+      // تطبيق فوري لأي فلتر (دروب داون/تاريخ) بمجرد اختياره، من غير الحاجة لدوس "بحث"
+      document.getElementById("ar-status").onchange = arApplyFilters;
+      document.getElementById("ar-employee").onchange = arApplyFilters;
+      document.getElementById("ar-date-from").onchange = arApplyFilters;
+      document.getElementById("ar-date-to").onchange = arApplyFilters;
       var dateClearBtn = document.getElementById("ar-date-clear");
       if (dateClearBtn) dateClearBtn.onclick = function () { s.dateFrom = ""; s.dateTo = ""; s.page = 1; renderArchiveScreen(view, container); };
       wirePager(view, "ar", s, totalPages, function () { renderArchiveScreen(view, container); });
