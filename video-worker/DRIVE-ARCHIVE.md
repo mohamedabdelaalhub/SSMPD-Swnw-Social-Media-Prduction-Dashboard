@@ -38,7 +38,7 @@ so use the command above when only archiving needs recovery.
 
 - The existing JSON/base64 bridge accepts up to 35 MiB per file. Larger files fail explicitly
   and stay on disk. Resumable uploads are a follow-up; do not silently recompress the original.
-- A cover is a frame extracted from the completed video, not a designed thumbnail.
+- Without cover options, a cover is an extracted frame. With cover options enabled, five 1080×1920 title/logo templates are generated from the clean visual track (or final video if the clean track is absent).
 - Default runs do not upload outputs to Supabase Storage. `output_video_url` remains reserved
   for a direct publishing copy. `SSMPD_VIDEO_STAGE_OUTPUT=1` retains the previous staging upload
   for controlled publishing tests, but automatic expiry/cleanup is not implemented yet.
@@ -48,3 +48,27 @@ so use the command above when only archiving needs recovery.
   The existing renderer and media resolver are unchanged.
 - Python mock tests validate archive failure/retry behavior; they do not prove live Google or
   Supabase deployment. Node syntax checks do not validate Apps Script service permissions.
+
+## Branded cover choices
+
+Apply `supabase/migrations/20260908_video_cover_candidates.sql` after the assets/Drive migration.
+Also install `cover_candidates.py` alongside `worker.py` and `drive_archive.py`.
+Update the existing Apps Script deployment with the new cover_1 through cover_5 support.
+In a Content Item, upload the brand logo as an image, enable cover options, enter a title
+(up to 80 characters), choose top/bottom placement, choose the logo and save settings before
+creating the next job. Settings and logo references are snapshotted with that job. The logo
+is excluded from the visual footage pool. Templates are configured per Content Item;
+a shared Brand Library is not introduced by this change.
+
+The worker samples five windows across the visual track and uses FFmpeg's thumbnail filter
+within each window. This is representative-frame sampling, not face-aware or blur-ranking AI.
+Candidates from a static source can look similar. Each option is archived in the same Drive
+job folder. Small private JPEG preview copies live in video-inputs for signed dashboard
+previews; Drive remains the image archive. Preview copies currently stay until a future
+cleanup policy is implemented.
+
+Selecting an option calls an authorized RPC which verifies the candidate belongs to this job,
+then updates selected_cover_id and cover_url. It changes no video pixels and does not rerender.
+Until selection, option 1 is the default cover. The original video and all options remain on Drive.
+The preview uses signed URLs and does not make video-inputs public. Existing ready jobs are
+not retroactively changed; use a new render with cover options to generate choices.

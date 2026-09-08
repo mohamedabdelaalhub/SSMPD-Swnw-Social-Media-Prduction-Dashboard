@@ -285,7 +285,7 @@ function jsonOut(obj) {
 function handleVideoArchive_(p) {
   var uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   if (!uuid.test(p.jobId || "") || !uuid.test(p.contentId || "")) throw new Error("Invalid video identity");
-  if (p.kind !== "video" && p.kind !== "cover") throw new Error("Invalid archive kind");
+  if (p.kind !== "video" && p.kind !== "cover" && !/^cover_[1-5]$/.test(p.kind)) throw new Error("Invalid archive kind");
   if (!/^[a-f0-9]{64}$/.test(p.sha256 || "")) throw new Error("Invalid checksum");
   var date = new Date(p.createdAt);
   if (isNaN(date.getTime())) throw new Error("Invalid job date");
@@ -305,7 +305,7 @@ function handleVideoArchive_(p) {
     folder = getOrCreateFolder_(folder, Utilities.formatDate(date, "UTC", "yyyy"));
     folder = getOrCreateFolder_(folder, Utilities.formatDate(date, "UTC", "MM"));
     folder = getOrCreateFolder_(folder, p.contentId + "_" + p.jobId);
-    var name = p.kind === "video" ? "final.mp4" : "cover.jpg";
+    var name = p.kind === "video" ? "final.mp4" : (p.kind === "cover" ? "cover.jpg" : p.kind + ".jpg");
     var existing = folder.getFilesByName(name);
     var file;
     if (existing.hasNext()) {

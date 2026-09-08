@@ -14,6 +14,7 @@ import socket
 import subprocess
 import sys
 import time
+import uuid
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -219,6 +220,8 @@ def uploaded_asset_paths(job: dict[str, Any], asset_type: str) -> list[Path]:
     assets = job.get("_downloaded_assets") or []
     out: list[Path] = []
     for asset in assets:
+        if isinstance(asset, dict) and asset.get("id") == (job.get("cover_settings") or {}).get("logo_asset_id"):
+            continue
         if isinstance(asset, dict) and asset.get("asset_type") == asset_type and asset.get("local_path"):
             p = Path(str(asset["local_path"]))
             if p.exists():
@@ -652,7 +655,20 @@ def archive_rendered_job(base_url: str, key: str, job: dict[str, Any], output: P
         if not cover.exists():
             run([ffmpeg, "-y", "-ss", "0", "-i", str(output), "-frames:v", "1", "-q:v", "2", str(cover)])
         video = archive_upload(job, output, "video")
-        thumbnail = archive_upload(job, cover, "cover")
+        from cover_candidates import build as build_covers
+        candidates = build_covers(job, output, ffmpeg, probe_duration(ffprobe, output))
+        thumbnail = archive_upload(job, cover, "cover") if not candidates else None
+        for candidate in candidates:
+            archived = archive_upload(job, candidate["path"], "cover_" + str(candidate["index"]))
+            storage_path = upload_cover_preview(base_url, key, job, candidate)
+            request_json("POST", base_url + "/rest/v1/video_cover_candidates?on_conflict=job_id,candidate_index", key, {
+                "id": str(uuid.uuid5(uuid.UUID(job_id), "cover-" + str(candidate["index"]))),
+                "job_id": job_id, "candidate_index": candidate["index"],
+                "timestamp_seconds": candidate["timestamp_seconds"], "storage_path": storage_path,
+                "drive_url": archived["fileUrl"],
+            }, {"Prefer": "resolution=merge-duplicates,return=minimal"})
+            if thumbnail is None:
+                thumbnail = archived
         # The archive is primary. Direct publishing copies are explicitly opt-in.
         staged = None
         if os.environ.get("SSMPD_VIDEO_STAGE_OUTPUT") == "1":
@@ -660,7 +676,8 @@ def archive_rendered_job(base_url: str, key: str, job: dict[str, Any], output: P
         update_job(base_url, key, job_id, {
             "status": "ready", "archive_status": "archived", "archive_error": None,
             "drive_video_url": video["fileUrl"], "drive_video_id": video["fileId"],
-            "drive_folder_url": video["folderUrl"], "cover_url": thumbnail["fileUrl"],
+            "drive_folder_url": video["folderUrl"],
+            "cover_url": job.get("cover_url") if job.get("selected_cover_id") else thumbnail["fileUrl"],
             "output_video_url": staged, "error_message": None,
             "archived_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "render_finished_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -673,13 +690,26 @@ def archive_rendered_job(base_url: str, key: str, job: dict[str, Any], output: P
         raise
 
 
+def upload_cover_preview(base_url, key, job, candidate):
+    storage_path = f'{job["created_by"]}/{job["content_id"]}/covers/{job["id"]}/{candidate["index"]}.jpg'
+    headers = api_headers(key, json_content=False)
+    headers.update({"Content-Type": "image/jpeg", "x-upsert": "true"})
+    req = urllib.request.Request(base_url + "/storage/v1/object/video-inputs/" + storage_path,
+                                 data=candidate["path"].read_bytes(), headers=headers, method="POST")
+    with urllib.request.urlopen(req, timeout=60) as response:
+        response.read()
+    return storage_path
+
+
 def retry_archive(base_url: str, key: str, job_id: str) -> None:
     if not re.fullmatch(r"[0-9a-fA-F-]{36}", job_id):
         raise WorkerError("Invalid job ID.")
     rows = request_json("GET", base_url + "/rest/v1/video_jobs?id=eq." + job_id + "&select=*", key)
     if not rows or rows[0].get("status") not in ("failed", "ready"):
         raise WorkerError("Archive retry requires a failed or ready job.")
-    archive_rendered_job(base_url, key, rows[0], WORK_ROOT / job_id / "output.mp4")
+    job = rows[0]
+    job["_downloaded_assets"] = download_job_assets(base_url, key, job, WORK_ROOT / job_id)
+    archive_rendered_job(base_url, key, job, WORK_ROOT / job_id / "output.mp4")
     print("ARCHIVED", job_id)
 
 
