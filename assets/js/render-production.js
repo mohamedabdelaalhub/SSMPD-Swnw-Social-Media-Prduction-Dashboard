@@ -518,13 +518,15 @@ function openAgentImportModal(parentBackdrop) {
           '<div style="font-size:11px;color:var(--c-muted);margin-bottom:8px;">تم إنشاء الـJob: ' +
           escapeHtml(new Date(latest.created_at).toLocaleString("ar-EG")) + '</div>';
 
-        if (latest.status === "ready" && latest.output_video_url) {
-          html += '<a class="btn sm" target="_blank" href="' + escapeHtml(latest.output_video_url) + '">▶️ فتح الفيديو النهائي</a>';
+        if (latest.status === "ready" && (latest.drive_video_url || latest.output_video_url)) {
+          html += '<a class="btn sm" target="_blank" href="' + escapeHtml(latest.drive_video_url || latest.output_video_url) + '">▶️ فتح الفيديو النهائي</a>';
+          if (latest.drive_folder_url) html += ' <a class="btn ghost sm" target="_blank" rel="noopener" href="' + escapeHtml(latest.drive_folder_url) + '">أرشيف Google Drive</a>';
+          if (latest.cover_url) html += ' <a class="btn ghost sm" target="_blank" rel="noopener" href="' + escapeHtml(latest.cover_url) + '">فتح الغلاف</a>';
           if (!missing.length) {
             html += ' <button class="btn ghost sm" id="create-video-job-btn">🔁 إعادة إنتاج الفيديو</button>';
           }
         } else if (latest.status === "failed") {
-          html += '<div class="err-msg">فشل الإنتاج' +
+          html += '<div class="err-msg">' + (latest.archive_status === "failed" ? "اكتمل الرندر وتعطلت الأرشفة" : "فشل الإنتاج") +
             (latest.error_message ? ': ' + escapeHtml(latest.error_message) : '') + '</div>';
           if (!missing.length) html += '<button class="btn sm" id="create-video-job-btn">🔁 إنشاء محاولة جديدة</button>';
         } else if (latest.status === "cancelled" && !missing.length) {
@@ -804,3 +806,4 @@ function openAgentImportModal(parentBackdrop) {
 
   window.SSMPDRenderProduction = { render: render };
 })();
+

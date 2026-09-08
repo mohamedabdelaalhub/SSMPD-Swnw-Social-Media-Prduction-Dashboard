@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import argparse
+from drive_archive import upload as archive_upload
 import json
 import os
 import re
@@ -620,20 +621,8 @@ def process_job(base_url: str, key: str, job: dict[str, Any]) -> None:
         job["_downloaded_assets"] = download_job_assets(base_url, key, job, job_dir)
         update_job(base_url, key, job_id, {"status": "rendering"})
         output, voice = render(job, job_dir)
-        update_job(base_url, key, job_id, {"status": "uploading"})
-        public_url = upload_mp4(base_url, key, job_id, output)
-        update_job(
-            base_url,
-            key,
-            job_id,
-            {
-                "status": "ready",
-                "output_video_url": public_url,
-                "error_message": None,
-                "render_finished_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-            },
-        )
-        print(f"READY {job_id} | voice={voice} | {public_url}", flush=True)
+        archive_rendered_job(base_url, key, job, output)
+        print(f"READY {job_id} | voice={voice} | Google Drive", flush=True)
     except Exception as e:
         msg = str(e)[:1800]
         try:
@@ -650,6 +639,48 @@ def process_job(base_url: str, key: str, job: dict[str, Any]) -> None:
         except Exception:
             pass
         raise
+
+
+def archive_rendered_job(base_url: str, key: str, job: dict[str, Any], output: Path) -> None:
+    job_id = str(job["id"])
+    update_job(base_url, key, job_id, {"status": "uploading", "archive_status": "uploading"})
+    try:
+        ffmpeg, ffprobe = ffmpeg_paths()
+        if probe_duration(ffprobe, output) <= 0:
+            raise WorkerError("Rendered output is missing or invalid.")
+        cover = output.parent / "cover.jpg"
+        if not cover.exists():
+            run([ffmpeg, "-y", "-ss", "0", "-i", str(output), "-frames:v", "1", "-q:v", "2", str(cover)])
+        video = archive_upload(job, output, "video")
+        thumbnail = archive_upload(job, cover, "cover")
+        # The archive is primary. Direct publishing copies are explicitly opt-in.
+        staged = None
+        if os.environ.get("SSMPD_VIDEO_STAGE_OUTPUT") == "1":
+            staged = upload_mp4(base_url, key, job_id, output)
+        update_job(base_url, key, job_id, {
+            "status": "ready", "archive_status": "archived", "archive_error": None,
+            "drive_video_url": video["fileUrl"], "drive_video_id": video["fileId"],
+            "drive_folder_url": video["folderUrl"], "cover_url": thumbnail["fileUrl"],
+            "output_video_url": staged, "error_message": None,
+            "archived_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "render_finished_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        })
+    except Exception as e:
+        update_job(base_url, key, job_id, {
+            "status": "failed", "archive_status": "failed", "archive_error": str(e)[:1000],
+            "error_message": "Render retained locally. Retry archive without rendering: " + str(e)[:1000],
+        })
+        raise
+
+
+def retry_archive(base_url: str, key: str, job_id: str) -> None:
+    if not re.fullmatch(r"[0-9a-fA-F-]{36}", job_id):
+        raise WorkerError("Invalid job ID.")
+    rows = request_json("GET", base_url + "/rest/v1/video_jobs?id=eq." + job_id + "&select=*", key)
+    if not rows or rows[0].get("status") not in ("failed", "ready"):
+        raise WorkerError("Archive retry requires a failed or ready job.")
+    archive_rendered_job(base_url, key, rows[0], WORK_ROOT / job_id / "output.mp4")
+    print("ARCHIVED", job_id)
 
 
 def check_environment() -> int:
@@ -701,12 +732,16 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--check", action="store_true")
     parser.add_argument("--once", action="store_true")
+    parser.add_argument("--retry-archive", metavar="JOB_ID")
     args = parser.parse_args()
 
     if args.check:
         return check_environment()
 
     base_url, key = config()
+    if args.retry_archive:
+        retry_archive(base_url, key, args.retry_archive)
+        return 0
     WORK_ROOT.mkdir(parents=True, exist_ok=True)
     print("SSMPD Video Worker started:", WORKER_ID, flush=True)
 

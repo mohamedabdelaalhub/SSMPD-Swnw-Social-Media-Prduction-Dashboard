@@ -4150,3 +4150,13 @@ $$;
 revoke all on function public.create_video_job(uuid) from public;
 grant execute on function public.create_video_job(uuid) to authenticated;
 
+
+-- 49) Google Drive video archive metadata. No change to booking or patient data.
+alter table public.video_jobs
+  add column if not exists drive_video_url text,
+  add column if not exists drive_video_id text,
+  add column if not exists drive_folder_url text,
+  add column if not exists archive_status text not null default 'pending'
+    check (archive_status in ('pending','uploading','archived','failed')),
+  add column if not exists archive_error text,
+  add column if not exists archived_at timestamptz;
