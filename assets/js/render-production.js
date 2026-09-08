@@ -443,16 +443,16 @@ function openAgentImportModal(parentBackdrop) {
     return missing;
   }
 
-  function coverSettingsHtml(item, assets) {
+  function coverSettingsHtml(item, brandLogo) {
     var c = item.cover_settings || {};
-    var images = assets.filter(function (a) { return a.asset_type === "image"; });
+    var brandName = item.brand === 'sono' ? 'سونو' : (item.brand === 'dr_dina' ? 'د. دينا' : 'غير محدد');
     return '<details style="margin:12px 0;"><summary>اقتراحات كفر الفيديو</summary>' +
       '<label style="display:block;margin:12px 0;"><input type="checkbox" id="cover-enabled"' + (c.enabled ? ' checked' : '') + '> جهّز 5 كفرات للاختيار منها</label>' +
       '<div class="field"><label for="cover-title">عنوان الكفر</label><input id="cover-title" maxlength="80" value="' + escapeHtml(c.title || item.title || '') + '"></div>' +
       '<div class="field"><label for="cover-position">مكان العنوان</label><select id="cover-position"><option value="bottom"' + (c.position !== 'top' ? ' selected' : '') + '>أسفل الصورة</option><option value="top"' + (c.position === 'top' ? ' selected' : '') + '>أعلى الصورة</option></select></div>' +
-      '<div class="field"><label for="cover-logo">لوجو البراند</label><select id="cover-logo"><option value="">اختر صورة اللوجو من المواد المرفوعة</option>' +
-      images.map(function (a) { return '<option value="' + escapeHtml(a.id) + '"' + (c.logo_asset_id === a.id ? ' selected' : '') + '>' + escapeHtml(a.file_name) + '</option>'; }).join('') + '</select></div>' +
-      '<p>ارفع اللوجو ضمن الصور وحدده هنا. الإعدادات تُستخدم مع الإنتاج القادم، واللوجو لا يُستخدم كلقطة داخل الفيديو.</p>' +
+      '<div class="field"><label>لوجو البراند — ' + escapeHtml(brandName) + '</label>' +
+      (brandLogo ? '<img id="content-brand-logo" alt="لوجو البراند" style="width:150px;height:100px;object-fit:contain;background:#fff;"><p>يُستخدم لوجو ' + escapeHtml(brandName) + ' المحفوظ في لوحة الإدارة.</p>' : '<p>احفظ لوجو ' + escapeHtml(brandName) + ' من قسم لوجوهات البراندات في لوحة الإدارة قبل الإنتاج.</p>') + '</div>' +
+      '<p>العنوان ومكانه يُستخدمان مع الإنتاج القادم. اللوجو مرتبط بالبراند تلقائيًا.</p>' +
       '<button class="btn sm" id="save-cover-settings">حفظ إعدادات الكفر</button><span id="cover-settings-feedback" role="status"></span></details>';
   }
 
@@ -490,10 +490,12 @@ function openAgentImportModal(parentBackdrop) {
 
     Promise.all([
       window.SSMPDDb.listVideoJobsForContent(item.id),
-      window.SSMPDDb.listVideoAssetsForContent(item.id)
+      window.SSMPDDb.listVideoAssetsForContent(item.id),
+      window.SSMPDDb.listBrandLogos()
     ]).then(function (res) {
       var jobs = res[0] || [];
       var assets = res[1] || [];
+      var brandLogo = (res[2] || []).filter(function (b) { return b.brand === item.brand; })[0];
       var latest = jobs.length ? jobs[0] : null;
       var missing = videoJobMissingFields(item);
       var mediaMode = item.video_media_mode || "uploaded_plus_auto";
@@ -530,7 +532,7 @@ function openAgentImportModal(parentBackdrop) {
         html += '<div style="display:flex;flex-direction:column;gap:6px;">';
         assets.forEach(function (a) {
           html += '<div style="display:flex;align-items:center;gap:8px;padding:7px 8px;border:1px solid var(--c-border);border-radius:8px;">' +
-            '<span style="font-size:11px;font-weight:700;min-width:72px;">' + escapeHtml(videoAssetTypeLabel(a.asset_type)) + '</span>' +
+            '<span style="font-size:11px;font-weight:700;min-width:72px;">' + escapeHtml(a.asset_role === "legacy_logo" ? "لوجو سابق — مستبعد" : videoAssetTypeLabel(a.asset_type)) + '</span>' +
             '<span style="font-size:12px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escapeHtml(a.file_name) + '</span>' +
             '<span style="font-size:10px;color:var(--c-muted);">' + escapeHtml(formatBytes(a.file_size)) + '</span>' +
             '<button class="btn ghost sm" data-open-video-asset="' + escapeHtml(a.id) + '">فتح</button>' +
@@ -541,7 +543,7 @@ function openAgentImportModal(parentBackdrop) {
       }
       html += '</div>';
 
-      html += coverSettingsHtml(item, assets);
+      html += coverSettingsHtml(item, brandLogo);
 
       if (!latest) {
         html += '<div style="font-size:12px;color:var(--c-muted);margin-bottom:8px;">حوّل المسودة إلى Video Job مستقل ليقرأه عامل الفيديو على الماك لاحقًا.</div>';
@@ -571,6 +573,8 @@ function openAgentImportModal(parentBackdrop) {
           html += '<div class="err-msg">' + (latest.archive_status === "failed" ? "اكتمل الرندر وتعطلت الأرشفة" : "فشل الإنتاج") +
             (latest.error_message ? ': ' + escapeHtml(latest.error_message) : '') + '</div>';
           if (!missing.length) html += '<button class="btn sm" id="create-video-job-btn">🔁 إنشاء محاولة جديدة</button>';
+        } else if (latest.status === "pending" && !missing.length) {
+          html += '<p>بعد حفظ الإعدادات أو رفع المواد، حدّث المهمة لتستخدمها عند التشغيل.</p><button class="btn sm" id="create-video-job-btn">تحديث مهمة الانتظار</button>';
         } else if (latest.status === "cancelled" && !missing.length) {
           html += '<button class="btn sm" id="create-video-job-btn">🔁 إنشاء Video Job جديد</button>';
         } else {
@@ -584,17 +588,20 @@ function openAgentImportModal(parentBackdrop) {
       if (latest && latest.status === "ready" && latest.cover_settings && latest.cover_settings.enabled) {
         loadCoverChoices(slot.querySelector('#video-cover-choices'), latest, function () { renderVideoJobSection(slot, item); });
       }
+      if (brandLogo) window.SSMPDDb.getBrandLogoUrl(brandLogo.storage_path).then(function (url) {
+        var img = slot.querySelector('#content-brand-logo');
+        if (img) img.src = url;
+      }).catch(function () {});
       var saveCover = slot.querySelector('#save-cover-settings');
       saveCover.onclick = function () {
         var settings = {
           enabled: slot.querySelector('#cover-enabled').checked,
           title: slot.querySelector('#cover-title').value.trim(),
-          position: slot.querySelector('#cover-position').value,
-          logo_asset_id: slot.querySelector('#cover-logo').value || null
+          position: slot.querySelector('#cover-position').value
         };
         var feedback = slot.querySelector('#cover-settings-feedback');
-        if (settings.enabled && (!settings.title || !settings.logo_asset_id)) {
-          feedback.textContent = 'اكتب العنوان واختر اللوجو.'; return;
+        if (settings.enabled && (!settings.title || !brandLogo)) {
+          feedback.textContent = 'اكتب العنوان وتأكد من حفظ لوجو هذا البراند في لوحة الإدارة.'; return;
         }
         saveCover.disabled = true;
         var createJobButton = slot.querySelector('#create-video-job-btn');

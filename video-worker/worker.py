@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import argparse
 from drive_archive import upload as archive_upload
+from brand_identity import logo_asset
 import json
 import os
 import re
@@ -197,7 +198,11 @@ def download_job_assets(base_url: str, key: str, job: dict[str, Any], job_dir: P
         if ext and local_path.suffix.lower() != ext.lower():
             local_path = local_path.with_suffix(ext)
 
-        url = base_url + "/storage/v1/object/video-inputs/" + urllib.parse.quote(storage_path, safe="/")
+        bucket = "video-inputs"
+        if asset.get("asset_type") == "brand_logo":
+            logo_asset(job)
+            bucket = "brand-logos"
+        url = base_url + "/storage/v1/object/" + bucket + "/" + urllib.parse.quote(storage_path, safe="/")
         req = urllib.request.Request(url, headers=api_headers(key, json_content=False), method="GET")
         try:
             with urllib.request.urlopen(req, timeout=180) as resp:
@@ -621,6 +626,7 @@ def process_job(base_url: str, key: str, job: dict[str, Any]) -> None:
     (job_dir / "job.json").write_text(json.dumps(job, ensure_ascii=False, indent=2), encoding="utf-8")
 
     try:
+        logo_asset(job)
         job["_downloaded_assets"] = download_job_assets(base_url, key, job, job_dir)
         update_job(base_url, key, job_id, {"status": "rendering"})
         output, voice = render(job, job_dir)

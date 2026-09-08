@@ -7,6 +7,50 @@
     return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
 
+  function renderBrandLogos(host) {
+    var brands = { sono: 'سونو', dr_dina: 'د. دينا' };
+    host.innerHTML = '<h3>لوجوهات البراندات</h3><p>اللوجو المحفوظ يُستخدم تلقائيًا حسب براند المحتوى. تغييره متاح للسوبر أدمن.</p>' +
+      Object.keys(brands).map(function (brand) {
+        return '<div style="display:inline-block;vertical-align:top;width:280px;margin:8px;padding:14px;border:1px solid var(--c-border);border-radius:10px;">' +
+          '<h4>' + brands[brand] + '</h4><img id="brand-preview-' + brand + '" alt="لوجو ' + brands[brand] + '" style="display:none;width:200px;height:130px;object-fit:contain;background:#fff;">' +
+          '<p id="brand-state-' + brand + '">جاري تحميل اللوجو</p>' +
+          '<input id="brand-file-' + brand + '" type="file" accept="image/png,image/jpeg,image/webp">' +
+          '<button class="btn sm" id="brand-save-' + brand + '" disabled>حفظ لوجو ' + brands[brand] + '</button></div>';
+      }).join('');
+    window.SSMPDDb.listBrandLogos().then(function (rows) {
+      if (!host.isConnected) return;
+      Object.keys(brands).forEach(function (brand) {
+        var current = rows.filter(function (r) { return r.brand === brand; })[0];
+        var img = host.querySelector('#brand-preview-' + brand);
+        var state = host.querySelector('#brand-state-' + brand);
+        var input = host.querySelector('#brand-file-' + brand);
+        var button = host.querySelector('#brand-save-' + brand);
+        state.textContent = current ? 'اللوجو محفوظ' : 'لم يُحفظ لوجو لهذا البراند بعد';
+        if (current) window.SSMPDDb.getBrandLogoUrl(current.storage_path).then(function (url) {
+          if (!input.files.length) { img.src = url; img.style.display = 'block'; }
+        }).catch(function () { state.textContent = 'تعذر تحميل معاينة اللوجو'; });
+        input.onchange = function () {
+          var file = input.files[0];
+          button.disabled = !file;
+          if (file) {
+            var preview = URL.createObjectURL(file);
+            img.onload = function () { URL.revokeObjectURL(preview); };
+            img.src = preview; img.style.display = 'block';
+            state.textContent = 'راجع الصورة ثم احفظها لبراند ' + brands[brand];
+          }
+        };
+        button.onclick = function () {
+          var file = input.files[0];
+          if (!file || !confirm('اعتماد هذه الصورة كلوجو براند ' + brands[brand] + ' للإنتاج القادم؟')) return;
+          button.disabled = true; input.disabled = true;
+          window.SSMPDDb.uploadBrandLogo(brand, file).then(function () { renderBrandLogos(host); }).catch(function (e) {
+            state.textContent = e.message; button.disabled = false; input.disabled = false;
+          });
+        };
+      });
+    }).catch(function (e) { host.textContent = 'تعذر تحميل إعدادات البراندات: ' + e.message; });
+  }
+
   function render(container) {
     container.innerHTML = '<div class="loading">بيحمّل…</div>';
     Promise.all([
@@ -75,7 +119,9 @@
         '<button class="btn ghost sm" id="usage-load-btn">تحميل تقرير الاستخدام</button>' +
         '<div id="usage-report-box" style="margin-top:12px;"></div></div>';
 
+      html += '<div class="section" id="brand-logo-settings"></div>';
       container.innerHTML = html;
+      renderBrandLogos(container.querySelector('#brand-logo-settings'));
 
       document.getElementById("add-admin-btn").onclick = function () {
         var email = document.getElementById("new-email").value.trim();
@@ -388,3 +434,4 @@
 
   window.SSMPDRenderAdmin = { render: render };
 })();
+
