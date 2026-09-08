@@ -71,7 +71,7 @@
 
   var state = {
     subTab: "dashboard",
-    browseSearch: "", browsePage: 1, browsePageSize: 20000,
+    browseSearch: "", browsePage: 1, browsePageSize: 10,
     browseDateField: "created_at", browseDateFrom: "", browseDateTo: "",
     reviewFilter: "pending", reviewPage: 1,
     uploadPatient: null, uploadSearch: "", uploadResults: []
@@ -2483,10 +2483,16 @@
               '</td></tr>';
           });
           html += '</tbody></table>';
-          html += '<div style="display:flex;gap:8px;align-items:center;justify-content:center;margin-top:14px;">' +
+          html += '<div style="display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;margin-top:14px;">' +
             '<button class="btn ghost sm" id="pt-prev" ' + (state.browsePage <= 1 ? "disabled" : "") + '>السابق</button>' +
             '<span style="font-size:12px;color:var(--c-muted);">صفحة ' + state.browsePage + ' من ' + totalPages + ' (' + total + ' مريض)</span>' +
-            '<button class="btn ghost sm" id="pt-next" ' + (state.browsePage >= totalPages ? "disabled" : "") + '>التالي</button></div>';
+            '<button class="btn ghost sm" id="pt-next" ' + (state.browsePage >= totalPages ? "disabled" : "") + '>التالي</button>' +
+            '<span style="font-size:12px;color:var(--c-muted);margin-right:8px;">عدد لكل صفحة:</span>' +
+            '<select id="pt-page-size" class="input" style="width:auto;padding:4px 8px;">' +
+            [10, 30, 50, 100].map(function (n) {
+              return '<option value="' + n + '" ' + (state.browsePageSize === n ? "selected" : "") + '>' + n + '</option>';
+            }).join("") +
+            '</select></div>';
         }
         html += '</div>';
         view.innerHTML = html;
@@ -2519,6 +2525,12 @@
         var nextBtn = document.getElementById("pt-next");
         if (prevBtn) prevBtn.onclick = function () { if (state.browsePage > 1) { state.browsePage--; renderBrowseScreen(view, container); } };
         if (nextBtn) nextBtn.onclick = function () { state.browsePage++; renderBrowseScreen(view, container); };
+        var pageSizeSelect = document.getElementById("pt-page-size");
+        if (pageSizeSelect) pageSizeSelect.onchange = function (e) {
+          state.browsePageSize = Number(e.target.value) || 10;
+          state.browsePage = 1;
+          renderBrowseScreen(view, container);
+        };
 
         view.querySelectorAll("[data-open]").forEach(function (btn) {
           btn.onclick = function () { openPatientModal(view, container, btn.getAttribute("data-open")); };
