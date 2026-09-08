@@ -4703,3 +4703,91 @@ $$;
 
 revoke all on function public.create_video_job(uuid) from public;
 grant execute on function public.create_video_job(uuid) to authenticated;
+
+-- ============================================================
+-- 49) الحسابات (Accounting) — تسعير الخدمات + الباكجز
+-- ============================================================
+-- موديول جديد لتسعير المستلزمات/الخدمات وبناء باكجز منها. بيانات مالية
+-- حساسة — مقصورة على can_manage_all_content() (مدير عام/سوبر أدمن) بس،
+-- نفس دائرة صلاحية بيانات الليدز المالية الموجودة أصلاً في المشروع.
+
+create table if not exists public.pricing_supplies (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  unit_type text,                          -- علبة/زجاجة/عبوة... نص حر
+  units_per_package numeric,               -- عدد الوحدات في العبوة
+  package_price numeric not null default 0,-- سعر العبوة
+  consumption_per_patient numeric,         -- كمية الاستهلاك الافتراضية للمريض الواحد
+  category text,
+  active boolean not null default true,
+  created_by uuid references public.admins(id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.pricing_services (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  base_price numeric not null default 0,   -- سعر الخدمة نفسها (كشف/تقييم/تحليل/جلسة)
+  supplies_used jsonb not null default '[]'::jsonb, -- [{supply_id, quantity}] غير محدود
+  profit_margin_percent numeric not null default 0,
+  category text,
+  active boolean not null default true,
+  created_by uuid references public.admins(id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.pricing_packages (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  services_included jsonb not null default '[]'::jsonb, -- [{service_id, quantity}] غير محدود
+  profit_margin_percent numeric not null default 0,
+  active boolean not null default true,
+  created_by uuid references public.admins(id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+alter table public.pricing_supplies enable row level security;
+alter table public.pricing_services enable row level security;
+alter table public.pricing_packages enable row level security;
+
+drop policy if exists "accounting read supplies" on public.pricing_supplies;
+create policy "accounting read supplies" on public.pricing_supplies
+  for select using (public.can_manage_all_content());
+drop policy if exists "accounting write supplies" on public.pricing_supplies;
+create policy "accounting write supplies" on public.pricing_supplies
+  for insert with check (public.can_manage_all_content());
+drop policy if exists "accounting update supplies" on public.pricing_supplies;
+create policy "accounting update supplies" on public.pricing_supplies
+  for update using (public.can_manage_all_content());
+drop policy if exists "accounting delete supplies" on public.pricing_supplies;
+create policy "accounting delete supplies" on public.pricing_supplies
+  for delete using (public.can_manage_all_content());
+
+drop policy if exists "accounting read services" on public.pricing_services;
+create policy "accounting read services" on public.pricing_services
+  for select using (public.can_manage_all_content());
+drop policy if exists "accounting write services" on public.pricing_services;
+create policy "accounting write services" on public.pricing_services
+  for insert with check (public.can_manage_all_content());
+drop policy if exists "accounting update services" on public.pricing_services;
+create policy "accounting update services" on public.pricing_services
+  for update using (public.can_manage_all_content());
+drop policy if exists "accounting delete services" on public.pricing_services;
+create policy "accounting delete services" on public.pricing_services
+  for delete using (public.can_manage_all_content());
+
+drop policy if exists "accounting read packages" on public.pricing_packages;
+create policy "accounting read packages" on public.pricing_packages
+  for select using (public.can_manage_all_content());
+drop policy if exists "accounting write packages" on public.pricing_packages;
+create policy "accounting write packages" on public.pricing_packages
+  for insert with check (public.can_manage_all_content());
+drop policy if exists "accounting update packages" on public.pricing_packages;
+create policy "accounting update packages" on public.pricing_packages
+  for update using (public.can_manage_all_content());
+drop policy if exists "accounting delete packages" on public.pricing_packages;
+create policy "accounting delete packages" on public.pricing_packages
+  for delete using (public.can_manage_all_content());
