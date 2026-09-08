@@ -14,115 +14,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const CRON_SECRET = Deno.env.get("META_PUBLISH_CRON_SECRET");
-const GRAPH_VERSION = "v26.0";
-
-
-type GoogleServiceAccount = {
-  client_email: string;
-  private_key: string;
-  token_uri?: string;
-};
-
-let googleTokenCache: { token: string; expiresAt: number } | null = null;
-
-function base64Url(bytes: Uint8Array): string {
-  let binary = "";
-  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
-}
-
-function base64UrlJson(value: unknown): string {
-  return base64Url(new TextEncoder().encode(JSON.stringify(value)));
-}
-
-function pemToPkcs8(pem: string): ArrayBuffer {
-  const clean = pem
-    .replace(/-----BEGIN PRIVATE KEY-----/g, "")
-    .replace(/-----END PRIVATE KEY-----/g, "")
-    .replace(/\s+/g, "");
-  const binary = atob(clean);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  return bytes.buffer;
-}
-
-async function getGoogleDriveAccessToken(): Promise<string> {
-  if (googleTokenCache && googleTokenCache.expiresAt > Date.now() + 60_000) {
-    return googleTokenCache.token;
-  }
-
-  const raw = Deno.env.get("META_PUBLISH_GOOGLE_SERVICE_ACCOUNT_KEY");
-  if (!raw) throw new Error("META_PUBLISH_GOOGLE_SERVICE_ACCOUNT_KEY secret is missing");
-
-  let sa: GoogleServiceAccount;
-  try {
-    sa = JSON.parse(raw);
-  } catch {
-    throw new Error("META_PUBLISH_GOOGLE_SERVICE_ACCOUNT_KEY is not valid JSON");
-  }
-  if (!sa.client_email || !sa.private_key) {
-    throw new Error("META_PUBLISH_GOOGLE_SERVICE_ACCOUNT_KEY is missing client_email/private_key");
-  }
-
-  const tokenUri = sa.token_uri || "https://oauth2.googleapis.com/token";
-  const now = Math.floor(Date.now() / 1000);
-  const signingInput =
-    base64UrlJson({ alg: "RS256", typ: "JWT" }) +
-    "." +
-    base64UrlJson({
-      iss: sa.client_email,
-      scope: "https://www.googleapis.com/auth/drive.readonly",
-      aud: tokenUri,
-      iat: now,
-      exp: now + 3600
-    });
-
-  const key = await crypto.subtle.importKey(
-    "pkcs8",
-    pemToPkcs8(sa.private_key),
-    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
-    false,
-    ["sign"]
-  );
-  const signature = await crypto.subtle.sign(
-    "RSASSA-PKCS1-v1_5",
-    key,
-    new TextEncoder().encode(signingInput)
-  );
-  const assertion = signingInput + "." + base64Url(new Uint8Array(signature));
-
-  const res = await fetch(tokenUri, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
-      assertion
-    })
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok || !data.access_token) {
-    throw new Error("Google OAuth failed: " + (data.error_description || data.error || res.status));
-  }
-
-  const expiresIn = Number(data.expires_in || 3600);
-  googleTokenCache = {
-    token: data.access_token,
-    expiresAt: Date.now() + Math.max(60, expiresIn - 60) * 1000
-  };
-  return data.access_token;
-}
-
-function googleDriveFileId(url: string): string | null {
-  const pathMatch = /\/file\/d\/([^/?#]+)/.exec(url);
-  if (pathMatch) return pathMatch[1];
-  try {
-    const u = new URL(url);
-    if (u.hostname.endsWith("drive.google.com")) return u.searchParams.get("id");
-  } catch {
-    // not a URL we understand
-  }
-  return null;
-}
+const GRAPH_VERSION = "v19.0";
 
 function getServiceRoleKey(): string | null {
   const secretKeysRaw = Deno.env.get("SUPABASE_SECRET_KEYS");
@@ -176,49 +68,21 @@ async function graphPost(path: string, params: Record<string, string>) {
 // "meta-publish-assets") عشان يبقى عندنا رابط ثابت Meta تقدر تجيبه مباشرة
 // (Google Drive share links مش مضمونة تترجع bytes الصورة الخام لـfetch
 // خارجي). لو الفشل حصل، الـjob بيفشل برسالة واضحة — مفيش تخمين.
-async function rehostImageToStorage(admin: ReturnType<typeof createClient>, jobId: string, sourceUrl: string): Promise<string> {
-  const driveId = googleDriveFileId(sourceUrl);
-
-  let res: Response;
-  if (driveId) {
-    const googleAccessToken = await getGoogleDriveAccessToken();
-    res = await fetch(
-      `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(driveId)}?alt=media&supportsAllDrives=true`,
-      { headers: { Authorization: `Bearer ${googleAccessToken}` } }
-    );
-  } else {
-    res = await fetch(sourceUrl);
-  }
-
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    throw new Error(
-      `تعذّر تحميل ملف التصميم${driveId ? " من Google Drive بحساب الخدمة" : ""} (HTTP ${res.status})` +
-      (body ? `: ${body.slice(0, 180)}` : "")
-    );
-  }
-
-  const contentType = (res.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
-  if (!/^image\//.test(contentType)) {
-    throw new Error("ملف التصميم مش صورة (content-type: " + (contentType || "unknown") + ")");
-  }
-
+async function rehostImageToStorage(admin: ReturnType<typeof createClient>, jobId: string, driveUrl: string): Promise<string> {
+  var directUrl = driveUrl;
+  var m = /\/file\/d\/([^/]+)/.exec(driveUrl);
+  if (m) directUrl = `https://drive.google.com/uc?export=download&id=${m[1]}`;
+  const res = await fetch(directUrl);
+  if (!res.ok) throw new Error(`تعذّر تحميل ملف التصميم من Drive (HTTP ${res.status})`);
+  const contentType = res.headers.get("content-type") || "image/jpeg";
+  if (!/^image\//.test(contentType)) throw new Error("ملف التصميم مش صورة (content-type: " + contentType + ") — أول إصدار بيدعم صور بس");
   const bytes = new Uint8Array(await res.arrayBuffer());
-  const extByType: Record<string, string> = {
-    "image/jpeg": "jpg",
-    "image/png": "png",
-    "image/webp": "webp",
-    "image/gif": "gif"
-  };
-  const ext = extByType[contentType] || contentType.split("/")[1] || "jpg";
+  const ext = contentType.split("/")[1]?.split(";")[0] || "jpg";
   const path = `${jobId}.${ext}`;
-
-  const up = await admin.storage
-    .from("meta-publish-assets")
-    .upload(path, bytes, { contentType, upsert: true });
+  const up = await admin.storage.from("meta-publish-assets").upload(path, bytes, { contentType, upsert: true });
   if (up.error) throw new Error("فشل رفع الصورة لـSupabase Storage: " + up.error.message);
-
-  return admin.storage.from("meta-publish-assets").getPublicUrl(path).data.publicUrl;
+  const pub = admin.storage.from("meta-publish-assets").getPublicUrl(path);
+  return pub.data.publicUrl;
 }
 
 async function publishFacebookPhoto(pageId: string, token: string, imageUrl: string, message: string) {
@@ -282,8 +146,8 @@ async function processJob(admin: ReturnType<typeof createClient>, job: any) {
     return;
   }
 
-  const contentRes = await admin.from("content_items").select("title, body, design_file_url").eq("id", job.content_id).maybeSingle();
-  const content = contentRes.data as { title: string; body: string | null; design_file_url: string | null } | null;
+  const contentRes = await admin.from("content_items").select("title, body, design_file_url, published_url, published_urls").eq("id", job.content_id).maybeSingle();
+  const content = contentRes.data as { title: string; body: string | null; design_file_url: string | null; published_url: string | null; published_urls: Record<string, string> | null } | null;
   if (!content) {
     await admin.from("meta_publish_jobs").update({ status: "failed", error_code: "CONTENT_NOT_FOUND", error_message: "مادة المحتوى غير موجودة." }).eq("id", job.id);
     return;
@@ -291,18 +155,10 @@ async function processJob(admin: ReturnType<typeof createClient>, job: any) {
   const message = content.body || content.title || "";
 
   var imageUrl: string | null = null;
+  var imageError: string | null = null;
   if (content.design_file_url) {
-    try {
-      imageUrl = await rehostImageToStorage(admin, job.id, content.design_file_url);
-    } catch (e) {
-      const imageError = e instanceof Error ? e.message : String(e);
-      await admin.from("meta_publish_jobs").update({
-        status: "failed",
-        error_code: "IMAGE_FETCH_ERROR",
-        error_message: imageError
-      }).eq("id", job.id);
-      return;
-    }
+    try { imageUrl = await rehostImageToStorage(admin, job.id, content.design_file_url); }
+    catch (e) { imageError = e instanceof Error ? e.message : String(e); }
   }
 
   if (job.publish_facebook) {
@@ -326,7 +182,7 @@ async function processJob(admin: ReturnType<typeof createClient>, job: any) {
     if (!brandCfg.instagram_business_account_id) {
       errors.push("انستجرام: instagram_business_account_id مش متظبط للبراند ده");
     } else if (!imageUrl) {
-      errors.push("انستجرام: لازم صورة — أول إصدار بيدعم صور بس، ومفيش ملف تصميم متاح.");
+      errors.push("انستجرام: " + (imageError || "لازم صورة — أول إصدار بيدعم صور بس، ومفيش ملف تصميم متاح."));
     } else {
       const r = await publishInstagramSingleImage(brandCfg.instagram_business_account_id, token, imageUrl, message);
       if (r.ok) {
@@ -345,11 +201,19 @@ async function processJob(admin: ReturnType<typeof createClient>, job: any) {
   await admin.from("meta_publish_jobs").update(patch).eq("id", job.id);
 
   if (patch.status === "published" || patch.status === "partial") {
-    const publishedUrl = (patch.facebook_permalink as string) || (patch.instagram_permalink as string) || null;
+    // بند ١ من المراجعة المعمارية (٢٠٢٦-٠٩-٠٨): مبنكتبش فوق رابط منشور
+    // يدوي كان متسجّل قبل كده لمنصة تانية (زي تيكتوك/يوتيوب) — كل رابط
+    // منصة بيتسجّل في published_urls[platform] من غير ما يمسح أي رابط
+    // تاني، و published_url (القديم، للتوافق الخلفي) بيتحدّث بس لو فاضي.
+    const mergedUrls: Record<string, string> = { ...(content.published_urls || {}) };
+    if (patch.facebook_permalink) mergedUrls.facebook = patch.facebook_permalink as string;
+    if (patch.instagram_permalink) mergedUrls.instagram = patch.instagram_permalink as string;
+    const fallbackUrl = (patch.facebook_permalink as string) || (patch.instagram_permalink as string) || null;
     await admin.from("content_items").update({
       stage: "published",
       published_at: new Date().toISOString(),
-      published_url: publishedUrl
+      published_url: content.published_url || fallbackUrl,
+      published_urls: mergedUrls
     }).eq("id", job.content_id);
   }
 }
