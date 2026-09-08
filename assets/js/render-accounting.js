@@ -7,6 +7,8 @@
 
   function num(v) { var n = Number(v); return isFinite(n) ? n : 0; }
   function fmt(n) { return num(n).toLocaleString("en-US", { maximumFractionDigits: 2 }); }
+  function numSpan(n) { return '<span class="acc-num">' + fmt(n) + '</span>'; }
+  function pill(cls, text) { return '<span class="acc-pill ' + cls + '">' + text + '</span>'; }
 
   function unitCost(supply) {
     var units = num(supply.units_per_package);
@@ -107,44 +109,53 @@
 
   // ============ ١) تسعير الخدمات ============
   function renderPricingScreen(subView, container) {
-    var html = '<div class="section">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">' +
-      '<h3 style="margin:0;">مستلزمات/إضافات طبية</h3>' +
-      '<div><button class="btn" id="acc-print-supplies">🖨 طباعة</button> ' +
+    var avgMargin = state.services.length ? state.services.reduce(function (s, x) { return s + num(x.profit_margin_percent); }, 0) / state.services.length : 0;
+
+    var html = '<div class="kpi-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px;">' +
+      '<div class="kpi-card"><div class="label">مستلزمات مسجّلة</div><div class="value">' + state.supplies.length + '</div></div>' +
+      '<div class="kpi-card"><div class="label">خدمات مسعّرة</div><div class="value">' + state.services.length + '</div></div>' +
+      '<div class="kpi-card"><div class="label">متوسط هامش الربح</div><div class="value small acc-num">' + fmt(avgMargin) + '%</div></div>' +
+      '</div>';
+
+    html += '<div class="acc-card acc-cost">' +
+      '<div class="acc-card-head"><div><span class="acc-eyebrow">ضلع التكلفة</span><h3>مستلزمات وإضافات طبية</h3></div>' +
+      '<div class="acc-actions"><button class="btn" id="acc-print-supplies">🖨 طباعة</button> ' +
       '<button class="btn" id="acc-export-supplies">⬇ Excel</button> ' +
       '<button class="btn btn-primary" id="acc-add-supply">+ إضافة مستلزم</button></div></div>' +
-      '<div style="overflow-x:auto;"><table class="simple"><thead><tr>' +
-      '<th>الاسم</th><th>نوع الوحدة</th><th>عدد الوحدات/عبوة</th><th>سعر العبوة</th>' +
-      '<th>تكلفة الوحدة</th><th>استهلاك افتراضي/مريض</th><th></th></tr></thead><tbody>' +
-      state.supplies.map(function (s) {
-        return '<tr><td>' + s.name + '</td><td>' + (s.unit_type || "—") + '</td>' +
-          '<td>' + fmt(s.units_per_package) + '</td><td>' + fmt(s.package_price) + '</td>' +
-          '<td>' + fmt(unitCost(s)) + '</td><td>' + fmt(s.consumption_per_patient) + '</td>' +
-          '<td><button class="btn-link" data-edit-supply="' + s.id + '">تعديل</button> ' +
-          '<button class="btn-link" data-del-supply="' + s.id + '">حذف</button></td></tr>';
-      }).join("") +
-      (state.supplies.length ? "" : '<tr><td colspan="7">لا يوجد مستلزمات مضافة</td></tr>') +
-      '</tbody></table></div></div>';
+      (state.supplies.length ?
+        '<div style="overflow-x:auto;"><table class="simple acc-table"><thead><tr>' +
+        '<th>الاسم</th><th>نوع الوحدة</th><th>عدد الوحدات/عبوة</th><th>سعر العبوة</th>' +
+        '<th>تكلفة الوحدة</th><th>استهلاك افتراضي/مريض</th><th></th></tr></thead><tbody>' +
+        state.supplies.map(function (s) {
+          return '<tr><td>' + s.name + '</td><td>' + (s.unit_type || "—") + '</td>' +
+            '<td class="acc-col-num">' + numSpan(s.units_per_package) + '</td><td class="acc-col-num">' + numSpan(s.package_price) + '</td>' +
+            '<td class="acc-col-num">' + pill("acc-margin", fmt(unitCost(s))) + '</td><td class="acc-col-num">' + numSpan(s.consumption_per_patient) + '</td>' +
+            '<td><button class="btn-link" data-edit-supply="' + s.id + '">تعديل</button> ' +
+            '<button class="btn-link" data-del-supply="' + s.id + '">حذف</button></td></tr>';
+        }).join("") + '</tbody></table></div>'
+        : '<div class="acc-empty"><span class="acc-empty-icon">🧾</span>لسه مفيش مستلزمات مضافة — ابدأ بإضافة أول مستلزم عشان تقدر تربطه بالخدمات</div>') +
+      '</div>';
 
-    html += '<div class="section">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">' +
-      '<h3 style="margin:0;">الخدمات والتسعير</h3>' +
-      '<div><button class="btn" id="acc-print-services">🖨 طباعة</button> ' +
+    html += '<div class="acc-card acc-revenue">' +
+      '<div class="acc-card-head"><div><span class="acc-eyebrow">ضلع التسعير</span><h3>الخدمات والتسعير</h3></div>' +
+      '<div class="acc-actions"><button class="btn" id="acc-print-services">🖨 طباعة</button> ' +
       '<button class="btn" id="acc-export-services">⬇ Excel</button> ' +
       '<button class="btn btn-primary" id="acc-add-service">+ إضافة خدمة</button></div></div>' +
-      '<div style="overflow-x:auto;"><table class="simple"><thead><tr>' +
-      '<th>الخدمة</th><th>سعر الخدمة</th><th>تكلفة المستلزمات</th><th>إجمالي التكلفة</th>' +
-      '<th>هامش الربح %</th><th>قيمة الربح</th><th>السعر النهائي</th><th></th></tr></thead><tbody>' +
-      state.services.map(function (s) {
-        var t = serviceTotals(s);
-        return '<tr><td>' + s.name + '</td><td>' + fmt(s.base_price) + '</td><td>' + fmt(t.materialsCost) + '</td>' +
-          '<td>' + fmt(t.totalCost) + '</td><td>' + fmt(t.margin) + '%</td><td>' + fmt(t.profitValue) + '</td>' +
-          '<td><b>' + fmt(t.finalPrice) + '</b></td>' +
-          '<td><button class="btn-link" data-edit-service="' + s.id + '">تعديل</button> ' +
-          '<button class="btn-link" data-del-service="' + s.id + '">حذف</button></td></tr>';
-      }).join("") +
-      (state.services.length ? "" : '<tr><td colspan="8">لا يوجد خدمات مضافة</td></tr>') +
-      '</tbody></table></div></div>';
+      (state.services.length ?
+        '<div style="overflow-x:auto;"><table class="simple acc-table"><thead><tr>' +
+        '<th>الخدمة</th><th>سعر الخدمة</th><th>تكلفة المستلزمات</th><th>إجمالي التكلفة</th>' +
+        '<th>هامش الربح</th><th>قيمة الربح</th><th>السعر النهائي</th><th></th></tr></thead><tbody>' +
+        state.services.map(function (s) {
+          var t = serviceTotals(s);
+          return '<tr><td>' + s.name + '</td><td class="acc-col-num">' + numSpan(s.base_price) + '</td><td class="acc-col-num">' + numSpan(t.materialsCost) + '</td>' +
+            '<td class="acc-col-num">' + numSpan(t.totalCost) + '</td><td class="acc-col-num">' + pill("acc-margin", fmt(t.margin) + "%") + '</td>' +
+            '<td class="acc-col-num">' + pill("acc-profit", fmt(t.profitValue)) + '</td>' +
+            '<td class="acc-col-num">' + pill("acc-final", fmt(t.finalPrice)) + '</td>' +
+            '<td><button class="btn-link" data-edit-service="' + s.id + '">تعديل</button> ' +
+            '<button class="btn-link" data-del-service="' + s.id + '">حذف</button></td></tr>';
+        }).join("") + '</tbody></table></div>'
+        : '<div class="acc-empty"><span class="acc-empty-icon">💊</span>لسه مفيش خدمات مسعّرة — ضيف الخدمة الأولى وحدد سعرها الأساسي وهامش الربح</div>') +
+      '</div>';
 
     subView.innerHTML = html;
     wirePricingScreen(subView, container);
@@ -290,11 +301,11 @@
     function renderLines() {
       var el = document.getElementById("sv-lines");
       el.innerHTML = lines.map(function (l, i) {
-        return '<div class="field" style="display:flex;gap:8px;align-items:center;" data-line="' + i + '">' +
+        return '<div class="acc-line-row" data-line="' + i + '">' +
           '<select data-line-supply style="flex:2;">' + supplyOptions(l.supply_id) + '</select>' +
           '<input data-line-qty type="number" step="any" placeholder="الكمية" value="' + (l.quantity != null ? l.quantity : "") + '" style="flex:1;">' +
           '<button class="btn-link" data-line-del type="button">حذف</button></div>';
-      }).join("") || '<p style="color:#888;">لا يوجد مستلزمات مضافة لهذه الخدمة</p>';
+      }).join("") || '<div class="acc-line-empty">لا يوجد مستلزمات مضافة لهذه الخدمة</div>';
       el.querySelectorAll("[data-line]").forEach(function (row) {
         var idx = Number(row.getAttribute("data-line"));
         row.querySelector("[data-line-supply]").onchange = function (e) { lines[idx].supply_id = e.target.value; updateTotals(); };
@@ -306,9 +317,11 @@
     function updateTotals() {
       var tmp = { base_price: document.getElementById("sv-price").value, supplies_used: lines, profit_margin_percent: document.getElementById("sv-margin").value };
       var t = serviceTotals(tmp);
-      document.getElementById("sv-totals").innerHTML =
-        'تكلفة المستلزمات: <b>' + fmt(t.materialsCost) + '</b> — إجمالي التكلفة: <b>' + fmt(t.totalCost) + '</b> — ' +
-        'قيمة الربح: <b>' + fmt(t.profitValue) + '</b> — <span style="color:#0F369D;">السعر النهائي: <b>' + fmt(t.finalPrice) + '</b></span>';
+      document.getElementById("sv-totals").innerHTML = '<div class="acc-totals-strip">' +
+        '<span>تكلفة المستلزمات: ' + numSpan(t.materialsCost) + '</span>' +
+        '<span>إجمالي التكلفة: ' + numSpan(t.totalCost) + '</span>' +
+        '<span>قيمة الربح: ' + numSpan(t.profitValue) + '</span>' +
+        '<span class="acc-final-line">السعر النهائي: ' + numSpan(t.finalPrice) + '</span></div>';
     }
     document.getElementById("sv-add-line").onclick = function () { lines.push({ supply_id: "", quantity: 1 }); renderLines(); };
     document.getElementById("sv-price").oninput = updateTotals;
@@ -337,25 +350,35 @@
 
   // ============ ٢) الباكجز ============
   function renderPackagesScreen(subView, container) {
-    var html = '<div class="section">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">' +
-      '<h3 style="margin:0;">الباكجز</h3>' +
-      '<div><button class="btn" id="acc-print-packages">🖨 طباعة</button> ' +
+    var totalValue = state.packages.reduce(function (s, p) { return s + packageTotals(p).finalTotal; }, 0);
+    var avgMargin = state.packages.length ? state.packages.reduce(function (s, p) { return s + num(p.profit_margin_percent); }, 0) / state.packages.length : 0;
+
+    var html = '<div class="kpi-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px;">' +
+      '<div class="kpi-card"><div class="label">باكجات مُجهّزة</div><div class="value">' + state.packages.length + '</div></div>' +
+      '<div class="kpi-card"><div class="label">متوسط نسبة الربح</div><div class="value small acc-num">' + fmt(avgMargin) + '%</div></div>' +
+      '<div class="kpi-card"><div class="label">إجمالي قيمة الباكجات</div><div class="value small acc-num">' + fmt(totalValue) + '</div></div>' +
+      '</div>';
+
+    html += '<div class="acc-card acc-revenue">' +
+      '<div class="acc-card-head"><div><span class="acc-eyebrow">تجميع خدمات</span><h3>الباكجز</h3></div>' +
+      '<div class="acc-actions"><button class="btn" id="acc-print-packages">🖨 طباعة</button> ' +
       '<button class="btn" id="acc-export-packages">⬇ Excel</button> ' +
       '<button class="btn btn-primary" id="acc-add-package">+ إضافة باكج</button></div></div>' +
-      '<div style="overflow-x:auto;"><table class="simple"><thead><tr>' +
-      '<th>الباكج</th><th>عدد الخدمات</th><th>الإجمالي الفرعي</th><th>نسبة الربح %</th>' +
-      '<th>قيمة الربح</th><th>الإجمالي النهائي</th><th></th></tr></thead><tbody>' +
-      state.packages.map(function (p) {
-        var t = packageTotals(p);
-        return '<tr><td>' + p.name + '</td><td>' + (p.services_included || []).length + '</td>' +
-          '<td>' + fmt(t.subtotal) + '</td><td>' + fmt(t.margin) + '%</td><td>' + fmt(t.profitValue) + '</td>' +
-          '<td><b>' + fmt(t.finalTotal) + '</b></td>' +
-          '<td><button class="btn-link" data-edit-package="' + p.id + '">تعديل</button> ' +
-          '<button class="btn-link" data-del-package="' + p.id + '">حذف</button></td></tr>';
-      }).join("") +
-      (state.packages.length ? "" : '<tr><td colspan="7">لا يوجد باكجات مضافة</td></tr>') +
-      '</tbody></table></div></div>';
+      (state.packages.length ?
+        '<div style="overflow-x:auto;"><table class="simple acc-table"><thead><tr>' +
+        '<th>الباكج</th><th>عدد الخدمات</th><th>الإجمالي الفرعي</th><th>نسبة الربح</th>' +
+        '<th>قيمة الربح</th><th>الإجمالي النهائي</th><th></th></tr></thead><tbody>' +
+        state.packages.map(function (p) {
+          var t = packageTotals(p);
+          return '<tr><td>' + p.name + '</td><td class="acc-col-num">' + (p.services_included || []).length + '</td>' +
+            '<td class="acc-col-num">' + numSpan(t.subtotal) + '</td><td class="acc-col-num">' + pill("acc-margin", fmt(t.margin) + "%") + '</td>' +
+            '<td class="acc-col-num">' + pill("acc-profit", fmt(t.profitValue)) + '</td>' +
+            '<td class="acc-col-num">' + pill("acc-final", fmt(t.finalTotal)) + '</td>' +
+            '<td><button class="btn-link" data-edit-package="' + p.id + '">تعديل</button> ' +
+            '<button class="btn-link" data-del-package="' + p.id + '">حذف</button></td></tr>';
+        }).join("") + '</tbody></table></div>'
+        : '<div class="acc-empty"><span class="acc-empty-icon">📦</span>لسه مفيش باكجات — جمّع أي مجموعة خدمات وحدد نسبة ربح الباكج نفسه</div>') +
+      '</div>';
     subView.innerHTML = html;
 
     var reload = function () { render(container); };
@@ -404,11 +427,11 @@
     function renderLines() {
       var el = document.getElementById("pk-lines");
       el.innerHTML = lines.map(function (l, i) {
-        return '<div class="field" style="display:flex;gap:8px;align-items:center;" data-line="' + i + '">' +
+        return '<div class="acc-line-row" data-line="' + i + '">' +
           '<select data-line-service style="flex:2;">' + serviceOptions(l.service_id) + '</select>' +
           '<input data-line-qty type="number" step="any" placeholder="الكمية" value="' + (l.quantity != null ? l.quantity : 1) + '" style="flex:1;">' +
           '<button class="btn-link" data-line-del type="button">حذف</button></div>';
-      }).join("") || '<p style="color:#888;">لا يوجد خدمات مضافة لهذا الباكج</p>';
+      }).join("") || '<div class="acc-line-empty">لا يوجد خدمات مضافة لهذا الباكج</div>';
       el.querySelectorAll("[data-line]").forEach(function (row) {
         var idx = Number(row.getAttribute("data-line"));
         row.querySelector("[data-line-service]").onchange = function (e) { lines[idx].service_id = e.target.value; updateTotals(); };
@@ -420,9 +443,10 @@
     function updateTotals() {
       var tmp = { services_included: lines, profit_margin_percent: document.getElementById("pk-margin").value };
       var t = packageTotals(tmp);
-      document.getElementById("pk-totals").innerHTML =
-        'الإجمالي الفرعي: <b>' + fmt(t.subtotal) + '</b> — قيمة الربح: <b>' + fmt(t.profitValue) + '</b> — ' +
-        '<span style="color:#0F369D;">الإجمالي النهائي: <b>' + fmt(t.finalTotal) + '</b></span>';
+      document.getElementById("pk-totals").innerHTML = '<div class="acc-totals-strip">' +
+        '<span>الإجمالي الفرعي: ' + numSpan(t.subtotal) + '</span>' +
+        '<span>قيمة الربح: ' + numSpan(t.profitValue) + '</span>' +
+        '<span class="acc-final-line">الإجمالي النهائي: ' + numSpan(t.finalTotal) + '</span></div>';
     }
     document.getElementById("pk-add-line").onclick = function () { lines.push({ service_id: "", quantity: 1 }); renderLines(); };
     document.getElementById("pk-margin").oninput = updateTotals;
