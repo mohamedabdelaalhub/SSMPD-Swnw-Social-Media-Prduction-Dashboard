@@ -443,7 +443,18 @@ function openAgentImportModal(parentBackdrop) {
     return missing;
   }
 
-  function coverSettingsHtml(item, brandLogo) {
+  function brandLogoOptionsHtml(item, logos) {
+    var selected = (item.cover_settings || {}).logo_variant || 'primary';
+    var labels = { primary: 'النسخة الأولى', alternate: 'النسخة الثانية' };
+    return '<div style="display:flex;gap:12px;flex-wrap:wrap;">' + Object.keys(labels).map(function (variant) {
+      var logo = logos.filter(function (r) { return r.brand === item.brand && (r.variant || 'primary') === variant; })[0];
+      return '<label style="display:block;padding:10px;border:1px solid var(--c-border);border-radius:8px;">' +
+        '<input type="radio" name="brand-logo-variant" value="' + variant + '"' + (selected === variant ? ' checked' : '') + (logo ? '' : ' disabled') + '> ' + labels[variant] +
+        (logo ? '<img data-brand-logo-variant="' + variant + '" alt="' + labels[variant] + '" style="display:block;width:150px;height:100px;object-fit:contain;background:#eee;">' : '<p>لم تُرفع هذه النسخة بعد</p>') + '</label>';
+    }).join('') + '</div>';
+  }
+
+  function coverSettingsHtml(item, brandLogos) {
     var c = item.cover_settings || {};
     var brandName = item.brand === 'sono' ? 'سونو' : (item.brand === 'dr_dina' ? 'د. دينا' : 'غير محدد');
     return '<details style="margin:12px 0;"><summary>اقتراحات كفر الفيديو</summary>' +
@@ -451,8 +462,8 @@ function openAgentImportModal(parentBackdrop) {
       '<div class="field"><label for="cover-title">عنوان الكفر</label><input id="cover-title" maxlength="80" value="' + escapeHtml(c.title || item.title || '') + '"></div>' +
       '<div class="field"><label for="cover-position">مكان العنوان</label><select id="cover-position"><option value="bottom"' + (c.position !== 'top' ? ' selected' : '') + '>أسفل الصورة</option><option value="top"' + (c.position === 'top' ? ' selected' : '') + '>أعلى الصورة</option></select></div>' +
       '<div class="field"><label>لوجو البراند — ' + escapeHtml(brandName) + '</label>' +
-      (brandLogo ? '<img id="content-brand-logo" alt="لوجو البراند" style="width:150px;height:100px;object-fit:contain;background:#fff;"><p>يُستخدم لوجو ' + escapeHtml(brandName) + ' المحفوظ في لوحة الإدارة.</p>' : '<p>احفظ لوجو ' + escapeHtml(brandName) + ' من قسم لوجوهات البراندات في لوحة الإدارة قبل الإنتاج.</p>') + '</div>' +
-      '<p>العنوان ومكانه يُستخدمان مع الإنتاج القادم. اللوجو مرتبط بالبراند تلقائيًا.</p>' +
+      brandLogoOptionsHtml(item, brandLogos) + '</div>' +
+      '<p>العنوان ومكانه يُستخدمان مع الإنتاج القادم. اختيار اللوجو يقتصر على نسختي هذا البراند.</p>' +
       '<button class="btn sm" id="save-cover-settings">حفظ إعدادات الكفر</button><span id="cover-settings-feedback" role="status"></span></details>';
   }
 
@@ -495,7 +506,7 @@ function openAgentImportModal(parentBackdrop) {
     ]).then(function (res) {
       var jobs = res[0] || [];
       var assets = res[1] || [];
-      var brandLogo = (res[2] || []).filter(function (b) { return b.brand === item.brand; })[0];
+      var brandLogos = (res[2] || []).filter(function (b) { return b.brand === item.brand; });
       var latest = jobs.length ? jobs[0] : null;
       var missing = videoJobMissingFields(item);
       var mediaMode = item.video_media_mode || "uploaded_plus_auto";
@@ -543,7 +554,7 @@ function openAgentImportModal(parentBackdrop) {
       }
       html += '</div>';
 
-      html += coverSettingsHtml(item, brandLogo);
+      html += coverSettingsHtml(item, brandLogos);
 
       if (!latest) {
         html += '<div style="font-size:12px;color:var(--c-muted);margin-bottom:8px;">حوّل المسودة إلى Video Job مستقل ليقرأه عامل الفيديو على الماك لاحقًا.</div>';
@@ -588,20 +599,23 @@ function openAgentImportModal(parentBackdrop) {
       if (latest && latest.status === "ready" && latest.cover_settings && latest.cover_settings.enabled) {
         loadCoverChoices(slot.querySelector('#video-cover-choices'), latest, function () { renderVideoJobSection(slot, item); });
       }
-      if (brandLogo) window.SSMPDDb.getBrandLogoUrl(brandLogo.storage_path).then(function (url) {
-        var img = slot.querySelector('#content-brand-logo');
-        if (img) img.src = url;
-      }).catch(function () {});
+      brandLogos.forEach(function (logo) {
+        window.SSMPDDb.getBrandLogoUrl(logo.storage_path).then(function (url) {
+          var img = slot.querySelector('[data-brand-logo-variant="' + (logo.variant || 'primary') + '"]');
+          if (img) img.src = url;
+        }).catch(function () {});
+      });
       var saveCover = slot.querySelector('#save-cover-settings');
       saveCover.onclick = function () {
         var settings = {
           enabled: slot.querySelector('#cover-enabled').checked,
           title: slot.querySelector('#cover-title').value.trim(),
-          position: slot.querySelector('#cover-position').value
+          position: slot.querySelector('#cover-position').value,
+          logo_variant: (slot.querySelector('[name="brand-logo-variant"]:checked') || {}).value || 'primary'
         };
         var feedback = slot.querySelector('#cover-settings-feedback');
-        if (settings.enabled && (!settings.title || !brandLogo)) {
-          feedback.textContent = 'اكتب العنوان وتأكد من حفظ لوجو هذا البراند في لوحة الإدارة.'; return;
+        if (settings.enabled && (!settings.title || !brandLogos.some(function (b) { return (b.variant || 'primary') === settings.logo_variant; }))) {
+          feedback.textContent = 'اكتب العنوان واختر نسخة لوجو محفوظة لهذا البراند.'; return;
         }
         saveCover.disabled = true;
         var createJobButton = slot.querySelector('#create-video-job-btn');
