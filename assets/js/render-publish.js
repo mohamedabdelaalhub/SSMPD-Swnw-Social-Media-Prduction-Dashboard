@@ -152,12 +152,12 @@
         '<div id="pb-meta-hint-' + i.id + '" style="display:none;margin:6px 0 10px;padding:8px 10px;border:1px solid var(--c-border);border-radius:8px;color:var(--c-muted);font-size:12px;">فيسبوك/انستجرام: رابط المنشور بيتسجل تلقائيًا بعد نجاح النشر.</div>' +
         '<div class="field"><label>معاد النشر المجدول</label><input type="datetime-local" id="pb-when-' + i.id + '"></div>' +
         '<div id="pb-manual-wrap-' + i.id + '" style="display:none;">' +
-          '<div class="field"><label>رابط المنشور للمنصات اليدوية فقط (تيكتوك/يوتيوب/الموقع)</label>' +
-          '<input placeholder="https://..." id="pb-url-' + i.id + '"></div>' +
+        '<div class="field"><label>رابط المنشور للمنصات اليدوية فقط (تيكتوك/يوتيوب/الموقع)</label>' +
+        '<input placeholder="https://..." id="pb-url-' + i.id + '"></div>' +
         '</div>' +
         '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px;">' +
-          '<button class="btn" data-schedule="' + i.id + '">جدولة</button>' +
-          '<button class="btn ghost" data-publish-now="' + i.id + '">نشر الآن</button>' +
+        '<button class="btn" data-schedule="' + i.id + '">جدولة</button>' +
+        '<button class="btn ghost" data-publish-now="' + i.id + '">نشر الآن</button>' +
         '</div>' + jobHtml;
     } else {
       actionsHtml = jobHtml;
@@ -166,14 +166,14 @@
           actionsHtml +=
             '<div class="field"><label>رابط المنشور للمنصات اليدوية فقط</label><input placeholder="https://..." id="pb-url-' + i.id + '"></div>' +
             '<div style="display:flex;gap:8px;margin-top:6px;">' +
-              '<button class="btn" data-confirm-publish="' + i.id + '">تأكيد النشر يدويًا</button>' +
-              '<button class="btn ghost" data-cancel-schedule="' + i.id + '">إلغاء الجدولة</button>' +
+            '<button class="btn" data-confirm-publish="' + i.id + '">تأكيد النشر يدويًا</button>' +
+            '<button class="btn ghost" data-cancel-schedule="' + i.id + '">إلغاء الجدولة</button>' +
             '</div>';
         } else {
           actionsHtml +=
             '<div style="margin-top:8px;padding:8px 10px;border:1px solid var(--c-border);border-radius:8px;color:var(--c-muted);font-size:12px;">روابط Facebook/Instagram هتتسجل تلقائيًا بعد نجاح النشر.</div>' +
             '<div style="display:flex;gap:8px;margin-top:6px;">' +
-              '<button class="btn ghost" data-cancel-schedule="' + i.id + '">إلغاء الجدولة</button>' +
+            '<button class="btn ghost" data-cancel-schedule="' + i.id + '">إلغاء الجدولة</button>' +
             '</div>';
         }
       } else if (job.status !== "pending" && job.status !== "processing") {
@@ -186,23 +186,23 @@
     var statusLabel = mode === "scheduled" ? "مجدولة" : "جاهزة للنشر";
     return '<div class="section" style="border:1px solid var(--c-border);border-radius:12px;padding:12px 14px;margin-bottom:10px;">' +
       '<div style="display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;">' +
-        '<div style="min-width:0;flex:1;">' +
-          '<div class="title" style="font-weight:800;margin-bottom:4px;">' + escapeHtml(i.title) + W.brandBadgeHtml(i.brand) + '</div>' +
-          '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">' +
-            '<span class="status-pill ' + (mode === "scheduled" ? "received" : "approved") + '">' + statusLabel + '</span>' +
-            scheduledLine +
-          '</div>' +
-        '</div>' +
-        '<button class="btn ghost sm" data-toggle-publish-details="' + i.id + '">فتح التفاصيل</button>' +
+      '<div style="min-width:0;flex:1;">' +
+      '<div class="title" style="font-weight:800;margin-bottom:4px;">' + escapeHtml(i.title) + W.brandBadgeHtml(i.brand) + '</div>' +
+      '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">' +
+      '<span class="status-pill ' + (mode === "scheduled" ? "received" : "approved") + '">' + statusLabel + '</span>' +
+      scheduledLine +
+      '</div>' +
+      '</div>' +
+      '<button class="btn ghost sm" data-toggle-publish-details="' + i.id + '">فتح التفاصيل</button>' +
       '</div>' +
       '<div id="publish-details-' + i.id + '" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--c-border);">' +
-        '<div class="meta">بواسطة: ' + escapeHtml(ownerName) + ' · مصمم: ' + escapeHtml(designerName) + '</div>' +
-        (i.body ? '<p style="white-space:pre-wrap;margin:8px 0;">' + escapeHtml(i.body) + '</p>' : '') +
-        (i.design_file_url ? '<p><a href="' + i.design_file_url + '" target="_blank" class="btn ghost sm">فتح ملف التصميم المعتمد</a></p>' : '<p style="color:var(--c-muted);font-size:12px;">مفيش ملف تصميم مرفوع</p>') +
-        actionsHtml +
-        '<div id="comments-slot-' + i.id + '" style="margin-top:10px;"></div>' +
+      '<div class="meta">بواسطة: ' + escapeHtml(ownerName) + ' · مصمم: ' + escapeHtml(designerName) + '</div>' +
+      (i.body ? '<p style="white-space:pre-wrap;margin:8px 0;">' + escapeHtml(i.body) + '</p>' : '') +
+      (i.design_file_url ? '<p><a href="' + i.design_file_url + '" target="_blank" class="btn ghost sm">فتح ملف التصميم المعتمد</a></p>' : '<p style="color:var(--c-muted);font-size:12px;">مفيش ملف تصميم مرفوع</p>') +
+      actionsHtml +
+      '<div id="comments-slot-' + i.id + '" style="margin-top:10px;"></div>' +
       '</div>' +
-    '</div>';
+      '</div>';
   }
 
   function wire(container) {
@@ -304,10 +304,16 @@
     if (metaSelected) {
       // فيسبوك/انستجرام: جدولة فورية (stage="scheduled" بمعاد = الآن) —
       // بتتحول لـ"published" تلقائيًا بعد ما الـEdge Function تنشر فعليًا.
+      // رابط المنصات التانية (لو موجود) بيتسجّل في published_urls لكل منصة
+      // على حدة — عشان الـEdge Function متكتبش فوقه لما تنشر Meta بعد كده
+      // (بند ١ من المراجعة المعمارية).
+      var otherUrlsPatch = {};
+      others.forEach(function (p) { otherUrlsPatch[p] = url; });
       window.SSMPDDb.updateContentItem(id, {
         stage: "scheduled", brand: brand, publish_platform: platforms[0], publish_platforms: platforms,
         scheduled_publish_at: nowIso, scheduled_by: me.id,
-        published_url: others.length ? url : null
+        published_url: others.length ? url : null,
+        published_urls: otherUrlsPatch
       }).then(function () {
         return window.SSMPDDb.logActivity({ content_id: id, actor_id: me.id, action: "نشر فوري (تلقائي)", from_stage: "ready_to_publish", to_stage: "scheduled" });
       }).then(function () {
@@ -338,8 +344,20 @@
     var url = valueOf("pb-url-" + id);
     if (!url) { notify("حط رابط المنشور الأول", "error"); return; }
     var me = window.SSMPDAuth.currentAdmin;
-    window.SSMPDDb.updateContentItem(id, {
-      stage: "published", published_url: url, published_by: me.id, published_at: new Date().toISOString()
+    // بند ١ من المراجعة المعمارية (٢٠٢٦-٠٩-٠٨): قبل الكتابة، نجيب حالة المادة
+    // الحالية — لو فيها رابط Meta تلقائي متسجل بالفعل (من منصة تانية غير اللي
+    // بنأكدها هنا)، منكتبش فوقه في published_url، وبنسجل رابطنا في
+    // published_urls لكل منصة على حدة بدل ما نكلبش القديم.
+    window.SSMPDDb.getContentItem(id).then(function (current) {
+      var mergedUrls = Object.assign({}, (current && current.published_urls) || {});
+      var platform = (current && current.publish_platform) || "manual";
+      mergedUrls[platform] = url;
+      var patch = {
+        stage: "published", published_by: me.id, published_at: new Date().toISOString(),
+        published_url: (current && current.published_url) ? current.published_url : url,
+        published_urls: mergedUrls
+      };
+      return window.SSMPDDb.updateContentItem(id, patch);
     }).then(function (updated) {
       window.SSMPDDrive.logPublished(id, updated.title, url, updated.stage_history).catch(function () {});
       return window.SSMPDDb.logActivity({ content_id: id, actor_id: me.id, action: "تأكيد نشر مجدول", from_stage: "scheduled", to_stage: "published" });
