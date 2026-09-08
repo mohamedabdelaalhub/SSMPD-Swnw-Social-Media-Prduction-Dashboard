@@ -71,7 +71,7 @@
 
   var state = {
     subTab: "dashboard",
-    browseSearch: "", browsePage: 1, browsePageSize: 20,
+    browseSearch: "", browsePage: 1, browsePageSize: 100,
     browseDateField: "created_at", browseDateFrom: "", browseDateTo: "",
     reviewFilter: "pending", reviewPage: 1,
     uploadPatient: null, uploadSearch: "", uploadResults: []
