@@ -57,8 +57,8 @@ Update the existing Apps Script deployment with the new cover_1 through cover_5 
 Brand logos now come from the persistent `brand_logos` registry. Apply
 `supabase/migrations/20260908_brand_logos.sql` after the prior migrations and install
 `brand_identity.py` alongside the other worker modules. A super admin uploads the logo
-once into the dedicated Sono or Dr. Dina card in the Admin panel. Content authors can
-edit the cover title/placement but cannot select or override the logo. Logo files live
+into one of two fixed slots for Sono or Dr. Dina in the Admin panel. Content authors can
+edit the cover title/placement and select either saved variant of their content brand. Logo files live
 in a private immutable `brand-logos` bucket. Replacements use new object paths so
 historical and running jobs retain their original snapshots.
 
@@ -85,3 +85,23 @@ then updates selected_cover_id and cover_url. It changes no video pixels and doe
 Until selection, option 1 is the default cover. The original video and all options remain on Drive.
 The preview uses signed URLs and does not make video-inputs public. Existing ready jobs are
 not retroactively changed; use a new render with cover options to generate choices.
+
+## Two variants per brand
+
+Apply `supabase/migrations/20260908_brand_logo_variants.sql` after the permanent-brand
+migration. Existing logos remain in the `primary` slot. The second slot is `alternate`.
+The Admin panel has four fixed upload cards: two for Sono and two for Dr. Dina. In content
+production, users see only their brand's two variants with previews; missing slots are
+shown disabled. Save cover settings and refresh the pending job to capture a change.
+
+Job creation reads only `logo_variant` from the content settings, validates the two
+allowed values and fetches the logo using both `brand` and `variant` server-side. It
+never accepts a logo ID or another brand from the client. The first slot remains the
+default for existing content. If the selected slot is missing, job creation reports it
+instead of silently selecting another slot. Replacing a slot does not mutate existing
+job snapshots or stored logo objects. The previous three-argument upload RPC remains
+compatible and updates the first slot only.
+
+This variant change does not require a new Apps Script deployment or additional worker
+code beyond the permanent-brand worker update (`brand_identity.py` plus its callers).
+The user's Mac still needs that PR 12 worker update before rendering new jobs.
