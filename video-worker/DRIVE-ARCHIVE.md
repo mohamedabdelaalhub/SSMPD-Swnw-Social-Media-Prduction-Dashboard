@@ -54,11 +54,24 @@ so use the command above when only archiving needs recovery.
 Apply `supabase/migrations/20260908_video_cover_candidates.sql` after the assets/Drive migration.
 Also install `cover_candidates.py` alongside `worker.py` and `drive_archive.py`.
 Update the existing Apps Script deployment with the new cover_1 through cover_5 support.
-In a Content Item, upload the brand logo as an image, enable cover options, enter a title
-(up to 80 characters), choose top/bottom placement, choose the logo and save settings before
-creating the next job. Settings and logo references are snapshotted with that job. The logo
-is excluded from the visual footage pool. Templates are configured per Content Item;
-a shared Brand Library is not introduced by this change.
+Brand logos now come from the persistent `brand_logos` registry. Apply
+`supabase/migrations/20260908_brand_logos.sql` after the prior migrations and install
+`brand_identity.py` alongside the other worker modules. A super admin uploads the logo
+once into the dedicated Sono or Dr. Dina card in the Admin panel. Content authors can
+edit the cover title/placement but cannot select or override the logo. Logo files live
+in a private immutable `brand-logos` bucket. Replacements use new object paths so
+historical and running jobs retain their original snapshots.
+
+Job creation obtains the logo server-side by the Content Item brand. It ignores
+per-video logo IDs and requires a saved logo. A pending job can be refreshed using
+its dashboard button to capture current settings/assets/logo. Running jobs are not
+modified. Previously selected per-content logo assets are tagged `legacy_logo` and
+excluded from new footage snapshots without deleting their files. The updated worker
+refuses old/unbound or cross-brand snapshots and requires pending jobs to be refreshed.
+
+The registry prevents accidental per-video brand swaps. The super admin still needs
+to verify each uploaded image belongs to the card's brand; the system does not infer
+brand identity from image pixels. No logo has been auto-imported based on filenames.
 
 The worker samples five windows across the visual track and uses FFmpeg's thumbnail filter
 within each window. This is representative-frame sampling, not face-aware or blur-ranking AI.

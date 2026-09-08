@@ -1,6 +1,7 @@
 """Five branded cover options from the rendered visual track; FFmpeg + libass."""
 from pathlib import Path
 import subprocess
+from brand_identity import logo_asset
 
 
 def build(job, output, ffmpeg, duration):
@@ -10,10 +11,10 @@ def build(job, output, ffmpeg, duration):
     title = str(settings.get('title') or job.get('title') or '').strip()
     if not title or len(title) > 80:
         raise RuntimeError('Cover title must contain 1–80 characters.')
-    logo = next((Path(a['local_path']) for a in job.get('_downloaded_assets', [])
-                 if a.get('id') == settings.get('logo_asset_id') and a.get('asset_type') == 'image'), None)
-    if logo is None or not logo.is_file():
-        raise RuntimeError('Choose and upload the brand logo before generating cover options.')
+    asset = logo_asset(job, downloaded=True)
+    logo = Path(asset.get('local_path') or '')
+    if not logo.is_file():
+        raise RuntimeError('Saved brand logo could not be downloaded.')
     output = Path(output)
     # The clean track avoids duplicating burned-in subtitles on the cover.
     source = output.parent / 'background.mp4'
