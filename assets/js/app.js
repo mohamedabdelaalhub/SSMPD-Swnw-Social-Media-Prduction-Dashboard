@@ -603,7 +603,7 @@
 
     // فصل بصري: تابات السويت الرئيسي (SSMPD) بتتخفي تماماً لما نكون جوه موديول
     // منفصل (أرشيف المرضى / الليدز / لوحة التحكم) عشان ميظهرش هيدر حاجتين مع بعض
-    var isSeparateModule = ["patients", "leads", "admin"].indexOf(tab) !== -1;
+    var isSeparateModule = ["patients", "leads", "admin", "accounting"].indexOf(tab) !== -1;
     var tabsBar = document.getElementById("tabs-bar");
     if (tabsBar) tabsBar.style.display = isSeparateModule ? "none" : "";
     var mmTabs = document.querySelector("#mobile-menu .mm-tabs");
