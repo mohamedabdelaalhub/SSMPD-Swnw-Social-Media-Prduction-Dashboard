@@ -379,3 +379,32 @@ table.simple tr:hover{background:var(--c-bg);}
   .calendar-grid{grid-template-columns:repeat(7,minmax(0,1fr));}
   .calendar-cell .item{font-size:9.5px;}
 }
+
+/* ===========================================================
+   الحسابات (Accounting) — تسعير الخدمات + الباكجز
+   منطق بصري: عمود "التكلفة" بلون محايد، عمود "السعر النهائي/الربح"
+   ببادچ لوني (أزرق للسعر النهائي، أخضر لقيمة الربح) — فصل بصري بين
+   ضلع التكلفة وضلع الإيراد، وأرقام دايمًا LTR جوه جدول RTL.
+   =========================================================== */
+.acc-card{background:var(--c-card); border-radius:var(--radius); box-shadow:var(--shadow); padding:20px; margin-bottom:18px; border-top:3px solid var(--c-border);}
+.acc-card.acc-cost{border-top-color:var(--c-primary);}
+.acc-card.acc-revenue{border-top-color:var(--c-alert);}
+.acc-card-head{display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:14px;}
+.acc-card-head h3{margin:0; font-size:15px; display:flex; align-items:center; gap:8px;}
+.acc-card-head .acc-eyebrow{font-size:11px; font-weight:700; color:var(--c-muted); letter-spacing:.02em;}
+.acc-actions{display:flex; gap:8px; flex-wrap:wrap;}
+.acc-num{direction:ltr; unicode-bidi:embed; font-variant-numeric:tabular-nums; display:inline-block;}
+table.simple.acc-table th{white-space:nowrap;}
+table.simple.acc-table td.acc-col-num{text-align:left;}
+.acc-pill{display:inline-block; padding:3px 10px; border-radius:999px; font-size:12.5px; font-weight:700; font-variant-numeric:tabular-nums; direction:ltr; unicode-bidi:embed;}
+.acc-pill.acc-final{background:rgba(15,54,157,.1); color:var(--c-primary);}
+.acc-pill.acc-profit{background:rgba(47,125,92,.12); color:var(--c-positive);}
+.acc-pill.acc-margin{background:rgba(22,33,46,.06); color:var(--c-dark); font-weight:600;}
+.acc-empty{text-align:center; padding:26px 10px; color:var(--c-muted); font-size:13.5px;}
+.acc-empty .acc-empty-icon{font-size:22px; display:block; margin-bottom:6px; opacity:.6;}
+.acc-line-row{display:flex; gap:8px; align-items:center; padding:8px 10px; border:1px solid var(--c-border); border-radius:10px; margin-bottom:8px; background:var(--c-bg);}
+.acc-line-row select, .acc-line-row input{margin:0;}
+.acc-line-empty{color:var(--c-muted); font-size:13px; padding:6px 2px 10px;}
+.acc-totals-strip{margin-top:12px; padding:12px 14px; background:var(--c-bg); border-radius:10px; font-size:13px; display:flex; flex-wrap:wrap; gap:14px; align-items:center;}
+.acc-totals-strip b{font-variant-numeric:tabular-nums; direction:ltr; unicode-bidi:embed; display:inline-block;}
+.acc-totals-strip .acc-final-line{color:var(--c-primary); font-weight:700; font-size:14.5px;}
