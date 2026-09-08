@@ -235,6 +235,52 @@
     createVideoJob: function (contentId) {
       return handle(client.rpc("create_video_job", { p_content_id: contentId }));
     },
+    listVideoAssetsForContent: function (contentId) {
+      return handle(client.from("video_assets").select("*")
+        .eq("content_id", contentId)
+        .order("created_at", { ascending: true }));
+    },
+    uploadVideoAsset: function (contentId, adminId, assetType, file) {
+      var safeName = String(file.name || "asset")
+        .replace(/[^a-zA-Z0-9._-]+/g, "-")
+        .replace(/^-+|-+$/g, "") || "asset";
+      var storagePath = adminId + "/" + contentId + "/" +
+        Date.now() + "-" + Math.random().toString(36).slice(2, 8) + "-" + safeName;
+      var bucket = client.storage.from("video-inputs");
+
+      return bucket.upload(storagePath, file, {
+        cacheControl: "3600",
+        upsert: false,
+        contentType: file.type || undefined
+      }).then(function (res) {
+        if (res.error) throw res.error;
+        return handle(client.rpc("register_video_asset", {
+          p_content_id: contentId,
+          p_asset_type: assetType,
+          p_storage_path: storagePath,
+          p_file_name: file.name || safeName,
+          p_mime_type: file.type || "",
+          p_file_size: file.size
+        })).catch(function (e) {
+          bucket.remove([storagePath]).catch(function () {});
+          throw e;
+        });
+      });
+    },
+    deleteVideoAsset: function (asset) {
+      var bucket = client.storage.from("video-inputs");
+      return bucket.remove([asset.storage_path]).then(function (res) {
+        if (res.error) throw res.error;
+        return handle(client.rpc("delete_video_asset_record", { p_asset_id: asset.id }));
+      });
+    },
+    getVideoAssetSignedUrl: function (storagePath) {
+      return client.storage.from("video-inputs").createSignedUrl(storagePath, 900)
+        .then(function (res) {
+          if (res.error) throw res.error;
+          return res.data && res.data.signedUrl;
+        });
+    },
 
     // ---------- comments ----------
     listComments: function (contentId) {
