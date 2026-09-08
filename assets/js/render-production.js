@@ -395,6 +395,32 @@ function openAgentImportModal(parentBackdrop) {
     return '<details style="margin:12px 0;"><summary style="cursor:pointer;font-weight:700;">بيانات التنفيذ المنظمة</summary><div style="margin-top:10px;">' + rows.join("") + '</div></details>';
   }
 
+  function videoAssetTypeLabel(type) {
+    var labels = {
+      image: "صورة",
+      video: "فيديو",
+      voiceover: "Voice-over",
+      music: "موسيقى"
+    };
+    return labels[type] || type || "—";
+  }
+
+  function videoMediaModeLabel(mode) {
+    var labels = {
+      uploaded_only: "المواد المرفوعة فقط",
+      uploaded_plus_auto: "استخدم المرفوع وكمل الناقص تلقائيًا",
+      auto: "إنتاج تلقائي بالكامل"
+    };
+    return labels[mode] || labels.uploaded_plus_auto;
+  }
+
+  function formatBytes(bytes) {
+    var n = Number(bytes || 0);
+    if (n < 1024) return n + " B";
+    if (n < 1024 * 1024) return (n / 1024).toFixed(1) + " KB";
+    return (n / 1024 / 1024).toFixed(1) + " MB";
+  }
+
   function videoJobStatusLabel(status) {
     var labels = {
       pending: "في انتظار عامل الفيديو",
@@ -422,11 +448,58 @@ function openAgentImportModal(parentBackdrop) {
 
     slot.innerHTML = '<div class="section"><h4 style="margin:0;">🎬 إنتاج الفيديو</h4><div class="loading" style="margin-top:8px;">بيحمّل حالة الإنتاج…</div></div>';
 
-    window.SSMPDDb.listVideoJobsForContent(item.id).then(function (jobs) {
-      jobs = jobs || [];
+    Promise.all([
+      window.SSMPDDb.listVideoJobsForContent(item.id),
+      window.SSMPDDb.listVideoAssetsForContent(item.id)
+    ]).then(function (res) {
+      var jobs = res[0] || [];
+      var assets = res[1] || [];
       var latest = jobs.length ? jobs[0] : null;
       var missing = videoJobMissingFields(item);
+      var mediaMode = item.video_media_mode || "uploaded_plus_auto";
       var html = '<div class="section"><h4 style="margin:0 0 8px;">🎬 إنتاج الفيديو</h4>';
+
+      html += '<div style="border:1px solid var(--c-border);border-radius:10px;padding:10px;margin-bottom:12px;">' +
+        '<div style="font-weight:700;margin-bottom:8px;">📦 مواد الإنتاج <span style="font-size:11px;color:var(--c-muted);font-weight:400;">(اختياري)</span></div>' +
+        '<div style="font-size:11px;color:var(--c-muted);margin-bottom:8px;">ارفع صور/فيديو/Voice-over/موسيقى. النظام يعطيها الأولوية، ولو ناقص مواد يكمل تلقائيًا حسب الوضع المختار.</div>' +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin-bottom:8px;">' +
+          '<div class="field" style="margin:0;min-width:220px;"><label>Media Mode</label>' +
+            '<select id="video-media-mode">' +
+              '<option value="uploaded_plus_auto"' + (mediaMode === "uploaded_plus_auto" ? " selected" : "") + '>استخدم المرفوع وكمل الناقص تلقائيًا</option>' +
+              '<option value="uploaded_only"' + (mediaMode === "uploaded_only" ? " selected" : "") + '>المواد المرفوعة فقط</option>' +
+              '<option value="auto"' + (mediaMode === "auto" ? " selected" : "") + '>إنتاج تلقائي بالكامل</option>' +
+            '</select>' +
+          '</div>' +
+          '<div class="field" style="margin:0;min-width:150px;"><label>نوع الملف</label>' +
+            '<select id="video-asset-type">' +
+              '<option value="image">صورة</option>' +
+              '<option value="video">فيديو</option>' +
+              '<option value="voiceover">Voice-over</option>' +
+              '<option value="music">موسيقى</option>' +
+            '</select>' +
+          '</div>' +
+          '<div class="field" style="margin:0;min-width:220px;flex:1;"><label>اختيار الملفات</label>' +
+            '<input id="video-asset-files" type="file" multiple accept="image/*,video/*,audio/*">' +
+          '</div>' +
+          '<button class="btn sm" id="upload-video-assets-btn">⬆️ رفع</button>' +
+        '</div>';
+
+      if (!assets.length) {
+        html += '<div style="font-size:11px;color:var(--c-muted);">لا توجد مواد مرفوعة لهذا الفيديو حتى الآن.</div>';
+      } else {
+        html += '<div style="display:flex;flex-direction:column;gap:6px;">';
+        assets.forEach(function (a) {
+          html += '<div style="display:flex;align-items:center;gap:8px;padding:7px 8px;border:1px solid var(--c-border);border-radius:8px;">' +
+            '<span style="font-size:11px;font-weight:700;min-width:72px;">' + escapeHtml(videoAssetTypeLabel(a.asset_type)) + '</span>' +
+            '<span style="font-size:12px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escapeHtml(a.file_name) + '</span>' +
+            '<span style="font-size:10px;color:var(--c-muted);">' + escapeHtml(formatBytes(a.file_size)) + '</span>' +
+            '<button class="btn ghost sm" data-open-video-asset="' + escapeHtml(a.id) + '">فتح</button>' +
+            '<button class="btn ghost sm" data-delete-video-asset="' + escapeHtml(a.id) + '">حذف</button>' +
+          '</div>';
+        });
+        html += '</div>';
+      }
+      html += '</div>';
 
       if (!latest) {
         html += '<div style="font-size:12px;color:var(--c-muted);margin-bottom:8px;">حوّل المسودة إلى Video Job مستقل ليقرأه عامل الفيديو على الماك لاحقًا.</div>';
@@ -463,6 +536,93 @@ function openAgentImportModal(parentBackdrop) {
 
       html += '</div>';
       slot.innerHTML = html;
+
+      var mediaModeSelect = slot.querySelector("#video-media-mode");
+      if (mediaModeSelect) {
+        mediaModeSelect.onchange = function () {
+          var mode = mediaModeSelect.value;
+          mediaModeSelect.disabled = true;
+          window.SSMPDDb.updateContentItem(item.id, { video_media_mode: mode }).then(function () {
+            item.video_media_mode = mode;
+            mediaModeSelect.disabled = false;
+            if (window.SSMPDToast) window.SSMPDToast.show("تم حفظ Media Mode: " + videoMediaModeLabel(mode), "success");
+          }).catch(function (e) {
+            mediaModeSelect.disabled = false;
+            alert("خطأ: " + e.message);
+          });
+        };
+      }
+
+      var uploadBtn = slot.querySelector("#upload-video-assets-btn");
+      if (uploadBtn) {
+        uploadBtn.onclick = function () {
+          var typeEl = slot.querySelector("#video-asset-type");
+          var filesEl = slot.querySelector("#video-asset-files");
+          var files = Array.prototype.slice.call((filesEl && filesEl.files) || []);
+          var assetType = typeEl ? typeEl.value : "image";
+          if (!files.length) { alert("اختار ملف واحد على الأقل"); return; }
+
+          for (var i = 0; i < files.length; i++) {
+            if (files[i].size > 50 * 1024 * 1024) {
+              alert("الملف " + files[i].name + " أكبر من 50MB");
+              return;
+            }
+            if ((assetType === "image" && files[i].type.indexOf("image/") !== 0) ||
+                (assetType === "video" && files[i].type.indexOf("video/") !== 0) ||
+                ((assetType === "voiceover" || assetType === "music") && files[i].type.indexOf("audio/") !== 0)) {
+              alert("نوع الملف لا يطابق الاختيار: " + files[i].name);
+              return;
+            }
+          }
+
+          var me = window.SSMPDAuth.currentAdmin;
+          uploadBtn.disabled = true;
+          uploadBtn.textContent = "جاري الرفع…";
+
+          var chain = Promise.resolve();
+          files.forEach(function (file) {
+            chain = chain.then(function () {
+              return window.SSMPDDb.uploadVideoAsset(item.id, me.id, assetType, file);
+            });
+          });
+
+          chain.then(function () {
+            if (window.SSMPDToast) window.SSMPDToast.show("تم رفع مواد الإنتاج", "success");
+            renderVideoJobSection(slot, item);
+          }).catch(function (e) {
+            uploadBtn.disabled = false;
+            uploadBtn.textContent = "⬆️ رفع";
+            alert("خطأ في الرفع: " + e.message);
+          });
+        };
+      }
+
+      slot.querySelectorAll("[data-open-video-asset]").forEach(function (btn) {
+        btn.onclick = function () {
+          var id = btn.getAttribute("data-open-video-asset");
+          var asset = assets.filter(function (a) { return a.id === id; })[0];
+          if (!asset) return;
+          window.SSMPDDb.getVideoAssetSignedUrl(asset.storage_path).then(function (url) {
+            if (url) window.open(url, "_blank");
+          }).catch(function (e) { alert("خطأ: " + e.message); });
+        };
+      });
+
+      slot.querySelectorAll("[data-delete-video-asset]").forEach(function (btn) {
+        btn.onclick = function () {
+          var id = btn.getAttribute("data-delete-video-asset");
+          var asset = assets.filter(function (a) { return a.id === id; })[0];
+          if (!asset) return;
+          if (!confirm("حذف " + asset.file_name + "؟")) return;
+          btn.disabled = true;
+          window.SSMPDDb.deleteVideoAsset(asset).then(function () {
+            renderVideoJobSection(slot, item);
+          }).catch(function (e) {
+            btn.disabled = false;
+            alert("خطأ: " + e.message);
+          });
+        };
+      });
 
       var createBtn = slot.querySelector("#create-video-job-btn");
       if (createBtn) {
