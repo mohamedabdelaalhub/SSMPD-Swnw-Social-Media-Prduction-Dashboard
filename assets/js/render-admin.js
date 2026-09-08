@@ -9,22 +9,27 @@
 
   function renderBrandLogos(host) {
     var brands = { sono: 'سونو', dr_dina: 'د. دينا' };
-    host.innerHTML = '<h3>لوجوهات البراندات</h3><p>اللوجو المحفوظ يُستخدم تلقائيًا حسب براند المحتوى. تغييره متاح للسوبر أدمن.</p>' +
-      Object.keys(brands).map(function (brand) {
+    var variants = { primary: 'النسخة الأولى', alternate: 'النسخة الثانية' };
+    var slots = [];
+    Object.keys(brands).forEach(function (brand) { Object.keys(variants).forEach(function (variant) { slots.push({brand: brand, variant: variant, key: brand + '-' + variant}); }); });
+    host.innerHTML = '<h3>لوجوهات البراندات</h3><p>احفظ نسختين لكل براند. الموظف يختار بين نسختي براند المحتوى، ورفع الصور متاح للسوبر أدمن.</p>' +
+      slots.map(function (slot) {
+        var brand = slot.brand, key = slot.key, label = brands[brand] + " — " + variants[slot.variant];
         return '<div style="display:inline-block;vertical-align:top;width:280px;margin:8px;padding:14px;border:1px solid var(--c-border);border-radius:10px;">' +
-          '<h4>' + brands[brand] + '</h4><img id="brand-preview-' + brand + '" alt="لوجو ' + brands[brand] + '" style="display:none;width:200px;height:130px;object-fit:contain;background:#fff;">' +
-          '<p id="brand-state-' + brand + '">جاري تحميل اللوجو</p>' +
-          '<input id="brand-file-' + brand + '" type="file" accept="image/png,image/jpeg,image/webp">' +
-          '<button class="btn sm" id="brand-save-' + brand + '" disabled>حفظ لوجو ' + brands[brand] + '</button></div>';
+          '<h4>' + label + '</h4><img id="brand-preview-' + key + '" alt="لوجو ' + label + '" style="display:none;width:200px;height:130px;object-fit:contain;background:#fff;">' +
+          '<p id="brand-state-' + key + '">جاري تحميل اللوجو</p>' +
+          '<input id="brand-file-' + key + '" type="file" accept="image/png,image/jpeg,image/webp">' +
+          '<button class="btn sm" id="brand-save-' + key + '" disabled>حفظ لوجو ' + label + '</button></div>';
       }).join('');
     window.SSMPDDb.listBrandLogos().then(function (rows) {
       if (!host.isConnected) return;
-      Object.keys(brands).forEach(function (brand) {
-        var current = rows.filter(function (r) { return r.brand === brand; })[0];
-        var img = host.querySelector('#brand-preview-' + brand);
-        var state = host.querySelector('#brand-state-' + brand);
-        var input = host.querySelector('#brand-file-' + brand);
-        var button = host.querySelector('#brand-save-' + brand);
+      slots.forEach(function (slot) {
+        var brand = slot.brand, key = slot.key, label = brands[brand] + " — " + variants[slot.variant];
+        var current = rows.filter(function (r) { return r.brand === brand && (r.variant || 'primary') === slot.variant; })[0];
+        var img = host.querySelector('#brand-preview-' + key);
+        var state = host.querySelector('#brand-state-' + key);
+        var input = host.querySelector('#brand-file-' + key);
+        var button = host.querySelector('#brand-save-' + key);
         state.textContent = current ? 'اللوجو محفوظ' : 'لم يُحفظ لوجو لهذا البراند بعد';
         if (current) window.SSMPDDb.getBrandLogoUrl(current.storage_path).then(function (url) {
           if (!input.files.length) { img.src = url; img.style.display = 'block'; }
@@ -36,14 +41,14 @@
             var preview = URL.createObjectURL(file);
             img.onload = function () { URL.revokeObjectURL(preview); };
             img.src = preview; img.style.display = 'block';
-            state.textContent = 'راجع الصورة ثم احفظها لبراند ' + brands[brand];
+            state.textContent = 'راجع الصورة ثم احفظها لبراند ' + label;
           }
         };
         button.onclick = function () {
           var file = input.files[0];
-          if (!file || !confirm('اعتماد هذه الصورة كلوجو براند ' + brands[brand] + ' للإنتاج القادم؟')) return;
+          if (!file || !confirm('اعتماد هذه الصورة كلوجو براند ' + label + ' للإنتاج القادم؟')) return;
           button.disabled = true; input.disabled = true;
-          window.SSMPDDb.uploadBrandLogo(brand, file).then(function () { renderBrandLogos(host); }).catch(function (e) {
+          window.SSMPDDb.uploadBrandLogo(brand, slot.variant, file).then(function () { renderBrandLogos(host); }).catch(function (e) {
             state.textContent = e.message; button.disabled = false; input.disabled = false;
           });
         };

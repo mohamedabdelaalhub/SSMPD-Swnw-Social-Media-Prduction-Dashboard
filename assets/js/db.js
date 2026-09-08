@@ -248,16 +248,17 @@
         return res.data.signedUrl;
       });
     },
-    uploadBrandLogo: function (brand, file) {
+    uploadBrandLogo: function (brand, variant, file) {
       if (['sono','dr_dina'].indexOf(brand) < 0) return Promise.reject(new Error('براند غير معروف'));
+      if (['primary','alternate'].indexOf(variant) < 0) return Promise.reject(new Error('نسخة لوجو غير صالحة'));
       var types = { 'image/png': '.png', 'image/jpeg': '.jpg', 'image/webp': '.webp' };
       if (!types[file.type] || !file.size || file.size > 5 * 1024 * 1024) {
         return Promise.reject(new Error('ارفع PNG أو JPG أو WebP بحجم لا يتجاوز 5MB'));
       }
-      var path = brand + '/' + crypto.randomUUID() + types[file.type];
+      var path = brand + '/' + variant + '/' + crypto.randomUUID() + types[file.type];
       return client.storage.from('brand-logos').upload(path, file, { upsert: false, contentType: file.type }).then(function (res) {
         if (res.error) throw res.error;
-        return handle(client.rpc('set_brand_logo', { p_brand: brand, p_storage_path: path, p_file_name: file.name }));
+        return handle(client.rpc('set_brand_logo', { p_brand: brand, p_variant: variant, p_storage_path: path, p_file_name: file.name }));
       });
     },
     selectVideoCover: function (jobId, candidateId) {
