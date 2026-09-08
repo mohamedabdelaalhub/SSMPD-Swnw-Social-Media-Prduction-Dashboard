@@ -104,6 +104,13 @@ def media_keywords(job: dict[str, Any]) -> list[str]:
 
 
 def discover_media_assets(job: dict[str, Any]) -> list[Path]:
+    mode = str(job.get("media_mode") or "uploaded_plus_auto")
+    uploaded = uploaded_asset_paths(job, "image") + uploaded_asset_paths(job, "video")
+    if uploaded:
+        return uploaded
+    if mode == "uploaded_only":
+        return []
+
     root = media_root()
     files = media_files(root)
     if not files:
@@ -164,6 +171,58 @@ def update_job(base_url: str, key: str, job_id: str, patch: dict[str, Any]) -> N
         patch,
         {"Prefer": "return=minimal"},
     )
+
+
+def download_job_assets(base_url: str, key: str, job: dict[str, Any], job_dir: Path) -> list[dict[str, Any]]:
+    raw_assets = job.get("input_assets") or []
+    if not isinstance(raw_assets, list) or not raw_assets:
+        return []
+
+    target_dir = job_dir / "input-assets"
+    target_dir.mkdir(parents=True, exist_ok=True)
+    downloaded: list[dict[str, Any]] = []
+
+    for idx, asset in enumerate(raw_assets):
+        if not isinstance(asset, dict):
+            continue
+        storage_path = str(asset.get("storage_path") or "").strip()
+        file_name = str(asset.get("file_name") or ("asset-" + str(idx))).strip()
+        if not storage_path:
+            continue
+
+        ext = Path(file_name).suffix
+        local_path = target_dir / (f"{idx:02d}-" + re.sub(r"[^A-Za-z0-9._-]+", "-", file_name))
+        if ext and local_path.suffix.lower() != ext.lower():
+            local_path = local_path.with_suffix(ext)
+
+        url = base_url + "/storage/v1/object/video-inputs/" + urllib.parse.quote(storage_path, safe="/")
+        req = urllib.request.Request(url, headers=api_headers(key, json_content=False), method="GET")
+        try:
+            with urllib.request.urlopen(req, timeout=180) as resp:
+                local_path.write_bytes(resp.read())
+        except urllib.error.HTTPError as e:
+            body = e.read().decode("utf-8", "replace")
+            raise WorkerError(f"Input asset download failed HTTP {e.code}: {body[:800]}") from e
+
+        copied = dict(asset)
+        copied["local_path"] = str(local_path)
+        downloaded.append(copied)
+
+    return downloaded
+
+
+def uploaded_asset_paths(job: dict[str, Any], asset_type: str) -> list[Path]:
+    mode = str(job.get("media_mode") or "uploaded_plus_auto")
+    if mode == "auto":
+        return []
+    assets = job.get("_downloaded_assets") or []
+    out: list[Path] = []
+    for asset in assets:
+        if isinstance(asset, dict) and asset.get("asset_type") == asset_type and asset.get("local_path"):
+            p = Path(str(asset["local_path"]))
+            if p.exists():
+                out.append(p)
+    return out
 
 
 def upload_mp4(base_url: str, key: str, job_id: str, path: Path) -> str:
@@ -274,7 +333,11 @@ def macos_synthesize(script: str, out_aiff: Path) -> str:
     return voice
 
 
-def synthesize(script: str, job_dir: Path) -> tuple[Path, str]:
+def synthesize(script: str, job_dir: Path, job: dict[str, Any]) -> tuple[Path, str]:
+    uploaded_voice = uploaded_asset_paths(job, "voiceover")
+    if uploaded_voice:
+        return uploaded_voice[0], "Uploaded voiceover"
+
     azure_key, azure_region, azure_voice = azure_tts_config()
     if azure_key and azure_region:
         out_mp3 = job_dir / "voice.mp3"
@@ -475,7 +538,7 @@ def render(job: dict[str, Any], job_dir: Path) -> tuple[Path, str]:
     if min_s <= 0 or max_s < min_s:
         raise WorkerError("Invalid video duration in job.")
 
-    voice_path, voice = synthesize(script, job_dir)
+    voice_path, voice = synthesize(script, job_dir, job)
     audio_dur = probe_duration(ffprobe, voice_path)
 
     target = max(float(min_s), min(float(max_s), audio_dur + 2.5))
@@ -486,7 +549,9 @@ def render(job: dict[str, Any], job_dir: Path) -> tuple[Path, str]:
     ass = job_dir / "captions.ass"
     write_ass(job, target, spoken_duration, ass)
 
+    music_assets = uploaded_asset_paths(job, "music")
     out = job_dir / "output.mp4"
+    base_out = job_dir / ("output-base.mp4" if music_assets else "output.mp4")
     ass_filter = "ass=filename='" + filter_path(ass) + "'"
 
     visual_background = render_visual_background(ffmpeg, job, job_dir, target)
@@ -518,12 +583,30 @@ def render(job: dict[str, Any], job_dir: Path) -> tuple[Path, str]:
         "-b:a", "192k",
         "-t", f"{target:.3f}",
         "-movflags", "+faststart",
-        str(out),
+        str(base_out),
     ]
 
     p = run(cmd, check=False)
-    if p.returncode != 0 or not out.exists():
+    if p.returncode != 0 or not base_out.exists():
         raise WorkerError("FFmpeg render failed: " + p.stderr[-1500:])
+
+    if music_assets:
+        music = music_assets[0]
+        mix_cmd = [
+            ffmpeg, "-y",
+            "-i", str(base_out),
+            "-stream_loop", "-1", "-i", str(music),
+            "-filter_complex",
+            f"[1:a]volume=0.10,atrim=0:{target:.3f}[m];[0:a][m]amix=inputs=2:duration=first:dropout_transition=2[a]",
+            "-map", "0:v:0", "-map", "[a]",
+            "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
+            "-t", f"{target:.3f}", "-movflags", "+faststart",
+            str(out),
+        ]
+        mp = run(mix_cmd, check=False)
+        if mp.returncode != 0 or not out.exists():
+            raise WorkerError("Music mix failed: " + mp.stderr[-1500:])
+
     return out, voice
 
 
@@ -534,6 +617,7 @@ def process_job(base_url: str, key: str, job: dict[str, Any]) -> None:
     (job_dir / "job.json").write_text(json.dumps(job, ensure_ascii=False, indent=2), encoding="utf-8")
 
     try:
+        job["_downloaded_assets"] = download_job_assets(base_url, key, job, job_dir)
         update_job(base_url, key, job_id, {"status": "rendering"})
         output, voice = render(job, job_dir)
         update_job(base_url, key, job_id, {"status": "uploading"})
