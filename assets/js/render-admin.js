@@ -7,6 +7,10 @@
     return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
 
+  // fallback لو app_settings.physio_devices لسه مش محدّث على القاعدة — نفس القائمة
+  // الافتراضية المستخدمة في render-patients.js
+  var PHYSIO_DEVICES_DEFAULT = ["Cryo", "Tense", "RF", "Manual", "حجامة (Cupping)", "Recovery", "Laser", "Compression", "Ultra Sound", "Infra Red"];
+
   function renderBrandLogos(host) {
     var brands = { sono: 'سونو', dr_dina: 'د. دينا' };
     var variants = { primary: 'النسخة الأولى', alternate: 'النسخة الثانية' };
@@ -114,6 +118,19 @@
         '<div class="field" style="margin:0;"><label>ليدز جديدة من غير رد (ساعة)</label><input type="number" min="1" id="sla-leads-hours" value="' + ((appSettings && appSettings.leads_sla_hours) || 24) + '" style="width:100px;"></div>' +
         '<button class="btn sm" id="sla-save-btn">حفظ</button></div></div>';
 
+      var physioDevices = (appSettings && appSettings.physio_devices && appSettings.physio_devices.length) ? appSettings.physio_devices : PHYSIO_DEVICES_DEFAULT;
+      html += '<div class="section"><h3>أجهزة العلاج الطبيعي</h3>' +
+        '<p style="font-size:11px;color:var(--c-muted);margin-bottom:8px;">الأجهزة دي بتظهر كخانات اختيار في جلسات "تقرير علاج طبيعي" لأي مريض، وفي طباعة التقرير — إضافة/حذف جهاز هنا بيتحدّث في كل مكان تلقائياً.</p>' +
+        '<div id="physio-devices-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">' +
+        physioDevices.map(function (d, i) {
+          return '<span style="display:inline-flex;align-items:center;gap:6px;background:var(--c-bg-soft,#f2f2f2);border:1px solid var(--c-border);border-radius:16px;padding:4px 10px;font-size:12px;">' +
+            escapeHtml(d) + '<button type="button" class="btn-link" data-remove-device="' + i + '" style="color:var(--c-danger,#D0402A);">×</button></span>';
+        }).join("") + '</div>' +
+        '<div style="display:flex;gap:8px;">' +
+        '<input id="new-physio-device" placeholder="اسم الجهاز الجديد" style="flex:1;min-width:150px;padding:9px 12px;border-radius:10px;border:1px solid var(--c-border);">' +
+        '<button class="btn ghost sm" id="add-physio-device-btn">+ إضافة</button>' +
+        '<button class="btn sm" id="physio-devices-save-btn">حفظ</button></div></div>';
+
       html += '<div class="section"><h3>أداء الموظفين</h3>' +
         '<p style="font-size:11px;color:var(--c-muted);margin-bottom:8px;">ملخص إنتاجية كل موظف في موديول المحتوى (إنشاء/تصميم/نشر) في مكان واحد — بدل ما تتجمع يدوياً من شاشات متفرقة.</p>' +
         '<button class="btn ghost sm" id="perf-load-btn">تحميل تقرير الأداء</button>' +
@@ -213,6 +230,40 @@
             .then(function () { slaSaveBtn.disabled = false; slaSaveBtn.textContent = "حفظ"; });
         };
       }
+
+      var deviceListState = physioDevices.slice();
+      var deviceChipsBox = document.getElementById("physio-devices-list");
+      function renderDeviceChips() {
+        deviceChipsBox.innerHTML = deviceListState.map(function (d, i) {
+          return '<span style="display:inline-flex;align-items:center;gap:6px;background:var(--c-bg-soft,#f2f2f2);border:1px solid var(--c-border);border-radius:16px;padding:4px 10px;font-size:12px;">' +
+            escapeHtml(d) + '<button type="button" class="btn-link" data-remove-device="' + i + '" style="color:var(--c-danger,#D0402A);">×</button></span>';
+        }).join("");
+        deviceChipsBox.querySelectorAll("[data-remove-device]").forEach(function (btn) {
+          btn.onclick = function () {
+            deviceListState.splice(parseInt(btn.getAttribute("data-remove-device"), 10), 1);
+            renderDeviceChips();
+          };
+        });
+      }
+      renderDeviceChips();
+      document.getElementById("add-physio-device-btn").onclick = function () {
+        var input = document.getElementById("new-physio-device");
+        var val = input.value.trim();
+        if (!val) return;
+        if (deviceListState.indexOf(val) !== -1) { alert("الجهاز ده موجود بالفعل في القائمة."); return; }
+        deviceListState.push(val);
+        input.value = "";
+        renderDeviceChips();
+      };
+      var devicesSaveBtn = document.getElementById("physio-devices-save-btn");
+      devicesSaveBtn.onclick = function () {
+        if (!deviceListState.length) { alert("لازم يفضل جهاز واحد على الأقل في القائمة."); return; }
+        devicesSaveBtn.disabled = true; devicesSaveBtn.textContent = "بيحفظ…";
+        window.SSMPDDb.updateAppSettings({ physio_devices: deviceListState, updated_by: myId })
+          .then(function () { window.SSMPDToast.show("اتحفظت قائمة الأجهزة"); })
+          .catch(function (e) { alert("خطأ: " + e.message); })
+          .then(function () { devicesSaveBtn.disabled = false; devicesSaveBtn.textContent = "حفظ"; });
+      };
 
       var perfBtn = document.getElementById("perf-load-btn");
       if (perfBtn) {
