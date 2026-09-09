@@ -4814,3 +4814,96 @@ alter table public.content_items
 alter table public.app_settings
   add column if not exists physio_devices jsonb not null default
   '["Cryo","Tense","RF","Manual","حجامة (Cupping)","Recovery","Laser","Compression","Ultra Sound","Infra Red"]'::jsonb;
+
+-- ============================================================
+-- قسم ٥٢: Patient Portal — Phase 1 (Foundation فقط، بدون UI/Auth UX)
+-- تأسيس آمن لاحقًا لتسجيل دخول المريض ورؤية ملفه الطبي الموجود
+-- بالفعل في الـDashboard. لا نسخ ولا duplicate لبيانات المريض —
+-- patients.id يفضل مصدر الحقيقة الوحيد، والجداول الطبية الحالية
+-- (patient_visits/prescriptions/files/reports...) متتغيرش خالص.
+-- ============================================================
+
+-- 52-أ) حسابات المرضى — منفصلة منطقياً عن admins تماماً
+create table if not exists public.patient_accounts (
+  id             uuid primary key default gen_random_uuid(),
+  auth_user_id   uuid not null unique references auth.users(id) on delete cascade,
+  patient_id     uuid not null references public.patients(id) on delete restrict,
+  status         text not null default 'active' check (status in ('active','disabled')),
+  phone_verified boolean not null default false,
+  created_at     timestamptz not null default now(),
+  updated_at     timestamptz not null default now(),
+  last_login_at  timestamptz
+);
+create index if not exists patient_accounts_patient_idx on public.patient_accounts (patient_id);
+
+alter table public.patient_accounts enable row level security;
+
+-- المريض يشوف صف حسابه بس (اكتشاف الحساب/الدخول)
+drop policy if exists "patient reads own account" on public.patient_accounts;
+create policy "patient reads own account" on public.patient_accounts
+  for select using (auth_user_id = auth.uid());
+
+-- الإدارة (سوبر أدمن) بس تقدر تدير/تعدّل الحسابات — مفيش insert/update/delete
+-- سياسة لدور authenticated العادي، يعني المريض مش قادر يعدّل patient_id بتاعه
+-- ولا أي عمود تاني في صفه (حتى لو قرأه) — الكتابة الفعلية عن طريق service role
+-- أو سوبر أدمن بس.
+drop policy if exists "super admin manage patient accounts" on public.patient_accounts;
+create policy "super admin manage patient accounts" on public.patient_accounts
+  for all using (public.is_super()) with check (public.is_super());
+
+-- 52-ب) ربط مريض Supabase بمريضه الحقيقي في IHospital (mapping فقط — بدون اتصال فعلي الآن)
+create table if not exists public.patient_system_links (
+  id                   uuid primary key default gen_random_uuid(),
+  supabase_patient_id  uuid not null references public.patients(id) on delete cascade,
+  ihospital_patient_id text,
+  hospital_id          text,
+  match_method         text,
+  match_confidence     numeric,
+  verified             boolean not null default false,
+  verified_at          timestamptz,
+  created_at           timestamptz not null default now(),
+  updated_at           timestamptz not null default now(),
+  unique (supabase_patient_id, ihospital_patient_id, hospital_id)
+);
+create index if not exists patient_system_links_patient_idx
+  on public.patient_system_links (supabase_patient_id);
+
+alter table public.patient_system_links enable row level security;
+
+-- إدارة/سوبر أدمن بس — مفيش وصول مباشر للمريض (client) خالص لسه، ولا حتى قراءة
+drop policy if exists "super admin manage patient system links" on public.patient_system_links;
+create policy "super admin manage patient system links" on public.patient_system_links
+  for all using (public.is_super()) with check (public.is_super());
+
+-- 52-ج) آلية visibility مستقبلية للـPortal — جدول lookup مشترك واحد بدل
+-- ما نضيف عمود portal_status على كل جدول تقرير طبي على حدة (أنظف وأقل
+-- تغيير، وميغيّرش شكل أي جدول موجود ولا يأثر على الـDashboard خالص).
+create table if not exists public.patient_portal_visibility (
+  id            uuid primary key default gen_random_uuid(),
+  patient_id    uuid not null references public.patients(id) on delete cascade,
+  entity_type   text not null check (entity_type in (
+                  'medical_report','echo_report','dental_report','physio_report',
+                  'prescription','lab_request','radiology_request','patient_file'
+                )),
+  entity_id     uuid not null,
+  portal_status text not null default 'internal' check (portal_status in ('internal','approved','hidden')),
+  created_at    timestamptz not null default now(),
+  updated_at    timestamptz not null default now(),
+  unique (entity_type, entity_id)
+);
+create index if not exists patient_portal_visibility_patient_idx
+  on public.patient_portal_visibility (patient_id);
+
+alter table public.patient_portal_visibility enable row level security;
+
+-- نفس نمط صلاحيات الجداول الطبية الحالية (أرشيف/مراجعة) — مفيش توسيع
+-- لصلاحيات anon/authenticated، ومفيش وصول مباشر من client المريض لسه.
+drop policy if exists "portal visibility read" on public.patient_portal_visibility;
+create policy "portal visibility read" on public.patient_portal_visibility
+  for select using (
+    public.has_archive_access() or public.has_archive_review_access() or public.can_access_leads()
+  );
+drop policy if exists "portal visibility write" on public.patient_portal_visibility;
+create policy "portal visibility write" on public.patient_portal_visibility
+  for all using (public.has_archive_access() or public.can_manage_all_content())
+  with check (public.has_archive_access() or public.can_manage_all_content());
