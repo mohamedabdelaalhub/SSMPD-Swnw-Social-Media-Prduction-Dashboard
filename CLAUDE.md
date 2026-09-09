@@ -102,6 +102,14 @@ test/smoke.js              اختبار jsdom — Supabase مموّه بالكا
 | `lead_attempts` | (قيد الإنشاء) سجل كل محاولة تواصل مع الليد (متعدد لكل ليد) |
 | `lead_status_log` | (قيد الإنشاء) سجل تغييرات `current_status` تلقائياً (بتريجر `trg_log_lead_status_change`) — أساس مؤشرات الأداء |
 | `lead_feedback_tags` | (قيد الإنشاء) تصنيف اختياري (إيجابي/سلبي/محايد) لكل ليد أو محاولة تواصل |
+| `patient_accounts` | (Patient Portal — Phase 1 Foundation فقط، لسه من غير UI) حساب دخول المريض — `auth_user_id` (فريد) → `patient_id`، منفصل تماماً عن `admins` |
+| `patient_system_links` | (Patient Portal — Foundation) ربط `patients.id` بمريضه الحقيقي في IHospital لاحقاً — mapping بس، بدون اتصال فعلي حالياً |
+| `patient_portal_visibility` | (Patient Portal — Foundation) جدول lookup مشترك (`entity_type`+`entity_id`+`portal_status`: `internal`/`approved`/`hidden`) لتحديد لاحقاً أي تقرير/ملف يظهر للمريض — الافتراضي `internal` (متخفيش حاجة عن الـDashboard، بس متتعرضش للبورتال لحد ما تتعتمد) |
+
+**Patient Portal**: البنية الآمنة (Phase 1) دلوقتي جاهزة في `setup.sql` (قسم ٥٢) —
+لسه من غير UI أو صفحة دخول للمريض. `patients.id` هو المعرّف الدائم (مش
+الهاتف)، وممكن أكتر من حساب/رقم هاتف يتربط بنفس المريض لاحقاً (سيناريو
+العيلة). التفاصيل الكاملة في مشروع Claude لو احتجتها.
 
 **ثمان مراحل Kanban** (`content_items.stage`) — المفاتيح مخزّنة في القاعدة،
 **لا تُغيَّر** بلا Migration:
@@ -228,8 +236,8 @@ npm install jsdom   # مرة واحدة
 node test/smoke.js
 ```
 
-يغطّي: شاشة الدخول، الشِل العام والتابات حسب الدور، الملخص العام
-  الأرشيف (الكالندر)، Kanban السبع أعمدة.
+يغطّي: شاشة الدخول، الشِل العام والتابات حسب الدور، الملخص العام،
+الأرشيف (الكالندر)، Kanban السبع أعمدة.
 
 **بعد أي تعديل**: شغّل `test/smoke.js`، وارفع بصمة الكاش، وتأكد يدوياً
 من الرابط اللايف (سكرين شوت) قبل ما تقول للمستخدم "خلصت".
