@@ -89,7 +89,7 @@ Deno.serve(async (req) => {
         admin.from("patients").select("id", { count: "exact", head: true }),
         admin.from("patient_files").select("id", { count: "exact", head: true }),
         admin.from("patient_files").select("id", { count: "exact", head: true }).eq("review_status", "pending"),
-        admin.from("patients").select("id, patient_code, full_name, created_at").order("created_at", { ascending: false }).limit(8),
+        admin.from("patients").select("id, patient_code, full_name, phone, email, created_at").order("created_at", { ascending: false }).limit(8),
         admin.from("patient_files").select("id, file_name, category, review_status, uploaded_at, patient_id, patients(full_name, patient_code)").order("uploaded_at", { ascending: false }).limit(8),
       ]);
     return json({
@@ -115,7 +115,7 @@ Deno.serve(async (req) => {
     }
     const { data: patient, error: pErr } = await admin
       .from("patients")
-      .select("id, patient_code, full_name, phone, status, gender, age, medical_record_no, last_visit_date, sent_to_nursing_at, created_at")
+      .select("id, patient_code, full_name, phone, email, status, gender, age, medical_record_no, last_visit_date, sent_to_nursing_at, created_at")
       .eq("id", patientId)
       .maybeSingle();
     if (pErr || !patient) return json({ error: "المريض غير موجود" }, 404);
@@ -172,7 +172,7 @@ Deno.serve(async (req) => {
   if (doctorOnly) {
     const { data: rows, error } = await admin
       .from("patient_doctor_assignments")
-      .select("id, assigned_at, patients(id, patient_code, full_name, phone, status, created_at)")
+      .select("id, assigned_at, patients(id, patient_code, full_name, phone, email, status, created_at)")
       .eq("doctor_id", caller.id)
       .eq("status", "pending")
       .order("assigned_at", { ascending: true });
@@ -194,7 +194,7 @@ Deno.serve(async (req) => {
     // escape" من bundler دينو (على الأغلب بسبب الـ backtick المتداخل) — استُبدل
     // بـ concatenation عادي كإصلاح مطابق للنسخة المنشورة فعلياً (٢٠٢٦-٠٨-٢٣).
     query = query.or(
-      "full_name.ilike.%" + search + "%,phone.ilike.%" + search + "%,phone_normalized.ilike.%" + search + "%,patient_code.ilike.%" + search + "%",
+      "full_name.ilike.%" + search + "%,phone.ilike.%" + search + "%,phone_normalized.ilike.%" + search + "%,email.ilike.%" + search + "%,patient_code.ilike.%" + search + "%",
     );
   }
   if (dateFrom) query = query.gte(dateField, dateFrom);
