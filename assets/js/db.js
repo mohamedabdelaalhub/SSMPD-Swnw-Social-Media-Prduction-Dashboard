@@ -463,6 +463,9 @@
     rejectPatientIdentityVerification: function (verificationId, reason) {
       return edgeFetch("patient-verification-review", { method: "POST", json: { op: "reject", verification_id: verificationId, reason: reason || null } });
     },
+    resendPatientActivation: function (verificationId) {
+      return edgeFetch("patient-verification-review", { method: "POST", json: { op: "resend_activation", verification_id: verificationId } });
+    },
     revokePatientAccountAccess: function (accessId, reason) {
       return edgeFetch("patient-verification-review", { method: "POST", json: { op: "revoke", access_id: accessId, reason: reason || null } });
     },
