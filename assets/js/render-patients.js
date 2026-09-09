@@ -1490,7 +1490,10 @@
   }
 
   // ---------- فورم "تقرير علاج طبيعي" (إنشاء/تعديل) ----------
-  var PHYSIO_TREATMENTS = ["Cryo", "Tense", "RF", "Manual", "حجامة (Cupping)", "Recovery", "Laser", "Compression"];
+  // قائمة الأجهزة دلوقتي قابلة للتعديل من لوحة التحكم (app_settings.physio_devices)
+  // — الافتراضية هنا بس fallback لو الجدول لسه مش محدّث أو النداء فشل.
+  var PHYSIO_TREATMENTS_DEFAULT = ["Cryo", "Tense", "RF", "Manual", "حجامة (Cupping)", "Recovery", "Laser", "Compression", "Ultra Sound", "Infra Red"];
+  var PHYSIO_TREATMENTS = PHYSIO_TREATMENTS_DEFAULT.slice();
 
   function physioSessionRowHtml(s) {
     s = s || {};
@@ -1516,6 +1519,14 @@
   }
 
   function openPhysioReportFormModal(patient, existingReport, onSaved) {
+    window.SSMPDDb.getAppSettings().then(function (s) {
+      if (s && s.physio_devices && s.physio_devices.length) PHYSIO_TREATMENTS = s.physio_devices;
+    }).catch(function () {}).then(function () {
+      _openPhysioReportFormModalImpl(patient, existingReport, onSaved);
+    });
+  }
+
+  function _openPhysioReportFormModalImpl(patient, existingReport, onSaved) {
     var r = existingReport || {};
     var isEdit = !!existingReport;
     var painPoints = (r.pain_points || []).slice();
