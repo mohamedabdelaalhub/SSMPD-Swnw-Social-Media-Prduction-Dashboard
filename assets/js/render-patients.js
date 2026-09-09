@@ -298,7 +298,8 @@
     backdrop.className = "modal-backdrop";
     backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>مريض جديد</h3><button class="modal-close">×</button></div>' +
       '<div class="field"><label>الاسم بالكامل</label><input id="np-name"></div>' +
-      '<div class="field"><label>رقم الهاتف</label><input id="np-phone" placeholder="01xxxxxxxxx"></div>' +\n      '<div class="field"><label>البريد الإلكتروني للـPatient Portal (اختياري)</label><input id="np-email" type="email" placeholder="name@example.com"></div>' +
+      '<div class="field"><label>رقم الهاتف</label><input id="np-phone" placeholder="01xxxxxxxxx"></div>' +
+      '<div class="field"><label>البريد الإلكتروني للـPatient Portal (اختياري)</label><input id="np-email" type="email" placeholder="name@example.com"></div>' +
       '<div class="field"><label>الرقم القومي (اختياري)</label><input id="np-nid" maxlength="14"></div>' +
       '<div class="field"><label>السن</label><input id="np-age" type="number" min="0"></div>' +
       '<div class="field"><label>النوع</label><select id="np-gender"><option value="">—</option><option value="male">ذكر</option><option value="female">أنثى</option></select></div>' +
@@ -312,7 +313,8 @@
 
     document.getElementById("np-save").onclick = function () {
       var full_name = document.getElementById("np-name").value.trim();
-      var phone = document.getElementById("np-phone").value.trim();\n      var email = document.getElementById("np-email").value.trim().toLowerCase();
+      var phone = document.getElementById("np-phone").value.trim();
+      var email = document.getElementById("np-email").value.trim().toLowerCase();
       var national_id = document.getElementById("np-nid").value.trim();
       var age = document.getElementById("np-age").value.trim();
       var gender = document.getElementById("np-gender").value;
@@ -343,7 +345,8 @@
     backdrop.className = "modal-backdrop";
     backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>تعديل بيانات المريض</h3><button class="modal-close">×</button></div>' +
       '<div class="field"><label>الاسم بالكامل</label><input id="ep-name" value="' + escapeHtml(patient.full_name || "") + '"></div>' +
-      '<div class="field"><label>رقم الهاتف</label><input id="ep-phone" value="' + escapeHtml(patient.phone || "") + '"></div>' +\n      '<div class="field"><label>البريد الإلكتروني للـPatient Portal</label><input id="ep-email" type="email" value="' + escapeHtml(patient.email || "") + '"></div>' +
+      '<div class="field"><label>رقم الهاتف</label><input id="ep-phone" value="' + escapeHtml(patient.phone || "") + '"></div>' +
+      '<div class="field"><label>البريد الإلكتروني للـPatient Portal</label><input id="ep-email" type="email" value="' + escapeHtml(patient.email || "") + '"></div>' +
       '<div class="field"><label>السن</label><input id="ep-age" type="number" min="0" value="' + escapeHtml(patient.age != null ? String(patient.age) : "") + '"></div>' +
       '<div class="field"><label>النوع</label><select id="ep-gender">' +
         '<option value="" ' + (!patient.gender ? "selected" : "") + '>—</option>' +
@@ -359,7 +362,8 @@
 
     document.getElementById("ep-save").onclick = function () {
       var full_name = document.getElementById("ep-name").value.trim();
-      var phone = document.getElementById("ep-phone").value.trim();\n      var email = document.getElementById("ep-email").value.trim().toLowerCase();
+      var phone = document.getElementById("ep-phone").value.trim();
+      var email = document.getElementById("ep-email").value.trim().toLowerCase();
       var age = document.getElementById("ep-age").value.trim();
       var gender = document.getElementById("ep-gender").value;
       var medical_record_no = document.getElementById("ep-mrn").value.trim();
