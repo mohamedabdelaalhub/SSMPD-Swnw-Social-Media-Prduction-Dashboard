@@ -11,3 +11,4 @@
 .status-list{display:grid;gap:10px;margin-top:18px}.status-card{border:1px solid var(--line);border-radius:15px;padding:14px}.status-card b{font-family:"BigVesta",sans-serif}.meta{font-size:12px;color:var(--muted);margin-top:6px}.pill{display:inline-flex;border-radius:999px;padding:4px 9px;font-size:11px;background:#eef3ff;color:var(--blue)}.pill.approved{background:#e9f7ef;color:var(--ok)}.pill.rejected,.pill.revoked{background:#fff0ed;color:var(--bad)}
 footer{text-align:center;color:var(--muted);font-size:11px;padding:14px 4px;line-height:1.7}
 @media(max-width:620px){.shell{margin:16px auto}.panel{padding:20px;border-radius:18px}.grid{grid-template-columns:1fr}.field.full{grid-column:auto}.hero h1{font-size:24px}.brandbar img{width:54px;height:54px}}
+\n.portal-nav{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 18px}.btn.sm{min-height:36px;padding:0 12px;font-size:12px}\n
