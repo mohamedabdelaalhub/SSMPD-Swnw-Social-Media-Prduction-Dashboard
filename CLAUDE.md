@@ -3649,3 +3649,35 @@ Facebook Page + Instagram Professional Account — سيرفر-سايد بالك�
   تاريخية تقريبية (من إعلانات العلامة التجارية العامة/متعددة التخصصات)
   لمواد "باطنة"/"أطفال" بدل ما يعرض "مفيش بيانات كافية". مفيش أي تعديل
   كود مطلوب — البانل بيقرا الـmapping ديناميكيًا من الجدول.
+
+## أجهزة Ultra Sound/Infra Red + قائمة أجهزة العلاج الطبيعي بقت قابلة للتعديل من لوحة التحكم (`?v=87`/`?v=variants-47` — قسم ٥١ — ٢٠٢٦-٠٩-٠٩)
+
+- طلب المستخدم: إضافة جهازين جداد في خانات جلسات "تقرير علاج طبيعي"
+  (Ultra Sound وInfra Red)، مع أوبشن في لوحة التحكم يقدر يضيف بيه أجهزة
+  جديدة، وأي جهاز يتضاف من هناك يسمع تلقائيًا في الملف الطبي والتقارير
+  وبقية الداشبورد.
+- **فحص أول**: `PHYSIO_TREATMENTS` كانت الثابت الوحيد في الريبو كله بيبني
+  خانات الأجهزة (مكان واحد بس — `physioSessionRowHtml` في
+  `render-patients.js`)، و`printPhysioReport` بيطبع `session.treatments`
+  كنص حر من غير أي قائمة ثابتة تانية — فمفيش داعي لتعديل الطباعة خالص،
+  ومفيش داعي لتعديل schema `patient_physio_reports.sessions` (نصوص حرة
+  أصلًا).
+- `setup.sql` قسم ٥١: عمود جديد `app_settings.physio_devices jsonb` (نفس
+  نمط `content_agent_gpt_url` في قسم ٣٧ بالظبط — صف الإعدادات الوحيد
+  id=1) — قيمة افتراضية فيها الثمان أجهزة القديمة + Ultra Sound + Infra
+  Red. **كتابة/قراءة مباشرة عن طريق `getAppSettings()`/`updateAppSettings()`
+  الموجودتين بالفعل — مفيش Edge Function ولا جدول جديد.**
+- `render-patients.js`: `PHYSIO_TREATMENTS` بقت متغيّر قابل للتحديث (مش
+  ثابت)، بقيمة افتراضية (`PHYSIO_TREATMENTS_DEFAULT`) فيها الجهازين
+  الجداد كـfallback. `openPhysioReportFormModal` بقت بتجيب
+  `app_settings.physio_devices` (لو موجودة ومليانة) قبل ما تبني الفورم
+  (`_openPhysioReportFormModalImpl`) — نداء إضافي واحد بس عند فتح فورم
+  تقرير العلاج الطبيعي (مش عند فتح ملف المريض كله).
+- `render-admin.js`: سكشن جديد "أجهزة العلاج الطبيعي" جوه لوحة "المستخدمون
+  والصلاحيات" (بعد سكشن SLA مباشرة) — قائمة chips قابلة للحذف + خانة
+  "اسم الجهاز الجديد" + زرار "+ إضافة" (محلي في المتصفح) + زرار "حفظ"
+  يكتب المصفوفة كاملة في `app_settings.physio_devices`.
+- بصمة الكاش اترفعت لـ `render-patients.js?v=87`، `render-admin.js
+  ?v=variants-47` في `index.html`.
+- **لازم**: تشغيل قسم ٥١ من `setup.sql` في Supabase SQL Editor (عمود جديد
+  فقط — آمن للتشغيل، ومفيش Edge Function مطلوب نشرها).
