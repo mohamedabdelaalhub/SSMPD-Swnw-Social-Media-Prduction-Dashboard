@@ -4803,3 +4803,14 @@ create policy "accounting delete packages" on public.pricing_packages
 -- ============================================================
 alter table public.content_items
   add column if not exists published_urls jsonb not null default '{}'::jsonb;
+
+-- ============================================================
+-- قسم ٥١: قائمة أجهزة العلاج الطبيعي بقت قابلة للتعديل من لوحة التحكم
+-- (app_settings.physio_devices) — بدل قائمة ثابتة في الكود. نفس نمط
+-- content_agent_gpt_url (قسم ٣٧) بالظبط: عمود إضافي على صف الإعدادات
+-- الوحيد id=1، قراءة/كتابة عن طريق getAppSettings/updateAppSettings
+-- الموجودتين بالفعل — مفيش Edge Function ولا جدول جديد.
+-- ============================================================
+alter table public.app_settings
+  add column if not exists physio_devices jsonb not null default
+  '["Cryo","Tense","RF","Manual","حجامة (Cupping)","Recovery","Laser","Compression","Ultra Sound","Infra Red"]'::jsonb;
