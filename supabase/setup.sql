@@ -4815,43 +4815,131 @@ alter table public.app_settings
   add column if not exists physio_devices jsonb not null default
   '["Cryo","Tense","RF","Manual","حجامة (Cupping)","Recovery","Laser","Compression","Ultra Sound","Infra Red"]'::jsonb;
 
+
 -- ============================================================
--- قسم ٥٢: Patient Portal — Phase 1 (Foundation فقط، بدون UI/Auth UX)
--- تأسيس آمن لاحقًا لتسجيل دخول المريض ورؤية ملفه الطبي الموجود
--- بالفعل في الـDashboard. لا نسخ ولا duplicate لبيانات المريض —
+-- قسم ٥٢: Patient Portal — Phase 1: Final Foundation (Pre-Live)
+-- ⚠️ لسه ماتشغلش على Supabase Live — القسم ده Foundation/Schema/RLS بس،
+-- بدون أي UI أو Auth UX فعلي. لا نسخ ولا duplicate لبيانات المريض —
 -- patients.id يفضل مصدر الحقيقة الوحيد، والجداول الطبية الحالية
--- (patient_visits/prescriptions/files/reports...) متتغيرش خالص.
+-- (patient_visits/prescriptions/files/medical_reports/echo/dental/
+-- physio/lab_requests/radiology_requests) متتغيرش خالص.
+--
+-- القاعدة الأمنية الأساسية لكل الأقسام تحت:
+-- محدش يوصل لأي ملف طبي لمجرد إن رقم التليفون اتطابق، أو الـOTP نجح،
+-- أو الاسم اتطابق. الـOTP بيثبت ملكية رقم التليفون بس — مش هوية أو صلاحية.
+-- الوصول لأي سجل طبي (حتى وصول المريض لملفه هو نفسه) لازم يعدّي على
+-- تحقّق هوية/صلاحية رسمي معتمد من الموظفين (patient_identity_verifications
+-- → patient_account_access بحالة approved).
 -- ============================================================
 
--- 52-أ) حسابات المرضى — منفصلة منطقياً عن admins تماماً
+-- ------------------------------------------------------------
+-- 52-أ) حسابات المرضى — حساب الدخول (Login) بس، من غير أي ربط مباشر
+-- بمريض معيّن. حساب واحد ممكن لاحقًا يوصل لأكتر من ملف مريض (نفسه +
+-- أبناءه مثلاً) عن طريق patient_account_access تحت — مش عمود مباشر هنا.
+-- منفصلة منطقياً بالكامل عن admins/staff auth/أدوار الموظفين.
+-- ------------------------------------------------------------
 create table if not exists public.patient_accounts (
   id             uuid primary key default gen_random_uuid(),
   auth_user_id   uuid not null unique references auth.users(id) on delete cascade,
-  patient_id     uuid not null references public.patients(id) on delete restrict,
   status         text not null default 'active' check (status in ('active','disabled')),
   phone_verified boolean not null default false,
   created_at     timestamptz not null default now(),
   updated_at     timestamptz not null default now(),
   last_login_at  timestamptz
 );
-create index if not exists patient_accounts_patient_idx on public.patient_accounts (patient_id);
+-- لو كانت نسخة سابقة (قبل التعديل ده) اتعملت بعمود patient_id مباشر —
+-- امسحه، مفيش داعي ليه دلوقتي (الربط بقى عن طريق patient_account_access)
+alter table public.patient_accounts drop column if exists patient_id;
 
-alter table public.patient_accounts enable row level security;
+-- ------------------------------------------------------------
+-- 52-ب) صلاحية دخول الملف — مين المسموح له يوصل لأي patients.id، وبأي
+-- صفة (نفسه/ولي أمر/ممثل معتمد)، وبحالة تحقّق واضحة. حساب واحد ممكن
+-- يوصل لأكتر من مريض، ومريض واحد ممكن يبقى ليه أكتر من ولي أمر معتمد
+-- (unique(account_id, patient_id) بس — مش unique على patient_id لوحده).
+-- ------------------------------------------------------------
+create table if not exists public.patient_account_access (
+  id                  uuid primary key default gen_random_uuid(),
+  account_id          uuid not null references public.patient_accounts(id) on delete cascade,
+  patient_id          uuid not null references public.patients(id) on delete cascade,
+  access_type         text not null check (access_type in ('self','guardian','authorized')),
+  relationship        text check (relationship in ('self','father','mother','legal_guardian','spouse','other')),
+  verification_status text not null default 'pending'
+                        check (verification_status in ('pending','approved','rejected','revoked','expired')),
+  is_primary          boolean not null default false,
+  verified_by         uuid references public.admins(id),
+  verified_at         timestamptz,
+  expires_at          timestamptz,
+  revoked_by          uuid references public.admins(id),
+  revoked_at          timestamptz,
+  rejection_reason    text,
+  created_at          timestamptz not null default now(),
+  updated_at          timestamptz not null default now(),
+  unique (account_id, patient_id)
+);
+create index if not exists patient_account_access_patient_idx on public.patient_account_access (patient_id);
+create index if not exists patient_account_access_account_idx on public.patient_account_access (account_id);
+create index if not exists patient_account_access_status_idx on public.patient_account_access (verification_status);
 
--- المريض يشوف صف حسابه بس (اكتشاف الحساب/الدخول)
-drop policy if exists "patient reads own account" on public.patient_accounts;
-create policy "patient reads own account" on public.patient_accounts
-  for select using (auth_user_id = auth.uid());
+-- ------------------------------------------------------------
+-- 52-ج) طلبات تحقّق الهوية/الصلاحية — كل صف "طلب" لحد ما موظف يراجعه
+-- ويوافق/يرفض. الموافقة هي اللي بتنتج/تحدّث صف approved في
+-- patient_account_access — مفيش موافقة ذاتية من كود العميل خالص.
+-- ------------------------------------------------------------
+create table if not exists public.patient_identity_verifications (
+  id                     uuid primary key default gen_random_uuid(),
+  account_id             uuid not null references public.patient_accounts(id) on delete cascade,
+  requested_patient_id   uuid references public.patients(id) on delete set null,
+  verification_type      text not null check (verification_type in ('self_identity','guardian_relationship','authorized_representative')),
+  requested_relationship text check (requested_relationship in ('self','father','mother','legal_guardian','spouse','other')),
+  status                 text not null default 'pending'
+                           check (status in ('pending','approved','rejected','revoked','expired')),
+  submitted_at           timestamptz not null default now(),
+  reviewed_by            uuid references public.admins(id),
+  reviewed_at            timestamptz,
+  rejection_reason       text,
+  expires_at             timestamptz,
+  created_at             timestamptz not null default now(),
+  updated_at             timestamptz not null default now()
+);
+create index if not exists patient_identity_verifications_account_idx
+  on public.patient_identity_verifications (account_id);
+create index if not exists patient_identity_verifications_patient_idx
+  on public.patient_identity_verifications (requested_patient_id);
+create index if not exists patient_identity_verifications_status_idx
+  on public.patient_identity_verifications (status);
 
--- الإدارة (سوبر أدمن) بس تقدر تدير/تعدّل الحسابات — مفيش insert/update/delete
--- سياسة لدور authenticated العادي، يعني المريض مش قادر يعدّل patient_id بتاعه
--- ولا أي عمود تاني في صفه (حتى لو قرأه) — الكتابة الفعلية عن طريق service role
--- أو سوبر أدمن بس.
-drop policy if exists "super admin manage patient accounts" on public.patient_accounts;
-create policy "super admin manage patient accounts" on public.patient_accounts
-  for all using (public.is_super()) with check (public.is_super());
+-- ------------------------------------------------------------
+-- 52-د) مستندات التحقّق — طلب واحد ممكن ياخد أكتر من مستند رسمي، فجدول
+-- منفصل بدل ما نحط verification_document_id واحد على patient_account_access.
+-- ⚠️ دي "مستندات أمنية داخلية" — مش ملفات المريض العادية (patient_files):
+-- ممنوع تظهر في قائمة ملفات المريض العادية، ولا لأولياء أمور تانيين، ولا
+-- تتحمّل من خلال وصول المريض العادي، ومتورثش صلاحيات patient_files العريضة.
+-- بدل ما نستخدم بنية patient_files المشتركة (صلاحياتها أوسع من اللازم
+-- هنا)، الجدول ده منفصل بالكامل وRLS مقفول عليه لوحده تحت.
+-- storage_ref بيخزّن مرجع الملف بس (زي drive_file_id في patient_files) —
+-- مفيش رقم هوية حكومي خام هنا خالص لو محتجناه لاحقًا، هاش بس زي
+-- patients.national_id_hash.
+-- ------------------------------------------------------------
+create table if not exists public.patient_verification_documents (
+  id              uuid primary key default gen_random_uuid(),
+  verification_id uuid not null references public.patient_identity_verifications(id) on delete cascade,
+  storage_ref     text not null,
+  -- document_type مقصود يكون نص حر مُهيّأ من إعدادات المركز (مش enum ثابت)
+  -- عشان مفيش افتراض قانوني مبرمج جوه الكود إن مستند بعينه "يثبت" ولاية
+  -- أمر رسمياً — المركز هو اللي يقرر تشغيلياً إيه المستندات المقبولة.
+  document_type   text not null,
+  uploaded_by     uuid references public.patient_accounts(id),
+  created_at      timestamptz not null default now()
+);
+create index if not exists patient_verification_documents_verification_idx
+  on public.patient_verification_documents (verification_id);
 
--- 52-ب) ربط مريض Supabase بمريضه الحقيقي في IHospital (mapping فقط — بدون اتصال فعلي الآن)
+-- ------------------------------------------------------------
+-- 52-هـ) patient_system_links — إصلاح الـuniqueness: الـunique constraint
+-- العادي بيسمح بتكرار غير مقصود لما الأعمدة nullable (NULL != NULL في
+-- Postgres). استبدلناه بـpartial unique index بيمنع تكرار mapping حقيقي
+-- بس (لما ihospital_patient_id وhospital_id الاتنين موجودين فعلاً).
+-- ------------------------------------------------------------
 create table if not exists public.patient_system_links (
   id                   uuid primary key default gen_random_uuid(),
   supabase_patient_id  uuid not null references public.patients(id) on delete cascade,
@@ -4862,22 +4950,25 @@ create table if not exists public.patient_system_links (
   verified             boolean not null default false,
   verified_at          timestamptz,
   created_at           timestamptz not null default now(),
-  updated_at           timestamptz not null default now(),
-  unique (supabase_patient_id, ihospital_patient_id, hospital_id)
+  updated_at           timestamptz not null default now()
 );
+alter table public.patient_system_links drop constraint if exists patient_system_links_supabase_patient_id_ihospital_patient_i_key;
+alter table public.patient_system_links drop constraint if exists patient_system_links_supabase_patient_id_ihospital_patient_id_hospital_id_key;
+create unique index if not exists patient_system_links_real_mapping_uidx
+  on public.patient_system_links (supabase_patient_id, ihospital_patient_id, hospital_id)
+  where ihospital_patient_id is not null and hospital_id is not null;
+alter table public.patient_system_links drop constraint if exists patient_system_links_match_confidence_check;
+alter table public.patient_system_links add constraint patient_system_links_match_confidence_check
+  check (match_confidence is null or (match_confidence >= 0 and match_confidence <= 1));
 create index if not exists patient_system_links_patient_idx
   on public.patient_system_links (supabase_patient_id);
 
-alter table public.patient_system_links enable row level security;
-
--- إدارة/سوبر أدمن بس — مفيش وصول مباشر للمريض (client) خالص لسه، ولا حتى قراءة
-drop policy if exists "super admin manage patient system links" on public.patient_system_links;
-create policy "super admin manage patient system links" on public.patient_system_links
-  for all using (public.is_super()) with check (public.is_super());
-
--- 52-ج) آلية visibility مستقبلية للـPortal — جدول lookup مشترك واحد بدل
--- ما نضيف عمود portal_status على كل جدول تقرير طبي على حدة (أنظف وأقل
--- تغيير، وميغيّرش شكل أي جدول موجود ولا يأثر على الـDashboard خالص).
+-- ------------------------------------------------------------
+-- 52-و) patient_portal_visibility — زي ما هي (جدول lookup مشترك واحد
+-- بدل عمود على كل جدول تقرير طبي). approved-only للبورتال — وحتى ولي
+-- أمر approved مايشوفش أي حاجة إلا لو الـentity بتاعتها approved برضه
+-- (شرطين مع بعض، مش بديلين عن بعض — قسم ٥٢-ط تحت).
+-- ------------------------------------------------------------
 create table if not exists public.patient_portal_visibility (
   id            uuid primary key default gen_random_uuid(),
   patient_id    uuid not null references public.patients(id) on delete cascade,
@@ -4894,10 +4985,140 @@ create table if not exists public.patient_portal_visibility (
 create index if not exists patient_portal_visibility_patient_idx
   on public.patient_portal_visibility (patient_id);
 
+-- ------------------------------------------------------------
+-- 52-ز) صلاحية موظف مخصّصة ومنفصلة لمراجعة/اعتماد هوية المريض — مش كل
+-- موظف عنده وصول أرشيف يقدر يعتمد تحقّق هوية/ولاية أمر (عملية حساسة).
+-- نفس نمط has_archive_access/has_archive_review_access (عمود boolean
+-- منفصل على admins + دالة مساعدة). سوبر أدمن بياخد override زي العادة.
+-- ------------------------------------------------------------
+alter table public.admins add column if not exists has_verification_management_access boolean not null default false;
+
+create or replace function public.can_manage_patient_identity_verification()
+returns boolean language sql security definer stable set search_path = public as $$
+  select coalesce((
+    select has_verification_management_access from public.admins
+    where user_id = auth.uid() and active limit 1
+  ), false) or public.is_super();
+$$;
+revoke all on function public.can_manage_patient_identity_verification() from public;
+grant execute on function public.can_manage_patient_identity_verification() to authenticated;
+
+-- ------------------------------------------------------------
+-- 52-ح) سجل تدقيق (Audit Log) لعمليات الهوية/الوصول الخاصة بالـPortal.
+-- الكتابة عن طريق service role/الباك إند بس (مفيش insert policy لأي
+-- دور client) — يعني العميل (مريض أو موظف عادي) مايقدرش يعدّل ولا يمسح
+-- التاريخ خالص. القراءة لموظف عنده صلاحية إدارة التحقّق أو سوبر أدمن.
+-- ------------------------------------------------------------
+create table if not exists public.patient_portal_audit_log (
+  id             uuid primary key default gen_random_uuid(),
+  account_id     uuid references public.patient_accounts(id) on delete set null,
+  patient_id     uuid references public.patients(id) on delete set null,
+  actor_admin_id uuid references public.admins(id),
+  action         text not null,
+  entity_type    text,
+  entity_id      uuid,
+  metadata       jsonb,
+  created_at     timestamptz not null default now()
+);
+create index if not exists patient_portal_audit_log_patient_idx on public.patient_portal_audit_log (patient_id, created_at desc);
+create index if not exists patient_portal_audit_log_account_idx on public.patient_portal_audit_log (account_id, created_at desc);
+
+-- ============================================================
+-- 52-ط) RLS — كل الجداول فوق
+-- ============================================================
+
+-- ---------- patient_accounts ----------
+alter table public.patient_accounts enable row level security;
+
+drop policy if exists "patient reads own account" on public.patient_accounts;
+create policy "patient reads own account" on public.patient_accounts
+  for select using (auth_user_id = auth.uid());
+
+drop policy if exists "super admin manage patient accounts" on public.patient_accounts;
+create policy "super admin manage patient accounts" on public.patient_accounts
+  for all using (public.is_super() or public.can_manage_patient_identity_verification())
+  with check (public.is_super() or public.can_manage_patient_identity_verification());
+
+-- ---------- patient_account_access ----------
+alter table public.patient_account_access enable row level security;
+
+-- المريض يقرا صفوف الوصول الخاصة بحسابه بس (approved/pending/إلخ) —
+-- مايقدرش يعدّل ولا يضيف ولا يمسح أي صف (مفيش insert/update/delete policy
+-- لدور authenticated خالص — الاعتماد/الإلغاء عن طريق الموظف/service بس).
+drop policy if exists "account reads own access rows" on public.patient_account_access;
+create policy "account reads own access rows" on public.patient_account_access
+  for select using (
+    exists (select 1 from public.patient_accounts a where a.id = account_id and a.auth_user_id = auth.uid())
+    or public.can_manage_patient_identity_verification()
+  );
+
+drop policy if exists "staff manage access rows" on public.patient_account_access;
+create policy "staff manage access rows" on public.patient_account_access
+  for all using (public.can_manage_patient_identity_verification())
+  with check (public.can_manage_patient_identity_verification());
+
+-- ---------- patient_identity_verifications ----------
+alter table public.patient_identity_verifications enable row level security;
+
+drop policy if exists "account reads own verifications" on public.patient_identity_verifications;
+create policy "account reads own verifications" on public.patient_identity_verifications
+  for select using (
+    exists (select 1 from public.patient_accounts a where a.id = account_id and a.auth_user_id = auth.uid())
+    or public.can_manage_patient_identity_verification()
+  );
+
+-- المريض يقدر يقدّم طلب تحقّق جديد لحسابه هو بس، وبحالة pending دايمًا —
+-- مايقدرش يحط نفسه approved/rejected ولا يعبّي reviewed_by/reviewed_at.
+drop policy if exists "account submits own verification request" on public.patient_identity_verifications;
+create policy "account submits own verification request" on public.patient_identity_verifications
+  for insert with check (
+    exists (select 1 from public.patient_accounts a where a.id = account_id and a.auth_user_id = auth.uid())
+    and status = 'pending'
+    and reviewed_by is null
+    and reviewed_at is null
+  );
+
+-- المراجعة/الاعتماد/الرفض/التحديث بعد التقديم — للموظف صاحب الصلاحية بس
+drop policy if exists "staff review verifications" on public.patient_identity_verifications;
+create policy "staff review verifications" on public.patient_identity_verifications
+  for update using (public.can_manage_patient_identity_verification())
+  with check (public.can_manage_patient_identity_verification());
+drop policy if exists "staff delete verifications" on public.patient_identity_verifications;
+create policy "staff delete verifications" on public.patient_identity_verifications
+  for delete using (public.can_manage_patient_identity_verification());
+
+-- ---------- patient_verification_documents ----------
+-- مقصود: مفيش select policy لأي دور authenticated خالص (لا المريض ولا
+-- الموظف العادي) — مستندات أمنية داخلية، قراءتها عن طريق service role/
+-- أدوات إدارية منفصلة بس. المريض يقدر "يرفع" (insert) مستند لطلب تحقّق
+-- بتاعه هو وهو لسه pending فقط.
+alter table public.patient_verification_documents enable row level security;
+
+drop policy if exists "account uploads own verification document" on public.patient_verification_documents;
+create policy "account uploads own verification document" on public.patient_verification_documents
+  for insert with check (
+    exists (
+      select 1 from public.patient_identity_verifications v
+      join public.patient_accounts a on a.id = v.account_id
+      where v.id = verification_id and a.auth_user_id = auth.uid() and v.status = 'pending'
+    )
+  );
+
+drop policy if exists "staff manage verification documents" on public.patient_verification_documents;
+create policy "staff manage verification documents" on public.patient_verification_documents
+  for all using (public.can_manage_patient_identity_verification())
+  with check (public.can_manage_patient_identity_verification());
+
+-- ---------- patient_system_links ----------
+alter table public.patient_system_links enable row level security;
+
+drop policy if exists "super admin manage patient system links" on public.patient_system_links;
+create policy "super admin manage patient system links" on public.patient_system_links
+  for all using (public.is_super()) with check (public.is_super());
+
+-- ---------- patient_portal_visibility (سلوك الموظفين الحالي متغيرش) ----------
 alter table public.patient_portal_visibility enable row level security;
 
--- نفس نمط صلاحيات الجداول الطبية الحالية (أرشيف/مراجعة) — مفيش توسيع
--- لصلاحيات anon/authenticated، ومفيش وصول مباشر من client المريض لسه.
 drop policy if exists "portal visibility read" on public.patient_portal_visibility;
 create policy "portal visibility read" on public.patient_portal_visibility
   for select using (
@@ -4907,3 +5128,33 @@ drop policy if exists "portal visibility write" on public.patient_portal_visibil
 create policy "portal visibility write" on public.patient_portal_visibility
   for all using (public.has_archive_access() or public.can_manage_all_content())
   with check (public.has_archive_access() or public.can_manage_all_content());
+
+-- ---------- patient_portal_audit_log ----------
+-- مقصود: مفيش insert/update/delete policy لأي دور client خالص — الكتابة
+-- عن طريق service role بس (بيتخطى RLS). القراءة لموظف صلاحية التحقّق/سوبر أدمن.
+alter table public.patient_portal_audit_log enable row level security;
+
+drop policy if exists "staff read portal audit log" on public.patient_portal_audit_log;
+create policy "staff read portal audit log" on public.patient_portal_audit_log
+  for select using (public.can_manage_patient_identity_verification());
+
+-- ============================================================
+-- ملاحظة معمارية (قسم ٥٢ كامل): تفويض الـPatient API المستقبلي لازم
+-- يتطلب الاتنين مع بعض دايمًا:
+--   أ) patient_account_access.verification_status = 'approved' لنفس
+--      الـpatient_id المطلوب
+--   ب) patient_portal_visibility.portal_status = 'approved' لنفس
+--      الـentity المطلوبة
+-- أي طلب من غير الاتنين مع بعض = Deny. مفيش patient_id يوصل من العميل
+-- لوحده يكفي كتفويض. الرجوع لهذا القسم عند بناء أي Edge Function مستقبلية.
+--
+-- إلغاء الوصول (revoke) بيحصل بتحديث verification_status لـ'revoked' —
+-- مايتمسحش الصف خالص (التاريخ يفضل موجود: revoked_by/revoked_at).
+-- انتقال expired بنفس المنطق (عمود expires_at + تحديث الحالة).
+--
+-- استقلالية القاصر مستقبلاً: القاصر لما يكبر ويعمل حساب بنفسه، ملفه
+-- الطبي (patients.id) يفضل هو هو من غير تكرار — بس علاقات الوصول
+-- (patient_account_access) اللي بتتغيّر، مش الـPatient نفسه. patients
+-- عندها عمود age بس مفيش date_of_birth موثوق — أي انتقال عمري تلقائي
+-- محتاج date_of_birth الأول (تحسين بيانات مستقبلي، مش جزء من المرحلة دي).
+-- ============================================================
