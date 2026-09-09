@@ -5158,3 +5158,328 @@ create policy "staff read portal audit log" on public.patient_portal_audit_log
 -- عندها عمود age بس مفيش date_of_birth موثوق — أي انتقال عمري تلقائي
 -- محتاج date_of_birth الأول (تحسين بيانات مستقبلي، مش جزء من المرحلة دي).
 -- ============================================================
+
+-- ============================================================
+-- قسم ٥٢ (تصحيح أمني نهائي — Pre-Live، لسه معلّق) — إنفاذ فعلي على
+-- مستوى القاعدة نفسها (مش مجرد convention في الواجهة) لقاعدة "الوصول
+-- المعتمد بالمستند" اللي كانت موصوفة كملاحظة بس فوق. النقاط دي بتقفل
+-- أي مسار مباشر يتخطى تدفق التحقّق.
+-- ============================================================
+
+-- ------------------------------------------------------------
+-- 52-ي) ربط صريح بين patient_account_access والتحقّق اللي أنتجه
+-- ------------------------------------------------------------
+alter table public.patient_account_access
+  add column if not exists verification_id uuid references public.patient_identity_verifications(id) on delete set null;
+
+-- ------------------------------------------------------------
+-- 52-ك) قفل الكتابة المباشرة: من دلوقتي مفيش أي INSERT/UPDATE/DELETE
+-- من دور authenticated (لا مريض ولا موظف) على patient_account_access
+-- ولا patient_identity_verifications خالص — الكتابة الوحيدة المسموحة
+-- هي عن طريق الدوال SECURITY DEFINER تحت (بتشتغل بصلاحية مالك القاعدة
+-- وبتتخطى RLS، زي guard_content_transition وباقي التريجرز الحالية في
+-- المشروع) — يعني حتى لو حد قدر يفتح REST مباشر، مفيش سياسة تسمحله
+-- يعمل approved access row من غير المرور بالتدفق ده.
+-- ------------------------------------------------------------
+drop policy if exists "staff manage access rows" on public.patient_account_access;
+drop policy if exists "staff review verifications" on public.patient_identity_verifications;
+drop policy if exists "staff delete verifications" on public.patient_identity_verifications;
+-- (سياسات القراءة "account reads own access rows" / "account reads own
+-- verifications" / "account submits own verification request" فضلت
+-- زي ما هي من غير تغيير)
+
+-- ------------------------------------------------------------
+-- 52-ل) دوال الاعتماد/الرفض/الإلغاء الآمنة — المسار الوحيد المسموح
+-- للكتابة على الجدولين فوق. كل واحدة بتتحقق بنفسها من صلاحية الموظف
+-- (دفاع إضافي حتى لو الدالة بتتخطى RLS أصلاً).
+-- ------------------------------------------------------------
+
+-- اعتماد طلب تحقّق: بيتأكد إن الطلب لسه pending، وإن فيه مستند تحقّق
+-- رسمي واحد على الأقل مرفوع ليه، وبعدين atomically: يعتمد الطلب نفسه،
+-- وينشئ/يحدّث صف approved في patient_account_access مربوط بـverification_id.
+-- التسجيل في patient_portal_audit_log بيحصل تلقائي عن طريق التريجرز
+-- في 52-م تحت — مش الدالة دي مسؤولة عنه.
+create or replace function public.approve_patient_identity_verification(p_verification_id uuid)
+returns public.patient_account_access
+language plpgsql security definer set search_path = public as $$
+declare
+  v_verification public.patient_identity_verifications;
+  v_access_type  text;
+  v_doc_count    int;
+  v_result       public.patient_account_access;
+begin
+  if not public.can_manage_patient_identity_verification() then
+    raise exception 'not authorized to approve identity verifications';
+  end if;
+
+  select * into v_verification from public.patient_identity_verifications
+    where id = p_verification_id for update;
+  if not found then
+    raise exception 'verification request % not found', p_verification_id;
+  end if;
+  if v_verification.status <> 'pending' then
+    raise exception 'verification request % is not pending (status=%)', p_verification_id, v_verification.status;
+  end if;
+  if v_verification.requested_patient_id is null then
+    raise exception 'verification request % has no requested_patient_id', p_verification_id;
+  end if;
+
+  select count(*) into v_doc_count from public.patient_verification_documents
+    where verification_id = p_verification_id;
+  if v_doc_count < 1 then
+    raise exception 'verification request % has no attached documents — cannot approve', p_verification_id;
+  end if;
+
+  v_access_type := case v_verification.verification_type
+    when 'self_identity' then 'self'
+    when 'guardian_relationship' then 'guardian'
+    when 'authorized_representative' then 'authorized'
+  end;
+
+  update public.patient_identity_verifications
+    set status = 'approved', reviewed_by = public.my_admin_id(), reviewed_at = now(), updated_at = now()
+    where id = p_verification_id;
+
+  insert into public.patient_account_access
+    (account_id, patient_id, access_type, relationship, verification_status,
+     verified_by, verified_at, verification_id, revoked_by, revoked_at, rejection_reason)
+  values
+    (v_verification.account_id, v_verification.requested_patient_id, v_access_type,
+     v_verification.requested_relationship, 'approved',
+     public.my_admin_id(), now(), v_verification.id, null, null, null)
+  on conflict (account_id, patient_id) do update set
+    access_type = excluded.access_type,
+    relationship = excluded.relationship,
+    verification_status = 'approved',
+    verified_by = excluded.verified_by,
+    verified_at = excluded.verified_at,
+    verification_id = excluded.verification_id,
+    revoked_by = null,
+    revoked_at = null,
+    rejection_reason = null,
+    updated_at = now()
+  returning * into v_result;
+
+  return v_result;
+end;
+$$;
+revoke all on function public.approve_patient_identity_verification(uuid) from public;
+grant execute on function public.approve_patient_identity_verification(uuid) to authenticated;
+
+-- رفض طلب تحقّق (لسه pending بس)
+create or replace function public.reject_patient_identity_verification(p_verification_id uuid, p_reason text default null)
+returns public.patient_identity_verifications
+language plpgsql security definer set search_path = public as $$
+declare v_result public.patient_identity_verifications;
+begin
+  if not public.can_manage_patient_identity_verification() then
+    raise exception 'not authorized to reject identity verifications';
+  end if;
+  update public.patient_identity_verifications
+    set status = 'rejected', reviewed_by = public.my_admin_id(), reviewed_at = now(),
+        rejection_reason = p_reason, updated_at = now()
+    where id = p_verification_id and status = 'pending'
+    returning * into v_result;
+  if v_result.id is null then
+    raise exception 'verification request % not found or not pending', p_verification_id;
+  end if;
+  return v_result;
+end;
+$$;
+revoke all on function public.reject_patient_identity_verification(uuid, text) from public;
+grant execute on function public.reject_patient_identity_verification(uuid, text) to authenticated;
+
+-- إلغاء/انتهاء صلاحية وصول معتمد بالفعل (approved → revoked/expired) —
+-- التاريخ مايتمسحش، بس الصف بيفضل موجود بحالة جديدة
+create or replace function public.revoke_patient_account_access(p_access_id uuid, p_reason text default null, p_new_status text default 'revoked')
+returns public.patient_account_access
+language plpgsql security definer set search_path = public as $$
+declare v_result public.patient_account_access;
+begin
+  if not public.can_manage_patient_identity_verification() then
+    raise exception 'not authorized to revoke patient account access';
+  end if;
+  if p_new_status not in ('revoked','expired') then
+    raise exception 'invalid target status %', p_new_status;
+  end if;
+  update public.patient_account_access
+    set verification_status = p_new_status, revoked_by = public.my_admin_id(), revoked_at = now(),
+        rejection_reason = coalesce(p_reason, rejection_reason), updated_at = now()
+    where id = p_access_id and verification_status = 'approved'
+    returning * into v_result;
+  if v_result.id is null then
+    raise exception 'access row % not found or not currently approved', p_access_id;
+  end if;
+  return v_result;
+end;
+$$;
+revoke all on function public.revoke_patient_account_access(uuid, text, text) from public;
+grant execute on function public.revoke_patient_account_access(uuid, text, text) to authenticated;
+
+-- ------------------------------------------------------------
+-- 52-م) تدقيق مفروض على مستوى القاعدة (Triggers) — مش معتمد على إن
+-- كود التطبيق "يتذكر" يكتب في patient_portal_audit_log. بما إن الكتابة
+-- على الجدولين دول بقت من غير الدوال فوق أصلاً مستحيلة (52-ك)، التريجرز
+-- دي بتسجّل تلقائيًا أي تغيير حقيقي يحصل، سواء عن طريق الدوال دي أو أي
+-- مسار مستقبلي تاني.
+-- ------------------------------------------------------------
+create or replace function public.log_patient_identity_verification_submitted()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  insert into public.patient_portal_audit_log(account_id, patient_id, action, entity_type, entity_id)
+  values (new.account_id, new.requested_patient_id, 'verification_submitted', 'patient_identity_verifications', new.id);
+  return new;
+end;
+$$;
+drop trigger if exists trg_patient_identity_verification_submitted on public.patient_identity_verifications;
+create trigger trg_patient_identity_verification_submitted
+  after insert on public.patient_identity_verifications
+  for each row execute function public.log_patient_identity_verification_submitted();
+
+create or replace function public.log_patient_identity_verification_status_change()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if new.status is distinct from old.status and new.status in ('approved','rejected','revoked','expired') then
+    insert into public.patient_portal_audit_log(account_id, patient_id, actor_admin_id, action, entity_type, entity_id, metadata)
+    values (new.account_id, new.requested_patient_id, new.reviewed_by, 'verification_' || new.status,
+            'patient_identity_verifications', new.id,
+            case when new.rejection_reason is not null then jsonb_build_object('reason', new.rejection_reason) else null end);
+  end if;
+  return new;
+end;
+$$;
+drop trigger if exists trg_patient_identity_verification_status_change on public.patient_identity_verifications;
+create trigger trg_patient_identity_verification_status_change
+  after update on public.patient_identity_verifications
+  for each row execute function public.log_patient_identity_verification_status_change();
+
+create or replace function public.log_patient_account_access_status_change()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare v_action text;
+begin
+  if (tg_op = 'INSERT' and new.verification_status = 'approved')
+     or (tg_op = 'UPDATE' and new.verification_status is distinct from old.verification_status) then
+    v_action := case new.verification_status
+      when 'approved' then 'access_granted'
+      when 'revoked'  then 'access_revoked'
+      when 'expired'  then 'access_expired'
+      when 'rejected' then 'access_rejected'
+      else null end;
+    if v_action is not null then
+      insert into public.patient_portal_audit_log(account_id, patient_id, actor_admin_id, action, entity_type, entity_id, metadata)
+      values (new.account_id, new.patient_id, coalesce(new.revoked_by, new.verified_by), v_action,
+              'patient_account_access', new.id,
+              case when new.rejection_reason is not null then jsonb_build_object('reason', new.rejection_reason) else null end);
+    end if;
+  end if;
+  return new;
+end;
+$$;
+drop trigger if exists trg_patient_account_access_status_change on public.patient_account_access;
+create trigger trg_patient_account_access_status_change
+  after insert or update on public.patient_account_access
+  for each row execute function public.log_patient_account_access_status_change();
+
+-- تسجيل يدوي لفتح/تحميل مستند تحقّق — مفيش طريقة تلقائية على مستوى DB
+-- تعترض قراءة ملف من Storage، فالتدفق الوحيد المسموح للقراءة (52-ن تحت)
+-- هو عن طريق سيرفر/Edge Function مستقبلية لازم تنادي الدالة دي الأول
+-- قبل ما تصدر أي رابط مؤقت للملف — مفيش سياسة SELECT مباشرة على
+-- الـbucket خالص (حتى للموظف) عشان نضمن إن كل فتح ملف يعدّي من هنا.
+create or replace function public.log_verification_document_access(p_document_id uuid, p_action text default 'accessed')
+returns void language plpgsql security definer set search_path = public as $$
+declare v_patient_id uuid;
+begin
+  if not public.can_manage_patient_identity_verification() then
+    raise exception 'not authorized to access verification documents';
+  end if;
+  select v.requested_patient_id into v_patient_id
+    from public.patient_verification_documents d
+    join public.patient_identity_verifications v on v.id = d.verification_id
+    where d.id = p_document_id;
+  insert into public.patient_portal_audit_log(patient_id, actor_admin_id, action, entity_type, entity_id)
+  values (v_patient_id, public.my_admin_id(), 'verification_document_' || p_action, 'patient_verification_documents', p_document_id);
+end;
+$$;
+revoke all on function public.log_verification_document_access(uuid, text) from public;
+grant execute on function public.log_verification_document_access(uuid, text) to authenticated;
+
+-- ------------------------------------------------------------
+-- 52-ن) تخزين مستندات التحقّق — Supabase Storage bucket خاص (private)
+-- منفصل تمامًا عن أي bucket/فولدر بتاع patient_files العادية، مفيش
+-- public URL، ومفيش أي وراثة لصلاحيات patient_files. الاتفاقية:
+-- اسم الملف = '{verification_id}/{filename}' (الفولدر الأول = رقم
+-- الطلب) — بنستخدمه في سياسة الرفع عشان نتأكد إن المريض بيرفع لطلبه
+-- هو وهو لسه pending بس.
+--
+-- ⚠️ مقصود: مفيش SELECT policy خالص على الـbucket ده — لا للمريض ولا
+-- حتى للموظف. القراءة/التحميل المباشر من العميل (client) مستحيل تمامًا
+-- على مستوى RLS. الطريقة الوحيدة لفتح ملف هي مستقبلاً عن طريق سيرفر/
+-- Edge Function بمفتاح service_role يصدر رابط مؤقت (signed URL) بعد ما
+-- ينادي log_verification_document_access() فوق — يعني كل تحميل بيتسجّل
+-- إجباريًا، مفيش مسار يتخطى التسجيل.
+-- ------------------------------------------------------------
+insert into storage.buckets (id, name, public)
+  values ('patient-verification-documents', 'patient-verification-documents', false)
+  on conflict (id) do nothing;
+
+drop policy if exists "verification docs upload own" on storage.objects;
+create policy "verification docs upload own" on storage.objects
+  for insert to authenticated
+  with check (
+    bucket_id = 'patient-verification-documents'
+    and exists (
+      select 1 from public.patient_identity_verifications v
+      join public.patient_accounts a on a.id = v.account_id
+      where a.auth_user_id = auth.uid()
+        and v.status = 'pending'
+        and v.id::text = (storage.foldername(name))[1]
+    )
+  );
+-- مفيش update/delete/select policy لأي دور client على الـbucket ده خالص
+-- (immutable بعد الرفع، وقراءة service role بس).
+
+-- ------------------------------------------------------------
+-- 52-س) uploaded_by مايتقبلش من العميل خالص — التريجر بيحدده سيرفريًا
+-- من حساب المريض المطابق لـauth.uid()، بغض النظر عن أي قيمة العميل
+-- بعتها في الـinsert نفسه.
+-- ------------------------------------------------------------
+create or replace function public.enforce_verification_document_uploader()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare v_account_id uuid;
+begin
+  select id into v_account_id from public.patient_accounts where auth_user_id = auth.uid();
+  if v_account_id is not null then
+    new.uploaded_by := v_account_id;
+  end if;
+  return new;
+end;
+$$;
+drop trigger if exists trg_enforce_verification_document_uploader on public.patient_verification_documents;
+create trigger trg_enforce_verification_document_uploader
+  before insert on public.patient_verification_documents
+  for each row execute function public.enforce_verification_document_uploader();
+
+-- ------------------------------------------------------------
+-- 52-ع) منع تكرار طلب تحقّق pending لنفس (حساب + مريض + نوع التحقّق)
+-- ------------------------------------------------------------
+create unique index if not exists patient_identity_verifications_no_dup_pending_uidx
+  on public.patient_identity_verifications (account_id, requested_patient_id, verification_type)
+  where status = 'pending' and requested_patient_id is not null;
+
+-- ------------------------------------------------------------
+-- 52-ف) patient_system_links — uniqueness أدق: الـpartial index القديم
+-- (supabase_patient_id, ihospital_patient_id, hospital_id) كان بيسمح
+-- بربط نفس (hospital_id, ihospital_patient_id) بأكتر من مريض Supabase.
+-- استبدلناه بقيدين (one real patient ↔ one linked patient لكل مستشفى):
+--   ١) نفس المريض الحقيقي في IHospital (hospital_id+ihospital_patient_id)
+--      يترابط بمريض Supabase واحد بس.
+--   ٢) نفس مريض Supabase مايترابطش بأكتر من مريض IHospital داخل نفس
+--      الـhospital_id.
+-- ------------------------------------------------------------
+drop index if exists public.patient_system_links_real_mapping_uidx;
+create unique index if not exists patient_system_links_external_uidx
+  on public.patient_system_links (hospital_id, ihospital_patient_id)
+  where hospital_id is not null and ihospital_patient_id is not null;
+create unique index if not exists patient_system_links_supabase_per_hospital_uidx
+  on public.patient_system_links (supabase_patient_id, hospital_id)
+  where hospital_id is not null;
