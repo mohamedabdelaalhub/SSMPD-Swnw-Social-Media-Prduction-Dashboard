@@ -106,20 +106,30 @@ test/smoke.js              اختبار jsdom — Supabase مموّه بالكا
 | `patient_account_access` | (Patient Portal — Foundation) مين المسموح له يوصل لأي `patients.id` وبأي صفة (`self`/`guardian`/`authorized`) وبحالة `verification_status` (`pending`/`approved`/`rejected`/`revoked`/`expired`) — حساب واحد لأكتر من مريض، ومريض واحد لأكتر من ولي أمر معتمد |
 | `patient_identity_verifications` | (Patient Portal — Foundation) طلبات تحقّق الهوية/الصلاحية قبل ما تتحوّل لصف `approved` في `patient_account_access` — مراجعة موظف إلزامية، مفيش موافقة ذاتية |
 | `patient_verification_documents` | (Patient Portal — Foundation) مستندات التحقّق الرسمية (منفصلة تماماً عن `patient_files` العادية — أمنية داخلية، مش مرئية للمريض ولا لأولياء أمور تانيين) |
-| `patient_system_links` | (Patient Portal — Foundation) ربط `patients.id` بمريضه الحقيقي في IHospital لاحقاً — mapping بس، بدون اتصال فعلي حالياً (uniqueness عن طريق partial unique index يمنع تكرار mapping حقيقي فقط) |
+| `patient_system_links` | (Patient Portal — Foundation) ربط `patients.id` بمريضه الحقيقي في IHospital لاحقاً — mapping بس، بدون اتصال فعلي حالياً (uniqueness: `(hospital_id, ihospital_patient_id)` و`(supabase_patient_id, hospital_id)` — مريض حقيقي واحد ↔ مريض Supabase واحد لكل مستشفى) |
 | `patient_portal_visibility` | (Patient Portal — Foundation) جدول lookup مشترك (`entity_type`+`entity_id`+`portal_status`: `internal`/`approved`/`hidden`) — الافتراضي `internal` (متخفيش حاجة عن الـDashboard، بس متتعرضش للبورتال لحد ما تتعتمد) |
-| `patient_portal_audit_log` | (Patient Portal — Foundation) سجل تدقيق لعمليات الهوية/الوصول — كتابة عن طريق service role بس، قراءة لموظف صلاحية التحقّق/سوبر أدمن |
+| `patient_portal_audit_log` | (Patient Portal — Foundation) سجل تدقيق **مفروض بتريجرز على مستوى القاعدة** (مش app code) لكل تغيير حالة تحقّق/وصول — كتابة عن طريق service role/التريجرز بس، قراءة لموظف صلاحية التحقّق/سوبر أدمن |
 
-**Patient Portal**: البنية الآمنة (Phase 1 — Final Foundation) دلوقتي جاهزة
-في `setup.sql` (قسم ٥٢) — **لسه ماتشغلتش على Supabase Live**. لسه من غير UI
-أو صفحة دخول للمريض. القاعدة الأمنية الأساسية: **الوصول لأي سجل طبي
-(حتى وصول المريض لملفه هو نفسه) لازم تحقّق هوية/صلاحية رسمي معتمد من
-الموظفين — الـOTP بيثبت ملكية رقم التليفون بس، مش هوية.** `patients.id`
-هو المعرّف الدائم دايماً، وممكن أكتر من حساب/رقم هاتف يتربط بنفس المريض
-لاحقاً (سيناريو العيلة/الولاية). موظف عنده صلاحية أرشيف عادية **مايقدرش**
-يعتمد تحقّق هوية — محتاج `has_verification_management_access` (عمود جديد
-على `admins`) أو سوبر أدمن. التفاصيل الكاملة في مشروع Claude
-(`changelog/07-patient-portal-phase1.md`).
+**Patient Portal**: البنية الآمنة (Phase 1 — Final Foundation + تصحيح أمني)
+دلوقتي جاهزة في `setup.sql` (قسم ٥٢) — **لسه ماتشغلتش على Supabase Live**.
+لسه من غير UI أو صفحة دخول للمريض. القاعدة الأمنية الأساسية: **الوصول لأي
+سجل طبي (حتى وصول المريض لملفه هو نفسه) لازم تحقّق هوية/صلاحية رسمي
+معتمد من الموظفين — الـOTP بيثبت ملكية رقم التليفون بس، مش هوية.**
+`patients.id` هو المعرّف الدائم دايماً.
+
+**إنفاذ فعلي على مستوى القاعدة (مش convention بس)**: مفيش أي INSERT/UPDATE
+مباشر مسموح من العميل على `patient_account_access` ولا
+`patient_identity_verifications` خالص — الكتابة الوحيدة عن طريق 3 دوال
+`SECURITY DEFINER`: `approve_patient_identity_verification()` (بتتأكد إن
+فيه مستند تحقّق واحد على الأقل مرفوع قبل ما توافق)،
+`reject_patient_identity_verification()`، و`revoke_patient_account_access()`.
+التدقيق نفسه بتريجرز تلقائية (مش معتمد على كود التطبيق). مستندات التحقّق
+في Supabase Storage bucket خاص (`patient-verification-documents`) —
+مفيش SELECT policy خالص عليه (حتى للموظف)، القراءة المستقبلية لازم
+تعدّي عن طريق سيرفر/Edge Function بيسجّل الوصول أولاً. موظف عنده صلاحية
+أرشيف عادية **مايقدرش** يعتمد تحقّق هوية — محتاج
+`has_verification_management_access` أو سوبر أدمن. التفاصيل الكاملة في
+مشروع Claude (`changelog/07-patient-portal-phase1.md`).
 
 **ثمان مراحل Kanban** (`content_items.stage`) — المفاتيح مخزّنة في القاعدة،
 **لا تُغيَّر** بلا Migration:
