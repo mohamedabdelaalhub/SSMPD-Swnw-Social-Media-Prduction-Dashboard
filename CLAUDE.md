@@ -102,14 +102,24 @@ test/smoke.js              اختبار jsdom — Supabase مموّه بالكا
 | `lead_attempts` | (قيد الإنشاء) سجل كل محاولة تواصل مع الليد (متعدد لكل ليد) |
 | `lead_status_log` | (قيد الإنشاء) سجل تغييرات `current_status` تلقائياً (بتريجر `trg_log_lead_status_change`) — أساس مؤشرات الأداء |
 | `lead_feedback_tags` | (قيد الإنشاء) تصنيف اختياري (إيجابي/سلبي/محايد) لكل ليد أو محاولة تواصل |
-| `patient_accounts` | (Patient Portal — Phase 1 Foundation فقط، لسه من غير UI) حساب دخول المريض — `auth_user_id` (فريد) → `patient_id`، منفصل تماماً عن `admins` |
-| `patient_system_links` | (Patient Portal — Foundation) ربط `patients.id` بمريضه الحقيقي في IHospital لاحقاً — mapping بس، بدون اتصال فعلي حالياً |
-| `patient_portal_visibility` | (Patient Portal — Foundation) جدول lookup مشترك (`entity_type`+`entity_id`+`portal_status`: `internal`/`approved`/`hidden`) لتحديد لاحقاً أي تقرير/ملف يظهر للمريض — الافتراضي `internal` (متخفيش حاجة عن الـDashboard، بس متتعرضش للبورتال لحد ما تتعتمد) |
+| `patient_accounts` | (Patient Portal — Foundation، Pre-Live) حساب دخول المريض بس (`auth_user_id` فريد) — بدون ربط مباشر بمريض؛ الربط عن طريق `patient_account_access` |
+| `patient_account_access` | (Patient Portal — Foundation) مين المسموح له يوصل لأي `patients.id` وبأي صفة (`self`/`guardian`/`authorized`) وبحالة `verification_status` (`pending`/`approved`/`rejected`/`revoked`/`expired`) — حساب واحد لأكتر من مريض، ومريض واحد لأكتر من ولي أمر معتمد |
+| `patient_identity_verifications` | (Patient Portal — Foundation) طلبات تحقّق الهوية/الصلاحية قبل ما تتحوّل لصف `approved` في `patient_account_access` — مراجعة موظف إلزامية، مفيش موافقة ذاتية |
+| `patient_verification_documents` | (Patient Portal — Foundation) مستندات التحقّق الرسمية (منفصلة تماماً عن `patient_files` العادية — أمنية داخلية، مش مرئية للمريض ولا لأولياء أمور تانيين) |
+| `patient_system_links` | (Patient Portal — Foundation) ربط `patients.id` بمريضه الحقيقي في IHospital لاحقاً — mapping بس، بدون اتصال فعلي حالياً (uniqueness عن طريق partial unique index يمنع تكرار mapping حقيقي فقط) |
+| `patient_portal_visibility` | (Patient Portal — Foundation) جدول lookup مشترك (`entity_type`+`entity_id`+`portal_status`: `internal`/`approved`/`hidden`) — الافتراضي `internal` (متخفيش حاجة عن الـDashboard، بس متتعرضش للبورتال لحد ما تتعتمد) |
+| `patient_portal_audit_log` | (Patient Portal — Foundation) سجل تدقيق لعمليات الهوية/الوصول — كتابة عن طريق service role بس، قراءة لموظف صلاحية التحقّق/سوبر أدمن |
 
-**Patient Portal**: البنية الآمنة (Phase 1) دلوقتي جاهزة في `setup.sql` (قسم ٥٢) —
-لسه من غير UI أو صفحة دخول للمريض. `patients.id` هو المعرّف الدائم (مش
-الهاتف)، وممكن أكتر من حساب/رقم هاتف يتربط بنفس المريض لاحقاً (سيناريو
-العيلة). التفاصيل الكاملة في مشروع Claude لو احتجتها.
+**Patient Portal**: البنية الآمنة (Phase 1 — Final Foundation) دلوقتي جاهزة
+في `setup.sql` (قسم ٥٢) — **لسه ماتشغلتش على Supabase Live**. لسه من غير UI
+أو صفحة دخول للمريض. القاعدة الأمنية الأساسية: **الوصول لأي سجل طبي
+(حتى وصول المريض لملفه هو نفسه) لازم تحقّق هوية/صلاحية رسمي معتمد من
+الموظفين — الـOTP بيثبت ملكية رقم التليفون بس، مش هوية.** `patients.id`
+هو المعرّف الدائم دايماً، وممكن أكتر من حساب/رقم هاتف يتربط بنفس المريض
+لاحقاً (سيناريو العيلة/الولاية). موظف عنده صلاحية أرشيف عادية **مايقدرش**
+يعتمد تحقّق هوية — محتاج `has_verification_management_access` (عمود جديد
+على `admins`) أو سوبر أدمن. التفاصيل الكاملة في مشروع Claude
+(`changelog/07-patient-portal-phase1.md`).
 
 **ثمان مراحل Kanban** (`content_items.stage`) — المفاتيح مخزّنة في القاعدة،
 **لا تُغيَّر** بلا Migration:
