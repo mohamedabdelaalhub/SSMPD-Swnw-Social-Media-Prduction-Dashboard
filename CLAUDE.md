@@ -19,6 +19,12 @@
 منشور على GitHub Pages:
 `https://mohamedabdelaalhub.github.io/SSMPD-Swnw-Social-Media-Prduction-Dashboard/`
 
+**مسار النسخة المحلية على ماك المستخدم** (كلون قديم للريبو، مش وسيلة
+النشر — النشر يتم حصرياً عن طريق GitHub Web UI كما هو موضح تحت):
+`/Users/m.ibrahim/Work Archives/SwnW Specialized Clinics Medical Center 2/Website/SSMPD - Swnw Social Media Prduction Dashboard/SSMPD-Swnw-Social-Media-Prduction-Dashboard`
+⚠️ هذه النسخة غالباً قديمة (متأخرة عن الريبو الحي على GitHub) — لا تُستخدم
+كمصدر لرفع ملفات، فقط للرجوع إليها لو المستخدم طلب فتح الفولدر على جهازه.
+
 ---
 
 ## المستخدم
