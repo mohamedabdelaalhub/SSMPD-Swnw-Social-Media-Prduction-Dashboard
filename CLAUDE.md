@@ -121,8 +121,11 @@ test/smoke.js              اختبار jsdom — Supabase مموّه بالكا
 مباشر مسموح من العميل على `patient_account_access` ولا
 `patient_identity_verifications` خالص — الكتابة الوحيدة عن طريق 3 دوال
 `SECURITY DEFINER`: `approve_patient_identity_verification()` (بتتأكد إن
-فيه مستند تحقّق واحد على الأقل مرفوع قبل ما توافق)،
+فيه **object حقيقي في storage.objects** يقابل المستند، مش مجرد صف
+metadata — وبتنسخ `expires_at` من الطلب لصف الوصول)،
 `reject_patient_identity_verification()`، و`revoke_patient_account_access()`.
+أي Patient API مستقبلي لازم يتحقق كمان من `expires_at` (approved AND
+(expires_at IS NULL OR expires_at > now())) مش بس الحالة.
 التدقيق نفسه بتريجرز تلقائية (مش معتمد على كود التطبيق). مستندات التحقّق
 في Supabase Storage bucket خاص (`patient-verification-documents`) —
 مفيش SELECT policy خالص عليه (حتى للموظف)، القراءة المستقبلية لازم
