@@ -452,6 +452,25 @@
       return handle(client.from("media_buyer_escalations").update(patch).eq("id", id).select().single());
     },
 
+    // ---------- Patient Portal / التحقق من الهوية ----------
+    listPatientIdentityVerifications: function (status) {
+      return edgeFetch("patient-verification-review", { method: "POST", json: { op: "list", status: status || "pending" } })
+        .then(function (r) { return r.items || []; });
+    },
+    approvePatientIdentityVerification: function (verificationId) {
+      return edgeFetch("patient-verification-review", { method: "POST", json: { op: "approve", verification_id: verificationId } });
+    },
+    rejectPatientIdentityVerification: function (verificationId, reason) {
+      return edgeFetch("patient-verification-review", { method: "POST", json: { op: "reject", verification_id: verificationId, reason: reason || null } });
+    },
+    revokePatientAccountAccess: function (accessId, reason) {
+      return edgeFetch("patient-verification-review", { method: "POST", json: { op: "revoke", access_id: accessId, reason: reason || null } });
+    },
+    getPatientVerificationDocumentUrl: function (documentId) {
+      return edgeFetch("patient-verification-review", { method: "POST", json: { op: "document_url", document_id: documentId } })
+        .then(function (r) { return r.url; });
+    },
+
     // ---------- أرشيف المرضى (Edge Functions) ----------
     createPatientArchive: function (payload) {
       return edgeFetch("patients-create", { method: "POST", json: payload });

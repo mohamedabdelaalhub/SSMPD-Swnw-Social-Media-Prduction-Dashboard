@@ -81,7 +81,7 @@
         '<p style="font-size:11px;color:var(--c-muted);margin-top:8px;">هو اللي هيفتح رابط اللوحة ويعمل "حساب جديد" بنفس البريد ده وينشئ كلمة سره — إنت مش بتحط له كلمة سر.</p></div>';
 
       html += '<div class="section"><h3>كل المستخدمين (' + admins.length + ')</h3>' +
-        '<table class="simple"><thead><tr><th>الاسم</th><th>البريد</th><th>الدور الأساسي</th><th>أدوار إضافية</th><th>أرشيف المرضى</th><th>معاينة الأرشيف فقط</th><th>حذف الليدز</th><th>الحالة</th><th></th></tr></thead><tbody>';
+        '<table class="simple"><thead><tr><th>الاسم</th><th>البريد</th><th>الدور الأساسي</th><th>أدوار إضافية</th><th>أرشيف المرضى</th><th>معاينة الأرشيف فقط</th><th>تحقق هوية المرضى</th><th>حذف الليدز</th><th>الحالة</th><th></th></tr></thead><tbody>';
 
       admins.forEach(function (a) {
         var lastSuper = a.role === "super_admin" && a.active && activeSupers.length === 1;
@@ -97,6 +97,7 @@
           }).join("") + '</td>' +
           '<td style="text-align:center;"><input type="checkbox" data-archive="' + a.id + '" ' + (a.has_archive_access ? "checked" : "") + '></td>' +
           '<td style="text-align:center;"><input type="checkbox" data-archive-view-only="' + a.id + '" ' + (a.has_archive_view_only ? "checked" : "") + '></td>' +
+          '<td style="text-align:center;"><input type="checkbox" data-verification-access="' + a.id + '" ' + (a.has_verification_management_access ? "checked" : "") + '></td>' +
           '<td style="text-align:center;"><input type="checkbox" data-delete-leads="' + a.id + '" ' + (a.can_delete_leads ? "checked" : "") + '></td>' +
           '<td>' + (a.user_id ? '<span class="status-pill approved">مفعّل</span>' : '<span class="status-pill draft">بانتظار إنشاء الحساب</span>') + '</td>' +
           '<td>' +
@@ -109,6 +110,7 @@
         '<p style="font-size:11px;color:var(--c-muted);margin-top:8px;">"الدور الأساسي" بيتحكم في الشاشة الافتراضية وبادچ الدور. "أدوار إضافية" بتضيف صلاحيات دور تاني للمستخدم نفسه من غير ما تغيّر دوره الأساسي — مثلاً موظف خدمة عملاء تحب يبقى ليه كمان صلاحية الاستقبال أو إدارة المحتوى.</p>' +
         '<p style="font-size:11px;color:var(--c-muted);margin-top:4px;">"أرشيف المرضى" صلاحية منفصلة عن الرول — أي مستخدم مفعّلة عنده بيقدر يوصل لتاب أرشيف المرضى مهما كان روله.</p>' +
         '<p style="font-size:11px;color:var(--c-muted);margin-top:4px;">"معاينة الأرشيف فقط" لمين محتاج يتصفح ملفات المرضى بس (مثال: طبيب سونو) — بيقدر يشوف ويفتح الملفات، من غير رفع أو حذف أو مراجعة.</p>' +
+        '<p style="font-size:11px;color:var(--c-muted);margin-top:4px;">"تحقق هوية المرضى" صلاحية حساسة لمراجعة المستندات الرسمية واعتماد/رفض/إلغاء وصول بوابة المريض.</p>' +
         '<p style="font-size:11px;color:var(--c-muted);margin-top:4px;">"حذف الليدز" صلاحية حذف نهائي لأي ليد من موديول إدارة الليدز — متاحة تلقائياً للسوبر أدمن، وممكن تتفعّل لأي مستخدم تاني هنا.</p></div>';
 
       html += '<div class="section"><h3>إعدادات التنبيهات (SLA)</h3>' +
@@ -179,6 +181,12 @@
       container.querySelectorAll("[data-archive-view-only]").forEach(function (cb) {
         cb.onchange = function () {
           window.SSMPDDb.updateAdmin(cb.getAttribute("data-archive-view-only"), { has_archive_view_only: cb.checked })
+            .catch(function (e) { alert("خطأ: " + e.message); render(container); });
+        };
+      });
+      container.querySelectorAll("[data-verification-access]").forEach(function (cb) {
+        cb.onchange = function () {
+          window.SSMPDDb.updateAdmin(cb.getAttribute("data-verification-access"), { has_verification_management_access: cb.checked })
             .catch(function (e) { alert("خطأ: " + e.message); render(container); });
         };
       });

@@ -293,3 +293,14 @@ Meta Auto Publisher (قسم ٤٣ — محتاج خطوات نشر يدوية م�
 فوق)، وسجّل التفاصيل الكاملة في مشروع Claude (`project_write` لملف جديد
 أو إضافة لملف الشهر/الموضوع المناسب) بدل ما تضيفها هنا في CLAUDE.md —
 الملف ده دلوقتي مخصص للبنية/القواعد الثابتة بس، مش changelog.
+
+
+## Patient Portal — Phase 2 (Auth + Identity Verification)
+
+- الاسم الظاهر للمستخدم دائمًا **Swnw**. لا تُظهر Sono/SONO للمريض؛ المعرّفات التقنية القديمة تظل كما هي لو تغييرها يكسر النظام.
+- بوابة المريض منفصلة عن واجهة الموظفين، لكنها تستخدم نفس Supabase ونفس `patients.id`.
+- OTP يثبت ملكية الهاتف فقط؛ لا يفتح أي ملف طبي.
+- الوصول لأي ملف طبي يحتاج تحقق رسمي + مستندات + اعتماد موظف مخول.
+- Patient self-service: `patient-portal-self-service` + `patient-verification-upload`.
+- Staff review: `patient-verification-review` + واجهة مراجعة من قائمة المستخدم.
+- هذه المرحلة لا تعرض Visits/Prescriptions/Reports بعد؛ هي تبني Account Activation + Verification workflow فقط.
