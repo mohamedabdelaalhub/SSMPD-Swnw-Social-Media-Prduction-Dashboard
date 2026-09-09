@@ -5224,10 +5224,18 @@ begin
     raise exception 'verification request % has no requested_patient_id', p_verification_id;
   end if;
 
-  select count(*) into v_doc_count from public.patient_verification_documents
-    where verification_id = p_verification_id;
+  -- مش مجرد وجود صف metadata — لازم فعليًا يقابله object حقيقي في
+  -- storage.objects جوه نفس الـbucket، وتحت مسار الطلب ده بالظبط
+  -- ({verification_id}/...)، وإلا الاعتماد يفشل.
+  select count(*) into v_doc_count
+    from public.patient_verification_documents d
+    join storage.objects o
+      on o.bucket_id = 'patient-verification-documents'
+     and o.name = d.storage_ref
+    where d.verification_id = p_verification_id
+      and (storage.foldername(d.storage_ref))[1] = p_verification_id::text;
   if v_doc_count < 1 then
-    raise exception 'verification request % has no attached documents — cannot approve', p_verification_id;
+    raise exception 'verification request % has no verified stored document — cannot approve', p_verification_id;
   end if;
 
   v_access_type := case v_verification.verification_type
@@ -5242,11 +5250,11 @@ begin
 
   insert into public.patient_account_access
     (account_id, patient_id, access_type, relationship, verification_status,
-     verified_by, verified_at, verification_id, revoked_by, revoked_at, rejection_reason)
+     verified_by, verified_at, verification_id, expires_at, revoked_by, revoked_at, rejection_reason)
   values
     (v_verification.account_id, v_verification.requested_patient_id, v_access_type,
      v_verification.requested_relationship, 'approved',
-     public.my_admin_id(), now(), v_verification.id, null, null, null)
+     public.my_admin_id(), now(), v_verification.id, v_verification.expires_at, null, null, null)
   on conflict (account_id, patient_id) do update set
     access_type = excluded.access_type,
     relationship = excluded.relationship,
@@ -5254,6 +5262,7 @@ begin
     verified_by = excluded.verified_by,
     verified_at = excluded.verified_at,
     verification_id = excluded.verification_id,
+    expires_at = excluded.expires_at,
     revoked_by = null,
     revoked_at = null,
     rejection_reason = null,
@@ -5447,10 +5456,11 @@ create or replace function public.enforce_verification_document_uploader()
 returns trigger language plpgsql security definer set search_path = public as $$
 declare v_account_id uuid;
 begin
+  -- مفيش أي قيمة uploaded_by جاية من العميل بتتقبل خالص — بتتحدد سيرفريًا
+  -- دايمًا: id حساب المريض المطابق لـauth.uid() لو موجود، وإلا NULL
+  -- (تدفق موظف/service — مش مقصود يتربط بحساب مريض).
   select id into v_account_id from public.patient_accounts where auth_user_id = auth.uid();
-  if v_account_id is not null then
-    new.uploaded_by := v_account_id;
-  end if;
+  new.uploaded_by := v_account_id;
   return new;
 end;
 $$;
@@ -5483,3 +5493,12 @@ create unique index if not exists patient_system_links_external_uidx
 create unique index if not exists patient_system_links_supabase_per_hospital_uidx
   on public.patient_system_links (supabase_patient_id, hospital_id)
   where hospital_id is not null;
+
+-- ------------------------------------------------------------
+-- 52-ص) ملاحظة توثيقية بس (مفيش Patient API دلوقتي): أي تفويض مستقبلي
+-- لازم يتحقق كمان من انتهاء الصلاحية، مش بس approved:
+--   verification_status = 'approved'
+--   AND (expires_at IS NULL OR expires_at > now())
+-- بالإضافة لشرط patient_portal_visibility.portal_status='approved'
+-- المذكور فوق (52-ط الملاحظة المعمارية) — الشروط التلاتة مع بعض.
+-- ------------------------------------------------------------
