@@ -341,12 +341,12 @@
   }
 
   function openEditPatientModal(patient, onSaved) {
-    // بعض قوائم المرضى القديمة لا ترجع حقل email. في الحالة دي هات السجل الكامل
-    // قبل فتح التعديل، عشان البريد المحفوظ مايبانش فاضي بعد الحفظ.
+    // لو السجل جاي من قائمة قديمة بدون email، هات المريض مباشرة من Supabase
+    // بدل استدعاء patient-files-list لتجنب أي loop لو الدالة المنشورة أقدم.
     if (patient && patient.id && typeof patient.email === "undefined") {
-      window.SSMPDDb.listPatientsArchive({ patient_id: patient.id })
-        .then(function (res) {
-          openEditPatientModal((res && res.patient) || patient, onSaved);
+      window.SSMPDDb.getPatientRecord(patient.id)
+        .then(function (fullPatient) {
+          openEditPatientModal(fullPatient || patient, onSaved);
         })
         .catch(function (e) { T.show("خطأ: " + e.message, "error"); });
       return;
