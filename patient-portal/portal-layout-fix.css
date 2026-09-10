@@ -1,0 +1,72 @@
+/* Patient portal layout/performance polish — loaded last on purpose. */
+.profile-tabs{
+  width:min(820px,calc(100% - 36px))!important;
+  margin:18px auto 0!important;
+  padding:0!important;
+  display:flex!important;
+  justify-content:center!important;
+  align-items:flex-end!important;
+  gap:10px!important;
+  flex-wrap:nowrap!important;
+  overflow:visible!important;
+}
+.profile-tabs>button{
+  flex:0 0 auto!important;
+  width:auto!important;
+  min-width:165px!important;
+  height:56px!important;
+  padding:0 20px!important;
+}
+
+.profile-hero{
+  min-height:154px!important;
+  margin-top:16px!important;
+  padding:22px 34px!important;
+  gap:22px!important;
+}
+.profile-hero .avatar{
+  width:66px!important;
+  height:66px!important;
+  border-width:6px!important;
+}
+.profile-hero .avatar svg{
+  width:31px!important;
+  height:31px!important;
+}
+.hero-copy .welcome{font-size:13px!important}
+.hero-copy h1{font-size:31px!important;margin-bottom:5px!important}
+.hero-copy p{font-size:13px!important}
+.hero-message{min-width:170px!important;gap:7px!important}
+.hero-message strong,.hero-message span{font-size:21px!important}
+.hero-message:after{width:54px!important;margin-top:5px!important}
+
+.profile-content{min-height:320px!important}
+
+@media(max-width:900px){
+  .profile-tabs{width:min(690px,calc(100% - 24px))!important;gap:7px!important}
+  .profile-tabs>button{min-width:145px!important;padding:0 14px!important;font-size:12px!important}
+  .profile-hero{padding:20px 24px!important}
+}
+
+@media(max-width:640px){
+  .profile-tabs{
+    width:calc(100% - 20px)!important;
+    display:grid!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:7px!important;
+  }
+  .profile-tabs>button{
+    width:100%!important;
+    min-width:0!important;
+    border-bottom:1px solid var(--line)!important;
+    border-radius:13px!important;
+  }
+  .profile-tabs button.active:after{left:20%!important;right:20%!important}
+  .profile-hero{
+    grid-template-columns:auto 1fr!important;
+    min-height:auto!important;
+    padding:18px!important;
+  }
+  .hero-message{display:none!important}
+  .hero-copy h1{font-size:25px!important}
+}
