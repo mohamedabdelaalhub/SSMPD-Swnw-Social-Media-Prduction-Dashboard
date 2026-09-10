@@ -481,6 +481,9 @@
     listPatientsArchive: function (params) {
       return edgeFetch("patient-files-list" + qs(params));
     },
+    getPatientRecord: function (id) {
+      return handle(client.from("patients").select("*").eq("id", id).single());
+    },
     updatePatientRecord: function (id, patch) {
       return handle(client.from("patients").update(patch).eq("id", id).select().single());
     },
