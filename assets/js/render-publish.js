@@ -9,6 +9,13 @@
 
   var META_PLATFORMS = ["facebook", "instagram"];
 
+  // حالة عرض الكالندر (اختياري بجانب القائمة العادية) — نفس نمط شاشة الأرشيف
+  var viewState = { mode: "list", calView: "month", cursor: new Date() };
+
+  function dayKey(d) {
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
+
   var JOB_STATUS_LABELS = {
     pending: { label: "في الانتظار", cls: "draft" },
     processing: { label: "جاري النشر", cls: "received" },
@@ -56,35 +63,186 @@
         var jobByContent = {};
         jobs.forEach(function (j) { if (!jobByContent[j.content_id]) jobByContent[j.content_id] = j; });
 
-        var html = '<h2 style="margin-bottom:16px;">النشر</h2>' +
-          '<p style="color:var(--c-muted);font-size:12px;margin-top:-10px;margin-bottom:16px;">هنا كل مادة خلصت اعتماد نهائي وتصميم — جاهزة تتجدول أو تتنشر مباشرة. فيسبوك/انستجرام بينشروا تلقائيًا، وباقي المنصات (تيكتوك/يوتيوب/الموقع) لسه بتحتاج تأكيد يدوي.</p>';
-
-        html += '<div class="section"><h3>مجدولة للنشر (' + scheduled.length + ')</h3>';
-        if (!scheduled.length) {
-          html += '<div class="empty-state">مفيش مواد مجدولة دلوقتي</div>';
-        } else {
-          scheduled.forEach(function (i) { html += renderCard(i, adminsById, "scheduled", jobByContent[i.id]); });
-        }
-        html += '</div>';
-
-        html += '<div class="section"><h3>جاهزة للنشر (' + ready.length + ')</h3>';
-        if (!ready.length) {
-          html += '<div class="empty-state">مفيش مواد جاهزة للنشر دلوقتي</div>';
-        } else {
-          ready.forEach(function (i) { html += renderCard(i, adminsById, "ready", jobByContent[i.id]); });
-        }
-        html += '</div>';
-
-        container.innerHTML = html;
-        wire(container);
-        scheduled.concat(ready).forEach(function (i) {
-          var slot = document.getElementById("comments-slot-" + i.id);
-          if (slot) window.SSMPDComments.render(slot, i.id, adminsById);
-        });
+        var ctx = { scheduled: scheduled, ready: ready, adminsById: adminsById, jobByContent: jobByContent };
+        if (viewState.mode === "calendar") renderCalendarView(container, ctx);
+        else renderListView(container, ctx);
       });
     }).catch(function (e) {
       container.innerHTML = '<div class="err-msg">خطأ: ' + e.message + '</div>';
     });
+  }
+
+  function viewToggleHtml() {
+    return '<div style="display:flex;gap:6px;">' +
+      '<button class="btn ' + (viewState.mode === "list" ? "" : "ghost") + ' sm" id="pb-view-list">قائمة</button>' +
+      '<button class="btn ' + (viewState.mode === "calendar" ? "" : "ghost") + ' sm" id="pb-view-calendar">كالندر</button>' +
+      '</div>';
+  }
+
+  function wireViewToggle(container, ctx) {
+    var listBtn = document.getElementById("pb-view-list");
+    var calBtn = document.getElementById("pb-view-calendar");
+    if (listBtn) listBtn.onclick = function () { viewState.mode = "list"; renderListView(container, ctx); };
+    if (calBtn) calBtn.onclick = function () { viewState.mode = "calendar"; renderCalendarView(container, ctx); };
+  }
+
+  function renderListView(container, ctx) {
+    var scheduled = ctx.scheduled, ready = ctx.ready, adminsById = ctx.adminsById, jobByContent = ctx.jobByContent;
+    var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">' +
+      '<h2 style="margin:0;">النشر</h2>' + viewToggleHtml() + '</div>' +
+      '<p style="color:var(--c-muted);font-size:12px;margin-top:-10px;margin-bottom:16px;">هنا كل مادة خلصت اعتماد نهائي وتصميم — جاهزة تتجدول أو تتنشر مباشرة. فيسبوك/انستجرام بينشروا تلقائيًا، وباقي المنصات (تيكتوك/يوتيوب/الموقع) لسه بتحتاج تأكيد يدوي.</p>';
+
+    html += '<div class="section"><h3>مجدولة للنشر (' + scheduled.length + ')</h3>';
+    if (!scheduled.length) {
+      html += '<div class="empty-state">مفيش مواد مجدولة دلوقتي</div>';
+    } else {
+      scheduled.forEach(function (i) { html += renderCard(i, adminsById, "scheduled", jobByContent[i.id]); });
+    }
+    html += '</div>';
+
+    html += '<div class="section"><h3>جاهزة للنشر (' + ready.length + ')</h3>';
+    if (!ready.length) {
+      html += '<div class="empty-state">مفيش مواد جاهزة للنشر دلوقتي</div>';
+    } else {
+      ready.forEach(function (i) { html += renderCard(i, adminsById, "ready", jobByContent[i.id]); });
+    }
+    html += '</div>';
+
+    container.innerHTML = html;
+    wireViewToggle(container, ctx);
+    wire(container);
+    scheduled.concat(ready).forEach(function (i) {
+      var slot = document.getElementById("comments-slot-" + i.id);
+      if (slot) window.SSMPDComments.render(slot, i.id, adminsById);
+    });
+  }
+
+  // عرض كالندر اختياري (شهر/أسبوع) للمواد المجدولة حسب معاد النشر — نفس
+  // فكرة كالندر الأرشيف بالظبط. المواد "جاهزة للنشر" لسه من غير معاد محدد،
+  // فبتتعرض في قايمة صغيرة تحت الكالندر بدل ما تختفي.
+  function renderCalendarView(container, ctx) {
+    var W = window.SSMPDWorkflow;
+    var scheduled = ctx.scheduled, ready = ctx.ready, adminsById = ctx.adminsById;
+    var byDay = {};
+    scheduled.forEach(function (i) {
+      if (!i.scheduled_publish_at) return;
+      var k = dayKey(new Date(i.scheduled_publish_at));
+      (byDay[k] = byDay[k] || []).push(i);
+    });
+
+    var cursor = viewState.cursor;
+    var year = cursor.getFullYear(), month = cursor.getMonth();
+    var monthLabel = cursor.toLocaleDateString("ar-EG", { month: "long", year: "numeric" });
+
+    var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">' +
+      '<h2 style="margin:0;">النشر</h2>' + viewToggleHtml() + '</div>';
+
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px;">' +
+      '<h3 style="margin:0;">' + monthLabel + '</h3>' +
+      '<div style="display:flex;gap:6px;">' +
+      '<button class="btn ghost sm" id="pb-cal-prev">‹ السابق</button>' +
+      '<button class="btn ghost sm" id="pb-cal-today">النهارده</button>' +
+      '<button class="btn ghost sm" id="pb-cal-next">التالي ›</button>' +
+      '<button class="btn ' + (viewState.calView === "month" ? "" : "ghost") + ' sm" id="pb-cal-month">شهر</button>' +
+      '<button class="btn ' + (viewState.calView === "week" ? "" : "ghost") + ' sm" id="pb-cal-week">أسبوع</button>' +
+      '</div></div>';
+
+    var firstOfMonth = new Date(year, month, 1);
+    var startOffset = firstOfMonth.getDay();
+    var daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    var cellsStart;
+    if (viewState.calView === "week") {
+      var wd = cursor.getDay();
+      cellsStart = new Date(cursor); cellsStart.setDate(cursor.getDate() - wd);
+    }
+
+    html += '<div class="calendar-grid">';
+    ["أحد", "اثنين", "ثلاثاء", "أربعاء", "خميس", "جمعة", "سبت"].forEach(function (d) {
+      html += '<div style="text-align:center;font-size:11px;font-weight:700;color:var(--c-muted);">' + d + '</div>';
+    });
+
+    var cellsToRender = [];
+    if (viewState.calView === "month") {
+      for (var i = 0; i < startOffset; i++) cellsToRender.push(null);
+      for (var d = 1; d <= daysInMonth; d++) cellsToRender.push(new Date(year, month, d));
+    } else {
+      for (var wdi = 0; wdi < 7; wdi++) {
+        var dd = new Date(cellsStart); dd.setDate(cellsStart.getDate() + wdi);
+        cellsToRender.push(dd);
+      }
+    }
+
+    var todayKey = dayKey(new Date());
+    cellsToRender.forEach(function (d) {
+      if (!d) { html += '<div class="calendar-cell" style="background:transparent;border:none;"></div>'; return; }
+      var k = dayKey(d);
+      var dayItems = byDay[k] || [];
+      var isToday = k === todayKey;
+      html += '<div class="calendar-cell"' + (isToday ? ' style="border-color:var(--c-primary);"' : '') + '><div class="day-num">' + d.getDate() + '</div>';
+      dayItems.forEach(function (it) {
+        var timeLabel = new Date(it.scheduled_publish_at).toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" });
+        html += '<div class="item" data-open-pub="' + it.id + '" title="' + escapeHtml(it.title) + '">' + timeLabel + ' — ' + escapeHtml(it.title) + W.brandBadgeHtml(it.brand) + '</div>';
+      });
+      html += '</div>';
+    });
+    html += '</div>';
+
+    html += '<div class="section" style="margin-top:16px;"><h3>جاهزة للنشر بدون معاد محدد (' + ready.length + ')</h3>';
+    if (!ready.length) {
+      html += '<div class="empty-state">مفيش مواد جاهزة للنشر دلوقتي</div>';
+    } else {
+      html += '<div style="display:flex;flex-direction:column;gap:6px;">' + ready.map(function (i) {
+        return '<div class="item" data-open-pub="' + i.id + '" style="cursor:pointer;padding:8px 10px;border:1px solid var(--c-border);border-radius:8px;">' +
+          escapeHtml(i.title) + W.brandBadgeHtml(i.brand) + '</div>';
+      }).join('') + '</div>';
+    }
+    html += '</div>';
+
+    container.innerHTML = html;
+    wireViewToggle(container, ctx);
+
+    document.getElementById("pb-cal-prev").onclick = function () {
+      if (viewState.calView === "month") cursor.setMonth(cursor.getMonth() - 1); else cursor.setDate(cursor.getDate() - 7);
+      renderCalendarView(container, ctx);
+    };
+    document.getElementById("pb-cal-next").onclick = function () {
+      if (viewState.calView === "month") cursor.setMonth(cursor.getMonth() + 1); else cursor.setDate(cursor.getDate() + 7);
+      renderCalendarView(container, ctx);
+    };
+    document.getElementById("pb-cal-today").onclick = function () {
+      viewState.cursor = new Date(); renderCalendarView(container, ctx);
+    };
+    document.getElementById("pb-cal-month").onclick = function () { viewState.calView = "month"; renderCalendarView(container, ctx); };
+    document.getElementById("pb-cal-week").onclick = function () { viewState.calView = "week"; renderCalendarView(container, ctx); };
+
+    container.querySelectorAll("[data-open-pub]").forEach(function (el) {
+      el.onclick = function () { openPublishDetailModal(el.getAttribute("data-open-pub"), ctx); };
+    });
+  }
+
+  // مودال تفاصيل/إجراءات مادة واحدة — بيتفتح من كليك على عنصر في الكالندر
+  // (بيستخدم نفس renderCard/wire اللي القائمة العادية بتستخدمهم).
+  function openPublishDetailModal(id, ctx) {
+    var all = ctx.scheduled.concat(ctx.ready);
+    var item = all.filter(function (i) { return i.id === id; })[0];
+    if (!item) return;
+    var mode = ctx.scheduled.indexOf(item) !== -1 ? "scheduled" : "ready";
+    var backdrop = document.createElement("div");
+    backdrop.className = "modal-backdrop";
+    backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>تفاصيل النشر</h3>' +
+      '<button class="modal-close">×</button></div>' +
+      '<div id="pb-modal-card"></div></div>';
+    document.body.appendChild(backdrop);
+    backdrop.querySelector("#pb-modal-card").innerHTML = renderCard(item, ctx.adminsById, mode, ctx.jobByContent[item.id]);
+    var detailsBox = backdrop.querySelector('[id^="publish-details-"]');
+    if (detailsBox) detailsBox.style.display = "block";
+    wire(backdrop);
+    updateManualLinkVisibility(item.id);
+    var slot = backdrop.querySelector("#comments-slot-" + item.id);
+    if (slot) window.SSMPDComments.render(slot, item.id, ctx.adminsById);
+    backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
+    backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
   }
 
   // حالة/نتيجة job النشر التلقائي (فيسبوك/انستجرام) — بند ٨: عرض حقيقي
@@ -240,6 +398,12 @@
     });
   }
 
+  // بيقفل مودال تفاصيل النشر (لو مفتوح) بعد أي إجراء ناجح — عشان مايفضلش
+  // معلّق فاضل على بيانات قديمة بعد ما الشاشة الأساسية تتحدّث من ورايه.
+  function closePublishModal() {
+    document.querySelectorAll(".modal-backdrop").forEach(function (el) { el.remove(); });
+  }
+
   // بديل alert() — رسالة toast مش بلوكينج (alert() ممكن يتمنع/يتجاهل جوه متصفحات
   // مدمجة في تطبيقات الموبايل زي واتساب/ماسنجر، فيبان للمستخدم إن الزرار "ماعملش حاجة")
   function notify(msg, type) {
@@ -280,7 +444,7 @@
       return maybeCreateMetaJob(id, brand, platforms, whenIso);
     }).then(function () {
       notify(hasMetaPlatform(platforms) ? "تمت الجدولة — فيسبوك/انستجرام هينشروا تلقائيًا في المعاد ده" : "تمت الجدولة");
-      render(document.getElementById("view-container"));
+      closePublishModal(); render(document.getElementById("view-container"));
     }).catch(function (e) { notify("خطأ: " + e.message, "error"); });
   }
 
@@ -320,7 +484,7 @@
         return maybeCreateMetaJob(id, brand, platforms, nowIso);
       }).then(function () {
         notify("هينشر تلقائيًا خلال دقيقة تقريبًا — تقدر تتابع الحالة هنا");
-        render(document.getElementById("view-container"));
+        closePublishModal(); render(document.getElementById("view-container"));
       }).catch(function (e) { notify("خطأ: " + e.message, "error"); });
       return;
     }
@@ -334,7 +498,7 @@
       return window.SSMPDDb.logActivity({ content_id: id, actor_id: me.id, action: "نشر", from_stage: "ready_to_publish", to_stage: "published" });
     }).then(function () {
       notify("اتنشرت — هتظهر في الملخص والأرشيف دلوقتي");
-      render(document.getElementById("view-container"));
+      closePublishModal(); render(document.getElementById("view-container"));
     }).catch(function (e) { notify("خطأ: " + e.message, "error"); });
   }
 
@@ -363,7 +527,7 @@
       return window.SSMPDDb.logActivity({ content_id: id, actor_id: me.id, action: "تأكيد نشر مجدول", from_stage: "scheduled", to_stage: "published" });
     }).then(function () {
       notify("اتأكد النشر — هتظهر في الملخص والأرشيف دلوقتي");
-      render(document.getElementById("view-container"));
+      closePublishModal(); render(document.getElementById("view-container"));
     }).catch(function (e) { notify("خطأ: " + e.message, "error"); });
   }
 
@@ -387,7 +551,7 @@
       })
       .then(function () {
         notify("اتلغت الجدولة");
-        render(document.getElementById("view-container"));
+        closePublishModal(); render(document.getElementById("view-container"));
       })
       .catch(function (e) { notify("خطأ: " + e.message, "error"); });
   }
@@ -397,7 +561,7 @@
   function cancelMetaJob(jobId) {
     window.SSMPDDb.cancelMetaPublishJob(jobId).then(function () {
       notify("اتلغى النشر التلقائي لهذه المادة");
-      render(document.getElementById("view-container"));
+      closePublishModal(); render(document.getElementById("view-container"));
     }).catch(function (e) { notify("خطأ: " + e.message, "error"); });
   }
 
