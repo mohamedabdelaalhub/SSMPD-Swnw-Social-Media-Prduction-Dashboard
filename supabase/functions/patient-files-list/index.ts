@@ -186,7 +186,7 @@ Deno.serve(async (req) => {
   // من غير patient_id: قائمة/بحث المرضى (اسم أو رقم أو patient_code)
   let query = admin
     .from("patients")
-    .select("id, patient_code, full_name, phone, status, gender, age, medical_record_no, last_visit_date, sent_to_nursing_at, created_at", { count: "exact" })
+    .select("id, patient_code, full_name, phone, email, status, gender, age, medical_record_no, last_visit_date, sent_to_nursing_at, created_at", { count: "exact" })
     .order("created_at", { ascending: false });
 
   if (search) {
