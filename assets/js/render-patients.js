@@ -341,6 +341,16 @@
   }
 
   function openEditPatientModal(patient, onSaved) {
+    // بعض قوائم المرضى القديمة لا ترجع حقل email. في الحالة دي هات السجل الكامل
+    // قبل فتح التعديل، عشان البريد المحفوظ مايبانش فاضي بعد الحفظ.
+    if (patient && patient.id && typeof patient.email === "undefined") {
+      window.SSMPDDb.listPatientsArchive({ patient_id: patient.id })
+        .then(function (res) {
+          openEditPatientModal((res && res.patient) || patient, onSaved);
+        })
+        .catch(function (e) { T.show("خطأ: " + e.message, "error"); });
+      return;
+    }
     var backdrop = document.createElement("div");
     backdrop.className = "modal-backdrop";
     backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>تعديل بيانات المريض</h3><button class="modal-close">×</button></div>' +
