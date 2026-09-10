@@ -1,0 +1,7 @@
+.top-brand.brand-polished,.subpage-brand.brand-polished{display:flex;align-items:center;gap:12px}
+.top-brand.brand-polished img,.subpage-brand.brand-polished img{flex:0 0 auto}
+.brand-divider{width:1px;height:34px;background:#cfd9e8;display:block;flex:0 0 auto;border-radius:999px}
+.brand-meta{display:flex;flex-direction:column;gap:3px;line-height:1.2;text-align:right;min-width:0}
+.brand-user-name{font-family:"BigVesta","Hiragino",system-ui,sans-serif;font-size:13px;font-weight:700;color:#24324a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px}
+.brand-user-label{font-family:"BigVesta","Hiragino",system-ui,sans-serif;font-size:11px;color:#7b8798;white-space:nowrap}
+@media(max-width:650px){.brand-divider{height:28px}.brand-user-name{font-size:12px;max-width:135px}.brand-user-label{font-size:10px}.top-brand.brand-polished,.subpage-brand.brand-polished{gap:9px}}
