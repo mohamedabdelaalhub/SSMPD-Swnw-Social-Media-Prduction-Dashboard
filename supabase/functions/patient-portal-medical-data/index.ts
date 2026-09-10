@@ -51,14 +51,6 @@ Deno.serve(async (req) => {
 
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
-  const { data: staff, error: staffError } = await admin
-    .from("admins")
-    .select("id")
-    .eq("user_id", user.id)
-    .maybeSingle();
-  if (staffError) return json({ error: staffError.message }, 500);
-  if (staff) return json({ error: "STAFF_ACCOUNT_NOT_ALLOWED" }, 403);
-
   const { data: account, error: accountError } = await admin
     .from("patient_accounts")
     .select("id, status, activation_completed_at")
@@ -88,7 +80,7 @@ Deno.serve(async (req) => {
       .select("patient_id, treating_doctor, specialty, height, weight, blood_pressure, blood_sugar, pulse, oxygen_percent, chronic_conditions, surgeries, family_history, updated_at")
       .in("patient_id", patientIds),
     admin.from("patient_visits")
-      .select("id, patient_id, visit_number, visit_date, complaint, medications, xrays, labs, other_recommendations, follow_up_date, blood_pressure, blood_sugar, pulse, created_at")
+      .select("id, patient_id, visit_number, visit_date, doctor_name, specialty, complaint, medications, xrays, labs, other_recommendations, follow_up_date, blood_pressure, blood_sugar, pulse, created_at")
       .in("patient_id", patientIds)
       .order("visit_date", { ascending: false })
       .limit(250),
