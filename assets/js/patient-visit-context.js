@@ -123,7 +123,7 @@
     if(pendingEditVisitId && Db.client){
       var id = pendingEditVisitId;
       Db.client.from("patient_visits")
-        .select("doctor_name,specialty,encounter_type")
+        .select("patient_id,doctor_name,specialty,encounter_type")
         .eq("id", id)
         .maybeSingle()
         .then(function(res){
@@ -132,6 +132,20 @@
           doctor.value = res.data.doctor_name || "";
           specialty.value = res.data.specialty || "";
           syncLabels();
+
+          // Legacy visits were created before doctor/specialty moved onto the visit row.
+          // Use the old profile values only as an editable suggestion; never save them automatically.
+          if((!doctor.value || !specialty.value) && res.data.patient_id){
+            Db.client.from("patient_medical_profile")
+              .select("treating_doctor,specialty")
+              .eq("patient_id", res.data.patient_id)
+              .maybeSingle()
+              .then(function(profileRes){
+                if(profileRes.error || !profileRes.data || !document.body.contains(modal)) return;
+                if(!doctor.value) doctor.value = profileRes.data.treating_doctor || "";
+                if(!specialty.value) specialty.value = profileRes.data.specialty || "";
+              });
+          }
         });
     }
   }
@@ -188,8 +202,6 @@
       .maybeSingle()
       .then(function(res){
         if(res.error || !res.data || !document.body.contains(modal)) return;
-        var box = modal.querySelector(".modal > div:not(.modal-head)") || modal.querySelector(".modal");
-        if(!box) return;
         var labels = {checkup:"كشف",follow_up:"متابعة",emergency:"طوارئ",session:"جلسة",lab:"تحليل",radiology:"أشعة",home_visit:"زيارة منزلية"};
         var info = document.createElement("div");
         info.style.cssText = "padding:9px 11px;margin:0 0 10px;border:1px solid #dce5f2;border-radius:10px;background:#f7faff;font-size:12px;line-height:1.8;";
@@ -221,10 +233,10 @@
       Array.prototype.forEach.call(m.addedNodes || [], function(node){
         if(!node || node.nodeType !== 1) return;
         if(node.classList && node.classList.contains("modal-backdrop")) enhanceBackdrop(node);
-        else if(node.querySelectorAll) node.querySelectorAll(".modal-backdrop").forEach(enhanceBackdrop);
       });
     });
   });
+  // Patient modals are appended directly to body, so there is no need to observe the whole dashboard subtree.
   observer.observe(document.body, {childList:true, subtree:false});
 
   document.querySelectorAll(".modal-backdrop").forEach(enhanceBackdrop);
