@@ -161,6 +161,9 @@
     if (tabs.indexOf("patients") !== -1) ddItems += '<button class="ud-item" data-goto="patients">أرشيف المرضى</button>';
     if (tabs.indexOf("leads") !== -1) ddItems += '<button class="ud-item" data-goto="leads">إدارة الليدز والتواصل</button>';
     if (tabs.indexOf("accounting") !== -1) ddItems += '<button class="ud-item" data-goto="accounting">الحسابات</button>';
+    if ((admin.has_verification_management_access || R.isSuperAdmin(admin)) && window.SSMPDRenderPatientVerification) {
+      ddItems += '<button class="ud-item" id="ud-patient-verification">طلبات تحقق هوية المرضى</button>';
+    }
     ddItems += '<button class="ud-item" id="ud-change-pass">تغيير كلمة السر</button>';
     if (tabs.indexOf("admin") !== -1) ddItems += '<button class="ud-item" data-goto="admin">لوحة التحكم</button>';
 
@@ -231,6 +234,14 @@
         userDropdown.classList.remove("open");
       }
     });
+
+    var patientVerificationBtn = document.getElementById("ud-patient-verification");
+    if (patientVerificationBtn) {
+      patientVerificationBtn.onclick = function () {
+        userDropdown.classList.remove("open");
+        window.SSMPDRenderPatientVerification.open();
+      };
+    }
 
     document.getElementById("ud-change-pass").onclick = function () {
       userDropdown.classList.remove("open");

@@ -82,7 +82,7 @@ Deno.serve(async (req) => {
   }
 
   const fullName = (body.full_name ?? "").toString().trim();
-  const phoneRaw = (body.phone ?? "").toString().trim();
+  const phoneRaw = (body.phone ?? "").toString().trim();\n  const email = (body.email ?? "").toString().trim().toLowerCase() || null;
   const nationalId = (body.national_id ?? "").toString().trim();
   const genderRaw = (body.gender ?? "").toString().trim();
   const gender = genderRaw === "male" || genderRaw === "female" ? genderRaw : null;
@@ -101,7 +101,7 @@ Deno.serve(async (req) => {
     .insert({
       full_name: fullName,
       phone: phoneRaw || null,
-      phone_normalized: phoneNormalized,
+      phone_normalized: phoneNormalized,\n      email: email,
       national_id_hash: nationalIdHash,
       gender: gender,
       age: age !== null && !Number.isNaN(age) ? age : null,
@@ -109,7 +109,7 @@ Deno.serve(async (req) => {
       last_visit_date: new Date().toISOString().slice(0, 10),
       created_by: caller.id,
     })
-    .select("id, patient_code, full_name, phone, status, gender, age, medical_record_no, last_visit_date, created_at")
+    .select("id, patient_code, full_name, phone, email, status, gender, age, medical_record_no, last_visit_date, created_at")
     .single();
 
   if (error) return json({ error: error.message }, 500);
