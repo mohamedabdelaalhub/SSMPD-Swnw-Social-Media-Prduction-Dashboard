@@ -80,7 +80,7 @@ Deno.serve(async (req) => {
       .select("patient_id, treating_doctor, specialty, height, weight, blood_pressure, blood_sugar, pulse, oxygen_percent, chronic_conditions, surgeries, family_history, updated_at")
       .in("patient_id", patientIds),
     admin.from("patient_visits")
-      .select("id, patient_id, visit_number, visit_date, doctor_name, specialty, complaint, medications, xrays, labs, other_recommendations, follow_up_date, blood_pressure, blood_sugar, pulse, created_at")
+      .select("id, patient_id, visit_number, visit_date, encounter_type, doctor_name, specialty, complaint, medications, xrays, labs, other_recommendations, follow_up_date, blood_pressure, blood_sugar, pulse, created_at")
       .in("patient_id", patientIds)
       .order("visit_date", { ascending: false })
       .limit(250),
