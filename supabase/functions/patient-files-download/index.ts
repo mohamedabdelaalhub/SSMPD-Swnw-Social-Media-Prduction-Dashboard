@@ -9,33 +9,47 @@ const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "GET, OPTIONS",
+  "Access-Control-Expose-Headers": "Content-Disposition, Content-Type",
 };
+
+const PATIENT_PORTAL_CATEGORIES = new Set([
+  "insurance",
+  "radiology",
+  "lab_result",
+  "prescription",
+  "physical_therapy",
+  "medical_report",
+  "eeg",
+  "invoice",
+  "other",
+]);
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...CORS, "Content-Type": "application/json" },
+    headers: { ...CORS, "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" },
   });
 }
 
-async function getCallerAdmin(req: Request) {
+async function getAuthenticatedUser(req: Request) {
   const authHeader = req.headers.get("Authorization");
-  if (!authHeader) return null;
+  if (!authHeader || !authHeader.toLowerCase().startsWith("bearer ")) return null;
   const userClient = createClient(SUPABASE_URL, ANON_KEY, {
     global: { headers: { Authorization: authHeader } },
   });
   const { data: { user }, error } = await userClient.auth.getUser();
   if (error || !user) return null;
-  const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+  return user;
+}
+
+async function getCallerAdmin(userId: string, admin: ReturnType<typeof createClient>) {
   const { data: row } = await admin
     .from("admins")
     .select("id, role, has_archive_access, has_archive_review_access, has_archive_view_only, active, admin_extra_roles!admin_id(role)")
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
     .eq("active", true)
     .maybeSingle();
   if (!row) return null;
-  // تعدد الأدوار: مضمومة في نفس استعلام admins فوق (join) بدل نداء منفصل —
-  // أسرع (رحلة شبكة واحدة بدل اتنين) لكل استدعاء للدالة دي
   const extra = (row as unknown as { admin_extra_roles?: { role: string }[] }).admin_extra_roles;
   return { ...row, extra_roles: (extra ?? []).map((r: { role: string }) => r.role) };
 }
@@ -71,7 +85,9 @@ async function importPrivateKey(pem: string): Promise<CryptoKey> {
 }
 
 async function getDriveAccessToken(): Promise<string> {
-  const key = JSON.parse(Deno.env.get("GOOGLE_SERVICE_ACCOUNT_KEY")!);
+  const rawKey = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_KEY");
+  if (!rawKey) throw new Error("GOOGLE_SERVICE_ACCOUNT_KEY غير مضبوط");
+  const key = JSON.parse(rawKey);
   const now = Math.floor(Date.now() / 1000);
   const header = { alg: "RS256", typ: "JWT" };
   const claim = {
@@ -103,42 +119,85 @@ async function getDriveAccessToken(): Promise<string> {
   return tokenJson.access_token as string;
 }
 
+async function hasEffectivePortalAccess(
+  admin: ReturnType<typeof createClient>,
+  accountId: string,
+  patientId: string,
+) {
+  const { data: rows, error } = await admin
+    .from("patient_account_access")
+    .select("id, verification_status, revoked_at, expires_at")
+    .eq("account_id", accountId)
+    .eq("patient_id", patientId)
+    .eq("verification_status", "approved");
+  if (error) throw error;
+  const now = Date.now();
+  return (rows || []).some((r: any) =>
+    !r.revoked_at && (!r.expires_at || new Date(r.expires_at).getTime() > now)
+  );
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS });
   if (req.method !== "GET") return json({ error: "Method not allowed" }, 405);
 
-  const caller = await getCallerAdmin(req);
-  if (!caller) return json({ error: "غير مصرح — سجّل دخولك تاني" }, 401);
-  // صاحب "مراجعة الأرشيف" بس (has_archive_review_access، من غير أرشيف كامل) لازم يقدر يفتح
-  // الملف قبل ما يقرر يعتمد أو يرفض — كان ناقص هنا قبل كده (كان بيقدر يشوف طابور المراجعة
-  // بس مش يفتح الملف نفسه، لأن الدالة دي ماكانتش بتفحص الصلاحية دي خالص)
-  const canReviewOrFull = caller.has_archive_access || caller.has_archive_review_access || isSuperAdmin(caller);
-  const doctorOnly = caller.has_archive_view_only && !canReviewOrFull;
-  const allowed = canReviewOrFull || caller.has_archive_view_only || isNursing(caller);
-  if (!allowed) return json({ error: "مفيش صلاحية أرشيف المرضى" }, 403);
+  const user = await getAuthenticatedUser(req);
+  if (!user) return json({ error: "غير مصرح — سجّل دخولك تاني" }, 401);
 
   const url = new URL(req.url);
   const fileId = url.searchParams.get("file_id");
+  const mode = url.searchParams.get("mode") === "preview" ? "preview" : "download";
   if (!fileId) return json({ error: "file_id مطلوب" }, 400);
 
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
   const { data: fileRow, error } = await admin
     .from("patient_files")
-    .select("id, patient_id, drive_file_id, file_name, mime_type")
+    .select("id, patient_id, category, drive_file_id, file_name, mime_type")
     .eq("id", fileId)
     .maybeSingle();
   if (error || !fileRow) return json({ error: "الملف غير موجود" }, 404);
 
-  // "طبيب سونو" (معاينة محالة فقط) — لازم يكون فيه إحالة pending للمريض ده تحديداً
-  if (doctorOnly) {
-    const { data: assignment } = await admin
-      .from("patient_doctor_assignments")
-      .select("id")
-      .eq("patient_id", fileRow.patient_id)
-      .eq("doctor_id", caller.id)
-      .eq("status", "pending")
+  const caller = await getCallerAdmin(user.id, admin);
+  let portalAccount: any = null;
+
+  if (caller) {
+    const canReviewOrFull = caller.has_archive_access || caller.has_archive_review_access || isSuperAdmin(caller);
+    const doctorOnly = caller.has_archive_view_only && !canReviewOrFull;
+    const allowed = canReviewOrFull || caller.has_archive_view_only || isNursing(caller);
+    if (!allowed) return json({ error: "مفيش صلاحية أرشيف المرضى" }, 403);
+
+    if (doctorOnly) {
+      const { data: assignment } = await admin
+        .from("patient_doctor_assignments")
+        .select("id")
+        .eq("patient_id", fileRow.patient_id)
+        .eq("doctor_id", caller.id)
+        .eq("status", "pending")
+        .maybeSingle();
+      if (!assignment) return json({ error: "السجل ده مش محال لك" }, 403);
+    }
+  } else {
+    const { data: account, error: accountError } = await admin
+      .from("patient_accounts")
+      .select("id, status, activation_completed_at")
+      .eq("auth_user_id", user.id)
       .maybeSingle();
-    if (!assignment) return json({ error: "المريض ده مش محال لك" }, 403);
+    if (accountError) return json({ error: accountError.message }, 500);
+    if (!account || account.status !== "active" || !account.activation_completed_at) {
+      return json({ error: "PATIENT_ACCOUNT_NOT_ACTIVATED" }, 403);
+    }
+    if (!PATIENT_PORTAL_CATEGORIES.has(fileRow.category)) {
+      return json({ error: "FILE_NOT_AVAILABLE_IN_PORTAL" }, 403);
+    }
+
+    let allowed = false;
+    try {
+      allowed = await hasEffectivePortalAccess(admin, account.id, fileRow.patient_id);
+    } catch (e) {
+      return json({ error: String((e as Error).message || e) }, 500);
+    }
+    if (!allowed) return json({ error: "NO_APPROVED_MEDICAL_ACCESS" }, 403);
+    portalAccount = account;
   }
 
   let token: string;
@@ -149,27 +208,41 @@ Deno.serve(async (req) => {
   }
 
   const driveRes = await fetch(
-    `https://www.googleapis.com/drive/v3/files/${fileRow.drive_file_id}?alt=media`,
+    `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileRow.drive_file_id)}?alt=media`,
     { headers: { Authorization: `Bearer ${token}` } },
   );
   if (!driveRes.ok) {
     return json({ error: "فشل تحميل الملف من Drive: " + (await driveRes.text()) }, 502);
   }
 
-  await admin.from("archive_access_log").insert({
-    file_id: fileRow.id,
-    patient_id: fileRow.patient_id,
-    employee_id: caller.id,
-    action: "download",
-  });
+  if (caller) {
+    await admin.from("archive_access_log").insert({
+      file_id: fileRow.id,
+      patient_id: fileRow.patient_id,
+      employee_id: caller.id,
+      action: "download",
+    });
+  } else if (portalAccount) {
+    await admin.from("patient_portal_audit_log").insert({
+      account_id: portalAccount.id,
+      action: mode === "preview" ? "portal_file_preview" : "portal_file_download",
+      entity_type: "patient_files",
+      entity_id: fileRow.id,
+      metadata: { patient_id: fileRow.patient_id },
+    });
+  }
 
-  const encodedName = encodeURIComponent(fileRow.file_name);
+  const encodedName = encodeURIComponent(fileRow.file_name || "file");
+  const disposition = mode === "preview" ? "inline" : "attachment";
   return new Response(driveRes.body, {
     status: 200,
     headers: {
       ...CORS,
       "Content-Type": fileRow.mime_type || "application/octet-stream",
-      "Content-Disposition": `attachment; filename*=UTF-8''${encodedName}`,
+      "Content-Disposition": `${disposition}; filename*=UTF-8''${encodedName}`,
+      "Cache-Control": "private, no-store, max-age=0",
+      "Pragma": "no-cache",
+      "X-Content-Type-Options": "nosniff",
     },
   });
 });
