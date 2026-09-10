@@ -1,0 +1,26 @@
+.top-brand,.subpage-brand{gap:12px}
+.brand-divider{display:block;width:1px;height:38px;background:linear-gradient(180deg,transparent,#cfd9e7 18%,#cfd9e7 82%,transparent);flex:0 0 1px}
+.brand-meta{display:flex!important;flex-direction:column;gap:2px;min-width:0;line-height:1.25}
+.brand-meta b{font-family:"BigVesta",sans-serif;font-size:14px;color:#243650;font-weight:700;white-space:nowrap;max-width:220px;overflow:hidden;text-overflow:ellipsis}
+.brand-meta small{font-family:"BigVesta",sans-serif;font-size:11px;color:var(--muted);white-space:nowrap}
+
+.native-file-input{position:absolute!important;width:1px!important;height:1px!important;opacity:0!important;pointer-events:none!important;overflow:hidden!important}
+.document-type-field,.upload-field{min-width:0}
+.file-picker{height:50px;width:100%;border:1px dashed #b9c9dd;border-radius:14px;background:linear-gradient(180deg,#fbfdff,#f6f9fd);display:flex;align-items:center;gap:11px;padding:0 14px;color:#41516a;outline:none;transition:border-color .15s ease,background .15s ease,box-shadow .15s ease;cursor:pointer;overflow:hidden}
+.file-picker:hover,.file-picker:focus{border-color:var(--blue-2);background:#f3f8ff;box-shadow:0 0 0 4px rgba(13,104,200,.06)}
+.file-picker.dragging{border-color:var(--blue);background:#eef5ff;box-shadow:0 0 0 4px rgba(18,63,167,.08)}
+.file-picker.has-files{border-style:solid;border-color:#9bcbb8;background:#f1faf6}
+.file-picker-icon{width:32px;height:32px;border-radius:10px;background:#e8f1ff;color:var(--blue);display:grid;place-items:center;flex:0 0 auto}
+.file-picker.has-files .file-picker-icon{background:#e0f3ea;color:#18835b}
+.file-picker-icon svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.file-picker-copy{min-width:0;display:flex;flex-direction:column;gap:1px;text-align:right}
+.file-picker-copy b{font-size:12px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.file-picker-copy small{font-size:9px;color:var(--muted);direction:ltr;text-align:right}
+
+@media(max-width:650px){
+  .brand-divider{height:32px}
+  .brand-meta b{font-size:12px;max-width:130px}
+  .brand-meta small{font-size:10px}
+  .document-type-field,.upload-field{grid-column:auto}
+  .file-picker{height:52px}
+}
