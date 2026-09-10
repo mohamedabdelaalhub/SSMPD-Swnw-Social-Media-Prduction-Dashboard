@@ -1,20 +1,30 @@
 (function(){
 "use strict";
 
-// Prevent no-op textContent assignments from creating DOM mutations.
-// This breaks the MutationObserver feedback loop caused by the compatibility
-// layer repeatedly writing the same tab labels back into the DOM.
-var d=Object.getOwnPropertyDescriptor(Node.prototype,"textContent");
-if(!d||typeof d.get!=="function"||typeof d.set!=="function"||d.configurable===false)return;
+/*
+  The portal has several compatibility scripts that observe #portal-root.
+  They only need to react when the main app replaces the root view, not to
+  every nested DOM change they themselves make.  Observing the whole subtree
+  caused the observers to wake each other repeatedly and could freeze Chrome.
 
-Object.defineProperty(Node.prototype,"textContent",{
-  configurable:d.configurable,
-  enumerable:d.enumerable,
-  get:d.get,
-  set:function(value){
-    var next=value==null?"":String(value);
-    if(d.get.call(this)===next)return;
-    d.set.call(this,value);
-  }
-});
+  Keep MutationObserver native everywhere else, but for #portal-root force
+  subtree=false.  This preserves login/profile re-render detection while
+  preventing self-triggering loops inside tabs, cards and content sections.
+*/
+var NativeMutationObserver=window.MutationObserver;
+if(typeof NativeMutationObserver!=="function")return;
+
+window.MutationObserver=function(callback){
+  var observer=new NativeMutationObserver(callback);
+  var nativeObserve=observer.observe.bind(observer);
+  observer.observe=function(target,options){
+    var next=options||{};
+    if(target&&target.id==="portal-root"){
+      next=Object.assign({},next,{subtree:false,childList:true});
+    }
+    return nativeObserve(target,next);
+  };
+  return observer;
+};
+window.MutationObserver.prototype=NativeMutationObserver.prototype;
 })();
