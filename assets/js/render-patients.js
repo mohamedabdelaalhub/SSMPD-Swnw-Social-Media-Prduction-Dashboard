@@ -372,6 +372,7 @@
       var patch = {
         full_name: full_name,
         phone: phone || null,
+        email: email || null,
         age: age ? Number(age) : null,
         gender: gender || null,
         medical_record_no: medical_record_no || null,
