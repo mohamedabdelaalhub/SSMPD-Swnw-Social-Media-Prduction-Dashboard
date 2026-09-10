@@ -38,7 +38,18 @@ function errText(e){
 }
 function invoke(name,body){
   return client.functions.invoke(name,{body:body}).then(function(r){
-    if(r.error)throw r.error;
+    if(r.error){
+      var ctx=r.error&&r.error.context;
+      if(ctx&&typeof ctx.clone==="function"){
+        return ctx.clone().json().then(function(payload){
+          throw new Error(payload&&payload.error?payload.error:(r.error.message||String(r.error)));
+        }).catch(function(parseErr){
+          if(parseErr&&parseErr.message&&parseErr.message!=="Unexpected end of JSON input")throw parseErr;
+          throw r.error;
+        });
+      }
+      throw r.error;
+    }
     if(r.data&&r.data.error)throw new Error(r.data.error);
     return r.data||{};
   });
