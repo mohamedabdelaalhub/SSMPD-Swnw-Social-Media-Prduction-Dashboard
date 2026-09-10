@@ -1,0 +1,11 @@
+.document-row{grid-template-columns:auto 1fr auto auto!important}
+.document-actions{display:flex;align-items:center;gap:7px}
+.file-action{min-height:36px;border:1px solid #dbe5f1;border-radius:10px;background:#fff;color:#31527f;padding:0 10px;display:inline-flex;align-items:center;justify-content:center;gap:6px;font-size:11px;font-weight:600;transition:.15s ease}
+.file-action:hover{border-color:#9db9df;background:#f5f9ff;color:#123fa7}
+.file-action.download{background:#eef5ff;color:#123fa7;border-color:#d5e5fb}
+.file-action svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.file-action.loading{opacity:.55;cursor:wait}
+.portal-file-toast{position:fixed;left:24px;bottom:24px;z-index:9999;max-width:min(420px,calc(100vw - 48px));background:#17335e;color:#fff;border-radius:12px;padding:12px 15px;box-shadow:0 16px 40px rgba(20,47,93,.25);font-size:12px;line-height:1.6;opacity:0;transform:translateY(8px);transition:.18s ease}
+.portal-file-toast.show{opacity:1;transform:translateY(0)}
+.portal-file-toast.error{background:#a9362a}
+@media(max-width:760px){.document-row{grid-template-columns:auto 1fr!important}.document-meta{grid-column:2}.document-actions{grid-column:1/-1;justify-content:flex-end;border-top:1px solid #edf1f6;padding-top:9px}.file-action{flex:1}.portal-file-toast{left:12px;right:12px;bottom:12px;max-width:none}}
