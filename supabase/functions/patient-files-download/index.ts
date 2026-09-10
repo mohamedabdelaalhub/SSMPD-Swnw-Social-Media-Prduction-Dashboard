@@ -137,6 +137,34 @@ async function hasEffectivePortalAccess(
   );
 }
 
+async function authorizePortalAccess(
+  admin: ReturnType<typeof createClient>,
+  userId: string,
+  fileRow: any,
+) {
+  const { data: account, error: accountError } = await admin
+    .from("patient_accounts")
+    .select("id, status, activation_completed_at")
+    .eq("auth_user_id", userId)
+    .maybeSingle();
+  if (accountError) return { error: accountError.message, status: 500 };
+  if (!account || account.status !== "active" || !account.activation_completed_at) {
+    return { error: "PATIENT_ACCOUNT_NOT_ACTIVATED", status: 403 };
+  }
+  if (!PATIENT_PORTAL_CATEGORIES.has(fileRow.category)) {
+    return { error: "FILE_NOT_AVAILABLE_IN_PORTAL", status: 403 };
+  }
+
+  let allowed = false;
+  try {
+    allowed = await hasEffectivePortalAccess(admin, account.id, fileRow.patient_id);
+  } catch (e) {
+    return { error: String((e as Error).message || e), status: 500 };
+  }
+  if (!allowed) return { error: "NO_APPROVED_MEDICAL_ACCESS", status: 403 };
+  return { account };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS });
   if (req.method !== "GET") return json({ error: "Method not allowed" }, 405);
@@ -147,6 +175,7 @@ Deno.serve(async (req) => {
   const url = new URL(req.url);
   const fileId = url.searchParams.get("file_id");
   const mode = url.searchParams.get("mode") === "preview" ? "preview" : "download";
+  const requestedContext = url.searchParams.get("context") === "portal" ? "portal" : "auto";
   if (!fileId) return json({ error: "file_id مطلوب" }, 400);
 
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
@@ -157,47 +186,41 @@ Deno.serve(async (req) => {
     .maybeSingle();
   if (error || !fileRow) return json({ error: "الملف غير موجود" }, 404);
 
-  const caller = await getCallerAdmin(user.id, admin);
+  let caller: any = null;
   let portalAccount: any = null;
 
-  if (caller) {
-    const canReviewOrFull = caller.has_archive_access || caller.has_archive_review_access || isSuperAdmin(caller);
-    const doctorOnly = caller.has_archive_view_only && !canReviewOrFull;
-    const allowed = canReviewOrFull || caller.has_archive_view_only || isNursing(caller);
-    if (!allowed) return json({ error: "مفيش صلاحية أرشيف المرضى" }, 403);
-
-    if (doctorOnly) {
-      const { data: assignment } = await admin
-        .from("patient_doctor_assignments")
-        .select("id")
-        .eq("patient_id", fileRow.patient_id)
-        .eq("doctor_id", caller.id)
-        .eq("status", "pending")
-        .maybeSingle();
-      if (!assignment) return json({ error: "السجل ده مش محال لك" }, 403);
-    }
+  // Explicit portal context always uses patient-portal authorization, even when
+  // the same Supabase Auth user also exists in admins. This prevents employee
+  // archive permissions from leaking into the patient portal (and vice versa).
+  if (requestedContext === "portal") {
+    const portalAuth: any = await authorizePortalAccess(admin, user.id, fileRow);
+    if (!portalAuth.account) return json({ error: portalAuth.error }, portalAuth.status || 403);
+    portalAccount = portalAuth.account;
   } else {
-    const { data: account, error: accountError } = await admin
-      .from("patient_accounts")
-      .select("id, status, activation_completed_at")
-      .eq("auth_user_id", user.id)
-      .maybeSingle();
-    if (accountError) return json({ error: accountError.message }, 500);
-    if (!account || account.status !== "active" || !account.activation_completed_at) {
-      return json({ error: "PATIENT_ACCOUNT_NOT_ACTIVATED" }, 403);
-    }
-    if (!PATIENT_PORTAL_CATEGORIES.has(fileRow.category)) {
-      return json({ error: "FILE_NOT_AVAILABLE_IN_PORTAL" }, 403);
-    }
+    // Backward-compatible auto mode: staff callers keep the existing archive
+    // authorization path; non-staff callers fall back to portal authorization.
+    caller = await getCallerAdmin(user.id, admin);
+    if (caller) {
+      const canReviewOrFull = caller.has_archive_access || caller.has_archive_review_access || isSuperAdmin(caller);
+      const doctorOnly = caller.has_archive_view_only && !canReviewOrFull;
+      const allowed = canReviewOrFull || caller.has_archive_view_only || isNursing(caller);
+      if (!allowed) return json({ error: "مفيش صلاحية أرشيف المرضى" }, 403);
 
-    let allowed = false;
-    try {
-      allowed = await hasEffectivePortalAccess(admin, account.id, fileRow.patient_id);
-    } catch (e) {
-      return json({ error: String((e as Error).message || e) }, 500);
+      if (doctorOnly) {
+        const { data: assignment } = await admin
+          .from("patient_doctor_assignments")
+          .select("id")
+          .eq("patient_id", fileRow.patient_id)
+          .eq("doctor_id", caller.id)
+          .eq("status", "pending")
+          .maybeSingle();
+        if (!assignment) return json({ error: "السجل ده مش محال لك" }, 403);
+      }
+    } else {
+      const portalAuth: any = await authorizePortalAccess(admin, user.id, fileRow);
+      if (!portalAuth.account) return json({ error: portalAuth.error }, portalAuth.status || 403);
+      portalAccount = portalAuth.account;
     }
-    if (!allowed) return json({ error: "NO_APPROVED_MEDICAL_ACCESS" }, 403);
-    portalAccount = account;
   }
 
   let token: string;
@@ -215,20 +238,20 @@ Deno.serve(async (req) => {
     return json({ error: "فشل تحميل الملف من Drive: " + (await driveRes.text()) }, 502);
   }
 
-  if (caller) {
-    await admin.from("archive_access_log").insert({
-      file_id: fileRow.id,
-      patient_id: fileRow.patient_id,
-      employee_id: caller.id,
-      action: "download",
-    });
-  } else if (portalAccount) {
+  if (portalAccount) {
     await admin.from("patient_portal_audit_log").insert({
       account_id: portalAccount.id,
       action: mode === "preview" ? "portal_file_preview" : "portal_file_download",
       entity_type: "patient_files",
       entity_id: fileRow.id,
-      metadata: { patient_id: fileRow.patient_id },
+      metadata: { patient_id: fileRow.patient_id, authorization_context: "portal" },
+    });
+  } else if (caller) {
+    await admin.from("archive_access_log").insert({
+      file_id: fileRow.id,
+      patient_id: fileRow.patient_id,
+      employee_id: caller.id,
+      action: "download",
     });
   }
 
