@@ -1,8 +1,6 @@
 (function(){
 "use strict";
 
-var DISPLAY_NAME_KEY="swnw-portal-display-name";
-
 function uploadIcon(){
   return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M5 14v5h14v-5"/></svg>';
 }
@@ -65,58 +63,9 @@ function enhanceFilePicker(scope){
   refresh();
 }
 
-function enhanceBrand(scope){
-  var area=scope||document;
-  var userNameNode=area.querySelector&&area.querySelector(".user-copy b");
-  if(userNameNode&&userNameNode.textContent.trim()){
-    sessionStorage.setItem(DISPLAY_NAME_KEY,userNameNode.textContent.trim());
-  }
-  var displayName=(userNameNode&&userNameNode.textContent.trim())||sessionStorage.getItem(DISPLAY_NAME_KEY)||"مستخدم Swnw";
-
-  var topBrand=area.querySelector&&area.querySelector(".top-brand");
-  if(topBrand&&topBrand.dataset.polished!=="1"){
-    topBrand.dataset.polished="1";
-    var oldLabel=topBrand.querySelector(".brand-label");
-    if(oldLabel)oldLabel.remove();
-    var img=topBrand.querySelector("img");
-    if(img){
-      var divider=document.createElement("span");
-      divider.className="brand-divider";
-      var meta=document.createElement("span");
-      meta.className="brand-meta";
-      meta.innerHTML='<b>'+escapeHtml(displayName)+'</b><small>ملف المستخدم</small>';
-      img.insertAdjacentElement("afterend",divider);
-      divider.insertAdjacentElement("afterend",meta);
-    }
-  }
-
-  var subBrand=area.querySelector&&area.querySelector(".subpage-brand");
-  if(subBrand&&subBrand.dataset.polished!=="1"){
-    subBrand.dataset.polished="1";
-    Array.prototype.slice.call(subBrand.children).forEach(function(el){
-      if(el.tagName!=="IMG")el.remove();
-    });
-    var subImg=subBrand.querySelector("img");
-    if(subImg){
-      var subDivider=document.createElement("span");
-      subDivider.className="brand-divider";
-      var subMeta=document.createElement("span");
-      subMeta.className="brand-meta";
-      subMeta.innerHTML='<b>'+escapeHtml(displayName)+'</b><small>ملف المستخدم</small>';
-      subImg.insertAdjacentElement("afterend",subDivider);
-      subDivider.insertAdjacentElement("afterend",subMeta);
-    }
-  }
-}
-
-function escapeHtml(s){
-  return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
-}
-
 function enhance(){
   var root=document.getElementById("portal-root");
   if(!root)return;
-  enhanceBrand(root);
   enhanceFilePicker(root);
 }
 
