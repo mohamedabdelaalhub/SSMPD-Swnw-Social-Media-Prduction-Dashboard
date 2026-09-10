@@ -1,0 +1,23 @@
+.profile-tabs{overflow-x:auto;scrollbar-width:thin;flex-wrap:nowrap}
+.profile-tabs .medical-tab{min-width:170px;flex:0 0 auto}
+.portal-medical-view{grid-column:1/-1;width:100%}
+.medical-loading{min-height:220px;display:grid;place-items:center;color:var(--muted);text-align:center}
+.medical-loading .spinner{display:block;margin:0 auto 10px}
+.medical-records{display:flex;flex-direction:column;gap:18px}
+.medical-record-card{border:1px solid var(--line);border-radius:18px;background:#fff;overflow:hidden}
+.medical-record-head{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:17px 18px;background:linear-gradient(180deg,#f8fbff,#f4f8fd);border-bottom:1px solid var(--line)}
+.medical-record-title{min-width:0}.medical-record-title h2{font-family:"BigVesta";font-size:20px;margin:0 0 4px}.medical-record-title p{margin:0;color:var(--muted);font-size:11px;direction:ltr;text-align:right}
+.medical-record-badge{border-radius:999px;padding:6px 11px;background:var(--ok-bg);color:var(--ok);font-size:10px;font-weight:700;white-space:nowrap}
+.medical-section{padding:18px}.medical-section+.medical-section{border-top:1px solid var(--line)}
+.medical-section h3{font-family:"BigVesta";font-size:16px;margin:0 0 13px}.medical-section-note{font-size:11px;color:var(--muted);margin:-7px 0 13px}
+.health-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.health-item{min-height:76px;border:1px solid var(--line);border-radius:14px;background:#fbfdff;padding:12px 13px;display:flex;flex-direction:column;justify-content:center;gap:5px}.health-item label{font-size:10px;color:var(--muted)}.health-item b{font-size:14px;font-weight:600;overflow-wrap:anywhere}.health-item .unit{font-size:10px;color:var(--muted);font-weight:400}
+.health-item.highlight{background:#eef6ff;border-color:#d2e4f8}.health-item.highlight b{color:var(--blue)}
+.medical-chip-list{display:flex;flex-wrap:wrap;gap:7px}.medical-chip{display:inline-flex;align-items:center;gap:5px;border:1px solid #dfe8f3;background:#f7faff;border-radius:999px;padding:7px 10px;font-size:11px;color:#384861}.medical-chip strong{font-weight:700;color:var(--ink)}
+.medical-empty{border:1px dashed #cbd8e8;border-radius:15px;background:#fbfdff;padding:24px;text-align:center;color:var(--muted);font-size:12px}
+.rx-list,.visit-med-list{display:flex;flex-direction:column;gap:10px}.rx-card{border:1px solid var(--line);border-radius:15px;padding:14px;background:#fff}.rx-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:9px}.rx-top b{font-size:13px}.rx-top span{font-size:10px;color:var(--muted);white-space:nowrap}.rx-meta{display:flex;flex-wrap:wrap;gap:6px 12px;color:var(--muted);font-size:10px;margin-bottom:9px}.rx-text{white-space:pre-wrap;line-height:1.8;font-size:12px;color:#26364e;background:#f7faff;border-radius:11px;padding:11px}
+.visit-med{display:grid;grid-template-columns:auto 1fr;gap:11px;align-items:start;border:1px solid var(--line);border-radius:14px;padding:12px}.visit-date{font-size:10px;color:var(--blue);background:#eef5ff;border-radius:9px;padding:5px 8px;white-space:nowrap}.visit-med p{margin:0;line-height:1.75;font-size:12px}
+.followup-card{border:1px solid #cfe0f2;background:linear-gradient(135deg,#f1f8ff,#fff);border-radius:17px;padding:20px;display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:center}.followup-date-box{min-width:92px;border-radius:14px;background:#fff;border:1px solid #d7e5f3;padding:12px;text-align:center}.followup-date-box strong{display:block;color:var(--blue);font-size:17px}.followup-date-box span{display:block;color:var(--muted);font-size:9px;margin-top:3px}.followup-copy h3{margin:0 0 6px;font-family:"BigVesta";font-size:17px}.followup-copy p{margin:0;color:var(--muted);font-size:11px;line-height:1.7}.followup-copy .complaint{margin-top:7px;color:#3f4f66}
+.portal-medical-error{grid-column:1/-1}
+@media(max-width:900px){.health-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:650px){.profile-tabs{padding-bottom:3px}.profile-tabs .medical-tab{min-width:145px;height:52px}.health-grid{grid-template-columns:1fr 1fr}.medical-section{padding:14px}.medical-record-head{padding:14px}.followup-card{grid-template-columns:1fr}.followup-date-box{width:max-content}.rx-top{flex-direction:column;gap:4px}}
