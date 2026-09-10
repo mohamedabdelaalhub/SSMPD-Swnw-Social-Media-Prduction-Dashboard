@@ -32,7 +32,7 @@ function fetchFile(file,mode,previewWindow){
   return client.auth.getSession().then(function(r){
     var session=r.data&&r.data.session;
     if(!session)throw new Error("انتهت جلسة الدخول. سجّل دخولك من جديد.");
-    var url=cfg.url.replace(/\/$/,"")+"/functions/v1/patient-files-download?file_id="+encodeURIComponent(file.id)+"&mode="+(mode==="preview"?"preview":"download");
+    var url=cfg.url.replace(/\/$/,"")+"/functions/v1/patient-files-download?file_id="+encodeURIComponent(file.id)+"&mode="+(mode==="preview"?"preview":"download")+"&context=portal";
     return fetch(url,{headers:{Authorization:"Bearer "+session.access_token,apikey:cfg.anonKey}});
   }).then(function(res){
     if(!res.ok){
