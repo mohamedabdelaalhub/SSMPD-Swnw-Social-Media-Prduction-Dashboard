@@ -31,6 +31,8 @@ const CATEGORY_FOLDER_NAMES: Record<string, string> = {
   radiology: "Radiology",
   lab_result: "Lab_Results",
   prescription: "Prescriptions",
+  physical_therapy: "Physical_Therapy",
+  medical_report: "Medical_Reports",
   eeg: "EEG_Brain_Scans",
   other: "Other",
 };
@@ -122,7 +124,7 @@ Deno.serve(async (req) => {
 
   if (!patientId) return json({ error: "patient_id مطلوب" }, 400);
   if (!category || !CATEGORY_FOLDER_NAMES[category]) {
-    return json({ error: "category غير صالحة (id_document/insurance/radiology/lab_result/prescription/eeg/other)" }, 400);
+    return json({ error: "category غير صالحة (id_document/insurance/radiology/lab_result/prescription/physical_therapy/medical_report/eeg/other)" }, 400);
   }
   if (category === "other" && !otherDescription) {
     return json({ error: "لازم توصف نوع الملف لما الفئة تكون \"أخرى\"" }, 400);
