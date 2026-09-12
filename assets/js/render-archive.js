@@ -108,7 +108,8 @@
     var item = items.filter(function (i) { return i.id === id; })[0];
     if (!item) return;
     var publisher = adminsById[item.published_by] ? adminsById[item.published_by].name :
-      (adminsById[item.scheduled_by] ? adminsById[item.scheduled_by].name : "نشر تلقائي (Meta)");
+      (item.scheduled_by ? "نشر تلقائي (Meta)" : "—");
+    var scheduler = adminsById[item.scheduled_by] ? adminsById[item.scheduled_by].name : "—";
     var backdrop = document.createElement("div");
     backdrop.className = "modal-backdrop";
     backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>' + escapeHtml(item.title) + W.brandBadgeHtml(item.brand) + '</h3>' +
@@ -119,6 +120,7 @@
       '<table class="simple" style="margin-top:12px;"><tr><th>تاريخ النشر</th><td>' +
       (item.published_at ? new Date(item.published_at).toLocaleString("ar-EG") : "—") + '</td></tr>' +
       '<tr><th>نُشر بواسطة</th><td>' + escapeHtml(publisher) + '</td></tr>' +
+      (item.scheduled_by ? '<tr><th>جدولها</th><td>' + escapeHtml(scheduler) + '</td></tr>' : '') +
       '<tr><th>المنصة</th><td>' + W.platformsLabel(item.publish_platforms && item.publish_platforms.length ? item.publish_platforms : item.publish_platform) + '</td></tr></table>' +
       '<div style="margin-top:12px;">' + W.itemActionsHtml(item, window.SSMPDAuth.currentAdmin) + '</div></div>';
     document.body.appendChild(backdrop);
