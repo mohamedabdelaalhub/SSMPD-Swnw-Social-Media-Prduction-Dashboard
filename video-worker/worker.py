@@ -188,6 +188,9 @@ def download_job_assets(base_url: str, key: str, job: dict[str, Any], job_dir: P
     for idx, asset in enumerate(raw_assets):
         if not isinstance(asset, dict):
             continue
+        # Auto mode ignores content uploads, but still needs the saved brand logo.
+        if job.get("media_mode") == "auto" and asset.get("asset_type") != "brand_logo":
+            continue
         storage_path = str(asset.get("storage_path") or "").strip()
         file_name = str(asset.get("file_name") or ("asset-" + str(idx))).strip()
         if not storage_path:
