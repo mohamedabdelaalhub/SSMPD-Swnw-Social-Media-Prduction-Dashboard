@@ -2095,6 +2095,302 @@
     }
   }
 
+  // ================= التغذية: قوالب وجبات + زيارات + تتبع التزام =================
+  function addMealRowHtml(m, container) {
+    m = m || {};
+    var row = document.createElement("div");
+    row.innerHTML = '<div class="meal-row" style="border:1px solid var(--c-border);border-radius:8px;padding:8px;margin-bottom:8px;display:flex;gap:6px;flex-wrap:wrap;">' +
+      '<input data-meal-name placeholder="اسم الوجبة (مثال: الإفطار)" value="' + escapeHtml(m.name || '') + '" style="flex:2;min-width:120px;">' +
+      '<input data-meal-ingredients placeholder="المكونات (افصل بفاصلة)" value="' + escapeHtml((m.ingredients || []).join('، ')) + '" style="flex:3;min-width:180px;">' +
+      '<input data-meal-calories type="number" placeholder="السعرات" value="' + escapeHtml(m.calories != null ? String(m.calories) : '') + '" style="flex:1;min-width:80px;">' +
+      '<button type="button" class="btn danger sm" data-remove-meal>حذف</button></div>';
+    row = row.firstElementChild;
+    row.setAttribute("data-meal-id", m.id || ("m_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8)));
+    container.appendChild(row);
+    row.querySelector("[data-remove-meal]").onclick = function () { row.remove(); };
+    return row;
+  }
+
+  function readMealRows(container) {
+    return Array.prototype.slice.call(container.querySelectorAll(".meal-row")).map(function (row) {
+      return {
+        id: row.getAttribute("data-meal-id"),
+        name: row.querySelector("[data-meal-name]").value.trim(),
+        ingredients: row.querySelector("[data-meal-ingredients]").value.split(/[،,]/).map(function (s) { return s.trim(); }).filter(Boolean),
+        calories: row.querySelector("[data-meal-calories]").value ? Number(row.querySelector("[data-meal-calories]").value) : null
+      };
+    }).filter(function (m) { return m.name; });
+  }
+
+  // ---------- إدارة قوالب الوجبات الجاهزة (منفصلة عن أي مريض) ----------
+  function openNutritionTemplateFormModal(existingTemplate, onSaved) {
+    var t = existingTemplate || {};
+    var isEdit = !!existingTemplate;
+    var backdrop = document.createElement("div");
+    backdrop.className = "modal-backdrop";
+    backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>' + (isEdit ? "تعديل قالب وجبات" : "قالب وجبات جديد") + '</h3><button class="modal-close">×</button></div>' +
+      '<div class="field"><label>اسم الجدول</label><input id="nt-name" value="' + escapeHtml(t.name || '') + '"></div>' +
+      '<div class="field"><label>التشخيص (الحالة اللي الجدول ده مناسب لها)</label><textarea id="nt-diagnosis" rows="2">' + escapeHtml(t.diagnosis_summary || '') + '</textarea></div>' +
+      '<div class="field"><label>الوجبات</label><div id="nt-meals"></div>' +
+      '<button type="button" class="btn ghost sm" id="nt-add-meal">+ إضافة وجبة</button></div>' +
+      '<button class="btn block" id="nt-save">حفظ</button></div>';
+    document.body.appendChild(backdrop);
+    backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
+    backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
+    var mealsContainer = document.getElementById("nt-meals");
+    (t.meals && t.meals.length ? t.meals : []).forEach(function (m) { addMealRowHtml(m, mealsContainer); });
+    document.getElementById("nt-add-meal").onclick = function () { addMealRowHtml(null, mealsContainer); };
+    document.getElementById("nt-save").onclick = function () {
+      var name = document.getElementById("nt-name").value.trim();
+      if (!name) { T.show("اكتب اسم الجدول الأول", "error"); return; }
+      var patch = { name: name, diagnosis_summary: document.getElementById("nt-diagnosis").value.trim(), meals: readMealRows(mealsContainer) };
+      if (isEdit) patch.id = t.id;
+      window.SSMPDDb.saveNutritionTemplate(patch, me && me.id).then(function () {
+        T.show("اتحفظ القالب");
+        backdrop.remove();
+        if (onSaved) onSaved();
+      }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
+    };
+  }
+
+  function openNutritionTemplateManagerModal(onChange) {
+    var backdrop = document.createElement("div");
+    backdrop.className = "modal-backdrop";
+    backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>قوالب الوجبات الجاهزة</h3><button class="modal-close">×</button></div>' +
+      '<button class="btn ghost sm" id="nt-new" style="margin-bottom:10px;">+ قالب جديد</button>' +
+      '<div id="nt-list"><div class="loading">بيحمّل…</div></div></div>';
+    document.body.appendChild(backdrop);
+    backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); if (onChange) onChange(); };
+    backdrop.onclick = function (e) { if (e.target === backdrop) { backdrop.remove(); if (onChange) onChange(); } };
+    function reload() {
+      window.SSMPDDb.listNutritionTemplates().then(function (templates) {
+        var listEl = document.getElementById("nt-list");
+        if (!templates.length) { listEl.innerHTML = '<p style="font-size:12px;color:var(--c-muted);">مفيش قوالب محفوظة لسه.</p>'; return; }
+        listEl.innerHTML = templates.map(function (t) {
+          var creator = t.admins ? t.admins.name : "—";
+          return '<div style="border-bottom:1px solid var(--c-border);padding:8px 0;font-size:12px;">' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">' +
+            '<b>' + escapeHtml(t.name) + '</b>' +
+            '<button class="btn ghost sm" data-edit-template="' + t.id + '">تعديل</button></div>' +
+            (t.diagnosis_summary ? '<div style="color:var(--c-muted);margin-top:2px;">' + escapeHtml(t.diagnosis_summary) + '</div>' : '') +
+            '<div style="color:var(--c-muted);margin-top:4px;">منشئ الجدول: ' + escapeHtml(creator) + ' · عدد مرات الاستخدام: ' + (t.usage_count || 0) + '</div></div>';
+        }).join("");
+        listEl.querySelectorAll("[data-edit-template]").forEach(function (btn) {
+          btn.onclick = function () {
+            var t = templates.filter(function (x) { return String(x.id) === btn.getAttribute("data-edit-template"); })[0];
+            if (t) openNutritionTemplateFormModal(t, reload);
+          };
+        });
+      }).catch(function (e) { document.getElementById("nt-list").innerHTML = '<div class="err-msg">خطأ: ' + e.message + '</div>'; });
+    }
+    document.getElementById("nt-new").onclick = function () { openNutritionTemplateFormModal(null, reload); };
+    reload();
+  }
+
+  // ---------- زيارة تغذية لمريض ----------
+  function openNutritionVisitFormModal(patient, existingVisit, onSaved) {
+    var v = existingVisit || {};
+    var isEdit = !!existingVisit;
+    var backdrop = document.createElement("div");
+    backdrop.className = "modal-backdrop";
+    backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>' + (isEdit ? "تعديل زيارة تغذية" : "زيارة تغذية جديدة") + '</h3><button class="modal-close">×</button></div>' +
+      '<p style="font-size:12px;color:var(--c-muted);margin:-6px 0 10px;">المريض: ' + escapeHtml(patient.full_name) + '</p>' +
+      '<div style="display:flex;gap:8px;">' +
+      '<div class="field" style="flex:1;"><label>تاريخ الزيارة</label><input id="nv-date" type="date" value="' + (v.visit_date || new Date().toISOString().slice(0, 10)) + '"></div>' +
+      '<div class="field" style="flex:1;"><label>التوقيت</label><input id="nv-time" type="time" value="' + escapeHtml(v.visit_time || '') + '"></div>' +
+      '<div class="field" style="flex:1;"><label>الطبيب المعالج</label><input id="nv-doctor" value="' + escapeHtml(v.doctor_name || '') + '"></div>' +
+      '</div>' +
+      '<div style="display:flex;gap:8px;">' +
+      '<div class="field" style="flex:1;"><label>الوزن</label><input id="nv-weight" value="' + escapeHtml(v.weight || '') + '"></div>' +
+      '<div class="field" style="flex:1;"><label>نسبة الدهون</label><input id="nv-fat" value="' + escapeHtml(v.body_fat_percentage || '') + '"></div>' +
+      '</div>' +
+      '<div class="field"><label>الأدوية</label><input id="nv-meds" value="' + escapeHtml(v.medications || '') + '"></div>' +
+      '<div class="field"><label>ملاحظات</label><textarea id="nv-notes" rows="2">' + escapeHtml(v.notes || '') + '</textarea></div>' +
+      '<div class="field"><label>جدول الوجبات (Daily Meals)</label>' +
+      '<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">' +
+      '<select id="nv-template-pick" style="flex:1;"><option value="">— استخدام قالب محفوظ —</option></select>' +
+      '<button type="button" class="btn ghost sm" id="nv-manage-templates">القوالب</button></div>' +
+      '<div id="nv-meals"></div>' +
+      '<button type="button" class="btn ghost sm" id="nv-add-meal">+ إضافة وجبة</button>' +
+      (v.template_name_snapshot ? '<div style="font-size:11px;color:var(--c-muted);margin-top:6px;">مبني على قالب: ' + escapeHtml(v.template_name_snapshot) + '</div>' : '') +
+      '</div>' +
+      '<div class="field" id="nv-files-field"><label>مستندات مرفقة</label>' +
+      (isEdit ?
+        '<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">' +
+        '<input type="file" id="nv-files-input" accept="image/*,application/pdf" multiple style="flex:1;">' +
+        '<button class="btn ghost sm" id="nv-files-add">إضافة</button></div>' +
+        '<div id="nv-files-status" style="font-size:11px;color:var(--c-muted);margin-bottom:6px;"></div>' +
+        '<div id="nv-files-list"></div>'
+        : '<p style="font-size:12px;color:var(--c-muted);">احفظ الزيارة الأول، وبعدين هيظهر لك اختيار إضافة المستندات.</p>') +
+      '</div>' +
+      '<button class="btn block" id="nv-save">حفظ</button></div>';
+    document.body.appendChild(backdrop);
+    backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
+    backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
+
+    var mealsContainer = document.getElementById("nv-meals");
+    var mealTemplateId = v.template_id || null;
+    var mealTemplateName = v.template_name_snapshot || "";
+    var completions = {}; // meal_id -> completion row
+
+    function renderMeals(meals) {
+      mealsContainer.innerHTML = "";
+      (meals || []).forEach(function (m) { addMealRowHtml(m, mealsContainer); });
+      if (isEdit) applyCompletionUi();
+    }
+    function applyCompletionUi() {
+      mealsContainer.querySelectorAll(".meal-row").forEach(function (row) {
+        var mid = row.getAttribute("data-meal-id");
+        if (row.querySelector("[data-meal-done]")) return;
+        var c = completions[mid];
+        var wrap = document.createElement("label");
+        wrap.style.cssText = "display:flex;align-items:center;gap:4px;font-size:11px;flex-basis:100%;margin-top:4px;";
+        wrap.innerHTML = '<input type="checkbox" data-meal-done' + (c && c.completed ? " checked" : "") + '> الحالة: أخدها المريض' +
+          (c && c.completed && c.completed_at ? ' <span style="color:var(--c-muted);">(' + new Date(c.completed_at).toLocaleString("ar-EG") + ')</span>' : '');
+        row.appendChild(wrap);
+        wrap.querySelector("[data-meal-done]").onchange = function (e) {
+          window.SSMPDDb.setNutritionMealCompletion(existingVisit.id, mid, e.target.checked, me && me.id).then(function (row2) {
+            completions[mid] = row2;
+          }).catch(function (err) { T.show("خطأ: " + err.message, "error"); e.target.checked = !e.target.checked; });
+        };
+      });
+    }
+    function loadCompletions() {
+      if (!isEdit) return;
+      window.SSMPDDb.listNutritionMealCompletions(existingVisit.id).then(function (rows) {
+        completions = {};
+        (rows || []).forEach(function (r) { completions[r.meal_id] = r; });
+        applyCompletionUi();
+      }).catch(function () {});
+    }
+
+    renderMeals(v.meals || []);
+    loadCompletions();
+    document.getElementById("nv-add-meal").onclick = function () { addMealRowHtml(null, mealsContainer); };
+
+    function loadTemplatesIntoSelect() {
+      window.SSMPDDb.listNutritionTemplates().then(function (templates) {
+        var sel = document.getElementById("nv-template-pick");
+        var current = sel.value;
+        sel.innerHTML = '<option value="">— استخدام قالب محفوظ —</option>' +
+          templates.map(function (t) { return '<option value="' + t.id + '">' + escapeHtml(t.name) + '</option>'; }).join("");
+        sel.value = current;
+        sel.onchange = function () {
+          if (!sel.value) return;
+          var t = templates.filter(function (x) { return String(x.id) === sel.value; })[0];
+          if (!t) return;
+          mealTemplateId = t.id;
+          mealTemplateName = t.name;
+          renderMeals(t.meals || []);
+          sel.value = "";
+          T.show("اتنسخت وجبات القالب — تقدر تعدّل فيها قبل الحفظ");
+        };
+      }).catch(function () {});
+    }
+    loadTemplatesIntoSelect();
+    document.getElementById("nv-manage-templates").onclick = function () { openNutritionTemplateManagerModal(loadTemplatesIntoSelect); };
+
+    if (isEdit) {
+      window.SSMPDDb.listNutritionVisitFiles(existingVisit.id).then(function (files) { renderPhysioImagesList(document.getElementById("nv-files-list"), files || []); }).catch(function () {});
+      document.getElementById("nv-files-add").onclick = function () {
+        var input = document.getElementById("nv-files-input");
+        var fileList = Array.prototype.slice.call(input.files || []);
+        if (!fileList.length) { T.show("اختار مستند أو أكتر الأول", "error"); return; }
+        var statusEl = document.getElementById("nv-files-status");
+        var addBtn = document.getElementById("nv-files-add");
+        addBtn.disabled = true;
+        var done = 0;
+        statusEl.textContent = "بيرفع 0/" + fileList.length + "…";
+        var chain = Promise.resolve();
+        fileList.forEach(function (file) {
+          chain = chain.then(function () {
+            var fd = new FormData();
+            fd.append("patient_id", patient.id);
+            fd.append("category", "other");
+            fd.append("other_description", "مستند مرفق بزيارة تغذية — " + (v.visit_date || existingVisit.visit_date || ""));
+            fd.append("file", file);
+            return window.SSMPDDb.uploadPatientFile(fd).then(function (res) {
+              return window.SSMPDDb.linkNutritionVisitFile(existingVisit.id, res.file.id);
+            }).then(function () { done++; statusEl.textContent = "بيرفع " + done + "/" + fileList.length + "…"; });
+          });
+        });
+        chain.then(function () {
+          statusEl.textContent = ""; addBtn.disabled = false; input.value = "";
+          T.show("اتضافت المستندات");
+          window.SSMPDDb.listNutritionVisitFiles(existingVisit.id).then(function (files) { renderPhysioImagesList(document.getElementById("nv-files-list"), files || []); });
+        }).catch(function (e) {
+          statusEl.textContent = ""; addBtn.disabled = false;
+          T.show("خطأ في رفع المستندات: " + e.message, "error");
+        });
+      };
+    }
+
+    document.getElementById("nv-save").onclick = function () {
+      var patch = {
+        visit_date: document.getElementById("nv-date").value || new Date().toISOString().slice(0, 10),
+        visit_time: document.getElementById("nv-time").value || "",
+        doctor_name: document.getElementById("nv-doctor").value.trim(),
+        weight: document.getElementById("nv-weight").value.trim(),
+        body_fat_percentage: document.getElementById("nv-fat").value.trim(),
+        medications: document.getElementById("nv-meds").value.trim(),
+        notes: document.getElementById("nv-notes").value.trim(),
+        meals: readMealRows(mealsContainer),
+        template_id: mealTemplateId,
+        template_name_snapshot: mealTemplateName
+      };
+      if (isEdit) patch.id = existingVisit.id;
+      var isNewWithTemplate = !isEdit && mealTemplateId;
+      window.SSMPDDb.saveNutritionVisit(patient.id, patch, me && me.id).then(function (saved) {
+        var after = function () {
+          if (onSaved) onSaved();
+          if (!isEdit) {
+            T.show("اتحفظت الزيارة — تقدر تضيف مستندات دلوقتي");
+            backdrop.remove();
+            openNutritionVisitFormModal(patient, saved, onSaved);
+          } else {
+            T.show("اتحدثت الزيارة");
+            backdrop.remove();
+          }
+        };
+        if (isNewWithTemplate) {
+          window.SSMPDDb.listNutritionTemplates().then(function (templates) {
+            var t = templates.filter(function (x) { return x.id === mealTemplateId; })[0];
+            if (t) return window.SSMPDDb.bumpNutritionTemplateUsage(t.id, t.usage_count);
+          }).catch(function () {}).then(after);
+        } else { after(); }
+      }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
+    };
+  }
+
+  function printNutritionVisit(patient, visit) {
+    var win = window.open("", "_blank");
+    if (!win) { T.show("المتصفح منع فتح نافذة الطباعة — سمح بالنوافذ المنبثقة وحاول تاني", "error"); return; }
+    var meals = visit.meals || [];
+    var field = function (label, value) { return '<p style="margin:0 0 8px;font-size:13px;"><b>' + label + ': </b>' + escapeHtml(value || "—") + '</p>'; };
+    var mealsRows = meals.length ? meals.map(function (m) {
+      return '<tr><td style="border:1px solid #999;padding:4px 6px;">' + escapeHtml(m.name || "") + '</td>' +
+        '<td style="border:1px solid #999;padding:4px 6px;">' + escapeHtml((m.ingredients || []).join('، ')) + '</td>' +
+        '<td style="border:1px solid #999;padding:4px 6px;text-align:center;">' + (m.calories != null ? m.calories : "—") + '</td></tr>';
+    }).join("") : '<tr><td colspan="3" style="border:1px solid #999;padding:8px;text-align:center;color:#888;">لا توجد وجبات مسجّلة</td></tr>';
+    var body =
+      '<h1 style="font-size:24px;color:#0F369D;text-align:right;margin:0 0 4px;">تقرير تغذية</h1>' +
+      '<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:14px;color:#555;"><span>' + escapeHtml(patient.full_name) + '</span><span>' + fmtDate(visit.visit_date) + '</span></div>' +
+      field("التوقيت", visit.visit_time) + field("الطبيب المعالج", visit.doctor_name) +
+      field("الوزن", visit.weight) + field("نسبة الدهون", visit.body_fat_percentage) +
+      field("الأدوية", visit.medications) + field("ملاحظات", visit.notes) +
+      (visit.template_name_snapshot ? field("مبني على قالب", visit.template_name_snapshot) : "") +
+      '<div style="text-align:center;text-decoration:underline;font-size:13px;margin:14px 0 8px;">جدول الوجبات (Daily Meals)</div>' +
+      '<table style="width:100%;border-collapse:collapse;font-size:11px;" dir="rtl">' +
+      '<tr><th style="border:1px solid #999;padding:4px 6px;background:#f2f2f2;">الوجبة</th><th style="border:1px solid #999;padding:4px 6px;background:#f2f2f2;">المكونات</th><th style="border:1px solid #999;padding:4px 6px;background:#f2f2f2;">السعرات</th></tr>' +
+      mealsRows + '</table>';
+    win.document.open();
+    win.document.write('<!doctype html><html><head><meta charset="utf-8"><title>تقرير تغذية — ' + escapeHtml(patient.full_name) + '</title>' +
+      '<style>' + PRINT_FONT_FACE_CSS + '@page{size:A4;margin:0;}body{margin:0;}*{-webkit-print-color-adjust:exact;print-color-adjust:exact;}</style></head>' +
+      '<body>' + letterheadPageHtml("rtl", body) + '</body></html>');
+    win.document.close();
+    waitForImagesThenPrint(win, 3000);
+  }
+
   // ---------- طباعة بروفايل المريض كامل: صفحة بيانات شخصية/طبية + كل المرفقات كصفحات داخلية ----------
   function buildProfileCoverHtml(patient, profile, visits) {
     visits = visits || [];
@@ -2638,9 +2934,10 @@
         window.SSMPDDb.listLabRequests(patientId).catch(function () { return []; }),
         window.SSMPDDb.listRadiologyRequests(patientId).catch(function () { return []; }),
         window.SSMPDDb.listPatientExperienceRatings(patientId).catch(function () { return []; }),
+        window.SSMPDDb.listNutritionVisits(patientId).catch(function () { return []; }),
       ]).then(function (results) {
         var res = results[0], profile = results[1], visits = results[2] || [];
-        renderPatientModal(backdrop, view, container, res.patient, res.files || [], profile, visits, results[3] || [], results[4] || [], results[5] || [], results[6] || [], results[7] || [], results[8] || [], results[9] || [], results[10] || []);
+        renderPatientModal(backdrop, view, container, res.patient, res.files || [], profile, visits, results[3] || [], results[4] || [], results[5] || [], results[6] || [], results[7] || [], results[8] || [], results[9] || [], results[10] || [], results[11] || []);
       }).catch(function (e) {
         backdrop.querySelector(".modal").innerHTML = '<div class="err-msg">خطأ: ' + e.message + '</div>';
       });
@@ -2703,7 +3000,8 @@
     return html;
   }
 
-  function renderPatientModal(backdrop, view, container, patient, files, profile, visits, reports, echoReports, dentalReports, physioReports, prescriptions, labRequests, radiologyRequests, experienceRatings) {
+  function renderPatientModal(backdrop, view, container, patient, files, profile, visits, reports, echoReports, dentalReports, physioReports, prescriptions, labRequests, radiologyRequests, experienceRatings, nutritionVisits) {
+    nutritionVisits = nutritionVisits || [];
     var byCategory = {};
     CATEGORIES.forEach(function (c) { byCategory[c.key] = []; });
     files.forEach(function (f) { (byCategory[f.category] || (byCategory[f.category] = [])).push(f); });
@@ -3005,6 +3303,29 @@
     }
     html += '</div>';
 
+    // ---------- التغذية ----------
+    html += '<div class="section" style="padding:12px 14px;">' +
+      '<h3 style="font-size:13px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
+      '<span>التغذية (' + nutritionVisits.length + ')</span>' +
+      '<span style="display:flex;gap:6px;">' +
+      (canUp ? '<button class="btn ghost sm" data-manage-nutrition-templates="1">قوالب الوجبات</button>' : '') +
+      (canUp ? '<button class="btn ghost sm" data-new-nutrition-visit="1">+ زيارة جديدة</button>' : '') +
+      '</span></h3>';
+    if (!nutritionVisits.length) {
+      html += '<p style="font-size:12px;color:var(--c-muted);">مفيش زيارات تغذية مُسجّلة لسه.</p>';
+    } else {
+      nutritionVisits.forEach(function (r) {
+        html += '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--c-border);font-size:12px;">' +
+          '<div><b>زيارة تغذية</b> — ' + fmtDate(r.visit_date) +
+          (r.template_name_snapshot ? '<br><span style="color:var(--c-muted);">قالب: ' + escapeHtml(r.template_name_snapshot) + '</span>' : '') + '</div>' +
+          '<div style="display:flex;gap:6px;flex-shrink:0;">' +
+          '<button class="btn ghost sm" data-edit-nutrition-visit="' + r.id + '">تعديل</button>' +
+          '<button class="btn ghost sm" data-print-nutrition-visit="' + r.id + '">🖨 طباعة</button>' +
+          (canUp ? '<button class="btn danger sm" data-del-nutrition-visit="' + r.id + '">حذف</button>' : '') + '</div></div>';
+      });
+    }
+    html += '</div>';
+
     // ---------- تقييم تجربة المريض ----------
     html += '<div class="section" style="padding:12px 14px;">' +
       '<h3 style="font-size:13px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
@@ -3039,8 +3360,9 @@
         window.SSMPDDb.listLabRequests(patient.id).catch(function () { return []; }),
         window.SSMPDDb.listRadiologyRequests(patient.id).catch(function () { return []; }),
         window.SSMPDDb.listPatientExperienceRatings(patient.id).catch(function () { return []; }),
+        window.SSMPDDb.listNutritionVisits(patient.id).catch(function () { return []; }),
       ]).then(function (results) {
-        renderPatientModal(backdrop, view, container, results[0].patient, results[0].files || [], results[1], results[2] || [], results[3] || [], results[4] || [], results[5] || [], results[6] || [], results[7] || [], results[8] || [], results[9] || [], results[10] || []);
+        renderPatientModal(backdrop, view, container, results[0].patient, results[0].files || [], results[1], results[2] || [], results[3] || [], results[4] || [], results[5] || [], results[6] || [], results[7] || [], results[8] || [], results[9] || [], results[10] || [], results[11] || []);
       });
     }
 
@@ -3337,6 +3659,36 @@
         if (!confirm("حذف تقرير العلاج الطبيعي ده؟")) return;
         window.SSMPDDb.deletePhysioReport(btn.getAttribute("data-del-physio-report")).then(function () {
           T.show("اتحذف التقرير");
+          reloadModal();
+        }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
+      };
+    });
+
+    var newNutritionVisitBtn = backdrop.querySelector("[data-new-nutrition-visit]");
+    if (newNutritionVisitBtn) {
+      newNutritionVisitBtn.onclick = function () { openNutritionVisitFormModal(patient, null, reloadModal); };
+    }
+    var manageNutritionTemplatesBtn = backdrop.querySelector("[data-manage-nutrition-templates]");
+    if (manageNutritionTemplatesBtn) {
+      manageNutritionTemplatesBtn.onclick = function () { openNutritionTemplateManagerModal(); };
+    }
+    backdrop.querySelectorAll("[data-edit-nutrition-visit]").forEach(function (btn) {
+      btn.onclick = function () {
+        var r = nutritionVisits.filter(function (x) { return String(x.id) === btn.getAttribute("data-edit-nutrition-visit"); })[0];
+        if (r) openNutritionVisitFormModal(patient, r, reloadModal);
+      };
+    });
+    backdrop.querySelectorAll("[data-print-nutrition-visit]").forEach(function (btn) {
+      btn.onclick = function () {
+        var r = nutritionVisits.filter(function (x) { return String(x.id) === btn.getAttribute("data-print-nutrition-visit"); })[0];
+        if (r) printNutritionVisit(patient, r);
+      };
+    });
+    backdrop.querySelectorAll("[data-del-nutrition-visit]").forEach(function (btn) {
+      btn.onclick = function () {
+        if (!confirm("حذف زيارة التغذية دي؟")) return;
+        window.SSMPDDb.deleteNutritionVisit(btn.getAttribute("data-del-nutrition-visit")).then(function () {
+          T.show("اتحذفت الزيارة");
           reloadModal();
         }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
       };

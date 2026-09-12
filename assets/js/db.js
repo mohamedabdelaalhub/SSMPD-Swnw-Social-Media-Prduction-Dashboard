@@ -452,37 +452,12 @@
       return handle(client.from("media_buyer_escalations").update(patch).eq("id", id).select().single());
     },
 
-    // ---------- Patient Portal / التحقق من الهوية ----------
-    listPatientIdentityVerifications: function (status) {
-      return edgeFetch("patient-verification-review", { method: "POST", json: { op: "list", status: status || "pending" } })
-        .then(function (r) { return r.items || []; });
-    },
-    approvePatientIdentityVerification: function (verificationId) {
-      return edgeFetch("patient-verification-review", { method: "POST", json: { op: "approve", verification_id: verificationId } });
-    },
-    rejectPatientIdentityVerification: function (verificationId, reason) {
-      return edgeFetch("patient-verification-review", { method: "POST", json: { op: "reject", verification_id: verificationId, reason: reason || null } });
-    },
-    resendPatientActivation: function (verificationId) {
-      return edgeFetch("patient-verification-review", { method: "POST", json: { op: "resend_activation", verification_id: verificationId } });
-    },
-    revokePatientAccountAccess: function (accessId, reason) {
-      return edgeFetch("patient-verification-review", { method: "POST", json: { op: "revoke", access_id: accessId, reason: reason || null } });
-    },
-    getPatientVerificationDocumentUrl: function (documentId) {
-      return edgeFetch("patient-verification-review", { method: "POST", json: { op: "document_url", document_id: documentId } })
-        .then(function (r) { return r.url; });
-    },
-
     // ---------- أرشيف المرضى (Edge Functions) ----------
     createPatientArchive: function (payload) {
       return edgeFetch("patients-create", { method: "POST", json: payload });
     },
     listPatientsArchive: function (params) {
       return edgeFetch("patient-files-list" + qs(params));
-    },
-    getPatientRecord: function (id) {
-      return handle(client.from("patients").select("*").eq("id", id).single());
     },
     updatePatientRecord: function (id, patch) {
       return handle(client.from("patients").update(patch).eq("id", id).select().single());
@@ -701,6 +676,67 @@
     },
     deletePhysioReport: function (id) {
       return handle(client.from("patient_physio_reports").delete().eq("id", id));
+    },
+    // ---------- التغذية: قوالب وجبات + زيارات + مستندات + تتبع التزام ----------
+    listNutritionTemplates: function () {
+      return handle(client.from("nutrition_meal_templates").select("*, admins(name)").order("usage_count", { ascending: false }));
+    },
+    saveNutritionTemplate: function (patch, createdBy) {
+      var row = Object.assign({}, patch);
+      if (patch && patch.id) {
+        var id = patch.id;
+        delete row.id;
+        row.updated_at = new Date().toISOString();
+        return handle(client.from("nutrition_meal_templates").update(row).eq("id", id).select().single());
+      }
+      row.created_by = createdBy;
+      return handle(client.from("nutrition_meal_templates").insert(row).select().single());
+    },
+    deleteNutritionTemplate: function (id) {
+      return handle(client.from("nutrition_meal_templates").delete().eq("id", id));
+    },
+    bumpNutritionTemplateUsage: function (id, currentCount) {
+      return handle(client.from("nutrition_meal_templates").update({ usage_count: (currentCount || 0) + 1 }).eq("id", id));
+    },
+    listNutritionVisits: function (patientId) {
+      return handle(client.from("patient_nutrition_visits").select("*").eq("patient_id", patientId).order("visit_date", { ascending: false }));
+    },
+    saveNutritionVisit: function (patientId, patch, createdBy) {
+      var row = Object.assign({}, patch, { patient_id: patientId });
+      if (patch && patch.id) {
+        var id = patch.id;
+        delete row.id;
+        row.updated_at = new Date().toISOString();
+        return handle(client.from("patient_nutrition_visits").update(row).eq("id", id).select().single());
+      }
+      row.created_by = createdBy;
+      return handle(client.from("patient_nutrition_visits").insert(row).select().single());
+    },
+    deleteNutritionVisit: function (id) {
+      return handle(client.from("patient_nutrition_visits").delete().eq("id", id));
+    },
+    listNutritionVisitFiles: function (visitId) {
+      return handle(client.from("patient_nutrition_visit_files")
+        .select("id, created_at, patient_files(id, file_name, file_size, mime_type, uploaded_at)")
+        .eq("visit_id", visitId)
+        .order("created_at", { ascending: true }));
+    },
+    linkNutritionVisitFile: function (visitId, patientFileId) {
+      return handle(client.from("patient_nutrition_visit_files")
+        .insert({ visit_id: visitId, patient_file_id: patientFileId })
+        .select().single());
+    },
+    listNutritionMealCompletions: function (visitId) {
+      return handle(client.from("patient_nutrition_meal_completions").select("*").eq("visit_id", visitId));
+    },
+    setNutritionMealCompletion: function (visitId, mealId, completed, adminId) {
+      return handle(client.from("patient_nutrition_meal_completions")
+        .upsert({
+          visit_id: visitId, meal_id: mealId, completed: completed,
+          completed_at: completed ? new Date().toISOString() : null,
+          recorded_by_admin_id: adminId, updated_at: new Date().toISOString()
+        }, { onConflict: "visit_id,meal_id" })
+        .select().single());
     },
     getPatientFiles: function (patientId) {
       return edgeFetch("patient-files-list" + qs({ patient_id: patientId }));
