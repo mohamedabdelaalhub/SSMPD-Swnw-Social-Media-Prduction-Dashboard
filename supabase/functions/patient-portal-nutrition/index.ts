@@ -79,12 +79,19 @@ Deno.serve(async (req) => {
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
     const ctx: any = await portalContext(req, admin);
     if (!ctx.account) return json({ error: ctx.error }, ctx.status || 500);
-    if (body.op === "overview") {
-      if (!ctx.patientIds.length) return json({ visits: [], next_offset: null });
+    const daily = body.op === "daily_overview" || body.op === "set_daily_completion";
+    const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Cairo", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+    const day = body.tracking_date || today;
+    if (daily && (typeof day !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(day)
+      || Number.isNaN(Date.parse(day)) || new Date(day).toISOString().slice(0, 10) !== day || day > today)) {
+      return json({ error: "INVALID_TRACKING_DATE" }, 400);
+    }
+    if (body.op === "overview" || body.op === "daily_overview") {
+      if (!ctx.patientIds.length) return json({ visits: [], next_offset: null, tracking_date: day, today });
       const offset = body.offset === undefined ? 0 : body.offset;
       if (!Number.isSafeInteger(offset) || offset < 0) return json({ error: "INVALID_OFFSET" }, 400);
       const { data, error } = await admin.from("patient_nutrition_visits")
-        .select("id, patient_id, visit_date, doctor_name, template_name_snapshot, meals, patients(full_name, patient_code)")
+        .select("id, patient_id, visit_date, visit_time, doctor_name, template_name_snapshot, meals, patients(full_name, patient_code)")
         .in("patient_id", ctx.patientIds).order("visit_date", { ascending: false }).order("id")
         .range(offset, offset + 19);
       if (error) throw error;
@@ -93,35 +100,49 @@ Deno.serve(async (req) => {
       for (const visit of visits) {
         const completions: any[] = [];
         for (let start = 0; ; start += 500) {
-          const { data: rows, error: readError } = await admin.from("patient_nutrition_meal_completions")
-            .select("meal_id, completed, completed_at, updated_at").eq("visit_id", visit.id)
-            .order("id").range(start, start + 499);
+          let query = admin.from(daily ? "patient_nutrition_daily_completions" : "patient_nutrition_meal_completions")
+            .select("meal_id, completed, completed_at, updated_at").eq("visit_id", visit.id);
+          if (daily) query = query.eq("tracking_date", day);
+          const { data: rows, error: readError } = await query.order("id").range(start, start + 499);
           if (readError) throw readError;
           completions.push(...(rows || []));
           if (!rows || rows.length < 500) break;
         }
         visit.completions = completions;
+        if (daily) {
+          const legacy: any[] = [];
+          for (let start = 0; ; start += 500) {
+            const { data: oldRows, error: oldError } = await admin.from("patient_nutrition_meal_completions")
+              .select("meal_id, completed, completed_at").eq("visit_id", visit.id).order("id").range(start, start + 499);
+            if (oldError) throw oldError;
+            legacy.push(...(oldRows || []));
+            if (!oldRows || oldRows.length < 500) break;
+          }
+          visit.legacy_completions = legacy;
+        }
       }
-      return json({ visits, next_offset: visits.length === 20 ? offset + 20 : null });
+      return json({ visits, next_offset: visits.length === 20 ? offset + 20 : null, tracking_date: day, today });
     }
-    if (body.op !== "set_completion") return json({ error: "UNKNOWN_OPERATION" }, 400);
+    if (body.op !== "set_completion" && body.op !== "set_daily_completion") return json({ error: "UNKNOWN_OPERATION" }, 400);
     if (typeof body.visit_id !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(body.visit_id)
       || typeof body.meal_id !== "string" || !body.meal_id || body.meal_id.length > 500
       || typeof body.completed !== "boolean") return json({ error: "INVALID_COMPLETION" }, 400);
     const { data: visit, error: visitError } = await admin.from("patient_nutrition_visits")
-      .select("id, patient_id, meals").eq("id", body.visit_id).maybeSingle();
+      .select("id, patient_id, visit_date, meals").eq("id", body.visit_id).maybeSingle();
     if (visitError) throw visitError;
     // Same response for missing and unauthorized visits; client cannot choose the patient or actor.
     if (!visit || !ctx.patientIds.includes(visit.patient_id)) return json({ error: "NO_APPROVED_MEDICAL_ACCESS" }, 403);
     const matches = Array.isArray(visit.meals) ? visit.meals.filter((m: any) => m && m.id === body.meal_id) : [];
     if (matches.length !== 1) return json({ error: "MEAL_NOT_FOUND" }, 400);
+    if (daily && day < visit.visit_date) return json({ error: "INVALID_TRACKING_DATE" }, 400);
     const now = new Date().toISOString();
-    const { data: completion, error: writeError } = await admin.from("patient_nutrition_meal_completions")
-      .upsert({ visit_id: visit.id, meal_id: body.meal_id, completed: body.completed,
+    const { data: completion, error: writeError } = await admin.from(daily ? "patient_nutrition_daily_completions" : "patient_nutrition_meal_completions")
+      .upsert({ ...(daily ? { tracking_date: day } : {}), visit_id: visit.id, meal_id: body.meal_id, completed: body.completed,
         completed_at: body.completed ? now : null, updated_at: now,
-        recorded_by_account_id: ctx.account.id, recorded_by_admin_id: null }, { onConflict: "visit_id,meal_id" })
+        recorded_by_account_id: ctx.account.id, recorded_by_admin_id: null }, { onConflict: daily ? "visit_id,meal_id,tracking_date" : "visit_id,meal_id" })
       .select("id, visit_id, meal_id, completed, completed_at, updated_at").single();
     if (writeError) throw writeError;
+    if (daily) return json({ ok: true, completion, tracking_date: day, audit_recorded: true });
     const { error: auditError } = await admin.from("patient_portal_audit_log").insert({
       account_id: ctx.account.id, patient_id: visit.patient_id,
       action: "nutrition_meal_completion_set", entity_type: "patient_nutrition_meal_completions",

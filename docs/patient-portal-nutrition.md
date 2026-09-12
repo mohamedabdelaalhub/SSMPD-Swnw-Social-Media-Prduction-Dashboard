@@ -1,55 +1,89 @@
-# Patient portal nutrition integration — 2026-09-12
+# Nutrition daily tracking — staged release, 2026-09-12
 
-Same SSMPD project `uuijfbpgvtdxgaosqpxo`, section 53 tables, and `patients.id`.
+## Deployment order
 
-## Deployment
+1. Run `supabase/migrations/20260912_nutrition_daily_tracking.sql` in project
+   `uuijfbpgvtdxgaosqpxo`. The same DDL is in setup.sql section 54.
+2. Replace `patient-portal-nutrition` with the complete index.ts from this release.
+   Deploy in Supabase Dashboard; legacy Verify JWT OFF. auth.getUser() still validates sessions.
+3. Merge/publish this release's dashboard and portal assets to main, then refresh.
 
-Create `patient-portal-nutrition` in Supabase Dashboard and deploy the complete
-`supabase/functions/patient-portal-nutrition/index.ts`. Set legacy Verify JWT OFF.
-The function validates the bearer session with `auth.getUser()` itself. It uses
-existing SUPABASE_URL, SUPABASE_ANON_KEY and SUPABASE_SERVICE_ROLE_KEY environment variables.
-Section 53 must already be applied to the live database. No new tables or RLS policies are required.
-GitHub publication does not deploy this Edge Function.
+The existing visit-level table and API operations remain supported throughout rollout.
+The new UI must not publish before the SQL and Edge Function. No secrets change.
 
-## Contract
+## Daily model
 
-POST `{op:"overview",offset:0}` returns `{visits, next_offset}` in pages of 20,
-with patient name/code, visit date, doctor, snapshot meals and completion status.
-No template table reads. Only effective approved patient access is included.
+New table: patient_nutrition_daily_completions. Unique key is
+(visit_id, meal_id, tracking_date). No client-supplied patient ID is accepted.
+Dates follow Africa/Cairo and must be between visit_date and today inclusive.
+No end date or fixed duration is inferred; a visit's plan remains selectable for
+subsequent days. Each visit has its own daily states, even when plans overlap.
 
-POST `{op:"set_completion",visit_id,meal_id,completed:true}` assigns a boolean.
-`completed:false` clears completed_at. No client patient ID, actor or timestamp is trusted.
-The server fetches the visit, derives patient_id, checks exact approved access
-(non-revoked, non-expired), and requires exactly one matching meal ID in the snapshot.
-Active account and activation_completed_at are required for both operations.
-No family membership or staff role grants an exception.
+The existing patient_nutrition_meal_completions rows are preserved without conversion.
+Their completed_at is a confirmation timestamp, not proof of the actual meal date.
+Both interfaces show them separately as previous undated confirmations.
+New writes go exclusively to the daily table after the UI release.
 
-Upsert uses `visit_id,meal_id`; actor is recorded_by_account_id and admin actor is
-cleared. Repeating a desired state keeps that boolean, while updating timestamp/actor.
-Response `{ok:true,completion,audit_recorded}` returns the saved state.
-Audit action is nutrition_meal_completion_set. Like patient-portal-experience,
-audit insertion is a separate write, not atomic with completion. An audit failure
-is logged and returned as audit_recorded:false; the saved completion remains saved.
+Daily row fields: id, visit_id, meal_id, tracking_date, meal_name_snapshot,
+completed, completed_at, recorded_by_admin_id, recorded_by_account_id, updated_at.
+Meal name is captured by a database trigger from the visit's snapshot, not the template.
+Repeat assignment preserves completed_at; clearing confirmation sets it to null.
+Reconfirming sets a new server timestamp. Last writer's account/admin is recorded.
 
-## Scope and behavior
+## Security
 
-The Nutrition tab reads on every open/refresh, supports pagination and explicit retry,
-disables a checkbox while saving, and restores its last acknowledged state on failure.
-No patient medical data is cached in this module. No direct patient table writes.
-No daily tracking date exists in section 53: status is per visit+meal, not per day.
-Visit attachments continue through the existing medical-files flow; this tab covers meals.
-Per-entity patient_portal_visibility is not introduced here; authorization follows the
-requested experience function pattern and section 53 contract.
-Dashboard reads the same completion table and polls every 15 seconds while the patient view is open and visible. Visit rows show each meal status and a completed count. The edit form refreshes existing checkboxes after asynchronous reads. Staff writes clear recorded_by_account_id. No Realtime publication or RLS changes are required.
+The Edge Function validates auth.getUser(), active/activated portal account,
+and exact patient_account_access with approved, non-revoked, non-expired access.
+It derives patient_id from visit_id and checks meal_id membership in the visit snapshot.
+Family membership and staff privileges do not bypass portal access checks.
 
-Regression test: `node test/nutrition-dashboard.cjs` covers delayed status loading, refreshed checkboxes, summary, escaping and polling cleanup.
+The daily table has RLS with the same staff read/write scope as section 53.
+No direct patient write policy is added. A BEFORE trigger validates date/meal,
+sets server timestamps, and overwrites actor fields. Service-role patient writes
+also recheck the active account and effective approved patient access in the trigger.
+Authenticated staff writes record my_admin_id() and clear the patient account actor.
+An AFTER trigger records nutrition_daily_completion_set in patient_portal_audit_log
+inside the same transaction; audit failure rolls back the completion.
+No per-entity visibility or new family grants are introduced.
 
-## Verification
+## API
 
-`node test/portal-nutrition.cjs` covers session/account/access, target patient isolation,
-meal membership, strict boolean, trusted actor, audit and scoped reads.
-`node test/portal-nutrition-ui.cjs` covers rendering/escaping, pending controls,
-explicit state, failed saves and detached view responses.
-The general smoke suite still fails in existing dashboard fixtures before completion;
-it does not load these new portal files. Live authenticated testing remains pending
-manual Edge deployment. No live patient records were modified during development.
+POST `{op:"daily_overview",offset:0,tracking_date:"2026-09-12"}` returns
+`{visits,next_offset,tracking_date,today}`. Page size 20, each visit contains daily
+completions and legacy_completions. Queries are scoped to effective approved records.
+
+POST `{op:"set_daily_completion",visit_id,meal_id,tracking_date,completed:true}`
+returns `{ok:true,completion,tracking_date,audit_recorded:true}` after the transaction.
+Boolean is assigned, never toggled. Future/invalid/pre-visit dates are rejected.
+Legacy overview/set_completion operations stay compatible with old cached clients;
+those old operations still use the separate legacy table and its existing audit behavior.
+
+## Interfaces
+
+Dashboard: separate collapsible cards; newest visit open, older visits closed.
+Plan title from template_name_snapshot, doctor, date-only formatting; visit_time is
+shown only when explicitly stored. Delete is inside an options menu.
+Each card has a day picker, confirmed count, progress bar and per-meal badge.
+Confirmation times use Cairo and are labeled as confirmation times.
+Empty meals show an explanation instead of 0/0. Status polls every 15 seconds for
+open cards while visible and stops after closing the patient view.
+Edit form has its own day picker and prevents edits while initial status is loading.
+
+Portal: newest visit per patient opens first, day picker, progress and per-meal controls.
+Date cannot change during a pending save. Failed writes restore last acknowledged state.
+Old-view responses cannot overwrite a replacement view. No medical data cache added.
+Nutrition remains last/leftmost in the tabs.
+
+## Validation and limits
+
+- portal-nutrition.cjs: legacy compatibility, daily API, date validation, exact patient access.
+- portal-nutrition-ui.cjs: escaped content, pending controls, rollback and stale views.
+- nutrition-dashboard.cjs: asynchronous checkboxes, daily summary and polling cleanup.
+- nutrition-daily-sql.cjs: PGlite/Postgres migration run twice, separate dates,
+  repeated timestamps, meal/date guards, RLS denial, trusted staff actor and atomic audit rollback.
+  Run with @electric-sql/pglite available via NODE_PATH.
+- General smoke suite still fails in existing dashboard fixtures before completion.
+- Browser rendering could not be checked locally because Chromium download returned 502.
+  Live visual and authenticated integration checks remain pending staged deployment.
+
+No live patient records were changed in development. SQL was tested on synthetic data.

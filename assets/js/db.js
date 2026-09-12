@@ -729,6 +729,14 @@
     listNutritionMealCompletions: function (visitId) {
       return handle(client.from("patient_nutrition_meal_completions").select("*").eq("visit_id", visitId));
     },
+    listNutritionDailyCompletions: function (visitId, day) {
+      return handle(client.from("patient_nutrition_daily_completions").select("*").eq("visit_id", visitId).eq("tracking_date", day));
+    },
+    setNutritionDailyCompletion: function (visitId, mealId, day, completed) {
+      return handle(client.from("patient_nutrition_daily_completions").upsert({
+        visit_id: visitId, meal_id: mealId, tracking_date: day, completed: completed
+      }, { onConflict: "visit_id,meal_id,tracking_date" }).select().single());
+    },
     setNutritionMealCompletion: function (visitId, mealId, completed, adminId) {
       return handle(client.from("patient_nutrition_meal_completions")
         .upsert({
