@@ -79,7 +79,7 @@
       var dayItems = byDay[k] || [];
       html += '<div class="calendar-cell"><div class="day-num">' + d.getDate() + '</div>';
       dayItems.forEach(function (it) {
-        html += '<div class="item" data-open-published="' + it.id + '" title="' + escapeHtml(it.title) + '">' + escapeHtml(it.title) + W.brandBadgeHtml(it.brand) + '</div>';
+        html += '<div class="item" data-open="' + it.id + '" title="' + escapeHtml(it.title) + '">' + escapeHtml(it.title) + W.brandBadgeHtml(it.brand) + '</div>';
       });
       html += '</div>';
     });
@@ -98,13 +98,8 @@
     document.getElementById("arch-month").onclick = function () { state.view = "month"; render(container); };
     document.getElementById("arch-week").onclick = function () { state.view = "week"; render(container); };
 
-    container.querySelectorAll("[data-open-published]").forEach(function (el) {
-      el.onclick = function () {
-        var id = el.getAttribute("data-open-published");
-        var item = items.filter(function (x) { return x.id === id; })[0];
-        if (!item) return;
-        W.openPublishedPostOptions(item, function () { openDetail(id, items, adminsById); });
-      };
+    container.querySelectorAll("[data-open]").forEach(function (el) {
+      el.onclick = function () { openDetail(el.getAttribute("data-open"), items, adminsById); };
     });
   }
 
@@ -112,7 +107,8 @@
     var W = window.SSMPDWorkflow;
     var item = items.filter(function (i) { return i.id === id; })[0];
     if (!item) return;
-    var publisher = adminsById[item.published_by] ? adminsById[item.published_by].name : "—";
+    var publisher = adminsById[item.published_by] ? adminsById[item.published_by].name :
+      (adminsById[item.scheduled_by] ? adminsById[item.scheduled_by].name : "نشر تلقائي (Meta)");
     var backdrop = document.createElement("div");
     backdrop.className = "modal-backdrop";
     backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>' + escapeHtml(item.title) + W.brandBadgeHtml(item.brand) + '</h3>' +
