@@ -41,3 +41,6 @@ verify_jwt = false
 [functions.patient-portal-documents]
 # Auth is validated with auth.getUser inside the function. Dashboard legacy JWT toggle: OFF.
 verify_jwt = false
+
+[functions.patient-portal-nutrition]
+verify_jwt = false
