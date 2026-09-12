@@ -8,7 +8,7 @@ if(!root||!cfg||!cfg.url||!cfg.anonKey||!window.supabase)return;
 var client=window.supabase.createClient(cfg.url,cfg.anonKey,{
   auth:{persistSession:true,autoRefreshToken:true,storageKey:"swnw-patient-portal-auth"}
 });
-var docsLoading=null,unavailableSources=[];
+
 
 var CATEGORIES=[
   {id:"all",label:"الكل"},
@@ -48,16 +48,12 @@ function categoryForRow(row){
   return "other";
 }
 
-function getGeneratedDocuments(force){
-
-  if(docsLoading)return docsLoading;
-  docsLoading=client.functions.invoke("patient-portal-documents",{body:{op:"list"}}).then(function(r){
+function getGeneratedDocuments(){
+  return client.functions.invoke("patient-portal-documents",{body:{op:"list"}}).then(function(r){
     if(r.error)throw r.error;
     if(r.data&&r.data.error)throw new Error(r.data.error);
-    unavailableSources=(r.data&&r.data.unavailable_sources)||[];
-    return (r.data&&r.data.documents)||[];
-  }).finally(function(){docsLoading=null;});
-  return docsLoading;
+    return r.data||{documents:[]};
+  });
 }
 
 function reportBody(doc){
@@ -189,48 +185,52 @@ function applyFilter(section,id){
   }else if(empty){empty.hidden=true;}
 }
 
+function showDocumentsStatus(section,message,retry){
+  var old=section.querySelector(".portal-documents-status");if(old)old.remove();
+  var status=document.createElement("div");status.className="portal-documents-status";status.setAttribute("role","status");
+  var text=document.createElement("p");text.textContent=message;status.appendChild(text);
+  if(retry){
+    var button=document.createElement("button");button.type="button";button.className="file-action portal-documents-retry";button.textContent="إعادة المحاولة";
+    button.onclick=function(){section.dataset.generatedDocsReady="";enhanceFiles();};status.appendChild(button);
+  }
+  section.appendChild(status);
+}
+
 function enhanceFiles(){
   var section=root.querySelector(".documents-section");
-  if(!section)return false;
+  if(!section||section.dataset.documentsLoading==="true")return;
+  // Each root render creates a new section. Only request once for that section;
+  // never share pending medical responses between account/view generations.
+  if(section.dataset.generatedDocsLoading==="1"||section.dataset.generatedDocsReady==="1")return;
   var list=ensureList(section);
-
-  // Classify uploaded files immediately, even if the new documents function is not deployed yet.
   Array.prototype.slice.call(list.querySelectorAll(".document-row:not([data-generated-document])")).forEach(function(row){
     row.setAttribute("data-file-category",categoryForRow(row));
   });
   rebuildFilterBar(section);
-
-  if(section.dataset.generatedDocsLoading==="1"||section.dataset.generatedDocsReady==="1")return true;
   section.dataset.generatedDocsLoading="1";
-  getGeneratedDocuments(false).then(function(docs){
-    if(!document.body.contains(section))return;
+  showDocumentsStatus(section,"جاري تحميل تقارير المركز…",false);
+  getGeneratedDocuments().then(function(result){
+    if(!root.contains(section))return;
+    var docs=result.documents||[];
     list=ensureList(section);
     list.querySelectorAll('[data-generated-document="1"]').forEach(function(x){x.remove();});
-    (docs||[]).forEach(function(doc){list.appendChild(generatedRow(doc));});
+    docs.forEach(function(doc){list.appendChild(generatedRow(doc));});
     var empty=section.querySelector(".compact-empty");
-    if(empty&&(docs||[]).length)empty.remove();
+    if(empty&&docs.length)empty.remove();
     section.dataset.generatedDocsReady="1";
     rebuildFilterBar(section);
     var status=section.querySelector(".portal-documents-status");if(status)status.remove();
-    if(unavailableSources.length){status=document.createElement("p");status.className="portal-documents-status";status.textContent="تعذر تحميل بعض المستندات أو مرفقاتها. أعد فتح تبويب الملفات للمحاولة.";section.appendChild(status);section.dataset.generatedDocsReady="";}
+    if((result.unavailable_sources||[]).length){showDocumentsStatus(section,"تعذر تحميل بعض المستندات أو مرفقاتها.",true);}
   }).catch(function(e){
-    // Existing uploaded files keep working if the additive function is not deployed yet.
+    if(!root.contains(section))return;
     console.warn("patient portal generated documents unavailable",e);
-    if(!section.querySelector(".portal-documents-status")){var status=document.createElement("p");status.className="portal-documents-status";status.textContent="تعذر تحميل مستندات المركز. أعد فتح تبويب الملفات للمحاولة.";section.appendChild(status);}
-  }).finally(function(){
-    if(document.body.contains(section))section.dataset.generatedDocsLoading="";
-  });
-  return true;
+    section.dataset.generatedDocsReady="1";
+    showDocumentsStatus(section,"تعذر تحميل تقارير المركز. الملفات المرفوعة تظل متاحة.",true);
+  }).finally(function(){section.dataset.generatedDocsLoading="";});
 }
 
-function scheduleFilesEnhance(){
-  [80,220,550,1100].forEach(function(ms){setTimeout(enhanceFiles,ms);});
-}
-
-document.addEventListener("click",function(e){
-  var t=e.target&&e.target.closest?e.target.closest('[data-profile-tab="files"]'):null;
-  if(t)scheduleFilesEnhance();
-},true);
-
-scheduleFilesEnhance();
+// The app replaces portal-root when login or file loading completes, regardless
+// of request duration. Observe direct replacements only, not our own row edits.
+new MutationObserver(function(){enhanceFiles();}).observe(root,{childList:true});
+enhanceFiles();
 })();
