@@ -2188,6 +2188,30 @@
   }
 
   // ---------- زيارة تغذية لمريض ----------
+  // Staff reads remain under the existing dashboard RLS. Stop polling when the view closes.
+  function watchNutritionStatus(el, visit) {
+    function refresh() {
+      if (!el.isConnected) return;
+      if (document.hidden) { setTimeout(refresh, 15000); return; }
+      window.SSMPDDb.listNutritionMealCompletions(visit.id).then(function (rows) {
+        if (!el.isConnected) return;
+        var meals = Array.isArray(visit.meals) ? visit.meals : [];
+        var byMeal = {};
+        (rows || []).forEach(function (r) { byMeal[r.meal_id] = r; });
+        var done = meals.filter(function (m) { return byMeal[m.id] && byMeal[m.id].completed; }).length;
+        el.innerHTML = '<b>تناول ' + done + ' من ' + meals.length + ' وجبات</b>' + meals.map(function (m) {
+          var c = byMeal[m.id];
+          return '<div style="margin-top:5px;">' + escapeHtml(m.name || "وجبة") + ' — ' +
+            (c && c.completed ? 'تم تناولها' : 'لم يتم تأكيد تناولها') +
+            (c && c.completed && c.completed_at ? ' · ' + escapeHtml(new Date(c.completed_at).toLocaleString("ar-EG")) : '') + '</div>';
+        }).join('');
+      }).catch(function () {
+        if (el.isConnected) el.textContent = "تعذر تحديث حالة الوجبات. ستتم إعادة المحاولة.";
+      }).finally(function () { if (el.isConnected) setTimeout(refresh, 15000); });
+    }
+    refresh();
+  }
+
   function openNutritionVisitFormModal(patient, existingVisit, onSaved) {
     var v = existingVisit || {};
     var isEdit = !!existingVisit;
@@ -2232,6 +2256,7 @@
     var mealTemplateId = v.template_id || null;
     var mealTemplateName = v.template_name_snapshot || "";
     var completions = {}; // meal_id -> completion row
+    var completionsLoaded = false, completionWrites = 0;
 
     function renderMeals(meals) {
       mealsContainer.innerHTML = "";
@@ -2241,27 +2266,37 @@
     function applyCompletionUi() {
       mealsContainer.querySelectorAll(".meal-row").forEach(function (row) {
         var mid = row.getAttribute("data-meal-id");
-        if (row.querySelector("[data-meal-done]")) return;
+        var previous = row.querySelector("[data-meal-done]");
+        if (previous && previous.dataset.saving === "1") return;
+        if (previous) previous.parentElement.remove();
         var c = completions[mid];
         var wrap = document.createElement("label");
         wrap.style.cssText = "display:flex;align-items:center;gap:4px;font-size:11px;flex-basis:100%;margin-top:4px;";
         wrap.innerHTML = '<input type="checkbox" data-meal-done' + (c && c.completed ? " checked" : "") + '> الحالة: أخدها المريض' +
           (c && c.completed && c.completed_at ? ' <span style="color:var(--c-muted);">(' + new Date(c.completed_at).toLocaleString("ar-EG") + ')</span>' : '');
         row.appendChild(wrap);
+        wrap.querySelector("[data-meal-done]").disabled = !completionsLoaded;
         wrap.querySelector("[data-meal-done]").onchange = function (e) {
-          window.SSMPDDb.setNutritionMealCompletion(existingVisit.id, mid, e.target.checked, me && me.id).then(function (row2) {
+          var checkbox = e.target, desired = checkbox.checked, prior = !!(completions[mid] && completions[mid].completed);
+          checkbox.disabled = true; checkbox.dataset.saving = "1"; completionWrites++;
+          window.SSMPDDb.setNutritionMealCompletion(existingVisit.id, mid, desired, me && me.id).then(function (row2) {
             completions[mid] = row2;
-          }).catch(function (err) { T.show("خطأ: " + err.message, "error"); e.target.checked = !e.target.checked; });
+          }).catch(function (err) { T.show("خطأ: " + err.message, "error"); checkbox.checked = prior; }).finally(function () { completionWrites--; checkbox.disabled = false; delete checkbox.dataset.saving; applyCompletionUi(); });
         };
       });
     }
     function loadCompletions() {
-      if (!isEdit) return;
+      if (!isEdit || !backdrop.isConnected) return;
+      if (completionWrites || document.hidden) { setTimeout(loadCompletions, 15000); return; }
       window.SSMPDDb.listNutritionMealCompletions(existingVisit.id).then(function (rows) {
+        if (!backdrop.isConnected || completionWrites) return;
+        completionsLoaded = true;
         completions = {};
         (rows || []).forEach(function (r) { completions[r.meal_id] = r; });
         applyCompletionUi();
-      }).catch(function () {});
+      }).catch(function () { T.show("تعذر تحديث حالة الوجبات", "error"); }).finally(function () {
+        if (backdrop.isConnected) setTimeout(loadCompletions, 15000);
+      });
     }
 
     renderMeals(v.meals || []);
@@ -3322,6 +3357,7 @@
           '<button class="btn ghost sm" data-edit-nutrition-visit="' + r.id + '">تعديل</button>' +
           '<button class="btn ghost sm" data-print-nutrition-visit="' + r.id + '">🖨 طباعة</button>' +
           (canUp ? '<button class="btn danger sm" data-del-nutrition-visit="' + r.id + '">حذف</button>' : '') + '</div></div>';
+        html += '<div data-nutrition-status="' + escapeHtml(r.id) + '" style="font-size:12px;padding:8px 0 14px;">جاري تحميل حالة الوجبات…</div>';
       });
     }
     html += '</div>';
@@ -3346,6 +3382,10 @@
 
     backdrop.innerHTML = html;
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
+    backdrop.querySelectorAll("[data-nutrition-status]").forEach(function (el) {
+      var visit = nutritionVisits.find(function (v) { return String(v.id) === el.getAttribute("data-nutrition-status"); });
+      if (visit) watchNutritionStatus(el, visit);
+    });
 
     function reloadModal() {
       Promise.all([

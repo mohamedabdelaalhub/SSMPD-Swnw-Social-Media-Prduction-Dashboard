@@ -734,7 +734,7 @@
         .upsert({
           visit_id: visitId, meal_id: mealId, completed: completed,
           completed_at: completed ? new Date().toISOString() : null,
-          recorded_by_admin_id: adminId, updated_at: new Date().toISOString()
+          recorded_by_admin_id: adminId, recorded_by_account_id: null, updated_at: new Date().toISOString()
         }, { onConflict: "visit_id,meal_id" })
         .select().single());
     },

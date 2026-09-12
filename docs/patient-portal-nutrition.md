@@ -40,10 +40,9 @@ No daily tracking date exists in section 53: status is per visit+meal, not per d
 Visit attachments continue through the existing medical-files flow; this tab covers meals.
 Per-entity patient_portal_visibility is not introduced here; authorization follows the
 requested experience function pattern and section 53 contract.
-Dashboard reads the same completion table when reopening the visit. No realtime
-subscription/publication was added, so an already-open dashboard needs reopening/refresh.
-The existing staff writer does not clear recorded_by_account_id when overwriting a
-patient action; consumers should not infer last actor exclusively from that column.
+Dashboard reads the same completion table and polls every 15 seconds while the patient view is open and visible. Visit rows show each meal status and a completed count. The edit form refreshes existing checkboxes after asynchronous reads. Staff writes clear recorded_by_account_id. No Realtime publication or RLS changes are required.
+
+Regression test: `node test/nutrition-dashboard.cjs` covers delayed status loading, refreshed checkboxes, summary, escaping and polling cleanup.
 
 ## Verification
 
