@@ -109,6 +109,10 @@ test/smoke.js              اختبار jsdom — Supabase مموّه بالكا
 | `patient_system_links` | (Patient Portal — Foundation) ربط `patients.id` بمريضه الحقيقي في IHospital لاحقاً — mapping بس، بدون اتصال فعلي حالياً (uniqueness: `(hospital_id, ihospital_patient_id)` و`(supabase_patient_id, hospital_id)` — مريض حقيقي واحد ↔ مريض Supabase واحد لكل مستشفى) |
 | `patient_portal_visibility` | (Patient Portal — Foundation) جدول lookup مشترك (`entity_type`+`entity_id`+`portal_status`: `internal`/`approved`/`hidden`) — الافتراضي `internal` (متخفيش حاجة عن الـDashboard، بس متتعرضش للبورتال لحد ما تتعتمد) |
 | `patient_portal_audit_log` | (Patient Portal — Foundation) سجل تدقيق **مفروض بتريجرز على مستوى القاعدة** (مش app code) لكل تغيير حالة تحقّق/وصول — كتابة عن طريق service role/التريجرز بس، قراءة لموظف صلاحية التحقّق/سوبر أدمن |
+| `nutrition_meal_templates` | قوالب وجبات جاهزة لإعادة الاستخدام مع أي مريض — منشئ + عدد استخدام + وجبات (`meals` jsonb) |
+| `patient_nutrition_visits` | زيارة تغذية لمريض — **نسخة (snapshot)** من الوجبات وقت الحفظ، مش مرجع حي للقالب (`template_id` اختياري + `template_name_snapshot`) |
+| `patient_nutrition_visit_files` | مستندات مرفقة بزيارة تغذية — نفس نمط `patient_physio_report_images` |
+| `patient_nutrition_meal_completions` | تتبع التزام كل وجبة (`visit_id`+`meal_id`) — كتابة الموظف من الداشبورد تحت RLS عادي، وكتابة بوابة المريض مستقبلاً عن طريق Edge Function بصلاحية service_role (بتتخطى RLS) |
 
 **Patient Portal**: البنية الآمنة (Phase 1 — Final Foundation + تصحيح أمني)
 دلوقتي جاهزة في `setup.sql` (قسم ٥٢) — **لسه ماتشغلتش على Supabase Live**.
@@ -293,14 +297,3 @@ Meta Auto Publisher (قسم ٤٣ — محتاج خطوات نشر يدوية م�
 فوق)، وسجّل التفاصيل الكاملة في مشروع Claude (`project_write` لملف جديد
 أو إضافة لملف الشهر/الموضوع المناسب) بدل ما تضيفها هنا في CLAUDE.md —
 الملف ده دلوقتي مخصص للبنية/القواعد الثابتة بس، مش changelog.
-
-
-## Patient Portal — Phase 2 (Auth + Identity Verification)
-
-- الاسم الظاهر للمستخدم دائمًا **Swnw**. لا تُظهر Sono/SONO للمريض؛ المعرّفات التقنية القديمة تظل كما هي لو تغييرها يكسر النظام.
-- بوابة المريض منفصلة عن واجهة الموظفين، لكنها تستخدم نفس Supabase ونفس `patients.id`.
-- OTP يثبت ملكية الهاتف فقط؛ لا يفتح أي ملف طبي.
-- الوصول لأي ملف طبي يحتاج تحقق رسمي + مستندات + اعتماد موظف مخول.
-- Patient self-service: `patient-portal-self-service` + `patient-verification-upload`.
-- Staff review: `patient-verification-review` + واجهة مراجعة من قائمة المستخدم.
-- هذه المرحلة لا تعرض Visits/Prescriptions/Reports بعد؛ هي تبني Account Activation + Verification workflow فقط.
