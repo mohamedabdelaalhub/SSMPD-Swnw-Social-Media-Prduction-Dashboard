@@ -299,7 +299,6 @@
     backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>مريض جديد</h3><button class="modal-close">×</button></div>' +
       '<div class="field"><label>الاسم بالكامل</label><input id="np-name"></div>' +
       '<div class="field"><label>رقم الهاتف</label><input id="np-phone" placeholder="01xxxxxxxxx"></div>' +
-      '<div class="field"><label>البريد الإلكتروني للـPatient Portal (اختياري)</label><input id="np-email" type="email" placeholder="name@example.com"></div>' +
       '<div class="field"><label>الرقم القومي (اختياري)</label><input id="np-nid" maxlength="14"></div>' +
       '<div class="field"><label>السن</label><input id="np-age" type="number" min="0"></div>' +
       '<div class="field"><label>النوع</label><select id="np-gender"><option value="">—</option><option value="male">ذكر</option><option value="female">أنثى</option></select></div>' +
@@ -314,7 +313,6 @@
     document.getElementById("np-save").onclick = function () {
       var full_name = document.getElementById("np-name").value.trim();
       var phone = document.getElementById("np-phone").value.trim();
-      var email = document.getElementById("np-email").value.trim().toLowerCase();
       var national_id = document.getElementById("np-nid").value.trim();
       var age = document.getElementById("np-age").value.trim();
       var gender = document.getElementById("np-gender").value;
@@ -324,7 +322,7 @@
       if (!full_name) { T.show("اكتب اسم المريض", "error"); return; }
       if (!phone) { T.show("اكتب رقم الهاتف", "error"); return; }
       window.SSMPDDb.createPatientArchive({
-        full_name: full_name, phone: phone, email: email || undefined, national_id: national_id || undefined,
+        full_name: full_name, phone: phone, national_id: national_id || undefined,
         age: age || undefined, gender: gender || undefined, medical_record_no: medical_record_no || undefined
       })
         .then(function (res) {
@@ -341,22 +339,11 @@
   }
 
   function openEditPatientModal(patient, onSaved) {
-    // لو السجل جاي من قائمة قديمة بدون email، هات المريض مباشرة من Supabase
-    // بدل استدعاء patient-files-list لتجنب أي loop لو الدالة المنشورة أقدم.
-    if (patient && patient.id && typeof patient.email === "undefined") {
-      window.SSMPDDb.getPatientRecord(patient.id)
-        .then(function (fullPatient) {
-          openEditPatientModal(fullPatient || patient, onSaved);
-        })
-        .catch(function (e) { T.show("خطأ: " + e.message, "error"); });
-      return;
-    }
     var backdrop = document.createElement("div");
     backdrop.className = "modal-backdrop";
     backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>تعديل بيانات المريض</h3><button class="modal-close">×</button></div>' +
       '<div class="field"><label>الاسم بالكامل</label><input id="ep-name" value="' + escapeHtml(patient.full_name || "") + '"></div>' +
       '<div class="field"><label>رقم الهاتف</label><input id="ep-phone" value="' + escapeHtml(patient.phone || "") + '"></div>' +
-      '<div class="field"><label>البريد الإلكتروني للـPatient Portal</label><input id="ep-email" type="email" value="' + escapeHtml(patient.email || "") + '"></div>' +
       '<div class="field"><label>السن</label><input id="ep-age" type="number" min="0" value="' + escapeHtml(patient.age != null ? String(patient.age) : "") + '"></div>' +
       '<div class="field"><label>النوع</label><select id="ep-gender">' +
         '<option value="" ' + (!patient.gender ? "selected" : "") + '>—</option>' +
@@ -373,7 +360,6 @@
     document.getElementById("ep-save").onclick = function () {
       var full_name = document.getElementById("ep-name").value.trim();
       var phone = document.getElementById("ep-phone").value.trim();
-      var email = document.getElementById("ep-email").value.trim().toLowerCase();
       var age = document.getElementById("ep-age").value.trim();
       var gender = document.getElementById("ep-gender").value;
       var medical_record_no = document.getElementById("ep-mrn").value.trim();
@@ -382,7 +368,6 @@
       var patch = {
         full_name: full_name,
         phone: phone || null,
-        email: email || null,
         age: age ? Number(age) : null,
         gender: gender || null,
         medical_record_no: medical_record_no || null,
@@ -1563,6 +1548,7 @@
       '<div id="pp-canvas" style="position:relative;display:inline-block;border:1px solid var(--c-border);border-radius:8px;overflow:hidden;cursor:crosshair;">' +
       '<img id="pp-img" src="assets/img/physio-body-diagram.png" style="display:block;width:680px;max-width:100%;" draggable="false"></div>' +
       '<div id="pp-list" style="margin-top:8px;"></div></div>' +
+      '<div class="field"><label>Diagnosis (تشخيص الحالة بشكل عام)</label><textarea id="pr-diagnosis" rows="2" placeholder="تشخيص الحالة العام — منفصل عن تحديد نقط الـ area على الرسم">' + escapeHtml(r.diagnosis || '') + '</textarea></div>' +
       '<div class="field" style="margin-top:6px;"><label>صور أشعة/فحوصات مرفقة (عدد مفتوح — اختار كذا صورة مرة واحدة)</label>' +
       (isEdit ?
         '<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">' +
@@ -1634,7 +1620,8 @@
         var dot = document.createElement("div");
         dot.className = "pp-dot";
         dot.title = p.note || "";
-        dot.style.cssText = "position:absolute;width:16px;height:16px;border-radius:50%;background:#D0402A;border:2px solid #fff;box-shadow:0 0 2px rgba(0,0,0,.5);transform:translate(-50%,-50%);cursor:pointer;left:" + p.x + "%;top:" + p.y + "%;";
+        dot.textContent = String(i + 1);
+        dot.style.cssText = "position:absolute;width:16px;height:16px;border-radius:50%;background:#D0402A;border:2px solid #fff;box-shadow:0 0 2px rgba(0,0,0,.5);transform:translate(-50%,-50%);cursor:pointer;left:" + p.x + "%;top:" + p.y + "%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;line-height:1;";
         dot.setAttribute("data-pp-idx", i);
         ppCanvas.appendChild(dot);
       });
@@ -1689,6 +1676,7 @@
         chronic_diseases: document.getElementById("pr-chronic").value.trim(),
         surgeries: document.getElementById("pr-surgeries").value.trim(),
         family_history: document.getElementById("pr-family").value.trim(),
+        diagnosis: document.getElementById("pr-diagnosis").value.trim(),
         pain_points: painPoints,
         sessions: sessions
       };
@@ -2061,14 +2049,13 @@
       '<div style="text-align:center;">' +
       '<div style="position:relative;display:inline-block;">' +
       '<img src="' + PRINT_SITE_BASE + 'assets/img/physio-body-diagram.png" style="width:210px;display:block;">' +
-      painPoints.map(function (p) {
-        return '<div style="position:absolute;width:11px;height:11px;border-radius:50%;background:#D0402A;-webkit-print-color-adjust:exact;print-color-adjust:exact;border:2px solid #fff;transform:translate(-50%,-50%);left:' + p.x + '%;top:' + p.y + '%;"></div>';
+      painPoints.map(function (p, i) {
+        return '<div style="position:absolute;width:14px;height:14px;border-radius:50%;background:#D0402A;-webkit-print-color-adjust:exact;print-color-adjust:exact;border:2px solid #fff;transform:translate(-50%,-50%);left:' + p.x + '%;top:' + p.y + '%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;line-height:1;">' + (i + 1) + '</div>';
       }).join("") +
       '</div>' +
-      (painPoints.some(function (p) { return p.note; }) ?
-        '<div style="text-align:right;font-size:10px;margin-top:6px;">' +
-        painPoints.filter(function (p) { return p.note; }).map(function (p, i) { return '<div>● ' + escapeHtml(p.note) + '</div>'; }).join("") +
-        '</div>' : '') +
+      '<div style="text-align:right;font-size:10px;margin-top:6px;">' +
+      painPoints.map(function (p, i) { return '<div>● نقطة ' + (i + 1) + (p.note ? ': ' + escapeHtml(p.note) : '') + '</div>'; }).join("") +
+      '</div>' +
       '</div>' : '';
     var sessionsTableHtml =
       '<div style="text-align:center;text-decoration:underline;font-size:13px;margin:0 0 8px;">جدول الجلسات</div>' +
@@ -2084,6 +2071,7 @@
       field("أمراض مزمنة", report.chronic_diseases) +
       field("العمليات الجراحية", report.surgeries) +
       field("تاريخ مرضي بالعائلة", report.family_history) +
+      field("Diagnosis (تشخيص الحالة)", report.diagnosis) +
       '<div style="display:flex;gap:14px;align-items:flex-start;margin-top:12px;">' +
       '<div style="flex:1;min-width:0;">' + sessionsTableHtml + '</div>' +
       (painPointsHtml ? '<div style="flex:0 0 220px;">' + painPointsHtml + '</div>' : '') +
