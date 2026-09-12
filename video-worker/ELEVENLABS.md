@@ -22,3 +22,15 @@ temporary audio. It never reads or claims Supabase jobs. The command wrapper
 can be opened separately after installing the update.
 
 API contract: https://elevenlabs.io/docs/api-reference/text-to-speech/convert
+
+## Approved listening baseline
+
+The user approved this exact test sentence after listening on their Mac:
+
+> إحنا هنا عشان نسمعك ونفهم إيه اللي تاعبك، ونشرح لك كل خطوة بكلام مفهوم.
+
+Keep the voice and model/settings above for the next full-video trial. In this
+sentence use «تاعبك»; «مضايقك», «مدايقك» and «تعبك» were not accepted. This is an
+editorial choice for this sentence, not a global replacement rule. Review new
+scripts in conversational Egyptian Arabic and listen before approving them.
+Approval covers this voice sample; a complete generated video still needs review.

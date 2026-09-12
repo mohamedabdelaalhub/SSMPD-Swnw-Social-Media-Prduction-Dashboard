@@ -798,7 +798,7 @@ def main() -> int:
             eleven_key, eleven_voice = eleven_tts.config()
             with tempfile.TemporaryDirectory(prefix="ssmpd-voice-") as folder:
                 audio = Path(folder) / "preview.mp3"
-                eleven_tts.synthesize("إزيك؟ عامل إيه؟ إحنا هنا عشان نسمعك ونفهم إيه اللي مضايقك، ونشرح لك كل خطوة بكلام مفهوم.", audio, eleven_key, eleven_voice)
+                eleven_tts.synthesize("إحنا هنا عشان نسمعك ونفهم إيه اللي تاعبك، ونشرح لك كل خطوة بكلام مفهوم.", audio, eleven_key, eleven_voice)
                 _, ffprobe = ffmpeg_paths()
                 if probe_duration(ffprobe, audio) <= 0:
                     raise WorkerError("تعذر قراءة مدة الصوت.")
