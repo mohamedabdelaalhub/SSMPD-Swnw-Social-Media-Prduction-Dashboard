@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import argparse
+import eleven_tts
 from drive_archive import upload as archive_upload
 from brand_identity import logo_asset
 import json
@@ -349,6 +350,12 @@ def synthesize(script: str, job_dir: Path, job: dict[str, Any]) -> tuple[Path, s
     uploaded_voice = uploaded_asset_paths(job, "voiceover")
     if uploaded_voice:
         return uploaded_voice[0], "Uploaded voiceover"
+
+    eleven_key, eleven_voice = eleven_tts.config()
+    if eleven_key:
+        out_mp3 = job_dir / "voice.mp3"
+        voice = eleven_tts.synthesize(script, out_mp3, eleven_key, eleven_voice)
+        return out_mp3, "ElevenLabs " + voice
 
     azure_key, azure_region, azure_voice = azure_tts_config()
     if azure_key and azure_region:
@@ -744,21 +751,28 @@ def check_environment() -> int:
         print("FFmpeg: FAIL -", e)
 
     try:
-        azure_key, azure_region, azure_voice = azure_tts_config()
-        if azure_key and azure_region:
-            print("Azure TTS: configured")
-            print("Azure region:", azure_region)
-            print("Azure voice:", azure_voice)
+        eleven_key, eleven_voice = eleven_tts.config()
+        if eleven_key:
+            print("ElevenLabs TTS: configured (credentials present; API not tested)")
+            print("Active TTS: ElevenLabs")
+            print("ElevenLabs voice:", eleven_voice)
+            print("ElevenLabs model:", eleven_tts.MODEL_ID)
         else:
-            voices = arabic_voices()
-            if voices:
-                print("Azure TTS: not configured — macOS fallback:", ", ".join(voices))
+            azure_key, azure_region, azure_voice = azure_tts_config()
+            if azure_key and azure_region:
+                print("Azure TTS: configured")
+                print("Azure region:", azure_region)
+                print("Azure voice:", azure_voice)
             else:
-                ok = False
-                print("Azure TTS: not configured and no Arabic macOS fallback voice found")
+                voices = arabic_voices()
+                if voices:
+                    print("Azure TTS: not configured — macOS fallback:", ", ".join(voices))
+                else:
+                    ok = False
+                    print("No configured TTS or Arabic macOS voice found")
     except Exception as e:
         ok = False
-        print("Azure TTS: FAIL -", e)
+        print("TTS: FAIL -", e)
 
     root = media_root()
     print("Media library:", root)
@@ -770,12 +784,31 @@ def check_environment() -> int:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--check", action="store_true")
+    parser.add_argument("--test-voice", action="store_true", help="Test ElevenLabs without claiming a video job")
     parser.add_argument("--once", action="store_true")
     parser.add_argument("--retry-archive", metavar="JOB_ID")
     args = parser.parse_args()
 
     if args.check:
         return check_environment()
+
+    if args.test_voice:
+        import tempfile
+        try:
+            eleven_key, eleven_voice = eleven_tts.config()
+            with tempfile.TemporaryDirectory(prefix="ssmpd-voice-") as folder:
+                audio = Path(folder) / "preview.mp3"
+                eleven_tts.synthesize("إزيك؟ عامل إيه؟ إحنا هنا عشان نسمعك ونفهم إيه اللي مضايقك، ونشرح لك كل خطوة بكلام مفهوم.", audio, eleven_key, eleven_voice)
+                _, ffprobe = ffmpeg_paths()
+                if probe_duration(ffprobe, audio) <= 0:
+                    raise WorkerError("تعذر قراءة مدة الصوت.")
+                print("تم توليد الصوت من ElevenLabs. جاري التشغيل.", flush=True)
+                subprocess.run(["/usr/bin/afplay", str(audio)], check=True)
+            print("اختبار الصوت اكتمل. لم يتم تشغيل أي مهمة فيديو.")
+            return 0
+        except Exception as error:
+            print("اختبار الصوت لم يكتمل:", error)
+            return 1
 
     base_url, key = config()
     if args.retry_archive:
