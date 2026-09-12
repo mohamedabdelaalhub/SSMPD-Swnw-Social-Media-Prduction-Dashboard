@@ -232,6 +232,7 @@
     backdrop.className = "modal-backdrop";
     backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>تفاصيل النشر</h3>' +
       '<button class="modal-close">×</button></div>' +
+      W.contentFormatDetailsHtml(item) +
       '<div id="pb-modal-card"></div></div>';
     document.body.appendChild(backdrop);
     backdrop.querySelector("#pb-modal-card").innerHTML = renderCard(item, ctx.adminsById, mode, ctx.jobByContent[item.id]);

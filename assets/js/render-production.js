@@ -872,6 +872,7 @@ function openAgentImportModal(parentBackdrop) {
       backdrop.className = "modal-backdrop";
       backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>' + escapeHtml(item.title) + W.brandBadgeHtml(item.brand) + W.specialtyBadgeHtml(item.specialty) + '</h3>' +
         '<button class="modal-close">×</button></div>' +
+      W.contentFormatDetailsHtml(item) +
         '<div class="status-pill ' + stagePillClass(item.stage) + '" style="margin-bottom:12px;">' + W.stageLabel(item.stage) + '</div>' +
         '<p style="white-space:pre-wrap;">' + escapeHtml(item.body || "") + '</p>' +
         structuredDetailsHtml(item) +

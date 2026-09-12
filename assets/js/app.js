@@ -145,7 +145,7 @@
     var roleLabel = R.labelAll(admin);
 
     // قائمة منسدلة موحّدة (أيقونة بجانب الاسم) — بالترتيب اللي طلبه المستخدم بالظبط:
-    // الاسم، ثم الدور، ثم SSMPD، ثم أرشيف المرضى، ثم إدارة الليدز والتواصل، ثم تغيير كلمة السر،
+    // الاسم، ثم الدور، ثم إنتاج المحتوى، ثم أرشيف المرضى، ثم إدارة الليدز والتواصل، ثم تغيير كلمة السر،
     // ثم لوحة التحكم (لو سوبر أدمن)، ثم خروج
     // ملحوظة مهمة: "أرشيف المرضى" و"إدارة الليدز" و"لوحة التحكم" بقوا تابات
     // القائمة المنسدلة فقط — اتشالوا من شريط التابات العادي (وقائمة الموبايل
@@ -157,7 +157,7 @@
       return mainSuiteTabs.map(function (t) { return '<button class="tab-btn" data-tab="' + t + '">' + TAB_LABELS[t] + '</button>'; }).join("");
     }
     var ddItems = '';
-    if (mainSuiteTabs.length) ddItems += '<button class="ud-item" data-goto="' + mainSuiteTabs[0] + '">SSMPD</button>';
+    if (mainSuiteTabs.length) ddItems += '<button class="ud-item" data-goto="' + mainSuiteTabs[0] + '">إنتاج المحتوى</button>';
     if (tabs.indexOf("patients") !== -1) ddItems += '<button class="ud-item" data-goto="patients">أرشيف المرضى</button>';
     if (tabs.indexOf("leads") !== -1) ddItems += '<button class="ud-item" data-goto="leads">إدارة الليدز والتواصل</button>';
     if (tabs.indexOf("accounting") !== -1) ddItems += '<button class="ud-item" data-goto="accounting">الحسابات</button>';

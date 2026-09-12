@@ -144,7 +144,7 @@ setTimeout(() => {
   const rootEl = window.document.getElementById("app-root");
   const text = rootEl.innerHTML;
 
-  assert(/SSMPD/.test(text), "الشِل العام اترسم (لوجو SSMPD ظاهر)");
+  assert(rootEl.querySelector('#user-dropdown [data-goto="summary"]').textContent === "إنتاج المحتوى", "اسم إنتاج المحتوى ظاهر في القائمة");
   assert(/سوبر أدمن/.test(text), "بادچ الدور ظاهر (سوبر أدمن)");
   // أرشيف المرضى/إدارة الليدز/لوحة التحكم بقوا تابات القائمة المنسدلة فقط —
   // مش مكررين في شريط التابات العادي ولا قائمة الموبايل القديمة (بالظبط زي
