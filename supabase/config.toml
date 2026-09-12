@@ -37,3 +37,7 @@ verify_jwt = false
 # deterministic booking lifecycle event. It authenticates with its own
 # BOOKING_SYNC_SECRET header; no dashboard user JWT is involved.
 verify_jwt = false
+
+[functions.patient-portal-documents]
+# Auth is validated with auth.getUser inside the function. Dashboard legacy JWT toggle: OFF.
+verify_jwt = false

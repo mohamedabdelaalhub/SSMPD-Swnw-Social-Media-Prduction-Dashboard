@@ -53,8 +53,32 @@ function clip(v: unknown, n = 900) {
 }
 
 function detail(label: string, value: unknown) {
-  const text = clip(value);
+  const text = str(value);
   return text ? { label, value: text } : null;
+}
+
+// Keys verified against setup.sql and assets/js/render-patients.js save handlers.
+function fields(value: any, labels: Record<string, string>): string {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return "";
+  return Object.entries(labels).map(([key, label]) => {
+    const text = str(value[key]);
+    return text ? `${label}: ${text}` : "";
+  }).filter(Boolean).join("\n");
+}
+const vitalLabels = { weight: "الوزن", blood_pressure: "ضغط الدم", blood_sugar: "سكر الدم", pulse: "النبض" };
+function sessions(value: any, dental = false): string {
+  if (!Array.isArray(value)) return "";
+  return value.map((s: any, i: number) => [
+    `الجلسة ${i + 1}`,
+    fields(s, dental ? { date: "التاريخ", tooth: "السن", service: "الخدمة", notes: "ملاحظات" } :
+      { date: "التاريخ", treatments: "العلاجات", duration: "المدة", notes: "ملاحظات" }),
+    dental ? "" : fields(s.vitals, vitalLabels),
+  ].filter(Boolean).join("\n")).join("\n\n");
+}
+function points(value: any): string {
+  if (!Array.isArray(value)) return "";
+  return value.map((p: any, i: number) => `النقطة ${i + 1}\n` + fields(p,
+    { x: "الموضع الأفقي (%)", y: "الموضع الرأسي (%)", side: "الجهة", note: "ملاحظة" })).join("\n\n");
 }
 
 function patientRef(row: any, patientsById: Record<string, any>) {
@@ -106,13 +130,20 @@ Deno.serve(async (req) => {
   if (patientError) return json({ error: patientError.message }, 500);
   const patientsById = Object.fromEntries((patients || []).map((p: any) => [p.id, p]));
 
+  const unavailableSources: string[] = [];
   async function safeRows(table: string) {
-    const { data, error } = await admin.from(table).select("*").in("patient_id", patientIds).limit(500);
-    if (error) {
-      console.error("patient portal documents query failed", table, error.message);
-      return [] as any[];
+    const rows: any[] = [];
+    for (let offset = 0; ; offset += 500) {
+      const { data, error } = await admin.from(table).select("*").in("patient_id", patientIds)
+        .order("id").range(offset, offset + 499);
+      if (error) {
+        console.error("patient portal documents query failed", table, error.message);
+        unavailableSources.push(table);
+        return [] as any[];
+      }
+      rows.push(...(data || []));
+      if (!data || data.length < 500) return rows;
     }
-    return (data || []) as any[];
   }
 
   const [medicalReports, echoReports, dentalReports, physioReports, prescriptions, labRequests, radiologyRequests] = await Promise.all([
@@ -152,12 +183,13 @@ Deno.serve(async (req) => {
       doctor_name: r.doctor_name || null,
       specialty: "Echocardiography",
       patient: patientRef(r, patientsById),
-      summary: clip(r.conclusion || r.summary || r.findings, 180),
+      summary: clip(r.conclusion_text || r.summary_text, 180),
       details: [
         detail("Referred by", r.referred_by),
-        detail("Findings", r.findings),
-        detail("Summary", r.summary),
-        detail("Conclusion", r.conclusion),
+        detail("Patient label", r.patient_label),
+        detail("Dimensions", fields(r.dimensions, { lvedd: "LVEDD", lvesd: "LVESD", lv_swt: "LV SWT", lv_pwt: "LV PWT", ef: "EF", left_atrium: "Left atrium", ao_root: "Ao root", ao_excursion: "Ao excursion", rt_ventricle: "Right ventricle", fs: "FS" })),
+        detail("Summary", r.summary_text),
+        detail("Conclusion", r.conclusion_text),
       ].filter(Boolean),
     });
   }
@@ -172,11 +204,16 @@ Deno.serve(async (req) => {
       doctor_name: r.doctor_name || null,
       specialty: "أسنان",
       patient: patientRef(r, patientsById),
-      summary: clip(r.chief_complaint || r.diagnosis || r.notes, 180),
+      summary: clip(r.chief_complaint || r.treatment_plan || sessions(r.sessions, true), 180),
       details: [
         detail("الشكوى", r.chief_complaint),
-        detail("التشخيص", r.diagnosis),
-        detail("الخطة / الملاحظات", r.treatment_plan || r.notes),
+        detail("الحالة المزمنة", r.chronic_condition),
+        detail("العلاج السابق", r.previous_treatment),
+        detail("خطة العلاج", r.treatment_plan),
+        detail("نوع التركيبة", r.prosthesis_type),
+        detail("الأمراض المزمنة", r.chronic_illnesses),
+        detail("علامات الأسنان", points(r.tooth_marks)),
+        detail("الجلسات", sessions(r.sessions, true)),
       ].filter(Boolean),
     });
   }
@@ -191,11 +228,16 @@ Deno.serve(async (req) => {
       doctor_name: r.doctor_name || null,
       specialty: r.specialty || "علاج طبيعي",
       patient: patientRef(r, patientsById),
-      summary: clip(r.visit_reason || r.diagnosis || r.notes, 180),
+      summary: clip(r.visit_reason || r.diagnosis || sessions(r.sessions) || r.chronic_diseases, 180),
       details: [
         detail("سبب الزيارة", r.visit_reason),
         detail("التشخيص", r.diagnosis),
-        detail("ملاحظات", r.notes),
+        detail("القياسات", fields(r.vitals, vitalLabels)),
+        detail("الأمراض المزمنة", r.chronic_diseases),
+        detail("العمليات السابقة", r.surgeries),
+        detail("التاريخ العائلي", r.family_history),
+        detail("نقاط الألم", points(r.pain_points)),
+        detail("الجلسات", sessions(r.sessions)),
       ].filter(Boolean),
     });
   }
@@ -256,6 +298,35 @@ Deno.serve(async (req) => {
     });
   }
 
+  // Join images only within each already-authorized patient's report.
+  const linkSources = [
+    ["echo_report", "patient_echo_report_images", "echo_report_id"],
+    ["dental_report", "patient_dental_report_images", "dental_report_id"],
+    ["physio_report", "patient_physio_report_images", "physio_report_id"],
+  ];
+  for (const [source, table, key] of linkSources) {
+    const matching = documents.filter((d) => d.source === source);
+    for (let offset = 0; offset < matching.length; offset += 100) {
+      const batch = matching.slice(offset, offset + 100);
+      const links: any[] = [];
+      for (let page = 0; ; page += 500) {
+        const { data, error } = await admin.from(table)
+          .select(`${key}, patient_files(id, patient_id, category, file_name, mime_type, file_size)`)
+          .in(key, batch.map((d) => d.id)).order("id").range(page, page + 499);
+        if (error) { unavailableSources.push(table); break; }
+        links.push(...(data || []));
+        if (!data || data.length < 500) break;
+      }
+      for (const doc of batch) {
+        doc.attachments = (links || []).filter((l: any) => l[key] === doc.id)
+          .map((l: any) => l.patient_files)
+          .filter((f: any) => f && f.patient_id === doc.patient?.id &&
+            ["insurance", "radiology", "lab_result", "prescription", "physical_therapy", "medical_report", "eeg", "invoice", "other"].includes(f.category))
+          .map((f: any) => ({ id: f.id, file_name: f.file_name, mime_type: f.mime_type, file_size: f.file_size }));
+      }
+    }
+  }
+
   documents.sort((a, b) => {
     const ta = new Date(a.date || 0).getTime() || 0;
     const tb = new Date(b.date || 0).getTime() || 0;
@@ -272,5 +343,5 @@ Deno.serve(async (req) => {
     if (error) console.error("portal documents audit failed", error.message);
   });
 
-  return json({ documents });
+  return json({ documents, unavailable_sources: unavailableSources });
 });

@@ -67,24 +67,38 @@ function wireButton(btn,file,mode){
     fetchFile(file,mode,previewWindow).catch(function(e){toast(String(e&&e.message||e||"تعذر فتح الملف."),"error");}).finally(function(){btn.disabled=false;btn.classList.remove("loading");});
   };
 }
+function fileDetails(file){
+  var old=document.querySelector(".portal-document-modal-backdrop");if(old)old.remove();
+  var backdrop=document.createElement("div");backdrop.className="portal-document-modal-backdrop";
+  var values=[["اسم الملف",file.file_name],["المريض",file.patient&&file.patient.full_name],["رقم الملف",file.patient&&file.patient.patient_code],["تاريخ الرفع",file.uploaded_at],["حجم الملف بالبايت",file.file_size],["نوع الملف",file.mime_type],["الوصف",file.other_description]];
+  backdrop.innerHTML='<div class="portal-document-modal" role="dialog" aria-modal="true" aria-label="تفاصيل الملف"><div class="portal-document-modal-head"><h2>تفاصيل الملف</h2><button type="button" aria-label="إغلاق">×</button></div>'+values.filter(function(v){return v[1]!=null&&v[1]!=="";}).map(function(v){return '<div class="portal-document-detail"><label>'+esc(v[0])+'</label><p>'+esc(v[1])+'</p></div>';}).join('')+'<div class="document-actions"><button type="button" class="file-action preview">عرض</button><button type="button" class="file-action download">تحميل</button></div></div>';
+  document.body.appendChild(backdrop);
+  var previous=document.activeElement;
+  function close(){backdrop.remove();document.removeEventListener("keydown",onKey);if(previous)previous.focus();}
+  function onKey(e){if(e.key==="Escape")close();}
+  backdrop.querySelector("button").onclick=close;backdrop.onclick=function(e){if(e.target===backdrop)close();};document.addEventListener("keydown",onKey);
+  wireButton(backdrop.querySelector(".preview"),file,"preview");wireButton(backdrop.querySelector(".download"),file,"download");backdrop.querySelector("button").focus();
+}
 function enhanceDocumentList(list){
   if(!list||list.dataset.fileActions==="loading"||list.dataset.fileActions==="ready")return;
   list.dataset.fileActions="loading";
   getFiles().then(function(files){
-    var rows=Array.prototype.slice.call(list.querySelectorAll(".document-row"));
-    rows.forEach(function(row,i){
-      var file=files[i];if(!file)return;
+    var rows=Array.prototype.slice.call(list.querySelectorAll(".document-row[data-file-id]:not([data-generated-document])"));
+    rows.forEach(function(row){
+      var file=files.find(function(f){return String(f.id)===row.getAttribute("data-file-id");});if(!file)return;
       if(row.querySelector(".document-actions"))return;
       var actions=document.createElement("div");
       actions.className="document-actions";
-      actions.innerHTML='<button type="button" class="file-action preview">'+icon("eye")+'<span>معاينة</span></button><button type="button" class="file-action download">'+icon("download")+'<span>تحميل</span></button>';
+      actions.innerHTML='<button type="button" class="file-action details">التفاصيل</button><button type="button" class="file-action preview">'+icon("eye")+'<span>معاينة</span></button><button type="button" class="file-action download">'+icon("download")+'<span>تحميل</span></button>';
       row.appendChild(actions);
+      actions.querySelector(".details").onclick=function(){fileDetails(file);};
       wireButton(actions.querySelector(".preview"),file,"preview");
       wireButton(actions.querySelector(".download"),file,"download");
     });
     list.dataset.fileActions="ready";
   }).catch(function(e){list.dataset.fileActions="";toast("تعذر تجهيز فتح الملفات: "+String(e&&e.message||e),"error");});
 }
+window.SwnwPortalFiles={wireButton:wireButton};
 function enhance(){document.querySelectorAll(".document-list").forEach(enhanceDocumentList);}
 enhance();
 var root=document.getElementById("portal-root");if(root)new MutationObserver(function(){enhance();}).observe(root,{childList:true,subtree:true});

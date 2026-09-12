@@ -8,7 +8,7 @@ if(!root||!cfg||!cfg.url||!cfg.anonKey||!window.supabase)return;
 var client=window.supabase.createClient(cfg.url,cfg.anonKey,{
   auth:{persistSession:true,autoRefreshToken:true,storageKey:"swnw-patient-portal-auth"}
 });
-var docsCache=null,docsCacheAt=0,docsLoading=null;
+var docsLoading=null,unavailableSources=[];
 
 var CATEGORIES=[
   {id:"all",label:"الكل"},
@@ -49,17 +49,40 @@ function categoryForRow(row){
 }
 
 function getGeneratedDocuments(force){
-  if(!force&&docsCache&&Date.now()-docsCacheAt<30000)return Promise.resolve(docsCache);
+
   if(docsLoading)return docsLoading;
   docsLoading=client.functions.invoke("patient-portal-documents",{body:{op:"list"}}).then(function(r){
     if(r.error)throw r.error;
     if(r.data&&r.data.error)throw new Error(r.data.error);
-    docsCache=(r.data&&r.data.documents)||[];
-    docsCacheAt=Date.now();
-    return docsCache;
+    unavailableSources=(r.data&&r.data.unavailable_sources)||[];
+    return (r.data&&r.data.documents)||[];
   }).finally(function(){docsLoading=null;});
   return docsLoading;
 }
+
+function reportBody(doc){
+  var meta=[{label:"المريض",value:doc.patient&&doc.patient.full_name},{label:"رقم الملف",value:doc.patient&&doc.patient.patient_code},{label:"التاريخ",value:fmtDate(doc.date)},{label:"الطبيب / مقدم الخدمة",value:doc.doctor_name},{label:"التخصص",value:doc.specialty}];
+  return '<h1>'+esc(doc.title)+'</h1>'+meta.concat(doc.details||[]).filter(function(d){return d.value;}).map(function(d){return '<section><h3>'+esc(d.label)+'</h3><p dir="auto">'+esc(d.value)+'</p></section>';}).join('')+
+    ((doc.attachments||[]).length?'<h3>المرفقات</h3><p>تُعرض وتُحمّل الملفات المرفقة من داخل البوابة.</p><ul>'+doc.attachments.map(function(f){return '<li>'+esc(f.file_name)+'</li>';}).join('')+'</ul>':'');
+}
+function reportHtml(doc){
+  return '<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+esc(doc.title)+' — Swnw</title><style>body{font-family:Tahoma,Arial,sans-serif;color:#16212E;margin:30px;line-height:1.8}h1,h3{color:#0F369D}section{border-bottom:1px solid #ddd}p{white-space:pre-wrap;overflow-wrap:anywhere}h3{break-after:avoid}@page{size:A4;margin:18mm}@media print{body{margin:0}}</style></head><body><header>Swnw</header>'+reportBody(doc)+'</body></html>';
+}
+function downloadReport(doc){
+  var url=URL.createObjectURL(new Blob([reportHtml(doc)],{type:"text/html;charset=utf-8"}));
+  var a=document.createElement("a");a.href=url;a.download='Swnw-'+doc.source+'-'+doc.id+'.html';document.body.appendChild(a);a.click();a.remove();
+  setTimeout(function(){URL.revokeObjectURL(url);},5000);
+}
+function printReport(doc){
+  var win=window.open("about:blank","_blank");
+  if(!win){window.alert("اسمح بفتح النافذة لعرض المستند وحفظه PDF.");return;}
+  win.opener=null;win.document.write(reportHtml(doc));win.document.close();win.focus();win.print();
+}
+function reportActions(container,doc){
+  container.querySelector(".generated-download").onclick=function(){downloadReport(doc);};
+  container.querySelector(".generated-print").onclick=function(){printReport(doc);};
+}
+function actionHtml(){return '<button type="button" class="file-action generated-download">تحميل المستند HTML</button><button type="button" class="file-action generated-print">طباعة / حفظ PDF</button>';}
 
 function detailModal(doc){
   var old=document.querySelector(".portal-document-modal-backdrop");if(old)old.remove();
@@ -69,15 +92,32 @@ function detailModal(doc){
   backdrop.innerHTML='<div class="portal-document-modal" role="dialog" aria-modal="true">'+
     '<div class="portal-document-modal-head"><div><span>'+esc(labelForCategory(doc.category))+'</span><h2>'+esc(doc.title||"مستند طبي")+'</h2></div><button type="button" aria-label="إغلاق">×</button></div>'+
     '<div class="portal-document-summary-grid">'+
+      (doc.patient&&doc.patient.full_name?'<div><small>المريض</small><b>'+esc(doc.patient.full_name)+'</b></div>':'')+
       '<div><small>التاريخ</small><b>'+fmtDate(doc.date)+'</b></div>'+
       (doc.doctor_name?'<div><small>الطبيب / مقدم الخدمة</small><b>'+esc(doc.doctor_name)+'</b></div>':'')+
       (doc.specialty?'<div><small>التخصص</small><b>'+esc(doc.specialty)+'</b></div>':'')+
       (doc.patient&&doc.patient.patient_code?'<div><small>رقم الملف</small><b class="ltr">'+esc(doc.patient.patient_code)+'</b></div>':'')+
-    '</div>'+
-    (details||'<div class="portal-document-no-details">المستند مسجل في ملفك الطبي ولا توجد تفاصيل نصية إضافية للعرض هنا.</div>')+
+    '</div><div class="document-actions">'+actionHtml()+'</div>'+
+    (details||'<div class="portal-document-no-details">لم تُسجّل تفاصيل نصية في هذا المستند.</div>')+
   '</div>';
   document.body.appendChild(backdrop);
-  var close=function(){backdrop.remove();};
+  reportActions(backdrop,doc);
+  if((doc.attachments||[]).length){
+    var attachments=document.createElement("div");attachments.className="portal-document-attachments";
+    attachments.innerHTML='<h3>المرفقات</h3>';
+    doc.attachments.forEach(function(file){
+      var row=document.createElement("div");row.className="portal-document-detail";
+      row.innerHTML='<p>'+esc(file.file_name)+'</p><div class="document-actions"><button type="button" class="file-action attachment-preview">عرض</button><button type="button" class="file-action attachment-download">تحميل</button></div>';
+      if(window.SwnwPortalFiles){window.SwnwPortalFiles.wireButton(row.querySelector(".attachment-preview"),file,"preview");window.SwnwPortalFiles.wireButton(row.querySelector(".attachment-download"),file,"download");}
+      attachments.appendChild(row);
+    });
+    backdrop.querySelector(".portal-document-modal").appendChild(attachments);
+  }
+  var previousFocus=document.activeElement;
+  var close=function(){backdrop.remove();document.removeEventListener("keydown",onKey);if(previousFocus)previousFocus.focus();};
+  function onKey(e){if(e.key==="Escape")close();}
+  document.addEventListener("keydown",onKey);
+  backdrop.querySelector("button").focus();
   backdrop.querySelector("button").onclick=close;
   backdrop.onclick=function(e){if(e.target===backdrop)close();};
 }
@@ -90,8 +130,9 @@ function generatedRow(doc){
   row.innerHTML='<span class="document-icon generated-icon">▤</span>'+
     '<div class="document-main"><b>'+esc(doc.title||labelForCategory(doc.category))+'</b><span>'+esc(labelForCategory(doc.category))+(doc.patient&&doc.patient.patient_code?' • <span class="ltr">'+esc(doc.patient.patient_code)+'</span>':'')+'</span>'+(doc.summary?'<small class="generated-summary">'+esc(doc.summary)+'</small>':'')+'</div>'+
     '<div class="document-meta"><span>'+fmtDate(doc.date)+'</span><small class="generated-source-pill">منشأ بالمركز</small></div>'+
-    '<div class="document-actions"><button type="button" class="file-action generated-view">عرض التفاصيل</button></div>';
+    '<div class="document-actions"><button type="button" class="file-action generated-view">عرض التفاصيل</button>'+actionHtml()+'</div>';
   row.querySelector(".generated-view").onclick=function(){detailModal(doc);};
+  reportActions(row,doc);
   return row;
 }
 
@@ -170,9 +211,12 @@ function enhanceFiles(){
     if(empty&&(docs||[]).length)empty.remove();
     section.dataset.generatedDocsReady="1";
     rebuildFilterBar(section);
+    var status=section.querySelector(".portal-documents-status");if(status)status.remove();
+    if(unavailableSources.length){status=document.createElement("p");status.className="portal-documents-status";status.textContent="تعذر تحميل بعض المستندات أو مرفقاتها. أعد فتح تبويب الملفات للمحاولة.";section.appendChild(status);section.dataset.generatedDocsReady="";}
   }).catch(function(e){
     // Existing uploaded files keep working if the additive function is not deployed yet.
     console.warn("patient portal generated documents unavailable",e);
+    if(!section.querySelector(".portal-documents-status")){var status=document.createElement("p");status.className="portal-documents-status";status.textContent="تعذر تحميل مستندات المركز. أعد فتح تبويب الملفات للمحاولة.";section.appendChild(status);}
   }).finally(function(){
     if(document.body.contains(section))section.dataset.generatedDocsLoading="";
   });

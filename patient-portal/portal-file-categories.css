@@ -194,3 +194,6 @@
   .portal-document-modal-backdrop{padding:10px;}
   .portal-document-modal{padding:16px;border-radius:16px;}
 }
+
+.portal-document-modal .document-actions,.generated-document-row .document-actions{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.portal-document-detail p{overflow-wrap:anywhere;unicode-bidi:plaintext}
