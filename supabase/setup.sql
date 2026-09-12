@@ -5505,3 +5505,153 @@ create unique index if not exists patient_system_links_supabase_per_hospital_uid
 -- بالإضافة لشرط patient_portal_visibility.portal_status='approved'
 -- المذكور فوق (52-ط الملاحظة المعمارية) — الشروط التلاتة مع بعض.
 -- ------------------------------------------------------------
+
+-- ============================================================
+--  53) قسم التغذية — قوالب وجبات + زيارات + تتبع التزام (٢٠٢٦-٠٩-١٢)
+--  ملاحظة تكامل: بوابة المريض (patient-portal/) بتقرأ/تكتب عن طريق
+--  Edge Functions بصلاحية service_role (بتتخطى RLS بالكامل)، فسياسات
+--  RLS هنا بتحكم بس كتابة/قراءة الداشبورد المباشرة (الموظفين تحت
+--  auth العادي) — مش بديل عن التحقق الداخلي جوه أي Edge Function مستقبلية
+--  زي patient-portal-nutrition. جدول الالتزام بيتعرّف بـ(visit_id, meal_id)
+--  بدل ما يثق في patient_id/تاريخ جايين من العميل مباشرة.
+-- ============================================================
+
+-- قوالب وجبات جاهزة لإعادة الاستخدام (مش مرتبطة بمريض بعينه)
+create table if not exists public.nutrition_meal_templates (
+  id                uuid primary key default gen_random_uuid(),
+  name              text not null,
+  diagnosis_summary text not null default '', -- التشخيص/الحالة اللي الجدول ده مناسب لها
+  -- [{id, name, ingredients:[...], calories}, ...] — id ثابت لكل وجبة عشان الالتزام يترّبط بيه
+  meals             jsonb not null default '[]'::jsonb,
+  usage_count       int not null default 0,
+  created_by        uuid references public.admins(id),
+  created_at        timestamptz not null default now(),
+  updated_at        timestamptz not null default now()
+);
+
+alter table public.nutrition_meal_templates enable row level security;
+drop policy if exists "nutrition templates read" on public.nutrition_meal_templates;
+create policy "nutrition templates read" on public.nutrition_meal_templates
+  for select using (
+    public.has_archive_access() or public.has_archive_review_access() or public.can_access_leads()
+  );
+drop policy if exists "nutrition templates write" on public.nutrition_meal_templates;
+create policy "nutrition templates write" on public.nutrition_meal_templates
+  for insert with check (public.has_archive_access() or public.can_manage_all_content());
+drop policy if exists "nutrition templates update" on public.nutrition_meal_templates;
+create policy "nutrition templates update" on public.nutrition_meal_templates
+  for update using (public.has_archive_access() or public.can_manage_all_content());
+drop policy if exists "nutrition templates delete" on public.nutrition_meal_templates;
+create policy "nutrition templates delete" on public.nutrition_meal_templates
+  for delete using (public.has_archive_access() or public.can_manage_all_content());
+
+-- زيارة تغذية لمريض — نسخة (snapshot) من الوجبات وقت الحفظ، مش مرجع حي
+-- للقالب (تعديل القالب بعد كده متأثرش على تاريخ المريض)
+create table if not exists public.patient_nutrition_visits (
+  id                    uuid primary key default gen_random_uuid(),
+  patient_id            uuid not null references public.patients(id) on delete cascade,
+  visit_date            date not null default current_date,
+  visit_time            text not null default '',
+  doctor_name           text not null default '',
+  weight                text not null default '',
+  body_fat_percentage   text not null default '',
+  medications           text not null default '',
+  notes                 text not null default '',
+  template_id           uuid references public.nutrition_meal_templates(id) on delete set null,
+  template_name_snapshot text not null default '', -- لو القالب اتمسح بعدين، نفضل عارفين اسمه
+  -- [{id, name, ingredients:[...], calories}, ...] — نسخة وقت الحفظ
+  meals                 jsonb not null default '[]'::jsonb,
+  created_by            uuid references public.admins(id),
+  created_at            timestamptz not null default now(),
+  updated_at            timestamptz not null default now()
+);
+create index if not exists patient_nutrition_visits_patient_idx
+  on public.patient_nutrition_visits (patient_id, visit_date desc);
+
+alter table public.patient_nutrition_visits enable row level security;
+drop policy if exists "nutrition visits read" on public.patient_nutrition_visits;
+create policy "nutrition visits read" on public.patient_nutrition_visits
+  for select using (
+    public.has_archive_access() or public.has_archive_review_access() or public.can_access_leads()
+    or public.is_assigned_doctor_for_patient(patient_id)
+  );
+drop policy if exists "nutrition visits write" on public.patient_nutrition_visits;
+create policy "nutrition visits write" on public.patient_nutrition_visits
+  for insert with check (public.has_archive_access() or public.can_manage_all_content());
+drop policy if exists "nutrition visits update" on public.patient_nutrition_visits;
+create policy "nutrition visits update" on public.patient_nutrition_visits
+  for update using (public.has_archive_access() or public.can_manage_all_content());
+drop policy if exists "nutrition visits delete" on public.patient_nutrition_visits;
+create policy "nutrition visits delete" on public.patient_nutrition_visits
+  for delete using (public.has_archive_access() or public.can_manage_all_content());
+
+-- مستندات مرفقة بزيارة التغذية — نفس نمط صور العلاج الطبيعي بالظبط
+create table if not exists public.patient_nutrition_visit_files (
+  id               uuid primary key default gen_random_uuid(),
+  visit_id         uuid not null references public.patient_nutrition_visits(id) on delete cascade,
+  patient_file_id  uuid not null references public.patient_files(id) on delete cascade,
+  created_at       timestamptz not null default now()
+);
+create index if not exists patient_nutrition_visit_files_visit_idx
+  on public.patient_nutrition_visit_files (visit_id);
+create unique index if not exists patient_nutrition_visit_files_unique
+  on public.patient_nutrition_visit_files (visit_id, patient_file_id);
+
+alter table public.patient_nutrition_visit_files enable row level security;
+drop policy if exists "nutrition visit files read" on public.patient_nutrition_visit_files;
+create policy "nutrition visit files read" on public.patient_nutrition_visit_files
+  for select using (
+    exists (
+      select 1 from public.patient_nutrition_visits v
+      where v.id = visit_id
+        and (
+          public.has_archive_access() or public.has_archive_review_access() or public.can_access_leads()
+          or public.is_assigned_doctor_for_patient(v.patient_id)
+        )
+    )
+  );
+drop policy if exists "nutrition visit files write" on public.patient_nutrition_visit_files;
+create policy "nutrition visit files write" on public.patient_nutrition_visit_files
+  for insert with check (public.has_archive_access() or public.can_manage_all_content());
+drop policy if exists "nutrition visit files delete" on public.patient_nutrition_visit_files;
+create policy "nutrition visit files delete" on public.patient_nutrition_visit_files
+  for delete using (public.has_archive_access() or public.can_manage_all_content());
+
+-- تتبع الالتزام بكل وجبة — معرّفة بـ(visit_id, meal_id) مش بتاريخ/patient_id
+-- جاي من العميل. "تعيين حالة" مش toggle: نفس meal_id مرتين بنفس completed
+-- تسيبها زي ما هي (on conflict do update). كتابة الموظف من الداشبورد هنا
+-- تحت RLS عادي؛ كتابة بوابة المريض هتيجي لاحقاً من Edge Function بصلاحية
+-- service_role (بيتخطى RLS، فالتحقق من هوية/وصول المريض مسؤولية الدالة
+-- نفسها هناك، مش السياسة هنا).
+create table if not exists public.patient_nutrition_meal_completions (
+  id                     uuid primary key default gen_random_uuid(),
+  visit_id               uuid not null references public.patient_nutrition_visits(id) on delete cascade,
+  meal_id                text not null, -- بيطابق id الوجبة جوه meals jsonb بتاعة الزيارة
+  completed              boolean not null default false,
+  completed_at           timestamptz,
+  recorded_by_admin_id   uuid references public.admins(id),
+  recorded_by_account_id uuid references public.patient_accounts(id),
+  updated_at             timestamptz not null default now()
+);
+create unique index if not exists patient_nutrition_meal_completions_unique
+  on public.patient_nutrition_meal_completions (visit_id, meal_id);
+
+alter table public.patient_nutrition_meal_completions enable row level security;
+drop policy if exists "nutrition meal completions read" on public.patient_nutrition_meal_completions;
+create policy "nutrition meal completions read" on public.patient_nutrition_meal_completions
+  for select using (
+    exists (
+      select 1 from public.patient_nutrition_visits v
+      where v.id = visit_id
+        and (
+          public.has_archive_access() or public.has_archive_review_access() or public.can_access_leads()
+          or public.is_assigned_doctor_for_patient(v.patient_id)
+        )
+    )
+  );
+drop policy if exists "nutrition meal completions write" on public.patient_nutrition_meal_completions;
+create policy "nutrition meal completions write" on public.patient_nutrition_meal_completions
+  for insert with check (public.has_archive_access() or public.can_manage_all_content());
+drop policy if exists "nutrition meal completions update" on public.patient_nutrition_meal_completions;
+create policy "nutrition meal completions update" on public.patient_nutrition_meal_completions
+  for update using (public.has_archive_access() or public.can_manage_all_content());
