@@ -162,6 +162,7 @@
 
     backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>' + escapeHtml(item.title) + W.brandBadgeHtml(item.brand) + W.specialtyBadgeHtml(item.specialty) + '</h3>' +
       '<button class="modal-close">×</button></div>' +
+      W.contentFormatDetailsHtml(item) +
       '<div class="status-pill approval" style="margin-bottom:12px;">' + W.stageLabel(item.stage) + '</div>' +
       '<div class="field" style="display:flex;align-items:flex-end;gap:8px;max-width:400px;flex-wrap:wrap;">' +
       '<div style="flex:1;min-width:140px;"><label>المادة دي لصفحة</label>' + W.brandSelectHtml("rv-brand", item.brand || "") + '</div>' +

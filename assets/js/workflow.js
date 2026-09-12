@@ -526,6 +526,13 @@
     });
     return html + '</select>';
   }
+  function contentFormatDetailsHtml(item) {
+    var key = item.content_format;
+    var format = Object.prototype.hasOwnProperty.call(CONTENT_FORMATS, key) ? CONTENT_FORMATS[key] : null;
+    var label = format ? format.label : "غير محدد";
+    return '<p class="content-format-detail" style="margin:0 0 12px;"><span style="color:var(--c-muted);">نوع المادة</span> <strong>' + escapeHtml(label) + '</strong></p>';
+  }
+
   function ciFormatSelectHtml(id, selected) {
     var html = '<select id="' + id + '"><option value="">— كل الأشكال —</option>';
     Object.keys(CONTENT_FORMATS).forEach(function (k) {
@@ -1343,6 +1350,7 @@ function ciCopyFallbackBrief(ctx) {
     brandBadgeHtml: brandBadgeHtml,
     brandSelectHtml: brandSelectHtml,
     specialtyBadgeHtml: specialtyBadgeHtml,
+    contentFormatDetailsHtml: contentFormatDetailsHtml,
     specialtySelectHtml: specialtySelectHtml,
     platformSelectHtml: platformSelectHtml,
     platformCheckboxesHtml: platformCheckboxesHtml,

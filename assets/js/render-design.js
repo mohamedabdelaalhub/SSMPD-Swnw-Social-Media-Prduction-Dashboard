@@ -119,6 +119,7 @@
       backdrop.className = "modal-backdrop";
       backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>' + escapeHtml(item.title) + W.brandBadgeHtml(item.brand) + '</h3>' +
         '<button class="modal-close">×</button></div>' +
+      W.contentFormatDetailsHtml(item) +
         '<p style="white-space:pre-wrap;">' + escapeHtml(item.body || "") + '</p>' +
         (item.design_file_url ? '<p><a href="' + item.design_file_url + '" target="_blank" class="btn ghost sm">فتح آخر تصميم مرفوع</a></p>' : '') +
         '<div style="margin:10px 0;">' + W.itemActionsHtml(item, window.SSMPDAuth.currentAdmin) + '</div>' +
