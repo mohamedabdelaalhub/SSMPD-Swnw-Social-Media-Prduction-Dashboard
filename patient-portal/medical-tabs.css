@@ -24,3 +24,5 @@
 
 /* المتابعات القادمة */
 .upcoming-followup-title{color:#e97816}.followup-card{border-color:#f0a05c;background:linear-gradient(135deg,#fff8f1,#fff)}.followup-date-box{border-color:#ee9a55}.followup-date-box strong{color:#db6a08}
+
+.followup-status-box{min-width:92px;border-radius:14px;padding:12px;text-align:center;font-size:12px;font-weight:700}.followup-attended{border-color:#9ed5bd;background:#f5fcf7}.followup-attended .followup-status-box{background:#e9f7ef;color:#167148}.followup-no-show{border-color:#d9dde4;background:#f8f9fb}.followup-no-show .followup-status-box{background:#eceff3;color:#697586}
