@@ -417,14 +417,32 @@ def split_script(text: str) -> list[str]:
 
 
 def short_caption_chunks(text: str, words_per_caption: int = 5) -> list[str]:
-    """Keep every on-screen caption to four or five spoken words."""
+    """Keep captions short without separating abbreviations or names."""
     out: list[str] = []
     for sentence in split_script(text):
         words = sentence.split()
-        for start in range(0, len(words), words_per_caption):
-            chunk = " ".join(words[start:start + words_per_caption]).strip()
-            if chunk:
-                out.append(chunk)
+        units: list[tuple[str, int]] = []
+        index = 0
+        while index < len(words):
+            word = words[index]
+            if word in ("د.", "د", "دكتور") and index + 1 < len(words):
+                units.append((word + " " + words[index + 1], 2))
+                index += 2
+            else:
+                units.append((word, 1))
+                index += 1
+
+        current: list[str] = []
+        word_count = 0
+        for value, count in units:
+            if current and word_count + count > words_per_caption:
+                out.append(" ".join(current))
+                current = []
+                word_count = 0
+            current.append(value)
+            word_count += count
+        if current:
+            out.append(" ".join(current))
     return out
 
 
@@ -465,7 +483,7 @@ def write_ass(job: dict[str, Any], target_duration: float, spoken_duration: floa
         "",
         "[V4+ Styles]",
         "Format: Name,Fontname,Fontsize,PrimaryColour,SecondaryColour,OutlineColour,BackColour,Bold,Italic,Underline,StrikeOut,ScaleX,ScaleY,Spacing,Angle,BorderStyle,Outline,Shadow,Alignment,MarginL,MarginR,MarginV,Encoding",
-        f"Style: Body,{font},46,&H00FFFFFF,&H000000FF,&H00132636,&H80000000,0,0,0,0,100,100,0,0,1,2,1,5,110,110,210,1",
+        f"Style: Body,{font},46,&H00FFFFFF,&H000000FF,&H00132636,&H900C1B2A,0,0,0,0,100,100,0,0,3,18,0,5,110,110,210,1",
         f"Style: CTA,{font},42,&H00FFFFFF,&H000000FF,&H00132636,&H90000000,0,0,0,0,100,100,0,0,1,2,1,5,100,100,300,1",
         "",
         "[Events]",
