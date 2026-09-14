@@ -874,7 +874,16 @@ def rerender_preview(base_url: str, key: str, job_id: str) -> None:
     job_dir.mkdir(parents=True, exist_ok=True)
     job["_downloaded_assets"] = download_job_assets(base_url, key, job, job_dir)
     output, voice = render(job, job_dir)
-    print(f"RENDERED {job_id} | voice={voice} | local={output}", flush=True)
+    ffmpeg, ffprobe = ffmpeg_paths()
+    from cover_candidates import build as build_covers
+    candidates = build_covers(
+        job, output, ffmpeg, probe_duration(ffprobe, output),
+        template_dir=brand_template_dir(job),
+    )
+    print(
+        f"RENDERED {job_id} | voice={voice} | local={output} | covers={len(candidates)}",
+        flush=True,
+    )
 
 
 def retry_archive(base_url: str, key: str, job_id: str) -> None:
