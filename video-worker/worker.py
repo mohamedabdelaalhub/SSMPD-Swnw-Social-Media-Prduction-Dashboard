@@ -645,7 +645,7 @@ def render(job: dict[str, Any], job_dir: Path) -> tuple[Path, str]:
 
     logo_graph = (
         "[1:v]scale=150:-1:force_original_aspect_ratio=decrease[logo];"
-        "[0:v][logo]overlay=x=48:y=54:format=auto[v]"
+        "[0:v][logo]overlay=x=48:y=54:format=auto:eof_action=repeat[v]"
     )
     p = run([
         ffmpeg, "-y", "-i", str(captioned), "-i", str(logo),
