@@ -39,6 +39,7 @@ def build(job, output, ffmpeg, duration, template_dir=None):
     result = []
     for index, fraction in enumerate((0.12, 0.30, 0.48, 0.66, 0.84), 1):
         path = output.parent / f"cover-{index}.jpg"
+        temp = output.parent / f".cover-{index}.png"
         at = max(0, min(duration - 0.1, duration * fraction))
         if not path.exists():
             if use_template:
@@ -52,7 +53,7 @@ def build(job, output, ffmpeg, duration, template_dir=None):
                 command = [
                     ffmpeg, "-y", "-ss", f"{at:.3f}", "-i", str(source.resolve()),
                     "-i", str(template.resolve()), "-filter_complex", graph,
-                    "-map", "[out]", "-frames:v", "1", "-c:v", "mjpeg", "-strict", "unofficial", "-pix_fmt", "yuvj420p", "-threads", "1", "-q:v", "2", str(path.resolve()),
+                    "-map", "[out]", "-frames:v", "1", "-c:v", "png", "-threads", "1", str(temp.resolve()),
                 ]
             else:
                 graph = (
@@ -65,9 +66,17 @@ def build(job, output, ffmpeg, duration, template_dir=None):
                 command = [
                     ffmpeg, "-y", "-ss", f"{at:.3f}", "-i", str(source.resolve()),
                     "-filter_complex", graph,
-                    "-map", "[out]", "-frames:v", "1", "-c:v", "mjpeg", "-strict", "unofficial", "-pix_fmt", "yuvj420p", "-threads", "1", "-q:v", "2", str(path.resolve()),
+                    "-map", "[out]", "-frames:v", "1", "-c:v", "png", "-threads", "1", str(temp.resolve()),
                 ]
             p = subprocess.run(command, cwd=str(output.parent), capture_output=True, text=True)
+            if not p.returncode and temp.exists():
+                converted = subprocess.run(
+                    ["/usr/bin/sips", "-s", "format", "jpeg", str(temp.resolve()), "--out", str(path.resolve())],
+                    cwd=str(output.parent), capture_output=True, text=True,
+                )
+                temp.unlink(missing_ok=True)
+                if converted.returncode:
+                    raise RuntimeError("Cover JPEG conversion failed: " + converted.stderr[-1000:])
             if p.returncode or not path.exists():
                 raise RuntimeError("Cover generation failed: " + p.stderr[-1000:])
         result.append({"index": index, "timestamp_seconds": round(at, 3), "path": path})
