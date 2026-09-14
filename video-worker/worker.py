@@ -715,9 +715,11 @@ def archive_rendered_job(base_url: str, key: str, job: dict[str, Any], output: P
         cover = output.parent / "cover.jpg"
         if not cover.exists():
             run([ffmpeg, "-y", "-ss", "0", "-i", str(output), "-frames:v", "1", "-q:v", "2", str(cover)])
-        video = archive_upload(job, output, "video")
         from cover_candidates import build as build_covers
         candidates = build_covers(job, output, ffmpeg, probe_duration(ffprobe, output))
+        # Build the local branded covers before the archive bridge is contacted.
+        # This preserves previewable cover files even if Google Drive is unavailable.
+        video = archive_upload(job, output, "video")
         thumbnail = archive_upload(job, cover, "cover") if not candidates else None
         for candidate in candidates:
             archived = archive_upload(job, candidate["path"], "cover_" + str(candidate["index"]))
