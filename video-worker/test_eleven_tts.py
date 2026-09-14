@@ -93,6 +93,11 @@ class ElevenTests(unittest.TestCase):
         self.assertEqual(chunks, ['إحنا هنا عشان نسمعك ونفهم', 'إيه اللي تاعبك ونشرح لك', 'كل خطوة.'])
         self.assertTrue(all(len(chunk.split()) <= 5 for chunk in chunks))
 
+    def test_caption_keeps_doctor_abbreviation_with_name(self):
+        chunks = worker.short_caption_chunks('تابعوا مع د. دينا حسني في العيادة اليوم.')
+        self.assertTrue(any('د. دينا' in chunk for chunk in chunks))
+        self.assertFalse(any(chunk.strip() == 'د.' for chunk in chunks))
+
     def test_ebaatlena_is_spoken_smoothly_without_changing_script(self):
         script = 'لو عندك سؤال، ابعتلنا وإحنا نساعدك.'
         with patch('worker.uploaded_asset_paths', return_value=[]), patch('eleven_tts.config', return_value=('secret', eleven_tts.VOICE_ID)), patch('eleven_tts.synthesize', return_value=eleven_tts.VOICE_ID) as synth:
