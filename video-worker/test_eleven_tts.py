@@ -81,6 +81,13 @@ class ElevenTests(unittest.TestCase):
         self.assertEqual(script, 'تابعوا مع الدكتورة دينا حسني في العيادة.')
         self.assertEqual(synth.call_args.args[0], 'تابعوا مع الدكتورة دينا حُسْني في العيادة.')
 
+    def test_ebaatlena_is_spoken_smoothly_without_changing_script(self):
+        script = 'لو عندك سؤال، ابعتلنا وإحنا نساعدك.'
+        with patch('worker.uploaded_asset_paths', return_value=[]), patch('eleven_tts.config', return_value=('secret', eleven_tts.VOICE_ID)), patch('eleven_tts.synthesize', return_value=eleven_tts.VOICE_ID) as synth:
+            worker.synthesize(script, Path('.'), {})
+        self.assertEqual(script, 'لو عندك سؤال، ابعتلنا وإحنا نساعدك.')
+        self.assertEqual(synth.call_args.args[0], 'لو عندك سؤال، ابعَت لنا وإحنا نساعدك.')
+
     def test_eleven_failure_never_switches_to_azure(self):
         with patch('worker.uploaded_asset_paths', return_value=[]), patch('eleven_tts.config', return_value=('secret', eleven_tts.VOICE_ID)), patch('eleven_tts.synthesize', side_effect=eleven_tts.ElevenTTSError('failure')), patch('worker.azure_tts_config') as azure:
             with self.assertRaises(eleven_tts.ElevenTTSError):
