@@ -347,8 +347,12 @@ def macos_synthesize(script: str, out_aiff: Path) -> str:
 
 
 def spoken_script(script: str) -> str:
-    """Keep the published script intact while guiding Arabic name pronunciation."""
-    return script.replace("دينا حسني", "دينا حُسْني")
+    """Keep the published script intact while guiding Egyptian Arabic pronunciation."""
+    return (
+        script
+        .replace("دينا حسني", "دينا حُسْني")
+        .replace("ابعتلنا", "ابعَت لنا")
+    )
 
 
 def synthesize(script: str, job_dir: Path, job: dict[str, Any]) -> tuple[Path, str]:
