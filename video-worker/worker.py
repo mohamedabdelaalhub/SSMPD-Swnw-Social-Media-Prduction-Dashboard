@@ -87,6 +87,35 @@ def media_root() -> Path:
     return Path.home() / "SSMPDVideoWorker" / "Media Library"
 
 
+def brand_template_dir(job: dict[str, Any]) -> Path:
+    brand_folder = "Dina" if str(job.get("brand") or "") == "dr_dina" else "Swnw"
+    return media_root() / "Brand Templates" / brand_folder
+
+
+def brand_template_asset(job: dict[str, Any], file_name: str) -> Path | None:
+    path = brand_template_dir(job) / file_name
+    return path if path.is_file() else None
+
+
+def brand_contact_slide(job: dict[str, Any]) -> Path | None:
+    file_name = "شريحة التواصل Dina.jpg" if str(job.get("brand") or "") == "dr_dina" else "شريحة التواصل Swnw.jpg"
+    return brand_template_asset(job, file_name)
+
+
+def brand_outro(job: dict[str, Any]) -> Path | None:
+    file_name = "Dina Outro.mp4" if str(job.get("brand") or "") == "dr_dina" else "Swnw Outro.mp4"
+    return brand_template_asset(job, file_name)
+
+
+def default_music_asset() -> Path | None:
+    root = media_root() / "Brand Templates"
+    for file_name in ("Background Music.mp3", "Background Music.m4a", "Background Music.wav"):
+        path = root / file_name
+        if path.is_file():
+            return path
+    return None
+
+
 def media_files(root: Path) -> list[Path]:
     if not root.exists():
         return []
@@ -454,8 +483,15 @@ def brand_font(job: dict[str, Any]) -> str:
     return "BigVestaArabicBeta"
 
 
+def has_static_brand_ending(job: dict[str, Any]) -> bool:
+    return bool(brand_contact_slide(job) and brand_outro(job))
+
+
 def closing_card(job: dict[str, Any]) -> str:
-    """A visual-only ending card; audio remains exactly the approved script."""
+    """Fallback ending used only until the supplied brand files are installed."""
+    if has_static_brand_ending(job):
+        return ""
+
     settings = job.get("cover_settings") or {}
     phone = str(settings.get("phone") or job.get("phone") or "").strip()
     whatsapp = str(settings.get("whatsapp") or job.get("whatsapp") or "").strip()
@@ -493,7 +529,8 @@ def write_ass(job: dict[str, Any], target_duration: float, spoken_duration: floa
     if parts:
         total_words = max(1, sum(len(part.split()) for part in parts))
         cursor = 0.25
-        end_limit = max(cursor + 0.5, min(spoken_duration, target_duration - 2.8))
+        cta_reserve = 2.8 if cta else 0.0
+        end_limit = max(cursor + 0.5, min(spoken_duration, target_duration - cta_reserve))
         available = max(0.5, end_limit - cursor)
         for idx, part in enumerate(parts):
             weight = max(1, len(part.split())) / total_words
@@ -608,6 +645,42 @@ def render_visual_background(ffmpeg: str, job: dict[str, Any], job_dir: Path, ta
     return background
 
 
+def append_brand_ending(ffmpeg: str, job: dict[str, Any], main_video: Path) -> Path:
+    """Append the approved contact slide and animated outro without changing the spoken copy."""
+    slide = brand_contact_slide(job)
+    outro = brand_outro(job)
+    if not slide or not outro:
+        return main_video
+
+    contact = main_video.parent / "brand-contact.mp4"
+    contact_seconds = 3.2
+    if not contact.exists():
+        p = run([
+            ffmpeg, "-y", "-loop", "1", "-t", f"{contact_seconds:.3f}", "-i", str(slide),
+            "-f", "lavfi", "-t", f"{contact_seconds:.3f}",
+            "-i", "anullsrc=channel_layout=stereo:sample_rate=48000",
+            "-vf", "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,format=yuv420p",
+            "-map", "0:v:0", "-map", "1:a:0", "-shortest",
+            "-c:v", "libx264", "-preset", "medium", "-crf", "20",
+            "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", str(contact),
+        ], check=False)
+        if p.returncode != 0 or not contact.exists():
+            raise WorkerError("Contact-slide render failed: " + p.stderr[-1200:])
+
+    ended = main_video.parent / "output-with-brand-ending.mp4"
+    p = run([
+        ffmpeg, "-y", "-i", str(main_video), "-i", str(contact), "-i", str(outro),
+        "-filter_complex",
+        "[0:v][0:a][1:v][1:a][2:v][2:a]concat=n=3:v=1:a=1[v][a]",
+        "-map", "[v]", "-map", "[a]",
+        "-c:v", "libx264", "-preset", "medium", "-crf", "21", "-pix_fmt", "yuv420p",
+        "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", str(ended),
+    ], check=False)
+    if p.returncode != 0 or not ended.exists():
+        raise WorkerError("Brand ending render failed: " + p.stderr[-1500:])
+    return ended
+
+
 def render(job: dict[str, Any], job_dir: Path) -> tuple[Path, str]:
     ffmpeg, ffprobe = ffmpeg_paths()
     script = str(job.get("script_text") or "").strip()
@@ -621,8 +694,9 @@ def render(job: dict[str, Any], job_dir: Path) -> tuple[Path, str]:
 
     voice_path, voice = synthesize(script, job_dir, job)
     audio_dur = probe_duration(ffprobe, voice_path)
-    target = max(float(min_s), min(float(max_s), audio_dur + 2.7))
-    voice_target = max(1.0, target - 2.7)
+    fallback_cta_seconds = 0.0 if has_static_brand_ending(job) else 2.7
+    target = max(float(min_s), min(float(max_s), audio_dur + fallback_cta_seconds))
+    voice_target = max(1.0, target - fallback_cta_seconds)
     speed = audio_dur / voice_target if audio_dur > voice_target else 1.0
     spoken_duration = audio_dur / speed
 
@@ -633,6 +707,7 @@ def render(job: dict[str, Any], job_dir: Path) -> tuple[Path, str]:
         raise WorkerError("Saved brand logo could not be downloaded.")
 
     music_assets = uploaded_asset_paths(job, "music")
+    music = music_assets[0] if music_assets else default_music_asset()
     out = job_dir / "output.mp4"
     captioned = job_dir / "output-captioned.mp4"
     visual_out = job_dir / "output-visual.mp4"
@@ -674,20 +749,22 @@ def render(job: dict[str, Any], job_dir: Path) -> tuple[Path, str]:
     if p.returncode != 0 or not visual_out.exists():
         raise WorkerError("FFmpeg logo render failed: " + p.stderr[-1500:])
 
-    if music_assets:
-        music = music_assets[0]
+    video_with_ending = append_brand_ending(ffmpeg, job, visual_out)
+    final_duration = probe_duration(ffprobe, video_with_ending)
+
+    if music:
         mix_cmd = [
-            ffmpeg, "-y", "-i", str(visual_out), "-stream_loop", "-1", "-i", str(music),
+            ffmpeg, "-y", "-i", str(video_with_ending), "-stream_loop", "-1", "-i", str(music),
             "-filter_complex",
-            f"[1:a]volume=0.10,atrim=0:{target:.3f}[m];[0:a][m]amix=inputs=2:duration=first:dropout_transition=2[a]",
+            f"[1:a]volume=0.08,atrim=0:{final_duration:.3f}[m];[0:a][m]amix=inputs=2:duration=first:dropout_transition=2[a]",
             "-map", "0:v:0", "-map", "[a]", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
-            "-t", f"{target:.3f}", "-movflags", "+faststart", str(out),
+            "-t", f"{final_duration:.3f}", "-movflags", "+faststart", str(out),
         ]
         mp = run(mix_cmd, check=False)
         if mp.returncode != 0 or not out.exists():
             raise WorkerError("Music mix failed: " + mp.stderr[-1500:])
     else:
-        shutil.move(str(visual_out), str(out))
+        shutil.move(str(video_with_ending), str(out))
 
     return out, voice
 
@@ -734,7 +811,10 @@ def archive_rendered_job(base_url: str, key: str, job: dict[str, Any], output: P
         if not cover.exists():
             run([ffmpeg, "-y", "-ss", "0", "-i", str(output), "-frames:v", "1", "-q:v", "2", str(cover)])
         from cover_candidates import build as build_covers
-        candidates = build_covers(job, output, ffmpeg, probe_duration(ffprobe, output))
+        candidates = build_covers(
+            job, output, ffmpeg, probe_duration(ffprobe, output),
+            template_dir=brand_template_dir(job),
+        )
         # Build the local branded covers before the archive bridge is contacted.
         # This preserves previewable cover files even if Google Drive is unavailable.
         video = archive_upload(job, output, "video")
@@ -857,6 +937,8 @@ def check_environment() -> int:
     root = media_root()
     print("Media library:", root)
     print("Visual assets found:", len(media_files(root)))
+    print("Brand endings:", "ready" if (root / "Brand Templates" / "Swnw").is_dir() and (root / "Brand Templates" / "Dina").is_dir() else "not installed")
+    print("Default background music:", "configured" if default_music_asset() else "not configured")
 
     return 0 if ok else 1
 
