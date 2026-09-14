@@ -21,3 +21,6 @@
 .portal-medical-error{grid-column:1/-1}
 @media(max-width:900px){.health-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:650px){.profile-tabs{padding-bottom:3px}.profile-tabs .medical-tab{min-width:145px;height:52px}.health-grid{grid-template-columns:1fr 1fr}.medical-section{padding:14px}.medical-record-head{padding:14px}.followup-card{grid-template-columns:1fr}.followup-date-box{width:max-content}.rx-top{flex-direction:column;gap:4px}}
+
+/* المتابعات القادمة */
+.upcoming-followup-title{color:#e97816}.followup-card{border-color:#f0a05c;background:linear-gradient(135deg,#fff8f1,#fff)}.followup-date-box{border-color:#ee9a55}.followup-date-box strong{color:#db6a08}
