@@ -4,6 +4,35 @@ set -e
 SCRIPT_DIR="${0:A:h}"
 SERVICE="SSMPD Video Worker"
 PROJECT_URL="https://uuijfbpgvtdxgaosqpxo.supabase.co"
+WORKER_DIR="$HOME/SSMPDVideoWorker"
+AGENT_LABEL="com.ssmpd.video-worker"
+AGENT_FILE="$HOME/Library/LaunchAgents/${AGENT_LABEL}.plist"
+LOG_DIR="$WORKER_DIR/logs"
+
+install_background_worker() {
+  local python_bin
+  python_bin="$(command -v python3)"
+  mkdir -p "$HOME/Library/LaunchAgents" "$LOG_DIR"
+
+  cat > "$AGENT_FILE" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>$AGENT_LABEL</string>
+  <key>ProgramArguments</key>
+  <array><string>$python_bin</string><string>$WORKER_DIR/worker.py</string></array>
+  <key>WorkingDirectory</key><string>$WORKER_DIR</string>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>StandardOutPath</key><string>$LOG_DIR/worker.log</string>
+  <key>StandardErrorPath</key><string>$LOG_DIR/worker-error.log</string>
+</dict></plist>
+EOF
+
+  launchctl bootout "gui/$(id -u)" "$AGENT_FILE" >/dev/null 2>&1 || true
+  launchctl bootstrap "gui/$(id -u)" "$AGENT_FILE"
+  launchctl kickstart -k "gui/$(id -u)/$AGENT_LABEL"
+}
 
 echo "========================================"
 echo " SSMPD Mac Video Worker — Setup"
@@ -41,7 +70,7 @@ chmod +x "$SCRIPT_DIR/worker.py" "$SCRIPT_DIR/Run Once.command" "$SCRIPT_DIR/Che
 
 echo
 echo "✅ تم حفظ الإعدادات في macOS Keychain."
-echo
 python3 "$SCRIPT_DIR/worker.py" --check
-echo
-echo "لو كل السطور فوق OK، شغّل Run Once.command لاختبار أول Video Job."
+install_background_worker
+echo "✅ العامل يعمل تلقائيًا في الخلفية."
+echo "من الآن استخدم الداشبورد لإنشاء أو إعادة إنتاج الفيديوهات."
