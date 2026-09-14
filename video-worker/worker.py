@@ -39,6 +39,7 @@ WORKER_ID = os.environ.get("SSMPD_VIDEO_WORKER_ID", socket.gethostname())
 
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".heic"}
 VIDEO_EXTENSIONS = {".mp4", ".mov", ".m4v", ".webm"}
+AUDIO_EXTENSIONS = {".mp3", ".m4a", ".aac", ".wav", ".aif", ".aiff"}
 
 class WorkerError(RuntimeError):
     pass
@@ -107,7 +108,57 @@ def brand_outro(job: dict[str, Any]) -> Path | None:
     return brand_template_asset(job, file_name)
 
 
-def default_music_asset() -> Path | None:
+def music_mood(job: dict[str, Any]) -> str:
+    """Normalize the optional dashboard choice for the brand music mood."""
+    settings = job.get("cover_settings") or {}
+    value = str(job.get("music_mood") or settings.get("music_mood") or "").strip().lower()
+    if value in ("calm", "هادئ", "هادي", "هادئه", "quiet", "soft"):
+        return "calm"
+    if value in ("upbeat", "energetic", "حماسي", "حماسى", "حماس"):
+        return "upbeat"
+    if value in ("serious", "formal", "جاد", "رسمى"):
+        return "serious"
+    return "calm"
+
+
+def branded_music_assets(job: dict[str, Any]) -> list[Path]:
+    """Read the three approved tracks placed beside each brand's templates."""
+    root = brand_template_dir(job)
+    folders = (
+        "Music Tracks",
+        "Dina Music Tracks",
+        "Swnw Music Tracks",
+    )
+    found: list[Path] = []
+    seen: set[Path] = set()
+    for folder in folders:
+        path = root / folder
+        if not path.is_dir():
+            continue
+        for item in sorted(path.rglob("*"), key=lambda p: str(p).lower()):
+            if item.is_file() and item.suffix.lower() in AUDIO_EXTENSIONS and item not in seen:
+                found.append(item)
+                seen.add(item)
+    return found
+
+
+def default_music_asset(job: dict[str, Any]) -> Path | None:
+    assets = branded_music_assets(job)
+    mood = music_mood(job)
+    terms = {
+        "calm": ("calm", "هادئ", "هادي", "soft", "quiet"),
+        "upbeat": ("upbeat", "energetic", "حماسي", "حماسى", "حماس"),
+        "serious": ("serious", "formal", "جاد", "documentary"),
+    }[mood]
+    for asset in assets:
+        name = asset.name.lower()
+        if any(term in name for term in terms):
+            return asset
+
+    # If a filename was not labelled, keep rendering with the first approved track.
+    if assets:
+        return assets[0]
+
     root = media_root() / "Brand Templates"
     for file_name in ("Background Music.mp3", "Background Music.m4a", "Background Music.wav"):
         path = root / file_name
@@ -707,7 +758,7 @@ def render(job: dict[str, Any], job_dir: Path) -> tuple[Path, str]:
         raise WorkerError("Saved brand logo could not be downloaded.")
 
     music_assets = uploaded_asset_paths(job, "music")
-    music = music_assets[0] if music_assets else default_music_asset()
+    music = music_assets[0] if music_assets else default_music_asset(job)
     out = job_dir / "output.mp4"
     captioned = job_dir / "output-captioned.mp4"
     visual_out = job_dir / "output-visual.mp4"
@@ -947,7 +998,8 @@ def check_environment() -> int:
     print("Media library:", root)
     print("Visual assets found:", len(media_files(root)))
     print("Brand endings:", "ready" if (root / "Brand Templates" / "Swnw").is_dir() and (root / "Brand Templates" / "Dina").is_dir() else "not installed")
-    print("Default background music:", "configured" if default_music_asset() else "not configured")
+    print("Default background music:", "configured" if default_music_asset({"brand": "swnw"}) else "not configured")
+    print("Brand music tracks:", "Swnw=" + str(len(branded_music_assets({"brand": "swnw"}))) + ", Dina=" + str(len(branded_music_assets({"brand": "dr_dina"}))))
 
     return 0 if ok else 1
 
