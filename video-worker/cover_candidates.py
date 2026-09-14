@@ -16,7 +16,15 @@ def build(job, output, ffmpeg, duration, template_dir=None):
 
     output = Path(output)
     source = output.parent / "background.mp4"
-    if not source.exists():
+    source_duration = float(duration)
+    if source.exists():
+        # The final output also contains the contact card and outro. Covers must
+        # be selected from the original visual track, not from that ending.
+        try:
+            source_duration = min(source_duration, float(job.get("duration_max_seconds") or source_duration))
+        except (TypeError, ValueError):
+            pass
+    else:
         source = output
     font = str(settings.get("font_family") or "BigVestaArabicBeta").strip()
     title = cover_title(title.replace("\\", " ").replace("{", "").replace("}", " "))
@@ -40,7 +48,7 @@ def build(job, output, ffmpeg, duration, template_dir=None):
     for index, fraction in enumerate((0.12, 0.30, 0.48, 0.66, 0.84), 1):
         path = output.parent / f"cover-{index}.jpg"
         temp = output.parent / f".cover-{index}.png"
-        at = max(0, min(duration - 0.1, duration * fraction))
+        at = max(0, min(source_duration - 0.1, source_duration * fraction))
         if not path.exists():
             if use_template:
                 graph = (
