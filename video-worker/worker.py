@@ -346,25 +346,31 @@ def macos_synthesize(script: str, out_aiff: Path) -> str:
     return voice
 
 
+def spoken_script(script: str) -> str:
+    """Keep the published script intact while guiding Arabic name pronunciation."""
+    return script.replace("دينا حسني", "دينا حُسْني")
+
+
 def synthesize(script: str, job_dir: Path, job: dict[str, Any]) -> tuple[Path, str]:
     uploaded_voice = uploaded_asset_paths(job, "voiceover")
     if uploaded_voice:
         return uploaded_voice[0], "Uploaded voiceover"
 
+    spoken = spoken_script(script)
     eleven_key, eleven_voice = eleven_tts.config()
     if eleven_key:
         out_mp3 = job_dir / "voice.mp3"
-        voice = eleven_tts.synthesize(script, out_mp3, eleven_key, eleven_voice)
+        voice = eleven_tts.synthesize(spoken, out_mp3, eleven_key, eleven_voice)
         return out_mp3, "ElevenLabs " + voice
 
     azure_key, azure_region, azure_voice = azure_tts_config()
     if azure_key and azure_region:
         out_mp3 = job_dir / "voice.mp3"
-        voice = azure_synthesize(script, out_mp3, azure_key, azure_region, azure_voice)
+        voice = azure_synthesize(spoken, out_mp3, azure_key, azure_region, azure_voice)
         return out_mp3, "Azure " + voice
 
     out_aiff = job_dir / "voice.aiff"
-    voice = macos_synthesize(script, out_aiff)
+    voice = macos_synthesize(spoken, out_aiff)
     return out_aiff, "macOS " + voice
 
 def probe_duration(ffprobe: str, media: Path) -> float:
