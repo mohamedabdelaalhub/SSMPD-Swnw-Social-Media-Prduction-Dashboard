@@ -1,7 +1,8 @@
 (function(){
 "use strict";
 function esc(v){return String(v==null?"":v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
-function today(){return new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Cairo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());}
+function cairoDay(v){var d=v instanceof Date?v:new Date(v);if(isNaN(d))return '';var parts=new Intl.DateTimeFormat('en-US',{timeZone:'Africa/Cairo',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(d),out={};parts.forEach(function(p){out[p.type]=p.value;});return out.year+'-'+out.month+'-'+out.day;}
+function today(){return cairoDay(new Date());}
 function date(v){if(!/^\d{4}-\d{2}-\d{2}$/.test(v||''))return 'تاريخ غير مسجل';return new Intl.DateTimeFormat('ar-EG',{year:'numeric',month:'long',day:'numeric',timeZone:'UTC'}).format(new Date(v+'T12:00:00Z'));}
 function dayDate(v){if(!/^\d{4}-\d{2}-\d{2}$/.test(v||''))return 'تاريخ غير مسجل';return new Intl.DateTimeFormat('ar-EG',{weekday:'long',year:'numeric',month:'long',day:'numeric',timeZone:'UTC'}).format(new Date(v+'T12:00:00Z'));}
 function shiftDay(v,amount){var d=new Date(v+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+amount);return d.toISOString().slice(0,10);}
@@ -31,11 +32,11 @@ function history(meals,rows,fromDay,toDay){
    if(!ok)return '<td><span class="nutrition-badge pending">لم يؤكد</span></td>';
    var actor=r.recorded_by_account_id?'المريض':(r.recorded_by_admin_id?'الموظف':'غير محدد');
    var snapshot=r.meal_name_snapshot&&r.meal_name_snapshot!==names.get(id)?'<br>اسم الوجبة وقت التسجيل · '+esc(r.meal_name_snapshot):'';
-   return '<td><details class="nutrition-history-detail"><summary class="nutrition-badge done">تم</summary><small>وقت التأكيد · '+esc(confirmed(r.completed_at))+'<br>بواسطة · '+actor+snapshot+'</small></details></td>';
+   return '<td><details class="nutrition-history-detail"><summary class="nutrition-badge done">تم</summary><small>وقت التأكيد · '+esc(confirmed(r.completed_at))+'<br>بواسطة · '+actor+(r.legacy?'<br>نوع التسجيل · تأكيد سابق':'')+snapshot+'</small></details></td>';
   }).join('');
   return '<tr><th scope="row"><b>'+esc(dayDate(day))+'</b><small>'+esc(day)+'</small></th>'+cells+'<td><b>'+done+' من '+columns.length+'</b>'+(hasAny?'':'<small class="nutrition-no-records">لا توجد تأكيدات</small>')+'</td></tr>';
  }).join('');
  return '<div class="nutrition-history-scroll"><table class="nutrition-history-table"><thead><tr>'+head+'</tr></thead><tbody>'+body+'</tbody></table></div>';
 }
-window.SwnwNutritionView={esc:esc,today:today,date:date,dayDate:dayDate,shiftDay:shiftDay,confirmed:confirmed,status:status,history:history};
+window.SwnwNutritionView={esc:esc,today:today,cairoDay:cairoDay,date:date,dayDate:dayDate,shiftDay:shiftDay,confirmed:confirmed,status:status,history:history};
 })();

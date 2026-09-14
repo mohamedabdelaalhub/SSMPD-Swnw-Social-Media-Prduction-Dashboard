@@ -2192,14 +2192,23 @@
   function watchNutritionStatus(el, visit) {
     var ui = window.SwnwNutritionView, version = 0;
     var today=ui.today(),defaultFrom=ui.shiftDay(today,-6);if(defaultFrom<visit.visit_date)defaultFrom=visit.visit_date;
-    el.innerHTML = '<div class="nutrition-history-head"><div><h5>سجل متابعة الوجبات</h5><p class="nutrition-date-note">آخر الأيام أولًا. اضغط على «تم» لمعرفة وقت التأكيد ومن سجّله.</p></div><div class="nutrition-range"><label>من <input type="date" data-from min="'+escapeHtml(visit.visit_date)+'" max="'+today+'" value="'+defaultFrom+'"></label><label>إلى <input type="date" data-to min="'+escapeHtml(visit.visit_date)+'" max="'+today+'" value="'+today+'"></label><button type="button" class="btn ghost sm" data-last-week>آخر ٧ أيام</button></div></div><p class="nutrition-date-note">كل التواريخ وأوقات التأكيد بتوقيت القاهرة. عدم وجود تأكيد لا يعني أن المريض لم يتناول الوجبة.</p><div data-daily-status></div><details class="nutrition-legacy"><summary>تأكيدات سابقة قبل المتابعة اليومية</summary><p>هذه التأكيدات غير مرتبطة بيوم تناول محدد.</p><div data-legacy-status></div></details>';
+    el.innerHTML = '<div class="nutrition-history-head"><div><h5>سجل متابعة الوجبات</h5><p class="nutrition-date-note">آخر الأيام أولًا. اضغط على «تم» لمعرفة وقت التأكيد ومن سجّله.</p></div><div class="nutrition-range"><label>من <input type="date" data-from min="'+escapeHtml(visit.visit_date)+'" max="'+today+'" value="'+defaultFrom+'"></label><label>إلى <input type="date" data-to min="'+escapeHtml(visit.visit_date)+'" max="'+today+'" value="'+today+'"></label><button type="button" class="btn ghost sm" data-last-week>آخر ٧ أيام</button></div></div><p class="nutrition-date-note">الجدول يجمع المتابعة اليومية والتأكيدات الأقدم حسب وقت تسجيلها بتوقيت القاهرة. عدم وجود تأكيد لا يعني أن المريض لم يتناول الوجبة.</p><div data-daily-status></div><details class="nutrition-legacy"><summary>تأكيدات أقدم بلا وقت مسجل</summary><p>لا يمكن وضع هذه التأكيدات في يوم محدد.</p><div data-legacy-status></div></details>';
     var from = el.querySelector('[data-from]'), to=el.querySelector('[data-to]'),target = el.querySelector('[data-daily-status]');
     function refresh() {
       if (!el.isConnected) return;
       var token = ++version;
       if (!from.value || !to.value || from.value < visit.visit_date || to.value > ui.today() || from.value > to.value) { target.textContent = 'اختر فترة صحيحة من تاريخ الزيارة حتى اليوم.'; return; }
-      window.SSMPDDb.listNutritionDailyCompletionHistory(visit.id, from.value, to.value).then(function(rows){
-        if(el.isConnected && token === version) target.innerHTML = ui.history(visit.meals, rows, from.value, to.value);
+      Promise.all([
+        window.SSMPDDb.listNutritionDailyCompletionHistory(visit.id, from.value, to.value),
+        window.SSMPDDb.listNutritionMealCompletions(visit.id).catch(function(){return [];})
+      ]).then(function(results){
+        var daily=results[0]||[],legacy=results[1]||[],dailyKeys=new Set(daily.map(function(r){return r.tracking_date+'|'+r.meal_id;}));
+        var datedLegacy=legacy.filter(function(r){return r&&r.completed===true&&r.completed_at&&ui.cairoDay(r.completed_at);}).map(function(r){return {meal_id:r.meal_id,meal_name_snapshot:r.meal_name_snapshot||'',tracking_date:ui.cairoDay(r.completed_at),completed:true,completed_at:r.completed_at,recorded_by_admin_id:r.recorded_by_admin_id,recorded_by_account_id:r.recorded_by_account_id,legacy:true};}).filter(function(r){return r.tracking_date>=from.value&&r.tracking_date<=to.value&&!dailyKeys.has(r.tracking_date+'|'+r.meal_id);});
+        var undatedLegacy=legacy.filter(function(r){return !(r&&r.completed===true&&r.completed_at&&ui.cairoDay(r.completed_at));});
+        if(el.isConnected && token === version){
+          target.innerHTML = ui.history(visit.meals, daily.concat(datedLegacy), from.value, to.value);
+          el.querySelector('[data-legacy-status]').innerHTML=undatedLegacy.length?ui.status(visit.meals,undatedLegacy):'<p>لا توجد تأكيدات أقدم بلا وقت مسجل.</p>';
+        }
       }).catch(function(){if(el.isConnected && token === version) target.textContent = 'تعذر تحميل سجل المتابعة. غيّر الفترة أو حاول مرة أخرى.';});
     }
     function changed(){target.textContent='جاري التحميل…';refresh();}
@@ -2207,7 +2216,6 @@
     el.querySelector('[data-last-week]').onclick=function(){to.value=ui.today();from.value=ui.shiftDay(to.value,-6);if(from.value<visit.visit_date)from.value=visit.visit_date;changed();};
     function poll(){if(!el.isConnected)return;if(!document.hidden && el.closest('details.nutrition-visit-card').open)refresh();setTimeout(poll,15000);}
     refresh();setTimeout(poll,15000);
-    window.SSMPDDb.listNutritionMealCompletions(visit.id).then(function(rows){if(el.isConnected)el.querySelector('[data-legacy-status]').innerHTML=rows.length?ui.status(visit.meals,rows):'<p>لا توجد تأكيدات سابقة.</p>';}).catch(function(){if(el.isConnected)el.querySelector('[data-legacy-status]').textContent='تعذر تحميل التأكيدات السابقة.';});
   }
 
   function openNutritionVisitFormModal(patient, existingVisit, onSaved) {

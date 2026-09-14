@@ -66,10 +66,13 @@ shown only when explicitly stored. Delete is inside an options menu.
 Each card has a daily follow-up table. It shows the latest seven eligible days by
 default and accepts a custom from/to period. Days are newest first; meal names are
 dynamic, and historical meal names from meal_name_snapshot remain available when a
-plan changes. Clicking a completed badge reveals the Cairo confirmation time and
-whether the patient or a staff user recorded it. A day without rows says that no
-confirmations exist; it is not described as a missed meal. Status polls every 15
-seconds for open cards while visible and stops after closing the patient view.
+plan changes. Daily rows appear by tracking_date. Older rows are placed on the
+Cairo day of their completed_at timestamp and labeled as a previous confirmation.
+Rows without a timestamp stay in a separate section because their day is unknown.
+Clicking a completed badge reveals the Cairo confirmation time and whether the
+patient or a staff user recorded it. A day without rows says that no confirmations
+exist; it is not described as a missed meal. Status polls every 15 seconds for open
+cards while visible and stops after closing the patient view.
 Edit form has its own day picker and prevents edits while initial status is loading.
 
 Portal: newest visit per patient opens first, day picker, progress and per-meal controls.
