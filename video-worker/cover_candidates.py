@@ -20,8 +20,17 @@ def build(job, output, ffmpeg, duration, template_dir=None):
     if source.exists():
         # The final output also contains the contact card and outro. Covers must
         # be selected from the original visual track, not from that ending.
+        ffprobe = Path(ffmpeg).with_name("ffprobe")
         try:
-            source_duration = min(source_duration, float(job.get("duration_max_seconds") or source_duration))
+            measured = subprocess.run(
+                [str(ffprobe), "-v", "error", "-show_entries", "format=duration",
+                 "-of", "default=noprint_wrappers=1:nokey=1", str(source.resolve())],
+                capture_output=True, text=True, check=False,
+            )
+            if measured.returncode == 0:
+                source_duration = min(source_duration, float(measured.stdout.strip()))
+            else:
+                source_duration = min(source_duration, float(job.get("duration_max_seconds") or source_duration))
         except (TypeError, ValueError):
             pass
     else:
