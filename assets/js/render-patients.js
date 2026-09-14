@@ -2191,17 +2191,20 @@
   // Staff reads remain under the existing dashboard RLS. Stop polling when the view closes.
   function watchNutritionStatus(el, visit) {
     var ui = window.SwnwNutritionView, version = 0;
-    el.innerHTML = '<label class="nutrition-day">يوم المتابعة <input type="date" min="'+escapeHtml(visit.visit_date)+'" max="'+ui.today()+'" value="'+ui.today()+'"></label><p class="nutrition-date-note">التواريخ وأوقات التأكيد بتوقيت القاهرة</p><div data-daily-status></div><details class="nutrition-legacy"><summary>تأكيدات سابقة قبل المتابعة اليومية</summary><p>هذه التأكيدات غير مرتبطة بيوم تناول محدد.</p><div data-legacy-status></div></details>';
-    var day = el.querySelector('input'), target = el.querySelector('[data-daily-status]');
+    var today=ui.today(),defaultFrom=ui.shiftDay(today,-6);if(defaultFrom<visit.visit_date)defaultFrom=visit.visit_date;
+    el.innerHTML = '<div class="nutrition-history-head"><div><h5>سجل متابعة الوجبات</h5><p class="nutrition-date-note">آخر الأيام أولًا. اضغط على «تم» لمعرفة وقت التأكيد ومن سجّله.</p></div><div class="nutrition-range"><label>من <input type="date" data-from min="'+escapeHtml(visit.visit_date)+'" max="'+today+'" value="'+defaultFrom+'"></label><label>إلى <input type="date" data-to min="'+escapeHtml(visit.visit_date)+'" max="'+today+'" value="'+today+'"></label><button type="button" class="btn ghost sm" data-last-week>آخر ٧ أيام</button></div></div><p class="nutrition-date-note">كل التواريخ وأوقات التأكيد بتوقيت القاهرة. عدم وجود تأكيد لا يعني أن المريض لم يتناول الوجبة.</p><div data-daily-status></div><details class="nutrition-legacy"><summary>تأكيدات سابقة قبل المتابعة اليومية</summary><p>هذه التأكيدات غير مرتبطة بيوم تناول محدد.</p><div data-legacy-status></div></details>';
+    var from = el.querySelector('[data-from]'), to=el.querySelector('[data-to]'),target = el.querySelector('[data-daily-status]');
     function refresh() {
       if (!el.isConnected) return;
       var token = ++version;
-      if (!day.value || day.value < visit.visit_date || day.value > ui.today()) { target.textContent = 'اختر يومًا من تاريخ الزيارة حتى اليوم.'; return; }
-      window.SSMPDDb.listNutritionDailyCompletions(visit.id, day.value).then(function(rows){
-        if(el.isConnected && token === version) target.innerHTML = ui.status(visit.meals, rows);
-      }).catch(function(){if(el.isConnected && token === version) target.textContent = 'تعذر تحميل متابعة هذا اليوم. أعد اختيار اليوم للمحاولة.';});
+      if (!from.value || !to.value || from.value < visit.visit_date || to.value > ui.today() || from.value > to.value) { target.textContent = 'اختر فترة صحيحة من تاريخ الزيارة حتى اليوم.'; return; }
+      window.SSMPDDb.listNutritionDailyCompletionHistory(visit.id, from.value, to.value).then(function(rows){
+        if(el.isConnected && token === version) target.innerHTML = ui.history(visit.meals, rows, from.value, to.value);
+      }).catch(function(){if(el.isConnected && token === version) target.textContent = 'تعذر تحميل سجل المتابعة. غيّر الفترة أو حاول مرة أخرى.';});
     }
-    day.onchange = function(){target.textContent='جاري التحميل…';refresh();};
+    function changed(){target.textContent='جاري التحميل…';refresh();}
+    from.onchange=changed;to.onchange=changed;
+    el.querySelector('[data-last-week]').onclick=function(){to.value=ui.today();from.value=ui.shiftDay(to.value,-6);if(from.value<visit.visit_date)from.value=visit.visit_date;changed();};
     function poll(){if(!el.isConnected)return;if(!document.hidden && el.closest('details.nutrition-visit-card').open)refresh();setTimeout(poll,15000);}
     refresh();setTimeout(poll,15000);
     window.SSMPDDb.listNutritionMealCompletions(visit.id).then(function(rows){if(el.isConnected)el.querySelector('[data-legacy-status]').innerHTML=rows.length?ui.status(visit.meals,rows):'<p>لا توجد تأكيدات سابقة.</p>';}).catch(function(){if(el.isConnected)el.querySelector('[data-legacy-status]').textContent='تعذر تحميل التأكيدات السابقة.';});

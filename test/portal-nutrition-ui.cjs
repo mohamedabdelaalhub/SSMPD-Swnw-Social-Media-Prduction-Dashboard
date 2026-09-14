@@ -7,6 +7,7 @@ const tick=()=>new Promise(r=>setTimeout(r,20));
  w.eval(fs.readFileSync('assets/js/nutrition-view.js','utf8'));
  w.eval(fs.readFileSync('patient-portal/portal-nutrition.js','utf8'));w.document.querySelector('[data-nutrition-tab]').click();await tick();
  assert.equal(w.document.querySelectorAll('[data-nutrition-tab]').length,1);assert.equal(w.document.querySelectorAll('.nutrition-view script,.nutrition-view img').length,0);
+ assert.match(w.document.querySelector('.nutrition-selected-date').textContent,/وجبات اليوم/);assert.match(w.document.querySelector('.nutrition-visit-card').textContent,/تاريخ زيارة التغذية/);assert.match(w.document.querySelector('.nutrition-card-day').textContent,/٢٠٢٦|2026/);
  const box=w.document.querySelector('input[type=checkbox]');box.click();assert.equal(box.disabled,true);await tick();assert.equal(box.checked,true);assert.deepEqual(JSON.parse(JSON.stringify(calls[1])), {op:'set_daily_completion',visit_id:'visit',meal_id:'meal',tracking_date:w.SwnwNutritionView.today(),completed:true});
  fail=true;box.click();await tick();assert.equal(box.checked,true);assert.match(w.document.querySelector('.nutrition-meal [role=status]').textContent,/تعذر/);
  fail=false;let resolve;pending=new Promise(r=>resolve=r);box.click();w.document.querySelector('.profile-content').innerHTML='different tab';resolve();await tick();assert.equal(w.document.querySelector('.profile-content').textContent,'different tab');

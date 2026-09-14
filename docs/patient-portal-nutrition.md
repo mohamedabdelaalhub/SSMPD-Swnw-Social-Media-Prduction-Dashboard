@@ -63,14 +63,19 @@ those old operations still use the separate legacy table and its existing audit 
 Dashboard: separate collapsible cards; newest visit open, older visits closed.
 Plan title from template_name_snapshot, doctor, date-only formatting; visit_time is
 shown only when explicitly stored. Delete is inside an options menu.
-Each card has a day picker, confirmed count, progress bar and per-meal badge.
-Confirmation times use Cairo and are labeled as confirmation times.
-Empty meals show an explanation instead of 0/0. Status polls every 15 seconds for
-open cards while visible and stops after closing the patient view.
+Each card has a daily follow-up table. It shows the latest seven eligible days by
+default and accepts a custom from/to period. Days are newest first; meal names are
+dynamic, and historical meal names from meal_name_snapshot remain available when a
+plan changes. Clicking a completed badge reveals the Cairo confirmation time and
+whether the patient or a staff user recorded it. A day without rows says that no
+confirmations exist; it is not described as a missed meal. Status polls every 15
+seconds for open cards while visible and stops after closing the patient view.
 Edit form has its own day picker and prevents edits while initial status is loading.
 
 Portal: newest visit per patient opens first, day picker, progress and per-meal controls.
-Date cannot change during a pending save. Failed writes restore last acknowledged state.
+The selected day appears as a full Arabic weekday/date above the meal list, while the
+visit metadata explicitly labels the nutrition visit date. Date cannot change during
+a pending save. Failed writes restore last acknowledged state.
 Old-view responses cannot overwrite a replacement view. No medical data cache added.
 Nutrition remains last/leftmost in the tabs.
 
