@@ -445,7 +445,8 @@ def closing_card(job: dict[str, Any]) -> str:
         phone = phone or "0236230005"
         whatsapp = whatsapp or "+201010686264"
     if phone and whatsapp:
-        return "للتواصل والحجز\\Nاتصل بنا: " + phone + "\\Nواتساب: " + whatsapp
+        return "للتواصل والحجز\nاتصل بنا: " + phone + "\nواتساب: " + whatsapp
+
     return str(job.get("cta_text") or "").strip()
 
 
