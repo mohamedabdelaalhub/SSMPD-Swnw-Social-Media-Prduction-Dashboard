@@ -502,16 +502,30 @@ function openAgentImportModal(parentBackdrop) {
     Promise.all([
       window.SSMPDDb.listVideoJobsForContent(item.id),
       window.SSMPDDb.listVideoAssetsForContent(item.id),
-      window.SSMPDDb.listBrandLogos()
+      window.SSMPDDb.listBrandLogos(),
+      window.SSMPDDb.listVideoWorkerHeartbeats()
     ]).then(function (res) {
       var jobs = res[0] || [];
       var assets = res[1] || [];
       var brandLogos = (res[2] || []).filter(function (b) { return b.brand === item.brand; });
+      var workers = res[3] || [];
       var latest = jobs.length ? jobs[0] : null;
       var missing = videoJobMissingFields(item);
       var mediaMode = item.video_media_mode || "uploaded_plus_auto";
       var musicMood = item.video_music_mood || "calm";
       var html = '<div class="section"><h4 style="margin:0 0 8px;">🎬 إنتاج الفيديو</h4>';
+      var latestWorker = workers.length ? workers[0] : null;
+      var workerSeenAt = latestWorker && latestWorker.last_seen_at ? new Date(latestWorker.last_seen_at) : null;
+      var workerOnline = workerSeenAt && (Date.now() - workerSeenAt.getTime() <= 2 * 60 * 1000);
+      if (latestWorker) {
+        html += '<div style="border:1px solid ' + (workerOnline ? '#9fd5b1' : 'var(--c-border)') + ';border-radius:10px;padding:9px 10px;margin-bottom:12px;font-size:12px;">' +
+          '<b>عامل الفيديو:</b> ' + (workerOnline ? 'متصل' : 'غير متصل') +
+          ' <span style="color:var(--c-muted);">آخر نشاط: ' + escapeHtml(workerSeenAt.toLocaleString("ar-EG")) + '</span>' +
+          (latestWorker.status ? ' <span style="color:var(--c-muted);">(' + escapeHtml(latestWorker.status === "working" ? "ينتج فيديو" : latestWorker.status === "error" ? "تحتاج مراجعة" : "في الانتظار") + ')</span>' : '') +
+          '</div>';
+      } else {
+        html += '<div style="border:1px solid var(--c-border);border-radius:10px;padding:9px 10px;margin-bottom:12px;font-size:12px;color:var(--c-muted);">عامل الفيديو لم يسجل نشاطًا بعد.</div>';
+      }
 
       html += '<div style="border:1px solid var(--c-border);border-radius:10px;padding:10px;margin-bottom:12px;">' +
         '<div style="font-weight:700;margin-bottom:8px;">📦 مواد الإنتاج <span style="font-size:11px;color:var(--c-muted);font-weight:400;">(اختياري)</span></div>' +
