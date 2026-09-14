@@ -36,7 +36,10 @@ function history(meals,rows,fromDay,toDay){
   }).join('');
   return '<tr><th scope="row"><b>'+esc(dayDate(day))+'</b><small>'+esc(day)+'</small></th>'+cells+'<td><b>'+done+' من '+columns.length+'</b>'+(hasAny?'':'<small class="nutrition-no-records">لا توجد تأكيدات</small>')+'</td></tr>';
  }).join('');
- return '<div class="nutrition-history-scroll"><table class="nutrition-history-table"><thead><tr>'+head+'</tr></thead><tbody>'+body+'</tbody></table></div>';
+ var possible=days.length*meals.length,completedRows=rows.filter(function(r){return r&&r.completed;}).length,percent=possible?Math.round((completedRows/possible)*100):0,latest=rows.filter(function(r){return r&&r.completed&&r.completed_at;}).sort(function(a,b){return String(b.completed_at).localeCompare(String(a.completed_at));})[0],latestText='لا يوجد تسجيل مؤكد';
+ if(latest){var latestActor=latest.recorded_by_account_id?'المريض':(latest.recorded_by_admin_id?'الموظف':'غير محدد');latestText=confirmed(latest.completed_at)+' · '+latestActor;}
+ var summary='<div class="nutrition-summary"><div><small>إجمالي الفترة</small><b>'+completedRows+' من '+possible+' وجبة</b></div><div><small>نسبة الالتزام</small><b>'+percent+'%</b></div><div><small>آخر تسجيل</small><b>'+esc(latestText)+'</b></div></div>';
+ return summary+'<div class="nutrition-history-scroll"><table class="nutrition-history-table"><thead><tr>'+head+'</tr></thead><tbody>'+body+'</tbody></table></div>';
 }
 window.SwnwNutritionView={esc:esc,today:today,cairoDay:cairoDay,date:date,dayDate:dayDate,shiftDay:shiftDay,confirmed:confirmed,status:status,history:history};
 })();
