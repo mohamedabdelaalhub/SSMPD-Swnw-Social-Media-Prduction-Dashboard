@@ -232,6 +232,10 @@
         .eq("content_id", contentId)
         .order("created_at", { ascending: false }));
     },
+    listVideoWorkerHeartbeats: function () {
+      return handle(client.from("video_worker_heartbeats").select("*")
+        .order("last_seen_at", { ascending: false }));
+    },
     createVideoJob: function (contentId) {
       return handle(client.rpc("create_video_job", { p_content_id: contentId }));
     },
