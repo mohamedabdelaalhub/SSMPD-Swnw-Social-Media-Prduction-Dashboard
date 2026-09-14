@@ -3075,6 +3075,7 @@
     var canDoctor = isDoctorOnly();
     var canVisitWrite = canUp || canDoctor;   // إضافة/تعديل زيارة
     var canVisitDelete = canUp;               // حذف زيارة — أرشيف كامل بس
+    var canDeleteNutrition = !!(me && (me.role === "super_admin" || me.can_delete_nutrition_visits));
     var canRxWrite = canUp || canDoctor;      // إضافة روشتة (تعديل/حذف روشتة فاضلين أرشيف كامل بس تحت)
     html += '<div class="section" style="padding:12px 14px;">' +
       '<h3 style="font-size:13px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
@@ -3136,10 +3137,11 @@
           .filter(Boolean).join(' · ');
         html += '<tr><td>' + fmtDate(v.visit_date) + '</td><td>' + escapeHtml(v.visit_number || '—') + '</td>' +
           '<td>' + escapeHtml(v.complaint || '—') + (v.referred_to_other_doctor ? '<br><span style="color:var(--c-accent2, #F15A22);">محوّل لـ' + escapeHtml(v.referred_doctor_name || 'طبيب آخر') + '</span>' : '') + '</td><td>' + escapeHtml(plan || '—') + '</td>' +
-          '<td>' + (v.follow_up_date ? fmtDate(v.follow_up_date) : '—') + '</td>' +
+          '<td>' + (v.follow_up_status === 'no_show' ? '<span style="color:var(--c-muted);">لم يتم الحضور</span>' : (v.follow_up_status === 'attended' ? '<span style="color:#177a56;">تم الحضور</span>' : (v.follow_up_date ? fmtDate(v.follow_up_date) : '—'))) + '</td>' +
           (canVisitWrite ? '<td style="white-space:nowrap;">' +
             '<button class="btn ghost sm" data-view-visit="' + v.id + '">عرض</button> ' +
             '<button class="btn ghost sm" data-edit-visit="' + v.id + '">تعديل</button> ' +
+            (v.follow_up_date && v.follow_up_status !== 'no_show' ? '<button class="btn ghost sm" data-followup-attended="' + v.id + '">تم الحضور</button> <button class="btn ghost sm" data-followup-no-show="' + v.id + '">لم يتم الحضور</button> ' : '') +
             (canVisitDelete ? '<button class="btn danger sm" data-del-visit="' + v.id + '">حذف</button>' : '') + '</td>' : '') + '</tr>';
       });
       html += '</tbody></table>';
@@ -3365,7 +3367,7 @@
         html += '<details class="nutrition-visit-card"'+(i===0?' open':'')+'><summary><div><h4>'+escapeHtml(r.template_name_snapshot || 'خطة التغذية')+'</h4><div class="nutrition-meta">'+ui.date(r.visit_date)+(r.visit_time?' · '+escapeHtml(r.visit_time):'')+'<br>'+escapeHtml(r.doctor_name ? 'الطبيب · '+r.doctor_name : 'الطبيب غير مسجل')+'</div></div></summary><div class="nutrition-visit-body"><div class="nutrition-actions">'+
           '<button class="btn ghost sm" data-edit-nutrition-visit="'+r.id+'">تعديل الزيارة</button>'+
           '<button class="btn ghost sm" data-print-nutrition-visit="'+r.id+'">طباعة الخطة</button>'+
-          (canUp?'<details class="nutrition-more"><summary>خيارات</summary><button class="btn danger sm" data-del-nutrition-visit="'+r.id+'">حذف الزيارة</button></details>':'')+'</div>'+
+          (canDeleteNutrition?'<details class="nutrition-more"><summary>خيارات</summary><button class="btn danger sm" data-del-nutrition-visit="'+r.id+'">حذف الزيارة</button></details>':'')+'</div>'+
           '<div data-nutrition-status="'+escapeHtml(r.id)+'"></div></div></details>';
       });
     }
@@ -3433,6 +3435,15 @@
         window.SSMPDDb.deletePatientVisit(visitId).then(function () {
           T.show("اتحذفت الزيارة");
           reloadModal();
+        }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
+      };
+    });
+    backdrop.querySelectorAll("[data-followup-attended], [data-followup-no-show]").forEach(function (btn) {
+      btn.onclick = function () {
+        var status = btn.hasAttribute("data-followup-attended") ? "attended" : "no_show";
+        var visitId = btn.getAttribute(status === "attended" ? "data-followup-attended" : "data-followup-no-show");
+        window.SSMPDDb.updatePatientVisit(visitId, { follow_up_status: status }).then(function () {
+          T.show(status === "attended" ? "تم تأكيد حضور المتابعة" : "تم تسجيل عدم الحضور"); reloadModal();
         }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
       };
     });
