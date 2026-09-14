@@ -3141,7 +3141,7 @@
           (canVisitWrite ? '<td style="white-space:nowrap;">' +
             '<button class="btn ghost sm" data-view-visit="' + v.id + '">عرض</button> ' +
             '<button class="btn ghost sm" data-edit-visit="' + v.id + '">تعديل</button> ' +
-            (v.follow_up_date && v.follow_up_status !== 'no_show' ? '<button class="btn ghost sm" data-followup-attended="' + v.id + '">تم الحضور</button> <button class="btn ghost sm" data-followup-no-show="' + v.id + '">لم يتم الحضور</button> ' : '') +
+            (v.follow_up_date && (!v.follow_up_status || v.follow_up_status === 'pending') ? '<button class="btn ghost sm" data-followup-attended="' + v.id + '">تم الحضور</button> <button class="btn ghost sm" data-followup-no-show="' + v.id + '">لم يتم الحضور</button> ' : '') +
             (canVisitDelete ? '<button class="btn danger sm" data-del-visit="' + v.id + '">حذف</button>' : '') + '</td>' : '') + '</tr>';
       });
       html += '</tbody></table>';
