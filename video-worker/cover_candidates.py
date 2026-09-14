@@ -52,7 +52,7 @@ def build(job, output, ffmpeg, duration, template_dir=None):
                 command = [
                     ffmpeg, "-y", "-ss", f"{at:.3f}", "-i", str(source.resolve()),
                     "-i", str(template.resolve()), "-filter_complex", graph,
-                    "-map", "[out]", "-frames:v", "1", "-q:v", "2", str(path.resolve()),
+                    "-map", "[out]", "-frames:v", "1", "-c:v", "mjpeg", "-threads", "1", "-q:v", "2", str(path.resolve()),
                 ]
             else:
                 graph = (
@@ -65,7 +65,7 @@ def build(job, output, ffmpeg, duration, template_dir=None):
                 command = [
                     ffmpeg, "-y", "-ss", f"{at:.3f}", "-i", str(source.resolve()),
                     "-filter_complex", graph,
-                    "-map", "[out]", "-frames:v", "1", "-q:v", "2", str(path.resolve()),
+                    "-map", "[out]", "-frames:v", "1", "-c:v", "mjpeg", "-threads", "1", "-q:v", "2", str(path.resolve()),
                 ]
             p = subprocess.run(command, cwd=str(output.parent), capture_output=True, text=True)
             if p.returncode or not path.exists():
