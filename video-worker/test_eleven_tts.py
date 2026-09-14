@@ -81,6 +81,18 @@ class ElevenTests(unittest.TestCase):
         self.assertEqual(script, 'تابعوا مع الدكتورة دينا حسني في العيادة.')
         self.assertEqual(synth.call_args.args[0], 'تابعوا مع الدكتورة دينا حُسْني في العيادة.')
 
+    def test_dr_dina_hosny_has_no_abbreviation_pause(self):
+        script = 'تابعوا مع د. دينا حسني في العيادة.'
+        with patch('worker.uploaded_asset_paths', return_value=[]), patch('eleven_tts.config', return_value=('secret', eleven_tts.VOICE_ID)), patch('eleven_tts.synthesize', return_value=eleven_tts.VOICE_ID) as synth:
+            worker.synthesize(script, Path('.'), {})
+        self.assertEqual(script, 'تابعوا مع د. دينا حسني في العيادة.')
+        self.assertEqual(synth.call_args.args[0], 'تابعوا مع الدكتورة دينا حُسْني في العيادة.')
+
+    def test_short_caption_chunks_use_five_words_or_fewer(self):
+        chunks = worker.short_caption_chunks('إحنا هنا عشان نسمعك ونفهم إيه اللي تاعبك ونشرح لك كل خطوة.')
+        self.assertEqual(chunks, ['إحنا هنا عشان نسمعك ونفهم', 'إيه اللي تاعبك ونشرح لك', 'كل خطوة.'])
+        self.assertTrue(all(len(chunk.split()) <= 5 for chunk in chunks))
+
     def test_ebaatlena_is_spoken_smoothly_without_changing_script(self):
         script = 'لو عندك سؤال، ابعتلنا وإحنا نساعدك.'
         with patch('worker.uploaded_asset_paths', return_value=[]), patch('eleven_tts.config', return_value=('secret', eleven_tts.VOICE_ID)), patch('eleven_tts.synthesize', return_value=eleven_tts.VOICE_ID) as synth:
