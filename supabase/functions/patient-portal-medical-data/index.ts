@@ -80,7 +80,7 @@ Deno.serve(async (req) => {
       .select("patient_id, treating_doctor, specialty, height, weight, blood_pressure, blood_sugar, pulse, oxygen_percent, chronic_conditions, surgeries, family_history, updated_at")
       .in("patient_id", patientIds),
     admin.from("patient_visits")
-      .select("id, patient_id, visit_number, visit_date, encounter_type, doctor_name, specialty, complaint, medications, xrays, labs, other_recommendations, follow_up_date, blood_pressure, blood_sugar, pulse, created_at")
+      .select("id, patient_id, visit_number, visit_date, encounter_type, doctor_name, specialty, complaint, medications, xrays, labs, other_recommendations, follow_up_date, follow_up_status, follow_up_status_at, blood_pressure, blood_sugar, pulse, created_at")
       .in("patient_id", patientIds)
       .order("visit_date", { ascending: false })
       .limit(250),
@@ -115,7 +115,7 @@ Deno.serve(async (req) => {
     const prescriptions = prescriptionsByPatient[patient.id] || [];
     const latestVisit = visits[0] || null;
     const upcomingFollowUps = visits
-      .filter((v: any) => v.follow_up_date && v.follow_up_date >= today)
+      .filter((v: any) => v.follow_up_date && v.follow_up_status !== "no_show" && v.follow_up_status !== "attended" && v.follow_up_date >= today)
       .sort((a: any, b: any) => String(a.follow_up_date).localeCompare(String(b.follow_up_date)));
 
     const chronicConditions = Array.isArray(profile.chronic_conditions)
