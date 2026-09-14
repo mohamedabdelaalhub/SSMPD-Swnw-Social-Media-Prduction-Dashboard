@@ -132,7 +132,7 @@ function renderVisits(data){
         visitBlock("الأشعة المطلوبة",v.xrays)+
         visitBlock("التحاليل المطلوبة",v.labs)+
         visitBlock("توصيات أخرى",v.other_recommendations)+
-        (v.follow_up_date?'<div class="visit-followup"><b>موعد المتابعة</b><span>'+fmtDate(v.follow_up_date)+'</span></div>':'')+
+        (v.follow_up_date?'<div class="visit-followup '+(v.follow_up_status==="no_show"?"visit-followup-no-show":v.follow_up_status==="attended"?"visit-followup-attended":"")+'"><b>'+(v.follow_up_status==="no_show"?"لم يتم الحضور":v.follow_up_status==="attended"?"تم الحضور":"موعد المتابعة")+'</b><span>'+(v.follow_up_status==="no_show"?"":v.follow_up_status==="attended"?"تم تأكيد الحضور":fmtDate(v.follow_up_date))+'</span></div>':'')+
       '</section>';
     }).join("")+'</div></div></article>';
   }).join("")+'</div>';
