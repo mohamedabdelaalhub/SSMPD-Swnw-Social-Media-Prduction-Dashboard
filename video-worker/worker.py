@@ -497,20 +497,29 @@ def split_script(text: str) -> list[str]:
 
 
 def short_caption_chunks(text: str, words_per_caption: int = 5) -> list[str]:
-    """Keep captions short without separating abbreviations or names."""
+    """Keep Arabic captions short, readable, and free of trailing punctuation."""
     out: list[str] = []
+
+    def clean(word: str) -> str:
+        return re.sub(r"[،,.!؟؛:]+", "", word).strip()
+
     for sentence in split_script(text):
         words = sentence.split()
         units: list[tuple[str, int]] = []
         index = 0
         while index < len(words):
             word = words[index]
-            if word in ("د.", "د", "دكتور") and index + 1 < len(words):
-                units.append((word + " " + words[index + 1], 2))
-                index += 2
-            else:
-                units.append((word, 1))
-                index += 1
+            if word in ("د.", "د", "دكتور") and index + 2 < len(words):
+                name = " ".join(clean(part) for part in words[index + 1:index + 3] if clean(part))
+                if name:
+                    units.append(("دكتور " + name, 3))
+                    index += 3
+                    continue
+
+            value = clean(word)
+            if value:
+                units.append((value, 1))
+            index += 1
 
         current: list[str] = []
         word_count = 0
@@ -800,14 +809,17 @@ def render(job: dict[str, Any], job_dir: Path) -> tuple[Path, str]:
     if p.returncode != 0 or not visual_out.exists():
         raise WorkerError("FFmpeg logo render failed: " + p.stderr[-1500:])
 
+    main_duration = probe_duration(ffprobe, visual_out)
     video_with_ending = append_brand_ending(ffmpeg, job, visual_out)
     final_duration = probe_duration(ffprobe, video_with_ending)
 
     if music:
+        music_fade_start = max(0.0, main_duration - 0.7)
         mix_cmd = [
             ffmpeg, "-y", "-i", str(video_with_ending), "-stream_loop", "-1", "-i", str(music),
             "-filter_complex",
-            f"[1:a]volume=0.08,atrim=0:{final_duration:.3f}[m];[0:a][m]amix=inputs=2:duration=first:dropout_transition=2[a]",
+            f"[1:a]volume=0.08,atrim=0:{main_duration:.3f},afade=t=out:st={music_fade_start:.3f}:d=0.7[m];"
+            "[0:a][m]amix=inputs=2:duration=first:dropout_transition=2[a]",
             "-map", "0:v:0", "-map", "[a]", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
             "-t", f"{final_duration:.3f}", "-movflags", "+faststart", str(out),
         ]
