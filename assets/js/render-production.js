@@ -510,6 +510,7 @@ function openAgentImportModal(parentBackdrop) {
       var latest = jobs.length ? jobs[0] : null;
       var missing = videoJobMissingFields(item);
       var mediaMode = item.video_media_mode || "uploaded_plus_auto";
+      var musicMood = item.video_music_mood || "calm";
       var html = '<div class="section"><h4 style="margin:0 0 8px;">🎬 إنتاج الفيديو</h4>';
 
       html += '<div style="border:1px solid var(--c-border);border-radius:10px;padding:10px;margin-bottom:12px;">' +
@@ -521,6 +522,13 @@ function openAgentImportModal(parentBackdrop) {
               '<option value="uploaded_plus_auto"' + (mediaMode === "uploaded_plus_auto" ? " selected" : "") + '>استخدم المرفوع وكمل الناقص تلقائيًا</option>' +
               '<option value="uploaded_only"' + (mediaMode === "uploaded_only" ? " selected" : "") + '>المواد المرفوعة فقط</option>' +
               '<option value="auto"' + (mediaMode === "auto" ? " selected" : "") + '>إنتاج تلقائي بالكامل</option>' +
+            '</select>' +
+          '</div>' +
+          '<div class="field" style="margin:0;min-width:170px;"><label>موسيقى الفيديو</label>' +
+            '<select id="video-music-mood">' +
+              '<option value="calm"' + (musicMood === "calm" ? " selected" : "") + '>هادئة</option>' +
+              '<option value="upbeat"' + (musicMood === "upbeat" ? " selected" : "") + '>حماسية</option>' +
+              '<option value="serious"' + (musicMood === "serious" ? " selected" : "") + '>جادة</option>' +
             '</select>' +
           '</div>' +
           '<div class="field" style="margin:0;min-width:150px;"><label>نوع الملف</label>' +
@@ -640,6 +648,22 @@ function openAgentImportModal(parentBackdrop) {
             if (window.SSMPDToast) window.SSMPDToast.show("تم حفظ Media Mode: " + videoMediaModeLabel(mode), "success");
           }).catch(function (e) {
             mediaModeSelect.disabled = false;
+            alert("خطأ: " + e.message);
+          });
+        };
+      }
+
+      var musicMoodSelect = slot.querySelector("#video-music-mood");
+      if (musicMoodSelect) {
+        musicMoodSelect.onchange = function () {
+          var mood = musicMoodSelect.value;
+          musicMoodSelect.disabled = true;
+          window.SSMPDDb.updateContentItem(item.id, { video_music_mood: mood }).then(function () {
+            item.video_music_mood = mood;
+            musicMoodSelect.disabled = false;
+            if (window.SSMPDToast) window.SSMPDToast.show("تم حفظ نوع موسيقى الفيديو", "success");
+          }).catch(function (e) {
+            musicMoodSelect.disabled = false;
             alert("خطأ: " + e.message);
           });
         };
