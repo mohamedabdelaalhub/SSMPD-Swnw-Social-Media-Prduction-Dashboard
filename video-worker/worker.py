@@ -36,6 +36,10 @@ DEFAULT_FFPROBE = "/opt/homebrew/opt/ffmpeg-full/bin/ffprobe"
 POLL_SECONDS = int(os.environ.get("SSMPD_VIDEO_POLL_SECONDS", "10"))
 WORK_ROOT = Path(os.environ.get("SSMPD_VIDEO_WORK_ROOT", str(Path.home() / "SSMPDVideoWorker" / "jobs")))
 WORKER_ID = os.environ.get("SSMPD_VIDEO_WORKER_ID", socket.gethostname())
+HEARTBEAT_SECONDS = 60
+CLEANUP_INTERVAL_SECONDS = 6 * 60 * 60
+SUCCESSFUL_JOB_RETENTION_DAYS = 7
+FAILED_JOB_RETENTION_DAYS = 14
 
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".heic"}
 VIDEO_EXTENSIONS = {".mp4", ".mov", ".m4v", ".webm"}
@@ -255,6 +259,66 @@ def update_job(base_url: str, key: str, job_id: str, patch: dict[str, Any]) -> N
         patch,
         {"Prefer": "return=minimal"},
     )
+
+
+def heartbeat(base_url: str, key: str, status: str, job_id: str | None = None) -> None:
+    """Record that the local worker is alive without exposing device paths or secrets."""
+    try:
+        request_json(
+            "POST",
+            base_url + "/rest/v1/rpc/video_worker_heartbeat",
+            key,
+            {
+                "p_worker_id": WORKER_ID,
+                "p_status": status,
+                "p_current_job_id": job_id,
+            },
+        )
+    except Exception:
+        # A status widget must never stop video production.
+        pass
+
+
+def safe_error_message(error: Exception | str, limit: int = 1800) -> str:
+    """Keep dashboard errors useful while hiding local user and job paths."""
+    text = str(error).replace("\\", "/")
+    text = re.sub(r"/Users/[^/\s]+", "~", text)
+    text = re.sub(r"/home/[^/\s]+", "~", text)
+    text = re.sub(r"~/(?:SSMPDVideoWorker|Downloads|Desktop|Documents)(?:/[^\s]*)?", "~", text)
+    return text[:limit]
+
+
+def cleanup_old_job_dirs(base_url: str, key: str) -> int:
+    """Remove only completed local job folders after their retention window."""
+    now = time.time()
+    cutoffs = {
+        "ready": now - SUCCESSFUL_JOB_RETENTION_DAYS * 86400,
+        "cancelled": now - SUCCESSFUL_JOB_RETENTION_DAYS * 86400,
+        "failed": now - FAILED_JOB_RETENTION_DAYS * 86400,
+    }
+    removed = 0
+    for status, cutoff in cutoffs.items():
+        cutoff_iso = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(cutoff))
+        try:
+            rows = request_json(
+                "GET",
+                base_url + "/rest/v1/video_jobs?select=id,status,updated_at"
+                + "&status=eq." + status
+                + "&updated_at=lt." + urllib.parse.quote(cutoff_iso, safe=":"),
+                key,
+            ) or []
+        except Exception:
+            continue
+        for row in rows:
+            job_id = str(row.get("id") or "")
+            if not re.fullmatch(r"[0-9a-fA-F-]{36}", job_id):
+                continue
+            job_dir = WORK_ROOT / job_id
+            if job_dir.parent != WORK_ROOT or not job_dir.is_dir():
+                continue
+            shutil.rmtree(job_dir, ignore_errors=True)
+            removed += 1
+    return removed
 
 
 def download_job_assets(base_url: str, key: str, job: dict[str, Any], job_dir: Path) -> list[dict[str, Any]]:
@@ -838,15 +902,18 @@ def process_job(base_url: str, key: str, job: dict[str, Any]) -> None:
     job_dir.mkdir(parents=True, exist_ok=True)
     (job_dir / "job.json").write_text(json.dumps(job, ensure_ascii=False, indent=2), encoding="utf-8")
 
+    heartbeat(base_url, key, "working", job_id)
     try:
         logo_asset(job)
         job["_downloaded_assets"] = download_job_assets(base_url, key, job, job_dir)
         update_job(base_url, key, job_id, {"status": "rendering"})
         output, voice = render(job, job_dir)
         archive_rendered_job(base_url, key, job, output)
+        heartbeat(base_url, key, "idle")
         print(f"READY {job_id} | voice={voice} | Google Drive", flush=True)
     except Exception as e:
-        msg = str(e)[:1800]
+        msg = safe_error_message(e)
+        heartbeat(base_url, key, "error", job_id)
         try:
             update_job(
                 base_url,
@@ -907,9 +974,10 @@ def archive_rendered_job(base_url: str, key: str, job: dict[str, Any], output: P
             "render_finished_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         })
     except Exception as e:
+        message = safe_error_message(e, 1000)
         update_job(base_url, key, job_id, {
-            "status": "failed", "archive_status": "failed", "archive_error": str(e)[:1000],
-            "error_message": "Render retained locally. Retry archive without rendering: " + str(e)[:1000],
+            "status": "failed", "archive_status": "failed", "archive_error": message,
+            "error_message": "Render retained locally. Retry archive without rendering: " + message,
         })
         raise
 
@@ -1055,15 +1123,27 @@ def main() -> int:
         return 0
     WORK_ROOT.mkdir(parents=True, exist_ok=True)
     print("SSMPD Video Worker started:", WORKER_ID, flush=True)
+    last_heartbeat = 0.0
+    last_cleanup = 0.0
 
     while True:
+        now = time.time()
+        if now - last_heartbeat >= HEARTBEAT_SECONDS:
+            heartbeat(base_url, key, "idle")
+            last_heartbeat = now
+        if now - last_cleanup >= CLEANUP_INTERVAL_SECONDS:
+            removed = cleanup_old_job_dirs(base_url, key)
+            if removed:
+                print("CLEANUP", removed, "old local job folders", flush=True)
+            last_cleanup = now
+
         job = claim_job(base_url, key)
         if job:
             print("CLAIMED", job.get("id"), job.get("title", ""), flush=True)
             try:
                 process_job(base_url, key, job)
             except Exception as e:
-                print("FAILED", job.get("id"), str(e), file=sys.stderr, flush=True)
+                print("FAILED", job.get("id"), safe_error_message(e), file=sys.stderr, flush=True)
             if args.once:
                 return 0
         elif args.once:
