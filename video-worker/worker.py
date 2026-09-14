@@ -764,6 +764,21 @@ def upload_cover_preview(base_url, key, job, candidate):
     return storage_path
 
 
+def rerender_preview(base_url: str, key: str, job_id: str) -> None:
+    """Render an existing job locally without contacting the archive bridge."""
+    if not re.fullmatch(r"[0-9a-fA-F-]{36}", job_id):
+        raise WorkerError("Invalid job ID.")
+    rows = request_json("GET", base_url + "/rest/v1/video_jobs?id=eq." + job_id + "&select=*", key)
+    if not rows:
+        raise WorkerError("Video job was not found.")
+    job = rows[0]
+    job_dir = WORK_ROOT / job_id
+    job_dir.mkdir(parents=True, exist_ok=True)
+    job["_downloaded_assets"] = download_job_assets(base_url, key, job, job_dir)
+    output, voice = render(job, job_dir)
+    print(f"RENDERED {job_id} | voice={voice} | local={output}", flush=True)
+
+
 def retry_archive(base_url: str, key: str, job_id: str) -> None:
     if not re.fullmatch(r"[0-9a-fA-F-]{36}", job_id):
         raise WorkerError("Invalid job ID.")
@@ -834,6 +849,7 @@ def main() -> int:
     parser.add_argument("--test-voice", action="store_true", help="Test ElevenLabs without claiming a video job")
     parser.add_argument("--once", action="store_true")
     parser.add_argument("--retry-archive", metavar="JOB_ID")
+    parser.add_argument("--rerender", metavar="JOB_ID", help="Render an existing job locally without archive upload")
     args = parser.parse_args()
 
     if args.check:
@@ -858,6 +874,9 @@ def main() -> int:
             return 1
 
     base_url, key = config()
+    if args.rerender:
+        rerender_preview(base_url, key, args.rerender)
+        return 0
     if args.retry_archive:
         retry_archive(base_url, key, args.retry_archive)
         return 0
