@@ -347,9 +347,11 @@ def macos_synthesize(script: str, out_aiff: Path) -> str:
 
 
 def spoken_script(script: str) -> str:
-    """Keep the published script intact while guiding Egyptian Arabic pronunciation."""
+    """Keep published copy intact while guiding Egyptian Arabic pronunciation."""
     return (
         script
+        .replace("د. دينا حسني", "الدكتورة دينا حُسْني")
+        .replace("د.دينا حسني", "الدكتورة دينا حُسْني")
         .replace("دينا حسني", "دينا حُسْني")
         .replace("ابعتلنا", "ابعَت لنا")
     )
@@ -414,40 +416,69 @@ def split_script(text: str) -> list[str]:
     return chunks
 
 
+def short_caption_chunks(text: str, words_per_caption: int = 5) -> list[str]:
+    """Keep every on-screen caption to four or five spoken words."""
+    out: list[str] = []
+    for sentence in split_script(text):
+        words = sentence.split()
+        for start in range(0, len(words), words_per_caption):
+            chunk = " ".join(words[start:start + words_per_caption]).strip()
+            if chunk:
+                out.append(chunk)
+    return out
+
+
+def brand_font(job: dict[str, Any]) -> str:
+    settings = job.get("cover_settings") or {}
+    configured = str(settings.get("font_family") or "").strip()
+    if configured:
+        return configured
+    return "BigVestaArabicBeta"
+
+
+def closing_card(job: dict[str, Any]) -> str:
+    """A visual-only ending card; audio remains exactly the approved script."""
+    settings = job.get("cover_settings") or {}
+    phone = str(settings.get("phone") or job.get("phone") or "").strip()
+    whatsapp = str(settings.get("whatsapp") or job.get("whatsapp") or "").strip()
+    if job.get("brand") == "dr_dina":
+        phone = phone or "0236230005"
+        whatsapp = whatsapp or "+201010686264"
+    if phone and whatsapp:
+        return "للتواصل والحجز\\Nاتصل بنا: " + phone + "\\Nواتساب: " + whatsapp
+    return str(job.get("cta_text") or "").strip()
+
+
 def write_ass(job: dict[str, Any], target_duration: float, spoken_duration: float, path: Path) -> None:
-    title = ass_escape(str(job.get("title") or ""))
-    cta = ass_escape(str(job.get("cta_text") or ""))
-    parts = split_script(str(job.get("script_text") or ""))
+    parts = short_caption_chunks(str(job.get("script_text") or ""))
+    cta = closing_card(job)
+    font = brand_font(job)
 
     lines = [
         "[Script Info]",
         "ScriptType: v4.00+",
         "PlayResX: 1080",
         "PlayResY: 1920",
-        "WrapStyle: 2",
+        "WrapStyle: 0",
         "ScaledBorderAndShadow: yes",
         "",
         "[V4+ Styles]",
         "Format: Name,Fontname,Fontsize,PrimaryColour,SecondaryColour,OutlineColour,BackColour,Bold,Italic,Underline,StrikeOut,ScaleX,ScaleY,Spacing,Angle,BorderStyle,Outline,Shadow,Alignment,MarginL,MarginR,MarginV,Encoding",
-        "Style: Title,Arial,64,&H00FFFFFF,&H000000FF,&H00132636,&H80000000,-1,0,0,0,100,100,0,0,1,3,1,8,80,80,170,1",
-        "Style: Body,Arial,58,&H00FFFFFF,&H000000FF,&H00132636,&H80000000,-1,0,0,0,100,100,0,0,1,3,1,5,95,95,180,1",
-        "Style: CTA,Arial,58,&H00FFFFFF,&H000000FF,&H00132636,&H80000000,-1,0,0,0,100,100,0,0,1,3,1,2,95,95,190,1",
+        f"Style: Body,{font},46,&H00FFFFFF,&H000000FF,&H00132636,&H80000000,0,0,0,0,100,100,0,0,1,2,1,5,110,110,210,1",
+        f"Style: CTA,{font},42,&H00FFFFFF,&H000000FF,&H00132636,&H90000000,0,0,0,0,100,100,0,0,1,2,1,5,100,100,300,1",
         "",
         "[Events]",
         "Format: Layer,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text",
     ]
 
-    if title:
-        lines.append(f"Dialogue: 0,{ass_time(0)},{ass_time(min(3.2, target_duration))},Title,,0,0,0,,{title}")
-
     if parts:
-        total_chars = max(1, sum(max(1, len(p)) for p in parts))
+        total_words = max(1, sum(len(part.split()) for part in parts))
         cursor = 0.25
-        end_limit = max(cursor + 0.5, min(spoken_duration, target_duration - 2.5))
+        end_limit = max(cursor + 0.5, min(spoken_duration, target_duration - 2.8))
         available = max(0.5, end_limit - cursor)
         for idx, part in enumerate(parts):
-            weight = max(1, len(part)) / total_chars
-            seg = max(1.2, available * weight)
+            weight = max(1, len(part.split())) / total_words
+            seg = max(0.85, available * weight)
             end = end_limit if idx == len(parts) - 1 else min(end_limit, cursor + seg)
             lines.append(
                 f"Dialogue: 0,{ass_time(cursor)},{ass_time(end)},Body,,0,0,0,,{ass_escape(part)}"
@@ -455,8 +486,10 @@ def write_ass(job: dict[str, Any], target_duration: float, spoken_duration: floa
             cursor = end
 
     if cta:
-        start = max(0.0, target_duration - 2.5)
-        lines.append(f"Dialogue: 0,{ass_time(start)},{ass_time(target_duration)},CTA,,0,0,0,,{cta}")
+        start = max(0.0, target_duration - 2.7)
+        lines.append(
+            f"Dialogue: 1,{ass_time(start)},{ass_time(target_duration)},CTA,,0,0,0,,{ass_escape(cta)}"
+        )
 
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
@@ -569,72 +602,73 @@ def render(job: dict[str, Any], job_dir: Path) -> tuple[Path, str]:
 
     voice_path, voice = synthesize(script, job_dir, job)
     audio_dur = probe_duration(ffprobe, voice_path)
-
-    target = max(float(min_s), min(float(max_s), audio_dur + 2.5))
-    voice_target = max(1.0, target - 2.5)
+    target = max(float(min_s), min(float(max_s), audio_dur + 2.7))
+    voice_target = max(1.0, target - 2.7)
     speed = audio_dur / voice_target if audio_dur > voice_target else 1.0
     spoken_duration = audio_dur / speed
 
     ass = job_dir / "captions.ass"
     write_ass(job, target, spoken_duration, ass)
+    logo = Path(str(logo_asset(job, downloaded=True).get("local_path") or ""))
+    if not logo.is_file():
+        raise WorkerError("Saved brand logo could not be downloaded.")
 
     music_assets = uploaded_asset_paths(job, "music")
     out = job_dir / "output.mp4"
-    base_out = job_dir / ("output-base.mp4" if music_assets else "output.mp4")
+    captioned = job_dir / "output-captioned.mp4"
+    visual_out = job_dir / "output-visual.mp4"
     ass_filter = "ass=filename='" + filter_path(ass) + "'"
-
     visual_background = render_visual_background(ffmpeg, job, job_dir, target)
+
     if visual_background:
         cmd = [ffmpeg, "-y", "-i", str(visual_background), "-i", str(voice_path)]
     else:
         cmd = [
-            ffmpeg, "-y",
-            "-f", "lavfi",
+            ffmpeg, "-y", "-f", "lavfi",
             "-i", f"color=c=0x102A43:s=1080x1920:r=30:d={target:.3f}",
             "-i", str(voice_path),
         ]
 
     if speed > 1.0001:
-        cmd += [
-            "-filter_complex", f"[1:a]{atempo_chain(speed)}[a]",
-            "-map", "0:v:0", "-map", "[a]",
-        ]
+        cmd += ["-filter_complex", f"[1:a]{atempo_chain(speed)}[a]", "-map", "0:v:0", "-map", "[a]"]
     else:
         cmd += ["-map", "0:v:0", "-map", "1:a:0"]
-
     cmd += [
-        "-vf", ass_filter,
-        "-c:v", "libx264",
-        "-preset", "medium",
-        "-crf", "21",
-        "-pix_fmt", "yuv420p",
-        "-c:a", "aac",
-        "-b:a", "192k",
-        "-t", f"{target:.3f}",
-        "-movflags", "+faststart",
-        str(base_out),
+        "-vf", ass_filter, "-c:v", "libx264", "-preset", "medium", "-crf", "21",
+        "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k",
+        "-t", f"{target:.3f}", "-movflags", "+faststart", str(captioned),
     ]
-
     p = run(cmd, check=False)
-    if p.returncode != 0 or not base_out.exists():
-        raise WorkerError("FFmpeg render failed: " + p.stderr[-1500:])
+    if p.returncode != 0 or not captioned.exists():
+        raise WorkerError("FFmpeg caption render failed: " + p.stderr[-1500:])
+
+    logo_graph = (
+        "[1:v]scale=150:-1:force_original_aspect_ratio=decrease[logo];"
+        "[0:v][logo]overlay=x=48:y=54:format=auto[v]"
+    )
+    p = run([
+        ffmpeg, "-y", "-i", str(captioned), "-i", str(logo),
+        "-filter_complex", logo_graph, "-map", "[v]", "-map", "0:a:0",
+        "-c:v", "libx264", "-preset", "medium", "-crf", "21", "-pix_fmt", "yuv420p",
+        "-c:a", "copy", "-movflags", "+faststart", str(visual_out),
+    ], check=False)
+    if p.returncode != 0 or not visual_out.exists():
+        raise WorkerError("FFmpeg logo render failed: " + p.stderr[-1500:])
 
     if music_assets:
         music = music_assets[0]
         mix_cmd = [
-            ffmpeg, "-y",
-            "-i", str(base_out),
-            "-stream_loop", "-1", "-i", str(music),
+            ffmpeg, "-y", "-i", str(visual_out), "-stream_loop", "-1", "-i", str(music),
             "-filter_complex",
             f"[1:a]volume=0.10,atrim=0:{target:.3f}[m];[0:a][m]amix=inputs=2:duration=first:dropout_transition=2[a]",
-            "-map", "0:v:0", "-map", "[a]",
-            "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
-            "-t", f"{target:.3f}", "-movflags", "+faststart",
-            str(out),
+            "-map", "0:v:0", "-map", "[a]", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
+            "-t", f"{target:.3f}", "-movflags", "+faststart", str(out),
         ]
         mp = run(mix_cmd, check=False)
         if mp.returncode != 0 or not out.exists():
             raise WorkerError("Music mix failed: " + mp.stderr[-1500:])
+    else:
+        shutil.move(str(visual_out), str(out))
 
     return out, voice
 
