@@ -115,7 +115,7 @@ Deno.serve(async (req) => {
     const prescriptions = prescriptionsByPatient[patient.id] || [];
     const latestVisit = visits[0] || null;
     const upcomingFollowUps = visits
-      .filter((v: any) => v.follow_up_date && v.follow_up_status !== "no_show" && v.follow_up_status !== "attended" && v.follow_up_date >= today)
+      .filter((v: any) => v.follow_up_date && (v.follow_up_status === "attended" || v.follow_up_status === "no_show" || v.follow_up_date >= today))
       .sort((a: any, b: any) => String(a.follow_up_date).localeCompare(String(b.follow_up_date)));
 
     const chronicConditions = Array.isArray(profile.chronic_conditions)
