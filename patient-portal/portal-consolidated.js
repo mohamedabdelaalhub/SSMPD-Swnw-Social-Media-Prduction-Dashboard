@@ -34,7 +34,6 @@ function icon(name){var p={user:'<path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7
 
 function invokeMedical(force){
   if(!force&&medicalCache&&Date.now()-medicalCacheAt<30000)return Promise.resolve(medicalCache);
-  client.rpc("refresh_overdue_followups").catch(function(){});
   return client.functions.invoke("patient-portal-medical-data",{body:{op:"overview"}}).then(function(r){
     if(r.error)throw r.error;
     if(r.data&&r.data.error)throw new Error(r.data.error);
