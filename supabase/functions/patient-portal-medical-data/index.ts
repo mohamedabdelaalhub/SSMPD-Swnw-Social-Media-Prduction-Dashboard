@@ -77,10 +77,10 @@ Deno.serve(async (req) => {
       .select("id, patient_code, full_name, phone, email, age, gender, medical_record_no, last_visit_date")
       .in("id", patientIds),
     admin.from("patient_medical_profile")
-      .select("patient_id, treating_doctor, specialty, height, weight, blood_pressure, blood_sugar, pulse, oxygen_percent, chronic_conditions, surgeries, family_history, updated_at")
+      .select("patient_id, height, chronic_conditions, surgeries, family_history, updated_at")
       .in("patient_id", patientIds),
     admin.from("patient_visits")
-      .select("id, patient_id, visit_number, visit_date, encounter_type, doctor_name, specialty, complaint, medications, xrays, labs, other_recommendations, follow_up_date, follow_up_time, follow_up_status, follow_up_status_at, follow_up_reschedule_reason, follow_up_reschedule_note, follow_up_patient_message, follow_up_rescheduled_at, blood_pressure, blood_sugar, pulse, created_at")
+      .select("id, patient_id, visit_number, visit_date, encounter_type, doctor_name, specialty, complaint, medications, xrays, labs, other_recommendations, follow_up_date, follow_up_time, follow_up_status, follow_up_status_at, follow_up_reschedule_reason, follow_up_reschedule_note, follow_up_patient_message, follow_up_rescheduled_at, blood_pressure, blood_sugar, pulse, weight, oxygen_percent, created_at")
       .in("patient_id", patientIds)
       .order("visit_date", { ascending: false })
       .limit(250),
@@ -142,14 +142,7 @@ Deno.serve(async (req) => {
       },
       access: accessByPatient[patient.id] || null,
       medical_profile: {
-        treating_doctor: profile.treating_doctor || null,
-        specialty: profile.specialty || null,
         height: profile.height || null,
-        weight: profile.weight || null,
-        blood_pressure: profile.blood_pressure || latestVisit?.blood_pressure || null,
-        blood_sugar: profile.blood_sugar || latestVisit?.blood_sugar || null,
-        pulse: profile.pulse || latestVisit?.pulse || null,
-        oxygen_percent: profile.oxygen_percent || null,
         chronic_conditions: chronicConditions,
         surgeries,
         family_history: familyHistory,
