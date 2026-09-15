@@ -325,8 +325,6 @@
       '<div class="field"><label>السن</label><input id="np-age" type="number" min="0"></div>' +
       '<div class="field"><label>النوع</label><select id="np-gender"><option value="">—</option><option value="male">ذكر</option><option value="female">أنثى</option></select></div>' +
       '<div class="field"><label>الرقم الطبي (اختياري)</label><input id="np-mrn"></div>' +
-      '<div class="field"><label>الطبيب المعالج (اختياري)</label><input id="np-doctor"></div>' +
-      '<div class="field"><label>التخصص (اختياري)</label><input id="np-specialty" placeholder="مثلاً: عام / اطفال / تجميل / كماوي"></div>' +
       '<button class="btn block" id="np-save">حفظ</button></div>';
     document.body.appendChild(backdrop);
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
@@ -340,8 +338,6 @@
       var age = document.getElementById("np-age").value.trim();
       var gender = document.getElementById("np-gender").value;
       var medical_record_no = document.getElementById("np-mrn").value.trim();
-      var treating_doctor = document.getElementById("np-doctor").value.trim();
-      var specialty = document.getElementById("np-specialty").value.trim();
       if (!full_name) { T.show("اكتب اسم المريض", "error"); return; }
       if (!phone) { T.show("اكتب رقم الهاتف", "error"); return; }
       window.SSMPDDb.createPatientArchive({
@@ -352,10 +348,6 @@
           T.show("اتضاف المريض بكود " + (res.patient_code || ""));
           backdrop.remove();
           var created = { id: res.id, full_name: full_name, patient_code: res.patient_code };
-          if (treating_doctor || specialty) {
-            window.SSMPDDb.savePatientMedicalProfile(res.id, { treating_doctor: treating_doctor || null, specialty: specialty || null }, me && me.id)
-              .catch(function () { /* البيانات الطبية اختيارية عند الإنشاء — مفيش داعي نوقف الفلو لو فشلت */ });
-          }
           if (onCreated) onCreated(created);
         }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
     };
@@ -408,7 +400,7 @@
     };
   }
 
-  // ---------- تعديل البيانات الطبية (طبيب معالج/تخصص/علامات حيوية/أمراض مزمنة/عمليات/تاريخ عائلي) ----------
+  // ---------- تعديل التاريخ الصحي الثابت (الأمراض المزمنة/العمليات/تاريخ العائلة) ----------
   function openEditMedicalProfileModal(patient, profile, onSaved) {
     profile = profile || {};
     var chronicByKey = {};
@@ -418,18 +410,8 @@
 
     var backdrop = document.createElement("div");
     backdrop.className = "modal-backdrop";
-    var html = '<div class="modal"><div class="modal-head"><h3>تعديل البيانات الطبية</h3><button class="modal-close">×</button></div>';
-
-    html += '<div class="field"><label>الطبيب المعالج</label><input id="mp-doctor" value="' + escapeHtml(profile.treating_doctor || "") + '"></div>';
-    html += '<div class="field"><label>التخصص</label><input id="mp-specialty" value="' + escapeHtml(profile.specialty || "") + '"></div>';
-    html += '<div style="display:flex;gap:8px;flex-wrap:wrap;">' +
-      '<div class="field" style="flex:1;min-width:120px;"><label>ضغط الدم</label><input id="mp-bp" value="' + escapeHtml(profile.blood_pressure || "") + '"></div>' +
-      '<div class="field" style="flex:1;min-width:120px;"><label>سكر الدم</label><input id="mp-sugar" value="' + escapeHtml(profile.blood_sugar || "") + '"></div>' +
-      '<div class="field" style="flex:1;min-width:120px;"><label>الوزن</label><input id="mp-weight" value="' + escapeHtml(profile.weight || "") + '"></div>' +
-      '<div class="field" style="flex:1;min-width:120px;"><label>النبض</label><input id="mp-pulse" value="' + escapeHtml(profile.pulse || "") + '"></div>' +
-      '<div class="field" style="flex:1;min-width:120px;"><label>نسبة الأكسجين</label><input id="mp-oxygen" value="' + escapeHtml(profile.oxygen_percent || "") + '"></div>' +
-      '</div>';
-
+    var html = '<div class="modal"><div class="modal-head"><h3>تعديل التاريخ الصحي</h3><button class="modal-close">×</button></div>';
+    html += '<p style="font-size:12px;color:var(--c-muted);margin:0 0 12px;">الطبيب والتخصص والقياسات تُسجّل داخل كل زيارة حتى يظل تاريخها دقيقًا.</p>';
     html += '<div class="field"><label>الأمراض المزمنة</label>';
     CHRONIC_CONDITIONS.forEach(function (cc) {
       var existing = chronicByKey[cc.key];
@@ -496,13 +478,6 @@
         if (disease) familyOut.push({ disease: disease, has: true });
       });
       var patch = {
-        treating_doctor: document.getElementById("mp-doctor").value.trim() || null,
-        specialty: document.getElementById("mp-specialty").value.trim() || null,
-        blood_pressure: document.getElementById("mp-bp").value.trim() || null,
-        blood_sugar: document.getElementById("mp-sugar").value.trim() || null,
-        weight: document.getElementById("mp-weight").value.trim() || null,
-        pulse: document.getElementById("mp-pulse").value.trim() || null,
-        oxygen_percent: document.getElementById("mp-oxygen").value.trim() || null,
         chronic_conditions: chronic_conditions,
         surgeries: surgeriesOut,
         family_history: familyOut
@@ -527,11 +502,18 @@
       '<div class="field"><label>رقم الزيارة</label><input id="vs-number" value="' + escapeHtml(v.visit_number || '') + '"></div>' +
       '<div class="field"><label>الشكوى</label><input id="vs-complaint" value="' + escapeHtml(v.complaint || '') + '"></div>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap;">' +
+      '<div class="field" style="flex:1;min-width:170px;"><label>الطبيب</label><input id="vs-doctor" value="' + escapeHtml(v.doctor_name || '') + '"></div>' +
+      '<div class="field" style="flex:1;min-width:170px;"><label>التخصص</label><input id="vs-specialty" value="' + escapeHtml(v.specialty || '') + '"></div>' +
+      '</div>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;">' +
       '<div class="field" style="flex:1;min-width:110px;"><label>ضغط الدم</label><input id="vs-bp" value="' + escapeHtml(v.blood_pressure || '') + '"></div>' +
       '<div class="field" style="flex:1;min-width:110px;"><label>سكر الدم</label><input id="vs-sugar" value="' + escapeHtml(v.blood_sugar || '') + '"></div>' +
       '<div class="field" style="flex:1;min-width:110px;"><label>النبض</label><input id="vs-pulse" value="' + escapeHtml(v.pulse || '') + '"></div>' +
+      '<div class="field" style="flex:1;min-width:110px;"><label>الوزن</label><input id="vs-weight" value="' + escapeHtml(v.weight || '') + '"></div>' +
+      '<div class="field" style="flex:1;min-width:110px;"><label>نسبة الأكسجين</label><input id="vs-oxygen" value="' + escapeHtml(v.oxygen_percent || '') + '"></div>' +
       '</div>' +
-      '<div class="field"><label>الأدوية</label><input id="vs-meds" value="' + escapeHtml(v.medications || '') + '"></div>' +
+      '<div class="field"><label>خطة الأدوية</label><p style="font-size:12px;color:var(--c-muted);margin:0 0 8px;">أضف الدواء ومواعيده ليظهر للمريض في جدول الجرعات.</p><div id="vs-medication-list"></div><button type="button" class="btn ghost sm" id="vs-add-medication">+ إضافة دواء</button></div>' +
+      '<div class="field"><label>ملاحظات دوائية إضافية</label><input id="vs-meds" value="' + escapeHtml(v.medications || '') + '"></div>' +
       '<div class="field"><label>الأشعة</label><input id="vs-xrays" value="' + escapeHtml(v.xrays || '') + '"></div>' +
       '<div class="field"><label>التحاليل</label><input id="vs-labs" value="' + escapeHtml(v.labs || '') + '"></div>' +
       '<div class="field"><label>توصيات أخرى</label><input id="vs-other" value="' + escapeHtml(v.other_recommendations || '') + '"></div>' +
@@ -551,6 +533,35 @@
     document.body.appendChild(backdrop);
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
     backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
+
+    var medicationList = backdrop.querySelector("#vs-medication-list");
+    function addMedicationRow(m) {
+      m = m || {};
+      var row = document.createElement("div");
+      row.className = "visit-medication-row";
+      row.style.cssText = "border:1px solid var(--c-border);border-radius:10px;padding:8px;margin-bottom:8px;display:grid;gap:7px;";
+      row.innerHTML = '<div style="display:flex;gap:7px;flex-wrap:wrap;"><input data-med-name placeholder="اسم الدواء" value="' + escapeHtml(m.medicine_name || '') + '" style="flex:2;min-width:150px;"><input data-med-strength placeholder="التركيز" value="' + escapeHtml(m.strength || '') + '" style="flex:1;min-width:100px;"><input data-med-dosage placeholder="الجرعة" value="' + escapeHtml(m.dosage || '') + '" style="flex:1;min-width:100px;"></div><div style="display:flex;gap:7px;flex-wrap:wrap;align-items:end;"><label style="flex:1;min-width:95px;font-size:12px;">كل <input data-med-every type="number" min="1" max="31" value="' + escapeHtml(m.frequency_hours || 8) + '"></label><label style="flex:1;min-width:95px;font-size:12px;">وحدة <select data-med-unit><option value="hours">ساعة</option><option value="days">يوم</option></select></label><label style="flex:1;min-width:95px;font-size:12px;">لمدة <input data-med-duration type="number" min="1" max="365" value="' + escapeHtml(m.duration_days || 1) + '"> يوم</label><label style="flex:1;min-width:125px;font-size:12px;">البداية <input data-med-start-date type="date" value="' + escapeHtml(m.start_date || (v.visit_date || new Date().toISOString().slice(0, 10))) + '"></label><label style="flex:1;min-width:100px;font-size:12px;">الساعة <input data-med-start-time type="time" value="' + escapeHtml(m.start_time ? String(m.start_time).slice(0, 5) : '08:00') + '"></label><button type="button" class="btn danger sm" data-remove-med>حذف</button></div><input data-med-instructions placeholder="تعليمات إضافية للمريض" value="' + escapeHtml(m.instructions || '') + '">';
+      row.querySelector("[data-med-unit]").value = m.frequency_hours && m.frequency_hours % 24 === 0 && m.frequency_hours >= 24 ? "days" : "hours";
+      if (row.querySelector("[data-med-unit]").value === "days") row.querySelector("[data-med-every]").value = Math.max(1, Math.round((m.frequency_hours || 24) / 24));
+      row.querySelector("[data-remove-med]").onclick = function () { row.remove(); };
+      medicationList.appendChild(row);
+    }
+    function collectMedications() {
+      var out = [], invalid = false;
+      medicationList.querySelectorAll(".visit-medication-row").forEach(function (row) {
+        var name = row.querySelector("[data-med-name]").value.trim();
+        if (!name) return;
+        var every = Number(row.querySelector("[data-med-every]").value), unit = row.querySelector("[data-med-unit]").value, duration = Number(row.querySelector("[data-med-duration]").value);
+        var hours = unit === "days" ? every * 24 : every;
+        if (!Number.isInteger(hours) || hours < 1 || hours > 336 || !Number.isInteger(duration) || duration < 1 || duration > 365) { invalid = true; return; }
+        out.push({ medicine_name:name, strength:row.querySelector("[data-med-strength]").value.trim(), dosage:row.querySelector("[data-med-dosage]").value.trim(), frequency_hours:hours, duration_days:duration, start_date:row.querySelector("[data-med-start-date]").value || null, start_time:row.querySelector("[data-med-start-time]").value || null, instructions:row.querySelector("[data-med-instructions]").value.trim(), status:"active" });
+      }); return { medications:out, invalid:invalid };
+    }
+    backdrop.querySelector("#vs-add-medication").onclick = function () { addMedicationRow(); };
+    if (isEdit) {
+      window.SSMPDDb.listVisitMedications(v.id).then(function (rows) { (rows || []).forEach(addMedicationRow); });
+      window.SSMPDDb.listVisitMedicationDoseCompletions(v.id).then(function (rows) { var taken=(rows||[]).filter(function(x){return x.status==="taken";}).length, missed=(rows||[]).filter(function(x){return x.status==="missed";}).length, report=document.createElement("p"); report.style.cssText="font-size:12px;color:var(--c-muted);margin:0 0 10px;"; report.textContent="التزام المريض المسجل: "+taken+" جرعة تم أخذها، "+missed+" جرعة لم تُؤخذ."; medicationList.parentNode.insertBefore(report,medicationList); }).catch(function(){});
+    }
 
     var referredBox = document.getElementById("vs-referred");
     var referredDoctorInput = document.getElementById("vs-referred-doctor");
@@ -577,6 +588,7 @@
     rescheduleNote.oninput = updateRescheduleUi;
 
     document.getElementById("vs-save").onclick = function () {
+      var medicationResult = collectMedications();
       var referred = referredBox.checked;
       var referredDoctorName = referredDoctorInput.value.trim();
       var newFollowUpDate = followUpDate.value || null;
@@ -588,13 +600,18 @@
       if (referred && !referredDoctorName) { T.show("اكتب اسم الطبيب المحوّل له", "error"); return; }
       if (followupChanged && !reason) { T.show("اختر سبب تأجيل الموعد", "error"); return; }
       if (followupChanged && reason === "other" && !reasonNote) { T.show("اكتب سبب التأجيل", "error"); return; }
+      if (medicationResult.invalid) { T.show("راجع دورية ومدة كل دواء", "error"); return; }
       var patch = {
         visit_date: document.getElementById("vs-date").value || new Date().toISOString().slice(0, 10),
         visit_number: document.getElementById("vs-number").value.trim() || null,
         complaint: document.getElementById("vs-complaint").value.trim() || null,
+        doctor_name: document.getElementById("vs-doctor").value.trim() || null,
+        specialty: document.getElementById("vs-specialty").value.trim() || null,
         blood_pressure: document.getElementById("vs-bp").value.trim() || null,
         blood_sugar: document.getElementById("vs-sugar").value.trim() || null,
         pulse: document.getElementById("vs-pulse").value.trim() || null,
+        weight: document.getElementById("vs-weight").value.trim() || null,
+        oxygen_percent: document.getElementById("vs-oxygen").value.trim() || null,
         medications: document.getElementById("vs-meds").value.trim() || null,
         xrays: document.getElementById("vs-xrays").value.trim() || null,
         labs: document.getElementById("vs-labs").value.trim() || null,
@@ -628,7 +645,9 @@
       var req = isEdit ?
         window.SSMPDDb.updatePatientVisit(existingVisit.id, patch) :
         window.SSMPDDb.addPatientVisit(patient.id, patch, me && me.id);
-      req.then(function () {
+      req.then(function (savedVisit) {
+        return window.SSMPDDb.setVisitMedications(savedVisit.id, medicationResult.medications).then(function () { return savedVisit; });
+      }).then(function () {
         if (shouldCreateReferralLead) {
           return window.SSMPDDb.createDoctorReferralLead(patient.id, referredDoctorName).then(function () {
             T.show(isEdit ? "اتحدثت الزيارة، واتعمل ليد تحويل جديد" : "اتضافت الزيارة، واتعمل ليد تحويل جديد");
@@ -3169,7 +3188,7 @@
       'تاريخ آخر زيارة: ' + fmtDate(patient.last_visit_date) +
       '</p></div>';
 
-    // ---------- البيانات الطبية ----------
+    // ---------- التاريخ الصحي الثابت ----------
     var activeChronic = (profile && Array.isArray(profile.chronic_conditions)) ?
       profile.chronic_conditions.filter(function (c) { return c.has; }) : [];
     var activeSurgeries = (profile && Array.isArray(profile.surgeries)) ?
@@ -3179,18 +3198,12 @@
 
     html += '<div class="section" style="padding:12px 14px;">' +
       '<h3 style="font-size:13px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
-      '<span>البيانات الطبية</span>' +
+      '<span>التاريخ الصحي الثابت</span>' +
       (canEditMedical ? '<button class="btn ghost sm" data-edit-medical="1">تعديل</button>' : '') +
       '</h3>';
     if (!profile) {
-      html += '<p style="font-size:12px;color:var(--c-muted);">مفيش بيانات طبية مسجّلة لسه.</p>';
+      html += '<p style="font-size:12px;color:var(--c-muted);">مفيش تاريخ صحي ثابت مسجّل لسه.</p>';
     } else {
-      html += '<p style="font-size:12px;color:var(--c-muted);line-height:1.9;">' +
-        'الطبيب المعالج: ' + escapeHtml(profile.treating_doctor || "—") + '<br>' +
-        'التخصص: ' + escapeHtml(profile.specialty || "—") + '<br>' +
-        'ضغط الدم: ' + escapeHtml(profile.blood_pressure || "—") + ' · سكر الدم: ' + escapeHtml(profile.blood_sugar || "—") + '<br>' +
-        'الوزن: ' + escapeHtml(profile.weight || "—") + ' · النبض: ' + escapeHtml(profile.pulse || "—") + ' · الأكسجين: ' + escapeHtml(profile.oxygen_percent || "—") +
-        '</p>';
       html += '<p style="font-size:12px;margin-top:8px;"><b>الأمراض المزمنة: </b>' +
         (activeChronic.length ? activeChronic.map(function (c) {
           var lbl = (CHRONIC_CONDITIONS.filter(function (x) { return x.key === c.name; })[0] || {}).label || c.name;
