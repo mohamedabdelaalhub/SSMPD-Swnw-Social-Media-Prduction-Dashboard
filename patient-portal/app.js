@@ -80,13 +80,41 @@ function nav(){return '<div class="portal-nav"><button class="auth-nav-btn" data
 function wireNav(){root.querySelectorAll("[data-view]").forEach(function(b){b.onclick=function(){var v=b.getAttribute("data-view");if(v==="login")loginView();else if(v==="request")requestView();else activationView();};});}
 
 function loginView(message){
-  root.innerHTML='<div class="auth-page"><div class="auth-wrap">'+authBrand()+'<section class="auth-card"><div class="auth-heading"><h1>دخول بوابة المستخدم</h1><p>بعد اعتماد الهوية وتفعيل الحساب، الدخول بيكون بالبريد الإلكتروني وكلمة السر بدون رسائل SMS.</p></div>'+nav()+(message?'<div class="notice '+(message.type||"")+'">'+esc(message.text)+'</div>':"")+'<div class="field"><label>البريد الإلكتروني</label><input id="login-email" type="email" autocomplete="email"></div><div class="field"><label>كلمة السر</label><input id="login-password" type="password" autocomplete="current-password"></div><button class="btn block" id="login-btn">دخول</button></section><div class="auth-footnote">بياناتك لا تظهر إلا بعد التحقق الرسمي واعتماد الوصول.</div></div></div>';
+  root.innerHTML='<div class="auth-page"><div class="auth-wrap">'+authBrand()+'<section class="auth-card"><div class="auth-heading"><h1>دخول بوابة المستخدم</h1><p>بعد اعتماد الهوية وتفعيل الحساب، الدخول بيكون بالبريد الإلكتروني وكلمة السر بدون رسائل SMS.</p></div>'+nav()+(message?'<div class="notice '+(message.type||"")+'">'+esc(message.text)+'</div>':"")+'<div class="field"><label>البريد الإلكتروني</label><input id="login-email" type="email" autocomplete="email"></div><div class="field"><label>كلمة السر</label><input id="login-password" type="password" autocomplete="current-password"></div><button class="btn block" id="login-btn">دخول</button><button class="auth-nav-btn" id="forgot-password" style="margin-top:10px;">نسيت كلمة السر؟</button></section><div class="auth-footnote">بياناتك لا تظهر إلا بعد التحقق الرسمي واعتماد الوصول.</div></div></div>';
   wireNav();
+  document.getElementById("forgot-password").onclick=function(){forgotPasswordView();};
   document.getElementById("login-btn").onclick=function(){
     var btn=this,email=document.getElementById("login-email").value.trim().toLowerCase(),password=document.getElementById("login-password").value;
     if(!email||!password){loginView({type:"error",text:"اكتب البريد وكلمة السر."});return;}
     btn.disabled=true;btn.textContent="جاري الدخول…";
     client.auth.signInWithPassword({email:email,password:password}).then(function(r){if(r.error)throw r.error;return loadPortal();}).catch(function(e){loginView({type:"error",text:errText(e)});});
+  };
+}
+function forgotPasswordView(message){
+  root.innerHTML='<div class="auth-page"><div class="auth-wrap"><div class="auth-brand"><img src="../assets/img/logo.svg" alt="Swnw"><div><b>Swnw</b><span>بوابة المستخدم</span></div></div><section class="auth-card"><div class="auth-heading"><h1>استعادة كلمة السر</h1><p>اكتب بريدك المسجل في بوابة المريض. سنرسل لك رابطًا آمنًا لتعيين كلمة سر جديدة.</p></div>'+(message?'<div class="notice '+(message.type||"")+'">'+esc(message.text)+'</div>':"")+'<div class="field"><label>البريد الإلكتروني</label><input id="forgot-email" type="email" autocomplete="email"></div><button class="btn block" id="forgot-submit">إرسال رابط التغيير</button><button class="auth-nav-btn" id="forgot-back" style="margin-top:10px;">رجوع لتسجيل الدخول</button></section></div></div>';
+  document.getElementById("forgot-back").onclick=function(){loginView();};
+  document.getElementById("forgot-submit").onclick=function(){
+    var btn=this,email=document.getElementById("forgot-email").value.trim().toLowerCase();
+    if(!email){forgotPasswordView({type:"error",text:"اكتب البريد الإلكتروني."});return;}
+    btn.disabled=true;btn.textContent="جاري الإرسال…";
+    client.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname+"?reset=1"}).then(function(r){
+      if(r.error)throw r.error;
+      forgotPasswordView({type:"ok",text:"إذا كان البريد مرتبطًا بحساب مفعل، أرسلنا رابط تغيير كلمة السر إليه."});
+    }).catch(function(e){forgotPasswordView({type:"error",text:errText(e)});});
+  };
+}
+function newPasswordView(message){
+  root.innerHTML='<div class="auth-page"><div class="auth-wrap"><div class="auth-brand"><img src="../assets/img/logo.svg" alt="Swnw"><div><b>Swnw</b><span>بوابة المستخدم</span></div></div><section class="auth-card"><div class="auth-heading"><h1>تعيين كلمة سر جديدة</h1><p>اختر كلمة سر جديدة للحساب.</p></div>'+(message?'<div class="notice '+(message.type||"")+'">'+esc(message.text)+'</div>':"")+'<div class="field"><label>كلمة السر الجديدة</label><input id="new-password" type="password" autocomplete="new-password"></div><div class="field"><label>تأكيد كلمة السر</label><input id="confirm-password" type="password" autocomplete="new-password"></div><button class="btn block" id="new-password-submit">حفظ كلمة السر</button></section></div></div>';
+  document.getElementById("new-password-submit").onclick=function(){
+    var btn=this,p=document.getElementById("new-password").value,c=document.getElementById("confirm-password").value;
+    if(p.length<8){newPasswordView({type:"error",text:"كلمة السر يجب أن تكون 8 أحرف على الأقل."});return;}
+    if(p!==c){newPasswordView({type:"error",text:"كلمتا السر غير متطابقتين."});return;}
+    btn.disabled=true;btn.textContent="جاري الحفظ…";
+    client.auth.updateUser({password:p}).then(function(r){
+      if(r.error)throw r.error;
+      history.replaceState(null,"",location.pathname);
+      loginView({type:"ok",text:"تم تغيير كلمة السر. سجل دخولك بالكلمة الجديدة."});
+    }).catch(function(e){newPasswordView({type:"error",text:errText(e)});});
   };
 }
 function requestFormHtml(){
@@ -165,5 +193,12 @@ function renderStatus(data,activeTab,fileState){
 }
 
 function loadPortal(){root.innerHTML='<div class="loading-page"><div class="loading-logo"><img src="../assets/img/logo.svg" alt="Swnw"></div><div class="loading-line"></div><p>جاري تحميل حسابك…</p></div>';return invoke("patient-portal-self-service",{op:"status"}).then(function(data){renderStatus(data,"data",null);}).catch(function(e){client.auth.signOut().finally(function(){loginView({type:"error",text:errText(e)});});});}
-client.auth.getSession().then(function(r){if(r.data&&r.data.session)loadPortal();else loginView();});
+client.auth.onAuthStateChange(function(event){
+  if(event==="PASSWORD_RECOVERY")newPasswordView();
+});
+if(location.search.indexOf("reset=1")>=0){
+  newPasswordView();
+}else{
+  client.auth.getSession().then(function(r){if(r.data&&r.data.session)loadPortal();else loginView();});
+}
 })();
