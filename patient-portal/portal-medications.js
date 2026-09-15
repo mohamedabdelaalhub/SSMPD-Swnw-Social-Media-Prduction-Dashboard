@@ -33,7 +33,13 @@ function open(){
    var rows=card.querySelector(".slot-medications");
    slot.rows.forEach(function(x){
     var m=x.medicine,d=x.dose,state=doseState(d),row=document.createElement("article");row.className="scheduled-medication";
-    row.innerHTML='<div class="medicine-copy"><h4>'+esc(m.medicine_name)+(m.strength?' <small>'+esc(m.strength)+"</small>":"")+'</h4><p>'+esc(m.dosage||"الجرعة غير مسجلة")+" · "+esc(freq(m))+" · لمدة "+esc(m.duration_days)+" يوم</p>'+(!instruction&&m.instructions?'<span class="meal-badge">'+esc(m.instructions)+'</span>':'')+'</div><div class="dose-actions"><span class="dose-confirmation"></span><div><button type="button" class="dose-taken" data-taken>تم أخذها</button><button type="button" class="dose-missed" data-missed>لم تؤخذ</button></div></div>';
+    row.innerHTML=[
+      '<div class="medicine-copy"><h4>',esc(m.medicine_name),
+      m.strength?' <small>'+esc(m.strength)+'</small>':'',
+      '</h4><p>',esc(m.dosage||"الجرعة غير مسجلة"),' · ',esc(freq(m)),' · لمدة ',esc(m.duration_days),' يوم</p>',
+      (!instruction&&m.instructions?'<span class="meal-badge">'+esc(m.instructions)+'</span>':''),
+      '</div><div class="dose-actions"><span class="dose-confirmation"></span><div><button type="button" class="dose-taken" data-taken>تم أخذها</button><button type="button" class="dose-missed" data-missed>لم تؤخذ</button></div></div>'
+    ].join("");
     var note=row.querySelector(".dose-confirmation"),takenBtn=row.querySelector("[data-taken]"),missedBtn=row.querySelector("[data-missed]");
     function draw(){state=doseState(d);row.dataset.state=state;takenBtn.classList.toggle("active",state==="taken");missedBtn.classList.toggle("active",state==="missed");note.textContent=state==="taken"?(d.completion&&d.completion.taken_at?"تم التسجيل":"تم أخذها"):state==="missed"?"تم تسجيل عدم الأخذ":state==="late"?"فات موعد الجرعة":"";
     }function save(next){takenBtn.disabled=missedBtn.disabled=true;note.textContent="جاري الحفظ…";invoke({op:"set_dose",medication_id:m.id,scheduled_key:d.scheduled_key,status:next}).then(function(res){d.completion=res.completion;draw();open()}).catch(function(){note.textContent="تعذر الحفظ. حاول مرة أخرى."}).finally(function(){takenBtn.disabled=missedBtn.disabled=false})}
