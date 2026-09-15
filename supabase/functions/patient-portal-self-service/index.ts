@@ -1,22 +1,3 @@
-diff --git a/supabase/functions/patient-portal-self-service/index.ts b/supabase/functions/patient-portal-self-service/index.ts
-index 4983e71..a777d7c 100644
---- a/supabase/functions/patient-portal-self-service/index.ts
-+++ b/supabase/functions/patient-portal-self-service/index.ts
-@@ -81,14 +81,6 @@ async function getActivePortalAccount(
-   const user = await getAuthenticatedUser(req);
-   if (!user) return { error: "UNAUTHORIZED", status: 401 };
- 
--  const { data: staff, error: staffError } = await admin
--    .from("admins")
--    .select("id")
--    .eq("user_id", user.id)
--    .maybeSingle();
--  if (staffError) return { error: staffError.message, status: 500 };
--  if (staff) return { error: "STAFF_ACCOUNT_NOT_ALLOWED", status: 403 };
--
-   const { data: account, error } = await admin
-     .from("patient_accounts")
-     .select("*")
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
