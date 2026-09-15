@@ -41,7 +41,7 @@
   function edgeFetch(path, opts) {
     opts = opts || {};
     return getAccessToken().then(function (token) {
-      var headers = { Authorization: "Bearer " + token };
+      var headers = { Authorization: "Bearer " + token, apikey: cfg.anonKey, "X-Client-Info": "ssmpd-dashboard" };
       var body;
       if (opts.json !== undefined) {
         headers["Content-Type"] = "application/json";
