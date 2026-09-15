@@ -30,7 +30,7 @@ function open(){
   groups(meds).forEach(function(slot){
    var states=slot.rows.map(function(x){return doseState(x.dose)}),state=states.indexOf("missed")>=0||states.indexOf("late")>=0?"late":states.every(function(x){return x==="taken"})?"taken":"upcoming",instruction=sharedInstruction(slot.rows);
    var card=document.createElement("section");card.className="medication-slot slot-"+state;
-   card.innerHTML='<div class="slot-head"><div class="slot-state"><span class="slot-icon"></span><div><h3>'+esc(time(slot.time))+'</h3><p>'+esc(label(state))+(state==="upcoming"&&remaining(slot.rows[0].dose)?" · "+esc(remaining(slot.rows[0].dose)):"")+'</p></div></div>'+(instruction?'<span class="dose-instruction">تعليمات الطبيب: '+esc(instruction)+'</span>':'')+'</div><div class="slot-medications"></div>';
+   card.innerHTML='<div class="slot-head"><div class="slot-state"><span class="slot-icon"></span><div><h3>'+esc(time(slot.time))+'</h3><p>'+esc(label(state))+(state==="upcoming"&&remaining(slot.rows[0].dose)?" · "+esc(remaining(slot.rows[0].dose)):"")+'</p></div></div>'+'</div><div class="slot-medications"></div>';
    var rows=card.querySelector(".slot-medications");
    slot.rows.forEach(function(x){
     var m=x.medicine,d=x.dose,state=doseState(d),row=document.createElement("article");row.className="scheduled-medication";
