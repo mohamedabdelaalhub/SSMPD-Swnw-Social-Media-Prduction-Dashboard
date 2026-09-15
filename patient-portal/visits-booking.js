@@ -19,6 +19,21 @@ function fmtDate(v){
   if(isNaN(d.getTime()))return esc(v);
   return new Intl.DateTimeFormat("ar-EG",{year:"numeric",month:"short",day:"numeric"}).format(d);
 }
+function fmtTime(v){
+  if(!v)return "";
+  var p=String(v).slice(0,5).split(":"),h=Number(p[0]);
+  if(p.length!==2||isNaN(h))return esc(v);
+  return (h%12||12)+":"+p[1]+(h>=12?" مساءً":" صباحًا");
+}
+function followupHtml(v){
+  if(!v.follow_up_date)return "";
+  var when=fmtDate(v.follow_up_date)+(v.follow_up_time?" — "+fmtTime(v.follow_up_time):"");
+  var status=v.follow_up_status||"pending";
+  var cls=status==="no_show"?"visit-followup-no-show":status==="attended"?"visit-followup-attended":status==="rescheduled"?"visit-followup-rescheduled":"";
+  var title=status==="no_show"?"لم يتم الحضور":status==="attended"?"تم الحضور":status==="rescheduled"?"تم تأجيل موعد المتابعة":"موعد المتابعة";
+  var detail=status==="no_show"?"":status==="attended"?"تم تأكيد الحضور":when;
+  return '<div class="visit-followup '+cls+'"><div><b>'+title+'</b><span>'+detail+'</span></div>'+(status==="rescheduled"&&v.follow_up_patient_message?'<p class="visit-followup-message">'+esc(v.follow_up_patient_message)+'</p>':'')+'</div>';
+}
 function icon(name){
   var p={
     visits:'<path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/>',
@@ -46,7 +61,7 @@ function errorView(message){
 }
 function invokeMedical(){
   if(medicalCache&&Date.now()-medicalCacheAt<30000)return Promise.resolve(medicalCache);
-  return client.functions.invoke("patient-portal-medical-data",{body:{op:"overview"}}).then(function(r){
+  return client.rpc("refresh_overdue_followups").catch(function(){}).then(function(){return client.functions.invoke("patient-portal-medical-data",{body:{op:"overview"}});}).then(function(r){
     if(r.error)throw r.error;
     if(r.data&&r.data.error)throw new Error(r.data.error);
     medicalCache=r.data||{records:[]};medicalCacheAt=Date.now();return medicalCache;
@@ -132,7 +147,7 @@ function renderVisits(data){
         visitBlock("الأشعة المطلوبة",v.xrays)+
         visitBlock("التحاليل المطلوبة",v.labs)+
         visitBlock("توصيات أخرى",v.other_recommendations)+
-        (v.follow_up_date?'<div class="visit-followup '+(v.follow_up_status==="no_show"?"visit-followup-no-show":v.follow_up_status==="attended"?"visit-followup-attended":"")+'"><b>'+(v.follow_up_status==="no_show"?"لم يتم الحضور":v.follow_up_status==="attended"?"تم الحضور":"موعد المتابعة")+'</b><span>'+(v.follow_up_status==="no_show"?"":v.follow_up_status==="attended"?"تم تأكيد الحضور":fmtDate(v.follow_up_date))+'</span></div>':'')+
+        followupHtml(v)+
       '</section>';
     }).join("")+'</div></div></article>';
   }).join("")+'</div>';
