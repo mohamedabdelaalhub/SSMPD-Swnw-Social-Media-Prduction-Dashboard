@@ -489,6 +489,9 @@
     updatePatientVisit: function (visitId, patch) {
       return handle(client.from("patient_visits").update(patch).eq("id", visitId).select().single());
     },
+    refreshOverdueFollowups: function () {
+      return handle(client.rpc("refresh_overdue_followups"));
+    },
     // تحويل مريض لطبيب آخر (من داخل فورم الزيارة) → بيعمل ليد جديد بمصدر
     // "تحويل من طبيب العيادة" عشان الريسبشن/خدمة العملاء يحجزوا معاد جديد
     createDoctorReferralLead: function (patientId, doctorName) {
