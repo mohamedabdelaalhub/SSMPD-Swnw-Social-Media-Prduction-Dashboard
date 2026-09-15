@@ -70,7 +70,7 @@ function renderUnifiedData(data){
         item("الاسم الكامل",p.full_name,true)+item("رقم الملف",p.patient_code)+item("رقم الهاتف",p.phone)+item("البريد الإلكتروني",p.email)+item("السن",p.age)+item("النوع",gender(p.gender))+item("نوع الوصول",relation(a.relationship||a.access_type))+item("حالة الوصول","معتمد",true)+
       '</div></section>'+
       '<section class="medical-section"><h3>المؤشرات الصحية</h3><p class="medical-section-note">تظهر أحدث قيمة مسجلة في الملف الطبي.</p><div class="health-grid">'+
-        item("الطول",m.height)+item("الوزن",m.weight)+item("ضغط الدم",m.blood_pressure,true)+item("سكر الدم",m.blood_sugar,true)+item("النبض",m.pulse)+item("نسبة الأكسجين",m.oxygen_percent)+
+        item("الطول",m.height)+
       '</div></section>'+
       '<section class="medical-section"><h3>التاريخ الصحي</h3><div class="history-grid"><div><h4>الأمراض المزمنة والأدوية المرتبطة</h4>'+chips(m.chronic_conditions,"chronic")+'</div><div><h4>العمليات الجراحية</h4>'+chips(m.surgeries,"surgery")+'</div><div><h4>التاريخ المرضي بالعائلة</h4>'+chips(m.family_history,"family")+'</div></div></section>'+
     '</article>';
@@ -82,7 +82,7 @@ function visitVital(label,value){if(value===null||typeof value==="undefined"||St
 function visitBlock(label,value){if(value===null||typeof value==="undefined"||String(value).trim()==="")return "";return '<div class="visit-block"><label>'+esc(label)+'</label><p>'+esc(value)+'</p></div>';}
 function visitCard(v){
   var type=encounter(v.encounter_type||"checkup"),doctor=v.doctor_name||"الطبيب غير مسجل",specialty=v.specialty||"التخصص غير مسجل";
-  var vitals=[visitVital("الضغط",v.blood_pressure),visitVital("السكر",v.blood_sugar),visitVital("النبض",v.pulse)].join("");
+  var vitals=[visitVital("الضغط",v.blood_pressure),visitVital("السكر",v.blood_sugar),visitVital("النبض",v.pulse),visitVital("الوزن",v.weight),visitVital("الأكسجين",v.oxygen_percent)].join("");
   return '<section class="visit-card unified-visit-card" data-encounter="'+esc(type.id)+'">'+
     '<div class="visit-card-top"><div><div class="visit-title-row"><span class="encounter-badge type-'+esc(type.id)+'">'+esc(type.label)+'</span><span class="visit-date">'+fmtDate(v.visit_date)+'</span></div><h3>'+esc(doctor)+'</h3><p>'+esc(specialty)+(v.visit_number?' • زيارة رقم '+esc(v.visit_number):'')+'</p></div><span class="visit-doctor-icon">'+icon("doctor")+'</span></div>'+
     (vitals?'<div class="visit-vitals">'+vitals+'</div>':'')+
