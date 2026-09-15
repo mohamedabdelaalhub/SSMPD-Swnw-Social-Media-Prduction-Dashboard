@@ -53,7 +53,8 @@
     radiology:      { label: "أشعة",                  color: "#546E7A" },
     lab:            { label: "تحاليل",                color: "#4C6B3A" },
     nursing_services: { label: "خدمات التمريض",        color: "#1F8A70" },
-    internal_services: { label: "خدمات داخل المركز",   color: "#4A5568" }
+    internal_services: { label: "خدمات داخل المركز",   color: "#4A5568" },
+    speech_therapy: { label: "علاج النطق",             color: "#7A8B4A" }
   };
 
   // منصة النشر — تُختار عند النشر (زي ما يُختار البراند تاني في نفس اللحظة)
