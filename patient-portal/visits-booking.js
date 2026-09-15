@@ -61,7 +61,6 @@ function errorView(message){
 }
 function invokeMedical(){
   if(medicalCache&&Date.now()-medicalCacheAt<30000)return Promise.resolve(medicalCache);
-  client.rpc("refresh_overdue_followups").catch(function(){});
   return client.functions.invoke("patient-portal-medical-data",{body:{op:"overview"}}).then(function(r){
     if(r.error)throw r.error;
     if(r.data&&r.data.error)throw new Error(r.data.error);
