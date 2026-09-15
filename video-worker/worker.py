@@ -251,6 +251,24 @@ def claim_job(base_url: str, key: str) -> dict[str, Any] | None:
 
 
 def update_job(base_url: str, key: str, job_id: str, patch: dict[str, Any]) -> None:
+    # A clear stage bar in the dashboard. Percentages reflect completed steps,
+    # never a fake estimate of remaining FFmpeg time.
+    status = patch.get("status")
+    if status and "progress_percent" not in patch:
+        progress = {
+            "pending": (0, "في الانتظار"),
+            "preparing": (15, "تجهيز الملفات"),
+            "rendering": (55, "إنتاج الفيديو والصوت"),
+            "uploading": (85, "حفظ الفيديو والأغلفة"),
+            "ready": (100, "اكتمل"),
+            "failed": (0, "تحتاج مراجعة"),
+            "cancelled": (0, "أُلغيت"),
+        }.get(str(status))
+        if progress:
+            patch = dict(patch)
+            patch["progress_percent"] = progress[0]
+            patch["progress_stage"] = progress[1]
+
     encoded = urllib.parse.quote(job_id, safe="")
     request_json(
         "PATCH",
