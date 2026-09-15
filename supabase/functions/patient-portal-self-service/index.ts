@@ -514,6 +514,52 @@ Deno.serve(async (req) => {
     return json({ ok: true });
   }
 
+  if (op === "request_password_reset") {
+    const email = normalizeEmail(body.email);
+    // رسالة موحّدة تمنع كشف ما إذا كان البريد مسجلاً أم لا.
+    const accepted = () => json({ ok: true });
+
+    if (!validEmail(email)) return accepted();
+
+    const { data: account, error: accountError } = await admin
+      .from("patient_accounts")
+      .select("id, auth_user_id, status, login_email, activation_completed_at")
+      .eq("login_email", email)
+      .maybeSingle();
+    if (accountError) return json({ error: accountError.message }, 500);
+
+    if (!account || account.status !== "active" || !account.activation_completed_at) return accepted();
+
+    // حاجز صريح إضافي: لا نرسل رابطًا أبدًا إلى بريد له حساب موظف.
+    const { data: staff, error: staffError } = await admin
+      .from("admins")
+      .select("id")
+      .ilike("email", email)
+      .maybeSingle();
+    if (staffError) return json({ error: staffError.message }, 500);
+    if (staff) return accepted();
+
+    const { data: authUser, error: authUserError } = await admin.auth.admin.getUserById(account.auth_user_id);
+    if (authUserError || !authUser.user || normalizeEmail(authUser.user.email) !== email) return accepted();
+
+    const resetUrl = "https://mohamedabdelaalhub.github.io/SSMPD-Swnw-Social-Media-Prduction-Dashboard/patient-portal/?reset=1";
+    const recover = await fetch(SUPABASE_URL + "/auth/v1/recover", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: ANON_KEY },
+      body: JSON.stringify({ email, redirect_to: resetUrl }),
+    });
+    if (!recover.ok) return json({ error: "PASSWORD_RESET_EMAIL_FAILED" }, 500);
+
+    await admin.from("patient_portal_audit_log").insert({
+      account_id: account.id,
+      action: "password_reset_requested",
+      entity_type: "patient_accounts",
+      entity_id: account.id,
+      metadata: { channel: "patient_portal" },
+    });
+    return accepted();
+  }
+
   if (op === "status") {
     const ctx = await getActivePortalAccount(req, admin);
     if (!ctx.account) return json({ error: ctx.error }, ctx.status || 500);
