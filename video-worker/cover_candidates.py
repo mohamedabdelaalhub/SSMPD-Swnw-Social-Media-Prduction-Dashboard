@@ -36,21 +36,36 @@ def build(job, output, ffmpeg, duration, template_dir=None):
     else:
         source = output
     font = str(settings.get("font_family") or "BigVestaArabicBeta").strip()
-    title = cover_title(title.replace("\\", " ").replace("{", "").replace("}", " "))
+    clean_title = title.replace("\\", " ").replace("{", "").replace("}", " ")
+    words = clean_title.split()
+    # The one-line card is used only when the title will remain readable.
+    one_line = len(words) <= 5 and len(clean_title) <= 34
+    title = cover_title(clean_title, words_per_line=12 if one_line else 4)
+    title_y = 1320 if one_line else 1280
+    title_size = 64 if one_line else 60
     ass = output.parent / "cover-title.ass"
     ass.write_text(
         "[Script Info]\nScriptType: v4.00+\nPlayResX: 1080\nPlayResY: 1920\nWrapStyle: 0\n"
         "[V4+ Styles]\n"
         "Format: Name,Fontname,Fontsize,PrimaryColour,SecondaryColour,OutlineColour,BackColour,Bold,Italic,Underline,StrikeOut,ScaleX,ScaleY,Spacing,Angle,BorderStyle,Outline,Shadow,Alignment,MarginL,MarginR,MarginV,Encoding\n"
-        f"Style: Cover,{font},64,&H00005DFF,&H00005DFF,&H00005DFF,&H00000000,0,0,0,0,100,100,0,0,1,1,0,5,112,112,0,1\n"
+        f"Style: Cover,{font},{title_size},&H00005DFF,&H00005DFF,&H00005DFF,&H00000000,0,0,0,0,100,100,0,0,1,1,0,5,112,112,0,1\n"
         "[Events]\nFormat: Layer,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text\n"
-        f"Dialogue: 0,0:00:00.00,0:10:00.00,Cover,,0,0,0,,{{\\pos(540,1320)}}{title}\n",
+        f"Dialogue: 0,0:00:00.00,0:10:00.00,Cover,,0,0,0,,{{\\pos(540,{title_y})}}{title}\n",
         encoding="utf-8",
     )
 
     folder = Path(template_dir) if template_dir else None
-    template_name = "Dina Front Video Cover Template.png" if str(job.get("brand") or "") == "dr_dina" else "Swnw Front Video Cover Template.png"
+    is_dina = str(job.get("brand") or "") == "dr_dina"
+    template_name = (
+        ("Dina Cover One Line.png" if one_line else "Dina Cover Two Lines.png")
+        if is_dina else
+        ("Swnw Cover One Line.png" if one_line else "Swnw Cover Two Lines.png")
+    )
     template = folder / template_name if folder else None
+    # Keep compatibility with the prior package until both new templates exist.
+    if not template or not template.is_file():
+        fallback_name = "Dina Front Video Cover Template.png" if is_dina else "Swnw Front Video Cover Template.png"
+        template = folder / fallback_name if folder else None
     use_template = bool(template and template.is_file())
 
     result = []
