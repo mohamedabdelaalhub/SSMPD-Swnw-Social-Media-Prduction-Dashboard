@@ -611,7 +611,11 @@ function openAgentImportModal(parentBackdrop) {
         } else if (latest.status === "cancelled" && !missing.length) {
           html += '<button class="btn sm" id="create-video-job-btn">🔁 إنشاء Video Job جديد</button>';
         } else {
-          html += '<div style="font-size:12px;color:var(--c-muted);">الـJob محفوظ في الطابور وجاهز للمرحلة التالية: ربط Mac Video Worker.</div>';
+          var progressText = latest.status === "preparing" ? "العامل يجهّز ملفات الفيديو الآن." :
+            latest.status === "rendering" ? "جاري إنتاج الفيديو الآن." :
+            latest.status === "uploading" ? "جاري حفظ الفيديو والأغلفة الآن." :
+            "جاري تنفيذ الفيديو.";
+          html += '<div style="font-size:12px;color:var(--c-muted);">' + progressText + '</div>';
         }
       }
 
