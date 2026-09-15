@@ -941,6 +941,34 @@
       return handle(client.from("meta_publish_jobs").update({ status: "cancelled" }).eq("id", id).select().single());
     },
 
+    // ---------- مراجعة طلبات تفعيل بوابة المرضى ----------
+    patientVerificationRequest: function (payload) {
+      return client.functions.invoke("patient-verification-review", { body: payload }).then(function (res) {
+        if (res.error) throw res.error;
+        return res.data || {};
+      });
+    },
+    listPatientIdentityVerifications: function (status) {
+      return this.patientVerificationRequest({ op: "list", status: status || "pending" })
+        .then(function (r) { return r.items || []; });
+    },
+    approvePatientIdentityVerification: function (verificationId) {
+      return this.patientVerificationRequest({ op: "approve", verification_id: verificationId });
+    },
+    rejectPatientIdentityVerification: function (verificationId, reason) {
+      return this.patientVerificationRequest({ op: "reject", verification_id: verificationId, reason: reason || null });
+    },
+    resendPatientActivation: function (verificationId) {
+      return this.patientVerificationRequest({ op: "resend_activation", verification_id: verificationId });
+    },
+    revokePatientAccountAccess: function (accessId, reason) {
+      return this.patientVerificationRequest({ op: "revoke", access_id: accessId, reason: reason || null });
+    },
+    getPatientVerificationDocumentUrl: function (documentId) {
+      return this.patientVerificationRequest({ op: "document_url", document_id: documentId })
+        .then(function (r) { return r.url; });
+    },
+
     // ---------- realtime ----------
     subscribeTable: function (table, onChange) {
       var channel = client
