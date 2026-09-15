@@ -10,6 +10,7 @@ function freq(m){return m.frequency_hours%24===0?"كل "+(m.frequency_hours/24)+
 function nowMinutes(){var p=new Intl.DateTimeFormat("en-GB",{timeZone:"Africa/Cairo",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).formatToParts(new Date()),x={};p.forEach(function(a){x[a.type]=a.value});return Number(x.hour)*60+Number(x.minute)}
 function due(d){var p=String(d.scheduled_time||"").split(":");return Number(p[0])*60+Number(p[1])}
 function doseState(d){if(d.completion&&d.completion.status==="taken")return"taken";if(d.completion&&d.completion.status==="missed")return"missed";return due(d)<nowMinutes()?"late":"upcoming"}
+function remaining(d){var minutes=due(d)-nowMinutes();if(minutes<=0)return"";var hours=Math.floor(minutes/60),mins=minutes%60,parts=[];if(hours)parts.push(hours+" "+(hours===1?"ساعة":"ساعات"));if(mins)parts.push(mins+" دقيقة");return parts.length?"متبقي "+parts.join(" و"):"متبقي أقل من دقيقة"}
 function label(s){return s==="taken"?"تم أخذها":s==="missed"?"لم تؤخذ":s==="late"?"فات موعدها":"الجرعة القادمة"}
 function sharedInstruction(rows){var a=(rows[0].medicine.instructions||"").trim();return a&&rows.every(function(x){return (x.medicine.instructions||"").trim()===a})?a:""}
 function setActive(){var tabs=root.querySelector(".profile-tabs");if(tabs)tabs.querySelectorAll("button").forEach(function(b){b.classList.toggle("active",b.getAttribute("data-medical-tab")==="prescriptions")})}
@@ -29,7 +30,7 @@ function open(){
   groups(meds).forEach(function(slot){
    var states=slot.rows.map(function(x){return doseState(x.dose)}),state=states.indexOf("missed")>=0||states.indexOf("late")>=0?"late":states.every(function(x){return x==="taken"})?"taken":"upcoming",instruction=sharedInstruction(slot.rows);
    var card=document.createElement("section");card.className="medication-slot slot-"+state;
-   card.innerHTML='<div class="slot-head"><div class="slot-state"><span class="slot-icon"></span><div><h3>'+esc(time(slot.time))+'</h3><p>'+esc(label(state))+'</p></div></div>'+(instruction?'<span class="meal-badge">'+esc(instruction)+'</span>':'')+'</div><div class="slot-medications"></div>';
+   card.innerHTML='<div class="slot-head"><div class="slot-state"><span class="slot-icon"></span><div><h3>'+esc(time(slot.time))+'</h3><p>'+esc(label(state))+(state==="upcoming"&&remaining(slot.rows[0].dose)?" · "+esc(remaining(slot.rows[0].dose)):"")+'</p></div></div>'+(instruction?'<span class="meal-badge">'+esc(instruction)+'</span>':'')+'</div><div class="slot-medications"></div>';
    var rows=card.querySelector(".slot-medications");
    slot.rows.forEach(function(x){
     var m=x.medicine,d=x.dose,state=doseState(d),row=document.createElement("article");row.className="scheduled-medication";
