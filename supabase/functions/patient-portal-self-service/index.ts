@@ -81,6 +81,13 @@ async function getActivePortalAccount(
   const user = await getAuthenticatedUser(req);
   if (!user) return { error: "UNAUTHORIZED", status: 401 };
 
+  const { data: staff, error: staffError } = await admin
+    .from("admins")
+    .select("id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (staffError) return { error: staffError.message, status: 500 };
+  if (staff) return { error: "STAFF_ACCOUNT_NOT_ALLOWED", status: 403 };
 
   const { data: account, error } = await admin
     .from("patient_accounts")
@@ -524,3 +531,57 @@ Deno.serve(async (req) => {
     if (!account || account.status !== "active" || !account.activation_completed_at) return accepted();
 
     // حاجز صريح إضافي: لا نرسل رابطًا أبدًا إلى بريد له حساب موظف.
+    const { data: staff, error: staffError } = await admin
+      .from("admins")
+      .select("id")
+      .ilike("email", email)
+      .maybeSingle();
+    if (staffError) return json({ error: staffError.message }, 500);
+    if (staff) return accepted();
+
+    const { data: authUser, error: authUserError } = await admin.auth.admin.getUserById(account.auth_user_id);
+    if (authUserError || !authUser.user || normalizeEmail(authUser.user.email) !== email) return accepted();
+
+    const resetUrl = "https://mohamedabdelaalhub.github.io/SSMPD-Swnw-Social-Media-Prduction-Dashboard/patient-portal/?reset=1";
+    const recover = await fetch(SUPABASE_URL + "/auth/v1/recover", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: ANON_KEY },
+      body: JSON.stringify({ email, redirect_to: resetUrl }),
+    });
+    if (!recover.ok) return json({ error: "PASSWORD_RESET_EMAIL_FAILED" }, 500);
+
+    await admin.from("patient_portal_audit_log").insert({
+      account_id: account.id,
+      action: "password_reset_requested",
+      entity_type: "patient_accounts",
+      entity_id: account.id,
+      metadata: { channel: "patient_portal" },
+    });
+    return accepted();
+  }
+
+  if (op === "status") {
+    const ctx = await getActivePortalAccount(req, admin);
+    if (!ctx.account) return json({ error: ctx.error }, ctx.status || 500);
+
+    await admin.from("patient_accounts")
+      .update({ last_login_at: new Date().toISOString() })
+      .eq("id", ctx.account.id);
+
+    try { return json(await statusPayload(admin, ctx.account)); }
+    catch (e) { return json({ error: String((e as Error).message || e) }, 500); }
+  }
+
+  if (op === "files") {
+    const ctx = await getActivePortalAccount(req, admin);
+    if (!ctx.account) return json({ error: ctx.error }, ctx.status || 500);
+
+    try {
+      return json(await portalFilesPayload(admin, ctx.account));
+    } catch (e) {
+      return json({ error: String((e as Error).message || e) }, 500);
+    }
+  }
+
+  return json({ error: "UNKNOWN_OPERATION" }, 400);
+});
