@@ -6054,3 +6054,30 @@ revoke all on function public.claim_next_video_job(text) from anon;
 revoke all on function public.claim_next_video_job(text) from authenticated;
 grant execute on function public.claim_next_video_job(text) to service_role;
 
+
+
+-- ============================================================
+-- 54) تخصصات إضافية لربط المحتوى بإعلانات Meta (٢٠٢٦-٠٩-١٥)
+-- ============================================================
+-- "علاج النطق" تخصص جديد فعليًا (كان عندنا إعلان واحد على الأقل بدون
+-- تخصص مطابق). باقي الأسطر تحضير مسبق فقط — التخصصات دي (عظام/جراحة/
+-- أنف وأذن/نفسية/أطفال/أورام/قلب/أوعية دموية/أشعة/تمريض/خدمات داخلية)
+-- مفيش لها إعلانات Meta لحد الآن، لكن لو حملة جديدة اتعملت وتخصصها
+-- (عمود specialty في meta_ads) اتسجّل بنفس النص بالظبط هنا، الربط هيشتغل
+-- تلقائيًا من غير أي تعديل تاني على الكود — لازم النص يتطابق حرفيًا
+-- (مفيش fuzzy matching، بند (أ) في قسم إعلانات Meta فوق).
+insert into public.content_meta_specialty_map (content_specialty_key, meta_specialty_label) values
+  ('speech_therapy',    'Speech Therapy / Behavioral'),
+  ('orthopedics',       'Orthopedics'),
+  ('surgery',           'General Surgery'),
+  ('ent',               'ENT'),
+  ('psychiatry',        'Psychiatry / Mental Health'),
+  ('pediatrics',        'Pediatrics'),
+  ('oncology',          'Oncology'),
+  ('cardiology',        'Cardiology'),
+  ('vascular',          'Vascular'),
+  ('radiology',         'Radiology'),
+  ('nursing_services',  'Nursing Services'),
+  ('internal_services', 'Internal Services'),
+  ('internal',          'Internal Medicine')
+on conflict (content_specialty_key) do nothing;
