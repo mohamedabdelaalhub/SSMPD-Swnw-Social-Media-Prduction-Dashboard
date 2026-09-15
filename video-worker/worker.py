@@ -715,6 +715,12 @@ def render_visual_background(ffmpeg: str, job: dict[str, Any], job_dir: Path, ta
     if not assets:
         return None
 
+    # The first uploaded clip is often a preparation shot. Rotate the available
+    # material once so a second, usually more useful treatment shot opens the reel.
+    # A single uploaded item naturally remains first.
+    if len(assets) > 1:
+        assets = assets[1:] + assets[:1]
+
     scene_count = max(3, min(7, int(round(target / 4.5))))
     overlap = 0.35
     scene_duration = (target + overlap * (scene_count - 1)) / scene_count
@@ -1173,3 +1179,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
