@@ -30,7 +30,7 @@ function open(){
   groups(meds).forEach(function(slot){
    var states=slot.rows.map(function(x){return doseState(x.dose)}),state=states.indexOf("missed")>=0||states.indexOf("late")>=0?"late":states.every(function(x){return x==="taken"})?"taken":"upcoming",instruction=sharedInstruction(slot.rows);
    var card=document.createElement("section");card.className="medication-slot slot-"+state;
-   card.innerHTML='<div class="slot-head"><div class="slot-state"><span class="slot-icon"></span><div><h3>'+esc(time(slot.time))+'</h3><p>'+esc(label(state))+(state==="upcoming"&&remaining(slot.rows[0].dose)?" · "+esc(remaining(slot.rows[0].dose)):"")+'</p></div></div>'+'</div><div class="slot-medications"></div>';
+   card.innerHTML='<div class="slot-head"><div class="slot-state"><span class="slot-icon"></span><div><h3>'+esc(time(slot.time))+'</h3><p>'+esc(label(state))+(state==="upcoming"&&remaining(slot.rows[0].dose)?" · "+esc(remaining(slot.rows[0].dose)):"")+'</p></div></div>'+(instruction?'<span class="dose-instruction">'+esc(instruction)+'</span>':'')+'</div><div class="slot-medications"></div>';
    var rows=card.querySelector(".slot-medications");
    slot.rows.forEach(function(x){
     var m=x.medicine,d=x.dose,state=doseState(d),row=document.createElement("article");row.className="scheduled-medication";
@@ -38,7 +38,7 @@ function open(){
       '<div class="medicine-copy"><h4>',esc(m.medicine_name),
       m.strength?' <small>'+esc(m.strength)+'</small>':'',
       '</h4><p>',esc(m.dosage||"الجرعة غير مسجلة"),' · ',esc(freq(m)),' · لمدة ',esc(m.duration_days),' يوم</p>',
-      (!instruction&&m.instructions?'<span class="dose-instruction">تعليمات الطبيب: '+esc(m.instructions)+'</span>':''),
+      (!instruction&&m.instructions?'<span class="dose-instruction">'+esc(m.instructions)+'</span>':''),
       '</div><div class="dose-actions"><span class="dose-confirmation"></span><div><button type="button" class="dose-taken" data-taken>تم أخذها</button><button type="button" class="dose-missed" data-missed>لم تؤخذ</button></div></div>'
     ].join("");
     var note=row.querySelector(".dose-confirmation"),takenBtn=row.querySelector("[data-taken]"),missedBtn=row.querySelector("[data-missed]");
