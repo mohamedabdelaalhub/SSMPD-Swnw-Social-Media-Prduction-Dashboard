@@ -1,5 +1,5 @@
-Warning: truncated output (original token count: 68153)
-Total output lines: 3906
+Warning: truncated output (original token count: 68287)
+Total output lines: 3911
 
 /* SSMPD — قطاع أرشيف المرضى: ٤ شاشات داخلية (داشبورد عام / رفع ملفات / مراجعة قبل الاعتماد /
    تصفح وفلترة) — كل عملية بتعدّي من Supabase Edge Functions (db.js)، مفيش أي وصول مباشر لـ
@@ -323,6 +323,7 @@ Total output lines: 3906
     backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>مريض جديد</h3><button class="modal-close">×</button></div>' +
       '<div class="field"><label>الاسم بالكامل</label><input id="np-name"></div>' +
       '<div class="field"><label>رقم الهاتف</label><input id="np-phone" placeholder="01xxxxxxxxx"></div>' +
+      '<div class="field"><label>البريد الإلكتروني</label><input id="np-email" type="email" placeholder="name@example.com"></div>' +
       '<div class="field"><label>الرقم القومي (اختياري)</label><input id="np-nid" maxlength="14"></div>' +
       '<div class="field"><label>السن</label><input id="np-age" type="number" min="0"></div>' +
       '<div class="field"><label>النوع</label><select id="np-gender"><option value="">—</option><option value="male">ذكر</option><option value="female">أنثى</option></select></div>' +
@@ -337,6 +338,7 @@ Total output lines: 3906
     document.getElementById("np-save").onclick = function () {
       var full_name = document.getElementById("np-name").value.trim();
       var phone = document.getElementById("np-phone").value.trim();
+      var email = document.getElementById("np-email").value.trim().toLowerCase();
       var national_id = document.getElementById("np-nid").value.trim();
       var age = document.getElementById("np-age").value.trim();
       var gender = document.getElementById("np-gender").value;
@@ -346,7 +348,7 @@ Total output lines: 3906
       if (!full_name) { T.show("اكتب اسم المريض", "error"); return; }
       if (!phone) { T.show("اكتب رقم الهاتف", "error"); return; }
       window.SSMPDDb.createPatientArchive({
-        full_name: full_name, phone: phone, national_id: national_id || undefined,
+        full_name: full_name, phone: phone, email: email || undefined, national_id: national_id || undefined,
         age: age || undefined, gender: gender || undefined, medical_record_no: medical_record_no || undefined
       })
         .then(function (res) {
@@ -368,6 +370,7 @@ Total output lines: 3906
     backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>تعديل بيانات المريض</h3><button class="modal-close">×</button></div>' +
       '<div class="field"><label>الاسم بالكامل</label><input id="ep-name" value="' + escapeHtml(patient.full_name || "") + '"></div>' +
       '<div class="field"><label>رقم الهاتف</label><input id="ep-phone" value="' + escapeHtml(patient.phone || "") + '"></div>' +
+      '<div class="field"><label>البريد الإلكتروني</label><input id="ep-email" type="email" value="' + escapeHtml(patient.email || "") + '"></div>' +
       '<div class="field"><label>السن</label><input id="ep-age" type="number" min="0" value="' + escapeHtml(patient.age != null ? String(patient.age) : "") + '"></div>' +
       '<div class="field"><label>النوع</label><select id="ep-gender">' +
         '<option value="" ' + (!patient.gender ? "selected" : "") + '>—</option>' +
@@ -384,6 +387,7 @@ Total output lines: 3906
     document.getElementById("ep-save").onclick = function () {
       var full_name = document.getElementById("ep-name").value.trim();
       var phone = document.getElementById("ep-phone").value.trim();
+      var email = document.getElementById("ep-email").value.trim().toLowerCase();
       var age = document.getElementById("ep-age").value.trim();
       var gender = document.getElementById("ep-gender").value;
       var medical_record_no = document.getElementById("ep-mrn").value.trim();
@@ -392,6 +396,7 @@ Total output lines: 3906
       var patch = {
         full_name: full_name,
         phone: phone || null,
+        email: email || null,
         age: age ? Number(age) : null,
         gender: gender || null,
         medical_record_no: medical_record_no || null,
@@ -1440,15 +1445,7 @@ Total output lines: 3906
         : '<p style="font-size:12px;color:var(--c-muted);">احفظ التقرير الأول، وبعدين هيظهر لك اختيار إضافة صور الأشعة.</p>') +
       '</div>' +
       '<div class="field"><label>جدول الجلسات</label><div id="dr-sessions"></div>' +
-      '<button type="button" class="btn ghost sm" id="dr-add-session">+ إضافة جلسة</button></div>' +
-      '<button class="btn block" id="dr-save">حفظ</button></div>';
-    document.body.appendChild(backdrop);
-    backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
-    backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
-
-    if (isEdit) {
-      loadDentalImages(existingReport.id, document.getElementById("dr-images-list"));
-      document.getElementById("dr-images-add").o…18153 tokens truncated…            fd.append("category", "other");
+      '<button…18287 tokens truncated…            fd.append("category", "other");
             fd.append("other_description", "مستند مرفق بزيارة تغذية — " + (v.visit_date || existingVisit.visit_date || ""));
             fd.append("file", file);
             return window.SSMPDDb.uploadPatientFile(fd).then(function (res) {
