@@ -49,6 +49,27 @@
     try { return new Date(iso).toLocaleString("en-US", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }); }
     catch (e) { return iso; }
   }
+  function fmtFollowUpTime(value) {
+    if (!value) return "";
+    var parts = String(value).slice(0, 5).split(":");
+    if (parts.length !== 2) return escapeHtml(value);
+    var hour = Number(parts[0]);
+    if (isNaN(hour)) return escapeHtml(value);
+    return (hour % 12 || 12) + ":" + parts[1] + (hour >= 12 ? " مساءً" : " صباحًا");
+  }
+  function followUpDisplay(v) {
+    if (!v || !v.follow_up_date) return "—";
+    var when = fmtDate(v.follow_up_date) + (v.follow_up_time ? " — " + fmtFollowUpTime(v.follow_up_time) : "");
+    if (v.follow_up_status === "no_show") return '<span style="color:var(--c-muted);">لم يتم الحضور</span>';
+    if (v.follow_up_status === "attended") return '<span style="color:#177a56;">تم الحضور</span>';
+    if (v.follow_up_status === "rescheduled") return '<span style="color:#a06400;">تم تأجيل الموعد<br><small>' + when + '</small></span>';
+    return when;
+  }
+  function followUpMessage(date, time, reason, note) {
+    var reasons = { emergency: "لظروف طارئة", clinic_delay: "لتأخر العيادة", doctor_schedule: "لتعديل جدول الطبيب", patient_request: "بناءً على طلبك" };
+    var why = reason === "other" && note ? "بسبب " + note : (reasons[reason] || "لظروف طارئة");
+    return "نعتذر عن تأجيل موعد المتابعة مع الطبيب " + why + ". الموعد الجديد يوم " + fmtDate(date) + (time ? " الساعة " + fmtFollowUpTime(time) : "") + ".";
+  }
   function fmtNum(n) { return (n || 0).toLocaleString("en-US"); }
 
   var me = null; // window.SSMPDAuth.currentAdmin
@@ -509,7 +530,15 @@
       '<div class="field"><label>الأشعة</label><input id="vs-xrays" value="' + escapeHtml(v.xrays || '') + '"></div>' +
       '<div class="field"><label>التحاليل</label><input id="vs-labs" value="' + escapeHtml(v.labs || '') + '"></div>' +
       '<div class="field"><label>توصيات أخرى</label><input id="vs-other" value="' + escapeHtml(v.other_recommendations || '') + '"></div>' +
-      '<div class="field"><label>تاريخ المتابعة</label><input id="vs-followup" type="date" value="' + (v.follow_up_date || '') + '"></div>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;">' +
+      '<div class="field" style="flex:1;min-width:160px;"><label>تاريخ المتابعة</label><input id="vs-followup" type="date" value="' + (v.follow_up_date || '') + '"></div>' +
+      '<div class="field" style="flex:1;min-width:130px;"><label>وقت المتابعة</label><input id="vs-followup-time" type="time" value="' + escapeHtml(v.follow_up_time ? String(v.follow_up_time).slice(0, 5) : '') + '"></div>' +
+      '</div>' +
+      '<div id="vs-reschedule-wrap" class="field" style="display:' + (isEdit && v.follow_up_date ? 'block' : 'none') + ';border:1px solid var(--c-border);border-radius:10px;padding:10px;">' +
+      '<label>في حالة تأجيل الموعد، اختر السبب</label>' +
+      '<select id="vs-reschedule-reason"><option value="">بدون تأجيل</option><option value="emergency">ظروف طارئة</option><option value="clinic_delay">تأخر العيادة</option><option value="doctor_schedule">تعديل جدول الطبيب</option><option value="patient_request">بناءً على طلب المريض</option><option value="other">سبب آخر</option></select>' +
+      '<input id="vs-reschedule-note" placeholder="اكتب السبب الآخر" value="' + escapeHtml(v.follow_up_reschedule_note || '') + '" style="margin-top:8px;display:none;">' +
+      '<p id="vs-reschedule-preview" style="display:none;margin:8px 0 0;font-size:12px;line-height:1.8;color:var(--c-muted);"></p></div>' +
       '<div class="field" style="border-top:1px solid var(--c-border);padding-top:10px;">' +
       '<label style="display:flex;align-items:center;gap:8px;font-weight:normal;"><input type="checkbox" id="vs-referred" ' + (v.referred_to_other_doctor ? "checked" : "") + '> محوّل لطبيب آخر</label>' +
       '<input id="vs-referred-doctor" placeholder="اسم الطبيب المحوّل له" value="' + escapeHtml(v.referred_doctor_name || '') + '" style="margin-top:8px;' + (v.referred_to_other_doctor ? "" : "display:none;") + '"></div>' +
@@ -521,11 +550,39 @@
     var referredBox = document.getElementById("vs-referred");
     var referredDoctorInput = document.getElementById("vs-referred-doctor");
     referredBox.onchange = function () { referredDoctorInput.style.display = referredBox.checked ? "" : "none"; };
+    var followUpDate = document.getElementById("vs-followup");
+    var followUpTime = document.getElementById("vs-followup-time");
+    var rescheduleWrap = document.getElementById("vs-reschedule-wrap");
+    var rescheduleReason = document.getElementById("vs-reschedule-reason");
+    var rescheduleNote = document.getElementById("vs-reschedule-note");
+    var reschedulePreview = document.getElementById("vs-reschedule-preview");
+    function updateRescheduleUi() {
+      var oldTime = v.follow_up_time ? String(v.follow_up_time).slice(0, 5) : "";
+      var changed = isEdit && !!v.follow_up_date && (followUpDate.value !== (v.follow_up_date || "") || followUpTime.value !== oldTime);
+      rescheduleWrap.style.display = changed ? "block" : "none";
+      rescheduleNote.style.display = rescheduleReason.value === "other" ? "" : "none";
+      if (changed && rescheduleReason.value && followUpDate.value) {
+        reschedulePreview.style.display = "block";
+        reschedulePreview.textContent = followUpMessage(followUpDate.value, followUpTime.value, rescheduleReason.value, rescheduleNote.value.trim());
+      } else reschedulePreview.style.display = "none";
+    }
+    followUpDate.onchange = updateRescheduleUi;
+    followUpTime.onchange = updateRescheduleUi;
+    rescheduleReason.onchange = updateRescheduleUi;
+    rescheduleNote.oninput = updateRescheduleUi;
 
     document.getElementById("vs-save").onclick = function () {
       var referred = referredBox.checked;
       var referredDoctorName = referredDoctorInput.value.trim();
+      var newFollowUpDate = followUpDate.value || null;
+      var newFollowUpTime = followUpTime.value || null;
+      var oldFollowUpTime = v.follow_up_time ? String(v.follow_up_time).slice(0, 5) : null;
+      var followupChanged = isEdit && !!v.follow_up_date && (newFollowUpDate !== (v.follow_up_date || null) || newFollowUpTime !== oldFollowUpTime);
+      var reason = rescheduleReason.value || null;
+      var reasonNote = rescheduleNote.value.trim() || null;
       if (referred && !referredDoctorName) { T.show("اكتب اسم الطبيب المحوّل له", "error"); return; }
+      if (followupChanged && !reason) { T.show("اختر سبب تأجيل الموعد", "error"); return; }
+      if (followupChanged && reason === "other" && !reasonNote) { T.show("اكتب سبب التأجيل", "error"); return; }
       var patch = {
         visit_date: document.getElementById("vs-date").value || new Date().toISOString().slice(0, 10),
         visit_number: document.getElementById("vs-number").value.trim() || null,
@@ -537,10 +594,27 @@
         xrays: document.getElementById("vs-xrays").value.trim() || null,
         labs: document.getElementById("vs-labs").value.trim() || null,
         other_recommendations: document.getElementById("vs-other").value.trim() || null,
-        follow_up_date: document.getElementById("vs-followup").value || null,
+        follow_up_date: newFollowUpDate,
+        follow_up_time: newFollowUpTime,
         referred_to_other_doctor: referred,
         referred_doctor_name: referred ? referredDoctorName : null
       };
+      if (!newFollowUpDate) {
+        patch.follow_up_status = null;
+        patch.follow_up_reschedule_reason = null;
+        patch.follow_up_reschedule_note = null;
+        patch.follow_up_patient_message = null;
+        patch.follow_up_rescheduled_at = null;
+      } else if (followupChanged) {
+        patch.follow_up_status = "rescheduled";
+        patch.follow_up_reschedule_reason = reason;
+        patch.follow_up_reschedule_note = reasonNote;
+        patch.follow_up_patient_message = followUpMessage(newFollowUpDate, newFollowUpTime, reason, reasonNote);
+        patch.follow_up_rescheduled_at = new Date().toISOString();
+        patch.follow_up_status_at = new Date().toISOString();
+      } else if (!isEdit || !v.follow_up_date) {
+        patch.follow_up_status = "pending";
+      }
       // لو "محوّل لطبيب آخر" اتفعّل جديد في الزيارة دي (مكانش مفعّل قبل كده) —
       // بنعمل ليد جديد بمصدر "تحويل من طبيب العيادة" عشان الريسبشن/خدمة
       // العملاء يحجزوا معاد جديد. لو الزيارة كانت أصلاً محوّلة (تعديل)، مش
@@ -3137,11 +3211,11 @@
           .filter(Boolean).join(' · ');
         html += '<tr><td>' + fmtDate(v.visit_date) + '</td><td>' + escapeHtml(v.visit_number || '—') + '</td>' +
           '<td>' + escapeHtml(v.complaint || '—') + (v.referred_to_other_doctor ? '<br><span style="color:var(--c-accent2, #F15A22);">محوّل لـ' + escapeHtml(v.referred_doctor_name || 'طبيب آخر') + '</span>' : '') + '</td><td>' + escapeHtml(plan || '—') + '</td>' +
-          '<td>' + (v.follow_up_status === 'no_show' ? '<span style="color:var(--c-muted);">لم يتم الحضور</span>' : (v.follow_up_status === 'attended' ? '<span style="color:#177a56;">تم الحضور</span>' : (v.follow_up_date ? fmtDate(v.follow_up_date) : '—'))) + '</td>' +
+          '<td>' + followUpDisplay(v) + (v.follow_up_patient_message ? '<br><small style="color:var(--c-muted);">' + escapeHtml(v.follow_up_patient_message) + '</small>' : '') + '</td>' +
           (canVisitWrite ? '<td style="white-space:nowrap;">' +
             '<button class="btn ghost sm" data-view-visit="' + v.id + '">عرض</button> ' +
             '<button class="btn ghost sm" data-edit-visit="' + v.id + '">تعديل</button> ' +
-            (v.follow_up_date && (!v.follow_up_status || v.follow_up_status === 'pending') ? '<button class="btn ghost sm" data-followup-attended="' + v.id + '">تم الحضور</button> <button class="btn ghost sm" data-followup-no-show="' + v.id + '">لم يتم الحضور</button> ' : '') +
+            (v.follow_up_date && (!v.follow_up_status || v.follow_up_status === 'pending' || v.follow_up_status === 'rescheduled') ? '<button class="btn ghost sm" data-followup-attended="' + v.id + '">تم الحضور</button> <button class="btn ghost sm" data-followup-no-show="' + v.id + '">لم يتم الحضور</button> ' : '') +
             (canVisitDelete ? '<button class="btn danger sm" data-del-visit="' + v.id + '">حذف</button>' : '') + '</td>' : '') + '</tr>';
       });
       html += '</tbody></table>';
@@ -3399,7 +3473,8 @@
     });
 
     function reloadModal() {
-      Promise.all([
+      var refresh = window.SSMPDDb.refreshOverdueFollowups ? window.SSMPDDb.refreshOverdueFollowups().catch(function () { return 0; }) : Promise.resolve(0);
+      refresh.then(function () { return Promise.all([
         window.SSMPDDb.getPatientFiles(patient.id),
         window.SSMPDDb.getPatientMedicalProfile(patient.id).catch(function () { return null; }),
         window.SSMPDDb.listPatientVisits(patient.id).catch(function () { return []; }),
@@ -3412,7 +3487,7 @@
         window.SSMPDDb.listRadiologyRequests(patient.id).catch(function () { return []; }),
         window.SSMPDDb.listPatientExperienceRatings(patient.id).catch(function () { return []; }),
         window.SSMPDDb.listNutritionVisits(patient.id).catch(function () { return []; }),
-      ]).then(function (results) {
+      ]); }).then(function (results) {
         renderPatientModal(backdrop, view, container, results[0].patient, results[0].files || [], results[1], results[2] || [], results[3] || [], results[4] || [], results[5] || [], results[6] || [], results[7] || [], results[8] || [], results[9] || [], results[10] || [], results[11] || []);
       });
     }
@@ -3442,7 +3517,7 @@
       btn.onclick = function () {
         var status = btn.hasAttribute("data-followup-attended") ? "attended" : "no_show";
         var visitId = btn.getAttribute(status === "attended" ? "data-followup-attended" : "data-followup-no-show");
-        window.SSMPDDb.updatePatientVisit(visitId, { follow_up_status: status }).then(function () {
+        window.SSMPDDb.updatePatientVisit(visitId, { follow_up_status: status, follow_up_status_at: new Date().toISOString() }).then(function () {
           T.show(status === "attended" ? "تم تأكيد حضور المتابعة" : "تم تسجيل عدم الحضور"); reloadModal();
         }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
       };
