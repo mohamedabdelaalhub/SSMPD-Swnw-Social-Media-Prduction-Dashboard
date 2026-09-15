@@ -39,13 +39,7 @@ begin
       follow_up_status_at = now()
   where follow_up_date is not null
     and follow_up_status in ('pending', 'rescheduled')
-    and (
-      follow_up_date < timezone('Africa/Cairo', now())::date
-      or (
-        follow_up_time is not null
-        and (follow_up_date + follow_up_time) <= timezone('Africa/Cairo', now())::timestamp
-      )
-    );
+    and follow_up_date < timezone('Africa/Cairo', now())::date;
 
   get diagnostics changed_count = row_count;
   return changed_count;
