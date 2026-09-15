@@ -1,1 +1,68 @@
-.medication-view{font-family:var(--font-arabic,"BigVestaArabicBeta",Tahoma,sans-serif);display:grid;gap:14px;max-width:980px;margin:auto}.medication-page-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;padding:8px 2px}.medication-page-head span{color:#1748ad;font-weight:800;font-size:13px}.medication-page-head h2{font-size:26px;line-height:1.1;margin:4px 0 7px;color:#152238}.medication-page-head p{margin:0;color:#6c7b91;font-size:14px}.medication-refresh{border:1px solid #1748ad;background:#fff;color:#1748ad;border-radius:12px;padding:10px 18px;font:inherit;font-weight:800;cursor:pointer}.medication-summary{background:#f3f7ff;border:1px solid #d8e4fb;border-radius:16px;padding:14px 16px;display:grid;gap:9px}.medication-summary>div:first-child{display:flex;align-items:baseline;gap:7px}.medication-summary b{font-size:16px;color:#123fa7}.medication-summary span{color:#63738a;font-size:13px}.medication-summary progress{width:100%;height:8px;border:0;border-radius:9px;overflow:hidden}.medication-summary progress::-webkit-progress-bar{background:#dce6f7}.medication-summary progress::-webkit-progress-value{background:#1e9b68;border-radius:9px}.summary-counts{display:flex;gap:12px;flex-wrap:wrap}.summary-counts .taken{color:#17734f}.summary-counts .upcoming{color:#63738a}.summary-counts .missed{color:#be3b29}.medication-day{font-size:13px;color:#718096}.medication-slots{display:grid;gap:12px}.medication-slot{border:1px solid #dce5f4;border-radius:18px;padding:14px;background:#fff}.slot-head{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:0 2px 11px;border-bottom:1px solid #edf1f7}.slot-state{display:flex;gap:9px;align-items:center}.slot-icon{height:30px;width:30px;border-radius:50%;display:grid;place-items:center;background:#edf2fa}.slot-icon:before{content:"◷";color:#718096;font-size:17px}.slot-head h3{margin:0;font-size:18px;color:#152238}.slot-head p{margin:1px 0 0;color:#718096;font-size:12px}.meal-badge{display:inline-flex;background:#e9f0ff;color:#1748ad;padding:5px 10px;border-radius:999px;font-size:12px;font-weight:800}.slot-taken{background:#f0faf5;border-color:#ccebdc}.slot-taken .slot-icon{background:#d8f2e4}.slot-taken .slot-icon:before{content:"✓";color:#198a5e;font-weight:900}.slot-taken .slot-head p{color:#198a5e}.slot-late{background:#fff8f6;border-color:#f4d2c9}.slot-late .slot-icon{background:#fde3dd}.slot-late .slot-icon:before{content:"×";color:#d8432e;font-size:23px}.slot-late .slot-head p{color:#c63c2a}.slot-medications{display:grid}.scheduled-medication{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:11px 2px}.scheduled-medication+.scheduled-medication{border-top:1px solid #edf1f7}.medicine-copy h4{margin:0;color:#1646a8;font-size:16px;font-family:var(--font-latin,inherit)}.medicine-copy h4 small{font-weight:600}.medicine-copy p{margin:3px 0 0;color:#6c7b91;font-size:12px}.medicine-copy>.meal-badge{margin-top:7px}.dose-actions{display:grid;gap:6px;justify-items:end;text-align:left;min-width:250px}.dose-actions>div{display:flex;gap:6px}.dose-actions button{border-radius:999px;padding:9px 15px;font:inherit;font-weight:800;cursor:pointer}.dose-taken{border:1px solid #1e9b68;background:#1e9b68;color:#fff}.dose-missed{border:1px solid #cbd5e1;background:#fff;color:#68778b}.dose-taken.active{background:#197b55;box-shadow:inset 0 0 0 2px #b7e7cf}.dose-missed.active{background:#d8442f;border-color:#d8442f;color:#fff}.dose-confirmation{height:17px;font-size:12px;color:#63738a}.scheduled-medication[data-state="taken"] .dose-confirmation{color:#198a5e}.scheduled-medication[data-state="missed"] .dose-confirmation,.scheduled-medication[data-state="late"] .dose-confirmation{color:#c63c2a}.medication-empty{padding:30px;text-align:center;border:1px dashed #cbd5e1;border-radius:16px;color:#64748b}@media(max-width:680px){.medication-page-head{align-items:flex-start}.medication-page-head h2{font-size:23px}.medication-page-head p{font-size:13px}.medication-refresh{padding:9px 12px}.slot-head{align-items:flex-start}.scheduled-medication{align-items:stretch;flex-direction:column}.dose-actions{justify-items:stretch;min-width:0}.dose-actions>div{width:100%}.dose-actions button{flex:1;padding:11px 8px}.dose-confirmation{text-align:right;order:-1}.summary-counts{gap:8px}.meal-badge{white-space:normal;text-align:center}}@media(min-width:681px){.medication-slot{padding:17px 20px}}
+.medication-view{font-family:var(--font-arabic,"BigVestaArabicBeta",Tahoma,sans-serif);display:grid;gap:14px;max-width:980px;margin:auto}
+.medication-page-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;padding:6px 2px}
+.medication-page-head span{color:#0F369D;font-weight:700;font-size:12px}
+.medication-page-head h2{font-size:24px;line-height:1.15;margin:4px 0 6px;color:#16212E;font-weight:800}
+.medication-page-head p{margin:0;color:#6B7686;font-size:13px}
+.medication-refresh{border:1px solid #E4E8F0;background:#fff;color:#16212E;border-radius:10px;padding:9px 16px;font:inherit;font-weight:700;font-size:13px;cursor:pointer;transition:border-color .15s,color .15s}
+.medication-refresh:hover{border-color:#0F369D;color:#0F369D}
+.medication-summary{background:#F6F8FB;border:1px solid #E4E8F0;border-radius:14px;padding:14px 16px;display:grid;gap:8px}
+.medication-summary>div:first-child{display:flex;align-items:baseline;gap:6px}
+.medication-summary b{font-size:15px;color:#16212E;font-weight:800}
+.medication-summary span{color:#6B7686;font-size:12.5px}
+.medication-summary progress{width:100%;height:6px;border:0;border-radius:6px;overflow:hidden;appearance:none}
+.medication-summary progress::-webkit-progress-bar{background:#E4E8F0}
+.medication-summary progress::-webkit-progress-value{background:#2F7D5C;border-radius:6px}
+.summary-counts{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;font-weight:700}
+.summary-counts .taken{color:#2F7D5C}
+.summary-counts .upcoming{color:#6B7686}
+.summary-counts .missed{color:#D0402A}
+.medication-day{font-size:12.5px;color:#6B7686}
+.medication-slots{display:grid;gap:10px}
+.medication-slot{border:1px solid #E4E8F0;border-radius:16px;padding:16px;background:#fff}
+.slot-head{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:0 0 10px;border-bottom:1px solid #EEF1F6;margin-bottom:2px}
+.slot-state{display:flex;gap:10px;align-items:center}
+.slot-icon{height:28px;width:28px;border-radius:50%;display:grid;place-items:center;background:#F6F8FB;flex:none}
+.slot-icon:before{content:"◷";color:#6B7686;font-size:14px}
+.slot-head h3{margin:0;font-size:16px;color:#16212E;font-weight:700}
+.slot-head p{margin:1px 0 0;color:#6B7686;font-size:12px}
+.meal-badge{display:inline-flex;background:#EEF2FB;color:#0F369D;padding:4px 10px;border-radius:999px;font-size:11.5px;font-weight:700}
+.slot-taken{border-color:#DCEEE3}
+.slot-taken .slot-icon{background:#E4F3EA}
+.slot-taken .slot-icon:before{content:"✓";color:#2F7D5C;font-weight:900;font-size:13px}
+.slot-taken .slot-head p{color:#2F7D5C}
+.slot-late{border-color:#F3D6CE}
+.slot-late .slot-icon{background:#FBE7E1}
+.slot-late .slot-icon:before{content:"!";color:#D0402A;font-weight:900;font-size:15px}
+.slot-late .slot-head p{color:#D0402A}
+.slot-medications{display:grid}
+.scheduled-medication{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 0}
+.scheduled-medication+.scheduled-medication{border-top:1px solid #EEF1F6}
+.medicine-copy h4{margin:0;color:#16212E;font-size:15px;font-weight:700;font-family:var(--font-latin,inherit)}
+.medicine-copy h4 small{font-weight:500;color:#6B7686}
+.medicine-copy p{margin:3px 0 0;color:#6B7686;font-size:12px}
+.medicine-copy>.meal-badge{margin-top:7px}
+.dose-actions{display:grid;gap:6px;justify-items:end;text-align:left;min-width:220px}
+.dose-actions>div{display:flex;background:#F6F8FB;border-radius:999px;padding:3px;gap:2px}
+.dose-actions button{flex:1;border:0;background:transparent;border-radius:999px;padding:8px 14px;font:inherit;font-weight:700;font-size:12.5px;color:#6B7686;cursor:pointer;transition:background .15s,color .15s}
+.dose-taken.active{background:#2F7D5C;color:#fff}
+.dose-missed.active{background:#D0402A;color:#fff}
+.dose-confirmation{height:16px;font-size:11.5px;color:#6B7686}
+.scheduled-medication[data-state="taken"] .dose-confirmation{color:#2F7D5C}
+.scheduled-medication[data-state="missed"] .dose-confirmation,.scheduled-medication[data-state="late"] .dose-confirmation{color:#D0402A}
+.medication-empty{padding:28px;text-align:center;border:1px dashed #E4E8F0;border-radius:14px;color:#6B7686;font-size:13px}
+.medication-status{color:#6B7686;font-size:12.5px}
+@media(max-width:680px){
+.medication-page-head{align-items:flex-start}
+.medication-page-head h2{font-size:21px}
+.medication-page-head p{font-size:12.5px}
+.medication-refresh{padding:8px 12px}
+.slot-head{align-items:flex-start}
+.scheduled-medication{align-items:stretch;flex-direction:column}
+.dose-actions{justify-items:stretch;min-width:0}
+.dose-actions>div{width:100%}
+.dose-actions button{flex:1;padding:10px 8px}
+.dose-confirmation{text-align:right;order:-1}
+.summary-counts{gap:10px}
+.meal-badge{white-space:normal;text-align:center}
+}
+@media(min-width:681px){.medication-slot{padding:18px 20px}}
