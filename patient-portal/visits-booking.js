@@ -136,6 +136,8 @@ function renderVisits(data){
       var specialty=v.specialty||"التخصص غير مسجل";
       var vitals=[
         visitVital("الضغط",v.blood_pressure),
+        visitVital("الوزن",v.weight),
+        visitVital("الأكسجين",v.oxygen_percent),
         visitVital("السكر",v.blood_sugar),
         visitVital("النبض",v.pulse)
       ].join("");
