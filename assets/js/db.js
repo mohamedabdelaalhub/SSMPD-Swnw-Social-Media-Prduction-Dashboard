@@ -489,6 +489,15 @@
     updatePatientVisit: function (visitId, patch) {
       return handle(client.from("patient_visits").update(patch).eq("id", visitId).select().single());
     },
+    listVisitMedications: function (visitId) {
+      return handle(client.from("patient_visit_medications").select("*").eq("visit_id", visitId).order("created_at"));
+    },
+    setVisitMedications: function (visitId, medications) {
+      return handle(client.rpc("set_patient_visit_medications", { p_visit_id: visitId, p_medications: medications || [] }));
+    },
+    listVisitMedicationDoseCompletions: function (visitId) {
+      return handle(client.from("patient_medication_dose_completions").select("*, patient_visit_medications!inner(visit_id, medicine_name)").eq("patient_visit_medications.visit_id", visitId).order("scheduled_date", { ascending: false }).order("scheduled_time", { ascending: false }).limit(100));
+    },
     refreshOverdueFollowups: function () {
       return handle(client.rpc("refresh_overdue_followups"));
     },
