@@ -588,7 +588,12 @@ function openAgentImportModal(parentBackdrop) {
             '<button class="btn sm" id="create-video-job-btn">🎬 إنشاء Video Job</button>';
         }
       } else {
+        var fallbackProgress = { pending: 0, preparing: 15, rendering: 55, uploading: 85, ready: 100 };
+        var progressValue = latest.progress_percent == null ? (fallbackProgress[latest.status] || 0) : Math.max(0, Math.min(100, Number(latest.progress_percent)));
+        var progressLabel = latest.progress_stage || (latest.status === "preparing" ? "تجهيز الملفات" : latest.status === "rendering" ? "إنتاج الفيديو والصوت" : latest.status === "uploading" ? "حفظ الفيديو والأغلفة" : latest.status === "ready" ? "اكتمل" : "في الانتظار");
         html += '<div style="font-size:12px;margin-bottom:6px;"><b>الحالة:</b> ' + escapeHtml(videoJobStatusLabel(latest.status)) + '</div>' +
+          '<div style="margin:8px 0 10px;"><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:5px;"><span>' + escapeHtml(progressLabel) + '</span><b>' + progressValue + '%</b></div>' +
+          '<div style="height:8px;background:#e7ebf3;border-radius:999px;overflow:hidden;"><div style="width:' + progressValue + '%;height:100%;background:#1746a2;border-radius:999px;transition:width .35s ease;"></div></div></div>' +
           '<div style="font-size:12px;margin-bottom:6px;"><b>القالب:</b> ' + escapeHtml(latest.video_template || "—") +
           ' &nbsp; <b>المدة:</b> ' + escapeHtml((latest.duration_min_seconds == null ? "—" : latest.duration_min_seconds) + "–" +
           (latest.duration_max_seconds == null ? "—" : latest.duration_max_seconds) + " ث") + '</div>' +
