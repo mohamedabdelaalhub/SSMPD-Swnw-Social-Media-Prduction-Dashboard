@@ -13,6 +13,7 @@ function doseState(d){if(d.completion&&d.completion.status==="taken")return"take
 function remaining(d){var minutes=due(d)-nowMinutes();if(minutes<=0)return"";var hours=Math.floor(minutes/60),mins=minutes%60,parts=[];if(hours)parts.push(hours+" "+(hours===1?"ساعة":"ساعات"));if(mins)parts.push(mins+" دقيقة");return parts.length?"متبقي "+parts.join(" و"):"متبقي أقل من دقيقة"}
 function label(s){return s==="taken"?"تم أخذها":s==="missed"?"لم تؤخذ":s==="late"?"فات موعدها":"الجرعة القادمة"}
 function sharedInstruction(rows){var a=(rows[0].medicine.instructions||"").trim();return a&&rows.every(function(x){return (x.medicine.instructions||"").trim()===a})?a:""}
+function sharedDoctor(rows){var a=((rows[0].medicine.visit||{}).doctor_name||"").trim();return a&&rows.every(function(x){return ((x.medicine.visit||{}).doctor_name||"").trim()===a})?a:""}
 function setActive(){var tabs=root.querySelector(".profile-tabs");if(tabs)tabs.querySelectorAll("button").forEach(function(b){b.classList.toggle("active",b.getAttribute("data-medical-tab")==="prescriptions")})}
 function groups(meds){var out={},list=[];meds.forEach(function(m){(m.doses||[]).forEach(function(d){var key=d.scheduled_key;if(!out[key]){out[key]={key:key,time:d.scheduled_time,rows:[]};list.push(out[key])}out[key].rows.push({medicine:m,dose:d})})});return list.sort(function(a,b){return a.key.localeCompare(b.key)})}
 function open(){
@@ -28,9 +29,9 @@ function open(){
   summary.innerHTML='<div><b>'+taken+' من '+all.length+'</b><span>جرعات تم تسجيلها اليوم</span></div><progress max="'+Math.max(all.length,1)+'" value="'+taken+'"></progress><div class="summary-counts"><span class="taken">'+taken+' تم أخذها</span><span class="upcoming">'+pending+' قادمة</span>'+(missed?'<span class="missed">'+missed+' تحتاج تسجيلًا</span>':'')+'</div>';
   if(!meds.length){list.innerHTML='<div class="medication-empty">لا توجد جرعات مجدولة لليوم.</div>';status.textContent="";return}
   groups(meds).forEach(function(slot){
-   var states=slot.rows.map(function(x){return doseState(x.dose)}),state=states.indexOf("missed")>=0||states.indexOf("late")>=0?"late":states.every(function(x){return x==="taken"})?"taken":"upcoming",instruction=sharedInstruction(slot.rows);
+   var states=slot.rows.map(function(x){return doseState(x.dose)}),state=states.indexOf("missed")>=0||states.indexOf("late")>=0?"late":states.every(function(x){return x==="taken"})?"taken":"upcoming",instruction=sharedInstruction(slot.rows),doctor=sharedDoctor(slot.rows);
    var card=document.createElement("section");card.className="medication-slot slot-"+state;
-   card.innerHTML='<div class="slot-head"><div class="slot-state"><span class="slot-icon"></span><div><h3>'+esc(time(slot.time))+'</h3><p>'+esc(label(state))+(state==="upcoming"&&remaining(slot.rows[0].dose)?" · "+esc(remaining(slot.rows[0].dose)):"")+'</p></div></div>'+(instruction?'<span class="dose-instruction">'+esc(instruction)+'</span>':'')+'</div><div class="slot-medications"></div>';
+   card.innerHTML='<div class="slot-head"><div class="slot-state"><span class="slot-icon"></span><div><h3>'+esc(time(slot.time))+'</h3><p>'+esc(label(state))+(state==="upcoming"&&remaining(slot.rows[0].dose)?" · "+esc(remaining(slot.rows[0].dose)):"")+'</p></div></div>'+((doctor||instruction)?'<div class="slot-side">'+(doctor?'<span class="dose-doctor">الطبيب: '+esc(doctor)+'</span>':'')+(instruction?'<span class="dose-instruction">'+esc(instruction)+'</span>':'')+'</div>':'')+'</div><div class="slot-medications"></div>';
    var rows=card.querySelector(".slot-medications");
    slot.rows.forEach(function(x){
     var m=x.medicine,d=x.dose,state=doseState(d),row=document.createElement("article");row.className="scheduled-medication";

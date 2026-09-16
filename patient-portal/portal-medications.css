@@ -19,12 +19,14 @@
 .medication-day{font-size:12.5px;color:#6B7686}
 .medication-slots{display:grid;gap:10px}
 .medication-slot{border:1px solid #E4E8F0;border-radius:16px;padding:16px;background:#fff}
-.slot-head{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:0 0 12px;border-bottom:1px solid #EEF1F6;margin-bottom:10px}
+.slot-head{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:0 0 12px;border-bottom:1px solid #EEF1F6;margin-bottom:10px;flex-wrap:wrap}
 .slot-state{display:flex;gap:11px;align-items:center}
 .slot-icon{height:32px;width:32px;border-radius:50%;display:grid;place-items:center;background:#F6F8FB;flex:none}
 .slot-icon:before{content:"◷";color:#6B7686;font-size:18px;line-height:1}
 .slot-head h3{margin:0 0 3px;font-size:16px;line-height:1.3;color:#16212E;font-weight:700}
 .slot-head p{margin:0;color:#6B7686;font-size:12px;line-height:1.4}
+.slot-side{display:flex;flex-direction:column;align-items:flex-end;gap:3px;text-align:right}
+.dose-doctor{color:#16212E;font-size:12px;font-weight:700;white-space:nowrap}
 .dose-instruction{color:#0F369D;font-size:12px;font-weight:700;white-space:nowrap}
 .slot-taken{border-color:#DCEEE3}
 .slot-taken .slot-icon{background:#E4F3EA}
@@ -65,5 +67,7 @@
 .dose-confirmation{text-align:right;order:-1}
 .summary-counts{gap:10px}
 .dose-instruction{white-space:normal}
+.dose-doctor{white-space:normal}
+.slot-side{align-items:flex-start;text-align:right;width:100%}
 }
 @media(min-width:681px){.medication-slot{padding:18px 20px}}
