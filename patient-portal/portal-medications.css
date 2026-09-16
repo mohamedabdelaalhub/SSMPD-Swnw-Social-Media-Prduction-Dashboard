@@ -5,6 +5,10 @@
 .medication-page-head p{margin:0;color:#6B7686;font-size:13px}
 .medication-refresh{border:1px solid #E4E8F0;background:#fff;color:#16212E;border-radius:10px;padding:9px 16px;font:inherit;font-weight:700;font-size:13px;cursor:pointer;transition:border-color .15s,color .15s}
 .medication-refresh:hover{border-color:#0F369D;color:#0F369D}
+.medication-period{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.period-tile{background:#F6F8FB;border:1px solid #E4E8F0;border-radius:12px;padding:12px 8px;text-align:center}
+.period-tile b{display:block;font-size:19px;color:#16212E;font-weight:800;line-height:1.2}
+.period-tile span{display:block;margin-top:3px;color:#6B7686;font-size:11.5px}
 .medication-summary{background:#F6F8FB;border:1px solid #E4E8F0;border-radius:14px;padding:14px 16px;display:grid;gap:8px}
 .medication-summary>div:first-child{display:flex;align-items:baseline;gap:6px}
 .medication-summary b{font-size:15px;color:#16212E;font-weight:800}
@@ -46,6 +50,8 @@
 .dose-actions{display:grid;gap:6px;justify-items:end;text-align:left;min-width:230px}
 .dose-actions>div{display:flex;gap:10px}
 .dose-actions button{border:1.5px solid #E4E8F0;background:#fff;border-radius:10px;padding:9px 16px;font:inherit;font-weight:700;font-size:12.5px;color:#6B7686;cursor:pointer;white-space:nowrap;transition:background .15s,border-color .15s,color .15s}
+.dose-taken:hover:not(.active){border-color:#0F369D;color:#0F369D}
+.dose-missed:hover:not(.active){border-color:#F15A22;color:#F15A22}
 .dose-taken.active{background:#2F7D5C;border-color:#2F7D5C;color:#fff}
 .dose-missed.active{background:#D0402A;border-color:#D0402A;color:#fff}
 .dose-confirmation{height:16px;font-size:11.5px;color:#6B7686}

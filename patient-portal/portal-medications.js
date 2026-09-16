@@ -18,9 +18,14 @@ function setActive(){var tabs=root.querySelector(".profile-tabs");if(tabs)tabs.q
 function groups(meds){var out={},list=[];meds.forEach(function(m){(m.doses||[]).forEach(function(d){var key=d.scheduled_key;if(!out[key]){out[key]={key:key,time:d.scheduled_time,rows:[]};list.push(out[key])}out[key].rows.push({medicine:m,dose:d})})});return list.sort(function(a,b){return a.key.localeCompare(b.key)})}
 function open(){
  var c=root.querySelector(".profile-content");if(!c)return;setActive();
- c.innerHTML='<section class="portal-medical-view medication-view"><header class="medication-page-head"><div><span>خطة العلاج</span><h2>الأدوية اليوم</h2><p>سجّل الجرعة بعد أخذها ليظهر الالتزام للفريق المعالج.</p></div><button class="medication-refresh" type="button" data-refresh aria-label="تحديث">تحديث</button></header><div class="medication-summary" data-summary></div><div class="medication-day" data-day></div><div class="medication-slots" data-list></div><p class="medication-status" data-status></p></section>';
- var view=c.firstElementChild,list=view.querySelector("[data-list]"),status=view.querySelector("[data-status]"),summary=view.querySelector("[data-summary]");
+ c.innerHTML='<section class="portal-medical-view medication-view"><header class="medication-page-head"><div><span>خطة العلاج</span><h2>الأدوية اليوم</h2><p>سجّل الجرعة بعد أخذها ليظهر الالتزام للفريق المعالج.</p></div><button class="medication-refresh" type="button" data-refresh aria-label="تحديث">تحديث</button></header><div class="medication-period" data-period><div class="period-tile"><b>…</b><span>إجمالي جرعات العلاج</span></div><div class="period-tile"><b>…</b><span>تم أخذها</span></div><div class="period-tile"><b>…</b><span>نسبة الالتزام</span></div></div><div class="medication-summary" data-summary></div><div class="medication-day" data-day></div><div class="medication-slots" data-list></div><p class="medication-status" data-status></p></section>';
+ var view=c.firstElementChild,list=view.querySelector("[data-list]"),status=view.querySelector("[data-status]"),summary=view.querySelector("[data-summary]"),period=view.querySelector("[data-period]");
  view.querySelector("[data-refresh]").onclick=open;status.textContent="جاري تحميل جدول الجرعات…";
+ invoke({op:"summary"}).then(function(s){
+  if(!view.isConnected)return;
+  var percent=s.total?Math.round(s.taken/s.total*100):0;
+  period.innerHTML='<div class="period-tile"><b>'+s.total+'</b><span>إجمالي جرعات العلاج</span></div><div class="period-tile"><b>'+s.taken+'</b><span>تم أخذها</span></div><div class="period-tile"><b>'+percent+'%</b><span>نسبة الالتزام</span></div>';
+ }).catch(function(){if(view.isConnected)period.innerHTML='<div class="period-tile"><b>—</b><span>إجمالي جرعات العلاج</span></div><div class="period-tile"><b>—</b><span>تم أخذها</span></div><div class="period-tile"><b>—</b><span>نسبة الالتزام</span></div>'});
  invoke({op:"overview"}).then(function(data){
   if(!view.isConnected)return;
   view.querySelector("[data-day]").textContent="جدول جرعات اليوم · "+data.day;
