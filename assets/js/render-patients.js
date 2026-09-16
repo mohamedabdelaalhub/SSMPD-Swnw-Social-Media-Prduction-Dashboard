@@ -2640,6 +2640,23 @@
   }
 
   // ---------- عرض تفاصيل زيارة (قراءة فقط) ----------
+  // سجل التزام المريض بالجرعات (زي سجل متابعة الوجبات، بس للأدوية) — يظهر داخل تفاصيل الزيارة
+  function watchMedicationStatus(el, visit) {
+    el.innerHTML = '<h5 style="margin:16px 0 6px;">سجل الالتزام بالأدوية</h5><p style="font-size:11px;color:var(--c-muted);margin:0 0 8px;">آخر ١٠٠ جرعة سجّلها المريض من البوابة، الأحدث أولًا.</p><div data-med-log>جاري التحميل…</div>';
+    var target = el.querySelector('[data-med-log]');
+    window.SSMPDDb.listVisitMedicationDoseCompletions(visit.id).then(function (rows) {
+      if (!el.isConnected) return;
+      if (!rows || !rows.length) { target.innerHTML = '<p style="font-size:12px;color:var(--c-muted);">لسه مفيش أي جرعة مسجّلة من المريض.</p>'; return; }
+      target.innerHTML = '<table class="simple"><thead><tr><th>الدواء</th><th>التاريخ</th><th>الوقت</th><th>الحالة</th></tr></thead><tbody>' +
+        rows.map(function (r) {
+          var med = (r.patient_visit_medications && r.patient_visit_medications.medicine_name) || '—';
+          var taken = r.status === 'taken';
+          return '<tr><td>' + escapeHtml(med) + '</td><td>' + fmtDate(r.scheduled_date) + '</td><td>' + escapeHtml((r.scheduled_time || '').slice(0, 5)) + '</td>' +
+            '<td style="color:' + (taken ? 'var(--c-positive,#2F7D5C)' : 'var(--c-negative,#D0402A)') + ';font-weight:700;">' + (taken ? 'تم أخذها' : 'لم تؤخذ') + '</td></tr>';
+        }).join('') + '</tbody></table>';
+    }).catch(function () { if (el.isConnected) target.textContent = 'تعذر تحميل سجل الأدوية.'; });
+  }
+
   function openViewVisitModal(v) {
     var plan = [v.medications ? 'الأدوية: ' + v.medications : '', v.xrays ? 'الأشعة: ' + v.xrays : '', v.labs ? 'التحاليل: ' + v.labs : '', v.other_recommendations ? 'توصيات أخرى: ' + v.other_recommendations : '']
       .filter(Boolean).join('<br>');
@@ -2654,10 +2671,11 @@
       '<p><b>خطة العلاج: </b><br>' + (plan || '—') + '</p>' +
       '<p><b>تاريخ المتابعة: </b>' + (v.follow_up_date ? fmtDate(v.follow_up_date) : '—') + '</p>' +
       (v.referred_to_other_doctor ? '<p style="color:var(--c-accent2, #F15A22);"><b>تم التحويل لطبيب آخر: </b>' + escapeHtml(v.referred_doctor_name || '—') + '</p>' : '') +
-      '</div></div>';
+      '</div><div data-med-status></div></div>';
     document.body.appendChild(backdrop);
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
     backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
+    watchMedicationStatus(backdrop.querySelector('[data-med-status]'), v);
   }
 
   // ============ ٣) شاشة المراجعة ============
