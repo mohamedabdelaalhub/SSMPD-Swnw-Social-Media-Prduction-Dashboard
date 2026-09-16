@@ -2641,12 +2641,28 @@
 
   // ---------- عرض تفاصيل زيارة (قراءة فقط) ----------
   // سجل التزام المريض بالجرعات (زي سجل متابعة الوجبات، بس للأدوية) — يظهر داخل تفاصيل الزيارة
+  function medicationPlanDoseCount(m) {
+    var hours = Number(m.frequency_hours), days = Number(m.duration_days);
+    if (!hours || hours <= 0 || !days || days <= 0) return 0;
+    return Math.floor((days * 24) / hours);
+  }
   function watchMedicationStatus(el, visit) {
-    el.innerHTML = '<h5 style="margin:16px 0 6px;">سجل الالتزام بالأدوية</h5><p style="font-size:11px;color:var(--c-muted);margin:0 0 8px;">آخر ١٠٠ جرعة سجّلها المريض من البوابة، الأحدث أولًا.</p><div data-med-log>جاري التحميل…</div>';
-    var target = el.querySelector('[data-med-log]');
-    window.SSMPDDb.listVisitMedicationDoseCompletions(visit.id).then(function (rows) {
+    el.innerHTML = '<h5 style="margin:16px 0 6px;">سجل الالتزام بالأدوية</h5>' +
+      '<div class="medication-period" data-med-period style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px;"></div>' +
+      '<p style="font-size:11px;color:var(--c-muted);margin:0 0 8px;">آخر ١٠٠ جرعة سجّلها المريض من البوابة، الأحدث أولًا.</p><div data-med-log>جاري التحميل…</div>';
+    var target = el.querySelector('[data-med-log]'), period = el.querySelector('[data-med-period]');
+    var tile = function (label, value) { return '<div style="background:var(--c-bg-soft,#F6F8FB);border:1px solid var(--c-border,#E4E8F0);border-radius:10px;padding:8px 6px;text-align:center;"><b style="display:block;font-size:16px;">' + value + '</b><span style="display:block;margin-top:2px;color:var(--c-muted);font-size:11px;">' + label + '</span></div>'; };
+    Promise.all([
+      window.SSMPDDb.listVisitMedications(visit.id),
+      window.SSMPDDb.listVisitMedicationDoseCompletions(visit.id)
+    ]).then(function (res) {
       if (!el.isConnected) return;
-      if (!rows || !rows.length) { target.innerHTML = '<p style="font-size:12px;color:var(--c-muted);">لسه مفيش أي جرعة مسجّلة من المريض.</p>'; return; }
+      var meds = res[0] || [], rows = res[1] || [];
+      var total = meds.reduce(function (sum, m) { return sum + medicationPlanDoseCount(m); }, 0);
+      var takenRows = rows.filter(function (r) { return r.status === 'taken'; });
+      var percent = total ? Math.round((takenRows.length / total) * 100) : 0;
+      period.innerHTML = tile('نسبة الالتزام', percent + '%') + tile('تم أخذها', takenRows.length) + tile('إجمالي جرعات العلاج', total);
+      if (!rows.length) { target.innerHTML = '<p style="font-size:12px;color:var(--c-muted);">لسه مفيش أي جرعة مسجّلة من المريض.</p>'; return; }
       target.innerHTML = '<table class="simple"><thead><tr><th>الدواء</th><th>التاريخ</th><th>الوقت</th><th>الحالة</th></tr></thead><tbody>' +
         rows.map(function (r) {
           var med = (r.patient_visit_medications && r.patient_visit_medications.medicine_name) || '—';
