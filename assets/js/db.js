@@ -519,6 +519,27 @@
     deletePatientSpeechSession: function (sessionId) {
       return handle(client.from("patient_speech_sessions").delete().eq("id", sessionId));
     },
+    getPatientPsychologyProfile: function (patientId) {
+      return handle(client.from("patient_psychology_profiles").select("*").eq("patient_id", patientId).maybeSingle());
+    },
+    savePatientPsychologyProfile: function (patientId, patch, adminId) {
+      var row = Object.assign({}, patch, { patient_id: patientId, updated_by: adminId, updated_at: new Date().toISOString() });
+      if (!row.created_by) row.created_by = adminId;
+      return handle(client.from("patient_psychology_profiles").upsert(row, { onConflict: "patient_id" }).select().single());
+    },
+    listPatientPsychologySessions: function (patientId) {
+      return handle(client.from("patient_psychology_sessions").select("*").eq("patient_id", patientId).order("session_at", { ascending: false }));
+    },
+    addPatientPsychologySession: function (patientId, session, adminId) {
+      var row = Object.assign({}, session, { patient_id: patientId, created_by: adminId, updated_by: adminId });
+      return handle(client.from("patient_psychology_sessions").insert(row).select().single());
+    },
+    updatePatientPsychologySession: function (sessionId, patch, adminId) {
+      return handle(client.from("patient_psychology_sessions").update(Object.assign({}, patch, { updated_by: adminId, updated_at: new Date().toISOString() })).eq("id", sessionId).select().single());
+    },
+    deletePatientPsychologySession: function (sessionId) {
+      return handle(client.from("patient_psychology_sessions").delete().eq("id", sessionId));
+    },
     refreshOverdueFollowups: function () {
       return handle(client.rpc("refresh_overdue_followups"));
     },
