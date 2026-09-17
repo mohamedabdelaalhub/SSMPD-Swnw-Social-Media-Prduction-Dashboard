@@ -3160,6 +3160,94 @@
     };
   }
 
+  function openPsychologyProfileFormModal(patient, profile, onSaved) {
+    profile = profile || {};
+    var issueOptions = [["anxiety","قلق"],["depression","اكتئاب"],["panic","نوبات هلع"],["relationships","علاقات"],["self_esteem","تقدير ذات"],["behavior","سلوك"],["other","أخرى"]];
+    var backdrop = document.createElement("div");
+    backdrop.className = "modal-backdrop";
+    backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>التقييم النفسي الأولي</h3><button class="modal-close">×</button></div>' +
+      '<div class="section" style="padding:10px 12px;margin-bottom:12px;"><p style="font-size:13px;margin:0;line-height:1.8;"><b>' + escapeHtml(patient.full_name) + '</b><br>السن: ' + escapeHtml(patient.age != null ? String(patient.age) : "—") + ' · النوع: ' + (patient.gender === "male" ? "ذكر" : patient.gender === "female" ? "أنثى" : "—") + '</p></div>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;"><div class="field" style="flex:1;min-width:160px;"><label>تاريخ أول جلسة</label><input id="pp-first-date" type="date" value="' + escapeHtml(profile.first_session_date || "") + '"></div><div class="field" style="flex:1;min-width:160px;"><label>نوع الجلسة</label><select id="pp-session-type"><option value="">اختر النوع</option><option value="individual">فردية</option><option value="family">أسرية</option><option value="couple">زوجية</option><option value="child">طفل</option></select></div></div>' +
+      '<div class="field"><label>سبب الحجز</label><input id="pp-booking-reason" value="' + escapeHtml(profile.booking_reason || "") + '"></div>' +
+      '<div class="field"><label>المشكلة الأساسية</label><div id="pp-issues" style="display:flex;gap:8px;flex-wrap:wrap;">' + issueOptions.map(function (x) { return '<label style="border:1px solid var(--c-border);border-radius:9px;padding:7px 9px;font-size:13px;"><input type="checkbox" value="' + x[0] + '" ' + ((profile.main_issues || []).indexOf(x[0]) > -1 ? "checked" : "") + '> ' + x[1] + '</label>'; }).join("") + '</div></div>' +
+      '<div class="field" id="pp-other-wrap" style="display:' + ((profile.main_issues || []).indexOf("other") > -1 ? "block" : "none") + ';"><label>تفاصيل أخرى</label><input id="pp-other" value="' + escapeHtml(profile.main_issue_other || "") + '"></div>' +
+      '<div class="field"><label>سبب الحضور والشكوى الأساسية</label><textarea id="pp-complaint" rows="3">' + escapeHtml(profile.presenting_complaint || "") + '</textarea></div>' +
+      '<div class="field"><label>متى بدأت المشكلة؟</label><input id="pp-started" value="' + escapeHtml(profile.problem_started || "") + '" placeholder="مثال: منذ 6 أشهر"></div>' +
+      '<div class="field"><label>الأعراض أو المشكلة الحالية</label><textarea id="pp-symptoms" rows="3">' + escapeHtml(profile.current_symptoms || "") + '</textarea></div>' +
+      '<div class="field"><label>هل سبق علاج أو جلسات؟</label><div id="pp-previous-treatment" style="display:flex;gap:14px;"><label><input type="radio" name="previous-treatment" value="yes"> نعم</label><label><input type="radio" name="previous-treatment" value="no"> لا</label></div></div>' +
+      '<div class="field"><label>أدوية نفسية سابقة أو حالية</label><div id="pp-med-list"></div><button type="button" class="btn ghost sm" id="pp-add-med">+ إضافة دواء</button></div>' +
+      '<div class="field"><label>أهم الضغوط أو الظروف الحالية</label><textarea id="pp-stressors" rows="3">' + escapeHtml(profile.current_stressors || "") + '</textarea></div>' +
+      '<div class="field"><label>تأثير المشكلة على الحياة</label><select id="pp-impact"><option value="">غير محدد</option><option value="mild">بسيط</option><option value="moderate">متوسط</option><option value="severe">شديد</option></select></div>' +
+      '<div class="field"><label>الهدف من العلاج</label><textarea id="pp-goal" rows="3">' + escapeHtml(profile.treatment_goal || "") + '</textarea></div>' +
+      '<div class="field"><label>ملاحظات الأخصائي</label><textarea id="pp-notes" rows="3">' + escapeHtml(profile.specialist_notes || "") + '</textarea></div>' +
+      '<button class="btn block" id="pp-save">حفظ التقييم</button></div>';
+    document.body.appendChild(backdrop);
+    backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
+    backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
+    backdrop.querySelector("#pp-session-type").value = profile.session_type || "";
+    backdrop.querySelector("#pp-impact").value = profile.life_impact || "";
+    var previous = profile.previous_treatment === true ? "yes" : profile.previous_treatment === false ? "no" : "";
+    if (previous) (backdrop.querySelector('input[name="previous-treatment"][value="' + previous + '"]') || {}).checked = true;
+    var issues = backdrop.querySelector("#pp-issues");
+    issues.onchange = function () { backdrop.querySelector("#pp-other-wrap").style.display = Array.from(issues.querySelectorAll("input:checked")).some(function (x) { return x.value === "other"; }) ? "block" : "none"; };
+    var medList = backdrop.querySelector("#pp-med-list");
+    function addMed(m) {
+      m = m || {};
+      var x = document.createElement("div");
+      x.className = "psych-med-row";
+      x.style.cssText = "border:1px solid var(--c-border);border-radius:9px;padding:8px;margin-bottom:8px;display:grid;gap:7px;";
+      x.innerHTML = '<div style="display:flex;gap:7px;flex-wrap:wrap;"><input data-pm-name placeholder="اسم الدواء" value="' + escapeHtml(m.name || "") + '" style="flex:1;min-width:130px;"><input data-pm-dose placeholder="الجرعة" value="' + escapeHtml(m.dosage || "") + '" style="flex:1;min-width:100px;"><input data-pm-duration placeholder="المدة" value="' + escapeHtml(m.duration || "") + '" style="flex:1;min-width:100px;"></div><div style="display:flex;gap:7px;flex-wrap:wrap;"><input data-pm-use placeholder="سبب الاستخدام" value="' + escapeHtml(m.use_reason || "") + '" style="flex:1;min-width:150px;"><input data-pm-stop placeholder="سبب التوقف" value="' + escapeHtml(m.stop_reason || "") + '" style="flex:1;min-width:150px;"><button type="button" class="btn danger sm" data-remove-psych-med>حذف</button></div>';
+      x.querySelector("[data-remove-psych-med]").onclick = function () { x.remove(); };
+      medList.appendChild(x);
+    }
+    (profile.psychiatric_medications || []).forEach(addMed);
+    backdrop.querySelector("#pp-add-med").onclick = function () { addMed(); };
+    backdrop.querySelector("#pp-save").onclick = function () {
+      var medications = Array.from(medList.querySelectorAll(".psych-med-row")).map(function (x) { return { name:x.querySelector("[data-pm-name]").value.trim(), dosage:x.querySelector("[data-pm-dose]").value.trim(), duration:x.querySelector("[data-pm-duration]").value.trim(), use_reason:x.querySelector("[data-pm-use]").value.trim(), stop_reason:x.querySelector("[data-pm-stop]").value.trim() }; }).filter(function (x) { return x.name || x.dosage || x.duration || x.use_reason || x.stop_reason; });
+      var selected = Array.from(issues.querySelectorAll("input:checked")).map(function (x) { return x.value; });
+      var previousValue = (backdrop.querySelector('input[name="previous-treatment"]:checked') || {}).value;
+      var patch = { first_session_date:backdrop.querySelector("#pp-first-date").value || null, session_type:backdrop.querySelector("#pp-session-type").value || null, booking_reason:backdrop.querySelector("#pp-booking-reason").value.trim() || null, main_issues:selected, main_issue_other:selected.indexOf("other") > -1 ? backdrop.querySelector("#pp-other").value.trim() || null : null, presenting_complaint:backdrop.querySelector("#pp-complaint").value.trim() || null, problem_started:backdrop.querySelector("#pp-started").value.trim() || null, current_symptoms:backdrop.querySelector("#pp-symptoms").value.trim() || null, previous_treatment:previousValue === "yes" ? true : previousValue === "no" ? false : null, psychiatric_medications:medications, current_stressors:backdrop.querySelector("#pp-stressors").value.trim() || null, life_impact:backdrop.querySelector("#pp-impact").value || null, treatment_goal:backdrop.querySelector("#pp-goal").value.trim() || null, specialist_notes:backdrop.querySelector("#pp-notes").value.trim() || null };
+      window.SSMPDDb.savePatientPsychologyProfile(patient.id, patch, me && me.id).then(function () { T.show("تم حفظ التقييم النفسي"); backdrop.remove(); onSaved(); }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
+    };
+  }
+
+  function openPsychologySessionFormModal(patient, sessions, existing, onSaved) {
+    var row = existing || {};
+    var nextNumber = sessions.length ? Math.max.apply(null, sessions.map(function (x) { return Number(x.session_number) || 0; })) + 1 : 1;
+    var interventionOptions = [["cbt","CBT"],["counseling","إرشاد"],["thought_restructuring","تعديل أفكار"],["skills","مهارات"],["other","أخرى"]];
+    var backdrop = document.createElement("div");
+    backdrop.className = "modal-backdrop";
+    backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>' + (existing ? "تعديل جلسة نفسية" : "جلسة نفسية جديدة") + '</h3><button class="modal-close">×</button></div>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;"><div class="field" style="flex:1;min-width:140px;"><label>رقم الجلسة</label><input id="ps-number" type="number" min="1" max="999" value="' + escapeHtml(row.session_number || nextNumber) + '"></div><div class="field" style="flex:2;min-width:200px;"><label>موعد الجلسة</label><input id="ps-at" type="datetime-local" value="' + speechDateTimeLocal(row.session_at || new Date().toISOString()) + '"></div></div>' +
+      '<div class="field"><label>مدة الجلسة</label><select id="ps-duration"><option value="">غير محددة</option><option value="30">30 دقيقة</option><option value="45">45 دقيقة</option><option value="50">50 دقيقة</option><option value="60">60 دقيقة</option><option value="75">75 دقيقة</option><option value="90">90 دقيقة</option><option value="120">120 دقيقة</option></select></div>' +
+      '<div class="field"><label>مستوى التحسن</label><select id="ps-improvement"><option value="">غير مسجل</option><option value="none">لا يوجد</option><option value="slight">بسيط</option><option value="moderate">متوسط</option><option value="good">جيد</option><option value="major">كبير</option></select></div>' +
+      '<div class="field"><label>هدف الجلسة</label><textarea id="ps-goal" rows="3">' + escapeHtml(row.session_goal || "") + '</textarea></div>' +
+      '<div class="field"><label>التدخل المستخدم</label><div id="ps-interventions" style="display:flex;gap:8px;flex-wrap:wrap;">' + interventionOptions.map(function (x) { return '<label style="border:1px solid var(--c-border);border-radius:9px;padding:7px 9px;font-size:13px;"><input type="checkbox" value="' + x[0] + '" ' + ((row.interventions || []).indexOf(x[0]) > -1 ? "checked" : "") + '> ' + x[1] + '</label>'; }).join("") + '</div></div>' +
+      '<div class="field" id="ps-other-wrap" style="display:' + ((row.interventions || []).indexOf("other") > -1 ? "block" : "none") + ';"><label>تفاصيل تدخل آخر</label><input id="ps-other" value="' + escapeHtml(row.intervention_other || "") + '"></div>' +
+      '<div class="field"><label>التزام العميل</label><select id="ps-adherence"><option value="">غير مسجل</option><option value="good">جيد</option><option value="average">متوسط</option><option value="weak">ضعيف</option></select></div>' +
+      '<div class="field"><label>حضور الجلسة</label><div id="ps-attendance" style="display:flex;gap:14px;"><label><input type="radio" name="psych-attendance" value="attended"> حضر</label><label><input type="radio" name="psych-attendance" value="absent"> غاب</label><label><input type="radio" name="psych-attendance" value="excused"> اعتذر</label></div></div>' +
+      '<div class="field"><label>خطة الجلسة القادمة</label><textarea id="ps-next-plan" rows="3">' + escapeHtml(row.next_session_plan || "") + '</textarea></div>' +
+      '<div class="field"><label>ملاحظات الأخصائي</label><textarea id="ps-notes" rows="3">' + escapeHtml(row.specialist_notes || "") + '</textarea></div>' +
+      '<button class="btn block" id="ps-save">حفظ الجلسة</button></div>';
+    document.body.appendChild(backdrop);
+    backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
+    backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
+    backdrop.querySelector("#ps-duration").value = row.duration_minutes || "";
+    backdrop.querySelector("#ps-improvement").value = row.improvement_level || "";
+    backdrop.querySelector("#ps-adherence").value = row.adherence_level || "";
+    (backdrop.querySelector('input[name="psych-attendance"][value="' + (row.attendance_status || "attended") + '"]') || {}).checked = true;
+    var interventions = backdrop.querySelector("#ps-interventions");
+    interventions.onchange = function () { backdrop.querySelector("#ps-other-wrap").style.display = Array.from(interventions.querySelectorAll("input:checked")).some(function (x) { return x.value === "other"; }) ? "block" : "none"; };
+    backdrop.querySelector("#ps-save").onclick = function () {
+      var number = Number(backdrop.querySelector("#ps-number").value), at = backdrop.querySelector("#ps-at").value;
+      if (!Number.isInteger(number) || number < 1 || number > 999 || !at) { T.show("اكتب رقم الجلسة وموعدها", "error"); return; }
+      var selected = Array.from(interventions.querySelectorAll("input:checked")).map(function (x) { return x.value; });
+      var patch = { session_number:number, session_at:new Date(at).toISOString(), duration_minutes:Number(backdrop.querySelector("#ps-duration").value) || null, improvement_level:backdrop.querySelector("#ps-improvement").value || null, session_goal:backdrop.querySelector("#ps-goal").value.trim() || null, interventions:selected, intervention_other:selected.indexOf("other") > -1 ? backdrop.querySelector("#ps-other").value.trim() || null : null, adherence_level:backdrop.querySelector("#ps-adherence").value || null, attendance_status:(backdrop.querySelector('input[name="psych-attendance"]:checked') || {}).value || "attended", next_session_plan:backdrop.querySelector("#ps-next-plan").value.trim() || null, specialist_notes:backdrop.querySelector("#ps-notes").value.trim() || null };
+      var req = existing ? window.SSMPDDb.updatePatientPsychologySession(row.id, patch, me && me.id) : window.SSMPDDb.addPatientPsychologySession(patient.id, patch, me && me.id);
+      req.then(function () { T.show("تم حفظ الجلسة النفسية"); backdrop.remove(); onSaved(); }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
+    };
+  }
+
   function openPatientModal(view, container, patientId) {
     var backdrop = document.createElement("div");
     backdrop.className = "modal-backdrop";
@@ -3183,9 +3271,11 @@
         window.SSMPDDb.listNutritionVisits(patientId).catch(function () { return []; }),
         window.SSMPDDb.getPatientSpeechProfile(patientId).catch(function () { return null; }),
         window.SSMPDDb.listPatientSpeechSessions(patientId).catch(function () { return []; }),
+        window.SSMPDDb.getPatientPsychologyProfile(patientId).catch(function () { return null; }),
+        window.SSMPDDb.listPatientPsychologySessions(patientId).catch(function () { return []; }),
       ]).then(function (results) {
         var res = results[0], profile = results[1], visits = results[2] || [];
-        renderPatientModal(backdrop, view, container, res.patient, res.files || [], profile, visits, results[3] || [], results[4] || [], results[5] || [], results[6] || [], results[7] || [], results[8] || [], results[9] || [], results[10] || [], results[11] || [], results[12] || null, results[13] || []);
+        renderPatientModal(backdrop, view, container, res.patient, res.files || [], profile, visits, results[3] || [], results[4] || [], results[5] || [], results[6] || [], results[7] || [], results[8] || [], results[9] || [], results[10] || [], results[11] || [], results[12] || null, results[13] || [], results[14] || null, results[15] || []);
       }).catch(function (e) {
         backdrop.querySelector(".modal").innerHTML = '<div class="err-msg">خطأ: ' + e.message + '</div>';
       });
@@ -3248,10 +3338,12 @@
     return html;
   }
 
-  function renderPatientModal(backdrop, view, container, patient, files, profile, visits, reports, echoReports, dentalReports, physioReports, prescriptions, labRequests, radiologyRequests, experienceRatings, nutritionVisits, speechProfile, speechSessions) {
+  function renderPatientModal(backdrop, view, container, patient, files, profile, visits, reports, echoReports, dentalReports, physioReports, prescriptions, labRequests, radiologyRequests, experienceRatings, nutritionVisits, speechProfile, speechSessions, psychologyProfile, psychologySessions) {
     nutritionVisits = nutritionVisits || [];
     speechProfile = speechProfile || null;
     speechSessions = speechSessions || [];
+    psychologyProfile = psychologyProfile || null;
+    psychologySessions = psychologySessions || [];
     var byCategory = {};
     CATEGORIES.forEach(function (c) { byCategory[c.key] = []; });
     files.forEach(function (f) { (byCategory[f.category] || (byCategory[f.category] = [])).push(f); });
@@ -3342,6 +3434,20 @@
             (v.follow_up_date && (!v.follow_up_status || v.follow_up_status === 'pending' || v.follow_up_status === 'rescheduled') ? '<button class="btn ghost sm" data-followup-attended="' + v.id + '">تم الحضور</button> <button class="btn ghost sm" data-followup-no-show="' + v.id + '">لم يتم الحضور</button> ' : '') +
             (canVisitDelete ? '<button class="btn danger sm" data-del-visit="' + v.id + '">حذف</button>' : '') + '</td>' : '') + '</tr>';
       });
+      html += '</tbody></table>';
+    }
+    html += '</div>';
+
+    var psychologyIssueLabels = { anxiety:"قلق", depression:"اكتئاب", panic:"نوبات هلع", relationships:"علاقات", self_esteem:"تقدير ذات", behavior:"سلوك", other:"أخرى" };
+    var psychologyAttendance = { attended:"حضر", absent:"غاب", excused:"اعتذر" };
+    var psychologyImprovement = { none:"لا يوجد", slight:"بسيط", moderate:"متوسط", good:"جيد", major:"كبير" };
+    html += '<div class="section" style="padding:12px 14px;">' +
+      '<h3 style="font-size:14px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;"><span>الصحة النفسية</span>' + (canEditMedical ? '<span><button class="btn ghost sm" data-edit-psychology-profile="1">التقييم الأولي</button> <button class="btn ghost sm" data-add-psychology-session="1">+ جلسة جديدة</button></span>' : '') + '</h3>' +
+      '<div style="font-size:12px;color:var(--c-muted);line-height:1.9;">تاريخ أول جلسة: ' + (psychologyProfile && psychologyProfile.first_session_date ? fmtDate(psychologyProfile.first_session_date) : "—") + '<br>نوع الجلسة: ' + (psychologyProfile && psychologyProfile.session_type ? ({individual:"فردية",family:"أسرية",couple:"زوجية",child:"طفل"}[psychologyProfile.session_type] || "—") : "—") + '<br>المشكلة الأساسية: ' + (psychologyProfile && psychologyProfile.main_issues && psychologyProfile.main_issues.length ? psychologyProfile.main_issues.map(function (x) { return psychologyIssueLabels[x] || x; }).join("، ") + (psychologyProfile.main_issue_other ? " (" + escapeHtml(psychologyProfile.main_issue_other) + ")" : "") : "—") + '<br>عدد الجلسات: ' + psychologySessions.length + '</div>';
+    if (!psychologySessions.length) html += '<p style="font-size:12px;color:var(--c-muted);margin:10px 0 0;">مفيش جلسات نفسية مسجلة.</p>';
+    else {
+      html += '<table class="simple" style="margin-top:10px;font-size:12px;"><thead><tr><th>الجلسة</th><th>الموعد</th><th>المدة</th><th>التحسن</th><th>الحضور</th><th>الخطة القادمة</th>' + (canEditMedical ? '<th></th>' : '') + '</tr></thead><tbody>';
+      psychologySessions.forEach(function (x) { html += '<tr><td>' + x.session_number + '</td><td>' + fmtDate(x.session_at) + '</td><td>' + (x.duration_minutes ? x.duration_minutes + " دقيقة" : "—") + '</td><td>' + speechLabel(psychologyImprovement, x.improvement_level) + '</td><td>' + speechLabel(psychologyAttendance, x.attendance_status) + '</td><td>' + escapeHtml(x.next_session_plan || "—") + '</td>' + (canEditMedical ? '<td style="white-space:nowrap;"><button class="btn ghost sm" data-edit-psychology-session="' + x.id + '">تعديل</button> <button class="btn danger sm" data-del-psychology-session="' + x.id + '">حذف</button></td>' : '') + '</tr>'; });
       html += '</tbody></table>';
     }
     html += '</div>';
@@ -3727,6 +3833,17 @@
           fileInput.value = "";
         });
       };
+    });
+
+    var editPsychologyProfileBtn = backdrop.querySelector("[data-edit-psychology-profile]");
+    if (editPsychologyProfileBtn) editPsychologyProfileBtn.onclick = function () { openPsychologyProfileFormModal(patient, psychologyProfile, reloadModal); };
+    var addPsychologySessionBtn = backdrop.querySelector("[data-add-psychology-session]");
+    if (addPsychologySessionBtn) addPsychologySessionBtn.onclick = function () { openPsychologySessionFormModal(patient, psychologySessions, null, reloadModal); };
+    backdrop.querySelectorAll("[data-edit-psychology-session]").forEach(function (btn) {
+      btn.onclick = function () { var row = psychologySessions.filter(function (x) { return String(x.id) === btn.getAttribute("data-edit-psychology-session"); })[0]; if (row) openPsychologySessionFormModal(patient, psychologySessions, row, reloadModal); };
+    });
+    backdrop.querySelectorAll("[data-del-psychology-session]").forEach(function (btn) {
+      btn.onclick = function () { if (!confirm("حذف الجلسة النفسية دي؟")) return; window.SSMPDDb.deletePatientPsychologySession(btn.getAttribute("data-del-psychology-session")).then(function () { T.show("تم حذف الجلسة"); reloadModal(); }).catch(function (e) { T.show("خطأ: " + e.message, "error"); }); };
     });
 
     var editSpeechProfileBtn = backdrop.querySelector("[data-edit-speech-profile]");
