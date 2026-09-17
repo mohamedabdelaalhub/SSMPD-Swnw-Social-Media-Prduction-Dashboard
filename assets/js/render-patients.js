@@ -3103,27 +3103,44 @@
 
   function openSpeechProfileFormModal(patient, profile, onSaved) {
     profile = profile || {};
-    var issueOptions = [["speech_delay","تأخر كلام"],["language_delay","تأخر لغة"],["pronunciation","نطق"],["stuttering","تلعثم"],["communication","اضطراب تواصل"],["other","أخرى"]];
+    var issueOptions = [["speech_delay","تأخر كلام"],["language_delay","لغة"],["pronunciation","نطق"],["stuttering","تلعثم"],["communication","تواصل"],["other","أخرى"]];
+    var yesNo = function (name, value) { return '<div style="display:flex;gap:14px;"><label><input type="radio" name="' + name + '" value="yes" ' + (value === true ? "checked" : "") + '> نعم</label><label><input type="radio" name="' + name + '" value="no" ' + (value === false ? "checked" : "") + '> لا</label></div>'; };
     var backdrop = document.createElement("div");
     backdrop.className = "modal-backdrop";
-    backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>بيانات حالة التخاطب</h3><button class="modal-close">×</button></div>' +
+    backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>التقييم الأولي للتخاطب</h3><button class="modal-close">×</button></div>' +
       '<div class="section" style="padding:10px 12px;margin-bottom:12px;"><p style="font-size:13px;margin:0;line-height:1.8;"><b>' + escapeHtml(patient.full_name) + '</b><br>السن: ' + escapeHtml(patient.age != null ? String(patient.age) : "—") + ' · النوع: ' + (patient.gender === "male" ? "ذكر" : patient.gender === "female" ? "أنثى" : "—") + '</p></div>' +
       '<div class="field"><label>تاريخ أول جلسة</label><input id="sp-first-session" type="date" value="' + escapeHtml(profile.first_session_date || "") + '"></div>' +
+      '<div class="field"><label>سبب الحضور والشكوى الأساسية</label><textarea id="sp-complaint" rows="3">' + escapeHtml(profile.presenting_complaint || "") + '</textarea></div>' +
+      '<div class="field"><label>متى بدأت المشكلة؟</label><input id="sp-started" value="' + escapeHtml(profile.problem_started || "") + '" placeholder="مثال: منذ عمر سنتين"></div>' +
       '<div class="field"><label>نوع المشكلة</label><div id="sp-issues" style="display:flex;gap:8px;flex-wrap:wrap;">' + issueOptions.map(function (x) { return '<label style="border:1px solid var(--c-border);border-radius:9px;padding:7px 9px;font-size:13px;"><input type="checkbox" value="' + x[0] + '" ' + ((profile.issue_types || []).indexOf(x[0]) > -1 ? "checked" : "") + '> ' + x[1] + '</label>'; }).join("") + '</div></div>' +
       '<div class="field" id="sp-other-wrap" style="display:' + ((profile.issue_types || []).indexOf("other") > -1 ? "block" : "none") + ';"><label>تفاصيل أخرى</label><input id="sp-other" value="' + escapeHtml(profile.issue_other || "") + '" placeholder="اكتب وصف المشكلة"></div>' +
+      '<div class="field"><label>هل يوجد تاريخ زواج أقارب؟</label>' + yesNo("sp-consanguinity", profile.consanguinity) + '</div>' +
+      '<div class="field"><label>هل يوجد أمراض أو اضطرابات وراثية بالعائلة؟</label>' + yesNo("sp-genetic", profile.genetic_family_history) + '<input id="sp-genetic-details" placeholder="اذكرها" value="' + escapeHtml(profile.genetic_family_history_details || "") + '" style="margin-top:8px;display:' + (profile.genetic_family_history === true ? "" : "none") + ';"></div>' +
+      '<div class="field"><label>هل حدثت مشاكل أثناء الحمل أو الولادة؟</label>' + yesNo("sp-birth", profile.pregnancy_birth_issues) + '<input id="sp-birth-details" placeholder="اذكرها" value="' + escapeHtml(profile.pregnancy_birth_issues_details || "") + '" style="margin-top:8px;display:' + (profile.pregnancy_birth_issues === true ? "" : "none") + ';"></div>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;"><div class="field" style="flex:1;min-width:160px;"><label>تطور الكلام واللغة: أول كلمة</label><input id="sp-first-word" value="' + escapeHtml(profile.first_word || "") + '" placeholder="مثال: سنة ونصف"></div><div class="field" style="flex:1;min-width:160px;"><label>أول جملة</label><input id="sp-first-sentence" value="' + escapeHtml(profile.first_sentence || "") + '" placeholder="مثال: 3 سنوات"></div></div>' +
+      '<div class="field"><label>هل سبق له جلسات تخاطب؟</label>' + yesNo("sp-previous", profile.previous_speech_therapy) + '<textarea id="sp-previous-result" rows="2" placeholder="النتيجة" style="margin-top:8px;display:' + (profile.previous_speech_therapy === true ? "" : "none") + ';">' + escapeHtml(profile.previous_speech_therapy_result || "") + '</textarea></div>' +
+      '<div class="field"><label>مستوى الفهم والكلام حاليًا</label><textarea id="sp-current-level" rows="3">' + escapeHtml(profile.current_understanding_speech || "") + '</textarea></div>' +
+      '<div class="field"><label>الهدف من الجلسات</label><textarea id="sp-goal" rows="3">' + escapeHtml(profile.therapy_goal || "") + '</textarea></div>' +
+      '<div class="field"><label>ملاحظات الأخصائي</label><textarea id="sp-notes" rows="3">' + escapeHtml(profile.specialist_notes || "") + '</textarea></div>' +
       '<div class="field"><label>عدد الجلسات المخطط لها</label><input id="sp-planned-sessions" type="number" min="1" max="999" value="' + escapeHtml(profile.planned_sessions || "") + '" placeholder="مثال: 12"></div>' +
-      '<button class="btn block" id="sp-save-profile">حفظ</button></div>';
+      '<button class="btn block" id="sp-save-profile">حفظ التقييم</button></div>';
     document.body.appendChild(backdrop);
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
     backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
     var issues = backdrop.querySelector("#sp-issues");
     issues.onchange = function () { backdrop.querySelector("#sp-other-wrap").style.display = Array.from(issues.querySelectorAll("input:checked")).some(function (x) { return x.value === "other"; }) ? "block" : "none"; };
+    function conditional(name, target) { backdrop.querySelectorAll('input[name="' + name + '"]').forEach(function (x) { x.onchange = function () { backdrop.querySelector(target).style.display = x.value === "yes" ? "" : "none"; }; }); }
+    conditional("sp-genetic", "#sp-genetic-details");
+    conditional("sp-birth", "#sp-birth-details");
+    conditional("sp-previous", "#sp-previous-result");
+    function bool(name) { var x = backdrop.querySelector('input[name="' + name + '"]:checked'); return x ? x.value === "yes" : null; }
     backdrop.querySelector("#sp-save-profile").onclick = function () {
       var selected = Array.from(issues.querySelectorAll("input:checked")).map(function (x) { return x.value; });
       var planned = Number(backdrop.querySelector("#sp-planned-sessions").value || 0);
       if (planned && (!Number.isInteger(planned) || planned < 1 || planned > 999)) { T.show("راجع عدد الجلسات", "error"); return; }
-      var patch = { first_session_date: backdrop.querySelector("#sp-first-session").value || null, issue_types: selected, issue_other: selected.indexOf("other") > -1 ? backdrop.querySelector("#sp-other").value.trim() || null : null, planned_sessions: planned || null };
-      window.SSMPDDb.savePatientSpeechProfile(patient.id, patch, me && me.id).then(function () { T.show("تم حفظ بيانات التخاطب"); backdrop.remove(); onSaved(); }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
+      var genetic = bool("sp-genetic"), birth = bool("sp-birth"), previous = bool("sp-previous");
+      var patch = { first_session_date:backdrop.querySelector("#sp-first-session").value || null, presenting_complaint:backdrop.querySelector("#sp-complaint").value.trim() || null, problem_started:backdrop.querySelector("#sp-started").value.trim() || null, issue_types:selected, issue_other:selected.indexOf("other") > -1 ? backdrop.querySelector("#sp-other").value.trim() || null : null, consanguinity:bool("sp-consanguinity"), genetic_family_history:genetic, genetic_family_history_details:genetic ? backdrop.querySelector("#sp-genetic-details").value.trim() || null : null, pregnancy_birth_issues:birth, pregnancy_birth_issues_details:birth ? backdrop.querySelector("#sp-birth-details").value.trim() || null : null, first_word:backdrop.querySelector("#sp-first-word").value.trim() || null, first_sentence:backdrop.querySelector("#sp-first-sentence").value.trim() || null, previous_speech_therapy:previous, previous_speech_therapy_result:previous ? backdrop.querySelector("#sp-previous-result").value.trim() || null : null, current_understanding_speech:backdrop.querySelector("#sp-current-level").value.trim() || null, therapy_goal:backdrop.querySelector("#sp-goal").value.trim() || null, specialist_notes:backdrop.querySelector("#sp-notes").value.trim() || null, planned_sessions:planned || null };
+      window.SSMPDDb.savePatientSpeechProfile(patient.id, patch, me && me.id).then(function () { T.show("تم حفظ التقييم الأولي للتخاطب"); backdrop.remove(); onSaved(); }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
     };
   }
 
