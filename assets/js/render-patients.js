@@ -3473,7 +3473,7 @@
     var speechAttendance = { attended:"حضر", absent:"غاب", excused:"اعتذر" };
     var speechResponse = { excellent:"ممتاز", good:"جيد", average:"متوسط", weak:"ضعيف" };
     html += '<div class="section" style="padding:12px 14px;">' +
-      '<h3 style="font-size:14px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;"><span>التخاطب</span>' + (canEditMedical ? '<span><button class="btn ghost sm" data-edit-speech-profile="1">بيانات الحالة</button> <button class="btn ghost sm" data-add-speech-session="1">+ جلسة جديدة</button></span>' : '') + '</h3>' +
+      '<h3 style="font-size:14px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;"><span>التخاطب</span>' + (canEditMedical ? '<span><button class="btn ghost sm" data-edit-speech-profile="1">التقييم الأولي</button> <button class="btn ghost sm" data-add-speech-session="1">+ جلسة جديدة</button></span>' : '') + '</h3>' +
       '<div style="font-size:12px;color:var(--c-muted);line-height:1.9;">تاريخ أول جلسة: ' + (speechProfile && speechProfile.first_session_date ? fmtDate(speechProfile.first_session_date) : "—") + '<br>نوع المشكلة: ' + (speechProfile && speechProfile.issue_types && speechProfile.issue_types.length ? speechProfile.issue_types.map(function (x) { return speechIssueLabels[x] || x; }).join("، ") + (speechProfile.issue_other ? " (" + escapeHtml(speechProfile.issue_other) + ")" : "") : "—") + '<br>عدد الجلسات: ' + speechSessions.length + (speechProfile && speechProfile.planned_sessions ? " من " + speechProfile.planned_sessions : "") + '</div>';
     if (!speechSessions.length) html += '<p style="font-size:12px;color:var(--c-muted);margin:10px 0 0;">مفيش جلسات تخاطب مسجلة.</p>';
     else {
