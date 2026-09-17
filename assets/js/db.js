@@ -498,6 +498,27 @@
     listVisitMedicationDoseCompletions: function (visitId) {
       return handle(client.from("patient_medication_dose_completions").select("*, patient_visit_medications!inner(visit_id, medicine_name)").eq("patient_visit_medications.visit_id", visitId).order("scheduled_date", { ascending: false }).order("scheduled_time", { ascending: false }).limit(100));
     },
+    getPatientSpeechProfile: function (patientId) {
+      return handle(client.from("patient_speech_profiles").select("*").eq("patient_id", patientId).maybeSingle());
+    },
+    savePatientSpeechProfile: function (patientId, patch, adminId) {
+      var row = Object.assign({}, patch, { patient_id: patientId, updated_by: adminId, updated_at: new Date().toISOString() });
+      if (!row.created_by) row.created_by = adminId;
+      return handle(client.from("patient_speech_profiles").upsert(row, { onConflict: "patient_id" }).select().single());
+    },
+    listPatientSpeechSessions: function (patientId) {
+      return handle(client.from("patient_speech_sessions").select("*").eq("patient_id", patientId).order("session_at", { ascending: false }));
+    },
+    addPatientSpeechSession: function (patientId, session, adminId) {
+      var row = Object.assign({}, session, { patient_id: patientId, created_by: adminId, updated_by: adminId });
+      return handle(client.from("patient_speech_sessions").insert(row).select().single());
+    },
+    updatePatientSpeechSession: function (sessionId, patch, adminId) {
+      return handle(client.from("patient_speech_sessions").update(Object.assign({}, patch, { updated_by: adminId, updated_at: new Date().toISOString() })).eq("id", sessionId).select().single());
+    },
+    deletePatientSpeechSession: function (sessionId) {
+      return handle(client.from("patient_speech_sessions").delete().eq("id", sessionId));
+    },
     refreshOverdueFollowups: function () {
       return handle(client.rpc("refresh_overdue_followups"));
     },
