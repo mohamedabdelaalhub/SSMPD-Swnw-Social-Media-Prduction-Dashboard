@@ -3092,6 +3092,74 @@
     });
   }
 
+  function speechDateTimeLocal(value) {
+    if (!value) return "";
+    var d = new Date(value);
+    if (isNaN(d.getTime())) return String(value).slice(0, 16);
+    var pad = function (n) { return String(n).padStart(2, "0"); };
+    return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()) + "T" + pad(d.getHours()) + ":" + pad(d.getMinutes());
+  }
+  function speechLabel(map, value) { return map[value] || "—"; }
+
+  function openSpeechProfileFormModal(patient, profile, onSaved) {
+    profile = profile || {};
+    var issueOptions = [["speech_delay","تأخر كلام"],["language_delay","تأخر لغة"],["pronunciation","نطق"],["stuttering","تلعثم"],["communication","اضطراب تواصل"],["other","أخرى"]];
+    var backdrop = document.createElement("div");
+    backdrop.className = "modal-backdrop";
+    backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>بيانات حالة التخاطب</h3><button class="modal-close">×</button></div>' +
+      '<div class="section" style="padding:10px 12px;margin-bottom:12px;"><p style="font-size:13px;margin:0;line-height:1.8;"><b>' + escapeHtml(patient.full_name) + '</b><br>السن: ' + escapeHtml(patient.age != null ? String(patient.age) : "—") + ' · النوع: ' + (patient.gender === "male" ? "ذكر" : patient.gender === "female" ? "أنثى" : "—") + '</p></div>' +
+      '<div class="field"><label>تاريخ أول جلسة</label><input id="sp-first-session" type="date" value="' + escapeHtml(profile.first_session_date || "") + '"></div>' +
+      '<div class="field"><label>نوع المشكلة</label><div id="sp-issues" style="display:flex;gap:8px;flex-wrap:wrap;">' + issueOptions.map(function (x) { return '<label style="border:1px solid var(--c-border);border-radius:9px;padding:7px 9px;font-size:13px;"><input type="checkbox" value="' + x[0] + '" ' + ((profile.issue_types || []).indexOf(x[0]) > -1 ? "checked" : "") + '> ' + x[1] + '</label>'; }).join("") + '</div></div>' +
+      '<div class="field" id="sp-other-wrap" style="display:' + ((profile.issue_types || []).indexOf("other") > -1 ? "block" : "none") + ';"><label>تفاصيل أخرى</label><input id="sp-other" value="' + escapeHtml(profile.issue_other || "") + '" placeholder="اكتب وصف المشكلة"></div>' +
+      '<div class="field"><label>عدد الجلسات المخطط لها</label><input id="sp-planned-sessions" type="number" min="1" max="999" value="' + escapeHtml(profile.planned_sessions || "") + '" placeholder="مثال: 12"></div>' +
+      '<button class="btn block" id="sp-save-profile">حفظ</button></div>';
+    document.body.appendChild(backdrop);
+    backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
+    backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
+    var issues = backdrop.querySelector("#sp-issues");
+    issues.onchange = function () { backdrop.querySelector("#sp-other-wrap").style.display = Array.from(issues.querySelectorAll("input:checked")).some(function (x) { return x.value === "other"; }) ? "block" : "none"; };
+    backdrop.querySelector("#sp-save-profile").onclick = function () {
+      var selected = Array.from(issues.querySelectorAll("input:checked")).map(function (x) { return x.value; });
+      var planned = Number(backdrop.querySelector("#sp-planned-sessions").value || 0);
+      if (planned && (!Number.isInteger(planned) || planned < 1 || planned > 999)) { T.show("راجع عدد الجلسات", "error"); return; }
+      var patch = { first_session_date: backdrop.querySelector("#sp-first-session").value || null, issue_types: selected, issue_other: selected.indexOf("other") > -1 ? backdrop.querySelector("#sp-other").value.trim() || null : null, planned_sessions: planned || null };
+      window.SSMPDDb.savePatientSpeechProfile(patient.id, patch, me && me.id).then(function () { T.show("تم حفظ بيانات التخاطب"); backdrop.remove(); onSaved(); }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
+    };
+  }
+
+  function openSpeechSessionFormModal(patient, sessions, existing, onSaved) {
+    var row = existing || {};
+    var isEdit = !!existing;
+    var nextNumber = sessions.length ? Math.max.apply(null, sessions.map(function (x) { return Number(x.session_number) || 0; })) + 1 : 1;
+    var backdrop = document.createElement("div");
+    backdrop.className = "modal-backdrop";
+    backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>' + (isEdit ? "تعديل جلسة التخاطب" : "جلسة تخاطب جديدة") + '</h3><button class="modal-close">×</button></div>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;"><div class="field" style="flex:1;min-width:150px;"><label>الجلسة</label><input id="ss-number" type="number" min="1" max="999" value="' + escapeHtml(row.session_number || nextNumber) + '"></div><div class="field" style="flex:1;min-width:180px;"><label>النوع</label><select id="ss-type"><option value="assessment">تقييم</option><option value="follow_up">متابعة</option></select></div></div>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;"><div class="field" style="flex:2;min-width:200px;"><label>موعد الجلسة</label><input id="ss-at" type="datetime-local" value="' + speechDateTimeLocal(row.session_at || new Date().toISOString()) + '"></div><div class="field" style="flex:1;min-width:150px;"><label>مدة الجلسة</label><select id="ss-duration"><option value="">غير محددة</option><option value="30">30 دقيقة</option><option value="45">45 دقيقة</option><option value="60">60 دقيقة</option><option value="90">90 دقيقة</option><option value="120">120 دقيقة</option></select></div></div>' +
+      '<div class="field"><label>مستوى الاستجابة</label><select id="ss-response"><option value="">غير مسجل</option><option value="excellent">ممتاز</option><option value="good">جيد</option><option value="average">متوسط</option><option value="weak">ضعيف</option></select></div>' +
+      '<div class="field"><label>أهداف الجلسة</label><textarea id="ss-goals" rows="3" placeholder="الأهداف المطلوب العمل عليها">' + escapeHtml(row.goals || "") + '</textarea></div>' +
+      '<div class="field"><label>ما تم التدريب عليه</label><textarea id="ss-training" rows="3" placeholder="التمارين والمهارات التي تم التدريب عليها">' + escapeHtml(row.training_done || "") + '</textarea></div>' +
+      '<div class="field"><label>الواجب المنزلي</label><textarea id="ss-homework" rows="3" placeholder="ما يطبقه الطفل في المنزل">' + escapeHtml(row.homework || "") + '</textarea></div>' +
+      '<div class="field"><label>حضور الجلسة</label><div id="ss-attendance" style="display:flex;gap:8px;flex-wrap:wrap;"><label><input type="radio" name="speech-attendance" value="attended"> حضر</label><label><input type="radio" name="speech-attendance" value="absent"> غاب</label><label><input type="radio" name="speech-attendance" value="excused"> اعتذر</label></div></div>' +
+      '<div class="field"><label>ملاحظات الأخصائي</label><textarea id="ss-notes" rows="3" placeholder="ملاحظات الجلسة">' + escapeHtml(row.specialist_notes || "") + '</textarea></div>' +
+      '<div class="field"><label>موعد الجلسة القادمة</label><input id="ss-next" type="datetime-local" value="' + speechDateTimeLocal(row.next_session_at || "") + '"></div>' +
+      '<button class="btn block" id="ss-save">حفظ الجلسة</button></div>';
+    document.body.appendChild(backdrop);
+    backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
+    backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
+    backdrop.querySelector("#ss-type").value = row.session_type || "follow_up";
+    backdrop.querySelector("#ss-duration").value = row.duration_minutes || "";
+    backdrop.querySelector("#ss-response").value = row.response_level || "";
+    (backdrop.querySelector('input[name="speech-attendance"][value="' + (row.attendance_status || "attended") + '"]') || {}).checked = true;
+    backdrop.querySelector("#ss-save").onclick = function () {
+      var number = Number(backdrop.querySelector("#ss-number").value), at = backdrop.querySelector("#ss-at").value;
+      if (!Number.isInteger(number) || number < 1 || number > 999 || !at) { T.show("اكتب رقم الجلسة وموعدها", "error"); return; }
+      var patch = { session_number:number, session_type:backdrop.querySelector("#ss-type").value, session_at:new Date(at).toISOString(), duration_minutes:Number(backdrop.querySelector("#ss-duration").value) || null, response_level:backdrop.querySelector("#ss-response").value || null, goals:backdrop.querySelector("#ss-goals").value.trim() || null, training_done:backdrop.querySelector("#ss-training").value.trim() || null, homework:backdrop.querySelector("#ss-homework").value.trim() || null, attendance_status:(backdrop.querySelector('input[name="speech-attendance"]:checked') || {}).value || "attended", specialist_notes:backdrop.querySelector("#ss-notes").value.trim() || null, next_session_at:backdrop.querySelector("#ss-next").value ? new Date(backdrop.querySelector("#ss-next").value).toISOString() : null };
+      var req = isEdit ? window.SSMPDDb.updatePatientSpeechSession(row.id, patch, me && me.id) : window.SSMPDDb.addPatientSpeechSession(patient.id, patch, me && me.id);
+      req.then(function () { T.show("تم حفظ جلسة التخاطب"); backdrop.remove(); onSaved(); }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
+    };
+  }
+
   function openPatientModal(view, container, patientId) {
     var backdrop = document.createElement("div");
     backdrop.className = "modal-backdrop";
@@ -3113,9 +3181,11 @@
         window.SSMPDDb.listRadiologyRequests(patientId).catch(function () { return []; }),
         window.SSMPDDb.listPatientExperienceRatings(patientId).catch(function () { return []; }),
         window.SSMPDDb.listNutritionVisits(patientId).catch(function () { return []; }),
+        window.SSMPDDb.getPatientSpeechProfile(patientId).catch(function () { return null; }),
+        window.SSMPDDb.listPatientSpeechSessions(patientId).catch(function () { return []; }),
       ]).then(function (results) {
         var res = results[0], profile = results[1], visits = results[2] || [];
-        renderPatientModal(backdrop, view, container, res.patient, res.files || [], profile, visits, results[3] || [], results[4] || [], results[5] || [], results[6] || [], results[7] || [], results[8] || [], results[9] || [], results[10] || [], results[11] || []);
+        renderPatientModal(backdrop, view, container, res.patient, res.files || [], profile, visits, results[3] || [], results[4] || [], results[5] || [], results[6] || [], results[7] || [], results[8] || [], results[9] || [], results[10] || [], results[11] || [], results[12] || null, results[13] || []);
       }).catch(function (e) {
         backdrop.querySelector(".modal").innerHTML = '<div class="err-msg">خطأ: ' + e.message + '</div>';
       });
@@ -3178,8 +3248,10 @@
     return html;
   }
 
-  function renderPatientModal(backdrop, view, container, patient, files, profile, visits, reports, echoReports, dentalReports, physioReports, prescriptions, labRequests, radiologyRequests, experienceRatings, nutritionVisits) {
+  function renderPatientModal(backdrop, view, container, patient, files, profile, visits, reports, echoReports, dentalReports, physioReports, prescriptions, labRequests, radiologyRequests, experienceRatings, nutritionVisits, speechProfile, speechSessions) {
     nutritionVisits = nutritionVisits || [];
+    speechProfile = speechProfile || null;
+    speechSessions = speechSessions || [];
     var byCategory = {};
     CATEGORIES.forEach(function (c) { byCategory[c.key] = []; });
     files.forEach(function (f) { (byCategory[f.category] || (byCategory[f.category] = [])).push(f); });
@@ -3270,6 +3342,20 @@
             (v.follow_up_date && (!v.follow_up_status || v.follow_up_status === 'pending' || v.follow_up_status === 'rescheduled') ? '<button class="btn ghost sm" data-followup-attended="' + v.id + '">تم الحضور</button> <button class="btn ghost sm" data-followup-no-show="' + v.id + '">لم يتم الحضور</button> ' : '') +
             (canVisitDelete ? '<button class="btn danger sm" data-del-visit="' + v.id + '">حذف</button>' : '') + '</td>' : '') + '</tr>';
       });
+      html += '</tbody></table>';
+    }
+    html += '</div>';
+
+    var speechIssueLabels = { speech_delay:"تأخر كلام", language_delay:"تأخر لغة", pronunciation:"نطق", stuttering:"تلعثم", communication:"اضطراب تواصل", other:"أخرى" };
+    var speechAttendance = { attended:"حضر", absent:"غاب", excused:"اعتذر" };
+    var speechResponse = { excellent:"ممتاز", good:"جيد", average:"متوسط", weak:"ضعيف" };
+    html += '<div class="section" style="padding:12px 14px;">' +
+      '<h3 style="font-size:14px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;"><span>التخاطب</span>' + (canEditMedical ? '<span><button class="btn ghost sm" data-edit-speech-profile="1">بيانات الحالة</button> <button class="btn ghost sm" data-add-speech-session="1">+ جلسة جديدة</button></span>' : '') + '</h3>' +
+      '<div style="font-size:12px;color:var(--c-muted);line-height:1.9;">تاريخ أول جلسة: ' + (speechProfile && speechProfile.first_session_date ? fmtDate(speechProfile.first_session_date) : "—") + '<br>نوع المشكلة: ' + (speechProfile && speechProfile.issue_types && speechProfile.issue_types.length ? speechProfile.issue_types.map(function (x) { return speechIssueLabels[x] || x; }).join("، ") + (speechProfile.issue_other ? " (" + escapeHtml(speechProfile.issue_other) + ")" : "") : "—") + '<br>عدد الجلسات: ' + speechSessions.length + (speechProfile && speechProfile.planned_sessions ? " من " + speechProfile.planned_sessions : "") + '</div>';
+    if (!speechSessions.length) html += '<p style="font-size:12px;color:var(--c-muted);margin:10px 0 0;">مفيش جلسات تخاطب مسجلة.</p>';
+    else {
+      html += '<table class="simple" style="margin-top:10px;font-size:12px;"><thead><tr><th>الجلسة</th><th>الموعد</th><th>النوع</th><th>الاستجابة</th><th>الحضور</th><th>الجلسة القادمة</th>' + (canEditMedical ? '<th></th>' : '') + '</tr></thead><tbody>';
+      speechSessions.forEach(function (x) { html += '<tr><td>' + x.session_number + '</td><td>' + fmtDate(x.session_at) + '</td><td>' + (x.session_type === "assessment" ? "تقييم" : "متابعة") + '</td><td>' + speechLabel(speechResponse, x.response_level) + '</td><td>' + speechLabel(speechAttendance, x.attendance_status) + '</td><td>' + (x.next_session_at ? fmtDate(x.next_session_at) : "—") + '</td>' + (canEditMedical ? '<td style="white-space:nowrap;"><button class="btn ghost sm" data-edit-speech-session="' + x.id + '">تعديل</button> <button class="btn danger sm" data-del-speech-session="' + x.id + '">حذف</button></td>' : '') + '</tr>'; });
       html += '</tbody></table>';
     }
     html += '</div>';
@@ -3641,6 +3727,17 @@
           fileInput.value = "";
         });
       };
+    });
+
+    var editSpeechProfileBtn = backdrop.querySelector("[data-edit-speech-profile]");
+    if (editSpeechProfileBtn) editSpeechProfileBtn.onclick = function () { openSpeechProfileFormModal(patient, speechProfile, reloadModal); };
+    var addSpeechSessionBtn = backdrop.querySelector("[data-add-speech-session]");
+    if (addSpeechSessionBtn) addSpeechSessionBtn.onclick = function () { openSpeechSessionFormModal(patient, speechSessions, null, reloadModal); };
+    backdrop.querySelectorAll("[data-edit-speech-session]").forEach(function (btn) {
+      btn.onclick = function () { var row = speechSessions.filter(function (x) { return String(x.id) === btn.getAttribute("data-edit-speech-session"); })[0]; if (row) openSpeechSessionFormModal(patient, speechSessions, row, reloadModal); };
+    });
+    backdrop.querySelectorAll("[data-del-speech-session]").forEach(function (btn) {
+      btn.onclick = function () { if (!confirm("حذف جلسة التخاطب دي؟")) return; window.SSMPDDb.deletePatientSpeechSession(btn.getAttribute("data-del-speech-session")).then(function () { T.show("تم حذف الجلسة"); reloadModal(); }).catch(function (e) { T.show("خطأ: " + e.message, "error"); }); };
     });
 
     var printAllBtn = backdrop.querySelector("[data-print-all]");
