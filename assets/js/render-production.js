@@ -795,8 +795,8 @@ function openAgentImportModal(parentBackdrop) {
       var items = res[0];
       var stats = C.computeCommentStats(res[1], res[2], me.id);
 
-      var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">' +
-        '<h2>إنتاج المحتوى</h2><button class="btn" id="new-content-btn">+ فكرة/محتوى جديد</button></div>';
+      var html = '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px;">' +
+        '<h2>إنتاج المحتوى</h2><div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn ghost" id="idea-bank-btn">بنك الأفكار</button><button class="btn" id="new-content-btn">+ فكرة/محتوى جديد</button></div></div>';
 
       html += '<div class="section"><h3>كل المواد بتاعتي (' + items.length + ')</h3>';
       if (!items.length) {
@@ -817,6 +817,9 @@ function openAgentImportModal(parentBackdrop) {
       container.innerHTML = html;
 
       document.getElementById("new-content-btn").onclick = openCreateModal;
+      document.getElementById("idea-bank-btn").onclick = function () {
+        if (window.SSMPDContentAI) window.SSMPDContentAI.openIdeaBank();
+      };
       container.querySelectorAll("[data-published-open]").forEach(function (btn) {
         btn.onclick = function () {
           var id = btn.getAttribute("data-published-open");
@@ -846,6 +849,7 @@ function openAgentImportModal(parentBackdrop) {
       '<div class="field"><label>التخصص</label>' + W.specialtySelectHtml("cf-specialty", "") + '</div>' +
       '<div class="field"><label>نص المحتوى</label><textarea id="cf-body" placeholder="اكتب الفكرة والنص..."></textarea></div>' +
       W.contentIntelligencePanelHtml() +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 12px;"><button type="button" class="btn" id="cf-ai-generate">توليد ٣ أفكار بالذكاء الاصطناعي</button><button type="button" class="btn ghost" id="cf-ai-import">استيراد رد الوكيل يدويًا</button></div>' +
       structuredFieldsHtml() +
       '<div style="text-align:left;margin-top:10px;"><button class="btn" id="cf-submit">إرسال للاعتماد الأولي</button> ' +
       '<button class="btn ghost" id="cf-draft">حفظ كمسودة</button></div></div>';
@@ -856,6 +860,10 @@ function openAgentImportModal(parentBackdrop) {
     W.wireContentIntelligence(backdrop, function () { return document.getElementById("cf-specialty").value; });
     var importAgentBtn = document.getElementById("cf-import-agent");
     if (importAgentBtn) importAgentBtn.onclick = function () { openAgentImportModal(backdrop); };
+    document.getElementById("cf-ai-generate").onclick = function () {
+      if (window.SSMPDContentAI) window.SSMPDContentAI.openGenerator();
+    };
+    document.getElementById("cf-ai-import").onclick = function () { openAgentImportModal(backdrop); };
     document.getElementById("cf-specialty").addEventListener("change", function () {
       W.refreshContentIntelligence(backdrop, function () { return document.getElementById("cf-specialty").value; });
     });
