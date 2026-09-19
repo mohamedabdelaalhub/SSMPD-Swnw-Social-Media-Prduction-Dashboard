@@ -849,7 +849,7 @@ function openAgentImportModal(parentBackdrop) {
       '<div class="field"><label>التخصص</label>' + W.specialtySelectHtml("cf-specialty", "") + '</div>' +
       '<div class="field"><label>نص المحتوى</label><textarea id="cf-body" placeholder="اكتب الفكرة والنص..."></textarea></div>' +
       W.contentIntelligencePanelHtml() +
-      '<div style="display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 12px;"><button type="button" class="btn" id="cf-ai-generate">توليد ٣ أفكار بالذكاء الاصطناعي</button><button type="button" class="btn ghost" id="cf-ai-import">استيراد رد الوكيل يدويًا</button></div>' +
+      '<div class="content-ai-actions"><button type="button" class="btn" id="cf-ai-generate">توليد ٣ أفكار بالذكاء الاصطناعي</button><button type="button" class="btn ghost" id="cf-ai-import">استيراد رد الوكيل يدويًا</button></div>' +
       structuredFieldsHtml() +
       '<div style="text-align:left;margin-top:10px;"><button class="btn" id="cf-submit">إرسال للاعتماد الأولي</button> ' +
       '<button class="btn ghost" id="cf-draft">حفظ كمسودة</button></div></div>';
