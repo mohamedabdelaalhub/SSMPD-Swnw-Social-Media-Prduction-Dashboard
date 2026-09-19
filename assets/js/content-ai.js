@@ -13,10 +13,10 @@
       title: x.title || "",
       idea: x.idea || "",
       hook: x.hook || "",
-      angle: x.angle || "",
-      formatKey: x.format || x.format_key || "",
-      script: x.script || "",
-      caption: x.caption || "",
+      angle: x.angle || x.content_angle || "",
+      formatKey: x.format || x.format_key || x.preferred_format || "",
+      script: x.script || x.script_text || "",
+      caption: x.caption || x.caption_text || "",
       ctaType: x.cta_type || x.ctaType || "",
       cta: x.cta_text || x.cta || "",
       durationMin: x.duration_min_seconds == null ? x.durationMin : x.duration_min_seconds,
@@ -32,6 +32,11 @@
       '<div style="font-size:12px;margin:5px 0;"><b>الافتتاحية:</b> ' + esc(idea.hook) + '</div>' +
       '<div style="font-size:12px;margin:5px 0;"><b>الزاوية:</b> ' + esc(idea.angle) + '</div>' +
       '<div style="font-size:12px;margin:5px 0;"><b>الشكل:</b> ' + esc(idea.formatKey || "—") + '</div>' +
+      '<details style="margin-top:8px;"><summary>مراجعة النص وبيانات التنفيذ</summary>' +
+      '<p style="white-space:pre-wrap;font-size:13px;">' + esc(idea.caption) + '</p>' +
+      (idea.script ? '<p style="white-space:pre-wrap;font-size:13px;"><b>السكريبت</b><br>' + esc(idea.script) + '</p>' : '') +
+      '<p style="font-size:13px;"><b>الدعوة للتفاعل</b> ' + esc(idea.cta) + '</p>' +
+      '<p style="font-size:13px;"><b>سبب الاختبار</b> ' + esc(idea.why) + '</p></details>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">' + extra + '</div></article>';
   }
   function getContext() {
@@ -82,23 +87,34 @@
       if (!context.brand) { alert("اختر الصفحة أولًا من نموذج المحتوى."); return; }
       if (mode === "develop" && !(topic || context.title || context.body)) { alert("اكتب فكرة أو مسودة لتطويرها."); return; }
       btn.disabled = true; btn.textContent = "جاري التوليد…"; slot.innerHTML = '<div class="loading" style="margin-top:10px;">يتم إعداد ٣ اقتراحات…</div>';
-      window.SSMPDDb.generateContentIdeas({
+      var requestContext = Object.assign({}, context, { topic: topic || context.topic });
+      window.SSMPDWorkflow.getContentAIBrief(requestContext).then(function (brief) {
+        return window.SSMPDDb.generateContentIdeas({
         mode: mode, brand: context.brand, specialty: context.specialty,
         advertising_objective: context.advertisingObjective, preferred_format: context.format,
         topic: topic || context.topic, manual_draft: mode === "develop" ? (context.body || context.title) : "",
-        title: context.title, performance_brief: ""
+        title: context.title, performance_brief: brief
+        });
       }).then(function (data) {
         var ideas = (data.ideas || []).slice(0, 3).map(normalise);
         if (ideas.length !== 3) throw new Error("لم تصل ٣ أفكار مكتملة. أعد المحاولة.");
         slot.innerHTML = ideas.map(function (idea, i) {
           return renderCard(idea, i,
-            '<button class="btn sm" data-use="' + i + '">اعتماد وتنفيذ</button>' +
+            '<button class="btn sm" data-use="' + i + '">اختيار الفكرة</button>' +
             '<button class="btn ghost sm" data-save="' + i + '">حفظ لوقت لاحق</button>');
         }).join("");
         slot.querySelectorAll("[data-use]").forEach(function (b) { b.onclick = function () {
           var idea = ideas[Number(b.getAttribute("data-use"))]; fill(idea);
-          if (window.SSMPDToast) window.SSMPDToast.show("تم ملء بيانات المادة. اختر إنشاء فيديو أو تصميم بعد الحفظ.", "success");
-          close();
+          if (window.SSMPDToast) window.SSMPDToast.show("تم ملء بيانات المادة. يمكنك حفظ باقي الأفكار قبل الرجوع للنموذج.", "success");
+          slot.querySelectorAll("[data-use]").forEach(function (button) {
+            button.textContent = button === b ? "تم اختيارها" : "اختيار بدلًا منها";
+          });
+          if (!slot.querySelector("[data-return-form]")) {
+            var back = document.createElement("button");
+            back.className = "btn"; back.setAttribute("data-return-form", "");
+            back.textContent = "الرجوع لحفظ المادة";
+            back.onclick = close; slot.appendChild(back);
+          }
         };});
         slot.querySelectorAll("[data-save]").forEach(function (b) { b.onclick = function () {
           var idea = ideas[Number(b.getAttribute("data-save"))]; b.disabled = true;
