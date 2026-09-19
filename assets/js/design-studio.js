@@ -14,6 +14,10 @@
    '<label>العنوان على التصميم<textarea data-field="headline" rows="2"></textarea></label>'+
    '<label>السطر التوضيحي<textarea data-field="subtitle" rows="2"></textarea></label>'+
    '<label>الدعوة للتفاعل<input data-field="cta"></label><p>النصوص قابلة للتعديل قبل الحفظ. الكابشن الأصلي يظل محفوظًا.</p>'+
+   '<details><summary>أحجام النص وزر التفاعل</summary>'+
+   '<label>حجم العنوان الرئيسي <output data-value="headlineSize">83</output><input type="range" data-field="headlineSize" min="46" max="90" step="1" value="83"></label>'+
+   '<label>حجم السطر التوضيحي <output data-value="subtitleSize">42</output><input type="range" data-field="subtitleSize" min="24" max="48" step="1" value="42"></label>'+
+   '<label>حجم زر التفاعل <output data-value="ctaScale">100%</output><input type="range" data-field="ctaScale" min="0.8" max="1.15" step="0.01" value="1"></label></details>'+
    '<label>صورة من جهازك<input type="file" accept="image/png,image/jpeg,image/webp" data-upload></label>'+
    '<button class="btn ghost" data-library>صور سونو المحفوظة</button><div data-images style="display:flex;flex-wrap:wrap;gap:6px"></div>'+
    '<details><summary>توليد صورة بالذكاء الاصطناعي</summary><label>وصف المشهد<textarea data-prompt rows="3"></textarea></label>'+
@@ -43,7 +47,7 @@
    catch(e){status.textContent=e.message;}buttons();
   }
   function buttons(){root.querySelectorAll('input,textarea,select,[data-library],[data-retry]').forEach(function(el){el.disabled=working;});root.querySelector('[data-download]').disabled=!valid||working;root.querySelector('[data-save]').disabled=!valid||working;root.querySelector('[data-generate]').disabled=working;}
-  root.querySelectorAll('[data-field]').forEach(function(el){el.oninput=paint;});
+  root.querySelectorAll('[data-field]').forEach(function(el){el.oninput=function(){var output=root.querySelector('[data-value="'+el.dataset.field+'"]');if(output)output.textContent=el.dataset.field==='ctaScale'?Math.round(Number(el.value)*100)+'%':el.value;paint();};});
   async function setScene(url){scene=await C.loadImage(url);await paint();}
   root.querySelector('[data-upload]').onchange=async function(){
    var file=this.files[0];if(!file)return;
