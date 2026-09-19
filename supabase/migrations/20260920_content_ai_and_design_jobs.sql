@@ -97,8 +97,8 @@ begin
   return to_jsonb(saved);
 end; $$;
 
-revoke all on function public.save_content_idea(text,text,text,text,text,text,text,text,text,text,text,text,text,integer,integer,text,text,jsonb) from public;
-grant execute on function public.save_content_idea(text,text,text,text,text,text,text,text,text,text,text,text,text,integer,integer,text,text,jsonb) to authenticated;
+revoke all on function public.save_content_idea(text,text,text,text,text,text,text,text,text,text,text,text,integer,integer,text,text,jsonb) from public;
+grant execute on function public.save_content_idea(text,text,text,text,text,text,text,text,text,text,text,text,integer,integer,text,text,jsonb) to authenticated;
 revoke all on function public.mark_content_idea_used(uuid) from public;
 grant execute on function public.mark_content_idea_used(uuid) to authenticated;
 revoke all on function public.discard_content_idea(uuid) from public;
