@@ -221,6 +221,42 @@
     updateContentItem: function (id, patch) {
       return handle(client.from("content_items").update(patch).eq("id", id).select().single());
     },
+    // ---------- Content AI + idea bank ----------
+    generateContentIdeas: function (payload) {
+      return edgeFetch("/content-ai", { method: "POST", json: payload });
+    },
+    listSavedContentIdeas: function () {
+      return handle(client.from("content_idea_bank").select("*")
+        .eq("status", "saved").order("created_at", { ascending: false }));
+    },
+    saveContentIdea: function (idea, context) {
+      context = context || {};
+      return handle(client.rpc("save_content_idea", {
+        p_brand: context.brand || "",
+        p_specialty: context.specialty || "",
+        p_advertising_objective: context.advertisingObjective || "",
+        p_preferred_format: idea.formatKey || context.format || "",
+        p_title: idea.title || "",
+        p_idea: idea.idea || "",
+        p_hook: idea.hook || "",
+        p_content_angle: idea.angle || "",
+        p_script_text: idea.script || "",
+        p_caption_text: idea.caption || "",
+        p_cta_type: idea.ctaType || "",
+        p_cta_text: idea.cta || "",
+        p_duration_min_seconds: idea.durationMin == null ? null : idea.durationMin,
+        p_duration_max_seconds: idea.durationMax == null ? null : idea.durationMax,
+        p_video_template: idea.videoTemplate || "",
+        p_hypothesis_reason: idea.why || "",
+        p_raw_output: idea.raw || null
+      }));
+    },
+    markContentIdeaUsed: function (ideaId) {
+      return handle(client.rpc("mark_content_idea_used", { p_idea_id: ideaId }));
+    },
+    discardContentIdea: function (ideaId) {
+      return handle(client.rpc("discard_content_idea", { p_idea_id: ideaId }));
+    },
     // حذف نهائي — مقصور على السوبر أدمن حسب صلاحيات RLS "super deletes content"
     deleteContentItem: function (id) {
       return handle(client.from("content_items").delete().eq("id", id));
