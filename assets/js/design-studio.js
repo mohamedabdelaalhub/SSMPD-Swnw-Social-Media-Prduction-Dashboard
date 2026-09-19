@@ -14,10 +14,16 @@
    '<label>العنوان على التصميم<textarea data-field="headline" rows="2"></textarea></label>'+
    '<label>السطر التوضيحي<textarea data-field="subtitle" rows="2"></textarea></label>'+
    '<label>الدعوة للتفاعل<input data-field="cta"></label><p>النصوص قابلة للتعديل قبل الحفظ. الكابشن الأصلي يظل محفوظًا.</p>'+
-   '<details><summary>أحجام النص وزر التفاعل</summary>'+
-   '<label>حجم العنوان الرئيسي <output data-value="headlineSize">83</output><input type="range" data-field="headlineSize" min="46" max="90" step="1" value="83"></label>'+
-   '<label>حجم السطر التوضيحي <output data-value="subtitleSize">42</output><input type="range" data-field="subtitleSize" min="24" max="48" step="1" value="42"></label>'+
-   '<label>حجم زر التفاعل <output data-value="ctaScale">100%</output><input type="range" data-field="ctaScale" min="0.8" max="1.15" step="0.01" value="1"></label></details>'+
+   '<details open><summary>حجم النص وموضعه</summary>'+
+   '<label>وضع العنوان<select data-field="titlePosition"><option value="bottom">تحت</option><option value="top">فوق</option><option value="right">يمين</option><option value="left">يسار</option></select></label>'+
+   '<label>حجم خط العنوان بالبكسل<input type="number" data-field="headlineSize" min="20" max="180" step="1" value="83"></label>'+
+   '<label>حجم خط السطر التوضيحي بالبكسل<input type="number" data-field="subtitleSize" min="16" max="100" step="1" value="42"></label>'+
+   '<label>حجم خط زر التفاعل بالبكسل<input type="number" data-field="ctaSize" min="16" max="80" step="1" value="31"></label>'+
+   '<p>الموضع بالبكسل. السالب يحرّك لفوق والموجب لتحت. حجم الزر يتناسب مع النص.</p>'+
+   '<label>تحريك العنوان<input type="number" data-field="headlineOffset" min="-600" max="600" step="5" value="0"></label>'+
+   '<label>تحريك السطر التوضيحي<input type="number" data-field="subtitleOffset" min="-600" max="600" step="5" value="0"></label>'+
+   '<label>تحريك زر التفاعل<input type="number" data-field="ctaOffset" min="-900" max="60" step="5" value="0"></label>'+
+   '<p>عند التوليد يتوجّه المشهد حسب وضع العنوان. للصورة المحفوظة يمكنك تعديل القص، وتظهر خلفية بيضاء تحت النص للحفاظ على وضوحه.</p></details>'+
    '<label>صورة من جهازك<input type="file" accept="image/png,image/jpeg,image/webp" data-upload></label>'+
    '<button class="btn ghost" data-library>صور سونو المحفوظة</button><div data-images style="display:flex;flex-wrap:wrap;gap:6px"></div>'+
    '<details><summary>توليد صورة بالذكاء الاصطناعي</summary><label>وصف المشهد<textarea data-prompt rows="3"></textarea></label>'+
@@ -47,7 +53,7 @@
    catch(e){status.textContent=e.message;}buttons();
   }
   function buttons(){root.querySelectorAll('input,textarea,select,[data-library],[data-retry]').forEach(function(el){el.disabled=working;});root.querySelector('[data-download]').disabled=!valid||working;root.querySelector('[data-save]').disabled=!valid||working;root.querySelector('[data-generate]').disabled=working;}
-  root.querySelectorAll('[data-field]').forEach(function(el){el.oninput=function(){var output=root.querySelector('[data-value="'+el.dataset.field+'"]');if(output)output.textContent=el.dataset.field==='ctaScale'?Math.round(Number(el.value)*100)+'%':el.value;paint();};});
+  root.querySelectorAll('[data-field]').forEach(function(el){el.oninput=function(){if(el.dataset.field==='titlePosition'){root.querySelector('[data-field="x"]').value=el.value==='left'?100:el.value==='right'?0:50;root.querySelector('[data-field="headlineOffset"]').value=0;root.querySelector('[data-field="subtitleOffset"]').value=0;}var output=root.querySelector('[data-value="'+el.dataset.field+'"]');if(output)output.textContent=el.dataset.field==='ctaScale'?Math.round(Number(el.value)*100)+'%':el.value;paint();};});
   async function setScene(url){scene=await C.loadImage(url);await paint();}
   root.querySelector('[data-upload]').onchange=async function(){
    var file=this.files[0];if(!file)return;
@@ -66,7 +72,7 @@
   root.querySelector('[data-generate]').onclick=async function(){
    if(working)return;working=true;buttons();status.textContent='جاري توليد الصورة وحفظها…';
    var key=localStorage.getItem(requestStore)||crypto.randomUUID();localStorage.setItem(requestStore,key);
-   try{var result=await invoke({content_id:item.id,request_key:key,prompt:root.querySelector('[data-prompt]').value,quality:root.querySelector('[data-quality]').value});
+   try{var result=await invoke({content_id:item.id,request_key:key,prompt:C.scenePrompt(root.querySelector('[data-prompt]').value,data()),quality:root.querySelector('[data-quality]').value});
     if(result.url){sceneJobId=result.job_id;sourceFile=null;sourceUrl=null;await setScene(result.url);localStorage.removeItem(requestStore);root.querySelector('[data-generate]').textContent='إعادة توليد صورة جديدة';}
     else status.textContent='الطلب مسجل وما زال قيد التنفيذ. اضغط مجددًا لاستعادة نتيجته بدون طلب مدفوع جديد.';
    }catch(e){status.textContent=e.message+' — نفس الطلب محفوظ لمنع تكرار الخصم.';root.querySelector('[data-retry]').hidden=!e.terminal;}
