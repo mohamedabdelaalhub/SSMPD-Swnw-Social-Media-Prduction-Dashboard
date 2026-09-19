@@ -19,70 +19,102 @@
     ].map(function (f) { return f.load().then(function (loaded) { document.fonts.add(loaded); }); }));
     return fonts;
   }
-  function fit(ctx, value, box, weight) {
-    var text = String(value || '').trim();
-    if (!text) return null;
-    for (var size = box.max; size >= box.min; size -= 2) {
-      ctx.font = weight + ' ' + size + 'px SonoLatin, SonoDesign';
-      var lines = [], overflow = false;
-      text.split('\n').forEach(function (paragraph) {
-        var line = '';
-        paragraph.split(/\s+/).forEach(function (word) {
-          if (ctx.measureText(word).width > box.w) overflow = true;
-          var candidate = line ? line + ' ' + word : word;
-          if (ctx.measureText(candidate).width > box.w && line) { lines.push(line); line = word; }
-          else line = candidate;
-        });
-        lines.push(line);
-      });
-      if (!overflow && lines.length <= box.lines && lines.length * size * 1.35 <= box.h) return {lines:lines,size:size};
-    }
-    throw new Error('النص أطول من المساحة المتاحة. عدّله قبل التصدير.');
+
+  function number(value, fallback, min, max) {
+    if (value === '' || value == null) return fallback;
+    var n = Number(value); return Number.isFinite(n) ? Math.max(min,Math.min(max,n)) : fallback;
+  }
+  function measure(ctx, value, size, width, weight, leading) {
+    var text = String(value || '').trim(); if (!text) return null;
+    ctx.font = weight + ' ' + size + 'px SonoLatin, SonoDesign';
+    var lines = [];
+    text.split('\n').forEach(function(paragraph) {
+      var line = '';
+      paragraph.split(/\s+/).forEach(function(word) {
+        if(ctx.measureText(word).width > width) throw new Error('حجم الخط أكبر من عرض المساحة. قلّل الحجم أو غيّر وضع العنوان.');
+        var candidate = line ? line+' '+word : word;
+        if(line && ctx.measureText(candidate).width > width) { lines.push(line); line=word; }
+        else line=candidate;
+      }); lines.push(line);
+    });
+    return {lines:lines,size:size,weight:weight,leading:leading,h:size*1.35+(lines.length-1)*size*leading};
+  }
+  function scenePrompt(prompt, data) {
+    var instructions = {
+      top:'Leave the upper middle area below the logo empty with a pale plain background for a heading. Place the main subject lower in the frame.',
+      bottom:'Place the main subject in the upper image area. Keep the lower edge pale and uncluttered for a heading below the image.',
+      right:'Leave the RIGHT half empty with a pale plain background for Arabic text. Place the person and all key details on the LEFT.',
+      left:'Leave the LEFT half empty with a pale plain background for Arabic text. Place the person and all key details on the RIGHT.'
+    };
+    return String(prompt || '')+'\nComposition: '+(instructions[data.titlePosition]||instructions.bottom)+' No writing or logos.';
   }
   async function render(canvas, scene, data) {
     await ready();
     var overlay = await loadImage(new URL('design-templates/sono-white/overlay.png', base));
-    canvas.width = 1080; canvas.height = 1350;
-    var ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#fff'; ctx.fillRect(0,0,1080,1350);
-    if (scene) {
-      var height = 830, scale = Math.max(1080 / scene.width, height / scene.height) * (Number(data.zoom) || 1);
-      var w = scene.width * scale, h = scene.height * scale;
-      ctx.save(); ctx.beginPath(); ctx.rect(0,0,1080,height); ctx.clip();
-      ctx.drawImage(scene, (1080-w) * (Number(data.x)/100), (height-h) * (Number(data.y)/100), w,h); ctx.restore();
+    canvas.width=1080; canvas.height=1350;
+    var ctx=canvas.getContext('2d');
+    ctx.fillStyle='#fff'; ctx.fillRect(0,0,1080,1350);
+    var side = data.titlePosition==='left' || data.titlePosition==='right';
+    var sceneX = data.titlePosition==='left' ? 550 : 0;
+    var sceneWidth = side ? 530 : 1080;
+    if(scene) {
+      var height=830,scale=Math.max(sceneWidth/scene.width,height/scene.height)*number(data.zoom,1,1,2);
+      var w=scene.width*scale,h=scene.height*scale;
+      ctx.save();ctx.beginPath();ctx.rect(sceneX,0,sceneWidth,height);ctx.clip();
+      ctx.drawImage(scene,sceneX+(sceneWidth-w)*number(data.x,50,0,100)/100,(height-h)*number(data.y,50,0,100)/100,w,h);ctx.restore();
     }
-    // Fade the scene before the fixed overlay so brand pixels stay untouched.
-    var fade = ctx.createLinearGradient(0,650,0,830);
-    fade.addColorStop(0,'rgba(255,255,255,0)');
-    fade.addColorStop(1,'rgba(255,255,255,1)');
-    ctx.fillStyle = fade; ctx.fillRect(0,650,1080,180);
+    var fade=ctx.createLinearGradient(0,650,0,830);
+    fade.addColorStop(0,'rgba(255,255,255,0)');fade.addColorStop(1,'rgba(255,255,255,1)');
+    ctx.fillStyle=fade;ctx.fillRect(0,650,1080,180);
     ctx.drawImage(overlay,0,0,1080,1350);
-    ctx.direction = 'rtl'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    function draw(text, box, weight, color, shadow) {
-      var layout = fit(ctx,text,box,weight); if (!layout) return;
-      ctx.font = weight + ' ' + layout.size + 'px SonoLatin, SonoDesign';
-      layout.lines.forEach(function (line,i) {
-        var y = box.y + box.h/2 + (i-(layout.lines.length-1)/2)*layout.size*(box.leading || 1.35);
-        if (shadow) { ctx.fillStyle='#00dedb'; ctx.fillText(line,544,y+5); }
-        ctx.fillStyle=color; ctx.fillText(line,540,y);
+    ctx.direction='rtl';ctx.textAlign='center';ctx.textBaseline='middle';
+    var presets={bottom:{x:540,y:883,w:960},top:{x:540,y:320,w:960},right:{x:775,y:390,w:450},left:{x:305,y:390,w:450}};
+    var position=presets[data.titlePosition]?data.titlePosition:'bottom',p=presets[position];
+    var title=measure(ctx,data.headline,number(data.headlineSize,83,20,180),p.w,700,1.12);
+    var subtitle=measure(ctx,data.subtitle,number(data.subtitleSize,42,16,100),p.w,400,1.2);
+    var titleY=p.y+number(data.headlineOffset,0,-600,600);
+    var subtitleY=titleY+(title?title.h/2:0)+22+(subtitle?subtitle.h/2:0)+number(data.subtitleOffset,0,-600,600);
+    var ctaSize=number(data.ctaSize,31*number(data.ctaScale,1,0.8,1.15),16,80);
+    var cta=measure(ctx,data.cta,ctaSize,880,700,1.1);
+    var ctaY=1088+number(data.ctaOffset,0,-900,60);
+    if(cta && cta.lines.length>1) throw new Error('نص زر التفاعل طويل. قلّل حجم الخط أو اختصره.');
+    var blocks=[];
+    function block(layout,y,x,width) {
+      if(!layout)return;
+      if(y-layout.h/2<190 || y+layout.h/2>1160)throw new Error('النص خارج المساحة الآمنة. حرّكه بعيدًا عن اللوجو والفوتر أو قلّل حجمه.');
+      blocks.push({top:y-layout.h/2,bottom:y+layout.h/2,left:x-width/2,right:x+width/2});
+    }
+    block(title,titleY,p.x,p.w);block(subtitle,subtitleY,p.x,p.w);
+    var buttonWidth=0,buttonHeight=0;
+    if(cta) {
+      ctx.font='700 '+ctaSize+'px SonoLatin, SonoDesign';
+      buttonWidth=Math.max(220,ctx.measureText(cta.lines[0]).width+70);buttonHeight=cta.h+14;
+      block({h:buttonHeight},ctaY,540,buttonWidth);
+    }
+    for(var i=0;i<blocks.length;i++)for(var j=i+1;j<blocks.length;j++){
+      var a=blocks[i],b=blocks[j];
+      if(a.left<b.right && a.right>b.left && a.top<b.bottom+8 && a.bottom+8>b.top)
+        throw new Error('العناصر متداخلة. عدّل موضع السطر أو زر التفاعل.');
+    }
+    // Opaque quiet panel under text placed over the scene; fixed overlay remains unchanged.
+    [title,subtitle].forEach(function(layout,index){
+      if(!layout)return;var y=index?subtitleY:titleY;
+      if(y-layout.h/2<830) {
+        ctx.fillStyle='#fff';ctx.beginPath();
+        ctx.roundRect(p.x-p.w/2-12,y-layout.h/2-10,p.w+24,layout.h+20,18);ctx.fill();
+      }
+    });
+    function draw(layout,x,y,color,shadow) {
+      if(!layout)return;ctx.font=layout.weight+' '+layout.size+'px SonoLatin, SonoDesign';
+      layout.lines.forEach(function(line,i){
+        var baseline=y+(i-(layout.lines.length-1)/2)*layout.size*layout.leading;
+        if(shadow){ctx.fillStyle='#00dedb';ctx.fillText(line,x+4,baseline+5);}
+        ctx.fillStyle=color;ctx.fillText(line,x,baseline);
       });
     }
-    function bounded(value, fallback, min, max) {
-      var n = Number(value); return Number.isFinite(n) && n > 0 ? Math.max(min,Math.min(max,n)) : fallback;
-    }
-    var headlineSize = bounded(data.headlineSize,83,46,90);
-    var subtitleSize = bounded(data.subtitleSize,42,24,48);
-    var ctaScale = bounded(data.ctaScale,1,0.8,1.15);
-    var buttonWidth = 372 * ctaScale, buttonHeight = 56 * ctaScale;
-    var buttonY = 1088 - buttonHeight / 2;
-    draw(data.headline,{y:806,h:155,w:960,max:headlineSize,min:46,lines:2,leading:1.15},700,'#07599d',true);
-    draw(data.subtitle,{y:940,h:88,w:950,max:subtitleSize,min:24,lines:2},400,'#272727');
-    if (String(data.cta || '').trim()) {
-      fit(ctx,data.cta,{h:buttonHeight,w:buttonWidth-28,max:31*ctaScale,min:22,lines:1},700);
-      ctx.fillStyle='#ff541d'; ctx.beginPath(); ctx.roundRect(540-buttonWidth/2,buttonY,buttonWidth,buttonHeight,buttonHeight/2); ctx.fill();
-      draw(data.cta,{y:buttonY,h:buttonHeight,w:buttonWidth-28,max:31*ctaScale,min:22,lines:1},700,'white');
-    }
+    draw(title,p.x,titleY,'#07599d',true);draw(subtitle,p.x,subtitleY,'#272727');
+    if(cta){ctx.fillStyle='#ff541d';ctx.beginPath();ctx.roundRect(540-buttonWidth/2,ctaY-buttonHeight/2,buttonWidth,buttonHeight,buttonHeight/2);ctx.fill();draw(cta,540,ctaY,'#fff');}
     return canvas;
   }
-  window.SSMPDDesignComposer = {render:render,loadImage:loadImage,ready:ready};
+  window.SSMPDDesignComposer={render:render,loadImage:loadImage,ready:ready,scenePrompt:scenePrompt};
 })();
