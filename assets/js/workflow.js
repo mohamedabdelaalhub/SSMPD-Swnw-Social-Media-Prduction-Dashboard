@@ -913,7 +913,7 @@
   function ciAppendAgentOutputContract(lines, fmtKey) {
     lines.push("");
     lines.push("=== OUTPUT CONTRACT — MANDATORY ===");
-    lines.push("Generate 3-5 ideas. EVERY idea must contain ALL required fields below. Do not omit a field.");
+    lines.push("Generate exactly 3 ideas. EVERY idea must contain ALL required fields below. Do not omit a field.");
     lines.push("");
     lines.push("REQUIRED FIELDS FOR EVERY IDEA:");
     lines.push("1. title — short publishable title");
@@ -963,7 +963,7 @@
     lines.push("All JSON values must be plain text with valid JSON escaping.");
   }
 
-function ciCopyFallbackBrief(ctx) {
+function ciCopyFallbackBrief(ctx, returnOnly) {
     var brand = document.getElementById("cf-brand");
     var generalInfo = ciBuildPatternPool(ctx.generalPatterns || [], ciMetricFor(ctx.objKey));
     var generalItems = generalInfo.actionablePool.filter(function (x) { return x.aStatus.key !== "weak"; });
@@ -999,7 +999,7 @@ function ciCopyFallbackBrief(ctx) {
       });
     } else {
       lines.push("No reliable historical performance data is available for this specialty/objective.");
-      lines.push("Generate 3-5 content hypotheses based on the specialty, topic, objective and format.");
+      lines.push("Generate exactly 3 content hypotheses based on the specialty, topic, objective and format.");
       lines.push("Do not invent historical performance evidence.");
       lines.push("");
     }
@@ -1008,6 +1008,7 @@ function ciCopyFallbackBrief(ctx) {
 
 
     var text = lines.join("\n");
+    if (returnOnly) return text;
     var done = function () {
       if (window.SSMPDToast) window.SSMPDToast.show("تم نسخ الـBrief — افتح وكيل إنشاء المحتوى", "success");
       else alert("تم نسخ الـBrief");
@@ -1042,6 +1043,12 @@ function ciCopyFallbackBrief(ctx) {
       '<button class="btn ghost sm" id="ci-open-agent">وكيل إنشاء المحتوى ↗</button></div>';
     out.innerHTML = html;
 
+    out.buildBrief = function () {
+      return ciCopyFallbackBrief({
+        specialtyKey: specialtyKey, objKey: objKey, fmtKey: fmtKey,
+        topicText: topicText, generalPatterns: general
+      }, true);
+    };
     var copyBtn = out.querySelector("#ci-copy-brief");
     if (copyBtn) copyBtn.onclick = function () {
       ciCopyFallbackBrief({
@@ -1163,6 +1170,14 @@ function ciCopyFallbackBrief(ctx) {
 
     out.innerHTML = html;
 
+    out.buildBrief = function () {
+      return ciCopyBrief(out, {
+        specialtyKey: specialtyKey, metaLabel: metaLabel, objKey: objKey,
+        fmtKey: fmtKey, topicText: topicText, overallConfidence: overallConfidence,
+        bestPerf: bestPerf, bestActionable: bestActionable,
+        secondActionable: secondActionable, weak: weakPick
+      }, true);
+    };
     var briefCopyBtn = out.querySelector("#ci-copy-brief");
     if (briefCopyBtn) {
       briefCopyBtn.onclick = function () {
@@ -1222,7 +1237,7 @@ function ciCopyFallbackBrief(ctx) {
     return lines;
   }
 
-  function ciCopyBrief(out, ctx) {
+  function ciCopyBrief(out, ctx, returnOnly) {
     var brand = document.getElementById("cf-brand");
     var lines = [];
     lines.push("=== Brief للوكيل — إنشاء محتوى جديد ===");
@@ -1282,6 +1297,7 @@ function ciCopyFallbackBrief(ctx) {
 
 
     var text = lines.join("\n");
+    if (returnOnly) return text;
     var done = function () {
       if (window.SSMPDToast) window.SSMPDToast.show("تم نسخ الـBrief — افتح وكيل إنشاء المحتوى", "success");
       else alert("تم نسخ الـBrief");
@@ -1337,7 +1353,20 @@ function ciCopyFallbackBrief(ctx) {
     renderCiOutput(container, getSpecialtyKey);
   }
 
+  function getContentAIBrief(context) {
+    if (!context.specialty || !context.advertisingObjective) {
+      return Promise.reject(new Error("اختر التخصص والهدف الإعلاني قبل التوليد."));
+    }
+    return ciLoadData().then(function (data) {
+      var out = document.createElement("div");
+      renderCiResults(out, data, context.specialty, context.advertisingObjective, context.format, context.topic);
+      if (typeof out.buildBrief !== "function") throw new Error("تعذر إعداد Brief الأداء. حاول مرة أخرى.");
+      return out.buildBrief();
+    });
+  }
+
   window.SSMPDWorkflow = {
+    getContentAIBrief: getContentAIBrief,
     STAGES: STAGES,
     metaLinksSectionHtml: metaLinksSectionHtml,
     wireMetaLinksSection: wireMetaLinksSection,
