@@ -931,7 +931,7 @@ function openAgentImportModal(parentBackdrop) {
         '<div class="status-pill ' + stagePillClass(item.stage) + '" style="margin-bottom:12px;">' + W.stageLabel(item.stage) + '</div>' +
         '<p style="white-space:pre-wrap;">' + escapeHtml(item.body || "") + '</p>' +
         structuredDetailsHtml(item) +
-        (item.content_format === "video" ? '<div id="video-job-slot"></div>' : '') +
+        (item.content_format === "video" ? '<div id="video-job-slot"></div>' : '<div id="design-job-slot"></div>') +
         (item.design_file_url ? '<p><a href="' + item.design_file_url + '" target="_blank" class="btn ghost sm">فتح ملف التصميم</a></p>' : '') +
         '<div style="margin:10px 0;">' + W.itemActionsHtml(item, me) + '</div>' +
         W.metaLinksSectionHtml(item) +
@@ -942,6 +942,7 @@ function openAgentImportModal(parentBackdrop) {
       W.wireItemActions(backdrop, item, function () { render(document.getElementById("view-container")); });
       W.wireMetaLinksSection(backdrop, item, me);
       renderVideoJobSection(backdrop.querySelector("#video-job-slot"), item);
+      window.SSMPDDesignStudio.mount(backdrop.querySelector("#design-job-slot"), item);
 
       window.SSMPDDb.listAdminsBasic().then(function (admins) {
         var map = {}; admins.forEach(function (a) { map[a.id] = a; });

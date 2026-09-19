@@ -123,12 +123,14 @@
         '<p style="white-space:pre-wrap;">' + escapeHtml(item.body || "") + '</p>' +
         (item.design_file_url ? '<p><a href="' + item.design_file_url + '" target="_blank" class="btn ghost sm">فتح آخر تصميم مرفوع</a></p>' : '') +
         '<div style="margin:10px 0;">' + W.itemActionsHtml(item, window.SSMPDAuth.currentAdmin) + '</div>' +
+        '<div id="design-studio-slot"></div>' +
         '<div class="upload-box" id="upload-box">اسحب ملف التصميم هنا أو اضغط للاختيار<br>' +
         '<input type="file" id="design-file-input" style="display:none;"></div>' +
         '<div id="upload-status" style="font-size:12px;color:var(--c-muted);"></div>' +
         W.metaLinksSectionHtml(item) +
         '<div id="comments-slot"></div></div>';
       document.body.appendChild(backdrop);
+      window.SSMPDDesignStudio.mount(backdrop.querySelector("#design-studio-slot"), item);
       backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
       backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
       W.wireItemActions(backdrop, item, function () { render(document.getElementById("view-container")); });
