@@ -29,7 +29,7 @@
    '<details><summary>توليد صورة بالذكاء الاصطناعي</summary><label>وصف المشهد<textarea data-prompt rows="3"></textarea></label>'+
    '<label>الجودة<select data-quality><option value="medium">Medium</option><option value="high">High</option></select></label>'+
    '<p>توليد صورة واحدة لكل طلب. حد التجربة ٣ محاولات للمادة و٥ دولارات شهريًا. تعديل النص لا يستهلك توليدًا جديدًا.</p>'+
-   '<button class="btn" data-generate>توليد الصورة</button> <button class="btn ghost" data-retry hidden>محاولة جديدة بعد الفشل</button></details>'+
+   '<div class="design-ai-actions"><button class="btn" data-generate>توليد الصورة</button><button class="btn ghost" data-retry hidden>محاولة جديدة بعد الفشل</button></div></details>'+
    '<label>تكبير الصورة<input type="range" data-field="zoom" min="1" max="2" step="0.05" value="1"></label>'+
    '<label>موضع أفقي<input type="range" data-field="x" min="0" max="100" value="50"></label>'+
    '<label>موضع رأسي<input type="range" data-field="y" min="0" max="100" value="50"></label>'+
