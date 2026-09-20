@@ -494,6 +494,37 @@ function openAgentImportModal(parentBackdrop) {
     }).catch(function (e) { if (host.isConnected) host.textContent = 'تعذر تحميل اقتراحات الكفر: ' + e.message; });
   }
 
+  function watchVideoWorker(slot, item) {
+    var host = slot.querySelector('[data-worker-live]');
+    var stopped = false, timer = null;
+    var observer = new MutationObserver(function () {
+      if (!slot.isConnected || !host.isConnected) { stopped = true; clearTimeout(timer); observer.disconnect(); }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+    async function refresh() {
+      try {
+        var result = await Promise.all([
+          window.SSMPDDb.listVideoJobsForContent(item.id),
+          window.SSMPDDb.listVideoWorkerHeartbeats().catch(function () { return null; })
+        ]);
+        if (stopped || !host.isConnected) return;
+        var job = (result[0] || [])[0], workers = result[1];
+        var active = (workers || []).filter(function (w) { return Date.now() - new Date(w.last_seen_at).getTime() <= 120000; });
+        var text = workers === null ? 'تعذر قراءة اتصال العامل. راجع تحديث قاعدة بيانات العامل.' :
+          !active.length ? 'لا توجد نبضة اتصال حديثة من عامل الماك. شغّل العامل واترك الماك متصلًا بالإنترنت.' :
+          active.some(function (w) { return w.status === 'working'; }) ? 'العامل متصل وينفذ مهمة.' :
+          active.every(function (w) { return w.status === 'error'; }) ? 'العامل متصل وأبلغ عن خطأ. راجع شاشة العامل على الماك.' : 'العامل متصل.';
+        if (job) text += ' حالة المهمة — ' + videoJobStatusLabel(job.status) + '.';
+        if (job && job.status === 'pending') text += ' المهمة محفوظة. تحديث الحالة لا ينشئ طلبًا جديدًا.';
+        if (job && job.status === 'pending' && active.length && Date.now() - new Date(job.created_at).getTime() > 120000) text += ' لو ظل الانتظار، نحتاج شاشة العامل لمعرفة سبب عدم استلام المهمة.';
+        if (job && job.status === 'ready') text += ' اضغط تحديث العرض لفتح الناتج.';
+        host.textContent = text;
+      } catch (e) { if (host.isConnected) host.textContent = 'تعذر تحديث حالة المهمة. جرّب تحديث العرض.'; }
+      finally { if (!stopped && host.isConnected) timer = setTimeout(refresh, 15000); }
+    }
+    refresh();
+  }
+
   function renderVideoJobSection(slot, item) {
     if (!slot || item.content_format !== "video") return;
 
@@ -503,7 +534,7 @@ function openAgentImportModal(parentBackdrop) {
       window.SSMPDDb.listVideoJobsForContent(item.id),
       window.SSMPDDb.listVideoAssetsForContent(item.id),
       window.SSMPDDb.listBrandLogos(),
-      window.SSMPDDb.listVideoWorkerHeartbeats()
+      window.SSMPDDb.listVideoWorkerHeartbeats().catch(function () { return []; })
     ]).then(function (res) {
       var jobs = res[0] || [];
       var assets = res[1] || [];
@@ -535,7 +566,7 @@ function openAgentImportModal(parentBackdrop) {
             '<select id="video-media-mode">' +
               '<option value="uploaded_plus_auto"' + (mediaMode === "uploaded_plus_auto" ? " selected" : "") + '>استخدم المرفوع وكمل الناقص تلقائيًا</option>' +
               '<option value="uploaded_only"' + (mediaMode === "uploaded_only" ? " selected" : "") + '>المواد المرفوعة فقط</option>' +
-              '<option value="auto"' + (mediaMode === "auto" ? " selected" : "") + '>إنتاج تلقائي بالكامل</option>' +
+              '<option value="auto"' + (mediaMode === "auto" ? " selected" : "") + '>إنتاج تلقائي من مكتبة الوسائط</option>' +
             '</select>' +
           '</div>' +
           '<div class="field" style="margin:0;min-width:170px;"><label>موسيقى الفيديو</label>' +
@@ -625,8 +656,11 @@ function openAgentImportModal(parentBackdrop) {
       }
 
       html += '</div>';
+      html += '<div class="section"><p data-worker-live role="status">جاري فحص اتصال عامل الفيديو…</p><button class="btn ghost sm" data-refresh-video>تحديث العرض</button></div>';
       html += '<div id="video-cover-choices"></div>';
       slot.innerHTML = html;
+      slot.querySelector('[data-refresh-video]').onclick = function () { renderVideoJobSection(slot, item); };
+      watchVideoWorker(slot, item);
       if (latest && latest.status === "ready" && latest.cover_settings && latest.cover_settings.enabled) {
         loadCoverChoices(slot.querySelector('#video-cover-choices'), latest, function () { renderVideoJobSection(slot, item); });
       }
@@ -951,6 +985,6 @@ function openAgentImportModal(parentBackdrop) {
     });
   }
 
-  window.SSMPDRenderProduction = { render: render };
+  window.SSMPDRenderProduction = { render: render, renderVideoJobSection: renderVideoJobSection };
 })();
 

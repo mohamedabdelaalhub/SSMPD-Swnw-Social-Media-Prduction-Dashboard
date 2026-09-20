@@ -272,6 +272,16 @@
       return handle(client.from("video_worker_heartbeats").select("*")
         .order("last_seen_at", { ascending: false }));
     },
+    routeContentDesign: function (contentId, target, designerId) {
+      return handle(client.rpc("route_content_design", { p_content_id: contentId, p_target: target, p_designer_id: designerId || null })).catch(function (e) {
+        // Preserve human assignment while the additive migration is being deployed.
+        if (target !== 'human' || ['PGRST202','42883'].indexOf(e.code) === -1) throw e;
+        return handle(client.from('content_items').update({stage:'in_design',assigned_designer:designerId}).eq('id',contentId).eq('stage','initial_approval').select().single());
+      });
+    },
+    submitAiDesign: function (contentId) {
+      return handle(client.rpc("submit_ai_design", { p_content_id: contentId }));
+    },
     createVideoJob: function (contentId) {
       return handle(client.rpc("create_video_job", { p_content_id: contentId }));
     },

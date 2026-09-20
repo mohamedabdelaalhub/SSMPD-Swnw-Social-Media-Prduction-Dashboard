@@ -2,7 +2,7 @@
  'use strict';
  var C=window.SSMPDDesignComposer;
  function mount(slot,item){
-  if(!slot||['published','scheduled','ready_to_publish'].includes(item.stage)||item.brand!=='sono'||item.content_format==='video'||!(window.SSMPDWorkflow.canEditItem(window.SSMPDAuth.currentAdmin,item)||item.assigned_designer===window.SSMPDAuth.currentAdmin.id)) return;
+  if(!slot||['published','scheduled','ready_to_publish'].includes(item.stage)||item.brand!=='sono'||item.content_format==='video'||!(window.SSMPDWorkflow.canEditItem(window.SSMPDAuth.currentAdmin,item)||item.assigned_designer===window.SSMPDAuth.currentAdmin.id||(item.design_execution==='ai'&&['in_design','needs_revision'].includes(item.stage)&&window.SSMPDRoles.hasAnyRole(window.SSMPDAuth.currentAdmin,['approver'])))) return;
   var start=document.createElement('button'); start.className='btn ghost'; start.textContent='إنشاء تصميم'; slot.appendChild(start);
   start.onclick=function(){open(item);};
  }
