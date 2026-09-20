@@ -200,7 +200,22 @@ def discover_media_assets(job: dict[str, Any]) -> list[Path]:
         return []
 
     root = media_root()
-    files = media_files(root)
+    # Only explicitly curated footage for this brand and specialty may be selected.
+    brand = str(job.get("brand") or "")
+    specialty = str(job.get("specialty") or "").strip()
+    if brand not in ("sono", "dr_dina") or not specialty or Path(specialty).name != specialty or specialty in (".", ".."):
+        return []
+    scopes = [root / "B-roll" / brand / specialty, root / "B-roll" / "shared" / specialty]
+    files = []
+    blocked = ("logo", "outro", "intro", "cover", "template", "لوجو", "شعار", "كفر", "اوترو", "تواصل")
+    for scope in scopes:
+        for path in media_files(scope):
+            if path.is_symlink() or scope.resolve() not in path.resolve().parents:
+                continue
+            if any(term in str(path.relative_to(scope)).lower() for term in blocked):
+                continue
+            if path.suffix.lower() in VIDEO_EXTENSIONS:
+                files.append(path)
     if not files:
         return []
 
@@ -713,7 +728,7 @@ def filter_path(path: Path) -> str:
 def render_visual_background(ffmpeg: str, job: dict[str, Any], job_dir: Path, target: float) -> Path | None:
     assets = discover_media_assets(job)
     if not assets:
-        return None
+        raise WorkerError("لا توجد مشاهد فيديو معتمدة لهذا التخصص. ارفع مشاهد للمادة أو أضفها لمكتبة B-roll الخاصة بالصفحة والتخصص. لم يتم توليد فيديو.")
 
     # The first uploaded clip is often a preparation shot. Rotate the available
     # material once so a second, usually more useful treatment shot opens the reel.
@@ -846,6 +861,9 @@ def render(job: dict[str, Any], job_dir: Path) -> tuple[Path, str]:
     max_s = int(job.get("duration_max_seconds") or 0)
     if min_s <= 0 or max_s < min_s:
         raise WorkerError("Invalid video duration in job.")
+
+    if not discover_media_assets(job):
+        raise WorkerError("لا توجد مشاهد فيديو معتمدة لهذا التخصص. ارفع مشاهد للمادة أو أضفها لمكتبة B-roll الخاصة بالصفحة والتخصص. توقف الإنتاج قبل توليد الصوت.")
 
     voice_path, voice = synthesize(script, job_dir, job)
     audio_dur = probe_duration(ffprobe, voice_path)

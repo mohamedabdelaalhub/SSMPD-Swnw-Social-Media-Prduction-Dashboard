@@ -27,3 +27,11 @@ The user supplied a `Brand ending render failed` error showing mismatched SAR `1
 The static compositor now starts scene drawing at y=160, clipped below the logo reserve. Font placements and the fixed PNG remain unchanged. Scene prompts also request a quiet top band without people or important details. Existing images can be recomposed without a new generation request. The native canvas test checks exact top-reserve pixels for all four title placements and extreme crop controls.
 
 The scene now extends to y=960 behind a fade from y=700 to y=905. The fixed overlay becomes opaque around y=908. Bottom-title contrast uses a soft gradient when moved into the image, avoiding a hard white rectangle. Generation prompts request additional lower framing.
+
+## Media isolation repair
+
+The supplied 29.682-second video contains Dina cover/outro assets in a Sono visual track. The recursive media discovery previously included Brand Templates. Automatic selection now reads only videos explicitly curated under `Media Library/B-roll/<brand>/<specialty>` or `B-roll/shared/<specialty>`. Brand is `sono` or `dr_dina`; specialty uses the dashboard's stored code. Template/logo/outro filenames and escaping symlinks are rejected. Uploaded material remains an explicit selection. Empty discovery fails before TTS. This mode assembles local footage; it does not generate AI video scenes.
+
+Covers now use three frames from background.mp4 and the validated job logo. Legacy cover PNGs are no longer overlaid. No fallback to final.mp4 (which contains endings) is allowed. Verified three real FFmpeg renders and logo pixels with a synthetic moving source. Four media/input regression tests pass; SAR ending test passes. This does not verify clinical relevance of footage on the user's Mac or guarantee generated-image composition.
+
+Static scene rendering extends from y=160 to y=1260 (300px beyond prior endpoint), with the existing fade and fixed opaque footer preserved. Top reserve and footer pixel tests pass. The scene service requests portrait 1024x1536 and an empty top20% plus lower extension, replacing the obsolete 1080x715 crop instruction. The Edge Function requires deployment by the user. Existing source images do not gain new photographic content through recomposition.

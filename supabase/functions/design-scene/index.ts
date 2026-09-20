@@ -33,8 +33,8 @@ Deno.serve(async req => {
   jobId=job.id;
   const response=await fetch('https://api.openai.com/v1/images/generations',{
    method:'POST',headers:{Authorization:'Bearer '+key,'Content-Type':'application/json'},
-   body:JSON.stringify({model:'gpt-image-1.5',quality:job.image_quality,size:'1536x1024',n:1,output_format:'png',
-    prompt:'Create only a photorealistic scene for a medical social post. No text, letters, digits, logos, watermarks or contact details. Pale clean background, natural anatomy. Leave the top left corner quiet for an existing logo. Frame the subject safely for a 1080 x 715 crop. Scene brief: '+prompt}),
+   body:JSON.stringify({model:'gpt-image-1.5',quality:job.image_quality,size:'1024x1536',n:1,output_format:'png',
+    prompt:'Create only a photorealistic scene for a medical social post. No text, letters, digits, logos, watermarks or contact details. Pale clean background, natural anatomy. Portrait framing. Reserve the entire upper 20 percent as uncluttered pale background without people, hair or objects. Place every head fully below this band. Extend the scene downward by at least 300 pixels at final 1080-pixel-wide scale, showing additional lower body and background for a fade. Never place a logo yourself. Follow the requested title safe area. Scene brief: '+prompt}),
    signal:AbortSignal.timeout(150000)
   });
   const result=await response.json(); if(!response.ok) throw new Error(result.error?.message||'فشل توليد الصورة');

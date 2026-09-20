@@ -1,6 +1,7 @@
 """Branded portrait cover options generated from the clean visual track."""
 from pathlib import Path
 import subprocess
+from brand_identity import logo_asset
 
 
 def cover_title(title: str, words_per_line: int = 4) -> str:
@@ -34,7 +35,7 @@ def build(job, output, ffmpeg, duration, template_dir=None):
         except (TypeError, ValueError):
             pass
     else:
-        source = output
+        raise RuntimeError("لا يوجد مسار مشاهد للكفر. أعد الإنتاج باستخدام مشاهد معتمدة.")
     font = str(settings.get("font_family") or "BigVestaArabicBeta").strip()
     clean_title = title.replace("\\", " ").replace("{", "").replace("}", " ")
     words = clean_title.split()
@@ -54,56 +55,34 @@ def build(job, output, ffmpeg, duration, template_dir=None):
         encoding="utf-8",
     )
 
-    folder = Path(template_dir) if template_dir else None
-    is_dina = str(job.get("brand") or "") == "dr_dina"
-    template_name = (
-        ("Dina Cover One Line.png" if one_line else "Dina Cover Two Lines.png")
-        if is_dina else
-        ("Swnw Cover One Line.png" if one_line else "Swnw Cover Two Lines.png")
-    )
-    template = folder / template_name if folder else None
-    # Keep compatibility with the prior package until both new templates exist.
-    if not template or not template.is_file():
-        fallback_name = "Dina Front Video Cover Template.png" if is_dina else "Swnw Front Video Cover Template.png"
-        template = folder / fallback_name if folder else None
-    use_template = bool(template and template.is_file())
+    # Use the bound brand logo, never an opaque legacy cover template.
+    logo = Path(str(logo_asset(job, downloaded=True).get("local_path") or ""))
+    if not logo.is_file():
+        raise RuntimeError("Saved brand logo is missing for cover generation.")
 
     result = []
-    for index, fraction in enumerate((0.12, 0.30, 0.48, 0.66, 0.84), 1):
+    for index, fraction in enumerate((0.18, 0.50, 0.80), 1):
         path = output.parent / f"cover-{index}.jpg"
         temp = output.parent / f".cover-{index}.png"
         at = max(0, min(source_duration - 0.1, source_duration * fraction))
         if not path.exists():
-            if use_template:
-                graph = (
-                    "[0:v]thumbnail=12,scale=1080:1920:force_original_aspect_ratio=increase,"
-                    "crop=1080:1920[background];"
-                    "[1:v]scale=1080:1920[template];"
-                    "[background][template]overlay=0:0:format=auto,"
-                    "ass=filename='cover-title.ass'[out]"
-                )
-                command = [
-                    ffmpeg, "-y", "-ss", f"{at:.3f}", "-i", str(source.resolve()),
-                    "-i", str(template.resolve()), "-filter_complex", graph,
-                    "-map", "[out]", "-frames:v", "1", "-c:v", "png", "-threads", "1", str(temp.resolve()),
-                ]
-            else:
-                graph = (
-                    "[0:v]thumbnail=12,scale=1080:1920:force_original_aspect_ratio=increase,"
-                    "crop=1080:1920,"
-                    "drawbox=x=0:y=0:w=1080:h=1920:color=0x071A33@0.24:t=fill,"
-                    "drawbox=x=54:y=1050:w=972:h=560:color=0x102A43@0.93:t=fill,"
-                    "ass=filename='cover-title.ass'[out]"
-                )
-                command = [
-                    ffmpeg, "-y", "-ss", f"{at:.3f}", "-i", str(source.resolve()),
-                    "-filter_complex", graph,
-                    "-map", "[out]", "-frames:v", "1", "-c:v", "png", "-threads", "1", str(temp.resolve()),
-                ]
+            graph = (
+                "[0:v]scale=1080:1920:force_original_aspect_ratio=increase,"
+                "crop=1080:1920,setsar=1,"
+                "drawbox=x=54:y=1120:w=972:h=420:color=white@0.94:t=fill[background];"
+                "[1:v]scale=240:150:force_original_aspect_ratio=decrease,format=rgba[logo];"
+                "[background][logo]overlay=x=54:y=54:format=auto,"
+                "ass=filename='cover-title.ass'[out]"
+            )
+            command = [
+                ffmpeg, "-y", "-ss", f"{at:.3f}", "-i", str(source.resolve()),
+                "-i", str(logo.resolve()), "-filter_complex", graph,
+                "-map", "[out]", "-frames:v", "1", "-c:v", "png", "-threads", "1", str(temp.resolve()),
+            ]
             p = subprocess.run(command, cwd=str(output.parent), capture_output=True, text=True)
             if not p.returncode and temp.exists():
                 converted = subprocess.run(
-                    ["/usr/bin/sips", "-s", "format", "jpeg", str(temp.resolve()), "--out", str(path.resolve())],
+                    [ffmpeg, "-v", "error", "-y", "-i", str(temp.resolve()), "-frames:v", "1", "-q:v", "2", str(path.resolve())],
                     cwd=str(output.parent), capture_output=True, text=True,
                 )
                 temp.unlink(missing_ok=True)
