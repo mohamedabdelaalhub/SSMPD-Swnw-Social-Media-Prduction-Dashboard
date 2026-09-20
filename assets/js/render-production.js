@@ -609,6 +609,12 @@ function openAgentImportModal(parentBackdrop) {
 
       html += coverSettingsHtml(item, brandLogos);
 
+      html += '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:10px 0 6px;">' +
+        '<div style="font-size:12px;">' + (latest ? '<b>الحالة:</b> ' + escapeHtml(videoJobStatusLabel(latest.status)) : '') + '</div>' +
+        '<div style="margin-inline-start:auto;max-width:100%;flex:0 1 360px;display:flex;flex-direction:column;align-items:flex-end;gap:5px;text-align:left;">' +
+        '<button class="btn ghost sm" style="font-size:11px;padding:5px 10px;min-height:30px;" data-refresh-video>تحديث العرض</button>' +
+        '<div data-worker-live role="status" style="font-size:11px;line-height:1.6;color:var(--c-muted);">جاري فحص اتصال عامل الفيديو…</div></div></div>';
+
       if (!latest) {
         html += '<div style="font-size:12px;color:var(--c-muted);margin-bottom:8px;">حوّل المسودة إلى Video Job مستقل ليقرأه عامل الفيديو على الماك لاحقًا.</div>';
         if (missing.length) {
@@ -622,8 +628,7 @@ function openAgentImportModal(parentBackdrop) {
         var fallbackProgress = { pending: 0, preparing: 15, rendering: 55, uploading: 85, ready: 100 };
         var progressValue = latest.progress_percent == null ? (fallbackProgress[latest.status] || 0) : Math.max(0, Math.min(100, Number(latest.progress_percent)));
         var progressLabel = latest.progress_stage || (latest.status === "preparing" ? "تجهيز الملفات" : latest.status === "rendering" ? "إنتاج الفيديو والصوت" : latest.status === "uploading" ? "حفظ الفيديو والأغلفة" : latest.status === "ready" ? "اكتمل" : "في الانتظار");
-        html += '<div style="font-size:12px;margin-bottom:6px;"><b>الحالة:</b> ' + escapeHtml(videoJobStatusLabel(latest.status)) + '</div>' +
-          '<div style="margin:8px 0 10px;"><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:5px;"><span>' + escapeHtml(progressLabel) + '</span><b>' + progressValue + '%</b></div>' +
+        html += '<div style="margin:8px 0 10px;"><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:5px;"><span>' + escapeHtml(progressLabel) + '</span><b>' + progressValue + '%</b></div>' +
           '<div style="height:8px;background:#e7ebf3;border-radius:999px;overflow:hidden;"><div style="width:' + progressValue + '%;height:100%;background:#1746a2;border-radius:999px;transition:width .35s ease;"></div></div></div>' +
           '<div style="font-size:12px;margin-bottom:6px;"><b>القالب:</b> ' + escapeHtml(latest.video_template || "—") +
           ' &nbsp; <b>المدة:</b> ' + escapeHtml((latest.duration_min_seconds == null ? "—" : latest.duration_min_seconds) + "–" +
@@ -656,7 +661,6 @@ function openAgentImportModal(parentBackdrop) {
       }
 
       html += '</div>';
-      html += '<div class="section"><p data-worker-live role="status">جاري فحص اتصال عامل الفيديو…</p><button class="btn ghost sm" data-refresh-video>تحديث العرض</button></div>';
       html += '<div id="video-cover-choices"></div>';
       slot.innerHTML = html;
       slot.querySelector('[data-refresh-video]').onclick = function () { renderVideoJobSection(slot, item); };
