@@ -23,7 +23,7 @@
    '<label>تحريك العنوان<input type="number" data-field="headlineOffset" min="-600" max="600" step="5" value="0"></label>'+
    '<label>تحريك السطر التوضيحي<input type="number" data-field="subtitleOffset" min="-600" max="600" step="5" value="0"></label>'+
    '<label>تحريك زر التفاعل<input type="number" data-field="ctaOffset" min="-900" max="60" step="5" value="0"></label>'+
-   '<p>عند التوليد يتوجّه المشهد حسب وضع العنوان. للصورة المحفوظة يمكنك تعديل القص، وتظهر خلفية بيضاء تحت النص للحفاظ على وضوحه.</p></details>'+
+   '<p>أول ١٦٠ بكسل محجوزة للشعار. عند التوليد يتوجّه المشهد حسب وضع العنوان. للصورة المحفوظة يمكنك تعديل القص، وتظهر خلفية بيضاء تحت النص للحفاظ على وضوحه.</p></details>'+
    '<label>صورة من جهازك<input type="file" accept="image/png,image/jpeg,image/webp" data-upload></label>'+
    '<button class="btn ghost" data-library>صور سونو المحفوظة</button><div data-images style="display:flex;flex-wrap:wrap;gap:6px"></div>'+
    '<details><summary>توليد صورة بالذكاء الاصطناعي</summary><label>وصف المشهد<textarea data-prompt rows="3"></textarea></label>'+

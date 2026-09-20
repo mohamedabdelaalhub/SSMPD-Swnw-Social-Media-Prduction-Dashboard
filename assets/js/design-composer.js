@@ -42,11 +42,11 @@
   function scenePrompt(prompt, data) {
     var instructions = {
       top:'Leave the upper middle area below the logo empty with a pale plain background for a heading. Place the main subject lower in the frame.',
-      bottom:'Place the main subject in the upper image area. Keep the lower edge pale and uncluttered for a heading below the image.',
+      bottom:'Place the main subject in the image area BELOW the reserved top band. Keep the lower edge pale and uncluttered for a heading below the image.',
       right:'Leave the RIGHT half empty with a pale plain background for Arabic text. Place the person and all key details on the LEFT.',
       left:'Leave the LEFT half empty with a pale plain background for Arabic text. Place the person and all key details on the RIGHT.'
     };
-    return String(prompt || '')+'\nComposition: '+(instructions[data.titlePosition]||instructions.bottom)+' No writing or logos.';
+    return String(prompt || '')+'\nComposition: '+(instructions[data.titlePosition]||instructions.bottom)+' Reserve the entire TOP 20 percent of the source image as a pale, plain background with no people, heads, hair, hands, equipment or important details. Keep every person fully below this band, with space above their head. The final 1080x1350 design reserves at least 160 pixels at the top for a fixed logo. Frame a wider shot with additional lower body and background visible; reserve extra space below the subjects for a gradual fade, rather than cutting their torso at the bottom edge. No writing or logos.';
   }
   async function render(canvas, scene, data) {
     await ready();
@@ -58,14 +58,14 @@
     var sceneX = data.titlePosition==='left' ? 550 : 0;
     var sceneWidth = side ? 530 : 1080;
     if(scene) {
-      var height=830,scale=Math.max(sceneWidth/scene.width,height/scene.height)*number(data.zoom,1,1,2);
+      var sceneTop=160,height=960-sceneTop,scale=Math.max(sceneWidth/scene.width,height/scene.height)*number(data.zoom,1,1,2);
       var w=scene.width*scale,h=scene.height*scale;
-      ctx.save();ctx.beginPath();ctx.rect(sceneX,0,sceneWidth,height);ctx.clip();
-      ctx.drawImage(scene,sceneX+(sceneWidth-w)*number(data.x,50,0,100)/100,(height-h)*number(data.y,50,0,100)/100,w,h);ctx.restore();
+      ctx.save();ctx.beginPath();ctx.rect(sceneX,sceneTop,sceneWidth,height);ctx.clip();
+      ctx.drawImage(scene,sceneX+(sceneWidth-w)*number(data.x,50,0,100)/100,sceneTop+(height-h)*number(data.y,50,0,100)/100,w,h);ctx.restore();
     }
-    var fade=ctx.createLinearGradient(0,650,0,830);
+    var fade=ctx.createLinearGradient(0,700,0,905);
     fade.addColorStop(0,'rgba(255,255,255,0)');fade.addColorStop(1,'rgba(255,255,255,1)');
-    ctx.fillStyle=fade;ctx.fillRect(0,650,1080,180);
+    ctx.fillStyle=fade;ctx.fillRect(0,700,1080,260);
     ctx.drawImage(overlay,0,0,1080,1350);
     ctx.direction='rtl';ctx.textAlign='center';ctx.textBaseline='middle';
     var presets={bottom:{x:540,y:883,w:960},top:{x:540,y:320,w:960},right:{x:775,y:390,w:450},left:{x:305,y:390,w:450}};
@@ -99,7 +99,14 @@
     // Opaque quiet panel under text placed over the scene; fixed overlay remains unchanged.
     [title,subtitle].forEach(function(layout,index){
       if(!layout)return;var y=index?subtitleY:titleY;
-      if(y-layout.h/2<830) {
+      if(position==='bottom' && y-layout.h/2<800) {
+        // A moved bottom title needs contrast without a hard rectangular image edge.
+        var quiet=ctx.createLinearGradient(0,y-layout.h/2-100,0,y+layout.h/2+100);
+        quiet.addColorStop(0,'rgba(255,255,255,0)');quiet.addColorStop(.3,'rgba(255,255,255,.98)');
+        quiet.addColorStop(.7,'rgba(255,255,255,.98)');quiet.addColorStop(1,'rgba(255,255,255,0)');
+        ctx.save();ctx.beginPath();ctx.rect(0,160,1080,1000);ctx.clip();
+        ctx.fillStyle=quiet;ctx.fillRect(0,y-layout.h/2-100,1080,layout.h+200);ctx.restore();
+      } else if(position!=='bottom' && y-layout.h/2<905) {
         ctx.fillStyle='#fff';ctx.beginPath();
         ctx.roundRect(p.x-p.w/2-12,y-layout.h/2-10,p.w+24,layout.h+20,18);ctx.fill();
       }

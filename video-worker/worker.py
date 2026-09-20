@@ -807,7 +807,7 @@ def append_brand_ending(ffmpeg: str, job: dict[str, Any], main_video: Path) -> P
             ffmpeg, "-y", "-loop", "1", "-t", f"{contact_seconds:.3f}", "-i", str(slide),
             "-f", "lavfi", "-t", f"{contact_seconds:.3f}",
             "-i", "anullsrc=channel_layout=stereo:sample_rate=48000",
-            "-vf", "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,format=yuv420p",
+            "-vf", "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1,fps=30,format=yuv420p",
             "-map", "0:v:0", "-map", "1:a:0", "-shortest",
             "-c:v", "libx264", "-preset", "medium", "-crf", "20",
             "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", str(contact),
@@ -819,7 +819,14 @@ def append_brand_ending(ffmpeg: str, job: dict[str, Any], main_video: Path) -> P
     p = run([
         ffmpeg, "-y", "-i", str(main_video), "-i", str(contact), "-i", str(outro),
         "-filter_complex",
-        "[0:v][0:a][1:v][1:a][2:v][2:a]concat=n=3:v=1:a=1[v][a]",
+        ";".join(
+            f"[{i}:v]scale=1080:1920:force_original_aspect_ratio=decrease,"
+            f"pad=1080:1920:(ow-iw)/2:(oh-ih)/2,setsar=1,fps=30,"
+            f"format=yuv420p,settb=AVTB,setpts=PTS-STARTPTS[v{i}];"
+            f"[{i}:a]aresample=48000,aformat=sample_fmts=fltp:channel_layouts=stereo,"
+            f"asetpts=PTS-STARTPTS[a{i}]"
+            for i in range(3)
+        ) + ";[v0][a0][v1][a1][v2][a2]concat=n=3:v=1:a=1[v][a]",
         "-map", "[v]", "-map", "[a]",
         "-c:v", "libx264", "-preset", "medium", "-crf", "21", "-pix_fmt", "yuv420p",
         "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", str(ended),

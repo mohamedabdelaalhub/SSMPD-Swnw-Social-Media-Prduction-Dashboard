@@ -19,8 +19,21 @@ vm.runInNewContext(fs.readFileSync(root+'/assets/js/design-composer.js','utf8'),
  const c=canvas();await context.window.SSMPDDesignComposer.render(c,scene,{...base,headline:'آلام الظهر'});
  const overlay=await loadImage(root+'/assets/design-templates/sono-white/overlay.png'),ref=createCanvas(1080,1350);ref.getContext('2d').drawImage(overlay,0,0,1080,1350);
  assert.deepEqual(c.getContext('2d').getImageData(0,1190,1080,160).data,ref.getContext('2d').getImageData(0,1190,1080,160).data);
- for(const titlePosition of ['top','bottom','right','left']) {await context.window.SSMPDDesignComposer.render(canvas(),scene,{...base,headline:'التعب المستمر',subtitle:'اعرف السبب',titlePosition,headlineSize:64,subtitleSize:32});}
+ const topReference=createCanvas(1080,1350),topCtx=topReference.getContext('2d');
+ topCtx.fillStyle='#fff';topCtx.fillRect(0,0,1080,1350);topCtx.drawImage(overlay,0,0,1080,1350);
+ for(const titlePosition of ['top','bottom','right','left']) {
+   const result=canvas();
+   await context.window.SSMPDDesignComposer.render(result,scene,{...base,headline:'التعب المستمر',subtitle:'اعرف السبب',titlePosition,headlineSize:64,subtitleSize:32,zoom:2,x:100,y:0});
+   assert.deepEqual(result.getContext('2d').getImageData(0,0,1080,160).data,topCtx.getImageData(0,0,1080,160).data,'Scene cannot intrude into logo reserve, including extreme crop settings');
+   assert(context.window.SSMPDDesignComposer.scenePrompt('clinic',{titlePosition}).includes('TOP 20 percent'));
+ }
  await context.window.SSMPDDesignComposer.render(canvas(),scene,{...base,headline:'التعب',headlineSize:130,headlineOffset:-120,ctaSize:40,ctaOffset:20});
  await assert.rejects(context.window.SSMPDDesignComposer.render(canvas(),scene,{...base,headline:'التعب',ctaOffset:60,ctaSize:80}),/خارج المساحة|متداخلة/);
+ // The image continues beyond the fade. A dark source must meet the fixed panel without a seam.
+ const dark=createCanvas(1536,1024);dark.getContext('2d').fillStyle='#000';dark.getContext('2d').fillRect(0,0,1536,1024);
+ const faded=canvas();await context.window.SSMPDDesignComposer.render(faded,dark,{headline:'',subtitle:'',cta:''});
+ const pixels=faded.getContext('2d');
+ assert(pixels.getImageData(540,800,1,1).data[0]<250,'Image still extends into the lower fade');
+ assert(pixels.getImageData(540,905,1,1).data[0]>=253,'Fade completes before the opaque lower panel');
  console.log('PASS: 3 Arabic titles, output size, overflow rejection, exact footer pixels. Native canvas only, not browser QA.');
 })().catch(e=>{console.error(e);process.exitCode=1;});
