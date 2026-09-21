@@ -10,7 +10,7 @@ const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 // "Service Account مفيش عنده مساحة تخزين" (403 storageQuotaExceeded) اللي كانت
 // بتحصل مع الرفع المباشر بالـ Service Account. موثّق في CLAUDE.md.
 const DRIVE_BRIDGE_URL =
-  "https://script.google.com/macros/s/AKfycbyTg8uqckj3ttdCS5rV32jzAjpdtTt74XKYaxNZH1tSQ3ESqR63dASUvsjbU0T_BFBl/exec";
+  "https://script.google.com/macros/s/AKfycbzEs73BE101-gIlSx_qwdF625nSalQ2i6mob7mGqH3oN4x40NlZoowjNta3KtKaXYjTYA/exec";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
