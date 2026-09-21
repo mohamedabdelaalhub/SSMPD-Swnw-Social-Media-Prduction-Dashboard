@@ -623,6 +623,10 @@
         handle(client.rpc("contract_entity_financial_rows", { p_entity_id: entityId }))
       ]).then(function (r) { return { entity: r[0], contacts: r[1], contracts: r[2], activities: r[3], finance: r[4] }; });
     },
+    updateContractingEntityContract: function (contractId, entityId, patch) {
+      return handle(client.from("contracting_entity_contracts").update(patch)
+        .eq("id", contractId).eq("entity_id", entityId).select().single());
+    },
     addContractActivity: function (row) { return handle(client.from("contracting_entity_activities").insert(row).select().single()); },
     linkPatientToContract: function (row) { return handle(client.from("contract_patient_links").insert(row).select().single()); },
     uploadContractingEntityContract: function (formData) {
