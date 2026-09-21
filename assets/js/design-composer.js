@@ -63,7 +63,7 @@
       ctx.save();ctx.beginPath();ctx.rect(sceneX,sceneTop,sceneWidth,height);ctx.clip();
       ctx.drawImage(scene,sceneX+(sceneWidth-w)*number(data.x,50,0,100)/100,sceneTop+(height-h)*number(data.y,50,0,100)/100+number(data.imageOffsetY,0,-400,400),w,h);ctx.restore();
     }
-    var fadeStart=number(data.fadeStartY,760,500,1000),fadeEnd=number(data.fadeEndY,905,550,1120);
+    var fadeStart=number(data.fadeStartY,860,500,1000),fadeEnd=number(data.fadeEndY,1005,550,1120);
     if(fadeEnd<fadeStart+50)fadeEnd=Math.min(1120,fadeStart+50);
     var fade=ctx.createLinearGradient(0,fadeStart,0,fadeEnd);
     fade.addColorStop(0,'rgba(255,255,255,0)');fade.addColorStop(1,'rgba(255,255,255,1)');

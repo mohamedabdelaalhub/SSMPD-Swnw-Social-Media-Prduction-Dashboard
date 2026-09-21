@@ -34,8 +34,8 @@
    '<label>تكبير أو تصغير الصورة <input type="number" data-number-for="zoom" min="0.5" max="3" step="0.05" value="1">×<input type="range" data-field="zoom" min="0.5" max="3" step="0.05" value="1"></label><p>اكتب قيمة من 0.5× إلى 3×. التصغير قد يظهر خلفية فارغة حول الصورة.</p>'+
    '<label>موضع أفقي <input type="number" data-number-for="x" min="0" max="100" step="1" value="50"><input type="range" data-field="x" min="0" max="100" value="50"></label>'+
    '<label>تحريك الصورة رأسيًا <input type="number" data-number-for="imageOffsetY" min="-400" max="400" step="5" value="0"> بكسل<input type="range" data-field="imageOffsetY" min="-400" max="400" step="5" value="0"></label><p>السالب لفوق والموجب لتحت، حتى بدون تكبير. لو ظهرت حافة فارغة، قلّل التحريك أو كبّر الصورة.</p>'+
-   '<label>بداية الـFade <input type="number" data-number-for="fadeStartY" min="500" max="1000" step="5" value="760"> بكسل<input type="range" data-field="fadeStartY" min="500" max="1000" step="5" value="760"></label>'+
-   '<label>نهاية الـFade <input type="number" data-number-for="fadeEndY" min="550" max="1120" step="5" value="905"> بكسل<input type="range" data-field="fadeEndY" min="550" max="1120" step="5" value="905"></label><p>حرّك بداية ونهاية التلاشي لتحكم مساحة ظهور الصورة. النهاية تتوقف قبل الفوتر.</p>'+
+   '<label>بداية الـFade <input type="number" data-number-for="fadeStartY" min="500" max="1000" step="5" value="860"> بكسل<input type="range" data-field="fadeStartY" min="500" max="1000" step="5" value="860"></label>'+
+   '<label>نهاية الـFade <input type="number" data-number-for="fadeEndY" min="550" max="1120" step="5" value="1005"> بكسل<input type="range" data-field="fadeEndY" min="550" max="1120" step="5" value="1005"></label><p>حرّك بداية ونهاية التلاشي لتحكم مساحة ظهور الصورة. النهاية تتوقف قبل الفوتر.</p>'+
    '<p role="status" data-status></p><button class="btn" data-download disabled>تنزيل PNG</button> '+
    '<button class="btn ghost" data-save disabled>حفظ نسخة للمراجعة</button><div data-versions></div></div>'+
    '<div style="flex:1 1 350px;min-width:0"><canvas style="width:100%;height:auto;border:1px solid #e2e6ed"></canvas></div></div></div>';
