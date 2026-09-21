@@ -216,9 +216,11 @@
         .order("created_at", { ascending: false }).limit(6));
     },
     createContentItem: function (row) {
+      if (!window.SSMPDContentText.confirmSave(row)) return Promise.reject(new Error("تم إلغاء الحفظ. عدّل النص ثم احفظه."));
       return handle(client.from("content_items").insert(row).select().single());
     },
     updateContentItem: function (id, patch) {
+      if (!window.SSMPDContentText.confirmSave(patch)) return Promise.reject(new Error("تم إلغاء الحفظ. عدّل النص ثم احفظه."));
       return handle(client.from("content_items").update(patch).eq("id", id).select().single());
     },
     // ---------- Content AI + idea bank ----------
@@ -230,6 +232,7 @@
         .eq("status", "saved").order("created_at", { ascending: false }));
     },
     saveContentIdea: function (idea, context) {
+      if (!window.SSMPDContentText.confirmSave({ body: idea.idea, caption_text: idea.caption, script_text: idea.script })) return Promise.reject(new Error("تم إلغاء الحفظ. عدّل النص ثم احفظه."));
       context = context || {};
       return handle(client.rpc("save_content_idea", {
         p_brand: context.brand || "",

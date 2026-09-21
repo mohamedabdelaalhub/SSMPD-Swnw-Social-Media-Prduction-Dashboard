@@ -8,6 +8,19 @@
   var C = window.SSMPDComments;
 
   var META_PLATFORMS = ["facebook", "instagram"];
+  var previewPending = new Set();
+
+  function reviewBeforePublishing(id, label, proceed) {
+    if (previewPending.has(id)) return;
+    previewPending.add(id);
+    window.SSMPDDb.getContentItem(id).then(function (item) {
+      if (!item || item.stage !== "ready_to_publish") throw new Error("المادة لم تعد جاهزة للنشر. حدّث الصفحة.");
+      return window.SSMPDContentText.preview(item, label);
+    }).then(function (accepted) {
+      if (accepted) proceed();
+    }).catch(function (error) { notify(error.message, "error"); })
+      .finally(function () { previewPending.delete(id); });
+  }
 
   // حالة عرض الكالندر (اختياري بجانب القائمة العادية) — نفس نمط شاشة الأرشيف
   var viewState = { mode: "list", calView: "month", cursor: new Date() };
@@ -356,7 +369,8 @@
       '</div>' +
       '<div id="publish-details-' + i.id + '" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--c-border);">' +
       '<div class="meta">بواسطة: ' + escapeHtml(ownerName) + ' · مصمم: ' + escapeHtml(designerName) + '</div>' +
-      (i.body ? '<p style="white-space:pre-wrap;margin:8px 0;">' + escapeHtml(i.body) + '</p>' : '') +
+      '<h4>نص النشر</h4><p style="white-space:pre-wrap;margin:8px 0;">' + escapeHtml(window.SSMPDContentText.publicationText(i)) + '</p>' +
+      (window.SSMPDContentText.repeatedExcerpt(window.SSMPDContentText.publicationText(i)) ? '<p role="alert" style="color:var(--c-negative)">فيه مقطع مكرر في نص النشر. راجع المادة قبل التأكيد.</p>' : '') +
       (i.design_file_url ? '<p><a href="' + i.design_file_url + '" target="_blank" class="btn ghost sm">فتح ملف التصميم المعتمد</a></p>' : '<p style="color:var(--c-muted);font-size:12px;">مفيش ملف تصميم مرفوع</p>') +
       actionsHtml +
       '<div id="comments-slot-' + i.id + '" style="margin-top:10px;"></div>' +
@@ -427,13 +441,14 @@
 
   // جدولة مادة "جاهزة للنشر" لمعاد محدد — بتنقلها لحالة "مجدولة للنشر"، وبتعمل
   // job نشر تلقائي لو من ضمن المنصات المختارة فيسبوك/انستجرام
-  function schedule(id) {
+  function schedule(id, reviewed) {
     var brand = valueOf("pb-brand-" + id);
     var platforms = W.readPlatformCheckboxes("pb-platform-" + id);
     var when = valueOf("pb-when-" + id);
     if (!brand) { notify("اختر المادة دي لصفحة سونو ولا د.دينا الأول", "error"); return; }
     if (!platforms.length) { notify("اختر هتتنشر على أنهي منصة (تقدر تختار أكتر من واحدة)", "error"); return; }
     if (!when) { notify("حدد معاد النشر المجدول", "error"); return; }
+    if (!reviewed) { reviewBeforePublishing(id, "تأكيد الجدولة", function () { schedule(id, true); }); return; }
     var me = window.SSMPDAuth.currentAdmin;
     var whenIso = new Date(when).toISOString();
     window.SSMPDDb.updateContentItem(id, {
@@ -452,7 +467,7 @@
   // نشر فوري — لو من ضمن المنصات فيسبوك/انستجرام، بيعمل job نشر تلقائي فوري
   // (scheduled_at = الآن، الـEdge Function هتاخده في تشغيلة الدقيقة الجاية).
   // لمنصات تانية (تيكتوك/يوتيوب/الموقع) لازم رابط يدوي زي ما كان.
-  function publishNow(id) {
+  function publishNow(id, reviewed) {
     var brand = valueOf("pb-brand-" + id);
     var platforms = W.readPlatformCheckboxes("pb-platform-" + id);
     var url = valueOf("pb-url-" + id);
@@ -462,6 +477,7 @@
     if (!platforms.length) { notify("اختر هتتنشر على أنهي منصة (تقدر تختار أكتر من واحدة)", "error"); return; }
     if (others.length && !url) { notify("حط رابط المنشور للمنصات غير فيسبوك/انستجرام", "error"); return; }
     if (!others.length && !metaSelected) { notify("مفيش منصة مختارة", "error"); return; }
+    if (!reviewed) { reviewBeforePublishing(id, "تأكيد النشر", function () { publishNow(id, true); }); return; }
 
     var me = window.SSMPDAuth.currentAdmin;
     var nowIso = new Date().toISOString();
