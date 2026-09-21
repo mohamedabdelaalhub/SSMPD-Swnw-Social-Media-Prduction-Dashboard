@@ -325,6 +325,16 @@ table.simple tr:hover{background:var(--c-bg);}
 .brand-badge.sono{background:#E7ECFA; color:var(--c-primary);}
 .brand-badge.dr_dina{background:#FFF1E6; color:var(--c-alert);}
 
+/* نوع المادة أعلى كروت إدارة المحتوى وفي جدول الإنتاج */
+.content-format-badge{
+  display:block; width:max-content; font-size:10px; font-weight:800;
+  padding:3px 9px; border-radius:999px; margin:0 0 7px;
+}
+.content-format-badge.video{background:#E8F0FF; color:#164CA8;}
+.content-format-badge.image_post,.content-format-badge.link_post{background:#E7F6F0; color:#147A58;}
+.content-format-badge.unknown{background:#EEF0F4; color:var(--c-muted);}
+.simple .content-format-badge{display:inline-flex; margin:0 7px 0 0; vertical-align:middle;}
+
 /* عنوان قابل للضغط يفتح تفاصيل المادة */
 .link-open{cursor:pointer; color:var(--c-primary); font-weight:700;}
 .link-open:hover{text-decoration:underline;}

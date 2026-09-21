@@ -67,7 +67,7 @@
           html += '<div class="kanban-col"><h4>' + s.label + '<span class="count">' + colItems.length + '</span></h4>';
           colItems.forEach(function (i) {
             var ownerName = (adminsById[i.created_by] || {}).name || "—";
-            var designerName = i.design_execution === "ai" ? "وكيل التصميم بالذكاء الاصطناعي" : i.assigned_designer ? ((adminsById[i.assigned_designer] || {}).name || "—") : "";
+            var designerName = i.assigned_designer ? ((adminsById[i.assigned_designer] || {}).name || "—") : "";
             // وقت دخول المادة للمرحلة الحالية: لو عند المصمم بنستخدم وقت
             // الاستلام الفعلي (design_received_at) لو موجود، وإلا آخر تحديث عام
             var stageTimeIso = (i.stage === "in_design" && i.design_received_at) ? i.design_received_at : i.updated_at;
@@ -75,7 +75,7 @@
             var titleHtml = i.stage === "published"
               ? '<span class="link-open" data-published-open="' + i.id + '">' + escapeHtml(i.title) + '</span>'
               : escapeHtml(i.title);
-            html += '<div class="kanban-card" data-id="' + i.id + '"><div class="title">' + titleHtml + W.brandBadgeHtml(i.brand) + W.specialtyBadgeHtml(i.specialty) + C.commentButtonHtml(i.id, stats) + '</div>' +
+            html += '<div class="kanban-card" data-id="' + i.id + '">' + W.contentFormatBadgeHtml(i) + '<div class="title">' + titleHtml + W.brandBadgeHtml(i.brand) + W.specialtyBadgeHtml(i.specialty) + C.commentButtonHtml(i.id, stats) + '</div>' +
               '<div class="meta">بواسطة: ' + escapeHtml(ownerName) + (designerName ? " · مصمم: " + escapeHtml(designerName) : "") + '</div>' +
               (agoLabel ? '<div class="meta" style="color:var(--c-muted);">في المرحلة دي ' + agoLabel + '</div>' : '') + '</div>';
           });
@@ -132,14 +132,10 @@
     var backdrop = document.createElement("div");
     backdrop.className = "modal-backdrop";
     var actionsHtml = "";
-    var supportsAi = item.content_format === "video" || (item.brand === "sono" && item.content_format === "image_post");
-    var isAi = item.design_execution === "ai";
-    var aiActive = isAi && ["in_design", "needs_revision"].indexOf(item.stage) !== -1;
 
     if (item.stage === "initial_approval") {
-      actionsHtml = '<div class="field"><label>اختر جهة تنفيذ التصميم</label><select id="rv-designer">' +
+      actionsHtml = '<div class="field"><label>اختر المصمم</label><select id="rv-designer">' +
         '<option value="">— اختر —</option>' +
-        (supportsAi ? '<option value="ai">وكيل التصميم بالذكاء الاصطناعي</option>' : '') +
         designers.map(function (d) { return '<option value="' + d.id + '">' + escapeHtml(d.name || d.email) + '</option>'; }).join("") +
         '</select></div>' +
         '<div style="display:flex;gap:8px;"><button class="btn" id="rv-approve">اعتماد أولي — أرسل للتصميم</button>' +
@@ -147,10 +143,6 @@
     } else if (item.stage === "final_approval") {
       actionsHtml = '<div style="display:flex;gap:8px;"><button class="btn" id="rv-approve">اعتماد نهائي — جاهز للنشر</button>' +
         '<button class="btn danger" id="rv-reject">طلب تعديل</button></div>';
-    } else if (aiActive) {
-      actionsHtml = '<p>جهة التنفيذ — وكيل التصميم بالذكاء الاصطناعي</p>' +
-        (item.content_format === 'video' ? '<div id="rv-ai-video"></div>' : '<button class="btn" id="rv-ai-open">فتح استوديو التصميم بالذكاء الاصطناعي</button>') +
-        '<button class="btn ghost" id="rv-ai-submit" style="margin:10px 0;">إرسال النسخة للاعتماد النهائي</button><p id="rv-ai-feedback" role="status"></p>';
     } else {
       actionsHtml = '<p style="color:var(--c-muted);font-size:12px;">لا يوجد إجراء اعتماد على هذه المرحلة حالياً.</p>';
     }
@@ -214,7 +206,7 @@
       var oldDesignerName = (adminsById[item.assigned_designer] || {}).name || "—";
       var newDesignerName = (adminsById[newDesignerId] || {}).name || "—";
       if (!confirm("تأكيد نقل المادة من \"" + oldDesignerName + "\" إلى \"" + newDesignerName + "\"؟")) return;
-      var patch = { assigned_designer: newDesignerId, design_execution: "human" };
+      var patch = { assigned_designer: newDesignerId };
       // لو الشغل لسه في التصميم، صفّر وقت الاستلام عشان المصمم الجديد يشوفها "في انتظار الاستلام"
       if (item.stage === "in_design" || item.stage === "needs_revision") patch.design_received_at = null;
       window.SSMPDDb.updateContentItem(item.id, patch).then(function () {
@@ -223,44 +215,21 @@
         .catch(function (e) { alert("خطأ: " + e.message); });
     };
 
-    var aiOpen = backdrop.querySelector('#rv-ai-open');
-    if (aiOpen) aiOpen.onclick = function () { window.SSMPDDesignStudio.open(item); };
-    if (aiActive && item.content_format === 'video') {
-      window.SSMPDRenderProduction.renderVideoJobSection(backdrop.querySelector('#rv-ai-video'), item);
-    }
-    var aiSubmit = backdrop.querySelector('#rv-ai-submit');
-    if (aiSubmit) aiSubmit.onclick = function () {
-      aiSubmit.disabled = true;
-      window.SSMPDDb.submitAiDesign(item.id).then(function (updated) {
-        window.SSMPDDrive.logDesignUploaded(item.id, updated.title).catch(function () {});
-        backdrop.remove(); render(document.getElementById('view-container'));
-      }).catch(function (e) {
-        aiSubmit.disabled = false;
-        backdrop.querySelector('#rv-ai-feedback').textContent = e.message;
-      });
-    };
     if (approveBtn) approveBtn.onclick = function () {
-      if (approveBtn.disabled) return;
+      var patch = {};
       var wasInitialApproval = item.stage === "initial_approval";
-      var designerId = wasInitialApproval ? document.getElementById("rv-designer").value : '';
-      if (wasInitialApproval && !designerId) { alert("اختر المصمم أو وكيل التصميم"); return; }
-      approveBtn.disabled = true;
-      var sendingToAi = designerId === 'ai';
-      var operation = wasInitialApproval
-        ? window.SSMPDDb.routeContentDesign(item.id, sendingToAi ? 'ai' : 'human', sendingToAi ? null : designerId)
-        : window.SSMPDDb.updateContentItem(item.id, { stage: 'ready_to_publish' });
-      operation.then(function (updated) {
+      if (wasInitialApproval) {
+        var designerId = document.getElementById("rv-designer").value;
+        if (!designerId) { alert("اختر مصمم الأول"); return; }
+        patch = { stage: "in_design", assigned_designer: designerId };
+      } else {
+        patch = { stage: "ready_to_publish" };
+      }
+      window.SSMPDDb.updateContentItem(item.id, patch).then(function (updated) {
         if (wasInitialApproval) window.SSMPDDrive.logDesignSent(item.id, updated.title).catch(function () {});
-        else window.SSMPDDb.logActivity({ content_id: item.id, actor_id: me.id, action: 'اعتماد نهائي', from_stage: item.stage, to_stage: 'ready_to_publish' }).catch(function () {});
-        backdrop.remove(); render(document.getElementById('view-container'));
-        if (sendingToAi) {
-          if (updated.content_format !== 'video') window.SSMPDDesignStudio.open(updated);
-          else openReviewModal(updated.id, items.map(function (row) { return row.id === updated.id ? updated : row; }), admins, designersAll);
-        }
-      }).catch(function (e) {
-        approveBtn.disabled = false;
-        alert(/route_content_design/.test(e.message) ? 'شغّل تحديث قاعدة البيانات الخاص بوكيل التصميم أولاً.' : 'خطأ: ' + e.message);
-      });
+        return window.SSMPDDb.logActivity({ content_id: item.id, actor_id: me.id, action: "اعتماد", from_stage: item.stage, to_stage: patch.stage });
+      }).then(function () { backdrop.remove(); render(document.getElementById("view-container")); })
+        .catch(function (e) { alert("خطأ: " + e.message); });
     };
 
     if (rejectBtn) rejectBtn.onclick = function () {

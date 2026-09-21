@@ -1,1400 +1,1 @@
-/* SSMPD â€” ØªØ¹Ø±ÙŠÙ Ù…Ø±Ø§Ø­Ù„ Ø³ÙŠØ± Ø§Ù„Ø¹Ù…Ù„ (Ù…ØµØ¯Ø± ÙˆØ§Ø­Ø¯ Ù„Ù„Ø­Ù‚ÙŠÙ‚Ø©) */
-(function () {
-  "use strict";
-
-  // Ù¨ Ù…Ø±Ø§Ø­Ù„ Kanban Ø¨Ø§Ù„ØªØ±ØªÙŠØ¨ â€” Ù„Ø§ ØªÙØºÙŠÙÙ‘Ø± Ø§Ù„Ù…ÙØ§ØªÙŠØ­ (stage) Ù„Ø£Ù†Ù‡Ø§ Ù…Ø®Ø²Ù‘Ù†Ø© ÙÙŠ Ø§Ù„Ù‚Ø§Ø¹Ø¯Ø©
-  var STAGES = [
-    { key: "idea_selection",   label: "Ø§Ø®ØªÙŠØ§Ø± Ø§Ù„ÙÙƒØ±Ø©" },
-    { key: "initial_approval", label: "Ø§Ø¹ØªÙ…Ø§Ø¯ Ø£ÙˆÙ„ÙŠ" },
-    { key: "in_design",        label: "Ù‚ÙŠØ¯ Ø§Ù„ØªØµÙ…ÙŠÙ…" },
-    { key: "final_approval",   label: "ÙÙŠ Ø§Ù„Ø§Ø¹ØªÙ…Ø§Ø¯ Ø§Ù„Ù†Ù‡Ø§Ø¦ÙŠ" },
-    { key: "needs_revision",   label: "Ù…Ø·Ù„ÙˆØ¨ ØªØ¹Ø¯ÙŠÙ„" },
-    { key: "ready_to_publish", label: "Ø¬Ø§Ù‡Ø² Ù„Ù„Ù†Ø´Ø±" },
-    { key: "scheduled",        label: "Ù…Ø¬Ø¯ÙˆÙ„Ø© Ù„Ù„Ù†Ø´Ø±" },
-    { key: "published",        label: "ØªÙ… Ø§Ù„Ù†Ø´Ø±" }
-  ];
-
-  // Ø­Ø§Ù„Ø© Ø¹Ø±Ø¶ Ø§Ù„Ù…ØµÙ…Ù… (Ø£ÙŠÙ‚ÙˆÙ†Ø©) â€” Ù…Ø´ØªÙ‚Ø© Ù…Ù† stage + design_received_at + assigned_designer
-  var DESIGN_STATUS = {
-    pending:   { label: "ÙÙŠ Ø§Ù†ØªØ¸Ø§Ø± Ø§Ù„Ø§Ø³ØªÙ„Ø§Ù…",   pillClass: "draft" },
-    received:  { label: "ØªÙ… Ø§Ù„Ø§Ø³ØªÙ„Ø§Ù…",        pillClass: "received" },
-    approval:  { label: "ÙÙŠ Ø§Ù„Ø§Ø¹ØªÙ…Ø§Ø¯",         pillClass: "approval" },
-    revision:  { label: "Ù…Ø·Ù„ÙˆØ¨ Ø§Ù„ØªØ¹Ø¯ÙŠÙ„",       pillClass: "revision" },
-    approved:  { label: "ØªÙ… Ø§Ù„Ø§Ø¹ØªÙ…Ø§Ø¯ Ù„Ù„Ù†Ø´Ø±",    pillClass: "approved" }
-  };
-
-  // ØªÙ…ÙŠÙŠØ² Ø§Ù„Ù…Ø­ØªÙˆÙ‰ Ø¨ÙŠÙ† Ø§Ù„ØµÙØ­ØªÙŠÙ† â€” ÙŠØ­Ø¯Ø¯Ù‡ Ù…Ù†Ø´Ø¦ Ø§Ù„Ù…Ø­ØªÙˆÙ‰ØŒ ÙˆÙŠØ¸Ù‡Ø± Ù„ÙƒÙ„ Ø§Ù„Ø£Ø¯ÙˆØ§Ø± ÙÙŠ ÙƒÙ„ Ø§Ù„Ù…Ø±Ø§Ø­Ù„
-  var BRANDS = {
-    sono:    { label: "Ø³ÙˆÙ†Ùˆ" },
-    dr_dina: { label: "Ø¯.Ø¯ÙŠÙ†Ø§" }
-  };
-
-  // Ø§Ù„ØªØ®ØµØµ/Ø§Ù„Ù‚Ø³Ù… Ø§Ù„Ø·Ø¨ÙŠ Ø§Ù„Ù„ÙŠ Ø§Ù„Ù…Ø§Ø¯Ø© Ø¨ØªØ®Øµ â€” Ø§Ø®ØªÙŠØ§Ø±ÙŠØŒ Ù„Ø£ØºØ±Ø§Ø¶ ØªØµÙ†ÙŠÙ ÙˆØ¥Ø­ØµØ§Ø¦ÙŠØ§Øª
-  // Ø§Ù„Ø¯Ø§Ø´Ø¨ÙˆØ±Ø¯ Ø¨Ø³ (Ù…Ø´ Ø¬Ø²Ø¡ Ù…Ù† Ø³ÙŠØ± Ø¹Ù…Ù„ Ø§Ù„Ø§Ø¹ØªÙ…Ø§Ø¯ ÙˆÙ„Ø§ Ø¨ÙŠØ£Ø«Ø± ÙÙŠÙ‡)
-  // ÙƒÙ„ ØªØ®ØµØµ Ù„Ù‡ Ù„ÙˆÙ† Ù…Ù…ÙŠØ² Ø®Ø§Øµ Ø¨ÙŠÙ‡ (Ø®Ù„ÙÙŠØ© Ø§Ù„Ø¨Ø§Ø¯Ú†) â€” Ø§Ù„Ù†Øµ Ø¯Ø§ÙŠÙ…Ø§Ù‹ Ø£Ø¨ÙŠØ¶ Ø¹Ø´Ø§Ù†
-  // Ø§Ù„ØªØ¨Ø§ÙŠÙ† ÙŠÙØ¶Ù„ ÙˆØ§Ø¶Ø­ Ù…Ù‡Ù…Ø§ ÙƒØ§Ù† Ù„ÙˆÙ† Ø§Ù„ØªØ®ØµØµ (Ø·Ù„Ø¨ Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù… ØµØ±Ø§Ø­Ø©)
-  var SPECIALTIES = {
-    neurology:      { label: "Ø§Ù„Ù…Ø® ÙˆØ§Ù„Ø£Ø¹ØµØ§Ø¨",        color: "#6A4FB6" },
-    internal:       { label: "Ø§Ù„Ø¨Ø§Ø·Ù†Ø©",              color: "#0F369D" },
-    orthopedics:    { label: "Ø§Ù„Ø¹Ø¸Ø§Ù…",               color: "#8A6D3B" },
-    surgery:        { label: "Ø§Ù„Ø¬Ø±Ø§Ø­Ø©",               color: "#D0402A" },
-    dermatology:    { label: "Ø§Ù„Ø¬Ù„Ø¯ÙŠØ©",               color: "#C2679A" },
-    ent:            { label: "Ø§Ù„Ø£Ù†Ù ÙˆØ§Ù„Ø£Ø°Ù†",           color: "#2E8B8B" },
-    obgyn:          { label: "Ø§Ù„Ù†Ø³Ø§Ø¡ ÙˆØ§Ù„ØªÙˆÙ„ÙŠØ¯",        color: "#E0559C" },
-    psychiatry:     { label: "Ø§Ù„Ù†ÙØ³ÙŠØ© ÙˆØ§Ù„Ø¥Ø¯Ù…Ø§Ù†",       color: "#5C5C8A" },
-    pediatrics:     { label: "Ø§Ù„Ø£Ø·ÙØ§Ù„",               color: "#3AA6D9" },
-    physio_nutrition: { label: "Ø§Ù„Ø¹Ù„Ø§Ø¬ Ø§Ù„Ø·Ø¨ÙŠØ¹ÙŠ ÙˆØ§Ù„ØªØºØ°ÙŠØ©", color: "#2F7D5C" },
-    oncology:       { label: "Ø§Ù„Ø£ÙˆØ±Ø§Ù…",               color: "#7A2E8A" },
-    cardiology:     { label: "Ø§Ù„Ù‚Ù„Ø¨",                 color: "#C0293A" },
-    vascular:       { label: "Ø§Ù„Ø£ÙˆØ¹ÙŠØ© Ø§Ù„Ø¯Ù…ÙˆÙŠØ©",        color: "#B23A5E" },
-    dental:         { label: "Ø§Ù„Ø£Ø³Ù†Ø§Ù†",               color: "#3E8FB0" },
-    cosmetic_laser: { label: "Ø§Ù„ØªØ¬Ù…ÙŠÙ„ ÙˆØ§Ù„Ù„ÙŠØ²Ø±",        color: "#B0779A" },
-    emergency:      { label: "Ø§Ù„Ø·ÙˆØ§Ø±Ø¦",               color: "#F15A22" },
-    radiology:      { label: "Ø£Ø´Ø¹Ø©",                  color: "#546E7A" },
-    lab:            { label: "ØªØ­Ø§Ù„ÙŠÙ„",                color: "#4C6B3A" },
-    nursing_services: { label: "Ø®Ø¯Ù…Ø§Øª Ø§Ù„ØªÙ…Ø±ÙŠØ¶",        color: "#1F8A70" },
-    internal_services: { label: "Ø®Ø¯Ù…Ø§Øª Ø¯Ø§Ø®Ù„ Ø§Ù„Ù…Ø±ÙƒØ²",   color: "#4A5568" },
-    speech_therapy: { label: "Ø¹Ù„Ø§Ø¬ Ø§Ù„Ù†Ø·Ù‚",             color: "#7A8B4A" }
-  };
-
-  // Ù…Ù†ØµØ© Ø§Ù„Ù†Ø´Ø± â€” ØªÙØ®ØªØ§Ø± Ø¹Ù†Ø¯ Ø§Ù„Ù†Ø´Ø± (Ø²ÙŠ Ù…Ø§ ÙŠÙØ®ØªØ§Ø± Ø§Ù„Ø¨Ø±Ø§Ù†Ø¯ ØªØ§Ù†ÙŠ ÙÙŠ Ù†ÙØ³ Ø§Ù„Ù„Ø­Ø¸Ø©)
-  var PLATFORMS = {
-    facebook:  { label: "ÙÙŠØ³Ø¨ÙˆÙƒ" },
-    instagram: { label: "Ø§Ù†Ø³ØªØ¬Ø±Ø§Ù…" },
-    tiktok:    { label: "ØªÙŠÙƒØªÙˆÙƒ" },
-    youtube:   { label: "Ù‚Ù†Ø§Ø© ÙŠÙˆØªÙŠÙˆØ¨" },
-    website:   { label: "Ø§Ù„Ù…ÙˆÙ‚Ø¹ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ" }
-  };
-
-  function stageLabel(key) {
-    var s = STAGES.filter(function (x) { return x.key === key; })[0];
-    return s ? s.label : key;
-  }
-
-  function stageIndex(key) {
-    for (var i = 0; i < STAGES.length; i++) if (STAGES[i].key === key) return i;
-    return -1;
-  }
-
-  // ÙŠØ­Ø¯Ø¯ Ø­Ø§Ù„Ø© Ø§Ù„Ø£ÙŠÙ‚ÙˆÙ†Ø© ÙÙŠ Ø´Ø§Ø´Ø© Ø§Ù„Ù…ØµÙ…Ù… Ø¨Ù†Ø§Ø¡Ù‹ Ø¹Ù„Ù‰ stage + Ù‡Ù„ Ø§Ù„Ù…ØµÙ…Ù… Ø¯ÙˆØ³ "Ø§Ø³ØªÙ„Ø§Ù…" ÙˆÙ„Ø§ Ù„Ø³Ù‡
-  function designStatusFor(item) {
-    switch (item.stage) {
-      case "in_design": return item.design_received_at ? "received" : "pending";
-      case "final_approval": return "approval";
-      case "needs_revision": return "revision";
-      case "ready_to_publish":
-      case "published": return "approved";
-      default: return "pending";
-    }
-  }
-
-  // Ø¨Ø§Ø¯Ú† ØµØºÙŠØ± ÙŠØ¸Ù‡Ø± Ø¬Ù†Ø¨ Ø§Ù„Ø¹Ù†ÙˆØ§Ù† ÙÙŠ ÙƒÙ„ Ø§Ù„Ø´Ø§Ø´Ø§Øª â€” ÙØ§Ø¶ÙŠ Ù„Ùˆ Ø§Ù„Ù…Ø§Ø¯Ø© Ù„Ø³Ù‡ Ø¨Ù„Ø§ Ø¨Ø±Ø§Ù†Ø¯ Ù…Ø­Ø¯Ø¯
-  function brandBadgeHtml(brand) {
-    if (!brand || !BRANDS[brand]) return "";
-    return '<span class="brand-badge ' + brand + '">' + BRANDS[brand].label + "</span>";
-  }
-
-  // Ø¯Ø±ÙˆØ¨ Ø¯Ø§ÙˆÙ† Ø§Ø®ØªÙŠØ§Ø± Ø§Ù„Ø¨Ø±Ø§Ù†Ø¯ â€” Ø¨ÙŠÙØ³ØªØ®Ø¯Ù… Ø¹Ù†Ø¯ Ø¥Ù†Ø´Ø§Ø¡ Ø§Ù„Ù…Ø­ØªÙˆÙ‰ ÙˆØ¹Ù†Ø¯ Ø¥Ø¹Ø§Ø¯Ø© Ø§Ù„Ø§Ø®ØªÙŠØ§Ø± ÙˆÙ‚Øª Ø§Ù„Ù†Ø´Ø±
-  function brandSelectHtml(id, selected) {
-    var opts = Object.keys(BRANDS).map(function (k) {
-      return '<option value="' + k + '"' + (selected === k ? " selected" : "") + '>' + BRANDS[k].label + "</option>";
-    }).join("");
-    return '<select id="' + id + '"><option value="">â€” Ø§Ø®ØªØ± â€”</option>' + opts + "</select>";
-  }
-
-  // Ø¨Ø§Ø¯Ú† ØµØºÙŠØ± Ù„Ù„ØªØ®ØµØµ â€” ÙØ§Ø¶ÙŠ Ù„Ùˆ Ù…ÙÙŠØ´ ØªØ®ØµØµ Ù…Ø­Ø¯Ø¯
-  function specialtyBadgeHtml(specialty) {
-    if (!specialty || !SPECIALTIES[specialty]) return "";
-    var color = SPECIALTIES[specialty].color || "#0F369D";
-    return '<span class="brand-badge" style="background:' + color + ';color:#fff;">' + SPECIALTIES[specialty].label + "</span>";
-  }
-
-  // Ø¯Ø±ÙˆØ¨ Ø¯Ø§ÙˆÙ† Ø§Ø®ØªÙŠØ§Ø± Ø§Ù„ØªØ®ØµØµ â€” Ø§Ø®ØªÙŠØ§Ø±ÙŠ (ÙÙŠÙ‡ "Ø¨Ø¯ÙˆÙ† ØªØ®ØµØµ")
-  function specialtySelectHtml(id, selected) {
-    var opts = Object.keys(SPECIALTIES).map(function (k) {
-      return '<option value="' + k + '"' + (selected === k ? " selected" : "") + '>' + SPECIALTIES[k].label + "</option>";
-    }).join("");
-    return '<select id="' + id + '"><option value="">â€” Ø¨Ø¯ÙˆÙ† ØªØ®ØµØµ â€”</option>' + opts + "</select>";
-  }
-
-  // Ø¯Ø±ÙˆØ¨ Ø¯Ø§ÙˆÙ† Ø§Ø®ØªÙŠØ§Ø± Ù…Ù†ØµØ© Ø§Ù„Ù†Ø´Ø± (Ø§Ø®ØªÙŠØ§Ø± ÙˆØ§Ø­Ø¯ â€” Ù‚Ø¯ÙŠÙ…ØŒ ÙØ§Ø¶Ù„ Ù„Ù„ØªÙˆØ§ÙÙ‚)
-  function platformSelectHtml(id, selected) {
-    var opts = Object.keys(PLATFORMS).map(function (k) {
-      return '<option value="' + k + '"' + (selected === k ? " selected" : "") + '>' + PLATFORMS[k].label + "</option>";
-    }).join("");
-    return '<select id="' + id + '"><option value="">â€” Ø§Ø®ØªØ± â€”</option>' + opts + "</select>";
-  }
-
-  // ØªØ´ÙŠÙƒ Ø¨ÙˆÙƒØ³Ø§Øª Ø§Ø®ØªÙŠØ§Ø± Ø£ÙƒØªØ± Ù…Ù† Ù…Ù†ØµØ© Ù†Ø´Ø± Ù…Ø±Ø© ÙˆØ§Ø­Ø¯Ø© â€” Ø¨Ø¯ÙŠÙ„ Ø¬Ø¯ÙŠØ¯ Ù„Ù€platformSelectHtml
-  // selected: Ù…ØµÙÙˆÙØ© Ù‚ÙŠÙ… (Ù…Ø«Ø§Ù„: ["facebook","instagram"])
-  function platformCheckboxesHtml(idPrefix, selected) {
-    var sel = Array.isArray(selected) ? selected : (selected ? [selected] : []);
-    return Object.keys(PLATFORMS).map(function (k) {
-      var checked = sel.indexOf(k) !== -1 ? " checked" : "";
-      return '<label style="display:inline-flex;align-items:center;gap:4px;margin-inline-end:10px;font-weight:400;">' +
-        '<input type="checkbox" class="platform-cb" id="' + idPrefix + '-' + k + '" value="' + k + '"' + checked + '> ' +
-        PLATFORMS[k].label + '</label>';
-    }).join("");
-  }
-
-  // Ø¨ÙŠØ±Ø¬Ø¹ Ù…ØµÙÙˆÙØ© Ø§Ù„Ù…Ù†ØµØ§Øª Ø§Ù„Ù…Ø®ØªØ§Ø±Ø© Ù…Ù† ØªØ´ÙŠÙƒ Ø¨ÙˆÙƒØ³Ø§Øª platformCheckboxesHtml
-  function readPlatformCheckboxes(idPrefix) {
-    var out = [];
-    Object.keys(PLATFORMS).forEach(function (k) {
-      var el = document.getElementById(idPrefix + "-" + k);
-      if (el && el.checked) out.push(k);
-    });
-    return out;
-  }
-
-  // ØªØ³Ù…ÙŠØ© Ø¹Ø±Ø¶ Ù„Ù…ØµÙÙˆÙØ©/Ù‚ÙŠÙ…Ø© Ù…Ù†ØµØ§Øª â€” ØªØ³ØªØ®Ø¯Ù… ÙÙŠ Ø¹Ø±Ø¶ Ø§Ù„Ø£Ø±Ø´ÙŠÙ Ø¨Ø¯Ù„ W.PLATFORMS[x] Ø§Ù„Ù…Ø¨Ø§Ø´Ø±Ø©
-  function platformsLabel(platforms) {
-    var arr = Array.isArray(platforms) ? platforms : (platforms ? [platforms] : []);
-    if (!arr.length) return "â€”";
-    return arr.map(function (k) { return PLATFORMS[k] ? PLATFORMS[k].label : k; }).join("ØŒ ");
-  }
-
-  function escapeHtml(s) {
-    return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  }
-  function escapeAttr(s) {
-    return escapeHtml(s).replace(/"/g, "&quot;");
-  }
-
-  // Ù…ÙŠÙ† ÙŠÙ‚Ø¯Ø± ÙŠØ¹Ø¯Ù‘Ù„ Ø§Ù„Ù…Ø§Ø¯Ø©: Ø§Ù„Ø³ÙˆØ¨Ø± Ø£Ø¯Ù…Ù† ÙˆØ§Ù„Ù…Ø¯ÙŠØ± Ø§Ù„Ø¹Ø§Ù… Ø¯Ø§ÙŠÙ…Ø§Ù‹ØŒ Ø£Ùˆ Ù…Ù†Ø´Ø¦ Ø§Ù„Ù…Ø§Ø¯Ø© Ù†ÙØ³Ù‡
-  function canEditItem(me, item) {
-    if (!me || !item) return false;
-    if (window.SSMPDRoles.hasAnyRole(me, ["super_admin", "general_manager"])) return true;
-    return item.created_by === me.id;
-  }
-
-  // Ø§Ù„Ø­Ø°Ù Ù…Ù‚ØµÙˆØ± Ø¹Ù„Ù‰ Ø§Ù„Ø³ÙˆØ¨Ø± Ø£Ø¯Ù…Ù† ÙˆØ§Ù„Ù…Ø¯ÙŠØ± Ø§Ù„Ø¹Ø§Ù… (Ø²ÙŠ Ù…Ø§ Ù‡Ùˆ Ù…Ø­Ø¯Ø¯ ÙÙŠ ØµÙ„Ø§Ø­ÙŠØ§Øª Ø§Ù„Ù‚Ø§Ø¹Ø¯Ø© RLS)
-  function canDeleteItem(me) {
-    return !!(me && window.SSMPDRoles.hasAnyRole(me, ["super_admin", "general_manager"]));
-  }
-
-  // Ø²Ø±Ø§ÙŠØ± ØªØ¹Ø¯ÙŠÙ„/Ø­Ø°Ù â€” Ø¨ØªØ¸Ù‡Ø± Ø­Ø³Ø¨ ØµÙ„Ø§Ø­ÙŠØ© Ø§Ù„Ø´Ø®Øµ Ø§Ù„Ø­Ø§Ù„ÙŠØŒ ØªÙØ³ØªØ®Ø¯Ù… ÙÙŠ ÙƒÙ„ Ø´Ø§Ø´Ø§Øª Ø¹Ø±Ø¶ Ø§Ù„Ù…Ø§Ø¯Ø©
-  function itemActionsHtml(item, me) {
-    var html = "";
-    if (canEditItem(me, item)) html += '<button class="btn ghost sm" data-edit-item="' + item.id + '">ØªØ¹Ø¯ÙŠÙ„</button> ';
-    if (canDeleteItem(me)) html += '<button class="btn danger sm" data-delete-item="' + item.id + '">Ø­Ø°Ù</button>';
-    return html;
-  }
-
-  // Ù…ÙˆØ¯Ø§Ù„ ØªØ¹Ø¯ÙŠÙ„ Ø¹Ù†ÙˆØ§Ù†/Ù†Øµ/ØµÙØ­Ø© Ø§Ù„Ù…Ø§Ø¯Ø© â€” Ø¨ÙŠØªÙØªØ­ ÙÙˆÙ‚ Ø£ÙŠ Ù…ÙˆØ¯Ø§Ù„ ØªØ§Ù†ÙŠ Ù…ÙØªÙˆØ­
-  function openEditContentModal(item, onSaved) {
-    var backdrop = document.createElement("div");
-    backdrop.className = "modal-backdrop";
-    backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>ØªØ¹Ø¯ÙŠÙ„ Ø§Ù„Ù…Ø§Ø¯Ø©</h3>' +
-      '<button class="modal-close">Ã—</button></div>' +
-      '<div class="field"><label>Ø§Ù„Ø¹Ù†ÙˆØ§Ù†</label><input id="ed-title" value="' + escapeAttr(item.title) + '"></div>' +
-      '<div class="field"><label>Ø§Ù„Ù…Ø§Ø¯Ø© Ø¯ÙŠ Ù„ØµÙØ­Ø©</label>' + brandSelectHtml("ed-brand", item.brand || "") + '</div>' +
-      '<div class="field"><label>Ø§Ù„ØªØ®ØµØµ</label>' + specialtySelectHtml("ed-specialty", item.specialty || "") + '</div>' +
-      '<div class="field"><label>Ù†Øµ Ø§Ù„Ù…Ø­ØªÙˆÙ‰</label><textarea id="ed-body">' + escapeHtml(item.body || "") + '</textarea></div>' +
-      '<details style="margin-top:12px;"><summary style="cursor:pointer;font-weight:700;">Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ù…Ø­ØªÙˆÙ‰ / Ø§Ù„ÙÙŠØ¯ÙŠÙˆ</summary><div style="margin-top:10px;">' +
-      '<div class="field"><label>Ø§Ù„Ù‡Ø¯Ù Ø§Ù„Ø¥Ø¹Ù„Ø§Ù†ÙŠ</label>' + ciObjectiveSelectHtml("ed-objective", item.advertising_objective || "") + '</div>' +
-      '<div class="field"><label>Ø´ÙƒÙ„ Ø§Ù„Ù…Ø­ØªÙˆÙ‰</label>' + ciFormatSelectHtml("ed-format", item.content_format || "") + '</div>' +
-      '<div class="field"><label>Ø§Ù„Ù…ÙˆØ¶ÙˆØ¹ / Ø§Ù„Ø®Ø¯Ù…Ø©</label><input id="ed-topic" value="' + escapeAttr(item.topic_service || "") + '"></div>' +
-      '<div class="field"><label>Hook</label><textarea id="ed-hook">' + escapeHtml(item.hook_text || "") + '</textarea></div>' +
-      '<div class="field"><label>Angle</label><input id="ed-angle" value="' + escapeAttr(item.content_angle || "") + '"></div>' +
-      '<div class="field"><label>Ø³ÙƒØ±ÙŠØ¨Øª / Voice-over</label><textarea id="ed-script">' + escapeHtml(item.script_text || "") + '</textarea></div>' +
-      '<div class="field"><label>ÙƒØ§Ø¨Ø´Ù† Ø§Ù„Ù†Ø´Ø±</label><textarea id="ed-caption">' + escapeHtml(item.caption_text || "") + '</textarea></div>' +
-      '<div class="field"><label>Ù†ÙˆØ¹ CTA</label><input id="ed-cta-type" value="' + escapeAttr(item.cta_type || "") + '"></div>' +
-      '<div class="field"><label>Ù†Øµ CTA</label><input id="ed-cta-text" value="' + escapeAttr(item.cta_text || "") + '"></div>' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
-      '<div class="field"><label>Ø£Ù‚Ù„ Ù…Ø¯Ø© (Ø«)</label><input id="ed-duration-min" type="number" min="0" step="1" value="' + escapeAttr(item.target_duration_min_seconds == null ? "" : item.target_duration_min_seconds) + '"></div>' +
-      '<div class="field"><label>Ø£Ù‚ØµÙ‰ Ù…Ø¯Ø© (Ø«)</label><input id="ed-duration-max" type="number" min="0" step="1" value="' + escapeAttr(item.target_duration_max_seconds == null ? "" : item.target_duration_max_seconds) + '"></div>' +
-      '</div>' +
-      '<div class="field"><label>Video Template</label><input id="ed-video-template" value="' + escapeAttr(item.video_template || "") + '"></div>' +
-      '<div class="field"><label>Ø³Ø¨Ø¨ Ø§Ù„ÙØ±Ø¶ÙŠØ© / Evidence note</label><textarea id="ed-hypothesis">' + escapeHtml(item.hypothesis_reason || "") + '</textarea></div>' +
-      '</div></details>' +
-      '<div style="text-align:left;margin-top:10px;"><button class="btn" id="ed-save">Ø­ÙØ¸ Ø§Ù„ØªØ¹Ø¯ÙŠÙ„Ø§Øª</button></div></div>';
-    document.body.appendChild(backdrop);
-    backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
-    backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
-
-    document.getElementById("ed-save").onclick = function () {
-      var title = document.getElementById("ed-title").value.trim();
-      var body = document.getElementById("ed-body").value.trim();
-      var brand = document.getElementById("ed-brand").value;
-      var specialty = document.getElementById("ed-specialty").value;
-      var minEl = document.getElementById("ed-duration-min");
-      var maxEl = document.getElementById("ed-duration-max");
-      var durationMin = minEl && minEl.value !== "" ? parseInt(minEl.value, 10) : null;
-      var durationMax = maxEl && maxEl.value !== "" ? parseInt(maxEl.value, 10) : null;
-      if (durationMin != null && durationMax != null && durationMax < durationMin) {
-        alert("Ø£Ù‚ØµÙ‰ Ù…Ø¯Ø© Ù„Ø§Ø²Ù… ØªÙƒÙˆÙ† Ø£ÙƒØ¨Ø± Ù…Ù† Ø£Ùˆ ØªØ³Ø§ÙˆÙŠ Ø£Ù‚Ù„ Ù…Ø¯Ø©");
-        return;
-      }
-      if (!title) { alert("Ø§ÙƒØªØ¨ Ø¹Ù†ÙˆØ§Ù†"); return; }
-      if (!brand) { alert("Ø§Ø®ØªØ± Ø§Ù„Ù…Ø§Ø¯Ø© Ø¯ÙŠ Ù„ØµÙØ­Ø© Ø³ÙˆÙ†Ùˆ ÙˆÙ„Ø§ Ø¯.Ø¯ÙŠÙ†Ø§"); return; }
-      window.SSMPDDb.updateContentItem(item.id, {
-        title: title,
-        body: body,
-        brand: brand,
-        specialty: specialty || null,
-        advertising_objective: document.getElementById("ed-objective").value || null,
-        content_format: document.getElementById("ed-format").value || null,
-        topic_service: document.getElementById("ed-topic").value.trim() || null,
-        hook_text: document.getElementById("ed-hook").value.trim() || null,
-        content_angle: document.getElementById("ed-angle").value.trim() || null,
-        script_text: document.getElementById("ed-script").value.trim() || null,
-        caption_text: document.getElementById("ed-caption").value.trim() || null,
-        cta_type: document.getElementById("ed-cta-type").value.trim() || null,
-        cta_text: document.getElementById("ed-cta-text").value.trim() || null,
-        target_duration_min_seconds: isNaN(durationMin) ? null : durationMin,
-        target_duration_max_seconds: isNaN(durationMax) ? null : durationMax,
-        video_template: document.getElementById("ed-video-template").value.trim() || null,
-        hypothesis_reason: document.getElementById("ed-hypothesis").value.trim() || null
-      })
-        .then(function (updated) {
-          backdrop.remove();
-          if (onSaved) onSaved(updated);
-        }).catch(function (e) { alert("Ø®Ø·Ø£: " + e.message); });
-    };
-  }
-
-  // Ø­Ø°Ù Ù†Ù‡Ø§Ø¦ÙŠ Ø¨Ø¹Ø¯ ØªØ£ÙƒÙŠØ¯ â€” Ø§Ù„Ø¥Ø¬Ø±Ø§Ø¡ Ø¯Ù‡ Ù„Ø§ ÙŠÙ…ÙƒÙ† Ø§Ù„ØªØ±Ø§Ø¬Ø¹ Ø¹Ù†Ù‡
-  function deleteContentItemWithConfirm(item, onDeleted) {
-    if (!confirm('Ù…ØªØ£ÙƒØ¯ Ø¥Ù†Ùƒ Ø¹Ø§ÙŠØ² ØªØ­Ø°Ù "' + item.title + '"ØŸ Ø§Ù„Ø¥Ø¬Ø±Ø§Ø¡ Ø¯Ù‡ Ù†Ù‡Ø§Ø¦ÙŠ ÙˆÙ…Ø´ Ù‡ÙŠØªØ±Ø¬Ø¹.')) return;
-    window.SSMPDDb.deleteContentItem(item.id).then(function () {
-      if (onDeleted) onDeleted();
-    }).catch(function (e) { alert("Ø®Ø·Ø£: " + e.message); });
-  }
-
-  // Ø±Ø¨Ø· Ø²Ø±Ø§ÙŠØ± ØªØ¹Ø¯ÙŠÙ„/Ø­Ø°Ù Ø¯Ø§Ø®Ù„ Ø£ÙŠ Ù…ÙˆØ¯Ø§Ù„ â€” Ø§Ø³ØªØ¯Ø¹ÙŠÙ‡Ø§ Ø¨Ø¹Ø¯ Ø¥Ø¶Ø§ÙØ© Ø§Ù„Ù…ÙˆØ¯Ø§Ù„ Ù„Ù„ØµÙØ­Ø©
-  function wireItemActions(backdrop, item, onChanged) {
-    var editBtn = backdrop.querySelector("[data-edit-item]");
-    if (editBtn) editBtn.onclick = function () {
-      openEditContentModal(item, function (updated) {
-        backdrop.remove();
-        if (onChanged) onChanged(updated);
-      });
-    };
-    var delBtn = backdrop.querySelector("[data-delete-item]");
-    if (delBtn) delBtn.onclick = function () {
-      deleteContentItemWithConfirm(item, function () {
-        backdrop.remove();
-        if (onChanged) onChanged(null);
-      });
-    };
-  }
-
-  // ---------- ÙØªØ­ Ø§Ù„Ù…Ù†Ø´ÙˆØ± Ø§Ù„Ù…Ù†Ø´ÙˆØ± Ø¹Ù„Ù‰ Ø§Ù„Ù…Ù†ØµØ© Ø§Ù„Ù…Ù†Ø§Ø³Ø¨Ø© ----------
-  // Ø¨Ø¹Ø¯ Ø§Ù„Ù†Ø´Ø± Ø§Ù„ØªÙ„Ù‚Ø§Ø¦ÙŠ Ø¨Ù†Ø¬Ù…Ø¹ Ø£Ø­Ø¯Ø« Ø±ÙˆØ§Ø¨Ø· Facebook/Instagram Ù…Ù† meta_publish_jobs.
-  // Ù„Ùˆ Ø§Ù„Ù…Ù†ØµØªÙŠÙ† Ù…ÙˆØ¬ÙˆØ¯ÙŠÙ† Ø¨Ù†Ø¹Ø±Ø¶ Ø§Ø®ØªÙŠØ§Ø±ØŒ ÙˆÙ„Ùˆ Ù…ÙÙŠØ´ Ø±ÙˆØ§Ø¨Ø· Meta Ø¨Ù†Ø±Ø¬Ø¹ Ù„Ù€published_url Ø§Ù„Ù‚Ø¯ÙŠÙ….
-  function openPublishedPostOptions(item, onDetails) {
-    if (!item || !item.id) return;
-    window.SSMPDDb.listMetaPublishJobsForContent([item.id]).then(function (jobs) {
-      var fb = null, ig = null;
-      (jobs || []).forEach(function (j) {
-        if (!fb && j.facebook_permalink) fb = j.facebook_permalink;
-        if (!ig && j.instagram_permalink) ig = j.instagram_permalink;
-      });
-
-      var backdrop = document.createElement("div");
-      backdrop.className = "modal-backdrop";
-
-      var links = "";
-      if (fb) {
-        links += '<a class="btn" href="' + escapeAttr(fb) + '" target="_blank" rel="noopener noreferrer">ÙØªØ­ Ø¹Ù„Ù‰ Facebook â†—</a>';
-      }
-      if (ig) {
-        links += '<a class="btn" href="' + escapeAttr(ig) + '" target="_blank" rel="noopener noreferrer">ÙØªØ­ Ø¹Ù„Ù‰ Instagram â†—</a>';
-      }
-      if (!fb && !ig && item.published_url) {
-        links += '<a class="btn" href="' + escapeAttr(item.published_url) + '" target="_blank" rel="noopener noreferrer">ÙØªØ­ Ø±Ø§Ø¨Ø· Ø§Ù„Ù…Ù†Ø´ÙˆØ± â†—</a>';
-      }
-      if (!links) {
-        links = '<div style="color:var(--c-muted);font-size:12px;">Ù…ÙÙŠØ´ Ø±Ø§Ø¨Ø· Ù…Ù†Ø´ÙˆØ± Ù…Ø³Ø¬Ù„ Ù„Ù„Ù…Ø§Ø¯Ø© Ø¯ÙŠ Ù„Ø³Ù‡.</div>';
-      }
-
-      backdrop.innerHTML = '<div class="modal" style="max-width:460px;">' +
-        '<div class="modal-head"><h3>ÙØªØ­ Ø§Ù„Ù…Ù†Ø´ÙˆØ±</h3><button class="modal-close">Ã—</button></div>' +
-        '<p style="margin-top:0;font-weight:700;">' + escapeHtml(item.title || "") + '</p>' +
-        '<div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0;">' + links + '</div>' +
-        (onDetails ? '<button class="btn ghost" data-open-content-details>ÙØªØ­ ØªÙØ§ØµÙŠÙ„ Ø§Ù„Ù…Ø§Ø¯Ø©</button>' : '') +
-        '</div>';
-
-      document.body.appendChild(backdrop);
-      backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
-      backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
-      var detailsBtn = backdrop.querySelector("[data-open-content-details]");
-      if (detailsBtn) detailsBtn.onclick = function () {
-        backdrop.remove();
-        onDetails();
-      };
-    }).catch(function () {
-      // fallback Ø¢Ù…Ù† Ù„Ùˆ Ø§Ø³ØªØ¹Ù„Ø§Ù… jobs ÙØ´Ù„ Ù„Ø£ÙŠ Ø³Ø¨Ø¨
-      if (item.published_url) {
-        window.open(item.published_url, "_blank", "noopener");
-      } else if (onDetails) {
-        onDetails();
-      }
-    });
-  }
-
-  // ---------- Ø±Ø¨Ø· Ø§Ù„Ù…Ø­ØªÙˆÙ‰ Ø¨Ø¥Ø¹Ù„Ø§Ù†Ø§Øª Meta (Ù‚Ø³Ù… Ù£Ù¦) â€” ÙŠØ¯ÙˆÙŠ Ø¨Ø§Ù„ÙƒØ§Ù…Ù„ØŒ Ù…ÙÙŠØ´ auto-link ----------
-  // Ù†ÙØ³ ØµÙ„Ø§Ø­ÙŠØ© RLS Ù„Ø¬Ø¯ÙˆÙ„ content_meta_links Ø¨Ø§Ù„Ø¸Ø¨Ø· (page_manager/approver/can_manage_all_content)
-  function canManageMetaLinks(me) {
-    return !!(me && (window.SSMPDRoles.hasAnyRole(me, ["page_manager", "approver", "super_admin", "general_manager"])));
-  }
-
-  function fmtMoneyW(n) { return n == null || isNaN(n) ? "â€”" : Number(n).toLocaleString("en-US", { maximumFractionDigits: 2 }) + " Ø¬.Ù…"; }
-  function fmtNumW(n) { return n == null || isNaN(n) ? "â€”" : Number(n).toLocaleString("en-US", { maximumFractionDigits: 0 }); }
-
-  // Ù…ÙƒØ§Ù† Ø§Ù„Ø­Ø¬Ø² ÙÙŠ Ø§Ù„Ù…ÙˆØ¯Ø§Ù„ â€” Ø¨ÙŠØªÙ…Ù„Ù‰ async Ø¨Ø¹Ø¯ Ù…Ø§ Ø§Ù„Ù…ÙˆØ¯Ø§Ù„ ÙŠØªØ¶Ø§Ù Ù„Ù„ØµÙØ­Ø©
-  function metaLinksSectionHtml(item) {
-    return '<div class="section" style="margin-top:10px;"><h4 style="font-size:13px;margin-bottom:8px;">Ø£Ø¯Ø§Ø¡ Ø¥Ø¹Ù„Ø§Ù†Ø§Øª Meta</h4>' +
-      '<div id="meta-links-' + item.id + '"><div class="loading">Ø¨ÙŠØ­Ù…Ù‘Ù„â€¦</div></div></div>';
-  }
-
-  // Ø¨ÙŠØªÙ†Ø§Ø¯Ù‰ Ø¨Ø¹Ø¯ Ø¥Ø¶Ø§ÙØ© Ø§Ù„Ù…ÙˆØ¯Ø§Ù„ Ù„Ù„Ù€DOM â€” Ø¨ÙŠØ­Ù…Ù‘Ù„ Ø§Ù„Ø±ÙˆØ§Ø¨Ø· Ø§Ù„Ø­Ø§Ù„ÙŠØ© ÙˆÙŠØ±Ø³Ù… Ø§Ù„Ù…Ù„Ø®Øµ
-  function wireMetaLinksSection(container, item, me) {
-    var box = container.querySelector("#meta-links-" + item.id);
-    if (!box) return;
-    window.SSMPDDb.listContentMetaPerformance(item.id).then(function (rows) {
-      renderMetaLinksBox(box, item, me, rows || []);
-    }).catch(function (e) {
-      box.innerHTML = '<p style="font-size:12px;color:var(--c-negative);">ØªØ¹Ø°Ù‘Ø± ØªØ­Ù…ÙŠÙ„ Ø±ÙˆØ§Ø¨Ø· Meta: ' + escapeHtml(e.message || e) + '</p>';
-    });
-  }
-
-  function renderMetaLinksBox(box, item, me, rows) {
-    var canManage = canManageMetaLinks(me);
-    var linkBtnHtml = canManage ? '<button class="btn ghost sm" data-link-meta-ad="' + item.id + '">Ø±Ø¨Ø· Ø¥Ø¹Ù„Ø§Ù† Meta</button>' : "";
-
-    if (!rows.length) {
-      box.innerHTML = '<p style="font-size:12px;color:var(--c-muted);">Ù…ÙÙŠØ´ Ø¥Ø¹Ù„Ø§Ù† Meta Ù…Ø±ØªØ¨Ø· Ø¨Ø§Ù„Ù…Ø§Ø¯Ø© Ø¯ÙŠ.</p>' + linkBtnHtml;
-      wireLinkButton(box, item, me);
-      return;
-    }
-
-    // ØªØ¬Ù…ÙŠØ¹ Ø§Ù„Ø±ÙˆØ§Ø¨Ø· Ø§Ù„Ù…Ø­ÙÙˆØ¸Ø© (content_meta_links) Ø¨Ù…Ø¹Ø±Ù‘ÙÙ‡Ø§ â€” ÙƒÙ„ Ø±Ø§Ø¨Ø· Ù…Ù…ÙƒÙ† ÙŠÙÙ†Ù‘Ø­ Ù„Ø£ÙƒØªØ± Ù…Ù† Ø¥Ø¹Ù„Ø§Ù† Ù„Ùˆ ÙƒØ§Ù† Ø±Ø§Ø¨Ø· Ù…Ø¬Ù…ÙˆØ¹Ø© ÙƒØ±ÙŠÙŠØªÙ
-    var linksById = {};
-    rows.forEach(function (r) {
-      if (!linksById[r.link_id]) linksById[r.link_id] = { link_id: r.link_id, creative_group_id: r.creative_group_id, ads: [], linked_at: r.linked_at, confidence: r.confidence };
-      if (r.meta_ad_id) linksById[r.link_id].ads.push(r);
-    });
-
-    // ØªØ¬Ù…ÙŠØ¹ Ø§Ù„Ø£Ø¯Ø§Ø¡: dedup Ø­Ø³Ø¨ meta_ad_id Ø¹Ø´Ø§Ù† Ø¥Ø¹Ù„Ø§Ù† Ø§ØªØ±ØªØ¨Ø· Ø¨ÙŠÙ‡ Ù…Ø¨Ø§Ø´Ø±Ø© ÙˆØ¨Ø±Ø¶Ù‡ Ø¬ÙˆÙ‡ Ù…Ø¬Ù…ÙˆØ¹Ø© ÙƒØ±ÙŠÙŠØªÙ Ù…Ø§ ÙŠØªØ­Ø³Ø¨Ø´ Ù…Ø±ØªÙŠÙ†
-    var uniqueAds = {};
-    rows.forEach(function (r) { if (r.meta_ad_id && !uniqueAds[r.meta_ad_id]) uniqueAds[r.meta_ad_id] = r; });
-    var adsList = Object.keys(uniqueAds).map(function (k) { return uniqueAds[k]; });
-
-    var sum = function (k) { return adsList.reduce(function (s, r) { return s + (Number(r[k]) || 0); }, 0); };
-    var spend = sum("spend"), msgConv = sum("msg_conv"), leads = sum("leads"), clicks = sum("clicks"), impressions = sum("impressions"), reach = sum("reach");
-    var costPerMsg = msgConv ? spend / msgConv : null;
-    var costPerLead = leads ? spend / leads : null;
-    var ctrPct = impressions ? (clicks / impressions * 100) : null;
-    var cpc = clicks ? spend / clicks : null;
-    var statuses = {}; adsList.forEach(function (r) { if (r.status) statuses[r.status] = true; });
-    var statusStr = Object.keys(statuses).join("ØŒ ") || "â€”";
-
-    var html = '<div class="kpi-grid">' +
-      '<div class="kpi-card"><div class="label">Ø§Ù„Ø¥Ù†ÙØ§Ù‚</div><div class="value small">' + fmtMoneyW(spend) + '</div></div>' +
-      '<div class="kpi-card"><div class="label">Ù…Ø­Ø§Ø¯Ø«Ø§Øª</div><div class="value small">' + fmtNumW(msgConv) + '</div></div>' +
-      '<div class="kpi-card"><div class="label">ØªÙƒÙ„ÙØ© Ø§Ù„Ù…Ø­Ø§Ø¯Ø«Ø©</div><div class="value small">' + (costPerMsg == null ? "â€”" : fmtMoneyW(costPerMsg)) + '</div></div>' +
-      '<div class="kpi-card"><div class="label">Leads</div><div class="value small">' + fmtNumW(leads) + '</div></div>' +
-      '<div class="kpi-card"><div class="label">CPL</div><div class="value small">' + (costPerLead == null ? "â€”" : fmtMoneyW(costPerLead)) + '</div></div>' +
-      '<div class="kpi-card"><div class="label">Ø§Ù„ÙˆØµÙˆÙ„</div><div class="value small">' + fmtNumW(reach) + '</div></div>' +
-      '<div class="kpi-card"><div class="label">CTR</div><div class="value small">' + (ctrPct == null ? "â€”" : ctrPct.toFixed(2) + "%") + '</div></div>' +
-      '<div class="kpi-card"><div class="label">CPC</div><div class="value small">' + (cpc == null ? "â€”" : fmtMoneyW(cpc)) + '</div></div>' +
-      '<div class="kpi-card"><div class="label">Ø§Ù„Ø­Ø§Ù„Ø©</div><div class="value small">' + escapeHtml(statusStr) + '</div></div>' +
-      '</div>';
-
-    if (adsList.length > 1) {
-      html += '<div style="max-height:200px;overflow:auto;margin-top:8px;"><table class="simple"><thead><tr><th>Ø§Ù„Ø¥Ø¹Ù„Ø§Ù†</th><th>Ù…Ø¬Ù…ÙˆØ¹Ø© Ø§Ù„ÙƒØ±ÙŠÙŠØªÙ</th><th>Ø§Ù„Ø­Ø§Ù„Ø©</th><th>Ø§Ù„Ø¥Ù†ÙØ§Ù‚</th><th>Leads</th></tr></thead><tbody>' +
-        adsList.map(function (r) {
-          return '<tr><td style="font-size:11px;">' + escapeHtml(r.ad_name) + '</td><td style="font-size:11px;">' + escapeHtml(r.creative_group_id) + '</td>' +
-            '<td>' + escapeHtml(r.status) + '</td><td>' + fmtMoneyW(r.spend) + '</td><td>' + fmtNumW(r.leads) + '</td></tr>';
-        }).join("") + '</tbody></table></div>';
-    }
-
-    html += '<div style="margin-top:8px;">' + Object.keys(linksById).map(function (k) {
-      var l = linksById[k];
-      var desc = l.ads.length && !l.creative_group_id ? "Ø¥Ø¹Ù„Ø§Ù†: " + escapeHtml(l.ads[0].ad_name)
-        : l.creative_group_id ? "Ù…Ø¬Ù…ÙˆØ¹Ø© ÙƒØ±ÙŠÙŠØªÙ: " + escapeHtml(l.creative_group_id) + " (" + l.ads.length + " Ø¥Ø¹Ù„Ø§Ù†)"
-        : "Ø±Ø§Ø¨Ø·";
-      return '<span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;background:var(--c-card);border:1px solid var(--c-border);border-radius:8px;padding:3px 8px;margin:2px;">' +
-        desc + (canManage ? ' <button class="btn ghost sm" data-unlink-meta="' + l.link_id + '" style="padding:1px 6px;">ÙÙƒ Ø§Ù„Ø±Ø¨Ø·</button>' : '') + '</span>';
-    }).join("") + '</div>';
-
-    html += '<div style="margin-top:8px;">' + linkBtnHtml + '</div>';
-    box.innerHTML = html;
-    wireLinkButton(box, item, me);
-    box.querySelectorAll("[data-unlink-meta]").forEach(function (btn) {
-      btn.onclick = function () {
-        if (!confirm("ÙÙƒ Ø±Ø¨Ø· Ø§Ù„Ø¥Ø¹Ù„Ø§Ù† Ø¯Ù‡ Ø¹Ù† Ø§Ù„Ù…Ø§Ø¯Ø©ØŸ")) return;
-        window.SSMPDDb.deleteContentMetaLink(btn.getAttribute("data-unlink-meta")).then(function () {
-          wireMetaLinksSection(box.parentElement, item, me);
-        }).catch(function (e) { alert("Ø®Ø·Ø£: " + e.message); });
-      };
-    });
-  }
-
-  function wireLinkButton(box, item, me) {
-    var btn = box.querySelector("[data-link-meta-ad]");
-    if (btn) btn.onclick = function () {
-      openLinkMetaAdModal(item, me, function () { wireMetaLinksSection(box.parentElement, item, me); });
-    };
-  }
-
-  // Ù…ÙˆØ¯Ø§Ù„ Ø§Ù„Ø¨Ø­Ø« Ø¹Ù† Ø¥Ø¹Ù„Ø§Ù† Meta ÙˆØ±Ø¨Ø·Ù‡ â€” Ø§Ø®ØªÙŠØ§Ø± ÙŠØ¯ÙˆÙŠ ØµØ±ÙŠØ­ Ø¯Ø§ÙŠÙ…Ù‹Ø§ØŒ Ù…ÙÙŠØ´ auto-match
-  function openLinkMetaAdModal(item, me, onLinked) {
-    var backdrop = document.createElement("div");
-    backdrop.className = "modal-backdrop";
-    backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>Ø±Ø¨Ø· Ø¥Ø¹Ù„Ø§Ù† Meta Ø¨Ù€Â«' + escapeHtml(item.title) + 'Â»</h3>' +
-      '<button class="modal-close">Ã—</button></div>' +
-      '<input id="lma-search" placeholder="Ø¯ÙˆÙ‘Ø± Ø¨Ø§Ù„Ø§Ø³Ù… / Ø§Ø³Ù… Ø§Ù„Ø­Ù…Ù„Ø© / Ø±Ù‚Ù… Ø§Ù„Ø¥Ø¹Ù„Ø§Ù† / Ù…Ø¬Ù…ÙˆØ¹Ø© Ø§Ù„ÙƒØ±ÙŠÙŠØªÙ / Ø§Ù„ØªØ®ØµØµ" style="width:100%;padding:9px 12px;border-radius:10px;border:1px solid var(--c-border);margin-bottom:10px;">' +
-      '<div id="lma-results" style="max-height:360px;overflow:auto;"><div class="loading">Ø¨ÙŠØ­Ù…Ù‘Ù„ Ø§Ù„Ø¥Ø¹Ù„Ø§Ù†Ø§Øªâ€¦</div></div></div>';
-    document.body.appendChild(backdrop);
-    backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
-    backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
-
-    window.SSMPDDb.listMetaAdPerformance().then(function (ads) {
-      var resultsBox = document.getElementById("lma-results");
-      function renderResults(term) {
-        term = (term || "").toLowerCase();
-        var filtered = !term ? ads : ads.filter(function (a) {
-          return [a.ad_name, a.campaign_name, a.platform_ad_id, a.creative_group_id, a.specialty].some(function (v) {
-            return v && String(v).toLowerCase().indexOf(term) !== -1;
-          });
-        });
-        if (!filtered.length) { resultsBox.innerHTML = '<p style="font-size:12px;color:var(--c-muted);">Ù…ÙÙŠØ´ Ù†ØªØ§Ø¦Ø¬.</p>'; return; }
-        resultsBox.innerHTML = '<table class="simple"><thead><tr><th>Ø§Ù„Ø¥Ø¹Ù„Ø§Ù†</th><th>Ø§Ù„Ø­Ù…Ù„Ø©</th><th>Ø§Ù„ØªØ®ØµØµ</th><th>Ø§Ù„Ø­Ø§Ù„Ø©</th><th>Ø§Ù„Ø¥Ù†ÙØ§Ù‚</th><th></th></tr></thead><tbody>' +
-          filtered.slice(0, 100).map(function (a) {
-            return '<tr><td style="font-size:11px;">' + escapeHtml(a.ad_name) + '<div style="color:var(--c-muted);font-size:10px;">' + escapeHtml(a.platform_ad_id) + ' â€” ' + escapeHtml(a.creative_group_id) + '</div></td>' +
-              '<td style="font-size:11px;">' + escapeHtml(a.campaign_name) + '</td><td>' + escapeHtml(a.specialty) + '</td>' +
-              '<td>' + escapeHtml(a.status) + '</td><td>' + fmtMoneyW(a.spend) + '</td>' +
-              '<td><button class="btn ghost sm" data-pick-ad="' + a.ad_id + '">Ø±Ø¨Ø· Ù‡Ø°Ø§ Ø§Ù„Ø¥Ø¹Ù„Ø§Ù†</button>' +
-              (a.creative_group_id ? ' <button class="btn ghost sm" data-pick-group="' + escapeAttr(a.creative_group_id) + '">Ø±Ø¨Ø· ÙƒÙ„ Ø§Ù„Ù…Ø¬Ù…ÙˆØ¹Ø©</button>' : '') + '</td></tr>';
-          }).join("") + '</tbody></table>';
-        resultsBox.querySelectorAll("[data-pick-ad]").forEach(function (btn) {
-          btn.onclick = function () { doLink({ content_id: item.id, meta_ad_id: btn.getAttribute("data-pick-ad"), linked_by: me.id }); };
-        });
-        resultsBox.querySelectorAll("[data-pick-group]").forEach(function (btn) {
-          btn.onclick = function () { doLink({ content_id: item.id, creative_group_id: btn.getAttribute("data-pick-group"), linked_by: me.id }); };
-        });
-      }
-      function doLink(row) {
-        window.SSMPDDb.createContentMetaLink(row).then(function () {
-          backdrop.remove();
-          if (onLinked) onLinked();
-        }).catch(function (e) {
-          if (e && e.code === "23505") alert("Ø§Ù„Ø¥Ø¹Ù„Ø§Ù†/Ø§Ù„Ù…Ø¬Ù…ÙˆØ¹Ø© Ø¯ÙŠ Ù…Ø±ØªØ¨Ø·Ø© Ø¨Ø§Ù„ÙØ¹Ù„ Ø¨Ø§Ù„Ù…Ø§Ø¯Ø© Ø¯ÙŠ.");
-          else alert("Ø®Ø·Ø£: " + e.message);
-        });
-      }
-      renderResults("");
-      document.getElementById("lma-search").oninput = function (e) { renderResults(e.target.value); };
-    }).catch(function (e) {
-      document.getElementById("lma-results").innerHTML = '<p style="color:var(--c-negative);font-size:12px;">ØªØ¹Ø°Ù‘Ø± ØªØ­Ù…ÙŠÙ„ Ø§Ù„Ø¥Ø¹Ù„Ø§Ù†Ø§Øª: ' + escapeHtml(e.message || e) + '</p>';
-    });
-  }
-
-  // ============================================================
-  // Content Intelligence (Ù‚Ø³Ù… Ù£Ù§) â€” Ø¨Ø§Ù†Ù„ Ø§Ø³ØªØ´Ø§Ø±ÙŠ ÙˆÙ‚Øª Ø¥Ù†Ø´Ø§Ø¡ Ù…Ø­ØªÙˆÙ‰ Ø¬Ø¯ÙŠØ¯.
-  // Ø¨ÙŠÙ‚Ø±Ø§ Ø¨Ø³ Ù…Ù† vw_content_intelligence_patterns/content_meta_specialty_map/
-  // vw_meta_ad_performance â€” Ù…ÙÙŠØ´ Ø£ÙŠ ØªØ¹Ø¯ÙŠÙ„ Ø¹Ù„Ù‰ Ø³Ù„ÙˆÙƒ Ø¥Ù†Ø´Ø§Ø¡ Ø§Ù„Ù…Ø­ØªÙˆÙ‰ Ø§Ù„Ø­Ø§Ù„ÙŠØŒ
-  // ÙˆØ§Ù„Ø¨Ø§Ù†Ù„ Ø§Ø®ØªÙŠØ§Ø±ÙŠ Ø¨Ø§Ù„ÙƒØ§Ù…Ù„ (Ù‚Ø§Ø¨Ù„ Ù„Ù„Ø·ÙŠØŒ ÙˆÙ…ÙÙŠØ´ Ø¥Ø¬Ø¨Ø§Ø± Ù„Ø§Ø³ØªØ®Ø¯Ø§Ù…Ù‡).
-  // ============================================================
-
-  var CONTENT_OBJECTIVES = {
-    messages:        { label: "Ø±Ø³Ø§Ø¦Ù„ ÙˆØ§ØªØ³Ø§Ø¨/Ù…Ø§Ø³Ù†Ø¬Ø± (Messages)", meta: "MESSAGES" },
-    lead_generation: { label: "ØªÙˆÙ„ÙŠØ¯ Ù„ÙŠØ¯Ø² (Lead Generation)",   meta: "LEAD_GENERATION" },
-    engagement:      { label: "ØªÙØ§Ø¹Ù„ (Engagement)",             meta: "OUTCOME_ENGAGEMENT" },
-    reach:           { label: "ÙˆØµÙˆÙ„ (Reach)",                   meta: "REACH" },
-    sales:           { label: "Ù…Ø¨ÙŠØ¹Ø§Øª (Sales)",                 meta: "OUTCOME_SALES" },
-    link_clicks:     { label: "Ø²ÙŠØ§Ø±Ø§Øª Ø±Ø§Ø¨Ø· (Link Clicks)",      meta: "LINK_CLICKS" },
-    page_likes:      { label: "Ø¥Ø¹Ø¬Ø§Ø¨ Ø§Ù„ØµÙØ­Ø© (Page Likes)",      meta: "PAGE_LIKES" }
-  };
-  var CONTENT_FORMATS = {
-    video:      { label: "ÙÙŠØ¯ÙŠÙˆ",             meta: "Video" },
-    image_post: { label: "Ø¨ÙˆØ³Øª ØµÙˆØ±Ø©/Ù†Øµ",       meta: "Existing post (Static image/text)" },
-    link_post:  { label: "Ø¨ÙˆØ³Øª Ø±Ø§Ø¨Ø·",          meta: "Existing post (Shared link)" }
-  };
-  var CONFIDENCE_LABELS = {
-    high:   { label: "Ù‚ÙˆÙŠ (High)", cls: "approved" },
-    medium: { label: "Ù…ØªÙˆØ³Ø· (Medium)", cls: "received" },
-    low:    { label: "Ù…Ø­Ø¯ÙˆØ¯ (Low)", cls: "draft" }
-  };
-
-  function ciObjectiveSelectHtml(id, selected) {
-    var html = '<select id="' + id + '"><option value="">â€” Ø§Ø®ØªØ± Ø§Ù„Ù‡Ø¯Ù â€”</option>';
-    Object.keys(CONTENT_OBJECTIVES).forEach(function (k) {
-      html += '<option value="' + k + '"' + (selected === k ? " selected" : "") + '>' + escapeHtml(CONTENT_OBJECTIVES[k].label) + '</option>';
-    });
-    return html + '</select>';
-  }
-  function contentFormatDetailsHtml(item) {
-    var key = item.content_format;
-    var format = Object.prototype.hasOwnProperty.call(CONTENT_FORMATS, key) ? CONTENT_FORMATS[key] : null;
-    var label = format ? format.label : "ØºÙŠØ± Ù…Ø­Ø¯Ø¯";
-    return '<p class="content-format-detail" style="margin:0 0 12px;"><span style="color:var(--c-muted);">Ù†ÙˆØ¹ Ø§Ù„Ù…Ø§Ø¯Ø©</span> <strong>' + escapeHtml(label) + '</strong></p>';
-  }
-
-  function ciFormatSelectHtml(id, selected) {
-    var html = '<select id="' + id + '"><option value="">â€” ÙƒÙ„ Ø§Ù„Ø£Ø´ÙƒØ§Ù„ â€”</option>';
-    Object.keys(CONTENT_FORMATS).forEach(function (k) {
-      html += '<option value="' + k + '"' + (selected === k ? " selected" : "") + '>' + escapeHtml(CONTENT_FORMATS[k].label) + '</option>';
-    });
-    return html + '</select>';
-  }
-  function ciMetricFor(objKey) {
-    if (objKey === "messages") return "weighted_cost_per_message";
-    if (objKey === "lead_generation") return "weighted_cost_per_lead";
-    return "weighted_cpm"; // ÙˆØ¹ÙŠ/ØªÙØ§Ø¹Ù„/ÙˆØµÙˆÙ„/Ù…Ø¨ÙŠØ¹Ø§Øª/Ø²ÙŠØ§Ø±Ø§Øª â€” Ù†Ø­ÙƒÙ… Ø¨ØªÙƒÙ„ÙØ© Ø§Ù„Ø¸Ù‡ÙˆØ± Ù…Ø´ ØªÙƒÙ„ÙØ© Ù†ØªÙŠØ¬Ø© Ø±Ø³Ø§Ø¦Ù„/Ù„ÙŠØ¯Ø²
-  }
-  function ciMetricLabel(objKey) {
-    if (objKey === "messages") return "ØªÙƒÙ„ÙØ©/Ù…Ø­Ø§Ø¯Ø«Ø©";
-    if (objKey === "lead_generation") return "ØªÙƒÙ„ÙØ©/Ù„ÙŠØ¯";
-    return "CPM (ØªÙƒÙ„ÙØ© Ø§Ù„Ø£Ù„Ù Ø¸Ù‡ÙˆØ±)";
-  }
-
-  var _ciDataPromise = null;
-  function ciLoadData() {
-    if (_ciDataPromise) return _ciDataPromise;
-    _ciDataPromise = Promise.all([
-      window.SSMPDDb.listContentIntelligencePatterns(),
-      window.SSMPDDb.listContentSpecialtyMap(),
-      window.SSMPDDb.listMetaAdPerformance()
-    ]).then(function (res) {
-      return { patterns: res[0] || [], map: res[1] || [], ads: res[2] || [] };
-    }).catch(function (e) { _ciDataPromise = null; throw e; });
-    return _ciDataPromise;
-  }
-
-  // ---------- V2 ranking engine (Ù‚Ø³Ù… Ù£Ù§ ØªØ­Ø³ÙŠÙ† â€” Ø±Ø§Ù†Ùƒ + ØªØµÙ†ÙŠÙ ÙˆØ§Ø¶Ø­ Ù„ØºÙŠØ± Ø§Ù„Ù…ØªØ®ØµØµ) ----------
-
-  function ciBetterConf(a, b) {
-    var order = { high: 3, medium: 2, low: 1 };
-    if (!a) return b || "low";
-    if (!b) return a;
-    return order[a] >= order[b] ? a : b;
-  }
-
-  // Ø«Ù‚Ø© Ø¥Ø¬Ù…Ø§Ù„ÙŠØ© Ø¹Ù„Ù‰ Ù…Ø¬Ù…ÙˆØ¹Ø© Ø¹Ù†Ø§ØµØ± Ù‚Ø§Ø¨Ù„Ø© Ù„Ù„Ù…Ù‚Ø§Ø±Ù†Ø© â€” Ù†ÙØ³ Ø¹ØªØ¨Ø§Øª section 37 SQL
-  function ciAggregateConfidence(pool) {
-    var count = pool.length, spend = 0, sample = 0;
-    pool.forEach(function (x) { spend += x.spend || 0; sample += x.sample || 0; });
-    if (count >= 5 && (spend >= 2000 || sample >= 20)) return "high";
-    if (count >= 2 && (spend >= 300 || sample >= 5)) return "medium";
-    return "low";
-  }
-
-  // ØªØ±ØªÙŠØ¨: Ø§Ù„Ø£Ù‚Ù„ ØªÙƒÙ„ÙØ© Ø£ÙˆÙ„Ø§Ù‹ØŒ Ù„ÙƒÙ† Ù„Ùˆ Ø§Ù„ÙØ±Ù‚ Ø£Ù‚Ù„ Ù…Ù† Ù¢Ù Ùª Ù†ÙØ¶Ù‘Ù„ Ø§Ù„Ø£Ø¯Ù„Ø© Ø§Ù„Ø£Ù‚ÙˆÙ‰ (Ø¹Ø¯Ø¯ Ù†ØªØ§Ø¦Ø¬/Ø¥Ù†ÙØ§Ù‚/ØªÙƒØ±Ø§Ø±)
-  // â€” Ø¹Ø´Ø§Ù† Ù…Ø¹Ø¯Ù„ Ø¶Ø¹ÙŠÙ Ø¨Ø¹ÙŠÙ†Ø© ÙˆØ§Ø­Ø¯Ø© Ù…ÙŠØªÙØ¶Ù„Ø´ Ø¹Ù„Ù‰ Ø£Ø¯Ø§Ø¡ Ù…Ø³ØªÙ‚Ø± Ø¨Ø¹ÙŠÙ†Ø© ÙƒØ¨ÙŠØ±Ø© (Ø¨Ù†Ø¯ Ù¡Ù¤).
-  function ciSortComparable(arr) {
-    return arr.slice().sort(function (a, b) {
-      var av = a.metric, bv = b.metric;
-      if (Math.abs(av - bv) / Math.max(av, bv, 1) < 0.2) {
-        var as = (a.sample || 0) + (a.spend || 0) / 500 + (a.runs || 1) * 2;
-        var bs = (b.sample || 0) + (b.spend || 0) / 500 + (b.runs || 1) * 2;
-        if (as !== bs) return bs - as;
-      }
-      return av - bv;
-    });
-  }
-
-  // ØªØµÙ†ÙŠÙ ÙƒÙ„ Ø¹Ù†ØµØ± Ø¨Ø¹Ø¯ Ø§Ù„ØªØ±ØªÙŠØ¨: BEST (Ù…Ø«Ø¨Øª Ø£Ùˆ Ù…ØªØ§Ø­ Ø­Ø§Ù„ÙŠÙ‹Ø§) / STRONG / PROMISING / WEAK
-  function ciClassifyStatus(x, idx, poolConfidence, bestMetric) {
-    var ratio = bestMetric > 0 ? x.metric / bestMetric : 1;
-    var ownStrong = (x.sample || 0) >= 5 || (x.spend || 0) >= 300 || (x.runs || 1) >= 2;
-    if (idx === 0) {
-      if (poolConfidence === "high" && ownStrong) return { key: "best_proven", emoji: "â­", label: "Ø£ÙØ¶Ù„ Ø®ÙŠØ§Ø± (BEST OPTION)" };
-      return { key: "best_available", emoji: "â­", label: "Ø£ÙØ¶Ù„ Ø®ÙŠØ§Ø± Ù…ØªØ§Ø­ Ø­Ø§Ù„ÙŠÙ‹Ø§" + (poolConfidence === "low" ? " â€” Ø«Ù‚Ø© Ù…Ù†Ø®ÙØ¶Ø©" : "") };
-    }
-    if (ratio <= 1.5) return { key: "strong", emoji: "ğŸŸ¢", label: "Ø®ÙŠØ§Ø± Ù‚ÙˆÙŠ (STRONG)" };
-    if (ratio <= 3) return { key: "promising", emoji: "ğŸŸ¡", label: "ÙˆØ§Ø¹Ø¯ â€” Ø¬Ø±Ù‘Ø¨Ù‡ Ø£ÙƒØªØ± (PROMISING)" };
-    return { key: "weak", emoji: "ğŸ”´", label: "Ø¶Ø¹ÙŠÙ / Ø£Ø¹Ø¯ Ø§Ù„Ø§Ø®ØªØ¨Ø§Ø± (WEAK)" };
-  }
-
-  // V4.2: Ø­Ø§Ø±Ø³ Ø£Ø¯Ø§Ø¡ Ø¹Ø§Ù„Ù…ÙŠ â€” ciAssignRankStatus Ø¨ØªØ­Ø³Ø¨ ratio/status Ø¨Ø§Ù„Ù†Ø³Ø¨Ø©
-  // Ù„Ø£ÙØ¶Ù„ Ø¹Ù†ØµØ± Ø¬ÙˆÙ‡ Ù†ÙØ³ Ø§Ù„Ù€pool Ø¨Ø³ (patterns Ù„ÙˆØ­Ø¯Ù‡Ù…ØŒ Ø£Ùˆ ads Ù„ÙˆØ­Ø¯Ù‡Ù…) â€” Ù„Ùˆ
-  // pool Ø§Ù„Ø¥Ø¹Ù„Ø§Ù†Ø§Øª Ù…Ø«Ù„Ø§Ù‹ ÙÙŠÙ‡ Ø¹Ù†ØµØ± ÙˆØ§Ø­Ø¯ Ø¨Ø³ (Ø²ÙŠ Ø¥Ø¹Ù„Ø§Ù† 530.20 Ø¨Ø¹Ø¯ Ø§Ø³ØªØ¨Ø¹Ø§Ø¯
-  // Ø§Ù„ØªÙ‚Ù†ÙŠÙŠÙ†)ØŒ Ø¨ÙŠØ¨Ù‚Ù‰ idx=0/ratio=1 "Ø£ÙØ¶Ù„ Ø®ÙŠØ§Ø± Ù…Ø­Ù„ÙŠÙ‹Ø§" Ø­ØªÙ‰ Ù„Ùˆ ÙƒØ§Ù† Ø£Ø³ÙˆØ£ Ø¨ÙƒØªÙŠØ±
-  // Ù…Ù† Ø£ÙØ¶Ù„ Ù†Ù…Ø· ØªØ§Ø±ÙŠØ®ÙŠ ÙÙŠ patterns pool. Ø§Ù„Ø­Ø§Ø±Ø³ Ø¯Ù‡ Ø¨ÙŠÙ‚Ø§Ø±Ù† ÙƒÙ„ Ø¹Ù†ØµØ± Ø¨Ø£ÙØ¶Ù„
-  // Ø£Ø¯Ø§Ø¡ ØªØ§Ø±ÙŠØ®ÙŠ Ø¹Ø§Ù„Ù…ÙŠ (Ø¹Ø¨Ø± Ø§Ù„Ù†Ù…Ø·ÙŠÙ† Ù…Ø¹ Ø¨Ø¹Ø¶) ÙˆÙ„Ùˆ Ø£ØºÙ„Ù‰ Ù…Ù†Ù‡ Ø¨Ø£ÙƒØªØ± Ù…Ù† 3Ã— (Ù†ÙØ³
-  // Ø¹ØªØ¨Ø© "Ø¶Ø¹ÙŠÙ" Ø§Ù„Ù…ÙˆØ¬ÙˆØ¯Ø© Ø£ØµÙ„Ø§Ù‹) Ø¨ÙŠÙØ±Ø¶ Ø¹Ù„ÙŠÙ‡ Ø­Ø§Ù„Ø© "Ø¶Ø¹ÙŠÙ" Ø¨ØºØ¶ Ø§Ù„Ù†Ø¸Ø± Ø¹Ù† Ø±Ø§Ù†ÙƒÙ‡
-  // Ø§Ù„Ù…Ø­Ù„ÙŠ â€” ØªØ¹Ø¯ÙŠÙ„ Ù…Ø¨Ø§Ø´Ø± Ø¹Ù„Ù‰ Ù†ÙØ³ Ø§Ù„Ù€object reference ÙØ¨ÙŠØ£Ø«Ø± ØªÙ„Ù‚Ø§Ø¦ÙŠÙ‹Ø§ Ø¹Ù„Ù‰
-  // status ÙˆaStatus Ù…Ø¹Ù‹Ø§ ÙÙŠ ÙƒÙ„ Ù…ÙƒØ§Ù† (ÙƒØ±ÙˆØª/Brief/Ù‚Ø³Ù… Ø§Ù„Ù…Ù‚Ø§Ø±Ù†Ø© Ø§Ù„ØªØ§Ø±ÙŠØ®ÙŠØ©).
-  function ciApplyGlobalWeakGuard(pool, globalBestMetric) {
-    if (!globalBestMetric || globalBestMetric <= 0) return;
-    pool.forEach(function (x) {
-      var globalRatio = x.metric / globalBestMetric;
-      if (globalRatio > 3) {
-        var weakStatus = { key: "weak", emoji: "ğŸ”´", label: "Ø¶Ø¹ÙŠÙ / Ø£Ø¹Ø¯ Ø§Ù„Ø§Ø®ØªØ¨Ø§Ø± (WEAK)" };
-        x.status = weakStatus;
-        x.ratio = globalRatio;
-        if (x.aStatus) { x.aStatus = weakStatus; x.aRatio = globalRatio; }
-      }
-    });
-  }
-
-  function ciItemConfidenceLabel(x, poolConfidence) {
-    var ownStrong = (x.sample || 0) >= 5 || (x.spend || 0) >= 300 || (x.runs || 1) >= 2;
-    var lvl = ownStrong ? poolConfidence : (poolConfidence === "high" ? "medium" : poolConfidence);
-    return CONFIDENCE_LABELS[lvl] || CONFIDENCE_LABELS.low;
-  }
-
-  function ciWhyText(status, ratio, runs, metricLabel) {
-    switch (status.key) {
-      case "best_proven": return "Ø£Ù‚Ù„ " + metricLabel + " Ø¨ÙŠÙ† Ø§Ù„Ø®ÙŠØ§Ø±Ø§Øª Ø§Ù„Ù‚Ø§Ø¨Ù„Ø© Ù„Ù„Ù…Ù‚Ø§Ø±Ù†Ø©ØŒ Ù…Ø¹ Ø­Ø¬Ù… Ù†ØªØ§Ø¦Ø¬/ØªÙƒØ±Ø§Ø± Ø£ÙØ¶Ù„ Ù…Ù† Ø§Ù„Ø¨Ø¯Ø§Ø¦Ù„.";
-      case "best_available": return "Ø£ÙØ¶Ù„ " + metricLabel + " Ù…ØªØ§Ø­ Ø­Ø§Ù„ÙŠÙ‹Ø§ Ø¶Ù…Ù† Ø¨ÙŠØ§Ù†Ø§Øª Ù…Ø­Ø¯ÙˆØ¯Ø© â€” ÙŠØ³ØªØ§Ù‡Ù„ Ø§Ù„ØªØ¬Ø±Ø¨Ø©ØŒ Ù…Ø´ Ø¯Ù„ÙŠÙ„ Ù†Ù‡Ø§Ø¦ÙŠ.";
-      case "strong": return "Ù‚Ø±ÙŠØ¨ Ù…Ù† Ø§Ù„Ø£ÙØ¶Ù„ Ø¨Ø£Ø¯Ù„Ø© Ù…Ø¹Ù‚ÙˆÙ„Ø©" + ((runs || 1) > 1 ? "ØŒ ÙˆØ­Ù‚Ù‚ Ø£Ø¯Ø§Ø¡ Ø¬ÙŠØ¯Ù‹Ø§ Ø¹Ø¨Ø± Ø£ÙƒØªØ± Ù…Ù† ØªØ´ØºÙŠÙ„ Ù„Ù†ÙØ³ Creative Group." : ".");
-      case "promising": return "Ø§Ù„Ù†ØªÙŠØ¬Ø© Ù…Ù‚Ø¨ÙˆÙ„Ø©ØŒ Ù„ÙƒÙ† Ø§Ù„Ø¹ÙŠÙ†Ø© ØµØºÙŠØ±Ø© Ø£Ùˆ Ø§Ù„Ø¥Ø¹Ù„Ø§Ù† Ø§ØªØ´ØºÙ‘Ù„ Ù…Ø±Ø© ÙˆØ§Ø­Ø¯Ø© Ø¨Ø³ â€” Ù…Ø­ØªØ§Ø¬ Ø§Ø®ØªØ¨Ø§Ø± Ø£ÙƒØªØ±.";
-      case "weak": return metricLabel + " Ø£Ø¹Ù„Ù‰ Ø¨ÙƒØªÙŠØ± Ù…Ù† Ø§Ù„Ø¨Ø¯Ø§Ø¦Ù„ Ø§Ù„ØªØ§Ø±ÙŠØ®ÙŠØ© (~" + (ratio || 1).toFixed(1) + "Ã— Ø§Ù„Ø£ÙØ¶Ù„).";
-      default: return "";
-    }
-  }
-
-  // Ù‚ÙŠÙ…Ø© "Ø¨Ù„Ø§ Ù…Ø¹Ù†Ù‰" (UNKNOWN/N/A/ÙØ§Ø¶ÙŠ) â€” Ø£Ø³Ø§Ø³ ØªÙ…ÙŠÙŠØ² Ø£Ø¯Ø§Ø¡ Ø±Ù‚Ù…ÙŠ Ø¹Ù† Pattern ÙØ¹Ù„ÙŠ Ù‚Ø§Ø¨Ù„ Ù„Ù„Ø§Ø³ØªØ®Ø¯Ø§Ù… (V3)
-  function ciIsMeaningful(v) {
-    if (v == null) return false;
-    var s = String(v).trim();
-    if (!s) return false;
-    return !/^(unknown|n\/a|na|null|none|--+|â€”+|-)$/i.test(s);
-  }
-
-  // V4.1 (Ø¨Ù†Ø¯ Ù¡): ÙŠØ¬Ù…Ø¹ Ø¨Ø³ Ø§Ù„Ù‚ÙŠÙ… Ø§Ù„Ù„ÙŠ Ù„ÙŠÙ‡Ø§ Ù…Ø¹Ù†Ù‰ ÙØ¹Ù„ÙŠ (ÙŠØªØ¬Ø§Ù‡Ù„ UNKNOWN/N/A ØªÙ…Ø§Ù…Ù‹Ø§
-  // Ø¨Ø¯Ù„ Ù…Ø§ ÙŠØ·Ø¨Ø¹Ù‡Ø§) â€” Ø£Ø³Ø§Ø³ Ø£ÙŠ Ù…Ù„Ø®Øµ/Ø¹Ù†ÙˆØ§Ù† ÙŠÙˆØ§Ø¬Ù‡ Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù… (Ù„Ø§ ÙŠØ¸Ù‡Ø± Ø£Ø¨Ø¯Ù‹Ø§ "UNKNOWN").
-  function ciMeaningfulJoin(vals, sep) {
-    var parts = [];
-    (vals || []).forEach(function (v) { if (ciIsMeaningful(v)) parts.push(v); });
-    return parts.join(sep || " + ");
-  }
-
-  // Ù…Ø¤Ù‡Ù„ ÙƒÙ€"Pattern Ù…Ø­ØªÙˆÙ‰" (ÙˆÙ„ÙŠØ³ Ù…Ø¬Ø±Ø¯ Ø±Ù‚Ù… Ø£Ø¯Ø§Ø¡) Ù„Ùˆ Ø¹Ù†Ø¯Ù‡ Ø£ÙŠ Ø¥Ø´Ø§Ø±Ø© Ø¥Ø¨Ø¯Ø§Ø¹ÙŠØ© Ù…ÙÙŠØ¯Ø© â€”
-  // Hook Ø£Ùˆ Angle Ø£Ùˆ CTA Ø£Ùˆ FormatØŒ Ø£Ùˆ (Ù„Ù„Ø¥Ø¹Ù„Ø§Ù†Ø§Øª) Ø¹Ù†ÙˆØ§Ù†/Ù†Øµ ÙƒØ±ÙŠÙŠØªÙ Ø­Ù‚ÙŠÙ‚ÙŠ (Ø¨Ù†Ø¯ Ù£)
-  function ciIsActionable(p, kind) {
-    var hasHook = ciIsMeaningful(p.hook_type);
-    var hasAngle = ciIsMeaningful(p.content_angle);
-    var hasCta = ciIsMeaningful(p.cta_type);
-    var hasCreative = kind === "ad" && (ciIsMeaningful(p.creative_title) || (p.creative_body && String(p.creative_body).trim().length > 15));
-    // Ù…Ù„Ø­ÙˆØ¸Ø© (V4): Ø§Ù„Ù€Format/creative_type Ø§ØªØ´Ø§Ù„ Ù†Ù‡Ø§Ø¦ÙŠÙ‹Ø§ Ù…Ù† Ø´Ø±ÙˆØ· Ø§Ù„Ø£Ù‡Ù„ÙŠØ© â€”
-    // Ø§Ù„Ø´ÙƒÙ„ (ØµÙˆØ±Ø©/ÙÙŠØ¯ÙŠÙˆ) Ù„ÙˆØ­Ø¯Ù‡ Ù…Ø´ Ø¥Ø´Ø§Ø±Ø© Ø¥Ø¨Ø¯Ø§Ø¹ÙŠØ© ÙƒØ§ÙÙŠØ© Ø¹Ø´Ø§Ù† Ù†Ø±Ø´Ù‘Ø­ Ø§Ù„Ù€Pattern.
-    if (kind === "ad" && ciIsTechnical(p)) return false; // Ø¥Ø¹Ù„Ø§Ù† ØªÙ‚Ù†ÙŠ/Ø±Ø§Ø¨Ø· Ø¨Ø³ Ù…Ø´ Ù…Ø¤Ù‡Ù„ Ø£Ø¨Ø¯Ù‹Ø§
-    return hasHook || hasAngle || hasCta || hasCreative;
-  }
-
-  function ciHowToUseText(p, status, isTechnical) {
-    if (isTechnical) return "Ø§Ø³ØªÙØ¯ Ø¨Ø³ Ù…Ù† Ø£Ø¯Ø§Ø¡ Ø§Ù„Ù€CTA/Ø§Ù„Ù‡Ø¯ÙØŒ Ù…Ø´ Ù…Ù† Ø§Ù„Ù€Creative Ù†ÙØ³Ù‡ (Ø¯Ù‡ Ø¥Ø¹Ù„Ø§Ù† ØªÙ‚Ù†ÙŠ/Ø±Ø§Ø¨Ø· Ø¨Ø³).";
-    if (status.key === "weak") return "Ù„Ø§ ØªÙƒØ±Ø± Ù†ÙØ³ Ø§Ù„ØªÙ†ÙÙŠØ°. Ù„Ùˆ Ù‡ØªØ®ØªØ¨Ø± Ø§Ù„ÙÙƒØ±Ø©ØŒ ØºÙŠÙ‘Ø± Ø§Ù„Ù€Hook Ø£Ùˆ Ø§Ù„Ù€Angle.";
-    var parts = [];
-    if (ciIsMeaningful(p.hook_type)) parts.push("Ø§Ø¨Ø¯Ø£ Ø¨Ù€" + p.hook_type);
-    if (ciIsMeaningful(p.content_angle)) parts.push("Ø¹Ù† " + p.content_angle);
-    var lead = parts.length ? parts.join(" ") + "ØŒ Ø¨Ø¹Ø¯ÙŠÙ† Ù‚Ø¯Ù‘Ù… Ù…Ø¹Ù„ÙˆÙ…Ø© Ù‚ØµÙŠØ±Ø©" : "Ù‚Ø¯Ù‘Ù… Ù…Ø¹Ù„ÙˆÙ…Ø© Ù‚ØµÙŠØ±Ø© ÙˆÙ…Ø¨Ø§Ø´Ø±Ø© ØªØ®Øµ Ø§Ù„Ù…Ø´ÙƒÙ„Ø©/Ø§Ù„Ø®Ø¯Ù…Ø©";
-    var cta = ciIsMeaningful(p.cta_type) ? "ØŒ ÙˆÙ‚ÙÙ„ Ø¨Ù€CTA " + p.cta_type + "." : "ØŒ ÙˆÙ‚ÙÙ„ Ø¨Ø¯Ø¹ÙˆØ© ÙˆØ§Ø¶Ø­Ø© Ù„Ù„ØªÙˆØ§ØµÙ„.";
-    return lead + cta;
-  }
-
-  // Ø¥Ø¹Ù„Ø§Ù† ØªÙ‚Ù†ÙŠ/Ø±Ø§Ø¨Ø· Ø¨Ø³ (Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†/Ù†Øµ ÙƒØ±ÙŠÙŠØªÙ Ø­Ù‚ÙŠÙ‚ÙŠ) â€” Ù…Ø´ Ù…ØµØ¯Ø± Ø¥Ù„Ù‡Ø§Ù… Ø¥Ø¨Ø¯Ø§Ø¹ÙŠ (Ø¨Ù†Ø¯ Ù§)
-  function ciIsTechnical(a) {
-    // V4: Ø£ÙˆÙ„ Ø­Ø§Ø¬Ø© Ù†ÙØ­Øµ Ø§Ø³Ù… Ø§Ù„Ø¥Ø¹Ù„Ø§Ù†/Ø§Ù„Ø­Ù…Ù„Ø© â€” Ù„Ùˆ ÙˆØ§Ø¶Ø­ Ø¥Ù†Ù‡ Ø¥Ø¹Ù„Ø§Ù† ØªÙ‚Ù†ÙŠ/Ø±Ø§Ø¨Ø·
-    // (Promoting Website / Ø±Ø§Ø¨Ø· whatsapp.com/send / Ø±Ø§Ø¨Ø· Ø®Ø§Ù…)ØŒ ÙŠØªØµÙ†Ù‘Ù ØªÙ‚Ù†ÙŠ
-    // ÙÙˆØ±Ù‹Ø§ Ø­ØªÙ‰ Ù„Ùˆ Ø¹Ù†Ø¯Ù‡ creative_body (Ø§Ù„Ù†Øµ Ù…Ù…ÙƒÙ† ÙŠÙØ¶Ù„ Ù…ØªØ§Ø­ ÙÙŠ Ø§Ù„ØªÙ‚Ø§Ø±ÙŠØ±ØŒ Ø¨Ø³
-    // Ø§Ù„Ø¥Ø¹Ù„Ø§Ù† Ù†ÙØ³Ù‡ Ù…Ø´ Ù…ØµØ¯Ø± Ø¥Ù„Ù‡Ø§Ù… Ø¥Ø¨Ø¯Ø§Ø¹ÙŠ).
-    var name = String(a.ad_name || "") + " " + String(a.campaign_name || "");
-    if (/promoting\s*website|whatsapp\.com\/send|https?:\/\//i.test(name)) return true;
-    var title = String(a.creative_title || "").trim();
-    var body = String(a.creative_body || "").trim();
-    if (title || body.length > 15) return false;
-    return true; // Ù…ÙÙŠØ´ Ø¹Ù†ÙˆØ§Ù† ÙˆÙ„Ø§ Ù†Øµ ÙƒØ±ÙŠÙŠØªÙ Ù…ÙÙŠØ¯ØŒ ÙˆÙ„Ø§ Ø§Ø³Ù… ØªÙ‚Ù†ÙŠ ÙˆØ§Ø¶Ø­
-  }
-
-  function ciTechnicalSummary(list, metricField) {
-    if (!list.length) return null;
-    var sum = 0, n = 0, ctas = {};
-    list.forEach(function (a) {
-      if (a[metricField] != null) { sum += Number(a[metricField]); n++; }
-      if (ciIsMeaningful(a.cta_type)) ctas[a.cta_type] = true; // V4.1 (Ø¨Ù†Ø¯ Ù¤): ØªØ¬Ø§Ù‡Ù„ Ù‚ÙŠÙ… CTA Ø§Ù„Ù„ÙŠ Ù…Ø§Ù„Ù‡Ø§Ø´ Ù…Ø¹Ù†Ù‰ (UNKNOWN/N/A)
-    });
-    return { count: list.length, avgMetric: n ? sum / n : null, ctas: Object.keys(ctas) };
-  }
-
-  // ØªØ±ØªÙŠØ¨+ØªØµÙ†ÙŠÙ Ø¹Ø§Ù…: Ø¨ÙŠØ­Ø³Ø¨ rank/ratio/status Ø¹Ù„Ù‰ Ù…ØµÙÙˆÙØ© Ù…Ø±ØªØ¨Ø© Ø¨Ø§Ù„ÙØ¹Ù„ØŒ ÙˆÙŠØ±Ø¬Ù‘Ø¹ Ø«Ù‚Ø© Ø§Ù„Ù…Ø¬Ù…ÙˆØ¹Ø©
-  function ciAssignRankStatus(arr) {
-    var poolConfidence = ciAggregateConfidence(arr);
-    var bestMetric = arr.length ? arr[0].metric : null;
-    arr.forEach(function (x, idx) {
-      x.rank = idx + 1;
-      x.ratio = bestMetric > 0 ? x.metric / bestMetric : 1;
-      x.status = ciClassifyStatus(x, idx, poolConfidence, bestMetric);
-    });
-    return poolConfidence;
-  }
-
-  // Ù†ÙØ³ Ø§Ù„ÙÙƒØ±Ø© Ø¨Ø³ Ù„Ù…Ø¬Ù…ÙˆØ¹Ø© Ø§Ù„Ø¹Ù†Ø§ØµØ± Ø§Ù„Ù…Ø¤Ù‡Ù„Ø© ÙƒÙ€"Pattern Ù…Ø­ØªÙˆÙ‰" (actionable) â€”
-  // Ø¨ÙŠØªØ®Ø²Ù† ÙÙŠ Ø­Ù‚ÙˆÙ„ Ù…Ù†ÙØµÙ„Ø© (aRank/aRatio/aStatus) Ø¹Ø´Ø§Ù† Ø§Ù„Ø±Ø§Ù†Ùƒ Ø§Ù„Ø£ØµÙ„ÙŠ (Ø£Ø¯Ø§Ø¡
-  // Ø±Ù‚Ù…ÙŠ Ø¨Ø­Øª) ÙŠÙØ¶Ù„ Ù…ÙˆØ¬ÙˆØ¯ ÙˆÙ…Ø³ØªÙ‚Ù„ â€” Ø¨Ù†Ø¯ Ù¢/Ù§ (ÙØµÙ„ Ø§Ù„Ø£Ø¯Ø§Ø¡ Ø¹Ù† Ø§Ù„Ø¥Ù„Ù‡Ø§Ù… Ø§Ù„Ø¥Ø¨Ø¯Ø§Ø¹ÙŠ)
-  function ciAssignActionableRank(arr) {
-    var poolConfidence = ciAggregateConfidence(arr);
-    var bestMetric = arr.length ? arr[0].metric : null;
-    arr.forEach(function (x, idx) {
-      x.aRank = idx + 1;
-      x.aRatio = bestMetric > 0 ? x.metric / bestMetric : 1;
-      x.aStatus = ciClassifyStatus(x, idx, poolConfidence, bestMetric);
-      // V4.1 (Ø¨Ù†Ø¯ Ù¢/Ù£): Ø§Ù„Ø­Ø§Ù„Ø© Ø§Ù„Ø¹Ø§Ù„Ù…ÙŠØ© (x.statusØŒ Ù…Ø­Ø³ÙˆØ¨Ø© Ø¹Ù„Ù‰ Ø§Ù„Ù…Ø¬Ù…ÙˆØ¹Ø© Ø§Ù„ÙƒØ§Ù…Ù„Ø©)
-      // Ù‡ÙŠ Ø§Ù„Ù…Ø±Ø¬Ø¹ Ø§Ù„Ø­Ù‚ÙŠÙ‚ÙŠ Ù„Ù„Ø£Ø¯Ø§Ø¡ â€” Ù„Ùˆ Ø§Ù„Ø¹Ù†ØµØ± Ø¯Ù‡ "Ø¶Ø¹ÙŠÙ" Ø¹Ø§Ù„Ù…ÙŠÙ‹Ø§ØŒ Ù…Ø§ ÙŠÙ†ÙØ¹Ø´ ÙŠØ¸Ù‡Ø±
-      // ÙƒÙ€"Ø£ÙØ¶Ù„ Ø®ÙŠØ§Ø± Ù…ØªØ§Ø­" Ø¬ÙˆÙ‡ Ø§Ù„Ù€subset Ø§Ù„Ù‚Ø§Ø¨Ù„ Ù„Ù„Ø§Ø³ØªØ®Ø¯Ø§Ù… Ù„Ù…Ø¬Ø±Ø¯ Ø¥Ù†Ù‡ idx=0 Ù‡Ù†Ø§Ùƒ.
-      if (x.status && x.status.key === "weak") {
-        x.aStatus = x.status;
-      }
-    });
-    return poolConfidence;
-  }
-
-  // Ø¨Ù†Ø§Ø¡ pool Ù…ÙØµÙ†ÙÙ‘Ù Ù…Ù† Ø£Ù†Ù…Ø§Ø· vw_content_intelligence_patterns â€”
-  // pool = ØªØ±ØªÙŠØ¨ Ø£Ø¯Ø§Ø¡ Ø±Ù‚Ù…ÙŠ Ø¨Ø­ØªØŒ actionablePool = Ø¨Ø³ Ø§Ù„Ù„ÙŠ ÙÙŠÙ‡Ù… Ø¥Ø´Ø§Ø±Ø© Ø¥Ø¨Ø¯Ø§Ø¹ÙŠØ© Ù…ÙÙŠØ¯Ø© (V3)
-  function ciBuildPatternPool(matchedPatterns, metricKey) {
-    var valid = matchedPatterns.filter(function (p) { return p[metricKey] != null; });
-    var arr = valid.map(function (p) {
-      return { raw: p, metric: Number(p[metricKey]), sample: Number(p.total_messages || 0) + Number(p.total_leads || 0), spend: Number(p.total_spend || 0), runs: Number(p.ads_count || 1) };
-    });
-    arr = ciSortComparable(arr);
-    arr.forEach(function (x) { x.actionable = ciIsActionable(x.raw, "pattern"); });
-    var poolConfidence = ciAssignRankStatus(arr);
-    var actionableArr = arr.filter(function (x) { return x.actionable; });
-    var actionableConfidence = actionableArr.length ? ciAssignActionableRank(actionableArr) : "low";
-    return { pool: arr, confidence: poolConfidence, actionablePool: actionableArr, actionableConfidence: actionableConfidence };
-  }
-
-  // Ø¨Ù†Ø§Ø¡ pool Ù…ÙØµÙ†ÙÙ‘Ù Ù…Ù† Ø¥Ø¹Ù„Ø§Ù†Ø§Øª vw_meta_ad_performance â€” Ù…ÙØ³ØªØ¨Ø¹Ø¯ Ù…Ù†Ù‡ Ø§Ù„Ø¥Ø¹Ù„Ø§Ù†Ø§Øª
-  // Ø§Ù„ØªÙ‚Ù†ÙŠØ©/Ø§Ù„Ø±Ø§Ø¨Ø· Ø¨Ø³ (Ø¨ØªØ±Ø¬Ø¹ Ù…Ù†ÙØµÙ„Ø© ÙÙŠ technical)ØŒ ÙˆÙ…ÙØ¬Ù…Ù‘Ø¹ Ø­Ø³Ø¨ creative_group_id
-  // (Ù†ÙØ³ Ø§Ù„Ù…Ø¬Ù…ÙˆØ¹Ø© = Ù…Ø«Ø§Ù„ ÙˆØ§Ø­Ø¯ + Ø¹Ø¯Ø¯ ØªÙƒØ±Ø§Ø±Ø§Øª)
-  function ciBuildExamplePool(ads, metaLabel, objMeta, objKey) {
-    var filtered = ads.filter(function (a) { return a.specialty === metaLabel && a.objective === objMeta; });
-    var metricField = objKey === "messages" ? "cost_per_msg_conv" : objKey === "lead_generation" ? "cost_per_lead" : "cpm";
-    var sampleField = objKey === "messages" ? "msg_conv" : objKey === "lead_generation" ? "leads" : "impressions";
-    var valid = filtered.filter(function (a) {
-      if (objKey === "messages") return Number(a.msg_conv) > 0 && a.cost_per_msg_conv != null;
-      if (objKey === "lead_generation") return Number(a.leads) > 0 && a.cost_per_lead != null;
-      return a.cpm != null;
-    });
-    var technical = valid.filter(ciIsTechnical);
-    var creative = valid.filter(function (a) { return !ciIsTechnical(a); });
-
-    var arr = creative.map(function (a) {
-      return { metric: Number(a[metricField]), sample: Number(a[sampleField] || 0), spend: Number(a.spend || 0), a: a };
-    });
-    arr = ciSortComparable(arr); // Ù†Ø±ØªØ¨ Ø§Ù„Ø¥Ø¹Ù„Ø§Ù†Ø§Øª Ø§Ù„ÙØ±Ø¯ÙŠØ© Ø§Ù„Ø£ÙˆÙ„ Ø¹Ø´Ø§Ù† Ù†Ù…Ø«Ù‘Ù„ ÙƒÙ„ Ù…Ø¬Ù…ÙˆØ¹Ø© ÙƒØ±ÙŠÙŠØªÙ Ø¨Ø£ÙØ¶Ù„ ØªØ´ØºÙŠÙ„ Ù„ÙŠÙ‡Ø§
-
-    var groups = {}; var deduped = [];
-    arr.forEach(function (x) {
-      var key = x.a.creative_group_id || x.a.ad_id;
-      if (groups[key]) { groups[key].runs += 1; return; }
-      var g = { raw: x.a, metric: x.metric, sample: x.sample, spend: x.spend, runs: 1 };
-      groups[key] = g; deduped.push(g);
-    });
-
-    var pool = ciSortComparable(deduped);
-    pool.forEach(function (x) { x.actionable = ciIsActionable(x.raw, "ad"); });
-    var poolConfidence = ciAssignRankStatus(pool);
-    var actionablePool = pool.filter(function (x) { return x.actionable; });
-    var actionableConfidence = actionablePool.length ? ciAssignActionableRank(actionablePool) : "low";
-    return { pool: pool, confidence: poolConfidence, actionablePool: actionablePool, actionableConfidence: actionableConfidence, technical: ciTechnicalSummary(technical, metricField), metricField: metricField };
-  }
-
-  function ciSignalHtml(confidence) {
-    if (confidence === "high") return '<p style="font-size:12px;color:var(--c-positive);margin:4px 0;">ğŸ“Š Ù„Ø¯ÙŠÙ†Ø§ Ø¨ÙŠØ§Ù†Ø§Øª Ù‚ÙˆÙŠØ© Ù„Ù‡Ø°Ø§ Ø§Ù„ØªØ®ØµØµ ÙˆØ§Ù„Ù‡Ø¯Ù.</p>';
-    if (confidence === "medium") return '<p style="font-size:12px;color:var(--c-muted);margin:4px 0;">ğŸ“Š Ø¨ÙŠØ§Ù†Ø§Øª Ù…ØªÙˆØ³Ø·Ø© â€” Ù†ØªØ§ÙŠØ¬ Ù…Ø¨Ø¯Ø¦ÙŠØ© Ù…ÙÙŠØ¯Ø© Ù„ÙƒÙ† Ù„Ø³Ù‡ Ù…Ø­ØªØ§Ø¬Ø© ØªØ¬Ø±Ø¨Ø© Ø£ÙƒØªØ±.</p>';
-    return '<p style="font-size:12px;color:var(--c-muted);margin:4px 0;">ğŸ“Š Ø§Ù„Ø¹ÙŠÙ†Ø© Ù…Ø­Ø¯ÙˆØ¯Ø© â€” ØªØ¹Ø§Ù…Ù„ Ù…Ø¹ Ø§Ù„Ù†ØªØ§Ø¦Ø¬ ÙƒØªØ¬Ø±Ø¨Ø© ÙˆÙ„ÙŠØ³Øª Ù‚Ø§Ø¹Ø¯Ø© Ù…Ø¤ÙƒØ¯Ø©.</p>';
-  }
-
-  // ÙƒØ§Ø±Øª Ù…ÙˆØ­Ù‘Ø¯ Ù„Ø¹Ù†ØµØ± Ù…ÙØµÙ†ÙÙ‘Ù (Ù†Ù…Ø· Ø£Ùˆ Ø¥Ø¹Ù„Ø§Ù† ÙØ±Ø¯ÙŠ) â€” Ø±Ø§Ù†Ùƒ + Ø­Ø§Ù„Ø© + Ø«Ù‚Ø© + Ù„ÙŠÙ‡/Ø¥Ø²Ø§ÙŠ
-  // mode: "perf" (Ø±Ø§Ù†Ùƒ Ø£Ø¯Ø§Ø¡ Ø±Ù‚Ù…ÙŠ Ø¨Ø­ØªØŒ Ø§Ù„Ø§ÙØªØ±Ø§Ø¶ÙŠ) Ø£Ùˆ "actionable" (Ø±Ø§Ù†Ùƒ Ø¨ÙŠÙ†
-  // Ø§Ù„Ù€Patterns Ø§Ù„Ù‚Ø§Ø¨Ù„Ø© Ù„Ù„Ø§Ø³ØªØ®Ø¯Ø§Ù… Ø¨Ø³ â€” Ø¨ÙŠØ³ØªØ®Ø¯Ù… aRank/aRatio/aStatus)
-  function ciCardHtml(x, objKey, poolConfidence, kind, mode) {
-    mode = mode || "perf";
-    var metricLabel = ciMetricLabel(objKey);
-    var p = x.raw;
-    var rank = mode === "actionable" ? x.aRank : x.rank;
-    var status = mode === "actionable" ? x.aStatus : x.status;
-    var ratio = mode === "actionable" ? x.aRatio : x.ratio;
-    var confLabel = ciItemConfidenceLabel(x, poolConfidence);
-    var why = ciWhyText(status, ratio, x.runs, metricLabel);
-    var how = ciHowToUseText(p, status, false);
-    var incomplete = !x.actionable ? '<div style="color:var(--c-negative);margin-top:2px;">âš ï¸ Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„ØªÙ†ÙÙŠØ° Ø§Ù„Ø¥Ø¨Ø¯Ø§Ø¹ÙŠ ØºÙŠØ± Ù…ÙƒØªÙ…Ù„Ø© Ù„Ù‡Ø°Ø§ Ø§Ù„Ø¥Ø¹Ù„Ø§Ù† â€” Ù…ÙÙŠØ¯ ÙƒØ¥Ø´Ø§Ø±Ø© Ø£Ø¯Ø§Ø¡ Ø¨Ø³ØŒ Ù…Ø´ Ù…Ø±Ø¬Ø¹ ÙƒØ§ÙÙ Ù„ØµÙ†Ø§Ø¹Ø© Ù…Ø­ØªÙˆÙ‰ Ø¬Ø¯ÙŠØ¯.</div>' : "";
-    var html = '<div style="border:1px solid var(--c-border,#e3e3e3);border-radius:6px;padding:8px 10px;margin-bottom:6px;font-size:12px;">';
-    html += '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px;"><b>#' + rank + ' ' + status.emoji + ' ' + escapeHtml(status.label) + '</b>' +
-      '<span class="status-pill ' + confLabel.cls + '" style="font-size:10px;">Ø«Ù‚Ø©: ' + confLabel.label + '</span></div>' + incomplete;
-    if (kind === "ad") {
-      html += '<div style="margin-top:4px;"><b>' + escapeHtml(p.ad_name || p.campaign_name || "â€”") + '</b>' +
-        (x.runs > 1 ? ' <span style="color:var(--c-muted);">(' + x.runs + ' ØªÙƒØ±Ø§Ø±)</span>' : '') + '</div>';
-      if (p.creative_title) html += '<div><b>Ø§Ù„Ø¹Ù†ÙˆØ§Ù†:</b> ' + escapeHtml(p.creative_title) + '</div>';
-      if (p.creative_body) html += '<div><b>Ø§Ù„Ù†Øµ:</b> ' + escapeHtml(String(p.creative_body).slice(0, 140)) + (String(p.creative_body).length > 140 ? "â€¦" : "") + '</div>';
-    }
-    html += '<div><b>Hook:</b> ' + escapeHtml(p.hook_type || "â€”") + ' &nbsp; <b>Angle:</b> ' + escapeHtml(p.content_angle || "â€”") + '</div>';
-    html += '<div><b>Format:</b> ' + escapeHtml(p.creative_type || "â€”") + ' &nbsp; <b>CTA:</b> ' + escapeHtml(p.cta_type || "â€”") + '</div>';
-    if (kind === "ad") {
-      html += '<div>Ø¥Ù†ÙØ§Ù‚: ' + fmtMoneyW(p.spend) + ' | Ù…Ø­Ø§Ø¯Ø«Ø§Øª: ' + fmtNumW(p.msg_conv) + ' | ØªÙƒÙ„ÙØ©/Ù…Ø­Ø§Ø¯Ø«Ø©: ' + fmtMoneyW(p.cost_per_msg_conv) +
-        ' | Leads: ' + fmtNumW(p.leads) + ' | CPL: ' + fmtMoneyW(p.cost_per_lead) + ' | CTR: ' + (p.ctr != null ? Number(p.ctr).toFixed(2) + "%" : "â€”") +
-        ' | CPC: ' + fmtMoneyW(p.cpc) + ' | CPM: ' + fmtMoneyW(p.cpm) + '</div>';
-      if (p.creative_group_id) html += '<div style="color:var(--c-muted);">Creative Group: ' + escapeHtml(p.creative_group_id) + ' â€” Runs: ' + x.runs + '</div>';
-      if (p.preview_url) html += '<div><a href="' + p.preview_url + '" target="_blank" rel="noopener noreferrer">Ù…Ø¹Ø§ÙŠÙ†Ø© Ø§Ù„Ø¥Ø¹Ù„Ø§Ù† Ø§Ù„Ø£ØµÙ„ÙŠ</a></div>';
-    } else {
-      html += '<div>' + metricLabel + ': <b>' + fmtMoneyW(x.metric) + '</b> &nbsp; Ø¥Ø¹Ù„Ø§Ù†Ø§Øª: ' + fmtNumW(p.ads_count) + '</div>';
-    }
-    html += '<div style="margin-top:4px;color:var(--c-muted);"><b>Ù„ÙŠÙ‡ Ø¨Ù†Ø±Ø´Ø­Ù‡ØŸ</b> ' + escapeHtml(why) + '</div>';
-    html += '<div style="color:var(--c-muted);"><b>Ø§Ø³ØªØ®Ø¯Ù…Ù‡ Ø¥Ø²Ø§ÙŠØŸ</b> ' + escapeHtml(how) + '</div>';
-    html += '</div>';
-    return html;
-  }
-
-  function ciCardsHtml(title, items, objKey, poolConfidence, kind, emptyMsg, mode) {
-    var html = '<h4 style="font-size:12px;margin:10px 0 6px;">' + title + '</h4>';
-    if (!items.length) {
-      html += '<div class="empty-state" style="font-size:11px;">' + (emptyMsg || "Ù„Ø§ ÙŠÙˆØ¬Ø¯") + '</div>';
-      return html;
-    }
-    items.forEach(function (x) { html += ciCardHtml(x, objKey, poolConfidence, kind, mode); });
-    return html;
-  }
-
-  function ciTechnicalHtml(tech) {
-    if (!tech) return "";
-    return '<h4 style="font-size:12px;margin:10px 0 6px;">ğŸ“Œ Ø¥Ø´Ø§Ø±Ø© Ø£Ø¯Ø§Ø¡ Ù„Ù„Ù€CTA (Ø¥Ø¹Ù„Ø§Ù†Ø§Øª ØªÙ‚Ù†ÙŠØ©/Ø±Ø§Ø¨Ø· Ø¨Ø³ â€” Ù…Ø´ Ù…ØµØ¯Ø± Ø¥Ù„Ù‡Ø§Ù… Ø¥Ø¨Ø¯Ø§Ø¹ÙŠ)</h4>' +
-      '<div class="empty-state" style="font-size:11px;">' + tech.count + ' Ø¥Ø¹Ù„Ø§Ù† ØªÙ‚Ù†ÙŠØŒ CTA: ' + escapeHtml(tech.ctas.join("ØŒ ") || "â€”") +
-      (tech.avgMetric != null ? " â€” Ù…ØªÙˆØ³Ø· Ø§Ù„Ø£Ø¯Ø§Ø¡: " + fmtMoneyW(tech.avgMetric) : "") + '</div>';
-  }
-
-  function contentIntelligencePanelHtml() {
-    return '<div class="section ci-panel" style="margin-top:14px;">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" id="ci-toggle-head">' +
-      '<h3 style="margin:0;font-size:14px;">âœ¨ Ø°ÙƒØ§Ø¡ Ø§Ù„Ù…Ø­ØªÙˆÙ‰</h3><span id="ci-toggle-arrow">â–¾</span></div>' +
-      '<div id="ci-body" style="margin-top:10px;">' +
-      '<div class="field"><label>Ø§Ù„Ù‡Ø¯Ù Ø§Ù„Ø¥Ø¹Ù„Ø§Ù†ÙŠ</label>' + ciObjectiveSelectHtml("ci-objective") + '</div>' +
-      '<div class="field"><label>Ø´ÙƒÙ„ Ø§Ù„Ù…Ø­ØªÙˆÙ‰ (Ø§Ø®ØªÙŠØ§Ø±ÙŠ)</label>' + ciFormatSelectHtml("ci-format") + '</div>' +
-      '<div class="field"><label>Ø§Ù„Ù…ÙˆØ¶ÙˆØ¹ / Ø§Ù„Ø®Ø¯Ù…Ø© (Ø§Ø®ØªÙŠØ§Ø±ÙŠ)</label><input id="ci-topic" placeholder="Ù…Ø«Ø§Ù„: Ø§Ù„ØµØ¯Ø§Ø¹ Ø§Ù„Ù†ØµÙÙŠØŒ Ø±Ø³Ù… Ø§Ù„Ù…Ø®ØŒ ØªÙ†Ù…ÙŠÙ„ Ø§Ù„Ø£Ø·Ø±Ø§Ù..."></div>' +
-      '<div id="ci-output"><div class="empty-state" style="font-size:12px;">Ø§Ø®ØªØ± Ø§Ù„ØªØ®ØµØµ ÙÙˆÙ‚ Ø«Ù… Ø§Ù„Ù‡Ø¯Ù Ø§Ù„Ø¥Ø¹Ù„Ø§Ù†ÙŠ Ù„Ø¹Ø±Ø¶ Ø§Ù„ØªÙˆØµÙŠØ§Øª</div></div>' +
-      '</div></div>';
-  }
-
-  function ciCurrentState(container) {
-    var objSel = container.querySelector("#ci-objective");
-    var fmtSel = container.querySelector("#ci-format");
-    var topicSel = container.querySelector("#ci-topic");
-    return { objKey: objSel ? objSel.value : "", fmtKey: fmtSel ? fmtSel.value : "", topicText: topicSel ? topicSel.value.trim() : "" };
-  }
-
-  function renderCiOutput(container, getSpecialtyKey) {
-    var out = container.querySelector("#ci-output");
-    if (!out) return;
-    var specialtyKey = getSpecialtyKey();
-    var st = ciCurrentState(container);
-    if (!specialtyKey) { out.innerHTML = '<div class="empty-state" style="font-size:12px;">Ø§Ø®ØªØ± Ø§Ù„ØªØ®ØµØµ ÙÙˆÙ‚ Ø§Ù„Ø£ÙˆÙ„</div>'; return; }
-    if (!st.objKey) { out.innerHTML = '<div class="empty-state" style="font-size:12px;">Ø§Ø®ØªØ± Ø§Ù„Ù‡Ø¯Ù Ø§Ù„Ø¥Ø¹Ù„Ø§Ù†ÙŠ Ù„Ø¹Ø±Ø¶ Ø§Ù„ØªÙˆØµÙŠØ§Øª</div>'; return; }
-    out.innerHTML = '<div class="loading" style="font-size:12px;">Ø¨ÙŠØ­Ù…Ù‘Ù„ Ø¨ÙŠØ§Ù†Ø§Øª Ø°ÙƒØ§Ø¡ Ø§Ù„Ù…Ø­ØªÙˆÙ‰â€¦</div>';
-    ciLoadData().then(function (data) {
-      renderCiResults(out, data, specialtyKey, st.objKey, st.fmtKey, st.topicText);
-    }).catch(function (e) {
-      out.innerHTML = '<div class="err-msg">ØªØ¹Ø°Ù‘Ø± ØªØ­Ù…ÙŠÙ„ Ø¨ÙŠØ§Ù†Ø§Øª Ø°ÙƒØ§Ø¡ Ø§Ù„Ù…Ø­ØªÙˆÙ‰: ' + escapeHtml(e.message || e) + '</div>';
-    });
-  }
-
-  function ciGeneralFallbackHtml(patterns, objKey, fallbackMode) {
-    if (!patterns.length) return "";
-    var metricKey = ciMetricFor(objKey);
-    var info = ciBuildPatternPool(patterns, metricKey);
-    var items = info.actionablePool.filter(function (x) { return x.aStatus.key !== "weak"; });
-    if (!items.length) items = info.pool.filter(function (x) { return x.status.key !== "weak"; });
-    if (!items.length) items = info.pool;
-    var title = fallbackMode
-      ? "Ø£ÙØ¶Ù„ Ø§Ù„Ø¥Ø´Ø§Ø±Ø§Øª Ø§Ù„Ø¹Ø§Ù…Ø© Ø¹Ø¨Ø± Ø§Ù„Ø­Ø³Ø§Ø¨ (GENERAL ACCOUNT INSIGHTS â€” ÙØ±Ø¶ÙŠØ§Øª Ø§Ø®ØªØ¨Ø§Ø± ÙÙ‚Ø·ØŒ Ù…Ø´ Ø®Ø§ØµØ© Ø¨Ø§Ù„ØªØ®ØµØµ Ø¯Ù‡)"
-      : "Ø£ÙØ¶Ù„ Ø§Ù„Ø£Ù†Ù…Ø§Ø· Ø§Ù„Ø¹Ø§Ù…Ø© Ø¹Ø¨Ø± Ø§Ù„Ø­Ø³Ø§Ø¨ (GENERAL ACCOUNT INSIGHTS â€” Ù…Ø´ Ø®Ø§ØµØ© Ø¨Ø§Ù„ØªØ®ØµØµ Ø¯Ù‡)";
-    var html = '<h4 style="font-size:12px;margin:10px 0 6px;color:var(--c-muted);">' + title + '</h4>';
-    items.slice(0, 3).forEach(function (x) {
-      html += ciCardHtml(x, objKey, info.confidence, "pattern", x.actionable ? "actionable" : "perf");
-    });
-    return html;
-  }
-
-  function ciAppendAgentOutputContract(lines, fmtKey) {
-    lines.push("");
-    lines.push("=== OUTPUT CONTRACT â€” MANDATORY ===");
-    lines.push("Generate exactly 3 ideas. EVERY idea must contain ALL required fields below. Do not omit a field.");
-    lines.push("");
-    lines.push("REQUIRED FIELDS FOR EVERY IDEA:");
-    lines.push("1. title â€” short publishable title");
-    lines.push("2. idea â€” one concise paragraph describing the concept");
-    lines.push("3. hook â€” one strong opening sentence only");
-    lines.push("4. angle â€” concise strategic angle");
-    lines.push("5. format â€” exactly one of: video, image_post, link_post");
-    lines.push("6. script â€” mandatory for video; pure spoken Voice-over text only, no labels or directions");
-    lines.push("7. caption â€” mandatory, publish-ready, and not a copy of the script");
-    lines.push("8. cta_type â€” mandatory");
-    lines.push("9. cta_text â€” mandatory and written exactly as it should appear/publish");
-    lines.push("10. duration_min_seconds / duration_max_seconds â€” mandatory numeric range for video; null otherwise");
-    lines.push("11. video_template â€” mandatory for video; choose the closest of medical_educational, doctor_talking, quick_tips");
-    lines.push("12. hypothesis_reason â€” mandatory; explain why this is a useful test given the evidence level");
-    lines.push("");
-    lines.push("QUALITY RULES:");
-    lines.push("- Never leave caption, CTA, hook, angle, or hypothesis_reason blank.");
-    lines.push("- For video, never leave script or duration blank.");
-    lines.push("- The script must be natural spoken Arabic suitable for the requested duration. Do not include headings such as Hook/Angle/CTA inside the script.");
-    lines.push("- The caption must be ready to publish, concise, medically responsible, and should complement rather than repeat the script verbatim.");
-    lines.push("- CTA must match the creative purpose and medical safety. If the content describes urgent/red-flag symptoms, patient safety overrides Sales: use an emergency/safety CTA, never a booking CTA.");
-    lines.push("- If the objective is Sales/Messages but a booking CTA would be medically inappropriate, choose the safe CTA and explain that in hypothesis_reason.");
-    lines.push("- Do not invent prices, offers, contact details, doctor credentials, benchmarks, or medical claims not supplied by the Brief or approved business knowledge.");
-    lines.push("- Do not use fearmongering, guaranteed outcomes, or diagnosis-by-content language.");
-    lines.push("- Keep evidence language calibrated: Medium/Low = hypothesis/test, not proven winner.");
-    lines.push("- No Markdown code fences inside field values. No 'svg' labels. No placeholder text.");
-    lines.push("");
-    lines.push("CTA TYPES:");
-    lines.push('Use one of: "save_share", "whatsapp", "book", "message", "call", "learn_more", "comment", "emergency_action", "custom".');
-    lines.push("");
-    lines.push("SELF-CHECK BEFORE FINAL ANSWER:");
-    lines.push("Before sending the answer, verify every idea has all mandatory fields. If any required field is missing or empty, fix it before you answer.");
-    lines.push("");
-    lines.push("HUMAN-READABLE OUTPUT:");
-    lines.push("For each idea, show: Title, Idea, Hook, Angle, Format, Script, Caption, CTA Type, CTA Text, Duration, Video Template, Hypothesis Reason.");
-    lines.push("");
-    lines.push("IMPORTANT FOR DASHBOARD IMPORT:");
-    lines.push("After the human-readable section, add ONE structured block at the very end and nothing after it:");
-    lines.push("SSMPD_STRUCTURED_JSON");
-    lines.push("\`\`\`json");
-    lines.push('{"ideas":[{"number":1,"title":"","idea":"","hook":"","angle":"","format":"video","script":"","caption":"","cta_type":"save_share","cta_text":"","duration_min_seconds":25,"duration_max_seconds":30,"video_template":"medical_educational","hypothesis_reason":""}]}');
-    lines.push("\`\`\`");
-    lines.push("SSMPD_STRUCTURED_JSON_END");
-    lines.push("Repeat one object per idea. Use exactly these keys.");
-    lines.push('format must be exactly one of: "video", "image_post", "link_post".');
-    lines.push("For non-video ideas set script, duration_min_seconds, duration_max_seconds, and video_template to null where not applicable.");
-    lines.push("All JSON values must be plain text with valid JSON escaping.");
-  }
-
-function ciCopyFallbackBrief(ctx, returnOnly) {
-    var brand = document.getElementById("cf-brand");
-    var generalInfo = ciBuildPatternPool(ctx.generalPatterns || [], ciMetricFor(ctx.objKey));
-    var generalItems = generalInfo.actionablePool.filter(function (x) { return x.aStatus.key !== "weak"; });
-    if (!generalItems.length) generalItems = generalInfo.pool.filter(function (x) { return x.status.key !== "weak"; });
-    if (!generalItems.length) generalItems = generalInfo.pool;
-
-    var lines = [];
-    lines.push("=== Brief Ù„Ù„ÙˆÙƒÙŠÙ„ â€” Ø¥Ù†Ø´Ø§Ø¡ Ù…Ø­ØªÙˆÙ‰ Ø¬Ø¯ÙŠØ¯ ===");
-    lines.push("Brand: " + (brand && brand.value ? brand.value : "â€”"));
-    lines.push("Specialty: " + (SPECIALTIES[ctx.specialtyKey] ? SPECIALTIES[ctx.specialtyKey].label : ctx.specialtyKey));
-    lines.push("Topic/Service: " + (ctx.topicText || "â€”"));
-    lines.push("Advertising Objective: " + (CONTENT_OBJECTIVES[ctx.objKey] ? CONTENT_OBJECTIVES[ctx.objKey].label : ctx.objKey));
-    lines.push("Preferred Format: " + (CONTENT_FORMATS[ctx.fmtKey] ? CONTENT_FORMATS[ctx.fmtKey].label : "Ø£ÙŠ Ø´ÙƒÙ„"));
-    lines.push("Evidence level: Low / fallback");
-    lines.push("");
-    lines.push("DATA SCOPE: GENERAL ACCOUNT INSIGHTS");
-    lines.push("SPECIALTY-SPECIFIC HISTORICAL DATA: NOT AVAILABLE");
-    lines.push("EVIDENCE WARNING: These patterns are from the overall account and are NOT evidence that they will perform the same way for this specialty.");
-    lines.push("Use them only to generate testing hypotheses. Do not describe them as proven winners for this specialty.");
-    lines.push("");
-
-    if (generalItems.length) {
-      generalItems.slice(0, 3).forEach(function (x, idx) {
-        var p = x.raw || {};
-        lines.push("GENERAL ACCOUNT PATTERN #" + (idx + 1) + " â€” TESTING HYPOTHESIS");
-        if (ciIsMeaningful(p.hook_type)) lines.push("Hook: " + p.hook_type);
-        if (ciIsMeaningful(p.content_angle)) lines.push("Angle: " + p.content_angle);
-        if (ciIsMeaningful(p.creative_type)) lines.push("Format: " + p.creative_type);
-        if (ciIsMeaningful(p.cta_type)) lines.push("CTA: " + p.cta_type);
-        if (x.metric != null) lines.push(ciMetricLabel(ctx.objKey) + ": " + fmtMoneyW(x.metric));
-        lines.push("NOTE: Account-level signal only â€” not specialty-specific proof.");
-        lines.push("");
-      });
-    } else {
-      lines.push("No reliable historical performance data is available for this specialty/objective.");
-      lines.push("Generate exactly 3 content hypotheses based on the specialty, topic, objective and format.");
-      lines.push("Do not invent historical performance evidence.");
-      lines.push("");
-    }
-
-    ciAppendAgentOutputContract(lines, ctx.fmtKey);
-
-
-    var text = lines.join("\n");
-    if (returnOnly) return text;
-    var done = function () {
-      if (window.SSMPDToast) window.SSMPDToast.show("ØªÙ… Ù†Ø³Ø® Ø§Ù„Ù€Brief â€” Ø§ÙØªØ­ ÙˆÙƒÙŠÙ„ Ø¥Ù†Ø´Ø§Ø¡ Ø§Ù„Ù…Ø­ØªÙˆÙ‰", "success");
-      else alert("ØªÙ… Ù†Ø³Ø® Ø§Ù„Ù€Brief");
-    };
-    var fail = function () {
-      if (window.SSMPDToast) window.SSMPDToast.show("ØªØ¹Ø°Ù‘Ø± Ø§Ù„Ù†Ø³Ø® Ø§Ù„ØªÙ„Ù‚Ø§Ø¦ÙŠ â€” Ø§Ù†Ø³Ø® ÙŠØ¯ÙˆÙŠÙ‹Ø§", "error");
-    };
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(done).catch(fail);
-    } else {
-      try {
-        var ta = document.createElement("textarea");
-        ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
-        document.body.appendChild(ta); ta.select();
-        document.execCommand("copy"); document.body.removeChild(ta);
-        done();
-      } catch (e) { fail(); }
-    }
-  }
-
-  function renderCiFallback(out, data, specialtyKey, objKey, fmtKey, topicText, warningText) {
-    var objMeta = CONTENT_OBJECTIVES[objKey] ? CONTENT_OBJECTIVES[objKey].meta : null;
-    var general = data.patterns.filter(function (p) { return p.objective === objMeta && p.confidence !== "low"; });
-    var html = '<div class="empty-state" style="font-size:12px;">' + escapeHtml(warningText) + '</div>';
-    if (general.length) {
-      html += ciGeneralFallbackHtml(general, objKey, true);
-    } else {
-      html += '<div class="empty-state" style="font-size:11px;margin-top:8px;">Ù„Ø§ ØªÙˆØ¬Ø¯ Ø¨ÙŠØ§Ù†Ø§Øª Ø£Ø¯Ø§Ø¡ Ø¹Ø§Ù…Ø© Ù…ÙˆØ«ÙˆÙ‚Ø© Ù„Ù‡Ø°Ø§ Ø§Ù„Ù‡Ø¯Ù Ø­Ø§Ù„ÙŠÙ‹Ø§ â€” Ø§Ù„ÙˆÙƒÙŠÙ„ Ø³ÙŠÙˆÙ„Ù‘Ø¯ ÙØ±Ø¶ÙŠØ§Øª Ø§Ø®ØªØ¨Ø§Ø± Ø¨Ø¯ÙˆÙ† Ø§Ø®ØªØ±Ø§Ø¹ ØªØ§Ø±ÙŠØ® Ø£Ø¯Ø§Ø¡.</div>';
-    }
-    html += '<div style="text-align:left;margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;">' +
-      '<button class="btn ghost sm" id="ci-copy-brief">Ù†Ø³Ø® Brief Ù„Ù„ÙˆÙƒÙŠÙ„</button>' +
-      '<button class="btn ghost sm" id="ci-open-agent">ÙˆÙƒÙŠÙ„ Ø¥Ù†Ø´Ø§Ø¡ Ø§Ù„Ù…Ø­ØªÙˆÙ‰ â†—</button></div>';
-    out.innerHTML = html;
-
-    out.buildBrief = function () {
-      return ciCopyFallbackBrief({
-        specialtyKey: specialtyKey, objKey: objKey, fmtKey: fmtKey,
-        topicText: topicText, generalPatterns: general
-      }, true);
-    };
-    var copyBtn = out.querySelector("#ci-copy-brief");
-    if (copyBtn) copyBtn.onclick = function () {
-      ciCopyFallbackBrief({
-        specialtyKey: specialtyKey,
-        objKey: objKey,
-        fmtKey: fmtKey,
-        topicText: topicText,
-        generalPatterns: general
-      });
-    };
-    var agentBtn = out.querySelector("#ci-open-agent");
-    if (agentBtn) agentBtn.onclick = function () { ciOpenAgent(); };
-  }
-
-  function renderCiResults(out, data, specialtyKey, objKey, fmtKey, topicText) {
-    var mapRow = data.map.filter(function (m) { return m.content_specialty_key === specialtyKey; })[0];
-    var metaLabel = mapRow ? mapRow.meta_specialty_label : null;
-    var objMeta = CONTENT_OBJECTIVES[objKey] ? CONTENT_OBJECTIVES[objKey].meta : null;
-
-    if (!metaLabel) {
-      renderCiFallback(
-        out, data, specialtyKey, objKey, fmtKey, topicText,
-        "Ù„Ø§ ØªÙˆØ¬Ø¯ Ø¨ÙŠØ§Ù†Ø§Øª ØªØ§Ø±ÙŠØ®ÙŠØ© Ø®Ø§ØµØ© Ø¨Ù‡Ø°Ø§ Ø§Ù„ØªØ®ØµØµ Ø­Ø§Ù„ÙŠÙ‹Ø§. Ø³ÙŠØªÙ… Ø§Ø³ØªØ®Ø¯Ø§Ù… Ø£Ù†Ù…Ø§Ø· Ø¹Ø§Ù…Ø© Ù…Ù† Ø§Ù„Ø­Ø³Ø§Ø¨ ÙƒÙ…Ø±Ø¬Ø¹ Ø§Ø®ØªØ¨Ø§Ø± ÙÙ‚Ø·."
-      );
-      return;
-    }
-
-    var matched = data.patterns.filter(function (p) { return p.specialty === metaLabel && p.objective === objMeta; });
-    var metricKey = ciMetricFor(objKey);
-    var patternInfo = ciBuildPatternPool(matched, metricKey);
-    var examplesInfo = ciBuildExamplePool(data.ads, metaLabel, objMeta, objKey);
-
-    if (!matched.length && !examplesInfo.pool.length) {
-      renderCiFallback(
-        out, data, specialtyKey, objKey, fmtKey, topicText,
-        "Ù„Ø§ ØªÙˆØ¬Ø¯ Ø¨ÙŠØ§Ù†Ø§Øª ØªØ§Ø±ÙŠØ®ÙŠØ© ÙƒØ§ÙÙŠØ© Ù„Ù‡Ø°Ø§ Ø§Ù„ØªØ®ØµØµ Ù…Ø¹ Ø§Ù„Ù‡Ø¯Ù Ø¯Ù‡. Ø³ÙŠØªÙ… Ø§Ø³ØªØ®Ø¯Ø§Ù… Ø£ÙØ¶Ù„ Ø§Ù„Ø¥Ø´Ø§Ø±Ø§Øª Ø§Ù„Ø¹Ø§Ù…Ø© Ø§Ù„Ù…ØªØ§Ø­Ø© Ù…Ù† Ø§Ù„Ø­Ø³Ø§Ø¨ ÙƒÙØ±Ø¶ÙŠØ§Øª Ø§Ø®ØªØ¨Ø§Ø±."
-      );
-      return;
-    }
-
-    var pPool = patternInfo.pool, pConf = patternInfo.confidence;
-    var pActionable = patternInfo.actionablePool, pActConf = patternInfo.actionableConfidence;
-
-    var exPool = examplesInfo.pool, exConf = examplesInfo.confidence;
-    var exActionable = examplesInfo.actionablePool, exActConf = examplesInfo.actionableConfidence;
-
-    // V4.2 (Ø­Ø§Ø±Ø³ Ø§Ù„Ø£Ø¯Ø§Ø¡ Ø§Ù„Ø¹Ø§Ù„Ù…ÙŠ) â€” Ù„Ø§Ø²Ù… ÙŠØªØ·Ø¨Ù‘Ù‚ Ù‚Ø¨Ù„ Ø£ÙŠ ÙÙ„ØªØ±Ø© Ø¹Ù„Ù‰ x.status.key
-    var globalBestMetric = null;
-    if (pPool.length) globalBestMetric = pPool[0].metric;
-    if (exPool.length && (globalBestMetric == null || exPool[0].metric < globalBestMetric)) globalBestMetric = exPool[0].metric;
-    ciApplyGlobalWeakGuard(pPool, globalBestMetric);
-    ciApplyGlobalWeakGuard(exPool, globalBestMetric);
-
-    var avoidPatterns = pPool.filter(function (x) { return x.status.key === "weak"; });
-    var exWeak = exPool.filter(function (x) { return x.status.key === "weak"; });
-
-    // V3 â€” ÙØµÙ„ "Ø£ÙØ¶Ù„ Ø£Ø¯Ø§Ø¡ Ø±Ù‚Ù…ÙŠ" Ø¹Ù† "Ø£ÙØ¶Ù„ Pattern Ù…Ø­ØªÙˆÙ‰ Ù‚Ø§Ø¨Ù„ Ù„Ù„Ø§Ø³ØªØ®Ø¯Ø§Ù…":
-    // Ø£Ø¯Ø§Ø¡ Ø§Ù„Ø¨Ø³Ø· (worked/exStrong) Ø¯Ù„ÙˆÙ‚ØªÙŠ Ø¨ÙŠØªØ­Ø³Ø¨ Ø¨Ø³ Ù…Ù† Ø§Ù„Ø¹Ù†Ø§ØµØ± Ø§Ù„Ù…Ø¤Ù‡Ù„Ø©
-    // Ø¥Ø¨Ø¯Ø§Ø¹ÙŠÙ‹Ø§ (actionable) â€” Ø£Ø¯Ø§Ø¡ Ø±Ù‚Ù…ÙŠ Ø¨Ø­Øª Ø¨Ù…ØªØ§Ø¯Ø§ØªØ§ Ù†Ø§Ù‚ØµØ© (Hook=UNKNOWN...)
-    // ÙŠÙØ¶Ù„ ÙŠØ¸Ù‡Ø± ÙƒÙ€"Ø£ÙØ¶Ù„ Ø£Ø¯Ø§Ø¡ ØªØ§Ø±ÙŠØ®ÙŠ" Ø¨Ø³ØŒ Ù…Ø´ ÙƒÙ€Pattern Ù…ÙˆØµÙ‰ Ø¨ÙŠÙ‡ (Ø¨Ù†Ø¯ Ù¡/Ù¢/Ù£)
-    var workedPatterns = pActionable.filter(function (x) { return x.status.key !== "weak"; }).slice(0, 3);
-    var workedExamples = exActionable.filter(function (x) { return x.status.key !== "weak"; });
-    var exSectionTitle = (exActConf === "high" || exActConf === "medium") ? "ğŸ† Ø£Ù…Ø«Ù„Ø© Ù†Ø§Ø¬Ø­Ø©" : "ğŸ“š Ø£Ù…Ø«Ù„Ø© ØªØ§Ø±ÙŠØ®ÙŠØ© Ù„Ù„Ù…Ù‚Ø§Ø±Ù†Ø©";
-
-    var overallConfidence = ciBetterConf(pActionable.length ? pActConf : null, exActionable.length ? exActConf : null);
-
-    // Ø£) Ø£ÙØ¶Ù„ Ø£Ø¯Ø§Ø¡ ØªØ§Ø±ÙŠØ®ÙŠ (Ø±Ù‚Ù… Ø¨Ø­ØªØŒ Ø¨ØºØ¶ Ø§Ù„Ù†Ø¸Ø± Ø¹Ù† Ø§ÙƒØªÙ…Ø§Ù„ Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ø¥Ø¨Ø¯Ø§Ø¹ÙŠØ©)
-    var perfCandidates = [];
-    if (pPool.length) perfCandidates.push({ x: pPool[0], kind: "pattern", kindLabel: "Ù†Ù…Ø·", conf: pConf });
-    if (exPool.length) perfCandidates.push({ x: exPool[0], kind: "ad", kindLabel: "Ø¥Ø¹Ù„Ø§Ù† ØªØ§Ø±ÙŠØ®ÙŠ", conf: exConf });
-    perfCandidates.sort(function (a, b) { return a.x.metric - b.x.metric; });
-    var bestPerf = perfCandidates[0] || null;
-
-    // Ø¨) Ø£ÙØ¶Ù„ Pattern Ù…Ø­ØªÙˆÙ‰ Ù‚Ø§Ø¨Ù„ ÙØ¹Ù„Ø§Ù‹ Ù„Ù„Ø§Ø³ØªØ®Ø¯Ø§Ù… (Ù‚Ø¯ Ù„Ø§ ÙŠÙƒÙˆÙ† Ø£Ø±Ø®Øµ Ø¥Ø¹Ù„Ø§Ù†)
-    var actionableCombined = workedPatterns.map(function (x) { return { x: x, kind: "pattern", kindLabel: "Ù†Ù…Ø·", conf: pActConf }; })
-      .concat(workedExamples.map(function (x) { return { x: x, kind: "ad", kindLabel: "Ø¥Ø¹Ù„Ø§Ù† ØªØ§Ø±ÙŠØ®ÙŠ", conf: exActConf }; }));
-    actionableCombined.sort(function (a, b) { return a.x.metric - b.x.metric; });
-    var bestActionable = actionableCombined[0] || null;
-    var secondActionable = actionableCombined[1] || null;
-
-    var weakPick = exWeak[0] ? { x: exWeak[0], kind: "ad", kindLabel: "Ø¥Ø¹Ù„Ø§Ù† ØªØ§Ø±ÙŠØ®ÙŠ", conf: exConf } :
-      (avoidPatterns[0] ? { x: avoidPatterns[0], kind: "pattern", kindLabel: "Ù†Ù…Ø·", conf: pConf } : null);
-
-    var html = "";
-    // Ù…Ù„Ø®ØµÙŠÙ† Ø£Ø¹Ù„Ù‰ Ø§Ù„Ø¨Ø§Ù†Ù„ â€” Ø£Ø¯Ø§Ø¡ Ø±Ù‚Ù…ÙŠ Ù…Ù†ÙØµÙ„ Ø¹Ù† Ø§ØªØ¬Ø§Ù‡ Ù…Ø­ØªÙˆÙ‰ Ù‚Ø§Ø¨Ù„ Ù„Ù„Ø§Ø³ØªØ®Ø¯Ø§Ù… (Ø¨Ù†Ø¯ Ù¥)
-    if (bestPerf) {
-      var perfIncomplete = !bestPerf.x.actionable;
-      html += '<div style="background:var(--c-bg-alt,#f6f6f6);border-radius:6px;padding:8px 10px;margin-bottom:6px;font-size:12px;">' +
-        '<div><b>ğŸ“Š Ø£ÙØ¶Ù„ Ø£Ø¯Ø§Ø¡ ØªØ§Ø±ÙŠØ®ÙŠ:</b> ' + fmtMoneyW(bestPerf.x.metric) + ' (' + ciMetricLabel(objKey) + ')</div>' +
-        (perfIncomplete
-          ? '<div style="color:var(--c-negative);">âš ï¸ Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„ØªÙ†ÙÙŠØ° Ø§Ù„Ø¥Ø¨Ø¯Ø§Ø¹ÙŠ ØºÙŠØ± Ù…ÙƒØªÙ…Ù„Ø© Ù„Ù‡Ø°Ø§ Ø§Ù„Ø¥Ø¹Ù„Ø§Ù† â€” Performance benchmark only.</div>'
-          : '<div>' + escapeHtml(ciMeaningfulJoin([bestPerf.x.raw.hook_type, bestPerf.x.raw.content_angle, bestPerf.x.raw.cta_type]) || "â€”") + '</div>') +
-        '</div>';
-    }
-    if (bestActionable) {
-      html += '<div style="background:var(--c-bg-alt,#f6f6f6);border-radius:6px;padding:8px 10px;margin-bottom:8px;font-size:12px;">' +
-        '<div><b>âœ¨ Ø£ÙØ¶Ù„ Ø§ØªØ¬Ø§Ù‡ Ù‚Ø§Ø¨Ù„ Ù„Ù„Ø§Ø³ØªØ®Ø¯Ø§Ù… ÙÙŠ Ø§Ù„Ù…Ø­ØªÙˆÙ‰ Ø­Ø§Ù„ÙŠÙ‹Ø§:</b> ' + escapeHtml(ciMeaningfulJoin([bestActionable.x.raw.hook_type, bestActionable.x.raw.content_angle, bestActionable.x.raw.cta_type]) || "â€”") + '</div>' +
-        '<div>' + ciMetricLabel(objKey) + ': ' + fmtMoneyW(bestActionable.x.metric) + '</div>' +
-        '<div>Confidence: ' + ciItemConfidenceLabel(bestActionable.x, bestActionable.conf).label + '</div>' +
-        '<div>Reason: ' + escapeHtml(ciWhyText(bestActionable.x.aStatus, bestActionable.x.aRatio, bestActionable.x.runs, ciMetricLabel(objKey))) + '</div>' +
-        (overallConfidence === "low" ? '<div style="color:var(--c-negative);">Ø£ÙØ¶Ù„ Ø§ØªØ¬Ø§Ù‡ Ù…ØªØ§Ø­ Ø­Ø§Ù„ÙŠÙ‹Ø§ØŒ Ù„ÙƒÙ† Ø§Ù„Ø£Ø¯Ù„Ø© Ù…Ø­Ø¯ÙˆØ¯Ø© ÙˆÙŠØ­ØªØ§Ø¬ Ø§Ø®ØªØ¨Ø§Ø±.</div>' : "") +
-        '</div>';
-    } else {
-      html += '<div style="background:var(--c-bg-alt,#f6f6f6);border-radius:6px;padding:8px 10px;margin-bottom:8px;font-size:12px;">Ù„Ø§ ØªÙˆØ¬Ø¯ Ø¨ÙŠØ§Ù†Ø§Øª Creative ÙƒØ§ÙÙŠØ© Ø­Ø§Ù„ÙŠÙ‹Ø§ Ù„Ø§Ø³ØªØ®Ø±Ø§Ø¬ Ø§ØªØ¬Ø§Ù‡ Ù…Ø­ØªÙˆÙ‰ Ù…ÙˆØ«ÙˆÙ‚.</div>';
-    }
-
-    html += ciSignalHtml(overallConfidence);
-    var workedHeading = overallConfidence === "low" ? "ğŸ§ª ÙØ±Ø¶ÙŠØ§Øª ØªØ³ØªØ­Ù‚ Ø§Ù„Ø§Ø®ØªØ¨Ø§Ø± â€” Ø£Ø¯Ù„Ø© Ù…Ø­Ø¯ÙˆØ¯Ø©" : "âœ… Ù…Ø§ Ù†Ø¬Ø­ ÙˆØ§Ù„Ø£Ù†Ù…Ø§Ø· Ø§Ù„Ù‚ÙˆÙŠØ©";
-    html += ciCardsHtml(workedHeading, workedPatterns, objKey, pActConf, "pattern", "Ù„Ø³Ù‡ Ù…Ø¹Ù†Ø¯Ù†Ø§Ø´ Ø£Ù†Ù…Ø§Ø· Ø¨Ø«Ù‚Ø© ÙƒØ§ÙÙŠØ© Ù„Ù‡Ø°Ø§ Ø§Ù„ØªØ®ØµØµ/Ø§Ù„Ù‡Ø¯Ù.", "actionable");
-    if (avoidPatterns.length) html += ciCardsHtml("ğŸ”´ Ø£Ù†Ù…Ø§Ø· Ø£Ø¯Ø§Ø¡ Ø¶Ø¹ÙŠÙ ØªØ§Ø±ÙŠØ®ÙŠÙ‹Ø§", avoidPatterns, objKey, pConf, "pattern", "", "perf");
-
-    html += ciCardsHtml(exSectionTitle, workedExamples, objKey, exActConf, "ad", "Ù„Ø§ ØªÙˆØ¬Ø¯ Ø£Ù…Ø«Ù„Ø© ØªØ§Ø±ÙŠØ®ÙŠØ© Ù…Ø·Ø§Ø¨Ù‚Ø© ÙƒØ§ÙÙŠØ©.", "actionable");
-    if (exWeak.length) html += ciCardsHtml("ğŸ”´ Ø£Ù…Ø«Ù„Ø© Ø£Ø¯Ø§Ø¡ Ø¶Ø¹ÙŠÙ ØªØ§Ø±ÙŠØ®ÙŠÙ‹Ø§", exWeak, objKey, exConf, "ad", "", "perf");
-    html += ciTechnicalHtml(examplesInfo.technical);
-
-    html += '<div style="text-align:left;margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;">' +
-      '<button class="btn ghost sm" id="ci-copy-brief">Ù†Ø³Ø® Brief Ù„Ù„ÙˆÙƒÙŠÙ„</button>' +
-      '<button class="btn ghost sm" id="ci-open-agent">ÙˆÙƒÙŠÙ„ Ø¥Ù†Ø´Ø§Ø¡ Ø§Ù„Ù…Ø­ØªÙˆÙ‰ â†—</button></div>';
-
-    out.innerHTML = html;
-
-    out.buildBrief = function () {
-      return ciCopyBrief(out, {
-        specialtyKey: specialtyKey, metaLabel: metaLabel, objKey: objKey,
-        fmtKey: fmtKey, topicText: topicText, overallConfidence: overallConfidence,
-        bestPerf: bestPerf, bestActionable: bestActionable,
-        secondActionable: secondActionable, weak: weakPick
-      }, true);
-    };
-    var briefCopyBtn = out.querySelector("#ci-copy-brief");
-    if (briefCopyBtn) {
-      briefCopyBtn.onclick = function () {
-        ciCopyBrief(out, {
-          specialtyKey: specialtyKey, metaLabel: metaLabel, objKey: objKey, fmtKey: fmtKey, topicText: topicText,
-          overallConfidence: overallConfidence, bestPerf: bestPerf, bestActionable: bestActionable, secondActionable: secondActionable, weak: weakPick
-        });
-      };
-    }
-    var agentBtn = out.querySelector("#ci-open-agent");
-    if (agentBtn) { agentBtn.onclick = function () { ciOpenAgent(); }; }
-  }
-
-  // mode: "perf" (Ø±Ø§Ù†Ùƒ Ø£Ø¯Ø§Ø¡ Ø±Ù‚Ù…ÙŠØŒ Ø§Ù„Ø§ÙØªØ±Ø§Ø¶ÙŠ) Ø£Ùˆ "actionable"
-  // displayRank (Ø§Ø®ØªÙŠØ§Ø±ÙŠ): V4 â€” ÙŠÙØ±Ø¶ Ø±Ù‚Ù… Ø§Ù„Ø±Ø§Ù†Ùƒ Ø§Ù„Ù…Ø¹Ø±ÙˆØ¶ Ù„ÙŠØ·Ø§Ø¨Ù‚ Ù…ÙˆØ¶Ø¹ Ø§Ù„Ø¹Ù†ØµØ±
-  // Ø§Ù„ÙØ¹Ù„ÙŠ ÙÙŠ Ø§Ù„Ø§Ø®ØªÙŠØ§Ø± Ø§Ù„Ù…ÙØ¬Ù…ÙÙ‘Ø¹ (OPTION #1/#2)ØŒ Ø¨Ø¯Ù„ Ø±Ø§Ù†ÙƒÙ‡ Ø¬ÙˆÙ‡ Ø³Ø¨-Ø¨ÙˆÙˆÙ„ Ù†ÙˆØ¹Ù‡
-  // Ø¨Ø³ (patterns Ù„ÙˆØ­Ø¯Ù‡Ù… Ø£Ùˆ ads Ù„ÙˆØ­Ø¯Ù‡Ù…) â€” Ø¯Ù‡ Ø§Ù„Ù„ÙŠ ÙƒØ§Ù† Ø¨ÙŠØ³Ø¨Ø¨ ØªÙ†Ø§Ù‚Ø¶ Ø²ÙŠ
-  // "OPTION #2" Ù…Ø¹ "RANK: #1". Ù„Ùˆ Ù…Ø´ Ù…ØªØ¨Ø¹ØªØŒ Ø¨ÙŠØ±Ø¬Ø¹ Ù„Ø³Ù„ÙˆÙƒ x.aRank/x.rank Ø§Ù„Ù‚Ø¯ÙŠÙ….
-  function ciBriefCardLines(x, objKey, poolConfidence, kind, mode, displayRank) {
-    mode = mode || "perf";
-    var p = x.raw, metricLabel = ciMetricLabel(objKey), lines = [];
-    var rank = displayRank != null ? displayRank : (mode === "actionable" ? x.aRank : x.rank);
-    var status = mode === "actionable" ? x.aStatus : x.status;
-    var ratio = mode === "actionable" ? x.aRatio : x.ratio;
-    lines.push("RANK: #" + rank);
-    lines.push("STATUS: " + status.label);
-    lines.push("CONFIDENCE: " + ciItemConfidenceLabel(x, poolConfidence).label);
-    if (!x.actionable) lines.push("NOTE: Creative metadata incomplete for this ad.");
-    if (kind === "ad") {
-      if (ciIsMeaningful(p.creative_title)) lines.push("Creative Title: " + p.creative_title);
-      if (p.creative_body && String(p.creative_body).trim().length > 15) lines.push("Body excerpt: " + String(p.creative_body).slice(0, 140));
-    }
-    if (ciIsMeaningful(p.hook_type)) lines.push("Hook: " + p.hook_type);
-    if (ciIsMeaningful(p.content_angle)) lines.push("Angle: " + p.content_angle);
-    if (ciIsMeaningful(p.creative_type)) lines.push("Format: " + p.creative_type);
-    if (ciIsMeaningful(p.cta_type)) lines.push("CTA: " + p.cta_type);
-    if (kind === "ad") {
-      lines.push("Spend: " + fmtMoneyW(p.spend));
-      lines.push("Messages: " + fmtNumW(p.msg_conv));
-      lines.push("Cost/Message: " + fmtMoneyW(p.cost_per_msg_conv));
-      lines.push("Leads: " + fmtNumW(p.leads));
-      lines.push("CPL: " + fmtMoneyW(p.cost_per_lead));
-      lines.push("CTR: " + (p.ctr != null ? Number(p.ctr).toFixed(2) + "%" : "â€”"));
-      lines.push("CPC: " + fmtMoneyW(p.cpc));
-      lines.push("Creative Group: " + (p.creative_group_id || "â€”"));
-      lines.push("Runs: " + x.runs);
-    } else {
-      lines.push(metricLabel + ": " + fmtMoneyW(x.metric));
-      lines.push("Ads count: " + fmtNumW(p.ads_count));
-    }
-    if (x.actionable) {
-      lines.push("WHY: " + ciWhyText(status, ratio, x.runs, metricLabel));
-      lines.push("HOW TO USE: " + ciHowToUseText(p, status, false));
-    } else {
-      lines.push("USE: Performance benchmark only. Do NOT derive Hook/Angle from this ad.");
-    }
-    return lines;
-  }
-
-  function ciCopyBrief(out, ctx, returnOnly) {
-    var brand = document.getElementById("cf-brand");
-    var lines = [];
-    lines.push("=== Brief Ù„Ù„ÙˆÙƒÙŠÙ„ â€” Ø¥Ù†Ø´Ø§Ø¡ Ù…Ø­ØªÙˆÙ‰ Ø¬Ø¯ÙŠØ¯ ===");
-    lines.push("Brand: " + (brand && brand.value ? brand.value : "â€”"));
-    lines.push("Specialty: " + (SPECIALTIES[ctx.specialtyKey] ? SPECIALTIES[ctx.specialtyKey].label : ctx.specialtyKey));
-    lines.push("Topic/Service: " + (ctx.topicText || "â€”"));
-    lines.push("Advertising Objective: " + (CONTENT_OBJECTIVES[ctx.objKey] ? CONTENT_OBJECTIVES[ctx.objKey].label : ctx.objKey));
-    lines.push("Preferred Format: " + (CONTENT_FORMATS[ctx.fmtKey] ? CONTENT_FORMATS[ctx.fmtKey].label : "Ø£ÙŠ Ø´ÙƒÙ„"));
-    lines.push("Evidence level: " + (CONFIDENCE_LABELS[ctx.overallConfidence] || CONFIDENCE_LABELS.low).label);
-    lines.push("");
-    if (ctx.bestPerf) {
-      lines.push("BEST HISTORICAL PERFORMANCE:");
-      ciBriefCardLines(ctx.bestPerf.x, ctx.objKey, ctx.bestPerf.conf, ctx.bestPerf.kind, "perf").forEach(function (l) { lines.push(l); });
-      lines.push("");
-    }
-    if (!ctx.bestActionable) {
-      lines.push("Ù„Ø§ ØªÙˆØ¬Ø¯ Winning Patterns Ù…Ø¤ÙƒØ¯Ø© Ù„Ù‡Ø°Ø§ Ø§Ù„ØªØ®ØµØµ/Ø§Ù„Ù‡Ø¯Ù. Ù„Ø§ ØªÙˆØ¬Ø¯ Ø¨ÙŠØ§Ù†Ø§Øª Creative ÙƒØ§ÙÙŠØ© Ø­Ø§Ù„ÙŠÙ‹Ø§ Ù„Ø§Ø³ØªØ®Ø±Ø§Ø¬ Ø§ØªØ¬Ø§Ù‡ Ù…Ø­ØªÙˆÙ‰ Ù…ÙˆØ«ÙˆÙ‚.");
-      lines.push("Ø§Ø³ØªØ®Ø¯Ù… Ø§Ù„Ø£Ù…Ø«Ù„Ø© Ø§Ù„ØªØ§Ù„ÙŠØ© Ù„Ù„Ù…Ù‚Ø§Ø±Ù†Ø© ÙˆØµÙŠØ§ØºØ© ÙØ±Ø¶ÙŠØ§Øª Ø§Ø®ØªØ¨Ø§Ø±ØŒ ÙˆÙ„ÙŠØ³ ÙƒØ¯Ù„ÙŠÙ„ Ù†Ù‡Ø§Ø¦ÙŠ.");
-      lines.push("");
-    } else {
-      lines.push("BEST ACTIONABLE CONTENT PATTERN (RECOMMENDED OPTION #1 â€” " + ctx.bestActionable.kindLabel + "):");
-      // V4: displayRank=1 ÙŠÙØ±Ø¶ "RANK: #1" Ù‡Ù†Ø§ Ù…Ù‡Ù…Ø§ ÙƒØ§Ù† Ø±Ø§Ù†Ùƒ Ø§Ù„Ø¹Ù†ØµØ± Ø¬ÙˆÙ‡ Ø³Ø¨-Ø¨ÙˆÙˆÙ„
-      // Ù†ÙˆØ¹Ù‡ Ø¨Ø³ â€” Ø¹Ø´Ø§Ù† ÙŠÙØ¶Ù„ Ù…ØªØ³Ù‚ Ù…Ø¹ "OPTION #1" ÙÙŠ Ø§Ù„Ø¹Ù†ÙˆØ§Ù† Ø¯Ø§ÙŠÙ…Ù‹Ø§.
-      ciBriefCardLines(ctx.bestActionable.x, ctx.objKey, ctx.bestActionable.conf, ctx.bestActionable.kind, "actionable", 1).forEach(function (l) { lines.push(l); });
-      lines.push("");
-    }
-    if (ctx.secondActionable) {
-      lines.push("OPTION #2:");
-      // V4: displayRank=2 (Ø¨Ø¯Ù„ x.aRank Ø§Ù„Ø®Ø§Ù…) â€” ÙŠØ­Ù„ ØªÙ†Ø§Ù‚Ø¶ "OPTION #2 / RANK: #1"
-      // Ø§Ù„Ù…ÙØ¨Ù„ÙÙ‘Øº Ø¹Ù†Ù‡ØŒ Ø¨Ø®Ù„ÙŠ Ø§Ù„Ø±Ø§Ù†Ùƒ Ø§Ù„Ù…Ø¹Ø±ÙˆØ¶ ÙŠØ·Ø§Ø¨Ù‚ ØªØ±ØªÙŠØ¨ Ø§Ù„Ø§Ø®ØªÙŠØ§Ø± Ø§Ù„ÙØ¹Ù„ÙŠ Ø¯Ø§ÙŠÙ…Ù‹Ø§.
-      ciBriefCardLines(ctx.secondActionable.x, ctx.objKey, ctx.secondActionable.conf, ctx.secondActionable.kind, "actionable", 2).forEach(function (l) { lines.push(l); });
-      lines.push("");
-    }
-    if (ctx.weak) {
-      lines.push("WEAK EXAMPLE (Ù„Ø§ ØªÙƒØ±Ø±Ù‡ â€” Ù„Ù„Ù…Ù‚Ø§Ø±Ù†Ø© Ø¨Ø³):");
-      ciBriefCardLines(ctx.weak.x, ctx.objKey, ctx.weak.conf, ctx.weak.kind, "perf").forEach(function (l) { lines.push(l); });
-      lines.push("");
-    }
-    // V4.1 (Ø¨Ù†Ø¯ Ù©): ØªÙ†Ø¨ÙŠÙ‡ ØµØ±ÙŠØ­ â€” OPTION #2 Ù…ÙŠØ¸Ù‡Ø±Ø´ Ø£ØµÙ„Ø§Ù‹ Ù„Ùˆ Ù…ÙÙŠØ´ Ø¹Ù†ØµØ± ØªØ§Ù†ÙŠ
-    // Ù…Ø¤Ù‡Ù„ ØºÙŠØ± Ø¶Ø¹ÙŠÙ (workedPatterns/workedExamples Ø¨ÙŠØ³ØªØ¨Ø¹Ø¯ÙˆØ§ weak Ø¨Ø§Ù„ÙØ¹Ù„ Ù‚Ø¨Ù„
-    // Ù…Ø§ ÙŠÙˆØµÙ„ÙˆØ§ Ù‡Ù†Ø§)ØŒ ÙˆØ§Ù„ØªØ¹Ù„ÙŠÙ…Ø§Øª Ø¯ÙŠ Ø¨ØªØ£ÙƒØ¯ Ù„Ù„ÙˆÙƒÙŠÙ„ Ø¥Ù†Ù‡ Ù…ÙŠØ¹ØªØ¨Ø±Ø´ Ø£ÙŠ Ø¹Ù†ØµØ± Ø¶Ø¹ÙŠÙ
-    // Ø®ÙŠØ§Ø± Ù…ÙˆØµÙ‰ Ø¨ÙŠÙ‡ Ø­ØªÙ‰ Ù„Ùˆ Ø¸Ù‡Ø± ÙÙŠ Ù‚Ø³Ù… "WEAK EXAMPLE" ÙÙˆÙ‚.
-    lines.push("Do NOT output OPTION #2 if the only remaining actionable item is classified weak. A weak-performing item must never be treated as a recommended option, even if it has usable creative metadata.");
-    lines.push("");
-    // V4.1 (Ø¨Ù†Ø¯ Ù¥/Ù¦/Ù§): ØªØ¹Ù„ÙŠÙ…Ø§Øª ØµØ±ÙŠØ­Ø© Ù„Ù„ÙˆÙƒÙŠÙ„ Ø§Ù„Ø®Ø§Ø±Ø¬ÙŠ Ø¹Ø´Ø§Ù† ÙŠØ­Ø§ÙØ¸ Ø¹Ù„Ù‰ Ù„ØºØ© Ø§Ù„Ø£Ø¯Ù„Ø©
-    // ÙˆÙ…Ø§ÙŠØ®ØªØ±Ø¹Ø´ Ø¬Ø¯Ø§ÙˆÙ„ Ù†Ø´Ø± Ø£Ùˆ Ø¨ÙŠØ§Ù†Ø§Øª Ù…Ø´ Ù…ÙˆØ¬ÙˆØ¯Ø© ÙÙŠ Ø§Ù„Ù€Brief.
-    lines.push("EVIDENCE LANGUAGE:");
-    lines.push("- Do not describe Medium/Low evidence as a proven winner.");
-    lines.push("- Use phrases like 'Ø£ÙØ¶Ù„ Ø§ØªØ¬Ø§Ù‡ Ù…ØªØ§Ø­ Ø­Ø§Ù„ÙŠÙ‹Ø§' or 'ÙØ±Ø¶ÙŠØ© ØªØ³ØªØ­Ù‚ Ø§Ù„Ø§Ø®ØªØ¨Ø§Ø±'.");
-    lines.push("- Only use 'winner/proven' language if the evidence level above is explicitly High/Proven.");
-    lines.push("");
-    lines.push("Do not recommend posting times/days unless time-of-day/day-of-week performance data is explicitly provided in this Brief.");
-    lines.push("Do not invent benchmarks, contact details, doctor names, medical service claims, offers, or historical performance facts that are not supplied by this Brief or already part of the Content Agent's approved business knowledge.");
-    lines.push("");
-    lines.push("Ø§Ø³ØªØ®Ø¯Ù… Ø§Ù„Ù†ØªØ§Ø¦Ø¬ ÙƒÙ…Ø±Ø¬Ø¹ Ø§Ø³ØªØ±Ø§ØªÙŠØ¬ÙŠ ÙˆÙ„ÙŠØ³ ÙƒÙ†Øµ Ù„Ù„Ù†Ø³Ø®. Ù‡Ø°Ø§ Ù†Ù…Ø· Ø§Ø³ØªØ±Ø§ØªÙŠØ¬ÙŠ ÙˆÙ„ÙŠØ³ Ù†Øµ Ù„Ù„Ù†Ø³Ø® Ø§Ù„Ø­Ø±ÙÙŠ.");
-    ciAppendAgentOutputContract(lines, ctx.fmtKey);
-
-
-    var text = lines.join("\n");
-    if (returnOnly) return text;
-    var done = function () {
-      if (window.SSMPDToast) window.SSMPDToast.show("ØªÙ… Ù†Ø³Ø® Ø§Ù„Ù€Brief â€” Ø§ÙØªØ­ ÙˆÙƒÙŠÙ„ Ø¥Ù†Ø´Ø§Ø¡ Ø§Ù„Ù…Ø­ØªÙˆÙ‰", "success");
-      else alert("ØªÙ… Ù†Ø³Ø® Ø§Ù„Ù€Brief");
-    };
-    var fail = function () {
-      if (window.SSMPDToast) window.SSMPDToast.show("ØªØ¹Ø°Ù‘Ø± Ø§Ù„Ù†Ø³Ø® Ø§Ù„ØªÙ„Ù‚Ø§Ø¦ÙŠ â€” Ø§Ù†Ø³Ø® ÙŠØ¯ÙˆÙŠÙ‹Ø§ Ù…Ù† Ø§Ù„Ù†Ø§ÙØ°Ø©", "error");
-    };
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(done).catch(fail);
-    } else {
-      try {
-        var ta = document.createElement("textarea");
-        ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
-        document.body.appendChild(ta); ta.select();
-        document.execCommand("copy"); document.body.removeChild(ta);
-        done();
-      } catch (e) { fail(); }
-    }
-  }
-
-  function ciOpenAgent() {
-    window.SSMPDDb.getAppSettings().then(function (s) {
-      var url = s && s.content_agent_gpt_url;
-      if (!url) {
-        if (window.SSMPDToast) window.SSMPDToast.show("Ø±Ø§Ø¨Ø· ÙˆÙƒÙŠÙ„ Ø¥Ù†Ø´Ø§Ø¡ Ø§Ù„Ù…Ø­ØªÙˆÙ‰ ØºÙŠØ± Ù…ÙØ¹Ø¯ Ø¨Ø¹Ø¯", "error");
-        return;
-      }
-      window.open(url, "_blank", "noopener,noreferrer");
-    }).catch(function () {
-      if (window.SSMPDToast) window.SSMPDToast.show("ØªØ¹Ø°Ù‘Ø± ØªØ­Ù…ÙŠÙ„ Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª ÙˆÙƒÙŠÙ„ Ø§Ù„Ù…Ø­ØªÙˆÙ‰", "error");
-    });
-  }
-
-  function wireContentIntelligence(container, getSpecialtyKey) {
-    var head = container.querySelector("#ci-toggle-head");
-    var body = container.querySelector("#ci-body");
-    var arrow = container.querySelector("#ci-toggle-arrow");
-    if (head && body && arrow) {
-      head.onclick = function () {
-        var collapsed = body.style.display === "none";
-        body.style.display = collapsed ? "" : "none";
-        arrow.textContent = collapsed ? "â–¾" : "â–¸";
-      };
-    }
-    function refresh() { renderCiOutput(container, getSpecialtyKey); }
-    var objSel = container.querySelector("#ci-objective");
-    var fmtSel = container.querySelector("#ci-format");
-    if (objSel) objSel.onchange = refresh;
-    if (fmtSel) fmtSel.onchange = refresh;
-    refresh();
-  }
-  function refreshContentIntelligence(container, getSpecialtyKey) {
-    renderCiOutput(container, getSpecialtyKey);
-  }
-
-  function getContentAIBrief(context) {
-    if (!context.specialty || !context.advertisingObjective) {
-      return Promise.reject(new Error("Ø§Ø®ØªØ± Ø§Ù„ØªØ®ØµØµ ÙˆØ§Ù„Ù‡Ø¯Ù Ø§Ù„Ø¥Ø¹Ù„Ø§Ù†ÙŠ Ù‚Ø¨Ù„ Ø§Ù„ØªÙˆÙ„ÙŠØ¯."));
-    }
-    return ciLoadData().then(function (data) {
-      var out = document.createElement("div");
-      renderCiResults(out, data, context.specialty, context.advertisingObjective, context.format, context.topic);
-      if (typeof out.buildBrief !== "function") throw new Error("ØªØ¹Ø°Ø± Ø¥Ø¹Ø¯Ø§Ø¯ Brief Ø§Ù„Ø£Ø¯Ø§Ø¡. Ø­Ø§ÙˆÙ„ Ù…Ø±Ø© Ø£Ø®Ø±Ù‰.");
-      return out.buildBrief();
-    });
-  }
-
-  window.SSMPDWorkflow = {
-    getContentAIBrief: getContentAIBrief,
-    STAGES: STAGES,
-    metaLinksSectionHtml: metaLinksSectionHtml,
-    wireMetaLinksSection: wireMetaLinksSection,
-    DESIGN_STATUS: DESIGN_STATUS,
-    BRANDS: BRANDS,
-    SPECIALTIES: SPECIALTIES,
-    PLATFORMS: PLATFORMS,
-    stageLabel: stageLabel,
-    stageIndex: stageIndex,
-    designStatusFor: designStatusFor,
-    brandBadgeHtml: brandBadgeHtml,
-    brandSelectHtml: brandSelectHtml,
-    specialtyBadgeHtml: specialtyBadgeHtml,
-    contentFormatDetailsHtml: contentFormatDetailsHtml,
-    specialtySelectHtml: specialtySelectHtml,
-    platformSelectHtml: platformSelectHtml,
-    platformCheckboxesHtml: platformCheckboxesHtml,
-    readPlatformCheckboxes: readPlatformCheckboxes,
-    platformsLabel: platformsLabel,
-    canEditItem: canEditItem,
-    canDeleteItem: canDeleteItem,
-    itemActionsHtml: itemActionsHtml,
-    openEditContentModal: openEditContentModal,
-    deleteContentItemWithConfirm: deleteContentItemWithConfirm,
-    wireItemActions: wireItemActions,
-    openPublishedPostOptions: openPublishedPostOptions,
-    contentIntelligencePanelHtml: contentIntelligencePanelHtml,
-    wireContentIntelligence: wireContentIntelligence,
-    refreshContentIntelligence: refreshContentIntelligence
-  };
-})();
+YªçŠx-®éÜj×¢ëiºÚ+Š§j[h‘éÜ¢éíßMtí:-jZ.¶›­–)Ş³Rò¢54ÕB(	BŠ­‹‹˜­˜˜]‹Š}Šİ˜B‹=˜­‹Š}˜M‹˜]˜B˜]‹]Šı‹˜Š}ŠİŠò˜M˜MŠİ˜-˜­˜-Š’’¢ğ¢†gVæ7F–öâ‚’°¢'W6R7G&–7B#° ¢òòš‚˜]‹Š}Šİ˜B¶æ&âŠŠ}˜MŠ­‹Š­˜­Š‚(	B˜MŠrŠ­˜ı‹­˜­˜í™‹Š}˜M˜]˜Š}Š­˜­ŠÒ‡7FvR’˜MŠ=˜m˜}Šr˜]Ší‹-™˜mŠ’˜˜¢Š}˜M˜-Š}‹ŠıŠ¢f"5DtU2Ò°¢²¶W“¢&–FV÷6VÆV7F–öâ"ÂÆ&VÃ¢-Š}ŠíŠ­˜­Š}‹Š}˜M˜˜=‹Š’"ÒÀ¢²¶W“¢&–æ—F–Åö&÷fÂ"ÂÆ&VÃ¢-Š}‹Š­˜]Š}ŠòŠ=˜˜M˜¢"ÒÀ¢²¶W“¢&–åöFW6–vâ"ÂÆ&VÃ¢-˜-˜­ŠòŠ}˜MŠ­‹]˜]˜­˜R"ÒÀ¢²¶W“¢&f–æÅö&÷fÂ"ÂÆ&VÃ¢-˜˜¢Š}˜MŠ}‹Š­˜]Š}ŠòŠ}˜M˜m˜}Š}Šm˜¢"ÒÀ¢²¶W“¢&æVVG5÷&Wf—6–öâ"ÂÆ&VÃ¢-˜]‹}˜M˜Š‚Š­‹Šı˜­˜B"ÒÀ¢²¶W“¢'&VG•÷Fõ÷V&Æ—6‚"ÂÆ&VÃ¢-ŠÍŠ}˜}‹"˜M˜M˜m‹M‹"ÒÀ¢²¶W“¢'66†VGVÆVB"ÂÆ&VÃ¢-˜]ŠÍŠı˜˜MŠ’˜M˜M˜m‹M‹"ÒÀ¢²¶W“¢'V&Æ—6†VB"ÂÆ&VÃ¢-Š­˜RŠ}˜M˜m‹M‹"Ğ¢Ó° ¢òòŠİŠ}˜MŠ’‹‹‹bŠ}˜M˜]‹]˜]˜RŠ=˜­˜-˜˜mŠ’’(	B˜]‹MŠ­˜-Š’˜]˜b7FvR²FW6–vå÷&V6V—fVEöB²76–væVEöFW6–væW ¢f"DU4”tåõ5DEU2Ò°¢VæF–æs¢²Æ&VÃ¢-˜˜¢Š}˜mŠ­‹Š}‹Š}˜MŠ}‹=Š­˜MŠ}˜R"Â–ÆÄ6Æ73¢&G&gB"ÒÀ¢&V6V—fVC¢²Æ&VÃ¢-Š­˜RŠ}˜MŠ}‹=Š­˜MŠ}˜R"Â–ÆÄ6Æ73¢'&V6V—fVB"ÒÀ¢&÷fÃ¢²Æ&VÃ¢-˜˜¢Š}˜MŠ}‹Š­˜]Š}Šò"Â–ÆÄ6Æ73¢&&÷fÂ"ÒÀ¢&Wf—6–öã¢²Æ&VÃ¢-˜]‹}˜M˜Š‚Š}˜MŠ­‹Šı˜­˜B"Â–ÆÄ6Æ73¢'&Wf—6–öâ"ÒÀ¢&÷fVC¢²Æ&VÃ¢-Š­˜RŠ}˜MŠ}‹Š­˜]Š}Šò˜M˜M˜m‹M‹"Â–ÆÄ6Æ73¢&&÷fVB"Ğ¢Ó° ¢òòŠ­˜]˜­˜­‹"Š}˜M˜]ŠİŠ­˜˜’Š˜­˜bŠ}˜M‹]˜ŠİŠ­˜­˜b(	B˜­ŠİŠıŠı˜r˜]˜m‹MŠbŠ}˜M˜]ŠİŠ­˜˜ˆÂ˜˜­‹˜}‹˜M˜=˜BŠ}˜MŠ=Šı˜Š}‹˜˜¢˜=˜BŠ}˜M˜]‹Š}Šİ˜@¢f"%$äE2Ò°¢6öæó¢²Æ&VÃ¢-‹=˜˜m˜‚"ÒÀ¢G%öF–æ¢²Æ&VÃ¢-ŠòíŠı˜­˜mŠr"Ğ¢Ó° ¢òòŠ}˜MŠ­Ší‹]‹RıŠ}˜M˜-‹=˜RŠ}˜M‹}Š˜¢Š}˜M˜M˜¢Š}˜M˜]Š}ŠıŠ’ŠŠ­Ší‹R(	BŠ}ŠíŠ­˜­Š}‹˜­ˆÂ˜MŠ=‹­‹Š}‹bŠ­‹]˜m˜­˜˜Š]Šİ‹]Š}Šm˜­Š}Š ¢òòŠ}˜MŠıŠ}‹MŠ˜‹ŠòŠ‹2˜]‹BŠÍ‹-Š˜]˜b‹=˜­‹‹˜]˜BŠ}˜MŠ}‹Š­˜]Š}Šò˜˜MŠrŠ˜­Š=Š½‹˜˜­˜r¢òò˜=˜BŠ­Ší‹]‹R˜M˜r˜M˜˜b˜]˜]˜­‹"ŠíŠ}‹RŠ˜­˜rŠí˜M˜˜­Š’Š}˜MŠŠ}Šı¨b’(	BŠ}˜M˜m‹RŠıŠ}˜­˜]Š}˜²Š=Š˜­‹b‹‹MŠ}˜`¢òòŠ}˜MŠ­ŠŠ}˜­˜b˜­˜‹m˜B˜Š}‹mŠÒ˜]˜}˜]Šr˜=Š}˜b˜M˜˜bŠ}˜MŠ­Ší‹]‹R‹}˜MŠ‚Š}˜M˜]‹=Š­ŠíŠı˜R‹]‹Š}ŠİŠ’¢f"5T4”ÅD”U2Ò°¢æWW&öÆöw“¢²Æ&VÃ¢-Š}˜M˜]Šâ˜Š}˜MŠ=‹‹]Š}Š‚"Â6öÆ÷#¢"3dDd#b"ÒÀ¢–çFW&æÃ¢²Æ&VÃ¢-Š}˜MŠŠ}‹}˜mŠ’"Â6öÆ÷#¢"3c3c”B"ÒÀ¢÷'F†÷VF–73¢²Æ&VÃ¢-Š}˜M‹‹Š}˜R"Â6öÆ÷#¢"3„dC4""ÒÀ¢7W&vW'“¢²Æ&VÃ¢-Š}˜MŠÍ‹Š}ŠİŠ’"Â6öÆ÷#¢"4CC$"ÒÀ¢FW&ÖFöÆöw“¢²Æ&VÃ¢-Š}˜MŠÍ˜MŠı˜­Š’"Â6öÆ÷#¢"43#cs”"ÒÀ¢VçC¢²Æ&VÃ¢-Š}˜MŠ=˜m˜˜Š}˜MŠ=‹˜b"Â6öÆ÷#¢"3$S„#„""ÒÀ¢ö&w–ã¢²Æ&VÃ¢-Š}˜M˜m‹=Š}Š˜Š}˜MŠ­˜˜M˜­Šò"Â6öÆ÷#¢"4SSS”2"ÒÀ¢7–6†–G'“¢²Æ&VÃ¢-Š}˜M˜m˜‹=˜­Š’˜Š}˜MŠ]Šı˜]Š}˜b"Â6öÆ÷#¢"3T3T3„"ÒÀ¢VF–G&–73¢²Æ&VÃ¢-Š}˜MŠ=‹}˜Š}˜B"Â6öÆ÷#¢"34dC’"ÒÀ¢‡—6–õöçWG&—F–öã¢²Æ&VÃ¢-Š}˜M‹˜MŠ}ŠÂŠ}˜M‹}Š˜­‹˜¢˜Š}˜MŠ­‹­‹˜­Š’"Â6öÆ÷#¢"3$ctCT2"ÒÀ¢öæ6öÆöw“¢²Æ&VÃ¢-Š}˜MŠ=˜‹Š}˜R"Â6öÆ÷#¢"3t$S„"ÒÀ¢6&F–öÆöw“¢²Æ&VÃ¢-Š}˜M˜-˜MŠ‚"Â6öÆ÷#¢"43#“4"ÒÀ¢f67VÆ#¢²Æ&VÃ¢-Š}˜MŠ=˜‹˜­Š’Š}˜MŠı˜]˜˜­Š’"Â6öÆ÷#¢"4##4TR"ÒÀ¢FVçFÃ¢²Æ&VÃ¢-Š}˜MŠ=‹=˜mŠ}˜b"Â6öÆ÷#¢"34S„d#"ÒÀ¢6÷6ÖWF–5öÆ6W#¢²Æ&VÃ¢-Š}˜MŠ­ŠÍ˜]˜­˜B˜Š}˜M˜M˜­‹-‹"Â6öÆ÷#¢"4#ss”"ÒÀ¢VÖW&vVæ7“¢²Æ&VÃ¢-Š}˜M‹}˜Š}‹Šb"Â6öÆ÷#¢"4cT#""ÒÀ¢&F–öÆöw“¢²Æ&VÃ¢-Š=‹M‹Š’"Â6öÆ÷#¢"3SCdSt"ÒÀ¢Æ#¢²Æ&VÃ¢-Š­ŠİŠ}˜M˜­˜B"Â6öÆ÷#¢"3D3d#4"ÒÀ¢çW'6–æu÷6W'f–6W3¢²Æ&VÃ¢-ŠíŠı˜]Š}Š¢Š}˜MŠ­˜]‹˜­‹b"Â6öÆ÷#¢"3c„s"ÒÀ¢–çFW&æÅ÷6W'f–6W3¢²Æ&VÃ¢-ŠíŠı˜]Š}Š¢ŠıŠ}Ší˜BŠ}˜M˜]‹˜=‹""Â6öÆ÷#¢"3DSSc‚"ÒÀ¢7VV6…÷F†W&“¢²Æ&VÃ¢-‹˜MŠ}ŠÂŠ}˜M˜m‹}˜""Â6öÆ÷#¢"3t„#D"Ğ¢Ó° ¢òò˜]˜m‹]Š’Š}˜M˜m‹M‹(	BŠ­˜ıŠíŠ­Š}‹‹˜mŠòŠ}˜M˜m‹M‹‹-˜¢˜]Šr˜­˜ıŠíŠ­Š}‹Š}˜MŠ‹Š}˜mŠòŠ­Š}˜m˜¢˜˜¢˜m˜‹2Š}˜M˜MŠİ‹Š’¢f"ÄDdõ$Õ2Ò°¢f6V&öö³¢²Æ&VÃ¢-˜˜­‹=Š˜˜2"ÒÀ¢–ç7Fw&Ó¢²Æ&VÃ¢-Š}˜m‹=Š­ŠÍ‹Š}˜R"ÒÀ¢F–·Fö³¢²Æ&VÃ¢-Š­˜­˜=Š­˜˜2"ÒÀ¢–÷WGV&S¢²Æ&VÃ¢-˜-˜mŠ}Š’˜­˜Š­˜­˜Š‚"ÒÀ¢vV'6—FS¢²Æ&VÃ¢-Š}˜M˜]˜˜-‹’Š}˜MŠ]˜M˜=Š­‹˜˜m˜¢"Ğ¢Ó° ¢gVæ7F–öâ7FvTÆ&VÂ†¶W’’°¢f"2Ò5DtU2æf–ÇFW"†gVæ7F–öâ‡‚’²&WGW&â‚æ¶W’ÓÓÒ¶W“²Ò•³Ó°¢&WGW&â2ò2æÆ&VÂ¢¶W“°¢Ğ ¢gVæ7F–öâ7FvT–æFW‚†¶W’’°¢f÷"‡f"’Ò²’Â5DtU2æÆVæwFƒ²’²²’–b…5DtU5¶•Òæ¶W’ÓÓÒ¶W’’&WGW&â“°¢&WGW&âÓ°¢Ğ ¢òò˜­ŠİŠıŠòŠİŠ}˜MŠ’Š}˜MŠ=˜­˜-˜˜mŠ’˜˜¢‹MŠ}‹MŠ’Š}˜M˜]‹]˜]˜RŠ˜mŠ}Š˜²‹˜M˜’7FvR²˜}˜BŠ}˜M˜]‹]˜]˜RŠı˜‹2-Š}‹=Š­˜MŠ}˜R"˜˜MŠr˜M‹=˜p¢gVæ7F–öâFW6–vå7FGW4f÷"†—FVÒ’°¢7v—F6‚†—FVÒç7FvR’°¢66R&–åöFW6–vâ#¢&WGW&â—FVÒæFW6–vå÷&V6V—fVEöBò'&V6V—fVB"¢'VæF–ær#°¢66R&f–æÅö&÷fÂ#¢&WGW&â&&÷fÂ#°¢66R&æVVG5÷&Wf—6–öâ#¢&WGW&â'&Wf—6–öâ#°¢66R'&VG•÷Fõ÷V&Æ—6‚# ¢66R'V&Æ—6†VB#¢&WGW&â&&÷fVB#°¢FVfVÇC¢&WGW&â'VæF–ær#°¢Ğ¢Ğ ¢òòŠŠ}Šı¨b‹]‹­˜­‹˜­‹˜}‹ŠÍ˜mŠ‚Š}˜M‹˜m˜Š}˜b˜˜¢˜=˜BŠ}˜M‹MŠ}‹MŠ}Š¢(	B˜Š}‹m˜¢˜M˜‚Š}˜M˜]Š}ŠıŠ’˜M‹=˜rŠ˜MŠrŠ‹Š}˜mŠò˜]ŠİŠıŠğ¢gVæ7F–öâ'&æD&FvT‡FÖÂ†'&æB’°¢–b‚'&æBÇÂ%$äE5¶'&æEÒ’&WGW&â"#°¢&WGW&âsÇ7â6Æ73Ò&'&æBÖ&FvRr²'&æB²r#âr²%$äE5¶'&æEÒæÆ&VÂ²#Â÷7ãâ#°¢Ğ ¢òòŠı‹˜Š‚ŠıŠ}˜˜bŠ}ŠíŠ­˜­Š}‹Š}˜MŠ‹Š}˜mŠò(	BŠ˜­˜ı‹=Š­ŠíŠı˜R‹˜mŠòŠ]˜m‹MŠ}ŠŠ}˜M˜]ŠİŠ­˜˜’˜‹˜mŠòŠ]‹Š}ŠıŠ’Š}˜MŠ}ŠíŠ­˜­Š}‹˜˜-Š¢Š}˜M˜m‹M‹¢gVæ7F–öâ'&æE6VÆV7D‡FÖÂ†–BÂ6VÆV7FVB’°¢f"÷G2Òö&¦V7Bæ¶W—2„%$äE2’æÖ†gVæ7F–öâ†²’°¢&WGW&âsÆ÷F–öâfÇVSÒ"r²²²r"r²‡6VÆV7FVBÓÓÒ²ò"6VÆV7FVB"¢""’²sâr²%$äE5¶µÒæÆ&VÂ²#Âö÷F–öãâ#°¢Ò’æ¦ö–â‚""“°¢&WGW&âsÇ6VÆV7B–CÒ"r²–B²r#ãÆ÷F–öâfÇVSÒ"#î(	BŠ}ŠíŠ­‹(	CÂö÷F–öãâr²÷G2²#Â÷6VÆV7Câ#°¢Ğ ¢òòŠŠ}Šı¨b‹]‹­˜­‹˜M˜MŠ­Ší‹]‹R(	B˜Š}‹m˜¢˜M˜‚˜]˜˜­‹BŠ­Ší‹]‹R˜]ŠİŠıŠğ¢gVæ7F–öâ7V6–ÇG”&FvT‡FÖÂ‡7V6–ÇG’’°¢–b‚7V6–ÇG’ÇÂ5T4”ÅD”U5·7V6–ÇG•Ò’&WGW&â"#°¢f"6öÆ÷"Ò5T4”ÅD”U5·7V6–ÇG•Òæ6öÆ÷"ÇÂ"3c3c”B#°¢&WGW&âsÇ7â6Æ73Ò&'&æBÖ&FvR"7G–ÆSÒ&&6¶w&÷VæC¢r²6öÆ÷"²s¶6öÆ÷#¢6ffc²#âr²5T4”ÅD”U5·7V6–ÇG•ÒæÆ&VÂ²#Â÷7ãâ#°¢Ğ ¢òòŠı‹˜Š‚ŠıŠ}˜˜bŠ}ŠíŠ­˜­Š}‹Š}˜MŠ­Ší‹]‹R(	BŠ}ŠíŠ­˜­Š}‹˜¢˜˜­˜r-ŠŠı˜˜bŠ­Ší‹]‹R"¢gVæ7F–öâ7V6–ÇG•6VÆV7D‡FÖÂ†–BÂ6VÆV7FVB’°¢f"÷G2Òö&¦V7Bæ¶W—2…5T4”ÅD”U2’æÖ†gVæ7F–öâ†²’°¢&WGW&âsÆ÷F–öâfÇVSÒ"r²²²r"r²‡6VÆV7FVBÓÓÒ²ò"6VÆV7FVB"¢""’²sâr²5T4”ÅD”U5¶µÒæÆ&VÂ²#Âö÷F–öãâ#°¢Ò’æ¦ö–â‚""“°¢&WGW&âsÇ6VÆV7B–CÒ"r²–B²r#ãÆ÷F–öâfÇVSÒ"#î(	BŠŠı˜˜bŠ­Ší‹]‹R(	CÂö÷F–öãâr²÷G2²#Â÷6VÆV7Câ#°¢Ğ ¢òòŠı‹˜Š‚ŠıŠ}˜˜bŠ}ŠíŠ­˜­Š}‹˜]˜m‹]Š’Š}˜M˜m‹M‹Š}ŠíŠ­˜­Š}‹˜Š}ŠİŠò(	B˜-Šı˜­˜]ˆÂ˜Š}‹m˜B˜M˜MŠ­˜Š}˜˜"¢gVæ7F–öâÆFf÷&Õ6VÆV7D‡FÖÂ†–BÂ6VÆV7FVB’°¢f"÷G2Òö&¦V7Bæ¶W—2…ÄDdõ$Õ2’æÖ†gVæ7F–öâ†²’°¢&WGW&âsÆ÷F–öâfÇVSÒ"r²²²r"r²‡6VÆV7FVBÓÓÒ²ò"6VÆV7FVB"¢""’²sâr²ÄDdõ$Õ5¶µÒæÆ&VÂ²#Âö÷F–öãâ#°¢Ò’æ¦ö–â‚""“°¢&WGW&âsÇ6VÆV7B–CÒ"r²–B²r#ãÆ÷F–öâfÇVSÒ"#î(	BŠ}ŠíŠ­‹(	CÂö÷F–öãâr²÷G2²#Â÷6VÆV7Câ#°¢Ğ ¢òòŠ­‹M˜­˜2Š˜˜=‹=Š}Š¢Š}ŠíŠ­˜­Š}‹Š=˜=Š­‹˜]˜b˜]˜m‹]Š’˜m‹M‹˜]‹Š’˜Š}ŠİŠıŠ’(	BŠŠı˜­˜BŠÍŠı˜­Šò˜M˜ÆFf÷&Õ6VÆV7D‡FÖÀ¢òò6VÆV7FVC¢˜]‹]˜˜˜Š’˜-˜­˜R˜]Š½Š}˜C¢²&f6V&öö²"Â&–ç7Fw&Ò%Ò¢gVæ7F–öâÆFf÷&Ô6†V6¶&÷†W4‡FÖÂ†–E&Vf—‚Â6VÆV7FVB’°¢f"6VÂÒ'&’æ—4'&’‡6VÆV7FVB’ò6VÆV7FVB¢‡6VÆV7FVBò·6VÆV7FVEÒ¢µÒ“°¢&WGW&âö&¦V7Bæ¶W—2…ÄDdõ$Õ2’æÖ†gVæ7F–öâ†²’°¢f"6†V6¶VBÒ6VÂæ–æFW„öb†²’ÓÒÓò"6†V6¶VB"¢"#°¢&WGW&âsÆÆ&VÂ7G–ÆSÒ&F—7Æ“¦–æÆ–æRÖfÆWƒ¶Æ–vâÖ—FV×3¦6VçFW#¶v£Gƒ¶Ö&v–âÖ–æÆ–æRÖVæC£ƒ¶föçB×vV–v‡C£C²#âr°¢sÆ–çWBG—SÒ&6†V6¶&÷‚"6Æ73Ò'ÆFf÷&ÒÖ6""–CÒ"r²–E&Vf—‚²rÒr²²²r"fÇVSÒ"r²²²r"r²6†V6¶VB²sâr°¢ÄDdõ$Õ5¶µÒæÆ&VÂ²sÂöÆ&VÃâs°¢Ò’æ¦ö–â‚""“°¢Ğ ¢òòŠ˜­‹ŠÍ‹’˜]‹]˜˜˜Š’Š}˜M˜]˜m‹]Š}Š¢Š}˜M˜]ŠíŠ­Š}‹Š’˜]˜bŠ­‹M˜­˜2Š˜˜=‹=Š}Š¢ÆFf÷&Ô6†V6¶&÷†W4‡FÖÀ¢gVæ7F–öâ&VEÆFf÷&Ô6†V6¶&÷†W2†–E&Vf—‚’°¢f"÷WBÒµÓ°¢ö&¦V7Bæ¶W—2…ÄDdõ$Õ2’æf÷$V6‚†gVæ7F–öâ†²’°¢f"VÂÒFö7VÖVçBævWDVÆVÖVçD'”–B†–E&Vf—‚²"Ò"²²“°¢–b†VÂbbVÂæ6†V6¶VB’÷WBçW6‚†²“°¢Ò“°¢&WGW&â÷WC°¢Ğ ¢òòŠ­‹=˜]˜­Š’‹‹‹b˜M˜]‹]˜˜˜Š’ı˜-˜­˜]Š’˜]˜m‹]Š}Š¢(	BŠ­‹=Š­ŠíŠı˜R˜˜¢‹‹‹bŠ}˜MŠ=‹‹M˜­˜ŠŠı˜BråÄDdõ$Õ5·…ÒŠ}˜M˜]ŠŠ}‹M‹Š¢gVæ7F–öâÆFf÷&×4Æ&VÂ‡ÆFf÷&×2’°¢f"'"Ò'&’æ—4'&’‡ÆFf÷&×2’òÆFf÷&×2¢‡ÆFf÷&×2ò·ÆFf÷&×5Ò¢µÒ“°¢–b‚'"æÆVæwF‚’&WGW&â.(	B#°¢&WGW&â'"æÖ†gVæ7F–öâ†²’²&WGW&âÄDdõ$Õ5¶µÒòÄDdõ$Õ5¶µÒæÆ&VÂ¢³²Ò’æ¦ö–â‚-ˆÂ"“°¢Ğ ¢gVæ7F–öâW66T‡FÖÂ‡2’°¢&WGW&â7G&–ær‡2ÓÒçVÆÂò""¢2’ç&WÆ6R‚òbörÂ"f×²"’ç&WÆ6R‚óÂörÂ"fÇC²"’ç&WÆ6R‚óâörÂ"fwC²"“°¢Ğ¢gVæ7F–öâW66TGG"‡2’°¢&WGW&âW66T‡FÖÂ‡2’ç&WÆ6R‚ò"örÂ"gV÷C²"“°¢Ğ ¢òò˜]˜­˜b˜­˜-Šı‹˜­‹Šı™˜BŠ}˜M˜]Š}ŠıŠ“¢Š}˜M‹=˜Š‹Š=Šı˜]˜b˜Š}˜M˜]Šı˜­‹Š}˜M‹Š}˜RŠıŠ}˜­˜]Š}˜½ˆÂŠ=˜‚˜]˜m‹MŠbŠ}˜M˜]Š}ŠıŠ’˜m˜‹=˜p¢gVæ7F–öâ6äVF—D—FVÒ†ÖRÂ—FVÒ’°¢–b‚ÖRÇÂ—FVÒ’&WGW&âfÇ6S°¢–b‡v–æF÷rå54ÕE&öÆW2æ†4ç•&öÆR†ÖRÂ²'7WW%öFÖ–â"Â&vVæW&ÅöÖævW"%Ò’’&WGW&âG'VS°¢&WGW&â—FVÒæ7&VFVEö'’ÓÓÒÖRæ–C°¢Ğ ¢òòŠ}˜MŠİ‹˜˜]˜-‹]˜‹‹˜M˜’Š}˜M‹=˜Š‹Š=Šı˜]˜b˜Š}˜M˜]Šı˜­‹Š}˜M‹Š}˜R‹-˜¢˜]Šr˜}˜‚˜]ŠİŠıŠò˜˜¢‹]˜MŠ}Šİ˜­Š}Š¢Š}˜M˜-Š}‹ŠıŠ’$Å2¢gVæ7F–öâ6äFVÆWFT—FVÒ†ÖR’°¢&WGW&â†ÖRbbv–æF÷rå54ÕE&öÆW2æ†4ç•&öÆR†ÖRÂ²'7WW%öFÖ–â"Â&vVæW&ÅöÖævW"%Ò’“°¢Ğ ¢òò‹-‹Š}˜­‹Š­‹Šı˜­˜BıŠİ‹˜(	BŠŠ­‹˜}‹Šİ‹=Š‚‹]˜MŠ}Šİ˜­Š’Š}˜M‹MŠí‹RŠ}˜MŠİŠ}˜M˜­ˆÂŠ­˜ı‹=Š­ŠíŠı˜R˜˜¢˜=˜B‹MŠ}‹MŠ}Š¢‹‹‹bŠ}˜M˜]Š}ŠıŠ¢gVæ7F–öâ—FVÔ7F–öç4‡FÖÂ†—FVÒÂÖR’°¢f"‡FÖÂÒ"#°¢–b†6äVF—D—FVÒ†ÖRÂ—FVÒ’’‡FÖÂ³ÒsÆ'WGFöâ6Æ73Ò&'Fâv†÷7B6Ò"FFÖVF—BÖ—FVÓÒ"r²—FVÒæ–B²r#íŠ­‹Šı˜­˜CÂö'WGFöãâs°¢–b†6äFVÆWFT—FVÒ†ÖR’’‡FÖÂ³ÒsÆ'WGFöâ6Æ73Ò&'FâFævW"6Ò"FFÖFVÆWFRÖ—FVÓÒ"r²—FVÒæ–B²r#íŠİ‹˜Âö'WGFöãâs°¢&WGW&â‡FÖÃ°¢Ğ ¢òò˜]˜ŠıŠ}˜BŠ­‹Šı˜­˜B‹˜m˜Š}˜bı˜m‹Rı‹]˜ŠİŠ’Š}˜M˜]Š}ŠıŠ’(	BŠ˜­Š­˜Š­ŠÒ˜˜˜"Š=˜¢˜]˜ŠıŠ}˜BŠ­Š}˜m˜¢˜]˜Š­˜ŠĞ¢gVæ7F–öâ÷VäVF—D6öçFVçDÖöFÂ†—FVÒÂöå6fVB’°¢f"&6¶G&÷ÒFö7VÖVçBæ7&VFTVÆVÖVçB‚&F—b"“°¢&6¶G&÷æ6Æ74æÖRÒ&ÖöFÂÖ&6¶G&÷#°¢&6¶G&÷æ–ææW$…DÔÂÒsÆF—b6Æ73Ò&ÖöFÂ#ãÆF—b6Æ73Ò&ÖöFÂÖ†VB#ãÆƒ3íŠ­‹Šı˜­˜BŠ}˜M˜]Š}ŠıŠ“Âöƒ3âr°¢sÆ'WGFöâ6Æ73Ò&ÖöFÂÖ6Æ÷6R#ì9sÂö'WGFöããÂöF—câr°¢sÆF—b6Æ73Ò&f–VÆB#ãÆÆ&VÃíŠ}˜M‹˜m˜Š}˜cÂöÆ&VÃãÆ–çWB–CÒ&VB×F—FÆR"fÇVSÒ"r²W66TGG"†—FVÒçF—FÆR’²r#ãÂöF—câr°¢sÆF—b6Æ73Ò&f–VÆB#ãÆÆ&VÃíŠ}˜M˜]Š}ŠıŠ’Šı˜¢˜M‹]˜ŠİŠ“ÂöÆ&VÃâr²'&æE6VÆV7D‡FÖÂ‚&VBÖ'&æB"Â—FVÒæ'&æBÇÂ""’²sÂöF—câr°¢sÆF—b6Æ73Ò&f–VÆB#ãÆÆ&VÃíŠ}˜MŠ­Ší‹]‹SÂöÆ&VÃâr²7V6–ÇG•6VÆV7D‡FÖÂ‚&VB×7V6–ÇG’"Â—FVÒç7V6–ÇG’ÇÂ""’²sÂöF—câr°¢sÆF—b6Æ73Ò&f–VÆB#ãÆÆ&VÃí˜m‹RŠ}˜M˜]ŠİŠ­˜˜“ÂöÆ&VÃãÇFW‡F&V–CÒ&VBÖ&öG’#âr²W66T‡FÖÂ†—FVÒæ&öG’ÇÂ""’²sÂ÷FW‡F&VãÂöF—câr°¢sÆFWF–Ç27G–ÆSÒ&Ö&v–â×F÷£'ƒ²#ãÇ7VÖÖ'’7G–ÆSÒ&7W'6÷#§ö–çFW#¶föçB×vV–v‡C£s²#íŠ˜­Š}˜mŠ}Š¢Š}˜M˜]ŠİŠ­˜˜’òŠ}˜M˜˜­Šı˜­˜ƒÂ÷7VÖÖ'“ãÆF—b7G–ÆSÒ&Ö&v–â×F÷£ƒ²#âr°¢sÆF—b6Æ73Ò&f–VÆB#ãÆÆ&VÃíŠ}˜M˜}Šı˜Š}˜MŠ]‹˜MŠ}˜m˜£ÂöÆ&VÃâr²6”ö&¦V7F—fU6VÆV7D‡FÖÂ‚&VBÖö&¦V7F—fR"Â—FVÒæGfW'F—6–æuöö&¦V7F—fRÇÂ""’²sÂöF—câr°¢sÆF—b6Æ73Ò&f–VÆB#ãÆÆ&VÃí‹M˜=˜BŠ}˜M˜]ŠİŠ­˜˜“ÂöÆ&VÃâr²6”f÷&ÖE6VÆV7D‡FÖÂ‚&VBÖf÷&ÖB"Â—FVÒæ6öçFVçEöf÷&ÖBÇÂ""’²sÂöF—câr°¢sÆF—b6Æ73Ò&f–VÆB#ãÆÆ&VÃíŠ}˜M˜]˜‹m˜‹’òŠ}˜MŠíŠı˜]Š“ÂöÆ&VÃãÆ–çWB–CÒ&VB×F÷–2"fÇVSÒ"r²W66TGG"†—FVÒçF÷–5÷6W'f–6RÇÂ""’²r#ãÂöF—câr°¢sÆF—b6Æ73Ò&f–VÆB#ãÆÆ&VÃä†öö³ÂöÆ&VÃãÇFW‡F&V–CÒ&VBÖ†öö²#âr²W66T‡FÖÂ†—FVÒæ†ööµ÷FW‡BÇÂ""’²sÂ÷FW‡F&VãÂöF—câr°¢sÆF—b6Æ73Ò&f–VÆB#ãÆÆ&VÃäævÆSÂöÆ&VÃãÆ–çWB–CÒ&VBÖævÆR"fÇVSÒ"r²W66TGG"†—FVÒæ6öçFVçEöævÆRÇÂ""’²r#ãÂöF—câr°¢sÆF—b6Æ73Ò&f–VÆB#ãÆÆ&VÃí‹=˜=‹˜­ŠŠ¢òfö–6RÖ÷fW#ÂöÆ&VÃãÇFW‡F&V–CÒ&VB×67&—B#âr²W66T‡FÖÂ†—FVÒç67&—E÷FW‡BÇÂ""’²sÂ÷FW‡F&VãÂöF—câr°¢sÆF—b6Æ73Ò&f–VÆB#ãÆÆ&VÃí˜=Š}Š‹M˜bŠ}˜M˜m‹M‹ÂöÆ&VÃãÇFW‡F&V–CÒ&VBÖ6F–öâ#âr²W66T‡FÖÂ†—FVÒæ6F–öå÷FW‡BÇÂ""’²sÂ÷FW‡F&VãÂöF—câr°¢sÆF—b6Æ73Ò&f–VÆB#ãÆÆ&VÃí˜m˜‹’5DÂöÆ&VÃãÆ–çWB–CÒ&VBÖ7F×G—R"fÇVSÒ"r²W66TGG"†—FVÒæ7F÷G—RÇÂ""’²r#ãÂöF—câr°¢sÆF—b6Æ73Ò&f–VÆB#ãÆÆ&VÃí˜m‹R5DÂöÆ&VÃãÆ–çWB–CÒ&VBÖ7F×FW‡B"fÇVSÒ"r²W66TGG"†—FVÒæ7F÷FW‡BÇÂ""’²r#ãÂöF—câr°¢sÆF—b7G–ÆSÒ&F—7Æ“¦w&–C¶w&–B×FV×ÆFRÖ6öÇVÖç3£g"g#¶v£‡ƒ²#âr°¢sÆF—b6Æ73Ò&f–VÆB#ãÆÆ&VÃíŠ=˜-˜B˜]ŠıŠ’Š²“ÂöÆ&VÃãÆ–çWB–CÒ&VBÖGW&F–öâÖÖ–â"G—SÒ&çVÖ&W""Ö–ãÒ#"7FWÒ#"fÇVSÒ"r²W66TGG"†—FVÒçF&vWEöGW&F–öåöÖ–å÷6V6öæG2ÓÒçVÆÂò""¢—FVÒçF&vWEöGW&F–öåöÖ–å÷6V6öæG2’²r#ãÂöF—câr°¢sÆF—b6Æ73Ò&f–VÆB#ãÆÆ&VÃíŠ=˜-‹]˜’˜]ŠıŠ’Š²“ÂöÆ&VÃãÆ–çWB–CÒ&VBÖGW&F–öâÖÖ‚"G—SÒ&çVÖ&W""Ö–ãÒ#"7FWÒ#"fÇVSÒ"r²W66TGG"†—FVÒçF&vWEöGW&F–öåöÖ…÷6V6öæG2ÓÒçVÆÂò""¢—FVÒçF&vWEöGW&F–öåöÖ…÷6V6öæG2’²r#ãÂöF—câr°¢sÂöF—câr°¢sÆF—b6Æ73Ò&f–VÆB#ãÆÆ&VÃåf–FVòFV×ÆFSÂöÆ&VÃãÆ–çWB–CÒ&VB×f–FVò×FV×ÆFR"fÇVSÒ"r²W66TGG"†—FVÒçf–FVõ÷FV×ÆFRÇÂ""’²r#ãÂöF—câr°¢sÆF—b6Æ73Ò&f–VÆB#ãÆÆ&VÃí‹=ŠŠ‚Š}˜M˜‹‹m˜­Š’òWf–FVæ6Ræ÷FSÂöÆ&VÃãÇFW‡F&V–CÒ&VBÖ‡—÷F†W6—2#âr²W66T‡FÖÂ†—FVÒæ‡—÷F†W6—5÷&V6öâÇÂ""’²sÂ÷FW‡F&VãÂöF—câr°¢sÂöF—cãÂöFWF–Ç3âr°¢sÆF—b7G–ÆSÒ'FW‡BÖÆ–vã¦ÆVgC¶Ö&v–â×F÷£ƒ²#ãÆ'WGFöâ6Æ73Ò&'Fâ"–CÒ&VB×6fR#íŠİ˜‹‚Š}˜MŠ­‹Šı˜­˜MŠ}Š£Âö'WGFöããÂöF—cãÂöF—câs°¢Fö7VÖVçBæ&öG’æVæD6†–ÆB†&6¶G&÷“°¢&6¶G&÷çVW'•6VÆV7F÷"‚"æÖöFÂÖ6Æ÷6R"’æöæ6Æ–6²ÒgVæ7F–öâ‚’²&6¶G&÷ç&VÖ÷fR‚“²Ó°¢&6¶G&÷æöæ6Æ–6²ÒgVæ7F–öâ†R’²–b†RçF&vWBÓÓÒ&6¶G&÷’&6¶G&÷ç&VÖ÷fR‚“²Ó° ¢Fö7VÖVçBævWDVÆVÖVçD'”–B‚&VB×6fR"’æöæ6Æ–6²ÒgVæ7F–öâ‚’°¢f"F—FÆRÒFö7VÖVçBævWDVÆVÖVçD'”–B‚&VB×F—FÆR"’çfÇVRçG&–Ò‚“°¢f"&öG’ÒFö7VÖVçBævWDVÆVÖVçD'”–B‚&VBÖ&öG’"’çfÇVRçG&–Ò‚“°¢f"'&æBÒFö7VÖVçBævWDVÆVÖVçD'”–B‚&VBÖ'&æB"’çfÇVS°¢f"7V6–ÇG’ÒFö7VÖVçBævWDVÆVÖVçD'”–B‚&VB×7V6–ÇG’"’çfÇVS°¢f"Ö–äVÂÒFö7VÖVçBævWDVÆVÖVçD'”–B‚&VBÖGW&F–öâÖÖ–â"“°¢f"Ö„VÂÒFö7VÖVçBævWDVÆVÖVçD'”–B‚&VBÖGW&F–öâÖÖ‚"“°¢f"GW&F–öäÖ–âÒÖ–äVÂbbÖ–äVÂçfÇVRÓÒ""ò'6T–çB†Ö–äVÂçfÇVRÂ’¢çVÆÃ°¢f"GW&F–öäÖ‚ÒÖ„VÂbbÖ„VÂçfÇVRÓÒ""ò'6T–çB†Ö„VÂçfÇVRÂ’¢çVÆÃ°¢–b†GW&F–öäÖ–âÒçVÆÂbbGW&F–öäÖ‚ÒçVÆÂbbGW&F–öäÖ‚ÂGW&F–öäÖ–â’°¢ÆW'B‚-Š=˜-‹]˜’˜]ŠıŠ’˜MŠ}‹-˜RŠ­˜=˜˜bŠ=˜=Š‹˜]˜bŠ=˜‚Š­‹=Š}˜˜¢Š=˜-˜B˜]ŠıŠ’"“°¢&WGW&ã°¢Ğ¢–b‚F—FÆR’²ÆW'B‚-Š}˜=Š­Š‚‹˜m˜Š}˜b"“²&WGW&ã²Ğ¢–b‚'&æB’²ÆW'B‚-Š}ŠíŠ­‹Š}˜M˜]Š}ŠıŠ’Šı˜¢˜M‹]˜ŠİŠ’‹=˜˜m˜‚˜˜MŠrŠòíŠı˜­˜mŠr"“²&WGW&ã²Ğ¢v–æF÷rå54ÕDF"çWFFT6öçFVçD—FVÒ†—FVÒæ–BÂ°¢F—FÆS¢F—FÆRÀ¢&öG“¢&öG’À¢'&æC¢'&æBÀ¢7V6–ÇG“¢7V6–ÇG’ÇÂçVÆÂÀ¢GfW'F—6–æuöö&¦V7F—fS¢Fö7VÖVçBævWDVÆVÖVçD'”–B‚&VBÖö&¦V7F—fR"’çfÇVRÇÂçVÆÂÀ¢6öçFVçEöf÷&ÖC¢Fö7VÖVçBævWDVÆVÖVçD'”–B‚&VBÖf÷&ÖB"’çfÇVRÇÂçVÆÂÀ¢F÷–5÷6W'f–6S¢Fö7VÖVçBævWDVÆVÖVçD'”–B‚&VB×F÷–2"’çfÇVRçG&–Ò‚’ÇÂçVÆÂÀ¢†ööµ÷FW‡C¢Fö7VÖVçBævWDVÆVÖVçD'”–B‚&VBÖ†öö²"’çfÇVRçG&–Ò‚’ÇÂçVÆÂÀ¢6öçFVçEöævÆS¢Fö7VÖVçBævWDVÆVÖVçD'”–B‚&VBÖævÆR"’çfÇVRçG&–Ò‚’ÇÂçVÆÂÀ¢67&—E÷FW‡C¢Fö7VÖVçBævWDVÆVÖVçD'”–B‚&VB×67&—B"’çfÇVRçG&–Ò‚’ÇÂçVÆÂÀ¢6F–öå÷FW‡C¢Fö7VÖVçBævWDVÆVÖVçD'”–B‚&VBÖ6F–öâ"’çfÇVRçG&–Ò‚’ÇÂçVÆÂÀ¢7F÷G—S¢Fö7VÖVçBævWDVÆVÖVçD'”–B‚&VBÖ7F×G—R"’çfÇVRçG&–Ò‚’ÇÂçVÆÂÀ¢7F÷FW‡C¢Fö7VÖVçBævWDVÆVÖVçD'”–B‚&VBÖ7F×FW‡B"’çfÇVRçG&–Ò‚’ÇÂçVÆÂÀ¢F&vWEöGW&F–öåöÖ–å÷6V6öæG3¢—4æâ†GW&F–öäÖ–â’òçVÆÂ¢GW&F–öäÖ–âÀ¢F&vWEöGW&F–öåöÖ…÷6V6öæG3¢—4æâ†GW&F–öäÖ‚’òçVÆÂ¢GW&F–öäÖ‚À¢f–FVõ÷FV×ÆFS¢Fö7VÖVçBævWDVÆVÖVçD'”–B‚&VB×f–FVò×FV×ÆFR"’çfÇVRçG&–Ò‚’ÇÂçVÆÂÀ¢‡—÷F†W6—5÷&V6öã¢Fö7VÖVçBævWDVÆVÖVçD'”–B‚&VBÖ‡—÷F†W6—2"’çfÇVRçG&–Ò‚’ÇÂçVÆÀ¢Ò¢çF†Vâ†gVæ7F–öâ‡WFFVB’°¢&6¶G&÷ç&VÖ÷fR‚“°¢–b†öå6fVB’öå6fVB‡WFFVB“°¢Ò’æ6F6‚†gVæ7F–öâ†R’²ÆW'B‚-Ší‹}Š3¢"²RæÖW76vR“²Ò“°¢Ó°¢Ğ ¢òòŠİ‹˜˜m˜}Š}Šm˜¢Š‹ŠòŠ­Š=˜=˜­Šò(	BŠ}˜MŠ]ŠÍ‹Š}ŠŠı˜r˜MŠr˜­˜]˜=˜bŠ}˜MŠ­‹Š}ŠÍ‹’‹˜m˜p¢gVæ7F–öâFVÆWFT6öçFVçD—FVÕv—F„6öæf—&Ò†—FVÒÂöäFVÆWFVB’°¢–b‚6öæf—&Ò‚}˜]Š­Š=˜=ŠòŠ]˜m˜2‹Š}˜­‹"Š­Šİ‹˜"r²—FVÒçF—FÆR²r-‰òŠ}˜MŠ]ŠÍ‹Š}ŠŠı˜r˜m˜}Š}Šm˜¢˜˜]‹B˜}˜­Š­‹ŠÍ‹’âr’’&WGW&ã°¢v–æF÷rå54ÕDF"æFVÆWFT6öçFVçD—FVÒ†—FVÒæ–B’çF†Vâ†gVæ7F–öâ‚’°¢–b†öäFVÆWFVB’öäFVÆWFVB‚“°¢Ò’æ6F6‚†gVæ7F–öâ†R’²ÆW'B‚-Ší‹}Š3¢"²RæÖW76vR“²Ò“°¢Ğ ¢òò‹Š‹r‹-‹Š}˜­‹Š­‹Šı˜­˜BıŠİ‹˜ŠıŠ}Ší˜BŠ=˜¢˜]˜ŠıŠ}˜B(	BŠ}‹=Š­Šı‹˜­˜}ŠrŠ‹ŠòŠ]‹mŠ}˜Š’Š}˜M˜]˜ŠıŠ}˜B˜M˜M‹]˜ŠİŠ¢gVæ7F–öâv—&T—FVÔ7F–öç2†&6¶G&÷Â—FVÒÂöä6†ævVB’°¢f"VF—D'FâÒ&6¶G&÷çVW'•6VÆV7F÷"‚%¶FFÖVF—BÖ—FVÕÒ"“°¢–b†VF—D'Fâ’VF—D'Fâæöæ6Æ–6²ÒgVæ7F–öâ‚’°¢÷VäVF—D6öçFVçDÖöFÂ†—FVÒÂgVæ7F–öâ‡WFFVB’°¢&6¶G&÷ç&VÖ÷fR‚“°¢–b†öä6†ævVB’öä6†ævVB‡WFFVB“°¢Ò“°¢Ó°¢f"FVÄ'FâÒ&6¶G&÷çVW'•6VÆV7F÷"‚%¶FFÖFVÆWFRÖ—FVÕÒ"“°¢–b†FVÄ'Fâ’FVÄ'Fâæöæ6Æ–6²ÒgVæ7F–öâ‚’°¢FVÆWFT6öçFVçD—FVÕv—F„6öæf—&Ò†—FVÒÂgVæ7F–öâ‚’°¢&6¶G&÷ç&VÖ÷fR‚“°¢–b†öä6†ævVB’öä6†ævVB†çVÆÂ“°¢Ò“°¢Ó°¢Ğ ¢òòÒÒÒÒÒÒÒÒÒÒ˜Š­ŠÒŠ}˜M˜]˜m‹M˜‹Š}˜M˜]˜m‹M˜‹‹˜M˜’Š}˜M˜]˜m‹]Š’Š}˜M˜]˜mŠ}‹=ŠŠ’ÒÒÒÒÒÒÒÒÒĞ¢òòŠ‹ŠòŠ}˜M˜m‹M‹Š}˜MŠ­˜M˜-Š}Šm˜¢Š˜mŠÍ˜]‹’Š=ŠİŠıŠ²‹˜Š}Š‹rf6V&öö²ô–ç7Fw&Ò˜]˜bÖWF÷V&Æ—6…ö¦ö'2à¢òò˜M˜‚Š}˜M˜]˜m‹]Š­˜­˜b˜]˜ŠÍ˜Šı˜­˜bŠ˜m‹‹‹bŠ}ŠíŠ­˜­Š}‹ˆÂ˜˜M˜‚˜]˜˜­‹B‹˜Š}Š‹rÖWFŠ˜m‹ŠÍ‹’˜M˜V&Æ—6†VE÷W&ÂŠ}˜M˜-Šı˜­˜Rà¢gVæ7F–öâ÷VåV&Æ—6†VE÷7D÷F–öç2†—FVÒÂöäFWF–Ç2’°¢–b‚—FVÒÇÂ—FVÒæ–B’&WGW&ã°¢v–æF÷rå54ÕDF"æÆ—7DÖWFV&Æ—6„¦ö'4f÷$6öçFVçB…¶—FVÒæ–EÒ’çF†Vâ†gVæ7F–öâ†¦ö'2’°¢f"f"ÒçVÆÂÂ–rÒçVÆÃ°¢†¦ö'2ÇÂµÒ’æf÷$V6‚†gVæ7F–öâ†¢’°¢–b‚f"bb¢æf6V&ööµ÷W&ÖÆ–æ²’f"Ò¢æf6V&ööµ÷W&ÖÆ–æ³°¢–b‚–rbb¢æ–ç7Fw&Õ÷W&ÖÆ–æ²’–rÒ¢æ–ç7Fw&Õı|×Ní¢G§²ÚîÆ­yİ˜]˜‹]˜’Š˜­˜rŠ˜mŠòšıš"ıš2¢f"v÷&¶VEGFW&ç2Ò7F–öæ&ÆRæf–ÇFW"†gVæ7F–öâ‡‚’²&WGW&â‚ç7FGW2æ¶W’ÓÒ'vV²#²Ò’ç6Æ–6RƒÂ2“°¢f"v÷&¶VDW†×ÆW2ÒW„7F–öæ&ÆRæf–ÇFW"†gVæ7F–öâ‡‚’²&WGW&â‚ç7FGW2æ¶W’ÓÒ'vV²#²Ò“°¢f"W…6V7F–öåF—FÆRÒ†W„7D6öæbÓÓÒ&†–v‚"ÇÂW„7D6öæbÓÓÒ&ÖVF—VÒ"’ò/	øøbŠ=˜]Š½˜MŠ’˜mŠ}ŠÍŠİŠ’"¢/	ù9¢Š=˜]Š½˜MŠ’Š­Š}‹˜­Ší˜­Š’˜M˜M˜]˜-Š}‹˜mŠ’#° ¢f"÷fW&ÆÄ6öæf–FVæ6RÒ6”&WGFW$6öæb‡7F–öæ&ÆRæÆVæwF‚ò7D6öæb¢çVÆÂÂW„7F–öæ&ÆRæÆVæwF‚òW„7D6öæb¢çVÆÂ“° ¢òòŠ2’Š=˜‹m˜BŠ=ŠıŠ}ŠŠ­Š}‹˜­Ší˜¢‹˜-˜RŠŠİŠ­ˆÂŠ‹­‹bŠ}˜M˜m‹‹‹˜bŠ}˜=Š­˜]Š}˜BŠ}˜MŠ˜­Š}˜mŠ}Š¢Š}˜MŠ]ŠŠıŠ}‹˜­Š’¢f"W&d6æF–FFW2ÒµÓ°¢–b‡ööÂæÆVæwF‚’W&d6æF–FFW2çW6‚‡²ƒ¢ööÅ³ÒÂ¶–æC¢'GFW&â"Â¶–æDÆ&VÃ¢-˜m˜]‹r"Â6öæc¢6öæbÒ“°¢–b†W…ööÂæÆVæwF‚’W&d6æF–FFW2çW6‚‡²ƒ¢W…ööÅ³ÒÂ¶–æC¢&B"Â¶–æDÆ&VÃ¢-Š]‹˜MŠ}˜bŠ­Š}‹˜­Ší˜¢"Â6öæc¢W„6öæbÒ“°¢W&d6æF–FFW2ç6÷'B†gVæ7F–öâ†Â"’²&WGW&âç‚æÖWG&–2Ò"ç‚æÖWG&–3²Ò“°¢f"&W7EW&bÒW&d6æF–FFW5³ÒÇÂçVÆÃ° ¢òòŠ‚’Š=˜‹m˜BGFW&â˜]ŠİŠ­˜˜’˜-Š}Š˜B˜‹˜MŠ}˜²˜M˜MŠ}‹=Š­ŠíŠıŠ}˜R˜-Šò˜MŠr˜­˜=˜˜bŠ=‹Ší‹RŠ]‹˜MŠ}˜b¢f"7F–öæ&ÆT6öÖ&–æVBÒv÷&¶VEGFW&ç2æÖ†gVæ7F–öâ‡‚’²&WGW&â²ƒ¢‚Â¶–æC¢'GFW&â"Â¶–æDÆ&VÃ¢-˜m˜]‹r"Â6öæc¢7D6öæbÓ²Ò¢æ6öæ6B‡v÷&¶VDW†×ÆW2æÖ†gVæ7F–öâ‡‚’²&WGW&â²ƒ¢‚Â¶–æC¢&B"Â¶–æDÆ&VÃ¢-Š]‹˜MŠ}˜bŠ­Š}‹˜­Ší˜¢"Â6öæc¢W„7D6öæbÓ²Ò’“°¢7F–öæ&ÆT6öÖ&–æVBç6÷'B†gVæ7F–öâ†Â"’²&WGW&âç‚æÖWG&–2Ò"ç‚æÖWG&–3²Ò“°¢f"&W7D7F–öæ&ÆRÒ7F–öæ&ÆT6öÖ&–æVE³ÒÇÂçVÆÃ°¢f"6V6öæD7F–öæ&ÆRÒ7F–öæ&ÆT6öÖ&–æVE³ÒÇÂçVÆÃ° ¢f"vVµ–6²ÒW…vVµ³Òò²ƒ¢W…vVµ³ÒÂ¶–æC¢&B"Â¶–æDÆ&VÃ¢-Š]‹˜MŠ}˜bŠ­Š}‹˜­Ší˜¢"Â6öæc¢W„6öæbÒ ¢†fö–EGFW&ç5³Òò²ƒ¢fö–EGFW&ç5³ÒÂ¶–æC¢'GFW&â"Â¶–æDÆ&VÃ¢-˜m˜]‹r"Â6öæc¢6öæbÒ¢çVÆÂ“° ¢f"‡FÖÂÒ"#°¢òò˜]˜MŠí‹]˜­˜bŠ=‹˜M˜’Š}˜MŠŠ}˜m˜B(	BŠ=ŠıŠ}Š‹˜-˜]˜¢˜]˜m˜‹]˜B‹˜bŠ}Š­ŠÍŠ}˜r˜]ŠİŠ­˜˜’˜-Š}Š˜B˜M˜MŠ}‹=Š­ŠíŠıŠ}˜RŠ˜mŠòšR¢–b†&W7EW&b’°¢f"W&d–æ6ö×ÆWFRÒ&W7EW&bç‚æ7F–öæ&ÆS°¢‡FÖÂ³ÒsÆF—b7G–ÆSÒ&&6¶w&÷VæC§f"‚ÒÖ2Ö&rÖÇBÂ6cfcfcb“¶&÷&FW"×&F—W3£gƒ·FF–æs£‡‚ƒ¶Ö&v–âÖ&÷GFöÓ£gƒ¶föçB×6—¦S£'ƒ²#âr°¢sÆF—cãÆ#ï	ù8¢Š=˜‹m˜BŠ=ŠıŠ}ŠŠ­Š}‹˜­Ší˜££Âö#âr²f×DÖöæW•r†&W7EW&bç‚æÖWG&–2’²r‚r²6”ÖWG&–4Æ&VÂ†ö&¤¶W’’²r“ÂöF—câr°¢‡W&d–æ6ö×ÆWFP¢òsÆF—b7G–ÆSÒ&6öÆ÷#§f"‚ÒÖ2ÖæVvF—fR“²#î)ªûˆòŠ˜­Š}˜mŠ}Š¢Š}˜MŠ­˜m˜˜­‹Š}˜MŠ]ŠŠıŠ}‹˜¢‹­˜­‹˜]˜=Š­˜]˜MŠ’˜M˜}‹ŠrŠ}˜MŠ]‹˜MŠ}˜b(	BW&f÷&Öæ6R&Væ6†Ö&²öæÇ’ãÂöF—câp¢¢sÆF—câr²W66T‡FÖÂ†6”ÖVæ–ævgVÄ¦ö–â…¶&W7EW&bç‚ç&ræ†ööµ÷G—RÂ&W7EW&bç‚ç&ræ6öçFVçEöævÆRÂ&W7EW&bç‚ç&ræ7F÷G—UÒ’ÇÂ.(	B"’²sÂöF—câr’°¢sÂöF—câs°¢Ğ¢–b†&W7D7F–öæ&ÆR’°¢‡FÖÂ³ÒsÆF—b7G–ÆSÒ&&6¶w&÷VæC§f"‚ÒÖ2Ö&rÖÇBÂ6cfcfcb“¶&÷&FW"×&F—W3£gƒ·FF–æs£‡‚ƒ¶Ö&v–âÖ&÷GFöÓ£‡ƒ¶föçB×6—¦S£'ƒ²#âr°¢sÆF—cãÆ#î)Ê‚Š=˜‹m˜BŠ}Š­ŠÍŠ}˜r˜-Š}Š˜B˜M˜MŠ}‹=Š­ŠíŠıŠ}˜R˜˜¢Š}˜M˜]ŠİŠ­˜˜’ŠİŠ}˜M˜­˜½Šs£Âö#âr²W66T‡FÖÂ†6”ÖVæ–ævgVÄ¦ö–â…¶&W7D7F–öæ&ÆRç‚ç&ræ†ööµ÷G—RÂ&W7D7F–öæ&ÆRç‚ç&ræ6öçFVçEöævÆRÂ&W7D7F–öæ&ÆRç‚ç&ræ7F÷G—UÒ’ÇÂ.(	B"’²sÂöF—câr°¢sÆF—câr²6”ÖWG&–4Æ&VÂ†ö&¤¶W’’²s¢r²f×DÖöæW•r†&W7D7F–öæ&ÆRç‚æÖWG&–2’²sÂöF—câr°¢sÆF—cä6öæf–FVæ6S¢r²6”—FVÔ6öæf–FVæ6TÆ&VÂ†&W7D7F–öæ&ÆRç‚Â&W7D7F–öæ&ÆRæ6öæb’æÆ&VÂ²sÂöF—câr°¢sÆF—cå&V6öã¢r²W66T‡FÖÂ†6•v‡•FW‡B†&W7D7F–öæ&ÆRç‚æ7FGW2Â&W7D7F–öæ&ÆRç‚æ&F–òÂ&W7D7F–öæ&ÆRç‚ç'Vç2Â6”ÖWG&–4Æ&VÂ†ö&¤¶W’’’’²sÂöF—câr°¢†÷fW&ÆÄ6öæf–FVæ6RÓÓÒ&Æ÷r"òsÆF—b7G–ÆSÒ&6öÆ÷#§f"‚ÒÖ2ÖæVvF—fR“²#íŠ=˜‹m˜BŠ}Š­ŠÍŠ}˜r˜]Š­Š}ŠÒŠİŠ}˜M˜­˜½Š}ˆÂ˜M˜=˜bŠ}˜MŠ=Šı˜MŠ’˜]ŠİŠı˜ŠıŠ’˜˜­ŠİŠ­Š}ŠÂŠ}ŠíŠ­ŠŠ}‹ãÂöF—câr¢""’°¢sÂöF—câs°¢ÒVÇ6R°¢‡FÖÂ³ÒsÆF—b7G–ÆSÒ&&6¶w&÷VæC§f"‚ÒÖ2Ö&rÖÇBÂ6cfcfcb“¶&÷&FW"×&F—W3£gƒ·FF–æs£‡‚ƒ¶Ö&v–âÖ&÷GFöÓ£‡ƒ¶föçB×6—¦S£'ƒ²#í˜MŠrŠ­˜ŠÍŠòŠ˜­Š}˜mŠ}Š¢7&VF—fR˜=Š}˜˜­Š’ŠİŠ}˜M˜­˜½Šr˜MŠ}‹=Š­Ší‹Š}ŠÂŠ}Š­ŠÍŠ}˜r˜]ŠİŠ­˜˜’˜]˜Š½˜˜"ãÂöF—câs°¢Ğ ¢‡FÖÂ³Ò6•6–væÄ‡FÖÂ†÷fW&ÆÄ6öæf–FVæ6R“°¢f"v÷&¶VD†VF–ærÒ÷fW&ÆÄ6öæf–FVæ6RÓÓÒ&Æ÷r"ò/	úz¢˜‹‹m˜­Š}Š¢Š­‹=Š­Šİ˜"Š}˜MŠ}ŠíŠ­ŠŠ}‹(	BŠ=Šı˜MŠ’˜]ŠİŠı˜ŠıŠ’"¢.)ÈR˜]Šr˜mŠÍŠÒ˜Š}˜MŠ=˜m˜]Š}‹rŠ}˜M˜-˜˜­Š’#°¢‡FÖÂ³Ò6”6&G4‡FÖÂ‡v÷&¶VD†VF–ærÂv÷&¶VEGFW&ç2Âö&¤¶W’Â7D6öæbÂ'GFW&â"Â-˜M‹=˜r˜]‹˜mŠı˜mŠ}‹BŠ=˜m˜]Š}‹rŠŠ½˜-Š’˜=Š}˜˜­Š’˜M˜}‹ŠrŠ}˜MŠ­Ší‹]‹RıŠ}˜M˜}Šı˜â"Â&7F–öæ&ÆR"“°¢–b†fö–EGFW&ç2æÆVæwF‚’‡FÖÂ³Ò6”6&G4‡FÖÂ‚/	ùKBŠ=˜m˜]Š}‹rŠ=ŠıŠ}Š‹m‹˜­˜Š­Š}‹˜­Ší˜­˜½Šr"Âfö–EGFW&ç2Âö&¤¶W’Â6öæbÂ'GFW&â"Â""Â'W&b"“° ¢‡FÖÂ³Ò6”6&G4‡FÖÂ†W…6V7F–öåF—FÆRÂv÷&¶VDW†×ÆW2Âö&¤¶W’ÂW„7D6öæbÂ&B"Â-˜MŠrŠ­˜ŠÍŠòŠ=˜]Š½˜MŠ’Š­Š}‹˜­Ší˜­Š’˜]‹}Š}Š˜-Š’˜=Š}˜˜­Š’â"Â&7F–öæ&ÆR"“°¢–b†W…vV²æÆVæwF‚’‡FÖÂ³Ò6”6&G4‡FÖÂ‚/	ùKBŠ=˜]Š½˜MŠ’Š=ŠıŠ}Š‹m‹˜­˜Š­Š}‹˜­Ší˜­˜½Šr"ÂW…vV²Âö&¤¶W’ÂW„6öæbÂ&B"Â""Â'W&b"“°¢‡FÖÂ³Ò6•FV6†æ–6Ä‡FÖÂ†W†×ÆW4–æfòçFV6†æ–6Â“° ¢‡FÖÂ³ÒsÆF—b7G–ÆSÒ'FW‡BÖÆ–vã¦ÆVgC¶Ö&v–â×F÷£ƒ¶F—7Æ“¦fÆWƒ¶v£gƒ¶fÆW‚×w&§w&²#âr°¢sÆ'WGFöâ6Æ73Ò&'Fâv†÷7B6Ò"–CÒ&6’Ö6÷’Ö'&–Vb#í˜m‹=Šâ'&–Vb˜M˜M˜˜=˜­˜CÂö'WGFöãâr°¢sÆ'WGFöâ6Æ73Ò&'Fâv†÷7B6Ò"–CÒ&6’Ö÷VâÖvVçB#í˜˜=˜­˜BŠ]˜m‹MŠ}ŠŠ}˜M˜]ŠİŠ­˜˜’(isÂö'WGFöããÂöF—câs° ¢÷WBæ–ææW$…DÔÂÒ‡FÖÃ° ¢÷WBæ'V–ÆD'&–VbÒgVæ7F–öâ‚’°¢&WGW&â6”6÷”'&–Vb†÷WBÂ°¢7V6–ÇG”¶W“¢7V6–ÇG”¶W’ÂÖWFÆ&VÃ¢ÖWFÆ&VÂÂö&¤¶W“¢ö&¤¶W’À¢f×D¶W“¢f×D¶W’ÂF÷–5FW‡C¢F÷–5FW‡BÂ÷fW&ÆÄ6öæf–FVæ6S¢÷fW&ÆÄ6öæf–FVæ6RÀ¢&W7EW&c¢&W7EW&bÂ&W7D7F–öæ&ÆS¢&W7D7F–öæ&ÆRÀ¢6V6öæD7F–öæ&ÆS¢6V6öæD7F–öæ&ÆRÂvV³¢vVµ–6°¢ÒÂG'VR“°¢Ó°¢f"'&–Vd6÷”'FâÒ÷WBçVW'•6VÆV7F÷"‚"66’Ö6÷’Ö'&–Vb"“°¢–b†'&–Vd6÷”'Fâ’°¢'&–Vd6÷”'Fâæöæ6Æ–6²ÒgVæ7F–öâ‚’°¢6”6÷”'&–Vb†÷WBÂ°¢7V6–ÇG”¶W“¢7V6–ÇG”¶W’ÂÖWFÆ&VÃ¢ÖWFÆ&VÂÂö&¤¶W“¢ö&¤¶W’Âf×D¶W“¢f×D¶W’ÂF÷–5FW‡C¢F÷–5FW‡BÀ¢÷fW&ÆÄ6öæf–FVæ6S¢÷fW&ÆÄ6öæf–FVæ6RÂ&W7EW&c¢&W7EW&bÂ&W7D7F–öæ&ÆS¢&W7D7F–öæ&ÆRÂ6V6öæD7F–öæ&ÆS¢6V6öæD7F–öæ&ÆRÂvV³¢vVµ–6°¢Ò“°¢Ó°¢Ğ¢f"vVçD'FâÒ÷WBçVW'•6VÆV7F÷"‚"66’Ö÷VâÖvVçB"“°¢–b†vVçD'Fâ’²vVçD'Fâæöæ6Æ–6²ÒgVæ7F–öâ‚’²6”÷VävVçB‚“²Ó²Ğ¢Ğ ¢òòÖöFS¢'W&b"‹Š}˜m˜2Š=ŠıŠ}Š‹˜-˜]˜­ˆÂŠ}˜MŠ}˜Š­‹Š}‹m˜¢’Š=˜‚&7F–öæ&ÆR ¢òòF—7Æ•&æ²Š}ŠíŠ­˜­Š}‹˜¢“¢cB(	B˜­˜‹‹b‹˜-˜RŠ}˜M‹Š}˜m˜2Š}˜M˜]‹‹˜‹b˜M˜­‹}Š}Š˜"˜]˜‹m‹’Š}˜M‹˜m‹]‹¢òòŠ}˜M˜‹˜M˜¢˜˜¢Š}˜MŠ}ŠíŠ­˜­Š}‹Š}˜M˜]˜ıŠÍ˜]˜í™‹’„õD”ôâ3ò3"ˆÂŠŠı˜B‹Š}˜m˜=˜rŠÍ˜˜r‹=Š‚İŠ˜˜˜B˜m˜‹˜p¢òòŠ‹2‡GFW&ç2˜M˜ŠİŠı˜}˜RŠ=˜‚G2˜M˜ŠİŠı˜}˜R’(	BŠı˜rŠ}˜M˜M˜¢˜=Š}˜bŠ˜­‹=ŠŠ‚Š­˜mŠ}˜-‹b‹-˜ ¢òò$õD”ôâ3""˜]‹’%$ä³¢3"â˜M˜‚˜]‹B˜]Š­Š‹Š­ˆÂŠ˜­‹ŠÍ‹’˜M‹=˜M˜˜2‚æ&æ²÷‚ç&æ²Š}˜M˜-Šı˜­˜Rà¢gVæ7F–öâ6”'&–Vd6&DÆ–æW2‡‚Âö&¤¶W’ÂööÄ6öæf–FVæ6RÂ¶–æBÂÖöFRÂF—7Æ•&æ²’°¢ÖöFRÒÖöFRÇÂ'W&b#°¢f"Ò‚ç&rÂÖWG&–4Æ&VÂÒ6”ÖWG&–4Æ&VÂ†ö&¤¶W’’ÂÆ–æW2ÒµÓ°¢f"&æ²ÒF—7Æ•&æ²ÒçVÆÂòF—7Æ•&æ²¢†ÖöFRÓÓÒ&7F–öæ&ÆR"ò‚æ&æ²¢‚ç&æ²“°¢f"7FGW2ÒÖöFRÓÓÒ&7F–öæ&ÆR"ò‚æ7FGW2¢‚ç7FGW3°¢f"&F–òÒÖöFRÓÓÒ&7F–öæ&ÆR"ò‚æ&F–ò¢‚ç&F–ó°¢Æ–æW2çW6‚‚%$ä³¢2"²&æ²“°¢Æ–æW2çW6‚‚%5DEU3¢"²7FGW2æÆ&VÂ“°¢Æ–æW2çW6‚‚$4ôäd”DTä4S¢"²6”—FVÔ6öæf–FVæ6TÆ&VÂ‡‚ÂööÄ6öæf–FVæ6R’æÆ&VÂ“°¢–b‚‚æ7F–öæ&ÆR’Æ–æW2çW6‚‚$äõDS¢7&VF—fRÖWFFF–æ6ö×ÆWFRf÷"F†—2Bâ"“°¢–b†¶–æBÓÓÒ&B"’°¢–b†6”—4ÖVæ–ævgVÂ‡æ7&VF—fU÷F—FÆR’’Æ–æW2çW6‚‚$7&VF—fRF—FÆS¢"²æ7&VF—fU÷F—FÆR“°¢–b‡æ7&VF—fUö&öG’bb7G&–ær‡æ7&VF—fUö&öG’’çG&–Ò‚’æÆVæwF‚âR’Æ–æW2çW6‚‚$&öG’W†6W'C¢"²7G&–ær‡æ7&VF—fUö&öG’’ç6Æ–6RƒÂC’“°¢Ğ¢–b†6”—4ÖVæ–ævgVÂ‡æ†ööµ÷G—R’’Æ–æW2çW6‚‚$†öö³¢"²æ†ööµ÷G—R“°¢–b†6”—4ÖVæ–ævgVÂ‡æ6öçFVçEöævÆR’’Æ–æW2çW6‚‚$ævÆS¢"²æ6öçFVçEöævÆR“°¢–b†6”—4ÖVæ–ævgVÂ‡æ7&VF—fU÷G—R’’Æ–æW2çW6‚‚$f÷&ÖC¢"²æ7&VF—fU÷G—R“°¢–b†6”—4ÖVæ–ævgVÂ‡æ7F÷G—R’’Æ–æW2çW6‚‚$5D¢"²æ7F÷G—R“°¢–b†¶–æBÓÓÒ&B"’°¢Æ–æW2çW6‚‚%7VæC¢"²f×DÖöæW•r‡ç7VæB’“°¢Æ–æW2çW6‚‚$ÖW76vW3¢"²f×DçVÕr‡æ×6uö6öçb’“°¢Æ–æW2çW6‚‚$6÷7BôÖW76vS¢"²f×DÖöæW•r‡æ6÷7E÷W%ö×6uö6öçb’“°¢Æ–æW2çW6‚‚$ÆVG3¢"²f×DçVÕr‡æÆVG2’“°¢Æ–æW2çW6‚‚$5Ã¢"²f×DÖöæW•r‡æ6÷7E÷W%öÆVB’“°¢Æ–æW2çW6‚‚$5E#¢"²‡æ7G"ÒçVÆÂòçVÖ&W"‡æ7G"’çFôf—†VBƒ"’²"R"¢.(	B"’“°¢Æ–æW2çW6‚‚$53¢"²f×DÖöæW•r‡æ72’“°¢Æ–æW2çW6‚‚$7&VF—fRw&÷W¢"²‡æ7&VF—fUöw&÷Wö–BÇÂ.(	B"’“°¢Æ–æW2çW6‚‚%'Vç3¢"²‚ç'Vç2“°¢ÒVÇ6R°¢Æ–æW2çW6‚†ÖWG&–4Æ&VÂ²#¢"²f×DÖöæW•r‡‚æÖWG&–2’“°¢Æ–æW2çW6‚‚$G26÷VçC¢"²f×DçVÕr‡æG5ö6÷VçB’“°¢Ğ¢–b‡‚æ7F–öæ&ÆR’°¢Æ–æW2çW6‚‚%t…“¢"²6•v‡•FW‡B‡7FGW2Â&F–òÂ‚ç'Vç2ÂÖWG&–4Æ&VÂ’“°¢Æ–æW2çW6‚‚$„õrDòU4S¢"²6”†÷uFõW6UFW‡B‡Â7FGW2ÂfÇ6R’“°¢ÒVÇ6R°¢Æ–æW2çW6‚‚%U4S¢W&f÷&Öæ6R&Væ6†Ö&²öæÇ’âFòäõBFW&—fR†öö²ôævÆRg&öÒF†—2Bâ"“°¢Ğ¢&WGW&âÆ–æW3°¢Ğ ¢gVæ7F–öâ6”6÷”'&–Vb†÷WBÂ7G‚Â&WGW&äöæÇ’’°¢f"'&æBÒFö7VÖVçBævWDVÆVÖVçD'”–B‚&6bÖ'&æB"“°¢f"Æ–æW2ÒµÓ°¢Æ–æW2çW6‚‚#ÓÓÒ'&–Vb˜M˜M˜˜=˜­˜B(	BŠ]˜m‹MŠ}Š˜]ŠİŠ­˜˜’ŠÍŠı˜­ŠòÓÓÒ"“°¢Æ–æW2çW6‚‚$'&æC¢"²†'&æBbb'&æBçfÇVRò'&æBçfÇVR¢.(	B"’“°¢Æ–æW2çW6‚‚%7V6–ÇG“¢"²…5T4”ÅD”U5¶7G‚ç7V6–ÇG”¶W•Òò5T4”ÅD”U5¶7G‚ç7V6–ÇG”¶W•ÒæÆ&VÂ¢7G‚ç7V6–ÇG”¶W’’“°¢Æ–æW2çW6‚‚%F÷–2õ6W'f–6S¢"²†7G‚çF÷–5FW‡BÇÂ.(	B"’“°¢Æ–æW2çW6‚‚$GfW'F—6–ærö&¦V7F—fS¢"²„4ôåDTåEôô$¤T5D•dU5¶7G‚æö&¤¶W•Òò4ôåDTåEôô$¤T5D•dU5¶7G‚æö&¤¶W•ÒæÆ&VÂ¢7G‚æö&¤¶W’’“°¢Æ–æW2çW6‚‚%&VfW'&VBf÷&ÖC¢"²„4ôåDTåEôdõ$ÔE5¶7G‚æf×D¶W•Òò4ôåDTåEôdõ$ÔE5¶7G‚æf×D¶W•ÒæÆ&VÂ¢-Š=˜¢‹M˜=˜B"’“°¢Æ–æW2çW6‚‚$Wf–FVæ6RÆWfVÃ¢"²„4ôäd”DTä4UôÄ$TÅ5¶7G‚æ÷fW&ÆÄ6öæf–FVæ6UÒÇÂ4ôäd”DTä4UôÄ$TÅ2æÆ÷r’æÆ&VÂ“°¢Æ–æW2çW6‚‚""“°¢–b†7G‚æ&W7EW&b’°¢Æ–æW2çW6‚‚$$U5B„•5Dõ$”4ÂU$dõ$Ôä4S¢"“°¢6”'&–Vd6&DÆ–æW2†7G‚æ&W7EW&bç‚Â7G‚æö&¤¶W’Â7G‚æ&W7EW&bæ6öæbÂ7G‚æ&W7EW&bæ¶–æBÂ'W&b"’æf÷$V6‚†gVæ7F–öâ†Â’²Æ–æW2çW6‚†Â“²Ò“°¢Æ–æW2çW6‚‚""“°¢Ğ¢–b‚7G‚æ&W7D7F–öæ&ÆR’°¢Æ–æW2çW6‚‚-˜MŠrŠ­˜ŠÍŠòv–ææ–ærGFW&ç2˜]ŠM˜=ŠıŠ’˜M˜}‹ŠrŠ}˜MŠ­Ší‹]‹RıŠ}˜M˜}Šı˜â˜MŠrŠ­˜ŠÍŠòŠ˜­Š}˜mŠ}Š¢7&VF—fR˜=Š}˜˜­Š’ŠİŠ}˜M˜­˜½Šr˜MŠ}‹=Š­Ší‹Š}ŠÂŠ}Š­ŠÍŠ}˜r˜]ŠİŠ­˜˜’˜]˜Š½˜˜"â"“°¢Æ–æW2çW6‚‚-Š}‹=Š­ŠíŠı˜RŠ}˜MŠ=˜]Š½˜MŠ’Š}˜MŠ­Š}˜M˜­Š’˜M˜M˜]˜-Š}‹˜mŠ’˜‹]˜­Š}‹­Š’˜‹‹m˜­Š}Š¢Š}ŠíŠ­ŠŠ}‹ˆÂ˜˜M˜­‹2˜=Šı˜M˜­˜B˜m˜}Š}Šm˜¢â"“°¢Æ–æW2çW6‚‚""“°¢ÒVÇ6R°¢Æ–æW2çW6‚‚$$U5B5D”ôä$ÄR4ôåDTåBEDU$â…$T4ôÔÔTäDTBõD”ôâ3(	B"²7G‚æ&W7D7F–öæ&ÆRæ¶–æDÆ&VÂ²"“¢"“°¢òòcC¢F—7Æ•&æ³Ó˜­˜‹‹b%$ä³¢3"˜}˜mŠr˜]˜}˜]Šr˜=Š}˜b‹Š}˜m˜2Š}˜M‹˜m‹]‹ŠÍ˜˜r‹=Š‚İŠ˜˜˜@¢òò˜m˜‹˜rŠ‹2(	B‹‹MŠ}˜b˜­˜‹m˜B˜]Š­‹=˜"˜]‹’$õD”ôâ3"˜˜¢Š}˜M‹˜m˜Š}˜bŠıŠ}˜­˜]˜½Šrà¢6”'&–Vd6&DÆ–æW2†7G‚æ&W7D7F–öæ&ÆRç‚Â7G‚æö&¤¶W’Â7G‚æ&W7D7F–öæ&ÆRæ6öæbÂ7G‚æ&W7D7F–öæ&ÆRæ¶–æBÂ&7F–öæ&ÆR"Â’æf÷$V6‚†gVæ7F–öâ†Â’²Æ–æW2çW6‚†Â“²Ò“°¢Æ–æW2çW6‚‚""“°¢Ğ¢–b†7G‚ç6V6öæD7F–öæ&ÆR’°¢Æ–æW2çW6‚‚$õD”ôâ3#¢"“°¢òòcC¢F—7Æ•&æ³Ó"ŠŠı˜B‚æ&æ²Š}˜MŠíŠ}˜R’(	B˜­Šİ˜BŠ­˜mŠ}˜-‹b$õD”ôâ3"ò$ä³¢3 ¢òòŠ}˜M˜]˜ıŠ˜M˜í™‹¢‹˜m˜}ˆÂŠŠí˜M˜¢Š}˜M‹Š}˜m˜2Š}˜M˜]‹‹˜‹b˜­‹}Š}Š˜"Š­‹Š­˜­Š‚Š}˜MŠ}ŠíŠ­˜­Š}‹Š}˜M˜‹˜M˜¢ŠıŠ}˜­˜]˜½Šrà¢6”'&–Vd6&DÆ–æW2†7G‚ç6V6öæD7F–öæ&ÆRç‚Â7G‚æö&¤¶W’Â7G‚ç6V6öæD7F–öæ&ÆRæ6öæbÂ7G‚ç6V6öæD7F–öæ&ÆRæ¶–æBÂ&7F–öæ&ÆR"Â"’æf÷$V6‚†gVæ7F–öâ†Â’²Æ–æW2çW6‚†Â“²Ò“°¢Æ–æW2çW6‚‚""“°¢Ğ¢–b†7G‚çvV²’°¢Æ–æW2çW6‚‚%tT²U„ÕÄR˜MŠrŠ­˜=‹‹˜r(	B˜M˜M˜]˜-Š}‹˜mŠ’Š‹2“¢"“°¢6”'&–Vd6&DÆ–æW2†7G‚çvV²ç‚Â7G‚æö&¤¶W’Â7G‚çvV²æ6öæbÂ7G‚çvV²æ¶–æBÂ'W&b"’æf÷$V6‚†gVæ7F–öâ†Â’²Æ–æW2çW6‚†Â“²Ò“°¢Æ–æW2çW6‚‚""“°¢Ğ¢òòcBãŠ˜mŠòš’“¢Š­˜mŠ˜­˜r‹]‹˜­ŠÒ(	BõD”ôâ3"˜]˜­‹˜}‹‹BŠ=‹]˜MŠ}˜²˜M˜‚˜]˜˜­‹B‹˜m‹]‹Š­Š}˜m˜ ¢òò˜]ŠM˜}˜B‹­˜­‹‹m‹˜­˜‡v÷&¶VEGFW&ç2÷v÷&¶VDW†×ÆW2Š˜­‹=Š­Š‹Šı˜ŠrvV²ŠŠ}˜M˜‹˜B˜-Š˜@¢òò˜]Šr˜­˜‹]˜M˜Šr˜}˜mŠrˆÂ˜Š}˜MŠ­‹˜M˜­˜]Š}Š¢Šı˜¢ŠŠ­Š=˜=Šò˜M˜M˜˜=˜­˜BŠ]˜m˜r˜]˜­‹Š­Š‹‹BŠ=˜¢‹˜m‹]‹‹m‹˜­˜¢òòŠí˜­Š}‹˜]˜‹]˜’Š˜­˜rŠİŠ­˜’˜M˜‚‹˜}‹˜˜¢˜-‹=˜R%tT²U„ÕÄR"˜˜˜"à¢Æ–æW2çW6‚‚$FòäõB÷WGWBõD”ôâ3"–bF†RöæÇ’&VÖ–æ–ær7F–öæ&ÆR—FVÒ—26Æ76–f–VBvV²âvV²×W&f÷&Ö–ær—FVÒ×W7BæWfW"&RG&VFVB2&V6öÖÖVæFVB÷F–öâÂWfVâ–b—B†2W6&ÆR7&VF—fRÖWFFFâ"“°¢Æ–æW2çW6‚‚""“°¢òòcBãŠ˜mŠòšRıšbıšr“¢Š­‹˜M˜­˜]Š}Š¢‹]‹˜­ŠİŠ’˜M˜M˜˜=˜­˜BŠ}˜MŠíŠ}‹ŠÍ˜¢‹‹MŠ}˜b˜­ŠİŠ}˜‹‚‹˜M˜’˜M‹­Š’Š}˜MŠ=Šı˜MŠ¢òò˜˜]Š}˜­ŠíŠ­‹‹‹BŠÍŠıŠ}˜˜B˜m‹M‹Š=˜‚Š˜­Š}˜mŠ}Š¢˜]‹B˜]˜ŠÍ˜ŠıŠ’˜˜¢Š}˜M˜'&–Vbà¢Æ–æW2çW6‚‚$Ud”DTä4RÄäuTtS¢"“°¢Æ–æW2çW6‚‚"ÒFòæ÷BFW67&–&RÖVF—VÒôÆ÷rWf–FVæ6R2&÷fVâv–ææW"â"“°¢Æ–æW2çW6‚‚"ÒW6R‡&6W2Æ–¶R}Š=˜‹m˜BŠ}Š­ŠÍŠ}˜r˜]Š­Š}ŠÒŠİŠ}˜M˜­˜½Šrr÷"}˜‹‹m˜­Š’Š­‹=Š­Šİ˜"Š}˜MŠ}ŠíŠ­ŠŠ}‹râ"“°¢Æ–æW2çW6‚‚"ÒöæÇ’W6Rwv–ææW"÷&÷fVârÆæwVvR–bF†RWf–FVæ6RÆWfVÂ&÷fR—2W‡Æ–6—FÇ’†–v‚õ&÷fVââ"“°¢Æ–æW2çW6‚‚""“°¢Æ–æW2çW6‚‚$Fòæ÷B&V6öÖÖVæB÷7F–ærF–ÖW2öF—2VæÆW72F–ÖRÖöbÖF’öF’Ööb×vVV²W&f÷&Öæ6RFF—2W‡Æ–6—FÇ’&÷f–FVB–âF†—2'&–Vbâ"“°¢Æ–æW2çW6‚‚$Fòæ÷B–çfVçB&Væ6†Ö&·2Â6öçF7BFWF–Ç2ÂFö7F÷"æÖW2ÂÖVF–6Â6W'f–6R6Æ–×2ÂöffW'2Â÷"†—7F÷&–6ÂW&f÷&Öæ6Rf7G2F†B&Ræ÷B7WÆ–VB'’F†—2'&–Vb÷"Ç&VG’'BöbF†R6öçFVçBvVçBw2&÷fVB'W6–æW72¶æ÷vÆVFvRâ"“°¢Æ–æW2çW6‚‚""“°¢Æ–æW2çW6‚‚-Š}‹=Š­ŠíŠı˜RŠ}˜M˜mŠ­Š}ŠmŠÂ˜=˜]‹ŠÍ‹’Š}‹=Š­‹Š}Š­˜­ŠÍ˜¢˜˜M˜­‹2˜=˜m‹R˜M˜M˜m‹=Šââ˜}‹Šr˜m˜]‹rŠ}‹=Š­‹Š}Š­˜­ŠÍ˜¢˜˜M˜­‹2˜m‹R˜M˜M˜m‹=ŠâŠ}˜MŠİ‹˜˜¢â"“°¢6”VæDvVçD÷WGWD6öçG&7B†Æ–æW2Â7G‚æf×D¶W’“°  ¢f"FW‡BÒÆ–æW2æ¦ö–â‚%Æâ"“°¢–b‡&WGW&äöæÇ’’&WGW&âFW‡C°¢f"FöæRÒgVæ7F–öâ‚’°¢–b‡v–æF÷rå54ÕEFö7B’v–æF÷rå54ÕEFö7Bç6†÷r‚-Š­˜R˜m‹=ŠâŠ}˜M˜'&–Vb(	BŠ}˜Š­ŠÒ˜˜=˜­˜BŠ]˜m‹MŠ}ŠŠ}˜M˜]ŠİŠ­˜˜’"Â'7V66W72"“°¢VÇ6RÆW'B‚-Š­˜R˜m‹=ŠâŠ}˜M˜'&–Vb"“°¢Ó°¢f"f–ÂÒgVæ7F–öâ‚’°¢–b‡v–æF÷rå54ÕEFö7B’v–æF÷rå54ÕEFö7Bç6†÷r‚-Š­‹‹™‹Š}˜M˜m‹=ŠâŠ}˜MŠ­˜M˜-Š}Šm˜¢(	BŠ}˜m‹=Šâ˜­Šı˜˜­˜½Šr˜]˜bŠ}˜M˜mŠ}˜‹Š’"Â&W'&÷""“°¢Ó°¢–b†æf–vF÷"æ6Æ—&ö&Bbbæf–vF÷"æ6Æ—&ö&Bçw&—FUFW‡B’°¢æf–vF÷"æ6Æ—&ö&Bçw&—FUFW‡B‡FW‡B’çF†Vâ†FöæR’æ6F6‚†f–Â“°¢ÒVÇ6R°¢G'’°¢f"FÒFö7VÖVçBæ7&VFTVÆVÖVçB‚'FW‡F&V"“°¢FçfÇVRÒFW‡C²Fç7G–ÆRç÷6—F–öâÒ&f—†VB#²Fç7G–ÆRæ÷6—G’Ò##°¢Fö7VÖVçBæ&öG’æVæD6†–ÆB‡F“²Fç6VÆV7B‚“°¢Fö7VÖVçBæW†V46öÖÖæB‚&6÷’"“²Fö7VÖVçBæ&öG’ç&VÖ÷fT6†–ÆB‡F“°¢FöæR‚“°¢Ò6F6‚†R’²f–Â‚“²Ğ¢Ğ¢Ğ ¢gVæ7F–öâ6”÷VävVçB‚’°¢v–æF÷rå54ÕDF"ævWD6WGF–æw2‚’çF†Vâ†gVæ7F–öâ‡2’°¢f"W&ÂÒ2bb2æ6öçFVçEövVçEöwE÷W&Ã°¢–b‚W&Â’°¢–b‡v–æF÷rå54ÕEFö7B’v–æF÷rå54ÕEFö7Bç6†÷r‚-‹Š}Š‹r˜˜=˜­˜BŠ]˜m‹MŠ}ŠŠ}˜M˜]ŠİŠ­˜˜’‹­˜­‹˜]˜ı‹ŠòŠ‹Šò"Â&W'&÷""“°¢&WGW&ã°¢Ğ¢v–æF÷ræ÷Vâ‡W&ÂÂ%ö&Ææ²"Â&æö÷VæW"Ææ÷&VfW'&W""“°¢Ò’æ6F6‚†gVæ7F–öâ‚’°¢–b‡v–æF÷rå54ÕEFö7B’v–æF÷rå54ÕEFö7Bç6†÷r‚-Š­‹‹™‹Š­Šİ˜]˜­˜BŠ]‹ŠıŠ}ŠıŠ}Š¢˜˜=˜­˜BŠ}˜M˜]ŠİŠ­˜˜’"Â&W'&÷""“°¢Ò“°¢Ğ ¢gVæ7F–öâv—&T6öçFVçD–çFVÆÆ–vVæ6R†6öçF–æW"ÂvWE7V6–ÇG”¶W’’°¢f"†VBÒ6öçF–æW"çVW'•6VÆV7F÷"‚"66’×FövvÆRÖ†VB"“°¢f"&öG’Ò6öçF–æW"çVW'•6VÆV7F÷"‚"66’Ö&öG’"“°¢f"'&÷rÒ6öçF–æW"çVW'•6VÆV7F÷"‚"66’×FövvÆRÖ'&÷r"“°¢–b††VBbb&öG’bb'&÷r’°¢†VBæöæ6Æ–6²ÒgVæ7F–öâ‚’°¢f"6öÆÆ6VBÒ&öG’ç7G–ÆRæF—7Æ’ÓÓÒ&æöæR#°¢&öG’ç7G–ÆRæF—7Æ’Ò6öÆÆ6VBò""¢&æöæR#°¢'&÷rçFW‡D6öçFVçBÒ6öÆÆ6VBò.)kâ"¢.)k‚#°¢Ó°¢Ğ¢gVæ7F–öâ&Vg&W6‚‚’²&VæFW$6”÷WGWB†6öçF–æW"ÂvWE7V6–ÇG”¶W’“²Ğ¢f"ö&¥6VÂÒ6öçF–æW"çVW'•6VÆV7F÷"‚"66’Öö&¦V7F—fR"“°¢f"f×E6VÂÒ6öçF–æW"çVW'•6VÆV7F÷"‚"66’Öf÷&ÖB"“°¢–b†ö&¥6VÂ’ö&¥6VÂæöæ6†ævRÒ&Vg&W6ƒ°¢–b†f×E6VÂ’f×E6VÂæöæ6†ævRÒ&Vg&W6ƒ°¢&Vg&W6‚‚“°¢Ğ¢gVæ7F–öâ&Vg&W6„6öçFVçD–çFVÆÆ–vVæ6R†6öçF–æW"ÂvWE7V6–ÇG”¶W’’°¢&VæFW$6”÷WGWB†6öçF–æW"ÂvWE7V6–ÇG”¶W’“°¢Ğ ¢gVæ7F–öâvWD6öçFVçD”'&–Vb†6öçFW‡B’°¢–b‚6öçFW‡Bç7V6–ÇG’ÇÂ6öçFW‡BæGfW'F—6–ætö&¦V7F—fR’°¢&WGW&â&öÖ—6Rç&V¦V7B†æWrW'&÷"‚-Š}ŠíŠ­‹Š}˜MŠ­Ší‹]‹R˜Š}˜M˜}Šı˜Š}˜MŠ]‹˜MŠ}˜m˜¢˜-Š˜BŠ}˜MŠ­˜˜M˜­Šòâ"’“°¢Ğ¢&WGW&â6”ÆöDFF‚’çF†Vâ†gVæ7F–öâ†FF’°¢f"÷WBÒFö7VÖVçBæ7&VFTVÆVÖVçB‚&F—b"“°¢&VæFW$6•&W7VÇG2†÷WBÂFFÂ6öçFW‡Bç7V6–ÇG’Â6öçFW‡BæGfW'F—6–ætö&¦V7F—fRÂ6öçFW‡Bæf÷&ÖBÂ6öçFW‡BçF÷–2“°¢–b‡G—Vöb÷WBæ'V–ÆD'&–VbÓÒ&gVæ7F–öâ"’F‡&÷ræWrW'&÷"‚-Š­‹‹‹Š]‹ŠıŠ}Šò'&–VbŠ}˜MŠ=ŠıŠ}ŠâŠİŠ}˜˜B˜]‹Š’Š=Ší‹˜’â"“°¢&WGW&â÷WBæ'V–ÆD'&–Vb‚“°¢Ò“°¢Ğ ¢v–æF÷rå54ÕEv÷&¶fÆ÷rÒ°¢vWD6öçFVçD”'&–Vc¢vWD6öçFVçD”'&–VbÀ¢5DtU3¢5DtU2À¢ÖWFÆ–æ·56V7F–öä‡FÖÃ¢ÖWFÆ–æ·56V7F–öä‡FÖÂÀ¢v—&TÖWFÆ–æ·56V7F–öã¢v—&TÖWFÆ–æ·56V7F–öâÀ¢DU4”tåõ5DEU3¢DU4”tåõ5DEU2À¢%$äE3¢%$äE2À¢5T4”ÅD”U3¢5T4”ÅD”U2À¢ÄDdõ$Õ3¢ÄDdõ$Õ2À¢7FvTÆ&VÃ¢7FvTÆ&VÂÀ¢7FvT–æFWƒ¢7FvT–æFW‚À¢FW6–vå7FGW4f÷#¢FW6–vå7FGW4f÷"À¢'&æD&FvT‡FÖÃ¢'&æD&FvT‡FÖÂÀ¢'&æE6VÆV7D‡FÖÃ¢'&æE6VÆV7D‡FÖÂÀ¢7V6–ÇG”&FvT‡FÖÃ¢7V6–ÇG”&FvT‡FÖÂÀ¢6öçFVçDf÷&ÖDFWF–Ç4‡FÖÃ¢6öçFVçDf÷&ÖDFWF–Ç4‡FÖÂÀ¢6öçFVçDf÷&ÖD&FvT‡FÖÃ¢6öçFVçDf÷&ÖD&FvT‡FÖÂÀ¢7V6–ÇG•6VÆV7D‡FÖÃ¢7V6–ÇG•6VÆV7D‡FÖÂÀ¢ÆFf÷&Õ6VÆV7D‡FÖÃ¢ÆFf÷&Õ6VÆV7D‡FÖÂÀ¢ÆFf÷&Ô6†V6¶&÷†W4‡FÖÃ¢ÆFf÷&Ô6†V6¶&÷†W4‡FÖÂÀ¢&VEÆFf÷&Ô6†V6¶&÷†W3¢&VEÆFf÷&Ô6†V6¶&÷†W2À¢ÆFf÷&×4Æ&VÃ¢ÆFf÷&×4Æ&VÂÀ¢6äVF—D—FVÓ¢6äVF—D—FVÒÀ¢6äFVÆWFT—FVÓ¢6äFVÆWFT—FVÒÀ¢—FVÔ7F–öç4‡FÖÃ¢—FVÔ7F–öç4‡FÖÂÀ¢÷VäVF—D6öçFVçDÖöFÃ¢÷VäVF—D6öçFVçDÖöFÂÀ¢FVÆWFT6öçFVçD—FVÕv—F„6öæf—&Ó¢FVÆWFT6öçFVçD—FVÕv—F„6öæf—&ÒÀ¢v—&T—FVÔ7F–öç3¢v—&T—FVÔ7F–öç2À¢÷VåV&Æ—6†VE÷7D÷F–öç3¢÷VåV&Æ—6†VE÷7D÷F–öç2À¢6öçFVçD–çFVÆÆ–vVæ6UæVÄ‡FÖÃ¢6öçFVçD–çFVÆÆ–vVæ6UæVÄ‡FÖÂÀ¢v—&T6öçFVçD–çFVÆÆ–vVæ6S¢v—&T6öçFVçD–çFVÆÆ–vVæ6RÀ¢&Vg&W6„6öçFVçD–çFVÆÆ–vVæ6S¢&Vg&W6„6öçFVçD–çFVÆÆ–vVæ6P¢Ó°§Ò’‚“°
