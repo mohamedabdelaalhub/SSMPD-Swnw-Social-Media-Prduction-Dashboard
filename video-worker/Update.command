@@ -16,12 +16,18 @@ if [[ ! -d "$WORKER_DIR" ]]; then
 fi
 
 mkdir -p "$BACKUP" "$LOG_DIR" "$HOME/Library/LaunchAgents"
-for file in worker.py cover_candidates.py eleven_tts.py drive_archive.py brand_identity.py; do
+STAGING="$(mktemp -d "$WORKER_DIR/update-XXXXXX")"
+trap 'rm -rf "$STAGING"' EXIT
+for file in worker.py cover_candidates.py eleven_tts.py drive_archive.py brand_identity.py image_storyboard.py; do
   [[ -f "$WORKER_DIR/$file" ]] && cp "$WORKER_DIR/$file" "$BACKUP/"
-  curl -fsSL "$SOURCE/$file" -o "$WORKER_DIR/$file"
+  curl -fsSL "$SOURCE/$file" -o "$STAGING/$file"
 done
 
-python3 -m py_compile "$WORKER_DIR/worker.py" "$WORKER_DIR/cover_candidates.py" "$WORKER_DIR/eleven_tts.py" "$WORKER_DIR/drive_archive.py" "$WORKER_DIR/brand_identity.py"
+python3 -m py_compile "$STAGING/worker.py" "$STAGING/cover_candidates.py" "$STAGING/eleven_tts.py" "$STAGING/drive_archive.py" "$STAGING/brand_identity.py" "$STAGING/image_storyboard.py"
+launchctl bootout "gui/$(id -u)" "$AGENT_FILE" >/dev/null 2>&1 || true
+for file in worker.py cover_candidates.py eleven_tts.py drive_archive.py brand_identity.py image_storyboard.py; do
+  mv "$STAGING/$file" "$WORKER_DIR/$file"
+done
 
 PYTHON_BIN="$(command -v python3)"
 cat > "$AGENT_FILE" <<EOF

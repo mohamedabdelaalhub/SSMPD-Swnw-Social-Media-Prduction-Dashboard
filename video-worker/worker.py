@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import argparse
 import eleven_tts
+import image_storyboard
 from drive_archive import upload as archive_upload
 from brand_identity import logo_asset
 import json
@@ -257,12 +258,15 @@ def request_json(method: str, url: str, key: str, payload: Any | None = None, ex
 
 
 def claim_job(base_url: str, key: str) -> dict[str, Any] | None:
-    return request_json(
-        "POST",
-        base_url + "/rest/v1/rpc/claim_next_video_job",
-        key,
-        {"p_worker_id": WORKER_ID},
-    )
+    try:
+        return request_json("POST", base_url + "/rest/v1/rpc/claim_next_video_job", key,
+                            {"p_worker_id": WORKER_ID, "p_max_input_schema_version": 3})
+    except WorkerError as error:
+        if "PGRST202" not in str(error):
+            raise
+        # Keep normal jobs working if this worker was updated before the migration.
+        return request_json("POST", base_url + "/rest/v1/rpc/claim_next_video_job", key,
+                            {"p_worker_id": WORKER_ID})
 
 
 def update_job(base_url: str, key: str, job_id: str, patch: dict[str, Any]) -> None:
@@ -862,7 +866,9 @@ def render(job: dict[str, Any], job_dir: Path) -> tuple[Path, str]:
     if min_s <= 0 or max_s < min_s:
         raise WorkerError("Invalid video duration in job.")
 
-    if not discover_media_assets(job):
+    if job.get("media_mode") == "image_storyboard":
+        image_storyboard.validate(job, downloaded=True)
+    if job.get("media_mode") != "image_storyboard" and not discover_media_assets(job):
         raise WorkerError("لا توجد مشاهد فيديو معتمدة لهذا التخصص. ارفع مشاهد للمادة أو أضفها لمكتبة B-roll الخاصة بالصفحة والتخصص. توقف الإنتاج قبل توليد الصوت.")
 
     voice_path, voice = synthesize(script, job_dir, job)
@@ -885,7 +891,9 @@ def render(job: dict[str, Any], job_dir: Path) -> tuple[Path, str]:
     captioned = job_dir / "output-captioned.mp4"
     visual_out = job_dir / "output-visual.mp4"
     ass_filter = "ass=filename='" + filter_path(ass) + "'"
-    visual_background = render_visual_background(ffmpeg, job, job_dir, target)
+    visual_background = (image_storyboard.render(ffmpeg, job, job_dir, target, spoken_duration, run)
+                         if job.get("media_mode") == "image_storyboard"
+                         else render_visual_background(ffmpeg, job, job_dir, target))
 
     if visual_background:
         cmd = [ffmpeg, "-y", "-i", str(visual_background), "-i", str(voice_path)]

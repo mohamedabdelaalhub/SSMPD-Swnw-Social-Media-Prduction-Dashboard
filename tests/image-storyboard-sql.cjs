@@ -1,0 +1,57 @@
+const {PGlite}=require('@electric-sql/pglite');
+const fs=require('fs'),assert=require('assert/strict'),path=require('path');
+const root=path.resolve(__dirname,'..');
+(async()=>{
+ const db=new PGlite();
+ // Reuse the existing routing schema fixture so the same role gates are exercised.
+ const test=fs.readFileSync(path.join(root,'tests/ai-routing-sql.cjs'),'utf8');
+ const bootstrap=test.match(/await db\.exec\(`([\s\S]*?)`\);/)[1].replace("select 'authenticated'::text", "select coalesce(nullif(current_setting('test.auth',true),''),'authenticated')::text");
+ await db.exec(bootstrap);
+ await db.exec(`alter table video_jobs add column worker_id text, add column attempt_count integer default 0, add column updated_at timestamptz default now(), add column error_message text, add column render_started_at timestamptz, add column render_finished_at timestamptz, add column progress_percent integer, add column progress_stage text;
+ create table video_worker_heartbeats(worker_id text,current_job_id uuid,last_seen_at timestamptz);
+ alter table video_assets add column created_by uuid;`);
+ await db.exec(fs.readFileSync(path.join(root,'supabase/migrations/20260920_ai_design_routing.sql'),'utf8'));
+ const migration=fs.readFileSync(path.join(root,'supabase/migrations/20260921_image_storyboard.sql'),'utf8');
+ await db.exec(migration);await db.exec(migration);
+ const owner='00000000-0000-4000-8000-000000000001',other='00000000-0000-4000-8000-000000000002';
+ await db.query("select set_config('test.me',$1,false),set_config('test.role','page_manager',false)",[owner]);
+ await db.exec("insert into brand_logos(brand,variant,storage_path,file_name) values('sono','primary','sono/logo.png','logo.png')");
+ const item=(await db.query("insert into content_items(created_by,title,brand,content_format,script_text,target_duration_min_seconds,target_duration_max_seconds,video_template) values($1,'title','sono','video','واحد اثنان ثلاثة أربعة خمسة ستة سبعة ثمانية',25,30,'quick_tips') returning *",[owner])).rows[0];
+ const texts=['واحد اثنان','ثلاثة أربعة','خمسة ستة','سبعة ثمانية'];
+ const board={version:1,source_script:item.script_text,transition:'fade',scenes:texts.map(text=>({text,motion:'pan_left',asset_id:null}))};
+ const save=b=>db.query('select save_video_storyboard($1,$2)',[item.id,JSON.stringify(b)]);
+ const create=()=>db.query('select create_video_job($1) as job',[item.id]);
+ await save(board);await assert.rejects(create(),/صورة لكل مشهد/);
+ for(let i=0;i<4;i++) {
+   const id='10000000-0000-4000-8000-00000000000'+i;
+   await db.query("insert into video_assets(id,content_id,asset_type,storage_path,file_name,mime_type,file_size,created_at,asset_role) values($1,$2,'image',$3,'photo.png','image/png',20,now(),'footage')",[id,item.id,'images/'+i]);
+   board.scenes[i].asset_id=id;
+ }
+ await db.query("select set_config('test.me',$1,false)",[other]);await assert.rejects(save(board),/غير مسموح/);
+ await db.query("select set_config('test.me',$1,false)",[owner]);
+ const bad=structuredClone(board);bad.scenes[1].asset_id=bad.scenes[0].asset_id;await assert.rejects(save(bad),/صورة مختلفة/);
+ const missing=structuredClone(board);missing.scenes[1].asset_id=other;await assert.rejects(save(missing),/مفقودة/);
+ const incomplete=structuredClone(board);incomplete.scenes.pop();await assert.rejects(save(incomplete),/عدد المشاهد/);
+ const altered=structuredClone(board);altered.scenes[0].text='نص آخر';await assert.rejects(save(altered),/تغطي السكريبت/);
+ await db.query("select set_config('test.me',$1,false),set_config('test.role','approver',false)",[other]);
+ await db.query("update content_items set design_execution='ai',stage='in_design' where id=$1",[item.id]);
+ await db.query("select register_video_asset($1,'music',$2,'track.mp3','audio/mpeg',100)",[item.id,other+'/'+item.id+'/track.mp3']);
+ await db.query("select set_config('test.me',$1,false),set_config('test.role','page_manager',false)",[owner]);
+ await save(board);const first=(await create()).rows[0].job;
+ assert.equal(first.input_schema_version,3);assert.deepEqual(first.storyboard,board);
+ const same=(await create()).rows[0].job;assert.equal(same.id,first.id,'Pending create stays idempotent');
+ await db.query("update content_items set script_text='changed' where id=$1",[item.id]);await assert.rejects(create(),/السكريبت اتغير/);
+ const snapshot=(await db.query('select storyboard from video_jobs where id=$1',[first.id])).rows[0].storyboard;assert.deepEqual(snapshot,board);
+ await assert.rejects(db.query("select claim_next_video_job('old')"),/service_role/);
+ await db.exec("select set_config('test.auth','service_role',false)");
+ assert.equal((await db.query("select claim_next_video_job('old') as job")).rows[0].job,null,'Old worker cannot claim schema 3');
+ const claimed=(await db.query("select claim_next_video_job('new',3) as job")).rows[0].job;assert.equal(claimed.id,first.id);
+ assert.equal((await db.query("select claim_next_video_job('second',3) as job")).rows[0].job,null);
+ await db.exec("select set_config('test.auth','authenticated',false)");
+ const legacy=(await db.query("insert into content_items(created_by,title,brand,content_format,script_text,target_duration_min_seconds,target_duration_max_seconds,video_template,video_media_mode) values($1,'legacy','sono','video','script',25,30,'quick_tips','auto') returning id",[owner])).rows[0].id;
+ const ordinary=(await db.query('select create_video_job($1) as job',[legacy])).rows[0].job;
+ assert.equal(ordinary.input_schema_version,2);assert.equal(ordinary.storyboard,null);
+ await db.exec("select set_config('test.auth','service_role',false)");
+ assert.equal((await db.query("select claim_next_video_job('old') as job")).rows[0].job.id,ordinary.id,'Old workers still claim ordinary jobs');
+ await db.close();console.log('PASS migration repeatability, role gates, incomplete/duplicate/stale rejection, immutable snapshots and worker compatibility');
+})().catch(e=>{console.error(e);process.exitCode=1});

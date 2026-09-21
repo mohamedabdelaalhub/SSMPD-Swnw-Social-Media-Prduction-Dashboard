@@ -285,6 +285,9 @@
     submitAiDesign: function (contentId) {
       return handle(client.rpc("submit_ai_design", { p_content_id: contentId }));
     },
+    saveVideoStoryboard: function (contentId, storyboard) {
+      return handle(client.rpc('save_video_storyboard', { p_content_id: contentId, p_storyboard: storyboard }));
+    },
     createVideoJob: function (contentId) {
       return handle(client.rpc("create_video_job", { p_content_id: contentId }));
     },

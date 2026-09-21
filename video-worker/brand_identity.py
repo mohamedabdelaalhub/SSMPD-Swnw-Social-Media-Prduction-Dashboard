@@ -2,7 +2,7 @@
 def logo_asset(job, downloaded=False):
     brand = job.get('brand')
     settings = job.get('cover_settings') or {}
-    if job.get('input_schema_version') != 2 or settings.get('logo_source') != 'brand_library':
+    if job.get('input_schema_version') not in (2, 3) or settings.get('logo_source') != 'brand_library':
         raise RuntimeError('Refresh this pending job from the dashboard to bind its saved brand logo.')
     if brand not in ('sono', 'dr_dina') or settings.get('logo_brand') != brand:
         raise RuntimeError('Brand logo does not match the video brand.')

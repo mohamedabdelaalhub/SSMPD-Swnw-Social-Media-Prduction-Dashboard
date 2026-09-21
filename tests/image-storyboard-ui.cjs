@@ -1,0 +1,46 @@
+const {JSDOM}=require('jsdom'),fs=require('fs'),assert=require('assert/strict'),path=require('path'),{webcrypto}=require('crypto');
+const root=path.resolve(__dirname,'..'),tick=()=>new Promise(r=>setImmediate(r));
+(async()=>{
+ const dom=new JSDOM('<div id="host"></div>',{runScripts:'outside-only',url:'https://example.test'}),w=dom.window;
+ Object.defineProperty(w,'crypto',{value:webcrypto});w.confirm=()=>true;
+ const item={id:'item',script_text:'مع بداية المدارس نلاحظ إن الطفل بيحتاج وقت علشان يتأقلم. تابعوا نومه وتركيزه خلال اليوم. لو المشكلة مستمرة اتكلموا مع المدرس وحددوا ميعاد للتقييم.',target_duration_min_seconds:25,target_duration_max_seconds:30};
+ let saves=0,uploads=0,fail=false,ready=false;
+ w.SSMPDAuth={currentAdmin:{id:'admin'}};
+ w.SSMPDDb={saveVideoStoryboard:async(id,board)=>{saves++;if(fail)throw Error('save failed');return {video_media_mode:'image_storyboard',video_storyboard:JSON.parse(JSON.stringify(board))};},
+ getVideoAssetSignedUrl:async()=>'',uploadVideoAsset:async()=>({id:'new'+(++uploads),asset_type:'image',file_name:'scene.png'})};
+ w.eval(fs.readFileSync(path.join(root,'assets/js/video-storyboard.js'),'utf8'));
+ const S=w.SSMPDVideoStoryboard,board=S.split(item);
+ assert.equal(board.scenes.map(s=>s.text).join(' '),item.script_text);
+ assert.equal(board.scenes.length,5);
+ assert.match(S.problem(item,board,[]),/المتبقية/);
+ const assets=board.scenes.map((s,i)=>{s.asset_id='asset'+i;return {id:s.asset_id,asset_type:'image',file_name:'scene'+i};});
+ assert.equal(S.problem(item,board,assets),'');
+ assert.match(S.problem({...item,script_text:'changed'},board,assets),/اتغير/);
+ const repeated=JSON.parse(JSON.stringify(board));repeated.scenes[1].asset_id=repeated.scenes[0].asset_id;
+ assert.match(S.problem(item,repeated,assets),/مختلفة/);
+ item.video_storyboard=board;
+ const host=w.document.getElementById('host');const editor=S.mount(host,item,assets,r=>ready=r);
+ assert.equal(ready,true);
+ const transition=host.querySelector('[data-transition]');transition.value='slide';transition.dispatchEvent(new w.Event('change'));
+ assert.equal(editor.ready(),false);await host.querySelector('[data-save]').onclick();assert.equal(ready,true);assert.equal(item.video_storyboard.transition,'slide');
+ async function upload(index,bytes){const input=host.querySelectorAll('[data-image]')[index];Object.defineProperty(input,'files',{value:[{name:'photo.png',type:'image/png',size:10,arrayBuffer:async()=>new Uint8Array(bytes).buffer}]});await input.onchange();await tick();}
+ await upload(0,[1,2,3]);assert.equal(uploads,1);assert.equal(item.video_storyboard.scenes[0].asset_id,'new1');
+ await upload(1,[1,2,3]);assert.equal(uploads,1,'Repeated file must not upload');assert.match(host.textContent,/مستخدمة/);
+ fail=true;await upload(1,[4,5,6]);assert.equal(editor.ready(),false,'Failed save must block production');assert.equal(ready,false);
+ fail=false;await host.querySelector('[data-save]').onclick();assert.equal(editor.ready(),true);
+ assert(saves>=4);
+ let jobs=0,available=[];
+ w.alert=()=>{};w.SSMPDWorkflow={};w.SSMPDComments={};
+ Object.assign(w.SSMPDDb,{listVideoJobsForContent:async()=>[],listVideoAssetsForContent:async()=>available,listBrandLogos:async()=>[],listVideoWorkerHeartbeats:async()=>[],createVideoJob:async()=>{jobs++;return {};}});
+ w.eval(fs.readFileSync(path.join(root,'assets/js/render-production.js'),'utf8'));
+ Object.assign(item,{content_format:'video',video_template:'quick_tips',video_media_mode:'image_storyboard',brand:'sono'});
+ const video=w.document.createElement('div');w.document.body.appendChild(video);
+ w.SSMPDRenderProduction.renderVideoJobSection(video,item);await tick();
+ assert.equal(video.querySelector('#create-video-job-btn').disabled,true);
+ video.querySelector('#create-video-job-btn').onclick();assert.equal(jobs,0);
+ available=item.video_storyboard.scenes.map(s=>({id:s.asset_id,asset_type:'image',file_name:'photo.png'}));
+ w.SSMPDRenderProduction.renderVideoJobSection(video,item);await tick();
+ assert.equal(video.querySelector('#create-video-job-btn').disabled,false);
+ video.querySelector('#create-video-job-btn').click();await tick();assert.equal(jobs,1);
+ dom.window.close();console.log('PASS complete script splitting, required images, duplicate-file rejection, dirty state, upload recovery and persisted mapping');
+})().catch(e=>{console.error(e);process.exitCode=1});
