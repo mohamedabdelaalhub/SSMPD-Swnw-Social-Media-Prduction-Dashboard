@@ -69,7 +69,7 @@
       ctx.save();ctx.beginPath();ctx.rect(sceneX,sceneTop,sceneWidth,height);ctx.clip();
       ctx.drawImage(scene,sceneX+(sceneWidth-w)*number(data.x,50,0,100)/100,sceneTop+(height-h)*number(data.y,50,0,100)/100+number(data.imageOffsetY,0,-400,400),w,h);ctx.restore();
     }
-    var fadeStart=number(data.fadeStartY,860,500,1000),fadeEnd=number(data.fadeEndY,1005,550,1120);
+    var fadeStart=number(data.fadeStartY,960,500,1000),fadeEnd=number(data.fadeEndY,1105,550,1120);
     if(fadeEnd<fadeStart+50)fadeEnd=Math.min(1120,fadeStart+50);
     var fade=ctx.createLinearGradient(0,fadeStart,0,fadeEnd);
     fade.addColorStop(0,'rgba(255,255,255,0)');fade.addColorStop(1,'rgba(255,255,255,1)');
@@ -113,14 +113,7 @@
     // Opaque quiet panel under text placed over the scene; fixed overlay remains unchanged.
     [title,subtitle].forEach(function(layout,index){
       if(!layout)return;var y=index?subtitleY:titleY;
-      if(position==='bottom' && y-layout.h/2<fadeEnd) {
-        // A moved bottom title needs contrast without a hard rectangular image edge.
-        var quiet=ctx.createLinearGradient(0,y-layout.h/2-100,0,y+layout.h/2+100);
-        quiet.addColorStop(0,'rgba(255,255,255,0)');quiet.addColorStop(.3,'rgba(255,255,255,.98)');
-        quiet.addColorStop(.7,'rgba(255,255,255,.98)');quiet.addColorStop(1,'rgba(255,255,255,0)');
-        ctx.save();ctx.beginPath();ctx.rect(0,160,1080,1000);ctx.clip();
-        ctx.fillStyle=quiet;ctx.fillRect(0,y-layout.h/2-100,1080,layout.h+200);ctx.restore();
-      } else if(position!=='bottom' && y-layout.h/2<905) {
+      if(position!=='bottom' && y-layout.h/2<905) {
         ctx.fillStyle='#fff';ctx.beginPath();
         ctx.roundRect(p.x-p.w/2-12,y-layout.h/2-10,p.w+24,layout.h+20,18);ctx.fill();
       }
