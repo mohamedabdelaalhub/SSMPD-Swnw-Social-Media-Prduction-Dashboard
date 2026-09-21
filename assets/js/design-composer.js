@@ -63,8 +63,8 @@
       ctx.save();ctx.beginPath();ctx.rect(sceneX,sceneTop,sceneWidth,height);ctx.clip();
       ctx.drawImage(scene,sceneX+(sceneWidth-w)*number(data.x,50,0,100)/100,sceneTop+(height-h)*number(data.y,50,0,100)/100+number(data.imageOffsetY,0,-400,400),w,h);ctx.restore();
     }
-    var fadeStart=number(data.fadeStartY,760,500,850),fadeEnd=number(data.fadeEndY,905,550,905);
-    if(fadeEnd<fadeStart+50)fadeEnd=Math.min(905,fadeStart+50);
+    var fadeStart=number(data.fadeStartY,760,500,1000),fadeEnd=number(data.fadeEndY,905,550,1120);
+    if(fadeEnd<fadeStart+50)fadeEnd=Math.min(1120,fadeStart+50);
     var fade=ctx.createLinearGradient(0,fadeStart,0,fadeEnd);
     fade.addColorStop(0,'rgba(255,255,255,0)');fade.addColorStop(1,'rgba(255,255,255,1)');
     ctx.fillStyle=fade;ctx.fillRect(0,fadeStart,1080,1260-fadeStart);
@@ -107,7 +107,7 @@
     // Opaque quiet panel under text placed over the scene; fixed overlay remains unchanged.
     [title,subtitle].forEach(function(layout,index){
       if(!layout)return;var y=index?subtitleY:titleY;
-      if(position==='bottom' && y-layout.h/2<800) {
+      if(position==='bottom' && y-layout.h/2<fadeEnd) {
         // A moved bottom title needs contrast without a hard rectangular image edge.
         var quiet=ctx.createLinearGradient(0,y-layout.h/2-100,0,y+layout.h/2+100);
         quiet.addColorStop(0,'rgba(255,255,255,0)');quiet.addColorStop(.3,'rgba(255,255,255,.98)');
