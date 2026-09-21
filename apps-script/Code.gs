@@ -27,6 +27,7 @@
  * the link")، وبيوصلهم غير التوثيق/الصلاحية بتاعت الـ Edge Function نفسها:
  *   - أرشيف المرضى (فولدر مريض/فئة متداخل) → category: "patient_archive"
  *   - فواتير حجوزات الليدز (فولدر واحد مسطّح) → category: "leads_invoice"
+ *   - عقود الجهات → داخل فولدر الأرشيف، فولدر مستقل لكل جهة
  */
 
 var CATEGORY_FOLDER_IDS = {
@@ -69,6 +70,7 @@ function doGet() {
 // ---------- رفع ملفات (تصميم / محتوى / أرشيف / أرشيف مرضى / فواتير ليدز) ----------
 function handleUpload_(payload) {
   var category = payload.category || "design";
+  if (category === "contracting_entity_contract") return handleContractingEntityContractUpload_(payload);
   if (!CATEGORY_FOLDER_IDS[category]) return jsonOut({ ok: false, error: "نوع فولدر غير معروف: " + category });
   if (!payload.base64) return jsonOut({ ok: false, error: "لا يوجد محتوى ملف" });
 
@@ -127,6 +129,23 @@ function handleLeadsInvoiceUpload_(payload) {
   file.setDescription("SSMPD Leads — leadId: " + (payload.leadId || ""));
 
   return jsonOut({ ok: true, fileUrl: file.getUrl(), folderUrl: root.getUrl(), fileId: file.getId() });
+}
+
+// عقود الجهات: الأرشيف/جهات التعاقد/<اسم الجهة>/العقود.
+// استخدمنا جذر الأرشيف الحالي حتى لا نحتاج إعداد Drive جديد أو صلاحية جديدة.
+function handleContractingEntityContractUpload_(payload) {
+  var entityName = payload.entityName;
+  if (!entityName) return jsonOut({ ok: false, error: "لا يوجد اسم جهة التعاقد" });
+  var archiveRoot = DriveApp.getFolderById(CATEGORY_FOLDER_IDS.archive);
+  var entitiesRoot = getOrCreateFolder_(archiveRoot, "جهات التعاقد");
+  var entityFolder = getOrCreateFolder_(entitiesRoot, entityName);
+  var contractsFolder = getOrCreateFolder_(entityFolder, "العقود");
+  var fileName = payload.fileName || ("contract-" + new Date().getTime());
+  var mimeType = payload.mimeType || "application/octet-stream";
+  var bytes = Utilities.base64Decode(payload.base64);
+  var file = contractsFolder.createFile(Utilities.newBlob(bytes, mimeType, fileName));
+  file.setDescription("SSMPD Contract | entity: " + entityName + " | contractId: " + (payload.contractId || ""));
+  return jsonOut({ ok: true, fileUrl: file.getUrl(), folderUrl: contractsFolder.getUrl(), fileId: file.getId() });
 }
 
 // ---------- تسجيل حدث في ملف التتبع (Excel) المناسب ----------

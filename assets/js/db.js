@@ -525,6 +525,9 @@
     updatePatientVisit: function (visitId, patch) {
       return handle(client.from("patient_visits").update(patch).eq("id", visitId).select().single());
     },
+    listContractsForPatientVisit: function (patientId) {
+      return handle(client.rpc("list_contracts_for_patient_visit", { p_patient_id: patientId }));
+    },
     listVisitMedications: function (visitId) {
       return handle(client.from("patient_visit_medications").select("*").eq("visit_id", visitId).order("created_at"));
     },
@@ -619,6 +622,9 @@
     },
     addContractActivity: function (row) { return handle(client.from("contracting_entity_activities").insert(row).select().single()); },
     linkPatientToContract: function (row) { return handle(client.from("contract_patient_links").insert(row).select().single()); },
+    uploadContractingEntityContract: function (formData) {
+      return edgeFetchForm("contracting-entity-contract-upload", formData);
+    },
     // ---------- تقارير مُنشأة من الداشبورد: تقرير طبي + Echocardiography ----------
     listMedicalReports: function (patientId) {
       return handle(client.from("patient_medical_reports").select("*").eq("patient_id", patientId).order("report_date", { ascending: false }));

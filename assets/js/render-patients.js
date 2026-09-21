@@ -514,6 +514,7 @@
     backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>' + (isEdit ? "تعديل الزيارة" : "زيارة جديدة") + '</h3><button class="modal-close">×</button></div>' +
       '<div class="field"><label>تاريخ الزيارة</label><input id="vs-date" type="date" value="' + (v.visit_date || new Date().toISOString().slice(0, 10)) + '"></div>' +
       '<div class="field"><label>رقم الزيارة</label><input id="vs-number" value="' + escapeHtml(v.visit_number || '') + '"></div>' +
+      '<div class="field"><label>جهة التعاقد لهذه الزيارة</label><select id="vs-contract"><option value="">مريض مباشر — بدون جهة تعاقد</option></select><p style="font-size:11px;color:var(--c-muted);margin:5px 0 0;">تظهر هنا العقود النشطة المرتبطة بالمريض فقط.</p></div>' +
       '<div class="field"><label>الشكوى</label><input id="vs-complaint" value="' + escapeHtml(v.complaint || '') + '"></div>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap;">' +
       '<div class="field" style="flex:1;min-width:170px;"><label>الطبيب</label><input id="vs-doctor" value="' + escapeHtml(v.doctor_name || '') + '"></div>' +
@@ -547,6 +548,18 @@
     document.body.appendChild(backdrop);
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
     backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
+
+    var contractSelect = backdrop.querySelector("#vs-contract");
+    window.SSMPDDb.listContractsForPatientVisit(patient.id).then(function (contracts) {
+      (contracts || []).forEach(function (contract) {
+        var opt = document.createElement("option");
+        opt.value = contract.contract_id;
+        opt.textContent = contract.entity_name + " — حتى " + (contract.end_date || "مفتوح");
+        contractSelect.appendChild(opt);
+      });
+      var preferred = v.contract_id || ((contracts || []).filter(function (c) { return c.is_current_patient_contract; })[0] || {}).contract_id;
+      if (preferred) contractSelect.value = preferred;
+    }).catch(function () { /* عدم تعطيل الزيارة لو تحديث القاعدة لم يُشغّل بعد */ });
 
     var medicationList = backdrop.querySelector("#vs-medication-list");
     function addMedicationRow(m) {
@@ -618,6 +631,7 @@
       var patch = {
         visit_date: document.getElementById("vs-date").value || new Date().toISOString().slice(0, 10),
         visit_number: document.getElementById("vs-number").value.trim() || null,
+        contract_id: contractSelect.value || null,
         complaint: document.getElementById("vs-complaint").value.trim() || null,
         doctor_name: document.getElementById("vs-doctor").value.trim() || null,
         specialty: document.getElementById("vs-specialty").value.trim() || null,
