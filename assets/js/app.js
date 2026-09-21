@@ -21,6 +21,7 @@
     archive: window.SSMPDRenderArchive,
     patients: window.SSMPDRenderPatients,
     leads: window.SSMPDRenderLeads,
+    contracting_entities: window.SSMPDRenderContractingEntities,
     admin: window.SSMPDRenderAdmin,
     metaads: window.SSMPDRenderMetaAds,
     mediabuyer: window.SSMPDRenderMediaBuyer,
@@ -35,6 +36,7 @@
     archive: "الأرشيف",
     patients: "أرشيف المرضى",
     leads: "إدارة الليدز والتواصل",
+    contracting_entities: "جهات التعاقد",
     admin: "لوحة التحكم",
     metaads: "إعلانات Meta Ads",
     mediabuyer: "وكيل الإعلانات",
@@ -151,7 +153,7 @@
     // القائمة المنسدلة فقط — اتشالوا من شريط التابات العادي (وقائمة الموبايل
     // القديمة) عشان ميبقوش متكررين في مكانين، ويبانوا بس في المكان اللي
     // المستخدم طلبه (جوه القائمة المنسدلة).
-    var mainSuiteTabs = tabs.filter(function (t) { return ["patients", "leads", "admin", "accounting"].indexOf(t) === -1; });
+    var mainSuiteTabs = tabs.filter(function (t) { return ["patients", "leads", "contracting_entities", "admin", "accounting"].indexOf(t) === -1; });
 
     function tabButtonsHtml() {
       return mainSuiteTabs.map(function (t) { return '<button class="tab-btn" data-tab="' + t + '">' + TAB_LABELS[t] + '</button>'; }).join("");
@@ -160,6 +162,7 @@
     if (mainSuiteTabs.length) ddItems += '<button class="ud-item" data-goto="' + mainSuiteTabs[0] + '">إنتاج المحتوى</button>';
     if (tabs.indexOf("patients") !== -1) ddItems += '<button class="ud-item" data-goto="patients">أرشيف المرضى</button>';
     if (tabs.indexOf("leads") !== -1) ddItems += '<button class="ud-item" data-goto="leads">إدارة الليدز والتواصل</button>';
+    if (tabs.indexOf("contracting_entities") !== -1) ddItems += '<button class="ud-item" data-goto="contracting_entities">جهات التعاقد</button>';
     if (tabs.indexOf("accounting") !== -1) ddItems += '<button class="ud-item" data-goto="accounting">الحسابات</button>';
     if ((admin.has_verification_management_access || R.isSuperAdmin(admin)) && window.SSMPDRenderPatientVerification) {
       ddItems += '<button class="ud-item" id="ud-patient-verification">طلبات تحقق هوية المرضى</button>';
@@ -614,7 +617,7 @@
 
     // فصل بصري: تابات السويت الرئيسي (SSMPD) بتتخفي تماماً لما نكون جوه موديول
     // منفصل (أرشيف المرضى / الليدز / لوحة التحكم) عشان ميظهرش هيدر حاجتين مع بعض
-    var isSeparateModule = ["patients", "leads", "admin", "accounting"].indexOf(tab) !== -1;
+    var isSeparateModule = ["patients", "leads", "contracting_entities", "admin", "accounting"].indexOf(tab) !== -1;
     var tabsBar = document.getElementById("tabs-bar");
     if (tabsBar) tabsBar.style.display = isSeparateModule ? "none" : "";
     var mmTabs = document.querySelector("#mobile-menu .mm-tabs");
@@ -654,7 +657,7 @@
   // تحديث لحظي: أعد رسم التاب الحالي لو بيعرض بيانات محتوى، وما فيش مودال مفتوح، ومفيش
   // إجراء/بيانات لسه المستخدم شغال عليها (كتابة كومنت، فورم جدولة، ...) دلوقتي
   function refreshCurrentTab() {
-    if (["summary", "production", "review", "design", "publish", "archive", "patients", "leads"].indexOf(currentTab) !== -1) {
+    if (["summary", "production", "review", "design", "publish", "archive", "patients", "leads", "contracting_entities"].indexOf(currentTab) !== -1) {
       var el = document.getElementById("view-container");
       if (el && !document.querySelector(".modal-backdrop") && !isUserEditing()) {
         RENDERERS[currentTab].render(el);

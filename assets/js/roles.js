@@ -11,7 +11,8 @@
     reception: "استقبال",
     customer_service: "خدمة عملاء",
     nursing: "تمريض",
-    sono_doctor: "طبيب سونو"
+    sono_doctor: "طبيب سونو",
+    contract_manager: "مسؤول التعاقدات"
   };
 
   // كل تاب: مين يشوفه — المدير العام يشوف كل حاجة زي السوبر أدمن ما عدا تاب المستخدمين
@@ -29,7 +30,8 @@
     admin: ["super_admin"],
     metaads: ["page_manager", "approver", "general_manager", "super_admin"],
     mediabuyer: ["page_manager", "approver", "general_manager", "super_admin"],
-    accounting: ["general_manager", "super_admin"]
+    accounting: ["general_manager", "super_admin"],
+    contracting_entities: ["contract_manager", "general_manager", "super_admin"]
   };
 
   // بياخد صف admin كامل أو رول كـ string لوحده (توافق مع كود/اختبارات قديمة)
@@ -80,6 +82,7 @@
 
     defaultTab: function (adminOrRole) {
       var admin = normalizeAdmin(adminOrRole);
+      if (Roles.hasRole(admin, "contract_manager")) return "contracting_entities";
       if (Roles.hasRole(admin, "reception") || Roles.hasRole(admin, "customer_service")) return "leads";
       if (Roles.hasRole(admin, "nursing")) return "patients";
       if (Roles.hasRole(admin, "sono_doctor")) return "patients";

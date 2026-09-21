@@ -82,13 +82,15 @@ Deno.serve(async (req) => {
   }
 
   const fullName = (body.full_name ?? "").toString().trim();
-  const phoneRaw = (body.phone ?? "").toString().trim();\n  const email = (body.email ?? "").toString().trim().toLowerCase() || null;
+  const phoneRaw = (body.phone ?? "").toString().trim();
+  const email = (body.email ?? "").toString().trim().toLowerCase() || null;
   const nationalId = (body.national_id ?? "").toString().trim();
   const genderRaw = (body.gender ?? "").toString().trim();
   const gender = genderRaw === "male" || genderRaw === "female" ? genderRaw : null;
   const ageRaw = body.age;
   const age = ageRaw === undefined || ageRaw === null || ageRaw === "" ? null : Number(ageRaw);
   const medicalRecordNo = (body.medical_record_no ?? "").toString().trim() || null;
+  const contractId = (body.contract_id ?? "").toString().trim() || null;
 
   if (!fullName) return json({ error: "الاسم مطلوب" }, 400);
 
@@ -101,7 +103,8 @@ Deno.serve(async (req) => {
     .insert({
       full_name: fullName,
       phone: phoneRaw || null,
-      phone_normalized: phoneNormalized,\n      email: email,
+      phone_normalized: phoneNormalized,
+      email: email,
       national_id_hash: nationalIdHash,
       gender: gender,
       age: age !== null && !Number.isNaN(age) ? age : null,
@@ -113,6 +116,28 @@ Deno.serve(async (req) => {
     .single();
 
   if (error) return json({ error: error.message }, 500);
+
+  // ربط اختياري بجهة تعاقد: يتم في الـEdge Function عشان إنشاء المريض
+  // من أرشيف المرضى يظل عمليًا حتى لو ليس للمستخدم صلاحية CRUD مباشرة على العقود.
+  if (contractId) {
+    const { data: contract, error: contractError } = await admin
+      .from("contracting_entity_contracts")
+      .select("id, status, start_date, end_date")
+      .eq("id", contractId)
+      .maybeSingle();
+    const nowDate = new Date().toISOString().slice(0, 10);
+    if (contractError || !contract || contract.status !== "active" || contract.start_date > nowDate || (contract.end_date && contract.end_date < nowDate)) {
+      await admin.from("patients").delete().eq("id", patient.id);
+      return json({ error: "عقد جهة التعاقد غير نشط أو غير صالح اليوم" }, 400);
+    }
+    const { error: linkError } = await admin.from("contract_patient_links").insert({
+      contract_id: contractId, patient_id: patient.id, linked_from: nowDate, linked_by: caller.id,
+    });
+    if (linkError) {
+      await admin.from("patients").delete().eq("id", patient.id);
+      return json({ error: "تعذر ربط المريض بجهة التعاقد: " + linkError.message }, 400);
+    }
+  }
 
   return json({ patient });
 });

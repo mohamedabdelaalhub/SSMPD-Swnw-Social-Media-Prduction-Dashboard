@@ -272,16 +272,6 @@
       return handle(client.from("video_worker_heartbeats").select("*")
         .order("last_seen_at", { ascending: false }));
     },
-    routeContentDesign: function (contentId, target, designerId) {
-      return handle(client.rpc("route_content_design", { p_content_id: contentId, p_target: target, p_designer_id: designerId || null })).catch(function (e) {
-        // Preserve human assignment while the additive migration is being deployed.
-        if (target !== 'human' || ['PGRST202','42883'].indexOf(e.code) === -1) throw e;
-        return handle(client.from('content_items').update({stage:'in_design',assigned_designer:designerId}).eq('id',contentId).eq('stage','initial_approval').select().single());
-      });
-    },
-    submitAiDesign: function (contentId) {
-      return handle(client.rpc("submit_ai_design", { p_content_id: contentId }));
-    },
     createVideoJob: function (contentId) {
       return handle(client.rpc("create_video_job", { p_content_id: contentId }));
     },
@@ -597,6 +587,38 @@
     deletePatientVisit: function (visitId) {
       return handle(client.from("patient_visits").delete().eq("id", visitId));
     },
+    // ---------- جهات التعاقد ----------
+    listContractingEntities: function () {
+      return handle(client.rpc("contracting_entities_overview"));
+    },
+    listActiveContracts: function () {
+      return handle(client.from("contracting_entity_contracts")
+        .select("id, entity_id, start_date, end_date, status, contracting_entities(name)")
+        .eq("status", "active").order("start_date", { ascending: false }));
+    },
+    createContractingEntity: function (entity, contact, contract, activity) {
+      return handle(client.from("contracting_entities").insert(entity).select().single()).then(function (created) {
+        var jobs = [];
+        if (contact && contact.full_name) jobs.push(client.from("contracting_entity_contacts").insert(Object.assign({}, contact, { entity_id: created.id, is_primary: true })));
+        var contractJob = contract ? client.from("contracting_entity_contracts").insert(Object.assign({}, contract, { entity_id: created.id })).select().single() : Promise.resolve({ data: null });
+        return Promise.all([Promise.all(jobs), contractJob]).then(function (rows) {
+          var savedContract = rows[1] && rows[1].data;
+          if (!activity || !activity.summary) return created;
+          return handle(client.from("contracting_entity_activities").insert(Object.assign({}, activity, { entity_id: created.id, contract_id: savedContract && savedContract.id }))).then(function () { return created; });
+        });
+      });
+    },
+    getContractingEntityDetails: function (entityId) {
+      return Promise.all([
+        handle(client.from("contracting_entities").select("*").eq("id", entityId).single()),
+        handle(client.from("contracting_entity_contacts").select("*").eq("entity_id", entityId).order("is_primary", { ascending: false })),
+        handle(client.from("contracting_entity_contracts").select("*").eq("entity_id", entityId).order("start_date", { ascending: false })),
+        handle(client.from("contracting_entity_activities").select("*").eq("entity_id", entityId).order("created_at", { ascending: false })),
+        handle(client.rpc("contract_entity_financial_rows", { p_entity_id: entityId }))
+      ]).then(function (r) { return { entity: r[0], contacts: r[1], contracts: r[2], activities: r[3], finance: r[4] }; });
+    },
+    addContractActivity: function (row) { return handle(client.from("contracting_entity_activities").insert(row).select().single()); },
+    linkPatientToContract: function (row) { return handle(client.from("contract_patient_links").insert(row).select().single()); },
     // ---------- تقارير مُنشأة من الداشبورد: تقرير طبي + Echocardiography ----------
     listMedicalReports: function (patientId) {
       return handle(client.from("patient_medical_reports").select("*").eq("patient_id", patientId).order("report_date", { ascending: false }));

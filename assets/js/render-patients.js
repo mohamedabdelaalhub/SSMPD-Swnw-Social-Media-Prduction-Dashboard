@@ -325,10 +325,21 @@
       '<div class="field"><label>السن</label><input id="np-age" type="number" min="0"></div>' +
       '<div class="field"><label>النوع</label><select id="np-gender"><option value="">—</option><option value="male">ذكر</option><option value="female">أنثى</option></select></div>' +
       '<div class="field"><label>الرقم الطبي (اختياري)</label><input id="np-mrn"></div>' +
+      '<div class="field"><label>جهة التعاقد (اختياري)</label><select id="np-contract"><option value="">مريض مباشر — بدون جهة</option></select><small style="display:block;margin-top:4px;color:var(--c-muted);">الربط يحسب فواتير المريض القادمة ضمن العقد، بدون كشف أي بيانات طبية للجهة.</small></div>' +
       '<button class="btn block" id="np-save">حفظ</button></div>';
     document.body.appendChild(backdrop);
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
     backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
+
+    // عقود نشطة فقط: المريض الجديد لا يُنسب لجهة منتهية أو تحت تفاوض.
+    window.SSMPDDb.listActiveContracts().then(function (contracts) {
+      var select = document.getElementById("np-contract");
+      if (!select) return;
+      (contracts || []).forEach(function (c) {
+        var name = c.contracting_entities && c.contracting_entities.name;
+        select.innerHTML += '<option value="' + c.id + '">' + escapeHtml(name || "جهة تعاقد") + '</option>';
+      });
+    }).catch(function () { /* المريض يبقى مباشرًا لو الموديول لم يُفعّل بعد */ });
 
     document.getElementById("np-save").onclick = function () {
       var full_name = document.getElementById("np-name").value.trim();
@@ -338,16 +349,19 @@
       var age = document.getElementById("np-age").value.trim();
       var gender = document.getElementById("np-gender").value;
       var medical_record_no = document.getElementById("np-mrn").value.trim();
+      var contract_id = document.getElementById("np-contract").value || undefined;
       if (!full_name) { T.show("اكتب اسم المريض", "error"); return; }
       if (!phone) { T.show("اكتب رقم الهاتف", "error"); return; }
       window.SSMPDDb.createPatientArchive({
         full_name: full_name, phone: phone, email: email || undefined, national_id: national_id || undefined,
-        age: age || undefined, gender: gender || undefined, medical_record_no: medical_record_no || undefined
+        age: age || undefined, gender: gender || undefined, medical_record_no: medical_record_no || undefined,
+        contract_id: contract_id
       })
         .then(function (res) {
-          T.show("اتضاف المريض بكود " + (res.patient_code || ""));
+          var savedPatient = res.patient || res;
+          T.show("اتضاف المريض بكود " + (savedPatient.patient_code || ""));
           backdrop.remove();
-          var created = { id: res.id, full_name: full_name, patient_code: res.patient_code };
+          var created = { id: savedPatient.id, full_name: full_name, patient_code: savedPatient.patient_code };
           if (onCreated) onCreated(created);
         }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
     };
