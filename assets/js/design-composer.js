@@ -58,7 +58,7 @@
     var sceneX = data.titlePosition==='left' ? 550 : 0;
     var sceneWidth = side ? 530 : 1080;
     if(scene) {
-      var sceneTop=0,height=1260-sceneTop,scale=Math.max(sceneWidth/scene.width,height/scene.height)*number(data.zoom,1,1,2);
+      var sceneTop=0,height=1260-sceneTop,scale=Math.max(sceneWidth/scene.width,height/scene.height)*number(data.zoom,1,.5,3);
       var w=scene.width*scale,h=scene.height*scale;
       ctx.save();ctx.beginPath();ctx.rect(sceneX,sceneTop,sceneWidth,height);ctx.clip();
       ctx.drawImage(scene,sceneX+(sceneWidth-w)*number(data.x,50,0,100)/100,sceneTop+(height-h)*number(data.y,50,0,100)/100+number(data.imageOffsetY,0,-400,400),w,h);ctx.restore();

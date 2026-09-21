@@ -76,5 +76,7 @@ vm.runInNewContext(fs.readFileSync(root+'/assets/js/design-composer.js','utf8'),
    assert.deepEqual(moved.getContext('2d').getImageData(0,1190,1080,160).data,ref.getContext('2d').getImageData(0,1190,1080,160).data);
  }
  assert(samples[0]>samples[1]+20 && samples[1]>samples[2]+20,'Direct vertical movement works both ways at zoom 1');
+ const shrunk=canvas();await context.window.SSMPDDesignComposer.render(shrunk,dark,{headline:'',subtitle:'',cta:'',zoom:.5});
+ assert(shrunk.getContext('2d').getImageData(20,300,1,1).data[0]>=253,'Zoom below 1 can shrink the image');
  console.log('PASS: 3 Arabic titles, output size, overflow rejection, exact footer pixels. Native canvas only, not browser QA.');
 })().catch(e=>{console.error(e);process.exitCode=1;});
