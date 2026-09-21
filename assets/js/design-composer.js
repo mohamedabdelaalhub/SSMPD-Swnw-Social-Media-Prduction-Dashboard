@@ -49,7 +49,12 @@
     };
     return String(prompt || '')+'\nComposition: '+(instructions[data.titlePosition]||instructions.bottom)+' Extend the photograph naturally to every edge, including the top. Keep only the small upper-left corner calm and light for a logo overlay; place faces and important details away from that corner. Do not add a blank horizontal header, white margin or separate top panel. Use a portrait frame with at least 300 additional pixels of lower body and background below the normal composition at final export scale. Do not crop at shoulders, elbows or torso. Reserve this lower extension for a gradual fade. No writing or logos.';
   }
-  async function render(canvas, scene, data) {
+  async function render(canvas, scene, data, options) {
+    var issues=[];
+    function problem(message) {
+      if(!options || !options.preview)throw new Error(message);
+      if(!issues.includes(message))issues.push(message);
+    }
     await ready();
     var overlay = await loadImage(new URL('design-templates/sono-white/overlay.png', base));
     canvas.width=1080; canvas.height=1350;
@@ -86,11 +91,11 @@
     var ctaSize=number(data.ctaSize,31*number(data.ctaScale,1,0.8,1.15),16,80);
     var cta=measure(ctx,data.cta,ctaSize,880,700,1.1);
     var ctaY=1088+number(data.ctaOffset,0,-900,60);
-    if(cta && cta.lines.length>1) throw new Error('نص زر التفاعل طويل. قلّل حجم الخط أو اختصره.');
+    if(cta && cta.lines.length>1) problem('نص زر التفاعل طويل. قلّل حجم الخط أو اختصره.');
     var blocks=[];
     function block(layout,y,x,width) {
       if(!layout)return;
-      if(y-layout.h/2<190 || y+layout.h/2>1160)throw new Error('النص خارج المساحة الآمنة. حرّكه بعيدًا عن اللوجو والفوتر أو قلّل حجمه.');
+      if(y-layout.h/2<190 || y+layout.h/2>1160)problem('النص خارج المساحة الآمنة. حرّكه بعيدًا عن اللوجو والفوتر أو قلّل حجمه.');
       blocks.push({top:y-layout.h/2,bottom:y+layout.h/2,left:x-width/2,right:x+width/2});
     }
     block(title,titleY,p.x,p.w);block(subtitle,subtitleY,p.x,p.w);
@@ -103,7 +108,7 @@
     for(var i=0;i<blocks.length;i++)for(var j=i+1;j<blocks.length;j++){
       var a=blocks[i],b=blocks[j];
       if(a.left<b.right && a.right>b.left && a.top<b.bottom+8 && a.bottom+8>b.top)
-        throw new Error('العناصر متداخلة. عدّل موضع السطر أو زر التفاعل.');
+        problem('العناصر متداخلة. عدّل موضع السطر أو زر التفاعل.');
     }
     // Opaque quiet panel under text placed over the scene; fixed overlay remains unchanged.
     [title,subtitle].forEach(function(layout,index){
@@ -130,6 +135,7 @@
     }
     draw(title,p.x,titleY,'#07599d',true);draw(subtitle,p.x,subtitleY,'#272727');
     if(cta){ctx.fillStyle='#ff541d';ctx.beginPath();ctx.roundRect(540-buttonWidth/2,ctaY-buttonHeight/2,buttonWidth,buttonHeight,buttonHeight/2);ctx.fill();draw(cta,540,ctaY,'#fff');}
+    canvas.designIssues=issues;
     return canvas;
   }
   window.SSMPDDesignComposer={render:render,loadImage:loadImage,ready:ready,scenePrompt:scenePrompt};
