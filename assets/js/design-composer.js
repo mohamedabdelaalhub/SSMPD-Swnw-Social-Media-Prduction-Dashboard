@@ -74,6 +74,12 @@
     var subtitle=measure(ctx,data.subtitle,number(data.subtitleSize,42,16,100),p.w,400,1.2);
     var titleY=p.y+number(data.headlineOffset,0,-600,600);
     var subtitleY=titleY+(title?title.h/2:0)+22+(subtitle?subtitle.h/2:0)+number(data.subtitleOffset,0,-600,600);
+    if(data.textOrder==='subtitle_first' && title && subtitle) {
+      // Keep the same text area while reversing the two blocks, including wrapped lines.
+      var stackTop=titleY-title.h/2;
+      subtitleY=stackTop+subtitle.h/2+number(data.subtitleOffset,0,-600,600);
+      titleY=stackTop+subtitle.h+22+title.h/2;
+    }
     var ctaSize=number(data.ctaSize,31*number(data.ctaScale,1,0.8,1.15),16,80);
     var cta=measure(ctx,data.cta,ctaSize,880,700,1.1);
     var ctaY=1088+number(data.ctaOffset,0,-900,60);

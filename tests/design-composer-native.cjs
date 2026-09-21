@@ -29,6 +29,29 @@ vm.runInNewContext(fs.readFileSync(root+'/assets/js/design-composer.js','utf8'),
  }
  await context.window.SSMPDDesignComposer.render(canvas(),scene,{...base,headline:'التعب',headlineSize:130,headlineOffset:-120,ctaSize:40,ctaOffset:20});
  await assert.rejects(context.window.SSMPDDesignComposer.render(canvas(),scene,{...base,headline:'التعب',ctaOffset:60,ctaSize:80}),/خارج المساحة|متداخلة/);
+ // Reverse complete text blocks without changing their content, font size or styling.
+ for(const titlePosition of ['top','bottom','right','left']) {
+   for(const multiline of [false,true]) {
+     const headline=multiline?'هل العلاقة دي\nتستنزفك؟':'تستنزفك؟';
+     const subtitle=multiline?'السطر التوضيحي\nللتصميم':'هل العلاقة دي';
+     const settings={headline,subtitle,cta:'',headlineSize:64,subtitleSize:32,titlePosition};
+     async function record(textOrder) {
+       const output=canvas(),ctx=output.getContext('2d'),draw=ctx.fillText.bind(ctx),calls=[];
+       ctx.fillText=(text,x,y)=>{if(ctx.fillStyle==='#07599d'||ctx.fillStyle==='#272727')calls.push({text,x,y,font:ctx.font});draw(text,x,y);};
+       await context.window.SSMPDDesignComposer.render(output,scene,{...settings,textOrder});
+       return {output,calls};
+     }
+     const normal=await record('headline_first'),reversed=await record('subtitle_first'),legacy=await record(undefined);
+     assert.deepEqual(legacy.calls,normal.calls,'Existing designs keep the previous default order');
+     assert.deepEqual(normal.calls.map(({text,font})=>({text,font})),reversed.calls.map(({text,font})=>({text,font})));
+     const titles=reversed.calls.filter(c=>c.font.startsWith('700 ')),subtitles=reversed.calls.filter(c=>c.font.startsWith('400 '));
+     assert(Math.max(...subtitles.map(c=>c.y))<Math.min(...titles.map(c=>c.y)),'Entire subtitle block must precede the title');
+     assert.deepEqual(reversed.output.getContext('2d').getImageData(0,0,1080,160).data,topCtx.getImageData(0,0,1080,160).data);
+   }
+ }
+ for(const text of [{headline:'العنوان فقط',subtitle:''},{headline:'',subtitle:'السطر فقط'}]) {
+   await context.window.SSMPDDesignComposer.render(canvas(),scene,{...text,textOrder:'subtitle_first'});
+ }
  // The image continues beyond the fade. A dark source must meet the fixed panel without a seam.
  const dark=createCanvas(1536,1024);dark.getContext('2d').fillStyle='#000';dark.getContext('2d').fillRect(0,0,1536,1024);
  const faded=canvas();await context.window.SSMPDDesignComposer.render(faded,dark,{headline:'',subtitle:'',cta:''});
