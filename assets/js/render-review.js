@@ -150,7 +150,7 @@
         '<button class="btn danger" id="rv-reject">طلب تعديل</button></div>';
     } else if (aiActive) {
       actionsHtml = '<p>جهة التنفيذ — وكيل التصميم بالذكاء الاصطناعي</p>' +
-        (item.content_format === 'video' ? '<div id="rv-ai-video"></div>' : '<button class="btn" id="rv-ai-open">فتح استوديو التصميم بالذكاء الاصطناعي</button>') +
+        (item.content_format === 'video' ? '<div id="rv-ai-video"></div>' : '<button class="btn ghost" id="rv-ai-open">فتح استوديو التصميم بالذكاء الاصطناعي</button>') +
         '<button class="btn ghost" id="rv-ai-submit" style="margin:10px 0;">إرسال النسخة للاعتماد النهائي</button><p id="rv-ai-feedback" role="status"></p>';
     } else {
       actionsHtml = '<p style="color:var(--c-muted);font-size:12px;">لا يوجد إجراء اعتماد على هذه المرحلة حالياً.</p>';

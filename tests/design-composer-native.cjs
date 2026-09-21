@@ -54,6 +54,25 @@ vm.runInNewContext(fs.readFileSync(root+'/assets/js/design-composer.js','utf8'),
  for(const text of [{headline:'العنوان فقط',subtitle:''},{headline:'',subtitle:'السطر فقط'}]) {
    await context.window.SSMPDDesignComposer.render(canvas(),scene,{...text,textOrder:'subtitle_first'});
  }
+ // Font size and vertical controls must move only their intended text block and CTA.
+ async function captureText(settings) {
+   const output=canvas(),ctx=output.getContext('2d'),draw=ctx.fillText.bind(ctx),calls=[];
+   ctx.fillText=(text,x,y)=>{if(['#07599d','#272727','#fff'].includes(ctx.fillStyle))calls.push({text,y,font:ctx.font,color:ctx.fillStyle});draw(text,x,y);};
+   await context.window.SSMPDDesignComposer.render(output,scene,{cta:'',headlineSize:64,subtitleSize:32,...settings});
+   return calls;
+ }
+ async function captureCta(ctaOffset) {
+   const output=canvas(),ctx=output.getContext('2d'),draw=ctx.fillText.bind(ctx),calls=[];
+   ctx.fillText=(text,x,y)=>{if(ctx.fillStyle==='#fff')calls.push({text,y});draw(text,x,y);};
+   await context.window.SSMPDDesignComposer.render(output,scene,{headline:'',subtitle:'',cta:'اتصل',ctaOffset});
+   return calls.find(c=>c.text==='اتصل');
+ }
+ const headlineBase=await captureText({headline:'عنوان',subtitle:''}),headlineMoved=await captureText({headline:'عنوان',subtitle:'',headlineOffset:-80,headlineSize:90}),subtitleBase=await captureText({headline:'',subtitle:'سطر'}),subtitleMoved=await captureText({headline:'',subtitle:'سطر',subtitleOffset:-60}),ctaBase=await captureCta(0),ctaMoved=await captureCta(20);
+ const call=(calls,text)=>calls.find(c=>c.text===text);
+ assert.equal(call(headlineMoved,'عنوان').y,call(headlineBase,'عنوان').y-80,'Headline position control works');
+ assert.equal(call(subtitleMoved,'سطر').y,call(subtitleBase,'سطر').y-60,'Subtitle position control works');
+ assert.equal(ctaMoved.y,ctaBase.y+20,'CTA position control works');
+ assert(call(headlineMoved,'عنوان').font.includes('90px'),'Headline size control works');
  // The image continues beyond the fade. A dark source must meet the fixed panel without a seam.
  const dark=createCanvas(1536,1024);dark.getContext('2d').fillStyle='#000';dark.getContext('2d').fillRect(0,0,1536,1024);
  const faded=canvas();await context.window.SSMPDDesignComposer.render(faded,dark,{headline:'',subtitle:'',cta:''});
