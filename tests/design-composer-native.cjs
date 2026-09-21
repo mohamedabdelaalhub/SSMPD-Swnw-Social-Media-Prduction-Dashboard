@@ -67,10 +67,11 @@ vm.runInNewContext(fs.readFileSync(root+'/assets/js/design-composer.js','utf8'),
    await context.window.SSMPDDesignComposer.render(output,scene,{headline:'',subtitle:'',cta:'اتصل',ctaOffset});
    return calls.find(c=>c.text==='اتصل');
  }
- const headlineBase=await captureText({headline:'عنوان',subtitle:''}),headlineMoved=await captureText({headline:'عنوان',subtitle:'',headlineOffset:-80,headlineSize:90}),subtitleBase=await captureText({headline:'',subtitle:'سطر'}),subtitleMoved=await captureText({headline:'',subtitle:'سطر',subtitleOffset:-60}),ctaBase=await captureCta(0),ctaMoved=await captureCta(20);
+ const headlineBase=await captureText({headline:'عنوان',subtitle:''}),headlineMoved=await captureText({headline:'عنوان',subtitle:'',headlineOffset:-80,headlineSize:90}),subtitleBase=await captureText({headline:'',subtitle:'سطر'}),subtitleMoved=await captureText({headline:'',subtitle:'سطر',subtitleOffset:-60}),subtitleLarge=await captureText({headline:'',subtitle:'هل العلاقة دي',subtitleSize:100}),ctaBase=await captureCta(0),ctaMoved=await captureCta(20);
  const call=(calls,text)=>calls.find(c=>c.text===text);
  assert.equal(call(headlineMoved,'عنوان').y,call(headlineBase,'عنوان').y-80,'Headline position control works');
  assert.equal(call(subtitleMoved,'سطر').y,call(subtitleBase,'سطر').y-60,'Subtitle position control works');
+ assert.match(call(subtitleLarge,'هل العلاقة دي').font,/100px SonoDesign/,'Arabic subtitle size uses the design font');
  assert.equal(ctaMoved.y,ctaBase.y+20,'CTA position control works');
  assert(call(headlineMoved,'عنوان').font.includes('90px'),'Headline size control works');
  // The image continues beyond the fade. A dark source must meet the fixed panel without a seam.

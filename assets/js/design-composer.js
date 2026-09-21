@@ -24,9 +24,10 @@
     if (value === '' || value == null) return fallback;
     var n = Number(value); return Number.isFinite(n) ? Math.max(min,Math.min(max,n)) : fallback;
   }
+  function family(value) { return /[\u0600-\u06ff]/.test(String(value || '')) ? 'SonoDesign, SonoLatin' : 'SonoLatin, SonoDesign'; }
   function measure(ctx, value, size, width, weight, leading) {
     var text = String(value || '').trim(); if (!text) return null;
-    ctx.font = weight + ' ' + size + 'px SonoLatin, SonoDesign';
+    var fontFamily=family(text);ctx.font = weight + ' ' + size + 'px ' + fontFamily;
     var lines = [];
     text.split('\n').forEach(function(paragraph) {
       var line = '';
@@ -37,7 +38,7 @@
         else line=candidate;
       }); lines.push(line);
     });
-    return {lines:lines,size:size,weight:weight,leading:leading,h:size*1.35+(lines.length-1)*size*leading};
+    return {lines:lines,size:size,weight:weight,fontFamily:fontFamily,leading:leading,h:size*1.35+(lines.length-1)*size*leading};
   }
   function scenePrompt(prompt, data) {
     var instructions = {
@@ -95,7 +96,7 @@
     block(title,titleY,p.x,p.w);block(subtitle,subtitleY,p.x,p.w);
     var buttonWidth=0,buttonHeight=0;
     if(cta) {
-      ctx.font='700 '+ctaSize+'px SonoLatin, SonoDesign';
+      ctx.font='700 '+ctaSize+'px '+cta.fontFamily;
       buttonWidth=Math.max(220,ctx.measureText(cta.lines[0]).width+70);buttonHeight=cta.h+14;
       block({h:buttonHeight},ctaY,540,buttonWidth);
     }
@@ -120,7 +121,7 @@
       }
     });
     function draw(layout,x,y,color,shadow) {
-      if(!layout)return;ctx.font=layout.weight+' '+layout.size+'px SonoLatin, SonoDesign';
+      if(!layout)return;ctx.font=layout.weight+' '+layout.size+'px '+layout.fontFamily;
       layout.lines.forEach(function(line,i){
         var baseline=y+(i-(layout.lines.length-1)/2)*layout.size*layout.leading;
         if(shadow){ctx.fillStyle='#00dedb';ctx.fillText(line,x+4,baseline+5);}
