@@ -54,7 +54,7 @@
    catch(e){status.textContent=e.message;}buttons();
   }
   function buttons(){root.querySelectorAll('input,textarea,select,[data-library],[data-retry]').forEach(function(el){el.disabled=working;});root.querySelector('[data-download]').disabled=!valid||working;root.querySelector('[data-save]').disabled=!valid||working;root.querySelector('[data-generate]').disabled=working;}
-  root.querySelectorAll('[data-field]').forEach(function(el){el.oninput=function(){if(el.dataset.field==='titlePosition'){root.querySelector('[data-field="x"]').value=el.value==='left'?100:el.value==='right'?0:50;root.querySelector('[data-field="headlineOffset"]').value=0;root.querySelector('[data-field="subtitleOffset"]').value=0;}var output=root.querySelector('[data-value="'+el.dataset.field+'"]');if(output)output.textContent=el.dataset.field==='ctaScale'?Math.round(Number(el.value)*100)+'%':el.value;paint();};});
+  root.querySelectorAll('[data-field]').forEach(function(el){function changed(){if(el.dataset.field==='titlePosition'){root.querySelector('[data-field="x"]').value=el.value==='left'?100:el.value==='right'?0:50;root.querySelector('[data-field="headlineOffset"]').value=0;root.querySelector('[data-field="subtitleOffset"]').value=0;}var output=root.querySelector('[data-value="'+el.dataset.field+'"]');if(output)output.textContent=el.dataset.field==='ctaScale'?Math.round(Number(el.value)*100)+'%':el.value;paint();}el.oninput=changed;el.onchange=changed;});
   async function setScene(url){scene=await C.loadImage(url);await paint();}
   root.querySelector('[data-upload]').onchange=async function(){
    var file=this.files[0];if(!file)return;

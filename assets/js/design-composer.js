@@ -63,9 +63,9 @@
       ctx.save();ctx.beginPath();ctx.rect(sceneX,sceneTop,sceneWidth,height);ctx.clip();
       ctx.drawImage(scene,sceneX+(sceneWidth-w)*number(data.x,50,0,100)/100,sceneTop+(height-h)*number(data.y,50,0,100)/100+number(data.imageOffsetY,0,-400,400),w,h);ctx.restore();
     }
-    var fade=ctx.createLinearGradient(0,700,0,905);
+    var fade=ctx.createLinearGradient(0,760,0,905);
     fade.addColorStop(0,'rgba(255,255,255,0)');fade.addColorStop(1,'rgba(255,255,255,1)');
-    ctx.fillStyle=fade;ctx.fillRect(0,700,1080,560);
+    ctx.fillStyle=fade;ctx.fillRect(0,760,1080,500);
     ctx.drawImage(overlay,0,0,1080,1350);
     ctx.direction='rtl';ctx.textAlign='center';ctx.textBaseline='middle';
     var presets={bottom:{x:540,y:883,w:960},top:{x:540,y:320,w:960},right:{x:775,y:390,w:450},left:{x:305,y:390,w:450}};
