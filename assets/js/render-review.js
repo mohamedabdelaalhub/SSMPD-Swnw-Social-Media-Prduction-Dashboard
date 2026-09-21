@@ -67,7 +67,7 @@
           html += '<div class="kanban-col"><h4>' + s.label + '<span class="count">' + colItems.length + '</span></h4>';
           colItems.forEach(function (i) {
             var ownerName = (adminsById[i.created_by] || {}).name || "—";
-            var designerName = i.assigned_designer ? ((adminsById[i.assigned_designer] || {}).name || "—") : "";
+            var designerName = i.design_execution === "ai" ? "وكيل التصميم بالذكاء الاصطناعي" : i.assigned_designer ? ((adminsById[i.assigned_designer] || {}).name || "—") : "";
             // وقت دخول المادة للمرحلة الحالية: لو عند المصمم بنستخدم وقت
             // الاستلام الفعلي (design_received_at) لو موجود، وإلا آخر تحديث عام
             var stageTimeIso = (i.stage === "in_design" && i.design_received_at) ? i.design_received_at : i.updated_at;
@@ -132,10 +132,15 @@
     var backdrop = document.createElement("div");
     backdrop.className = "modal-backdrop";
     var actionsHtml = "";
+    var supportsAi = item.content_format === "video" || (item.brand === "sono" && item.content_format === "image_post");
+    var isAi = item.design_execution === "ai";
+    var aiActive = isAi && ["in_design", "needs_revision"].indexOf(item.stage) !== -1;
+    var canSwitchToAi = supportsAi && ["in_design", "needs_revision"].indexOf(item.stage) !== -1;
 
     if (item.stage === "initial_approval") {
-      actionsHtml = '<div class="field"><label>اختر المصمم</label><select id="rv-designer">' +
+      actionsHtml = '<div class="field"><label>اختر جهة تنفيذ التصميم</label><select id="rv-designer">' +
         '<option value="">— اختر —</option>' +
+        (supportsAi ? '<option value="ai">وكيل التصميم بالذكاء الاصطناعي</option>' : '') +
         designers.map(function (d) { return '<option value="' + d.id + '">' + escapeHtml(d.name || d.email) + '</option>'; }).join("") +
         '</select></div>' +
         '<div style="display:flex;gap:8px;"><button class="btn" id="rv-approve">اعتماد أولي — أرسل للتصميم</button>' +
@@ -143,21 +148,27 @@
     } else if (item.stage === "final_approval") {
       actionsHtml = '<div style="display:flex;gap:8px;"><button class="btn" id="rv-approve">اعتماد نهائي — جاهز للنشر</button>' +
         '<button class="btn danger" id="rv-reject">طلب تعديل</button></div>';
+    } else if (aiActive) {
+      actionsHtml = '<p>جهة التنفيذ — وكيل التصميم بالذكاء الاصطناعي</p>' +
+        (item.content_format === 'video' ? '<div id="rv-ai-video"></div>' : '<button class="btn" id="rv-ai-open">فتح استوديو التصميم بالذكاء الاصطناعي</button>') +
+        '<button class="btn ghost" id="rv-ai-submit" style="margin:10px 0;">إرسال النسخة للاعتماد النهائي</button><p id="rv-ai-feedback" role="status"></p>';
     } else {
       actionsHtml = '<p style="color:var(--c-muted);font-size:12px;">لا يوجد إجراء اعتماد على هذه المرحلة حالياً.</p>';
     }
 
     // تغيير المصمم المسؤول — متاح في أي مرحلة بعد ما يتحدد مصمم (حتى لو الشغل بدأ)
     var reassignHtml = "";
-    if (item.assigned_designer) {
-      reassignHtml = '<div class="field" style="margin-top:10px;"><label>المصمم المسؤول</label>' +
+    if (item.assigned_designer || aiActive || canSwitchToAi) {
+      reassignHtml = '<div class="field" style="margin-top:10px;"><label>جهة تنفيذ التصميم</label>' +
         '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">' +
         '<select id="rv-reassign">' +
+        '<option value="">— اختر —</option>' +
+        (canSwitchToAi ? '<option value="ai"' + (isAi ? ' selected' : '') + '>وكيل التصميم بالذكاء الاصطناعي</option>' : '') +
         designers.map(function (d) {
           return '<option value="' + d.id + '" ' + (d.id === item.assigned_designer ? "selected" : "") + '>' + escapeHtml(d.name || d.email) + '</option>';
         }).join("") +
         '</select>' +
-        '<button class="btn ghost sm" id="rv-reassign-btn">تغيير المصمم</button></div></div>';
+        '<button class="btn ghost sm" id="rv-reassign-btn">تغيير جهة التنفيذ</button></div></div>';
     }
 
     backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>' + escapeHtml(item.title) + W.brandBadgeHtml(item.brand) + W.specialtyBadgeHtml(item.specialty) + '</h3>' +
@@ -200,36 +211,67 @@
     var me = window.SSMPDAuth.currentAdmin;
 
     if (reassignBtn) reassignBtn.onclick = function () {
+      if (reassignBtn.disabled) return;
       var newDesignerId = document.getElementById("rv-reassign").value;
-      if (!newDesignerId) { alert("اختر مصمم"); return; }
-      if (newDesignerId === item.assigned_designer) { backdrop.remove(); return; }
-      var oldDesignerName = (adminsById[item.assigned_designer] || {}).name || "—";
-      var newDesignerName = (adminsById[newDesignerId] || {}).name || "—";
+      if (!newDesignerId) { alert("اختر جهة تنفيذ التصميم"); return; }
+      var toAi = newDesignerId === 'ai';
+      if (toAi && !canSwitchToAi) return;
+      if ((toAi && isAi) || (!toAi && !isAi && newDesignerId === item.assigned_designer)) return;
+      var oldDesignerName = isAi ? "وكيل التصميم بالذكاء الاصطناعي" : (adminsById[item.assigned_designer] || {}).name || "—";
+      var newDesignerName = toAi ? "وكيل التصميم بالذكاء الاصطناعي" : (adminsById[newDesignerId] || {}).name || "—";
       if (!confirm("تأكيد نقل المادة من \"" + oldDesignerName + "\" إلى \"" + newDesignerName + "\"؟")) return;
-      var patch = { assigned_designer: newDesignerId };
+      var patch = { assigned_designer: toAi ? null : newDesignerId, design_execution: toAi ? "ai" : "human" };
       // لو الشغل لسه في التصميم، صفّر وقت الاستلام عشان المصمم الجديد يشوفها "في انتظار الاستلام"
       if (item.stage === "in_design" || item.stage === "needs_revision") patch.design_received_at = null;
-      window.SSMPDDb.updateContentItem(item.id, patch).then(function () {
-        return window.SSMPDDb.logActivity({ content_id: item.id, actor_id: me.id, action: "تغيير المصمم: " + oldDesignerName + " ← " + newDesignerName, from_stage: item.stage, to_stage: item.stage });
-      }).then(function () { backdrop.remove(); render(document.getElementById("view-container")); })
-        .catch(function (e) { alert("خطأ: " + e.message); });
+      reassignBtn.disabled = true;
+      window.SSMPDDb.updateContentItem(item.id, patch).then(function (updated) {
+        window.SSMPDDb.logActivity({ content_id: item.id, actor_id: me.id, action: "تغيير جهة التنفيذ: " + oldDesignerName + " ← " + newDesignerName, from_stage: item.stage, to_stage: item.stage }).catch(function () {});
+        backdrop.remove(); render(document.getElementById("view-container"));
+        if (toAi) {
+          if (updated.content_format !== 'video') window.SSMPDDesignStudio.open(updated);
+          else openReviewModal(updated.id, items.map(function (row) { return row.id === updated.id ? updated : row; }), admins, designersAll);
+        }
+      }).catch(function (e) { reassignBtn.disabled = false; alert("خطأ: " + e.message); });
     };
 
+    var aiOpen = backdrop.querySelector('#rv-ai-open');
+    if (aiOpen) aiOpen.onclick = function () { window.SSMPDDesignStudio.open(item); };
+    if (aiActive && item.content_format === 'video') {
+      window.SSMPDRenderProduction.renderVideoJobSection(backdrop.querySelector('#rv-ai-video'), item);
+    }
+    var aiSubmit = backdrop.querySelector('#rv-ai-submit');
+    if (aiSubmit) aiSubmit.onclick = function () {
+      aiSubmit.disabled = true;
+      window.SSMPDDb.submitAiDesign(item.id).then(function (updated) {
+        window.SSMPDDrive.logDesignUploaded(item.id, updated.title).catch(function () {});
+        backdrop.remove(); render(document.getElementById('view-container'));
+      }).catch(function (e) {
+        aiSubmit.disabled = false;
+        backdrop.querySelector('#rv-ai-feedback').textContent = e.message;
+      });
+    };
     if (approveBtn) approveBtn.onclick = function () {
-      var patch = {};
+      if (approveBtn.disabled) return;
       var wasInitialApproval = item.stage === "initial_approval";
-      if (wasInitialApproval) {
-        var designerId = document.getElementById("rv-designer").value;
-        if (!designerId) { alert("اختر مصمم الأول"); return; }
-        patch = { stage: "in_design", assigned_designer: designerId };
-      } else {
-        patch = { stage: "ready_to_publish" };
-      }
-      window.SSMPDDb.updateContentItem(item.id, patch).then(function (updated) {
+      var designerId = wasInitialApproval ? document.getElementById("rv-designer").value : '';
+      if (wasInitialApproval && !designerId) { alert("اختر المصمم أو وكيل التصميم"); return; }
+      approveBtn.disabled = true;
+      var sendingToAi = designerId === 'ai';
+      var operation = wasInitialApproval
+        ? window.SSMPDDb.routeContentDesign(item.id, sendingToAi ? 'ai' : 'human', sendingToAi ? null : designerId)
+        : window.SSMPDDb.updateContentItem(item.id, { stage: 'ready_to_publish' });
+      operation.then(function (updated) {
         if (wasInitialApproval) window.SSMPDDrive.logDesignSent(item.id, updated.title).catch(function () {});
-        return window.SSMPDDb.logActivity({ content_id: item.id, actor_id: me.id, action: "اعتماد", from_stage: item.stage, to_stage: patch.stage });
-      }).then(function () { backdrop.remove(); render(document.getElementById("view-container")); })
-        .catch(function (e) { alert("خطأ: " + e.message); });
+        else window.SSMPDDb.logActivity({ content_id: item.id, actor_id: me.id, action: 'اعتماد نهائي', from_stage: item.stage, to_stage: 'ready_to_publish' }).catch(function () {});
+        backdrop.remove(); render(document.getElementById('view-container'));
+        if (sendingToAi) {
+          if (updated.content_format !== 'video') window.SSMPDDesignStudio.open(updated);
+          else openReviewModal(updated.id, items.map(function (row) { return row.id === updated.id ? updated : row; }), admins, designersAll);
+        }
+      }).catch(function (e) {
+        approveBtn.disabled = false;
+        alert(/route_content_design/.test(e.message) ? 'شغّل تحديث قاعدة البيانات الخاص بوكيل التصميم أولاً.' : 'خطأ: ' + e.message);
+      });
     };
 
     if (rejectBtn) rejectBtn.onclick = function () {
