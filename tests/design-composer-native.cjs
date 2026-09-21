@@ -60,6 +60,10 @@ vm.runInNewContext(fs.readFileSync(root+'/assets/js/design-composer.js','utf8'),
  const pixels=faded.getContext('2d');
  assert(pixels.getImageData(540,800,1,1).data[0]<250,'Image still extends into the lower fade');
  assert(pixels.getImageData(540,905,1,1).data[0]>=253,'Fade completes before the opaque lower panel');
+ const lateFade=canvas();await context.window.SSMPDDesignComposer.render(lateFade,dark,{headline:'',subtitle:'',cta:'',fadeStartY:820,fadeEndY:900});
+ assert(lateFade.getContext('2d').getImageData(540,790,1,1).data[0]+20<pixels.getImageData(540,790,1,1).data[0],'Moving the fade down keeps the image visible longer');
+ const earlyFade=canvas();await context.window.SSMPDDesignComposer.render(earlyFade,dark,{headline:'',subtitle:'',cta:'',fadeStartY:600,fadeEndY:750});
+ assert(earlyFade.getContext('2d').getImageData(540,760,1,1).data[0]>=253,'Moving the fade up clears the image sooner');
  // A portrait that exactly fits vertically previously had zero available crop travel.
  const portrait=createCanvas(1080,1260),pc=portrait.getContext('2d');
  const gradient=pc.createLinearGradient(0,0,0,1260);gradient.addColorStop(0,'#000000');gradient.addColorStop(1,'#ffffff');pc.fillStyle=gradient;pc.fillRect(0,0,1080,1260);

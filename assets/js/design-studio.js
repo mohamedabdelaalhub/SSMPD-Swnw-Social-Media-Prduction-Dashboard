@@ -34,6 +34,8 @@
    '<label>تكبير الصورة<input type="range" data-field="zoom" min="1" max="2" step="0.05" value="1"></label>'+
    '<label>موضع أفقي<input type="range" data-field="x" min="0" max="100" value="50"></label>'+
    '<label>تحريك الصورة رأسيًا: <output data-value="imageOffsetY">0</output> بكسل<input type="range" data-field="imageOffsetY" min="-400" max="400" step="5" value="0"></label><p>السالب لفوق والموجب لتحت، حتى بدون تكبير. لو ظهرت حافة فارغة، قلّل التحريك أو كبّر الصورة.</p>'+
+   '<label>بداية الـFade: <output data-value="fadeStartY">760</output> بكسل<input type="range" data-field="fadeStartY" min="500" max="850" step="5" value="760"></label>'+
+   '<label>نهاية الـFade: <output data-value="fadeEndY">905</output> بكسل<input type="range" data-field="fadeEndY" min="550" max="905" step="5" value="905"></label><p>حرّك بداية ونهاية التلاشي لتحكم مساحة ظهور الصورة. النهاية تتوقف قبل الفوتر.</p>'+
    '<p role="status" data-status></p><button class="btn" data-download disabled>تنزيل PNG</button> '+
    '<button class="btn ghost" data-save disabled>حفظ نسخة للمراجعة</button><div data-versions></div></div>'+
    '<div style="flex:1 1 350px;min-width:0"><canvas style="width:100%;height:auto;border:1px solid #e2e6ed"></canvas></div></div></div>';
@@ -54,7 +56,7 @@
    catch(e){status.textContent=e.message;}buttons();
   }
   function buttons(){root.querySelectorAll('input,textarea,select,[data-library],[data-retry]').forEach(function(el){el.disabled=working;});root.querySelector('[data-download]').disabled=!valid||working;root.querySelector('[data-save]').disabled=!valid||working;root.querySelector('[data-generate]').disabled=working;}
-  root.querySelectorAll('[data-field]').forEach(function(el){function changed(){if(el.dataset.field==='titlePosition'){root.querySelector('[data-field="x"]').value=el.value==='left'?100:el.value==='right'?0:50;root.querySelector('[data-field="headlineOffset"]').value=0;root.querySelector('[data-field="subtitleOffset"]').value=0;}var output=root.querySelector('[data-value="'+el.dataset.field+'"]');if(output)output.textContent=el.dataset.field==='ctaScale'?Math.round(Number(el.value)*100)+'%':el.value;paint();}el.oninput=changed;el.onchange=changed;});
+  root.querySelectorAll('[data-field]').forEach(function(el){function changed(){if(el.dataset.field==='titlePosition'){root.querySelector('[data-field="x"]').value=el.value==='left'?100:el.value==='right'?0:50;root.querySelector('[data-field="headlineOffset"]').value=0;root.querySelector('[data-field="subtitleOffset"]').value=0;}if(el.dataset.field==='fadeStartY'){var end=root.querySelector('[data-field="fadeEndY"]');if(Number(end.value)<Number(el.value)+50){end.value=Math.min(905,Number(el.value)+50);var endOutput=root.querySelector('[data-value="fadeEndY"]');if(endOutput)endOutput.textContent=end.value;}}if(el.dataset.field==='fadeEndY'){var start=root.querySelector('[data-field="fadeStartY"]');if(Number(start.value)>Number(el.value)-50){start.value=Math.max(500,Number(el.value)-50);var startOutput=root.querySelector('[data-value="fadeStartY"]');if(startOutput)startOutput.textContent=start.value;}}var output=root.querySelector('[data-value="'+el.dataset.field+'"]');if(output)output.textContent=el.dataset.field==='ctaScale'?Math.round(Number(el.value)*100)+'%':el.value;paint();}el.oninput=changed;el.onchange=changed;});
   async function setScene(url){scene=await C.loadImage(url);await paint();}
   root.querySelector('[data-upload]').onchange=async function(){
    var file=this.files[0];if(!file)return;
