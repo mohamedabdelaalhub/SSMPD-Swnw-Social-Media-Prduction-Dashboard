@@ -42,11 +42,11 @@
   function scenePrompt(prompt, data) {
     var instructions = {
       top:'Leave the upper middle area below the logo empty with a pale plain background for a heading. Place the main subject lower in the frame.',
-      bottom:'Place the main subject in the image area BELOW the reserved top band. Keep the lower edge pale and uncluttered for a heading below the image.',
+      bottom:'Place the main subject naturally in the upper and middle image area. Keep the lower edge pale and uncluttered for a heading below the image.',
       right:'Leave the RIGHT half empty with a pale plain background for Arabic text. Place the person and all key details on the LEFT.',
       left:'Leave the LEFT half empty with a pale plain background for Arabic text. Place the person and all key details on the RIGHT.'
     };
-    return String(prompt || '')+'\nComposition: '+(instructions[data.titlePosition]||instructions.bottom)+' Reserve the entire TOP 20 percent of the source image as a pale, plain background with no people, heads, hair, hands, equipment or important details. Keep every person fully below this band, with space above their head. The final 1080x1350 design reserves at least 160 pixels at the top for a fixed logo. Use a portrait frame with at least 300 additional pixels of lower body and background below the normal composition at final export scale. Do not crop at shoulders, elbows or torso. Reserve this lower extension for a gradual fade. Keep the top safety band part of the pale background, not a separate graphic panel. No writing or logos.';
+    return String(prompt || '')+'\nComposition: '+(instructions[data.titlePosition]||instructions.bottom)+' Extend the photograph naturally to every edge, including the top. Keep only the small upper-left corner calm and light for a logo overlay; place faces and important details away from that corner. Do not add a blank horizontal header, white margin or separate top panel. Use a portrait frame with at least 300 additional pixels of lower body and background below the normal composition at final export scale. Do not crop at shoulders, elbows or torso. Reserve this lower extension for a gradual fade. No writing or logos.';
   }
   async function render(canvas, scene, data) {
     await ready();
@@ -58,10 +58,10 @@
     var sceneX = data.titlePosition==='left' ? 550 : 0;
     var sceneWidth = side ? 530 : 1080;
     if(scene) {
-      var sceneTop=160,height=1260-sceneTop,scale=Math.max(sceneWidth/scene.width,height/scene.height)*number(data.zoom,1,1,2);
+      var sceneTop=0,height=1260-sceneTop,scale=Math.max(sceneWidth/scene.width,height/scene.height)*number(data.zoom,1,1,2);
       var w=scene.width*scale,h=scene.height*scale;
       ctx.save();ctx.beginPath();ctx.rect(sceneX,sceneTop,sceneWidth,height);ctx.clip();
-      ctx.drawImage(scene,sceneX+(sceneWidth-w)*number(data.x,50,0,100)/100,sceneTop+(height-h)*number(data.y,50,0,100)/100,w,h);ctx.restore();
+      ctx.drawImage(scene,sceneX+(sceneWidth-w)*number(data.x,50,0,100)/100,sceneTop+(height-h)*number(data.y,50,0,100)/100+number(data.imageOffsetY,0,-400,400),w,h);ctx.restore();
     }
     var fade=ctx.createLinearGradient(0,700,0,905);
     fade.addColorStop(0,'rgba(255,255,255,0)');fade.addColorStop(1,'rgba(255,255,255,1)');

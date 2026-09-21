@@ -24,8 +24,10 @@ vm.runInNewContext(fs.readFileSync(root+'/assets/js/design-composer.js','utf8'),
  for(const titlePosition of ['top','bottom','right','left']) {
    const result=canvas();
    await context.window.SSMPDDesignComposer.render(result,scene,{...base,headline:'التعب المستمر',subtitle:'اعرف السبب',titlePosition,headlineSize:64,subtitleSize:32,zoom:2,x:100,y:0});
-   assert.deepEqual(result.getContext('2d').getImageData(0,0,1080,160).data,topCtx.getImageData(0,0,1080,160).data,'Scene cannot intrude into logo reserve, including extreme crop settings');
-   assert(context.window.SSMPDDesignComposer.scenePrompt('clinic',{titlePosition}).includes('TOP 20 percent'));
+   const sampleX=titlePosition==='right'?500:1050;
+   assert(result.getContext('2d').getImageData(sampleX,20,1,1).data[0]<250,'Photograph reaches the top instead of a full-width white band');
+   assert(!context.window.SSMPDDesignComposer.scenePrompt('clinic',{titlePosition}).includes('TOP 20 percent'));
+   assert(context.window.SSMPDDesignComposer.scenePrompt('clinic',{titlePosition}).includes('upper-left corner'));
  }
  await context.window.SSMPDDesignComposer.render(canvas(),scene,{...base,headline:'التعب',headlineSize:130,headlineOffset:-120,ctaSize:40,ctaOffset:20});
  await assert.rejects(context.window.SSMPDDesignComposer.render(canvas(),scene,{...base,headline:'التعب',ctaOffset:60,ctaSize:80}),/خارج المساحة|متداخلة/);
@@ -46,7 +48,7 @@ vm.runInNewContext(fs.readFileSync(root+'/assets/js/design-composer.js','utf8'),
      assert.deepEqual(normal.calls.map(({text,font})=>({text,font})),reversed.calls.map(({text,font})=>({text,font})));
      const titles=reversed.calls.filter(c=>c.font.startsWith('700 ')),subtitles=reversed.calls.filter(c=>c.font.startsWith('400 '));
      assert(Math.max(...subtitles.map(c=>c.y))<Math.min(...titles.map(c=>c.y)),'Entire subtitle block must precede the title');
-     assert.deepEqual(reversed.output.getContext('2d').getImageData(0,0,1080,160).data,topCtx.getImageData(0,0,1080,160).data);
+     assert.deepEqual(reversed.output.getContext('2d').getImageData(0,0,1080,160).data,normal.output.getContext('2d').getImageData(0,0,1080,160).data,'Reordering text does not change the logo or photograph');
    }
  }
  for(const text of [{headline:'العنوان فقط',subtitle:''},{headline:'',subtitle:'السطر فقط'}]) {
@@ -58,5 +60,15 @@ vm.runInNewContext(fs.readFileSync(root+'/assets/js/design-composer.js','utf8'),
  const pixels=faded.getContext('2d');
  assert(pixels.getImageData(540,800,1,1).data[0]<250,'Image still extends into the lower fade');
  assert(pixels.getImageData(540,905,1,1).data[0]>=253,'Fade completes before the opaque lower panel');
+ // A portrait that exactly fits vertically previously had zero available crop travel.
+ const portrait=createCanvas(1080,1260),pc=portrait.getContext('2d');
+ const gradient=pc.createLinearGradient(0,0,0,1260);gradient.addColorStop(0,'#000000');gradient.addColorStop(1,'#ffffff');pc.fillStyle=gradient;pc.fillRect(0,0,1080,1260);
+ const samples=[];
+ for(const imageOffsetY of [-200,0,200]) {
+   const moved=canvas();await context.window.SSMPDDesignComposer.render(moved,portrait,{headline:'',zoom:1,imageOffsetY});
+   samples.push(moved.getContext('2d').getImageData(900,400,1,1).data[0]);
+   assert.deepEqual(moved.getContext('2d').getImageData(0,1190,1080,160).data,ref.getContext('2d').getImageData(0,1190,1080,160).data);
+ }
+ assert(samples[0]>samples[1]+20 && samples[1]>samples[2]+20,'Direct vertical movement works both ways at zoom 1');
  console.log('PASS: 3 Arabic titles, output size, overflow rejection, exact footer pixels. Native canvas only, not browser QA.');
 })().catch(e=>{console.error(e);process.exitCode=1;});
