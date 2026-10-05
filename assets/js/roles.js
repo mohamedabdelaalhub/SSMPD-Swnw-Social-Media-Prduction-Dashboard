@@ -105,6 +105,10 @@
       return Roles.hasAnyRole(adminOrRole, ["designer", "general_manager", "super_admin"]);
     },
 
+    canCreateAIDesign: function (adminOrRole) {
+      return Roles.hasAnyRole(adminOrRole, ["page_manager", "designer", "approver", "general_manager", "super_admin"]);
+    },
+
     canCreateContent: function (adminOrRole) {
       return Roles.hasAnyRole(adminOrRole, ["page_manager", "general_manager", "super_admin"]);
     },
