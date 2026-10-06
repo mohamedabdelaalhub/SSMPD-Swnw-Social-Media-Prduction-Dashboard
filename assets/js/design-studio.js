@@ -19,11 +19,12 @@
 
  function mount(slot,item){
   if(!slot||!window.SSMPDDesignFiles.canEdit(item))return;
-  var start=document.createElement('button'); start.className='btn ghost'; start.textContent=item.design_file_url?'تعديل التصميم — حفظ نسخة جديدة':'إنشاء تصميم بالذكاء الاصطناعي'; slot.appendChild(start);
+  var start=document.createElement('button'); start.className='btn ghost'; start.textContent=item.design_file_url?'تعديل التصميم الحالي':'إنشاء تصميم بالذكاء الاصطناعي'; slot.appendChild(start);
   start.onclick=function(){open(item);};
  }
  function open(item){
   if(!window.SSMPDDesignFiles.canEdit(item))return;
+  var editingExisting=!!item.design_file_url;
   var root=document.createElement('div'); root.className='modal-backdrop'; root.style.zIndex=10001;
   root.innerHTML='<div class="modal" style="width:min(1100px,96vw);max-height:94vh;overflow:auto" dir="rtl">'+
    '<div class="modal-head"><h3>تصميم سونو — الصورة العلوية</h3><button class="modal-close" aria-label="إغلاق">×</button></div>'+
@@ -56,6 +57,7 @@
    '<p role="status" data-draft-status></p><p role="status" data-status></p><button class="btn" data-download disabled>تنزيل PNG</button> '+
    '<button class="btn ghost" data-save disabled>حفظ نسخة للمراجعة</button><div data-versions></div></div>'+
    '<div style="flex:1 1 350px;min-width:0"><canvas style="width:100%;height:auto;border:1px solid #e2e6ed"></canvas></div></div></div>';
+  if(editingExisting){root.querySelector('h3').textContent='تعديل التصميم الحالي';root.querySelector('[data-save]').textContent='حفظ التعديل للمراجعة';root.querySelector('[data-generate]').textContent='استبدال الصورة بتوليد جديد';var current=document.createElement('a');current.href=item.design_file_url;current.target='_blank';current.rel='noopener';current.className='btn ghost sm';current.textContent='استعراض التصميم الحالي';root.querySelector('.modal-head').after(current);}
   document.body.appendChild(root);
   var sceneJobId=null,sourceFile=null,sourceUrl=null;
   var scene=null,valid=false,version=0,working=false;
@@ -139,8 +141,10 @@
    try{
     var cloud=await window.SSMPDDesignFiles.latest(item.id);baseVersion=cloud&&cloud.id||null;
     var local;try{local=await draftStore(draftKey);}catch(e){draftStatus.textContent='التخزين المحلي غير متاح؛ النسخة المحفوظة على الحساب متاحة.';}
-    var useLocal=local&&((local.baseVersion||null)===baseVersion)&&(!cloud||local.updatedAt>Date.parse(cloud.created_at));
+    var useLocal=!editingExisting&&local&&((local.baseVersion||null)===baseVersion)&&(!cloud||local.updatedAt>Date.parse(cloud.created_at));
     var saved=useLocal?local:cloud?{settings:cloud.settings,sceneJobId:cloud.scene_job_id,sourceUrl:cloud.source_file_url}:null;
+    if(editingExisting&&(!cloud||cloud.settings.template==='uploaded-flat-image'))throw new Error('الملف الحالي محفوظ كصورة فقط، ولا توجد إعدادات أو طبقات تتيح تعديل النصوص والمواضع. يمكنك استعراضه من الزر أعلى النافذة.');
+    if(editingExisting&&cloud.output_file_url&&cloud.output_file_url!==item.design_file_url)throw new Error('ملف التصميم الحالي لا يطابق النسخة القابلة للتعديل المحفوظة. حدّث قائمة المواد وافتحها مجددًا.');
     if(saved){
      root.querySelectorAll('[data-field]').forEach(function(field){if(saved.settings&&saved.settings[field.dataset.field]!==undefined)field.value=saved.settings[field.dataset.field];});
      root.querySelectorAll('[data-number-for]').forEach(function(el){var field=root.querySelector('[data-field="'+el.dataset.numberFor+'"]');if(field)el.value=field.value;});
@@ -152,8 +156,8 @@
      draftStatus.textContent=useLocal?'تم استرجاع مسودتك المحلية الأحدث':'تم فتح النسخة المحفوظة على الحساب للتعديل';
      if(!scene&&cloud)draftStatus.textContent+=' — التصميم القديم لا يحتوي على صورة أصلية قابلة للاسترجاع. اختر الصورة الأصلية لاستكمال التعديل.';
     }
-   }catch(e){loadFailed=true;draftStatus.textContent='تعذر تحميل النسخة المحفوظة. أغلق النافذة وافتحها مجددًا. '+e.message;}
-   finally{restoring=false;root.querySelectorAll('button').forEach(function(el){el.disabled=false;});buttons();await paint();}
+   }catch(e){loadFailed=true;draftStatus.textContent=e.message;if(editingExisting){root.querySelector('.design-layout').style.display='none';root.querySelector('.modal').appendChild(draftStatus);}}
+   finally{restoring=false;root.querySelectorAll('button').forEach(function(el){el.disabled=false;});buttons();if(!loadFailed)await paint();}
   })();
  }
  window.SSMPDDesignStudio={mount:mount,open:open};
