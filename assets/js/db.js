@@ -443,6 +443,9 @@
       return handle(client.from("comments").select("*").eq("content_id", contentId).order("created_at", { ascending: true }));
     },
     // كل الكومنتات في النظام — تُستخدم لحساب عداد "تعليق جديد" في الشاشات
+    deleteComment: function (id) {
+      return handle(client.from("comments").delete().eq("id", id).select("id").single());
+    },
     listAllComments: function () {
       return handle(client.from("comments").select("*").order("created_at", { ascending: true }));
     },

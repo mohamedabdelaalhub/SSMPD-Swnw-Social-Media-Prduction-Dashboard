@@ -14,6 +14,11 @@
       .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
 
+  function canDeleteComment(comment) {
+    var me = window.SSMPDAuth.currentAdmin;
+    return !!me && (comment.author_id === me.id || window.SSMPDRoles.hasAnyRole(me, ['super_admin', 'general_manager']));
+  }
+
   var Comments = {
     // container: عنصر DOM، contentId: uuid، adminsById: خريطة id->admin (للاسم)
     render: function (container, contentId, adminsById) {
@@ -32,7 +37,7 @@
               '<div style="margin-top:6px;"><select class="comment-status-select" data-comment-id="' + c.id + '">' +
               '<option value="pending"' + (status === "pending" ? " selected" : "") + '>في انتظار التعديل</option>' +
               '<option value="done"' + (status === "done" ? " selected" : "") + '>تم التعديل</option>' +
-              '</select></div></div>';
+              '</select>' + (canDeleteComment(c) ? ' <button type="button" class="btn danger sm delete-comment-btn" data-delete-comment="' + c.id + '">حذف التعليق</button>' : '') + '</div></div>';
           });
         }
         html += '<div style="margin-top:10px;display:flex;gap:8px;">' +
@@ -57,6 +62,25 @@
           sel.onchange = function () {
             window.SSMPDDb.updateComment(sel.getAttribute("data-comment-id"), { status: sel.value })
               .catch(function (e) { alert("خطأ: " + e.message); });
+          };
+        });
+
+        container.querySelectorAll('[data-delete-comment]').forEach(function (button) {
+          button.onclick = function () {
+            var id = button.getAttribute('data-delete-comment');
+            var comment = rows.find(function (row) { return row.id === id; });
+            if (button.disabled || !comment || !canDeleteComment(comment)) return;
+            if (!window.confirm('حذف هذا التعليق؟')) return;
+            button.disabled = true;
+            window.SSMPDDb.deleteComment(id).then(function () {
+              button.closest('.comment').remove();
+              rows = rows.filter(function (row) { return row.id !== id; });
+              container.querySelector('h4').textContent = 'الكومنتات (' + rows.length + ')';
+              if (!rows.length) {
+                var empty = document.createElement('div'); empty.className = 'empty-state';
+                empty.textContent = 'مفيش كومنتات لسه'; container.querySelector('h4').after(empty);
+              }
+            }).catch(function (error) { button.disabled = false; alert('تعذر حذف التعليق: ' + error.message); });
           };
         });
 
@@ -97,3 +121,4 @@
 
   window.SSMPDComments = Comments;
 })();
+
