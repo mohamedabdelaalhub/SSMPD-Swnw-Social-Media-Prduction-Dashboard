@@ -254,6 +254,30 @@
     };
   }
 
+  function draftSubmissionHtml(item, me) {
+    if (item.stage !== "idea_selection") return "";
+    return '<p style="font-size:12px;color:var(--c-muted);">هذه مسودة لم تُرسل للاعتماد الأولي بعد.</p>' +
+      (canEditItem(me, item) ? '<button type="button" class="btn" data-submit-draft>إرسال للاعتماد الأولي</button><p data-draft-feedback role="status"></p>' : '<p>بانتظار إرسال صاحب المادة أو الإدارة.</p>');
+  }
+  function wireDraftSubmission(container, item, onSubmitted) {
+    var button = container.querySelector('[data-submit-draft]');
+    if (!button) return;
+    button.onclick = function () {
+      if (button.disabled || item.stage !== 'idea_selection' || !canEditItem(window.SSMPDAuth.currentAdmin, item)) return;
+      var feedback = container.querySelector('[data-draft-feedback]');
+      if (!String(item.title || '').trim() || !String(item.body || '').trim()) {
+        feedback.textContent = 'أكمل عنوان المادة ونص المحتوى من زر تعديل قبل الإرسال.'; return;
+      }
+      button.disabled = true; feedback.textContent = 'جاري الإرسال…';
+      window.SSMPDDb.submitContentDraft(item.id).then(function (updated) {
+        window.SSMPDDb.logActivity({content_id:item.id,actor_id:window.SSMPDAuth.currentAdmin.id,action:'إرسال للاعتماد الأولي',from_stage:'idea_selection',to_stage:'initial_approval'}).catch(function () {});
+        if (onSubmitted) onSubmitted(updated);
+      }).catch(function (error) {
+        button.disabled = false; feedback.textContent = 'تعذر الإرسال: ' + error.message;
+      });
+    };
+  }
+
   // حذف نهائي بعد تأكيد — الإجراء ده لا يمكن التراجع عنه
   function deleteContentItemWithConfirm(item, onDeleted) {
     if (!confirm('متأكد إنك عايز تحذف "' + item.title + '"؟ الإجراء ده نهائي ومش هيترجع.')) return;
@@ -1384,6 +1408,8 @@ function ciCopyFallbackBrief(ctx, returnOnly) {
   window.SSMPDWorkflow = {
     getContentAIBrief: getContentAIBrief,
     STAGES: STAGES,
+    draftSubmissionHtml: draftSubmissionHtml,
+    wireDraftSubmission: wireDraftSubmission,
     metaLinksSectionHtml: metaLinksSectionHtml,
     wireMetaLinksSection: wireMetaLinksSection,
     DESIGN_STATUS: DESIGN_STATUS,
@@ -1415,3 +1441,4 @@ function ciCopyFallbackBrief(ctx, returnOnly) {
     refreshContentIntelligence: refreshContentIntelligence
   };
 })();
+

@@ -1,0 +1,23 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const {JSDOM}=require('jsdom');
+(async()=>{
+ const dom=new JSDOM('<main></main>',{runScripts:'outside-only'}),w=dom.window;
+ w.SSMPDRoles={hasAnyRole:(me,roles)=>roles.includes(me.role)};
+ w.eval(fs.readFileSync('assets/js/workflow.js','utf8'));
+ const W=w.SSMPDWorkflow,item={id:'draft',stage:'idea_selection',title:'عنوان',body:'نص',created_by:'owner'};
+ for(const me of [{id:'owner',role:'content_creator'},{id:'admin',role:'super_admin'},{id:'manager',role:'general_manager'}]) assert.match(W.draftSubmissionHtml(item,me),/data-submit-draft/);
+ assert.doesNotMatch(W.draftSubmissionHtml(item,{id:'other',role:'content_creator'}),/data-submit-draft/);
+ assert.equal(W.draftSubmissionHtml({...item,stage:'initial_approval'},{id:'admin',role:'super_admin'}),'');
+ w.SSMPDAuth={currentAdmin:{id:'owner',role:'content_creator'}};
+ let calls=0,done=0,resolve;
+ w.SSMPDDb={submitContentDraft:id=>{calls++;assert.equal(id,'draft');return new Promise(r=>resolve=r)},logActivity:()=>Promise.resolve()};
+ const root=w.document.querySelector('main');root.innerHTML=W.draftSubmissionHtml(item,w.SSMPDAuth.currentAdmin);
+ W.wireDraftSubmission(root,item,()=>done++);const btn=root.querySelector('button');btn.click();btn.click();assert.equal(calls,1);assert.equal(btn.disabled,true);resolve({...item,stage:'initial_approval'});await new Promise(r=>setTimeout(r,0));assert.equal(done,1);
+ root.innerHTML=W.draftSubmissionHtml(item,w.SSMPDAuth.currentAdmin);
+ w.SSMPDDb.submitContentDraft=()=>Promise.reject(new Error('RLS'));
+ W.wireDraftSubmission(root,item,()=>done++);root.querySelector('button').click();await new Promise(r=>setTimeout(r,0));assert.equal(root.querySelector('button').disabled,false);assert.match(root.textContent,/RLS/);assert.equal(done,1);
+ root.innerHTML=W.draftSubmissionHtml(item,w.SSMPDAuth.currentAdmin);W.wireDraftSubmission(root,{...item,body:''},()=>done++);root.querySelector('button').click();assert.match(root.textContent,/أكمل/);
+ assert.match(fs.readFileSync('assets/js/db.js','utf8'),/submitContentDraft:[\s\S]*?\.eq\("stage", "idea_selection"\)/);
+ console.log('PASS draft permissions, stage visibility, double-click protection, success, failure and incomplete content');w.close();
+})();

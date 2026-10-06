@@ -290,6 +290,10 @@
       if (!window.SSMPDContentText.confirmSave(patch)) return Promise.reject(new Error("تم إلغاء الحفظ. عدّل النص ثم احفظه."));
       return handle(client.from("content_items").update(patch).eq("id", id).select().single());
     },
+    submitContentDraft: function (id) {
+      return handle(client.from("content_items").update({stage:"initial_approval"})
+        .eq("id", id).eq("stage", "idea_selection").select().single());
+    },
     // ---------- Content AI + idea bank ----------
     generateContentIdeas: function (payload) {
       return edgeFetch("/content-ai", { method: "POST", json: payload });

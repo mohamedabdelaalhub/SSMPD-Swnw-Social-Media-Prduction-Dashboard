@@ -989,6 +989,7 @@ function openAgentImportModal(parentBackdrop) {
         (item.content_format === "video" ? '<div id="video-job-slot"></div>' : '<div id="design-job-slot"></div>') +
         (item.design_file_url ? '<p><a href="' + item.design_file_url + '" target="_blank" class="btn ghost sm">فتح ملف التصميم</a></p>' : '') +
         '<div style="margin:10px 0;">' + W.itemActionsHtml(item, me) + '</div>' +
+        W.draftSubmissionHtml(item, me) +
         W.metaLinksSectionHtml(item) +
         '<div id="comments-slot"></div></div>';
       document.body.appendChild(backdrop);
@@ -996,6 +997,7 @@ function openAgentImportModal(parentBackdrop) {
       backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
       W.wireItemActions(backdrop, item, function () { render(document.getElementById("view-container")); });
       W.wireMetaLinksSection(backdrop, item, me);
+      W.wireDraftSubmission(backdrop, item, function () { backdrop.remove(); render(document.getElementById("view-container")); });
       renderVideoJobSection(backdrop.querySelector("#video-job-slot"), item);
       window.SSMPDDesignStudio.mount(backdrop.querySelector("#design-job-slot"), item);
 
@@ -1008,4 +1010,5 @@ function openAgentImportModal(parentBackdrop) {
 
   window.SSMPDRenderProduction = { render: render, renderVideoJobSection: renderVideoJobSection };
 })();
+
 

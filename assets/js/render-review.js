@@ -137,7 +137,9 @@
     var aiActive = isAi && ["in_design", "needs_revision"].indexOf(item.stage) !== -1;
     var canSwitchToAi = supportsAi && ["in_design", "needs_revision"].indexOf(item.stage) !== -1;
 
-    if (item.stage === "initial_approval") {
+    if (item.stage === "idea_selection") {
+      actionsHtml = W.draftSubmissionHtml(item, window.SSMPDAuth.currentAdmin);
+    } else if (item.stage === "initial_approval") {
       actionsHtml = '<div class="field"><label>اختر جهة تنفيذ التصميم</label><select id="rv-designer">' +
         '<option value="">— اختر —</option>' +
         (supportsAi ? '<option value="ai">وكيل التصميم بالذكاء الاصطناعي</option>' : '') +
@@ -209,6 +211,7 @@
     var rejectBtn = document.getElementById("rv-reject");
     var reassignBtn = document.getElementById("rv-reassign-btn");
     var me = window.SSMPDAuth.currentAdmin;
+    W.wireDraftSubmission(backdrop, item, function () { backdrop.remove(); render(document.getElementById("view-container")); });
 
     if (reassignBtn) reassignBtn.onclick = function () {
       if (reassignBtn.disabled) return;
@@ -289,3 +292,4 @@
 
   window.SSMPDRenderReview = { render: render };
 })();
+
