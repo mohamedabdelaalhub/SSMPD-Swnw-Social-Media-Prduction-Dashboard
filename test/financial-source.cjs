@@ -1,0 +1,12 @@
+const fs=require('fs'),vm=require('vm'),assert=require('node:assert/strict');
+const code=fs.readFileSync(require('path').join(__dirname,'../apps-script/ads-expenses-bridge.gs'),'utf8');
+const context={Utilities:{formatDate:(d,tz,format)=>format==='yyyy-MM'?new Intl.DateTimeFormat('en-CA',{timeZone:tz,year:'numeric',month:'2-digit'}).format(d):new Intl.DateTimeFormat('en-CA',{timeZone:tz}).format(d)}};
+vm.createContext(context);vm.runInContext(code,context);
+const tx=[['التاريخ','النوع','القيمة (جم)','الشهر','كود العملية','مفتاح التكرار'],[46266,'سحب',-100,'2026-09','ABC','#REF!'],['','سداد',40,'2026-09','deposit','']];
+const oe=[['التاريخ','الجهة/الاشتراك','القيمة (جم)','الشهر'],[46266,'Vendor',-10,'2026-09']];
+const monthly=[['الشهر','إجمالي سحوبات فيسبوك','إجمالي المسدد','إجمالي اشتراكات ومصروفات أخرى','صافي الحركة','الرصيد المرحّل (افتتاحي)','الرصيد الختامي'],['2026-09',-100,40,-10,-70,0,-70]];
+const tables={'سجل الحركات':tx,'اشتراكات ومصروفات أخرى':oe,'الإقفال الشهري':monthly};
+const book={getSpreadsheetTimeZone:()=> 'America/Los_Angeles',getName:()=> 'Fixture',getSheetByName(name){assert.notEqual(name,'السحوبات من كشف الحساب البنكي');return{getDataRange:()=>({getValues:()=>tables[name]})};}};
+let data=context.readAdsExpenses_(book);assert.equal(data.transactions.length,2);assert.equal(data.transactions[1].date,'');assert.equal(data.monthly[0].closingBalance,-70);assert.equal(data.dataQualityIssues.length,0);assert.equal(data.lastRecordAt,'2026-09-01');
+monthly[1][1]='#REF!';assert.throws(()=>context.readAdsExpenses_(book),/معادلة غير صالحة/);monthly[1][1]=-101;assert.match(context.readAdsExpenses_(book).dataQualityIssues[0],/اختلاف/);
+console.log('Financial bridge checks passed.');

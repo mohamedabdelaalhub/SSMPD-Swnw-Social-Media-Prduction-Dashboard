@@ -87,6 +87,8 @@
       if (!res.ok) throw new Error("تعذّر الوصول لجسر مصروفات الإعلانات (" + res.status + ")");
       return res.json();
     }).then(function (data) {
+      if(data.error)throw new Error(data.error);
+      if(!Array.isArray(data.monthly))throw new Error("جسر المصروفات لم يرجع بيانات الإقفال الشهري");
       return {
         monthly: (data.monthly || []).map(function (m) {
           return {
@@ -96,6 +98,9 @@
         }),
         transactions: data.transactions || [],
         otherExpensesItems: data.otherExpensesItems || [],
+        sourceTitle: data.sourceTitle || null,
+        sourceSpreadsheetId: data.sourceSpreadsheetId || null,
+        dataQualityIssues: data.dataQualityIssues || [],
         lastRecordAt: data.lastRecordAt || null
       };
     });
@@ -208,8 +213,10 @@
     fetchAdsExpensesData().then(function (data) {
       adsExpensesCache = data;
       var html = "";
+      if(data.sourceTitle)html += '<p style="font-size:12px;color:var(--c-muted);">المصدر — ' + escapeHtml(data.sourceTitle) + '</p>';
+      if(data.dataQualityIssues.length)html += '<p role="status">مراجعة البيانات مطلوبة — ' + data.dataQualityIssues.map(escapeHtml).join(" / ") + '</p>';
       if (data.lastRecordAt) {
-        html += '<p style="font-size:11px;color:var(--c-muted);">آخر حركة مسجّلة في الملف — ' + fmtMonthDate(data.lastRecordAt) + '</p>';
+        html += '<p style="font-size:11px;color:var(--c-muted);">آخر حركة مسجّلة في الملف — ' + fmtTxDate(data.lastRecordAt) + '</p>';
       }
       // الملف فيه صفوف شهور مجهّزة مسبقاً لسنين قدام (لسه مالهاش بيانات) — بنعرض
       // بس الشهر الحالي وما قبله (الحاضر فوق)، والشهور القادمة (المستقبل) مش
@@ -224,14 +231,14 @@
         html += '<div class="empty-state">مفيش بيانات لشهور فاتت أو الشهر الحالي — الملف فيه بس شهور مستقبلية لسه معلّقة.</div>';
       } else {
         var lastMonth = pastAndCurrent[0];
-        var totalFbSpendAllMonths = pastAndCurrent.reduce(function (s, m) { return s + m.fbSpend; }, 0);
+        var totalExpensesAllMonths = pastAndCurrent.reduce(function (s, m) { return s + m.fbSpend + m.otherExpenses; }, 0);
         html += '<div class="kpi-grid">' +
           kpiCard("إجمالي سحوبات فيسبوك (" + escapeHtml(String(lastMonth.month)) + ")", fmtNum(lastMonth.fbSpend) + " ج.م", { small: true }) +
-          kpiCard("إجمالي المصروفات الكلي", fmtNum(totalFbSpendAllMonths) + " ج.م", { small: true }) +
+          kpiCard("إجمالي المصروفات الكلي", fmtNum(totalExpensesAllMonths) + " ج.م", { small: true }) +
           kpiCard("الرصيد الختامي", '<span style="color:' + (lastMonth.closingBalance < 0 ? "var(--c-negative)" : lastMonth.closingBalance > 0 ? "var(--c-positive)" : "inherit") + ';">' + fmtNum(lastMonth.closingBalance) + " ج.م</span>") +
           '</div>';
         if (latestAdsBatchTotals && lastMonth.fbSpend) {
-          var diff = lastMonth.fbSpend - latestAdsBatchTotals.spent;
+          var diff = Math.abs(lastMonth.fbSpend) - latestAdsBatchTotals.spent;
           html += '<h4 style="margin-top:14px;font-size:13px;">مقارنة مع آخر تقرير Meta Ads مستورد</h4>' +
             '<table class="simple"><thead><tr><th>المصدر</th><th>المبلغ</th></tr></thead><tbody>' +
             '<tr><td>سحوبات البنك الفعلية (' + escapeHtml(String(lastMonth.month)) + ')</td><td>' + fmtNum(lastMonth.fbSpend) + ' ج.م</td></tr>' +
@@ -896,3 +903,4 @@
 
   window.SSMPDRenderSummary = { render: render };
 })();
+

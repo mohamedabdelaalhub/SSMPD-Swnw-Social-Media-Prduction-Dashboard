@@ -1,71 +1,93 @@
-/* ===========================================================
-   جسر مصروفات الإعلانات الفعلية — SWNW Ads Expenses Bridge
-   مشروع Apps Script منفصل تماماً عن Code.gs (جسر أرشيف Drive) —
-   Web App مستقل بيرجّع ملخص "الإقفال الشهري" + سجل الحركات التفصيلي
-   + بنود "مصروفات أخرى" التفصيلية جاهزين كـJSON.
+/* Read-only bridge. Update the EXISTING ads-expenses Web App deployment.
+   Do not replace the Drive archive Code.gs or change dashboard config.js.
+   Bank reconciliation is deliberately never read or added to totals. */
+var ADS_EXPENSES_SHEET_ID = '1iWLoprZNt-F2GTEhpTs6JiOYV5mq7YfIbN7ugAfx_ik';
 
-   ليه موجود: قراءة ملف xlsx على Drive بـ`alt=media` + مفتاح API بس
-   (من غير OAuth) كانت بترجع 503 بشكل متكرر مش مضمون. الحل: Apps
-   Script يقرا الملف مباشرة بحساب المالك (OAuth) ويرجّع بس الأرقام
-   الجاهزة — مفيش تنزيل ملف خام من المتصفح خالص.
-
-   النشر: Deploy → Manage deployments → ✏️ → Version: New version → Deploy
-   (بيحافظ على نفس رابط /exec المستخدم في config.js → adsExpensesWebAppUrl)
-
-   إضافة سجل الحركات (٢٠٢٦-٠٩-٠١): بترجّع كمان `transactions` — كل صف من
-   شيت "سجل الحركات" (التاريخ/الوقت/النوع/القيمة/كود العملية/البيان/الشهر
-   بصيغة yyyy-MM/ملاحظات/المصدر) — بيُستخدم في الداشبورد عشان لما حد يدوس
-   على رقم في جدول الإقفال الشهري يشوف الحركات التفصيلية اللي جمّعت الرقم ده.
-
-   إضافة بنود "مصروفات أخرى" التفصيلية (٢٠٢٦-٠٩-٠١): كان عمود "مصروفات أخرى"
-   في شيت "الإقفال الشهري" بيرجع رقم إجمالي بس من غير أي تفصيل — مع إن ملف
-   الإكسل فعلياً فيه شيت منفصل "اشتراكات ومصروفات أخرى" بيسجّل كل بند لوحده
-   (اسم الجهة/الاشتراك، القيمة، البيان). بترجّع دلوقتي `otherExpensesItems` —
-   كل صف من الشيت ده (التاريخ/الوقت/الجهة أو الاشتراك/القيمة/كود العملية/
-   البيان/الشهر بصيغة yyyy-MM/ملاحظات/المصدر) — عشان تبقى متاحة في مودال
-   تفاصيل "مصروفات أخرى" في الداشبورد بدل ملاحظة عامة بدون تفصيل.
-   =========================================================== */
 function doGet(e) {
-  var ss = SpreadsheetApp.openById('1MGDJe3Jn3fRcthqq7-264l5PzsA6c6Nr');
-  var sheet = ss.getSheetByName('الإقفال الشهري');
-  var data = sheet.getDataRange().getValues();
-  var nowStr = Utilities.formatDate(new Date(), 'GMT+2', 'yyyy-MM');
-  var monthly = [];
-  for (var i = 0; i < data.length; i++) {
-    var row = data[i];
-    var month = row[0];
-    if (!month) continue;
-    var monthStr = (month instanceof Date) ? Utilities.formatDate(month, 'GMT+2', 'yyyy-MM') : String(month);
-    if (!/^\d{4}-\d{2}$/.test(monthStr)) continue;
-    if (monthStr > nowStr) continue;
-    monthly.push({ month: monthStr, fbSpend: Number(row[1]) || 0, paid: Number(row[2]) || 0, otherExpenses: Number(row[3]) || 0, closingBalance: Number(row[6]) || 0 });
-  }
-  var txSheet = ss.getSheetByName('سجل الحركات');
-  var txData = txSheet ? txSheet.getDataRange().getValues() : [];
-  var transactions = [];
-  for (var j = 1; j < txData.length; j++) {
-    var t = txData[j];
-    if (!t[6]) continue;
-    transactions.push({
-      date: t[0] instanceof Date ? Utilities.formatDate(t[0], 'GMT+2', 'yyyy-MM-dd') : String(t[0]),
-      time: t[1] instanceof Date ? Utilities.formatDate(t[1], 'GMT+2', 'HH:mm') : String(t[1]),
-      type: String(t[2] || ''), amount: Number(t[3]) || 0, opCode: String(t[4] || ''),
-      description: String(t[5] || ''), month: String(t[6]), notes: String(t[7] || ''), source: String(t[8] || '')
-    });
-  }
-  var oeSheet = ss.getSheetByName('اشتراكات ومصروفات أخرى');
-  var oeData = oeSheet ? oeSheet.getDataRange().getValues() : [];
-  var otherExpensesItems = [];
-  for (var k = 1; k < oeData.length; k++) {
-    var o = oeData[k];
-    if (!o[6]) continue;
-    otherExpensesItems.push({
-      date: o[0] instanceof Date ? Utilities.formatDate(o[0], 'GMT+2', 'yyyy-MM-dd') : String(o[0]),
-      time: o[1] instanceof Date ? Utilities.formatDate(o[1], 'GMT+2', 'HH:mm') : String(o[1]),
-      vendor: String(o[2] || ''), amount: Number(o[3]) || 0, opCode: String(o[4] || ''),
-      description: String(o[5] || ''), month: String(o[6]), notes: String(o[7] || ''), source: String(o[8] || '')
-    });
-  }
-  var out = { lastRecordAt: new Date().toISOString(), monthly: monthly, transactions: transactions, otherExpensesItems: otherExpensesItems };
+  var out;
+  try { out = readAdsExpenses_(SpreadsheetApp.openById(ADS_EXPENSES_SHEET_ID)); }
+  catch (error) { out = { error: 'تعذر قراءة المصدر المالي: ' + error.message }; }
   return ContentService.createTextOutput(JSON.stringify(out)).setMimeType(ContentService.MimeType.JSON);
+}
+
+function readAdsExpenses_(ss) {
+  var tz = ss.getSpreadsheetTimeZone();
+  var currentMonth = Utilities.formatDate(new Date(), 'Africa/Cairo', 'yyyy-MM');
+  function text(value) { return value == null ? '' : String(value).trim(); }
+  function date(value) {
+    if (value instanceof Date && !isNaN(value.getTime())) return Utilities.formatDate(value, tz, 'yyyy-MM-dd');
+    if (typeof value === 'number' && isFinite(value) && value > 0) return new Date(Math.floor(value - 25569) * 86400000).toISOString().slice(0, 10);
+    var s = text(value), m;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+    if ((m = s.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/))) return m[3] + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[1]).slice(-2);
+    return '';
+  }
+  function month(value, day) {
+    if (value instanceof Date) return Utilities.formatDate(value, tz, 'yyyy-MM');
+    var s = text(value);
+    if (/^\d{4}-(0[1-9]|1[0-2])$/.test(s)) return s;
+    if (s && s !== '-') throw new Error('شهر غير صالح: ' + s);
+    return day ? day.slice(0, 7) : '';
+  }
+  function money(value, location) {
+    if (value === '' || value == null) throw new Error('قيمة مالية فارغة في ' + location);
+    var s = text(value).replace(/[٠-٩]/g, function(c) { return String(c.charCodeAt(0)-1632); }).replace(/[,٬\s]/g, '').replace(/٫/g, '.').replace(/−/g, '-');
+    var n = typeof value === 'number' ? value : /^[-+]?\d+(\.\d+)?$/.test(s) ? Number(s) : NaN;
+    if (!isFinite(n)) throw new Error('قيمة مالية أو معادلة غير صالحة في ' + location);
+    return Math.round(n * 100) / 100;
+  }
+  function table(name, required) {
+    var sheet = ss.getSheetByName(name);
+    if (!sheet) throw new Error('الشيت غير موجود: ' + name);
+    var rows = sheet.getDataRange().getValues(), headers = (rows[0] || []).map(text), columns = {};
+    required.forEach(function(h) { var index = headers.indexOf(h); if (index < 0) throw new Error('عمود غير موجود في ' + name + ': ' + h); columns[h] = index; });
+    return { name: name, rows: rows.slice(1), headers: headers, columns: columns };
+  }
+  function cell(t, row, h) { var index = t.headers.indexOf(h); return index < 0 ? '' : row[index]; }
+  function detailRows(t, vendorHeader) {
+    var result = [];
+    t.rows.forEach(function(row, i) {
+      var day = date(cell(t,row,'التاريخ')), value = cell(t,row,'القيمة (جم)');
+      if (!day && (value === '' || value == null)) return;
+      if (!day && text(cell(t,row,'التاريخ'))) throw new Error('تاريخ غير صالح في ' + t.name + ' صف ' + (i+2));
+      var m = month(cell(t,row,'الشهر'),day);
+      if (!m) throw new Error('الحركة بلا تاريخ أو شهر في ' + t.name + ' صف ' + (i+2));
+      if (day && m !== day.slice(0,7)) throw new Error('الشهر لا يطابق التاريخ في ' + t.name + ' صف ' + (i+2));
+      var amount = money(value,t.name+' صف '+(i+2)), type = vendorHeader ? '' : text(cell(t,row,'النوع'));
+      if (!vendorHeader && type !== 'سحب' && type !== 'سداد') throw new Error('نوع حركة غير معروف في صف '+(i+2));
+      if ((vendorHeader || type === 'سحب') && amount > 0 || type === 'سداد' && amount < 0) throw new Error('إشارة القيمة لا تطابق نوع الحركة في '+t.name+' صف '+(i+2));
+      var code=text(cell(t,row,'كود العملية')), card=text(cell(t,row,'آخر 4 أرقام')), vendor=vendorHeader?text(cell(t,row,vendorHeader)):'Facebook';
+      var timeValue=cell(t,row,'الوقت'), time=timeValue instanceof Date?Utilities.formatDate(timeValue,tz,'HH:mm'):text(timeValue);
+      var item={date:day,time:time,amount:amount,opCode:code,description:text(cell(t,row,'البيان')),month:m,notes:text(cell(t,row,'ملاحظات')),source:text(cell(t,row,'المصدر')),verificationStatus:text(cell(t,row,'حالة التحقق')),cardLast4:card,sourceFile:text(cell(t,row,'ملف المصدر')),sourceRow:i+2};
+      if(vendorHeader){item.vendor=vendor;item.originalCurrency=text(cell(t,row,'العملة الأصلية'));item.originalAmount=cell(t,row,'القيمة الأصلية');item.exchangeRate=cell(t,row,'سعر الصرف (AED->EGP)');}else item.type=type;
+      // Calculate a matching key independently of the broken ARRAYFORMULA.
+      // Keep all source rows. A matching key is not permission to delete a transaction.
+      item.dedupeKey=[day||m,amount.toFixed(2),code&&code!=='-'?code.toUpperCase():vendor,type,card].join('|');
+      result.push(item);
+    });
+    return result;
+  }
+  var tx=table('سجل الحركات',['التاريخ','النوع','القيمة (جم)','الشهر']);
+  var oe=table('اشتراكات ومصروفات أخرى',['التاريخ','الجهة/الاشتراك','القيمة (جم)','الشهر']);
+  var close=table('الإقفال الشهري',['الشهر','إجمالي سحوبات فيسبوك','إجمالي المسدد','إجمالي اشتراكات ومصروفات أخرى','صافي الحركة','الرصيد المرحّل (افتتاحي)','الرصيد الختامي']);
+  var transactions=detailRows(tx,null), otherExpensesItems=detailRows(oe,'الجهة/الاشتراك'), monthly=[];
+  close.rows.forEach(function(row,i){
+    var value=cell(close,row,'الشهر');
+    if(!(value instanceof Date)&&!/^\d{4}-(0[1-9]|1[0-2])$/.test(text(value)))return;
+    var m=month(value);if(m>currentMonth)return;
+    function n(h){return money(cell(close,row,h),close.name+' صف '+(i+2)+' '+h);}
+    monthly.push({month:m,fbSpend:n('إجمالي سحوبات فيسبوك'),paid:n('إجمالي المسدد'),otherExpenses:n('إجمالي اشتراكات ومصروفات أخرى'),netMovement:n('صافي الحركة'),openingBalance:n('الرصيد المرحّل (افتتاحي)'),closingBalance:n('الرصيد الختامي')});
+  });
+  monthly.sort(function(a,b){return a.month.localeCompare(b.month);});
+  var issues=[],seen={};
+  transactions.concat(otherExpensesItems).forEach(function(t){if(seen[t.dedupeKey])issues.push('حركتان لهما مفتاح مطابقة واحد: '+t.date);seen[t.dedupeKey]=true;});
+  function sum(items,m,type){return items.filter(function(t){return t.month===m&&(!type||t.type===type);}).reduce(function(total,t){return total+Math.round(t.amount*100);},0);}
+  monthly.forEach(function(m,i){
+    var matches=sum(transactions,m.month,'سحب')===Math.round(m.fbSpend*100)&&sum(transactions,m.month,'سداد')===Math.round(m.paid*100)&&sum(otherExpensesItems,m.month)===Math.round(m.otherExpenses*100);
+    var net=Math.round(m.fbSpend*100)+Math.round(m.paid*100)+Math.round(m.otherExpenses*100);
+    if(!matches||net!==Math.round(m.netMovement*100)||Math.round(m.openingBalance*100)+net!==Math.round(m.closingBalance*100))issues.push('اختلاف بين الإقفال والحركات في '+m.month);
+    if(i&&Math.round(m.openingBalance*100)!==Math.round(monthly[i-1].closingBalance*100))issues.push('الرصيد الافتتاحي لا يطابق الشهر السابق في '+m.month);
+  });
+  var days=transactions.concat(otherExpensesItems).map(function(t){return t.date;}).filter(Boolean).sort();
+  return {sourceSpreadsheetId:ADS_EXPENSES_SHEET_ID,sourceTitle:ss.getName(),generatedAt:new Date().toISOString(),lastRecordAt:days.length?days[days.length-1]:null,monthly:monthly,transactions:transactions,otherExpensesItems:otherExpensesItems,dataQualityIssues:issues};
 }
