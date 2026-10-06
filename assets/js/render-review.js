@@ -184,11 +184,13 @@
       '<p style="white-space:pre-wrap;">' + escapeHtml(item.body || "") + '</p>' +
       (item.design_file_url ? '<p><a href="' + item.design_file_url + '" target="_blank" class="btn ghost sm">فتح ملف التصميم</a></p>' : '') +
       '<div style="margin:6px 0 14px;">' + W.itemActionsHtml(item, window.SSMPDAuth.currentAdmin) + '</div>' +
+      '<div id="review-design-edit-slot"></div>' +
       reassignHtml +
       '<div style="margin:14px 0;">' + actionsHtml + '</div>' +
       W.metaLinksSectionHtml(item) +
       '<div id="comments-slot"></div></div>';
     document.body.appendChild(backdrop);
+    if(item.stage==='final_approval')window.SSMPDDesignStudio.mount(backdrop.querySelector("#review-design-edit-slot"),item);
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
     backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
     W.wireItemActions(backdrop, item, function () { render(document.getElementById("view-container")); });
@@ -292,4 +294,5 @@
 
   window.SSMPDRenderReview = { render: render };
 })();
+
 

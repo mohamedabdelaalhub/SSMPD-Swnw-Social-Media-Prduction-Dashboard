@@ -160,29 +160,40 @@
     var status = document.getElementById("upload-status");
     status.textContent = "بيرفع على أرشيف Google Drive…";
     var me = window.SSMPDAuth.currentAdmin;
+    if(backdrop.dataset.uploading)return;backdrop.dataset.uploading="1";
 
-    window.SSMPDDrive.uploadDesignFile(file, { title: item.title, contentId: item.id })
-      .then(function (res) {
-        status.textContent = "اترفع بنجاح ✓";
-        var newStage = item.stage === "in_design" || item.stage === "needs_revision" ? "final_approval" : item.stage;
-        return window.SSMPDDb.updateContentItem(item.id, {
-          design_file_url: res.fileUrl,
-          design_drive_folder: res.folderUrl,
-          stage: newStage
-        }).then(function (updated) {
-          window.SSMPDDrive.logDesignUploaded(item.id, updated.title).catch(function () {});
-          window.SSMPDDb.logUsageActivity(me.id, "رفع تصميم", file.name + " — " + item.title).catch(function () {});
-          return window.SSMPDDb.logActivity({ content_id: item.id, actor_id: me.id, action: "رفع تصميم", from_stage: item.stage, to_stage: newStage });
-        });
-      }).then(function () {
+    (async function(){
+      var res;
+      if(['image/png','image/jpeg','image/webp'].includes(file.type)){
+        status.textContent='حفظ التصميم على الحساب…';
+        if(file.size>20*1024*1024)throw new Error('اختر صورة بحجم أقل من ٢٠ ميجابايت');
+        var latest=await window.SSMPDDesignFiles.latest(item.id);
+        var local=URL.createObjectURL(file),png;
+        try{var image=await window.SSMPDDesignComposer.loadImage(local),canvas=document.createElement('canvas');canvas.width=image.width;canvas.height=image.height;canvas.getContext('2d').drawImage(image,0,0);png=await new Promise(function(resolve,reject){canvas.toBlob(function(blob){blob?resolve(blob):reject(new Error('تعذر تصدير التصميم'));},'image/png');});}finally{URL.revokeObjectURL(local);}
+        var saved=await window.SSMPDDesignFiles.save(item,png,null,{template:'uploaded-flat-image',original_name:file.name},null,latest&&latest.id);
+        res={fileUrl:saved.item.design_file_url,private:true};
+        window.SSMPDDrive.uploadDesignFile(file,{title:item.title,contentId:item.id}).catch(function(){});
+      }else{
+        // Keep the existing PDF/video/working-file upload route.
+        res=await window.SSMPDDrive.uploadDesignFile(file,{title:item.title,contentId:item.id});
+      }
+      var newStage=item.stage==='in_design'||item.stage==='needs_revision'?'final_approval':item.stage;
+      var patch={stage:newStage};if(!res.private)patch.design_file_url=res.fileUrl;if(res.folderUrl)patch.design_drive_folder=res.folderUrl;
+      var updated=await window.SSMPDDb.updateContentItem(item.id,patch);
+      window.SSMPDDrive.logDesignUploaded(item.id,updated.title).catch(function(){});
+      window.SSMPDDb.logUsageActivity(me.id,'رفع تصميم',file.name+' — '+item.title).catch(function(){});
+      await window.SSMPDDb.logActivity({content_id:item.id,actor_id:me.id,action:'رفع تصميم',from_stage:item.stage,to_stage:newStage});
+      status.textContent='تم حفظ التصميم وإرساله للمراجعة';
+    })().then(function () {
         setTimeout(function () {
           backdrop.remove();
           render(document.getElementById("view-container"));
         }, 700);
       }).catch(function (e) {
-        status.textContent = "خطأ: " + e.message;
+        backdrop.dataset.uploading="";status.textContent = "خطأ: " + e.message;
       });
   }
 
   window.SSMPDRenderDesign = { render: render };
 })();
+
