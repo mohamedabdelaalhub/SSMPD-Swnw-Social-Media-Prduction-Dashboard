@@ -32,13 +32,13 @@
     text.split('\n').forEach(function(paragraph) {
       var line = '';
       paragraph.split(/\s+/).forEach(function(word) {
-        if(ctx.measureText(word).width > width) throw new Error('حجم الخط أكبر من عرض المساحة. قلّل الحجم أو غيّر وضع العنوان.');
+        // Keep whole words and the chosen font size. Layout advice never blocks export.
         var candidate = line ? line+' '+word : word;
         if(line && ctx.measureText(candidate).width > width) { lines.push(line); line=word; }
         else line=candidate;
       }); lines.push(line);
     });
-    return {lines:lines,size:size,weight:weight,fontFamily:fontFamily,leading:leading,h:size*1.35+(lines.length-1)*size*leading};
+    return {lines:lines,w:Math.max.apply(null,lines.map(function(line){return ctx.measureText(line).width;})),size:size,weight:weight,fontFamily:fontFamily,leading:leading,h:size*1.35+(lines.length-1)*size*leading};
   }
   function scenePrompt(prompt, data) {
     var instructions = {
@@ -52,7 +52,6 @@
   async function render(canvas, scene, data, options) {
     var issues=[];
     function problem(message) {
-      if(!options || !options.preview)throw new Error(message);
       if(!issues.includes(message))issues.push(message);
     }
     await ready();
@@ -77,7 +76,8 @@
     ctx.drawImage(overlay,0,0,1080,1350);
     ctx.direction='rtl';ctx.textAlign='center';ctx.textBaseline='middle';
     var presets={bottom:{x:540,y:883,w:960},top:{x:540,y:320,w:960},right:{x:775,y:390,w:450},left:{x:305,y:390,w:450}};
-    var position=presets[data.titlePosition]?data.titlePosition:'bottom',p=presets[position];
+    var position=presets[data.titlePosition]?data.titlePosition:'bottom',p=Object.assign({},presets[position]);
+    p.w=number(data.textWidth,p.w,300,1000);
     var title=measure(ctx,data.headline,number(data.headlineSize,83,20,180),p.w,700,1.12);
     var subtitle=measure(ctx,data.subtitle,number(data.subtitleSize,42,16,100),p.w,400,1.2);
     var titleY=p.y+number(data.headlineOffset,0,-600,600);
@@ -95,7 +95,10 @@
     var blocks=[];
     function block(layout,y,x,width) {
       if(!layout)return;
-      if(y-layout.h/2<190 || y+layout.h/2>1160)problem('النص خارج المساحة الآمنة. حرّكه بعيدًا عن اللوجو والفوتر أو قلّل حجمه.');
+      width=layout.w||width;
+      if(x-width/2<0 || x+width/2>1080 || y-layout.h/2<0 || y+layout.h/2>1350)problem('جزء من النص خارج حدود الصورة وقد يظهر مقصوصًا.');
+      if(layout.w>p.w)problem('النص أعرض من منطقة النص المختارة. يمكنك زيادة عرض المنطقة أو توزيع الكلمات على سطرين.');
+      if(y-layout.h/2<190 || y+layout.h/2>1160)problem('النص قريب من اللوجو أو الفوتر. راجع شكله في المعاينة.');
       blocks.push({top:y-layout.h/2,bottom:y+layout.h/2,left:x-width/2,right:x+width/2});
     }
     block(title,titleY,p.x,p.w);block(subtitle,subtitleY,p.x,p.w);
@@ -128,8 +131,10 @@
     }
     draw(title,p.x,titleY,'#07599d',true);draw(subtitle,p.x,subtitleY,'#272727');
     if(cta){ctx.fillStyle='#ff541d';ctx.beginPath();ctx.roundRect(540-buttonWidth/2,ctaY-buttonHeight/2,buttonWidth,buttonHeight,buttonHeight/2);ctx.fill();draw(cta,540,ctaY,'#fff');}
-    canvas.designIssues=issues;
+    canvas.designWarnings=issues;
+    canvas.designIssues=[];
     return canvas;
   }
   window.SSMPDDesignComposer={render:render,loadImage:loadImage,ready:ready,scenePrompt:scenePrompt};
 })();
+

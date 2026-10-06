@@ -35,6 +35,7 @@
    '<details open><summary>حجم النص وموضعه</summary>'+
    '<label>ترتيب السطرين<select data-field="textOrder"><option value="headline_first">العنوان الكبير فوق — السطر التوضيحي تحت</option><option value="subtitle_first">السطر التوضيحي فوق — العنوان الكبير تحت</option></select></label>'+
    '<label>وضع العنوان<select data-field="titlePosition"><option value="bottom">تحت</option><option value="top">فوق</option><option value="right">يمين</option><option value="left">يسار</option></select></label>'+
+   '<label>عرض منطقة النص بالبكسل<input type="number" data-field="textWidth" min="300" max="1000" step="10" placeholder="تلقائي حسب موضع النص"></label><p>زيادة العرض تسمح بعنوان أكبر في عدد سطور أقل. حدود اللوجو والفوتر تنبيه فقط ولا تمنع الحفظ.</p>'+
    '<label>حجم خط العنوان بالبكسل<input type="number" data-field="headlineSize" min="20" max="180" step="1" value="83"></label>'+
    '<label>حجم خط السطر التوضيحي بالبكسل<input type="number" data-field="subtitleSize" min="16" max="100" step="1" value="42"></label>'+
    '<label>حجم خط زر التفاعل بالبكسل<input type="number" data-field="ctaSize" min="16" max="80" step="1" value="31"></label>'+
@@ -85,7 +86,7 @@
   function data(){var out={};root.querySelectorAll('[data-field]').forEach(function(el){out[el.dataset.field]=el.value;});return out;}
   async function paint(){
    var current=++version;valid=false;buttons();
-   try{var settings=data();if(!settings.headline.trim())throw new Error('اكتب عنوان التصميم.');var buffer=document.createElement('canvas');await C.render(buffer,scene,settings,{preview:true});if(current!==version)return;canvas.width=buffer.width;canvas.height=buffer.height;canvas.getContext('2d').drawImage(buffer,0,0);var issues=buffer.designIssues||[];valid=!!scene&&!issues.length;status.textContent=issues.length?'المعاينة تعرض القيم الحالية. '+issues.join(' ')+' الحفظ متوقف حتى تصحيح الموضع.':scene?'المعاينة جاهزة. راجع النص وموضع الصورة.':'اختر صورة أو ولّد مشهدًا لبدء المعاينة.';}
+   try{var settings=data();if(!settings.headline.trim())throw new Error('اكتب عنوان التصميم.');var buffer=document.createElement('canvas');await C.render(buffer,scene,settings,{preview:true});if(current!==version)return;canvas.width=buffer.width;canvas.height=buffer.height;canvas.getContext('2d').drawImage(buffer,0,0);var issues=buffer.designIssues||[],warnings=buffer.designWarnings||[];valid=!!scene&&!issues.length;status.textContent=issues.length?issues.join(' '):scene?'المعاينة جاهزة للحفظ. '+(warnings.length?warnings.join(' ')+' يمكنك الحفظ بالقيم الحالية.':'راجع النص وموضع الصورة.'):'اختر صورة أو ولّد مشهدًا لبدء المعاينة.';}
    catch(e){if(current!==version)return;canvas.width=1080;canvas.height=1350;status.textContent='تعذر عرض القيم الحالية. '+e.message;}buttons();
   }
   function buttons(){root.querySelectorAll('input,textarea,select,[data-library],[data-retry]').forEach(function(el){el.disabled=working||restoring||loadFailed;});root.querySelector('[data-download]').disabled=!valid||working||restoring||loadFailed;root.querySelector('[data-save]').disabled=!valid||working||restoring||loadFailed;root.querySelector('[data-generate]').disabled=working||restoring||loadFailed;}
@@ -162,4 +163,5 @@
  }
  window.SSMPDDesignStudio={mount:mount,open:open};
 })();
+
 
