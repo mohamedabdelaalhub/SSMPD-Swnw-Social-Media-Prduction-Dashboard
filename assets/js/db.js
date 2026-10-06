@@ -337,6 +337,12 @@
     },
 
     // ---------- video_jobs ----------
+    getVideoStudioCapabilities: function () {
+      return handle(client.rpc('get_video_studio_capabilities')).catch(function (e) {
+        if (['PGRST202','42883'].includes(e.code)) return {schema_version:3};
+        throw e;
+      });
+    },
     listVideoJobsForContent: function (contentId) {
       return handle(client.from("video_jobs").select("*")
         .eq("content_id", contentId)

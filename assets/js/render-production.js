@@ -291,9 +291,9 @@
     if (!h.cta) missing.push("CTA");
     if (!h.why) missing.push("Hypothesis Reason");
     if (effectiveFormat === "video") {
-      if (!h.script) missing.push("Script");
-      if (h.durationMin == null || h.durationMax == null) missing.push("Duration");
-      if (!h.videoTemplate) missing.push("Video Template");
+      if (!h.script) missing.push("السكريبت");
+      if (h.durationMin == null || h.durationMax == null) missing.push("المدة");
+      if (!h.videoTemplate) missing.push("قالب الإنتاج");
     }
     return { missing: missing, effectiveFormat: effectiveFormat };
   }
@@ -437,10 +437,10 @@ function openAgentImportModal(parentBackdrop) {
 
   function videoJobMissingFields(item) {
     var missing = [];
-    if (item.content_format !== "video") missing.push("Format = video");
-    if (!item.script_text) missing.push("Script");
-    if (item.target_duration_min_seconds == null || item.target_duration_max_seconds == null) missing.push("Duration");
-    if (!item.video_template) missing.push("Video Template");
+    if (item.content_format !== "video") missing.push("نوع المادة: فيديو");
+    if (!item.script_text) missing.push("السكريبت");
+    if (item.target_duration_min_seconds == null || item.target_duration_max_seconds == null) missing.push("المدة");
+    if (!item.video_template) missing.push("قالب الإنتاج");
     return missing;
   }
 
@@ -546,6 +546,7 @@ function openAgentImportModal(parentBackdrop) {
       var mediaMode = item.video_media_mode || "uploaded_plus_auto";
       var musicMood = item.video_music_mood || "calm";
       var storyboardEditor = null;
+      var studioEditor = null;
       var html = '<div class="section"><h4 style="margin:0 0 8px;">🎬 إنتاج الفيديو</h4>';
       var latestWorker = workers.length ? workers[0] : null;
       var workerSeenAt = latestWorker && latestWorker.last_seen_at ? new Date(latestWorker.last_seen_at) : null;
@@ -562,14 +563,15 @@ function openAgentImportModal(parentBackdrop) {
 
       html += '<div style="border:1px solid var(--c-border);border-radius:10px;padding:10px;margin-bottom:12px;">' +
         '<div style="font-weight:700;margin-bottom:8px;">📦 مواد الإنتاج <span style="font-size:11px;color:var(--c-muted);font-weight:400;">(اختياري)</span></div>' +
-        '<div style="font-size:11px;color:var(--c-muted);margin-bottom:8px;">' + (mediaMode === 'image_storyboard' ? 'صور المشاهد تُرفع بجوار كل مقطع بالأسفل. يمكنك إضافة تعليق صوتي أو موسيقى هنا.' : 'ارفع صور/فيديو/Voice-over/موسيقى. النظام يعطيها الأولوية، ولو ناقص مواد يكمل تلقائيًا حسب الوضع المختار.') + '</div>' +
+        '<div style="font-size:11px;color:var(--c-muted);margin-bottom:8px;">' + (mediaMode === 'studio_storyboard' ? 'اختر ملفًا أو مصدر توليد لكل مشهد بالأسفل. يمكن رفع تصوير الفريق هنا أو داخل المشهد. هذا المسار يحتاج تفعيل الاستوديو وتحديث العامل.' : mediaMode === 'image_storyboard' ? 'صور المشاهد تُرفع بجوار كل مقطع بالأسفل. يمكنك إضافة تعليق صوتي أو موسيقى هنا.' : 'ارفع صور/فيديو/Voice-over/موسيقى. النظام يعطيها الأولوية، ولو ناقص مواد يكمل تلقائيًا حسب الوضع المختار.') + '</div>' +
         '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin-bottom:8px;">' +
-          '<div class="field" style="margin:0;min-width:220px;"><label>Media Mode</label>' +
+          '<div class="field" style="margin:0;min-width:220px;"><label>طريقة الإنتاج</label>' +
             '<select id="video-media-mode">' +
+              '<option value="studio_storyboard"' + (mediaMode === 'studio_storyboard' ? ' selected' : '') + '>مونتاج تصوير الفريق + مشاهد مولدة</option>' +
               '<option value="image_storyboard"' + (mediaMode === 'image_storyboard' ? ' selected' : '') + '>فيديو من صور — صورة لكل مقطع</option>' +
-              '<option value="uploaded_plus_auto"' + (mediaMode === "uploaded_plus_auto" ? " selected" : "") + '>استخدم المرفوع وكمل الناقص تلقائيًا</option>' +
-              '<option value="uploaded_only"' + (mediaMode === "uploaded_only" ? " selected" : "") + '>المواد المرفوعة فقط</option>' +
-              '<option value="auto"' + (mediaMode === "auto" ? " selected" : "") + '>إنتاج تلقائي من مكتبة الوسائط</option>' +
+              '<option value="uploaded_plus_auto"' + (mediaMode === "uploaded_plus_auto" ? " selected" : "") + '>المرفوع + لقطات من مكتبة الوسائط</option>' +
+              '<option value="uploaded_only"' + (mediaMode === "uploaded_only" ? " selected" : "") + '>مونتاج تلقائي من الملفات المرفوعة فقط</option>' +
+              '<option value="auto"' + (mediaMode === "auto" ? " selected" : "") + '>مونتاج تلقائي من مكتبة الوسائط</option>' +
             '</select>' +
           '</div>' +
           '<div class="field" style="margin:0;min-width:170px;"><label>موسيقى الفيديو</label>' +
@@ -583,7 +585,7 @@ function openAgentImportModal(parentBackdrop) {
             '<select id="video-asset-type">' +
               '<option value="image">صورة</option>' +
               '<option value="video">فيديو</option>' +
-              '<option value="voiceover">Voice-over</option>' +
+              '<option value="voiceover">تعليق صوتي جاهز</option>' +
               '<option value="music">موسيقى</option>' +
             '</select>' +
           '</div>' +
@@ -610,7 +612,7 @@ function openAgentImportModal(parentBackdrop) {
       }
       html += '</div>';
 
-      if (mediaMode === 'image_storyboard') html += '<div id="video-storyboard-slot"></div>';
+      if (['image_storyboard','studio_storyboard'].includes(mediaMode)) html += '<div id="video-storyboard-slot"></div>';
       html += coverSettingsHtml(item, brandLogos);
 
       if (!latest) {
@@ -620,7 +622,7 @@ function openAgentImportModal(parentBackdrop) {
         } else {
           html += '<div style="font-size:12px;margin-bottom:10px;"><b>القالب:</b> ' + escapeHtml(item.video_template) +
             ' &nbsp; <b>المدة:</b> ' + escapeHtml(item.target_duration_min_seconds + "–" + item.target_duration_max_seconds + " ث") + '</div>' +
-            '<button class="btn sm" id="create-video-job-btn">🎬 إنشاء Video Job</button>';
+            '<button class="btn sm" id="create-video-job-btn">إنتاج الفيديو</button>';
         }
       } else {
         var fallbackProgress = { pending: 0, preparing: 15, rendering: 55, uploading: 85, ready: 100 };
@@ -665,9 +667,12 @@ function openAgentImportModal(parentBackdrop) {
       slot.innerHTML = html;
       slot.querySelector('[data-refresh-video]').onclick = function () { renderVideoJobSection(slot, item); };
       watchVideoWorker(slot, item);
+      if (mediaMode === 'studio_storyboard') {
+        storyboardEditor = window.SSMPDStudioStoryboard.mount(slot.querySelector('#video-storyboard-slot'), item, assets, function (ready) { var button = slot.querySelector('#create-video-job-btn'); if (button) button.disabled = !ready || !!(studioEditor && studioEditor.isDirty()); });
+      }
       if (mediaMode === 'image_storyboard') {
         storyboardEditor = window.SSMPDVideoStoryboard.mount(slot.querySelector('#video-storyboard-slot'), item, assets, function (ready) {
-          var button = slot.querySelector('#create-video-job-btn'); if (button) button.disabled = !ready;
+          var button = slot.querySelector('#create-video-job-btn'); if (button) button.disabled = !ready || !!(studioEditor && studioEditor.isDirty());
         });
         var typeSelect = slot.querySelector('#video-asset-type');
         typeSelect.querySelector('option[value="image"]').remove();
@@ -703,7 +708,7 @@ function openAgentImportModal(parentBackdrop) {
           feedback.textContent = 'تم حفظ إعدادات الكفر للإنتاج القادم.';
         }).catch(function (e) { feedback.textContent = e.message; }).then(function () {
           saveCover.disabled = false;
-          if (createJobButton) createJobButton.disabled = storyboardEditor ? !storyboardEditor.ready() : false;
+          if (createJobButton) createJobButton.disabled = !!(studioEditor && studioEditor.isDirty()) || (storyboardEditor ? !storyboardEditor.ready() : false);
         });
       };
 
@@ -714,8 +719,10 @@ function openAgentImportModal(parentBackdrop) {
           mediaModeSelect.disabled = true;
           var changeMode;
           try {
-            changeMode = mode === 'image_storyboard'
-              ? window.SSMPDDb.saveVideoStoryboard(item.id, item.video_storyboard && item.video_storyboard.source_script === item.script_text ? item.video_storyboard : window.SSMPDVideoStoryboard.split(item))
+            var boardApi = mode === 'studio_storyboard' ? window.SSMPDStudioStoryboard : window.SSMPDVideoStoryboard;
+            var version = mode === 'studio_storyboard' ? 2 : 1;
+            changeMode = ['image_storyboard','studio_storyboard'].includes(mode)
+              ? window.SSMPDDb.saveVideoStoryboard(item.id, item.video_storyboard && item.video_storyboard.version === version && item.video_storyboard.source_script === item.script_text ? item.video_storyboard : boardApi.split(item))
               : window.SSMPDDb.updateContentItem(item.id, { video_media_mode: mode });
           } catch (e) { mediaModeSelect.disabled = false; mediaModeSelect.value = mediaMode; alert(e.message); return; }
           changeMode.then(function (updated) {
@@ -820,9 +827,13 @@ function openAgentImportModal(parentBackdrop) {
       var createBtn = slot.querySelector("#create-video-job-btn");
       if (createBtn) {
         createBtn.onclick = function () {
+          if (createBtn.disabled) return;
+          if (studioEditor && studioEditor.isDirty()) { alert('احفظ السكريبت قبل الإنتاج.'); return; }
           if (storyboardEditor && !storyboardEditor.ready()) { alert('أكمل صور المشاهد واحفظ التعديلات قبل الإنتاج.'); return; }
           createBtn.disabled = true;
-          createBtn.textContent = "جاري إنشاء الـJob…";
+          var generated = ((item.video_storyboard || {}).scenes || []).filter(function (scene) { return item.video_media_mode === 'studio_storyboard' && ['ai_image','ai_video'].includes(scene.source); });
+          if (generated.length && !window.confirm('هذه المهمة ستولد ' + generated.filter(function(s){return s.source==='ai_image';}).length + ' صور و' + generated.filter(function(s){return s.source==='ai_video';}).length + ' مقاطع باستخدام رصيد خدمة التوليد على العامل. إرسال المهمة؟')) { createBtn.disabled = false; return; }
+          createBtn.textContent = "جاري إرسال مهمة الإنتاج…";
           window.SSMPDDb.createVideoJob(item.id).then(function () {
             if (window.SSMPDToast) window.SSMPDToast.show("تم إنشاء Video Job — جاهز لطابور عامل الفيديو", "success");
             renderVideoJobSection(slot, item);
@@ -833,6 +844,7 @@ function openAgentImportModal(parentBackdrop) {
           });
         };
       }
+      if (window.SSMPDVideoStudio) studioEditor = window.SSMPDVideoStudio.enhance(slot, item, assets, jobs, function () { renderVideoJobSection(slot, item); }, function () { return storyboardEditor && storyboardEditor.isDirty && storyboardEditor.isDirty(); });
     }).catch(function (e) {
       slot.innerHTML = '<div class="err-msg">تعذر تحميل Video Jobs: ' + escapeHtml(e.message) + '</div>';
     });

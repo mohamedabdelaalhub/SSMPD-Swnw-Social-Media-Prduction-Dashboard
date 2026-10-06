@@ -18,14 +18,14 @@ fi
 mkdir -p "$BACKUP" "$LOG_DIR" "$HOME/Library/LaunchAgents"
 STAGING="$(mktemp -d "$WORKER_DIR/update-XXXXXX")"
 trap 'rm -rf "$STAGING"' EXIT
-for file in worker.py cover_candidates.py eleven_tts.py drive_archive.py brand_identity.py image_storyboard.py; do
+for file in worker.py cover_candidates.py eleven_tts.py drive_archive.py brand_identity.py image_storyboard.py studio_storyboard.py studio_generation.py; do
   [[ -f "$WORKER_DIR/$file" ]] && cp "$WORKER_DIR/$file" "$BACKUP/"
   curl -fsSL "$SOURCE/$file" -o "$STAGING/$file"
 done
 
-python3 -m py_compile "$STAGING/worker.py" "$STAGING/cover_candidates.py" "$STAGING/eleven_tts.py" "$STAGING/drive_archive.py" "$STAGING/brand_identity.py" "$STAGING/image_storyboard.py"
+python3 -m py_compile "$STAGING/worker.py" "$STAGING/cover_candidates.py" "$STAGING/eleven_tts.py" "$STAGING/drive_archive.py" "$STAGING/brand_identity.py" "$STAGING/image_storyboard.py" "$STAGING/studio_storyboard.py" "$STAGING/studio_generation.py"
 launchctl bootout "gui/$(id -u)" "$AGENT_FILE" >/dev/null 2>&1 || true
-for file in worker.py cover_candidates.py eleven_tts.py drive_archive.py brand_identity.py image_storyboard.py; do
+for file in worker.py cover_candidates.py eleven_tts.py drive_archive.py brand_identity.py image_storyboard.py studio_storyboard.py studio_generation.py; do
   mv "$STAGING/$file" "$WORKER_DIR/$file"
 done
 
@@ -52,3 +52,4 @@ launchctl kickstart -k "gui/$(id -u)/$AGENT_LABEL"
 echo "✅ تم تحديث العامل وتشغيله تلقائيًا في الخلفية."
 echo "Backup: $BACKUP"
 echo "استخدم الداشبورد فقط لإنتاج الفيديوهات."
+

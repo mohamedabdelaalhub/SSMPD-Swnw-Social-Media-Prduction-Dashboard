@@ -7,6 +7,9 @@ from __future__ import annotations
 import argparse
 import eleven_tts
 import image_storyboard
+import studio_storyboard
+import studio_generation
+import threading
 from drive_archive import upload as archive_upload
 from brand_identity import logo_asset
 import json
@@ -260,7 +263,7 @@ def request_json(method: str, url: str, key: str, payload: Any | None = None, ex
 def claim_job(base_url: str, key: str) -> dict[str, Any] | None:
     try:
         return request_json("POST", base_url + "/rest/v1/rpc/claim_next_video_job", key,
-                            {"p_worker_id": WORKER_ID, "p_max_input_schema_version": 3})
+                            {"p_worker_id": WORKER_ID, "p_max_input_schema_version": 4})
     except WorkerError as error:
         if "PGRST202" not in str(error):
             raise
@@ -866,9 +869,15 @@ def render(job: dict[str, Any], job_dir: Path) -> tuple[Path, str]:
     if min_s <= 0 or max_s < min_s:
         raise WorkerError("Invalid video duration in job.")
 
+    if job.get("media_mode") == "studio_storyboard":
+        studio_storyboard.validate(job, downloaded=True)
+        for scene in job['storyboard']['scenes']:
+            asset = next(a for a in job['_downloaded_assets'] if str(a.get('id')) == str(scene['asset_id']))
+            if asset['asset_type'] == 'video' and scene.get('clip_start', 0) >= probe_duration(ffprobe, Path(asset['local_path'])):
+                raise WorkerError('بداية أحد المقاطع بعد نهاية ملف الفيديو. راجع المشهد قبل الإنتاج.')
     if job.get("media_mode") == "image_storyboard":
         image_storyboard.validate(job, downloaded=True)
-    if job.get("media_mode") != "image_storyboard" and not discover_media_assets(job):
+    if job.get("media_mode") not in ("image_storyboard", "studio_storyboard") and not discover_media_assets(job):
         raise WorkerError("لا توجد مشاهد فيديو معتمدة لهذا التخصص. ارفع مشاهد للمادة أو أضفها لمكتبة B-roll الخاصة بالصفحة والتخصص. توقف الإنتاج قبل توليد الصوت.")
 
     voice_path, voice = synthesize(script, job_dir, job)
@@ -891,7 +900,8 @@ def render(job: dict[str, Any], job_dir: Path) -> tuple[Path, str]:
     captioned = job_dir / "output-captioned.mp4"
     visual_out = job_dir / "output-visual.mp4"
     ass_filter = "ass=filename='" + filter_path(ass) + "'"
-    visual_background = (image_storyboard.render(ffmpeg, job, job_dir, target, spoken_duration, run)
+    visual_background = (studio_storyboard.render(ffmpeg, job, job_dir, target, spoken_duration, run)
+                         if job.get("media_mode") == "studio_storyboard" else image_storyboard.render(ffmpeg, job, job_dir, target, spoken_duration, run)
                          if job.get("media_mode") == "image_storyboard"
                          else render_visual_background(ffmpeg, job, job_dir, target))
 
@@ -960,9 +970,35 @@ def process_job(base_url: str, key: str, job: dict[str, Any]) -> None:
     (job_dir / "job.json").write_text(json.dumps(job, ensure_ascii=False, indent=2), encoding="utf-8")
 
     heartbeat(base_url, key, "working", job_id)
+    stop_heartbeat = threading.Event()
+    def keep_alive():
+        while not stop_heartbeat.wait(30):
+            heartbeat(base_url, key, "working", job_id)
+    pulse = threading.Thread(target=keep_alive, daemon=True)
+    pulse.start()
     try:
         logo_asset(job)
         job["_downloaded_assets"] = download_job_assets(base_url, key, job, job_dir)
+        if job.get('media_mode') == 'studio_storyboard':
+            def checkpoint(state):
+                update_job(base_url, key, job_id, {'generation_state': state, 'progress_stage': 'تجهيز المشاهد المولدة'})
+            def upload_scene(path, source, mime):
+                headers = api_headers(key, json_content=False)
+                headers.update({'Content-Type': mime, 'x-upsert': 'true'})
+                request = urllib.request.Request(base_url + '/storage/v1/object/video-inputs/' + urllib.parse.quote(path, safe='/'), data=source.read_bytes(), headers=headers, method='POST')
+                with urllib.request.urlopen(request, timeout=180) as response: response.read()
+                asset_id = str(uuid.uuid5(uuid.UUID(job_id), path))
+                request_json('POST', base_url + '/rest/v1/video_assets?on_conflict=id', key, {
+                    'id':asset_id, 'content_id':job['content_id'], 'created_by':job['created_by'],
+                    'asset_type':'image' if mime=='image/png' else 'video', 'asset_role':'footage',
+                    'storage_path':path, 'file_name':source.name, 'mime_type':mime, 'file_size':source.stat().st_size
+                }, {'Prefer':'resolution=merge-duplicates,return=minimal'})
+                return asset_id
+            def download_scene(path, destination):
+                request = urllib.request.Request(base_url + '/storage/v1/object/video-inputs/' + urllib.parse.quote(path, safe='/'), headers=api_headers(key, json_content=False))
+                with urllib.request.urlopen(request, timeout=180) as response: destination.write_bytes(response.read())
+            studio_generation.prepare(job, job_dir, checkpoint, upload_scene, download_scene)
+            (job_dir / 'job.json').write_text(json.dumps(job, ensure_ascii=False, indent=2), encoding='utf-8')
         update_job(base_url, key, job_id, {"status": "rendering"})
         output, voice = render(job, job_dir)
         archive_rendered_job(base_url, key, job, output)
@@ -985,6 +1021,9 @@ def process_job(base_url: str, key: str, job: dict[str, Any]) -> None:
         except Exception:
             pass
         raise
+    finally:
+        stop_heartbeat.set()
+        pulse.join(timeout=2)
 
 
 def archive_rendered_job(base_url: str, key: str, job: dict[str, Any], output: Path) -> None:
@@ -1212,4 +1251,5 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
 

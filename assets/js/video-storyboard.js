@@ -42,7 +42,7 @@
     var assets = initialAssets.slice(), board = item.video_storyboard ? JSON.parse(JSON.stringify(item.video_storyboard)) : null;
     var dirty = false, busy = false, message = '';
     function ready() { return !busy && !dirty && !problem(item, board, assets); }
-    function signal() { changed(ready()); }
+    function signal() { host.classList.toggle('confirm-pending', dirty || busy); changed(ready()); }
     function draw() {
       if (!host.isConnected) return;
       var invalid = problem(item, board, assets);
@@ -103,7 +103,8 @@
       finally { busy = false; draw(); }
     }
     draw();
-    return { ready: ready };
+    return { ready: ready, isDirty: function () { return dirty || busy; } };
   }
   window.SSMPDVideoStoryboard = { split: split, problem: problem, mount: mount };
 })();
+
