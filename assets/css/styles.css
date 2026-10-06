@@ -479,3 +479,16 @@ table.simple.acc-table td.acc-col-num{text-align:left;}
 @media(prefers-reduced-motion:reduce){.design-ai-actions .btn{transition:none;}}
 
 .design-ai-actions .btn[hidden]{display:none;}
+
+/* Content management: keep columns and review dialogs within phone width. */
+@media (max-width:720px){
+  .content-review-board{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;width:100%;min-width:0}
+  .content-review-board .kanban-col{width:100%;min-width:0;min-height:0}
+  .content-review-board .kanban-card{min-width:0;overflow-wrap:anywhere}
+  .content-review-modal{width:100%;min-width:0;max-width:100%;max-height:calc(100dvh - 32px);overscroll-behavior:contain}
+  .content-review-modal .modal-head{align-items:flex-start;gap:10px}
+  .content-review-modal .modal-head h3{min-width:0;overflow-wrap:anywhere;font-size:18px}
+  .content-review-modal .modal-close{flex:0 0 44px;min-height:44px}
+  .content-review-modal p,.content-review-modal a,.content-review-modal .comment{overflow-wrap:anywhere}
+  .content-review-modal input,.content-review-modal select,.content-review-modal textarea{min-width:0;max-width:100%;font-size:16px}
+}

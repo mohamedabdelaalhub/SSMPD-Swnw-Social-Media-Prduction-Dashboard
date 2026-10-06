@@ -61,7 +61,7 @@
             '</ul></div>';
         }
 
-        html += '<div class="kanban">';
+        html += '<div class="kanban content-review-board">';
         W.STAGES.forEach(function (s) {
           var colItems = items.filter(function (i) { return i.stage === s.key; });
           html += '<div class="kanban-col"><h4>' + s.label + '<span class="count">' + colItems.length + '</span></h4>';
@@ -173,7 +173,7 @@
         '<button class="btn ghost sm" id="rv-reassign-btn">تغيير جهة التنفيذ</button></div></div>';
     }
 
-    backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>' + escapeHtml(item.title) + W.brandBadgeHtml(item.brand) + W.specialtyBadgeHtml(item.specialty) + '</h3>' +
+    backdrop.innerHTML = '<div class="modal content-review-modal"><div class="modal-head"><h3>' + escapeHtml(item.title) + W.brandBadgeHtml(item.brand) + W.specialtyBadgeHtml(item.specialty) + '</h3>' +
       '<button class="modal-close">×</button></div>' +
       W.contentFormatDetailsHtml(item) +
       '<div class="status-pill approval" style="margin-bottom:12px;">' + W.stageLabel(item.stage) + '</div>' +
