@@ -97,6 +97,73 @@
     });
   }
 
+  // Read-only archive queries use the signed-in client. Existing leads RLS remains authoritative.
+  // Registration (received_by), assignment and last contact are different actions.
+  var registrationCache = null, registrationRevision = 0;
+  function invalidateRegistration() { registrationCache = null; registrationRevision += 1; }
+  function archiveDates(query, f) {
+    if (f.date_from) query = query.gte('created_at', f.date_from);
+    if (f.date_to) {
+      var end = new Date(f.date_to + 'T00:00:00Z');
+      if (!Number.isFinite(end.getTime())) throw new Error('تاريخ غير صالح');
+      end.setUTCDate(end.getUTCDate() + 1);
+      query = query.lt('created_at', end.toISOString());
+    }
+    return query;
+  }
+  function listLeadArchive(params) {
+    var f = params || {}, size = Math.min(50, Math.max(1, Number(f.page_size) || 20)), page = Math.max(1, Number(f.page) || 1);
+    var query = client.from('leads').select('id, customer_name, phone_raw, phone_normalized, source, current_status, patient_type, assigned_to, received_by, interested_service, requested_department, priority, booking_reference, booking_date, booked_by, created_at, closed_at, missing_data_completed_at', { count: 'exact' }).order('created_at', { ascending: false }).order('id', { ascending: false });
+    if (f.status) query = query.eq('current_status', f.status);
+    if (f.received_by === '__unrecorded__') query = query.is('received_by', null);
+    else if (f.received_by) query = query.eq('received_by', f.received_by);
+    if (f.search) {
+      var pattern = JSON.stringify('%' + String(f.search).replace(/[\\%_]/g, '\\$&') + '%');
+      query = query.or('customer_name.ilike.' + pattern + ',phone_raw.ilike.' + pattern + ',phone_normalized.ilike.' + pattern);
+    }
+    query = archiveDates(query, f);
+    return query.range((page - 1) * size, page * size - 1).then(function (r) {
+      if (r.error) throw r.error;
+      return { leads: r.data || [], total: r.count || 0, page: page, page_size: size };
+    });
+  }
+  async function getLeadRegistrationStats(filters, employees, force) {
+    if (force) invalidateRegistration();
+    var revision = registrationRevision;
+    var f = filters || {}, admin = window.SSMPDAuth && window.SSMPDAuth.currentAdmin;
+    var key = JSON.stringify([admin && admin.id, f.date_from || '', f.date_to || '', (employees || []).map(function (e) { return e.id; })]);
+    if (!force && registrationCache && registrationCache.key === key && Date.now() - registrationCache.at < 30000) return registrationCache.data;
+    var counts = Object.create(null), last = Object.create(null), seen = new Set(), offset = 0, size = 500, expected = null;
+    while (true) {
+      var query = archiveDates(client.from('leads').select('id, received_by, created_at', { count: 'exact' }).order('id', { ascending: true }), f);
+      var result = await query.range(offset, offset + size - 1);
+      if (result.error) throw result.error;
+      if (expected === null) expected = result.count;
+      (result.data || []).forEach(function (lead) {
+        if (seen.has(lead.id)) return;
+        seen.add(lead.id);
+        var id = lead.received_by || '__unrecorded__';
+        counts[id] = (counts[id] || 0) + 1;
+        if (!last[id] || lead.created_at > last[id]) last[id] = lead.created_at;
+      });
+      if ((result.data || []).length < size) break;
+      offset += size;
+    }
+    if (expected !== null && expected !== seen.size) throw new Error('الليدز اتغيرت أثناء تحميل المؤشرات. اضغط تحديث.');
+    var names = await handle(client.rpc('list_admins_basic'));
+    var byId = Object.create(null);
+    (names || []).forEach(function (e) { byId[e.id] = e; });
+    var ids = Object.keys(counts);
+    (employees || []).forEach(function (e) { if (!ids.includes(e.id)) ids.push(e.id); if (!byId[e.id]) byId[e.id] = e; });
+    var rows = ids.map(function (id) {
+      var profile = byId[id], count = counts[id] || 0;
+      return { employee_id: id === '__unrecorded__' ? null : id, employee_name: id === '__unrecorded__' ? 'بدون مسجل' : profile ? profile.name : 'حساب غير متاح (' + id.slice(0, 8) + ')', active: profile ? profile.active !== false : false, count: count, percentage: seen.size ? count * 100 / seen.size : 0, last_registered_at: last[id] || null };
+    }).sort(function (a, b) { return b.count - a.count || a.employee_name.localeCompare(b.employee_name, 'ar'); });
+    var data = { total: seen.size, employees: rows, registrars: (names || []).filter(function (e) { return counts[e.id] || (employees || []).some(function (x) { return x.id === e.id; }); }) };
+    if (revision === registrationRevision) registrationCache = { key: key, at: Date.now(), data: data };
+    return data;
+  }
+
   var Db = {
     client: client,
 
@@ -982,8 +1049,11 @@
 
     // ---------- إدارة الليدز (Edge Functions) ----------
     createLead: function (payload) {
+      invalidateRegistration();
       return edgeFetch("leads-create", { method: "POST", json: payload });
     },
+    listLeadArchive: listLeadArchive,
+    getLeadRegistrationStats: getLeadRegistrationStats,
     listLeads: function (params) {
       return edgeFetch("leads-list" + qs(params));
     },
@@ -997,6 +1067,7 @@
     // can_delete_leads مفعّلة (RLS "leads delete" في setup.sql هي الحارس
     // الحقيقي، الزرار في الواجهة بيتخفي بس لغير المصرح له)
     deleteLead: function (id) {
+      invalidateRegistration();
       return handle(client.from("leads").delete().eq("id", id));
     },
     // استكمال بيانات عميل "ناقص بيانات" (اسم/تليفون كان ناقص وقت الرفع بالإكسيل)
@@ -1022,6 +1093,7 @@
       return edgeFetch("leads-list" + qs({ stats: 1, from: f.from || undefined, to: f.to || undefined }));
     },
     bulkCreateLeads: function (rows) {
+      invalidateRegistration();
       return edgeFetch("leads-bulk-create", { method: "POST", json: { leads: rows } });
     },
     uploadLeadInvoice: function (formData) {
@@ -1118,7 +1190,7 @@
     subscribeTable: function (table, onChange) {
       var channel = client
         .channel("ssmpd-" + table + "-" + Math.random().toString(36).slice(2))
-        .on("postgres_changes", { event: "*", schema: "public", table: table }, onChange)
+        .on("postgres_changes", { event: "*", schema: "public", table: table }, function (payload) { if (table === "leads") invalidateRegistration(); onChange(payload); })
         .subscribe();
       return channel;
     },
@@ -1191,4 +1263,5 @@
     "إلى أي مدى قد ترشح عيادات سونو لعائلتك وأصدقائك؟"
   ];
 })();
+
 

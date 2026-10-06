@@ -39,7 +39,7 @@
   var CLOSED_STATUSES = ["service_done", "rejected", "no_response", "invalid_number"];
 
   function escapeHtml(s) {
-    return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   }
   function fmtDate(iso) {
     if (!iso) return "—";
@@ -666,28 +666,69 @@
     }).catch(function (e) { view.innerHTML = '<div class="err-msg">خطأ: ' + e.message + '</div>'; });
   }
 
+  function registrarName(id) {
+    if (!id) return 'بدون مسجل';
+    var person = (state.archiveRegistrars || state.employees).filter(function (e) { return e.id === id; })[0];
+    return person ? person.name : 'حساب غير متاح (' + String(id).slice(0, 8) + ')';
+  }
+  function loadArchiveRegistrationStats(view, container, s, force) {
+    var panel = view.querySelector('#ar-registration-stats');
+    window.SSMPDDb.getLeadRegistrationStats({ date_from: s.dateFrom, date_to: s.dateTo }, state.employees, force).then(function (stats) {
+      if (!view.isConnected || view.querySelector('#ar-registration-stats') !== panel) return;
+      state.archiveRegistrars = stats.registrars;
+      var select = view.querySelector('#ar-employee');
+      if (select) {
+        select.innerHTML = '<option value="">كل الموظفين (مسجل الليد)</option>' + stats.employees.map(function (e) {
+          var id = e.employee_id || '__unrecorded__';
+          return '<option value="' + escapeHtml(id) + '">' + escapeHtml(e.employee_name) + ' (' + fmtNum(e.count) + ')</option>';
+        }).join('') + (stats.employees.some(function (e) { return !e.employee_id; }) ? '' : '<option value="__unrecorded__">بدون مسجل (0)</option>');
+        select.value = s.bookedBy;
+      }
+      view.querySelectorAll('[data-registrar]').forEach(function (cell) { cell.textContent = registrarName(cell.getAttribute('data-registrar')); });
+      var period = s.dateFrom || s.dateTo ? 'الفترة ' + (s.dateFrom || 'البداية') + ' — ' + (s.dateTo || 'اليوم') : 'كل الفترات';
+      var html = '<div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:8px;"><div><h3 style="margin:0;">تسجيل الليدز حسب الموظف</h3><p style="font-size:12px;color:var(--c-muted);margin:4px 0;">' + escapeHtml(period) + ' · إجمالي التسجيلات ' + fmtNum(stats.total) + '</p></div><button class="btn ghost sm" id="ar-refresh-stats">تحديث</button></div>';
+      html += '<p style="font-size:12px;color:var(--c-muted);">كل ليد يُحسب مرة واحدة لمسجله، سواء إدخال يدوي أو رفع إكسيل. المؤشرات تشمل كل الحالات؛ فلتر الموظف والبحث يغيّران القائمة فقط.</p>';
+      if (!stats.employees.length) html += '<p>لا توجد تسجيلات في هذه الفترة.</p>';
+      else {
+        html += '<div style="overflow-x:auto;"><table class="simple"><thead><tr><th>الموظف</th><th>الليدز المسجلة</th><th>نسبته من الإجمالي</th><th>آخر تسجيل</th><th></th></tr></thead><tbody>';
+        stats.employees.forEach(function (e) {
+          html += '<tr><td>' + escapeHtml(e.employee_name) + (e.employee_id && !e.active ? '<small style="display:block;color:var(--c-muted);">حساب غير نشط</small>' : '') + '</td><td>' + fmtNum(e.count) + '</td><td style="min-width:130px;">' + e.percentage.toFixed(1) + '%<div style="height:4px;background:var(--c-border);border-radius:4px;margin-top:5px;"><div style="height:4px;background:var(--c-primary,#0F369D);border-radius:4px;width:' + Math.min(100, e.percentage) + '%;"></div></div></td><td style="font-size:11px;">' + fmtDate(e.last_registered_at) + '</td><td><button class="btn ghost sm" data-registrar-filter="' + escapeHtml(e.employee_id || '__unrecorded__') + '">عرض الليدز</button></td></tr>';
+        });
+        html += '</tbody></table></div>';
+      }
+      panel.innerHTML = html;
+      panel.querySelector('#ar-refresh-stats').onclick = function () { renderArchiveScreen(view, container, true); };
+      panel.querySelectorAll('[data-registrar-filter]').forEach(function (button) { button.onclick = function () { s.bookedBy = button.getAttribute('data-registrar-filter'); s.search = ''; s.status = ''; s.page = 1; renderArchiveScreen(view, container); }; });
+    }).catch(function (error) {
+      if (!view.isConnected || view.querySelector('#ar-registration-stats') !== panel) return;
+      panel.innerHTML = '<h3>تسجيل الليدز حسب الموظف</h3><p class="err-msg">تعذر تحميل المؤشرات: ' + escapeHtml(error.message) + '</p><button class="btn ghost sm" id="ar-refresh-stats">إعادة المحاولة</button>';
+      panel.querySelector('#ar-refresh-stats').onclick = function () { renderArchiveScreen(view, container, true); };
+    });
+  }
+
   // ============ ٥) أرشيف الليدز ============
-  function renderArchiveScreen(view, container) {
+  function renderArchiveScreen(view, container, forceStats) {
     view.innerHTML = '<div class="loading">بيحمّل…</div>';
-    var s = state.archive;
-    window.SSMPDDb.listLeads({
-      status: s.status || undefined, search: s.search || undefined, assigned_to: s.bookedBy || undefined,
+    var s = state.archive, request = state.archiveRequest = (state.archiveRequest || 0) + 1;
+    window.SSMPDDb.listLeadArchive({
+      status: s.status || undefined, search: s.search || undefined, received_by: s.bookedBy || undefined,
       date_from: s.dateFrom || undefined, date_to: s.dateTo || undefined,
       page: s.page, page_size: s.pageSize
     }).then(function (res) {
+      if (state.archiveRequest !== request || !view.isConnected) return;
       var leads = res.leads || [];
       var total = res.total || 0;
       var totalPages = Math.max(1, Math.ceil(total / s.pageSize));
 
-      var html = '<div class="section">';
+      var html = '<div id="ar-registration-stats" class="section"><p class="loading">جارٍ حساب تسجيلات الموظفين…</p></div><div class="section">';
       html += '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">' +
         '<input id="ar-search" placeholder="بحث بالاسم / الهاتف" value="' + escapeHtml(s.search) + '" style="flex:1;min-width:200px;padding:9px 12px;border-radius:10px;border:1px solid var(--c-border);">' +
         '<select id="ar-status"><option value="">كل الحالات</option>' +
         Object.keys(STATUS_LABELS).map(function (k) { return '<option value="' + k + '" ' + (s.status === k ? "selected" : "") + '>' + STATUS_LABELS[k] + '</option>'; }).join("") +
         '</select>' +
-        '<select id="ar-employee"><option value="">كل الموظفين (آخر رد)</option>' +
-        state.employees.map(function (e) { return '<option value="' + e.id + '" ' + (s.bookedBy === e.id ? "selected" : "") + '>' + escapeHtml(e.name) + '</option>'; }).join("") +
-        '</select>' +
+        '<select id="ar-employee"><option value="">كل الموظفين (مسجل الليد)</option>' +
+        (state.archiveRegistrars || state.employees).map(function (e) { return '<option value="' + e.id + '" ' + (s.bookedBy === e.id ? "selected" : "") + '>' + escapeHtml(e.name) + '</option>'; }).join("") +
+        '<option value="__unrecorded__" ' + (s.bookedBy === '__unrecorded__' ? 'selected' : '') + '>بدون مسجل</option></select>' +
         '<label style="font-size:11px;color:var(--c-muted);">من <input type="date" id="ar-date-from" value="' + escapeHtml(s.dateFrom || "") + '" style="padding:6px 8px;border-radius:8px;border:1px solid var(--c-border);"></label>' +
         '<label style="font-size:11px;color:var(--c-muted);">إلى <input type="date" id="ar-date-to" value="' + escapeHtml(s.dateTo || "") + '" style="padding:6px 8px;border-radius:8px;border:1px solid var(--c-border);"></label>' +
         '<button class="btn ghost sm" id="ar-search-btn">بحث</button>' +
@@ -697,11 +738,12 @@
       if (!leads.length) {
         html += '<p style="color:var(--c-muted);font-size:13px;">مفيش ليدز مطابقة.</p>';
       } else {
-        html += '<table class="simple"><thead><tr><th>العميل</th><th>الهاتف</th><th>المصدر</th><th>الحالة</th><th>تاريخ الإضافة</th><th></th></tr></thead><tbody>';
+        html += '<table class="simple"><thead><tr><th>العميل</th><th>الهاتف</th><th>المصدر</th><th>الحالة</th><th>مسجل الليد</th><th>تاريخ الإضافة</th><th></th></tr></thead><tbody>';
         leads.forEach(function (l) {
           html += '<tr><td>' + escapeHtml(l.customer_name) + '</td><td>' + escapeHtml(l.phone_raw || l.phone_normalized || "—") + '</td>' +
             '<td>' + (SOURCE_LABELS[l.source] || l.source) + '</td>' +
             '<td><span class="status-pill ' + (STATUS_PILL_CLASS[l.current_status] || "draft") + '">' + (STATUS_LABELS[l.current_status] || l.current_status) + '</span></td>' +
+            '<td data-registrar="' + escapeHtml(l.received_by || '') + '">' + escapeHtml(registrarName(l.received_by)) + '</td>' +
             '<td style="font-size:11px;color:var(--c-muted);">' + fmtDate(l.created_at) + '</td>' +
             '<td><button class="btn ghost sm" data-open="' + l.id + '">فتح</button></td></tr>';
         });
@@ -710,6 +752,7 @@
       }
       html += '</div>';
       view.innerHTML = html;
+      loadArchiveRegistrationStats(view, container, s, forceStats);
 
       var arApplyFilters = function () {
         s.search = document.getElementById("ar-search").value.trim();
@@ -735,11 +778,11 @@
       var exportBtn = document.getElementById("ar-export-xlsx");
       if (exportBtn) exportBtn.onclick = function () {
         exportBtn.disabled = true; exportBtn.textContent = "بيجهّز…";
-        exportLeadsArchiveExcel({ status: s.status || undefined, search: s.search || undefined, assigned_to: s.bookedBy || undefined, date_from: s.dateFrom || undefined, date_to: s.dateTo || undefined }, total)
+        exportLeadsArchiveExcel({ status: s.status || undefined, search: s.search || undefined, received_by: s.bookedBy || undefined, date_from: s.dateFrom || undefined, date_to: s.dateTo || undefined }, total)
           .then(function () { exportBtn.disabled = false; exportBtn.textContent = "⬇ تصدير إكسيل (" + total + ")"; })
           .catch(function (e) { T.show("خطأ: " + e.message, "error"); exportBtn.disabled = false; exportBtn.textContent = "⬇ تصدير إكسيل (" + total + ")"; });
       };
-    }).catch(function (e) { view.innerHTML = '<div class="err-msg">خطأ: ' + e.message + '</div>'; });
+    }).catch(function (e) { if (state.archiveRequest !== request || !view.isConnected) return; view.innerHTML = '<div class="err-msg">خطأ: ' + e.message + '</div>'; });
   }
 
   // ---------- تصدير كل الليدز المطابقة لفلتر أرشيف الليدز (بيدور على كل الصفحات، ٥٠ في المرة) ----------
@@ -749,16 +792,16 @@
     var totalPages = Math.max(1, Math.ceil((total || 0) / pageSize));
     var pagePromises = [];
     for (var p = 1; p <= totalPages; p++) {
-      pagePromises.push(window.SSMPDDb.listLeads(Object.assign({}, filters, { page: p, page_size: pageSize })));
+      pagePromises.push(window.SSMPDDb.listLeadArchive(Object.assign({}, filters, { page: p, page_size: pageSize })));
     }
     return Promise.all(pagePromises).then(function (results) {
       var allLeads = [];
       results.forEach(function (r) { allLeads = allLeads.concat(r.leads || []); });
-      var rows = [["العميل", "الهاتف", "المصدر", "الحالة", "تاريخ الإضافة", "رقم الحجز"]];
+      var rows = [["العميل", "الهاتف", "المصدر", "الحالة", "مسجل الليد", "تاريخ الإضافة", "رقم الحجز"]];
       allLeads.forEach(function (l) {
         rows.push([
           l.customer_name, l.phone_raw || l.phone_normalized || "", (SOURCE_LABELS[l.source] || l.source),
-          (STATUS_LABELS[l.current_status] || l.current_status), fmtDate(l.created_at), l.booking_reference || ""
+          (STATUS_LABELS[l.current_status] || l.current_status), registrarName(l.received_by), fmtDate(l.created_at), l.booking_reference || ""
         ]);
       });
       var wb = XLSX.utils.book_new();
@@ -1176,3 +1219,4 @@
 
   window.SSMPDRenderLeads = { render: render, openSearch: openSearch };
 })();
+
