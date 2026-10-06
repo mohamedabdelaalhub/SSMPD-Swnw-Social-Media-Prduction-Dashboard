@@ -603,6 +603,7 @@
   }
 
   function switchTab(tab) {
+    removeRefreshNotice();
     currentTab = tab;
     try { sessionStorage.setItem(ACTIVE_TAB_KEY, tab); } catch (e) {}
     document.querySelectorAll(".tab-btn").forEach(function (b) {
@@ -624,7 +625,8 @@
     if (mmTabs) mmTabs.style.display = isSeparateModule ? "none" : "";
 
     var renderer = RENDERERS[tab];
-    if (renderer) renderer.render(document.getElementById("view-container"));
+    var previousView=document.getElementById('view-container');
+    if(renderer && previousView){var freshView=previousView.cloneNode(false);previousView.replaceWith(freshView);renderer.render(freshView);}
   }
 
   // جسر تنقّل بسيط للربط العكسي (تاب Meta Ads → فتح المادة المرتبطة) — بيستخدم
@@ -634,35 +636,58 @@
     switchTab("review");
   };
 
-  // بيتحقق إن مفيش المستخدم بيكتب/مختار حاجة دلوقتي في الشاشة الحالية (كومنت لسه ما اتبعتش،
-  // فورم جدولة نشر لسه مليان...) عشان الريفريش التلقائي ميمسحوش من تحته
+  var editedFields = new WeakSet();
+  function rememberEdit(event) {
+    var view=document.getElementById('view-container'),field=event.target;
+    if(view && view.contains(field) && field.matches('input,textarea,select,[contenteditable="true"]'))editedFields.add(field);
+  }
+  document.addEventListener('input',rememberEdit,true);
+  document.addEventListener('change',rememberEdit,true);
   function isUserEditing() {
-    var el = document.getElementById("view-container");
-    if (!el) return false;
-    var active = document.activeElement;
-    if (active && el.contains(active)) {
-      var tag = active.tagName;
-      if (tag === "TEXTAREA" || tag === "SELECT") return true;
-      if (tag === "INPUT" && ["checkbox", "radio", "file", "button", "submit"].indexOf(active.type) === -1) return true;
-    }
-    var fields = el.querySelectorAll("textarea, input[type=text], input[type=number], input[type=date], input[type=datetime-local], input[type=email], input[type=password], input[type=search]");
-    for (var i = 0; i < fields.length; i++) {
-      if (fields[i].value) return true;
-    }
-    // زرار في وضع "متأكد؟" (تأكيد بضغطة تانية) — ما نمسحوش الحالة دي من تحت المستخدم
-    if (el.querySelector(".confirm-pending")) return true;
-    return false;
+    var view=document.getElementById('view-container');if(!view)return false;
+    var active=document.activeElement;
+    if(active && view.contains(active) && active.matches('input,textarea,select,[contenteditable="true"]'))return true;
+    return Array.from(view.querySelectorAll('input,textarea,select,[contenteditable="true"]')).some(function(field){return editedFields.has(field) || (field.type==='file' && field.files && field.files.length);}) || !!view.querySelector('.confirm-pending');
   }
 
-  // تحديث لحظي: أعد رسم التاب الحالي لو بيعرض بيانات محتوى، وما فيش مودال مفتوح، ومفيش
-  // إجراء/بيانات لسه المستخدم شغال عليها (كتابة كومنت، فورم جدولة، ...) دلوقتي
-  function refreshCurrentTab() {
-    if (["summary", "production", "review", "design", "publish", "archive", "patients", "leads", "contracting_entities"].indexOf(currentTab) !== -1) {
-      var el = document.getElementById("view-container");
-      if (el && !document.querySelector(".modal-backdrop") && !isUserEditing()) {
-        RENDERERS[currentTab].render(el);
+  // Realtime must never replace a screen which the user is reading or editing.
+  // Keep notifications live, and let the user decide when to redraw the current view.
+  function removeRefreshNotice() {
+    var notice = document.getElementById('ssmpd-refresh-notice');
+    if (notice) notice.remove();
+  }
+  function showRefreshNotice() {
+    if (!currentTab || document.getElementById('ssmpd-refresh-notice')) return;
+    var notice = document.createElement('div');
+    notice.id = 'ssmpd-refresh-notice';notice.setAttribute('role','status');
+    notice.style.cssText='position:fixed;bottom:18px;left:18px;z-index:90;display:flex;gap:10px;align-items:center;max-width:calc(100vw - 36px);padding:10px 12px;background:#fff;border:1px solid #cdd6e3;border-radius:10px;box-shadow:0 4px 20px #16212e22;font-size:12px;direction:rtl';
+    notice.innerHTML='<span>وصلت تحديثات للبيانات</span><button type="button" class="btn ghost sm" style="padding:6px 10px;min-height:34px;">تحديث الشاشة</button>';
+    notice.querySelector('button').onclick=function(){
+      var dialogs=Array.from(document.querySelectorAll('.modal-backdrop,.modal-overlay,.modal,[role="dialog"]')).some(function(el){return !el.hidden && getComputedStyle(el).display!=='none' && getComputedStyle(el).visibility!=='hidden';});
+      if(dialogs){window.SSMPDToast.show('احفظ المدخلات واقفل النافذة قبل تحديث الشاشة.','info');return;}
+      if(isUserEditing() && !window.confirm('تحديث الشاشة قد يمسح مدخلات لم تحفظها. هل حفظت البيانات وتريد المتابعة؟'))return;
+      var tab=currentTab,view=document.getElementById('view-container'),renderer=RENDERERS[tab];
+      if(!view||!renderer)return;
+      var x=window.scrollX,y=window.scrollY;
+      var nested=Array.from(view.querySelectorAll('[id]')).filter(function(el){return el.scrollTop||el.scrollLeft;}).map(function(el){return {id:el.id,top:el.scrollTop,left:el.scrollLeft};});
+      var previousView=view;view=previousView.cloneNode(false);previousView.replaceWith(view);
+      var timer,deadline,observer=new MutationObserver(function(){clearTimeout(timer);timer=setTimeout(restore,120);});
+      function restore(){
+        if(currentTab!==tab||!view.isConnected){finish();return;}
+        if(view.querySelector('.loading'))return;
+        nested.forEach(function(pos){var el=document.getElementById(pos.id);if(el&&view.contains(el)){el.scrollTop=pos.top;el.scrollLeft=pos.left;}});
+        window.scrollTo(x,y);finish();
       }
-    }
+      function finish(){observer.disconnect();clearTimeout(timer);clearTimeout(deadline);}
+      observer.observe(view,{childList:true,subtree:true});deadline=setTimeout(finish,10000);
+      removeRefreshNotice();renderer.render(view);timer=setTimeout(restore,120);
+    };
+    document.body.appendChild(notice);
+  }
+  function refreshCurrentTab(payload) {
+    // The 45-second fallback refreshes notification counts only.
+    // A real database event adds a notice without touching inputs, tabs or scroll.
+    if(payload && payload.eventType)showRefreshNotice();
     refreshNotifBadge();
   }
 
@@ -791,3 +816,4 @@
     });
   });
 })();
+
