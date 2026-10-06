@@ -149,7 +149,7 @@
     } else if (field === "otherExpenses") {
       var sumOe = rows.reduce(function (s, t) { return s + Number(t.amount || 0); }, 0);
       bodyHtml = '<p style="font-size:12px;color:var(--c-muted);">عدد البنود: ' + rows.length + ' — الإجمالي: ' + fmtNum(sumOe) + ' ج.م</p>' +
-        '<div style="max-height:360px;overflow:auto;"><table class="simple"><thead><tr><th>التاريخ</th><th>الجهة أو الاشتراك</th><th>القيمة</th><th>البيان</th></tr></thead><tbody>' +
+        "<div style=\"max-height:360px;overflow:auto;\"><table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE-->التاريخ</th><th>الجهة أو الاشتراك</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%82%D9%8A%D9%85%D8%A9-->القيمة</th><th>البيان</th></tr></thead><tbody>" +
         rows.map(function (t) {
           return '<tr><td>' + fmtTxDate(t.date) + '</td><td>' + escapeHtml(t.vendor || "—") + '</td>' +
             '<td>' + fmtNum(t.amount) + '</td><td>' + escapeHtml(t.description || "—") + '</td></tr>';
@@ -157,7 +157,7 @@
     } else {
       var sum = rows.reduce(function (s, t) { return s + Number(t.amount || 0); }, 0);
       bodyHtml = '<p style="font-size:12px;color:var(--c-muted);">عدد الحركات: ' + rows.length + ' — الإجمالي: ' + fmtNum(sum) + ' ج.م</p>' +
-        '<div style="max-height:360px;overflow:auto;"><table class="simple"><thead><tr><th>التاريخ</th><th>الوقت</th><th>النوع</th><th>القيمة</th><th>البيان</th><th>الكود</th></tr></thead><tbody>' +
+        "<div style=\"max-height:360px;overflow:auto;\"><table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE-->التاريخ</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%88%D9%82%D8%AA-->الوقت</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%86%D9%88%D8%B9-->النوع</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%82%D9%8A%D9%85%D8%A9-->القيمة</th><th>البيان</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%83%D9%88%D8%AF-->الكود</th></tr></thead><tbody>" +
         rows.map(function (t) {
           return '<tr><td>' + fmtTxDate(t.date) + '</td><td>' + escapeHtml(t.time || "—") + '</td><td>' + escapeHtml(t.type || "—") + '</td>' +
             '<td>' + fmtNum(t.amount) + '</td><td>' + escapeHtml(t.description || "—") + '</td><td>' + escapeHtml(t.opCode || "—") + '</td></tr>';
@@ -197,7 +197,7 @@
     }
     var shown = filterVal ? months.filter(function (m) { return String(m.month) === filterVal; }) : months;
     if (!shown.length) return '<div class="empty-state">مفيش بيانات لهذا الشهر.</div>';
-    return '<table class="simple"><thead><tr><th>الشهر</th><th>سحوبات فيسبوك</th><th>المسدد</th><th>مصروفات أخرى</th><th>الرصيد الختامي</th></tr></thead><tbody>' +
+    return "<table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%B4%D9%87%D8%B1-->الشهر</th><th>سحوبات فيسبوك</th><th>المسدد</th><th>مصروفات أخرى</th><th>الرصيد الختامي</th></tr></thead><tbody>" +
       shown.map(monthlyRowHtml).join("") + '</tbody></table>';
   }
 
@@ -240,10 +240,10 @@
         if (latestAdsBatchTotals && lastMonth.fbSpend) {
           var diff = Math.abs(lastMonth.fbSpend) - latestAdsBatchTotals.spent;
           html += '<h4 style="margin-top:14px;font-size:13px;">مقارنة مع آخر تقرير Meta Ads مستورد</h4>' +
-            '<table class="simple"><thead><tr><th>المصدر</th><th>المبلغ</th></tr></thead><tbody>' +
+            "<table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%B5%D8%AF%D8%B1-->المصدر</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%A8%D9%84%D8%BA-->المبلغ</th></tr></thead><tbody>" +
             '<tr><td>سحوبات البنك الفعلية (' + escapeHtml(String(lastMonth.month)) + ')</td><td>' + fmtNum(lastMonth.fbSpend) + ' ج.م</td></tr>' +
             '<tr><td>المبلغ المُنفق حسب تقرير Meta Ads</td><td>' + fmtNum(latestAdsBatchTotals.spent) + ' ج.م</td></tr>' +
-            '<tr><td>الفرق</td><td class="' + (diff > 0 ? "up" : diff < 0 ? "down" : "") + '">' + (diff > 0 ? "▲ " : diff < 0 ? "▼ " : "") + fmtNum(Math.abs(diff)) + ' ج.م</td></tr>' +
+            "<tr><td> <!--ssmpd-i18n:%D8%A7%D9%84%D9%81%D8%B1%D9%82-->الفرق</td><td class=\"" + (diff > 0 ? "up" : diff < 0 ? "down" : "") + '">' + (diff > 0 ? "▲ " : diff < 0 ? "▼ " : "") + fmtNum(Math.abs(diff)) + ' ج.م</td></tr>' +
             '</tbody></table>' +
             '<p style="font-size:11px;color:var(--c-muted);margin-top:6px;">لو الفرق كبير، السبب غالباً اختلاف فترة تقرير Meta Ads عن الشهر البنكي، أو رسوم/عمولات إضافية على السحب.</p>';
         }
@@ -262,7 +262,7 @@
       html += '<div style="text-align:left;margin-top:10px;"><button class="btn ghost sm" id="ads-expenses-refresh-btn">↻ تحديث الآن</button></div>';
       body.innerHTML = html;
       var refreshBtn = document.getElementById("ads-expenses-refresh-btn");
-      if (refreshBtn) refreshBtn.onclick = function () { body.innerHTML = '<div class="loading" style="font-size:13px;">بيتحمّل من Google Drive…</div>'; loadAdsExpenses(latestAdsBatchTotals); };
+      if (refreshBtn) refreshBtn.onclick = function () { body.innerHTML = "<div class=\"loading\" style=\"font-size:13px;\"> <!--ssmpd-i18n:%D8%A8%D9%8A%D8%AA%D8%AD%D9%85%D9%91%D9%84%20%D9%85%D9%86%20Google%20Drive%E2%80%A6-->بيتحمّل من Google Drive…</div>"; loadAdsExpenses(latestAdsBatchTotals); };
       var monthFilterEl = document.getElementById("ads-month-filter");
       if (monthFilterEl) monthFilterEl.onchange = function () {
         var wrap = document.getElementById("ads-monthly-wrap");
@@ -282,7 +282,7 @@
       body.innerHTML = '<div class="err-msg">تعذّر تحميل ملف المصروفات: ' + escapeHtml(e.message) + '</div>' +
         '<div style="text-align:left;margin-top:6px;"><button class="btn ghost sm" id="ads-expenses-refresh-btn">↻ إعادة محاولة</button></div>';
       var retryBtn = document.getElementById("ads-expenses-refresh-btn");
-      if (retryBtn) retryBtn.onclick = function () { body.innerHTML = '<div class="loading" style="font-size:13px;">بيتحمّل من Google Drive…</div>'; loadAdsExpenses(latestAdsBatchTotals); };
+      if (retryBtn) retryBtn.onclick = function () { body.innerHTML = "<div class=\"loading\" style=\"font-size:13px;\"> <!--ssmpd-i18n:%D8%A8%D9%8A%D8%AA%D8%AD%D9%85%D9%91%D9%84%20%D9%85%D9%86%20Google%20Drive%E2%80%A6-->بيتحمّل من Google Drive…</div>"; loadAdsExpenses(latestAdsBatchTotals); };
     });
   }
 
@@ -320,7 +320,7 @@
         return { delta: (diff > 0 ? "▲ " : "▼ ") + Math.abs(diff), deltaClass: diff > 0 ? "up" : "down" };
       }
 
-      var html = '<h2 style="margin-bottom:16px;">الملخص العام</h2>';
+      var html = "<h2 style=\"margin-bottom:16px;\"> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D9%84%D8%AE%D8%B5%20%D8%A7%D9%84%D8%B9%D8%A7%D9%85-->الملخص العام</h2>";
 
       // نظرة عامة على النظام كله — للمدير العام/السوبر أدمن بس: نبضة واحدة
       // عبر الموديولات التلاتة (محتوى/ليدز/أرشيف مرضى) بدل ما يفتح كل شاشة
@@ -362,7 +362,7 @@
         html += '</div>';
       }
 
-      html += '<div class="section"><h3>إنتاج المحتوى</h3><div class="kpi-grid">';
+      html += "<div class=\"section\"><h3> <!--ssmpd-i18n:%D8%A5%D9%86%D8%AA%D8%A7%D8%AC%20%D8%A7%D9%84%D9%85%D8%AD%D8%AA%D9%88%D9%89-->إنتاج المحتوى</h3><div class=\"kpi-grid\">";
       html += kpiCard("إجمالي المحتوى", total);
       html += kpiCard("مخطط له", planned);
       html += kpiCard("قيد التصميم", inDesign);
@@ -388,7 +388,7 @@
       if (!specialtyKeysOrdered.length && !specialtyCounts.__none__) {
         html += '<div class="empty-state">لسه مفيش مواد متصنّفة بتخصص</div>';
       } else {
-        html += '<table class="simple"><thead><tr><th>التخصص</th><th>عدد المواد</th></tr></thead><tbody>';
+        html += "<table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AA%D8%AE%D8%B5%D8%B5-->التخصص</th><th>عدد المواد</th></tr></thead><tbody>";
         specialtyKeysOrdered.forEach(function (k) {
           html += '<tr><td>' + W.SPECIALTIES[k].label + '</td><td>' + specialtyCounts[k] + '</td></tr>';
         });
@@ -447,7 +447,7 @@
         var mA = metrics.filter(function (m) { return m.week_start === cmp.weekA; })[0];
         var mB = metrics.filter(function (m) { return m.week_start === cmp.weekB; })[0];
         if (mA && mB) {
-          html += '<table class="simple"><thead><tr><th>المؤشر</th><th>' + mA.week_start + '</th><th>' + mB.week_start + '</th><th>الفرق</th></tr></thead><tbody>';
+          html += '<table class="simple"><thead><tr><th>المؤشر</th><th>' + mA.week_start + '</th><th>' + mB.week_start + "</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%81%D8%B1%D9%82-->الفرق</th></tr></thead><tbody>";
           [
             { k: "reach", label: "الوصول" },
             { k: "engagement_rate", label: "نسبة التفاعل %" },
@@ -461,7 +461,7 @@
         }
 
         html += '<h4 style="margin-top:16px;font-size:13px;">كل الأسابيع</h4>' +
-          '<div style="max-height:260px;overflow:auto;"><table class="simple"><thead><tr><th>الأسبوع</th><th>الوصول</th><th>نسبة التفاعل</th><th>متابعين جدد</th></tr></thead><tbody>' +
+          "<div style=\"max-height:260px;overflow:auto;\"><table class=\"simple\"><thead><tr><th>الأسبوع</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%88%D8%B5%D9%88%D9%84-->الوصول</th><th>نسبة التفاعل</th><th>متابعين جدد</th></tr></thead><tbody>" +
           metrics.map(function (m) {
             return '<tr><td>' + m.week_start + '</td><td>' + fmtNum(m.reach) + '</td><td>' + (m.engagement_rate || 0) + '%</td><td>' + fmtNum(m.new_followers) + '</td></tr>';
           }).join("") + '</tbody></table></div>';
@@ -511,11 +511,11 @@
 
         html += '<p style="font-size:11px;color:var(--c-muted);margin:8px 0 0;">دوس على اسم أي عمود في الجدول تحت عشان تشوف مؤشراته (الإجمالي/المتوسط/الأعلى/الأقل حملة).</p>';
         html += '<table class="simple ads-col-table" style="margin-top:6px;"><thead><tr>' +
-          '<th data-col="campaign_name">الحملة</th>' +
+          "<th data-col=\"campaign_name\"> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AD%D9%85%D9%84%D8%A9-->الحملة</th>" +
           '<th data-col="amount_spent" data-unit="ج.م">المبلغ المُنفق</th>' +
           '<th data-col="results">النتائج</th>' +
           '<th data-col="cost_per_result" data-unit="ج.م">تكلفة النتيجة</th>' +
-          '<th data-col="reach">الوصول</th>' +
+          "<th data-col=\"reach\"> <!--ssmpd-i18n:%D8%A7%D9%84%D9%88%D8%B5%D9%88%D9%84-->الوصول</th>" +
           '<th data-col="link_clicks">النقرات</th>' +
           '<th data-col="ctr" data-unit="%">نسبة النقر</th>' +
           '</tr></thead><tbody>';
@@ -555,7 +555,7 @@
           var bA = batchesMap[cmp.batchA], bB = batchesMap[cmp.batchB];
           if (bA && bB) {
             var tA = batchTotals(bA.rows), tB = batchTotals(bB.rows);
-            html += '<table class="simple"><thead><tr><th>المؤشر</th><th>' + fmtDate(bA.createdAt) + '</th><th>' + fmtDate(bB.createdAt) + '</th><th>الفرق</th></tr></thead><tbody>';
+            html += '<table class="simple"><thead><tr><th>المؤشر</th><th>' + fmtDate(bA.createdAt) + '</th><th>' + fmtDate(bB.createdAt) + "</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%81%D8%B1%D9%82-->الفرق</th></tr></thead><tbody>";
             [
               { a: tA.spent, b: tB.spent, label: "المبلغ المُنفق (ج.م)" },
               { a: tA.reach, b: tB.reach, label: "الوصول" },
@@ -570,7 +570,7 @@
         }
 
         html += '<h4 style="margin-top:16px;font-size:13px;">أرشيف التقارير</h4>' +
-          '<table class="simple"><thead><tr><th>تاريخ الاستيراد</th><th>عدد الحملات</th><th>الإنفاق</th><th>الوصول</th></tr></thead><tbody>' +
+          "<table class=\"simple\"><thead><tr><th>تاريخ الاستيراد</th><th>عدد الحملات</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%A5%D9%86%D9%81%D8%A7%D9%82-->الإنفاق</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%88%D8%B5%D9%88%D9%84-->الوصول</th></tr></thead><tbody>" +
           batches.map(function (b) {
             var t = batchTotals(b.rows);
             return '<tr><td>' + fmtDate(b.createdAt) + '</td><td>' + b.rows.length + '</td><td>' + fmtNum(t.spent) + ' ج.م</td><td>' + fmtNum(t.reach) + '</td></tr>';
@@ -584,7 +584,7 @@
       // ---------- مصروفات الإعلانات الفعلية (من كشف الحساب البنكي — ملف Google Drive) ----------
       html += '<div class="section" id="ads-expenses-section">' +
         '<h3>💰 مصروفات الإعلانات الفعلية (من كشف الحساب البنكي)</h3>' +
-        '<div id="ads-expenses-body"><div class="loading" style="font-size:13px;">بيتحمّل من Google Drive…</div></div>' +
+        "<div id=\"ads-expenses-body\"><div class=\"loading\" style=\"font-size:13px;\"> <!--ssmpd-i18n:%D8%A8%D9%8A%D8%AA%D8%AD%D9%85%D9%91%D9%84%20%D9%85%D9%86%20Google%20Drive%E2%80%A6-->بيتحمّل من Google Drive…</div></div>" +
         '</div>';
 
       container.innerHTML = html;
@@ -856,7 +856,7 @@
       '<div class="field"><label>الوصول (Reach)</label><input type="number" id="wm-reach"></div>' +
       '<div class="field"><label>نسبة التفاعل %</label><input type="number" step="0.1" id="wm-eng"></div>' +
       '<div class="field"><label>متابعين جدد</label><input type="number" id="wm-followers"></div>' +
-      '<div style="text-align:left;"><button class="btn" id="wm-save">حفظ</button></div></div>';
+      "<div style=\"text-align:left;\"><button class=\"btn\" id=\"wm-save\"> <!--ssmpd-i18n:%D8%AD%D9%81%D8%B8-->حفظ</button></div></div>";
     document.body.appendChild(backdrop);
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
     backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
@@ -903,4 +903,5 @@
 
   window.SSMPDRenderSummary = { render: render };
 })();
+
 

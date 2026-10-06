@@ -53,7 +53,7 @@
 
   function render(container) {
     var me = window.SSMPDAuth.currentAdmin;
-    container.innerHTML = '<div class="loading">بيحمّل…</div>';
+    container.innerHTML = "<div class=\"loading\"> <!--ssmpd-i18n:%D8%A8%D9%8A%D8%AD%D9%85%D9%91%D9%84%E2%80%A6-->بيحمّل…</div>";
     Promise.all([
       window.SSMPDDb.listContentItems({}),
       window.SSMPDDb.listAdminsBasic(),
@@ -102,7 +102,7 @@
   function renderListView(container, ctx) {
     var scheduled = ctx.scheduled, ready = ctx.ready, adminsById = ctx.adminsById, jobByContent = ctx.jobByContent;
     var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">' +
-      '<h2 style="margin:0;">النشر</h2>' + viewToggleHtml() + '</div>' +
+      "<h2 style=\"margin:0;\"> <!--ssmpd-i18n:%D8%A7%D9%84%D9%86%D8%B4%D8%B1-->النشر</h2>" + viewToggleHtml() + '</div>' +
       '<p style="color:var(--c-muted);font-size:12px;margin-top:-10px;margin-bottom:16px;">هنا كل مادة خلصت اعتماد نهائي وتصميم — جاهزة تتجدول أو تتنشر مباشرة. فيسبوك/انستجرام بينشروا تلقائيًا، وباقي المنصات (تيكتوك/يوتيوب/الموقع) لسه بتحتاج تأكيد يدوي.</p>';
 
     html += '<div class="section"><h3>مجدولة للنشر (' + scheduled.length + ')</h3>';
@@ -148,16 +148,16 @@
     var monthLabel = cursor.toLocaleDateString("ar-EG", { month: "long", year: "numeric" });
 
     var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">' +
-      '<h2 style="margin:0;">النشر</h2>' + viewToggleHtml() + '</div>';
+      "<h2 style=\"margin:0;\"> <!--ssmpd-i18n:%D8%A7%D9%84%D9%86%D8%B4%D8%B1-->النشر</h2>" + viewToggleHtml() + '</div>';
 
     html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px;">' +
       '<h3 style="margin:0;">' + monthLabel + '</h3>' +
       '<div style="display:flex;gap:6px;">' +
-      '<button class="btn ghost sm" id="pb-cal-prev">‹ السابق</button>' +
+      "<button class=\"btn ghost sm\" id=\"pb-cal-prev\"> <!--ssmpd-i18n:%E2%80%B9%20%D8%A7%D9%84%D8%B3%D8%A7%D8%A8%D9%82-->‹ السابق</button>" +
       '<button class="btn ghost sm" id="pb-cal-today">النهارده</button>' +
-      '<button class="btn ghost sm" id="pb-cal-next">التالي ›</button>' +
-      '<button class="btn ' + (viewState.calView === "month" ? "" : "ghost") + ' sm" id="pb-cal-month">شهر</button>' +
-      '<button class="btn ' + (viewState.calView === "week" ? "" : "ghost") + ' sm" id="pb-cal-week">أسبوع</button>' +
+      "<button class=\"btn ghost sm\" id=\"pb-cal-next\"> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AA%D8%A7%D9%84%D9%8A%20%E2%80%BA-->التالي ›</button>" +
+      '<button class="btn ' + (viewState.calView === "month" ? "" : "ghost") + " sm\" id=\"pb-cal-month\"> <!--ssmpd-i18n:%D8%B4%D9%87%D8%B1-->شهر</button>" +
+      '<button class="btn ' + (viewState.calView === "week" ? "" : "ghost") + " sm\" id=\"pb-cal-week\"> <!--ssmpd-i18n:%D8%A3%D8%B3%D8%A8%D9%88%D8%B9-->أسبوع</button>" +
       '</div></div>';
 
     var firstOfMonth = new Date(year, month, 1);
@@ -319,7 +319,7 @@
     var actionsHtml;
     if (mode === "ready") {
       actionsHtml =
-        '<div class="field"><label>المادة دي لصفحة</label>' + W.brandSelectHtml("pb-brand-" + i.id, i.brand || "") + '</div>' +
+        "<div class=\"field\"><label> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%A7%D8%AF%D8%A9%20%D8%AF%D9%8A%20%D9%84%D8%B5%D9%81%D8%AD%D8%A9-->المادة دي لصفحة</label>" + W.brandSelectHtml("pb-brand-" + i.id, i.brand || "") + '</div>' +
         '<div class="field"><label>هتتنشر على (تقدر تختار أكتر من منصة)</label><div id="pb-platform-' + i.id + '">' + W.platformCheckboxesHtml("pb-platform-" + i.id, i.publish_platforms || i.publish_platform || []) + '</div></div>' +
         '<div id="pb-meta-hint-' + i.id + '" style="display:none;margin:6px 0 10px;padding:8px 10px;border:1px solid var(--c-border);border-radius:8px;color:var(--c-muted);font-size:12px;">فيسبوك/انستجرام: رابط المنشور بيتسجل تلقائيًا بعد نجاح النشر.</div>' +
         '<div class="field"><label>معاد النشر المجدول</label><input type="datetime-local" id="pb-when-' + i.id + '"></div>' +
@@ -365,7 +365,7 @@
       scheduledLine +
       '</div>' +
       '</div>' +
-      '<button class="btn ghost sm" data-toggle-publish-details="' + i.id + '">فتح التفاصيل</button>' +
+      '<button class="btn ghost sm" data-toggle-publish-details="' + i.id + "\"> <!--ssmpd-i18n:%D9%81%D8%AA%D8%AD%20%D8%A7%D9%84%D8%AA%D9%81%D8%A7%D8%B5%D9%8A%D9%84-->فتح التفاصيل</button>" +
       '</div>' +
       '<div id="publish-details-' + i.id + '" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--c-border);">' +
       '<div class="meta">بواسطة: ' + escapeHtml(ownerName) + ' · مصمم: ' + escapeHtml(designerName) + '</div>' +
@@ -584,3 +584,4 @@
 
   window.SSMPDRenderPublish = { render: render };
 })();
+

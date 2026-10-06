@@ -27,11 +27,11 @@
   var editingExisting=!!item.design_file_url;
   var root=document.createElement('div'); root.className='modal-backdrop'; root.style.zIndex=10001;
   root.innerHTML='<div class="modal" style="width:min(1100px,96vw);max-height:94vh;overflow:auto" dir="rtl">'+
-   '<div class="modal-head"><h3>تصميم سونو — الصورة العلوية</h3><button class="modal-close" aria-label="إغلاق">×</button></div>'+
+   "<div class=\"modal-head\"><h3>تصميم سونو — الصورة العلوية</h3><button class=\"modal-close\" aria-label=\"إغلاق\" data-i18n-aria-label=\"%D8%A5%D8%BA%D9%84%D8%A7%D9%82\" data-i18n-aria-label=\"%D8%A5%D8%BA%D9%84%D8%A7%D9%82\">×</button></div>"+
    '<div class="design-layout" style="display:flex;flex-wrap:wrap;gap:20px"><div style="flex:1 1 300px;min-width:0">'+
    '<label>العنوان على التصميم<textarea data-field="headline" rows="2"></textarea></label>'+
    '<label>السطر التوضيحي<textarea data-field="subtitle" rows="2"></textarea></label>'+
-   '<label>الدعوة للتفاعل<input data-field="cta"></label><p>النصوص قابلة للتعديل قبل الحفظ. الكابشن الأصلي يظل محفوظًا.</p>'+
+   "<label> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AF%D8%B9%D9%88%D8%A9%20%D9%84%D9%84%D8%AA%D9%81%D8%A7%D8%B9%D9%84-->الدعوة للتفاعل<input data-field=\"cta\"></label><p>النصوص قابلة للتعديل قبل الحفظ. الكابشن الأصلي يظل محفوظًا.</p>"+
    '<details open><summary>حجم النص وموضعه</summary>'+
    '<label>ترتيب السطرين<select data-field="textOrder"><option value="headline_first">العنوان الكبير فوق — السطر التوضيحي تحت</option><option value="subtitle_first">السطر التوضيحي فوق — العنوان الكبير تحت</option></select></label>'+
    '<label>وضع العنوان<select data-field="titlePosition"><option value="bottom">تحت</option><option value="top">فوق</option><option value="right">يمين</option><option value="left">يسار</option></select></label>'+
@@ -52,9 +52,9 @@
    '<div class="design-ai-actions"><button class="btn" data-generate>توليد الصورة</button><button class="btn ghost" data-retry hidden>محاولة جديدة بعد الفشل</button></div></details>'+
    '<label>تكبير أو تصغير الصورة <input type="number" data-number-for="zoom" min="0.5" max="3" step="0.05" value="1">×<input type="range" data-field="zoom" min="0.5" max="3" step="0.05" value="1"></label><p>اكتب قيمة من 0.5× إلى 3×. التصغير قد يظهر خلفية فارغة حول الصورة.</p>'+
    '<label>موضع أفقي <input type="number" data-number-for="x" min="0" max="100" step="1" value="50"><input type="range" data-field="x" min="0" max="100" value="50"></label>'+
-   '<label>تحريك الصورة رأسيًا <input type="number" data-number-for="imageOffsetY" min="-400" max="400" step="5" value="0"> بكسل<input type="range" data-field="imageOffsetY" min="-400" max="400" step="5" value="0"></label><p>السالب لفوق والموجب لتحت، حتى بدون تكبير. لو ظهرت حافة فارغة، قلّل التحريك أو كبّر الصورة.</p>'+
-   '<label>بداية الـFade <input type="number" data-number-for="fadeStartY" min="500" max="1000" step="5" value="960"> بكسل<input type="range" data-field="fadeStartY" min="500" max="1000" step="5" value="960"></label>'+
-   '<label>نهاية الـFade <input type="number" data-number-for="fadeEndY" min="550" max="1120" step="5" value="1105"> بكسل<input type="range" data-field="fadeEndY" min="550" max="1120" step="5" value="1105"></label><p>حرّك بداية ونهاية التلاشي لتحكم مساحة ظهور الصورة. النهاية تتوقف قبل الفوتر.</p>'+
+   "<label>تحريك الصورة رأسيًا <input type=\"number\" data-number-for=\"imageOffsetY\" min=\"-400\" max=\"400\" step=\"5\" value=\"0\"> <!--ssmpd-i18n:%D8%A8%D9%83%D8%B3%D9%84--> بكسل<input type=\"range\" data-field=\"imageOffsetY\" min=\"-400\" max=\"400\" step=\"5\" value=\"0\"></label><p>السالب لفوق والموجب لتحت، حتى بدون تكبير. لو ظهرت حافة فارغة، قلّل التحريك أو كبّر الصورة.</p>"+
+   "<label>بداية الـFade <input type=\"number\" data-number-for=\"fadeStartY\" min=\"500\" max=\"1000\" step=\"5\" value=\"960\"> <!--ssmpd-i18n:%D8%A8%D9%83%D8%B3%D9%84--> بكسل<input type=\"range\" data-field=\"fadeStartY\" min=\"500\" max=\"1000\" step=\"5\" value=\"960\"></label>"+
+   "<label>نهاية الـFade <input type=\"number\" data-number-for=\"fadeEndY\" min=\"550\" max=\"1120\" step=\"5\" value=\"1105\"> <!--ssmpd-i18n:%D8%A8%D9%83%D8%B3%D9%84--> بكسل<input type=\"range\" data-field=\"fadeEndY\" min=\"550\" max=\"1120\" step=\"5\" value=\"1105\"></label><p>حرّك بداية ونهاية التلاشي لتحكم مساحة ظهور الصورة. النهاية تتوقف قبل الفوتر.</p>"+
    '<p role="status" data-draft-status></p><p role="status" data-status></p><button class="btn" data-download disabled>تنزيل PNG</button> '+
    '<button class="btn ghost" data-save disabled>حفظ نسخة للمراجعة</button><div data-versions></div></div>'+
    '<div style="flex:1 1 350px;min-width:0"><canvas style="width:100%;height:auto;border:1px solid #e2e6ed"></canvas></div></div></div>';
@@ -163,5 +163,6 @@
  }
  window.SSMPDDesignStudio={mount:mount,open:open};
 })();
+
 
 

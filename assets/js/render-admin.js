@@ -61,7 +61,7 @@
   }
 
   function render(container) {
-    container.innerHTML = '<div class="loading">بيحمّل…</div>';
+    container.innerHTML = "<div class=\"loading\"> <!--ssmpd-i18n:%D8%A8%D9%8A%D8%AD%D9%85%D9%91%D9%84%E2%80%A6-->بيحمّل…</div>";
     Promise.all([
       window.SSMPDDb.listAdmins(),
       window.SSMPDDb.getAppSettings().catch(function () { return null; })
@@ -73,15 +73,15 @@
       var html = '<h2 style="margin-bottom:16px;">المستخدمون والصلاحيات</h2>';
       html += '<div class="section"><h3>إضافة مستخدم جديد</h3>' +
         '<div style="display:flex;gap:8px;flex-wrap:wrap;">' +
-        '<input id="new-email" placeholder="البريد الإلكتروني" style="flex:1;min-width:200px;padding:9px 12px;border-radius:10px;border:1px solid var(--c-border);">' +
-        '<input id="new-name" placeholder="الاسم" style="flex:1;min-width:150px;padding:9px 12px;border-radius:10px;border:1px solid var(--c-border);">' +
+        "<input id=\"new-email\" placeholder=\"البريد الإلكتروني\" data-i18n-placeholder=\"%D8%A7%D9%84%D8%A8%D8%B1%D9%8A%D8%AF%20%D8%A7%D9%84%D8%A5%D9%84%D9%83%D8%AA%D8%B1%D9%88%D9%86%D9%8A\" data-i18n-placeholder=\"%D8%A7%D9%84%D8%A8%D8%B1%D9%8A%D8%AF%20%D8%A7%D9%84%D8%A5%D9%84%D9%83%D8%AA%D8%B1%D9%88%D9%86%D9%8A\" style=\"flex:1;min-width:200px;padding:9px 12px;border-radius:10px;border:1px solid var(--c-border);\">" +
+        "<input id=\"new-name\" placeholder=\"الاسم\" data-i18n-placeholder=\"%D8%A7%D9%84%D8%A7%D8%B3%D9%85\" data-i18n-placeholder=\"%D8%A7%D9%84%D8%A7%D8%B3%D9%85\" style=\"flex:1;min-width:150px;padding:9px 12px;border-radius:10px;border:1px solid var(--c-border);\">" +
         '<select id="new-role" style="padding:9px 12px;border-radius:10px;border:1px solid var(--c-border);">' +
         Object.keys(R.ALL).map(function (k) { return '<option value="' + k + '">' + R.label(k) + '</option>'; }).join("") +
-        '</select><button class="btn" id="add-admin-btn">إضافة</button></div>' +
+        "</select><button class=\"btn\" id=\"add-admin-btn\"> <!--ssmpd-i18n:%D8%A5%D8%B6%D8%A7%D9%81%D8%A9-->إضافة</button></div>" +
         '<p style="font-size:11px;color:var(--c-muted);margin-top:8px;">هو اللي هيفتح رابط اللوحة ويعمل "حساب جديد" بنفس البريد ده وينشئ كلمة سره — إنت مش بتحط له كلمة سر.</p></div>';
 
       html += '<div class="section"><h3>كل المستخدمين (' + admins.length + ')</h3>' +
-        '<table class="simple"><thead><tr><th>الاسم</th><th>البريد</th><th>الدور الأساسي</th><th>أدوار إضافية</th><th>أرشيف المرضى</th><th>معاينة الأرشيف فقط</th><th>تحقق هوية المرضى</th><th>حذف الليدز</th><th>حذف زيارات التغذية</th><th>الحالة</th><th></th></tr></thead><tbody>';
+        "<table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%A7%D8%B3%D9%85-->الاسم</th><th>البريد</th><th>الدور الأساسي</th><th>أدوار إضافية</th><th> <!--ssmpd-i18n:%D8%A3%D8%B1%D8%B4%D9%8A%D9%81%20%D8%A7%D9%84%D9%85%D8%B1%D8%B6%D9%89-->أرشيف المرضى</th><th>معاينة الأرشيف فقط</th><th>تحقق هوية المرضى</th><th>حذف الليدز</th><th>حذف زيارات التغذية</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AD%D8%A7%D9%84%D8%A9-->الحالة</th><th></th></tr></thead><tbody>";
 
       admins.forEach(function (a) {
         var lastSuper = a.role === "super_admin" && a.active && activeSupers.length === 1;
@@ -103,8 +103,8 @@
           '<td>' + (a.user_id ? '<span class="status-pill approved">مفعّل</span>' : '<span class="status-pill draft">بانتظار إنشاء الحساب</span>') + '</td>' +
           '<td>' +
           '<button class="btn ghost sm" data-toggle="' + a.id + '" ' + (lastSuper ? "disabled" : "") + '>' + (a.active ? "إيقاف" : "تفعيل") + '</button> ' +
-          '<button class="btn ghost sm" data-set-pass="' + a.id + '" ' + (a.user_id ? "" : "disabled") + '>تغيير كلمة السر</button> ' +
-          '<button class="btn danger sm" data-del="' + a.id + '" ' + (lastSuper || a.id === myId ? "disabled" : "") + '>حذف</button>' +
+          '<button class="btn ghost sm" data-set-pass="' + a.id + '" ' + (a.user_id ? "" : "disabled") + "> <!--ssmpd-i18n:%D8%AA%D8%BA%D9%8A%D9%8A%D8%B1%20%D9%83%D9%84%D9%85%D8%A9%20%D8%A7%D9%84%D8%B3%D8%B1-->تغيير كلمة السر</button> " +
+          '<button class="btn danger sm" data-del="' + a.id + '" ' + (lastSuper || a.id === myId ? "disabled" : "") + "> <!--ssmpd-i18n:%D8%AD%D8%B0%D9%81-->حذف</button>" +
           '</td></tr>';
       });
       html += '</tbody></table>' +
@@ -119,7 +119,7 @@
         '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">' +
         '<div class="field" style="margin:0;"><label>مواد المحتوى (ساعة)</label><input type="number" min="1" id="sla-content-hours" value="' + ((appSettings && appSettings.content_sla_hours) || 48) + '" style="width:100px;"></div>' +
         '<div class="field" style="margin:0;"><label>ليدز جديدة من غير رد (ساعة)</label><input type="number" min="1" id="sla-leads-hours" value="' + ((appSettings && appSettings.leads_sla_hours) || 24) + '" style="width:100px;"></div>' +
-        '<button class="btn sm" id="sla-save-btn">حفظ</button></div></div>';
+        "<button class=\"btn sm\" id=\"sla-save-btn\"> <!--ssmpd-i18n:%D8%AD%D9%81%D8%B8-->حفظ</button></div></div>";
 
       var physioDevices = (appSettings && appSettings.physio_devices && appSettings.physio_devices.length) ? appSettings.physio_devices : PHYSIO_DEVICES_DEFAULT;
       html += '<div class="section"><h3>أجهزة العلاج الطبيعي</h3>' +
@@ -131,8 +131,8 @@
         }).join("") + '</div>' +
         '<div style="display:flex;gap:8px;">' +
         '<input id="new-physio-device" placeholder="اسم الجهاز الجديد" style="flex:1;min-width:150px;padding:9px 12px;border-radius:10px;border:1px solid var(--c-border);">' +
-        '<button class="btn ghost sm" id="add-physio-device-btn">+ إضافة</button>' +
-        '<button class="btn sm" id="physio-devices-save-btn">حفظ</button></div></div>';
+        "<button class=\"btn ghost sm\" id=\"add-physio-device-btn\"> <!--ssmpd-i18n:%2B%20%D8%A5%D8%B6%D8%A7%D9%81%D8%A9-->+ إضافة</button>" +
+        "<button class=\"btn sm\" id=\"physio-devices-save-btn\"> <!--ssmpd-i18n:%D8%AD%D9%81%D8%B8-->حفظ</button></div></div>";
 
       html += '<div class="section"><h3>أداء الموظفين</h3>' +
         '<p style="font-size:11px;color:var(--c-muted);margin-bottom:8px;">ملخص إنتاجية كل موظف في موديول المحتوى (إنشاء/تصميم/نشر) في مكان واحد — بدل ما تتجمع يدوياً من شاشات متفرقة.</p>' +
@@ -371,7 +371,7 @@
     var neverLoggedIn = rows.filter(function (r) { return !r.lastLoginAt; });
 
     var html = '<h4 style="margin-bottom:8px;">لوحة نشاط الفريق</h4>';
-    html += '<table class="simple"><thead><tr><th>المستخدم</th><th>عدد الجلسات</th><th>إجمالي وقت الاستخدام</th><th>متوسط الجلسة</th><th>عدد الأنشطة</th><th>آخر دخول</th></tr></thead><tbody>';
+    html += "<table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%B3%D8%AA%D8%AE%D8%AF%D9%85-->المستخدم</th><th>عدد الجلسات</th><th>إجمالي وقت الاستخدام</th><th>متوسط الجلسة</th><th>عدد الأنشطة</th><th>آخر دخول</th></tr></thead><tbody>";
     if (!mostActive.length) {
       html += '<tr><td colspan="6" style="color:var(--c-muted);">مفيش بيانات كفاية للترتيب — حمّل التقرير الأول.</td></tr>';
     } else {
@@ -397,7 +397,7 @@
   function renderUsageReportHtml(sessions, activity, admins) {
     var html = renderUsageSummaryHtml(admins || [], sessions, activity);
     html += '<h4 style="margin:16px 0 8px;">سجل الجلسات (' + sessions.length + ')</h4>' +
-      '<table class="simple"><thead><tr><th>المستخدم</th><th>وقت الدخول</th><th>وقت الخروج</th><th>المدة</th></tr></thead><tbody>';
+      "<table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%B3%D8%AA%D8%AE%D8%AF%D9%85-->المستخدم</th><th>وقت الدخول</th><th>وقت الخروج</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%AF%D8%A9-->المدة</th></tr></thead><tbody>";
     if (!sessions.length) {
       html += '<tr><td colspan="4" style="color:var(--c-muted);">مفيش جلسات مسجّلة.</td></tr>';
     } else {
@@ -412,7 +412,7 @@
     html += '</tbody></table>';
 
     html += '<h4 style="margin:16px 0 8px;">سجل الأنشطة المهمة (' + activity.length + ')</h4>' +
-      '<table class="simple"><thead><tr><th>المستخدم</th><th>النشاط</th><th>اسم التقرير/الملف</th><th>الوقت</th></tr></thead><tbody>';
+      "<table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%B3%D8%AA%D8%AE%D8%AF%D9%85-->المستخدم</th><th>النشاط</th><th>اسم التقرير/الملف</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%88%D9%82%D8%AA-->الوقت</th></tr></thead><tbody>";
     if (!activity.length) {
       html += '<tr><td colspan="4" style="color:var(--c-muted);">مفيش أنشطة مسجّلة.</td></tr>';
     } else {
@@ -460,7 +460,7 @@
   }
 
   function renderPerformanceReportHtml(rows) {
-    var html = '<table class="simple"><thead><tr><th>الموظف</th><th>مواد أنشأها</th><th>مواد صممها (استلمها)</th><th>مواد نشرها</th></tr></thead><tbody>';
+    var html = "<table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D9%88%D8%B8%D9%81-->الموظف</th><th>مواد أنشأها</th><th>مواد صممها (استلمها)</th><th>مواد نشرها</th></tr></thead><tbody>";
     if (!rows.length) {
       html += '<tr><td colspan="4" style="color:var(--c-muted);">مفيش بيانات كفاية.</td></tr>';
     } else {
@@ -481,9 +481,9 @@
     backdrop.className = "modal-backdrop";
     backdrop.innerHTML = '<div class="modal" style="max-width:420px;">' +
       '<div class="modal-head"><h3>تغيير كلمة سر: ' + escapeHtml(admin.name || admin.email) + '</h3><button class="modal-close">×</button></div>' +
-      '<div class="field"><label>كلمة السر الجديدة</label><input id="sp-pass1" type="password" autocomplete="new-password" autocapitalize="off" autocorrect="off" spellcheck="false"></div>' +
-      '<div class="field"><label>تأكيد كلمة السر</label><input id="sp-pass2" type="password" autocomplete="new-password" autocapitalize="off" autocorrect="off" spellcheck="false"></div>' +
-      '<button class="btn block" id="sp-save">حفظ</button>' +
+      "<div class=\"field\"><label> <!--ssmpd-i18n:%D9%83%D9%84%D9%85%D8%A9%20%D8%A7%D9%84%D8%B3%D8%B1%20%D8%A7%D9%84%D8%AC%D8%AF%D9%8A%D8%AF%D8%A9-->كلمة السر الجديدة</label><input id=\"sp-pass1\" type=\"password\" autocomplete=\"new-password\" autocapitalize=\"off\" autocorrect=\"off\" spellcheck=\"false\"></div>" +
+      "<div class=\"field\"><label> <!--ssmpd-i18n:%D8%AA%D8%A3%D9%83%D9%8A%D8%AF%20%D9%83%D9%84%D9%85%D8%A9%20%D8%A7%D9%84%D8%B3%D8%B1-->تأكيد كلمة السر</label><input id=\"sp-pass2\" type=\"password\" autocomplete=\"new-password\" autocapitalize=\"off\" autocorrect=\"off\" spellcheck=\"false\"></div>" +
+      "<button class=\"btn block\" id=\"sp-save\"> <!--ssmpd-i18n:%D8%AD%D9%81%D8%B8-->حفظ</button>" +
       '</div>';
     document.body.appendChild(backdrop);
 
@@ -505,4 +505,5 @@
 
   window.SSMPDRenderAdmin = { render: render };
 })();
+
 

@@ -89,9 +89,9 @@
   var ESCALATION_STATUS_LABELS = { open: "مفتوحة", reviewing: "قيد المراجعة", resolved: "تم الحل", dismissed: "مرفوضة" };
   function escalationsSectionHtml() {
     var open = escalations.filter(function (e) { return e.status === "open" || e.status === "reviewing"; });
-    if (!open.length) return '<div class="section"><h3>حالات تحتاج مراجعة</h3><p style="color:var(--c-muted);font-size:13px;">لا يوجد حالات مفتوحة حاليًا.</p></div>';
+    if (!open.length) return "<div class=\"section\"><h3> <!--ssmpd-i18n:%D8%AD%D8%A7%D9%84%D8%A7%D8%AA%20%D8%AA%D8%AD%D8%AA%D8%A7%D8%AC%20%D9%85%D8%B1%D8%A7%D8%AC%D8%B9%D8%A9-->حالات تحتاج مراجعة</h3><p style=\"color:var(--c-muted);font-size:13px;\">لا يوجد حالات مفتوحة حاليًا.</p></div>";
     var can = canApprove();
-    var html = '<div class="section"><h3>حالات تحتاج مراجعة</h3>';
+    var html = "<div class=\"section\"><h3> <!--ssmpd-i18n:%D8%AD%D8%A7%D9%84%D8%A7%D8%AA%20%D8%AA%D8%AD%D8%AA%D8%A7%D8%AC%20%D9%85%D8%B1%D8%A7%D8%AC%D8%B9%D8%A9-->حالات تحتاج مراجعة</h3>";
     open.forEach(function (e) {
       html += '<div style="border:1px solid var(--c-border);border-radius:8px;padding:10px;margin-bottom:10px;">' +
         '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;">' +
@@ -107,7 +107,7 @@
           (e.status === "open" ? '<button class="btn ghost sm" data-esc-reviewing="' + e.id + '">تحت المراجعة</button>' : "") +
           '<input type="text" class="esc-notes" data-esc-notes-for="' + e.id + '" placeholder="ملاحظات الحل (مطلوبة للحل/الرفض)" style="flex:1;min-width:180px;">' +
           '<button class="btn sm" data-esc-resolve="' + e.id + '">حل</button>' +
-          '<button class="btn ghost sm" data-esc-dismiss="' + e.id + '">رفض</button>' +
+          '<button class="btn ghost sm" data-esc-dismiss="' + e.id + "\"> <!--ssmpd-i18n:%D8%B1%D9%81%D8%B6-->رفض</button>" +
           '</div>'
         ) : "") +
         '</div>';
@@ -198,10 +198,10 @@
   function planCardHtml(p) {
     var canAct = canApprove() && p.status === "pending_approval";
     var actBtns = canAct
-      ? '<button class="btn sm" data-approve-plan="' + p.id + '">اعتماد</button> ' +
-        '<button class="btn ghost sm" data-reject-plan="' + p.id + '">رفض</button> ' +
-        '<button class="btn ghost sm" data-edit-plan="' + p.id + '">تعديل</button>'
-      : (canApprove() ? '<button class="btn ghost sm" data-edit-plan="' + p.id + '">تعديل</button>' : "");
+      ? '<button class="btn sm" data-approve-plan="' + p.id + "\"> <!--ssmpd-i18n:%D8%A7%D8%B9%D8%AA%D9%85%D8%A7%D8%AF-->اعتماد</button> " +
+        '<button class="btn ghost sm" data-reject-plan="' + p.id + "\"> <!--ssmpd-i18n:%D8%B1%D9%81%D8%B6-->رفض</button> " +
+        '<button class="btn ghost sm" data-edit-plan="' + p.id + "\"> <!--ssmpd-i18n:%D8%AA%D8%B9%D8%AF%D9%8A%D9%84-->تعديل</button>"
+      : (canApprove() ? '<button class="btn ghost sm" data-edit-plan="' + p.id + "\"> <!--ssmpd-i18n:%D8%AA%D8%B9%D8%AF%D9%8A%D9%84-->تعديل</button>" : "");
     return '<div class="section" style="margin-bottom:10px;">' +
       '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;">' +
       '<div><strong>' + escapeHtml(p.title) + '</strong> — <span style="font-size:11px;color:var(--c-muted);">' + statusLabel(p.status) + '</span></div>' +
@@ -244,8 +244,8 @@
       '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;">' +
       '<div><strong>' + titleHtml + '</strong>' + (a.action_type ? ' <span style="font-size:11px;color:var(--c-muted);">(' + (ACTION_LABELS[a.action_type] || escapeHtml(a.action_type)) + ')</span>' : '') +
       ' — <span style="font-size:11px;color:var(--c-muted);">' + statusLabel(a.status) + '</span></div>' +
-      (canAct ? '<div><button class="btn sm" data-approve-action="' + a.id + '">اعتماد</button> ' +
-        '<button class="btn ghost sm" data-reject-action="' + a.id + '">رفض</button></div>' : '') +
+      (canAct ? '<div><button class="btn sm" data-approve-action="' + a.id + "\"> <!--ssmpd-i18n:%D8%A7%D8%B9%D8%AA%D9%85%D8%A7%D8%AF-->اعتماد</button> " +
+        '<button class="btn ghost sm" data-reject-action="' + a.id + "\"> <!--ssmpd-i18n:%D8%B1%D9%81%D8%B6-->رفض</button></div>" : '') +
       '</div>' +
       (isAdvisoryOnly ? '<div style="font-size:11px;color:var(--c-muted);margin-top:4px;">توصية استشارية بس — مفيش تعديل فعلي على Meta مرتبط بيها.</div>' : '') +
       '<div style="font-size:12px;color:var(--c-muted);margin-top:4px;">الهدف: ' + escapeHtml(a.target_type || "—") +
@@ -265,9 +265,9 @@
   function liveMonitoringHtml(adRows) {
     if (!adRows.length) return '<p style="color:var(--c-muted);font-size:13px;">لا توجد بيانات أداء حالياً.</p>';
     var html = '<div style="max-height:340px;overflow:auto;"><table class="simple"><thead><tr>' +
-      '<th>الحملة</th><th>المجموعة الإعلانية</th><th>الإعلان</th><th>الإنفاق</th><th>الوصول</th><th>الظهور</th>' +
-      '<th>محادثات</th><th>Leads</th><th>تكلفة المحادثة</th><th>CPL</th><th>CTR</th><th>CPC</th><th>CPM</th><th>الحالة</th>' +
-      '<th>المحتوى المرتبط</th></tr></thead><tbody>';
+      "<th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AD%D9%85%D9%84%D8%A9-->الحملة</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%AC%D9%85%D9%88%D8%B9%D8%A9%20%D8%A7%D9%84%D8%A5%D8%B9%D9%84%D8%A7%D9%86%D9%8A%D8%A9-->المجموعة الإعلانية</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%A5%D8%B9%D9%84%D8%A7%D9%86-->الإعلان</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%A5%D9%86%D9%81%D8%A7%D9%82-->الإنفاق</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%88%D8%B5%D9%88%D9%84-->الوصول</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%B8%D9%87%D9%88%D8%B1-->الظهور</th>" +
+      "<th> <!--ssmpd-i18n:%D9%85%D8%AD%D8%A7%D8%AF%D8%AB%D8%A7%D8%AA-->محادثات</th><th>Leads</th><th> <!--ssmpd-i18n:%D8%AA%D9%83%D9%84%D9%81%D8%A9%20%D8%A7%D9%84%D9%85%D8%AD%D8%A7%D8%AF%D8%AB%D8%A9-->تكلفة المحادثة</th><th>CPL</th><th>CTR</th><th>CPC</th><th>CPM</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AD%D8%A7%D9%84%D8%A9-->الحالة</th>" +
+      "<th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%AD%D8%AA%D9%88%D9%89%20%D8%A7%D9%84%D9%85%D8%B1%D8%AA%D8%A8%D8%B7-->المحتوى المرتبط</th></tr></thead><tbody>";
     adRows.forEach(function (r) {
       html += '<tr><td>' + escapeHtml(r.campaign_name) + '</td><td>' + escapeHtml(r.adset_name) + '</td><td style="font-size:11px;">' + escapeHtml(r.ad_name) + '</td>' +
         '<td>' + fmtMoney(r.spend) + '</td><td>' + fmtNum(r.reach) + '</td><td>' + fmtNum(r.impressions) + '</td>' +
@@ -307,12 +307,12 @@
     var backdrop = document.createElement("div");
     backdrop.className = "modal-backdrop";
     backdrop.innerHTML = '<div class="modal"><h3>تعديل خطة</h3>' +
-      '<div class="field"><label>العنوان</label><input id="mb-e-title" value="' + escapeHtml(p.title) + '"></div>' +
+      "<div class=\"field\"><label> <!--ssmpd-i18n:%D8%A7%D9%84%D8%B9%D9%86%D9%88%D8%A7%D9%86-->العنوان</label><input id=\"mb-e-title\" value=\"" + escapeHtml(p.title) + '"></div>' +
       '<div class="field"><label>الميزانية اليومية</label><input id="mb-e-daily" type="number" value="' + (p.daily_budget || "") + '"></div>' +
       '<div class="field"><label>الميزانية الإجمالية</label><input id="mb-e-total" type="number" value="' + (p.total_budget || "") + '"></div>' +
       '<div class="field"><label>ملخص الاستهداف</label><textarea id="mb-e-targeting">' + escapeHtml(p.targeting_summary || "") + '</textarea></div>' +
       '<div class="field"><label>ملخص الاستراتيجية</label><textarea id="mb-e-strategy">' + escapeHtml(p.strategy_summary || "") + '</textarea></div>' +
-      '<div style="margin-top:12px;"><button class="btn" id="mb-e-save">حفظ</button> <button class="btn ghost" id="mb-e-cancel">إلغاء</button></div>' +
+      "<div style=\"margin-top:12px;\"><button class=\"btn\" id=\"mb-e-save\"> <!--ssmpd-i18n:%D8%AD%D9%81%D8%B8-->حفظ</button> <button class=\"btn ghost\" id=\"mb-e-cancel\"> <!--ssmpd-i18n:%D8%A5%D9%84%D8%BA%D8%A7%D8%A1-->إلغاء</button></div>" +
       '</div>';
     document.body.appendChild(backdrop);
     backdrop.querySelector("#mb-e-cancel").onclick = function () { backdrop.remove(); };
@@ -488,3 +488,4 @@
 
   window.SSMPDRenderMediaBuyer = { render: render };
 })();
+

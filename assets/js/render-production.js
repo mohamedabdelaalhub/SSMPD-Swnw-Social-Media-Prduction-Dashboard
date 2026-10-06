@@ -336,8 +336,8 @@ function openAgentImportModal(parentBackdrop) {
           (h.script ? '<div style="font-size:12px;margin-bottom:4px;"><b>Script:</b> ' + escapeHtml(h.script.slice(0, 180)) + (h.script.length > 180 ? "…" : "") + '</div>' : '') +
           (h.caption ? '<div style="font-size:12px;margin-bottom:4px;"><b>Caption:</b> ' + escapeHtml(h.caption.slice(0, 120)) + (h.caption.length > 120 ? "…" : "") + '</div>' : '') +
           (h.cta ? '<div style="font-size:12px;margin-bottom:4px;"><b>CTA:</b> ' + escapeHtml(h.cta) + '</div>' : '') +
-          (h.format ? '<div style="font-size:12px;margin-bottom:4px;"><b>الشكل:</b> ' + escapeHtml(h.format) + '</div>' : '') +
-          ((h.durationMin != null || h.durationMax != null) ? '<div style="font-size:12px;margin-bottom:4px;"><b>المدة:</b> ' + escapeHtml((h.durationMin == null ? "—" : h.durationMin) + "–" + (h.durationMax == null ? "—" : h.durationMax) + " ث") + '</div>' : '') +
+          (h.format ? "<div style=\"font-size:12px;margin-bottom:4px;\"><b> <!--ssmpd-i18n:%D8%A7%D9%84%D8%B4%D9%83%D9%84%3A-->الشكل:</b> " + escapeHtml(h.format) + '</div>' : '') +
+          ((h.durationMin != null || h.durationMax != null) ? "<div style=\"font-size:12px;margin-bottom:4px;\"><b> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%AF%D8%A9%3A-->المدة:</b> " + escapeHtml((h.durationMin == null ? "—" : h.durationMin) + "–" + (h.durationMax == null ? "—" : h.durationMax) + " ث") + '</div>' : '') +
           status +
           (missing.length
             ? '<button class="btn ghost sm" type="button" disabled style="opacity:.55;cursor:not-allowed;">⚠️ الفكرة غير مكتملة</button>'
@@ -583,8 +583,8 @@ function openAgentImportModal(parentBackdrop) {
           '</div>' +
           '<div class="field" style="margin:0;min-width:150px;"><label>نوع الملف</label>' +
             '<select id="video-asset-type">' +
-              '<option value="image">صورة</option>' +
-              '<option value="video">فيديو</option>' +
+              "<option value=\"image\"> <!--ssmpd-i18n:%D8%B5%D9%88%D8%B1%D8%A9-->صورة</option>" +
+              "<option value=\"video\"> <!--ssmpd-i18n:%D9%81%D9%8A%D8%AF%D9%8A%D9%88-->فيديو</option>" +
               '<option value="voiceover">تعليق صوتي جاهز</option>' +
               '<option value="music">موسيقى</option>' +
             '</select>' +
@@ -604,8 +604,8 @@ function openAgentImportModal(parentBackdrop) {
             '<span style="font-size:11px;font-weight:700;min-width:72px;">' + escapeHtml(a.asset_role === "legacy_logo" ? "لوجو سابق — مستبعد" : videoAssetTypeLabel(a.asset_type)) + '</span>' +
             '<span style="font-size:12px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escapeHtml(a.file_name) + '</span>' +
             '<span style="font-size:10px;color:var(--c-muted);">' + escapeHtml(formatBytes(a.file_size)) + '</span>' +
-            '<button class="btn ghost sm" data-open-video-asset="' + escapeHtml(a.id) + '">فتح</button>' +
-            '<button class="btn ghost sm" data-delete-video-asset="' + escapeHtml(a.id) + '">حذف</button>' +
+            '<button class="btn ghost sm" data-open-video-asset="' + escapeHtml(a.id) + "\"> <!--ssmpd-i18n:%D9%81%D8%AA%D8%AD-->فتح</button>" +
+            '<button class="btn ghost sm" data-delete-video-asset="' + escapeHtml(a.id) + "\"> <!--ssmpd-i18n:%D8%AD%D8%B0%D9%81-->حذف</button>" +
           '</div>';
         });
         html += '</div>';
@@ -621,18 +621,18 @@ function openAgentImportModal(parentBackdrop) {
           html += '<div class="err-msg">⚠️ لا يمكن إنشاء Video Job قبل اكتمال: ' + escapeHtml(missing.join("، ")) + '</div>';
         } else {
           html += '<div style="font-size:12px;margin-bottom:10px;"><b>القالب:</b> ' + escapeHtml(item.video_template) +
-            ' &nbsp; <b>المدة:</b> ' + escapeHtml(item.target_duration_min_seconds + "–" + item.target_duration_max_seconds + " ث") + '</div>' +
+            " &nbsp; <b> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%AF%D8%A9%3A-->المدة:</b> " + escapeHtml(item.target_duration_min_seconds + "–" + item.target_duration_max_seconds + " ث") + '</div>' +
             '<button class="btn sm" id="create-video-job-btn">إنتاج الفيديو</button>';
         }
       } else {
         var fallbackProgress = { pending: 0, preparing: 15, rendering: 55, uploading: 85, ready: 100 };
         var progressValue = latest.progress_percent == null ? (fallbackProgress[latest.status] || 0) : Math.max(0, Math.min(100, Number(latest.progress_percent)));
         var progressLabel = latest.progress_stage || (latest.status === "preparing" ? "تجهيز الملفات" : latest.status === "rendering" ? "إنتاج الفيديو والصوت" : latest.status === "uploading" ? "حفظ الفيديو والأغلفة" : latest.status === "ready" ? "اكتمل" : "في الانتظار");
-        html += '<div style="font-size:12px;margin-bottom:6px;"><b>الحالة:</b> ' + escapeHtml(videoJobStatusLabel(latest.status)) + '</div>' +
+        html += "<div style=\"font-size:12px;margin-bottom:6px;\"><b> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AD%D8%A7%D9%84%D8%A9%3A-->الحالة:</b> " + escapeHtml(videoJobStatusLabel(latest.status)) + '</div>' +
           '<div style="margin:8px 0 10px;"><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:5px;"><span>' + escapeHtml(progressLabel) + '</span><b>' + progressValue + '%</b></div>' +
           '<div style="height:8px;background:#e7ebf3;border-radius:999px;overflow:hidden;"><div style="width:' + progressValue + '%;height:100%;background:#1746a2;border-radius:999px;transition:width .35s ease;"></div></div></div>' +
           '<div style="font-size:12px;margin-bottom:6px;"><b>القالب:</b> ' + escapeHtml(latest.video_template || "—") +
-          ' &nbsp; <b>المدة:</b> ' + escapeHtml((latest.duration_min_seconds == null ? "—" : latest.duration_min_seconds) + "–" +
+          " &nbsp; <b> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%AF%D8%A9%3A-->المدة:</b> " + escapeHtml((latest.duration_min_seconds == null ? "—" : latest.duration_min_seconds) + "–" +
           (latest.duration_max_seconds == null ? "—" : latest.duration_max_seconds) + " ث") + '</div>' +
           '<div style="font-size:11px;color:var(--c-muted);margin-bottom:8px;">تم إنشاء الـJob: ' +
           escapeHtml(new Date(latest.created_at).toLocaleString("ar-EG")) + '</div>';
@@ -852,7 +852,7 @@ function openAgentImportModal(parentBackdrop) {
 
   function render(container) {
     var me = window.SSMPDAuth.currentAdmin;
-    container.innerHTML = '<div class="loading">بيحمّل…</div>';
+    container.innerHTML = "<div class=\"loading\"> <!--ssmpd-i18n:%D8%A8%D9%8A%D8%AD%D9%85%D9%91%D9%84%E2%80%A6-->بيحمّل…</div>";
 
     Promise.all([
       window.SSMPDDb.listContentItems({ createdBy: me.id }),
@@ -863,19 +863,19 @@ function openAgentImportModal(parentBackdrop) {
       var stats = C.computeCommentStats(res[1], res[2], me.id);
 
       var html = '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px;">' +
-        '<h2>إنتاج المحتوى</h2><div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn ghost" id="idea-bank-btn">بنك الأفكار</button><button class="btn" id="new-content-btn">+ فكرة/محتوى جديد</button></div></div>';
+        "<h2> <!--ssmpd-i18n:%D8%A5%D9%86%D8%AA%D8%A7%D8%AC%20%D8%A7%D9%84%D9%85%D8%AD%D8%AA%D9%88%D9%89-->إنتاج المحتوى</h2><div style=\"display:flex;gap:8px;flex-wrap:wrap;\"><button class=\"btn ghost\" id=\"idea-bank-btn\"> <!--ssmpd-i18n:%D8%A8%D9%86%D9%83%20%D8%A7%D9%84%D8%A3%D9%81%D9%83%D8%A7%D8%B1-->بنك الأفكار</button><button class=\"btn\" id=\"new-content-btn\">+ فكرة/محتوى جديد</button></div></div>";
 
       html += '<div class="section"><h3>كل المواد بتاعتي (' + items.length + ')</h3>';
       if (!items.length) {
         html += '<div class="empty-state">لسه مفيش محتوى — ابدأ بفكرة جديدة</div>';
       } else {
-        html += '<table class="simple"><thead><tr><th>العنوان</th><th>الحالة</th><th>آخر تحديث</th><th></th></tr></thead><tbody>';
+        html += "<table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%B9%D9%86%D9%88%D8%A7%D9%86-->العنوان</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AD%D8%A7%D9%84%D8%A9-->الحالة</th><th>آخر تحديث</th><th></th></tr></thead><tbody>";
         items.forEach(function (i) {
           var titleOpenAttr = i.stage === "published" ? 'data-published-open="' + i.id + '"' : 'data-open="' + i.id + '"';
           html += '<tr><td>' + W.contentFormatBadgeHtml(i) + '<span class="link-open" ' + titleOpenAttr + '>' + escapeHtml(i.title) + '</span>' + W.brandBadgeHtml(i.brand) + W.specialtyBadgeHtml(i.specialty) + '</td>' +
             '<td><span class="status-pill ' + stagePillClass(i.stage) + '">' + W.stageLabel(i.stage) + '</span></td>' +
             '<td>' + new Date(i.updated_at).toLocaleDateString("ar-EG") + '</td>' +
-            '<td><button class="btn ghost sm" data-open="' + i.id + '">فتح</button> ' + C.commentButtonHtml(i.id, stats) + '</td></tr>';
+            '<td><button class="btn ghost sm" data-open="' + i.id + "\"> <!--ssmpd-i18n:%D9%81%D8%AA%D8%AD-->فتح</button> " + C.commentButtonHtml(i.id, stats) + '</td></tr>';
         });
         html += '</tbody></table>';
       }
@@ -911,9 +911,9 @@ function openAgentImportModal(parentBackdrop) {
     backdrop.className = "modal-backdrop";
     backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>فكرة/محتوى جديد</h3>' +
       '<button class="modal-close">×</button></div>' +
-      '<div class="field"><label>العنوان</label><input id="cf-title" placeholder="عنوان المحتوى"></div>' +
-      '<div class="field"><label>المادة دي لصفحة</label>' + W.brandSelectHtml("cf-brand", "") + '</div>' +
-      '<div class="field"><label>التخصص</label>' + W.specialtySelectHtml("cf-specialty", "") + '</div>' +
+      "<div class=\"field\"><label> <!--ssmpd-i18n:%D8%A7%D9%84%D8%B9%D9%86%D9%88%D8%A7%D9%86-->العنوان</label><input id=\"cf-title\" placeholder=\"عنوان المحتوى\"></div>" +
+      "<div class=\"field\"><label> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%A7%D8%AF%D8%A9%20%D8%AF%D9%8A%20%D9%84%D8%B5%D9%81%D8%AD%D8%A9-->المادة دي لصفحة</label>" + W.brandSelectHtml("cf-brand", "") + '</div>' +
+      "<div class=\"field\"><label> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AA%D8%AE%D8%B5%D8%B5-->التخصص</label>" + W.specialtySelectHtml("cf-specialty", "") + '</div>' +
       '<div class="field"><label>نص المحتوى</label><textarea id="cf-body" placeholder="اكتب الفكرة والنص..."></textarea></div>' +
       W.contentIntelligencePanelHtml() +
       '<div class="content-ai-actions"><button type="button" class="btn" id="cf-ai-generate">توليد ٣ أفكار بالذكاء الاصطناعي</button><button type="button" class="btn ghost" id="cf-ai-import">استيراد رد الوكيل يدويًا</button></div>' +
@@ -1022,5 +1022,6 @@ function openAgentImportModal(parentBackdrop) {
 
   window.SSMPDRenderProduction = { render: render, renderVideoJobSection: renderVideoJobSection };
 })();
+
 
 

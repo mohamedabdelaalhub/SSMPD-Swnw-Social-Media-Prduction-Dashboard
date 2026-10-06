@@ -1,0 +1,9 @@
+html[lang="en"] body {direction:ltr;}
+html[lang="en"] .field,
+html[lang="en"] .ud-item,
+html[lang="en"] .mobile-menu .mm-tabs .tab-btn,
+html[lang="en"] th {text-align:left;}
+.language-switch {white-space:nowrap;flex-shrink:0;min-height:36px;}
+.auth-box > .language-switch {display:block;margin-inline-start:auto;margin-bottom:12px;}
+html[lang="en"] input[type="email"],html[lang="en"] input[type="url"] {direction:ltr;}
+@media(max-width:600px){.topbar>.language-switch {font-size:12px;padding:6px 8px;}}

@@ -31,11 +31,11 @@
       '<div style="font-size:12px;margin:5px 0;"><b>الفكرة:</b> ' + esc(idea.idea) + '</div>' +
       '<div style="font-size:12px;margin:5px 0;"><b>الافتتاحية:</b> ' + esc(idea.hook) + '</div>' +
       '<div style="font-size:12px;margin:5px 0;"><b>الزاوية:</b> ' + esc(idea.angle) + '</div>' +
-      '<div style="font-size:12px;margin:5px 0;"><b>الشكل:</b> ' + esc(idea.formatKey || "—") + '</div>' +
+      "<div style=\"font-size:12px;margin:5px 0;\"><b> <!--ssmpd-i18n:%D8%A7%D9%84%D8%B4%D9%83%D9%84%3A-->الشكل:</b> " + esc(idea.formatKey || "—") + '</div>' +
       '<details style="margin-top:8px;"><summary>مراجعة النص وبيانات التنفيذ</summary>' +
       '<p style="white-space:pre-wrap;font-size:13px;">' + esc(idea.caption) + '</p>' +
-      (idea.script ? '<p style="white-space:pre-wrap;font-size:13px;"><b>السكريبت</b><br>' + esc(idea.script) + '</p>' : '') +
-      '<p style="font-size:13px;"><b>الدعوة للتفاعل</b> ' + esc(idea.cta) + '</p>' +
+      (idea.script ? "<p style=\"white-space:pre-wrap;font-size:13px;\"><b> <!--ssmpd-i18n:%D8%A7%D9%84%D8%B3%D9%83%D8%B1%D9%8A%D8%A8%D8%AA-->السكريبت</b><br>" + esc(idea.script) + '</p>' : '') +
+      "<p style=\"font-size:13px;\"><b> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AF%D8%B9%D9%88%D8%A9%20%D9%84%D9%84%D8%AA%D9%81%D8%A7%D8%B9%D9%84-->الدعوة للتفاعل</b> " + esc(idea.cta) + '</p>' +
       '<p style="font-size:13px;"><b>سبب الاختبار</b> ' + esc(idea.why) + '</p></details>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">' + extra + '</div></article>';
   }
@@ -68,7 +68,7 @@
     backdrop.style.zIndex = "9999";
     backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>توليد أفكار بالذكاء الاصطناعي</h3><button class="modal-close">×</button></div>' +
       '<p style="font-size:12px;color:var(--c-muted);">سيظهر ٣ اقتراحات جديدة فقط. اختَر واحدة للتنفيذ أو احفظ الباقي في بنك الأفكار.</p>' +
-      '<div class="field"><label for="ai-objective">هدف البوست</label>' + window.SSMPDWorkflow.objectiveSelectHtml('ai-objective', context.advertisingObjective) + '</div>' +
+      "<div class=\"field\"><label for=\"ai-objective\"> <!--ssmpd-i18n:%D9%87%D8%AF%D9%81%20%D8%A7%D9%84%D8%A8%D9%88%D8%B3%D8%AA-->هدف البوست</label>" + window.SSMPDWorkflow.objectiveSelectHtml('ai-objective', context.advertisingObjective) + '</div>' +
       '<div class="field"><label>نوع الطلب</label><select id="ai-mode"><option value="ideas">توليد ٣ أفكار جديدة</option><option value="develop">تطوير الفكرة/المسودة المكتوبة</option></select></div>' +
       '<div class="field"><label>الموضوع أو توجيه إضافي</label><textarea id="ai-topic" placeholder="مثال: الصداع النصفي، أو اتركه ليستخدم بيانات المادة"></textarea></div>' +
       '<div id="ai-context-note" style="font-size:12px;color:var(--c-muted);margin-bottom:10px;"></div>' +
@@ -105,7 +105,7 @@
         if (ideas.length !== 3) throw new Error("لم تصل ٣ أفكار مكتملة. أعد المحاولة.");
         slot.innerHTML = ideas.map(function (idea, i) {
           return renderCard(idea, i,
-            '<button class="btn sm" data-use="' + i + '">اختيار الفكرة</button>' +
+            '<button class="btn sm" data-use="' + i + "\"> <!--ssmpd-i18n:%D8%A7%D8%AE%D8%AA%D9%8A%D8%A7%D8%B1%20%D8%A7%D9%84%D9%81%D9%83%D8%B1%D8%A9-->اختيار الفكرة</button>" +
             '<button class="btn ghost sm" data-save="' + i + '">حفظ لوقت لاحق</button>');
         }).join("");
         slot.querySelectorAll("[data-use]").forEach(function (b) { b.onclick = function () {
@@ -134,7 +134,7 @@
   function openIdeaBank() {
     var backdrop = document.createElement("div");
     backdrop.className = "modal-backdrop"; backdrop.style.zIndex = "9999";
-    backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>بنك الأفكار</h3><button class="modal-close">×</button></div><div class="loading">بيحمّل الأفكار المحفوظة…</div></div>';
+    backdrop.innerHTML = "<div class=\"modal\"><div class=\"modal-head\"><h3> <!--ssmpd-i18n:%D8%A8%D9%86%D9%83%20%D8%A7%D9%84%D8%A3%D9%81%D9%83%D8%A7%D8%B1-->بنك الأفكار</h3><button class=\"modal-close\">×</button></div><div class=\"loading\">بيحمّل الأفكار المحفوظة…</div></div>";
     document.body.appendChild(backdrop);
     function close() { backdrop.remove(); }
     backdrop.querySelector(".modal-close").onclick = close; backdrop.onclick = function (e) { if (e.target === backdrop) close(); };

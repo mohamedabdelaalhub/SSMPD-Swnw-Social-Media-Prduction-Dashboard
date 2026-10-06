@@ -48,19 +48,19 @@
 
     var html = '<div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:14px;">' +
       '<div><h2 style="margin:0;">حجوزات الوكيل</h2><div style="font-size:12px;color:var(--c-muted);margin-top:4px;">مرآة متابعة فقط — نظام الحجز الرسمي هو مصدر الحقيقة.</div></div>' +
-      '<button class="btn ghost sm" id="bookings-refresh">تحديث</button></div>' +
+      "<button class=\"btn ghost sm\" id=\"bookings-refresh\"> <!--ssmpd-i18n:%D8%AA%D8%AD%D8%AF%D9%8A%D8%AB-->تحديث</button></div>" +
       '<div class="kpi-grid" style="margin-bottom:14px;">' +
         '<div class="kpi-card"><div class="label">إجمالي الظاهر</div><div class="value small">' + rowsCache.length + '</div></div>' +
-        '<div class="kpi-card"><div class="label">مؤكد</div><div class="value small">' + confirmed + '</div></div>' +
-        '<div class="kpi-card"><div class="label">اليوم</div><div class="value small">' + todayCount + '</div></div>' +
+        "<div class=\"kpi-card\"><div class=\"label\"> <!--ssmpd-i18n:%D9%85%D8%A4%D9%83%D8%AF-->مؤكد</div><div class=\"value small\">" + confirmed + '</div></div>' +
+        "<div class=\"kpi-card\"><div class=\"label\"> <!--ssmpd-i18n:%D8%A7%D9%84%D9%8A%D9%88%D9%85-->اليوم</div><div class=\"value small\">" + todayCount + '</div></div>' +
         '<div class="kpi-card"><div class="label">قادمة</div><div class="value small">' + futureCount + '</div></div>' +
       '</div>' +
       '<div class="section">' +
         '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">' +
           '<input id="booking-search" type="search" placeholder="بحث بالاسم / الهاتف / المرجع / الطبيب…" style="flex:1;min-width:240px;">' +
-          '<select id="booking-status"><option value="">كل الحالات</option>' +
-            '<option value="confirmed">مؤكد</option><option value="rescheduled">أُعيدت الجدولة</option>' +
-            '<option value="cancelled">ملغي</option><option value="arrived">حضر</option>' +
+          "<select id=\"booking-status\"><option value=\"\"> <!--ssmpd-i18n:%D9%83%D9%84%20%D8%A7%D9%84%D8%AD%D8%A7%D9%84%D8%A7%D8%AA-->كل الحالات</option>" +
+            "<option value=\"confirmed\"> <!--ssmpd-i18n:%D9%85%D8%A4%D9%83%D8%AF-->مؤكد</option><option value=\"rescheduled\">أُعيدت الجدولة</option>" +
+            "<option value=\"cancelled\">ملغي</option><option value=\"arrived\"> <!--ssmpd-i18n:%D8%AD%D8%B6%D8%B1-->حضر</option>" +
             '<option value="completed">تمت الزيارة</option><option value="no_show">لم يحضر</option>' +
           '</select>' +
         '</div>' +
@@ -91,11 +91,11 @@
   function renderRows(rows) {
     var box = document.getElementById("bookings-list");
     if (!rows.length) {
-      box.innerHTML = '<div class="empty-state">مفيش حجوزات مطابقة.</div>';
+      box.innerHTML = "<div class=\"empty-state\"> <!--ssmpd-i18n:%D9%85%D9%81%D9%8A%D8%B4%20%D8%AD%D8%AC%D9%88%D8%B2%D8%A7%D8%AA%20%D9%85%D8%B7%D8%A7%D8%A8%D9%82%D8%A9.-->مفيش حجوزات مطابقة.</div>";
       return;
     }
     box.innerHTML = '<div style="overflow:auto;"><table class="simple"><thead><tr>' +
-      '<th>المريض</th><th>التخصص / الطبيب</th><th>الموعد</th><th>الحالة</th><th>المرجع</th><th>القناة</th>' +
+      "<th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%B1%D9%8A%D8%B6-->المريض</th><th>التخصص / الطبيب</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D9%88%D8%B9%D8%AF-->الموعد</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AD%D8%A7%D9%84%D8%A9-->الحالة</th><th>المرجع</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%82%D9%86%D8%A7%D8%A9-->القناة</th>" +
       '</tr></thead><tbody>' +
       rows.map(function (r) {
         return '<tr class="booking-row" data-booking-id="' + r.id + '" style="cursor:pointer;">' +
@@ -122,16 +122,16 @@
     modal.className = "modal-backdrop";
     modal.innerHTML = '<div class="modal"><div class="modal-head"><h3>تفاصيل الحجز</h3><button class="modal-close">×</button></div>' +
       '<table class="simple">' +
-      '<tr><th>المريض</th><td>' + esc(b.customer_name || "—") + '</td></tr>' +
-      '<tr><th>الهاتف</th><td>' + esc(b.phone || b.wa_id || "—") + '</td></tr>' +
-      '<tr><th>التخصص</th><td>' + esc(b.specialty_name || "—") + '</td></tr>' +
-      '<tr><th>الطبيب</th><td>' + esc(b.doctor_name || "—") + '</td></tr>' +
-      '<tr><th>الموعد</th><td>' + esc(dateText(b)) + '</td></tr>' +
+      "<tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%B1%D9%8A%D8%B6-->المريض</th><td>" + esc(b.customer_name || "—") + '</td></tr>' +
+      "<tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%87%D8%A7%D8%AA%D9%81-->الهاتف</th><td>" + esc(b.phone || b.wa_id || "—") + '</td></tr>' +
+      "<tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AA%D8%AE%D8%B5%D8%B5-->التخصص</th><td>" + esc(b.specialty_name || "—") + '</td></tr>' +
+      "<tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%B7%D8%A8%D9%8A%D8%A8-->الطبيب</th><td>" + esc(b.doctor_name || "—") + '</td></tr>' +
+      "<tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D9%88%D8%B9%D8%AF-->الموعد</th><td>" + esc(dateText(b)) + '</td></tr>' +
       '<tr><th>السعر</th><td>' + (b.price == null ? "—" : esc(b.price) + " " + esc(b.currency || "EGP")) + '</td></tr>' +
-      '<tr><th>الحالة</th><td>' + esc(statusLabel(b.status)) + '</td></tr>' +
+      "<tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AD%D8%A7%D9%84%D8%A9-->الحالة</th><td>" + esc(statusLabel(b.status)) + '</td></tr>' +
       '<tr><th>مرجع الحجز</th><td>' + esc(b.booking_reference || b.official_booking_id || "—") + '</td></tr>' +
       '<tr><th>Booking Request ID</th><td style="direction:ltr;text-align:left;">' + esc(b.booking_request_id) + '</td></tr>' +
-      '<tr><th>القناة</th><td>' + esc(b.channel || "—") + '</td></tr>' +
+      "<tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%82%D9%86%D8%A7%D8%A9-->القناة</th><td>" + esc(b.channel || "—") + '</td></tr>' +
       '<tr><th>آخر مزامنة</th><td>' + (b.last_synced_at ? new Date(b.last_synced_at).toLocaleString("ar-EG") : "—") + '</td></tr>' +
       '</table></div>';
     document.body.appendChild(modal);
@@ -141,3 +141,4 @@
 
   window.SSMPDRenderBookings = { render: render };
 })();
+

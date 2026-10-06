@@ -150,14 +150,14 @@
 
   // ============ ١) شاشة الاستقبال ============
   function newLeadFormHtml() {
-    return '<div class="field"><label>اسم العميل</label><input id="nl-name"></div>' +
-      '<div class="field"><label>رقم الهاتف</label><input id="nl-phone" placeholder="01xxxxxxxxx"></div>' +
-      '<div class="field"><label>المصدر</label><select id="nl-source">' +
+    return "<div class=\"field\"><label> <!--ssmpd-i18n:%D8%A7%D8%B3%D9%85%20%D8%A7%D9%84%D8%B9%D9%85%D9%8A%D9%84-->اسم العميل</label><input id=\"nl-name\"></div>" +
+      "<div class=\"field\"><label> <!--ssmpd-i18n:%D8%B1%D9%82%D9%85%20%D8%A7%D9%84%D9%87%D8%A7%D8%AA%D9%81-->رقم الهاتف</label><input id=\"nl-phone\" placeholder=\"01xxxxxxxxx\"></div>" +
+      "<div class=\"field\"><label> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%B5%D8%AF%D8%B1-->المصدر</label><select id=\"nl-source\">" +
       Object.keys(SOURCE_LABELS).filter(function (k) { return k !== "doctor_referral"; }).map(function (k) { return '<option value="' + k + '">' + SOURCE_LABELS[k] + '</option>'; }).join("") + '</select></div>' +
       '<div class="field"><label>نص الرسالة (اختياري)</label><textarea id="nl-message" rows="2"></textarea></div>' +
-      '<div class="field"><label>الخدمة المهتم بيها (اختياري)</label><select id="nl-service"><option value="">— بدون —</option>' +
+      "<div class=\"field\"><label>الخدمة المهتم بيها (اختياري)</label><select id=\"nl-service\"><option value=\"\"> <!--ssmpd-i18n:%E2%80%94%20%D8%A8%D8%AF%D9%88%D9%86%20%E2%80%94-->— بدون —</option>" +
       Object.keys(SERVICE_LABELS).map(function (k) { return '<option value="' + k + '">' + SERVICE_LABELS[k] + '</option>'; }).join("") + '</select></div>' +
-      '<div class="field"><label>مصدر الاهتمام (اختياري)</label><select id="nl-acquisition"><option value="">— بدون —</option>' +
+      "<div class=\"field\"><label>مصدر الاهتمام (اختياري)</label><select id=\"nl-acquisition\"><option value=\"\"> <!--ssmpd-i18n:%E2%80%94%20%D8%A8%D8%AF%D9%88%D9%86%20%E2%80%94-->— بدون —</option>" +
       Object.keys(ACQUISITION_LABELS).map(function (k) { return '<option value="' + k + '">' + ACQUISITION_LABELS[k] + '</option>'; }).join("") + '</select></div>' +
       '<div id="nl-dup-box"></div>';
   }
@@ -165,7 +165,7 @@
   function renderReceptionScreen(view, container) {
     var html = '<div class="section"><h3>استقبال رسالة جديدة</h3>' + newLeadFormHtml() +
       '<button class="btn" id="nl-save">حفظ الليد</button></div>' +
-      '<div class="section"><h3>آخر الليدز المُضافة</h3><div id="nl-recent"><div class="loading">بيحمّل…</div></div></div>';
+      "<div class=\"section\"><h3>آخر الليدز المُضافة</h3><div id=\"nl-recent\"><div class=\"loading\"> <!--ssmpd-i18n:%D8%A8%D9%8A%D8%AD%D9%85%D9%91%D9%84%E2%80%A6-->بيحمّل…</div></div></div>";
     view.innerHTML = html;
 
     function loadRecent() {
@@ -173,7 +173,7 @@
         var leads = res.leads || [];
         var box = document.getElementById("nl-recent");
         if (!leads.length) { box.innerHTML = '<p style="font-size:12px;color:var(--c-muted);">مفيش ليدز لسه.</p>'; return; }
-        box.innerHTML = '<table class="simple"><thead><tr><th>العميل</th><th>الهاتف</th><th>المصدر</th><th>الحالة</th><th>تاريخ</th></tr></thead><tbody>' +
+        box.innerHTML = "<table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%B9%D9%85%D9%8A%D9%84-->العميل</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%87%D8%A7%D8%AA%D9%81-->الهاتف</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%B5%D8%AF%D8%B1-->المصدر</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AD%D8%A7%D9%84%D8%A9-->الحالة</th><th> <!--ssmpd-i18n:%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE-->تاريخ</th></tr></thead><tbody>" +
           leads.map(function (l) {
             return '<tr><td>' + escapeHtml(l.customer_name) + '</td><td>' + escapeHtml(l.phone_raw || l.phone_normalized || "—") + '</td>' +
               '<td>' + (SOURCE_LABELS[l.source] || l.source) + '</td>' +
@@ -228,7 +228,7 @@
 
   // ============ ٢) شاشة خدمة العملاء ============
   function renderCsScreen(view, container) {
-    view.innerHTML = '<div class="loading">بيحمّل…</div>';
+    view.innerHTML = "<div class=\"loading\"> <!--ssmpd-i18n:%D8%A8%D9%8A%D8%AD%D9%85%D9%91%D9%84%E2%80%A6-->بيحمّل…</div>";
     var s = state.cs;
     window.SSMPDDb.listLeads({
       status: s.status || undefined, search: s.search || undefined,
@@ -241,22 +241,22 @@
       var html = '<div class="section">';
       html += '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">' +
         '<input id="cs-search" placeholder="بحث بالاسم / الهاتف" value="' + escapeHtml(s.search) + '" style="flex:1;min-width:200px;padding:9px 12px;border-radius:10px;border:1px solid var(--c-border);">' +
-        '<select id="cs-status"><option value="">كل الحالات</option>' +
+        "<select id=\"cs-status\"><option value=\"\"> <!--ssmpd-i18n:%D9%83%D9%84%20%D8%A7%D9%84%D8%AD%D8%A7%D9%84%D8%A7%D8%AA-->كل الحالات</option>" +
         Object.keys(STATUS_LABELS).map(function (k) { return '<option value="' + k + '" ' + (s.status === k ? "selected" : "") + '>' + STATUS_LABELS[k] + '</option>'; }).join("") +
         '</select>' +
         '<label style="font-size:12px;display:flex;align-items:center;gap:4px;"><input type="checkbox" id="cs-open-only" ' + (s.openOnly ? "checked" : "") + '> المفتوحة بس</label>' +
-        '<button class="btn ghost sm" id="cs-search-btn">بحث</button></div>';
+        "<button class=\"btn ghost sm\" id=\"cs-search-btn\"> <!--ssmpd-i18n:%D8%A8%D8%AD%D8%AB-->بحث</button></div>";
 
       if (!leads.length) {
-        html += '<p style="color:var(--c-muted);font-size:13px;">مفيش ليدز مطابقة.</p>';
+        html += "<p style=\"color:var(--c-muted);font-size:13px;\"> <!--ssmpd-i18n:%D9%85%D9%81%D9%8A%D8%B4%20%D9%84%D9%8A%D8%AF%D8%B2%20%D9%85%D8%B7%D8%A7%D8%A8%D9%82%D8%A9.-->مفيش ليدز مطابقة.</p>";
       } else {
-        html += '<table class="simple"><thead><tr><th>العميل</th><th>الهاتف</th><th>المصدر</th><th>الحالة</th><th>معاد متابعة</th><th></th></tr></thead><tbody>';
+        html += "<table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%B9%D9%85%D9%8A%D9%84-->العميل</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%87%D8%A7%D8%AA%D9%81-->الهاتف</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%B5%D8%AF%D8%B1-->المصدر</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AD%D8%A7%D9%84%D8%A9-->الحالة</th><th>معاد متابعة</th><th></th></tr></thead><tbody>";
         leads.forEach(function (l) {
           html += '<tr><td>' + escapeHtml(l.customer_name) + '</td><td>' + escapeHtml(l.phone_raw || l.phone_normalized || "—") + '</td>' +
             '<td>' + (SOURCE_LABELS[l.source] || l.source) + '</td>' +
             '<td><span class="status-pill ' + (STATUS_PILL_CLASS[l.current_status] || "draft") + '">' + (STATUS_LABELS[l.current_status] || l.current_status) + '</span></td>' +
             '<td style="font-size:11px;color:var(--c-muted);">' + (l.next_follow_up_date ? fmtDateOnly(l.next_follow_up_date) : "—") + '</td>' +
-            '<td><button class="btn ghost sm" data-open="' + l.id + '">فتح</button></td></tr>';
+            '<td><button class="btn ghost sm" data-open="' + l.id + "\"> <!--ssmpd-i18n:%D9%81%D8%AA%D8%AD-->فتح</button></td></tr>";
         });
         html += '</tbody></table>';
         html += pagerHtml("cs", s.page, totalPages, total, "ليد");
@@ -280,9 +280,9 @@
 
   function pagerHtml(prefix, page, totalPages, total, unitLabel) {
     return '<div style="display:flex;gap:8px;align-items:center;justify-content:center;margin-top:14px;">' +
-      '<button class="btn ghost sm" id="' + prefix + '-prev" ' + (page <= 1 ? "disabled" : "") + '>السابق</button>' +
+      '<button class="btn ghost sm" id="' + prefix + '-prev" ' + (page <= 1 ? "disabled" : "") + "> <!--ssmpd-i18n:%D8%A7%D9%84%D8%B3%D8%A7%D8%A8%D9%82-->السابق</button>" +
       '<span style="font-size:12px;color:var(--c-muted);">صفحة ' + page + ' من ' + totalPages + ' (' + fmtNum(total) + ' ' + unitLabel + ')</span>' +
-      '<button class="btn ghost sm" id="' + prefix + '-next" ' + (page >= totalPages ? "disabled" : "") + '>التالي</button></div>';
+      '<button class="btn ghost sm" id="' + prefix + '-next" ' + (page >= totalPages ? "disabled" : "") + "> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AA%D8%A7%D9%84%D9%8A-->التالي</button></div>";
   }
   function wirePager(view, prefix, s, totalPages, rerender) {
     var prevBtn = document.getElementById(prefix + "-prev");
@@ -296,7 +296,7 @@
   // بيتفتح من هنا كمان علشان نضمن نفس الأسئلة بالظبط زي ما طلب الفريق.
   function renderExperienceRatingsScreen(view, container) {
     var s = state.experience_ratings;
-    view.innerHTML = '<div class="loading">بيحمّل…</div>';
+    view.innerHTML = "<div class=\"loading\"> <!--ssmpd-i18n:%D8%A8%D9%8A%D8%AD%D9%85%D9%91%D9%84%E2%80%A6-->بيحمّل…</div>";
     window.SSMPDDb.listAllExperienceRatings({}).then(function (all) {
       var todayStr = new Date().toISOString().slice(0, 10);
       var todayRatings = all.filter(function (r) { return r.visit_date === todayStr; });
@@ -307,7 +307,7 @@
         '<p style="font-size:12px;color:var(--c-muted);margin-bottom:8px;">دوّر بالاسم / رقم الهاتف / كود المريض علشان تفتح فورم تقييم تجربته.</p>' +
         '<div style="display:flex;gap:8px;flex-wrap:wrap;">' +
         '<input id="er-search" placeholder="بحث عن مريض…" value="' + escapeHtml(s.searchTerm) + '" style="flex:1;min-width:200px;padding:9px 12px;border-radius:10px;border:1px solid var(--c-border);">' +
-        '<button class="btn sm" id="er-search-btn">بحث</button></div>' +
+        "<button class=\"btn sm\" id=\"er-search-btn\"> <!--ssmpd-i18n:%D8%A8%D8%AD%D8%AB-->بحث</button></div>" +
         '<div id="er-search-results" style="margin-top:10px;"></div></div>';
 
       html += '<div class="kpi-grid">' +
@@ -321,10 +321,10 @@
 
       html += '<div class="section"><h3>أرشيف التقييمات الكامل</h3>' +
         '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px;">' +
-        '<div class="field" style="margin:0;"><label>من تاريخ</label><input type="date" id="er-from" value="' + escapeHtml(s.from) + '"></div>' +
-        '<div class="field" style="margin:0;"><label>إلى تاريخ</label><input type="date" id="er-to" value="' + escapeHtml(s.to) + '"></div>' +
-        '<button class="btn ghost sm" id="er-filter-apply">تطبيق</button>' +
-        (s.from || s.to ? '<button class="btn ghost sm" id="er-filter-clear">مسح الفلتر</button>' : '') +
+        "<div class=\"field\" style=\"margin:0;\"><label> <!--ssmpd-i18n:%D9%85%D9%86%20%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE-->من تاريخ</label><input type=\"date\" id=\"er-from\" value=\"" + escapeHtml(s.from) + '"></div>' +
+        "<div class=\"field\" style=\"margin:0;\"><label> <!--ssmpd-i18n:%D8%A5%D9%84%D9%89%20%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE-->إلى تاريخ</label><input type=\"date\" id=\"er-to\" value=\"" + escapeHtml(s.to) + '"></div>' +
+        "<button class=\"btn ghost sm\" id=\"er-filter-apply\"> <!--ssmpd-i18n:%D8%AA%D8%B7%D8%A8%D9%8A%D9%82-->تطبيق</button>" +
+        (s.from || s.to ? "<button class=\"btn ghost sm\" id=\"er-filter-clear\"> <!--ssmpd-i18n:%D9%85%D8%B3%D8%AD%20%D8%A7%D9%84%D9%81%D9%84%D8%AA%D8%B1-->مسح الفلتر</button>" : '') +
         '<span style="flex:1;"></span>' +
         '<button class="btn ghost sm" id="er-export-xlsx">⬇ تصدير إكسيل</button>' +
         '<button class="btn ghost sm" id="er-export-pdf">🖨 تصدير PDF</button>' +
@@ -351,7 +351,7 @@
 
   function experienceRatingsTableHtml(rows, emptyMsg) {
     if (!rows.length) return '<p style="font-size:13px;color:var(--c-muted);">' + emptyMsg + '</p>';
-    var html = '<table class="simple"><thead><tr><th>المريض</th><th>الهاتف</th><th>التاريخ</th><th>متوسط التقييم</th><th>ملاحظات</th></tr></thead><tbody>';
+    var html = "<table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%B1%D9%8A%D8%B6-->المريض</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%87%D8%A7%D8%AA%D9%81-->الهاتف</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE-->التاريخ</th><th>متوسط التقييم</th><th> <!--ssmpd-i18n:%D9%85%D9%84%D8%A7%D8%AD%D8%B8%D8%A7%D8%AA-->ملاحظات</th></tr></thead><tbody>";
     rows.forEach(function (r) {
       var avg = window.SSMPDRenderPatients.experienceRatingAvg(r);
       var p = r.patients || {};
@@ -380,7 +380,7 @@
     var box = document.getElementById("er-search-results");
     if (!box) return;
     if (s.searchTerm && !s.searchResults.length) {
-      box.innerHTML = '<p style="font-size:12px;color:var(--c-muted);">مفيش مرضى مطابقين.</p>';
+      box.innerHTML = "<p style=\"font-size:12px;color:var(--c-muted);\"> <!--ssmpd-i18n:%D9%85%D9%81%D9%8A%D8%B4%20%D9%85%D8%B1%D8%B6%D9%89%20%D9%85%D8%B7%D8%A7%D8%A8%D9%82%D9%8A%D9%86.-->مفيش مرضى مطابقين.</p>";
       return;
     }
     box.innerHTML = s.searchResults.map(function (p) {
@@ -425,7 +425,7 @@
       'td,th{border:1px solid #ccc;padding:6px 10px;text-align:right;font-size:12px;}h1{font-size:20px;}</style></head><body>';
     html += '<h1>تقييمات تجربة المريض — مركز عيادات Swnw</h1>';
     html += '<p>تاريخ التقرير: ' + new Date().toLocaleDateString("ar-EG") + ' — إجمالي التقييمات: ' + rows.length + '</p>';
-    html += '<table><tr><th>المريض</th><th>الهاتف</th><th>التاريخ</th><th>المتوسط</th><th>ملاحظات</th></tr>';
+    html += "<table><tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%B1%D9%8A%D8%B6-->المريض</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%87%D8%A7%D8%AA%D9%81-->الهاتف</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE-->التاريخ</th><th>المتوسط</th><th> <!--ssmpd-i18n:%D9%85%D9%84%D8%A7%D8%AD%D8%B8%D8%A7%D8%AA-->ملاحظات</th></tr>";
     rows.forEach(function (r) {
       var p = r.patients || {};
       var avg = window.SSMPDRenderPatients.experienceRatingAvg(r);
@@ -443,12 +443,12 @@
   function renderDashboardScreen(view, container) {
     var d = state.dashboard;
     view.innerHTML = '<div class="section" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px;">' +
-      '<div class="field" style="margin:0;"><label>من تاريخ</label><input type="date" id="ld-dash-from" value="' + escapeHtml(d.from) + '"></div>' +
-      '<div class="field" style="margin:0;"><label>إلى تاريخ</label><input type="date" id="ld-dash-to" value="' + escapeHtml(d.to) + '"></div>' +
-      '<button class="btn sm" id="ld-dash-apply">تطبيق</button>' +
-      (d.from || d.to ? '<button class="btn ghost sm" id="ld-dash-clear">مسح الفلتر</button>' : '') +
+      "<div class=\"field\" style=\"margin:0;\"><label> <!--ssmpd-i18n:%D9%85%D9%86%20%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE-->من تاريخ</label><input type=\"date\" id=\"ld-dash-from\" value=\"" + escapeHtml(d.from) + '"></div>' +
+      "<div class=\"field\" style=\"margin:0;\"><label> <!--ssmpd-i18n:%D8%A5%D9%84%D9%89%20%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE-->إلى تاريخ</label><input type=\"date\" id=\"ld-dash-to\" value=\"" + escapeHtml(d.to) + '"></div>' +
+      "<button class=\"btn sm\" id=\"ld-dash-apply\"> <!--ssmpd-i18n:%D8%AA%D8%B7%D8%A8%D9%8A%D9%82-->تطبيق</button>" +
+      (d.from || d.to ? "<button class=\"btn ghost sm\" id=\"ld-dash-clear\"> <!--ssmpd-i18n:%D9%85%D8%B3%D8%AD%20%D8%A7%D9%84%D9%81%D9%84%D8%AA%D8%B1-->مسح الفلتر</button>" : '') +
       '<span style="font-size:11px;color:var(--c-muted);">الفلتر بيأثر على: توزيع الحالة، تصنيف عضوي/إعلان، والدخل. أما "مفتوحة/مغلقة/تم الحجز" فبتفضل الحالة اللحظية دايماً.</span>' +
-      '</div><div id="ld-dash-body"><div class="loading">بيحمّل…</div></div>';
+      "</div><div id=\"ld-dash-body\"><div class=\"loading\"> <!--ssmpd-i18n:%D8%A8%D9%8A%D8%AD%D9%85%D9%91%D9%84%E2%80%A6-->بيحمّل…</div></div>";
 
     document.getElementById("ld-dash-apply").onclick = function () {
       d.from = document.getElementById("ld-dash-from").value;
@@ -490,10 +490,10 @@
       }
 
       html += '<div class="kpi-grid">' +
-        '<div class="kpi-card"><div class="label">ليدز مفتوحة</div><div class="value">' + fmtNum(res.open) + '</div></div>' +
-        '<div class="kpi-card"><div class="label">ليدز مغلقة</div><div class="value">' + fmtNum(res.closed) + '</div></div>' +
-        '<div class="kpi-card"><div class="label">تم الحجز</div><div class="value small">' + fmtNum(res.booked) + '</div></div>' +
-        '<div class="kpi-card"><div class="label">إجمالي دخل الفواتير</div><div class="value small">' + fmtNum(res.total_income) + ' ج.م</div></div>' +
+        "<div class=\"kpi-card\"><div class=\"label\"> <!--ssmpd-i18n:%D9%84%D9%8A%D8%AF%D8%B2%20%D9%85%D9%81%D8%AA%D9%88%D8%AD%D8%A9-->ليدز مفتوحة</div><div class=\"value\">" + fmtNum(res.open) + '</div></div>' +
+        "<div class=\"kpi-card\"><div class=\"label\"> <!--ssmpd-i18n:%D9%84%D9%8A%D8%AF%D8%B2%20%D9%85%D8%BA%D9%84%D9%82%D8%A9-->ليدز مغلقة</div><div class=\"value\">" + fmtNum(res.closed) + '</div></div>' +
+        "<div class=\"kpi-card\"><div class=\"label\"> <!--ssmpd-i18n:%D8%AA%D9%85%20%D8%A7%D9%84%D8%AD%D8%AC%D8%B2-->تم الحجز</div><div class=\"value small\">" + fmtNum(res.booked) + '</div></div>' +
+        "<div class=\"kpi-card\"><div class=\"label\"> <!--ssmpd-i18n:%D8%A5%D8%AC%D9%85%D8%A7%D9%84%D9%8A%20%D8%AF%D8%AE%D9%84%20%D8%A7%D9%84%D9%81%D9%88%D8%A7%D8%AA%D9%8A%D8%B1-->إجمالي دخل الفواتير</div><div class=\"value small\">" + fmtNum(res.total_income) + ' ج.م</div></div>' +
         '</div>';
 
       // تصنيف مصدر الليدز: عضوي مقابل إعلان — عرض بارز زي ما طلب الفريق
@@ -507,10 +507,10 @@
         '<div class="kpi-card"><div class="label">غير مصنّف</div><div class="value small">' + fmtNum(acq.unknown || 0) + '</div></div>' +
         '</div>';
 
-      html += '<div class="section"><h3>توزيع حسب الحالة</h3>';
+      html += "<div class=\"section\"><h3> <!--ssmpd-i18n:%D8%AA%D9%88%D8%B2%D9%8A%D8%B9%20%D8%AD%D8%B3%D8%A8%20%D8%A7%D9%84%D8%AD%D8%A7%D9%84%D8%A9-->توزيع حسب الحالة</h3>";
       var byStatus = res.by_status || {};
       var keys = Object.keys(STATUS_LABELS);
-      html += '<table class="simple"><thead><tr><th>الحالة</th><th>العدد</th></tr></thead><tbody>';
+      html += "<table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AD%D8%A7%D9%84%D8%A9-->الحالة</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%B9%D8%AF%D8%AF-->العدد</th></tr></thead><tbody>";
       keys.forEach(function (k) {
         html += '<tr><td><span class="status-pill ' + (STATUS_PILL_CLASS[k] || "draft") + '">' + STATUS_LABELS[k] + '</span></td><td>' + fmtNum(byStatus[k] || 0) + '</td></tr>';
       });
@@ -522,7 +522,7 @@
       if (!byEmp.length) {
         html += '<p style="font-size:13px;color:var(--c-muted);">مفيش فواتير مرفوعة ' + (d.from || d.to ? "في الفترة دي" : "لسه") + '.</p>';
       } else {
-        html += '<table class="simple"><thead><tr><th>الموظف</th><th>عدد الفواتير</th><th>إجمالي الدخل</th></tr></thead><tbody>';
+        html += "<table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D9%88%D8%B8%D9%81-->الموظف</th><th> <!--ssmpd-i18n:%D8%B9%D8%AF%D8%AF%20%D8%A7%D9%84%D9%81%D9%88%D8%A7%D8%AA%D9%8A%D8%B1-->عدد الفواتير</th><th> <!--ssmpd-i18n:%D8%A5%D8%AC%D9%85%D8%A7%D9%84%D9%8A%20%D8%A7%D9%84%D8%AF%D8%AE%D9%84-->إجمالي الدخل</th></tr></thead><tbody>";
         byEmp.forEach(function (e) {
           html += '<tr><td>' + escapeHtml(e.employee_name) + '</td><td>' + fmtNum(e.invoices_count) + '</td><td>' + fmtNum(e.total) + ' ج.م</td></tr>';
         });
@@ -531,12 +531,12 @@
       html += '</div>';
 
       // الدخل نفسه مجمّع حسب "القسم المطلوب" (requested_department) بدل الموظف
-      html += '<div class="section"><h3>الدخل حسب القسم</h3>';
+      html += "<div class=\"section\"><h3> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AF%D8%AE%D9%84%20%D8%AD%D8%B3%D8%A8%20%D8%A7%D9%84%D9%82%D8%B3%D9%85-->الدخل حسب القسم</h3>";
       var byDept = res.income_by_department || [];
       if (!byDept.length) {
         html += '<p style="font-size:13px;color:var(--c-muted);">مفيش فواتير مرفوعة ' + (d.from || d.to ? "في الفترة دي" : "لسه") + '.</p>';
       } else {
-        html += '<table class="simple"><thead><tr><th>القسم</th><th>عدد الفواتير</th><th>إجمالي الدخل</th></tr></thead><tbody>';
+        html += "<table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%82%D8%B3%D9%85-->القسم</th><th> <!--ssmpd-i18n:%D8%B9%D8%AF%D8%AF%20%D8%A7%D9%84%D9%81%D9%88%D8%A7%D8%AA%D9%8A%D8%B1-->عدد الفواتير</th><th> <!--ssmpd-i18n:%D8%A5%D8%AC%D9%85%D8%A7%D9%84%D9%8A%20%D8%A7%D9%84%D8%AF%D8%AE%D9%84-->إجمالي الدخل</th></tr></thead><tbody>";
         byDept.forEach(function (r) {
           html += '<tr><td>' + escapeHtml(r.department) + '</td><td>' + fmtNum(r.invoices_count) + '</td><td>' + fmtNum(r.total) + ' ج.م</td></tr>';
         });
@@ -592,22 +592,22 @@
       'td,th{border:1px solid #ccc;padding:6px 10px;text-align:right;font-size:13px;}h1{font-size:20px;}h2{font-size:15px;margin-top:20px;}</style></head><body>';
     html += '<h1>تقرير داشبورد الليدز — مركز عيادات Swnw</h1>';
     html += '<p>تاريخ التقرير: ' + new Date().toLocaleDateString("ar-EG") + (d.from || d.to ? ' — الفترة: ' + (d.from || "—") + ' إلى ' + (d.to || "—") : '') + '</p>';
-    html += '<table><tr><td>ليدز مفتوحة</td><td>' + (res.open || 0) + '</td></tr>' +
-      '<tr><td>ليدز مغلقة</td><td>' + (res.closed || 0) + '</td></tr>' +
-      '<tr><td>تم الحجز</td><td>' + (res.booked || 0) + '</td></tr>' +
-      '<tr><td>إجمالي دخل الفواتير</td><td>' + (res.total_income || 0) + ' ج.م</td></tr>' +
+    html += "<table><tr><td> <!--ssmpd-i18n:%D9%84%D9%8A%D8%AF%D8%B2%20%D9%85%D9%81%D8%AA%D9%88%D8%AD%D8%A9-->ليدز مفتوحة</td><td>" + (res.open || 0) + '</td></tr>' +
+      "<tr><td> <!--ssmpd-i18n:%D9%84%D9%8A%D8%AF%D8%B2%20%D9%85%D8%BA%D9%84%D9%82%D8%A9-->ليدز مغلقة</td><td>" + (res.closed || 0) + '</td></tr>' +
+      "<tr><td> <!--ssmpd-i18n:%D8%AA%D9%85%20%D8%A7%D9%84%D8%AD%D8%AC%D8%B2-->تم الحجز</td><td>" + (res.booked || 0) + '</td></tr>' +
+      "<tr><td> <!--ssmpd-i18n:%D8%A5%D8%AC%D9%85%D8%A7%D9%84%D9%8A%20%D8%AF%D8%AE%D9%84%20%D8%A7%D9%84%D9%81%D9%88%D8%A7%D8%AA%D9%8A%D8%B1-->إجمالي دخل الفواتير</td><td>" + (res.total_income || 0) + ' ج.م</td></tr>' +
       '<tr><td>' + ACQUISITION_LABELS.organic + '</td><td>' + (acq.organic || 0) + '</td></tr>' +
       '<tr><td>' + ACQUISITION_LABELS.ad + '</td><td>' + (acq.ad || 0) + '</td></tr></table>';
 
-    html += '<h2>توزيع حسب الحالة</h2><table><tr><th>الحالة</th><th>العدد</th></tr>';
+    html += "<h2> <!--ssmpd-i18n:%D8%AA%D9%88%D8%B2%D9%8A%D8%B9%20%D8%AD%D8%B3%D8%A8%20%D8%A7%D9%84%D8%AD%D8%A7%D9%84%D8%A9-->توزيع حسب الحالة</h2><table><tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AD%D8%A7%D9%84%D8%A9-->الحالة</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%B9%D8%AF%D8%AF-->العدد</th></tr>";
     Object.keys(STATUS_LABELS).forEach(function (k) { html += '<tr><td>' + STATUS_LABELS[k] + '</td><td>' + ((res.by_status || {})[k] || 0) + '</td></tr>'; });
     html += '</table>';
 
-    html += '<h2>الدخل حسب الموظف</h2><table><tr><th>الموظف</th><th>عدد الفواتير</th><th>الإجمالي (ج.م)</th></tr>';
+    html += "<h2>الدخل حسب الموظف</h2><table><tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D9%88%D8%B8%D9%81-->الموظف</th><th> <!--ssmpd-i18n:%D8%B9%D8%AF%D8%AF%20%D8%A7%D9%84%D9%81%D9%88%D8%A7%D8%AA%D9%8A%D8%B1-->عدد الفواتير</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%A5%D8%AC%D9%85%D8%A7%D9%84%D9%8A%20(%D8%AC.%D9%85)-->الإجمالي (ج.م)</th></tr>";
     (res.income_by_employee || []).forEach(function (e) { html += '<tr><td>' + escapeHtml(e.employee_name) + '</td><td>' + e.invoices_count + '</td><td>' + e.total + '</td></tr>'; });
     html += '</table>';
 
-    html += '<h2>الدخل حسب القسم</h2><table><tr><th>القسم</th><th>عدد الفواتير</th><th>الإجمالي (ج.م)</th></tr>';
+    html += "<h2> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AF%D8%AE%D9%84%20%D8%AD%D8%B3%D8%A8%20%D8%A7%D9%84%D9%82%D8%B3%D9%85-->الدخل حسب القسم</h2><table><tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%82%D8%B3%D9%85-->القسم</th><th> <!--ssmpd-i18n:%D8%B9%D8%AF%D8%AF%20%D8%A7%D9%84%D9%81%D9%88%D8%A7%D8%AA%D9%8A%D8%B1-->عدد الفواتير</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%A5%D8%AC%D9%85%D8%A7%D9%84%D9%8A%20(%D8%AC.%D9%85)-->الإجمالي (ج.م)</th></tr>";
     (res.income_by_department || []).forEach(function (r) { html += '<tr><td>' + escapeHtml(r.department) + '</td><td>' + r.invoices_count + '</td><td>' + r.total + '</td></tr>'; });
     html += '</table></body></html>';
 
@@ -618,7 +618,7 @@
 
   // ============ ٤) الحجوزات الفعلية ============
   function renderBookedScreen(view, container) {
-    view.innerHTML = '<div class="loading">بيحمّل…</div>';
+    view.innerHTML = "<div class=\"loading\"> <!--ssmpd-i18n:%D8%A8%D9%8A%D8%AD%D9%85%D9%91%D9%84%E2%80%A6-->بيحمّل…</div>";
     var s = state.booked;
     window.SSMPDDb.listLeads({
       status: "booked", search: s.search || undefined, booked_by: s.bookedBy || undefined,
@@ -631,21 +631,21 @@
       var html = '<div class="section">';
       html += '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">' +
         '<input id="bk-search" placeholder="بحث بالاسم / الهاتف" value="' + escapeHtml(s.search) + '" style="flex:1;min-width:200px;padding:9px 12px;border-radius:10px;border:1px solid var(--c-border);">' +
-        '<select id="bk-employee"><option value="">كل الموظفين</option>' +
+        "<select id=\"bk-employee\"><option value=\"\"> <!--ssmpd-i18n:%D9%83%D9%84%20%D8%A7%D9%84%D9%85%D9%88%D8%B8%D9%81%D9%8A%D9%86-->كل الموظفين</option>" +
         state.employees.map(function (e) { return '<option value="' + e.id + '" ' + (s.bookedBy === e.id ? "selected" : "") + '>' + escapeHtml(e.name) + '</option>'; }).join("") +
         '</select>' +
-        '<button class="btn ghost sm" id="bk-search-btn">بحث</button></div>';
+        "<button class=\"btn ghost sm\" id=\"bk-search-btn\"> <!--ssmpd-i18n:%D8%A8%D8%AD%D8%AB-->بحث</button></div>";
 
       if (!leads.length) {
-        html += '<p style="color:var(--c-muted);font-size:13px;">مفيش حجوزات مطابقة.</p>';
+        html += "<p style=\"color:var(--c-muted);font-size:13px;\"> <!--ssmpd-i18n:%D9%85%D9%81%D9%8A%D8%B4%20%D8%AD%D8%AC%D9%88%D8%B2%D8%A7%D8%AA%20%D9%85%D8%B7%D8%A7%D8%A8%D9%82%D8%A9.-->مفيش حجوزات مطابقة.</p>";
       } else {
-        html += '<table class="simple"><thead><tr><th>العميل</th><th>الهاتف</th><th>رقم الحجز</th><th>تاريخ الحجز</th><th>أنهى الحجز</th><th></th></tr></thead><tbody>';
+        html += "<table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%B9%D9%85%D9%8A%D9%84-->العميل</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%87%D8%A7%D8%AA%D9%81-->الهاتف</th><th>رقم الحجز</th><th> <!--ssmpd-i18n:%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE%20%D8%A7%D9%84%D8%AD%D8%AC%D8%B2-->تاريخ الحجز</th><th>أنهى الحجز</th><th></th></tr></thead><tbody>";
         leads.forEach(function (l) {
           html += '<tr><td>' + escapeHtml(l.customer_name) + '</td><td>' + escapeHtml(l.phone_raw || l.phone_normalized || "—") + '</td>' +
             '<td>' + escapeHtml(l.booking_reference || "—") + '</td>' +
             '<td style="font-size:11px;color:var(--c-muted);">' + fmtDateOnly(l.booking_date) + '</td>' +
             '<td style="font-size:11px;">' + escapeHtml(employeeName(l.booked_by)) + '</td>' +
-            '<td><button class="btn ghost sm" data-open="' + l.id + '">فتح</button></td></tr>';
+            '<td><button class="btn ghost sm" data-open="' + l.id + "\"> <!--ssmpd-i18n:%D9%81%D8%AA%D8%AD-->فتح</button></td></tr>";
         });
         html += '</tbody></table>';
         html += pagerHtml("bk", s.page, totalPages, total, "حجز");
@@ -678,7 +678,7 @@
       state.archiveRegistrars = stats.registrars;
       var select = view.querySelector('#ar-employee');
       if (select) {
-        select.innerHTML = '<option value="">كل الموظفين (مسجل الليد)</option>' + stats.employees.map(function (e) {
+        select.innerHTML = "<option value=\"\"> <!--ssmpd-i18n:%D9%83%D9%84%20%D8%A7%D9%84%D9%85%D9%88%D8%B8%D9%81%D9%8A%D9%86%20(%D9%85%D8%B3%D8%AC%D9%84%20%D8%A7%D9%84%D9%84%D9%8A%D8%AF)-->كل الموظفين (مسجل الليد)</option>" + stats.employees.map(function (e) {
           var id = e.employee_id || '__unrecorded__';
           return '<option value="' + escapeHtml(id) + '">' + escapeHtml(e.employee_name) + ' (' + fmtNum(e.count) + ')</option>';
         }).join('') + (stats.employees.some(function (e) { return !e.employee_id; }) ? '' : '<option value="__unrecorded__">بدون مسجل (0)</option>');
@@ -686,11 +686,11 @@
       }
       view.querySelectorAll('[data-registrar]').forEach(function (cell) { cell.textContent = registrarName(cell.getAttribute('data-registrar')); });
       var period = s.dateFrom || s.dateTo ? 'الفترة ' + (s.dateFrom || 'البداية') + ' — ' + (s.dateTo || 'اليوم') : 'كل الفترات';
-      var html = '<div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:8px;"><div><h3 style="margin:0;">تسجيل الليدز حسب الموظف</h3><p style="font-size:12px;color:var(--c-muted);margin:4px 0;">' + escapeHtml(period) + ' · إجمالي التسجيلات ' + fmtNum(stats.total) + '</p></div><button class="btn ghost sm" id="ar-refresh-stats">تحديث</button></div>';
+      var html = "<div style=\"display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:8px;\"><div><h3 style=\"margin:0;\"> <!--ssmpd-i18n:%D8%AA%D8%B3%D8%AC%D9%8A%D9%84%20%D8%A7%D9%84%D9%84%D9%8A%D8%AF%D8%B2%20%D8%AD%D8%B3%D8%A8%20%D8%A7%D9%84%D9%85%D9%88%D8%B8%D9%81-->تسجيل الليدز حسب الموظف</h3><p style=\"font-size:12px;color:var(--c-muted);margin:4px 0;\">" + escapeHtml(period) + ' · إجمالي التسجيلات ' + fmtNum(stats.total) + "</p></div><button class=\"btn ghost sm\" id=\"ar-refresh-stats\"> <!--ssmpd-i18n:%D8%AA%D8%AD%D8%AF%D9%8A%D8%AB-->تحديث</button></div>";
       html += '<p style="font-size:12px;color:var(--c-muted);">كل ليد يُحسب مرة واحدة لمسجله، سواء إدخال يدوي أو رفع إكسيل. المؤشرات تشمل كل الحالات؛ فلتر الموظف والبحث يغيّران القائمة فقط.</p>';
       if (!stats.employees.length) html += '<p>لا توجد تسجيلات في هذه الفترة.</p>';
       else {
-        html += '<div style="overflow-x:auto;"><table class="simple"><thead><tr><th>الموظف</th><th>الليدز المسجلة</th><th>نسبته من الإجمالي</th><th>آخر تسجيل</th><th></th></tr></thead><tbody>';
+        html += "<div style=\"overflow-x:auto;\"><table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D9%88%D8%B8%D9%81-->الموظف</th><th>الليدز المسجلة</th><th>نسبته من الإجمالي</th><th>آخر تسجيل</th><th></th></tr></thead><tbody>";
         stats.employees.forEach(function (e) {
           html += '<tr><td>' + escapeHtml(e.employee_name) + (e.employee_id && !e.active ? '<small style="display:block;color:var(--c-muted);">حساب غير نشط</small>' : '') + '</td><td>' + fmtNum(e.count) + '</td><td style="min-width:130px;">' + e.percentage.toFixed(1) + '%<div style="height:4px;background:var(--c-border);border-radius:4px;margin-top:5px;"><div style="height:4px;background:var(--c-primary,#0F369D);border-radius:4px;width:' + Math.min(100, e.percentage) + '%;"></div></div></td><td style="font-size:11px;">' + fmtDate(e.last_registered_at) + '</td><td><button class="btn ghost sm" data-registrar-filter="' + escapeHtml(e.employee_id || '__unrecorded__') + '">عرض الليدز</button></td></tr>';
         });
@@ -701,14 +701,14 @@
       panel.querySelectorAll('[data-registrar-filter]').forEach(function (button) { button.onclick = function () { s.bookedBy = button.getAttribute('data-registrar-filter'); s.search = ''; s.status = ''; s.page = 1; renderArchiveScreen(view, container); }; });
     }).catch(function (error) {
       if (!view.isConnected || view.querySelector('#ar-registration-stats') !== panel) return;
-      panel.innerHTML = '<h3>تسجيل الليدز حسب الموظف</h3><p class="err-msg">تعذر تحميل المؤشرات: ' + escapeHtml(error.message) + '</p><button class="btn ghost sm" id="ar-refresh-stats">إعادة المحاولة</button>';
+      panel.innerHTML = "<h3> <!--ssmpd-i18n:%D8%AA%D8%B3%D8%AC%D9%8A%D9%84%20%D8%A7%D9%84%D9%84%D9%8A%D8%AF%D8%B2%20%D8%AD%D8%B3%D8%A8%20%D8%A7%D9%84%D9%85%D9%88%D8%B8%D9%81-->تسجيل الليدز حسب الموظف</h3><p class=\"err-msg\">تعذر تحميل المؤشرات: " + escapeHtml(error.message) + '</p><button class="btn ghost sm" id="ar-refresh-stats">إعادة المحاولة</button>';
       panel.querySelector('#ar-refresh-stats').onclick = function () { renderArchiveScreen(view, container, true); };
     });
   }
 
   // ============ ٥) أرشيف الليدز ============
   function renderArchiveScreen(view, container, forceStats) {
-    view.innerHTML = '<div class="loading">بيحمّل…</div>';
+    view.innerHTML = "<div class=\"loading\"> <!--ssmpd-i18n:%D8%A8%D9%8A%D8%AD%D9%85%D9%91%D9%84%E2%80%A6-->بيحمّل…</div>";
     var s = state.archive, request = state.archiveRequest = (state.archiveRequest || 0) + 1;
     window.SSMPDDb.listLeadArchive({
       status: s.status || undefined, search: s.search || undefined, received_by: s.bookedBy || undefined,
@@ -723,29 +723,29 @@
       var html = '<div id="ar-registration-stats" class="section"><p class="loading">جارٍ حساب تسجيلات الموظفين…</p></div><div class="section">';
       html += '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">' +
         '<input id="ar-search" placeholder="بحث بالاسم / الهاتف" value="' + escapeHtml(s.search) + '" style="flex:1;min-width:200px;padding:9px 12px;border-radius:10px;border:1px solid var(--c-border);">' +
-        '<select id="ar-status"><option value="">كل الحالات</option>' +
+        "<select id=\"ar-status\"><option value=\"\"> <!--ssmpd-i18n:%D9%83%D9%84%20%D8%A7%D9%84%D8%AD%D8%A7%D9%84%D8%A7%D8%AA-->كل الحالات</option>" +
         Object.keys(STATUS_LABELS).map(function (k) { return '<option value="' + k + '" ' + (s.status === k ? "selected" : "") + '>' + STATUS_LABELS[k] + '</option>'; }).join("") +
         '</select>' +
-        '<select id="ar-employee"><option value="">كل الموظفين (مسجل الليد)</option>' +
+        "<select id=\"ar-employee\"><option value=\"\"> <!--ssmpd-i18n:%D9%83%D9%84%20%D8%A7%D9%84%D9%85%D9%88%D8%B8%D9%81%D9%8A%D9%86%20(%D9%85%D8%B3%D8%AC%D9%84%20%D8%A7%D9%84%D9%84%D9%8A%D8%AF)-->كل الموظفين (مسجل الليد)</option>" +
         (state.archiveRegistrars || state.employees).map(function (e) { return '<option value="' + e.id + '" ' + (s.bookedBy === e.id ? "selected" : "") + '>' + escapeHtml(e.name) + '</option>'; }).join("") +
         '<option value="__unrecorded__" ' + (s.bookedBy === '__unrecorded__' ? 'selected' : '') + '>بدون مسجل</option></select>' +
-        '<label style="font-size:11px;color:var(--c-muted);">من <input type="date" id="ar-date-from" value="' + escapeHtml(s.dateFrom || "") + '" style="padding:6px 8px;border-radius:8px;border:1px solid var(--c-border);"></label>' +
-        '<label style="font-size:11px;color:var(--c-muted);">إلى <input type="date" id="ar-date-to" value="' + escapeHtml(s.dateTo || "") + '" style="padding:6px 8px;border-radius:8px;border:1px solid var(--c-border);"></label>' +
-        '<button class="btn ghost sm" id="ar-search-btn">بحث</button>' +
+        "<label style=\"font-size:11px;color:var(--c-muted);\"> <!--ssmpd-i18n:%D9%85%D9%86-->من <input type=\"date\" id=\"ar-date-from\" value=\"" + escapeHtml(s.dateFrom || "") + '" style="padding:6px 8px;border-radius:8px;border:1px solid var(--c-border);"></label>' +
+        "<label style=\"font-size:11px;color:var(--c-muted);\"> <!--ssmpd-i18n:%D8%A5%D9%84%D9%89-->إلى <input type=\"date\" id=\"ar-date-to\" value=\"" + escapeHtml(s.dateTo || "") + '" style="padding:6px 8px;border-radius:8px;border:1px solid var(--c-border);"></label>' +
+        "<button class=\"btn ghost sm\" id=\"ar-search-btn\"> <!--ssmpd-i18n:%D8%A8%D8%AD%D8%AB-->بحث</button>" +
         (s.dateFrom || s.dateTo ? '<button class="btn ghost sm" id="ar-date-clear">✕ مسح الفترة</button>' : '') +
         '<button class="btn ghost sm" id="ar-export-xlsx">⬇ تصدير إكسيل (' + total + ')</button></div>';
 
       if (!leads.length) {
-        html += '<p style="color:var(--c-muted);font-size:13px;">مفيش ليدز مطابقة.</p>';
+        html += "<p style=\"color:var(--c-muted);font-size:13px;\"> <!--ssmpd-i18n:%D9%85%D9%81%D9%8A%D8%B4%20%D9%84%D9%8A%D8%AF%D8%B2%20%D9%85%D8%B7%D8%A7%D8%A8%D9%82%D8%A9.-->مفيش ليدز مطابقة.</p>";
       } else {
-        html += '<table class="simple"><thead><tr><th>العميل</th><th>الهاتف</th><th>المصدر</th><th>الحالة</th><th>مسجل الليد</th><th>تاريخ الإضافة</th><th></th></tr></thead><tbody>';
+        html += "<table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%B9%D9%85%D9%8A%D9%84-->العميل</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%87%D8%A7%D8%AA%D9%81-->الهاتف</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%B5%D8%AF%D8%B1-->المصدر</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AD%D8%A7%D9%84%D8%A9-->الحالة</th><th>مسجل الليد</th><th> <!--ssmpd-i18n:%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE%20%D8%A7%D9%84%D8%A5%D8%B6%D8%A7%D9%81%D8%A9-->تاريخ الإضافة</th><th></th></tr></thead><tbody>";
         leads.forEach(function (l) {
           html += '<tr><td>' + escapeHtml(l.customer_name) + '</td><td>' + escapeHtml(l.phone_raw || l.phone_normalized || "—") + '</td>' +
             '<td>' + (SOURCE_LABELS[l.source] || l.source) + '</td>' +
             '<td><span class="status-pill ' + (STATUS_PILL_CLASS[l.current_status] || "draft") + '">' + (STATUS_LABELS[l.current_status] || l.current_status) + '</span></td>' +
             '<td data-registrar="' + escapeHtml(l.received_by || '') + '">' + escapeHtml(registrarName(l.received_by)) + '</td>' +
             '<td style="font-size:11px;color:var(--c-muted);">' + fmtDate(l.created_at) + '</td>' +
-            '<td><button class="btn ghost sm" data-open="' + l.id + '">فتح</button></td></tr>';
+            '<td><button class="btn ghost sm" data-open="' + l.id + "\"> <!--ssmpd-i18n:%D9%81%D8%AA%D8%AD-->فتح</button></td></tr>";
         });
         html += '</tbody></table>';
         html += pagerHtml("ar", s.page, totalPages, total, "ليد");
@@ -813,7 +813,7 @@
   // ============ تحويلات الأطباء (نفس تصميم أرشيف الليدز، مفلترة على
   //              مصدر "تحويل من طبيب العيادة" بس) ============
   function renderReferralsScreen(view, container) {
-    view.innerHTML = '<div class="loading">بيحمّل…</div>';
+    view.innerHTML = "<div class=\"loading\"> <!--ssmpd-i18n:%D8%A8%D9%8A%D8%AD%D9%85%D9%91%D9%84%E2%80%A6-->بيحمّل…</div>";
     var s = state.referrals;
     window.SSMPDDb.listLeads({
       status: s.status || undefined, search: s.search || undefined, source: "doctor_referral",
@@ -826,23 +826,23 @@
       var html = '<div class="section">';
       html += '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">' +
         '<input id="rf-search" placeholder="بحث بالاسم / الهاتف" value="' + escapeHtml(s.search) + '" style="flex:1;min-width:200px;padding:9px 12px;border-radius:10px;border:1px solid var(--c-border);">' +
-        '<select id="rf-status"><option value="">كل الحالات</option>' +
+        "<select id=\"rf-status\"><option value=\"\"> <!--ssmpd-i18n:%D9%83%D9%84%20%D8%A7%D9%84%D8%AD%D8%A7%D9%84%D8%A7%D8%AA-->كل الحالات</option>" +
         Object.keys(STATUS_LABELS).map(function (k) { return '<option value="' + k + '" ' + (s.status === k ? "selected" : "") + '>' + STATUS_LABELS[k] + '</option>'; }).join("") +
         '</select>' +
         '<select id="rf-employee"><option value="">كل الموظفين (آخر رد)</option>' +
         state.employees.map(function (e) { return '<option value="' + e.id + '" ' + (s.bookedBy === e.id ? "selected" : "") + '>' + escapeHtml(e.name) + '</option>'; }).join("") +
         '</select>' +
-        '<button class="btn ghost sm" id="rf-search-btn">بحث</button></div>';
+        "<button class=\"btn ghost sm\" id=\"rf-search-btn\"> <!--ssmpd-i18n:%D8%A8%D8%AD%D8%AB-->بحث</button></div>";
 
       if (!leads.length) {
         html += '<p style="color:var(--c-muted);font-size:13px;">مفيش تحويلات مطابقة.</p>';
       } else {
-        html += '<table class="simple"><thead><tr><th>العميل</th><th>الهاتف</th><th>الحالة</th><th>تاريخ التحويل</th><th></th></tr></thead><tbody>';
+        html += "<table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%B9%D9%85%D9%8A%D9%84-->العميل</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%87%D8%A7%D8%AA%D9%81-->الهاتف</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AD%D8%A7%D9%84%D8%A9-->الحالة</th><th>تاريخ التحويل</th><th></th></tr></thead><tbody>";
         leads.forEach(function (l) {
           html += '<tr><td>' + escapeHtml(l.customer_name) + '</td><td>' + escapeHtml(l.phone_raw || l.phone_normalized || "—") + '</td>' +
             '<td><span class="status-pill ' + (STATUS_PILL_CLASS[l.current_status] || "draft") + '">' + (STATUS_LABELS[l.current_status] || l.current_status) + '</span></td>' +
             '<td style="font-size:11px;color:var(--c-muted);">' + fmtDate(l.created_at) + '</td>' +
-            '<td><button class="btn ghost sm" data-open="' + l.id + '">فتح</button></td></tr>';
+            '<td><button class="btn ghost sm" data-open="' + l.id + "\"> <!--ssmpd-i18n:%D9%81%D8%AA%D8%AD-->فتح</button></td></tr>";
         });
         html += '</tbody></table>';
         html += pagerHtml("rf", s.page, totalPages, total, "تحويلة");
@@ -866,7 +866,7 @@
 
   // ============ ٦) عملاء ناقصين بيانات (اسم أو تليفون ناقص وقت رفع الإكسيل) ============
   function renderMissingDataScreen(view, container) {
-    view.innerHTML = '<div class="loading">بيحمّل…</div>';
+    view.innerHTML = "<div class=\"loading\"> <!--ssmpd-i18n:%D8%A8%D9%8A%D8%AD%D9%85%D9%91%D9%84%E2%80%A6-->بيحمّل…</div>";
     var dayAgo = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
     Promise.all([
       window.SSMPDDb.listLeads({ status: "missing_data", page_size: 50 }),
@@ -888,7 +888,7 @@
       if (!pending.length) {
         html += '<p style="color:var(--c-muted);font-size:13px;">مفيش عملاء ناقصين بيانات حالياً.</p>';
       } else {
-        html += '<table class="simple"><thead><tr><th>الاسم</th><th>الهاتف</th><th>المصدر</th><th>تاريخ الإضافة</th><th></th></tr></thead><tbody>';
+        html += "<table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%A7%D8%B3%D9%85-->الاسم</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%87%D8%A7%D8%AA%D9%81-->الهاتف</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%B5%D8%AF%D8%B1-->المصدر</th><th> <!--ssmpd-i18n:%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE%20%D8%A7%D9%84%D8%A5%D8%B6%D8%A7%D9%81%D8%A9-->تاريخ الإضافة</th><th></th></tr></thead><tbody>";
         pending.forEach(function (l) {
           html += '<tr><td>' + escapeHtml(l.customer_name) + '</td><td>' + escapeHtml(l.phone_raw || l.phone_normalized || "—") + '</td>' +
             '<td>' + (SOURCE_LABELS[l.source] || l.source) + '</td>' +
@@ -915,9 +915,9 @@
     backdrop.className = "modal-backdrop";
     backdrop.innerHTML = '<div class="modal" style="max-width:400px;"><div class="modal-head"><h3>استكمال بيانات العميل</h3>' +
       '<button class="modal-close">×</button></div>' +
-      '<div class="field"><label>اسم العميل</label><input id="cmd-name" value="' + escapeHtml(lead.customer_name === "بدون اسم" ? "" : lead.customer_name) + '"></div>' +
-      '<div class="field"><label>رقم الهاتف</label><input id="cmd-phone" placeholder="01xxxxxxxxx" value="' + escapeHtml(lead.phone_raw || "") + '"></div>' +
-      '<div style="text-align:left;"><button class="btn" id="cmd-save">حفظ</button></div></div>';
+      "<div class=\"field\"><label> <!--ssmpd-i18n:%D8%A7%D8%B3%D9%85%20%D8%A7%D9%84%D8%B9%D9%85%D9%8A%D9%84-->اسم العميل</label><input id=\"cmd-name\" value=\"" + escapeHtml(lead.customer_name === "بدون اسم" ? "" : lead.customer_name) + '"></div>' +
+      "<div class=\"field\"><label> <!--ssmpd-i18n:%D8%B1%D9%82%D9%85%20%D8%A7%D9%84%D9%87%D8%A7%D8%AA%D9%81-->رقم الهاتف</label><input id=\"cmd-phone\" placeholder=\"01xxxxxxxxx\" value=\"" + escapeHtml(lead.phone_raw || "") + '"></div>' +
+      "<div style=\"text-align:left;\"><button class=\"btn\" id=\"cmd-save\"> <!--ssmpd-i18n:%D8%AD%D9%81%D8%B8-->حفظ</button></div></div>";
     document.body.appendChild(backdrop);
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
     backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
@@ -991,7 +991,7 @@
           window.SSMPDDb.logUsageActivity(meBulk.id, "رفع إكسيل ليدز جماعي", state.bulk.fileName + " (" + fmtNum(res.created_count) + " ليد)").catch(function () {});
           state.bulk.result = res;
           var resBox = document.getElementById("bk-result");
-          var html3 = '<div class="section"><h3>النتيجة</h3>' +
+          var html3 = "<div class=\"section\"><h3> <!--ssmpd-i18n:%D8%A7%D9%84%D9%86%D8%AA%D9%8A%D8%AC%D8%A9-->النتيجة</h3>" +
             '<p>تم إنشاء <b>' + fmtNum(res.created_count) + '</b> ليد، وتحويل <b>' + fmtNum(res.missing_data_count || 0) + '</b> صف ناقص بيانات لقائمة "عملاء ناقصين بيانات"، وتم تخطي <b>' + fmtNum(res.skipped_count) + '</b> صف.</p>';
           if (res.skipped && res.skipped.length) {
             html3 += '<table class="simple"><thead><tr><th>الصف</th><th>السبب</th></tr></thead><tbody>' +
@@ -1015,7 +1015,7 @@
   function openLeadModal(view, container, leadId, onChange) {
     var backdrop = document.createElement("div");
     backdrop.className = "modal-backdrop";
-    backdrop.innerHTML = '<div class="modal"><div class="loading">بيحمّل…</div></div>';
+    backdrop.innerHTML = "<div class=\"modal\"><div class=\"loading\"> <!--ssmpd-i18n:%D8%A8%D9%8A%D8%AD%D9%85%D9%91%D9%84%E2%80%A6-->بيحمّل…</div></div>";
     document.body.appendChild(backdrop);
     backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
 
@@ -1055,7 +1055,7 @@
 
       // تحديث الحالة والأولوية وتفاصيل الحجز
       html += '<div class="field" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">' +
-        '<div><label>الحالة</label><select id="lm-status">' +
+        "<div><label> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AD%D8%A7%D9%84%D8%A9-->الحالة</label><select id=\"lm-status\">" +
         Object.keys(STATUS_LABELS).map(function (k) { return '<option value="' + k + '" ' + (k === lead.current_status ? "selected" : "") + '>' + STATUS_LABELS[k] + '</option>'; }).join("") +
         '</select></div>' +
         '<div><label>الأولوية</label><select id="lm-priority">' +
@@ -1063,8 +1063,8 @@
         '</select></div>' +
         '<div id="lm-booking-wrap" style="display:' + (INVOICE_ALLOWED_STATUSES.indexOf(lead.current_status) !== -1 ? "flex" : "none") + ';gap:8px;">' +
         '<div><label>رقم/مرجع الحجز</label><input id="lm-booking" value="' + escapeHtml(lead.booking_reference || "") + '" style="width:140px;"></div>' +
-        '<div><label>تاريخ الحجز</label><input id="lm-booking-date" type="date" value="' + (lead.booking_date || "") + '"></div></div>' +
-        '<button class="btn ghost sm" id="lm-save-status">حفظ</button></div>' +
+        "<div><label> <!--ssmpd-i18n:%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE%20%D8%A7%D9%84%D8%AD%D8%AC%D8%B2-->تاريخ الحجز</label><input id=\"lm-booking-date\" type=\"date\" value=\"" + (lead.booking_date || "") + '"></div></div>' +
+        "<button class=\"btn ghost sm\" id=\"lm-save-status\"> <!--ssmpd-i18n:%D8%AD%D9%81%D8%B8-->حفظ</button></div>" +
         '<div id="lm-status-err" class="err-msg" style="display:none;margin-bottom:10px;"></div>';
 
       // تسجيل محاولة تواصل جديدة
@@ -1121,8 +1121,8 @@
           html += '<p style="font-size:12px;color:var(--c-muted);">مفيش فاتورة مرفوعة لسه.</p>';
         }
         html += '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-top:8px;">' +
-          '<div><label>المبلغ</label><input id="iv-amount" type="number" min="0" step="0.01" style="width:100px;"></div>' +
-          '<div><label>اسم الخدمة</label><input id="iv-service" style="width:140px;"></div>' +
+          "<div><label> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%A8%D9%84%D8%BA-->المبلغ</label><input id=\"iv-amount\" type=\"number\" min=\"0\" step=\"0.01\" style=\"width:100px;\"></div>" +
+          "<div><label> <!--ssmpd-i18n:%D8%A7%D8%B3%D9%85%20%D8%A7%D9%84%D8%AE%D8%AF%D9%85%D8%A9-->اسم الخدمة</label><input id=\"iv-service\" style=\"width:140px;\"></div>" +
           '<div><label>الملف (صورة / PDF / إكسيل)</label><input type="file" id="iv-file" accept="image/*,.pdf,.xlsx,.xls"></div>' +
           '<button class="btn sm" id="iv-save">رفع الفاتورة (وإقفال الخدمة)</button></div>' +
           '<div id="iv-status" style="font-size:12px;color:var(--c-muted);margin-top:6px;"></div></div>';
@@ -1219,4 +1219,5 @@
 
   window.SSMPDRenderLeads = { render: render, openSearch: openSearch };
 })();
+
 

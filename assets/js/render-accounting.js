@@ -124,14 +124,14 @@
       '<button class="btn btn-primary" id="acc-add-supply">+ إضافة مستلزم</button></div></div>' +
       (state.supplies.length ?
         '<div style="overflow-x:auto;"><table class="simple acc-table"><thead><tr>' +
-        '<th>الاسم</th><th>نوع الوحدة</th><th>عدد الوحدات/عبوة</th><th>سعر العبوة</th>' +
-        '<th>تكلفة الوحدة</th><th>استهلاك افتراضي/مريض</th><th></th></tr></thead><tbody>' +
+        "<th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%A7%D8%B3%D9%85-->الاسم</th><th>نوع الوحدة</th><th>عدد الوحدات/عبوة</th><th>سعر العبوة</th>" +
+        "<th> <!--ssmpd-i18n:%D8%AA%D9%83%D9%84%D9%81%D8%A9%20%D8%A7%D9%84%D9%88%D8%AD%D8%AF%D8%A9-->تكلفة الوحدة</th><th>استهلاك افتراضي/مريض</th><th></th></tr></thead><tbody>" +
         state.supplies.map(function (s) {
           return '<tr><td>' + s.name + '</td><td>' + (s.unit_type || "—") + '</td>' +
             '<td class="acc-col-num">' + numSpan(s.units_per_package) + '</td><td class="acc-col-num">' + numSpan(s.package_price) + '</td>' +
             '<td class="acc-col-num">' + pill("acc-margin", fmt(unitCost(s))) + '</td><td class="acc-col-num">' + numSpan(s.consumption_per_patient) + '</td>' +
-            '<td><button class="btn-link" data-edit-supply="' + s.id + '">تعديل</button> ' +
-            '<button class="btn-link" data-del-supply="' + s.id + '">حذف</button></td></tr>';
+            '<td><button class="btn-link" data-edit-supply="' + s.id + "\"> <!--ssmpd-i18n:%D8%AA%D8%B9%D8%AF%D9%8A%D9%84-->تعديل</button> " +
+            '<button class="btn-link" data-del-supply="' + s.id + "\"> <!--ssmpd-i18n:%D8%AD%D8%B0%D9%81-->حذف</button></td></tr>";
         }).join("") + '</tbody></table></div>'
         : '<div class="acc-empty"><span class="acc-empty-icon">🧾</span>لسه مفيش مستلزمات مضافة — ابدأ بإضافة أول مستلزم عشان تقدر تربطه بالخدمات</div>') +
       '</div>';
@@ -143,16 +143,16 @@
       '<button class="btn btn-primary" id="acc-add-service">+ إضافة خدمة</button></div></div>' +
       (state.services.length ?
         '<div style="overflow-x:auto;"><table class="simple acc-table"><thead><tr>' +
-        '<th>الخدمة</th><th>سعر الخدمة</th><th>تكلفة المستلزمات</th><th>إجمالي التكلفة</th>' +
-        '<th>هامش الربح</th><th>قيمة الربح</th><th>السعر النهائي</th><th></th></tr></thead><tbody>' +
+        "<th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AE%D8%AF%D9%85%D8%A9-->الخدمة</th><th>سعر الخدمة</th><th>تكلفة المستلزمات</th><th> <!--ssmpd-i18n:%D8%A5%D8%AC%D9%85%D8%A7%D9%84%D9%8A%20%D8%A7%D9%84%D8%AA%D9%83%D9%84%D9%81%D8%A9-->إجمالي التكلفة</th>" +
+        "<th>هامش الربح</th><th> <!--ssmpd-i18n:%D9%82%D9%8A%D9%85%D8%A9%20%D8%A7%D9%84%D8%B1%D8%A8%D8%AD-->قيمة الربح</th><th>السعر النهائي</th><th></th></tr></thead><tbody>" +
         state.services.map(function (s) {
           var t = serviceTotals(s);
           return '<tr><td>' + s.name + '</td><td class="acc-col-num">' + numSpan(s.base_price) + '</td><td class="acc-col-num">' + numSpan(t.materialsCost) + '</td>' +
             '<td class="acc-col-num">' + numSpan(t.totalCost) + '</td><td class="acc-col-num">' + pill("acc-margin", fmt(t.margin) + "%") + '</td>' +
             '<td class="acc-col-num">' + pill("acc-profit", fmt(t.profitValue)) + '</td>' +
             '<td class="acc-col-num">' + pill("acc-final", fmt(t.finalPrice)) + '</td>' +
-            '<td><button class="btn-link" data-edit-service="' + s.id + '">تعديل</button> ' +
-            '<button class="btn-link" data-del-service="' + s.id + '">حذف</button></td></tr>';
+            '<td><button class="btn-link" data-edit-service="' + s.id + "\"> <!--ssmpd-i18n:%D8%AA%D8%B9%D8%AF%D9%8A%D9%84-->تعديل</button> " +
+            '<button class="btn-link" data-del-service="' + s.id + "\"> <!--ssmpd-i18n:%D8%AD%D8%B0%D9%81-->حذف</button></td></tr>";
         }).join("") + '</tbody></table></div>'
         : '<div class="acc-empty"><span class="acc-empty-icon">💊</span>لسه مفيش خدمات مسعّرة — ضيف الخدمة الأولى وحدد سعرها الأساسي وهامش الربح</div>') +
       '</div>';
@@ -246,12 +246,12 @@
     backdrop.className = "modal-backdrop";
     backdrop.innerHTML = '<div class="modal">' +
       '<h3>' + (supply.id ? "تعديل مستلزم" : "إضافة مستلزم") + '</h3>' +
-      '<div class="field"><label>الاسم</label><input id="sp-name" value="' + (supply.name || "") + '"></div>' +
+      "<div class=\"field\"><label> <!--ssmpd-i18n:%D8%A7%D9%84%D8%A7%D8%B3%D9%85-->الاسم</label><input id=\"sp-name\" value=\"" + (supply.name || "") + '"></div>' +
       '<div class="field"><label>نوع الوحدة (علبة/زجاجة/عبوة...)</label><input id="sp-unit" value="' + (supply.unit_type || "") + '"></div>' +
       '<div class="field"><label>عدد الوحدات في العبوة</label><input id="sp-units" type="number" step="any" value="' + (supply.units_per_package != null ? supply.units_per_package : "") + '"></div>' +
       '<div class="field"><label>سعر العبوة</label><input id="sp-price" type="number" step="any" value="' + (supply.package_price != null ? supply.package_price : "") + '"></div>' +
       '<div class="field"><label>كمية الاستهلاك الافتراضية للمريض الواحد</label><input id="sp-consume" type="number" step="any" value="' + (supply.consumption_per_patient != null ? supply.consumption_per_patient : "") + '"></div>' +
-      '<div style="margin-top:12px;"><button class="btn btn-primary" id="sp-save">حفظ</button> <button class="btn" id="sp-cancel">إلغاء</button></div>' +
+      "<div style=\"margin-top:12px;\"><button class=\"btn btn-primary\" id=\"sp-save\"> <!--ssmpd-i18n:%D8%AD%D9%81%D8%B8-->حفظ</button> <button class=\"btn\" id=\"sp-cancel\"> <!--ssmpd-i18n:%D8%A5%D9%84%D8%BA%D8%A7%D8%A1-->إلغاء</button></div>" +
       '</div>';
     document.body.appendChild(backdrop);
     document.getElementById("sp-cancel").onclick = function () { backdrop.remove(); };
@@ -282,19 +282,19 @@
     backdrop.className = "modal-backdrop";
     backdrop.innerHTML = '<div class="modal" style="max-width:560px;">' +
       '<h3>' + (service.id ? "تعديل خدمة" : "إضافة خدمة") + '</h3>' +
-      '<div class="field"><label>اسم الخدمة</label><input id="sv-name" value="' + (service.name || "") + '"></div>' +
+      "<div class=\"field\"><label> <!--ssmpd-i18n:%D8%A7%D8%B3%D9%85%20%D8%A7%D9%84%D8%AE%D8%AF%D9%85%D8%A9-->اسم الخدمة</label><input id=\"sv-name\" value=\"" + (service.name || "") + '"></div>' +
       '<div class="field"><label>سعر الخدمة (بدون مستلزمات)</label><input id="sv-price" type="number" step="any" value="' + (service.base_price != null ? service.base_price : "") + '"></div>' +
       '<div class="field"><label>هامش الربح %</label><input id="sv-margin" type="number" step="any" value="' + (service.profit_margin_percent != null ? service.profit_margin_percent : "") + '"></div>' +
       '<h4>المستلزمات المستخدمة (غير محدودة)</h4>' +
       '<div id="sv-lines"></div>' +
       '<button class="btn" id="sv-add-line" type="button">+ إضافة مستلزم للخدمة</button>' +
       '<div id="sv-totals" style="margin-top:10px;font-size:13px;"></div>' +
-      '<div style="margin-top:12px;"><button class="btn btn-primary" id="sv-save">حفظ</button> <button class="btn" id="sv-cancel">إلغاء</button></div>' +
+      "<div style=\"margin-top:12px;\"><button class=\"btn btn-primary\" id=\"sv-save\"> <!--ssmpd-i18n:%D8%AD%D9%81%D8%B8-->حفظ</button> <button class=\"btn\" id=\"sv-cancel\"> <!--ssmpd-i18n:%D8%A5%D9%84%D8%BA%D8%A7%D8%A1-->إلغاء</button></div>" +
       '</div>';
     document.body.appendChild(backdrop);
 
     function supplyOptions(selected) {
-      return '<option value="">— اختر —</option>' + state.supplies.map(function (s) {
+      return "<option value=\"\"> <!--ssmpd-i18n:%E2%80%94%20%D8%A7%D8%AE%D8%AA%D8%B1%20%E2%80%94-->— اختر —</option>" + state.supplies.map(function (s) {
         return '<option value="' + s.id + '"' + (selected === s.id ? " selected" : "") + '>' + s.name + '</option>';
       }).join("");
     }
@@ -303,8 +303,8 @@
       el.innerHTML = lines.map(function (l, i) {
         return '<div class="acc-line-row" data-line="' + i + '">' +
           '<select data-line-supply style="flex:2;">' + supplyOptions(l.supply_id) + '</select>' +
-          '<input data-line-qty type="number" step="any" placeholder="الكمية" value="' + (l.quantity != null ? l.quantity : "") + '" style="flex:1;">' +
-          '<button class="btn-link" data-line-del type="button">حذف</button></div>';
+          "<input data-line-qty type=\"number\" step=\"any\" placeholder=\"الكمية\" data-i18n-placeholder=\"%D8%A7%D9%84%D9%83%D9%85%D9%8A%D8%A9\" data-i18n-placeholder=\"%D8%A7%D9%84%D9%83%D9%85%D9%8A%D8%A9\" value=\"" + (l.quantity != null ? l.quantity : "") + '" style="flex:1;">' +
+          "<button class=\"btn-link\" data-line-del type=\"button\"> <!--ssmpd-i18n:%D8%AD%D8%B0%D9%81-->حذف</button></div>";
       }).join("") || '<div class="acc-line-empty">لا يوجد مستلزمات مضافة لهذه الخدمة</div>';
       el.querySelectorAll("[data-line]").forEach(function (row) {
         var idx = Number(row.getAttribute("data-line"));
@@ -367,15 +367,15 @@
       (state.packages.length ?
         '<div style="overflow-x:auto;"><table class="simple acc-table"><thead><tr>' +
         '<th>الباكج</th><th>عدد الخدمات</th><th>الإجمالي الفرعي</th><th>نسبة الربح</th>' +
-        '<th>قيمة الربح</th><th>الإجمالي النهائي</th><th></th></tr></thead><tbody>' +
+        "<th> <!--ssmpd-i18n:%D9%82%D9%8A%D9%85%D8%A9%20%D8%A7%D9%84%D8%B1%D8%A8%D8%AD-->قيمة الربح</th><th>الإجمالي النهائي</th><th></th></tr></thead><tbody>" +
         state.packages.map(function (p) {
           var t = packageTotals(p);
           return '<tr><td>' + p.name + '</td><td class="acc-col-num">' + (p.services_included || []).length + '</td>' +
             '<td class="acc-col-num">' + numSpan(t.subtotal) + '</td><td class="acc-col-num">' + pill("acc-margin", fmt(t.margin) + "%") + '</td>' +
             '<td class="acc-col-num">' + pill("acc-profit", fmt(t.profitValue)) + '</td>' +
             '<td class="acc-col-num">' + pill("acc-final", fmt(t.finalTotal)) + '</td>' +
-            '<td><button class="btn-link" data-edit-package="' + p.id + '">تعديل</button> ' +
-            '<button class="btn-link" data-del-package="' + p.id + '">حذف</button></td></tr>';
+            '<td><button class="btn-link" data-edit-package="' + p.id + "\"> <!--ssmpd-i18n:%D8%AA%D8%B9%D8%AF%D9%8A%D9%84-->تعديل</button> " +
+            '<button class="btn-link" data-del-package="' + p.id + "\"> <!--ssmpd-i18n:%D8%AD%D8%B0%D9%81-->حذف</button></td></tr>";
         }).join("") + '</tbody></table></div>'
         : '<div class="acc-empty"><span class="acc-empty-icon">📦</span>لسه مفيش باكجات — جمّع أي مجموعة خدمات وحدد نسبة ربح الباكج نفسه</div>') +
       '</div>';
@@ -415,12 +415,12 @@
       '<div id="pk-lines"></div>' +
       '<button class="btn" id="pk-add-line" type="button">+ إضافة خدمة للباكج</button>' +
       '<div id="pk-totals" style="margin-top:10px;font-size:13px;"></div>' +
-      '<div style="margin-top:12px;"><button class="btn btn-primary" id="pk-save">حفظ</button> <button class="btn" id="pk-cancel">إلغاء</button></div>' +
+      "<div style=\"margin-top:12px;\"><button class=\"btn btn-primary\" id=\"pk-save\"> <!--ssmpd-i18n:%D8%AD%D9%81%D8%B8-->حفظ</button> <button class=\"btn\" id=\"pk-cancel\"> <!--ssmpd-i18n:%D8%A5%D9%84%D8%BA%D8%A7%D8%A1-->إلغاء</button></div>" +
       '</div>';
     document.body.appendChild(backdrop);
 
     function serviceOptions(selected) {
-      return '<option value="">— اختر —</option>' + state.services.map(function (s) {
+      return "<option value=\"\"> <!--ssmpd-i18n:%E2%80%94%20%D8%A7%D8%AE%D8%AA%D8%B1%20%E2%80%94-->— اختر —</option>" + state.services.map(function (s) {
         return '<option value="' + s.id + '"' + (selected === s.id ? " selected" : "") + '>' + s.name + ' (' + fmt(serviceTotals(s).finalPrice) + ')</option>';
       }).join("");
     }
@@ -429,8 +429,8 @@
       el.innerHTML = lines.map(function (l, i) {
         return '<div class="acc-line-row" data-line="' + i + '">' +
           '<select data-line-service style="flex:2;">' + serviceOptions(l.service_id) + '</select>' +
-          '<input data-line-qty type="number" step="any" placeholder="الكمية" value="' + (l.quantity != null ? l.quantity : 1) + '" style="flex:1;">' +
-          '<button class="btn-link" data-line-del type="button">حذف</button></div>';
+          "<input data-line-qty type=\"number\" step=\"any\" placeholder=\"الكمية\" data-i18n-placeholder=\"%D8%A7%D9%84%D9%83%D9%85%D9%8A%D8%A9\" data-i18n-placeholder=\"%D8%A7%D9%84%D9%83%D9%85%D9%8A%D8%A9\" value=\"" + (l.quantity != null ? l.quantity : 1) + '" style="flex:1;">' +
+          "<button class=\"btn-link\" data-line-del type=\"button\"> <!--ssmpd-i18n:%D8%AD%D8%B0%D9%81-->حذف</button></div>";
       }).join("") || '<div class="acc-line-empty">لا يوجد خدمات مضافة لهذا الباكج</div>';
       el.querySelectorAll("[data-line]").forEach(function (row) {
         var idx = Number(row.getAttribute("data-line"));
@@ -473,3 +473,4 @@
 
   window.SSMPDRenderAccounting = { render: render };
 })();
+

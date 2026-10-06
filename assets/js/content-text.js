@@ -44,7 +44,7 @@
       modal.className = "modal-backdrop";
       modal.style.zIndex = "10000";
       modal.innerHTML = '<div class="modal" role="dialog" aria-modal="true" aria-label="معاينة نص النشر">' +
-        '<div class="modal-head"><h3>معاينة نص النشر</h3><button class="modal-close" aria-label="إغلاق">×</button></div>' +
+        "<div class=\"modal-head\"><h3>معاينة نص النشر</h3><button class=\"modal-close\" aria-label=\"إغلاق\" data-i18n-aria-label=\"%D8%A5%D8%BA%D9%84%D8%A7%D9%82\" data-i18n-aria-label=\"%D8%A5%D8%BA%D9%84%D8%A7%D9%82\">×</button></div>" +
         '<p data-source style="color:var(--c-muted)"></p>' +
         '<p data-repeat role="alert" style="color:var(--c-negative);white-space:pre-wrap"></p>' +
         '<div data-text dir="auto" style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:45vh;overflow:auto;padding:14px;border:1px solid var(--c-border);border-radius:8px"></div>' +
@@ -81,3 +81,4 @@
   }
   window.SSMPDContentText = { repeatedExcerpt: repeatedExcerpt, confirmSave: confirmSave, publicationText: publicationText, preview: preview };
 })();
+

@@ -60,3 +60,4 @@
   }
   window.SSMPDVideoStudio={enhance:enhance};
 })();
+

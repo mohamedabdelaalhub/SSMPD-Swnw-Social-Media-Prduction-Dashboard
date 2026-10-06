@@ -91,28 +91,28 @@
   // بادچ صغير يظهر جنب العنوان في كل الشاشات — فاضي لو المادة لسه بلا براند محدد
   function brandBadgeHtml(brand) {
     if (!brand || !BRANDS[brand]) return "";
-    return '<span class="brand-badge ' + brand + '">' + BRANDS[brand].label + "</span>";
+    return '<span class="brand-badge ' + brand + '">' + window.SSMPDI18n.textHtml(BRANDS[brand].label) + "</span>";
   }
 
   // دروب داون اختيار البراند — بيُستخدم عند إنشاء المحتوى وعند إعادة الاختيار وقت النشر
   function brandSelectHtml(id, selected) {
     var opts = Object.keys(BRANDS).map(function (k) {
-      return '<option value="' + k + '"' + (selected === k ? " selected" : "") + '>' + BRANDS[k].label + "</option>";
+      return '<option value="' + k + '"' + (selected === k ? " selected" : "") + '>' + window.SSMPDI18n.textHtml(BRANDS[k].label) + "</option>";
     }).join("");
-    return '<select id="' + id + '"><option value="">— اختر —</option>' + opts + "</select>";
+    return '<select id="' + id + "\"><option value=\"\"> <!--ssmpd-i18n:%E2%80%94%20%D8%A7%D8%AE%D8%AA%D8%B1%20%E2%80%94-->— اختر —</option>" + opts + "</select>";
   }
 
   // بادچ صغير للتخصص — فاضي لو مفيش تخصص محدد
   function specialtyBadgeHtml(specialty) {
     if (!specialty || !SPECIALTIES[specialty]) return "";
     var color = SPECIALTIES[specialty].color || "#0F369D";
-    return '<span class="brand-badge" style="background:' + color + ';color:#fff;">' + SPECIALTIES[specialty].label + "</span>";
+    return '<span class="brand-badge" style="background:' + color + ';color:#fff;">' + window.SSMPDI18n.textHtml(SPECIALTIES[specialty].label) + "</span>";
   }
 
   // دروب داون اختيار التخصص — اختياري (فيه "بدون تخصص")
   function specialtySelectHtml(id, selected) {
     var opts = Object.keys(SPECIALTIES).map(function (k) {
-      return '<option value="' + k + '"' + (selected === k ? " selected" : "") + '>' + SPECIALTIES[k].label + "</option>";
+      return '<option value="' + k + '"' + (selected === k ? " selected" : "") + '>' + window.SSMPDI18n.textHtml(SPECIALTIES[k].label) + "</option>";
     }).join("");
     return '<select id="' + id + '"><option value="">— بدون تخصص —</option>' + opts + "</select>";
   }
@@ -120,9 +120,9 @@
   // دروب داون اختيار منصة النشر (اختيار واحد — قديم، فاضل للتوافق)
   function platformSelectHtml(id, selected) {
     var opts = Object.keys(PLATFORMS).map(function (k) {
-      return '<option value="' + k + '"' + (selected === k ? " selected" : "") + '>' + PLATFORMS[k].label + "</option>";
+      return '<option value="' + k + '"' + (selected === k ? " selected" : "") + '>' + window.SSMPDI18n.textHtml(PLATFORMS[k].label) + "</option>";
     }).join("");
-    return '<select id="' + id + '"><option value="">— اختر —</option>' + opts + "</select>";
+    return '<select id="' + id + "\"><option value=\"\"> <!--ssmpd-i18n:%E2%80%94%20%D8%A7%D8%AE%D8%AA%D8%B1%20%E2%80%94-->— اختر —</option>" + opts + "</select>";
   }
 
   // تشيك بوكسات اختيار أكتر من منصة نشر مرة واحدة — بديل جديد لـplatformSelectHtml
@@ -176,8 +176,8 @@
   // زراير تعديل/حذف — بتظهر حسب صلاحية الشخص الحالي، تُستخدم في كل شاشات عرض المادة
   function itemActionsHtml(item, me) {
     var html = "";
-    if (canEditItem(me, item)) html += '<button class="btn ghost sm" data-edit-item="' + item.id + '">تعديل</button> ';
-    if (canDeleteItem(me)) html += '<button class="btn danger sm" data-delete-item="' + item.id + '">حذف</button>';
+    if (canEditItem(me, item)) html += '<button class="btn ghost sm" data-edit-item="' + item.id + "\"> <!--ssmpd-i18n:%D8%AA%D8%B9%D8%AF%D9%8A%D9%84-->تعديل</button> ";
+    if (canDeleteItem(me)) html += '<button class="btn danger sm" data-delete-item="' + item.id + "\"> <!--ssmpd-i18n:%D8%AD%D8%B0%D9%81-->حذف</button>";
     return html;
   }
 
@@ -187,12 +187,12 @@
     backdrop.className = "modal-backdrop";
     backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>تعديل المادة</h3>' +
       '<button class="modal-close">×</button></div>' +
-      '<div class="field"><label>العنوان</label><input id="ed-title" value="' + escapeAttr(item.title) + '"></div>' +
-      '<div class="field"><label>المادة دي لصفحة</label>' + brandSelectHtml("ed-brand", item.brand || "") + '</div>' +
-      '<div class="field"><label>التخصص</label>' + specialtySelectHtml("ed-specialty", item.specialty || "") + '</div>' +
+      "<div class=\"field\"><label> <!--ssmpd-i18n:%D8%A7%D9%84%D8%B9%D9%86%D9%88%D8%A7%D9%86-->العنوان</label><input id=\"ed-title\" value=\"" + escapeAttr(item.title) + '"></div>' +
+      "<div class=\"field\"><label> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%A7%D8%AF%D8%A9%20%D8%AF%D9%8A%20%D9%84%D8%B5%D9%81%D8%AD%D8%A9-->المادة دي لصفحة</label>" + brandSelectHtml("ed-brand", item.brand || "") + '</div>' +
+      "<div class=\"field\"><label> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AA%D8%AE%D8%B5%D8%B5-->التخصص</label>" + specialtySelectHtml("ed-specialty", item.specialty || "") + '</div>' +
       '<div class="field"><label>نص المحتوى</label><textarea id="ed-body">' + escapeHtml(item.body || "") + '</textarea></div>' +
       '<details style="margin-top:12px;"><summary style="cursor:pointer;font-weight:700;">بيانات المحتوى / الفيديو</summary><div style="margin-top:10px;">' +
-      '<div class="field"><label>الهدف الإعلاني</label>' + ciObjectiveSelectHtml("ed-objective", item.advertising_objective || "") + '</div>' +
+      "<div class=\"field\"><label> <!--ssmpd-i18n:%D8%A7%D9%84%D9%87%D8%AF%D9%81%20%D8%A7%D9%84%D8%A5%D8%B9%D9%84%D8%A7%D9%86%D9%8A-->الهدف الإعلاني</label>" + ciObjectiveSelectHtml("ed-objective", item.advertising_objective || "") + '</div>' +
       '<div class="field"><label>شكل المحتوى</label>' + ciFormatSelectHtml("ed-format", item.content_format || "") + '</div>' +
       '<div class="field"><label>الموضوع / الخدمة</label><input id="ed-topic" value="' + escapeAttr(item.topic_service || "") + '"></div>' +
       '<div class="field"><label>Hook</label><textarea id="ed-hook">' + escapeHtml(item.hook_text || "") + '</textarea></div>' +
@@ -208,7 +208,7 @@
       '<div class="field"><label>Video Template</label><input id="ed-video-template" value="' + escapeAttr(item.video_template || "") + '"></div>' +
       '<div class="field"><label>سبب الفرضية / Evidence note</label><textarea id="ed-hypothesis">' + escapeHtml(item.hypothesis_reason || "") + '</textarea></div>' +
       '</div></details>' +
-      '<div style="text-align:left;margin-top:10px;"><button class="btn" id="ed-save">حفظ التعديلات</button></div></div>';
+      "<div style=\"text-align:left;margin-top:10px;\"><button class=\"btn\" id=\"ed-save\"> <!--ssmpd-i18n:%D8%AD%D9%81%D8%B8%20%D8%A7%D9%84%D8%AA%D8%B9%D8%AF%D9%8A%D9%84%D8%A7%D8%AA-->حفظ التعديلات</button></div></div>";
     document.body.appendChild(backdrop);
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
     backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
@@ -369,8 +369,8 @@
 
   // مكان الحجز في المودال — بيتملى async بعد ما المودال يتضاف للصفحة
   function metaLinksSectionHtml(item) {
-    return '<div class="section" style="margin-top:10px;"><h4 style="font-size:13px;margin-bottom:8px;">أداء إعلانات Meta</h4>' +
-      '<div id="meta-links-' + item.id + '"><div class="loading">بيحمّل…</div></div></div>';
+    return "<div class=\"section\" style=\"margin-top:10px;\"><h4 style=\"font-size:13px;margin-bottom:8px;\"> <!--ssmpd-i18n:%D8%A3%D8%AF%D8%A7%D8%A1%20%D8%A5%D8%B9%D9%84%D8%A7%D9%86%D8%A7%D8%AA%20Meta-->أداء إعلانات Meta</h4>" +
+      '<div id="meta-links-' + item.id + "\"><div class=\"loading\"> <!--ssmpd-i18n:%D8%A8%D9%8A%D8%AD%D9%85%D9%91%D9%84%E2%80%A6-->بيحمّل…</div></div></div>";
   }
 
   // بيتنادى بعد إضافة المودال للـDOM — بيحمّل الروابط الحالية ويرسم الملخص
@@ -386,10 +386,10 @@
 
   function renderMetaLinksBox(box, item, me, rows) {
     var canManage = canManageMetaLinks(me);
-    var linkBtnHtml = canManage ? '<button class="btn ghost sm" data-link-meta-ad="' + item.id + '">ربط إعلان Meta</button>' : "";
+    var linkBtnHtml = canManage ? '<button class="btn ghost sm" data-link-meta-ad="' + item.id + "\"> <!--ssmpd-i18n:%D8%B1%D8%A8%D8%B7%20%D8%A5%D8%B9%D9%84%D8%A7%D9%86%20Meta-->ربط إعلان Meta</button>" : "";
 
     if (!rows.length) {
-      box.innerHTML = '<p style="font-size:12px;color:var(--c-muted);">مفيش إعلان Meta مرتبط بالمادة دي.</p>' + linkBtnHtml;
+      box.innerHTML = "<p style=\"font-size:12px;color:var(--c-muted);\"> <!--ssmpd-i18n:%D9%85%D9%81%D9%8A%D8%B4%20%D8%A5%D8%B9%D9%84%D8%A7%D9%86%20Meta%20%D9%85%D8%B1%D8%AA%D8%A8%D8%B7%20%D8%A8%D8%A7%D9%84%D9%85%D8%A7%D8%AF%D8%A9%20%D8%AF%D9%8A.-->مفيش إعلان Meta مرتبط بالمادة دي.</p>" + linkBtnHtml;
       wireLinkButton(box, item, me);
       return;
     }
@@ -416,19 +416,19 @@
     var statusStr = Object.keys(statuses).join("، ") || "—";
 
     var html = '<div class="kpi-grid">' +
-      '<div class="kpi-card"><div class="label">الإنفاق</div><div class="value small">' + fmtMoneyW(spend) + '</div></div>' +
-      '<div class="kpi-card"><div class="label">محادثات</div><div class="value small">' + fmtNumW(msgConv) + '</div></div>' +
-      '<div class="kpi-card"><div class="label">تكلفة المحادثة</div><div class="value small">' + (costPerMsg == null ? "—" : fmtMoneyW(costPerMsg)) + '</div></div>' +
+      "<div class=\"kpi-card\"><div class=\"label\"> <!--ssmpd-i18n:%D8%A7%D9%84%D8%A5%D9%86%D9%81%D8%A7%D9%82-->الإنفاق</div><div class=\"value small\">" + fmtMoneyW(spend) + '</div></div>' +
+      "<div class=\"kpi-card\"><div class=\"label\"> <!--ssmpd-i18n:%D9%85%D8%AD%D8%A7%D8%AF%D8%AB%D8%A7%D8%AA-->محادثات</div><div class=\"value small\">" + fmtNumW(msgConv) + '</div></div>' +
+      "<div class=\"kpi-card\"><div class=\"label\"> <!--ssmpd-i18n:%D8%AA%D9%83%D9%84%D9%81%D8%A9%20%D8%A7%D9%84%D9%85%D8%AD%D8%A7%D8%AF%D8%AB%D8%A9-->تكلفة المحادثة</div><div class=\"value small\">" + (costPerMsg == null ? "—" : fmtMoneyW(costPerMsg)) + '</div></div>' +
       '<div class="kpi-card"><div class="label">Leads</div><div class="value small">' + fmtNumW(leads) + '</div></div>' +
       '<div class="kpi-card"><div class="label">CPL</div><div class="value small">' + (costPerLead == null ? "—" : fmtMoneyW(costPerLead)) + '</div></div>' +
-      '<div class="kpi-card"><div class="label">الوصول</div><div class="value small">' + fmtNumW(reach) + '</div></div>' +
+      "<div class=\"kpi-card\"><div class=\"label\"> <!--ssmpd-i18n:%D8%A7%D9%84%D9%88%D8%B5%D9%88%D9%84-->الوصول</div><div class=\"value small\">" + fmtNumW(reach) + '</div></div>' +
       '<div class="kpi-card"><div class="label">CTR</div><div class="value small">' + (ctrPct == null ? "—" : ctrPct.toFixed(2) + "%") + '</div></div>' +
       '<div class="kpi-card"><div class="label">CPC</div><div class="value small">' + (cpc == null ? "—" : fmtMoneyW(cpc)) + '</div></div>' +
-      '<div class="kpi-card"><div class="label">الحالة</div><div class="value small">' + escapeHtml(statusStr) + '</div></div>' +
+      "<div class=\"kpi-card\"><div class=\"label\"> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AD%D8%A7%D9%84%D8%A9-->الحالة</div><div class=\"value small\">" + escapeHtml(statusStr) + '</div></div>' +
       '</div>';
 
     if (adsList.length > 1) {
-      html += '<div style="max-height:200px;overflow:auto;margin-top:8px;"><table class="simple"><thead><tr><th>الإعلان</th><th>مجموعة الكرييتف</th><th>الحالة</th><th>الإنفاق</th><th>Leads</th></tr></thead><tbody>' +
+      html += "<div style=\"max-height:200px;overflow:auto;margin-top:8px;\"><table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%A5%D8%B9%D9%84%D8%A7%D9%86-->الإعلان</th><th>مجموعة الكرييتف</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AD%D8%A7%D9%84%D8%A9-->الحالة</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%A5%D9%86%D9%81%D8%A7%D9%82-->الإنفاق</th><th>Leads</th></tr></thead><tbody>" +
         adsList.map(function (r) {
           return '<tr><td style="font-size:11px;">' + escapeHtml(r.ad_name) + '</td><td style="font-size:11px;">' + escapeHtml(r.creative_group_id) + '</td>' +
             '<td>' + escapeHtml(r.status) + '</td><td>' + fmtMoneyW(r.spend) + '</td><td>' + fmtNumW(r.leads) + '</td></tr>';
@@ -486,7 +486,7 @@
           });
         });
         if (!filtered.length) { resultsBox.innerHTML = '<p style="font-size:12px;color:var(--c-muted);">مفيش نتائج.</p>'; return; }
-        resultsBox.innerHTML = '<table class="simple"><thead><tr><th>الإعلان</th><th>الحملة</th><th>التخصص</th><th>الحالة</th><th>الإنفاق</th><th></th></tr></thead><tbody>' +
+        resultsBox.innerHTML = "<table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%A5%D8%B9%D9%84%D8%A7%D9%86-->الإعلان</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AD%D9%85%D9%84%D8%A9-->الحملة</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AA%D8%AE%D8%B5%D8%B5-->التخصص</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AD%D8%A7%D9%84%D8%A9-->الحالة</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%A5%D9%86%D9%81%D8%A7%D9%82-->الإنفاق</th><th></th></tr></thead><tbody>" +
           filtered.slice(0, 100).map(function (a) {
             return '<tr><td style="font-size:11px;">' + escapeHtml(a.ad_name) + '<div style="color:var(--c-muted);font-size:10px;">' + escapeHtml(a.platform_ad_id) + ' — ' + escapeHtml(a.creative_group_id) + '</div></td>' +
               '<td style="font-size:11px;">' + escapeHtml(a.campaign_name) + '</td><td>' + escapeHtml(a.specialty) + '</td>' +
@@ -547,7 +547,7 @@
   function ciObjectiveSelectHtml(id, selected) {
     var html = '<select id="' + id + '"><option value="">— اختر الهدف —</option>';
     Object.keys(CONTENT_OBJECTIVES).forEach(function (k) {
-      html += '<option value="' + k + '"' + (selected === k ? " selected" : "") + '>' + escapeHtml(CONTENT_OBJECTIVES[k].label) + '</option>';
+      html += '<option value="' + k + '"' + (selected === k ? " selected" : "") + '>' + window.SSMPDI18n.textHtml(escapeHtml(CONTENT_OBJECTIVES[k].label)) + '</option>';
     });
     return html + '</select>';
   }
@@ -555,7 +555,7 @@
     var key = item.content_format;
     var format = Object.prototype.hasOwnProperty.call(CONTENT_FORMATS, key) ? CONTENT_FORMATS[key] : null;
     var label = format ? format.label : "غير محدد";
-    return '<p class="content-format-detail" style="margin:0 0 12px;"><span style="color:var(--c-muted);">نوع المادة</span> <strong>' + escapeHtml(label) + '</strong></p>';
+    return "<p class=\"content-format-detail\" style=\"margin:0 0 12px;\"><span style=\"color:var(--c-muted);\"> <!--ssmpd-i18n:%D9%86%D9%88%D8%B9%20%D8%A7%D9%84%D9%85%D8%A7%D8%AF%D8%A9-->نوع المادة</span> <strong>" + escapeHtml(label) + '</strong></p>';
   }
 
   // شارة كبيرة أعلى كارت المادة حتى يميّز فريق المحتوى الفيديو من البوست بسرعة.
@@ -577,7 +577,7 @@
   function ciFormatSelectHtml(id, selected) {
     var html = '<select id="' + id + '"><option value="">— كل الأشكال —</option>';
     Object.keys(CONTENT_FORMATS).forEach(function (k) {
-      html += '<option value="' + k + '"' + (selected === k ? " selected" : "") + '>' + escapeHtml(CONTENT_FORMATS[k].label) + '</option>';
+      html += '<option value="' + k + '"' + (selected === k ? " selected" : "") + '>' + window.SSMPDI18n.textHtml(escapeHtml(CONTENT_FORMATS[k].label)) + '</option>';
     });
     return html + '</select>';
   }
@@ -862,8 +862,8 @@
     if (kind === "ad") {
       html += '<div style="margin-top:4px;"><b>' + escapeHtml(p.ad_name || p.campaign_name || "—") + '</b>' +
         (x.runs > 1 ? ' <span style="color:var(--c-muted);">(' + x.runs + ' تكرار)</span>' : '') + '</div>';
-      if (p.creative_title) html += '<div><b>العنوان:</b> ' + escapeHtml(p.creative_title) + '</div>';
-      if (p.creative_body) html += '<div><b>النص:</b> ' + escapeHtml(String(p.creative_body).slice(0, 140)) + (String(p.creative_body).length > 140 ? "…" : "") + '</div>';
+      if (p.creative_title) html += "<div><b> <!--ssmpd-i18n:%D8%A7%D9%84%D8%B9%D9%86%D9%88%D8%A7%D9%86%3A-->العنوان:</b> " + escapeHtml(p.creative_title) + '</div>';
+      if (p.creative_body) html += "<div><b> <!--ssmpd-i18n:%D8%A7%D9%84%D9%86%D8%B5%3A-->النص:</b> " + escapeHtml(String(p.creative_body).slice(0, 140)) + (String(p.creative_body).length > 140 ? "…" : "") + '</div>';
     }
     html += '<div><b>Hook:</b> ' + escapeHtml(p.hook_type || "—") + ' &nbsp; <b>Angle:</b> ' + escapeHtml(p.content_angle || "—") + '</div>';
     html += '<div><b>Format:</b> ' + escapeHtml(p.creative_type || "—") + ' &nbsp; <b>CTA:</b> ' + escapeHtml(p.cta_type || "—") + '</div>';
@@ -904,7 +904,7 @@
       '<div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" id="ci-toggle-head">' +
       '<h3 style="margin:0;font-size:14px;">✨ ذكاء المحتوى</h3><span id="ci-toggle-arrow">▾</span></div>' +
       '<div class="content-brief-fields" style="margin-top:10px;">' +
-      '<div class="field"><label for="ci-objective">هدف البوست</label>' + ciObjectiveSelectHtml("ci-objective") + '</div>' +
+      "<div class=\"field\"><label for=\"ci-objective\"> <!--ssmpd-i18n:%D9%87%D8%AF%D9%81%20%D8%A7%D9%84%D8%A8%D9%88%D8%B3%D8%AA-->هدف البوست</label>" + ciObjectiveSelectHtml("ci-objective") + '</div>' +
       '<div class="field"><label>شكل المحتوى (اختياري)</label>' + ciFormatSelectHtml("ci-format") + '</div>' +
       '<div class="field"><label>الموضوع / الخدمة (اختياري)</label><input id="ci-topic" placeholder="مثال: الصداع النصفي، رسم المخ، تنميل الأطراف..."></div></div>' +
       '<div id="ci-body" style="margin-top:10px;">' +
@@ -1443,4 +1443,5 @@ function ciCopyFallbackBrief(ctx, returnOnly) {
     refreshContentIntelligence: refreshContentIntelligence
   };
 })();
+
 

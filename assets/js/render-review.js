@@ -25,7 +25,7 @@
 
   function render(container) {
     var me = window.SSMPDAuth.currentAdmin;
-    container.innerHTML = '<div class="loading">بيحمّل…</div>';
+    container.innerHTML = "<div class=\"loading\"> <!--ssmpd-i18n:%D8%A8%D9%8A%D8%AD%D9%85%D9%91%D9%84%E2%80%A6-->بيحمّل…</div>";
     Promise.all([
       window.SSMPDDb.listContentItems({}),
       window.SSMPDDb.listAdminsBasic(),
@@ -40,7 +40,7 @@
         var settings = res[5];
         var adminsById = {}; admins.forEach(function (a) { adminsById[a.id] = a; });
 
-        var html = '<h2 style="margin-bottom:16px;">إدارة المحتوى</h2>';
+        var html = "<h2 style=\"margin-bottom:16px;\"> <!--ssmpd-i18n:%D8%A5%D8%AF%D8%A7%D8%B1%D8%A9%20%D8%A7%D9%84%D9%85%D8%AD%D8%AA%D9%88%D9%89-->إدارة المحتوى</h2>";
 
         // تنبيه SLA: مواد واقفة في مرحلة اعتماد (أولي أو نهائي) من غير حركة
         // لأكتر من حد SLA (قابل للتعديل من لوحة الأدمن، افتراضي ٤٨ ساعة) —
@@ -64,7 +64,7 @@
         html += '<div class="kanban content-review-board">';
         W.STAGES.forEach(function (s) {
           var colItems = items.filter(function (i) { return i.stage === s.key; });
-          html += '<div class="kanban-col"><h4>' + s.label + '<span class="count">' + colItems.length + '</span></h4>';
+          html += '<div class="kanban-col"><h4>' + window.SSMPDI18n.textHtml(s.label) + '<span class="count">' + colItems.length + '</span></h4>';
           colItems.forEach(function (i) {
             var ownerName = (adminsById[i.created_by] || {}).name || "—";
             var designerName = i.design_execution === "ai" ? "وكيل التصميم بالذكاء الاصطناعي" : i.assigned_designer ? ((adminsById[i.assigned_designer] || {}).name || "—") : "";
@@ -141,7 +141,7 @@
       actionsHtml = W.draftSubmissionHtml(item, window.SSMPDAuth.currentAdmin);
     } else if (item.stage === "initial_approval") {
       actionsHtml = '<div class="field"><label>اختر جهة تنفيذ التصميم</label><select id="rv-designer">' +
-        '<option value="">— اختر —</option>' +
+        "<option value=\"\"> <!--ssmpd-i18n:%E2%80%94%20%D8%A7%D8%AE%D8%AA%D8%B1%20%E2%80%94-->— اختر —</option>" +
         (supportsAi ? '<option value="ai">وكيل التصميم بالذكاء الاصطناعي</option>' : '') +
         designers.map(function (d) { return '<option value="' + d.id + '">' + escapeHtml(d.name || d.email) + '</option>'; }).join("") +
         '</select></div>' +
@@ -155,7 +155,7 @@
         (item.content_format === 'video' ? '<div id="rv-ai-video"></div>' : '<button class="btn ghost" id="rv-ai-open">فتح استوديو التصميم بالذكاء الاصطناعي</button>') +
         '<button class="btn ghost" id="rv-ai-submit" style="margin:10px 0;">إرسال النسخة للاعتماد النهائي</button><p id="rv-ai-feedback" role="status"></p>';
     } else {
-      actionsHtml = '<p style="color:var(--c-muted);font-size:12px;">لا يوجد إجراء اعتماد على هذه المرحلة حالياً.</p>';
+      actionsHtml = "<p style=\"color:var(--c-muted);font-size:12px;\"> <!--ssmpd-i18n:%D9%84%D8%A7%20%D9%8A%D9%88%D8%AC%D8%AF%20%D8%A5%D8%AC%D8%B1%D8%A7%D8%A1%20%D8%A7%D8%B9%D8%AA%D9%85%D8%A7%D8%AF%20%D8%B9%D9%84%D9%89%20%D9%87%D8%B0%D9%87%20%D8%A7%D9%84%D9%85%D8%B1%D8%AD%D9%84%D8%A9%20%D8%AD%D8%A7%D9%84%D9%8A%D8%A7%D9%8B.-->لا يوجد إجراء اعتماد على هذه المرحلة حالياً.</p>";
     }
 
     // تغيير المصمم المسؤول — متاح في أي مرحلة بعد ما يتحدد مصمم (حتى لو الشغل بدأ)
@@ -164,7 +164,7 @@
       reassignHtml = '<div class="field" style="margin-top:10px;"><label>جهة تنفيذ التصميم</label>' +
         '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">' +
         '<select id="rv-reassign">' +
-        '<option value="">— اختر —</option>' +
+        "<option value=\"\"> <!--ssmpd-i18n:%E2%80%94%20%D8%A7%D8%AE%D8%AA%D8%B1%20%E2%80%94-->— اختر —</option>" +
         (canSwitchToAi ? '<option value="ai"' + (isAi ? ' selected' : '') + '>وكيل التصميم بالذكاء الاصطناعي</option>' : '') +
         designers.map(function (d) {
           return '<option value="' + d.id + '" ' + (d.id === item.assigned_designer ? "selected" : "") + '>' + escapeHtml(d.name || d.email) + '</option>';
@@ -178,9 +178,9 @@
       W.contentFormatDetailsHtml(item) +
       '<div class="status-pill approval" style="margin-bottom:12px;">' + W.stageLabel(item.stage) + '</div>' +
       '<div class="field" style="display:flex;align-items:flex-end;gap:8px;max-width:400px;flex-wrap:wrap;">' +
-      '<div style="flex:1;min-width:140px;"><label>المادة دي لصفحة</label>' + W.brandSelectHtml("rv-brand", item.brand || "") + '</div>' +
-      '<div style="flex:1;min-width:140px;"><label>التخصص</label>' + W.specialtySelectHtml("rv-specialty", item.specialty || "") + '</div>' +
-      '<button class="btn ghost sm" id="rv-save-brand" style="margin-bottom:1px;">حفظ</button></div>' +
+      "<div style=\"flex:1;min-width:140px;\"><label> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%A7%D8%AF%D8%A9%20%D8%AF%D9%8A%20%D9%84%D8%B5%D9%81%D8%AD%D8%A9-->المادة دي لصفحة</label>" + W.brandSelectHtml("rv-brand", item.brand || "") + '</div>' +
+      "<div style=\"flex:1;min-width:140px;\"><label> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AA%D8%AE%D8%B5%D8%B5-->التخصص</label>" + W.specialtySelectHtml("rv-specialty", item.specialty || "") + '</div>' +
+      "<button class=\"btn ghost sm\" id=\"rv-save-brand\" style=\"margin-bottom:1px;\"> <!--ssmpd-i18n:%D8%AD%D9%81%D8%B8-->حفظ</button></div>" +
       '<p style="white-space:pre-wrap;">' + escapeHtml(item.body || "") + '</p>' +
       (item.design_file_url ? '<p><a href="' + item.design_file_url + '" target="_blank" class="btn ghost sm">فتح ملف التصميم</a></p>' : '') +
       '<div style="margin:6px 0 14px;">' + W.itemActionsHtml(item, window.SSMPDAuth.currentAdmin) + '</div>' +
@@ -294,5 +294,6 @@
 
   window.SSMPDRenderReview = { render: render };
 })();
+
 
 

@@ -10,8 +10,8 @@ var old=document.getElementById("patient-verification-review-modal");if(old)old.
 var bd=document.createElement("div");bd.id="patient-verification-review-modal";bd.className="modal-backdrop";
 bd.innerHTML='<div class="modal" style="width:min(1040px,96vw);max-width:1040px;max-height:88vh;overflow:auto;">'+
 '<div class="modal-head"><h3>مراجعة التحقق من هوية مرضى Swnw</h3><button class="modal-close">×</button></div>'+
-'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;"><button class="btn sm" data-status="pending">قيد المراجعة</button><button class="btn ghost sm" data-status="approved">المعتمدة</button><button class="btn ghost sm" data-status="rejected">المرفوضة</button><button class="btn ghost sm" data-status="all">الكل</button></div>'+
-'<div id="patient-verification-review-list"><div class="loading">بيحمّل…</div></div></div>';
+"<div style=\"display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;\"><button class=\"btn sm\" data-status=\"pending\">قيد المراجعة</button><button class=\"btn ghost sm\" data-status=\"approved\">المعتمدة</button><button class=\"btn ghost sm\" data-status=\"rejected\">المرفوضة</button><button class=\"btn ghost sm\" data-status=\"all\"> <!--ssmpd-i18n:%D8%A7%D9%84%D9%83%D9%84-->الكل</button></div>"+
+"<div id=\"patient-verification-review-list\"><div class=\"loading\"> <!--ssmpd-i18n:%D8%A8%D9%8A%D8%AD%D9%85%D9%91%D9%84%E2%80%A6-->بيحمّل…</div></div></div>";
 document.body.appendChild(bd);
 bd.querySelector(".modal-close").onclick=function(){bd.remove();};
 bd.addEventListener("click",function(e){if(e.target===bd)bd.remove();});
@@ -19,7 +19,7 @@ bd.querySelectorAll("[data-status]").forEach(function(b){b.onclick=function(){lo
 load(bd,"pending");
 }
 function load(bd,status){
-var host=bd.querySelector("#patient-verification-review-list");host.innerHTML='<div class="loading">بيحمّل…</div>';
+var host=bd.querySelector("#patient-verification-review-list");host.innerHTML="<div class=\"loading\"> <!--ssmpd-i18n:%D8%A8%D9%8A%D8%AD%D9%85%D9%91%D9%84%E2%80%A6-->بيحمّل…</div>";
 window.SSMPDDb.listPatientIdentityVerifications(status).then(function(items){
 if(!items.length){host.innerHTML='<div style="padding:18px;text-align:center;color:var(--c-muted);">مفيش طلبات في الحالة دي.</div>';return;}
 host.innerHTML=items.map(function(x){
@@ -34,7 +34,7 @@ if(x.status==="pending"){
     '<option value="المستند منتهي الصلاحية">المستند منتهي الصلاحية</option>'+
     '<option value="البيانات غير متطابقة">البيانات غير متطابقة</option>'+
     '<option value="other">سبب آخر</option>'+
-  '</select> <button class="btn danger sm" data-reject="'+x.id+'">رفض</button>';
+  '</select> <button class="btn danger sm" data-reject="'+x.id+"\"> <!--ssmpd-i18n:%D8%B1%D9%81%D8%B6-->رفض</button>";
 }
 if(x.status==="approved"&&!acc.activation_completed_at){
   buttons+=' <button class="btn ghost sm" data-resend="'+x.id+'">إعادة إرسال كود التفعيل</button>';

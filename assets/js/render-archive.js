@@ -40,10 +40,10 @@
     var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">' +
       '<h2>' + monthLabel + '</h2>' +
       '<div style="display:flex;gap:6px;">' +
-      '<button class="btn ghost sm" id="arch-prev">‹ السابق</button>' +
-      '<button class="btn ghost sm" id="arch-next">التالي ›</button>' +
-      '<button class="btn ' + (state.view === "month" ? "" : "ghost") + ' sm" id="arch-month">شهر</button>' +
-      '<button class="btn ' + (state.view === "week" ? "" : "ghost") + ' sm" id="arch-week">أسبوع</button>' +
+      "<button class=\"btn ghost sm\" id=\"arch-prev\"> <!--ssmpd-i18n:%E2%80%B9%20%D8%A7%D9%84%D8%B3%D8%A7%D8%A8%D9%82-->‹ السابق</button>" +
+      "<button class=\"btn ghost sm\" id=\"arch-next\"> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AA%D8%A7%D9%84%D9%8A%20%E2%80%BA-->التالي ›</button>" +
+      '<button class="btn ' + (state.view === "month" ? "" : "ghost") + " sm\" id=\"arch-month\"> <!--ssmpd-i18n:%D8%B4%D9%87%D8%B1-->شهر</button>" +
+      '<button class="btn ' + (state.view === "week" ? "" : "ghost") + " sm\" id=\"arch-week\"> <!--ssmpd-i18n:%D8%A3%D8%B3%D8%A8%D9%88%D8%B9-->أسبوع</button>" +
       '</div></div>';
 
     var firstOfMonth = new Date(year, month, 1);
@@ -118,11 +118,11 @@
       '<p style="white-space:pre-wrap;">' + escapeHtml(item.body || "") + '</p>' +
       (item.design_file_url ? '<p><a href="' + item.design_file_url + '" target="_blank" class="btn ghost sm">التصميم</a></p>' : '') +
       (item.published_url ? '<p><a href="' + item.published_url + '" target="_blank" class="btn ghost sm">رابط المنشور</a></p>' : '') +
-      '<table class="simple" style="margin-top:12px;"><tr><th>تاريخ النشر</th><td>' +
+      "<table class=\"simple\" style=\"margin-top:12px;\"><tr><th> <!--ssmpd-i18n:%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE%20%D8%A7%D9%84%D9%86%D8%B4%D8%B1-->تاريخ النشر</th><td>" +
       (item.published_at ? new Date(item.published_at).toLocaleString("ar-EG") : "—") + '</td></tr>' +
       '<tr><th>نُشر بواسطة</th><td>' + escapeHtml(publisher) + '</td></tr>' +
       (item.scheduled_by ? '<tr><th>جدولها</th><td>' + escapeHtml(scheduler) + '</td></tr>' : '') +
-      '<tr><th>المنصة</th><td>' + W.platformsLabel(item.publish_platforms && item.publish_platforms.length ? item.publish_platforms : item.publish_platform) + '</td></tr></table>' +
+      "<tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D9%86%D8%B5%D8%A9-->المنصة</th><td>" + W.platformsLabel(item.publish_platforms && item.publish_platforms.length ? item.publish_platforms : item.publish_platform) + '</td></tr></table>' +
       '<div style="margin-top:12px;">' + W.itemActionsHtml(item, window.SSMPDAuth.currentAdmin) + '</div></div>';
     document.body.appendChild(backdrop);
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
@@ -132,3 +132,4 @@
 
   window.SSMPDRenderArchive = { render: render };
 })();
+

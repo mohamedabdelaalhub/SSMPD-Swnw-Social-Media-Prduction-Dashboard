@@ -26,7 +26,7 @@
       return window.SSMPDDb.listComments(contentId).then(function (rows) {
         var html = '<div class="comment-thread"><h4 style="font-size:13px;margin-bottom:10px;">الكومنتات (' + rows.length + ')</h4>';
         if (!rows.length) {
-          html += '<div class="empty-state" style="padding:14px;">مفيش كومنتات لسه</div>';
+          html += "<div class=\"empty-state\" style=\"padding:14px;\"> <!--ssmpd-i18n:%D9%85%D9%81%D9%8A%D8%B4%20%D9%83%D9%88%D9%85%D9%86%D8%AA%D8%A7%D8%AA%20%D9%84%D8%B3%D9%87-->مفيش كومنتات لسه</div>";
         } else {
           rows.forEach(function (c) {
             var authorRow = adminsById && adminsById[c.author_id];
@@ -41,8 +41,8 @@
           });
         }
         html += '<div style="margin-top:10px;display:flex;gap:8px;">' +
-          '<textarea class="new-comment-box" placeholder="اكتب كومنت..." style="flex:1;min-height:44px;"></textarea>' +
-          '</div><div style="text-align:left;margin-top:6px;"><button class="btn sm send-comment-btn">إرسال</button></div></div>';
+          "<textarea class=\"new-comment-box\" placeholder=\"اكتب كومنت...\" data-i18n-placeholder=\"%D8%A7%D9%83%D8%AA%D8%A8%20%D9%83%D9%88%D9%85%D9%86%D8%AA...\" data-i18n-placeholder=\"%D8%A7%D9%83%D8%AA%D8%A8%20%D9%83%D9%88%D9%85%D9%86%D8%AA...\" style=\"flex:1;min-height:44px;\"></textarea>" +
+          "</div><div style=\"text-align:left;margin-top:6px;\"><button class=\"btn sm send-comment-btn\"> <!--ssmpd-i18n:%D8%A5%D8%B1%D8%B3%D8%A7%D9%84-->إرسال</button></div></div>";
         container.innerHTML = html;
 
         // استخدام querySelector على الـ container نفسه (مش document) عشان الكومبوننت ده يشتغل صح
@@ -121,4 +121,5 @@
 
   window.SSMPDComments = Comments;
 })();
+
 

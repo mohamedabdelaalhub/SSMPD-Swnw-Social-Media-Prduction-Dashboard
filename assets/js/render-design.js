@@ -10,7 +10,7 @@
 
   function render(container) {
     var me = window.SSMPDAuth.currentAdmin;
-    container.innerHTML = '<div class="loading">بيحمّل…</div>';
+    container.innerHTML = "<div class=\"loading\"> <!--ssmpd-i18n:%D8%A8%D9%8A%D8%AD%D9%85%D9%91%D9%84%E2%80%A6-->بيحمّل…</div>";
 
     Promise.all([
       window.SSMPDDb.listContentItems({ assignedDesigner: me.id }),
@@ -27,12 +27,12 @@
         return ["ready_to_publish", "published"].indexOf(i.stage) !== -1;
       });
 
-      var html = '<h2 style="margin-bottom:16px;">شاشة التصميم</h2>';
+      var html = "<h2 style=\"margin-bottom:16px;\"> <!--ssmpd-i18n:%D8%B4%D8%A7%D8%B4%D8%A9%20%D8%A7%D9%84%D8%AA%D8%B5%D9%85%D9%8A%D9%85-->شاشة التصميم</h2>";
       html += '<div class="section"><h3>محتوى جاهز للتصميم (' + actionable.length + ')</h3>';
       if (!actionable.length) {
         html += '<div class="empty-state">مفيش تاسكات محتاجة تصميم دلوقتي</div>';
       } else {
-        html += '<table class="simple"><thead><tr><th>العنوان</th><th>الحالة</th><th></th></tr></thead><tbody>';
+        html += "<table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%B9%D9%86%D9%88%D8%A7%D9%86-->العنوان</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AD%D8%A7%D9%84%D8%A9-->الحالة</th><th></th></tr></thead><tbody>";
         actionable.forEach(function (i) {
           var ds = W.designStatusFor(i);
           var statusCell;
@@ -47,7 +47,7 @@
           }
           html += '<tr><td><span class="link-open" data-open="' + i.id + '">' + escapeHtml(i.title) + '</span>' + W.brandBadgeHtml(i.brand) + '</td>' +
             '<td>' + statusCell + '</td>' +
-            '<td><button class="btn ghost sm" data-open="' + i.id + '">فتح</button> ' + C.commentButtonHtml(i.id, stats) + '</td></tr>';
+            '<td><button class="btn ghost sm" data-open="' + i.id + "\"> <!--ssmpd-i18n:%D9%81%D8%AA%D8%AD-->فتح</button> " + C.commentButtonHtml(i.id, stats) + '</td></tr>';
         });
         html += '</tbody></table>';
       }
@@ -57,7 +57,7 @@
       if (!done.length) {
         html += '<div class="empty-state">لسه مفيش</div>';
       } else {
-        html += '<table class="simple"><thead><tr><th>العنوان</th><th>الحالة</th></tr></thead><tbody>';
+        html += "<table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%B9%D9%86%D9%88%D8%A7%D9%86-->العنوان</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AD%D8%A7%D9%84%D8%A9-->الحالة</th></tr></thead><tbody>";
         done.forEach(function (i) {
           html += '<tr><td><span class="link-open" data-open="' + i.id + '">' + escapeHtml(i.title) + '</span>' + W.brandBadgeHtml(i.brand) + '</td>' +
             '<td><span class="status-pill approved">' + W.stageLabel(i.stage) + '</span></td></tr>';
@@ -196,4 +196,5 @@
 
   window.SSMPDRenderDesign = { render: render };
 })();
+
 

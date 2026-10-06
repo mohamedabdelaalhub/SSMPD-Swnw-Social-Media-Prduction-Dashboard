@@ -137,7 +137,7 @@
 
   // ============ ١) الداشبورد العام ============
   function renderDashboard(view, container) {
-    view.innerHTML = '<div class="loading">بيحمّل…</div>';
+    view.innerHTML = "<div class=\"loading\"> <!--ssmpd-i18n:%D8%A8%D9%8A%D8%AD%D9%85%D9%91%D9%84%E2%80%A6-->بيحمّل…</div>";
     window.SSMPDDb.getPatientArchiveStats().then(function (res) {
       var html = '<div class="kpi-grid">' +
         '<div class="kpi-card"><div class="label">إجمالي المرضى</div><div class="value">' + fmtNum(res.total_patients) + '</div></div>' +
@@ -150,7 +150,7 @@
       if (!patients.length) {
         html += '<p style="color:var(--c-muted);font-size:13px;">مفيش إضافات لسه.</p>';
       } else {
-        html += '<table class="simple"><thead><tr><th>كود المريض</th><th>الاسم</th><th>الهاتف</th><th>تاريخ</th></tr></thead><tbody>';
+        html += "<table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D9%83%D9%88%D8%AF%20%D8%A7%D9%84%D9%85%D8%B1%D9%8A%D8%B6-->كود المريض</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%A7%D8%B3%D9%85-->الاسم</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%87%D8%A7%D8%AA%D9%81-->الهاتف</th><th> <!--ssmpd-i18n:%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE-->تاريخ</th></tr></thead><tbody>";
         patients.forEach(function (p) {
           html += '<tr><td>' + escapeHtml(p.patient_code || "—") + '</td><td>' + escapeHtml(p.full_name) + '</td>' +
             '<td>' + escapeHtml(p.phone || "—") + '</td><td style="font-size:11px;color:var(--c-muted);">' + fmtDate(p.created_at) + '</td></tr>';
@@ -164,7 +164,7 @@
       if (!files.length) {
         html += '<p style="color:var(--c-muted);font-size:13px;">مفيش ملفات لسه.</p>';
       } else {
-        html += '<table class="simple"><thead><tr><th>الملف</th><th>الفئة</th><th>حالة المراجعة</th><th>تاريخ</th></tr></thead><tbody>';
+        html += "<table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D9%84%D9%81-->الملف</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%81%D8%A6%D8%A9-->الفئة</th><th>حالة المراجعة</th><th> <!--ssmpd-i18n:%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE-->تاريخ</th></tr></thead><tbody>";
         files.forEach(function (f) {
           html += '<tr><td>' + escapeHtml(f.file_name) + '</td><td>' + categoryLabel(f.category) + '</td>' +
             '<td><span class="status-pill ' + (REVIEW_PILL[f.review_status] || "draft") + '">' + (REVIEW_LABELS[f.review_status] || f.review_status) + '</span></td>' +
@@ -185,7 +185,7 @@
     var html = '<div class="section"><h3>اختيار المريض</h3>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">' +
       '<input id="up-search" placeholder="بحث بالاسم / الهاتف / كود المريض" value="' + escapeHtml(state.uploadSearch) + '" style="flex:1;min-width:220px;padding:9px 12px;border-radius:10px;border:1px solid var(--c-border);">' +
-      '<button class="btn ghost sm" id="up-search-btn">بحث</button>' +
+      "<button class=\"btn ghost sm\" id=\"up-search-btn\"> <!--ssmpd-i18n:%D8%A8%D8%AD%D8%AB-->بحث</button>" +
       '<button class="btn sm" id="up-new-patient-btn">+ مريض جديد</button></div>' +
       '<div id="up-search-results"></div></div>';
     html += '<div id="up-form-wrap"></div>';
@@ -223,7 +223,7 @@
         '<button class="btn ghost sm" id="np-edit-btn">تعديل بيانات</button>' +
         '<button class="btn ghost sm" id="np-upload-btn">رفع مستندات</button>' +
         '<button class="btn ghost sm" id="np-nursing-btn">إرسال للتمريض</button>' +
-        '<button class="btn ghost sm" id="np-delete-btn" style="color:var(--c-danger,#c33);">حذف</button>' +
+        "<button class=\"btn ghost sm\" id=\"np-delete-btn\" style=\"color:var(--c-danger,#c33);\"> <!--ssmpd-i18n:%D8%AD%D8%B0%D9%81-->حذف</button>" +
         '</div>' +
         '<div id="np-upload-form-wrap"></div>' +
         '<div id="np-action-status" style="font-size:12px;color:var(--c-muted);"></div></div>';
@@ -272,13 +272,13 @@
 
     function renderUploadForm(wrap, patient) {
       wrap.innerHTML = '<div class="field" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-top:8px;">' +
-        '<div style="flex:1;min-width:140px;"><label>الفئة</label><select id="uf-category">' +
+        "<div style=\"flex:1;min-width:140px;\"><label> <!--ssmpd-i18n:%D8%A7%D9%84%D9%81%D8%A6%D8%A9-->الفئة</label><select id=\"uf-category\">" +
         CATEGORIES.map(function (c) { return '<option value="' + c.key + '">' + c.label + '</option>'; }).join("") +
         '</select></div>' +
-        '<div style="flex:2;min-width:180px;"><label>الملف</label><input type="file" id="uf-file"></div>' +
-        '<div style="min-width:150px;"><label>تاريخ إصدار المستند (اختياري)</label><input type="date" id="uf-issued-at"></div>' +
-        '<button class="btn sm" id="uf-btn">رفع</button></div>' +
-        '<div class="field" id="uf-other-wrap"><label id="uf-other-label">ملاحظات / تفاصيل الملف (اختياري)</label><input id="uf-other-desc" placeholder="اكتب أي تفاصيل تخص الملف"></div>' +
+        "<div style=\"flex:2;min-width:180px;\"><label> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D9%84%D9%81-->الملف</label><input type=\"file\" id=\"uf-file\"></div>" +
+        "<div style=\"min-width:150px;\"><label> <!--ssmpd-i18n:%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE%20%D8%A5%D8%B5%D8%AF%D8%A7%D8%B1%20%D8%A7%D9%84%D9%85%D8%B3%D8%AA%D9%86%D8%AF%20(%D8%A7%D8%AE%D8%AA%D9%8A%D8%A7%D8%B1%D9%8A)-->تاريخ إصدار المستند (اختياري)</label><input type=\"date\" id=\"uf-issued-at\"></div>" +
+        "<button class=\"btn sm\" id=\"uf-btn\"> <!--ssmpd-i18n:%D8%B1%D9%81%D8%B9-->رفع</button></div>" +
+        "<div class=\"field\" id=\"uf-other-wrap\"><label id=\"uf-other-label\"> <!--ssmpd-i18n:%D9%85%D9%84%D8%A7%D8%AD%D8%B8%D8%A7%D8%AA%20%2F%20%D8%AA%D9%81%D8%A7%D8%B5%D9%8A%D9%84%20%D8%A7%D9%84%D9%85%D9%84%D9%81%20(%D8%A7%D8%AE%D8%AA%D9%8A%D8%A7%D8%B1%D9%8A)-->ملاحظات / تفاصيل الملف (اختياري)</label><input id=\"uf-other-desc\" placeholder=\"اكتب أي تفاصيل تخص الملف\"></div>" +
         '<div id="uf-status" style="font-size:12px;color:var(--c-muted);"></div>';
 
       var catSelect = document.getElementById("uf-category");
@@ -319,14 +319,14 @@
     backdrop.className = "modal-backdrop";
     backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>مريض جديد</h3><button class="modal-close">×</button></div>' +
       '<div class="field"><label>الاسم بالكامل</label><input id="np-name"></div>' +
-      '<div class="field"><label>رقم الهاتف</label><input id="np-phone" placeholder="01xxxxxxxxx"></div>' +
-      '<div class="field"><label>البريد الإلكتروني</label><input id="np-email" type="email" placeholder="name@example.com"></div>' +
+      "<div class=\"field\"><label> <!--ssmpd-i18n:%D8%B1%D9%82%D9%85%20%D8%A7%D9%84%D9%87%D8%A7%D8%AA%D9%81-->رقم الهاتف</label><input id=\"np-phone\" placeholder=\"01xxxxxxxxx\"></div>" +
+      "<div class=\"field\"><label> <!--ssmpd-i18n:%D8%A7%D9%84%D8%A8%D8%B1%D9%8A%D8%AF%20%D8%A7%D9%84%D8%A5%D9%84%D9%83%D8%AA%D8%B1%D9%88%D9%86%D9%8A-->البريد الإلكتروني</label><input id=\"np-email\" type=\"email\" placeholder=\"name@example.com\"></div>" +
       '<div class="field"><label>الرقم القومي (اختياري)</label><input id="np-nid" maxlength="14"></div>' +
-      '<div class="field"><label>السن</label><input id="np-age" type="number" min="0"></div>' +
-      '<div class="field"><label>النوع</label><select id="np-gender"><option value="">—</option><option value="male">ذكر</option><option value="female">أنثى</option></select></div>' +
+      "<div class=\"field\"><label> <!--ssmpd-i18n:%D8%A7%D9%84%D8%B3%D9%86-->السن</label><input id=\"np-age\" type=\"number\" min=\"0\"></div>" +
+      "<div class=\"field\"><label> <!--ssmpd-i18n:%D8%A7%D9%84%D9%86%D9%88%D8%B9-->النوع</label><select id=\"np-gender\"><option value=\"\">—</option><option value=\"male\">ذكر</option><option value=\"female\">أنثى</option></select></div>" +
       '<div class="field"><label>الرقم الطبي (اختياري)</label><input id="np-mrn"></div>' +
       '<div class="field"><label>جهة التعاقد (اختياري)</label><select id="np-contract"><option value="">مريض مباشر — بدون جهة</option></select><small style="display:block;margin-top:4px;color:var(--c-muted);">الربط يحسب فواتير المريض القادمة ضمن العقد، بدون كشف أي بيانات طبية للجهة.</small></div>' +
-      '<button class="btn block" id="np-save">حفظ</button></div>';
+      "<button class=\"btn block\" id=\"np-save\"> <!--ssmpd-i18n:%D8%AD%D9%81%D8%B8-->حفظ</button></div>";
     document.body.appendChild(backdrop);
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
     backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
@@ -372,17 +372,17 @@
     backdrop.className = "modal-backdrop";
     backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>تعديل بيانات المريض</h3><button class="modal-close">×</button></div>' +
       '<div class="field"><label>الاسم بالكامل</label><input id="ep-name" value="' + escapeHtml(patient.full_name || "") + '"></div>' +
-      '<div class="field"><label>رقم الهاتف</label><input id="ep-phone" value="' + escapeHtml(patient.phone || "") + '"></div>' +
-      '<div class="field"><label>البريد الإلكتروني</label><input id="ep-email" type="email" value="' + escapeHtml(patient.email || "") + '"></div>' +
-      '<div class="field"><label>السن</label><input id="ep-age" type="number" min="0" value="' + escapeHtml(patient.age != null ? String(patient.age) : "") + '"></div>' +
-      '<div class="field"><label>النوع</label><select id="ep-gender">' +
+      "<div class=\"field\"><label> <!--ssmpd-i18n:%D8%B1%D9%82%D9%85%20%D8%A7%D9%84%D9%87%D8%A7%D8%AA%D9%81-->رقم الهاتف</label><input id=\"ep-phone\" value=\"" + escapeHtml(patient.phone || "") + '"></div>' +
+      "<div class=\"field\"><label> <!--ssmpd-i18n:%D8%A7%D9%84%D8%A8%D8%B1%D9%8A%D8%AF%20%D8%A7%D9%84%D8%A5%D9%84%D9%83%D8%AA%D8%B1%D9%88%D9%86%D9%8A-->البريد الإلكتروني</label><input id=\"ep-email\" type=\"email\" value=\"" + escapeHtml(patient.email || "") + '"></div>' +
+      "<div class=\"field\"><label> <!--ssmpd-i18n:%D8%A7%D9%84%D8%B3%D9%86-->السن</label><input id=\"ep-age\" type=\"number\" min=\"0\" value=\"" + escapeHtml(patient.age != null ? String(patient.age) : "") + '"></div>' +
+      "<div class=\"field\"><label> <!--ssmpd-i18n:%D8%A7%D9%84%D9%86%D9%88%D8%B9-->النوع</label><select id=\"ep-gender\">" +
         '<option value="" ' + (!patient.gender ? "selected" : "") + '>—</option>' +
         '<option value="male" ' + (patient.gender === "male" ? "selected" : "") + '>ذكر</option>' +
         '<option value="female" ' + (patient.gender === "female" ? "selected" : "") + '>أنثى</option>' +
       '</select></div>' +
       '<div class="field"><label>الرقم الطبي</label><input id="ep-mrn" value="' + escapeHtml(patient.medical_record_no || "") + '"></div>' +
       '<div class="field"><label>تاريخ آخر زيارة</label><input id="ep-visit" type="date" value="' + escapeHtml(patient.last_visit_date || "") + '"></div>' +
-      '<button class="btn block" id="ep-save">حفظ</button></div>';
+      "<button class=\"btn block\" id=\"ep-save\"> <!--ssmpd-i18n:%D8%AD%D9%81%D8%B8-->حفظ</button></div>";
     document.body.appendChild(backdrop);
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
     backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
@@ -441,9 +441,9 @@
       '<button type="button" class="btn ghost sm" data-add-surgery-row="1">+ إضافة عملية</button></div>';
 
     html += '<div class="field"><label>تاريخ مرضي بالعائلة</label><div data-family-list></div>' +
-      '<button type="button" class="btn ghost sm" data-add-family-row="1">+ إضافة</button></div>';
+      "<button type=\"button\" class=\"btn ghost sm\" data-add-family-row=\"1\"> <!--ssmpd-i18n:%2B%20%D8%A5%D8%B6%D8%A7%D9%81%D8%A9-->+ إضافة</button></div>";
 
-    html += '<button class="btn block" id="mp-save">حفظ</button></div>';
+    html += "<button class=\"btn block\" id=\"mp-save\"> <!--ssmpd-i18n:%D8%AD%D9%81%D8%B8-->حفظ</button></div>";
     backdrop.innerHTML = html;
     document.body.appendChild(backdrop);
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
@@ -456,8 +456,8 @@
       var row = document.createElement("div");
       row.style.cssText = "display:flex;gap:6px;margin-bottom:4px;";
       row.innerHTML = '<input data-surgery-name placeholder="اسم العملية" style="flex:1;" value="' + escapeHtml(name || "") + '">' +
-        '<input data-surgery-notes placeholder="ملاحظات" style="flex:1;" value="' + escapeHtml(notes || "") + '">' +
-        '<button type="button" class="btn danger sm" data-remove-row="1">حذف</button>';
+        "<input data-surgery-notes placeholder=\"ملاحظات\" data-i18n-placeholder=\"%D9%85%D9%84%D8%A7%D8%AD%D8%B8%D8%A7%D8%AA\" data-i18n-placeholder=\"%D9%85%D9%84%D8%A7%D8%AD%D8%B8%D8%A7%D8%AA\" style=\"flex:1;\" value=\"" + escapeHtml(notes || "") + '">' +
+        "<button type=\"button\" class=\"btn danger sm\" data-remove-row=\"1\"> <!--ssmpd-i18n:%D8%AD%D8%B0%D9%81-->حذف</button>";
       row.querySelector("[data-remove-row]").onclick = function () { row.remove(); };
       surgeriesList.appendChild(row);
     }
@@ -465,7 +465,7 @@
       var row = document.createElement("div");
       row.style.cssText = "display:flex;gap:6px;margin-bottom:4px;";
       row.innerHTML = '<input data-family-disease placeholder="المرض" style="flex:1;" value="' + escapeHtml(disease || "") + '">' +
-        '<button type="button" class="btn danger sm" data-remove-row="1">حذف</button>';
+        "<button type=\"button\" class=\"btn danger sm\" data-remove-row=\"1\"> <!--ssmpd-i18n:%D8%AD%D8%B0%D9%81-->حذف</button>";
       row.querySelector("[data-remove-row]").onclick = function () { row.remove(); };
       familyList.appendChild(row);
     }
@@ -512,13 +512,13 @@
     var backdrop = document.createElement("div");
     backdrop.className = "modal-backdrop";
     backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>' + (isEdit ? "تعديل الزيارة" : "زيارة جديدة") + '</h3><button class="modal-close">×</button></div>' +
-      '<div class="field"><label>تاريخ الزيارة</label><input id="vs-date" type="date" value="' + (v.visit_date || new Date().toISOString().slice(0, 10)) + '"></div>' +
+      "<div class=\"field\"><label> <!--ssmpd-i18n:%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE%20%D8%A7%D9%84%D8%B2%D9%8A%D8%A7%D8%B1%D8%A9-->تاريخ الزيارة</label><input id=\"vs-date\" type=\"date\" value=\"" + (v.visit_date || new Date().toISOString().slice(0, 10)) + '"></div>' +
       '<div class="field"><label>رقم الزيارة</label><input id="vs-number" value="' + escapeHtml(v.visit_number || '') + '"></div>' +
       '<div class="field"><label>جهة التعاقد لهذه الزيارة</label><select id="vs-contract"><option value="">مريض مباشر — بدون جهة تعاقد</option></select><p style="font-size:11px;color:var(--c-muted);margin:5px 0 0;">تظهر هنا العقود النشطة المرتبطة بالمريض فقط.</p></div>' +
       '<div class="field"><label>الشكوى</label><input id="vs-complaint" value="' + escapeHtml(v.complaint || '') + '"></div>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap;">' +
-      '<div class="field" style="flex:1;min-width:170px;"><label>الطبيب</label><input id="vs-doctor" value="' + escapeHtml(v.doctor_name || '') + '"></div>' +
-      '<div class="field" style="flex:1;min-width:170px;"><label>التخصص</label><input id="vs-specialty" value="' + escapeHtml(v.specialty || '') + '"></div>' +
+      "<div class=\"field\" style=\"flex:1;min-width:170px;\"><label> <!--ssmpd-i18n:%D8%A7%D9%84%D8%B7%D8%A8%D9%8A%D8%A8-->الطبيب</label><input id=\"vs-doctor\" value=\"" + escapeHtml(v.doctor_name || '') + '"></div>' +
+      "<div class=\"field\" style=\"flex:1;min-width:170px;\"><label> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AA%D8%AE%D8%B5%D8%B5-->التخصص</label><input id=\"vs-specialty\" value=\"" + escapeHtml(v.specialty || '') + '"></div>' +
       '</div>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap;">' +
       '<div class="field" style="flex:1;min-width:110px;"><label>ضغط الدم</label><input id="vs-bp" value="' + escapeHtml(v.blood_pressure || '') + '"></div>' +
@@ -544,7 +544,7 @@
       '<div class="field" style="border-top:1px solid var(--c-border);padding-top:10px;">' +
       '<label style="display:flex;align-items:center;gap:8px;font-weight:normal;"><input type="checkbox" id="vs-referred" ' + (v.referred_to_other_doctor ? "checked" : "") + '> محوّل لطبيب آخر</label>' +
       '<input id="vs-referred-doctor" placeholder="اسم الطبيب المحوّل له" value="' + escapeHtml(v.referred_doctor_name || '') + '" style="margin-top:8px;' + (v.referred_to_other_doctor ? "" : "display:none;") + '"></div>' +
-      '<button class="btn block" id="vs-save">حفظ</button></div>';
+      "<button class=\"btn block\" id=\"vs-save\"> <!--ssmpd-i18n:%D8%AD%D9%81%D8%B8-->حفظ</button></div>";
     document.body.appendChild(backdrop);
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
     backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
@@ -567,7 +567,7 @@
       var row = document.createElement("div");
       row.className = "visit-medication-row";
       row.style.cssText = "border:1px solid var(--c-border);border-radius:10px;padding:8px;margin-bottom:8px;display:grid;gap:7px;";
-      row.innerHTML = '<div style="display:flex;gap:7px;flex-wrap:wrap;"><input data-med-name placeholder="اسم الدواء" value="' + escapeHtml(m.medicine_name || '') + '" style="flex:2;min-width:150px;"><input data-med-strength placeholder="التركيز" value="' + escapeHtml(m.strength || '') + '" style="flex:1;min-width:100px;"><input data-med-dosage placeholder="الجرعة" value="' + escapeHtml(m.dosage || '') + '" style="flex:1;min-width:100px;"></div><div style="display:flex;gap:7px;flex-wrap:wrap;align-items:end;"><label style="flex:1;min-width:95px;font-size:12px;">كل <input data-med-every type="number" min="1" max="31" value="' + escapeHtml(m.frequency_hours || 8) + '"></label><label style="flex:1;min-width:95px;font-size:12px;">وحدة <select data-med-unit><option value="hours">ساعة</option><option value="days">يوم</option></select></label><label style="flex:1;min-width:95px;font-size:12px;">لمدة <input data-med-duration type="number" min="1" max="365" value="' + escapeHtml(m.duration_days || 1) + '"> يوم</label><label style="flex:1;min-width:125px;font-size:12px;">البداية <input data-med-start-date type="date" value="' + escapeHtml(m.start_date || (v.visit_date || new Date().toISOString().slice(0, 10))) + '"></label><label style="flex:1;min-width:100px;font-size:12px;">الساعة <input data-med-start-time type="time" value="' + escapeHtml(m.start_time ? String(m.start_time).slice(0, 5) : '08:00') + '"></label><button type="button" class="btn danger sm" data-remove-med>حذف</button></div><input data-med-instructions placeholder="تعليمات إضافية للمريض" value="' + escapeHtml(m.instructions || '') + '">';
+      row.innerHTML = '<div style="display:flex;gap:7px;flex-wrap:wrap;"><input data-med-name placeholder="اسم الدواء" value="' + escapeHtml(m.medicine_name || '') + '" style="flex:2;min-width:150px;"><input data-med-strength placeholder="التركيز" value="' + escapeHtml(m.strength || '') + '" style="flex:1;min-width:100px;"><input data-med-dosage placeholder="الجرعة" value="' + escapeHtml(m.dosage || '') + '" style="flex:1;min-width:100px;"></div><div style="display:flex;gap:7px;flex-wrap:wrap;align-items:end;"><label style="flex:1;min-width:95px;font-size:12px;">كل <input data-med-every type="number" min="1" max="31" value="' + escapeHtml(m.frequency_hours || 8) + "\"></label><label style=\"flex:1;min-width:95px;font-size:12px;\">وحدة <select data-med-unit><option value=\"hours\">ساعة</option><option value=\"days\"> <!--ssmpd-i18n:%D9%8A%D9%88%D9%85-->يوم</option></select></label><label style=\"flex:1;min-width:95px;font-size:12px;\">لمدة <input data-med-duration type=\"number\" min=\"1\" max=\"365\" value=\"" + escapeHtml(m.duration_days || 1) + "\"> <!--ssmpd-i18n:%D9%8A%D9%88%D9%85--> يوم</label><label style=\"flex:1;min-width:125px;font-size:12px;\">البداية <input data-med-start-date type=\"date\" value=\"" + escapeHtml(m.start_date || (v.visit_date || new Date().toISOString().slice(0, 10))) + '"></label><label style="flex:1;min-width:100px;font-size:12px;">الساعة <input data-med-start-time type="time" value="' + escapeHtml(m.start_time ? String(m.start_time).slice(0, 5) : '08:00') + "\"></label><button type=\"button\" class=\"btn danger sm\" data-remove-med> <!--ssmpd-i18n:%D8%AD%D8%B0%D9%81-->حذف</button></div><input data-med-instructions placeholder=\"تعليمات إضافية للمريض\" value=\"" + escapeHtml(m.instructions || '') + '">';
       row.querySelector("[data-med-unit]").value = m.frequency_hours && m.frequency_hours % 24 === 0 && m.frequency_hours >= 24 ? "days" : "hours";
       if (row.querySelector("[data-med-unit]").value === "days") row.querySelector("[data-med-every]").value = Math.max(1, Math.round((m.frequency_hours || 24) / 24));
       row.querySelector("[data-remove-med]").onclick = function () { row.remove(); };
@@ -703,7 +703,7 @@
       '<div class="field"><label>التخصص (اختياري — لتمييز التقارير لو أكتر من تقرير لنفس المريض)</label><input id="mr-specialty" type="text" placeholder="مثال: عظام" value="' + escapeHtml(r.specialty || '') + '"></div>' +
       '<div class="field"><label>نص التقرير</label><textarea id="mr-body" rows="10" placeholder="اكتب نص التقرير كامل زي ما هيتطبع بالظبط...">' + escapeHtml(r.body_text || '') + '</textarea></div>' +
       '<p style="font-size:11px;color:var(--c-muted);">هيتطبع باسم "المدير الطبي: ' + escapeHtml(r.doctor_name || 'د.دينا حسني') + '" تلقائي في نهاية التقرير.</p>' +
-      '<button class="btn block" id="mr-save">حفظ</button></div>';
+      "<button class=\"btn block\" id=\"mr-save\"> <!--ssmpd-i18n:%D8%AD%D9%81%D8%B8-->حفظ</button></div>";
     document.body.appendChild(backdrop);
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
     backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
@@ -735,11 +735,11 @@
     backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>' + (isEdit ? "تعديل الروشتة" : "روشتة جديدة") + '</h3><button class="modal-close">×</button></div>' +
       '<p style="font-size:12px;color:var(--c-muted);margin:-6px 0 10px;">المريض: ' + escapeHtml(patient.full_name) + (patient.age != null ? (' — ' + patient.age + ' عام') : '') + '</p>' +
       '<div class="field"><label>تاريخ الروشتة</label><input id="rx-date" type="date" value="' + (r.report_date || new Date().toISOString().slice(0, 10)) + '"></div>' +
-      '<div class="field"><label>اسم الطبيب</label><input id="rx-doctor" type="text" placeholder="اسم الطبيب" value="' + escapeHtml(r.doctor_name || '') + '"></div>' +
+      "<div class=\"field\"><label> <!--ssmpd-i18n:%D8%A7%D8%B3%D9%85%20%D8%A7%D9%84%D8%B7%D8%A8%D9%8A%D8%A8-->اسم الطبيب</label><input id=\"rx-doctor\" type=\"text\" placeholder=\"اسم الطبيب\" data-i18n-placeholder=\"%D8%A7%D8%B3%D9%85%20%D8%A7%D9%84%D8%B7%D8%A8%D9%8A%D8%A8\" value=\"" + escapeHtml(r.doctor_name || '') + '"></div>' +
       '<div class="field"><label>التخصص (اختياري)</label><input id="rx-specialty" type="text" placeholder="مثال: عظام" value="' + escapeHtml(r.specialty || '') + '"></div>' +
       '<div class="field"><label>التشخيص (اختياري)</label><input id="rx-diagnosis" type="text" placeholder="التشخيص" value="' + escapeHtml(r.diagnosis || '') + '"></div>' +
       '<div class="field"><label>الروشتة</label><textarea id="rx-body" rows="10" placeholder="اكتب تفاصيل الروشتة كاملة زي ما هتتطبع بالظبط...">' + escapeHtml(r.rx_text || '') + '</textarea></div>' +
-      '<button class="btn block" id="rx-save">حفظ</button></div>';
+      "<button class=\"btn block\" id=\"rx-save\"> <!--ssmpd-i18n:%D8%AD%D9%81%D8%B8-->حفظ</button></div>";
     document.body.appendChild(backdrop);
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
     backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
@@ -820,7 +820,7 @@
     var html = '<div class="modal"><div class="modal-head"><h3>' + (isEdit ? "تعديل طلب التحاليل" : "طلب تحاليل جديد") + '</h3><button class="modal-close">×</button></div>' +
       '<p style="font-size:12px;color:var(--c-muted);margin:-6px 0 10px;">المريض: ' + escapeHtml(patient.full_name) + (patient.age != null ? (' — ' + patient.age + ' عام') : '') + '</p>' +
       '<div class="field"><label>تاريخ الطلب</label><input id="lr-date" type="date" value="' + (r.report_date || new Date().toISOString().slice(0, 10)) + '"></div>' +
-      '<div class="field"><label>اسم الطبيب</label><input id="lr-doctor" type="text" placeholder="اسم الطبيب" value="' + escapeHtml(r.doctor_name || '') + '"></div>' +
+      "<div class=\"field\"><label> <!--ssmpd-i18n:%D8%A7%D8%B3%D9%85%20%D8%A7%D9%84%D8%B7%D8%A8%D9%8A%D8%A8-->اسم الطبيب</label><input id=\"lr-doctor\" type=\"text\" placeholder=\"اسم الطبيب\" data-i18n-placeholder=\"%D8%A7%D8%B3%D9%85%20%D8%A7%D9%84%D8%B7%D8%A8%D9%8A%D8%A8\" value=\"" + escapeHtml(r.doctor_name || '') + '"></div>' +
       '<div class="field"><label>التشخيص (اختياري)</label><input id="lr-diagnosis" type="text" placeholder="التشخيص" value="' + escapeHtml(r.diagnosis || '') + '"></div>';
     LAB_CATEGORIES.forEach(function (cat) {
       html += '<div style="margin-top:12px;"><b style="font-size:12px;color:#0F369D;">' + cat.label + '</b>' +
@@ -832,7 +832,7 @@
       html += '</div></div>';
     });
     html += '<div class="field" style="margin-top:12px;"><label>Others (اختياري)</label><textarea id="lr-others" rows="2" placeholder="تحاليل تانية غير موجودة في القائمة">' + escapeHtml(r.others_text || '') + '</textarea></div>' +
-      '<button class="btn block" id="lr-save" style="margin-top:10px;">حفظ</button></div>';
+      "<button class=\"btn block\" id=\"lr-save\" style=\"margin-top:10px;\"> <!--ssmpd-i18n:%D8%AD%D9%81%D8%B8-->حفظ</button></div>";
     backdrop.innerHTML = html;
     document.body.appendChild(backdrop);
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
@@ -881,10 +881,10 @@
     var body =
       '<h1 style="font-size:26px;color:#0F369D;text-align:right;margin:0 0 4px;">Lab Request</h1>' +
       '<div style="border-bottom:1px solid #ccc;padding-bottom:10px;margin-bottom:16px;"></div>' +
-      '<p style="margin:0 0 4px;"><b>المريض:</b> ' + escapeHtml(patient.full_name) + '</p>' +
-      (patient.age != null ? '<p style="margin:0 0 4px;"><b>العمر:</b> ' + escapeHtml(String(patient.age)) + ' عام</p>' : '') +
-      '<p style="margin:0 0 4px;"><b>التاريخ:</b> ' + fmtDate(lr.report_date) + '</p>' +
-      (lr.doctor_name ? '<p style="margin:0 0 4px;"><b>الطبيب:</b> ' + escapeHtml(lr.doctor_name) + '</p>' : '') +
+      "<p style=\"margin:0 0 4px;\"><b> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%B1%D9%8A%D8%B6%3A-->المريض:</b> " + escapeHtml(patient.full_name) + '</p>' +
+      (patient.age != null ? "<p style=\"margin:0 0 4px;\"><b> <!--ssmpd-i18n:%D8%A7%D9%84%D8%B9%D9%85%D8%B1%3A-->العمر:</b> " + escapeHtml(String(patient.age)) + ' عام</p>' : '') +
+      "<p style=\"margin:0 0 4px;\"><b> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE%3A-->التاريخ:</b> " + fmtDate(lr.report_date) + '</p>' +
+      (lr.doctor_name ? "<p style=\"margin:0 0 4px;\"><b> <!--ssmpd-i18n:%D8%A7%D9%84%D8%B7%D8%A8%D9%8A%D8%A8%3A-->الطبيب:</b> " + escapeHtml(lr.doctor_name) + '</p>' : '') +
       (lr.diagnosis ? '<p style="margin:0 0 16px;"><b>التشخيص:</b> ' + escapeHtml(lr.diagnosis) + '</p>' : '<div style="margin-bottom:16px;"></div>') +
       (catsHtml ? '<div style="columns:2;column-gap:16px;direction:ltr;text-align:left;">' + catsHtml + '</div>' : '<p style="font-size:12px;color:#888;">مفيش تحاليل متعلّم عليها.</p>') +
       (lr.others_text ? '<div style="margin-top:14px;direction:rtl;text-align:right;"><b>Others:</b> ' + escapeHtml(lr.others_text) + '</div>' : '');
@@ -916,7 +916,7 @@
     var html = '<div class="modal"><div class="modal-head"><h3>' + (isEdit ? "تعديل طلب الأشعة" : "طلب أشعة جديد") + '</h3><button class="modal-close">×</button></div>' +
       '<p style="font-size:12px;color:var(--c-muted);margin:-6px 0 10px;">المريض: ' + escapeHtml(patient.full_name) + (patient.age != null ? (' — ' + patient.age + ' عام') : '') + '</p>' +
       '<div class="field"><label>تاريخ الطلب</label><input id="rr-date" type="date" value="' + (r.report_date || new Date().toISOString().slice(0, 10)) + '"></div>' +
-      '<div class="field"><label>اسم الطبيب</label><input id="rr-doctor" type="text" placeholder="اسم الطبيب" value="' + escapeHtml(r.doctor_name || '') + '"></div>' +
+      "<div class=\"field\"><label> <!--ssmpd-i18n:%D8%A7%D8%B3%D9%85%20%D8%A7%D9%84%D8%B7%D8%A8%D9%8A%D8%A8-->اسم الطبيب</label><input id=\"rr-doctor\" type=\"text\" placeholder=\"اسم الطبيب\" data-i18n-placeholder=\"%D8%A7%D8%B3%D9%85%20%D8%A7%D9%84%D8%B7%D8%A8%D9%8A%D8%A8\" value=\"" + escapeHtml(r.doctor_name || '') + '"></div>' +
       '<div class="field"><label>التشخيص المبدئي (اختياري)</label><input id="rr-diagnosis" type="text" placeholder="التشخيص" value="' + escapeHtml(r.diagnosis || '') + '"></div>';
     RADIOLOGY_CATEGORIES.forEach(function (cat) {
       html += '<div style="margin-top:12px;"><b style="font-size:12px;color:#0F369D;">' + cat.label + '</b>' +
@@ -934,7 +934,7 @@
       html += '</div></div>';
     });
     html += '<div class="field" style="margin-top:12px;"><label>Others (اختياري)</label><textarea id="rr-others" rows="2" placeholder="أشعة تانية غير موجودة في القائمة">' + escapeHtml(r.others_text || '') + '</textarea></div>' +
-      '<button class="btn block" id="rr-save" style="margin-top:10px;">حفظ</button></div>';
+      "<button class=\"btn block\" id=\"rr-save\" style=\"margin-top:10px;\"> <!--ssmpd-i18n:%D8%AD%D9%81%D8%B8-->حفظ</button></div>";
     backdrop.innerHTML = html;
     document.body.appendChild(backdrop);
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
@@ -992,10 +992,10 @@
     var body =
       '<h1 style="font-size:24px;color:#0F369D;text-align:right;margin:0 0 4px;">Diagnostic Imaging Request</h1>' +
       '<div style="border-bottom:1px solid #ccc;padding-bottom:10px;margin-bottom:16px;"></div>' +
-      '<p style="margin:0 0 4px;"><b>المريض:</b> ' + escapeHtml(patient.full_name) + '</p>' +
-      (patient.age != null ? '<p style="margin:0 0 4px;"><b>العمر:</b> ' + escapeHtml(String(patient.age)) + ' عام</p>' : '') +
-      '<p style="margin:0 0 4px;"><b>التاريخ:</b> ' + fmtDate(rr.report_date) + '</p>' +
-      (rr.doctor_name ? '<p style="margin:0 0 4px;"><b>الطبيب:</b> ' + escapeHtml(rr.doctor_name) + '</p>' : '') +
+      "<p style=\"margin:0 0 4px;\"><b> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%B1%D9%8A%D8%B6%3A-->المريض:</b> " + escapeHtml(patient.full_name) + '</p>' +
+      (patient.age != null ? "<p style=\"margin:0 0 4px;\"><b> <!--ssmpd-i18n:%D8%A7%D9%84%D8%B9%D9%85%D8%B1%3A-->العمر:</b> " + escapeHtml(String(patient.age)) + ' عام</p>' : '') +
+      "<p style=\"margin:0 0 4px;\"><b> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE%3A-->التاريخ:</b> " + fmtDate(rr.report_date) + '</p>' +
+      (rr.doctor_name ? "<p style=\"margin:0 0 4px;\"><b> <!--ssmpd-i18n:%D8%A7%D9%84%D8%B7%D8%A8%D9%8A%D8%A8%3A-->الطبيب:</b> " + escapeHtml(rr.doctor_name) + '</p>' : '') +
       (rr.diagnosis ? '<p style="margin:0 0 16px;"><b>التشخيص:</b> ' + escapeHtml(rr.diagnosis) + '</p>' : '<div style="margin-bottom:16px;"></div>') +
       (catsHtml ? '<div style="columns:2;column-gap:16px;direction:ltr;text-align:left;">' + catsHtml + '</div>' : '<p style="font-size:12px;color:#888;">مفيش بنود أشعة متعلّم عليها.</p>') +
       (rr.others_text ? '<div style="margin-top:14px;direction:rtl;text-align:right;"><b>Others:</b> ' + escapeHtml(rr.others_text) + '</div>' : '');
@@ -1022,7 +1022,7 @@
     var html = '<div class="modal"><div class="modal-head"><h3>تقييم تجربة جديد</h3><button class="modal-close">×</button></div>' +
       '<p style="font-size:14px;font-weight:700;margin:-6px 0 2px;">' + escapeHtml(patient.full_name) + '</p>' +
       '<p style="font-size:12px;color:var(--c-muted);margin:0 0 12px;line-height:1.7;">نسعى دائماً إلى تحسين جودة الخدمة إلى المستوى الذي تستحقونه.<br>هذا الاستبيان سوف يساعدنا في تحقيق ذلك.</p>' +
-      '<div class="field"><label>تاريخ الزيارة</label><input id="er-date" type="date" value="' + new Date().toISOString().slice(0, 10) + '"></div>';
+      "<div class=\"field\"><label> <!--ssmpd-i18n:%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE%20%D8%A7%D9%84%D8%B2%D9%8A%D8%A7%D8%B1%D8%A9-->تاريخ الزيارة</label><input id=\"er-date\" type=\"date\" value=\"" + new Date().toISOString().slice(0, 10) + '"></div>';
     window.SSMPDExperienceQuestions.forEach(function (q, i) {
       html += '<div style="margin-top:14px;">' +
         '<div style="font-size:13px;font-weight:700;margin-bottom:6px;">' + (i + 1) + '. ' + escapeHtml(q) + '</div>' +
@@ -1063,7 +1063,7 @@
           '<div style="padding:40px 20px;text-align:center;">' +
           '<div style="font-size:40px;margin-bottom:14px;">🎉</div>' +
           '<h3 style="margin-bottom:8px;">نشكركم على تعاونكم معنا</h3>' +
-          '<button class="btn" id="er-close-thanks" style="margin-top:16px;">إغلاق</button></div>';
+          "<button class=\"btn\" id=\"er-close-thanks\" style=\"margin-top:16px;\"> <!--ssmpd-i18n:%D8%A5%D8%BA%D9%84%D8%A7%D9%82-->إغلاق</button></div>";
         var closed = false;
         var closeNow = function () {
           if (closed) return;
@@ -1113,9 +1113,9 @@
         '<div><b>' + escapeHtml(f.file_name || "—") + '</b><br>' +
         '<span style="color:var(--c-muted);">' + fmtBytes(f.file_size) + ' · ' + fmtDate(f.uploaded_at) + '</span></div>' +
         '<div style="display:flex;gap:6px;flex-shrink:0;">' +
-        '<button class="btn ghost sm" data-echo-img-view="' + f.id + '">عرض</button>' +
-        '<button class="btn ghost sm" data-echo-img-dl="' + f.id + '" data-echo-img-name="' + escapeHtml(f.file_name || "") + '">تنزيل</button>' +
-        '<button class="btn danger sm" data-echo-img-del="' + f.id + '">حذف</button></div></div>';
+        '<button class="btn ghost sm" data-echo-img-view="' + f.id + "\"> <!--ssmpd-i18n:%D8%B9%D8%B1%D8%B6-->عرض</button>" +
+        '<button class="btn ghost sm" data-echo-img-dl="' + f.id + '" data-echo-img-name="' + escapeHtml(f.file_name || "") + "\"> <!--ssmpd-i18n:%D8%AA%D9%86%D8%B2%D9%8A%D9%84-->تنزيل</button>" +
+        '<button class="btn danger sm" data-echo-img-del="' + f.id + "\"> <!--ssmpd-i18n:%D8%AD%D8%B0%D9%81-->حذف</button></div></div>";
     });
     container.innerHTML = html;
     container.querySelectorAll("[data-echo-img-view]").forEach(function (btn) {
@@ -1169,7 +1169,7 @@
   }
 
   function loadEchoImages(reportId, container) {
-    container.innerHTML = '<p style="font-size:12px;color:var(--c-muted);">بيحمّل…</p>';
+    container.innerHTML = "<p style=\"font-size:12px;color:var(--c-muted);\"> <!--ssmpd-i18n:%D8%A8%D9%8A%D8%AD%D9%85%D9%91%D9%84%E2%80%A6-->بيحمّل…</p>";
     window.SSMPDDb.listEchoReportImages(reportId).then(function (images) {
       renderEchoImagesList(container, images || []);
     }).catch(function (e) { container.innerHTML = '<p style="font-size:12px;color:var(--c-danger,#c0392b);">خطأ: ' + escapeHtml(e.message) + '</p>'; });
@@ -1184,7 +1184,7 @@
     var html = '<div class="modal"><div class="modal-head"><h3>' + (isEdit ? "تعديل تقرير Echo" : "تقرير Echo جديد") + '</h3><button class="modal-close">×</button></div>' +
       '<div class="field"><label>الاسم زي ما هيتطبع</label><input id="er-name" value="' + escapeHtml(r.patient_label || patient.full_name || '') + '"></div>' +
       '<div style="display:flex;gap:8px;">' +
-      '<div class="field" style="flex:1;"><label>التاريخ</label><input id="er-date" type="date" value="' + (r.report_date || new Date().toISOString().slice(0, 10)) + '"></div>' +
+      "<div class=\"field\" style=\"flex:1;\"><label> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE-->التاريخ</label><input id=\"er-date\" type=\"date\" value=\"" + (r.report_date || new Date().toISOString().slice(0, 10)) + '"></div>' +
       '<div class="field" style="flex:1;"><label>Referred By</label><input id="er-referred" value="' + escapeHtml(r.referred_by || '') + '"></div>' +
       '</div>' +
       '<div class="field"><label>Dimensions</label><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;">';
@@ -1201,12 +1201,12 @@
       (isEdit ?
         '<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">' +
         '<input type="file" id="er-images-input" accept="image/*" multiple style="flex:1;">' +
-        '<button class="btn ghost sm" id="er-images-add">إضافة</button></div>' +
+        "<button class=\"btn ghost sm\" id=\"er-images-add\"> <!--ssmpd-i18n:%D8%A5%D8%B6%D8%A7%D9%81%D8%A9-->إضافة</button></div>" +
         '<div id="er-images-status" style="font-size:11px;color:var(--c-muted);margin-bottom:6px;"></div>' +
         '<div id="er-images-list"></div>'
         : '<p style="font-size:12px;color:var(--c-muted);">احفظ التقرير الأول، وبعدين هيظهر لك اختيار إضافة صور.</p>') +
       '</div>' +
-      '<button class="btn block" id="er-save">حفظ</button></div>';
+      "<button class=\"btn block\" id=\"er-save\"> <!--ssmpd-i18n:%D8%AD%D9%81%D8%B8-->حفظ</button></div>";
     backdrop.innerHTML = html;
     document.body.appendChild(backdrop);
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
@@ -1303,8 +1303,8 @@
       '<input type="date" data-sess-date value="' + escapeHtml(s.date || '') + '" style="flex:1;">' +
       '<input data-sess-tooth placeholder="رقم السن" value="' + escapeHtml(s.tooth || '') + '" style="flex:1;">' +
       '<input data-sess-service placeholder="الخدمة اللي اتعملت" value="' + escapeHtml(s.service || '') + '" style="flex:2;">' +
-      '<input data-sess-notes placeholder="ملاحظات" value="' + escapeHtml(s.notes || '') + '" style="flex:2;">' +
-      '<button type="button" class="btn danger sm" data-remove-session>حذف</button></div>';
+      "<input data-sess-notes placeholder=\"ملاحظات\" data-i18n-placeholder=\"%D9%85%D9%84%D8%A7%D8%AD%D8%B8%D8%A7%D8%AA\" data-i18n-placeholder=\"%D9%85%D9%84%D8%A7%D8%AD%D8%B8%D8%A7%D8%AA\" value=\"" + escapeHtml(s.notes || '') + '" style="flex:2;">' +
+      "<button type=\"button\" class=\"btn danger sm\" data-remove-session> <!--ssmpd-i18n:%D8%AD%D8%B0%D9%81-->حذف</button></div>";
   }
 
   // صور أشعة الأسنان المرفقة بتقرير الأسنان — نفس نمط صور Echo تمامًا
@@ -1320,9 +1320,9 @@
         '<div><b>' + escapeHtml(f.file_name || "—") + '</b><br>' +
         '<span style="color:var(--c-muted);">' + fmtBytes(f.file_size) + ' · ' + fmtDate(f.uploaded_at) + '</span></div>' +
         '<div style="display:flex;gap:6px;flex-shrink:0;">' +
-        '<button class="btn ghost sm" data-dental-img-view="' + f.id + '">عرض</button>' +
-        '<button class="btn ghost sm" data-dental-img-dl="' + f.id + '" data-dental-img-name="' + escapeHtml(f.file_name || "") + '">تنزيل</button>' +
-        '<button class="btn danger sm" data-dental-img-del="' + f.id + '">حذف</button></div></div>';
+        '<button class="btn ghost sm" data-dental-img-view="' + f.id + "\"> <!--ssmpd-i18n:%D8%B9%D8%B1%D8%B6-->عرض</button>" +
+        '<button class="btn ghost sm" data-dental-img-dl="' + f.id + '" data-dental-img-name="' + escapeHtml(f.file_name || "") + "\"> <!--ssmpd-i18n:%D8%AA%D9%86%D8%B2%D9%8A%D9%84-->تنزيل</button>" +
+        '<button class="btn danger sm" data-dental-img-del="' + f.id + "\"> <!--ssmpd-i18n:%D8%AD%D8%B0%D9%81-->حذف</button></div></div>";
     });
     container.innerHTML = html;
     container.querySelectorAll("[data-dental-img-view]").forEach(function (btn) {
@@ -1376,7 +1376,7 @@
   }
 
   function loadDentalImages(reportId, container) {
-    container.innerHTML = '<p style="font-size:12px;color:var(--c-muted);">بيحمّل…</p>';
+    container.innerHTML = "<p style=\"font-size:12px;color:var(--c-muted);\"> <!--ssmpd-i18n:%D8%A8%D9%8A%D8%AD%D9%85%D9%91%D9%84%E2%80%A6-->بيحمّل…</p>";
     window.SSMPDDb.listDentalReportImages(reportId).then(function (images) {
       renderDentalImagesList(container, images || []);
     }).catch(function (e) { container.innerHTML = '<p style="font-size:12px;color:var(--c-danger,#c0392b);">خطأ: ' + escapeHtml(e.message) + '</p>'; });
@@ -1395,9 +1395,9 @@
         '<div><b>' + escapeHtml(f.file_name || "—") + '</b><br>' +
         '<span style="color:var(--c-muted);">' + fmtBytes(f.file_size) + ' · ' + fmtDate(f.uploaded_at) + '</span></div>' +
         '<div style="display:flex;gap:6px;flex-shrink:0;">' +
-        '<button class="btn ghost sm" data-physio-img-view="' + f.id + '">عرض</button>' +
-        '<button class="btn ghost sm" data-physio-img-dl="' + f.id + '" data-physio-img-name="' + escapeHtml(f.file_name || "") + '">تنزيل</button>' +
-        '<button class="btn danger sm" data-physio-img-del="' + f.id + '">حذف</button></div></div>';
+        '<button class="btn ghost sm" data-physio-img-view="' + f.id + "\"> <!--ssmpd-i18n:%D8%B9%D8%B1%D8%B6-->عرض</button>" +
+        '<button class="btn ghost sm" data-physio-img-dl="' + f.id + '" data-physio-img-name="' + escapeHtml(f.file_name || "") + "\"> <!--ssmpd-i18n:%D8%AA%D9%86%D8%B2%D9%8A%D9%84-->تنزيل</button>" +
+        '<button class="btn danger sm" data-physio-img-del="' + f.id + "\"> <!--ssmpd-i18n:%D8%AD%D8%B0%D9%81-->حذف</button></div></div>";
     });
     container.innerHTML = html;
     container.querySelectorAll("[data-physio-img-view]").forEach(function (btn) {
@@ -1451,7 +1451,7 @@
   }
 
   function loadPhysioImages(reportId, container) {
-    container.innerHTML = '<p style="font-size:12px;color:var(--c-muted);">بيحمّل…</p>';
+    container.innerHTML = "<p style=\"font-size:12px;color:var(--c-muted);\"> <!--ssmpd-i18n:%D8%A8%D9%8A%D8%AD%D9%85%D9%91%D9%84%E2%80%A6-->بيحمّل…</p>";
     window.SSMPDDb.listPhysioReportImages(reportId).then(function (images) {
       renderPhysioImagesList(container, images || []);
     }).catch(function (e) { container.innerHTML = '<p style="font-size:12px;color:var(--c-danger,#c0392b);">خطأ: ' + escapeHtml(e.message) + '</p>'; });
@@ -1466,8 +1466,8 @@
     backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>' + (isEdit ? "تعديل تقرير الأسنان" : "تقرير أسنان جديد") + '</h3><button class="modal-close">×</button></div>' +
       '<p style="font-size:12px;color:var(--c-muted);margin:-6px 0 10px;">المريض: ' + escapeHtml(patient.full_name) + '</p>' +
       '<div style="display:flex;gap:8px;">' +
-      '<div class="field" style="flex:1;"><label>التاريخ</label><input id="dr-date" type="date" value="' + (r.report_date || new Date().toISOString().slice(0, 10)) + '"></div>' +
-      '<div class="field" style="flex:1;"><label>اسم الطبيب</label><input id="dr-doctor" value="' + escapeHtml(r.doctor_name || '') + '"></div>' +
+      "<div class=\"field\" style=\"flex:1;\"><label> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE-->التاريخ</label><input id=\"dr-date\" type=\"date\" value=\"" + (r.report_date || new Date().toISOString().slice(0, 10)) + '"></div>' +
+      "<div class=\"field\" style=\"flex:1;\"><label> <!--ssmpd-i18n:%D8%A7%D8%B3%D9%85%20%D8%A7%D9%84%D8%B7%D8%A8%D9%8A%D8%A8-->اسم الطبيب</label><input id=\"dr-doctor\" value=\"" + escapeHtml(r.doctor_name || '') + '"></div>' +
       '</div>' +
       '<div class="field"><label>الشكوى (Chief Complaint)</label><textarea id="dr-complaint" rows="2">' + escapeHtml(r.chief_complaint || '') + '</textarea></div>' +
       '<div class="field"><label>الحالة المزمنة</label><input id="dr-chronic-cond" value="' + escapeHtml(r.chronic_condition || '') + '"></div>' +
@@ -1483,14 +1483,14 @@
       (isEdit ?
         '<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">' +
         '<input type="file" id="dr-images-input" accept="image/*" multiple style="flex:1;">' +
-        '<button class="btn ghost sm" id="dr-images-add">إضافة</button></div>' +
+        "<button class=\"btn ghost sm\" id=\"dr-images-add\"> <!--ssmpd-i18n:%D8%A5%D8%B6%D8%A7%D9%81%D8%A9-->إضافة</button></div>" +
         '<div id="dr-images-status" style="font-size:11px;color:var(--c-muted);margin-bottom:6px;"></div>' +
         '<div id="dr-images-list"></div>'
         : '<p style="font-size:12px;color:var(--c-muted);">احفظ التقرير الأول، وبعدين هيظهر لك اختيار إضافة صور الأشعة.</p>') +
       '</div>' +
-      '<div class="field"><label>جدول الجلسات</label><div id="dr-sessions"></div>' +
+      "<div class=\"field\"><label> <!--ssmpd-i18n:%D8%AC%D8%AF%D9%88%D9%84%20%D8%A7%D9%84%D8%AC%D9%84%D8%B3%D8%A7%D8%AA-->جدول الجلسات</label><div id=\"dr-sessions\"></div>" +
       '<button type="button" class="btn ghost sm" id="dr-add-session">+ إضافة جلسة</button></div>' +
-      '<button class="btn block" id="dr-save">حفظ</button></div>';
+      "<button class=\"btn block\" id=\"dr-save\"> <!--ssmpd-i18n:%D8%AD%D9%81%D8%B8-->حفظ</button></div>";
     document.body.appendChild(backdrop);
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
     backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
@@ -1558,7 +1558,7 @@
         return '<div style="display:flex;gap:6px;align-items:center;margin-bottom:4px;">' +
           '<span style="font-size:11px;color:#0F369D;">● سن ' + (i + 1) + '</span>' +
           '<input data-td-note="' + i + '" placeholder="ملاحظة (اختياري)" value="' + escapeHtml(p.note || '') + '" style="flex:1;font-size:12px;padding:3px 6px;">' +
-          '<button type="button" class="btn danger sm" data-td-remove="' + i + '">حذف</button></div>';
+          '<button type="button" class="btn danger sm" data-td-remove="' + i + "\"> <!--ssmpd-i18n:%D8%AD%D8%B0%D9%81-->حذف</button></div>";
       }).join("") : '<p style="font-size:11px;color:var(--c-muted);">مفيش أسنان متحددة لسه.</p>';
       tdList.querySelectorAll("[data-td-remove]").forEach(function (btn) {
         btn.onclick = function () { toothMarks.splice(Number(btn.getAttribute("data-td-remove")), 1); renderToothMarks(); };
@@ -1641,7 +1641,7 @@
       '<input data-sess-pulse placeholder="النبض" value="' + escapeHtml(v.pulse || '') + '">' +
       '<input data-sess-bp placeholder="ضغط الدم" value="' + escapeHtml(v.blood_pressure || '') + '">' +
       '<input data-sess-sugar placeholder="سكر الدم" value="' + escapeHtml(v.blood_sugar || '') + '"></div>' +
-      '<input data-sess-notes placeholder="ملاحظات" value="' + escapeHtml(s.notes || '') + '" style="width:100%;"></div>';
+      "<input data-sess-notes placeholder=\"ملاحظات\" data-i18n-placeholder=\"%D9%85%D9%84%D8%A7%D8%AD%D8%B8%D8%A7%D8%AA\" data-i18n-placeholder=\"%D9%85%D9%84%D8%A7%D8%AD%D8%B8%D8%A7%D8%AA\" value=\"" + escapeHtml(s.notes || '') + '" style="width:100%;"></div>';
   }
 
   function openPhysioReportFormModal(patient, existingReport, onSaved) {
@@ -1661,8 +1661,8 @@
     backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>' + (isEdit ? "تعديل تقرير العلاج الطبيعي" : "تقرير علاج طبيعي جديد") + '</h3><button class="modal-close">×</button></div>' +
       '<p style="font-size:12px;color:var(--c-muted);margin:-6px 0 10px;">المريض: ' + escapeHtml(patient.full_name) + '</p>' +
       '<div style="display:flex;gap:8px;">' +
-      '<div class="field" style="flex:1;"><label>تاريخ الزيارة</label><input id="pr-date" type="date" value="' + (r.visit_date || new Date().toISOString().slice(0, 10)) + '"></div>' +
-      '<div class="field" style="flex:1;"><label>التخصص</label><input id="pr-specialty" value="' + escapeHtml(r.specialty || 'علاج طبيعي') + '"></div>' +
+      "<div class=\"field\" style=\"flex:1;\"><label> <!--ssmpd-i18n:%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE%20%D8%A7%D9%84%D8%B2%D9%8A%D8%A7%D8%B1%D8%A9-->تاريخ الزيارة</label><input id=\"pr-date\" type=\"date\" value=\"" + (r.visit_date || new Date().toISOString().slice(0, 10)) + '"></div>' +
+      "<div class=\"field\" style=\"flex:1;\"><label> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AA%D8%AE%D8%B5%D8%B5-->التخصص</label><input id=\"pr-specialty\" value=\"" + escapeHtml(r.specialty || 'علاج طبيعي') + '"></div>' +
       '<div class="field" style="flex:1;"><label>الطبيب المعالج</label><input id="pr-doctor" value="' + escapeHtml(r.doctor_name || '') + '"></div>' +
       '</div>' +
       '<div class="field"><label>سبب الزيارة</label><textarea id="pr-reason" rows="2">' + escapeHtml(r.visit_reason || '') + '</textarea></div>' +
@@ -1679,14 +1679,14 @@
       (isEdit ?
         '<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">' +
         '<input type="file" id="pr-images-input" accept="image/*" multiple style="flex:1;">' +
-        '<button class="btn ghost sm" id="pr-images-add">إضافة</button></div>' +
+        "<button class=\"btn ghost sm\" id=\"pr-images-add\"> <!--ssmpd-i18n:%D8%A5%D8%B6%D8%A7%D9%81%D8%A9-->إضافة</button></div>" +
         '<div id="pr-images-status" style="font-size:11px;color:var(--c-muted);margin-bottom:6px;"></div>' +
         '<div id="pr-images-list"></div>'
         : '<p style="font-size:12px;color:var(--c-muted);">احفظ التقرير الأول، وبعدين هيظهر لك اختيار إضافة الصور.</p>') +
       '</div>' +
-      '<div class="field"><label>جدول الجلسات</label><div id="pr-sessions"></div>' +
+      "<div class=\"field\"><label> <!--ssmpd-i18n:%D8%AC%D8%AF%D9%88%D9%84%20%D8%A7%D9%84%D8%AC%D9%84%D8%B3%D8%A7%D8%AA-->جدول الجلسات</label><div id=\"pr-sessions\"></div>" +
       '<button type="button" class="btn ghost sm" id="pr-add-session">+ إضافة جلسة</button></div>' +
-      '<button class="btn block" id="pr-save">حفظ</button></div>';
+      "<button class=\"btn block\" id=\"pr-save\"> <!--ssmpd-i18n:%D8%AD%D9%81%D8%B8-->حفظ</button></div>";
     document.body.appendChild(backdrop);
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
     backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
@@ -1755,7 +1755,7 @@
         return '<div style="display:flex;gap:6px;align-items:center;margin-bottom:4px;">' +
           '<span style="font-size:11px;color:var(--c-danger,#c0392b);">● نقطة ' + (i + 1) + '</span>' +
           '<input data-pp-note="' + i + '" placeholder="ملاحظة (اختياري)" value="' + escapeHtml(p.note || '') + '" style="flex:1;font-size:12px;padding:3px 6px;">' +
-          '<button type="button" class="btn danger sm" data-pp-remove="' + i + '">حذف</button></div>';
+          '<button type="button" class="btn danger sm" data-pp-remove="' + i + "\"> <!--ssmpd-i18n:%D8%AD%D8%B0%D9%81-->حذف</button></div>";
       }).join("") : '<p style="font-size:11px;color:var(--c-muted);">مفيش نقاط ألم متحددة لسه.</p>';
       ppList.querySelectorAll("[data-pp-remove]").forEach(function (btn) {
         btn.onclick = function () { painPoints.splice(Number(btn.getAttribute("data-pp-remove")), 1); renderPainPoints(); };
@@ -1993,9 +1993,9 @@
     var body =
       '<h1 style="font-size:28px;color:#0F369D;text-align:right;margin:0 0 4px;">' + escapeHtml(reportTitle) + '</h1>' +
       '<div style="color:#F15A22;font-size:13px;text-align:right;border-bottom:1px solid #ccc;padding-bottom:10px;margin-bottom:22px;font-style:italic;">Medical Report</div>' +
-      '<p style="margin:0 0 4px;"><b>المريض:</b> ' + escapeHtml(patient.full_name) + '</p>' +
-      (patient.age != null ? '<p style="margin:0 0 4px;"><b>العمر:</b> ' + escapeHtml(String(patient.age)) + ' عام</p>' : '') +
-      '<p style="margin:0 0 22px;"><b>التاريخ:</b> ' + fmtDate(report.report_date) + '</p>' +
+      "<p style=\"margin:0 0 4px;\"><b> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%B1%D9%8A%D8%B6%3A-->المريض:</b> " + escapeHtml(patient.full_name) + '</p>' +
+      (patient.age != null ? "<p style=\"margin:0 0 4px;\"><b> <!--ssmpd-i18n:%D8%A7%D9%84%D8%B9%D9%85%D8%B1%3A-->العمر:</b> " + escapeHtml(String(patient.age)) + ' عام</p>' : '') +
+      "<p style=\"margin:0 0 22px;\"><b> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE%3A-->التاريخ:</b> " + fmtDate(report.report_date) + '</p>' +
       bodyParagraphs +
       '<p style="margin:22px 0;">وتفضلوا بقبول فائق الاحترام والتقدير</p>' +
       '<div style="margin-top:50px;"><div>المدير الطبي:</div><div style="font-weight:700;margin-top:4px;">' + escapeHtml(report.doctor_name || "د.دينا حسني") + '</div></div>';
@@ -2118,9 +2118,9 @@
       field("التركيبة (ثابتة/متحركة)", report.prosthesis_type) +
       field("الأمراض المزمنة", report.chronic_illnesses) +
       toothMarksHtml +
-      '<div style="text-align:center;text-decoration:underline;font-size:13px;margin:16px 0 8px;">جدول الجلسات</div>' +
+      "<div style=\"text-align:center;text-decoration:underline;font-size:13px;margin:16px 0 8px;\"> <!--ssmpd-i18n:%D8%AC%D8%AF%D9%88%D9%84%20%D8%A7%D9%84%D8%AC%D9%84%D8%B3%D8%A7%D8%AA-->جدول الجلسات</div>" +
       '<table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:20px;" dir="rtl">' +
-      '<tr><th style="border:1px solid #999;padding:5px 8px;background:#f2f2f2;">التاريخ</th><th style="border:1px solid #999;padding:5px 8px;background:#f2f2f2;">رقم السن</th><th style="border:1px solid #999;padding:5px 8px;background:#f2f2f2;">الخدمة</th><th style="border:1px solid #999;padding:5px 8px;background:#f2f2f2;">ملاحظات</th></tr>' +
+      "<tr><th style=\"border:1px solid #999;padding:5px 8px;background:#f2f2f2;\"> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE-->التاريخ</th><th style=\"border:1px solid #999;padding:5px 8px;background:#f2f2f2;\">رقم السن</th><th style=\"border:1px solid #999;padding:5px 8px;background:#f2f2f2;\"> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AE%D8%AF%D9%85%D8%A9-->الخدمة</th><th style=\"border:1px solid #999;padding:5px 8px;background:#f2f2f2;\"> <!--ssmpd-i18n:%D9%85%D9%84%D8%A7%D8%AD%D8%B8%D8%A7%D8%AA-->ملاحظات</th></tr>" +
       rows + '</table>' +
       '<p style="margin:24px 0 0;font-size:13px;">وتفضلوا بقبول فائق الاحترام والتقدير</p>' +
       (report.doctor_name ? '<p style="text-align:left;margin-top:24px;font-weight:700;font-size:13px;">' + escapeHtml(report.doctor_name) + '</p>' : '');
@@ -2184,9 +2184,9 @@
       '</div>' +
       '</div>' : '';
     var sessionsTableHtml =
-      '<div style="text-align:center;text-decoration:underline;font-size:13px;margin:0 0 8px;">جدول الجلسات</div>' +
+      "<div style=\"text-align:center;text-decoration:underline;font-size:13px;margin:0 0 8px;\"> <!--ssmpd-i18n:%D8%AC%D8%AF%D9%88%D9%84%20%D8%A7%D9%84%D8%AC%D9%84%D8%B3%D8%A7%D8%AA-->جدول الجلسات</div>" +
       '<table style="width:100%;border-collapse:collapse;font-size:11px;" dir="rtl">' +
-      '<tr><th style="border:1px solid #999;padding:4px 6px;background:#f2f2f2;">#</th><th style="border:1px solid #999;padding:4px 6px;background:#f2f2f2;">التاريخ</th><th style="border:1px solid #999;padding:4px 6px;background:#f2f2f2;">نوع العلاج</th><th style="border:1px solid #999;padding:4px 6px;background:#f2f2f2;">المدة</th><th style="border:1px solid #999;padding:4px 6px;background:#f2f2f2;">القياسات الحيوية</th><th style="border:1px solid #999;padding:4px 6px;background:#f2f2f2;">ملاحظات</th></tr>' +
+      "<tr><th style=\"border:1px solid #999;padding:4px 6px;background:#f2f2f2;\">#</th><th style=\"border:1px solid #999;padding:4px 6px;background:#f2f2f2;\"> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE-->التاريخ</th><th style=\"border:1px solid #999;padding:4px 6px;background:#f2f2f2;\">نوع العلاج</th><th style=\"border:1px solid #999;padding:4px 6px;background:#f2f2f2;\"> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%AF%D8%A9-->المدة</th><th style=\"border:1px solid #999;padding:4px 6px;background:#f2f2f2;\">القياسات الحيوية</th><th style=\"border:1px solid #999;padding:4px 6px;background:#f2f2f2;\"> <!--ssmpd-i18n:%D9%85%D9%84%D8%A7%D8%AD%D8%B8%D8%A7%D8%AA-->ملاحظات</th></tr>" +
       rows + '</table>';
     var body =
       '<h1 style="font-size:24px;color:#0F369D;text-align:right;margin:0 0 4px;">تقرير علاج طبيعي</h1>' +
@@ -2229,7 +2229,7 @@
       '<input data-meal-name placeholder="اسم الوجبة (مثال: الإفطار)" value="' + escapeHtml(m.name || '') + '" style="flex:2;min-width:120px;">' +
       '<input data-meal-ingredients placeholder="المكونات (افصل بفاصلة)" value="' + escapeHtml((m.ingredients || []).join('، ')) + '" style="flex:3;min-width:180px;">' +
       '<input data-meal-calories type="number" placeholder="السعرات" value="' + escapeHtml(m.calories != null ? String(m.calories) : '') + '" style="flex:1;min-width:80px;">' +
-      '<button type="button" class="btn danger sm" data-remove-meal>حذف</button></div>';
+      "<button type=\"button\" class=\"btn danger sm\" data-remove-meal> <!--ssmpd-i18n:%D8%AD%D8%B0%D9%81-->حذف</button></div>";
     row = row.firstElementChild;
     row.setAttribute("data-meal-id", m.id || ("m_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8)));
     container.appendChild(row);
@@ -2259,7 +2259,7 @@
       '<div class="field"><label>التشخيص (الحالة اللي الجدول ده مناسب لها)</label><textarea id="nt-diagnosis" rows="2">' + escapeHtml(t.diagnosis_summary || '') + '</textarea></div>' +
       '<div class="field"><label>الوجبات</label><div id="nt-meals"></div>' +
       '<button type="button" class="btn ghost sm" id="nt-add-meal">+ إضافة وجبة</button></div>' +
-      '<button class="btn block" id="nt-save">حفظ</button></div>';
+      "<button class=\"btn block\" id=\"nt-save\"> <!--ssmpd-i18n:%D8%AD%D9%81%D8%B8-->حفظ</button></div>";
     document.body.appendChild(backdrop);
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
     backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
@@ -2284,7 +2284,7 @@
     backdrop.className = "modal-backdrop";
     backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>قوالب الوجبات الجاهزة</h3><button class="modal-close">×</button></div>' +
       '<button class="btn ghost sm" id="nt-new" style="margin-bottom:10px;">+ قالب جديد</button>' +
-      '<div id="nt-list"><div class="loading">بيحمّل…</div></div></div>';
+      "<div id=\"nt-list\"><div class=\"loading\"> <!--ssmpd-i18n:%D8%A8%D9%8A%D8%AD%D9%85%D9%91%D9%84%E2%80%A6-->بيحمّل…</div></div></div>";
     document.body.appendChild(backdrop);
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); if (onChange) onChange(); };
     backdrop.onclick = function (e) { if (e.target === backdrop) { backdrop.remove(); if (onChange) onChange(); } };
@@ -2297,7 +2297,7 @@
           return '<div style="border-bottom:1px solid var(--c-border);padding:8px 0;font-size:12px;">' +
             '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">' +
             '<b>' + escapeHtml(t.name) + '</b>' +
-            '<button class="btn ghost sm" data-edit-template="' + t.id + '">تعديل</button></div>' +
+            '<button class="btn ghost sm" data-edit-template="' + t.id + "\"> <!--ssmpd-i18n:%D8%AA%D8%B9%D8%AF%D9%8A%D9%84-->تعديل</button></div>" +
             (t.diagnosis_summary ? '<div style="color:var(--c-muted);margin-top:2px;">' + escapeHtml(t.diagnosis_summary) + '</div>' : '') +
             '<div style="color:var(--c-muted);margin-top:4px;">منشئ الجدول: ' + escapeHtml(creator) + ' · عدد مرات الاستخدام: ' + (t.usage_count || 0) + '</div></div>';
         }).join("");
@@ -2318,7 +2318,7 @@
   function watchNutritionStatus(el, visit) {
     var ui = window.SwnwNutritionView, version = 0;
     var today=ui.today(),defaultFrom=ui.shiftDay(today,-6);if(defaultFrom<visit.visit_date)defaultFrom=visit.visit_date;
-    el.innerHTML = '<div class="nutrition-history-head"><div><h5>سجل متابعة الوجبات</h5><p class="nutrition-date-note">آخر الأيام أولًا. اضغط على «تم» لمعرفة وقت التأكيد ومن سجّله.</p></div><div class="nutrition-range"><label>من <input type="date" data-from min="'+escapeHtml(visit.visit_date)+'" max="'+today+'" value="'+defaultFrom+'"></label><label>إلى <input type="date" data-to min="'+escapeHtml(visit.visit_date)+'" max="'+today+'" value="'+today+'"></label><button type="button" class="btn ghost sm" data-last-week>آخر ٧ أيام</button></div></div><p class="nutrition-date-note">الجدول يجمع المتابعة اليومية والتأكيدات الأقدم حسب وقت تسجيلها بتوقيت القاهرة. عدم وجود تأكيد لا يعني أن المريض لم يتناول الوجبة.</p><div data-daily-status></div><details class="nutrition-legacy"><summary>تأكيدات أقدم بلا وقت مسجل</summary><p>لا يمكن وضع هذه التأكيدات في يوم محدد.</p><div data-legacy-status></div></details>';
+    el.innerHTML = "<div class=\"nutrition-history-head\"><div><h5>سجل متابعة الوجبات</h5><p class=\"nutrition-date-note\">آخر الأيام أولًا. اضغط على «تم» لمعرفة وقت التأكيد ومن سجّله.</p></div><div class=\"nutrition-range\"><label> <!--ssmpd-i18n:%D9%85%D9%86-->من <input type=\"date\" data-from min=\""+escapeHtml(visit.visit_date)+'" max="'+today+'" value="'+defaultFrom+"\"></label><label> <!--ssmpd-i18n:%D8%A5%D9%84%D9%89-->إلى <input type=\"date\" data-to min=\""+escapeHtml(visit.visit_date)+'" max="'+today+'" value="'+today+'"></label><button type="button" class="btn ghost sm" data-last-week>آخر ٧ أيام</button></div></div><p class="nutrition-date-note">الجدول يجمع المتابعة اليومية والتأكيدات الأقدم حسب وقت تسجيلها بتوقيت القاهرة. عدم وجود تأكيد لا يعني أن المريض لم يتناول الوجبة.</p><div data-daily-status></div><details class="nutrition-legacy"><summary>تأكيدات أقدم بلا وقت مسجل</summary><p>لا يمكن وضع هذه التأكيدات في يوم محدد.</p><div data-legacy-status></div></details>';
     var from = el.querySelector('[data-from]'), to=el.querySelector('[data-to]'),target = el.querySelector('[data-daily-status]');
     function refresh() {
       if (!el.isConnected) return;
@@ -2352,7 +2352,7 @@
     backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>' + (isEdit ? "تعديل زيارة تغذية" : "زيارة تغذية جديدة") + '</h3><button class="modal-close">×</button></div>' +
       '<p style="font-size:12px;color:var(--c-muted);margin:-6px 0 10px;">المريض: ' + escapeHtml(patient.full_name) + '</p>' +
       '<div style="display:flex;gap:8px;">' +
-      '<div class="field" style="flex:1;"><label>تاريخ الزيارة</label><input id="nv-date" type="date" value="' + (v.visit_date || new Date().toISOString().slice(0, 10)) + '"></div>' +
+      "<div class=\"field\" style=\"flex:1;\"><label> <!--ssmpd-i18n:%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE%20%D8%A7%D9%84%D8%B2%D9%8A%D8%A7%D8%B1%D8%A9-->تاريخ الزيارة</label><input id=\"nv-date\" type=\"date\" value=\"" + (v.visit_date || new Date().toISOString().slice(0, 10)) + '"></div>' +
       '<div class="field" style="flex:1;"><label>التوقيت</label><input id="nv-time" type="time" value="' + escapeHtml(v.visit_time || '') + '"></div>' +
       '<div class="field" style="flex:1;"><label>الطبيب المعالج</label><input id="nv-doctor" value="' + escapeHtml(v.doctor_name || '') + '"></div>' +
       '</div>' +
@@ -2361,7 +2361,7 @@
       '<div class="field" style="flex:1;"><label>نسبة الدهون</label><input id="nv-fat" value="' + escapeHtml(v.body_fat_percentage || '') + '"></div>' +
       '</div>' +
       '<div class="field"><label>الأدوية</label><input id="nv-meds" value="' + escapeHtml(v.medications || '') + '"></div>' +
-      '<div class="field"><label>ملاحظات</label><textarea id="nv-notes" rows="2">' + escapeHtml(v.notes || '') + '</textarea></div>' +
+      "<div class=\"field\"><label> <!--ssmpd-i18n:%D9%85%D9%84%D8%A7%D8%AD%D8%B8%D8%A7%D8%AA-->ملاحظات</label><textarea id=\"nv-notes\" rows=\"2\">" + escapeHtml(v.notes || '') + '</textarea></div>' +
       '<div class="field"><label>جدول الوجبات (Daily Meals)</label>' +
       '<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">' +
       '<select id="nv-template-pick" style="flex:1;"><option value="">— استخدام قالب محفوظ —</option></select>' +
@@ -2375,12 +2375,12 @@
       (isEdit ?
         '<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">' +
         '<input type="file" id="nv-files-input" accept="image/*,application/pdf" multiple style="flex:1;">' +
-        '<button class="btn ghost sm" id="nv-files-add">إضافة</button></div>' +
+        "<button class=\"btn ghost sm\" id=\"nv-files-add\"> <!--ssmpd-i18n:%D8%A5%D8%B6%D8%A7%D9%81%D8%A9-->إضافة</button></div>" +
         '<div id="nv-files-status" style="font-size:11px;color:var(--c-muted);margin-bottom:6px;"></div>' +
         '<div id="nv-files-list"></div>'
         : '<p style="font-size:12px;color:var(--c-muted);">احفظ الزيارة الأول، وبعدين هيظهر لك اختيار إضافة المستندات.</p>') +
       '</div>' +
-      '<button class="btn block" id="nv-save">حفظ</button></div>';
+      "<button class=\"btn block\" id=\"nv-save\"> <!--ssmpd-i18n:%D8%AD%D9%81%D8%B8-->حفظ</button></div>";
     document.body.appendChild(backdrop);
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
     backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
@@ -2609,8 +2609,8 @@
       html += '<p>مفيش زيارات مسجّلة.</p>';
     } else {
       html += '<table style="width:100%;border-collapse:collapse;font-size:12px;"><thead><tr>' +
-        '<th style="border:1px solid #ccc;padding:5px;">التاريخ</th><th style="border:1px solid #ccc;padding:5px;">الشكوى</th>' +
-        '<th style="border:1px solid #ccc;padding:5px;">خطة العلاج</th><th style="border:1px solid #ccc;padding:5px;">متابعة</th></tr></thead><tbody>';
+        "<th style=\"border:1px solid #ccc;padding:5px;\"> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE-->التاريخ</th><th style=\"border:1px solid #ccc;padding:5px;\">الشكوى</th>" +
+        "<th style=\"border:1px solid #ccc;padding:5px;\">خطة العلاج</th><th style=\"border:1px solid #ccc;padding:5px;\"> <!--ssmpd-i18n:%D9%85%D8%AA%D8%A7%D8%A8%D8%B9%D8%A9-->متابعة</th></tr></thead><tbody>";
       visits.forEach(function (v) {
         var plan = [v.medications ? 'أدوية: ' + v.medications : '', v.xrays ? 'أشعة: ' + v.xrays : '', v.labs ? 'تحاليل: ' + v.labs : '', v.other_recommendations || '']
           .filter(Boolean).join(' · ');
@@ -2691,7 +2691,7 @@
       var percent = total ? Math.round((takenRows.length / total) * 100) : 0;
       period.innerHTML = tile('نسبة الالتزام', percent + '%') + tile('تم أخذها', takenRows.length) + tile('إجمالي جرعات العلاج', total);
       if (!rows.length) { target.innerHTML = '<p style="font-size:12px;color:var(--c-muted);">لسه مفيش أي جرعة مسجّلة من المريض.</p>'; return; }
-      target.innerHTML = '<table class="simple"><thead><tr><th>الدواء</th><th>التاريخ</th><th>الوقت</th><th>الحالة</th></tr></thead><tbody>' +
+      target.innerHTML = "<table class=\"simple\"><thead><tr><th>الدواء</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE-->التاريخ</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%88%D9%82%D8%AA-->الوقت</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AD%D8%A7%D9%84%D8%A9-->الحالة</th></tr></thead><tbody>" +
         rows.map(function (r) {
           var med = (r.patient_visit_medications && r.patient_visit_medications.medicine_name) || '—';
           var taken = r.status === 'taken';
@@ -2708,7 +2708,7 @@
     backdrop.className = "modal-backdrop";
     backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>تفاصيل الزيارة</h3><button class="modal-close">×</button></div>' +
       '<div style="font-size:13px;line-height:1.9;">' +
-      '<p><b>التاريخ: </b>' + fmtDate(v.visit_date) + '</p>' +
+      "<p><b> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE%3A-->التاريخ: </b>" + fmtDate(v.visit_date) + '</p>' +
       '<p><b>رقم الزيارة: </b>' + escapeHtml(v.visit_number || '—') + '</p>' +
       '<p><b>الشكوى: </b>' + escapeHtml(v.complaint || '—') + '</p>' +
       '<p><b>ضغط الدم: </b>' + escapeHtml(v.blood_pressure || '—') + ' &nbsp; <b>سكر الدم: </b>' + escapeHtml(v.blood_sugar || '—') + ' &nbsp; <b>النبض: </b>' + escapeHtml(v.pulse || '—') + '</p>' +
@@ -2724,7 +2724,7 @@
 
   // ============ ٣) شاشة المراجعة ============
   function renderReviewScreen(view, container) {
-    view.innerHTML = '<div class="loading">بيحمّل…</div>';
+    view.innerHTML = "<div class=\"loading\"> <!--ssmpd-i18n:%D8%A8%D9%8A%D8%AD%D9%85%D9%91%D9%84%E2%80%A6-->بيحمّل…</div>";
     window.SSMPDDb.listFilesForReview({ review_status: state.reviewFilter, page: state.reviewPage, page_size: 20 })
       .then(function (res) {
         var files = res.files || [];
@@ -2740,7 +2740,7 @@
         if (!files.length) {
           html += '<p style="color:var(--c-muted);font-size:13px;">مفيش ملفات في الحالة دي.</p>';
         } else {
-          html += '<table class="simple"><thead><tr><th>المريض</th><th>الملف</th><th>الفئة</th><th>رافع الملف</th><th>تاريخ الرفع</th><th></th></tr></thead><tbody>';
+          html += "<table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%B1%D9%8A%D8%B6-->المريض</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D9%84%D9%81-->الملف</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%81%D8%A6%D8%A9-->الفئة</th><th>رافع الملف</th><th>تاريخ الرفع</th><th></th></tr></thead><tbody>";
           files.forEach(function (f) {
             html += '<tr><td>' + escapeHtml((f.patients && f.patients.full_name) || "—") + '</td>' +
               '<td>' + escapeHtml(f.file_name) + (f.other_description ? ' — ' + escapeHtml(f.other_description) : '') + '</td>' +
@@ -2748,15 +2748,15 @@
               '<td style="font-size:11px;">' + escapeHtml(f.uploaded_by_name || "—") + '</td>' +
               '<td style="font-size:11px;color:var(--c-muted);">' + fmtDate(f.uploaded_at) + '</td>' +
               '<td>' + (state.reviewFilter === "pending" ?
-                '<button class="btn ghost sm" data-view="' + f.id + '">عرض</button> <button class="btn sm" data-approve="' + f.id + '">اعتماد</button> <button class="btn danger sm" data-reject="' + f.id + '">رفض</button>' :
+                '<button class="btn ghost sm" data-view="' + f.id + "\"> <!--ssmpd-i18n:%D8%B9%D8%B1%D8%B6-->عرض</button> <button class=\"btn sm\" data-approve=\"" + f.id + "\"> <!--ssmpd-i18n:%D8%A7%D8%B9%D8%AA%D9%85%D8%A7%D8%AF-->اعتماد</button> <button class=\"btn danger sm\" data-reject=\"" + f.id + "\"> <!--ssmpd-i18n:%D8%B1%D9%81%D8%B6-->رفض</button>" :
                 '<span class="status-pill ' + (REVIEW_PILL[f.review_status] || "draft") + '">' + (REVIEW_LABELS[f.review_status] || f.review_status) + '</span>') +
               '</td></tr>';
           });
           html += '</tbody></table>';
           html += '<div style="display:flex;gap:8px;align-items:center;justify-content:center;margin-top:14px;">' +
-            '<button class="btn ghost sm" id="rv-prev" ' + (state.reviewPage <= 1 ? "disabled" : "") + '>السابق</button>' +
+            '<button class="btn ghost sm" id="rv-prev" ' + (state.reviewPage <= 1 ? "disabled" : "") + "> <!--ssmpd-i18n:%D8%A7%D9%84%D8%B3%D8%A7%D8%A8%D9%82-->السابق</button>" +
             '<span style="font-size:12px;color:var(--c-muted);">صفحة ' + state.reviewPage + ' من ' + totalPages + ' (' + total + ')</span>' +
-            '<button class="btn ghost sm" id="rv-next" ' + (state.reviewPage >= totalPages ? "disabled" : "") + '>التالي</button></div>';
+            '<button class="btn ghost sm" id="rv-next" ' + (state.reviewPage >= totalPages ? "disabled" : "") + "> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AA%D8%A7%D9%84%D9%8A-->التالي</button></div>";
         }
         html += '</div>';
         view.innerHTML = html;
@@ -2806,7 +2806,7 @@
             td.innerHTML = '<div style="display:flex;gap:8px;align-items:center;">' +
               '<input class="rv-reject-notes" placeholder="سبب الرفض (اختياري)" style="flex:1;padding:7px 10px;border-radius:8px;border:1px solid var(--c-border);">' +
               '<button class="btn danger sm rv-reject-confirm">تأكيد الرفض</button>' +
-              '<button class="btn ghost sm rv-reject-cancel">إلغاء</button></div>';
+              "<button class=\"btn ghost sm rv-reject-cancel\"> <!--ssmpd-i18n:%D8%A5%D9%84%D8%BA%D8%A7%D8%A1-->إلغاء</button></div>";
             wrap.appendChild(td);
             row.parentNode.insertBefore(wrap, row.nextSibling);
             var notesInput = td.querySelector(".rv-reject-notes");
@@ -2832,14 +2832,14 @@
 
   // ============ شاشة "طبيب سونو" — طابور الحالات المحالة له بس ============
   function renderDoctorQueue(container) {
-    container.innerHTML = '<div class="loading">بيحمّل…</div>';
+    container.innerHTML = "<div class=\"loading\"> <!--ssmpd-i18n:%D8%A8%D9%8A%D8%AD%D9%85%D9%91%D9%84%E2%80%A6-->بيحمّل…</div>";
     window.SSMPDDb.listMyDoctorAssignments(me.id).then(function (rows) {
       var html = '<h2 style="margin-bottom:16px;">الحالات المحالة لك</h2>';
       html += '<div class="section">';
       if (!rows.length) {
         html += '<div class="empty-state">مفيش حالات محالة لك دلوقتي</div>';
       } else {
-        html += '<table class="simple"><thead><tr><th>كود المريض</th><th>الاسم</th><th>الهاتف</th><th>وقت الإحالة</th><th></th></tr></thead><tbody>';
+        html += "<table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D9%83%D9%88%D8%AF%20%D8%A7%D9%84%D9%85%D8%B1%D9%8A%D8%B6-->كود المريض</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%A7%D8%B3%D9%85-->الاسم</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%87%D8%A7%D8%AA%D9%81-->الهاتف</th><th>وقت الإحالة</th><th></th></tr></thead><tbody>";
         rows.forEach(function (r) {
           var p = r.patients;
           if (!p) return;
@@ -2923,7 +2923,7 @@
       var body = '<h2 style="font-size:18px;color:#0F369D;margin:0 0 4px;">قائمة المرضى</h2>' +
         '<p style="font-size:12px;color:#666;margin:0 0 14px;">إجمالي: ' + patients.length + ' مريض' + (state.browseDateFrom || state.browseDateTo ? (' — فلتر تاريخ: ' + (state.browseDateFrom || "…") + ' إلى ' + (state.browseDateTo || "…")) : '') + '</p>' +
         '<table style="width:100%;border-collapse:collapse;font-size:12px;" dir="rtl">' +
-        '<tr><th style="border:1px solid #999;padding:5px 8px;background:#f2f2f2;">كود المريض</th><th style="border:1px solid #999;padding:5px 8px;background:#f2f2f2;">الاسم</th><th style="border:1px solid #999;padding:5px 8px;background:#f2f2f2;">الهاتف</th><th style="border:1px solid #999;padding:5px 8px;background:#f2f2f2;">السن</th><th style="border:1px solid #999;padding:5px 8px;background:#f2f2f2;">تاريخ الإضافة</th><th style="border:1px solid #999;padding:5px 8px;background:#f2f2f2;">آخر زيارة</th></tr>' +
+        "<tr><th style=\"border:1px solid #999;padding:5px 8px;background:#f2f2f2;\"> <!--ssmpd-i18n:%D9%83%D9%88%D8%AF%20%D8%A7%D9%84%D9%85%D8%B1%D9%8A%D8%B6-->كود المريض</th><th style=\"border:1px solid #999;padding:5px 8px;background:#f2f2f2;\"> <!--ssmpd-i18n:%D8%A7%D9%84%D8%A7%D8%B3%D9%85-->الاسم</th><th style=\"border:1px solid #999;padding:5px 8px;background:#f2f2f2;\"> <!--ssmpd-i18n:%D8%A7%D9%84%D9%87%D8%A7%D8%AA%D9%81-->الهاتف</th><th style=\"border:1px solid #999;padding:5px 8px;background:#f2f2f2;\"> <!--ssmpd-i18n:%D8%A7%D9%84%D8%B3%D9%86-->السن</th><th style=\"border:1px solid #999;padding:5px 8px;background:#f2f2f2;\"> <!--ssmpd-i18n:%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE%20%D8%A7%D9%84%D8%A5%D8%B6%D8%A7%D9%81%D8%A9-->تاريخ الإضافة</th><th style=\"border:1px solid #999;padding:5px 8px;background:#f2f2f2;\">آخر زيارة</th></tr>" +
         rows + '</table>';
       win.document.open();
       win.document.write('<!doctype html><html><head><meta charset="utf-8"><title>قائمة المرضى</title>' +
@@ -2934,7 +2934,7 @@
   }
 
   function renderBrowseScreen(view, container) {
-    view.innerHTML = '<div class="loading">بيحمّل…</div>';
+    view.innerHTML = "<div class=\"loading\"> <!--ssmpd-i18n:%D8%A8%D9%8A%D8%AD%D9%85%D9%91%D9%84%E2%80%A6-->بيحمّل…</div>";
     var canAssignPreload = canAssignDoctor();
     Promise.all([
       window.SSMPDDb.listPatientsArchive(Object.assign({ search: state.browseSearch || undefined, page: state.browsePage, page_size: state.browsePageSize }, browseDateFilterParams())),
@@ -2955,28 +2955,28 @@
         var html = '<div class="section">';
         html += '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px;">' +
           '<input id="pt-search" placeholder="بحث بالاسم / الهاتف / كود المريض" value="' + escapeHtml(state.browseSearch) + '" style="flex:1;min-width:220px;padding:9px 12px;border-radius:10px;border:1px solid var(--c-border);">' +
-          '<button class="btn ghost sm" id="pt-search-btn">بحث</button></div>';
+          "<button class=\"btn ghost sm\" id=\"pt-search-btn\"> <!--ssmpd-i18n:%D8%A8%D8%AD%D8%AB-->بحث</button></div>";
         html += '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px;padding:10px;background:var(--c-bg-alt,#f7f8fa);border-radius:10px;">' +
           '<span style="font-size:12px;color:var(--c-muted);">فلترة بالتاريخ:</span>' +
           '<select id="pt-date-field" style="padding:6px 8px;border-radius:8px;border:1px solid var(--c-border);">' +
           '<option value="created_at"' + (state.browseDateField === "created_at" ? " selected" : "") + '>تاريخ إضافة المريض</option>' +
           '<option value="last_visit_date"' + (state.browseDateField === "last_visit_date" ? " selected" : "") + '>تاريخ آخر زيارة</option>' +
           '</select>' +
-          '<span style="font-size:11px;color:var(--c-muted);">من</span><input id="pt-date-from" type="date" value="' + escapeHtml(state.browseDateFrom) + '" style="padding:6px 8px;border-radius:8px;border:1px solid var(--c-border);">' +
-          '<span style="font-size:11px;color:var(--c-muted);">إلى</span><input id="pt-date-to" type="date" value="' + escapeHtml(state.browseDateTo) + '" style="padding:6px 8px;border-radius:8px;border:1px solid var(--c-border);">' +
-          '<button class="btn ghost sm" id="pt-date-apply">تطبيق</button>' +
-          (state.browseDateFrom || state.browseDateTo ? '<button class="btn ghost sm" id="pt-date-clear">مسح الفلتر</button>' : '') +
+          "<span style=\"font-size:11px;color:var(--c-muted);\"> <!--ssmpd-i18n:%D9%85%D9%86-->من</span><input id=\"pt-date-from\" type=\"date\" value=\"" + escapeHtml(state.browseDateFrom) + '" style="padding:6px 8px;border-radius:8px;border:1px solid var(--c-border);">' +
+          "<span style=\"font-size:11px;color:var(--c-muted);\"> <!--ssmpd-i18n:%D8%A5%D9%84%D9%89-->إلى</span><input id=\"pt-date-to\" type=\"date\" value=\"" + escapeHtml(state.browseDateTo) + '" style="padding:6px 8px;border-radius:8px;border:1px solid var(--c-border);">' +
+          "<button class=\"btn ghost sm\" id=\"pt-date-apply\"> <!--ssmpd-i18n:%D8%AA%D8%B7%D8%A8%D9%8A%D9%82-->تطبيق</button>" +
+          (state.browseDateFrom || state.browseDateTo ? "<button class=\"btn ghost sm\" id=\"pt-date-clear\"> <!--ssmpd-i18n:%D9%85%D8%B3%D8%AD%20%D8%A7%D9%84%D9%81%D9%84%D8%AA%D8%B1-->مسح الفلتر</button>" : '') +
           '<span style="flex:1;"></span>' +
           '<select id="pt-export-select" style="padding:6px 8px;border-radius:8px;border:1px solid var(--c-border);"><option value="">⬇ تصدير النتائج...</option><option value="excel">ملف Excel</option><option value="pdf">ملف PDF</option></select>' +
           '</div>';
 
         if (!patients.length) {
-          html += '<p style="color:var(--c-muted);font-size:13px;">مفيش مرضى مطابقين.</p>';
+          html += "<p style=\"color:var(--c-muted);font-size:13px;\"> <!--ssmpd-i18n:%D9%85%D9%81%D9%8A%D8%B4%20%D9%85%D8%B1%D8%B6%D9%89%20%D9%85%D8%B7%D8%A7%D8%A8%D9%82%D9%8A%D9%86.-->مفيش مرضى مطابقين.</p>";
         } else {
           var canAssign = canAssignDoctor();
           var canEditBrowse = canUpload();
           var canDeleteBrowse = window.SSMPDRoles.hasRole(me, "super_admin");
-          html += '<table class="simple"><thead><tr><th>كود المريض</th><th>الاسم</th><th>الهاتف</th><th>السن</th><th>النوع</th><th>الرقم الطبي</th><th>آخر زيارة</th><th>الحالة</th><th></th></tr></thead><tbody>';
+          html += "<table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D9%83%D9%88%D8%AF%20%D8%A7%D9%84%D9%85%D8%B1%D9%8A%D8%B6-->كود المريض</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%A7%D8%B3%D9%85-->الاسم</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%87%D8%A7%D8%AA%D9%81-->الهاتف</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%B3%D9%86-->السن</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%86%D9%88%D8%B9-->النوع</th><th>الرقم الطبي</th><th>آخر زيارة</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AD%D8%A7%D9%84%D8%A9-->الحالة</th><th></th></tr></thead><tbody>";
           patients.forEach(function (p) {
             html += '<tr><td>' + escapeHtml(p.patient_code || "—") + '</td><td>' + escapeHtml(p.full_name) + '</td>' +
               '<td>' + escapeHtml(p.phone || "—") + '</td>' +
@@ -2984,8 +2984,8 @@
               '<td>' + (p.gender === "male" ? "ذكر" : p.gender === "female" ? "أنثى" : "—") + '</td>' +
               '<td>' + escapeHtml(p.medical_record_no || "—") + '</td>' +
               '<td>' + fmtDate(p.last_visit_date) + '</td>' +
-              '<td>' + (p.status === "archived" ? '<span class="status-pill draft">مؤرشف</span>' : '<span class="status-pill approved">نشط</span>') + '</td>' +
-              '<td style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;"><button class="btn ghost sm" data-open="' + p.id + '">فتح</button>' +
+              '<td>' + (p.status === "archived" ? '<span class="status-pill draft">مؤرشف</span>' : "<span class=\"status-pill approved\"> <!--ssmpd-i18n:%D9%86%D8%B4%D8%B7-->نشط</span>") + '</td>' +
+              '<td style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;"><button class="btn ghost sm" data-open="' + p.id + "\"> <!--ssmpd-i18n:%D9%81%D8%AA%D8%AD-->فتح</button>" +
               (canEditBrowse ? '<button class="btn ghost sm" data-edit="' + p.id + '">تعديل البيانات</button>' : '') +
               (canAssign ? (function () {
                 var pend = pendingByPatient[p.id];
@@ -2995,14 +2995,14 @@
                 }
                 return '<button class="btn ghost sm" data-assign="' + p.id + '" data-assign-name="' + escapeHtml(p.full_name) + '">تحويل لطبيب سونو</button>';
               })() : '') +
-              (canDeleteBrowse ? '<button class="btn ghost sm" data-delete-patient="' + p.id + '" data-delete-name="' + escapeHtml(p.full_name) + '" style="color:var(--c-danger,#c33);">حذف</button>' : '') +
+              (canDeleteBrowse ? '<button class="btn ghost sm" data-delete-patient="' + p.id + '" data-delete-name="' + escapeHtml(p.full_name) + "\" style=\"color:var(--c-danger,#c33);\"> <!--ssmpd-i18n:%D8%AD%D8%B0%D9%81-->حذف</button>" : '') +
               '</td></tr>';
           });
           html += '</tbody></table>';
           html += '<div style="display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;margin-top:14px;">' +
-            '<button class="btn ghost sm" id="pt-prev" ' + (state.browsePage <= 1 ? "disabled" : "") + '>السابق</button>' +
+            '<button class="btn ghost sm" id="pt-prev" ' + (state.browsePage <= 1 ? "disabled" : "") + "> <!--ssmpd-i18n:%D8%A7%D9%84%D8%B3%D8%A7%D8%A8%D9%82-->السابق</button>" +
             '<span style="font-size:12px;color:var(--c-muted);">صفحة ' + state.browsePage + ' من ' + totalPages + ' (' + total + ' مريض)</span>' +
-            '<button class="btn ghost sm" id="pt-next" ' + (state.browsePage >= totalPages ? "disabled" : "") + '>التالي</button>' +
+            '<button class="btn ghost sm" id="pt-next" ' + (state.browsePage >= totalPages ? "disabled" : "") + "> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AA%D8%A7%D9%84%D9%8A-->التالي</button>" +
             '<span style="font-size:12px;color:var(--c-muted);margin-right:8px;">عدد لكل صفحة:</span>' +
             '<select id="pt-page-size" class="input" style="width:auto;padding:4px 8px;">' +
             [10, 30, 50, 100].map(function (n) {
@@ -3089,7 +3089,7 @@
   function openAssignDoctorModal(patientId, patientName) {
     var backdrop = document.createElement("div");
     backdrop.className = "modal-backdrop";
-    backdrop.innerHTML = '<div class="modal"><div class="loading">بيحمّل…</div></div>';
+    backdrop.innerHTML = "<div class=\"modal\"><div class=\"loading\"> <!--ssmpd-i18n:%D8%A8%D9%8A%D8%AD%D9%85%D9%91%D9%84%E2%80%A6-->بيحمّل…</div></div>";
     document.body.appendChild(backdrop);
     backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
 
@@ -3146,10 +3146,10 @@
       '<div class="field"><label>هل يوجد أمراض أو اضطرابات وراثية بالعائلة؟</label>' + yesNo("sp-genetic", profile.genetic_family_history) + '<input id="sp-genetic-details" placeholder="اذكرها" value="' + escapeHtml(profile.genetic_family_history_details || "") + '" style="margin-top:8px;display:' + (profile.genetic_family_history === true ? "" : "none") + ';"></div>' +
       '<div class="field"><label>هل حدثت مشاكل أثناء الحمل أو الولادة؟</label>' + yesNo("sp-birth", profile.pregnancy_birth_issues) + '<input id="sp-birth-details" placeholder="اذكرها" value="' + escapeHtml(profile.pregnancy_birth_issues_details || "") + '" style="margin-top:8px;display:' + (profile.pregnancy_birth_issues === true ? "" : "none") + ';"></div>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap;"><div class="field" style="flex:1;min-width:160px;"><label>تطور الكلام واللغة: أول كلمة</label><input id="sp-first-word" value="' + escapeHtml(profile.first_word || "") + '" placeholder="مثال: سنة ونصف"></div><div class="field" style="flex:1;min-width:160px;"><label>أول جملة</label><input id="sp-first-sentence" value="' + escapeHtml(profile.first_sentence || "") + '" placeholder="مثال: 3 سنوات"></div></div>' +
-      '<div class="field"><label>هل سبق له جلسات تخاطب؟</label>' + yesNo("sp-previous", profile.previous_speech_therapy) + '<textarea id="sp-previous-result" rows="2" placeholder="النتيجة" style="margin-top:8px;display:' + (profile.previous_speech_therapy === true ? "" : "none") + ';">' + escapeHtml(profile.previous_speech_therapy_result || "") + '</textarea></div>' +
+      '<div class="field"><label>هل سبق له جلسات تخاطب؟</label>' + yesNo("sp-previous", profile.previous_speech_therapy) + "<textarea id=\"sp-previous-result\" rows=\"2\" placeholder=\"النتيجة\" data-i18n-placeholder=\"%D8%A7%D9%84%D9%86%D8%AA%D9%8A%D8%AC%D8%A9\" data-i18n-placeholder=\"%D8%A7%D9%84%D9%86%D8%AA%D9%8A%D8%AC%D8%A9\" style=\"margin-top:8px;display:" + (profile.previous_speech_therapy === true ? "" : "none") + ';">' + escapeHtml(profile.previous_speech_therapy_result || "") + '</textarea></div>' +
       '<div class="field"><label>مستوى الفهم والكلام حاليًا</label><textarea id="sp-current-level" rows="3">' + escapeHtml(profile.current_understanding_speech || "") + '</textarea></div>' +
       '<div class="field"><label>الهدف من الجلسات</label><textarea id="sp-goal" rows="3">' + escapeHtml(profile.therapy_goal || "") + '</textarea></div>' +
-      '<div class="field"><label>ملاحظات الأخصائي</label><textarea id="sp-notes" rows="3">' + escapeHtml(profile.specialist_notes || "") + '</textarea></div>' +
+      "<div class=\"field\"><label> <!--ssmpd-i18n:%D9%85%D9%84%D8%A7%D8%AD%D8%B8%D8%A7%D8%AA%20%D8%A7%D9%84%D8%A3%D8%AE%D8%B5%D8%A7%D8%A6%D9%8A-->ملاحظات الأخصائي</label><textarea id=\"sp-notes\" rows=\"3\">" + escapeHtml(profile.specialist_notes || "") + '</textarea></div>' +
       '<div class="field"><label>عدد الجلسات المخطط لها</label><input id="sp-planned-sessions" type="number" min="1" max="999" value="' + escapeHtml(profile.planned_sessions || "") + '" placeholder="مثال: 12"></div>' +
       '<button class="btn block" id="sp-save-profile">حفظ التقييم</button></div>';
     document.body.appendChild(backdrop);
@@ -3179,14 +3179,14 @@
     var backdrop = document.createElement("div");
     backdrop.className = "modal-backdrop";
     backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>' + (isEdit ? "تعديل جلسة التخاطب" : "جلسة تخاطب جديدة") + '</h3><button class="modal-close">×</button></div>' +
-      '<div style="display:flex;gap:8px;flex-wrap:wrap;"><div class="field" style="flex:1;min-width:150px;"><label>الجلسة</label><input id="ss-number" type="number" min="1" max="999" value="' + escapeHtml(row.session_number || nextNumber) + '"></div><div class="field" style="flex:1;min-width:180px;"><label>النوع</label><select id="ss-type"><option value="assessment">تقييم</option><option value="follow_up">متابعة</option></select></div></div>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;"><div class="field" style="flex:1;min-width:150px;"><label>الجلسة</label><input id="ss-number" type="number" min="1" max="999" value="' + escapeHtml(row.session_number || nextNumber) + "\"></div><div class=\"field\" style=\"flex:1;min-width:180px;\"><label> <!--ssmpd-i18n:%D8%A7%D9%84%D9%86%D9%88%D8%B9-->النوع</label><select id=\"ss-type\"><option value=\"assessment\">تقييم</option><option value=\"follow_up\"> <!--ssmpd-i18n:%D9%85%D8%AA%D8%A7%D8%A8%D8%B9%D8%A9-->متابعة</option></select></div></div>" +
       '<div style="display:flex;gap:8px;flex-wrap:wrap;"><div class="field" style="flex:2;min-width:200px;"><label>موعد الجلسة</label><input id="ss-at" type="datetime-local" value="' + speechDateTimeLocal(row.session_at || new Date().toISOString()) + '"></div><div class="field" style="flex:1;min-width:150px;"><label>مدة الجلسة</label><select id="ss-duration"><option value="">غير محددة</option><option value="30">30 دقيقة</option><option value="45">45 دقيقة</option><option value="60">60 دقيقة</option><option value="90">90 دقيقة</option><option value="120">120 دقيقة</option></select></div></div>' +
-      '<div class="field"><label>مستوى الاستجابة</label><select id="ss-response"><option value="">غير مسجل</option><option value="excellent">ممتاز</option><option value="good">جيد</option><option value="average">متوسط</option><option value="weak">ضعيف</option></select></div>' +
+      "<div class=\"field\"><label>مستوى الاستجابة</label><select id=\"ss-response\"><option value=\"\"> <!--ssmpd-i18n:%D8%BA%D9%8A%D8%B1%20%D9%85%D8%B3%D8%AC%D9%84-->غير مسجل</option><option value=\"excellent\">ممتاز</option><option value=\"good\">جيد</option><option value=\"average\"> <!--ssmpd-i18n:%D9%85%D8%AA%D9%88%D8%B3%D8%B7-->متوسط</option><option value=\"weak\">ضعيف</option></select></div>" +
       '<div class="field"><label>أهداف الجلسة</label><textarea id="ss-goals" rows="3" placeholder="الأهداف المطلوب العمل عليها">' + escapeHtml(row.goals || "") + '</textarea></div>' +
       '<div class="field"><label>ما تم التدريب عليه</label><textarea id="ss-training" rows="3" placeholder="التمارين والمهارات التي تم التدريب عليها">' + escapeHtml(row.training_done || "") + '</textarea></div>' +
       '<div class="field"><label>الواجب المنزلي</label><textarea id="ss-homework" rows="3" placeholder="ما يطبقه الطفل في المنزل">' + escapeHtml(row.homework || "") + '</textarea></div>' +
-      '<div class="field"><label>حضور الجلسة</label><div id="ss-attendance" style="display:flex;gap:8px;flex-wrap:wrap;"><label><input type="radio" name="speech-attendance" value="attended"> حضر</label><label><input type="radio" name="speech-attendance" value="absent"> غاب</label><label><input type="radio" name="speech-attendance" value="excused"> اعتذر</label></div></div>' +
-      '<div class="field"><label>ملاحظات الأخصائي</label><textarea id="ss-notes" rows="3" placeholder="ملاحظات الجلسة">' + escapeHtml(row.specialist_notes || "") + '</textarea></div>' +
+      "<div class=\"field\"><label>حضور الجلسة</label><div id=\"ss-attendance\" style=\"display:flex;gap:8px;flex-wrap:wrap;\"><label><input type=\"radio\" name=\"speech-attendance\" value=\"attended\"> <!--ssmpd-i18n:%D8%AD%D8%B6%D8%B1--> حضر</label><label><input type=\"radio\" name=\"speech-attendance\" value=\"absent\"> غاب</label><label><input type=\"radio\" name=\"speech-attendance\" value=\"excused\"> اعتذر</label></div></div>" +
+      "<div class=\"field\"><label> <!--ssmpd-i18n:%D9%85%D9%84%D8%A7%D8%AD%D8%B8%D8%A7%D8%AA%20%D8%A7%D9%84%D8%A3%D8%AE%D8%B5%D8%A7%D8%A6%D9%8A-->ملاحظات الأخصائي</label><textarea id=\"ss-notes\" rows=\"3\" placeholder=\"ملاحظات الجلسة\">" + escapeHtml(row.specialist_notes || "") + '</textarea></div>' +
       '<div class="field"><label>موعد الجلسة القادمة</label><input id="ss-next" type="datetime-local" value="' + speechDateTimeLocal(row.next_session_at || "") + '"></div>' +
       '<button class="btn block" id="ss-save">حفظ الجلسة</button></div>';
     document.body.appendChild(backdrop);
@@ -3222,9 +3222,9 @@
       '<div class="field"><label>هل سبق علاج أو جلسات؟</label><div id="pp-previous-treatment" style="display:flex;gap:14px;"><label><input type="radio" name="previous-treatment" value="yes"> نعم</label><label><input type="radio" name="previous-treatment" value="no"> لا</label></div></div>' +
       '<div class="field"><label>أدوية نفسية سابقة أو حالية</label><div id="pp-med-list"></div><button type="button" class="btn ghost sm" id="pp-add-med">+ إضافة دواء</button></div>' +
       '<div class="field"><label>أهم الضغوط أو الظروف الحالية</label><textarea id="pp-stressors" rows="3">' + escapeHtml(profile.current_stressors || "") + '</textarea></div>' +
-      '<div class="field"><label>تأثير المشكلة على الحياة</label><select id="pp-impact"><option value="">غير محدد</option><option value="mild">بسيط</option><option value="moderate">متوسط</option><option value="severe">شديد</option></select></div>' +
+      "<div class=\"field\"><label>تأثير المشكلة على الحياة</label><select id=\"pp-impact\"><option value=\"\">غير محدد</option><option value=\"mild\">بسيط</option><option value=\"moderate\"> <!--ssmpd-i18n:%D9%85%D8%AA%D9%88%D8%B3%D8%B7-->متوسط</option><option value=\"severe\">شديد</option></select></div>" +
       '<div class="field"><label>الهدف من العلاج</label><textarea id="pp-goal" rows="3">' + escapeHtml(profile.treatment_goal || "") + '</textarea></div>' +
-      '<div class="field"><label>ملاحظات الأخصائي</label><textarea id="pp-notes" rows="3">' + escapeHtml(profile.specialist_notes || "") + '</textarea></div>' +
+      "<div class=\"field\"><label> <!--ssmpd-i18n:%D9%85%D9%84%D8%A7%D8%AD%D8%B8%D8%A7%D8%AA%20%D8%A7%D9%84%D8%A3%D8%AE%D8%B5%D8%A7%D8%A6%D9%8A-->ملاحظات الأخصائي</label><textarea id=\"pp-notes\" rows=\"3\">" + escapeHtml(profile.specialist_notes || "") + '</textarea></div>' +
       '<button class="btn block" id="pp-save">حفظ التقييم</button></div>';
     document.body.appendChild(backdrop);
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
@@ -3241,7 +3241,7 @@
       var x = document.createElement("div");
       x.className = "psych-med-row";
       x.style.cssText = "border:1px solid var(--c-border);border-radius:9px;padding:8px;margin-bottom:8px;display:grid;gap:7px;";
-      x.innerHTML = '<div style="display:flex;gap:7px;flex-wrap:wrap;"><input data-pm-name placeholder="اسم الدواء" value="' + escapeHtml(m.name || "") + '" style="flex:1;min-width:130px;"><input data-pm-dose placeholder="الجرعة" value="' + escapeHtml(m.dosage || "") + '" style="flex:1;min-width:100px;"><input data-pm-duration placeholder="المدة" value="' + escapeHtml(m.duration || "") + '" style="flex:1;min-width:100px;"></div><div style="display:flex;gap:7px;flex-wrap:wrap;"><input data-pm-use placeholder="سبب الاستخدام" value="' + escapeHtml(m.use_reason || "") + '" style="flex:1;min-width:150px;"><input data-pm-stop placeholder="سبب التوقف" value="' + escapeHtml(m.stop_reason || "") + '" style="flex:1;min-width:150px;"><button type="button" class="btn danger sm" data-remove-psych-med>حذف</button></div>';
+      x.innerHTML = '<div style="display:flex;gap:7px;flex-wrap:wrap;"><input data-pm-name placeholder="اسم الدواء" value="' + escapeHtml(m.name || "") + '" style="flex:1;min-width:130px;"><input data-pm-dose placeholder="الجرعة" value="' + escapeHtml(m.dosage || "") + "\" style=\"flex:1;min-width:100px;\"><input data-pm-duration placeholder=\"المدة\" data-i18n-placeholder=\"%D8%A7%D9%84%D9%85%D8%AF%D8%A9\" value=\"" + escapeHtml(m.duration || "") + '" style="flex:1;min-width:100px;"></div><div style="display:flex;gap:7px;flex-wrap:wrap;"><input data-pm-use placeholder="سبب الاستخدام" value="' + escapeHtml(m.use_reason || "") + '" style="flex:1;min-width:150px;"><input data-pm-stop placeholder="سبب التوقف" value="' + escapeHtml(m.stop_reason || "") + "\" style=\"flex:1;min-width:150px;\"><button type=\"button\" class=\"btn danger sm\" data-remove-psych-med> <!--ssmpd-i18n:%D8%AD%D8%B0%D9%81-->حذف</button></div>";
       x.querySelector("[data-remove-psych-med]").onclick = function () { x.remove(); };
       medList.appendChild(x);
     }
@@ -3265,14 +3265,14 @@
     backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>' + (existing ? "تعديل جلسة نفسية" : "جلسة نفسية جديدة") + '</h3><button class="modal-close">×</button></div>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap;"><div class="field" style="flex:1;min-width:140px;"><label>رقم الجلسة</label><input id="ps-number" type="number" min="1" max="999" value="' + escapeHtml(row.session_number || nextNumber) + '"></div><div class="field" style="flex:2;min-width:200px;"><label>موعد الجلسة</label><input id="ps-at" type="datetime-local" value="' + speechDateTimeLocal(row.session_at || new Date().toISOString()) + '"></div></div>' +
       '<div class="field"><label>مدة الجلسة</label><select id="ps-duration"><option value="">غير محددة</option><option value="30">30 دقيقة</option><option value="45">45 دقيقة</option><option value="50">50 دقيقة</option><option value="60">60 دقيقة</option><option value="75">75 دقيقة</option><option value="90">90 دقيقة</option><option value="120">120 دقيقة</option></select></div>' +
-      '<div class="field"><label>مستوى التحسن</label><select id="ps-improvement"><option value="">غير مسجل</option><option value="none">لا يوجد</option><option value="slight">بسيط</option><option value="moderate">متوسط</option><option value="good">جيد</option><option value="major">كبير</option></select></div>' +
+      "<div class=\"field\"><label>مستوى التحسن</label><select id=\"ps-improvement\"><option value=\"\"> <!--ssmpd-i18n:%D8%BA%D9%8A%D8%B1%20%D9%85%D8%B3%D8%AC%D9%84-->غير مسجل</option><option value=\"none\">لا يوجد</option><option value=\"slight\">بسيط</option><option value=\"moderate\"> <!--ssmpd-i18n:%D9%85%D8%AA%D9%88%D8%B3%D8%B7-->متوسط</option><option value=\"good\">جيد</option><option value=\"major\">كبير</option></select></div>" +
       '<div class="field"><label>هدف الجلسة</label><textarea id="ps-goal" rows="3">' + escapeHtml(row.session_goal || "") + '</textarea></div>' +
       '<div class="field"><label>التدخل المستخدم</label><div id="ps-interventions" style="display:flex;gap:8px;flex-wrap:wrap;">' + interventionOptions.map(function (x) { return '<label style="border:1px solid var(--c-border);border-radius:9px;padding:7px 9px;font-size:13px;"><input type="checkbox" value="' + x[0] + '" ' + ((row.interventions || []).indexOf(x[0]) > -1 ? "checked" : "") + '> ' + x[1] + '</label>'; }).join("") + '</div></div>' +
       '<div class="field" id="ps-other-wrap" style="display:' + ((row.interventions || []).indexOf("other") > -1 ? "block" : "none") + ';"><label>تفاصيل تدخل آخر</label><input id="ps-other" value="' + escapeHtml(row.intervention_other || "") + '"></div>' +
-      '<div class="field"><label>التزام العميل</label><select id="ps-adherence"><option value="">غير مسجل</option><option value="good">جيد</option><option value="average">متوسط</option><option value="weak">ضعيف</option></select></div>' +
-      '<div class="field"><label>حضور الجلسة</label><div id="ps-attendance" style="display:flex;gap:14px;"><label><input type="radio" name="psych-attendance" value="attended"> حضر</label><label><input type="radio" name="psych-attendance" value="absent"> غاب</label><label><input type="radio" name="psych-attendance" value="excused"> اعتذر</label></div></div>' +
+      "<div class=\"field\"><label>التزام العميل</label><select id=\"ps-adherence\"><option value=\"\"> <!--ssmpd-i18n:%D8%BA%D9%8A%D8%B1%20%D9%85%D8%B3%D8%AC%D9%84-->غير مسجل</option><option value=\"good\">جيد</option><option value=\"average\"> <!--ssmpd-i18n:%D9%85%D8%AA%D9%88%D8%B3%D8%B7-->متوسط</option><option value=\"weak\">ضعيف</option></select></div>" +
+      "<div class=\"field\"><label>حضور الجلسة</label><div id=\"ps-attendance\" style=\"display:flex;gap:14px;\"><label><input type=\"radio\" name=\"psych-attendance\" value=\"attended\"> <!--ssmpd-i18n:%D8%AD%D8%B6%D8%B1--> حضر</label><label><input type=\"radio\" name=\"psych-attendance\" value=\"absent\"> غاب</label><label><input type=\"radio\" name=\"psych-attendance\" value=\"excused\"> اعتذر</label></div></div>" +
       '<div class="field"><label>خطة الجلسة القادمة</label><textarea id="ps-next-plan" rows="3">' + escapeHtml(row.next_session_plan || "") + '</textarea></div>' +
-      '<div class="field"><label>ملاحظات الأخصائي</label><textarea id="ps-notes" rows="3">' + escapeHtml(row.specialist_notes || "") + '</textarea></div>' +
+      "<div class=\"field\"><label> <!--ssmpd-i18n:%D9%85%D9%84%D8%A7%D8%AD%D8%B8%D8%A7%D8%AA%20%D8%A7%D9%84%D8%A3%D8%AE%D8%B5%D8%A7%D8%A6%D9%8A-->ملاحظات الأخصائي</label><textarea id=\"ps-notes\" rows=\"3\">" + escapeHtml(row.specialist_notes || "") + '</textarea></div>' +
       '<button class="btn block" id="ps-save">حفظ الجلسة</button></div>';
     document.body.appendChild(backdrop);
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
@@ -3296,7 +3296,7 @@
   function openPatientModal(view, container, patientId) {
     var backdrop = document.createElement("div");
     backdrop.className = "modal-backdrop";
-    backdrop.innerHTML = '<div class="modal"><div class="loading">بيحمّل…</div></div>';
+    backdrop.innerHTML = "<div class=\"modal\"><div class=\"loading\"> <!--ssmpd-i18n:%D8%A8%D9%8A%D8%AD%D9%85%D9%91%D9%84%E2%80%A6-->بيحمّل…</div></div>";
     document.body.appendChild(backdrop);
     backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
 
@@ -3337,14 +3337,14 @@
       '<h3 style="font-size:13px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
       '<span>' + catLabel + ' (' + (uploadedList.length + createdCount) + ')</span>' +
       '<span>' + (canUp ? '<button class="btn ghost sm" data-upload-cat="' + catKey + '">+ رفع مستند</button> ' : '') +
-      (canCreate ? '<button class="btn ghost sm" ' + newBtnAttr + '>+ إنشاء جديد</button>' : '') +
+      (canCreate ? '<button class="btn ghost sm" ' + newBtnAttr + "> <!--ssmpd-i18n:%2B%20%D8%A5%D9%86%D8%B4%D8%A7%D8%A1%20%D8%AC%D8%AF%D9%8A%D8%AF-->+ إنشاء جديد</button>" : '') +
       (canUp ? '<input type="file" accept="image/*,application/pdf" data-file-input-cat="' + catKey + '" style="display:none;"></span>' : '</span>') +
       '</h3>';
     if (canUp) {
       html += '<div class="field" data-other-wrap-cat style="display:none;margin-bottom:8px;">' +
-        '<label>ملاحظات / تفاصيل الملف (اختياري)</label>' +
+        "<label> <!--ssmpd-i18n:%D9%85%D9%84%D8%A7%D8%AD%D8%B8%D8%A7%D8%AA%20%2F%20%D8%AA%D9%81%D8%A7%D8%B5%D9%8A%D9%84%20%D8%A7%D9%84%D9%85%D9%84%D9%81%20(%D8%A7%D8%AE%D8%AA%D9%8A%D8%A7%D8%B1%D9%8A)-->ملاحظات / تفاصيل الملف (اختياري)</label>" +
         '<input data-other-desc-cat placeholder="اكتب أي تفاصيل تخص الملف">' +
-        '<label style="margin-top:6px;">تاريخ إصدار المستند (اختياري)</label>' +
+        "<label style=\"margin-top:6px;\"> <!--ssmpd-i18n:%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE%20%D8%A5%D8%B5%D8%AF%D8%A7%D8%B1%20%D8%A7%D9%84%D9%85%D8%B3%D8%AA%D9%86%D8%AF%20(%D8%A7%D8%AE%D8%AA%D9%8A%D8%A7%D8%B1%D9%8A)-->تاريخ إصدار المستند (اختياري)</label>" +
         '<input type="date" data-issued-at-cat></div>';
     }
     html += '<div data-cat-status style="font-size:11px;color:var(--c-muted);margin-bottom:6px;"></div>';
@@ -3363,10 +3363,10 @@
           (f.uploaded_by_name ? ' · رفعه: ' + escapeHtml(f.uploaded_by_name) : '') +
           (f.reviewed_by_name ? ' · راجعه: ' + escapeHtml(f.reviewed_by_name) : '') + '</span></div>' +
           '<div style="display:flex;gap:6px;flex-shrink:0;">' +
-          '<button class="btn ghost sm" data-view-file="' + f.id + '">عرض</button>' +
-          '<button class="btn ghost sm" data-dl="' + f.id + '">تنزيل</button>' +
+          '<button class="btn ghost sm" data-view-file="' + f.id + "\"> <!--ssmpd-i18n:%D8%B9%D8%B1%D8%B6-->عرض</button>" +
+          '<button class="btn ghost sm" data-dl="' + f.id + "\"> <!--ssmpd-i18n:%D8%AA%D9%86%D8%B2%D9%8A%D9%84-->تنزيل</button>" +
           '<button class="btn ghost sm" data-print-file="' + f.id + '">🖨 طباعة</button>' +
-          (canUp ? '<button class="btn danger sm" data-del-file="' + f.id + '">حذف</button>' : '') + '</div></div>';
+          (canUp ? '<button class="btn danger sm" data-del-file="' + f.id + "\"> <!--ssmpd-i18n:%D8%AD%D8%B0%D9%81-->حذف</button>" : '') + '</div></div>';
       });
       html += '</div>';
     }
@@ -3421,7 +3421,7 @@
     html += '<div class="section" style="padding:12px 14px;">' +
       '<h3 style="font-size:13px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
       '<span>البيانات الشخصية</span>' +
-      (canUp ? '<button class="btn ghost sm" data-edit-personal="1">تعديل</button>' : '') +
+      (canUp ? "<button class=\"btn ghost sm\" data-edit-personal=\"1\"> <!--ssmpd-i18n:%D8%AA%D8%B9%D8%AF%D9%8A%D9%84-->تعديل</button>" : '') +
       '</h3>' +
       '<p style="font-size:12px;color:var(--c-muted);line-height:1.9;">' +
       'الهاتف: ' + escapeHtml(patient.phone || "—") + '<br>' +
@@ -3442,7 +3442,7 @@
     html += '<div class="section" style="padding:12px 14px;">' +
       '<h3 style="font-size:13px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
       '<span>التاريخ الصحي الثابت</span>' +
-      (canEditMedical ? '<button class="btn ghost sm" data-edit-medical="1">تعديل</button>' : '') +
+      (canEditMedical ? "<button class=\"btn ghost sm\" data-edit-medical=\"1\"> <!--ssmpd-i18n:%D8%AA%D8%B9%D8%AF%D9%8A%D9%84-->تعديل</button>" : '') +
       '</h3>';
     if (!profile) {
       html += '<p style="font-size:12px;color:var(--c-muted);">مفيش تاريخ صحي ثابت مسجّل لسه.</p>';
@@ -3466,7 +3466,7 @@
     if (!visits.length) {
       html += '<p style="font-size:12px;color:var(--c-muted);margin-top:6px;">مفيش زيارات مسجّلة.</p>';
     } else {
-      html += '<table class="simple" style="margin-top:8px;font-size:12px;"><thead><tr><th>التاريخ</th><th>رقم الزيارة</th><th>الشكوى</th><th>خطة العلاج</th><th>متابعة</th>' + (canVisitWrite ? '<th></th>' : '') + '</tr></thead><tbody>';
+      html += "<table class=\"simple\" style=\"margin-top:8px;font-size:12px;\"><thead><tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE-->التاريخ</th><th>رقم الزيارة</th><th>الشكوى</th><th>خطة العلاج</th><th> <!--ssmpd-i18n:%D9%85%D8%AA%D8%A7%D8%A8%D8%B9%D8%A9-->متابعة</th>" + (canVisitWrite ? '<th></th>' : '') + '</tr></thead><tbody>';
       visits.forEach(function (v) {
         var plan = [v.medications ? 'أدوية: ' + v.medications : '', v.xrays ? 'أشعة: ' + v.xrays : '', v.labs ? 'تحاليل: ' + v.labs : '', v.other_recommendations ? v.other_recommendations : '']
           .filter(Boolean).join(' · ');
@@ -3474,10 +3474,10 @@
           '<td>' + escapeHtml(v.complaint || '—') + (v.referred_to_other_doctor ? '<br><span style="color:var(--c-accent2, #F15A22);">محوّل لـ' + escapeHtml(v.referred_doctor_name || 'طبيب آخر') + '</span>' : '') + '</td><td>' + escapeHtml(plan || '—') + '</td>' +
           '<td>' + followUpDisplay(v) + (v.follow_up_patient_message ? '<br><small style="color:var(--c-muted);">' + escapeHtml(v.follow_up_patient_message) + '</small>' : '') + '</td>' +
           (canVisitWrite ? '<td style="white-space:nowrap;">' +
-            '<button class="btn ghost sm" data-view-visit="' + v.id + '">عرض</button> ' +
-            '<button class="btn ghost sm" data-edit-visit="' + v.id + '">تعديل</button> ' +
+            '<button class="btn ghost sm" data-view-visit="' + v.id + "\"> <!--ssmpd-i18n:%D8%B9%D8%B1%D8%B6-->عرض</button> " +
+            '<button class="btn ghost sm" data-edit-visit="' + v.id + "\"> <!--ssmpd-i18n:%D8%AA%D8%B9%D8%AF%D9%8A%D9%84-->تعديل</button> " +
             (v.follow_up_date && (!v.follow_up_status || v.follow_up_status === 'pending' || v.follow_up_status === 'rescheduled') ? '<button class="btn ghost sm" data-followup-attended="' + v.id + '">تم الحضور</button> <button class="btn ghost sm" data-followup-no-show="' + v.id + '">لم يتم الحضور</button> ' : '') +
-            (canVisitDelete ? '<button class="btn danger sm" data-del-visit="' + v.id + '">حذف</button>' : '') + '</td>' : '') + '</tr>';
+            (canVisitDelete ? '<button class="btn danger sm" data-del-visit="' + v.id + "\"> <!--ssmpd-i18n:%D8%AD%D8%B0%D9%81-->حذف</button>" : '') + '</td>' : '') + '</tr>';
       });
       html += '</tbody></table>';
     }
@@ -3491,8 +3491,8 @@
       '<div style="font-size:12px;color:var(--c-muted);line-height:1.9;">تاريخ أول جلسة: ' + (psychologyProfile && psychologyProfile.first_session_date ? fmtDate(psychologyProfile.first_session_date) : "—") + '<br>نوع الجلسة: ' + (psychologyProfile && psychologyProfile.session_type ? ({individual:"فردية",family:"أسرية",couple:"زوجية",child:"طفل"}[psychologyProfile.session_type] || "—") : "—") + '<br>المشكلة الأساسية: ' + (psychologyProfile && psychologyProfile.main_issues && psychologyProfile.main_issues.length ? psychologyProfile.main_issues.map(function (x) { return psychologyIssueLabels[x] || x; }).join("، ") + (psychologyProfile.main_issue_other ? " (" + escapeHtml(psychologyProfile.main_issue_other) + ")" : "") : "—") + '<br>عدد الجلسات: ' + psychologySessions.length + '</div>';
     if (!psychologySessions.length) html += '<p style="font-size:12px;color:var(--c-muted);margin:10px 0 0;">مفيش جلسات نفسية مسجلة.</p>';
     else {
-      html += '<table class="simple" style="margin-top:10px;font-size:12px;"><thead><tr><th>الجلسة</th><th>الموعد</th><th>المدة</th><th>التحسن</th><th>الحضور</th><th>الخطة القادمة</th>' + (canEditMedical ? '<th></th>' : '') + '</tr></thead><tbody>';
-      psychologySessions.forEach(function (x) { html += '<tr><td>' + x.session_number + '</td><td>' + fmtDate(x.session_at) + '</td><td>' + (x.duration_minutes ? x.duration_minutes + " دقيقة" : "—") + '</td><td>' + speechLabel(psychologyImprovement, x.improvement_level) + '</td><td>' + speechLabel(psychologyAttendance, x.attendance_status) + '</td><td>' + escapeHtml(x.next_session_plan || "—") + '</td>' + (canEditMedical ? '<td style="white-space:nowrap;"><button class="btn ghost sm" data-edit-psychology-session="' + x.id + '">تعديل</button> <button class="btn danger sm" data-del-psychology-session="' + x.id + '">حذف</button></td>' : '') + '</tr>'; });
+      html += "<table class=\"simple\" style=\"margin-top:10px;font-size:12px;\"><thead><tr><th>الجلسة</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D9%88%D8%B9%D8%AF-->الموعد</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%AF%D8%A9-->المدة</th><th>التحسن</th><th>الحضور</th><th>الخطة القادمة</th>" + (canEditMedical ? '<th></th>' : '') + '</tr></thead><tbody>';
+      psychologySessions.forEach(function (x) { html += '<tr><td>' + x.session_number + '</td><td>' + fmtDate(x.session_at) + '</td><td>' + (x.duration_minutes ? x.duration_minutes + " دقيقة" : "—") + '</td><td>' + speechLabel(psychologyImprovement, x.improvement_level) + '</td><td>' + speechLabel(psychologyAttendance, x.attendance_status) + '</td><td>' + escapeHtml(x.next_session_plan || "—") + '</td>' + (canEditMedical ? '<td style="white-space:nowrap;"><button class="btn ghost sm" data-edit-psychology-session="' + x.id + "\"> <!--ssmpd-i18n:%D8%AA%D8%B9%D8%AF%D9%8A%D9%84-->تعديل</button> <button class=\"btn danger sm\" data-del-psychology-session=\"" + x.id + "\"> <!--ssmpd-i18n:%D8%AD%D8%B0%D9%81-->حذف</button></td>" : '') + '</tr>'; });
       html += '</tbody></table>';
     }
     html += '</div>';
@@ -3505,8 +3505,8 @@
       '<div style="font-size:12px;color:var(--c-muted);line-height:1.9;">تاريخ أول جلسة: ' + (speechProfile && speechProfile.first_session_date ? fmtDate(speechProfile.first_session_date) : "—") + '<br>نوع المشكلة: ' + (speechProfile && speechProfile.issue_types && speechProfile.issue_types.length ? speechProfile.issue_types.map(function (x) { return speechIssueLabels[x] || x; }).join("، ") + (speechProfile.issue_other ? " (" + escapeHtml(speechProfile.issue_other) + ")" : "") : "—") + '<br>عدد الجلسات: ' + speechSessions.length + (speechProfile && speechProfile.planned_sessions ? " من " + speechProfile.planned_sessions : "") + '</div>';
     if (!speechSessions.length) html += '<p style="font-size:12px;color:var(--c-muted);margin:10px 0 0;">مفيش جلسات تخاطب مسجلة.</p>';
     else {
-      html += '<table class="simple" style="margin-top:10px;font-size:12px;"><thead><tr><th>الجلسة</th><th>الموعد</th><th>النوع</th><th>الاستجابة</th><th>الحضور</th><th>الجلسة القادمة</th>' + (canEditMedical ? '<th></th>' : '') + '</tr></thead><tbody>';
-      speechSessions.forEach(function (x) { html += '<tr><td>' + x.session_number + '</td><td>' + fmtDate(x.session_at) + '</td><td>' + (x.session_type === "assessment" ? "تقييم" : "متابعة") + '</td><td>' + speechLabel(speechResponse, x.response_level) + '</td><td>' + speechLabel(speechAttendance, x.attendance_status) + '</td><td>' + (x.next_session_at ? fmtDate(x.next_session_at) : "—") + '</td>' + (canEditMedical ? '<td style="white-space:nowrap;"><button class="btn ghost sm" data-edit-speech-session="' + x.id + '">تعديل</button> <button class="btn danger sm" data-del-speech-session="' + x.id + '">حذف</button></td>' : '') + '</tr>'; });
+      html += "<table class=\"simple\" style=\"margin-top:10px;font-size:12px;\"><thead><tr><th>الجلسة</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D9%88%D8%B9%D8%AF-->الموعد</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%86%D9%88%D8%B9-->النوع</th><th>الاستجابة</th><th>الحضور</th><th>الجلسة القادمة</th>" + (canEditMedical ? '<th></th>' : '') + '</tr></thead><tbody>';
+      speechSessions.forEach(function (x) { html += '<tr><td>' + x.session_number + '</td><td>' + fmtDate(x.session_at) + '</td><td>' + (x.session_type === "assessment" ? "تقييم" : "متابعة") + '</td><td>' + speechLabel(speechResponse, x.response_level) + '</td><td>' + speechLabel(speechAttendance, x.attendance_status) + '</td><td>' + (x.next_session_at ? fmtDate(x.next_session_at) : "—") + '</td>' + (canEditMedical ? '<td style="white-space:nowrap;"><button class="btn ghost sm" data-edit-speech-session="' + x.id + "\"> <!--ssmpd-i18n:%D8%AA%D8%B9%D8%AF%D9%8A%D9%84-->تعديل</button> <button class=\"btn danger sm\" data-del-speech-session=\"" + x.id + "\"> <!--ssmpd-i18n:%D8%AD%D8%B0%D9%81-->حذف</button></td>" : '') + '</tr>'; });
       html += '</tbody></table>';
     }
     html += '</div>';
@@ -3525,14 +3525,14 @@
         '<h3 style="font-size:13px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
         '<span>' + c.label + ' (' + list.length + ')</span>' +
         (canUp ? '<span><button class="btn ghost sm" data-upload-cat="' + c.key + '">+ رفع</button>' +
-          (c.key === "medical_report" ? ' <button class="btn ghost sm" data-new-medical-report="1">+ إنشاء جديد</button>' : '') +
+          (c.key === "medical_report" ? " <button class=\"btn ghost sm\" data-new-medical-report=\"1\"> <!--ssmpd-i18n:%2B%20%D8%A5%D9%86%D8%B4%D8%A7%D8%A1%20%D8%AC%D8%AF%D9%8A%D8%AF-->+ إنشاء جديد</button>" : '') +
           '<input type="file" accept="image/*,application/pdf" data-file-input-cat="' + c.key + '" style="display:none;"></span>' : '') +
         '</h3>';
       if (canUp) {
         html += '<div class="field" data-other-wrap-cat style="display:none;margin-bottom:8px;">' +
           '<label>' + (c.key === "other" ? "وصف نوع الملف" : "ملاحظات / تفاصيل الملف (اختياري)") + '</label>' +
           '<input data-other-desc-cat placeholder="' + (c.key === "other" ? "اكتب نوع الملف" : "اكتب أي تفاصيل تخص الملف") + '">' +
-          '<label style="margin-top:6px;">تاريخ إصدار المستند (اختياري)</label>' +
+          "<label style=\"margin-top:6px;\"> <!--ssmpd-i18n:%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE%20%D8%A5%D8%B5%D8%AF%D8%A7%D8%B1%20%D8%A7%D9%84%D9%85%D8%B3%D8%AA%D9%86%D8%AF%20(%D8%A7%D8%AE%D8%AA%D9%8A%D8%A7%D8%B1%D9%8A)-->تاريخ إصدار المستند (اختياري)</label>" +
           '<input type="date" data-issued-at-cat></div>';
       }
       html += '<div data-cat-status style="font-size:11px;color:var(--c-muted);margin-bottom:6px;"></div>';
@@ -3551,10 +3551,10 @@
             (f.uploaded_by_name ? ' · رفعه: ' + escapeHtml(f.uploaded_by_name) : '') +
             (f.reviewed_by_name ? ' · راجعه: ' + escapeHtml(f.reviewed_by_name) : '') + '</span></div>' +
             '<div style="display:flex;gap:6px;flex-shrink:0;">' +
-            '<button class="btn ghost sm" data-view-file="' + f.id + '">عرض</button>' +
-            '<button class="btn ghost sm" data-dl="' + f.id + '">تنزيل</button>' +
+            '<button class="btn ghost sm" data-view-file="' + f.id + "\"> <!--ssmpd-i18n:%D8%B9%D8%B1%D8%B6-->عرض</button>" +
+            '<button class="btn ghost sm" data-dl="' + f.id + "\"> <!--ssmpd-i18n:%D8%AA%D9%86%D8%B2%D9%8A%D9%84-->تنزيل</button>" +
             '<button class="btn ghost sm" data-print-file="' + f.id + '">🖨 طباعة</button>' +
-            (canUp ? '<button class="btn danger sm" data-del-file="' + f.id + '">حذف</button>' : '') + '</div></div>';
+            (canUp ? '<button class="btn danger sm" data-del-file="' + f.id + "\"> <!--ssmpd-i18n:%D8%AD%D8%B0%D9%81-->حذف</button>" : '') + '</div></div>';
         });
         html += '</div>';
       }
@@ -3573,14 +3573,14 @@
       '<h3 style="font-size:13px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
       '<span>تقرير طبي (' + (mrList.length + reports.length) + ')</span>' +
       (canUp ? '<span><button class="btn ghost sm" data-upload-cat="medical_report">+ رفع مستند</button> ' +
-        '<button class="btn ghost sm" data-new-medical-report="1">+ إنشاء جديد</button>' +
+        "<button class=\"btn ghost sm\" data-new-medical-report=\"1\"> <!--ssmpd-i18n:%2B%20%D8%A5%D9%86%D8%B4%D8%A7%D8%A1%20%D8%AC%D8%AF%D9%8A%D8%AF-->+ إنشاء جديد</button>" +
         '<input type="file" accept="image/*,application/pdf" data-file-input-cat="medical_report" style="display:none;"></span>' : '') +
       '</h3>';
     if (canUp) {
       html += '<div class="field" data-other-wrap-cat style="display:none;margin-bottom:8px;">' +
-        '<label>ملاحظات / تفاصيل الملف (اختياري)</label>' +
+        "<label> <!--ssmpd-i18n:%D9%85%D9%84%D8%A7%D8%AD%D8%B8%D8%A7%D8%AA%20%2F%20%D8%AA%D9%81%D8%A7%D8%B5%D9%8A%D9%84%20%D8%A7%D9%84%D9%85%D9%84%D9%81%20(%D8%A7%D8%AE%D8%AA%D9%8A%D8%A7%D8%B1%D9%8A)-->ملاحظات / تفاصيل الملف (اختياري)</label>" +
         '<input data-other-desc-cat placeholder="اكتب أي تفاصيل تخص الملف">' +
-        '<label style="margin-top:6px;">تاريخ إصدار المستند (اختياري)</label>' +
+        "<label style=\"margin-top:6px;\"> <!--ssmpd-i18n:%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE%20%D8%A5%D8%B5%D8%AF%D8%A7%D8%B1%20%D8%A7%D9%84%D9%85%D8%B3%D8%AA%D9%86%D8%AF%20(%D8%A7%D8%AE%D8%AA%D9%8A%D8%A7%D8%B1%D9%8A)-->تاريخ إصدار المستند (اختياري)</label>" +
         '<input type="date" data-issued-at-cat></div>';
     }
     html += '<div data-cat-status style="font-size:11px;color:var(--c-muted);margin-bottom:6px;"></div>';
@@ -3595,10 +3595,10 @@
           (f.uploaded_by_name ? ' · رفعه: ' + escapeHtml(f.uploaded_by_name) : '') +
           (f.reviewed_by_name ? ' · راجعه: ' + escapeHtml(f.reviewed_by_name) : '') + '</span></div>' +
           '<div style="display:flex;gap:6px;flex-shrink:0;">' +
-          '<button class="btn ghost sm" data-view-file="' + f.id + '">عرض</button>' +
-          '<button class="btn ghost sm" data-dl="' + f.id + '">تنزيل</button>' +
+          '<button class="btn ghost sm" data-view-file="' + f.id + "\"> <!--ssmpd-i18n:%D8%B9%D8%B1%D8%B6-->عرض</button>" +
+          '<button class="btn ghost sm" data-dl="' + f.id + "\"> <!--ssmpd-i18n:%D8%AA%D9%86%D8%B2%D9%8A%D9%84-->تنزيل</button>" +
           '<button class="btn ghost sm" data-print-file="' + f.id + '">🖨 طباعة</button>' +
-          (canUp ? '<button class="btn danger sm" data-del-file="' + f.id + '">حذف</button>' : '') + '</div></div>';
+          (canUp ? '<button class="btn danger sm" data-del-file="' + f.id + "\"> <!--ssmpd-i18n:%D8%AD%D8%B0%D9%81-->حذف</button>" : '') + '</div></div>';
       });
     }
     html += '<div style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--c-border);">' +
@@ -3611,9 +3611,9 @@
           '<div><b>' + escapeHtml("تقرير طبي" + (r.specialty ? (" - " + r.specialty) : "")) + '</b> — ' + fmtDate(r.report_date) + '<br>' +
           '<span style="color:var(--c-muted);">' + escapeHtml((r.body_text || "").slice(0, 60)) + ((r.body_text || "").length > 60 ? "…" : "") + '</span></div>' +
           '<div style="display:flex;gap:6px;flex-shrink:0;">' +
-          '<button class="btn ghost sm" data-edit-medical-report="' + r.id + '">تعديل</button>' +
+          '<button class="btn ghost sm" data-edit-medical-report="' + r.id + "\"> <!--ssmpd-i18n:%D8%AA%D8%B9%D8%AF%D9%8A%D9%84-->تعديل</button>" +
           '<button class="btn ghost sm" data-print-medical-report="' + r.id + '">🖨 طباعة</button>' +
-          (canUp ? '<button class="btn danger sm" data-del-medical-report="' + r.id + '">حذف</button>' : '') + '</div></div>';
+          (canUp ? '<button class="btn danger sm" data-del-medical-report="' + r.id + "\"> <!--ssmpd-i18n:%D8%AD%D8%B0%D9%81-->حذف</button>" : '') + '</div></div>';
       });
     }
     html += '</div></div>';
@@ -3624,9 +3624,9 @@
         return '<div><b>' + escapeHtml("روشتة" + (r.specialty ? (" - " + r.specialty) : "")) + '</b> — ' + fmtDate(r.report_date) +
           (r.doctor_name ? '<br><span style="color:var(--c-muted);">د. ' + escapeHtml(r.doctor_name) + '</span>' : '') + '</div>' +
           '<div style="display:flex;gap:6px;flex-shrink:0;">' +
-          '<button class="btn ghost sm" data-edit-prescription="' + r.id + '">تعديل</button>' +
+          '<button class="btn ghost sm" data-edit-prescription="' + r.id + "\"> <!--ssmpd-i18n:%D8%AA%D8%B9%D8%AF%D9%8A%D9%84-->تعديل</button>" +
           '<button class="btn ghost sm" data-print-prescription="' + r.id + '">🖨 طباعة</button>' +
-          (canUp ? '<button class="btn danger sm" data-del-prescription="' + r.id + '">حذف</button>' : '') + '</div>';
+          (canUp ? '<button class="btn danger sm" data-del-prescription="' + r.id + "\"> <!--ssmpd-i18n:%D8%AD%D8%B0%D9%81-->حذف</button>" : '') + '</div>';
       }, canRxWrite);
 
     // -- طلب تحاليل (مدموجة مع فئة رفع "تحاليل") --
@@ -3635,9 +3635,9 @@
         return '<div><b>طلب تحاليل</b> — ' + fmtDate(r.report_date) + ' — ' + (r.tests || []).length + ' تحليل' +
           (r.doctor_name ? '<br><span style="color:var(--c-muted);">د. ' + escapeHtml(r.doctor_name) + '</span>' : '') + '</div>' +
           '<div style="display:flex;gap:6px;flex-shrink:0;">' +
-          '<button class="btn ghost sm" data-edit-lab-request="' + r.id + '">تعديل</button>' +
+          '<button class="btn ghost sm" data-edit-lab-request="' + r.id + "\"> <!--ssmpd-i18n:%D8%AA%D8%B9%D8%AF%D9%8A%D9%84-->تعديل</button>" +
           '<button class="btn ghost sm" data-print-lab-request="' + r.id + '">🖨 طباعة</button>' +
-          (canUp ? '<button class="btn danger sm" data-del-lab-request="' + r.id + '">حذف</button>' : '') + '</div>';
+          (canUp ? '<button class="btn danger sm" data-del-lab-request="' + r.id + "\"> <!--ssmpd-i18n:%D8%AD%D8%B0%D9%81-->حذف</button>" : '') + '</div>';
       });
 
     // -- طلب أشعة (مدموجة مع فئة رفع "أشعة") --
@@ -3646,16 +3646,16 @@
         return '<div><b>طلب أشعة</b> — ' + fmtDate(r.report_date) + ' — ' + (r.items || []).length + ' بند' +
           (r.doctor_name ? '<br><span style="color:var(--c-muted);">د. ' + escapeHtml(r.doctor_name) + '</span>' : '') + '</div>' +
           '<div style="display:flex;gap:6px;flex-shrink:0;">' +
-          '<button class="btn ghost sm" data-edit-radiology-request="' + r.id + '">تعديل</button>' +
+          '<button class="btn ghost sm" data-edit-radiology-request="' + r.id + "\"> <!--ssmpd-i18n:%D8%AA%D8%B9%D8%AF%D9%8A%D9%84-->تعديل</button>" +
           '<button class="btn ghost sm" data-print-radiology-request="' + r.id + '">🖨 طباعة</button>' +
-          (canUp ? '<button class="btn danger sm" data-del-radiology-request="' + r.id + '">حذف</button>' : '') + '</div>';
+          (canUp ? '<button class="btn danger sm" data-del-radiology-request="' + r.id + "\"> <!--ssmpd-i18n:%D8%AD%D8%B0%D9%81-->حذف</button>" : '') + '</div>';
       });
 
     // ---------- Echocardiography Report ----------
     html += '<div class="section" style="padding:12px 14px;">' +
       '<h3 style="font-size:13px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
       '<span>Echocardiography Report (' + echoReports.length + ')</span>' +
-      (canUp ? '<button class="btn ghost sm" data-new-echo-report="1">+ إنشاء جديد</button>' : '') +
+      (canUp ? "<button class=\"btn ghost sm\" data-new-echo-report=\"1\"> <!--ssmpd-i18n:%2B%20%D8%A5%D9%86%D8%B4%D8%A7%D8%A1%20%D8%AC%D8%AF%D9%8A%D8%AF-->+ إنشاء جديد</button>" : '') +
       '</h3>';
     if (!echoReports.length) {
       html += '<p style="font-size:12px;color:var(--c-muted);">مفيش تقارير Echo مُنشأة لسه.</p>';
@@ -3665,9 +3665,9 @@
           '<div><b>' + escapeHtml(r.patient_label || patient.full_name) + '</b> — ' + fmtDate(r.report_date) +
           (r.conclusion_text ? '<br><span style="color:var(--c-muted);">' + escapeHtml(r.conclusion_text.slice(0, 60)) + (r.conclusion_text.length > 60 ? "…" : "") + '</span>' : '') + '</div>' +
           '<div style="display:flex;gap:6px;flex-shrink:0;">' +
-          '<button class="btn ghost sm" data-edit-echo-report="' + r.id + '">تعديل</button>' +
+          '<button class="btn ghost sm" data-edit-echo-report="' + r.id + "\"> <!--ssmpd-i18n:%D8%AA%D8%B9%D8%AF%D9%8A%D9%84-->تعديل</button>" +
           '<button class="btn ghost sm" data-print-echo-report="' + r.id + '">🖨 طباعة</button>' +
-          (canUp ? '<button class="btn danger sm" data-del-echo-report="' + r.id + '">حذف</button>' : '') + '</div></div>';
+          (canUp ? '<button class="btn danger sm" data-del-echo-report="' + r.id + "\"> <!--ssmpd-i18n:%D8%AD%D8%B0%D9%81-->حذف</button>" : '') + '</div></div>';
       });
     }
     html += '</div>';
@@ -3676,7 +3676,7 @@
     html += '<div class="section" style="padding:12px 14px;">' +
       '<h3 style="font-size:13px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
       '<span>تقرير أسنان (' + dentalReports.length + ')</span>' +
-      (canUp ? '<button class="btn ghost sm" data-new-dental-report="1">+ إنشاء جديد</button>' : '') +
+      (canUp ? "<button class=\"btn ghost sm\" data-new-dental-report=\"1\"> <!--ssmpd-i18n:%2B%20%D8%A5%D9%86%D8%B4%D8%A7%D8%A1%20%D8%AC%D8%AF%D9%8A%D8%AF-->+ إنشاء جديد</button>" : '') +
       '</h3>';
     if (!dentalReports.length) {
       html += '<p style="font-size:12px;color:var(--c-muted);">مفيش تقارير أسنان مُنشأة لسه.</p>';
@@ -3686,9 +3686,9 @@
           '<div><b>تقرير أسنان</b> — ' + fmtDate(r.report_date) +
           (r.chief_complaint ? '<br><span style="color:var(--c-muted);">' + escapeHtml(r.chief_complaint.slice(0, 60)) + (r.chief_complaint.length > 60 ? "…" : "") + '</span>' : '') + '</div>' +
           '<div style="display:flex;gap:6px;flex-shrink:0;">' +
-          '<button class="btn ghost sm" data-edit-dental-report="' + r.id + '">تعديل</button>' +
+          '<button class="btn ghost sm" data-edit-dental-report="' + r.id + "\"> <!--ssmpd-i18n:%D8%AA%D8%B9%D8%AF%D9%8A%D9%84-->تعديل</button>" +
           '<button class="btn ghost sm" data-print-dental-report="' + r.id + '">🖨 طباعة</button>' +
-          (canUp ? '<button class="btn danger sm" data-del-dental-report="' + r.id + '">حذف</button>' : '') + '</div></div>';
+          (canUp ? '<button class="btn danger sm" data-del-dental-report="' + r.id + "\"> <!--ssmpd-i18n:%D8%AD%D8%B0%D9%81-->حذف</button>" : '') + '</div></div>';
       });
     }
     html += '</div>';
@@ -3697,7 +3697,7 @@
     html += '<div class="section" style="padding:12px 14px;">' +
       '<h3 style="font-size:13px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
       '<span>تقرير علاج طبيعي (' + physioReports.length + ')</span>' +
-      (canUp ? '<button class="btn ghost sm" data-new-physio-report="1">+ إنشاء جديد</button>' : '') +
+      (canUp ? "<button class=\"btn ghost sm\" data-new-physio-report=\"1\"> <!--ssmpd-i18n:%2B%20%D8%A5%D9%86%D8%B4%D8%A7%D8%A1%20%D8%AC%D8%AF%D9%8A%D8%AF-->+ إنشاء جديد</button>" : '') +
       '</h3>';
     if (!physioReports.length) {
       html += '<p style="font-size:12px;color:var(--c-muted);">مفيش تقارير علاج طبيعي مُنشأة لسه.</p>';
@@ -3707,9 +3707,9 @@
           '<div><b>تقرير علاج طبيعي</b> — ' + fmtDate(r.visit_date) +
           (r.visit_reason ? '<br><span style="color:var(--c-muted);">' + escapeHtml(r.visit_reason.slice(0, 60)) + (r.visit_reason.length > 60 ? "…" : "") + '</span>' : '') + '</div>' +
           '<div style="display:flex;gap:6px;flex-shrink:0;">' +
-          '<button class="btn ghost sm" data-edit-physio-report="' + r.id + '">تعديل</button>' +
+          '<button class="btn ghost sm" data-edit-physio-report="' + r.id + "\"> <!--ssmpd-i18n:%D8%AA%D8%B9%D8%AF%D9%8A%D9%84-->تعديل</button>" +
           '<button class="btn ghost sm" data-print-physio-report="' + r.id + '">🖨 طباعة</button>' +
-          (canUp ? '<button class="btn danger sm" data-del-physio-report="' + r.id + '">حذف</button>' : '') + '</div></div>';
+          (canUp ? '<button class="btn danger sm" data-del-physio-report="' + r.id + "\"> <!--ssmpd-i18n:%D8%AD%D8%B0%D9%81-->حذف</button>" : '') + '</div></div>';
       });
     }
     html += '</div>';
@@ -4215,3 +4215,4 @@
     experienceRatingAvg: experienceRatingAvg
   };
 })();
+

@@ -12,7 +12,7 @@
  }
  async function view(url){
   var root=document.createElement('div');root.className='modal-backdrop';root.style.zIndex=10002;
-  root.innerHTML='<div class="modal" dir="rtl"><div class="modal-head"><h3>معاينة التصميم</h3><button class="modal-close" aria-label="إغلاق">×</button></div><p role="status">تحميل التصميم…</p></div>';
+  root.innerHTML="<div class=\"modal\" dir=\"rtl\"><div class=\"modal-head\"><h3>معاينة التصميم</h3><button class=\"modal-close\" aria-label=\"إغلاق\" data-i18n-aria-label=\"%D8%A5%D8%BA%D9%84%D8%A7%D9%82\" data-i18n-aria-label=\"%D8%A5%D8%BA%D9%84%D8%A7%D9%82\">×</button></div><p role=\"status\">تحميل التصميم…</p></div>";
   document.body.appendChild(root);root.querySelector('button').onclick=function(){root.remove();};
   try{var signed=await resolve(url);if(!root.isConnected)return;var image=document.createElement('img');image.alt='التصميم المحفوظ';image.style.cssText='display:block;width:100%;height:auto;max-height:75vh;object-fit:contain';image.src=signed;image.onerror=function(){root.querySelector('p').textContent='تعذر تحميل التصميم. أغلق المعاينة وافتحها مجددًا.';};image.onload=function(){root.querySelector('p').textContent='';};root.querySelector('.modal').appendChild(image);
    var download=document.createElement('button');download.className='btn ghost sm';download.textContent='تنزيل التصميم';download.onclick=async function(){download.disabled=true;try{var fresh=await resolve(url),response=await fetch(fresh);if(!response.ok)throw new Error('تعذر تنزيل الملف');var blob=await response.blob(),local=URL.createObjectURL(blob),a=document.createElement('a');a.href=local;a.download='design.png';a.click();setTimeout(function(){URL.revokeObjectURL(local);},1000);}catch(e){root.querySelector('p').textContent=e.message;}finally{download.disabled=false;}};root.querySelector('.modal').appendChild(download);
@@ -31,3 +31,4 @@
  function canEdit(item){var me=window.SSMPDAuth.currentAdmin,R=window.SSMPDRoles;return !!(me&&R.canCreateAIDesign(me)&&item.brand==='sono'&&item.content_format!=='video'&&!['published','scheduled','ready_to_publish'].includes(item.stage)&&(window.SSMPDWorkflow.canEditItem(me,item)||item.assigned_designer===me.id||(item.design_execution==='ai'&&['in_design','needs_revision','final_approval'].includes(item.stage)&&R.hasRole(me,'approver'))));}
  window.SSMPDDesignFiles={resolve:resolve,view:view,path:path,latest:latest,save:save,canEdit:canEdit};
 })();
+

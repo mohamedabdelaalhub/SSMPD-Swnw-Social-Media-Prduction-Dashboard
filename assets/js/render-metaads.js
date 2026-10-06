@@ -82,16 +82,16 @@
     var objectives = uniqSorted(adRows.map(function (r) { return r.objective; }));
     var statuses = uniqSorted(adRows.map(function (r) { return r.status; }));
     function opts(list, current) {
-      return '<option value="">الكل</option>' + list.map(function (v) {
+      return "<option value=\"\"> <!--ssmpd-i18n:%D8%A7%D9%84%D9%83%D9%84-->الكل</option>" + list.map(function (v) {
         return '<option value="' + escapeHtml(v) + '" ' + (current === v ? "selected" : "") + '>' + escapeHtml(v) + '</option>';
       }).join("");
     }
     return '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">' +
       '<div class="field"><label style="font-size:11px;">الحساب</label><select id="ma-f-account">' + opts(accounts, filters.account) + '</select></div>' +
-      '<div class="field"><label style="font-size:11px;">الحملة</label><select id="ma-f-campaign">' + opts(campaigns, filters.campaign) + '</select></div>' +
-      '<div class="field"><label style="font-size:11px;">التخصص</label><select id="ma-f-specialty">' + opts(specialties, filters.specialty) + '</select></div>' +
+      "<div class=\"field\"><label style=\"font-size:11px;\"> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AD%D9%85%D9%84%D8%A9-->الحملة</label><select id=\"ma-f-campaign\">" + opts(campaigns, filters.campaign) + '</select></div>' +
+      "<div class=\"field\"><label style=\"font-size:11px;\"> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AA%D8%AE%D8%B5%D8%B5-->التخصص</label><select id=\"ma-f-specialty\">" + opts(specialties, filters.specialty) + '</select></div>' +
       '<div class="field"><label style="font-size:11px;">الهدف (Objective)</label><select id="ma-f-objective">' + opts(objectives, filters.objective) + '</select></div>' +
-      '<div class="field"><label style="font-size:11px;">الحالة</label><select id="ma-f-status">' + opts(statuses, filters.status) + '</select></div>' +
+      "<div class=\"field\"><label style=\"font-size:11px;\"> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AD%D8%A7%D9%84%D8%A9-->الحالة</label><select id=\"ma-f-status\">" + opts(statuses, filters.status) + '</select></div>' +
       '<div class="field"><label style="font-size:11px;">من تاريخ البدء</label><input type="date" id="ma-f-date" value="' + escapeHtml(filters.fromDate) + '"></div>' +
       '<button class="btn ghost sm" id="ma-f-reset">تصفير الفلاتر</button>' +
       '</div>';
@@ -115,8 +115,8 @@
   function specialtyTableHtml() {
     if (!specialtyRows.length) return '<p style="color:var(--c-muted);font-size:13px;">لا توجد بيانات.</p>';
     var html = '<div style="max-height:360px;overflow:auto;"><table class="simple"><thead><tr>' +
-      '<th>التخصص</th><th>الهدف</th><th>إعلانات</th><th>الإنفاق</th><th>محادثات</th><th>Leads</th>' +
-      '<th>تكلفة المحادثة</th><th>CPL</th><th>CTR</th><th>CPC</th><th>CPM</th></tr></thead><tbody>';
+      "<th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AA%D8%AE%D8%B5%D8%B5-->التخصص</th><th>الهدف</th><th>إعلانات</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%A5%D9%86%D9%81%D8%A7%D9%82-->الإنفاق</th><th> <!--ssmpd-i18n:%D9%85%D8%AD%D8%A7%D8%AF%D8%AB%D8%A7%D8%AA-->محادثات</th><th>Leads</th>" +
+      "<th> <!--ssmpd-i18n:%D8%AA%D9%83%D9%84%D9%81%D8%A9%20%D8%A7%D9%84%D9%85%D8%AD%D8%A7%D8%AF%D8%AB%D8%A9-->تكلفة المحادثة</th><th>CPL</th><th>CTR</th><th>CPC</th><th>CPM</th></tr></thead><tbody>";
     specialtyRows.forEach(function (r) {
       html += '<tr><td>' + escapeHtml(r.specialty) + '</td><td>' + escapeHtml(r.objective) + '</td>' +
         '<td>' + fmtNum(r.ads) + '</td><td>' + fmtMoney(r.spend) + '</td><td>' + fmtNum(r.msg_conv) + '</td><td>' + fmtNum(r.leads) + '</td>' +
@@ -133,8 +133,8 @@
   function creativeTableHtml() {
     if (!creativeRows.length) return '<p style="color:var(--c-muted);font-size:13px;">لا توجد بيانات.</p>';
     var html = '<div style="max-height:360px;overflow:auto;"><table class="simple"><thead><tr>' +
-      '<th>Creative Group</th><th>التخصص</th><th>Hook</th><th>الزاوية</th><th>النوع</th><th>مرّات التشغيل</th>' +
-      '<th>الإنفاق</th><th>النتائج</th><th>محادثات</th><th>Leads</th><th>تكلفة النتيجة</th><th>المحتوى المرتبط</th></tr></thead><tbody>';
+      "<th>Creative Group</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AA%D8%AE%D8%B5%D8%B5-->التخصص</th><th>Hook</th><th>الزاوية</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%86%D9%88%D8%B9-->النوع</th><th>مرّات التشغيل</th>" +
+      "<th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%A5%D9%86%D9%81%D8%A7%D9%82-->الإنفاق</th><th>النتائج</th><th> <!--ssmpd-i18n:%D9%85%D8%AD%D8%A7%D8%AF%D8%AB%D8%A7%D8%AA-->محادثات</th><th>Leads</th><th>تكلفة النتيجة</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%AD%D8%AA%D9%88%D9%89%20%D8%A7%D9%84%D9%85%D8%B1%D8%AA%D8%A8%D8%B7-->المحتوى المرتبط</th></tr></thead><tbody>";
     creativeRows.forEach(function (r) {
       html += '<tr><td style="font-size:11px;">' + escapeHtml(r.creative_group_id) + '</td><td>' + escapeHtml(r.specialty) + '</td>' +
         '<td>' + escapeHtml(r.hook_type) + '</td><td>' + escapeHtml(r.content_angle) + '</td><td>' + escapeHtml(r.creative_type) + '</td>' +
@@ -150,9 +150,9 @@
   function adsTableHtml(rows) {
     if (!rows.length) return '<p style="color:var(--c-muted);font-size:13px;">لا توجد إعلانات مطابقة للفلاتر.</p>';
     var html = '<div style="max-height:460px;overflow:auto;"><table class="simple"><thead><tr>' +
-      '<th>الحملة</th><th>المجموعة الإعلانية</th><th>الإعلان</th><th>الكرييتف</th><th>التخصص</th><th>الهدف</th>' +
-      '<th>الإنفاق</th><th>الوصول</th><th>الظهور</th><th>النقرات</th><th>CTR</th><th>CPC</th><th>CPM</th>' +
-      '<th>محادثات</th><th>تكلفة المحادثة</th><th>Leads</th><th>CPL</th><th>الحالة</th><th>المحتوى المرتبط</th></tr></thead><tbody>';
+      "<th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AD%D9%85%D9%84%D8%A9-->الحملة</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%AC%D9%85%D9%88%D8%B9%D8%A9%20%D8%A7%D9%84%D8%A5%D8%B9%D9%84%D8%A7%D9%86%D9%8A%D8%A9-->المجموعة الإعلانية</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%A5%D8%B9%D9%84%D8%A7%D9%86-->الإعلان</th><th>الكرييتف</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AA%D8%AE%D8%B5%D8%B5-->التخصص</th><th>الهدف</th>" +
+      "<th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%A5%D9%86%D9%81%D8%A7%D9%82-->الإنفاق</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%88%D8%B5%D9%88%D9%84-->الوصول</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%B8%D9%87%D9%88%D8%B1-->الظهور</th><th>النقرات</th><th>CTR</th><th>CPC</th><th>CPM</th>" +
+      "<th> <!--ssmpd-i18n:%D9%85%D8%AD%D8%A7%D8%AF%D8%AB%D8%A7%D8%AA-->محادثات</th><th> <!--ssmpd-i18n:%D8%AA%D9%83%D9%84%D9%81%D8%A9%20%D8%A7%D9%84%D9%85%D8%AD%D8%A7%D8%AF%D8%AB%D8%A9-->تكلفة المحادثة</th><th>Leads</th><th>CPL</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AD%D8%A7%D9%84%D8%A9-->الحالة</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%AD%D8%AA%D9%88%D9%89%20%D8%A7%D9%84%D9%85%D8%B1%D8%AA%D8%A8%D8%B7-->المحتوى المرتبط</th></tr></thead><tbody>";
     rows.forEach(function (r) {
       html += '<tr><td style="font-size:11px;">' + escapeHtml(r.campaign_name) + '</td><td style="font-size:11px;">' + escapeHtml(r.adset_name) + '</td>' +
         '<td style="font-size:11px;">' + escapeHtml(r.ad_name) + '</td><td style="font-size:11px;">' + escapeHtml(r.creative_title) + '</td>' +
@@ -178,7 +178,7 @@
       '</div>';
     html += '<p style="font-size:12px;color:var(--c-muted);margin:8px 0;">الإسناد بيعتمد على عمود meta_ad_id على الليد (ما بيتحطش تلقائي على الليدز القديمة) — الليدز من غير إسناد فضلت زي ما هي وظاهرة عادي في تاب «إدارة الليدز والتواصل».</p>';
     if (recent.length) {
-      html += '<div style="max-height:300px;overflow:auto;"><table class="simple"><thead><tr><th>العميل</th><th>تاريخ الاستلام</th><th>الإعلان</th><th>الحملة</th><th>التخصص</th></tr></thead><tbody>';
+      html += "<div style=\"max-height:300px;overflow:auto;\"><table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%B9%D9%85%D9%8A%D9%84-->العميل</th><th>تاريخ الاستلام</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%A5%D8%B9%D9%84%D8%A7%D9%86-->الإعلان</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AD%D9%85%D9%84%D8%A9-->الحملة</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AA%D8%AE%D8%B5%D8%B5-->التخصص</th></tr></thead><tbody>";
       recent.forEach(function (l) {
         html += '<tr><td>' + escapeHtml(l.customer_name) + '</td><td>' + fmtDate(l.received_at) + '</td>' +
           '<td style="font-size:11px;">' + escapeHtml(l.matched_ad_name) + '</td>' +
@@ -215,7 +215,7 @@
 
   function renderAll(el) {
     var filtered = applyFilters(adRows);
-    var html = '<div class="section"><h3>إعلانات Meta Ads</h3>' + filterBarHtml() +
+    var html = "<div class=\"section\"><h3> <!--ssmpd-i18n:%D8%A5%D8%B9%D9%84%D8%A7%D9%86%D8%A7%D8%AA%20Meta%20Ads-->إعلانات Meta Ads</h3>" + filterBarHtml() +
       '<div id="ma-kpis">' + kpiSectionHtml(computeKpis(filtered)) + '</div></div>' +
       '<div class="section"><h3>الأداء حسب التخصص</h3>' + specialtyTableHtml() + '</div>' +
       '<div class="section"><h3>أداء الكرييتف (حسب Creative Group)</h3>' + creativeTableHtml() + '</div>' +
@@ -248,3 +248,4 @@
 
   window.SSMPDRenderMetaAds = { render: render };
 })();
+

@@ -49,22 +49,23 @@
     mode = mode || "login";
     var html = '<div class="auth-screen"><div class="auth-box">' +
       '<img class="logo" src="assets/img/logo.svg" alt="Swnw">' +
-      '<h1>لوحة إنتاج المحتوى</h1><p class="sub">' + window.SSMPD_CONFIG.centerName + '</p>' +
+      "<h1> <!--ssmpd-i18n:%D9%84%D9%88%D8%AD%D8%A9%20%D8%A5%D9%86%D8%AA%D8%A7%D8%AC%20%D8%A7%D9%84%D9%85%D8%AD%D8%AA%D9%88%D9%89-->لوحة إنتاج المحتوى</h1><p class=\"sub\">" + window.SSMPD_CONFIG.centerName + '</p>' +
       (errorMsg ? '<div class="err-msg">' + errorMsg + '</div>' : '') +
-      '<div class="field"><label>البريد الإلكتروني</label><input id="auth-email" type="email" autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false"></div>' +
-      '<div class="field"><label>كلمة السر</label><input id="auth-pass" type="password" autocomplete="current-password" autocapitalize="off" autocorrect="off" spellcheck="false"></div>';
+      "<div class=\"field\"><label> <!--ssmpd-i18n:%D8%A7%D9%84%D8%A8%D8%B1%D9%8A%D8%AF%20%D8%A7%D9%84%D8%A5%D9%84%D9%83%D8%AA%D8%B1%D9%88%D9%86%D9%8A-->البريد الإلكتروني</label><input id=\"auth-email\" type=\"email\" autocomplete=\"username\" autocapitalize=\"off\" autocorrect=\"off\" spellcheck=\"false\"></div>" +
+      "<div class=\"field\"><label> <!--ssmpd-i18n:%D9%83%D9%84%D9%85%D8%A9%20%D8%A7%D9%84%D8%B3%D8%B1-->كلمة السر</label><input id=\"auth-pass\" type=\"password\" autocomplete=\"current-password\" autocapitalize=\"off\" autocorrect=\"off\" spellcheck=\"false\"></div>";
 
     if (mode === "signup") {
-      html += '<div class="field"><label>الاسم</label><input id="auth-name"></div>' +
-        '<button class="btn block" id="auth-submit">إنشاء الحساب</button>' +
-        '<p style="margin-top:14px;font-size:12px;"><a href="#" id="switch-mode">عندك حساب؟ سجّل الدخول</a></p>';
+      html += "<div class=\"field\"><label> <!--ssmpd-i18n:%D8%A7%D9%84%D8%A7%D8%B3%D9%85-->الاسم</label><input id=\"auth-name\"></div>" +
+        "<button class=\"btn block\" id=\"auth-submit\"> <!--ssmpd-i18n:%D8%A5%D9%86%D8%B4%D8%A7%D8%A1%20%D8%A7%D9%84%D8%AD%D8%B3%D8%A7%D8%A8-->إنشاء الحساب</button>" +
+        "<p style=\"margin-top:14px;font-size:12px;\"><a href=\"#\" id=\"switch-mode\"> <!--ssmpd-i18n:%D8%B9%D9%86%D8%AF%D9%83%20%D8%AD%D8%B3%D8%A7%D8%A8%D8%9F%20%D8%B3%D8%AC%D9%91%D9%84%20%D8%A7%D9%84%D8%AF%D8%AE%D9%88%D9%84-->عندك حساب؟ سجّل الدخول</a></p>";
     } else {
-      html += '<button class="btn block" id="auth-submit">دخول</button>' +
-        '<p style="margin-top:14px;font-size:12px;"><a href="#" id="forgot-pass">نسيت كلمة السر؟</a></p>' +
-        '<p style="margin-top:6px;font-size:12px;"><a href="#" id="switch-mode">حساب جديد؟ اضغط هنا (لو اتضفت من الأدمن)</a></p>';
+      html += "<button class=\"btn block\" id=\"auth-submit\"> <!--ssmpd-i18n:%D8%AF%D8%AE%D9%88%D9%84-->دخول</button>" +
+        "<p style=\"margin-top:14px;font-size:12px;\"><a href=\"#\" id=\"forgot-pass\"> <!--ssmpd-i18n:%D9%86%D8%B3%D9%8A%D8%AA%20%D9%83%D9%84%D9%85%D8%A9%20%D8%A7%D9%84%D8%B3%D8%B1%D8%9F-->نسيت كلمة السر؟</a></p>" +
+        "<p style=\"margin-top:6px;font-size:12px;\"><a href=\"#\" id=\"switch-mode\"> <!--ssmpd-i18n:%D8%AD%D8%B3%D8%A7%D8%A8%20%D8%AC%D8%AF%D9%8A%D8%AF%D8%9F%20%D8%A7%D8%B6%D8%BA%D8%B7%20%D9%87%D9%86%D8%A7%20(%D9%84%D9%88%20%D8%A7%D8%AA%D8%B6%D9%81%D8%AA%20%D9%85%D9%86%20%D8%A7%D9%84%D8%A3%D8%AF%D9%85%D9%86)-->حساب جديد؟ اضغط هنا (لو اتضفت من الأدمن)</a></p>";
     }
-    html += '</div><footer style="text-align:center;font-size:11px;color:var(--c-muted);padding:14px 0;">© جميع الحقوق محفوظة لشركة دار النقاهة الطبية</footer></div>';
+    html += "</div><footer style=\"text-align:center;font-size:11px;color:var(--c-muted);padding:14px 0;\"> <!--ssmpd-i18n:%C2%A9%20%D8%AC%D9%85%D9%8A%D8%B9%20%D8%A7%D9%84%D8%AD%D9%82%D9%88%D9%82%20%D9%85%D8%AD%D9%81%D9%88%D8%B8%D8%A9%20%D9%84%D8%B4%D8%B1%D9%83%D8%A9%20%D8%AF%D8%A7%D8%B1%20%D8%A7%D9%84%D9%86%D9%82%D8%A7%D9%87%D8%A9%20%D8%A7%D9%84%D8%B7%D8%A8%D9%8A%D8%A9-->© جميع الحقوق محفوظة لشركة دار النقاهة الطبية</footer></div>";
     root().innerHTML = html;
+    if (!root().querySelector("[data-language-switch]")) root().querySelector(".auth-box").insertAdjacentHTML("afterbegin",window.SSMPDI18n.buttonHtml());
 
     document.getElementById("switch-mode").onclick = function (e) {
       e.preventDefault();
@@ -144,7 +145,7 @@
     var admin = window.SSMPDAuth.currentAdmin;
     var tabs = Object.keys(TAB_LABELS).filter(function (t) { return R.canSeeTab(admin, t); });
     var displayName = escapeHtml(admin.name || admin.email);
-    var roleLabel = R.labelAll(admin);
+    var roleLabel = R.rolesOf(admin).map(function(role){return window.SSMPDI18n.textHtml(R.ALL[role]||role);}).join(' / ');
 
     // قائمة منسدلة موحّدة (أيقونة بجانب الاسم) — بالترتيب اللي طلبه المستخدم بالظبط:
     // الاسم، ثم الدور، ثم إنتاج المحتوى، ثم أرشيف المرضى، ثم إدارة الليدز والتواصل، ثم تغيير كلمة السر،
@@ -156,54 +157,54 @@
     var mainSuiteTabs = tabs.filter(function (t) { return ["patients", "leads", "contracting_entities", "admin", "accounting"].indexOf(t) === -1; });
 
     function tabButtonsHtml() {
-      return mainSuiteTabs.map(function (t) { return '<button class="tab-btn" data-tab="' + t + '">' + TAB_LABELS[t] + '</button>'; }).join("");
+      return mainSuiteTabs.map(function (t) { return '<button class="tab-btn" data-tab="' + t + '">' + window.SSMPDI18n.textHtml(TAB_LABELS[t]) + '</button>'; }).join("");
     }
     var ddItems = '';
-    if (mainSuiteTabs.length) ddItems += '<button class="ud-item" data-goto="' + mainSuiteTabs[0] + '">إنتاج المحتوى</button>';
-    if (tabs.indexOf("patients") !== -1) ddItems += '<button class="ud-item" data-goto="patients">أرشيف المرضى</button>';
-    if (tabs.indexOf("leads") !== -1) ddItems += '<button class="ud-item" data-goto="leads">إدارة الليدز والتواصل</button>';
-    if (tabs.indexOf("contracting_entities") !== -1) ddItems += '<button class="ud-item" data-goto="contracting_entities">جهات التعاقد</button>';
-    if (tabs.indexOf("accounting") !== -1) ddItems += '<button class="ud-item" data-goto="accounting">الحسابات</button>';
+    if (mainSuiteTabs.length) ddItems += '<button class="ud-item" data-goto="' + mainSuiteTabs[0] + "\"> <!--ssmpd-i18n:%D8%A5%D9%86%D8%AA%D8%A7%D8%AC%20%D8%A7%D9%84%D9%85%D8%AD%D8%AA%D9%88%D9%89-->إنتاج المحتوى</button>";
+    if (tabs.indexOf("patients") !== -1) ddItems += "<button class=\"ud-item\" data-goto=\"patients\"> <!--ssmpd-i18n:%D8%A3%D8%B1%D8%B4%D9%8A%D9%81%20%D8%A7%D9%84%D9%85%D8%B1%D8%B6%D9%89-->أرشيف المرضى</button>";
+    if (tabs.indexOf("leads") !== -1) ddItems += "<button class=\"ud-item\" data-goto=\"leads\"> <!--ssmpd-i18n:%D8%A5%D8%AF%D8%A7%D8%B1%D8%A9%20%D8%A7%D9%84%D9%84%D9%8A%D8%AF%D8%B2%20%D9%88%D8%A7%D9%84%D8%AA%D9%88%D8%A7%D8%B5%D9%84-->إدارة الليدز والتواصل</button>";
+    if (tabs.indexOf("contracting_entities") !== -1) ddItems += "<button class=\"ud-item\" data-goto=\"contracting_entities\"> <!--ssmpd-i18n:%D8%AC%D9%87%D8%A7%D8%AA%20%D8%A7%D9%84%D8%AA%D8%B9%D8%A7%D9%82%D8%AF-->جهات التعاقد</button>";
+    if (tabs.indexOf("accounting") !== -1) ddItems += "<button class=\"ud-item\" data-goto=\"accounting\"> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AD%D8%B3%D8%A7%D8%A8%D8%A7%D8%AA-->الحسابات</button>";
     if ((admin.has_verification_management_access || R.isSuperAdmin(admin)) && window.SSMPDRenderPatientVerification) {
-      ddItems += '<button class="ud-item" id="ud-patient-verification">طلبات تحقق هوية المرضى</button>';
+      ddItems += "<button class=\"ud-item\" id=\"ud-patient-verification\"> <!--ssmpd-i18n:%D8%B7%D9%84%D8%A8%D8%A7%D8%AA%20%D8%AA%D8%AD%D9%82%D9%82%20%D9%87%D9%88%D9%8A%D8%A9%20%D8%A7%D9%84%D9%85%D8%B1%D8%B6%D9%89-->طلبات تحقق هوية المرضى</button>";
     }
-    ddItems += '<button class="ud-item" id="ud-change-pass">تغيير كلمة السر</button>';
-    if (tabs.indexOf("admin") !== -1) ddItems += '<button class="ud-item" data-goto="admin">لوحة التحكم</button>';
+    ddItems += "<button class=\"ud-item\" id=\"ud-change-pass\"> <!--ssmpd-i18n:%D8%AA%D8%BA%D9%8A%D9%8A%D8%B1%20%D9%83%D9%84%D9%85%D8%A9%20%D8%A7%D9%84%D8%B3%D8%B1-->تغيير كلمة السر</button>";
+    if (tabs.indexOf("admin") !== -1) ddItems += "<button class=\"ud-item\" data-goto=\"admin\"> <!--ssmpd-i18n:%D9%84%D9%88%D8%AD%D8%A9%20%D8%A7%D9%84%D8%AA%D8%AD%D9%83%D9%85-->لوحة التحكم</button>";
 
     // شريط تابات عادي على الشاشات الكبيرة + زرار قائمة منسدلة (اسم + سهم) يظهر بدل الشريط على الموبايل/التابلت
     // ترتيب محتوى القائمة المنسدلة زي ما طلب المستخدم بالظبط: الاسم، ثم الدور، ثم قائمة التابات، ثم خروج
     var html = '<div class="app-shell"><div class="topbar">' +
-      '<div class="brand"><img src="assets/img/mark.svg" alt=""><span id="brand-section-name">مركز عيادات سونو التخصصية</span></div>' +
+      "<div class=\"brand\"><img src=\"assets/img/mark.svg\" alt=\"\"><span id=\"brand-section-name\"> <!--ssmpd-i18n:%D9%85%D8%B1%D9%83%D8%B2%20%D8%B9%D9%8A%D8%A7%D8%AF%D8%A7%D8%AA%20%D8%B3%D9%88%D9%86%D9%88%20%D8%A7%D9%84%D8%AA%D8%AE%D8%B5%D8%B5%D9%8A%D8%A9-->مركز عيادات سونو التخصصية</span></div>" +
       '<div style="position:relative;flex:1;max-width:280px;margin:0 10px;">' +
-      '<input id="global-search-input" type="search" placeholder="بحث (Ctrl+K)…" autocomplete="off" style="width:100%;padding:7px 10px;border-radius:10px;border:1px solid var(--c-border);font-size:12px;">' +
+      "<input id=\"global-search-input\" type=\"search\" placeholder=\"بحث (Ctrl+K)…\" data-i18n-placeholder=\"%D8%A8%D8%AD%D8%AB%20(Ctrl%2BK)%E2%80%A6\" data-i18n-placeholder=\"%D8%A8%D8%AD%D8%AB%20(Ctrl%2BK)%E2%80%A6\" autocomplete=\"off\" style=\"width:100%;padding:7px 10px;border-radius:10px;border:1px solid var(--c-border);font-size:12px;\">" +
       '<div id="global-search-results" hidden style="position:absolute;top:100%;right:0;left:0;background:var(--c-card);border:1px solid var(--c-border);border-radius:10px;margin-top:4px;max-height:340px;overflow:auto;z-index:50;box-shadow:0 6px 18px rgba(0,0,0,.12);"></div>' +
       '</div>' +
       '<button class="btn ghost sm" id="kudos-send-btn" type="button" title="ابعت شكر" hidden>🎉 شكر</button>' +
       '<div style="position:relative;">' +
-      '<button class="btn ghost sm" id="notif-bell-btn" type="button" title="الإشعارات" hidden style="position:relative;">🔔' +
+      "<button class=\"btn ghost sm\" id=\"notif-bell-btn\" type=\"button\" title=\"الإشعارات\" data-i18n-title=\"%D8%A7%D9%84%D8%A5%D8%B4%D8%B9%D8%A7%D8%B1%D8%A7%D8%AA\" data-i18n-title=\"%D8%A7%D9%84%D8%A5%D8%B4%D8%B9%D8%A7%D8%B1%D8%A7%D8%AA\" hidden style=\"position:relative;\">🔔" +
       '<span id="notif-badge" hidden style="position:absolute;top:-6px;left:-6px;background:#D0402A;color:#fff;border-radius:10px;font-size:10px;padding:1px 5px;line-height:1.4;">0</span></button>' +
       '<div id="notif-panel" hidden style="position:absolute;top:100%;left:0;width:300px;background:var(--c-card);border:1px solid var(--c-border);border-radius:10px;margin-top:4px;max-height:360px;overflow:auto;z-index:60;box-shadow:0 6px 18px rgba(0,0,0,.12);"></div>' +
       '</div>' +
-      '<div class="who"><span class="role-badge">' + roleLabel + '</span> <b>' + displayName + '</b>' +
-      '<button class="user-menu-icon" id="user-menu-btn" type="button" title="القائمة" aria-label="القائمة">☰</button>' +
-      ' <button class="btn ghost sm" id="logout-btn">خروج</button></div>' +
+      window.SSMPDI18n.buttonHtml() + '<div class="who"><span class="role-badge">' + roleLabel + '</span> <b>' + displayName + '</b>' +
+      "<button class=\"user-menu-icon\" id=\"user-menu-btn\" type=\"button\" title=\"القائمة\" data-i18n-title=\"%D8%A7%D9%84%D9%82%D8%A7%D8%A6%D9%85%D8%A9\" data-i18n-title=\"%D8%A7%D9%84%D9%82%D8%A7%D8%A6%D9%85%D8%A9\" aria-label=\"القائمة\" data-i18n-aria-label=\"%D8%A7%D9%84%D9%82%D8%A7%D8%A6%D9%85%D8%A9\" data-i18n-aria-label=\"%D8%A7%D9%84%D9%82%D8%A7%D8%A6%D9%85%D8%A9\">☰</button>" +
+      " <button class=\"btn ghost sm\" id=\"logout-btn\"> <!--ssmpd-i18n:%D8%AE%D8%B1%D9%88%D8%AC-->خروج</button></div>" +
       '<button class="menu-toggle" id="menu-toggle-btn" type="button"><b>' + displayName + '</b><span class="mt-arrow">▾</span></button>' +
       '</div>' +
       '<div class="user-dropdown" id="user-dropdown">' +
       '<div class="mm-name">' + displayName + '</div>' +
       '<div class="mm-role"><span class="role-badge">' + roleLabel + '</span></div>' +
       '<div class="ud-items">' + ddItems + '</div>' +
-      '<button class="btn ghost sm mm-logout" id="logout-btn-dropdown">خروج</button>' +
+      "<button class=\"btn ghost sm mm-logout\" id=\"logout-btn-dropdown\"> <!--ssmpd-i18n:%D8%AE%D8%B1%D9%88%D8%AC-->خروج</button>" +
       '</div>' +
       '<div class="tabs" id="tabs-bar">' + tabButtonsHtml() + '</div>' +
       '<div class="mobile-menu" id="mobile-menu">' +
       '<div class="mm-name">' + displayName + '</div>' +
       '<div class="mm-role"><span class="role-badge">' + roleLabel + '</span></div>' +
       '<div class="mm-tabs">' + tabButtonsHtml() + '</div>' +
-      '<button class="btn ghost sm mm-logout" id="logout-btn-mobile">خروج</button>' +
+      "<button class=\"btn ghost sm mm-logout\" id=\"logout-btn-mobile\"> <!--ssmpd-i18n:%D8%AE%D8%B1%D9%88%D8%AC-->خروج</button>" +
       '</div>' +
       '<main class="view" id="view-container"></main>' +
-      '<footer style="text-align:center;font-size:11px;color:var(--c-muted);padding:14px 0;">© جميع الحقوق محفوظة لشركة دار النقاهة الطبية</footer></div>';
+      "<footer style=\"text-align:center;font-size:11px;color:var(--c-muted);padding:14px 0;\"> <!--ssmpd-i18n:%C2%A9%20%D8%AC%D9%85%D9%8A%D8%B9%20%D8%A7%D9%84%D8%AD%D9%82%D9%88%D9%82%20%D9%85%D8%AD%D9%81%D9%88%D8%B8%D8%A9%20%D9%84%D8%B4%D8%B1%D9%83%D8%A9%20%D8%AF%D8%A7%D8%B1%20%D8%A7%D9%84%D9%86%D9%82%D8%A7%D9%87%D8%A9%20%D8%A7%D9%84%D8%B7%D8%A8%D9%8A%D8%A9-->© جميع الحقوق محفوظة لشركة دار النقاهة الطبية</footer></div>";
     root().innerHTML = html;
 
     var mobileMenu = document.getElementById("mobile-menu");
@@ -351,22 +352,22 @@
     var admin = window.SSMPDAuth.currentAdmin;
     var panel = document.getElementById("notif-panel");
     if (!panel || !admin) return;
-    panel.innerHTML = '<div style="padding:12px;font-size:12px;color:var(--c-muted);">بيحمّل…</div>';
+    panel.innerHTML = "<div style=\"padding:12px;font-size:12px;color:var(--c-muted);\"> <!--ssmpd-i18n:%D8%A8%D9%8A%D8%AD%D9%85%D9%91%D9%84%E2%80%A6-->بيحمّل…</div>";
     window.SSMPDDb.getNotificationLastSeen(admin.id).then(function (row) {
       var seenBefore = (row && row.last_seen_at) || notifDefaultSince();
       return fetchNotifItemsRecent(20).then(function (items) { return { items: items, seenBefore: seenBefore }; });
     }).then(function (res) {
       var items = res.items;
       var body = !items.length
-        ? '<div style="padding:14px;font-size:12px;color:var(--c-muted);text-align:center;">مفيش إشعارات</div>'
+        ? "<div style=\"padding:14px;font-size:12px;color:var(--c-muted);text-align:center;\"> <!--ssmpd-i18n:%D9%85%D9%81%D9%8A%D8%B4%20%D8%A5%D8%B4%D8%B9%D8%A7%D8%B1%D8%A7%D8%AA-->مفيش إشعارات</div>"
         : items.map(function (it) { return notifItemHtml(it, res.seenBefore); }).join("");
-      panel.innerHTML = '<div style="padding:6px 10px;font-weight:bold;font-size:12px;border-bottom:1px solid var(--c-border);">آخر الأنشطة</div>' + body +
-        '<button type="button" id="notif-see-all-btn" style="display:block;width:100%;text-align:center;padding:9px;border:none;background:none;color:var(--c-primary,#0F369D);font-size:12px;cursor:pointer;">كل الإشعارات</button>';
+      panel.innerHTML = "<div style=\"padding:6px 10px;font-weight:bold;font-size:12px;border-bottom:1px solid var(--c-border);\"> <!--ssmpd-i18n:%D8%A2%D8%AE%D8%B1%20%D8%A7%D9%84%D8%A3%D9%86%D8%B4%D8%B7%D8%A9-->آخر الأنشطة</div>" + body +
+        "<button type=\"button\" id=\"notif-see-all-btn\" style=\"display:block;width:100%;text-align:center;padding:9px;border:none;background:none;color:var(--c-primary,#0F369D);font-size:12px;cursor:pointer;\"> <!--ssmpd-i18n:%D9%83%D9%84%20%D8%A7%D9%84%D8%A5%D8%B4%D8%B9%D8%A7%D8%B1%D8%A7%D8%AA-->كل الإشعارات</button>";
       var seeAllBtn = document.getElementById("notif-see-all-btn");
       if (seeAllBtn) seeAllBtn.onclick = function () { panel.hidden = true; openNotifFullPage(); };
       return window.SSMPDDb.markNotificationsSeen(admin.id);
     }).catch(function () {
-      panel.innerHTML = '<div style="padding:10px;font-size:12px;color:#D0402A;">تعذّر تحميل الإشعارات</div>';
+      panel.innerHTML = "<div style=\"padding:10px;font-size:12px;color:#D0402A;\"> <!--ssmpd-i18n:%D8%AA%D8%B9%D8%B0%D9%91%D8%B1%20%D8%AA%D8%AD%D9%85%D9%8A%D9%84%20%D8%A7%D9%84%D8%A5%D8%B4%D8%B9%D8%A7%D8%B1%D8%A7%D8%AA-->تعذّر تحميل الإشعارات</div>";
     });
   }
 
@@ -380,7 +381,7 @@
     backdrop.id = "notif-fullpage-backdrop";
     backdrop.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;display:flex;align-items:center;justify-content:center;";
     backdrop.innerHTML = '<div style="background:var(--c-card);border-radius:12px;width:420px;max-width:92vw;max-height:82vh;display:flex;flex-direction:column;overflow:hidden;">' +
-      '<div style="padding:10px 14px;border-bottom:1px solid var(--c-border);display:flex;justify-content:space-between;align-items:center;"><b style="font-size:13px;">كل الإشعارات</b><button type="button" id="notif-fp-close" style="border:none;background:none;font-size:18px;cursor:pointer;">×</button></div>' +
+      "<div style=\"padding:10px 14px;border-bottom:1px solid var(--c-border);display:flex;justify-content:space-between;align-items:center;\"><b style=\"font-size:13px;\"> <!--ssmpd-i18n:%D9%83%D9%84%20%D8%A7%D9%84%D8%A5%D8%B4%D8%B9%D8%A7%D8%B1%D8%A7%D8%AA-->كل الإشعارات</b><button type=\"button\" id=\"notif-fp-close\" style=\"border:none;background:none;font-size:18px;cursor:pointer;\">×</button></div>" +
       '<div id="notif-fp-settings" style="padding:10px 14px;border-bottom:1px solid var(--c-border);font-size:12px;"></div>' +
       '<div id="notif-fp-list" style="overflow:auto;flex:1;"></div>' +
       '</div>';
@@ -391,7 +392,7 @@
     function loadList(settings) {
       var listEl = document.getElementById("notif-fp-list");
       if (!listEl) return;
-      listEl.innerHTML = '<div style="padding:14px;font-size:12px;color:var(--c-muted);">بيحمّل…</div>';
+      listEl.innerHTML = "<div style=\"padding:14px;font-size:12px;color:var(--c-muted);\"> <!--ssmpd-i18n:%D8%A8%D9%8A%D8%AD%D9%85%D9%91%D9%84%E2%80%A6-->بيحمّل…</div>";
       var seenBefore = settings.last_seen_at || notifDefaultSince();
       var p = settings.clear_mode === "days"
         ? fetchNotifItems(new Date(Date.now() - settings.clear_value * 86400000).toISOString(), 300)
@@ -399,10 +400,10 @@
       p.then(function (items) {
         listEl.innerHTML = items.length
           ? items.map(function (it) { return notifItemHtml(it, seenBefore); }).join("")
-          : '<div style="padding:14px;font-size:12px;color:var(--c-muted);text-align:center;">مفيش إشعارات</div>';
+          : "<div style=\"padding:14px;font-size:12px;color:var(--c-muted);text-align:center;\"> <!--ssmpd-i18n:%D9%85%D9%81%D9%8A%D8%B4%20%D8%A5%D8%B4%D8%B9%D8%A7%D8%B1%D8%A7%D8%AA-->مفيش إشعارات</div>";
         window.SSMPDDb.markNotificationsSeen(admin.id).catch(function () {});
       }).catch(function () {
-        listEl.innerHTML = '<div style="padding:10px;font-size:12px;color:#D0402A;">تعذّر التحميل</div>';
+        listEl.innerHTML = "<div style=\"padding:10px;font-size:12px;color:#D0402A;\"> <!--ssmpd-i18n:%D8%AA%D8%B9%D8%B0%D9%91%D8%B1%20%D8%A7%D9%84%D8%AA%D8%AD%D9%85%D9%8A%D9%84-->تعذّر التحميل</div>";
       });
     }
 
@@ -410,10 +411,10 @@
       var box = document.getElementById("notif-fp-settings");
       if (!box) return;
       box.innerHTML = 'اعرض آخر: ' +
-        '<label style="margin-inline-start:6px;"><input type="radio" name="notif-clear-mode" value="count"' + (settings.clear_mode !== "days" ? " checked" : "") + '> عدد</label>' +
-        '<label style="margin-inline-start:10px;"><input type="radio" name="notif-clear-mode" value="days"' + (settings.clear_mode === "days" ? " checked" : "") + '> يوم</label>' +
+        '<label style="margin-inline-start:6px;"><input type="radio" name="notif-clear-mode" value="count"' + (settings.clear_mode !== "days" ? " checked" : "") + "> <!--ssmpd-i18n:%D8%B9%D8%AF%D8%AF--> عدد</label>" +
+        '<label style="margin-inline-start:10px;"><input type="radio" name="notif-clear-mode" value="days"' + (settings.clear_mode === "days" ? " checked" : "") + "> <!--ssmpd-i18n:%D9%8A%D9%88%D9%85--> يوم</label>" +
         '<input type="number" min="1" id="notif-clear-value" value="' + (settings.clear_value || 50) + '" style="width:70px;margin-inline-start:10px;padding:3px 6px;border:1px solid var(--c-border);border-radius:6px;">' +
-        '<button type="button" id="notif-clear-save" class="btn ghost sm" style="margin-inline-start:8px;">حفظ</button>';
+        "<button type=\"button\" id=\"notif-clear-save\" class=\"btn ghost sm\" style=\"margin-inline-start:8px;\"> <!--ssmpd-i18n:%D8%AD%D9%81%D8%B8-->حفظ</button>";
       document.getElementById("notif-clear-save").onclick = function () {
         var mode = box.querySelector('input[name="notif-clear-mode"]:checked').value;
         var val = parseInt(document.getElementById("notif-clear-value").value, 10) || 50;
@@ -494,7 +495,7 @@
           leadsItems.forEach(function (l) { html += itemBtn("leads", "", l.customer_name || l.phone_raw || "—"); });
         }
         if (patientsItems.length) {
-          html += '<div style="padding:6px 10px;font-size:11px;color:var(--c-muted);">أرشيف المرضى</div>';
+          html += "<div style=\"padding:6px 10px;font-size:11px;color:var(--c-muted);\"> <!--ssmpd-i18n:%D8%A3%D8%B1%D8%B4%D9%8A%D9%81%20%D8%A7%D9%84%D9%85%D8%B1%D8%B6%D9%89-->أرشيف المرضى</div>";
           patientsItems.forEach(function (p) { html += itemBtn("patients", "", p.full_name || p.phone || "—"); });
         }
         if (!html) html = '<div style="padding:10px;font-size:12px;color:var(--c-muted);">مفيش نتائج</div>';
@@ -561,7 +562,7 @@
     var backdrop = document.createElement("div");
     backdrop.className = "modal-backdrop";
     backdrop.innerHTML = '<div class="modal" style="max-width:420px;">' +
-      '<div class="modal-head"><h3>نسيت كلمة السر؟</h3><button class="modal-close">×</button></div>' +
+      "<div class=\"modal-head\"><h3> <!--ssmpd-i18n:%D9%86%D8%B3%D9%8A%D8%AA%20%D9%83%D9%84%D9%85%D8%A9%20%D8%A7%D9%84%D8%B3%D8%B1%D8%9F-->نسيت كلمة السر؟</h3><button class=\"modal-close\">×</button></div>" +
       '<p style="font-size:13px;color:var(--c-text);line-height:1.7;">كلمة السر بتتغيّر بس عن طريق السوبر أدمن — تواصل معاه وهيغيّرها لك مباشرة من لوحة التحكم.</p>' +
       '<button class="btn block" id="fp-ok">تمام</button>' +
       '</div>';
@@ -577,10 +578,10 @@
     var backdrop = document.createElement("div");
     backdrop.className = "modal-backdrop";
     backdrop.innerHTML = '<div class="modal" style="max-width:420px;">' +
-      '<div class="modal-head"><h3>تغيير كلمة السر</h3><button class="modal-close">×</button></div>' +
-      '<div class="field"><label>كلمة السر الجديدة</label><input id="cp-pass1" type="password" autocomplete="new-password" autocapitalize="off" autocorrect="off" spellcheck="false"></div>' +
-      '<div class="field"><label>تأكيد كلمة السر</label><input id="cp-pass2" type="password" autocomplete="new-password" autocapitalize="off" autocorrect="off" spellcheck="false"></div>' +
-      '<button class="btn block" id="cp-save" style="margin-top:10px;">حفظ</button>' +
+      "<div class=\"modal-head\"><h3> <!--ssmpd-i18n:%D8%AA%D8%BA%D9%8A%D9%8A%D8%B1%20%D9%83%D9%84%D9%85%D8%A9%20%D8%A7%D9%84%D8%B3%D8%B1-->تغيير كلمة السر</h3><button class=\"modal-close\">×</button></div>" +
+      "<div class=\"field\"><label> <!--ssmpd-i18n:%D9%83%D9%84%D9%85%D8%A9%20%D8%A7%D9%84%D8%B3%D8%B1%20%D8%A7%D9%84%D8%AC%D8%AF%D9%8A%D8%AF%D8%A9-->كلمة السر الجديدة</label><input id=\"cp-pass1\" type=\"password\" autocomplete=\"new-password\" autocapitalize=\"off\" autocorrect=\"off\" spellcheck=\"false\"></div>" +
+      "<div class=\"field\"><label> <!--ssmpd-i18n:%D8%AA%D8%A3%D9%83%D9%8A%D8%AF%20%D9%83%D9%84%D9%85%D8%A9%20%D8%A7%D9%84%D8%B3%D8%B1-->تأكيد كلمة السر</label><input id=\"cp-pass2\" type=\"password\" autocomplete=\"new-password\" autocapitalize=\"off\" autocorrect=\"off\" spellcheck=\"false\"></div>" +
+      "<button class=\"btn block\" id=\"cp-save\" style=\"margin-top:10px;\"> <!--ssmpd-i18n:%D8%AD%D9%81%D8%B8-->حفظ</button>" +
       '</div>';
     document.body.appendChild(backdrop);
 
@@ -613,7 +614,7 @@
     // اسم الشعار بيتغيّر حسب السكشن المفتوح دلوقتي: اسم المركز + اسم السكشن
     var brandName = document.getElementById("brand-section-name");
     if (brandName) {
-      brandName.textContent = "مركز عيادات سونو التخصصية" + (TAB_LABELS[tab] ? " | " + TAB_LABELS[tab] : "");
+      brandName.innerHTML = window.SSMPDI18n.textHtml("مركز عيادات سونو التخصصية") + (TAB_LABELS[tab] ? " | " + window.SSMPDI18n.textHtml(TAB_LABELS[tab]) : "");
     }
 
     // فصل بصري: تابات السويت الرئيسي (SSMPD) بتتخفي تماماً لما نكون جوه موديول
@@ -661,7 +662,7 @@
     var notice = document.createElement('div');
     notice.id = 'ssmpd-refresh-notice';notice.setAttribute('role','status');
     notice.style.cssText='position:fixed;bottom:18px;left:18px;z-index:90;display:flex;gap:10px;align-items:center;max-width:calc(100vw - 36px);padding:10px 12px;background:#fff;border:1px solid #cdd6e3;border-radius:10px;box-shadow:0 4px 20px #16212e22;font-size:12px;direction:rtl';
-    notice.innerHTML='<span>وصلت تحديثات للبيانات</span><button type="button" class="btn ghost sm" style="padding:6px 10px;min-height:34px;">تحديث الشاشة</button>';
+    notice.innerHTML="<span> <!--ssmpd-i18n:%D9%88%D8%B5%D9%84%D8%AA%20%D8%AA%D8%AD%D8%AF%D9%8A%D8%AB%D8%A7%D8%AA%20%D9%84%D9%84%D8%A8%D9%8A%D8%A7%D9%86%D8%A7%D8%AA-->وصلت تحديثات للبيانات</span><button type=\"button\" class=\"btn ghost sm\" style=\"padding:6px 10px;min-height:34px;\"> <!--ssmpd-i18n:%D8%AA%D8%AD%D8%AF%D9%8A%D8%AB%20%D8%A7%D9%84%D8%B4%D8%A7%D8%B4%D8%A9-->تحديث الشاشة</button>";
     notice.querySelector('button').onclick=function(){
       var dialogs=Array.from(document.querySelectorAll('.modal-backdrop,.modal-overlay,.modal,[role="dialog"]')).some(function(el){return !el.hidden && getComputedStyle(el).display!=='none' && getComputedStyle(el).visibility!=='hidden';});
       if(dialogs){window.SSMPDToast.show('احفظ المدخلات واقفل النافذة قبل تحديث الشاشة.','info');return;}
@@ -711,7 +712,7 @@
       var backdrop = document.createElement("div");
       backdrop.className = "modal-backdrop";
       backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>🎉 ابعت شكر لموظف</h3><button class="modal-close">×</button></div>' +
-        '<div class="field"><label>الموظف</label><select id="kudos-to"><option value="">— اختر —</option>' +
+        "<div class=\"field\"><label> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D9%88%D8%B8%D9%81-->الموظف</label><select id=\"kudos-to\"><option value=\"\"> <!--ssmpd-i18n:%E2%80%94%20%D8%A7%D8%AE%D8%AA%D8%B1%20%E2%80%94-->— اختر —</option>" +
         others.map(function (a) { return '<option value="' + a.id + '">' + escapeHtml(a.name) + '</option>'; }).join("") + '</select></div>' +
         '<div class="field"><label>رسالة الشكر</label><textarea id="kudos-msg" placeholder="مثال: شكراً على المجهود الرائع في حملة الأسبوع ده!"></textarea></div>' +
         '<div style="text-align:left;margin-top:10px;display:flex;gap:8px;justify-content:space-between;align-items:center;">' +
@@ -728,7 +729,7 @@
         var box = document.getElementById("kudos-history-box");
         box.hidden = !box.hidden;
         if (box.hidden) return;
-        box.innerHTML = '<div style="font-size:12px;color:var(--c-muted);">بيحمّل…</div>';
+        box.innerHTML = "<div style=\"font-size:12px;color:var(--c-muted);\"> <!--ssmpd-i18n:%D8%A8%D9%8A%D8%AD%D9%85%D9%91%D9%84%E2%80%A6-->بيحمّل…</div>";
         window.SSMPDDb.listRecentKudos(15).then(function (rows) {
           box.innerHTML = (rows || []).length ? rows.map(function (r) {
             return '<div style="padding:6px 0;border-bottom:1px solid var(--c-border);font-size:12px;">' +
@@ -736,7 +737,7 @@
               ' — ' + escapeHtml(r.message) +
               '<div style="color:var(--c-muted);font-size:10px;margin-top:2px;">بواسطة ' + escapeHtml((r.from_admin && r.from_admin.name) || "—") + '</div></div>';
           }).join("") : '<div style="font-size:12px;color:var(--c-muted);">مفيش شكر اتبعت لسه</div>';
-        }).catch(function () { box.innerHTML = '<div style="font-size:12px;color:#D0402A;">تعذّر التحميل</div>'; });
+        }).catch(function () { box.innerHTML = "<div style=\"font-size:12px;color:#D0402A;\"> <!--ssmpd-i18n:%D8%AA%D8%B9%D8%B0%D9%91%D8%B1%20%D8%A7%D9%84%D8%AA%D8%AD%D9%85%D9%8A%D9%84-->تعذّر التحميل</div>"; });
       };
       document.getElementById("kudos-preview").onclick = function () {
         var toSel = document.getElementById("kudos-to");
@@ -816,4 +817,5 @@
     });
   });
 })();
+
 
