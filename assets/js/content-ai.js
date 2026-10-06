@@ -68,6 +68,7 @@
     backdrop.style.zIndex = "9999";
     backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>توليد أفكار بالذكاء الاصطناعي</h3><button class="modal-close">×</button></div>' +
       '<p style="font-size:12px;color:var(--c-muted);">سيظهر ٣ اقتراحات جديدة فقط. اختَر واحدة للتنفيذ أو احفظ الباقي في بنك الأفكار.</p>' +
+      '<div class="field"><label for="ai-objective">هدف البوست</label>' + window.SSMPDWorkflow.objectiveSelectHtml('ai-objective', context.advertisingObjective) + '</div>' +
       '<div class="field"><label>نوع الطلب</label><select id="ai-mode"><option value="ideas">توليد ٣ أفكار جديدة</option><option value="develop">تطوير الفكرة/المسودة المكتوبة</option></select></div>' +
       '<div class="field"><label>الموضوع أو توجيه إضافي</label><textarea id="ai-topic" placeholder="مثال: الصداع النصفي، أو اتركه ليستخدم بيانات المادة"></textarea></div>' +
       '<div id="ai-context-note" style="font-size:12px;color:var(--c-muted);margin-bottom:10px;"></div>' +
@@ -84,6 +85,10 @@
       var slot = backdrop.querySelector("#ai-results");
       var mode = backdrop.querySelector("#ai-mode").value;
       var topic = backdrop.querySelector("#ai-topic").value.trim();
+      context.advertisingObjective = backdrop.querySelector("#ai-objective").value;
+      if (!context.advertisingObjective) { slot.textContent = "اختر هدف البوست قبل التوليد."; backdrop.querySelector("#ai-objective").focus(); return; }
+      var objectiveField = document.getElementById("ci-objective");
+      if (objectiveField) { objectiveField.value = context.advertisingObjective; objectiveField.dispatchEvent(new Event("change", { bubbles: true })); }
       if (!context.brand) { alert("اختر الصفحة أولًا من نموذج المحتوى."); return; }
       if (mode === "develop" && !(topic || context.title || context.body)) { alert("اكتب فكرة أو مسودة لتطويرها."); return; }
       btn.disabled = true; btn.textContent = "جاري التوليد…"; slot.innerHTML = '<div class="loading" style="margin-top:10px;">يتم إعداد ٣ اقتراحات…</div>';

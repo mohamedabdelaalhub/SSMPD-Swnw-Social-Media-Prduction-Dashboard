@@ -903,10 +903,11 @@
     return '<div class="section ci-panel" style="margin-top:14px;">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" id="ci-toggle-head">' +
       '<h3 style="margin:0;font-size:14px;">✨ ذكاء المحتوى</h3><span id="ci-toggle-arrow">▾</span></div>' +
-      '<div id="ci-body" style="margin-top:10px;">' +
-      '<div class="field"><label>الهدف الإعلاني</label>' + ciObjectiveSelectHtml("ci-objective") + '</div>' +
+      '<div class="content-brief-fields" style="margin-top:10px;">' +
+      '<div class="field"><label for="ci-objective">هدف البوست</label>' + ciObjectiveSelectHtml("ci-objective") + '</div>' +
       '<div class="field"><label>شكل المحتوى (اختياري)</label>' + ciFormatSelectHtml("ci-format") + '</div>' +
-      '<div class="field"><label>الموضوع / الخدمة (اختياري)</label><input id="ci-topic" placeholder="مثال: الصداع النصفي، رسم المخ، تنميل الأطراف..."></div>' +
+      '<div class="field"><label>الموضوع / الخدمة (اختياري)</label><input id="ci-topic" placeholder="مثال: الصداع النصفي، رسم المخ، تنميل الأطراف..."></div></div>' +
+      '<div id="ci-body" style="margin-top:10px;">' +
       '<div id="ci-output"><div class="empty-state" style="font-size:12px;">اختر التخصص فوق ثم الهدف الإعلاني لعرض التوصيات</div></div>' +
       '</div></div>';
   }
@@ -1407,6 +1408,7 @@ function ciCopyFallbackBrief(ctx, returnOnly) {
 
   window.SSMPDWorkflow = {
     getContentAIBrief: getContentAIBrief,
+    objectiveSelectHtml: ciObjectiveSelectHtml,
     STAGES: STAGES,
     draftSubmissionHtml: draftSubmissionHtml,
     wireDraftSubmission: wireDraftSubmission,
