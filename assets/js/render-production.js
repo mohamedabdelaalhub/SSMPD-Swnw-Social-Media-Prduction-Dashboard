@@ -89,6 +89,7 @@
     if (!template && fmtKey === "video") template = "medical_educational";
 
     return {
+      raw: x,
       number: String(x.number || x.idea_number || idx + 1),
       title: stripMd(x.title || ""),
       idea: stripMd(x.idea || x.description || ""),
@@ -360,7 +361,7 @@ function openAgentImportModal(parentBackdrop) {
           document.getElementById("cf-duration-max").value = h.durationMax == null ? "" : h.durationMax;
           document.getElementById("cf-video-template").value = h.videoTemplate || "";
           document.getElementById("cf-hypothesis").value = h.why || "";
-          document.getElementById("cf-agent-raw").value = raw;
+          document.getElementById("cf-agent-raw").value = h.raw ? JSON.stringify(Object.assign({},h.raw,{original_agent_output:raw})) : raw;
 
           var fmt = document.getElementById("ci-format");
           if (fmt && h.formatKey) fmt.value = h.formatKey;
@@ -1022,6 +1023,7 @@ function openAgentImportModal(parentBackdrop) {
 
   window.SSMPDRenderProduction = { render: render, renderVideoJobSection: renderVideoJobSection };
 })();
+
 
 
 

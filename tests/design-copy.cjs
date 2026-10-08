@@ -1,0 +1,20 @@
+const assert=require('assert/strict'),fs=require('fs'),vm=require('vm'),{stripTypeScriptTypes}=require('module');
+const copy={design_headline:'المناعة مش منتج سحري',design_subtitle:'نومك وأكلك وحركتك بيفرقوا في صحتك',design_cta:'احفظ وشارك'};
+const w={};vm.runInNewContext(fs.readFileSync('assets/js/design-copy.js','utf8'),{window:w});
+assert.equal(w.SSMPDDesignCopy.count(copy.design_headline),4);assert.equal(w.SSMPDDesignCopy.count(copy.design_subtitle),6);
+assert.throws(()=>w.SSMPDDesignCopy.validate({...copy,design_headline:'واحد اتنين تلاتة أربعة خمسة ستة'}));assert.throws(()=>w.SSMPDDesignCopy.validate({...copy,design_subtitle:'واحد اتنين تلاتة أربعة خمسة ستة سبعة تمانية تسعة'}));
+assert.equal(w.SSMPDDesignCopy.validate({...copy,design_headline:'«المناعة، مش منتج سحري»'}).design_headline,copy.design_headline);
+assert.equal(w.SSMPDDesignCopy.initial({title:'b',agent_raw_output:JSON.stringify({ideas:[{title:'a',design_headline:'wrong'},{title:'b',...copy}]})}).headline,copy.design_headline);
+assert.equal(w.SSMPDDesignCopy.initial({title:'a',agent_raw_output:'legacy prose'}).headline,'a');
+(async()=>{
+ let handler,sent,reply=copy,allowed=true,active=true,calls=0;
+ const code=stripTypeScriptTypes(fs.readFileSync('supabase/functions/content-ai/index.ts','utf8').replace(/^import .*\n/,''));
+ const db={rpc:async()=>({data:active?'admin':null}),from:()=>({select(){return this},eq(){return this},single:async()=>allowed?{data:{title:'original',brand:'sono',caption_text:'existing caption'}}:{error:{}}})};
+ vm.runInNewContext(code,{createClient:()=>db,Deno:{env:{get:()=> 'test-only'},serve:fn=>handler=fn},Response,fetch:async(url,request)=>{calls++;sent=JSON.parse(request.body);return {ok:true,json:async()=>({output_text:JSON.stringify(reply)})}}});
+ const req=(body,auth=true)=>new Request('https://example.test',{method:'POST',headers:auth?{Authorization:'Bearer test-only'}:{},body:JSON.stringify(body)});
+ let res=await handler(req({mode:'design_copy',content_id:'test',caption:'malicious replacement'}));assert.equal(res.status,200);assert.equal((await res.json()).design_copy.design_headline,copy.design_headline);assert.equal(JSON.parse(sent.input).caption,'existing caption');assert(sent.instructions.includes('5 كلمات')&&sent.instructions.includes('8 كلمات'));
+ reply={...copy,design_headline:'واحد اتنين تلاتة أربعة خمسة ستة'};assert.equal((await handler(req({mode:'design_copy',content_id:'test'}))).status,400);
+ const before=calls;allowed=false;assert.equal((await handler(req({mode:'design_copy',content_id:'private'}))).status,400);assert.equal(calls,before);allowed=true;active=false;assert.equal((await handler(req({mode:'design_copy',content_id:'test'}))).status,400);assert.equal(calls,before);assert.equal((await handler(req({mode:'design_copy',content_id:'test'},false))).status,400);
+ active=true;const idea={title:'عنوان',idea:'فكرة',hook:'هوك',angle:'زاوية',format:'image_post',caption:'كابشن',cta_type:'save_share',cta_text:'شارك',hypothesis_reason:'فرضية',...copy};reply={ideas:[idea,{...idea},{...idea}]};res=await handler(req({brand:'sono',mode:'ideas',preferred_format:'image_post'}));assert.equal(res.status,200);assert(sent.text.format.schema.properties.ideas.items.required.includes('design_subtitle'));assert.equal((await res.json()).ideas.length,3);
+ console.log('PASS: 5/8 word limits, punctuation, correct import mapping, RLS/auth refusal without AI calls, server-owned content, single suggestion, and existing three-idea output. No live AI requests.');
+})().catch(e=>{console.error(e);process.exitCode=1});

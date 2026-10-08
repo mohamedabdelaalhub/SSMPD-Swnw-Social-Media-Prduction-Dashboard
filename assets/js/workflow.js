@@ -982,6 +982,7 @@
     lines.push("11. video_template — mandatory for video; choose the closest of medical_educational, doctor_talking, quick_tips");
     lines.push("12. hypothesis_reason — mandatory; explain why this is a useful test given the evidence level");
     lines.push("");
+    lines.push("DESIGN COPY STYLE: Always include design_headline (maximum 5 words), design_subtitle (maximum 8 words) and design_cta (2–4 words). Main headline is one engaging idea. Subtitle adds meaning without repeating it. Use natural Egyptian Arabic, proofread spelling. No commas, quotation marks, colons, ellipses or decorative punctuation in design copy. Never cut a sentence to meet the limit; rewrite it. CTA matches the objective and content, and emergency safety overrides booking. These are distinct from hook, caption and cta_text.");
     lines.push("QUALITY RULES:");
     lines.push("- Never leave caption, CTA, hook, angle, or hypothesis_reason blank.");
     lines.push("- For video, never leave script or duration blank.");
@@ -1007,7 +1008,7 @@
     lines.push("After the human-readable section, add ONE structured block at the very end and nothing after it:");
     lines.push("SSMPD_STRUCTURED_JSON");
     lines.push("\`\`\`json");
-    lines.push('{"ideas":[{"number":1,"title":"","idea":"","hook":"","angle":"","format":"video","script":"","caption":"","cta_type":"save_share","cta_text":"","duration_min_seconds":25,"duration_max_seconds":30,"video_template":"medical_educational","hypothesis_reason":""}]}');
+    lines.push('{"ideas":[{"number":1,"design_headline":"","design_subtitle":"","design_cta":"","title":"","idea":"","hook":"","angle":"","format":"video","script":"","caption":"","cta_type":"save_share","cta_text":"","duration_min_seconds":25,"duration_max_seconds":30,"video_template":"medical_educational","hypothesis_reason":""}]}');
     lines.push("\`\`\`");
     lines.push("SSMPD_STRUCTURED_JSON_END");
     lines.push("Repeat one object per idea. Use exactly these keys.");
@@ -1455,6 +1456,7 @@ function ciCopyFallbackBrief(ctx, returnOnly) {
     refreshContentIntelligence: refreshContentIntelligence
   };
 })();
+
 
 
 

@@ -8,6 +8,7 @@
   }
   function normalise(x) {
     x = x || {};
+    if(x.raw_output)x=Object.assign({},x.raw_output,x);
     return {
       raw: x,
       title: x.title || "",
@@ -32,6 +33,7 @@
       '<div style="font-size:12px;margin:5px 0;"><b>الافتتاحية:</b> ' + esc(idea.hook) + '</div>' +
       '<div style="font-size:12px;margin:5px 0;"><b>الزاوية:</b> ' + esc(idea.angle) + '</div>' +
       "<div style=\"font-size:12px;margin:5px 0;\"><b> <!--ssmpd-i18n:%D8%A7%D9%84%D8%B4%D9%83%D9%84%3A-->الشكل:</b> " + esc(idea.formatKey || "—") + '</div>' +
+      '<p style="font-size:12px">نصوص التصميم — ' + esc(idea.raw.design_headline || '—') + ' / ' + esc(idea.raw.design_subtitle || '—') + ' / ' + esc(idea.raw.design_cta || '—') + '</p>' +
       '<details style="margin-top:8px;"><summary>مراجعة النص وبيانات التنفيذ</summary>' +
       '<p style="white-space:pre-wrap;font-size:13px;">' + esc(idea.caption) + '</p>' +
       (idea.script ? "<p style=\"white-space:pre-wrap;font-size:13px;\"><b> <!--ssmpd-i18n:%D8%A7%D9%84%D8%B3%D9%83%D8%B1%D9%8A%D8%A8%D8%AA-->السكريبت</b><br>" + esc(idea.script) + '</p>' : '') +
@@ -164,3 +166,4 @@
   }
   window.SSMPDContentAI = { openGenerator: openGenerator, openIdeaBank: openIdeaBank };
 })();
+
