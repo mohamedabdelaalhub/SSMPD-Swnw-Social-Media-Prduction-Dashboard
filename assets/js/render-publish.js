@@ -390,6 +390,7 @@
       '</div>' +
       '<button class="btn ghost sm" data-toggle-publish-details="' + i.id + "\"> <!--ssmpd-i18n:%D9%81%D8%AA%D8%AD%20%D8%A7%D9%84%D8%AA%D9%81%D8%A7%D8%B5%D9%8A%D9%84-->فتح التفاصيل</button>" +
       '</div>' +
+      (canRevise(i)?'<button class="btn ghost sm" data-prepublish-edit="'+i.id+'">تعديل قبل النشر</button>':'')+
       '<div data-publication-preview="' + i.id + '"></div>' +
       '<div data-website-publish-action="' + i.id + '"></div>' +
       '<div id="publish-details-' + i.id + '" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--c-border);">' +
@@ -400,7 +401,19 @@
       '</div>';
   }
 
+  function canRevise(item){var me=window.SSMPDAuth.currentAdmin;return ['ready_to_publish','scheduled'].indexOf(item.stage)>=0&&(W.canEditItem(me,item)||window.SSMPDRoles.hasRole(me,'approver'));}
   function wire(container) {
+    container.querySelectorAll('[data-prepublish-edit]').forEach(function(button){button.onclick=async function(){button.disabled=true;try{
+      var item=await window.SSMPDDb.getContentItem(button.dataset.prepublishEdit);
+      if(!canRevise(item))throw new Error('المادة لم تعد متاحة للتعديل قبل النشر. حدّث القائمة.');
+      var jobs=await window.SSMPDDb.listMetaPublishJobsForContent([item.id]);
+      if(jobs.some(function(job){return ['processing','published','partial'].indexOf(job.status)>=0;}))throw new Error('النشر بدأ أو تم جزئيًا. حدّث الحالة قبل التعديل.');
+      W.openEditContentModal(item,function(){closePublishModal();render(document.getElementById('view-container'));notify('تم حفظ التعديل وإلغاء الجدولة. المادة الآن في الاعتماد النهائي.');},{beforePublish:true,save:async function(id,patch){
+        if(!window.SSMPDContentText.confirmSave(patch))throw new Error('تم إلغاء الحفظ.');
+        var result=await window.SSMPDDb.client.rpc('revise_content_before_publish',{p_id:id,p_patch:patch,p_expected_updated_at:item.updated_at});
+        if(result.error)throw result.error;return result.data;
+      }});
+    }catch(e){notify(e.message,'error');}finally{button.disabled=false;}};});
     container.querySelectorAll("[data-toggle-publish-details]").forEach(function (btn) {
       btn.onclick = function () {
         var id = btn.getAttribute("data-toggle-publish-details");

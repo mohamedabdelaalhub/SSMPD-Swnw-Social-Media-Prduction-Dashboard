@@ -182,7 +182,8 @@
   }
 
   // مودال تعديل عنوان/نص/صفحة المادة — بيتفتح فوق أي مودال تاني مفتوح
-  function openEditContentModal(item, onSaved) {
+  function openEditContentModal(item, onSaved, options) {
+    options=options||{};
     var backdrop = document.createElement("div");
     backdrop.className = "modal-backdrop";
     backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>تعديل المادة</h3>' +
@@ -213,6 +214,13 @@
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
     backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
 
+    if(options.beforePublish){
+      backdrop.querySelector('h3').textContent='تعديل قبل النشر';
+      backdrop.querySelector('details').open=true;
+      var message=document.createElement('p');message.textContent='حفظ التعديل يرجع المادة للاعتماد النهائي ويلغي الجدولة الحالية. بعد الاعتماد اختر النشر أو الجدولة من جديد.';
+      backdrop.querySelector('.modal-head').after(message);
+      if(item.design_file_url&&window.SSMPDDesignStudio&&window.SSMPDDesignFiles&&window.SSMPDDesignFiles.canEdit(Object.assign({},item,{stage:'final_approval'}))){var design=document.createElement('button');design.className='btn ghost';design.textContent='تعديل التصميم الحالي';design.onclick=function(){options.editDesign=true;document.getElementById('ed-save').click();};backdrop.querySelector('#ed-save').after(design);}
+    }
     document.getElementById("ed-save").onclick = function () {
       var title = document.getElementById("ed-title").value.trim();
       var body = document.getElementById("ed-body").value.trim();
@@ -228,7 +236,10 @@
       }
       if (!title) { alert("اكتب عنوان"); return; }
       if (!brand) { alert("اختر المادة دي لصفحة سونو ولا د.دينا"); return; }
-      window.SSMPDDb.updateContentItem(item.id, {
+      var save=options.save||window.SSMPDDb.updateContentItem.bind(window.SSMPDDb);
+      var saveButton=backdrop.querySelector("#ed-save");if(saveButton.disabled)return;
+      saveButton.disabled=true;
+      save(item.id, {
         title: title,
         body: body,
         brand: brand,
@@ -250,7 +261,8 @@
         .then(function (updated) {
           backdrop.remove();
           if (onSaved) onSaved(updated);
-        }).catch(function (e) { alert("خطأ: " + e.message); });
+          if(options.editDesign&&window.SSMPDDesignStudio)window.SSMPDDesignStudio.open(updated);
+        }).catch(function (e) { options.editDesign=false;alert("خطأ: " + e.message); }).finally(function(){saveButton.disabled=false;});
     };
   }
 
@@ -1443,5 +1455,6 @@ function ciCopyFallbackBrief(ctx, returnOnly) {
     refreshContentIntelligence: refreshContentIntelligence
   };
 })();
+
 
 
