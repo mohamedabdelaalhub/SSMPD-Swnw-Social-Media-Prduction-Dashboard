@@ -8,8 +8,10 @@
   layout.removeAttribute('style');tools.removeAttribute('style');preview.removeAttribute('style');
   tools.className='design-editor__tools';preview.className='design-editor__preview';
   var canvas=preview.querySelector('canvas');canvas.removeAttribute('style');
-  var wrap=document.createElement('div');wrap.className='design-editor__canvas';wrap.append(canvas);preview.append(wrap);
-  var expand=document.createElement('button');expand.type='button';expand.className='btn ghost sm design-editor__expand';expand.textContent='تكبير التصميم';expand.setAttribute('aria-expanded','false');var toolbar=document.createElement('div');toolbar.className='design-editor__preview-toolbar';toolbar.append(expand);preview.prepend(toolbar);
+  var wrap=document.createElement('div');wrap.className='design-editor__canvas';var frame=document.createElement('div');frame.className='design-editor__frame';frame.append(canvas);wrap.append(frame);preview.append(wrap);
+  function sizeFrame(){var w=Math.max(0,wrap.clientWidth-20),h=Math.max(0,wrap.clientHeight-20);var width=Math.min(w,h*1080/1350);frame.style.width=width+'px';frame.style.height=(width*1350/1080)+'px';}
+  var frameObserver=typeof ResizeObserver!=='undefined'?new ResizeObserver(sizeFrame):null;if(frameObserver)frameObserver.observe(wrap);
+  var expand=document.createElement('button');expand.type='button';expand.className='btn ghost sm design-editor__expand';expand.textContent='تكبير التصميم';expand.setAttribute('aria-expanded','false');var toolbar=document.createElement('div');toolbar.className='design-editor__preview-toolbar';toolbar.append(expand);var boundsLabel=document.createElement('span');boundsLabel.className='design-editor__bounds-label';boundsLabel.textContent='حدود التصميم · 1080 × 1350';toolbar.append(boundsLabel);preview.prepend(toolbar);
   var tabs=document.createElement('nav');tabs.className='design-editor__tabs';tabs.setAttribute('aria-label','عناصر التصميم');layout.append(tabs);
   var footer=document.createElement('footer');footer.className='design-editor__footer';modal.append(footer);
   var feedback=document.createElement('div');feedback.className='design-editor__feedback';footer.append(feedback);
@@ -60,7 +62,7 @@
   }
   root.addEventListener('focusin',fit);root.addEventListener('focusout',fit);window.addEventListener('resize',fit);
   if(viewport){viewport.addEventListener('resize',fit);viewport.addEventListener('scroll',fit);}fit();
-  var observer=new MutationObserver(function(){if(root.isConnected)return;window.removeEventListener('resize',fit);if(viewport){viewport.removeEventListener('resize',fit);viewport.removeEventListener('scroll',fit);}observer.disconnect();});observer.observe(document.body,{childList:true,subtree:true});
+  var observer=new MutationObserver(function(){if(root.isConnected)return;window.removeEventListener('resize',fit);if(frameObserver)frameObserver.disconnect();if(viewport){viewport.removeEventListener('resize',fit);viewport.removeEventListener('scroll',fit);}observer.disconnect();});observer.observe(document.body,{childList:true,subtree:true});
  }
  window.SSMPDDesignEditorLayout={mount:mount};
 })();
