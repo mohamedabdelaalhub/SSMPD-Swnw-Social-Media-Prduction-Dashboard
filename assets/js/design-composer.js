@@ -3,6 +3,7 @@
   'use strict';
   var base = new URL('../', document.currentScript.src);
   var fonts;
+  var overlayPromise;
   var logoCache=new Map();
   async function logoImage(path){var cached=logoCache.get(path);if(cached&&cached.until>Date.now())return cached.promise;var promise=window.SSMPDDb.getBrandLogoUrl(path).then(loadImage);logoCache.set(path,{until:Date.now()+300000,promise:promise});try{return await promise;}catch(e){logoCache.delete(path);throw e;}}
   function loadImage(url) {
@@ -57,7 +58,8 @@
       if(!issues.includes(message))issues.push(message);
     }
     await ready();
-    var overlay = await loadImage(new URL('design-templates/sono-white/overlay.png', base));
+    if(!overlayPromise)overlayPromise=loadImage(new URL('design-templates/sono-white/overlay.png', base)).catch(function(error){overlayPromise=null;throw error;});
+    var overlay = await overlayPromise;
     canvas.width=1080; canvas.height=1350;
     var ctx=canvas.getContext('2d');
     ctx.fillStyle='#fff'; ctx.fillRect(0,0,1080,1350);

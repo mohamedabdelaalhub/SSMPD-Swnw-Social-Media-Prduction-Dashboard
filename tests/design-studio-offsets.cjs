@@ -7,10 +7,11 @@ const {JSDOM}=require('jsdom');
  w.SSMPDDesignComposer={render:async(canvas,scene,data)=>{settings=data;canvas.width=1080;canvas.height=1350;canvas.designIssues=[];canvas.designWarnings=[];}};
  w.SSMPDDesignFiles={canEdit:()=>true,latest:async()=>({id:'version',created_at:'2026-10-08',settings:{headline:'Saved title',headlineOffset:-40,subtitleOffset:35,ctaOffset:-100}})};
  w.SSMPDDb={listBrandLogos:async()=>[],client:{from:()=>({select(){return this},eq(){return this},order(){return this},limit:async()=>({data:[]})})}};
+ w.eval(fs.readFileSync(path.resolve(__dirname,'../assets/js/design-editor-layout.js'),'utf8'));
  w.eval(fs.readFileSync(path.resolve(__dirname,'../assets/js/design-studio.js'),'utf8'));
  w.SSMPDDesignStudio.open({id:'item',brand:'sono',title:'Title',hook_text:'Hook'});
  await new Promise(resolve=>setTimeout(resolve,20));
- const tick=()=>new Promise(resolve=>setTimeout(resolve,0));
+ const tick=()=>new Promise(resolve=>setTimeout(resolve,25));
  for(const key of ['headlineOffset','subtitleOffset','ctaOffset']){
   const slider=w.document.querySelector('[data-field="'+key+'"]'),input=w.document.querySelector('[data-number-for="'+key+'"]');
   assert.equal(input.value,slider.value,'saved signed offsets restore to both controls');
