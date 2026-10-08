@@ -290,8 +290,8 @@ async function processJob(admin: ReturnType<typeof createClient>, job: any) {
     return;
   }
 
-  const contentRes = await admin.from("content_items").select("title, body, caption_text, cta_text, design_file_url, published_url, published_urls").eq("id", job.content_id).maybeSingle();
-  const content = contentRes.data as { title: string; body: string | null; caption_text: string | null; cta_text: string | null; design_file_url: string | null; published_url: string | null; published_urls: Record<string, string> | null } | null;
+  const contentRes = await admin.from("content_items").select("title, brand, body, caption_text, cta_text, hook_text, design_file_url, published_url, published_urls").eq("id", job.content_id).maybeSingle();
+  const content = contentRes.data as { title: string; brand: string | null; hook_text: string | null; body: string | null; caption_text: string | null; cta_text: string | null; design_file_url: string | null; published_url: string | null; published_urls: Record<string, string> | null } | null;
   if (!content) {
     await admin.from("meta_publish_jobs").update({ status: "failed", error_code: "CONTENT_NOT_FOUND", error_message: "مادة المحتوى غير موجودة." }).eq("id", job.id);
     return;

@@ -6,7 +6,7 @@ Website publishing now accepts approved ready, scheduled and previously publishe
 
 ## Backend activation
 
-1. In the content dashboard Supabase project, run `supabase/migrations/20261008_publication_preview_and_legacy_website.sql`. It includes the previous queue setup and can be run again safely. Do not run it in another dashboard project.
+1. In the content dashboard Supabase project, run `supabase/migrations/20261008_post_identity_hook_and_contacts.sql`. It includes the previous queue setup and can be run again safely. Do not run it in another dashboard project.
 2. Redeploy `meta-publish-process` from this complete repository. It imports `assets/js/publication-text.js` to use the same caption/CTA contract as the preview and can download private content-designs images server-side.
 3. If the website integration has not yet been activated, also deploy the existing `website-publish-process`, configure `WEBSITE_CONTENT_ENDPOINT` and `WEBSITE_WEBHOOK_SECRET` server-side, and enable its existing queue schedule. See the existing website integration guide. Never put secrets in browser configuration.
 4. Confirm one approved item against the real website and one social test post after deployment. Local tests do not establish that these external services are configured.

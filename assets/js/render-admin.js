@@ -13,7 +13,7 @@
 
   function renderBrandLogos(host) {
     var brands = { sono: 'سونو', dr_dina: 'د. دينا' };
-    var variants = { primary: 'النسخة الأولى', alternate: 'النسخة الثانية' };
+    var variants = { primary: 'للخلفيات الفاتحة — النسخة الأولى', alternate: 'للخلفيات الغامقة — النسخة الثانية' };
     var slots = [];
     Object.keys(brands).forEach(function (brand) { Object.keys(variants).forEach(function (variant) { slots.push({brand: brand, variant: variant, key: brand + '-' + variant}); }); });
     host.innerHTML = '<h3>لوجوهات البراندات</h3><p>احفظ نسختين لكل براند. الموظف يختار بين نسختي براند المحتوى، ورفع الصور متاح للسوبر أدمن.</p>' +
@@ -31,6 +31,7 @@
         var brand = slot.brand, key = slot.key, label = brands[brand] + " — " + variants[slot.variant];
         var current = rows.filter(function (r) { return r.brand === brand && (r.variant || 'primary') === slot.variant; })[0];
         var img = host.querySelector('#brand-preview-' + key);
+        img.style.background = slot.variant === 'alternate' ? '#202633' : '#fff';
         var state = host.querySelector('#brand-state-' + key);
         var input = host.querySelector('#brand-file-' + key);
         var button = host.querySelector('#brand-save-' + key);
@@ -505,5 +506,6 @@
 
   window.SSMPDRenderAdmin = { render: render };
 })();
+
 
 

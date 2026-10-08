@@ -29,7 +29,8 @@
   root.innerHTML='<div class="modal" style="width:min(1100px,96vw);max-height:94vh;overflow:auto" dir="rtl">'+
    "<div class=\"modal-head\"><h3>تصميم سونو — الصورة العلوية</h3><button class=\"modal-close\" aria-label=\"إغلاق\" data-i18n-aria-label=\"%D8%A5%D8%BA%D9%84%D8%A7%D9%82\" data-i18n-aria-label=\"%D8%A5%D8%BA%D9%84%D8%A7%D9%82\">×</button></div>"+
    '<div class="design-layout" style="display:flex;flex-wrap:wrap;gap:20px"><div style="flex:1 1 300px;min-width:0">'+
-   '<label>العنوان على التصميم<textarea data-field="headline" rows="2"></textarea></label>'+
+   '<label>نسخة اللوجو<select data-field="logoVariant"><option value="primary">للخلفيات الفاتحة — النسخة الأولى</option><option value="alternate">للخلفيات الغامقة — النسخة الثانية</option><option value="legacy" hidden>اللوجو المحفوظ في القالب</option></select></label><p data-logo-status></p>'+
+   '<label>الهوك / العنوان على التصميم<textarea data-field="headline" rows="2"></textarea></label>'+
    '<label>السطر التوضيحي<textarea data-field="subtitle" rows="2"></textarea></label>'+
    "<label> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AF%D8%B9%D9%88%D8%A9%20%D9%84%D9%84%D8%AA%D9%81%D8%A7%D8%B9%D9%84-->الدعوة للتفاعل<input data-field=\"cta\"></label><p>النصوص قابلة للتعديل قبل الحفظ. الكابشن الأصلي يظل محفوظًا.</p>"+
    '<details open><summary>حجم النص وموضعه</summary>'+
@@ -60,6 +61,7 @@
    '<div style="flex:1 1 350px;min-width:0"><canvas style="width:100%;height:auto;border:1px solid #e2e6ed"></canvas></div></div></div>';
   if(editingExisting){root.querySelector('h3').textContent='تعديل التصميم الحالي';root.querySelector('[data-save]').textContent='حفظ التعديل للمراجعة';root.querySelector('[data-generate]').textContent='استبدال الصورة بتوليد جديد';var current=document.createElement('a');current.href=item.design_file_url;current.target='_blank';current.rel='noopener';current.className='btn ghost sm';current.textContent='استعراض التصميم الحالي';root.querySelector('.modal-head').after(current);}
   document.body.appendChild(root);
+  var logos=[],savedLogo=null;
   var sceneJobId=null,sourceFile=null,sourceUrl=null;
   var scene=null,valid=false,version=0,working=false;
   var status=root.querySelector('[data-status]'),canvas=root.querySelector('canvas');
@@ -77,20 +79,20 @@
   function scheduleDraft(){if(restoring)return;clearTimeout(draftTimer);draftTimer=setTimeout(function(){saveDraft().catch(function(){});},350);}
   root.addEventListener('input',scheduleDraft);root.addEventListener('change',scheduleDraft);
   var requestStore='ssmpd-scene-request-'+item.id;
-  root.querySelector('[data-field="headline"]').value=item.hook||item.title||'';
+  root.querySelector('[data-field="headline"]').value=item.hook_text||item.hook||item.title||'';
   root.querySelector('[data-field="cta"]').value='';
   root.querySelector('[data-prompt]').value=item.title||'';
   root.querySelector('.modal-close').onclick=async function(){clearTimeout(draftTimer);if(loadFailed){root.remove();return;}if(restoring||working){draftStatus.textContent='انتظر انتهاء تحميل أو توليد الصورة قبل الإغلاق.';return;}try{await saveDraft();root.remove();}catch(e){}};
   root.querySelectorAll('input:not([type=file]),textarea,select').forEach(function(el){el.style.width='100%';el.style.boxSizing='border-box';el.style.marginBottom='10px';});
   root.querySelectorAll('[data-number-for]').forEach(function(el){el.style.width='90px';el.style.display='inline-block';el.style.margin='0 8px';el.style.direction='ltr';});
-  function data(){var out={};root.querySelectorAll('[data-field]').forEach(function(el){out[el.dataset.field]=el.value;});return out;}
+  function data(){var out={};root.querySelectorAll('[data-field]').forEach(function(el){out[el.dataset.field]=el.value;});var logo=savedLogo&&savedLogo.logoVariant===out.logoVariant?savedLogo:logos.find(function(row){return (row.variant||'primary')===out.logoVariant;});if(out.logoVariant!=='legacy'&&logo){out.logoStoragePath=logo.logoStoragePath||logo.storage_path;out.logoAssetId=logo.logoAssetId||logo.id;out.logoBrand=item.brand;}return out;}
   async function paint(){
    var current=++version;valid=false;buttons();
    try{var settings=data();if(!settings.headline.trim())throw new Error('اكتب عنوان التصميم.');var buffer=document.createElement('canvas');await C.render(buffer,scene,settings,{preview:true});if(current!==version)return;canvas.width=buffer.width;canvas.height=buffer.height;canvas.getContext('2d').drawImage(buffer,0,0);var issues=buffer.designIssues||[],warnings=buffer.designWarnings||[];valid=!!scene&&!issues.length;status.textContent=issues.length?issues.join(' '):scene?'المعاينة جاهزة للحفظ. '+(warnings.length?warnings.join(' ')+' يمكنك الحفظ بالقيم الحالية.':'راجع النص وموضع الصورة.'):'اختر صورة أو ولّد مشهدًا لبدء المعاينة.';}
    catch(e){if(current!==version)return;canvas.width=1080;canvas.height=1350;status.textContent='تعذر عرض القيم الحالية. '+e.message;}buttons();
   }
   function buttons(){root.querySelectorAll('input,textarea,select,[data-library],[data-retry]').forEach(function(el){el.disabled=working||restoring||loadFailed;});root.querySelector('[data-download]').disabled=!valid||working||restoring||loadFailed;root.querySelector('[data-save]').disabled=!valid||working||restoring||loadFailed;root.querySelector('[data-generate]').disabled=working||restoring||loadFailed;}
-  root.querySelectorAll('[data-field]').forEach(function(el){function changed(){if(el.dataset.field==='titlePosition'){root.querySelector('[data-field="x"]').value=el.value==='left'?100:el.value==='right'?0:50;root.querySelector('[data-field="headlineOffset"]').value=0;root.querySelector('[data-field="subtitleOffset"]').value=0;}if(el.dataset.field==='fadeStartY'){var end=root.querySelector('[data-field="fadeEndY"]');if(Number(end.value)<Number(el.value)+50){end.value=Math.min(1120,Number(el.value)+50);var endOutput=root.querySelector('[data-value="fadeEndY"]');if(endOutput)endOutput.textContent=end.value;}}if(el.dataset.field==='fadeEndY'){var start=root.querySelector('[data-field="fadeStartY"]');if(Number(start.value)>Number(el.value)-50){start.value=Math.max(500,Number(el.value)-50);var startOutput=root.querySelector('[data-value="fadeStartY"]');if(startOutput)startOutput.textContent=start.value;}}var numberInput=root.querySelector('[data-number-for="'+el.dataset.field+'"]');if(numberInput)numberInput.value=el.value;var output=root.querySelector('[data-value="'+el.dataset.field+'"]');if(output)output.textContent=el.dataset.field==='ctaScale'?Math.round(Number(el.value)*100)+'%':el.value;paint();}el.oninput=changed;el.onchange=changed;});
+  root.querySelectorAll('[data-field]').forEach(function(el){function changed(){if(el.dataset.field==='logoVariant')savedLogo=null;if(el.dataset.field==='titlePosition'){root.querySelector('[data-field="x"]').value=el.value==='left'?100:el.value==='right'?0:50;root.querySelector('[data-field="headlineOffset"]').value=0;root.querySelector('[data-field="subtitleOffset"]').value=0;}if(el.dataset.field==='fadeStartY'){var end=root.querySelector('[data-field="fadeEndY"]');if(Number(end.value)<Number(el.value)+50){end.value=Math.min(1120,Number(el.value)+50);var endOutput=root.querySelector('[data-value="fadeEndY"]');if(endOutput)endOutput.textContent=end.value;}}if(el.dataset.field==='fadeEndY'){var start=root.querySelector('[data-field="fadeStartY"]');if(Number(start.value)>Number(el.value)-50){start.value=Math.max(500,Number(el.value)-50);var startOutput=root.querySelector('[data-value="fadeStartY"]');if(startOutput)startOutput.textContent=start.value;}}var numberInput=root.querySelector('[data-number-for="'+el.dataset.field+'"]');if(numberInput)numberInput.value=el.value;var output=root.querySelector('[data-value="'+el.dataset.field+'"]');if(output)output.textContent=el.dataset.field==='ctaScale'?Math.round(Number(el.value)*100)+'%':el.value;paint();}el.oninput=changed;el.onchange=changed;});
   root.querySelectorAll('[data-number-for]').forEach(function(input){var slider=root.querySelector('[data-field="'+input.dataset.numberFor+'"]');function changed(){if(input.value==='')return;var min=Number(input.min),max=Number(input.max),value=Math.max(min,Math.min(max,Number(input.value)));if(!Number.isFinite(value))return;input.value=value;slider.value=value;slider.dispatchEvent(new Event('input',{bubbles:true}));}input.oninput=changed;input.onchange=changed;});
   async function setScene(url){
    var loaded=await C.loadImage(url),raw=document.createElement('canvas');raw.width=loaded.width;raw.height=loaded.height;raw.getContext('2d').drawImage(loaded,0,0);
@@ -140,6 +142,9 @@
   buttons();root.querySelectorAll('input,textarea,select,button').forEach(function(el){el.disabled=true;});
   (async function(){
    try{
+    try{logos=(await window.SSMPDDb.listBrandLogos()).filter(function(row){return row.brand===item.brand;});}catch(e){root.querySelector('[data-logo-status]').textContent='تعذر تحميل مكتبة اللوجوهات. اللوجو المحفوظ في القالب متاح.';}
+    ['primary','alternate'].forEach(function(variant){var option=root.querySelector('[data-field="logoVariant"] option[value="'+variant+'"]');if(!logos.some(function(row){return (row.variant||'primary')===variant;})){option.disabled=true;option.textContent+=' — لم يُرفع';}});
+    if(!logos.some(function(row){return (row.variant||'primary')==='primary';}))root.querySelector('[data-field="logoVariant"]').value='legacy';
     var cloud=await window.SSMPDDesignFiles.latest(item.id);baseVersion=cloud&&cloud.id||null;
     var local;try{local=await draftStore(draftKey);}catch(e){draftStatus.textContent='التخزين المحلي غير متاح؛ النسخة المحفوظة على الحساب متاحة.';}
     var useLocal=!editingExisting&&local&&((local.baseVersion||null)===baseVersion)&&(!cloud||local.updatedAt>Date.parse(cloud.created_at));
@@ -147,6 +152,8 @@
     if(editingExisting&&(!cloud||cloud.settings.template==='uploaded-flat-image'))throw new Error('الملف الحالي محفوظ كصورة فقط، ولا توجد إعدادات أو طبقات تتيح تعديل النصوص والمواضع. يمكنك استعراضه من الزر أعلى النافذة.');
     if(editingExisting&&cloud.output_file_url&&cloud.output_file_url!==item.design_file_url)throw new Error('ملف التصميم الحالي لا يطابق النسخة القابلة للتعديل المحفوظة. حدّث قائمة المواد وافتحها مجددًا.');
     if(saved){
+     if(saved.settings&&saved.settings.logoStoragePath)savedLogo=saved.settings;
+     if(!saved.settings||!saved.settings.logoVariant)root.querySelector('[data-field="logoVariant"]').value='legacy';
      root.querySelectorAll('[data-field]').forEach(function(field){if(saved.settings&&saved.settings[field.dataset.field]!==undefined)field.value=saved.settings[field.dataset.field];});
      root.querySelectorAll('[data-number-for]').forEach(function(el){var field=root.querySelector('[data-field="'+el.dataset.numberFor+'"]');if(field)el.value=field.value;});
      if(useLocal){root.querySelector('[data-prompt]').value=saved.prompt||'';root.querySelector('[data-quality]').value=saved.quality||'medium';}
@@ -163,6 +170,7 @@
  }
  window.SSMPDDesignStudio={mount:mount,open:open};
 })();
+
 
 
 

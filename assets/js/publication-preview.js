@@ -17,7 +17,8 @@
   if(options.destination==='website')post.append(el('h4','publication-post__title',item.title||''));
   var media=el('div','publication-post__media');post.append(media);
   var body=el('div','publication-post__body',finalText||'لا يوجد نص نشر محفوظ.');body.dir='auto';post.append(body);root.append(post);
-  root.append(el('p','publication-preview__source',source==='caption_text'?'الكابشن المحفوظ مع نص التواصل المسجل، دون تكراره.':'الكابشن غير مسجل. المعاينة تستخدم '+(source==='body'?'نص المحتوى':'العنوان')+' مع نص التواصل المسجل.'));
+  if(!String(item.hook_text||'').trim())root.append(el('p','publication-preview__source','الهوك غير مسجل لهذه المادة. يمكنك إضافته من تعديل المحتوى.'));
+  root.append(el('p','publication-preview__source',source==='caption_text'?'الكابشن المحفوظ مع الهوك والتفاعل وبيانات التواصل.':'الكابشن غير مسجل. المعاينة تستخدم '+(source==='body'?'نص المحتوى':'العنوان')+' مع الهوك والتفاعل وبيانات التواصل.'));
   if(!item.design_file_url){media.append(el('p','publication-preview__empty','لم يُرفع التصميم بعد.'));}
   else {
    var linkUrl=safeUrl(item.design_file_url);
@@ -43,7 +44,7 @@
   }
   if(options.details!==false){
    var details=el('details','publication-preview__details');details.append(el('summary',null,'الفكرة والسكريبت وتفاصيل المحتوى'));
-   var fields=[['وصف الفكرة',item.body],['الافتتاحية',item.hook_text],['زاوية المحتوى',item.content_angle],['السكريبت',item.script_text],['نص التواصل / CTA',item.cta_text],['نوع التواصل',item.cta_type],['الموضوع / الخدمة',item.topic_service],['سبب الفكرة',item.hypothesis_reason]];
+   var fields=[['وصف الفكرة',item.body],['الهوك / الافتتاحية',item.hook_text],['زاوية المحتوى',item.content_angle],['السكريبت',item.script_text],['نص التواصل / CTA',item.cta_text],['نوع التواصل',item.cta_type],['الموضوع / الخدمة',item.topic_service],['سبب الفكرة',item.hypothesis_reason]];
    fields.forEach(function(field){if(!field[1])return;var row=el('div','publication-preview__detail');row.append(el('strong',null,field[0]));var text=el('p',null,field[1]);text.dir='auto';row.append(text);details.append(row);});
    if(item.target_duration_min_seconds!=null||item.target_duration_max_seconds!=null)details.append(el('p',null,'مدة الفيديو '+(item.target_duration_min_seconds==null?'—':item.target_duration_min_seconds)+' إلى '+(item.target_duration_max_seconds==null?'—':item.target_duration_max_seconds)+' ثانية'));
    if(details.children.length>1)root.append(details);

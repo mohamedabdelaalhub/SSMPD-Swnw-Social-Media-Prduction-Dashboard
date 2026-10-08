@@ -3,6 +3,8 @@
   'use strict';
   var base = new URL('../', document.currentScript.src);
   var fonts;
+  var logoCache=new Map();
+  async function logoImage(path){var cached=logoCache.get(path);if(cached&&cached.until>Date.now())return cached.promise;var promise=window.SSMPDDb.getBrandLogoUrl(path).then(loadImage);logoCache.set(path,{until:Date.now()+300000,promise:promise});try{return await promise;}catch(e){logoCache.delete(path);throw e;}}
   function loadImage(url) {
     return new Promise(function (resolve, reject) {
       var image = new Image(); image.crossOrigin = 'anonymous';
@@ -47,7 +49,7 @@
       right:'Leave the RIGHT half empty with a pale plain background for Arabic text. Place the person and all key details on the LEFT.',
       left:'Leave the LEFT half empty with a pale plain background for Arabic text. Place the person and all key details on the RIGHT.'
     };
-    return String(prompt || '')+'\nComposition: '+(instructions[data.titlePosition]||instructions.bottom)+' Extend the photograph naturally to every edge, including the top. Keep only the small upper-left corner calm and light for a logo overlay; place faces and important details away from that corner. Do not add a blank horizontal header, white margin or separate top panel. Use a portrait frame with at least 300 additional pixels of lower body and background below the normal composition at final export scale. Do not crop at shoulders, elbows or torso. Reserve this lower extension for a gradual fade. No writing or logos.';
+    return String(prompt || '')+'\nComposition: '+(instructions[data.titlePosition]||instructions.bottom)+' Extend the photograph naturally to every edge, including the top. Keep only the small upper-left corner calm and '+(data.logoVariant==='alternate'?'dark':'light')+' for a logo overlay; place faces and important details away from that corner. Do not add a blank horizontal header, white margin or separate top panel. Use a portrait frame with at least 300 additional pixels of lower body and background below the normal composition at final export scale. Do not crop at shoulders, elbows or torso. Reserve this lower extension for a gradual fade. No writing or logos.';
   }
   async function render(canvas, scene, data, options) {
     var issues=[];
@@ -73,7 +75,14 @@
     var fade=ctx.createLinearGradient(0,fadeStart,0,fadeEnd);
     fade.addColorStop(0,'rgba(255,255,255,0)');fade.addColorStop(1,'rgba(255,255,255,1)');
     ctx.fillStyle=fade;ctx.fillRect(0,fadeStart,1080,1260-fadeStart);
-    ctx.drawImage(overlay,0,0,1080,1350);
+    if(data.logoVariant && data.logoVariant!=='legacy') {
+      if(!data.logoStoragePath || data.logoBrand!=='sono' || !data.logoStoragePath.startsWith('sono/'))throw new Error('اختر نسخة لوجو سونو المحفوظة في المكتبة.');
+      var logo=await logoImage(data.logoStoragePath);
+      // Clip out the embedded upper logo while preserving the existing lower template and contact footer.
+      ctx.save();ctx.beginPath();ctx.rect(0,200,1080,1150);ctx.clip();ctx.drawImage(overlay,0,0,1080,1350);ctx.restore();
+      var logoScale=Math.min(280/logo.width,125/logo.height);
+      ctx.drawImage(logo,36,30,logo.width*logoScale,logo.height*logoScale);
+    }else ctx.drawImage(overlay,0,0,1080,1350);
     ctx.direction='rtl';ctx.textAlign='center';ctx.textBaseline='middle';
     var presets={bottom:{x:540,y:883,w:960},top:{x:540,y:320,w:960},right:{x:775,y:390,w:450},left:{x:305,y:390,w:450}};
     var position=presets[data.titlePosition]?data.titlePosition:'bottom',p=Object.assign({},presets[position]);
@@ -137,4 +146,5 @@
   }
   window.SSMPDDesignComposer={render:render,loadImage:loadImage,ready:ready,scenePrompt:scenePrompt};
 })();
+
 
