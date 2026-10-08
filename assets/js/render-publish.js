@@ -1,7 +1,7 @@
 /* SSMPD — تاب النشر: المواد المعتمدة (محتوى + تصميم) بتتجدول أو تتنشر من هنا
    قسم ٤٣: فيسبوك/انستجرام بقوا بينشروا فعليًا (Meta Auto Publisher — خلفية
    عن طريق meta_publish_jobs + Edge Function + pg_cron) بدل تأكيد رابط يدوي.
-   تيكتوك/يوتيوب/الموقع الإلكتروني لسه نشر يدوي زي الأول بالظبط. */
+   تيكتوك/يوتيوب الإلكتروني لسه نشر يدوي زي الأول بالظبط. */
 (function () {
   "use strict";
   var W = window.SSMPDWorkflow;
@@ -76,9 +76,10 @@
         var jobByContent = {};
         jobs.forEach(function (j) { if (!jobByContent[j.content_id]) jobByContent[j.content_id] = j; });
 
-        var ctx = { scheduled: scheduled, ready: ready, adminsById: adminsById, jobByContent: jobByContent };
+        var ctx = { allItems: items, scheduled: scheduled, ready: ready, adminsById: adminsById, jobByContent: jobByContent };
         if (viewState.mode === "calendar") renderCalendarView(container, ctx);
         else renderListView(container, ctx);
+
       });
     }).catch(function (e) {
       container.innerHTML = '<div class="err-msg">خطأ: ' + e.message + '</div>';
@@ -103,7 +104,7 @@
     var scheduled = ctx.scheduled, ready = ctx.ready, adminsById = ctx.adminsById, jobByContent = ctx.jobByContent;
     var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">' +
       "<h2 style=\"margin:0;\"> <!--ssmpd-i18n:%D8%A7%D9%84%D9%86%D8%B4%D8%B1-->النشر</h2>" + viewToggleHtml() + '</div>' +
-      '<p style="color:var(--c-muted);font-size:12px;margin-top:-10px;margin-bottom:16px;">هنا كل مادة خلصت اعتماد نهائي وتصميم — جاهزة تتجدول أو تتنشر مباشرة. فيسبوك/انستجرام بينشروا تلقائيًا، وباقي المنصات (تيكتوك/يوتيوب/الموقع) لسه بتحتاج تأكيد يدوي.</p>';
+      '<p style="color:var(--c-muted);font-size:12px;margin-top:-10px;margin-bottom:16px;">هنا كل مادة خلصت اعتماد نهائي وتصميم — جاهزة تتجدول أو تتنشر مباشرة. فيسبوك/انستجرام بينشروا تلقائيًا، تيكتوك/يوتيوب بتحتاج تأكيد يدوي. نشر الموقع له قسم مستقل.</p>';
 
     html += '<div class="section"><h3>مجدولة للنشر (' + scheduled.length + ')</h3>';
     if (!scheduled.length) {
@@ -122,6 +123,7 @@
     html += '</div>';
 
     container.innerHTML = html;
+    window.SSMPDWebsite.mount(container, ctx.allItems);
     wireViewToggle(container, ctx);
     wire(container);
     scheduled.concat(ready).forEach(function (i) {
@@ -213,6 +215,7 @@
     html += '</div>';
 
     container.innerHTML = html;
+    window.SSMPDWebsite.mount(container, ctx.allItems);
     wireViewToggle(container, ctx);
 
     document.getElementById("pb-cal-prev").onclick = function () {
@@ -287,13 +290,29 @@
     return html;
   }
 
+  function socialPlatformCheckboxes(prefix, selected) {
+    var box = document.createElement("div");
+    box.innerHTML = W.platformCheckboxesHtml(prefix, selected);
+    var website = box.querySelector('input[value="website"]');
+    if (website) website.parentElement.remove();
+    return box.innerHTML;
+  }
+
+  function updateSocialContent(id, patch) {
+    if (!patch.publish_platforms) return window.SSMPDDb.updateContentItem(id, patch);
+    return window.SSMPDDb.client.from("website_publications").select("action").eq("content_id", id).maybeSingle().then(function (r) {
+      if (r.data && r.data.action === "upsert" && patch.publish_platforms.indexOf("website") < 0) patch.publish_platforms.push("website");
+      return window.SSMPDDb.updateContentItem(id, patch);
+    });
+  }
+
   function itemPlatforms(i) {
     var p = i.publish_platforms || i.publish_platform || [];
     return Array.isArray(p) ? p : (p ? [p] : []);
   }
 
   function nonMetaPlatforms(platforms) {
-    return (platforms || []).filter(function (p) { return META_PLATFORMS.indexOf(p) === -1; });
+    return (platforms || []).filter(function (p) { return META_PLATFORMS.indexOf(p) === -1 && p !== "website"; });
   }
 
   function updateManualLinkVisibility(id) {
@@ -320,11 +339,11 @@
     if (mode === "ready") {
       actionsHtml =
         "<div class=\"field\"><label> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%A7%D8%AF%D8%A9%20%D8%AF%D9%8A%20%D9%84%D8%B5%D9%81%D8%AD%D8%A9-->المادة دي لصفحة</label>" + W.brandSelectHtml("pb-brand-" + i.id, i.brand || "") + '</div>' +
-        '<div class="field"><label>هتتنشر على (تقدر تختار أكتر من منصة)</label><div id="pb-platform-' + i.id + '">' + W.platformCheckboxesHtml("pb-platform-" + i.id, i.publish_platforms || i.publish_platform || []) + '</div></div>' +
+        '<div class="field"><label>هتتنشر على (تقدر تختار أكتر من منصة)</label><div id="pb-platform-' + i.id + '">' + socialPlatformCheckboxes("pb-platform-" + i.id, i.publish_platforms || i.publish_platform || []) + '</div></div>' +
         '<div id="pb-meta-hint-' + i.id + '" style="display:none;margin:6px 0 10px;padding:8px 10px;border:1px solid var(--c-border);border-radius:8px;color:var(--c-muted);font-size:12px;">فيسبوك/انستجرام: رابط المنشور بيتسجل تلقائيًا بعد نجاح النشر.</div>' +
         '<div class="field"><label>معاد النشر المجدول</label><input type="datetime-local" id="pb-when-' + i.id + '"></div>' +
         '<div id="pb-manual-wrap-' + i.id + '" style="display:none;">' +
-        '<div class="field"><label>رابط المنشور للمنصات اليدوية فقط (تيكتوك/يوتيوب/الموقع)</label>' +
+        '<div class="field"><label>رابط المنشور للمنصات اليدوية فقط (تيكتوك/يوتيوب)</label>' +
         '<input placeholder="https://..." id="pb-url-' + i.id + '"></div>' +
         '</div>' +
         '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px;">' +
@@ -442,6 +461,7 @@
   // جدولة مادة "جاهزة للنشر" لمعاد محدد — بتنقلها لحالة "مجدولة للنشر"، وبتعمل
   // job نشر تلقائي لو من ضمن المنصات المختارة فيسبوك/انستجرام
   function schedule(id, reviewed) {
+    if (W.readPlatformCheckboxes("pb-platform-" + id).indexOf("website") !== -1) { notify("جدولة الموقع غير مفعلة. انشر الموقع من قسمه، وحدد منصات السوشيال للجدولة.", "error"); return; }
     var brand = valueOf("pb-brand-" + id);
     var platforms = W.readPlatformCheckboxes("pb-platform-" + id);
     var when = valueOf("pb-when-" + id);
@@ -451,7 +471,7 @@
     if (!reviewed) { reviewBeforePublishing(id, "تأكيد الجدولة", function () { schedule(id, true); }); return; }
     var me = window.SSMPDAuth.currentAdmin;
     var whenIso = new Date(when).toISOString();
-    window.SSMPDDb.updateContentItem(id, {
+    updateSocialContent(id, {
       stage: "scheduled", brand: brand, publish_platform: platforms[0], publish_platforms: platforms,
       scheduled_publish_at: whenIso, scheduled_by: me.id
     }).then(function () {
@@ -466,13 +486,14 @@
 
   // نشر فوري — لو من ضمن المنصات فيسبوك/انستجرام، بيعمل job نشر تلقائي فوري
   // (scheduled_at = الآن، الـEdge Function هتاخده في تشغيلة الدقيقة الجاية).
-  // لمنصات تانية (تيكتوك/يوتيوب/الموقع) لازم رابط يدوي زي ما كان.
+  // لمنصات تانية (تيكتوك/يوتيوب) لازم رابط يدوي زي ما كان.
   function publishNow(id, reviewed) {
+    if (W.readPlatformCheckboxes("pb-platform-" + id).indexOf("website") !== -1) { notify("استخدم قسم نشر الموقع لتأكيد النشر، وانشر السوشيال بشكل مستقل.", "error"); return; }
     var brand = valueOf("pb-brand-" + id);
     var platforms = W.readPlatformCheckboxes("pb-platform-" + id);
     var url = valueOf("pb-url-" + id);
     var metaSelected = hasMetaPlatform(platforms);
-    var others = platforms.filter(function (p) { return META_PLATFORMS.indexOf(p) === -1; });
+    var others = platforms.filter(function (p) { return META_PLATFORMS.indexOf(p) === -1 && p !== "website"; });
     if (!brand) { notify("اختر المادة دي لصفحة سونو ولا د.دينا الأول", "error"); return; }
     if (!platforms.length) { notify("اختر هتتنشر على أنهي منصة (تقدر تختار أكتر من واحدة)", "error"); return; }
     if (others.length && !url) { notify("حط رابط المنشور للمنصات غير فيسبوك/انستجرام", "error"); return; }
@@ -490,7 +511,7 @@
       // (بند ١ من المراجعة المعمارية).
       var otherUrlsPatch = {};
       others.forEach(function (p) { otherUrlsPatch[p] = url; });
-      window.SSMPDDb.updateContentItem(id, {
+      updateSocialContent(id, {
         stage: "scheduled", brand: brand, publish_platform: platforms[0], publish_platforms: platforms,
         scheduled_publish_at: nowIso, scheduled_by: me.id,
         published_url: others.length ? url : null,
@@ -507,7 +528,7 @@
     }
 
     // مفيش فيسبوك/انستجرام مختارين — نفس السلوك اليدوي القديم بالكامل
-    window.SSMPDDb.updateContentItem(id, {
+    updateSocialContent(id, {
       stage: "published", published_url: url, published_by: me.id, published_at: nowIso,
       brand: brand, publish_platform: platforms[0], publish_platforms: platforms
     }).then(function (updated) {
@@ -538,7 +559,7 @@
         published_url: (current && current.published_url) ? current.published_url : url,
         published_urls: mergedUrls
       };
-      return window.SSMPDDb.updateContentItem(id, patch);
+      return updateSocialContent(id, patch);
     }).then(function (updated) {
       window.SSMPDDrive.logPublished(id, updated.title, url, updated.stage_history).catch(function () {});
       return window.SSMPDDb.logActivity({ content_id: id, actor_id: me.id, action: "تأكيد نشر مجدول", from_stage: "scheduled", to_stage: "published" });
@@ -562,7 +583,7 @@
     }
     if (btn && btn._cancelTimer) clearTimeout(btn._cancelTimer);
     var me = window.SSMPDAuth.currentAdmin;
-    window.SSMPDDb.updateContentItem(id, { stage: "ready_to_publish", scheduled_publish_at: null, scheduled_by: null })
+    updateSocialContent(id, { stage: "ready_to_publish", scheduled_publish_at: null, scheduled_by: null })
       .then(function () {
         return window.SSMPDDb.logActivity({ content_id: id, actor_id: me.id, action: "إلغاء جدولة النشر", from_stage: "scheduled", to_stage: "ready_to_publish" });
       })
@@ -584,4 +605,3 @@
 
   window.SSMPDRenderPublish = { render: render };
 })();
-

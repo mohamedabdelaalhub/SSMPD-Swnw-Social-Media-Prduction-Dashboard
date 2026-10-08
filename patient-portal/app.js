@@ -87,7 +87,7 @@ function loginView(message){
     var btn=this,email=document.getElementById("login-email").value.trim().toLowerCase(),password=document.getElementById("login-password").value;
     if(!email||!password){loginView({type:"error",text:"اكتب البريد وكلمة السر."});return;}
     btn.disabled=true;btn.textContent="جاري الدخول…";
-    client.auth.signInWithPassword({email:email,password:password}).then(function(r){if(r.error)throw r.error;return loadPortal();}).catch(function(e){loginView({type:"error",text:errText(e)});});
+    client.auth.signInWithPassword({email:email,password:password}).then(function(r){if(r.error)throw r.error;return completeLogin();}).catch(function(e){loginView({type:"error",text:errText(e)});});
   };
 }
 function forgotPasswordView(message){
@@ -111,7 +111,8 @@ function newPasswordView(message){
     btn.disabled=true;btn.textContent="جاري الحفظ…";
     client.auth.updateUser({password:p}).then(function(r){
       if(r.error)throw r.error;
-      history.replaceState(null,"",location.pathname);
+      var returnTarget=window.SSMPDPortalRouting.parse(location.search).returnUrl;
+      history.replaceState(null,"",location.pathname+(returnTarget?"?view=login&returnUrl="+encodeURIComponent(returnTarget):""));
       loginView({type:"ok",text:"تم تغيير كلمة السر. سجل دخولك بالكلمة الجديدة."});
     }).catch(function(e){newPasswordView({type:"error",text:errText(e)});});
   };
@@ -141,7 +142,7 @@ function requestView(message){
 function activationView(message,prefillEmail){
   root.innerHTML='<div class="auth-page"><div class="auth-wrap">'+authBrand()+'<section class="auth-card"><div class="auth-heading"><h1>تفعيل الحساب</h1><p>اكتب كود الـ8 أرقام اللي وصلك من Swnw بعد اعتماد المستندات، وحدد كلمة سر جديدة.</p></div>'+nav()+(message?'<div class="notice '+(message.type||"")+'">'+esc(message.text)+'</div>':"")+'<div class="field"><label>البريد الإلكتروني</label><input id="activation-email" type="email" autocomplete="email" value="'+esc(prefillEmail||"")+'"></div><div class="field"><label>كود التفعيل</label><input id="activation-code" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="00000000"></div><div class="field"><label>كلمة السر الجديدة</label><input id="new-password" type="password" autocomplete="new-password" placeholder="10 أحرف على الأقل"></div><div class="field"><label>تأكيد كلمة السر</label><input id="confirm-password" type="password" autocomplete="new-password"></div><button class="btn block" id="activate-btn">تفعيل الحساب</button></section></div></div>';
   wireNav();
-  document.getElementById("activate-btn").onclick=function(){var btn=this,email=document.getElementById("activation-email").value.trim().toLowerCase(),code=document.getElementById("activation-code").value.replace(/\D/g,""),password=document.getElementById("new-password").value,confirmPassword=document.getElementById("confirm-password").value;if(password!==confirmPassword){activationView({type:"error",text:"كلمتا السر غير متطابقتين."},email);return;}if(password.length<10){activationView({type:"error",text:"كلمة السر لازم تكون 10 أحرف على الأقل."},email);return;}btn.disabled=true;btn.textContent="جاري التفعيل…";invoke("patient-portal-self-service",{op:"activate",email:email,code:code,new_password:password}).then(function(){return client.auth.signInWithPassword({email:email,password:password});}).then(function(r){if(r.error)throw r.error;return loadPortal();}).catch(function(e){activationView({type:"error",text:errText(e)},email);});};
+  document.getElementById("activate-btn").onclick=function(){var btn=this,email=document.getElementById("activation-email").value.trim().toLowerCase(),code=document.getElementById("activation-code").value.replace(/\D/g,""),password=document.getElementById("new-password").value,confirmPassword=document.getElementById("confirm-password").value;if(password!==confirmPassword){activationView({type:"error",text:"كلمتا السر غير متطابقتين."},email);return;}if(password.length<10){activationView({type:"error",text:"كلمة السر لازم تكون 10 أحرف على الأقل."},email);return;}btn.disabled=true;btn.textContent="جاري التفعيل…";invoke("patient-portal-self-service",{op:"activate",email:email,code:code,new_password:password}).then(function(){return client.auth.signInWithPassword({email:email,password:password});}).then(function(r){if(r.error)throw r.error;return completeLogin();}).catch(function(e){activationView({type:"error",text:errText(e)},email);});};
 }
 
 function linkedFileRequestView(data,message){
@@ -191,13 +192,17 @@ function renderStatus(data,activeTab,fileState){
   var addFromFiles=document.getElementById("files-add-access");if(addFromFiles)addFromFiles.onclick=function(){linkedFileRequestView(data);};
 }
 
+function completeLogin(){var target=window.SSMPDPortalRouting.parse(location.search).returnUrl;if(target){location.assign(target);return Promise.resolve();}return loadPortal();}
 function loadPortal(){root.innerHTML='<div class="loading-page"><div class="loading-logo"><img src="../assets/img/logo.svg" alt="Swnw"></div><div class="loading-line"></div><p>جاري تحميل حسابك…</p></div>';return invoke("patient-portal-self-service",{op:"status"}).then(function(data){renderStatus(data,"data",null);}).catch(function(e){client.auth.signOut().finally(function(){loginView({type:"error",text:errText(e)});});});}
 client.auth.onAuthStateChange(function(event){
   if(event==="PASSWORD_RECOVERY")newPasswordView();
 });
-if(location.search.indexOf("reset=1")>=0){
+var route=window.SSMPDPortalRouting.parse(location.search);
+if(route.recovery){
   newPasswordView();
+}else if(route.view==="activate"){activationView();
+}else if(route.view==="reset"){forgotPasswordView();
 }else{
-  client.auth.getSession().then(function(r){if(r.data&&r.data.session)loadPortal();else loginView();});
+  client.auth.getSession().then(function(r){if(r.data&&r.data.session)completeLogin();else loginView();});
 }
 })();

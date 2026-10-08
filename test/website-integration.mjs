@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
+import {buildPayload,imageBytes,deliver,outcome} from '../supabase/functions/website-publish-process/transport.mjs';
+const context={URL,URLSearchParams};vm.createContext(context);vm.runInContext(fs.readFileSync(new URL('../patient-portal/routing.js',import.meta.url),'utf8'),context);
+const routing=context.SSMPDPortalRouting;
+for(const view of ['login','activate','reset'])assert.equal(routing.parse('?view='+view).view,view);
+assert.equal(routing.parse('?reset=1&view=reset').recovery,true);
+for(const input of ['https://evil.com','https://swnwclinics.com.evil.com','https://user@swnwclinics.com','//swnwclinics.com','https://swnwclinics.com\\@evil.com','javascript:alert(1)','https://swnwclinics.com:444'])assert.equal(routing.safeReturnUrl(input),null,input);
+assert.equal(routing.safeReturnUrl('https://staging.swnwclinics.com/account?q=1'),'https://staging.swnwclinics.com/account?q=1');
+const payload=buildPayload({id:'id',title:'Post',captionText:'Text',platforms:['website'],_imageUrl:'private',publishedUrl:null});assert.equal(payload._imageUrl,undefined);assert.equal(payload.publishedUrl,undefined);
+assert.throws(()=>buildPayload({...payload,publishedUrl:'http://example.com'}));
+assert.throws(()=>imageBytes(new Uint8Array(10)));assert.throws(()=>imageBytes(new Uint8Array(5*1024*1024+1)));
+assert.equal(imageBytes(new Uint8Array([255,216,255,1])).mime,'image/jpeg');
+for(const [http,body,action,want] of [[201,{ok:true,status:'published'},null,'published'],[200,{ok:true,pendingReview:true},null,'pending_review'],[200,{ok:true},'unpublish','unpublished'],[200,{ok:false},null,'failed'],[401,{},null,'failed'],[503,{},null,'retry'],[429,{},null,'retry']])assert.equal(outcome(http,body,action),want);
+let calls=0;const result=await deliver('https://example.test','test-only',payload,async(url,options)=>{calls++;assert.equal(options.headers.Authorization,'Bearer test-only');assert.deepEqual(JSON.parse(options.body),payload);return {status:201,json:async()=>({ok:true,status:'published',publicPath:'/posts/id'})};});assert.equal(result.status,'published');assert.equal(calls,1);
+console.log('PASS routing, allowlist, image validation, payload, mocked delivery and response states');

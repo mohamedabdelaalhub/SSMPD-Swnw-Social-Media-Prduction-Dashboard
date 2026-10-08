@@ -44,3 +44,7 @@ verify_jwt = false
 
 [functions.patient-portal-nutrition]
 verify_jwt = false
+
+[functions.website-publish-process]
+# JWT staff sessions or server-side cron secret are verified inside the function.
+verify_jwt = false
