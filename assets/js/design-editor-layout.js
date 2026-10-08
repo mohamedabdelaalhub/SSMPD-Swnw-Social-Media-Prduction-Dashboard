@@ -23,7 +23,7 @@
    ['cta','التفاعل',['cta','ctaSize','ctaOffset']],
    ['image','الصورة',['[data-upload]','[data-library]','[data-images]','zoom','x','imageOffsetY','fadeStartY','fadeEndY']],
    ['logo','اللوجو',['logoVariant','[data-logo-status]']],
-   ['layout','ترتيب النصوص',['textOrder','titlePosition','textWidth']],
+   ['layout','القالب والترتيب',['layoutTemplate','textOrder','titlePosition','textWidth']],
    ['generation','التوليد',['[data-prompt]','[data-quality]','.design-ai-actions']],
    ['versions','النسخ',['[data-versions]']]
   ];
@@ -66,3 +66,4 @@
  }
  window.SSMPDDesignEditorLayout={mount:mount};
 })();
+

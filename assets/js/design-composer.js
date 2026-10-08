@@ -50,9 +50,13 @@
       right:'Leave the RIGHT half empty with a pale plain background for Arabic text. Place the person and all key details on the LEFT.',
       left:'Leave the LEFT half empty with a pale plain background for Arabic text. Place the person and all key details on the RIGHT.'
     };
+    if(data.layoutTemplate==='full_photo')instructions.bottom='Fill the portrait with a continuous photograph. Keep the lower third calm for a text card. Place faces and important details in the upper and middle areas.';
     return String(prompt || '')+'\nComposition: '+(instructions[data.titlePosition]||instructions.bottom)+' Extend the photograph naturally to every edge, including the top. Keep only the small upper-left corner calm and '+(data.logoVariant==='alternate'?'dark':'light')+' for a logo overlay; place faces and important details away from that corner. Do not add a blank horizontal header, white margin or separate top panel. Use a portrait frame with at least 300 additional pixels of lower body and background below the normal composition at final export scale. Do not crop at shoulders, elbows or torso. Reserve this lower extension for a gradual fade. No writing or logos.';
   }
   async function render(canvas, scene, data, options) {
+    data=Object.assign({},data);
+    var template=['classic','full_photo','split'].includes(data.layoutTemplate)?data.layoutTemplate:'classic';
+    var photographic=template==='full_photo';
     var issues=[];
     function problem(message) {
       if(!issues.includes(message))issues.push(message);
@@ -76,17 +80,18 @@
     if(fadeEnd<fadeStart+50)fadeEnd=Math.min(1120,fadeStart+50);
     var fade=ctx.createLinearGradient(0,fadeStart,0,fadeEnd);
     fade.addColorStop(0,'rgba(255,255,255,0)');fade.addColorStop(1,'rgba(255,255,255,1)');
-    ctx.fillStyle=fade;ctx.fillRect(0,fadeStart,1080,1260-fadeStart);
+    if(!photographic){ctx.fillStyle=fade;ctx.fillRect(0,fadeStart,1080,1260-fadeStart);}
     if(data.logoVariant && data.logoVariant!=='legacy') {
       if(!data.logoStoragePath || data.logoBrand!=='sono' || !data.logoStoragePath.startsWith('sono/'))throw new Error('اختر نسخة لوجو سونو المحفوظة في المكتبة.');
       var logo=await logoImage(data.logoStoragePath);
       // Clip out the embedded upper logo while preserving the existing lower template and contact footer.
-      ctx.save();ctx.beginPath();ctx.rect(0,200,1080,1150);ctx.clip();ctx.drawImage(overlay,0,0,1080,1350);ctx.restore();
+      ctx.save();ctx.beginPath();ctx.rect(0,photographic?1170:200,1080,photographic?180:1150);ctx.clip();ctx.drawImage(overlay,0,0,1080,1350);ctx.restore();
       var logoScale=Math.min(280/logo.width,125/logo.height);
       ctx.drawImage(logo,36,30,logo.width*logoScale,logo.height*logoScale);
-    }else ctx.drawImage(overlay,0,0,1080,1350);
+    }else if(photographic){ctx.save();ctx.beginPath();ctx.rect(0,0,340,190);ctx.rect(0,1170,1080,180);ctx.clip();ctx.drawImage(overlay,0,0,1080,1350);ctx.restore();}else ctx.drawImage(overlay,0,0,1080,1350);
     ctx.direction='rtl';ctx.textAlign='center';ctx.textBaseline='middle';
     var presets={bottom:{x:540,y:883,w:960},top:{x:540,y:320,w:960},right:{x:775,y:390,w:450},left:{x:305,y:390,w:450}};
+    if(photographic)presets.bottom={x:540,y:845,w:930};
     var position=presets[data.titlePosition]?data.titlePosition:'bottom',p=Object.assign({},presets[position]);
     p.w=number(data.textWidth,p.w,300,1000);
     var title=measure(ctx,data.headline,number(data.headlineSize,83,20,180),p.w,700,1.12);
@@ -124,10 +129,11 @@
       if(a.left<b.right && a.right>b.left && a.top<b.bottom+8 && a.bottom+8>b.top)
         problem('العناصر متداخلة. عدّل موضع السطر أو زر التفاعل.');
     }
+    if(photographic&&blocks.length){var top=Math.max(200,Math.min.apply(null,blocks.map(function(b){return b.top;}))-28),bottom=Math.min(1160,Math.max.apply(null,blocks.map(function(b){return b.bottom;}))+28);if(bottom>top){ctx.fillStyle='#123b64';ctx.beginPath();ctx.roundRect(35,top,1010,bottom-top,28);ctx.fill();}}
     // Opaque quiet panel under text placed over the scene; fixed overlay remains unchanged.
     [title,subtitle].forEach(function(layout,index){
       if(!layout)return;var y=index?subtitleY:titleY;
-      if(position!=='bottom' && y-layout.h/2<905) {
+      if(!photographic&&position!=='bottom' && y-layout.h/2<905) {
         ctx.fillStyle='#fff';ctx.beginPath();
         ctx.roundRect(p.x-p.w/2-12,y-layout.h/2-10,p.w+24,layout.h+20,18);ctx.fill();
       }
@@ -140,7 +146,7 @@
         ctx.fillStyle=color;ctx.fillText(line,x,baseline);
       });
     }
-    draw(title,p.x,titleY,'#07599d',true);draw(subtitle,p.x,subtitleY,'#272727');
+    draw(title,p.x,titleY,photographic?'#fff':'#07599d',!photographic);draw(subtitle,p.x,subtitleY,photographic?'#fff':'#272727');
     if(cta){ctx.fillStyle='#ff541d';ctx.beginPath();ctx.roundRect(540-buttonWidth/2,ctaY-buttonHeight/2,buttonWidth,buttonHeight,buttonHeight/2);ctx.fill();draw(cta,540,ctaY,'#fff');}
     canvas.designWarnings=issues;
     canvas.designIssues=[];
@@ -148,5 +154,6 @@
   }
   window.SSMPDDesignComposer={render:render,loadImage:loadImage,ready:ready,scenePrompt:scenePrompt};
 })();
+
 
 
