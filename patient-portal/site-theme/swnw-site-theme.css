@@ -1,0 +1,356 @@
+/* SWNW site theme for the patient portal.
+   Load this file AFTER all of the portal's own stylesheets. It only restyles (tokens, type,
+   buttons, surfaces) and styles the site header/footer added by swnw-site-chrome.js; it does
+   not change layout logic or hide anything. Keep the fonts/ folder next to this file. */
+
+@font-face { font-family: "SWNW Sans"; src: url("fonts/ibm-plex-sans-arabic-400.woff2") format("woff2"); font-weight: 400; font-display: swap; unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF; }
+@font-face { font-family: "SWNW Sans"; src: url("fonts/ibm-plex-sans-arabic-500.woff2") format("woff2"); font-weight: 500; font-display: swap; unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF; }
+@font-face { font-family: "SWNW Sans"; src: url("fonts/ibm-plex-sans-arabic-600.woff2") format("woff2"); font-weight: 600; font-display: swap; unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF; }
+@font-face { font-family: "SWNW Sans"; src: url("fonts/ibm-plex-sans-arabic-700.woff2") format("woff2"); font-weight: 700; font-display: swap; unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF; }
+@font-face { font-family: "SWNW Sans"; src: url("fonts/ibm-plex-sans-latin-400.woff2") format("woff2"); font-weight: 400; font-display: swap; unicode-range: U+0000-024F, U+2000-206F, U+20A0-20CF; }
+@font-face { font-family: "SWNW Sans"; src: url("fonts/ibm-plex-sans-latin-500.woff2") format("woff2"); font-weight: 500; font-display: swap; unicode-range: U+0000-024F, U+2000-206F, U+20A0-20CF; }
+@font-face { font-family: "SWNW Sans"; src: url("fonts/ibm-plex-sans-latin-600.woff2") format("woff2"); font-weight: 600; font-display: swap; unicode-range: U+0000-024F, U+2000-206F, U+20A0-20CF; }
+@font-face { font-family: "SWNW Sans"; src: url("fonts/ibm-plex-sans-latin-700.woff2") format("woff2"); font-weight: 700; font-display: swap; unicode-range: U+0000-024F, U+2000-206F, U+20A0-20CF; }
+
+/* ---- Tokens: the portal's own variables, mapped to the website palette ---- */
+:root {
+    --blue: #0F369D;
+    --blue-2: #0170B9;
+    --blue-soft: #EEF2FB;
+    --ink: #172033;
+    --muted: #5B6472;
+    --line: #DCE3EF;
+    --bg: #F6F6F6;
+    --shadow: 0 24px 64px -32px rgba(15, 54, 157, 0.35);
+    --swnw-navy: #0A1482;
+    --swnw-sky: #0096F2;
+    --swnw-orange: #F05A22;
+    --swnw-font: "SWNW Sans", system-ui, -apple-system, "Segoe UI", Tahoma, sans-serif;
+}
+
+/* ---- Type: one family everywhere (the portal mixes two display fonts) ---- */
+body,
+body button,
+body input,
+body select,
+body textarea,
+body h1,
+body h2,
+body h3,
+body h4,
+body p,
+body span,
+body b,
+body strong,
+body label,
+body a,
+body li,
+body td,
+body th,
+body div {
+    font-family: var(--swnw-font) !important;
+}
+
+body {
+    background: var(--bg) !important;
+    color: var(--ink);
+}
+
+h1,
+h2,
+h3 {
+    font-weight: 700;
+    letter-spacing: 0;
+}
+
+/* ---- Buttons: pill shape, blue by default, orange on hover (as on the website) ---- */
+.btn {
+    min-height: 50px;
+    padding-inline: 26px;
+    background: var(--blue);
+    border-radius: 999px;
+    font-weight: 600;
+    transition: background-color 160ms ease, color 160ms ease, border-color 160ms ease;
+}
+
+.btn:hover,
+.btn:focus-visible {
+    background: var(--swnw-orange);
+}
+
+.btn:focus-visible,
+.auth-nav-btn:focus-visible,
+.back-btn:focus-visible,
+.profile-tabs button:focus-visible {
+    outline: 3px solid var(--swnw-orange);
+    outline-offset: 2px;
+}
+
+.btn.secondary {
+    color: var(--blue);
+    background: #fff;
+    border: 2px solid var(--blue);
+}
+
+.btn.secondary:hover,
+.btn.secondary:focus-visible {
+    color: #fff;
+    background: var(--blue);
+}
+
+.btn.compact {
+    min-height: 42px;
+    padding-inline: 18px;
+    font-size: 13px;
+}
+
+.auth-nav-btn {
+    padding: 10px 18px;
+    color: var(--blue);
+    background: #fff;
+    border: 1.5px solid #C5D0EA;
+    font-size: 14px;
+}
+
+.auth-nav-btn:hover {
+    color: #fff;
+    background: var(--blue);
+    border-color: var(--blue);
+}
+
+.back-btn {
+    border-radius: 999px;
+}
+
+/* ---- Fields ---- */
+.field input,
+.field select,
+.field textarea {
+    border-color: #C9D1DF;
+    border-radius: 12px;
+    font-size: 16px;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px rgba(15, 54, 157, 0.15);
+}
+
+/* ---- Sign-in / activation screens ---- */
+.auth-page {
+    min-height: calc(100vh - 150px);
+    place-items: start center;
+    padding-block: clamp(28px, 5vw, 64px);
+}
+
+/* The website header already carries the logo, so the second one above the card is dropped. */
+.swnw-chrome-header ~ * .auth-brand,
+.swnw-chrome-header ~ .auth-page .auth-brand {
+    display: none;
+}
+
+.auth-card {
+    background: #fff;
+    border-color: #E3E7EF;
+    border-radius: 20px;
+}
+
+.auth-heading h1 {
+    color: var(--blue);
+    font-size: clamp(24px, 3vw, 32px);
+}
+
+.auth-brand b {
+    color: var(--blue);
+}
+
+/* ---- Signed-in shell ---- */
+.app-topbar {
+    background: #fff;
+    border-color: #E3E7EF;
+    border-radius: 0 0 16px 16px;
+}
+
+.profile-hero {
+    color: #fff;
+    background: linear-gradient(135deg, var(--blue) 0%, var(--swnw-sky) 100%) !important;
+    border: 0;
+    border-radius: 20px;
+}
+
+.profile-hero:after {
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.14), transparent 70%);
+}
+
+.profile-hero .hero-copy h1,
+.profile-hero .hero-copy p,
+.profile-hero .hero-copy .welcome,
+.profile-hero .hero-message,
+.profile-hero .hero-message strong,
+.profile-hero .hero-message span {
+    color: #fff;
+}
+
+.profile-hero .hero-message:after {
+    background: var(--swnw-orange);
+}
+
+.profile-tabs button {
+    color: var(--muted);
+    background: #EEF2FB;
+    font-weight: 600;
+}
+
+.profile-tabs button.active {
+    color: var(--blue);
+    background: #fff;
+}
+
+.profile-tabs button.active:after {
+    background: var(--swnw-orange);
+}
+
+.files-card,
+.details-card,
+.documents-section,
+.linked-section {
+    border-color: #E3E7EF;
+    border-radius: 16px;
+}
+
+.section-heading h2,
+.section-heading h3 {
+    color: var(--blue);
+}
+
+/* ---- Website header and footer (inserted by swnw-site-chrome.js) ---- */
+.swnw-chrome-header {
+    background: var(--swnw-navy);
+    font-family: var(--swnw-font);
+}
+
+.swnw-chrome-header__inner,
+.swnw-chrome-footer__inner {
+    display: flex;
+    max-width: 1280px;
+    margin-inline: auto;
+    padding-inline: 20px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px 22px;
+    flex-wrap: wrap;
+}
+
+.swnw-chrome-header__inner {
+    min-height: 76px;
+}
+
+.swnw-chrome-header__brand img {
+    display: block;
+    width: auto;
+    height: 54px;
+}
+
+.swnw-chrome-header nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 6px;
+}
+
+.swnw-chrome-header nav a {
+    padding: 9px 14px;
+    color: #fff;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.swnw-chrome-header nav a:hover,
+.swnw-chrome-header nav a:focus-visible {
+    background: var(--swnw-orange);
+    outline: 0;
+}
+
+.swnw-chrome-header__cta {
+    padding: 9px 22px;
+    color: #fff;
+    background: var(--swnw-orange);
+    border: 2px solid var(--swnw-orange);
+    border-radius: 999px;
+    font-size: 15px;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.swnw-chrome-header__cta:hover,
+.swnw-chrome-header__cta:focus-visible {
+    color: var(--swnw-orange);
+    background: #fff;
+    border-color: #fff;
+    outline: 0;
+}
+
+.swnw-chrome-footer {
+    margin-top: 40px;
+    color: #F1F4FA;
+    background: var(--swnw-navy);
+    font-family: var(--swnw-font);
+    font-size: 14px;
+}
+
+.swnw-chrome-footer__inner {
+    min-height: 64px;
+    padding-block: 14px;
+}
+
+.swnw-chrome-footer a {
+    color: #fff;
+    text-decoration: none;
+}
+
+.swnw-chrome-footer a:hover,
+.swnw-chrome-footer a:focus-visible {
+    text-decoration: underline;
+}
+
+.swnw-chrome-footer__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 18px;
+}
+
+@media (max-width: 720px) {
+    /* One compact row on phones: logo and the booking button; the footer keeps the link back to the site. */
+    .swnw-chrome-header__inner {
+        min-height: 64px;
+        flex-wrap: nowrap;
+    }
+
+    .swnw-chrome-header nav {
+        display: none;
+    }
+
+    .swnw-chrome-header__brand img {
+        height: 46px;
+    }
+
+    .swnw-chrome-header__cta {
+        padding: 7px 16px;
+        font-size: 14px;
+    }
+
+    .swnw-chrome-footer__inner {
+        justify-content: center;
+        text-align: center;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .btn {
+        transition: none;
+    }
+}
