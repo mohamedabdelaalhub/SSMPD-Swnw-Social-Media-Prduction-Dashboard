@@ -46,6 +46,7 @@ Deno.serve(async (req) => {
     const apiKey = Deno.env.get("OPENAI_API_KEY");
     if (!apiKey) throw new Error("لم يتم إعداد OPENAI_API_KEY في أسرار Supabase بعد.");
 
+    const model = Deno.env.get("CONTENT_AI_MODEL") || "gpt-4.1-mini";
     const body = await req.json();
     if(body?.mode === "design_copy") {
       if(!body.content_id)throw new Error("المادة مطلوبة.");
@@ -54,7 +55,7 @@ Deno.serve(async (req) => {
       if(itemRes.error||!itemRes.data)throw new Error("المادة غير متاحة لهذا الحساب.");
       const item=itemRes.data;
       const copyBrief={brand:item.brand,title:item.title,body:item.body,hook:item.hook_text,caption:item.caption_text,script:item.script_text,cta:item.cta_text,cta_type:item.cta_type,objective:item.advertising_objective};
-      const generated=await fetch("https://api.openai.com/v1/responses",{method:"POST",headers:{Authorization:"Bearer "+apiKey,"Content-Type":"application/json"},body:JSON.stringify({model:"gpt-5.6-sol",instructions:designStyle,input:JSON.stringify(copyBrief),text:{format:{type:"json_schema",name:"ssmpd_design_copy",strict:true,schema:{type:"object",additionalProperties:false,required:Object.keys(copyProperties),properties:copyProperties}}}})});
+      const generated=await fetch("https://api.openai.com/v1/responses",{method:"POST",headers:{Authorization:"Bearer "+apiKey,"Content-Type":"application/json"},body:JSON.stringify({model,instructions:designStyle,input:JSON.stringify(copyBrief),text:{format:{type:"json_schema",name:"ssmpd_design_copy",strict:true,schema:{type:"object",additionalProperties:false,required:Object.keys(copyProperties),properties:copyProperties}}}})});
       const result=await generated.json();
       if(!generated.ok)throw new Error(result?.error?.message||"تعذر اقتراح النصوص.");
       return Response.json({design_copy:checkedCopy(JSON.parse(responseText(result)))},{headers:cors});
@@ -105,7 +106,7 @@ Deno.serve(async (req) => {
       method: "POST",
       headers: { "Authorization": "Bearer " + apiKey, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "gpt-5.6-sol",
+        model,
         instructions:instructions+"\n"+designStyle,
         input: "SSMPD Dashboard Brief:\n" + JSON.stringify(brief),
         text: { format: { type: "json_schema", name: "ssmpd_content_ideas", strict: true, schema } }
@@ -131,8 +132,9 @@ Deno.serve(async (req) => {
         !["medical_educational", "doctor_talking", "quick_tips"].includes(idea.video_template)
       )) throw new Error("بيانات الفيديو غير مكتملة.");
     }
-    return Response.json({ ideas: parsed.ideas, model: "gpt-5.6-sol" }, { headers: { ...cors, "Content-Type": "application/json" } });
+    return Response.json({ ideas: parsed.ideas, model }, { headers: { ...cors, "Content-Type": "application/json" } });
   } catch (error) {
     return Response.json({ error: error instanceof Error ? error.message : "حدث خطأ غير معروف." }, { status: 400, headers: { ...cors, "Content-Type": "application/json" } });
   }
 });
+
