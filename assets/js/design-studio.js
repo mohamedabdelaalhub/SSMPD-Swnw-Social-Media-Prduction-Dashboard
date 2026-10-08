@@ -17,6 +17,15 @@
   });
  }
 
+ function offsetControl(key,label,min,max){
+  return '<div class="design-offset-control" style="margin:12px 0"><label for="design-number-'+key+'">'+label+'</label>'+ 
+   '<div style="display:grid;grid-template-columns:1fr 90px 1fr;gap:8px;align-items:center">'+
+   '<button type="button" class="btn ghost sm" style="min-height:44px" data-offset-step="'+key+'" data-delta="-5">لفوق</button>'+
+   '<input id="design-number-'+key+'" type="text" inputmode="text" dir="ltr" aria-label="'+label+' بالبكسل" data-number-for="'+key+'" min="'+min+'" max="'+max+'" value="0">'+
+   '<button type="button" class="btn ghost sm" style="min-height:44px" data-offset-step="'+key+'" data-delta="5">لتحت</button></div>'+
+   '<input type="range" dir="ltr" aria-label="'+label+'" data-field="'+key+'" min="'+min+'" max="'+max+'" step="1" value="0">'+
+   '<button type="button" class="btn ghost sm" style="min-height:44px" data-offset-reset="'+key+'">رجوع للصفر</button></div>';
+ }
  function mount(slot,item){
   if(!slot||!window.SSMPDDesignFiles.canEdit(item))return;
   var start=document.createElement('button'); start.className='btn ghost'; start.textContent=item.design_file_url?'تعديل التصميم الحالي':'إنشاء تصميم بالذكاء الاصطناعي'; slot.appendChild(start);
@@ -41,9 +50,9 @@
    '<label>حجم خط السطر التوضيحي بالبكسل<input type="number" data-field="subtitleSize" min="16" max="100" step="1" value="42"></label>'+
    '<label>حجم خط زر التفاعل بالبكسل<input type="number" data-field="ctaSize" min="16" max="80" step="1" value="31"></label>'+
    '<p>الموضع بالبكسل. السالب يحرّك لفوق والموجب لتحت. حجم الزر يتناسب مع النص.</p>'+
-   '<label>تحريك العنوان<input type="number" data-field="headlineOffset" min="-600" max="600" step="5" value="0"></label>'+
-   '<label>تحريك السطر التوضيحي<input type="number" data-field="subtitleOffset" min="-600" max="600" step="5" value="0"></label>'+
-   '<label>تحريك زر التفاعل<input type="number" data-field="ctaOffset" min="-900" max="60" step="5" value="0"></label>'+
+   offsetControl('headlineOffset','تحريك العنوان',-600,600)+
+   offsetControl('subtitleOffset','تحريك السطر التوضيحي',-600,600)+
+   offsetControl('ctaOffset','تحريك زر التفاعل',-900,60)+
    '<p>الشعار ثابت فوق الصورة. أبعد الوجه والتفاصيل المهمة عن ركن الشعار. يمكنك تعديل القص والموضع، وتظهر خلفية فاتحة تحت النص للحفاظ على وضوحه.</p></details>'+
    '<label>صورة من جهازك<input type="file" accept="image/png,image/jpeg,image/webp" data-upload></label>'+
    '<button class="btn ghost" data-library>صور سونو المحفوظة</button><div data-images style="display:flex;flex-wrap:wrap;gap:6px"></div>'+
@@ -84,16 +93,23 @@
   root.querySelector('[data-prompt]').value=item.title||'';
   root.querySelector('.modal-close').onclick=async function(){clearTimeout(draftTimer);if(loadFailed){root.remove();return;}if(restoring||working){draftStatus.textContent='انتظر انتهاء تحميل أو توليد الصورة قبل الإغلاق.';return;}try{await saveDraft();root.remove();}catch(e){}};
   root.querySelectorAll('input:not([type=file]),textarea,select').forEach(function(el){el.style.width='100%';el.style.boxSizing='border-box';el.style.marginBottom='10px';});
-  root.querySelectorAll('[data-number-for]').forEach(function(el){el.style.width='90px';el.style.display='inline-block';el.style.margin='0 8px';el.style.direction='ltr';});
+  root.querySelectorAll('[data-number-for]').forEach(function(el){el.style.width='90px';el.style.display='inline-block';el.style.margin=el.closest('.design-offset-control')?'0':'0 8px';el.style.direction='ltr';});
   function data(){var out={};root.querySelectorAll('[data-field]').forEach(function(el){out[el.dataset.field]=el.value;});var logo=savedLogo&&savedLogo.logoVariant===out.logoVariant?savedLogo:logos.find(function(row){return (row.variant||'primary')===out.logoVariant;});if(out.logoVariant!=='legacy'&&logo){out.logoStoragePath=logo.logoStoragePath||logo.storage_path;out.logoAssetId=logo.logoAssetId||logo.id;out.logoBrand=item.brand;}return out;}
   async function paint(){
    var current=++version;valid=false;buttons();
    try{var settings=data();if(!settings.headline.trim())throw new Error('اكتب عنوان التصميم.');var buffer=document.createElement('canvas');await C.render(buffer,scene,settings,{preview:true});if(current!==version)return;canvas.width=buffer.width;canvas.height=buffer.height;canvas.getContext('2d').drawImage(buffer,0,0);var issues=buffer.designIssues||[],warnings=buffer.designWarnings||[];valid=!!scene&&!issues.length;status.textContent=issues.length?issues.join(' '):scene?'المعاينة جاهزة للحفظ. '+(warnings.length?warnings.join(' ')+' يمكنك الحفظ بالقيم الحالية.':'راجع النص وموضع الصورة.'):'اختر صورة أو ولّد مشهدًا لبدء المعاينة.';}
    catch(e){if(current!==version)return;canvas.width=1080;canvas.height=1350;status.textContent='تعذر عرض القيم الحالية. '+e.message;}buttons();
   }
-  function buttons(){root.querySelectorAll('input,textarea,select,[data-library],[data-retry]').forEach(function(el){el.disabled=working||restoring||loadFailed;});root.querySelector('[data-download]').disabled=!valid||working||restoring||loadFailed;root.querySelector('[data-save]').disabled=!valid||working||restoring||loadFailed;root.querySelector('[data-generate]').disabled=working||restoring||loadFailed;}
-  root.querySelectorAll('[data-field]').forEach(function(el){function changed(){if(el.dataset.field==='logoVariant')savedLogo=null;if(el.dataset.field==='titlePosition'){root.querySelector('[data-field="x"]').value=el.value==='left'?100:el.value==='right'?0:50;root.querySelector('[data-field="headlineOffset"]').value=0;root.querySelector('[data-field="subtitleOffset"]').value=0;}if(el.dataset.field==='fadeStartY'){var end=root.querySelector('[data-field="fadeEndY"]');if(Number(end.value)<Number(el.value)+50){end.value=Math.min(1120,Number(el.value)+50);var endOutput=root.querySelector('[data-value="fadeEndY"]');if(endOutput)endOutput.textContent=end.value;}}if(el.dataset.field==='fadeEndY'){var start=root.querySelector('[data-field="fadeStartY"]');if(Number(start.value)>Number(el.value)-50){start.value=Math.max(500,Number(el.value)-50);var startOutput=root.querySelector('[data-value="fadeStartY"]');if(startOutput)startOutput.textContent=start.value;}}var numberInput=root.querySelector('[data-number-for="'+el.dataset.field+'"]');if(numberInput)numberInput.value=el.value;var output=root.querySelector('[data-value="'+el.dataset.field+'"]');if(output)output.textContent=el.dataset.field==='ctaScale'?Math.round(Number(el.value)*100)+'%':el.value;paint();}el.oninput=changed;el.onchange=changed;});
-  root.querySelectorAll('[data-number-for]').forEach(function(input){var slider=root.querySelector('[data-field="'+input.dataset.numberFor+'"]');function changed(){if(input.value==='')return;var min=Number(input.min),max=Number(input.max),value=Math.max(min,Math.min(max,Number(input.value)));if(!Number.isFinite(value))return;input.value=value;slider.value=value;slider.dispatchEvent(new Event('input',{bubbles:true}));}input.oninput=changed;input.onchange=changed;});
+  function buttons(){root.querySelectorAll('input,textarea,select,[data-library],[data-retry],[data-offset-step],[data-offset-reset]').forEach(function(el){el.disabled=working||restoring||loadFailed;});root.querySelector('[data-download]').disabled=!valid||working||restoring||loadFailed;root.querySelector('[data-save]').disabled=!valid||working||restoring||loadFailed;root.querySelector('[data-generate]').disabled=working||restoring||loadFailed;}
+  root.querySelectorAll('[data-field]').forEach(function(el){function changed(){if(el.dataset.field==='logoVariant')savedLogo=null;if(el.dataset.field==='titlePosition'){root.querySelector('[data-field="x"]').value=el.value==='left'?100:el.value==='right'?0:50;root.querySelector('[data-field="headlineOffset"]').value=0;root.querySelector('[data-field="subtitleOffset"]').value=0;['headlineOffset','subtitleOffset'].forEach(function(key){root.querySelector('[data-number-for="'+key+'"]').value=0;});}if(el.dataset.field==='fadeStartY'){var end=root.querySelector('[data-field="fadeEndY"]');if(Number(end.value)<Number(el.value)+50){end.value=Math.min(1120,Number(el.value)+50);var endOutput=root.querySelector('[data-value="fadeEndY"]');if(endOutput)endOutput.textContent=end.value;}}if(el.dataset.field==='fadeEndY'){var start=root.querySelector('[data-field="fadeStartY"]');if(Number(start.value)>Number(el.value)-50){start.value=Math.max(500,Number(el.value)-50);var startOutput=root.querySelector('[data-value="fadeStartY"]');if(startOutput)startOutput.textContent=start.value;}}var numberInput=root.querySelector('[data-number-for="'+el.dataset.field+'"]');if(numberInput)numberInput.value=el.value;var output=root.querySelector('[data-value="'+el.dataset.field+'"]');if(output)output.textContent=el.dataset.field==='ctaScale'?Math.round(Number(el.value)*100)+'%':el.value;paint();}el.oninput=changed;el.onchange=changed;});
+  root.querySelectorAll('[data-number-for]').forEach(function(input){var slider=root.querySelector('[data-field="'+input.dataset.numberFor+'"]');function changed(){if(input.value==='')return;var min=Number(input.getAttribute('min')),max=Number(input.getAttribute('max')),value=Math.max(min,Math.min(max,Number(input.value)));if(!Number.isFinite(value))return;input.value=value;slider.value=value;slider.dispatchEvent(new Event('input',{bubbles:true}));}input.oninput=changed;input.onchange=changed;});
+  root.querySelectorAll('[data-offset-step],[data-offset-reset]').forEach(function(button){button.onclick=function(){
+   if(working||restoring||loadFailed)return;
+   var key=button.dataset.offsetStep||button.dataset.offsetReset,slider=root.querySelector('[data-field="'+key+'"]');
+   var value=button.dataset.offsetReset?0:Number(slider.value)+Number(button.dataset.delta);
+   slider.value=Math.max(Number(slider.min),Math.min(Number(slider.max),value));
+   slider.dispatchEvent(new Event('input',{bubbles:true}));
+  };});
   async function setScene(url){
    var loaded=await C.loadImage(url),raw=document.createElement('canvas');raw.width=loaded.width;raw.height=loaded.height;raw.getContext('2d').drawImage(loaded,0,0);
    var stored=await new Promise(function(resolve,reject){try{raw.toBlob(function(blob){blob?resolve(blob):reject(new Error('تعذر حفظ صورة المسودة'));},'image/png');}catch(e){reject(e);}});
