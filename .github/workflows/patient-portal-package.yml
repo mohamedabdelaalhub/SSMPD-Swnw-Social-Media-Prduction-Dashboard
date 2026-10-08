@@ -1,0 +1,32 @@
+name: Patient portal IIS package
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'patient-portal/**'
+      - 'assets/js/nutrition-view.js'
+      - 'assets/css/nutrition.css'
+      - 'assets/img/**'
+      - 'assets/fonts/**'
+      - 'config.js'
+      - 'scripts/build-patient-portal.mjs'
+      - 'deploy/patient-portal.web.config'
+      - '.github/workflows/patient-portal-package.yml'
+permissions:
+  contents: read
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node scripts/build-patient-portal.mjs . dist/patient-portal
+      - uses: actions/upload-artifact@v4
+        with:
+          name: patient-portal-iis
+          path: dist/patient-portal/
+          retention-days: 14
+          if-no-files-found: error

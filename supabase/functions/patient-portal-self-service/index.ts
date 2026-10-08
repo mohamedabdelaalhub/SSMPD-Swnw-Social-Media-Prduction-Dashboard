@@ -542,7 +542,18 @@ Deno.serve(async (req) => {
     const { data: authUser, error: authUserError } = await admin.auth.admin.getUserById(account.auth_user_id);
     if (authUserError || !authUser.user || normalizeEmail(authUser.user.email) !== email) return accepted();
 
-    const resetUrl = "https://mohamedabdelaalhub.github.io/SSMPD-Swnw-Social-Media-Prduction-Dashboard/patient-portal/?reset=1";
+    const portalBase = Deno.env.get("PATIENT_PORTAL_BASE_URL") || "https://mohamedabdelaalhub.github.io/SSMPD-Swnw-Social-Media-Prduction-Dashboard/patient-portal/";
+    let resetUrl: string;
+    try {
+      const target = new URL(portalBase);
+      const allowed = target.origin === "https://portal.swnwclinics.com" ||
+        (target.origin === "https://mohamedabdelaalhub.github.io" && target.pathname === "/SSMPD-Swnw-Social-Media-Prduction-Dashboard/patient-portal/");
+      if (!allowed || target.username || target.password || target.search || target.hash) throw new Error("Invalid portal URL");
+      target.searchParams.set("reset", "1");
+      resetUrl = target.href;
+    } catch {
+      return json({ error: "PORTAL_URL_NOT_CONFIGURED" }, 503);
+    }
     const recover = await fetch(SUPABASE_URL + "/auth/v1/recover", {
       method: "POST",
       headers: { "Content-Type": "application/json", apikey: ANON_KEY },
@@ -585,3 +596,4 @@ Deno.serve(async (req) => {
 
   return json({ error: "UNKNOWN_OPERATION" }, 400);
 });
+
