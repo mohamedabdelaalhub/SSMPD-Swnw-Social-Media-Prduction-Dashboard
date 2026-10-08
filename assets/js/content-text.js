@@ -33,12 +33,11 @@
       "\n\nموافق = حفظ النص كما هو لو التكرار مقصود.\nإلغاء = الرجوع لتعديل النص. لن نحذف أي نص تلقائيًا.");
   }
 
-  // Matches the existing meta-publish-process body/title fallback exactly.
   function publicationText(item) {
-    return item.body || item.title || "";
+    return window.SSMPDPublicationText.compose(item);
   }
 
-  function preview(item, actionLabel) {
+  function preview(item, actionLabel, options) {
     return new Promise(function (resolve) {
       var modal = document.createElement("div");
       modal.className = "modal-backdrop";
@@ -47,13 +46,13 @@
         "<div class=\"modal-head\"><h3>معاينة نص النشر</h3><button class=\"modal-close\" aria-label=\"إغلاق\" data-i18n-aria-label=\"%D8%A5%D8%BA%D9%84%D8%A7%D9%82\" data-i18n-aria-label=\"%D8%A5%D8%BA%D9%84%D8%A7%D9%82\">×</button></div>" +
         '<p data-source style="color:var(--c-muted)"></p>' +
         '<p data-repeat role="alert" style="color:var(--c-negative);white-space:pre-wrap"></p>' +
-        '<div data-text dir="auto" style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:45vh;overflow:auto;padding:14px;border:1px solid var(--c-border);border-radius:8px"></div>' +
+        '<div data-post-preview></div>' +
         '<div style="display:flex;gap:8px;margin-top:16px"><button class="btn" data-continue></button>' +
         '<button class="btn ghost" data-back>رجوع بدون نشر</button></div></div>';
       var text = publicationText(item);
       var repeated = repeatedExcerpt(text);
-      modal.querySelector("[data-source]").textContent = item.body ? "المصدر الحالي للنشر هو نص المحتوى." : "نص المحتوى فارغ، لذلك سيُنشر العنوان.";
-      modal.querySelector("[data-text]").textContent = text;
+      modal.querySelector("[data-source]").textContent = "راجع النص والتصميم قبل التأكيد.";
+
       modal.querySelector("[data-repeat]").textContent = repeated ? "فيه مقطع مكرر\n«" + repeated.slice(0, 180) + "»\nيمكنك الرجوع للتعديل أو تأكيد التكرار لو مقصود." : "";
       modal.querySelector("[data-continue]").textContent = repeated ? actionLabel + " بالنص المكرر" : actionLabel;
       var previousFocus = document.activeElement;
@@ -66,7 +65,7 @@
       function onKey(e) {
         if (e.key === "Escape") { e.preventDefault(); e.stopImmediatePropagation(); finish(false); }
         if (e.key === "Tab") {
-          var buttons = Array.from(modal.querySelectorAll("button"));
+          var buttons = Array.from(modal.querySelectorAll("button,a[href]"));
           var index = buttons.indexOf(document.activeElement);
           e.preventDefault(); buttons[(index + (e.shiftKey ? buttons.length - 1 : 1)) % buttons.length].focus();
         }
@@ -75,10 +74,12 @@
       modal.querySelector("[data-back]").onclick = modal.querySelector(".modal-close").onclick = function () { finish(false); };
       modal.onclick = function (e) { if (e.target === modal) finish(false); };
       document.body.appendChild(modal);
+      window.SSMPDPublicationPreview.mount(modal.querySelector("[data-post-preview]"), item, options);
       document.addEventListener("keydown", onKey, true);
       modal.querySelector("[data-back]").focus();
     });
   }
   window.SSMPDContentText = { repeatedExcerpt: repeatedExcerpt, confirmSave: confirmSave, publicationText: publicationText, preview: preview };
 })();
+
 

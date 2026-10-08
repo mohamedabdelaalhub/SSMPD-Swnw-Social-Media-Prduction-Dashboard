@@ -1,3 +1,4 @@
+import "../../../assets/js/publication-text.js";
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
@@ -186,7 +187,15 @@ async function rehostImageToStorage(admin: ReturnType<typeof createClient>, jobI
       { headers: { Authorization: `Bearer ${googleAccessToken}` } }
     );
   } else {
-    res = await fetch(sourceUrl);
+    const source = new URL(sourceUrl);
+    const prefix = "/storage/v1/object/authenticated/content-designs/";
+    if (source.origin === new URL(Deno.env.get("SUPABASE_URL")!).origin && source.pathname.startsWith(prefix)) {
+      const file = await admin.storage.from("content-designs").download(decodeURIComponent(source.pathname.slice(prefix.length)));
+      if (file.error || !file.data) throw new Error("تعذّر تحميل التصميم من التخزين");
+      res = new Response(file.data, { headers: { "content-type": file.data.type } });
+    } else {
+      res = await fetch(sourceUrl);
+    }
   }
 
   if (!res.ok) {
@@ -281,13 +290,13 @@ async function processJob(admin: ReturnType<typeof createClient>, job: any) {
     return;
   }
 
-  const contentRes = await admin.from("content_items").select("title, body, design_file_url, published_url, published_urls").eq("id", job.content_id).maybeSingle();
-  const content = contentRes.data as { title: string; body: string | null; design_file_url: string | null; published_url: string | null; published_urls: Record<string, string> | null } | null;
+  const contentRes = await admin.from("content_items").select("title, body, caption_text, cta_text, design_file_url, published_url, published_urls").eq("id", job.content_id).maybeSingle();
+  const content = contentRes.data as { title: string; body: string | null; caption_text: string | null; cta_text: string | null; design_file_url: string | null; published_url: string | null; published_urls: Record<string, string> | null } | null;
   if (!content) {
     await admin.from("meta_publish_jobs").update({ status: "failed", error_code: "CONTENT_NOT_FOUND", error_message: "مادة المحتوى غير موجودة." }).eq("id", job.id);
     return;
   }
-  const message = content.body || content.title || "";
+  const message: string = (globalThis as any).SSMPDPublicationText.compose(content);
 
   var imageUrl: string | null = null;
   if (content.design_file_url) {
@@ -384,3 +393,4 @@ Deno.serve(async (req) => {
   }
   return json({ ok: true, processed: jobs.length });
 });
+

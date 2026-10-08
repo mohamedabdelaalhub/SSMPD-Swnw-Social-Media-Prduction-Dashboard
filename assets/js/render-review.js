@@ -122,6 +122,14 @@
   }
 
   function openReviewModal(id, items, admins, designersAll) {
+    return window.SSMPDDb.getContentItem(id).then(function(current) {
+      if (!current) throw new Error("المادة غير موجودة");
+      var latest = items.map(function(row) { return row.id === id ? current : row; });
+      showReviewModal(id, latest, admins, designersAll);
+    }).catch(function(error) { if(window.SSMPDToast) window.SSMPDToast.show(error.message,"error"); else alert(error.message); });
+  }
+
+  function showReviewModal(id, items, admins, designersAll) {
     var item = items.filter(function (i) { return i.id === id; })[0];
     if (!item) return;
     // designersAll (list_designers_all RPC) بيشمل الرول الأساسي والإضافي —
@@ -181,8 +189,8 @@
       "<div style=\"flex:1;min-width:140px;\"><label> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%A7%D8%AF%D8%A9%20%D8%AF%D9%8A%20%D9%84%D8%B5%D9%81%D8%AD%D8%A9-->المادة دي لصفحة</label>" + W.brandSelectHtml("rv-brand", item.brand || "") + '</div>' +
       "<div style=\"flex:1;min-width:140px;\"><label> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AA%D8%AE%D8%B5%D8%B5-->التخصص</label>" + W.specialtySelectHtml("rv-specialty", item.specialty || "") + '</div>' +
       "<button class=\"btn ghost sm\" id=\"rv-save-brand\" style=\"margin-bottom:1px;\"> <!--ssmpd-i18n:%D8%AD%D9%81%D8%B8-->حفظ</button></div>" +
-      '<p style="white-space:pre-wrap;">' + escapeHtml(item.body || "") + '</p>' +
-      (item.design_file_url ? '<p><a href="' + item.design_file_url + '" target="_blank" class="btn ghost sm">فتح ملف التصميم</a></p>' : '') +
+      '<div id="review-publication-preview"></div>' +
+      '<div id="review-website-publish"></div>' +
       '<div style="margin:6px 0 14px;">' + W.itemActionsHtml(item, window.SSMPDAuth.currentAdmin) + '</div>' +
       '<div id="review-design-edit-slot"></div>' +
       reassignHtml +
@@ -190,10 +198,12 @@
       W.metaLinksSectionHtml(item) +
       '<div id="comments-slot"></div></div>';
     document.body.appendChild(backdrop);
+    window.SSMPDPublicationPreview.mount(backdrop.querySelector("#review-publication-preview"),item);
+    window.SSMPDWebsite.mountAction(backdrop.querySelector("#review-website-publish"),item);
     if(item.design_file_url||item.stage==='final_approval')window.SSMPDDesignStudio.mount(backdrop.querySelector("#review-design-edit-slot"),item);
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
     backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
-    W.wireItemActions(backdrop, item, function () { render(document.getElementById("view-container")); });
+    W.wireItemActions(backdrop, item, function () { backdrop.remove(); render(document.getElementById("view-container")); });
     W.wireMetaLinksSection(backdrop, item, window.SSMPDAuth.currentAdmin);
 
     var adminsById = {}; admins.forEach(function (a) { adminsById[a.id] = a; });
@@ -294,6 +304,7 @@
 
   window.SSMPDRenderReview = { render: render };
 })();
+
 
 
 

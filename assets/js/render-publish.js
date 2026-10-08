@@ -126,6 +126,8 @@
     window.SSMPDWebsite.mount(container, ctx.allItems);
     wireViewToggle(container, ctx);
     wire(container);
+    window.SSMPDPublicationPreview.mountSlots(container,scheduled.concat(ready));
+    window.SSMPDWebsite.mountActions(container,scheduled.concat(ready));
     scheduled.concat(ready).forEach(function (i) {
       var slot = document.getElementById("comments-slot-" + i.id);
       if (slot) window.SSMPDComments.render(slot, i.id, adminsById);
@@ -255,6 +257,8 @@
     var detailsBox = backdrop.querySelector('[id^="publish-details-"]');
     if (detailsBox) detailsBox.style.display = "block";
     wire(backdrop);
+    window.SSMPDPublicationPreview.mountSlots(backdrop,[item]);
+    window.SSMPDWebsite.mountActions(backdrop,[item]);
     updateManualLinkVisibility(item.id);
     var slot = backdrop.querySelector("#comments-slot-" + item.id);
     if (slot) window.SSMPDComments.render(slot, item.id, ctx.adminsById);
@@ -348,7 +352,7 @@
         '</div>' +
         '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px;">' +
         '<button class="btn" data-schedule="' + i.id + '">جدولة</button>' +
-        '<button class="btn ghost" data-publish-now="' + i.id + '">نشر الآن</button>' +
+        '<button class="btn ghost" data-publish-now="' + i.id + '">نشر السوشيال الآن</button>' +
         '</div>' + jobHtml;
     } else {
       actionsHtml = jobHtml;
@@ -386,11 +390,10 @@
       '</div>' +
       '<button class="btn ghost sm" data-toggle-publish-details="' + i.id + "\"> <!--ssmpd-i18n:%D9%81%D8%AA%D8%AD%20%D8%A7%D9%84%D8%AA%D9%81%D8%A7%D8%B5%D9%8A%D9%84-->فتح التفاصيل</button>" +
       '</div>' +
+      '<div data-publication-preview="' + i.id + '"></div>' +
+      '<div data-website-publish-action="' + i.id + '"></div>' +
       '<div id="publish-details-' + i.id + '" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--c-border);">' +
       '<div class="meta">بواسطة: ' + escapeHtml(ownerName) + ' · مصمم: ' + escapeHtml(designerName) + '</div>' +
-      '<h4>نص النشر</h4><p style="white-space:pre-wrap;margin:8px 0;">' + escapeHtml(window.SSMPDContentText.publicationText(i)) + '</p>' +
-      (window.SSMPDContentText.repeatedExcerpt(window.SSMPDContentText.publicationText(i)) ? '<p role="alert" style="color:var(--c-negative)">فيه مقطع مكرر في نص النشر. راجع المادة قبل التأكيد.</p>' : '') +
-      (i.design_file_url ? '<p><a href="' + i.design_file_url + '" target="_blank" class="btn ghost sm">فتح ملف التصميم المعتمد</a></p>' : '<p style="color:var(--c-muted);font-size:12px;">مفيش ملف تصميم مرفوع</p>') +
       actionsHtml +
       '<div id="comments-slot-' + i.id + '" style="margin-top:10px;"></div>' +
       '</div>' +
@@ -605,3 +608,4 @@
 
   window.SSMPDRenderPublish = { render: render };
 })();
+
