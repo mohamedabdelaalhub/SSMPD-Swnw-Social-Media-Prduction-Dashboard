@@ -1,5 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { buildPayload,imageBytes,deliver } from './transport.mjs';
+import { buildPayload,imageBytes,deliver,privateKey } from './transport.mjs';
 const cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization,apikey,content-type,x-client-info','Access-Control-Allow-Methods':'POST,OPTIONS'};
 Deno.serve(async(req)=>{
  const reply=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{...cors,'Content-Type':'application/json'}});
@@ -34,6 +34,23 @@ Deno.serve(async(req)=>{
     if(downloadError||!file)throw Error('IMAGE_DOWNLOAD_FAILED');
     if(file.size>5*1024*1024)throw Error('INVALID_FILE');
     body.image=imageBytes(new Uint8Array(await file.arrayBuffer()));
+   }
+   // Carousel slides and reels: short-lived (2h) download links — the studio must copy the files when it receives them.
+   if(job.action==='upsert' && Array.isArray(job.payload._slides) && job.payload._slides.length>1){
+    const images=[];
+    for(const [i,slide] of job.payload._slides.slice(0,10).entries()){
+     const k=privateKey(slide,new URL(url).origin,'content-designs',job.content_id);if(!k)throw Error('INVALID_FILE');
+     const {data:signed,error:signError}=await db.storage.from('content-designs').createSignedUrl(k,7200);
+     if(signError||!signed)throw Error('IMAGE_DOWNLOAD_FAILED');
+     images.push({index:i+1,url:signed.signedUrl,mime:'image/png'});
+    }
+    body.images=images;
+   }
+   if(job.action==='upsert' && job.payload._videoUrl){
+    const k=privateKey(job.payload._videoUrl,new URL(url).origin,'video-inputs',null);if(!k)throw Error('INVALID_FILE');
+    const {data:signed,error:signError}=await db.storage.from('video-inputs').createSignedUrl(k,7200);
+    if(signError||!signed)throw Error('VIDEO_DOWNLOAD_FAILED');
+    body.video={url:signed.signedUrl,mime:'video/mp4',expiresInSeconds:7200};
    }
    result=await deliver(target.href,secret,body);
    if(result.status==='failed'||result.status==='retry')reason='HTTP_'+result.http;
