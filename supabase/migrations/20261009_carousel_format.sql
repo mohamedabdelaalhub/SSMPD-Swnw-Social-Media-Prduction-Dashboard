@@ -71,6 +71,6 @@ begin
  values(p_content_id,public.my_admin_id(),'حفظ كاروسيل ('||n||' شرايح)',item.stage,item.stage);
  return jsonb_build_object('item',to_jsonb(item));
 end $$;
-revoke all on function public.save_private_carousel(uuid,text[],jsonb) from public;
+revoke all on function public.save_private_carousel(uuid,text[],jsonb) from public,anon;
 grant execute on function public.save_private_carousel(uuid,text[],jsonb) to authenticated;
 commit;
