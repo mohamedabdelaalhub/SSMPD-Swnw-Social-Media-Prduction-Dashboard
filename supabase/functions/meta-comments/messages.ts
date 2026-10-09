@@ -26,11 +26,20 @@ export async function syncMessages(db: any, brand: string, cfg: any, token: stri
   const pageId = cfg.facebook_page_id, igId = cfg.instagram_business_account_id;
   for (const platform of ["messenger", "instagram"] as const) {
     if (platform === "instagram" && !igId) continue;
+    // Instagram rejects nested messages on the conversations list ("reduce the amount of data"/timeout),
+    // so there the messages of each conversation are read one by one.
+    const ig = platform === "instagram";
     const r = await gget(`${pageId}/conversations`, {
-      platform, fields: "id,link,updated_time,messages.limit(6){id,message,from,created_time}",
-      limit: platform === "instagram" ? "8" : "20", access_token: token
+      platform, fields: ig ? "id,updated_time" : "id,link,updated_time,messages.limit(6){id,message,from,created_time}",
+      limit: ig ? "10" : "20", access_token: token
     });
     if (!r.ok) { report.errors.push(`${brand} ${platform} messages: ${r.error}`); continue; }
+    if (ig) for (const conv of r.data.data || []) {
+      if (conv.updated_time && Date.now() - Date.parse(conv.updated_time) > 3 * 864e5) { conv.messages = { data: [] }; continue; }
+      const mr = await gget(`${conv.id}/messages`, { fields: "id,message,from,created_time", limit: "6", access_token: token });
+      conv.messages = { data: mr.ok ? mr.data.data || [] : [] };
+      if (!mr.ok) report.errors.push(`${brand} instagram conversation: ${mr.error}`);
+    }
     const plat = platform === "messenger" ? "facebook" : "instagram";
     const selfIds = new Set([pageId, igId].filter(Boolean));
     for (const conv of r.data.data || []) {
