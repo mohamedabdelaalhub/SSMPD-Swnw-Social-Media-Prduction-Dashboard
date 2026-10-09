@@ -28,7 +28,20 @@
   var result=await client().rpc('save_private_design_version',{p_content_id:item.id,p_output_url:base()+outputPath,p_source_url:sourcePath?base()+sourcePath:null,p_scene_job_id:sceneJobId||null,p_settings:settings,p_base_version:baseVersion||null});
   if(result.error)throw result.error;return result.data;
  }
- function canEdit(item){var me=window.SSMPDAuth.currentAdmin,R=window.SSMPDRoles;return !!(me&&R.canCreateAIDesign(me)&&item.brand==='sono'&&item.content_format!=='video'&&!['published','scheduled','ready_to_publish'].includes(item.stage)&&(window.SSMPDWorkflow.canEditItem(me,item)||item.assigned_designer===me.id||(item.design_execution==='ai'&&['in_design','needs_revision','final_approval'].includes(item.stage)&&R.hasRole(me,'approver'))));}
- window.SSMPDDesignFiles={resolve:resolve,view:view,path:path,latest:latest,save:save,canEdit:canEdit};
+ // Carousel: every slide is its own private design file (<content>/<uuid>/output.png), saved together by one RPC.
+ async function saveCarousel(item,blobs,settings){
+  if(!blobs||blobs.length<2||blobs.length>10)throw new Error('الكاروسيل لازم يكون من ٢ لـ ١٠ صور');
+  var storage=client().storage.from(bucket),urls=[];
+  for(var i=0;i<blobs.length;i++){
+   var key=item.id+'/'+crypto.randomUUID()+'/output.png';
+   var upload=await storage.upload(key,blobs[i],{contentType:'image/png',upsert:false});
+   if(upload.error)throw new Error('تعذر حفظ الشريحة '+(i+1)+'. '+upload.error.message);
+   urls.push(base()+key);
+  }
+  var result=await client().rpc('save_private_carousel',{p_content_id:item.id,p_output_urls:urls,p_settings:settings||{}});
+  if(result.error)throw result.error;return result.data;
+ }
+ function canEdit(item){var me=window.SSMPDAuth.currentAdmin,R=window.SSMPDRoles;return !!(me&&R.canCreateAIDesign(me)&&item.brand==='sono'&&item.content_format!=='video'&&item.content_format!=='carousel'&&!['published','scheduled','ready_to_publish'].includes(item.stage)&&(window.SSMPDWorkflow.canEditItem(me,item)||item.assigned_designer===me.id||(item.design_execution==='ai'&&['in_design','needs_revision','final_approval'].includes(item.stage)&&R.hasRole(me,'approver'))));}
+ window.SSMPDDesignFiles={resolve:resolve,view:view,path:path,latest:latest,save:save,saveCarousel:saveCarousel,canEdit:canEdit};
 })();
 

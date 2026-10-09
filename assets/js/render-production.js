@@ -74,6 +74,7 @@
     var fmtKey = x.formatKey || x.content_format || "";
     if (!fmtKey) {
       if (/reel|فيديو|video/i.test(fmtRaw)) fmtKey = "video";
+      else if (/كاروسيل|carousel/i.test(fmtRaw)) fmtKey = "carousel";
       else if (/صورة|بوست|image/i.test(fmtRaw)) fmtKey = "image_post";
       else if (/رابط|link/i.test(fmtRaw)) fmtKey = "link_post";
     }
@@ -253,8 +254,9 @@
 
       var duration = parseDuration(values.format + "\n" + block);
       var fmtKey = /reel|فيديو|video/i.test(values.format) ? "video" :
+        (/كاروسيل|carousel/i.test(values.format) ? "carousel" :
         (/صورة|بوست|image/i.test(values.format) ? "image_post" :
-        (/رابط|link/i.test(values.format) ? "link_post" : ""));
+        (/رابط|link/i.test(values.format) ? "link_post" : "")));
       var title = h.title || values.hook || values.idea.split("\n")[0] || ("فكرة " + h.number);
 
       out.push(normalizeImportedIdea({

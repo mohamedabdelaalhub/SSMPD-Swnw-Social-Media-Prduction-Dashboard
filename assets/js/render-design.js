@@ -124,8 +124,12 @@
         (item.design_file_url ? '<p><a href="' + item.design_file_url + '" target="_blank" class="btn ghost sm">فتح آخر تصميم مرفوع</a></p>' : '') +
         '<div style="margin:10px 0;">' + W.itemActionsHtml(item, window.SSMPDAuth.currentAdmin) + '</div>' +
         '<div id="design-studio-slot"></div>' +
-        '<div class="upload-box" id="upload-box">اسحب ملف التصميم هنا أو اضغط للاختيار<br>' +
-        '<input type="file" id="design-file-input" style="display:none;"></div>' +
+        (item.content_format === "carousel"
+          ? '<div class="upload-box" id="upload-box">اسحب صور الكاروسيل هنا أو اضغط للاختيار (من ٢ لـ ١٠ صور)<br>' +
+            '<small>الصور بتترتب حسب اسم الملف، فسمّيها 01، 02، 03…</small>' +
+            '<input type="file" id="design-file-input" multiple accept="image/png,image/jpeg,image/webp" style="display:none;"></div>'
+          : '<div class="upload-box" id="upload-box">اسحب ملف التصميم هنا أو اضغط للاختيار<br>' +
+            '<input type="file" id="design-file-input" style="display:none;"></div>') +
         '<div id="upload-status" style="font-size:12px;color:var(--c-muted);"></div>' +
         W.metaLinksSectionHtml(item) +
         '<div id="comments-slot"></div></div>';
@@ -148,11 +152,59 @@
       box.ondragleave = function () { box.classList.remove("drag"); };
       box.ondrop = function (e) {
         e.preventDefault(); box.classList.remove("drag");
-        if (e.dataTransfer.files.length) handleUpload(e.dataTransfer.files[0], item, backdrop);
+        if (!e.dataTransfer.files.length) return;
+        if (item.content_format === "carousel") handleCarouselUpload(e.dataTransfer.files, item, backdrop);
+        else handleUpload(e.dataTransfer.files[0], item, backdrop);
       };
       input.onchange = function () {
-        if (input.files.length) handleUpload(input.files[0], item, backdrop);
+        if (!input.files.length) return;
+        if (item.content_format === "carousel") handleCarouselUpload(input.files, item, backdrop);
+        else handleUpload(input.files[0], item, backdrop);
       };
+    });
+  }
+
+  async function toPng(file) {
+    var local = URL.createObjectURL(file);
+    try {
+      var image = await window.SSMPDDesignComposer.loadImage(local), canvas = document.createElement("canvas");
+      canvas.width = image.width; canvas.height = image.height; canvas.getContext("2d").drawImage(image, 0, 0);
+      return await new Promise(function (resolve, reject) { canvas.toBlob(function (blob) { blob ? resolve(blob) : reject(new Error("تعذر تصدير الصورة")); }, "image/png"); });
+    } finally { URL.revokeObjectURL(local); }
+  }
+
+  // كاروسيل: كل الصور بتتحفظ مع بعض كتصميم واحد، والشريحة الأولى هي الغلاف.
+  function handleCarouselUpload(fileList, item, backdrop) {
+    var status = document.getElementById("upload-status");
+    var me = window.SSMPDAuth.currentAdmin;
+    if (backdrop.dataset.uploading) return;
+    var files = Array.prototype.slice.call(fileList).sort(function (a, b) {
+      return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" });
+    });
+    backdrop.dataset.uploading = "1";
+    (async function () {
+      if (files.length < 2 || files.length > 10) throw new Error("اختار من ٢ لـ ١٠ صور للكاروسيل");
+      files.forEach(function (f) {
+        if (!["image/png", "image/jpeg", "image/webp"].includes(f.type)) throw new Error("الملف " + f.name + " مش صورة PNG أو JPG أو WEBP");
+        if (f.size > 20 * 1024 * 1024) throw new Error("الصورة " + f.name + " أكبر من ٢٠ ميجابايت");
+      });
+      var blobs = [];
+      for (var i = 0; i < files.length; i++) {
+        status.textContent = "تجهيز الشريحة " + (i + 1) + " من " + files.length + "…";
+        blobs.push(await toPng(files[i]));
+      }
+      status.textContent = "حفظ " + files.length + " شرايح على الحساب…";
+      await window.SSMPDDesignFiles.saveCarousel(item, blobs, { template: "uploaded-carousel", original_names: files.map(function (f) { return f.name; }) });
+      var newStage = item.stage === "in_design" || item.stage === "needs_revision" ? "final_approval" : item.stage;
+      var updated = newStage !== item.stage ? await window.SSMPDDb.updateContentItem(item.id, { stage: newStage }) : item;
+      window.SSMPDDrive.logDesignUploaded(item.id, updated.title).catch(function () {});
+      window.SSMPDDb.logUsageActivity(me.id, "رفع كاروسيل", files.length + " شرايح — " + item.title).catch(function () {});
+      await window.SSMPDDb.logActivity({ content_id: item.id, actor_id: me.id, action: "رفع كاروسيل (" + files.length + " شرايح)", from_stage: item.stage, to_stage: newStage });
+      status.textContent = "تم حفظ الكاروسيل وإرساله للمراجعة";
+    })().then(function () {
+      setTimeout(function () { backdrop.remove(); render(document.getElementById("view-container")); }, 700);
+    }).catch(function (e) {
+      backdrop.dataset.uploading = ""; status.textContent = "خطأ: " + e.message;
     });
   }
 
