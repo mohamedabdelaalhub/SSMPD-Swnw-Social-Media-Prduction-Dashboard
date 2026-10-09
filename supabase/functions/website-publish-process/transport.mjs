@@ -8,7 +8,7 @@ export function outcome(http, body, action) {
  return http===429||http>=500||http===0 ? 'retry' : 'failed';
 }
 export function buildPayload(snapshot) {
- const { _imageUrl, ...body }=snapshot;
+ const { _imageUrl, _slides, _videoUrl, ...body }=snapshot;
  if(body.action==='unpublish') return {id:body.id,action:'unpublish'};
  if(!body.title?.trim() || !Array.isArray(body.platforms)||!body.platforms.includes('website')) throw Error('INVALID_FIELDS');
  if(body.publishedUrl){try{const u=new URL(body.publishedUrl);if(u.protocol!=='https:'||u.username||u.password)throw Error();}catch{throw Error('INVALID_PUBLISHED_URL');}}
@@ -30,4 +30,16 @@ export async function deliver(endpoint, secret, payload, fetcher=fetch) {
  const response=await fetcher(endpoint,{method:'POST',headers:{Authorization:'Bearer '+secret,'Content-Type':'application/json'},body,signal:AbortSignal.timeout(45000)});
  let data={};try{data=await response.json();}catch{}
  return {http:response.status,status:outcome(response.status,data,payload.action),path:typeof data.publicPath==='string'?data.publicPath:null};
+}
+// Private file → storage key inside the expected bucket (and content folder for designs), or null.
+export function privateKey(fileUrl, origin, bucket, contentId) {
+ try{
+  const u=new URL(fileUrl),prefix='/storage/v1/object/';
+  if(u.origin!==origin||!u.pathname.startsWith(prefix))return null;
+  const path=decodeURIComponent(u.pathname.slice(prefix.length)).replace(/^(authenticated|sign|public)\//,'');
+  if(!path.startsWith(bucket+'/')||path.includes('..'))return null;
+  const key=path.slice(bucket.length+1);
+  if(contentId&&!key.startsWith(contentId+'/'))return null;
+  return key;
+ }catch{return null;}
 }
