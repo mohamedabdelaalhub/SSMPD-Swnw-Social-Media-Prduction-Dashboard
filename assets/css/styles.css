@@ -497,3 +497,29 @@ table.simple.acc-table td.acc-col-num{text-align:left;}
   .content-review-modal p,.content-review-modal a,.content-review-modal .comment{overflow-wrap:anywhere}
   .content-review-modal input,.content-review-modal select,.content-review-modal textarea{min-width:0;max-width:100%;font-size:16px}
 }
+
+/* تاب التعليقات */
+.cm-wrap{max-width:900px;margin:0 auto;}
+.cm-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:12px;}
+.cm-head h2{margin:0 0 4px;}
+.cm-tabs,.cm-filters,.cm-actions{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0;}
+.cm-count{display:inline-block;min-width:18px;padding:0 6px;border-radius:9px;background:var(--c-alert);color:#fff;font-size:11px;}
+.cm-card{background:#fff;border:1px solid var(--c-border);border-radius:12px;padding:14px;margin-bottom:12px;}
+.cm-card.sensitive{border-color:var(--c-negative);box-shadow:inset 4px 0 0 var(--c-negative);}
+.cm-card.off{opacity:.6;}
+.cm-meta{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px;font-size:12px;}
+.cm-badge{padding:2px 8px;border-radius:10px;background:rgba(15,54,157,.08);color:var(--c-primary);font-size:11px;}
+.cm-badge.facebook{background:#1877f2;color:#fff;}
+.cm-badge.instagram{background:#c13584;color:#fff;}
+.cm-badge.danger{background:var(--c-negative);color:#fff;}
+.cm-badge.auto{background:var(--c-alert);color:#fff;}
+.cm-badge.st-replied{background:rgba(47,125,92,.12);color:var(--c-positive);}
+.cm-badge.st-failed{background:rgba(208,64,42,.12);color:var(--c-negative);}
+.cm-badge.st-ignored{background:#eee;color:#666;}
+.cm-post{margin-inline-start:auto;}
+.cm-msg p,.cm-reply p{margin:4px 0 0;white-space:pre-wrap;line-height:1.7;}
+.cm-reply{margin:8px 18px 0 0;padding:8px 10px;border-radius:8px;background:#f6f7fb;font-size:13px;}
+.cm-reply.page{background:rgba(15,54,157,.06);}
+.cm-input{width:100%;margin-top:10px;padding:8px 10px;border:1px solid var(--c-border);border-radius:8px;font:inherit;resize:vertical;}
+.cm-examples{margin:4px 0 0;padding-inline-start:18px;font-size:13px;}
+.cm-lib{margin-top:8px;font-size:12px;}
