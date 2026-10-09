@@ -27,7 +27,8 @@
     return "من " + Math.floor(h / 24) + " يوم";
   }
   function isPending(c) { return !c.author_is_page && !c.parent_comment_id && ["new", "drafted", "failed"].indexOf(c.status) !== -1; }
-  function isOverdue(c) { return isPending(c) && ageMin(c.commented_at) >= OVERDUE_MIN; }
+  // متأخر = مستني رد من أكتر من ساعة وفي آخر ٧ أيام (التعليقات الأقدم بتظهر عادي من غير تنبيه)
+  function isOverdue(c) { var m = ageMin(c.commented_at); return isPending(c) && m >= OVERDUE_MIN && m < 7 * 1440; }
   function link(url, text) { return url ? '<a href="' + esc(url) + '" target="_blank" rel="noopener">' + text + "</a>" : text; }
 
   function load() {

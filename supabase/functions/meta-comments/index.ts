@@ -3,10 +3,9 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 
 // Meta Comments — inbox + approved replies.
 //
-// Cron (X-Cron-Secret, every 5 minutes): pulls Facebook/Instagram comments on posts this system
-// published in the last 30 days into public.social_comments, then sends replies a person approved
-// in the dashboard (status = 'approved'). Staff may also call it with their session to send
-// right after approving. Nothing is ever replied without a human approval row.
+// Cron (X-Cron-Secret, every 2 minutes): pulls Facebook/Instagram comments into public.social_comments,
+// then sends replies a person approved in the dashboard (status = 'approved'). Staff may also call it
+// with their session to sync, get a suggested reply, or send right after approving.
 // Page tokens stay in Edge Function secrets; nothing token-related is logged or returned.
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -55,7 +54,50 @@ async function syncBrand(db: any, brand: string, cfg: any, jobs: any[], report: 
     const me = await gget(cfg.instagram_business_account_id, { fields: "username", access_token: token });
     igUsername = me.ok ? me.data.username : null;
   }
+  // Watch every post of the last 60 days on the page/Instagram (not only dashboard posts), but only
+  // re-read comments of a post when its comment count changed — keeps Graph calls low every 2 minutes.
+  const since = Math.floor((Date.now() - 60 * 864e5) / 1000).toString();
+  const counts = new Map<string, number>();
+  const byFb = new Map(jobs.filter((j) => j.facebook_post_id).map((j) => [j.facebook_post_id, j]));
+  const byIg = new Map(jobs.filter((j) => j.instagram_media_id).map((j) => [j.instagram_media_id, j]));
+  if (cfg?.facebook_page_id) {
+    const r = await gget(`${cfg.facebook_page_id}/published_posts`, { fields: "id,comments.summary(true).limit(0)", since, limit: "60", access_token: token });
+    if (!r.ok) report.errors.push(`${brand} page posts: ${r.error}`);
+    else for (const p of r.data.data || []) {
+      counts.set(p.id, p.comments?.summary?.total_count ?? -1);
+      if (!byFb.has(p.id)) byFb.set(p.id, { id: null, content_id: null, facebook_post_id: p.id });
+    }
+  }
+  if (cfg?.instagram_business_account_id) {
+    const r = await gget(`${cfg.instagram_business_account_id}/media`, { fields: "id,permalink,timestamp,comments_count", limit: "40", access_token: token });
+    if (!r.ok) report.errors.push(`${brand} instagram media: ${r.error}`);
+    else for (const m of r.data.data || []) {
+      if (m.timestamp && Date.parse(m.timestamp) < Number(since) * 1000) continue;
+      counts.set(m.id, m.comments_count ?? -1);
+      const known = byIg.get(m.id);
+      if (known) known.instagram_permalink = known.instagram_permalink || m.permalink || null;
+      else byIg.set(m.id, { id: null, content_id: null, instagram_media_id: m.id, instagram_permalink: m.permalink || null });
+    }
+  }
+  const { data: watched } = await db.from("social_comment_watch").select("post_ref,last_count,checked_at").eq("brand", brand);
+  const watch = new Map((watched || []).map((w: any) => [w.post_ref, w]));
+  const stale = (ref: string) => {
+    const w: any = watch.get(ref), c = counts.get(ref);
+    if (!w || c === undefined || c < 0 || w.last_count !== c) return true;
+    return Date.now() - Date.parse(w.checked_at) > 6 * 3600e3; // safety re-read every 6 hours
+  };
+  const watchRows: Row[] = [];
+  jobs = [
+    ...[...byFb.values()].filter((j) => stale(j.facebook_post_id)).map((j) => ({ ...j, instagram_media_id: null })),
+    ...[...byIg.values()].filter((j) => stale(j.instagram_media_id)).map((j) => ({ ...j, facebook_post_id: null }))
+  ];
+  for (const j of jobs) {
+    const ref = j.facebook_post_id || j.instagram_media_id;
+    watchRows.push({ post_ref: ref, platform: j.facebook_post_id ? "facebook" : "instagram", brand, last_count: counts.get(ref) ?? null, checked_at: new Date().toISOString() });
+  }
+  report.checked = (report.checked || 0) + jobs.length;
   const rows: Row[] = [];
+  const failed = new Set<string>();
   const pageReplied = new Set<string>();
   for (const job of jobs) {
     if (job.facebook_post_id) {
@@ -63,7 +105,7 @@ async function syncBrand(db: any, brand: string, cfg: any, jobs: any[], report: 
         fields: "id,message,from{id,name},created_time,permalink_url,comments.limit(50){id,message,from{id,name},created_time,permalink_url}",
         filter: "toplevel", order: "reverse_chronological", limit: "50", access_token: token
       });
-      if (!r.ok) { report.errors.push(`${brand} facebook: ${r.error}`); }
+      if (!r.ok) { report.errors.push(`${brand} facebook: ${r.error}`); failed.add(job.facebook_post_id); }
       else for (const c of r.data.data || []) {
         const isPage = c.from?.id === cfg?.facebook_page_id;
         rows.push(fbRow(brand, job, c, null, isPage));
@@ -78,7 +120,7 @@ async function syncBrand(db: any, brand: string, cfg: any, jobs: any[], report: 
       const r = await gget(`${job.instagram_media_id}/comments`, {
         fields: "id,text,username,timestamp,replies{id,text,username,timestamp}", limit: "50", access_token: token
       });
-      if (!r.ok) { report.errors.push(`${brand} instagram: ${r.error}`); }
+      if (!r.ok) { report.errors.push(`${brand} instagram: ${r.error}`); failed.add(job.instagram_media_id); }
       else for (const c of r.data.data || []) {
         const isPage = !!igUsername && c.username === igUsername;
         rows.push(igRow(brand, job, c, null, isPage));
@@ -93,21 +135,29 @@ async function syncBrand(db: any, brand: string, cfg: any, jobs: any[], report: 
   if (rows.length) {
     // New comments only; existing rows keep their drafts/status.
     const ins = await db.from("social_comments").upsert(rows, { onConflict: "id", ignoreDuplicates: true });
-    if (ins.error) report.errors.push(`${brand} save: ${ins.error.message}`);
+    if (ins.error) { report.errors.push(`${brand} save: ${ins.error.message}`); report.saveFailed = true; }
     else report.seen += rows.length;
     // Rows saved before links were collected: fill comment/author links once.
     const ids = rows.map((r) => r.id as string);
-    const { data: missing } = await db.from("social_comments").select("id").in("id", ids).is("comment_url", null);
+    const missing: any[] = [];
+    for (let i = 0; i < ids.length; i += 80) {
+      const { data } = await db.from("social_comments").select("id").in("id", ids.slice(i, i + 80)).is("comment_url", null);
+      missing.push(...(data || []));
+    }
     const byId = new Map(rows.map((r) => [r.id as string, r]));
-    for (const m of missing || []) {
+    for (const m of missing) {
       const r = byId.get(m.id);
       if (r?.comment_url) await db.from("social_comments").update({ comment_url: r.comment_url, author_url: r.author_url }).eq("id", m.id);
     }
   }
+  const okWatch = watchRows.filter((w) => !failed.has(w.post_ref as string));
+  if (okWatch.length && !report.saveFailed) await db.from("social_comment_watch").upsert(okWatch, { onConflict: "post_ref" });
   // Answered directly on Facebook/Instagram → no longer waiting in the dashboard.
-  if (pageReplied.size) {
+  // In chunks: a single request with hundreds of ids is too long and fails silently.
+  const answered = [...pageReplied];
+  for (let i = 0; i < answered.length; i += 80) {
     await db.from("social_comments").update({ status: "replied", updated_at: new Date().toISOString() })
-      .in("id", [...pageReplied]).in("status", ["new", "drafted"]);
+      .in("id", answered.slice(i, i + 80)).in("status", ["new", "drafted"]);
   }
 }
 function fbRow(brand: string, job: any, c: any, parent: string | null, isPage: boolean): Row {
@@ -251,6 +301,7 @@ async function runSync(db: any, report: any) {
   if (error) { report.errors.push(error.message); return; }
   const { data: cfgs } = await db.from("meta_brand_config").select("*");
   const byBrand: Record<string, any[]> = {};
+  for (const c of cfgs || []) byBrand[c.brand] ||= [];
   for (const j of jobs || []) (byBrand[j.brand] ||= []).push(j);
   for (const [brand, list] of Object.entries(byBrand)) {
     await syncBrand(db, brand, (cfgs || []).find((c: any) => c.brand === brand), list, report);
