@@ -44,7 +44,7 @@
     return {lines:lines,w:Math.max.apply(null,lines.map(function(line){return ctx.measureText(line).width;})),size:size,weight:weight,fontFamily:fontFamily,leading:leading,h:size*1.35+(lines.length-1)*size*leading};
   }
   function scenePrompt(prompt, data) {
-    if(data.brand==='dr_dina')return String(prompt||'')+' Portrait photograph for a pediatric medical education post. No writing, logos or borders. Keep the subject away from the small top-left logo and bottom contact strip.';
+    if(data.brand==='dr_dina'){var age=/باركنسون|parkinson/i.test(String(prompt||''))?' Unless the brief explicitly specifies another age, show an older adult aged 55–75 with Parkinson disease, never a child.':'';return String(prompt||'')+' Portrait photograph for a neurology medical education post. Match the subject, age and condition to the scene brief. Do not assume the subject is a child. No writing, logos or borders. Keep the subject away from the small top-left logo and bottom contact strip.'+age;}
     var instructions = {
       top:'Leave the upper middle area below the logo empty with a pale plain background for a heading. Place the main subject lower in the frame.',
       bottom:'Place the main subject naturally in the upper and middle image area. Keep the lower edge pale and uncluttered for a heading below the image.',
