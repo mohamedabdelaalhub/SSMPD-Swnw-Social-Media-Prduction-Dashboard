@@ -225,6 +225,13 @@ h3 {
     color: var(--blue);
 }
 
+/* ---- Family tab: .profile-content is a two-column grid (280px + rest) and the family view is its only child,
+   so without this it is squeezed into the 280px column (the other tabs already span both columns). ---- */
+.profile-content > .family-view {
+    grid-column: 1 / -1;
+    min-width: 0;
+}
+
 /* ---- Website header and footer (inserted by swnw-site-chrome.js) ---- */
 .swnw-chrome-header {
     background: var(--swnw-navy);
