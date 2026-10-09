@@ -540,3 +540,4 @@ table.simple.acc-table td.acc-col-num{text-align:left;}
 .pf-h{margin:18px 0 8px;}
 .pf-table-wrap{overflow-x:auto;background:#fff;border:1px solid var(--c-border);border-radius:12px;}
 .pf-table th{background:#f6f7fb;white-space:nowrap;}
+.cm-hint{font-size:12px;margin-top:4px;}
