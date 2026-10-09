@@ -26,6 +26,7 @@
     design: ["designer", "general_manager", "super_admin"],
     publish: ["page_manager", "approver", "general_manager", "super_admin"],
     comments: ["page_manager", "approver", "general_manager", "super_admin"],
+    clinic_info: ["page_manager", "customer_service", "general_manager", "super_admin"],
     performance: ["page_manager", "approver", "general_manager", "super_admin"],
     archive: ["page_manager", "designer", "approver", "general_manager", "super_admin"],
     leads: ["reception", "customer_service", "general_manager", "super_admin"],
