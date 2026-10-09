@@ -327,6 +327,14 @@
     if (metaHint) metaHint.style.display = hasMetaPlatform(platforms) ? "block" : "none";
   }
 
+  // datetime-local بيحتاج الوقت المحلي بصيغة YYYY-MM-DDTHH:MM
+  function toLocalInput(iso) {
+    if (!iso) return "";
+    var d = new Date(iso); if (isNaN(d)) return "";
+    var pad = function (n) { return String(n).padStart(2, "0"); };
+    return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()) + "T" + pad(d.getHours()) + ":" + pad(d.getMinutes());
+  }
+
   function renderCard(i, adminsById, mode, job) {
     var ownerName = (adminsById[i.created_by] || {}).name || "—";
     var designerName = i.assigned_designer ? ((adminsById[i.assigned_designer] || {}).name || "—") : "—";
@@ -356,6 +364,15 @@
         '</div>' + jobHtml;
     } else {
       actionsHtml = jobHtml;
+      // تعديل ميعاد النشر — متاح طالما النشر التلقائي لسه مابدأش
+      if (!job || job.status === "pending") {
+        actionsHtml +=
+          '<div class="field" style="margin-top:10px;"><label>تعديل ميعاد النشر</label>' +
+          '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">' +
+          '<input type="datetime-local" id="pb-rewhen-' + i.id + '" value="' + toLocalInput(i.scheduled_publish_at) + '" style="flex:1;min-width:200px;">' +
+          '<button class="btn" data-reschedule="' + i.id + '">حفظ الميعاد الجديد</button>' +
+          '</div></div>';
+      }
       if (!jobIsLive) {
         if (manualScheduled.length) {
           actionsHtml +=
@@ -442,6 +459,9 @@
     });
     container.querySelectorAll("[data-cancel-schedule]").forEach(function (btn) {
       btn.onclick = function () { cancelSchedule(btn.getAttribute("data-cancel-schedule"), btn); };
+    });
+    container.querySelectorAll("[data-reschedule]").forEach(function (btn) {
+      btn.onclick = function () { reschedule(btn.getAttribute("data-reschedule"), btn); };
     });
     container.querySelectorAll("[data-cancel-meta-job]").forEach(function (btn) {
       btn.onclick = function () { cancelMetaJob(btn.getAttribute("data-cancel-meta-job")); };
@@ -583,6 +603,23 @@
       notify("اتأكد النشر — هتظهر في الملخص والأرشيف دلوقتي");
       closePublishModal(); render(document.getElementById("view-container"));
     }).catch(function (e) { notify("خطأ: " + e.message, "error"); });
+  }
+
+  // تعديل ميعاد مادة مجدولة — بيحرّك ميعاد المادة وميعاد النشر التلقائي (لو لسه
+  // pending) مع بعض في خطوة واحدة على السيرفر، فمايحصلش اختلاف بينهم.
+  function reschedule(id, btn) {
+    var when = valueOf("pb-rewhen-" + id);
+    if (!when) { notify("حدد الميعاد الجديد", "error"); return; }
+    var whenDate = new Date(when);
+    if (isNaN(whenDate) || whenDate.getTime() < Date.now() - 60000) { notify("اختار ميعاد في المستقبل", "error"); return; }
+    if (btn) btn.disabled = true;
+    window.SSMPDDb.client.rpc("reschedule_content_publish", { p_id: id, p_when: whenDate.toISOString() })
+      .then(function (r) {
+        if (r.error) throw r.error;
+        notify("اتغيّر ميعاد النشر لـ " + whenDate.toLocaleString("ar-EG"));
+        closePublishModal(); render(document.getElementById("view-container"));
+      })
+      .catch(function (e) { if (btn) btn.disabled = false; notify("خطأ: " + e.message, "error"); });
   }
 
   // إلغاء الجدولة — تأكيد بضغطة تانية على نفس الزرار بدل نافذة confirm() المتصفح
