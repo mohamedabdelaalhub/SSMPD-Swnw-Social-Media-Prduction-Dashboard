@@ -3,7 +3,7 @@
   'use strict';
   var base = new URL('../', document.currentScript.src);
   var fonts;
-  var overlayPromise;
+  var overlayPromise,whiteFooterPromise;
   var logoCache=new Map();
   async function logoImage(path){var cached=logoCache.get(path);if(cached&&cached.until>Date.now())return cached.promise;var promise=window.SSMPDDb.getBrandLogoUrl(path).then(loadImage);logoCache.set(path,{until:Date.now()+300000,promise:promise});try{return await promise;}catch(e){logoCache.delete(path);throw e;}}
   function loadImage(url) {
@@ -64,7 +64,8 @@
     }
     await ready();
     if(!overlayPromise)overlayPromise=loadImage(new URL('design-templates/sono-white/overlay.png', base)).catch(function(error){overlayPromise=null;throw error;});
-    var overlay = await overlayPromise;
+    var overlay = await overlayPromise,whiteFooter=null;
+    if(fullBleed){if(!whiteFooterPromise)whiteFooterPromise=loadImage(new URL('design-templates/sono-white/white-footer.png',base)).catch(function(error){whiteFooterPromise=null;throw error;});whiteFooter=await whiteFooterPromise;}
     canvas.width=1080; canvas.height=1350;
     var ctx=canvas.getContext('2d');
     ctx.fillStyle='#fff'; ctx.fillRect(0,0,1080,1350);
@@ -91,7 +92,7 @@
       var logoScale=Math.min(280/logo.width,125/logo.height);
       ctx.drawImage(logo,36,30,logo.width*logoScale,logo.height*logoScale);
     }else if(photographic){ctx.save();ctx.beginPath();ctx.rect(0,0,340,190);if(!fullBleed)ctx.rect(0,1170,1080,180);ctx.clip();ctx.drawImage(overlay,0,0,1080,1350);ctx.restore();}else ctx.drawImage(overlay,0,0,1080,1350);
-    if(fullBleed){ctx.save();ctx.fillStyle=window.SSMPDDesignPanelColor.hex(data.panelTextColor,'#ffffff');ctx.textAlign='center';ctx.textBaseline='middle';ctx.direction='ltr';ctx.font='600 29px SonoLatin';ctx.fillText('0236230005   |   +201010686264',540,1255);ctx.direction='rtl';ctx.font='400 27px SonoDesign';ctx.fillText('45 ع بجوار الخزان حدائق الأهرام',540,1305);ctx.restore();}
+
     ctx.direction='rtl';ctx.textAlign='center';ctx.textBaseline='middle';
     var presets={bottom:{x:540,y:883,w:960},top:{x:540,y:320,w:960},right:{x:775,y:390,w:450},left:{x:305,y:390,w:450}};
     if(photographic)presets.bottom={x:540,y:845,w:930};
@@ -152,6 +153,7 @@
     var headlineColor=photographic?window.SSMPDDesignPanelColor.hex(data.panelTextColor,'#fff'):'#07599d';if(data.headlineFill&&data.headlineFill!=='auto'&&title)headlineColor=window.SSMPDDesignPanelColor.fill(ctx,data,{x:p.x-p.w/2,y:titleY-title.h/2,w:p.w,h:title.h},'headline');
     draw(title,p.x,titleY,headlineColor,!photographic&&(!data.headlineFill||data.headlineFill==='auto'));draw(subtitle,p.x,subtitleY,photographic?window.SSMPDDesignPanelColor.hex(data.panelTextColor,'#fff'):'#272727');
     if(cta){ctx.fillStyle='#ff541d';ctx.beginPath();ctx.roundRect(540-buttonWidth/2,ctaY-buttonHeight/2,buttonWidth,buttonHeight,buttonHeight/2);ctx.fill();draw(cta,540,ctaY,'#fff');}
+    if(whiteFooter)ctx.drawImage(whiteFooter,0,0,1080,1350);
     canvas.designWarnings=issues;
     canvas.designIssues=[];
     return canvas;
