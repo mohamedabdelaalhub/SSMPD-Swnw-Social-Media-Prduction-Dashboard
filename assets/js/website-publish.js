@@ -9,7 +9,7 @@
   // Durable queue remains pending even if the immediate worker call fails.
   return db.functions.invoke('website-publish-process',{body:{}}).then(function(r){return {queued:true,workerError:r.error};}).catch(function(){return {queued:true,workerError:true};});
  });}
- var websiteView={tab:'pending',filter:'all',search:''};
+ var websiteView={tab:null,filter:'all',search:''};
  function bucket(state){var status=state&&state.website_publish_status;return status==='published'?'published':status==='unpublished'?'unpublished':'pending';}
  function mount(container,items){
   var panel=document.createElement('section');panel.className='section website-panel';panel.innerHTML='<div class="website-panel__header"><div><h3>نشر الموقع</h3><p>نشر مستقل عن السوشيال. تنتقل المادة للقائمة المناسبة بعد تأكيد حالة الموقع.</p></div><button class="btn ghost sm" data-web-refresh>تحديث الحالة</button></div><div class="website-tabs" role="tablist" aria-label="قوائم نشر الموقع"></div><div class="website-filters"><label>بحث عن مادة<input type="search" data-web-search placeholder="عنوان المادة"></label><label data-web-stage-label>حالة السوشيال<select data-website-filter><option value="all">كل المواد المعتمدة</option><option value="ready_to_publish">جاهزة للنشر</option><option value="published">منشورة على السوشيال</option><option value="scheduled">مجدولة للسوشيال</option></select></label></div><div data-website-list role="tabpanel">جاري تحميل حالة الموقع…</div>';
@@ -19,7 +19,11 @@
   function draw(){
    var eligible=items.filter(function(i){return states[i.id]||['ready_to_publish','scheduled','published'].indexOf(i.stage)>=0;});
    var tabs=[['pending','بانتظار النشر على الموقع'],['published','المنشور على الموقع'],['unpublished','المسحوب من الموقع']];
-   panel.querySelector('.website-tabs').innerHTML=tabs.map(function(t){var n=eligible.filter(function(i){return bucket(states[i.id])===t[0];}).length;return '<button type="button" role="tab" aria-selected="'+(websiteView.tab===t[0])+'" class="website-tab" data-web-tab="'+t[0]+'">'+t[1]+'<span>'+n+'</span></button>';}).join('');
+   panel.querySelector('.website-tabs').innerHTML=tabs.map(function(t){var n=eligible.filter(function(i){return bucket(states[i.id])===t[0];}).length;return '<button type="button" role="tab" aria-selected="'+(websiteView.tab===t[0])+'" aria-expanded="'+(websiteView.tab===t[0])+'" class="website-tab" data-web-tab="'+t[0]+'">'+t[1]+'<span>'+n+'</span></button>';}).join('');
+   panel.querySelectorAll('[data-web-tab]').forEach(function(button){button.onclick=function(){var tab=button.dataset.webTab;websiteView.tab=websiteView.tab===tab?null:tab;opened.clear();draw();panel.querySelector('[data-web-tab="'+tab+'"]').focus();};});
+   panel.querySelector('.website-filters').style.display=websiteView.tab?'':'none';
+   panel.querySelector('[data-website-list]').hidden=!websiteView.tab;
+   if(!websiteView.tab){panel.querySelector('[data-website-list]').replaceChildren();return;}
    panel.querySelector('[data-web-stage-label]').hidden=websiteView.tab!=='pending';
    var selected=eligible.filter(function(i){return bucket(states[i.id])===websiteView.tab&&(websiteView.tab!=='pending'||websiteView.filter==='all'||i.stage===websiteView.filter)&&String(i.title||'').toLocaleLowerCase().includes(websiteView.search.toLocaleLowerCase());});
    panel.querySelector('[data-website-list]').innerHTML=selected.length?selected.map(function(i){
@@ -31,7 +35,6 @@
     (st?'<button class="btn ghost sm" data-web-log="'+esc(i.id)+'">سجل المحاولات</button>':'')+'</div>'+
     (st&&st.last_error?'<p class="website-error" role="status">'+esc(st.last_error)+'</p>':'')+'<div data-web-preview="'+esc(i.id)+'"></div><div class="website-history" data-web-history="'+esc(i.id)+'"></div></div></details>';
    }).join(''):'<div class="website-empty">'+(websiteView.search?'لا توجد مواد تطابق البحث.':websiteView.tab==='published'?'لا توجد مواد منشورة على الموقع.':websiteView.tab==='unpublished'?'لا توجد مواد مسحوبة من الموقع.':'لا توجد مواد بانتظار النشر على الموقع.')+'</div>';
-   panel.querySelectorAll('[data-web-tab]').forEach(function(button){button.onclick=function(){websiteView.tab=button.dataset.webTab;opened.clear();draw();panel.querySelector('[data-web-tab="'+websiteView.tab+'"]').focus();};});
    panel.querySelectorAll('[data-web-item]').forEach(function(details){var mounted=false;function preview(){if(details.open){opened.add(details.dataset.webItem);if(!mounted&&window.SSMPDPublicationPreview){var item=items.find(function(i){return i.id===details.dataset.webItem;});window.SSMPDPublicationPreview.mount(details.querySelector('[data-web-preview]'),item,{destination:'website'});mounted=true;}}else opened.delete(details.dataset.webItem);}details.ontoggle=preview;preview();});
    panel.querySelectorAll('[data-web-send]').forEach(function(b){b.onclick=async function(){b.disabled=true;try{await publishItem(b.dataset.webSend);refresh();}catch(e){notice(e.message);}finally{b.disabled=false;}};});
    panel.querySelectorAll('[data-web-withdraw]').forEach(function(b){b.onclick=async function(){if(!window.confirm('سحب هذه المادة من الموقع فقط؟'))return;b.disabled=true;try{await enqueue(b.dataset.webWithdraw,'unpublish');refresh();}catch(e){notice(e.message);}finally{b.disabled=false;}};});
