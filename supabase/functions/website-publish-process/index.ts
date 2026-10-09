@@ -14,8 +14,9 @@ Deno.serve(async(req)=>{
  const bearer=(req.headers.get('Authorization')||'').replace(/^Bearer /i,'');
  if(bearer!==secret){
   const {data,error}=await db.auth.getUser(bearer);if(error||!data.user)return reply({error:'AUTH_REQUIRED'},401);
-  const {data:admin}=await db.from('admins').select('id,role,admin_extra_roles(role)').eq('user_id',data.user.id).eq('active',true).maybeSingle();
-  const roles=admin?[admin.role,...(admin.admin_extra_roles||[]).map((r:any)=>r.role)]:[];
+  const {data:admin}=await db.from('admins').select('id,role').eq('user_id',data.user.id).eq('active',true).maybeSingle();
+  const {data:extra}=admin?await db.from('admin_extra_roles').select('role').eq('admin_id',admin.id):{data:[]};
+  const roles=admin?[admin.role,...(extra||[]).map((r:any)=>r.role)]:[];
   if(!roles.some((r:string)=>['page_manager','approver','general_manager','super_admin'].includes(r)))return reply({error:'FORBIDDEN'},403);
  }
  let processed=0;

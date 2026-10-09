@@ -283,9 +283,11 @@ async function suggestReply(db: any, id: string): Promise<{ ok: boolean; text?: 
 }
 // New comments get a suggestion ready before anyone opens the tab (a few per run to keep cost low).
 async function autoSuggest(db: any, report: any) {
-  const since = new Date(Date.now() - 3 * 864e5).toISOString();
+  // Recent comments wait for the approved-replies check first; older unanswered ones are drafted too.
+  const since = new Date(Date.now() - 60 * 864e5).toISOString();
   const { data } = await db.from("social_comments").select("id").eq("status", "new").eq("author_is_page", false)
-    .is("parent_comment_id", null).is("suggested_reply", null).eq("auto_checked", true).gte("commented_at", since)
+    .is("parent_comment_id", null).is("suggested_reply", null).gte("commented_at", since)
+    .or(`auto_checked.eq.true,commented_at.lt.${new Date(Date.now() - 7 * 864e5).toISOString()}`)
     .order("commented_at", { ascending: false }).limit(5);
   for (const c of data || []) {
     const r = await suggestReply(db, c.id);
@@ -349,8 +351,10 @@ Deno.serve(async (req) => {
     const jwt = (req.headers.get("Authorization") || "").replace(/^Bearer /i, "");
     const user = await db.auth.getUser(jwt);
     if (user.error || !user.data.user) return reply({ ok: false, error: "AUTH_REQUIRED" }, 401);
-    const { data: admin } = await db.from("admins").select("id,role,admin_extra_roles(role)").eq("user_id", user.data.user.id).eq("active", true).maybeSingle();
-    const roles = admin ? [admin.role, ...(admin.admin_extra_roles || []).map((r: any) => r.role)] : [];
+    // admin_extra_roles has two FKs to admins (admin_id, added_by), so it is read separately.
+    const { data: admin } = await db.from("admins").select("id,role").eq("user_id", user.data.user.id).eq("active", true).maybeSingle();
+    const { data: extra } = admin ? await db.from("admin_extra_roles").select("role").eq("admin_id", admin.id) : { data: [] };
+    const roles = admin ? [admin.role, ...(extra || []).map((r: any) => r.role)] : [];
     if (!roles.some((r: string) => ["page_manager", "approver", "general_manager", "super_admin"].includes(r))) return reply({ ok: false, error: "FORBIDDEN" }, 403);
     if (body.action === "suggest") {
       if (typeof body.id !== "string") return reply({ ok: false, error: "id required" }, 400);
