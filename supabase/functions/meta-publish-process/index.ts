@@ -176,7 +176,7 @@ async function graphPost(path: string, params: Record<string, string>) {
 // "meta-publish-assets") عشان يبقى عندنا رابط ثابت Meta تقدر تجيبه مباشرة
 // (Google Drive share links مش مضمونة تترجع bytes الصورة الخام لـfetch
 // خارجي). لو الفشل حصل، الـjob بيفشل برسالة واضحة — مفيش تخمين.
-async function rehostImageToStorage(admin: ReturnType<typeof createClient>, jobId: string, sourceUrl: string, suffix = ""): Promise<string> {
+async function rehostImageToStorage(admin: ReturnType<typeof createClient>, jobId: string, sourceUrl: string, suffix = "", allowVideo = false): Promise<string> {
   const driveId = googleDriveFileId(sourceUrl);
 
   let res: Response;
@@ -188,9 +188,9 @@ async function rehostImageToStorage(admin: ReturnType<typeof createClient>, jobI
     );
   } else {
     const source = new URL(sourceUrl);
-    const prefix = "/storage/v1/object/authenticated/content-designs/";
-    if (source.origin === new URL(Deno.env.get("SUPABASE_URL")!).origin && source.pathname.startsWith(prefix)) {
-      const file = await admin.storage.from("content-designs").download(decodeURIComponent(source.pathname.slice(prefix.length)));
+    const privateMatch = /^\/storage\/v1\/object\/authenticated\/(content-designs|video-inputs)\/(.+)$/.exec(source.pathname);
+    if (source.origin === new URL(Deno.env.get("SUPABASE_URL")!).origin && privateMatch) {
+      const file = await admin.storage.from(privateMatch[1]).download(decodeURIComponent(privateMatch[2]));
       if (file.error || !file.data) throw new Error("تعذّر تحميل التصميم من التخزين");
       res = new Response(file.data, { headers: { "content-type": file.data.type } });
     } else {
@@ -207,8 +207,8 @@ async function rehostImageToStorage(admin: ReturnType<typeof createClient>, jobI
   }
 
   const contentType = (res.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
-  if (!/^image\//.test(contentType)) {
-    throw new Error("ملف التصميم مش صورة (content-type: " + (contentType || "unknown") + ")");
+  if (!/^image\//.test(contentType) && !(allowVideo && /^video\//.test(contentType))) {
+    throw new Error("ملف التصميم مش " + (allowVideo ? "صورة أو فيديو" : "صورة") + " (content-type: " + (contentType || "unknown") + ")");
   }
 
   const bytes = new Uint8Array(await res.arrayBuffer());
@@ -216,7 +216,9 @@ async function rehostImageToStorage(admin: ReturnType<typeof createClient>, jobI
     "image/jpeg": "jpg",
     "image/png": "png",
     "image/webp": "webp",
-    "image/gif": "gif"
+    "image/gif": "gif",
+    "video/mp4": "mp4",
+    "video/quicktime": "mov"
   };
   const ext = extByType[contentType] || contentType.split("/")[1] || "jpg";
   const path = `${jobId}${suffix}.${ext}`;
@@ -319,6 +321,36 @@ async function publishInstagramCarousel(igUserId: string, token: string, imageUr
   return { ok: true, containerId, mediaId, permalink: perma.ok ? perma.data.permalink : null };
 }
 
+// فيديو فيسبوك: Meta بتحمّل الفيديو من الرابط وتعالجه في الخلفية.
+async function publishFacebookVideo(pageId: string, token: string, videoUrl: string, message: string) {
+  const r = await graphPost(`${pageId}/videos`, { file_url: videoUrl, description: message, access_token: token });
+  if (!r.ok) return { ok: false, error: r.data.error?.message || "فشل نشر الفيديو على فيسبوك" };
+  const videoId: string = r.data.id;
+  const perma = await graphGet(videoId, { fields: "permalink_url", access_token: token });
+  const link = perma.ok && perma.data.permalink_url ? perma.data.permalink_url : `/${videoId}`;
+  return { ok: true, postId: videoId, permalink: link.startsWith("http") ? link : `https://www.facebook.com${link}` };
+}
+
+// ريلز انستجرام: معالجة الفيديو ممكن تاخد دقايق، فبنستنى لحد ~٩٠ ثانية بس.
+// لو لسه بيتعالج، بنرجّع pending ونحتفظ بالـcontainer، والتشغيلة الجاية تكمّل
+// النشر من غير ما تعيد رفع الفيديو.
+async function publishInstagramReel(igUserId: string, token: string, videoUrl: string, caption: string, existingContainer: string | null) {
+  let containerId = existingContainer;
+  if (!containerId) {
+    const c = await graphPost(`${igUserId}/media`, { media_type: "REELS", video_url: videoUrl, caption, share_to_feed: "true", access_token: token });
+    if (!c.ok) return { ok: false, error: c.data.error?.message || "فشل إنشاء ريل انستجرام" };
+    containerId = c.data.id;
+  }
+  const status = await waitInstagramContainers([containerId as string], token, 90);
+  if (status === "IN_PROGRESS") return { ok: false, pending: true, containerId, error: "الريل لسه بيتعالج على انستجرام" };
+  if (status) return { ok: false, containerId, error: "ريل انستجرام فشل في المعالجة (status: " + status + ")" };
+  const pub = await graphPost(`${igUserId}/media_publish`, { creation_id: containerId as string, access_token: token });
+  if (!pub.ok) return { ok: false, containerId, error: pub.data.error?.message || "فشل نشر ريل انستجرام" };
+  const mediaId: string = pub.data.id;
+  const perma = await graphGet(mediaId, { fields: "permalink", access_token: token });
+  return { ok: true, containerId, mediaId, permalink: perma.ok ? perma.data.permalink : null };
+}
+
 function carouselSlideUrls(contentId: string, slides: unknown): string[] {
   if (!Array.isArray(slides)) return [];
   const prefix = new URL(SUPABASE_URL).origin + "/storage/v1/object/authenticated/content-designs/" + contentId + "/";
@@ -328,6 +360,7 @@ function carouselSlideUrls(contentId: string, slides: unknown): string[] {
 async function processJob(admin: ReturnType<typeof createClient>, job: any) {
   const patch: Record<string, unknown> = {};
   const errors: string[] = [];
+  var igPending = false;
   var successCount = 0, requestedCount = 0;
 
   const token = pageTokenForBrand(job.brand);
@@ -358,8 +391,20 @@ async function processJob(admin: ReturnType<typeof createClient>, job: any) {
   const message: string = (globalThis as any).SSMPDPublicationText.compose(content);
 
   var imageUrl: string | null = null;
+  var videoUrl: string | null = null;
   var carouselUrls: string[] = [];
-  if (content.content_format === "carousel") {
+  if (content.content_format === "video") {
+    if (!content.design_file_url) {
+      await admin.from("meta_publish_jobs").update({ status: "failed", error_code: "VIDEO_MISSING", error_message: "مفيش ملف فيديو مرفوع للمادة دي." }).eq("id", job.id);
+      return;
+    }
+    try {
+      videoUrl = await rehostImageToStorage(admin, job.id, content.design_file_url, "", true);
+    } catch (e) {
+      await admin.from("meta_publish_jobs").update({ status: "failed", error_code: "VIDEO_FETCH_ERROR", error_message: e instanceof Error ? e.message : String(e) }).eq("id", job.id);
+      return;
+    }
+  } else if (content.content_format === "carousel") {
     const slides = carouselSlideUrls(job.content_id, content.carousel_slides);
     if (slides.length < 2) {
       await admin.from("meta_publish_jobs").update({ status: "failed", error_code: "CAROUSEL_SLIDES_MISSING", error_message: "الكاروسيل محتاج من ٢ لـ ١٠ صور مرفوعة من شاشة التصميم." }).eq("id", job.id);
@@ -389,8 +434,12 @@ async function processJob(admin: ReturnType<typeof createClient>, job: any) {
     requestedCount++;
     if (!brandCfg.facebook_page_id) {
       errors.push("فيسبوك: facebook_page_id مش متظبط للبراند ده");
+    } else if (job.facebook_post_id) {
+      successCount++; // اتنشر في تشغيلة سابقة (الريل كان لسه بيتعالج على انستجرام)
     } else {
-      const r = carouselUrls.length
+      const r = videoUrl
+        ? await publishFacebookVideo(brandCfg.facebook_page_id, token, videoUrl, message)
+        : carouselUrls.length
         ? await publishFacebookCarousel(brandCfg.facebook_page_id, token, carouselUrls, message)
         : imageUrl
         ? await publishFacebookPhoto(brandCfg.facebook_page_id, token, imageUrl, message)
@@ -407,8 +456,18 @@ async function processJob(admin: ReturnType<typeof createClient>, job: any) {
     requestedCount++;
     if (!brandCfg.instagram_business_account_id) {
       errors.push("انستجرام: instagram_business_account_id مش متظبط للبراند ده");
-    } else if (!imageUrl && !carouselUrls.length) {
-      errors.push("انستجرام: لازم صورة — أول إصدار بيدعم صور بس، ومفيش ملف تصميم متاح.");
+    } else if (!imageUrl && !carouselUrls.length && !videoUrl) {
+      errors.push("انستجرام: لازم صورة أو فيديو — مفيش ملف تصميم متاح.");
+    } else if (videoUrl) {
+      const r = await publishInstagramReel(brandCfg.instagram_business_account_id, token, videoUrl, message, job.instagram_container_id || null) as any;
+      if (r.ok) {
+        patch.instagram_container_id = r.containerId; patch.instagram_media_id = r.mediaId; patch.instagram_permalink = r.permalink; successCount++;
+      } else if (r.pending) {
+        patch.instagram_container_id = r.containerId; igPending = true;
+      } else {
+        if (r.containerId) patch.instagram_container_id = r.containerId;
+        errors.push("انستجرام: " + r.error);
+      }
     } else {
       const r = carouselUrls.length
         ? await publishInstagramCarousel(brandCfg.instagram_business_account_id, token, carouselUrls, message)
@@ -422,6 +481,14 @@ async function processJob(admin: ReturnType<typeof createClient>, job: any) {
     }
   }
 
+  if (igPending && errors.length === 0 && job.attempt_count < 10) {
+    // الريل لسه بيتعالج: نرجّع الـjob pending بعد دقيقة، ونحتفظ باللي اتنشر.
+    patch.status = "pending";
+    patch.scheduled_at = new Date(Date.now() + 60_000).toISOString();
+    await admin.from("meta_publish_jobs").update(patch).eq("id", job.id);
+    return;
+  }
+  if (igPending) errors.push("انستجرام: الريل ماخلصش معالجة بعد أكتر من محاولة");
   patch.status = successCount === 0 ? "failed" : (successCount < requestedCount ? "partial" : "published");
   if (errors.length) { patch.error_code = "PUBLISH_ERROR"; patch.error_message = errors.join(" | "); }
   if (patch.status === "published" || patch.status === "partial") patch.published_at = new Date().toISOString();

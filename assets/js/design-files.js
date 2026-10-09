@@ -5,7 +5,12 @@
  function client(){return window.SSMPDDb.client;}
  function base(){return window.SSMPD_CONFIG.supabase.url.replace(/\/+$/,'')+'/storage/v1/object/authenticated/'+bucket+'/';}
  function path(url){return typeof url==='string'&&url.indexOf(base())===0?url.slice(base().length):null;}
+ // Private uploaded videos (video-inputs) are previewed the same way as private designs.
+ function videoBase(){return window.SSMPD_CONFIG.supabase.url.replace(/\/+$/,'')+'/storage/v1/object/authenticated/video-inputs/';}
+ function videoPath(url){return typeof url==='string'&&url.indexOf(videoBase())===0?url.slice(videoBase().length):null;}
  async function resolve(url){
+  var vkey=videoPath(url);
+  if(vkey){var v=await client().storage.from('video-inputs').createSignedUrl(vkey,600);if(v.error)throw v.error;return v.data.signedUrl;}
   var key=path(url);if(!key)return url;
   var result=await client().storage.from(bucket).createSignedUrl(key,300);
   if(result.error)throw result.error;return result.data.signedUrl;
@@ -19,7 +24,7 @@
   }catch(e){root.querySelector('p').textContent='تعذر الاستعراض: '+e.message;}
  }
  // Also handles existing links in publishing/archive without changing legacy Drive links.
- document.addEventListener('click',function(event){var a=event.target.closest&&event.target.closest('a[href]');if(a&&path(a.getAttribute('href'))){event.preventDefault();view(a.getAttribute('href'));}});
+ document.addEventListener('click',function(event){var a=event.target.closest&&event.target.closest('a[href]');if(!a)return;var href=a.getAttribute('href');if(path(href)){event.preventDefault();view(href);}else if(videoPath(href)){event.preventDefault();resolve(href).then(function(u){window.open(u,'_blank','noopener');}).catch(function(e){alert('تعذر فتح الفيديو: '+e.message);});}});
  async function latest(id){var r=await client().from('design_versions').select('*').eq('content_id',id).order('created_at',{ascending:false}).order('id',{ascending:false}).limit(1);if(r.error)throw r.error;return r.data&&r.data[0]||null;}
  async function save(item,output,source,settings,sceneJobId,baseVersion){
   var folder=item.id+'/'+crypto.randomUUID()+'/',outputPath=folder+'output.png',sourcePath=source?folder+'source.png':null;
