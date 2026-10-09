@@ -46,7 +46,8 @@
   var result=await client().rpc('save_private_carousel',{p_content_id:item.id,p_output_urls:urls,p_settings:settings||{}});
   if(result.error)throw result.error;return result.data;
  }
- function canEdit(item){var me=window.SSMPDAuth.currentAdmin,R=window.SSMPDRoles;return !!(me&&R.canCreateAIDesign(me)&&item.brand==='sono'&&item.content_format!=='video'&&item.content_format!=='carousel'&&!['published','scheduled','ready_to_publish'].includes(item.stage)&&(window.SSMPDWorkflow.canEditItem(me,item)||item.assigned_designer===me.id||(item.design_execution==='ai'&&['in_design','needs_revision','final_approval'].includes(item.stage)&&R.hasRole(me,'approver'))));}
+ function canEdit(item){var me=window.SSMPDAuth.currentAdmin,R=window.SSMPDRoles;return !!(me&&R.canCreateAIDesign(me)&&['sono','dr_dina'].includes(item.brand)&&item.content_format!=='video'&&item.content_format!=='carousel'&&!['published','scheduled','ready_to_publish'].includes(item.stage)&&(window.SSMPDWorkflow.canEditItem(me,item)||item.assigned_designer===me.id||(item.design_execution==='ai'&&['in_design','needs_revision','final_approval'].includes(item.stage)&&R.hasRole(me,'approver'))));}
  window.SSMPDDesignFiles={resolve:resolve,view:view,path:path,latest:latest,save:save,saveCarousel:saveCarousel,canEdit:canEdit};
 })();
+
 

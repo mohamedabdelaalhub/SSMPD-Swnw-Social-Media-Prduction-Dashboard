@@ -44,6 +44,7 @@
     return {lines:lines,w:Math.max.apply(null,lines.map(function(line){return ctx.measureText(line).width;})),size:size,weight:weight,fontFamily:fontFamily,leading:leading,h:size*1.35+(lines.length-1)*size*leading};
   }
   function scenePrompt(prompt, data) {
+    if(data.brand==='dr_dina')return String(prompt||'')+' Portrait photograph for a pediatric medical education post. No writing, logos or borders. Keep the subject away from the small top-left logo and bottom contact strip.';
     var instructions = {
       top:'Leave the upper middle area below the logo empty with a pale plain background for a heading. Place the main subject lower in the frame.',
       bottom:'Place the main subject naturally in the upper and middle image area. Keep the lower edge pale and uncluttered for a heading below the image.',
@@ -55,6 +56,7 @@
   }
   async function render(canvas, scene, data, options) {
     data=Object.assign({},data);
+    if(data.brand==='dr_dina')return window.SSMPDDinaTemplate.render(canvas,scene,data);
     if(data.layoutTemplate==='sono_doctor')return window.SSMPDDoctorTemplate.render(canvas,scene,data);
     var template=['classic','full_photo','full_bleed','split'].includes(data.layoutTemplate)?data.layoutTemplate:'classic';
     var fullBleed=template==='full_bleed',photographic=template==='full_photo'||fullBleed;

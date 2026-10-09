@@ -140,7 +140,7 @@
     var backdrop = document.createElement("div");
     backdrop.className = "modal-backdrop";
     var actionsHtml = "";
-    var supportsAi = item.content_format === "video" || (item.brand === "sono" && item.content_format === "image_post");
+    var supportsAi = item.content_format === "video" || (["sono","dr_dina"].includes(item.brand) && item.content_format === "image_post");
     var isAi = item.design_execution === "ai";
     var aiActive = isAi && ["in_design", "needs_revision"].indexOf(item.stage) !== -1;
     var canSwitchToAi = supportsAi && ["in_design", "needs_revision"].indexOf(item.stage) !== -1;

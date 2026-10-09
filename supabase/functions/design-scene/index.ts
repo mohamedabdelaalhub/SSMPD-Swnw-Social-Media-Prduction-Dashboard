@@ -33,7 +33,7 @@ Deno.serve(async req => {
   const body=JSON.parse(requestText);
   if(body.action&&!['library','expand','original'].includes(body.action))throw new Error('عملية غير صالحة');
   if(body.action==='library') {
-   const {data,error}=await userDb.from('design_jobs').select('id,scene_storage_path,scene_prompt,image_quality,created_at,render_settings').like('scene_storage_path','sono/%').order('created_at',{ascending:false}).limit(30);
+   const {data,error}=await userDb.from('design_jobs').select('id,scene_storage_path,scene_prompt,image_quality,created_at,render_settings').like('scene_storage_path',(body.brand==='dr_dina'?'dr_dina':'sono')+'/%').order('created_at',{ascending:false}).limit(30);
    if(error) throw error;
    const images=await Promise.all((data||[]).map(async row=>{
     const {data:signed,error:e}=await db.storage.from('design-scenes').createSignedUrl(row.scene_storage_path,3600); if(e) throw e;
@@ -46,6 +46,9 @@ Deno.serve(async req => {
    return Response.json({expansion:await expansionLinks(db,job)},{headers});
   }
   if(!key) throw new Error('لم يتم إعداد مفتاح التوليد');
+  const {data:content,error:contentError}=await userDb.from('content_items').select('brand').eq('id',body.content_id).maybeSingle();
+  if(contentError||!content||!['sono','dr_dina'].includes(content.brand))throw new Error('المادة غير متاحة للتصميم');
+  const sceneBrand=content.brand;
   const expand=body.action==='expand';
   let prepared: any=null;
   if(expand){
@@ -97,11 +100,11 @@ Deno.serve(async req => {
    const outputData=output.data as unknown as Uint8Array,originalData=prepared.pixels.data as Uint8Array;
    for(let i=0;i<outputData.length;i+=4)if(prepared.maskPixels.data[i+3]===255)outputData.set(originalData.subarray(i,i+4),i);
    bytes=new Uint8Array(PNG.sync.write(output) as unknown as Uint8Array);
-   const originalPath='sono/'+job.id+'/original.png';
+   const originalPath=sceneBrand+'/'+job.id+'/original.png';
    const originalUpload=await db.storage.from('design-scenes').upload(originalPath,prepared.original,{contentType:'image/png',upsert:false});if(originalUpload.error)throw originalUpload.error;
    expansion={mode:body.mode,original_path:originalPath};
   }
-  const path='sono/'+job.id+'/scene.png';
+  const path=sceneBrand+'/'+job.id+'/scene.png';
   const upload=await db.storage.from('design-scenes').upload(path,bytes,{contentType:'image/png',upsert:false}); if(upload.error) throw upload.error;
   const saved=await db.from('design_jobs').update({status:'scene_ready',scene_storage_path:path,render_settings:{expansion,usage:result.usage||null,cost_note:'Conservative reservation; reconcile with provider billing'},updated_at:new Date().toISOString()}).eq('id',job.id); if(saved.error) throw saved.error;
   const signed=await db.storage.from('design-scenes').createSignedUrl(path,3600); if(signed.error) throw signed.error;
@@ -112,4 +115,5 @@ Deno.serve(async req => {
   return Response.json({error:message,status:jobId?'failed':undefined},{headers,status:400});
  }
 });
+
 
