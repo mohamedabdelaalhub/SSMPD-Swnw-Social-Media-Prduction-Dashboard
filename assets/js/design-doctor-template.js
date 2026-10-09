@@ -38,8 +38,11 @@
   drawText(ctx,name,317.11,602,472,245,num(data.doctorNameSize,97,24,110),700,'#fff',2);
   drawText(ctx,title,388.23,798.77,517,55,num(data.doctorTitleSize,32.56,16,42),400,'#fff',2);
   issues=issues.concat(model.issues);canvas.doctorVariant=variant;
-  var map=window.SSMPDDoctorTemplateMap[String(variant)]||[],frames=map.filter(function(f){return f.text!=='__pill';});
+  var map=window.SSMPDDoctorTemplateMap[String(variant)]||[],frames=map.filter(function(f){return f.text!=='__pill'&&f.text!=='__line';});
   map.filter(function(f){return f.text==='__pill'&&f.box[3]-f.box[1]<100;}).forEach(function(f){var b=f.box;ctx.fillStyle='#fff';ctx.beginPath();ctx.roundRect(b[0],b[1],b[2]-b[0],b[3]-b[1],(b[3]-b[1])/2);ctx.fill();});
+  ctx.save();ctx.lineCap='butt';
+  map.filter(function(f){return f.text==='__line';}).forEach(function(f){ctx.strokeStyle=f.color;ctx.lineWidth=f.weight;ctx.beginPath();f.points.forEach(function(p,i){if(i)ctx.lineTo(p[0],p[1]);else ctx.moveTo(p[0],p[1]);});ctx.stroke();});
+  ctx.restore();
   var slot=-1;
   frames.forEach(function(f){var value=f.text,isClock=/^\d{2}:\d{2}$/.test(value),isDay=!isClock&&!['من كل أسبوع','من الساعة','وحتى الساعة'].includes(value)&&!value.includes('مسـ');
    if(isDay)slot++;var appointment=model.rows[variant<5?0:slot]||{},a=time(appointment.time_from),z=time(appointment.time_to),b=f.box,w=b[2]-b[0],h=b[3]-b[1],x=(b[0]+b[2])/2,y=(b[1]+b[3])/2,color='#fff',weight=400;
