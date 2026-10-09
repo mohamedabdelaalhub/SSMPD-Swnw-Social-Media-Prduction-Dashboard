@@ -73,7 +73,7 @@
     var sceneX = data.titlePosition==='left' ? 550 : 0;
     var sceneWidth = side ? 530 : 1080;
     if(scene) {
-      var sceneTop=0,height=(fullBleed?1350:1260)-sceneTop,scale=Math.max(sceneWidth/scene.width,height/scene.height)*number(data.zoom,1,.5,3);
+      var sceneTop=0,height=(fullBleed?1350:1260)-sceneTop,paddingScale=data.scenePaddingScale===2?2:data.scenePaddingScale===1?1:null,sceneZoom=number(data.zoom,1,.5,3),scale=Math.max(sceneWidth/scene.width,height/scene.height)*(paddingScale?Math.max(1/paddingScale,sceneZoom)*paddingScale:sceneZoom);
       var w=scene.width*scale,h=scene.height*scale;
       ctx.save();ctx.beginPath();ctx.rect(sceneX,sceneTop,sceneWidth,height);ctx.clip();
       ctx.drawImage(scene,sceneX+(sceneWidth-w)*number(data.x,50,0,100)/100,sceneTop+(height-h)*number(data.y,50,0,100)/100+number(data.imageOffsetY,0,-400,400),w,h);ctx.restore();
