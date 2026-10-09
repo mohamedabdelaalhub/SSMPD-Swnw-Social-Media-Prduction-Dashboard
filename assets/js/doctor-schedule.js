@@ -4,7 +4,7 @@
  function canonical(s){return String(s||'').replace(/ـ/g,'').replace(/[إأآ]/g,'ا').replace(/\s/g,'');}
  function parse(value){if(Array.isArray(value))value=value.join(' - ');var text=canonical(value);return days.filter(function(d){return text.includes(canonical(d));});}
  function normalise(rows,mode,excluded){
-  rows=(rows||[]).filter(function(r){return r&&(r.days||r.time_from||r.time_to);});mode=mode||((rows.length>1&&rows.some(function(r){return r.time_from!==rows[0].time_from||r.time_to!==rows[0].time_to;}))?'different':'shared');
+  rows=(rows||[]).filter(function(r){return r&&(r.days||r.time_from||r.time_to);});mode=mode||(rows.length>1?'different':'shared');
   var issues=[],expanded=[],seen=new Set();
   rows.forEach(function(r){var named=parse(r.days);if(!named.length&&mode!=='except')issues.push('اختر يوم العمل.');if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(r.time_from||'')||!/^([01]\d|2[0-3]):[0-5]\d$/.test(r.time_to||''))issues.push('أكمل موعد البداية والنهاية.');named.forEach(function(day){if(seen.has(day))issues.push('اليوم '+day+' مكرر.');seen.add(day);expanded.push({days:day,time_from:r.time_from,time_to:r.time_to});});});
   var excludedDays=parse(excluded),first=rows[0]||{};

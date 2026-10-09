@@ -5,4 +5,5 @@ let r=D.normalise([{days:'',time_from:'17:00',time_to:'00:00'}],'except',['ال�
 r=D.normalise([{days:'',time_from:'17:00',time_to:'00:00'}],'except',[]);assert.equal(r.rows.length,7);assert.equal(r.issues.length,0);
 assert(D.normalise([{days:'الأحد',time_from:'17:00',time_to:'19:00'},{days:'الأحد',time_from:'20:00',time_to:'22:00'}],'different').issues.some(x=>x.includes('مكرر')));
 assert(D.normalise([{days:'الأحد',time_from:'17:00',time_to:''}],'different').issues.length);
+assert.equal(D.normalise([{days:'الأحد',time_from:'17:00',time_to:'19:00'},{days:'الأربعاء',time_from:'17:00',time_to:'19:00'}]).mode,'different');
 console.log('PASS: all 1–7 day mappings, shared times, exceptions, midnight, duplicate and incomplete days.');
