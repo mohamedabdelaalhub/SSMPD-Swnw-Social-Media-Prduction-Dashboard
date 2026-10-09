@@ -62,8 +62,12 @@
         document.body.appendChild(footer);
     }
     if (document.body) mount(); else document.addEventListener("DOMContentLoaded", mount);
-    // The portal re-renders its root; keep the footer last without touching the portal's nodes.
-    new MutationObserver(function () {
+    // The portal re-renders its root; keep the footer last without touching the portal's nodes, and tell the
+    // header when the portal is signed in (the theme then shows the portal's account button inside the header).
+    function sync() {
         if (footer.parentNode === document.body && document.body.lastElementChild !== footer) document.body.appendChild(footer);
-    }).observe(document.documentElement, { childList: true, subtree: true });
+        header.classList.toggle("has-account", !!document.querySelector(".app-topbar .user-area"));
+    }
+    new MutationObserver(sync).observe(document.documentElement, { childList: true, subtree: true });
+    sync();
 }());

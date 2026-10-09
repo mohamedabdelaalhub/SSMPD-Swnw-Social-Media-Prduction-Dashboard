@@ -167,10 +167,114 @@ h3 {
 }
 
 /* ---- Signed-in shell ---- */
-.app-topbar {
-    background: #fff;
-    border-color: #E3E7EF;
-    border-radius: 0 0 16px 16px;
+/* One header instead of two: the portal's own top bar is not drawn as a bar. Its logo and name (already in the
+   website header and in the hero) are hidden, and its account button is placed inside the website header.
+   The portal's nodes are not moved, so its menu and click handlers keep working. */
+.swnw-chrome-header ~ #portal-root .app-topbar {
+    position: absolute;
+    z-index: 25;
+    top: 0;
+    right: 0;
+    left: 0;
+    display: block;
+    height: 76px;
+    min-height: 0;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    pointer-events: none;
+}
+
+.swnw-chrome-header ~ #portal-root .app-topbar .top-brand {
+    display: none;
+}
+
+.swnw-chrome-header ~ #portal-root .app-topbar .user-area {
+    position: absolute;
+    top: 50%;
+    inset-inline-end: max(20px, calc((100% - 1280px) / 2 + 20px));
+    transform: translateY(-50%);
+    pointer-events: auto;
+}
+
+.swnw-chrome-header ~ #portal-root .user-menu-button {
+    gap: 10px;
+    padding: 5px 8px;
+    color: #fff;
+    border-radius: 999px;
+}
+
+.swnw-chrome-header ~ #portal-root .user-menu-button:hover,
+.swnw-chrome-header ~ #portal-root .user-menu-button:focus-visible {
+    background: rgba(255, 255, 255, 0.14);
+    outline: 0;
+}
+
+.swnw-chrome-header ~ #portal-root .user-menu-button .user-copy {
+    min-width: 0;
+    max-width: 150px;
+}
+
+.swnw-chrome-header ~ #portal-root .user-menu-button .user-copy b {
+    overflow: hidden;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.swnw-chrome-header ~ #portal-root .user-menu-button .user-copy small {
+    display: none;
+}
+
+.swnw-chrome-header ~ #portal-root .user-menu-button .menu-glyph {
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+/* The account sits at the end of the header, so its menu opens towards the page, not off the edge. */
+.swnw-chrome-header ~ #portal-root .profile-menu {
+    top: calc(100% + 10px);
+    right: auto;
+    left: 0;
+}
+
+/* Room for the account button (class set by swnw-site-chrome.js while the portal is signed in). */
+.swnw-chrome-header.has-account .swnw-chrome-header__inner {
+    padding-inline-end: 280px;
+}
+
+@media (max-width: 1100px) {
+    .swnw-chrome-header ~ #portal-root .user-menu-button .user-copy {
+        display: none;
+    }
+
+    .swnw-chrome-header.has-account .swnw-chrome-header__inner {
+        padding-inline-end: 130px;
+    }
+}
+
+@media (max-width: 720px) {
+    .swnw-chrome-header ~ #portal-root .app-topbar {
+        height: 64px;
+    }
+
+    .swnw-chrome-header ~ #portal-root .app-topbar .user-area {
+        inset-inline-end: 12px;
+    }
+
+    .swnw-chrome-header ~ #portal-root .user-menu-button {
+        padding: 2px;
+    }
+
+    .swnw-chrome-header.has-account .swnw-chrome-header__inner {
+        padding-inline-end: 72px;
+    }
 }
 
 .profile-hero {
