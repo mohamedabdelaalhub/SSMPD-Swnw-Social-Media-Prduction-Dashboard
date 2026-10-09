@@ -101,7 +101,8 @@
     wire(container, data);
   }
 
-  var CATEGORY = { general: "استفسار", medical_sensitive: "سؤال طبي", emergency: "طوارئ", complaint: "شكوى", thanks: "شكر", spam: "سبام" };
+  var PLAT = { facebook: "فيسبوك", instagram: "انستجرام", whatsapp: "واتساب" };
+  var CATEGORY = { handoff: "محتاج حد من الفريق", general: "استفسار", medical_sensitive: "سؤال طبي", emergency: "طوارئ", complaint: "شكوى", thanks: "شكر", spam: "سبام" };
   function autopilotNote(a) {
     var on = [];
     if (a.comments) on.push("التعليقات"); if (a.messages) on.push("الرسايل");
@@ -125,10 +126,10 @@
     return intro + alerts.map(function (a) {
       return '<div class="cm-card sensitive">' +
         '<div class="cm-meta"><span class="cm-badge danger">' + (CATEGORY[a.category] || "تنبيه") + "</span>" +
-        '<span class="cm-badge ' + a.platform + '">' + (a.platform === "facebook" ? "فيسبوك" : "انستجرام") + " · " + (a.kind === "comment" ? "تعليق" : "رسالة") + "</span>" +
+        '<span class="cm-badge ' + a.platform + '">' + (PLAT[a.platform] || a.platform) + " · " + (a.kind === "comment" ? "تعليق" : "رسالة") + "</span>" +
         '<span class="cm-badge">' + (BRANDS[a.brand] || a.brand) + "</span></div>" +
         '<div class="cm-msg"><b>' + esc(a.who || "مستخدم") + '</b> <span class="muted">' + when(a.at) + " · " + ago(a.at) + "</span>" +
-        (a.url ? ' <a class="cm-open" href="' + esc(a.url) + '" target="_blank" rel="noopener">افتح ' + (a.kind === "comment" ? "التعليق" : "المحادثة") + " ↗</a>" : "") +
+        (a.url ? ' <a class="cm-open" href="' + esc(a.url) + '" target="_blank" rel="noopener">' + (a.platform === "whatsapp" ? "كلّمه على واتساب" : "افتح " + (a.kind === "comment" ? "التعليق" : "المحادثة")) + " ↗</a>" : "") +
         "<p>" + esc(a.text) + "</p></div>" +
         (a.reply ? '<div class="cm-reply page"><b>ردنا التلقائي</b><p>' + esc(a.reply) + "</p></div>" : "") +
         '<div class="cm-actions"><button class="btn btn-primary sm" data-resolve="' + a.kind + "|" + esc(a.id) + '">تم التعامل</button></div></div>';
@@ -152,7 +153,7 @@
       var cust = c.list.filter(function (m) { return !m.is_page; });
       var lastCust = cust[cust.length - 1] || c.last;
       var h = '<div class="cm-card' + (lastCust.alert ? " sensitive" : "") + '"><div class="cm-meta">' +
-        '<span class="cm-badge ' + c.last.platform + '">' + (c.last.platform === "facebook" ? "ماسنجر" : "انستجرام") + "</span>" +
+        '<span class="cm-badge ' + c.last.platform + '">' + (c.last.platform === "facebook" ? "ماسنجر" : (PLAT[c.last.platform] || c.last.platform)) + "</span>" +
         '<span class="cm-badge">' + (BRANDS[c.last.brand] || c.last.brand) + "</span>" +
         '<span class="cm-badge st-' + lastCust.status + '">' + (MSTATUS[lastCust.status] || lastCust.status) + "</span>" +
         (lastCust.category ? '<span class="cm-badge">' + (CATEGORY[lastCust.category] || lastCust.category) + "</span>" : "") +
