@@ -2,7 +2,7 @@
 (function () {
   "use strict";
 
-  var state = { filter: "pending", brand: "", section: "inbox" };
+  var state = { filter: "pending", brand: "", platform: "", section: "inbox" };
   var BRANDS = { sono: "سونو", dr_dina: "د. دينا" };
   var STATUS = {
     "new": "محتاج رد", drafted: "رد مقترح", approved: "في الطريق", sending: "بيتنشر",
@@ -60,6 +60,7 @@
 
     var list = top.filter(function (c) {
       if (state.brand && c.brand !== state.brand) return false;
+      if (state.platform && c.platform !== state.platform) return false;
       if (state.filter === "pending") return ["new", "drafted", "failed", "approved", "sending"].indexOf(c.status) !== -1;
       if (state.filter === "replied") return c.status === "replied";
       if (state.filter === "ignored") return c.status === "ignored";
@@ -67,7 +68,7 @@
     });
 
     var html = '<div class="cm-head"><div><h2>التعليقات</h2><p class="muted">تعليقات فيسبوك وانستجرام على البوستات اللي اتنشرت من الداشبورد — بتتحدث كل ٥ دقايق.</p></div>' +
-      '<button class="btn ghost sm" id="cm-refresh">تحديث</button></div>' +
+      '<button class="btn ghost sm" id="cm-refresh">اسحب التعليقات الجديدة دلوقتي</button></div>' +
       '<div class="cm-tabs">' +
       '<button class="btn sm ' + (state.section === "inbox" ? "" : "ghost") + '" data-section="inbox">التعليقات' + (pendingCount ? ' <span class="cm-count">' + pendingCount + "</span>" : "") + "</button>" +
       '<button class="btn sm ' + (state.section === "templates" ? "" : "ghost") + '" data-section="templates">الردود المعتمدة (' + data.templates.length + ")</button></div>";
@@ -77,7 +78,8 @@
     else {
       html += '<div class="cm-filters">' +
         select("cm-filter", state.filter, { pending: "محتاج رد", replied: "تم الرد", ignored: "متجاهل", all: "الكل" }) +
-        select("cm-brand", state.brand, { "": "كل الصفحات", sono: "سونو", dr_dina: "د. دينا" }) + "</div>";
+        select("cm-brand", state.brand, { "": "كل الصفحات", sono: "سونو", dr_dina: "د. دينا" }) +
+        select("cm-platform", state.platform, { "": "فيسبوك وانستجرام", facebook: "فيسبوك بس", instagram: "انستجرام بس" }) + "</div>";
       html += list.length ? list.map(function (c) { return card(c, byParent[c.platform_comment_id] || [], data); }).join("")
         : '<div class="empty">مفيش تعليقات هنا دلوقتي.</div>';
     }
@@ -118,6 +120,7 @@
     if (canAnswer) {
       h += '<textarea class="cm-input" rows="3" placeholder="اكتب الرد…">' + esc(c.suggested_reply || "") + "</textarea>" +
         '<div class="cm-actions"><button class="btn btn-primary sm" data-approve="' + esc(c.id) + '">اعتمد وانشر</button>' +
+        '<button class="btn ghost sm" data-suggest="' + esc(c.id) + '">✨ ' + (c.suggested_reply ? "اقترح رد تاني" : "اقترح رد") + "</button>" +
         '<button class="btn ghost sm" data-ignore="' + esc(c.id) + '">تجاهل</button></div>';
     }
     return h + "</div>";
@@ -142,7 +145,23 @@
     var again = function () { render(container); };
     var fail = function (e) { alert(e && e.message ? e.message : "حصل خطأ"); };
     var q = function (s) { return container.querySelectorAll(s); };
-    var refresh = container.querySelector("#cm-refresh"); if (refresh) refresh.onclick = again;
+    var refresh = container.querySelector("#cm-refresh");
+    if (refresh) refresh.onclick = function () {
+      refresh.disabled = true; refresh.textContent = "بيسحب من فيسبوك وانستجرام…";
+      db().functions.invoke("meta-comments", { body: { action: "sync" } }).catch(function () {}).then(again);
+    };
+    var pf = container.querySelector("#cm-platform"); if (pf) pf.onchange = function () { state.platform = pf.value; draw(container, data); };
+    q("[data-suggest]").forEach(function (b) {
+      b.onclick = function () {
+        var box = b.closest(".cm-card").querySelector(".cm-input");
+        b.disabled = true; var label = b.textContent; b.textContent = "بيكتب رد…";
+        db().functions.invoke("meta-comments", { body: { action: "suggest", id: b.dataset.suggest } }).then(function (r) {
+          var d = r.data || {};
+          if (r.error || !d.ok) throw new Error(d.error || "تعذر اقتراح رد");
+          box.value = d.text; box.focus();
+        }).catch(fail).then(function () { b.disabled = false; b.textContent = label; });
+      };
+    });
     q("[data-section]").forEach(function (b) { b.onclick = function () { state.section = b.dataset.section; draw(container, data); }; });
     var f = container.querySelector("#cm-filter"); if (f) f.onchange = function () { state.filter = f.value; draw(container, data); };
     var br = container.querySelector("#cm-brand"); if (br) br.onchange = function () { state.brand = br.value; draw(container, data); };
