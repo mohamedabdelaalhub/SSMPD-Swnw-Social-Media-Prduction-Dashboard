@@ -35,10 +35,15 @@
     return Promise.all([
       db().from("social_comments").select("*").order("commented_at", { ascending: false }).limit(400),
       db().from("social_reply_templates").select("*").order("created_at", { ascending: false }),
-      db().from("content_items").select("id,title")
+      db().from("content_items").select("id,title"),
+      db().from("social_messages").select("*").order("sent_at", { ascending: false }).limit(400),
+      db().from("social_settings").select("value").eq("key", "autopilot").maybeSingle()
     ]).then(function (r) {
       if (r[0].error) throw r[0].error;
-      return { comments: r[0].data || [], templates: r[1].data || [], titles: (r[2].data || []).reduce(function (m, c) { m[c.id] = c.title; return m; }, {}) };
+      return {
+        comments: r[0].data || [], templates: r[1].data || [], titles: (r[2].data || []).reduce(function (m, c) { m[c.id] = c.title; return m; }, {}),
+        messages: r[3].error ? [] : (r[3].data || []), autopilot: (r[4] && r[4].data && r[4].data.value) || {}
+      };
     });
   }
 
@@ -57,7 +62,9 @@
     replies.forEach(function (r) { (byParent[r.parent_comment_id] = byParent[r.parent_comment_id] || []).push(r); });
     var pendingCount = top.filter(isPending).length;
     var overdueCount = top.filter(isOverdue).length;
-    updateTabBadge(pendingCount, overdueCount);
+    var alerts = alertList(data);
+    updateTabBadge(pendingCount + alerts.length, overdueCount + alerts.length);
+    var convs = conversations(data.messages);
 
     var list = top.filter(function (c) {
       if (state.brand && c.brand !== state.brand) return false;
@@ -68,14 +75,19 @@
       return true;
     });
 
-    var html = '<div class="cm-head"><div><h2>التعليقات</h2><p class="muted">تعليقات فيسبوك وانستجرام على البوستات اللي اتنشرت من الداشبورد — بتتحدث كل ٥ دقايق.</p></div>' +
+    var html = '<div class="cm-head"><div><h2>التعليقات</h2><p class="muted">تعليقات ورسايل فيسبوك وانستجرام — بتتحدث كل دقيقتين. ' + autopilotNote(data.autopilot) + '</p></div>' +
       '<button class="btn ghost sm" id="cm-refresh">اسحب التعليقات الجديدة دلوقتي</button></div>' +
       '<div class="cm-tabs">' +
       '<button class="btn sm ' + (state.section === "inbox" ? "" : "ghost") + '" data-section="inbox">التعليقات' + (pendingCount ? ' <span class="cm-count">' + pendingCount + "</span>" : "") + "</button>" +
-      '<button class="btn sm ' + (state.section === "templates" ? "" : "ghost") + '" data-section="templates">الردود المعتمدة (' + data.templates.length + ")</button></div>";
+      '<button class="btn sm ' + (state.section === "templates" ? "" : "ghost") + '" data-section="templates">الردود المعتمدة (' + data.templates.length + ")</button>" +
+      '<button class="btn sm ' + (state.section === "messages" ? "" : "ghost") + '" data-section="messages">الرسايل (' + convs.length + ")</button>" +
+      '<button class="btn sm ' + (state.section === "alerts" ? "" : "ghost") + (alerts.length ? " danger-btn" : "") + '" data-section="alerts">🚨 تنبيهات' + (alerts.length ? ' <span class="cm-count">' + alerts.length + "</span>" : "") + "</button></div>";
+    if (alerts.length && state.section !== "alerts") html += '<div class="cm-alert danger">🚨 فيه ' + alerts.length + ' شكوى/حالة طارئة اترد عليها تلقائي ومحتاجة حد من الفريق يتواصل — <a href="#" data-section="alerts">افتح التنبيهات</a></div>';
 
-    if (overdueCount && state.section !== "templates") html += '<div class="cm-alert">⚠️ فيه ' + overdueCount + ' تعليق مستني رد من أكتر من ساعة — الرد السريع بيفرق مع الناس.</div>';
+    if (overdueCount && state.section === "inbox") html += '<div class="cm-alert">⚠️ فيه ' + overdueCount + ' تعليق مستني رد من أكتر من ساعة — الرد السريع بيفرق مع الناس.</div>';
     if (state.section === "templates") html += templatesHtml(data.templates);
+    else if (state.section === "alerts") html += alertsHtml(alerts, data);
+    else if (state.section === "messages") html += messagesHtml(convs);
     else {
       html += '<div class="cm-filters">' +
         select("cm-filter", state.filter, { pending: "محتاج رد", replied: "تم الرد", ignored: "متجاهل", all: "الكل" }) +
@@ -86,6 +98,72 @@
     }
     container.innerHTML = '<div class="cm-wrap" dir="rtl">' + html + "</div>";
     wire(container, data);
+  }
+
+  var CATEGORY = { general: "استفسار", medical_sensitive: "سؤال طبي", emergency: "طوارئ", complaint: "شكوى", thanks: "شكر", spam: "سبام" };
+  function autopilotNote(a) {
+    var on = [];
+    if (a.comments) on.push("التعليقات"); if (a.messages) on.push("الرسايل");
+    return on.length ? "الرد التلقائي شغال على: " + on.join(" و") + "." : "الرد التلقائي متوقف — الردود بتستنى اعتماد.";
+  }
+  // تنبيهات حمرا: شكاوى/طوارئ اترد عليها تلقائياً ولسه محدش من الفريق اتعامل معاها.
+  function alertList(data) {
+    var out = [];
+    data.comments.forEach(function (c) { if (c.alert && !c.alert_resolved_at) out.push({ kind: "comment", id: c.id, platform: c.platform, brand: c.brand, who: c.author_name, text: c.message, reply: c.final_reply, at: c.commented_at, url: c.comment_url, category: c.category }); });
+    var seen = {};
+    data.messages.forEach(function (m) {
+      if (!m.alert || m.alert_resolved_at || seen[m.conversation_id]) return;
+      seen[m.conversation_id] = 1;
+      out.push({ kind: "message", id: m.id, platform: m.platform, brand: m.brand, who: m.sender_name, text: m.message, reply: m.reply_text, at: m.sent_at, url: m.conversation_url, category: m.category });
+    });
+    return out.sort(function (a, b) { return new Date(b.at) - new Date(a.at); });
+  }
+  function alertsHtml(alerts, data) {
+    var intro = '<p class="muted">الشكاوى والحالات الطارئة بيترد عليها فوراً برد ثابت (اعتذار ووعد بالتواصل / توجيه للطوارئ). هنا لازم حد من الفريق يتواصل مع الشخص بنفسه، وبعدها يضغط "تم التعامل".</p>';
+    if (!alerts.length) return intro + '<div class="empty">مفيش تنبيهات مفتوحة 👌</div>';
+    return intro + alerts.map(function (a) {
+      return '<div class="cm-card sensitive">' +
+        '<div class="cm-meta"><span class="cm-badge danger">' + (CATEGORY[a.category] || "تنبيه") + "</span>" +
+        '<span class="cm-badge ' + a.platform + '">' + (a.platform === "facebook" ? "فيسبوك" : "انستجرام") + " · " + (a.kind === "comment" ? "تعليق" : "رسالة") + "</span>" +
+        '<span class="cm-badge">' + (BRANDS[a.brand] || a.brand) + "</span></div>" +
+        '<div class="cm-msg"><b>' + esc(a.who || "مستخدم") + '</b> <span class="muted">' + when(a.at) + " · " + ago(a.at) + "</span>" +
+        (a.url ? ' <a class="cm-open" href="' + esc(a.url) + '" target="_blank" rel="noopener">افتح ' + (a.kind === "comment" ? "التعليق" : "المحادثة") + " ↗</a>" : "") +
+        "<p>" + esc(a.text) + "</p></div>" +
+        (a.reply ? '<div class="cm-reply page"><b>ردنا التلقائي</b><p>' + esc(a.reply) + "</p></div>" : "") +
+        '<div class="cm-actions"><button class="btn btn-primary sm" data-resolve="' + a.kind + "|" + esc(a.id) + '">تم التعامل</button></div></div>';
+    }).join("");
+  }
+  function conversations(messages) {
+    var by = {}, order = [];
+    messages.slice().reverse().forEach(function (m) {
+      if (!by[m.conversation_id]) { by[m.conversation_id] = []; order.push(m.conversation_id); }
+      by[m.conversation_id].push(m);
+    });
+    return order.map(function (id) { var list = by[id]; return { id: id, list: list, last: list[list.length - 1] }; })
+      .filter(function (c) { return (!state.brand || c.last.brand === state.brand) && (!state.platform || c.last.platform === state.platform); })
+      .sort(function (a, b) { return new Date(b.last.sent_at) - new Date(a.last.sent_at); });
+  }
+  var MSTATUS = { "new": "مستنية رد", replied: "تم الرد", skipped: "سبام", failed: "فشل الإرسال", expired: "فات عليها ٢٤ ساعة" };
+  function messagesHtml(convs) {
+    var intro = '<p class="muted">رسايل ماسنجر وانستجرام دايركت. فيسبوك مسموح يترد فيها خلال ٢٤ ساعة بس من آخر رسالة من العميل.</p>';
+    if (!convs.length) return intro + '<div class="empty">مفيش رسايل لسه — لو الصلاحية pages_messaging مش مفعّلة على توكن الصفحة، الرسايل مش هتتسحب.</div>';
+    return intro + convs.slice(0, 80).map(function (c) {
+      var cust = c.list.filter(function (m) { return !m.is_page; });
+      var lastCust = cust[cust.length - 1] || c.last;
+      var h = '<div class="cm-card' + (lastCust.alert ? " sensitive" : "") + '"><div class="cm-meta">' +
+        '<span class="cm-badge ' + c.last.platform + '">' + (c.last.platform === "facebook" ? "ماسنجر" : "انستجرام") + "</span>" +
+        '<span class="cm-badge">' + (BRANDS[c.last.brand] || c.last.brand) + "</span>" +
+        '<span class="cm-badge st-' + lastCust.status + '">' + (MSTATUS[lastCust.status] || lastCust.status) + "</span>" +
+        (lastCust.category ? '<span class="cm-badge">' + (CATEGORY[lastCust.category] || lastCust.category) + "</span>" : "") +
+        (c.last.conversation_url ? '<a class="cm-open" href="' + esc(c.last.conversation_url) + '" target="_blank" rel="noopener">افتح المحادثة ↗</a>' : "") + "</div>";
+      c.list.slice(-6).forEach(function (m) {
+        h += '<div class="cm-reply' + (m.is_page ? " page" : "") + '"><b>' + esc(m.is_page ? "الصفحة" : (m.sender_name || "عميل")) + '</b> <span class="muted">' + when(m.sent_at) + "</span><p>" + esc(m.message) + "</p></div>";
+      });
+      if (lastCust.status === "replied" && lastCust.reply_text && !c.list.some(function (m) { return m.is_page && new Date(m.sent_at) >= new Date(lastCust.sent_at); }))
+        h += '<div class="cm-reply page"><b>ردنا</b> <span class="muted">' + when(lastCust.replied_at) + "</span><p>" + esc(lastCust.reply_text) + "</p></div>";
+      if (lastCust.status === "failed" && lastCust.last_error) h += '<div class="err-msg">' + esc(lastCust.last_error) + "</div>";
+      return h + "</div>";
+    }).join("");
   }
 
   function select(id, value, options) {
@@ -164,7 +242,14 @@
         }).catch(fail).then(function () { b.disabled = false; b.textContent = label; });
       };
     });
-    q("[data-section]").forEach(function (b) { b.onclick = function () { state.section = b.dataset.section; draw(container, data); }; });
+    q("[data-section]").forEach(function (b) { b.onclick = function (e) { if (e && e.preventDefault) e.preventDefault(); state.section = b.dataset.section; draw(container, data); }; });
+    q("[data-resolve]").forEach(function (b) {
+      b.onclick = function () {
+        var parts = b.dataset.resolve.split("|");
+        b.disabled = true;
+        db().rpc("social_alert_resolve", { p_kind: parts[0], p_id: parts.slice(1).join("|") }).then(function (r) { if (r.error) throw r.error; again(); }).catch(function (e) { b.disabled = false; fail(e); });
+      };
+    });
     var f = container.querySelector("#cm-filter"); if (f) f.onchange = function () { state.filter = f.value; draw(container, data); };
     var br = container.querySelector("#cm-brand"); if (br) br.onchange = function () { state.brand = br.value; draw(container, data); };
     q("[data-approve]").forEach(function (b) {

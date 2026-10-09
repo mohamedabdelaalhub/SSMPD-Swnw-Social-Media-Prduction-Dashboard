@@ -524,6 +524,8 @@ table.simple.acc-table td.acc-col-num{text-align:left;}
 .cm-examples{margin:4px 0 0;padding-inline-start:18px;font-size:13px;}
 .cm-lib{margin-top:8px;font-size:12px;}
 .cm-alert{background:rgba(208,64,42,.08);border:1px solid rgba(208,64,42,.35);color:var(--c-negative);border-radius:10px;padding:10px 12px;margin:10px 0;font-weight:600;}
+.cm-alert.danger{background:#D0402A;color:#fff;border-color:#D0402A;}.cm-alert.danger a{color:#fff;text-decoration:underline;}
+.btn.danger-btn{border-color:#D0402A;color:#D0402A;}.btn.danger-btn:not(.ghost){background:#D0402A;color:#fff;}
 .cm-open{font-size:12px;margin-inline-start:8px;}
 .cm-tab-badge{display:inline-block;min-width:18px;margin-inline-start:6px;padding:0 6px;border-radius:9px;background:var(--c-alert);color:#fff;font-size:11px;line-height:18px;text-align:center;}
 .cm-tab-badge.late{background:var(--c-negative);animation:cmPulse 1.6s ease-in-out infinite;}
