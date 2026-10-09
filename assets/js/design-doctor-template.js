@@ -34,6 +34,12 @@
   drawText(ctx,data.doctorPrefix==='الدكتورة'?'الدكتورة':'الدكتور',317.11,437.5,390,80,61.4,400,'#fff',1);
   drawText(ctx,name,317.11,602,472,245,num(data.doctorNameSize,97,24,110),400,'#fff',2);
   drawText(ctx,title,388.23,798.77,517,55,num(data.doctorTitleSize,32.56,16,42),400,'#fff',2);
+  var schedules=[{days:days,time_from:data.doctorTimeFrom,time_to:data.doctorTimeTo}].concat(JSON.parse(data.doctorScheduleExtra||'[]'));
+  if(schedules.some(function(r){return !r.days||!time(r.time_from)||!time(r.time_to);}))issues.push('أكمل كل المواعيد.');
+  if(schedules.length>4)issues.push('مساحة القالب تتسع لأربعة مواعيد مختلفة. اجمع الأيام التي لها نفس الساعات.');
+  var shared=schedules.every(function(r){return r.time_from===data.doctorTimeFrom&&r.time_to===data.doctorTimeTo;});
+  if(shared)days=schedules.map(function(r){return r.days;}).join(' - ');
+  if(!shared){schedules.forEach(function(r,i){var a=time(r.time_from),b=time(r.time_to);drawText(ctx,r.days,710,968+i*29,220,28,23,700,'#fff',1);drawText(ctx,a&&b?a.value+' '+a.period+' — '+b.value+' '+b.period:'أكمل الموعد',405,968+i*29,340,28,21,400,'#fff',1);});}else{
   ctx.fillStyle='#fff';ctx.beginPath();ctx.roundRect(598,972,218,33,17);ctx.fill();
   drawText(ctx,days,707.18,988,208,30,23.85,700,'#0c3b9d',1);
   drawText(ctx,'من كل أسبوع',707.18,1037,205,48,27,400,'#fff',1);
@@ -42,6 +48,7 @@
    drawText(ctx,row[2],row[1],973,120,30,18,400,'#c1cce5',1);
    if(row[0]){ctx.save();ctx.direction='ltr';ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='700 32.94px DoctorLatin';ctx.fillStyle='#fff';ctx.fillText(row[0].value,row[1],1016);ctx.restore();drawText(ctx,row[0].period,row[1],1044,110,27,18,400,'#c1cce5',1);}
   });
+  }
   canvas.designIssues=issues;canvas.designWarnings=[];return canvas;
  }
  window.SSMPDDoctorTemplate={render:render};

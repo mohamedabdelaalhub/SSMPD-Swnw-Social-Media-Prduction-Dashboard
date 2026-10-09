@@ -82,6 +82,7 @@
    '<div style="flex:1 1 350px;min-width:0"><canvas style="width:100%;height:auto;border:1px solid #e2e6ed"></canvas></div></div></div>';
   window.SSMPDDesignEditorLayout.mount(root);
   if(editingExisting){root.querySelector('h3').textContent='تعديل التصميم الحالي';root.querySelector('[data-save]').textContent='حفظ التعديل للمراجعة';root.querySelector('[data-generate]').textContent='استبدال الصورة بتوليد جديد';var current=document.createElement('a');current.href=item.design_file_url;current.target='_blank';current.rel='noopener';current.className='btn ghost sm';current.textContent='استعراض التصميم الحالي';root.querySelector('.design-editor__preview-toolbar').append(current);}
+  var scheduleExtra=window.SSMPDDoctorContent.mountSchedule(root.querySelector('[data-field="doctorTimeTo"]').closest('label'),null,'doctorScheduleExtra');
   document.body.appendChild(root);
   var logos=[],savedLogo=null;
   var sceneJobId=null,sourceFile=null,sourceUrl=null;
@@ -106,6 +107,7 @@
   if(window.SSMPDDesignCopy)window.SSMPDDesignCopy.mount(root,item,function(copy){if(working||restoring||loadFailed)return;[['headline','design_headline'],['subtitle','design_subtitle'],['cta','design_cta']].forEach(function(pair){root.querySelector('[data-field="'+pair[0]+'"]').value=copy[pair[1]];});requestPaint();scheduleDraft();});
   var doctorBrief=window.SSMPDDoctorContent&&window.SSMPDDoctorContent.from(item);
   if(doctorBrief){root.querySelector('[data-field="layoutTemplate"]').value='sono_doctor';[['doctorPrefix','prefix'],['doctorName','name'],['doctorTitle','title'],['doctorDays','days'],['doctorTimeFrom','time_from'],['doctorTimeTo','time_to']].forEach(function(pair){root.querySelector('[data-field="'+pair[0]+'"]').value=doctorBrief[pair[1]]||'';});}
+  if(doctorBrief)scheduleExtra.value=JSON.stringify((doctorBrief.schedule||[]).slice(1));scheduleExtra.dispatchEvent(new Event('schedule-restore'));
   root.querySelector('[data-prompt]').value=item.title||'';
   root.querySelector('.modal-close').onclick=async function(){clearTimeout(draftTimer);if(loadFailed){root.remove();return;}if(restoring||working){draftStatus.textContent='انتظر انتهاء تحميل أو توليد الصورة قبل الإغلاق.';return;}try{await saveDraft();root.remove();}catch(e){}};
   root.querySelectorAll('input:not([type=file]),textarea,select').forEach(function(el){el.style.width='100%';el.style.boxSizing='border-box';el.style.marginBottom='10px';});
@@ -195,7 +197,7 @@
     if(saved){
      if(saved.settings&&saved.settings.logoStoragePath)savedLogo=saved.settings;
      if(!saved.settings||!saved.settings.logoVariant)root.querySelector('[data-field="logoVariant"]').value='legacy';
-     root.querySelectorAll('[data-field]').forEach(function(field){if(saved.settings&&saved.settings[field.dataset.field]!==undefined)field.value=saved.settings[field.dataset.field];});
+     root.querySelectorAll('[data-field]').forEach(function(field){if(saved.settings&&saved.settings[field.dataset.field]!==undefined)field.value=saved.settings[field.dataset.field];});scheduleExtra.dispatchEvent(new Event('schedule-restore'));
      root.querySelectorAll('[data-number-for]').forEach(function(el){var field=root.querySelector('[data-field="'+el.dataset.numberFor+'"]');if(field)el.value=field.value;});
      if(useLocal){root.querySelector('[data-prompt]').value=saved.prompt||'';root.querySelector('[data-quality]').value=saved.quality||'medium';}
      sceneJobId=saved.sceneJobId||null;sourceFile=saved.sourceFile||null;sourceUrl=saved.sourceUrl||null;

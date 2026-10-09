@@ -67,13 +67,15 @@ Deno.serve(async (req) => {
     }
 
     const doctorIntro=body?.content_kind === "doctor_intro"||/^تعريف\s+(?:د\s*[/.]|الدكتور(?:ة)?|دكتور(?:ة)?)\s*/u.test(String(body?.title||"").trim());
-    let doctorBrief: Record<string,string>|null=null;
+    let doctorBrief: Record<string,any>|null=null;
     if(doctorIntro){
       if(body.brand!=="sono")throw new Error("تعريف الطبيب مخصص لصفحة سونو.");
       doctorBrief={};
       for(const key of ["prefix","name","title","days","time_from","time_to","qualifications","experience"]){const value=body?.doctor_brief?.[key];if(value!=null&&typeof value!=="string")throw new Error("بيانات الطبيب غير صالحة.");doctorBrief[key]=String(value||"").trim();if(doctorBrief[key].length>4000)throw new Error("بيانات الطبيب أطول من الحد المسموح.");}
       if(!["الدكتور","الدكتورة"].includes(doctorBrief.prefix)||!doctorBrief.name||!doctorBrief.title)throw new Error("اسم الطبيب والتايتل مطلوبان.");
-      if(!doctorBrief.days||![doctorBrief.time_from,doctorBrief.time_to].every(value=>/^([01]\d|2[0-3]):[0-5]\d$/.test(value)))throw new Error("أيام العمل وموعد البداية والنهاية مطلوبة.");
+      const schedule=body?.doctor_brief?.schedule||[{days:doctorBrief.days,time_from:doctorBrief.time_from,time_to:doctorBrief.time_to}];
+      if(!Array.isArray(schedule)||!schedule.length||schedule.some(r=>!r||typeof r.days!=="string"||!r.days.trim()||r.days.length>4000||![r.time_from,r.time_to].every(v=>typeof v==="string"&&/^([01]\d|2[0-3]):[0-5]\d$/.test(v))))throw new Error("كل موعد يحتاج أيامًا ووقت بداية ونهاية.");
+      doctorBrief.schedule=schedule.map(r=>({days:r.days.trim(),time_from:r.time_from,time_to:r.time_to}));
     }
 
     const brief = {
