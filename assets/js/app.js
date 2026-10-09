@@ -37,7 +37,7 @@
     design: "شاشة التصميم",
     publish: "النشر",
     comments: "التعليقات",
-    clinic_info: "معلومات المركز",
+    clinic_info: "تحديث بيانات الشات بوت",
     performance: "أداء البوستات",
     archive: "الأرشيف",
     patients: "أرشيف المرضى",

@@ -1,4 +1,4 @@
-/* SSMPD — تاب "معلومات المركز": البيانات اللي وكيل الواتساب بيرد منها (مواعيد، دفع، عروض، أسئلة شائعة…).
+/* SSMPD — تاب "تحديث بيانات الشات بوت": البيانات اللي وكيل الواتساب بيرد منها (مواعيد، دفع، عروض، أسئلة شائعة…).
    أي تعديل هنا بيوصل للوكيل خلال دقايق (Edge Function clinic-knowledge). جهات التعاقد بتتقري من تابها. */
 (function () {
   "use strict";
@@ -43,7 +43,7 @@
   var SECTIONS = [["profile", "بيانات المركز"], ["hours", "مواعيد العمل"], ["payment", "الدفع والخدمات"], ["offers", "العروض"], ["faqs", "أسئلة شائعة"], ["contracts", "جهات التعاقد"], ["notes", "تعليمات للوكيل"]];
 
   function draw(container, data) {
-    var html = '<div class="ci-wrap" dir="rtl"><div class="cm-head"><div><h2>معلومات المركز</h2>' +
+    var html = '<div class="ci-wrap" dir="rtl"><div class="cm-head"><div><h2>تحديث بيانات الشات بوت</h2>' +
       '<p class="muted">البيانات اللي وكيل الواتساب بيرد منها على العملاء. أي تعديل بتحفظه هنا بيوصل للوكيل خلال دقايق.</p></div></div>' +
       '<div class="cm-tabs">' + SECTIONS.map(function (s) {
         return '<button class="btn sm ' + (state.section === s[0] ? "" : "ghost") + '" data-sec="' + s[0] + '">' + s[1] + "</button>";
