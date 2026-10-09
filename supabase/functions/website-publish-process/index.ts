@@ -7,7 +7,8 @@ Deno.serve(async(req)=>{
  if(req.method!=='POST')return reply({error:'METHOD_NOT_ALLOWED'},405);
  const url=Deno.env.get('SUPABASE_URL')!,key=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
  const db=createClient(url,key,{auth:{persistSession:false}});
- const secret=Deno.env.get('WEBSITE_WEBHOOK_SECRET'),endpoint=Deno.env.get('WEBSITE_CONTENT_ENDPOINT');
+ let secret=Deno.env.get('WEBSITE_WEBHOOK_SECRET'),endpoint=Deno.env.get('WEBSITE_CONTENT_ENDPOINT');
+ if(!secret||!endpoint){const {data:cfg}=await db.rpc('website_worker_config');secret=secret||cfg?.secret;endpoint=endpoint||cfg?.endpoint;}
  if(!secret||!endpoint)return reply({error:'INTEGRATION_DISABLED'},503);
  let target:URL;try{target=new URL(endpoint);if(target.protocol!=='https:'||target.username||target.password)throw Error();}catch{return reply({error:'INVALID_ENDPOINT'},503);}
  const bearer=(req.headers.get('Authorization')||'').replace(/^Bearer /i,'');
