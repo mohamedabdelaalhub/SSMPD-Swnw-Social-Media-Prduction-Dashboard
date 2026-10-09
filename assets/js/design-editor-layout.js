@@ -27,7 +27,8 @@
    ['generation','التوليد',['[data-prompt]','[data-quality]','.design-ai-actions']],
    ['versions','النسخ',['[data-versions]']],
    ['doctor','بيانات الدكتور',['doctorPrefix','doctorName','doctorTitle','doctorNameSize','doctorTitleSize']],
-   ['schedule','المواعيد',['doctorDays','doctorTimeFrom','doctorTimeTo']]
+   ['schedule','المواعيد',['doctorDays','doctorTimeFrom','doctorTimeTo']],
+   ['panel','بوكس النص',['[data-panel-colors]']]
   ];
   var panels=[],buttons=[],prefix='design-tool-'+(++serial)+'-';
   definitions.forEach(function(def){
@@ -44,7 +45,7 @@
    });
    var button=document.createElement('button');button.type='button';button.className='btn ghost sm';button.dataset.toolTab=def[0];button.textContent=def[1];button.setAttribute('aria-controls',panel.id);button.setAttribute('aria-pressed','false');tabs.append(button);
    if(['doctor','schedule'].includes(def[0])){panel.dataset.doctorOnly='';button.dataset.doctorOnly='';panel.hidden=true;button.hidden=true;}
-   if(['headline','subtitle','cta','logo','generation'].includes(def[0])){panel.dataset.standardOnly='';button.dataset.standardOnly='';}
+   if(['headline','subtitle','cta','logo','generation','panel'].includes(def[0])){panel.dataset.standardOnly='';button.dataset.standardOnly='';}
    panels.push(panel);buttons.push(button);
   });
   var help=document.createElement('details');var summary=document.createElement('summary');summary.textContent='إرشادات التعديل';help.append(summary);

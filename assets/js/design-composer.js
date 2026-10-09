@@ -130,7 +130,7 @@
       if(a.left<b.right && a.right>b.left && a.top<b.bottom+8 && a.bottom+8>b.top)
         problem('العناصر متداخلة. عدّل موضع السطر أو زر التفاعل.');
     }
-    if(photographic&&blocks.length){var top=Math.max(200,Math.min.apply(null,blocks.map(function(b){return b.top;}))-28),bottom=Math.min(1160,Math.max.apply(null,blocks.map(function(b){return b.bottom;}))+28);if(bottom>top){ctx.fillStyle='#123b64';ctx.beginPath();ctx.roundRect(35,top,1010,bottom-top,28);ctx.fill();}}
+    if(photographic&&blocks.length){var top=Math.max(200,Math.min.apply(null,blocks.map(function(b){return b.top;}))-28),bottom=Math.min(1160,Math.max.apply(null,blocks.map(function(b){return b.bottom;}))+28);if(bottom>top){ctx.fillStyle=window.SSMPDDesignPanelColor.fill(ctx,data,{x:35,y:top,w:1010,h:bottom-top});ctx.beginPath();ctx.roundRect(35,top,1010,bottom-top,28);ctx.fill();}}
     // Opaque quiet panel under text placed over the scene; fixed overlay remains unchanged.
     [title,subtitle].forEach(function(layout,index){
       if(!layout)return;var y=index?subtitleY:titleY;
@@ -147,7 +147,7 @@
         ctx.fillStyle=color;ctx.fillText(line,x,baseline);
       });
     }
-    draw(title,p.x,titleY,photographic?'#fff':'#07599d',!photographic);draw(subtitle,p.x,subtitleY,photographic?'#fff':'#272727');
+    draw(title,p.x,titleY,photographic?window.SSMPDDesignPanelColor.hex(data.panelTextColor,'#fff'):'#07599d',!photographic);draw(subtitle,p.x,subtitleY,photographic?window.SSMPDDesignPanelColor.hex(data.panelTextColor,'#fff'):'#272727');
     if(cta){ctx.fillStyle='#ff541d';ctx.beginPath();ctx.roundRect(540-buttonWidth/2,ctaY-buttonHeight/2,buttonWidth,buttonHeight,buttonHeight/2);ctx.fill();draw(cta,540,ctaY,'#fff');}
     canvas.designWarnings=issues;
     canvas.designIssues=[];

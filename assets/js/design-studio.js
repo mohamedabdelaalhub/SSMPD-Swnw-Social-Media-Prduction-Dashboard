@@ -80,6 +80,7 @@
    '<p role="status" data-draft-status></p><p role="status" data-status></p><button class="btn" data-download disabled>تنزيل PNG</button> '+
    '<button class="btn ghost" data-save disabled>حفظ نسخة للمراجعة</button><div data-versions></div></div>'+
    '<div style="flex:1 1 350px;min-width:0"><canvas style="width:100%;height:auto;border:1px solid #e2e6ed"></canvas></div></div></div>';
+  root.querySelector('.design-layout').children[0].insertAdjacentHTML('afterbegin',window.SSMPDDesignPanelColor.html());
   window.SSMPDDesignEditorLayout.mount(root);
   if(editingExisting){root.querySelector('h3').textContent='تعديل التصميم الحالي';root.querySelector('[data-save]').textContent='حفظ التعديل للمراجعة';root.querySelector('[data-generate]').textContent='استبدال الصورة بتوليد جديد';var current=document.createElement('a');current.href=item.design_file_url;current.target='_blank';current.rel='noopener';current.className='btn ghost sm';current.textContent='استعراض التصميم الحالي';root.querySelector('.design-editor__preview-toolbar').append(current);}
   var scheduleExtra=window.SSMPDDoctorContent.mountSchedule(root.querySelector('[data-field="doctorTimeTo"]').closest('label'),null,'doctorScheduleExtra');
@@ -136,6 +137,8 @@
    slider.value=Math.max(Number(slider.min),Math.min(Number(slider.max),value));
    slider.dispatchEvent(new Event('input',{bubbles:true}));
   };});
+  root.querySelectorAll('[data-field^="panel"]').forEach(function(field){var changed=field.oninput,last=field.value;field.oninput=function(){last=field.value;changed();};field.onchange=function(){if(field.value!==last){last=field.value;changed();}};});
+  var syncPanelColors=window.SSMPDDesignPanelColor.mount(root);
   async function setScene(url){
    var loaded=await C.loadImage(url),raw=document.createElement('canvas');raw.width=loaded.width;raw.height=loaded.height;raw.getContext('2d').drawImage(loaded,0,0);
    var stored=await new Promise(function(resolve,reject){try{raw.toBlob(function(blob){blob?resolve(blob):reject(new Error('تعذر حفظ صورة المسودة'));},'image/png');}catch(e){reject(e);}});
@@ -207,7 +210,7 @@
      if(!scene&&cloud)draftStatus.textContent+=' — التصميم القديم لا يحتوي على صورة أصلية قابلة للاسترجاع. اختر الصورة الأصلية لاستكمال التعديل.';
     }
    }catch(e){loadFailed=true;draftStatus.textContent=e.message;if(editingExisting){if(current)root.querySelector('.modal-head').append(current);root.querySelector('.design-layout').style.display='none';root.querySelector('.modal').appendChild(draftStatus);}}
-   finally{restoring=false;syncTemplate();root.querySelectorAll('button').forEach(function(el){el.disabled=false;});buttons();if(!loadFailed)await paint();}
+   finally{restoring=false;syncPanelColors();syncTemplate();root.querySelectorAll('button').forEach(function(el){el.disabled=false;});buttons();if(!loadFailed)await paint();}
   })();
  }
  window.SSMPDDesignStudio={mount:mount,open:open};
