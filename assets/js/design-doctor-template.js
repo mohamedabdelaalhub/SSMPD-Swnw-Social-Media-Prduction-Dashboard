@@ -24,7 +24,7 @@
  async function render(canvas,photo,data){
   var loaded=await ready(),bg=loaded[0];canvas.width=1080;canvas.height=1350;var ctx=canvas.getContext('2d');ctx.drawImage(bg,0,0,1080,1350);
   var issues=[],name=text(data.doctorName),title=text(data.doctorTitle),days=text(data.doctorDays),start=time(data.doctorTimeFrom),end=time(data.doctorTimeTo);
-  if(!name)issues.push('اكتب اسم الدكتور.');if(!title)issues.push('اكتب التايتل والتخصص.');if(!days)issues.push('اكتب أيام العمل.');if(!start||!end)issues.push('حدد موعد البداية والنهاية.');
+  if(!name)issues.push('اكتب اسم الدكتور.');if(!title)issues.push('اكتب التايتل والتخصص.');
   if(photo){
    var x=797.7,y=602.66,r=193,scale=Math.max(r*2/photo.width,r*2/photo.height)*num(data.doctorZoom,1,1,3),w=photo.width*scale,h=photo.height*scale;
    ctx.save();ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.clip();ctx.drawImage(photo,x-w/2+(w-r*2)/2*num(data.doctorPhotoX,0,-100,100)/100,y-h/2+(h-r*2)/2*num(data.doctorPhotoY,0,-100,100)/100,w,h);ctx.restore();
@@ -34,10 +34,12 @@
   drawText(ctx,data.doctorPrefix==='الدكتورة'?'الدكتورة':'الدكتور',317.11,437.5,390,80,61.4,400,'#fff',1);
   drawText(ctx,name,317.11,602,472,245,num(data.doctorNameSize,97,24,110),400,'#fff',2);
   drawText(ctx,title,388.23,798.77,517,55,num(data.doctorTitleSize,32.56,16,42),400,'#fff',2);
-  var schedules=[{days:days,time_from:data.doctorTimeFrom,time_to:data.doctorTimeTo}].concat(JSON.parse(data.doctorScheduleExtra||'[]'));
+  var schedules=[{days:days,time_from:data.doctorTimeFrom,time_to:data.doctorTimeTo}].concat(JSON.parse(data.doctorScheduleExtra||'[]')).filter(function(r){return r.days||r.time_from||r.time_to;});
+  if(!schedules.length)issues.push('حدد أيام العمل وموعد البداية والنهاية.');
+  if(schedules.length){days=schedules[0].days;start=time(schedules[0].time_from);end=time(schedules[0].time_to);}
   if(schedules.some(function(r){return !r.days||!time(r.time_from)||!time(r.time_to);}))issues.push('أكمل كل المواعيد.');
   if(schedules.length>4)issues.push('مساحة القالب تتسع لأربعة مواعيد مختلفة. اجمع الأيام التي لها نفس الساعات.');
-  var shared=schedules.every(function(r){return r.time_from===data.doctorTimeFrom&&r.time_to===data.doctorTimeTo;});
+  var shared=schedules.every(function(r){return r.time_from===schedules[0].time_from&&r.time_to===schedules[0].time_to;});
   if(shared)days=schedules.map(function(r){return r.days;}).join(' - ');
   if(!shared){schedules.forEach(function(r,i){var a=time(r.time_from),b=time(r.time_to);drawText(ctx,r.days,710,968+i*29,220,28,23,700,'#fff',1);drawText(ctx,a&&b?a.value+' '+a.period+' — '+b.value+' '+b.period:'أكمل الموعد',405,968+i*29,340,28,21,400,'#fff',1);});}else{
   ctx.fillStyle='#fff';ctx.beginPath();ctx.roundRect(598,972,218,33,17);ctx.fill();

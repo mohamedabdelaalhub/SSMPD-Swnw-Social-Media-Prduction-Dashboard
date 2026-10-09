@@ -1,7 +1,7 @@
 (function(){
  'use strict';
  var keys=['prefix','name','title','days','time_from','time_to','qualifications','experience'];
- function read(){var out={};keys.forEach(function(key){var el=document.getElementById('doctor-'+key);out[key]=el?el.value.trim():'';});var extra=document.getElementById('doctor-schedule-extra');out.schedule=[{days:out.days,time_from:out.time_from,time_to:out.time_to}].concat(extra?JSON.parse(extra.value||'[]'):[]);return out;}
+ function read(){var out={};keys.forEach(function(key){var el=document.getElementById('doctor-'+key);out[key]=el?el.value.trim():'';});var extra=document.getElementById('doctor-schedule-extra');out.schedule=[{days:out.days,time_from:out.time_from,time_to:out.time_to}].concat(extra?JSON.parse(extra.value||'[]'):[]).filter(function(r){return r.days||r.time_from||r.time_to;});if(out.schedule.length){out.days=out.schedule[0].days;out.time_from=out.schedule[0].time_from;out.time_to=out.schedule[0].time_to;}return out;}
  function active(){var el=document.getElementById('cf-content-kind');return !!el&&el.value==='doctor_intro';}
  function validate(d){if(!d.name||!d.title)throw new Error('اكتب اسم الطبيب والتايتل والتخصص.');if(!(d.schedule||[d]).length||(d.schedule||[d]).some(function(r){return !r.days||!/^([01]\d|2[0-3]):[0-5]\d$/.test(r.time_from)||!/^([01]\d|2[0-3]):[0-5]\d$/.test(r.time_to);}))throw new Error('أيام العمل وموعد البداية والنهاية مطلوبة.');}
  function from(item){var raw=item&&item.agent_raw_output;try{if(typeof raw==='string')raw=JSON.parse(raw);}catch(e){return null;}return raw&&raw.content_kind==='doctor_intro'&&raw.doctor_brief||null;}

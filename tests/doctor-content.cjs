@@ -7,9 +7,10 @@ doc.querySelector('#form').insertAdjacentHTML('beforeend',D.html());D.wire(doc.q
 function set(id,value){const el=doc.getElementById(id);el.value=value;el.dispatchEvent(new w.Event('input',{bubbles:true}));}
 set('cf-title','تعريف د/ راضي');set('cf-title','تعريف د/ راضي منصور');assert.equal(D.current(false).name,'راضي منصور');assert.equal(doc.getElementById('ci-format').value,'image_post');assert.throws(()=>D.current(true),/التايتل/);
 set('doctor-title','استشاري أمراض الأطفال');assert.throws(()=>D.current(true),/موعد/);set('doctor-days','الأحد - الاثنين');set('doctor-time_from','17:30');set('doctor-time_to','00:00');const facts=D.current(true);assert.equal(facts.qualifications,'');assert.equal(facts.time_to,'00:00');assert(D.prompt(facts).includes('لا تضف سنوات خبرة'));
-doc.querySelector('[data-add-schedule]').click();assert.throws(()=>D.current(true),/موعد/);
+doc.querySelector('[data-add-schedule]').click();assert.equal(D.current(true).schedule.length,1);
 const extra=doc.querySelector('[data-schedule-rows]');for(const [key,value] of Object.entries({days:'الأربعاء',time_from:'20:00',time_to:'22:00'})){const el=extra.querySelector('[data-key="'+key+'"]');el.value=value;el.dispatchEvent(new w.Event('input',{bubbles:true}));}
 assert.equal(D.current(true).schedule.length,2);D.hydrate(D.current(true));assert.equal(doc.querySelector('[data-schedule-rows] [data-key="time_from"]').value,'20:00');
+set('doctor-days','');set('doctor-time_from','');set('doctor-time_to','');assert.equal(D.current(true).schedule.length,1);assert.equal(D.current(true).days,'الأربعاء');D.hydrate({...facts,schedule:[facts,{days:"الأربعاء",time_from:"20:00",time_to:"22:00"}]});
 let sent;
 w.SSMPDWorkflow={objectiveSelectHtml:id=>'<select id="'+id+'"><option value="awareness">awareness</option></select>',getContentAIBrief:async ctx=>{assert.equal(ctx.doctorBrief.name,'راضي منصور');return D.prompt(ctx.doctorBrief);}};
 w.SSMPDDb={generateContentIdeas:async body=>{sent=body;const idea={title:'نرحب بالدكتور راضي',idea:'ترحيب',caption:'بوست ترحيب',format:'image_post'};return {ideas:[idea,{...idea},{...idea}]};}};
