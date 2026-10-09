@@ -50,14 +50,14 @@
       right:'Leave the RIGHT half empty with a pale plain background for Arabic text. Place the person and all key details on the LEFT.',
       left:'Leave the LEFT half empty with a pale plain background for Arabic text. Place the person and all key details on the RIGHT.'
     };
-    if(data.layoutTemplate==='full_photo')instructions.bottom='Fill the portrait with a continuous photograph. Keep the lower third calm for a text card. Place faces and important details in the upper and middle areas.';
+    if(['full_photo','full_bleed'].includes(data.layoutTemplate))instructions.bottom='Fill the portrait with a continuous photograph. Keep the lower third calm for a text card. Place faces and important details in the upper and middle areas.';
     return String(prompt || '')+'\nComposition: '+(instructions[data.titlePosition]||instructions.bottom)+' Extend the photograph naturally to every edge, including the top. Keep only the small upper-left corner calm and '+(data.logoVariant==='alternate'?'dark':'light')+' for a logo overlay; place faces and important details away from that corner. Do not add a blank horizontal header, white margin or separate top panel. Use a portrait frame with at least 300 additional pixels of lower body and background below the normal composition at final export scale. Do not crop at shoulders, elbows or torso. Reserve this lower extension for a gradual fade. No writing or logos.';
   }
   async function render(canvas, scene, data, options) {
     data=Object.assign({},data);
     if(data.layoutTemplate==='sono_doctor')return window.SSMPDDoctorTemplate.render(canvas,scene,data);
-    var template=['classic','full_photo','split'].includes(data.layoutTemplate)?data.layoutTemplate:'classic';
-    var photographic=template==='full_photo';
+    var template=['classic','full_photo','full_bleed','split'].includes(data.layoutTemplate)?data.layoutTemplate:'classic';
+    var fullBleed=template==='full_bleed',photographic=template==='full_photo'||fullBleed;
     var issues=[];
     function problem(message) {
       if(!issues.includes(message))issues.push(message);
@@ -72,7 +72,7 @@
     var sceneX = data.titlePosition==='left' ? 550 : 0;
     var sceneWidth = side ? 530 : 1080;
     if(scene) {
-      var sceneTop=0,height=1260-sceneTop,scale=Math.max(sceneWidth/scene.width,height/scene.height)*number(data.zoom,1,.5,3);
+      var sceneTop=0,height=(fullBleed?1350:1260)-sceneTop,scale=Math.max(sceneWidth/scene.width,height/scene.height)*number(data.zoom,1,.5,3);
       var w=scene.width*scale,h=scene.height*scale;
       ctx.save();ctx.beginPath();ctx.rect(sceneX,sceneTop,sceneWidth,height);ctx.clip();
       ctx.drawImage(scene,sceneX+(sceneWidth-w)*number(data.x,50,0,100)/100,sceneTop+(height-h)*number(data.y,50,0,100)/100+number(data.imageOffsetY,0,-400,400),w,h);ctx.restore();
@@ -82,14 +82,16 @@
     var fade=ctx.createLinearGradient(0,fadeStart,0,fadeEnd);
     fade.addColorStop(0,'rgba(255,255,255,0)');fade.addColorStop(1,'rgba(255,255,255,1)');
     if(!photographic){ctx.fillStyle=fade;ctx.fillRect(0,fadeStart,1080,1260-fadeStart);}
+    window.SSMPDDesignPanelColor.edges(ctx,data);
     if(data.logoVariant && data.logoVariant!=='legacy') {
       if(!data.logoStoragePath || data.logoBrand!=='sono' || !data.logoStoragePath.startsWith('sono/'))throw new Error('اختر نسخة لوجو سونو المحفوظة في المكتبة.');
       var logo=await logoImage(data.logoStoragePath);
       // Clip out the embedded upper logo while preserving the existing lower template and contact footer.
-      ctx.save();ctx.beginPath();ctx.rect(0,photographic?1170:200,1080,photographic?180:1150);ctx.clip();ctx.drawImage(overlay,0,0,1080,1350);ctx.restore();
+      if(!fullBleed){ctx.save();ctx.beginPath();ctx.rect(0,photographic?1170:200,1080,photographic?180:1150);ctx.clip();ctx.drawImage(overlay,0,0,1080,1350);ctx.restore();}
       var logoScale=Math.min(280/logo.width,125/logo.height);
       ctx.drawImage(logo,36,30,logo.width*logoScale,logo.height*logoScale);
-    }else if(photographic){ctx.save();ctx.beginPath();ctx.rect(0,0,340,190);ctx.rect(0,1170,1080,180);ctx.clip();ctx.drawImage(overlay,0,0,1080,1350);ctx.restore();}else ctx.drawImage(overlay,0,0,1080,1350);
+    }else if(photographic){ctx.save();ctx.beginPath();ctx.rect(0,0,340,190);if(!fullBleed)ctx.rect(0,1170,1080,180);ctx.clip();ctx.drawImage(overlay,0,0,1080,1350);ctx.restore();}else ctx.drawImage(overlay,0,0,1080,1350);
+    if(fullBleed){ctx.save();ctx.fillStyle=window.SSMPDDesignPanelColor.hex(data.panelTextColor,'#ffffff');ctx.textAlign='center';ctx.textBaseline='middle';ctx.direction='ltr';ctx.font='600 29px SonoLatin';ctx.fillText('0236230005   |   +201010686264',540,1255);ctx.direction='rtl';ctx.font='400 27px SonoDesign';ctx.fillText('45 ع بجوار الخزان حدائق الأهرام',540,1305);ctx.restore();}
     ctx.direction='rtl';ctx.textAlign='center';ctx.textBaseline='middle';
     var presets={bottom:{x:540,y:883,w:960},top:{x:540,y:320,w:960},right:{x:775,y:390,w:450},left:{x:305,y:390,w:450}};
     if(photographic)presets.bottom={x:540,y:845,w:930};
@@ -130,7 +132,7 @@
       if(a.left<b.right && a.right>b.left && a.top<b.bottom+8 && a.bottom+8>b.top)
         problem('العناصر متداخلة. عدّل موضع السطر أو زر التفاعل.');
     }
-    if(photographic&&blocks.length){var top=Math.max(200,Math.min.apply(null,blocks.map(function(b){return b.top;}))-28),bottom=Math.min(1160,Math.max.apply(null,blocks.map(function(b){return b.bottom;}))+28);if(bottom>top){ctx.fillStyle=window.SSMPDDesignPanelColor.fill(ctx,data,{x:35,y:top,w:1010,h:bottom-top});ctx.beginPath();ctx.roundRect(35,top,1010,bottom-top,28);ctx.fill();}}
+    if(photographic&&data.panelFill!=='none'&&blocks.length){var top=Math.max(200,Math.min.apply(null,blocks.map(function(b){return b.top;}))-28),bottom=Math.min(1160,Math.max.apply(null,blocks.map(function(b){return b.bottom;}))+28);if(bottom>top){ctx.fillStyle=window.SSMPDDesignPanelColor.fill(ctx,data,{x:35,y:top,w:1010,h:bottom-top});ctx.beginPath();ctx.roundRect(35,top,1010,bottom-top,28);ctx.fill();}}
     // Opaque quiet panel under text placed over the scene; fixed overlay remains unchanged.
     [title,subtitle].forEach(function(layout,index){
       if(!layout)return;var y=index?subtitleY:titleY;
@@ -147,7 +149,8 @@
         ctx.fillStyle=color;ctx.fillText(line,x,baseline);
       });
     }
-    draw(title,p.x,titleY,photographic?window.SSMPDDesignPanelColor.hex(data.panelTextColor,'#fff'):'#07599d',!photographic);draw(subtitle,p.x,subtitleY,photographic?window.SSMPDDesignPanelColor.hex(data.panelTextColor,'#fff'):'#272727');
+    var headlineColor=photographic?window.SSMPDDesignPanelColor.hex(data.panelTextColor,'#fff'):'#07599d';if(data.headlineFill&&data.headlineFill!=='auto'&&title)headlineColor=window.SSMPDDesignPanelColor.fill(ctx,data,{x:p.x-p.w/2,y:titleY-title.h/2,w:p.w,h:title.h},'headline');
+    draw(title,p.x,titleY,headlineColor,!photographic&&(!data.headlineFill||data.headlineFill==='auto'));draw(subtitle,p.x,subtitleY,photographic?window.SSMPDDesignPanelColor.hex(data.panelTextColor,'#fff'):'#272727');
     if(cta){ctx.fillStyle='#ff541d';ctx.beginPath();ctx.roundRect(540-buttonWidth/2,ctaY-buttonHeight/2,buttonWidth,buttonHeight,buttonHeight/2);ctx.fill();draw(cta,540,ctaY,'#fff');}
     canvas.designWarnings=issues;
     canvas.designIssues=[];

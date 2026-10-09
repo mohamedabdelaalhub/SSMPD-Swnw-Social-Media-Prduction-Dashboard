@@ -18,7 +18,7 @@
   ['[data-status]','[data-draft-status]'].forEach(function(selector){feedback.append(root.querySelector(selector));});
   var actions=document.createElement('div');actions.className='design-editor__actions';actions.append(root.querySelector('[data-download]'),root.querySelector('[data-save]'));footer.append(actions);
   var definitions=[
-   ['headline','العنوان',['headline','headlineSize','headlineOffset']],
+   ['headline','العنوان',['headline','headlineSize','headlineOffset','[data-headline-colors]']],
    ['subtitle','السطر التوضيحي',['subtitle','subtitleSize','subtitleOffset']],
    ['cta','التفاعل',['cta','ctaSize','ctaOffset']],
    ['image','الصورة',['[data-upload]','[data-library]','[data-images]','zoom','x','imageOffsetY','fadeStartY','fadeEndY','doctorZoom','doctorPhotoX','doctorPhotoY']],
@@ -28,7 +28,8 @@
    ['versions','النسخ',['[data-versions]']],
    ['doctor','بيانات الدكتور',['doctorPrefix','doctorName','doctorTitle','doctorNameSize','doctorTitleSize']],
    ['schedule','المواعيد',['doctorDays','doctorTimeFrom','doctorTimeTo']],
-   ['panel','بوكس النص',['[data-panel-colors]']]
+   ['panel','بوكس النص',['[data-panel-colors]']],
+   ['edges','الكتل والتلاشي',['[data-edge-blocks]']]
   ];
   var panels=[],buttons=[],prefix='design-tool-'+(++serial)+'-';
   definitions.forEach(function(def){
@@ -45,7 +46,7 @@
    });
    var button=document.createElement('button');button.type='button';button.className='btn ghost sm';button.dataset.toolTab=def[0];button.textContent=def[1];button.setAttribute('aria-controls',panel.id);button.setAttribute('aria-pressed','false');tabs.append(button);
    if(['doctor','schedule'].includes(def[0])){panel.dataset.doctorOnly='';button.dataset.doctorOnly='';panel.hidden=true;button.hidden=true;}
-   if(['headline','subtitle','cta','logo','generation','panel'].includes(def[0])){panel.dataset.standardOnly='';button.dataset.standardOnly='';}
+   if(['headline','subtitle','cta','logo','generation','panel','edges'].includes(def[0])){panel.dataset.standardOnly='';button.dataset.standardOnly='';}
    panels.push(panel);buttons.push(button);
   });
   var help=document.createElement('details');var summary=document.createElement('summary');summary.textContent='إرشادات التعديل';help.append(summary);
