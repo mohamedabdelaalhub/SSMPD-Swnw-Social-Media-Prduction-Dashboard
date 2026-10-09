@@ -55,6 +55,24 @@ async function syncBrand(db: any, brand: string, cfg: any, jobs: any[], report: 
     const me = await gget(cfg.instagram_business_account_id, { fields: "username", access_token: token });
     igUsername = me.ok ? me.data.username : null;
   }
+  // Also watch every recent post on the page/account, not only the ones published from the dashboard
+  // (posts made directly on Facebook/Instagram get comments too).
+  const knownFb = new Set(jobs.map((j) => j.facebook_post_id).filter(Boolean));
+  const knownIg = new Set(jobs.map((j) => j.instagram_media_id).filter(Boolean));
+  const since = Math.floor((Date.now() - 14 * 864e5) / 1000).toString(); // non-dashboard posts: last 14 days
+  if (cfg?.facebook_page_id) {
+    const r = await gget(`${cfg.facebook_page_id}/published_posts`, { fields: "id", since, limit: "25", access_token: token });
+    if (!r.ok) report.errors.push(`${brand} page posts: ${r.error}`);
+    else for (const p of r.data.data || []) { if (!knownFb.has(p.id)) jobs.push({ id: null, content_id: null, facebook_post_id: p.id }); }
+  }
+  if (cfg?.instagram_business_account_id) {
+    const r = await gget(`${cfg.instagram_business_account_id}/media`, { fields: "id,permalink,timestamp", limit: "20", access_token: token });
+    if (!r.ok) report.errors.push(`${brand} instagram media: ${r.error}`);
+    else for (const m of r.data.data || []) {
+      if (knownIg.has(m.id) || (m.timestamp && Date.parse(m.timestamp) < Number(since) * 1000)) continue;
+      jobs.push({ id: null, content_id: null, instagram_media_id: m.id, instagram_permalink: m.permalink || null });
+    }
+  }
   const rows: Row[] = [];
   const pageReplied = new Set<string>();
   for (const job of jobs) {
@@ -251,6 +269,7 @@ async function runSync(db: any, report: any) {
   if (error) { report.errors.push(error.message); return; }
   const { data: cfgs } = await db.from("meta_brand_config").select("*");
   const byBrand: Record<string, any[]> = {};
+  for (const c of cfgs || []) byBrand[c.brand] ||= [];
   for (const j of jobs || []) (byBrand[j.brand] ||= []).push(j);
   for (const [brand, list] of Object.entries(byBrand)) {
     await syncBrand(db, brand, (cfgs || []).find((c: any) => c.brand === brand), list, report);
