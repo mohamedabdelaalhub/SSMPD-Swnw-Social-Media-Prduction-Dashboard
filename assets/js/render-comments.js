@@ -119,7 +119,8 @@
     }
     if (c.status === "failed" && c.last_error) h += '<div class="err-msg">' + esc(c.last_error) + "</div>";
     if (canAnswer) {
-      h += '<textarea class="cm-input" rows="3" placeholder="اكتب الرد…">' + esc(c.suggested_reply || "") + "</textarea>" +
+      h += '<textarea class="cm-input" rows="5" placeholder="اكتب الرد…">' + esc(c.suggested_reply || "") + "</textarea>" +
+        '<div class="muted cm-hint">بيانات الحجز (العنوان + التليفون + الواتساب) بتتضاف تلقائياً في آخر أي رد لو مش موجودة.</div>' +
         '<div class="cm-actions"><button class="btn btn-primary sm" data-approve="' + esc(c.id) + '">اعتمد وانشر</button>' +
         '<button class="btn ghost sm" data-suggest="' + esc(c.id) + '">✨ ' + (c.suggested_reply ? "اقترح رد تاني" : "اقترح رد") + "</button>" +
         '<button class="btn ghost sm" data-ignore="' + esc(c.id) + '">تجاهل</button></div>';
