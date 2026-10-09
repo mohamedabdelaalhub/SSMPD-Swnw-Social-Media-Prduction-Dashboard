@@ -523,3 +523,20 @@ table.simple.acc-table td.acc-col-num{text-align:left;}
 .cm-input{width:100%;margin-top:10px;padding:8px 10px;border:1px solid var(--c-border);border-radius:8px;font:inherit;resize:vertical;}
 .cm-examples{margin:4px 0 0;padding-inline-start:18px;font-size:13px;}
 .cm-lib{margin-top:8px;font-size:12px;}
+.cm-alert{background:rgba(208,64,42,.08);border:1px solid rgba(208,64,42,.35);color:var(--c-negative);border-radius:10px;padding:10px 12px;margin:10px 0;font-weight:600;}
+.cm-open{font-size:12px;margin-inline-start:8px;}
+.cm-tab-badge{display:inline-block;min-width:18px;margin-inline-start:6px;padding:0 6px;border-radius:9px;background:var(--c-alert);color:#fff;font-size:11px;line-height:18px;text-align:center;}
+.cm-tab-badge.late{background:var(--c-negative);animation:cmPulse 1.6s ease-in-out infinite;}
+@keyframes cmPulse{0%,100%{opacity:1}50%{opacity:.55}}
+/* تاب أداء البوستات */
+.pf-wrap{max-width:1100px;}
+.pf-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin:12px 0;}
+.pf-note{background:rgba(241,90,34,.08);border:1px solid rgba(241,90,34,.3);border-radius:10px;padding:10px 12px;margin:10px 0;font-size:13px;}
+.pf-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;}
+.pf-grid h4{margin:0 0 8px;}
+.pf-mini,.pf-table{width:100%;border-collapse:collapse;font-size:13px;}
+.pf-mini th,.pf-mini td,.pf-table th,.pf-table td{padding:6px 8px;border-bottom:1px solid var(--c-border);text-align:start;}
+.pf-mini tr.best td{background:rgba(47,125,92,.1);font-weight:700;}
+.pf-h{margin:18px 0 8px;}
+.pf-table-wrap{overflow-x:auto;background:#fff;border:1px solid var(--c-border);border-radius:12px;}
+.pf-table th{background:#f6f7fb;white-space:nowrap;}

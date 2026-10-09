@@ -52,3 +52,7 @@ verify_jwt = false
 [functions.meta-comments]
 # Called by pg_cron with X-Cron-Secret, or by staff sessions (verified inside the function).
 verify_jwt = false
+
+[functions.meta-insights]
+# Called by pg_cron with X-Cron-Secret (checked inside the function).
+verify_jwt = false
