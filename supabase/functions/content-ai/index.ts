@@ -76,6 +76,13 @@ Deno.serve(async (req) => {
       const schedule=body?.doctor_brief?.schedule||[{days:doctorBrief.days,time_from:doctorBrief.time_from,time_to:doctorBrief.time_to}];
       if(!Array.isArray(schedule)||!schedule.length||schedule.some(r=>!r||typeof r.days!=="string"||!r.days.trim()||r.days.length>4000||![r.time_from,r.time_to].every(v=>typeof v==="string"&&/^([01]\d|2[0-3]):[0-5]\d$/.test(v))))throw new Error("كل موعد يحتاج أيامًا ووقت بداية ونهاية.");
       doctorBrief.schedule=schedule.map(r=>({days:r.days.trim(),time_from:r.time_from,time_to:r.time_to}));
+      const scheduleMode=body?.doctor_brief?.schedule_mode;
+      if(scheduleMode!=null&&!['shared','different','except'].includes(scheduleMode))throw new Error('حالة المواعيد غير صالحة.');
+      doctorBrief.schedule_mode=scheduleMode||'different';
+      const excluded=body?.doctor_brief?.excluded_days||[];
+      if(!Array.isArray(excluded)||excluded.length>7||excluded.some(d=>typeof d!=='string'||d.length>30))throw new Error('أيام الاستثناء غير صالحة.');
+      doctorBrief.excluded_days=excluded;
+
     }
 
     const brief = {

@@ -1,7 +1,7 @@
 /* User's InDesign template, page 1. Coordinates use its 1080 x 1350 page. */
 (function(){
  'use strict';
- var base=new URL('../design-templates/sono-doctor/',document.currentScript.src),assets;
+ var base=new URL('../design-templates/sono-doctor/',document.currentScript.src),assets,backgrounds={};
  function ready(){
   if(!assets)assets=Promise.all([
    window.SSMPDDesignComposer.loadImage(new URL('background.webp',base)),
@@ -22,7 +22,10 @@
  }
  function time(value){var match=/^(\d{2}):(\d{2})$/.exec(text(value));if(!match||Number(match[1])>23||Number(match[2])>59)return null;var hour=Number(match[1]);return {value:String(hour%12||12).padStart(2,'0')+':'+match[2],period:hour<12?'صباحًا':'مساءً'};}
  async function render(canvas,photo,data){
-  var loaded=await ready(),bg=loaded[0];canvas.width=1080;canvas.height=1350;var ctx=canvas.getContext('2d');ctx.drawImage(bg,0,0,1080,1350);
+  var rows=[{days:data.doctorDays,time_from:data.doctorTimeFrom,time_to:data.doctorTimeTo}].concat(JSON.parse(data.doctorScheduleExtra||'[]')),mode=data.doctorScheduleMode;
+  if(mode&&mode!=='different')rows=rows.slice(0,1);var model=window.SSMPDDoctorSchedule.normalise(rows,mode,mode==='except'?data.doctorDays:null),variant=model.variant;
+  if(!backgrounds[variant])backgrounds[variant]=window.SSMPDDesignComposer.loadImage(new URL('variants/'+variant+'.webp',base)).catch(function(e){delete backgrounds[variant];throw e;});
+  var loaded=await ready(),bg=await backgrounds[variant];canvas.width=1080;canvas.height=1350;var ctx=canvas.getContext('2d');ctx.drawImage(bg,0,0,1080,1350);
   var issues=[],name=text(data.doctorName),title=text(data.doctorTitle),days=text(data.doctorDays),start=time(data.doctorTimeFrom),end=time(data.doctorTimeTo);
   if(!name)issues.push('اكتب اسم الدكتور.');if(!title)issues.push('اكتب التايتل والتخصص.');
   if(photo){
@@ -32,25 +35,19 @@
    ctx.save();ctx.beginPath();ctx.arc(691.05,777.55,26,0,Math.PI*2);ctx.clip();ctx.drawImage(bg,0,0,1080,1350);ctx.restore();
   }
   drawText(ctx,data.doctorPrefix==='الدكتورة'?'الدكتورة':'الدكتور',317.11,437.5,390,80,61.4,400,'#fff',1);
-  drawText(ctx,name,317.11,602,472,245,num(data.doctorNameSize,97,24,110),400,'#fff',2);
+  drawText(ctx,name,317.11,602,472,245,num(data.doctorNameSize,97,24,110),700,'#fff',2);
   drawText(ctx,title,388.23,798.77,517,55,num(data.doctorTitleSize,32.56,16,42),400,'#fff',2);
-  var schedules=[{days:days,time_from:data.doctorTimeFrom,time_to:data.doctorTimeTo}].concat(JSON.parse(data.doctorScheduleExtra||'[]')).filter(function(r){return r.days||r.time_from||r.time_to;});
-  if(!schedules.length)issues.push('حدد أيام العمل وموعد البداية والنهاية.');
-  if(schedules.length){days=schedules[0].days;start=time(schedules[0].time_from);end=time(schedules[0].time_to);}
-  if(schedules.some(function(r){return !r.days||!time(r.time_from)||!time(r.time_to);}))issues.push('أكمل كل المواعيد.');
-  if(schedules.length>4)issues.push('مساحة القالب تتسع لأربعة مواعيد مختلفة. اجمع الأيام التي لها نفس الساعات.');
-  var shared=schedules.every(function(r){return r.time_from===schedules[0].time_from&&r.time_to===schedules[0].time_to;});
-  if(shared)days=schedules.map(function(r){return r.days;}).join(' - ');
-  if(!shared){schedules.forEach(function(r,i){var a=time(r.time_from),b=time(r.time_to);drawText(ctx,r.days,710,968+i*29,220,28,23,700,'#fff',1);drawText(ctx,a&&b?a.value+' '+a.period+' — '+b.value+' '+b.period:'أكمل الموعد',405,968+i*29,340,28,21,400,'#fff',1);});}else{
-  ctx.fillStyle='#fff';ctx.beginPath();ctx.roundRect(598,972,218,33,17);ctx.fill();
-  drawText(ctx,days,707.18,988,208,30,23.85,700,'#0c3b9d',1);
-  drawText(ctx,'من كل أسبوع',707.18,1037,205,48,27,400,'#fff',1);
-  ctx.strokeStyle='rgba(255,255,255,.5)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(560,974);ctx.lineTo(560,1051);ctx.stroke();
-  [[start,468.35,'من الساعة'],[end,319.61,'وحتى الساعة']].forEach(function(row){
-   drawText(ctx,row[2],row[1],973,120,30,18,400,'#c1cce5',1);
-   if(row[0]){ctx.save();ctx.direction='ltr';ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='700 32.94px DoctorLatin';ctx.fillStyle='#fff';ctx.fillText(row[0].value,row[1],1016);ctx.restore();drawText(ctx,row[0].period,row[1],1044,110,27,18,400,'#c1cce5',1);}
+  issues=issues.concat(model.issues);canvas.doctorVariant=variant;
+  var map=window.SSMPDDoctorTemplateMap[String(variant)]||[],frames=map.filter(function(f){return f.text!=='__pill';});
+  map.filter(function(f){return f.text==='__pill'&&f.box[3]-f.box[1]<100;}).forEach(function(f){var b=f.box;ctx.fillStyle='#fff';ctx.beginPath();ctx.roundRect(b[0],b[1],b[2]-b[0],b[3]-b[1],(b[3]-b[1])/2);ctx.fill();});
+  var slot=-1;
+  frames.forEach(function(f){var value=f.text,isClock=/^\d{2}:\d{2}$/.test(value),isDay=!isClock&&!['من كل أسبوع','من الساعة','وحتى الساعة'].includes(value)&&!value.includes('مسـ');
+   if(isDay)slot++;var appointment=model.rows[variant<5?0:slot]||{},a=time(appointment.time_from),z=time(appointment.time_to),b=f.box,w=b[2]-b[0],h=b[3]-b[1],x=(b[0]+b[2])/2,y=(b[1]+b[3])/2,color='#fff',weight=400;
+   if(isDay){value=variant===4?(model.excluded.length?'كل أيام الأسبوع ما عدا\n'+model.excluded.join(' - '):'كل أيام الأسبوع'):variant<5?model.days.join(' - '):appointment.days||'';color='#0c3b9d';weight=700;}
+   else if(value==='05:30')value=a?a.value:'';else if(value==='12:00')value=z?z.value:'';else if(value.includes('مسـ')){var previous=frames[frames.indexOf(f)-1];value=previous&&previous.text==='من الساعة'?(a?a.period:''):(z?z.period:'');color='#c1cce5';}else if(value!=='من كل أسبوع')color='#c1cce5';
+   if(isClock){ctx.save();ctx.direction='ltr';ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='700 '+f.size+'px DoctorLatin';ctx.fillStyle='#fff';ctx.fillText(value,x,y);ctx.restore();}
+   else drawText(ctx,value,x,y,w+4,Math.max(h+8,f.size*1.4),f.size,weight,color,variant===4&&isDay?2:1);
   });
-  }
   canvas.designIssues=issues;canvas.designWarnings=[];return canvas;
  }
  window.SSMPDDoctorTemplate={render:render};
