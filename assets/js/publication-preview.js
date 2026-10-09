@@ -19,7 +19,17 @@
   var body=el('div','publication-post__body',finalText||'لا يوجد نص نشر محفوظ.');body.dir='auto';post.append(body);root.append(post);
   if(!String(item.hook_text||'').trim())root.append(el('p','publication-preview__source','الهوك غير مسجل لهذه المادة. يمكنك إضافته من تعديل المحتوى.'));
   root.append(el('p','publication-preview__source',source==='caption_text'?'الكابشن المحفوظ مع الهوك والتفاعل وبيانات التواصل.':'الكابشن غير مسجل. المعاينة تستخدم '+(source==='body'?'نص المحتوى':'العنوان')+' مع الهوك والتفاعل وبيانات التواصل.'));
-  if(!item.design_file_url){media.append(el('p','publication-preview__empty','لم يُرفع التصميم بعد.'));}
+  var slides=item.content_format==='carousel'&&Array.isArray(item.carousel_slides)?item.carousel_slides.filter(function(u){return typeof u==='string';}):[];
+  if(item.content_format==='carousel'&&slides.length<2){media.append(el('p','publication-preview__empty','لم تُرفع صور الكاروسيل بعد (من ٢ لـ ١٠ صور).'));}
+  else if(slides.length>1){
+   var strip=el('div','publication-carousel');strip.setAttribute('aria-label','شرايح الكاروسيل');media.append(strip);
+   slides.forEach(function(url,i){
+    var cell=el('figure','publication-carousel__slide'),img=el('img');img.alt='الشريحة '+(i+1);img.loading='lazy';
+    cell.append(img,el('figcaption',null,(i+1)+' / '+slides.length));strip.append(cell);
+    signed(url).then(function(s){var safe=safeUrl(s);if(safe&&root.isConnected)img.src=safe;}).catch(function(){cell.append(el('p','publication-preview__empty','تعذر التحميل'));});
+   });
+  }
+  else if(!item.design_file_url){media.append(el('p','publication-preview__empty','لم يُرفع التصميم بعد.'));}
   else {
    var linkUrl=safeUrl(item.design_file_url);
    if(!linkUrl){media.append(el('p','publication-preview__empty','رابط التصميم غير صالح.'));}

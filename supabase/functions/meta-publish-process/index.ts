@@ -7,7 +7,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 // بتتنادى كل دقيقة عن طريق pg_cron (net.http_post، هيدر X-Cron-Secret بس —
 // مش JWT دashboard ولا مفتاح service_role نفسه، راجع setup.sql قسم ٤٣ بند ٦).
 // بتاخد الـjobs المستحقة (pending + scheduled_at <= now())، تكلّم Meta Graph
-// API (Facebook Page + Instagram Business — صورة واحدة بس في أول إصدار)،
+// API (Facebook Page + Instagram Business — صورة واحدة أو كاروسيل من ٢ لـ ١٠ صور)،
 // وتحدّث meta_publish_jobs + content_items بمفتاح service_role.
 //
 // أمان: مفيش أي Meta access token ولا مفتاح Supabase بيوصل للفرونت إند
@@ -176,7 +176,7 @@ async function graphPost(path: string, params: Record<string, string>) {
 // "meta-publish-assets") عشان يبقى عندنا رابط ثابت Meta تقدر تجيبه مباشرة
 // (Google Drive share links مش مضمونة تترجع bytes الصورة الخام لـfetch
 // خارجي). لو الفشل حصل، الـjob بيفشل برسالة واضحة — مفيش تخمين.
-async function rehostImageToStorage(admin: ReturnType<typeof createClient>, jobId: string, sourceUrl: string): Promise<string> {
+async function rehostImageToStorage(admin: ReturnType<typeof createClient>, jobId: string, sourceUrl: string, suffix = ""): Promise<string> {
   const driveId = googleDriveFileId(sourceUrl);
 
   let res: Response;
@@ -219,7 +219,7 @@ async function rehostImageToStorage(admin: ReturnType<typeof createClient>, jobI
     "image/gif": "gif"
   };
   const ext = extByType[contentType] || contentType.split("/")[1] || "jpg";
-  const path = `${jobId}.${ext}`;
+  const path = `${jobId}${suffix}.${ext}`;
 
   const up = await admin.storage
     .from("meta-publish-assets")
@@ -266,6 +266,65 @@ async function publishInstagramSingleImage(igUserId: string, token: string, imag
   return { ok: true, containerId, mediaId, permalink: perma.ok ? perma.data.permalink : null };
 }
 
+// كاروسيل فيسبوك: كل صورة بتترفع "مش منشورة" وبعدين بوست واحد بيجمعهم.
+async function publishFacebookCarousel(pageId: string, token: string, imageUrls: string[], message: string) {
+  const ids: string[] = [];
+  for (const url of imageUrls) {
+    const r = await graphPost(`${pageId}/photos`, { url, published: "false", access_token: token });
+    if (!r.ok) return { ok: false, error: r.data.error?.message || "فشل رفع صورة من صور الكاروسيل على فيسبوك" };
+    ids.push(r.data.id);
+  }
+  const params: Record<string, string> = { message, access_token: token };
+  ids.forEach((id, i) => { params[`attached_media[${i}]`] = JSON.stringify({ media_fbid: id }); });
+  const r = await graphPost(`${pageId}/feed`, params);
+  if (!r.ok) return { ok: false, error: r.data.error?.message || "فشل نشر كاروسيل فيسبوك" };
+  const postId: string = r.data.id;
+  const perma = await graphGet(postId, { fields: "permalink_url", access_token: token });
+  return { ok: true, postId, permalink: perma.ok ? perma.data.permalink_url : `https://www.facebook.com/${postId}` };
+}
+
+async function waitInstagramContainers(ids: string[], token: string, maxSeconds: number): Promise<string | null> {
+  const pending = new Set(ids);
+  for (let waited = 0; waited < maxSeconds && pending.size; waited += 2) {
+    await new Promise((r) => setTimeout(r, 2000));
+    for (const id of [...pending]) {
+      const chk = await graphGet(id, { fields: "status_code", access_token: token });
+      const code = chk.ok ? chk.data.status_code : "ERROR";
+      if (code === "FINISHED") pending.delete(id);
+      else if (code === "ERROR" || code === "EXPIRED") return code;
+    }
+  }
+  return pending.size ? "IN_PROGRESS" : null;
+}
+
+// كاروسيل انستجرام: container لكل صورة (is_carousel_item) ثم container أب CAROUSEL.
+async function publishInstagramCarousel(igUserId: string, token: string, imageUrls: string[], caption: string) {
+  const children: string[] = [];
+  for (const url of imageUrls) {
+    const c = await graphPost(`${igUserId}/media`, { image_url: url, is_carousel_item: "true", access_token: token });
+    if (!c.ok) return { ok: false, error: c.data.error?.message || "فشل إنشاء صورة من صور كاروسيل انستجرام" };
+    children.push(c.data.id);
+  }
+  const childStatus = await waitInstagramContainers(children, token, 30);
+  if (childStatus) return { ok: false, error: "صور الكاروسيل ماخلصتش معالجة على انستجرام (status: " + childStatus + ")" };
+  const parent = await graphPost(`${igUserId}/media`, { media_type: "CAROUSEL", children: children.join(","), caption, access_token: token });
+  if (!parent.ok) return { ok: false, error: parent.data.error?.message || "فشل إنشاء container كاروسيل انستجرام" };
+  const containerId: string = parent.data.id;
+  const parentStatus = await waitInstagramContainers([containerId], token, 20);
+  if (parentStatus) return { ok: false, containerId, error: "container الكاروسيل ماخلصش معالجة (status: " + parentStatus + ")" };
+  const pub = await graphPost(`${igUserId}/media_publish`, { creation_id: containerId, access_token: token });
+  if (!pub.ok) return { ok: false, containerId, error: pub.data.error?.message || "فشل نشر كاروسيل انستجرام" };
+  const mediaId: string = pub.data.id;
+  const perma = await graphGet(mediaId, { fields: "permalink", access_token: token });
+  return { ok: true, containerId, mediaId, permalink: perma.ok ? perma.data.permalink : null };
+}
+
+function carouselSlideUrls(contentId: string, slides: unknown): string[] {
+  if (!Array.isArray(slides)) return [];
+  const prefix = new URL(SUPABASE_URL).origin + "/storage/v1/object/authenticated/content-designs/" + contentId + "/";
+  return slides.filter((u): u is string => typeof u === "string" && u.startsWith(prefix) && u.endsWith("/output.png")).slice(0, 10);
+}
+
 async function processJob(admin: ReturnType<typeof createClient>, job: any) {
   const patch: Record<string, unknown> = {};
   const errors: string[] = [];
@@ -290,8 +349,8 @@ async function processJob(admin: ReturnType<typeof createClient>, job: any) {
     return;
   }
 
-  const contentRes = await admin.from("content_items").select("title, brand, body, caption_text, cta_text, hook_text, design_file_url, published_url, published_urls").eq("id", job.content_id).maybeSingle();
-  const content = contentRes.data as { title: string; brand: string | null; hook_text: string | null; body: string | null; caption_text: string | null; cta_text: string | null; design_file_url: string | null; published_url: string | null; published_urls: Record<string, string> | null } | null;
+  const contentRes = await admin.from("content_items").select("title, brand, body, caption_text, cta_text, hook_text, design_file_url, published_url, published_urls, content_format, carousel_slides").eq("id", job.content_id).maybeSingle();
+  const content = contentRes.data as { title: string; brand: string | null; hook_text: string | null; body: string | null; caption_text: string | null; cta_text: string | null; design_file_url: string | null; published_url: string | null; published_urls: Record<string, string> | null; content_format: string | null; carousel_slides: unknown } | null;
   if (!content) {
     await admin.from("meta_publish_jobs").update({ status: "failed", error_code: "CONTENT_NOT_FOUND", error_message: "مادة المحتوى غير موجودة." }).eq("id", job.id);
     return;
@@ -299,7 +358,20 @@ async function processJob(admin: ReturnType<typeof createClient>, job: any) {
   const message: string = (globalThis as any).SSMPDPublicationText.compose(content);
 
   var imageUrl: string | null = null;
-  if (content.design_file_url) {
+  var carouselUrls: string[] = [];
+  if (content.content_format === "carousel") {
+    const slides = carouselSlideUrls(job.content_id, content.carousel_slides);
+    if (slides.length < 2) {
+      await admin.from("meta_publish_jobs").update({ status: "failed", error_code: "CAROUSEL_SLIDES_MISSING", error_message: "الكاروسيل محتاج من ٢ لـ ١٠ صور مرفوعة من شاشة التصميم." }).eq("id", job.id);
+      return;
+    }
+    try {
+      for (let i = 0; i < slides.length; i++) carouselUrls.push(await rehostImageToStorage(admin, job.id, slides[i], `_${i + 1}`));
+    } catch (e) {
+      await admin.from("meta_publish_jobs").update({ status: "failed", error_code: "IMAGE_FETCH_ERROR", error_message: e instanceof Error ? e.message : String(e) }).eq("id", job.id);
+      return;
+    }
+  } else if (content.design_file_url) {
     try {
       imageUrl = await rehostImageToStorage(admin, job.id, content.design_file_url);
     } catch (e) {
@@ -318,7 +390,9 @@ async function processJob(admin: ReturnType<typeof createClient>, job: any) {
     if (!brandCfg.facebook_page_id) {
       errors.push("فيسبوك: facebook_page_id مش متظبط للبراند ده");
     } else {
-      const r = imageUrl
+      const r = carouselUrls.length
+        ? await publishFacebookCarousel(brandCfg.facebook_page_id, token, carouselUrls, message)
+        : imageUrl
         ? await publishFacebookPhoto(brandCfg.facebook_page_id, token, imageUrl, message)
         : await publishFacebookTextOnly(brandCfg.facebook_page_id, token, message);
       if (r.ok) {
@@ -333,10 +407,12 @@ async function processJob(admin: ReturnType<typeof createClient>, job: any) {
     requestedCount++;
     if (!brandCfg.instagram_business_account_id) {
       errors.push("انستجرام: instagram_business_account_id مش متظبط للبراند ده");
-    } else if (!imageUrl) {
+    } else if (!imageUrl && !carouselUrls.length) {
       errors.push("انستجرام: لازم صورة — أول إصدار بيدعم صور بس، ومفيش ملف تصميم متاح.");
     } else {
-      const r = await publishInstagramSingleImage(brandCfg.instagram_business_account_id, token, imageUrl, message);
+      const r = carouselUrls.length
+        ? await publishInstagramCarousel(brandCfg.instagram_business_account_id, token, carouselUrls, message)
+        : await publishInstagramSingleImage(brandCfg.instagram_business_account_id, token, imageUrl as string, message);
       if (r.ok) {
         patch.instagram_container_id = r.containerId; patch.instagram_media_id = r.mediaId; patch.instagram_permalink = r.permalink; successCount++;
       } else {

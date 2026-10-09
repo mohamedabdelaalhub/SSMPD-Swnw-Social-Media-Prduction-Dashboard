@@ -548,7 +548,8 @@
   var CONTENT_FORMATS = {
     video:      { label: "فيديو",             meta: "Video" },
     image_post: { label: "بوست صورة/نص",       meta: "Existing post (Static image/text)" },
-    link_post:  { label: "بوست رابط",          meta: "Existing post (Shared link)" }
+    link_post:  { label: "بوست رابط",          meta: "Existing post (Shared link)" },
+    carousel:   { label: "كاروسيل (من ٢ لـ ١٠ صور)", meta: "Carousel" }
   };
   var CONFIDENCE_LABELS = {
     high:   { label: "قوي (High)", cls: "approved" },
@@ -577,12 +578,13 @@
     if (!Object.prototype.hasOwnProperty.call(CONTENT_FORMATS, key)) {
       var raw = String(item.format || item.content_type || "").toLowerCase();
       if (/video|reel|فيديو/.test(raw)) key = "video";
+      else if (/carousel|كاروسيل/.test(raw)) key = "carousel";
       else if (/link|رابط/.test(raw)) key = "link_post";
       else if (/image|post|بوست|صورة/.test(raw)) key = "image_post";
     }
     var format = CONTENT_FORMATS[key];
     if (!format) return '<span class="content-format-badge unknown">نوع غير محدد</span>';
-    var icon = key === "video" ? "فيديو" : "بوست";
+    var icon = key === "video" ? "فيديو" : (key === "carousel" ? "كاروسيل" : "بوست");
     return '<span class="content-format-badge ' + key + '">' + icon + '</span>';
   }
 
