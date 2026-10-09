@@ -60,11 +60,14 @@
     set("cf-caption", idea.caption); set("cf-cta-type", idea.ctaType); set("cf-cta-text", idea.cta);
     set("cf-duration-min", idea.durationMin); set("cf-duration-max", idea.durationMax);
     set("cf-video-template", idea.videoTemplate); set("cf-hypothesis", idea.why);
+    if(idea.raw.doctor_brief)window.SSMPDDoctorContent.hydrate(idea.raw.doctor_brief);
     set("cf-agent-raw", JSON.stringify(idea.raw));
     var format = document.getElementById("ci-format"); if (format && idea.formatKey) format.value = idea.formatKey;
   }
   function openGenerator() {
-    var context = getContext();
+    var context = getContext(),doctorBrief;
+    try{doctorBrief=window.SSMPDDoctorContent.current(true);}catch(e){alert(e.message);return;}
+    if(doctorBrief){context.doctorBrief=doctorBrief;context.format="image_post";}
     var backdrop = document.createElement("div");
     backdrop.className = "modal-backdrop";
     backdrop.style.zIndex = "9999";
@@ -94,16 +97,17 @@
       if (!context.brand) { alert("اختر الصفحة أولًا من نموذج المحتوى."); return; }
       if (mode === "develop" && !(topic || context.title || context.body)) { alert("اكتب فكرة أو مسودة لتطويرها."); return; }
       btn.disabled = true; btn.textContent = "جاري التوليد…"; slot.innerHTML = '<div class="loading" style="margin-top:10px;">يتم إعداد ٣ اقتراحات…</div>';
-      var requestContext = Object.assign({}, context, { topic: topic || context.topic });
+      try{doctorBrief=window.SSMPDDoctorContent.current(true);}catch(e){slot.textContent=e.message;btn.disabled=false;btn.textContent="توليد الاقتراحات";return;}
+      var requestContext = Object.assign({}, context, { topic: topic || context.topic,doctorBrief:doctorBrief });
       window.SSMPDWorkflow.getContentAIBrief(requestContext).then(function (brief) {
         return window.SSMPDDb.generateContentIdeas({
         mode: mode, brand: context.brand, specialty: context.specialty,
         advertising_objective: context.advertisingObjective, preferred_format: context.format,
         topic: topic || context.topic, manual_draft: mode === "develop" ? (context.body || context.title) : "",
-        title: context.title, performance_brief: brief
+        title: context.title, performance_brief: brief, content_kind:doctorBrief?"doctor_intro":"standard",doctor_brief:doctorBrief
         });
       }).then(function (data) {
-        var ideas = (data.ideas || []).slice(0, 3).map(normalise);
+        var ideas = (data.ideas || []).slice(0, 3).map(function(idea){if(doctorBrief)idea=window.SSMPDDoctorContent.metadata(idea,doctorBrief);return normalise(idea);});
         if (ideas.length !== 3) throw new Error("لم تصل ٣ أفكار مكتملة. أعد المحاولة.");
         slot.innerHTML = ideas.map(function (idea, i) {
           return renderCard(idea, i,
@@ -166,4 +170,5 @@
   }
   window.SSMPDContentAI = { openGenerator: openGenerator, openIdeaBank: openIdeaBank };
 })();
+
 

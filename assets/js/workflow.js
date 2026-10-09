@@ -1064,6 +1064,7 @@ function ciCopyFallbackBrief(ctx, returnOnly) {
 
 
     var text = lines.join("\n");
+    if(window.SSMPDDoctorContent){var doctor;try{doctor=window.SSMPDDoctorContent.current(true);}catch(e){if(returnOnly)throw e;alert(e.message);return;}if(doctor)text+=window.SSMPDDoctorContent.prompt(doctor);}
     if (returnOnly) return text;
     var done = function () {
       if (window.SSMPDToast) window.SSMPDToast.show("تم نسخ الـBrief — افتح وكيل إنشاء المحتوى", "success");
@@ -1353,6 +1354,7 @@ function ciCopyFallbackBrief(ctx, returnOnly) {
 
 
     var text = lines.join("\n");
+    if(window.SSMPDDoctorContent){var doctor;try{doctor=window.SSMPDDoctorContent.current(true);}catch(e){if(returnOnly)throw e;alert(e.message);return;}if(doctor)text+=window.SSMPDDoctorContent.prompt(doctor);}
     if (returnOnly) return text;
     var done = function () {
       if (window.SSMPDToast) window.SSMPDToast.show("تم نسخ الـBrief — افتح وكيل إنشاء المحتوى", "success");
@@ -1458,6 +1460,7 @@ function ciCopyFallbackBrief(ctx, returnOnly) {
     refreshContentIntelligence: refreshContentIntelligence
   };
 })();
+
 
 
 

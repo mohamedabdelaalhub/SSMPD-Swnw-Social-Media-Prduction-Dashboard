@@ -66,16 +66,27 @@ Deno.serve(async (req) => {
       throw new Error("اكتب فكرة أو مسودة لتطويرها.");
     }
 
+    const doctorIntro=body?.content_kind === "doctor_intro"||/^تعريف\s+(?:د\s*[/.]|الدكتور(?:ة)?|دكتور(?:ة)?)\s*/u.test(String(body?.title||"").trim());
+    let doctorBrief: Record<string,string>|null=null;
+    if(doctorIntro){
+      if(body.brand!=="sono")throw new Error("تعريف الطبيب مخصص لصفحة سونو.");
+      doctorBrief={};
+      for(const key of ["prefix","name","title","days","time_from","time_to","qualifications","experience"]){const value=body?.doctor_brief?.[key];if(value!=null&&typeof value!=="string")throw new Error("بيانات الطبيب غير صالحة.");doctorBrief[key]=String(value||"").trim();if(doctorBrief[key].length>4000)throw new Error("بيانات الطبيب أطول من الحد المسموح.");}
+      if(!["الدكتور","الدكتورة"].includes(doctorBrief.prefix)||!doctorBrief.name||!doctorBrief.title)throw new Error("اسم الطبيب والتايتل مطلوبان.");
+      if(!doctorBrief.days||![doctorBrief.time_from,doctorBrief.time_to].every(value=>/^([01]\d|2[0-3]):[0-5]\d$/.test(value)))throw new Error("أيام العمل وموعد البداية والنهاية مطلوبة.");
+    }
+
     const brief = {
       mode,
       brand: String(body.brand || ""),
       specialty: String(body.specialty || ""),
       advertising_objective: String(body.advertising_objective || ""),
-      preferred_format: String(body.preferred_format || ""),
+      preferred_format: doctorIntro?"image_post":String(body.preferred_format || ""),
       topic: String(body.topic || ""),
       title: String(body.title || ""),
       manual_draft: String(body.manual_draft || ""),
-      performance_brief: String(body.performance_brief || "")
+      performance_brief: String(body.performance_brief || ""),
+      content_kind:doctorIntro?"doctor_intro":"standard",doctor_brief:doctorBrief
     };
 
     const schema = {
@@ -107,7 +118,7 @@ Deno.serve(async (req) => {
       headers: { "Authorization": "Bearer " + apiKey, "Content-Type": "application/json" },
       body: JSON.stringify({
         model,
-        instructions:instructions+"\n"+designStyle,
+        instructions:instructions+"\n"+designStyle+(doctorIntro?"\nهذه مادة تعريف طبيب. اكتب بالضبط 3 منشورات ترحيب وتقديم للطبيب، لا توعية بمرض. doctor_brief المصدر الوحيد للاسم والتايتل والمؤهلات والخبرات والجدول. لا تخترع ألقابًا أو شهادات أو سنوات خبرة أو خدمات. إذا المؤهلات أو الخبرات فارغة احذفها. استخدم image_post والكابشن يشمل الترحيب والبيانات المتاحة والمواعيد وبيانات تواصل المركز. لا تغيّر الحقائق بين الاقتراحات. أعط نصوص التصميم المطلوبة لكن القالب يسكن بيانات الطبيب مباشرة.":""),
         input: "SSMPD Dashboard Brief:\n" + JSON.stringify(brief),
         text: { format: { type: "json_schema", name: "ssmpd_content_ideas", strict: true, schema } }
       })
@@ -132,9 +143,11 @@ Deno.serve(async (req) => {
         !["medical_educational", "doctor_talking", "quick_tips"].includes(idea.video_template)
       )) throw new Error("بيانات الفيديو غير مكتملة.");
     }
+    if(doctorIntro)for(const idea of parsed.ideas){idea.content_kind="doctor_intro";idea.doctor_brief=doctorBrief;}
     return Response.json({ ideas: parsed.ideas, model }, { headers: { ...cors, "Content-Type": "application/json" } });
   } catch (error) {
     return Response.json({ error: error instanceof Error ? error.message : "حدث خطأ غير معروف." }, { status: 400, headers: { ...cors, "Content-Type": "application/json" } });
   }
 });
+
 

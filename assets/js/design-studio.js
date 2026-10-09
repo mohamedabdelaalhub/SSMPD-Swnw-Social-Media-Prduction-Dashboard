@@ -104,6 +104,8 @@
   var copyDefaults=window.SSMPDDesignCopy?window.SSMPDDesignCopy.initial(item):{headline:item.hook_text||item.hook||item.title||'',subtitle:'',cta:''};
   ['headline','subtitle','cta'].forEach(function(key){root.querySelector('[data-field="'+key+'"]').value=copyDefaults[key];});
   if(window.SSMPDDesignCopy)window.SSMPDDesignCopy.mount(root,item,function(copy){if(working||restoring||loadFailed)return;[['headline','design_headline'],['subtitle','design_subtitle'],['cta','design_cta']].forEach(function(pair){root.querySelector('[data-field="'+pair[0]+'"]').value=copy[pair[1]];});requestPaint();scheduleDraft();});
+  var doctorBrief=window.SSMPDDoctorContent&&window.SSMPDDoctorContent.from(item);
+  if(doctorBrief){root.querySelector('[data-field="layoutTemplate"]').value='sono_doctor';[['doctorPrefix','prefix'],['doctorName','name'],['doctorTitle','title'],['doctorDays','days'],['doctorTimeFrom','time_from'],['doctorTimeTo','time_to']].forEach(function(pair){root.querySelector('[data-field="'+pair[0]+'"]').value=doctorBrief[pair[1]]||'';});}
   root.querySelector('[data-prompt]').value=item.title||'';
   root.querySelector('.modal-close').onclick=async function(){clearTimeout(draftTimer);if(loadFailed){root.remove();return;}if(restoring||working){draftStatus.textContent='انتظر انتهاء تحميل أو توليد الصورة قبل الإغلاق.';return;}try{await saveDraft();root.remove();}catch(e){}};
   root.querySelectorAll('input:not([type=file]),textarea,select').forEach(function(el){el.style.width='100%';el.style.boxSizing='border-box';el.style.marginBottom='10px';});
@@ -209,6 +211,7 @@
  }
  window.SSMPDDesignStudio={mount:mount,open:open};
 })();
+
 
 
 
