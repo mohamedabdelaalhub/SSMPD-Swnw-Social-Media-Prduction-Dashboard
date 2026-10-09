@@ -60,7 +60,8 @@
     var replies = data.comments.filter(function (c) { return c.parent_comment_id; });
     var byParent = {};
     replies.forEach(function (r) { (byParent[r.parent_comment_id] = byParent[r.parent_comment_id] || []).push(r); });
-    var pendingCount = top.filter(isPending).length;
+    var cutoff = Date.now() - 60 * 864e5;
+    var pendingCount = top.filter(function (c) { return isPending(c) && new Date(c.commented_at).getTime() >= cutoff; }).length;
     var overdueCount = top.filter(isOverdue).length;
     var alerts = alertList(data);
     updateTabBadge(pendingCount + alerts.length, overdueCount + alerts.length);
@@ -298,12 +299,22 @@
   }
   function pollBadge() {
     if (!window.SSMPDDb || !window.SSMPDDb.client || !document.querySelector('.tab-btn[data-tab="comments"]')) return;
-    db().from("social_comments").select("commented_at,status,author_is_page,parent_comment_id")
-      .in("status", ["new", "drafted", "failed"]).eq("author_is_page", false).is("parent_comment_id", null).limit(500)
-      .then(function (r) { if (r.error) return; var rows = r.data || []; updateTabBadge(rows.length, rows.filter(isOverdue).length); });
+    // نفس اللي بيظهر في قسم "محتاج رد" بالظبط: تعليقات آخر ٦٠ يوم المستنية رد + التنبيهات المفتوحة.
+    var since = new Date(Date.now() - 60 * 864e5).toISOString();
+    Promise.all([
+      db().from("social_comments").select("commented_at,status,author_is_page,parent_comment_id")
+        .in("status", ["new", "drafted", "failed"]).eq("author_is_page", false).is("parent_comment_id", null).gte("commented_at", since).limit(500),
+      db().from("social_comments").select("id", { count: "exact", head: true }).eq("alert", true).is("alert_resolved_at", null),
+      db().from("social_messages").select("conversation_id").eq("alert", true).is("alert_resolved_at", null).limit(200)
+    ]).then(function (r) {
+      var rows = r[0].error ? [] : (r[0].data || []);
+      var alerts = (r[1].error ? 0 : (r[1].count || 0)) + (r[2].error ? 0 : Object.keys((r[2].data || []).reduce(function (m, x) { m[x.conversation_id] = 1; return m; }, {})).length);
+      updateTabBadge(rows.length + alerts, rows.filter(isOverdue).length + alerts);
+    }).catch(function () { updateTabBadge(0, 0); });
   }
   setTimeout(pollBadge, 4000);
-  setInterval(pollBadge, 120000);
+  setInterval(pollBadge, 60000);
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) pollBadge(); });
 
   window.SSMPDRenderComments = { render: render };
 })();
