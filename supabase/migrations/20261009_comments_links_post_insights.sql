@@ -19,3 +19,13 @@ alter table public.post_insights enable row level security;
 drop policy if exists post_insights_read on public.post_insights;
 create policy post_insights_read on public.post_insights for select to authenticated using (public.social_comments_access());
 grant select on public.post_insights to authenticated;
+
+-- Per-post comment counts so meta-comments only re-reads posts whose comments changed.
+create table if not exists public.social_comment_watch (
+ post_ref text primary key,
+ platform text not null,
+ brand text not null,
+ last_count int,
+ checked_at timestamptz not null default now()
+);
+alter table public.social_comment_watch enable row level security;

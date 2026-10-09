@@ -55,25 +55,50 @@ async function syncBrand(db: any, brand: string, cfg: any, jobs: any[], report: 
     const me = await gget(cfg.instagram_business_account_id, { fields: "username", access_token: token });
     igUsername = me.ok ? me.data.username : null;
   }
-  // Also watch every recent post on the page/account, not only the ones published from the dashboard
-  // (posts made directly on Facebook/Instagram get comments too).
-  const knownFb = new Set(jobs.map((j) => j.facebook_post_id).filter(Boolean));
-  const knownIg = new Set(jobs.map((j) => j.instagram_media_id).filter(Boolean));
-  const since = Math.floor((Date.now() - 14 * 864e5) / 1000).toString(); // non-dashboard posts: last 14 days
+  // Watch every post of the last 60 days on the page/Instagram (not only dashboard posts), but only
+  // re-read comments of a post when its comment count changed — keeps Graph calls low every 2 minutes.
+  const since = Math.floor((Date.now() - 60 * 864e5) / 1000).toString();
+  const counts = new Map<string, number>();
+  const byFb = new Map(jobs.filter((j) => j.facebook_post_id).map((j) => [j.facebook_post_id, j]));
+  const byIg = new Map(jobs.filter((j) => j.instagram_media_id).map((j) => [j.instagram_media_id, j]));
   if (cfg?.facebook_page_id) {
-    const r = await gget(`${cfg.facebook_page_id}/published_posts`, { fields: "id", since, limit: "25", access_token: token });
+    const r = await gget(`${cfg.facebook_page_id}/published_posts`, { fields: "id,comments.summary(true).limit(0)", since, limit: "60", access_token: token });
     if (!r.ok) report.errors.push(`${brand} page posts: ${r.error}`);
-    else for (const p of r.data.data || []) { if (!knownFb.has(p.id)) jobs.push({ id: null, content_id: null, facebook_post_id: p.id }); }
-  }
-  if (cfg?.instagram_business_account_id) {
-    const r = await gget(`${cfg.instagram_business_account_id}/media`, { fields: "id,permalink,timestamp", limit: "20", access_token: token });
-    if (!r.ok) report.errors.push(`${brand} instagram media: ${r.error}`);
-    else for (const m of r.data.data || []) {
-      if (knownIg.has(m.id) || (m.timestamp && Date.parse(m.timestamp) < Number(since) * 1000)) continue;
-      jobs.push({ id: null, content_id: null, instagram_media_id: m.id, instagram_permalink: m.permalink || null });
+    else for (const p of r.data.data || []) {
+      counts.set(p.id, p.comments?.summary?.total_count ?? -1);
+      if (!byFb.has(p.id)) byFb.set(p.id, { id: null, content_id: null, facebook_post_id: p.id });
     }
   }
+  if (cfg?.instagram_business_account_id) {
+    const r = await gget(`${cfg.instagram_business_account_id}/media`, { fields: "id,permalink,timestamp,comments_count", limit: "40", access_token: token });
+    if (!r.ok) report.errors.push(`${brand} instagram media: ${r.error}`);
+    else for (const m of r.data.data || []) {
+      if (m.timestamp && Date.parse(m.timestamp) < Number(since) * 1000) continue;
+      counts.set(m.id, m.comments_count ?? -1);
+      const known = byIg.get(m.id);
+      if (known) known.instagram_permalink = known.instagram_permalink || m.permalink || null;
+      else byIg.set(m.id, { id: null, content_id: null, instagram_media_id: m.id, instagram_permalink: m.permalink || null });
+    }
+  }
+  const { data: watched } = await db.from("social_comment_watch").select("post_ref,last_count,checked_at").eq("brand", brand);
+  const watch = new Map((watched || []).map((w: any) => [w.post_ref, w]));
+  const stale = (ref: string) => {
+    const w: any = watch.get(ref), c = counts.get(ref);
+    if (!w || c === undefined || c < 0 || w.last_count !== c) return true;
+    return Date.now() - Date.parse(w.checked_at) > 6 * 3600e3; // safety re-read every 6 hours
+  };
+  const watchRows: Row[] = [];
+  jobs = [
+    ...[...byFb.values()].filter((j) => stale(j.facebook_post_id)).map((j) => ({ ...j, instagram_media_id: null })),
+    ...[...byIg.values()].filter((j) => stale(j.instagram_media_id)).map((j) => ({ ...j, facebook_post_id: null }))
+  ];
+  for (const j of jobs) {
+    const ref = j.facebook_post_id || j.instagram_media_id;
+    watchRows.push({ post_ref: ref, platform: j.facebook_post_id ? "facebook" : "instagram", brand, last_count: counts.get(ref) ?? null, checked_at: new Date().toISOString() });
+  }
+  report.checked = (report.checked || 0) + jobs.length;
   const rows: Row[] = [];
+  const failed = new Set<string>();
   const pageReplied = new Set<string>();
   for (const job of jobs) {
     if (job.facebook_post_id) {
@@ -81,7 +106,7 @@ async function syncBrand(db: any, brand: string, cfg: any, jobs: any[], report: 
         fields: "id,message,from{id,name},created_time,permalink_url,comments.limit(50){id,message,from{id,name},created_time,permalink_url}",
         filter: "toplevel", order: "reverse_chronological", limit: "50", access_token: token
       });
-      if (!r.ok) { report.errors.push(`${brand} facebook: ${r.error}`); }
+      if (!r.ok) { report.errors.push(`${brand} facebook: ${r.error}`); failed.add(job.facebook_post_id); }
       else for (const c of r.data.data || []) {
         const isPage = c.from?.id === cfg?.facebook_page_id;
         rows.push(fbRow(brand, job, c, null, isPage));
@@ -96,7 +121,7 @@ async function syncBrand(db: any, brand: string, cfg: any, jobs: any[], report: 
       const r = await gget(`${job.instagram_media_id}/comments`, {
         fields: "id,text,username,timestamp,replies{id,text,username,timestamp}", limit: "50", access_token: token
       });
-      if (!r.ok) { report.errors.push(`${brand} instagram: ${r.error}`); }
+      if (!r.ok) { report.errors.push(`${brand} instagram: ${r.error}`); failed.add(job.instagram_media_id); }
       else for (const c of r.data.data || []) {
         const isPage = !!igUsername && c.username === igUsername;
         rows.push(igRow(brand, job, c, null, isPage));
@@ -111,7 +136,7 @@ async function syncBrand(db: any, brand: string, cfg: any, jobs: any[], report: 
   if (rows.length) {
     // New comments only; existing rows keep their drafts/status.
     const ins = await db.from("social_comments").upsert(rows, { onConflict: "id", ignoreDuplicates: true });
-    if (ins.error) report.errors.push(`${brand} save: ${ins.error.message}`);
+    if (ins.error) { report.errors.push(`${brand} save: ${ins.error.message}`); report.saveFailed = true; }
     else report.seen += rows.length;
     // Rows saved before links were collected: fill comment/author links once.
     const ids = rows.map((r) => r.id as string);
@@ -122,6 +147,8 @@ async function syncBrand(db: any, brand: string, cfg: any, jobs: any[], report: 
       if (r?.comment_url) await db.from("social_comments").update({ comment_url: r.comment_url, author_url: r.author_url }).eq("id", m.id);
     }
   }
+  const okWatch = watchRows.filter((w) => !failed.has(w.post_ref as string));
+  if (okWatch.length && !report.saveFailed) await db.from("social_comment_watch").upsert(okWatch, { onConflict: "post_ref" });
   // Answered directly on Facebook/Instagram → no longer waiting in the dashboard.
   if (pageReplied.size) {
     await db.from("social_comments").update({ status: "replied", updated_at: new Date().toISOString() })
