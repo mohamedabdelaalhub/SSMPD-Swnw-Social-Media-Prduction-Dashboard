@@ -3,10 +3,9 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 
 // Meta Comments — inbox + approved replies.
 //
-// Cron (X-Cron-Secret, every 5 minutes): pulls Facebook/Instagram comments on posts this system
-// published in the last 30 days into public.social_comments, then sends replies a person approved
-// in the dashboard (status = 'approved'). Staff may also call it with their session to send
-// right after approving. Nothing is ever replied without a human approval row.
+// Cron (X-Cron-Secret, every 2 minutes): pulls Facebook/Instagram comments into public.social_comments,
+// then sends replies a person approved in the dashboard (status = 'approved'). Staff may also call it
+// with their session to sync, get a suggested reply, or send right after approving.
 // Page tokens stay in Edge Function secrets; nothing token-related is logged or returned.
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -140,9 +139,13 @@ async function syncBrand(db: any, brand: string, cfg: any, jobs: any[], report: 
     else report.seen += rows.length;
     // Rows saved before links were collected: fill comment/author links once.
     const ids = rows.map((r) => r.id as string);
-    const { data: missing } = await db.from("social_comments").select("id").in("id", ids).is("comment_url", null);
+    const missing: any[] = [];
+    for (let i = 0; i < ids.length; i += 80) {
+      const { data } = await db.from("social_comments").select("id").in("id", ids.slice(i, i + 80)).is("comment_url", null);
+      missing.push(...(data || []));
+    }
     const byId = new Map(rows.map((r) => [r.id as string, r]));
-    for (const m of missing || []) {
+    for (const m of missing) {
       const r = byId.get(m.id);
       if (r?.comment_url) await db.from("social_comments").update({ comment_url: r.comment_url, author_url: r.author_url }).eq("id", m.id);
     }
@@ -150,9 +153,11 @@ async function syncBrand(db: any, brand: string, cfg: any, jobs: any[], report: 
   const okWatch = watchRows.filter((w) => !failed.has(w.post_ref as string));
   if (okWatch.length && !report.saveFailed) await db.from("social_comment_watch").upsert(okWatch, { onConflict: "post_ref" });
   // Answered directly on Facebook/Instagram → no longer waiting in the dashboard.
-  if (pageReplied.size) {
+  // In chunks: a single request with hundreds of ids is too long and fails silently.
+  const answered = [...pageReplied];
+  for (let i = 0; i < answered.length; i += 80) {
     await db.from("social_comments").update({ status: "replied", updated_at: new Date().toISOString() })
-      .in("id", [...pageReplied]).in("status", ["new", "drafted"]);
+      .in("id", answered.slice(i, i + 80)).in("status", ["new", "drafted"]);
   }
 }
 function fbRow(brand: string, job: any, c: any, parent: string | null, isPage: boolean): Row {
