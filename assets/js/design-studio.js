@@ -117,7 +117,7 @@
    root.classList.toggle('is-doctor-template',doctor);
    root.querySelectorAll('[data-doctor-only]').forEach(function(el){el.hidden=!doctor;});
    root.querySelectorAll('[data-standard-only]').forEach(function(el){el.hidden=doctor;});
-   if(root.querySelector('[data-tool-tab="'+root.dataset.activeTool+'"]').hidden)root.querySelector('[data-tool-tab="'+(doctor?'doctor':'headline')+'"]').click();
+   if(root.dataset.activeTool&&root.querySelector('[data-tool-tab="'+root.dataset.activeTool+'"]').hidden)root.querySelector('[data-tool-tab="'+(doctor?'doctor':'headline')+'"]').click();
   }
   function data(){var out={};root.querySelectorAll('[data-field]').forEach(function(el){out[el.dataset.field]=el.value;});var logo=savedLogo&&savedLogo.logoVariant===out.logoVariant?savedLogo:logos.find(function(row){return (row.variant||'primary')===out.logoVariant;});if(out.logoVariant!=='legacy'&&logo){out.logoStoragePath=logo.logoStoragePath||logo.storage_path;out.logoAssetId=logo.logoAssetId||logo.id;out.logoBrand=item.brand;}return out;}
   async function paint(){
@@ -200,6 +200,7 @@
      if(saved.settings&&saved.settings.logoStoragePath)savedLogo=saved.settings;
      if(!saved.settings||!saved.settings.logoVariant)root.querySelector('[data-field="logoVariant"]').value='legacy';
      root.querySelectorAll('[data-field]').forEach(function(field){if(saved.settings&&saved.settings[field.dataset.field]!==undefined)field.value=saved.settings[field.dataset.field];});if(saved.settings&&!saved.settings.doctorScheduleMode){var oldRows=[{days:saved.settings.doctorDays,time_from:saved.settings.doctorTimeFrom,time_to:saved.settings.doctorTimeTo}].concat(JSON.parse(saved.settings.doctorScheduleExtra||'[]'));oldRows=oldRows.filter(function(r){return r.days||r.time_from||r.time_to;});root.querySelector('[data-field="doctorScheduleMode"]').value=window.SSMPDDoctorSchedule.normalise(oldRows).mode;if(oldRows.length){root.querySelector('[data-field="doctorDays"]').value=oldRows[0].days||'';root.querySelector('[data-field="doctorTimeFrom"]').value=oldRows[0].time_from||'';root.querySelector('[data-field="doctorTimeTo"]').value=oldRows[0].time_to||'';scheduleExtra.value=JSON.stringify(oldRows.slice(1));}}scheduleExtra.dispatchEvent(new Event('schedule-restore'));
+     ['Top','Bottom'].forEach(function(edge){if(saved.settings&&saved.settings['edge'+edge+'Fade']===undefined&&saved.settings['edge'+edge+'Height']!==undefined)root.querySelector('[data-field="edge'+edge+'Fade"]').value=saved.settings['edge'+edge+'Height'];});
      root.querySelectorAll('[data-number-for]').forEach(function(el){var field=root.querySelector('[data-field="'+el.dataset.numberFor+'"]');if(field)el.value=field.value;});
      if(useLocal){root.querySelector('[data-prompt]').value=saved.prompt||'';root.querySelector('[data-quality]').value=saved.quality||'medium';}
      sceneJobId=saved.sceneJobId||null;sourceFile=saved.sourceFile||null;sourceUrl=saved.sourceUrl||null;

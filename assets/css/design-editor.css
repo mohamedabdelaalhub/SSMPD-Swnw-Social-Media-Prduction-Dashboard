@@ -55,3 +55,25 @@
 .design-color-rgb{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;direction:ltr;}
 .design-color-control input[aria-invalid=true]{border-color:var(--c-negative);}
 [data-gradient-controls][hidden]{display:none;}
+
+/* One accordion list at every screen size. The artwork keeps its own viewport. */
+.design-editor .design-layout{grid-template-areas:"preview tools";grid-template-columns:minmax(0,1fr) minmax(300px,430px);grid-template-rows:minmax(0,1fr)}
+.design-editor__tools>[data-tool-tab]{display:flex;align-items:center;justify-content:space-between;width:100%;min-height:44px;padding:10px 12px;margin:0 0 6px;font-size:13px;text-align:right;border:1px solid #dfe4ed;border-radius:8px;background:#fff;color:#17243b}
+.design-editor__tools>[data-tool-tab]::after,.design-editor__subgroup>summary::after{content:'⌄';font-size:18px;line-height:1;transition:transform .15s}
+.design-editor__tools>[data-tool-tab][aria-expanded=true]{background:#eef3ff;border-color:#123ba2;color:#123ba2}
+.design-editor__tools>[data-tool-tab][aria-expanded=true]::after,.design-editor__subgroup[open]>summary::after{transform:rotate(180deg)}
+.design-editor__panel{display:none;margin:0 0 10px;padding:4px 8px 8px;border:0}
+.design-editor__panel.is-active{display:block}
+.design-editor__subgroup{margin:0 0 6px;border:1px solid #e1e6ef;border-radius:8px;padding:0 10px}
+.design-editor__subgroup>summary{display:flex;justify-content:space-between;align-items:center;min-height:42px;font-size:13px;cursor:pointer;list-style:none}
+.design-editor__subgroup>summary::-webkit-details-marker{display:none}
+.design-editor__subgroup[open]>summary{margin-bottom:8px;border-bottom:1px solid #edf0f5}
+.design-editor__subgroup label{font-size:12px}
+.design-editor__subgroup .design-color-control{padding:8px;margin:8px 0}
+@media(max-width:900px){
+ .design-editor .design-layout{grid-template-areas:"preview" "tools";grid-template-columns:minmax(0,1fr);grid-template-rows:min(34vh,260px) minmax(0,1fr)}
+ .design-editor-backdrop.has-keyboard .design-layout{grid-template-rows:80px minmax(0,1fr)}
+}
+@media(max-width:900px) and (max-height:500px){.design-editor .design-layout{grid-template-rows:85px minmax(0,1fr)}}
+@media(min-width:600px) and (max-width:900px) and (max-height:500px){.design-editor .design-layout{grid-template-areas:"preview tools";grid-template-columns:minmax(0,.42fr) minmax(0,.58fr);grid-template-rows:minmax(0,1fr)}}
+.design-editor.is-preview-expanded .design-layout{grid-template-areas:"preview";grid-template-columns:1fr;grid-template-rows:minmax(0,1fr)}
