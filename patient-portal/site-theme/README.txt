@@ -16,9 +16,11 @@ How to install in the portal repository
         <link rel="stylesheet" href="site-theme/swnw-site-theme.css?v=1">
      and AFTER the last existing script:
         <script src="site-theme/swnw-site-chrome.js?v=1" data-site="https://swnwclinics.com" defer></script>
-     Keep data-site on the live website: the portal serves real patients and the staging site books into
-     a test database. Add the attribute  data-schedule  to the same tag once the redesigned website is
-     live (it adds the "جدول العيادات" link, a page the current live website does not have).
+     data-site decides where the header/footer links go. While the portal is not open to patients it may
+     point to https://staging.swnwclinics.com (owner's choice, 2026-10-09). BEFORE patients get access it
+     must point to the live website: the staging site books into a test database.
+     The attribute  data-schedule  adds the "جدول العيادات" link; only use it when data-site is a website
+     that has /User/Schedule (the redesigned one).
   3. Do not copy web.config; it only exists so the files can be previewed from the staging site.
 
 Verified
