@@ -1,0 +1,2 @@
+-- Applied live 2026-10-10 (migration "clinic_info_for_agent"): clinic_profile, clinic_hours, clinic_offers,
+-- clinic_faqs + clinic_info_access()/clinic_info_edit() and RLS. See Supabase migration history for the full SQL.
