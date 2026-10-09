@@ -60,7 +60,7 @@ async function syncBrand(db: any, brand: string, cfg: any, jobs: any[], report: 
   for (const job of jobs) {
     if (job.facebook_post_id) {
       const r = await gget(`${job.facebook_post_id}/comments`, {
-        fields: "id,message,from{id,name},created_time,comments.limit(50){id,message,from{id,name},created_time}",
+        fields: "id,message,from{id,name},created_time,permalink_url,comments.limit(50){id,message,from{id,name},created_time,permalink_url}",
         filter: "toplevel", order: "reverse_chronological", limit: "50", access_token: token
       });
       if (!r.ok) { report.errors.push(`${brand} facebook: ${r.error}`); }
@@ -95,6 +95,14 @@ async function syncBrand(db: any, brand: string, cfg: any, jobs: any[], report: 
     const ins = await db.from("social_comments").upsert(rows, { onConflict: "id", ignoreDuplicates: true });
     if (ins.error) report.errors.push(`${brand} save: ${ins.error.message}`);
     else report.seen += rows.length;
+    // Rows saved before links were collected: fill comment/author links once.
+    const ids = rows.map((r) => r.id as string);
+    const { data: missing } = await db.from("social_comments").select("id").in("id", ids).is("comment_url", null);
+    const byId = new Map(rows.map((r) => [r.id as string, r]));
+    for (const m of missing || []) {
+      const r = byId.get(m.id);
+      if (r?.comment_url) await db.from("social_comments").update({ comment_url: r.comment_url, author_url: r.author_url }).eq("id", m.id);
+    }
   }
   // Answered directly on Facebook/Instagram → no longer waiting in the dashboard.
   if (pageReplied.size) {
@@ -106,14 +114,16 @@ function fbRow(brand: string, job: any, c: any, parent: string | null, isPage: b
   return {
     id: `facebook:${c.id}`, platform: "facebook", platform_comment_id: c.id, brand, content_id: job.content_id, job_id: job.id,
     post_ref: job.facebook_post_id, parent_comment_id: parent, author_name: c.from?.name || null, author_is_page: isPage,
-    message: c.message || "", commented_at: c.created_time || null, status: isPage ? "replied" : "new"
+    message: c.message || "", commented_at: c.created_time || null, status: isPage ? "replied" : "new",
+    comment_url: c.permalink_url || null, author_url: null
   };
 }
 function igRow(brand: string, job: any, c: any, parent: string | null, isPage: boolean): Row {
   return {
     id: `instagram:${c.id}`, platform: "instagram", platform_comment_id: c.id, brand, content_id: job.content_id, job_id: job.id,
     post_ref: job.instagram_media_id, parent_comment_id: parent, author_name: c.username || null, author_is_page: isPage,
-    message: c.text || "", commented_at: c.timestamp || null, status: isPage ? "replied" : "new"
+    message: c.text || "", commented_at: c.timestamp || null, status: isPage ? "replied" : "new",
+    comment_url: job.instagram_permalink || null, author_url: c.username ? `https://www.instagram.com/${c.username}/` : null
   };
 }
 
@@ -225,7 +235,7 @@ Deno.serve(async (req) => {
   const report = { seen: 0, sent: 0, errors: [] as string[] };
   const cutoff = new Date(Date.now() - MAX_POST_AGE_DAYS * 864e5).toISOString();
   const { data: jobs, error } = await db.from("meta_publish_jobs")
-    .select("id,brand,content_id,facebook_post_id,instagram_media_id")
+    .select("id,brand,content_id,facebook_post_id,instagram_media_id,instagram_permalink")
     .in("status", ["published", "partial"]).gte("published_at", cutoff).limit(60);
   if (error) return reply({ ok: false, error: error.message }, 500);
   const { data: cfgs } = await db.from("meta_brand_config").select("*");

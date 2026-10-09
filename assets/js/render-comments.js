@@ -17,6 +17,18 @@
     try { return new Date(d).toLocaleString("ar-EG", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }); } catch (e) { return ""; }
   }
   function db() { return window.SSMPDDb.client; }
+  var OVERDUE_MIN = 60; // تعليق مستني رد أكتر من ساعة = متأخر
+  function ageMin(d) { return d ? Math.floor((Date.now() - new Date(d).getTime()) / 60000) : 0; }
+  function ago(d) {
+    var m = ageMin(d);
+    if (m < 1) return "دلوقتي";
+    if (m < 60) return "من " + m + " دقيقة";
+    var h = Math.floor(m / 60); if (h < 24) return "من " + h + " ساعة";
+    return "من " + Math.floor(h / 24) + " يوم";
+  }
+  function isPending(c) { return !c.author_is_page && !c.parent_comment_id && ["new", "drafted", "failed"].indexOf(c.status) !== -1; }
+  function isOverdue(c) { return isPending(c) && ageMin(c.commented_at) >= OVERDUE_MIN; }
+  function link(url, text) { return url ? '<a href="' + esc(url) + '" target="_blank" rel="noopener">' + text + "</a>" : text; }
 
   function load() {
     return Promise.all([
@@ -42,7 +54,9 @@
     var replies = data.comments.filter(function (c) { return c.parent_comment_id; });
     var byParent = {};
     replies.forEach(function (r) { (byParent[r.parent_comment_id] = byParent[r.parent_comment_id] || []).push(r); });
-    var pendingCount = top.filter(function (c) { return ["new", "drafted", "failed"].indexOf(c.status) !== -1; }).length;
+    var pendingCount = top.filter(isPending).length;
+    var overdueCount = top.filter(isOverdue).length;
+    updateTabBadge(pendingCount, overdueCount);
 
     var list = top.filter(function (c) {
       if (state.brand && c.brand !== state.brand) return false;
@@ -58,6 +72,7 @@
       '<button class="btn sm ' + (state.section === "inbox" ? "" : "ghost") + '" data-section="inbox">التعليقات' + (pendingCount ? ' <span class="cm-count">' + pendingCount + "</span>" : "") + "</button>" +
       '<button class="btn sm ' + (state.section === "templates" ? "" : "ghost") + '" data-section="templates">الردود المعتمدة (' + data.templates.length + ")</button></div>";
 
+    if (overdueCount && state.section !== "templates") html += '<div class="cm-alert">⚠️ فيه ' + overdueCount + ' تعليق مستني رد من أكتر من ساعة — الرد السريع بيفرق مع الناس.</div>';
     if (state.section === "templates") html += templatesHtml(data.templates);
     else {
       html += '<div class="cm-filters">' +
@@ -86,8 +101,11 @@
       '<span class="cm-badge">' + (BRANDS[c.brand] || c.brand) + "</span>" +
       '<span class="cm-badge st-' + c.status + '">' + (STATUS[c.status] || c.status) + "</span>" +
       (c.sensitive ? '<span class="cm-badge danger">حساس — راجعه بنفسك</span>' : "") + autoNote +
+      (isOverdue(c) ? '<span class="cm-badge danger">متأخر ' + ago(c.commented_at).replace("من ", "") + "</span>" : "") +
       '<span class="muted cm-post">على: ' + esc(title) + "</span></div>" +
-      '<div class="cm-msg"><b>' + esc(c.author_name || "مستخدم") + '</b> <span class="muted">' + when(c.commented_at) + "</span><p>" + esc(c.message) + "</p></div>";
+      '<div class="cm-msg"><b>' + link(c.author_url, esc(c.author_name || "مستخدم")) + '</b> <span class="muted">' + when(c.commented_at) + " · " + ago(c.commented_at) + "</span>" +
+      (c.comment_url ? ' <a class="cm-open" href="' + esc(c.comment_url) + '" target="_blank" rel="noopener">افتح على ' + (c.platform === "facebook" ? "فيسبوك" : "انستجرام") + " ↗</a>" : "") +
+      "<p>" + esc(c.message) + "</p></div>";
     thread.forEach(function (r) {
       h += '<div class="cm-reply' + (r.author_is_page ? " page" : "") + '"><b>' + esc(r.author_is_page ? "رد الصفحة" : (r.author_name || "مستخدم")) + "</b> <span class=\"muted\">" + when(r.commented_at) + "</span><p>" + esc(r.message) + "</p></div>";
     });
@@ -160,6 +178,26 @@
       };
     });
   }
+
+  // شارة على تاب "التعليقات": عدد المستني رد، وبتبقى حمرا لو فيه تعليق متأخر.
+  function updateTabBadge(pending, overdue) {
+    document.querySelectorAll('.tab-btn[data-tab="comments"]').forEach(function (btn) {
+      var b = btn.querySelector(".cm-tab-badge");
+      if (!pending) { if (b) b.remove(); return; }
+      if (!b) { b = document.createElement("span"); b.className = "cm-tab-badge"; btn.appendChild(b); }
+      b.textContent = pending;
+      b.classList.toggle("late", overdue > 0);
+      b.title = overdue ? overdue + " تعليق متأخر أكتر من ساعة" : pending + " تعليق مستني رد";
+    });
+  }
+  function pollBadge() {
+    if (!window.SSMPDDb || !window.SSMPDDb.client || !document.querySelector('.tab-btn[data-tab="comments"]')) return;
+    db().from("social_comments").select("commented_at,status,author_is_page,parent_comment_id")
+      .in("status", ["new", "drafted", "failed"]).eq("author_is_page", false).is("parent_comment_id", null).limit(500)
+      .then(function (r) { if (r.error) return; var rows = r.data || []; updateTabBadge(rows.length, rows.filter(isOverdue).length); });
+  }
+  setTimeout(pollBadge, 4000);
+  setInterval(pollBadge, 120000);
 
   window.SSMPDRenderComments = { render: render };
 })();
