@@ -44,3 +44,6 @@
 .design-editor__frame{flex:none;position:relative;background:white;outline:2px solid #123b94;box-shadow:0 0 0 4px white,0 3px 12px #1e293b55}
 .design-editor__frame canvas{width:100%;height:100%;object-fit:fill}
 .design-editor__bounds-label{font-size:11px;color:#123b94;white-space:nowrap}
+
+.design-editor [hidden]{display:none!important}
+

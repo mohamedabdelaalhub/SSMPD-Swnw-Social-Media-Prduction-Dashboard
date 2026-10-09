@@ -28,7 +28,7 @@
  }
  function mount(slot,item){
   if(!slot||!window.SSMPDDesignFiles.canEdit(item))return;
-  var start=document.createElement('button'); start.className='btn ghost'; start.textContent=item.design_file_url?'تعديل التصميم الحالي':'إنشاء تصميم بالذكاء الاصطناعي'; slot.appendChild(start);
+  var start=document.createElement('button'); start.className='btn ghost'; start.textContent=item.design_file_url?'تعديل التصميم الحالي':'إنشاء تصميم'; slot.appendChild(start);
   start.onclick=function(){open(item);};
  }
  function open(item){
@@ -38,7 +38,7 @@
   root.innerHTML='<div class="modal" style="width:min(1100px,96vw);max-height:94vh;overflow:auto" dir="rtl">'+
    "<div class=\"modal-head\"><h3>تصميم سونو — الصورة العلوية</h3><button class=\"modal-close\" aria-label=\"إغلاق\" data-i18n-aria-label=\"%D8%A5%D8%BA%D9%84%D8%A7%D9%82\" data-i18n-aria-label=\"%D8%A5%D8%BA%D9%84%D8%A7%D9%82\">×</button></div>"+
    '<div class="design-layout" style="display:flex;flex-wrap:wrap;gap:20px"><div style="flex:1 1 300px;min-width:0">'+
-   '<label>قالب التصميم<select data-field="layoutTemplate"><option value="classic">صورة فوق والنص تحت</option><option value="full_photo">صورة ممتدة وبطاقة نص</option><option value="split">صورة ونص جنب بعض</option></select></label><p>تبديل القالب يحافظ على الصورة والنصوص. لا يحتاج توليدًا جديدًا.</p>'+
+   '<label>قالب التصميم<select data-field="layoutTemplate"><option value="classic">صورة فوق والنص تحت</option><option value="full_photo">صورة ممتدة وبطاقة نص</option><option value="split">صورة ونص جنب بعض</option><option value="sono_doctor">قالب تعريف الدكتور — سونو</option></select></label><p>تبديل القالب يحافظ على الصورة والنصوص. لا يحتاج توليدًا جديدًا.</p>'+
    '<label>نسخة اللوجو<select data-field="logoVariant"><option value="primary">للخلفيات الفاتحة — النسخة الأولى</option><option value="alternate">للخلفيات الغامقة — النسخة الثانية</option><option value="legacy" hidden>اللوجو المحفوظ في القالب</option></select></label><p data-logo-status></p>'+
    '<label>العنوان الرئيسي — حتى ٥ كلمات<textarea data-field="headline" rows="2"></textarea></label>'+
    '<label>السطر التوضيحي — حتى ٨ كلمات<textarea data-field="subtitle" rows="2"></textarea></label>'+
@@ -55,6 +55,17 @@
    offsetControl('subtitleOffset','تحريك السطر التوضيحي',-600,600)+
    offsetControl('ctaOffset','تحريك زر التفاعل',-900,60)+
    '<p>الشعار ثابت فوق الصورة. أبعد الوجه والتفاصيل المهمة عن ركن الشعار. يمكنك تعديل القص والموضع، وتظهر خلفية فاتحة تحت النص للحفاظ على وضوحه.</p></details>'+
+   '<label>الدكتور أو الدكتورة<select data-field="doctorPrefix"><option>الدكتور</option><option>الدكتورة</option></select></label>'+
+   '<label>اسم الدكتور<textarea data-field="doctorName" rows="2" placeholder="الاسم كما سيظهر في التصميم"></textarea></label>'+
+   '<label>التايتل والتخصص<textarea data-field="doctorTitle" rows="2" placeholder="مثال استشاري أمراض الأطفال"></textarea></label>'+
+   '<label>حجم الاسم الأقصى<input type="number" data-field="doctorNameSize" min="24" max="110" value="97"></label><p>حجم الاسم يتقلص تلقائيًا عند الحاجة ليتناسب مع المساحة. يمكنك تقسيم الاسم على سطرين.</p>'+
+   '<label>حجم التايتل الأقصى<input type="number" data-field="doctorTitleSize" min="16" max="42" value="32.56" step="0.5"></label>'+
+   '<label>أيام العمل<input data-field="doctorDays" placeholder="مثال الأحد - الاثنين"></label>'+
+   '<label>من الساعة<input type="time" data-field="doctorTimeFrom" dir="ltr"></label>'+
+   '<label>حتى الساعة<input type="time" data-field="doctorTimeTo" dir="ltr"></label><p>اختر صباحًا أو مساءً. التصميم يعرض الموعد بنظام ١٢ ساعة، ويدعم مواعيد بعد منتصف الليل.</p>'+
+   '<label>تكبير صورة الدكتور<input type="range" data-field="doctorZoom" min="1" max="3" step="0.05" value="1"></label>'+
+   '<label>تحريك داخل الدائرة يمينًا ويسارًا<input type="range" data-field="doctorPhotoX" min="-100" max="100" value="0" dir="ltr"></label>'+
+   '<label>تحريك داخل الدائرة فوق وتحت<input type="range" data-field="doctorPhotoY" min="-100" max="100" value="0" dir="ltr"></label><p>الصورة تملأ الدائرة دائمًا. التكبير يسمح بتحريك الجزء الظاهر من الصورة.</p>'+
    '<label>صورة من جهازك<input type="file" accept="image/png,image/jpeg,image/webp" data-upload></label>'+
    '<button class="btn ghost" data-library>صور سونو المحفوظة</button><div data-images style="display:flex;flex-wrap:wrap;gap:6px"></div>'+
    '<details><summary>توليد صورة بالذكاء الاصطناعي</summary><label>وصف المشهد<textarea data-prompt rows="3"></textarea></label>'+
@@ -97,16 +108,23 @@
   root.querySelector('.modal-close').onclick=async function(){clearTimeout(draftTimer);if(loadFailed){root.remove();return;}if(restoring||working){draftStatus.textContent='انتظر انتهاء تحميل أو توليد الصورة قبل الإغلاق.';return;}try{await saveDraft();root.remove();}catch(e){}};
   root.querySelectorAll('input:not([type=file]),textarea,select').forEach(function(el){el.style.width='100%';el.style.boxSizing='border-box';el.style.marginBottom='10px';});
   root.querySelectorAll('[data-number-for]').forEach(function(el){el.style.width='90px';el.style.display='inline-block';el.style.margin=el.closest('.design-offset-control')?'0':'0 8px';el.style.direction='ltr';});
+  function syncTemplate(){
+   var doctor=root.querySelector('[data-field="layoutTemplate"]').value==='sono_doctor';
+   root.classList.toggle('is-doctor-template',doctor);
+   root.querySelectorAll('[data-doctor-only]').forEach(function(el){el.hidden=!doctor;});
+   root.querySelectorAll('[data-standard-only]').forEach(function(el){el.hidden=doctor;});
+   if(root.querySelector('[data-tool-tab="'+root.dataset.activeTool+'"]').hidden)root.querySelector('[data-tool-tab="'+(doctor?'doctor':'headline')+'"]').click();
+  }
   function data(){var out={};root.querySelectorAll('[data-field]').forEach(function(el){out[el.dataset.field]=el.value;});var logo=savedLogo&&savedLogo.logoVariant===out.logoVariant?savedLogo:logos.find(function(row){return (row.variant||'primary')===out.logoVariant;});if(out.logoVariant!=='legacy'&&logo){out.logoStoragePath=logo.logoStoragePath||logo.storage_path;out.logoAssetId=logo.logoAssetId||logo.id;out.logoBrand=item.brand;}return out;}
   async function paint(){
    var current=++version;valid=false;buttons();
-   try{var settings=data();if(!settings.headline.trim())throw new Error('اكتب عنوان التصميم.');var buffer=document.createElement('canvas');await C.render(buffer,scene,settings,{preview:true});if(current!==version)return;canvas.width=buffer.width;canvas.height=buffer.height;canvas.getContext('2d').drawImage(buffer,0,0);var issues=buffer.designIssues||[],warnings=buffer.designWarnings||[];valid=!!scene&&!issues.length;status.textContent=issues.length?issues.join(' '):scene?'المعاينة جاهزة للحفظ. '+(warnings.length?warnings.join(' ')+' يمكنك الحفظ بالقيم الحالية.':'راجع النص وموضع الصورة.'):'اختر صورة أو ولّد مشهدًا لبدء المعاينة.';}
+   try{var settings=data();if(settings.layoutTemplate!=='sono_doctor'&&!settings.headline.trim())throw new Error('اكتب عنوان التصميم.');var buffer=document.createElement('canvas');await C.render(buffer,scene,settings,{preview:true});if(current!==version)return;canvas.width=buffer.width;canvas.height=buffer.height;canvas.getContext('2d').drawImage(buffer,0,0);var issues=buffer.designIssues||[],warnings=buffer.designWarnings||[];valid=!!scene&&!issues.length;status.textContent=issues.length?issues.join(' '):scene?'المعاينة جاهزة للحفظ. '+(warnings.length?warnings.join(' ')+' يمكنك الحفظ بالقيم الحالية.':'راجع النص وموضع الصورة.'):'اختر صورة أو ولّد مشهدًا لبدء المعاينة.';}
    catch(e){if(current!==version)return;canvas.width=1080;canvas.height=1350;status.textContent='تعذر عرض القيم الحالية. '+e.message;}buttons();
   }
   function buttons(){root.querySelectorAll('input,textarea,select,[data-library],[data-retry],[data-offset-step],[data-offset-reset],[data-copy-suggest]').forEach(function(el){el.disabled=working||restoring||loadFailed||el.dataset.copyBusy==='true';});root.querySelector('[data-download]').disabled=!valid||working||restoring||loadFailed;root.querySelector('[data-save]').disabled=!valid||working||restoring||loadFailed;root.querySelector('[data-generate]').disabled=working||restoring||loadFailed;}
   var paintFrame=null;
   function requestPaint(){version++;valid=false;buttons();if(paintFrame!==null)return;paintFrame=(window.requestAnimationFrame||function(callback){return setTimeout(callback,16);})(function(){paintFrame=null;if(root.isConnected)paint();});}
-  root.querySelectorAll('[data-field]').forEach(function(el){function changed(){if(el.dataset.field==='logoVariant')savedLogo=null;if(el.dataset.field==='layoutTemplate'){root.querySelector('[data-field="titlePosition"]').value=el.value==='split'?'right':'bottom';root.querySelector('[data-field="textWidth"]').value='';['headlineOffset','subtitleOffset','ctaOffset'].forEach(function(key){root.querySelector('[data-field="'+key+'"]').value=0;root.querySelector('[data-number-for="'+key+'"]').value=0;});}if(el.dataset.field==='titlePosition'){root.querySelector('[data-field="x"]').value=el.value==='left'?100:el.value==='right'?0:50;root.querySelector('[data-field="headlineOffset"]').value=0;root.querySelector('[data-field="subtitleOffset"]').value=0;['headlineOffset','subtitleOffset'].forEach(function(key){root.querySelector('[data-number-for="'+key+'"]').value=0;});}if(el.dataset.field==='fadeStartY'){var end=root.querySelector('[data-field="fadeEndY"]');if(Number(end.value)<Number(el.value)+50){end.value=Math.min(1120,Number(el.value)+50);var endOutput=root.querySelector('[data-value="fadeEndY"]');if(endOutput)endOutput.textContent=end.value;}}if(el.dataset.field==='fadeEndY'){var start=root.querySelector('[data-field="fadeStartY"]');if(Number(start.value)>Number(el.value)-50){start.value=Math.max(500,Number(el.value)-50);var startOutput=root.querySelector('[data-value="fadeStartY"]');if(startOutput)startOutput.textContent=start.value;}}var numberInput=root.querySelector('[data-number-for="'+el.dataset.field+'"]');if(numberInput)numberInput.value=el.value;var output=root.querySelector('[data-value="'+el.dataset.field+'"]');if(output)output.textContent=el.dataset.field==='ctaScale'?Math.round(Number(el.value)*100)+'%':el.value;requestPaint();}el.oninput=changed;el.onchange=changed;});
+  root.querySelectorAll('[data-field]').forEach(function(el){function changed(){if(el.dataset.field==='layoutTemplate')syncTemplate();if(el.dataset.field==='logoVariant')savedLogo=null;if(el.dataset.field==='layoutTemplate'){root.querySelector('[data-field="titlePosition"]').value=el.value==='split'?'right':'bottom';root.querySelector('[data-field="textWidth"]').value='';['headlineOffset','subtitleOffset','ctaOffset'].forEach(function(key){root.querySelector('[data-field="'+key+'"]').value=0;root.querySelector('[data-number-for="'+key+'"]').value=0;});}if(el.dataset.field==='titlePosition'){root.querySelector('[data-field="x"]').value=el.value==='left'?100:el.value==='right'?0:50;root.querySelector('[data-field="headlineOffset"]').value=0;root.querySelector('[data-field="subtitleOffset"]').value=0;['headlineOffset','subtitleOffset'].forEach(function(key){root.querySelector('[data-number-for="'+key+'"]').value=0;});}if(el.dataset.field==='fadeStartY'){var end=root.querySelector('[data-field="fadeEndY"]');if(Number(end.value)<Number(el.value)+50){end.value=Math.min(1120,Number(el.value)+50);var endOutput=root.querySelector('[data-value="fadeEndY"]');if(endOutput)endOutput.textContent=end.value;}}if(el.dataset.field==='fadeEndY'){var start=root.querySelector('[data-field="fadeStartY"]');if(Number(start.value)>Number(el.value)-50){start.value=Math.max(500,Number(el.value)-50);var startOutput=root.querySelector('[data-value="fadeStartY"]');if(startOutput)startOutput.textContent=start.value;}}var numberInput=root.querySelector('[data-number-for="'+el.dataset.field+'"]');if(numberInput)numberInput.value=el.value;var output=root.querySelector('[data-value="'+el.dataset.field+'"]');if(output)output.textContent=el.dataset.field==='ctaScale'?Math.round(Number(el.value)*100)+'%':el.value;requestPaint();}el.oninput=changed;el.onchange=changed;});
   root.querySelectorAll('[data-number-for]').forEach(function(input){var slider=root.querySelector('[data-field="'+input.dataset.numberFor+'"]');function changed(){if(input.value==='')return;var min=Number(input.getAttribute('min')),max=Number(input.getAttribute('max')),value=Math.max(min,Math.min(max,Number(input.value)));if(!Number.isFinite(value))return;input.value=value;slider.value=value;slider.dispatchEvent(new Event('input',{bubbles:true}));}input.oninput=changed;input.onchange=changed;});
   root.querySelectorAll('[data-offset-step],[data-offset-reset]').forEach(function(button){button.onclick=function(){
    if(working||restoring||loadFailed)return;
@@ -135,7 +153,7 @@
   };
   root.querySelector('[data-retry]').onclick=function(){localStorage.removeItem(requestStore);this.hidden=true;root.querySelector('[data-generate]').click();};
   root.querySelector('[data-generate]').onclick=async function(){
-   if(working)return;working=true;buttons();status.textContent='جاري توليد الصورة وحفظها…';
+   if(working||data().layoutTemplate==='sono_doctor')return;working=true;buttons();status.textContent='جاري توليد الصورة وحفظها…';
    var key=localStorage.getItem(requestStore)||crypto.randomUUID();localStorage.setItem(requestStore,key);
    try{var result=await invoke({content_id:item.id,request_key:key,prompt:C.scenePrompt(root.querySelector('[data-prompt]').value,data()),quality:root.querySelector('[data-quality]').value});
     if(result.url){sceneJobId=result.job_id;sourceFile=null;sourceUrl=null;await setScene(result.url);localStorage.removeItem(requestStore);root.querySelector('[data-generate]').textContent='إعادة توليد صورة جديدة';await saveDraft();}
@@ -148,7 +166,7 @@
   root.querySelector('[data-save]').onclick=async function(){
    if(!valid||working||loadFailed)return;working=true;buttons();status.textContent='حفظ نسخة جديدة للمراجعة…';
    try{var file=new File([await blob()],'sono-'+item.id+'-'+Date.now()+'.png',{type:'image/png'});
-    var saved=await window.SSMPDDesignFiles.save(item,file,sceneBlob,Object.assign({template:'sono-white-v1',width:1080,height:1350},data()),sceneJobId,baseVersion);
+    var saved=await window.SSMPDDesignFiles.save(item,file,sceneBlob,Object.assign({template:data().layoutTemplate==='sono_doctor'?'sono-doctor-v1':'sono-white-v1',width:canvas.width,height:canvas.height},data()),sceneJobId,baseVersion);
     baseVersion=saved.version_id;Object.assign(item,saved.item);await saveDraft().catch(function(){});
     addVersion({output_file_url:item.design_file_url,created_at:new Date().toISOString()});
     status.textContent=item.stage==='final_approval'?'تم حفظ النسخة الجديدة وهي بانتظار الاعتماد.':'تم حفظ نسخة جديدة على الحساب. أرسلها للاعتماد من مسار المراجعة.';
@@ -186,11 +204,12 @@
      if(!scene&&cloud)draftStatus.textContent+=' — التصميم القديم لا يحتوي على صورة أصلية قابلة للاسترجاع. اختر الصورة الأصلية لاستكمال التعديل.';
     }
    }catch(e){loadFailed=true;draftStatus.textContent=e.message;if(editingExisting){if(current)root.querySelector('.modal-head').append(current);root.querySelector('.design-layout').style.display='none';root.querySelector('.modal').appendChild(draftStatus);}}
-   finally{restoring=false;root.querySelectorAll('button').forEach(function(el){el.disabled=false;});buttons();if(!loadFailed)await paint();}
+   finally{restoring=false;syncTemplate();root.querySelectorAll('button').forEach(function(el){el.disabled=false;});buttons();if(!loadFailed)await paint();}
   })();
  }
  window.SSMPDDesignStudio={mount:mount,open:open};
 })();
+
 
 
 

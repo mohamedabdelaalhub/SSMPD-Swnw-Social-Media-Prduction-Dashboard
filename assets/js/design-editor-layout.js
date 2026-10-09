@@ -21,11 +21,13 @@
    ['headline','العنوان',['headline','headlineSize','headlineOffset']],
    ['subtitle','السطر التوضيحي',['subtitle','subtitleSize','subtitleOffset']],
    ['cta','التفاعل',['cta','ctaSize','ctaOffset']],
-   ['image','الصورة',['[data-upload]','[data-library]','[data-images]','zoom','x','imageOffsetY','fadeStartY','fadeEndY']],
+   ['image','الصورة',['[data-upload]','[data-library]','[data-images]','zoom','x','imageOffsetY','fadeStartY','fadeEndY','doctorZoom','doctorPhotoX','doctorPhotoY']],
    ['logo','اللوجو',['logoVariant','[data-logo-status]']],
    ['layout','القالب والترتيب',['layoutTemplate','textOrder','titlePosition','textWidth']],
    ['generation','التوليد',['[data-prompt]','[data-quality]','.design-ai-actions']],
-   ['versions','النسخ',['[data-versions]']]
+   ['versions','النسخ',['[data-versions]']],
+   ['doctor','بيانات الدكتور',['doctorPrefix','doctorName','doctorTitle','doctorNameSize','doctorTitleSize']],
+   ['schedule','المواعيد',['doctorDays','doctorTimeFrom','doctorTimeTo']]
   ];
   var panels=[],buttons=[],prefix='design-tool-'+(++serial)+'-';
   definitions.forEach(function(def){
@@ -35,10 +37,14 @@
     var node=tools.querySelector(key[0]==='['||key[0]==='.'?key:'[data-field="'+key+'"]');if(!node)return;
     var unit=node.closest('.design-offset-control')||node.closest('label')||node;
     var hint=unit.nextElementSibling;
+    if(['zoom','x','imageOffsetY','fadeStartY','fadeEndY','textOrder','titlePosition','textWidth','[data-library]','[data-images]'].includes(key))unit.dataset.standardOnly='';
+    if(key.startsWith('doctor'))unit.dataset.doctorOnly='';
     panel.append(unit);
-    if(hint&&hint.tagName==='P'&&!hint.hasAttribute('data-logo-status')&&!hint.hasAttribute('data-status')&&!hint.hasAttribute('data-draft-status'))panel.append(hint);
+    if(hint&&hint.tagName==='P'&&!hint.hasAttribute('data-logo-status')&&!hint.hasAttribute('data-status')&&!hint.hasAttribute('data-draft-status')){if(unit.hasAttribute('data-standard-only'))hint.dataset.standardOnly='';if(unit.hasAttribute('data-doctor-only'))hint.dataset.doctorOnly='';panel.append(hint);}
    });
    var button=document.createElement('button');button.type='button';button.className='btn ghost sm';button.dataset.toolTab=def[0];button.textContent=def[1];button.setAttribute('aria-controls',panel.id);button.setAttribute('aria-pressed','false');tabs.append(button);
+   if(['doctor','schedule'].includes(def[0])){panel.dataset.doctorOnly='';button.dataset.doctorOnly='';panel.hidden=true;button.hidden=true;}
+   if(['headline','subtitle','cta','logo','generation'].includes(def[0])){panel.dataset.standardOnly='';button.dataset.standardOnly='';}
    panels.push(panel);buttons.push(button);
   });
   var help=document.createElement('details');var summary=document.createElement('summary');summary.textContent='إرشادات التعديل';help.append(summary);
@@ -66,4 +72,5 @@
  }
  window.SSMPDDesignEditorLayout={mount:mount};
 })();
+
 

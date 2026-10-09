@@ -55,6 +55,7 @@
   }
   async function render(canvas, scene, data, options) {
     data=Object.assign({},data);
+    if(data.layoutTemplate==='sono_doctor')return window.SSMPDDoctorTemplate.render(canvas,scene,data);
     var template=['classic','full_photo','split'].includes(data.layoutTemplate)?data.layoutTemplate:'classic';
     var photographic=template==='full_photo';
     var issues=[];
@@ -154,6 +155,7 @@
   }
   window.SSMPDDesignComposer={render:render,loadImage:loadImage,ready:ready,scenePrompt:scenePrompt};
 })();
+
 
 
 
