@@ -136,6 +136,8 @@ input,select,textarea{font-family:inherit; font-size:14px;}
 .topbar .brand{display:flex; align-items:center; gap:10px;}
 .topbar .brand img{height:26px;}
 .topbar .brand span{font-weight:800; font-size:14px; color:var(--c-primary);}
+.topbar .brand span.brand-sep{margin:0 8px; font-weight:400; color:var(--c-muted); opacity:.5;}
+.topbar .brand span.brand-section{color:var(--c-muted);}
 
 /* رأس موحّد لكل موديول منفصل (أرشيف المرضى / إدارة الليدز) — نفس شكل .topbar .brand بالظبط */
 .module-brand{display:flex; align-items:center; gap:10px; margin-bottom:14px;}

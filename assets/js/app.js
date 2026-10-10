@@ -621,7 +621,7 @@
     // اسم الشعار بيتغيّر حسب السكشن المفتوح دلوقتي: اسم المركز + اسم السكشن
     var brandName = document.getElementById("brand-section-name");
     if (brandName) {
-      brandName.innerHTML = window.SSMPDI18n.textHtml("مركز عيادات سونو التخصصية") + (TAB_LABELS[tab] ? " | " + window.SSMPDI18n.textHtml(TAB_LABELS[tab]) : "");
+      brandName.innerHTML = window.SSMPDI18n.textHtml("مركز عيادات سونو التخصصية") + (TAB_LABELS[tab] ? '<span class="brand-sep">|</span><span class="brand-section">' + window.SSMPDI18n.textHtml(TAB_LABELS[tab]) + "</span>" : "");
     }
 
     // فصل بصري: تابات السويت الرئيسي (SSMPD) بتتخفي تماماً لما نكون جوه موديول
