@@ -74,3 +74,8 @@ Dr. Dina — render with the dashboard's OWN renderer so it matches the studio e
   await SSMPDDinaTemplate.render(canvas, sceneImage, {dinaVariant:"<1-12>", headline, subtitle, designBody, cta, headlineSize?, subtitleSize?, designBodySize?, ctaSize?, x?, imageOffsetY?, zoom?})
   and export canvas.toDataURL. Variant names (Mohamed's): 1 تصريح خلفية فاتحة · 2 تصريح خلفية غامقة · 3 معلومة من د. دينا · 4 بحثت لك · 5 سؤال وجواب · 6 محتوى عام · 7 عنوان فوق · 8 عنوان علي بوكس · 9 عنوان يمين · 10 عنوان تحت - خلفية سوداء · 11 عنوان تحت - خلفية بيج · 12 عنوان تحت - خلفية نبيتي.
   Content kind → variants: quote (على لسان الدكتورة) 1,2 · education (معلومة طبية) 3,6,7,8 · research (بحثت لك) 4 · qa (سؤال وجواب) 5 · question (سؤال يشد الانتباه) 9 · tip (نصيحة وخطوة عملية) 10,11,12. Headline ≤ 5 words, subtitle ≤ 8 words. Rotate variants.
+
+## Dr. Dina variants 3 & 4 text layout (Mohamed's notes, 2026-10-11 — built into the renderer)
+- Headline: Tajawal Black (900), 80 px default, wraps to TWO lines (write 3–5 words so it breaks naturally).
+- Subtitle sits 15 px closer to the headline than before; body starts right after it.
+- Body paragraph line spacing is +3 px. Do not pass headlineSize/designBodySize unless the text doesn't fit.
