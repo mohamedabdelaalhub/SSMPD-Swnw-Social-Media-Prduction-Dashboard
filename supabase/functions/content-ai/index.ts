@@ -61,7 +61,7 @@ function carouselBrief(value:any){
  const notes=String(value.notes||"").trim();if(notes.length>3000)throw Error("نص الشرايح أطول من الحد المسموح.");
  return {slides_count,style,notes};
 }
-function carouselInstructions(b:any){return "\nCAROUSEL: المادة كاروسيل (format=carousel) من "+b.slides_count+" شرايح بالضبط. الأسلوب: "+carouselStyles[b.style]+". carousel_copy مصفوفة بطول "+b.slides_count+" بالترتيب: الشريحة 1 role=hook عنوان يشد حتى 6 كلمات وbody سطر حتى 12 كلمة يخلّي الناس تقلب؛ الشرايح الوسطى role=point كل واحدة فكرة واحدة: headline حتى 6 كلمات وbody حتى 22 كلمة بالعامية المصرية الواضحة بدون تكرار؛ الشريحة الأخيرة role=cta: headline دعوة للحجز أو التواصل حتى 6 كلمات وbody يذكر واتساب 01010686264 أو التليفون 0236230005 فقط. لا أسعار ولا وعود بنتيجة ولا تشخيص. scene لكل شريحة وصف قصير لصورة أو أيقونة مناسبة بدون نص. لو notes فيها نص للشرايح التزم بمعناه وصحّح صياغته فقط. design_headline = عنوان الشريحة الأولى. الكابشن يكمّل الشرايح ولا ينسخها. script والمدة وvideo_template = null.";}
+function carouselInstructions(b:any){return "\nCAROUSEL: المادة كاروسيل (format=carousel) من "+b.slides_count+" شرايح بالضبط. الأسلوب: "+carouselStyles[b.style]+". carousel_copy مصفوفة بطول "+b.slides_count+" بالترتيب: الشريحة 1 role=hook: headline من 3 لـ 6 كلمات يشد، وbody من 6 لـ 12 كلمة يخلّي الناس تقلب؛ الشرايح الوسطى role=point كل واحدة فكرة واحدة: headline من 2 لـ 6 كلمات وbody من 10 لـ 22 كلمة بالعامية المصرية الواضحة بدون تكرار؛ الشريحة الأخيرة role=cta: headline من 2 لـ 6 كلمات دعوة للحجز أو التواصل وbody من 6 لـ 16 كلمة يذكر واتساب 01010686264 أو التليفون 0236230005 فقط. لا أسعار ولا وعود بنتيجة ولا تشخيص. scene لكل شريحة وصف قصير لصورة أو أيقونة مناسبة بدون نص. لو notes فيها نص للشرايح التزم بمعناه وصحّح صياغته فقط. design_headline = عنوان الشريحة الأولى. الكابشن يكمّل الشرايح ولا ينسخها. script والمدة وvideo_template = null.";}
 function checkedCarousel(idea:any,b:any){
  const copy=idea.carousel_copy;
  if(!Array.isArray(copy)||copy.length!==b.slides_count)throw Error("عدد شرايح الكاروسيل الناتج غير مطابق.");
@@ -70,7 +70,7 @@ function checkedCarousel(idea:any,b:any){
   if(!s||typeof s.headline!=="string"||!s.headline.trim())throw Error("شريحة بدون عنوان.");
   s.headline=s.headline.replace(/["'“”«»…]/g," ").replace(/\s+/g," ").trim();s.body=String(s.body||"").trim();s.scene=String(s.scene||"").trim();
   s.role=i===0?"hook":i===copy.length-1?"cta":"point";
-  if(words(s.headline)>9||words(s.body)>35)throw Error("نص شريحة أطول من الحد.");
+  if(words(s.headline)>8||words(s.body)>30)throw Error("الشريحة "+(i+1)+" نصها أطول من الحد (العنوان حتى 6 كلمات والنص حتى 22 كلمة).");
  });
  return idea;
 }
@@ -181,13 +181,16 @@ Deno.serve(async (req) => {
       }
     };
 
+    let retryNote = "";
+    for (let attempt = 1; ; attempt++) {
+    try {
     const openai = await fetch("https://api.openai.com/v1/responses", {
       method: "POST",
       headers: { "Authorization": "Bearer " + apiKey, "Content-Type": "application/json" },
       body: JSON.stringify({
         model,
         instructions:instructions+"\n"+designStyle+(dina?"\n"+dinaInstructions(dina):"")+(carousel?carouselInstructions(carousel):"")+(doctorIntro?"\nهذه مادة تعريف طبيب. اكتب بالضبط 3 منشورات ترحيب وتقديم للطبيب، لا توعية بمرض. doctor_brief المصدر الوحيد للاسم والتايتل والمؤهلات والخبرات والجدول. لا تخترع ألقابًا أو شهادات أو سنوات خبرة أو خدمات. إذا المؤهلات أو الخبرات فارغة احذفها. استخدم image_post والكابشن يشمل الترحيب والبيانات المتاحة والمواعيد وبيانات تواصل المركز. لا تغيّر الحقائق بين الاقتراحات. أعط نصوص التصميم المطلوبة لكن القالب يسكن بيانات الطبيب مباشرة.":""),
-        input: "SSMPD Dashboard Brief:\n" + JSON.stringify(brief),
+        input: "SSMPD Dashboard Brief:\n" + JSON.stringify(brief) + retryNote,
         text: { format: { type: "json_schema", name: "ssmpd_content_ideas", strict: true, schema } }
       })
     });
@@ -215,6 +218,13 @@ Deno.serve(async (req) => {
     if(dina)for(const idea of parsed.ideas)idea.dina_brief=dina;
     if(carousel)for(const idea of parsed.ideas){idea.content_kind="carousel";idea.carousel_brief=carousel;}
     return Response.json({ ideas: parsed.ideas, model }, { headers: { ...cors, "Content-Type": "application/json" } });
+    } catch (attemptError) {
+      // One automatic retry with the reason, so staff don't have to press generate again.
+      const msg = attemptError instanceof Error ? attemptError.message : String(attemptError);
+      if (attempt >= 2 || /OpenAI|OPENAI|سجّل|غير مسجل/.test(msg)) throw attemptError;
+      retryNote = "\n\nالمحاولة السابقة اترفضت لأن: " + msg + " — أعد الإنتاج والتزم بكل الحدود وعدد الكلمات وعدد الشرايح بالضبط.";
+    }
+    }
   } catch (error) {
     return Response.json({ error: error instanceof Error ? error.message : "حدث خطأ غير معروف." }, { status: 400, headers: { ...cors, "Content-Type": "application/json" } });
   }

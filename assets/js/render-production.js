@@ -368,6 +368,7 @@ function openAgentImportModal(parentBackdrop) {
           if(h.raw&&h.raw.dina_brief)window.SSMPDDinaContent.hydrate(h.raw.dina_brief);
           if(h.raw&&h.raw.doctor_brief)window.SSMPDDoctorContent.hydrate(h.raw.doctor_brief);
           if(h.raw&&h.raw.before_after_brief)window.SSMPDBeforeAfterContent.hydrate(h.raw.before_after_brief);
+          if(h.raw&&Array.isArray(h.raw.carousel_copy)&&window.SSMPDCarouselContent)window.SSMPDCarouselContent.hydrate(h.raw.carousel_brief||{slides_count:Math.max(3,Math.min(10,h.raw.carousel_copy.length)),style:'tips',notes:''},h.raw.carousel_copy);
           var fmt = document.getElementById("ci-format");
           if (fmt && h.formatKey) fmt.value = h.formatKey;
 
