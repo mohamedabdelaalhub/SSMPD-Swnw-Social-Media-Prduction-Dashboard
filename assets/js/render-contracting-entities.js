@@ -18,6 +18,16 @@
 
   function canDelete() { return window.SSMPDRoles.canDeleteContractingEntity(window.SSMPDAuth.currentAdmin); }
 
+  function suspendEntity(entityId, done) {
+    if (!canDelete()) return T.show(tr("التعليق متاح للسوبر أدمن والمدير فقط"), "error");
+    window.SSMPDDb.getContractingEntityDetails(entityId).then(function (d) {
+      var contract = d.contracts[0];
+      if (!contract) throw new Error("لا يوجد عقد لهذه الجهة");
+      return window.SSMPDDb.updateContractingEntityContract(contract.id, entityId, { status: "suspended" });
+    }).then(function () { T.show(tr("تم تعليق التعاقد")); done(); })
+      .catch(function (e) { T.show(tr(e.message), "error"); });
+  }
+
   function openDelete(entity, done) {
     if (!canDelete()) return T.show(tr("الحذف متاح للسوبر أدمن والمدير فقط"), "error");
     var bd = modal(label("حذف جهة التعاقد"), '<p>' + label('هل تريد حذف هذه الجهة؟') + ' <b>' + esc(entity.name) + '</b></p><p>' + label('يشمل الحذف العقود وبيانات التواصل والمتابعة. الجهة المرتبطة بمرضى أو زيارات لا يمكن حذفها.') + '</p><div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn ghost" id="ced-cancel">' + label("إلغاء") + '</button><button class="btn danger-btn" id="ced-confirm">' + label("تأكيد الحذف") + '</button></div>');
@@ -53,11 +63,12 @@
       html += "<div class=\"section\"><div style=\"overflow:auto;\"><table><thead><tr><th>الجهة</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%86%D9%88%D8%B9-->النوع</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AD%D8%A7%D9%84%D8%A9-->الحالة</th><th>نهاية العقد</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%AA%D8%A7%D8%A8%D8%B9%D8%A9%20%D8%A7%D9%84%D9%82%D8%A7%D8%AF%D9%85%D8%A9-->المتابعة القادمة</th><th>المرضى</th><th>الإيراد الموثق</th><th></th></tr></thead><tbody>";
       if (!rows.length) html += '<tr><td colspan="8" style="text-align:center;color:var(--c-muted);padding:24px;">لا توجد جهات تعاقد مسجلة بعد.</td></tr>';
       rows.forEach(function (r) {
-        html += '<tr><td><b>' + esc(r.entity_name) + '</b></td><td>' + (TYPES[r.entity_type] || r.entity_type) + '</td><td>' + statusPill(r.contract_status) + '</td><td>' + date(r.end_date) + '</td><td>' + date(r.next_follow_up_date) + '</td><td>' + Number(r.patients_count || 0) + '</td><td>' + money(r.documented_revenue) + '</td><td><button class="btn ghost sm" data-open="' + r.entity_id + '">فتح الملف</button>' + (canDelete() ? ' <button class="btn ghost sm" style="color:#b42318;" data-delete-entity="' + r.entity_id + '">' + label("حذف") + '</button>' : "") + '</td></tr>';
+        html += '<tr><td><b>' + esc(r.entity_name) + '</b></td><td>' + (TYPES[r.entity_type] || r.entity_type) + '</td><td>' + statusPill(r.contract_status) + '</td><td>' + date(r.end_date) + '</td><td>' + date(r.next_follow_up_date) + '</td><td>' + Number(r.patients_count || 0) + '</td><td>' + money(r.documented_revenue) + '</td><td><button class="btn ghost sm" data-open="' + r.entity_id + '">فتح الملف</button>' + (canDelete() && r.contract_status && r.contract_status !== "suspended" ? ' <button class="btn ghost sm" data-suspend-entity="' + r.entity_id + '">' + label("تعليق التعاقد") + '</button>' : "") + (canDelete() ? ' <button class="btn ghost sm" style="color:#b42318;" data-delete-entity="' + r.entity_id + '">' + label("حذف") + '</button>' : "") + '</td></tr>';
       });
       html += '</tbody></table></div><p style="font-size:11px;color:var(--c-muted);margin:12px 0 0;">الإيراد الموثق = مجموع فواتير الخدمات المسجلة للمريض بعد ربطه بالعقد. نسبة الخصم محفوظة في العقد ولا تتحول لقيمة نقدية إلا عند وجود فاتورة قبل الخصم.</p></div>';
       container.querySelector("#ce-view").innerHTML = html;
       container.querySelectorAll("[data-delete-entity]").forEach(function (b) { b.onclick = function () { var row = rows.find(function (r) { return r.entity_id === b.getAttribute("data-delete-entity"); }); if (row) openDelete({ id: row.entity_id, name: row.entity_name }, function () { load(container); }); }; });
+      container.querySelectorAll("[data-suspend-entity]").forEach(function (b) { b.onclick = function () { b.disabled = true; suspendEntity(b.getAttribute("data-suspend-entity"), function () { load(container); }); setTimeout(function () { b.disabled = false; }, 1500); }; });
       document.getElementById("ce-new").onclick = function () { openCreate(container); };
       container.querySelectorAll("[data-open]").forEach(function (b) { b.onclick = function () { openDetails(b.getAttribute("data-open"), container); }; });
     }).catch(function (e) { container.querySelector("#ce-view").innerHTML = '<div class="section"><p>تعذر تحميل جهات التعاقد: ' + esc(e.message) + '</p></div>'; });
