@@ -20,7 +20,7 @@
 
   function openDelete(entity, done) {
     if (!canDelete()) return T.show(tr("الحذف متاح للسوبر أدمن والمدير فقط"), "error");
-    var bd = modal(label("حذف جهة التعاقد"), '<p>' + label('هل تريد حذف هذه الجهة؟') + ' <b>' + esc(entity.name) + '</b></p><p>' + label('يشمل الحذف العقود وبيانات التواصل والمتابعة. الجهة المرتبطة بمرضى أو زيارات لا يمكن حذفها.') + '</p><div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn ghost" id="ced-cancel">' + label("إلغاء") + '</button><button class="btn" style="background:#b42318;" id="ced-confirm">' + label("تأكيد الحذف") + '</button></div>');
+    var bd = modal(label("حذف جهة التعاقد"), '<p>' + label('هل تريد حذف هذه الجهة؟') + ' <b>' + esc(entity.name) + '</b></p><p>' + label('يشمل الحذف العقود وبيانات التواصل والمتابعة. الجهة المرتبطة بمرضى أو زيارات لا يمكن حذفها.') + '</p><div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn ghost" id="ced-cancel">' + label("إلغاء") + '</button><button class="btn danger-btn" id="ced-confirm">' + label("تأكيد الحذف") + '</button></div>');
     bd.querySelector("#ced-cancel").onclick = function () { bd.remove(); };
     bd.querySelector("#ced-confirm").onclick = function () {
       var button = this;
