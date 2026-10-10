@@ -1,0 +1,76 @@
+# Claude content style guide (SSMPD) — the single source of design rules for the daily task and the design queue
+
+Kit files (download with gateway `?op=kit_get&name=<path>`):
+- dina/ref/01..19.jpg, sono/ref/01..18.jpg — the approved templates (720px). LOOK at 3–4 of them before designing every day.
+- dina/logo_black.png, dina/logo_gold.png, dina/logo_white.png, dina/logo_badge.png (round white badge) · sono/logo_web.png, sono/logo.svg
+- dina/contact_slide.jpg, sono/contact_slide.jpg — use as (or copy the layout of) the last carousel slide / reel end card
+- dina/outro.mp4, sono/outro.mp4 — append to every reel · dina|sono/music_{calm,serious,upbeat}.mp3 — reel music (low, under the voice)
+- dina/cover_template.png, sono/cover_template.png — reel cover frame (logo top-left, white rounded title box lower third)
+Fonts are in the repo: assets/fonts (Tajawal-*.ttf for Dina; BigVesta-*.woff2 + Hiragino-W3/W6/W8.woff2 for Sono).
+
+## Dr. Dina (د. دينا حسني — استشاري المخ والأعصاب)
+- Font: Tajawal only (Black/Bold for titles, Medium/Regular for body). Titles often use kashida (تطويل) to stretch words.
+- Palette: white (#FFFFFF) main, warm cream panel #F3E6C0, strong red #E3141B (key words, quote marks ”, badges), magenta/pink #E5007E (frames around her photo), black #111 titles. Nutrition series adds one accent per post (green #6CC24A / orange #F28C28 / amber #F5A300) as a soft blob in the top-right corner.
+- Logo: calligraphic "دينا" (black or gold) small at top-left (~110 px wide on 1080).
+- Layout families:
+  1. Hero image top + wavy red curve divider, red circle badge "يكون في معلومك", justified body paragraph below, quote mark + "د. دينا حسني".
+  2. Quote card: small circular portrait + name/title line, red ” marks, topic title, justified paragraph, side image with red curved edge.
+  3. Topic + doctor: topic image in an organic blob (left), vertical rounded label chip ("بحثت لك" / "سؤال وجواب" with small icon), title in red/black, short answer, signature "د. دينا حسني | استشاري المخ والأعصاب" with red ”. (Her photos are NOT in the kit — use the blob/illustration side only; never fake her picture.)
+  4. Infographic: big two-tone title (black + colored keyword in parentheses), central object illustration, 3–6 points with icon circles or numbered circles, thin divider lines.
+- Footer on every design (one thin line, small pills): 📞 0236230005 · 📱 01154542191 · fb/ig icons · @dr. Dina Hosni - د. دينا حسني
+- Contact slide: white, round logo badge, "د. دينا حسني / استشاري المخ والأعصاب", red numbers 02-36230005 / 01154542191, WhatsApp 01010686264, address pill "حدائق الأهرام - شارع الخزان - 45 ع".
+
+## Swnw (عيادات سونو التخصصية)
+- Fonts: BigVesta Arabic (heavy headlines, kashida stretching), Hiragino Kaku for numbers/English and small text.
+- Palette: royal blue #0F369D → #1D4FD0 gradient backgrounds (often with faint medical line-art), OR clean white/light-grey with subtle wave lines; headline keyword in blue or cyan gradient (#16C2E3 → #0B8FD8); orange #F15A22 pill buttons ("احجز موعدك", "ابدأي معانا دلوقتي"); dark text #16212E.
+- Logo: "عيادات سونو التخصصية" with the circular emblem, top-left (on blue designs inside a white tab/card at the top).
+- Layout families:
+  1. Problem/solution photo post: big BigVesta title ("وداعاً لآلام الظهر!"), one-line subtitle question, orange CTA pill, realistic photo with the pain area glowing red, white background.
+  2. Blue doctor intro: cutout/circular doctor photo, "الدكتور" + big name, specialty in a cyan gradient pill.
+  3. "نصيحة اليوم مع سونو": white, blue square brackets framing a photo + orange title + short tip, doctor signature chip with small round photo.
+  4. Series like "علماء وأطباء", "من آراء عملائنا", cosmetics before/after split with "Before/After" vertical labels, 24h emergency 3D illustration.
+- Footer on every design: three white rounded pills (📱 +201154542191 · 📞 0236230005 · WhatsApp +201010686264) + line "📍 45 ع بجوار الخزان حدائق الأهرام".
+- Contact slide: blue background, big white rounded card, logo, orange numbers, address pill.
+
+## Rules for every design
+- 1080×1350 posts/carousel slides; 1080×1920 reels/covers. Generous margins (≥ 60 px), max 2 font families, max ~35 words per image (carousel slides ≤ 25).
+- Hierarchy: one dominant title, one subtitle, then points. Arabic RTL, check no clipped or broken letters (render then Read the PNG).
+- Use these templates as the baseline and push quality: cleaner spacing, consistent footers, stronger hook on slide 1, clear CTA. Do not copy their exact old texts.
+- Photos: these templates use real photos. Until a stock-photo source is connected, use clean flat/3D-style SVG illustrations in the brand palette; never use Dr. Dina's or any doctor's photo without it being in the kit, and never put another brand's logo.
+- Never write prices. Always include the footer contacts.
+
+## Dr. Dina official frames WITH her photo (use these for Dina image posts — preferred over illustrations)
+Kit: dina/templates/frame_*.png are 1080×1350 PNGs; the transparent areas are where your content/image goes. dina/templates/example_01..12.png show each frame filled correctly.
+- frame_1_wave_quote_magenta.png / frame_2_wave_quote_cream.png — her small portrait + "د. دينا حسني" quote header top-right column, red wave divider; put a topic photo/illustration in the transparent right side, title + justified paragraph in the left column under the header.
+- frame_3_blob_pinkjacket_bahatlak.png — her (pink jacket) on the right with "بحثت لك" chip; topic image inside the white blob, title + short paragraph + signature under it on the left.
+- frame_4_whitecoat_sual_gawab.png — her (white coat) on the right with "سؤال وجواب" chip; question title in red + answer on the left.
+- frame_5_magenta_full.png and frame_6to12_fullbleed_footer.png — full-bleed: put a full background visual (brain/DNA dark-blue style as in examples 6–12) and a big Tajawal title (white/yellow/red highlight boxes) — logo badge top-left and footer are already in the frame.
+Compose: render your content layer under the frame (frame on top), check the transparent windows are fully covered, keep text inside the left column.
+
+## Photo sources (gateway — needs the updated claude-automation function)
+- Stock (Pixabay, free for commercial use): POST ?op=stock {"q":"back pain man","type":"photo"|"video","orientation":"vertical"} → hits with preview/large URLs; download with POST ?op=fetch_media&url=<large URL>. Prefer people who look Arab/Egyptian; avoid obviously foreign settings.
+- Generated (OpenAI): POST ?op=image {"prompt":"...","size":"1024x1536","quality":"medium"} → PNG. Use for Egyptian/Arab-looking people and scenes when stock has no good match. Photorealistic, natural light, no text/logos in the image, modest clothing. Max 3 generated images per day.
+- Never generate or alter images of Dr. Dina or any real doctor — use only the kit frames that already contain her photo.
+- If these ops return an error (function not updated yet), fall back to illustrations.
+
+## Swnw fixed frame (MANDATORY on every Swnw post/slide — approved by Mohamed 2026-10-11)
+- Kit: sono/frame_light.png (colored logo + blue contact pills — for light backgrounds) and sono/frame_dark.png (white version — for blue/dark backgrounds). 1080×1350 transparent overlays containing the logo (top-left), the grey wave lines, the two contact pills (0236230005 / +201010686264) and the address line. Put the frame ABOVE photos/backgrounds and BELOW your text; never redraw or alter the logo/footer yourself.
+- Keep all text and buttons above y≈1190 (the footer area belongs to the frame).
+- APPROVED LOCKED LAYOUT (Mohamed approved 2026-10-11 — reuse exactly; template: sono/templates/photo_post_v1.html + sono/templates/photo_post_v1.png):
+  photo top (object-fit cover, ~880 px tall) fading to white from y≈520 to ≈820; content block starts at y=725, centered, 60 px side margins;
+  main title BigVesta Bold 80 px, line-height 1.1, blue #0F369D with the key words in the cyan gradient; subtitle BigVesta Regular 41 px, #4A5563, ONE line (shorten the text rather than wrap), 16 px under the title;
+  info box #F3F6FC, 2 px #DCE5F5 border, radius 26, 36 px under the subtitle, orange (#F15A22) heading + white chips with orange dots;
+  orange CTA pill (BigVesta Bold 34 px) 32 px under the box; everything must end above y≈1190 (frame footer).
+- Gradient (background-clip:text) words cut Arabic descenders (ق ي ع): give the gradient span padding-bottom ~12px with an equal negative margin, and always zoom-check descenders in the render.
+
+
+## Recent approved dashboard designs = the variety to rotate (kit: sono/dash_refs/01..16.jpg, dina templates below)
+Swnw — all share: fixed frame (logo top-left, footer pills), photo filling the top ~60%, big BigVesta title with cyan→blue gradient (or white on dark), one-line subtitle, small orange CTA pill. Rotate the BOTTOM PANEL treatment so the feed doesn't look identical:
+  a) white panel (photo fades to white)  b) royal-blue gradient panel (#1D3FB0→#2A2FA0) with white/cyan title
+  c) deep red gradient panel (#B0101A) for pain/urgency topics with white title  d) full dark photo with white title for warning topics (smoking, addiction)
+  e) blue "doctor welcome" layout: doctor cutout in circle, name big, specialty orange pill, weekly schedule cards.
+  Never use the same treatment twice in a row for the same page.
+Dr. Dina — render with the dashboard's OWN renderer so it matches the studio exactly: serve the repo root over http (python3 -m http.server), load assets/js/design-panel-color.js, design-composer.js, dina-content.js, design-dina-template.js, then
+  await SSMPDDinaTemplate.render(canvas, sceneImage, {dinaVariant:"<1-12>", headline, subtitle, designBody, cta, headlineSize?, subtitleSize?, designBodySize?, ctaSize?, x?, imageOffsetY?, zoom?})
+  and export canvas.toDataURL. Variant names (Mohamed's): 1 تصريح خلفية فاتحة · 2 تصريح خلفية غامقة · 3 معلومة من د. دينا · 4 بحثت لك · 5 سؤال وجواب · 6 محتوى عام · 7 عنوان فوق · 8 عنوان علي بوكس · 9 عنوان يمين · 10 عنوان تحت - خلفية سوداء · 11 عنوان تحت - خلفية بيج · 12 عنوان تحت - خلفية نبيتي.
+  Content kind → variants: quote (على لسان الدكتورة) 1,2 · education (معلومة طبية) 3,6,7,8 · research (بحثت لك) 4 · qa (سؤال وجواب) 5 · question (سؤال يشد الانتباه) 9 · tip (نصيحة وخطوة عملية) 10,11,12. Headline ≤ 5 words, subtitle ≤ 8 words. Rotate variants.
