@@ -51,8 +51,10 @@
       }).join("") + "</div>";
     var p = data.profile;
     var editable = state.section !== "contracts";
+    var headHtml = html, tb = "";
+    html = "";
     if (editable) {
-      html += '<div class="cm-actions" style="margin:0 0 10px;">' + (state.editing
+      tb = '<div style="float:left;margin:0 0 8px 8px;">' + (state.editing
         ? '<button class="btn ghost sm" data-cancel-edit>' + (LIST_SECTIONS.indexOf(state.section) !== -1 ? "تم" : "إلغاء") + "</button>"
         : '<button class="btn btn-primary sm" data-edit>تعديل</button>') + "</div>";
     }
@@ -88,7 +90,12 @@
           return "<tr><td>" + esc(c.name) + "</td><td>" + (c.discount_percent ? esc(c.discount_percent) + "%" : "—") + "</td><td>" + esc(c.services || "—") + "</td></tr>";
         }).join("") + "</table>" : '<div class="empty">مفيش عقود سارية.</div>');
     }
-    container.innerHTML = html + "</div>";
+    if (tb) {
+      var inserted = false;
+      html = html.replace(/<div class="ci-card[^"]*"[^>]*>/, function (m) { inserted = true; return m + tb; });
+      if (!inserted) html = tb + html;
+    }
+    container.innerHTML = headHtml + html + "</div>";
     wire(container, data);
   }
 
