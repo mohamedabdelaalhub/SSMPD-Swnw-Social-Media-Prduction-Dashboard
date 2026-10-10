@@ -70,7 +70,7 @@ function checkedCarousel(idea:any,b:any){
   if(!s||typeof s.headline!=="string"||!s.headline.trim())throw Error("شريحة بدون عنوان.");
   s.headline=s.headline.replace(/["'“”«»…]/g," ").replace(/\s+/g," ").trim();s.body=String(s.body||"").trim();s.scene=String(s.scene||"").trim();
   s.role=i===0?"hook":i===copy.length-1?"cta":"point";
-  if(words(s.headline)>7||words(s.body)>26)throw Error("نص شريحة أطول من الحد.");
+  if(words(s.headline)>9||words(s.body)>35)throw Error("نص شريحة أطول من الحد.");
  });
  return idea;
 }
