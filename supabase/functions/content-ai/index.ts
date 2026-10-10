@@ -52,6 +52,29 @@ function checkedDina(copy:any,b:any){
 }
 function itemDinaBrief(item:any){let raw=item.agent_raw_output||{};try{if(typeof raw==="string")raw=JSON.parse(raw);}catch{return null;}if(raw.ideas)raw=raw.ideas.find((r:any)=>r.title===item.title)||{};return dinaBrief(raw.dina_brief,item.brand);}
 
+const carouselStyles: Record<string,string> = {tips:"نصايح أو خطوات مرقّمة، شريحة لكل خطوة",myths:"خرافة وحقيقة: كل شريحة خرافة شائعة وتصحيحها",symptoms:"أعراض وعلامات تحذير، مع شريحة متى تروح للطبيب فورًا",journey:"رحلة المريض في المركز من الحجز للمتابعة دون أسعار",faq:"أسئلة شائعة: سؤال وإجابة قصيرة في كل شريحة",compare:"مقارنة واضحة بين حالتين أو اختيارين"};
+function carouselBrief(value:any){
+ if(!value)return null;
+ const slides_count=Number(value.slides_count);
+ if(!Number.isInteger(slides_count)||slides_count<3||slides_count>10)throw Error("عدد شرايح الكاروسيل من ٣ لـ ١٠.");
+ const style=carouselStyles[value.style]?value.style:"tips";
+ const notes=String(value.notes||"").trim();if(notes.length>3000)throw Error("نص الشرايح أطول من الحد المسموح.");
+ return {slides_count,style,notes};
+}
+function carouselInstructions(b:any){return "\nCAROUSEL: المادة كاروسيل (format=carousel) من "+b.slides_count+" شرايح بالضبط. الأسلوب: "+carouselStyles[b.style]+". carousel_copy مصفوفة بطول "+b.slides_count+" بالترتيب: الشريحة 1 role=hook عنوان يشد حتى 6 كلمات وbody سطر حتى 12 كلمة يخلّي الناس تقلب؛ الشرايح الوسطى role=point كل واحدة فكرة واحدة: headline حتى 6 كلمات وbody حتى 22 كلمة بالعامية المصرية الواضحة بدون تكرار؛ الشريحة الأخيرة role=cta: headline دعوة للحجز أو التواصل حتى 6 كلمات وbody يذكر واتساب 01010686264 أو التليفون 0236230005 فقط. لا أسعار ولا وعود بنتيجة ولا تشخيص. scene لكل شريحة وصف قصير لصورة أو أيقونة مناسبة بدون نص. لو notes فيها نص للشرايح التزم بمعناه وصحّح صياغته فقط. design_headline = عنوان الشريحة الأولى. الكابشن يكمّل الشرايح ولا ينسخها. script والمدة وvideo_template = null.";}
+function checkedCarousel(idea:any,b:any){
+ const copy=idea.carousel_copy;
+ if(!Array.isArray(copy)||copy.length!==b.slides_count)throw Error("عدد شرايح الكاروسيل الناتج غير مطابق.");
+ const words=(t:string)=>String(t||"").trim().split(/\s+/).filter(Boolean).length;
+ copy.forEach((s:any,i:number)=>{
+  if(!s||typeof s.headline!=="string"||!s.headline.trim())throw Error("شريحة بدون عنوان.");
+  s.headline=s.headline.replace(/["'“”«»…]/g," ").replace(/\s+/g," ").trim();s.body=String(s.body||"").trim();s.scene=String(s.scene||"").trim();
+  s.role=i===0?"hook":i===copy.length-1?"cta":"point";
+  if(words(s.headline)>7||words(s.body)>26)throw Error("نص شريحة أطول من الحد.");
+ });
+ return idea;
+}
+
 function responseText(data: any): string {
   if (typeof data?.output_text === "string") return data.output_text;
   const parts: string[] = [];
@@ -118,18 +141,19 @@ Deno.serve(async (req) => {
     }
 
     const dina=dinaBrief(body.dina_brief,String(body.brand||""));
+    const carousel=(dina||doctorIntro)?null:(carouselBrief(body.carousel_brief)||(body.preferred_format==="carousel"?carouselBrief({slides_count:6,style:"tips"}):null));
     if(dina&&doctorIntro)throw Error("اختر تعريف طبيب أو محتوى قوالب د. دينا، وليس الاثنين.");
     const brief = {
       mode,
       brand: String(body.brand || ""),
       specialty: String(body.specialty || ""),
       advertising_objective: String(body.advertising_objective || ""),
-      preferred_format: (doctorIntro||dina)?"image_post":String(body.preferred_format || ""),
+      preferred_format: (doctorIntro||dina)?"image_post":carousel?"carousel":String(body.preferred_format || ""),
       topic: String(body.topic || ""),
       title: String(body.title || ""),
       manual_draft: String(body.manual_draft || ""),
       performance_brief: String(body.performance_brief || ""),
-      content_kind:doctorIntro?"doctor_intro":"standard",doctor_brief:doctorBrief,dina_brief:dina
+      content_kind:doctorIntro?"doctor_intro":carousel?"carousel":"standard",doctor_brief:doctorBrief,dina_brief:dina,carousel_brief:carousel
     };
 
     const schema = {
@@ -141,11 +165,12 @@ Deno.serve(async (req) => {
           type: "array", minItems: 3, maxItems: 3,
           items: {
             type: "object", additionalProperties: false,
-            required: ["title","idea","hook","angle","format","script","caption","cta_type","cta_text","duration_min_seconds","duration_max_seconds","video_template","hypothesis_reason","design_headline","design_subtitle","design_cta",...(dina?Object.keys(dinaProperties):[])],
+            required: ["title","idea","hook","angle","format","script","caption","cta_type","cta_text","duration_min_seconds","duration_max_seconds","video_template","hypothesis_reason","design_headline","design_subtitle","design_cta",...(dina?Object.keys(dinaProperties):[]),...(carousel?["carousel_copy"]:[])],
             properties: {
               ...copyProperties,...(dina?dinaProperties:{}),
+              ...(carousel?{carousel_copy:{type:"array",items:{type:"object",additionalProperties:false,required:["role","headline","body","scene"],properties:{role:{type:"string",enum:["hook","point","cta"]},headline:{type:"string"},body:{type:"string"},scene:{type:"string"}}}}}:{}),
               title:{type:"string"}, idea:{type:"string"}, hook:{type:"string"}, angle:{type:"string"},
-              format:{type:"string",enum:["video","image_post","link_post"]}, script:{type:["string","null"]}, caption:{type:"string"},
+              format:{type:"string",enum:carousel?["carousel"]:["video","image_post","link_post"]}, script:{type:["string","null"]}, caption:{type:"string"},
               cta_type:{type:"string",enum:["save_share","whatsapp","book","message","call","learn_more","comment","emergency_action","custom"]},
               cta_text:{type:"string"}, duration_min_seconds:{type:["integer","null"]}, duration_max_seconds:{type:["integer","null"]},
               video_template:{type:["string","null"],enum:["medical_educational","doctor_talking","quick_tips",null]},
@@ -161,7 +186,7 @@ Deno.serve(async (req) => {
       headers: { "Authorization": "Bearer " + apiKey, "Content-Type": "application/json" },
       body: JSON.stringify({
         model,
-        instructions:instructions+"\n"+designStyle+(dina?"\n"+dinaInstructions(dina):"")+(doctorIntro?"\nهذه مادة تعريف طبيب. اكتب بالضبط 3 منشورات ترحيب وتقديم للطبيب، لا توعية بمرض. doctor_brief المصدر الوحيد للاسم والتايتل والمؤهلات والخبرات والجدول. لا تخترع ألقابًا أو شهادات أو سنوات خبرة أو خدمات. إذا المؤهلات أو الخبرات فارغة احذفها. استخدم image_post والكابشن يشمل الترحيب والبيانات المتاحة والمواعيد وبيانات تواصل المركز. لا تغيّر الحقائق بين الاقتراحات. أعط نصوص التصميم المطلوبة لكن القالب يسكن بيانات الطبيب مباشرة.":""),
+        instructions:instructions+"\n"+designStyle+(dina?"\n"+dinaInstructions(dina):"")+(carousel?carouselInstructions(carousel):"")+(doctorIntro?"\nهذه مادة تعريف طبيب. اكتب بالضبط 3 منشورات ترحيب وتقديم للطبيب، لا توعية بمرض. doctor_brief المصدر الوحيد للاسم والتايتل والمؤهلات والخبرات والجدول. لا تخترع ألقابًا أو شهادات أو سنوات خبرة أو خدمات. إذا المؤهلات أو الخبرات فارغة احذفها. استخدم image_post والكابشن يشمل الترحيب والبيانات المتاحة والمواعيد وبيانات تواصل المركز. لا تغيّر الحقائق بين الاقتراحات. أعط نصوص التصميم المطلوبة لكن القالب يسكن بيانات الطبيب مباشرة.":""),
         input: "SSMPD Dashboard Brief:\n" + JSON.stringify(brief),
         text: { format: { type: "json_schema", name: "ssmpd_content_ideas", strict: true, schema } }
       })
@@ -172,11 +197,11 @@ Deno.serve(async (req) => {
     if (!Array.isArray(parsed?.ideas) || parsed.ideas.length !== 3) throw new Error("النتيجة لم تحتوِ على ٣ أفكار مكتملة.");
     const requiredText = ["title", "idea", "hook", "angle", "caption", "cta_type", "cta_text", "hypothesis_reason"];
     for (const idea of parsed.ideas) {
-      checkedCopy(idea);if(dina)checkedDina(idea,dina);
+      checkedCopy(idea);if(dina)checkedDina(idea,dina);if(carousel){checkedCarousel(idea,carousel);idea.script=null;idea.duration_min_seconds=null;idea.duration_max_seconds=null;idea.video_template=null;}
       if (requiredText.some((key) => typeof idea[key] !== "string" || !idea[key].trim())) {
         throw new Error("النتيجة بها حقول ناقصة. لم يتم حفظها أو اعتمادها.");
       }
-      if (["video", "image_post", "link_post"].includes(brief.preferred_format) && idea.format !== brief.preferred_format) {
+      if (["video", "image_post", "link_post", "carousel"].includes(brief.preferred_format) && idea.format !== brief.preferred_format) {
         throw new Error("نوع المحتوى الناتج لا يطابق النوع المطلوب.");
       }
       if (idea.format === "video" && (
@@ -188,6 +213,7 @@ Deno.serve(async (req) => {
     }
     if(doctorIntro)for(const idea of parsed.ideas){idea.content_kind="doctor_intro";idea.doctor_brief=doctorBrief;}
     if(dina)for(const idea of parsed.ideas)idea.dina_brief=dina;
+    if(carousel)for(const idea of parsed.ideas){idea.content_kind="carousel";idea.carousel_brief=carousel;}
     return Response.json({ ideas: parsed.ideas, model }, { headers: { ...cors, "Content-Type": "application/json" } });
   } catch (error) {
     return Response.json({ error: error instanceof Error ? error.message : "حدث خطأ غير معروف." }, { status: 400, headers: { ...cors, "Content-Type": "application/json" } });

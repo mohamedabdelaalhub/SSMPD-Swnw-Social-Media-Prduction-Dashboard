@@ -33,7 +33,7 @@
       '<div style="font-size:12px;margin:5px 0;"><b>الافتتاحية:</b> ' + esc(idea.hook) + '</div>' +
       '<div style="font-size:12px;margin:5px 0;"><b>الزاوية:</b> ' + esc(idea.angle) + '</div>' +
       "<div style=\"font-size:12px;margin:5px 0;\"><b> <!--ssmpd-i18n:%D8%A7%D9%84%D8%B4%D9%83%D9%84%3A-->الشكل:</b> " + esc(idea.formatKey || "—") + '</div>' +
-      '<p style="font-size:12px">نصوص التصميم — ' + esc(idea.raw.design_headline || '—') + ' / ' + esc(idea.raw.design_subtitle || '—') + ' / ' + esc(idea.raw.design_cta || '—') + '</p>' + (idea.raw.design_body ? '<p>نص داخل التصميم — '+esc(idea.raw.design_body)+'</p>' : '') +
+      '<p style="font-size:12px">نصوص التصميم — ' + esc(idea.raw.design_headline || '—') + ' / ' + esc(idea.raw.design_subtitle || '—') + ' / ' + esc(idea.raw.design_cta || '—') + '</p>' + (idea.raw.design_body ? '<p>نص داخل التصميم — '+esc(idea.raw.design_body)+'</p>' : '') + (Array.isArray(idea.raw.carousel_copy)&&window.SSMPDCarouselContent ? '<div style="font-size:12px"><b>الشرايح:</b>'+window.SSMPDCarouselContent.copyHtml(idea.raw.carousel_copy)+'</div>' : '') +
       '<details style="margin-top:8px;"><summary>مراجعة النص وبيانات التنفيذ</summary>' +
       '<p style="white-space:pre-wrap;font-size:13px;">' + esc(idea.caption) + '</p>' +
       (idea.script ? "<p style=\"white-space:pre-wrap;font-size:13px;\"><b> <!--ssmpd-i18n:%D8%A7%D9%84%D8%B3%D9%83%D8%B1%D9%8A%D8%A8%D8%AA-->السكريبت</b><br>" + esc(idea.script) + '</p>' : '') +
@@ -63,6 +63,7 @@
     if(idea.raw.dina_brief)window.SSMPDDinaContent.hydrate(idea.raw.dina_brief);
     if(idea.raw.doctor_brief)window.SSMPDDoctorContent.hydrate(idea.raw.doctor_brief);
     if(idea.raw.before_after_brief)window.SSMPDBeforeAfterContent.hydrate(idea.raw.before_after_brief);
+    if(idea.raw.carousel_brief)window.SSMPDCarouselContent.hydrate(idea.raw.carousel_brief,idea.raw.carousel_copy);
     set("cf-agent-raw", JSON.stringify(idea.raw));
     var format = document.getElementById("ci-format"); if (format && idea.formatKey) format.value = idea.formatKey;
   }
@@ -71,6 +72,7 @@
     try{doctorBrief=window.SSMPDDoctorContent.current(true);dinaBrief=window.SSMPDDinaContent.current(true);}catch(e){alert(e.message);return;}
     if(doctorBrief){context.doctorBrief=doctorBrief;context.format="image_post";}
     baBrief=window.SSMPDBeforeAfterContent&&window.SSMPDBeforeAfterContent.current(false);if(dinaBrief||baBrief)context.format="image_post";
+    var carouselBrief=window.SSMPDCarouselContent&&window.SSMPDCarouselContent.current(false);if(carouselBrief&&!dinaBrief&&!doctorBrief)context.format="carousel";else carouselBrief=null;
     var backdrop = document.createElement("div");
     backdrop.className = "modal-backdrop";
     backdrop.style.zIndex = "9999";
@@ -109,10 +111,10 @@
         mode: mode, brand: context.brand, specialty: context.specialty,
         advertising_objective: context.advertisingObjective, preferred_format: context.format,
         topic: guidedTopic, manual_draft: mode === "develop" ? (context.body || context.title) : "",
-        title: context.title, performance_brief: brief, content_kind:doctorBrief?"doctor_intro":"standard",doctor_brief:doctorBrief,dina_brief:dinaBrief
+        title: context.title, performance_brief: brief, content_kind:doctorBrief?"doctor_intro":carouselBrief?"carousel":"standard",doctor_brief:doctorBrief,dina_brief:dinaBrief,carousel_brief:carouselBrief
         });
       }).then(function (data) {
-        var ideas = (data.ideas || []).slice(0, 3).map(function(idea){if(doctorBrief)idea=window.SSMPDDoctorContent.metadata(idea,doctorBrief);if(baBrief)idea=window.SSMPDBeforeAfterContent.metadata(idea,baBrief);if(dinaBrief&&!idea.dina_brief)throw Error("حدّث Edge Function content-ai لتفعيل محتوى قوالب د. دينا.");return normalise(idea);});
+        var ideas = (data.ideas || []).slice(0, 3).map(function(idea){if(doctorBrief)idea=window.SSMPDDoctorContent.metadata(idea,doctorBrief);if(baBrief)idea=window.SSMPDBeforeAfterContent.metadata(idea,baBrief);if(carouselBrief){if(!Array.isArray(idea.carousel_copy))throw Error("حدّث Edge Function content-ai لتفعيل محتوى الكاروسيل.");idea=window.SSMPDCarouselContent.metadata(idea,carouselBrief);}if(dinaBrief&&!idea.dina_brief)throw Error("حدّث Edge Function content-ai لتفعيل محتوى قوالب د. دينا.");return normalise(idea);});
         if (ideas.length !== 3) throw new Error("لم تصل ٣ أفكار مكتملة. أعد المحاولة.");
         slot.innerHTML = ideas.map(function (idea, i) {
           return renderCard(idea, i,
