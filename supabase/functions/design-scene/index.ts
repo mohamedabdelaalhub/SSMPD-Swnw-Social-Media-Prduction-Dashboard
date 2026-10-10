@@ -85,8 +85,8 @@ Deno.serve(async req => {
   }else{
   response=await fetch('https://api.openai.com/v1/images/generations',{
    method:'POST',headers:{Authorization:'Bearer '+key,'Content-Type':'application/json'},
-   body:JSON.stringify({model:'gpt-image-1.5',quality:job.image_quality,size:'1024x1536',n:1,output_format:'png',
-    prompt:'Create only a photorealistic scene for a medical social post. No text, letters, digits, logos, watermarks or contact details. Pale clean background, natural anatomy. Portrait framing. Extend the photograph naturally to the top edge, with no blank horizontal header or white margin. Keep only the small upper-left logo corner calm and light, without faces or important details. Extend the scene downward by at least 300 pixels at final 1080-pixel-wide scale, showing additional lower body and background for a fade. Never place a logo yourself. Follow the requested title safe area. Scene brief: '+prompt}),
+   body:JSON.stringify({model:'gpt-image-1.5',quality:job.image_quality,size:'1024x1536',n:1,output_format:'png',background:prompt.startsWith('[TRANSPARENT_CUTOUT]')?'transparent':'auto',
+    prompt:prompt.startsWith('[TRANSPARENT_CUTOUT]')?'Create an isolated photorealistic illustrative cutout with fully transparent background. No text or logos. Natural anatomy. '+prompt.replace('[TRANSPARENT_CUTOUT]',''):'Create only a photorealistic scene for a medical social post. No text, letters, digits, logos, watermarks or contact details. Pale clean background, natural anatomy. Portrait framing. Extend the photograph naturally to the top edge, with no blank horizontal header or white margin. Keep only the small upper-left logo corner calm and light, without faces or important details. Extend the scene downward by at least 300 pixels at final 1080-pixel-wide scale, showing additional lower body and background for a fade. Never place a logo yourself. Follow the requested title safe area. Scene brief: '+prompt}),
    signal:AbortSignal.timeout(150000)
   });
   }
@@ -115,5 +115,6 @@ Deno.serve(async req => {
   return Response.json({error:message,status:jobId?'failed':undefined},{headers,status:400});
  }
 });
+
 
 

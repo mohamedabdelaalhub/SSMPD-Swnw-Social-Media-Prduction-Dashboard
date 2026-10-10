@@ -44,6 +44,7 @@
     return {lines:lines,w:Math.max.apply(null,lines.map(function(line){return ctx.measureText(line).width;})),size:size,weight:weight,fontFamily:fontFamily,leading:leading,h:size*1.35+(lines.length-1)*size*leading};
   }
   function scenePrompt(prompt, data) {
+    if(data.layoutTemplate==='sono_before_after_cutout')return '[TRANSPARENT_CUTOUT] '+String(prompt||'')+' Create an illustrative cosmetic comparison using the same adult person, AFTER on the LEFT and BEFORE on the RIGHT, aligned face and pose. A single isolated cutout with transparent background. No text, lines, labels or logos. Include shoulders and lower torso. This is an illustration, not an actual patient result.';
     if(data.brand==='dr_dina'){var age=/باركنسون|parkinson/i.test(String(prompt||''))?' Unless the brief explicitly specifies another age, show an older adult aged 55–75 with Parkinson disease, never a child.':'';return String(prompt||'')+' Portrait photograph for a neurology medical education post. Match the subject, age and condition to the scene brief. Do not assume the subject is a child. No writing, logos or borders. Keep the subject away from the small top-left logo and bottom contact strip.'+age;}
     var instructions = {
       top:'Leave the upper middle area below the logo empty with a pale plain background for a heading. Place the main subject lower in the frame.',
@@ -57,6 +58,7 @@
   async function render(canvas, scene, data, options) {
     data=Object.assign({},data);
     if(data.brand==='dr_dina')return window.SSMPDDinaTemplate.render(canvas,scene,data);
+    if(/^sono_before_after_/.test(data.layoutTemplate))return window.SSMPDBeforeAfterTemplate.render(canvas,scene,data);
     if(data.layoutTemplate==='sono_doctor')return window.SSMPDDoctorTemplate.render(canvas,scene,data);
     var template=['classic','full_photo','full_bleed','split'].includes(data.layoutTemplate)?data.layoutTemplate:'classic';
     var fullBleed=template==='full_bleed',photographic=template==='full_photo'||fullBleed;
@@ -87,8 +89,8 @@
     if(!photographic){ctx.fillStyle=fade;ctx.fillRect(0,fadeStart,1080,1260-fadeStart);}
     window.SSMPDDesignPanelColor.edges(ctx,data);
     if(data.logoVariant && data.logoVariant!=='legacy') {
-      if(!data.logoStoragePath || data.logoBrand!=='sono' || !data.logoStoragePath.startsWith('sono/'))throw new Error('اختر نسخة لوجو سونو المحفوظة في المكتبة.');
-      var logo=await logoImage(data.logoStoragePath);
+      if(data.logoVariant!=='cosmetics'&&(!data.logoStoragePath || data.logoBrand!=='sono' || !data.logoStoragePath.startsWith('sono/')))throw new Error('اختر نسخة لوجو سونو المحفوظة في المكتبة.');
+      var logo=data.logoVariant==='cosmetics'?await loadImage(new URL('design-templates/sono-cosmetics/logo.png',base)):await logoImage(data.logoStoragePath);
       // Clip out the embedded upper logo while preserving the existing lower template and contact footer.
       if(!fullBleed){ctx.save();ctx.beginPath();ctx.rect(0,photographic?1170:200,1080,photographic?180:1150);ctx.clip();ctx.drawImage(overlay,0,0,1080,1350);ctx.restore();}
       var logoScale=Math.min(280/logo.width,125/logo.height);
@@ -165,6 +167,7 @@
   }
   window.SSMPDDesignComposer={render:render,loadImage:loadImage,ready:ready,scenePrompt:scenePrompt};
 })();
+
 
 
 

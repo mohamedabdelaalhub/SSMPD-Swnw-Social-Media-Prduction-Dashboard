@@ -23,7 +23,7 @@
    ['body','نص التصميم',['designBody','designBodySize']],
    ['subtitle','السطر التوضيحي',['subtitle','subtitleSize','subtitleOffset']],
    ['cta','التفاعل',['cta','ctaSize','ctaOffset']],
-   ['image','الصورة',['[data-upload]','[data-library]','[data-images]','zoom','x','imageOffsetY','fadeStartY','fadeEndY','doctorZoom','doctorPhotoX','doctorPhotoY']],
+   ['image','الصورة',['[data-upload]','[data-upload-after]','beforePhotoX','afterZoom','afterPhotoX','afterPhotoY','beforeAfterEvidence','[data-library]','[data-images]','zoom','x','imageOffsetY','fadeStartY','fadeEndY','doctorZoom','doctorPhotoX','doctorPhotoY']],
    ['logo','اللوجو',['logoVariant','[data-logo-status]']],
    ['layout','القالب والترتيب',['layoutTemplate','dinaVariant','textOrder','titlePosition','textWidth']],
    ['generation','التوليد',['[data-prompt]','[data-quality]','.design-ai-actions']],
@@ -65,7 +65,7 @@
     var container=panel.querySelector('[data-panel-colors]');
     [['نوع الخلفية',[':scope>label']],['لون الخلفية',['[data-color-control=panelColor]','[data-gradient-controls]']],['لون النص',['[data-color-control=panelTextColor]']]].forEach(function(g){var d=document.createElement('details');d.className='design-editor__subgroup';var summary=document.createElement('summary');summary.textContent=g[0];d.append(summary);g[1].forEach(function(selector){var node=container.querySelector(selector);if(node)d.append(node);});container.append(d);});
    }else if(!['edges','schedule','versions'].includes(key)){
-    Array.from(panel.children).forEach(function(n){if(n.tagName==='H4'||n.tagName==='P')return;var d=document.createElement('details');d.className='design-editor__subgroup';var summary=document.createElement('summary');summary.textContent=n.tagName==='LABEL'?n.childNodes[0].textContent.trim():n.matches('[data-panel-colors]')?'ألوان خلفية النص':n.matches('[data-images]')?'الصور المتاحة':n.matches('[data-library]')?'مكتبة الصور':n.matches('[data-upload]')?'رفع صورة':n.matches('.design-ai-actions')?'توليد الصورة':n.tagName==='DETAILS'?'إرشادات التعديل':n.textContent.trim().slice(0,45)||'الإعدادات';var hint=n.nextElementSibling;['standardOnly','doctorOnly'].forEach(function(flag){if(flag in n.dataset)d.dataset[flag]='';});panel.insertBefore(d,n);d.append(summary,n);if(hint&&hint.tagName==='P'&&!hint.hasAttribute('data-logo-status'))d.append(hint);});
+    Array.from(panel.children).forEach(function(n){if(n.tagName==='H4'||n.tagName==='P')return;var d=document.createElement('details');d.className='design-editor__subgroup';var summary=document.createElement('summary');summary.textContent=n.tagName==='LABEL'?n.childNodes[0].textContent.trim():n.matches('[data-panel-colors]')?'ألوان خلفية النص':n.matches('[data-images]')?'الصور المتاحة':n.matches('[data-library]')?'مكتبة الصور':n.matches('[data-upload]')?'رفع صورة':n.matches('.design-ai-actions')?'توليد الصورة':n.tagName==='DETAILS'?'إرشادات التعديل':n.textContent.trim().slice(0,45)||'الإعدادات';var hint=n.nextElementSibling;['standardOnly','doctorOnly','beforeAfterOnly'].forEach(function(flag){if(flag in n.dataset)d.dataset[flag]='';});panel.insertBefore(d,n);d.append(summary,n);if(hint&&hint.tagName==='P'&&!hint.hasAttribute('data-logo-status'))d.append(hint);});
    }
    panel.querySelectorAll('details>summary').forEach(function(summary){summary.addEventListener('click',function(){var d=summary.parentElement;if(d.open)return;Array.from(d.parentElement.children).forEach(function(other){if(other!==d&&other.tagName==='DETAILS')other.open=false;});});});
    panel.addEventListener('toggle',function(e){var d=e.target;if(d.tagName!=='DETAILS'||!d.open)return;Array.from(d.parentElement.children).forEach(function(other){if(other!==d&&other.tagName==='DETAILS')other.open=false;});},true);
@@ -93,5 +93,6 @@
  }
  window.SSMPDDesignEditorLayout={mount:mount};
 })();
+
 
 
