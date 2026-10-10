@@ -735,6 +735,8 @@ window.SSMPD_TRANSLATIONS = {
   "يشمل الحذف العقود وبيانات التواصل والمتابعة. الجهة المرتبطة بمرضى أو زيارات لا يمكن حذفها.": "Deletion includes contracts, contacts and follow-up records. Entities linked to patients or visits cannot be deleted.",
   "تأكيد الحذف": "Confirm deletion",
   "تعليق التعاقد": "Suspend contract",
+  "لا توجد جهات في هذه الحالة": "No entities in this status",
+  "بدون عقد": "No contract",
   "لا توجد عقود سارية لتعليقها": "No active contracts to suspend",
   "للجهة أكثر من عقد ساري. اختر عقدًا بعينه أو علّق كل العقود.": "This entity has more than one active contract. Choose one or suspend all.",
   "تعليق هذا العقد": "Suspend this contract",
