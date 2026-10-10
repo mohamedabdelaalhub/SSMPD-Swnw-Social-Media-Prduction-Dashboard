@@ -17,12 +17,12 @@
     var isVideo = item.content_format === "video";
     return '<div id="claude-design-box" style="margin-top:12px;padding:12px;border:1px dashed var(--c-primary,#0F369D);border-radius:12px;">' +
       '<b>' + (isVideo ? "مونتاج Claude Creative" : "تصميم Claude Creative") + '</b>' +
-      (isVideo ? '<p style="font-size:12px;color:var(--c-muted);margin:6px 0;">ارفع مقاطع الفيديو اللي اتصورت في المركز على المادة الأول، وClaude هيعمل منها ريل.</p>' :
+      (isVideo ? '<p style="font-size:12px;color:var(--c-muted);margin:6px 0;">لو فيه مقاطع اتصورت في المركز ارفعها على المادة الأول وClaude هيعمل منها ريل. لو مفيش، Claude هيعمل الريل من فيديوهات جاهزة مرخّصة أو صور + تعليق صوتي + موسيقى وخاتمة الصفحة.</p>' :
       '<div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin:8px 0;">' +
       '<label style="display:inline-flex;gap:5px;align-items:center;"><input type="radio" name="claude-style" value="photo" checked> صور حقيقية</label>' +
       '<label style="display:inline-flex;gap:5px;align-items:center;"><input type="radio" name="claude-style" value="illustration"> رسوم</label></div>') +
       (item.stage === "needs_revision" ? '<p style="font-size:12px;color:var(--c-muted);margin:6px 0;">Claude هيطبّق كومنتات «طلب تعديل» المكتوبة على المادة. لو عايز تصميم جديد من الأول اكتب في الكومنت: أعد التصميم من الأول.</p>' : '') +
-      '<button class="btn sm" id="claude-design-go">' + (item.stage === "needs_revision" ? "نفّذ التعديل" : isVideo ? "نفّذ المونتاج" : "نفّذ التصميم") + '</button>' +
+      '<button class="btn sm" id="claude-design-go">' + (item.stage === "needs_revision" ? "نفّذ التعديل" : isVideo ? "نفّذ المونتاج" : item.content_format === "carousel" ? "نفّذ الكاروسيل" : "نفّذ التصميم") + '</button>' +
       '<p id="claude-design-status" role="status" style="font-size:12px;color:var(--c-muted);margin:6px 0 0;"></p></div>';
   }
   function wireClaudeDesign(root, item) {

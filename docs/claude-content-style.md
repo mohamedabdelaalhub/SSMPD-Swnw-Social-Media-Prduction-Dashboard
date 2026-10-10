@@ -86,3 +86,18 @@ Dr. Dina — render with the dashboard's OWN renderer so it matches the studio e
 - Before redesigning an item in needs_revision, read ALL its comments (table comments, content_id = the item) that start with "طلب تعديل:" and that are newer than the last design; apply every requested change exactly and keep everything else from the previous design.
 - If a comment says "أعد التصميم من الأول" (or similar), make a completely new design (different variant/photo) instead of editing.
 - After uploading, mark those comments done (status = 'done') and send the item back to final_approval as usual. Never approve it yourself.
+
+## Template discovery — do this at the START of every run (Mohamed adds new templates from time to time)
+- List the dashboard's templates in this repository: every folder under `assets/design-templates/` and every `assets/js/design-*-template.js` / `*-content.js` file (plus `assets/design-templates/dr-dina/frames.json`). Also list the kit folders `sono/dash_refs/`, `sono/templates/`, `dina/templates/` with op=kit_get listing if available.
+- Compare with the templates named in this file. For anything NEW: open its renderer JS to learn its `render(...)` signature and fields, look at its preview images, and add it to the rotation (use it at least once in the next few days where the topic fits).
+- In the run summary, write one line: "قوالب جديدة اتلاقت: …" (or "مفيش قوالب جديدة").
+- Never edit or delete the template files themselves.
+
+## Carousel items (content_format = carousel)
+- The slide copy is in `agent_raw_output.carousel_copy` (array of {role: hook|point|cta, headline, body, scene}) and the brief in `carousel_brief` ({slides_count, style, notes}). If carousel_copy is missing, write it yourself from the title/body/caption with the same rules (slide 1 hook, middle slides one idea each, last slide contact/booking, ≤6-word headlines, ≤22-word bodies, no prices).
+- Design ALL slides as one consistent set, 1080×1350: same page frame/template on every slide, slide 1 big hook title + photo, middle slides numbered (١، ٢، ٣…) with the point title + body + small icon/photo, last slide = the page contact slide (kit dina/contact_slide.jpg or sono/contact_slide.jpg style). Swnw: fixed frame on every slide. Dina: use the dashboard renderer variants that fit (e.g. 7/8 for points) or her frames.
+- Upload each slide PNG to the content-designs bucket under `<content_id>/<uuid>/output.png`, then call `POST /rest/v1/rpc/save_private_carousel` with {p_content_id, p_output_urls:[…in order…], p_settings:{template:"claude-carousel"}}. Then move the item to final_approval as usual.
+
+## Video items with NO uploaded footage
+- If the item has no uploaded clips in video-inputs, build the reel yourself: Pixabay stock videos (op=stock type=video, vertical, people who look Egyptian/Arab, no other brands) and/or photos with slow zoom, plus ElevenLabs voice-over of the item's script (op=tts), page music low under the voice, burned-in Arabic captions, and the page outro (kit outro.mp4) at the end. 1080×1920, 20–45 s.
+- Never show a fake doctor or fake patient testimonial; stock people are illustrative only.
