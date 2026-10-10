@@ -85,7 +85,7 @@
     backdrop.querySelector(".modal-close").onclick = close;
     backdrop.onclick = function (e) { if (e.target === backdrop) close(); };
     var note = "الصفحة: " + (context.brand || "غير محددة") + " — التخصص: " + (context.specialty || "غير محدد") +
-      " — الهدف: " + (context.advertisingObjective || "غير محدد") + (dinaBrief ? " — " + window.SSMPDDinaContent.kinds[dinaBrief.kind].label + " — القالب " + dinaBrief.variant : "");
+      " — الهدف: " + (context.advertisingObjective || "غير محدد") + (dinaBrief ? " — " + window.SSMPDDinaContent.kinds[dinaBrief.kind].label + " — " + window.SSMPDDinaContent.names[dinaBrief.variant-1] : "");
     backdrop.querySelector("#ai-context-note").textContent = note;
     backdrop.querySelector("#ai-generate").onclick = function () {
       var btn = backdrop.querySelector("#ai-generate");

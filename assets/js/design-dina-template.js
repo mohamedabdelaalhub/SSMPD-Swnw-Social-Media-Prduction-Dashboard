@@ -21,6 +21,9 @@
   if(v===7||v>=10){var top=v===7,start=top?0:820,end=top?490:1280,col=v===7?'#bf7526':v===10?'#101010':v===11?'#f6edd6':'#6e225b';var g=c.createLinearGradient(0,start,0,end);g.addColorStop(0,top?col:col+'00');g.addColorStop(1,top?col+'00':col);c.fillStyle=g;c.fillRect(0,start,1080,end-start);}
   if(v>=6)window.SSMPDDesignPanelColor.edges(c,d);
   c.drawImage(overlay,0,0,1080,1350);
+  // The original quote artwork has a white footer wedge in the photo slot.
+  // Extend the same photo through it, retaining the curved divider and social pill.
+  if(scene&&v<=2){c.save();shape(c,entry.scene);c.clip();c.beginPath();c.rect(0,1240,1080,110);c.roundRect(660,1269,370,31,16);c.clip('evenodd');c.drawImage(scene,box[0]+(box[2]-scene.width*scale)*Math.max(0,Math.min(100,n(d.x,50)))/100,box[1]+(box[3]-scene.height*scale)/2+n(d.imageOffsetY,0),scene.width*scale,scene.height*scale);c.restore();}
   if(v===5&&scene){var slot=entry.scene.box;c.save();c.beginPath();c.rect(40,220,430,410);c.clip();var fit=Math.min(slot[2]/scene.width,slot[3]/scene.height)*n(d.zoom,1);c.drawImage(scene,slot[0]+(slot[2]-scene.width*fit)*Math.max(0,Math.min(100,n(d.x,50)))/100,slot[1]+(slot[3]-scene.height*fit)/2+n(d.imageOffsetY,0),scene.width*fit,scene.height*fit);c.restore();}
   if(v>=3)contact(c,v);
   var h,s,a,b,color=v===5||v===10||v===11?'#fd0000':v===9?'#ec9f03':v>=6?'#fff':'#111';

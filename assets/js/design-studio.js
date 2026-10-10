@@ -84,7 +84,7 @@
   if(item.brand==='dr_dina'){
    root.querySelector('h3').textContent='تصميم د. دينا';
    root.querySelector('[data-field=layoutTemplate]').innerHTML='<option value="dina">قوالب د. دينا</option>';
-   var options='';for(var variant=1;variant<=12;variant++)options+='<option value="'+variant+'">تنويعة '+variant+'</option>';
+   var options='';for(var variant=1;variant<=12;variant++)options+='<option value="'+variant+'">'+window.SSMPDDinaContent.names[variant-1]+'</option>';
    root.querySelector('[data-field=layoutTemplate]').closest('label').insertAdjacentHTML('afterend','<label>تنويعة التصميم<select data-field="dinaVariant">'+options+'</select></label><label>نص داخل التصميم — للقوالب ١ إلى ٥<textarea data-field="designBody" rows="5"></textarea></label><label>حجم نص التصميم<input type="number" data-field="designBodySize" min="16" max="80" value="39"></label>');
    root.querySelector('[data-library]').textContent='صور د. دينا المحفوظة';
    ['textOrder','titlePosition','textWidth','logoVariant','fadeStartY','fadeEndY'].forEach(function(key){root.querySelector('[data-field="'+key+'"]').closest('label').hidden=true;});
