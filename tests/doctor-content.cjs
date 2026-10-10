@@ -15,6 +15,7 @@ const savedFacts=D.current(true);doc.getElementById('doctor-schedule-mode').valu
 let sent;
 w.SSMPDWorkflow={objectiveSelectHtml:id=>'<select id="'+id+'"><option value="awareness">awareness</option></select>',getContentAIBrief:async ctx=>{assert.equal(ctx.doctorBrief.name,'راضي منصور');return D.prompt(ctx.doctorBrief);}};
 w.SSMPDDb={generateContentIdeas:async body=>{sent=body;const idea={title:'نرحب بالدكتور راضي',idea:'ترحيب',caption:'بوست ترحيب',format:'image_post'};return {ideas:[idea,{...idea},{...idea}]};}};
+w.eval(fs.readFileSync('assets/js/dina-content.js','utf8'));
 w.eval(fs.readFileSync('assets/js/content-ai.js','utf8'));
 (async()=>{
  set('doctor-time_from','');w.SSMPDContentAI.openGenerator();assert.equal(doc.querySelectorAll('.modal-backdrop').length,0);assert(alerts.at(-1).includes('موعد'));
@@ -23,3 +24,4 @@ w.eval(fs.readFileSync('assets/js/content-ai.js','utf8'));
  const kind=doc.getElementById('cf-content-kind');kind.value='standard';kind.dispatchEvent(new w.Event('change',{bubbles:true}));assert.equal(D.current(true),null);assert.equal(doc.getElementById('doctor-content-fields').hidden,true);
  console.log('PASS: title detection, required schedules, optional credentials, generation payload, selected-idea metadata, and generic-content switch. No AI calls.');
 })().catch(e=>{console.error(e);process.exitCode=1});
+

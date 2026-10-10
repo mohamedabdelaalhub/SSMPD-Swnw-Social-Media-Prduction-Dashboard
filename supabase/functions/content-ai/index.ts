@@ -21,6 +21,37 @@ function checkedCopy(copy: any) {
  return copy;
 }
 
+const dinaProfiles: Record<string,{variants:number[],style:string}> = {
+ quote:{variants:[1,2],style:"نصيحة على لسان د. دينا بصيغة المتكلم. اكتب توجيهًا طبيًا لا قصة شخصية ولا تجربة مزعومة ولا شهادة مريض."},
+ education:{variants:[3,6,7,8],style:"شرح طبي في المخ والأعصاب. 3 يدعم تعريفًا قصيرًا داخل التصميم. 6 و7 و8 عنوان وسطر توضيحي والصورة فقط، والتفاصيل في الكابشن."},
+ research:{variants:[4],style:"بحثت لك: لخّص نص المصدر المرفق فقط مع مرجعه في الكابشن. لا تختلق اسم دراسة أو سنة أو أرقام ولا تدّع بحثًا على الويب أو قراءة رابط لم تقرأه. فرّق بين النتائج الأولية والدليل المستقر."},
+ qa:{variants:[5],style:"سؤال وجواب. design_headline وdesign_subtitle معًا يصوغان السؤال. design_body جواب مباشر ومفهوم، والتفصيل في الكابشن. لا تجعل الإجابة المطلقة تتجاوز الأدلة."},
+ question:{variants:[9],style:"سؤال يشد الانتباه. العنوان موضوع قصير والسطر يطرح سؤالًا أو موقفًا، والكابشن يجيب. بلا تخويف أو تشخيص أو clickbait مضلل."},
+ tip:{variants:[10,11,12],style:"خطوة عملية. design_subtitle فعل أو نصيحة مختصرة داخل الكبسولة، وdesign_headline فائدتها أو مقصدها. التفاصيل والشروط في الكابشن."}
+};
+function dinaBrief(value:any,brand:string) {
+ if(!value)return null;
+ if(brand!=="dr_dina"||!dinaProfiles[value.kind]||!dinaProfiles[value.kind].variants.includes(value.variant))throw Error("نوع محتوى د. دينا أو القالب غير صالح.");
+ const audience=value.audience||"general";
+ if(!["general","adults","older_adults","parents"].includes(audience))throw Error("الجمهور غير صالح.");
+ const source_text=String(value.source_text||"").trim(),source_url=String(value.source_url||"").trim();
+ if(source_text.length>6000||source_url.length>500)throw Error("المصدر أطول من الحد المسموح.");
+ if(value.kind==="research"&&source_text.length<40)throw Error("أضف نصًا من المصدر لا يقل عن ٤٠ حرفًا لقالب بحثت لك.");
+ return {kind:value.kind,variant:value.variant,audience,source_text,source_url};
+}
+function dinaBodyLimit(b:any){return b.variant<=2?36:b.variant<=4?26:b.variant===5?20:0;}
+const dinaProperties={design_secondary_headline:{type:"string"},design_body:{type:"string"},design_scene_brief:{type:"string"}};
+function dinaInstructions(b:any){return "صفحة د. دينا استشاري المخ والأعصاب للبالغين والأطفال حسب الموضوع وليست صفحة أطفال فقط. نوع القالب: "+dinaProfiles[b.kind].style+" رقم القالب "+b.variant+". الجمهور "+b.audience+". design_secondary_headline اختياري حتى 5 كلمات، وإلا فارغ. design_body "+(dinaBodyLimit(b)?"نص داخل التصميم مطلوب حتى "+dinaBodyLimit(b)+" كلمة":"فارغ لأن هذا القالب لا يعرض نصًا داخليًا")+". design_scene_brief وصف للصورة دون نص أو لوجو، يحدد العمر والمشهد والمرض والجنس إن كان مذكورًا، دون افتراض طفل أو استخدام صورة الدكتورة كشخص مريض. عند باركنسون استخدم بالغًا ما لم يحدد الموضوع سنًا آخر. لا تفترض أن العلم مثبت ولا تقدّم علاجًا شخصيًا. العنوان الرئيسي 5 كلمات والتوضيحي 8 كلمات. الكابشن مستقل ويكمل المعلومات مع العنوان والتليفون ورابط واتساب المعتمدين. لا تنقل الكابشن كاملًا إلى التصميم.";}
+function checkedDina(copy:any,b:any){
+ for(const key of Object.keys(dinaProperties))if(typeof copy[key]!=="string")throw Error("أجزاء محتوى القالب غير مكتملة.");
+ copy.design_secondary_headline=copy.design_secondary_headline.replace(/["'“”‘’«»،,؛;:…]/g," ").replace(/\s+/g," ").trim();
+ const words=(t:string)=>t.trim().split(/\s+/).filter(Boolean).length;
+ const limit=dinaBodyLimit(b);
+ if(words(copy.design_secondary_headline)>5||words(copy.design_body)>limit||(limit&&!copy.design_body.trim())||copy.design_scene_brief.trim().length<10||copy.design_scene_brief.length>1500)throw Error("نصوص القالب تجاوزت حدها أو بها أجزاء ناقصة.");
+ return copy;
+}
+function itemDinaBrief(item:any){let raw=item.agent_raw_output||{};try{if(typeof raw==="string")raw=JSON.parse(raw);}catch{return null;}if(raw.ideas)raw=raw.ideas.find((r:any)=>r.title===item.title)||{};return dinaBrief(raw.dina_brief,item.brand);}
+
 function responseText(data: any): string {
   if (typeof data?.output_text === "string") return data.output_text;
   const parts: string[] = [];
@@ -54,11 +85,12 @@ Deno.serve(async (req) => {
       const itemRes=await authDb.from("content_items").select("*").eq("id",body.content_id).single();
       if(itemRes.error||!itemRes.data)throw new Error("المادة غير متاحة لهذا الحساب.");
       const item=itemRes.data;
-      const copyBrief={brand:item.brand,title:item.title,body:item.body,hook:item.hook_text,caption:item.caption_text,script:item.script_text,cta:item.cta_text,cta_type:item.cta_type,objective:item.advertising_objective};
-      const generated=await fetch("https://api.openai.com/v1/responses",{method:"POST",headers:{Authorization:"Bearer "+apiKey,"Content-Type":"application/json"},body:JSON.stringify({model,instructions:designStyle,input:JSON.stringify(copyBrief),text:{format:{type:"json_schema",name:"ssmpd_design_copy",strict:true,schema:{type:"object",additionalProperties:false,required:Object.keys(copyProperties),properties:copyProperties}}}})});
+      const dina=itemDinaBrief(item);
+      const copyBrief={dina_brief:dina,brand:item.brand,title:item.title,body:item.body,hook:item.hook_text,caption:item.caption_text,script:item.script_text,cta:item.cta_text,cta_type:item.cta_type,objective:item.advertising_objective};
+      const generated=await fetch("https://api.openai.com/v1/responses",{method:"POST",headers:{Authorization:"Bearer "+apiKey,"Content-Type":"application/json"},body:JSON.stringify({model,instructions:designStyle+(dina?"\n"+dinaInstructions(dina):""),input:JSON.stringify(copyBrief),text:{format:{type:"json_schema",name:"ssmpd_design_copy",strict:true,schema:{type:"object",additionalProperties:false,required:Object.keys({...copyProperties,...(dina?dinaProperties:{})}),properties:{...copyProperties,...(dina?dinaProperties:{})}}}}})});
       const result=await generated.json();
       if(!generated.ok)throw new Error(result?.error?.message||"تعذر اقتراح النصوص.");
-      return Response.json({design_copy:checkedCopy(JSON.parse(responseText(result)))},{headers:cors});
+      const copy=checkedCopy(JSON.parse(responseText(result)));if(dina)checkedDina(copy,dina);return Response.json({design_copy:copy},{headers:cors});
     }
     const mode = body?.mode === "develop" ? "develop" : "ideas";
     if (!body?.brand) throw new Error("الصفحة مطلوبة.");
@@ -85,17 +117,19 @@ Deno.serve(async (req) => {
 
     }
 
+    const dina=dinaBrief(body.dina_brief,String(body.brand||""));
+    if(dina&&doctorIntro)throw Error("اختر تعريف طبيب أو محتوى قوالب د. دينا، وليس الاثنين.");
     const brief = {
       mode,
       brand: String(body.brand || ""),
       specialty: String(body.specialty || ""),
       advertising_objective: String(body.advertising_objective || ""),
-      preferred_format: doctorIntro?"image_post":String(body.preferred_format || ""),
+      preferred_format: (doctorIntro||dina)?"image_post":String(body.preferred_format || ""),
       topic: String(body.topic || ""),
       title: String(body.title || ""),
       manual_draft: String(body.manual_draft || ""),
       performance_brief: String(body.performance_brief || ""),
-      content_kind:doctorIntro?"doctor_intro":"standard",doctor_brief:doctorBrief
+      content_kind:doctorIntro?"doctor_intro":"standard",doctor_brief:doctorBrief,dina_brief:dina
     };
 
     const schema = {
@@ -107,9 +141,9 @@ Deno.serve(async (req) => {
           type: "array", minItems: 3, maxItems: 3,
           items: {
             type: "object", additionalProperties: false,
-            required: ["title","idea","hook","angle","format","script","caption","cta_type","cta_text","duration_min_seconds","duration_max_seconds","video_template","hypothesis_reason","design_headline","design_subtitle","design_cta"],
+            required: ["title","idea","hook","angle","format","script","caption","cta_type","cta_text","duration_min_seconds","duration_max_seconds","video_template","hypothesis_reason","design_headline","design_subtitle","design_cta",...(dina?Object.keys(dinaProperties):[])],
             properties: {
-              ...copyProperties,
+              ...copyProperties,...(dina?dinaProperties:{}),
               title:{type:"string"}, idea:{type:"string"}, hook:{type:"string"}, angle:{type:"string"},
               format:{type:"string",enum:["video","image_post","link_post"]}, script:{type:["string","null"]}, caption:{type:"string"},
               cta_type:{type:"string",enum:["save_share","whatsapp","book","message","call","learn_more","comment","emergency_action","custom"]},
@@ -127,7 +161,7 @@ Deno.serve(async (req) => {
       headers: { "Authorization": "Bearer " + apiKey, "Content-Type": "application/json" },
       body: JSON.stringify({
         model,
-        instructions:instructions+"\n"+designStyle+(doctorIntro?"\nهذه مادة تعريف طبيب. اكتب بالضبط 3 منشورات ترحيب وتقديم للطبيب، لا توعية بمرض. doctor_brief المصدر الوحيد للاسم والتايتل والمؤهلات والخبرات والجدول. لا تخترع ألقابًا أو شهادات أو سنوات خبرة أو خدمات. إذا المؤهلات أو الخبرات فارغة احذفها. استخدم image_post والكابشن يشمل الترحيب والبيانات المتاحة والمواعيد وبيانات تواصل المركز. لا تغيّر الحقائق بين الاقتراحات. أعط نصوص التصميم المطلوبة لكن القالب يسكن بيانات الطبيب مباشرة.":""),
+        instructions:instructions+"\n"+designStyle+(dina?"\n"+dinaInstructions(dina):"")+(doctorIntro?"\nهذه مادة تعريف طبيب. اكتب بالضبط 3 منشورات ترحيب وتقديم للطبيب، لا توعية بمرض. doctor_brief المصدر الوحيد للاسم والتايتل والمؤهلات والخبرات والجدول. لا تخترع ألقابًا أو شهادات أو سنوات خبرة أو خدمات. إذا المؤهلات أو الخبرات فارغة احذفها. استخدم image_post والكابشن يشمل الترحيب والبيانات المتاحة والمواعيد وبيانات تواصل المركز. لا تغيّر الحقائق بين الاقتراحات. أعط نصوص التصميم المطلوبة لكن القالب يسكن بيانات الطبيب مباشرة.":""),
         input: "SSMPD Dashboard Brief:\n" + JSON.stringify(brief),
         text: { format: { type: "json_schema", name: "ssmpd_content_ideas", strict: true, schema } }
       })
@@ -138,7 +172,7 @@ Deno.serve(async (req) => {
     if (!Array.isArray(parsed?.ideas) || parsed.ideas.length !== 3) throw new Error("النتيجة لم تحتوِ على ٣ أفكار مكتملة.");
     const requiredText = ["title", "idea", "hook", "angle", "caption", "cta_type", "cta_text", "hypothesis_reason"];
     for (const idea of parsed.ideas) {
-      checkedCopy(idea);
+      checkedCopy(idea);if(dina)checkedDina(idea,dina);
       if (requiredText.some((key) => typeof idea[key] !== "string" || !idea[key].trim())) {
         throw new Error("النتيجة بها حقول ناقصة. لم يتم حفظها أو اعتمادها.");
       }
@@ -153,10 +187,12 @@ Deno.serve(async (req) => {
       )) throw new Error("بيانات الفيديو غير مكتملة.");
     }
     if(doctorIntro)for(const idea of parsed.ideas){idea.content_kind="doctor_intro";idea.doctor_brief=doctorBrief;}
+    if(dina)for(const idea of parsed.ideas)idea.dina_brief=dina;
     return Response.json({ ideas: parsed.ideas, model }, { headers: { ...cors, "Content-Type": "application/json" } });
   } catch (error) {
     return Response.json({ error: error instanceof Error ? error.message : "حدث خطأ غير معروف." }, { status: 400, headers: { ...cors, "Content-Type": "application/json" } });
   }
 });
+
 
 
