@@ -77,7 +77,28 @@ Deno.serve(async (req) => {
     const row: Record<string, unknown> = { job_id: job.id, brand: job.brand, content_id: job.content_id, published_at: job.published_at, synced_at: new Date().toISOString() };
     const raw: Record<string, unknown> = {};
     const errs: string[] = [];
-    if (job.facebook_post_id) {
+    if (job.facebook_post_id && !String(job.facebook_post_id).includes("_")) {
+      // Reels are stored by their VIDEO id (Reels API), which has no /insights edge and no
+      // reactions field. Read /video_insights, then the reel's feed post for the counts.
+      const vid = String(job.facebook_post_id);
+      const vi = await gget(`${vid}/video_insights`, { access_token: token });
+      const vm: Record<string, number | null> = {};
+      if (vi.ok) for (const e of (vi.data.data || [])) vm[e.name] = metricValue(e);
+      else errs.push("fb video_insights: " + vi.error);
+      raw.facebook = vm;
+      row.fb_reach = first(vm.post_impressions_unique, vm.post_total_media_view_unique);
+      row.fb_views = first(vm.blue_reels_play_count, vm.fb_reels_total_plays, vm.post_video_views, vm.post_impressions);
+      const info = await gget(vid, { fields: "post_id", access_token: token });
+      const postId = info.ok && info.data.post_id ? String(info.data.post_id) : null;
+      const counts = postId
+        ? await gget(postId, { fields: "reactions.summary(true).limit(0),comments.summary(true).limit(0),shares", access_token: token })
+        : await gget(vid, { fields: "likes.summary(true).limit(0),comments.summary(true).limit(0)", access_token: token });
+      if (counts.ok) {
+        row.fb_reactions = (counts.data.reactions ?? counts.data.likes)?.summary?.total_count ?? 0;
+        row.fb_comments = counts.data.comments?.summary?.total_count ?? 0;
+        row.fb_shares = counts.data.shares?.count ?? vm.post_video_social_actions_share ?? 0;
+      } else errs.push("fb reel counts: " + counts.error);
+    } else if (job.facebook_post_id) {
       const m = await metrics(job.facebook_post_id, ["post_total_media_view_unique", "post_media_view", "post_clicks"], token);
       if (m.out.post_total_media_view_unique == null && m.out.post_media_view == null) {
         // Older metric names, for Graph versions that still serve them.
