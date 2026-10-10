@@ -29,6 +29,7 @@
  function mount(slot,item){
   if(!slot||!window.SSMPDDesignFiles.canEdit(item))return;
   var start=document.createElement('button'); start.className='btn ghost'; start.textContent=item.design_file_url?'تعديل التصميم الحالي':'إنشاء تصميم'; slot.appendChild(start);
+  if(window.SSMPDDesignBudget)window.SSMPDDesignBudget.mount(slot);
   start.onclick=function(){open(item);};
  }
  function open(item){
