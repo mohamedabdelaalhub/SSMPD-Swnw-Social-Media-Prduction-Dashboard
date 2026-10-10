@@ -172,8 +172,9 @@
     if (tabs.indexOf("contracting_entities") !== -1) ddItems += "<button class=\"ud-item\" data-goto=\"contracting_entities\"> <!--ssmpd-i18n:%D8%AC%D9%87%D8%A7%D8%AA%20%D8%A7%D9%84%D8%AA%D8%B9%D8%A7%D9%82%D8%AF-->جهات التعاقد</button>";
     if (tabs.indexOf("clinic_info") !== -1) ddItems += '<button class="ud-item" data-goto="clinic_info">' + window.SSMPDI18n.textHtml(TAB_LABELS.clinic_info) + "</button>";
     if (tabs.indexOf("accounting") !== -1) ddItems += "<button class=\"ud-item\" data-goto=\"accounting\"> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AD%D8%B3%D8%A7%D8%A8%D8%A7%D8%AA-->الحسابات</button>";
-    // لوحة مؤشرات الاستثمار: داشبورد منفصل (sono-dashboard) — رابط بيفتح في تاب جديد، للسوبر أدمن والمدير العام بس
-    if (R.isSuperAdmin(admin) || admin.role === "general_manager") {
+    // لوحة مؤشرات الاستثمار: داشبورد منفصل (sono-dashboard) — رابط بيفتح في تاب جديد،
+    // للسوبر أدمن دايماً، ولأي مستخدم تاني متفعّل له "لوحة مؤشرات الاستثمار" من لوحة التحكم
+    if (R.isSuperAdmin(admin) || admin.has_investment_dashboard_access) {
       ddItems += '<a class="ud-item" href="https://mohamedabdelaalhub.github.io/sono-dashboard/" target="_blank" rel="noopener" style="display:block;text-decoration:none;color:inherit;">' + window.SSMPDI18n.textHtml("لوحة مؤشرات الاستثمار") + ' ↗</a>';
     }
     if ((admin.has_verification_management_access || R.isSuperAdmin(admin)) && window.SSMPDRenderPatientVerification) {
