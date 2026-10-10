@@ -23,7 +23,7 @@ function safeEqual(a: string, b: string) {
 function t12(v: string | null): string {
   if (!v) return "";
   const [h, m] = v.split(":").map(Number);
-  const suffix = h < 12 ? "الصبح" : h < 17 ? "الضهر" : "بالليل";
+  const suffix = h === 0 ? "بالليل" : h < 12 ? "الصبح" : h < 17 ? "الضهر" : "بالليل";
   const hh = h % 12 === 0 ? 12 : h % 12;
   return `${hh}${m ? ":" + String(m).padStart(2, "0") : ""} ${suffix}`;
 }
