@@ -5,7 +5,8 @@
 
   var DAYS = [["sat", "سبت"], ["sun", "أحد"], ["mon", "إتنين"], ["tue", "تلات"], ["wed", "أربع"], ["thu", "خميس"], ["fri", "جمعة"]];
   var PAYMENTS = ["كاش", "فيزا / ماستركارد", "ميزة", "إنستاباي", "فودافون كاش", "محافظ إلكترونية تانية", "تقسيط"];
-  var state = { section: "profile" };
+  var state = { section: "profile", editing: false };
+  var LIST_SECTIONS = ["hours", "offers", "faqs"];
 
   function db() { return window.SSMPDDb.client; }
   function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
@@ -49,7 +50,15 @@
         return '<button class="btn sm ' + (state.section === s[0] ? "" : "ghost") + '" data-sec="' + s[0] + '">' + s[1] + "</button>";
       }).join("") + "</div>";
     var p = data.profile;
-    if (state.section === "profile") {
+    var editable = state.section !== "contracts";
+    if (editable) {
+      html += '<div class="cm-actions" style="margin:0 0 10px;">' + (state.editing
+        ? '<button class="btn ghost sm" data-cancel-edit>' + (LIST_SECTIONS.indexOf(state.section) !== -1 ? "تم" : "إلغاء") + "</button>"
+        : '<button class="btn btn-primary sm" data-edit>تعديل</button>') + "</div>";
+    }
+    if (editable && !state.editing) {
+      html += viewSection(state.section, data);
+    } else if (state.section === "profile") {
       html += '<div class="ci-card">' +
         field("address", "العنوان", p.address) + field("maps_url", "لينك اللوكيشن (جوجل ماب)", p.maps_url, "url") +
         '<div class="ci-row">' + field("phone", "تليفون المركز", p.phone) + field("whatsapp", "واتساب", p.whatsapp) + "</div>" +
@@ -81,6 +90,41 @@
     }
     container.innerHTML = html + "</div>";
     wire(container, data);
+  }
+
+  function vrow(label, value) {
+    return '<div class="field ci-field"><label>' + label + '</label><div style="white-space:pre-wrap;">' + (value ? esc(value) : '<span class="muted">—</span>') + "</div></div>";
+  }
+  function viewSection(sec, data) {
+    var p = data.profile;
+    if (sec === "profile") {
+      return '<div class="ci-card">' + vrow("العنوان", p.address) + vrow("لينك اللوكيشن (جوجل ماب)", p.maps_url) +
+        '<div class="ci-row">' + vrow("تليفون المركز", p.phone) + vrow("واتساب", p.whatsapp) + "</div>" +
+        '<div class="ci-row">' + vrow("الإيميل", p.email) + vrow("الموقع", p.website) + "</div>" +
+        vrow("إزاي توصل / ركن العربيات / علامات مميزة", p.directions_notes) + "</div>";
+    }
+    if (sec === "payment") {
+      var pm = p.payment_methods || [];
+      return '<div class="ci-card">' + vrow("طرق الدفع المتاحة", pm.join("، ")) + vrow("ملاحظات الدفع", p.payment_notes) +
+        vrow("الكشف / التحاليل المنزلية", p.home_visits) + vrow("نتايج التحاليل والأشعة", p.results_notes) +
+        vrow("سياسة الحجز والإلغاء والتأجيل", p.booking_policy) + "</div>";
+    }
+    if (sec === "notes") return '<div class="ci-card">' + vrow("تعليمات الإدارة للوكيل", p.agent_notes) + "</div>";
+    if (sec === "hours") {
+      var names = {}; DAYS.forEach(function (d) { names[d[0]] = d[1]; });
+      return data.hours.length ? data.hours.map(function (h) {
+        var when = h.closed ? "مقفول" : hhmm(h.open_time) + " – " + hhmm(h.close_time);
+        return '<div class="ci-card">' + vrow(h.department || "—", (h.days || []).map(function (d) { return names[d] || d; }).join("، ") + " | " + when + (h.notes ? " | " + h.notes : "")) + "</div>";
+      }).join("") : '<div class="empty">لسه مفيش مواعيد مسجلة.</div>';
+    }
+    if (sec === "offers") {
+      return data.offers.length ? data.offers.map(function (o) {
+        return '<div class="ci-card">' + vrow((o.active === false ? "[متوقف] " : "") + (o.title || "—"), [o.price_text, o.details, (o.starts_on || o.ends_on) ? "من " + (o.starts_on || "—") + " إلى " + (o.ends_on || "—") : ""].filter(Boolean).join("\n")) + "</div>";
+      }).join("") : '<div class="empty">لسه مفيش عروض.</div>';
+    }
+    return '<p class="muted">أسئلة بتتكرر وإجابتها المعتمدة — الوكيل بيستخدم الإجابة دي بالظبط.</p>' + (data.faqs.length ? data.faqs.map(function (f) {
+      return '<div class="ci-card">' + vrow((f.active === false ? "[متوقف] " : "") + (f.question || "—"), f.answer) + "</div>";
+    }).join("") : '<div class="empty">لسه مفيش أسئلة.</div>');
   }
 
   function field(name, label, value, type) {
@@ -138,8 +182,16 @@
   }
 
   function wire(container, data) {
-    var again = function () { toast("اتحفظ ✓ — هيوصل للوكيل خلال دقايق"); render(container); };
-    qa(container, "[data-sec]").forEach(function (b) { b.onclick = function () { state.section = b.getAttribute("data-sec"); draw(container, data); }; });
+    var again = function () {
+      toast("اتحفظ ✓ — هيوصل للوكيل خلال دقايق");
+      if (LIST_SECTIONS.indexOf(state.section) === -1) state.editing = false;
+      render(container);
+    };
+    qa(container, "[data-sec]").forEach(function (b) { b.onclick = function () { state.section = b.getAttribute("data-sec"); state.editing = false; draw(container, data); }; });
+    var eb = q(container, "[data-edit]");
+    if (eb) eb.onclick = function () { state.editing = true; draw(container, data); };
+    var cb = q(container, "[data-cancel-edit]");
+    if (cb) cb.onclick = function () { state.editing = false; render(container); };
     var sp = q(container, "[data-save-profile]");
     if (sp) sp.onclick = function () {
       var row = { updated_at: new Date().toISOString() };
@@ -184,5 +236,5 @@
     });
   }
 
-  window.SSMPDRenderClinicInfo = { render: render };
+  window.SSMPDRenderClinicInfo = { render: function (container) { state.editing = false; render(container); } };
 })();
