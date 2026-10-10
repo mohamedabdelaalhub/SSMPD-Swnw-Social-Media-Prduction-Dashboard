@@ -340,13 +340,19 @@
     if (rejectBtn) rejectBtn.onclick = function () {
       var box = backdrop.querySelector(".new-comment-box");
       var note = box ? box.value.trim() : "";
-      if (!note) { alert("لازم تكتب كومنت التعديل المطلوب في مربع الكومنتات تحت قبل الرفض"); return; }
-      window.SSMPDDb.addComment({ content_id: item.id, author_id: me.id, body: "طلب تعديل: " + note }).then(function () {
-        return window.SSMPDDb.updateContentItem(item.id, { stage: "needs_revision" });
-      }).then(function () {
-        return window.SSMPDDb.logActivity({ content_id: item.id, actor_id: me.id, action: "طلب تعديل", from_stage: item.stage, to_stage: "needs_revision" });
-      }).then(function () { backdrop.remove(); render(document.getElementById("view-container")); })
-        .catch(function (e) { alert("خطأ: " + e.message); });
+      // الكومنت ممكن يكون اتبعت بالفعل بزرار "إرسال" (والمربع فاضي) — نكتفي بيه لو في كومنت "في انتظار التعديل" من نفس المستخدم
+      var ready = note
+        ? window.SSMPDDb.addComment({ content_id: item.id, author_id: me.id, body: "طلب تعديل: " + note, status: "pending" }).then(function () { return true; })
+        : window.SSMPDDb.listComments(item.id).then(function (rows) {
+            return (rows || []).some(function (c) { return c.author_id === me.id && (c.status || "pending") === "pending"; });
+          });
+      rejectBtn.disabled = true;
+      ready.then(function (ok) {
+        if (!ok) { rejectBtn.disabled = false; alert("لازم تكتب كومنت التعديل المطلوب في مربع الكومنتات تحت قبل الرفض"); return null; }
+        return window.SSMPDDb.updateContentItem(item.id, { stage: "needs_revision" }).then(function () {
+          return window.SSMPDDb.logActivity({ content_id: item.id, actor_id: me.id, action: "طلب تعديل", from_stage: item.stage, to_stage: "needs_revision" });
+        }).then(function () { backdrop.remove(); render(document.getElementById("view-container")); });
+      }).catch(function (e) { rejectBtn.disabled = false; alert("خطأ: " + e.message); });
     };
   }
 
