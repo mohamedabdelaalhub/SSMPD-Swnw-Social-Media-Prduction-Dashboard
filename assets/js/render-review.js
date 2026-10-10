@@ -1,5 +1,50 @@
 /* SSMPD — شاشة إدارة المحتوى (مسؤول الاعتماد) — Kanban بـ٨ مراحل */
 (function () {
+  // ===== Claude Creative: "نفّذ التصميم" =====
+  // لما مصمم المادة يكون Claude Creative: اختيار (صور حقيقية / رسوم) + زرار. الطلب بيتسجل،
+  // وClaude بيصمم (أو يمنتج الفيديوهات المرفوعة) خلال ساعة ويوصّل المادة للاعتماد النهائي.
+  // الاعتماد بيفضل بضغطة من مسؤول الاعتماد، وبعدها Claude بيجدولها في الميعاد اللي اقترحه.
+  var CLAUDE_DESIGNER_ID = "a0fbdfee-d147-4282-b988-186a9ae3e88c";
+  var CLAUDE_REQ_STATUS = {
+    pending: "في الطابور — Claude هيبدأ خلال ساعة",
+    working: "Claude شغال على التصميم دلوقتي…",
+    done: "التصميم جاهز في الاعتماد النهائي — مستني اعتمادك",
+    scheduled: "اتعتمد واتجدول للنشر ✅",
+    failed: "حصلت مشكلة — اطلب تاني"
+  };
+  function claudeDesignHtml(item) {
+    if (item.assigned_designer !== CLAUDE_DESIGNER_ID || ["in_design", "needs_revision"].indexOf(item.stage) === -1) return "";
+    var isVideo = item.content_format === "video";
+    return '<div id="claude-design-box" style="margin-top:12px;padding:12px;border:1px dashed var(--c-primary,#0F369D);border-radius:12px;">' +
+      '<b>' + (isVideo ? "مونتاج Claude Creative" : "تصميم Claude Creative") + '</b>' +
+      (isVideo ? '<p style="font-size:12px;color:var(--c-muted);margin:6px 0;">ارفع مقاطع الفيديو اللي اتصورت في المركز على المادة الأول، وClaude هيعمل منها ريل.</p>' :
+      '<div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin:8px 0;">' +
+      '<label style="display:inline-flex;gap:5px;align-items:center;"><input type="radio" name="claude-style" value="photo" checked> صور حقيقية</label>' +
+      '<label style="display:inline-flex;gap:5px;align-items:center;"><input type="radio" name="claude-style" value="illustration"> رسوم</label></div>') +
+      '<button class="btn sm" id="claude-design-go">' + (isVideo ? "نفّذ المونتاج" : "نفّذ التصميم") + '</button>' +
+      '<p id="claude-design-status" role="status" style="font-size:12px;color:var(--c-muted);margin:6px 0 0;"></p></div>';
+  }
+  function wireClaudeDesign(root, item) {
+    var box = root.querySelector("#claude-design-box");
+    if (!box) return;
+    var statusEl = box.querySelector("#claude-design-status"), btn = box.querySelector("#claude-design-go");
+    function show(req) {
+      if (!req) { statusEl.textContent = ""; btn.disabled = false; return; }
+      statusEl.textContent = "آخر طلب: " + (CLAUDE_REQ_STATUS[req.status] || req.status) + (req.note ? " — " + req.note : "");
+      btn.disabled = req.status === "pending" || req.status === "working";
+    }
+    window.SSMPDDb.latestClaudeDesignRequest(item.id).then(show, function () { statusEl.textContent = ""; });
+    btn.onclick = function () {
+      var picked = box.querySelector('input[name="claude-style"]:checked');
+      var style = picked ? picked.value : "photo";
+      btn.disabled = true;
+      window.SSMPDDb.requestClaudeDesign(item.id, style, (window.SSMPDAuth.currentAdmin || {}).id).then(show, function (e) {
+        btn.disabled = false;
+        statusEl.textContent = /claude_design_requests/.test(e.message) ? "شغّل ملف تحديث قاعدة البيانات الخاص بتصميم Claude أولاً." : "خطأ: " + e.message;
+      });
+    };
+  }
+
   "use strict";
   var W = window.SSMPDWorkflow;
   var C = window.SSMPDComments;
@@ -194,6 +239,7 @@
       '<div style="margin:6px 0 14px;">' + W.itemActionsHtml(item, window.SSMPDAuth.currentAdmin) + '</div>' +
       '<div id="review-design-edit-slot"></div>' +
       reassignHtml +
+      claudeDesignHtml(item) +
       '<div style="margin:14px 0;">' + actionsHtml + '</div>' +
       W.metaLinksSectionHtml(item) +
       '<div id="comments-slot"></div></div>';
@@ -204,6 +250,7 @@
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
     backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
     W.wireItemActions(backdrop, item, function () { backdrop.remove(); render(document.getElementById("view-container")); });
+    wireClaudeDesign(backdrop, item);
     W.wireMetaLinksSection(backdrop, item, window.SSMPDAuth.currentAdmin);
 
     var adminsById = {}; admins.forEach(function (a) { adminsById[a.id] = a; });

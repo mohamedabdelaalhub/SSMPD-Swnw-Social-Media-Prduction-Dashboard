@@ -200,6 +200,16 @@
     inviteAdmin: function (email, name, role) {
       return handle(client.from("admins").insert({ email: email, name: name, role: role, active: true }));
     },
+    // طلبات تصميم Claude Creative — Claude بيصمم ويوصّل المادة للاعتماد النهائي، والاعتماد بيفضل بإيد إنسان
+    requestClaudeDesign: function (contentId, style, requestedBy) {
+      return handle(client.from("claude_design_requests").insert({
+        content_id: contentId, style: style, requested_by: requestedBy || null
+      }).select().single());
+    },
+    latestClaudeDesignRequest: function (contentId) {
+      return handle(client.from("claude_design_requests").select("*").eq("content_id", contentId)
+        .order("created_at", { ascending: false }).limit(1)).then(function (rows) { return (rows && rows[0]) || null; });
+    },
     updateAdmin: function (id, patch) {
       return handle(client.from("admins").update(patch).eq("id", id));
     },
