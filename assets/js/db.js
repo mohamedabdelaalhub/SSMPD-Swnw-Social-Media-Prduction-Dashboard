@@ -690,6 +690,9 @@
     listContractingEntities: function () {
       return handle(client.rpc("contracting_entities_overview"));
     },
+    deleteContractingEntity: function (entityId) {
+      return handle(client.rpc("delete_contracting_entity", { p_entity_id: entityId }));
+    },
     listActiveContracts: function () {
       return handle(client.from("contracting_entity_contracts")
         .select("id, entity_id, start_date, end_date, status, contracting_entities(name)")

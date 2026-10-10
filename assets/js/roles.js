@@ -118,6 +118,10 @@
 
     // اعتماد/رفض خطط ووكيل Media Buyer — مقصور على المدير العام/السوبر أدمن
     // بس (زي سياسة RLS "managers write media_buyer_plans/actions" بالظبط)
+    canDeleteContractingEntity: function (adminOrRole) {
+      return Roles.hasAnyRole(adminOrRole, ["general_manager", "super_admin"]);
+    },
+
     canApproveMediaBuyer: function (adminOrRole) {
       return Roles.hasAnyRole(adminOrRole, ["general_manager", "super_admin"]);
     }

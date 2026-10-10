@@ -729,5 +729,14 @@ window.SSMPD_TRANSLATIONS = {
   "تيكتوك": "TikTok",
   "قناة يوتيوب": "YouTube",
   "الموقع الإلكتروني": "Website",
-  "غير محدد": "Unspecified"
+  "غير محدد": "Unspecified",
+  "حذف جهة التعاقد": "Delete contracting entity",
+  "هل تريد حذف هذه الجهة؟": "Delete this entity?",
+  "يشمل الحذف العقود وبيانات التواصل والمتابعة. الجهة المرتبطة بمرضى أو زيارات لا يمكن حذفها.": "Deletion includes contracts, contacts and follow-up records. Entities linked to patients or visits cannot be deleted.",
+  "تأكيد الحذف": "Confirm deletion",
+  "الحذف متاح للسوبر أدمن والمدير فقط": "Only super admins and general managers can delete entities",
+  "تم حذف جهة التعاقد": "Contracting entity deleted",
+  "جارٍ الحذف…": "Deleting\u2026",
+  "جهة التعاقد غير موجودة أو تم حذفها بالفعل": "Entity not found or already deleted",
+  "لا يمكن حذف جهة مرتبطة بمرضى أو زيارات. يمكن تعليق العقد بدلًا من الحذف.": "This entity is linked to patients or visits. Suspend the contract instead of deleting it."
 };
