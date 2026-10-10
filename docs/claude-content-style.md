@@ -78,6 +78,7 @@ Dr. Dina — render with the dashboard's OWN renderer so it matches the studio e
 ## Dr. Dina variants 3 & 4 text layout (Mohamed's notes, 2026-10-11 — built into the renderer)
 - Headline: Tajawal Black (900), 80 px default, wraps to TWO lines (write 3–5 words so it breaks naturally).
 - Subtitle sits 15 px closer to the headline than before; body starts right after it.
+- Headline is justified with kashida (tatweel) so both lines have the same width — write the two lines with similar length (e.g. "النوم الكويس / بيحمي مخك") so the stretch looks natural; pass headlineJustify:false to turn it off.
 - Headline line spacing +14 px (so the dots of ش don't touch the line above); subtitle Tajawal Bold 42 px on ONE line (auto-shrinks); CTA text Bold.
 - Body paragraph line spacing is +3 px. Do not pass headlineSize/designBodySize unless the text doesn't fit.
 
