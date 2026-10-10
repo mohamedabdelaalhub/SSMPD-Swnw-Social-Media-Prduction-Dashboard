@@ -18,14 +18,28 @@
 
   function canDelete() { return window.SSMPDRoles.canDeleteContractingEntity(window.SSMPDAuth.currentAdmin); }
 
+  function suspendContracts(entityId, contracts, done, bd) {
+    return Promise.all(contracts.map(function (c) {
+      return window.SSMPDDb.updateContractingEntityContract(c.id, entityId, { status: "suspended" });
+    })).then(function () { if (bd) bd.remove(); T.show(tr("تم تعليق التعاقد")); done(); })
+      .catch(function (e) { T.show(tr(e.message), "error"); });
+  }
+
   function suspendEntity(entityId, done) {
     if (!canDelete()) return T.show(tr("التعليق متاح للسوبر أدمن والمدير فقط"), "error");
     window.SSMPDDb.getContractingEntityDetails(entityId).then(function (d) {
-      var contract = d.contracts[0];
-      if (!contract) throw new Error("لا يوجد عقد لهذه الجهة");
-      return window.SSMPDDb.updateContractingEntityContract(contract.id, entityId, { status: "suspended" });
-    }).then(function () { T.show(tr("تم تعليق التعاقد")); done(); })
-      .catch(function (e) { T.show(tr(e.message), "error"); });
+      var open = d.contracts.filter(function (c) { return c.status === "active" || c.status === "negotiating"; });
+      if (!open.length) return T.show(tr("لا توجد عقود سارية لتعليقها"), "error");
+      if (open.length === 1) return suspendContracts(entityId, open, done);
+      var rows = open.map(function (c, i) {
+        return '<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--c-border);"><span>' + statusPill(c.status) + " " + date(c.start_date) + " — " + date(c.end_date) + '</span><button class="btn ghost sm" data-one="' + i + '">' + label("تعليق هذا العقد") + "</button></div>";
+      }).join("");
+      var bd = modal(label("تعليق التعاقد"), "<p>" + label("للجهة أكثر من عقد ساري. اختر عقدًا بعينه أو علّق كل العقود.") + "</p>" + rows +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;"><button class="btn ghost" id="ced-s-cancel">' + label("إلغاء") + '</button><button class="btn danger-btn" id="ced-s-all">' + label("تعليق كل العقود") + "</button></div>");
+      bd.querySelector("#ced-s-cancel").onclick = function () { bd.remove(); };
+      bd.querySelector("#ced-s-all").onclick = function () { this.disabled = true; suspendContracts(entityId, open, done, bd); };
+      bd.querySelectorAll("[data-one]").forEach(function (b) { b.onclick = function () { b.disabled = true; suspendContracts(entityId, [open[Number(b.getAttribute("data-one"))]], done, bd); }; });
+    }).catch(function (e) { T.show(tr(e.message), "error"); });
   }
 
   function openDelete(entity, done) {
