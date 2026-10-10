@@ -21,7 +21,8 @@
       '<div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin:8px 0;">' +
       '<label style="display:inline-flex;gap:5px;align-items:center;"><input type="radio" name="claude-style" value="photo" checked> صور حقيقية</label>' +
       '<label style="display:inline-flex;gap:5px;align-items:center;"><input type="radio" name="claude-style" value="illustration"> رسوم</label></div>') +
-      '<button class="btn sm" id="claude-design-go">' + (isVideo ? "نفّذ المونتاج" : "نفّذ التصميم") + '</button>' +
+      (item.stage === "needs_revision" ? '<p style="font-size:12px;color:var(--c-muted);margin:6px 0;">Claude هيطبّق كومنتات «طلب تعديل» المكتوبة على المادة. لو عايز تصميم جديد من الأول اكتب في الكومنت: أعد التصميم من الأول.</p>' : '') +
+      '<button class="btn sm" id="claude-design-go">' + (item.stage === "needs_revision" ? "نفّذ التعديل" : isVideo ? "نفّذ المونتاج" : "نفّذ التصميم") + '</button>' +
       '<p id="claude-design-status" role="status" style="font-size:12px;color:var(--c-muted);margin:6px 0 0;"></p></div>';
   }
   function wireClaudeDesign(root, item) {

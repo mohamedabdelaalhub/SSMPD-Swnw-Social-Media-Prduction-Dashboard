@@ -78,4 +78,10 @@ Dr. Dina — render with the dashboard's OWN renderer so it matches the studio e
 ## Dr. Dina variants 3 & 4 text layout (Mohamed's notes, 2026-10-11 — built into the renderer)
 - Headline: Tajawal Black (900), 80 px default, wraps to TWO lines (write 3–5 words so it breaks naturally).
 - Subtitle sits 15 px closer to the headline than before; body starts right after it.
+- Headline line spacing +14 px (so the dots of ش don't touch the line above); subtitle Tajawal Bold 42 px on ONE line (auto-shrinks); CTA text Bold.
 - Body paragraph line spacing is +3 px. Do not pass headlineSize/designBodySize unless the text doesn't fit.
+
+## Revision requests from the design queue (stage needs_revision)
+- Before redesigning an item in needs_revision, read ALL its comments (table comments, content_id = the item) that start with "طلب تعديل:" and that are newer than the last design; apply every requested change exactly and keep everything else from the previous design.
+- If a comment says "أعد التصميم من الأول" (or similar), make a completely new design (different variant/photo) instead of editing.
+- After uploading, mark those comments done (status = 'done') and send the item back to final_approval as usual. Never approve it yourself.
