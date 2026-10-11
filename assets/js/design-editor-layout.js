@@ -55,6 +55,25 @@
   var help=document.createElement('details');var summary=document.createElement('summary');summary.textContent='إرشادات التعديل';help.append(summary);
   Array.from(tools.children).forEach(function(node){if(node.tagName==='DETAILS'){node.querySelectorAll('p').forEach(function(p){help.append(p);});node.remove();}else help.append(node);});
   if(help.children.length>1)panels.find(function(p){return p.dataset.toolPanel==='layout';}).append(help);
+  // قسم الصورة (قبل/بعد): كل خيارات "صورة قبل" (الرفع + تفريغ الخلفية/الديكوبيه + تحريكها) جوه بوكس واحد، وكل خيارات "صورة بعد" في بوكس لوحده،
+  // فتفتح وتقفل مع بعض. الخيارات نفسها وأحداثها ماتغيّرتش، بس بتتنقل من أقسام منفصلة لبوكس واحد.
+  function groupBeforeAfter(panel){
+   function detailOf(node){return node?node.closest('details.design-editor__subgroup'):null;}
+   function merge(target,sources){
+    if(!target)return;
+    sources.forEach(function(d){
+     if(!d||d===target)return;
+     Array.from(d.children).forEach(function(c){if(c.tagName!=='SUMMARY')target.append(c);});
+     d.remove();
+    });
+    target.classList.add('design-editor__bundle');
+   }
+   var upload=panel.querySelector('[data-upload]'),uploadBox=detailOf(upload);
+   var cutout=panel.querySelector('[data-cutout-actions]'),beforeX=panel.querySelector('[data-field="beforePhotoX"]');
+   merge(uploadBox,[detailOf(cutout),detailOf(beforeX&&beforeX.closest('label'))]);
+   var afterUpload=panel.querySelector('[data-upload-after]'),afterBox=detailOf(afterUpload&&afterUpload.closest('label'));
+   merge(afterBox,['afterZoom','afterPhotoX','afterPhotoY'].map(function(name){var field=panel.querySelector('[data-field="'+name+'"]');return detailOf(field&&field.closest('label'));}));
+  }
   // Move existing fields, preserving their listeners and saved values.
   function subgroups(panel){
    var key=panel.dataset.toolPanel;
@@ -66,6 +85,7 @@
     [['نوع الخلفية',[':scope>label']],['لون الخلفية',['[data-color-control=panelColor]','[data-gradient-controls]']],['لون النص',['[data-color-control=panelTextColor]']]].forEach(function(g){var d=document.createElement('details');d.className='design-editor__subgroup';var summary=document.createElement('summary');summary.textContent=g[0];d.append(summary);g[1].forEach(function(selector){var node=container.querySelector(selector);if(node)d.append(node);});container.append(d);});
    }else if(!['edges','schedule','versions'].includes(key)){
     Array.from(panel.children).forEach(function(n){if(n.tagName==='H4'||n.tagName==='P')return;var d=document.createElement('details');d.className='design-editor__subgroup';var summary=document.createElement('summary');summary.textContent=n.matches('.design-offset-control')?n.querySelector('label').textContent.trim():n.tagName==='LABEL'?n.childNodes[0].textContent.trim():n.matches('[data-panel-colors]')?'ألوان خلفية النص':n.matches('[data-images]')?'الصور المتاحة':n.matches('[data-library]')?'مكتبة الصور':n.matches('[data-upload]')?'رفع صورة':n.matches('.design-ai-actions')?'توليد الصورة':n.matches('[data-cutout-actions]')?'تفريغ خلفية الصورة الحالية بالذكاء الاصطناعي':n.tagName==='DETAILS'?'إرشادات التعديل':n.textContent.trim().slice(0,45)||'الإعدادات';var hint=n.nextElementSibling;['standardOnly','doctorOnly','beforeAfterOnly'].forEach(function(flag){if(flag in n.dataset)d.dataset[flag]='';});panel.insertBefore(d,n);d.append(summary,n);if(hint&&hint.tagName==='P'&&!hint.hasAttribute('data-logo-status'))d.append(hint);});
+       if(key==='image')groupBeforeAfter(panel);
    }
    panel.querySelectorAll('details>summary').forEach(function(summary){summary.addEventListener('click',function(){var d=summary.parentElement;if(d.open)return;Array.from(d.parentElement.children).forEach(function(other){if(other!==d&&other.tagName==='DETAILS')other.open=false;});});});
    panel.addEventListener('toggle',function(e){var d=e.target;if(d.tagName!=='DETAILS'||!d.open)return;Array.from(d.parentElement.children).forEach(function(other){if(other!==d&&other.tagName==='DETAILS')other.open=false;});},true);
