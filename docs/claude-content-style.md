@@ -106,6 +106,11 @@ Dr. Dina — render with the dashboard's OWN renderer so it matches the studio e
 - Design ALL slides as one consistent set, 1080×1350: same page frame/template on every slide, slide 1 big hook title + photo, middle slides numbered (١، ٢، ٣…) with the point title + body + small icon/photo, last slide = the page contact slide (kit dina/contact_slide.jpg or sono/contact_slide.jpg style). Swnw: fixed frame on every slide. Dina: use the dashboard renderer variants that fit (e.g. 7/8 for points) or her frames.
 - Upload each slide PNG to the content-designs bucket under `<content_id>/<uuid>/output.png`, then call `POST /rest/v1/rpc/save_private_carousel` with {p_content_id, p_output_urls:[…in order…], p_settings:{template:"claude-carousel"}}. Then move the item to final_approval as usual.
 
+## Reel on-screen look (Mohamed, 2026-10-11)
+- Logo: the approved look is the kit frame `sono/cover_template.png` (Swnw) / `dina/cover_template.png` (Dr. Dina) — the logo sits DIRECTLY on the video, top-left, small (≈200 px wide on 1080), NO box, card or coloured tab behind it. Overlay the cover_template frame on every reel frame (or place `sono/logo_web.png` / the Dina logo at the same position and size). If the footage behind it is very light, add a soft dark gradient at the top of the video instead of a box.
+- Caption box: the white rounded box in the lower third (as in cover_template).
+- Highlighted words in on-screen text: Swnw = ORANGE #F15A22 (never blue); Dr. Dina = her red #E3141B. The rest of the text stays dark (#16212E) on the white box.
+
 ## Reel ending — fixed order (Mohamed, 2026-10-11)
 Every reel ends: content → contact card → outro. The outro is ALWAYS the very last thing.
 - Contact card (≈3 s, gentle zoom, voice-over may say the booking line): Swnw `sono/contact_video.jpg`, Dr. Dina `dina/contact_video.jpg` (kit, 1080×1920). Never build your own contact card for reels.
