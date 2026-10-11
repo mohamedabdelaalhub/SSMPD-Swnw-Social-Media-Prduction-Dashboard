@@ -1,7 +1,7 @@
 // Review additions to the medical-sources system:
 //  - links the model invents are removed (content-ai opens each link once)
 //  - older items that store the whole agent reply ({ideas:[…]}) still show their source
-//  - the vertical label sits beside the title block (≈60% height), higher on Dina quote layouts 1–2
+//  - Swnw: vertical label bottom-left, ending 50 px above the footer; Dina: under the CTA button
 const assert = require('assert/strict'), fs = require('fs'), path = require('path'), vm = require('vm');
 const { stripTypeScriptTypes } = require('node:module');
 const { JSDOM } = require('jsdom');
@@ -47,15 +47,19 @@ const read = f => fs.readFileSync(path.join(root, f), 'utf8');
   w.eval(read('assets/js/design-source.js'));
   const D = w.SSMPDDesignSource;
   D.draw(canvas, { coverSourceText: 'المصدر الطبي للمحتوى: NHS', brand: 'sono' });
-  assert.equal(Math.round(calls.at(-1).y), 810, 'Sono/default: beside the title block (60%)');
-  D.draw(canvas, { coverSourceText: 'المصدر الطبي للمحتوى: NHS', brand: 'dr_dina', layoutTemplate: 'dina', dinaVariant: '1' });
-  assert.equal(Math.round(calls.at(-1).y), 567, 'Dina quote layout: higher, away from the body text');
+  const len = 'المصدر الطبي للمحتوى: NHS'.length * 10;
+  assert.equal(Math.round(calls.at(-1).y), Math.round(1165 - len / 2), 'Swnw: vertical, bottom-left, ending 50 px above the footer');
   assert.ok(calls.every(c => c.x < 60), 'always on the left edge');
+  const texts = [];recorder.fillText = (t, x, y) => texts.push({ t, x, y });
+  const dina = { width: 1080, height: 1350, getContext: () => recorder, designCta: { x: 78, y: 1085, w: 419, h: 58 } };
+  D.draw(dina, { coverSourceText: 'المصدر الطبي للمحتوى: NHS', brand: 'dr_dina', layoutTemplate: 'dina', dinaVariant: '4' });
+  assert.equal(texts.length, 1);assert.equal(Math.round(texts[0].x), 288, 'Dina: centred under the CTA');assert.ok(texts[0].y > 1143 && texts[0].y < 1200, 'Dina: just under the CTA');
+
 
   // 4. Claude's HTML templates carry the label on covers/posts only.
   for (const f of ['sono-carousel-photo/01-cover.html', 'sono-post-photo/post.html', 'dina-carousel/photo-01-cover.html', 'dina-carousel/01-cover-dark.html', 'dina-post-photo/post.html'])
     assert.ok(read('docs/templates/' + f).includes('class=src'), f + ' has the source label');
   for (const f of ['sono-carousel-photo/02-point.html', 'sono-carousel-photo/99-contact.html', 'dina-carousel/02-point.html', 'dina-carousel/99-contact-dark.html', 'dina-carousel/photo-02-point.html'])
     assert.ok(!read('docs/templates/' + f).includes('class=src'), f + ' must not show the source');
-  console.log('PASS: invented/dead links removed, old {ideas} storage, label position per template, cover-only HTML templates.');
+  console.log('PASS: invented/dead links removed, old {ideas} storage, label position per template (Swnw bottom-left, Dina under CTA), cover-only HTML templates.');
 })().catch(e => { console.error(e); process.exitCode = 1; });
