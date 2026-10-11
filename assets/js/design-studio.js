@@ -43,7 +43,6 @@
  function mount(slot,item){
   if(!slot||!window.SSMPDDesignFiles.canEdit(item))return;
   var start=document.createElement('button'); start.className='btn ghost'; start.textContent=item.design_file_url?'تعديل التصميم الحالي':'إنشاء تصميم'; slot.appendChild(start);
-  if(window.SSMPDDesignBudget)window.SSMPDDesignBudget.mount(slot);
   start.onclick=function(){open(item);};
  }
  function open(item){
@@ -114,7 +113,6 @@
   root.querySelector('[data-quality]').closest('label').insertAdjacentHTML('afterend','<label>خلفية الصورة المولّدة<select data-field="sceneBackground"><option value="auto">خلفية عادية</option><option value="transparent">ديكوبيه مفرغة الخلفية</option></select></label>');
   root.querySelector('[data-upload]').closest('label').insertAdjacentHTML('afterend','<div data-cutout-actions><button type="button" class="btn ghost sm" data-remove-background disabled>تفريغ خلفية الصورة الحالية بالذكاء الاصطناعي</button><button type="button" class="btn ghost sm" data-undo-cutout hidden>رجوع للصورة قبل التفريغ</button><p>طلب مدفوع من ميزانية التصميم. راجع ملامح الصورة والتفاصيل بعد التفريغ قبل الحفظ.</p></div>');
   window.SSMPDDesignEditorLayout.mount(root);
-  if(window.SSMPDDesignBudget)window.SSMPDDesignBudget.mount(root.querySelector('[data-tool-panel="generation"]'));
   if(item.brand==='dr_dina'){['logo','panel'].forEach(function(key){root.querySelector('[data-tool-tab="'+key+'"]').hidden=true;});['textOrder','titlePosition','textWidth','logoVariant','fadeStartY','fadeEndY'].forEach(function(key){var el=root.querySelector('[data-field="'+key+'"]').closest('.design-editor__subgroup');if(el){el.hidden=true;el.dataset.dinaHidden='';}});root.querySelector('[data-field=designBody]').value=item.design_body||'';}
   if(editingExisting){root.querySelector('h3').textContent='تعديل التصميم الحالي';root.querySelector('[data-save]').textContent='حفظ التعديل للمراجعة';root.querySelector('[data-generate]').textContent='استبدال الصورة بتوليد جديد';var current=document.createElement('a');current.href=item.design_file_url;current.target='_blank';current.rel='noopener';current.className='btn ghost sm';current.textContent='استعراض التصميم الحالي';root.querySelector('.design-editor__preview-toolbar').append(current);}
   var scheduleExtra=window.SSMPDDoctorContent.mountSchedule(root.querySelector('[data-field="doctorTimeTo"]').closest('label'),null,'doctorScheduleExtra');
@@ -289,6 +287,7 @@
  }
  window.SSMPDDesignStudio={mount:mount,open:open};
 })();
+
 
 
 
