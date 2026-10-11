@@ -244,7 +244,24 @@
     });
   }
 
-  // عرض "كروت الأيام": كل يوم فيه مواد مجدولة كارت لوحده، مرتبين بالتاريخ، وجواه كل مادة بساعتها ومين جدولها.
+  // عرض "كروت الأيام": كل يوم فيه مواد مجدولة كارت لوحده، مجمّعين تحت عناوين (متأخرة / الأسبوع ده / الأسبوع الجاي / بعد كده)،
+  // وجوه الكارت كل مادة بساعتها وعنوانها وتحتهم الصفحة والمنصات ومين جدولها.
+  var LATN = "ar-EG-u-nu-latn";
+  function timeParts(iso) {
+    var parts = new Intl.DateTimeFormat(LATN, { hour: "2-digit", minute: "2-digit", hour12: true }).formatToParts(new Date(iso)), out = { h: "", m: "", p: "" };
+    parts.forEach(function (x) { if (x.type === "hour") out.h = x.value; if (x.type === "minute") out.m = x.value; if (x.type === "dayPeriod") out.p = x.value; });
+    return out;
+  }
+  function daysRowHtml(it, adminsById, showTime) {
+    var t = it.scheduled_publish_at ? timeParts(it.scheduled_publish_at) : null;
+    var who = (adminsById[it.scheduled_by] || {}).name;
+    var plats = W.platformsLabel(itemPlatforms(it));
+    return '<div class="pbd-row" data-open-pub="' + it.id + '" role="button" tabindex="0">' +
+      (showTime ? '<div class="pbd-time">' + (t ? escapeHtml(t.h + ":" + t.m) + "<small>" + escapeHtml(t.p) + "</small>" : "—") + "</div>" : "") +
+      '<div class="pbd-main"><div class="pbd-title">' + escapeHtml(it.title) + "</div>" +
+      '<div class="pbd-meta">' + W.brandBadgeHtml(it.brand) + '<span>' + escapeHtml(plats) + "</span></div>" +
+      (who ? '<div class="pbd-who">جدولها: ' + escapeHtml(who) + "</div>" : "") + "</div></div>";
+  }
   function renderDaysView(container, ctx) {
     var scheduled = ctx.scheduled, ready = ctx.ready, adminsById = ctx.adminsById;
     var byDay = {}, undated = [];
@@ -254,46 +271,54 @@
       (byDay[k] = byDay[k] || []).push(i);
     });
     var keys = Object.keys(byDay).sort();
-    var todayKey = dayKey(new Date()), tomorrowKey = dayKey(new Date(Date.now() + 86400000));
+    var now = new Date(), todayKey = dayKey(now), tomorrowKey = dayKey(new Date(now.getTime() + 86400000));
+    var weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
+    var nextWeekStart = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + 7);
+    var afterNextStart = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + 14);
+    function bucket(k) {
+      if (k < todayKey) return 0;
+      var d = new Date(k + "T00:00:00");
+      if (d < nextWeekStart) return 1;
+      if (d < afterNextStart) return 2;
+      return 3;
+    }
+    var BUCKETS = [["متأخرة — فات ميعادها", "late"], ["الأسبوع ده", ""], ["الأسبوع الجاي", ""], ["بعد كده", ""]];
     var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">' +
       '<h2 style="margin:0;">النشر</h2>' + viewToggleHtml() + '</div>';
-    html += '<h3 style="margin:0 0 10px;">مجدولة للنشر حسب اليوم (' + scheduled.length + ')</h3>';
-    if (!keys.length && !undated.length) html += '<div class="empty-state">مفيش مواد مجدولة دلوقتي</div>';
-    html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:12px;">';
-    keys.forEach(function (k) {
-      var items = byDay[k].slice().sort(function (a, b) { return new Date(a.scheduled_publish_at) - new Date(b.scheduled_publish_at); });
-      var first = new Date(items[0].scheduled_publish_at);
-      var past = k < todayKey;
-      var badge = k === todayKey ? '<span class="status-pill received">النهارده</span>' : (k === tomorrowKey ? '<span class="status-pill draft">بكره</span>' : (past ? '<span class="status-pill rejected">فات ميعادها</span>' : ""));
-      html += '<div class="section" style="margin:0;border:1px solid ' + (k === todayKey ? "var(--c-primary)" : (past ? "var(--c-negative)" : "var(--c-border)")) + ';border-radius:12px;padding:12px;">' +
-        '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">' +
-        '<b>' + escapeHtml(first.toLocaleDateString("ar-EG", { weekday: "long", day: "numeric", month: "long", year: "numeric" })) + '</b>' + badge + '</div>' +
-        '<div style="font-size:11px;color:var(--c-muted);margin-bottom:6px;">' + items.length + ' مادة</div>';
-      items.forEach(function (it) {
-        var time = new Date(it.scheduled_publish_at).toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" });
-        var who = (adminsById[it.scheduled_by] || {}).name;
-        html += '<div data-open-pub="' + it.id + '" style="cursor:pointer;border:1px solid var(--c-border);border-radius:8px;padding:8px 10px;margin-top:6px;">' +
-          '<div style="display:flex;gap:8px;align-items:baseline;"><b style="white-space:nowrap;">' + escapeHtml(time) + '</b>' +
-          '<span style="min-width:0;overflow-wrap:anywhere;">' + escapeHtml(it.title) + '</span>' + W.brandBadgeHtml(it.brand) + '</div>' +
-          '<div style="font-size:11px;color:var(--c-muted);margin-top:3px;">' + escapeHtml(W.platformsLabel(itemPlatforms(it))) + (who ? ' · جدولها: ' + escapeHtml(who) : '') + '</div></div>';
+    html += '<h3 style="margin:0;">مجدولة للنشر حسب اليوم (' + scheduled.length + ')</h3>';
+    if (!keys.length && !undated.length) html += '<div class="empty-state" style="margin-top:12px;">مفيش مواد مجدولة دلوقتي</div>';
+    BUCKETS.forEach(function (info, b) {
+      var days = keys.filter(function (k) { return bucket(k) === b; });
+      if (!days.length) return;
+      var total = days.reduce(function (n, k) { return n + byDay[k].length; }, 0);
+      html += '<div class="pbd-week ' + info[1] + '">' + info[0] + ' <small>(' + total + ')</small></div><div class="pbd-grid">';
+      days.forEach(function (k) {
+        var items = byDay[k].slice().sort(function (a, b2) { return new Date(a.scheduled_publish_at) - new Date(b2.scheduled_publish_at); });
+        var first = new Date(items[0].scheduled_publish_at);
+        var late = k < todayKey, today = k === todayKey;
+        var tag = today ? '<span class="pbd-tag">النهارده</span>' : (k === tomorrowKey ? '<span class="pbd-tag">بكره</span>' : (late ? '<span class="pbd-tag late">متأخرة</span>' : ""));
+        html += '<div class="pbd-card' + (today ? " today" : "") + (late ? " late" : "") + '"><div class="pbd-head">' +
+          '<div class="pbd-daynum">' + first.getDate() + '</div>' +
+          '<div class="pbd-day"><div class="pbd-dayname">' + escapeHtml(first.toLocaleDateString("ar-EG", { weekday: "long" })) + '</div>' +
+          '<div class="pbd-daymonth">' + escapeHtml(first.toLocaleDateString(LATN, { month: "long", year: "numeric" })) + '</div></div>' +
+          tag + '<span class="pbd-count" title="عدد المواد">' + items.length + '</span></div><div class="pbd-list">';
+        items.forEach(function (it) { html += daysRowHtml(it, adminsById, true); });
+        html += '</div></div>';
       });
       html += '</div>';
     });
-    html += '</div>';
     if (undated.length) {
-      html += '<div class="section" style="margin-top:16px;"><h3>مجدولة من غير ميعاد محدد (' + undated.length + ')</h3><div style="display:flex;flex-direction:column;gap:6px;">' +
-        undated.map(function (i) { return '<div data-open-pub="' + i.id + '" style="cursor:pointer;padding:8px 10px;border:1px solid var(--c-border);border-radius:8px;">' + escapeHtml(i.title) + W.brandBadgeHtml(i.brand) + '</div>'; }).join("") + '</div></div>';
+      html += '<div class="pbd-week">مجدولة من غير ميعاد محدد <small>(' + undated.length + ')</small></div><div class="pbd-plain">' +
+        undated.map(function (i) { return daysRowHtml(i, adminsById, false); }).join("") + '</div>';
     }
-    html += '<div class="section" style="margin-top:16px;"><h3>جاهزة للنشر بدون معاد محدد (' + ready.length + ')</h3>';
-    html += ready.length ? '<div style="display:flex;flex-direction:column;gap:6px;">' + ready.map(function (i) {
-      return '<div data-open-pub="' + i.id + '" style="cursor:pointer;padding:8px 10px;border:1px solid var(--c-border);border-radius:8px;">' + escapeHtml(i.title) + W.brandBadgeHtml(i.brand) + '</div>';
-    }).join("") + '</div>' : '<div class="empty-state">مفيش مواد جاهزة للنشر دلوقتي</div>';
-    html += '</div>';
+    html += '<div class="pbd-week">جاهزة للنشر بدون معاد محدد <small>(' + ready.length + ')</small></div>';
+    html += ready.length ? '<div class="pbd-plain">' + ready.map(function (i) { return daysRowHtml(i, adminsById, false); }).join("") + '</div>' : '<div class="empty-state">مفيش مواد جاهزة للنشر دلوقتي</div>';
     container.innerHTML = html;
     window.SSMPDWebsite.mount(container, ctx.allItems);
     wireViewToggle(container, ctx);
     container.querySelectorAll("[data-open-pub]").forEach(function (el) {
       el.onclick = function () { openPublishDetailModal(el.getAttribute("data-open-pub"), ctx); };
+      el.onkeydown = function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); el.click(); } };
     });
   }
 
