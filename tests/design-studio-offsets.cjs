@@ -7,6 +7,7 @@ const {JSDOM}=require('jsdom');
  w.SSMPDDesignComposer={render:async(canvas,scene,data)=>{settings=data;canvas.width=1080;canvas.height=1350;canvas.designIssues=[];canvas.designWarnings=[];}};
  w.SSMPDDesignFiles={canEdit:()=>true,latest:async()=>({id:'version',created_at:'2026-10-08',settings:{headline:'Saved title',headlineOffset:-40,subtitleOffset:35,ctaOffset:-100}})};
  w.SSMPDDb={listBrandLogos:async()=>[],client:{from:()=>({select(){return this},eq(){return this},order(){return this},limit:async()=>({data:[]})})}};
+ for(const f of ['design-panel-color','doctor-schedule','doctor-content','dina-content','before-after-content','design-copy','design-expansion'])w.eval(fs.readFileSync(path.resolve(__dirname,'../assets/js/'+f+'.js'),'utf8'));
  w.eval(fs.readFileSync(path.resolve(__dirname,'../assets/js/design-editor-layout.js'),'utf8'));
  w.eval(fs.readFileSync(path.resolve(__dirname,'../assets/js/design-studio.js'),'utf8'));
  w.SSMPDDesignStudio.open({id:'item',brand:'sono',title:'Title',hook_text:'Hook'});

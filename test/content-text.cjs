@@ -16,8 +16,10 @@ const document = {
   }
 };
 const window = { SSMPD_CONFIG: { supabase: { url: 'https://example.invalid', anonKey: 'test' } }, supabase: { createClient: () => client }, confirm() { confirmations++; return answer; } };
+// The post preview (text + design) now lives in publication-preview.js, which renders with textContent only.
+let previewed;window.SSMPDPublicationPreview = { mount(el, item) { previewed = window.SSMPDPublicationText.compose(item); el.textContent = previewed; } };
 const context = vm.createContext({ window, document, console, Promise, Set, Map });
-for (const file of ['content-text.js', 'db.js']) vm.runInContext(fs.readFileSync(path.join(root, 'assets/js', file), 'utf8'), context);
+for (const file of ['publication-text.js', 'content-text.js', 'db.js']) vm.runInContext(fs.readFileSync(path.join(root, 'assets/js', file), 'utf8'), context);
 const T = window.SSMPDContentText, db = window.SSMPDDb;
 const paragraph = 'مع بداية المدارس نلاحظ تغير سلوك الطفل وقد يحتاج إلى دعم ومتابعة من الأسرة والمدرسة.';
 async function main() {
@@ -38,16 +40,16 @@ async function main() {
   const before = confirmations;
   await db.updateContentItem('id', { stage: 'scheduled' });
   assert.equal(confirmations, before, 'Stage-only patches must not show a save warning');
-  assert.equal(T.publicationText({ body: paragraph, caption_text: 'Different caption', title: 'Title' }), paragraph);
+  assert.equal(T.publicationText({ body: paragraph, caption_text: 'Different caption', title: 'Title' }), 'Different caption', 'the ready caption wins over the draft body (publication-text.js contract)');assert.equal(T.publicationText({ body: paragraph, title: 'Title' }), paragraph);
   assert.equal(T.publicationText({ body: '', title: 'Title' }), 'Title');
   let result = T.preview({ body: repeated }, 'تأكيد النشر');
   assert.ok(lastModal.querySelector('[data-repeat]').textContent.includes('مكرر'));
-  assert.equal(lastModal.querySelector('[data-text]').textContent, repeated);
+  assert.equal(previewed, repeated);assert.equal(lastModal.querySelector('[data-post-preview]').textContent, repeated);
   lastModal.querySelector('[data-back]').onclick();
   assert.equal(await result, false);
   result = T.preview({ body: '<img src=x onerror=alert(1)>' }, 'تأكيد الجدولة');
-  assert.equal(lastModal.querySelector('[data-text]').textContent, '<img src=x onerror=alert(1)>');
-  assert.equal(lastModal.querySelector('[data-text]').innerHTML, undefined, 'Preview uses textContent, not HTML');
+  assert.equal(previewed, '<img src=x onerror=alert(1)>');
+  assert.equal(fs.readFileSync(path.join(root, 'assets/js/publication-preview.js'), 'utf8').includes('innerHTML'), false, 'Preview uses textContent, not HTML');
   lastModal.querySelector('[data-continue]').onclick();
   assert.equal(await result, true);
   // Exercise both real UI entry points. Cancelling the preview must not queue a post.
@@ -62,7 +64,9 @@ async function main() {
     updateContentItem: async () => { updates++; return {}; },
     logActivity: async () => {},
     createMetaPublishJob: async () => { jobs++; },
-    listContentItems: async () => []
+    listContentItems: async () => [],
+    // render-publish.js keeps an existing website publication when social platforms change.
+    client: { from: () => ({ select() { return this; }, eq() { return this; }, maybeSingle: async () => ({ data: null }) }) }
   };
   T.preview = async () => previewAnswer;
   const source = fs.readFileSync(path.join(root, 'assets/js/render-publish.js'), 'utf8')

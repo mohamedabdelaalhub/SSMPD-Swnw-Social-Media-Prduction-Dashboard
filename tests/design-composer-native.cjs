@@ -8,13 +8,13 @@ class ImageAdapter{
  set src(url){loadImage(new URL(url).pathname).then(img=>{Object.assign(this,{width:img.width,height:img.height});this.img=img;this.onload();}).catch(e=>this.onerror(e));}
 }
 const context={window:{},document:{currentScript:{src:'file://'+root+'/assets/js/design-composer.js'},fonts:{add(){}}},FontFace:class{load(){return Promise.resolve(this);}},Image:ImageAdapter,URL};
-vm.runInNewContext(fs.readFileSync(root+'/assets/js/design-composer.js','utf8'),context);
+vm.createContext(context);vm.runInContext(fs.readFileSync(root+'/assets/js/design-panel-color.js','utf8'),context);vm.runInContext(fs.readFileSync(root+'/assets/js/design-composer.js','utf8'),context);
 (async()=>{
  const scene=createCanvas(1536,1024);scene.getContext('2d').fillStyle='#ddeaf0';scene.getContext('2d').fillRect(0,0,1536,1024);
  function canvas(){const c=createCanvas(1080,1350),ctx=c.getContext('2d'),draw=ctx.drawImage.bind(ctx);ctx.drawImage=(img,...args)=>draw(img.img||img,...args);return c;}
  const base={headlineSize:64,subtitle:'اعرف إمتى تحتاج تقييمًا طبيًا',cta:'تواصل معنا',zoom:1,x:50,y:50};
  for(const headline of ['التعب المستمر يستحق الاهتمام','آلام الظهر','الكبد الدهني']){const c=canvas();await context.window.SSMPDDesignComposer.render(c,scene,{...base,headline});assert.equal(c.width,1080);assert.equal(c.height,1350);fs.writeFileSync('/tmp/sono-template-preview.png',c.toBuffer('image/png'));}
- await assert.rejects(context.window.SSMPDDesignComposer.render(canvas(),scene,{...base,headline:'كلمة '.repeat(150)}),/خارج المساحة|أكبر من عرض|متداخلة/);
+ {const over=canvas();await context.window.SSMPDDesignComposer.render(over,scene,{...base,headline:'كلمة '.repeat(150)});assert((over.designWarnings||[]).some(w=>/خارج المساحة|أكبر من عرض|متداخلة/.test(w)),'overflow is reported as advice, export not blocked');}
  // Footer pixels must equal the overlay at export size.
  const c=canvas();await context.window.SSMPDDesignComposer.render(c,scene,{...base,headline:'آلام الظهر'});
  const overlay=await loadImage(root+'/assets/design-templates/sono-white/overlay.png'),ref=createCanvas(1080,1350);ref.getContext('2d').drawImage(overlay,0,0,1080,1350);
@@ -30,7 +30,7 @@ vm.runInNewContext(fs.readFileSync(root+'/assets/js/design-composer.js','utf8'),
    assert(context.window.SSMPDDesignComposer.scenePrompt('clinic',{titlePosition}).includes('upper-left corner'));
  }
  await context.window.SSMPDDesignComposer.render(canvas(),scene,{...base,headline:'التعب',headlineSize:130,headlineOffset:-120,ctaSize:40,ctaOffset:20});
- await assert.rejects(context.window.SSMPDDesignComposer.render(canvas(),scene,{...base,headline:'التعب',ctaOffset:60,ctaSize:80}),/خارج المساحة|متداخلة/);
+ {const over=canvas();await context.window.SSMPDDesignComposer.render(over,scene,{...base,headline:'التعب',ctaOffset:60,ctaSize:80});assert((over.designWarnings||[]).length>0,'CTA overflow is reported as advice');}
  // Reverse complete text blocks without changing their content, font size or styling.
  for(const titlePosition of ['top','bottom','right','left']) {
    for(const multiline of [false,true]) {
