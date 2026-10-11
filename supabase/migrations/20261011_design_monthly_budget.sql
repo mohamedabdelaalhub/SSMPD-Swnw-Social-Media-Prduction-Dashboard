@@ -35,9 +35,7 @@ returns jsonb language plpgsql security definer set search_path=public as $$
 declare me uuid := public.my_admin_id(); job public.design_jobs%rowtype; reserve numeric; monthly_limit numeric;
 begin
  if me is null then raise exception 'غير مسموح'; end if;
- if not exists(select 1 from public.content_items where id=p_content_id and brand in ('sono','dr_dina') and stage not in ('published','scheduled','ready_to_publish') and
- (created_by=me or assigned_designer=me or public.can_manage_all_content() or
- (design_execution='ai' and stage in ('in_design','needs_revision') and public.has_role('approver')))) then raise exception 'غير مسموح لهذه المادة'; end if;
+ if not public.can_write_private_design(p_content_id) or not exists(select 1 from public.content_items where id=p_content_id and brand in ('sono','dr_dina')) then raise exception 'غير مسموح لهذه المادة'; end if;
  if p_request_key is null or p_prompt is null or p_quality is null or p_quality not in ('medium','high') or length(trim(p_prompt)) not between 10 and 3000 then raise exception 'وصف الصورة أو الجودة غير صالح'; end if;
  -- Serialize all account reservations, including different users, before checking the monthly cap.
  perform pg_advisory_xact_lock(20260920,1080);
@@ -53,6 +51,7 @@ begin
  -- Conservative reservation, not an exact OpenAI bill. Failed/ambiguous requests stay charged against the cap.
  reserve := case when p_quality='high' then 0.30 else 0.10 end;
  select monthly_limit_usd into monthly_limit from public.design_budget_settings where singleton;
+ if monthly_limit is null then raise exception 'إعداد الميزانية غير موجود. راجع السوبر أدمن.'; end if;
  if coalesce((select sum(estimated_cost_usd) from public.design_jobs where created_at>=date_trunc('month',now())),0)+reserve>monthly_limit then
    raise exception 'تم بلوغ الميزانية الشهرية للتصميم: % دولار. راجع السوبر أدمن.',monthly_limit;
  end if;
@@ -65,3 +64,4 @@ revoke all on function public.reserve_design_scene(uuid,uuid,text,text) from pub
 grant execute on function public.reserve_design_scene(uuid,uuid,text,text) to authenticated;
 
 commit;
+

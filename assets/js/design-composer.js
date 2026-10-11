@@ -81,7 +81,7 @@
       var sceneTop=0,height=(fullBleed?1350:1260)-sceneTop,paddingScale=data.scenePaddingScale===2?2:data.scenePaddingScale===1?1:null,sceneZoom=number(data.zoom,1,.5,3),scale=Math.max(sceneWidth/scene.width,height/scene.height)*(paddingScale?Math.max(1/paddingScale,sceneZoom)*paddingScale:sceneZoom);
       var w=scene.width*scale,h=scene.height*scale;
       ctx.save();ctx.beginPath();ctx.rect(sceneX,sceneTop,sceneWidth,height);ctx.clip();
-      ctx.drawImage(scene,sceneX+(sceneWidth-w)*number(data.x,50,0,100)/100,sceneTop+(height-h)*number(data.y,50,0,100)/100+number(data.imageOffsetY,0,-400,400),w,h);ctx.restore();
+      ctx.drawImage(scene,sceneX+(sceneWidth-w)*number(data.x,50,0,100)/100+number(data.imageOffsetX,0,-1080,1080),sceneTop+(height-h)*number(data.y,50,0,100)/100+number(data.imageOffsetY,0,-1350,1350),w,h);ctx.restore();
     }
     var fadeStart=number(data.fadeStartY,960,500,1000),fadeEnd=number(data.fadeEndY,1105,550,1120);
     if(fadeEnd<fadeStart+50)fadeEnd=Math.min(1120,fadeStart+50);
@@ -168,6 +168,7 @@
   }
   window.SSMPDDesignComposer={render:render,loadImage:loadImage,logoImage:logoImage,ready:ready,scenePrompt:scenePrompt};
 })();
+
 
 
 

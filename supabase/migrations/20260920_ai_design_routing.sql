@@ -212,7 +212,7 @@ revoke all on function public.create_video_job(uuid) from public;
 grant execute on function public.create_video_job(uuid) to authenticated;
 create or replace function public.reserve_design_scene(p_content_id uuid,p_request_key uuid,p_prompt text,p_quality text)
 returns jsonb language plpgsql security definer set search_path=public as $$
-declare me uuid := public.my_admin_id(); job public.design_jobs%rowtype; reserve numeric;
+declare me uuid := public.my_admin_id(); job public.design_jobs%rowtype; reserve numeric; monthly_limit numeric := 5;
 begin
  if me is null then raise exception 'غير مسموح'; end if;
  if not exists(select 1 from public.content_items where id=p_content_id and brand='sono' and stage not in ('published','scheduled','ready_to_publish') and
@@ -232,8 +232,13 @@ begin
  if (select count(*) from public.design_jobs where content_id=p_content_id and attempt_count>0)>=3 then raise exception 'وصلت لحد ٣ محاولات لهذه المادة'; end if;
  -- Conservative reservation, not an exact OpenAI bill. Failed/ambiguous requests stay charged against the cap.
  reserve := case when p_quality='high' then 0.30 else 0.10 end;
- if coalesce((select sum(estimated_cost_usd) from public.design_jobs where created_at>=date_trunc('month',now())),0)+reserve>5 then
-   raise exception 'تم بلوغ حد التجربة الشهري: ٥ دولارات';
+ -- Honor a saved team budget even when an older activation file is re-run.
+ if to_regclass('public.design_budget_settings') is not null then
+   execute 'select monthly_limit_usd from public.design_budget_settings where singleton' into monthly_limit;
+   monthly_limit := coalesce(monthly_limit,0);
+ end if;
+ if coalesce((select sum(estimated_cost_usd) from public.design_jobs where created_at>=date_trunc('month',now())),0)+reserve>monthly_limit then
+   raise exception 'تم بلوغ الميزانية الشهرية للتصميم: % دولار. راجع السوبر أدمن.',monthly_limit;
  end if;
  insert into public.design_jobs(content_id,created_by,template_id,request_key,status,scene_prompt,image_model,image_quality,attempt_count,estimated_cost_usd)
  values(p_content_id,me,(select id from public.design_templates where template_key='sono-white-v1'),p_request_key,'generating_scene',p_prompt,'gpt-image-1.5',p_quality,1,reserve)
@@ -322,3 +327,4 @@ end; $$;
 revoke all on function public.submit_ai_design(uuid) from public;
 grant execute on function public.submit_ai_design(uuid) to authenticated;
 commit;
+

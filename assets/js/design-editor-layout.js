@@ -23,7 +23,7 @@
    ['body','نص التصميم',['designBody','designBodySize']],
    ['subtitle','السطر التوضيحي',['subtitle','subtitleSize','subtitleOffset']],
    ['cta','التفاعل',['cta','ctaSize','ctaOffset']],
-   ['image','الصورة',['[data-upload]','[data-upload-after]','[data-cutout-actions]','beforePhotoX','afterZoom','afterPhotoX','afterPhotoY','beforeAfterEvidence','[data-library]','[data-images]','zoom','x','imageOffsetY','fadeStartY','fadeEndY','doctorZoom','doctorPhotoX','doctorPhotoY']],
+   ['image','الصورة',['[data-upload]','[data-upload-after]','[data-cutout-actions]','beforePhotoX','afterZoom','afterPhotoX','afterPhotoY','beforeAfterEvidence','[data-library]','[data-images]','zoom','x','imageOffsetX','imageOffsetY','fadeStartY','fadeEndY','doctorZoom','doctorPhotoX','doctorPhotoY']],
    ['logo','اللوجو',['logoVariant','[data-logo-status]']],
    ['layout','القالب والترتيب',['layoutTemplate','cosmeticsBackground','cosmeticsBackgroundColor','dinaVariant','textOrder','titlePosition','textWidth']],
    ['generation','التوليد',['[data-prompt]','[data-quality]','sceneBackground','.design-ai-actions']],
@@ -41,7 +41,7 @@
     var node=tools.querySelector(key[0]==='['||key[0]==='.'?key:'[data-field="'+key+'"]');if(!node)return;
     var unit=node.closest('.design-offset-control')||node.closest('label')||node;
     var hint=unit.nextElementSibling;
-    if(['zoom','x','imageOffsetY','fadeStartY','fadeEndY','textOrder','titlePosition','textWidth','[data-library]','[data-images]'].includes(key))unit.dataset.standardOnly='';
+    if(['zoom','x','imageOffsetX','imageOffsetY','fadeStartY','fadeEndY','textOrder','titlePosition','textWidth','[data-library]','[data-images]'].includes(key))unit.dataset.standardOnly='';
     if(key.startsWith('doctor'))unit.dataset.doctorOnly='';
     panel.append(unit);
     if(hint&&hint.tagName==='P'&&!hint.hasAttribute('data-logo-status')&&!hint.hasAttribute('data-status')&&!hint.hasAttribute('data-draft-status')){if(unit.hasAttribute('data-standard-only'))hint.dataset.standardOnly='';if(unit.hasAttribute('data-doctor-only'))hint.dataset.doctorOnly='';panel.append(hint);}
@@ -93,6 +93,7 @@
  }
  window.SSMPDDesignEditorLayout={mount:mount};
 })();
+
 
 
 

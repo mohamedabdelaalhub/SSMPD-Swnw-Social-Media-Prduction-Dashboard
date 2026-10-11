@@ -21,15 +21,15 @@
   c.fillStyle='#111';c.font='19.23px DinaContact';c.textAlign='center';c.textBaseline='middle';c.direction='ltr';c.fillText('01010686264',461.6,1307);c.restore();
  }
  async function render(canvas,scene,d){var frames=await ready(),v=Math.max(1,Math.min(12,Math.round(n(d.dinaVariant,1)))),entry=frames[v-1],def=defaults(v);if(!images[v])images[v]=window.SSMPDDesignComposer.loadImage(new URL('design-templates/dr-dina/'+v+'.webp?v=2',base));var overlay=await images[v];canvas.width=1080;canvas.height=1350;canvas.designIssues=[];canvas.designWarnings=[];var c=canvas.getContext('2d');c.fillStyle='#fff';c.fillRect(0,0,1080,1350);
-  if(scene&&v!==5){var box=entry.scene?entry.scene.box:[0,0,1080,1350];c.save();if(entry.scene){shape(c,entry.scene);c.clip();}var pad=n(d.scenePaddingScale,1),zoom=n(d.zoom,1);var scale=Math.max(box[2]/scene.width,box[3]/scene.height)*(pad>1?Math.max(1/pad,zoom)*pad:zoom);c.drawImage(scene,box[0]+(box[2]-scene.width*scale)*Math.max(0,Math.min(100,n(d.x,50)))/100,box[1]+(box[3]-scene.height*scale)/2+n(d.imageOffsetY,0),scene.width*scale,scene.height*scale);c.restore();}
+  if(scene&&v!==5){var box=entry.scene?entry.scene.box:[0,0,1080,1350];c.save();if(entry.scene){shape(c,entry.scene);c.clip();}var pad=n(d.scenePaddingScale,1),zoom=n(d.zoom,1);var scale=Math.max(box[2]/scene.width,box[3]/scene.height)*(pad>1?Math.max(1/pad,zoom)*pad:zoom);c.drawImage(scene,box[0]+(box[2]-scene.width*scale)*Math.max(0,Math.min(100,n(d.x,50)))/100+n(d.imageOffsetX,0),box[1]+(box[3]-scene.height*scale)/2+n(d.imageOffsetY,0),scene.width*scale,scene.height*scale);c.restore();}
   // Template-owned colour treatments precede the immutable logo and contact artwork.
   if(v===7||v>=10){var top=v===7,start=top?0:820,end=top?490:1280,col=v===7?'#bf7526':v===10?'#101010':v===11?'#f6edd6':'#6e225b';var g=c.createLinearGradient(0,start,0,end);g.addColorStop(0,top?col:col+'00');g.addColorStop(1,top?col+'00':col);c.fillStyle=g;c.fillRect(0,start,1080,end-start);}
   if(v>=6)window.SSMPDDesignPanelColor.edges(c,d);
   c.drawImage(overlay,0,0,1080,1350);
   // The original quote artwork has a white footer wedge in the photo slot.
   // Extend the same photo through it, retaining the curved divider and social pill.
-  if(scene&&v<=2){c.save();shape(c,entry.scene);c.clip();c.beginPath();c.rect(0,1240,1080,110);c.roundRect(660,1269,370,31,16);c.clip('evenodd');c.drawImage(scene,box[0]+(box[2]-scene.width*scale)*Math.max(0,Math.min(100,n(d.x,50)))/100,box[1]+(box[3]-scene.height*scale)/2+n(d.imageOffsetY,0),scene.width*scale,scene.height*scale);c.restore();}
-  if(v===5&&scene){var slot=entry.scene.box;c.save();c.beginPath();c.rect(40,220,430,410);c.clip();var fit=Math.min(slot[2]/scene.width,slot[3]/scene.height)*n(d.zoom,1);c.drawImage(scene,slot[0]+(slot[2]-scene.width*fit)*Math.max(0,Math.min(100,n(d.x,50)))/100,slot[1]+(slot[3]-scene.height*fit)/2+n(d.imageOffsetY,0),scene.width*fit,scene.height*fit);c.restore();}
+  if(scene&&v<=2){c.save();shape(c,entry.scene);c.clip();c.beginPath();c.rect(0,1240,1080,110);c.roundRect(660,1269,370,31,16);c.clip('evenodd');c.drawImage(scene,box[0]+(box[2]-scene.width*scale)*Math.max(0,Math.min(100,n(d.x,50)))/100+n(d.imageOffsetX,0),box[1]+(box[3]-scene.height*scale)/2+n(d.imageOffsetY,0),scene.width*scale,scene.height*scale);c.restore();}
+  if(v===5&&scene){var slot=entry.scene.box;c.save();c.beginPath();c.rect(40,220,430,410);c.clip();var fit=Math.min(slot[2]/scene.width,slot[3]/scene.height)*n(d.zoom,1);c.drawImage(scene,slot[0]+(slot[2]-scene.width*fit)*Math.max(0,Math.min(100,n(d.x,50)))/100+n(d.imageOffsetX,0),slot[1]+(slot[3]-scene.height*fit)/2+n(d.imageOffsetY,0),scene.width*fit,scene.height*fit);c.restore();}
   if(v>=3)contact(c,v);
   var h,s,a,b,color=v===5||v===10||v===11?'#fd0000':v===9?'#ec9f03':v>=6?'#fff':'#111';
   if(v<=5){h=v<=2?[90,595,382,83]:v<=4?[90,635,395,195]:[102,670,372,93];s=[h[0],h[1]+h[3]+12,h[2],65];b=v<=2?[50,800,402,290]:v<=4?[58,790,430,170]:[102,850,372,110];a=[h[0],v===5?995:1090,h[2],48];if(!d.subtitle){b[1]=v<=2?706:v<=4?721:790;b[3]=v<=2?388:v<=4?200:111;}}
@@ -44,3 +44,4 @@
  }
  window.SSMPDDinaTemplate={render:render,defaults:defaults};
 })();
+

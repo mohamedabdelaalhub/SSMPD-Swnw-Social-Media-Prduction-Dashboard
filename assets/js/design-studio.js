@@ -17,12 +17,12 @@
   });
  }
 
- function offsetControl(key,label,min,max){
+ function offsetControl(key,label,min,max,negativeLabel,positiveLabel){
   return '<div class="design-offset-control" style="margin:12px 0"><label for="design-number-'+key+'">'+label+'</label>'+ 
    '<div style="display:grid;grid-template-columns:1fr 90px 1fr;gap:8px;align-items:center">'+
-   '<button type="button" class="btn ghost sm" style="min-height:44px" data-offset-step="'+key+'" data-delta="-5">لفوق</button>'+
+   '<button type="button" class="btn ghost sm" style="min-height:44px" data-offset-step="'+key+'" data-delta="-5">'+(negativeLabel||'لفوق')+'</button>'+
    '<input id="design-number-'+key+'" type="text" inputmode="text" dir="ltr" aria-label="'+label+' بالبكسل" data-number-for="'+key+'" min="'+min+'" max="'+max+'" value="0">'+
-   '<button type="button" class="btn ghost sm" style="min-height:44px" data-offset-step="'+key+'" data-delta="5">لتحت</button></div>'+
+   '<button type="button" class="btn ghost sm" style="min-height:44px" data-offset-step="'+key+'" data-delta="5">'+(positiveLabel||'لتحت')+'</button></div>'+
    '<input type="range" dir="ltr" aria-label="'+label+'" data-field="'+key+'" min="'+min+'" max="'+max+'" step="1" value="0">'+
    '<button type="button" class="btn ghost sm" style="min-height:44px" data-offset-reset="'+key+'">رجوع للصفر</button></div>';
  }
@@ -72,11 +72,13 @@
    '<button class="btn ghost" data-library>صور سونو المحفوظة</button><div data-images style="display:flex;flex-wrap:wrap;gap:6px"></div>'+
    '<details><summary>توليد صورة بالذكاء الاصطناعي</summary><label>وصف المشهد<textarea data-prompt rows="3"></textarea></label>'+
    '<label>الجودة<select data-quality><option value="medium">Medium</option><option value="high">High</option></select></label>'+
-   '<p>توليد صورة واحدة لكل طلب. حد التجربة ٣ محاولات للمادة و٥ دولارات شهريًا. تعديل النص لا يستهلك توليدًا جديدًا.</p>'+
+   '<p>توليد صورة واحدة لكل طلب. حد التجربة ٣ محاولات للمادة. الميزانية الشهرية يحددها السوبر أدمن. تعديل النص لا يستهلك توليدًا جديدًا.</p>'+
    '<div class="design-ai-actions"><button class="btn" data-generate>توليد الصورة</button><button class="btn ghost" data-retry hidden>محاولة جديدة بعد الفشل</button></div></details>'+
    '<label>تكبير أو تصغير الصورة <input type="number" data-number-for="zoom" min="0.5" max="3" step="0.05" value="1">×<input type="range" data-field="zoom" min="0.5" max="3" step="0.05" value="1"></label><p>اكتب قيمة من 0.5× إلى 3×. التصغير قد يظهر خلفية فارغة حول الصورة.</p>'+
+   offsetControl('imageOffsetX','تحريك الصورة أفقيًا بالبكسل',-1080,1080,'لليسار','لليمين')+
    '<label>موضع أفقي <input type="number" data-number-for="x" min="0" max="100" step="1" value="50"><input type="range" data-field="x" min="0" max="100" value="50"></label>'+
-   "<label>تحريك الصورة رأسيًا <input type=\"number\" data-number-for=\"imageOffsetY\" min=\"-400\" max=\"400\" step=\"5\" value=\"0\"> <!--ssmpd-i18n:%D8%A8%D9%83%D8%B3%D9%84--> بكسل<input type=\"range\" data-field=\"imageOffsetY\" min=\"-400\" max=\"400\" step=\"5\" value=\"0\"></label><p>السالب لفوق والموجب لتحت، حتى بدون تكبير. لو ظهرت حافة فارغة، قلّل التحريك أو كبّر الصورة.</p>"+
+   offsetControl('imageOffsetY','تحريك الصورة رأسيًا بالبكسل',-1350,1350)+
+   '<p>السالب لفوق والموجب لتحت. التعديل يظهر في المعاينة.</p>'+
    "<label>بداية الـFade <input type=\"number\" data-number-for=\"fadeStartY\" min=\"500\" max=\"1000\" step=\"5\" value=\"960\"> <!--ssmpd-i18n:%D8%A8%D9%83%D8%B3%D9%84--> بكسل<input type=\"range\" data-field=\"fadeStartY\" min=\"500\" max=\"1000\" step=\"5\" value=\"960\"></label>"+
    "<label>نهاية الـFade <input type=\"number\" data-number-for=\"fadeEndY\" min=\"550\" max=\"1120\" step=\"5\" value=\"1105\"> <!--ssmpd-i18n:%D8%A8%D9%83%D8%B3%D9%84--> بكسل<input type=\"range\" data-field=\"fadeEndY\" min=\"550\" max=\"1120\" step=\"5\" value=\"1105\"></label><p>حرّك بداية ونهاية التلاشي لتحكم مساحة ظهور الصورة. النهاية تتوقف قبل الفوتر.</p>"+
    '<p role="status" data-draft-status></p><p role="status" data-status></p><button class="btn" data-download disabled>تنزيل PNG</button> '+
@@ -213,10 +215,10 @@
    finally{working=false;buttons();}
   };
   expansionUI=window.SSMPDDesignExpansion.mount(root,item,{
-   current:function(){return {scene:scene,sceneBlob:sceneBlob,sceneJobId:sceneJobId,sourceFile:sourceFile,sourceUrl:sourceUrl,originalUrl:expansionOriginalUrl,originalPath:expansionOriginalPath,originalFraming:expansionOriginalFraming,scenePaddingScale:scenePaddingScale,zoom:root.querySelector('[data-field="zoom"]').value,x:root.querySelector('[data-field="x"]').value,imageOffsetY:root.querySelector('[data-field="imageOffsetY"]').value};},
+   current:function(){return {scene:scene,sceneBlob:sceneBlob,sceneJobId:sceneJobId,sourceFile:sourceFile,sourceUrl:sourceUrl,originalUrl:expansionOriginalUrl,originalPath:expansionOriginalPath,originalFraming:expansionOriginalFraming,scenePaddingScale:scenePaddingScale,zoom:root.querySelector('[data-field="zoom"]').value,x:root.querySelector('[data-field="x"]').value,imageOffsetX:root.querySelector('[data-field="imageOffsetX"]').value,imageOffsetY:root.querySelector('[data-field="imageOffsetY"]').value};},
    busy:function(){return working||restoring||loadFailed;},setBusy:function(value){working=value;buttons();},invoke:invoke,save:saveDraft,
-   apply:async function(url,id,originalUrl,originalPath,reset,mode){var framing=expansionOriginalFraming;if(reset)expansionOriginalFraming={scenePaddingScale:scenePaddingScale,zoom:root.querySelector('[data-field="zoom"]').value,x:root.querySelector('[data-field="x"]').value,imageOffsetY:root.querySelector('[data-field="imageOffsetY"]').value};await setScene(url);sceneJobId=id;sourceFile=null;sourceUrl=url;expansionOriginalUrl=originalUrl;expansionOriginalPath=originalPath;if(reset){scenePaddingScale=mode==='all'?2:1;['zoom','x','imageOffsetY'].forEach(function(key){var value=key==='zoom'?(mode==='all'?'.7':'1'):key==='x'?'50':'0';root.querySelector('[data-field="'+key+'"]').value=value;root.querySelector('[data-number-for="'+key+'"]').value=value;});await paint();}else if(framing){scenePaddingScale=framing.scenePaddingScale||null;["zoom","x","imageOffsetY"].forEach(function(key){root.querySelector('[data-field="'+key+'"]').value=framing[key];root.querySelector('[data-number-for="'+key+'"]').value=framing[key];});expansionOriginalFraming=null;await paint();}else{scenePaddingScale=null;root.querySelector('[data-field="zoom"]').value=1;root.querySelector('[data-number-for="zoom"]').value=1;await paint();}},
-   restore:async function(previous){scene=previous.scene;sceneBlob=previous.sceneBlob;sceneJobId=previous.sceneJobId;sourceFile=previous.sourceFile;sourceUrl=previous.sourceUrl;expansionOriginalUrl=previous.originalUrl;expansionOriginalPath=previous.originalPath;expansionOriginalFraming=previous.originalFraming;scenePaddingScale=previous.scenePaddingScale;['zoom','x','imageOffsetY'].forEach(function(key){root.querySelector('[data-field="'+key+'"]').value=previous[key];root.querySelector('[data-number-for="'+key+'"]').value=previous[key];});await paint();}
+   apply:async function(url,id,originalUrl,originalPath,reset,mode){var framing=expansionOriginalFraming;if(reset)expansionOriginalFraming={scenePaddingScale:scenePaddingScale,zoom:root.querySelector('[data-field="zoom"]').value,x:root.querySelector('[data-field="x"]').value,imageOffsetX:root.querySelector('[data-field="imageOffsetX"]').value,imageOffsetY:root.querySelector('[data-field="imageOffsetY"]').value};await setScene(url);sceneJobId=id;sourceFile=null;sourceUrl=url;expansionOriginalUrl=originalUrl;expansionOriginalPath=originalPath;if(reset){scenePaddingScale=mode==='all'?2:1;['zoom','x','imageOffsetX','imageOffsetY'].forEach(function(key){var value=key==='zoom'?(mode==='all'?'.7':'1'):key==='x'?'50':'0';root.querySelector('[data-field="'+key+'"]').value=value;root.querySelector('[data-number-for="'+key+'"]').value=value;});await paint();}else if(framing){scenePaddingScale=framing.scenePaddingScale||null;["zoom","x","imageOffsetX","imageOffsetY"].forEach(function(key){root.querySelector('[data-field="'+key+'"]').value=framing[key]==null?(key==='x'?50:key==='zoom'?1:0):framing[key];root.querySelector('[data-number-for="'+key+'"]').value=framing[key]==null?(key==='x'?50:key==='zoom'?1:0):framing[key];});expansionOriginalFraming=null;await paint();}else{scenePaddingScale=null;root.querySelector('[data-field="zoom"]').value=1;root.querySelector('[data-number-for="zoom"]').value=1;await paint();}},
+   restore:async function(previous){scene=previous.scene;sceneBlob=previous.sceneBlob;sceneJobId=previous.sceneJobId;sourceFile=previous.sourceFile;sourceUrl=previous.sourceUrl;expansionOriginalUrl=previous.originalUrl;expansionOriginalPath=previous.originalPath;expansionOriginalFraming=previous.originalFraming;scenePaddingScale=previous.scenePaddingScale;['zoom','x','imageOffsetX','imageOffsetY'].forEach(function(key){root.querySelector('[data-field="'+key+'"]').value=previous[key];root.querySelector('[data-number-for="'+key+'"]').value=previous[key];});await paint();}
   });
   function blob(){if(!valid)return Promise.reject(new Error('صحّح المعاينة قبل التنزيل.'));return new Promise(function(resolve,reject){canvas.toBlob(function(b){b?resolve(b):reject(new Error('فشل تصدير الصورة'));},'image/png');});}
   root.querySelector('[data-download]').onclick=async function(){try{var url=URL.createObjectURL(await blob()),a=document.createElement('a');a.href=url;a.download=item.brand+'-'+item.id+'-'+Date.now()+'.png';a.click();setTimeout(function(){URL.revokeObjectURL(url);},1000);}catch(e){status.textContent=e.message;}};
@@ -271,6 +273,7 @@
  }
  window.SSMPDDesignStudio={mount:mount,open:open};
 })();
+
 
 
 
