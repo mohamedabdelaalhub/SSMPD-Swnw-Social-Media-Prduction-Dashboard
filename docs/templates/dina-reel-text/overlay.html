@@ -1,0 +1,27 @@
+<!doctype html>
+<!-- Dr. Dina reel text style "headline on video" (Mohamed approved the look, 2026-10-11).
+     Transparent 1080×1920 overlay: render with omitBackground:true and lay it over the footage with ffmpeg.
+     Query params: tag, title (use \n for a line break), hl (word(s) to colour), sub. -->
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><style>
+@font-face{font-family:BV;src:url(../../../assets/fonts/Tajawal-Black.ttf);font-weight:700}
+@font-face{font-family:BV;src:url(../../../assets/fonts/Tajawal-Medium.ttf);font-weight:400}
+html,body{margin:0;width:1080px;height:1920px;background:transparent;overflow:hidden}
+.shade{position:absolute;left:0;right:0;bottom:0;height:1150px;background:linear-gradient(to bottom,rgba(90,27,74,0) 0%,rgba(90,27,74,.55) 38%,rgba(60,16,50,.92) 75%,rgba(44,11,38,.97) 100%)}
+.logo{position:absolute;top:70px;left:60px;width:150px;filter:drop-shadow(0 2px 8px rgba(0,0,0,.35))}
+.box{position:absolute;left:70px;right:70px;bottom:520px;text-align:center;font-family:BV;color:#fff}
+.tag{display:inline-block;background:#E3141B;color:#fff;font-weight:700;font-size:44px;padding:8px 34px 14px;border-radius:40px;margin-bottom:26px}
+h1{margin:0;white-space:nowrap;font-weight:700;font-size:112px;line-height:1.18;text-shadow:0 4px 18px rgba(0,0,0,.35)}
+h1 .hl{color:#ff4b52}
+.sub{margin-top:22px;font-weight:400;font-size:52px;color:#f6edd6}
+</style></head><body>
+<div class="shade"></div>
+<img class="logo" src="../../../assets/design-templates/reel-cover/dina_logo_badge.png" alt="">
+<div class="box"><div class="tag" id="tag"></div><h1 id="t"></h1><div class="sub" id="sub"></div></div>
+<script>
+var q=new URLSearchParams(location.search),hl=(q.get('hl')||'').split(/\s+/).filter(Boolean);
+function esc(s){return s.replace(/[&<>]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;'}[c];});}
+document.getElementById('tag').textContent=q.get('tag')||'';if(!q.get('tag'))document.getElementById('tag').remove();
+document.getElementById('sub').textContent=q.get('sub')||'';
+document.getElementById('t').innerHTML=(q.get('title')||'').split('\\n').map(function(line){return line.split(' ').map(function(w){var b=w.replace(/[؟?!.,،]/g,'');return hl.indexOf(b)>-1||hl.indexOf(b.replace(/^و/,''))>-1?'<span class="hl">'+esc(w)+'</span>':esc(w);}).join(' ');}).join('<br>');
+document.fonts.ready.then(function(){var h=document.getElementById('t'),z=112;while(h.scrollWidth>940&&z>70){z-=4;h.style.fontSize=z+'px';}});
+</script></body></html>

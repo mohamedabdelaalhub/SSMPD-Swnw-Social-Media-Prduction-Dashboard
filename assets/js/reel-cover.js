@@ -89,6 +89,19 @@
     box.appendChild(thumb);
     if (current(item) && window.SSMPDDesignFiles) window.SSMPDDesignFiles.resolve(current(item)).then(function (u) { thumb.src = u; thumb.style.display = 'block'; }).catch(function () {});
     if (canEdit(item)) { var btn = document.createElement('button'); btn.className = 'btn ghost'; btn.textContent = current(item) ? '🎬 تعديل غلاف الريل' : '🎬 تصميم غلاف الريل'; btn.onclick = function () { open(item, function (url) { item.cover_settings = Object.assign({}, item.cover_settings || {}, { cover_image_url: url }); window.SSMPDDesignFiles.resolve(url).then(function (u) { thumb.src = u; thumb.style.display = 'block'; }); btn.textContent = '🎬 تعديل غلاف الريل'; }); }; box.appendChild(btn); }
+    // Text style on the reel (Mohamed, 2026-10-11): white box that hugs the words, or big headline on the video.
+    var styleWrap = document.createElement('label'); styleWrap.style.cssText = 'display:flex;gap:6px;align-items:center;font-size:13px;';
+    styleWrap.textContent = 'شكل الكلام على الفيديو:';
+    var sel = document.createElement('select'); sel.setAttribute('data-caption-style', '');
+    [['', 'Claude يختار'], ['box', 'بوكس أبيض على قد الكلام'], ['headline', 'عنوان كبير على الفيديو']].forEach(function (o) { var op = document.createElement('option'); op.value = o[0]; op.textContent = o[1]; sel.appendChild(op); });
+    sel.value = (item.cover_settings || {}).caption_style || '';
+    if (!canEdit(item)) sel.disabled = true;
+    sel.onchange = function () {
+      var settings = Object.assign({}, item.cover_settings || {}, { caption_style: sel.value });
+      sel.disabled = true;
+      window.SSMPDDb.updateContentItem(item.id, { cover_settings: settings }).then(function () { item.cover_settings = settings; }).catch(function () { sel.value = (item.cover_settings || {}).caption_style || ''; }).then(function () { sel.disabled = false; });
+    };
+    styleWrap.appendChild(sel); box.appendChild(styleWrap);
     slot.appendChild(box);
   }
   function open(item, done) {
