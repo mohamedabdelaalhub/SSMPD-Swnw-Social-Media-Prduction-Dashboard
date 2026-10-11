@@ -70,6 +70,7 @@
 
   function normalizeImportedIdea(x, idx) {
     x = x || {};
+    if (window.SSMPDDigits) x = window.SSMPDDigits.deep(x);
     var fmtRaw = String(x.format || x.content_format || "");
     var fmtKey = x.formatKey || x.content_format || "";
     if (!fmtKey) {

@@ -8,6 +8,7 @@
   }
   function normalise(x) {
     x = x || {};
+    if(window.SSMPDDigits)x=window.SSMPDDigits.deep(x);
     if(x.raw_output)x=Object.assign({},x.raw_output,x);
     return {
       raw: x,
