@@ -21,9 +21,9 @@
   var g=ctx.createLinearGradient(0,0,0,1350);g.addColorStop(0,'rgba(15,54,157,0.15)');g.addColorStop(.35,'rgba(15,54,157,0.35)');g.addColorStop(.66,'#0F369D');g.addColorStop(1,'#0a2a7c');ctx.fillStyle=g;ctx.fillRect(0,0,1080,1350);
   var family='SonoDesign, SonoLatin',right=1020,width=960,ctaTop=1088,ctaH=61;
   ctx.direction='rtl';ctx.textAlign='right';ctx.textBaseline='alphabetic';
-  // CTA pill (left), its top is the anchor of the whole text block.
+  // CTA pill (right, under the title — Mohamed 2026-10-11), its top is the anchor of the whole text block.
   var cta=String(data.cta||'').trim();
-  if(cta){ctx.font='700 32px '+family;var cw=ctx.measureText(cta).width+68;ctx.fillStyle='#F15A22';ctx.beginPath();ctx.roundRect(60,ctaTop,cw,ctaH,ctaH/2);ctx.fill();ctx.fillStyle='#fff';ctx.textAlign='center';ctx.fillText(cta,60+cw/2,ctaTop+ctaH/2+11);ctx.textAlign='right';}
+  if(cta){ctx.font='700 32px '+family;var cw=ctx.measureText(cta).width+68;ctx.fillStyle='#F15A22';ctx.beginPath();ctx.roundRect(1020-cw,ctaTop,cw,ctaH,ctaH/2);ctx.fill();ctx.fillStyle='#fff';ctx.textAlign='center';ctx.fillText(cta,1020-cw/2,ctaTop+ctaH/2+11);ctx.textAlign='right';}
   var bottom=(cta?ctaTop:1165)-40;
   var sub=String(data.subtitle||'').trim();
   if(sub){var ss=num(data.subtitleSize,40,24,60);ctx.font='400 '+ss+'px '+family;var sl=wrap(ctx,sub,width).slice(0,2);ctx.fillStyle='#dbe6ff';for(var i=sl.length-1;i>=0;i--){ctx.fillText(sl[i],right,bottom-ss*0.25);bottom-=ss*1.3;}bottom-=14;}

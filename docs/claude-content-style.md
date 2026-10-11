@@ -106,6 +106,7 @@ Dr. Dina — render with the dashboard's OWN renderer so it matches the studio e
 - Upload each slide PNG to the content-designs bucket under `<content_id>/<uuid>/output.png`, then call `POST /rest/v1/rpc/save_private_carousel` with {p_content_id, p_output_urls:[…in order…], p_settings:{template:"claude-carousel"}}. Then move the item to final_approval as usual.
 
 ## Video items with NO uploaded footage
+- Follow the request style (claude_design_requests.style, chosen by staff for videos too): `photo` = licensed real stock footage/photos; `illustration` = brand-palette illustrations/motion graphics, no real people footage.
 - If the item has no uploaded clips in video-inputs, build the reel yourself: Pixabay stock videos (op=stock type=video, vertical, people who look Egyptian/Arab, no other brands) and/or photos with slow zoom, plus ElevenLabs voice-over of the item's script (op=tts), page music low under the voice, burned-in Arabic captions, and the page outro (kit outro.mp4) at the end. 1080×1920, 20–45 s.
 - Never show a fake doctor or fake patient testimonial; stock people are illustrative only.
 
@@ -153,6 +154,7 @@ The in-dashboard generator is the content-ai Edge Function. Custom GPT instructi
 - Always use English/Western digits 0123456789 in every design and video caption — slide counters ("1 / 6", render the counter with direction:ltr), numbered circles, titles ("5 حاجات"), times, percentages and phone numbers. Never Arabic-Indic digits (٠١٢٣…). If the item's text has Arabic-Indic digits, convert them in the design.
 
 ## Single post in the carousel-cover style — APPROVED option (Mohamed 2026-10-11)
+- Single posts (both brands): the CTA button sits on the RIGHT, directly under the title block (Mohamed 2026-10-11). Dina's source line sits under it, also right-aligned.
 - Staff can make the same Swnw post in the dashboard studio: قالب التصميم ← «بوست بستايل غلاف الكاروسيل — سونو» (`layoutTemplate: sono_cover`, assets/js/design-cover-template.js, frame assets/design-templates/sono-cover/frame_dark.webp).
 - For content_format = image_post with a real photo (request style 'photo', and the daily run whenever a good photo exists), the DEFAULT layout is the carousel-cover style: `docs/templates/sono-post-photo/post.html` (Swnw) and `docs/templates/dina-post-photo/post.html` (Dr. Dina); references `assets/design-templates/carousel-reference/sono_post_cover_style.webp` / `dina_post_cover_style.webp`.
 - Same as the approved cover: full-bleed photo (face clearly visible in the upper half, framing rule applies) fading into royal blue (Swnw) / burgundy (Dina), tag pill, big title with key words in orange (Swnw) / light red (Dina), one-line subtitle — but NO slide counter and NO "اسحب وشوف": instead a CTA pill (Swnw orange #F15A22 e.g. "احجز موعدك"; Dina red #E3141B e.g. "شاركنا تجربتك في الكومنت") at the same place. Frames/footers exactly as the carousel covers.
