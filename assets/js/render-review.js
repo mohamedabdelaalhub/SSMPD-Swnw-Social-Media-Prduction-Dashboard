@@ -12,6 +12,13 @@
     scheduled: "اتعتمد واتجدول للنشر ✅",
     failed: "حصلت مشكلة — اطلب تاني"
   };
+  function designerOptionsHtml(item, designers, selectedId) {
+    var carousel = item.content_format === "carousel";
+    var options = carousel ? '<option value="' + CLAUDE_DESIGNER_ID + '"' + (selectedId === CLAUDE_DESIGNER_ID ? ' selected' : '') + '>تصميم الكاروسيل بالذكاء الاصطناعي — Claude</option>' : '';
+    return options + designers.filter(function (d) { return !carousel || d.id !== CLAUDE_DESIGNER_ID; }).map(function (d) {
+      return '<option value="' + escapeHtml(d.id) + '"' + (d.id === selectedId ? ' selected' : '') + '>' + escapeHtml(d.name || d.email) + '</option>';
+    }).join("");
+  }
   function claudeDesignHtml(item) {
     if (item.assigned_designer !== CLAUDE_DESIGNER_ID || ["in_design", "needs_revision"].indexOf(item.stage) === -1) return "";
     var isVideo = item.content_format === "video";
@@ -198,8 +205,9 @@
       actionsHtml = '<div class="field"><label>اختر جهة تنفيذ التصميم</label><select id="rv-designer">' +
         "<option value=\"\"> <!--ssmpd-i18n:%E2%80%94%20%D8%A7%D8%AE%D8%AA%D8%B1%20%E2%80%94-->— اختر —</option>" +
         (supportsAi ? '<option value="ai">وكيل التصميم بالذكاء الاصطناعي</option>' : '') +
-        designers.map(function (d) { return '<option value="' + d.id + '">' + escapeHtml(d.name || d.email) + '</option>'; }).join("") +
+        designerOptionsHtml(item, designers, null) +
         '</select></div>' +
+        (item.content_format === 'carousel' ? '<p style="font-size:12px;color:var(--c-muted);">اختار تصميم الكاروسيل بالذكاء الاصطناعي، وبعد الاعتماد الأولي اضغط «نفّذ الكاروسيل» لإرسال كل الشرايح إلى Claude.</p>' : '') +
         '<div style="display:flex;gap:8px;"><button class="btn" id="rv-approve">اعتماد أولي — أرسل للتصميم</button>' +
         '<button class="btn danger" id="rv-reject">طلب تعديل</button></div>';
     } else if (item.stage === "final_approval") {
@@ -221,9 +229,7 @@
         '<select id="rv-reassign">' +
         "<option value=\"\"> <!--ssmpd-i18n:%E2%80%94%20%D8%A7%D8%AE%D8%AA%D8%B1%20%E2%80%94-->— اختر —</option>" +
         (canSwitchToAi ? '<option value="ai"' + (isAi ? ' selected' : '') + '>وكيل التصميم بالذكاء الاصطناعي</option>' : '') +
-        designers.map(function (d) {
-          return '<option value="' + d.id + '" ' + (d.id === item.assigned_designer ? "selected" : "") + '>' + escapeHtml(d.name || d.email) + '</option>';
-        }).join("") +
+        designerOptionsHtml(item, designers, item.assigned_designer) +
         '</select>' +
         '<button class="btn ghost sm" id="rv-reassign-btn">تغيير جهة التنفيذ</button></div></div>';
     }
