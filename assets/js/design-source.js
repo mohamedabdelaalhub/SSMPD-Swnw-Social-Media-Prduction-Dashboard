@@ -22,7 +22,10 @@
     ctx.font = "400 " + size + "px " + family;
     var length = ctx.measureText(text).width;
     if (length > maxLength) { size = Math.max(14 * s, size * maxLength / length); ctx.font = "400 " + size + "px " + family; length = ctx.measureText(text).width; }
-    var x = 36 * s, centerY = height * 0.44;
+    // Position per template (Mohamed's reference: left edge, beside the title block ≈60% of the height).
+    // Dina quote layouts 1–2 keep their justified body near the left edge in the lower half → sit higher there.
+    var v = Number(data.dinaVariant), dinaQuote = data.layoutTemplate === "dina" && (v === 1 || v === 2);
+    var x = 36 * s, centerY = height * (dinaQuote ? 0.42 : 0.60);
     centerY = Math.max(220 * s + length / 2, Math.min(centerY, height - 170 * s - length / 2));
     var onLight = lightBackground(ctx, x - size, centerY - length / 2, size * 2, length);
     var color = onLight ? "rgba(22,33,46,0.62)" : "rgba(255,255,255,0.72)";

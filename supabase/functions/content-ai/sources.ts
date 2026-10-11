@@ -65,3 +65,20 @@ export function applySources(idea: any): void {
   const main = idea.sources.find((s: any) => s.is_primary) || idea.sources[0];
   idea.cover_source_text = main ? SOURCE_PREFIX + main.name : "";
 }
+
+// The model cannot browse, so a link on an allowed site can still be a made-up path.
+// Before returning ideas we open every link once; a page that does not answer (404, timeout…) is removed.
+export async function linkExists(url: string, fetcher: typeof fetch = fetch): Promise<boolean> {
+  try {
+    const res = await fetcher(url, { method: "GET", redirect: "follow", signal: AbortSignal.timeout(5000), headers: { "User-Agent": "Mozilla/5.0 (SSMPD source check)" } });
+    try { await res.body?.cancel(); } catch { /* ignore */ }
+    return res.status >= 200 && res.status < 400;
+  } catch { return false; }
+}
+
+export async function verifySources(idea: any, fetcher: typeof fetch = fetch): Promise<void> {
+  const checked = await Promise.all((idea.sources || []).map(async (s: any) => (await linkExists(s.url, fetcher)) ? s : null));
+  idea.sources = checked.filter(Boolean);
+  if (idea.sources.length && !idea.sources.some((s: any) => s.is_primary)) idea.sources[0].is_primary = true;
+  applySources(idea);
+}

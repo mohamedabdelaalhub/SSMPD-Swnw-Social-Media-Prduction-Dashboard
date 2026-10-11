@@ -48,11 +48,13 @@
     if (typeof raw !== "string" || !raw.trim()) return null;
     try { var parsed = JSON.parse(raw); return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : null; } catch (e) { return null; }
   }
-  function fromRaw(raw) {
+  function fromRaw(raw, title) {
     var obj = parseRaw(raw) || {};
+    // Some older items keep the whole agent reply ({ideas:[…]}) — read the matching idea.
+    if (obj.sources === undefined && Array.isArray(obj.ideas)) obj = obj.ideas.filter(function (i) { return i && i.title === title; })[0] || obj.ideas[0] || {};
     return { sources: cleanSources(obj.sources), cover_source_text: cleanCover(obj.cover_source_text) };
   }
-  function fromItem(item) { return fromRaw(item && item.agent_raw_output); }
+  function fromItem(item) { return fromRaw(item && item.agent_raw_output, item && item.title); }
 
   // النص اللي يتحط على التصميم: image_post فقط. الكاروسيل بيتصمم برا (كفر فقط) والفيديو مفيهوش مصدر بصري.
   function designText(item) {

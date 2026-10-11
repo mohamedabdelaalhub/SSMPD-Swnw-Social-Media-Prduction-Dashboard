@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { applySources, sourceInstructions, sourceProperties } from "./sources.ts";
+import { applySources, sourceInstructions, sourceProperties, verifySources } from "./sources.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -227,6 +227,7 @@ Deno.serve(async (req) => {
     }catch(error){if(!carousel||attempt===1)throw error;repair=error instanceof Error?error.message:String(error);}
     }
     for(const idea of parsed.ideas)applySources(idea);
+    await Promise.all(parsed.ideas.map((idea:any)=>verifySources(idea)));
     if(doctorIntro)for(const idea of parsed.ideas){idea.sources=[];idea.cover_source_text="";idea.content_kind="doctor_intro";idea.doctor_brief=doctorBrief;}
     if(dina)for(const idea of parsed.ideas)idea.dina_brief=dina;
     if(carousel)for(const idea of parsed.ideas){idea.content_kind="carousel";idea.carousel_brief=carousel;}

@@ -160,7 +160,7 @@ One structure for every origin of a content item: ChatGPT plugin manual import, 
 - Non-medical content (doctor welcome, offers, service/center ads): `"sources": []` and `"cover_source_text": ""`. Old items without these keys are valid and behave as the empty case.
 - Medical content: only real official pages you are sure exist (NHS, WHO, CDC, Mayo Clinic, NICE …) with https URLs. NEVER invent a source, URL or study title; if no specific page is known, leave `sources` empty. Exactly one `is_primary: true`. `cover_source_text` = «المصدر الطبي للمحتوى: » + primary `name`.
 - When you CREATE an item (POST content_items) write `agent_raw_output` as a JSON string that includes both keys. When you PATCH `agent_raw_output`, read the current JSON first and keep `sources` / `cover_source_text` (and the other keys such as carousel_copy, carousel_brief) — never overwrite the whole object. Staff may edit the source in the dashboard ("المصدر الطبي" section), so always read the latest value before designing.
-- The dashboard function `content-ai` already returns the same schema and drops any URL outside a short allow-list of medical authorities.
+- The dashboard function `content-ai` already returns the same schema, drops any URL outside a short allow-list of medical authorities, and opens every link once — a page that does not answer is removed. Do the same yourself: before saving a source, fetch its URL; if it is not reachable, do not use it.
 
 ### Where it appears on the design
 - `image_post`: draw `cover_source_text` ONCE.
@@ -169,6 +169,6 @@ One structure for every origin of a content item: ChatGPT plugin manual import, 
 - Never print the URL or the page title on any design.
 
 ### Visual spec (matches the approved reference)
-- Left edge, vertical, reading bottom-to-top (`writing-mode: vertical-rl; transform: rotate(180deg)`), centred around y≈44% of the 1080×1350 canvas (above the text card of full_photo layouts), 36 px from the left edge (inside the safe area, below the logo and above the footer zone y≈1190).
+- Left edge, vertical, reading bottom-to-top, centred around y≈810 (60%) of the 1080×1350 canvas — beside the title block like Mohamed's approved reference — 22–36 px from the left edge, below the logo and above the CTA/footer zone. Use the ready element in the approved HTML: `<div class=src><b></b><span>…</span></div>` (styles in sono.css / base.css of docs/templates/*) on the carousel cover and on single posts; delete the element when cover_source_text is empty. Add class `on-light` on light backgrounds. Dashboard canvas templates draw it automatically (assets/js/design-source.js; Dina quote layouts 1–2 sit higher at 42% because their body text reaches the lower-left).
 - Small: ~21 px (shrink to fit ≤ 34% of the canvas height, never below 14 px), weight 400, white at ~72% opacity on dark/blue backgrounds, dark #16212E at ~62% on light backgrounds. A small ▼ marker sits above the line. It must never touch the title, subtitle or CTA.
 - Western digits only (see "Numbers in designs").

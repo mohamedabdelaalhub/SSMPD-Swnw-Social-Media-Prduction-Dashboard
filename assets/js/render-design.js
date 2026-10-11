@@ -131,7 +131,7 @@
           : '<div class="upload-box" id="upload-box">اسحب ملف التصميم هنا أو اضغط للاختيار<br>' +
             '<input type="file" id="design-file-input" style="display:none;"></div>') +
         '<div id="upload-status" style="font-size:12px;color:var(--c-muted);"></div>' +
-        window.SSMPDSources.sectionHtml(item) +
+        (window.SSMPDSources ? window.SSMPDSources.sectionHtml(item) : '') +
         W.metaLinksSectionHtml(item) +
         '<div id="comments-slot"></div></div>';
       document.body.appendChild(backdrop);
@@ -140,7 +140,7 @@
       backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
       W.wireItemActions(backdrop, item, function () { render(document.getElementById("view-container")); });
       W.wireMetaLinksSection(backdrop, item, window.SSMPDAuth.currentAdmin);
-      window.SSMPDSources.wireSection(backdrop, item, window.SSMPDAuth.currentAdmin);
+      if (window.SSMPDSources) window.SSMPDSources.wireSection(backdrop, item, window.SSMPDAuth.currentAdmin);
 
       window.SSMPDDb.listAdminsBasic().then(function (admins) {
         var map = {}; admins.forEach(function (a) { map[a.id] = a; });

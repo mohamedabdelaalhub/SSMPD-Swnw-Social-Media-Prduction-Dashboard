@@ -1026,7 +1026,7 @@ function openAgentImportModal(parentBackdrop) {
         '<div class="status-pill ' + stagePillClass(item.stage) + '" style="margin-bottom:12px;">' + W.stageLabel(item.stage) + '</div>' +
         '<p style="white-space:pre-wrap;">' + escapeHtml(item.body || "") + '</p>' +
         structuredDetailsHtml(item) +
-        window.SSMPDSources.sectionHtml(item) +
+        (window.SSMPDSources ? window.SSMPDSources.sectionHtml(item) : '') +
         (item.content_format === "video" ? '<div id="video-job-slot"></div>' : '<div id="design-job-slot"></div>') +
         (item.design_file_url ? '<p><a href="' + item.design_file_url + '" target="_blank" class="btn ghost sm">فتح ملف التصميم</a></p>' : '') +
         '<div style="margin:10px 0;">' + W.itemActionsHtml(item, me) + '</div>' +
@@ -1038,7 +1038,7 @@ function openAgentImportModal(parentBackdrop) {
       backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
       W.wireItemActions(backdrop, item, function () { render(document.getElementById("view-container")); });
       W.wireMetaLinksSection(backdrop, item, me);
-      window.SSMPDSources.wireSection(backdrop, item, me);
+      if (window.SSMPDSources) window.SSMPDSources.wireSection(backdrop, item, me);
       W.wireDraftSubmission(backdrop, item, function () { backdrop.remove(); render(document.getElementById("view-container")); });
       renderVideoJobSection(backdrop.querySelector("#video-job-slot"), item);
       window.SSMPDDesignStudio.mount(backdrop.querySelector("#design-job-slot"), item);
