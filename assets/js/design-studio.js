@@ -151,6 +151,7 @@
   function syncTemplate(){
    var layout=root.querySelector('[data-field="layoutTemplate"]').value,ba=/^sono_before_after_/.test(layout),stack=layout==='sono_before_after_stack';
    root.querySelectorAll('[data-before-after-only]').forEach(function(el){var name=el.querySelector('[data-field]');el.hidden=!ba||(!stack&&(!name||['afterZoom','afterPhotoX','afterPhotoY'].includes(name.dataset.field)));});
+   if(window.SSMPDDesignEditorLayout&&window.SSMPDDesignEditorLayout.syncBeforeAfter)window.SSMPDDesignEditorLayout.syncBeforeAfter(root,ba);
    ['panel','edges','logo'].forEach(function(key){if(item.brand==='sono')root.querySelector('[data-tool-tab="'+key+'"]').hidden=key==='panel'&&ba;});
    root.querySelectorAll('[data-cosmetics-background]').forEach(function(el){var unit=el.closest('.design-editor__subgroup')||el;unit.hidden=!ba;});
    var doctor=layout==='sono_doctor';
