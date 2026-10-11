@@ -105,6 +105,12 @@ Dr. Dina — render with the dashboard's OWN renderer so it matches the studio e
 - Design ALL slides as one consistent set, 1080×1350: same page frame/template on every slide, slide 1 big hook title + photo, middle slides numbered (١، ٢، ٣…) with the point title + body + small icon/photo, last slide = the page contact slide (kit dina/contact_slide.jpg or sono/contact_slide.jpg style). Swnw: fixed frame on every slide. Dina: use the dashboard renderer variants that fit (e.g. 7/8 for points) or her frames.
 - Upload each slide PNG to the content-designs bucket under `<content_id>/<uuid>/output.png`, then call `POST /rest/v1/rpc/save_private_carousel` with {p_content_id, p_output_urls:[…in order…], p_settings:{template:"claude-carousel"}}. Then move the item to final_approval as usual.
 
+## Reel ending — fixed order (Mohamed, 2026-10-11)
+Every reel ends: content → contact card → outro. The outro is ALWAYS the very last thing.
+- Contact card (≈3 s, gentle zoom, voice-over may say the booking line): Swnw `sono/contact_video.jpg`, Dr. Dina `dina/contact_video.jpg` (kit, 1080×1920). Never build your own contact card for reels.
+- Outro (≈4 s, keep its own sound): Swnw `sono/outro.mp4` (blue, circular Swnw logo); Swnw cosmetics/aesthetics videos (تجميل، بشرة، ليزر، فيلر، بوتوكس…) use `sono/outro_cosmetics.mp4` instead; Dr. Dina `dina/outro.mp4`. The old burgundy outro (`sono/outro_old_burgundy.mp4`) is retired.
+- The voice is spoken sentence by sentence by the gateway (keeps the Egyptian dialect to the end). Keep sentences short.
+
 ## Reel voice-over pronunciation (Mohamed, 2026-10-11)
 - The gateway op=tts rewrites words the voice said wrong before speaking (built-in list in supabase/functions/claude-automation/index.ts + kit file tts/pronunciations.json). Add any new word Mohamed flags to the kit file as {"written": "spoken with tashkeel"}.
 - Write scripts so they read right: ordinals أولاً / ثانياً / ثالثاً (never تانياً / تالتاً), «بالراحة» not «براحة», add tashkeel on words that can be misread (الحِمْل، اثْبَتْ، قِسْم).

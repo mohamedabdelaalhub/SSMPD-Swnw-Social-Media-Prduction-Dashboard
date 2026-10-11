@@ -13,7 +13,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 //
 //   POST ?op=upload_image&content_id=<uuid>   body = PNG bytes  -> {url}
 //   POST ?op=upload_video                      body = MP4 bytes  -> {url}
-//   POST ?op=tts                               {text, model?, stability?, style?, speed?} -> MP3 bytes (ElevenLabs)
+//   POST ?op=tts                               {text, model?, stability?, style?, speed?, chunk?} -> MP3 bytes (ElevenLabs, sentence by sentence)
 //        The text first goes through the pronunciation list (kit file tts/pronunciations.json,
 //        plus the built-in defaults below): words Mohamed flagged are rewritten before speaking.
 //   POST ?op=download&bucket=video-inputs|content-designs&path=<p>  -> file bytes
@@ -90,6 +90,22 @@ export function applyPronunciations(text: string, map: Record<string, string>): 
     text = text.replace(new RegExp(`(^|[\\s،,.؟?!:؛;"'«»()\\-])(و|ف)?${esc(word)}(?=$|[\\s،,.؟?!:؛;"'«»()\\-])`, "g"), `$1$2${to}`);
   }
   return text;
+}
+
+export function splitSentences(text: string, max = 110): string[] {
+  // One sentence per call; a long sentence is cut at its commas; very short pieces join the next one.
+  const pieces: string[] = [];
+  for (const sentence of text.split(/(?<=[.؟?!])\s+/).map((x) => x.trim()).filter(Boolean)) {
+    if (sentence.length <= max) { pieces.push(sentence); continue; }
+    let cur = "";
+    for (const part of sentence.split(/(?<=[،,])\s+/)) {
+      if (cur && (cur + " " + part).length > max) { pieces.push(cur); cur = part; } else cur = cur ? cur + " " + part : part;
+    }
+    if (cur) pieces.push(cur);
+  }
+  const out: string[] = [];
+  for (const p of pieces) { if (out.length && out[out.length - 1].length < 25) out[out.length - 1] += " " + p; else out.push(p); }
+  return out.length ? out : [text];
 }
 
 Deno.serve(async (req) => {
@@ -196,13 +212,29 @@ Deno.serve(async (req) => {
     const settings = model === "eleven_v3"
       ? { stability: num(b?.stability, 0.5, 0, 1), similarity_boost: 0.75, use_speaker_boost: true }
       : { speed: num(b?.speed, 1.0, 0.7, 1.2), stability: num(b?.stability, 0.5, 0, 1), similarity_boost: 0.75, style: num(b?.style, 0, 0, 1), use_speaker_boost: true };
-    const r = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}?output_format=mp3_44100_128`, {
-      method: "POST",
-      headers: { "xi-api-key": el, "Content-Type": "application/json", Accept: "audio/mpeg" },
-      body: JSON.stringify({ text, model_id: model, language_code: model === "eleven_v3" || model.includes("2_5") ? "ar" : undefined, voice_settings: settings }),
-    });
-    if (!r.ok) return json({ ok: false, error: `elevenlabs ${r.status} ${(await r.text()).slice(0, 200)}` }, 502);
-    return new Response(await r.arrayBuffer(), { headers: { "Content-Type": "audio/mpeg", "X-Spoken-Text": encodeURIComponent(text).slice(0, 7000) } });
+    // Long scripts drift out of the Egyptian dialect toward the end (Mohamed, 2026-10-11), so we speak
+    // them sentence by sentence (≤ ~180 chars per call) and join the MP3s. v2 also gets the neighbouring
+    // sentences as context so the intonation stays continuous.
+    const chunks = b?.chunk === false ? [text] : splitSentences(text);
+    const parts: Uint8Array[] = [];
+    for (let i = 0; i < chunks.length; i++) {
+      const body: Record<string, unknown> = { text: chunks[i], model_id: model, voice_settings: settings };
+      if (model === "eleven_v3" || model.includes("2_5")) body.language_code = "ar";
+      if (model !== "eleven_v3") { if (i > 0) body.previous_text = chunks.slice(0, i).join(" ").slice(-400); if (i < chunks.length - 1) body.next_text = chunks.slice(i + 1).join(" ").slice(0, 300); }
+      const r = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}?output_format=mp3_44100_128`, {
+        method: "POST",
+        headers: { "xi-api-key": el, "Content-Type": "application/json", Accept: "audio/mpeg" },
+        body: JSON.stringify(body),
+      });
+      if (!r.ok) return json({ ok: false, error: `elevenlabs ${r.status} ${(await r.text()).slice(0, 200)}` }, 502);
+      let bytes = new Uint8Array(await r.arrayBuffer());
+      // Drop the ID3 tag of every piece after the first, so the joined file is one clean MP3 stream.
+      if (i > 0 && bytes[0] === 0x49 && bytes[1] === 0x44 && bytes[2] === 0x33) bytes = bytes.subarray(10 + ((bytes[6] << 21) | (bytes[7] << 14) | (bytes[8] << 7) | bytes[9]));
+      parts.push(bytes);
+    }
+    const out = new Uint8Array(parts.reduce((n, p) => n + p.length, 0));
+    let at = 0; for (const p of parts) { out.set(p, at); at += p.length; }
+    return new Response(out, { headers: { "Content-Type": "audio/mpeg", "X-Spoken-Text": encodeURIComponent(text).slice(0, 7000), "X-Chunks": String(chunks.length) } });
   }
 
   // Everything below acts as the Claude Creative account.
