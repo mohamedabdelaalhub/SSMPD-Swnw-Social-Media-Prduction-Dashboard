@@ -58,6 +58,23 @@
   var W = window.SSMPDWorkflow;
   var C = window.SSMPDComments;
 
+  // عرض إدارة المحتوى: كروت الأيام (الأساسي) / كانبان / قائمة — الكانبان هو العرض القديم زي ما هو
+  var viewState = { mode: "days", stage: "", all: false };
+  var RECENT_DAYS = 14;
+  function stageClass(stage) {
+    return { published: "published", needs_revision: "revision", scheduled: "received", ready_to_publish: "approved", idea_selection: "draft" }[stage] || "approval";
+  }
+  function reviewViewToggleHtml() {
+    var btn = function (mode, label) { return '<button class="btn ' + (viewState.mode === mode ? "" : "ghost") + ' sm" data-rv-mode="' + mode + '">' + label + "</button>"; };
+    var stageOpts = '<option value="">كل المراحل</option>' + W.STAGES.map(function (st) {
+      return '<option value="' + st.key + '"' + (viewState.stage === st.key ? " selected" : "") + ">" + window.SSMPDI18n.textHtml(st.label) + "</option>";
+    }).join("");
+    var filters = viewState.mode === "kanban" ? "" :
+      '<select id="rv-stage" style="max-width:190px;">' + stageOpts + "</select>" +
+      '<label style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--c-muted);"><input type="checkbox" id="rv-all"' + (viewState.all ? " checked" : "") + "> كل المواد (مش آخر " + RECENT_DAYS + " يوم بس)</label>";
+    return '<div class="pbr-bar"><div style="display:flex;gap:6px;">' + btn("days", "كروت الأيام") + btn("kanban", "كانبان") + btn("list", "قائمة") + "</div>" + filters + "</div>";
+  }
+
   function escapeHtml(s) {
     return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
@@ -94,6 +111,7 @@
         var settings = res[5];
         var adminsById = {}; admins.forEach(function (a) { adminsById[a.id] = a; });
 
+        function draw() {
         var html = "<h2 style=\"margin-bottom:16px;\"> <!--ssmpd-i18n:%D8%A5%D8%AF%D8%A7%D8%B1%D8%A9%20%D8%A7%D9%84%D9%85%D8%AD%D8%AA%D9%88%D9%89-->إدارة المحتوى</h2>";
 
         // تنبيه SLA: مواد واقفة في مرحلة اعتماد (أولي أو نهائي) من غير حركة
@@ -115,6 +133,38 @@
             '</ul></div>';
         }
 
+        html += reviewViewToggleHtml();
+        var visible = items.filter(function (i) {
+          if (viewState.stage && i.stage !== viewState.stage) return false;
+          return viewState.all || !i.updated_at || (nowTs - new Date(i.updated_at).getTime()) <= RECENT_DAYS * 86400000;
+        });
+        var stuckIds = {}; stuckItems.forEach(function (i) { stuckIds[i.id] = true; });
+        if (viewState.mode === "days") {
+          html += window.SSMPDDaysCards.build(visible, {
+            dateOf: function (i) { return i.updated_at; },
+            rowAttr: function (i) { return 'data-id="' + i.id + '"'; },
+            metaHtml: function (i) { return W.brandBadgeHtml(i.brand) + W.contentFormatBadgeHtml(i) + W.specialtyBadgeHtml(i.specialty); },
+            linesHtml: function (i) {
+              var ago = timeAgo((i.stage === "in_design" && i.design_received_at) ? i.design_received_at : i.updated_at);
+              var designer = i.design_execution === "ai" ? "وكيل التصميم" : i.assigned_designer ? ((adminsById[i.assigned_designer] || {}).name || "—") : "";
+              return '<div class="pbd-status"><span class="status-pill ' + stageClass(i.stage) + '">' + window.SSMPDI18n.textHtml(W.stageLabel(i.stage)) + "</span>" +
+                (stuckIds[i.id] ? '<span class="pbd-tag late">متأخرة في الاعتماد</span>' : "") + C.commentButtonHtml(i.id, stats) + "</div>" +
+                '<div class="pbd-sub">بواسطة: ' + escapeHtml((adminsById[i.created_by] || {}).name || "—") + (designer ? " · مصمم: " + escapeHtml(designer) : "") + (ago ? " · في المرحلة دي " + ago : "") + "</div>";
+            },
+            emptyHtml: '<div class="empty-state" style="margin-top:12px;">مفيش مواد في الفترة دي. جرّب تفعّل «كل المواد».</div>'
+          });
+        } else if (viewState.mode === "list") {
+          var sorted = visible.slice().sort(function (a, c) { return new Date(c.updated_at || 0) - new Date(a.updated_at || 0); });
+          html += '<div class="section"><div style="overflow:auto;"><table class="pbr-table"><thead><tr><th></th><th>المادة</th><th>المرحلة</th><th>بواسطة</th><th>المصمم</th><th>آخر نشاط</th></tr></thead><tbody>' +
+            (sorted.length ? sorted.map(function (i) {
+              var designer = i.design_execution === "ai" ? "وكيل التصميم" : i.assigned_designer ? ((adminsById[i.assigned_designer] || {}).name || "—") : "—";
+              return '<tr data-id="' + i.id + '" style="cursor:pointer;"><td class="pbr-thumb">' + window.SSMPDDaysCards.thumbHtml(i) + '</td>' +
+                '<td><div style="font-weight:700;margin-bottom:4px;">' + escapeHtml(i.title) + '</div><div class="pbd-meta">' + W.brandBadgeHtml(i.brand) + W.contentFormatBadgeHtml(i) + W.specialtyBadgeHtml(i.specialty) + C.commentButtonHtml(i.id, stats) + '</div></td>' +
+                '<td><span class="status-pill ' + stageClass(i.stage) + '">' + window.SSMPDI18n.textHtml(W.stageLabel(i.stage)) + "</span>" + (stuckIds[i.id] ? ' <span class="pbd-tag late">متأخرة</span>' : "") + '</td>' +
+                '<td>' + escapeHtml((adminsById[i.created_by] || {}).name || "—") + '</td><td>' + escapeHtml(designer) + '</td>' +
+                '<td style="white-space:nowrap;">' + escapeHtml(i.updated_at ? new Date(i.updated_at).toLocaleString("ar-EG-u-nu-latn", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "—") + '</td></tr>';
+            }).join("") : '<tr><td colspan="6" class="empty-state">مفيش مواد في الفترة دي.</td></tr>') + '</tbody></table></div></div>';
+        } else {
         html += '<div class="kanban content-review-board">';
         W.STAGES.forEach(function (s) {
           var colItems = items.filter(function (i) { return i.stage === s.key; });
@@ -137,8 +187,13 @@
           html += '</div>';
         });
         html += '</div>';
+        }
 
         container.innerHTML = html;
+        container.querySelectorAll("[data-rv-mode]").forEach(function (b) { b.onclick = function () { viewState.mode = b.getAttribute("data-rv-mode"); draw(); }; });
+        var stageSel = container.querySelector("#rv-stage"); if (stageSel) stageSel.onchange = function () { viewState.stage = stageSel.value; draw(); };
+        var allBox = container.querySelector("#rv-all"); if (allBox) allBox.onchange = function () { viewState.all = allBox.checked; draw(); };
+        if (viewState.mode !== "kanban") { window.SSMPDDaysCards.mountThumbs(container, items); window.SSMPDDaysCards.wireKeys(container); }
         container.querySelectorAll("[data-id]").forEach(function (el) {
           el.onclick = function (e) {
             if (e.target.closest("[data-comment]") || e.target.closest("[data-published-open]")) return; // العنوان المنشور له اختيار منصة مستقل
@@ -170,6 +225,8 @@
           window.SSMPDPendingOpenContentId = null;
           if (items.some(function (i) { return i.id === pendingId; })) openReviewModal(pendingId, items, admins, designersAll);
         }
+        }
+        draw();
       }).catch(function (e) {
         container.innerHTML = '<div class="err-msg">خطأ: ' + e.message + '</div>';
       });
@@ -191,6 +248,7 @@
     // منشورة على القاعدة الحية.
     var designers = (designersAll && designersAll.length) ? designersAll : admins.filter(function (a) { return a.role === "designer" && a.active; });
 
+    var adminsByIdForHistory = {}; admins.forEach(function (a) { adminsByIdForHistory[a.id] = a; });
     var backdrop = document.createElement("div");
     backdrop.className = "modal-backdrop";
     var actionsHtml = "";
@@ -251,6 +309,7 @@
       claudeDesignHtml(item) +
       '<div style="margin:14px 0;">' + actionsHtml + '</div>' +
       (window.SSMPDSources ? window.SSMPDSources.sectionHtml(item) : '') +
+      ((window.SSMPDScheduleHistory && (item.scheduled_publish_at || item.stage === 'scheduled' || item.stage === 'published')) ? window.SSMPDScheduleHistory.sectionHtml(item, adminsByIdForHistory) : '') +
       W.metaLinksSectionHtml(item) +
       '<div id="comments-slot"></div></div>';
     document.body.appendChild(backdrop);
@@ -263,6 +322,7 @@
     wireClaudeDesign(backdrop, item);
     W.wireMetaLinksSection(backdrop, item, window.SSMPDAuth.currentAdmin);
     if (window.SSMPDSources) window.SSMPDSources.wireSection(backdrop, item, window.SSMPDAuth.currentAdmin);
+    if (window.SSMPDScheduleHistory) window.SSMPDScheduleHistory.mountAll(backdrop, [item], adminsByIdForHistory);
 
     var adminsById = {}; admins.forEach(function (a) { adminsById[a.id] = a; });
     window.SSMPDComments.render(document.getElementById("comments-slot"), item.id, adminsById);
