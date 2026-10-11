@@ -6451,3 +6451,28 @@ drop trigger if exists trg_guard_claude_hold_job on public.meta_publish_jobs;
 create trigger trg_guard_claude_hold_job before insert on public.meta_publish_jobs
   for each row execute function public.guard_claude_hold_job();
 commit;
+-- 56) غلاف الريل — رفع وقراءة الصورة من content-designs (٢٠٢٦-١٠-١١)
+-- الغلاف ملف منفصل <content_id>/<uuid>/reel-cover.png ومربوط في content_items.cover_settings.cover_image_url.
+begin;
+create or replace function public.can_write_reel_cover(p_content_id uuid) returns boolean
+language sql stable security definer set search_path to 'public' as $$
+ select public.my_admin_id() is not null and exists(
+  select 1 from public.content_items c where c.id=p_content_id and c.content_format='video'
+  and c.brand in ('sono','dr_dina') and c.stage not in ('published','scheduled')
+  and (public.can_manage_all_content() or
+   (public.has_role('page_manager') and c.created_by=public.my_admin_id()) or
+   (public.has_role('designer') and (c.assigned_designer=public.my_admin_id() or c.created_by=public.my_admin_id())) or
+   public.has_role('approver')));
+$$;
+drop policy if exists "reel cover upload" on storage.objects;
+create policy "reel cover upload" on storage.objects for insert to authenticated with check (
+  bucket_id='content-designs' and owner_id=(auth.uid())::text
+  and name ~ '^[0-9a-f-]{36}/[0-9a-f-]{36}/reel-cover[.]png$'
+  and public.can_write_reel_cover(case when split_part(name,'/',1) ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then split_part(name,'/',1)::uuid end));
+drop policy if exists "reel cover view" on storage.objects;
+create policy "reel cover view" on storage.objects for select to authenticated using (
+  bucket_id='content-designs'
+  and public.can_read_private_design(case when split_part(name,'/',1) ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then split_part(name,'/',1)::uuid end)
+  and exists(select 1 from public.content_items c where c.id::text=split_part(objects.name,'/',1)
+   and c.cover_settings->>'cover_image_url' = 'https://uuijfbpgvtdxgaosqpxo.supabase.co/storage/v1/object/authenticated/content-designs/'||objects.name));
+commit;
