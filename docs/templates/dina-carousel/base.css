@@ -9,6 +9,3 @@ body{width:1080px;height:1350px;position:relative;overflow:hidden;font-family:T;
 .tag{display:inline-block;background:#E3141B;color:#fff;font-weight:700;font-size:34px;padding:8px 26px;border-radius:30px}
 .red{color:#E3141B}
 .pill{display:inline-block;background:#111;color:#fff;font-weight:700;font-size:34px;padding:14px 40px;border-radius:40px}
-/* frames 6–12 still print the old mobile in the footer: cover it (same as design-dina-template.js contact()) */
-.fix{position:absolute;left:346px;top:1291px;width:195px;height:34px;background:#fff;z-index:7;display:flex;align-items:center;justify-content:center;gap:8px;font-family:T;font-weight:700;font-size:21px;color:#111;direction:ltr}
-.fix i{width:26px;height:26px;border-radius:50%;background:#e50046;display:inline-block}
