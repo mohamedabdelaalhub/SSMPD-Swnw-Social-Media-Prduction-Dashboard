@@ -625,6 +625,10 @@ table.simple.acc-table td.acc-col-num{text-align:left;}
 .pbd-list{padding:6px 0;}
 .pbd-row{display:flex;gap:14px;align-items:flex-start;padding:12px 16px;cursor:pointer;transition:background .15s;}
 .pbd-row + .pbd-row{border-top:1px solid #eef0f6;}
+.pbd-sep{display:flex;align-items:center;gap:10px;padding:8px 16px 2px;font-size:11px;font-weight:700;color:var(--c-muted);}
+.pbd-sep::after{content:"";flex:1;height:1px;background:#e8ebf3;}
+.pbd-sep + .pbd-row{border-top:none;}
+.pbd-row + .pbd-sep{margin-top:6px;}
 .pbd-row:hover,.pbd-row:focus-visible{background:#f6f8ff;outline:none;}
 .pbd-time{flex:none;width:58px;text-align:center;font-size:15px;font-weight:800;color:var(--c-dark);line-height:1.15;direction:ltr;}
 .pbd-time small{display:block;font-size:11px;font-weight:600;color:var(--c-muted);margin-top:2px;direction:rtl;}
