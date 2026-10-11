@@ -144,3 +144,8 @@ The in-dashboard generator is the content-ai Edge Function. Custom GPT instructi
 
 ## Numbers in designs (Mohamed, 2026-10-11)
 - Always use English/Western digits 0123456789 in every design and video caption — slide counters ("1 / 6", render the counter with direction:ltr), numbered circles, titles ("5 حاجات"), times, percentages and phone numbers. Never Arabic-Indic digits (٠١٢٣…). If the item's text has Arabic-Indic digits, convert them in the design.
+
+## Single post in the carousel-cover style — APPROVED option (Mohamed 2026-10-11)
+- For content_format = image_post with a real photo (request style 'photo', and the daily run whenever a good photo exists), the DEFAULT layout is the carousel-cover style: `docs/templates/sono-post-photo/post.html` (Swnw) and `docs/templates/dina-post-photo/post.html` (Dr. Dina); references `assets/design-templates/carousel-reference/sono_post_cover_style.webp` / `dina_post_cover_style.webp`.
+- Same as the approved cover: full-bleed photo (face clearly visible in the upper half, framing rule applies) fading into royal blue (Swnw) / burgundy (Dina), tag pill, big title with key words in orange (Swnw) / light red (Dina), one-line subtitle — but NO slide counter and NO "اسحب وشوف": instead a CTA pill (Swnw orange #F15A22 e.g. "احجز موعدك"; Dina red #E3141B e.g. "شاركنا تجربتك في الكومنت") at the same place. Frames/footers exactly as the carousel covers.
+- The older locked Swnw photo layout (white fade, info box) and the bottom-panel treatments stay available as alternatives — rotate so the feed is not identical every day.
