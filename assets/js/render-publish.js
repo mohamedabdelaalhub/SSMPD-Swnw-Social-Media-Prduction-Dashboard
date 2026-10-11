@@ -373,6 +373,12 @@
           '<button class="btn" data-reschedule="' + i.id + '">حفظ الميعاد الجديد</button>' +
           '</div></div>';
       }
+      // النشر التلقائي لسه مستني: زرار واحد يلغي النشر التلقائي ويرجّع المادة لجاهزة للنشر (وClaude مايرجعش يجدولها).
+      if (job && job.status === "pending") {
+        actionsHtml += '<div style="display:flex;gap:8px;margin-top:6px;">' +
+          '<button class="btn ghost" data-cancel-schedule="' + i.id + '" data-job="' + job.id + '">إلغاء الجدولة</button>' +
+          '</div>';
+      }
       if (!jobIsLive) {
         if (manualScheduled.length) {
           actionsHtml +=
@@ -402,12 +408,14 @@
       '<div class="title" style="font-weight:800;margin-bottom:4px;">' + escapeHtml(i.title) + W.brandBadgeHtml(i.brand) + '</div>' +
       '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">' +
       '<span class="status-pill ' + (mode === "scheduled" ? "received" : "approved") + '">' + statusLabel + '</span>' +
+      (i.claude_hold ? '<span class="status-pill draft" title="Claude مش هيجدول المادة دي لحد ما تسمح له">⏸ موقوفة عن Claude</span>' : '') +
       scheduledLine +
       '</div>' +
       '</div>' +
       '<button class="btn ghost sm" data-toggle-publish-details="' + i.id + "\"> <!--ssmpd-i18n:%D9%81%D8%AA%D8%AD%20%D8%A7%D9%84%D8%AA%D9%81%D8%A7%D8%B5%D9%8A%D9%84-->فتح التفاصيل</button>" +
       '</div>' +
       (canRevise(i)?'<button class="btn ghost sm" data-prepublish-edit="'+i.id+'">تعديل قبل النشر</button>':'')+
+      (mode === "ready" ? ' <button class="btn ghost sm" data-claude-hold="' + i.id + '" data-hold="' + (i.claude_hold ? '0' : '1') + '">' + (i.claude_hold ? '▶️ سيب Claude يجدولها' : '⏸ ماتجدولهاش يا Claude') + '</button>' : '') +
       '<div data-publication-preview="' + i.id + '"></div>' +
       '<div data-website-publish-action="' + i.id + '"></div>' +
       '<div id="publish-details-' + i.id + '" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--c-border);">' +
@@ -459,6 +467,9 @@
     });
     container.querySelectorAll("[data-cancel-schedule]").forEach(function (btn) {
       btn.onclick = function () { cancelSchedule(btn.getAttribute("data-cancel-schedule"), btn); };
+    });
+    container.querySelectorAll("[data-claude-hold]").forEach(function (btn) {
+      btn.onclick = function () { setClaudeHold(btn.getAttribute("data-claude-hold"), btn.getAttribute("data-hold") === "1", btn); };
     });
     container.querySelectorAll("[data-reschedule]").forEach(function (btn) {
       btn.onclick = function () { reschedule(btn.getAttribute("data-reschedule"), btn); };
@@ -635,16 +646,36 @@
       return;
     }
     if (btn && btn._cancelTimer) clearTimeout(btn._cancelTimer);
-    var me = window.SSMPDAuth.currentAdmin;
-    updateSocialContent(id, { stage: "ready_to_publish", scheduled_publish_at: null, scheduled_by: null })
+    var me = window.SSMPDAuth.currentAdmin, jobId = btn && btn.getAttribute("data-job");
+    (jobId ? window.SSMPDDb.cancelMetaPublishJob(jobId) : Promise.resolve())
+      .then(function () { return holdPatch(id, { stage: "ready_to_publish", scheduled_publish_at: null, scheduled_by: null, claude_hold: true }); })
       .then(function () {
         return window.SSMPDDb.logActivity({ content_id: id, actor_id: me.id, action: "إلغاء جدولة النشر", from_stage: "scheduled", to_stage: "ready_to_publish" });
       })
       .then(function () {
-        notify("اتلغت الجدولة");
+        notify("اتلغت الجدولة — والمادة موقوفة عن Claude لحد ما تدوس «سيب Claude يجدولها»");
         closePublishModal(); render(document.getElementById("view-container"));
       })
       .catch(function (e) { notify("خطأ: " + e.message, "error"); });
+  }
+
+  // claude_hold: علامة "Claude مايجدولش المادة دي". لو عمود القاعدة لسه مااتضافش، الإلغاء يكمّل من غير العلامة.
+  function holdPatch(id, patch) {
+    return updateSocialContent(id, Object.assign({}, patch)).catch(function (e) {
+      if (!/claude_hold/.test(String(e && e.message))) throw e;
+      var rest = Object.assign({}, patch); delete rest.claude_hold;
+      return Object.keys(rest).length ? updateSocialContent(id, rest) : Promise.reject(new Error("شغّل تحديث قاعدة البيانات الخاص بإيقاف جدولة Claude الأول (قسم ٥٥ في setup.sql)."));
+    });
+  }
+  function setClaudeHold(id, on, btn) {
+    if (btn) btn.disabled = true;
+    holdPatch(id, { claude_hold: on }).then(function () {
+      var me = window.SSMPDAuth.currentAdmin;
+      return window.SSMPDDb.logActivity({ content_id: id, actor_id: me.id, action: on ? "إيقاف جدولة Claude للمادة" : "السماح لـClaude بجدولة المادة" });
+    }).then(function () {
+      notify(on ? "تمام — Claude مش هيجدول المادة دي" : "تمام — Claude يقدر يجدولها في أقرب دورة");
+      closePublishModal(); render(document.getElementById("view-container"));
+    }).catch(function (e) { if (btn) btn.disabled = false; notify("خطأ: " + e.message, "error"); });
   }
 
   // إلغاء job النشر التلقائي (فيسبوك/انستجرام) لسه pending — الـRLS بتمنع

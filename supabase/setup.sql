@@ -6408,3 +6408,46 @@ end; $$;
 revoke all on function public.submit_ai_design(uuid) from public;
 grant execute on function public.submit_ai_design(uuid) to authenticated;
 commit;
+
+-- ============================================================
+-- 55) إيقاف جدولة Claude لمادة معينة — claude_hold (٢٠٢٦-١٠-١١)
+-- ============================================================
+-- زرار «⏸ ماتجدولهاش يا Claude» في تاب النشر، و«إلغاء الجدولة» بيحطها تلقائيًا.
+-- الحماية في القاعدة نفسها: حساب Claude Creative مايقدرش يجدول/ينشر مادة موقوفة
+-- ولا يعمل لها job نشر تلقائي ولا يشيل العلامة — الشيل من الداشبورد بس.
+begin;
+alter table public.content_items add column if not exists claude_hold boolean not null default false;
+comment on column public.content_items.claude_hold is 'محمد/الموظف قال: Claude مايجدولش المادة دي لحد ما تتشال العلامة';
+
+create or replace function public.guard_claude_hold() returns trigger
+language plpgsql security definer set search_path to 'public' as $$
+declare claude uuid := 'a0fbdfee-d147-4282-b988-186a9ae3e88c';
+begin
+  -- Claude (gateway/service role) never removes a hold a person put.
+  if old.claude_hold and not new.claude_hold and (auth.role() = 'service_role' or public.my_admin_id() = claude) then
+    raise exception 'المادة موقوفة عن جدولة Claude — الإيقاف بيتشال من الداشبورد بس';
+  end if;
+  -- Claude never schedules or publishes a held item.
+  if new.claude_hold and new.stage in ('scheduled','published') and old.stage is distinct from new.stage
+     and (new.scheduled_by = claude or public.my_admin_id() = claude) then
+    raise exception 'المادة موقوفة عن جدولة Claude';
+  end if;
+  return new;
+end $$;
+drop trigger if exists trg_guard_claude_hold on public.content_items;
+create trigger trg_guard_claude_hold before update on public.content_items
+  for each row execute function public.guard_claude_hold();
+
+create or replace function public.guard_claude_hold_job() returns trigger
+language plpgsql security definer set search_path to 'public' as $$
+begin
+  if exists (select 1 from public.content_items c where c.id = new.content_id and c.claude_hold)
+     and new.created_by = 'a0fbdfee-d147-4282-b988-186a9ae3e88c' then
+    raise exception 'المادة موقوفة عن جدولة Claude';
+  end if;
+  return new;
+end $$;
+drop trigger if exists trg_guard_claude_hold_job on public.meta_publish_jobs;
+create trigger trg_guard_claude_hold_job before insert on public.meta_publish_jobs
+  for each row execute function public.guard_claude_hold_job();
+commit;
