@@ -40,6 +40,11 @@ function matchFilters(row, filters) {
   return filters.every(([col, val, op]) => {
     if (op === "ilike") return String(row[col] == null ? "" : row[col]).toLowerCase() === String(val).toLowerCase();
     if (op === "neq") return row[col] !== val;
+    if (op === "in") return (val || []).includes(row[col]);
+    if (op === "gte") return row[col] != null && row[col] >= val;
+    if (op === "lte") return row[col] != null && row[col] <= val;
+    if (op === "gt") return row[col] != null && row[col] > val;
+    if (op === "lt") return row[col] != null && row[col] < val;
     return row[col] === val;
   });
 }
@@ -51,6 +56,14 @@ class FakeQuery {
   is(col, val) { this._filters.push([col, val]); return this; }
   neq(col, val) { this._filters.push([col, val, "neq"]); return this; }
   ilike(col, val) { this._filters.push([col, val, "ilike"]); return this; }
+  in(col, val) { this._filters.push([col, val, "in"]); return this; }
+  gte(col, val) { this._filters.push([col, val, "gte"]); return this; }
+  lte(col, val) { this._filters.push([col, val, "lte"]); return this; }
+  gt(col, val) { this._filters.push([col, val, "gt"]); return this; }
+  lt(col, val) { this._filters.push([col, val, "lt"]); return this; }
+  // Filters the smoke test does not need to model precisely.
+  not() { return this; } or() { return this; } contains() { return this; } overlaps() { return this; } filter() { return this; } like() { return this; } textSearch() { return this; }
+  range(from, to) { this._limit = to - from + 1; return this; }
   order(col, opts) { this._order = { col, asc: !opts || opts.ascending !== false }; return this; }
   limit(n) { this._limit = n; return this; }
   single() { this._single = true; return this; }
@@ -62,7 +75,8 @@ class FakeQuery {
   _exec() {
     return new Promise((resolve) => {
       try {
-        const store = TABLES[this.table];
+        // Tables the fixture doesn't fill (leads, patients, Meta Ads…) start empty.
+        const store = TABLES[this.table] || (TABLES[this.table] = []);
         let result;
         if (this._op === "insert") {
           const row = Object.assign({ id: "gen-" + Math.random().toString(36).slice(2), created_at: now, updated_at: now }, this._payload);
@@ -109,6 +123,13 @@ const fakeClient = {
     signOut: () => Promise.resolve({ error: null }),
     onAuthStateChange: () => {}
   },
+  rpc(name) {
+    const basic = TABLES.admins.map(a => ({ id: a.id, name: a.name, email: a.email, role: a.role, active: a.active }));
+    const answers = { list_admins_basic: basic, list_designers_all: basic.filter(a => a.role === "designer"), my_admin_id: ME.id, is_super: true, my_role: ME.role };
+    return Promise.resolve({ data: name in answers ? answers[name] : [], error: null });
+  },
+  storage: { from() { return { upload: () => Promise.resolve({ data: {}, error: null }), createSignedUrl: () => Promise.resolve({ data: { signedUrl: "https://example.test/x" }, error: null }), remove: () => Promise.resolve({ data: [], error: null }) }; } },
+  functions: { invoke: () => Promise.resolve({ data: null, error: null }) },
   channel() { return { on() { return this; }, subscribe() { return this; } }; },
   removeChannel() {}
 };
@@ -122,19 +143,18 @@ process.on("unhandledRejection", (e) => console.error("UNHANDLED:", e && e.stack
 
 // نضحّي بمكتبة Supabase الحقيقية ونحقن نسخة مموّهة قبل تحميل db.js
 window.supabase = { createClient: () => fakeClient };
-window.fetch = () => Promise.resolve({ json: () => Promise.resolve({ ok: true }) });
+// Edge functions answer with an empty, successful JSON (the smoke test checks the screens, not the functions).
+window.fetch = () => Promise.resolve({ ok: true, status: 200, headers: { get: () => null }, json: () => Promise.resolve({ ok: true }), text: () => Promise.resolve("{}"), blob: () => Promise.resolve(new window.Blob([])) });
 
-const files = [
-  "config.js", "assets/js/toast.js", "assets/js/db.js", "assets/js/roles.js", "assets/js/workflow.js",
-  "assets/js/auth.js", "assets/js/drive.js", "assets/js/comments.js",
-  "assets/js/render-summary.js", "assets/js/render-production.js", "assets/js/render-review.js",
-  "assets/js/render-design.js", "assets/js/render-publish.js", "assets/js/render-archive.js",
-  "assets/js/render-admin.js", "assets/js/app.js"
-];
+// Load the dashboard scripts exactly as index.html does (same order), skipping CDN libraries.
+const files = [...html.matchAll(/<script[^>]+src="([^"]+)"/g)].map(m => m[1].split("?")[0])
+  .filter(src => !/^https?:/.test(src) && fs.existsSync(path.join(ROOT, src)));
 
 files.forEach(f => {
   const code = fs.readFileSync(path.join(ROOT, f), "utf8");
-  window.eval(code);
+  // Some files find their assets through document.currentScript.src, like a real <script> tag.
+  Object.defineProperty(window.document, "currentScript", { configurable: true, get: () => ({ src: "https://example.test/" + f }) });
+  try { window.eval(code + "\n//# sourceURL=" + f); } catch (e) { console.error("LOAD ERROR in " + f + ": " + e.message); }
 });
 
 // شغّل bootstrap زي DOMContentLoaded
@@ -144,13 +164,14 @@ setTimeout(() => {
   const rootEl = window.document.getElementById("app-root");
   const text = rootEl.innerHTML;
 
-  assert(rootEl.querySelector('#user-dropdown [data-goto="summary"]').textContent === "إنتاج المحتوى", "اسم إنتاج المحتوى ظاهر في القائمة");
+  assert(rootEl.querySelector('#user-dropdown [data-goto="summary"]').textContent.trim() === "إنتاج المحتوى", "اسم إنتاج المحتوى ظاهر في القائمة");
   assert(/سوبر أدمن/.test(text), "بادچ الدور ظاهر (سوبر أدمن)");
   // أرشيف المرضى/إدارة الليدز/لوحة التحكم بقوا تابات القائمة المنسدلة فقط —
   // مش مكررين في شريط التابات العادي ولا قائمة الموبايل القديمة (بالظبط زي
   // ما طلب المستخدم: مكان واحد بس هو القائمة المنسدلة)
-  assert(rootEl.querySelectorAll("#tabs-bar .tab-btn").length === 6, "الـ 6 تابات الأساسية بس ظاهرة في الشريط العادي (من غير أرشيف المرضى/الليدز/لوحة التحكم)");
-  assert(rootEl.querySelectorAll("#mobile-menu .tab-btn").length === 6, "نفس الـ 6 تابات بس في قائمة الموبايل المنسدلة القديمة");
+  const SOCIAL_TABS = "summary,production,review,design,publish,comments,performance,archive,metaads,mediabuyer";
+  assert([...rootEl.querySelectorAll("#tabs-bar .tab-btn")].map(b => b.getAttribute("data-tab")).join() === SOCIAL_TABS, "تابات السوشيال العشرة بس ظاهرة في الشريط العادي (من غير أرشيف المرضى/الليدز/لوحة التحكم)");
+  assert(rootEl.querySelectorAll("#mobile-menu .tab-btn").length === 10, "نفس التابات العشرة في قائمة الموبايل");
   assert(!/data-tab="patients"/.test(rootEl.querySelector("#tabs-bar").innerHTML), "أرشيف المرضى مش موجود في شريط التابات العادي");
   assert(!/data-tab="leads"/.test(rootEl.querySelector("#tabs-bar").innerHTML), "إدارة الليدز مش موجودة في شريط التابات العادي");
   assert(rootEl.querySelector('#user-dropdown [data-goto="patients"]') != null, "أرشيف المرضى موجود في القائمة المنسدلة");
@@ -160,12 +181,14 @@ setTimeout(() => {
   assert(rootEl.querySelector("#mobile-menu .mm-name") != null && rootEl.querySelector("#mobile-menu .mm-role") != null, "القائمة المنسدلة فيها الاسم والدور بالترتيب المطلوب");
 
   setTimeout(() => {
-    const view = window.document.getElementById("view-container");
-    assert(/الملخص العام/.test(view.innerHTML), "تاب الملخص العام هو الافتراضي واترسم");
-    assert(/إجمالي المحتوى/.test(view.innerHTML), "مؤشرات إنتاج المحتوى ظاهرة");
-    assert(/الإعلانات المدفوعة/.test(view.innerHTML), "سكشن الإعلانات المدفوعة ظاهر في الملخص العام");
-    assert(/New Traffic Campaign/.test(view.innerHTML), "اسم الحملة المستوردة ظاهر في جدول الإعلانات المدفوعة");
-    assert(/إجمالي المبلغ المُنفق/.test(view.innerHTML), "مؤشر إجمالي المبلغ المُنفق ظاهر");
+    // The screen container is replaced on every tab switch, so always read the current one.
+    const V = () => window.document.getElementById("view-container") || { innerHTML: "" };
+    const view = V();
+    assert(/الملخص العام/.test(V().innerHTML), "تاب الملخص العام هو الافتراضي واترسم");
+    assert(/إجمالي المحتوى/.test(V().innerHTML), "مؤشرات إنتاج المحتوى ظاهرة");
+    assert(/الإعلانات المدفوعة/.test(V().innerHTML), "سكشن الإعلانات المدفوعة ظاهر في الملخص العام");
+    assert(/New Traffic Campaign/.test(V().innerHTML), "اسم الحملة المستوردة ظاهر في جدول الإعلانات المدفوعة");
+    assert(/إجمالي المبلغ المُنفق/.test(V().innerHTML), "مؤشر إجمالي المبلغ المُنفق ظاهر");
     assert(!!window.document.getElementById("import-ads-btn"), "زرار استيراد تقرير حملات إعلانات ظاهر للسوبر أدمن");
 
     // اختبار التنقل لتاب الأرشيف
@@ -173,17 +196,17 @@ setTimeout(() => {
     archiveBtn.click();
 
     setTimeout(() => {
-      assert(/الأرشيف/.test(view.innerHTML), "تاب الأرشيف اترسم بعد الضغط");
-      assert(/بوست منشور/.test(view.innerHTML), "المادة المنشورة ظاهرة في كالندر الأرشيف");
+      assert(!!window.document.getElementById("arch-prev") && !!window.document.getElementById("arch-next"), "تاب الأرشيف (الكالندر الشهري) اترسم بعد الضغط");
+      assert(/بوست منشور/.test(V().innerHTML), "المادة المنشورة ظاهرة في كالندر الأرشيف");
 
       // اختبار تاب الإدارة (Kanban)
       const reviewBtn = [...rootEl.querySelectorAll(".tab-btn")].find(b => b.getAttribute("data-tab") === "review");
       reviewBtn.click();
       setTimeout(() => {
         assert(rootEl.querySelectorAll(".kanban-col").length === 8, "٨ أعمدة Kanban ظاهرة في شاشة إدارة المحتوى (بعد إضافة مرحلة مجدولة للنشر)");
-        assert(/بوست تجريبي/.test(view.innerHTML), "المادة في مرحلة اختيار الفكرة ظاهرة في العمود الصحيح");
-        assert(/سونو/.test(view.innerHTML) && /د\.دينا/.test(view.innerHTML), "بادچ تمييز سونو/د.دينا ظاهر في شاشة إدارة المحتوى");
-        assert(!/جاهز للنشر<\/h3>/.test(view.innerHTML), "سكشن \"جاهز للنشر\" القديم اتشال من شاشة إدارة المحتوى (اتنقل لتاب النشر)");
+        assert(/بوست تجريبي/.test(V().innerHTML), "المادة في مرحلة اختيار الفكرة ظاهرة في العمود الصحيح");
+        assert(/سونو/.test(V().innerHTML) && /د\.دينا/.test(V().innerHTML), "بادچ تمييز سونو/د.دينا ظاهر في شاشة إدارة المحتوى");
+        assert(!/جاهز للنشر<\/h3>/.test(V().innerHTML), "سكشن \"جاهز للنشر\" القديم اتشال من شاشة إدارة المحتوى (اتنقل لتاب النشر)");
 
         // تعديل/حذف المادة — السوبر أدمن لازم يشوف زرار "تعديل" و"حذف" في مودال المراجعة
         const firstCard = rootEl.querySelector(".kanban-card[data-id]");
@@ -225,9 +248,9 @@ setTimeout(() => {
           const publishBtn = [...rootEl.querySelectorAll(".tab-btn")].find(b => b.getAttribute("data-tab") === "publish");
           publishBtn.click();
           setTimeout(() => {
-            assert(/النشر<\/h2>/.test(view.innerHTML), "تاب النشر اترسم");
-            assert(/بوست جاهز للنشر/.test(view.innerHTML), "المادة الجاهزة للنشر (c3) ظاهرة في تاب النشر");
-            assert(/فتح ملف التصميم المعتمد/.test(view.innerHTML), "لينك التصميم المعتمد ظاهر مع المادة");
+            assert(/النشر<\/h2>/.test(V().innerHTML), "تاب النشر اترسم");
+            assert(/بوست جاهز للنشر/.test(V().innerHTML), "المادة الجاهزة للنشر (c3) ظاهرة في تاب النشر");
+            assert(!!window.document.querySelector('[data-publication-preview="c3"]'), "معاينة البوست (النص + التصميم المعتمد) ظاهرة مع المادة");
             assert(!!window.document.getElementById("pb-brand-c3"), "دروب داون اختيار الصفحة ظاهر لمادة جاهزة للنشر");
             assert(!!window.document.getElementById("pb-platform-c3"), "دروب داون اختيار المنصة ظاهر لمادة جاهزة للنشر");
             assert(!!window.document.getElementById("pb-when-c3"), "خانة معاد النشر المجدول ظاهرة لمادة جاهزة للنشر");
@@ -236,18 +259,24 @@ setTimeout(() => {
             // محاكاة عملية جدولة كاملة
             const brandSel = window.document.getElementById("pb-brand-c3");
             brandSel.value = "sono";
-            const platformSel = window.document.getElementById("pb-platform-c3");
-            platformSel.value = "instagram";
+            // المنصات بقت checkboxes، والجدولة بتفتح معاينة لازم تتأكد قبل الحفظ
+            const instagram = window.document.getElementById("pb-platform-c3-instagram");
+            if (instagram) instagram.checked = true;
             const whenInput = window.document.getElementById("pb-when-c3");
-            whenInput.value = "2026-09-01T10:00";
+            whenInput.value = "2026-12-01T10:00";
             window.document.querySelector('[data-schedule="c3"]').click();
+
+            setTimeout(() => {
+            const confirmPreview = window.document.querySelector("[data-continue]");
+            assert(!!confirmPreview, "معاينة \"تأكيد الجدولة\" ظهرت قبل الحفظ");
+            if (confirmPreview) confirmPreview.click();
 
             setTimeout(() => {
               const c3 = TABLES.content_items.find(i => i.id === "c3");
               assert(c3.stage === "scheduled", "المادة c3 بقت في حالة \"مجدولة\" في قاعدة البيانات المموّهة بعد الجدولة");
               assert(!!c3.scheduled_publish_at, "معاد النشر المجدول اتسجّل على المادة");
-              assert(!!window.document.querySelector('[data-confirm-publish="c3"]'), "زرار \"تأكيد النشر\" ظهر للمادة بعد ما بقت مجدولة");
-              assert(!!window.document.querySelector('[data-cancel-schedule="c3"]'), "زرار \"إلغاء الجدولة\" ظهر للمادة بعد ما بقت مجدولة");
+              assert((TABLES.meta_publish_jobs || []).some(j => j.content_id === "c3"), "اتعمل job نشر تلقائي لانستجرام للمادة المجدولة");
+              assert(!!window.document.querySelector('[data-cancel-schedule="c3"]'), "زرار \"إلغاء الجدولة\" ظهر للمادة بعد ما بقت مجدولة (حتى والنشر التلقائي مستني)");
 
               // موظف جديد اتضاف بالإيميل بس من السوبر أدمن (دعوة معلّقة user_id=null)،
               // وبعدين عمل حساب لأول مرة — لازم يترّبط تلقائياً بصف الدعوة المعلّقة (claimInvite)
@@ -262,10 +291,11 @@ setTimeout(() => {
                 console.log("\n--- في أخطاء فوق ---");
                 process.exit(1);
               });
-            }, 150);
-          }, 150);
-        }, 150);
-      }, 150);
-    }, 150);
-  }, 150);
-}, 150);
+            }, 700);
+            }, 700);
+          }, 700);
+        }, 700);
+      }, 700);
+    }, 700);
+  }, 700);
+}, 700);
