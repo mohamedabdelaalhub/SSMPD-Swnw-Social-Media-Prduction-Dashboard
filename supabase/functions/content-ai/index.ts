@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { applySources, sourceInstructions, sourceProperties } from "./sources.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -172,9 +173,9 @@ Deno.serve(async (req) => {
           type: "array", minItems: 3, maxItems: 3,
           items: {
             type: "object", additionalProperties: false,
-            required: ["title","idea","hook","angle","format","script","caption","cta_type","cta_text","duration_min_seconds","duration_max_seconds","video_template","hypothesis_reason","design_headline","design_subtitle","design_cta",...(dina?Object.keys(dinaProperties):[]),...(carousel?["carousel_copy"]:[])],
+            required: ["title","idea","hook","angle","format","script","caption","cta_type","cta_text","duration_min_seconds","duration_max_seconds","video_template","hypothesis_reason","design_headline","design_subtitle","design_cta","sources","cover_source_text",...(dina?Object.keys(dinaProperties):[]),...(carousel?["carousel_copy"]:[])],
             properties: {
-              ...copyProperties,...(dina?dinaProperties:{}),
+              ...copyProperties,...sourceProperties,...(dina?dinaProperties:{}),
               ...(carousel?{carousel_copy:{type:"array",minItems:carousel.slides_count,maxItems:carousel.slides_count,items:{type:"object",additionalProperties:false,required:["role","headline","body","scene"],properties:{role:{type:"string",enum:["hook","point","cta"]},headline:{type:"string"},body:{type:"string"},scene:{type:"string"}}}}}:{}),
               title:{type:"string"}, idea:{type:"string"}, hook:{type:"string"}, angle:{type:"string"},
               format:{type:"string",enum:carousel?["carousel"]:["video","image_post","link_post"]}, script:{type:["string","null"]}, caption:{type:"string"},
@@ -195,7 +196,7 @@ Deno.serve(async (req) => {
       headers: { "Authorization": "Bearer " + apiKey, "Content-Type": "application/json" },
       body: JSON.stringify({
         model,
-        instructions:instructions+"\n"+designStyle+(dina?"\n"+dinaInstructions(dina):"")+(carousel?carouselInstructions(carousel):"")+(doctorIntro?"\nهذه مادة تعريف طبيب. اكتب بالضبط 3 منشورات ترحيب وتقديم للطبيب، لا توعية بمرض. doctor_brief المصدر الوحيد للاسم والتايتل والمؤهلات والخبرات والجدول. لا تخترع ألقابًا أو شهادات أو سنوات خبرة أو خدمات. إذا المؤهلات أو الخبرات فارغة احذفها. استخدم image_post والكابشن يشمل الترحيب والبيانات المتاحة والمواعيد وبيانات تواصل المركز. لا تغيّر الحقائق بين الاقتراحات. أعط نصوص التصميم المطلوبة لكن القالب يسكن بيانات الطبيب مباشرة.":""),
+        instructions:instructions+"\n"+designStyle+sourceInstructions+(dina?"\n"+dinaInstructions(dina):"")+(carousel?carouselInstructions(carousel):"")+(doctorIntro?"\nهذه مادة تعريف طبيب. اكتب بالضبط 3 منشورات ترحيب وتقديم للطبيب، لا توعية بمرض. doctor_brief المصدر الوحيد للاسم والتايتل والمؤهلات والخبرات والجدول. لا تخترع ألقابًا أو شهادات أو سنوات خبرة أو خدمات. إذا المؤهلات أو الخبرات فارغة احذفها. استخدم image_post والكابشن يشمل الترحيب والبيانات المتاحة والمواعيد وبيانات تواصل المركز. لا تغيّر الحقائق بين الاقتراحات. أعط نصوص التصميم المطلوبة لكن القالب يسكن بيانات الطبيب مباشرة.":""),
         input: "SSMPD Dashboard Brief:\n" + JSON.stringify(brief)+(repair?"\nREPAIR THE PREVIOUS RESPONSE. Exact validation errors: "+repair+". Return all 3 complete corrected ideas in the same JSON schema. Previous response: "+previous:""),
         text: { format: { type: "json_schema", name: "ssmpd_content_ideas", strict: true, schema } }
       })
@@ -225,7 +226,8 @@ Deno.serve(async (req) => {
     break;
     }catch(error){if(!carousel||attempt===1)throw error;repair=error instanceof Error?error.message:String(error);}
     }
-    if(doctorIntro)for(const idea of parsed.ideas){idea.content_kind="doctor_intro";idea.doctor_brief=doctorBrief;}
+    for(const idea of parsed.ideas)applySources(idea);
+    if(doctorIntro)for(const idea of parsed.ideas){idea.sources=[];idea.cover_source_text="";idea.content_kind="doctor_intro";idea.doctor_brief=doctorBrief;}
     if(dina)for(const idea of parsed.ideas)idea.dina_brief=dina;
     if(carousel)for(const idea of parsed.ideas){idea.content_kind="carousel";idea.carousel_brief=carousel;}
     return Response.json({ ideas: parsed.ideas, model }, { headers: { ...cors, "Content-Type": "application/json" } });

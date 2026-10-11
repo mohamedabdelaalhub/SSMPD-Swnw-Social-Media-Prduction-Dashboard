@@ -250,6 +250,7 @@
       (window.SSMPDCarouselContent?window.SSMPDCarouselContent.itemHtml(item):'') +
       claudeDesignHtml(item) +
       '<div style="margin:14px 0;">' + actionsHtml + '</div>' +
+      window.SSMPDSources.sectionHtml(item) +
       W.metaLinksSectionHtml(item) +
       '<div id="comments-slot"></div></div>';
     document.body.appendChild(backdrop);
@@ -261,6 +262,7 @@
     W.wireItemActions(backdrop, item, function () { backdrop.remove(); render(document.getElementById("view-container")); });
     wireClaudeDesign(backdrop, item);
     W.wireMetaLinksSection(backdrop, item, window.SSMPDAuth.currentAdmin);
+    window.SSMPDSources.wireSection(backdrop, item, window.SSMPDAuth.currentAdmin);
 
     var adminsById = {}; admins.forEach(function (a) { adminsById[a.id] = a; });
     window.SSMPDComments.render(document.getElementById("comments-slot"), item.id, adminsById);

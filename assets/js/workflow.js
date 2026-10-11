@@ -996,6 +996,7 @@
     lines.push("- Do not use fearmongering, guaranteed outcomes, or diagnosis-by-content language.");
     lines.push("- Keep evidence language calibrated: Medium/Low = hypothesis/test, not proven winner.");
     lines.push("- No Markdown code fences inside field values. No 'svg' labels. No placeholder text.");
+    lines.push('- MEDICAL SOURCES: for medical content set sources to [{"name":"NHS","title":"Headaches","url":"https://www.nhs.uk/symptoms/headaches/","type":"medical_authority","is_primary":true}] and cover_source_text to "المصدر الطبي للمحتوى: NHS". Only real official pages you are sure of — never invent a source or URL. For non-medical content use sources=[] and cover_source_text="". Never put the URL or page title inside design text.');
     lines.push("");
     lines.push("CTA TYPES:");
     lines.push('Use one of: "save_share", "whatsapp", "book", "message", "call", "learn_more", "comment", "emergency_action", "custom".');
@@ -1010,7 +1011,7 @@
     lines.push("After the human-readable section, add ONE structured block at the very end and nothing after it:");
     lines.push("SSMPD_STRUCTURED_JSON");
     lines.push("\`\`\`json");
-    lines.push('{"ideas":[{"number":1,"design_headline":"","design_subtitle":"","design_cta":"","title":"","idea":"","hook":"","angle":"","format":"video","script":"","caption":"","cta_type":"save_share","cta_text":"","duration_min_seconds":25,"duration_max_seconds":30,"video_template":"medical_educational","hypothesis_reason":""}]}');
+    lines.push('{"ideas":[{"number":1,"design_headline":"","design_subtitle":"","design_cta":"","sources":[],"cover_source_text":"","title":"","idea":"","hook":"","angle":"","format":"video","script":"","caption":"","cta_type":"save_share","cta_text":"","duration_min_seconds":25,"duration_max_seconds":30,"video_template":"medical_educational","hypothesis_reason":""}]}');
     lines.push("\`\`\`");
     lines.push("SSMPD_STRUCTURED_JSON_END");
     lines.push("Repeat one object per idea. Use exactly these keys.");

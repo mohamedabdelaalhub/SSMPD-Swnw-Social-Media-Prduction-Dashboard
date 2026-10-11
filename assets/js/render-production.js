@@ -71,6 +71,8 @@
   function normalizeImportedIdea(x, idx) {
     x = x || {};
     if (window.SSMPDDigits) x = window.SSMPDDigits.deep(x);
+    // المصادر الطبية (اختيارية — الردود القديمة من غيرها تفضل شغالة)
+    if (window.SSMPDSources && (x.sources !== undefined || x.cover_source_text !== undefined)) x = Object.assign({}, x, { sources: window.SSMPDSources.clean(x.sources), cover_source_text: window.SSMPDSources.cleanCover(x.cover_source_text) });
     var fmtRaw = String(x.format || x.content_format || "");
     var fmtKey = x.formatKey || x.content_format || "";
     if (!fmtKey) {
@@ -340,6 +342,7 @@ function openAgentImportModal(parentBackdrop) {
           (h.script ? '<div style="font-size:12px;margin-bottom:4px;"><b>Script:</b> ' + escapeHtml(h.script.slice(0, 180)) + (h.script.length > 180 ? "…" : "") + '</div>' : '') +
           (h.caption ? '<div style="font-size:12px;margin-bottom:4px;"><b>Caption:</b> ' + escapeHtml(h.caption.slice(0, 120)) + (h.caption.length > 120 ? "…" : "") + '</div>' : '') +
           (h.cta ? '<div style="font-size:12px;margin-bottom:4px;"><b>CTA:</b> ' + escapeHtml(h.cta) + '</div>' : '') +
+          ((h.raw && h.raw.sources && h.raw.sources.length) ? '<div style="font-size:12px;margin-bottom:4px;"><b>المصدر الطبي:</b> ' + escapeHtml(window.SSMPDSources.primary(h.raw.sources).name || "—") + (window.SSMPDSources.primary(h.raw.sources).title ? " — " + escapeHtml(window.SSMPDSources.primary(h.raw.sources).title) : "") + (h.raw.cover_source_text ? ' <span style="color:var(--c-muted);">(على التصميم: ' + escapeHtml(h.raw.cover_source_text) + ')</span>' : '') + '</div>' : '') +
           (h.format ? "<div style=\"font-size:12px;margin-bottom:4px;\"><b> <!--ssmpd-i18n:%D8%A7%D9%84%D8%B4%D9%83%D9%84%3A-->الشكل:</b> " + escapeHtml(h.format) + '</div>' : '') +
           ((h.durationMin != null || h.durationMax != null) ? "<div style=\"font-size:12px;margin-bottom:4px;\"><b> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%AF%D8%A9%3A-->المدة:</b> " + escapeHtml((h.durationMin == null ? "—" : h.durationMin) + "–" + (h.durationMax == null ? "—" : h.durationMax) + " ث") + '</div>' : '') +
           (Array.isArray(h.raw&&h.raw.carousel_copy)?window.SSMPDCarouselContent.copyHtml(h.raw.carousel_copy):'') +
@@ -1023,6 +1026,7 @@ function openAgentImportModal(parentBackdrop) {
         '<div class="status-pill ' + stagePillClass(item.stage) + '" style="margin-bottom:12px;">' + W.stageLabel(item.stage) + '</div>' +
         '<p style="white-space:pre-wrap;">' + escapeHtml(item.body || "") + '</p>' +
         structuredDetailsHtml(item) +
+        window.SSMPDSources.sectionHtml(item) +
         (item.content_format === "video" ? '<div id="video-job-slot"></div>' : '<div id="design-job-slot"></div>') +
         (item.design_file_url ? '<p><a href="' + item.design_file_url + '" target="_blank" class="btn ghost sm">فتح ملف التصميم</a></p>' : '') +
         '<div style="margin:10px 0;">' + W.itemActionsHtml(item, me) + '</div>' +
@@ -1034,6 +1038,7 @@ function openAgentImportModal(parentBackdrop) {
       backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
       W.wireItemActions(backdrop, item, function () { render(document.getElementById("view-container")); });
       W.wireMetaLinksSection(backdrop, item, me);
+      window.SSMPDSources.wireSection(backdrop, item, me);
       W.wireDraftSubmission(backdrop, item, function () { backdrop.remove(); render(document.getElementById("view-container")); });
       renderVideoJobSection(backdrop.querySelector("#video-job-slot"), item);
       window.SSMPDDesignStudio.mount(backdrop.querySelector("#design-job-slot"), item);
@@ -1045,7 +1050,7 @@ function openAgentImportModal(parentBackdrop) {
     });
   }
 
-  window.SSMPDRenderProduction = { render: render, renderVideoJobSection: renderVideoJobSection };
+  window.SSMPDRenderProduction = { render: render, renderVideoJobSection: renderVideoJobSection, parseAgentHypotheses: parseAgentHypotheses };
 })();
 
 
