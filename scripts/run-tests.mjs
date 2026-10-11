@@ -5,10 +5,7 @@ import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 
 const root = new URL('..', import.meta.url).pathname;
-const skip = new Set([
-  // Full-page smoke test of the whole dashboard; it needs an up-to-date Supabase mock and is run manually.
-  'smoke.js',
-]);
+const skip = new Set([]);
 const files = ['test', 'tests'].flatMap(dir =>
   readdirSync(join(root, dir))
     .filter(f => /\.(cjs|mjs|js)$/.test(f) && !skip.has(f))
