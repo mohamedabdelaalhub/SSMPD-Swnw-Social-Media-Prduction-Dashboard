@@ -78,6 +78,7 @@
 
         var ctx = { allItems: items, scheduled: scheduled, ready: ready, adminsById: adminsById, jobByContent: jobByContent };
         if (viewState.mode === "calendar") renderCalendarView(container, ctx);
+        else if (viewState.mode === "days") renderDaysView(container, ctx);
         else renderListView(container, ctx);
 
       });
@@ -89,6 +90,7 @@
   function viewToggleHtml() {
     return '<div style="display:flex;gap:6px;">' +
       '<button class="btn ' + (viewState.mode === "list" ? "" : "ghost") + ' sm" id="pb-view-list">قائمة</button>' +
+      '<button class="btn ' + (viewState.mode === "days" ? "" : "ghost") + ' sm" id="pb-view-days">كروت الأيام</button>' +
       '<button class="btn ' + (viewState.mode === "calendar" ? "" : "ghost") + ' sm" id="pb-view-calendar">كالندر</button>' +
       '</div>';
   }
@@ -96,6 +98,8 @@
   function wireViewToggle(container, ctx) {
     var listBtn = document.getElementById("pb-view-list");
     var calBtn = document.getElementById("pb-view-calendar");
+    var daysBtn = document.getElementById("pb-view-days");
+    if (daysBtn) daysBtn.onclick = function () { viewState.mode = "days"; renderDaysView(container, ctx); };
     if (listBtn) listBtn.onclick = function () { viewState.mode = "list"; renderListView(container, ctx); };
     if (calBtn) calBtn.onclick = function () { viewState.mode = "calendar"; renderCalendarView(container, ctx); };
   }
@@ -126,6 +130,7 @@
     window.SSMPDWebsite.mount(container, ctx.allItems);
     wireViewToggle(container, ctx);
     wire(container);
+    window.SSMPDScheduleHistory.mountAll(container, scheduled, adminsById);
     window.SSMPDPublicationPreview.mountSlots(container,scheduled.concat(ready));
     window.SSMPDWebsite.mountActions(container,scheduled.concat(ready));
     scheduled.concat(ready).forEach(function (i) {
@@ -239,6 +244,59 @@
     });
   }
 
+  // عرض "كروت الأيام": كل يوم فيه مواد مجدولة كارت لوحده، مرتبين بالتاريخ، وجواه كل مادة بساعتها ومين جدولها.
+  function renderDaysView(container, ctx) {
+    var scheduled = ctx.scheduled, ready = ctx.ready, adminsById = ctx.adminsById;
+    var byDay = {}, undated = [];
+    scheduled.forEach(function (i) {
+      if (!i.scheduled_publish_at) { undated.push(i); return; }
+      var k = dayKey(new Date(i.scheduled_publish_at));
+      (byDay[k] = byDay[k] || []).push(i);
+    });
+    var keys = Object.keys(byDay).sort();
+    var todayKey = dayKey(new Date()), tomorrowKey = dayKey(new Date(Date.now() + 86400000));
+    var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">' +
+      '<h2 style="margin:0;">النشر</h2>' + viewToggleHtml() + '</div>';
+    html += '<h3 style="margin:0 0 10px;">مجدولة للنشر حسب اليوم (' + scheduled.length + ')</h3>';
+    if (!keys.length && !undated.length) html += '<div class="empty-state">مفيش مواد مجدولة دلوقتي</div>';
+    html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:12px;">';
+    keys.forEach(function (k) {
+      var items = byDay[k].slice().sort(function (a, b) { return new Date(a.scheduled_publish_at) - new Date(b.scheduled_publish_at); });
+      var first = new Date(items[0].scheduled_publish_at);
+      var past = k < todayKey;
+      var badge = k === todayKey ? '<span class="status-pill received">النهارده</span>' : (k === tomorrowKey ? '<span class="status-pill draft">بكره</span>' : (past ? '<span class="status-pill rejected">فات ميعادها</span>' : ""));
+      html += '<div class="section" style="margin:0;border:1px solid ' + (k === todayKey ? "var(--c-primary)" : (past ? "var(--c-negative)" : "var(--c-border)")) + ';border-radius:12px;padding:12px;">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">' +
+        '<b>' + escapeHtml(first.toLocaleDateString("ar-EG", { weekday: "long", day: "numeric", month: "long", year: "numeric" })) + '</b>' + badge + '</div>' +
+        '<div style="font-size:11px;color:var(--c-muted);margin-bottom:6px;">' + items.length + ' مادة</div>';
+      items.forEach(function (it) {
+        var time = new Date(it.scheduled_publish_at).toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" });
+        var who = (adminsById[it.scheduled_by] || {}).name;
+        html += '<div data-open-pub="' + it.id + '" style="cursor:pointer;border:1px solid var(--c-border);border-radius:8px;padding:8px 10px;margin-top:6px;">' +
+          '<div style="display:flex;gap:8px;align-items:baseline;"><b style="white-space:nowrap;">' + escapeHtml(time) + '</b>' +
+          '<span style="min-width:0;overflow-wrap:anywhere;">' + escapeHtml(it.title) + '</span>' + W.brandBadgeHtml(it.brand) + '</div>' +
+          '<div style="font-size:11px;color:var(--c-muted);margin-top:3px;">' + escapeHtml(W.platformsLabel(itemPlatforms(it))) + (who ? ' · جدولها: ' + escapeHtml(who) : '') + '</div></div>';
+      });
+      html += '</div>';
+    });
+    html += '</div>';
+    if (undated.length) {
+      html += '<div class="section" style="margin-top:16px;"><h3>مجدولة من غير ميعاد محدد (' + undated.length + ')</h3><div style="display:flex;flex-direction:column;gap:6px;">' +
+        undated.map(function (i) { return '<div data-open-pub="' + i.id + '" style="cursor:pointer;padding:8px 10px;border:1px solid var(--c-border);border-radius:8px;">' + escapeHtml(i.title) + W.brandBadgeHtml(i.brand) + '</div>'; }).join("") + '</div></div>';
+    }
+    html += '<div class="section" style="margin-top:16px;"><h3>جاهزة للنشر بدون معاد محدد (' + ready.length + ')</h3>';
+    html += ready.length ? '<div style="display:flex;flex-direction:column;gap:6px;">' + ready.map(function (i) {
+      return '<div data-open-pub="' + i.id + '" style="cursor:pointer;padding:8px 10px;border:1px solid var(--c-border);border-radius:8px;">' + escapeHtml(i.title) + W.brandBadgeHtml(i.brand) + '</div>';
+    }).join("") + '</div>' : '<div class="empty-state">مفيش مواد جاهزة للنشر دلوقتي</div>';
+    html += '</div>';
+    container.innerHTML = html;
+    window.SSMPDWebsite.mount(container, ctx.allItems);
+    wireViewToggle(container, ctx);
+    container.querySelectorAll("[data-open-pub]").forEach(function (el) {
+      el.onclick = function () { openPublishDetailModal(el.getAttribute("data-open-pub"), ctx); };
+    });
+  }
+
   // مودال تفاصيل/إجراءات مادة واحدة — بيتفتح من كليك على عنصر في الكالندر
   // (بيستخدم نفس renderCard/wire اللي القائمة العادية بتستخدمهم).
   function openPublishDetailModal(id, ctx) {
@@ -257,6 +315,7 @@
     var detailsBox = backdrop.querySelector('[id^="publish-details-"]');
     if (detailsBox) detailsBox.style.display = "block";
     wire(backdrop);
+    window.SSMPDScheduleHistory.mountAll(backdrop, [item], ctx.adminsById);
     window.SSMPDPublicationPreview.mountSlots(backdrop,[item]);
     window.SSMPDWebsite.mountActions(backdrop,[item]);
     updateManualLinkVisibility(item.id);
@@ -420,6 +479,7 @@
       '<div data-website-publish-action="' + i.id + '"></div>' +
       '<div id="publish-details-' + i.id + '" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--c-border);">' +
       '<div class="meta">بواسطة: ' + escapeHtml(ownerName) + ' · مصمم: ' + escapeHtml(designerName) + '</div>' +
+      (mode === "scheduled" ? window.SSMPDScheduleHistory.sectionHtml(i, adminsById) : "") +
       actionsHtml +
       '<div id="comments-slot-' + i.id + '" style="margin-top:10px;"></div>' +
       '</div>' +
@@ -522,7 +582,7 @@
       stage: "scheduled", brand: brand, publish_platform: platforms[0], publish_platforms: platforms,
       scheduled_publish_at: whenIso, scheduled_by: me.id
     }).then(function () {
-      return window.SSMPDDb.logActivity({ content_id: id, actor_id: me.id, action: "جدولة للنشر", from_stage: "ready_to_publish", to_stage: "scheduled" });
+      return window.SSMPDDb.logActivity({ content_id: id, actor_id: me.id, action: "جدولة للنشر — ميعاد النشر " + new Date(whenIso).toLocaleString("sv-SE", { timeZone: "Africa/Cairo" }).slice(0, 16) + " (توقيت القاهرة)", from_stage: "ready_to_publish", to_stage: "scheduled" });
     }).then(function () {
       return maybeCreateMetaJob(id, brand, platforms, whenIso);
     }).then(function () {
