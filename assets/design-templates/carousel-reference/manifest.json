@@ -39,6 +39,28 @@
         "dina_sample_02.webp",
         "dina_sample_03.webp"
       ]
+    },
+    {
+      "id": "sono_photo",
+      "brand": "sono",
+      "style": "photo",
+      "note": "APPROVED photo carousel (request style=photo). HTML: docs/templates/sono-carousel-photo/. Frames sono/frame_dark.png + frame_light.png from the kit.",
+      "files": [
+        "sono_photo_01.webp",
+        "sono_photo_02.webp",
+        "sono_photo_03.webp"
+      ]
+    },
+    {
+      "id": "dina_photo",
+      "brand": "dr_dina",
+      "style": "photo",
+      "note": "APPROVED photo carousel (request style=photo). HTML: docs/templates/dina-carousel/photo-*.html + 99-contact-dark.html. Never her photo; never a woman photo near her name.",
+      "files": [
+        "dina_photo_01.webp",
+        "dina_photo_02.webp",
+        "dina_photo_03.webp"
+      ]
     }
   ]
 }
