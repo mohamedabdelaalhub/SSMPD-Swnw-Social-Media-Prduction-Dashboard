@@ -249,6 +249,8 @@ setTimeout(() => {
           publishBtn.click();
           setTimeout(() => {
             assert(/النشر<\/h2>/.test(V().innerHTML), "تاب النشر اترسم");
+            assert(!!window.document.querySelector(".pbd-grid, .empty-state") && /كروت الأيام/.test(V().innerHTML), "كروت الأيام هي العرض الأساسي لتاب النشر");
+            window.document.getElementById("pb-view-list").click(); // باقي اختبارات الكروت (الجدولة) بتشتغل من عرض القائمة
             assert(/بوست جاهز للنشر/.test(V().innerHTML), "المادة الجاهزة للنشر (c3) ظاهرة في تاب النشر");
             assert(!!window.document.querySelector('[data-publication-preview="c3"]'), "معاينة البوست (النص + التصميم المعتمد) ظاهرة مع المادة");
             assert(!!window.document.getElementById("pb-brand-c3"), "دروب داون اختيار الصفحة ظاهر لمادة جاهزة للنشر");

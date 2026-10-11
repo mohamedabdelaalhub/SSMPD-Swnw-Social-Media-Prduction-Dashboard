@@ -23,7 +23,7 @@
   }
 
   // حالة عرض الكالندر (اختياري بجانب القائمة العادية) — نفس نمط شاشة الأرشيف
-  var viewState = { mode: "list", calView: "month", cursor: new Date() };
+  var viewState = { mode: "days", calView: "month", cursor: new Date() };
 
   function dayKey(d) {
     return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
@@ -89,8 +89,8 @@
 
   function viewToggleHtml() {
     return '<div style="display:flex;gap:6px;">' +
-      '<button class="btn ' + (viewState.mode === "list" ? "" : "ghost") + ' sm" id="pb-view-list">قائمة</button>' +
       '<button class="btn ' + (viewState.mode === "days" ? "" : "ghost") + ' sm" id="pb-view-days">كروت الأيام</button>' +
+      '<button class="btn ' + (viewState.mode === "list" ? "" : "ghost") + ' sm" id="pb-view-list">قائمة</button>' +
       '<button class="btn ' + (viewState.mode === "calendar" ? "" : "ghost") + ' sm" id="pb-view-calendar">كالندر</button>' +
       '</div>';
   }
