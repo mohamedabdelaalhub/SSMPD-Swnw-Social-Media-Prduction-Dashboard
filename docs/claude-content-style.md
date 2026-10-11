@@ -38,6 +38,13 @@ Fonts are in the repo: assets/fonts (Tajawal-*.ttf for Dina; BigVesta-*.woff2 + 
 - Use these templates as the baseline and push quality: cleaner spacing, consistent footers, stronger hook on slide 1, clear CTA. Do not copy their exact old texts.
 - Photos: these templates use real photos. Until a stock-photo source is connected, use clean flat/3D-style SVG illustrations in the brand palette; never use Dr. Dina's or any doctor's photo without it being in the kit, and never put another brand's logo.
 - Never write prices. Always include the footer contacts.
+- PERMANENT spacing rules (Mohamed, 2026-10-11):
+  - A multi-line title must never leave ONE word alone on a line. Shrink the font or rephrase (e.g. make the last line two words). The dashboard studio does this automatically by pulling a word down.
+  - At least 40 px between the grey/subtitle line and the CTA button. In the approved HTML templates the title block is anchored to the bottom (`.t{bottom:…}`), so it grows upward and the gap stays 40 px.
+  - At least 50 px empty above the footer (nothing — text, CTA, source label — may come closer).
+  - Title line spacing on covers and posts: line-height ≈1.24, so dots of ث/ش/ق are never touched by the line above.
+  - On inner slides the title, number and subtitle always sit ABOVE the photo layer (z-index 6) so no dot is hidden.
+- Dr. Dina variants 3/4: the headline is red (#e50026, the same as the CTA). Whenever the headline colour is changed, the CTA button takes the same colour.
 
 ## Dr. Dina official frames WITH her photo (use these for Dina image posts — preferred over illustrations)
 Kit: dina/templates/frame_*.png are 1080×1350 PNGs; the transparent areas are where your content/image goes. dina/templates/example_01..12.png show each frame filled correctly.
@@ -146,6 +153,7 @@ The in-dashboard generator is the content-ai Edge Function. Custom GPT instructi
 - Always use English/Western digits 0123456789 in every design and video caption — slide counters ("1 / 6", render the counter with direction:ltr), numbered circles, titles ("5 حاجات"), times, percentages and phone numbers. Never Arabic-Indic digits (٠١٢٣…). If the item's text has Arabic-Indic digits, convert them in the design.
 
 ## Single post in the carousel-cover style — APPROVED option (Mohamed 2026-10-11)
+- Staff can make the same Swnw post in the dashboard studio: قالب التصميم ← «بوست بستايل غلاف الكاروسيل — سونو» (`layoutTemplate: sono_cover`, assets/js/design-cover-template.js, frame assets/design-templates/sono-cover/frame_dark.webp).
 - For content_format = image_post with a real photo (request style 'photo', and the daily run whenever a good photo exists), the DEFAULT layout is the carousel-cover style: `docs/templates/sono-post-photo/post.html` (Swnw) and `docs/templates/dina-post-photo/post.html` (Dr. Dina); references `assets/design-templates/carousel-reference/sono_post_cover_style.webp` / `dina_post_cover_style.webp`.
 - Same as the approved cover: full-bleed photo (face clearly visible in the upper half, framing rule applies) fading into royal blue (Swnw) / burgundy (Dina), tag pill, big title with key words in orange (Swnw) / light red (Dina), one-line subtitle — but NO slide counter and NO "اسحب وشوف": instead a CTA pill (Swnw orange #F15A22 e.g. "احجز موعدك"; Dina red #E3141B e.g. "شاركنا تجربتك في الكومنت") at the same place. Frames/footers exactly as the carousel covers.
 - The older locked Swnw photo layout (white fade, info box) and the bottom-panel treatments stay available as alternatives — rotate so the feed is not identical every day.
