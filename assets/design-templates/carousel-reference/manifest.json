@@ -1,5 +1,5 @@
 {
-  "purpose": "User-approved reference layouts only. Do not reuse their topic text as new content. Both supplied sets are Sono. Adapt Dina with her existing identity and approved templates.",
+  "purpose": "User-approved reference layouts only. Do not reuse their topic text as new content.",
   "sets": [
     {
       "id": "back",
@@ -27,6 +27,17 @@
         "sono_flu_05.webp",
         "sono_flu_06.webp",
         "sono_flu_07.webp"
+      ]
+    },
+    {
+      "id": "dina_parents",
+      "brand": "dr_dina",
+      "style": "tips",
+      "note": "Approved Dina carousel look: dark burgundy cover and contact slides, beige point slides with one large illustration, never her photo. HTML sources in docs/templates/dina-carousel/.",
+      "files": [
+        "dina_sample_01.webp",
+        "dina_sample_02.webp",
+        "dina_sample_03.webp"
       ]
     }
   ]
