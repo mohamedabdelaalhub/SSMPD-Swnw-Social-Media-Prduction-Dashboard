@@ -112,7 +112,7 @@
   function parseStructuredAgentJson(raw) {
     var source = String(raw || "");
     var marker = source.match(/SSMPD_STRUCTURED_JSON\s*([\s\S]*?)(?:SSMPD_STRUCTURED_JSON_END|$)/i);
-    if (!marker) return [];
+    if (!marker) {try{var direct=JSON.parse(source.trim().replace(/^```(?:json)?\s*/i,"").replace(/\s*```$/,""));var directIdeas=Array.isArray(direct)?direct:Array.isArray(direct.ideas)?direct.ideas:direct.title?[direct]:[];return directIdeas.map(normalizeImportedIdea);}catch(ignore){return [];}}
     var chunk = marker[1]
       .replace(/^\s*\`\`\`(?:json)?\s*/i, "")
       .replace(/\s*\`\`\`\s*$/i, "")
@@ -341,6 +341,7 @@ function openAgentImportModal(parentBackdrop) {
           (h.cta ? '<div style="font-size:12px;margin-bottom:4px;"><b>CTA:</b> ' + escapeHtml(h.cta) + '</div>' : '') +
           (h.format ? "<div style=\"font-size:12px;margin-bottom:4px;\"><b> <!--ssmpd-i18n:%D8%A7%D9%84%D8%B4%D9%83%D9%84%3A-->الشكل:</b> " + escapeHtml(h.format) + '</div>' : '') +
           ((h.durationMin != null || h.durationMax != null) ? "<div style=\"font-size:12px;margin-bottom:4px;\"><b> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%AF%D8%A9%3A-->المدة:</b> " + escapeHtml((h.durationMin == null ? "—" : h.durationMin) + "–" + (h.durationMax == null ? "—" : h.durationMax) + " ث") + '</div>' : '') +
+          (Array.isArray(h.raw&&h.raw.carousel_copy)?window.SSMPDCarouselContent.copyHtml(h.raw.carousel_copy):'') +
           status +
           (missing.length
             ? '<button class="btn ghost sm" type="button" disabled style="opacity:.55;cursor:not-allowed;">⚠️ الفكرة غير مكتملة</button>'
@@ -368,6 +369,7 @@ function openAgentImportModal(parentBackdrop) {
           if(h.raw&&h.raw.dina_brief)window.SSMPDDinaContent.hydrate(h.raw.dina_brief);
           if(h.raw&&h.raw.doctor_brief)window.SSMPDDoctorContent.hydrate(h.raw.doctor_brief);
           if(h.raw&&h.raw.before_after_brief)window.SSMPDBeforeAfterContent.hydrate(h.raw.before_after_brief);
+          if(h.formatKey==="carousel"){var carouselBrief=h.raw&&h.raw.carousel_brief||{slides_count:Array.isArray(h.raw&&h.raw.carousel_copy)?h.raw.carousel_copy.length:6,style:"tips",notes:""};window.SSMPDCarouselContent.hydrate(carouselBrief,h.raw&&h.raw.carousel_copy);var selectedRaw=window.SSMPDCarouselContent.metadata(h.raw,carouselBrief);document.getElementById("cf-agent-raw").value=JSON.stringify(Object.assign({},selectedRaw,{original_agent_output:raw}));}
           var fmt = document.getElementById("ci-format");
           if (fmt && h.formatKey) fmt.value = h.formatKey;
 

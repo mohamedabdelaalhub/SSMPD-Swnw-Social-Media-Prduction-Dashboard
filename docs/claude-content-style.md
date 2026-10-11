@@ -101,3 +101,22 @@ Dr. Dina — render with the dashboard's OWN renderer so it matches the studio e
 ## Video items with NO uploaded footage
 - If the item has no uploaded clips in video-inputs, build the reel yourself: Pixabay stock videos (op=stock type=video, vertical, people who look Egyptian/Arab, no other brands) and/or photos with slow zoom, plus ElevenLabs voice-over of the item's script (op=tts), page music low under the voice, burned-in Arabic captions, and the page outro (kit outro.mp4) at the end. 1080×1920, 20–45 s.
 - Never show a fake doctor or fake patient testimonial; stock people are illustrative only.
+
+
+## Carousel contract — user references, 2026-10-11
+
+This section overrides the single-image locked layout and any general 25-word total cap for content_format=carousel. Use the per-field ranges below instead. Do not render all carousel text onto one photo post. Read the pending claude_design_requests.note: JSON with task=carousel is a rendering brief, not a status message. Preserve the brand, slides_count, style and ordered carousel_copy. Older materials with no copy require a complete carousel copy first; never silently reduce them to image_post.
+
+Read assets/design-templates/carousel-reference/manifest.json and open its reference slides before rendering. Both uploaded examples are Sono. The back series demonstrates a hook cover, five numbered habit/correction cards, then contacts. The flu series demonstrates a question cover, comparisons with two labeled columns, a practical advice slide, then contacts. Use their structure, spacing and hierarchy as references, not their medical text as a new source of truth. For Dina use her existing red/beige/black identity and approved frames, not Sono blue and not a fabricated physician portrait.
+
+Required copy ranges per slide, counted by whitespace:
+- hook headline 3–6 words, body 6–12.
+- point headline 2–6 words, body 10–22.
+- cta headline 2–6 words, body 6–16.
+- Every slide needs role, headline, body and a scene description. Role order is hook / points / cta. Cover headline is the design_headline. The caption complements the slides.
+- A point teaches one useful thing. No filler to reach the minimum. Compare means two labeled columns; myths mean myth and correction; FAQ means question and answer. Use numbers and icons, not repetitions of the cover photo post.
+- Keep the two approved contact numbers 01010686264 and 0236230005 in the page footer; final body includes an approved number, and WhatsApp uses https://wa.me/201010686264. No unapproved old contact numbers, prices, invented medical facts or guaranteed outcomes. Emergency guidance takes priority over booking.
+
+Preflight before upload: count all slides and words, verify distinct ideas, brand/frame/footer, numbering, clipping and legibility. If copy fails, report the slide and field to the writing agent and allow one correction; fail the request after a second invalid result. Do not upload a partial set. Upload all slides and call save_private_carousel with ordered URLs and settings containing the same carousel_copy/brief and template=claude-carousel. Verify content_items.carousel_slides length equals slides_count, design_file_url is the first slide, then move only to final_approval. Do not auto-approve.
+
+The in-dashboard generator is the content-ai Edge Function. Custom GPT instructions do not automatically replace that function's instructions. The external Claude scheduler must consume this repository guidance and the queue note; changing that scheduler's own configuration was not performed here.

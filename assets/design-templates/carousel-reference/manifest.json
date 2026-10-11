@@ -1,0 +1,33 @@
+{
+  "purpose": "User-approved reference layouts only. Do not reuse their topic text as new content. Both supplied sets are Sono. Adapt Dina with her existing identity and approved templates.",
+  "sets": [
+    {
+      "id": "back",
+      "brand": "sono",
+      "style": "tips",
+      "files": [
+        "sono_back_01.webp",
+        "sono_back_02.webp",
+        "sono_back_03.webp",
+        "sono_back_04.webp",
+        "sono_back_05.webp",
+        "sono_back_06.webp",
+        "sono_back_07.webp"
+      ]
+    },
+    {
+      "id": "flu",
+      "brand": "sono",
+      "style": "compare",
+      "files": [
+        "sono_flu_01.webp",
+        "sono_flu_02.webp",
+        "sono_flu_03.webp",
+        "sono_flu_04.webp",
+        "sono_flu_05.webp",
+        "sono_flu_06.webp",
+        "sono_flu_07.webp"
+      ]
+    }
+  ]
+}

@@ -72,7 +72,7 @@
     try{doctorBrief=window.SSMPDDoctorContent.current(true);dinaBrief=window.SSMPDDinaContent.current(true);}catch(e){alert(e.message);return;}
     if(doctorBrief){context.doctorBrief=doctorBrief;context.format="image_post";}
     baBrief=window.SSMPDBeforeAfterContent&&window.SSMPDBeforeAfterContent.current(false);if(dinaBrief||baBrief)context.format="image_post";
-    var carouselBrief=window.SSMPDCarouselContent&&window.SSMPDCarouselContent.current(false);if(carouselBrief&&!dinaBrief&&!doctorBrief)context.format="carousel";else carouselBrief=null;
+    var carouselBrief=window.SSMPDCarouselContent&&window.SSMPDCarouselContent.current(false);if(carouselBrief&&!doctorBrief)context.format="carousel";else carouselBrief=null;
     var backdrop = document.createElement("div");
     backdrop.className = "modal-backdrop";
     backdrop.style.zIndex = "9999";
@@ -89,7 +89,7 @@
     backdrop.onclick = function (e) { if (e.target === backdrop) close(); };
     var note = "الصفحة: " + (context.brand || "غير محددة") + " — التخصص: " + (context.specialty || "غير محدد") +
       " — الهدف: " + (context.advertisingObjective || "غير محدد") + (dinaBrief ? " — " + window.SSMPDDinaContent.kinds[dinaBrief.kind].label + " — " + window.SSMPDDinaContent.names[dinaBrief.variant-1] : "");
-    backdrop.querySelector("#ai-context-note").textContent = note;
+    backdrop.querySelector("#ai-context-note").textContent = note+(carouselBrief?" — كاروسيل "+carouselBrief.slides_count+" شرايح — "+window.SSMPDCarouselContent.styles[carouselBrief.style]:"");
     backdrop.querySelector("#ai-generate").onclick = function () {
       var btn = backdrop.querySelector("#ai-generate");
       var slot = backdrop.querySelector("#ai-results");
@@ -114,7 +114,7 @@
         title: context.title, performance_brief: brief, content_kind:doctorBrief?"doctor_intro":carouselBrief?"carousel":"standard",doctor_brief:doctorBrief,dina_brief:dinaBrief,carousel_brief:carouselBrief
         });
       }).then(function (data) {
-        var ideas = (data.ideas || []).slice(0, 3).map(function(idea){if(doctorBrief)idea=window.SSMPDDoctorContent.metadata(idea,doctorBrief);if(baBrief)idea=window.SSMPDBeforeAfterContent.metadata(idea,baBrief);if(carouselBrief){if(!Array.isArray(idea.carousel_copy))throw Error("حدّث Edge Function content-ai لتفعيل محتوى الكاروسيل.");idea=window.SSMPDCarouselContent.metadata(idea,carouselBrief);}if(dinaBrief&&!idea.dina_brief)throw Error("حدّث Edge Function content-ai لتفعيل محتوى قوالب د. دينا.");return normalise(idea);});
+        var ideas = (data.ideas || []).slice(0, 3).map(function(idea){if(doctorBrief)idea=window.SSMPDDoctorContent.metadata(idea,doctorBrief);if(baBrief)idea=window.SSMPDBeforeAfterContent.metadata(idea,baBrief);if(carouselBrief){if(idea.format!=="carousel")throw Error("الوكيل رجع بوست بدل الكاروسيل. انشر تحديث content-ai ثم أعد التوليد.");if(!Array.isArray(idea.carousel_copy))throw Error("حدّث Edge Function content-ai لتفعيل محتوى الكاروسيل.");idea=window.SSMPDCarouselContent.metadata(idea,carouselBrief);}if(dinaBrief&&!idea.dina_brief)throw Error("حدّث Edge Function content-ai لتفعيل محتوى قوالب د. دينا.");return normalise(idea);});
         if (ideas.length !== 3) throw new Error("لم تصل ٣ أفكار مكتملة. أعد المحاولة.");
         slot.innerHTML = ideas.map(function (idea, i) {
           return renderCard(idea, i,

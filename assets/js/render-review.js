@@ -31,7 +31,8 @@
     var statusEl = box.querySelector("#claude-design-status"), btn = box.querySelector("#claude-design-go");
     function show(req) {
       if (!req) { statusEl.textContent = ""; btn.disabled = false; return; }
-      statusEl.textContent = "آخر طلب: " + (CLAUDE_REQ_STATUS[req.status] || req.status) + (req.note ? " — " + req.note : "");
+      var note=req.note||"";try{var plan=JSON.parse(note);if(plan.task==="carousel")note="كاروسيل "+plan.slides_count+" شرايح";}catch(ignore){}
+      statusEl.textContent = "آخر طلب: " + (CLAUDE_REQ_STATUS[req.status] || req.status) + (note ? " — " + note : "");
       btn.disabled = req.status === "pending" || req.status === "working";
     }
     window.SSMPDDb.latestClaudeDesignRequest(item.id).then(show, function () { statusEl.textContent = ""; });
@@ -39,7 +40,7 @@
       var picked = box.querySelector('input[name="claude-style"]:checked');
       var style = picked ? picked.value : "photo";
       btn.disabled = true;
-      window.SSMPDDb.requestClaudeDesign(item.id, style, (window.SSMPDAuth.currentAdmin || {}).id).then(show, function (e) {
+      window.SSMPDDb.requestClaudeDesign(item.id, style, (window.SSMPDAuth.currentAdmin || {}).id, window.SSMPDCarouselContent&&window.SSMPDCarouselContent.designNote(item)).then(show, function (e) {
         btn.disabled = false;
         statusEl.textContent = /claude_design_requests/.test(e.message) ? "شغّل ملف تحديث قاعدة البيانات الخاص بتصميم Claude أولاً." : "خطأ: " + e.message;
       });
@@ -240,6 +241,7 @@
       '<div style="margin:6px 0 14px;">' + W.itemActionsHtml(item, window.SSMPDAuth.currentAdmin) + '</div>' +
       '<div id="review-design-edit-slot"></div>' +
       reassignHtml +
+      (window.SSMPDCarouselContent?window.SSMPDCarouselContent.itemHtml(item):'') +
       claudeDesignHtml(item) +
       '<div style="margin:14px 0;">' + actionsHtml + '</div>' +
       W.metaLinksSectionHtml(item) +

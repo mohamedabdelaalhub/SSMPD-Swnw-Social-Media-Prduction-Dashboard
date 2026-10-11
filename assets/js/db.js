@@ -201,9 +201,9 @@
       return handle(client.from("admins").insert({ email: email, name: name, role: role, active: true }));
     },
     // طلبات تصميم Claude Creative — Claude بيصمم ويوصّل المادة للاعتماد النهائي، والاعتماد بيفضل بإيد إنسان
-    requestClaudeDesign: function (contentId, style, requestedBy) {
+    requestClaudeDesign: function (contentId, style, requestedBy, note) {
       return handle(client.from("claude_design_requests").insert({
-        content_id: contentId, style: style, requested_by: requestedBy || null
+        content_id: contentId, style: style, requested_by: requestedBy || null, note: note || null
       }).select().single());
     },
     latestClaudeDesignRequest: function (contentId) {

@@ -27,11 +27,11 @@
   if(required&&(b.slides_count<3||b.slides_count>10))throw Error('عدد شرايح الكاروسيل من ٣ لـ ١٠.');
   return b;
  }
- function metadata(raw,b){try{raw=typeof raw==='string'?JSON.parse(raw):raw;}catch(e){raw={};}return Object.assign({},raw||{},{content_kind:'carousel',carousel_brief:b});}
- function from(item){try{var raw=typeof item.agent_raw_output==='string'?JSON.parse(item.agent_raw_output):item.agent_raw_output;return raw&&raw.content_kind==='carousel'&&raw.carousel_brief||null;}catch(e){return null;}}
+ function metadata(raw,b){try{raw=typeof raw==='string'?JSON.parse(raw):raw;}catch(e){raw={};}var out=Object.assign({},raw||{},{format:'carousel',content_kind:'carousel',carousel_brief:b});delete out.dina_brief;delete out.doctor_brief;delete out.before_after_brief;return out;}
+ function from(item){try{var raw=typeof item.agent_raw_output==='string'?JSON.parse(item.agent_raw_output):item.agent_raw_output;return raw&&raw.carousel_brief||(item.content_format==='carousel'?{slides_count:Array.isArray(raw&&raw.carousel_copy)?raw.carousel_copy.length:6,style:'tips',notes:''}:null);}catch(e){return null;}}
  function copyHtml(copy){
   if(!Array.isArray(copy)||!copy.length)return '';
-  return '<ol style="font-size:12px;margin:6px 0;padding-inline-start:18px">'+copy.map(function(s){return '<li><b>'+esc(s.headline)+'</b>'+(s.body?' — '+esc(s.body):'')+'</li>';}).join('')+'</ol>';
+  return '<div style="display:grid;gap:8px;margin:8px 0">'+copy.map(function(s,i){return '<article style="border:1px solid var(--c-border);border-radius:10px;padding:10px;min-width:0"><small>شريحة '+(i+1)+' من '+copy.length+' — '+(i===0?'الغلاف':i===copy.length-1?'التواصل':'المحتوى')+'</small><h4 style="margin:6px 0">'+esc(s.headline)+'</h4><p style="white-space:pre-wrap;margin:0">'+esc(s.body)+'</p><details><summary>توجيه التصميم</summary>'+esc(s.scene)+'</details></article>';}).join('')+'</div>'; 
  }
  function hydrate(b,copy){
   if(!b)return;var kind=document.getElementById('cf-content-kind');if(!kind)return;
@@ -41,5 +41,8 @@
   document.getElementById('carousel-notes').value=b.notes||'';
   var p=document.getElementById('carousel-copy-preview');if(p)p.innerHTML=copy&&copy.length?'<b style="font-size:12px">نصوص الشرايح من الوكيل:</b>'+copyHtml(copy):'';
  }
- window.SSMPDCarouselContent={html:html,wire:wire,current:current,metadata:metadata,from:from,hydrate:hydrate,copyHtml:copyHtml,styles:STYLES};
+ function copyFrom(item){try{var raw=typeof item.agent_raw_output==='string'?JSON.parse(item.agent_raw_output):item.agent_raw_output;return Array.isArray(raw&&raw.carousel_copy)?raw.carousel_copy:[];}catch(e){return [];}}
+ function itemHtml(item){var copy=copyFrom(item);return item.content_format==='carousel'&&copy.length?'<details style="margin:12px 0"><summary>نصوص شرايح الكاروسيل ('+copy.length+')</summary>'+copyHtml(copy)+'</details>':'';}
+ function designNote(item){if(item.content_format!=='carousel')return null;var raw=item.agent_raw_output||{};try{if(typeof raw==='string')raw=JSON.parse(raw);}catch(e){raw={};}var brief=from(item)||{slides_count:6,style:'tips',notes:''},copy=Array.isArray(raw.carousel_copy)?raw.carousel_copy:[];return JSON.stringify({task:'carousel',brand:item.brand,slides_count:brief.slides_count,style:brief.style,carousel_copy:copy,requires_copy_generation:!copy.length,title:item.title,caption:item.caption_text||item.body,reference_manifest:"assets/design-templates/carousel-reference/manifest.json",word_ranges:{hook:{headline:[3,6],body:[6,12]},point:{headline:[2,6],body:[10,22]},cta:{headline:[2,6],body:[6,16]}},instructions:'صمم كل الشرايح بالترتيب كمجموعة واحدة. غلاف يشد ثم فكرة واحدة لكل شريحة ثم التواصل. لا تحول الكاروسيل إلى بوست واحد ولا تكرر نفس البوست. في المقارنة عمودان داخل كل شريحة وفي الخرافة والحقيقة صندوقان. استخدم هوية الصفحة وترقيم الشرايح واتصالاتها المعتمدة. احفظ جميع الروابط في carousel_slides عبر save_private_carousel ثم final_approval فقط. راجع نصوص كل الشرايح ومساحات النص قبل الرفع.'});}
+ window.SSMPDCarouselContent={copyFrom:copyFrom,itemHtml:itemHtml,designNote:designNote,html:html,wire:wire,current:current,metadata:metadata,from:from,hydrate:hydrate,copyHtml:copyHtml,styles:STYLES};
 })();
