@@ -33,13 +33,15 @@
     var fontFamily=family(text);ctx.font = weight + ' ' + size + 'px ' + fontFamily;
     var lines = [];
     text.split('\n').forEach(function(paragraph) {
-      var line = '';
+      var line = '', start = lines.length;
       paragraph.split(/\s+/).forEach(function(word) {
         // Keep whole words and the chosen font size. Layout advice never blocks export.
         var candidate = line ? line+' '+word : word;
         if(line && ctx.measureText(candidate).width > width) { lines.push(line); line=word; }
         else line=candidate;
       }); lines.push(line);
+      // Never leave one word alone on the last line of a multi-line title: pull a word down from the line above.
+      var n=lines.length;if(n-start>=2&&line.indexOf(' ')<0&&line){var prev=lines[n-2].split(' ');if(prev.length>=3){var moved=prev.pop()+' '+line;if(ctx.measureText(moved).width<=width){lines[n-2]=prev.join(' ');lines[n-1]=moved;}}}
     });
     return {lines:lines,w:Math.max.apply(null,lines.map(function(line){return ctx.measureText(line).width;})),size:size,weight:weight,fontFamily:fontFamily,leading:leading,h:size*1.35+(lines.length-1)*size*leading};
   }
@@ -53,7 +55,7 @@
       right:'Leave the RIGHT half empty with a pale plain background for Arabic text. Place the person and all key details on the LEFT.',
       left:'Leave the LEFT half empty with a pale plain background for Arabic text. Place the person and all key details on the RIGHT.'
     };
-    if(['full_photo','full_bleed'].includes(data.layoutTemplate))instructions.bottom='Fill the portrait with a continuous photograph. Keep the lower third calm for a text card. Place faces and important details in the upper and middle areas.';
+    if(['full_photo','full_bleed','sono_cover'].includes(data.layoutTemplate))instructions.bottom='Fill the portrait with a continuous photograph. Keep the lower third calm for a text card. Place faces and important details in the upper and middle areas.';
     return String(prompt || '')+'\nComposition: '+(instructions[data.titlePosition]||instructions.bottom)+' Extend the photograph naturally to every edge, including the top. Keep only the small upper-left corner calm and '+(data.logoVariant==='alternate'?'dark':'light')+' for a logo overlay; place faces and important details away from that corner. Do not add a blank horizontal header, white margin or separate top panel. Use a portrait frame with at least 300 additional pixels of lower body and background below the normal composition at final export scale. Do not crop at shoulders, elbows or torso. Reserve this lower extension for a gradual fade. No writing or logos.';
   }
   async function render(canvas, scene, data, options) {
@@ -61,6 +63,7 @@
     if(data.brand==='dr_dina')return window.SSMPDDinaTemplate.render(canvas,scene,data);
     if(/^sono_before_after_/.test(data.layoutTemplate))return window.SSMPDBeforeAfterTemplate.render(canvas,scene,data);
     if(data.layoutTemplate==='sono_doctor')return window.SSMPDDoctorTemplate.render(canvas,scene,data);
+    if(data.layoutTemplate==='sono_cover'&&window.SSMPDCoverTemplate)return window.SSMPDCoverTemplate.render(canvas,scene,data);
     var template=['classic','full_photo','full_bleed','split'].includes(data.layoutTemplate)?data.layoutTemplate:'classic';
     var fullBleed=template==='full_bleed',photographic=template==='full_photo'||fullBleed;
     var issues=[];
@@ -140,6 +143,8 @@
       if(a.left<b.right && a.right>b.left && a.top<b.bottom+8 && a.bottom+8>b.top)
         problem('العناصر متداخلة. عدّل موضع السطر أو زر التفاعل.');
     }
+    // Permanent rule: at least 40 px between the text above and the CTA button.
+    if(cta&&blocks.length>1){var btn=blocks[blocks.length-1];blocks.slice(0,-1).forEach(function(b){if(b.bottom<=btn.top&&btn.top-b.bottom<40&&b.left<btn.right&&b.right>btn.left)problem('المسافة بين السطر التوضيحي وزر التفاعل أقل من 40 بكسل. نزّل الزر أو ارفع النص.');});}
     if(photographic&&data.panelFill!=='none'&&blocks.length){var top=Math.max(200,Math.min.apply(null,blocks.map(function(b){return b.top;}))-28),bottom=Math.min(1160,Math.max.apply(null,blocks.map(function(b){return b.bottom;}))+28);if(bottom>top){ctx.fillStyle=window.SSMPDDesignPanelColor.fill(ctx,data,{x:35,y:top,w:1010,h:bottom-top});ctx.beginPath();ctx.roundRect(35,top,1010,bottom-top,28);ctx.fill();}}
     // Opaque quiet panel under text placed over the scene; fixed overlay remains unchanged.
     [title,subtitle,secondary].forEach(function(layout,index){
