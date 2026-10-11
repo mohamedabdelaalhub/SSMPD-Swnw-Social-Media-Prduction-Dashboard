@@ -334,10 +334,11 @@ async function publishFacebookVideo(pageId: string, token: string, videoUrl: str
 // ريلز انستجرام: معالجة الفيديو ممكن تاخد دقايق، فبنستنى لحد ~٩٠ ثانية بس.
 // لو لسه بيتعالج، بنرجّع pending ونحتفظ بالـcontainer، والتشغيلة الجاية تكمّل
 // النشر من غير ما تعيد رفع الفيديو.
-async function publishInstagramReel(igUserId: string, token: string, videoUrl: string, caption: string, existingContainer: string | null) {
+async function publishInstagramReel(igUserId: string, token: string, videoUrl: string, caption: string, existingContainer: string | null, coverUrl: string | null = null) {
   let containerId = existingContainer;
   if (!containerId) {
-    const c = await graphPost(`${igUserId}/media`, { media_type: "REELS", video_url: videoUrl, caption, share_to_feed: "true", access_token: token });
+    // cover_url = the designed reel cover (content_items.cover_settings.cover_image_url), when there is one.
+    const c = await graphPost(`${igUserId}/media`, { media_type: "REELS", video_url: videoUrl, caption, share_to_feed: "true", ...(coverUrl ? { cover_url: coverUrl } : {}), access_token: token });
     if (!c.ok) return { ok: false, error: c.data.error?.message || "فشل إنشاء ريل انستجرام" };
     containerId = c.data.id;
   }
@@ -382,7 +383,7 @@ async function processJob(admin: ReturnType<typeof createClient>, job: any) {
     return;
   }
 
-  const contentRes = await admin.from("content_items").select("title, brand, body, caption_text, cta_text, hook_text, design_file_url, published_url, published_urls, content_format, carousel_slides").eq("id", job.content_id).maybeSingle();
+  const contentRes = await admin.from("content_items").select("title, brand, body, caption_text, cta_text, hook_text, design_file_url, published_url, published_urls, content_format, carousel_slides, cover_settings").eq("id", job.content_id).maybeSingle();
   const content = contentRes.data as { title: string; brand: string | null; hook_text: string | null; body: string | null; caption_text: string | null; cta_text: string | null; design_file_url: string | null; published_url: string | null; published_urls: Record<string, string> | null; content_format: string | null; carousel_slides: unknown } | null;
   if (!content) {
     await admin.from("meta_publish_jobs").update({ status: "failed", error_code: "CONTENT_NOT_FOUND", error_message: "مادة المحتوى غير موجودة." }).eq("id", job.id);
@@ -392,6 +393,7 @@ async function processJob(admin: ReturnType<typeof createClient>, job: any) {
 
   var imageUrl: string | null = null;
   var videoUrl: string | null = null;
+  var coverUrl: string | null = null;
   var carouselUrls: string[] = [];
   if (content.content_format === "video") {
     if (!content.design_file_url) {
@@ -400,6 +402,9 @@ async function processJob(admin: ReturnType<typeof createClient>, job: any) {
     }
     try {
       videoUrl = await rehostImageToStorage(admin, job.id, content.design_file_url, "", true);
+      // Optional designed cover: never blocks publishing if it can't be read.
+      const cover = (content as any).cover_settings?.cover_image_url;
+      if (typeof cover === "string" && cover) { try { coverUrl = await rehostImageToStorage(admin, job.id, cover, "-cover"); } catch { coverUrl = null; } }
     } catch (e) {
       await admin.from("meta_publish_jobs").update({ status: "failed", error_code: "VIDEO_FETCH_ERROR", error_message: e instanceof Error ? e.message : String(e) }).eq("id", job.id);
       return;
@@ -459,7 +464,7 @@ async function processJob(admin: ReturnType<typeof createClient>, job: any) {
     } else if (!imageUrl && !carouselUrls.length && !videoUrl) {
       errors.push("انستجرام: لازم صورة أو فيديو — مفيش ملف تصميم متاح.");
     } else if (videoUrl) {
-      const r = await publishInstagramReel(brandCfg.instagram_business_account_id, token, videoUrl, message, job.instagram_container_id || null) as any;
+      const r = await publishInstagramReel(brandCfg.instagram_business_account_id, token, videoUrl, message, job.instagram_container_id || null, coverUrl) as any;
       if (r.ok) {
         patch.instagram_container_id = r.containerId; patch.instagram_media_id = r.mediaId; patch.instagram_permalink = r.permalink; successCount++;
       } else if (r.pending) {

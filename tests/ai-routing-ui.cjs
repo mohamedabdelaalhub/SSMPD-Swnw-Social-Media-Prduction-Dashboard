@@ -2,12 +2,14 @@ const {JSDOM}=require('jsdom'),fs=require('fs'),assert=require('assert/strict'),
 const root=path.resolve(__dirname,'..'),tick=()=>new Promise(r=>setImmediate(r));
 (async()=>{
  const dom=new JSDOM('<div id="view-container"></div>',{runScripts:'outside-only',url:'https://example.test'}),w=dom.window;
- let current={id:'item',title:'اختبار',brand:'sono',content_format:'image_post',stage:'initial_approval',created_by:'owner'},calls=0,opened=0,updates=0,fail=false;
+ let current={id:'item',title:'اختبار',brand:'sono',content_format:'image_post',stage:'initial_approval',created_by:'owner',updated_at:new Date().toISOString()},calls=0,opened=0,updates=0,fail=false;
  w.alert=()=>{};w.SSMPDI18n={textHtml:s=>s,text:s=>s,html:s=>s};w.confirm=()=>true;w.SSMPDAuth={currentAdmin:{id:'reviewer'}};
  w.SSMPDWorkflow={STAGES:['initial_approval','in_design','final_approval'].map(key=>({key,label:key})),brandBadgeHtml:()=>'',specialtyBadgeHtml:()=>'',contentFormatDetailsHtml:()=>'',contentFormatBadgeHtml:()=>'',stageLabel:s=>s,itemActionsHtml:()=>'',metaLinksSectionHtml:()=>'',brandSelectHtml:()=>'<select id="rv-brand"></select>',specialtySelectHtml:()=>'<select id="rv-specialty"></select>',wireItemActions:()=>{},wireMetaLinksSection:()=>{},draftSubmissionHtml:()=>'',wireDraftSubmission:()=>{},openPublishedPostOptions:()=>{}};
  w.SSMPDComments={computeCommentStats:()=>({}),commentButtonHtml:()=>'',render:()=>{}};
  w.SSMPDDb={listContentItems:async()=>[current],getContentItem:async()=>current,listAdminsBasic:async()=>[],listAllComments:async()=>[],listMyCommentReads:async()=>[],listDesignersAll:async()=>[{id:'designer',name:'مصمم'}],getAppSettings:async()=>null,routeContentDesign:async(id,target,designer)=>{calls++;await tick();if(fail)throw Error('error');current={...current,stage:'in_design',design_execution:target,assigned_designer:designer};return current;},updateContentItem:async(id,patch)=>{updates++;await tick();if(fail)throw Error('error');current={...current,...patch};return current;},logActivity:async()=>{},latestClaudeDesignRequest:async()=>null,listComments:async()=>[]};
  w.SSMPDDrive={logDesignSent:async()=>{}};w.SSMPDDesignStudio={open:()=>opened++,mount:()=>{}};w.SSMPDPublicationPreview={mount:()=>{}};w.SSMPDWebsite={mountAction:()=>{}};w.SSMPDCarouselContent={designNote:()=>'',itemHtml:()=>''};w.SSMPDRenderProduction={renderVideoJobSection:()=>opened++};
+ // The review screen opens on the day-cards view (#85), which needs its helper loaded.
+ w.eval(fs.readFileSync(path.join(root,'assets/js/days-cards.js'),'utf8'));
  w.eval(fs.readFileSync(path.join(root,'assets/js/render-review.js'),'utf8'));
  async function show(){w.SSMPDRenderReview.render(w.document.getElementById('view-container'));await tick();w.document.querySelector('[data-id="item"]').click();await tick();await tick();}
  await show();assert(w.document.querySelector('#rv-designer option[value="ai"]'));assert(w.document.querySelector('#rv-designer option[value="designer"]'));
