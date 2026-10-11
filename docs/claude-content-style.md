@@ -91,6 +91,7 @@ Dr. Dina — render with the dashboard's OWN renderer so it matches the studio e
 
 ## Revision requests from the design queue (stage needs_revision)
 - Before redesigning an item in needs_revision, read ALL its comments (table comments, content_id = the item) that start with "طلب تعديل:" and that are newer than the last design; apply every requested change exactly and keep everything else from the previous design.
+- Videos/reels: "keep everything else" never keeps an old ending. Every revised video is re-exported with the CURRENT "Reel ending — fixed order" (kit contact card, then the current kit outro last) and the current pronunciation fixes, even if the comments don't mention them.
 - If a comment says "أعد التصميم من الأول" (or similar), make a completely new design (different variant/photo) instead of editing.
 - After uploading, mark those comments done (status = 'done') and send the item back to final_approval as usual. Never approve it yourself.
 
