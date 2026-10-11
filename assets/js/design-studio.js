@@ -41,6 +41,7 @@
   });
  }
  function mount(slot,item){
+  if(slot&&item&&item.content_format==='video'&&window.SSMPDReelCover)window.SSMPDReelCover.mount(slot,item);
   if(!slot||!window.SSMPDDesignFiles.canEdit(item))return;
   var start=document.createElement('button'); start.className='btn ghost'; start.textContent=item.design_file_url?'تعديل التصميم الحالي':'إنشاء تصميم'; slot.appendChild(start);
   start.onclick=function(){open(item);};

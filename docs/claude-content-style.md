@@ -102,14 +102,20 @@ Dr. Dina — render with the dashboard's OWN renderer so it matches the studio e
 - Never edit or delete the template files themselves.
 
 ## Carousel items (content_format = carousel)
+- Swipe hint on covers is always «اسحب وشوف ←» — the arrow points LEFT (the swipe direction on the platforms), at the left end of the text.
 - The slide copy is in `agent_raw_output.carousel_copy` (array of {role: hook|point|cta, headline, body, scene}) and the brief in `carousel_brief` ({slides_count, style, notes}). If carousel_copy is missing, write it yourself from the title/body/caption with the same rules (slide 1 hook, middle slides one idea each, last slide contact/booking, ≤6-word headlines, ≤22-word bodies, no prices).
 - Design ALL slides as one consistent set, 1080×1350: same page frame/template on every slide, slide 1 big hook title + photo, middle slides numbered (١، ٢، ٣…) with the point title + body + small icon/photo, last slide = the page contact slide (kit dina/contact_slide.jpg or sono/contact_slide.jpg style). Swnw: fixed frame on every slide. Dina: use the dashboard renderer variants that fit (e.g. 7/8 for points) or her frames.
 - Upload each slide PNG to the content-designs bucket under `<content_id>/<uuid>/output.png`, then call `POST /rest/v1/rpc/save_private_carousel` with {p_content_id, p_output_urls:[…in order…], p_settings:{template:"claude-carousel"}}. Then move the item to final_approval as usual.
 
 ## Reel on-screen look (Mohamed, 2026-10-11)
 - Logo: the approved look is the kit frame `sono/cover_template.png` (Swnw) / `dina/cover_template.png` (Dr. Dina) — the logo sits DIRECTLY on the video, top-left, small (≈200 px wide on 1080), NO box, card or coloured tab behind it. Overlay the cover_template frame on every reel frame (or place `sono/logo_web.png` / the Dina logo at the same position and size). If the footage behind it is very light, add a soft dark gradient at the top of the video instead of a box.
-- Caption box: the white rounded box in the lower third (as in cover_template).
+- Caption box: the white rounded box in the lower third (as in cover_template). The box HUGS the text (its width = the caption line + ~28 px padding each side, never a fixed full-width bar), and captions are cut into SHORT chunks of 2–5 words, one line each, switching with the voice (Mohamed, 2026-10-11: «بوكس على قد الكلام وبيتقطع جمل أصغر»).
+- Motion (Mohamed, 2026-10-11): key words must MOVE, not sit as plain text. Symptom / list words (e.g. صداع، تنميل، دوخة) pop in one after another (scale 0.6→1.08→1 with a short slide-up, ~0.25 s each, highlight colour), numbers count/pop, the hook line slides in. Keep it smooth and readable — no shaking, no fast flashing.
 - Highlighted words in on-screen text: Swnw = ORANGE #F15A22 (never blue); Dr. Dina = her red #E3141B. The rest of the text stays dark (#16212E) on the white box.
+
+## Reel cover (Mohamed, 2026-10-11)
+- Every reel gets a cover in the carousel-cover style: `docs/templates/sono-reel-cover/cover.html` (Swnw, blue, orange highlight) or `docs/templates/dina-reel-cover/cover.html` (Dr. Dina, burgundy, red highlight). 1080×1920: photo on top (a strong frame from the reel or a matching stock photo; never a generated image of Dr. Dina or any doctor), tag pill, big hook title (≤3 lines, no single orphan word), one subtitle line, «▶ شوف الفيديو».
+- Render it to PNG, upload with op=upload_image, then PATCH `content_items.cover_settings` MERGING the existing JSON: `{...cover_settings, cover_image_url}`. The dashboard shows it in the preview («غلاف الريل») and the publisher sends it as the Instagram reel cover. Staff can also make/edit it from «🎬 تصميم غلاف الريل» on video items.
 
 ## Reel ending — fixed order (Mohamed, 2026-10-11)
 Every reel ends: content → contact card → outro. The outro is ALWAYS the very last thing.
