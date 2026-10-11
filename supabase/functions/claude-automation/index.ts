@@ -13,7 +13,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 //
 //   POST ?op=upload_image&content_id=<uuid>   body = PNG bytes  -> {url}
 //   POST ?op=upload_video                      body = MP4 bytes  -> {url}
-//   POST ?op=tts                               {text, model?, stability?, style?, speed?, chunk?} -> MP3 bytes (ElevenLabs, sentence by sentence)
+//   POST ?op=tts                               {text, model?, stability?, style?, speed?, chunk?} -> MP3 bytes (ElevenLabs)
 //        The text first goes through the pronunciation list (kit file tts/pronunciations.json,
 //        plus the built-in defaults below): words Mohamed flagged are rewritten before speaking.
 //   POST ?op=download&bucket=video-inputs|content-designs&path=<p>  -> file bytes
@@ -212,10 +212,8 @@ Deno.serve(async (req) => {
     const settings = model === "eleven_v3"
       ? { stability: num(b?.stability, 0.5, 0, 1), similarity_boost: 0.75, use_speaker_boost: true }
       : { speed: num(b?.speed, 1.0, 0.7, 1.2), stability: num(b?.stability, 0.5, 0, 1), similarity_boost: 0.75, style: num(b?.style, 0, 0, 1), use_speaker_boost: true };
-    // Long scripts drift out of the Egyptian dialect toward the end (Mohamed, 2026-10-11), so we speak
-    // them sentence by sentence (≤ ~180 chars per call) and join the MP3s. v2 also gets the neighbouring
-    // sentences as context so the intonation stays continuous.
-    const chunks = b?.chunk === false ? [text] : splitSentences(text);
+    // Sentence-by-sentence made the voice worse (Mohamed, 2026-10-11): off by default, opt-in with chunk:true.
+    const chunks = b?.chunk === true ? splitSentences(text) : [text];
     const parts: Uint8Array[] = [];
     for (let i = 0; i < chunks.length; i++) {
       const body: Record<string, unknown> = { text: chunks[i], model_id: model, voice_settings: settings };

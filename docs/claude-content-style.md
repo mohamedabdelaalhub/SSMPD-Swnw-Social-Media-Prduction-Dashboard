@@ -109,7 +109,7 @@ Dr. Dina — render with the dashboard's OWN renderer so it matches the studio e
 Every reel ends: content → contact card → outro. The outro is ALWAYS the very last thing.
 - Contact card (≈3 s, gentle zoom, voice-over may say the booking line): Swnw `sono/contact_video.jpg`, Dr. Dina `dina/contact_video.jpg` (kit, 1080×1920). Never build your own contact card for reels.
 - Outro (≈4 s, keep its own sound): Swnw `sono/outro.mp4` (blue, circular Swnw logo); Swnw cosmetics/aesthetics videos (تجميل، بشرة، ليزر، فيلر، بوتوكس…) use `sono/outro_cosmetics.mp4` instead; Dr. Dina `dina/outro.mp4`. The old burgundy outro (`sono/outro_old_burgundy.mp4`) is retired.
-- The voice is spoken sentence by sentence by the gateway (keeps the Egyptian dialect to the end). Keep sentences short.
+- Keep the voice exactly as it is (one op=tts call per script, current model). Mohamed tried other models and sentence-by-sentence voice and rejected them (2026-10-11).
 
 ## Reel voice-over pronunciation (Mohamed, 2026-10-11)
 - The gateway op=tts rewrites words the voice said wrong before speaking (built-in list in supabase/functions/claude-automation/index.ts + kit file tts/pronunciations.json). Add any new word Mohamed flags to the kit file as {"written": "spoken with tashkeel"}.
