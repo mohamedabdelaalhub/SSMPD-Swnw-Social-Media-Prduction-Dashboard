@@ -302,7 +302,14 @@
           '<div class="pbd-day"><div class="pbd-dayname">' + escapeHtml(first.toLocaleDateString("ar-EG", { weekday: "long" })) + '</div>' +
           '<div class="pbd-daymonth">' + escapeHtml(first.toLocaleDateString(LATN, { month: "long", year: "numeric" })) + '</div></div>' +
           tag + '<span class="pbd-count" title="عدد المواد">' + items.length + '</span></div><div class="pbd-list">';
-        items.forEach(function (it) { html += daysRowHtml(it, adminsById, true); });
+        // سونو فوق ودينا تحتها (وأي مادة بدون صفحة في الآخر) — فاصل خفيف باسم الصفحة بينهم لو اليوم فيه أكتر من صفحة
+        var groups = [["sono", "سونو"], ["dr_dina", "د. دينا"], ["", "بدون صفحة"]].map(function (g) {
+          return { label: g[1], rows: items.filter(function (it) { return g[0] ? it.brand === g[0] : it.brand !== "sono" && it.brand !== "dr_dina"; }) };
+        }).filter(function (g) { return g.rows.length; });
+        groups.forEach(function (g) {
+          if (groups.length > 1) html += '<div class="pbd-sep"><span>' + g.label + '</span></div>';
+          g.rows.forEach(function (it) { html += daysRowHtml(it, adminsById, true); });
+        });
         html += '</div></div>';
       });
       html += '</div>';
