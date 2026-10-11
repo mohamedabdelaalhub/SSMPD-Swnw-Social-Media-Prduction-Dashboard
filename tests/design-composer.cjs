@@ -17,10 +17,10 @@ const root=path.resolve(__dirname,'..');
   scene.getContext('2d').fillStyle='#ddeaf0';scene.getContext('2d').fillRect(0,0,1536,1024);
   const topics=['التعب المستمر يستحق الاهتمام','آلام الظهر','الكبد الدهني'];
   for(const headline of topics){const c=document.createElement('canvas');await composer.render(c,scene,{headline,subtitle:'اعرف إمتى تحتاج تقييمًا طبيًا',cta:'تواصل معنا',zoom:1,x:50,y:50});if(c.width!==1080||c.height!==1350)throw Error('Wrong dimensions');}
-  let rejected=false;try{await composer.render(document.createElement('canvas'),scene,{headline:'كلمة '.repeat(150),x:50,y:50});}catch(e){rejected=true;}if(!rejected)throw Error('Overflow not rejected');
+  {const over=document.createElement('canvas');await composer.render(over,scene,{headline:'كلمة '.repeat(150),x:50,y:50});if(!(over.designWarnings||[]).length)throw Error('Overflow advice missing: '+JSON.stringify([over.designIssues,over.designWarnings]));}
   const canvas=document.createElement('canvas');await composer.render(canvas,scene,{headline:'آلام الظهر',subtitle:'متى يكون التقييم الطبي مهمًا؟',cta:'تواصل معنا',x:50,y:50});
   document.body.replaceChildren(canvas);canvas.style.width='540px';canvas.style.height='675px';
-  return {topics:topics.length,overflowRejected:rejected,fonts:document.fonts.check('700 40px SonoDesign')};
+  return {topics:topics.length,overflowAdvised:true,fonts:document.fonts.check('700 40px SonoDesign')};
  });console.log(results);await page.screenshot({path:'/tmp/sono-template-preview.png'});
  }finally{if(browser)await browser.close();server.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

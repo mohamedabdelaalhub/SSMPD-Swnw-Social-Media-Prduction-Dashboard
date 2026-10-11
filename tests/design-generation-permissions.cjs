@@ -23,5 +23,5 @@ await state('page_manager','dr_dina','in_design',other);await assert.rejects(res
 await state('viewer','dr_dina','in_design',actor);await assert.rejects(reserve(),/غير مسموح/);
 await state('super_admin','unknown','in_design',actor);await assert.rejects(reserve(),/غير مسموح/);
 await state('page_manager','dr_dina','in_design',actor);for(let i=0;i<3;i++){let j=await reserve();await db.query("update design_jobs set status='failed' where id=$1",[j.job.id]);}await assert.rejects(reserve(),/٣ محاولات/);
-await state('page_manager','dr_dina','in_design',actor);await db.query("insert into design_jobs(estimated_cost_usd,attempt_count) values(5,0)");await assert.rejects(reserve(),/٥ دولارات/);
+await state('page_manager','dr_dina','in_design',actor);await db.query("insert into design_jobs(estimated_cost_usd,attempt_count) values(5,0)");await assert.rejects(reserve(),/الميزانية الشهرية للتصميم: 5 دولار/);
 await db.close();console.log('PASS: real PostgreSQL permission function, Dina/Sono routing, final approval, denial, idempotency and quota checks.');})().catch(e=>{console.error(e);process.exitCode=1;});

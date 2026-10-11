@@ -17,17 +17,19 @@ w.HTMLCanvasElement.prototype.getContext=function(){
  }
  return native.get(this).getContext('2d');
 };
+{const fake=require('fake-indexeddb');w.indexedDB=fake.indexedDB;w.IDBKeyRange=fake.IDBKeyRange;}
+w.HTMLCanvasElement.prototype.toBlob=function(cb){cb(new w.Blob(['png'],{type:'image/png'}));};
 const query={select(){return this},eq(){return this},order(){return this},limit(){return Promise.resolve({data:[]})}};
 w.SSMPDDb={client:{from(){return query},functions:{invoke:async()=>({data:{images:[{id:'test',url:'test-scene'}]}})}}};
 w.eval(fs.readFileSync(root+'/assets/js/design-composer.js','utf8'));
 const C=w.SSMPDDesignComposer,render=C.render;let latest=Promise.resolve();
 C.render=(...args)=>latest=render(...args);
 C.loadImage=async()=>createCanvas(1080,1350);
-w.eval(fs.readFileSync(root+'/assets/js/design-studio.js','utf8'));
+w.SSMPDDesignFiles=w.SSMPDDesignFiles||{canEdit:()=>true,latest:async()=>null,resolve:async u=>u,path:()=>'',save:async()=>({})};w.SSMPDDb.listBrandLogos=w.SSMPDDb.listBrandLogos||(async()=>[]);for(const f of ['design-panel-color','doctor-schedule','doctor-content','dina-content','before-after-content','design-copy','design-expansion'])w.eval(fs.readFileSync(root+'/assets/js/'+f+'.js','utf8'));w.eval(fs.readFileSync(root+'/assets/js/design-editor-layout.js','utf8'));w.eval(fs.readFileSync(root+'/assets/js/design-studio.js','utf8'));
 const field=name=>w.document.querySelector('[data-field="'+name+'"]');
-async function change(name,value){calls=[];field(name).value=String(value);field(name).dispatchEvent(new w.Event('input'));await latest;await Promise.resolve();return calls.slice()}
+async function change(name,value){calls=[];field(name).value=String(value);field(name).dispatchEvent(new w.Event('input'));await new Promise(r=>setTimeout(r,60));await latest;await Promise.resolve();return calls.slice()}
 (async()=>{
- w.SSMPDDesignStudio.open({id:'test',title:'بتستنزفك؟'});await latest;
+ w.SSMPDDesignStudio.open({id:'test',title:'بتستنزفك؟'});await latest;await new Promise(r=>setTimeout(r,150));await latest; // let the draft restore finish
  await w.document.querySelector('[data-library]').onclick();w.document.querySelector('[data-images] button').click();await Promise.resolve();await latest;
  await change('subtitle','هل العلاقة دي');await change('textOrder','subtitle_first');await change('headlineSize',120);await change('cta','احجز موعدك الآن');
  let small=await change('subtitleSize',20);
@@ -35,8 +37,9 @@ async function change(name,value){calls=[];field(name).value=String(value);field
  assert(small.find(x=>x.text==='هل العلاقة دي').font.includes('20px'));
  assert(big.find(x=>x.text==='هل العلاقة دي').font.includes('100px'));
  assert(w.document.querySelector('[data-status]').textContent.includes('متداخلة'));
- assert(w.document.querySelector('[data-save]').disabled);
- assert(w.document.querySelector('[data-download]').disabled);
+ // Overlap is advice now (export is not blocked) — see test/design-layout-advice.cjs
+ assert.equal(w.document.querySelector('[data-save]').disabled,false);
+ assert.equal(w.document.querySelector('[data-download]').disabled,false);
  let moved=await change('headlineOffset',-150);
  assert(moved.find(x=>x.text==='بتستنزفك؟').y<big.find(x=>x.text==='بتستنزفك؟').y);
  assert.equal(w.document.querySelector('[data-download]').disabled,false);
@@ -45,6 +48,6 @@ async function change(name,value){calls=[];field(name).value=String(value);field
  let shifted=await change('ctaOffset',20);assert.equal(shifted.find(x=>x.text==='احجز موعدك الآن').y,cta.find(x=>x.text==='احجز موعدك الآن').y+20);
  await change('headlineSize',64);await change('subtitleSize',32);
  for(const pos of ['left','right'])assert((await change('titlePosition',pos)).some(x=>x.text.includes('هل')));
- console.log('PASS: real studio input handlers + native canvas; 20→100px, repeated edits, overlap preview, save guard, recovery, CTA size/position, left/right. Not browser QA.');
+ console.log('PASS: real studio input handlers + native canvas; 20→100px, repeated edits, overlap advice without blocking save, recovery, CTA size/position, left/right. Not browser QA.');
  dom.window.close();
 })().catch(e=>{console.error(e);process.exitCode=1;dom.window.close()});

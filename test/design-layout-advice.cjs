@@ -2,7 +2,7 @@ const fs=require('fs'),vm=require('vm'),assert=require('node:assert/strict'),pat
 const draws=[];
 const ctx={font:'',measureText(text){return{width:String(text).length*Number(this.font.match(/(\d+)px/)[1])*.55};},fillText(text,x,y){draws.push({text,x,y,font:this.font});},fillRect(){},drawImage(){},save(){},restore(){},beginPath(){},rect(){},clip(){},roundRect(){},fill(){},createLinearGradient(){return{addColorStop(){}};}};
 const window={},context={window,URL,document:{currentScript:{src:'https://fixture.test/assets/js/design-composer.js'},fonts:{add(){}}},FontFace:class{load(){return Promise.resolve(this);}},Image:class{set src(value){queueMicrotask(()=>this.onload());}}};
-vm.createContext(context);vm.runInContext(fs.readFileSync(path.join(__dirname,'../assets/js/design-composer.js'),'utf8'),context);
+vm.createContext(context);vm.runInContext(fs.readFileSync(path.join(__dirname,'../assets/js/design-panel-color.js'),'utf8'),context);vm.runInContext(fs.readFileSync(path.join(__dirname,'../assets/js/design-composer.js'),'utf8'),context);
 (async()=>{
  const canvas={getContext:()=>ctx},scene={width:1080,height:1350};
  const data={headline:'تغيير الجو',subtitle:'مش هو السبب المباشر',headlineSize:120,titlePosition:'bottom',headlineOffset:300,subtitleOffset:-90};

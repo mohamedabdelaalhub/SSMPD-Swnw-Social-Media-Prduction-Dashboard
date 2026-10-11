@@ -8,9 +8,11 @@ const db={
  rpc:async(name,args)=>{commands.push([name,args]);return {}},
  functions:{invoke:async()=>{workerCalls++;return {data:{ok:true}}}}
 };
-const window={SSMPDDb:{client:db,getContentItem:async()=>item},SSMPDWorkflow:{canEditItem:()=>true},SSMPDAuth:{currentAdmin:{}},SSMPDContentText:{preview:async()=>true},SSMPDToast:{show(){}},confirm:()=>true};
+const window={SSMPDDb:{client:db,getContentItem:async()=>item},SSMPDWorkflow:{canEditItem:()=>true},SSMPDAuth:{currentAdmin:{id:'approver',role:'approver'}},SSMPDContentText:{preview:async()=>true},SSMPDToast:{show(){}},confirm:()=>true};
 const c={window,document:dom.window.document,console};vm.createContext(c);vm.runInContext(fs.readFileSync(new URL('../assets/js/website-publish.js',import.meta.url),'utf8'),c);
 window.SSMPDWebsite.mount(c.document.querySelector('main'),[item]);await new Promise(r=>setTimeout(r,0));
+// Lists stay collapsed until a publication tab is chosen (23c29fc).
+assert.equal(c.document.querySelector('[data-website-list]').hidden,true);c.document.querySelector('[data-web-tab="published"]').click();await new Promise(r=>setTimeout(r,0));
 assert.ok(c.document.querySelector('details'));assert.equal(c.document.querySelector('unsafe'),null);assert.match(c.document.body.textContent,/منشور على الموقع/);
 c.document.querySelector('[data-web-send]').click();await new Promise(r=>setTimeout(r,0));assert.equal(commands[0][1].p_action,'upsert');assert.equal(workerCalls,1);
 c.document.querySelector('[data-web-withdraw]').click();await new Promise(r=>setTimeout(r,0));assert.equal(commands[1][1].p_action,'unpublish');
