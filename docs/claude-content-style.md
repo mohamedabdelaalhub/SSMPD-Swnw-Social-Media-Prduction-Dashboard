@@ -141,3 +141,6 @@ The in-dashboard generator is the content-ai Edge Function. Custom GPT instructi
   - Replace `PHOTO.jpg` in the HTML with the downloaded/generated photo.
 - PHOTO FRAMING RULE (mandatory): faces must be fully visible and clear, never under a title, a gradient or the logo. On covers the face centre must sit between y≈200 and y≈500 of the 1080×1350 canvas — move the photo up/down (e.g. `top:-230px; height:1580px; background-position:center top`) until it does; check the render. Same on point slides: the face sits in the upper/middle of the photo box, never cut by its edge.
 - Photos: prefer Pixabay (op=stock) only when the people look Egyptian/Arab and fit; otherwise generate (op=image, photorealistic Egyptian people, modest clothing, no text/logos; max 3 per run). Never generate or show doctors or Dr. Dina.
+
+## Numbers in designs (Mohamed, 2026-10-11)
+- Always use English/Western digits 0123456789 in every design and video caption — slide counters ("1 / 6", render the counter with direction:ltr), numbered circles, titles ("5 حاجات"), times, percentages and phone numbers. Never Arabic-Indic digits (٠١٢٣…). If the item's text has Arabic-Indic digits, convert them in the design.
