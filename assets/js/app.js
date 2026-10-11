@@ -312,7 +312,10 @@
   }
   function notifMapItems(res) {
     var items = (res[0] || []).map(function (r) {
-      return { at: r.created_at, text: ((r.admins && r.admins.name) || "مستخدم") + " — " + r.action };
+      var ci = r.content_items || {};
+      return { at: r.created_at, text: ((r.admins && r.admins.name) || "مستخدم") + " — " + r.action,
+        contentId: r.content_id, title: ci.title || "", format: ci.content_format || "", brand: ci.brand || "",
+        fromStage: r.from_stage || "", toStage: r.to_stage || "", itemStage: ci.stage || "", action: r.action };
     }).concat((res[1] || []).map(function (r) {
       return { at: r.created_at, text: ((r.admins && r.admins.name) || "مستخدم") + " — " + r.action_type + (r.report_name ? ": " + r.report_name : "") };
     }));
@@ -337,10 +340,60 @@
       return items.slice(0, limit);
     });
   }
+  // أي تاب يخص الإجراء ده: الجدولة/النشر ← النشر، التصميم ← التصميم، النشر الفعلي ← الأرشيف، طلب التعديل ← إدارة المحتوى، الإنشاء ← إنتاج المحتوى
+  var NOTIF_FORMATS = { video: "فيديو", image_post: "بوست صورة", carousel: "كاروسيل", link_post: "بوست رابط" };
+  var NOTIF_BRANDS = { sono: "سونو", dr_dina: "د. دينا" };
+  function notifTargetTab(it) {
+    var a = String(it.action || ""), want;
+    if (/جدول|ميعاد|مجدول/.test(a)) want = "publish";
+    else if (/^نشر/.test(a)) want = "archive";
+    else if (/تصميم|كاروسيل|جهة التنفيذ|نسخة/.test(a)) want = "design";
+    else if (/طلب تعديل/.test(a)) want = "review";
+    else if (/إنشاء/.test(a)) want = "production";
+    else if (it.toStage === "in_design") want = "design";
+    else if (it.toStage === "ready_to_publish" || it.toStage === "scheduled") want = "publish";
+    else if (it.toStage === "published") want = "archive";
+    else want = "review";
+    var chain = [want, "review", "production"];
+    for (var i = 0; i < chain.length; i++) if (document.querySelector('#tabs-bar [data-tab="' + chain[i] + '"]')) return chain[i];
+    return "";
+  }
   function notifItemHtml(it, seenBefore) {
     var unread = new Date(it.at) > new Date(seenBefore);
-    return '<div style="padding:8px 10px;border-bottom:1px solid var(--c-border);font-size:12px;' + (unread ? "" : "opacity:.5;") + '">' + notifEscHtml(it.text) +
-      '<div style="color:var(--c-muted);font-size:10px;margin-top:2px;">' + notifRelTime(it.at) + '</div></div>';
+    var W = window.SSMPDWorkflow;
+    var target = it.contentId ? notifTargetTab(it) : "";
+    var detail = "";
+    if (it.contentId) {
+      var meta = [NOTIF_FORMATS[it.format], NOTIF_BRANDS[it.brand]].filter(Boolean).join(" · ");
+      detail += '<div style="margin-top:3px;color:var(--c-dark);">📄 ' + (it.title ? "«" + notifEscHtml(it.title) + "»" : "مادة محذوفة") + (meta ? ' <span style="color:var(--c-muted);">· ' + notifEscHtml(meta) + "</span>" : "") + "</div>";
+      if (it.fromStage || it.toStage) {
+        var from = it.fromStage ? W.stageLabel(it.fromStage) : "", to = it.toStage ? W.stageLabel(it.toStage) : "";
+        detail += '<div style="color:var(--c-muted);margin-top:2px;">المرحلة: ' + notifEscHtml(from && to ? from + " ← " + to : (to || from)) + "</div>";
+      }
+      if (target && it.title) detail += '<div style="color:var(--c-primary);font-size:11px;margin-top:2px;">📍 يفتح في: ' + notifEscHtml(TAB_LABELS[target]) + "</div>";
+    }
+    var clickable = target && it.title;
+    return '<div' + (clickable ? ' data-notif-cid="' + notifEscHtml(it.contentId) + '" data-notif-tab="' + target + '" role="button" tabindex="0"' : "") +
+      ' style="padding:8px 10px;border-bottom:1px solid var(--c-border);font-size:12px;' + (unread ? "" : "opacity:.5;") + (clickable ? "cursor:pointer;" : "") + '">' + notifEscHtml(it.text) + detail +
+      '<div style="color:var(--c-muted);font-size:10px;margin-top:2px;">' + notifRelTime(it.at) + "</div></div>";
+  }
+  // بيفتح الشاشة المناسبة وبعدها المادة نفسها. لو المادة مش ظاهرة في قايمة التاب ده (اتنقلت مرحلة مثلاً) بنفتحها من إدارة المحتوى.
+  function openNotifTarget(contentId, tab) {
+    if (tab === "review" || !tab) { window.SSMPDGotoContent(contentId); return; }
+    var selector = ["data-open", "data-open-pub", "data-published-open"].map(function (attr) { return '#view-container [' + attr + '="' + contentId + '"]'; }).join(",");
+    switchTab(tab);
+    var tries = 0, timer = setInterval(function () {
+      var el = document.querySelector(selector);
+      if (el) { clearInterval(timer); el.click(); return; }
+      if (++tries > 20) { clearInterval(timer); window.SSMPDGotoContent(contentId); }
+    }, 200);
+  }
+  function wireNotifItems(root, onClose) {
+    root.querySelectorAll("[data-notif-cid]").forEach(function (el) {
+      function go() { if (onClose) onClose(); openNotifTarget(el.getAttribute("data-notif-cid"), el.getAttribute("data-notif-tab")); }
+      el.onclick = go;
+      el.onkeydown = function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } };
+    });
   }
   function refreshNotifBadge() {
     var admin = window.SSMPDAuth.currentAdmin;
@@ -374,6 +427,7 @@
         : items.map(function (it) { return notifItemHtml(it, res.seenBefore); }).join("");
       panel.innerHTML = "<div style=\"padding:6px 10px;font-weight:bold;font-size:12px;border-bottom:1px solid var(--c-border);\"> <!--ssmpd-i18n:%D8%A2%D8%AE%D8%B1%20%D8%A7%D9%84%D8%A3%D9%86%D8%B4%D8%B7%D8%A9-->آخر الأنشطة</div>" + body +
         "<button type=\"button\" id=\"notif-see-all-btn\" style=\"display:block;width:100%;text-align:center;padding:9px;border:none;background:none;color:var(--c-primary,#0F369D);font-size:12px;cursor:pointer;\"> <!--ssmpd-i18n:%D9%83%D9%84%20%D8%A7%D9%84%D8%A5%D8%B4%D8%B9%D8%A7%D8%B1%D8%A7%D8%AA-->كل الإشعارات</button>";
+      wireNotifItems(panel, function () { panel.hidden = true; });
       var seeAllBtn = document.getElementById("notif-see-all-btn");
       if (seeAllBtn) seeAllBtn.onclick = function () { panel.hidden = true; openNotifFullPage(); };
       return window.SSMPDDb.markNotificationsSeen(admin.id);
@@ -412,6 +466,7 @@
         listEl.innerHTML = items.length
           ? items.map(function (it) { return notifItemHtml(it, seenBefore); }).join("")
           : "<div style=\"padding:14px;font-size:12px;color:var(--c-muted);text-align:center;\"> <!--ssmpd-i18n:%D9%85%D9%81%D9%8A%D8%B4%20%D8%A5%D8%B4%D8%B9%D8%A7%D8%B1%D8%A7%D8%AA-->مفيش إشعارات</div>";
+        wireNotifItems(listEl, function () { backdrop.remove(); });
         window.SSMPDDb.markNotificationsSeen(admin.id).catch(function () {});
       }).catch(function () {
         listEl.innerHTML = "<div style=\"padding:10px;font-size:12px;color:#D0402A;\"> <!--ssmpd-i18n:%D8%AA%D8%B9%D8%B0%D9%91%D8%B1%20%D8%A7%D9%84%D8%AA%D8%AD%D9%85%D9%8A%D9%84-->تعذّر التحميل</div>";

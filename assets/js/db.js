@@ -241,13 +241,13 @@
     },
     // ---------- مركز إشعارات الأدمن/الإدارة (بيعيد استخدام activity_log + usage_activity_log الموجودين) ----------
     listRecentContentActivity: function (sinceIso, limit) {
-      return handle(client.from("activity_log").select("id, actor_id, action, created_at, admins!actor_id(name)").gt("created_at", sinceIso).order("created_at", { ascending: false }).limit(limit || 20));
+      return handle(client.from("activity_log").select("id, actor_id, action, from_stage, to_stage, content_id, created_at, admins!actor_id(name), content_items(title, content_format, brand, stage)").gt("created_at", sinceIso).order("created_at", { ascending: false }).limit(limit || 20));
     },
     listUsageActivitySince: function (sinceIso, limit) {
       return handle(client.from("usage_activity_log").select("id, admin_id, action_type, report_name, created_at, admins(name)").gt("created_at", sinceIso).order("created_at", { ascending: false }).limit(limit || 20));
     },
     listContentActivityRecent: function (limit) {
-      return handle(client.from("activity_log").select("id, actor_id, action, created_at, admins!actor_id(name)").order("created_at", { ascending: false }).limit(limit || 20));
+      return handle(client.from("activity_log").select("id, actor_id, action, from_stage, to_stage, content_id, created_at, admins!actor_id(name), content_items(title, content_format, brand, stage)").order("created_at", { ascending: false }).limit(limit || 20));
     },
     getNotificationLastSeen: function (adminId) {
       return handle(client.from("notification_reads").select("last_seen_at").eq("admin_id", adminId).maybeSingle());
