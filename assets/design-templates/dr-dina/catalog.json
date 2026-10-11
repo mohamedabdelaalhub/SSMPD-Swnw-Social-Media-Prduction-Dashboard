@@ -1,0 +1,146 @@
+{
+ "_rules": "doctor_photo=true → single posts only (never in a carousel, never as a reel cover). doctor_photo=false → allowed in carousels. Every new Dina template MUST get an entry here before it is used.",
+ "templates": [
+  {
+   "variant": 1,
+   "name": "تصريح خلفية فاتحة",
+   "file": "1.webp",
+   "doctor_photo": true,
+   "photo_style": "small_portrait",
+   "use": [
+    "single_post"
+   ]
+  },
+  {
+   "variant": 2,
+   "name": "تصريح خلفية غامقة",
+   "file": "2.webp",
+   "doctor_photo": true,
+   "photo_style": "small_portrait",
+   "use": [
+    "single_post"
+   ]
+  },
+  {
+   "variant": 3,
+   "name": "معلومة من د. دينا",
+   "file": "3.webp",
+   "doctor_photo": true,
+   "photo_style": "full_cutout",
+   "use": [
+    "single_post"
+   ]
+  },
+  {
+   "variant": 4,
+   "name": "بحثت لك",
+   "file": "4.webp",
+   "doctor_photo": true,
+   "photo_style": "full_cutout",
+   "use": [
+    "single_post"
+   ]
+  },
+  {
+   "variant": 5,
+   "name": "سؤال وجواب",
+   "file": "5.webp",
+   "doctor_photo": true,
+   "photo_style": "full_cutout",
+   "use": [
+    "single_post"
+   ]
+  },
+  {
+   "variant": 6,
+   "name": "محتوى عام",
+   "file": "6.webp",
+   "doctor_photo": false,
+   "photo_style": null,
+   "use": [
+    "single_post",
+    "carousel_cover",
+    "carousel_slide",
+    "carousel_contact"
+   ]
+  },
+  {
+   "variant": 7,
+   "name": "عنوان فوق",
+   "file": "7.webp",
+   "doctor_photo": false,
+   "photo_style": null,
+   "use": [
+    "single_post",
+    "carousel_cover",
+    "carousel_slide",
+    "carousel_contact"
+   ]
+  },
+  {
+   "variant": 8,
+   "name": "عنوان علي بوكس",
+   "file": "8.webp",
+   "doctor_photo": false,
+   "photo_style": null,
+   "use": [
+    "single_post",
+    "carousel_cover",
+    "carousel_slide",
+    "carousel_contact"
+   ]
+  },
+  {
+   "variant": 9,
+   "name": "عنوان يمين",
+   "file": "9.webp",
+   "doctor_photo": false,
+   "photo_style": null,
+   "use": [
+    "single_post",
+    "carousel_cover",
+    "carousel_slide",
+    "carousel_contact"
+   ]
+  },
+  {
+   "variant": 10,
+   "name": "عنوان تحت - خلفية سوداء",
+   "file": "10.webp",
+   "doctor_photo": false,
+   "photo_style": null,
+   "use": [
+    "single_post",
+    "carousel_cover",
+    "carousel_slide",
+    "carousel_contact"
+   ]
+  },
+  {
+   "variant": 11,
+   "name": "عنوان تحت - خلفية بيج",
+   "file": "11.webp",
+   "doctor_photo": false,
+   "photo_style": null,
+   "use": [
+    "single_post",
+    "carousel_cover",
+    "carousel_slide",
+    "carousel_contact"
+   ]
+  },
+  {
+   "variant": 12,
+   "name": "عنوان تحت - خلفية نبيتي",
+   "file": "12.webp",
+   "doctor_photo": false,
+   "photo_style": null,
+   "use": [
+    "single_post",
+    "carousel_cover",
+    "carousel_slide",
+    "carousel_contact"
+   ]
+  }
+ ]
+}
