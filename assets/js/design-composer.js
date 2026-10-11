@@ -44,6 +44,7 @@
     return {lines:lines,w:Math.max.apply(null,lines.map(function(line){return ctx.measureText(line).width;})),size:size,weight:weight,fontFamily:fontFamily,leading:leading,h:size*1.35+(lines.length-1)*size*leading};
   }
   function scenePrompt(prompt, data) {
+    if(data.sceneBackground==='transparent'&&data.layoutTemplate!=='sono_before_after_cutout')return '[TRANSPARENT_CUTOUT] '+String(prompt||'')+' A single isolated subject on a fully transparent background. Preserve the requested age, identity and medical context. No text, labels or logos.';
     if(data.layoutTemplate==='sono_before_after_cutout')return '[TRANSPARENT_CUTOUT] '+String(prompt||'')+' Create an illustrative cosmetic comparison using the same adult person, AFTER on the LEFT and BEFORE on the RIGHT, aligned face and pose. A single isolated cutout with transparent background. No text, lines, labels or logos. Include shoulders and lower torso. This is an illustration, not an actual patient result.';
     if(data.brand==='dr_dina'){var age=/باركنسون|parkinson/i.test(String(prompt||''))?' Unless the brief explicitly specifies another age, show an older adult aged 55–75 with Parkinson disease, never a child.':'';return String(prompt||'')+' Portrait photograph for a neurology medical education post. Match the subject, age and condition to the scene brief. Do not assume the subject is a child. No writing, logos or borders. Keep the subject away from the small top-left logo and bottom contact strip.'+age;}
     var instructions = {
@@ -165,7 +166,7 @@
     canvas.designIssues=[];
     return canvas;
   }
-  window.SSMPDDesignComposer={render:render,loadImage:loadImage,ready:ready,scenePrompt:scenePrompt};
+  window.SSMPDDesignComposer={render:render,loadImage:loadImage,logoImage:logoImage,ready:ready,scenePrompt:scenePrompt};
 })();
 
 

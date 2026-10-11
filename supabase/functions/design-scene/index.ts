@@ -31,7 +31,7 @@ Deno.serve(async req => {
   if(Number(req.headers.get('content-length')||0)>14000000)throw new Error('حجم الطلب يتجاوز الحد');
   const requestText=await req.text();if(requestText.length>14000000)throw new Error('حجم الطلب يتجاوز الحد');
   const body=JSON.parse(requestText);
-  if(body.action&&!['library','expand','original'].includes(body.action))throw new Error('عملية غير صالحة');
+  if(body.action&&!['library','expand','original','remove_background'].includes(body.action))throw new Error('عملية غير صالحة');
   if(body.action==='library') {
    const {data,error}=await userDb.from('design_jobs').select('id,scene_storage_path,scene_prompt,image_quality,created_at,render_settings').like('scene_storage_path',(body.brand==='dr_dina'?'dr_dina':'sono')+'/%').order('created_at',{ascending:false}).limit(30);
    if(error) throw error;
@@ -49,7 +49,7 @@ Deno.serve(async req => {
   const {data:content,error:contentError}=await userDb.from('content_items').select('brand').eq('id',body.content_id).maybeSingle();
   if(contentError||!content||!['sono','dr_dina'].includes(content.brand))throw new Error('المادة غير متاحة للتصميم');
   const sceneBrand=content.brand;
-  const expand=body.action==='expand';
+  const expand=body.action==='expand',removeBackground=body.action==='remove_background';
   let prepared: any=null;
   if(expand){
    if(!['horizontal','all'].includes(body.mode))throw new Error('اختر اتجاه التوسيع');
@@ -63,12 +63,13 @@ Deno.serve(async req => {
    if(protectedPixels<pixels.width*pixels.height*.1||protectedPixels>pixels.width*pixels.height*.9)throw new Error('مساحة التوسيع غير صالحة');
    prepared={image,mask,original,pixels,maskPixels,size};
   }
-  const inputHash=expand?await digest(body.mode+'|'+body.image+'|'+body.mask+'|'+body.original):'';
-  const prompt=expand?'Expand background '+body.mode+'. Preserve original subject. Input SHA256 '+inputHash:String(body.prompt||'');
-  const {data:reserved,error}=await userDb.rpc('reserve_design_scene',{p_content_id:body.content_id,p_request_key:body.request_key,p_prompt:prompt,p_quality:expand?'high':body.quality||'medium'});
+  if(removeBackground){const original=imageBytes(body.image),pixels=PNG.sync.read(Buffer.from(original)),padded=new PNG({width:1024,height:1536}),scale=Math.min(1024/pixels.width,1536/pixels.height),w=Math.max(1,Math.round(pixels.width*scale)),h=Math.max(1,Math.round(pixels.height*scale)),x=Math.floor((1024-w)/2),y=Math.floor((1536-h)/2);for(let yy=0;yy<h;yy++)for(let xx=0;xx<w;xx++){const source=(Math.min(pixels.height-1,Math.floor(yy*pixels.height/h))*pixels.width+Math.min(pixels.width-1,Math.floor(xx*pixels.width/w)))*4;padded.data.set(pixels.data.subarray(source,source+4),((y+yy)*1024+x+xx)*4);}prepared={original,pixels,padded,x,y,w,h};}
+  const inputHash=removeBackground?await digest(body.image):expand?await digest(body.mode+'|'+body.image+'|'+body.mask+'|'+body.original):'';
+  const prompt=removeBackground?'Remove background only. Preserve original subject RGB. Input SHA256 '+inputHash:expand?'Expand background '+body.mode+'. Preserve original subject. Input SHA256 '+inputHash:String(body.prompt||'');
+  const {data:reserved,error}=await userDb.rpc('reserve_design_scene',{p_content_id:body.content_id,p_request_key:body.request_key,p_prompt:prompt,p_quality:(expand||removeBackground)?'high':body.quality||'medium'});
   if(error) throw error;
   const job=reserved.job;
-  if(expand&&job.scene_prompt!==prompt)throw new Error('طلب التوسيع لا يطابق الصورة الأصلية');
+  if((expand||removeBackground)&&job.scene_prompt!==prompt)throw new Error('الطلب لا يطابق الصورة الأصلية');
   if(!reserved.new) {
    let url=null;
    if(job.scene_storage_path) {const signed=await db.storage.from('design-scenes').createSignedUrl(job.scene_storage_path,3600); url=signed.data?.signedUrl;}
@@ -76,7 +77,9 @@ Deno.serve(async req => {
   }
   jobId=job.id;
   let response: Response;
-  if(expand){
+  if(removeBackground){
+   const form=new FormData();form.append('model','gpt-image-1.5');form.append('quality','high');form.append('size','1024x1536');form.append('n','1');form.append('output_format','png');form.append('background','transparent');form.append('input_fidelity','high');form.append('image',new Blob([PNG.sync.write(prepared.padded)],{type:'image/png'}),'subject.png');form.append('prompt','Remove only the background. Isolate all foreground subjects with fully transparent alpha. Keep the exact existing subject positions, dimensions, identities, faces, clothing, medical details and framing. Do not move, resize, beautify, retouch or add any subject. Keep the existing transparent letterbox margins fully transparent. No text, checkerboard or colored background.');response=await fetch('https://api.openai.com/v1/images/edits',{method:'POST',headers:{Authorization:'Bearer '+key},body:form,signal:AbortSignal.timeout(150000)});
+  }else if(expand){
    const form=new FormData();
    form.append('model','gpt-image-1.5');form.append('quality',job.image_quality);form.append('size',prepared.size);form.append('n','1');form.append('output_format','png');form.append('input_fidelity','high');
    form.append('image',new Blob([prepared.image],{type:'image/png'}),'scene.png');form.append('mask',new Blob([prepared.mask],{type:'image/png'}),'mask.png');
@@ -93,7 +96,9 @@ Deno.serve(async req => {
   const result=await response.json(); if(!response.ok) throw new Error(result.error?.message||'فشل توليد الصورة');
   const encoded=result.data?.[0]?.b64_json; if(!encoded) throw new Error('لم ترجع صورة');
   let bytes=Uint8Array.from(atob(encoded),(c:string)=>c.charCodeAt(0));
-  let expansion: any=null;
+  let expansion: any=null,backgroundRemoval: any=null;
+  if(removeBackground){const matte=PNG.sync.read(Buffer.from(bytes));if(matte.width!==1024||matte.height!==1536)throw Error('التفريغ رجع بأبعاد غير مطابقة');const output=prepared.pixels;for(let y=0;y<output.height;y++)for(let x=0;x<output.width;x++){const alpha=matte.data[((prepared.y+Math.min(prepared.h-1,Math.floor(y*prepared.h/output.height)))*1024+prepared.x+Math.min(prepared.w-1,Math.floor(x*prepared.w/output.width)))*4+3];output.data[(y*output.width+x)*4+3]=Math.min(output.data[(y*output.width+x)*4+3],alpha);}bytes=new Uint8Array(PNG.sync.write(output));const originalPath=sceneBrand+'/'+job.id+'/original.png';const uploadOriginal=await db.storage.from('design-scenes').upload(originalPath,prepared.original,{contentType:'image/png',upsert:false});if(uploadOriginal.error)throw uploadOriginal.error;backgroundRemoval={original_path:originalPath,preserves_rgb:true};}
+  if(removeBackground||prompt.startsWith('[TRANSPARENT_CUTOUT]')){const checked=PNG.sync.read(Buffer.from(bytes));let transparent=0,visible=0;for(let i=3;i<checked.data.length;i+=4){if(checked.data[i]<10)transparent++;if(checked.data[i]>200)visible++;}if(transparent<checked.width*checked.height*.01||visible<checked.width*checked.height*.01)throw Error('النتيجة ليست صورة ديكوبيه صالحة. لم يتم استبدال صورتك الأصلية.');}
   if(expand){
    const output=PNG.sync.read(Buffer.from(imageBytes('data:image/png;base64,'+encoded)));
    if(output.width!==prepared.pixels.width||output.height!==prepared.pixels.height)throw new Error('التوسيع رجع بأبعاد غير مطابقة');
@@ -106,7 +111,7 @@ Deno.serve(async req => {
   }
   const path=sceneBrand+'/'+job.id+'/scene.png';
   const upload=await db.storage.from('design-scenes').upload(path,bytes,{contentType:'image/png',upsert:false}); if(upload.error) throw upload.error;
-  const saved=await db.from('design_jobs').update({status:'scene_ready',scene_storage_path:path,render_settings:{expansion,usage:result.usage||null,cost_note:'Conservative reservation; reconcile with provider billing'},updated_at:new Date().toISOString()}).eq('id',job.id); if(saved.error) throw saved.error;
+  const saved=await db.from('design_jobs').update({status:'scene_ready',scene_storage_path:path,render_settings:{expansion,backgroundRemoval,usage:result.usage||null,cost_note:'Conservative reservation; reconcile with provider billing'},updated_at:new Date().toISOString()}).eq('id',job.id); if(saved.error) throw saved.error;
   const signed=await db.storage.from('design-scenes').createSignedUrl(path,3600); if(signed.error) throw signed.error;
   return Response.json({job_id:job.id,status:'scene_ready',url:signed.data.signedUrl,expansion:await expansionLinks(db,{render_settings:{expansion}})},{headers});
  } catch(error) {
