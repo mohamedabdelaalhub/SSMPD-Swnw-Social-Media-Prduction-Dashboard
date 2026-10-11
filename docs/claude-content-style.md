@@ -105,6 +105,10 @@ Dr. Dina — render with the dashboard's OWN renderer so it matches the studio e
 - Design ALL slides as one consistent set, 1080×1350: same page frame/template on every slide, slide 1 big hook title + photo, middle slides numbered (١، ٢، ٣…) with the point title + body + small icon/photo, last slide = the page contact slide (kit dina/contact_slide.jpg or sono/contact_slide.jpg style). Swnw: fixed frame on every slide. Dina: use the dashboard renderer variants that fit (e.g. 7/8 for points) or her frames.
 - Upload each slide PNG to the content-designs bucket under `<content_id>/<uuid>/output.png`, then call `POST /rest/v1/rpc/save_private_carousel` with {p_content_id, p_output_urls:[…in order…], p_settings:{template:"claude-carousel"}}. Then move the item to final_approval as usual.
 
+## Reel voice-over pronunciation (Mohamed, 2026-10-11)
+- The gateway op=tts rewrites words the voice said wrong before speaking (built-in list in supabase/functions/claude-automation/index.ts + kit file tts/pronunciations.json). Add any new word Mohamed flags to the kit file as {"written": "spoken with tashkeel"}.
+- Write scripts so they read right: ordinals أولاً / ثانياً / ثالثاً (never تانياً / تالتاً), «بالراحة» not «براحة», add tashkeel on words that can be misread (الحِمْل، اثْبَتْ، قِسْم).
+
 ## Video items with NO uploaded footage
 - Follow the request style (claude_design_requests.style, chosen by staff for videos too): `photo` = licensed real stock footage/photos; `illustration` = brand-palette illustrations/motion graphics, no real people footage.
 - If the item has no uploaded clips in video-inputs, build the reel yourself: Pixabay stock videos (op=stock type=video, vertical, people who look Egyptian/Arab, no other brands) and/or photos with slow zoom, plus ElevenLabs voice-over of the item's script (op=tts), page music low under the voice, burned-in Arabic captions, and the page outro (kit outro.mp4) at the end. 1080×1920, 20–45 s.
