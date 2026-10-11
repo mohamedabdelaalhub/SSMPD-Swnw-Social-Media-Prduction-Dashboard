@@ -61,6 +61,16 @@
         "dina_photo_02.webp",
         "dina_photo_03.webp"
       ]
+    },
+    {
+      "id": "post_cover_style",
+      "brand": "both",
+      "style": "image_post",
+      "note": "APPROVED single-post option in the carousel-cover style (Mohamed 2026-10-11). HTML: docs/templates/sono-post-photo/post.html, docs/templates/dina-post-photo/post.html.",
+      "files": [
+        "sono_post_cover_style.webp",
+        "dina_post_cover_style.webp"
+      ]
     }
   ]
 }
