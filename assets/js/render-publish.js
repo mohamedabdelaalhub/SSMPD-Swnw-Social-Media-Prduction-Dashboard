@@ -296,7 +296,7 @@
         var items = byDay[k].slice().sort(function (a, b2) { return new Date(a.scheduled_publish_at) - new Date(b2.scheduled_publish_at); });
         var first = new Date(items[0].scheduled_publish_at);
         var late = k < todayKey, today = k === todayKey;
-        var tag = today ? '<span class="pbd-tag">النهارده</span>' : (k === tomorrowKey ? '<span class="pbd-tag">بكره</span>' : (late ? '<span class="pbd-tag late">متأخرة</span>' : ""));
+        var tag = today ? '<span class="pbd-tag today">النهارده</span>' : (k === tomorrowKey ? '<span class="pbd-tag">بكره</span>' : (late ? '<span class="pbd-tag late">متأخرة</span>' : ""));
         html += '<div class="pbd-card' + (today ? " today" : "") + (late ? " late" : "") + '"><div class="pbd-head">' +
           '<div class="pbd-daynum">' + first.getDate() + '</div>' +
           '<div class="pbd-day"><div class="pbd-dayname">' + escapeHtml(first.toLocaleDateString("ar-EG", { weekday: "long" })) + '</div>' +
