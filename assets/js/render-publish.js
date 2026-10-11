@@ -252,6 +252,67 @@
     parts.forEach(function (x) { if (x.type === "hour") out.h = x.value; if (x.type === "minute") out.m = x.value; if (x.type === "dayPeriod") out.p = x.value; });
     return out;
   }
+  // ثمبنيل التصميم على شمال كل مادة في كروت الأيام: بوست = التصميم، كاروسيل = الكفر (الشريحة الأولى)، فيديو = أول فريم.
+  // الصور خاصة فبتتحوّل لرابط مؤقت (SSMPDDesignFiles.resolve) وبتتحمّل وقت ما الصف يظهر على الشاشة بس.
+  var thumbCache = new Map();
+  function thumbSigned(url, force) {
+    var hit = thumbCache.get(url);
+    if (!force && hit && hit.until > Date.now()) return hit.promise;
+    var promise = window.SSMPDDesignFiles ? window.SSMPDDesignFiles.resolve(url) : Promise.resolve(url);
+    thumbCache.set(url, { promise: promise, until: Date.now() + 240000 });
+    promise.catch(function () { thumbCache.delete(url); });
+    return promise;
+  }
+  function thumbInfo(it) {
+    var slides = Array.isArray(it.carousel_slides) ? it.carousel_slides.filter(function (u) { return typeof u === "string" && u; }) : [];
+    if (it.content_format === "carousel") return slides.length ? { kind: "carousel", url: slides[0], count: slides.length } : { kind: "none" };
+    if (!it.design_file_url) return { kind: "none" };
+    return { kind: it.content_format === "video" ? "video" : "image", url: it.design_file_url };
+  }
+  function thumbHtml(it) {
+    var info = thumbInfo(it);
+    var badge = info.kind === "carousel" ? '<span class="pbd-badge">▤ ' + info.count + "</span>" : (info.kind === "video" ? '<span class="pbd-badge">▶</span>' : "");
+    return '<div class="pbd-thumb" data-thumb="' + it.id + '" data-kind="' + info.kind + '" aria-hidden="true"><span class="pbd-ph">' + (info.kind === "video" ? "🎬" : "🖼️") + "</span>" + badge + "</div>";
+  }
+  function safeHttp(value) {
+    try { var u = new URL(value, location.href); return /^https?:$/.test(u.protocol) ? u.href : null; } catch (e) { return null; }
+  }
+  function loadThumb(box, it) {
+    if (box.__loaded) return;
+    box.__loaded = true;
+    var info = thumbInfo(it);
+    if (info.kind === "none") return;
+    var drive = /^https:\/\/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?id=)([\w-]+)/.exec(info.url || "");
+    var media = document.createElement(info.kind === "video" ? "video" : "img");
+    if (info.kind === "video") { media.muted = true; media.preload = "metadata"; media.playsInline = true; } else { media.alt = ""; media.decoding = "async"; }
+    function fail() { media.remove(); }
+    var retried = false;
+    function attach(url) {
+      var safe = safeHttp(url);
+      if (!safe) { fail(); return; }
+      media.src = info.kind === "video" ? safe + "#t=0.1" : safe;
+      if (!media.isConnected) box.insertBefore(media, box.firstChild);
+    }
+    media.addEventListener("error", function () {
+      if (retried || drive) { fail(); return; }
+      retried = true;
+      thumbSigned(info.url, true).then(attach).catch(fail);
+    });
+    media.addEventListener(info.kind === "video" ? "loadeddata" : "load", function () { var ph = box.querySelector(".pbd-ph"); if (ph) ph.remove(); });
+    if (drive) { attach("https://drive.google.com/thumbnail?id=" + drive[1] + "&sz=w240"); return; }
+    thumbSigned(info.url).then(attach).catch(fail);
+  }
+  function mountThumbs(container, items) {
+    var byId = {}; items.forEach(function (i) { byId[i.id] = i; });
+    var boxes = Array.prototype.slice.call(container.querySelectorAll(".pbd-thumb"));
+    var go = function (box) { var it = byId[box.getAttribute("data-thumb")]; if (it) loadThumb(box, it); };
+    if (typeof IntersectionObserver === "undefined") { boxes.forEach(go); return; }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) { if (e.isIntersecting) { io.unobserve(e.target); go(e.target); } });
+    }, { rootMargin: "200px" });
+    boxes.forEach(function (b) { io.observe(b); });
+  }
+
   function daysRowHtml(it, adminsById, showTime) {
     var t = it.scheduled_publish_at ? timeParts(it.scheduled_publish_at) : null;
     var who = (adminsById[it.scheduled_by] || {}).name;
@@ -260,7 +321,7 @@
       (showTime ? '<div class="pbd-time">' + (t ? escapeHtml(t.h + ":" + t.m) + "<small>" + escapeHtml(t.p) + "</small>" : "—") + "</div>" : "") +
       '<div class="pbd-main"><div class="pbd-title">' + escapeHtml(it.title) + "</div>" +
       '<div class="pbd-meta">' + W.brandBadgeHtml(it.brand) + '<span>' + escapeHtml(plats) + "</span></div>" +
-      (who ? '<div class="pbd-who">جدولها: ' + escapeHtml(who) + "</div>" : "") + "</div></div>";
+      (who ? '<div class="pbd-who">جدولها: ' + escapeHtml(who) + "</div>" : "") + "</div>" + thumbHtml(it) + "</div>";
   }
   function renderDaysView(container, ctx) {
     var scheduled = ctx.scheduled, ready = ctx.ready, adminsById = ctx.adminsById;
@@ -323,6 +384,7 @@
     container.innerHTML = html;
     window.SSMPDWebsite.mount(container, ctx.allItems);
     wireViewToggle(container, ctx);
+    mountThumbs(container, scheduled.concat(ready));
     container.querySelectorAll("[data-open-pub]").forEach(function (el) {
       el.onclick = function () { openPublishDetailModal(el.getAttribute("data-open-pub"), ctx); };
       el.onkeydown = function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); el.click(); } };
