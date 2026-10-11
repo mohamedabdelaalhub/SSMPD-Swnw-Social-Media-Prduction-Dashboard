@@ -296,6 +296,7 @@ setTimeout(() => {
                   assert(!!doc.querySelector('[data-open-pub="c3"]'), "المادة المجدولة ظاهرة جوه كارت يومها");
                   assert(/جدولها: محمد عبدالعال/.test(V().textContent), "اسم اللي جدول ظاهر في كارت اليوم");
                   assert(!!doc.querySelector('[data-open-pub="c3"] .pbd-thumb[data-thumb="c3"]'), "ثمبنيل التصميم ظاهر على شمال المادة في كارت اليوم");
+                  assert(!!doc.querySelector('[data-open-pub="c3"] .pbd-meta .content-format-badge'), "نوع المحتوى (بوست/فيديو/كاروسيل) ظاهر جنب الصفحة");
                   doc.querySelector('[data-open-pub="c3"]').click();
                   setTimeout(() => {
                     assert(!!doc.querySelector('.modal-backdrop [data-sched-hist="c3"]'), "مودال التفاصيل من كروت الأيام فيه سجل الجدولة");

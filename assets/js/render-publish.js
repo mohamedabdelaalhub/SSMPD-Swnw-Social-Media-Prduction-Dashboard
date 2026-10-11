@@ -320,8 +320,8 @@
     return '<div class="pbd-row" data-open-pub="' + it.id + '" role="button" tabindex="0">' +
       (showTime ? '<div class="pbd-time">' + (t ? escapeHtml(t.h + ":" + t.m) + "<small>" + escapeHtml(t.p) + "</small>" : "—") + "</div>" : "") +
       '<div class="pbd-main"><div class="pbd-title">' + escapeHtml(it.title) + "</div>" +
-      '<div class="pbd-meta">' + W.brandBadgeHtml(it.brand) + '<span>' + escapeHtml(plats) + "</span></div>" +
-      (who ? '<div class="pbd-who">جدولها: ' + escapeHtml(who) + "</div>" : "") + "</div>" + thumbHtml(it) + "</div>";
+      '<div class="pbd-meta">' + W.brandBadgeHtml(it.brand) + W.contentFormatBadgeHtml(it) + "</div>" +
+      '<div class="pbd-sub" title="' + escapeHtml(plats + (who ? " · جدولها: " + who : "")) + '">' + escapeHtml(plats) + (who ? " · جدولها: " + escapeHtml(who) : "") + "</div></div>" + thumbHtml(it) + "</div>";
   }
   function renderDaysView(container, ctx) {
     var scheduled = ctx.scheduled, ready = ctx.ready, adminsById = ctx.adminsById;
