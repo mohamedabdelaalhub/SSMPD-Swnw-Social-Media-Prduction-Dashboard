@@ -51,7 +51,7 @@
     ctx.fillStyle = b.end; ctx.fillRect(0, 0, 1080, 1920);
     if (data.photo) {
       var p = data.photo, scale = Math.max(1080 / p.width, 1500 / p.height) * (Number(data.zoom) || 1), w = p.width * scale, h = p.height * scale;
-      ctx.drawImage(p, (1080 - w) / 2, (1500 - h) * (Number(data.y == null ? 25 : data.y) / 100), w, h);
+      ctx.drawImage(p, (1080 - w) * (Number(data.x == null ? 50 : data.x) / 100), (1500 - h) * (Number(data.y == null ? 25 : data.y) / 100), w, h);
     }
     var g = ctx.createLinearGradient(0, 0, 0, 1920);
     g.addColorStop(0, b.mid + '0.1)'); g.addColorStop(0.38, b.mid + '0.28)'); g.addColorStop(0.65, b.bg); g.addColorStop(1, b.end);
@@ -114,6 +114,7 @@
       '<div class="field"><label>الكلمة الملوّنة في العنوان</label><input data-f="highlight" maxlength="40" value="' + esc(c.cover_highlight || '') + '"></div>' +
       '<div class="field"><label>السطر التوضيحي</label><input data-f="subtitle" maxlength="70" value="' + esc(c.cover_subtitle || '') + '"></div>' +
       '<div class="field"><label>الصورة (تقدر تاخد لقطة من الفيديو)</label><input type="file" data-f="photo" accept="image/png,image/jpeg,image/webp"></div>' +
+      '<div class="field"><label>مكان الصورة يمين/شمال</label><input type="range" data-f="x" min="0" max="100" value="50"></div>' +
       '<div class="field"><label>مكان الصورة فوق/تحت</label><input type="range" data-f="y" min="0" max="100" value="25"></div>' +
       '<div class="field"><label>تكبير الصورة</label><input type="range" data-f="zoom" min="100" max="220" value="100"></div>' +
       '<p data-issues style="color:var(--c-negative);font-size:12px;"></p>' +
@@ -121,10 +122,10 @@
       '<div><canvas data-canvas style="width:270px;height:480px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,.2);"></canvas></div></div></div>';
     document.body.appendChild(root);
     var canvas = root.querySelector('[data-canvas]'), photo = null, q = function (k) { return root.querySelector('[data-f="' + k + '"]'); };
-    function data() { return { brand: item.brand, tag: q('tag').value, title: q('title').value, highlight: q('highlight').value, subtitle: q('subtitle').value, photo: photo, y: q('y').value, zoom: q('zoom').value / 100 }; }
+    function data() { return { brand: item.brand, tag: q('tag').value, title: q('title').value, highlight: q('highlight').value, subtitle: q('subtitle').value, photo: photo, x: q('x').value, y: q('y').value, zoom: q('zoom').value / 100 }; }
     var pending = null;
     function draw() { pending = render(canvas, data()).then(function () { root.querySelector('[data-issues]').textContent = (canvas.coverIssues || []).join(' '); }).catch(function (e) { root.querySelector('[data-issues]').textContent = e.message; }); }
-    ['tag', 'title', 'highlight', 'subtitle', 'y', 'zoom'].forEach(function (k) { q(k).oninput = draw; });
+    ['tag', 'title', 'highlight', 'subtitle', 'x', 'y', 'zoom'].forEach(function (k) { q(k).oninput = draw; });
     q('photo').onchange = function () { var f = q('photo').files[0]; if (!f) return; var u = URL.createObjectURL(f); image(u).then(function (i) { photo = i; draw(); }); };
     root.querySelector('.modal-close').onclick = function () { root.remove(); };
     root.querySelector('[data-save]').onclick = async function () {
@@ -136,7 +137,7 @@
         var blob = await new Promise(function (ok) { canvas.toBlob(ok, 'image/png'); });
         var key = item.id + '/' + crypto.randomUUID() + '/reel-cover.png', client = window.SSMPDDb.client;
         var up = await client.storage.from('content-designs').upload(key, blob, { contentType: 'image/png', upsert: false });
-        if (up.error) throw new Error('تعذر حفظ الغلاف. ' + up.error.message);
+        if (up.error) throw new Error(/row-level security/i.test(up.error.message) ? 'صلاحية حفظ الغلاف لسه مش متفعّلة في قاعدة البيانات (محتاجة تشغيل سكريبت reel-cover في Supabase مرة واحدة).' : 'تعذر حفظ الغلاف. ' + up.error.message);
         var url = window.SSMPD_CONFIG.supabase.url.replace(/\/+$/, '') + '/storage/v1/object/authenticated/content-designs/' + key;
         var settings = Object.assign({}, item.cover_settings || {}, { cover_image_url: url, cover_tag: q('tag').value.trim(), cover_highlight: q('highlight').value.trim(), cover_subtitle: q('subtitle').value.trim(), title: q('title').value.trim() });
         await window.SSMPDDb.updateContentItem(item.id, { cover_settings: settings });
