@@ -1,0 +1,14 @@
+@font-face{font-family:T;src:url(../../../assets/fonts/Tajawal-Regular.ttf);font-weight:400}
+@font-face{font-family:T;src:url(../../../assets/fonts/Tajawal-Medium.ttf);font-weight:500}
+@font-face{font-family:T;src:url(../../../assets/fonts/Tajawal-Bold.ttf);font-weight:700}
+@font-face{font-family:T;src:url(../../../assets/fonts/Tajawal-Black.ttf);font-weight:900}
+*{margin:0;box-sizing:border-box}
+body{width:1080px;height:1350px;position:relative;overflow:hidden;font-family:T;direction:rtl;background:#f6edd6;color:#111}
+.frame{position:absolute;inset:0;width:1080px;height:1350px;z-index:5;pointer-events:none}
+.count{position:absolute;top:70px;right:70px;z-index:6;background:#fff;border-radius:30px;padding:8px 22px;font-weight:700;font-size:26px;color:#6e225b}
+.tag{display:inline-block;background:#E3141B;color:#fff;font-weight:700;font-size:34px;padding:8px 26px;border-radius:30px}
+.red{color:#E3141B}
+.pill{display:inline-block;background:#111;color:#fff;font-weight:700;font-size:34px;padding:14px 40px;border-radius:40px}
+/* frames 6–12 still print the old mobile in the footer: cover it (same as design-dina-template.js contact()) */
+.fix{position:absolute;left:346px;top:1291px;width:195px;height:34px;background:#fff;z-index:7;display:flex;align-items:center;justify-content:center;gap:8px;font-family:T;font-weight:700;font-size:21px;color:#111;direction:ltr}
+.fix i{width:26px;height:26px;border-radius:50%;background:#e50046;display:inline-block}
