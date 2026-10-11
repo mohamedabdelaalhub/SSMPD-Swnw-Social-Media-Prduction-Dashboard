@@ -117,6 +117,7 @@
       W.contentFormatDetailsHtml(item) +
       '<div id="archive-publication-preview"></div>' +
       '<div id="archive-website-publish"></div>' +
+      (window.SSMPDSources ? window.SSMPDSources.sectionHtml(item) : '') +
       (item.published_url ? '<p><a href="' + item.published_url + '" target="_blank" class="btn ghost sm">رابط المنشور</a></p>' : '') +
       "<table class=\"simple\" style=\"margin-top:12px;\"><tr><th> <!--ssmpd-i18n:%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE%20%D8%A7%D9%84%D9%86%D8%B4%D8%B1-->تاريخ النشر</th><td>" +
       (item.published_at ? new Date(item.published_at).toLocaleString("ar-EG") : "—") + '</td></tr>' +
@@ -127,6 +128,7 @@
     document.body.appendChild(backdrop);
     window.SSMPDPublicationPreview.mount(backdrop.querySelector("#archive-publication-preview"),item);
     window.SSMPDWebsite.mountAction(backdrop.querySelector("#archive-website-publish"),item);
+    if (window.SSMPDSources) window.SSMPDSources.mount(backdrop.querySelector("[data-src-host]"), item, { editable: false });
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
     backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
     W.wireItemActions(backdrop, item, function () { backdrop.remove(); render(document.getElementById("view-container")); });

@@ -149,3 +149,26 @@ The in-dashboard generator is the content-ai Edge Function. Custom GPT instructi
 - For content_format = image_post with a real photo (request style 'photo', and the daily run whenever a good photo exists), the DEFAULT layout is the carousel-cover style: `docs/templates/sono-post-photo/post.html` (Swnw) and `docs/templates/dina-post-photo/post.html` (Dr. Dina); references `assets/design-templates/carousel-reference/sono_post_cover_style.webp` / `dina_post_cover_style.webp`.
 - Same as the approved cover: full-bleed photo (face clearly visible in the upper half, framing rule applies) fading into royal blue (Swnw) / burgundy (Dina), tag pill, big title with key words in orange (Swnw) / light red (Dina), one-line subtitle — but NO slide counter and NO "اسحب وشوف": instead a CTA pill (Swnw orange #F15A22 e.g. "احجز موعدك"; Dina red #E3141B e.g. "شاركنا تجربتك في الكومنت") at the same place. Frames/footers exactly as the carousel covers.
 - The older locked Swnw photo layout (white fade, info box) and the bottom-panel treatments stay available as alternatives — rotate so the feed is not identical every day.
+
+## Medical sources — `sources` + `cover_source_text` (Mohamed, 2026-10-11)
+One structure for every origin of a content item: ChatGPT plugin manual import, the in-dashboard `content-ai` function, and this daily Claude run. It lives at the TOP LEVEL of `content_items.agent_raw_output` (JSON text, no new columns):
+
+```json
+"sources": [{"name":"NHS","title":"Headaches","url":"https://www.nhs.uk/symptoms/headaches/","type":"medical_authority","is_primary":true}],
+"cover_source_text": "المصدر الطبي للمحتوى: NHS"
+```
+- Non-medical content (doctor welcome, offers, service/center ads): `"sources": []` and `"cover_source_text": ""`. Old items without these keys are valid and behave as the empty case.
+- Medical content: only real official pages you are sure exist (NHS, WHO, CDC, Mayo Clinic, NICE …) with https URLs. NEVER invent a source, URL or study title; if no specific page is known, leave `sources` empty. Exactly one `is_primary: true`. `cover_source_text` = «المصدر الطبي للمحتوى: » + primary `name`.
+- When you CREATE an item (POST content_items) write `agent_raw_output` as a JSON string that includes both keys. When you PATCH `agent_raw_output`, read the current JSON first and keep `sources` / `cover_source_text` (and the other keys such as carousel_copy, carousel_brief) — never overwrite the whole object. Staff may edit the source in the dashboard ("المصدر الطبي" section), so always read the latest value before designing.
+- The dashboard function `content-ai` already returns the same schema, drops any URL outside a short allow-list of medical authorities, and opens every link once — a page that does not answer is removed. Do the same yourself: before saving a source, fetch its URL; if it is not reachable, do not use it.
+
+### Where it appears on the design
+- `image_post`: draw `cover_source_text` ONCE.
+- `carousel`: draw it on slide 1 (the cover) ONLY — never on inner slides or the CTA/contact slide. The carousel request note carries `cover_source_text` and `source_slides: "cover_only"`.
+- `video`: never draw it (reel, cover frame, end card). Keep it in the item data only.
+- Never print the URL or the page title on any design.
+
+### Visual spec (matches the approved reference)
+- Swnw posts and covers: left edge, vertical, reading bottom-to-top, 22–36 px from the left edge, the text ENDING at y≈1165 of the 1080×1350 canvas (50 px above the footer), small ▼ marker above it. Dr. Dina: one horizontal line (≈19 px) directly UNDER the CTA button; if there is no room under the CTA, use the vertical bottom-left label. Use the ready element in the approved HTML: `<div class=src><b></b><span>…</span></div>` (styles in sono.css / base.css of docs/templates/*; positions already set in sono-post-photo/post.html and dina-post-photo/post.html) on the carousel cover and on single posts; delete the element when cover_source_text is empty. Add class `on-light` on light backgrounds. Dashboard canvas templates draw it automatically (assets/js/design-source.js).
+- Small: ~21 px (shrink to fit ≤ 34% of the canvas height, never below 14 px), weight 400, white at ~72% opacity on dark/blue backgrounds, dark #16212E at ~62% on light backgrounds. A small ▼ marker sits above the line. It must never touch the title, subtitle or CTA.
+- Western digits only (see "Numbers in designs").

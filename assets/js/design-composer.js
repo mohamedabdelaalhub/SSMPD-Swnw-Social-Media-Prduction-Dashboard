@@ -166,7 +166,9 @@
     canvas.designIssues=[];
     return canvas;
   }
-  window.SSMPDDesignComposer={render:render,loadImage:loadImage,logoImage:logoImage,ready:ready,scenePrompt:scenePrompt};
+  // سطر المصدر الطبي (data.coverSourceText) بيترسم مرة واحدة فوق أي قالب بعد ما يخلص رسمه.
+  function withSource(fn){return async function(canvas,scene,data){var out=await fn.apply(this,arguments);if(data&&data.coverSourceText&&window.SSMPDDesignSource)window.SSMPDDesignSource.draw(out||canvas,data);return out;};}
+  window.SSMPDDesignComposer={render:withSource(render),loadImage:loadImage,logoImage:logoImage,ready:ready,scenePrompt:scenePrompt};
 })();
 
 

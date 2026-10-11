@@ -8,7 +8,7 @@ assert.equal(w.SSMPDDesignCopy.initial({title:'b',agent_raw_output:JSON.stringif
 assert.equal(w.SSMPDDesignCopy.initial({title:'a',agent_raw_output:'legacy prose'}).headline,'a');
 (async()=>{
  let handler,sent,reply=copy,allowed=true,active=true,calls=0;
- const code=stripTypeScriptTypes(fs.readFileSync('supabase/functions/content-ai/index.ts','utf8').replace(/^import .*\n/,''));
+ const code=stripTypeScriptTypes(fs.readFileSync('supabase/functions/content-ai/sources.ts','utf8').replace(/^export /gm,'')+'\n'+fs.readFileSync('supabase/functions/content-ai/index.ts','utf8').replace(/^import .*\n/gm,''));
  const db={rpc:async()=>({data:active?'admin':null}),from:()=>({select(){return this},eq(){return this},single:async()=>allowed?{data:{title:'original',brand:'sono',caption_text:'existing caption'}}:{error:{}}})};
  vm.runInNewContext(code,{createClient:()=>db,Deno:{env:{get:key=>key==='CONTENT_AI_MODEL'?undefined:'test-only'},serve:fn=>handler=fn},Response,fetch:async(url,request)=>{calls++;sent=JSON.parse(request.body);return {ok:true,json:async()=>({output_text:JSON.stringify(reply)})}}});
  const req=(body,auth=true)=>new Request('https://example.test',{method:'POST',headers:auth?{Authorization:'Bearer test-only'}:{},body:JSON.stringify(body)});

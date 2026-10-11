@@ -7,3 +7,9 @@ body{width:1080px;height:1350px;position:relative;overflow:hidden;font-family:BV
 .tag{display:inline-block;background:#F15A22;color:#fff;font-weight:700;font-size:34px;padding:10px 28px;border-radius:30px}
 .or{color:#F15A22}
 .grad{background:linear-gradient(90deg,#16C2E3,#0B8FD8);-webkit-background-clip:text;background-clip:text;color:transparent;padding-bottom:12px;margin-bottom:-12px}
+
+/* Medical source (cover_source_text) — left edge, vertical, beside the title block. Cover/post only; omit the element when empty. */
+.src{position:absolute;left:22px;top:810px;z-index:7;display:flex;flex-direction:column;align-items:center;gap:10px;transform:translateY(-50%)}
+.src b{width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-top:9px solid currentColor}
+.src span{writing-mode:vertical-rl;transform:rotate(180deg);font-weight:400;font-size:21px;white-space:nowrap;max-height:460px;overflow:hidden}
+.src{color:rgba(255,255,255,.72)} .src.on-light{color:rgba(22,33,46,.62)}
