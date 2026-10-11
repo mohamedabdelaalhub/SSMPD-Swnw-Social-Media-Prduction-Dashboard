@@ -12,10 +12,15 @@
    function detailOf(node){return node?node.closest('details.design-editor__subgroup'):null;}
    if(!st){
     var cutout=panel.querySelector('[data-cutout-actions]'),beforeX=panel.querySelector('[data-field="beforePhotoX"]'),afterUpload=panel.querySelector('[data-upload-after]');
-    var field=function(name){var f=panel.querySelector('[data-field="'+name+'"]');return detailOf(f&&f.closest('label'));};
-    st=root.__beforeAfterGroups={on:false,moved:[],
-     before:{target:detailOf(panel.querySelector('[data-upload]')),sources:[detailOf(cutout),detailOf(beforeX&&beforeX.closest('label'))]},
-     after:{target:detailOf(afterUpload&&afterUpload.closest('label')),sources:[field('afterZoom'),field('afterPhotoX'),field('afterPhotoY')]}};
+    var field=function(name){var f=panel.querySelector('[data-field="'+name+'"]');return detailOf(f);};
+    var labelOf=function(name){var f=panel.querySelector('[data-field="'+name+'"]');return f&&(f.closest('.design-offset-control')?f.closest('.design-offset-control').querySelector('label'):f.closest('label'));};
+    // صورة قبل ليها نفس التلاتة بتاعت صورة بعد: تكبير + تحريك يمين/شمال + تحريك فوق/تحت. التكبير والتحريك الرأسي هما أصلاً اللي بيتحكموا في صورة قبل
+    // (zoom / imageOffsetY)، فبنجيبهم جوه بوكس صورة قبل بأسماء واضحة، والتحريك الأفقي العام (imageOffsetX) مالوش تأثير في قوالب قبل/بعد فبيتخفي هناك.
+    st=root.__beforeAfterGroups={on:false,moved:[],names:[],
+     before:{target:detailOf(panel.querySelector('[data-upload]')),sources:[detailOf(cutout),field('zoom'),detailOf(beforeX),field('imageOffsetY')]},
+     after:{target:detailOf(afterUpload),sources:[field('afterZoom'),field('afterPhotoX'),field('afterPhotoY')]},
+     hideOnly:[field('imageOffsetX')],
+     renames:[[labelOf('zoom'),'تكبير صورة قبل أو الديكوبيه'],[labelOf('imageOffsetY'),'تحريك صورة قبل أو الديكوبيه فوق وتحت']]};
    }
    var groups=[st.before,st.after];
    if(on){
@@ -28,13 +33,17 @@
       });
       g.target.classList.add('design-editor__bundle');
      });
+     st.renames.forEach(function(r){var label=r[0],node=label&&Array.from(label.childNodes).find(function(n){return n.nodeType===3&&n.nodeValue.trim();});if(node){st.names.push({node:node,text:node.nodeValue});node.nodeValue=r[1]+(label.tagName==='LABEL'&&label.querySelector('input')?' ':'');}});
      st.on=true;
     }
     // الأقسام اللي بقت فاضية تفضل مخفية (syncTemplate ممكن يرجّعها ظاهرة)
     groups.forEach(function(g){g.sources.forEach(function(src){if(src&&src!==g.target)src.hidden=true;});});
+    st.hideOnly.forEach(function(src){if(src)src.hidden=true;});
    }else if(st.on){
     st.moved.forEach(function(m){m.from.append(m.node);});
     st.moved=[];
+    st.names.forEach(function(n){n.node.nodeValue=n.text;});st.names=[];
+    st.hideOnly.forEach(function(src){if(src&&!src.querySelector('[data-before-after-only]'))src.hidden=false;});
     groups.forEach(function(g){if(g.target)g.target.classList.remove('design-editor__bundle');g.sources.forEach(function(src){if(src&&src!==g.target&&!src.querySelector('[data-before-after-only]'))src.hidden=false;});});
     st.on=false;
    }

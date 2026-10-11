@@ -151,7 +151,6 @@
   function syncTemplate(){
    var layout=root.querySelector('[data-field="layoutTemplate"]').value,ba=/^sono_before_after_/.test(layout),stack=layout==='sono_before_after_stack';
    root.querySelectorAll('[data-before-after-only]').forEach(function(el){var name=el.querySelector('[data-field]');el.hidden=!ba||(!stack&&(!name||['afterZoom','afterPhotoX','afterPhotoY'].includes(name.dataset.field)));});
-   if(window.SSMPDDesignEditorLayout&&window.SSMPDDesignEditorLayout.syncBeforeAfter)window.SSMPDDesignEditorLayout.syncBeforeAfter(root,ba);
    ['panel','edges','logo'].forEach(function(key){if(item.brand==='sono')root.querySelector('[data-tool-tab="'+key+'"]').hidden=key==='panel'&&ba;});
    root.querySelectorAll('[data-cosmetics-background]').forEach(function(el){var unit=el.closest('.design-editor__subgroup')||el;unit.hidden=!ba;});
    var doctor=layout==='sono_doctor';
@@ -160,6 +159,8 @@
    root.querySelectorAll('[data-standard-only]').forEach(function(el){el.hidden=doctor;});
    if(item.brand==='sono'){['textOrder','titlePosition','textWidth','x','fadeStartY','fadeEndY'].forEach(function(key){var field=root.querySelector('[data-field="'+key+'"]'),unit=field.closest('.design-editor__subgroup')||field.closest('label');unit.hidden=doctor||ba;});var uploadLabel=root.querySelector('[data-upload]').closest('label'),uploadGroup=uploadLabel.closest('details');var uploadText=stack?'صورة قبل':ba?'صورة PNG ديكوبيه مقسومة قبل/بعد':'صورة من جهازك';uploadLabel.firstChild.textContent=uploadText;if(uploadGroup)uploadGroup.querySelector('summary').textContent=uploadText;var expandButton=root.querySelector('[data-expand]');if(expandButton)expandButton.closest('details').hidden=doctor||ba;}
    if(item.brand==='dr_dina'){root.querySelectorAll('[data-dina-hidden]').forEach(function(el){el.hidden=true;});['logo','panel'].forEach(function(key){root.querySelector('[data-tool-tab="'+key+'"]').hidden=true;});var v=Number(root.querySelector('[data-field=dinaVariant]').value);root.querySelector('[data-tool-tab=body]').hidden=v>5;root.querySelector('[data-tool-tab=edges]').hidden=v<=5;}
+   // لازم يتنادى بعد آخر تحديث لحالة الظهور (standard-only/doctor-only) عشان يفضل مخفي اللي اتنقل
+   if(window.SSMPDDesignEditorLayout&&window.SSMPDDesignEditorLayout.syncBeforeAfter)window.SSMPDDesignEditorLayout.syncBeforeAfter(root,ba);
    if(root.dataset.activeTool&&root.querySelector('[data-tool-tab="'+root.dataset.activeTool+'"]').hidden)root.querySelector('[data-tool-tab="'+(doctor?'doctor':'headline')+'"]').click();
   }
   function data(){var out={brand:item.brand,scenePaddingScale:scenePaddingScale,expansionOriginalUrl:expansionOriginalPath||expansionOriginalUrl,expansionOriginalFraming:expansionOriginalFraming};root.querySelectorAll('[data-field]').forEach(function(el){out[el.dataset.field]=el.value;});out.coverSourceText=window.SSMPDSources?window.SSMPDSources.designText(item):'';var logo=savedLogo&&savedLogo.logoVariant===out.logoVariant?savedLogo:logos.find(function(row){return (row.variant||'primary')===out.logoVariant;});if(out.logoVariant!=='legacy'&&logo){out.logoStoragePath=logo.logoStoragePath||logo.storage_path;out.logoAssetId=logo.logoAssetId||logo.id;out.logoBrand=item.brand;}return out;}
