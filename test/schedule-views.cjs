@@ -203,6 +203,13 @@ setTimeout(() => {
       const reviewBtn = [...rootEl.querySelectorAll(".tab-btn")].find(b => b.getAttribute("data-tab") === "review");
       reviewBtn.click();
       setTimeout(() => {
+        // كروت الأيام هي العرض الأساسي لإدارة المحتوى، والكانبان القديم بيتفتح من زرار "كانبان"
+        assert(/كروت الأيام/.test(V().innerHTML) && rootEl.querySelectorAll(".kanban-col").length === 0, "كروت الأيام هي العرض الأساسي لإدارة المحتوى");
+        assert(!!rootEl.querySelector('.pbd-row[data-id="c1"] .pbd-thumb') && !!rootEl.querySelector(".pbd-row .content-format-badge"), "المادة ظاهرة في كارت يومها بثمبنيل وشارة نوع المحتوى");
+        assert(!!rootEl.querySelector(".pbd-sep") || rootEl.querySelectorAll(".pbd-card").length > 0, "كروت اليوم متقسمة حسب الصفحة (فاصل سونو/دينا لو اليوم فيه الاتنين)");
+        rootEl.querySelector('[data-rv-mode="list"]').click();
+        assert(!!rootEl.querySelector("table.pbr-table tr[data-id]"), "عرض القائمة في إدارة المحتوى شغال");
+        rootEl.querySelector('[data-rv-mode="kanban"]').click();
         assert(rootEl.querySelectorAll(".kanban-col").length === 8, "٨ أعمدة Kanban ظاهرة في شاشة إدارة المحتوى (بعد إضافة مرحلة مجدولة للنشر)");
         assert(/بوست تجريبي/.test(V().innerHTML), "المادة في مرحلة اختيار الفكرة ظاهرة في العمود الصحيح");
         assert(/سونو/.test(V().innerHTML) && /د\.دينا/.test(V().innerHTML), "بادچ تمييز سونو/د.دينا ظاهر في شاشة إدارة المحتوى");

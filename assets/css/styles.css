@@ -648,3 +648,14 @@ table.simple.acc-table td.acc-col-num{text-align:left;}
 .pbd-plain .pbd-row + .pbd-row{border-top:1px solid var(--c-border);}
 .pbd-plain .pbd-main{border:none;padding:0;}
 @media(max-width:520px){.pbd-grid{grid-template-columns:1fr;}}
+
+/* إدارة المحتوى — شريط العروض والفلاتر وصفوف الحالة */
+.pbr-bar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:0 0 14px;}
+.pbd-status{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:7px;}
+.pbd-status .btn{padding:3px 10px;font-size:11px;}
+.pbr-table{width:100%;border-collapse:collapse;font-size:13px;}
+.pbr-table th,.pbr-table td{padding:10px 8px;border-bottom:1px solid var(--c-border);text-align:start;vertical-align:middle;}
+.pbr-table tbody tr:hover{background:#f6f8ff;}
+.pbr-thumb{width:62px;}
+.pbr-thumb .pbd-thumb{width:48px;height:60px;}
+.pbr-bar select{padding:7px 12px;border:1px solid var(--c-border);border-radius:9px;background:#fff;font:inherit;font-size:13px;color:var(--c-dark);}
