@@ -113,6 +113,12 @@ Dr. Dina — render with the dashboard's OWN renderer so it matches the studio e
 - Motion (Mohamed, 2026-10-11): key words must MOVE, not sit as plain text. Symptom / list words (e.g. صداع، تنميل، دوخة) pop in one after another (scale 0.6→1.08→1 with a short slide-up, ~0.25 s each, highlight colour), numbers count/pop, the hook line slides in. Keep it smooth and readable — no shaking, no fast flashing.
 - Highlighted words in on-screen text: Swnw = ORANGE #F15A22 (never blue); Dr. Dina = her red #E3141B. The rest of the text stays dark (#16212E) on the white box.
 
+## Reel text styles — two options (Mohamed, 2026-10-11)
+Read `content_items.cover_settings.caption_style` (staff pick it on the video item):
+- `box` → white rounded caption box that hugs the words, short 2–5 word chunks (see "Reel on-screen look").
+- `headline` → big headline ON the video, no box (Mohamed liked this look): `docs/templates/sono-reel-text/overlay.html` or `docs/templates/dina-reel-text/overlay.html` — transparent 1080×1920 PNG (render with omitBackground, params tag/title/hl/sub, title lines split with \n, max 2 lines), overlaid on the footage with ffmpeg; dark brand gradient at the bottom, tag pill (Swnw orange, Dina red), white headline centred with the key word coloured (Swnw light blue #6EC6F5 in this style, Dina red), one subtitle line. Change the overlay per scene (a new headline every 3–6 s, fade/slide in), keep the same key-word motion.
+- empty → you choose; alternate between the two so the page doesn't look the same every day.
+
 ## Reel cover (Mohamed, 2026-10-11)
 - Every reel gets a cover in the carousel-cover style: `docs/templates/sono-reel-cover/cover.html` (Swnw, blue, orange highlight) or `docs/templates/dina-reel-cover/cover.html` (Dr. Dina, burgundy, red highlight). 1080×1920: photo on top (a strong frame from the reel or a matching stock photo; never a generated image of Dr. Dina or any doctor), tag pill, big hook title (≤3 lines, no single orphan word), one subtitle line, «▶ شوف الفيديو».
 - Render it to PNG, upload with op=upload_image, then PATCH `content_items.cover_settings` MERGING the existing JSON: `{...cover_settings, cover_image_url}`. The dashboard shows it in the preview («غلاف الريل») and the publisher sends it as the Instagram reel cover. Staff can also make/edit it from «🎬 تصميم غلاف الريل» on video items.
