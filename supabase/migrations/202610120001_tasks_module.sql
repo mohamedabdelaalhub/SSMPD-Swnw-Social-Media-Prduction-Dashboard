@@ -233,9 +233,13 @@ begin
   insert into public.task_updates(task_id,author_id,body,status_from,status_to)
     values(p_task_id,v_actor,trim(p_note),v_task.status,p_status);
   insert into public.task_notifications(recipient_id,task_id,kind,message)
-    select p.manager_id,p_task_id,case when p_status='review' then 'review' else 'status' end,
+    select recipients.admin_id,p_task_id,case when p_status='review' then 'review' else 'status' end,
            case when p_status='review' then 'المهمة جاهزة للمراجعة: ' else 'تم تحديث حالة المهمة: ' end||v_task.title
-    from public.task_projects p where p.id=v_task.project_id and p.manager_id<>v_actor
+    from (
+      select p.manager_id as admin_id from public.task_projects p where p.id=v_task.project_id
+      union
+      select m.admin_id from public.task_project_members m where m.project_id=v_task.project_id and m.role_name='manager'
+    ) recipients where recipients.admin_id<>v_actor
     on conflict do nothing;
 end $$;
 revoke all on function public.task_set_status(uuid,text,text) from public;
