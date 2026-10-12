@@ -1,6 +1,7 @@
 /* SSMPD — تاب مهام الموظفين */
 (function () {
   "use strict";
+  var liveTimer=null;
   var STATUS = {todo:"لم تبدأ",in_progress:"جاري العمل",review:"بانتظار المراجعة",revision:"مطلوب تعديل",done:"مكتملة",blocked:"متوقفة"};
   var PRIORITY = {low:"منخفضة",normal:"عادية",high:"عالية",urgent:"عاجلة"};
   function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
@@ -35,10 +36,10 @@
     var admin=window.SSMPDAuth.currentAdmin;
     var state={projects:[],tasks:[],people:[],notifications:[],modal:"",error:"",filter:"all"};
     var isAdmin=allManager(admin);
-    function refresh(){return Promise.all([
+    function refresh(){return window.SSMPDDb.taskRefreshOverdue().catch(function(){return 0;}).then(function(){return Promise.all([
       window.SSMPDDb.taskListProjects(),window.SSMPDDb.taskListVisible(),window.SSMPDDb.taskPeople(),
-      window.SSMPDDb.taskListNotifications(),window.SSMPDDb.taskRefreshOverdue()
-    ]).then(function(v){state.projects=v[0]||[];state.tasks=v[1]||[];state.people=v[2]||[];state.notifications=v[3]||[];draw();}).catch(function(e){state.error=e&&e.message||"تعذر تحميل المهام";draw();});}
+      window.SSMPDDb.taskListNotifications()
+    ]);}).then(function(v){state.projects=v[0]||[];state.tasks=v[1]||[];state.people=v[2]||[];state.notifications=v[3]||[];state.error="";draw();}).catch(function(e){state.error=e&&e.message||"تعذر تحميل المهام";draw();});}
     function draw(){
       var unread=state.notifications.filter(function(n){return !n.read_at;}).length;
       var allVisible=state.tasks.filter(function(t){return state.filter==="all"||t.status===state.filter;});
@@ -110,7 +111,7 @@
         window.SSMPDDb.taskCreate(fd.get("project_id"),fd.get("parent_task_id")||null,fd.get("title"),fd.get("description"),fd.get("expected_output"),fd.get("assignee_id"),due?new Date(due+"T23:59:00").toISOString():null,fd.get("priority")).then(function(){state.modal="";return refresh();}).catch(function(e){window.alert(e.message);});
       }
     };
-    refresh();
+    refresh().then(function(){liveTimer=setInterval(function(){if(!el.isConnected){clearInterval(liveTimer);liveTimer=null;return;}refresh();},90000);});
   }
   window.SSMPDRenderTasks={render:render};
 })();
