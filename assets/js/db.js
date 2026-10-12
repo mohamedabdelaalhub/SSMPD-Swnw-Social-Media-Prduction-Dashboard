@@ -1272,7 +1272,32 @@
     },
     deletePricingPackage: function (id) {
       return handle(client.from("pricing_packages").delete().eq("id", id));
-    }
+    },
+    taskListProjects: function () { return handle(client.rpc("task_list_projects")); },
+    taskListVisible: function () { return handle(client.rpc("task_list_visible")); },
+    taskPeople: function () { return handle(client.rpc("task_people")); },
+    taskListNotifications: function () {
+      return handle(client.from("task_notifications").select("*").eq("recipient_id", window.SSMPDAuth.currentAdmin.id).order("created_at", { ascending: false }).limit(40));
+    },
+    taskRefreshOverdue: function () { return handle(client.rpc("task_refresh_overdue_notifications")); },
+    taskCreateProject: function (title, description, managerId, members) {
+      return handle(client.rpc("task_create_project", { p_title:title, p_description:description || "", p_manager_id:managerId, p_members:members || [] }));
+    },
+    taskCreate: function (projectId, parentId, title, description, expectedOutput, assigneeId, dueAt, priority) {
+      return handle(client.rpc("task_create", { p_project_id:projectId, p_parent_task_id:parentId, p_title:title, p_description:description || "", p_expected_output:expectedOutput || "", p_assignee_id:assigneeId, p_due_at:dueAt, p_priority:priority || "normal" }));
+    },
+    taskSetStatus: function (taskId, status, note) {
+      return handle(client.rpc("task_set_status", { p_task_id:taskId, p_status:status, p_note:note }));
+    },
+    taskReview: function (taskId, approve, note) {
+      return handle(client.rpc("task_review", { p_task_id:taskId, p_approve:approve, p_note:note || "" }));
+    },
+    taskListUpdates: function (taskId) {
+      return handle(client.from("task_updates").select("id,task_id,author_id,body,status_from,status_to,created_at").eq("task_id",taskId).order("created_at",{ascending:false}));
+    },
+    taskMarkNotificationRead: function (id) {
+      return handle(client.from("task_notifications").update({read_at:new Date().toISOString()}).eq("id",id).eq("recipient_id",window.SSMPDAuth.currentAdmin.id));
+    },
   };
 
   window.SSMPDDb = Db;
