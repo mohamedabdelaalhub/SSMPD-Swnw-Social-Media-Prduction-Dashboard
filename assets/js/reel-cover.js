@@ -48,14 +48,24 @@
     await fonts();
     canvas.width = 1080; canvas.height = 1920;
     var ctx = canvas.getContext('2d');
-    ctx.fillStyle = b.end; ctx.fillRect(0, 0, 1080, 1920);
+    // Background: soft brand glow (no photo under the text). Photo = rounded card on top, so faces stay clear
+    // of the colour layer (Mohamed 2026-10-12: «الصورة تصغر وتتحرك لفوق علشان تبان الملامح»).
+    var bgc = data.brand === 'dr_dina' ? ['#7a2a66', '#5a1b4a', '#2c0b26'] : ['#2a5bd0', '#0F369D', '#0a2a7c'];
+    var rg = ctx.createRadialGradient(540, 345, 0, 540, 345, 1300);
+    rg.addColorStop(0, bgc[0]); rg.addColorStop(0.55, bgc[1]); rg.addColorStop(1, bgc[2]);
+    ctx.fillStyle = rg; ctx.fillRect(0, 0, 1080, 1920);
     if (data.photo) {
-      var p = data.photo, scale = Math.max(1080 / p.width, 1500 / p.height) * (Number(data.zoom) || 1), w = p.width * scale, h = p.height * scale;
-      ctx.drawImage(p, (1080 - w) * (Number(data.x == null ? 50 : data.x) / 100), (1500 - h) * (Number(data.y == null ? 25 : data.y) / 100), w, h);
+      var CX = 43, CY = 150, CW = 994, CH = 800;
+      var p = data.photo, scale = Math.max(CW / p.width, CH / p.height) * (Number(data.zoom) || 1), w = p.width * scale, h = p.height * scale;
+      var card = document.createElement('canvas'); card.width = CW; card.height = CH;
+      var cc = card.getContext('2d');
+      cc.drawImage(p, (CW - w) * (Number(data.x == null ? 50 : data.x) / 100), (CH - h) * (Number(data.y == null ? 0 : data.y) / 100), w, h);
+      cc.globalCompositeOperation = 'destination-in';
+      var fade = cc.createLinearGradient(0, 0, 0, CH); fade.addColorStop(0, '#000'); fade.addColorStop(0.84, '#000'); fade.addColorStop(1, 'rgba(0,0,0,0)');
+      cc.fillStyle = fade; cc.fillRect(0, 0, CW, CH);
+      ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.3)'; ctx.shadowBlur = 40; ctx.shadowOffsetY = 14;
+      ctx.beginPath(); ctx.roundRect(CX, CY, CW, CH, 28); ctx.clip(); ctx.drawImage(card, CX, CY); ctx.restore();
     }
-    var g = ctx.createLinearGradient(0, 0, 0, 1920);
-    g.addColorStop(0, b.mid + '0.1)'); g.addColorStop(0.38, b.mid + '0.28)'); g.addColorStop(0.65, b.bg); g.addColorStop(1, b.end);
-    ctx.fillStyle = g; ctx.fillRect(0, 0, 1080, 1920);
     try { var l = await logo(data.brand === 'dr_dina' ? 'dr_dina' : 'sono'); ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.35)'; ctx.shadowBlur = 14; ctx.drawImage(l, 60, 70, b.logoW, b.logoW * l.height / l.width); ctx.restore(); } catch (e) { /* logo is decorative */ }
     ctx.direction = 'rtl'; ctx.textBaseline = 'alphabetic';
     var right = 1010, width = 940, bottom = 1590, issues = [];
@@ -115,7 +125,7 @@
       '<div class="field"><label>السطر التوضيحي</label><input data-f="subtitle" maxlength="70" value="' + esc(c.cover_subtitle || '') + '"></div>' +
       '<div class="field"><label>الصورة (تقدر تاخد لقطة من الفيديو)</label><input type="file" data-f="photo" accept="image/png,image/jpeg,image/webp"></div>' +
       '<div class="field"><label>مكان الصورة يمين/شمال</label><input type="range" data-f="x" min="0" max="100" value="50"></div>' +
-      '<div class="field"><label>مكان الصورة فوق/تحت</label><input type="range" data-f="y" min="0" max="100" value="25"></div>' +
+      '<div class="field"><label>مكان الصورة فوق/تحت</label><input type="range" data-f="y" min="0" max="100" value="0"></div>' +
       '<div class="field"><label>تكبير الصورة</label><input type="range" data-f="zoom" min="100" max="220" value="100"></div>' +
       '<p data-issues style="color:var(--c-negative);font-size:12px;"></p>' +
       '<button class="btn" data-save>حفظ الغلاف</button> <span data-status role="status" style="font-size:12px;color:var(--c-muted);"></span></div>' +
