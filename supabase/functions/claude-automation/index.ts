@@ -13,6 +13,9 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 //
 //   POST ?op=upload_image&content_id=<uuid>   body = PNG bytes  -> {url}
 //   POST ?op=upload_video                      body = MP4 bytes  -> {url}
+//   POST ?op=upload_cover&content_id=<uuid>   body = PNG bytes  -> {url, linked}  reel cover (video items):
+//        saved as <id>/<uuid>/reel-cover.png and merged into content_items.cover_settings.cover_image_url
+//   POST ?op=tts_quota                                           -> ElevenLabs characters used/limit/reset date
 //   POST ?op=tts                               {text, model?, stability?, style?, speed?, chunk?} -> MP3 bytes (ElevenLabs)
 //        The text first goes through the pronunciation list (kit file tts/pronunciations.json,
 //        plus the built-in defaults below): words Mohamed flagged are rewritten before speaking.
@@ -49,6 +52,7 @@ const DEFAULT_PRONUNCIATIONS: Record<string, string> = {
   "براحة": "بالراحة",
   "اثبت": "اثْبَتْ",
   "قسم": "قِسْم",
+  "العظام": "العِظام", "العضام": "العِظام",
 };
 let kitPronunciations: { at: number; map: Record<string, string> } | null = null;
 
@@ -200,6 +204,17 @@ Deno.serve(async (req) => {
     return new Response(Uint8Array.from(atob(b64), (c) => c.charCodeAt(0)), { headers: { "Content-Type": "image/png" } });
   }
 
+  // How many ElevenLabs characters are left this month (check before writing a reel's voice).
+  if (op === "tts_quota") {
+    const el = Deno.env.get("SSMPD_ELEVENLABS_API_KEY");
+    if (!el) return json({ ok: false, error: "ElevenLabs key missing" }, 500);
+    const r = await fetch("https://api.elevenlabs.io/v1/user/subscription", { headers: { "xi-api-key": el } });
+    const d = await r.json().catch(() => null);
+    if (!r.ok || !d) return json({ ok: false, error: "elevenlabs " + r.status }, 502);
+    const used = Number(d.character_count || 0), limit = Number(d.character_limit || 0);
+    return json({ ok: true, tier: d.tier, used, limit, left: Math.max(0, limit - used), resets_at: d.next_character_count_reset_unix ? new Date(d.next_character_count_reset_unix * 1000).toISOString() : null, status: d.status });
+  }
+
   if (op === "tts") {
     const el = Deno.env.get("SSMPD_ELEVENLABS_API_KEY");
     if (!el) return json({ ok: false, error: "ElevenLabs key missing" }, 500);
@@ -248,6 +263,19 @@ Deno.serve(async (req) => {
       const bytes = new Uint8Array(await req.arrayBuffer());
       if (bytes.length < 100 || bytes.length > 12_000_000 || bytes[0] !== 0x89 || bytes[1] !== 0x50) return json({ ok: false, error: "PNG only (<12MB)" }, 400);
       return json({ ok: true, url: await store(jwt, "content-designs", `${cid}/${crypto.randomUUID()}/output.png`, bytes, "image/png") });
+    }
+    if (op === "upload_cover") {
+      const cid = q.get("content_id") || "";
+      if (!UUID.test(cid)) return json({ ok: false, error: "content_id" }, 400);
+      const bytes = new Uint8Array(await req.arrayBuffer());
+      if (bytes.length < 100 || bytes.length > 12_000_000 || bytes[0] !== 0x89 || bytes[1] !== 0x50) return json({ ok: false, error: "PNG only (<12MB)" }, 400);
+      const url = await store(jwt, "content-designs", `${cid}/${crypto.randomUUID()}/reel-cover.png`, bytes, "image/png");
+      // Link it on the item, keeping the rest of cover_settings.
+      const h = { apikey: ANON, Authorization: `Bearer ${jwt}`, "Content-Type": "application/json" };
+      const cur = await fetch(`${SB}/rest/v1/content_items?id=eq.${cid}&select=cover_settings`, { headers: h }).then((r) => r.json()).catch(() => null);
+      const settings = { ...((Array.isArray(cur) && cur[0]?.cover_settings) || {}), cover_image_url: url };
+      const p = await fetch(`${SB}/rest/v1/content_items?id=eq.${cid}`, { method: "PATCH", headers: { ...h, Prefer: "return=minimal" }, body: JSON.stringify({ cover_settings: settings }) });
+      return json({ ok: true, url, linked: p.ok, link_error: p.ok ? undefined : (await p.text()).slice(0, 300) });
     }
     if (op === "upload_video") {
       const bytes = new Uint8Array(await req.arrayBuffer());

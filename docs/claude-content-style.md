@@ -121,7 +121,7 @@ Read `content_items.cover_settings.caption_style` (staff pick it on the video it
 
 ## Reel cover (Mohamed, 2026-10-11)
 - Every reel gets a cover in the carousel-cover style: `docs/templates/sono-reel-cover/cover.html` (Swnw, blue, orange highlight) or `docs/templates/dina-reel-cover/cover.html` (Dr. Dina, burgundy, red highlight). 1080×1920: photo on top (a strong frame from the reel or a matching stock photo; never a generated image of Dr. Dina or any doctor), tag pill, big hook title (≤3 lines, no single orphan word), one subtitle line, «▶ شوف الفيديو».
-- Render it to PNG, upload with op=upload_image, then PATCH `content_items.cover_settings` MERGING the existing JSON: `{...cover_settings, cover_image_url}`. The dashboard shows it in the preview («غلاف الريل») and the publisher sends it as the Instagram reel cover. Staff can also make/edit it from «🎬 تصميم غلاف الريل» on video items.
+- Render it to PNG and upload it with the gateway `POST ?op=upload_cover&content_id=<id>` (body = PNG). That one call saves it as the reel cover AND links it in `cover_settings.cover_image_url` (response `linked:true`). Do NOT use op=upload_image for covers (it is refused for video items). Never send the cover to Mohamed instead of uploading; if upload_cover fails, report the exact error. The dashboard shows it in the preview («غلاف الريل») and the publisher sends it as the Instagram reel cover. Staff can also make/edit it from «🎬 تصميم غلاف الريل» on video items.
 
 ## Reel ending — fixed order (Mohamed, 2026-10-11)
 Every reel ends: content → contact card → outro. The outro is ALWAYS the very last thing.
@@ -130,6 +130,8 @@ Every reel ends: content → contact card → outro. The outro is ALWAYS the ver
 - Keep the voice exactly as it is (one op=tts call per script, current model). Mohamed tried other models and sentence-by-sentence voice and rejected them (2026-10-11).
 
 ## Reel voice-over pronunciation (Mohamed, 2026-10-11)
+- Before writing a reel's voice, call the gateway `POST ?op=tts_quota` (→ left, limit, resets_at). (If tts_quota itself answers an error, the API key can't read the balance: just go ahead with op=tts.) If `left` is less than the script length, don't call op=tts: make the posts/carousels, leave the reel, and tell Mohamed how many characters are left and the reset date.
+- New words to fix: write them with tashkeel in the script, and list them in your report for Mohamed (Claude in the main chat adds them to the permanent list). Don't try kit_put for tts/pronunciations.json from scheduled runs.
 - The gateway op=tts rewrites words the voice said wrong before speaking (built-in list in supabase/functions/claude-automation/index.ts + kit file tts/pronunciations.json). Add any new word Mohamed flags to the kit file as {"written": "spoken with tashkeel"}.
 - Write scripts so they read right: ordinals أولاً / ثانياً / ثالثاً (never تانياً / تالتاً), «بالراحة» not «براحة», add tashkeel on words that can be misread (الحِمْل، اثْبَتْ، قِسْم).
 
