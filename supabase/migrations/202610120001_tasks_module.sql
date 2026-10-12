@@ -188,7 +188,7 @@ begin
     select v_id,x.admin_id,case when x.role_name in ('manager','contributor','reviewer') then x.role_name else 'contributor' end
     from jsonb_to_recordset(coalesce(p_members,'[]'::jsonb)) as x(admin_id uuid,role_name text)
     join public.admins a on a.id=x.admin_id and a.active
-    on conflict(project_id,admin_id) do update set role_name=excluded.role_name;
+    on conflict(project_id,admin_id) do update set role_name=case when excluded.admin_id=p_manager_id then 'manager' else excluded.role_name end;
   return v_id;
 end $$;
 revoke all on function public.task_create_project(text,text,uuid,jsonb) from public;
@@ -301,9 +301,14 @@ revoke all on function public.task_refresh_overdue_notifications() from public;
 grant execute on function public.task_refresh_overdue_notifications() to authenticated;
 
 create or replace function public.task_list_projects()
-returns table(id uuid,title text,description text,created_by uuid,manager_id uuid,created_at timestamptz,can_manage boolean)
+returns table(id uuid,title text,description text,created_by uuid,manager_id uuid,created_at timestamptz,can_manage boolean,members jsonb)
 language sql stable security definer set search_path = public as $$
- select p.id,p.title,p.description,p.created_by,p.manager_id,p.created_at,public.task_can_manage_project(p.id) from public.task_projects p
+ select p.id,p.title,p.description,p.created_by,p.manager_id,p.created_at,public.task_can_manage_project(p.id),
+   coalesce((select jsonb_agg(jsonb_build_object('name',coalesce(nullif(a.name,''),a.email),'role',m.role_name)
+                              order by coalesce(nullif(a.name,''),a.email))
+             from public.task_project_members m join public.admins a on a.id=m.admin_id
+             where m.project_id=p.id),'[]'::jsonb)
+ from public.task_projects p
  where public.task_can_access_project(p.id) order by p.created_at desc;
 $$;
 revoke all on function public.task_list_projects() from public;
