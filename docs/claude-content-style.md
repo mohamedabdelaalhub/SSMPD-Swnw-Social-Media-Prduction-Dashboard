@@ -121,7 +121,6 @@ Read `content_items.cover_settings.caption_style` (staff pick it on the video it
 
 ## Reel cover (Mohamed, 2026-10-11)
 - Every reel gets a cover in the carousel-cover style: `docs/templates/sono-reel-cover/cover.html` (Swnw, blue, orange highlight) or `docs/templates/dina-reel-cover/cover.html` (Dr. Dina, burgundy, red highlight). 1080×1920: photo on top (a strong frame from the reel or a matching stock photo; never a generated image of Dr. Dina or any doctor), tag pill, big hook title (≤3 lines, no single orphan word), one subtitle line, «▶ شوف الفيديو».
-- Faces must be clearly visible (Mohamed 2026-10-12): the photo block is the top 1000px and fades out under the text. Use a frame/photo where people's faces are in the upper part, crop it so it's NOT over-zoomed (whole head + shoulders in view), and check that the face sits between y 80 and 760 and is not covered by the blue/burgundy layer. Never cover a face with the logo.
 - Render it to PNG and upload it with the gateway `POST ?op=upload_cover&content_id=<id>` (body = PNG). That one call saves it as the reel cover AND links it in `cover_settings.cover_image_url` (response `linked:true`). Do NOT use op=upload_image for covers (it is refused for video items). Never send the cover to Mohamed instead of uploading; if upload_cover fails, report the exact error. The dashboard shows it in the preview («غلاف الريل») and the publisher sends it as the Instagram reel cover. Staff can also make/edit it from «🎬 تصميم غلاف الريل» on video items.
 
 ## Reel ending — fixed order (Mohamed, 2026-10-11)
