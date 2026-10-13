@@ -28,6 +28,7 @@
  *   - أرشيف المرضى (فولدر مريض/فئة متداخل) → category: "patient_archive"
  *   - فواتير حجوزات الليدز (فولدر واحد مسطّح) → category: "leads_invoice"
  *   - عقود الجهات → داخل فولدر الأرشيف، فولدر مستقل لكل جهة
+ *   - منشورات مؤرشفة (بعد النشر بيومين) → داخل فولدر الأرشيف: منشورات مؤرشفة/<سنة-شهر>/<مادة> (action: "content_archive")
  *   - مرفقات المهام → داخل فولدر الأرشيف: مرفقات المهام/<سنة-شهر> (category: "task_attachment")
  */
 
@@ -57,6 +58,7 @@ function doPost(e) {
     var payload = JSON.parse(e.postData.contents);
     var action = payload.action || "upload";
     if (action === "video_archive") return handleVideoArchive_(payload);
+    if (action === "content_archive") return handleContentArchive_(payload);
     if (action === "log") return handleLog_(payload);
     return handleUpload_(payload);
   } catch (err) {
@@ -164,6 +166,53 @@ function handleTaskAttachmentUpload_(payload) {
   var file = monthFolder.createFile(Utilities.newBlob(bytes, mimeType, fileName));
   file.setDescription("SSMPD Task attachment | taskId: " + (payload.taskId || "") + " | " + (payload.contentTitle || ""));
   return jsonOut({ ok: true, fileUrl: file.getUrl(), folderUrl: monthFolder.getUrl(), fileId: file.getId() });
+}
+
+// أرشفة وسائط محتوى منشور (بتتنادى من Edge Function content-archive-process بعد يومين من النشر):
+// الأرشيف/منشورات مؤرشفة/<سنة-شهر>/<عنوان المادة>__<8 حروف من المعرف>/design|video|slide-NN|cover.<امتداد>
+// بنتأكد من sha256 قبل الحفظ، وبنرجّع الملف الموجود لو اتبعت قبل كده بنفس الـchecksum (آمن لإعادة المحاولة).
+function handleContentArchive_(p) {
+  var uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuid.test(p.contentId || "")) throw new Error("Invalid content id");
+  if (["design", "video", "slide", "cover"].indexOf(p.kind) < 0) throw new Error("Invalid archive kind");
+  if (!/^[a-f0-9]{64}$/.test(p.sha256 || "")) throw new Error("Invalid checksum");
+  if (!p.base64 || p.base64.length > 48933548) throw new Error("Archive bridge file limit is 35 MiB");
+  var date = new Date(p.publishedAt);
+  if (isNaN(date.getTime())) date = new Date();
+  var bytes = Utilities.base64Decode(p.base64);
+  if (!bytes.length || bytes.length > 35 * 1024 * 1024) throw new Error("Invalid file size");
+  var checksum = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, bytes).map(function (b) {
+    return ("0" + ((b + 256) % 256).toString(16)).slice(-2);
+  }).join("");
+  if (checksum !== p.sha256) throw new Error("Checksum mismatch");
+  var lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    var archiveRoot = DriveApp.getFolderById(CATEGORY_FOLDER_IDS.archive);
+    var root = getOrCreateFolder_(archiveRoot, "منشورات مؤرشفة");
+    var month = getOrCreateFolder_(root, Utilities.formatDate(date, "UTC", "yyyy-MM"));
+    var title = String(p.title || "مادة").replace(/[\/\\\x00-\x1f:*?"<>|]/g, " ").replace(/\s+/g, " ").trim().slice(0, 60) || "مادة";
+    var folder = getOrCreateFolder_(month, title + "__" + p.contentId.slice(0, 8));
+    var ext = String(p.fileName || "").split(".").pop().toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 5) || "bin";
+    var base = p.kind === "slide" ? "slide-" + ("0" + Math.max(1, Number(p.position) || 1)).slice(-2) : p.kind;
+    var name = base + "." + ext;
+    var existing = folder.getFilesByName(name);
+    var file;
+    if (existing.hasNext()) {
+      file = existing.next();
+      if (String(file.getDescription() || "").indexOf("sha256=" + checksum) < 0) {
+        name = base + "-" + checksum.slice(0, 8) + "." + ext;
+        file = folder.createFile(Utilities.newBlob(bytes, p.mimeType || "application/octet-stream", name));
+        file.setDescription("SSMPD Archive | sha256=" + checksum + " | contentId: " + p.contentId);
+      }
+    } else {
+      file = folder.createFile(Utilities.newBlob(bytes, p.mimeType || "application/octet-stream", name));
+      file.setDescription("SSMPD Archive | sha256=" + checksum + " | contentId: " + p.contentId);
+    }
+    return jsonOut({ ok: true, fileId: file.getId(), fileUrl: file.getUrl(), folderUrl: folder.getUrl(), size: bytes.length });
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 // ---------- تسجيل حدث في ملف التتبع (Excel) المناسب ----------
