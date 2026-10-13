@@ -214,6 +214,7 @@
       "<button class=\"btn ghost sm mm-logout\" id=\"logout-btn-dropdown\"> <!--ssmpd-i18n:%D8%AE%D8%B1%D9%88%D8%AC-->خروج</button>" +
       '</div>' +
       '<div class="tabs" id="tabs-bar">' + tabButtonsHtml() + '</div>' +
+      '<div id="inventory-navigation" hidden></div>' +
       '<div class="mobile-menu" id="mobile-menu">' +
       '<div class="mm-name">' + displayName + '</div>' +
       '<div class="mm-role"><span class="role-badge">' + roleLabel + '</span></div>' +
@@ -696,11 +697,14 @@
 
     // فصل بصري: تابات السويت الرئيسي (SSMPD) بتتخفي تماماً لما نكون جوه موديول
     // منفصل (أرشيف المرضى / الليدز / لوحة التحكم) عشان ميظهرش هيدر حاجتين مع بعض
-    var isSeparateModule = ["patients", "leads", "contracting_entities", "clinic_info", "admin", "accounting", "tasks"].indexOf(tab) !== -1;
+    var isSeparateModule = ["patients", "leads", "contracting_entities", "clinic_info", "admin", "accounting", "tasks", "inventory"].indexOf(tab) !== -1;
     var tabsBar = document.getElementById("tabs-bar");
     if (tabsBar) tabsBar.style.display = isSeparateModule ? "none" : "";
     var mmTabs = document.querySelector("#mobile-menu .mm-tabs");
     if (mmTabs) mmTabs.style.display = isSeparateModule ? "none" : "";
+
+    var inventoryNavigation = document.getElementById("inventory-navigation");
+    if (inventoryNavigation) { inventoryNavigation.innerHTML = ""; inventoryNavigation.hidden = true; }
 
     var renderer = RENDERERS[tab];
     var previousView=document.getElementById('view-container');
