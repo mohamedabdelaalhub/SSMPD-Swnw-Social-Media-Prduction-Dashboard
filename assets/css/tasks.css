@@ -133,3 +133,13 @@
  .tsk-tree-subtasks{margin-right:4px;padding-right:8px}
  .tsk-child .tsk-meta>span:nth-child(1){display:none}
 }
+
+.tsk-tree-row{display:flex;align-items:center;gap:7px;padding:6px 0}
+.tsk-tree-row .tsk-mini{flex:1;min-width:170px}
+.tsk-tree-status{font-size:11px;font-weight:700;padding:4px 7px;border-radius:10px;background:#edf2f7;white-space:nowrap}
+.tsk-tree-status.s-done{background:#e6f5ec;color:#26734d}
+.tsk-tree-status.s-review{background:#fff5db;color:#8a6200}
+.tsk-tree-status.s-blocked{background:#fde9e7;color:#a33e29}
+.tsk-tree-task.is-subtask{border-color:#58a88b}
+.tsk-tree-task.is-subtask>.tsk-tree-row{background:#f4faf7;border-radius:10px;padding:7px}
+@media(max-width:680px){.tsk-tree-row{flex-wrap:wrap}.tsk-tree-row .tsk-mini{flex-basis:100%}}
