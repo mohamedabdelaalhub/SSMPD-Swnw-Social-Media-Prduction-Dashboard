@@ -60,7 +60,7 @@ begin
 end $$;
 
 -- المواد الجاهزة للنقل: منشورة من يومين على الأقل، وفيها ملفات على Supabase.
--- بنستثني الكاروسيل/الفيديو المنشور على الموقع (مزامنة الموقع لسه بتحتاج ملف Supabase للنوعين دول).
+-- (المنشور على الموقع بيتنقل برضه: عامل نشر الموقع بقى بيقرأ الصور والشرايح والفيديو من الدرايف.)
 create or replace function public.content_archive_candidates(p_limit integer default 2, p_content uuid default null)
 returns table(content_id uuid, title text, brand text, content_format text, published_at timestamptz,
               design_file_url text, carousel_slides jsonb, cover_image_url text)
@@ -80,8 +80,6 @@ language sql stable security definer set search_path = public as $$
       or (jsonb_typeof(c.carousel_slides) = 'array' and c.carousel_slides::text like '%/storage/v1/object/authenticated/content-designs/%')
       or c.cover_settings->>'cover_image_url' like '%/storage/v1/object/authenticated/content-designs/%'
     )
-    and not (c.content_format in ('carousel','video')
-             and exists (select 1 from public.website_publications w where w.content_id = c.id and w.action = 'upsert'))
   order by c.published_at
   limit greatest(1, least(coalesce(p_limit, 2), 5));
 $$;
@@ -143,6 +141,13 @@ begin
   if v_final is not null and v_old_design is not null and v_new_design is distinct from v_old_design then
     update public.design_versions set output_file_url = v_new_design, source_file_url = null where id = v_final;
   end if;
+  -- لو المادة منشورة على الموقع: نظبط روابط الملفات في طلب النشر المحفوظ على الدرايف كمان (من غير إعادة نشر)
+  update public.website_publications w
+     set payload = w.payload || jsonb_strip_nulls(jsonb_build_object(
+           '_imageUrl', case when w.payload->>'_imageUrl' = v_old_design then to_jsonb(v_new_design) end,
+           '_videoUrl', case when w.payload->>'_videoUrl' = v_old_design then to_jsonb(v_new_design) end,
+           '_slides', case when jsonb_typeof(w.payload->'_slides') = 'array' then v_new_slides end))
+   where w.content_id = p_content_id;
   perform set_config('ssmpd.media_archive', '', true);
   return jsonb_build_object('ok', true, 'design', v_new_design);
 end $$;
@@ -189,3 +194,31 @@ grant execute on function public.content_archive_candidates(integer, uuid) to se
 grant execute on function public.content_archive_commit(uuid) to service_role;
 grant execute on function public.content_archive_pending_cleanup(integer) to service_role;
 grant execute on function public.content_archive_mark_cleared(uuid, text[]) to service_role;
+
+-- نشر تلقائي على الموقع: أي مادة بتتحول لـ "منشورة" (من ميتا أو يدوي) بتتحط عليها منصة الموقع وبتتطلب للنشر فوراً.
+-- لو طلب الموقع فشل، نشر السوشيال ما بيتعطلش (بيتنشر بعدين من زرار "نشر على الموقع").
+create or replace function public.website_auto_platform()
+returns trigger language plpgsql set search_path = public as $$
+begin
+  if new.stage = 'published' and old.stage is distinct from 'published'
+     and not (coalesce(new.publish_platforms, '[]'::jsonb) ? 'website' or new.publish_platform = 'website') then
+    new.publish_platforms := coalesce(new.publish_platforms, '[]'::jsonb) || '["website"]'::jsonb;
+  end if;
+  return new;
+end $$;
+
+create or replace function public.website_auto_enqueue()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if new.stage = 'published' and old.stage is distinct from 'published' then
+    begin
+      perform public.website_enqueue(new.id, 'upsert');
+    exception when others then
+      raise warning 'website auto publish skipped for %: %', new.id, sqlerrm;
+    end;
+  end if;
+  return null;
+end $$;
+
+create trigger website_auto_platform before update on public.content_items for each row execute function public.website_auto_platform();
+create trigger website_auto_enqueue after update on public.content_items for each row execute function public.website_auto_enqueue();

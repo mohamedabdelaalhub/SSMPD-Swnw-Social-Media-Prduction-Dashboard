@@ -212,6 +212,9 @@ Deno.serve(async (req) => {
     try {
       if (!dryRun && left() > 10_000) {
         const listing = await admin.storage.from("meta-publish-assets").list("", { limit: 1000 });
+        // ملفات الدرايف اللي اتجهزت مؤقتاً لنشر الموقع (website-*) بتتمسح بعد يوم
+        const staleWebsite = (listing.data || []).filter((f) => f.id && f.name.startsWith("website-") && f.created_at && Date.parse(f.created_at) < Date.now() - 86400000).map((f) => f.name);
+        if (staleWebsite.length) { await removeAll("meta-publish-assets", staleWebsite); report.meta_assets_removed += staleWebsite.length; }
         const byJob = new Map<string, string[]>();
         for (const f of listing.data || []) {
           const match = /^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i.exec(f.name);
@@ -221,7 +224,7 @@ Deno.serve(async (req) => {
           const cutoff = new Date(Date.now() - 2 * 86400000).toISOString();
           const jobs = await admin.from("meta_publish_jobs").select("id").in("id", [...byJob.keys()]).eq("status", "published").lte("published_at", cutoff);
           const names = ((jobs.data || []) as { id: string }[]).flatMap((j) => byJob.get(j.id) || []);
-          if (names.length) { await removeAll("meta-publish-assets", names); report.meta_assets_removed = names.length; }
+          if (names.length) { await removeAll("meta-publish-assets", names); report.meta_assets_removed += names.length; }
         }
       }
     } catch (e) {

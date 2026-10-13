@@ -14,6 +14,12 @@ const assert=require('assert/strict'),fs=require('fs'),vm=require('vm'),{stripTy
  for(const url of ['https://drive.google.com.evil.test/file/d/id/view','http://drive.google.com/file/d/id/view','https://user:password@drive.google.com/file/d/id/view','https://evil.test/storage/v1/object/public/content-designs/a.png',origin+'/storage/v1/object/public/patient-files/a.png']){const n=calls.length;await assert.rejects(ctx.readWebsiteImage(db,url,origin),/UNSUPPORTED_IMAGE_SOURCE|INVALID_FILE/);assert.equal(calls.length,n);}
  status=403;await assert.rejects(ctx.readWebsiteImage(db,'https://drive.google.com/file/d/forbidden/view',origin),/DRIVE_IMAGE_ACCESS_DENIED/);status=200;large=true;await assert.rejects(ctx.readWebsiteImage(db,'https://drive.google.com/file/d/large/view',origin),/INVALID_FILE/);
  large=false;ctx.Deno.env.get=()=>undefined;vm.runInContext('googleTokenCache=null',ctx);await assert.rejects(ctx.readWebsiteImage(db,'https://drive.google.com/file/d/id/view',origin),/DRIVE_SERVICE_ACCOUNT_MISSING/);
+ // Drive-hosted slides/videos are staged temporarily for the website (signed 2h link), never published from a public path.
+ {const up=[],sign=[];const stage={storage:{from:bucket=>({upload:async(path,bytes,opt)=>{up.push({bucket,path,type:opt.contentType,upsert:opt.upsert});return {error:null};},createSignedUrl:async(path,ttl)=>{sign.push({bucket,path,ttl});return {data:{signedUrl:'https://signed.example/'+path},error:null};}})}};
+  assert.equal(await ctx.stageForWebsite(stage,'cid','slide-1.png',png,'image/png'),'https://signed.example/website-cid-slide-1.png');
+  assert.deepEqual(up[0],{bucket:'meta-publish-assets',path:'website-cid-slide-1.png',type:'image/png',upsert:true});assert.equal(sign[0].ttl,7200);
+  assert.deepEqual(JSON.parse(JSON.stringify(ctx.sniffImage(png))),{ext:'png',mime:'image/png'});assert.equal(ctx.sniffImage(new Uint8Array([1,2,3,4,5,6,7,8,9,10,11,12])),null);
+  await assert.rejects(ctx.stageForWebsite({storage:{from:()=>({upload:async()=>({error:{message:'x'}})})}},'cid','v.mp4',png,'video/mp4'),/IMAGE_DOWNLOAD_FAILED/);}
  // Syntax-check the entire function after stripping TS/imports, without invoking a live service.
  new vm.Script(stripTypeScriptTypes(source.replace(/^import .*\n/gm,'')));
  console.log('PASS: authenticated/signed/public storage, legacy Meta assets, Drive links, real JWT signing with mock OAuth, token reuse, fixed endpoints, host/bucket rejection, denied access, oversized stream, missing credentials, full function syntax. No live publication.');

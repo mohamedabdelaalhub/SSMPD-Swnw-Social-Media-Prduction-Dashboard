@@ -102,18 +102,35 @@ function driveImageId(value) {
   return id&&/^[\w-]+$/.test(id)?id:null;
  }catch{return null;}
 }
+// قراءة ملف من Google Drive بحساب الخدمة (للصور والشرايح والفيديو المؤرشفين على الدرايف).
+async function readDriveFile(driveId,maxBytes,timeoutMs=30000) {
+ const token=await getGoogleDriveAccessToken();
+ const response=await fetch('https://www.googleapis.com/drive/v3/files/'+encodeURIComponent(driveId)+'?alt=media&supportsAllDrives=true',{headers:{Authorization:'Bearer '+token},redirect:'error',signal:AbortSignal.timeout(timeoutMs)});
+ if(!response.ok)throw Error(response.status===403||response.status===404?'DRIVE_IMAGE_ACCESS_DENIED':'IMAGE_DOWNLOAD_FAILED');
+ if(Number(response.headers.get('content-length'))>maxBytes){await response.body?.cancel();throw Error('INVALID_FILE');}
+ const reader=response.body?.getReader();if(!reader)throw Error('INVALID_FILE');
+ let length=0;const chunks=[];
+ try{while(true){const next=await reader.read();if(next.done)break;length+=next.value.length;if(length>maxBytes){await reader.cancel();throw Error('INVALID_FILE');}chunks.push(next.value);}}finally{reader.releaseLock();}
+ const bytes=new Uint8Array(length);let offset=0;for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.length;}return bytes;
+}
+function sniffImage(bytes) {
+ if(bytes[0]===255&&bytes[1]===216&&bytes[2]===255)return {ext:'jpg',mime:'image/jpeg'};
+ if(bytes.slice(0,8).join(',')==='137,80,78,71,13,10,26,10')return {ext:'png',mime:'image/png'};
+ if(new TextDecoder().decode(bytes.slice(0,4))==='RIFF'&&new TextDecoder().decode(bytes.slice(8,12))==='WEBP')return {ext:'webp',mime:'image/webp'};
+ return null;
+}
+// الموقع بيحمّل الشرايح والفيديو من روابط مؤقتة (ساعتين): ملفات الدرايف بنحطها مؤقتاً في meta-publish-assets (بتتمسح تلقائياً بعد يوم).
+async function stageForWebsite(db,contentId,name,bytes,contentType) {
+ const path='website-'+contentId+'-'+name;
+ const up=await db.storage.from('meta-publish-assets').upload(path,bytes,{contentType,upsert:true});
+ if(up.error)throw Error('IMAGE_DOWNLOAD_FAILED');
+ const signed=await db.storage.from('meta-publish-assets').createSignedUrl(path,7200);
+ if(signed.error||!signed.data)throw Error('IMAGE_DOWNLOAD_FAILED');
+ return signed.data.signedUrl;
+}
 async function readWebsiteImage(db,sourceUrl,origin) {
  const driveId=driveImageId(sourceUrl);
- if(driveId){
-  const token=await getGoogleDriveAccessToken();
-  const response=await fetch('https://www.googleapis.com/drive/v3/files/'+encodeURIComponent(driveId)+'?alt=media&supportsAllDrives=true',{headers:{Authorization:'Bearer '+token},redirect:'error',signal:AbortSignal.timeout(30000)});
-  if(!response.ok)throw Error(response.status===403||response.status===404?'DRIVE_IMAGE_ACCESS_DENIED':'IMAGE_DOWNLOAD_FAILED');
-  if(Number(response.headers.get('content-length'))>5*1024*1024){await response.body?.cancel();throw Error('INVALID_FILE');}
-  const reader=response.body?.getReader();if(!reader)throw Error('INVALID_FILE');
-  let length=0;const chunks=[];
-  try{while(true){const next=await reader.read();if(next.done)break;length+=next.value.length;if(length>5*1024*1024){await reader.cancel();throw Error('INVALID_FILE');}chunks.push(next.value);}}finally{reader.releaseLock();}
-  const bytes=new Uint8Array(length);let offset=0;for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.length;}return bytes;
- }
+ if(driveId)return readDriveFile(driveId,5*1024*1024,30000);
  const source=new URL(sourceUrl),prefix='/storage/v1/object/';
  if(source.origin!==origin||source.protocol!=='https:'||source.username||source.password||!source.pathname.startsWith(prefix))throw Error('UNSUPPORTED_IMAGE_SOURCE');
  const path=decodeURIComponent(source.pathname.slice(prefix.length)).replace(/^(authenticated|sign|public)\//,'');
@@ -159,6 +176,11 @@ Deno.serve(async(req)=>{
    if(job.action==='upsert' && Array.isArray(job.payload._slides) && job.payload._slides.length>1){
     const images=[];
     for(const [i,slide] of job.payload._slides.slice(0,10).entries()){
+     const slideDrive=driveImageId(slide);
+     if(slideDrive){
+      const bytes=await readDriveFile(slideDrive,8*1024*1024,60000),kind=sniffImage(bytes);if(!kind)throw Error('INVALID_FILE');
+      images.push({index:i+1,url:await stageForWebsite(db,job.content_id,'slide-'+(i+1)+'.'+kind.ext,bytes,kind.mime),mime:kind.mime});continue;
+     }
      const k=privateKey(slide,new URL(url).origin,'content-designs',job.content_id);if(!k)throw Error('INVALID_FILE');
      const {data:signed,error:signError}=await db.storage.from('content-designs').createSignedUrl(k,7200);
      if(signError||!signed)throw Error('IMAGE_DOWNLOAD_FAILED');
@@ -166,7 +188,10 @@ Deno.serve(async(req)=>{
     }
     body.images=images;
    }
-   if(job.action==='upsert' && job.payload._videoUrl){
+   if(job.action==='upsert' && job.payload._videoUrl && driveImageId(job.payload._videoUrl)){
+    const bytes=await readDriveFile(driveImageId(job.payload._videoUrl),35*1024*1024,110000);
+    body.video={url:await stageForWebsite(db,job.content_id,'video.mp4',bytes,'video/mp4'),mime:'video/mp4',expiresInSeconds:7200};
+   }else if(job.action==='upsert' && job.payload._videoUrl){
     const k=privateKey(job.payload._videoUrl,new URL(url).origin,'video-inputs',null);if(!k)throw Error('INVALID_FILE');
     const {data:signed,error:signError}=await db.storage.from('video-inputs').createSignedUrl(k,7200);
     if(signError||!signed)throw Error('VIDEO_DOWNLOAD_FAILED');
