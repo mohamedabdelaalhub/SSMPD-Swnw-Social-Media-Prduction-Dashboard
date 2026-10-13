@@ -39,7 +39,10 @@
     function refresh(){return window.SSMPDDb.taskRefreshOverdue().catch(function(){return 0;}).then(function(){return Promise.all([
       window.SSMPDDb.taskListProjects(),window.SSMPDDb.taskListVisible(),window.SSMPDDb.taskPeople(),
       window.SSMPDDb.taskListNotifications()
-    ]);}).then(function(v){state.projects=v[0]||[];state.tasks=v[1]||[];state.people=v[2]||[];state.notifications=v[3]||[];state.error="";draw();}).catch(function(e){state.error=e&&e.message||"تعذر تحميل المهام";draw();});}
+    ]);}).then(function(v){state.projects=v[0]||[];state.tasks=v[1]||[];state.people=v[2]||[];state.notifications=v[3]||[];state.error="";draw();}).catch(function(e){var raw=e&&e.message||"تعذر تحميل المهام";
+      state.error=/schema cache|could not find function/i.test(raw)
+        ?"دوال المهام غير ظاهرة بعد في Supabase. نفّذ في SQL Editor: NOTIFY pgrst, 'reload schema'; ثم حدّث الصفحة."
+        :raw;draw();});}
     function draw(){
       var unread=state.notifications.filter(function(n){return !n.read_at;}).length;
       var allVisible=state.tasks.filter(function(t){return state.filter==="all"||t.status===state.filter;});
