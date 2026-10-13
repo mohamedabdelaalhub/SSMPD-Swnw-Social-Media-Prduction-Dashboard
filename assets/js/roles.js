@@ -76,6 +76,7 @@
     canModuleAction: function (adminOrRole, module, action) {
       var admin = normalizeAdmin(adminOrRole);
       if (Roles.isControlledFinance(admin)) {
+        if (module==="inventory") return action==="view"||action==="create"||action==="update";
         var rows=admin.module_permissions||[], row=rows.find(function(p){return p.module_key===module;});
         return !!row && row.can_view===true && (action==='view'||row['can_'+action]===true) && !(module==='tasks'&&action==='delete');
       }
