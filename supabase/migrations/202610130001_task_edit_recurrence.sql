@@ -51,10 +51,10 @@ begin
     when 'week' then now()+make_interval(days=>p_interval_value*7)
     else now()+make_interval(months=>p_interval_value) end;
   insert into public.task_recurrences(project_id,parent_task_id,created_by,assignee_id,title,description,expected_output,priority,
-    interval_value,interval_unit,due_offset_days,next_run_at,ends_at)
+    interval_value,interval_unit,due_offset_days,next_run_at,ends_at,active)
   values(p_project_id,p_parent_task_id,public.my_admin_id(),p_assignee_id,trim(p_title),coalesce(p_description,''),coalesce(p_expected_output,''),
     case when p_priority in ('low','normal','high','urgent') then p_priority else 'normal' end,p_interval_value,p_interval_unit,
-    case when p_due_at is null then null else (p_due_at::date-current_date) end,v_next,p_ends_at)
+    case when p_due_at is null then null else (p_due_at::date-current_date) end,v_next,p_ends_at,(p_ends_at is null or v_next::date<=p_ends_at))
   returning id into v_series_id;
   update public.tasks set recurrence_id=v_series_id,recurrence_occurrence=0 where id=v_task_id;
   return v_task_id;
@@ -100,10 +100,10 @@ begin
       when 'week' then now()+make_interval(days=>p_interval_value*7)
       else now()+make_interval(months=>p_interval_value) end;
     insert into public.task_recurrences(project_id,parent_task_id,created_by,assignee_id,title,description,expected_output,priority,
-      interval_value,interval_unit,due_offset_days,next_run_at,ends_at)
+      interval_value,interval_unit,due_offset_days,next_run_at,ends_at,active)
     values(v_task.project_id,v_task.parent_task_id,public.my_admin_id(),p_assignee_id,trim(p_title),coalesce(p_description,''),
       coalesce(p_expected_output,''),case when p_priority in ('low','normal','high','urgent') then p_priority else 'normal' end,
-      p_interval_value,p_interval_unit,case when p_due_at is null then null else (p_due_at::date-current_date) end,v_next,p_ends_at)
+      p_interval_value,p_interval_unit,case when p_due_at is null then null else (p_due_at::date-current_date) end,v_next,p_ends_at,(p_ends_at is null or v_next::date<=p_ends_at))
     returning id into v_series_id;
     update public.tasks set recurrence_id=v_series_id,recurrence_occurrence=0 where id=p_task_id;
   end if;
