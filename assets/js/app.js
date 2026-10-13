@@ -168,7 +168,7 @@
       return mainSuiteTabs.map(function (t) { return '<button class="tab-btn" data-tab="' + t + '">' + window.SSMPDI18n.textHtml(TAB_LABELS[t]) + '</button>'; }).join("");
     }
     var ddItems = '';
-    if (mainSuiteTabs.length) ddItems += '<button class="ud-item" data-goto="' + mainSuiteTabs[0] + "\"> <!--ssmpd-i18n:%D8%A5%D9%86%D8%AA%D8%A7%D8%AC%20%D8%A7%D9%84%D9%85%D8%AD%D8%AA%D9%88%D9%89-->إنتاج المحتوى</button>";
+    if (mainSuiteTabs.length) ddItems += '<button class="ud-item" data-goto="'+mainSuiteTabs[0]+'">'+window.SSMPDI18n.textHtml(R.isControlledFinance(admin)?TAB_LABELS[mainSuiteTabs[0]]:'إنتاج المحتوى')+'</button>';
     if (tabs.indexOf("patients") !== -1) ddItems += "<button class=\"ud-item\" data-goto=\"patients\"> <!--ssmpd-i18n:%D8%A3%D8%B1%D8%B4%D9%8A%D9%81%20%D8%A7%D9%84%D9%85%D8%B1%D8%B6%D9%89-->أرشيف المرضى</button>";
     if (tabs.indexOf("leads") !== -1) ddItems += "<button class=\"ud-item\" data-goto=\"leads\"> <!--ssmpd-i18n:%D8%A5%D8%AF%D8%A7%D8%B1%D8%A9%20%D8%A7%D9%84%D9%84%D9%8A%D8%AF%D8%B2%20%D9%88%D8%A7%D9%84%D8%AA%D9%88%D8%A7%D8%B5%D9%84-->إدارة الليدز والتواصل</button>";
     if (tabs.indexOf("tasks") !== -1) ddItems += '<button class="ud-item" data-goto="tasks">المهام</button>';
@@ -287,7 +287,8 @@
     // — كده الريفريش/رجوع للصفحة (F5) ما يرجعش المستخدم للرئيسية من غير داعي
     var savedTab = null;
     try { savedTab = sessionStorage.getItem(ACTIVE_TAB_KEY); } catch (e) {}
-    var startTab = (savedTab && tabs.indexOf(savedTab) !== -1) ? savedTab : R.defaultTab(admin);
+    var preferred=R.defaultTab(admin);
+    var startTab = (savedTab && tabs.indexOf(savedTab) !== -1) ? savedTab : (tabs.indexOf(preferred)!==-1?preferred:tabs[0]);
     switchTab(startTab);
     setupRealtime();
   }
@@ -525,6 +526,7 @@
   // على أي حد مش هيستخدمه). Ctrl+K/⌘K يفوكّس الحقل، Enter يبحث، Escape يقفل.
   function setupGlobalSearch(admin, tabs) {
     var input = document.getElementById("global-search-input");
+    if(R.isControlledFinance(admin)){if(input){input.disabled=true;input.placeholder='استخدم البحث والفلاتر داخل القسم';}return;}
     var resultsBox = document.getElementById("global-search-results");
     if (!input || !resultsBox) return;
 
@@ -673,6 +675,9 @@
   }
 
   function switchTab(tab) {
+    var activeAdmin=window.SSMPDAuth.currentAdmin;
+    if(!tab || !R.canSeeTab(activeAdmin,tab)){var slot=document.getElementById('view-container');if(slot)slot.innerHTML='<div class="section"><h3>لم تُحدد صلاحيات أقسام لهذا الحساب</h3><p>السوبر أدمن يحدد الأقسام المتاحة من لوحة التحكم.</p></div>';return;}
+
     removeRefreshNotice();
     currentTab = tab;
     try { sessionStorage.setItem(ACTIVE_TAB_KEY, tab); } catch (e) {}
@@ -886,5 +891,6 @@
     });
   });
 })();
+
 
 

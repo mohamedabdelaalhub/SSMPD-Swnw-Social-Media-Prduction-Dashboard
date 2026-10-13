@@ -75,7 +75,13 @@
     });
   }
 
+  function applyPermissions(root){
+    var R=window.SSMPDRoles,a=window.SSMPDAuth.currentAdmin;
+    [['create','[id^="acc-add-"]'],['update','[data-edit-supply],[data-edit-service],[data-edit-package]'],['delete','[data-del-supply],[data-del-service],[data-del-package]']].forEach(function(pair){if(!R.canModuleAction(a,'accounting',pair[0]))root.querySelectorAll(pair[1]).forEach(function(el){el.hidden=true;el.disabled=true;el.onclick=null;});});
+  }
   function render(container) {
+    if(!window.SSMPDRoles.canModuleAction(window.SSMPDAuth.currentAdmin,'accounting','view')){container.innerHTML='<p>ليس لديك صلاحية عرض الحسابات.</p>';return;}
+
     me = window.SSMPDAuth.currentAdmin;
     var subs = [
       { key: "pricing", label: "تسعير الخدمات" },
@@ -105,6 +111,7 @@
   function renderSub(subView, container) {
     if (state.subTab === "packages") renderPackagesScreen(subView, container);
     else renderPricingScreen(subView, container);
+    applyPermissions(subView);
   }
 
   // ============ ١) تسعير الخدمات ============
@@ -473,4 +480,5 @@
 
   window.SSMPDRenderAccounting = { render: render };
 })();
+
 

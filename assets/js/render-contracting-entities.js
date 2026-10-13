@@ -17,6 +17,8 @@
   function tr(text) { return window.SSMPDI18n ? window.SSMPDI18n.t(text) : text; }
   function label(text) { return window.SSMPDI18n ? window.SSMPDI18n.textHtml(text) : esc(text); }
 
+  function applyPermissions(root){var R=window.SSMPDRoles,a=window.SSMPDAuth.currentAdmin;[['create','#ce-new,#ced-add,#ced-link'],['update','[data-edit-contract],[data-upload-contract]']].forEach(function(pair){if(!R.canModuleAction(a,'contracting_entities',pair[0]))root.querySelectorAll(pair[1]).forEach(function(el){el.hidden=true;el.disabled=true;el.onclick=null;});});if(!R.canModuleAction(a,'contracting_entities','create'))root.querySelectorAll('#ced-note,#ced-type,#ced-follow').forEach(function(el){el.disabled=true;});}
+  function canSuspend(){return window.SSMPDRoles.isControlledFinance(window.SSMPDAuth.currentAdmin)?window.SSMPDRoles.canModuleAction(window.SSMPDAuth.currentAdmin,'contracting_entities','update'):canDelete();}
   function canDelete() { return window.SSMPDRoles.canDeleteContractingEntity(window.SSMPDAuth.currentAdmin); }
 
   function suspendContracts(entityId, contracts, done, bd) {
@@ -27,7 +29,7 @@
   }
 
   function suspendEntity(entityId, done) {
-    if (!canDelete()) return T.show(tr("التعليق متاح للسوبر أدمن والمدير فقط"), "error");
+    if (!canSuspend()) return T.show(tr("التعليق متاح للسوبر أدمن والمدير فقط"), "error");
     window.SSMPDDb.getContractingEntityDetails(entityId).then(function (d) {
       var open = d.contracts.filter(function (c) { return c.status === "active" || c.status === "negotiating"; });
       if (!open.length) return T.show(tr("لا توجد عقود سارية لتعليقها"), "error");
@@ -62,6 +64,7 @@
   }
 
   function render(container) {
+    if(!window.SSMPDRoles.canModuleAction(window.SSMPDAuth.currentAdmin,"contracting_entities","view")){container.innerHTML="<p>ليس لديك صلاحية عرض جهات التعاقد.</p>";return;}
     me = window.SSMPDAuth.currentAdmin;
     container.innerHTML = '<div id="ce-view"><div class="loading">بيحمّل جهات التعاقد…</div></div>';
     load(container);
@@ -76,7 +79,7 @@
       var html = "<div class=\"section\"><div style=\"display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;\"><div><h2 style=\"margin:0 0 4px;\"> <!--ssmpd-i18n:%D8%AC%D9%87%D8%A7%D8%AA%20%D8%A7%D9%84%D8%AA%D8%B9%D8%A7%D9%82%D8%AF-->جهات التعاقد</h2><p style=\"margin:0;color:var(--c-muted);font-size:13px;\">تتبّع الجهات، العقود، المرضى المرتبطين، والإيراد الموثق من فواتير الخدمات.</p></div><button class=\"btn\" id=\"ce-new\">إضافة جهة تعاقد</button></div>" +
         '<div class="kpis" style="margin-top:16px;"><div class="kpi-card"><div class="label">جهات نشطة</div><div class="value">' + active.length + '</div></div><div class="kpi-card"><div class="label">قيد التفاوض</div><div class="value">' + negotiating.length + "</div></div><div class=\"kpi-card\"><div class=\"label\"> <!--ssmpd-i18n:%D9%85%D8%B1%D8%B6%D9%89%20%D9%85%D8%B1%D8%AA%D8%A8%D8%B7%D9%88%D9%86-->مرضى مرتبطون</div><div class=\"value\">" + rows.reduce(function (n, r) { return n + Number(r.patients_count || 0); }, 0) + "</div></div><div class=\"kpi-card\"><div class=\"label\"> <!--ssmpd-i18n:%D8%A5%D9%8A%D8%B1%D8%A7%D8%AF%20%D9%85%D9%88%D8%AB%D9%82-->إيراد موثق</div><div class=\"value small\">" + money(revenue) + '</div></div></div></div>';
       var thead = "<div style=\"overflow:auto;\"><table><thead><tr><th>الجهة</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%86%D9%88%D8%B9-->النوع</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AD%D8%A7%D9%84%D8%A9-->الحالة</th><th>نهاية العقد</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%AA%D8%A7%D8%A8%D8%B9%D8%A9%20%D8%A7%D9%84%D9%82%D8%A7%D8%AF%D9%85%D8%A9-->المتابعة القادمة</th><th>المرضى</th><th>الإيراد الموثق</th><th></th></tr></thead><tbody>";
-      function rowHtml(r) { return '<tr><td><b>' + esc(r.entity_name) + '</b></td><td>' + (TYPES[r.entity_type] || r.entity_type) + '</td><td>' + statusPill(r.contract_status) + '</td><td>' + date(r.end_date) + '</td><td>' + date(r.next_follow_up_date) + '</td><td>' + Number(r.patients_count || 0) + '</td><td>' + money(r.documented_revenue) + '</td><td><button class="btn ghost sm" data-open="' + r.entity_id + '">فتح الملف</button>' + (canDelete() && r.contract_status && r.contract_status !== "suspended" ? ' <button class="btn ghost sm" data-suspend-entity="' + r.entity_id + '">' + label("تعليق التعاقد") + '</button>' : "") + (canDelete() ? ' <button class="btn ghost sm" style="color:#b42318;" data-delete-entity="' + r.entity_id + '">' + label("حذف") + '</button>' : "") + '</td></tr>'; }
+      function rowHtml(r) { return '<tr><td><b>' + esc(r.entity_name) + '</b></td><td>' + (TYPES[r.entity_type] || r.entity_type) + '</td><td>' + statusPill(r.contract_status) + '</td><td>' + date(r.end_date) + '</td><td>' + date(r.next_follow_up_date) + '</td><td>' + Number(r.patients_count || 0) + '</td><td>' + money(r.documented_revenue) + '</td><td><button class="btn ghost sm" data-open="' + r.entity_id + '">فتح الملف</button>' + (canSuspend() && r.contract_status && r.contract_status !== "suspended" ? ' <button class="btn ghost sm" data-suspend-entity="' + r.entity_id + '">' + label("تعليق التعاقد") + '</button>' : "") + (canDelete() ? ' <button class="btn ghost sm" style="color:#b42318;" data-delete-entity="' + r.entity_id + '">' + label("حذف") + '</button>' : "") + '</td></tr>'; }
       var GROUPS = [["active", "تم التعاقد"], ["negotiating", "قيد التفاوض"], ["suspended", "معلّق"], ["expired", "منتهي"], ["rejected", "مرفوض"], ["", "بدون عقد"]];
       html += '<div class="section">';
       if (!rows.length) html += '<p style="text-align:center;color:var(--c-muted);padding:24px;">لا توجد جهات تعاقد مسجلة بعد.</p>';
@@ -95,6 +98,7 @@
       container.querySelectorAll("[data-delete-entity]").forEach(function (b) { b.onclick = function () { var row = rows.find(function (r) { return r.entity_id === b.getAttribute("data-delete-entity"); }); if (row) openDelete({ id: row.entity_id, name: row.entity_name }, function () { load(container); }); }; });
       container.querySelectorAll("[data-suspend-entity]").forEach(function (b) { b.onclick = function () { b.disabled = true; suspendEntity(b.getAttribute("data-suspend-entity"), function () { load(container); }); setTimeout(function () { b.disabled = false; }, 1500); }; });
       document.getElementById("ce-new").onclick = function () { openCreate(container); };
+      applyPermissions(container);
       container.querySelectorAll("[data-open]").forEach(function (b) { b.onclick = function () { openDetails(b.getAttribute("data-open"), container); }; });
     }).catch(function (e) { container.querySelector("#ce-view").innerHTML = '<div class="section"><p>تعذر تحميل جهات التعاقد: ' + esc(e.message) + '</p></div>'; });
   }
@@ -148,6 +152,7 @@
           if (contract) openEditContract(contract, function () { reload(); load(container); });
         }; });
         bd.querySelectorAll("[data-upload-contract]").forEach(function (b) { b.onclick = function () { openContractUpload(b.getAttribute("data-upload-contract"), reload); }; });
+        applyPermissions(bd);
       }).catch(function (e) { bd.querySelector(".modal").innerHTML = '<div class="modal-head"><h3>خطأ</h3><button class="modal-close">×</button></div><p>' + esc(e.message) + '</p>'; bd.querySelector(".modal-close").onclick = function () { bd.remove(); }; });
     }
     reload();
@@ -226,5 +231,6 @@
 
   window.SSMPDRenderContractingEntities = { render: render };
 })();
+
 
 

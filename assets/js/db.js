@@ -167,6 +167,8 @@
   var Db = {
     client: client,
 
+    listModulePermissions: function (adminId) { return handle(client.from("admin_module_permissions").select("module_key,can_view,can_create,can_update,can_delete").eq("admin_id",adminId)); },
+    saveModulePermissions: function (adminId,permissions) { return handle(client.rpc("set_admin_module_permissions",{p_admin_id:adminId,p_permissions:permissions})); },
     // ---------- admins ----------
     getMyAdminRow: function (userId) {
       return handle(client.from("admins").select("*").eq("user_id", userId).maybeSingle());
@@ -1320,5 +1322,6 @@
     "إلى أي مدى قد ترشح عيادات سونو لعائلتك وأصدقائك؟"
   ];
 })();
+
 
 

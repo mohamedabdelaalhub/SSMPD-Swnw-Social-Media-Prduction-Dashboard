@@ -1,3 +1,13 @@
+-- Keep permission checks compatible whether finance roles are activated before or after this file.
+do $compat$ begin
+ if to_regprocedure('public.finance_module_allowed(text,text)') is null then
+  execute $definition$create function public.finance_module_allowed(p_module text,p_action text)
+  returns boolean language sql stable security definer set search_path=public as $$select public.my_admin_id() is not null$$$definition$;
+ end if;
+end $compat$;
+revoke all on function public.finance_module_allowed(text,text) from public;
+grant execute on function public.finance_module_allowed(text,text) to authenticated;
+
 -- Edit task details and generate recurring tasks server-side.
 create table if not exists public.task_recurrences (
   id uuid primary key default gen_random_uuid(),
@@ -35,6 +45,15 @@ drop policy if exists task_recurrences_manage on public.task_recurrences;
 create policy task_recurrences_manage on public.task_recurrences for all to authenticated
   using (public.task_can_manage_project(project_id)) with check (public.task_can_manage_project(project_id));
 grant select,insert,update on public.task_recurrences to authenticated;
+drop policy if exists "finance recurrence select" on public.task_recurrences;
+create policy "finance recurrence select" on public.task_recurrences as restrictive for select to authenticated using (public.finance_module_allowed('tasks','view'));
+drop policy if exists "finance recurrence insert" on public.task_recurrences;
+create policy "finance recurrence insert" on public.task_recurrences as restrictive for insert to authenticated with check (public.finance_module_allowed('tasks','create'));
+drop policy if exists "finance recurrence update" on public.task_recurrences;
+create policy "finance recurrence update" on public.task_recurrences as restrictive for update to authenticated using (public.finance_module_allowed('tasks','update')) with check (public.finance_module_allowed('tasks','update'));
+drop policy if exists "finance recurrence delete" on public.task_recurrences;
+create policy "finance recurrence delete" on public.task_recurrences as restrictive for delete to authenticated using (public.finance_module_allowed('tasks','delete'));
+
 
 create or replace function public.task_create_recurring(
   p_project_id uuid,p_parent_task_id uuid,p_title text,p_description text,p_expected_output text,
@@ -68,8 +87,10 @@ create or replace function public.task_update_details(
 ) returns void language plpgsql security definer set search_path=public as $$
 declare v_task public.tasks%rowtype; v_series public.task_recurrences%rowtype; v_series_id uuid; v_due_offset integer; v_next timestamptz;
 begin
+  if not public.finance_module_allowed('tasks','update') then raise exception 'ليس لديك صلاحية تعديل المهام';end if;
   select * into v_task from public.tasks where id=p_task_id for update;
   if not found or not public.task_can_manage_project(v_task.project_id) then raise exception 'Not allowed to edit this task'; end if;
+  if p_repeat_active and v_task.recurrence_id is null and not public.finance_module_allowed('tasks','create') then raise exception 'تفعيل تكرار جديد يحتاج صلاحية إضافة المهام';end if;
   if length(trim(coalesce(p_title,'')))<2 or length(trim(p_title))>180 then raise exception 'Task title must be between 2 and 180 characters'; end if;
   if not exists(select 1 from public.admins where id=p_assignee_id and active) then raise exception 'Assignee is not active'; end if;
   if p_repeat_active and (p_interval_value not between 1 and 365 or p_interval_unit not in ('day','week','month')) then raise exception 'Invalid recurrence interval'; end if;
@@ -160,7 +181,7 @@ language sql stable security definer set search_path=public as $$
   from public.tasks t join public.task_projects p on p.id=t.project_id
   join public.admins a on a.id=t.assignee_id left join public.tasks pt on pt.id=t.parent_task_id
   left join public.task_recurrences r on r.id=t.recurrence_id
-  where public.task_can_manage_project(t.project_id) or t.assignee_id=public.my_admin_id()
+  where public.finance_module_allowed('tasks','view') and (public.task_can_manage_project(t.project_id) or t.assignee_id=public.my_admin_id())
   order by t.due_at nulls last,t.created_at desc;
 $$;
 revoke all on function public.task_list_visible() from public;
@@ -177,3 +198,4 @@ begin
 end $$;
 
 notify pgrst, 'reload schema';
+

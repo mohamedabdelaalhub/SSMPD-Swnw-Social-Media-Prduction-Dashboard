@@ -45,10 +45,12 @@
         (extra || []).forEach(function (r) { set[r.role] = true; });
         row.extra_roles = (extra || []).map(function (r) { return r.role; });
         row.roles = Object.keys(set);
-        return row;
+        if(!row.roles.some(function(role){return role==='accountant'||role==='financial_manager';}) || typeof window.SSMPDDb.listModulePermissions!=='function'){row.module_permissions=[];return row;}
+        return window.SSMPDDb.listModulePermissions(row.id).then(function(rows){row.module_permissions=rows||[];return row;},function(){row.module_permissions=[];return row;});
       }).catch(function () {
         row.extra_roles = [];
         row.roles = [row.role];
+        row.module_permissions=[];
         return row;
       });
     },
@@ -107,3 +109,4 @@
 
   window.SSMPDAuth = Auth;
 })();
+

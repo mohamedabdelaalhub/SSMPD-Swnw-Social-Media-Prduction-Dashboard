@@ -12,7 +12,9 @@
     customer_service: "خدمة عملاء",
     nursing: "تمريض",
     sono_doctor: "طبيب سونو",
-    contract_manager: "مسؤول التعاقدات"
+    contract_manager: "مسؤول التعاقدات",
+    accountant: "محاسب",
+    financial_manager: "مدير مالي"
   };
 
   // كل تاب: مين يشوفه — المدير العام يشوف كل حاجة زي السوبر أدمن ما عدا تاب المستخدمين
@@ -67,6 +69,21 @@
       return rolesList.some(function (r) { return mine.indexOf(r) !== -1; });
     },
 
+    isControlledFinance: function (adminOrRole) {
+      return Roles.hasAnyRole(adminOrRole, ["accountant", "financial_manager"]) && !Roles.hasAnyRole(adminOrRole, ["super_admin", "general_manager"]);
+    },
+    canModuleAction: function (adminOrRole, module, action) {
+      var admin = normalizeAdmin(adminOrRole);
+      if (Roles.isControlledFinance(admin)) {
+        var rows=admin.module_permissions||[], row=rows.find(function(p){return p.module_key===module;});
+        return !!row && row.can_view===true && (action==='view'||row['can_'+action]===true) && !(module==='tasks'&&action==='delete');
+      }
+      if(module==='accounting')return Roles.hasAnyRole(admin,["general_manager","super_admin"]);
+      if(module==='contracting_entities')return Roles.hasAnyRole(admin,action==='delete'?["general_manager","super_admin"]:["contract_manager","general_manager","super_admin"]);
+      if(module==='tasks')return action!=='delete';
+      return false;
+    },
+
     // كل أسماء أدوار المستخدم مجمّعة لعرض بادچ الدور — "خدمة عملاء، استقبال" مثلاً
     labelAll: function (adminOrRole) {
       return Roles.rolesOf(adminOrRole).map(Roles.label).join("، ");
@@ -76,6 +93,7 @@
     // has_archive_access المنفصلة عن الرول — لسه بيقبل الرول كـ string لوحده كمان
     canSeeTab: function (adminOrRole, tab) {
       var admin = normalizeAdmin(adminOrRole);
+      if (Roles.isControlledFinance(admin) && ["accounting","contracting_entities","tasks"].includes(tab))return Roles.canModuleAction(admin,tab,'view');
       if (tab === "patients") {
         return !!admin.has_archive_access || !!admin.has_archive_view_only ||
           Roles.hasRole(admin, "super_admin") || Roles.hasRole(admin, "nursing");
@@ -86,6 +104,12 @@
 
     defaultTab: function (adminOrRole) {
       var admin = normalizeAdmin(adminOrRole);
+      if (Roles.isControlledFinance(admin)) {
+        var tabs=["accounting","contracting_entities","tasks"];
+        var permitted=tabs.find(function(tab){return Roles.canSeeTab(admin,tab);});
+        if(permitted)return permitted;
+        var other=Object.keys(TAB_ACCESS).find(function(tab){return Roles.canSeeTab(admin,tab);});return other||null;
+      }
       if (Roles.hasRole(admin, "contract_manager")) return "contracting_entities";
       if (Roles.hasRole(admin, "reception") || Roles.hasRole(admin, "customer_service")) return "leads";
       if (Roles.hasRole(admin, "nursing")) return "patients";
@@ -120,7 +144,7 @@
     // اعتماد/رفض خطط ووكيل Media Buyer — مقصور على المدير العام/السوبر أدمن
     // بس (زي سياسة RLS "managers write media_buyer_plans/actions" بالظبط)
     canDeleteContractingEntity: function (adminOrRole) {
-      return Roles.hasAnyRole(adminOrRole, ["general_manager", "super_admin"]);
+      return Roles.canModuleAction(adminOrRole,"contracting_entities","delete");
     },
 
     canApproveMediaBuyer: function (adminOrRole) {
@@ -130,4 +154,5 @@
 
   window.SSMPDRoles = Roles;
 })();
+
 

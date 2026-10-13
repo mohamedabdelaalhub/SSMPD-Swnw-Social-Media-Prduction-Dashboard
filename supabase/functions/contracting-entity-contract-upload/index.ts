@@ -37,7 +37,9 @@ async function getCaller(req: Request) {
   if (!data) return null;
   const extra = ((data as unknown as { admin_extra_roles?: { role: string }[] }).admin_extra_roles || []).map((r) => r.role);
   const roles = [data.role, ...extra];
-  const allowed = roles.some((role) => ["super_admin", "general_manager", "contract_manager"].includes(role));
+  const controlledFinance = roles.some((r) => ["accountant", "financial_manager"].includes(r)) && !roles.some((r) => ["super_admin", "general_manager"].includes(r));
+  let allowed = roles.some((role) => ["super_admin", "general_manager", "contract_manager"].includes(role));
+  if(controlledFinance){const permission=await userClient.rpc("finance_module_allowed",{p_module:"contracting_entities",p_action:"update"});allowed=!permission.error&&permission.data===true;}
   return allowed ? { id: data.id } : null;
 }
 
@@ -99,3 +101,4 @@ Deno.serve(async (req) => {
     return json({ error: (error as Error).message }, 502);
   }
 });
+

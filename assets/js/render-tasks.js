@@ -21,21 +21,23 @@
       (t.return_note?'<p class="tsk-return"><b>ملاحظة المدير:</b> '+esc(t.return_note)+'</p>':"")+
       '<div class="tsk-actions">';
     var own=t.assignee_id===admin.id;
-    if(own&&t.status!=="done"&&t.status!=="review"){
+    if(window.SSMPDRoles.canModuleAction(admin,"tasks","update")&&own&&t.status!=="done"&&t.status!=="review"){
       if(t.status==="todo"||t.status==="revision") html+='<button class="btn btn-primary" data-action="progress" data-id="'+t.id+'">بدء المهمة</button>';
       else html+='<button class="btn" data-action="progress" data-id="'+t.id+'">تسجيل تحديث</button><button class="btn btn-primary" data-action="submit" data-id="'+t.id+'">إرسال للمراجعة</button>';
       html+='<button class="btn" data-action="blocked" data-id="'+t.id+'">تحديد كمتوقفة</button>';
     }
-    if(mayManage&&t.status==="review"){
+    if(window.SSMPDRoles.canModuleAction(admin,"tasks","update")&&mayManage&&t.status==="review"){
       html+='<button class="btn btn-primary" data-action="approve" data-id="'+t.id+'">اعتماد وإكمال</button><button class="btn btn-warn" data-action="return" data-id="'+t.id+'">إرجاع للتعديل</button>';
     }
     if(mayManage){
-      html+='<button class="btn" data-action="edit-task" data-id="'+t.id+'">تعديل المهمة</button><button class="btn" data-action="subtask" data-id="'+t.id+'">إضافة مهمة فرعية</button>';
+      if(window.SSMPDRoles.canModuleAction(admin,"tasks","update"))html+='<button class="btn" data-action="edit-task" data-id="'+t.id+'">تعديل المهمة</button>';
+      if(window.SSMPDRoles.canModuleAction(admin,"tasks","create"))html+='<button class="btn" data-action="subtask" data-id="'+t.id+'">إضافة مهمة فرعية</button>';
     }
     html+='<button class="btn btn-quiet" data-action="history" data-id="'+t.id+'">سجل التحديثات</button></div></div></article>';
     return html;
   }
   function render(el){
+    if(!window.SSMPDRoles.canModuleAction(window.SSMPDAuth.currentAdmin,"tasks","view")){el.innerHTML="<p>ليس لديك صلاحية عرض المهام.</p>";return;}
     var admin=window.SSMPDAuth.currentAdmin;
     var state={projects:[],tasks:[],people:[],notifications:[],modal:"",error:"",filter:"all"};
     var isAdmin=allManager(admin);
@@ -52,14 +54,14 @@
       var since=new Date(Date.now()-7*86400000);
       var week=state.tasks.filter(function(t){return new Date(t.updated_at)>=since;});
       var overdue=state.tasks.filter(function(t){return t.status!=="done"&&t.due_at&&new Date(t.due_at)<new Date();});
-      var canCreate=isAdmin||state.projects.some(function(p){return p.can_manage;});
+      var canCreate=window.SSMPDRoles.canModuleAction(admin,"tasks","create")&&(isAdmin||window.SSMPDRoles.isControlledFinance(admin));
       var pOpts=state.projects.map(function(p){return '<option value="'+p.id+'">'+esc(p.title)+'</option>';}).join("");
       var personOpts=state.people.map(function(p){return '<option value="'+p.id+'">'+esc(p.name||p.email)+'</option>';}).join("");
       var banner=state.error?'<div class="tsk-error">'+esc(state.error)+'</div>':"";
       var html='<section class="tsk-page" dir="rtl"><div class="tsk-head"><div><p class="tsk-eyebrow">تنظيم الشغل ومتابعته</p><h1>المهام والمشاريع</h1><p>حدّث تقدمك باستمرار، وسيظهر لك ما أُسند إليك فقط.</p></div><div class="tsk-head-actions"><button class="btn" data-action="notifications">الإشعارات'+(unread?' <b class="tsk-badge">'+unread+'</b>':"")+'</button>'+(canCreate?'<button class="btn btn-primary" data-action="new-project">+ مشروع / خطة عمل</button>':"")+'</div></div>'+banner;
       html+='<div class="tsk-stats"><div><span>تحديثات آخر 7 أيام</span><b>'+week.length+'</b></div><div><span>قيد المراجعة</span><b>'+state.tasks.filter(function(t){return t.status==="review";}).length+'</b></div><div><span>متأخرة</span><b>'+overdue.length+'</b></div><div><span>مكتملة</span><b>'+week.filter(function(t){return t.status==="done";}).length+'</b></div></div>';
-      if(state.projects.length){html+='<section class="tsk-panel"><div class="tsk-panel-head"><div><h2>المشاريع</h2><p>المدير وأعضاء الخطة وأدوارهم</p></div></div><div class="tsk-project-grid">'+(state.projects.map(function(p){var m=state.people.find(function(x){return x.id===p.manager_id;});var team=(p.members||[]).map(function(x){return esc(x.name)+" · "+({manager:"مدير مشارك",contributor:"عضو منفذ",reviewer:"مراجع"}[x.role]||"عضو");}).join("، ");return '<div class="tsk-project"><b>'+esc(p.title)+'</b><span>مدير المشروع: '+esc(m?m.name:"—")+'</span><small>'+esc(p.description||"بدون وصف")+'</small><small>الفريق: '+(team||"—")+'</small>'+(p.can_manage?'<button class="btn btn-small" data-action="new-task" data-project="'+p.id+'">إضافة مهمة</button>':"")+'</div>';}).join("")||'<p class="tsk-empty">لا توجد مشاريع حتى الآن.</p>')+'</div></section>';}
-      html+='<section class="tsk-panel"><div class="tsk-panel-head"><div><h2>'+(isAdmin?"كل المهام المسموح لك بمتابعتها":"مهامي")+'</h2><p>اكتب ما أنجزته عند كل تحديث. الإكمال النهائي يحتاج اعتماد المدير.</p></div><div class="tsk-filters"><select data-filter><option value="all">كل الحالات</option>'+Object.keys(STATUS).map(function(k){return '<option value="'+k+'" '+(state.filter===k?"selected":"")+'>'+STATUS[k]+'</option>';}).join("")+'</select>'+(state.projects.some(function(p){return p.can_manage;})?'<button class="btn btn-primary" data-action="new-task" data-project="'+(state.projects.find(function(p){return p.can_manage;})||{}).id+'">+ مهمة</button>':"")+'</div></div>';
+      if(state.projects.length){html+='<section class="tsk-panel"><div class="tsk-panel-head"><div><h2>المشاريع</h2><p>المدير وأعضاء الخطة وأدوارهم</p></div></div><div class="tsk-project-grid">'+(state.projects.map(function(p){var m=state.people.find(function(x){return x.id===p.manager_id;});var team=(p.members||[]).map(function(x){return esc(x.name)+" · "+({manager:"مدير مشارك",contributor:"عضو منفذ",reviewer:"مراجع"}[x.role]||"عضو");}).join("، ");return '<div class="tsk-project"><b>'+esc(p.title)+'</b><span>مدير المشروع: '+esc(m?m.name:"—")+'</span><small>'+esc(p.description||"بدون وصف")+'</small><small>الفريق: '+(team||"—")+'</small>'+(p.can_manage&&window.SSMPDRoles.canModuleAction(admin,"tasks","create")?'<button class="btn btn-small" data-action="new-task" data-project="'+p.id+'">إضافة مهمة</button>':"")+'</div>';}).join("")||'<p class="tsk-empty">لا توجد مشاريع حتى الآن.</p>')+'</div></section>';}
+      html+='<section class="tsk-panel"><div class="tsk-panel-head"><div><h2>'+(isAdmin?"كل المهام المسموح لك بمتابعتها":"مهامي")+'</h2><p>اكتب ما أنجزته عند كل تحديث. الإكمال النهائي يحتاج اعتماد المدير.</p></div><div class="tsk-filters"><select data-filter><option value="all">كل الحالات</option>'+Object.keys(STATUS).map(function(k){return '<option value="'+k+'" '+(state.filter===k?"selected":"")+'>'+STATUS[k]+'</option>';}).join("")+'</select>'+(window.SSMPDRoles.canModuleAction(admin,"tasks","create")&&state.projects.some(function(p){return p.can_manage;})?'<button class="btn btn-primary" data-action="new-task" data-project="'+(state.projects.find(function(p){return p.can_manage;})||{}).id+'">+ مهمة</button>':"")+'</div></div>';
       html+='<div class="tsk-list">'+(allVisible.map(function(t){var p=state.projects.find(function(x){return x.id===t.project_id;});return card(t,p||{},admin,state.people,isAdmin||t.can_manage);}).join("")||'<div class="tsk-empty">مفيش مهام في الحالة دي حالياً.</div>')+'</div></section>';
       html+='<section class="tsk-panel tsk-week"><div class="tsk-panel-head"><div><h2>ملخص الأسبوع</h2><p>آخر سبعة أيام حتى الآن</p></div></div><div class="tsk-week-row"><span>المهام التي تم تحديثها <b>'+week.length+'</b></span><span>اكتملت <b>'+week.filter(function(t){return t.status==="done";}).length+'</b></span><span>تحتاج مراجعة <b>'+week.filter(function(t){return t.status==="review";}).length+'</b></span><span>متأخرة <b>'+overdue.length+'</b></span></div><div class="tsk-week-list">'+week.slice(0,8).map(function(t){return '<div><span>'+esc(t.title)+'</span><span>'+esc(t.assignee_name||"")+'</span><span>'+esc(STATUS[t.status])+'</span></div>';}).join("")+'</div></section>';
       if(state.modal==="project"){
