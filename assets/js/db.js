@@ -1286,6 +1286,12 @@
     taskCreate: function (projectId, parentId, title, description, expectedOutput, assigneeId, dueAt, priority) {
       return handle(client.rpc("task_create", { p_project_id:projectId, p_parent_task_id:parentId, p_title:title, p_description:description || "", p_expected_output:expectedOutput || "", p_assignee_id:assigneeId, p_due_at:dueAt, p_priority:priority || "normal" }));
     },
+    taskCreateRecurring: function (projectId, parentId, title, description, expectedOutput, assigneeId, dueAt, priority, intervalValue, intervalUnit, endsAt) {
+      return handle(client.rpc("task_create_recurring", { p_project_id:projectId, p_parent_task_id:parentId, p_title:title, p_description:description || "", p_expected_output:expectedOutput || "", p_assignee_id:assigneeId, p_due_at:dueAt, p_priority:priority || "normal", p_interval_value:intervalValue, p_interval_unit:intervalUnit, p_ends_at:endsAt || null }));
+    },
+    taskUpdateDetails: function (taskId, title, description, expectedOutput, assigneeId, dueAt, priority, repeatActive, intervalValue, intervalUnit, endsAt, updateFuture) {
+      return handle(client.rpc("task_update_details", { p_task_id:taskId, p_title:title, p_description:description || "", p_expected_output:expectedOutput || "", p_assignee_id:assigneeId, p_due_at:dueAt, p_priority:priority || "normal", p_repeat_active:repeatActive, p_interval_value:intervalValue, p_interval_unit:intervalUnit, p_ends_at:endsAt || null, p_update_future:!!updateFuture }));
+    },
     taskSetStatus: function (taskId, status, note) {
       return handle(client.rpc("task_set_status", { p_task_id:taskId, p_status:status, p_note:note }));
     },
