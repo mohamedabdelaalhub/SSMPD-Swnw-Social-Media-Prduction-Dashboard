@@ -31,7 +31,7 @@
   }
   function norm(v){return String(v==null?"":v).toLowerCase().replace(/[ً-ٰٟـ]/g,"").replace(/[أإآ]/g,"ا").replace(/ى/g,"ي").replace(/ة/g,"ه").replace(/[٠-٩]/g,function(c){return String(c.charCodeAt(0)-1632);});}
   function linkify(text){return esc(text).replace(/(https?:\/\/[^\s<]+)/g,function(u){var clean=u.replace(/[.,،؛)]+$/,""),tail=u.slice(clean.length);return '<a href="'+clean+'" target="_blank" rel="noopener noreferrer">'+clean+'</a>'+tail;});}
-  var FILE_EXT=["png","jpg","jpeg","webp","gif","pdf","txt","csv","doc","docx","xls","xlsx","ppt","pptx"],MAX_FILES=5,MAX_BYTES=10485760;
+  var FILE_EXT=["png","jpg","jpeg","webp","gif","pdf","txt","csv","doc","docx","xls","xlsx","ppt","pptx"],MAX_FILES=10,MAX_BYTES=10485760;
   function fileSize(n){return n>=1048576?(n/1048576).toFixed(1).replace(/\.0$/,"")+" MB":Math.max(1,Math.round(n/1024))+" KB";}
   function store(key,value){try{if(value===undefined)return window.localStorage.getItem("ssmpd.tasks."+key);window.localStorage.setItem("ssmpd.tasks."+key,value);}catch(e){}return null;}
   var NOTE={
@@ -221,7 +221,7 @@
       if(state.modal==="history"){
         var ht=state.tasks.find(function(x){return x.id===state.historyTask;})||{};
         html+=modal("التعليقات وسجل التحديثات",(ht.title?'<p class="tsk-note-for">'+esc(ht.title)+'</p>':"")+
-          '<form data-form="comment" class="tsk-comment-form"><textarea name="comment" rows="3" maxlength="5000" placeholder="اكتب تعليق، أو الصق رابط ملف (Drive مثلاً)…"></textarea><div class="tsk-file-list" data-file-list></div><p class="tsk-field-error" role="alert" hidden></p><div class="tsk-form-actions"><label class="btn tsk-file-btn">📎 إرفاق ملفات<input type="file" multiple data-comment-files accept=".png,.jpg,.jpeg,.webp,.gif,.pdf,.txt,.csv,.doc,.docx,.xls,.xlsx,.ppt,.pptx"></label><button class="btn btn-primary" type="submit">إرسال التعليق</button></div><p class="tsk-hint">حتى 5 ملفات، كل ملف لحد 10 ميجا (صور، PDF، Word، Excel، PowerPoint، نص).</p></form>'+
+          '<form data-form="comment" class="tsk-comment-form"><textarea name="comment" rows="3" maxlength="5000" placeholder="اكتب تعليق، أو الصق رابط ملف (Drive مثلاً)…"></textarea><div class="tsk-file-list" data-file-list></div><p class="tsk-field-error" role="alert" hidden></p><div class="tsk-form-actions"><label class="btn tsk-file-btn">📎 إرفاق ملفات<input type="file" multiple data-comment-files accept=".png,.jpg,.jpeg,.webp,.gif,.pdf,.txt,.csv,.doc,.docx,.xls,.xlsx,.ppt,.pptx"></label><button class="btn btn-primary" type="submit">إرسال التعليق</button></div><p class="tsk-hint">حتى 10 ملفات، كل ملف لحد 10 ميجا (صور، PDF، Word، Excel، PowerPoint، نص). الملفات بتتحفظ على Google Drive.</p></form>'+
           '<div class="tsk-history">'+((state.history||[]).map(function(u){return '<article><b>'+esc(u.author_name||"عضو الفريق")+'</b><small>'+esc(stamp(u.created_at))+'</small>'+(u.status_to?'<span class="tsk-hist-status">'+esc((STATUS[u.status_from]||"")+(u.status_from?" ← ":"")+(STATUS[u.status_to]||u.status_to))+'</span>':"")+'<p>'+linkify(u.body)+'</p>'+attsHtml(u.id)+'</article>';}).join("")||'<p class="tsk-empty">لا توجد تعليقات أو تحديثات بعد.</p>')+'</div>');
       }
       el.innerHTML=html;
@@ -229,7 +229,7 @@
     function stamp(v){var d=new Date(v);return isNaN(d)?"":d.toLocaleString("ar-EG",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});}
     function attsHtml(updateId){
       var list=state.historyAtts[updateId];if(!list||!list.length)return "";
-      return '<div class="tsk-atts">'+list.map(function(a){return '<button type="button" class="tsk-att" data-action="open-file" data-path="'+esc(a.storage_path)+'">📎 '+esc(a.file_name)+' <small>'+esc(fileSize(a.size_bytes))+'</small></button>';}).join("")+'</div>';
+      return '<div class="tsk-atts">'+list.map(function(a){return '<a class="tsk-att" href="'+esc(/^https:\/\/(drive|docs)\.google\.com\//.test(a.file_url||"")?a.file_url:"#")+'" target="_blank" rel="noopener noreferrer">📎 '+esc(a.file_name)+(a.size_bytes?' <small>'+esc(fileSize(a.size_bytes))+'</small>':"")+'</a>';}).join("")+'</div>';
     }
     function renderFiles(){
       var box=el.querySelector("[data-file-list]");if(!box)return;
@@ -283,7 +283,7 @@
       if(!text&&!files.length){showErr(form,"اكتب التعليق أو أرفق ملفاً أولاً.");return;}
       var btn=form.querySelector("button[type=submit]");if(btn){btn.disabled=true;if(files.length)btn.textContent="بيرفع الملفات…";}
       var db=window.SSMPDDb,taskId=state.historyTask;
-      Promise.all(files.map(function(f){return db.taskUploadAttachment(taskId,f);})).then(function(atts){return db.taskAddComment(taskId,text,atts);}).then(function(){state.pendingFiles=[];openHistory(taskId);}).catch(function(e){if(btn){btn.disabled=false;btn.textContent="إرسال التعليق";}showErr(form,e&&e.message||"تعذر إرسال التعليق");});
+      Promise.all(files.map(function(f){return db.taskUploadAttachment(taskId,f,(state.tasks.find(function(x){return x.id===taskId;})||{}).title);})).then(function(atts){return db.taskAddComment(taskId,text,atts);}).then(function(){state.pendingFiles=[];openHistory(taskId);}).catch(function(e){if(btn){btn.disabled=false;btn.textContent="إرسال التعليق";}showErr(form,e&&e.message||"تعذر إرسال التعليق");});
     }
     function onEscape(ev){if(!el.isConnected){document.removeEventListener("keydown",onEscape);return;}if(ev.key==="Escape"&&state.modal){state.modal="";state.note=null;state.pendingFiles=[];draw();}}
     document.addEventListener("keydown",onEscape);
@@ -314,11 +314,6 @@
       }
       if(action==="history"){state.pendingFiles=[];state.historyTask="";openHistory(id);return;}
       if(action==="remove-file"){state.pendingFiles.splice(Number(id),1);renderFiles();return;}
-      if(action==="open-file"){
-        var popup=window.open("","_blank");
-        window.SSMPDDb.taskAttachmentUrl(b.dataset.path).then(function(url){if(popup){popup.opener=null;popup.location.href=url;}else window.location.href=url;}).catch(function(e){if(popup)popup.close();var form=el.querySelector(".tsk-comment-form");if(form)showErr(form,"تعذر فتح الملف: "+(e&&e.message||""));});
-        return;
-      }
       if(action==="progress"||action==="submit"||action==="blocked"||action==="approve"||action==="return"){
         if(!t)return;
         state.note={action:action,id:id,starting:t.status==="todo"||t.status==="revision",subject:t.title};

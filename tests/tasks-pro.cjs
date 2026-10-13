@@ -35,10 +35,10 @@ window.SSMPDDb={
  taskSetStatus:function(id,status,note){calls.push(['status',id,status,note]);return Promise.resolve()},
  taskReview:function(id,ok,note){calls.push(['review',id,ok,note]);return Promise.resolve()},
  taskListUpdates:function(id){return Promise.resolve((mock.updates[id]||[]).slice())},
- taskAddComment:function(id,body,atts){atts=atts||[];calls.push(['comment',id,body,atts.length]);var uid='u'+Math.random();(mock.updates[id]=mock.updates[id]||[]).unshift({id:uid,task_id:id,author_id:'a1',body:body||'مرفقات',created_at:new Date().toISOString()});atts.forEach(function(a){mock.atts.push({id:'f'+Math.random(),update_id:uid,file_name:a.name,mime_type:'application/pdf',size_bytes:2048,storage_path:a.path})});return Promise.resolve()},
- taskUploadAttachment:function(id,file){calls.push(['upload',id,file.name]);return Promise.resolve({path:id+'/'+Math.random()+'.pdf',name:file.name})},
+ taskAddComment:function(id,body,atts){atts=atts||[];calls.push(['comment',id,body,atts.length]);var uid='u'+Math.random();(mock.updates[id]=mock.updates[id]||[]).unshift({id:uid,task_id:id,author_id:'a1',body:body||'مرفقات',created_at:new Date().toISOString()});atts.forEach(function(a){mock.atts.push({id:'f'+Math.random(),update_id:uid,file_name:a.name,mime_type:'application/pdf',size_bytes:2048,file_url:a.url})});return Promise.resolve()},
+ taskUploadAttachment:function(id,file){calls.push(['upload',id,file.name]);return Promise.resolve({name:file.name,url:'https://drive.google.com/file/d/'+encodeURIComponent(file.name)+'/view',file_id:'x',size:file.size,mime:file.type})},
  taskListAttachments:function(id){return Promise.resolve(mock.atts.slice())},
- taskAttachmentUrl:function(path){calls.push(['signed',path]);return Promise.resolve('data:text/plain,ok')},
+
  taskMarkNotificationRead:function(id){calls.push(['read',id]);mock.notices.forEach(function(n){if(n.id===id)n.read_at='x'});return Promise.resolve()}
 };
 </script><script src="/assets/js/render-tasks.js"></script><script>SSMPDRenderTasks.render(document.getElementById('r'))</script></body></html>`;
@@ -110,7 +110,10 @@ try{
   await page.locator('.tsk-comment-form [type=submit]').click();await page.waitForFunction(()=>document.querySelector('.tsk-att'));
   const fc=await page.evaluate(()=>calls.filter(c=>c[0]==='upload'||c[0]==='comment').slice(-2));assert.deepEqual(fc,[['upload','t1','جرد.pdf'],['comment','t1','نص قبل الملفات',1]]);
   assert(/جرد\.pdf/.test(await page.locator('.tsk-att').first().textContent()),'attachment chip in history');
-  await page.locator('.tsk-att').first().click();await page.waitForFunction(()=>calls.some(c=>c[0]==='signed'));
+  const href=await page.locator('a.tsk-att').first().getAttribute('href');assert(/^https:\/\/drive\.google\.com\//.test(href),'attachment opens the Drive link');assert.equal(await page.locator('a.tsk-att').first().getAttribute('target'),'_blank');
+  // more than 10 files rejected
+  await page.setInputFiles('[data-comment-files]',Array.from({length:11},(_,i)=>({name:'f'+i+'.pdf',mimeType:'application/pdf',buffer:Buffer.from('x')})));assert.equal(await page.locator('.tsk-file-chip').count(),10,'up to 10 files');assert(/الحد الأقصى 10/.test(await page.locator('.tsk-field-error').textContent()));
+  await page.locator('.tsk-file-chip button').first().click();while(await page.locator('.tsk-file-chip').count())await page.locator('.tsk-file-chip button').first().click();
   // attachment-only comment is allowed, empty one is not
   await page.locator('.tsk-comment-form [type=submit]').click();assert(/اكتب التعليق أو أرفق/.test(await page.locator('.tsk-field-error').textContent()));
   await page.keyboard.press('Escape');

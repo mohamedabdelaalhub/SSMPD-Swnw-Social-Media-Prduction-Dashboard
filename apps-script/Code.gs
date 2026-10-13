@@ -28,6 +28,7 @@
  *   - أرشيف المرضى (فولدر مريض/فئة متداخل) → category: "patient_archive"
  *   - فواتير حجوزات الليدز (فولدر واحد مسطّح) → category: "leads_invoice"
  *   - عقود الجهات → داخل فولدر الأرشيف، فولدر مستقل لكل جهة
+ *   - مرفقات المهام → داخل فولدر الأرشيف: مرفقات المهام/<سنة-شهر> (category: "task_attachment")
  */
 
 var CATEGORY_FOLDER_IDS = {
@@ -71,6 +72,7 @@ function doGet() {
 function handleUpload_(payload) {
   var category = payload.category || "design";
   if (category === "contracting_entity_contract") return handleContractingEntityContractUpload_(payload);
+  if (category === "task_attachment") return handleTaskAttachmentUpload_(payload);
   if (!CATEGORY_FOLDER_IDS[category]) return jsonOut({ ok: false, error: "نوع فولدر غير معروف: " + category });
   if (!payload.base64) return jsonOut({ ok: false, error: "لا يوجد محتوى ملف" });
 
@@ -146,6 +148,22 @@ function handleContractingEntityContractUpload_(payload) {
   var file = contractsFolder.createFile(Utilities.newBlob(bytes, mimeType, fileName));
   file.setDescription("SSMPD Contract | entity: " + entityName + " | contractId: " + (payload.contractId || ""));
   return jsonOut({ ok: true, fileUrl: file.getUrl(), folderUrl: contractsFolder.getUrl(), fileId: file.getId() });
+}
+
+// مرفقات تعليقات المهام: الأرشيف/مرفقات المهام/<سنة-شهر>.
+// بنستخدم جذر الأرشيف الحالي من غير فولدر جديد أو صلاحية جديدة.
+function handleTaskAttachmentUpload_(payload) {
+  if (!payload.base64) return jsonOut({ ok: false, error: "لا يوجد محتوى ملف" });
+  var archiveRoot = DriveApp.getFolderById(CATEGORY_FOLDER_IDS.archive);
+  var tasksRoot = getOrCreateFolder_(archiveRoot, "مرفقات المهام");
+  var monthName = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM");
+  var monthFolder = getOrCreateFolder_(tasksRoot, monthName);
+  var fileName = payload.fileName || ("task-file-" + new Date().getTime());
+  var mimeType = payload.mimeType || "application/octet-stream";
+  var bytes = Utilities.base64Decode(payload.base64);
+  var file = monthFolder.createFile(Utilities.newBlob(bytes, mimeType, fileName));
+  file.setDescription("SSMPD Task attachment | taskId: " + (payload.taskId || "") + " | " + (payload.contentTitle || ""));
+  return jsonOut({ ok: true, fileUrl: file.getUrl(), folderUrl: monthFolder.getUrl(), fileId: file.getId() });
 }
 
 // ---------- تسجيل حدث في ملف التتبع (Excel) المناسب ----------

@@ -36,6 +36,7 @@
         base64: base64,
         contentTitle: (meta && meta.title) || "",
         contentId: (meta && meta.contentId) || "",
+        taskId: (meta && meta.taskId) || "",
         category: category
       };
       return fetch(url, {
@@ -44,6 +45,7 @@
         body: JSON.stringify(payload)
       }).then(function (r) { return r.json(); });
     }).then(function (res) {
+      if (res && !res.ok && /نوع فولدر غير معروف/.test(String(res.error || ""))) throw new Error("جسر Google Drive محتاج تحديث (إعادة نشر الـ Apps Script) عشان يقبل مرفقات المهام.");
       if (!res || !res.ok) throw new Error((res && res.error) || "فشل الرفع لجوجل درايف");
       return res; // { ok:true, fileUrl, folderUrl }
     });
@@ -72,6 +74,10 @@
     // يرفع ملف إنتاج محتوى (مرجعي/خام) → فولدر "إنتاج المحتوى"
     uploadContentFile: function (file, meta) {
       return uploadFile(file, meta, CATEGORIES.CONTENT);
+    },
+    // يرفع مرفق تعليق مهمة → الأرشيف/مرفقات المهام/<سنة-شهر>
+    uploadTaskFile: function (file, meta) {
+      return uploadFile(file, meta, "task_attachment");
     },
     // يرفع تقرير/تحليل → فولدر "الأرشيف"
     uploadArchiveFile: function (file, meta) {

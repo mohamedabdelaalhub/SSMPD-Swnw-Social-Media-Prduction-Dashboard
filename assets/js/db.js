@@ -1318,23 +1318,14 @@
         return handle(client.from("task_updates").insert({ task_id: taskId, author_id: window.SSMPDAuth.currentAdmin.id, body: text }));
       });
     },
-    taskUploadAttachment: function (taskId, file) {
-      var ext = (String(file.name || "").match(/\.([A-Za-z0-9]{1,8})$/) || [])[1];
-      var id = window.crypto && window.crypto.randomUUID ? window.crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2);
-      var path = taskId + "/" + id + (ext ? "." + ext.toLowerCase() : "");
-      return client.storage.from("task-attachments").upload(path, file, { contentType: file.type || undefined, upsert: false }).then(function (res) {
-        if (res.error) throw res.error;
-        return { path: path, name: file.name };
+    // الملف نفسه بيترفع على Google Drive (الأرشيف/مرفقات المهام)، والقاعدة بتحفظ الرابط بس
+    taskUploadAttachment: function (taskId, file, taskTitle) {
+      return window.SSMPDDrive.uploadTaskFile(file, { taskId: taskId, title: taskTitle || "" }).then(function (res) {
+        return { name: file.name, url: res.fileUrl, file_id: res.fileId || "", size: file.size, mime: file.type || "" };
       });
     },
     taskListAttachments: function (taskId) {
-      return handle(client.from("task_attachments").select("id,update_id,file_name,mime_type,size_bytes,storage_path").eq("task_id", taskId));
-    },
-    taskAttachmentUrl: function (path) {
-      return client.storage.from("task-attachments").createSignedUrl(path, 600).then(function (res) {
-        if (res.error) throw res.error;
-        return res.data.signedUrl;
-      });
+      return handle(client.from("task_attachments").select("id,update_id,file_name,mime_type,size_bytes,file_url").eq("task_id", taskId));
     },
     taskMarkNotificationRead: function (id) {
       return handle(client.from("task_notifications").update({read_at:new Date().toISOString()}).eq("id",id).eq("recipient_id",window.SSMPDAuth.currentAdmin.id));
