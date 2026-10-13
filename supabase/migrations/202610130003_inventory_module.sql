@@ -1,6 +1,12 @@
 -- إدارة المخزون والمشتريات والصرف والجرد لمركز Swnw
 -- شغّلي هذا الملف مرة واحدة في Supabase > SQL Editor بعد مراجعة التغيير.
 
+do $$ begin
+  if to_regclass('public.task_projects') is null or to_regclass('public.tasks') is null then
+    raise exception 'شغّل ملف إعداد تاب المهام أولاً قبل إعداد المخزن والجرد.';
+  end if;
+end $$;
+
 create extension if not exists pgcrypto;
 
 create table if not exists public.inventory_items (
@@ -25,6 +31,7 @@ create table if not exists public.inventory_requests (
   status text not null default 'pending' check (status in ('pending','approved','rejected','partial','completed','cancelled')),
   requester_id uuid not null references public.admins(id),
   reviewer_id uuid references public.admins(id),
+  supplier_name text not null default '',
   note text not null default '',
   review_note text not null default '',
   requested_at timestamptz not null default now(),
@@ -92,6 +99,7 @@ create table if not exists public.inventory_count_lines (
   item_id uuid not null references public.inventory_items(id),
   system_quantity numeric(14,3) not null default 0,
   counted_quantity numeric(14,3),
+  counted_at timestamptz,
   note text not null default '',
   unique(session_id,item_id)
 );
@@ -146,6 +154,12 @@ returns numeric language sql stable security definer set search_path=public as $
   select coalesce(sum(quantity_delta),0) from public.inventory_movements where item_id=p_item_id;
 $$;
 
+create or replace function public.inventory_average_cost(p_item_id uuid)
+returns numeric language sql stable security definer set search_path=public as $$
+  select coalesce(sum(quantity_delta*unit_cost)/nullif(public.inventory_on_hand(p_item_id),0),0)
+  from public.inventory_movements where item_id=p_item_id;
+$$;
+
 alter table public.inventory_items enable row level security;
 alter table public.inventory_requests enable row level security;
 alter table public.inventory_request_lines enable row level security;
@@ -185,19 +199,20 @@ declare v_me uuid:=public.my_admin_id(); v_items jsonb; v_requests jsonb; v_move
 begin
   if not public.inventory_can_view() then raise exception 'Not allowed to view inventory'; end if;
   select coalesce(jsonb_agg(to_jsonb(x) order by x.name),'[]') into v_items from (
-    select i.*,public.inventory_on_hand(i.id) on_hand from public.inventory_items i where i.active
+    select i.*,public.inventory_on_hand(i.id) on_hand,case when v_mgr then public.inventory_average_cost(i.id) else null end current_average_cost from public.inventory_items i where i.active
   ) x;
   select coalesce(jsonb_agg(to_jsonb(x) order by x.requested_at desc),'[]') into v_requests from (
-    select r.id,r.request_type,r.status,r.requester_id,a.name requester_name,r.note,r.review_note,r.requested_at,
+    select r.id,r.request_type,r.status,r.requester_id,a.name requester_name,r.supplier_name,r.note,r.review_note,r.requested_at,
       coalesce(jsonb_agg(jsonb_build_object('item_id',l.item_id,'item_name',i.name,'quantity',l.quantity,'package_cost',l.package_cost,'received_quantity',l.received_quantity,'fulfilled_quantity',l.fulfilled_quantity)) filter(where l.id is not null),'[]') lines
     from public.inventory_requests r join public.admins a on a.id=r.requester_id left join public.inventory_request_lines l on l.request_id=r.id left join public.inventory_items i on i.id=l.item_id
     where v_mgr or r.requester_id=v_me group by r.id,a.name order by r.requested_at desc limit 250
   ) x;
   select coalesce(jsonb_agg(to_jsonb(x) order by x.created_at desc),'[]') into v_moves from (
-    select m.*,i.name item_name,a.name actor_name from public.inventory_movements m join public.inventory_items i on i.id=m.item_id join public.admins a on a.id=m.created_by order by m.created_at desc limit 500
-  ) x where v_mgr;
+    select m.*,i.name item_name,a.name actor_name from public.inventory_movements m join public.inventory_items i on i.id=m.item_id join public.admins a on a.id=m.created_by
+    where v_mgr or (m.movement_type='sale' and m.created_by=v_me) order by m.created_at desc limit 500
+  ) x;
   select coalesce(jsonb_agg(to_jsonb(x) order by x.created_at desc),'[]') into v_counts from (
-    select s.*,a.name assignee_name,coalesce(jsonb_agg(jsonb_build_object('item_id',l.item_id,'item_name',i.name,'system_quantity',l.system_quantity,'counted_quantity',l.counted_quantity,'note',l.note)) filter(where l.id is not null),'[]') lines
+    select s.*,a.name assignee_name,coalesce(jsonb_agg(jsonb_build_object('item_id',l.item_id,'item_name',i.name,'system_quantity',case when v_mgr then l.system_quantity else null end,'counted_quantity',l.counted_quantity,'note',l.note)) filter(where l.id is not null),'[]') lines
     from public.inventory_count_sessions s join public.admins a on a.id=s.assigned_to left join public.inventory_count_lines l on l.session_id=s.id left join public.inventory_items i on i.id=l.item_id
     where v_mgr or s.assigned_to=v_me group by s.id,a.name order by s.created_at desc limit 150
   ) x;
@@ -228,13 +243,13 @@ begin
   return v_id;
 end $$;
 
-create or replace function public.inventory_create_request(p_type text,p_note text,p_lines jsonb)
+create or replace function public.inventory_create_request(p_type text,p_note text,p_supplier_name text,p_lines jsonb)
 returns uuid language plpgsql security definer set search_path=public as $$
 declare v_id uuid; v_line jsonb; v_item uuid; v_qty numeric; v_cost numeric;
 begin
   if not public.inventory_can_view() then raise exception 'Not allowed to request inventory'; end if;
   if p_type not in ('purchase','issue') or jsonb_array_length(coalesce(p_lines,'[]'))=0 then raise exception 'Choose at least one item'; end if;
-  insert into public.inventory_requests(request_type,requester_id,note) values(p_type,public.my_admin_id(),coalesce(p_note,'')) returning id into v_id;
+  insert into public.inventory_requests(request_type,requester_id,note,supplier_name) values(p_type,public.my_admin_id(),coalesce(p_note,''),coalesce(p_supplier_name,'')) returning id into v_id;
   for v_line in select * from jsonb_array_elements(p_lines) loop
     v_item:=(v_line->>'item_id')::uuid; v_qty:=(v_line->>'quantity')::numeric; v_cost:=coalesce((v_line->>'package_cost')::numeric,0);
     if v_qty<=0 or v_cost<0 or not exists(select 1 from public.inventory_items where id=v_item and active) then raise exception 'Invalid request line'; end if;
@@ -301,7 +316,7 @@ begin
     v_qty:=(v_line->>'quantity')::numeric;
     if v_qty<=0 or v_l.fulfilled_quantity+v_qty>v_l.quantity then raise exception 'Issued quantity exceeds the approved request'; end if;
     v_on_hand:=public.inventory_on_hand(v_l.item_id); if v_on_hand<v_qty then raise exception 'Insufficient stock'; end if;
-    select coalesce(sum(quantity_delta*unit_cost)/nullif(sum(quantity_delta),0),0) into v_cost from public.inventory_movements where item_id=v_l.item_id and movement_type='receipt';
+    v_cost:=public.inventory_average_cost(v_l.item_id);
     select current_sale_price,markup_percent into v_price,v_margin from public.inventory_items where id=v_l.item_id;
     update public.inventory_request_lines set fulfilled_quantity=fulfilled_quantity+v_qty where id=v_l.id;
     insert into public.inventory_movements(item_id,movement_type,quantity_delta,unit_cost,unit_sale_price,margin_percent,profit_amount,reference_type,reference_id,note,created_by)
@@ -318,7 +333,7 @@ begin
   if p_quantity<=0 then raise exception 'Quantity must be positive'; end if;
   select * into v_item from public.inventory_items where id=p_item_id and active for update;
   if not found or public.inventory_on_hand(p_item_id)<p_quantity then raise exception 'Item not found or insufficient stock'; end if;
-  select coalesce(sum(quantity_delta*unit_cost)/nullif(sum(quantity_delta),0),0) into v_cost from public.inventory_movements where item_id=p_item_id and movement_type='receipt';
+  v_cost:=public.inventory_average_cost(p_item_id);
   v_profit:=round((v_item.current_sale_price-v_cost)*p_quantity,2);
   insert into public.inventory_movements(item_id,movement_type,quantity_delta,unit_cost,unit_sale_price,margin_percent,profit_amount,patient_invoice_ref,payment_method,note,created_by)
     values(p_item_id,'sale',-p_quantity,v_cost,v_item.current_sale_price,v_item.markup_percent,v_profit,coalesce(p_patient_invoice_ref,''),coalesce(p_payment_method,''),coalesce(p_note,''),public.my_admin_id()) returning id into v_id;
@@ -347,7 +362,7 @@ begin
   for v_line in select * from jsonb_array_elements(coalesce(p_lines,'[]')) loop
     v_qty:=(v_line->>'counted_quantity')::numeric;
     if v_qty<0 then raise exception 'Count cannot be negative'; end if;
-    update public.inventory_count_lines set counted_quantity=v_qty,note=coalesce(v_line->>'note','') where session_id=p_session_id and item_id=(v_line->>'item_id')::uuid;
+    update public.inventory_count_lines set counted_quantity=v_qty,counted_at=now(),note=coalesce(v_line->>'note','') where session_id=p_session_id and item_id=(v_line->>'item_id')::uuid;
   end loop;
   if exists(select 1 from public.inventory_count_lines where session_id=p_session_id and counted_quantity is null) then raise exception 'Enter a count for every item'; end if;
   update public.inventory_count_sessions set status='submitted',submitted_at=now() where id=p_session_id;
@@ -355,15 +370,16 @@ end $$;
 
 create or replace function public.inventory_approve_count(p_session_id uuid)
 returns void language plpgsql security definer set search_path=public as $$
-declare v_s public.inventory_count_sessions%rowtype; v_l public.inventory_count_lines%rowtype; v_delta numeric; v_cost numeric;
+declare v_s public.inventory_count_sessions%rowtype; v_l public.inventory_count_lines%rowtype; v_delta numeric; v_cost numeric; v_expected numeric;
 begin
   if not public.inventory_can_manage() then raise exception 'Not allowed to approve counts'; end if;
   select * into v_s from public.inventory_count_sessions where id=p_session_id for update;
   if not found or v_s.status<>'submitted' then raise exception 'Count must be submitted first'; end if;
   for v_l in select * from public.inventory_count_lines where session_id=p_session_id loop
-    v_delta:=v_l.counted_quantity-public.inventory_on_hand(v_l.item_id);
+    select v_l.system_quantity+coalesce(sum(m.quantity_delta),0) into v_expected from public.inventory_movements m where m.item_id=v_l.item_id and m.created_at>v_l.counted_at;
+    v_delta:=v_l.counted_quantity-v_expected;
     if v_delta<>0 then
-      select coalesce(sum(quantity_delta*unit_cost)/nullif(sum(quantity_delta),0),0) into v_cost from public.inventory_movements where item_id=v_l.item_id and movement_type='receipt';
+      v_cost:=public.inventory_average_cost(v_l.item_id);
       insert into public.inventory_movements(item_id,movement_type,quantity_delta,unit_cost,reference_type,reference_id,note,created_by)
         values(v_l.item_id,'count_adjustment',v_delta,v_cost,'count',p_session_id,'تسوية نتيجة الجرد',public.my_admin_id());
     end if;
@@ -402,7 +418,6 @@ begin
     insert into public.task_notifications(recipient_id,task_id,kind,message)
       values(s.assigned_to,v_task_id,'assigned','تم إسناد جرد دوري جديد: '||s.title);
     update public.inventory_count_schedules set last_session_id=v_id,next_due_at=now()+make_interval(days=>s.cadence_days) where id=s.id;
-    insert into public.inventory_alerts(item_id,alert_type,message) select i.id,'late_count','بدأ موعد الجرد الدوري: '||s.title from public.inventory_items i where i.active limit 1;
     v_n:=v_n+1;
   end loop;
   return v_n;
@@ -413,7 +428,7 @@ returns integer language plpgsql security definer set search_path=public as $$
 declare i record; v_n integer:=0;
 begin
   for i in select id,name,minimum_quantity from public.inventory_items where active loop
-    if public.inventory_on_hand(i.id)<=i.minimum_quantity then
+    if i.minimum_quantity>0 and public.inventory_on_hand(i.id)<=i.minimum_quantity then
       insert into public.inventory_alerts(item_id,alert_type,message) select i.id,'low_stock','المخزون وصل للحد الأدنى: '||i.name where not exists(select 1 from public.inventory_alerts a where a.item_id=i.id and a.alert_type='low_stock' and a.resolved_at is null);
       v_n:=v_n+1;
     end if;
@@ -449,9 +464,10 @@ revoke all on function public.inventory_is_manager() from public;
 revoke all on function public.inventory_can_view() from public;
 revoke all on function public.inventory_can_manage() from public;
 revoke all on function public.inventory_on_hand(uuid) from public;
+revoke all on function public.inventory_average_cost(uuid) from public;
 revoke all on function public.inventory_snapshot() from public;
 revoke all on function public.inventory_save_item(uuid,text,text,text,text,numeric,numeric,numeric,numeric) from public;
-revoke all on function public.inventory_create_request(text,text,jsonb) from public;
+revoke all on function public.inventory_create_request(text,text,text,jsonb) from public;
 revoke all on function public.inventory_set_opening_balance(uuid,numeric,numeric,text) from public;
 revoke all on function public.inventory_review_request(uuid,boolean,text) from public;
 revoke all on function public.inventory_receive_request(uuid,jsonb,text) from public;
@@ -467,7 +483,7 @@ revoke all on function public.inventory_maintenance() from public;
 revoke all on function public.inventory_resolve_alert(uuid) from public;
 grant execute on function public.inventory_snapshot() to authenticated;
 grant execute on function public.inventory_save_item(uuid,text,text,text,text,numeric,numeric,numeric,numeric) to authenticated;
-grant execute on function public.inventory_create_request(text,text,jsonb) to authenticated;
+grant execute on function public.inventory_create_request(text,text,text,jsonb) to authenticated;
 grant execute on function public.inventory_set_opening_balance(uuid,numeric,numeric,text) to authenticated;
 grant execute on function public.inventory_review_request(uuid,boolean,text) to authenticated;
 grant execute on function public.inventory_receive_request(uuid,jsonb,text) to authenticated;
@@ -481,9 +497,8 @@ grant execute on function public.inventory_resolve_alert(uuid) to authenticated;
 
 -- محاولة تشغيل تنبيهات المخزون وإنشاء الجرد الدوري كل ساعة عند توفر pg_cron.
 do $$ begin
-  if exists(select 1 from pg_extension where extname='pg_cron') then
-    perform cron.schedule('swnw-inventory-maintenance','0 * * * *','select public.inventory_maintenance();');
-  end if;
+  execute 'create extension if not exists pg_cron';
+  perform cron.schedule('swnw-inventory-maintenance','0 * * * *','select public.inventory_maintenance();');
 exception when others then raise notice 'Could not schedule inventory maintenance; functions can be run manually: %',sqlerrm;
 end $$;
 
