@@ -8,6 +8,8 @@
   var promise=window.SSMPDDesignFiles?window.SSMPDDesignFiles.resolve(url):Promise.resolve(url);
   signedCache.set(url,{promise:promise,until:Date.now()+240000});promise.catch(function(){signedCache.delete(url);});return promise;
  }
+	function driveIdOf(value){try{var u=new URL(value);return u.hostname==='drive.google.com'?((u.pathname.match(/\/d\/([\w-]+)/)||[])[1]||u.searchParams.get('id')):null;}catch(e){return null;}}
+ function driveThumb(id,width){return 'https://drive.google.com/thumbnail?id='+encodeURIComponent(id)+'&sz=w'+width;}
  function mount(root,item,options){
   options=options||{};root.replaceChildren();root.classList.add('publication-preview');
   var finalText=window.SSMPDPublicationText.compose(item),source=window.SSMPDPublicationText.source(item);
@@ -26,6 +28,8 @@
    slides.forEach(function(url,i){
     var cell=el('figure','publication-carousel__slide'),img=el('img');img.alt='الشريحة '+(i+1);img.loading='lazy';
     cell.append(img,el('figcaption',null,(i+1)+' / '+slides.length));strip.append(cell);
+    var slideDrive=driveIdOf(url);
+    if(slideDrive&&/^[\w-]+$/.test(slideDrive)){img.referrerPolicy='no-referrer';img.addEventListener('error',function(){if(!cell.querySelector('.publication-preview__empty')){var open=el('a','publication-preview__empty','تعذر عرض الشريحة. افتحها من Drive');open.href=safeUrl(url)||'#';open.target='_blank';open.rel='noopener noreferrer';cell.append(open);}});img.src=driveThumb(slideDrive,1080);return;}
     signed(url).then(function(s){var safe=safeUrl(s);if(safe&&root.isConnected)img.src=safe;}).catch(function(){cell.append(el('p','publication-preview__empty','تعذر التحميل'));});
    });
   }
@@ -52,9 +56,11 @@
     }
    }
   }
+  if(item.media_archived_at)root.append(el('p','publication-preview__source','ملفات المادة دي اتنقلت لجوجل درايف بعد النشر، والمعاينة من Drive.'));
   var coverUrl=item.content_format==='video'&&item.cover_settings&&item.cover_settings.cover_image_url;
   if(coverUrl){var cover=el('figure','publication-preview__cover'),cimg=el('img');cimg.alt='غلاف الريل';cimg.loading='lazy';cimg.style.cssText='width:120px;aspect-ratio:9/16;object-fit:cover;border-radius:8px;display:block';cover.style.margin='8px 0';cover.append(cimg,el('figcaption',null,'غلاف الريل'));root.insertBefore(cover,post.nextSibling);
-   signed(coverUrl).then(function(u){var safe=safeUrl(u);if(safe&&root.isConnected){cimg.src=safe;var v=media.querySelector('video');if(v)v.poster=safe;}}).catch(function(){cover.append(el('p','publication-preview__empty','تعذر تحميل الغلاف'));});}
+   var coverDrive=driveIdOf(coverUrl);
+   (coverDrive&&/^[\w-]+$/.test(coverDrive)?Promise.resolve(driveThumb(coverDrive,480)):signed(coverUrl)).then(function(u){var safe=safeUrl(u);if(safe&&root.isConnected){if(coverDrive)cimg.referrerPolicy='no-referrer';cimg.src=safe;var v=media.querySelector('video');if(v)v.poster=safe;}}).catch(function(){cover.append(el('p','publication-preview__empty','تعذر تحميل الغلاف'));});}
   if(options.details!==false){
    var details=el('details','publication-preview__details');details.append(el('summary',null,'الفكرة والسكريبت وتفاصيل المحتوى'));
    var fields=[['وصف الفكرة',item.body],['الهوك / الافتتاحية',item.hook_text],['زاوية المحتوى',item.content_angle],['السكريبت',item.script_text],['نص التواصل / CTA',item.cta_text],['نوع التواصل',item.cta_type],['الموضوع / الخدمة',item.topic_service],['سبب الفكرة',item.hypothesis_reason]];

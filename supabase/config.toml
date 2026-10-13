@@ -56,3 +56,9 @@ verify_jwt = false
 [functions.meta-insights]
 # Called by pg_cron with X-Cron-Secret (checked inside the function).
 verify_jwt = false
+
+[functions.content-archive-process]
+# Called by pg_cron (X-Cron-Secret, same META_PUBLISH_CRON_SECRET as the Meta functions) and manually from the
+# dashboard by a super admin / general manager (real Supabase Auth JWT validated inside the function), so it must
+# NOT go through platform JWT verification.
+verify_jwt = false
