@@ -1310,8 +1310,31 @@
     taskSetProjectArchived: function (projectId, on) {
       return handle(client.from("task_projects").update({ archived_at: on ? new Date().toISOString() : null }).eq("id", projectId));
     },
-    taskAddComment: function (taskId, body) {
-      return handle(client.from("task_updates").insert({ task_id: taskId, author_id: window.SSMPDAuth.currentAdmin.id, body: String(body || "").trim() }));
+    // تعليق (+ مرفقات اختيارية) عن طريق الدالة اللي بترسل الإشعارات. لو الدالة لسه مش منشورة بنرجع للإدخال المباشر (من غير مرفقات).
+    taskAddComment: function (taskId, body, attachments) {
+      var atts = attachments || [], text = String(body || "").trim();
+      return handle(client.rpc("task_add_comment", { p_task_id: taskId, p_body: text, p_attachments: atts })).catch(function (e) {
+        if (atts.length || !/schema cache|could not find (the )?function/i.test(String(e && e.message || ""))) throw e;
+        return handle(client.from("task_updates").insert({ task_id: taskId, author_id: window.SSMPDAuth.currentAdmin.id, body: text }));
+      });
+    },
+    taskUploadAttachment: function (taskId, file) {
+      var ext = (String(file.name || "").match(/\.([A-Za-z0-9]{1,8})$/) || [])[1];
+      var id = window.crypto && window.crypto.randomUUID ? window.crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2);
+      var path = taskId + "/" + id + (ext ? "." + ext.toLowerCase() : "");
+      return client.storage.from("task-attachments").upload(path, file, { contentType: file.type || undefined, upsert: false }).then(function (res) {
+        if (res.error) throw res.error;
+        return { path: path, name: file.name };
+      });
+    },
+    taskListAttachments: function (taskId) {
+      return handle(client.from("task_attachments").select("id,update_id,file_name,mime_type,size_bytes,storage_path").eq("task_id", taskId));
+    },
+    taskAttachmentUrl: function (path) {
+      return client.storage.from("task-attachments").createSignedUrl(path, 600).then(function (res) {
+        if (res.error) throw res.error;
+        return res.data.signedUrl;
+      });
     },
     taskMarkNotificationRead: function (id) {
       return handle(client.from("task_notifications").update({read_at:new Date().toISOString()}).eq("id",id).eq("recipient_id",window.SSMPDAuth.currentAdmin.id));

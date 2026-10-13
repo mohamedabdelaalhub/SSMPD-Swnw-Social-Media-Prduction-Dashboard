@@ -17,6 +17,7 @@ window.mock={
   {id:'t6',project_id:'p2',title:'مهمة في مشروع قديم',status:'todo',assignee_id:'a3',assignee_name:'شروق',due_at:iso(5),priority:'normal',updated_at:iso(-1),can_manage:true},
   {id:'t7',project_id:'p1',title:'تنظيف الرفوف',status:'todo',assignee_id:'a1',assignee_name:'محمد',due_at:null,priority:'high',updated_at:iso(-5),can_manage:true}
  ],
+ atts:[],
  notices:[{id:'n1',task_id:'t4',message:'تم تحديث مهمة',created_at:iso(-1),read_at:null}],
  updates:{t1:[{id:'u1',task_id:'t1',author_id:'a3',body:'بدأت الشغل https://drive.google.com/x.',status_from:'todo',status_to:'in_progress',created_at:iso(-1)}]}
 };
@@ -34,7 +35,10 @@ window.SSMPDDb={
  taskSetStatus:function(id,status,note){calls.push(['status',id,status,note]);return Promise.resolve()},
  taskReview:function(id,ok,note){calls.push(['review',id,ok,note]);return Promise.resolve()},
  taskListUpdates:function(id){return Promise.resolve((mock.updates[id]||[]).slice())},
- taskAddComment:function(id,body){calls.push(['comment',id,body]);(mock.updates[id]=mock.updates[id]||[]).unshift({id:'u'+Math.random(),task_id:id,author_id:'a1',body:body,created_at:new Date().toISOString()});return Promise.resolve()},
+ taskAddComment:function(id,body,atts){atts=atts||[];calls.push(['comment',id,body,atts.length]);var uid='u'+Math.random();(mock.updates[id]=mock.updates[id]||[]).unshift({id:uid,task_id:id,author_id:'a1',body:body||'مرفقات',created_at:new Date().toISOString()});atts.forEach(function(a){mock.atts.push({id:'f'+Math.random(),update_id:uid,file_name:a.name,mime_type:'application/pdf',size_bytes:2048,storage_path:a.path})});return Promise.resolve()},
+ taskUploadAttachment:function(id,file){calls.push(['upload',id,file.name]);return Promise.resolve({path:id+'/'+Math.random()+'.pdf',name:file.name})},
+ taskListAttachments:function(id){return Promise.resolve(mock.atts.slice())},
+ taskAttachmentUrl:function(path){calls.push(['signed',path]);return Promise.resolve('data:text/plain,ok')},
  taskMarkNotificationRead:function(id){calls.push(['read',id]);mock.notices.forEach(function(n){if(n.id===id)n.read_at='x'});return Promise.resolve()}
 };
 </script><script src="/assets/js/render-tasks.js"></script><script>SSMPDRenderTasks.render(document.getElementById('r'))</script></body></html>`;
@@ -95,7 +99,21 @@ try{
   await page.locator('[data-task-id=t1] [data-action=history]').first().click();await page.waitForSelector('.tsk-comment-form');
   assert.equal(await page.locator('.tsk-history a[href="https://drive.google.com/x"]').count(),1,'link rendered without trailing dot');
   await page.fill('.tsk-comment-form textarea','تعليق جديد');await page.locator('.tsk-comment-form [type=submit]').click();await page.waitForFunction(()=>document.querySelectorAll('.tsk-history article').length===2);
-  assert.deepEqual(await page.evaluate(()=>calls.pop()),['comment','t1','تعليق جديد']);await page.keyboard.press('Escape');
+  assert.deepEqual(await page.evaluate(()=>calls.pop()),['comment','t1','تعليق جديد',0]);
+  // attachments: validation, chips, remove, upload + comment, open via signed URL
+  await page.setInputFiles('[data-comment-files]',[{name:'virus.exe',mimeType:'application/octet-stream',buffer:Buffer.from('x')}]);assert(/غير مسموح/.test(await page.locator('.tsk-field-error').textContent()),'bad type rejected');
+  await page.setInputFiles('[data-comment-files]',[{name:'big.pdf',mimeType:'application/pdf',buffer:Buffer.alloc(10485761)}]);assert(/أكبر من 10 ميجا/.test(await page.locator('.tsk-field-error').textContent()),'oversize rejected');
+  await page.fill('.tsk-comment-form textarea','نص قبل الملفات');
+  await page.setInputFiles('[data-comment-files]',[{name:'جرد.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF')},{name:'صورة.png',mimeType:'image/png',buffer:Buffer.from('x')}]);
+  assert.equal(await page.locator('.tsk-file-chip').count(),2,'two chips');assert.equal(await page.inputValue('.tsk-comment-form textarea'),'نص قبل الملفات','typed text survives');
+  await page.locator('.tsk-file-chip button').last().click();assert.equal(await page.locator('.tsk-file-chip').count(),1,'chip removed');
+  await page.locator('.tsk-comment-form [type=submit]').click();await page.waitForFunction(()=>document.querySelector('.tsk-att'));
+  const fc=await page.evaluate(()=>calls.filter(c=>c[0]==='upload'||c[0]==='comment').slice(-2));assert.deepEqual(fc,[['upload','t1','جرد.pdf'],['comment','t1','نص قبل الملفات',1]]);
+  assert(/جرد\.pdf/.test(await page.locator('.tsk-att').first().textContent()),'attachment chip in history');
+  await page.locator('.tsk-att').first().click();await page.waitForFunction(()=>calls.some(c=>c[0]==='signed'));
+  // attachment-only comment is allowed, empty one is not
+  await page.locator('.tsk-comment-form [type=submit]').click();assert(/اكتب التعليق أو أرفق/.test(await page.locator('.tsk-field-error').textContent()));
+  await page.keyboard.press('Escape');
   // 6: board view
   await page.locator('[data-action=view][data-id=board]').click();assert.equal(await page.locator('.tsk-col').count(),6,'six columns');
   await shot('board');assert(await page.locator('.tsk-col.s-review .tsk-mini').count()===1);assert.equal(await page.locator('.tsk-fchip').count(),0,'no status chips in board');

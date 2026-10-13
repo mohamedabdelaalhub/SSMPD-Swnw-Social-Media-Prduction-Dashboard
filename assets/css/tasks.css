@@ -99,3 +99,8 @@
 .tsk-hist-status{display:inline-block;margin-inline-start:8px;font-size:11px;background:#eaf1fb;color:#2f6fbf;border-radius:20px;padding:2px 9px}
 .tsk-history{margin-top:14px}.tsk-history a{color:#2f6fbf;word-break:break-all}
 @media(max-width:760px){.tsk-toolbar select{flex:1 1 45%}.tsk-viewtoggle{margin-inline-start:0;width:100%}.tsk-viewtoggle button{flex:1}.tsk-board{grid-template-columns:repeat(6,78vw)}.tsk-team table,.tsk-team thead,.tsk-team tbody,.tsk-team tr,.tsk-team td{display:block}.tsk-team thead{display:none}.tsk-team tr{border:1px solid #edf1f6;border-radius:10px;margin-bottom:8px;padding:6px 0}.tsk-team td{display:flex;justify-content:space-between;border:0;padding:5px 12px}.tsk-team td::before{content:attr(data-label);color:#69798e}}
+.tsk-file-btn{position:relative;overflow:hidden;font:inherit;cursor:pointer;display:inline-flex;align-items:center;gap:6px}.tsk-file-btn input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%}
+.tsk-file-list,.tsk-atts{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.tsk-file-list:empty{display:none}
+.tsk-file-chip,.tsk-att{display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:12px;background:#f3f7fd;border:1px solid #d5e1f0;color:#2f4f7f;border-radius:20px;padding:4px 10px}
+.tsk-att{cursor:pointer}.tsk-att:hover{background:#e6effa}.tsk-file-chip small,.tsk-att small{color:#7c8ba0}
+.tsk-file-chip button{border:0;background:transparent;color:#a33e29;font-size:16px;line-height:1;cursor:pointer;padding:0 2px}
