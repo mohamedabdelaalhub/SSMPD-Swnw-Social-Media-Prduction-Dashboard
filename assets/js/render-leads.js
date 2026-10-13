@@ -120,12 +120,20 @@
       else state.subTab = subs[0] ? subs[0].key : "dashboard";
     }
 
+    var oldTabs = container.querySelector(".tabs"), keepScroll = oldTabs ? oldTabs.scrollLeft : null;
     var html = '<div class="tabs" style="margin-bottom:16px;">' +
       subs.map(function (s) {
         return '<button class="tab-btn ' + (state.subTab === s.key ? "active" : "") + '" data-sub="' + s.key + '">' + s.label + '</button>';
       }).join("") + '</div>';
     html += '<div id="ld-sub-view"></div>';
     container.innerHTML = html;
+    // شريط التابات بيتعاد بناؤه مع كل ضغطة — نحافظ على مكان السكرول ونظهر التاب النشط (وإلا بيقفز ويبان كأنه رجّعك لتاب تاني، خصوصاً على الموبايل)
+    var newTabs = container.querySelector(".tabs");
+    if (newTabs) {
+      if (keepScroll != null) newTabs.scrollLeft = keepScroll;
+      var activeBtn = newTabs.querySelector(".tab-btn.active");
+      if (activeBtn && activeBtn.scrollIntoView) { try { activeBtn.scrollIntoView({ block: "nearest", inline: "nearest" }); } catch (e) {} }
+    }
 
     container.querySelectorAll("[data-sub]").forEach(function (btn) {
       btn.onclick = function () {
