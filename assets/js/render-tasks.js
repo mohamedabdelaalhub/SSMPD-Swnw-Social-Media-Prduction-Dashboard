@@ -6,6 +6,8 @@
   var PRIORITY = {low:"منخفضة",normal:"عادية",high:"عالية",urgent:"عاجلة"};
   function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
   function date(v){if(!v)return "بدون موعد";var d=new Date(v);return isNaN(d)?"":d.toLocaleDateString("ar-EG",{year:"numeric",month:"short",day:"numeric"});}
+  function dateValue(v){if(!v)return "";var d=new Date(v);if(isNaN(d))return "";return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
+  function repeatFields(t){t=t||{};var active=!!t.recurrence_active;return '<label class="tsk-repeat-toggle"><input type="checkbox" name="repeat_active" '+(active?"checked":"")+'><span>تكرار المهمة تلقائياً</span></label><div class="tsk-repeat-fields" '+(active?"":"hidden")+'><div class="tsk-form-row"><label>كل<input type="number" name="repeat_interval" min="1" max="365" value="'+esc(t.recurrence_interval_value||1)+'"></label><label>الفترة<select name="repeat_unit"><option value="day" '+(t.recurrence_interval_unit==="day"?"selected":"")+'>يوم</option><option value="week" '+(t.recurrence_interval_unit==="week"?"selected":"")+'>أسبوع</option><option value="month" '+(t.recurrence_interval_unit==="month"?"selected":"")+'>شهر</option></select></label></div><label>إيقاف التكرار في (اختياري)<input type="date" name="repeat_until" value="'+dateValue(t.recurrence_ends_at)+'"></label><small>سيتم إنشاء مهمة جديدة تلقائياً بالبيانات نفسها وإسنادها للمسؤول.</small></div>';}
   function allManager(a){return window.SSMPDRoles.hasAnyRole(a,["general_manager","super_admin"]);}
   function modal(title,body){return '<div class="tsk-modal-backdrop" data-action="close-modal"><section class="tsk-modal" role="dialog" aria-modal="true"><header><h3>'+esc(title)+'</h3><button type="button" class="tsk-x" data-action="close-modal" aria-label="إغلاق">×</button></header>'+body+'</section></div>';}
   function card(t,project,admin,people,mayManage){
@@ -15,6 +17,7 @@
       '<div class="tsk-meta"><span>'+esc(t.project_title||project.title||"مشروع")+'</span><span>المسؤول: '+esc(t.assignee_name||"—")+'</span><span class="'+(overdue?"tsk-overdue":"")+'">الموعد: '+date(t.due_at)+(overdue?" · متأخرة":"")+'</span><span>الأولوية: '+esc(PRIORITY[t.priority]||"عادية")+'</span></div>'+
       (t.description?'<p class="tsk-description">'+esc(t.description)+'</p>':"")+
       (t.expected_output?'<p class="tsk-output"><b>المطلوب:</b> '+esc(t.expected_output)+'</p>':"")+
+      (t.recurrence_active?'<p class="tsk-output">↻ تتكرر كل '+esc(t.recurrence_interval_value)+' '+esc(({day:"يوم",week:"أسبوع",month:"شهر"})[t.recurrence_interval_unit]||"فترة")+'</p>':"")+
       (t.return_note?'<p class="tsk-return"><b>ملاحظة المدير:</b> '+esc(t.return_note)+'</p>':"")+
       '<div class="tsk-actions">';
     var own=t.assignee_id===admin.id;
@@ -27,7 +30,7 @@
       html+='<button class="btn btn-primary" data-action="approve" data-id="'+t.id+'">اعتماد وإكمال</button><button class="btn btn-warn" data-action="return" data-id="'+t.id+'">إرجاع للتعديل</button>';
     }
     if(mayManage){
-      html+='<button class="btn" data-action="subtask" data-id="'+t.id+'">إضافة مهمة فرعية</button>';
+      html+='<button class="btn" data-action="edit-task" data-id="'+t.id+'">تعديل المهمة</button><button class="btn" data-action="subtask" data-id="'+t.id+'">إضافة مهمة فرعية</button>';
     }
     html+='<button class="btn btn-quiet" data-action="history" data-id="'+t.id+'">سجل التحديثات</button></div></div></article>';
     return html;
@@ -65,7 +68,13 @@
       if(state.modal==="task"){
         var projectId=state.modalProject||"";
         var parentId=state.modalParent||"";
-        html+=modal(parentId?"إضافة مهمة فرعية":"إضافة مهمة",'<form data-form="task"><input type="hidden" name="project_id" value="'+esc(projectId)+'"><input type="hidden" name="parent_task_id" value="'+esc(parentId)+'"><label>عنوان المهمة<input name="title" required maxlength="180"></label><label>وصف المطلوب<textarea name="description" rows="3"></textarea></label><label>النتيجة المتوقعة<textarea name="expected_output" rows="2"></textarea></label><label>المسؤول<select name="assignee_id" required>'+personOpts+'</select></label><div class="tsk-form-row"><label>موعد التسليم<input type="date" name="due_at"></label><label>الأولوية<select name="priority"><option value="normal">عادية</option><option value="low">منخفضة</option><option value="high">عالية</option><option value="urgent">عاجلة</option></select></label></div><footer><button class="btn btn-primary">إسناد المهمة</button><button type="button" class="btn" data-action="close-modal">إلغاء</button></footer></form>');
+        html+=modal(parentId?"إضافة مهمة فرعية":"إضافة مهمة",'<form data-form="task"><input type="hidden" name="project_id" value="'+esc(projectId)+'"><input type="hidden" name="parent_task_id" value="'+esc(parentId)+'"><label>عنوان المهمة<input name="title" required maxlength="180"></label><label>وصف المطلوب<textarea name="description" rows="3"></textarea></label><label>النتيجة المتوقعة<textarea name="expected_output" rows="2"></textarea></label><label>المسؤول<select name="assignee_id" required>'+personOpts+'</select></label><div class="tsk-form-row"><label>موعد التسليم<input type="date" name="due_at"></label><label>الأولوية<select name="priority"><option value="normal">عادية</option><option value="low">منخفضة</option><option value="high">عالية</option><option value="urgent">عاجلة</option></select></label></div>'+repeatFields(null)+'<footer><button class="btn btn-primary">إسناد المهمة</button><button type="button" class="btn" data-action="close-modal">إلغاء</button></footer></form>');
+      }
+      if(state.modal==="edit-task"&&state.editTask){
+        var et=state.editTask;
+        var editPersonOpts=state.people.map(function(p){return '<option value="'+p.id+'" '+(p.id===et.assignee_id?"selected":"")+'>'+esc(p.name||p.email)+'</option>';}).join("");
+        var editPriorityOpts=Object.keys(PRIORITY).map(function(k){return '<option value="'+k+'" '+(et.priority===k?"selected":"")+'>'+PRIORITY[k]+'</option>';}).join("");
+        html+=modal("تعديل المهمة",'<form data-form="task-edit"><input type="hidden" name="task_id" value="'+esc(et.id)+'"><label>عنوان المهمة<input name="title" required maxlength="180" value="'+esc(et.title)+'"></label><label>وصف المطلوب<textarea name="description" rows="3">'+esc(et.description)+'</textarea></label><label>النتيجة المتوقعة<textarea name="expected_output" rows="2">'+esc(et.expected_output)+'</textarea></label><label>المسؤول<select name="assignee_id" required>'+editPersonOpts+'</select></label><div class="tsk-form-row"><label>موعد التسليم<input type="date" name="due_at" value="'+dateValue(et.due_at)+'"></label><label>الأولوية<select name="priority">'+editPriorityOpts+'</select></label></div>'+repeatFields(et)+(et.recurrence_id?'<label class="tsk-repeat-toggle"><input type="checkbox" name="update_future" checked><span>تطبيق التعديلات على التكرارات القادمة</span></label>':"")+'<footer><button class="btn btn-primary">حفظ التعديلات</button><button type="button" class="btn" data-action="close-modal">إلغاء</button></footer></form>');
       }
       if(state.modal==="notifications"){
         html+=modal("إشعارات المهام",'<div class="tsk-notifications">'+(state.notifications.map(function(n){return '<button class="tsk-notice '+(n.read_at?"":"unread")+'" data-action="read-notice" data-id="'+n.id+'"><b>'+esc(n.message)+'</b><small>'+date(n.created_at)+'</small></button>';}).join("")||'<p class="tsk-empty">لا توجد إشعارات حالياً.</p>')+'</div>');
@@ -83,6 +92,7 @@
       if(action==="new-project"){state.modal="project";draw();return;}
       if(action==="new-task"){state.modal="task";state.modalProject=b.dataset.project;state.modalParent="";draw();return;}
       if(action==="subtask"){state.modal="task";state.modalProject=t.project_id;state.modalParent=t.id;draw();return;}
+      if(action==="edit-task"&&t){state.editTask=t;state.modal="edit-task";draw();return;}
       if(action==="notifications"){state.modal="notifications";draw();return;}
       if(action==="read-notice"){window.SSMPDDb.taskMarkNotificationRead(id).then(refresh);return;}
       if(action==="history"){window.SSMPDDb.taskListUpdates(id).then(function(rows){return window.SSMPDDb.taskPeople().then(function(people){rows.forEach(function(x){var p=people.find(function(y){return y.id===x.author_id;});x.author_name=p&&p.name;});state.history=rows;state.modal="history";draw();});}).catch(function(e){state.error=e.message;draw();});return;}
@@ -102,16 +112,21 @@
         window.SSMPDDb.taskReview(id,action==="approve",msg).then(refresh).catch(function(e){window.alert(e.message);});
       }
     };
-    el.onchange=function(ev){if(ev.target.matches("[data-filter]")){state.filter=ev.target.value;draw();}};
+    el.onchange=function(ev){if(ev.target.matches("[data-filter]")){state.filter=ev.target.value;draw();return;}if(ev.target.matches('input[name="repeat_active"]')){var fields=ev.target.closest("form").querySelector(".tsk-repeat-fields");if(fields)fields.hidden=!ev.target.checked;}};
     el.onsubmit=function(ev){
       var form=ev.target.closest("form[data-form]");if(!form)return;ev.preventDefault();
       var fd=new FormData(form);
       if(form.dataset.form==="project"){
         var members=Array.from(form.querySelectorAll('input[name="member"]:checked')).map(function(x){return {admin_id:x.value,role_name:fd.get("role_"+x.value)||"contributor"};});
         window.SSMPDDb.taskCreateProject(fd.get("title"),fd.get("description"),fd.get("manager_id"),members).then(function(){state.modal="";return refresh();}).catch(function(e){window.alert(e.message);});
+      }else if(form.dataset.form==="task-edit"){
+        var editDue=fd.get("due_at"),recurring=fd.get("repeat_active")==="on";
+        window.SSMPDDb.taskUpdateDetails(fd.get("task_id"),fd.get("title"),fd.get("description"),fd.get("expected_output"),fd.get("assignee_id"),editDue?new Date(editDue+"T23:59:00").toISOString():null,fd.get("priority"),recurring,Number(fd.get("repeat_interval")||1),fd.get("repeat_unit")||"day",fd.get("repeat_until")||null,fd.get("update_future")==="on").then(function(){state.modal="";state.editTask=null;return refresh();}).catch(function(e){window.alert(e.message);});
       }else{
-        var due=fd.get("due_at");
-        window.SSMPDDb.taskCreate(fd.get("project_id"),fd.get("parent_task_id")||null,fd.get("title"),fd.get("description"),fd.get("expected_output"),fd.get("assignee_id"),due?new Date(due+"T23:59:00").toISOString():null,fd.get("priority")).then(function(){state.modal="";return refresh();}).catch(function(e){window.alert(e.message);});
+        var due=fd.get("due_at"),repeat=fd.get("repeat_active")==="on";
+        var args=[fd.get("project_id"),fd.get("parent_task_id")||null,fd.get("title"),fd.get("description"),fd.get("expected_output"),fd.get("assignee_id"),due?new Date(due+"T23:59:00").toISOString():null,fd.get("priority")];
+        var createPromise=repeat?window.SSMPDDb.taskCreateRecurring.apply(null,args.concat([Number(fd.get("repeat_interval")||1),fd.get("repeat_unit")||"day",fd.get("repeat_until")||null])):window.SSMPDDb.taskCreate.apply(null,args);
+        createPromise.then(function(){state.modal="";return refresh();}).catch(function(e){window.alert(e.message);});
       }
     };
     refresh().then(function(){liveTimer=setInterval(function(){if(!el.isConnected){clearInterval(liveTimer);liveTimer=null;return;}refresh();},90000);});
