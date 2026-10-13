@@ -495,10 +495,10 @@ grant execute on function public.inventory_approve_count(uuid) to authenticated;
 grant execute on function public.inventory_save_count_schedule(uuid,text,integer,uuid,timestamptz) to authenticated;
 grant execute on function public.inventory_resolve_alert(uuid) to authenticated;
 
--- محاولة تشغيل تنبيهات المخزون وإنشاء الجرد الدوري كل ساعة عند توفر pg_cron.
+-- التنبيهات والجرد الدوري يعملان تلقائياً كل ساعة باستخدام pg_cron.
+create extension if not exists pg_cron;
 do $$ begin
-  execute 'create extension if not exists pg_cron';
+  perform cron.unschedule(jobid) from cron.job where jobname='swnw-inventory-maintenance';
   perform cron.schedule('swnw-inventory-maintenance','0 * * * *','select public.inventory_maintenance();');
-exception when others then raise notice 'Could not schedule inventory maintenance; functions can be run manually: %',sqlerrm;
 end $$;
 
