@@ -37,7 +37,8 @@
     mediabuyer: ["page_manager", "approver", "general_manager", "super_admin"],
     accounting: ["general_manager", "super_admin"],
     tasks: ["page_manager", "designer", "approver", "general_manager", "super_admin", "reception", "customer_service", "nursing", "sono_doctor", "contract_manager"],
-    contracting_entities: ["contract_manager", "general_manager", "super_admin"]
+    contracting_entities: ["contract_manager", "general_manager", "super_admin"],
+    inventory: ["general_manager", "super_admin", "nursing", "reception", "sono_doctor"]
   };
 
   // بياخد صف admin كامل أو رول كـ string لوحده (توافق مع كود/اختبارات قديمة)
@@ -79,6 +80,7 @@
         return !!row && row.can_view===true && (action==='view'||row['can_'+action]===true) && !(module==='tasks'&&action==='delete');
       }
       if(module==='accounting')return Roles.hasAnyRole(admin,["general_manager","super_admin"]);
+      if(module==='inventory')return Roles.hasAnyRole(admin,["general_manager","super_admin"]) || (action==="view"||action==="create")&&Roles.hasAnyRole(admin,["nursing","reception","sono_doctor"]);
       if(module==='contracting_entities')return Roles.hasAnyRole(admin,action==='delete'?["general_manager","super_admin"]:["contract_manager","general_manager","super_admin"]);
       if(module==='tasks')return action!=='delete';
       return false;
@@ -93,7 +95,7 @@
     // has_archive_access المنفصلة عن الرول — لسه بيقبل الرول كـ string لوحده كمان
     canSeeTab: function (adminOrRole, tab) {
       var admin = normalizeAdmin(adminOrRole);
-      if (Roles.isControlledFinance(admin) && ["accounting","contracting_entities","tasks"].includes(tab))return Roles.canModuleAction(admin,tab,'view');
+      if (Roles.isControlledFinance(admin) && ["accounting","contracting_entities","tasks","inventory"].includes(tab))return Roles.canModuleAction(admin,tab,'view');
       if (tab === "patients") {
         return !!admin.has_archive_access || !!admin.has_archive_view_only ||
           Roles.hasRole(admin, "super_admin") || Roles.hasRole(admin, "nursing");
@@ -105,7 +107,7 @@
     defaultTab: function (adminOrRole) {
       var admin = normalizeAdmin(adminOrRole);
       if (Roles.isControlledFinance(admin)) {
-        var tabs=["accounting","contracting_entities","tasks"];
+        var tabs=["accounting","contracting_entities","tasks","inventory"];
         var permitted=tabs.find(function(tab){return Roles.canSeeTab(admin,tab);});
         if(permitted)return permitted;
         var other=Object.keys(TAB_ACCESS).find(function(tab){return Roles.canSeeTab(admin,tab);});return other||null;
