@@ -7,7 +7,7 @@ var day=86400000,now=Date.now(),iso=function(n){return new Date(now+n*day).toISO
 window.calls=[];
 window.mock={
  archived:{p2:1},
- projects:[{id:'p1',title:'التحول الرقمي للمخزن',description:'وصف',manager_id:'a2',can_manage:true,members:[{id:'a1',name:'محمد',role:'manager'}]},{id:'p2',title:'مشروع قديم',description:'',manager_id:'a2',can_manage:true,members:[]}],
+ projects:[{id:'p1',title:'التحول الرقمي للمخزن',description:'وصف',manager_id:'a2',can_manage:true,members:[{id:'a1',name:'محمد',role:'manager'},{id:'a3',name:'شروق',role:'contributor'},{id:'a4',name:'منى',role:'reviewer'},{id:'a5',name:'علي',role:'contributor'},{id:'a6',name:'هدى',role:'contributor'}]},{id:'p2',title:'مشروع قديم',description:'',manager_id:'a2',can_manage:true,members:[]}],
  tasks:[
   {id:'t1',project_id:'p1',title:'جرد المخزن الطبي',status:'in_progress',assignee_id:'a1',assignee_name:'محمد',due_at:iso(3),priority:'normal',updated_at:iso(-1),can_manage:true},
   {id:'t2',project_id:'p1',title:'رفع الشيت',status:'review',assignee_id:'a3',assignee_name:'شروق',due_at:iso(-3),priority:'urgent',updated_at:iso(-2),can_manage:true},
@@ -68,6 +68,15 @@ try{
   await page.locator('[data-task-id=t1] .tsk-sub-toggle').click();
   // 5: project progress (done 2 of 6 in p1: t3,t5)
   assert(/2 من 6 مكتملة/.test(await page.locator('[data-project-id=p1]').textContent()),'project progress');
+  // batch 1: health badge, collapsed members, clickable stat cards, overdue chip
+  assert(/1 متأخرة/.test(await page.locator('[data-project-id=p1] .tsk-health').textContent()),'project health badge');
+  assert.equal(await page.locator('[data-project-id=p1] .tsk-chips .tsk-chip:not(.tsk-chip-more)').count(),3,'only 3 members shown');
+  await page.locator('[data-project-id=p1] .tsk-chip-more').click();assert.equal(await page.locator('[data-project-id=p1] .tsk-chips .tsk-chip:not(.tsk-chip-more)').count(),5,'members expand');
+  await page.locator('[data-project-id=p1] .tsk-chip-more').click();
+  assert(/منها 1 آخر 7 أيام/.test(await page.locator('.tsk-stat.st-green').textContent())&&/2/.test(await page.locator('.tsk-stat.st-green b').textContent()),'completed card counts all done tasks');
+  await page.locator('.tsk-stat.st-red').click();assert.deepEqual(await titles(),['رفع الشيت'],'overdue stat filters');assert(await page.locator('.tsk-fchip.on.s-blocked').count()===1,'overdue chip active');
+  await page.locator('.tsk-stat.st-green').click();assert((await titles()).includes('مهمة قديمة خلصت'),'done stat filters');
+  await page.locator('.tsk-fchip').first().click();
   // 3: search (Arabic normalisation) + project/assignee filters
   const input=page.locator('[data-search]');await input.fill('جرد');
   t=await titles();assert(t.includes('جرد المخزن الطبي')&&!t.includes('رفع الشيت'),'search filters');
