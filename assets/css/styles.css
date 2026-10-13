@@ -663,3 +663,6 @@ table.simple.acc-table td.acc-col-num{text-align:left;}
 .field input[type="date"]{min-width:140px;width:100%;box-sizing:border-box}
 .field:has(> input[type="date"]),.field:has(input[type="date"]){flex:1 1 150px;min-width:140px}
 @media(max-width:700px){div[style*="flex-wrap"]>.btn.sm{flex:0 0 auto}}
+/* Safari/iOS: حقل التاريخ بيتعامل كعنصر native بمقاس تلقائي (بيطلع بعرض صفر لو الأب مقاسه مش محدد) — نثبّت مظهره ومقاسه */
+.field input[type="date"]{-webkit-appearance:none;appearance:none;display:block;min-height:42px;line-height:1.2;text-align:right}
+.field input[type="date"]::-webkit-date-and-time-value{text-align:right;min-height:1.2em}
