@@ -37,7 +37,8 @@
     mediabuyer: ["page_manager", "approver", "general_manager", "super_admin"],
     accounting: ["general_manager", "super_admin"],
     tasks: ["page_manager", "designer", "approver", "general_manager", "super_admin", "reception", "customer_service", "nursing", "sono_doctor", "contract_manager"],
-    contracting_entities: ["contract_manager", "general_manager", "super_admin"]
+    contracting_entities: ["contract_manager", "general_manager", "super_admin"],
+    inventory: ["general_manager", "super_admin", "nursing", "reception", "sono_doctor"]
   };
 
   // بياخد صف admin كامل أو رول كـ string لوحده (توافق مع كود/اختبارات قديمة)
@@ -79,6 +80,7 @@
         return !!row && row.can_view===true && (action==='view'||row['can_'+action]===true) && !(module==='tasks'&&action==='delete');
       }
       if(module==='accounting')return Roles.hasAnyRole(admin,["general_manager","super_admin"]);
+      if(module==='inventory')return Roles.hasAnyRole(admin,["general_manager","super_admin"]) || (action==="view"||action==="create")&&Roles.hasAnyRole(admin,["nursing","reception","sono_doctor"]);
       if(module==='contracting_entities')return Roles.hasAnyRole(admin,action==='delete'?["general_manager","super_admin"]:["contract_manager","general_manager","super_admin"]);
       if(module==='tasks')return action!=='delete';
       return false;
