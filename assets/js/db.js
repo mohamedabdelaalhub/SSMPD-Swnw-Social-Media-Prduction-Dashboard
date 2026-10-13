@@ -1283,6 +1283,9 @@
     taskCreateProject: function (title, description, managerId, members) {
       return handle(client.rpc("task_create_project", { p_title:title, p_description:description || "", p_manager_id:managerId, p_members:members || [] }));
     },
+    taskUpdateProject: function (projectId, title, description, managerId, members) {
+      return handle(client.rpc("task_update_project", { p_project_id:projectId, p_title:title, p_description:description || "", p_manager_id:managerId, p_members:members || [] }));
+    },
     taskCreate: function (projectId, parentId, title, description, expectedOutput, assigneeId, dueAt, priority) {
       return handle(client.rpc("task_create", { p_project_id:projectId, p_parent_task_id:parentId, p_title:title, p_description:description || "", p_expected_output:expectedOutput || "", p_assignee_id:assigneeId, p_due_at:dueAt, p_priority:priority || "normal" }));
     },
