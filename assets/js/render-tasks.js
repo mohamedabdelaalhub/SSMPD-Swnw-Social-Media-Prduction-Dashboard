@@ -71,22 +71,23 @@
       if(window.SSMPDRoles.canModuleAction(admin,"tasks","create"))html+='<button class="btn" data-action="subtask" data-id="'+t.id+'">إضافة مهمة فرعية</button>';
       html+='<button class="btn btn-order" data-action="move-task" data-id="'+t.id+'" data-direction="up" title="تقديم في الترتيب">↑</button><button class="btn btn-order" data-action="move-task" data-id="'+t.id+'" data-direction="down" title="تأخير في الترتيب">↓</button>';
     }
-    html+='<button class="btn btn-quiet" data-action="history" data-id="'+t.id+'">التعليقات والسجل</button></div></div></article>';
+    var cc=(window.__tskCounts||{})[t.id];html+='<button class="btn btn-quiet" data-action="checklist" data-id="'+t.id+'">☑ القائمة'+(cc&&cc.total?' ('+cc.done+'/'+cc.total+')':'')+'</button><button class="btn btn-quiet" data-action="history" data-id="'+t.id+'">التعليقات والسجل</button></div></div></article>';
     return html;
   }
   function render(el){
     if(!window.SSMPDRoles.canModuleAction(window.SSMPDAuth.currentAdmin,"tasks","view")){el.innerHTML="<p>ليس لديك صلاحية عرض المهام.</p>";return;}
     var admin=window.SSMPDAuth.currentAdmin;
     var isAdmin=allManager(admin);
-    var state={projects:[],tasks:[],people:[],notifications:[],archived:{},modal:"",error:"",filter:"all",view:store("view")==="board"?"board":"list",sort:(["smart","manual","due","priority","updated"].indexOf(store("sort"))>=0?store("sort"):(isAdmin?"smart":"manual")),q:"",fProject:"",fAssignee:"",showArchived:false,expanded:{},membersOpen:{},note:null,deleteTarget:null,viewId:"",historyTask:"",history:[],historyAtts:{},pendingFiles:[]};
+    var state={projects:[],tasks:[],people:[],notifications:[],archived:{},modal:"",error:"",filter:"all",view:(["board","calendar"].indexOf(store("view"))>=0?store("view"):"list"),checkCounts:{},checklist:[],checkTask:"",calMonth:(function(){var d=new Date();return new Date(d.getFullYear(),d.getMonth(),1);})(),sort:(["smart","manual","due","priority","updated"].indexOf(store("sort"))>=0?store("sort"):(isAdmin?"smart":"manual")),q:"",fProject:"",fAssignee:"",showArchived:false,expanded:{},membersOpen:{},note:null,deleteTarget:null,viewId:"",historyTask:"",history:[],historyAtts:{},pendingFiles:[]};
     function refresh(){return window.SSMPDDb.taskRefreshOverdue().catch(function(){return 0;}).then(function(){return Promise.all([
       window.SSMPDDb.taskListProjects(),window.SSMPDDb.taskListVisible(),window.SSMPDDb.taskPeople(),
       window.SSMPDDb.taskListNotifications(),
       window.SSMPDDb.taskProjectArchives?window.SSMPDDb.taskProjectArchives().catch(function(){return [];}):Promise.resolve([])
-    ]);}).then(function(v){state.projects=v[0]||[];state.tasks=v[1]||[];state.people=v[2]||[];state.notifications=v[3]||[];state.archived={};(v[4]||[]).forEach(function(r){if(r.archived_at)state.archived[r.id]=true;});state.error="";if(!state.modal&&!typing())draw();}).catch(function(e){var raw=e&&e.message||"تعذر تحميل المهام";
+    ]);}).then(function(v){state.projects=v[0]||[];state.tasks=v[1]||[];state.people=v[2]||[];state.notifications=v[3]||[];state.archived={};(v[4]||[]).forEach(function(r){if(r.archived_at)state.archived[r.id]=true;});state.error="";return loadCounts().then(function(){if(!state.modal&&!typing())draw();});}).catch(function(e){var raw=e&&e.message||"تعذر تحميل المهام";
       state.error=/schema cache|could not find function/i.test(raw)
         ?"دوال المهام غير ظاهرة بعد في Supabase. نفّذ في SQL Editor: NOTIFY pgrst, 'reload schema'; ثم حدّث الصفحة."
         :raw;if(!state.modal)draw();});}
+    function loadCounts(){var db=window.SSMPDDb;if(!db.taskChecklistCounts||!state.tasks.length)return Promise.resolve();return db.taskChecklistCounts(state.tasks.map(function(t){return t.id;})).then(function(c){state.checkCounts=c||{};window.__tskCounts=state.checkCounts;}).catch(function(){});}
     function typing(){var a=document.activeElement;return !!(a&&el.contains(a)&&a.matches&&a.matches("[data-search]"));}
     function baseTasks(){return state.showArchived?state.tasks:state.tasks.filter(function(t){return !state.archived[t.project_id];});}
     function matches(t){
@@ -118,6 +119,7 @@
       var vis=sortTasks(board||state.filter==="all"?pool:(state.filter==="overdue"?pool.filter(isOverdue):pool.filter(function(t){return t.status===state.filter;})),state.sort);
       if(!base.length)return html+emptyHtml("none",canMakeTask);
       if(!vis.length)return html+emptyHtml("filtered",canMakeTask);
+      if(state.view==="calendar")return html+calendarHtml(vis);
       if(board){
         return html+'<div class="tsk-board">'+Object.keys(STATUS).map(function(k){var col=vis.filter(function(t){return t.status===k;});return '<section class="tsk-col s-'+k+'"><header><span>'+STATUS[k]+'</span><b>'+col.length+'</b></header><div class="tsk-col-body">'+(col.map(miniCard).join("")||'<p class="tsk-col-empty">لا توجد مهام</p>')+'</div></section>';}).join("")+'</div>';
       }
@@ -132,6 +134,15 @@
       });
       return html+'<div class="tsk-list">'+out+'</div>';
     }
+    function calendarHtml(list){
+      var m=state.calMonth,y=m.getFullYear(),mo=m.getMonth(),first=new Date(y,mo,1).getDay(),days=new Date(y,mo+1,0).getDate(),today=dateValue(new Date());
+      var byDay={},none=[];list.forEach(function(t){if(!t.due_at){none.push(t);return;}var d=new Date(t.due_at);if(d.getFullYear()===y&&d.getMonth()===mo)(byDay[d.getDate()]=byDay[d.getDate()]||[]).push(t);});
+      var names=["أحد","اثنين","ثلاثاء","أربعاء","خميس","جمعة","سبت"],cells="";
+      for(var i=0;i<first;i++)cells+='<div class="tsk-cal-cell off"></div>';
+      for(var d=1;d<=days;d++){var key=y+"-"+String(mo+1).padStart(2,"0")+"-"+String(d).padStart(2,"0"),ts=byDay[d]||[];
+        cells+='<div class="tsk-cal-cell'+(key===today?" today":"")+'"><b>'+d+'</b>'+ts.slice(0,3).map(function(t){return '<button type="button" class="tsk-cal-chip s-'+t.status+(isOverdue(t)?" late":"")+'" data-action="open-task" data-id="'+t.id+'" title="'+esc(t.title)+'">'+esc(t.title)+'</button>';}).join("")+(ts.length>3?'<small>+'+(ts.length-3)+' أخرى</small>':"")+'</div>';}
+      return '<div class="tsk-cal"><div class="tsk-cal-head"><button type="button" class="btn" data-action="cal-prev" aria-label="الشهر السابق">›</button><h3>'+m.toLocaleDateString("en-GB",{month:"long",year:"numeric"})+'</h3><button type="button" class="btn" data-action="cal-next" aria-label="الشهر التالي">‹</button><button type="button" class="btn" data-action="cal-today">اليوم</button></div><div class="tsk-cal-grid">'+names.map(function(n){return '<div class="tsk-cal-dow">'+n+'</div>';}).join("")+cells+'</div>'+(none.length?'<p class="tsk-cal-none"><b>بدون موعد ('+none.length+'):</b> '+none.slice(0,8).map(function(t){return '<button type="button" class="tsk-cal-chip" data-action="open-task" data-id="'+t.id+'">'+esc(t.title)+'</button>';}).join(" ")+'</p>':"")+'</div>';
+    }
     function drawList(){var host=el.querySelector("[data-list-host]");if(host)host.innerHTML=listHtml();else draw();}
     function toolbarHtml(){
       var base=baseTasks(),seen={},people=[];
@@ -143,7 +154,7 @@
         '<select data-sel="project" aria-label="المشروع"><option value="">كل المشاريع</option>'+projs.map(function(p){return '<option value="'+p.id+'" '+(state.fProject===p.id?"selected":"")+'>'+esc(p.title)+'</option>';}).join("")+'</select>'+
         (people.length>1?'<select data-sel="assignee" aria-label="المسؤول"><option value="">كل المسؤولين</option>'+people.map(function(p){return '<option value="'+p.id+'" '+(state.fAssignee===p.id?"selected":"")+'>'+esc(p.name)+'</option>';}).join("")+'</select>':"")+
         '<select data-sel="sort" aria-label="الترتيب">'+Object.keys(sorts).map(function(k){return '<option value="'+k+'" '+(state.sort===k?"selected":"")+'>'+sorts[k]+'</option>';}).join("")+'</select>'+
-        '<div class="tsk-viewtoggle" role="group" aria-label="طريقة العرض"><button type="button" data-action="view" data-id="list" class="'+(state.view==="list"?"on":"")+'">قائمة</button><button type="button" data-action="view" data-id="board" class="'+(state.view==="board"?"on":"")+'">لوحة</button></div></div>';
+        '<div class="tsk-viewtoggle" role="group" aria-label="طريقة العرض"><button type="button" data-action="view" data-id="list" class="'+(state.view==="list"?"on":"")+'">قائمة</button><button type="button" data-action="view" data-id="board" class="'+(state.view==="board"?"on":"")+'">لوحة</button><button type="button" data-action="view" data-id="calendar" class="'+(state.view==="calendar"?"on":"")+'">تقويم</button></div></div>';
     }
     function projectCard(p){
       var m=state.people.find(function(x){return x.id===p.manager_id;});
@@ -245,6 +256,10 @@
       if(state.modal==="notifications"){
         html+=modal("إشعارات المهام",'<div class="tsk-notifications">'+(state.notifications.map(function(n){return '<button class="tsk-notice '+(n.read_at?"":"unread")+'" data-action="read-notice" data-id="'+n.id+'"><b>'+esc(n.message)+'</b><small>'+esc(stamp(n.created_at))+(n.task_id?" · اضغط لفتح المهمة":"")+'</small></button>';}).join("")||'<div class="tsk-empty tsk-empty-rich"><div class="tsk-empty-icon">🔔</div><h3>مفيش إشعارات</h3><p>هتظهر هنا لما حد يحدّث مهمة أو يسند لك مهمة.</p></div>')+'</div>');
       }
+      if(state.modal==="checklist"){
+        var ct=state.tasks.find(function(x){return x.id===state.checkTask;})||{};
+        html+=modal("قائمة مهام صغيرة",(ct.title?'<p class="tsk-note-for">'+esc(ct.title)+'</p>':"")+'<form data-form="check-add" class="tsk-check-add"><input name="body" maxlength="300" placeholder="أضف بند جديد واضغط إضافة" required><button class="btn btn-primary">إضافة</button></form><div class="tsk-checklist">'+((state.checklist||[]).map(function(c){return '<div class="tsk-check-row'+(c.done?" done":"")+'"><label><input type="checkbox" data-check-id="'+c.id+'" '+(c.done?"checked":"")+'> <span>'+esc(c.body)+'</span></label><button type="button" class="btn-link" data-action="check-remove" data-id="'+c.id+'" aria-label="حذف البند">حذف</button></div>';}).join("")||'<p class="tsk-empty">مفيش بنود لسه. قسّم المهمة لخطوات صغيرة وعلّم عليها وانت بتخلصها.</p>')+'</div>');
+      }
       if(state.modal==="history"){
         var ht=state.tasks.find(function(x){return x.id===state.historyTask;})||{};
         html+=modal("التعليقات وسجل التحديثات",(ht.title?'<p class="tsk-note-for">'+esc(ht.title)+'</p>':"")+
@@ -276,6 +291,8 @@
       renderFiles();
     }
     function showErr(form,msg){var p=form.querySelector(".tsk-field-error");if(p){p.textContent=msg;p.hidden=false;}}
+    function reloadChecklist(){return window.SSMPDDb.taskChecklistList(state.checkTask).then(function(rows){state.checklist=rows||[];var done=state.checklist.filter(function(c){return c.done;}).length;state.checkCounts[state.checkTask]={total:state.checklist.length,done:done};window.__tskCounts=state.checkCounts;draw();});}
+    function openChecklist(id){state.checkTask=id;state.checklist=[];state.modal="checklist";draw();reloadChecklist().catch(function(e){state.modal="";state.error=e&&e.message||"تعذر تحميل القائمة";draw();});}
     function openHistory(id){
       var rows;
       Promise.all([window.SSMPDDb.taskListUpdates(id),window.SSMPDDb.taskListAttachments?window.SSMPDDb.taskListAttachments(id).catch(function(){return [];}):Promise.resolve([])]).then(function(v){
@@ -339,7 +356,7 @@
         draw();var host=el.querySelector("[data-list-host]");if(host&&host.scrollIntoView)host.scrollIntoView({behavior:"smooth",block:"start"});return;
       }
       if(action==="members"){state.membersOpen[b.dataset.project]=!state.membersOpen[b.dataset.project];draw();return;}
-      if(action==="view"){state.view=id==="board"?"board":"list";store("view",state.view);draw();return;}
+      if(action==="view"){state.view=id==="board"||id==="calendar"?id:"list";store("view",state.view);draw();return;}
       if(action==="clear-filters"){state.q="";state.fProject="";state.fAssignee="";state.filter="all";draw();return;}
       if(action==="toggle-sub"){state.expanded[id]=!state.expanded[id];draw();return;}
       if(action==="open-task"&&t){state.viewId=id;state.modal="task-view";draw();return;}
@@ -353,6 +370,9 @@
       if(action==="new-task"){state.modal="task";state.modalProject=b.dataset.project;state.modalParent="";draw();return;}
       if(action==="subtask"){state.modal="task";state.modalProject=t.project_id;state.modalParent=t.id;draw();return;}
       if(action==="edit-task"&&t){state.editTask=t;state.modal="edit-task";draw();return;}
+      if(action==="cal-prev"||action==="cal-next"||action==="cal-today"){var cm=state.calMonth;state.calMonth=action==="cal-today"?new Date(new Date().getFullYear(),new Date().getMonth(),1):new Date(cm.getFullYear(),cm.getMonth()+(action==="cal-next"?1:-1),1);draw();return;}
+      if(action==="checklist"){openChecklist(id);return;}
+      if(action==="check-remove"){window.SSMPDDb.taskChecklistRemove(id).then(function(){return reloadChecklist();}).catch(function(e){state.error=e.message||"تعذر الحذف";draw();});return;}
       if(action==="notifications"){state.modal="notifications";draw();return;}
       if(action==="read-notice"){
         var notice=state.notifications.find(function(x){return x.id===id;});
@@ -369,6 +389,7 @@
       }
     };
     el.onchange=function(ev){
+      if(ev.target.matches&&ev.target.matches("[data-check-id]")){window.SSMPDDb.taskChecklistToggle(ev.target.dataset.checkId,ev.target.checked).then(reloadChecklist).catch(function(e){state.error=e.message||"تعذر الحفظ";draw();});return;}
       if(ev.target.matches&&ev.target.matches("[data-comment-files]")){addFiles(ev.target);return;}
       var s=ev.target.closest&&ev.target.closest("[data-sel]");
       if(s){var k=s.dataset.sel;if(k==="project")state.fProject=s.value;else if(k==="assignee")state.fAssignee=s.value;else{state.sort=s.value;store("sort",s.value);}drawList();return;}
@@ -379,6 +400,7 @@
       var fd=new FormData(form);
       if(form.dataset.form==="note"){submitNote(form,fd);return;}
       if(form.dataset.form==="comment"){submitComment(form,fd);return;}
+      if(form.dataset.form==="check-add"){var cb=String(fd.get("body")||"").trim();if(!cb)return;window.SSMPDDb.taskChecklistAdd(state.checkTask,cb).then(reloadChecklist).catch(function(e){state.error=e.message||"تعذر الإضافة";draw();});return;}
       if(form.dataset.form==="project"||form.dataset.form==="project-edit"){
         var members=Array.from(form.querySelectorAll('input[name="member"]:checked')).map(function(x){return {admin_id:x.value,role_name:fd.get("role_"+x.value)||"contributor"};});
         var projectSave=form.dataset.form==="project-edit"
