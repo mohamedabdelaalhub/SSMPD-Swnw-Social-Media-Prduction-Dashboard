@@ -232,21 +232,23 @@
       var now = new Date().toISOString();
       return handle(client.from("login_sessions").update({ logout_at: now, last_seen_at: now }).eq("id", sessionId));
     },
-    logUsageActivity: function (adminId, actionType, reportName) {
-      return handle(client.from("usage_activity_log").insert({ admin_id: adminId, action_type: actionType, report_name: reportName || null }));
+    logUsageActivity: function (adminId, actionType, reportName, entityType, entityId) {
+      var row = { admin_id: adminId, action_type: actionType, report_name: reportName || null };
+      if (entityType && entityId) { row.entity_type = entityType; row.entity_id = entityId; }
+      return handle(client.from("usage_activity_log").insert(row));
     },
     listLoginSessions: function (limit) {
       return handle(client.from("login_sessions").select("id, admin_id, login_at, last_seen_at, logout_at, admins(name)").order("login_at", { ascending: false }).limit(limit || 200));
     },
     listUsageActivity: function (limit) {
-      return handle(client.from("usage_activity_log").select("id, admin_id, action_type, report_name, created_at, admins(name)").order("created_at", { ascending: false }).limit(limit || 200));
+      return handle(client.from("usage_activity_log").select("id, admin_id, action_type, report_name, entity_type, entity_id, created_at, admins(name)").order("created_at", { ascending: false }).limit(limit || 200));
     },
     // ---------- مركز إشعارات الأدمن/الإدارة (بيعيد استخدام activity_log + usage_activity_log الموجودين) ----------
     listRecentContentActivity: function (sinceIso, limit) {
       return handle(client.from("activity_log").select("id, actor_id, action, from_stage, to_stage, content_id, created_at, admins!actor_id(name), content_items(title, content_format, brand, stage)").gt("created_at", sinceIso).order("created_at", { ascending: false }).limit(limit || 20));
     },
     listUsageActivitySince: function (sinceIso, limit) {
-      return handle(client.from("usage_activity_log").select("id, admin_id, action_type, report_name, created_at, admins(name)").gt("created_at", sinceIso).order("created_at", { ascending: false }).limit(limit || 20));
+      return handle(client.from("usage_activity_log").select("id, admin_id, action_type, report_name, entity_type, entity_id, created_at, admins(name)").gt("created_at", sinceIso).order("created_at", { ascending: false }).limit(limit || 20));
     },
     listContentActivityRecent: function (limit) {
       return handle(client.from("activity_log").select("id, actor_id, action, from_stage, to_stage, content_id, created_at, admins!actor_id(name), content_items(title, content_format, brand, stage)").order("created_at", { ascending: false }).limit(limit || 20));

@@ -180,6 +180,28 @@ setTimeout(() => {
   assert(rootEl.querySelector(".menu-toggle") != null, "زرار القائمة المنسدلة (اسم+سهم) للموبايل ظاهر في الشِل");
   assert(rootEl.querySelector("#mobile-menu .mm-name") != null && rootEl.querySelector("#mobile-menu .mm-role") != null, "القائمة المنسدلة فيها الاسم والدور بالترتيب المطلوب");
 
+  // إشعارات "آخر الأنشطة": الإشعار اللي ليه عنصر مرتبط (ليد/مريض) لازم يبقى قابل للضغط ويفتح العنصر في مكانه
+  setTimeout(() => {
+    TABLES.usage_activity_log = [
+      { id: "u1", admin_id: ME.id, action_type: "رفع فاتورة حجز", report_name: "عميل — ليزر", entity_type: "lead", entity_id: "lead-9", created_at: new Date().toISOString(), admins: { name: "Zeina" } },
+      { id: "u2", admin_id: ME.id, action_type: "رفع مستند مريض", report_name: "ملف.pdf", entity_type: "patient", entity_id: "pat-7", created_at: new Date().toISOString(), admins: { name: "Zeina" } }
+    ];
+    const opened = [];
+    window.SSMPDRenderLeads = Object.assign(window.SSMPDRenderLeads || {}, { openLeadById: (id) => opened.push("lead:" + id) });
+    window.SSMPDRenderPatients = Object.assign(window.SSMPDRenderPatients || {}, { openPatientById: (id) => opened.push("patient:" + id) });
+    const bell = window.document.getElementById("notif-bell-btn");
+    assert(!!bell, "جرس الإشعارات ظاهر للسوبر أدمن");
+    bell.click();
+    setTimeout(() => {
+      const leadItem = window.document.querySelector('#notif-panel [data-notif-entity="lead"]');
+      const patItem = window.document.querySelector('#notif-panel [data-notif-entity="patient"]');
+      assert(!!leadItem && !!patItem, "إشعار الفاتورة والمستند قابلين للضغط (data-notif-entity)");
+      leadItem.click(); patItem.click();
+      assert(opened.join() === "lead:lead-9,patient:pat-7", "الضغط على الإشعار بيفتح الليد/المريض في مكانه: " + opened.join());
+      console.log("✓ إشعار آخر الأنشطة قابل للضغط ويفتح الليد/المريض في مكانه");
+    }, 300);
+  }, 250);
+
   setTimeout(() => {
     // The screen container is replaced on every tab switch, so always read the current one.
     const V = () => window.document.getElementById("view-container") || { innerHTML: "" };

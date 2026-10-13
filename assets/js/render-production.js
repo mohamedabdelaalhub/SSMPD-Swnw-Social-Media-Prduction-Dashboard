@@ -1004,7 +1004,7 @@ function openAgentImportModal(parentBackdrop) {
       })
         .then(function (row) {
           window.SSMPDDrive.logIdea(row.id, title).catch(function () {});
-          window.SSMPDDb.logUsageActivity(me.id, "إنشاء مادة محتوى", title).catch(function () {});
+          window.SSMPDDb.logUsageActivity(me.id, "إنشاء مادة محتوى", title, "content", row.id).catch(function () {});
           return window.SSMPDDb.logActivity({ content_id: row.id, actor_id: me.id, action: "إنشاء", from_stage: null, to_stage: stage });
         }).then(function () {
           backdrop.remove();
