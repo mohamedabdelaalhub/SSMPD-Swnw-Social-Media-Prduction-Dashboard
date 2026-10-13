@@ -77,8 +77,8 @@
   function render(el){
     if(!window.SSMPDRoles.canModuleAction(window.SSMPDAuth.currentAdmin,"tasks","view")){el.innerHTML="<p>ليس لديك صلاحية عرض المهام.</p>";return;}
     var admin=window.SSMPDAuth.currentAdmin;
-    var state={projects:[],tasks:[],people:[],notifications:[],archived:{},modal:"",error:"",filter:"all",view:store("view")==="board"?"board":"list",sort:(["smart","manual","due","priority","updated"].indexOf(store("sort"))>=0?store("sort"):(isAdmin?"smart":"manual")),q:"",fProject:"",fAssignee:"",showArchived:false,expanded:{},note:null,deleteTarget:null,viewId:"",historyTask:"",history:[],historyAtts:{},pendingFiles:[]};
     var isAdmin=allManager(admin);
+    var state={projects:[],tasks:[],people:[],notifications:[],archived:{},modal:"",error:"",filter:"all",view:store("view")==="board"?"board":"list",sort:(["smart","manual","due","priority","updated"].indexOf(store("sort"))>=0?store("sort"):(isAdmin?"smart":"manual")),q:"",fProject:"",fAssignee:"",showArchived:false,expanded:{},note:null,deleteTarget:null,viewId:"",historyTask:"",history:[],historyAtts:{},pendingFiles:[]};
     function refresh(){return window.SSMPDDb.taskRefreshOverdue().catch(function(){return 0;}).then(function(){return Promise.all([
       window.SSMPDDb.taskListProjects(),window.SSMPDDb.taskListVisible(),window.SSMPDDb.taskPeople(),
       window.SSMPDDb.taskListNotifications(),
