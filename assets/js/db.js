@@ -1306,6 +1306,11 @@
     taskReview: function (taskId, approve, note) {
       return handle(client.rpc("task_review", { p_task_id:taskId, p_approve:approve, p_note:note || "" }));
     },
+    taskChecklistList: function (taskId) { return handle(client.rpc("task_checklist_list", { p_task_id: taskId })); },
+    taskChecklistCounts: function (ids) { return handle(client.rpc("task_checklist_counts", { p_task_ids: ids })); },
+    taskChecklistAdd: function (taskId, body) { return handle(client.rpc("task_checklist_add", { p_task_id: taskId, p_body: body })); },
+    taskChecklistToggle: function (id, done) { return handle(client.rpc("task_checklist_toggle", { p_id: id, p_done: !!done })); },
+    taskChecklistRemove: function (id) { return handle(client.rpc("task_checklist_remove", { p_id: id })); },
     taskListUpdates: function (taskId) {
       return handle(client.from("task_updates").select("id,task_id,author_id,body,status_from,status_to,created_at").eq("task_id",taskId).order("created_at",{ascending:false}));
     },

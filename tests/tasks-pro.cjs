@@ -22,6 +22,7 @@ window.mock={
  updates:{t1:[{id:'u1',task_id:'t1',author_id:'a3',body:'بدأت الشغل https://drive.google.com/x.',status_from:'todo',status_to:'in_progress',created_at:iso(-1)}]}
 };
 if(location.search==='?empty'){mock.tasks=[];mock.notices=[];}
+mock.chk={t1:[{id:'c1',body:'بند أول',done:false}]};
 window.SSMPDAuth={currentAdmin:{id:'a1'}};
 window.SSMPDRoles={hasAnyRole:function(){return true},canModuleAction:function(){return true},isControlledFinance:function(){return false}};
 window.SSMPDDb={
@@ -37,6 +38,11 @@ window.SSMPDDb={
  taskListUpdates:function(id){return Promise.resolve((mock.updates[id]||[]).slice())},
  taskAddComment:function(id,body,atts){atts=atts||[];calls.push(['comment',id,body,atts.length]);var uid='u'+Math.random();(mock.updates[id]=mock.updates[id]||[]).unshift({id:uid,task_id:id,author_id:'a1',body:body||'مرفقات',created_at:new Date().toISOString()});atts.forEach(function(a){mock.atts.push({id:'f'+Math.random(),update_id:uid,file_name:a.name,mime_type:'application/pdf',size_bytes:2048,file_url:a.url})});return Promise.resolve()},
  taskUploadAttachment:function(id,file){calls.push(['upload',id,file.name]);return Promise.resolve({name:file.name,url:'https://drive.google.com/file/d/'+encodeURIComponent(file.name)+'/view',file_id:'x',size:file.size,mime:file.type})},
+ taskChecklistCounts:function(ids){var o={};ids.forEach(function(i){var l=mock.chk[i]||[];if(l.length)o[i]={total:l.length,done:l.filter(function(c){return c.done}).length}});return Promise.resolve(o)},
+ taskChecklistList:function(id){return Promise.resolve((mock.chk[id]||[]).slice())},
+ taskChecklistAdd:function(id,b){calls.push(['chk-add',id,b]);(mock.chk[id]=mock.chk[id]||[]).push({id:'c'+Math.random(),body:b,done:false});return Promise.resolve()},
+ taskChecklistToggle:function(id,d){calls.push(['chk-toggle',id,d]);Object.keys(mock.chk).forEach(function(k){mock.chk[k].forEach(function(c){if(c.id===id)c.done=d})});return Promise.resolve()},
+ taskChecklistRemove:function(id){calls.push(['chk-rm',id]);Object.keys(mock.chk).forEach(function(k){mock.chk[k]=mock.chk[k].filter(function(c){return c.id!==id})});return Promise.resolve()},
  taskListAttachments:function(id){return Promise.resolve(mock.atts.slice())},
 
  taskMarkNotificationRead:function(id){calls.push(['read',id]);mock.notices.forEach(function(n){if(n.id===id)n.read_at='x'});return Promise.resolve()}
@@ -148,6 +154,23 @@ try{
   await page.close();
  }
  // 13: nothing at all
+ // checklist + calendar
+ {const cp=await browser.newPage({viewport:{width:1100,height:900}});const ce=[];cp.on('pageerror',e=>ce.push(e.message));
+  await cp.goto('http://localhost:'+port+'/');await cp.waitForSelector('.tsk-card');
+  assert(/\(0\/1\)/.test(await cp.locator('[data-action="checklist"][data-id="t1"]').textContent()),'checklist counter on card');
+  await cp.click('[data-action="checklist"][data-id="t1"]');await cp.waitForSelector('.tsk-checklist');
+  await cp.fill('.tsk-check-add input','بند ثاني');await cp.click('.tsk-check-add button');
+  await cp.waitForFunction(()=>document.querySelectorAll('.tsk-check-row').length===2);
+  await cp.check('[data-check-id="c1"]');
+  await cp.waitForFunction(()=>document.querySelector('.tsk-check-row.done'));
+  await cp.click('[data-action="check-remove"]:last-of-type');
+  await cp.waitForFunction(()=>document.querySelectorAll('.tsk-check-row').length===1);
+  await cp.click('.tsk-modal header button');
+  await cp.click('[data-action="view"][data-id="calendar"]');await cp.waitForSelector('.tsk-cal-grid');
+  assert(await cp.locator('.tsk-cal-chip').count()>=1,'calendar shows chips');
+  await cp.click('[data-action="cal-next"]');await cp.click('[data-action="cal-today"]');
+  await cp.click('.tsk-cal-chip >> nth=0');await cp.waitForSelector('.tsk-modal');
+  assert.deepEqual(ce,[],ce.join('|'));await cp.close();}
  const empty=await browser.newPage({viewport:{width:1000,height:800}});
  await empty.goto('http://localhost:'+port+'/?empty');await empty.waitForSelector('.tsk-empty-rich');
  assert(/مفيش مهام لسه/.test(await empty.locator('.tsk-empty-rich').last().textContent()),'friendly empty state');
