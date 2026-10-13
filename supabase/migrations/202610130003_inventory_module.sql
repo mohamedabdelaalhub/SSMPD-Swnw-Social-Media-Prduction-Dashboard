@@ -89,6 +89,7 @@ create table if not exists public.inventory_count_sessions (
   submitted_at timestamptz,
   approved_by uuid references public.admins(id),
   approved_at timestamptz,
+  task_id uuid references public.tasks(id),
   note text not null default '',
   created_at timestamptz not null default now()
 );
@@ -354,7 +355,7 @@ end $$;
 
 create or replace function public.inventory_submit_count(p_session_id uuid,p_lines jsonb)
 returns void language plpgsql security definer set search_path=public as $$
-declare v_s public.inventory_count_sessions%rowtype; v_line jsonb; v_qty numeric;
+declare v_s public.inventory_count_sessions%rowtype; v_line jsonb; v_qty numeric; v_task_status text;
 begin
   select * into v_s from public.inventory_count_sessions where id=p_session_id for update;
   if not found or (v_s.assigned_to<>public.my_admin_id() and not public.inventory_can_manage()) then raise exception 'Not allowed to submit this count'; end if;
@@ -366,6 +367,13 @@ begin
   end loop;
   if exists(select 1 from public.inventory_count_lines where session_id=p_session_id and counted_quantity is null) then raise exception 'Enter a count for every item'; end if;
   update public.inventory_count_sessions set status='submitted',submitted_at=now() where id=p_session_id;
+  if v_s.task_id is not null then
+    select status into v_task_status from public.tasks where id=v_s.task_id for update;
+    update public.tasks set status='review',updated_at=now() where id=v_s.task_id and status not in ('done');
+    insert into public.task_updates(task_id,author_id,body,status_from,status_to) values(v_s.task_id,public.my_admin_id(),'تم تسليم نتائج الجرد للمراجعة',v_task_status,'review');
+    insert into public.task_notifications(recipient_id,task_id,kind,message)
+      select p.manager_id,v_s.task_id,'review','نتائج الجرد جاهزة للمراجعة' from public.tasks t join public.task_projects p on p.id=t.project_id where t.id=v_s.task_id and p.manager_id<>public.my_admin_id() on conflict do nothing;
+  end if;
 end $$;
 
 create or replace function public.inventory_approve_count(p_session_id uuid)
@@ -385,11 +393,15 @@ begin
     end if;
   end loop;
   update public.inventory_count_sessions set status='approved',approved_by=public.my_admin_id(),approved_at=now() where id=p_session_id;
+  if v_s.task_id is not null then
+    update public.tasks set status='done',completed_at=now(),updated_at=now() where id=v_s.task_id;
+    insert into public.task_updates(task_id,author_id,body,status_from,status_to) values(v_s.task_id,public.my_admin_id(),'تم اعتماد الجرد وتسوية الفروق','review','done');
+  end if;
 end $$;
 
 create or replace function public.inventory_save_count_schedule(p_id uuid,p_title text,p_cadence_days integer,p_assigned_to uuid,p_next_due_at timestamptz)
 returns uuid language plpgsql security definer set search_path=public as $$
-declare v_id uuid; v_project_id uuid; v_manager uuid:=public.my_admin_id();
+declare v_id uuid; v_project_id uuid; v_manager uuid:=public.my_admin_id(); v_old_assignee uuid;
 begin
   if not public.inventory_can_manage() then raise exception 'Not allowed to manage schedules'; end if;
   if p_cadence_days not between 1 and 366 or not exists(select 1 from public.admins where id=p_assigned_to and active) then raise exception 'Invalid schedule'; end if;
@@ -399,7 +411,9 @@ begin
     insert into public.task_project_members(project_id,admin_id,role_name) values(v_project_id,p_assigned_to,'contributor') on conflict(project_id,admin_id) do nothing;
     insert into public.inventory_count_schedules(title,cadence_days,assigned_to,next_due_at,created_by,project_id) values(trim(p_title),p_cadence_days,p_assigned_to,p_next_due_at,v_manager,v_project_id) returning id into v_id;
   else
-    update public.inventory_count_schedules set title=trim(p_title),cadence_days=p_cadence_days,assigned_to=p_assigned_to,next_due_at=p_next_due_at where id=p_id returning id,project_id into v_id,v_project_id;
+    select assigned_to,project_id into v_old_assignee,v_project_id from public.inventory_count_schedules where id=p_id for update;
+    update public.inventory_count_schedules set title=trim(p_title),cadence_days=p_cadence_days,assigned_to=p_assigned_to,next_due_at=p_next_due_at where id=p_id returning id into v_id;
+    delete from public.task_project_members where project_id=v_project_id and admin_id=v_old_assignee and role_name='contributor' and v_old_assignee<>v_manager;
     insert into public.task_project_members(project_id,admin_id,role_name) values(v_project_id,p_assigned_to,'contributor') on conflict(project_id,admin_id) do nothing;
   end if;
   return v_id;
@@ -413,8 +427,10 @@ begin
     insert into public.inventory_count_sessions(title,assigned_to,created_by,due_at,note)
       values(s.title,s.assigned_to,s.created_by,s.next_due_at,'تم إنشاؤه تلقائيًا من جدول الجرد') returning id into v_id;
     insert into public.inventory_count_lines(session_id,item_id,system_quantity) select v_id,i.id,public.inventory_on_hand(i.id) from public.inventory_items i where i.active;
+    update public.task_projects set archived_at=null where id=s.project_id;
     insert into public.tasks(project_id,title,description,expected_output,assignee_id,created_by,status,priority,due_at)
       values(s.project_id,'تنفيذ جرد: '||s.title,'إجراء جرد فعلي للأصناف وتسجيل الكميات من تاب المخزن','إكمال الجرد المخصص في تاب المخزن',s.assigned_to,s.created_by,'todo','high',s.next_due_at) returning id into v_task_id;
+    update public.inventory_count_sessions set task_id=v_task_id where id=v_id;
     insert into public.task_notifications(recipient_id,task_id,kind,message)
       values(s.assigned_to,v_task_id,'assigned','تم إسناد جرد دوري جديد: '||s.title);
     update public.inventory_count_schedules set last_session_id=v_id,next_due_at=now()+make_interval(days=>s.cadence_days) where id=s.id;
