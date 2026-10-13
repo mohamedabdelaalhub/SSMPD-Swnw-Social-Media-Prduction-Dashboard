@@ -1306,6 +1306,13 @@
     taskListUpdates: function (taskId) {
       return handle(client.from("task_updates").select("id,task_id,author_id,body,status_from,status_to,created_at").eq("task_id",taskId).order("created_at",{ascending:false}));
     },
+    taskProjectArchives: function () { return handle(client.from("task_projects").select("id,archived_at")); },
+    taskSetProjectArchived: function (projectId, on) {
+      return handle(client.from("task_projects").update({ archived_at: on ? new Date().toISOString() : null }).eq("id", projectId));
+    },
+    taskAddComment: function (taskId, body) {
+      return handle(client.from("task_updates").insert({ task_id: taskId, author_id: window.SSMPDAuth.currentAdmin.id, body: String(body || "").trim() }));
+    },
     taskMarkNotificationRead: function (id) {
       return handle(client.from("task_notifications").update({read_at:new Date().toISOString()}).eq("id",id).eq("recipient_id",window.SSMPDAuth.currentAdmin.id));
     },

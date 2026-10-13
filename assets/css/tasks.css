@@ -60,3 +60,42 @@
 .tsk-card.s-in_progress,.tsk-card.s-review,.tsk-card.s-revision,.tsk-card.s-blocked,.tsk-card.s-done{background:var(--c-card,#fff);color:inherit}.tsk-card.is-overdue{background:#fffaf9}
 .tsk-project .tsk-avatar{display:grid;color:#fff;font-size:18px}.tsk-project .tsk-count{display:grid;color:#2f6fbf;font-size:13px}
 .tsk-project .tsk-project-name span{display:block;color:var(--c-muted,#718096);font-size:12px}
+/* ===== المرحلة التانية: بحث/ترتيب/لوحة/مهام فرعية/تقدم المشروع/ملخص الموظفين ===== */
+.tsk-toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:0 0 14px}
+.tsk-toolbar select,.tsk-search{font:inherit;font-size:13px;border:1px solid #d8e0ea;border-radius:10px;padding:9px 12px;background:#fff;color:#2c4058;min-width:0}
+.tsk-search{flex:1 1 240px}.tsk-toolbar select{flex:0 1 190px;max-width:100%}
+.tsk-viewtoggle{display:inline-flex;border:1px solid #d8e0ea;border-radius:10px;overflow:hidden;margin-inline-start:auto}
+.tsk-viewtoggle button{font:inherit;font-size:13px;border:0;background:#fff;color:#40536a;padding:9px 16px;cursor:pointer}.tsk-viewtoggle button+button{border-inline-start:1px solid #d8e0ea}
+.tsk-viewtoggle button.on{background:var(--c-primary,#0F369D);color:#fff}
+.tsk-due{font-weight:700;color:#2f6fbf}.tsk-due.late{color:#b23e2d}
+.tsk-sub-toggle{display:flex;align-items:center;gap:8px;width:100%;font:inherit;font-size:12px;font-weight:700;color:#2f4f7f;background:#f3f7fd;border:1px dashed #c7d6ea;border-radius:10px;padding:8px 12px;margin:10px 0 0;cursor:pointer;text-align:right}
+.tsk-sub-toggle:hover{background:#eaf1fb}.tsk-caret{font-size:14px}
+.tsk-progress-bar{display:block;flex:1;height:7px;border-radius:6px;background:#e6ecf4;overflow:hidden;min-width:60px}.tsk-progress-bar i{display:block;height:100%;background:#2f7d5c;border-radius:6px}
+.tsk-progress-bar.mini{max-width:130px;margin-inline-start:auto}
+.tsk-progress{display:flex;flex-direction:column;gap:6px;font-size:12px;color:#53677f}.tsk-progress .tsk-progress-bar{flex:none;width:100%}
+.tsk-late-text{font-style:normal;color:#b23e2d;font-weight:700}
+.tsk-project.is-archived{opacity:.7;background:#f4f6f9}.tsk-arch-badge{font-style:normal;font-size:11px;background:#e5e9ef;color:#53677f;border-radius:10px;padding:2px 8px;margin-inline-start:6px;font-weight:600}
+.tsk-board{display:grid;grid-template-columns:repeat(6,minmax(165px,1fr));gap:12px;overflow-x:auto;padding-bottom:6px;align-items:start}
+.tsk-col{background:#f5f7fb;border-radius:14px;padding:10px;border-top:4px solid #cbd5e1;min-width:0}
+.tsk-col.s-in_progress{border-top-color:#2f6fbf}.tsk-col.s-review{border-top-color:#e0a000}.tsk-col.s-revision,.tsk-col.s-blocked{border-top-color:#d0402a}.tsk-col.s-done{border-top-color:#2f7d5c}
+.tsk-col header{display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:13px;margin-bottom:10px;color:#33465d}.tsk-col header b{background:#fff;border-radius:12px;padding:1px 9px;font-size:12px}
+.tsk-col-body{display:grid;gap:8px}.tsk-col-empty{text-align:center;font-size:12px;color:#8794a5;margin:10px 0}
+.tsk-mini{display:flex;flex-direction:column;gap:7px;text-align:right;font:inherit;background:#fff;border:1px solid #e3e9f1;border-radius:11px;padding:10px 11px;cursor:pointer;color:#20334a;box-shadow:0 2px 6px rgba(30,50,80,.04)}
+.tsk-mini:hover{box-shadow:0 6px 16px rgba(30,50,80,.1)}.tsk-mini.is-overdue{border-color:#f0c9bc;background:#fffaf9}
+.tsk-mini>b{font-size:13.5px;line-height:1.5}.tsk-mini-meta,.tsk-mini-foot{display:flex;flex-wrap:wrap;gap:6px;font-size:11.5px;color:#69798e;align-items:center}
+.tsk-prio{border-radius:20px;padding:2px 9px;font-size:11px;background:#eef2f7}.tsk-sub-badge{background:#eaf1fb;color:#2f6fbf;border-radius:20px;padding:2px 9px;font-size:11px}
+.tsk-team{overflow-x:auto;margin:6px 0 10px}.tsk-team table{width:100%;border-collapse:collapse;font-size:13px}
+.tsk-team th{background:#f3f6fa;color:#4a5d74;font-weight:700;padding:9px 12px;text-align:right;white-space:nowrap}.tsk-team td{padding:10px 12px;border-bottom:1px solid #edf1f6}
+.tsk-team td.late{color:#b23e2d;font-weight:700}.tsk-team tr:last-child td{border-bottom:0}
+.tsk-sub-title{font-size:14px;margin:16px 0 6px;color:#40536a}
+.tsk-empty-rich{display:flex;flex-direction:column;align-items:center;gap:6px;padding:34px 18px}.tsk-empty-rich h3{margin:0;font-size:17px;color:#33465d}.tsk-empty-rich p{margin:0 0 6px;max-width:420px;line-height:1.8}.tsk-empty-icon{font-size:34px}
+.tsk-empty-rich .btn{font:inherit;cursor:pointer;border:1px solid var(--c-border,#dbe2eb);background:#fff;color:#314761;border-radius:9px;padding:8px 16px}.tsk-empty-rich .btn-primary{background:var(--c-primary,#0F369D);color:#fff;border-color:var(--c-primary,#0F369D)}
+.tsk-flash{animation:tskFlash 2.4s ease}@keyframes tskFlash{0%,60%{box-shadow:0 0 0 4px rgba(241,90,34,.45)}100%{box-shadow:0 4px 14px rgba(30,50,80,.04)}}
+.tsk-note-for{margin:0 0 8px;font-weight:700;color:#33465d;font-size:14px}.tsk-hint{margin:0 0 8px;color:#69798e;font-size:13px;line-height:1.7}
+.tsk-field-error{margin:8px 0;padding:8px 10px;background:#fff0ec;color:#a33e29;border-radius:8px;font-size:13px}.tsk-field-error[hidden]{display:none}
+.tsk-form-actions{display:flex;gap:10px;margin-top:12px}.tsk-form-actions .btn{font:inherit;cursor:pointer;border:1px solid var(--c-border,#dbe2eb);background:#fff;color:#314761;border-radius:9px;padding:9px 16px}.tsk-form-actions .btn-primary{background:var(--c-primary,#0F369D);color:#fff;border-color:var(--c-primary,#0F369D)}.tsk-form-actions .btn:disabled{opacity:.6;cursor:default}
+.tsk-comment-form textarea{display:block;width:100%;box-sizing:border-box;font:inherit;border:1px solid #d8e0ea;border-radius:10px;padding:10px;resize:vertical}
+.tsk-modal form[data-form=note] textarea{display:block;width:100%;box-sizing:border-box;margin-top:6px;font:inherit;border:1px solid #d8e0ea;border-radius:10px;padding:10px;resize:vertical}
+.tsk-hist-status{display:inline-block;margin-inline-start:8px;font-size:11px;background:#eaf1fb;color:#2f6fbf;border-radius:20px;padding:2px 9px}
+.tsk-history{margin-top:14px}.tsk-history a{color:#2f6fbf;word-break:break-all}
+@media(max-width:760px){.tsk-toolbar select{flex:1 1 45%}.tsk-viewtoggle{margin-inline-start:0;width:100%}.tsk-viewtoggle button{flex:1}.tsk-board{grid-template-columns:repeat(6,78vw)}.tsk-team table,.tsk-team thead,.tsk-team tbody,.tsk-team tr,.tsk-team td{display:block}.tsk-team thead{display:none}.tsk-team tr{border:1px solid #edf1f6;border-radius:10px;margin-bottom:8px;padding:6px 0}.tsk-team td{display:flex;justify-content:space-between;border:0;padding:5px 12px}.tsk-team td::before{content:attr(data-label);color:#69798e}}
