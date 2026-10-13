@@ -659,3 +659,7 @@ table.simple.acc-table td.acc-col-num{text-align:left;}
 .pbr-thumb{width:62px;}
 .pbr-thumb .pbd-thumb{width:48px;height:60px;}
 .pbr-bar select{padding:7px 12px;border:1px solid var(--c-border);border-radius:9px;background:#fff;font:inherit;font-size:13px;color:var(--c-dark);}
+/* حقول التاريخ داخل صفوف الفلاتر: ما تتضغطش على بعض وزرار "تطبيق" ما يركبش عليها (خصوصاً على الموبايل) */
+.field input[type="date"]{min-width:140px;width:100%;box-sizing:border-box}
+.field:has(> input[type="date"]),.field:has(input[type="date"]){flex:1 1 150px;min-width:140px}
+@media(max-width:700px){div[style*="flex-wrap"]>.btn.sm{flex:0 0 auto}}
