@@ -77,7 +77,7 @@ begin
   end if;
 
   update public.tasks t
-  set sort_order=ordered.position*1000,updated_at=now()
+  set sort_order=ordered.position::integer*1000,updated_at=now()
   from unnest(p_task_ids) with ordinality as ordered(id,position)
   where t.id=ordered.id;
 end
