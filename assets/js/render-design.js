@@ -200,7 +200,7 @@
       var newStage = item.stage === "in_design" || item.stage === "needs_revision" ? "final_approval" : item.stage;
       var updated = newStage !== item.stage ? await window.SSMPDDb.updateContentItem(item.id, { stage: newStage }) : item;
       window.SSMPDDrive.logDesignUploaded(item.id, updated.title).catch(function () {});
-      window.SSMPDDb.logUsageActivity(me.id, "رفع كاروسيل", files.length + " شرايح — " + item.title).catch(function () {});
+      window.SSMPDDb.logUsageActivity(me.id, "رفع كاروسيل", files.length + " شرايح — " + item.title, "content", item.id).catch(function () {});
       await window.SSMPDDb.logActivity({ content_id: item.id, actor_id: me.id, action: "رفع كاروسيل (" + files.length + " شرايح)", from_stage: item.stage, to_stage: newStage });
       status.textContent = "تم حفظ الكاروسيل وإرساله للمراجعة";
     })().then(function () {
@@ -235,7 +235,7 @@
       var patch={stage:newStage};if(!res.private)patch.design_file_url=res.fileUrl;if(res.folderUrl)patch.design_drive_folder=res.folderUrl;
       var updated=await window.SSMPDDb.updateContentItem(item.id,patch);
       window.SSMPDDrive.logDesignUploaded(item.id,updated.title).catch(function(){});
-      window.SSMPDDb.logUsageActivity(me.id,'رفع تصميم',file.name+' — '+item.title).catch(function(){});
+      window.SSMPDDb.logUsageActivity(me.id,'رفع تصميم',file.name+' — '+item.title,'content',item.id).catch(function(){});
       await window.SSMPDDb.logActivity({content_id:item.id,actor_id:me.id,action:'رفع تصميم',from_stage:item.stage,to_stage:newStage});
       status.textContent='تم حفظ التصميم وإرساله للمراجعة';
     })().then(function () {

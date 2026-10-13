@@ -325,7 +325,8 @@
         contentId: r.content_id, title: ci.title || "", format: ci.content_format || "", brand: ci.brand || "",
         fromStage: r.from_stage || "", toStage: r.to_stage || "", itemStage: ci.stage || "", action: r.action };
     }).concat((res[1] || []).map(function (r) {
-      return { at: r.created_at, text: ((r.admins && r.admins.name) || "مستخدم") + " — " + r.action_type + (r.report_name ? ": " + r.report_name : "") };
+      return { at: r.created_at, text: ((r.admins && r.admins.name) || "مستخدم") + " — " + r.action_type + (r.report_name ? ": " + r.report_name : ""),
+        entityType: r.entity_type || "", entityId: r.entity_id || "", action: r.action_type };
     }));
     items.sort(function (a, b) { return new Date(b.at) - new Date(a.at); });
     return items;
@@ -380,8 +381,16 @@
       }
       if (target && it.title) detail += '<div style="color:var(--c-primary);font-size:11px;margin-top:2px;">📍 يفتح في: ' + notifEscHtml(TAB_LABELS[target]) + "</div>";
     }
-    var clickable = target && it.title;
-    return '<div' + (clickable ? ' data-notif-cid="' + notifEscHtml(it.contentId) + '" data-notif-tab="' + target + '" role="button" tabindex="0"' : "") +
+    var entity = !it.contentId && it.entityType && it.entityId ? it.entityType : "";
+    if (entity === "content") { target = notifTargetTab(it); }
+    var clickable = (target && it.title) || (entity === "content" && target) || entity === "lead" || entity === "patient";
+    var openAttrs = "";
+    if (clickable) {
+      if (entity === "lead" || entity === "patient") openAttrs = ' data-notif-entity="' + entity + '" data-notif-eid="' + notifEscHtml(it.entityId) + '" role="button" tabindex="0"';
+      else openAttrs = ' data-notif-cid="' + notifEscHtml(it.contentId || it.entityId) + '" data-notif-tab="' + target + '" role="button" tabindex="0"';
+      if (entity) detail += '<div style="color:var(--c-primary);font-size:11px;margin-top:2px;">📍 يفتح: ' + (entity === "lead" ? "بطاقة الليد" : entity === "patient" ? "ملف المريض" : notifEscHtml(TAB_LABELS[target])) + "</div>";
+    }
+    return '<div' + openAttrs +
       ' style="padding:8px 10px;border-bottom:1px solid var(--c-border);font-size:12px;' + (unread ? "" : "opacity:.5;") + (clickable ? "cursor:pointer;" : "") + '">' + notifEscHtml(it.text) + detail +
       '<div style="color:var(--c-muted);font-size:10px;margin-top:2px;">' + notifRelTime(it.at) + "</div></div>";
   }
@@ -397,8 +406,14 @@
     }, 200);
   }
   function wireNotifItems(root, onClose) {
-    root.querySelectorAll("[data-notif-cid]").forEach(function (el) {
-      function go() { if (onClose) onClose(); openNotifTarget(el.getAttribute("data-notif-cid"), el.getAttribute("data-notif-tab")); }
+    root.querySelectorAll("[data-notif-cid],[data-notif-entity]").forEach(function (el) {
+      function go() {
+        if (onClose) onClose();
+        var ent = el.getAttribute("data-notif-entity"), eid = el.getAttribute("data-notif-eid");
+        if (ent === "lead" && window.SSMPDRenderLeads && window.SSMPDRenderLeads.openLeadById) { window.SSMPDRenderLeads.openLeadById(eid); return; }
+        if (ent === "patient" && window.SSMPDRenderPatients && window.SSMPDRenderPatients.openPatientById) { window.SSMPDRenderPatients.openPatientById(eid); return; }
+        openNotifTarget(el.getAttribute("data-notif-cid"), el.getAttribute("data-notif-tab"));
+      }
       el.onclick = go;
       el.onkeydown = function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } };
     });

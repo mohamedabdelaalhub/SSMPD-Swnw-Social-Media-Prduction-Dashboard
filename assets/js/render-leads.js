@@ -1200,7 +1200,7 @@
           fd.append("file", file);
           statusEl.textContent = "بيرفع…";
           window.SSMPDDb.uploadLeadInvoice(fd).then(function () {
-            window.SSMPDDb.logUsageActivity(window.SSMPDAuth.currentAdmin.id, "رفع فاتورة حجز", (lead.customer_name || "") + (serviceName ? " — " + serviceName : "")).catch(function () {});
+            window.SSMPDDb.logUsageActivity(window.SSMPDAuth.currentAdmin.id, "رفع فاتورة حجز", (lead.customer_name || "") + (serviceName ? " — " + serviceName : ""), "lead", lead.id).catch(function () {});
             T.show("اترفعت الفاتورة");
             reload();
           }).catch(function (e) { statusEl.textContent = "خطأ: " + e.message; });
@@ -1217,7 +1217,7 @@
     state.archive.search = term;
   }
 
-  window.SSMPDRenderLeads = { render: render, openSearch: openSearch };
+  window.SSMPDRenderLeads = { render: render, openSearch: openSearch, openLeadById: function (id) { openLeadModal(null, null, id, function () {}); } };
 })();
 
 
