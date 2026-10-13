@@ -31,6 +31,8 @@
   }
   function norm(v){return String(v==null?"":v).toLowerCase().replace(/[ً-ٰٟـ]/g,"").replace(/[أإآ]/g,"ا").replace(/ى/g,"ي").replace(/ة/g,"ه").replace(/[٠-٩]/g,function(c){return String(c.charCodeAt(0)-1632);});}
   function linkify(text){return esc(text).replace(/(https?:\/\/[^\s<]+)/g,function(u){var clean=u.replace(/[.,،؛)]+$/,""),tail=u.slice(clean.length);return '<a href="'+clean+'" target="_blank" rel="noopener noreferrer">'+clean+'</a>'+tail;});}
+  var FILE_EXT=["png","jpg","jpeg","webp","gif","pdf","txt","csv","doc","docx","xls","xlsx","ppt","pptx"],MAX_FILES=10,MAX_BYTES=10485760;
+  function fileSize(n){return n>=1048576?(n/1048576).toFixed(1).replace(/\.0$/,"")+" MB":Math.max(1,Math.round(n/1024))+" KB";}
   function store(key,value){try{if(value===undefined)return window.localStorage.getItem("ssmpd.tasks."+key);window.localStorage.setItem("ssmpd.tasks."+key,value);}catch(e){}return null;}
   var NOTE={
     progress:{title:"تسجيل تحديث",start:"بدء المهمة",label:"إيه اللي اتعمل أو هتشتغل عليه؟",hint:"مثال: خلّصت جرد الرف الأول وهبدأ الرف التاني",required:true,button:"حفظ التحديث"},
@@ -71,7 +73,7 @@
   function render(el){
     if(!window.SSMPDRoles.canModuleAction(window.SSMPDAuth.currentAdmin,"tasks","view")){el.innerHTML="<p>ليس لديك صلاحية عرض المهام.</p>";return;}
     var admin=window.SSMPDAuth.currentAdmin;
-    var state={projects:[],tasks:[],people:[],notifications:[],archived:{},modal:"",error:"",filter:"all",view:store("view")==="board"?"board":"list",sort:(["smart","due","priority","updated"].indexOf(store("sort"))>=0?store("sort"):"smart"),q:"",fProject:"",fAssignee:"",showArchived:false,expanded:{},note:null,viewId:"",historyTask:"",history:[]};
+    var state={projects:[],tasks:[],people:[],notifications:[],archived:{},modal:"",error:"",filter:"all",view:store("view")==="board"?"board":"list",sort:(["smart","due","priority","updated"].indexOf(store("sort"))>=0?store("sort"):"smart"),q:"",fProject:"",fAssignee:"",showArchived:false,expanded:{},note:null,viewId:"",historyTask:"",history:[],historyAtts:{},pendingFiles:[]};
     var isAdmin=allManager(admin);
     function refresh(){return window.SSMPDDb.taskRefreshOverdue().catch(function(){return 0;}).then(function(){return Promise.all([
       window.SSMPDDb.taskListProjects(),window.SSMPDDb.taskListVisible(),window.SSMPDDb.taskPeople(),
@@ -219,18 +221,41 @@
       if(state.modal==="history"){
         var ht=state.tasks.find(function(x){return x.id===state.historyTask;})||{};
         html+=modal("التعليقات وسجل التحديثات",(ht.title?'<p class="tsk-note-for">'+esc(ht.title)+'</p>':"")+
-          '<form data-form="comment" class="tsk-comment-form"><textarea name="comment" rows="3" maxlength="5000" placeholder="اكتب تعليق، أو الصق رابط ملف (Drive مثلاً)…"></textarea><p class="tsk-field-error" role="alert" hidden></p><div class="tsk-form-actions"><button class="btn btn-primary" type="submit">إرسال التعليق</button></div></form>'+
-          '<div class="tsk-history">'+((state.history||[]).map(function(u){return '<article><b>'+esc(u.author_name||"عضو الفريق")+'</b><small>'+esc(stamp(u.created_at))+'</small>'+(u.status_to?'<span class="tsk-hist-status">'+esc((STATUS[u.status_from]||"")+(u.status_from?" ← ":"")+(STATUS[u.status_to]||u.status_to))+'</span>':"")+'<p>'+linkify(u.body)+'</p></article>';}).join("")||'<p class="tsk-empty">لا توجد تعليقات أو تحديثات بعد.</p>')+'</div>');
+          '<form data-form="comment" class="tsk-comment-form"><textarea name="comment" rows="3" maxlength="5000" placeholder="اكتب تعليق، أو الصق رابط ملف (Drive مثلاً)…"></textarea><div class="tsk-file-list" data-file-list></div><p class="tsk-field-error" role="alert" hidden></p><div class="tsk-form-actions"><label class="btn tsk-file-btn">📎 إرفاق ملفات<input type="file" multiple data-comment-files accept=".png,.jpg,.jpeg,.webp,.gif,.pdf,.txt,.csv,.doc,.docx,.xls,.xlsx,.ppt,.pptx"></label><button class="btn btn-primary" type="submit">إرسال التعليق</button></div><p class="tsk-hint">حتى 10 ملفات، كل ملف لحد 10 ميجا (صور، PDF، Word، Excel، PowerPoint، نص). الملفات بتتحفظ على Google Drive.</p></form>'+
+          '<div class="tsk-history">'+((state.history||[]).map(function(u){return '<article><b>'+esc(u.author_name||"عضو الفريق")+'</b><small>'+esc(stamp(u.created_at))+'</small>'+(u.status_to?'<span class="tsk-hist-status">'+esc((STATUS[u.status_from]||"")+(u.status_from?" ← ":"")+(STATUS[u.status_to]||u.status_to))+'</span>':"")+'<p>'+linkify(u.body)+'</p>'+attsHtml(u.id)+'</article>';}).join("")||'<p class="tsk-empty">لا توجد تعليقات أو تحديثات بعد.</p>')+'</div>');
       }
       el.innerHTML=html;
     }
     function stamp(v){var d=new Date(v);return isNaN(d)?"":d.toLocaleString("ar-EG",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});}
+    function attsHtml(updateId){
+      var list=state.historyAtts[updateId];if(!list||!list.length)return "";
+      return '<div class="tsk-atts">'+list.map(function(a){return '<a class="tsk-att" href="'+esc(/^https:\/\/(drive|docs)\.google\.com\//.test(a.file_url||"")?a.file_url:"#")+'" target="_blank" rel="noopener noreferrer">📎 '+esc(a.file_name)+(a.size_bytes?' <small>'+esc(fileSize(a.size_bytes))+'</small>':"")+'</a>';}).join("")+'</div>';
+    }
+    function renderFiles(){
+      var box=el.querySelector("[data-file-list]");if(!box)return;
+      box.innerHTML=state.pendingFiles.map(function(f,i){return '<span class="tsk-file-chip">📎 '+esc(f.name)+' <small>'+esc(fileSize(f.size))+'</small><button type="button" data-action="remove-file" data-id="'+i+'" aria-label="إزالة الملف">×</button></span>';}).join("");
+    }
+    function addFiles(input){
+      var form=input.closest("form"),err=form&&form.querySelector(".tsk-field-error"),problem="";
+      Array.prototype.slice.call(input.files||[]).forEach(function(f){
+        var ext=(String(f.name).match(/\.([A-Za-z0-9]+)$/)||[])[1];
+        if(!ext||FILE_EXT.indexOf(ext.toLowerCase())<0){problem="نوع الملف \""+f.name+"\" غير مسموح. المسموح: صور، PDF، Word، Excel، PowerPoint، نص.";return;}
+        if(f.size>MAX_BYTES){problem="الملف \""+f.name+"\" أكبر من 10 ميجا.";return;}
+        if(state.pendingFiles.length>=MAX_FILES){problem="الحد الأقصى "+MAX_FILES+" ملفات في التعليق.";return;}
+        state.pendingFiles.push(f);
+      });
+      input.value="";
+      if(err){err.textContent=problem;err.hidden=!problem;}
+      renderFiles();
+    }
     function showErr(form,msg){var p=form.querySelector(".tsk-field-error");if(p){p.textContent=msg;p.hidden=false;}}
     function openHistory(id){
       var rows;
-      window.SSMPDDb.taskListUpdates(id).then(function(list){
-        rows=list||[];rows.forEach(function(x){var p=state.people.find(function(y){return y.id===x.author_id;});x.author_name=p&&(p.name||p.email);});
-        state.history=rows;state.historyTask=id;state.modal="history";draw();
+      Promise.all([window.SSMPDDb.taskListUpdates(id),window.SSMPDDb.taskListAttachments?window.SSMPDDb.taskListAttachments(id).catch(function(){return [];}):Promise.resolve([])]).then(function(v){
+        rows=v[0]||[];rows.forEach(function(x){var p=state.people.find(function(y){return y.id===x.author_id;});x.author_name=p&&(p.name||p.email);});
+        state.historyAtts={};(v[1]||[]).forEach(function(a){(state.historyAtts[a.update_id]=state.historyAtts[a.update_id]||[]).push(a);});
+        if(state.historyTask!==id)state.pendingFiles=[];
+        state.history=rows;state.historyTask=id;state.modal="history";draw();renderFiles();
       }).catch(function(e){state.error=e&&e.message||"تعذر تحميل السجل";state.modal="";draw();});
     }
     function focusTask(id){
@@ -254,19 +279,20 @@
       call.then(function(){state.modal="";state.note=null;return refresh();}).catch(function(e){if(btn)btn.disabled=false;showErr(form,e&&e.message||"تعذر الحفظ");});
     }
     function submitComment(form,fd){
-      var text=String(fd.get("comment")||"").trim();
-      if(!text){showErr(form,"اكتب التعليق أولاً.");return;}
-      var btn=form.querySelector("button[type=submit]");if(btn)btn.disabled=true;
-      window.SSMPDDb.taskAddComment(state.historyTask,text).then(function(){openHistory(state.historyTask);}).catch(function(e){if(btn)btn.disabled=false;showErr(form,e&&e.message||"تعذر إرسال التعليق");});
+      var text=String(fd.get("comment")||"").trim(),files=state.pendingFiles.slice();
+      if(!text&&!files.length){showErr(form,"اكتب التعليق أو أرفق ملفاً أولاً.");return;}
+      var btn=form.querySelector("button[type=submit]");if(btn){btn.disabled=true;if(files.length)btn.textContent="بيرفع الملفات…";}
+      var db=window.SSMPDDb,taskId=state.historyTask;
+      Promise.all(files.map(function(f){return db.taskUploadAttachment(taskId,f,(state.tasks.find(function(x){return x.id===taskId;})||{}).title);})).then(function(atts){return db.taskAddComment(taskId,text,atts);}).then(function(){state.pendingFiles=[];openHistory(taskId);}).catch(function(e){if(btn){btn.disabled=false;btn.textContent="إرسال التعليق";}showErr(form,e&&e.message||"تعذر إرسال التعليق");});
     }
-    function onEscape(ev){if(!el.isConnected){document.removeEventListener("keydown",onEscape);return;}if(ev.key==="Escape"&&state.modal){state.modal="";state.note=null;draw();}}
+    function onEscape(ev){if(!el.isConnected){document.removeEventListener("keydown",onEscape);return;}if(ev.key==="Escape"&&state.modal){state.modal="";state.note=null;state.pendingFiles=[];draw();}}
     document.addEventListener("keydown",onEscape);
     el.oninput=function(ev){if(ev.target.matches&&ev.target.matches("[data-search]")){state.q=ev.target.value;drawList();}};
     el.onclick=function(ev){
       var b=ev.target.closest("[data-action]");if(!b)return;
       if(b.dataset.action==="close-modal"&&ev.target!==b&&ev.target.closest(".tsk-modal"))return;
       var action=b.dataset.action,id=b.dataset.id,t=state.tasks.find(function(x){return x.id===id;});
-      if(action==="close-modal"){state.modal="";state.note=null;draw();return;}
+      if(action==="close-modal"){state.modal="";state.note=null;state.pendingFiles=[];draw();return;}
       if(action==="filter"){state.filter=id;drawList();return;}
       if(action==="view"){state.view=id==="board"?"board":"list";store("view",state.view);draw();return;}
       if(action==="clear-filters"){state.q="";state.fProject="";state.fAssignee="";state.filter="all";draw();return;}
@@ -286,7 +312,8 @@
         window.SSMPDDb.taskMarkNotificationRead(id).catch(function(){}).then(refresh).then(function(){if(notice&&notice.task_id)focusTask(notice.task_id);});
         return;
       }
-      if(action==="history"){openHistory(id);return;}
+      if(action==="history"){state.pendingFiles=[];state.historyTask="";openHistory(id);return;}
+      if(action==="remove-file"){state.pendingFiles.splice(Number(id),1);renderFiles();return;}
       if(action==="progress"||action==="submit"||action==="blocked"||action==="approve"||action==="return"){
         if(!t)return;
         state.note={action:action,id:id,starting:t.status==="todo"||t.status==="revision",subject:t.title};
@@ -294,6 +321,7 @@
       }
     };
     el.onchange=function(ev){
+      if(ev.target.matches&&ev.target.matches("[data-comment-files]")){addFiles(ev.target);return;}
       var s=ev.target.closest&&ev.target.closest("[data-sel]");
       if(s){var k=s.dataset.sel;if(k==="project")state.fProject=s.value;else if(k==="assignee")state.fAssignee=s.value;else{state.sort=s.value;store("sort",s.value);}drawList();return;}
       if(ev.target.matches('input[name="repeat_active"]')){var fields=ev.target.closest("form").querySelector(".tsk-repeat-fields");if(fields)fields.hidden=!ev.target.checked;}

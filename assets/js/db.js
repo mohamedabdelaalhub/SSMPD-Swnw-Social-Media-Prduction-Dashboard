@@ -1310,8 +1310,22 @@
     taskSetProjectArchived: function (projectId, on) {
       return handle(client.from("task_projects").update({ archived_at: on ? new Date().toISOString() : null }).eq("id", projectId));
     },
-    taskAddComment: function (taskId, body) {
-      return handle(client.from("task_updates").insert({ task_id: taskId, author_id: window.SSMPDAuth.currentAdmin.id, body: String(body || "").trim() }));
+    // تعليق (+ مرفقات اختيارية) عن طريق الدالة اللي بترسل الإشعارات. لو الدالة لسه مش منشورة بنرجع للإدخال المباشر (من غير مرفقات).
+    taskAddComment: function (taskId, body, attachments) {
+      var atts = attachments || [], text = String(body || "").trim();
+      return handle(client.rpc("task_add_comment", { p_task_id: taskId, p_body: text, p_attachments: atts })).catch(function (e) {
+        if (atts.length || !/schema cache|could not find (the )?function/i.test(String(e && e.message || ""))) throw e;
+        return handle(client.from("task_updates").insert({ task_id: taskId, author_id: window.SSMPDAuth.currentAdmin.id, body: text }));
+      });
+    },
+    // الملف نفسه بيترفع على Google Drive (الأرشيف/مرفقات المهام)، والقاعدة بتحفظ الرابط بس
+    taskUploadAttachment: function (taskId, file, taskTitle) {
+      return window.SSMPDDrive.uploadTaskFile(file, { taskId: taskId, title: taskTitle || "" }).then(function (res) {
+        return { name: file.name, url: res.fileUrl, file_id: res.fileId || "", size: file.size, mime: file.type || "" };
+      });
+    },
+    taskListAttachments: function (taskId) {
+      return handle(client.from("task_attachments").select("id,update_id,file_name,mime_type,size_bytes,file_url").eq("task_id", taskId));
     },
     taskMarkNotificationRead: function (id) {
       return handle(client.from("task_notifications").update({read_at:new Date().toISOString()}).eq("id",id).eq("recipient_id",window.SSMPDAuth.currentAdmin.id));
