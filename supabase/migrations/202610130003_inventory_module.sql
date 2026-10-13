@@ -131,16 +131,14 @@ $$;
 create or replace function public.inventory_can_view()
 returns boolean language sql stable security definer set search_path=public as $$
   select public.inventory_is_manager()
-    or (public.has_role('accountant') or public.has_role('financial_manager'))
-       and exists(select 1 from public.admin_module_permissions p where p.admin_id=public.my_admin_id() and p.module_key='inventory' and p.can_view)
+    or public.has_role('accountant') or public.has_role('financial_manager')
     or public.has_role('nursing') or public.has_role('reception') or public.has_role('sono_doctor');
 $$;
 
 create or replace function public.inventory_can_manage()
 returns boolean language sql stable security definer set search_path=public as $$
   select public.inventory_is_manager()
-    or (public.has_role('accountant') or public.has_role('financial_manager'))
-       and exists(select 1 from public.admin_module_permissions p where p.admin_id=public.my_admin_id() and p.module_key='inventory' and p.can_view and p.can_update);
+    or public.has_role('accountant') or public.has_role('financial_manager');
 $$;
 
 create or replace function public.inventory_on_hand(p_item_id uuid)
