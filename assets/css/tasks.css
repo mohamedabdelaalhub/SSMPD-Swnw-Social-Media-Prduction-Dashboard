@@ -104,3 +104,42 @@
 .tsk-file-chip,.tsk-att{display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:12px;background:#f3f7fd;border:1px solid #d5e1f0;color:#2f4f7f;border-radius:20px;padding:4px 10px}
 .tsk-att{cursor:pointer}.tsk-att:hover{background:#e6effa}.tsk-file-chip small,.tsk-att small{color:#7c8ba0}
 .tsk-file-chip button{border:0;background:transparent;color:#a33e29;font-size:16px;line-height:1;cursor:pointer;padding:0 2px}
+
+/* Task hierarchy and manager ordering */
+.tsk-project{border-top:4px solid #315f9f}
+.tsk-project-hierarchy{margin-top:14px;border-top:1px solid var(--c-border,#e5eaf1);padding-top:10px}
+.tsk-project-hierarchy>summary{cursor:pointer;color:#315f9f;font-weight:700;list-style:none}
+.tsk-project-hierarchy>summary::-webkit-details-marker{display:none}
+.tsk-project-hierarchy>summary:after{content:"＋";float:left;color:#718096}
+.tsk-project-hierarchy[open]>summary:after{content:"−"}
+.tsk-project-tree{display:grid;gap:10px;margin-top:12px}
+.tsk-tree-task{border-right:3px solid #315f9f;padding-right:10px}
+.tsk-tree-subtasks{display:grid;gap:8px;margin:8px 8px 4px 0;padding-right:12px;border-right:2px solid #78a6d3}
+.tsk-tree-empty{margin:8px 0;color:#718096;font-size:13px}
+.tsk-card.tsk-main-task{border-right:4px solid #315f9f}
+.tsk-card.tsk-child{border-right:3px solid #58a88b;background:#f4faf7;box-shadow:none}
+.tsk-child .tsk-description,.tsk-child .tsk-output,.tsk-child .tsk-return{display:none}
+.tsk-child .tsk-title-row h3{font-size:14px}
+.tsk-child .tsk-meta{font-size:11px;gap:6px}
+.tsk-child .tsk-actions{margin-top:7px;gap:6px}
+.tsk-child .tsk-actions .btn:not([data-action="open-task"]):not([data-action="edit-task"]):not([data-action="delete-task"]):not([data-action="move-task"]):not([data-action="progress"]):not([data-action="submit"]):not([data-action="blocked"]):not([data-action="approve"]):not([data-action="return"]){display:none}
+.tsk-child .tsk-actions [data-action="open-task"]{display:inline-flex}
+.tsk-btn-danger,.btn-danger{background:#fff1f0!important;color:#b42318!important;border-color:#f2b8b5!important}
+.tsk-btn-order,.btn-order{min-width:34px;padding:5px 9px!important}
+.tsk-delete-confirm p{line-height:1.8}
+.tsk-delete-confirm footer{display:flex;justify-content:flex-start;gap:8px;margin-top:16px}
+@media(max-width:680px){
+ .tsk-project-hierarchy{margin-top:11px}
+ .tsk-tree-subtasks{margin-right:4px;padding-right:8px}
+ .tsk-child .tsk-meta>span:nth-child(1){display:none}
+}
+
+.tsk-tree-row{display:flex;align-items:center;gap:7px;padding:6px 0}
+.tsk-tree-row .tsk-mini{flex:1;min-width:170px}
+.tsk-tree-status{font-size:11px;font-weight:700;padding:4px 7px;border-radius:10px;background:#edf2f7;white-space:nowrap}
+.tsk-tree-status.s-done{background:#e6f5ec;color:#26734d}
+.tsk-tree-status.s-review{background:#fff5db;color:#8a6200}
+.tsk-tree-status.s-blocked{background:#fde9e7;color:#a33e29}
+.tsk-tree-task.is-subtask{border-color:#58a88b}
+.tsk-tree-task.is-subtask>.tsk-tree-row{background:#f4faf7;border-radius:10px;padding:7px}
+@media(max-width:680px){.tsk-tree-row{flex-wrap:wrap}.tsk-tree-row .tsk-mini{flex-basis:100%}}
