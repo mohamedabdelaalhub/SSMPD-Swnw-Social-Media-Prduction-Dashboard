@@ -132,7 +132,7 @@
       });
       return html+'<div class="tsk-list">'+out+'</div>';
     }
-    function drawList(){draw();}
+    function drawList(){var host=el.querySelector("[data-list-host]");if(host)host.innerHTML=listHtml();else draw();}
     function toolbarHtml(){
       var base=baseTasks(),seen={},people=[];
       base.forEach(function(t){if(t.assignee_id&&!seen[t.assignee_id]){seen[t.assignee_id]=true;people.push({id:t.assignee_id,name:t.assignee_name||"—"});}});
