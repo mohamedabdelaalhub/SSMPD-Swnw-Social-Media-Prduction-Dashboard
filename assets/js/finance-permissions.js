@@ -1,7 +1,7 @@
 /* Per-account module grants for the two financial roles. Supabase enforces every grant. */
 (function(){
  'use strict';
- var MODULES=[['accounting','الحسابات — المستلزمات والخدمات والباقات'],['contracting_entities','جهات التعاقد'],['tasks','المهام — داخل نطاق التكليف وإدارة المشروع']];
+ var MODULES=[['accounting','الحسابات — المستلزمات والخدمات والباقات'],['contracting_entities','جهات التعاقد'],['tasks','المهام — داخل نطاق التكليف وإدارة المشروع'],['inventory','المخزن والجرد — طلبات الأصناف والصرف والجرد']];
  var ACTIONS=[['view','عرض'],['create','إضافة'],['update','تعديل'],['delete','حذف']];
  function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
  async function open(admin){
