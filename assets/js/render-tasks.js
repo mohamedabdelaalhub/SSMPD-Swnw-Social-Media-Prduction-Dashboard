@@ -163,7 +163,7 @@
         '<div class="tsk-progress" title="'+done+' من '+mine.length+' مكتملة"><div class="tsk-progress-bar"><i style="width:'+pct+'%"></i></div><span>'+(mine.length?done+" من "+mine.length+" مكتملة · "+pct+"%":"لا توجد مهام بعد")+(late?' · <em class="tsk-late-text">'+late+' متأخرة</em>':"")+'</span></div>'+
         '<div class="tsk-chips">'+(chips||'<span class="tsk-chip muted">بدون فريق</span>')+'</div>'+
         (p.can_manage?'<div class="tsk-project-actions">'+(canUpdate&&!archived?'<button class="btn btn-small" data-action="edit-project" data-project="'+p.id+'">تعديل المشروع</button>':"")+(canAdd&&!archived?'<button class="btn btn-small" data-action="new-task" data-project="'+p.id+'">إضافة مهمة</button>':"")+(canUpdate?'<button class="btn btn-small btn-quiet" data-action="archive-project" data-project="'+p.id+'" data-state="'+(archived?"off":"on")+'">'+(archived?"إلغاء الأرشفة":"أرشفة")+'</button>':"")+(p.can_manage?'<button class="btn btn-small btn-danger" data-action="delete-project" data-project="'+p.id+'">حذف المشروع</button>':"")+'</div>':"")+
-        '<details class="tsk-project-hierarchy"><summary>مهام المشروع <b>'+projectTasks.length+'</b></summary><div class="tsk-project-tree">'+(hierarchy||'<p class="tsk-tree-empty">لا توجد مهام داخل المشروع.</p>')+'</div></details></div>';
+        '<details class="tsk-project-hierarchy" open><summary>مهام المشروع <b>'+projectTasks.length+'</b></summary><div class="tsk-project-tree">'+(hierarchy||'<p class="tsk-tree-empty">لا توجد مهام داخل المشروع.</p>')+'</div></details></div>';
     }
     function teamTable(base,since){
       var rows={};
