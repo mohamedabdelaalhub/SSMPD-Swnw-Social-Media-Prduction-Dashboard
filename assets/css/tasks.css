@@ -143,3 +143,9 @@
 .tsk-tree-task.is-subtask{border-color:#58a88b}
 .tsk-tree-task.is-subtask>.tsk-tree-row{background:#f4faf7;border-radius:10px;padding:7px}
 @media(max-width:680px){.tsk-tree-row{flex-wrap:wrap}.tsk-tree-row .tsk-mini{flex-basis:100%}}
+/* دفعة 1: كروت إحصاء قابلة للضغط، صحة المشروع، أعضاء مختصرين */
+button.tsk-stat{font:inherit;text-align:right;cursor:pointer;width:100%}.tsk-stat small{display:block;margin-top:4px;font-size:11px;color:#7c8ba0}.tsk-stat:hover{box-shadow:0 8px 20px rgba(30,50,80,.1);transform:translateY(-1px)}.tsk-stat{transition:box-shadow .15s,transform .15s}
+.tsk-health{flex:none;font-size:11px;font-weight:700;border-radius:20px;padding:3px 10px;background:#eef2f7;color:#53677f}
+.tsk-health.h-late{background:#fdebe7;color:#b23e2d}.tsk-health.h-done{background:#e5f7ec;color:#197444}.tsk-health.h-active{background:#eaf3ff;color:#2161a2}
+.tsk-progress-bar{display:flex}.tsk-progress-bar i.active{background:#2f6fbf;border-radius:0}.tsk-progress-bar i.done{border-radius:0}
+button.tsk-chip-more{font:inherit;font-size:12px;cursor:pointer;background:#eaf1fb;border-color:#c7d6ea;color:#2f4f7f}
