@@ -38,13 +38,19 @@
     return '<div class="pbd-thumb" data-thumb="' + esc(it.id) + '" data-kind="' + info.kind + '" aria-hidden="true"><span class="pbd-ph">' + (info.kind === "video" ? "🎬" : "🖼️") + "</span>" + badge + "</div>";
   }
   function safeHttp(value) {
-    try { var u = new URL(value, location.href); return /^https?:$/.test(u.protocol) ? u.href : null; } catch (e) { return null; }
+    try { var u = new URL(value, location.href); return /^(https?|blob):$/.test(u.protocol) ? u.href : null; } catch (e) { return null; }
   }
   function loadThumb(box, it) {
     if (box.__loaded) return;
     box.__loaded = true;
     var info = thumbInfo(it);
     if (info.kind === "none") return;
+    // فيديو: الغلاف (صورة صغيرة) لو موجود، وإلا نسيب الأيقونة من غير أي تحميل للفيديو نفسه (توفير Egress)
+    if (info.kind === "video" && !/^https:\/\/drive\.google\.com\//.test(info.url || "")) {
+      var cv = it.cover_settings && it.cover_settings.cover_image_url;
+      if (!cv) return;
+      info = { kind: "video-cover", url: cv };
+    }
     var drive = /^https:\/\/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?id=)([\w-]+)/.exec(info.url || "");
     var media = document.createElement(info.kind === "video" ? "video" : "img");
     if (info.kind === "video") { media.muted = true; media.preload = "metadata"; media.playsInline = true; } else { media.alt = ""; media.decoding = "async"; }
@@ -63,7 +69,7 @@
     });
     media.addEventListener(info.kind === "video" ? "loadeddata" : "load", function () { var ph = box.querySelector(".pbd-ph"); if (ph) ph.remove(); });
     if (drive) { attach("https://drive.google.com/thumbnail?id=" + drive[1] + "&sz=w240"); return; }
-    signed(info.url).then(attach).catch(fail);
+    (window.SSMPDThumbs ? window.SSMPDThumbs.get(info.url) : signed(info.url)).then(attach).catch(fail);
   }
   function mountThumbs(container, items) {
     var byId = {}; items.forEach(function (i) { byId[i.id] = i; });
