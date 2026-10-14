@@ -76,6 +76,8 @@
     if(fullBleed){if(!whiteFooterPromise)whiteFooterPromise=loadImage(new URL('design-templates/sono-white/white-footer.png',base)).catch(function(error){whiteFooterPromise=null;throw error;});whiteFooter=await whiteFooterPromise;}
     canvas.width=1080; canvas.height=1350;
     var ctx=canvas.getContext('2d');
+    // مناطق العناصر على المعاينة (من الأسفل للأعلى) — بتستخدمها شاشة التصميم لفتح خيارات العنصر اللي اتضغط عليه
+    var hits=[{key:'image',x:0,y:0,w:1080,h:1350},{key:'logo',x:0,y:0,w:340,h:190}];
     ctx.fillStyle='#fff'; ctx.fillRect(0,0,1080,1350);
     var side = data.titlePosition==='left' || data.titlePosition==='right';
     var sceneX = data.titlePosition==='left' ? 550 : 0;
@@ -145,7 +147,7 @@
     }
     // Permanent rule: at least 40 px between the text above and the CTA button.
     if(cta&&blocks.length>1){var btn=blocks[blocks.length-1];blocks.slice(0,-1).forEach(function(b){if(b.bottom<=btn.top&&btn.top-b.bottom<40&&b.left<btn.right&&b.right>btn.left)problem('المسافة بين السطر التوضيحي وزر التفاعل أقل من 40 بكسل. نزّل الزر أو ارفع النص.');});}
-    if(photographic&&data.panelFill!=='none'&&blocks.length){var top=Math.max(200,Math.min.apply(null,blocks.map(function(b){return b.top;}))-28),bottom=Math.min(1160,Math.max.apply(null,blocks.map(function(b){return b.bottom;}))+28);if(bottom>top){ctx.fillStyle=window.SSMPDDesignPanelColor.fill(ctx,data,{x:35,y:top,w:1010,h:bottom-top});ctx.beginPath();ctx.roundRect(35,top,1010,bottom-top,28);ctx.fill();}}
+    if(photographic&&data.panelFill!=='none'&&blocks.length){var top=Math.max(200,Math.min.apply(null,blocks.map(function(b){return b.top;}))-28),bottom=Math.min(1160,Math.max.apply(null,blocks.map(function(b){return b.bottom;}))+28);if(bottom>top){hits.push({key:'panel',x:35,y:top,w:1010,h:bottom-top});ctx.fillStyle=window.SSMPDDesignPanelColor.fill(ctx,data,{x:35,y:top,w:1010,h:bottom-top});ctx.beginPath();ctx.roundRect(35,top,1010,bottom-top,28);ctx.fill();}}
     // Opaque quiet panel under text placed over the scene; fixed overlay remains unchanged.
     [title,subtitle,secondary].forEach(function(layout,index){
       if(!layout)return;var y=index===2?secondaryY:index?subtitleY:titleY;
@@ -162,11 +164,14 @@
         ctx.fillStyle=color;ctx.fillText(line,x,baseline);
       });
     }
+    [[title,'headline',titleY],[secondary,'secondaryHeadline',secondaryY],[subtitle,'subtitle',subtitleY]].forEach(function(t){if(t[0])hits.push({key:t[1],x:p.x-(t[0].w||p.w)/2,y:t[2]-t[0].h/2,w:t[0].w||p.w,h:t[0].h});});
+    if(cta)hits.push({key:'cta',x:540-buttonWidth/2,y:ctaY-buttonHeight/2,w:buttonWidth,h:buttonHeight});
     var headlineColor=photographic?window.SSMPDDesignPanelColor.hex(data.panelTextColor,'#fff'):'#07599d';if(data.headlineFill&&data.headlineFill!=='auto'&&title)headlineColor=window.SSMPDDesignPanelColor.fill(ctx,data,{x:p.x-p.w/2,y:titleY-title.h/2,w:p.w,h:title.h},'headline');
     if(secondary){var secondaryColor=photographic?window.SSMPDDesignPanelColor.hex(data.panelTextColor,'#fff'):'#07599d';if(data.secondaryHeadlineFill&&data.secondaryHeadlineFill!=='auto')secondaryColor=window.SSMPDDesignPanelColor.fill(ctx,data,{x:p.x-p.w/2,y:secondaryY-secondary.h/2,w:p.w,h:secondary.h},'secondaryHeadline');draw(secondary,p.x,secondaryY,secondaryColor);}
     draw(title,p.x,titleY,headlineColor,!photographic&&(!data.headlineFill||data.headlineFill==='auto'));draw(subtitle,p.x,subtitleY,photographic?window.SSMPDDesignPanelColor.hex(data.panelTextColor,'#fff'):'#272727');
     if(cta){ctx.fillStyle='#ff541d';ctx.beginPath();ctx.roundRect(540-buttonWidth/2,ctaY-buttonHeight/2,buttonWidth,buttonHeight,buttonHeight/2);ctx.fill();draw(cta,540,ctaY,'#fff');}
     if(whiteFooter)ctx.drawImage(whiteFooter,0,0,1080,1350);
+    canvas.designHits=hits;
     canvas.designWarnings=issues;
     canvas.designIssues=[];
     return canvas;
