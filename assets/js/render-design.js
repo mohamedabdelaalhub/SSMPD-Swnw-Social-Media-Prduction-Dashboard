@@ -124,6 +124,7 @@
         (item.design_file_url ? '<p><a href="' + item.design_file_url + '" target="_blank" class="btn ghost sm">فتح آخر تصميم مرفوع</a></p>' : '') +
         '<div style="margin:10px 0;">' + W.itemActionsHtml(item, window.SSMPDAuth.currentAdmin) + '</div>' +
         '<div id="design-studio-slot"></div>' +
+        '<div id="ai-clips-slot"></div>' +
         (item.content_format === "carousel"
           ? '<div class="upload-box" id="upload-box">اسحب صور الكاروسيل هنا أو اضغط للاختيار (من ٢ لـ ١٠ صور)<br>' +
             '<small>الصور بتترتب حسب اسم الملف، فسمّيها 01، 02، 03…</small>' +
@@ -136,6 +137,7 @@
         '<div id="comments-slot"></div></div>';
       document.body.appendChild(backdrop);
       window.SSMPDDesignStudio.mount(backdrop.querySelector("#design-studio-slot"), item);
+      if (window.SSMPDAiClips) window.SSMPDAiClips.mount(backdrop.querySelector("#ai-clips-slot"), item);
       backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
       backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
       W.wireItemActions(backdrop, item, function () { render(document.getElementById("view-container")); });

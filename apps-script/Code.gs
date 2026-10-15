@@ -59,6 +59,7 @@ function doPost(e) {
     var action = payload.action || "upload";
     if (action === "video_archive") return handleVideoArchive_(payload);
     if (action === "content_archive") return handleContentArchive_(payload);
+    if (action === "material_library") return handleMaterialLibrary_(payload);
     if (action === "log") return handleLog_(payload);
     return handleUpload_(payload);
   } catch (err) {
@@ -210,6 +211,49 @@ function handleContentArchive_(p) {
       file.setDescription("SSMPD Archive | sha256=" + checksum + " | contentId: " + p.contentId);
     }
     return jsonOut({ ok: true, fileId: file.getId(), fileUrl: file.getUrl(), folderUrl: folder.getUrl(), size: bytes.length });
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// مكتبة الماتيريال: الأرشيف/ماتيريال/<القسم>/<سنة-شهر>/<اسم الملف>
+// الأقسام: ai_clips (لقطات Gemini) · scenes (مشاهد التصميم) · backups (نسخ احتياطية قبل المسح من Supabase).
+// بنتأكد من sha256، وإعادة الإرسال لنفس الملف آمنة (بيرجّع الملف الموجود).
+// {probe:true} بيرجّع ok من غير ما يلمس الدرايف — الـEdge Function بتستخدمه تتأكد إن الجسر متحدّث قبل ما تبدأ توليد.
+function handleMaterialLibrary_(p) {
+  if (p.probe) return jsonOut({ ok: true, probe: true, version: 1 });
+  var sections = { ai_clips: "لقطات Gemini", scenes: "مشاهد التصميم", backups: "نسخ احتياطية" };
+  if (!sections[p.section]) throw new Error("Invalid library section");
+  if (!/^[a-f0-9]{64}$/.test(p.sha256 || "")) throw new Error("Invalid checksum");
+  if (!p.base64 || p.base64.length > 48933548) throw new Error("Library bridge file limit is 35 MiB");
+  var bytes = Utilities.base64Decode(p.base64);
+  if (!bytes.length || bytes.length > 35 * 1024 * 1024) throw new Error("Invalid file size");
+  var checksum = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, bytes).map(function (b) {
+    return ("0" + ((b + 256) % 256).toString(16)).slice(-2);
+  }).join("");
+  if (checksum !== p.sha256) throw new Error("Checksum mismatch");
+  var lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    var archiveRoot = DriveApp.getFolderById(CATEGORY_FOLDER_IDS.archive);
+    var library = getOrCreateFolder_(archiveRoot, "ماتيريال");
+    var section = getOrCreateFolder_(library, sections[p.section]);
+    var month = getOrCreateFolder_(section, Utilities.formatDate(new Date(), "UTC", "yyyy-MM"));
+    var name = String(p.fileName || "file").replace(/[\/\\\x00-\x1f:*?"<>|]/g, "-").slice(0, 120) || "file";
+    var existing = month.getFilesByName(name);
+    var file;
+    if (existing.hasNext()) {
+      file = existing.next();
+      if (String(file.getDescription() || "").indexOf("sha256=" + checksum) < 0) {
+        name = checksum.slice(0, 8) + "-" + name;
+        file = month.createFile(Utilities.newBlob(bytes, p.mimeType || "application/octet-stream", name));
+        file.setDescription("SSMPD Material | sha256=" + checksum + " | " + String(p.description || "").slice(0, 300));
+      }
+    } else {
+      file = month.createFile(Utilities.newBlob(bytes, p.mimeType || "application/octet-stream", name));
+      file.setDescription("SSMPD Material | sha256=" + checksum + " | " + String(p.description || "").slice(0, 300));
+    }
+    return jsonOut({ ok: true, fileId: file.getId(), fileUrl: file.getUrl(), folderUrl: month.getUrl(), size: bytes.length });
   } finally {
     lock.releaseLock();
   }

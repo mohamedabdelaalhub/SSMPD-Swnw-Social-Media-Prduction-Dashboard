@@ -1308,6 +1308,10 @@
     taskReview: function (taskId, approve, note) {
       return handle(client.rpc("task_review", { p_task_id:taskId, p_approve:approve, p_note:note || "" }));
     },
+    aiClipOverview: function (contentId) { return handle(client.rpc("ai_clip_overview", { p_content_id: contentId || null })); },
+    aiClipRequest: function (contentId, prompt) { return handle(client.rpc("ai_clip_request", { p_content_id: contentId, p_prompt: prompt || null })); },
+    aiClipCancel: function (id) { return handle(client.rpc("ai_clip_cancel", { p_id: id })); },
+    aiClipSaveSettings: function (s) { return handle(client.rpc("ai_clip_save_settings", { p_enabled: !!s.enabled, p_auto: !!s.auto, p_budget_egp: s.budget, p_usd_to_egp: s.rate, p_model: s.model, p_seconds: s.seconds })); },
     taskChecklistList: function (taskId) { return handle(client.rpc("task_checklist_list", { p_task_id: taskId })); },
     taskChecklistCounts: function (ids) { return handle(client.rpc("task_checklist_counts", { p_task_ids: ids })); },
     taskChecklistAdd: function (taskId, body) { return handle(client.rpc("task_checklist_add", { p_task_id: taskId, p_body: body })); },
