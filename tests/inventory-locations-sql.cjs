@@ -151,7 +151,16 @@ const central='00000000-0000-4000-8000-000000000001';
  await fails('inventory_supply_create',[central,[{item_id:item,quantity:1}],'بعد الإلغاء',id(604)],/غير مسموح/);
  await owner('update admins set active=false where id=$1',[id(6)]);await as(6);await fails('inventory_supply_snapshot',[],/لم تُفعّل/);
  console.log('PASS staff supplies SQL: per-account grants, no prices/balances, cross-user RLS, scoped dispatch, idempotency, receipt ownership, atomic failure, revocation and inactive account');
+
+ // The single user-facing activation bundle must rerun against the existing inventory without resetting quantities.
+ await owner('create table if not exists content_items(id uuid primary key,title text,stage text,created_by uuid,assigned_designer uuid,created_at timestamptz,updated_at timestamptz)');
+ const existingLedger=(await owner('select count(*) n,sum(quantity_delta) q from inventory_movements'))[0];
+ await db.exec(fs.readFileSync(path.join(root,'supabase/activate-personal-home.sql'),'utf8'));
+ const afterActivation=(await owner('select count(*) n,sum(quantity_delta) q from inventory_movements'))[0];
+ assert.deepEqual(afterActivation,existingLedger,'activation preserves the stock ledger');
+ console.log('PASS combined home/supply activation against existing inventory with quantities preserved');
  console.log('PASS inventory SQL: isolated balances, draft imports, duplicate prevention, two distinct approvals, FEFO dispatch, receipt once, scoped consumption, blind draft counts, post-count movement, monthly scheduler and RLS');
  await db.close();
 })().catch(e=>{console.error(e);process.exit(1);});
+
 
