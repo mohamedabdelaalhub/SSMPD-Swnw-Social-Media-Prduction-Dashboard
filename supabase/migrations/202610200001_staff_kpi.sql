@@ -1,0 +1,13 @@
+-- تاب "أداء الفريق" (KPIs الموظفين) — طُبّق على القاعدة الحية بنفس التاريخ
+-- الجداول: kpi_defs (تعريف المؤشرات: الاتجاه/وحدة/حد أدنى للعينة/هل بيتناسب مع طول الفترة)
+--          kpi_targets (المستهدف والوزن لكل دور — قابل للتعديل من الواجهة للسوبر أدمن)
+--          staff_reviews (تقييم الإدارة الشهري 1–5 + ملاحظة)
+-- RLS: القراءة للسوبر أدمن والمدير العام، الكتابة: المستهدفات للسوبر أدمن، التقييم للاتنين (reviewed_by = my_admin_id()).
+-- الدالة: public.staff_kpis(p_from, p_to) — SECURITY DEFINER، للسوبر أدمن/المدير العام بس، بترجّع صف لكل (موظف × مؤشر):
+--   content_created, first_pass_rate, idea_to_approval_hours, post_engagement_ratio (من content_performance)،
+--   designs_delivered, design_turnaround_hours, design_first_pass_rate (من stage_history/activity_log)،
+--   approval_response_hours, approvals_done (من activity_log)، lead_attempts, lead_first_contact_minutes, bookings_made،
+--   tasks_on_time_rate, tasks_overdue_now.
+--   النقاط: الأعلى أفضل = قيمة/مستهدف (حد أقصى 100)، الأقل أفضل = مستهدف/قيمة؛ المؤشرات العددية بتتناسب مع طول الفترة (مستهدف لكل 30 يوم)؛
+--   مؤشر عينته أقل من min_sample ما بيتحسبش له score. الموظفين اللي مالهمش دور في kpi_targets مش بيظهروا.
+-- المصدر الفعلي للتعريفات: pg_get_functiondef('public.staff_kpis(timestamptz,timestamptz)'::regprocedure) وجداول kpi_defs / kpi_targets.

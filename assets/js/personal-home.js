@@ -2,7 +2,7 @@
 (function(){
 'use strict';
 var owner=null,options={},inbox=null,noticeError='',flight=null,seen=null,audio=null,clickOutside=null,live=null,homeRoot=null,homeReload=null,unlockHandler=null,generation=0;
-var LABELS={tasks:'المهام',production:'إنتاج المحتوى',review:'إدارة المحتوى والاعتماد',design:'التصميم',publish:'النشر',leads:'الليدز والتواصل',patients:'أرشيف المرضى',inventory:'المخزن والجرد',accounting:'الحسابات',contracting_entities:'جهات التعاقد',clinic_info:'بيانات الشات بوت',admin:'لوحة التحكم',summary:'ملخص إنتاج المحتوى',archive:'الأرشيف',performance:'أداء البوستات',metaads:'إعلانات Meta Ads',mediabuyer:'وكيل الإعلانات'};
+var LABELS={tasks:'المهام',production:'إنتاج المحتوى',review:'إدارة المحتوى والاعتماد',design:'التصميم',publish:'النشر',leads:'الليدز والتواصل',patients:'أرشيف المرضى',inventory:'المخزن والجرد',accounting:'الحسابات',contracting_entities:'جهات التعاقد',clinic_info:'بيانات الشات بوت',admin:'لوحة التحكم',summary:'ملخص إنتاج المحتوى',archive:'الأرشيف',performance:'أداء البوستات',staff_kpi:'أداء الفريق',metaads:'إعلانات Meta Ads',mediabuyer:'وكيل الإعلانات'};
 var STATUS={todo:'لم تبدأ',in_progress:'جاري العمل',review:'بانتظار المراجعة',revision:'أُعيدت للتعديل',done:'مكتملة',blocked:'متوقفة'};
 function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function rpc(n,a){return window.SSMPDDb.client.rpc(n,a||{}).then(function(r){if(r.error)throw r.error;return r.data;});}
@@ -38,8 +38,8 @@ function mount(admin,opts){stop();owner=admin;options=opts||{};seen=null;var b=d
  unlockHandler=unlock;document.addEventListener('pointerdown',unlock,{once:true});
 }
 function taskRows(rows){return rows.length?rows.map(function(t){var who=t.assignee_name||t.project_title||'';return '<button type="button" class="ph-row ph-task'+(t.due_at&&t.status!=='done'&&new Date(t.due_at)<new Date()?' ph-task-late':'')+'" data-home-task="'+esc(t.id)+'"><b>'+esc(t.title)+'</b><span class="ph-meta">'+(who?'<span class="ph-chip ph-chip-who">'+esc(who)+'</span>':'')+dueChip(t)+(t.status&&t.status!=='done'?'<span class="ph-chip ph-chip-st">'+esc(STATUS[t.status]||t.status)+'</span>':'')+'</span></button>';}).join(''):'<div class="ph-emptybox"><span>🎉</span><p>لا توجد مهام في هذه القائمة</p></div>';}
-var GROUPS=[['المحتوى',['production','review','design','publish','archive','summary','performance']],['التواصل والمرضى',['leads','patients','clinic_info']],['الإدارة',['tasks','inventory','accounting','contracting_entities','admin']],['الإعلانات',['metaads','mediabuyer']]];
-var ICONS={tasks:'✅',production:'✍️',review:'🔍',design:'🎨',publish:'📣',leads:'📞',patients:'🗂️',inventory:'📦',accounting:'💰',contracting_entities:'🤝',clinic_info:'🤖',admin:'⚙️',summary:'📊',archive:'🗃️',performance:'📈',metaads:'📢',mediabuyer:'🎯'};
+var GROUPS=[['المحتوى',['production','review','design','publish','archive','summary','performance']],['التواصل والمرضى',['leads','patients','clinic_info']],['الإدارة',['tasks','staff_kpi','inventory','accounting','contracting_entities','admin']],['الإعلانات',['metaads','mediabuyer']]];
+var ICONS={tasks:'✅',production:'✍️',review:'🔍',design:'🎨',publish:'📣',leads:'📞',patients:'🗂️',inventory:'📦',accounting:'💰',contracting_entities:'🤝',clinic_info:'🤖',admin:'⚙️',summary:'📊',archive:'🗃️',performance:'📈',staff_kpi:'🧑‍💼',metaads:'📢',mediabuyer:'🎯'};
 function metric(label,num,target,cls,icon){var zero=String(num)==='0';return '<button type="button" class="ph-metric '+(cls||'')+(zero?' ph-zero':'')+'" data-home-section="'+target+'"><i aria-hidden="true">'+(icon||'')+'</i><strong>'+esc(num)+'</strong><span>'+esc(label)+'</span></button>';}
 function render(root){homeRoot=root;var sequence=0;var admin=window.SSMPDAuth.currentAdmin;if(!owner)owner=admin;var R=window.SSMPDRoles;
  function shortcutKeys(){return Object.keys(LABELS).filter(allowed);}

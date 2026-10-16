@@ -1031,6 +1031,14 @@
     // أسماء كل الموظفين النشطين بس (id/name/role/active) — من غير بيانات حساسة،
     // متاحة لأي مستخدم مسجّل (مش بس السوبر أدمن زي listAdmins()). استخدمها لأي
     // عرض اسم بس (بواسطة/صاحب كومنت/مصمم مسؤول)، مش لشاشة إدارة المستخدمين نفسها.
+    // أداء الفريق (KPIs): الدالة بتحسب كل حاجة في القاعدة، والمستهدفات والتقييم الشهري جداول للإدارة بس
+    staffKpis: function (from, to) { return handle(client.rpc("staff_kpis", { p_from: from, p_to: to })); },
+    kpiDefs: function () { return handle(client.from("kpi_defs").select("*").order("sort_order")); },
+    kpiTargets: function () { return handle(client.from("kpi_targets").select("role,kpi,target,weight")); },
+    saveKpiTargets: function (rows) { return handle(client.from("kpi_targets").upsert(rows, { onConflict: "role,kpi" })); },
+    staffReviews: function (month) { return handle(client.from("staff_reviews").select("admin_id,month,rating,note,updated_at").eq("month", month)); },
+    staffReviewHistory: function (adminId) { return handle(client.from("staff_reviews").select("month,rating,note").eq("admin_id", adminId).order("month", { ascending: false }).limit(12)); },
+    saveStaffReview: function (adminId, month, rating, note) { return handle(client.from("staff_reviews").upsert({ admin_id: adminId, month: month, rating: rating, note: String(note || "").slice(0, 1000), reviewed_by: window.SSMPDAuth.currentAdmin.id, updated_at: new Date().toISOString() }, { onConflict: "admin_id,month" })); },
     // تقييم الموظف لأداء مادة منشورة (strong/ok/weak + سبب) — بيغذّي ذاكرة التعلّم
     getContentLearningBrief: function (brand) {
       return handle(client.rpc("content_learning_brief_staff", { p_brand: brand }));
