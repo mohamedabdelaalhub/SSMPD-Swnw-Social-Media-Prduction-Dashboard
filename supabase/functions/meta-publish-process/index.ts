@@ -1,6 +1,7 @@
 import "../../../assets/js/publication-text.js";
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { Image } from "https://deno.land/x/imagescript@1.3.0/mod.ts";
 
 // Meta Auto Publisher — Phase 43
 //
@@ -461,6 +462,8 @@ async function processJob(admin: ReturnType<typeof createClient>, job: any) {
     requestedCount++;
     if (!brandCfg.instagram_business_account_id) {
       errors.push("انستجرام: instagram_business_account_id مش متظبط للبراند ده");
+    } else if (job.instagram_media_id) {
+      successCount++; // اتنشر في تشغيلة سابقة (إعادة محاولة بسبب فيسبوك أو ستوري)
     } else if (!imageUrl && !carouselUrls.length && !videoUrl) {
       errors.push("انستجرام: لازم صورة أو فيديو — مفيش ملف تصميم متاح.");
     } else if (videoUrl) {
@@ -496,7 +499,8 @@ async function processJob(admin: ReturnType<typeof createClient>, job: any) {
   if (igPending) errors.push("انستجرام: الريل ماخلصش معالجة بعد أكتر من محاولة");
   patch.status = successCount === 0 ? "failed" : (successCount < requestedCount ? "partial" : "published");
   if (errors.length) { patch.error_code = "PUBLISH_ERROR"; patch.error_message = errors.join(" | "); }
-  if (patch.status === "published" || patch.status === "partial") patch.published_at = new Date().toISOString();
+  else { patch.error_code = null; patch.error_message = null; }
+  if ((patch.status === "published" || patch.status === "partial") && !job.published_at) patch.published_at = new Date().toISOString();
 
   await admin.from("meta_publish_jobs").update(patch).eq("id", job.id);
 
@@ -511,11 +515,99 @@ async function processJob(admin: ReturnType<typeof createClient>, job: any) {
     const fallbackUrl = (patch.facebook_permalink as string) || (patch.instagram_permalink as string) || null;
     await admin.from("content_items").update({
       stage: "published",
-      published_at: new Date().toISOString(),
+      published_at: job.published_at || new Date().toISOString(),
       published_url: content.published_url || fallbackUrl,
       published_urls: mergedUrls
     }).eq("id", job.content_id);
+
+    // ستوري تلقائي من نفس المنشور — فشلها ما بيأثرش على حالة النشر (بتتعاد من cron).
+    if (job.publish_story !== false) {
+      try {
+        await publishStories(admin, job, brandCfg, token, { imageUrl, carouselUrls, videoUrl });
+      } catch (e) {
+        await admin.from("meta_publish_jobs").update({ story_error: String(e instanceof Error ? e.message : e).slice(0, 400), story_attempts: (job.story_attempts || 0) + 1 }).eq("id", job.id);
+      }
+    }
   }
+}
+
+// ---------- ستوري (٩:١٦) على فيسبوك وانستجرام ----------
+// الصورة: خلفية مطموسة من نفس التصميم + التصميم في النص بعرض ١٠٠٠px. الريل: نفس الفيديو (٩:١٦ أصلاً).
+async function composeStoryImage(admin: ReturnType<typeof createClient>, jobId: string, srcUrl: string): Promise<string> {
+  const res = await fetch(srcUrl);
+  if (!res.ok) throw new Error("تعذّر قراءة التصميم لعمل الستوري (HTTP " + res.status + ")");
+  const src = await Image.decode(new Uint8Array(await res.arrayBuffer()));
+  const W = 1080, H = 1920;
+  const bg = src.clone();
+  const k = Math.max(W / bg.width, H / bg.height);
+  bg.resize(Math.ceil(bg.width * k), Math.ceil(bg.height * k));
+  bg.crop(Math.floor((bg.width - W) / 2), Math.floor((bg.height - H) / 2), W, H);
+  bg.resize(54, 96).resize(W, H); // طمس
+  try { bg.lightness(0.82); } catch { /* optional */ }
+  const fg = src.clone();
+  const fw = 1000;
+  fg.resize(fw, Math.round(fg.height * fw / fg.width));
+  bg.composite(fg, Math.round((W - fw) / 2), Math.max(0, Math.round((H - fg.height) / 2)));
+  const jpg = await bg.encodeJPEG(88);
+  const path = `${jobId}-story.jpg`;
+  const up = await admin.storage.from("meta-publish-assets").upload(path, jpg, { contentType: "image/jpeg", upsert: true });
+  if (up.error) throw new Error("فشل رفع صورة الستوري: " + up.error.message);
+  return admin.storage.from("meta-publish-assets").getPublicUrl(path).data.publicUrl;
+}
+
+async function publishInstagramStory(igUserId: string, token: string, media: { imageUrl?: string; videoUrl?: string }) {
+  const c = await graphPost(`${igUserId}/media`, { media_type: "STORIES", ...(media.videoUrl ? { video_url: media.videoUrl } : { image_url: media.imageUrl as string }), access_token: token });
+  if (!c.ok) return { ok: false, error: c.data.error?.message || "فشل إنشاء ستوري انستجرام" };
+  const status = await waitInstagramContainers([c.data.id], token, media.videoUrl ? 60 : 24);
+  if (status) return { ok: false, error: "ستوري انستجرام ماخلصتش معالجة (status: " + status + ")" };
+  const pub = await graphPost(`${igUserId}/media_publish`, { creation_id: c.data.id, access_token: token });
+  if (!pub.ok) return { ok: false, error: pub.data.error?.message || "فشل نشر ستوري انستجرام" };
+  return { ok: true, id: pub.data.id as string };
+}
+
+async function publishFacebookPhotoStory(pageId: string, token: string, imageUrl: string) {
+  const up = await graphPost(`${pageId}/photos`, { url: imageUrl, published: "false", access_token: token });
+  if (!up.ok) return { ok: false, error: up.data.error?.message || "فشل رفع صورة ستوري فيسبوك" };
+  const st = await graphPost(`${pageId}/photo_stories`, { photo_id: up.data.id, access_token: token });
+  if (!st.ok) return { ok: false, error: st.data.error?.message || "فشل نشر ستوري فيسبوك" };
+  return { ok: true, id: String(st.data.post_id || st.data.id || up.data.id) };
+}
+
+async function publishFacebookVideoStory(pageId: string, token: string, videoUrl: string) {
+  const start = await graphPost(`${pageId}/video_stories`, { upload_phase: "start", access_token: token });
+  if (!start.ok) return { ok: false, error: start.data.error?.message || "فشل بدء ستوري فيديو فيسبوك" };
+  const up = await fetch(start.data.upload_url, { method: "POST", headers: { Authorization: "OAuth " + token, file_url: videoUrl } });
+  const upJson = await up.json().catch(() => ({}));
+  if (!up.ok || upJson.error) return { ok: false, error: upJson.error?.message || "فشل رفع فيديو الستوري لفيسبوك" };
+  const fin = await graphPost(`${pageId}/video_stories`, { upload_phase: "finish", video_id: start.data.video_id, access_token: token });
+  if (!fin.ok) return { ok: false, error: fin.data.error?.message || "فشل إنهاء ستوري فيديو فيسبوك" };
+  return { ok: true, id: String(fin.data.post_id || start.data.video_id) };
+}
+
+async function publishStories(admin: ReturnType<typeof createClient>, job: any, cfg: BrandConfig, token: string, m: { imageUrl: string | null; carouselUrls: string[]; videoUrl: string | null }) {
+  const needFb = job.publish_facebook && !job.story_facebook_id && !!cfg.facebook_page_id;
+  const needIg = job.publish_instagram && !job.story_instagram_id && !!cfg.instagram_business_account_id;
+  if (!needFb && !needIg) return;
+  const patch: Record<string, unknown> = { story_attempts: (job.story_attempts || 0) + 1 };
+  const errs: string[] = [];
+  const video = m.videoUrl || null;
+  const still = m.imageUrl || m.carouselUrls[0] || null;
+  let storyImage: string | null = null;
+  if (!video) {
+    if (!still) { await admin.from("meta_publish_jobs").update({ story_error: "مفيش تصميم نعمل منه ستوري", story_attempts: 99 }).eq("id", job.id); return; }
+    storyImage = await composeStoryImage(admin, job.id, still);
+  }
+  if (needIg) {
+    const r = await publishInstagramStory(cfg.instagram_business_account_id as string, token, video ? { videoUrl: video } : { imageUrl: storyImage as string });
+    if (r.ok) patch.story_instagram_id = r.id; else errs.push("انستجرام: " + r.error);
+  }
+  if (needFb) {
+    const r = video ? await publishFacebookVideoStory(cfg.facebook_page_id as string, token, video) : await publishFacebookPhotoStory(cfg.facebook_page_id as string, token, storyImage as string);
+    if (r.ok) patch.story_facebook_id = r.id; else errs.push("فيسبوك: " + r.error);
+  }
+  patch.story_error = errs.length ? errs.join(" | ").slice(0, 500) : null;
+  if (!errs.length) patch.story_published_at = new Date().toISOString();
+  await admin.from("meta_publish_jobs").update(patch).eq("id", job.id);
 }
 
 Deno.serve(async (req) => {
