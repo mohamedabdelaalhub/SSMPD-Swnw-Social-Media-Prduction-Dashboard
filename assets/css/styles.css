@@ -675,3 +675,7 @@ table.simple.acc-table td.acc-col-num{text-align:left;}
 .crt-reason{display:flex;gap:8px}.crt-reason input{flex:1;min-width:0;font:inherit;padding:7px 10px;border:1px solid #cfd7df;border-radius:8px}
 .crt-ok{color:#2F7D5C}.crt-err{color:#D0402A}
 .cm-linkbtn{display:inline-flex!important;align-items:center;gap:4px;text-decoration:none!important;margin:4px 4px 4px 0;white-space:nowrap}
+
+/* Patient names open the existing archive profile. */
+.patient-name-link { font: inherit; color: var(--c-primary, #0F369D); background: none; border: 0; padding: 6px 0; text-align: start; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.patient-name-link:focus-visible { outline: 2px solid #0F369D; outline-offset: 3px; border-radius: 3px; }
