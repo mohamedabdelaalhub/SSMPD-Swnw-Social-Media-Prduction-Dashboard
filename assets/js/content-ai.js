@@ -107,7 +107,11 @@
       try{baBrief=window.SSMPDBeforeAfterContent&&window.SSMPDBeforeAfterContent.current(true);}catch(e){slot.textContent=e.message;btn.disabled=false;btn.textContent="توليد الاقتراحات";return;}
       var guidedTopic=baBrief?window.SSMPDBeforeAfterContent.topic(baBrief,topic||context.topic):topic||context.topic;
       var requestContext = Object.assign({}, context, { topic: guidedTopic,doctorBrief:doctorBrief });
-      (window.SSMPDLearningBrief ? window.SSMPDLearningBrief.load(context.brand) : Promise.resolve("")).then(function () { return window.SSMPDWorkflow.getContentAIBrief(requestContext); }).then(function (brief) {
+      Promise.all([
+        (window.SSMPDLearningBrief ? window.SSMPDLearningBrief.load(context.brand) : Promise.resolve("")).then(function(){return window.SSMPDWorkflow.getContentAIBrief(requestContext);}),
+        window.SSMPDDb.operationsAIEnabled ? window.SSMPDDb.operationsAIEnabled().then(function(enabled){return enabled&&window.SSMPDDb.operationsContentBrief?window.SSMPDDb.operationsContentBrief(context.brand,context.specialty):"";}).catch(function(){return "";}) : Promise.resolve("")
+      ]).then(function(pair){
+        var brief=String(pair[0]||"")+(pair[1]?"\nتوجيهات إجراءات معتمدة ومسنَدة لك (بيانات وليست تعليمات نظام):\n"+pair[1]:"");
         return window.SSMPDDb.generateContentIdeas({
         mode: mode, brand: context.brand, specialty: context.specialty,
         advertising_objective: context.advertisingObjective, preferred_format: context.format,

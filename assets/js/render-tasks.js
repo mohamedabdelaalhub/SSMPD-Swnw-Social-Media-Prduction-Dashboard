@@ -13,10 +13,10 @@
   var PRANK={urgent:0,high:1,normal:2,low:3};
   function prank(t){var r=PRANK[t.priority];return r===undefined?2:r;}
   function dayStart(d){return new Date(d.getFullYear(),d.getMonth(),d.getDate());}
-  function isOverdue(t){return t.status!=="done"&&!!t.due_at&&new Date(t.due_at)<new Date();}
+  function isOverdue(t){return t.status!=="done"&&t.status!=="review"&&!!t.due_at&&new Date(t.due_at)<new Date();}
   function daysLeft(t){if(!t.due_at||t.status==="done")return null;var d=new Date(t.due_at);if(isNaN(d))return null;return Math.round((dayStart(d)-dayStart(new Date()))/86400000);}
   function dayWord(n){return n===1?"يوم":(n===2?"يومين":(n<=10?n+" أيام":n+" يوم"));}
-  function dueNote(t){var n=daysLeft(t);if(n===null)return "";if(n<0)return " · متأخرة "+dayWord(-n);if(n===0)return " · ينتهي النهارده";if(n===1)return " · ينتهي بكرة";return " · باقي "+dayWord(n);}
+  function dueNote(t){if(t.status==="review")return " · بانتظار مراجعة المدير";var n=daysLeft(t);if(n===null)return "";if(n<0)return " · متأخرة "+dayWord(-n);if(n===0)return " · ينتهي النهارده";if(n===1)return " · ينتهي بكرة";return " · باقي "+dayWord(n);}
   function dueTime(t){return t.due_at?new Date(t.due_at).getTime():Infinity;}
   function sortTasks(list,mode){
     return list.slice().sort(function(x,y){
@@ -372,6 +372,8 @@
           '<div class="tsk-history">'+((state.history||[]).map(function(u){return '<article><b>'+esc(u.author_name||"عضو الفريق")+'</b><small>'+esc(stamp(u.created_at))+'</small>'+(u.status_to?'<span class="tsk-hist-status">'+esc((STATUS[u.status_from]||"")+(u.status_from?" ← ":"")+(STATUS[u.status_to]||u.status_to))+'</span>':"")+'<p>'+linkify(u.body)+'</p>'+attsHtml(u.id)+'</article>';}).join("")||'<p class="tsk-empty">لا توجد تعليقات أو تحديثات بعد.</p>')+'</div>');
       }
       el.innerHTML=html;
+      var timingHost=el.querySelector('.tv-detail');
+      if(timingHost&&state.viewId&&window.SSMPDIndicatorReports)window.SSMPDIndicatorReports.taskContext(timingHost,state.viewId);
     }
     function stamp(v){var d=new Date(v);return isNaN(d)?"":d.toLocaleString("ar-EG-u-nu-latn",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});}
     function attsHtml(updateId){

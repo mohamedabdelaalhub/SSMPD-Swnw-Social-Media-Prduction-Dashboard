@@ -1,5 +1,5 @@
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');const {PGlite}=require('@electric-sql/pglite');const root=path.resolve(__dirname,'..'),id=n=>'20000000-0000-4000-8000-'+String(n).padStart(12,'0');
-(async()=>{const db=new PGlite();await db.exec(`create role anon;create role authenticated;
+(async()=>{const db=new PGlite();await db.exec(`create role anon;create role authenticated;create role service_role;
 create table admins(id uuid primary key,name text,email text,role text,active boolean default true);
 create function my_admin_id() returns uuid language sql stable as $$select nullif(current_setting('test.admin',true),'')::uuid$$;
 create function has_role(r text) returns boolean language sql stable as $$select exists(select 1 from admins where id=my_admin_id() and role=r and active)$$;
@@ -19,6 +19,7 @@ await as(5);s=await rpc('personal_home_snapshot');assert.deepEqual(s.content.ite
 await as(4);s=await rpc('personal_home_snapshot');assert.equal(s.content.approval,1);assert.equal(s.content.items.length,1);n=await rpc('personal_home_inbox');assert.equal(n.notices[0].type,'content');await rpc('personal_home_read',[[n.notices[0].key]]);assert.equal((await rpc('personal_home_inbox')).unread,0);
 await owner("update content_items set stage='ready_to_publish',updated_at=now()+interval '1 minute' where id=$1",[id(80)]);await as(4);n=await rpc('personal_home_inbox');assert.equal(n.unread,1,'stage change gets distinct actionable notice');assert.equal((await rpc('personal_home_snapshot')).content.approval,0);
 await as(2);await rpc('task_set_status',[t1,'review','تم التنفيذ']);await as(1);s=await rpc('personal_home_snapshot');assert.equal(s.tasks.review,1);assert.equal(s.tasks.team_open,2);assert.equal(s.tasks.reviews[0].id,t1);
+await owner(fs.readFileSync(path.join(root,'supabase/migrations/202610170001_indicator_actions.sql'),'utf8'));await as(1);const fair=await rpc('operations_home_snapshot');assert.equal(fair.tasks.team_late,1,'manager review is not employee lateness');assert.equal(fair.tasks.review,1,'review remains actionable for manager');assert.deepEqual(fair.content,s.content,'existing content summary preserved');await as(2);assert.equal((await rpc('operations_home_snapshot')).tasks.late,0,'submitted work excludes review waiting');
 await as(7);s=await rpc('personal_home_snapshot');assert.equal(s.tasks,null,'finance denied by default without finance grants');assert.equal(s.content.items.length,0);
 // Supply fixtures expose the same scoped helpers as the separately-tested supply migration.
 await owner(`create table inventory_locations(id uuid primary key,name text,branch_id uuid);create table inventory_branches(id uuid primary key,name text);

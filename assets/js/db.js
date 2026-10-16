@@ -1306,6 +1306,16 @@
     deletePricingPackage: function (id) {
       return handle(client.from("pricing_packages").delete().eq("id", id));
     },
+    operationsReports: function () { return handle(client.from("operational_reports").select("id,title,branch,scope,period_from,period_to,source_approved_at").order("period_to",{ascending:false}).order("source_approved_at",{ascending:false}).limit(100)); },
+    operationsReport: function (id) { return handle(client.from("operational_reports").select("*").eq("id",id).single()); },
+    operationsIssues: function () { return handle(client.from("operational_issues").select("id,title,branch,scope,status,appearance_count,updated_at").order("updated_at",{ascending:false}).limit(300)); },
+    operationsIssueDetail: function (id) { return handle(client.rpc("operations_issue_detail",{p_issue_id:id})); },
+    operationsCreateAction: function (args) { return handle(client.rpc("operations_create_action",args)); },
+    operationsRecordOutcome: function (args) { return handle(client.rpc("operations_record_outcome",args)); },
+    operationsTaskContext: function (id) { return handle(client.rpc("operations_task_context",{p_task_id:id})); },
+    operationsContentBrief: function (brand,specialty) { return handle(client.rpc("operations_content_brief",{p_brand:brand,p_specialty:specialty||""})); },
+    operationsAIEnabled: function () { return handle(client.rpc("operations_ai_enabled")).then(function(v){return v===true;}).catch(function(){return false;}); },
+    operationsAdvice: function (id) { return client.functions.invoke("operations-advisor",{body:{issue_id:id}}).then(function(r){if(r.error||r.data?.error)throw Error(r.data?.error||"تعذر تشغيل المستشار. تحقق من التفعيل والرصيد.");return r.data;}); },
     taskListProjects: function () { return handle(client.rpc("task_list_projects")); },
     taskListVisible: function () { return handle(client.rpc("task_list_visible")); },
     taskPeople: function () { return handle(client.rpc("task_people")); },
