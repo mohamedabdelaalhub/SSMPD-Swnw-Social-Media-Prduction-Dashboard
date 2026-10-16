@@ -674,3 +674,4 @@ table.simple.acc-table td.acc-col-num{text-align:left;}
 .crt-chip.on.strong{background:#2F7D5C;color:#fff;border-color:#2F7D5C}.crt-chip.on.ok{background:#0F369D;color:#fff;border-color:#0F369D}.crt-chip.on.weak{background:#D0402A;color:#fff;border-color:#D0402A}
 .crt-reason{display:flex;gap:8px}.crt-reason input{flex:1;min-width:0;font:inherit;padding:7px 10px;border:1px solid #cfd7df;border-radius:8px}
 .crt-ok{color:#2F7D5C}.crt-err{color:#D0402A}
+.cm-linkbtn{display:inline-flex!important;align-items:center;gap:4px;text-decoration:none!important;margin:4px 4px 4px 0;white-space:nowrap}

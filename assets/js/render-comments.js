@@ -29,6 +29,17 @@
   function isPending(c) { return !c.author_is_page && !c.parent_comment_id && ["new", "drafted", "failed"].indexOf(c.status) !== -1; }
   // متأخر = مستني رد من أكتر من ساعة وفي آخر ٧ أيام (التعليقات الأقدم بتظهر عادي من غير تنبيه)
   function isOverdue(c) { var m = ageMin(c.commented_at); return isPending(c) && m >= OVERDUE_MIN && m < 7 * 1440; }
+  // الروابط جوه نص الرسالة تتحول لزرار بدل ما تتعرض كنص طويل
+  function rich(text) {
+    // الرابط ساعات بيوصل متقسّم: «…/?) (comment_id=123)» — بنرجّعه رابط واحد بيفتح التعليق نفسه
+    text = String(text == null ? "" : text).replace(/(https?:\/\/[^\s)]+?)\/?\?\)\s*\(comment_id=(\d+)\)/g, "$1/?comment_id=$2");
+    return esc(text).replace(/https?:\/\/[^\s<>"']+/g, function (m) {
+      var tail = (m.match(/[)\]}.,؟?!،:;]+$/) || [""])[0], url = tail ? m.slice(0, m.length - tail.length) : m;
+      if (!url) return m;
+      var label = /facebook\.com|fb\.com|fb\.watch/i.test(url) ? "افتح على فيسبوك" : /instagram\.com/i.test(url) ? "افتح على انستجرام" : /wa\.me|whatsapp/i.test(url) ? "افتح واتساب" : "فتح الرابط";
+      return '<a class="btn ghost sm cm-linkbtn" href="' + url + '" target="_blank" rel="noopener noreferrer">🔗 ' + label + "</a>" + (tail === "?" ? "" : tail.replace(/^\?/, ""));
+    });
+  }
   function link(url, text) { return url ? '<a href="' + esc(url) + '" target="_blank" rel="noopener">' + text + "</a>" : text; }
 
   function load() {
@@ -130,8 +141,8 @@
         '<span class="cm-badge">' + (BRANDS[a.brand] || a.brand) + "</span></div>" +
         '<div class="cm-msg"><b>' + esc(a.who || "مستخدم") + '</b> <span class="muted">' + when(a.at) + " · " + ago(a.at) + "</span>" +
         (a.url ? ' <a class="cm-open" href="' + esc(a.url) + '" target="_blank" rel="noopener">' + (a.platform === "whatsapp" ? "كلّمه على واتساب" : "افتح " + (a.kind === "comment" ? "التعليق" : "المحادثة")) + " ↗</a>" : "") +
-        "<p>" + esc(a.text) + "</p></div>" +
-        (a.reply ? '<div class="cm-reply page"><b>ردنا التلقائي</b><p>' + esc(a.reply) + "</p></div>" : "") +
+        "<p>" + rich(a.text) + "</p></div>" +
+        (a.reply ? '<div class="cm-reply page"><b>ردنا التلقائي</b><p>' + rich(a.reply) + "</p></div>" : "") +
         '<div class="cm-actions"><button class="btn btn-primary sm" data-resolve="' + a.kind + "|" + esc(a.id) + '">تم التعامل</button></div></div>';
     }).join("");
   }
@@ -159,10 +170,10 @@
         (lastCust.category ? '<span class="cm-badge">' + (CATEGORY[lastCust.category] || lastCust.category) + "</span>" : "") +
         (c.last.conversation_url ? '<a class="cm-open" href="' + esc(c.last.conversation_url) + '" target="_blank" rel="noopener">افتح المحادثة ↗</a>' : "") + "</div>";
       c.list.slice(-6).forEach(function (m) {
-        h += '<div class="cm-reply' + (m.is_page ? " page" : "") + '"><b>' + esc(m.is_page ? "الصفحة" : (m.sender_name || "عميل")) + '</b> <span class="muted">' + when(m.sent_at) + "</span><p>" + esc(m.message) + "</p></div>";
+        h += '<div class="cm-reply' + (m.is_page ? " page" : "") + '"><b>' + esc(m.is_page ? "الصفحة" : (m.sender_name || "عميل")) + '</b> <span class="muted">' + when(m.sent_at) + "</span><p>" + rich(m.message) + "</p></div>";
       });
       if (lastCust.status === "replied" && lastCust.reply_text && !c.list.some(function (m) { return m.is_page && new Date(m.sent_at) >= new Date(lastCust.sent_at); }))
-        h += '<div class="cm-reply page"><b>ردنا</b> <span class="muted">' + when(lastCust.replied_at) + "</span><p>" + esc(lastCust.reply_text) + "</p></div>";
+        h += '<div class="cm-reply page"><b>ردنا</b> <span class="muted">' + when(lastCust.replied_at) + "</span><p>" + rich(lastCust.reply_text) + "</p></div>";
       if (lastCust.status === "failed" && lastCust.last_error) h += '<div class="err-msg">' + esc(lastCust.last_error) + "</div>";
       return h + "</div>";
     }).join("");
@@ -188,12 +199,12 @@
       '<span class="muted cm-post">على: ' + esc(title) + "</span></div>" +
       '<div class="cm-msg"><b>' + link(c.author_url, esc(c.author_name || "مستخدم")) + '</b> <span class="muted">' + when(c.commented_at) + " · " + ago(c.commented_at) + "</span>" +
       (c.comment_url ? ' <a class="cm-open" href="' + esc(c.comment_url) + '" target="_blank" rel="noopener">افتح على ' + (c.platform === "facebook" ? "فيسبوك" : "انستجرام") + " ↗</a>" : "") +
-      "<p>" + esc(c.message) + "</p></div>";
+      "<p>" + rich(c.message) + "</p></div>";
     thread.forEach(function (r) {
-      h += '<div class="cm-reply' + (r.author_is_page ? " page" : "") + '"><b>' + esc(r.author_is_page ? "رد الصفحة" : (r.author_name || "مستخدم")) + "</b> <span class=\"muted\">" + when(r.commented_at) + "</span><p>" + esc(r.message) + "</p></div>";
+      h += '<div class="cm-reply' + (r.author_is_page ? " page" : "") + '"><b>' + esc(r.author_is_page ? "رد الصفحة" : (r.author_name || "مستخدم")) + "</b> <span class=\"muted\">" + when(r.commented_at) + "</span><p>" + rich(r.message) + "</p></div>";
     });
     if (c.status === "replied" && c.final_reply) {
-      h += '<div class="cm-reply page"><b>ردنا</b> <span class="muted">' + when(c.replied_at) + "</span><p>" + esc(c.final_reply) + "</p></div>";
+      h += '<div class="cm-reply page"><b>ردنا</b> <span class="muted">' + when(c.replied_at) + "</span><p>" + rich(c.final_reply) + "</p></div>";
       h += inLibrary ? '<div class="muted cm-lib">✓ ضمن الردود المعتمدة</div>'
         : (c.sensitive ? "" : '<button class="btn ghost sm" data-template="' + esc(c.id) + '">إضافة للردود المعتمدة</button>');
     }
