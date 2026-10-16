@@ -1061,6 +1061,8 @@ function ciCopyFallbackBrief(ctx, returnOnly) {
       lines.push("");
     }
 
+    var lbk = window.SSMPDLearningBrief && window.SSMPDLearningBrief.block(brand && brand.value);
+    if (lbk) { lines.push(""); lines.push(lbk); lines.push(""); }
     ciAppendAgentOutputContract(lines, ctx.fmtKey);
 
 
@@ -1109,12 +1111,15 @@ function ciCopyFallbackBrief(ctx, returnOnly) {
     };
     var copyBtn = out.querySelector("#ci-copy-brief");
     if (copyBtn) copyBtn.onclick = function () {
-      ciCopyFallbackBrief({
-        specialtyKey: specialtyKey,
-        objKey: objKey,
-        fmtKey: fmtKey,
-        topicText: topicText,
-        generalPatterns: general
+      var bEl = document.getElementById("cf-brand");
+      (window.SSMPDLearningBrief ? window.SSMPDLearningBrief.load(bEl && bEl.value) : Promise.resolve()).then(function () {
+        ciCopyFallbackBrief({
+          specialtyKey: specialtyKey,
+          objKey: objKey,
+          fmtKey: fmtKey,
+          topicText: topicText,
+          generalPatterns: general
+        });
       });
     };
     var agentBtn = out.querySelector("#ci-open-agent");
@@ -1239,9 +1244,12 @@ function ciCopyFallbackBrief(ctx, returnOnly) {
     var briefCopyBtn = out.querySelector("#ci-copy-brief");
     if (briefCopyBtn) {
       briefCopyBtn.onclick = function () {
-        ciCopyBrief(out, {
-          specialtyKey: specialtyKey, metaLabel: metaLabel, objKey: objKey, fmtKey: fmtKey, topicText: topicText,
-          overallConfidence: overallConfidence, bestPerf: bestPerf, bestActionable: bestActionable, secondActionable: secondActionable, weak: weakPick
+        var bEl = document.getElementById("cf-brand");
+        (window.SSMPDLearningBrief ? window.SSMPDLearningBrief.load(bEl && bEl.value) : Promise.resolve()).then(function () {
+          ciCopyBrief(out, {
+            specialtyKey: specialtyKey, metaLabel: metaLabel, objKey: objKey, fmtKey: fmtKey, topicText: topicText,
+            overallConfidence: overallConfidence, bestPerf: bestPerf, bestActionable: bestActionable, secondActionable: secondActionable, weak: weakPick
+          });
         });
       };
     }
@@ -1351,6 +1359,8 @@ function ciCopyFallbackBrief(ctx, returnOnly) {
     lines.push("Do not invent benchmarks, contact details, doctor names, medical service claims, offers, or historical performance facts that are not supplied by this Brief or already part of the Content Agent's approved business knowledge.");
     lines.push("");
     lines.push("استخدم النتائج كمرجع استراتيجي وليس كنص للنسخ. هذا نمط استراتيجي وليس نص للنسخ الحرفي.");
+    var lbk = window.SSMPDLearningBrief && window.SSMPDLearningBrief.block(brand && brand.value);
+    if (lbk) { lines.push(""); lines.push(lbk); lines.push(""); }
     ciAppendAgentOutputContract(lines, ctx.fmtKey);
 
 

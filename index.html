@@ -4,100 +4,101 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>لوحة إنتاج المحتوى — Swnw</title>
-<link rel="stylesheet" href="assets/css/i18n.css?v=operations-20261017-1">
+<link rel="stylesheet" href="assets/css/i18n.css?v=operations-live-20261017-2">
 <link rel="icon" href="assets/img/mark.svg">
-<link rel="stylesheet" href="assets/css/styles.css?v=operations-20261017-1">
-<link rel="stylesheet" href="assets/css/tasks.css?v=operations-20261017-1">
-<link rel="stylesheet" href="assets/css/inventory.css?v=operations-20261017-1">
-<link rel="stylesheet" href="assets/css/publication-preview.css?v=operations-20261017-1">
-<link rel="stylesheet" href="assets/css/design-editor.css?v=operations-20261017-1">
+<link rel="stylesheet" href="assets/css/styles.css?v=operations-live-20261017-2">
+<link rel="stylesheet" href="assets/css/tasks.css?v=operations-live-20261017-2">
+<link rel="stylesheet" href="assets/css/inventory.css?v=operations-live-20261017-2">
+<link rel="stylesheet" href="assets/css/publication-preview.css?v=operations-live-20261017-2">
+<link rel="stylesheet" href="assets/css/design-editor.css?v=operations-live-20261017-2">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<link rel="stylesheet" href="assets/css/nutrition.css?v=operations-20261017-1">
-<link rel="stylesheet" href="assets/css/video-studio.css?v=operations-20261017-1">
-<script src="assets/js/nutrition-view.js?v=operations-20261017-1"></script>
-<link rel="stylesheet" href="assets/css/personal-home.css?v=operations-20261017-1">
-<link rel="stylesheet" href="assets/css/staff-kpi.css?v=operations-20261017-1">
-<link rel="stylesheet" href="assets/css/ops-panels.css?v=operations-20261017-1">
-<link rel="stylesheet" href="assets/css/indicator-reports.css?v=operations-20261017-1">
+<link rel="stylesheet" href="assets/css/nutrition.css?v=operations-live-20261017-2">
+<link rel="stylesheet" href="assets/css/video-studio.css?v=operations-live-20261017-2">
+<script src="assets/js/nutrition-view.js?v=operations-live-20261017-2"></script>
+<link rel="stylesheet" href="assets/css/personal-home.css?v=operations-live-20261017-2">
+<link rel="stylesheet" href="assets/css/staff-kpi.css?v=operations-live-20261017-2">
+<link rel="stylesheet" href="assets/css/ops-panels.css?v=operations-live-20261017-2">
+<link rel="stylesheet" href="assets/css/indicator-reports.css?v=operations-live-20261017-2">
 </head>
 <body>
 <div id="app-root"></div>
 
-<script src="assets/js/latin-digits.js?v=operations-20261017-1"></script>
-<script src="assets/js/i18n-dictionary.js?v=operations-20261017-1"></script>
-<script src="assets/js/i18n.js?v=operations-20261017-1"></script>
-<script src="config.js?v=operations-20261017-1"></script>
-<script src="assets/js/toast.js?v=operations-20261017-1"></script>
-<script src="assets/js/publication-text.js?v=operations-20261017-1"></script>
-<script src="assets/js/content-text.js?v=operations-20261017-1"></script>
-<script src="assets/js/db.js?v=operations-20261017-1"></script>
-<script src="assets/js/roles.js?v=operations-20261017-1"></script>
-<script src="assets/js/finance-permissions.js?v=operations-20261017-1"></script>
-<script src="assets/js/workflow.js?v=operations-20261017-1"></script>
-<script src="assets/js/auth.js?v=operations-20261017-1"></script>
-<script src="assets/js/drive.js?v=operations-20261017-1"></script>
-<script src="assets/js/comments.js?v=operations-20261017-1"></script>
-<script src="assets/js/render-summary.js?v=operations-20261017-1"></script>
-<script src="assets/js/doctor-schedule.js?v=operations-20261017-1"></script>
-<script src="assets/js/before-after-content.js?v=operations-20261017-1"></script>
-<script src="assets/js/content-sources.js?v=operations-20261017-1"></script>
-<script src="assets/js/schedule-history.js?v=operations-20261017-1"></script>
-<script src="assets/js/days-cards.js?v=operations-20261017-1"></script>
-<script src="assets/js/carousel-content.js?v=operations-20261017-1"></script>
-<script src="assets/js/dina-content.js?v=operations-20261017-1"></script>
-<script src="assets/js/doctor-content.js?v=operations-20261017-1"></script>
-<script src="assets/js/content-ai.js?v=operations-20261017-1"></script>
-<script src="assets/js/doctor-template-map.js?v=operations-20261017-1"></script>
-<script src="assets/js/design-doctor-template.js?v=operations-20261017-1"></script>
-<script src="assets/js/design-panel-color.js?v=operations-20261017-1"></script>
-<script src="assets/js/design-dina-template.js?v=operations-20261017-1"></script>
-<script src="assets/js/design-before-after.js?v=operations-20261017-1"></script>
-<script src="assets/js/design-source.js?v=operations-20261017-1"></script>
-<script src="assets/js/design-cover-template.js?v=operations-20261017-1"></script>
-<script src="assets/js/design-composer.js?v=operations-20261017-1"></script>
-<script src="assets/js/design-files.js?v=operations-20261017-1"></script>
-<script src="assets/js/media-thumbs.js?v=operations-20261017-1"></script>
-<script src="assets/js/ai-clips.js?v=operations-20261017-1"></script>
-<script src="assets/js/publication-preview.js?v=operations-20261017-1"></script>
-<script src="assets/js/design-editor-layout.js?v=operations-20261017-1"></script>
-<script src="assets/js/design-copy.js?v=operations-20261017-1"></script>
-<script src="assets/js/design-expansion.js?v=operations-20261017-1"></script>
-<script src="assets/js/design-budget.js?v=operations-20261017-1"></script>
-<script src="assets/js/reel-cover.js?v=operations-20261017-1"></script>
-<script src="assets/js/design-studio.js?v=operations-20261017-1"></script>
-<script src="assets/js/video-storyboard.js?v=operations-20261017-1"></script>
-<script src="assets/js/studio-storyboard.js?v=operations-20261017-1"></script>
-<script src="assets/js/video-studio.js?v=operations-20261017-1"></script>
-<script src="assets/js/render-production.js?v=operations-20261017-1"></script>
-<script src="assets/js/render-review.js?v=operations-20261017-1"></script>
-<script src="assets/js/render-design.js?v=operations-20261017-1"></script>
-<script src="assets/js/website-publish.js?v=operations-20261017-1"></script>
-<script src="assets/js/render-publish.js?v=operations-20261017-1"></script>
-<script src="assets/js/render-comments.js?v=operations-20261017-1"></script>
-<script src="assets/js/render-clinic-info.js?v=operations-20261017-1"></script>
-<script src="assets/js/render-performance.js?v=operations-20261017-1"></script>
-<script src="assets/js/render-staffkpi.js?v=operations-20261017-1"></script>
-<script src="assets/js/ops-panels.js?v=operations-20261017-1"></script>
-<script src="assets/js/render-mykpi.js?v=operations-20261017-1"></script>
-<script src="assets/js/content-rating.js?v=operations-20261017-1"></script>
-<script src="assets/js/render-archive.js?v=operations-20261017-1"></script>
-<script src="assets/js/render-patients.js?v=operations-20261017-1"></script>
-<script src="assets/js/render-leads.js?v=operations-20261017-1"></script>
-<script src="assets/js/render-contracting-entities.js?v=operations-20261017-1"></script>
-<script src="assets/js/render-bookings.js?v=operations-20261017-1"></script>
-<script src="assets/js/inventory-supplies.js?v=operations-20261017-1"></script>
-<script src="assets/js/render-admin.js?v=operations-20261017-1"></script>
-<script src="assets/js/render-patient-verification.js?v=operations-20261017-1"></script>
-<script src="assets/js/render-metaads.js?v=operations-20261017-1"></script>
-<script src="assets/js/render-mediabuyer.js?v=operations-20261017-1"></script>
-<script src="assets/js/render-accounting.js?v=operations-20261017-1"></script>
-<script src="assets/js/render-tasks.js?v=operations-20261017-1"></script>
-<script src="assets/js/inventory-workspace.js?v=operations-20261017-1"></script>
-<script src="assets/js/render-inventory.js?v=operations-20261017-1"></script>
-<script src="assets/js/personal-home.js?v=operations-20261017-1"></script>
-<script src="assets/js/indicator-reports.js?v=operations-20261017-1"></script>
-<script src="assets/js/app.js?v=operations-20261017-1"></script>
+<script src="assets/js/latin-digits.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/i18n-dictionary.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/i18n.js?v=operations-live-20261017-2"></script>
+<script src="config.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/toast.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/publication-text.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/content-text.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/db.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/roles.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/finance-permissions.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/learning-brief.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/workflow.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/auth.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/drive.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/comments.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/render-summary.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/doctor-schedule.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/before-after-content.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/content-sources.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/schedule-history.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/days-cards.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/carousel-content.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/dina-content.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/doctor-content.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/content-ai.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/doctor-template-map.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/design-doctor-template.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/design-panel-color.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/design-dina-template.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/design-before-after.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/design-source.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/design-cover-template.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/design-composer.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/design-files.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/media-thumbs.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/ai-clips.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/publication-preview.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/design-editor-layout.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/design-copy.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/design-expansion.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/design-budget.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/reel-cover.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/design-studio.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/video-storyboard.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/studio-storyboard.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/video-studio.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/render-production.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/render-review.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/render-design.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/website-publish.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/render-publish.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/render-comments.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/render-clinic-info.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/render-performance.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/render-staffkpi.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/ops-panels.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/render-mykpi.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/content-rating.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/render-archive.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/render-patients.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/render-leads.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/render-contracting-entities.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/render-bookings.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/inventory-supplies.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/render-admin.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/render-patient-verification.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/render-metaads.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/render-mediabuyer.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/render-accounting.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/render-tasks.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/inventory-workspace.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/render-inventory.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/personal-home.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/indicator-reports.js?v=operations-live-20261017-2"></script>
+<script src="assets/js/app.js?v=operations-live-20261017-2"></script>
 </body>
 </html>
 

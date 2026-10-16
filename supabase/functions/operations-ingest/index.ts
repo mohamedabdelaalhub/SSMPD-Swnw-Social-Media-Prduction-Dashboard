@@ -1,13 +1,17 @@
-import {createClient} from 'npm:@supabase/supabase-js@2';
+import {createClient} from 'npm:@supabase/supabase-js@2.118.0';
 import {verified,checkedEnvelope} from './contract.mjs';
 Deno.serve(async(req:Request)=>{
  if(req.method!=='POST')return new Response('POST only',{status:405});
  try{
   if(Number(req.headers.get('content-length')||0)>350000)return new Response('Too large',{status:413});
   const raw=await req.text();if(raw.length>350000)return new Response('Too large',{status:413});
-  if(!await verified(Deno.env.get('OPERATIONS_BRIDGE_SECRET'),req.headers.get('x-operations-time'),raw,req.headers.get('x-operations-signature')))return new Response('Unauthorized',{status:401});
-  const envelope=checkedEnvelope(JSON.parse(raw));
+  const stamp=req.headers.get('x-operations-time'),sig=req.headers.get('x-operations-signature');
+  if(!/^\d{13}$/.test(stamp||'')||Math.abs(Date.now()-Number(stamp))>300000||!/^[0-9a-f]{64}$/.test(sig||''))return new Response('Unauthorized',{status:401});
   const db=createClient(Deno.env.get('SUPABASE_URL')!,Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,{auth:{persistSession:false}});
+  let secret=Deno.env.get('OPERATIONS_BRIDGE_SECRET');
+  if(!secret){const config=await db.rpc('operations_server_secrets');if(config.error)return new Response('Unavailable',{status:503});secret=config.data?.bridge;}
+  if(!await verified(secret,stamp,raw,sig))return new Response('Unauthorized',{status:401});
+  const envelope=checkedEnvelope(JSON.parse(raw));
   const {data,error}=await db.rpc('operations_ingest_snapshot',{p_snapshot:envelope.snapshot,p_approved_at:envelope.approved_at,p_actor:envelope.approved_by});
   if(error)return Response.json({error:'Unable to record report'},{status:503});
   return Response.json({ok:true,...data});

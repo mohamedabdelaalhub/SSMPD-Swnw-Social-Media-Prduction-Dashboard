@@ -1314,6 +1314,7 @@
     operationsRecordOutcome: function (args) { return handle(client.rpc("operations_record_outcome",args)); },
     operationsTaskContext: function (id) { return handle(client.rpc("operations_task_context",{p_task_id:id})); },
     operationsContentBrief: function (brand,specialty) { return handle(client.rpc("operations_content_brief",{p_brand:brand,p_specialty:specialty||""})); },
+    operationsAIEnabled: function () { return handle(client.rpc("operations_ai_enabled")).then(function(v){return v===true;}).catch(function(){return false;}); },
     operationsAdvice: function (id) { return client.functions.invoke("operations-advisor",{body:{issue_id:id}}).then(function(r){if(r.error||r.data?.error)throw Error(r.data?.error||"تعذر تشغيل المستشار. تحقق من التفعيل والرصيد.");return r.data;}); },
     taskListProjects: function () { return handle(client.rpc("task_list_projects")); },
     taskListVisible: function () { return handle(client.rpc("task_list_visible")); },

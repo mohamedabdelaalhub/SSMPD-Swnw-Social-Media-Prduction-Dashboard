@@ -2,7 +2,7 @@ const {PGlite}=require('@electric-sql/pglite'),fs=require('fs'),path=require('pa
 const root=path.resolve(__dirname,'..'),id=n=>'30000000-0000-4000-8000-'+String(n).padStart(12,'0');
 const date=n=>new Date(Date.now()+n*864e5).toISOString().slice(0,10),stamp=n=>new Date(Date.now()+n*864e5).toISOString();
 (async()=>{
- const db=new PGlite();await db.exec(`create role anon;create role authenticated;create role service_role;create table admins(id uuid primary key,name text,email text,role text,active boolean default true);
+ const db=new PGlite();await db.exec(`set timezone='UTC';create role anon;create role authenticated;create role service_role;create table admins(id uuid primary key,name text,email text,role text,active boolean default true);
  create function my_admin_id() returns uuid language sql stable as $$select (select id from admins where id=nullif(current_setting('test.admin',true),'')::uuid and active)$$;
  create function has_role(r text) returns boolean language sql stable as $$select exists(select 1 from admins where id=my_admin_id() and role=r and active)$$;
  grant usage on schema public to authenticated,service_role;grant select on admins to authenticated;`);
