@@ -22,6 +22,7 @@ const central='00000000-0000-4000-8000-000000000001';
  await db.exec(fs.readFileSync(path.join(root,'supabase/migrations/202610160001_inventory_lots_suppliers.sql'),'utf8'));
  const sql=fs.readFileSync(path.join(root,'supabase/migrations/202610160003_inventory_locations_transfers.sql'),'utf8');
  await db.exec(sql);
+ await db.exec(fs.readFileSync(path.join(root,'supabase/migrations/202610160004_inventory_structure_names.sql'),'utf8'));
  await db.exec(sql); // activation rerun must preserve data and function grants
  for(const [n,role,name] of [[1,'super_admin','Admin'],[2,'nursing','Senior'],[3,'accountant','Keeper'],[4,'general_manager','Manager'],[5,'nursing','Receiver'],[6,'nursing','Other']])await db.query('insert into admins(id,role,name) values($1,$2,$3)',[id(n),role,name]);
  async function as(n){await db.exec('reset role');await db.query("select set_config('test.admin',$1,false)",[id(n)]);await db.exec('set role authenticated');}
@@ -29,6 +30,10 @@ const central='00000000-0000-4000-8000-000000000001';
  async function fails(fn,args,msg){await assert.rejects(()=>call(fn,args),msg);}
  async function owner(sql,args=[]){await db.exec('reset role');return (await db.query(sql,args)).rows;}
  await as(1);
+ assert.equal((await call('inventory_workspace_snapshot')).branches[0].name,'حدائق الأهرام');
+ await call('inventory_rename_structure',['00000000-0000-4000-8000-000000000002','فرع حدائق الأهرام','branch']);
+ await db.exec('reset role');await db.exec(fs.readFileSync(path.join(root,'supabase/migrations/202610160004_inventory_structure_names.sql'),'utf8'));await as(1);
+ assert.equal((await call('inventory_workspace_snapshot')).branches[0].name,'فرع حدائق الأهرام','rerun keeps a chosen name');
  let snap=await call('inventory_workspace_snapshot');assert.equal(snap.locations.length,3);const nursing=snap.locations.find(l=>l.name==='التمريض').id;
  await call('inventory_assign_location',[central,id(3),'storekeeper',true]);
  await call('inventory_assign_location',[nursing,id(2),'senior_nursing',true]);
@@ -37,6 +42,8 @@ const central='00000000-0000-4000-8000-000000000001';
  const branch=await call('inventory_save_structure',['فرع جديد',null,'00000000-0000-4000-8000-000000000002',true]);
  snap=await call('inventory_workspace_snapshot');assert.equal(snap.locations.filter(l=>l.branch_id===branch).length,2);
  const item=await call('inventory_save_item',[null,'T1','كانيولا صفراء','مستلزمات','قطعة',10,5,20,12]);
+ await call('inventory_rename_structure',[central,'المركزي المعتمد','location']);
+ await fails('inventory_rename_structure',[central,'أ','location'],/راجع/);
  const asof='2026-10-15T12:00:00Z';
  const row={item_id:item,name:'كانيولا صفراء',quantity:100,unit:'قطعة',factor:1,unit_cost:10,create_new:false};
  const batch=await call('inventory_stage_import',[central,'opening',asof,'file.xlsx',[row]]);
@@ -46,6 +53,7 @@ const central='00000000-0000-4000-8000-000000000001';
  await fails('inventory_approve_import',[batch,true],/سبق/);
  assert.equal((await call('inventory_workspace_snapshot')).items[0].on_hand,100);
  await as(2);
+ await fails('inventory_rename_structure',[central,'غير مسموح','location'],/للسوبر أدمن/);
  await fails('inventory_workspace_snapshot',[central],/لم تُحدد/);
  await fails('inventory_assign_location',[central,id(2),'storekeeper',true],/غير مسموح/);
  await fails('inventory_allocate_at',[central,item,1],/permission denied/);
