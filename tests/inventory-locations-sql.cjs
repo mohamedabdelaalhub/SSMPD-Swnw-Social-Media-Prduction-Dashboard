@@ -52,6 +52,8 @@ const central='00000000-0000-4000-8000-000000000001';
  const transfer=await call('inventory_create_transfer',[central,nursing,id(5),[{item_id:item,quantity:20}],'للتمريض']);
  await fails('inventory_dispatch_transfer',[transfer],/الموافقتين/);
  await fails('inventory_review_transfer',[transfer,'storekeeper',true,''],/مسؤول/);
+ await fails('inventory_review_transfer',[transfer,null,true,''],/غير قابل/);
+ await fails('inventory_create_transfer',[central,nursing,id(5),null,''],/الأصناف/);
  await as(3);await call('inventory_review_transfer',[transfer,'storekeeper',true,'']);
  await fails('inventory_dispatch_transfer',[transfer],/الموافقتين/);
  await as(4);await call('inventory_review_transfer',[transfer,'manager',true,'']);

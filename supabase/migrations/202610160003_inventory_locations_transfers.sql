@@ -204,7 +204,7 @@ begin
  if not (public.inventory_location_can(p_source,'request') or public.inventory_location_can(p_destination,'request')) then raise exception 'إنشاء التحويل لسينيور التمريض والإدارة'; end if;
  if (select count(*) from public.inventory_locations where id in (p_source,p_destination) and active)<>2 then raise exception 'المصدر والوجهة يجب أن يكونا مخزنين نشطين مختلفين'; end if;
  if not exists(select 1 from public.admins a join public.inventory_location_staff s on s.admin_id=a.id where a.id=p_receiver and a.active and s.location_id=p_destination and s.responsibility in ('receiver','senior_nursing','storekeeper')) then raise exception 'عيّن مستلماً للمخزن الوجهة أولاً'; end if;
- if jsonb_typeof(p_lines)<>'array' or jsonb_array_length(p_lines) not between 1 and 500 then raise exception 'أضف الأصناف والكميات'; end if;
+ if p_lines is null or jsonb_typeof(p_lines)<>'array' or jsonb_array_length(p_lines) not between 1 and 500 then raise exception 'أضف الأصناف والكميات'; end if;
  insert into public.inventory_transfers(source_id,destination_id,requested_by,receiver_id,note) values(p_source,p_destination,public.my_admin_id(),p_receiver,coalesce(p_note,'')) returning id into v_id;
  for r in select * from jsonb_array_elements(p_lines) loop
   if (r->>'quantity')::numeric is null or (r->>'quantity')::numeric<=0 then raise exception 'الكمية مطلوبة'; end if;
@@ -218,7 +218,7 @@ returns void language plpgsql security definer set search_path=public as $$
 declare t public.inventory_transfers%rowtype; me uuid:=public.my_admin_id();
 begin
  select * into t from public.inventory_transfers where id=p_id for update;
- if not found or t.status<>'pending' or p_lane not in ('storekeeper','manager') or p_approve is null then raise exception 'الطلب غير قابل للمراجعة'; end if;
+ if not found or t.status<>'pending' or p_lane is null or p_lane not in ('storekeeper','manager') or p_approve is null then raise exception 'الطلب غير قابل للمراجعة'; end if;
  if p_lane='storekeeper' and not public.inventory_location_can(t.source_id,'storekeeper') then raise exception 'موافقة مسؤول مخزن المصدر مطلوبة'; end if;
  if p_lane='manager' and not (public.inventory_location_can(t.source_id,'manager') or public.inventory_location_can(t.destination_id,'manager')) then raise exception 'موافقة المدير مطلوبة'; end if;
  if (p_lane='storekeeper' and (t.storekeeper_by is not null or t.manager_by=me)) or (p_lane='manager' and (t.manager_by is not null or t.storekeeper_by=me)) then raise exception 'الموافقتان تحتاجان شخصين مختلفين'; end if;
@@ -505,8 +505,8 @@ begin
   if not exists(select 1 from public.inventory_count_lines where session_id=s.id) or exists(select 1 from public.inventory_count_lines where session_id=s.id and counted_quantity is null) then raise exception 'استكمل كل الأصناف؛ الخانة الفارغة ليست صفراً'; end if;
   update public.inventory_count_sessions set status='submitted',submitted_at=now() where id=s.id;
   if s.task_id is not null then
+   insert into public.task_updates(task_id,author_id,body,status_from,status_to) select id,public.my_admin_id(),'تسليم الجرد للمراجعة',status,'review' from public.tasks where id=s.task_id;
    update public.tasks set status='review',updated_at=now() where id=s.task_id;
-   insert into public.task_updates(task_id,author_id,body,status_from,status_to) values(s.task_id,public.my_admin_id(),'تسليم الجرد للمراجعة','in_progress','review');
    insert into public.task_notifications(recipient_id,task_id,kind,message)
     select p.manager_id,s.task_id,'review','الجرد جاهز للمراجعة' from public.tasks t join public.task_projects p on p.id=t.project_id where t.id=s.task_id;
   end if;
@@ -562,6 +562,9 @@ begin
    values(s.location_id,s.title,s.assigned_to,s.created_by,s.next_due_at,greatest(now(),s.next_due_at)+make_interval(days=>s.due_days),'جرد دوري') returning id into v_id;
   insert into public.inventory_count_lines(session_id,item_id,lot_id,system_quantity)
    select v_id,item_id,lot_id,sum(quantity_delta) from public.inventory_movements where location_id=s.location_id group by item_id,lot_id having sum(quantity_delta)>0;
+  insert into public.inventory_count_lines(session_id,item_id,system_quantity)
+   select v_id,i.id,0 from public.inventory_items i where i.active and not exists(select 1 from public.inventory_count_lines cl where cl.session_id=v_id and cl.item_id=i.id)
+    and (exists(select 1 from public.inventory_movements m where m.location_id=s.location_id and m.item_id=i.id) or exists(select 1 from public.inventory_opening_markers o where o.location_id=s.location_id and o.item_id=i.id));
   if s.project_id is not null then
    insert into public.tasks(project_id,title,description,expected_output,assignee_id,created_by,status,priority,due_at)
     values(s.project_id,s.title,'تسجيل العدد الفعلي في المخزن','تسليم الجرد للمراجعة',s.assigned_to,s.created_by,'todo','high',greatest(now(),s.next_due_at)+make_interval(days=>s.due_days)) returning id into tid;
@@ -598,7 +601,7 @@ begin
  v:=v||jsonb_build_object('items',(select coalesce(jsonb_agg(to_jsonb(i)||jsonb_build_object('on_hand',public.inventory_location_balance(v_loc,i.id),'available',public.inventory_location_balance(v_loc,i.id)-coalesce((select sum(m.quantity_delta) from public.inventory_movements m join public.inventory_lots l on l.id=m.lot_id where m.location_id=v_loc and m.item_id=i.id and l.expiry_date<current_date),0),'current_average_cost',case when can_manage then public.inventory_location_cost(v_loc,i.id) else null end) order by i.name),'[]') from public.inventory_items i where i.active),
  'lots',(select coalesce(jsonb_agg((to_jsonb(l)-'unit_cost')||jsonb_build_object('unit_cost',case when can_manage then l.unit_cost else null end,'remaining',public.inventory_location_balance(v_loc,l.item_id,l.id,false))),'[]') from public.inventory_lots l where public.inventory_location_balance(v_loc,l.item_id,l.id,false)>0),
  'suppliers',(select coalesce(jsonb_agg(to_jsonb(s)),'[]') from public.inventory_suppliers s where can_manage));
- v:=v||jsonb_build_object('movements',(select coalesce(jsonb_agg(to_jsonb(x) order by x.created_at desc),'[]') from (select m.*,i.name item_name,a.name actor_name from public.inventory_movements m join public.inventory_items i on i.id=m.item_id join public.admins a on a.id=m.created_by where m.location_id=v_loc and (can_manage or m.created_by=me) order by m.created_at desc limit 500) x),
+ v:=v||jsonb_build_object('movements',(select coalesce(jsonb_agg(to_jsonb(x) order by x.created_at desc),'[]') from (select m.*,i.name item_name,a.name actor_name,lt.lot_number,lt.expiry_date from public.inventory_movements m join public.inventory_items i on i.id=m.item_id join public.admins a on a.id=m.created_by left join public.inventory_lots lt on lt.id=m.lot_id where m.location_id=v_loc and (can_manage or m.created_by=me) order by m.created_at desc limit 500) x),
  'requests',(select coalesce(jsonb_agg(to_jsonb(x)),'[]') from (select r.*,a.name requester_name,(select coalesce(jsonb_agg(to_jsonb(l)||jsonb_build_object('item_name',i.name,'track_lots',i.track_lots)),'[]') from public.inventory_request_lines l join public.inventory_items i on i.id=l.item_id where l.request_id=r.id) lines from public.inventory_requests r join public.admins a on a.id=r.requester_id where (can_manage or r.requester_id=me) order by r.requested_at desc limit 250) x),
  'counts',(select coalesce(jsonb_agg(to_jsonb(x)),'[]') from (select s.*,a.name assignee_name,(select coalesce(jsonb_agg(jsonb_build_object('id',l.id,'item_id',l.item_id,'item_name',i.name,'lot_id',l.lot_id,'lot_number',lt.lot_number,'system_quantity',case when can_manage then l.system_quantity else null end,'counted_quantity',l.counted_quantity,'note',l.note) order by i.name),'[]') from public.inventory_count_lines l join public.inventory_items i on i.id=l.item_id left join public.inventory_lots lt on lt.id=l.lot_id where l.session_id=s.id) lines from public.inventory_count_sessions s join public.admins a on a.id=s.assigned_to where s.location_id=v_loc and (can_manage or s.assigned_to=me) order by s.created_at desc limit 150) x),
  'schedules',(select coalesce(jsonb_agg(to_jsonb(s)||jsonb_build_object('assignee_name',a.name)),'[]') from public.inventory_count_schedules s join public.admins a on a.id=s.assigned_to where s.location_id=v_loc and s.active and (can_manage or s.assigned_to=me)),

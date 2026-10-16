@@ -22,6 +22,7 @@ window.SSMPDDb={taskPeople:function(){return Promise.resolve([{id:'admin',name:'
    await page.selectOption('.inv-modal [name="dst"]','nurse');await page.selectOption('.inv-modal [name="receiver"]','receiver');
    await page.fill('[data-w-tline] input','5');await page.click('[data-save]');await page.waitForFunction(()=>calls.some(c=>c[0]==='inventory_create_transfer'));
    const tr=await page.evaluate(()=>calls.find(c=>c[0]==='inventory_create_transfer')[1]);assert.equal(tr.p_lines[0].quantity,5);assert.equal(tr.p_receiver,'receiver');
+   await page.click('[data-view="usage"]');await page.fill('[data-w-usage] [name="quantity"]','2');await page.fill('[data-w-usage] [name="note"]','استخدام بالعيادة');await page.click('[data-w-usage] button');await page.waitForFunction(()=>calls.some(c=>c[0]==='inventory_consume_at'));const use=await page.evaluate(()=>calls.find(c=>c[0]==='inventory_consume_at')[1]);assert.equal(use.p_location,'nurse');assert.equal(use.p_kind,'issue');
    await page.click('[data-view="imports"]');await page.click('[data-w-manual]');
    await page.selectOption('.inv-modal [name="item"]','i1');await page.fill('.inv-modal [name="quantity"]','٠');
    await page.fill('.inv-modal [name="asof"]','2026-10-15T12:00');await page.fill('.inv-modal [name="cost"]','2');
