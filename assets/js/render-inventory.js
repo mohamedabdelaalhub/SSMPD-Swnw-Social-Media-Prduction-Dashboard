@@ -16,7 +16,8 @@
   return window.SSMPDDb.client.rpc(name,args).then(function(r){if(r.error)throw r.error;return r.data;});
  }
  function people(){if(!window.SSMPDInventoryWorkspace)return window.SSMPDDb.taskPeople();return rpc('inventory_people').catch(function(e){if(e.code==='PGRST202'||e.code==='42883')return window.SSMPDDb.taskPeople();throw e;});}
- function context(){return {state:state,rpc:rpc,esc:esc,fmt:fmt,date:date,modal:modal,refresh:refresh,fail:fail};}
+ function navigate(view){state.view=view;render(rootNode);}
+ function context(){return {state:state,rpc:rpc,esc:esc,fmt:fmt,date:date,modal:modal,refresh:refresh,navigate:navigate,fail:fail};}
  function snapshot(){
   if(!window.SSMPDInventoryWorkspace)return rpc('inventory_snapshot');
   return rpc('inventory_workspace_snapshot',{p_location:window.SSMPDInventoryWorkspace.selected()}).then(function(d){return d||rpc('inventory_snapshot');}).catch(function(e){if(e.code==='PGRST202'||e.code==='42883')return rpc('inventory_snapshot');throw e;});
