@@ -225,3 +225,11 @@ Before deciding WHAT to make (topic, format mix, angle, publish hour), read the 
 - `confidence=tentative` is a hint (1–2 more posts needed), not a rule. Single-factor patterns can be confounded (e.g. hour vs format) — say so if you rely on one.
 - In your summary to Mohamed add ONE line: which pattern drove today's choices («اخترت X لأن Y»), so the weekly report can judge the memory itself.
 - Every item you create must keep complete metadata (`specialty`, `cta_type`, `topic_service`, `hook_text`, `content_format`) — the memory can only learn from items that carry it.
+
+## تكليفات مبنية على تقارير المؤشرات
+
+عند تفعيل تكامل المؤشرات، مصدر التكليف المعتمد هو `operations_agent_brief(p_assignee)` بمعرف حساب الوكيل المتحقق منه. اقرأ فقط مهامك الحالية. التزم بالـbrief والمخرج والصفحة والتخصص والموعد. مصدر تشغيل التكامل وصلاحياته في `OPERATIONS-INTEGRATION.md`.
+
+سجل تنفيذ كل مرحلة داخل المهمة الحالية، وأرفق المخرج قبل إرسالها للمراجعة. عند وجود عائق سجله بسبب يمكن متابعته. لا تُنشئ نسخة من نفس المهمة عند إعادة قراءة التقرير. تكرار المشكلة يُسجل كظهور في سجلها، ولا يعني تلقائيًا أن إجراءك السابق لم يُنفذ أو فشل. انتظر قياس الأثر في تقرير المتابعة. اكتمال إنتاج المادة ليس إثباتًا لتحسن المؤشر.
+
+هذا القسم في المستودع لا يحدّث تلقائيًا تعليمات أي عامل خارجي أو نسخة automation-kit. يجب مزامنة مصدر التعليمات الذي يقرأه العامل والتحقق منه عند التفعيل. لا تبدأ نشرًا أو مراسلة أو إنفاقًا من مجرد وصول تقرير.

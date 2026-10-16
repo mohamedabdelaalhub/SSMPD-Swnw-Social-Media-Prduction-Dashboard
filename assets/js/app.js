@@ -22,6 +22,7 @@
     comments: window.SSMPDRenderComments,
     clinic_info: window.SSMPDRenderClinicInfo,
     performance: window.SSMPDRenderPerformance,
+    indicator_reports: window.SSMPDIndicatorReports,
     staff_kpi: window.SSMPDRenderStaffKpi,
     my_kpi: window.SSMPDRenderMyKpi,
     archive: window.SSMPDRenderArchive,
@@ -45,6 +46,7 @@
     comments: "التعليقات",
     clinic_info: "تحديث بيانات الشات بوت",
     performance: "أداء البوستات",
+    indicator_reports: "تقارير المؤشرات والإجراءات",
     staff_kpi: "أداء الفريق",
     my_kpi: "أدائي",
     archive: "الأرشيف",
@@ -170,7 +172,7 @@
     // القائمة المنسدلة فقط — اتشالوا من شريط التابات العادي (وقائمة الموبايل
     // القديمة) عشان ميبقوش متكررين في مكانين، ويبانوا بس في المكان اللي
     // المستخدم طلبه (جوه القائمة المنسدلة).
-    var mainSuiteTabs = tabs.filter(function (t) { return ["home", "patients", "leads", "contracting_entities", "clinic_info", "admin", "accounting", "tasks", "inventory", "staff_kpi", "my_kpi"].indexOf(t) === -1; });
+    var mainSuiteTabs = tabs.filter(function (t) { return ["home", "patients", "leads", "contracting_entities", "clinic_info", "admin", "accounting", "tasks", "inventory", "staff_kpi", "my_kpi", "indicator_reports"].indexOf(t) === -1; });
 
     function tabButtonsHtml() {
       return mainSuiteTabs.map(function (t) { return '<button class="tab-btn" data-tab="' + t + '">' + window.SSMPDI18n.textHtml(TAB_LABELS[t]) + '</button>'; }).join("");
@@ -180,6 +182,7 @@
     if (tabs.indexOf("patients") !== -1) ddItems += "<button class=\"ud-item\" data-goto=\"patients\"> <!--ssmpd-i18n:%D8%A3%D8%B1%D8%B4%D9%8A%D9%81%20%D8%A7%D9%84%D9%85%D8%B1%D8%B6%D9%89-->أرشيف المرضى</button>";
     if (tabs.indexOf("leads") !== -1) ddItems += "<button class=\"ud-item\" data-goto=\"leads\"> <!--ssmpd-i18n:%D8%A5%D8%AF%D8%A7%D8%B1%D8%A9%20%D8%A7%D9%84%D9%84%D9%8A%D8%AF%D8%B2%20%D9%88%D8%A7%D9%84%D8%AA%D9%88%D8%A7%D8%B5%D9%84-->إدارة الليدز والتواصل</button>";
     if (tabs.indexOf("tasks") !== -1) ddItems += '<button class="ud-item" data-goto="tasks">المهام</button>';
+    if (tabs.indexOf("indicator_reports") !== -1) ddItems += '<button class="ud-item" data-goto="indicator_reports">تقارير المؤشرات والإجراءات</button>';
     if (tabs.indexOf("staff_kpi") !== -1) ddItems += '<button class="ud-item" data-goto="staff_kpi">أداء الفريق</button>';
     if (tabs.indexOf("my_kpi") !== -1) ddItems += '<button class="ud-item" data-goto="my_kpi">أدائي</button>';
     if (tabs.indexOf("inventory") !== -1) ddItems += '<button class="ud-item" data-goto="inventory">'+(admin.inventory_assigned===false&&admin.inventory_supply_access?'طلب مستلزمات':'المخزن والجرد')+'</button>';
@@ -746,7 +749,7 @@
 
     // فصل بصري: تابات السويت الرئيسي (SSMPD) بتتخفي تماماً لما نكون جوه موديول
     // منفصل (أرشيف المرضى / الليدز / لوحة التحكم) عشان ميظهرش هيدر حاجتين مع بعض
-    var isSeparateModule = ["home", "patients", "leads", "contracting_entities", "clinic_info", "admin", "accounting", "tasks", "inventory", "staff_kpi", "my_kpi"].indexOf(tab) !== -1;
+    var isSeparateModule = ["home", "patients", "leads", "contracting_entities", "clinic_info", "admin", "accounting", "tasks", "inventory", "staff_kpi", "my_kpi", "indicator_reports"].indexOf(tab) !== -1;
     var tabsBar = document.getElementById("tabs-bar");
     if (tabsBar) tabsBar.style.display = isSeparateModule ? "none" : "";
     var mmTabs = document.querySelector("#mobile-menu .mm-tabs");
@@ -779,6 +782,7 @@
 
   // جسر تنقّل بسيط للربط العكسي (تاب Meta Ads → فتح المادة المرتبطة) — بيستخدم
   // نفس آلية البحث الموحّد أعلاه (SSMPDPendingOpenContentId + تاب المراجعة)
+  window.SSMPDOpenTask = function(id){if(R.canSeeTab(window.SSMPDAuth.currentAdmin,'tasks'))openTaskFromNotif(id,null);};
   window.SSMPDGotoContent = function (contentId) {
     window.SSMPDPendingOpenContentId = contentId;
     switchTab("review");

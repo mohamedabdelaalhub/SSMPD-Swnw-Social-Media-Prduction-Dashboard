@@ -30,6 +30,7 @@
     comments: ["page_manager", "approver", "general_manager", "super_admin"],
     clinic_info: ["page_manager", "customer_service", "general_manager", "super_admin"],
     performance: ["page_manager", "approver", "general_manager", "super_admin"],
+    indicator_reports: ["general_manager", "super_admin"],
     staff_kpi: ["general_manager", "super_admin"],
     my_kpi: ["page_manager", "designer", "approver", "reception", "customer_service", "general_manager"],
     archive: ["page_manager", "designer", "approver", "general_manager", "super_admin"],
