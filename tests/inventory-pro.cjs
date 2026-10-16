@@ -21,6 +21,14 @@ const browser=await chromium.launch({executablePath:process.env.PW_CHROMIUM||und
 try{
  for(const width of [1280,390]){
   const page=await browser.newPage({viewport:{width,height:900}});const errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('dialog',d=>{if(!/مطلوب/.test(d.message()))errors.push('native dialog: '+d.message());d.dismiss();});
+
+  async function go(view){
+   const groups={overview:'overview',items:'stock',balances:'stock',requests:'operations',transfers:'operations',usage:'operations',sales:'operations',counts:'stocktakes',imports:'stocktakes',reports:'reporting',movements:'reporting'};
+   if(view==='suppliers'){await go('requests');await page.click('[data-view="suppliers"]');return;}
+   if(view==='overview'){await page.click('[data-group="overview"]');return;}
+   if(!await page.locator('[data-view="'+view+'"]').count())await page.click('[data-group="'+groups[view]+'"]');
+   await page.click('[data-view="'+view+'"]');
+  }
   await page.goto('http://localhost:'+port+'/');await page.waitForSelector('.inv-kpi');
   const txt=async s=>(await page.locator(s).first().textContent());
   assert(!/[٠-٩]/.test(await page.locator('body').textContent()),'Latin digits only');
@@ -28,8 +36,7 @@ try{
   await page.click('[data-kpi="low"]');await page.waitForSelector('[data-item-stock]');
   assert.equal(await page.locator('.inv-card tbody tr').count(),1,'low filter shows 1');
   assert(await page.locator('.inv-row-low').count()===1,'low row highlighted');
-  await page.click('[data-kpi="expiring"]').catch(()=>{});
-  await page.click('[data-view="overview"]');await page.click('[data-kpi="expiring"]');
+  await go('overview');await page.click('[data-kpi="expiring"]');
   assert.equal(await page.locator('.inv-card tbody tr').count(),2,'expiring filter shows 2 (near + expired)');
   assert(/منتهي منذ 2/.test(await page.locator('.inv-card tbody').textContent()),'expired badge');
   // search + pagination
@@ -43,7 +50,7 @@ try{
   assert(await page.locator('.inv-empty').count()===1,'empty state');
   await page.fill('[data-item-q]','');
   // pending requests KPI + review modal (no native prompt)
-  await page.click('[data-view="overview"]');await page.click('[data-kpi="pending"]');
+  await go('overview');await page.click('[data-kpi="pending"]');
   assert.equal(await page.locator('.inv-card tbody tr').count(),1);
   await page.click('[data-review="r2"][data-approve="0"]');
   await page.click('[data-save]');
@@ -63,17 +70,17 @@ try{
   const rc=await page.evaluate(()=>calls.find(c=>c[0]==='inventory_receive_request')[1].p_lines[0]);
   assert.equal(rc.lot_number,'L9');assert(rc.expiry_date);
   // write-off modal
-  await page.click('[data-view="items"]');await page.click('[data-writeoff=""]');
+  await go('items');await page.click('[data-writeoff=""]');
   await page.fill('.inv-modal [name="qty"]','2');await page.fill('.inv-modal [name="note"]','كُسر');await page.click('[data-save]');
   await page.waitForFunction(()=>calls.some(c=>c[0]==='inventory_write_off'));
   // reports
-  await page.click('[data-view="reports"]');await page.waitForSelector('[data-reorder]');
+  await go('reports');await page.waitForSelector('[data-reorder]');
   assert(/صنف 1/.test(await page.locator('.inv-card').first().textContent()),'reorder suggests low item');
   await page.click('[data-reorder]');
   assert(await page.locator('.inv-modal [data-line]').count()>=1,'reorder prefills lines');
   await page.click('[data-cancel]');
   // suppliers
-  await page.click('[data-view="suppliers"]');
+  await go('suppliers');
   assert(/مورد 1/.test(await txt('.inv-card')));
   assert.deepEqual(errors,[],errors.join('|'));
   await page.close();
@@ -81,3 +88,4 @@ try{
  console.log('PASS: inventory modals, clickable KPIs, search/filters, pagination, expiry badges, receipt lots, write-off, reports/reorder, suppliers. Mocked RPCs only.');
 }finally{await browser.close();server.close();}
 })().catch(e=>{console.error(e);process.exit(1);});
+
