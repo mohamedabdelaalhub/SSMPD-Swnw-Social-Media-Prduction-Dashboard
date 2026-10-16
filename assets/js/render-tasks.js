@@ -5,11 +5,11 @@
   var STATUS = {todo:"لم تبدأ",in_progress:"جاري العمل",review:"بانتظار المراجعة",revision:"مطلوب تعديل",done:"مكتملة",blocked:"متوقفة"};
   var PRIORITY = {low:"منخفضة",normal:"عادية",high:"عالية",urgent:"عاجلة"};
   function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
-  function date(v){if(!v)return "بدون موعد";var d=new Date(v);return isNaN(d)?"":d.toLocaleDateString("ar-EG",{year:"numeric",month:"short",day:"numeric"});}
+  function date(v){if(!v)return "بدون موعد";var d=new Date(v);return isNaN(d)?"":d.toLocaleDateString("ar-EG-u-nu-latn",{year:"numeric",month:"short",day:"numeric"});}
   function dateValue(v){if(!v)return "";var d=new Date(v);if(isNaN(d))return "";return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
   function repeatFields(t){t=t||{};var active=!!t.recurrence_active;return '<label class="tsk-repeat-toggle"><input type="checkbox" name="repeat_active" '+(active?"checked":"")+'><span>تكرار المهمة تلقائياً</span></label><div class="tsk-repeat-fields" '+(active?"":"hidden")+'><div class="tsk-form-row"><label>كل<input type="number" name="repeat_interval" min="1" max="365" value="'+esc(t.recurrence_interval_value||1)+'"></label><label>الفترة<select name="repeat_unit"><option value="day" '+(t.recurrence_interval_unit==="day"?"selected":"")+'>يوم</option><option value="week" '+(t.recurrence_interval_unit==="week"?"selected":"")+'>أسبوع</option><option value="month" '+(t.recurrence_interval_unit==="month"?"selected":"")+'>شهر</option></select></label></div><label>إيقاف التكرار في (اختياري)<input type="date" name="repeat_until" value="'+dateValue(t.recurrence_ends_at)+'"></label><small>سيتم إنشاء مهمة جديدة تلقائياً بالبيانات نفسها وإسنادها للمسؤول.</small></div>';}
   function allManager(a){return window.SSMPDRoles.hasAnyRole(a,["general_manager","super_admin"]);}
-  function modal(title,body){return '<div class="tsk-modal-backdrop" data-action="close-modal"><section class="tsk-modal" role="dialog" aria-modal="true"><header><h3>'+esc(title)+'</h3><button type="button" class="tsk-x" data-action="close-modal" aria-label="إغلاق">×</button></header>'+body+'</section></div>';}
+  function modal(title,body,cls){return '<div class="tsk-modal-backdrop" data-action="close-modal"><section class="tsk-modal'+(cls?' '+cls:'')+'" role="dialog" aria-modal="true"><header><h3>'+esc(title)+'</h3><button type="button" class="tsk-x" data-action="close-modal" aria-label="إغلاق">×</button></header>'+body+'</section></div>';}
   var PRANK={urgent:0,high:1,normal:2,low:3};
   function prank(t){var r=PRANK[t.priority];return r===undefined?2:r;}
   function dayStart(d){return new Date(d.getFullYear(),d.getMonth(),d.getDate());}
@@ -44,41 +44,56 @@
     archive:{title:"أرشفة المشروع",label:"",hint:"المشروع ومهامه هيختفوا من الشاشة الأساسية، وتقدر ترجّعهم من زر \"عرض المؤرشفة\".",required:false,button:"أرشفة المشروع",confirm:true,noText:true},
     unarchive:{title:"إلغاء أرشفة المشروع",label:"",hint:"المشروع ومهامه هيرجعوا للشاشة الأساسية.",required:false,button:"إلغاء الأرشفة",confirm:true,noText:true}
   };
-  function card(t,project,admin,people,mayManage,sub){
-    var overdue=t.status!=="done"&&t.due_at&&new Date(t.due_at)<new Date();
-    var statusClass="s-"+t.status;
-    var html='<article class="tsk-card '+statusClass+(overdue?' is-overdue':'')+' '+(t.parent_task_id?'tsk-child':'tsk-main-task')+'" data-task-id="'+t.id+'"><div class="tsk-card-main"><div class="tsk-title-row"><h3>'+esc(t.title)+'</h3><span class="tsk-status '+statusClass+'">'+esc(STATUS[t.status]||t.status)+'</span></div>'+
-      '<div class="tsk-meta"><span>'+esc(t.project_title||project.title||"مشروع")+'</span><span>المسؤول: '+esc(t.assignee_name||"—")+'</span><span class="'+(overdue?"tsk-overdue":"")+'">الموعد: '+date(t.due_at)+dueNote(t)+'</span><span class="tsk-prio p-'+esc(t.priority||'normal')+'">الأولوية: '+esc(PRIORITY[t.priority]||"عادية")+'</span></div>'+
-      (t.description?'<p class="tsk-description">'+esc(t.description)+'</p>':"")+
-      (t.expected_output?'<p class="tsk-output"><b>المطلوب:</b> '+esc(t.expected_output)+'</p>':"")+
-      (t.recurrence_active?'<p class="tsk-output">↻ تتكرر كل '+esc(t.recurrence_interval_value)+' '+esc(({day:"يوم",week:"أسبوع",month:"شهر"})[t.recurrence_interval_unit]||"فترة")+'</p>':"")+
-      (t.return_note?'<p class="tsk-return"><b>ملاحظة المدير:</b> '+esc(t.return_note)+'</p>':"")+
-      (sub?'<button type="button" class="tsk-sub-toggle" data-action="toggle-sub" data-id="'+t.id+'" aria-expanded="'+(sub.open?"true":"false")+'"><span class="tsk-caret">'+(sub.open?"▾":"▸")+'</span> '+sub.total+' مهام فرعية · '+sub.done+' مكتملة<span class="tsk-progress-bar mini"><i style="width:'+Math.round(sub.done*100/sub.total)+'%"></i></span></button>':"")+
-      '<div class="tsk-actions">';
-    var own=t.assignee_id===admin.id;
-    if(window.SSMPDRoles.canModuleAction(admin,"tasks","update")&&own&&t.status!=="done"&&t.status!=="review"){
+  function actionsHtml(t,admin,mayManage){
+    var html="",own=t.assignee_id===admin.id,R=window.SSMPDRoles;
+    if(R.canModuleAction(admin,"tasks","update")&&own&&t.status!=="done"&&t.status!=="review"){
       if(t.status==="todo"||t.status==="revision") html+='<button class="btn btn-primary" data-action="progress" data-id="'+t.id+'">بدء المهمة</button>';
       else html+='<button class="btn" data-action="progress" data-id="'+t.id+'">تسجيل تحديث</button><button class="btn btn-primary" data-action="submit" data-id="'+t.id+'">إرسال للمراجعة</button>';
       html+='<button class="btn" data-action="blocked" data-id="'+t.id+'">تحديد كمتوقفة</button>';
     }
-    if(window.SSMPDRoles.canModuleAction(admin,"tasks","update")&&mayManage&&t.status==="review"){
+    if(R.canModuleAction(admin,"tasks","update")&&mayManage&&t.status==="review"){
       html+='<button class="btn btn-primary" data-action="approve" data-id="'+t.id+'">اعتماد وإكمال</button><button class="btn btn-warn" data-action="return" data-id="'+t.id+'">إرجاع للتعديل</button>';
     }
-    if(t.parent_task_id)html+='<button class="btn btn-small" data-action="open-task" data-id="'+t.id+'">عرض التفاصيل</button>';
-    if(mayManage){
-      if(window.SSMPDRoles.canModuleAction(admin,"tasks","update"))html+='<button class="btn" data-action="edit-task" data-id="'+t.id+'">تعديل المهمة</button>';
-      html+='<button class="btn btn-danger" data-action="delete-task" data-id="'+t.id+'">حذف</button>';
-      if(window.SSMPDRoles.canModuleAction(admin,"tasks","create"))html+='<button class="btn" data-action="subtask" data-id="'+t.id+'">إضافة مهمة فرعية</button>';
-      html+='<button class="btn btn-order" data-action="move-task" data-id="'+t.id+'" data-direction="up" title="تقديم في الترتيب">↑</button><button class="btn btn-order" data-action="move-task" data-id="'+t.id+'" data-direction="down" title="تأخير في الترتيب">↓</button>';
-    }
-    var cc=(window.__tskCounts||{})[t.id];html+='<button class="btn btn-quiet" data-action="checklist" data-id="'+t.id+'">☑ القائمة'+(cc&&cc.total?' ('+cc.done+'/'+cc.total+')':'')+'</button><button class="btn btn-quiet" data-action="history" data-id="'+t.id+'">التعليقات والسجل</button></div></div></article>';
     return html;
   }
+  function moreActionsHtml(t,admin,mayManage){
+    var html="",R=window.SSMPDRoles;
+    if(mayManage){
+      if(R.canModuleAction(admin,"tasks","update"))html+='<button class="btn btn-quiet" data-action="edit-task" data-id="'+t.id+'">تعديل</button>';
+      if(R.canModuleAction(admin,"tasks","create"))html+='<button class="btn btn-quiet" data-action="subtask" data-id="'+t.id+'">+ مهمة فرعية</button>';
+      html+='<button class="btn btn-quiet" data-action="move-task" data-id="'+t.id+'" data-direction="up" title="تقديم في الترتيب">↑</button><button class="btn btn-quiet" data-action="move-task" data-id="'+t.id+'" data-direction="down" title="تأخير في الترتيب">↓</button>';
+      html+='<button class="btn btn-quiet tv-danger" data-action="delete-task" data-id="'+t.id+'">حذف</button>';
+    }
+    return html;
+  }
+  function relTime(v){
+    var d=new Date(v);if(isNaN(d))return "";var m=Math.max(0,Math.round((Date.now()-d.getTime())/60000));
+    if(m<2)return "الآن";if(m<60)return "من "+m+" دقيقة";var h=Math.round(m/60);if(h<24)return "من "+(h===1?"ساعة":(h===2?"ساعتين":h+" ساعات"));
+    var dd=Math.round(h/24);return dd===1?"من أمس":(dd===2?"من يومين":"من "+dd+" يوم");
+  }
+  function initials(name){var w=String(name||"").trim().split(/\s+/);return ((w[0]||"").charAt(0)+(w[1]||"").charAt(0)).toUpperCase()||"؟";}
+  // تصنيف المهمة لشريحة واحدة بس (عشان الشريط الملوّن يجمّع على 100%)
+  function seg(t){
+    if(t.status==="done")return "done";
+    if(isOverdue(t))return "late";
+    if(t.status==="review")return "review";
+    if(t.status==="in_progress"||t.status==="revision")return "active";
+    if(t.status==="blocked")return "blocked";
+    return "todo";
+  }
+  var SEG_LABEL={done:"تمت",late:"متأخرة",review:"مراجعة",active:"شغّالة",blocked:"متوقفة",todo:"لم تبدأ"};
+  var SEG_ORDER=["done","active","review","late","blocked","todo"];
+  function segCounts(list){var c={done:0,late:0,review:0,active:0,blocked:0,todo:0};list.forEach(function(t){c[seg(t)]++;});return c;}
+  function segBar(c,total){
+    if(!total)return '<div class="tv-bar"><i class="empty" style="width:100%"></i></div>';
+    return '<div class="tv-bar" role="img" aria-label="'+SEG_ORDER.filter(function(k){return c[k];}).map(function(k){return SEG_LABEL[k]+" "+c[k];}).join("، ")+'">'+SEG_ORDER.filter(function(k){return c[k];}).map(function(k){return '<i class="g-'+k+'" style="width:'+(c[k]*100/total)+'%"></i>';}).join("")+'</div>';
+  }
+  function segLegend(c){return SEG_ORDER.filter(function(k){return c[k];}).map(function(k){return '<span class="tv-leg g-'+k+'"><i></i>'+SEG_LABEL[k]+' <b>'+c[k]+'</b></span>';}).join("");}
   function render(el){
     if(!window.SSMPDRoles.canModuleAction(window.SSMPDAuth.currentAdmin,"tasks","view")){el.innerHTML="<p>ليس لديك صلاحية عرض المهام.</p>";return;}
     var admin=window.SSMPDAuth.currentAdmin;
     var isAdmin=allManager(admin);
-    var state={projects:[],tasks:[],people:[],notifications:[],archived:{},modal:"",error:"",filter:"all",view:(["board","calendar"].indexOf(store("view"))>=0?store("view"):"list"),checkCounts:{},checklist:[],checkTask:"",calMonth:(function(){var d=new Date();return new Date(d.getFullYear(),d.getMonth(),1);})(),sort:(["smart","manual","due","priority","updated"].indexOf(store("sort"))>=0?store("sort"):(isAdmin?"smart":"manual")),q:"",fProject:"",fAssignee:"",showArchived:false,expanded:{},membersOpen:{},note:null,deleteTarget:null,viewId:"",historyTask:"",history:[],historyAtts:{},pendingFiles:[]};
+    var state={projects:[],tasks:[],people:[],notifications:[],archived:{},modal:"",error:"",filter:"all",view:(["board","calendar"].indexOf(store("view"))>=0?store("view"):"list"),checkCounts:{},checklist:[],checkTask:"",calMonth:(function(){var d=new Date();return new Date(d.getFullYear(),d.getMonth(),1);})(),sort:(["smart","manual","due","priority","updated"].indexOf(store("sort"))>=0?store("sort"):(isAdmin?"smart":"manual")),q:"",fProject:"",fAssignee:"",showArchived:false,tab:(["projects","tasks","done","team"].indexOf(store("tab"))>=0?store("tab"):"projects"),openProject:"",pFilter:"all",expanded:{},membersOpen:{},note:null,deleteTarget:null,viewId:"",historyTask:"",history:[],historyAtts:{},pendingFiles:[]};
     function refresh(){return window.SSMPDDb.taskRefreshOverdue().catch(function(){return 0;}).then(function(){return Promise.all([
       window.SSMPDDb.taskListProjects(),window.SSMPDDb.taskListVisible(),window.SSMPDDb.taskPeople(),
       window.SSMPDDb.taskListNotifications(),
@@ -97,7 +112,33 @@
       return true;
     }
     function projectOf(t){return state.projects.find(function(x){return x.id===t.project_id;})||{};}
-    function cardFor(t,sub){return card(t,projectOf(t),admin,state.people,isAdmin||t.can_manage,sub);}
+    function cardFor(t,sub,opts){return taskRow(t,sub,Object.assign({showProject:true},opts||{}));}
+    function taskRow(t,sub,opts){
+      opts=opts||{};
+      var late=isOverdue(t),n=daysLeft(t),note=dueNote(t).replace(/^ · /,""),cc=state.checkCounts[t.id],meta=[],k=seg(t);
+      if(opts.showProject)meta.push('<span class="tv-chip proj">'+esc(t.project_title||projectOf(t).title||"مشروع")+'</span>');
+      meta.push('<span class="tv-chip">'+esc(t.assignee_name||"بدون مسؤول")+'</span>');
+      if(t.due_at&&t.status!=="done")meta.push('<span class="tv-chip due'+(late?" late":(n!==null&&n<=1?" soon":""))+'">'+esc(note||date(t.due_at))+'</span>');
+      if(t.status==="done")meta.push('<span class="tv-chip ok">✓ '+esc(relTime(t.completed_at||t.updated_at))+'</span>');
+      if(t.priority==="urgent"||t.priority==="high")meta.push('<span class="tv-chip prio p-'+t.priority+'">'+PRIORITY[t.priority]+'</span>');
+      if(cc&&cc.total)meta.push('<span class="tv-chip">☑ '+cc.done+'/'+cc.total+'</span>');
+      return '<div class="tv-row g-'+k+(t.parent_task_id?" is-sub":"")+'" data-task-id="'+t.id+'"><button type="button" class="tv-row-main" data-action="open-task" data-id="'+t.id+'"><span class="tv-dot"></span><span class="tv-row-title">'+esc(t.title)+'</span><span class="tv-row-meta">'+meta.join("")+'</span><span class="tv-pill g-'+k+'">'+esc(late?"متأخرة":(STATUS[t.status]||t.status))+'</span></button>'+(sub?'<button type="button" class="tv-sub" data-action="toggle-sub" data-id="'+t.id+'" aria-expanded="'+(sub.open?"true":"false")+'">'+(sub.open?"▾":"▸")+' '+sub.done+'/'+sub.total+' فرعية</button>':"")+'</div>';
+    }
+    function taskDetail(t){
+      var late=isOverdue(t),may=isAdmin||t.can_manage,pr=projectOf(t),k=seg(t),cc=state.checkCounts[t.id];
+      var parent=t.parent_task_id?state.tasks.find(function(x){return x.id===t.parent_task_id;}):null,kids=state.tasks.filter(function(x){return x.parent_task_id===t.id;});
+      var h='<div class="tv-detail g-'+k+'"><div class="tv-d-top"><span class="tv-pill g-'+k+'">'+esc(late?"متأخرة":(STATUS[t.status]||t.status))+'</span><span class="tv-crumb">'+esc(pr.title||t.project_title||"مشروع")+(parent?' › <button type="button" class="tv-link" data-action="open-task" data-id="'+parent.id+'">'+esc(parent.title)+'</button>':"")+'</span></div><h2 class="tv-d-title">'+esc(t.title)+'</h2>';
+      h+='<div class="tv-facts"><div><small>المسؤول</small><b>'+esc(t.assignee_name||"—")+'</b></div><div><small>موعد التسليم</small><b class="'+(late?"late":"")+'">'+(t.due_at?date(t.due_at):"بدون موعد")+'</b>'+(dueNote(t)&&t.status!=="done"?'<em>'+esc(dueNote(t).replace(/^ · /,""))+'</em>':"")+'</div><div><small>الأولوية</small><b>'+esc(PRIORITY[t.priority]||"عادية")+'</b></div><div><small>آخر تحديث</small><b>'+esc(relTime(t.updated_at)||"—")+'</b></div></div>';
+      if(t.return_note)h+='<div class="tv-callout"><b>ملاحظة المدير</b><p>'+esc(t.return_note)+'</p></div>';
+      if(t.description)h+='<section class="tv-sec"><h4>المطلوب</h4><p>'+esc(t.description)+'</p></section>';
+      if(t.expected_output)h+='<section class="tv-sec"><h4>النتيجة المتوقعة</h4><p>'+esc(t.expected_output)+'</p></section>';
+      if(t.recurrence_active)h+='<p class="tv-note">↻ تتكرر كل '+esc(t.recurrence_interval_value)+' '+esc(({day:"يوم",week:"أسبوع",month:"شهر"})[t.recurrence_interval_unit]||"فترة")+'</p>';
+      if(kids.length)h+='<section class="tv-sec"><h4>المهام الفرعية <span>'+kids.filter(function(x){return x.status==="done";}).length+' من '+kids.length+'</span></h4><div class="tv-sublist">'+sortTasks(kids,"manual").map(function(x){return taskRow(x,null,{});}).join("")+'</div></section>';
+      h+='<div class="tv-tools"><button type="button" class="tv-tool" data-action="checklist" data-id="'+t.id+'"><span>☑ القائمة الصغيرة</span>'+(cc&&cc.total?'<b>'+cc.done+'/'+cc.total+'</b>':"")+'</button><button type="button" class="tv-tool" data-action="history" data-id="'+t.id+'"><span>💬 التعليقات والسجل</span></button></div>';
+      var pa=actionsHtml(t,admin,may),ma=moreActionsHtml(t,admin,may);
+      if(pa||ma)h+='<div class="tv-d-actions">'+(pa?'<div class="tv-primary">'+pa+'</div>':"")+(ma?'<div class="tv-more">'+ma+'</div>':"")+'</div>';
+      return h+'</div>';
+    }
     function miniCard(t){
       var n=daysLeft(t),note=dueNote(t).replace(/^ · /,"");
       return '<button type="button" class="tsk-mini'+(isOverdue(t)?" is-overdue":"")+'" data-action="open-task" data-id="'+t.id+'" data-task-id="'+t.id+'"><b>'+esc(t.title)+'</b>'+
@@ -108,15 +149,33 @@
       if(kind==="none")return '<div class="tsk-empty tsk-empty-rich"><div class="tsk-empty-icon">✅</div><h3>مفيش مهام لسه</h3><p>ابدأ بإضافة أول مهمة وحدّد مسؤول وموعد، وهتظهر هنا ويتابعها الفريق.</p>'+(canCreate?'<button class="btn btn-primary" data-action="new-task" data-project="'+(state.projects.find(function(p){return p.can_manage&&!state.archived[p.id];})||{}).id+'">+ إضافة مهمة</button>':"")+'</div>';
       return '<div class="tsk-empty tsk-empty-rich"><div class="tsk-empty-icon">🔎</div><h3>مفيش نتائج مطابقة</h3><p>جرّب تغيّر البحث أو الفلاتر.</p><button class="btn" data-action="clear-filters">مسح الفلاتر</button></div>';
     }
+    var FILTER_LABEL={all:"الكل",mine:"مهامي",overdue:"متأخرة",soon:"تنتهي قريباً"};
+    function poolFor(pool,f){
+      if(f==="all")return pool.filter(function(t){return t.status!=="done";});
+      if(f==="done")return pool.filter(function(t){return t.status==="done";});
+      if(f==="overdue")return pool.filter(isOverdue);
+      if(f==="soon")return pool.filter(function(t){var n=daysLeft(t);return n!==null&&n>=0&&n<=2;});
+      if(f==="mine")return pool.filter(function(t){return t.assignee_id===admin.id&&t.status!=="done";});
+      return pool.filter(function(t){return t.status===f;});
+    }
+    function doneListHtml(){
+      var base=baseTasks(),pool=base.filter(matches).filter(function(t){return t.status==="done";});
+      pool.sort(function(a,b){return new Date(b.completed_at||b.updated_at||0)-new Date(a.completed_at||a.updated_at||0);});
+      if(!pool.length)return '<div class="tv-empty"><div>✅</div><h3>'+(base.some(function(t){return t.status==="done";})?"مفيش نتائج مطابقة":"لسه مفيش مهام منجزة")+'</h3><p>أول ما حد يخلّص مهمة وتتعتمد هتظهر هنا مجمّعة بالأسبوع.</p></div>';
+      var groups=[],idx={},today=dayStart(new Date());
+      pool.forEach(function(t){var d=dayStart(new Date(t.completed_at||t.updated_at)),diff=Math.round((today-d)/86400000),label=diff<=0?"النهارده":(diff===1?"أمس":(diff<7?"آخر 7 أيام":(diff<14?"الأسبوع اللي فات":d.toLocaleDateString("ar-EG-u-nu-latn",{month:"long",year:"numeric"}))));if(idx[label]===undefined){idx[label]=groups.length;groups.push({label:label,items:[]});}groups[idx[label]].items.push(t);});
+      return '<div class="tv-groups">'+groups.map(function(g){return '<section class="tv-group"><h3>'+esc(g.label)+' <span>'+g.items.length+'</span></h3>'+g.items.map(function(t){return taskRow(t,null,{showProject:true});}).join("")+'</section>';}).join("")+'</div>';
+    }
     function listHtml(){
+      if(state.tab==="done")return doneListHtml();
       var base=baseTasks(),pool=base.filter(matches),board=state.view==="board";
       var filtering=!!(state.q||state.fProject||state.fAssignee||(!board&&state.filter!=="all"));
       var canMakeTask=window.SSMPDRoles.canModuleAction(admin,"tasks","create")&&state.projects.some(function(p){return p.can_manage&&!state.archived[p.id];});
       var html="";
       if(!board){
-        html+='<div class="tsk-chipbar" role="tablist">'+["all","overdue"].concat(Object.keys(STATUS)).map(function(k){var n=k==="all"?pool.length:(k==="overdue"?pool.filter(isOverdue).length:pool.filter(function(t){return t.status===k;}).length);return '<button type="button" class="tsk-fchip '+(k==="all"?"":(k==="overdue"?"s-blocked":"s-"+k))+(state.filter===k?" on":"")+'" data-action="filter" data-id="'+k+'">'+(k==="all"?"الكل":(k==="overdue"?"متأخرة":STATUS[k]))+' <b>'+n+'</b></button>';}).join("")+'</div>';
+        html+='<div class="tsk-chipbar" role="tablist">'+["all","mine","overdue","soon"].concat(Object.keys(STATUS).filter(function(k){return k!=="done";})).map(function(k){var n=k==="all"?pool.filter(function(t){return t.status!=="done";}).length:poolFor(pool,k).length;return '<button type="button" class="tv-fchip'+(state.filter===k?" on":"")+'" data-action="filter" data-id="'+k+'">'+(FILTER_LABEL[k]||STATUS[k])+' <b>'+n+'</b></button>';}).join("")+'</div>';
       }
-      var vis=sortTasks(board||state.filter==="all"?pool:(state.filter==="overdue"?pool.filter(isOverdue):pool.filter(function(t){return t.status===state.filter;})),state.sort);
+      var vis=sortTasks(board?pool:poolFor(pool,state.filter),state.sort);
       if(!base.length)return html+emptyHtml("none",canMakeTask);
       if(!vis.length)return html+emptyHtml("filtered",canMakeTask);
       if(state.view==="calendar")return html+calendarHtml(vis);
@@ -153,33 +212,71 @@
       return '<div class="tsk-toolbar"><input type="search" class="tsk-search" data-search placeholder="ابحث باسم المهمة أو المسؤول أو المشروع…" value="'+esc(state.q)+'" aria-label="بحث في المهام">'+
         '<select data-sel="project" aria-label="المشروع"><option value="">كل المشاريع</option>'+projs.map(function(p){return '<option value="'+p.id+'" '+(state.fProject===p.id?"selected":"")+'>'+esc(p.title)+'</option>';}).join("")+'</select>'+
         (people.length>1?'<select data-sel="assignee" aria-label="المسؤول"><option value="">كل المسؤولين</option>'+people.map(function(p){return '<option value="'+p.id+'" '+(state.fAssignee===p.id?"selected":"")+'>'+esc(p.name)+'</option>';}).join("")+'</select>':"")+
-        '<select data-sel="sort" aria-label="الترتيب">'+Object.keys(sorts).map(function(k){return '<option value="'+k+'" '+(state.sort===k?"selected":"")+'>'+sorts[k]+'</option>';}).join("")+'</select>'+
-        '<div class="tsk-viewtoggle" role="group" aria-label="طريقة العرض"><button type="button" data-action="view" data-id="list" class="'+(state.view==="list"?"on":"")+'">قائمة</button><button type="button" data-action="view" data-id="board" class="'+(state.view==="board"?"on":"")+'">لوحة</button><button type="button" data-action="view" data-id="calendar" class="'+(state.view==="calendar"?"on":"")+'">تقويم</button></div></div>';
+        (state.tab==="done"?"":'<select data-sel="sort" aria-label="الترتيب">'+Object.keys(sorts).map(function(k){return '<option value="'+k+'" '+(state.sort===k?"selected":"")+'>'+sorts[k]+'</option>';}).join("")+'</select>'+
+        '<div class="tsk-viewtoggle" role="group" aria-label="طريقة العرض"><button type="button" data-action="view" data-id="list" class="'+(state.view==="list"?"on":"")+'">قائمة</button><button type="button" data-action="view" data-id="board" class="'+(state.view==="board"?"on":"")+'">لوحة</button><button type="button" data-action="view" data-id="calendar" class="'+(state.view==="calendar"?"on":"")+'">تقويم</button></div>')+'</div>';
     }
-    function projectCard(p){
-      var m=state.people.find(function(x){return x.id===p.manager_id;});
-      var projectTasks=sortTasks(state.tasks.filter(function(t){return t.project_id===p.id;}),"manual");
-      var roots=projectTasks.filter(function(t){return !t.parent_task_id;});
-      function treeItem(task,children){
-        var isOpen=!!state.expanded[task.id],canMove=!!task.can_manage;
-        return '<div class="tsk-tree-task '+(task.parent_task_id?'is-subtask':'')+'"><div class="tsk-tree-row">'+miniCard(task)+'<span class="tsk-tree-status s-'+esc(task.status)+'">'+esc(STATUS[task.status]||task.status)+'</span><button type="button" class="btn btn-small" data-action="open-task" data-id="'+task.id+'">عرض التفاصيل</button>'+
-          (canMove?'<button type="button" class="btn btn-order" data-action="move-task" data-id="'+task.id+'" data-direction="up" aria-label="تقديم">↑</button><button type="button" class="btn btn-order" data-action="move-task" data-id="'+task.id+'" data-direction="down" aria-label="تأخير">↓</button>':"")+
-          (children&&children.length?'<button type="button" class="tsk-sub-toggle" data-action="toggle-sub" data-id="'+task.id+'" aria-expanded="'+(isOpen?"true":"false")+'">'+(isOpen?"إخفاء":"عرض")+' '+children.length+' مهام فرعية</button>':"")+'</div>'+
-          (children&&children.length&&isOpen?'<div class="tsk-tree-subtasks">'+children.map(function(child){return treeItem(child,[]);}).join("")+'</div>':"")+'</div>';
-      }
-      var hierarchy=roots.map(function(root){return treeItem(root,projectTasks.filter(function(t){return t.parent_task_id===root.id;}));}).join("");
-      var memberList=p.members||[],membersOpen=!!state.membersOpen[p.id],shownMembers=membersOpen?memberList:memberList.slice(0,3);
-      var chips=shownMembers.map(function(x){return '<span class="tsk-chip">'+esc(x.name)+' <small>'+esc({manager:"مدير مشارك",contributor:"عضو منفذ",reviewer:"مراجع"}[x.role]||"عضو")+'</small></span>';}).join("")+(memberList.length>3?'<button type="button" class="tsk-chip tsk-chip-more" data-action="members" data-project="'+p.id+'">'+(membersOpen?"إخفاء":"+"+(memberList.length-3)+" آخرين")+'</button>':"");
-      var mine=state.tasks.filter(function(t){return t.project_id===p.id;}),done=mine.filter(function(t){return t.status==="done";}).length,pct=mine.length?Math.round(done*100/mine.length):0,late=mine.filter(isOverdue).length,archived=!!state.archived[p.id];
-      var active=mine.filter(function(t){return t.status==="in_progress"||t.status==="review"||t.status==="revision";}).length,activePct=mine.length?Math.round(active*100/mine.length):0;
-      var health=!mine.length?["none","بدون مهام"]:(late?["late","⚠ "+late+" متأخرة"]:(done===mine.length?["done","مكتمل ✓"]:(active?["active","شغّال"]:["idle","لم يبدأ"])));
+    function projTasks(p){return state.tasks.filter(function(t){return t.project_id===p.id;});}
+    function projectTile(p){
+      var m=state.people.find(function(x){return x.id===p.manager_id;}),mine=projTasks(p),c=segCounts(mine),total=mine.length,done=c.done,left=total-done,archived=!!state.archived[p.id];
+      var open=mine.filter(function(t){return t.status!=="done"&&t.due_at;}).sort(function(a,b){return dueTime(a)-dueTime(b);})[0];
+      var last=mine.reduce(function(mx,t){return Math.max(mx,new Date(t.updated_at||0).getTime());},0);
+      var health=!total?["none","بدون مهام"]:(c.late?["late",c.late+" متأخرة"]:(done===total?["done","مكتمل"]:(c.review?["review","بانتظار مراجعة"]:(c.active?["active","شغّال"]:["idle","لم يبدأ"]))));
+      var members=(p.members||[]).slice(0,4).map(function(x){return '<span class="tv-av" title="'+esc(x.name)+'">'+esc(initials(x.name))+'</span>';}).join("")+((p.members||[]).length>4?'<span class="tv-av more">+'+((p.members||[]).length-4)+'</span>':"");
+      return '<article class="tv-proj'+(archived?" is-archived":"")+'" role="button" tabindex="0" data-action="open-project" data-project="'+p.id+'" data-project-id="'+p.id+'"><div class="tv-proj-top"><span class="tv-logo">'+esc(String(p.title||"م").trim().charAt(0))+'</span><div class="tv-proj-name"><b>'+esc(p.title)+(archived?' <em class="tv-arch">مؤرشف</em>':"")+'</b><small>'+esc(m?m.name:"—")+'</small></div><span class="tv-health h-'+health[0]+'">'+esc(health[1])+'</span></div>'+
+        (p.description?'<p class="tv-proj-desc">'+esc(p.description)+'</p>':"")+
+        '<div class="tv-proj-num"><b>'+done+'</b><span>من '+total+' مهمة تمت</span><em>'+(total?Math.round(done*100/total):0)+'%</em></div>'+segBar(c,total)+'<div class="tv-legend">'+segLegend(c)+'</div>'+
+        '<div class="tv-proj-next">'+(!total?"أضف أول مهمة للمشروع":(left?'المتبقي <b>'+left+'</b>'+(open?' · الأقرب: '+esc(open.title)+' <em class="'+(isOverdue(open)?"late":"")+'">'+esc(dueNote(open).replace(/^ · /,""))+'</em>':""):"كل المهام تمت ✓"))+'</div>'+
+        '<div class="tv-proj-foot"><span class="tv-avs">'+members+'</span><small>'+(last?"آخر نشاط "+esc(relTime(last)):"")+'</small></div></article>';
+    }
+    function projectPage(p){
+      var m=state.people.find(function(x){return x.id===p.manager_id;}),mine=projTasks(p),c=segCounts(mine),total=mine.length,done=c.done,archived=!!state.archived[p.id];
       var canUpdate=window.SSMPDRoles.canModuleAction(admin,"tasks","update"),canAdd=window.SSMPDRoles.canModuleAction(admin,"tasks","create");
-      return '<div class="tsk-project'+(archived?" is-archived":"")+'" data-project-id="'+p.id+'"><div class="tsk-project-top"><span class="tsk-avatar">'+esc(String(p.title||"م").trim().charAt(0))+'</span><div class="tsk-project-name"><b>'+esc(p.title)+(archived?' <em class="tsk-arch-badge">مؤرشف</em>':"")+'</b><span>مدير المشروع: '+esc(m?m.name:"—")+'</span></div><span class="tsk-health h-'+health[0]+'">'+health[1]+'</span><span class="tsk-count" title="عدد المهام">'+mine.length+'</span></div>'+
-        (p.description?'<p class="tsk-project-desc">'+esc(p.description)+'</p>':"")+
-        '<div class="tsk-progress" title="'+done+' من '+mine.length+' مكتملة"><div class="tsk-progress-bar"><i class="done" style="width:'+pct+'%"></i><i class="active" style="width:'+activePct+'%"></i></div><span>'+(mine.length?done+" من "+mine.length+" مكتملة · "+pct+"%":"لا توجد مهام بعد")+(late?' · <em class="tsk-late-text">'+late+' متأخرة</em>':"")+'</span></div>'+
-        '<div class="tsk-chips">'+(chips||'<span class="tsk-chip muted">بدون فريق</span>')+'</div>'+
-        (p.can_manage?'<div class="tsk-project-actions">'+(canUpdate&&!archived?'<button class="btn btn-small" data-action="edit-project" data-project="'+p.id+'">تعديل المشروع</button>':"")+(canAdd&&!archived?'<button class="btn btn-small" data-action="new-task" data-project="'+p.id+'">إضافة مهمة</button>':"")+(canUpdate?'<button class="btn btn-small btn-quiet" data-action="archive-project" data-project="'+p.id+'" data-state="'+(archived?"off":"on")+'">'+(archived?"إلغاء الأرشفة":"أرشفة")+'</button>':"")+(p.can_manage?'<button class="btn btn-small btn-danger" data-action="delete-project" data-project="'+p.id+'">حذف المشروع</button>':"")+'</div>':"")+
-        '<details class="tsk-project-hierarchy" open><summary>مهام المشروع <b>'+projectTasks.length+'</b></summary><div class="tsk-project-tree">'+(hierarchy||'<p class="tsk-tree-empty">لا توجد مهام داخل المشروع.</p>')+'</div></details></div>';
+      var roots=sortTasks(mine.filter(function(t){return !t.parent_task_id;}),"manual"),f=state.pFilter;
+      function kidsOf(t){return mine.filter(function(x){return x.parent_task_id===t.id;});}
+      function rowWithKids(t){var kids=kidsOf(t),sub=kids.length?{total:kids.length,done:kids.filter(function(x){return x.status==="done";}).length,open:!!state.expanded[t.id]}:null;return taskRow(t,sub,{})+(sub&&sub.open?'<div class="tv-kids">'+sortTasks(kids,"manual").map(function(k){return taskRow(k,null,{});}).join("")+'</div>':"");}
+      function rootSeg(t){return seg(t);}
+      var body="";
+      if(!total)body='<div class="tv-empty"><div>🗂️</div><h3>المشروع لسه فاضي</h3><p>ابدأ بإضافة أول مهمة وحدّد مسؤول وموعد.</p>'+(p.can_manage&&canAdd&&!archived?'<button class="btn btn-primary" data-action="new-task" data-project="'+p.id+'">+ مهمة</button>':"")+'</div>';
+      else if(f!=="all"){
+        var list=roots.filter(function(t){return rootSeg(t)===f||kidsOf(t).some(function(k){return seg(k)===f;});});
+        body=list.length?'<div class="tv-list">'+list.map(rowWithKids).join("")+'</div>':'<div class="tv-empty"><h3>مفيش مهام بالحالة دي</h3></div>';
+      }else{
+        var order=[["review","بانتظار المراجعة"],["late","متأخرة"],["active","شغّالة دلوقتي"],["blocked","متوقفة"],["todo","لم تبدأ"]];
+        order.forEach(function(g){var items=roots.filter(function(t){return rootSeg(t)===g[0];});if(items.length)body+='<section class="tv-group g-'+g[0]+'"><h3>'+g[1]+' <span>'+items.length+'</span></h3><div class="tv-list">'+items.map(rowWithKids).join("")+'</div></section>';});
+        var dn=roots.filter(function(t){return rootSeg(t)==="done";});
+        if(dn.length)body+='<details class="tv-group g-done tv-done"><summary>المكتملة <span>'+dn.length+'</span></summary><div class="tv-list">'+dn.sort(function(a,b){return new Date(b.updated_at||0)-new Date(a.updated_at||0);}).map(rowWithKids).join("")+'</div></details>';
+      }
+      var memberList=p.members||[],membersOpen=!!state.membersOpen[p.id],shown=membersOpen?memberList:memberList.slice(0,4);
+      var chips=shown.map(function(x){return '<span class="tv-chip">'+esc(x.name)+' <small>'+esc({manager:"مدير مشارك",contributor:"منفذ",reviewer:"مراجع"}[x.role]||"عضو")+'</small></span>';}).join("")+(memberList.length>4?'<button type="button" class="tv-chip more" data-action="members" data-project="'+p.id+'">'+(membersOpen?"إخفاء":"+"+(memberList.length-4)+" آخرين")+'</button>':"");
+      return '<div class="tv-page"><div class="tv-page-bar"><button type="button" class="tv-back" data-action="back-projects">› كل المشاريع</button><div class="tv-bar-actions">'+(p.can_manage&&canAdd&&!archived?'<button class="btn btn-primary" data-action="new-task" data-project="'+p.id+'">+ مهمة</button>':"")+(p.can_manage&&canUpdate&&!archived?'<button class="btn btn-quiet" data-action="edit-project" data-project="'+p.id+'">تعديل</button>':"")+(p.can_manage&&canUpdate?'<button class="btn btn-quiet" data-action="archive-project" data-project="'+p.id+'" data-state="'+(archived?"off":"on")+'">'+(archived?"إلغاء الأرشفة":"أرشفة")+'</button>':"")+(p.can_manage?'<button class="btn btn-quiet tv-danger" data-action="delete-project" data-project="'+p.id+'">حذف</button>':"")+'</div></div>'+
+        '<header class="tv-ph"><span class="tv-logo lg">'+esc(String(p.title||"م").trim().charAt(0))+'</span><div class="tv-ph-name"><h2>'+esc(p.title)+(archived?' <em class="tv-arch">مؤرشف</em>':"")+'</h2><p>مدير المشروع: '+esc(m?m.name:"—")+'</p></div><div class="tv-bigpct"><b>'+(total?Math.round(done*100/total):0)+'%</b><small>'+done+' من '+total+' تمت · المتبقي '+(total-done)+'</small></div></header>'+
+        (p.description?'<p class="tv-ph-desc">'+esc(p.description)+'</p>':"")+
+        '<div class="tv-chips">'+(chips||'<span class="tv-chip muted">بدون فريق</span>')+'</div>'+segBar(c,total)+
+        '<div class="tv-filters"><button type="button" class="tv-fchip'+(f==="all"?" on":"")+'" data-action="pf" data-id="all">الكل <b>'+total+'</b></button>'+SEG_ORDER.filter(function(k){return c[k];}).map(function(k){return '<button type="button" class="tv-fchip g-'+k+(f===k?" on":"")+'" data-action="pf" data-id="'+k+'">'+SEG_LABEL[k]+' <b>'+c[k]+'</b></button>';}).join("")+'</div>'+body+'</div>';
+    }
+    function projectsHome(){
+      var archivedCount=state.projects.filter(function(p){return state.archived[p.id];}).length;
+      var shown=state.projects.filter(function(p){return state.showArchived||!state.archived[p.id];});
+      var canCreate=window.SSMPDRoles.canModuleAction(admin,"tasks","create")&&(isAdmin||window.SSMPDRoles.isControlledFinance(admin));
+      if(!state.projects.length)return '<div class="tv-empty"><div>🗂️</div><h3>مفيش مشاريع لسه</h3><p>المشروع أو خطة العمل هي اللي بتتجمّع تحتها المهام ويتابعها فريق محدد.</p>'+(canCreate?'<button class="btn btn-primary" data-action="new-project">+ مشروع / خطة عمل</button>':"")+'</div>';
+      var sorted=shown.slice().sort(function(a,b){var la=Math.max.apply(null,[0].concat(projTasks(a).map(function(t){return new Date(t.updated_at||0).getTime();}))),lb=Math.max.apply(null,[0].concat(projTasks(b).map(function(t){return new Date(t.updated_at||0).getTime();})));return lb-la;});
+      return (archivedCount?'<div class="tv-sub-actions"><button class="btn btn-quiet" data-action="toggle-archived">'+(state.showArchived?"إخفاء المؤرشفة":"عرض المؤرشفة ("+archivedCount+")")+'</button></div>':"")+'<div class="tv-grid">'+(sorted.map(projectTile).join("")||'<div class="tv-empty"><div>🗂️</div><h3>كل المشاريع مؤرشفة</h3><p>اضغط "عرض المؤرشفة" لو عايز تشوفها.</p></div>')+'</div>';
+    }
+    function needsStrip(base,unread){
+      var mgr=isAdmin||base.some(function(t){return t.can_manage;});
+      var mineOpen=base.filter(function(t){return t.assignee_id===admin.id&&t.status!=="done";});
+      var items=[];
+      if(mgr)items.push(["review","بانتظار مراجعتك",base.filter(function(t){return t.status==="review"&&(isAdmin||t.can_manage);}).length]);
+      items.push(["mine","مهامي المفتوحة",mineOpen.length]);
+      items.push(["overdue","متأخرة",base.filter(isOverdue).length]);
+      items.push(["soon","تنتهي خلال يومين",poolFor(base,"soon").length]);
+      items.push(["notices","إشعارات جديدة",unread]);
+      return '<div class="tv-needs" role="group" aria-label="محتاج منك دلوقتي">'+items.map(function(i){return '<button type="button" class="tv-need n-'+i[0]+(i[2]?" has":"")+'" data-action="stat" data-id="'+i[0]+'"><b>'+i[2]+'</b><span>'+i[1]+'</span></button>';}).join("")+'</div>';
+    }
+    function tabsBar(base,shownCount){
+      var open=base.filter(function(t){return t.status!=="done";}).length,done=base.filter(function(t){return t.status==="done";}).length;
+      var items=[["projects","المشاريع",shownCount],["tasks","كل المهام",open],["done","المنجزة",done],["team","الفريق",""]];
+      return '<nav class="tv-tabs" role="tablist">'+items.map(function(i){return '<button type="button" role="tab" class="tv-tab'+(state.tab===i[0]?" on":"")+'" data-action="tab" data-id="'+i[0]+'" aria-selected="'+(state.tab===i[0])+'">'+i[1]+(i[2]!==""?' <b>'+i[2]+'</b>':"")+'</button>';}).join("")+'</nav>';
     }
     function teamTable(base,since){
       var rows={};
@@ -203,20 +300,18 @@
       var pOpts=state.projects.map(function(p){return '<option value="'+p.id+'">'+esc(p.title)+'</option>';}).join("");
       var personOpts=state.people.map(function(p){return '<option value="'+p.id+'">'+esc(p.name||p.email)+'</option>';}).join("");
       var banner=state.error?'<div class="tsk-error">'+esc(state.error)+'</div>':"";
-      var html='<section class="tsk-page" dir="rtl"><div class="tsk-head"><div><p class="tsk-eyebrow">تنظيم الشغل ومتابعته</p><h1>المهام والمشاريع</h1><p>حدّث تقدمك باستمرار، وسيظهر لك ما أُسند إليك فقط.</p></div><div class="tsk-head-actions"><button class="btn" data-action="notifications">الإشعارات'+(unread?' <b class="tsk-badge">'+unread+'</b>':"")+'</button>'+(canCreate?'<button class="btn btn-primary" data-action="new-project">+ مشروع / خطة عمل</button>':"")+'</div></div>'+banner;
-      var doneAll=base.filter(function(t){return t.status==="done";}).length,doneWeek=week.filter(function(t){return t.status==="done";}).length,reviewCount=base.filter(function(t){return t.status==="review";}).length;
-      html+='<div class="tsk-stats">'+
-        '<button type="button" class="tsk-stat st-blue" data-action="stat" data-id="updated"><span>تحديثات آخر 7 أيام</span><b>'+week.length+'</b><small>اضغط للترتيب بآخر تحديث</small></button>'+
-        '<button type="button" class="tsk-stat st-amber" data-action="stat" data-id="review"><span>قيد المراجعة</span><b>'+reviewCount+'</b><small>اضغط لعرضها</small></button>'+
-        '<button type="button" class="tsk-stat st-red" data-action="stat" data-id="overdue"><span>متأخرة</span><b>'+overdue.length+'</b><small>اضغط لعرضها</small></button>'+
-        '<button type="button" class="tsk-stat st-green" data-action="stat" data-id="done"><span>مكتملة</span><b>'+doneAll+'</b><small>منها '+doneWeek+' آخر 7 أيام</small></button></div>';
-      var archivedCount=state.projects.filter(function(p){return state.archived[p.id];}).length;
       var shownProjects=state.projects.filter(function(p){return state.showArchived||!state.archived[p.id];});
-      if(state.projects.length){html+='<section class="tsk-panel"><div class="tsk-panel-head"><div><h2>المشاريع</h2><p>المدير وأعضاء الخطة وأدوارهم</p></div>'+(archivedCount?'<div class="tsk-filters"><button class="btn btn-quiet" data-action="toggle-archived">'+(state.showArchived?"إخفاء المؤرشفة":"عرض المؤرشفة ("+archivedCount+")")+'</button></div>':"")+'</div><div class="tsk-project-grid">'+(shownProjects.map(projectCard).join("")||'<div class="tsk-empty tsk-empty-rich"><div class="tsk-empty-icon">🗂️</div><h3>كل المشاريع مؤرشفة</h3><p>اضغط "عرض المؤرشفة" لو عايز تشوفها.</p></div>')+'</div></section>';}
-      else html+='<section class="tsk-panel"><div class="tsk-empty tsk-empty-rich"><div class="tsk-empty-icon">🗂️</div><h3>مفيش مشاريع لسه</h3><p>المشروع أو خطة العمل هي اللي بتتجمّع تحتها المهام ويتابعها فريق محدد.</p>'+(canCreate?'<button class="btn btn-primary" data-action="new-project">+ مشروع / خطة عمل</button>':"")+'</div></section>';
-      html+='<section class="tsk-panel"><div class="tsk-panel-head"><div><h2>'+(isAdmin?"كل المهام المسموح لك بمتابعتها":"مهامي")+'</h2><p>اكتب ما أنجزته عند كل تحديث. الإكمال النهائي يحتاج اعتماد المدير.</p></div><div class="tsk-filters">'+(window.SSMPDRoles.canModuleAction(admin,"tasks","create")&&state.projects.some(function(p){return p.can_manage&&!state.archived[p.id];})?'<button class="btn btn-primary" data-action="new-task" data-project="'+(state.projects.find(function(p){return p.can_manage&&!state.archived[p.id];})||{}).id+'">+ مهمة</button>':"")+'</div></div>';
-      html+=toolbarHtml()+'<div data-list-host>'+listHtml()+'</div></section>';
-      html+='<section class="tsk-panel tsk-week"><div class="tsk-panel-head"><div><h2>ملخص الأسبوع</h2><p>آخر سبعة أيام حتى الآن، وحالة كل موظف</p></div></div><div class="tsk-week-row"><span>المهام التي تم تحديثها <b>'+week.length+'</b></span><span>اكتملت <b>'+week.filter(function(t){return t.status==="done";}).length+'</b></span><span>تحتاج مراجعة <b>'+base.filter(function(t){return t.status==="review";}).length+'</b></span><span>متأخرة <b>'+overdue.length+'</b></span></div>'+teamTable(base,since)+'<h3 class="tsk-sub-title">آخر المهام المحدّثة</h3><div class="tsk-week-list">'+(week.slice().sort(function(a,b){return new Date(b.updated_at)-new Date(a.updated_at);}).slice(0,8).map(function(t){return '<div><span>'+esc(t.title)+'</span><span>'+esc(t.assignee_name||"")+'</span><span>'+esc(STATUS[t.status])+'</span></div>';}).join("")||'<p class="tsk-empty">مفيش تحديثات الأسبوع ده.</p>')+'</div></section>';
+      var html='<section class="tsk-page tv" dir="rtl"><div class="tv-head"><div><h1>المهام والمشاريع</h1><p>اعرف إيه اللي خلص وإيه اللي لسه شغّال، من غير زحمة.</p></div><div class="tsk-head-actions"><button class="btn btn-quiet tv-bell" data-action="notifications" aria-label="الإشعارات">🔔'+(unread?' <b class="tsk-badge">'+unread+'</b>':"")+'</button>'+(canCreate?'<button class="btn btn-primary" data-action="new-project">+ مشروع / خطة عمل</button>':"")+'</div></div>'+banner;
+      html+=needsStrip(base,unread)+tabsBar(base,shownProjects.length);
+      if(state.tab==="projects"){
+        var op=state.openProject&&state.projects.find(function(x){return x.id===state.openProject;});
+        if(state.openProject&&!op)state.openProject="";
+        html+='<section class="tv-body">'+(op?projectPage(op):projectsHome())+'</section>';
+      }else if(state.tab==="team"){
+        html+='<section class="tv-body tsk-week"><div class="tsk-week-row"><span>المهام التي تم تحديثها <b>'+week.length+'</b></span><span>اكتملت <b>'+week.filter(function(t){return t.status==="done";}).length+'</b></span><span>تحتاج مراجعة <b>'+base.filter(function(t){return t.status==="review";}).length+'</b></span><span>متأخرة <b>'+overdue.length+'</b></span></div>'+teamTable(base,since)+'<h3 class="tsk-sub-title">آخر المهام المحدّثة</h3><div class="tsk-week-list">'+(week.slice().sort(function(a,b){return new Date(b.updated_at)-new Date(a.updated_at);}).slice(0,8).map(function(t){return '<div><span>'+esc(t.title)+'</span><span>'+esc(t.assignee_name||"")+'</span><span>'+esc(STATUS[t.status])+'</span></div>';}).join("")||'<p class="tsk-empty">مفيش تحديثات الأسبوع ده.</p>')+'</div></section>';
+      }else{
+        html+='<section class="tv-body">'+toolbarHtml()+'<div data-list-host>'+listHtml()+'</div></section>';
+      }
       if(state.modal==="confirm-delete"&&state.deleteTarget){
         var dt=state.deleteTarget,kindLabel=dt.kind==="project"?"المشروع":"المهمة";
         html+=modal("تأكيد حذف "+kindLabel,'<div class="tsk-delete-confirm"><p>هل تريد حذف <b>'+esc(dt.title)+'</b>؟</p><p>سيتم حذف '+(dt.kind==="project"?"المشروع وكل المهام والمهام الفرعية التابعة له.":"المهمة وكل المهام الفرعية التابعة لها.")+' وسجل التحديثات المرتبط بها.</p><footer><button class="btn btn-danger" data-action="confirm-delete">نعم، احذف</button><button type="button" class="btn" data-action="close-modal">إلغاء</button></footer></div>');
@@ -245,7 +340,7 @@
         var editPriorityOpts=Object.keys(PRIORITY).map(function(k){return '<option value="'+k+'" '+(et.priority===k?"selected":"")+'>'+PRIORITY[k]+'</option>';}).join("");
         html+=modal("تعديل المهمة",'<form data-form="task-edit"><input type="hidden" name="task_id" value="'+esc(et.id)+'"><label>عنوان المهمة<input name="title" required maxlength="180" value="'+esc(et.title)+'"></label><label>وصف المطلوب<textarea name="description" rows="3">'+esc(et.description)+'</textarea></label><label>النتيجة المتوقعة<textarea name="expected_output" rows="2">'+esc(et.expected_output)+'</textarea></label><label>المسؤول<select name="assignee_id" required>'+editPersonOpts+'</select></label><div class="tsk-form-row"><label>موعد التسليم<input type="date" name="due_at" value="'+dateValue(et.due_at)+'"></label><label>الأولوية<select name="priority">'+editPriorityOpts+'</select></label></div>'+repeatFields(et)+(et.recurrence_id?'<label class="tsk-repeat-toggle"><input type="checkbox" name="update_future" checked><span>تطبيق التعديلات على التكرارات القادمة</span></label>':"")+'<footer><button class="btn btn-primary">حفظ التعديلات</button><button type="button" class="btn" data-action="close-modal">إلغاء</button></footer></form>');
       }
-      if(state.modal==="task-view"){var vt=state.tasks.find(function(x){return x.id===state.viewId;});if(vt)html+=modal("تفاصيل المهمة",cardFor(vt));}
+      if(state.modal==="task-view"){var vt=state.tasks.find(function(x){return x.id===state.viewId;});if(vt)html+=modal("تفاصيل المهمة",taskDetail(vt),"tv-wide");}
       if(state.modal==="note"&&state.note){
         var nc=NOTE[state.note.action]||NOTE.progress,nTitle=state.note.action==="progress"&&state.note.starting?nc.start:nc.title;
         html+=modal(nTitle,'<form data-form="note" novalidate><p class="tsk-note-for">'+esc(state.note.subject||"")+'</p>'+
@@ -268,7 +363,7 @@
       }
       el.innerHTML=html;
     }
-    function stamp(v){var d=new Date(v);return isNaN(d)?"":d.toLocaleString("ar-EG",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});}
+    function stamp(v){var d=new Date(v);return isNaN(d)?"":d.toLocaleString("ar-EG-u-nu-latn",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});}
     function attsHtml(updateId){
       var list=state.historyAtts[updateId];if(!list||!list.length)return "";
       return '<div class="tsk-atts">'+list.map(function(a){return '<a class="tsk-att" href="'+esc(/^https:\/\/(drive|docs)\.google\.com\//.test(a.file_url||"")?a.file_url:"#")+'" target="_blank" rel="noopener noreferrer">📎 '+esc(a.file_name)+(a.size_bytes?' <small>'+esc(fileSize(a.size_bytes))+'</small>':"")+'</a>';}).join("")+'</div>';
@@ -312,12 +407,10 @@
     }
     function focusTask(id){
       var t=state.tasks.find(function(x){return x.id===id;});if(!t)return;
-      state.view="list";state.filter="all";state.q="";state.fProject="";state.fAssignee="";
+      state.tab="projects";store("tab","projects");state.openProject=t.project_id;state.pFilter="all";
       if(state.archived[t.project_id])state.showArchived=true;
       if(t.parent_task_id)state.expanded[t.parent_task_id]=true;
-      draw();
-      var node=el.querySelector('[data-task-id="'+id+'"]');
-      if(node){if(node.scrollIntoView)node.scrollIntoView({behavior:"smooth",block:"center"});node.classList.add("tsk-flash");setTimeout(function(){node.classList.remove("tsk-flash");},2600);}
+      state.viewId=id;state.modal="task-view";draw();
     }
     function submitNote(form,fd){
       var n=state.note;if(!n)return;
@@ -339,6 +432,7 @@
     }
     function onEscape(ev){if(!el.isConnected){document.removeEventListener("keydown",onEscape);return;}if(ev.key==="Escape"&&state.modal){state.modal="";state.note=null;state.pendingFiles=[];draw();}}
     document.addEventListener("keydown",onEscape);
+    el.onkeydown=function(ev){var tile=ev.target.closest&&ev.target.closest(".tv-proj");if(tile&&ev.target===tile&&(ev.key==="Enter"||ev.key===" ")){ev.preventDefault();tile.click();}};
     el.oninput=function(ev){if(ev.target.matches&&ev.target.matches("[data-search]")){state.q=ev.target.value;drawList();}};
     el.onclick=function(ev){
       var b=ev.target.closest("[data-action]");if(!b)return;
@@ -351,10 +445,14 @@
       }
       if(action==="filter"){state.filter=id;drawList();return;}
       if(action==="stat"){
-        state.view="list";state.q="";state.fProject="";state.fAssignee="";
-        if(id==="updated"){state.filter="all";state.sort="updated";store("sort","updated");}else state.filter=id;
+        if(id==="notices"){state.modal="notifications";draw();return;}
+        state.tab="tasks";store("tab","tasks");state.view="list";state.q="";state.fProject="";state.fAssignee="";state.filter=id;
         draw();var host=el.querySelector("[data-list-host]");if(host&&host.scrollIntoView)host.scrollIntoView({behavior:"smooth",block:"start"});return;
       }
+      if(action==="tab"){state.tab=id;store("tab",id);if(id==="projects")state.openProject="";state.q="";state.fProject="";state.fAssignee="";draw();return;}
+      if(action==="open-project"){state.openProject=b.dataset.project;state.pFilter="all";draw();if(el.scrollIntoView)el.scrollIntoView({block:"start"});return;}
+      if(action==="back-projects"){state.openProject="";draw();return;}
+      if(action==="pf"){state.pFilter=id;draw();return;}
       if(action==="members"){state.membersOpen[b.dataset.project]=!state.membersOpen[b.dataset.project];draw();return;}
       if(action==="view"){state.view=id==="board"||id==="calendar"?id:"list";store("view",state.view);draw();return;}
       if(action==="clear-filters"){state.q="";state.fProject="";state.fAssignee="";state.filter="all";draw();return;}

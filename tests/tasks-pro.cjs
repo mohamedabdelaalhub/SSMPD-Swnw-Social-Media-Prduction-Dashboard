@@ -21,7 +21,7 @@ window.mock={
  notices:[{id:'n1',task_id:'t4',message:'تم تحديث مهمة',created_at:iso(-1),read_at:null}],
  updates:{t1:[{id:'u1',task_id:'t1',author_id:'a3',body:'بدأت الشغل https://drive.google.com/x.',status_from:'todo',status_to:'in_progress',created_at:iso(-1)}]}
 };
-if(location.search==='?empty'){mock.tasks=[];mock.notices=[];}
+if(location.search==='?empty'){mock.tasks=[];mock.notices=[];mock.projects=[];}
 mock.chk={t1:[{id:'c1',body:'بند أول',done:false}]};
 window.SSMPDAuth={currentAdmin:{id:'a1'}};
 window.SSMPDRoles={hasAnyRole:function(){return true},canModuleAction:function(){return true},isControlledFinance:function(){return false}};
@@ -55,125 +55,47 @@ const browser=await chromium.launch({executablePath:process.env.PW_CHROMIUM||und
 try{
  for(const width of [1280,390]){
   const page=await browser.newPage({viewport:{width,height:900}});const errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('dialog',d=>{errors.push('native dialog: '+d.message());d.dismiss();});
-  await page.goto('http://localhost:'+port+'/');await page.waitForSelector('.tsk-card');
-  const shot=async n=>{if(process.env.TASKS_SHOTS)await page.screenshot({path:process.env.TASKS_SHOTS+'/'+n+'-'+width+'.png',fullPage:true});};await shot('list');
-  const titles=()=>page.$$eval('.tsk-list .tsk-card h3',els=>els.map(e=>e.textContent));
-  // 2 + 4: smart sort — overdue first, done last; subtasks collapsed by default
-  let t=await titles();
-  assert.equal(t[0],'رفع الشيت','overdue first');assert.equal(t[t.length-1],'مهمة قديمة خلصت','done last');
-  assert(!t.includes('مهمة فرعية أولى'),'subtasks collapsed by default');
-  assert(!t.includes('مهمة في مشروع قديم'),'archived project tasks hidden');
-  // 4: due note
-  assert(/متأخرة 3 أيام/.test(await page.locator('[data-task-id=t2]').first().textContent()),'late note');
-  assert(/باقي 3 أيام/.test(await page.locator('[data-task-id=t1]').first().textContent()),'days left note');
-  // 7: toggle subtasks
-  assert(/2 مهام فرعية · 1 مكتملة/.test(await page.locator('[data-task-id=t1] .tsk-sub-toggle').textContent()));
-  await page.locator('[data-task-id=t1] .tsk-sub-toggle').click();t=await titles();
-  assert(t.includes('مهمة فرعية أولى')&&t.includes('مهمة فرعية تانية'),'subtasks expand under parent');
-  assert.deepEqual(t.slice(t.indexOf('جرد المخزن الطبي')+1,t.indexOf('جرد المخزن الطبي')+3),['مهمة فرعية تانية','مهمة فرعية أولى'],'children follow their parent (open before done)');
-  await page.locator('[data-task-id=t1] .tsk-sub-toggle').click();
-  // 5: project progress (done 2 of 6 in p1: t3,t5)
-  assert(/2 من 6 مكتملة/.test(await page.locator('[data-project-id=p1]').textContent()),'project progress');
-  // batch 1: health badge, collapsed members, clickable stat cards, overdue chip
-  assert(/1 متأخرة/.test(await page.locator('[data-project-id=p1] .tsk-health').textContent()),'project health badge');
-  assert.equal(await page.locator('[data-project-id=p1] .tsk-chips .tsk-chip:not(.tsk-chip-more)').count(),3,'only 3 members shown');
-  await page.locator('[data-project-id=p1] .tsk-chip-more').click();assert.equal(await page.locator('[data-project-id=p1] .tsk-chips .tsk-chip:not(.tsk-chip-more)').count(),5,'members expand');
-  await page.locator('[data-project-id=p1] .tsk-chip-more').click();
-  assert(/منها 1 آخر 7 أيام/.test(await page.locator('.tsk-stat.st-green').textContent())&&/2/.test(await page.locator('.tsk-stat.st-green b').textContent()),'completed card counts all done tasks');
-  await page.locator('.tsk-stat.st-red').click();assert.deepEqual(await titles(),['رفع الشيت'],'overdue stat filters');assert(await page.locator('.tsk-fchip.on.s-blocked').count()===1,'overdue chip active');
-  await page.locator('.tsk-stat.st-green').click();assert((await titles()).includes('مهمة قديمة خلصت'),'done stat filters');
-  await page.locator('.tsk-fchip').first().click();
-  // 3: search (Arabic normalisation) + project/assignee filters
-  const input=page.locator('[data-search]');await input.fill('جرد');
-  t=await titles();assert(t.includes('جرد المخزن الطبي')&&!t.includes('رفع الشيت'),'search filters');
-  assert(await input.evaluate(el=>el===document.activeElement),'search keeps focus while typing');
-  await input.fill('');
-  await page.selectOption('[data-sel=assignee]',{label:'شروق'});t=await titles();assert(t.every(x=>['رفع الشيت','مهمة قديمة خلصت','مهمة في مشروع قديم'].includes(x))&&t.length===2,'assignee filter: '+t);
-  await page.selectOption('[data-sel=assignee]','');
-  // 2: sort by priority
-  await page.selectOption('[data-sel=sort]','priority');t=await titles();assert.equal(t[0],'رفع الشيت','urgent first');
-  await page.selectOption('[data-sel=sort]','smart');
-  // status chips with counts
-  assert(/\d/.test(await page.locator('.tsk-fchip').first().textContent()));
-  await page.locator('.tsk-fchip.s-review').click();t=await titles();assert.deepEqual(t,['رفع الشيت']);await page.locator('.tsk-fchip').first().click();
-  // 13: empty filtered state with clear button
-  await input.fill('لا يوجد شيء مثل هذا');assert(await page.locator('.tsk-empty-rich [data-action=clear-filters]').count()===1);await page.locator('[data-action=clear-filters]').click();assert((await titles()).length>=3);
-  // 13: employee summary table
-  const rows=await page.$$eval('.tsk-team tbody tr',r=>r.map(x=>x.querySelector('b').textContent));assert(rows.includes('محمد')&&rows.includes('شروق'),'team table');
-  // 1 + 12: note modal instead of prompt; required validation, then RPC
-  await page.locator('[data-task-id=t1] [data-action=progress]').first().click();assert(await page.locator('.tsk-modal form[data-form=note]').count()===1);
-  await page.locator('.tsk-modal [type=submit]').click();assert(await page.locator('.tsk-field-error:visible').count()===1,'required note error');
-  assert.equal(await page.evaluate(()=>calls.length),0,'no RPC before text');
-  await page.fill('.tsk-modal textarea','خلصت الرف الأول');await page.locator('.tsk-modal [type=submit]').click();await page.waitForFunction(()=>!document.querySelector('.tsk-modal'));
-  assert.deepEqual(await page.evaluate(()=>calls.pop()),['status','t1','in_progress','خلصت الرف الأول']);
-  // 12: approve needs confirmation modal, note optional
-  await page.locator('[data-task-id=t2] [data-action=approve]').first().click();assert(/هتتقفل/.test(await page.locator('.tsk-modal').textContent()),'approve confirm');
-  await page.locator('.tsk-modal [type=submit]').click();await page.waitForFunction(()=>!document.querySelector('.tsk-modal'));assert.deepEqual(await page.evaluate(()=>calls.pop()),['review','t2',true,'']);
-  await page.locator('[data-task-id=t2] [data-action=return]').first().click();await page.locator('.tsk-modal [type=submit]').click();assert(/اكتب سبب الإرجاع/.test(await page.locator('.tsk-field-error').textContent()));await page.keyboard.press('Escape');assert.equal(await page.locator('.tsk-modal').count(),0,'Escape closes');
-  // 9: comments + linkified link
-  await page.locator('[data-task-id=t1] [data-action=history]').first().click();await page.waitForSelector('.tsk-comment-form');
-  assert.equal(await page.locator('.tsk-history a[href="https://drive.google.com/x"]').count(),1,'link rendered without trailing dot');
-  await page.fill('.tsk-comment-form textarea','تعليق جديد');await page.locator('.tsk-comment-form [type=submit]').click();await page.waitForFunction(()=>document.querySelectorAll('.tsk-history article').length===2);
-  assert.deepEqual(await page.evaluate(()=>calls.pop()),['comment','t1','تعليق جديد',0]);
-  // attachments: validation, chips, remove, upload + comment, open via signed URL
-  await page.setInputFiles('[data-comment-files]',[{name:'virus.exe',mimeType:'application/octet-stream',buffer:Buffer.from('x')}]);assert(/غير مسموح/.test(await page.locator('.tsk-field-error').textContent()),'bad type rejected');
-  await page.setInputFiles('[data-comment-files]',[{name:'big.pdf',mimeType:'application/pdf',buffer:Buffer.alloc(10485761)}]);assert(/أكبر من 10 ميجا/.test(await page.locator('.tsk-field-error').textContent()),'oversize rejected');
-  await page.fill('.tsk-comment-form textarea','نص قبل الملفات');
-  await page.setInputFiles('[data-comment-files]',[{name:'جرد.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF')},{name:'صورة.png',mimeType:'image/png',buffer:Buffer.from('x')}]);
-  assert.equal(await page.locator('.tsk-file-chip').count(),2,'two chips');assert.equal(await page.inputValue('.tsk-comment-form textarea'),'نص قبل الملفات','typed text survives');
-  await page.locator('.tsk-file-chip button').last().click();assert.equal(await page.locator('.tsk-file-chip').count(),1,'chip removed');
-  await page.locator('.tsk-comment-form [type=submit]').click();await page.waitForFunction(()=>document.querySelector('.tsk-att'));
-  const fc=await page.evaluate(()=>calls.filter(c=>c[0]==='upload'||c[0]==='comment').slice(-2));assert.deepEqual(fc,[['upload','t1','جرد.pdf'],['comment','t1','نص قبل الملفات',1]]);
-  assert(/جرد\.pdf/.test(await page.locator('.tsk-att').first().textContent()),'attachment chip in history');
-  const href=await page.locator('a.tsk-att').first().getAttribute('href');assert(/^https:\/\/drive\.google\.com\//.test(href),'attachment opens the Drive link');assert.equal(await page.locator('a.tsk-att').first().getAttribute('target'),'_blank');
-  // more than 10 files rejected
-  await page.setInputFiles('[data-comment-files]',Array.from({length:11},(_,i)=>({name:'f'+i+'.pdf',mimeType:'application/pdf',buffer:Buffer.from('x')})));assert.equal(await page.locator('.tsk-file-chip').count(),10,'up to 10 files');assert(/الحد الأقصى 10/.test(await page.locator('.tsk-field-error').textContent()));
-  await page.locator('.tsk-file-chip button').first().click();while(await page.locator('.tsk-file-chip').count())await page.locator('.tsk-file-chip button').first().click();
-  // attachment-only comment is allowed, empty one is not
-  await page.locator('.tsk-comment-form [type=submit]').click();assert(/اكتب التعليق أو أرفق/.test(await page.locator('.tsk-field-error').textContent()));
-  await page.keyboard.press('Escape');
-  // 6: board view
-  await page.locator('[data-action=view][data-id=board]').click();assert.equal(await page.locator('.tsk-col').count(),6,'six columns');
-  await shot('board');assert(await page.locator('.tsk-col.s-review .tsk-mini').count()===1);assert.equal(await page.locator('.tsk-fchip').count(),0,'no status chips in board');
-  await page.locator('.tsk-col.s-review .tsk-mini').click();assert(await page.locator('.tsk-modal .tsk-card').count()===1,'board card opens details');await page.keyboard.press('Escape');
-  assert.equal(await page.evaluate(()=>localStorage.getItem('ssmpd.tasks.view')),'board','view remembered');
-  await page.locator('[data-action=view][data-id=list]').click();
-  // 11: notification opens the task
-  await page.locator('[data-action=notifications]').click();await page.locator('.tsk-notice').first().click();await page.waitForFunction(()=>!document.querySelector('.tsk-modal')&&document.querySelector('[data-task-id=t4].tsk-flash'));
-  assert(/مهمة فرعية تانية/.test(await page.locator('[data-task-id=t4]').first().textContent()),'notification expands parent and focuses child');
-  assert.deepEqual(await page.evaluate(()=>calls.filter(c=>c[0]==='read')),[['read','n1']]);
-  // 10: archive project hides it and its tasks; toggle shows them back
-  await page.locator('[data-project-id=p1] [data-action=archive-project]').click();assert(/المشروع ومهامه هيختفوا/.test(await page.locator('.tsk-modal').textContent()));
-  await page.locator('.tsk-modal [type=submit]').click();await page.waitForFunction(()=>!document.querySelector('.tsk-modal'));
-  assert.deepEqual(await page.evaluate(()=>calls.pop()),['archive','p1',true]);assert.equal(await page.locator('[data-project-id=p1]').count(),0,'archived project hidden');
-  assert.equal((await titles()).includes('رفع الشيت'),false,'archived tasks hidden');
-  assert(/عرض المؤرشفة \(2\)/.test(await page.locator('[data-action=toggle-archived]').textContent()));
-  await page.locator('[data-action=toggle-archived]').click();assert.equal(await page.locator('[data-project-id=p1].is-archived').count(),1);
-  assert((await titles()).includes('رفع الشيت'),'tasks back when showing archived');
-  assert.deepEqual(errors,[],'page errors / native dialogs');
-  await page.close();
+  await page.goto('http://localhost:'+port+'/');await page.waitForSelector('.tv-proj');
+  const txt=s=>page.locator(s).first().textContent();
+  // ---- الرئيسية: المشاريع فقط + شريط "محتاج منك" ----
+  assert.equal(await page.locator('.tv-row').count(),0,'home shows projects only, no task rows');
+  assert.equal(await page.locator('.tv-proj').count(),1,'archived project hidden');
+  const need=async k=>Number(await page.locator('.tv-need.n-'+k+' b').textContent());
+  assert.equal(await need('review'),1);assert.equal(await need('mine'),3);assert.equal(await need('overdue'),1);assert.equal(await need('soon'),1);assert.equal(await need('notices'),1);
+  const tile=await txt('.tv-proj');
+  assert(/من 6 مهمة تمت/.test(tile)&&/33%/.test(tile),'tile summary: done of total + percent');
+  assert(await page.locator('.tv-proj .tv-bar i').count()>=3,'segmented bar');
+  assert(/المتبقي\s*4/.test(tile),'remaining count');assert(/شغّالة/.test(tile)&&/متأخرة/.test(tile)&&/لم تبدأ/.test(tile),'legend');
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1),true,'no horizontal overflow (home)');
+  // ---- صفحة المشروع ----
+  await page.click('.tv-proj');await page.waitForSelector('.tv-page');
+  assert.equal(await page.locator('.tv-group.g-late .tv-row').count(),1,'late group');assert.equal(await page.locator('.tv-group.g-active .tv-row').count(),1,'active group');assert.equal(await page.locator('.tv-group.g-todo .tv-row').count(),1,'todo group (roots only)');
+  assert.equal(await page.locator('details.tv-done').getAttribute('open'),null,'done section collapsed');assert(/1/.test(await txt('details.tv-done summary')));
+  assert(/☑ 0\/1/.test(await txt('[data-task-id="t1"]')),'checklist counter on row');
+  await page.click('[data-action="toggle-sub"][data-id="t1"]');assert.equal(await page.locator('.tv-kids .tv-row').count(),2,'subtasks expand under parent');
+  await page.click('[data-action="pf"][data-id="late"]');assert.equal(await page.locator('.tv-page .tv-row').count(),1,'filter chip narrows list');await page.click('[data-action="pf"][data-id="all"]');
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1),true,'no horizontal overflow (project)');
+  // ---- تفاصيل المهمة ----
+  await page.click('[data-task-id="t2"] .tv-row-main');await page.waitForSelector('.tv-detail');
+  const d=await txt('.tv-detail');assert(/رفع الشيت/.test(d)&&/المسؤول/.test(d)&&/موعد التسليم/.test(d)&&/عاجلة/.test(d),'detail facts');
+  assert(!/[٠-٩]/.test(d),'latin digits in detail');
+  assert.equal(await page.locator('.tv-detail [data-action="approve"]').count(),1,'review actions inside detail');
+  await page.click('.tv-detail [data-action="approve"]');await page.waitForSelector('[data-form="note"]');await page.click('[data-form="note"] button[type=submit]');
+  await page.waitForFunction(()=>calls.some(c=>c[0]==='review'&&c[1]==='t2'&&c[2]===true));
+  // ---- إشعار يفتح المهمة في مكانها ----
+  await page.click('[data-action="notifications"]');await page.click('[data-action="read-notice"]');await page.waitForSelector('.tv-detail');
+  assert(/مهمة فرعية تانية/.test(await txt('.tv-d-title')),'notice opens the task detail');assert.equal(await page.locator('.tv-crumb .tv-link').count(),1,'crumb links to parent task');
+  await page.keyboard.press('Escape');await page.waitForSelector('.tv-page');
+  // ---- تابات المنجزة وكل المهام وعدادات الشريط ----
+  await page.click('[data-action="tab"][data-id="done"]');await page.waitForSelector('.tv-group');assert(await page.locator('.tv-groups .tv-row').count()>=2,'done tab lists finished tasks');assert(/آخر 7 أيام|النهارده|أمس|الأسبوع/.test(await txt('.tv-groups')),'grouped by period');
+  await page.click('[data-action="tab"][data-id="projects"]');await page.waitForSelector('.tv-proj');
+  await page.click('.tv-need.n-overdue');await page.waitForSelector('.tv-row');assert.equal(await page.locator('.tv-row').count(),1,'overdue stat filters all-tasks tab');
+  await page.click('[data-action="tab"][data-id="team"]');assert(await page.locator('.tsk-week').count()===1,'team tab');
+  assert.deepEqual(errors,[],errors.join('|'));await page.close();
  }
- // 13: nothing at all
- // checklist + calendar
- {const cp=await browser.newPage({viewport:{width:1100,height:900}});const ce=[];cp.on('pageerror',e=>ce.push(e.message));
-  await cp.goto('http://localhost:'+port+'/');await cp.waitForSelector('.tsk-card');
-  assert(/\(0\/1\)/.test(await cp.locator('[data-action="checklist"][data-id="t1"]').textContent()),'checklist counter on card');
-  await cp.click('[data-action="checklist"][data-id="t1"]');await cp.waitForSelector('.tsk-checklist');
-  await cp.fill('.tsk-check-add input','بند ثاني');await cp.click('.tsk-check-add button');
-  await cp.waitForFunction(()=>document.querySelectorAll('.tsk-check-row').length===2);
-  await cp.check('[data-check-id="c1"]');
-  await cp.waitForFunction(()=>document.querySelector('.tsk-check-row.done'));
-  await cp.click('[data-action="check-remove"]:last-of-type');
-  await cp.waitForFunction(()=>document.querySelectorAll('.tsk-check-row').length===1);
-  await cp.click('.tsk-modal header button');
-  await cp.click('[data-action="view"][data-id="calendar"]');await cp.waitForSelector('.tsk-cal-grid');
-  assert(await cp.locator('.tsk-cal-chip').count()>=1,'calendar shows chips');
-  await cp.click('[data-action="cal-next"]');await cp.click('[data-action="cal-today"]');
-  await cp.click('.tsk-cal-chip >> nth=0');await cp.waitForSelector('.tsk-modal');
-  assert.deepEqual(ce,[],ce.join('|'));await cp.close();}
  const empty=await browser.newPage({viewport:{width:1000,height:800}});
- await empty.goto('http://localhost:'+port+'/?empty');await empty.waitForSelector('.tsk-empty-rich');
- assert(/مفيش مهام لسه/.test(await empty.locator('.tsk-empty-rich').last().textContent()),'friendly empty state');
- console.log('PASS: smart sort, due notes, search/filters, collapsible subtasks, project progress, board view, note modals (no native prompt), approve confirm, comments with links, notification focus, archive, team table, empty states. Mocked database only.');
+ await empty.goto('http://localhost:'+port+'/?empty');await empty.waitForSelector('.tv-empty');
+ assert(/مفيش مشاريع لسه/.test(await empty.locator('.tv-empty').first().textContent()),'friendly empty state');
+ console.log('PASS: projects-first home with needs strip, project page with grouped rows/sub-tasks/filters, clean task detail with actions, notice opens task in place, done/all/team tabs, desktop and mobile. Mocked database only.');
 }finally{await browser.close();server.close();}
 })().catch(e=>{console.error(e);process.exit(1);});
