@@ -113,6 +113,45 @@ const central='00000000-0000-4000-8000-000000000001';
  assert.equal(medsnap.lots.find(l=>l.item_id===med).unit_cost,null,'cost hidden from receiver');
  // Deactivated accounts lose all scoped RPC rights even while assigned.
  await owner('update admins set active=false where id=$1',[id(2)]);await as(2);await fails('inventory_workspace_snapshot',[nursing],/سجّل الدخول/);assert.equal(await call('inventory_my_access'),false);
+
+ // Staff requests share the existing request/ledger without workspace access.
+ const supplySQL=fs.readFileSync(path.join(root,'supabase/migrations/202610160005_inventory_staff_supplies.sql'),'utf8');
+ await owner('select 1');await db.exec(supplySQL);await db.exec(supplySQL);
+ await owner('insert into admins(id,role,name) values($1,$2,$3)',[id(7),'reception','Reception']);
+ await owner('insert into admins(id,role,name) values($1,$2,$3)',[id(8),'nursing','Second nurse']);
+ await as(1);await call('inventory_supply_set_permissions',[id(6),[central]]);await call('inventory_supply_set_permissions',[id(7),[central]]);
+ await as(6);assert.equal(await call('inventory_my_access'),false);assert.equal(await call('inventory_supply_my_access'),true);
+ await fails('inventory_workspace_snapshot',[],/لم تُحدد/);
+ await fails('inventory_create_request',['issue','محاولة قديمة','',[{item_id:item,quantity:1}]],/Not allowed/);
+ await fails('inventory_supply_set_permissions',[id(8),[central]],/للسوبر/);
+ async function noRows(sql,args=[]){try{assert.equal((await db.query(sql,args)).rows.length,0);}catch(e){if(e.code!=='42501')throw e;}}
+ await noRows('select * from inventory_items');
+ let ss=await call('inventory_supply_snapshot');assert.deepEqual(Object.keys(ss.items[0]).sort(),['id','name','unit']);assert(!('balances' in ss));assert.equal(ss.requests.length,0);
+ const beforeSupply=Number((await owner('select inventory_location_balance($1,$2) n',[central,item]))[0].n);
+ await as(6);const token=id(600),rq=await call('inventory_supply_create',[central,[{item_id:item,quantity:2}],'مستلزمات تمريض',token]);
+ assert.equal(await call('inventory_supply_create',[central,[{item_id:item,quantity:2}],'مستلزمات تمريض',token]),rq,'duplicate send returns same request');
+ assert.equal(Number((await owner('select inventory_location_balance($1,$2) n',[central,item]))[0].n),beforeSupply,'request does not deduct');
+ await as(6);await fails('inventory_supply_create',[nursing,[{item_id:item,quantity:1}],'فرع آخر',id(601)],/غير مسموح/);
+ await fails('inventory_supply_process',[rq,'dispatch',''],/غير مسموح/);
+ await as(7);ss=await call('inventory_supply_snapshot');assert.equal(ss.requests.length,0,'another permitted requester cannot see colleague requests');
+ await noRows('select * from inventory_requests where id=$1',[rq]);await noRows('select * from inventory_request_lines where request_id=$1',[rq]);
+ await fails('inventory_supply_confirm',[rq],/غير مسموح/);
+ await as(8);await fails('inventory_supply_snapshot',[],/لم تُفعّل/);
+ await as(3);await fails('inventory_review_request',[rq,true,''],/شاشة طلبات/);await fails('inventory_fulfill_issue',[rq,[{item_id:item,quantity:2}],''],/شاشة طلبات/);
+ await call('inventory_supply_process',[rq,'dispatch','']);await call('inventory_supply_process',[rq,'dispatch','']);
+ assert.equal(Number((await owner('select inventory_location_balance($1,$2) n',[central,item]))[0].n),beforeSupply-2,'dispatch deducted exactly once');
+ await as(7);await fails('inventory_supply_confirm',[rq],/غير مسموح/);
+ await as(6);await call('inventory_supply_confirm',[rq]);await call('inventory_supply_confirm',[rq]);ss=await call('inventory_supply_snapshot');assert(ss.requests[0].supply_received_at);assert.equal(ss.requests[0].events.length,3,'append-only creation dispatch receipt events');
+ const rejected=await call('inventory_supply_create',[central,[{item_id:item,quantity:1}],'طلب مرفوض',id(602)]);
+ const tooMuch=await call('inventory_supply_create',[central,[{item_id:item,quantity:100000}],'كمية كبيرة',id(603)]);
+ await as(3);await fails('inventory_supply_process',[rejected,'reject',''],/سبب/);await call('inventory_supply_process',[rejected,'reject','الطلب غير مناسب']);
+ await fails('inventory_supply_process',[tooMuch,'dispatch',''],/لا يكفي/);
+ assert.equal(Number((await owner('select inventory_location_balance($1,$2) n',[central,item]))[0].n),beforeSupply-2,'failed dispatch is atomic');
+ await as(1);await call('inventory_supply_set_permissions',[id(6),[]]);await as(6);assert.equal(await call('inventory_supply_my_access'),true,'history retained after revocation');
+ await fails('inventory_supply_create',[central,[{item_id:item,quantity:1}],'بعد الإلغاء',id(604)],/غير مسموح/);
+ await owner('update admins set active=false where id=$1',[id(6)]);await as(6);await fails('inventory_supply_snapshot',[],/لم تُفعّل/);
+ console.log('PASS staff supplies SQL: per-account grants, no prices/balances, cross-user RLS, scoped dispatch, idempotency, receipt ownership, atomic failure, revocation and inactive account');
  console.log('PASS inventory SQL: isolated balances, draft imports, duplicate prevention, two distinct approvals, FEFO dispatch, receipt once, scoped consumption, blind draft counts, post-count movement, monthly scheduler and RLS');
  await db.close();
 })().catch(e=>{console.error(e);process.exit(1);});
+

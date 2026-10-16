@@ -51,3 +51,7 @@
 @media(max-width:700px){.inv-scroll-hint{display:block}.inv-card{padding:12px}.inv-form{grid-template-columns:minmax(0,1fr)}.inv-form label,.inv-filters label{min-width:0}.inv-shell h2{font-size:19px;overflow-wrap:anywhere}.inv-card p{overflow-wrap:anywhere}}
 
 .inv-shell table.inv-table-compact{min-width:0;table-layout:fixed}.inv-table-compact td{overflow-wrap:anywhere}
+
+
+.inv-supply-list{display:grid;gap:12px;margin-top:14px;min-width:0}.inv-supply-request{border:1px solid #dfe4ea;border-radius:12px;padding:14px;min-width:0;overflow-wrap:anywhere}.inv-supply-request details{margin-top:12px}.inv-supply-request summary{cursor:pointer;color:#14399c}.inv-supply-request p{line-height:1.7}.inv-supply-line{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) auto;gap:8px;align-items:end;margin-bottom:12px}.inv-supply-line label{display:grid;gap:5px;min-width:0}.inv-subnav .btn[aria-pressed="true"]{background:#eaf0ff;border-color:#14399c;font-weight:700}
+@media(max-width:640px){.inv-supply-line{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.inv-supply-line label:first-child{grid-column:1/-1}.inv-supply-request{padding:10px}.inv-supply-request .inv-tools button{white-space:normal}}

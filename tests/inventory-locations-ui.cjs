@@ -27,7 +27,7 @@ window.SSMPDDb={taskPeople:function(){throw Error('inventory must not depend on 
    assert.equal(await page.locator('[data-group]').count(),5,'exactly five primary tabs');
    const beforeNav=await page.evaluate(()=>calls.length);
    await page.click('[data-group="stock"]');assert.equal(await page.locator('#r [data-inv-table]').count(),0,'group initially shows buttons only');assert.equal(await page.locator('.inv-subnav [data-view]').count(),2);assert.equal(await page.locator('[data-view="transfers"]').count(),0,'unrelated submenus hidden');
-   await page.click('[data-group="operations"]');assert.equal(await page.locator('.inv-subnav [data-view]').count(),4);assert.equal(await page.locator('#r [data-inv-table]').count(),0);assert.equal(await page.evaluate(()=>calls.length),beforeNav,'group navigation is local');
+   await page.click('[data-group="operations"]');assert.equal(await page.locator('.inv-subnav [data-view]').count(),5);assert.equal(await page.locator('#r [data-inv-table]').count(),0);assert.equal(await page.evaluate(()=>calls.length),beforeNav,'group navigation is local');
    if(process.env.INVENTORY_QA_SHOTS)await page.screenshot({path:path.join(process.env.INVENTORY_QA_SHOTS,'inventory-groups-'+width+'.png')});
 
    async function fits(label){const size=await page.evaluate(()=>({screen:innerWidth,doc:document.documentElement.scrollWidth}));assert(size.doc<=size.screen+1,label+' must not widen document: '+JSON.stringify(size));}
@@ -65,4 +65,5 @@ window.SSMPDDb={taskPeople:function(){throw Error('inventory must not depend on 
   console.log('PASS inventory UI at 1280/390/360: bounded table scrolling, location switching, transfer request, individual entry, Arabic zero, draft counts, branch copy and Excel-column parser; RPCs mocked');
  }finally{await browser.close();server.close();}
 })().catch(e=>{console.error(e);process.exit(1);});
+
 

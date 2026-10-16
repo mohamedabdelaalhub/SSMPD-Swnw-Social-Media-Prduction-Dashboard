@@ -105,6 +105,7 @@
           '<td>' + (a.user_id ? '<span class="status-pill approved">مفعّل</span>' : '<span class="status-pill draft">بانتظار إنشاء الحساب</span>') + '</td>' +
           '<td>' +
           ((a.role==='accountant'||a.role==='financial_manager'||extraRoles.indexOf('accountant')!==-1||extraRoles.indexOf('financial_manager')!==-1)?'<button class="btn ghost sm" data-finance-permissions="'+a.id+'">صلاحيات الأقسام</button> ':'') +
+          '<button class="btn ghost sm" data-supply-permissions="'+a.id+'">طلب المستلزمات</button> '+
           '<button class="btn ghost sm" data-toggle="' + a.id + '" ' + (lastSuper ? "disabled" : "") + '>' + (a.active ? "إيقاف" : "تفعيل") + '</button> ' +
           '<button class="btn ghost sm" data-set-pass="' + a.id + '" ' + (a.user_id ? "" : "disabled") + "> <!--ssmpd-i18n:%D8%AA%D8%BA%D9%8A%D9%8A%D8%B1%20%D9%83%D9%84%D9%85%D8%A9%20%D8%A7%D9%84%D8%B3%D8%B1-->تغيير كلمة السر</button> " +
           '<button class="btn danger sm" data-del="' + a.id + '" ' + (lastSuper || a.id === myId ? "disabled" : "") + "> <!--ssmpd-i18n:%D8%AD%D8%B0%D9%81-->حذف</button>" +
@@ -152,6 +153,7 @@
       if(window.SSMPDDesignBudget)window.SSMPDDesignBudget.mount(container.querySelector('#admin-design-budget'));
       renderBrandLogos(container.querySelector('#brand-logo-settings'));
 
+      container.querySelectorAll('[data-supply-permissions]').forEach(function(b){b.onclick=function(){var a=admins.find(function(x){return x.id===b.dataset.supplyPermissions;});if(a)window.SSMPDSupplyRequests.openPermissions(a);};});
       container.querySelectorAll('[data-finance-permissions]').forEach(function(button){button.onclick=function(){var admin=admins.find(function(a){return a.id===button.dataset.financePermissions;});if(admin)window.SSMPDFinancePermissions.open(admin);};});
       document.getElementById("add-admin-btn").onclick = function () {
         var email = document.getElementById("new-email").value.trim();
@@ -510,6 +512,7 @@
 
   window.SSMPDRenderAdmin = { render: render };
 })();
+
 
 
 

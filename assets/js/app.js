@@ -174,7 +174,7 @@
     if (tabs.indexOf("patients") !== -1) ddItems += "<button class=\"ud-item\" data-goto=\"patients\"> <!--ssmpd-i18n:%D8%A3%D8%B1%D8%B4%D9%8A%D9%81%20%D8%A7%D9%84%D9%85%D8%B1%D8%B6%D9%89-->أرشيف المرضى</button>";
     if (tabs.indexOf("leads") !== -1) ddItems += "<button class=\"ud-item\" data-goto=\"leads\"> <!--ssmpd-i18n:%D8%A5%D8%AF%D8%A7%D8%B1%D8%A9%20%D8%A7%D9%84%D9%84%D9%8A%D8%AF%D8%B2%20%D9%88%D8%A7%D9%84%D8%AA%D9%88%D8%A7%D8%B5%D9%84-->إدارة الليدز والتواصل</button>";
     if (tabs.indexOf("tasks") !== -1) ddItems += '<button class="ud-item" data-goto="tasks">المهام</button>';
-    if (tabs.indexOf("inventory") !== -1) ddItems += '<button class="ud-item" data-goto="inventory">المخزن والجرد</button>';
+    if (tabs.indexOf("inventory") !== -1) ddItems += '<button class="ud-item" data-goto="inventory">'+(admin.inventory_assigned===false&&admin.inventory_supply_access?'طلب مستلزمات':'المخزن والجرد')+'</button>';
     if (tabs.indexOf("contracting_entities") !== -1) ddItems += "<button class=\"ud-item\" data-goto=\"contracting_entities\"> <!--ssmpd-i18n:%D8%AC%D9%87%D8%A7%D8%AA%20%D8%A7%D9%84%D8%AA%D8%B9%D8%A7%D9%82%D8%AF-->جهات التعاقد</button>";
     if (tabs.indexOf("clinic_info") !== -1) ddItems += '<button class="ud-item" data-goto="clinic_info">' + window.SSMPDI18n.textHtml(TAB_LABELS.clinic_info) + "</button>";
     if (tabs.indexOf("accounting") !== -1) ddItems += "<button class=\"ud-item\" data-goto=\"accounting\"> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AD%D8%B3%D8%A7%D8%A8%D8%A7%D8%AA-->الحسابات</button>";
@@ -729,7 +729,7 @@
     // اسم الشعار بيتغيّر حسب السكشن المفتوح دلوقتي: اسم المركز + اسم السكشن
     var brandName = document.getElementById("brand-section-name");
     if (brandName) {
-      brandName.innerHTML = window.SSMPDI18n.textHtml("مركز عيادات سونو التخصصية") + (TAB_LABELS[tab] ? '<span class="brand-sep">|</span><span class="brand-section">' + window.SSMPDI18n.textHtml(TAB_LABELS[tab]) + "</span>" : "");
+      brandName.innerHTML = window.SSMPDI18n.textHtml("مركز عيادات سونو التخصصية") + (TAB_LABELS[tab] ? '<span class="brand-sep">|</span><span class="brand-section">' + window.SSMPDI18n.textHtml(tab==='inventory'&&window.SSMPDAuth.currentAdmin.inventory_assigned===false&&window.SSMPDAuth.currentAdmin.inventory_supply_access?'طلب مستلزمات':TAB_LABELS[tab]) + "</span>" : "");
     }
 
     // فصل بصري: تابات السويت الرئيسي (SSMPD) بتتخفي تماماً لما نكون جوه موديول
@@ -935,6 +935,7 @@
     });
   });
 })();
+
 
 
 
