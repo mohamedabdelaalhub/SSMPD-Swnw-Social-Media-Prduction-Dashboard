@@ -52,6 +52,9 @@
         row.roles = [row.role];
         row.module_permissions=[];
         return row;
+      }).then(function(result){
+        if(typeof client.rpc!=='function')return result;
+        return Promise.resolve().then(function(){return client.rpc('inventory_my_access');}).then(function(r){result.inventory_assigned=!!r&&!r.error&&r.data===true;return result;},function(){result.inventory_assigned=false;return result;});
       });
     },
 
@@ -109,4 +112,5 @@
 
   window.SSMPDAuth = Auth;
 })();
+
 

@@ -11,3 +11,20 @@
 .inv-check{display:flex!important;align-items:center;gap:8px;grid-column:1/-1}.inv-check input{min-width:auto}
 .inv-receive{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;border-bottom:1px solid #e4e8ed;padding:10px 0}.inv-receive>b{grid-column:1/-1}.inv-receive label{display:grid;gap:4px;font-size:12px}
 @media(max-width:700px){.inv-receive{grid-template-columns:1fr 1fr}}
+
+/* Locations, import review and two-stage transfer approval. */
+.inv-location-bar{display:flex;align-items:center;gap:16px;flex-wrap:wrap;background:#fff;border:1px solid #ccd7ea;border-radius:12px;padding:12px 16px;margin-bottom:16px}
+.inv-location-bar label{display:grid;gap:6px;min-width:240px;font-weight:600}
+.inv-location-bar select{padding:10px;border:1px solid #b7c6dc;border-radius:8px;max-width:100%;background:#fff}
+.inv-location-bar span{font-size:13px;color:#536277}
+.inv-import-rows{display:grid;gap:12px}
+.inv-import-row{padding:12px;border:1px solid #d6dfee;border-radius:10px;background:#f8faff}
+.inv-import-row summary{cursor:pointer;font-weight:600;line-height:1.7}
+.inv-modal .btn-link{border:0;background:transparent;color:#14399c;text-decoration:underline;cursor:pointer;font:inherit;padding:5px}
+.inv-import-row .inv-form{margin-top:8px;grid-template-columns:repeat(3,minmax(0,1fr))}
+.inv-shell td .btn{margin:3px;padding:7px 10px;font-size:13px}
+.inv-modal .inv-modal-actions{position:sticky;bottom:-20px;background:#fff;padding:12px 0;border-top:1px solid #d6dfee;z-index:2;flex-wrap:wrap}
+.inv-modal input,.inv-modal select{max-width:100%;min-width:0}
+.inv-modal [data-w-transfer-lines]{display:grid;gap:8px}
+.inv-table-wrap{overflow-x:auto;max-width:100%}
+@media(max-width:640px){.inv-location-bar{display:grid;gap:8px;padding:10px}.inv-location-bar label{min-width:0}.inv-import-row .inv-form{grid-template-columns:1fr}.inv-modal .inv-line{display:grid;grid-template-columns:1fr}.inv-card-head>div{display:flex;flex-wrap:wrap;gap:6px}.inv-card-head .btn{font-size:13px;padding:8px 10px}.inv-nav{flex-wrap:nowrap;overflow-x:auto;white-space:nowrap}.inv-modal-actions .btn{flex:1;white-space:nowrap}.inv-shell{min-width:0}}

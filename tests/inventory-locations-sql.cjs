@@ -1,0 +1,108 @@
+const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
+const {PGlite}=require('@electric-sql/pglite');
+const root=path.resolve(__dirname,'..');
+const id=n=>'10000000-0000-4000-8000-'+String(n).padStart(12,'0');
+const central='00000000-0000-4000-8000-000000000001';
+(async()=>{
+ const db=new PGlite();
+ await db.exec(`create role anon;create role authenticated;create schema auth;
+ create table admins(id uuid primary key,name text,email text,role text,active boolean default true);
+ create function my_admin_id() returns uuid language sql stable as $$select nullif(current_setting('test.admin',true),'')::uuid$$;
+ create function has_role(r text) returns boolean language sql stable as $$select exists(select 1 from admins where id=my_admin_id() and role=r and active)$$;
+ create table task_projects(id uuid primary key default gen_random_uuid(),title text,description text,created_by uuid,manager_id uuid,archived_at timestamptz);
+ create table task_project_members(project_id uuid,admin_id uuid,role_name text,unique(project_id,admin_id));
+ create table tasks(id uuid primary key default gen_random_uuid(),project_id uuid,title text,description text,expected_output text,assignee_id uuid,created_by uuid,status text,priority text,due_at timestamptz,completed_at timestamptz,updated_at timestamptz);
+ create table task_updates(task_id uuid,author_id uuid,body text,status_from text,status_to text);
+ create table task_notifications(recipient_id uuid,task_id uuid,kind text,message text);
+ grant usage on schema public to authenticated;grant select on admins to authenticated;
+ `);
+ let base=fs.readFileSync(path.join(root,'supabase/migrations/202610130003_inventory_module.sql'),'utf8').replace('create extension if not exists pgcrypto;','');
+ base=base.split('-- التنبيهات والجرد الدوري يعملان تلقائياً')[0];
+ await db.exec(base);
+ await db.exec(fs.readFileSync(path.join(root,'supabase/migrations/202610160001_inventory_lots_suppliers.sql'),'utf8'));
+ const sql=fs.readFileSync(path.join(root,'supabase/migrations/202610160003_inventory_locations_transfers.sql'),'utf8');
+ await db.exec(sql);
+ await db.exec(sql); // activation rerun must preserve data and function grants
+ for(const [n,role,name] of [[1,'super_admin','Admin'],[2,'nursing','Senior'],[3,'accountant','Keeper'],[4,'general_manager','Manager'],[5,'nursing','Receiver'],[6,'nursing','Other']])await db.query('insert into admins(id,role,name) values($1,$2,$3)',[id(n),role,name]);
+ async function as(n){await db.exec('reset role');await db.query("select set_config('test.admin',$1,false)",[id(n)]);await db.exec('set role authenticated');}
+ async function call(fn,args=[]){return (await db.query(`select public.${fn}(${args.map((_,i)=>'$'+(i+1)).join(',')}) v`,args)).rows[0].v;}
+ async function fails(fn,args,msg){await assert.rejects(()=>call(fn,args),msg);}
+ async function owner(sql,args=[]){await db.exec('reset role');return (await db.query(sql,args)).rows;}
+ await as(1);
+ let snap=await call('inventory_workspace_snapshot');assert.equal(snap.locations.length,3);const nursing=snap.locations.find(l=>l.name==='التمريض').id;
+ await call('inventory_assign_location',[central,id(3),'storekeeper',true]);
+ await call('inventory_assign_location',[nursing,id(2),'senior_nursing',true]);
+ await call('inventory_assign_location',[nursing,id(5),'receiver',true]);
+ await call('inventory_assign_location',[nursing,id(2),'counter',true]);
+ const branch=await call('inventory_save_structure',['فرع جديد',null,'00000000-0000-4000-8000-000000000002',true]);
+ snap=await call('inventory_workspace_snapshot');assert.equal(snap.locations.filter(l=>l.branch_id===branch).length,2);
+ const item=await call('inventory_save_item',[null,'T1','كانيولا صفراء','مستلزمات','قطعة',10,5,20,12]);
+ const asof='2026-10-15T12:00:00Z';
+ const row={item_id:item,name:'كانيولا صفراء',quantity:100,unit:'قطعة',factor:1,unit_cost:10,create_new:false};
+ const batch=await call('inventory_stage_import',[central,'opening',asof,'file.xlsx',[row]]);
+ assert.equal((await call('inventory_workspace_snapshot')).items[0].on_hand,0,'staging does not mutate stock');
+ await fails('inventory_stage_import',[central,'opening',asof,'renamed.xlsx',[row]],/سبق/);
+ await call('inventory_approve_import',[batch,true]);
+ await fails('inventory_approve_import',[batch,true],/سبق/);
+ assert.equal((await call('inventory_workspace_snapshot')).items[0].on_hand,100);
+ await as(2);
+ await fails('inventory_workspace_snapshot',[central],/لم تُحدد/);
+ await fails('inventory_assign_location',[central,id(2),'storekeeper',true],/غير مسموح/);
+ await fails('inventory_allocate_at',[central,item,1],/permission denied/);
+ const transfer=await call('inventory_create_transfer',[central,nursing,id(5),[{item_id:item,quantity:20}],'للتمريض']);
+ await fails('inventory_dispatch_transfer',[transfer],/الموافقتين/);
+ await fails('inventory_review_transfer',[transfer,'storekeeper',true,''],/مسؤول/);
+ await as(3);await call('inventory_review_transfer',[transfer,'storekeeper',true,'']);
+ await fails('inventory_dispatch_transfer',[transfer],/الموافقتين/);
+ await as(4);await call('inventory_review_transfer',[transfer,'manager',true,'']);
+ await as(3);await call('inventory_dispatch_transfer',[transfer]);
+ await fails('inventory_dispatch_transfer',[transfer],/الموافقتين/);
+ snap=await call('inventory_workspace_snapshot',[central]);assert.equal(snap.items[0].on_hand,80);let allocations=snap.transfers[0].lines[0].allocations;assert.equal(allocations[0].unit_cost,10);
+ await as(5);snap=await call('inventory_workspace_snapshot',[nursing]);assert.equal(snap.items[0].on_hand,0,'not credited before receipt');
+ await fails('inventory_receive_transfer',[transfer,[],''],/كل كميات/);
+ await call('inventory_receive_transfer',[transfer,allocations.map(a=>({allocation_id:a.id,quantity:a.quantity})), '']);
+ snap=await call('inventory_workspace_snapshot',[nursing]);assert.equal(snap.items[0].on_hand,20);
+ await fails('inventory_receive_transfer',[transfer,allocations.map(a=>({allocation_id:a.id,quantity:a.quantity})), ''],/غير متاح/);
+ await call('inventory_consume_at',[nursing,item,3,'issue','استخدام']);
+ await fails('inventory_consume_at',[central,item,1,'issue',''],/غير مسموح/);
+ await fails('inventory_consume_at',[nursing,item,30,'issue',''],/لا يكفي/);
+ await as(1);const count=await call('inventory_open_count_at',[nursing,'جرد اختبار',id(2),'2026-01-01T00:00:00Z','2027-01-01T00:00:00Z','']);
+ await as(2);snap=await call('inventory_workspace_snapshot',[nursing]);let line=snap.counts.find(c=>c.id===count).lines[0];assert.equal(line.system_quantity,null,'blind count');
+ await call('inventory_save_count_draft',[count,[{line_id:line.id,counted_quantity:null}],false]);
+ await fails('inventory_save_count_draft',[count,[{line_id:line.id,counted_quantity:null}],true],/الخانة الفارغة/);
+ await call('inventory_save_count_draft',[count,[{line_id:line.id,counted_quantity:15}],false]);
+ await as(5);await call('inventory_consume_at',[nursing,item,2,'issue','after count']);
+ await as(2);await call('inventory_save_count_draft',[count,[{line_id:line.id,counted_quantity:15}],true]);
+ await as(4);await call('inventory_approve_count',[count]);snap=await call('inventory_workspace_snapshot',[nursing]);assert.equal(snap.items[0].on_hand,13,'post-count movement preserved, delta applied once');
+ await fails('inventory_approve_count',[count],/اعتماد الجرد/);
+ await as(6);await fails('inventory_workspace_snapshot',[nursing],/لم تُحدد/);assert.equal((await db.query('select * from inventory_transfers')).rows.length,0,'RLS no cross-location transfer rows');
+ await as(1);await call('inventory_assign_location',[central,id(4),'storekeeper',true]);
+ await as(2);const t2=await call('inventory_create_transfer',[central,nursing,id(5),[{item_id:item,quantity:5}],'']);
+ await as(4);await call('inventory_review_transfer',[t2,'manager',true,'']);await fails('inventory_review_transfer',[t2,'storekeeper',true,''],/شخصين/);
+ // Monthly scheduler runs as database owner, reuses same cron and creates one count per location.
+ await as(1);await call('inventory_monthly_schedule',[nursing,id(2),'2026-01-01T00:00:00Z',7]);
+ await owner('select inventory_generate_due_counts()');
+ let schedules=await owner('select * from inventory_count_schedules where calendar_monthly');assert(new Date(schedules[0].next_due_at)>new Date());
+ const before=(await owner('select count(*) n from inventory_count_sessions'))[0].n;await owner('select inventory_generate_due_counts()');assert.equal((await owner('select count(*) n from inventory_count_sessions'))[0].n,before);
+ // Two lots in one opening import, FEFO and expired-stock exclusion.
+ await as(1);
+ const med=await call('inventory_save_item',[null,'L1','دواء اختبار','أدوية','أمبول',10,0,0,20]);
+ await call('inventory_set_track_lots',[med,true]);
+ const lotrow={item_id:med,name:'دواء اختبار',quantity:5,unit:'أمبول',factor:1,unit_cost:7,lot_number:'soon',expiry_date:'2090-01-01'};
+ let blank=await call('inventory_stage_import',[central,'opening',asof,'needs-cost.xlsx',[{...lotrow,unit_cost:null}]]);
+ await fails('inventory_approve_import',[blank,true],/تكلفة/);
+ const withcost=await call('inventory_revise_import',[blank,central,'opening',asof,'two-lots.xlsx',[lotrow,{...lotrow,quantity:9,lot_number:'later',expiry_date:'2099-01-01'},{...lotrow,quantity:2,lot_number:'expired',expiry_date:'2020-01-01'}]]);
+ await call('inventory_approve_import',[withcost,true]);
+ let medsnap=await call('inventory_workspace_snapshot',[central]);assert.equal(medsnap.items.find(i=>i.id===med).on_hand,16);assert.equal(medsnap.items.find(i=>i.id===med).available,14);
+ await as(2);const lt=await call('inventory_create_transfer',[central,nursing,id(5),[{item_id:med,quantity:6}],'']);
+ await as(3);await call('inventory_review_transfer',[lt,'storekeeper',true,'']);await as(4);await call('inventory_review_transfer',[lt,'manager',true,'']);await as(3);await call('inventory_dispatch_transfer',[lt]);
+ medsnap=await call('inventory_workspace_snapshot',[central]);let la=medsnap.transfers.find(t=>t.id===lt).lines[0].allocations;assert.equal(la.find(a=>a.lot_number==='soon').quantity,5);assert.equal(la.find(a=>a.lot_number==='later').quantity,1);assert(!la.some(a=>a.lot_number==='expired'));
+ await as(5);await fails('inventory_receive_transfer',[lt,la.map(a=>({allocation_id:a.id,quantity:a.quantity===5?4:a.quantity})), ''],/ملاحظة/);
+ await call('inventory_receive_transfer',[lt,la.map(a=>({allocation_id:a.id,quantity:a.quantity===5?4:a.quantity})), 'ناقص أمبول']);
+ medsnap=await call('inventory_workspace_snapshot',[nursing]);assert.equal(medsnap.transfers.find(t=>t.id===lt).status,'discrepancy');assert.equal(medsnap.transit.find(t=>t.item_id===med).quantity,1);
+ assert.equal(medsnap.lots.find(l=>l.item_id===med).unit_cost,null,'cost hidden from receiver');
+ // Deactivated accounts lose all scoped RPC rights even while assigned.
+ await owner('update admins set active=false where id=$1',[id(2)]);await as(2);await fails('inventory_workspace_snapshot',[nursing],/سجّل الدخول/);assert.equal(await call('inventory_my_access'),false);
+ console.log('PASS inventory SQL: isolated balances, draft imports, duplicate prevention, two distinct approvals, FEFO dispatch, receipt once, scoped consumption, blind draft counts, post-count movement, monthly scheduler and RLS');
+ await db.close();
+})().catch(e=>{console.error(e);process.exit(1);});
