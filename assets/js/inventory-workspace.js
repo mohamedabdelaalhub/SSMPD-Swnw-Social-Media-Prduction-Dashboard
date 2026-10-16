@@ -5,16 +5,17 @@
  var labels={pending:'بانتظار الموافقتين',approved:'جاهز للصرف',rejected:'مرفوض',in_transit:'قيد النقل',received:'تم الاستلام',discrepancy:'فرق استلام',open:'مفتوح',submitted:'بانتظار الاعتماد'};
  var responsibilities={senior_nursing:'سينيور التمريض',storekeeper:'مسؤول المخزن',manager:'المدير',receiver:'مستلم',counter:'مسؤول جرد'};
  function num(v){var s=String(v==null?'':v).trim().replace(/[٠-٩]/g,function(c){return '٠١٢٣٤٥٦٧٨٩'.indexOf(c);}).replace(/[۰-۹]/g,function(c){return '۰۱۲۳۴۵۶۷۸۹'.indexOf(c);}).replace(/٫/g,'.').replace(/[٬,]/g,'');return s===''?null:Number(s);}
+ function excelDate(v){if(v==null||v==='')return '';if(typeof v==='number'&&v>0&&v<2958466)return new Date(Date.UTC(1899,11,30)+Math.round(v)*86400000).toISOString().slice(0,10);var s=String(v).trim(),m=s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);return m?m[3]+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0'):s;}
  function norm(v){return String(v||'').trim().replace(/\s+/g,' ').toLowerCase();}
  function parseRows(matrix){
   if(!matrix.length)throw Error('الملف فارغ');
   var head=matrix[0].map(norm),find=function(names){return head.findIndex(function(h){return names.indexOf(h)!==-1;});};
-  var ni=find(['الصنف','اسم الصنف','name']),qi=find(['العدد','الكمية','quantity']),ui=head.findIndex(function(h){return /علبة|وحدة|unit/.test(h);});
+  var ni=find(['الصنف','اسم الصنف','name']),qi=find(['العدد','الكمية','quantity']),ui=head.findIndex(function(h){return ['الوحدة','وحدة الصرف','وحدة','unit'].indexOf(h)>=0||/علبة/.test(h);});
   if(ni<0||qi<0||ui<0)throw Error('الملف يحتاج أعمدة الصنف والعدد والوحدة');
   var ci=find(['تكلفة الوحدة','unit_cost']),li=find(['رقم التشغيلة','lot_number']),ei=find(['الصلاحية','تاريخ الصلاحية','expiry_date']);
   return matrix.slice(1).filter(function(r){return r.some(function(v){return String(v==null?'':v).trim()!=='';});}).map(function(r,k){
    var unit=String(r[ui]||'').trim(),match=unit.match(/\((\d+)\s*في العلبة\)/),factor=match?Number(match[1]):1;
-   return {name:String(r[ni]||'').trim(),quantity:num(r[qi]),unit:match?'قطعة':unit,source_unit:unit,factor:factor,unit_cost:ci>=0?num(r[ci]):null,lot_number:li>=0?String(r[li]||''):'',expiry_date:ei>=0?String(r[ei]||''):'',source_row:k+2,create_new:false,item_id:''};
+   return {name:String(r[ni]||'').trim(),quantity:num(r[qi]),unit:match?'قطعة':unit,source_unit:unit,factor:factor,unit_cost:ci>=0?num(r[ci]):null,lot_number:li>=0?String(r[li]||''):'',expiry_date:ei>=0?excelDate(r[ei]):'',source_row:k+2,create_new:false,item_id:''};
   });
  }
  function opts(c,rows,value,label,chosen,blank){return (blank?'<option value="">'+c.esc(blank)+'</option>':'')+rows.map(function(r){return '<option value="'+c.esc(r[value])+'" '+(r[value]===chosen?'selected':'')+'>'+c.esc(typeof label==='function'?label(r):r[label])+'</option>';}).join('');}

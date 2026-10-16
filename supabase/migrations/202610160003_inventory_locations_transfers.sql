@@ -105,6 +105,13 @@ create or replace function public.inventory_my_access()
 returns boolean language sql stable security definer set search_path=public as $$
  select exists(select 1 from public.inventory_locations l where public.inventory_location_can(l.id,'view'));
 $$;
+create or replace function public.inventory_people()
+returns table(id uuid,name text) language plpgsql stable security definer set search_path=public as $$
+begin
+ if not public.inventory_my_access() then raise exception 'غير مسموح بعرض موظفي المخزن'; end if;
+ return query select a.id,a.name from public.admins a where a.active and
+ (public.inventory_is_manager() or a.id=public.my_admin_id() or exists(select 1 from public.inventory_location_staff s where s.admin_id=a.id and public.inventory_location_can(s.location_id,'view'))) order by a.name;
+end $$;
 create or replace function public.inventory_location_cost(p_location uuid,p_item uuid,p_lot uuid default null,p_all_lots boolean default true)
 returns numeric language sql stable security definer set search_path=public as $$
  select greatest(0,coalesce(sum(quantity_delta*unit_cost)/nullif(sum(quantity_delta),0),0)) from public.inventory_movements where location_id=p_location and item_id=p_item and (p_all_lots or lot_id is not distinct from p_lot);
@@ -634,7 +641,7 @@ returns jsonb language sql stable security definer set search_path=public as $$ 
 -- دوال المساعدة غير قابلة للاستدعاء كـRPC. منح دوال الواجهة فقط.
 do $$ declare r record; begin
  for r in select oid::regprocedure sig from pg_proc where pronamespace='public'::regnamespace and proname in
- ('inventory_my_access','inventory_location_can','inventory_location_balance','inventory_location_cost','inventory_transfer_can_view','inventory_allocate_at','inventory_save_structure','inventory_assign_location','inventory_save_catalog','inventory_create_transfer','inventory_review_transfer','inventory_dispatch_transfer','inventory_receive_transfer','inventory_stage_import','inventory_revise_import','inventory_approve_import','inventory_consume_at','inventory_open_count_at','inventory_prepare_count','inventory_save_count_draft','inventory_monthly_schedule','inventory_workspace_snapshot') loop
+ ('inventory_my_access','inventory_people','inventory_location_can','inventory_location_balance','inventory_location_cost','inventory_transfer_can_view','inventory_allocate_at','inventory_save_structure','inventory_assign_location','inventory_save_catalog','inventory_create_transfer','inventory_review_transfer','inventory_dispatch_transfer','inventory_receive_transfer','inventory_stage_import','inventory_revise_import','inventory_approve_import','inventory_consume_at','inventory_open_count_at','inventory_prepare_count','inventory_save_count_draft','inventory_monthly_schedule','inventory_workspace_snapshot') loop
   execute format('revoke all on function %s from public,anon,authenticated',r.sig);
   if r.sig::text !~ 'inventory_(allocate_at|location_balance|location_cost)' then execute format('grant execute on function %s to authenticated',r.sig); end if;
  end loop;

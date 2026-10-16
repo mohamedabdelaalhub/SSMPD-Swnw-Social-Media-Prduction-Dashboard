@@ -15,6 +15,7 @@
   }
   return window.SSMPDDb.client.rpc(name,args).then(function(r){if(r.error)throw r.error;return r.data;});
  }
+ function people(){if(!window.SSMPDInventoryWorkspace)return window.SSMPDDb.taskPeople();return rpc('inventory_people').catch(function(e){if(e.code==='PGRST202'||e.code==='42883')return window.SSMPDDb.taskPeople();throw e;});}
  function context(){return {state:state,rpc:rpc,esc:esc,fmt:fmt,date:date,modal:modal,refresh:refresh,fail:fail};}
  function snapshot(){
   if(!window.SSMPDInventoryWorkspace)return rpc('inventory_snapshot');
@@ -29,7 +30,7 @@
  function alertBox(msg){window.SSMPDToast&&window.SSMPDToast.error?window.SSMPDToast.error(msg):window.alert(msg);}
  function success(msg){window.SSMPDToast&&window.SSMPDToast.success?window.SSMPDToast.success(msg):null;}
  function fail(e){alertBox((e&&e.message)||'حدث خطأ');}
- function load(done){state.loading=true;Promise.all([snapshot(),window.SSMPDDb.taskPeople()]).then(function(r){state.data=r[0]||{};state.people=r[1]||[];state.loading=false;done();}).catch(function(e){state.loading=false;alertBox(e.message||'تعذر تحميل بيانات المخزن. تأكد من تشغيل كود SQL في Supabase.');if(rootNode)rootNode.innerHTML='<section class="inv-card"><h2>تعذر تحميل المخزن</h2><p>راجع تشغيل ملف إعداد المخزن في Supabase، ثم حدّث الصفحة.</p></section>';});}
+ function load(done){state.loading=true;Promise.all([snapshot(),people()]).then(function(r){state.data=r[0]||{};state.people=r[1]||[];state.loading=false;done();}).catch(function(e){state.loading=false;alertBox(e.message||'تعذر تحميل بيانات المخزن. تأكد من تشغيل كود SQL في Supabase.');if(rootNode)rootNode.innerHTML='<section class="inv-card"><h2>تعذر تحميل المخزن</h2><p>راجع تشغيل ملف إعداد المخزن في Supabase، ثم حدّث الصفحة.</p></section>';});}
  function items(){return state.data&&state.data.items||[];}
  function item(id){return items().find(function(x){return x.id===id;})||{};}
  function lots(){return state.data&&state.data.lots||[];}
