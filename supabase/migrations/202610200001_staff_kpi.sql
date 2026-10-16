@@ -11,9 +11,12 @@
 --   النقاط: الأعلى أفضل = قيمة/مستهدف (حد أقصى 100)، الأقل أفضل = مستهدف/قيمة؛ المؤشرات العددية بتتناسب مع طول الفترة (مستهدف لكل 30 يوم)؛
 --   مؤشر عينته أقل من min_sample ما بيتحسبش له score. الموظفين اللي مالهمش دور في kpi_targets مش بيظهروا.
 -- المصدر الفعلي للتعريفات: pg_get_functiondef('public.staff_kpis(timestamptz,timestamptz)'::regprocedure) وجداول kpi_defs / kpi_targets.
+<<<<<<< HEAD
 
 -- ===== ملخص شهري + تنبيهات (طُبّقت على القاعدة الحية بنفس التاريخ) =====
 -- جداول: staff_monthly_summaries (strength/improve/action + score + snapshot kpis + source claude|system) · staff_kpi_alerts (تنبيه لكل موظف/مؤشر/أسبوع، acknowledged_at) · kpi_defs.alert_below (افتراضي 40)
 -- دوال (postgres/service فقط): staff_kpis_admin(from,to) · staff_kpi_month_data(month) · staff_summary_save(...) · staff_summary_fallback(month) · staff_kpi_scan_alerts()
 -- cron: ssmpd-staff-kpi-alerts يوميًا 07:30 UTC · ssmpd-staff-summary-fallback يوم 3 من كل شهر 08:00 UTC
 -- personal_home_inbox(): اتضاف مصدر kpi (تنبيهات الأداء) للسوبر أدمن والمدير العام، والنوع kpi بيفتح تاب أداء الفريق.
+=======
+>>>>>>> origin/main
