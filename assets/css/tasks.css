@@ -236,3 +236,12 @@ button.tsk-chip-more{font:inherit;font-size:12px;cursor:pointer;background:#eaf1
 .tv-d-actions{display:grid;gap:10px;border-top:1px solid #E8ECF3;padding-top:14px}.tv-primary,.tv-more{display:flex;gap:8px;flex-wrap:wrap}
 .tv-empty{display:grid;justify-items:center;gap:6px;text-align:center;padding:44px 16px;background:#fff;border:1px dashed #D5DCE8;border-radius:20px;color:#6B7785}.tv-empty div{font-size:34px}.tv-empty h3{margin:0;color:#1B2733}.tv-empty p{margin:0;font-size:13px}
 @media(max-width:700px){.tv-head h1{font-size:23px}.tv-needs{display:flex;overflow-x:auto;gap:10px;scroll-snap-type:x proximity;padding-bottom:4px;margin-inline:-4px;padding-inline:4px}.tv-need{flex:0 0 auto;min-width:148px;scroll-snap-align:start}.tv-need b{font-size:22px}.tv-tabs{width:100%}.tv-tab{padding:9px 10px;flex:1;font-size:13px}.tv-tab b{margin-inline-start:2px;padding:1px 6px}.tv-grid{grid-template-columns:1fr}.tv-ph{flex-wrap:wrap}.tv-bigpct{text-align:right;width:100%}.tv-facts{grid-template-columns:1fr 1fr}.tv-tools{grid-template-columns:1fr}.tv-row-main{padding:12px 14px}}
+
+.tv-chip.new{background:#FDECEA;color:#D0402A;font-weight:700}
+.tv-newline{margin:2px 0 8px;font-size:12.5px;font-weight:700;color:#D0402A;background:#FDECEA;border-radius:10px;padding:5px 10px;width:fit-content}
+.tv-comments{display:grid;gap:8px}
+.tv-comment{display:flex;align-items:center;gap:12px;text-align:right;font:inherit;background:#fff;border:1px solid #E4E9F2;border-radius:14px;padding:12px 14px;cursor:pointer;transition:border-color .12s,transform .12s}
+.tv-comment:hover{border-color:#0F369D;transform:translateY(-1px)}
+.tv-comment.new{border-color:#F4C5BB;background:#FFFAF8}
+.tv-comment-ic{font-size:20px}.tv-comment-tx{display:grid;gap:2px;flex:1;min-width:0}.tv-comment-tx b{font-size:14.5px;color:#16212E;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.tv-comment-tx small{color:#687482;font-size:12px}
+.tv-comment .tv-new{font-style:normal;font-size:11px;font-weight:700;color:#fff;background:#D0402A;border-radius:99px;padding:2px 9px}

@@ -1335,7 +1335,10 @@
     // الملف نفسه بيترفع على Google Drive (الأرشيف/مرفقات المهام)، والقاعدة بتحفظ الرابط بس
     taskUploadAttachment: function (taskId, file, taskTitle) {
       return window.SSMPDDrive.uploadTaskFile(file, { taskId: taskId, title: taskTitle || "" }).then(function (res) {
-        return { name: file.name, url: res.fileUrl, file_id: res.fileId || "", size: file.size, mime: file.type || "" };
+        var fid = res.fileId || res.id || "";
+        var url = res.fileUrl || res.url || res.webViewLink || (fid ? "https://drive.google.com/file/d/" + fid + "/view" : "");
+        if (!/^https:\/\/(drive|docs)\.google\.com\//.test(url)) throw new Error("الملف اترفع لكن جوجل درايف ما رجّعش رابط صالح — جرّب مرة تانية أو بلّغ الإدارة (الجسر محتاج إعادة نشر).");
+        return { name: file.name, url: url, file_id: fid, size: file.size, mime: file.type || "" };
       });
     },
     taskListAttachments: function (taskId) {

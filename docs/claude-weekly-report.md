@@ -11,7 +11,8 @@ Reader: Mohamed (owner, non-technical, Egyptian Arabic). He wants to know in 2 m
 3. Partnerships / outreach / audience research evidence (done by staff): 
    `select t.title, t.status, a.name, u.body, u.created_at from task_updates u join tasks t on t.id=u.task_id left join admins a on a.id=u.author_id where t.project_id='1b618cc4-7e28-4d9d-bb0a-17f3bdf71f32' and u.created_at > now()-interval '8 days' order by u.created_at;`
 4. Ads: `ad_campaigns` (last import) inside the data function; if the Meta Ads connector is available you MAY read (never change) campaign insights for the same week. If no campaign ran, say «لم تبدأ بعد».
-5. Never read or print patient data, phone numbers, names of leads. Leads are counts only.
+5. **Meta performance for ALL pages (read-only)** — the pages in `meta_brand_config` (Swnw clinics + Dr. Dina; any other page the Meta connector lists via `ads_get_user_pages`/`ads_get_ig_accounts`). With the Meta_Ads connector read (never change, never boost, never create) the last 7 days vs the 7 before: per page — reach/views, engagement, follower change, top Instagram media (`ads_get_ig_media`), and for paid items campaign/ad insights (`ads_insights_performance_trend`, `ads_insights_anomaly_signal`, benchmarks when available). Also use the stored tables: `meta_ads` (+ `content_angle`, `hook_type`, `creative_type`, `cta_type`) joined with `meta_ad_performance_lifetime` (cost per message/lead, CTR, ThruPlay) and `post_insights` for posts published from the dashboard. Match each Meta post/ad to its dashboard item by `content_id`/`post_id`/permalink so topic, format, hook, hour and author (Claude vs staff) are known. If the connector is unavailable or a metric is missing, say exactly which and continue with the stored data — never fill gaps with guesses.
+6. Never read or print patient data, phone numbers, names of leads. Leads are counts only.
 
 ## 2. Analyse (this is the value — not a list of numbers)
 - Week vs previous week: posts, reach, interactions, leads, booked. State the direction and the likely reason in one sentence each.
@@ -21,6 +22,15 @@ Reader: Mohamed (owner, non-technical, Egyptian Arabic). He wants to know in 2 m
 - Staff vs Claude items: staff items are extra and never count toward Claude's daily 3 per page.
 - Waiting-for-approval items older than 48 h = a bottleneck: list them with how long they have waited.
 - Be honest about thin data («عينة صغيرة»). Never invent, never guess a cause as a fact, never write prices.
+
+## 2b. Content intelligence (what we do differently next week)
+Go beyond ranking posts — look for patterns that repeat across at least 3 posts before calling them a pattern:
+- **Per page**: which topic family (e.g. جلدية/تغذية/تخسيس/أعصاب), format, hook style (سؤال/رقم/خرافة/قبل-بعد), CTA type and publish hour got the best reach, saves, shares, messages. Saves + shares + messages weigh more than likes.
+- **Cost view (paid)**: cost per message/lead per creative angle; which organic winners deserve a paid test (suggest, never start).
+- **Drop-off**: posts with reach but no interaction = weak hook/topic; interactions but no messages = weak CTA; messages but no booked = a front-desk/follow-up issue (say so neutrally).
+- **Audience signals**: recurring questions in comments / social messages counts → ideas for next week's topics (counts and topics only, no personal data).
+- **Consistency**: did each page hit its posting rhythm? gaps that coincide with reach dips.
+- Rate every conclusion: **قوي** (≥ 3 posts agree) / **مبدئي** (1–2 posts) / **بيانات ناقصة**.
 
 ## 3. Write the report (Egyptian Arabic, short sentences, tables where numbers matter)
 Sections, in this order:
@@ -34,6 +44,9 @@ Sections, in this order:
 8. **تنفيذ توصيات الأسبوع اللي فات** — followed / not followed.
 9. **أولويات الأسبوع القادم** — each with owner and date.
 10. **توصيات لمحتوى Claude اليومي** — max 3, concrete (format / hour / topic) — the daily routines read this section next week.
+11. **أداء ميتا لكل صفحة** — one small block per page: reach / engagement / followers vs last week, best post, weakest post, one lesson. Then paid (if any): spend, messages, cost per message, best creative angle.
+12. **خطة الأسبوع القادم (مقترحة)** — a ready content calendar: per page and per day → topic · format · hook · publish hour · why (the evidence from section 4/11). 2 deliberate **experiments** (one variable each, e.g. same topic as reel vs carousel) with the success metric and the date we judge them. Plus 3 **مؤشرات نتابعها** with this week's baseline so next week's report can say «تحسّن/تراجع».
+13. **مقترحات التنفيذ** — max 5 concrete proposals ranked by (impact ÷ effort), each with the owner (موظف الصفحات/المصمم/الاستقبال/Claude), the date, and the expected effect. Anything that needs spend or a decision goes into section 7 instead; never start ads or change settings yourself.
 
 ## 4. Deliver
 1. Mint a run token: `insert into public.automation_run_tokens(note) values ('weekly report') returning token;` (never print it).
@@ -45,5 +58,7 @@ Sections, in this order:
 5. POST `/rest/v1/rpc/task_set_status` `{p_task_id, p_status:"review", p_note:"<one-line summary>"}` — submit for review. NEVER mark it done: Mohamed approves.
 6. Archive: `insert into weekly_reports(week_start, week_end, doc_url, summary, decisions, priorities, recommendations) values (...)` (jsonb for the last three).
 7. Send Mohamed ONE short Egyptian-Arabic message: the 5-line summary, the Drive link, the decisions he must make. Mention any failure plainly.
+
+If the Meta connector reads fail, still deliver the report from stored data and put «تعذّر قراءة ميتا مباشرة: <السبب>» at the top of section 11.
 
 If anything fails, stop that step, leave the task where it is, report the exact error. No blind retries, no duplicates.

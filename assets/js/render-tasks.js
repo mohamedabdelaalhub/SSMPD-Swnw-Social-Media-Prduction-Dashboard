@@ -1,7 +1,7 @@
 /* SSMPD — تاب مهام الموظفين */
 (function () {
   "use strict";
-  var liveTimer=null;
+  var liveTimer=null,currentFocus=null;
   var STATUS = {todo:"لم تبدأ",in_progress:"جاري العمل",review:"بانتظار المراجعة",revision:"مطلوب تعديل",done:"مكتملة",blocked:"متوقفة"};
   var PRIORITY = {low:"منخفضة",normal:"عادية",high:"عالية",urgent:"عاجلة"};
   function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
@@ -93,7 +93,7 @@
     if(!window.SSMPDRoles.canModuleAction(window.SSMPDAuth.currentAdmin,"tasks","view")){el.innerHTML="<p>ليس لديك صلاحية عرض المهام.</p>";return;}
     var admin=window.SSMPDAuth.currentAdmin;
     var isAdmin=allManager(admin);
-    var state={projects:[],tasks:[],people:[],notifications:[],archived:{},modal:"",error:"",filter:"all",view:(["board","calendar"].indexOf(store("view"))>=0?store("view"):"list"),checkCounts:{},checklist:[],checkTask:"",calMonth:(function(){var d=new Date();return new Date(d.getFullYear(),d.getMonth(),1);})(),sort:(["smart","manual","due","priority","updated"].indexOf(store("sort"))>=0?store("sort"):(isAdmin?"smart":"manual")),q:"",fProject:"",fAssignee:"",showArchived:false,tab:(["projects","tasks","done","team"].indexOf(store("tab"))>=0?store("tab"):"projects"),openProject:"",pFilter:"all",expanded:{},membersOpen:{},note:null,deleteTarget:null,viewId:"",historyTask:"",history:[],historyAtts:{},pendingFiles:[]};
+    var state={projects:[],tasks:[],people:[],notifications:[],archived:{},modal:"",error:"",filter:"all",view:(["board","calendar"].indexOf(store("view"))>=0?store("view"):"list"),checkCounts:{},checklist:[],checkTask:"",calMonth:(function(){var d=new Date();return new Date(d.getFullYear(),d.getMonth(),1);})(),sort:(["smart","manual","due","priority","updated"].indexOf(store("sort"))>=0?store("sort"):(isAdmin?"smart":"manual")),q:"",fProject:"",fAssignee:"",showArchived:false,tab:(["projects","tasks","done","comments","team"].indexOf(store("tab"))>=0?store("tab"):"projects"),openProject:"",pFilter:"all",expanded:{},membersOpen:{},note:null,deleteTarget:null,viewId:"",historyTask:"",history:[],historyAtts:{},pendingFiles:[]};
     function refresh(){return window.SSMPDDb.taskRefreshOverdue().catch(function(){return 0;}).then(function(){return Promise.all([
       window.SSMPDDb.taskListProjects(),window.SSMPDDb.taskListVisible(),window.SSMPDDb.taskPeople(),
       window.SSMPDDb.taskListNotifications(),
@@ -113,6 +113,13 @@
     }
     function projectOf(t){return state.projects.find(function(x){return x.id===t.project_id;})||{};}
     function cardFor(t,sub,opts){return taskRow(t,sub,Object.assign({showProject:true},opts||{}));}
+    function newComments(taskId){return state.notifications.filter(function(n){return !n.read_at&&n.kind==="comment"&&n.task_id===taskId;}).length;}
+    function newCommentsIn(list){return list.reduce(function(a,t){return a+newComments(t.id);},0);}
+    function commentsTabHtml(){
+      var rows=state.notifications.filter(function(n){return n.kind==="comment";});
+      if(!rows.length)return '<section class="tv-body"><div class="tsk-empty tsk-empty-rich"><div class="tsk-empty-icon">💬</div><h3>مفيش تعليقات لسه</h3><p>التعليقات الجديدة على مهامك هتظهر هنا، وتقدر تفتح المهمة من نفس المكان.</p></div></section>';
+      return '<section class="tv-body"><div class="tv-comments">'+rows.map(function(n){var t=state.tasks.find(function(x){return x.id===n.task_id;});return '<button type="button" class="tv-comment'+(n.read_at?"":" new")+'" data-action="read-notice" data-id="'+n.id+'"><span class="tv-comment-ic">💬</span><span class="tv-comment-tx"><b>'+esc(t?t.title:String(n.message||"").replace(/^تعليق جديد على المهمة: /,""))+'</b><small>'+esc(t&&t.project_title?t.project_title+" · ":"")+esc(stamp(n.created_at))+'</small></span>'+(n.read_at?"":'<em class="tv-new">جديد</em>')+'</button>';}).join("")+'</div></section>';
+    }
     function taskRow(t,sub,opts){
       opts=opts||{};
       var late=isOverdue(t),n=daysLeft(t),note=dueNote(t).replace(/^ · /,""),cc=state.checkCounts[t.id],meta=[],k=seg(t);
@@ -122,6 +129,7 @@
       if(t.status==="done")meta.push('<span class="tv-chip ok">✓ '+esc(relTime(t.completed_at||t.updated_at))+'</span>');
       if(t.priority==="urgent"||t.priority==="high")meta.push('<span class="tv-chip prio p-'+t.priority+'">'+PRIORITY[t.priority]+'</span>');
       if(cc&&cc.total)meta.push('<span class="tv-chip">☑ '+cc.done+'/'+cc.total+'</span>');
+      if(newComments(t.id))meta.push('<span class="tv-chip new">💬 تعليق جديد</span>');
       return '<div class="tv-row g-'+k+(t.parent_task_id?" is-sub":"")+'" data-task-id="'+t.id+'"><button type="button" class="tv-row-main" data-action="open-task" data-id="'+t.id+'"><span class="tv-dot"></span><span class="tv-row-title">'+esc(t.title)+'</span><span class="tv-row-meta">'+meta.join("")+'</span><span class="tv-pill g-'+k+'">'+esc(late?"متأخرة":(STATUS[t.status]||t.status))+'</span></button>'+(sub?'<button type="button" class="tv-sub" data-action="toggle-sub" data-id="'+t.id+'" aria-expanded="'+(sub.open?"true":"false")+'">'+(sub.open?"▾":"▸")+' '+sub.done+'/'+sub.total+' فرعية</button>':"")+'</div>';
     }
     function taskDetail(t){
@@ -222,7 +230,7 @@
       var last=mine.reduce(function(mx,t){return Math.max(mx,new Date(t.updated_at||0).getTime());},0);
       var health=!total?["none","بدون مهام"]:(c.late?["late",c.late+" متأخرة"]:(done===total?["done","مكتمل"]:(c.review?["review","بانتظار مراجعة"]:(c.active?["active","شغّال"]:["idle","لم يبدأ"]))));
       var members=(p.members||[]).slice(0,4).map(function(x){return '<span class="tv-av" title="'+esc(x.name)+'">'+esc(initials(x.name))+'</span>';}).join("")+((p.members||[]).length>4?'<span class="tv-av more">+'+((p.members||[]).length-4)+'</span>':"");
-      return '<article class="tv-proj'+(archived?" is-archived":"")+'" role="button" tabindex="0" data-action="open-project" data-project="'+p.id+'" data-project-id="'+p.id+'"><div class="tv-proj-top"><span class="tv-logo">'+esc(String(p.title||"م").trim().charAt(0))+'</span><div class="tv-proj-name"><b>'+esc(p.title)+(archived?' <em class="tv-arch">مؤرشف</em>':"")+'</b><small>'+esc(m?m.name:"—")+'</small></div><span class="tv-health h-'+health[0]+'">'+esc(health[1])+'</span></div>'+
+      return '<article class="tv-proj'+(archived?" is-archived":"")+'" role="button" tabindex="0" data-action="open-project" data-project="'+p.id+'" data-project-id="'+p.id+'"><div class="tv-proj-top"><span class="tv-logo">'+esc(String(p.title||"م").trim().charAt(0))+'</span><div class="tv-proj-name"><b>'+esc(p.title)+(archived?' <em class="tv-arch">مؤرشف</em>':"")+'</b><small>'+esc(m?m.name:"—")+'</small></div><span class="tv-health h-'+health[0]+'">'+esc(health[1])+'</span></div>'+(newCommentsIn(mine)?'<div class="tv-newline">💬 '+newCommentsIn(mine)+' تعليق جديد</div>':"")+
         (p.description?'<p class="tv-proj-desc">'+esc(p.description)+'</p>':"")+
         '<div class="tv-proj-num"><b>'+done+'</b><span>من '+total+' مهمة تمت</span><em>'+(total?Math.round(done*100/total):0)+'%</em></div>'+segBar(c,total)+'<div class="tv-legend">'+segLegend(c)+'</div>'+
         '<div class="tv-proj-next">'+(!total?"أضف أول مهمة للمشروع":(left?'المتبقي <b>'+left+'</b>'+(open?' · الأقرب: '+esc(open.title)+' <em class="'+(isOverdue(open)?"late":"")+'">'+esc(dueNote(open).replace(/^ · /,""))+'</em>':""):"كل المهام تمت ✓"))+'</div>'+
@@ -275,7 +283,7 @@
     }
     function tabsBar(base,shownCount){
       var open=base.filter(function(t){return t.status!=="done";}).length,done=base.filter(function(t){return t.status==="done";}).length;
-      var items=[["projects","المشاريع",shownCount],["tasks","كل المهام",open],["done","المنجزة",done],["team","الفريق",""]];
+      var items=[["projects","المشاريع",shownCount],["tasks","كل المهام",open],["done","المنجزة",done],["comments","التعليقات",newCommentsIn(base)||""],["team","الفريق",""]];
       return '<nav class="tv-tabs" role="tablist">'+items.map(function(i){return '<button type="button" role="tab" class="tv-tab'+(state.tab===i[0]?" on":"")+'" data-action="tab" data-id="'+i[0]+'" aria-selected="'+(state.tab===i[0])+'">'+i[1]+(i[2]!==""?' <b>'+i[2]+'</b>':"")+'</button>';}).join("")+'</nav>';
     }
     function teamTable(base,since){
@@ -307,6 +315,8 @@
         var op=state.openProject&&state.projects.find(function(x){return x.id===state.openProject;});
         if(state.openProject&&!op)state.openProject="";
         html+='<section class="tv-body">'+(op?projectPage(op):projectsHome())+'</section>';
+      }else if(state.tab==="comments"){
+        html+=commentsTabHtml();
       }else if(state.tab==="team"){
         html+='<section class="tv-body tsk-week"><div class="tsk-week-row"><span>المهام التي تم تحديثها <b>'+week.length+'</b></span><span>اكتملت <b>'+week.filter(function(t){return t.status==="done";}).length+'</b></span><span>تحتاج مراجعة <b>'+base.filter(function(t){return t.status==="review";}).length+'</b></span><span>متأخرة <b>'+overdue.length+'</b></span></div>'+teamTable(base,since)+'<h3 class="tsk-sub-title">آخر المهام المحدّثة</h3><div class="tsk-week-list">'+(week.slice().sort(function(a,b){return new Date(b.updated_at)-new Date(a.updated_at);}).slice(0,8).map(function(t){return '<div><span>'+esc(t.title)+'</span><span>'+esc(t.assignee_name||"")+'</span><span>'+esc(STATUS[t.status])+'</span></div>';}).join("")||'<p class="tsk-empty">مفيش تحديثات الأسبوع ده.</p>')+'</div></section>';
       }else{
@@ -410,8 +420,9 @@
       state.tab="projects";store("tab","projects");state.openProject=t.project_id;state.pFilter="all";
       if(state.archived[t.project_id])state.showArchived=true;
       if(t.parent_task_id)state.expanded[t.parent_task_id]=true;
-      state.viewId=id;state.modal="task-view";draw();
+      state.viewId=id;state.modal="task-view";draw();return true;
     }
+    currentFocus=focusTask;
     function submitNote(form,fd){
       var n=state.note;if(!n)return;
       var cfg=NOTE[n.action]||NOTE.progress,text=String(fd.get("note")||"").trim();
@@ -517,5 +528,5 @@
     };
     refresh().then(function(){liveTimer=setInterval(function(){if(!el.isConnected){clearInterval(liveTimer);liveTimer=null;return;}refresh();},90000);});
   }
-  window.SSMPDRenderTasks={render:render};
+  window.SSMPDRenderTasks={render:render,focus:function(id){return currentFocus?currentFocus(id):false;}};
 })();

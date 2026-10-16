@@ -18,7 +18,7 @@ window.mock={
   {id:'t7',project_id:'p1',title:'تنظيف الرفوف',status:'todo',assignee_id:'a1',assignee_name:'محمد',due_at:null,priority:'high',updated_at:iso(-5),can_manage:true}
  ],
  atts:[],
- notices:[{id:'n1',task_id:'t4',message:'تم تحديث مهمة',created_at:iso(-1),read_at:null}],
+ notices:[{id:'n1',task_id:'t4',kind:'comment',message:'تم تحديث مهمة',created_at:iso(-1),read_at:null}],
  updates:{t1:[{id:'u1',task_id:'t1',author_id:'a3',body:'بدأت الشغل https://drive.google.com/x.',status_from:'todo',status_to:'in_progress',created_at:iso(-1)}]}
 };
 if(location.search==='?empty'){mock.tasks=[];mock.notices=[];mock.projects=[];}
@@ -62,6 +62,10 @@ try{
   assert.equal(await page.locator('.tv-proj').count(),1,'archived project hidden');
   const need=async k=>Number(await page.locator('.tv-need.n-'+k+' b').textContent());
   assert.equal(await need('review'),1);assert.equal(await need('mine'),3);assert.equal(await need('overdue'),1);assert.equal(await need('soon'),1);assert.equal(await need('notices'),1);
+  assert(/1 تعليق جديد/.test(await txt('.tv-proj')),'tile shows unread comment line');
+  assert(/التعليقات\s*1/.test(await txt('.tv-tabs')),'comments tab shows unread count');
+  await page.click('.tv-tab[data-id=comments]');assert.equal(await page.locator('.tv-comment.new').count(),1,'comments tab lists the new comment');
+  await page.click('.tv-tab[data-id=projects]');
   const tile=await txt('.tv-proj');
   assert(/من 6 مهمة تمت/.test(tile)&&/33%/.test(tile),'tile summary: done of total + percent');
   assert(await page.locator('.tv-proj .tv-bar i').count()>=3,'segmented bar');
