@@ -327,15 +327,25 @@
     }).concat((res[1] || []).map(function (r) {
       return { at: r.created_at, text: ((r.admins && r.admins.name) || "مستخدم") + " — " + r.action_type + (r.report_name ? ": " + r.report_name : ""),
         entityType: r.entity_type || "", entityId: r.entity_id || "", action: r.action_type };
+    })).concat((res[2] || []).map(function (r) {
+      return { at: r.created_at, text: r.message || "إشعار مهمة", entityType: "task", entityId: r.task_id || "", notifId: r.id, action: "task", read: !!r.read_at };
     }));
     items.sort(function (a, b) { return new Date(b.at) - new Date(a.at); });
     return items;
+  }
+  // إشعارات المهام (تعليق جديد/إسناد/قرب موعد) — بتظهر في الجرس العام من أي تاب
+  function notifTaskItems(sinceIso) {
+    if (!window.SSMPDDb.taskListNotifications) return Promise.resolve([]);
+    return window.SSMPDDb.taskListNotifications().then(function (rows) {
+      return (rows || []).filter(function (r) { return !r.read_at && (!sinceIso || new Date(r.created_at) > new Date(sinceIso)); });
+    }).catch(function () { return []; });
   }
   // إشعارات بعد وقت معيّن (badge/وضع "أيام")
   function fetchNotifItems(sinceIso, limit) {
     return Promise.all([
       window.SSMPDDb.listRecentContentActivity(sinceIso, limit).catch(function () { return []; }),
-      window.SSMPDDb.listUsageActivitySince(sinceIso, limit).catch(function () { return []; })
+      window.SSMPDDb.listUsageActivitySince(sinceIso, limit).catch(function () { return []; }),
+      notifTaskItems(sinceIso)
     ]).then(notifMapItems);
   }
   // آخر عدد إشعارات من غير فلترة تاريخ (الجرس/وضع "عدد") — بتفضل موجودة حتى لو
@@ -343,7 +353,8 @@
   function fetchNotifItemsRecent(limit) {
     return Promise.all([
       window.SSMPDDb.listContentActivityRecent(limit).catch(function () { return []; }),
-      window.SSMPDDb.listUsageActivity(limit).catch(function () { return []; })
+      window.SSMPDDb.listUsageActivity(limit).catch(function () { return []; }),
+      notifTaskItems("")
     ]).then(function (res) {
       var items = notifMapItems(res);
       return items.slice(0, limit);
@@ -383,12 +394,13 @@
     }
     var entity = !it.contentId && it.entityType && it.entityId ? it.entityType : "";
     if (entity === "content") { target = notifTargetTab(it); }
-    var clickable = (target && it.title) || (entity === "content" && target) || entity === "lead" || entity === "patient";
+    if (it.entityType === "task" && it.entityId) entity = "task";
+    var clickable = (target && it.title) || (entity === "content" && target) || entity === "lead" || entity === "patient" || entity === "task";
     var openAttrs = "";
     if (clickable) {
-      if (entity === "lead" || entity === "patient") openAttrs = ' data-notif-entity="' + entity + '" data-notif-eid="' + notifEscHtml(it.entityId) + '" role="button" tabindex="0"';
+      if (entity === "lead" || entity === "patient" || entity === "task") openAttrs = ' data-notif-entity="' + entity + '" data-notif-eid="' + notifEscHtml(it.entityId) + '"' + (it.notifId ? ' data-notif-nid="' + notifEscHtml(it.notifId) + '"' : "") + ' role="button" tabindex="0"';
       else openAttrs = ' data-notif-cid="' + notifEscHtml(it.contentId || it.entityId) + '" data-notif-tab="' + target + '" role="button" tabindex="0"';
-      if (entity) detail += '<div style="color:var(--c-primary);font-size:11px;margin-top:2px;">📍 يفتح: ' + (entity === "lead" ? "بطاقة الليد" : entity === "patient" ? "ملف المريض" : notifEscHtml(TAB_LABELS[target])) + "</div>";
+      if (entity) detail += '<div style="color:var(--c-primary);font-size:11px;margin-top:2px;">📍 يفتح: ' + (entity === "lead" ? "بطاقة الليد" : entity === "patient" ? "ملف المريض" : entity === "task" ? "المهمة" : notifEscHtml(TAB_LABELS[target])) + "</div>";
     }
     return '<div' + openAttrs +
       ' style="padding:8px 10px;border-bottom:1px solid var(--c-border);font-size:12px;' + (unread ? "" : "opacity:.5;") + (clickable ? "cursor:pointer;" : "") + '">' + notifEscHtml(it.text) + detail +
@@ -405,11 +417,21 @@
       if (++tries > 20) { clearInterval(timer); window.SSMPDGotoContent(contentId); }
     }, 200);
   }
+  function openTaskFromNotif(taskId, notifId) {
+    if (notifId && window.SSMPDDb.taskMarkNotificationRead) window.SSMPDDb.taskMarkNotificationRead(notifId).catch(function () {}).then(refreshNotifBadge);
+    switchTab("tasks");
+    var tries = 0, timer = setInterval(function () {
+      var R = window.SSMPDRenderTasks;
+      if (R && R.focus && R.focus(taskId)) { clearInterval(timer); return; }
+      if (++tries > 30) clearInterval(timer);
+    }, 250);
+  }
   function wireNotifItems(root, onClose) {
     root.querySelectorAll("[data-notif-cid],[data-notif-entity]").forEach(function (el) {
       function go() {
         if (onClose) onClose();
         var ent = el.getAttribute("data-notif-entity"), eid = el.getAttribute("data-notif-eid");
+        if (ent === "task") { openTaskFromNotif(eid, el.getAttribute("data-notif-nid")); return; }
         if (ent === "lead" && window.SSMPDRenderLeads && window.SSMPDRenderLeads.openLeadById) { window.SSMPDRenderLeads.openLeadById(eid); return; }
         if (ent === "patient" && window.SSMPDRenderPatients && window.SSMPDRenderPatients.openPatientById) { window.SSMPDRenderPatients.openPatientById(eid); return; }
         openNotifTarget(el.getAttribute("data-notif-cid"), el.getAttribute("data-notif-tab"));
