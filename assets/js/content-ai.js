@@ -77,8 +77,12 @@
       function line(r) { return (LEARN_DIM[r.dimension] || r.dimension) + "=" + r.value + " (" + (r.confidence === "strong" ? "قوي" : "مبدئي") + ")"; }
       var up = (j.do_more || []).slice(0, 8).map(line).join("، "), down = (j.do_less || []).slice(0, 8).map(line).join("، ");
       var weak = (j.staff_weak_ratings_30d || []).slice(0, 4).map(function (w) { return "«" + w.title + "»" + (w.reason ? " — " + w.reason : ""); }).join("؛ ");
+<<<<<<< HEAD
       var occ = (j.upcoming_occasions || []).slice(0, 4).map(function (o) { return o.name + " (" + o.from + ")"; }).join("، ");
       return (occ ? "\n\nمناسبات صحية قريبة (استخدمها لو مناسبة للتخصص): " + occ + "." : "") + "\n\nذاكرة الأداء (من أداء المنشورات السابقة — استرشاد فقط ولا تتجاوز القواعد الطبية ولا Brief الحالي): " +
+=======
+      return "\n\nذاكرة الأداء (من أداء المنشورات السابقة — استرشاد فقط ولا تتجاوز القواعد الطبية ولا Brief الحالي): " +
+>>>>>>> origin/main
         "70% كرر اللي نجح بموضوع جديد، 20% جرّب زاوية مختلفة، 10% تجربة محددة. " +
         (up ? "نجح: " + up + ". " : "") + (down ? "ضعيف: " + down + ". " : "") + (weak ? "تقييم الموظفين لمنشورات ضعيفة: " + weak + ". " : "") +
         "لا تكرر عناوين المنشورات الأخيرة.";
