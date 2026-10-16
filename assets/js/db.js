@@ -1036,10 +1036,10 @@
       return handle(client.rpc("content_learning_brief_staff", { p_brand: brand }));
     },
     getContentRating: function (contentId) {
-      return handle(client.from("content_ratings").select("rating,reason,rated_at").eq("content_id", contentId).maybeSingle());
+      return handle(client.from("content_ratings").select("rating,reason,failure_cause,rated_at").eq("content_id", contentId).maybeSingle());
     },
-    setContentRating: function (contentId, rating, reason) {
-      return handle(client.from("content_ratings").upsert({ content_id: contentId, rating: rating, reason: String(reason || "").slice(0, 400), rated_by: window.SSMPDAuth.currentAdmin.id, rated_at: new Date().toISOString() }, { onConflict: "content_id" }));
+    setContentRating: function (contentId, rating, reason, cause) {
+      return handle(client.from("content_ratings").upsert({ content_id: contentId, rating: rating, reason: String(reason || "").slice(0, 400), failure_cause: rating === "weak" && cause ? cause : null, rated_by: window.SSMPDAuth.currentAdmin.id, rated_at: new Date().toISOString() }, { onConflict: "content_id" }));
     },
     listAdminsBasic: function () {
       return handle(client.rpc("list_admins_basic"));
