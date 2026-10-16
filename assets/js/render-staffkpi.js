@@ -5,11 +5,7 @@
 
   var PRESETS = [["7d", "آخر 7 أيام"], ["30d", "آخر 30 يوم"], ["month", "الشهر الحالي"], ["prev_month", "الشهر اللي فات"], ["custom", "فترة مخصصة"]];
   var MONTHS = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
-<<<<<<< HEAD
   var state = { preset: "30d", from: "", to: "", role: "", points: true, rows: [], prev: [], defs: {}, reviews: {}, alerts: [], summaries: {}, error: "", loading: true, seq: 0 };
-=======
-  var state = { preset: "30d", from: "", to: "", role: "", points: true, rows: [], prev: [], defs: {}, reviews: {}, error: "", loading: true, seq: 0 };
->>>>>>> origin/main
 
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
   function store(k, v) { try { if (v === undefined) return localStorage.getItem("ssmpd_staffkpi_" + k); localStorage.setItem("ssmpd_staffkpi_" + k, v); } catch (e) { return null; } }
@@ -35,10 +31,7 @@
     var len = to - from, prevFrom = new Date(from - len);
     return { from: from, to: to, prevFrom: prevFrom, prevTo: from };
   }
-<<<<<<< HEAD
   function prevMonthIso() { var c = cairoParts(new Date()), y = c.m === 1 ? c.y - 1 : c.y, m = c.m === 1 ? 12 : c.m - 1; return y + "-" + String(m).padStart(2, "0") + "-01"; }
-=======
->>>>>>> origin/main
   function reviewMonth(r) { var c = cairoParts(new Date(r.to - 864e5)); return { iso: c.y + "-" + String(c.m).padStart(2, "0") + "-01", label: MONTHS[c.m - 1] + " " + c.y }; }
 
   // ---- التجميع ----
@@ -102,19 +95,11 @@
     var avg = scored.length ? Math.round(scored.reduce(function (a, g) { return a + g.score; }, 0) / scored.length) : null;
     var top = scored.slice().sort(function (a, b) { return b.score - a.score; })[0], low = scored.length > 1 ? scored.slice().sort(function (a, b) { return a.score - b.score; })[0] : null;
     var inactive = list.filter(function (g) { return !g.active; }).length;
-<<<<<<< HEAD
     function tile(l, v, s, cls, ic) { return '<div class="sk-tile ' + (cls || "") + '"><i aria-hidden="true">' + ic + '</i><b>' + v + '</b><span>' + l + '</span><small>' + s + '</small></div>'; }
     return '<section class="sk-summary">' + tile("متوسط الفريق", state.points && avg != null ? avg : "—", scored.length + " موظف لديهم تقييم", "", "📊") +
       tile("الأعلى أداءً", top ? esc(top.name) : "—", top && state.points ? top.score + " نقطة" : "", "good", "🏆") +
       tile("يحتاج متابعة", low ? esc(low.name) : "—", low && state.points ? low.score + " نقطة" : "", "bad", "🎯") +
       tile("بدون نشاط", inactive, "موظفين في الفترة", "mute", "💤") + '</section>';
-=======
-    function tile(l, v, s, cls) { return '<div class="sk-tile ' + (cls || "") + '"><span>' + l + '</span><b>' + v + '</b><small>' + s + '</small></div>'; }
-    return '<section class="sk-summary">' + tile("متوسط الفريق", state.points && avg != null ? avg : "—", scored.length + " موظف لديهم تقييم", "") +
-      tile("الأعلى أداءً", top ? esc(top.name) : "—", top && state.points ? top.score + " نقطة" : "", "good") +
-      tile("يحتاج متابعة", low ? esc(low.name) : "—", low && state.points ? low.score + " نقطة" : "", "bad") +
-      tile("بدون نشاط", inactive, "موظفين في الفترة", "") + '</section>';
->>>>>>> origin/main
   }
   function render(container) {
     var admin = window.SSMPDAuth.currentAdmin, isSuper = window.SSMPDRoles.isSuperAdmin ? window.SSMPDRoles.isSuperAdmin(admin) : admin.role === "super_admin";
@@ -124,7 +109,6 @@
     draw();
     load();
   }
-<<<<<<< HEAD
   function weakItems(groups) {
     var out = [];
     groups.forEach(function (g) { g.kpis.forEach(function (k) { var d = state.defs[k.kpi] || {}; if (k.score != null && k.score < 60 && k.sample >= (d.min_sample || 0)) out.push({ g: g, k: k, d: d }); }); });
@@ -146,22 +130,10 @@
     var sumRows = Object.keys(state.summaries).map(function (id) { var x = state.summaries[id]; return '<details class="sk-sum"><summary><b>' + esc(nameOf[id] || "—") + '</b>' + (x.score != null && state.points ? '<em>' + x.score + '</em>' : "") + '<span class="sk-src">' + (x.source === "claude" ? "Claude" : "تلقائي") + '</span></summary><p>💪 ' + esc(x.strength) + '</p><p>🔧 ' + esc(x.improve) + '</p><p>➡️ ' + esc(x.action) + '</p></details>'; }).join("");
     c.innerHTML = '<section class="sk" dir="rtl"><header class="sk-hero"><div><p>الإدارة · مؤشرات الأداء</p><h1>أداء الفريق</h1><span>' + r.from.toLocaleDateString("ar-EG-u-nu-latn") + ' ← ' + r.to.toLocaleDateString("ar-EG-u-nu-latn") + ' · مقارنة بالفترة السابقة بنفس الطول</span></div>' +
       '<div class="sk-actions">' + (state.isSuper ? '<button class="btn" data-sk="targets">المستهدفات</button>' : "") + '<button class="btn" data-sk="csv">تصدير CSV</button></div></header>' +
-=======
-  function draw() {
-    var c = state.container; if (!c) return;
-    var list = group(state.rows).filter(function (g) { return !state.role || g.role === state.role; });
-    var roles = {}; group(state.rows).forEach(function (g) { roles[g.role] = 1; });
-    var active = list.filter(function (g) { return g.active; }).sort(function (a, b) { return (b.score == null ? -1 : b.score) - (a.score == null ? -1 : a.score); });
-    var idle = list.filter(function (g) { return !g.active; });
-    var r = range();
-    c.innerHTML = '<section class="sk" dir="rtl"><div class="sk-head"><div><h1>أداء الفريق</h1><p>مؤشرات أداء لكل موظف تتحسب لوحدها من شغله الفعلي في الداشبورد — للإدارة فقط.</p></div>' +
-      '<div class="sk-actions">' + (state.isSuper ? '<button class="btn" data-sk="targets">المستهدفات</button>' : "") + '<button class="btn" data-sk="csv">تصدير CSV</button></div></div>' +
->>>>>>> origin/main
       '<div class="sk-tools"><div class="sk-presets" role="tablist">' + PRESETS.map(function (p) { return '<button type="button" class="sk-preset' + (state.preset === p[0] ? " on" : "") + '" data-sk-preset="' + p[0] + '">' + p[1] + '</button>'; }).join("") + '</div>' +
       (state.preset === "custom" ? '<div class="sk-custom"><label>من <input type="date" data-sk-from value="' + esc(state.from) + '"></label><label>إلى <input type="date" data-sk-to value="' + esc(state.to) + '"></label></div>' : "") +
       '<select data-sk-role aria-label="الدور"><option value="">كل الأدوار</option>' + Object.keys(roles).map(function (x) { return '<option value="' + esc(x) + '"' + (state.role === x ? " selected" : "") + '>' + esc(roleLabel(x)) + '</option>'; }).join("") + '</select>' +
       '<label class="sk-toggle"><input type="checkbox" data-sk-points' + (state.points ? " checked" : "") + '> إظهار النقاط</label></div>' +
-<<<<<<< HEAD
       (state.error ? '<div class="sk-err">' + esc(state.error) + '</div>' : "") + alertsHtml +
       (state.loading && !state.rows.length ? '<div class="sk-loading">جاري حساب المؤشرات…</div>' : attn + summary(list) +
         '<div class="sk-layout"><div class="sk-main"><section class="sk-grid">' + (active.map(card).join("") || '<p class="sk-none">لا توجد بيانات في الفترة دي</p>') + '</section></div>' +
@@ -169,14 +141,6 @@
         (sumRows ? '<section class="sk-box"><h2>ملخص الشهر اللي فات</h2>' + sumRows + '</section>' : "") +
         (idle.length ? '<section class="sk-box"><h2>بدون نشاط في الفترة <span class="sk-count">' + idle.length + '</span></h2><div class="sk-chips">' + idle.map(function (g) { return '<button type="button" class="sk-chip" data-staff="' + esc(g.id) + '">' + esc(g.name) + ' · ' + esc(roleLabel(g.role)) + '</button>'; }).join("") + '</div></section>' : "") + '</aside></div>') +
       '<p class="sk-foot">الأرقام بتعتمد على اللي بيتسجّل في الداشبورد؛ أي مؤشر عينته أقل من الحد الأدنى بيظهر «عينة صغيرة» ومبيدخلش في النقاط. الأعداد بتتناسب مع طول الفترة. النقاط = متوسط مرجّح لنسبة تحقيق كل مستهدف (حد أقصى 100). التنبيهات بتتولّد يوميًا لما مؤشر مهم ينزل تحت 40% خلال آخر أسبوعين.</p></section>';
-=======
-      '<p class="sk-range">من ' + r.from.toLocaleDateString("ar-EG-u-nu-latn") + " إلى " + r.to.toLocaleDateString("ar-EG-u-nu-latn") + ' · المقارنة بالفترة السابقة بنفس الطول</p>' +
-      (state.error ? '<div class="sk-err">' + esc(state.error) + '</div>' : "") +
-      (state.loading && !state.rows.length ? '<div class="sk-loading">جاري حساب المؤشرات…</div>' : summary(list) +
-        '<section class="sk-grid">' + (active.map(card).join("") || '<p class="sk-none">لا توجد بيانات في الفترة دي</p>') + '</section>' +
-        (idle.length ? '<details class="sk-idle"><summary>بدون نشاط في الفترة (' + idle.length + ')</summary><div>' + idle.map(function (g) { return '<button type="button" class="sk-chip" data-staff="' + esc(g.id) + '">' + esc(g.name) + ' · ' + esc(roleLabel(g.role)) + '</button>'; }).join("") + '</div></details>' : "")) +
-      '<p class="sk-foot">ملحوظات: الأرقام بتعتمد على اللي بيتسجّل في الداشبورد؛ أي مؤشر عينته أقل من الحد الأدنى بيظهر «عينة صغيرة» ومبيدخلش في النقاط. الأعداد بتتناسب مع طول الفترة. النقاط = متوسط مرجّح لنسبة تحقيق كل مستهدف (حد أقصى 100).</p></section>';
->>>>>>> origin/main
     wire();
   }
   function wire() {
@@ -191,29 +155,19 @@
       function open() { detail(el.getAttribute("data-staff")); }
       el.onclick = open; el.onkeydown = function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } };
     });
-<<<<<<< HEAD
     c.querySelectorAll("[data-sk-ack]").forEach(function (b) { b.onclick = function () { b.disabled = true; window.SSMPDDb.ackStaffAlert(b.getAttribute("data-sk-ack")).then(function () { state.alerts = state.alerts.filter(function (a) { return a.id !== b.getAttribute("data-sk-ack"); }); draw(); }).catch(function () { b.disabled = false; }); }; });
-=======
->>>>>>> origin/main
     var tb = c.querySelector('[data-sk="targets"]'); if (tb) tb.onclick = targetsModal;
     var cb = c.querySelector('[data-sk="csv"]'); if (cb) cb.onclick = exportCsv;
   }
   function load() {
     var seq = ++state.seq, r = range(); state.loading = true; state.error = "";
     var db = window.SSMPDDb, rm = reviewMonth(r);
-<<<<<<< HEAD
     Promise.all([db.staffKpis(r.from.toISOString(), r.to.toISOString()), db.staffKpis(r.prevFrom.toISOString(), r.prevTo.toISOString()), db.kpiDefs(), db.staffReviews(rm.iso), db.staffAlerts().catch(function () { return []; }), db.staffSummaries(prevMonthIso()).catch(function () { return []; })]).then(function (res) {
-=======
-    Promise.all([db.staffKpis(r.from.toISOString(), r.to.toISOString()), db.staffKpis(r.prevFrom.toISOString(), r.prevTo.toISOString()), db.kpiDefs(), db.staffReviews(rm.iso)]).then(function (res) {
->>>>>>> origin/main
       if (seq !== state.seq) return;
       state.rows = res[0] || []; state.prev = res[1] || [];
       state.defs = {}; (res[2] || []).forEach(function (d) { state.defs[d.kpi] = d; });
       state.reviews = {}; (res[3] || []).forEach(function (x) { state.reviews[x.admin_id] = x; });
-<<<<<<< HEAD
       state.alerts = res[4] || []; state.summaries = {}; (res[5] || []).forEach(function (x) { state.summaries[x.admin_id] = x; });
-=======
->>>>>>> origin/main
       state.loading = false; draw();
     }).catch(function (e) {
       if (seq !== state.seq) return;
@@ -239,10 +193,7 @@
     }).join("");
     var body = '<div class="sk-dh">' + ring(g.score) + '<div><b>' + esc(g.name) + '</b><span>' + esc(roleLabel(g.role)) + '</span></div></div>' +
       '<div class="sk-scroll"><table class="sk-table"><thead><tr><th>المؤشر</th><th>القيمة</th><th>المستهدف</th><th>تحقيق المستهدف</th><th>العينة</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
-<<<<<<< HEAD
       (state.summaries[id] ? '<div class="sk-msum"><h4>ملخص الشهر اللي فات <span class="sk-src">' + (state.summaries[id].source === "claude" ? "Claude" : "تلقائي") + '</span></h4><p>💪 ' + esc(state.summaries[id].strength) + '</p><p>🔧 ' + esc(state.summaries[id].improve) + '</p><p>➡️ ' + esc(state.summaries[id].action) + '</p></div>' : "") +
-=======
->>>>>>> origin/main
       '<form class="sk-review" data-sk-review><h4>تقييم الإدارة — ' + esc(rm.label) + '</h4><div class="sk-stars" role="radiogroup" aria-label="التقييم">' + [1, 2, 3, 4, 5].map(function (i) { return '<label><input type="radio" name="rating" value="' + i + '"' + (rv.rating === i ? " checked" : "") + '><span>★</span></label>'; }).join("") + '</div>' +
       '<textarea name="note" rows="3" maxlength="1000" placeholder="ملاحظة مختصرة (نقطة قوة / نقطة تطوير)">' + esc(rv.note || "") + '</textarea><div class="sk-rv-foot"><button class="btn btn-primary" type="submit">حفظ التقييم</button><span data-sk-rv-msg></span></div></form><div data-sk-hist></div>';
     var m = modal("أداء " + g.name, body, "sk-wide");
