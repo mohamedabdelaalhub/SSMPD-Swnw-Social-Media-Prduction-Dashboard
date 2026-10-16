@@ -98,3 +98,6 @@
 .sk-card{border-top:3px solid transparent}.sk-card:has(.sk-ring.sk-good){border-top-color:var(--k-good)}.sk-card:has(.sk-ring.sk-mid){border-top-color:var(--k-mid)}.sk-card:has(.sk-ring.sk-bad){border-top-color:var(--k-bad)}
 @media(max-width:1000px){.sk-layout{grid-template-columns:minmax(0,1fr)}}
 @media(max-width:700px){.sk-hero{padding:16px}.sk-hero h1{font-size:22px}.sk-actions{width:100%}.sk-actions .btn{flex:1}.sk-pills{display:grid;grid-template-columns:1fr}}
+.sk-static{cursor:default}.sk-static:hover{transform:none;box-shadow:none;border-color:var(--k-line)}
+.sk-msum-p{margin:6px 0 0;font-size:13.5px;line-height:1.9;color:#3B4A5F}
+.sk-hero .btn[aria-pressed="true"]{background:#2F7D5C;border-color:#2F7D5C}

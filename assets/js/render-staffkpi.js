@@ -5,7 +5,7 @@
 
   var PRESETS = [["7d", "آخر 7 أيام"], ["30d", "آخر 30 يوم"], ["month", "الشهر الحالي"], ["prev_month", "الشهر اللي فات"], ["custom", "فترة مخصصة"]];
   var MONTHS = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
-  var state = { preset: "30d", from: "", to: "", role: "", points: true, rows: [], prev: [], defs: {}, reviews: {}, alerts: [], summaries: {}, error: "", loading: true, seq: 0 };
+  var state = { preset: "30d", from: "", to: "", role: "", points: true, rows: [], prev: [], defs: {}, reviews: {}, alerts: [], summaries: {}, selfView: false, error: "", loading: true, seq: 0 };
 
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
   function store(k, v) { try { if (v === undefined) return localStorage.getItem("ssmpd_staffkpi_" + k); localStorage.setItem("ssmpd_staffkpi_" + k, v); } catch (e) { return null; } }
@@ -129,7 +129,7 @@
     var attn = weak.length ? '<section class="sk-attn"><h2>محتاج متابعة</h2><div class="sk-pills">' + weak.slice(0, 4).map(function (w) { return '<button type="button" class="sk-pill" data-staff="' + esc(w.g.id) + '"><i>⚠️</i><b>' + esc(w.g.name) + '</b><span>' + esc(w.d.label_ar || w.k.kpi) + '</span></button>'; }).join("") + '</div></section>' : (state.loading ? "" : '<section class="sk-attn"><div class="sk-allgood"><i>✓</i><div><b>مفيش مؤشر تحت الحد</b><span>كل المؤشرات اللي ليها بيانات كافية فوق 60%</span></div></div></section>');
     var sumRows = Object.keys(state.summaries).map(function (id) { var x = state.summaries[id]; return '<details class="sk-sum"><summary><b>' + esc(nameOf[id] || "—") + '</b>' + (x.score != null && state.points ? '<em>' + x.score + '</em>' : "") + '<span class="sk-src">' + (x.source === "claude" ? "Claude" : "تلقائي") + '</span></summary><p>💪 ' + esc(x.strength) + '</p><p>🔧 ' + esc(x.improve) + '</p><p>➡️ ' + esc(x.action) + '</p></details>'; }).join("");
     c.innerHTML = '<section class="sk" dir="rtl"><header class="sk-hero"><div><p>الإدارة · مؤشرات الأداء</p><h1>أداء الفريق</h1><span>' + r.from.toLocaleDateString("ar-EG-u-nu-latn") + ' ← ' + r.to.toLocaleDateString("ar-EG-u-nu-latn") + ' · مقارنة بالفترة السابقة بنفس الطول</span></div>' +
-      '<div class="sk-actions">' + (state.isSuper ? '<button class="btn" data-sk="targets">المستهدفات</button>' : "") + '<button class="btn" data-sk="csv">تصدير CSV</button></div></header>' +
+      '<div class="sk-actions">' + (state.isSuper ? '<button class="btn" data-sk="selfview" aria-pressed="' + state.selfView + '" title="لما تتفعّل كل موظف بيشوف أرقامه هو بس في تاب أدائي">أدائي للموظفين: ' + (state.selfView ? "مفعّلة ✓" : "مقفولة") + '</button><button class="btn" data-sk="targets">المستهدفات</button>' : "") + '<button class="btn" data-sk="csv">تصدير CSV</button></div></header>' +
       '<div class="sk-tools"><div class="sk-presets" role="tablist">' + PRESETS.map(function (p) { return '<button type="button" class="sk-preset' + (state.preset === p[0] ? " on" : "") + '" data-sk-preset="' + p[0] + '">' + p[1] + '</button>'; }).join("") + '</div>' +
       (state.preset === "custom" ? '<div class="sk-custom"><label>من <input type="date" data-sk-from value="' + esc(state.from) + '"></label><label>إلى <input type="date" data-sk-to value="' + esc(state.to) + '"></label></div>' : "") +
       '<select data-sk-role aria-label="الدور"><option value="">كل الأدوار</option>' + Object.keys(roles).map(function (x) { return '<option value="' + esc(x) + '"' + (state.role === x ? " selected" : "") + '>' + esc(roleLabel(x)) + '</option>'; }).join("") + '</select>' +
@@ -156,18 +156,20 @@
       el.onclick = open; el.onkeydown = function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } };
     });
     c.querySelectorAll("[data-sk-ack]").forEach(function (b) { b.onclick = function () { b.disabled = true; window.SSMPDDb.ackStaffAlert(b.getAttribute("data-sk-ack")).then(function () { state.alerts = state.alerts.filter(function (a) { return a.id !== b.getAttribute("data-sk-ack"); }); draw(); }).catch(function () { b.disabled = false; }); }; });
+    var sv = c.querySelector('[data-sk="selfview"]');
+    if (sv) sv.onclick = function () { sv.disabled = true; window.SSMPDDb.setStaffKpiSelfView(!state.selfView).then(function () { state.selfView = !state.selfView; draw(); }).catch(function (e) { sv.disabled = false; alert((e && e.message) || "تعذر الحفظ (للسوبر أدمن فقط)"); }); };
     var tb = c.querySelector('[data-sk="targets"]'); if (tb) tb.onclick = targetsModal;
     var cb = c.querySelector('[data-sk="csv"]'); if (cb) cb.onclick = exportCsv;
   }
   function load() {
     var seq = ++state.seq, r = range(); state.loading = true; state.error = "";
     var db = window.SSMPDDb, rm = reviewMonth(r);
-    Promise.all([db.staffKpis(r.from.toISOString(), r.to.toISOString()), db.staffKpis(r.prevFrom.toISOString(), r.prevTo.toISOString()), db.kpiDefs(), db.staffReviews(rm.iso), db.staffAlerts().catch(function () { return []; }), db.staffSummaries(prevMonthIso()).catch(function () { return []; })]).then(function (res) {
+    Promise.all([db.staffKpis(r.from.toISOString(), r.to.toISOString()), db.staffKpis(r.prevFrom.toISOString(), r.prevTo.toISOString()), db.kpiDefs(), db.staffReviews(rm.iso), db.staffAlerts().catch(function () { return []; }), (db.staffKpiSelfView ? db.staffKpiSelfView().catch(function () { return null; }) : Promise.resolve(null)), db.staffSummaries(prevMonthIso()).catch(function () { return []; })]).then(function (res) {
       if (seq !== state.seq) return;
       state.rows = res[0] || []; state.prev = res[1] || [];
       state.defs = {}; (res[2] || []).forEach(function (d) { state.defs[d.kpi] = d; });
       state.reviews = {}; (res[3] || []).forEach(function (x) { state.reviews[x.admin_id] = x; });
-      state.alerts = res[4] || []; state.summaries = {}; (res[5] || []).forEach(function (x) { state.summaries[x.admin_id] = x; });
+      state.selfView = !!(res[5] && res[5].value === true); state.alerts = res[4] || []; state.summaries = {}; (res[6] || []).forEach(function (x) { state.summaries[x.admin_id] = x; });
       state.loading = false; draw();
     }).catch(function (e) {
       if (seq !== state.seq) return;

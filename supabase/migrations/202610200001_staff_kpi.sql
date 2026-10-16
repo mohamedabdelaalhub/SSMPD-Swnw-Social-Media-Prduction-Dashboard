@@ -17,3 +17,9 @@
 -- دوال (postgres/service فقط): staff_kpis_admin(from,to) · staff_kpi_month_data(month) · staff_summary_save(...) · staff_summary_fallback(month) · staff_kpi_scan_alerts()
 -- cron: ssmpd-staff-kpi-alerts يوميًا 07:30 UTC · ssmpd-staff-summary-fallback يوم 3 من كل شهر 08:00 UTC
 -- personal_home_inbox(): اتضاف مصدر kpi (تنبيهات الأداء) للسوبر أدمن والمدير العام، والنوع kpi بيفتح تاب أداء الفريق.
+
+-- ===== تطويرات (طُبّقت على القاعدة الحية) =====
+-- personal_home_rating_queue(): منشورات عدّى عليها 3 أيام من غير تقييم (للموظف: بتاعته، وللمدير/المعتمد: الكل) — كارت «قيّم منشوراتك» في الرئيسية
+-- meta_publish_issues() + meta_job_retry(job): قائمة «نشر محتاج متابعة» فوق تاب النشر وإعادة محاولة بزرار
+-- staff_kpi_settings(self_view=false افتراضيًا) + my_staff_kpis(from,to): تاب «أدائي» للموظف (أرقامه هو بس) — بيتفعّل من تاب أداء الفريق (سوبر أدمن)
+-- policy content_learnings_toggle: الإدارة تعطّل أي قاعدة من لوحة «ذاكرة المحتوى» فوق تاب أداء البوستات

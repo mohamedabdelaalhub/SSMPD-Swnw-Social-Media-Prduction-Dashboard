@@ -91,3 +91,8 @@
  .ph-shortcuts{grid-template-columns:minmax(0,1fr)}.ph-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
  #notif-panel.ph-inbox{position:fixed!important;top:75px!important;inset-inline:12px!important;width:auto!important;max-width:440px;margin-inline:auto}
 }
+
+.ph-rate{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;border-bottom:1px solid #EDF1F7;padding:10px 4px}.ph-rate:last-child{border-bottom:0}
+.ph-rt{display:grid;gap:5px;flex:1;min-width:200px}.ph-rt b{font-size:14px;line-height:1.5}
+.ph-rbtns{display:flex;gap:6px;flex-wrap:wrap}.ph-rbtns button{font:inherit;font-size:12.5px;border:1px solid #D5DEEE;background:#F4F7FD;border-radius:99px;padding:5px 12px;cursor:pointer}.ph-rbtns button:hover{border-color:#0F369D;background:#fff}.ph-rbtns button:disabled{opacity:.5;cursor:default}
+.ph-thanks{color:#2F7D5C;font-size:13px}
