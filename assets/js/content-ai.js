@@ -68,6 +68,21 @@
     set("cf-agent-raw", JSON.stringify(idea.raw));
     var format = document.getElementById("ci-format"); if (format && idea.formatKey) format.value = idea.formatKey;
   }
+  // ذاكرة الأداء الأسبوعية (content_learnings) كسياق إضافي للمولّد — استرشاد فقط، ما بتغيّرش القواعد الطبية
+  var LEARN_DIM = { format: "النوع", daypart: "فترة النشر", weekday: "يوم النشر", cta_type: "نوع الدعوة للإجراء", specialty: "التخصص", angle: "الزاوية", note: "ملاحظة" };
+  function learningText(brand) {
+    if (!window.SSMPDDb.getContentLearningBrief || !brand) return Promise.resolve("");
+    return window.SSMPDDb.getContentLearningBrief(brand).then(function (j) {
+      if (!j || !j.mix) return "";
+      function line(r) { return (LEARN_DIM[r.dimension] || r.dimension) + "=" + r.value + " (" + (r.confidence === "strong" ? "قوي" : "مبدئي") + ")"; }
+      var up = (j.do_more || []).slice(0, 8).map(line).join("، "), down = (j.do_less || []).slice(0, 8).map(line).join("، ");
+      var weak = (j.staff_weak_ratings_30d || []).slice(0, 4).map(function (w) { return "«" + w.title + "»" + (w.reason ? " — " + w.reason : ""); }).join("؛ ");
+      return "\n\nذاكرة الأداء (من أداء المنشورات السابقة — استرشاد فقط ولا تتجاوز القواعد الطبية ولا Brief الحالي): " +
+        "70% كرر اللي نجح بموضوع جديد، 20% جرّب زاوية مختلفة، 10% تجربة محددة. " +
+        (up ? "نجح: " + up + ". " : "") + (down ? "ضعيف: " + down + ". " : "") + (weak ? "تقييم الموظفين لمنشورات ضعيفة: " + weak + ". " : "") +
+        "لا تكرر عناوين المنشورات الأخيرة.";
+    }).catch(function () { return ""; });
+  }
   function openGenerator() {
     var context = getContext(),doctorBrief,dinaBrief,baBrief;
     try{doctorBrief=window.SSMPDDoctorContent.current(true);dinaBrief=window.SSMPDDinaContent.current(true);}catch(e){alert(e.message);return;}
@@ -107,7 +122,8 @@
       try{baBrief=window.SSMPDBeforeAfterContent&&window.SSMPDBeforeAfterContent.current(true);}catch(e){slot.textContent=e.message;btn.disabled=false;btn.textContent="توليد الاقتراحات";return;}
       var guidedTopic=baBrief?window.SSMPDBeforeAfterContent.topic(baBrief,topic||context.topic):topic||context.topic;
       var requestContext = Object.assign({}, context, { topic: guidedTopic,doctorBrief:doctorBrief });
-      window.SSMPDWorkflow.getContentAIBrief(requestContext).then(function (brief) {
+      Promise.all([window.SSMPDWorkflow.getContentAIBrief(requestContext), learningText(context.brand)]).then(function (pair) {
+        var brief = String(pair[0] || "") + pair[1];
         return window.SSMPDDb.generateContentIdeas({
         mode: mode, brand: context.brand, specialty: context.specialty,
         advertising_objective: context.advertisingObjective, preferred_format: context.format,

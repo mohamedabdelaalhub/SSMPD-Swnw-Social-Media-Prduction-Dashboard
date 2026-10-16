@@ -1031,6 +1031,16 @@
     // أسماء كل الموظفين النشطين بس (id/name/role/active) — من غير بيانات حساسة،
     // متاحة لأي مستخدم مسجّل (مش بس السوبر أدمن زي listAdmins()). استخدمها لأي
     // عرض اسم بس (بواسطة/صاحب كومنت/مصمم مسؤول)، مش لشاشة إدارة المستخدمين نفسها.
+    // تقييم الموظف لأداء مادة منشورة (strong/ok/weak + سبب) — بيغذّي ذاكرة التعلّم
+    getContentLearningBrief: function (brand) {
+      return handle(client.rpc("content_learning_brief_staff", { p_brand: brand }));
+    },
+    getContentRating: function (contentId) {
+      return handle(client.from("content_ratings").select("rating,reason,rated_at").eq("content_id", contentId).maybeSingle());
+    },
+    setContentRating: function (contentId, rating, reason) {
+      return handle(client.from("content_ratings").upsert({ content_id: contentId, rating: rating, reason: String(reason || "").slice(0, 400), rated_by: window.SSMPDAuth.currentAdmin.id, rated_at: new Date().toISOString() }, { onConflict: "content_id" }));
+    },
     listAdminsBasic: function () {
       return handle(client.rpc("list_admins_basic"));
     },

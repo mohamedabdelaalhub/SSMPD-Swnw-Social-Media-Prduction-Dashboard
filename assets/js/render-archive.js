@@ -117,6 +117,7 @@
       W.contentFormatDetailsHtml(item) +
       '<div id="archive-publication-preview"></div>' +
       '<div id="archive-website-publish"></div>' +
+      '<div id="archive-rating"></div>' +
       window.SSMPDScheduleHistory.sectionHtml(item, adminsById) +
       (window.SSMPDSources ? window.SSMPDSources.sectionHtml(item) : '') +
       (item.published_url ? '<p><a href="' + item.published_url + '" target="_blank" class="btn ghost sm">رابط المنشور</a></p>' : '') +
@@ -129,6 +130,7 @@
     document.body.appendChild(backdrop);
     window.SSMPDPublicationPreview.mount(backdrop.querySelector("#archive-publication-preview"),item);
     window.SSMPDWebsite.mountAction(backdrop.querySelector("#archive-website-publish"),item);
+    if (window.SSMPDContentRating) window.SSMPDContentRating.mount(backdrop.querySelector("#archive-rating"), item);
     window.SSMPDScheduleHistory.mountAll(backdrop, [item], adminsById);
     if (window.SSMPDSources) window.SSMPDSources.mount(backdrop.querySelector("[data-src-host]"), item, { editable: false });
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };

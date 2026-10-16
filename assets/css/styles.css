@@ -668,3 +668,9 @@ table.simple.acc-table td.acc-col-num{text-align:left;}
 .field input[type="date"]::-webkit-date-and-time-value{text-align:right;min-height:1.2em}
 /* لقطات Gemini داخل مودال التصميم */
 .ai-clips{border:1px solid var(--c-border);border-radius:12px;padding:12px;margin:12px 0;background:#FAFBFD}.ai-clips-head{display:flex;justify-content:space-between;align-items:center}.ai-clips-head h4{margin:0}.ai-clips-hint{font-size:12px;color:var(--c-muted);margin:6px 0}.ai-clips-error{font-size:12px;color:#D0402A;margin:6px 0}.ai-clips-prompt{width:100%;box-sizing:border-box;margin:8px 0;padding:9px 10px;border:1px solid var(--c-border);border-radius:8px;font:inherit}.ai-clips-confirm{margin:8px 0;font-size:13px}.ai-clips-list{list-style:none;padding:0;margin:10px 0 0;display:grid;gap:8px}.ai-clip-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.ai-clip-frame{width:100%;aspect-ratio:9/16;max-height:60vh;border:0;border-radius:10px;margin-top:8px;background:#000}.ai-clips-settings{display:grid;gap:8px;margin:8px 0;padding:10px;border:1px dashed var(--c-border);border-radius:10px}.ai-clips-settings label{display:grid;gap:4px;font-size:12px}.ai-clips-settings .inv-check{display:flex;align-items:center;gap:8px}
+
+.crt{margin:12px 0;padding:10px 12px;border:1px solid var(--c-border,#dfe4ea);border-radius:12px;background:#f7f9fc;display:grid;gap:8px}
+.crt-chips{display:flex;gap:8px;flex-wrap:wrap}.crt-chip{font:inherit;padding:6px 14px;border-radius:99px;border:1px solid #cfd7df;background:#fff;cursor:pointer}
+.crt-chip.on.strong{background:#2F7D5C;color:#fff;border-color:#2F7D5C}.crt-chip.on.ok{background:#0F369D;color:#fff;border-color:#0F369D}.crt-chip.on.weak{background:#D0402A;color:#fff;border-color:#D0402A}
+.crt-reason{display:flex;gap:8px}.crt-reason input{flex:1;min-width:0;font:inherit;padding:7px 10px;border:1px solid #cfd7df;border-radius:8px}
+.crt-ok{color:#2F7D5C}.crt-err{color:#D0402A}
