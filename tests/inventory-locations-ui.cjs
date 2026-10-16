@@ -52,7 +52,7 @@ window.SSMPDDb={taskPeople:function(){throw Error('inventory must not depend on 
    assert.deepEqual(crashes,[]);
    const parsed=await page.evaluate(()=>SSMPDInventoryWorkspace.parseRows([['الصنف','العدد','علبة \\ عدد'],['كاب حجامة',3,'علبة (10 في العلبة)'],['كانولا','٠','عدد']]));
    assert.equal(parsed[0].factor,10);assert.equal(parsed[0].unit,'قطعة');assert.equal(parsed[1].quantity,0);
-   await page.evaluate(()=>{snap.can_manage=false;snap.can_setup=false;});await page.reload();await page.waitForSelector('[data-w-location]');await page.click('[data-group="reporting"]');assert.equal(await page.locator('[data-view="reports"]').count(),0,'management reports remain hidden');assert.equal(await page.locator('[data-w-open-structure]').count(),0,'setup remains hidden');await go('requests');assert.equal(await page.locator('[data-view="suppliers"]').count(),0,'supplier management remains hidden');
+   await page.evaluate(()=>{snap.can_manage=false;snap.can_setup=false;});await page.selectOption('[data-w-location]','central');await page.waitForFunction(()=>!document.querySelector('[data-w-open-structure]'));await page.click('[data-group="reporting"]');assert.equal(await page.locator('[data-view="reports"]').count(),0,'management reports remain hidden');assert.equal(await page.locator('[data-w-open-structure]').count(),0,'setup remains hidden');await go('requests');assert.equal(await page.locator('[data-view="suppliers"]').count(),0,'supplier management remains hidden');
    await page.close();
   }
   console.log('PASS inventory UI at 1280/390: location switching, transfer request, individual entry, Arabic zero, draft counts, branch copy and Excel-column parser; RPCs mocked');
