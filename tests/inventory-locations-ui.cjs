@@ -1,7 +1,7 @@
 const fs=require('fs'),path=require('path'),http=require('http'),assert=require('node:assert/strict');
 const {chromium}=require('playwright');
 const root=path.resolve(__dirname,'..');
-const html=`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><link rel="stylesheet" href="/assets/css/styles.css"><link rel="stylesheet" href="/assets/css/inventory.css"></head><body><div id="inventory-navigation" hidden></div><div id="r"></div>
+const html=`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/assets/css/styles.css"><link rel="stylesheet" href="/assets/css/inventory.css"></head><body><div id="inventory-navigation" hidden></div><main class="view" id="r"></main>
 <script>
 window.calls=[];window.errors=[];window.SSMPDToast={error:function(t){errors.push(t)},success:function(){}};
 var item={id:'i1',name:'كانيولا صفراء',base_unit:'قطعة',units_per_pack:10,category:'مستلزمات',on_hand:50,minimum_quantity:5,current_average_cost:2,current_sale_price:3};
@@ -13,7 +13,7 @@ window.SSMPDDb={taskPeople:function(){throw Error('inventory must not depend on 
  const server=http.createServer((req,res)=>{const url=decodeURIComponent(req.url.split('?')[0]);if(url==='/'){res.setHeader('content-type','text/html');return res.end(html);}const file=path.join(root,url);if(!file.startsWith(root)||!fs.existsSync(file)){res.statusCode=404;return res.end();}res.setHeader('content-type',file.endsWith('.css')?'text/css':'text/javascript');res.end(fs.readFileSync(file));}).listen(0);
  const browser=await chromium.launch({executablePath:process.env.PW_CHROMIUM||undefined,args:['--no-sandbox']});
  try{
-  for(const width of [1280,390]){
+  for(const width of [1280,390,360]){
    const page=await browser.newPage({viewport:{width,height:900}});const crashes=[];page.on('pageerror',e=>crashes.push(e.message));
 
   async function go(view){
@@ -30,6 +30,13 @@ window.SSMPDDb={taskPeople:function(){throw Error('inventory must not depend on 
    await page.click('[data-group="operations"]');assert.equal(await page.locator('.inv-subnav [data-view]').count(),4);assert.equal(await page.locator('#r [data-inv-table]').count(),0);assert.equal(await page.evaluate(()=>calls.length),beforeNav,'group navigation is local');
    if(process.env.INVENTORY_QA_SHOTS)await page.screenshot({path:path.join(process.env.INVENTORY_QA_SHOTS,'inventory-groups-'+width+'.png')});
 
+   async function fits(label){const size=await page.evaluate(()=>({screen:innerWidth,doc:document.documentElement.scrollWidth}));assert(size.doc<=size.screen+1,label+' must not widen document: '+JSON.stringify(size));}
+   await go('transfers');await fits('transfers');
+   if(process.env.INVENTORY_QA_SHOTS)await page.screenshot({path:path.join(process.env.INVENTORY_QA_SHOTS,'inventory-transfers-'+width+'.png')});
+   await go('balances');await fits('balances');
+   if(process.env.INVENTORY_QA_SHOTS)await page.screenshot({path:path.join(process.env.INVENTORY_QA_SHOTS,'inventory-balances-'+width+'.png')});
+   await page.click('[data-w-open-structure]');await fits('structure');
+   if(process.env.INVENTORY_QA_SHOTS)await page.screenshot({path:path.join(process.env.INVENTORY_QA_SHOTS,'inventory-structure-'+width+'.png')});
    // Existing dashboard reads a scoped snapshot; only explicit location changes reset the view.
    await page.selectOption('[data-w-location]','nurse');await page.waitForFunction(()=>calls.filter(c=>c[0]==='inventory_workspace_snapshot').some(c=>c[1].p_location==='nurse'));
    await go('transfers');await page.click('[data-w-new-transfer]');
@@ -55,7 +62,7 @@ window.SSMPDDb={taskPeople:function(){throw Error('inventory must not depend on 
    await page.evaluate(()=>{snap.can_manage=false;snap.can_setup=false;});await page.selectOption('[data-w-location]','central');await page.waitForFunction(()=>!document.querySelector('[data-w-open-structure]'));await page.click('[data-group="reporting"]');assert.equal(await page.locator('[data-view="reports"]').count(),0,'management reports remain hidden');assert.equal(await page.locator('[data-w-open-structure]').count(),0,'setup remains hidden');await go('requests');assert.equal(await page.locator('[data-view="suppliers"]').count(),0,'supplier management remains hidden');
    await page.close();
   }
-  console.log('PASS inventory UI at 1280/390: location switching, transfer request, individual entry, Arabic zero, draft counts, branch copy and Excel-column parser; RPCs mocked');
+  console.log('PASS inventory UI at 1280/390/360: bounded table scrolling, location switching, transfer request, individual entry, Arabic zero, draft counts, branch copy and Excel-column parser; RPCs mocked');
  }finally{await browser.close();server.close();}
 })().catch(e=>{console.error(e);process.exit(1);});
 

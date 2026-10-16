@@ -39,3 +39,15 @@
 .inv-group-empty p{margin:4px 0;color:#687482;font-size:14px}
 @media(max-width:640px){.inv-nav.inv-nav-main{gap:4px}.inv-nav-main .tab-btn{font-size:12px;padding:8px 3px}.inv-subnav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.inv-subnav .btn{white-space:normal;font-size:13px;padding:9px 6px}.inv-section-menu{padding:12px}}
 @media print{.inv-section-menu,.inv-group-empty{display:none!important}}
+
+/* Constrain intrinsic table width to its own scroller, not the page/grid. */
+.inv-shell{grid-template-columns:minmax(0,1fr);width:100%;max-width:100%;min-width:0}
+.inv-shell>*,.inv-card,.inv-section-menu,.inv-location-bar{min-width:0;max-width:100%;box-sizing:border-box}
+.inv-scroll,.inv-table-wrap{min-width:0;width:100%;max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
+.inv-shell input,.inv-shell select,.inv-shell textarea{max-width:100%;box-sizing:border-box}
+.inv-location-bar label{max-width:100%;min-width:0}
+.inv-scroll-hint{font-size:12px;color:#687482;margin:6px 0;display:none}
+.inv-operation-help{margin:0;color:#536170;font-size:14px;line-height:1.8}
+@media(max-width:700px){.inv-scroll-hint{display:block}.inv-card{padding:12px}.inv-form{grid-template-columns:minmax(0,1fr)}.inv-form label,.inv-filters label{min-width:0}.inv-shell h2{font-size:19px;overflow-wrap:anywhere}.inv-card p{overflow-wrap:anywhere}}
+
+.inv-shell table.inv-table-compact{min-width:0;table-layout:fixed}.inv-table-compact td{overflow-wrap:anywhere}
