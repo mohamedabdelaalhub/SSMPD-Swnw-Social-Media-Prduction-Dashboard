@@ -127,6 +127,7 @@
     html += '</div>';
 
     container.innerHTML = html;
+    if (window.SSMPDOpsPanels) window.SSMPDOpsPanels.publishIssues(container);
     window.SSMPDWebsite.mount(container, ctx.allItems);
     wireViewToggle(container, ctx);
     wire(container);
@@ -222,6 +223,7 @@
     html += '</div>';
 
     container.innerHTML = html;
+    if (window.SSMPDOpsPanels) window.SSMPDOpsPanels.publishIssues(container);
     window.SSMPDWebsite.mount(container, ctx.allItems);
     wireViewToggle(container, ctx);
 
@@ -388,6 +390,7 @@
     html += '<div class="pbd-week">جاهزة للنشر بدون معاد محدد <small>(' + ready.length + ')</small></div>';
     html += ready.length ? '<div class="pbd-plain">' + ready.map(function (i) { return daysRowHtml(i, adminsById, false); }).join("") + '</div>' : '<div class="empty-state">مفيش مواد جاهزة للنشر دلوقتي</div>';
     container.innerHTML = html;
+    if (window.SSMPDOpsPanels) window.SSMPDOpsPanels.publishIssues(container);
     window.SSMPDWebsite.mount(container, ctx.allItems);
     wireViewToggle(container, ctx);
     mountThumbs(container, scheduled.concat(ready));

@@ -97,6 +97,7 @@
           "<td>" + n(r.ig_saves) + "</td><td>" + n(r.m.shares) + "</td><td>" + pct(r.m.rate) + "</td></tr>";
       }).join("") + "</tbody></table></div></div>";
     container.innerHTML = html;
+    if (window.SSMPDOpsPanels) window.SSMPDOpsPanels.learningPanel(container);
     var sel = container.querySelector("#pf-brand"); if (sel) sel.onchange = function () { state.brand = sel.value; draw(container, all); };
   }
 
