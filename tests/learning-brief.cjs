@@ -1,0 +1,7 @@
+const assert=require('node:assert/strict');const fs=require('node:fs');
+global.window={SSMPDDb:{getContentLearningBrief:b=>Promise.resolve({mix:{},do_more:[{dimension:'format',value:'carousel',confidence:'strong',evidence:{posts:9,ratio:2.5}}],do_less:[{dimension:'daypart',value:'evening',confidence:'tentative',evidence:{posts:13,ratio:0.38}}],experiments:[],staff_weak_ratings_30d:[{title:'منشور ضعيف',reason:'هوك ممل'}],staff_strong_ratings_30d:[],upcoming_occasions:[{name:'اليوم العالمي للسكري',from:'2026-11-14',to:'2026-11-14',specialty:'internal'}],weekly_recommendations:['كرّر الكاروسيل الصبح'],weekly_report_week_end:'2026-10-16',recent_titles_45d:['عنوان أ','عنوان ب']})}};
+eval(fs.readFileSync(__dirname+'/../assets/js/learning-brief.js','utf8'));
+(async()=>{const LB=window.SSMPDLearningBrief;assert.equal(LB.block('sono'),'');const t=await LB.load('sono');assert.equal(LB.block('sono'),t);
+for(const k of ['PERFORMANCE MEMORY','DO MORE: النوع = كاروسيل (قوي، 9 منشورات، 2.5× متوسط الصفحة)','DO LESS / AVOID: فترة النشر = العصر/المغرب 4–7','STAFF MARKED WEAK','هوك ممل','WEEKLY REPORT RECOMMENDATIONS (أسبوع 2026-10-16): كرّر الكاروسيل الصبح','UPCOMING HEALTH OCCASIONS: اليوم العالمي للسكري','RECENT TITLES','MEMORY RULES'])assert(t.includes(k),'missing '+k);
+assert.equal(LB.build({}),'');assert.equal(LB.build({mix:{},do_more:[],do_less:[],upcoming_occasions:[],weekly_recommendations:[],staff_weak_ratings_30d:[]}),'','empty memory adds nothing');
+console.log('PASS learning brief block (rules, staff signals, weekly recs, occasions, empty case)');})();

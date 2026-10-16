@@ -23,3 +23,5 @@
 -- meta_publish_issues() + meta_job_retry(job): قائمة «نشر محتاج متابعة» فوق تاب النشر وإعادة محاولة بزرار
 -- staff_kpi_settings(self_view=false افتراضيًا) + my_staff_kpis(from,to): تاب «أدائي» للموظف (أرقامه هو بس) — بيتفعّل من تاب أداء الفريق (سوبر أدمن)
 -- policy content_learnings_toggle: الإدارة تعطّل أي قاعدة من لوحة «ذاكرة المحتوى» فوق تاب أداء البوستات
+
+-- content_learning_brief(): اتضاف weekly_recommendations (توصيات تقرير الجمعة الأخير) + weekly_report_week_end — بتدخل في بلوك PERFORMANCE MEMORY في الـBrief (assets/js/learning-brief.js)
