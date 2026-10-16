@@ -38,6 +38,15 @@
   function escapeHtml(s) {
     return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
+  function patientNameLink(id, name) {
+    if (!id) return escapeHtml(name || "—");
+    return '<button type="button" class="patient-name-link" data-open="' + escapeHtml(id).replace(/"/g, "&quot;") + '">' + escapeHtml(name || "—") + '</button>';
+  }
+  function bindPatientLinks(view, container) {
+    view.querySelectorAll("[data-open]").forEach(function (btn) {
+      btn.onclick = function () { openPatientModal(view, container, btn.getAttribute("data-open")); };
+    });
+  }
   function fmtBytes(n) {
     if (!n && n !== 0) return "—";
     if (n < 1024) return n + " بايت";
@@ -150,9 +159,9 @@
       if (!patients.length) {
         html += '<p style="color:var(--c-muted);font-size:13px;">مفيش إضافات لسه.</p>';
       } else {
-        html += "<table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D9%83%D9%88%D8%AF%20%D8%A7%D9%84%D9%85%D8%B1%D9%8A%D8%B6-->كود المريض</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%A7%D8%B3%D9%85-->الاسم</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%87%D8%A7%D8%AA%D9%81-->الهاتف</th><th> <!--ssmpd-i18n:%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE-->تاريخ</th></tr></thead><tbody>";
+        html += "<table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D9%83%D9%88%D8%AF%20%D8%A7%D9%84%D9%85%D8%B1%D9%8A%D8%B6-->كود المريض</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%A7%D8%B3%D9%85-->الاسم</th><th>أضاف المريض</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%87%D8%A7%D8%AA%D9%81-->الهاتف</th><th> <!--ssmpd-i18n:%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE-->تاريخ</th></tr></thead><tbody>";
         patients.forEach(function (p) {
-          html += '<tr><td>' + escapeHtml(p.patient_code || "—") + '</td><td>' + escapeHtml(p.full_name) + '</td>' +
+          html += '<tr><td>' + escapeHtml(p.patient_code || "—") + '</td><td>' + patientNameLink(p.id, p.full_name) + '</td><td>' + escapeHtml(p.created_by_name || 'غير مسجل') + '</td>' +
             '<td>' + escapeHtml(p.phone || "—") + '</td><td style="font-size:11px;color:var(--c-muted);">' + fmtDate(p.created_at) + '</td></tr>';
         });
         html += '</tbody></table>';
@@ -164,9 +173,9 @@
       if (!files.length) {
         html += '<p style="color:var(--c-muted);font-size:13px;">مفيش ملفات لسه.</p>';
       } else {
-        html += "<table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D9%84%D9%81-->الملف</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%81%D8%A6%D8%A9-->الفئة</th><th>حالة المراجعة</th><th> <!--ssmpd-i18n:%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE-->تاريخ</th></tr></thead><tbody>";
+        html += "<table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D9%84%D9%81-->الملف</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%81%D8%A6%D8%A9-->الفئة</th><th>رافع الملف</th><th>حالة المراجعة</th><th> <!--ssmpd-i18n:%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE-->تاريخ</th></tr></thead><tbody>";
         files.forEach(function (f) {
-          html += '<tr><td>' + escapeHtml(f.file_name) + '</td><td>' + categoryLabel(f.category) + '</td>' +
+          html += '<tr><td>' + escapeHtml(f.file_name) + '</td><td>' + categoryLabel(f.category) + '</td><td>' + escapeHtml(f.uploaded_by_name || 'غير مسجل') + '</td>' +
             '<td><span class="status-pill ' + (REVIEW_PILL[f.review_status] || "draft") + '">' + (REVIEW_LABELS[f.review_status] || f.review_status) + '</span></td>' +
             '<td style="font-size:11px;color:var(--c-muted);">' + fmtDate(f.uploaded_at) + '</td></tr>';
         });
@@ -175,6 +184,7 @@
       html += '</div>';
 
       view.innerHTML = html;
+      bindPatientLinks(view, container);
     }).catch(function (e) {
       view.innerHTML = '<div class="err-msg">خطأ: ' + e.message + '</div>';
     });
@@ -2742,10 +2752,10 @@
         } else {
           html += "<table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%B1%D9%8A%D8%B6-->المريض</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D9%84%D9%81-->الملف</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%81%D8%A6%D8%A9-->الفئة</th><th>رافع الملف</th><th>تاريخ الرفع</th><th></th></tr></thead><tbody>";
           files.forEach(function (f) {
-            html += '<tr><td>' + escapeHtml((f.patients && f.patients.full_name) || "—") + '</td>' +
+            html += '<tr><td>' + patientNameLink(f.patient_id, f.patients && f.patients.full_name) + '</td>' +
               '<td>' + escapeHtml(f.file_name) + (f.other_description ? ' — ' + escapeHtml(f.other_description) : '') + '</td>' +
               '<td>' + categoryLabel(f.category) + '</td>' +
-              '<td style="font-size:11px;">' + escapeHtml(f.uploaded_by_name || "—") + '</td>' +
+              '<td style="font-size:13px;font-weight:600;">' + escapeHtml(f.uploaded_by_name || "غير مسجل") + '</td>' +
               '<td style="font-size:11px;color:var(--c-muted);">' + fmtDate(f.uploaded_at) + '</td>' +
               '<td>' + (state.reviewFilter === "pending" ?
                 '<button class="btn ghost sm" data-view="' + f.id + "\"> <!--ssmpd-i18n:%D8%B9%D8%B1%D8%B6-->عرض</button> <button class=\"btn sm\" data-approve=\"" + f.id + "\"> <!--ssmpd-i18n:%D8%A7%D8%B9%D8%AA%D9%85%D8%A7%D8%AF-->اعتماد</button> <button class=\"btn danger sm\" data-reject=\"" + f.id + "\"> <!--ssmpd-i18n:%D8%B1%D9%81%D8%B6-->رفض</button>" :
@@ -2760,6 +2770,7 @@
         }
         html += '</div>';
         view.innerHTML = html;
+        bindPatientLinks(view, container);
 
         document.getElementById("rv-filter").onchange = function () {
           state.reviewFilter = this.value; state.reviewPage = 1; renderReviewScreen(view, container);
@@ -2976,9 +2987,9 @@
           var canAssign = canAssignDoctor();
           var canEditBrowse = canUpload();
           var canDeleteBrowse = window.SSMPDRoles.hasRole(me, "super_admin");
-          html += "<table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D9%83%D9%88%D8%AF%20%D8%A7%D9%84%D9%85%D8%B1%D9%8A%D8%B6-->كود المريض</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%A7%D8%B3%D9%85-->الاسم</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%87%D8%A7%D8%AA%D9%81-->الهاتف</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%B3%D9%86-->السن</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%86%D9%88%D8%B9-->النوع</th><th>الرقم الطبي</th><th>آخر زيارة</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AD%D8%A7%D9%84%D8%A9-->الحالة</th><th></th></tr></thead><tbody>";
+          html += "<table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D9%83%D9%88%D8%AF%20%D8%A7%D9%84%D9%85%D8%B1%D9%8A%D8%B6-->كود المريض</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%A7%D8%B3%D9%85-->الاسم</th><th>أضاف المريض</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%87%D8%A7%D8%AA%D9%81-->الهاتف</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%B3%D9%86-->السن</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%86%D9%88%D8%B9-->النوع</th><th>الرقم الطبي</th><th>آخر زيارة</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AD%D8%A7%D9%84%D8%A9-->الحالة</th><th></th></tr></thead><tbody>";
           patients.forEach(function (p) {
-            html += '<tr><td>' + escapeHtml(p.patient_code || "—") + '</td><td>' + escapeHtml(p.full_name) + '</td>' +
+            html += '<tr><td>' + escapeHtml(p.patient_code || "—") + '</td><td>' + patientNameLink(p.id, p.full_name) + '</td><td>' + escapeHtml(p.created_by_name || 'غير مسجل') + '</td>' +
               '<td>' + escapeHtml(p.phone || "—") + '</td>' +
               '<td>' + escapeHtml(p.age != null ? String(p.age) : "—") + '</td>' +
               '<td>' + (p.gender === "male" ? "ذكر" : p.gender === "female" ? "أنثى" : "—") + '</td>' +
