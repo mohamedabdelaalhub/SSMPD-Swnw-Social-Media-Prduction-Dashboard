@@ -247,4 +247,4 @@ button.tsk-chip-more{font:inherit;font-size:12px;cursor:pointer;background:#eaf1
 .tv-comment .tv-new{font-style:normal;font-size:11px;font-weight:700;color:#fff;background:#D0402A;border-radius:99px;padding:2px 9px}
 
 .tsk-att-wrap{display:inline-flex;align-items:center;gap:4px}
-.tsk-att-dl{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:50%;background:#0F369D;color:#fff;text-decoration:none;font-size:14px;line-height:1}.tsk-att-dl:hover{background:#F15A22}
+.tsk-att-dl{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:50%;background:#0F369D;color:#fff;text-decoration:none;font-size:14px;line-height:1}.tsk-att-dl:hover{background:#F15A22}.tsk-att-dl,.tsk-att-dl:hover,.tsk-att-dl:visited,.tsk-att-dl:focus{color:#fff;text-decoration:none}
