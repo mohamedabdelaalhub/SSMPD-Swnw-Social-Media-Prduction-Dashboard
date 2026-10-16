@@ -376,7 +376,8 @@
     function stamp(v){var d=new Date(v);return isNaN(d)?"":d.toLocaleString("ar-EG-u-nu-latn",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});}
     function attsHtml(updateId){
       var list=state.historyAtts[updateId];if(!list||!list.length)return "";
-      return '<div class="tsk-atts">'+list.map(function(a){return '<a class="tsk-att" href="'+esc(/^https:\/\/(drive|docs)\.google\.com\//.test(a.file_url||"")?a.file_url:"#")+'" target="_blank" rel="noopener noreferrer">📎 '+esc(a.file_name)+(a.size_bytes?' <small>'+esc(fileSize(a.size_bytes))+'</small>':"")+'</a>';}).join("")+'</div>';
+      function dl(u){var m=/\/d\/([\w-]+)/.exec(u||"")||/[?&]id=([\w-]+)/.exec(u||"");return m?"https://drive.google.com/uc?export=download&id="+m[1]:"";}
+      return '<div class="tsk-atts">'+list.map(function(a){var ok=/^https:\/\/(drive|docs)\.google\.com\//.test(a.file_url||""),d=ok?dl(a.file_url):"";return '<span class="tsk-att-wrap"><a class="tsk-att" href="'+esc(ok?a.file_url:"#")+'" target="_blank" rel="noopener noreferrer">📎 '+esc(a.file_name)+(a.size_bytes?' <small>'+esc(fileSize(a.size_bytes))+'</small>':"")+'</a>'+(d?'<a class="tsk-att-dl" href="'+esc(d)+'" target="_blank" rel="noopener noreferrer" download title="تحميل" aria-label="تحميل '+esc(a.file_name)+'">⬇</a>':"")+'</span>';}).join("")+'</div>';
     }
     function renderFiles(){
       var box=el.querySelector("[data-file-list]");if(!box)return;
