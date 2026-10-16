@@ -3162,8 +3162,10 @@
       '<div class="field"><label>الهدف من الجلسات</label><textarea id="sp-goal" rows="3">' + escapeHtml(profile.therapy_goal || "") + '</textarea></div>' +
       "<div class=\"field\"><label> <!--ssmpd-i18n:%D9%85%D9%84%D8%A7%D8%AD%D8%B8%D8%A7%D8%AA%20%D8%A7%D9%84%D8%A3%D8%AE%D8%B5%D8%A7%D8%A6%D9%8A-->ملاحظات الأخصائي</label><textarea id=\"sp-notes\" rows=\"3\">" + escapeHtml(profile.specialist_notes || "") + '</textarea></div>' +
       '<div class="field"><label>عدد الجلسات المخطط لها</label><input id="sp-planned-sessions" type="number" min="1" max="999" value="' + escapeHtml(profile.planned_sessions || "") + '" placeholder="مثال: 12"></div>' +
+      (window.SSMPDChildAssessments ? window.SSMPDChildAssessments.formHtml('speech', profile.assessment_details || {}, patient, false) : '') +
       '<button class="btn block" id="sp-save-profile">حفظ التقييم</button></div>';
     document.body.appendChild(backdrop);
+    if (window.SSMPDChildAssessments) window.SSMPDChildAssessments.wireForm(backdrop);
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
     backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
     var issues = backdrop.querySelector("#sp-issues");
@@ -3179,7 +3181,10 @@
       if (planned && (!Number.isInteger(planned) || planned < 1 || planned > 999)) { T.show("راجع عدد الجلسات", "error"); return; }
       var genetic = bool("sp-genetic"), birth = bool("sp-birth"), previous = bool("sp-previous");
       var patch = { first_session_date:backdrop.querySelector("#sp-first-session").value || null, presenting_complaint:backdrop.querySelector("#sp-complaint").value.trim() || null, problem_started:backdrop.querySelector("#sp-started").value.trim() || null, issue_types:selected, issue_other:selected.indexOf("other") > -1 ? backdrop.querySelector("#sp-other").value.trim() || null : null, consanguinity:bool("sp-consanguinity"), genetic_family_history:genetic, genetic_family_history_details:genetic ? backdrop.querySelector("#sp-genetic-details").value.trim() || null : null, pregnancy_birth_issues:birth, pregnancy_birth_issues_details:birth ? backdrop.querySelector("#sp-birth-details").value.trim() || null : null, first_word:backdrop.querySelector("#sp-first-word").value.trim() || null, first_sentence:backdrop.querySelector("#sp-first-sentence").value.trim() || null, previous_speech_therapy:previous, previous_speech_therapy_result:previous ? backdrop.querySelector("#sp-previous-result").value.trim() || null : null, current_understanding_speech:backdrop.querySelector("#sp-current-level").value.trim() || null, therapy_goal:backdrop.querySelector("#sp-goal").value.trim() || null, specialist_notes:backdrop.querySelector("#sp-notes").value.trim() || null, planned_sessions:planned || null };
-      window.SSMPDDb.savePatientSpeechProfile(patient.id, patch, me && me.id).then(function () { T.show("تم حفظ التقييم الأولي للتخاطب"); backdrop.remove(); onSaved(); }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
+      if (window.SSMPDChildAssessments) patch.assessment_details = window.SSMPDChildAssessments.collect(backdrop, profile.assessment_details || {});
+      patch.created_by = profile.created_by || (me && me.id);
+      var saveBtn = backdrop.querySelector('#sp-save-profile'); saveBtn.disabled = true;
+      window.SSMPDDb.savePatientSpeechProfile(patient.id, patch, me && me.id).then(function () { T.show("تم حفظ التقييم الأولي للتخاطب"); backdrop.remove(); onSaved(); }).catch(function (e) { saveBtn.disabled = false; T.show("خطأ: " + e.message, "error"); });
     };
   }
 
@@ -3325,7 +3330,7 @@
         window.SSMPDDb.listRadiologyRequests(patientId).catch(function () { return []; }),
         window.SSMPDDb.listPatientExperienceRatings(patientId).catch(function () { return []; }),
         window.SSMPDDb.listNutritionVisits(patientId).catch(function () { return []; }),
-        window.SSMPDDb.getPatientSpeechProfile(patientId).catch(function () { return null; }),
+        window.SSMPDDb.getPatientSpeechProfile(patientId),
         window.SSMPDDb.listPatientSpeechSessions(patientId).catch(function () { return []; }),
         window.SSMPDDb.getPatientPsychologyProfile(patientId).catch(function () { return null; }),
         window.SSMPDDb.listPatientPsychologySessions(patientId).catch(function () { return []; }),
@@ -3512,7 +3517,7 @@
     var speechAttendance = { attended:"حضر", absent:"غاب", excused:"اعتذر" };
     var speechResponse = { excellent:"ممتاز", good:"جيد", average:"متوسط", weak:"ضعيف" };
     html += '<div class="section" style="padding:12px 14px;">' +
-      '<h3 style="font-size:14px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;"><span>التخاطب</span>' + (canEditMedical ? '<span><button class="btn ghost sm" data-edit-speech-profile="1">التقييم الأولي</button> <button class="btn ghost sm" data-add-speech-session="1">+ جلسة جديدة</button></span>' : '') + '</h3>' +
+      '<h3 style="font-size:14px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;"><span>التخاطب</span><button class="btn ghost sm" data-view-speech-assessment>عرض استمارة التقييم</button>' + (canEditMedical ? '<span><button class="btn ghost sm" data-edit-speech-profile="1">التقييم الأولي</button> <button class="btn ghost sm" data-add-speech-session="1">+ جلسة جديدة</button></span>' : '') + '</h3>' +
       '<div style="font-size:12px;color:var(--c-muted);line-height:1.9;">تاريخ أول جلسة: ' + (speechProfile && speechProfile.first_session_date ? fmtDate(speechProfile.first_session_date) : "—") + '<br>نوع المشكلة: ' + (speechProfile && speechProfile.issue_types && speechProfile.issue_types.length ? speechProfile.issue_types.map(function (x) { return speechIssueLabels[x] || x; }).join("، ") + (speechProfile.issue_other ? " (" + escapeHtml(speechProfile.issue_other) + ")" : "") : "—") + '<br>عدد الجلسات: ' + speechSessions.length + (speechProfile && speechProfile.planned_sessions ? " من " + speechProfile.planned_sessions : "") + '</div>';
     if (!speechSessions.length) html += '<p style="font-size:12px;color:var(--c-muted);margin:10px 0 0;">مفيش جلسات تخاطب مسجلة.</p>';
     else {
@@ -3521,6 +3526,8 @@
       html += '</tbody></table>';
     }
     html += '</div>';
+
+    html += '<div data-development-assessments></div>';
 
     html += '<div class="section" style="padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
       '<b style="font-size:13px;">كل الملفات المرفوعة (' + files.length + ')</b>' +
@@ -3766,6 +3773,10 @@
     html += '</div>';
 
     backdrop.innerHTML = html;
+    if (window.SSMPDChildAssessments) {
+      window.SSMPDChildAssessments.mount(backdrop.querySelector('[data-development-assessments]'), patient, canEditMedical);
+      backdrop.querySelector('[data-view-speech-assessment]').onclick = function () { window.SSMPDChildAssessments.showSpeech(patient, speechProfile || {}); };
+    }
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
     backdrop.querySelectorAll("[data-nutrition-status]").forEach(function (el) {
       var visit = nutritionVisits.find(function (v) { return String(v.id) === el.getAttribute("data-nutrition-status"); });
@@ -3787,8 +3798,12 @@
         window.SSMPDDb.listRadiologyRequests(patient.id).catch(function () { return []; }),
         window.SSMPDDb.listPatientExperienceRatings(patient.id).catch(function () { return []; }),
         window.SSMPDDb.listNutritionVisits(patient.id).catch(function () { return []; }),
+        window.SSMPDDb.getPatientSpeechProfile(patient.id),
+        window.SSMPDDb.listPatientSpeechSessions(patient.id).catch(function () { return []; }),
+        window.SSMPDDb.getPatientPsychologyProfile(patient.id).catch(function () { return null; }),
+        window.SSMPDDb.listPatientPsychologySessions(patient.id).catch(function () { return []; }),
       ]); }).then(function (results) {
-        renderPatientModal(backdrop, view, container, results[0].patient, results[0].files || [], results[1], results[2] || [], results[3] || [], results[4] || [], results[5] || [], results[6] || [], results[7] || [], results[8] || [], results[9] || [], results[10] || [], results[11] || []);
+        renderPatientModal(backdrop, view, container, results[0].patient, results[0].files || [], results[1], results[2] || [], results[3] || [], results[4] || [], results[5] || [], results[6] || [], results[7] || [], results[8] || [], results[9] || [], results[10] || [], results[11] || [], results[12] || null, results[13] || [], results[14] || null, results[15] || []);
       });
     }
 
