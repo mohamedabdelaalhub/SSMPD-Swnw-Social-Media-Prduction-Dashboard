@@ -125,7 +125,7 @@ const fakeClient = {
   },
   rpc(name) {
     const basic = TABLES.admins.map(a => ({ id: a.id, name: a.name, email: a.email, role: a.role, active: a.active }));
-    const answers = { list_admins_basic: basic, list_designers_all: basic.filter(a => a.role === "designer"), my_admin_id: ME.id, is_super: true, my_role: ME.role };
+    const answers = { personal_home_snapshot:{generated_at:now,tasks:null,content:{approval:0,design:0,revision:0,publish:0,items:[]},supplies:[]}, personal_home_inbox:{notices:[],unread:0,limited:false}, list_admins_basic: basic, list_designers_all: basic.filter(a => a.role === "designer"), my_admin_id: ME.id, is_super: true, my_role: ME.role };
     return Promise.resolve({ data: name in answers ? answers[name] : [], error: null });
   },
   storage: { from() { return { upload: () => Promise.resolve({ data: {}, error: null }), createSignedUrl: () => Promise.resolve({ data: { signedUrl: "https://example.test/x" }, error: null }), remove: () => Promise.resolve({ data: [], error: null }) }; } },
@@ -179,12 +179,15 @@ setTimeout(() => {
   assert(rootEl.querySelector('#user-dropdown [data-goto="admin"]') != null, "لوحة التحكم موجودة في القائمة المنسدلة");
   assert(rootEl.querySelector(".menu-toggle") != null, "زرار القائمة المنسدلة (اسم+سهم) للموبايل ظاهر في الشِل");
   assert(rootEl.querySelector("#mobile-menu .mm-name") != null && rootEl.querySelector("#mobile-menu .mm-role") != null, "القائمة المنسدلة فيها الاسم والدور بالترتيب المطلوب");
+  assert(window.sessionStorage.getItem("ssmpd_active_tab")==="home" && !!rootEl.querySelector(".personal-home"), "الرئيسية الشخصية هي شاشة الدخول الجديدة");
+  rootEl.querySelector('#user-dropdown [data-goto="summary"]').click();
+
 
   setTimeout(() => {
     // The screen container is replaced on every tab switch, so always read the current one.
     const V = () => window.document.getElementById("view-container") || { innerHTML: "" };
     const view = V();
-    assert(/الملخص العام/.test(V().innerHTML), "تاب الملخص العام هو الافتراضي واترسم");
+    assert(/الملخص العام/.test(V().innerHTML), "تاب الملخص العام متاح ويرسم بعد الانتقال من الرئيسية الشخصية");
     assert(/إجمالي المحتوى/.test(V().innerHTML), "مؤشرات إنتاج المحتوى ظاهرة");
     assert(/الإعلانات المدفوعة/.test(V().innerHTML), "سكشن الإعلانات المدفوعة ظاهر في الملخص العام");
     assert(/New Traffic Campaign/.test(V().innerHTML), "اسم الحملة المستوردة ظاهر في جدول الإعلانات المدفوعة");
@@ -329,3 +332,4 @@ setTimeout(() => {
     }, 700);
   }, 700);
 }, 700);
+

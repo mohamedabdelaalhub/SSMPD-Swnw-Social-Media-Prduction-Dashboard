@@ -13,6 +13,7 @@
   var usageHeartbeatTimer = null;
 
   var RENDERERS = {
+    home: window.SSMPDPersonalHome,
     summary: window.SSMPDRenderSummary,
     production: window.SSMPDRenderProduction,
     review: window.SSMPDRenderReview,
@@ -33,6 +34,7 @@
     inventory: window.SSMPDRenderInventory
   };
   var TAB_LABELS = {
+    home: "الرئيسية الشخصية",
     summary: "الملخص العام",
     production: "إنتاج المحتوى",
     review: "إدارة المحتوى",
@@ -105,7 +107,7 @@
         action = window.SSMPDAuth.signIn(email, pass);
       }
 
-      action.then(function () { return bootAfterAuth(); })
+      action.then(function () { try{sessionStorage.removeItem(ACTIVE_TAB_KEY);}catch(e){} return bootAfterAuth(); })
         .catch(function (err) {
           showAuthScreen(mode, translateAuthError(err));
         });
@@ -164,17 +166,17 @@
     // القائمة المنسدلة فقط — اتشالوا من شريط التابات العادي (وقائمة الموبايل
     // القديمة) عشان ميبقوش متكررين في مكانين، ويبانوا بس في المكان اللي
     // المستخدم طلبه (جوه القائمة المنسدلة).
-    var mainSuiteTabs = tabs.filter(function (t) { return ["patients", "leads", "contracting_entities", "clinic_info", "admin", "accounting", "tasks", "inventory"].indexOf(t) === -1; });
+    var mainSuiteTabs = tabs.filter(function (t) { return ["home", "patients", "leads", "contracting_entities", "clinic_info", "admin", "accounting", "tasks", "inventory"].indexOf(t) === -1; });
 
     function tabButtonsHtml() {
       return mainSuiteTabs.map(function (t) { return '<button class="tab-btn" data-tab="' + t + '">' + window.SSMPDI18n.textHtml(TAB_LABELS[t]) + '</button>'; }).join("");
     }
-    var ddItems = '';
+    var ddItems = '<button class="ud-item" data-goto="home">الرئيسية الشخصية</button>';
     if (mainSuiteTabs.length) ddItems += '<button class="ud-item" data-goto="'+mainSuiteTabs[0]+'">'+window.SSMPDI18n.textHtml(R.isControlledFinance(admin)?TAB_LABELS[mainSuiteTabs[0]]:'إنتاج المحتوى')+'</button>';
     if (tabs.indexOf("patients") !== -1) ddItems += "<button class=\"ud-item\" data-goto=\"patients\"> <!--ssmpd-i18n:%D8%A3%D8%B1%D8%B4%D9%8A%D9%81%20%D8%A7%D9%84%D9%85%D8%B1%D8%B6%D9%89-->أرشيف المرضى</button>";
     if (tabs.indexOf("leads") !== -1) ddItems += "<button class=\"ud-item\" data-goto=\"leads\"> <!--ssmpd-i18n:%D8%A5%D8%AF%D8%A7%D8%B1%D8%A9%20%D8%A7%D9%84%D9%84%D9%8A%D8%AF%D8%B2%20%D9%88%D8%A7%D9%84%D8%AA%D9%88%D8%A7%D8%B5%D9%84-->إدارة الليدز والتواصل</button>";
     if (tabs.indexOf("tasks") !== -1) ddItems += '<button class="ud-item" data-goto="tasks">المهام</button>';
-    if (tabs.indexOf("inventory") !== -1) ddItems += '<button class="ud-item" data-goto="inventory">المخزن والجرد</button>';
+    if (tabs.indexOf("inventory") !== -1) ddItems += '<button class="ud-item" data-goto="inventory">'+(admin.inventory_assigned===false&&admin.inventory_supply_access?'طلب مستلزمات':'المخزن والجرد')+'</button>';
     if (tabs.indexOf("contracting_entities") !== -1) ddItems += "<button class=\"ud-item\" data-goto=\"contracting_entities\"> <!--ssmpd-i18n:%D8%AC%D9%87%D8%A7%D8%AA%20%D8%A7%D9%84%D8%AA%D8%B9%D8%A7%D9%82%D8%AF-->جهات التعاقد</button>";
     if (tabs.indexOf("clinic_info") !== -1) ddItems += '<button class="ud-item" data-goto="clinic_info">' + window.SSMPDI18n.textHtml(TAB_LABELS.clinic_info) + "</button>";
     if (tabs.indexOf("accounting") !== -1) ddItems += "<button class=\"ud-item\" data-goto=\"accounting\"> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AD%D8%B3%D8%A7%D8%A8%D8%A7%D8%AA-->الحسابات</button>";
@@ -231,6 +233,7 @@
     var userMenuBtn = document.getElementById("user-menu-btn");
 
     function doLogout() {
+      if(window.SSMPDPersonalHome)window.SSMPDPersonalHome.stop();
       try { sessionStorage.removeItem(ACTIVE_TAB_KEY); } catch (e) {}
       if (usageHeartbeatTimer) { clearInterval(usageHeartbeatTimer); usageHeartbeatTimer = null; }
       var finish = function () { window.SSMPDAuth.signOut().then(function () { location.reload(); }); };
@@ -291,7 +294,8 @@
     // — كده الريفريش/رجوع للصفحة (F5) ما يرجعش المستخدم للرئيسية من غير داعي
     var savedTab = null;
     try { savedTab = sessionStorage.getItem(ACTIVE_TAB_KEY); } catch (e) {}
-    var preferred=R.defaultTab(admin);
+    var preferred=R.defaultTab(admin);if(tabs.indexOf('home')!==-1)preferred='home';
+    try{if(sessionStorage.getItem('ssmpd_active_tab_owner')!==admin.id)savedTab=null;}catch(e){}
     var startTab = (savedTab && tabs.indexOf(savedTab) !== -1) ? savedTab : (tabs.indexOf(preferred)!==-1?preferred:tabs[0]);
     switchTab(startTab);
     setupRealtime();
@@ -441,6 +445,7 @@
     });
   }
   function refreshNotifBadge() {
+    if(window.SSMPDPersonalHome){window.SSMPDPersonalHome.refreshNotifications();return;}
     var admin = window.SSMPDAuth.currentAdmin;
     var badge = document.getElementById("notif-badge");
     var bellBtn = document.getElementById("notif-bell-btn");
@@ -546,6 +551,7 @@
     });
   }
   function setupNotifications(admin) {
+    if(window.SSMPDPersonalHome){window.SSMPDPersonalHome.mountNotifications(admin,{open:openHomeTarget,legacyActivity:canSeeNotifications(admin)?openNotifPanel:null});return;}
     var bellBtn = document.getElementById("notif-bell-btn");
     var panel = document.getElementById("notif-panel");
     if (!bellBtn || !panel || !canSeeNotifications(admin)) return;
@@ -721,7 +727,7 @@
 
     removeRefreshNotice();
     currentTab = tab;
-    try { sessionStorage.setItem(ACTIVE_TAB_KEY, tab); } catch (e) {}
+    try { sessionStorage.setItem(ACTIVE_TAB_KEY, tab);sessionStorage.setItem('ssmpd_active_tab_owner',activeAdmin.id); } catch (e) {}
     document.querySelectorAll(".tab-btn").forEach(function (b) {
       b.classList.toggle("active", b.getAttribute("data-tab") === tab);
     });
@@ -729,12 +735,12 @@
     // اسم الشعار بيتغيّر حسب السكشن المفتوح دلوقتي: اسم المركز + اسم السكشن
     var brandName = document.getElementById("brand-section-name");
     if (brandName) {
-      brandName.innerHTML = window.SSMPDI18n.textHtml("مركز عيادات سونو التخصصية") + (TAB_LABELS[tab] ? '<span class="brand-sep">|</span><span class="brand-section">' + window.SSMPDI18n.textHtml(TAB_LABELS[tab]) + "</span>" : "");
+      brandName.innerHTML = window.SSMPDI18n.textHtml("مركز عيادات سونو التخصصية") + (TAB_LABELS[tab] ? '<span class="brand-sep">|</span><span class="brand-section">' + window.SSMPDI18n.textHtml(tab==='inventory'&&window.SSMPDAuth.currentAdmin.inventory_assigned===false&&window.SSMPDAuth.currentAdmin.inventory_supply_access?'طلب مستلزمات':TAB_LABELS[tab]) + "</span>" : "");
     }
 
     // فصل بصري: تابات السويت الرئيسي (SSMPD) بتتخفي تماماً لما نكون جوه موديول
     // منفصل (أرشيف المرضى / الليدز / لوحة التحكم) عشان ميظهرش هيدر حاجتين مع بعض
-    var isSeparateModule = ["patients", "leads", "contracting_entities", "clinic_info", "admin", "accounting", "tasks", "inventory"].indexOf(tab) !== -1;
+    var isSeparateModule = ["home", "patients", "leads", "contracting_entities", "clinic_info", "admin", "accounting", "tasks", "inventory"].indexOf(tab) !== -1;
     var tabsBar = document.getElementById("tabs-bar");
     if (tabsBar) tabsBar.style.display = isSeparateModule ? "none" : "";
     var mmTabs = document.querySelector("#mobile-menu .mm-tabs");
@@ -746,6 +752,22 @@
     var renderer = RENDERERS[tab];
     var previousView=document.getElementById('view-container');
     if(renderer && previousView){var freshView=previousView.cloneNode(false);previousView.replaceWith(freshView);renderer.render(freshView);}
+  }
+
+  function openHomeTarget(type,id){
+    var admin=window.SSMPDAuth.currentAdmin;
+    if(type==='tab'){if(R.canSeeTab(admin,id))switchTab(id);return;}
+    if(type==='task'){if(R.canSeeTab(admin,'tasks'))openTaskFromNotif(id,null);return;}
+    if(type==='supply'){
+      if(!R.canSeeTab(admin,'inventory'))return;
+      window.SSMPDPendingInventoryView='supplies';switchTab('inventory');return;
+    }
+    if(type==='content'){
+      if(R.canSeeTab(admin,'review')){window.SSMPDGotoContent(id);return;}
+      var tab=R.canSeeTab(admin,'design')?'design':R.canSeeTab(admin,'publish')?'publish':'production';
+      if(!R.canSeeTab(admin,tab))return;
+      switchTab(tab);var tries=0,timer=setInterval(function(){var el=document.querySelector('#view-container [data-open="'+id+'"],#view-container [data-open-pub="'+id+'"]');if(el){clearInterval(timer);el.click();}else if(++tries>20)clearInterval(timer);},200);
+    }
   }
 
   // جسر تنقّل بسيط للربط العكسي (تاب Meta Ads → فتح المادة المرتبطة) — بيستخدم
@@ -935,6 +957,7 @@
     });
   });
 })();
+
 
 
 
