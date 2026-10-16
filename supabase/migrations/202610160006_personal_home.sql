@@ -66,8 +66,8 @@ begin
    select 'task:'||n.id::text key,'task' type,n.task_id id,n.created_at at,
    case when n.kind='assigned' then 'تم تعيين مهمة جديدة لك: '||t.title||'. برجاء البدء في التنفيذ في أقرب وقت.' else n.message end message,
    n.read_at is not null native_read
-   from public.task_notifications n join public.tasks t on t.id=n.task_id
-   where n.recipient_id=me and public.task_can_access(n.task_id)
+   from public.task_notifications n join public.tasks t on t.id=n.task_id join public.task_projects p on p.id=t.project_id
+   where p.archived_at is null and n.recipient_id=me and public.task_can_access(n.task_id)
    order by n.created_at desc limit 40) x;
  end if;
  select coalesce(jsonb_agg(to_jsonb(x)),'[]') into contents from (
@@ -105,7 +105,7 @@ begin
  select * into a from public.admins where id=me and active;
  if not found then raise exception 'سجّل الدخول'; end if;
  if public.personal_home_tasks_allowed() then
-  with visible as materialized (select * from public.task_list_visible()),
+  with visible as materialized (select t.* from public.task_list_visible() t join public.task_projects p on p.id=t.project_id where p.archived_at is null),
   own_tasks as (select * from visible where assignee_id=me or not can_manage),
   review_tasks as (select * from visible where status='review' and can_manage and public.personal_home_module_allowed('tasks','update')),
   team_tasks as (select * from visible where can_manage)
