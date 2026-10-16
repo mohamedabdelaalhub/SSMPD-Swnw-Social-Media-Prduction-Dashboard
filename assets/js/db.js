@@ -647,6 +647,17 @@
     listVisitMedicationDoseCompletions: function (visitId) {
       return handle(client.from("patient_medication_dose_completions").select("*, patient_visit_medications!inner(visit_id, medicine_name)").eq("patient_visit_medications.visit_id", visitId).order("scheduled_date", { ascending: false }).order("scheduled_time", { ascending: false }).limit(100));
     },
+    listDevelopmentAssessments: function (patientId) {
+      return handle(client.from("patient_development_assessments").select("*").eq("patient_id", patientId).order("assessment_date", { ascending: false, nullsFirst: false }).order("created_at", { ascending: false }));
+    },
+    saveDevelopmentAssessment: function (patientId, kind, existing, details) {
+      var row = { patient_id: patientId, assessment_kind: kind, assessment_date: details.assessment_date || null, details: details };
+      if (!existing) return handle(client.from("patient_development_assessments").insert(row).select().single());
+      return handle(client.from("patient_development_assessments").update({ assessment_date: row.assessment_date, details: details }).eq("id", existing.id).eq("patient_id", patientId).eq("assessment_kind", kind).eq("updated_at", existing.updated_at).select().maybeSingle()).then(function (saved) {
+        if (!saved) throw new Error("تم تعديل الاستمارة بواسطة مستخدم آخر. أعد فتحها قبل الحفظ.");
+        return saved;
+      });
+    },
     getPatientSpeechProfile: function (patientId) {
       return handle(client.from("patient_speech_profiles").select("*").eq("patient_id", patientId).maybeSingle());
     },
