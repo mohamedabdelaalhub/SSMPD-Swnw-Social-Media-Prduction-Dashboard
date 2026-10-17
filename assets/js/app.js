@@ -591,14 +591,14 @@
     });
   }
 
-  // بحث موحّد في الشريط العلوي (مرحلة ٦): بيدوّر بالتوازي في المحتوى/الليدز/
+  // بحث موحّد: وجهات محلية حسب الصلاحيات، ثم البحث القائم في المحتوى/الليدز/
   // أرشيف المرضى — كل واحد بس لو الدور عنده وصول للتاب المقابل (تكلفة صفر
   // على أي حد مش هيستخدمه). Ctrl+K/⌘K يفوكّس الحقل، Enter يبحث، Escape يقفل.
   function setupGlobalSearch(admin, tabs) {
     if(setupGlobalSearch.dispose)setupGlobalSearch.dispose();
     var input=document.getElementById('global-search-input'),toggle=document.getElementById('global-search-toggle'),panel=document.getElementById('global-search-panel'),resultsBox=document.getElementById('global-search-results'),revision=0,timer;
     if(!input||!toggle||!panel||!resultsBox)return;
-    if(R.isControlledFinance(admin)){toggle.disabled=true;toggle.title='استخدم البحث والفلاتر داخل القسم';return;}
+    var navigationOnly=R.isControlledFinance(admin);
     function closePanel(focus){clearTimeout(timer);revision++;panel.hidden=true;toggle.setAttribute('aria-expanded','false');hideResults();if(focus)toggle.focus();}
     function openPanel(){panel.hidden=false;toggle.setAttribute('aria-expanded','true');input.focus();input.select();if(input.value.trim().length>=2)runSearch(input.value);}
     toggle.onclick=function(){if(panel.hidden)openPanel();else closePanel(true);};
@@ -617,11 +617,14 @@
       term = term.trim();
       var request=++revision;
       if (term.length < 2) { hideResults(); return; }
-      var canContent = tabs.indexOf("review") !== -1 || tabs.indexOf("production") !== -1;
-      var canLeads = tabs.indexOf("leads") !== -1;
-      var canPatients = tabs.indexOf("patients") !== -1;
+      var canContent = !navigationOnly && (tabs.indexOf("review") !== -1 || tabs.indexOf("production") !== -1);
+      var canLeads = !navigationOnly && tabs.indexOf("leads") !== -1;
+      var canPatients = !navigationOnly && tabs.indexOf("patients") !== -1;
 
-      resultsBox.innerHTML='<p class="gsearch-status">'+window.SSMPDI18n.textHtml('جاري البحث…')+'</p>';resultsBox.hidden=false;
+      var destinations=window.SSMPDSearchDestinations?window.SSMPDSearchDestinations.find(term,admin,tabs):[];
+      var navigationHtml=destinations.length?'<div class="gsearch-group">'+window.SSMPDI18n.textHtml('الأقسام والخدمات')+'</div>'+destinations.map(function(r){return itemBtn('destination',r.id,r.label).replace('</button>','<small class="gsearch-path">'+escapeHtml(r.path)+'</small></button>');}).join(''):'';
+      function bindResults(){resultsBox.querySelectorAll('.gsearch-item').forEach(function(btn){btn.onclick=function(){var type=btn.getAttribute('data-type'),id=btn.getAttribute('data-id');closePanel(true);input.value='';if(type==='destination'){window.SSMPDSearchDestinations.open(id,admin,tabs,switchTab);}else if(type==='content'){window.SSMPDPendingOpenContentId=id;switchTab(tabs.indexOf('review')!==-1?'review':'production');}else if(type==='leads'){window.SSMPDRenderLeads.openSearch(term);switchTab('leads');}else if(type==='patients'){window.SSMPDRenderPatients.openSearch(term);switchTab('patients');}};});}
+      resultsBox.innerHTML=navigationHtml+'<p class="gsearch-status">'+window.SSMPDI18n.textHtml('جاري البحث…')+'</p>';resultsBox.hidden=false;bindResults();
       Promise.all([
         canContent ? window.SSMPDDb.searchContentItems(term) : Promise.resolve([]),
         canLeads ? window.SSMPDDb.listLeads({ search: term, page_size: 6 }) : Promise.resolve(null),
@@ -632,7 +635,7 @@
         var leadsItems = (res[1] && res[1].leads) || [];
         var patientsItems = (res[2] && res[2].patients) || [];
 
-        var html = "";
+        var html = navigationHtml;
         if (contentItems.length) {
           html += '<div style="padding:6px 10px;font-size:11px;color:var(--c-muted);">المحتوى</div>';
           contentItems.forEach(function (i) { html += itemBtn("content", i.id, i.title); });
@@ -649,24 +652,8 @@
         resultsBox.innerHTML = html;
         resultsBox.hidden = false;
 
-        resultsBox.querySelectorAll(".gsearch-item").forEach(function (btn) {
-          btn.onclick = function () {
-            var type = btn.getAttribute("data-type");
-            closePanel(true);
-            input.value = "";
-            if (type === "content") {
-              window.SSMPDPendingOpenContentId = btn.getAttribute("data-id");
-              switchTab(tabs.indexOf("review") !== -1 ? "review" : "production");
-            } else if (type === "leads") {
-              window.SSMPDRenderLeads.openSearch(term);
-              switchTab("leads");
-            } else if (type === "patients") {
-              window.SSMPDRenderPatients.openSearch(term);
-              switchTab("patients");
-            }
-          };
-        });
-      }).catch(function () {if(request!==revision||!input.isConnected||panel.hidden)return;resultsBox.innerHTML='<p class="gsearch-status">'+window.SSMPDI18n.textHtml('تعذر البحث. حاول مرة أخرى.')+'</p>';resultsBox.hidden=false;});
+        bindResults();
+      }).catch(function () {if(request!==revision||!input.isConnected||panel.hidden)return;resultsBox.innerHTML=navigationHtml+'<p class="gsearch-status">'+window.SSMPDI18n.textHtml('تعذر البحث. حاول مرة أخرى.')+'</p>';resultsBox.hidden=false;bindResults();});
     }
 
     // تنقّل بالكيبورد (↑/↓) بين نتائج البحث + Enter لاختيار النتيجة المظلّلة
