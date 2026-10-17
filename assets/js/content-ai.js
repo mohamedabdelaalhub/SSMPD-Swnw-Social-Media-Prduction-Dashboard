@@ -78,7 +78,7 @@
     backdrop.className = "modal-backdrop";
     backdrop.style.zIndex = "9999";
     backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>توليد أفكار بالذكاء الاصطناعي</h3><button class="modal-close">×</button></div>' +
-      '<p style="font-size:12px;color:var(--c-muted);">سيظهر ٣ اقتراحات جديدة فقط. اختَر واحدة للتنفيذ أو احفظ الباقي في بنك الأفكار.</p>' +
+      '<p style="font-size:12px;color:var(--c-muted);">هنجهز لك ٣ اقتراحات ونراجع نصوصها. اختَر فكرة للتنفيذ أو احفظها في بنك الأفكار.</p>' +
       "<div class=\"field\"><label for=\"ai-objective\"> <!--ssmpd-i18n:%D9%87%D8%AF%D9%81%20%D8%A7%D9%84%D8%A8%D9%88%D8%B3%D8%AA-->هدف البوست</label>" + window.SSMPDWorkflow.objectiveSelectHtml('ai-objective', context.advertisingObjective) + '</div>' +
       '<div class="field"><label>نوع الطلب</label><select id="ai-mode"><option value="ideas">توليد ٣ أفكار جديدة</option><option value="develop">تطوير الفكرة/المسودة المكتوبة</option></select></div>' +
       '<div class="field"><label>الموضوع أو توجيه إضافي</label><textarea id="ai-topic" placeholder="مثال: الصداع النصفي، أو اتركه ليستخدم بيانات المادة"></textarea></div>' +
@@ -120,8 +120,8 @@
         });
       }).then(function (data) {
         var ideas = (data.ideas || []).slice(0, 3).map(function(idea){if(doctorBrief)idea=window.SSMPDDoctorContent.metadata(idea,doctorBrief);if(baBrief)idea=window.SSMPDBeforeAfterContent.metadata(idea,baBrief);if(carouselBrief){if(idea.format!=="carousel")throw Error("الوكيل رجع بوست بدل الكاروسيل. انشر تحديث content-ai ثم أعد التوليد.");if(!Array.isArray(idea.carousel_copy))throw Error("حدّث Edge Function content-ai لتفعيل محتوى الكاروسيل.");idea=window.SSMPDCarouselContent.metadata(idea,carouselBrief);}if(dinaBrief&&!idea.dina_brief)throw Error("حدّث Edge Function content-ai لتفعيل محتوى قوالب د. دينا.");return normalise(idea);});
-        if (ideas.length !== 3) throw new Error("لم تصل ٣ أفكار مكتملة. أعد المحاولة.");
-        slot.innerHTML = ideas.map(function (idea, i) {
+        if (!ideas.length || (ideas.length !== 3 && data.partial !== true)) throw new Error("لم تصل اقتراحات مكتملة. طلبك ما زال في النموذج. أعد المحاولة.");
+        slot.innerHTML = (data.partial === true ? '<p role="status">جهزنا ' + ideas.length + ' من ٣ اقتراحات اجتازت مراجعة النصوص. تقدر تختار منها أو تحفظها. باقي الاقتراحات لم تجتز المراجعة بعد محاولات التصحيح.</p>' : "") + ideas.map(function (idea, i) {
           return renderCard(idea, i,
             '<button class="btn sm" data-use="' + i + "\"> <!--ssmpd-i18n:%D8%A7%D8%AE%D8%AA%D9%8A%D8%A7%D8%B1%20%D8%A7%D9%84%D9%81%D9%83%D8%B1%D8%A9-->اختيار الفكرة</button>" +
             '<button class="btn ghost sm" data-save="' + i + '">حفظ لوقت لاحق</button>');
