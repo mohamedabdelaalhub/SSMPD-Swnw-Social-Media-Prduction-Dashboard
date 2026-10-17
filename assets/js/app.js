@@ -32,6 +32,7 @@
     admin: window.SSMPDRenderAdmin,
     metaads: window.SSMPDRenderMetaAds,
     mediabuyer: window.SSMPDRenderMediaBuyer,
+    booking_cash: window.SSMPDBookingCash,
     accounting: window.SSMPDRenderAccounting,
     tasks: window.SSMPDRenderTasks,
     inventory: window.SSMPDRenderInventory
@@ -56,6 +57,7 @@
     admin: "لوحة التحكم",
     metaads: "إعلانات Meta Ads",
     mediabuyer: "وكيل الإعلانات",
+    booking_cash: "خزينة الاستقبال والحجوزات",
     accounting: "الحسابات",
     tasks: "المهام",
     inventory: "المخزن والجرد"
@@ -172,7 +174,7 @@
     // القائمة المنسدلة فقط — اتشالوا من شريط التابات العادي (وقائمة الموبايل
     // القديمة) عشان ميبقوش متكررين في مكانين، ويبانوا بس في المكان اللي
     // المستخدم طلبه (جوه القائمة المنسدلة).
-    var mainSuiteTabs = tabs.filter(function (t) { return ["home", "patients", "leads", "contracting_entities", "clinic_info", "admin", "accounting", "tasks", "inventory", "staff_kpi", "my_kpi", "indicator_reports"].indexOf(t) === -1; });
+    var mainSuiteTabs = tabs.filter(function (t) { return ["home", "booking_cash", "patients", "leads", "contracting_entities", "clinic_info", "admin", "accounting", "tasks", "inventory", "staff_kpi", "my_kpi", "indicator_reports"].indexOf(t) === -1; });
 
     function tabButtonsHtml() {
       return mainSuiteTabs.map(function (t) { return '<button class="tab-btn" data-tab="' + t + '">' + window.SSMPDI18n.textHtml(TAB_LABELS[t]) + '</button>'; }).join("");
@@ -189,6 +191,7 @@
     if (tabs.indexOf("contracting_entities") !== -1) ddItems += "<button class=\"ud-item\" data-goto=\"contracting_entities\"> <!--ssmpd-i18n:%D8%AC%D9%87%D8%A7%D8%AA%20%D8%A7%D9%84%D8%AA%D8%B9%D8%A7%D9%82%D8%AF-->جهات التعاقد</button>";
     if (tabs.indexOf("clinic_info") !== -1) ddItems += '<button class="ud-item" data-goto="clinic_info">' + window.SSMPDI18n.textHtml(TAB_LABELS.clinic_info) + "</button>";
     if (tabs.indexOf("accounting") !== -1) ddItems += "<button class=\"ud-item\" data-goto=\"accounting\"> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AD%D8%B3%D8%A7%D8%A8%D8%A7%D8%AA-->الحسابات</button>";
+    if (tabs.indexOf("booking_cash") !== -1) ddItems += '<button class="ud-item" data-goto="booking_cash">خزينة الاستقبال والحجوزات</button>';
     // لوحة مؤشرات الاستثمار: داشبورد منفصل (sono-dashboard) — رابط بيفتح في تاب جديد، للسوبر أدمن والمدير العام بس
     if (R.isSuperAdmin(admin) || admin.role === "general_manager") {
       ddItems += '<a class="ud-item" href="https://mohamedabdelaalhub.github.io/sono-dashboard/" target="_blank" rel="noopener" style="display:block;text-decoration:none;color:inherit;">' + window.SSMPDI18n.textHtml("لوحة مؤشرات الاستثمار") + ' ↗</a>';
@@ -751,7 +754,7 @@
 
     // فصل بصري: تابات السويت الرئيسي (SSMPD) بتتخفي تماماً لما نكون جوه موديول
     // منفصل (أرشيف المرضى / الليدز / لوحة التحكم) عشان ميظهرش هيدر حاجتين مع بعض
-    var isSeparateModule = ["home", "patients", "leads", "contracting_entities", "clinic_info", "admin", "accounting", "tasks", "inventory", "staff_kpi", "my_kpi", "indicator_reports"].indexOf(tab) !== -1;
+    var isSeparateModule = ["home", "booking_cash", "patients", "leads", "contracting_entities", "clinic_info", "admin", "accounting", "tasks", "inventory", "staff_kpi", "my_kpi", "indicator_reports"].indexOf(tab) !== -1;
     var tabsBar = document.getElementById("tabs-bar");
     if (tabsBar) tabsBar.style.display = isSeparateModule ? "none" : "";
     var mmTabs = document.querySelector("#mobile-menu .mm-tabs");
