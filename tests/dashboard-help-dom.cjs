@@ -2,15 +2,15 @@ const fs=require('fs'),assert=require('node:assert/strict'),{JSDOM}=require('jsd
 const read=n=>fs.readFileSync('assets/js/'+n+'.js','utf8'),tick=()=>new Promise(r=>setTimeout(r,20));
 (async()=>{const dom=new JSDOM('<div id="app-root"></div>',{runScripts:'outside-only',url:'https://test.invalid'}),w=dom.window,d=w.document,calls=[];// jsdom closes its document before pending i18n observer microtasks run.
 w.queueMicrotask=fn=>queueMicrotask(()=>{if(w.document)fn();});w.HTMLElement.prototype.scrollIntoView=function(){};w.SSMPDAuth={currentAdmin:{id:'owner',name:'اختبار',role:'super_admin',active:true}};w.SSMPD_CONFIG={};w.SSMPDPersonalHome={render:()=>{},mountNotifications:()=>{}};w.SSMPDDb={subscribeTable:()=>null,unsubscribe:()=>{}};w.SSMPDRenderAccounting={selectSection:(...x)=>calls.push(x),render:()=>{},openInventory:()=>calls.push('inventory')};w.SSMPDFinanceCash={openSection:s=>calls.push(s)};
-for(const n of ['roles','i18n-dictionary','i18n','ui-titles','search-destinations','dashboard-help-data','dashboard-help'])w.eval(read(n));let app=read('app');w.eval(app.slice(0,app.indexOf('  // ---------- تشغيل ----------'))+'window.__helpShell=renderShell;})();');w.__helpShell();await tick();const H=w.SSMPDDashboardHelp,q=s=>d.querySelector(s);assert(q('#dashboard-help-toggle'));q('#dashboard-help-toggle').click();assert(q('.dh-panel'));assert.equal(q('#app-root').getAttribute('aria-hidden'),'true');
+for(const n of ['roles','i18n-dictionary','i18n','ui-titles','search-destinations','dashboard-help-data','dashboard-help-fields','dashboard-help'])w.eval(read(n));let app=read('app');w.eval(app.slice(0,app.indexOf('  // ---------- تشغيل ----------'))+'window.__helpShell=renderShell;})();');w.__helpShell();await tick();const H=w.SSMPDDashboardHelp,q=s=>d.querySelector(s);assert(q('#dashboard-help-toggle'));q('#dashboard-help-toggle').click();assert(q('.dh-panel'));assert.equal(q('#app-root').getAttribute('aria-hidden'),'true');
 for(const [question,id] of [['انا عايز اعمل حجز لكن الداشبورد جايبالي الخدمة مش نشطة','booking-inactive'],['الطبيب مش ظاهر مع اني عملت العقد واعتمدته','doctor-missing'],['اكتب ايه في كمية وحدة المخزن مقابل وحدة التسعير','supply-map'],['رقم التشغيلة مش متوفر','batch'],['1111','account-1111']]){const rows=H.search(question,'reception_services');assert(rows.slice(0,3).some(a=>a.id===id),question+' -> '+rows.map(a=>a.id));}
 // Regression from the actual booking screenshot: shared source words must never imply stock.
 assert.equal(H.fieldHelp('مصدر الحجز','source','reception_services').title,'مصدر الحجز');
-assert.equal(H.fieldHelp('مصدر المعلومة','source_evidence','reception_services').title,'مصدر المعلومة عن الحجز');
+assert.equal(H.fieldHelp('مصدر المعلومة','source_evidence','reception_services').article,'booking-source');
 assert(H.fieldHelp('مصدر المعلومة','source_evidence','reception_services').text.includes('إفادة المريض'));
 assert.equal(H.fieldHelp('المصدر','source_id','inventory').article,'transfer');
 assert.equal(H.fieldHelp('المصدر','source_id','accounting').article,'transfer');
-assert.equal(H.fieldHelp('المصدر','source_id','reception_services'),null);
+assert.equal(H.fieldHelp('المصدر','source_id','reception_services').article,'booking-source');
 assert.equal(H.fieldHelp('مصدر التمويل','funding_source','reception_services'),null);
 assert.equal(H.fieldHelp('مصدر جديد','unknown_source_id','reception_services'),null);
 assert.equal(H.fieldHelp('رقم ملف المريض','file_no','patients').article,'patient');
