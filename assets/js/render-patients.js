@@ -116,8 +116,17 @@
   }
 
   function render(container) {
+    if (container.querySelector(".pp-page")) return;
     me = window.SSMPDAuth.currentAdmin;
-    if (isDoctorOnly()) { renderDoctorQueue(container); return; }
+    if (isDoctorOnly()) {
+      renderDoctorQueue(container);
+      if (window.SSMPDPatientUI) {
+        window.SSMPDPatientUI.observeArchive(container);
+        var doctorRoute = window.SSMPDPatientUI.route();
+        if (doctorRoute) openPatientModal(null, container, doctorRoute.id);
+      }
+      return;
+    }
     var subs = visibleSubScreens();
     if (subs.indexOf(state.subTab) === -1 && !subs.some(function (s) { return s.key === state.subTab; })) {
       state.subTab = subs[0] ? subs[0].key : "dashboard";
@@ -142,6 +151,11 @@
     else if (state.subTab === "upload") renderUploadScreen(subView, container);
     else if (state.subTab === "review") renderReviewScreen(subView, container);
     else renderBrowseScreen(subView, container);
+    if (window.SSMPDPatientUI) {
+      window.SSMPDPatientUI.observeArchive(container);
+      var profileRoute = window.SSMPDPatientUI.route();
+      if (profileRoute) openPatientModal(subView, container, profileRoute.id);
+    }
   }
 
   // ============ ١) الداشبورد العام ============
@@ -3075,7 +3089,7 @@
           btn.onclick = function () {
             var pid = btn.getAttribute("data-delete-patient");
             var pname = btn.getAttribute("data-delete-name");
-            if (!window.confirm("متأكد إنك عايز تمسح ملف \"" + pname + "\" نهائياً؟ الإجراء ده مش هيترجع.")) return;
+            if (!btn.dataset.ppDeleteApproved && !window.confirm("متأكد إنك عايز تمسح ملف \"" + pname + "\" نهائياً؟ الإجراء ده مش هيترجع.")) return;
             btn.disabled = true;
             window.SSMPDDb.deletePatientRecord(pid).then(function () {
               T.show("اتمسح الملف بنجاح");
@@ -3166,6 +3180,7 @@
       '<button class="btn block" id="sp-save-profile">حفظ التقييم</button></div>';
     document.body.appendChild(backdrop);
     if (window.SSMPDChildAssessments) window.SSMPDChildAssessments.wireForm(backdrop);
+    if (window.SSMPDPatientUI) window.SSMPDPatientUI.organizeSpeechForm(backdrop);
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
     backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
     var issues = backdrop.querySelector("#sp-issues");
@@ -3310,8 +3325,15 @@
   }
 
   function openPatientModal(view, container, patientId) {
+    me = window.SSMPDAuth.currentAdmin;
+    var pendingPage = Array.from(document.querySelectorAll('[data-pp-loading-patient]')).find(function (el) { return el.dataset.ppLoadingPatient === String(patientId); });
+    if (pendingPage) return;
+    var currentPage = document.querySelector('.pp-page');
+    if (currentPage && currentPage.dataset.ppPatientId === String(patientId)) return;
+    if (currentPage && window.SSMPDPatientUI) window.SSMPDPatientUI.closePage(currentPage, false);
     var backdrop = document.createElement("div");
     backdrop.className = "modal-backdrop";
+    backdrop.dataset.ppLoadingPatient = String(patientId);
     backdrop.innerHTML = "<div class=\"modal\"><div class=\"loading\"> <!--ssmpd-i18n:%D8%A8%D9%8A%D8%AD%D9%85%D9%91%D9%84%E2%80%A6-->بيحمّل…</div></div>";
     document.body.appendChild(backdrop);
     backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
@@ -3335,9 +3357,13 @@
         window.SSMPDDb.getPatientPsychologyProfile(patientId).catch(function () { return null; }),
         window.SSMPDDb.listPatientPsychologySessions(patientId).catch(function () { return []; }),
       ]).then(function (results) {
+        if (!backdrop.isConnected) return;
+        delete backdrop.dataset.ppLoadingPatient;
         var res = results[0], profile = results[1], visits = results[2] || [];
         renderPatientModal(backdrop, view, container, res.patient, res.files || [], profile, visits, results[3] || [], results[4] || [], results[5] || [], results[6] || [], results[7] || [], results[8] || [], results[9] || [], results[10] || [], results[11] || [], results[12] || null, results[13] || [], results[14] || null, results[15] || []);
       }).catch(function (e) {
+        if (!backdrop.isConnected) return;
+        delete backdrop.dataset.ppLoadingPatient;
         backdrop.querySelector(".modal").innerHTML = '<div class="err-msg">خطأ: ' + e.message + '</div>';
       });
     }
@@ -3475,6 +3501,8 @@
       html += '<p style="font-size:12px;margin-top:4px;"><b>تاريخ مرضي بالعائلة: </b>' +
         (activeFamily.length ? activeFamily.map(function (f) { return escapeHtml(f.disease || ""); }).join('، ') : 'لا يوجد') + '</p>';
     }
+
+    html += '</div><div class="section" data-visit-section style="padding:12px 14px;">';
 
     html += '<div style="margin-top:12px;display:flex;align-items:center;justify-content:space-between;">' +
       '<b style="font-size:12px;">سجل الزيارات (' + visits.length + ')</b>' +
@@ -3774,7 +3802,7 @@
 
     backdrop.innerHTML = html;
     if (window.SSMPDChildAssessments) {
-      window.SSMPDChildAssessments.mount(backdrop.querySelector('[data-development-assessments]'), patient, canEditMedical);
+      window.SSMPDChildAssessments.mount(backdrop.querySelector('[data-development-assessments]'), patient, canEditMedical, (speechProfile || {}).assessment_details || {});
       backdrop.querySelector('[data-view-speech-assessment]').onclick = function () { window.SSMPDChildAssessments.showSpeech(patient, speechProfile || {}); };
     }
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
@@ -3785,7 +3813,7 @@
 
     function reloadModal() {
       var refresh = window.SSMPDDb.refreshOverdueFollowups ? window.SSMPDDb.refreshOverdueFollowups().catch(function () { return 0; }) : Promise.resolve(0);
-      refresh.then(function () { return Promise.all([
+      return refresh.then(function () { return Promise.all([
         window.SSMPDDb.getPatientFiles(patient.id),
         window.SSMPDDb.getPatientMedicalProfile(patient.id).catch(function () { return null; }),
         window.SSMPDDb.listPatientVisits(patient.id).catch(function () { return []; }),
@@ -3804,7 +3832,7 @@
         window.SSMPDDb.listPatientPsychologySessions(patient.id).catch(function () { return []; }),
       ]); }).then(function (results) {
         renderPatientModal(backdrop, view, container, results[0].patient, results[0].files || [], results[1], results[2] || [], results[3] || [], results[4] || [], results[5] || [], results[6] || [], results[7] || [], results[8] || [], results[9] || [], results[10] || [], results[11] || [], results[12] || null, results[13] || [], results[14] || null, results[15] || []);
-      });
+      }).catch(function (e) { T.show("تعذر تحديث الملف: " + e.message, "error"); });
     }
 
     var editPersonalBtn = backdrop.querySelector("[data-edit-personal]");
@@ -3822,7 +3850,8 @@
     backdrop.querySelectorAll("[data-del-visit]").forEach(function (btn) {
       btn.onclick = function () {
         var visitId = btn.getAttribute("data-del-visit");
-        window.SSMPDDb.deletePatientVisit(visitId).then(function () {
+        if (!btn.dataset.ppDeleteApproved && !confirm("حذف الزيارة من ملف " + patient.full_name + "؟")) return;
+        return window.SSMPDDb.deletePatientVisit(visitId).then(function () {
           T.show("اتحذفت الزيارة");
           reloadModal();
         }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
@@ -3895,9 +3924,7 @@
         window.SSMPDDb.uploadPatientFile(fd).then(function () {
           if (me) window.SSMPDDb.logUsageActivity(me.id, "رفع مستند مريض", file.name + " (" + categoryLabel(catKey) + ")", "patient", patient.id).catch(function () {});
           T.show("اترفع الملف بنجاح، وهيبقى قيد المراجعة لحد ما مسؤول تاني يعتمده");
-          window.SSMPDDb.getPatientFiles(patient.id).then(function (res) {
-            renderPatientModal(backdrop, view, container, res.patient, res.files || []);
-          });
+          reloadModal();
         }).catch(function (e) {
           statusEl.textContent = "خطأ: " + e.message;
           btn.disabled = false;
@@ -3914,7 +3941,7 @@
       btn.onclick = function () { var row = psychologySessions.filter(function (x) { return String(x.id) === btn.getAttribute("data-edit-psychology-session"); })[0]; if (row) openPsychologySessionFormModal(patient, psychologySessions, row, reloadModal); };
     });
     backdrop.querySelectorAll("[data-del-psychology-session]").forEach(function (btn) {
-      btn.onclick = function () { if (!confirm("حذف الجلسة النفسية دي؟")) return; window.SSMPDDb.deletePatientPsychologySession(btn.getAttribute("data-del-psychology-session")).then(function () { T.show("تم حذف الجلسة"); reloadModal(); }).catch(function (e) { T.show("خطأ: " + e.message, "error"); }); };
+      btn.onclick = function () { if (!btn.dataset.ppDeleteApproved && !confirm("حذف الجلسة النفسية دي؟")) return; return window.SSMPDDb.deletePatientPsychologySession(btn.getAttribute("data-del-psychology-session")).then(function () { T.show("تم حذف الجلسة"); reloadModal(); }).catch(function (e) { T.show("خطأ: " + e.message, "error"); }); };
     });
 
     var editSpeechProfileBtn = backdrop.querySelector("[data-edit-speech-profile]");
@@ -3925,7 +3952,7 @@
       btn.onclick = function () { var row = speechSessions.filter(function (x) { return String(x.id) === btn.getAttribute("data-edit-speech-session"); })[0]; if (row) openSpeechSessionFormModal(patient, speechSessions, row, reloadModal); };
     });
     backdrop.querySelectorAll("[data-del-speech-session]").forEach(function (btn) {
-      btn.onclick = function () { if (!confirm("حذف جلسة التخاطب دي؟")) return; window.SSMPDDb.deletePatientSpeechSession(btn.getAttribute("data-del-speech-session")).then(function () { T.show("تم حذف الجلسة"); reloadModal(); }).catch(function (e) { T.show("خطأ: " + e.message, "error"); }); };
+      btn.onclick = function () { if (!btn.dataset.ppDeleteApproved && !confirm("حذف جلسة التخاطب دي؟")) return; return window.SSMPDDb.deletePatientSpeechSession(btn.getAttribute("data-del-speech-session")).then(function () { T.show("تم حذف الجلسة"); reloadModal(); }).catch(function (e) { T.show("خطأ: " + e.message, "error"); }); };
     });
 
     var printAllBtn = backdrop.querySelector("[data-print-all]");
@@ -3960,8 +3987,8 @@
     });
     backdrop.querySelectorAll("[data-del-medical-report]").forEach(function (btn) {
       btn.onclick = function () {
-        if (!confirm("حذف التقرير الطبي ده؟")) return;
-        window.SSMPDDb.deleteMedicalReport(btn.getAttribute("data-del-medical-report")).then(function () {
+        if (!btn.dataset.ppDeleteApproved && !confirm("حذف التقرير الطبي ده؟")) return;
+        return window.SSMPDDb.deleteMedicalReport(btn.getAttribute("data-del-medical-report")).then(function () {
           T.show("اتحذف التقرير");
           reloadModal();
         }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
@@ -3993,8 +4020,8 @@
     });
     backdrop.querySelectorAll("[data-del-prescription]").forEach(function (btn) {
       btn.onclick = function () {
-        if (!confirm("حذف الروشتة دي؟")) return;
-        window.SSMPDDb.deletePrescription(btn.getAttribute("data-del-prescription")).then(function () {
+        if (!btn.dataset.ppDeleteApproved && !confirm("حذف الروشتة دي؟")) return;
+        return window.SSMPDDb.deletePrescription(btn.getAttribute("data-del-prescription")).then(function () {
           T.show("اتحذفت الروشتة");
           reloadModal();
         }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
@@ -4020,8 +4047,8 @@
     });
     backdrop.querySelectorAll("[data-del-lab-request]").forEach(function (btn) {
       btn.onclick = function () {
-        if (!confirm("حذف طلب التحاليل ده؟")) return;
-        window.SSMPDDb.deleteLabRequest(btn.getAttribute("data-del-lab-request")).then(function () {
+        if (!btn.dataset.ppDeleteApproved && !confirm("حذف طلب التحاليل ده؟")) return;
+        return window.SSMPDDb.deleteLabRequest(btn.getAttribute("data-del-lab-request")).then(function () {
           T.show("اتحذف طلب التحاليل");
           reloadModal();
         }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
@@ -4047,8 +4074,8 @@
     });
     backdrop.querySelectorAll("[data-del-radiology-request]").forEach(function (btn) {
       btn.onclick = function () {
-        if (!confirm("حذف طلب الأشعة ده؟")) return;
-        window.SSMPDDb.deleteRadiologyRequest(btn.getAttribute("data-del-radiology-request")).then(function () {
+        if (!btn.dataset.ppDeleteApproved && !confirm("حذف طلب الأشعة ده؟")) return;
+        return window.SSMPDDb.deleteRadiologyRequest(btn.getAttribute("data-del-radiology-request")).then(function () {
           T.show("اتحذف طلب الأشعة");
           reloadModal();
         }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
@@ -4074,8 +4101,8 @@
     });
     backdrop.querySelectorAll("[data-del-echo-report]").forEach(function (btn) {
       btn.onclick = function () {
-        if (!confirm("حذف تقرير الـEcho ده؟")) return;
-        window.SSMPDDb.deleteEchoReport(btn.getAttribute("data-del-echo-report")).then(function () {
+        if (!btn.dataset.ppDeleteApproved && !confirm("حذف تقرير الـEcho ده؟")) return;
+        return window.SSMPDDb.deleteEchoReport(btn.getAttribute("data-del-echo-report")).then(function () {
           T.show("اتحذف التقرير");
           reloadModal();
         }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
@@ -4101,8 +4128,8 @@
     });
     backdrop.querySelectorAll("[data-del-dental-report]").forEach(function (btn) {
       btn.onclick = function () {
-        if (!confirm("حذف تقرير الأسنان ده؟")) return;
-        window.SSMPDDb.deleteDentalReport(btn.getAttribute("data-del-dental-report")).then(function () {
+        if (!btn.dataset.ppDeleteApproved && !confirm("حذف تقرير الأسنان ده؟")) return;
+        return window.SSMPDDb.deleteDentalReport(btn.getAttribute("data-del-dental-report")).then(function () {
           T.show("اتحذف التقرير");
           reloadModal();
         }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
@@ -4128,8 +4155,8 @@
     });
     backdrop.querySelectorAll("[data-del-physio-report]").forEach(function (btn) {
       btn.onclick = function () {
-        if (!confirm("حذف تقرير العلاج الطبيعي ده؟")) return;
-        window.SSMPDDb.deletePhysioReport(btn.getAttribute("data-del-physio-report")).then(function () {
+        if (!btn.dataset.ppDeleteApproved && !confirm("حذف تقرير العلاج الطبيعي ده؟")) return;
+        return window.SSMPDDb.deletePhysioReport(btn.getAttribute("data-del-physio-report")).then(function () {
           T.show("اتحذف التقرير");
           reloadModal();
         }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
@@ -4158,8 +4185,8 @@
     });
     backdrop.querySelectorAll("[data-del-nutrition-visit]").forEach(function (btn) {
       btn.onclick = function () {
-        if (!confirm("حذف زيارة التغذية دي؟")) return;
-        window.SSMPDDb.deleteNutritionVisit(btn.getAttribute("data-del-nutrition-visit")).then(function () {
+        if (!btn.dataset.ppDeleteApproved && !confirm("حذف زيارة التغذية دي؟")) return;
+        return window.SSMPDDb.deleteNutritionVisit(btn.getAttribute("data-del-nutrition-visit")).then(function () {
           T.show("اتحذفت الزيارة");
           reloadModal();
         }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
@@ -4211,21 +4238,20 @@
 
     backdrop.querySelectorAll("[data-del-file]").forEach(function (btn) {
       btn.onclick = function () {
-        if (btn.classList.contains("confirm-pending")) {
-          var fileId = btn.getAttribute("data-del-file");
-          window.SSMPDDb.deletePatientFile(fileId).then(function () {
-            T.show("اتحذف الملف");
-            window.SSMPDDb.getPatientFiles(patient.id).then(function (res) {
-              renderPatientModal(backdrop, view, container, res.patient, res.files || []);
-            });
-          }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
-        } else {
-          btn.classList.add("confirm-pending");
-          btn.textContent = "متأكد؟ اضغط تاني";
-          setTimeout(function () { btn.classList.remove("confirm-pending"); btn.textContent = "حذف"; }, 3000);
-        }
+        var fileId = btn.getAttribute("data-del-file");
+        if (!btn.dataset.ppDeleteApproved && !confirm("حذف المستند من ملف " + patient.full_name + "؟")) return;
+        return window.SSMPDDb.deletePatientFile(fileId).then(function () {
+          T.show("اتحذف الملف"); return reloadModal();
+        }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
       };
     });
+    if (window.SSMPDPatientUI) window.SSMPDPatientUI.mountPage(backdrop, container, {
+      patient:patient, profile:profile, files:files, visits:visits, reports:reports,
+      speechProfile:speechProfile, speechSessions:speechSessions, psychologyProfile:psychologyProfile, psychologySessions:psychologySessions,
+      echoReports:echoReports, dentalReports:dentalReports, physioReports:physioReports, nutritionVisits:nutritionVisits,
+      prescriptions:prescriptions, labRequests:labRequests, radiologyRequests:radiologyRequests, reload:reloadModal
+    });
+
   }
 
   // بيستخدمها البحث الموحّد في الشريط العلوي (مرحلة ٦): بتحضّر شاشة "تصفح
