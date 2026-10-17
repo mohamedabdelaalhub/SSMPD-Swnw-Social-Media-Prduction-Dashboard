@@ -3802,6 +3802,7 @@
     html += '</div>';
 
     backdrop.innerHTML = html;
+    if(window.SSMPDSharedReception)window.SSMPDSharedReception.append(backdrop.querySelector('.modal'),{context:'patient',id:patient.id});
     if (window.SSMPDChildAssessments) {
       window.SSMPDChildAssessments.mount(backdrop.querySelector('[data-development-assessments]'), patient, canEditMedical, (speechProfile || {}).assessment_details || {});
       backdrop.querySelector('[data-view-speech-assessment]').onclick = function () { window.SSMPDChildAssessments.showSpeech(patient, speechProfile || {}); };
@@ -4263,7 +4264,7 @@
   }
 
   window.SSMPDRenderPatients = {
-    render: render, openSearch: openSearch,
+    render: render, openSearch: openSearch, openCreate: function(onCreated) { openNewPatientModal(null,onCreated); },
     openPatientById: function (id) { openPatientModal(null, null, id); },
     openExperienceRatingFormModal: openExperienceRatingFormModal,
     experienceRatingAvg: experienceRatingAvg

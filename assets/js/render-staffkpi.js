@@ -141,6 +141,7 @@
         (sumRows ? '<section class="sk-box"><h2>ملخص الشهر اللي فات</h2>' + sumRows + '</section>' : "") +
         (idle.length ? '<section class="sk-box"><h2>بدون نشاط في الفترة <span class="sk-count">' + idle.length + '</span></h2><div class="sk-chips">' + idle.map(function (g) { return '<button type="button" class="sk-chip" data-staff="' + esc(g.id) + '">' + esc(g.name) + ' · ' + esc(roleLabel(g.role)) + '</button>'; }).join("") + '</div></section>' : "") + '</aside></div>') +
       '<p class="sk-foot">الأرقام بتعتمد على اللي بيتسجّل في الداشبورد؛ أي مؤشر عينته أقل من الحد الأدنى بيظهر «عينة صغيرة» ومبيدخلش في النقاط. الأعداد بتتناسب مع طول الفترة. النقاط = متوسط مرجّح لنسبة تحقيق كل مستهدف (حد أقصى 100). التنبيهات بتتولّد يوميًا لما مؤشر مهم ينزل تحت 40% خلال آخر أسبوعين.</p></section>';
+    if(window.SSMPDSharedReception)window.SSMPDSharedReception.append(c.querySelector('.sk'),{context:'staff',from:r.from.toISOString().slice(0,10),to:r.to.toISOString().slice(0,10)});
     wire();
   }
   function wire() {
