@@ -302,6 +302,7 @@
       };
     });
 
+    if(window.SSMPDNavigationUI)window.SSMPDNavigationUI.mount();
     setupGlobalSearch(admin, tabs);
     setupNotifications(admin);
     setupKudos(admin);
@@ -750,6 +751,7 @@
     if (tab !== 'patients' && window.SSMPDPatientUI) window.SSMPDPatientUI.clearRoute();
     removeRefreshNotice();
     currentTab = tab;
+    if(window.SSMPDNavigationUI)window.SSMPDNavigationUI.setCurrent(tab);
     try { sessionStorage.setItem(ACTIVE_TAB_KEY, tab);sessionStorage.setItem('ssmpd_active_tab_owner',activeAdmin.id); } catch (e) {}
     document.querySelectorAll(".tab-btn").forEach(function (b) {
       b.classList.toggle("active", b.getAttribute("data-tab") === tab);
