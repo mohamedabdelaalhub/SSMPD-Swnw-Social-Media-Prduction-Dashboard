@@ -1131,6 +1131,7 @@
         html += '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-top:8px;">' +
           "<div><label> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%A8%D9%84%D8%BA-->المبلغ</label><input id=\"iv-amount\" type=\"number\" min=\"0\" step=\"0.01\" style=\"width:100px;\"></div>" +
           "<div><label> <!--ssmpd-i18n:%D8%A7%D8%B3%D9%85%20%D8%A7%D9%84%D8%AE%D8%AF%D9%85%D8%A9-->اسم الخدمة</label><input id=\"iv-service\" style=\"width:140px;\"></div>" +
+          (!lead.patient_id ? '<div style="flex-basis:100%"><p>بيانات ملف المريض عند إنشائه لأول مرة</p><label>الاسم من كلمتين<input id="iv-patient-name" value="'+escapeHtml(lead.customer_name||'')+'"></label><label>التليفون<input id="iv-patient-phone" value="'+escapeHtml(lead.phone_raw||lead.phone_normalized||'')+'"></label><label>السن<input id="iv-patient-age" type="number" min="0" max="130" step="1"></label></div>' : '') +
           '<div><label>الملف (صورة / PDF / إكسيل)</label><input type="file" id="iv-file" accept="image/*,.pdf,.xlsx,.xls"></div>' +
           '<button class="btn sm" id="iv-save">رفع الفاتورة (وإقفال الخدمة)</button></div>' +
           '<div id="iv-status" style="font-size:12px;color:var(--c-muted);margin-top:6px;"></div></div>';
@@ -1203,6 +1204,7 @@
           if (!amount || amount <= 0) { statusEl.textContent = "اكتب مبلغ صحيح"; return; }
           if (!file) { statusEl.textContent = "اختار ملف الفاتورة"; return; }
           var fd = new FormData();
+          ['name','phone','age'].forEach(function(k){var el=document.getElementById('iv-patient-'+k);if(el&&el.value.trim())fd.append('patient_'+k,el.value.trim());});
           fd.append("lead_id", lead.id);
           fd.append("amount", amount);
           if (serviceName) fd.append("service_name", serviceName);

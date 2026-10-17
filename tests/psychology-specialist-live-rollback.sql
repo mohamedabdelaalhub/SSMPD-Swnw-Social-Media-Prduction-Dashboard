@@ -1,0 +1,31 @@
+begin;
+do $$
+declare manager uuid;u1 uuid;u2 uuid;a1 uuid;a2 uuid;patient uuid;req uuid;item uuid;result jsonb;snap jsonb;ref text:='TEST-PSYCH-'||gen_random_uuid()::text;phone text:='010'||lpad(floor(random()*100000000)::bigint::text,8,'0');
+begin
+ select user_id into manager from public.admins where active and role='super_admin' and user_id is not null order by id limit 1;
+ select id,user_id into a1,u1 from public.admins where active and user_id is not null and user_id<>manager and role<>'super_admin' order by id limit 1;
+ select id,user_id into a2,u2 from public.admins where active and user_id is not null and user_id not in(manager,u1) and role<>'super_admin' order by id limit 1;
+ if manager is null or u1 is null or u2 is null then raise exception 'Three existing staff accounts required';end if;
+ perform set_config('request.jwt.claim.sub',manager::text,true);
+ delete from public.admin_extra_roles where admin_id in(a1,a2);
+ update public.admins set role='psychology_specialist' where id in(a1,a2);
+ perform set_config('request.jwt.claim.sub',u2::text,true);execute 'set local role authenticated';
+ result:=public.psychology_command('create_patient',jsonb_build_object('full_name','حالة اختبار تراجع','phone',phone,'age',9),gen_random_uuid());patient:=(result->>'id')::uuid;
+ perform public.psychology_command('record_add',jsonb_build_object('patient_id',patient,'specialty','speech','record_kind','session','data',jsonb_build_object('session_at',now(),'goals',ref||' other')),gen_random_uuid());
+ perform set_config('request.jwt.claim.sub',u1::text,true);
+ if exists(select 1 from public.patients where id=patient) then raise exception 'Patient RLS leak';end if;
+ if public.has_archive_access() then raise exception 'Stale archive grant leak';end if;
+ result:=public.psychology_command('create_patient',jsonb_build_object('full_name','حالة اختبار تراجع','phone',phone,'age',9),gen_random_uuid());if not(result->>'existing')::boolean then raise exception 'Duplicate created';end if;
+ result:=public.psychology_command('request_access',jsonb_build_object('patient_id',patient,'reason',ref),gen_random_uuid());req:=(result->>'id')::uuid;
+ perform set_config('request.jwt.claim.sub',manager::text,true);
+ perform public.psychology_command('review_access',jsonb_build_object('id',req,'approve',true,'days',1,'note','اعتماد استعراض اختبار تراجع'),gen_random_uuid());
+ perform set_config('request.jwt.claim.sub',u1::text,true);snap:=public.psychology_snapshot(patient);
+ if jsonb_array_length(snap->'records')<>1 or snap?'files' then raise exception 'Invalid scoped snapshot';end if;
+ result:=public.psychology_command('record_add',jsonb_build_object('patient_id',patient,'specialty','behavior','record_kind','session','data',jsonb_build_object('session_at',now(),'goals',ref)),gen_random_uuid());item:=(result->>'id')::uuid;
+ perform set_config('request.jwt.claim.sub',manager::text,true);perform public.psychology_command('revoke_access',jsonb_build_object('id',req,'note','انتهاء استعراض الاختبار'),gen_random_uuid());
+ perform set_config('request.jwt.claim.sub',u1::text,true);snap:=public.psychology_snapshot(patient);
+ if jsonb_array_length(snap->'records')<>1 or snap->'records'->0->>'id'<>item::text then raise exception 'Revocation did not restore own-only access';end if;
+ execute 'reset role';
+end $$;
+rollback;
+select jsonb_build_object('test','psychology authenticated rollback passed','remaining_test_requests',(select count(*) from psychcare.requests where reason like 'TEST-PSYCH-%'),'remaining_test_records',(select count(*) from psychcare.records where data::text like '%TEST-PSYCH-%'),'private_schema_blocked',not has_schema_privilege('authenticated','psychcare','usage'),'anonymous_snapshot_blocked',not has_function_privilege('anon','public.psychology_snapshot(uuid)','execute'));

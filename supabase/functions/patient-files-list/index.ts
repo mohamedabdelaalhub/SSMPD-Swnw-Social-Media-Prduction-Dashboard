@@ -46,12 +46,18 @@ function isNursing(caller: { role: string; extra_roles?: string[] }): boolean {
   return caller.role === "nursing" || (caller.extra_roles ?? []).includes("nursing");
 }
 
+
+function restrictedPsychology(c:any):boolean {
+ const roles=[c.role,...(c.extra_roles||[])];
+ return roles.includes("psychology_specialist")&&!roles.includes("super_admin")&&!roles.includes("general_manager");
+}
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS });
   if (req.method !== "GET") return json({ error: "Method not allowed" }, 405);
 
   const caller = await getCallerAdmin(req);
   if (!caller) return json({ error: "غير مصرح — سجّل دخولك تاني" }, 401);
+  if(restrictedPsychology(caller))return json({error:"استخدم مساحة التخصصات النفسية لهذا الدور"},403);
   // ملاحظة: has_archive_review_access مكانتش متجابة من قبل هنا (select ماكانش شامله)
   // فكانت بترجع undefined دايماً — تم تصحيحها هنا كجزء من نفس التعديل (select فوق).
   const canReview = caller.has_archive_review_access || isSuperAdmin(caller);

@@ -603,6 +603,9 @@
     },
 
     // ---------- أرشيف المرضى (Edge Functions) ----------
+    psychologySnapshot: function(id) { return handle(client.rpc("psychology_snapshot",{p_patient:id||null})); },
+    psychologyLookup: function(query) { return handle(client.rpc("psychology_lookup",{p_query:query})); },
+    psychologyCommand: function(action,payload,token) { return handle(client.rpc("psychology_command",{p_action:action,p_payload:payload,p_token:token})); },
     createPatientArchive: function (payload) {
       return edgeFetch("patients-create", { method: "POST", json: payload });
     },
