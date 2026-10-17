@@ -1268,6 +1268,8 @@
       if (channel) client.removeChannel(channel);
     },
 
+    financeSupplierReceive: function(order,lines,reference,token){return handle(client.rpc('clinic_finance_supplier_receive',{p_order:order,p_lines:lines,p_reference:reference,p_token:token}));},
+    financeSupplierCommand: function(action,payload,token){return handle(client.rpc('clinic_finance_supplier_command',{p_action:action,p_payload:payload,p_token:token}));},
     financeDoctorCommand: function(action,payload,token){return handle(client.rpc('clinic_finance_doctor_command',{p_action:action,p_payload:payload,p_token:token}));},
     financeBill: function(payload,token){return handle(client.rpc('clinic_finance_bill',{p_payload:payload,p_token:token}));},
     financeCaseStep: function(id,step,note,responsibility,person,decision){return handle(client.rpc('clinic_finance_case_step',{p_id:id,p_step:step,p_note:note,p_responsibility:responsibility,p_person:person,p_decision:decision}));},
