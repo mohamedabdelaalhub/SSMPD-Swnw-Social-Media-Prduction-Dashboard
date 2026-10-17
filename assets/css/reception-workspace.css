@@ -9,3 +9,5 @@
 
 .rx-form [hidden]{display:none!important}
 .rx-form>[data-marketing-result]{grid-column:1/-1;min-width:0}
+
+.rx-mode-card{border:1px solid #b9c8ed;border-inline-start:4px solid #0F369D;background:#f2f5fc;border-radius:12px;padding:18px}.rx-mode-card h3{margin:0 0 8px;font-size:16px}.rx-mode-card p{margin:6px 0;line-height:1.9;font-size:14px}.rx-guide-card{border:1px solid var(--c-border);border-radius:14px;padding:22px;line-height:1.9}.rx-guide-card h4{font-size:21px;margin:10px 0}.rx-guide-card [data-guide-count]{color:var(--c-muted);margin:0}.rx-guide-tip{background:#f2f5fc;padding:14px;border-radius:10px;line-height:1.9}.rx-guide .modal{max-width:660px}.rx-guide footer{flex-wrap:wrap}.rx-guide [data-guide-skip]{margin-inline-start:auto}@media(max-width:600px){.rx-guide-card{padding:16px}.rx-guide-card h4{font-size:18px}.rx-guide footer .btn{flex:1}.rx-guide [data-guide-skip]{margin-inline-start:0;flex-basis:100%}}
