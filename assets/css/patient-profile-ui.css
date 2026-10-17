@@ -15,3 +15,4 @@ button.pp-action:focus-visible{outline:2px solid currentColor;outline-offset:2px
 @media(max-width:700px){.pp-header{padding:12px;gap:6px}.pp-header h3{width:100%;flex-basis:100%;font-size:17px}.pp-summary{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.pp-summary>div{padding:12px}.pp-specialty-grid{grid-template-columns:minmax(0,1fr)}.pp-tab{padding:10px 13px;font-size:13px}.pp-panel table{min-width:580px}.pp-confirm{padding:18px}}
 
 .pp-development{display:contents}.pp-development-empty{grid-column:1/-1}.pp-specialty summary:focus-visible{outline:2px solid #0F369D;outline-offset:-3px}
+.pp-print-options{display:grid;gap:10px}.pp-print-options button{width:100%}
