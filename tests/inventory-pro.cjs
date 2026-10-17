@@ -64,10 +64,10 @@ try{
   await page.click('[data-fulfill="r1"]');
   await page.click('[data-save]');
   assert(await page.locator('.inv-modal').count()===1,'expiry required');
-  await page.fill('.inv-receive [name="lot"]','L9');await page.fill('.inv-receive [name="exp"]',new Date(Date.now()+200*86400000).toISOString().slice(0,10));
+  await page.fill('[data-receipt-form] [name="reference"]','SUP-TEST-9');await page.fill('.inv-receive [name="lot"]','L9');await page.fill('.inv-receive [name="exp"]',new Date(Date.now()+200*86400000).toISOString().slice(0,10));
   await page.click('[data-save]');
-  await page.waitForFunction(()=>calls.some(c=>c[0]==='inventory_receive_request'));
-  const rc=await page.evaluate(()=>calls.find(c=>c[0]==='inventory_receive_request')[1].p_lines[0]);
+  await page.waitForFunction(()=>calls.some(c=>c[0]==='inventory_receive_document'));
+  const rc=await page.evaluate(()=>calls.find(c=>c[0]==='inventory_receive_document')[1].p_lines[0]);
   assert.equal(rc.lot_number,'L9');assert(rc.expiry_date);
   // write-off modal
   await go('items');await page.click('[data-writeoff=""]');

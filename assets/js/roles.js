@@ -99,6 +99,7 @@
     // has_archive_access المنفصلة عن الرول — لسه بيقبل الرول كـ string لوحده كمان
     canSeeTab: function (adminOrRole, tab) {
       var admin = normalizeAdmin(adminOrRole);
+      if(tab==="accounting")return Roles.canModuleAction(admin,"accounting","view") || Roles.canSeeTab(admin,"inventory") && !(admin.inventory_assigned===false && admin.inventory_supply_access===true);
       if(tab==="booking_cash" && Roles.isControlledFinance(admin))return Roles.canModuleAction(admin,"accounting","view");
       if(tab==="home")return admin.active!==false && !!(admin.id||admin.role);
       if(tab==="inventory" && typeof admin.inventory_assigned==='boolean')return admin.inventory_assigned || admin.inventory_supply_access===true || Roles.hasAnyRole(admin,["super_admin","general_manager"]);

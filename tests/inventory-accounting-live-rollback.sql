@@ -1,0 +1,52 @@
+-- Production RPC verification with two existing managers. No records survive rollback.
+begin;
+do $$
+declare a1 uuid;a2 uuid;admin1 uuid;sup uuid;item uuid;ord uuid;issue uuid;lot uuid;reg uuid;sh uuid;inv uuid;pay uuid;receipt uuid;token uuid:=gen_random_uuid();line jsonb;v jsonb;cnt uuid;count_lines jsonb;
+ref text:='TEST-INV-LINK-'||gen_random_uuid()::text;d date:=(now() at time zone 'Africa/Cairo')::date;central uuid:='00000000-0000-4000-8000-000000000001';blocked boolean:=false;
+begin
+select user_id,id into a1,admin1 from public.admins a where role='super_admin' and active and user_id is not null and not exists(select 1 from clinic_finance.shifts s where s.cashier_id=a.id and s.status<>'reviewed') order by id limit 1;
+select user_id into a2 from public.admins where role='super_admin' and active and user_id is not null and user_id<>a1 order by id limit 1;
+if a1 is null or a2 is null then raise exception 'Two existing managers required';end if;
+perform set_config('request.jwt.claim.sub',a1::text,true);execute 'set local role authenticated';
+sup:=public.inventory_save_supplier(null,ref,'','rollback test',true);
+item:=public.inventory_save_item(null,ref,'صنف اختبار تراجع','اختبار','قطعة',10,0,50,0);
+perform public.inventory_set_track_lots(item,true);
+ord:=public.inventory_create_request('purchase','طلب اختبار تراجع',ref,jsonb_build_array(jsonb_build_object('item_id',item,'quantity',20,'unit_cost',2,'expiry_date',d+730,'lot_number',ref)));
+perform set_config('request.jwt.claim.sub',a2::text,true);perform public.inventory_review_request(ord,true,'اعتماد مستقل');
+perform set_config('request.jwt.claim.sub',a1::text,true);
+line:=jsonb_build_array(jsonb_build_object('item_id',item,'quantity',20,'package_cost',20,'lot_number',ref,'expiry_date',d+730));
+receipt:=public.inventory_receive_document(ord,line,ref,token);
+if public.inventory_receive_document(ord,line,ref,token)<>receipt then raise exception 'Receipt retry changed ID';end if;
+v:=public.inventory_workspace_snapshot(central);
+select (x->>'id')::uuid into lot from jsonb_array_elements(v->'lots') x where x->>'item_id'=item::text;
+if lot is null then raise exception 'Lot not saved';end if;
+issue:=public.inventory_create_request('issue','صرف داخلي اختبار','',jsonb_build_array(jsonb_build_object('item_id',item,'quantity',3,'unit_cost',999,'lot_id',lot)));
+perform set_config('request.jwt.claim.sub',a2::text,true);perform public.inventory_review_request(issue,true,'اعتماد صرف');
+perform set_config('request.jwt.claim.sub',a1::text,true);
+perform public.inventory_fulfill_issue(issue,jsonb_build_array(jsonb_build_object('item_id',item,'quantity',3)),'استهلاك اختبار');
+-- Count actual stock through the existing draft/submission/approval flow.
+perform public.inventory_assign_location(central,admin1,'counter',true);
+cnt:=public.inventory_open_count_at(central,ref,admin1,now()-interval '1 hour',now()+interval '1 day','جرد اختبار تراجع');
+perform public.inventory_prepare_count(cnt);
+v:=public.inventory_workspace_snapshot(central);
+select jsonb_agg(jsonb_build_object('line_id',l->>'id','counted_quantity',(l->>'system_quantity')::numeric-case when l->>'item_id'=item::text and l->>'lot_id'=lot::text then 1 else 0 end)) into count_lines from jsonb_array_elements(v->'counts') c cross join lateral jsonb_array_elements(c->'lines') l where c->>'id'=cnt::text;
+perform public.inventory_save_count_draft(cnt,count_lines,true);
+perform set_config('request.jwt.claim.sub',a2::text,true);perform public.inventory_approve_count(cnt);
+perform set_config('request.jwt.claim.sub',a1::text,true);
+inv:=public.clinic_finance_bill(jsonb_build_object('reference',ref,'patient_ref',ref,'description','خدمة اختبار تراجع','service_amount',100,'items',jsonb_build_array(jsonb_build_object('item_id',item,'location_id',central,'quantity',2,'sale_price',3))),gen_random_uuid());
+reg:=public.clinic_finance_register(ref,1000);sh:=public.clinic_finance_open_shift(reg,gen_random_uuid());
+token:=gen_random_uuid();pay:=public.clinic_finance_collect_linked(inv,sh,'instapay',20,ref,token,ref,'VISIT-TEST');
+if public.clinic_finance_collect_linked(inv,sh,'instapay',20,ref,token,ref,'VISIT-TEST')<>pay then raise exception 'Collection retry changed ID';end if;
+begin perform public.clinic_finance_collect_linked(inv,sh,'bank',1,ref||'-BAD',gen_random_uuid(),ref,'WRONG-VISIT');exception when others then if sqlerrm like '%رقم الزيارة%' then blocked:=true;else raise;end if;end;
+if not blocked then raise exception 'Visit mismatch accepted';end if;
+v:=public.clinic_finance_snapshot(d,d);
+if not exists(select 1 from jsonb_array_elements(v->'payments') x where x->>'id'=pay::text and x->>'patient_file_ref'=ref and x->>'visit_ref'='VISIT-TEST') then raise exception 'Collection identifiers missing';end if;
+execute 'reset role';
+if (select sum(amount) from clinic_finance.supplier_events where supplier_id=sup)<>40 then raise exception 'Supplier debt mismatch';end if;
+if (select sum(l.debit) from clinic_finance.lines l join clinic_finance.entries e on e.id=l.entry_id join public.inventory_movements m on e.source_id=m.id where m.item_id=item and l.account='5123')<>6 then raise exception 'Consumption posting mismatch';end if;
+if (select sum(l.debit) from clinic_finance.lines l join clinic_finance.entries e on e.id=l.entry_id join public.inventory_movements m on e.source_id=m.id where m.item_id=item and l.account='5226')<>2 then raise exception 'Count posting mismatch';end if;
+if (select sum(quantity_delta*unit_cost) from public.inventory_movements where item_id=item)<>28 then raise exception 'Stock valuation mismatch';end if;
+if exists(select 1 from clinic_finance.entries e join clinic_finance.lines l on l.entry_id=e.id where e.source_id in (pay,inv) group by e.id having sum(l.debit-l.credit)<>0) then raise exception 'Unbalanced entries';end if;
+end $$;
+rollback;
+select jsonb_build_object('test','inventory accounting and linked collections rollback passed','remaining_test_items',(select count(*) from public.inventory_items where sku like 'TEST-INV-LINK-%'),'remaining_test_invoices',(select count(*) from clinic_finance.invoices where reference like 'TEST-INV-LINK-%'),'anonymous_receive_blocked',not has_function_privilege('anon','public.inventory_receive_document(uuid,jsonb,text,uuid)','execute'),'anonymous_collect_blocked',not has_function_privilege('anon','public.clinic_finance_collect_linked(uuid,uuid,text,numeric,text,uuid,text,text)','execute'));
