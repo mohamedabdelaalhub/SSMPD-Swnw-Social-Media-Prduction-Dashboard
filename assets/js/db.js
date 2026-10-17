@@ -1268,6 +1268,11 @@
       if (channel) client.removeChannel(channel);
     },
 
+    financeBill: function(payload,token){return handle(client.rpc('clinic_finance_bill',{p_payload:payload,p_token:token}));},
+    financeCaseStep: function(id,step,note,responsibility,person,decision){return handle(client.rpc('clinic_finance_case_step',{p_id:id,p_step:step,p_note:note,p_responsibility:responsibility,p_person:person,p_decision:decision}));},
+    financeInsuranceClaim: function(invoice,reference,insurer,amount,token){return handle(client.rpc('clinic_finance_insurance_claim',{p_invoice:invoice,p_reference:reference,p_insurer:insurer,p_amount:amount,p_token:token}));},
+    financeInsuranceAction: function(payload,token){return handle(client.rpc('clinic_finance_insurance_action',{p_payload:payload,p_token:token}));},
+    financeInsuranceReview: function(id,approve,note){return handle(client.rpc('clinic_finance_insurance_review',{p_id:id,p_approve:approve,p_note:note}));},
     financeSnapshot: function(from,to,offset){return handle(client.rpc('clinic_finance_snapshot',{p_from:from,p_to:to,p_offset:offset||0}));},
     financeRegister: function(name,limit){return handle(client.rpc('clinic_finance_register',{p_name:name,p_limit:limit}));},
     financeOpenShift: function(register,token){return handle(client.rpc('clinic_finance_open_shift',{p_register:register,p_token:token}));},
