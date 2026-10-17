@@ -43,11 +43,12 @@ window.SSMPDDb={
  taskChecklistAdd:function(id,b){calls.push(['chk-add',id,b]);(mock.chk[id]=mock.chk[id]||[]).push({id:'c'+Math.random(),body:b,done:false});return Promise.resolve()},
  taskChecklistToggle:function(id,d){calls.push(['chk-toggle',id,d]);Object.keys(mock.chk).forEach(function(k){mock.chk[k].forEach(function(c){if(c.id===id)c.done=d})});return Promise.resolve()},
  taskChecklistRemove:function(id){calls.push(['chk-rm',id]);Object.keys(mock.chk).forEach(function(k){mock.chk[k]=mock.chk[k].filter(function(c){return c.id!==id})});return Promise.resolve()},
+ taskWorkResults:function(){return Promise.resolve([])},
  taskListAttachments:function(id){return Promise.resolve(mock.atts.slice())},
 
  taskMarkNotificationRead:function(id){calls.push(['read',id]);mock.notices.forEach(function(n){if(n.id===id)n.read_at='x'});return Promise.resolve()}
 };
-</script><script src="/assets/js/render-tasks.js"></script><script>SSMPDRenderTasks.render(document.getElementById('r'))</script></body></html>`;
+</script><script src="/assets/js/task-work.js"></script><script src="/assets/js/render-tasks.js"></script><script>SSMPDRenderTasks.render(document.getElementById('r'))</script></body></html>`;
 (async()=>{
 const server=http.createServer((req,res)=>{const url=decodeURIComponent(req.url.split('?')[0]);if(url==='/'){res.setHeader('content-type','text/html');return res.end(page_html);}const f=path.join(root,url);if(!f.startsWith(root)||!fs.existsSync(f)||fs.statSync(f).isDirectory()){res.statusCode=404;return res.end();}const ext=path.extname(f);res.setHeader('content-type',ext==='.css'?'text/css':ext==='.js'?'text/javascript':'application/octet-stream');res.end(fs.readFileSync(f));}).listen(0);
 const port=server.address().port;
@@ -63,7 +64,7 @@ try{
   const need=async k=>Number(await page.locator('.tv-need.n-'+k+' b').textContent());
   assert.equal(await need('review'),1);assert.equal(await need('mine'),3);assert.equal(await need('overdue'),0);assert.equal(await need('soon'),1);assert.equal(await need('notices'),1);
   assert(/1 تعليق جديد/.test(await txt('.tv-proj')),'tile shows unread comment line');
-  assert(/التعليقات\s*1/.test(await txt('.tv-tabs')),'comments tab shows unread count');
+  assert(/المناقشة\s*1/.test(await txt('.tv-tabs')),'comments tab shows unread count');
   await page.click('.tv-tab[data-id=comments]');assert.equal(await page.locator('.tv-comment.new').count(),1,'comments tab lists the new comment');
   await page.click('.tv-tab[data-id=projects]');
   const tile=await txt('.tv-proj');

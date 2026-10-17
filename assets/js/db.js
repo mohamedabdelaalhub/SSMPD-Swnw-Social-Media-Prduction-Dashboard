@@ -1394,6 +1394,8 @@
     taskUpdateDetails: function (taskId, title, description, expectedOutput, assigneeId, dueAt, priority, repeatActive, intervalValue, intervalUnit, endsAt, updateFuture) {
       return handle(client.rpc("task_update_details", { p_task_id:taskId, p_title:title, p_description:description || "", p_expected_output:expectedOutput || "", p_assignee_id:assigneeId, p_due_at:dueAt, p_priority:priority || "normal", p_repeat_active:repeatActive, p_interval_value:intervalValue, p_interval_unit:intervalUnit, p_ends_at:endsAt || null, p_update_future:!!updateFuture }));
     },
+    taskWorkResults: function (id) { return handle(client.from("task_work_results").select("id,request_id,body,link,attachments,status,created_at").eq("task_id",id).order("created_at",{ascending:false}).limit(30)); },
+    taskSubmitWork: function (r) { return handle(client.rpc("task_submit_work",{p_task_id:r.task_id,p_request_id:r.request_id,p_status:r.status,p_body:r.body,p_link:r.link,p_attachments:r.attachments})); },
     taskSetStatus: function (taskId, status, note) {
       return handle(client.rpc("task_set_status", { p_task_id:taskId, p_status:status, p_note:note }));
     },
