@@ -1268,6 +1268,7 @@
       if (channel) client.removeChannel(channel);
     },
 
+    financeBankCommand: function(action,payload,token){return handle(client.rpc('clinic_finance_bank_command',{p_action:action,p_payload:payload,p_token:token}));},
     financeSupplierReceive: function(order,lines,reference,token){return handle(client.rpc('clinic_finance_supplier_receive',{p_order:order,p_lines:lines,p_reference:reference,p_token:token}));},
     financeSupplierCommand: function(action,payload,token){return handle(client.rpc('clinic_finance_supplier_command',{p_action:action,p_payload:payload,p_token:token}));},
     financeDoctorCommand: function(action,payload,token){return handle(client.rpc('clinic_finance_doctor_command',{p_action:action,p_payload:payload,p_token:token}));},
