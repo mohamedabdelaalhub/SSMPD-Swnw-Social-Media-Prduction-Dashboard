@@ -124,6 +124,14 @@
     { key: "packages", title: "الباكجز", description: "تجميع الخدمات وتسعير الباكج وهامش الربح.", list: "packages", unit: "باكج مجهز" }
   ];
 
+  function renderCatalogIssues(root,container){
+    if(!window.SSMPDDb.receptionCatalogIssues)return;
+    var panel=document.createElement('section');panel.className='acc-card';root.appendChild(panel);
+    window.SSMPDDb.receptionCatalogIssues().then(function(rows){if(!panel.isConnected)return;if(!rows.length){panel.remove();return;}
+      panel.innerHTML='<h4>إعدادات خدمات الحجز تحتاج استكمال</h4>'+rows.map(function(x,i){return '<div class="field"><strong>'+esc(x.name)+'</strong><p>'+esc(x.detail)+'</p><button class="btn" type="button" data-catalog-fix="'+i+'">فتح الإعداد الأصلي</button></div>';}).join('');
+      panel.querySelectorAll('[data-catalog-fix]').forEach(function(b){if(!window.SSMPDRoles.canModuleAction(me,'accounting','update')){b.hidden=true;return;}b.onclick=function(){var x=rows[+b.dataset.catalogFix],m=x.detail.match(/^اربط مستلزم (.+) بالصنف ووحدة المخزن من نموذج التسعير$/);if(x.kind==='contracts'){var nav=document.querySelector('[data-goto="contracting_entities"]');if(nav)nav.click();return;}window.SSMPDRenderAccounting.openSetupRepair(m?'supplies':x.kind,m?m[1]:x.name);render(container);};});
+    }).catch(function(){if(panel.isConnected)panel.textContent='تعذر تحميل مراجعة إعدادات الحجز. أعد فتح القسم للمحاولة.';});
+  }
   function renderSub(subView, container) {
     var section = catalogSections.filter(function (s) { return s.key === state.section; })[0];
     if (!section) {
@@ -140,6 +148,7 @@
           subView.querySelector("[data-acc-heading]").focus();
         };
       });
+      renderCatalogIssues(subView,container);
       return;
     }
     subView.innerHTML = '<div class="fc-section-head"><button type="button" class="btn" data-acc-back>رجوع للأقسام</button><h4 tabindex="-1" data-acc-heading>' + section.title + '</h4></div><div data-acc-detail></div>';
@@ -147,6 +156,7 @@
     if (section.key === "packages") renderPackagesScreen(detail, container);
     else renderPricingScreen(detail, container);
     applyPermissions(detail);
+    renderCatalogIssues(subView,container);
     var repair=state.pendingRepair;
     if(repair&&repair.section===state.section){
       state.pendingRepair=null;
