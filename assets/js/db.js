@@ -1268,6 +1268,8 @@
       if (channel) client.removeChannel(channel);
     },
 
+    bookingMessageResolve: function(id,decision,confirmed,note){return handle(client.rpc('clinic_booking_message_resolve',{p_id:id,p_decision:decision,p_confirmed:confirmed,p_note:note}));},
+    financeLegacyAsset: function(action,payload,token){return handle(client.rpc('clinic_finance_legacy_asset',{p_action:action,p_payload:payload,p_token:token}));},
     bookingCommand: function(action,payload,token){return handle(client.rpc('clinic_booking_command',{p_action:action,p_payload:payload,p_token:token}));},
     bookingShift: function(action,payload,token){return handle(client.rpc('clinic_booking_shift',{p_action:action,p_payload:payload,p_token:token}));},
     bookingSnapshot: function(from,to){return handle(client.rpc('clinic_booking_snapshot',{p_from:from,p_to:to}));},
