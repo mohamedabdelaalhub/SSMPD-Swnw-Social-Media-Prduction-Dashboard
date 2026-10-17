@@ -56,9 +56,9 @@
       if (!container.isConnected) return;
       rows = rows || [];
       var old = container.querySelector(".ops-learn"); if (old) old.remove();
-      if (!rows.length) return;
       var byBrand = {}; rows.forEach(function (r) { (byBrand[r.brand] = byBrand[r.brand] || []).push(r); });
-      var html = '<details class="ops-det"><summary>🧠 ذاكرة المحتوى — القواعد اللي اتعلّمناها <span class="ops-count">' + rows.length + '</span></summary><p class="ops-note">بتتحسب يوميًا من أداء المنشورات (3 منشورات فأكتر لكل قاعدة) وبتتقرا لمّا بنولّد أفكار جديدة. «قوي» = 5 منشورات فأكتر وفرق واضح. لو قاعدة مش منطقية، عطّلها.</p>';
+      var bar = '<div class="ops-bar"><button type="button" class="btn btn-primary sm" data-ops-weekly>📅 خطة الأسبوع القادم (Brief للوكيل)</button><span class="ops-note">بتستخدم ذاكرة الأداء وتقرير الجمعة وجدول النشر</span></div>';
+      var html = bar + (!rows.length ? "" : '<details class="ops-det"><summary>🧠 ذاكرة المحتوى — القواعد اللي اتعلّمناها <span class="ops-count">' + rows.length + '</span></summary><p class="ops-note">بتتحسب يوميًا من أداء المنشورات (3 منشورات فأكتر لكل قاعدة) وبتتقرا لمّا بنولّد أفكار جديدة. «قوي» = 5 منشورات فأكتر وفرق واضح. لو قاعدة مش منطقية، عطّلها.</p>');
       Object.keys(byBrand).forEach(function (b) {
         html += '<h4>' + esc(BRANDS[b] || (b === "all" ? "كل الصفحات" : b)) + '</h4><div class="ops-rules">' + byBrand[b].map(function (r) {
           var v = VERDICT[r.verdict] || [r.verdict, "info"], ev = r.evidence || {};
@@ -67,13 +67,20 @@
             (canEdit ? '<button type="button" class="ops-off" data-ops-off="' + esc(r.id) + '" title="تعطيل القاعدة">تعطيل</button>' : "") + '</div>';
         }).join("") + '</div>';
       });
-      html += '</details>';
+      if (rows.length) html += '</details>';
       var el = mk("ops-learn", html); place(container, el);
+      var wb = el.querySelector("[data-ops-weekly]"); if (wb) wb.onclick = function () { if (window.SSMPDWeeklyPlan) window.SSMPDWeeklyPlan.open(); };
       el.querySelectorAll("[data-ops-off]").forEach(function (b) {
         b.onclick = function () { b.disabled = true; window.SSMPDDb.setLearningActive(b.getAttribute("data-ops-off"), false).then(function () { var r = b.closest(".ops-rule"); if (r) r.remove(); }).catch(function (e) { b.disabled = false; alert((e && e.message) || "تعذر التعطيل"); }); };
       });
     }).catch(function () {});
   }
 
-  window.SSMPDOpsPanels = { publishIssues: publishIssues, learningPanel: learningPanel };
+  function weeklyPlanBar(container) {
+    if (!container || container.querySelector(".ops-weekly")) return;
+    var el = mk("ops-weekly", '<div class="ops-bar"><button type="button" class="btn btn-primary sm" data-ops-weekly>📅 خطة الأسبوع القادم (Brief للوكيل)</button><span class="ops-note">بتستخدم ذاكرة الأداء وتقرير الجمعة وجدول النشر</span></div>');
+    el.querySelector("[data-ops-weekly]").onclick = function () { if (window.SSMPDWeeklyPlan) window.SSMPDWeeklyPlan.open(); };
+    container.insertBefore(el, container.firstChild);
+  }
+  window.SSMPDOpsPanels = { publishIssues: publishIssues, learningPanel: learningPanel, weeklyPlanBar: weeklyPlanBar };
 })();

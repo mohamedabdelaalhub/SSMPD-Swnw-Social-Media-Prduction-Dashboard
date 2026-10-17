@@ -14,3 +14,10 @@
 .ops-rule{display:flex;gap:8px;align-items:center;flex-wrap:wrap;border-bottom:1px solid #EDF1F7;padding:7px 0;font-size:13.5px}.ops-rule:last-child{border-bottom:0}
 .ops-rule small{color:#6B7788;font-size:12px}
 .ops-off{margin-inline-start:auto;font:inherit;font-size:12px;border:1px solid #cfd7df;background:#fff;border-radius:8px;padding:3px 10px;cursor:pointer;color:#B2321F}.ops-off:hover{background:#FDECEA}
+
+.ops-bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.ops-weekly{padding:10px 14px}
+.wp-modal{max-width:760px;width:min(760px,96vw);max-height:92vh;overflow:auto}
+.wp-note{font-size:12.5px;color:#6B7788;margin:0 0 10px;line-height:1.8}
+.wp-form{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:12px}.wp-form label{display:grid;gap:4px;font-size:13px}.wp-form select{font:inherit;padding:7px 10px;border:1px solid #cfd7df;border-radius:8px;background:#fff;min-width:120px}
+.wp-text{width:100%;font:13px/1.8 ui-monospace,Menlo,Consolas,monospace;direction:rtl;border:1px solid #cfd7df;border-radius:10px;padding:10px;background:#F7F9FC;resize:vertical;min-height:260px}
+.wp-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px}.wp-err{color:#B2321F}
