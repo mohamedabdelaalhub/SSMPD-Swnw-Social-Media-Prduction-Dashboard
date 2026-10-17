@@ -31,6 +31,15 @@ function recordName(btn,meta){var list=[['data-del-file','files','مستند'],[
 function observeArchive(root){if(root._ppObserver)return;var observer=new MutationObserver(function(){decorate(root);});observer.observe(root,{childList:true,subtree:true});root._ppObserver=observer;decorate(root);}
 function route(){var match=/^#patient=([^&]+)(?:&section=([a-z]+))?$/.exec(location.hash);if(!match)return null;try{return {id:decodeURIComponent(match[1]),section:match[2]||'overview'};}catch(e){return null;}}
 function clearRoute(){if(route())history.replaceState(history.state,'',location.pathname+location.search);}
+function combinePrintActions(head){
+ var full=head.querySelector('[data-print-profile]'),text=head.querySelector('[data-print-profile-text]');if(!full||!text)return;
+ var trigger=document.createElement('button');trigger.type='button';trigger.className='btn ghost sm pp-action';trigger.dataset.ppIcon='print';trigger.dataset.ppPrint='yes';trigger.title='خيارات طباعة ملف المريض';trigger.setAttribute('aria-label',trigger.title);trigger.setAttribute('aria-haspopup','dialog');trigger.innerHTML=icon('print');full.before(trigger);full.remove();text.remove();
+ trigger.onclick=function(){
+  var dialog=document.createElement('dialog'),id='pp-print-'+(++serial);dialog.className='pp-confirm pp-print-dialog';dialog.setAttribute('aria-labelledby',id);dialog.innerHTML='<h3 id="'+id+'">طباعة ملف المريض</h3><div class="pp-print-options"><button type="button" class="btn ghost" data-pp-print-full>الملف بالمرفقات</button><button type="button" class="btn ghost" data-pp-print-text>البيانات فقط</button></div><p>البيانات فقط تشمل البيانات الشخصية والتاريخ الصحي والزيارات دون المرفقات.</p><button type="button" class="btn ghost" data-pp-print-cancel>إلغاء</button>';
+  function finish(){if(dialog.open&&typeof dialog.close==='function')dialog.close();dialog.remove();if(trigger.isConnected)trigger.focus();}
+  dialog.querySelector('[data-pp-print-full]').onclick=function(e){finish();full.onclick.call(full,e);};dialog.querySelector('[data-pp-print-text]').onclick=function(e){finish();text.onclick.call(text,e);};dialog.querySelector('[data-pp-print-cancel]').onclick=finish;dialog.addEventListener('cancel',function(e){e.preventDefault();finish();});dialog.addEventListener('close',function(){dialog.remove();if(trigger.isConnected)trigger.focus();});document.body.appendChild(dialog);if(typeof dialog.showModal==='function')dialog.showModal();else dialog.setAttribute('open','');dialog.querySelector('[data-pp-print-full]').focus();
+ };
+}
 function mountPage(page,container,meta){
  if(page._ppDevelopmentObserver)page._ppDevelopmentObserver.disconnect();page.dataset.ppPatientId=String(meta.patient.id);
  var host=page._ppHost||container||document.getElementById('view-container');
@@ -39,6 +48,7 @@ function mountPage(page,container,meta){
  page.className='pp-page';page.setAttribute('role','region');page.setAttribute('aria-label','ملف المريض '+meta.patient.full_name);page.onclick=null;
  var inner=page.querySelector(':scope > .modal');if(!inner)return;inner.classList.add('pp-workspace');
  var head=inner.querySelector(':scope > .modal-head');head.classList.add('pp-header');var close=head.querySelector('.modal-close');close.classList.add('btn','ghost');close.textContent='العودة للأرشيف';close.setAttribute('aria-label','العودة لأرشيف المرضى');close.onclick=function(){closePage(page,true);};
+ combinePrintActions(head);
  var refresh=document.createElement('button');refresh.type='button';refresh.className='btn ghost sm';refresh.textContent='تحديث الملف';refresh.onclick=function(){if(document.querySelector('.modal-backdrop,.pp-confirm[open]')){window.SSMPDToast.show('أغلق النموذج المفتوح قبل تحديث الملف');return;}refresh.disabled=true;Promise.resolve(meta.reload()).finally(function(){if(refresh.isConnected)refresh.disabled=false;});};head.insertBefore(refresh,close);
  var copy=document.createElement('button');copy.type='button';copy.className='btn ghost sm';copy.textContent='نسخ رابط الملف';copy.onclick=function(){if(!navigator.clipboard){window.SSMPDToast.show('نسخ الرابط غير متاح في المتصفح','error');return;}navigator.clipboard.writeText(location.href).then(function(){window.SSMPDToast.show('تم نسخ رابط الملف');}).catch(function(){window.SSMPDToast.show('تعذر نسخ الرابط','error');});};head.insertBefore(copy,close);
  var nav=document.createElement('div');nav.className='pp-tabs';nav.setAttribute('role','tablist');nav.setAttribute('aria-label','أقسام ملف المريض');

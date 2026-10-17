@@ -27,6 +27,7 @@ const tick=()=>new Promise(r=>setImmediate(r));
   assert.equal(button.textContent,p.full_name);
   assert.equal(button.querySelector('تجريبي'),null);
   assert(root.textContent.includes(screen==='review'?'موظف الرفع':'موظف الإدخال'));
+  if(screen==='browse'){const assign=root.querySelector('[data-assign]');assert(assign,'assignment action available');assert.equal(assign.parentNode.firstElementChild,assign,'assignment precedes view in RTL action order');assert.equal(assign.nextElementSibling.dataset.open,p.id);}
   button.click();assert.equal(opened.at(-1),p.id);
   w.document.querySelectorAll('.modal-backdrop').forEach(x=>x.remove());
  }

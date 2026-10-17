@@ -3010,8 +3010,7 @@
               '<td>' + escapeHtml(p.medical_record_no || "—") + '</td>' +
               '<td>' + fmtDate(p.last_visit_date) + '</td>' +
               '<td>' + (p.status === "archived" ? '<span class="status-pill draft">مؤرشف</span>' : "<span class=\"status-pill approved\"> <!--ssmpd-i18n:%D9%86%D8%B4%D8%B7-->نشط</span>") + '</td>' +
-              '<td style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;"><button class="btn ghost sm" data-open="' + p.id + "\"> <!--ssmpd-i18n:%D9%81%D8%AA%D8%AD-->فتح</button>" +
-              (canEditBrowse ? '<button class="btn ghost sm" data-edit="' + p.id + '">تعديل البيانات</button>' : '') +
+              '<td style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">' +
               (canAssign ? (function () {
                 var pend = pendingByPatient[p.id];
                 if (pend) {
@@ -3020,6 +3019,8 @@
                 }
                 return '<button class="btn ghost sm" data-assign="' + p.id + '" data-assign-name="' + escapeHtml(p.full_name) + '">تحويل لطبيب سونو</button>';
               })() : '') +
+              '<button class="btn ghost sm" data-open="' + p.id + "\"> <!--ssmpd-i18n:%D9%81%D8%AA%D8%AD-->فتح</button>" +
+              (canEditBrowse ? '<button class="btn ghost sm" data-edit="' + p.id + '">تعديل البيانات</button>' : '') +
               (canDeleteBrowse ? '<button class="btn ghost sm" data-delete-patient="' + p.id + '" data-delete-name="' + escapeHtml(p.full_name) + "\" style=\"color:var(--c-danger,#c33);\"> <!--ssmpd-i18n:%D8%AD%D8%B0%D9%81-->حذف</button>" : '') +
               '</td></tr>';
           });
