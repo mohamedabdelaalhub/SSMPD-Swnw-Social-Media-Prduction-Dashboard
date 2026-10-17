@@ -894,6 +894,7 @@ function openAgentImportModal(parentBackdrop) {
       html += '</div>';
 
       container.innerHTML = html;
+      if (window.SSMPDOpsPanels && window.SSMPDOpsPanels.weeklyPlanBar) window.SSMPDOpsPanels.weeklyPlanBar(container);
 
       document.getElementById("new-content-btn").onclick = openCreateModal;
       document.getElementById("idea-bank-btn").onclick = function () {
