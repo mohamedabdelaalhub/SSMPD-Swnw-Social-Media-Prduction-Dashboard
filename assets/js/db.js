@@ -1286,6 +1286,7 @@
     financeInsuranceReview: function(id,approve,note){return handle(client.rpc('clinic_finance_insurance_review',{p_id:id,p_approve:approve,p_note:note}));},
     financeSnapshot: function(from,to,offset){return handle(client.rpc('clinic_finance_snapshot',{p_from:from,p_to:to,p_offset:offset||0}));},
     financeSaveRegister: function(id,name,limit,mode){return handle(client.rpc('clinic_finance_save_register',{p_id:id,p_name:name,p_limit:limit,p_mode:mode}));},
+    receptionReport: function(workspace,from,to){return handle(client.rpc("clinic_reception_report",{p_workspace:workspace,p_from:from,p_to:to}));},
     receptionWorkspaces: function(){return handle(client.rpc("clinic_reception_workspaces",{}));},
     receptionBootstrap: function(){return handle(client.rpc("clinic_reception_bootstrap",{}));},
     receptionSnapshot: function(workspace,from,to){return handle(client.rpc("clinic_reception_snapshot",{p_workspace:workspace,p_from:from,p_to:to}));},
