@@ -306,6 +306,7 @@
     var preferred=R.defaultTab(admin);if(tabs.indexOf('home')!==-1)preferred='home';
     try{if(sessionStorage.getItem('ssmpd_active_tab_owner')!==admin.id)savedTab=null;}catch(e){}
     var startTab = (savedTab && tabs.indexOf(savedTab) !== -1) ? savedTab : (tabs.indexOf(preferred)!==-1?preferred:tabs[0]);
+    if (window.SSMPDPatientUI && window.SSMPDPatientUI.route() && tabs.indexOf('patients') !== -1) startTab = 'patients';
     switchTab(startTab);
     setupRealtime();
   }
@@ -734,6 +735,7 @@
     var activeAdmin=window.SSMPDAuth.currentAdmin;
     if(!tab || !R.canSeeTab(activeAdmin,tab)){var slot=document.getElementById('view-container');if(slot)slot.innerHTML='<div class="section"><h3>لم تُحدد صلاحيات أقسام لهذا الحساب</h3><p>السوبر أدمن يحدد الأقسام المتاحة من لوحة التحكم.</p></div>';return;}
 
+    if (tab !== 'patients' && window.SSMPDPatientUI) window.SSMPDPatientUI.clearRoute();
     removeRefreshNotice();
     currentTab = tab;
     try { sessionStorage.setItem(ACTIVE_TAB_KEY, tab);sessionStorage.setItem('ssmpd_active_tab_owner',activeAdmin.id); } catch (e) {}
@@ -762,6 +764,15 @@
     var previousView=document.getElementById('view-container');
     if(renderer && previousView){var freshView=previousView.cloneNode(false);previousView.replaceWith(freshView);renderer.render(freshView);}
   }
+
+  window.addEventListener('popstate', function () {
+    if (!window.SSMPDPatientUI || !window.SSMPDAuth.currentAdmin) return;
+    var route = window.SSMPDPatientUI.route(), page = document.querySelector('.pp-page');
+    if (!route) { if (page) window.SSMPDPatientUI.closePage(page, false); return; }
+    if (!R.canSeeTab(window.SSMPDAuth.currentAdmin, 'patients')) return;
+    if (page) window.SSMPDPatientUI.closePage(page, false);
+    switchTab('patients');
+  });
 
   function openHomeTarget(type,id){
     var admin=window.SSMPDAuth.currentAdmin;
