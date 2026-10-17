@@ -38,7 +38,7 @@
     admin: ["super_admin"],
     metaads: ["page_manager", "approver", "general_manager", "super_admin"],
     mediabuyer: ["page_manager", "approver", "general_manager", "super_admin"],
-    reception_services: ["general_manager", "super_admin"],
+    reception_services: ["general_manager", "super_admin", "reception", "customer_service", "nursing", "sono_doctor", "accountant", "financial_manager"],
     booking_cash: ["reception", "general_manager", "super_admin"],
     accounting: ["general_manager", "super_admin"],
     tasks: ["page_manager", "designer", "approver", "general_manager", "super_admin", "reception", "customer_service", "nursing", "sono_doctor", "contract_manager"],
