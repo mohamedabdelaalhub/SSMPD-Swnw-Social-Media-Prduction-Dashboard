@@ -1,0 +1,23 @@
+const fs=require('fs'),assert=require('node:assert/strict'),{JSDOM}=require('jsdom'),{spawnSync}=require('child_process'),{createHash}=require('crypto');
+const build=spawnSync('python3',['scripts/build-dashboard-help.py','--check'],{encoding:'utf8'});assert.equal(build.status,0,build.stdout+build.stderr);
+const inventory=require('../scripts/help-field-inventory.cjs'),manifest=JSON.parse(fs.readFileSync('docs/dashboard-help-fields.json','utf8'));
+assert.equal(manifest.fields.length,inventory.length);assert.deepEqual(manifest.fields.map(({file,label,name,forms})=>({file,label,name,forms})),inventory.map(({file,label,name,forms})=>({file,label,name,forms})));
+const dom=new JSDOM('<div id="view-container"></div>',{runScripts:'outside-only'}),w=dom.window;for(const file of ['dashboard-help-data','dashboard-help-fields','dashboard-help'])w.eval(fs.readFileSync('assets/js/'+file+'.js','utf8'));
+let missing=[];for(const field of manifest.fields){const found=w.SSMPDDashboardHelp.fieldHelp(field.label,field.name,field.tab,field.forms);if(!found||!found.reviewed||!found.text||/ليس له شرح|تعريف هذا الحقل غير موجود/.test(found.text)||createHash('sha256').update(found.text).digest('hex')!==field.text_sha256||found.article!==field.article)missing.push(field);}
+assert.equal(missing.length,0,JSON.stringify(missing.slice(0,8),null,2));
+const H=w.SSMPDDashboardHelp;
+assert(H.fieldHelp('الصفحة','','production').text.includes('سونو'));
+assert(H.fieldHelp('عدد الأفكار','','production').text.includes('21'));
+assert(H.fieldHelp('عدد الأفكار','','production').text.includes('Brief'));
+assert(H.fieldHelp('الوزن','','staff_kpi').text.includes('0 إلى10'));
+assert(H.fieldHelp('الوزن','','patients').text.includes('كيلوجرام'));
+assert(H.fieldHelp('النوع','kind','accounting',['إضافة حساب للشجرة']).text.includes('أصل'));
+assert(H.fieldHelp('النوع','kind','accounting',['تجهيز رسالة للحجز']).text.includes('رسالة'));
+assert(H.fieldHelp('الوحدة','unit','reception_services').text.includes('الصنف'));
+assert(H.fieldHelp('الوحدة','','patients').text.includes('دواء'));
+assert(H.fieldHelp('مصدر الحجز','source','reception_services').text.includes('واتساب'));
+assert(H.fieldHelp('مصدر المعلومة','source_evidence','reception_services').text.includes('إفادة المريض'));
+assert.equal(H.fieldHelp('اسم حقل جديد لا نعرفه','unknown_source_id','production'),null);
+assert(w.SSMPDHelpData.articles.some(a=>a.id==='weekly-planning'));
+assert(H.search('عدد الأفكار','production').some(a=>a.id==='weekly-planning'||a.id.startsWith('field-')));
+w.close();console.log('PASS source coverage: '+inventory.length+' source definitions, '+manifest.coverage.labels+' labels, '+manifest.coverage.files+' modules; screenshot fields, source/evidence, account/message type, stock/medicine units, KPI/patient weight, unknown fallback and field search.');
