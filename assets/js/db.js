@@ -1268,6 +1268,9 @@
       if (channel) client.removeChannel(channel);
     },
 
+    bookingCommand: function(action,payload,token){return handle(client.rpc('clinic_booking_command',{p_action:action,p_payload:payload,p_token:token}));},
+    bookingShift: function(action,payload,token){return handle(client.rpc('clinic_booking_shift',{p_action:action,p_payload:payload,p_token:token}));},
+    bookingSnapshot: function(from,to){return handle(client.rpc('clinic_booking_snapshot',{p_from:from,p_to:to}));},
     financeManualCommand: function(action,payload,token){return handle(client.rpc('clinic_finance_manual_command',{p_action:action,p_payload:payload,p_token:token}));},
     financeBusinessCommand: function(action,payload,token){return handle(client.rpc('clinic_finance_business_command',{p_action:action,p_payload:payload,p_token:token}));},
     financeBankCommand: function(action,payload,token){return handle(client.rpc('clinic_finance_bank_command',{p_action:action,p_payload:payload,p_token:token}));},
