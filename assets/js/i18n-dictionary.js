@@ -1,4 +1,13 @@
 window.SSMPD_TRANSLATIONS = {
+  "الليدز": "Leads",
+  "المحتوى": "Content",
+  "مفيش نتائج": "No results",
+  "تعذر البحث. حاول مرة أخرى.": "Search failed. Try again.",
+  "جاري البحث…": "Searching…",
+  "ابعت شكر": "Send thanks",
+  "البحث في الداشبورد": "Search the dashboard",
+  "اكتب حرفين على الأقل…": "Type at least two characters…",
+  "بحث في الأقسام المتاحة لك": "Search your available sections",
   "الملخص العام": "Overview",
   "إنتاج المحتوى": "Content production",
   "إدارة المحتوى": "Content management",
