@@ -42,10 +42,21 @@
  #view-container :is(.section,.kpi-card){border:1px solid var(--ui-line)}
  #view-container .section{padding:18px 20px;margin-bottom:16px}
  #view-container .section>h3{font-size:16px;margin-bottom:14px;line-height:1.8}
- #view-container .kpi-card{position:relative;padding:15px 18px;border-inline-start:3px solid #0F369D}
- #view-container .kpi-card .value{font-size:27px;line-height:1.4}
- #view-container .kpi-card .value.small{font-size:20px}
- #view-container .kpi-card .label{font-size:12px;line-height:1.8;margin-bottom:6px}
+ /* Metrics: aligned labels, restrained numbers and complete balanced rows. */
+ #view-container .kpi-grid{gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr));grid-auto-rows:1fr;align-items:stretch}
+ #view-container .kpi-card{position:relative;container-type:inline-size;min-width:0;padding:16px 18px;border:1px solid #E4E9F2;background:#FAFCFF;border-radius:14px;box-shadow:none;display:flex;flex-direction:column;justify-content:flex-start}
+ #view-container .kpi-card .label{font-size:12px;line-height:1.7;min-height:36px;margin-bottom:6px;color:#6B7788}
+ #view-container .kpi-card .value{font-size:clamp(18px,13cqi,25px);font-weight:700;line-height:1.5;font-variant-numeric:tabular-nums;overflow-wrap:normal;word-break:normal}
+ #view-container .kpi-card .value.small{font-size:clamp(14px,10cqi,22px)}
+ #view-container .kpi-card .delta{margin-top:8px}
+ @media(min-width:1000px){
+  #view-container .kpi-grid:has(>.kpi-card:nth-child(6):last-child),
+  #view-container .kpi-grid:has(>.kpi-card:nth-child(9):last-child){grid-template-columns:repeat(3,minmax(0,1fr))}
+  #view-container .kpi-grid:has(>.kpi-card:nth-child(8):last-child),
+  #view-container .kpi-grid:has(>.kpi-card:nth-child(12):last-child){grid-template-columns:repeat(4,minmax(0,1fr))}
+  #view-container .kpi-grid:has(>.kpi-card:nth-child(10):last-child){grid-template-columns:repeat(5,minmax(0,1fr))}
+ }
+ @media(min-width:701px) and (max-width:999px){#view-container .kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
  #view-container :is(.kanban-card,.op-item){border-radius:12px;border-color:var(--ui-line);box-shadow:none}
  #view-container :is(.fc-section-card,.aw-section-card,.inv-kpi,.tsk-project,.op-item){transition:border-color .15s,box-shadow .15s}
  #view-container :is(.fc-section-card,.aw-section-card,.inv-kpi,.tsk-project,.op-item):hover{border-color:#0F369D;box-shadow:0 5px 16px #0f369d0a}
@@ -82,11 +93,11 @@
   #view-container>div:has(>h2):first-child,#view-container :is(.cm-head,.website-panel__header,.fc-top,.op-head,.tsk-head,.tv-head,.pp-header,.fc-group-intro){flex-wrap:wrap}
   #view-container .section{padding:14px;border-radius:14px}
   #view-container .kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-  #view-container .kpi-card{min-width:0;padding:12px}
-  #view-container .kpi-card .value{font-size:clamp(18px,5vw,24px);overflow-wrap:normal;word-break:normal}
+  #view-container .kpi-card{min-width:0;padding:13px 14px}
   .modal-backdrop .modal>.modal-head,.tsk-modal>header{padding:13px 14px;gap:8px}
   .modal-backdrop .modal>.modal-head h3,.tsk-modal>header h3{font-size:16px}
   :is(#view-container,.modal-backdrop,.tsk-modal-backdrop) :is(.field,.fc-field,.rx-form,.inv-form,.tsk-form-row) :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=file]),select,textarea){font-size:16px}
  }
+ @media(max-width:400px){#view-container .kpi-card .label{font-size:11px;min-height:38px}}
  @media(prefers-reduced-motion:reduce){.app-shell .tab-btn,#view-container :is(.fc-section-card,.aw-section-card,.inv-kpi,.tsk-project,.op-item){transition:none}}
 }
