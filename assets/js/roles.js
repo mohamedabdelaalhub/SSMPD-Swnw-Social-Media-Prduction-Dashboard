@@ -12,6 +12,7 @@
     customer_service: "خدمة عملاء",
     nursing: "تمريض",
     sono_doctor: "طبيب سونو",
+    psychology_specialist: "أخصائي نفسية",
     contract_manager: "مسؤول التعاقدات",
     accountant: "محاسب",
     financial_manager: "مدير مالي"
@@ -98,8 +99,11 @@
 
     // بياخد صف admin كامل (مش بس الرول) عشان تاب "أرشيف المرضى" بيتفحص بصلاحية
     // has_archive_access المنفصلة عن الرول — لسه بيقبل الرول كـ string لوحده كمان
+    isPsychologySpecialist: function(a) { return Roles.hasRole(a,"psychology_specialist") && !Roles.hasAnyRole(a,["super_admin","general_manager"]); },
+
     canSeeTab: function (adminOrRole, tab) {
       var admin = normalizeAdmin(adminOrRole);
+      if(Roles.isPsychologySpecialist(admin))return ["home","patients","tasks"].includes(tab);
       if(tab==="accounting")return Roles.canModuleAction(admin,"accounting","view") || Roles.canSeeTab(admin,"inventory") && !(admin.inventory_assigned===false && admin.inventory_supply_access===true);
       if(tab==="booking_cash" && Roles.isControlledFinance(admin))return Roles.canModuleAction(admin,"accounting","view");
       if(tab==='reception_services'&&Roles.isControlledFinance(admin)&&!Roles.hasAnyRole(admin,['super_admin','general_manager','reception','customer_service','nursing','sono_doctor']))return Roles.canModuleAction(admin,'accounting','view');
@@ -116,6 +120,7 @@
 
     defaultTab: function (adminOrRole) {
       var admin = normalizeAdmin(adminOrRole);
+      if(Roles.isPsychologySpecialist(admin))return "home";
       if (Roles.isControlledFinance(admin)) {
         var tabs=["accounting","contracting_entities","tasks"];
         var permitted=tabs.find(function(tab){return Roles.canSeeTab(admin,tab);});

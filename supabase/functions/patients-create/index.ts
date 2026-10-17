@@ -65,12 +65,18 @@ function isSuperAdmin(caller: { role: string; extra_roles?: string[] }): boolean
   return caller.role === "super_admin" || (caller.extra_roles ?? []).includes("super_admin");
 }
 
+
+function restrictedPsychology(c:any):boolean {
+ const roles=[c.role,...(c.extra_roles||[])];
+ return roles.includes("psychology_specialist")&&!roles.includes("super_admin")&&!roles.includes("general_manager");
+}
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
   const caller = await getCallerAdmin(req);
   if (!caller) return json({ error: "غير مصرح — سجّل دخولك تاني" }, 401);
+  if(restrictedPsychology(caller))return json({error:"استخدم مساحة التخصصات النفسية لهذا الدور"},403);
   const allowed = caller.has_archive_access || isSuperAdmin(caller);
   if (!allowed) return json({ error: "مفيش صلاحية أرشيف المرضى" }, 403);
 
@@ -92,7 +98,9 @@ Deno.serve(async (req) => {
   const medicalRecordNo = (body.medical_record_no ?? "").toString().trim() || null;
   const contractId = (body.contract_id ?? "").toString().trim() || null;
 
-  if (!fullName) return json({ error: "الاسم مطلوب" }, 400);
+  if(fullName.split(/\s+/).filter(Boolean).length<2)return json({error:"اسم المريض مطلوب من كلمتين على الأقل"},400);
+  if(!phoneRaw||normalizePhone(phoneRaw).replace(/[^0-9]/g,"").length<8)return json({error:"رقم تليفون المريض مطلوب ويجب أن يكون صحيحًا"},400);
+  if(age===null||!Number.isInteger(age)||age<0||age>130)return json({error:"سن المريض مطلوب من صفر إلى130 سنة"},400);
 
   const phoneNormalized = phoneRaw ? normalizePhone(phoneRaw) : null;
   const nationalIdHash = nationalId ? await hashNationalId(nationalId) : null;

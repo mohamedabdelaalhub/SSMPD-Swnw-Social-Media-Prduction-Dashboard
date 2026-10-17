@@ -188,27 +188,31 @@ Deno.serve(async (req) => {
       if (!existing) return json({ error: "ملف المريض المرتبط بالليد ده مش موجود" }, 500);
       patientCode = existing.patient_code;
     } else {
-      const phoneNormalized = lead.phone_normalized || (lead.phone_raw ? normalizePhone(lead.phone_raw) : null);
+      const patientName=String(form.get('patient_name')||lead.customer_name||'').trim();
+      const patientPhone=String(form.get('patient_phone')||lead.phone_raw||lead.phone_normalized||'').trim();
+      const patientAgeRaw=String(form.get('patient_age')||'').trim(),patientAge=patientAgeRaw===''?null:Number(patientAgeRaw);
+      const phoneNormalized=patientPhone?normalizePhone(patientPhone):null;
       let matched: { id: string; patient_code: string } | null = null;
       if (phoneNormalized) {
         const { data: found } = await admin
           .from("patients")
-          .select("id, patient_code")
-          .eq("phone_normalized", phoneNormalized)
-          .limit(1)
-          .maybeSingle();
-        matched = found ?? null;
+          .select("id, patient_code, full_name")
+          .eq("phone_normalized", phoneNormalized);
+        const nameKey=(v:string)=>v.trim().replace(/[أإآ]/g,"ا").replace(/ى/g,"ي").replace(/\s+/g," ").toLowerCase();
+        matched=(found||[]).find((p:any)=>nameKey(p.full_name)===nameKey(patientName))??null;
       }
       if (matched) {
         patientId = matched.id;
         patientCode = matched.patient_code;
         patientType = "existing";
       } else {
+        if(patientName.split(/\s+/).filter(Boolean).length<2||!patientPhone||patientAge===null||!Number.isInteger(patientAge)||patientAge<0||patientAge>130)return json({error:"استكمل اسم المريض من كلمتين والتليفون والسن قبل إنشاء الملف ورفع الفاتورة"},400);
         const { data: created, error: createErr } = await admin
           .from("patients")
           .insert({
-            full_name: lead.customer_name,
-            phone: lead.phone_raw || null,
+            full_name: patientName,
+            phone: patientPhone,
+            age:patientAge,
             phone_normalized: phoneNormalized,
             created_by: caller.id,
           })

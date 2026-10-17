@@ -118,6 +118,7 @@
   function render(container) {
     if (container.querySelector(".pp-page")) return;
     me = window.SSMPDAuth.currentAdmin;
+    if(window.SSMPDRoles.isPsychologySpecialist&&window.SSMPDRoles.isPsychologySpecialist(me)){window.SSMPDPsychology.render(container);return;}
     if (isDoctorOnly()) {
       renderDoctorQueue(container);
       if (window.SSMPDPatientUI) {
@@ -136,8 +137,10 @@
       subs.map(function (s) {
         return '<button class="tab-btn ' + (state.subTab === s.key ? "active" : "") + '" data-sub="' + s.key + '">' + s.label + '</button>';
       }).join("") + '</div>';
+    if(window.SSMPDRoles.hasAnyRole&&window.SSMPDRoles.hasAnyRole(me,['general_manager','super_admin']))html+='<button class="btn" data-psych-requests>طلبات استعراض الأخصائيين</button>';
     html += '<div id="pt-sub-view"></div>';
     container.innerHTML = html;
+    var requests=container.querySelector("[data-psych-requests]");if(requests)requests.onclick=function(){window.SSMPDPsychology.openRequests();};
 
     container.querySelectorAll("[data-sub]").forEach(function (btn) {
       btn.onclick = function () {
@@ -355,6 +358,9 @@
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
     backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
 
+    var known=document.createElement('div'),lookupVersion=0;known.setAttribute('data-known-patients','');backdrop.querySelector('#np-phone').closest('.field').after(known);
+    backdrop.querySelector('#np-phone').onchange=function(){var phone=this.value,n=++lookupVersion;known.replaceChildren();if(!window.SSMPDDb.psychologyLookup||phone.replace(/[^0-9٠-٩]/g,'').length<8)return;window.SSMPDDb.psychologyLookup(phone).then(function(rows){if(n!==lookupVersion||!backdrop.isConnected)return;known.innerHTML=(rows.length?'<p>ملفات مسجلة بنفس التليفون — اختر المريض الحالي بدل إنشاء ملف آخر</p>':'')+rows.map(function(p,i){return '<button class="btn ghost" type="button" data-known="'+i+'">'+escapeHtml(p.full_name)+' — '+escapeHtml(p.patient_code)+'</button>';}).join('');known.querySelectorAll('[data-known]').forEach(function(b){b.onclick=function(){var p=rows[+b.dataset.known];backdrop.remove();if(onCreated)onCreated(p);else window.SSMPDRenderPatients.openPatientById(p.id);};});}).catch(function(){known.textContent='تعذر فحص الملفات الحالية. نراجع التكرار أيضًا عند الحفظ.';});};
+
     // عقود نشطة فقط: المريض الجديد لا يُنسب لجهة منتهية أو تحت تفاوض.
     window.SSMPDDb.listActiveContracts().then(function (contracts) {
       var select = document.getElementById("np-contract");
@@ -374,8 +380,9 @@
       var gender = document.getElementById("np-gender").value;
       var medical_record_no = document.getElementById("np-mrn").value.trim();
       var contract_id = document.getElementById("np-contract").value || undefined;
-      if (!full_name) { T.show("اكتب اسم المريض", "error"); return; }
-      if (!phone) { T.show("اكتب رقم الهاتف", "error"); return; }
+      if(full_name.split(/\s+/).filter(Boolean).length<2){T.show("اكتب اسم المريض من كلمتين على الأقل","error");return;}
+      if(!phone||phone.replace(/[^0-9٠-٩]/g,"").length<8){T.show("اكتب رقم تليفون المريض","error");return;}
+      if(age===""||!Number.isInteger(Number(age))||Number(age)<0||Number(age)>130){T.show("اكتب السن من صفر إلى130 سنة","error");return;}
       window.SSMPDDb.createPatientArchive({
         full_name: full_name, phone: phone, email: email || undefined, national_id: national_id || undefined,
         age: age || undefined, gender: gender || undefined, medical_record_no: medical_record_no || undefined,
@@ -419,7 +426,7 @@
       var gender = document.getElementById("ep-gender").value;
       var medical_record_no = document.getElementById("ep-mrn").value.trim();
       var last_visit_date = document.getElementById("ep-visit").value;
-      if (!full_name) { T.show("اكتب اسم المريض", "error"); return; }
+      if(full_name.split(/\s+/).filter(Boolean).length<2){T.show("اكتب اسم المريض من كلمتين على الأقل","error");return;}
       var patch = {
         full_name: full_name,
         phone: phone || null,
@@ -3155,7 +3162,7 @@
   }
   function speechLabel(map, value) { return map[value] || "—"; }
 
-  function openSpeechProfileFormModal(patient, profile, onSaved) {
+  function openSpeechProfileFormModal(patient, profile, onSaved, saveNew) {
     profile = profile || {};
     var issueOptions = [["speech_delay","تأخر كلام"],["language_delay","لغة"],["pronunciation","نطق"],["stuttering","تلعثم"],["communication","تواصل"],["other","أخرى"]];
     var yesNo = function (name, value) { return '<div style="display:flex;gap:14px;"><label><input type="radio" name="' + name + '" value="yes" ' + (value === true ? "checked" : "") + '> نعم</label><label><input type="radio" name="' + name + '" value="no" ' + (value === false ? "checked" : "") + '> لا</label></div>'; };
@@ -3200,11 +3207,11 @@
       if (window.SSMPDChildAssessments) patch.assessment_details = window.SSMPDChildAssessments.collect(backdrop, profile.assessment_details || {});
       patch.created_by = profile.created_by || (me && me.id);
       var saveBtn = backdrop.querySelector('#sp-save-profile'); saveBtn.disabled = true;
-      window.SSMPDDb.savePatientSpeechProfile(patient.id, patch, me && me.id).then(function () { T.show("تم حفظ التقييم الأولي للتخاطب"); backdrop.remove(); onSaved(); }).catch(function (e) { saveBtn.disabled = false; T.show("خطأ: " + e.message, "error"); });
+      (saveNew ? saveNew(patch) : window.SSMPDDb.savePatientSpeechProfile(patient.id, patch, me && me.id)).then(function () { T.show("تم حفظ التقييم الأولي للتخاطب"); backdrop.remove(); onSaved(); }).catch(function (e) { saveBtn.disabled = false; T.show("خطأ: " + e.message, "error"); });
     };
   }
 
-  function openSpeechSessionFormModal(patient, sessions, existing, onSaved) {
+  function openSpeechSessionFormModal(patient, sessions, existing, onSaved, saveNew) {
     var row = existing || {};
     var isEdit = !!existing;
     var nextNumber = sessions.length ? Math.max.apply(null, sessions.map(function (x) { return Number(x.session_number) || 0; })) + 1 : 1;
@@ -3232,12 +3239,12 @@
       var number = Number(backdrop.querySelector("#ss-number").value), at = backdrop.querySelector("#ss-at").value;
       if (!Number.isInteger(number) || number < 1 || number > 999 || !at) { T.show("اكتب رقم الجلسة وموعدها", "error"); return; }
       var patch = { session_number:number, session_type:backdrop.querySelector("#ss-type").value, session_at:new Date(at).toISOString(), duration_minutes:Number(backdrop.querySelector("#ss-duration").value) || null, response_level:backdrop.querySelector("#ss-response").value || null, goals:backdrop.querySelector("#ss-goals").value.trim() || null, training_done:backdrop.querySelector("#ss-training").value.trim() || null, homework:backdrop.querySelector("#ss-homework").value.trim() || null, attendance_status:(backdrop.querySelector('input[name="speech-attendance"]:checked') || {}).value || "attended", specialist_notes:backdrop.querySelector("#ss-notes").value.trim() || null, next_session_at:backdrop.querySelector("#ss-next").value ? new Date(backdrop.querySelector("#ss-next").value).toISOString() : null };
-      var req = isEdit ? window.SSMPDDb.updatePatientSpeechSession(row.id, patch, me && me.id) : window.SSMPDDb.addPatientSpeechSession(patient.id, patch, me && me.id);
+      var req = isEdit ? window.SSMPDDb.updatePatientSpeechSession(row.id, patch, me && me.id) : saveNew ? saveNew(patch) : window.SSMPDDb.addPatientSpeechSession(patient.id, patch, me && me.id);
       req.then(function () { T.show("تم حفظ جلسة التخاطب"); backdrop.remove(); onSaved(); }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
     };
   }
 
-  function openPsychologyProfileFormModal(patient, profile, onSaved) {
+  function openPsychologyProfileFormModal(patient, profile, onSaved, saveNew) {
     profile = profile || {};
     var issueOptions = [["anxiety","قلق"],["depression","اكتئاب"],["panic","نوبات هلع"],["relationships","علاقات"],["self_esteem","تقدير ذات"],["behavior","سلوك"],["other","أخرى"]];
     var backdrop = document.createElement("div");
@@ -3284,11 +3291,11 @@
       var selected = Array.from(issues.querySelectorAll("input:checked")).map(function (x) { return x.value; });
       var previousValue = (backdrop.querySelector('input[name="previous-treatment"]:checked') || {}).value;
       var patch = { first_session_date:backdrop.querySelector("#pp-first-date").value || null, session_type:backdrop.querySelector("#pp-session-type").value || null, booking_reason:backdrop.querySelector("#pp-booking-reason").value.trim() || null, main_issues:selected, main_issue_other:selected.indexOf("other") > -1 ? backdrop.querySelector("#pp-other").value.trim() || null : null, presenting_complaint:backdrop.querySelector("#pp-complaint").value.trim() || null, problem_started:backdrop.querySelector("#pp-started").value.trim() || null, current_symptoms:backdrop.querySelector("#pp-symptoms").value.trim() || null, previous_treatment:previousValue === "yes" ? true : previousValue === "no" ? false : null, psychiatric_medications:medications, current_stressors:backdrop.querySelector("#pp-stressors").value.trim() || null, life_impact:backdrop.querySelector("#pp-impact").value || null, treatment_goal:backdrop.querySelector("#pp-goal").value.trim() || null, specialist_notes:backdrop.querySelector("#pp-notes").value.trim() || null };
-      window.SSMPDDb.savePatientPsychologyProfile(patient.id, patch, me && me.id).then(function () { T.show("تم حفظ التقييم النفسي"); backdrop.remove(); onSaved(); }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
+      (saveNew ? saveNew(patch) : window.SSMPDDb.savePatientPsychologyProfile(patient.id, patch, me && me.id)).then(function () { T.show("تم حفظ التقييم النفسي"); backdrop.remove(); onSaved(); }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
     };
   }
 
-  function openPsychologySessionFormModal(patient, sessions, existing, onSaved) {
+  function openPsychologySessionFormModal(patient, sessions, existing, onSaved, saveNew) {
     var row = existing || {};
     var nextNumber = sessions.length ? Math.max.apply(null, sessions.map(function (x) { return Number(x.session_number) || 0; })) + 1 : 1;
     var interventionOptions = [["cbt","CBT"],["counseling","إرشاد"],["thought_restructuring","تعديل أفكار"],["skills","مهارات"],["other","أخرى"]];
@@ -3320,12 +3327,13 @@
       if (!Number.isInteger(number) || number < 1 || number > 999 || !at) { T.show("اكتب رقم الجلسة وموعدها", "error"); return; }
       var selected = Array.from(interventions.querySelectorAll("input:checked")).map(function (x) { return x.value; });
       var patch = { session_number:number, session_at:new Date(at).toISOString(), duration_minutes:Number(backdrop.querySelector("#ps-duration").value) || null, improvement_level:backdrop.querySelector("#ps-improvement").value || null, session_goal:backdrop.querySelector("#ps-goal").value.trim() || null, interventions:selected, intervention_other:selected.indexOf("other") > -1 ? backdrop.querySelector("#ps-other").value.trim() || null : null, adherence_level:backdrop.querySelector("#ps-adherence").value || null, attendance_status:(backdrop.querySelector('input[name="psych-attendance"]:checked') || {}).value || "attended", next_session_plan:backdrop.querySelector("#ps-next-plan").value.trim() || null, specialist_notes:backdrop.querySelector("#ps-notes").value.trim() || null };
-      var req = existing ? window.SSMPDDb.updatePatientPsychologySession(row.id, patch, me && me.id) : window.SSMPDDb.addPatientPsychologySession(patient.id, patch, me && me.id);
+      var req = existing ? window.SSMPDDb.updatePatientPsychologySession(row.id, patch, me && me.id) : saveNew ? saveNew(patch) : window.SSMPDDb.addPatientPsychologySession(patient.id, patch, me && me.id);
       req.then(function () { T.show("تم حفظ الجلسة النفسية"); backdrop.remove(); onSaved(); }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
     };
   }
 
   function openPatientModal(view, container, patientId) {
+    if(window.SSMPDRoles.isPsychologySpecialist&&window.SSMPDRoles.isPsychologySpecialist(window.SSMPDAuth.currentAdmin)){window.SSMPDPsychology.openPatient(patientId);return;}
     me = window.SSMPDAuth.currentAdmin;
     var pendingPage = Array.from(document.querySelectorAll('[data-pp-loading-patient]')).find(function (el) { return el.dataset.ppLoadingPatient === String(patientId); });
     if (pendingPage) return;
@@ -3532,7 +3540,7 @@
     var psychologyAttendance = { attended:"حضر", absent:"غاب", excused:"اعتذر" };
     var psychologyImprovement = { none:"لا يوجد", slight:"بسيط", moderate:"متوسط", good:"جيد", major:"كبير" };
     html += '<div class="section" style="padding:12px 14px;">' +
-      '<h3 style="font-size:14px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;"><span>الصحة النفسية</span>' + (canEditMedical ? '<span><button class="btn ghost sm" data-edit-psychology-profile="1">التقييم الأولي</button> <button class="btn ghost sm" data-add-psychology-session="1">+ جلسة جديدة</button></span>' : '') + '</h3>' +
+      '<h3 style="font-size:14px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;"><span>الصحة النفسية</span><button class="btn ghost sm" data-specialist-history>جلسات وتقييمات الأخصائيين</button>' + (canEditMedical ? '<span><button class="btn ghost sm" data-edit-psychology-profile="1">التقييم الأولي</button> <button class="btn ghost sm" data-add-psychology-session="1">+ جلسة جديدة</button></span>' : '') + '</h3>' +
       '<div style="font-size:12px;color:var(--c-muted);line-height:1.9;">تاريخ أول جلسة: ' + (psychologyProfile && psychologyProfile.first_session_date ? fmtDate(psychologyProfile.first_session_date) : "—") + '<br>نوع الجلسة: ' + (psychologyProfile && psychologyProfile.session_type ? ({individual:"فردية",family:"أسرية",couple:"زوجية",child:"طفل"}[psychologyProfile.session_type] || "—") : "—") + '<br>المشكلة الأساسية: ' + (psychologyProfile && psychologyProfile.main_issues && psychologyProfile.main_issues.length ? psychologyProfile.main_issues.map(function (x) { return psychologyIssueLabels[x] || x; }).join("، ") + (psychologyProfile.main_issue_other ? " (" + escapeHtml(psychologyProfile.main_issue_other) + ")" : "") : "—") + '<br>عدد الجلسات: ' + psychologySessions.length + '</div>';
     if (!psychologySessions.length) html += '<p style="font-size:12px;color:var(--c-muted);margin:10px 0 0;">مفيش جلسات نفسية مسجلة.</p>';
     else {
@@ -3803,6 +3811,7 @@
 
     backdrop.innerHTML = html;
     if(window.SSMPDSharedReception)window.SSMPDSharedReception.append(backdrop.querySelector('.modal'),{context:'patient',id:patient.id});
+    var history=backdrop.querySelector("[data-specialist-history]");if(history)history.onclick=function(){window.SSMPDPsychology.openPatient(patient.id);};
     if (window.SSMPDChildAssessments) {
       window.SSMPDChildAssessments.mount(backdrop.querySelector('[data-development-assessments]'), patient, canEditMedical, (speechProfile || {}).assessment_details || {});
       backdrop.querySelector('[data-view-speech-assessment]').onclick = function () { window.SSMPDChildAssessments.showSpeech(patient, speechProfile || {}); };
@@ -4264,6 +4273,7 @@
   }
 
   window.SSMPDRenderPatients = {
+    specialistForms:{speechAssessment:openSpeechProfileFormModal,psychologyAssessment:openPsychologyProfileFormModal,speechSession:openSpeechSessionFormModal,psychologySession:openPsychologySessionFormModal},
     render: render, openSearch: openSearch, openCreate: function(onCreated) { openNewPatientModal(null,onCreated); },
     openPatientById: function (id) { openPatientModal(null, null, id); },
     openExperienceRatingFormModal: openExperienceRatingFormModal,
