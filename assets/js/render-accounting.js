@@ -85,7 +85,8 @@
     me = window.SSMPDAuth.currentAdmin;
     var subs = [
       { key: "pricing", label: "تسعير الخدمات" },
-      { key: "packages", label: "الباكجز" }
+      { key: "packages", label: "الباكجز" },
+      { key: "cash", label: "الخزينة والدورة المالية" }
     ];
     var html = '<div class="tabs" style="margin-bottom:16px;">' +
       subs.map(function (s) {
@@ -100,6 +101,7 @@
       };
     });
     var subView = document.getElementById("acc-sub-view");
+    if(state.subTab==='cash'&&window.SSMPDFinanceCash){window.SSMPDFinanceCash.render(subView);return;}
     if (!state.loaded) {
       subView.innerHTML = '<p>جاري التحميل...</p>';
       loadAll(function () { renderSub(subView, container); });

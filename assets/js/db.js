@@ -1268,6 +1268,16 @@
       if (channel) client.removeChannel(channel);
     },
 
+    financeSnapshot: function(from,to,offset){return handle(client.rpc('clinic_finance_snapshot',{p_from:from,p_to:to,p_offset:offset||0}));},
+    financeRegister: function(name,limit){return handle(client.rpc('clinic_finance_register',{p_name:name,p_limit:limit}));},
+    financeOpenShift: function(register,token){return handle(client.rpc('clinic_finance_open_shift',{p_register:register,p_token:token}));},
+    financeInvoice: function(reference,patient,description,amount,token){return handle(client.rpc('clinic_finance_invoice',{p_reference:reference,p_patient_ref:patient,p_description:description,p_amount:amount,p_token:token}));},
+    financeCollect: function(invoice,shift,method,amount,reference,token){return handle(client.rpc('clinic_finance_collect',{p_invoice:invoice,p_shift:shift,p_method:method,p_amount:amount,p_reference:reference,p_token:token}));},
+    financeRequest: function(payload,token){return handle(client.rpc('clinic_finance_request',{p_payload:payload,p_token:token}));},
+    financeReviewRequest: function(id,approve,note){return handle(client.rpc('clinic_finance_review_request',{p_id:id,p_approve:approve,p_note:note}));},
+    financeCloseShift: function(shift,counts,note){return handle(client.rpc('clinic_finance_close_shift',{p_shift:shift,p_counts:counts,p_note:note}));},
+    financeReviewShift: function(shift,note){return handle(client.rpc('clinic_finance_review_shift',{p_shift:shift,p_note:note}));},
+    financeClosePeriod: function(through){return handle(client.rpc('clinic_finance_close_period',{p_through:through}));},
     // ---------- الحسابات (Accounting): تسعير الخدمات + الباكجز ----------
     listPricingSupplies: function () {
       return handle(client.from("pricing_supplies").select("*").order("name", { ascending: true }));
