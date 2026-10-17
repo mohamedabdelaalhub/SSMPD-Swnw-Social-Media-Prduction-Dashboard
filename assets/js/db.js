@@ -1199,7 +1199,7 @@
       if (params.from) q = q.gte("appointment_date", params.from);
       if (params.to) q = q.lte("appointment_date", params.to);
       if (params.limit) q = q.limit(params.limit);
-      return handle(q);
+      return handle(q).then(async function(rows){var linked=[];for(var page=0;page<Math.min(params.limit||500,500);page+=100){var report=await handle(client.rpc('clinic_reception_shared_records',{p_context:'bookings',p_id:null,p_from:params.from||null,p_to:params.to||null,p_offset:page}));if(!report)break;var extra=(report.appointments||[]).map(function(a){return {id:'reception:'+a.id,booking_reference:'RX-'+a.id,customer_name:a.patient_name,phone:a.phone,doctor_name:a.provider_name,specialty_name:a.service_name,appointment_date:a.appointment_date,appointment_time:a.appointment_time,status:a.status==='booked'?'confirmed':a.status,created_at:a.created_at,reception_id:a.id};});linked=linked.concat(extra);if(extra.length<100)break;}return (rows||[]).concat(linked).filter(function(r){return !params.status||r.status===params.status;}).sort(function(a,b){return String(a.appointment_date||'').localeCompare(String(b.appointment_date||''))||String(a.appointment_time||'').localeCompare(String(b.appointment_time||''));});});
     },
 
     // ---------- Meta Auto Publisher (قسم ٤٣) ----------
@@ -1290,6 +1290,8 @@
     receptionDirectory: function(workspace,term){return handle(client.rpc("clinic_reception_directory",{p_workspace:workspace,p_term:term}));},
     receptionMasters: function(workspace){return handle(client.rpc("clinic_reception_masters",{p_workspace:workspace}));},
     receptionIndicatorPublication: function(workspace,action,payload){return handle(client.rpc("clinic_reception_indicator_publication",{p_workspace:workspace,p_action:action,p_payload:payload||{}}));},
+    receptionPatientLeads: function(workspace,patient){return handle(client.rpc("clinic_reception_patient_leads",{p_workspace:workspace,p_patient:patient}));},
+    receptionSharedRecords: function(context,id,from,to,offset){return handle(client.rpc("clinic_reception_shared_records",{p_context:context,p_id:id||null,p_from:from||null,p_to:to||null,p_offset:offset||0}));},
     receptionIndicatorExport: function(workspace,from,to){return handle(client.rpc("clinic_reception_indicator_export",{p_workspace:workspace,p_from:from,p_to:to}));},
     receptionFinanceOverview: function(from,to){return handle(client.rpc("clinic_reception_finance_overview",{p_from:from,p_to:to}));},
     receptionMarketing: function(workspace,from,to){return handle(client.rpc("clinic_reception_marketing",{p_workspace:workspace,p_from:from,p_to:to}));},

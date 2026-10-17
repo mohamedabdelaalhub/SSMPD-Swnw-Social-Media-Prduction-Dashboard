@@ -1,0 +1,43 @@
+begin;
+do $$declare u uuid;me uuid;other uuid;w uuid;person uuid;pricing uuid;contract uuid;pro uuid;service uuid;patient uuid;appt uuid;visit uuid;ord uuid;invoice uuid;s jsonb;r jsonb;d date:=(now() at time zone 'Africa/Cairo')::date;prefix text:='RX-SHARED-'||gen_random_uuid()::text;blocked boolean:=false;
+begin
+ if exists(select 1 from clinic_reception.workspaces where mode='live') or (select live_enabled from clinic_reception.settings where id) then raise exception 'Rollback test requires cutover disabled';end if;
+ select user_id,id into u,me from public.admins where active and user_id is not null and role='super_admin' order by id limit 1;
+ select id into other from public.admins where active and id<>me order by id limit 1;
+ if u is null or other is null then raise exception 'Existing identities required';end if;
+ insert into public.patients(full_name,phone,created_by) values(prefix,'01000000000',me) returning id into person;
+ insert into public.pricing_services(name,base_price,supplies_used,profit_margin_percent,active,created_by,booking_enabled,booking_code,booking_department,booking_minutes) values(prefix,100,'[]',0,true,me,true,prefix,'اختبار متراجع',20) returning id into pricing;
+ -- Approved contract fixture is rolled back. This is not an approval by the real employee.
+ insert into clinic_finance.doctor_contracts(doctor_key,doctor_name,service_scope,valid_from,valid_to,rate,basis,base_scope,deduction,refund_policy,reference,status,payload,created_by,token,reviewed_by)
+ values(prefix,prefix,prefix,d,d+30,20,'performed','service','none','proportional_revenue',prefix,'active','{}',me,gen_random_uuid(),other) returning id into contract;
+ insert into clinic_reception.workspaces(name,mode,owner_id) values(prefix,'live',me) returning id into w;
+ update clinic_reception.settings set live_enabled=true,cutover_at=now();
+ perform set_config('request.jwt.claim.sub',u::text,true);execute 'set local role authenticated';
+ s:=public.clinic_reception_snapshot(w,d,d);select (x->>'id')::uuid into service from jsonb_array_elements(s->'services') x where x->>'pricing_service_id'=pricing::text;
+ if service is null then raise exception 'Native pricing service was not projected';end if;
+ pro:=(public.clinic_reception_command(w,'provider',jsonb_build_object('name',prefix,'department','اختبار متراجع','branch','اختبار','doctor_key',prefix),gen_random_uuid())->>'id')::uuid;
+ patient:=(public.clinic_reception_command(w,'patient_attach',jsonb_build_object('patient_id',person),gen_random_uuid())->>'id')::uuid;
+ perform public.clinic_reception_command(w,'availability',jsonb_build_object('provider_id',pro,'starts_at',d::text||'T06:00Z','ends_at',d::text||'T18:00Z'),gen_random_uuid());
+ appt:=(public.clinic_reception_command(w,'book',jsonb_build_object('patient_id',patient,'provider_id',pro,'service_id',service,'starts_at',d::text||'T08:00Z'),gen_random_uuid())->>'id')::uuid;
+ r:=public.clinic_reception_shared_records('patient',person,d,d,0);if jsonb_array_length(r->'appointments')<>1 then raise exception 'Booking missing from patient view';end if;
+ visit:=(public.clinic_reception_command(w,'arrive',jsonb_build_object('id',appt),gen_random_uuid())->>'id')::uuid;
+ s:=public.clinic_reception_snapshot(w,d,d);select (x->>'id')::uuid into ord from jsonb_array_elements(s->'orders')x where x->>'visit_id'=visit::text;
+ invoice:=(public.clinic_reception_command(w,'execute',jsonb_build_object('id',ord),gen_random_uuid())->>'id')::uuid;
+ perform public.clinic_reception_command(w,'collect',jsonb_build_object('patient_id',patient,'invoice_id',invoice,'amount',150,'method','instapay','reference',prefix),gen_random_uuid());
+ r:=public.clinic_reception_shared_records('finance',null,d,d,0);
+ if not exists(select 1 from jsonb_array_elements(r->'invoices') x where x->>'id'=invoice::text and (x->>'due')::numeric=0) then raise exception 'Native finance projection missing invoice';end if;
+ if not exists(select 1 from jsonb_array_elements(r->'payments') x where x->>'reference'=prefix and (x->>'amount')::numeric=150) then raise exception 'Native finance projection missing receipt';end if;
+ begin perform public.clinic_finance_collect(gen_random_uuid(),null,'bank',1,prefix,gen_random_uuid());exception when others then if sqlerrm not like '%مستخدم بالفعل%' then raise;end if;blocked:=true;end;
+ if not blocked then raise exception 'Reference reused through native collection';end if;
+ r:=public.clinic_reception_shared_records('staff',null,d,d,0);if not exists(select 1 from jsonb_array_elements(r->'staff') x where x->>'actor_id'=me::text and (x->>'executions')::integer=1) then raise exception 'Employee event missing';end if;
+ execute 'reset role';
+ if (select count(*) from clinic_finance.entries e join clinic_reception.journal j on j.id=e.source_id where j.workspace_id=w and j.source='service')<>1 then raise exception 'Income was duplicated or missing';end if;
+ if not exists(select 1 from public.patient_visits pv join clinic_reception.visits v on v.archive_visit_id=pv.id where v.id=visit and pv.patient_id=person and pv.doctor_name=prefix) then raise exception 'Canonical archive visit missing';end if;
+ update public.pricing_services set base_price=200 where id=pricing;
+ execute 'set local role authenticated';s:=public.clinic_reception_snapshot(w,d,d);
+ if not exists(select 1 from jsonb_array_elements(s->'services')x where x->>'pricing_service_id'=pricing::text and (x->>'price')::numeric=200) then raise exception 'Native price update missing';end if;
+ if not exists(select 1 from jsonb_array_elements(s->'orders')x where x->>'id'=ord::text and (x->>'price')::numeric=100) then raise exception 'Historical price was overwritten';end if;
+ execute 'reset role';
+end $$;
+rollback;
+select jsonb_build_object('test','canonical shared models production rollback passed','live_enabled',(select live_enabled from clinic_reception.settings where id),'live_workspaces',(select count(*) from clinic_reception.workspaces where mode='live'),'anon_shared_records_blocked',not has_function_privilege('anon','public.clinic_reception_shared_records(text,uuid,date,date,integer)','execute'));

@@ -102,6 +102,7 @@
       var admin = normalizeAdmin(adminOrRole);
       if(tab==="accounting")return Roles.canModuleAction(admin,"accounting","view") || Roles.canSeeTab(admin,"inventory") && !(admin.inventory_assigned===false && admin.inventory_supply_access===true);
       if(tab==="booking_cash" && Roles.isControlledFinance(admin))return Roles.canModuleAction(admin,"accounting","view");
+      if(tab==='reception_services'&&Roles.isControlledFinance(admin)&&!Roles.hasAnyRole(admin,['super_admin','general_manager','reception','customer_service','nursing','sono_doctor']))return Roles.canModuleAction(admin,'accounting','view');
       if(tab==="home")return admin.active!==false && !!(admin.id||admin.role);
       if(tab==="inventory" && typeof admin.inventory_assigned==='boolean')return admin.inventory_assigned || admin.inventory_supply_access===true || Roles.hasAnyRole(admin,["super_admin","general_manager"]);
       if (Roles.isControlledFinance(admin) && ["accounting","contracting_entities","tasks"].includes(tab))return Roles.canModuleAction(admin,tab,'view');
