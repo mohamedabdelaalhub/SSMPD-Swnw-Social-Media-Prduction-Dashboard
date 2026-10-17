@@ -209,11 +209,12 @@
     // ترتيب محتوى القائمة المنسدلة زي ما طلب المستخدم بالظبط: الاسم، ثم الدور، ثم قائمة التابات، ثم خروج
     var html = '<div class="app-shell"><div class="topbar">' +
       "<div class=\"brand\"><img src=\"assets/img/mark.svg\" alt=\"\"><span id=\"brand-section-name\"> <!--ssmpd-i18n:%D9%85%D8%B1%D9%83%D8%B2%20%D8%B9%D9%8A%D8%A7%D8%AF%D8%A7%D8%AA%20%D8%B3%D9%88%D9%86%D9%88%20%D8%A7%D9%84%D8%AA%D8%AE%D8%B5%D8%B5%D9%8A%D8%A9-->مركز عيادات سونو التخصصية</span></div>" +
-      '<div style="position:relative;flex:1;max-width:280px;margin:0 10px;">' +
-      "<input id=\"global-search-input\" type=\"search\" placeholder=\"بحث (Ctrl+K)…\" data-i18n-placeholder=\"%D8%A8%D8%AD%D8%AB%20(Ctrl%2BK)%E2%80%A6\" data-i18n-placeholder=\"%D8%A8%D8%AD%D8%AB%20(Ctrl%2BK)%E2%80%A6\" autocomplete=\"off\" style=\"width:100%;padding:7px 10px;border-radius:10px;border:1px solid var(--c-border);font-size:12px;\">" +
-      '<div id="global-search-results" hidden style="position:absolute;top:100%;right:0;left:0;background:var(--c-card);border:1px solid var(--c-border);border-radius:10px;margin-top:4px;max-height:340px;overflow:auto;z-index:50;box-shadow:0 6px 18px rgba(0,0,0,.12);"></div>' +
-      '</div>' +
-      '<button class="btn ghost sm" id="kudos-send-btn" type="button" title="ابعت شكر" hidden>🎉 شكر</button>' +
+      '<div class="topbar-tools"><div class="global-search">' +
+      '<button id="global-search-toggle" class="btn ghost sm header-icon" type="button" aria-label="بحث" data-i18n-aria-label="%D8%A8%D8%AD%D8%AB" title="بحث" data-i18n-title="%D8%A8%D8%AD%D8%AB" aria-expanded="false" aria-controls="global-search-panel"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m16 16 4.5 4.5"></path></svg></button>' +
+      '<div id="global-search-panel" class="global-search-panel" role="search" hidden><label for="global-search-input" data-i18n-text="%D8%A8%D8%AD%D8%AB%20%D9%81%D9%8A%20%D8%A7%D9%84%D8%A3%D9%82%D8%B3%D8%A7%D9%85%20%D8%A7%D9%84%D9%85%D8%AA%D8%A7%D8%AD%D8%A9%20%D9%84%D9%83">بحث في الأقسام المتاحة لك</label>' +
+      '<input id="global-search-input" type="search" placeholder="اكتب حرفين على الأقل…" data-i18n-placeholder="%D8%A7%D9%83%D8%AA%D8%A8%20%D8%AD%D8%B1%D9%81%D9%8A%D9%86%20%D8%B9%D9%84%D9%89%20%D8%A7%D9%84%D8%A3%D9%82%D9%84%E2%80%A6" aria-label="البحث في الداشبورد" data-i18n-aria-label="%D8%A7%D9%84%D8%A8%D8%AD%D8%AB%20%D9%81%D9%8A%20%D8%A7%D9%84%D8%AF%D8%A7%D8%B4%D8%A8%D9%88%D8%B1%D8%AF" autocomplete="off" aria-controls="global-search-results">' +
+      '<div id="global-search-results" aria-live="polite" hidden></div></div></div>' +
+      '<button class="btn ghost sm header-icon" id="kudos-send-btn" type="button" title="ابعت شكر" data-i18n-title="%D8%A7%D8%A8%D8%B9%D8%AA%20%D8%B4%D9%83%D8%B1" aria-label="ابعت شكر" data-i18n-aria-label="%D8%A7%D8%A8%D8%B9%D8%AA%20%D8%B4%D9%83%D8%B1" hidden><span aria-hidden="true">🎉</span></button>' +
       '<div style="position:relative;">' +
       "<button class=\"btn ghost sm\" id=\"notif-bell-btn\" type=\"button\" title=\"الإشعارات\" data-i18n-title=\"%D8%A7%D9%84%D8%A5%D8%B4%D8%B9%D8%A7%D8%B1%D8%A7%D8%AA\" data-i18n-title=\"%D8%A7%D9%84%D8%A5%D8%B4%D8%B9%D8%A7%D8%B1%D8%A7%D8%AA\" hidden style=\"position:relative;\">🔔" +
       '<span id="notif-badge" hidden style="position:absolute;top:-6px;left:-6px;background:#D0402A;color:#fff;border-radius:10px;font-size:10px;padding:1px 5px;line-height:1.4;">0</span></button>' +
@@ -222,7 +223,7 @@
       window.SSMPDI18n.buttonHtml() + '<div class="who"><span class="role-badge">' + roleLabel + '</span> <b>' + displayName + '</b>' +
       "<button class=\"user-menu-icon\" id=\"user-menu-btn\" type=\"button\" title=\"القائمة\" data-i18n-title=\"%D8%A7%D9%84%D9%82%D8%A7%D8%A6%D9%85%D8%A9\" data-i18n-title=\"%D8%A7%D9%84%D9%82%D8%A7%D8%A6%D9%85%D8%A9\" aria-label=\"القائمة\" data-i18n-aria-label=\"%D8%A7%D9%84%D9%82%D8%A7%D8%A6%D9%85%D8%A9\" data-i18n-aria-label=\"%D8%A7%D9%84%D9%82%D8%A7%D8%A6%D9%85%D8%A9\">☰</button>" +
       " <button class=\"btn ghost sm\" id=\"logout-btn\"> <!--ssmpd-i18n:%D8%AE%D8%B1%D9%88%D8%AC-->خروج</button></div>" +
-      '<button class="menu-toggle" id="menu-toggle-btn" type="button"><b>' + displayName + '</b><span class="mt-arrow">▾</span></button>' +
+      '</div><button class="menu-toggle" id="menu-toggle-btn" type="button"><b>' + displayName + '</b><span class="mt-arrow">▾</span></button>' +
       '</div>' +
       '<div class="user-dropdown" id="user-dropdown">' +
       '<div class="mm-name">' + displayName + '</div>' +
@@ -588,10 +589,13 @@
   // أرشيف المرضى — كل واحد بس لو الدور عنده وصول للتاب المقابل (تكلفة صفر
   // على أي حد مش هيستخدمه). Ctrl+K/⌘K يفوكّس الحقل، Enter يبحث، Escape يقفل.
   function setupGlobalSearch(admin, tabs) {
-    var input = document.getElementById("global-search-input");
-    if(R.isControlledFinance(admin)){if(input){input.disabled=true;input.placeholder='استخدم البحث والفلاتر داخل القسم';}return;}
-    var resultsBox = document.getElementById("global-search-results");
-    if (!input || !resultsBox) return;
+    if(setupGlobalSearch.dispose)setupGlobalSearch.dispose();
+    var input=document.getElementById('global-search-input'),toggle=document.getElementById('global-search-toggle'),panel=document.getElementById('global-search-panel'),resultsBox=document.getElementById('global-search-results'),revision=0,timer;
+    if(!input||!toggle||!panel||!resultsBox)return;
+    if(R.isControlledFinance(admin)){toggle.disabled=true;toggle.title='استخدم البحث والفلاتر داخل القسم';return;}
+    function closePanel(focus){clearTimeout(timer);revision++;panel.hidden=true;toggle.setAttribute('aria-expanded','false');hideResults();if(focus)toggle.focus();}
+    function openPanel(){panel.hidden=false;toggle.setAttribute('aria-expanded','true');input.focus();input.select();if(input.value.trim().length>=2)runSearch(input.value);}
+    toggle.onclick=function(){if(panel.hidden)openPanel();else closePanel(true);};
 
     function escapeHtml(s) {
       return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -605,16 +609,19 @@
 
     function runSearch(term) {
       term = term.trim();
+      var request=++revision;
       if (term.length < 2) { hideResults(); return; }
       var canContent = tabs.indexOf("review") !== -1 || tabs.indexOf("production") !== -1;
       var canLeads = tabs.indexOf("leads") !== -1;
       var canPatients = tabs.indexOf("patients") !== -1;
 
+      resultsBox.innerHTML='<p class="gsearch-status">'+window.SSMPDI18n.textHtml('جاري البحث…')+'</p>';resultsBox.hidden=false;
       Promise.all([
         canContent ? window.SSMPDDb.searchContentItems(term) : Promise.resolve([]),
         canLeads ? window.SSMPDDb.listLeads({ search: term, page_size: 6 }) : Promise.resolve(null),
         canPatients ? window.SSMPDDb.listPatientsArchive({ search: term, page_size: 6 }) : Promise.resolve(null)
       ]).then(function (res) {
+        if(request!==revision||!input.isConnected||panel.hidden)return;
         var contentItems = res[0] || [];
         var leadsItems = (res[1] && res[1].leads) || [];
         var patientsItems = (res[2] && res[2].patients) || [];
@@ -639,7 +646,7 @@
         resultsBox.querySelectorAll(".gsearch-item").forEach(function (btn) {
           btn.onclick = function () {
             var type = btn.getAttribute("data-type");
-            hideResults();
+            closePanel(true);
             input.value = "";
             if (type === "content") {
               window.SSMPDPendingOpenContentId = btn.getAttribute("data-id");
@@ -653,7 +660,7 @@
             }
           };
         });
-      }).catch(function () { hideResults(); });
+      }).catch(function () {if(request!==revision||!input.isConnected||panel.hidden)return;resultsBox.innerHTML='<p class="gsearch-status">'+window.SSMPDI18n.textHtml('تعذر البحث. حاول مرة أخرى.')+'</p>';resultsBox.hidden=false;});
     }
 
     // تنقّل بالكيبورد (↑/↓) بين نتائج البحث + Enter لاختيار النتيجة المظلّلة
@@ -674,18 +681,16 @@
       if (e.key === "Enter") {
         var active = resultsBox.querySelector(".gsearch-item.active");
         if (active && !resultsBox.hidden) { e.preventDefault(); active.click(); return; }
-        e.preventDefault(); runSearch(input.value);
-      } else if (e.key === "Escape") { input.blur(); hideResults(); }
+        e.preventDefault(); clearTimeout(timer);runSearch(input.value);
+      } else if (e.key === "Escape") {e.preventDefault();closePanel(true);}
       else if (e.key === "ArrowDown") { if (!resultsBox.hidden) { e.preventDefault(); moveActive(1); } }
       else if (e.key === "ArrowUp") { if (!resultsBox.hidden) { e.preventDefault(); moveActive(-1); } }
     });
-    document.addEventListener("click", function (e) {
-      if (!resultsBox.contains(e.target) && e.target !== input) hideResults();
-    });
-    document.addEventListener("keydown", function (e) {
-      var mod = e.ctrlKey || e.metaKey;
-      if (mod && e.key.toLowerCase() === "k") { e.preventDefault(); input.focus(); input.select(); }
-    });
+    input.addEventListener('input',function(){clearTimeout(timer);revision++;hideResults();if(input.value.trim().length>=2)timer=setTimeout(function(){runSearch(input.value);},300);});
+    function outside(e){if(!toggle.isConnected)return;if(!panel.contains(e.target)&&!toggle.contains(e.target))closePanel(false);}
+    function shortcut(e){if(!toggle.isConnected)return;var mod=e.ctrlKey||e.metaKey;if(mod&&e.key.toLowerCase()==='k'){e.preventDefault();openPanel();}else if(e.key==='Escape'&&!panel.hidden)closePanel(true);}
+    document.addEventListener('click',outside);document.addEventListener('keydown',shortcut);
+    setupGlobalSearch.dispose=function(){clearTimeout(timer);revision++;document.removeEventListener('click',outside);document.removeEventListener('keydown',shortcut);};
   }
 
   // مودال "نسيت كلمة السر؟" — بدون أي اعتماد على إيميل Supabase (القرار:
