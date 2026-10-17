@@ -166,6 +166,7 @@
   var ACTIVE_TAB_KEY = "ssmpd_active_tab";
 
   function renderShell() {
+    if(window.SSMPDDashboardHelp)window.SSMPDDashboardHelp.dispose();
     var admin = window.SSMPDAuth.currentAdmin;
     var tabs = Object.keys(TAB_LABELS).filter(function (t) { return R.canSeeTab(admin, t); });
     var displayName = escapeHtml(admin.name || admin.email);
@@ -212,7 +213,7 @@
     // ترتيب محتوى القائمة المنسدلة زي ما طلب المستخدم بالظبط: الاسم، ثم الدور، ثم قائمة التابات، ثم خروج
     var html = '<div class="app-shell"><div class="topbar">' +
       "<div class=\"brand\"><img src=\"assets/img/mark.svg\" alt=\"\"><span id=\"brand-section-name\"> <!--ssmpd-i18n:%D9%85%D8%B1%D9%83%D8%B2%20%D8%B9%D9%8A%D8%A7%D8%AF%D8%A7%D8%AA%20%D8%B3%D9%88%D9%86%D9%88%20%D8%A7%D9%84%D8%AA%D8%AE%D8%B5%D8%B5%D9%8A%D8%A9-->مركز عيادات سونو التخصصية</span></div>" +
-      '<div class="topbar-tools"><div class="global-search">' +
+      '<div class="topbar-tools"><button id="dashboard-help-toggle" class="btn ghost sm header-icon" type="button" aria-label="مساعدة الداشبورد" title="مساعدة الداشبورد" aria-expanded="false"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 2-2.5 2-2.5 4"></path><path d="M12 16h.01"></path></svg></button><div class="global-search">' +
       '<button id="global-search-toggle" class="btn ghost sm header-icon" type="button" aria-label="بحث" data-i18n-aria-label="%D8%A8%D8%AD%D8%AB" title="بحث" data-i18n-title="%D8%A8%D8%AD%D8%AB" aria-expanded="false" aria-controls="global-search-panel"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m16 16 4.5 4.5"></path></svg></button>' +
       '<div id="global-search-panel" class="global-search-panel" role="search" hidden><label for="global-search-input" data-i18n-text="%D8%A8%D8%AD%D8%AB%20%D9%81%D9%8A%20%D8%A7%D9%84%D8%A3%D9%82%D8%B3%D8%A7%D9%85%20%D8%A7%D9%84%D9%85%D8%AA%D8%A7%D8%AD%D8%A9%20%D9%84%D9%83">بحث في الأقسام المتاحة لك</label>' +
       '<input id="global-search-input" type="search" placeholder="اكتب حرفين على الأقل…" data-i18n-placeholder="%D8%A7%D9%83%D8%AA%D8%A8%20%D8%AD%D8%B1%D9%81%D9%8A%D9%86%20%D8%B9%D9%84%D9%89%20%D8%A7%D9%84%D8%A3%D9%82%D9%84%E2%80%A6" aria-label="البحث في الداشبورد" data-i18n-aria-label="%D8%A7%D9%84%D8%A8%D8%AD%D8%AB%20%D9%81%D9%8A%20%D8%A7%D9%84%D8%AF%D8%A7%D8%B4%D8%A8%D9%88%D8%B1%D8%AF" autocomplete="off" aria-controls="global-search-results">' +
@@ -252,6 +253,7 @@
     var userMenuBtn = document.getElementById("user-menu-btn");
 
     function doLogout() {
+      if(window.SSMPDDashboardHelp)window.SSMPDDashboardHelp.dispose();
       if(window.SSMPDPersonalHome)window.SSMPDPersonalHome.stop();
       try { sessionStorage.removeItem(ACTIVE_TAB_KEY); } catch (e) {}
       if (usageHeartbeatTimer) { clearInterval(usageHeartbeatTimer); usageHeartbeatTimer = null; }
@@ -309,6 +311,7 @@
 
     if(window.SSMPDNavigationUI)window.SSMPDNavigationUI.mount();
     setupGlobalSearch(admin, tabs);
+    if(window.SSMPDDashboardHelp)window.SSMPDDashboardHelp.mount({tab:function(){return currentTab;},tabs:function(){var a=window.SSMPDAuth.currentAdmin;return a?Object.keys(TAB_LABELS).filter(function(t){return R.canSeeTab(a,t);}):[];},navigate:switchTab});
     setupNotifications(admin);
     setupKudos(admin);
 
