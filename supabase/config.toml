@@ -70,3 +70,8 @@ verify_jwt = false
 [functions.operations-advisor]
 # Staff Auth token and management role checked inside the function.
 verify_jwt = false
+
+[functions.booking-messages-outbox]
+# Existing booking agent integration secret; the function verifies the
+# X-Booking-Sync-Secret header before calling service-only queue RPCs.
+verify_jwt = false
