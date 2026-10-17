@@ -1,0 +1,30 @@
+begin;
+do $$
+declare a1 uuid;a2 uuid;actor_id uuid;loc uuid;item uuid;bill uuid;reg uuid;sh uuid;sh2 uuid;q uuid;ci uuid;cl uuid;ac uuid;row_count numeric;snap jsonb;d date:=(now() at time zone 'Africa/Cairo')::date;failed boolean:=false;
+begin
+ select a.user_id,a.id into a1,actor_id from public.admins a where a.role='super_admin' and a.active and a.user_id is not null and not exists(select 1 from clinic_finance.shifts s where s.cashier_id=a.id and s.status<>'reviewed') order by a.id limit 1;
+ select user_id into a2 from public.admins where role='super_admin' and active and user_id is not null and user_id<>a1 order by id limit 1;
+ if a1 is null or a2 is null then raise exception 'No unused cashier/reviewer test pair';end if;
+ select id into loc from public.inventory_locations where kind='central' and active limit 1;
+ perform set_config('request.jwt.claim.sub',a1::text,true);execute 'set local role authenticated';
+ item:=public.inventory_save_item(null,'TEST-CONTROL-ROLLBACK','دواء اختبار تراجع','اختبار','قرص',1,0,100,100);
+ execute 'reset role';insert into public.inventory_movements(item_id,location_id,movement_type,quantity_delta,unit_cost,created_by,note) values(item,loc,'receipt',10,40,actor_id,'TEST ROLLBACK ONLY');execute 'set local role authenticated';
+ bill:=public.clinic_finance_bill(jsonb_build_object('reference','TEST-STOCK-BILL-ROLLBACK','patient_ref','TEST','description','خدمة ودواء اختبار','service_amount',300,'items',jsonb_build_array(jsonb_build_object('item_id',item,'location_id',loc,'quantity',2,'sale_price',100))),gen_random_uuid());
+ snap:=public.clinic_finance_snapshot(d,d);if (select (x->>'amount')::numeric from jsonb_array_elements(snap->'invoices')x where x->>'id'=bill::text)<>500 then raise exception 'Wrong bill total';end if;
+ execute 'reset role';select sum(quantity_delta) into row_count from public.inventory_movements where item_id=item;if row_count<>8 then raise exception 'Stock not decremented';end if;execute 'set local role authenticated';
+ perform public.inventory_consume_at(loc,item,1,'waste','هالك اختبار تراجع');
+ reg:=public.clinic_finance_register('TEST CONTROL ROLLBACK',300);sh:=public.clinic_finance_open_shift(reg,gen_random_uuid());perform public.clinic_finance_collect(bill,sh,'cash',500,'TEST-STOCK-RC-ROLLBACK',gen_random_uuid());perform public.clinic_finance_close_shift(sh,'{"100":1}','جرد اختبار');
+ perform set_config('request.jwt.claim.sub',a2::text,true);perform public.clinic_finance_review_shift(sh,'فرق يحتاج مراجعة');perform set_config('request.jwt.claim.sub',a1::text,true);
+ sh2:=public.clinic_finance_open_shift(reg,gen_random_uuid());q:=public.clinic_finance_request(jsonb_build_object('kind','expense','shift_id',sh2,'amount',150,'reason','اختبار منع تجاوز النقد','evidence','TEST'),gen_random_uuid());
+ perform set_config('request.jwt.claim.sub',a2::text,true);begin perform public.clinic_finance_review_request(q,true,'يجب رفض الصرف');exception when others then if sqlerrm like '%الكاش المتاح%' then failed:=true;else raise;end if;end;if not failed then raise exception 'Physical cash cap failed';end if;
+ perform public.clinic_finance_review_request(q,false,'نقد غير كاف');perform set_config('request.jwt.claim.sub',a1::text,true);
+ ci:=public.clinic_finance_invoice('TEST-INS-INV-ROLLBACK','','خدمة تأمين اختبار',1000,gen_random_uuid());cl:=public.clinic_finance_insurance_claim(ci,'TEST-CLAIM-ROLLBACK','شركة اختبار',800,gen_random_uuid());
+ ac:=public.clinic_finance_insurance_action(jsonb_build_object('claim_id',cl,'kind','correction','amount',0,'reference','CORR-TEST','reason','تصحيح مستند اختبار'),gen_random_uuid());perform set_config('request.jwt.claim.sub',a2::text,true);perform public.clinic_finance_insurance_review(ac,true,'مطلوب تصحيح');perform set_config('request.jwt.claim.sub',a1::text,true);
+ ac:=public.clinic_finance_insurance_action(jsonb_build_object('claim_id',cl,'kind','contractual','amount',100,'reference','ADJ-TEST','reason','تخفيض تعاقدي اختبار'),gen_random_uuid());perform set_config('request.jwt.claim.sub',a2::text,true);perform public.clinic_finance_insurance_review(ac,true,'اعتماد التخفيض');perform set_config('request.jwt.claim.sub',a1::text,true);
+ ac:=public.clinic_finance_insurance_action(jsonb_build_object('claim_id',cl,'kind','credit_loss','amount',200,'reference','LOSS-TEST','reason','تعثر تحصيل اختبار'),gen_random_uuid());perform set_config('request.jwt.claim.sub',a2::text,true);perform public.clinic_finance_insurance_review(ac,true,'تقدير خسارة اختبار');
+ execute 'reset role';if clinic_finance.claim_due(cl)<>700 or clinic_finance.claim_allowance(cl)<>200 then raise exception 'Insurance classification failed';end if;
+ if exists(select 1 from clinic_finance.lines group by entry_id having sum(debit-credit)<>0) then raise exception 'Unbalanced journal';end if;
+ if not exists(select 1 from clinic_finance.entries where source='inventory_waste' and description like '%هالك اختبار تراجع%') then raise exception 'Waste not posted';end if;
+end $$;
+rollback;
+select jsonb_build_object('test','stock, cash and insurance authenticated rollback passed','remaining_items',(select count(*) from public.inventory_items where sku='TEST-CONTROL-ROLLBACK'),'remaining_invoices',(select count(*) from clinic_finance.invoices where reference in ('TEST-STOCK-BILL-ROLLBACK','TEST-INS-INV-ROLLBACK')),'remaining_registers',(select count(*) from clinic_finance.registers where name='TEST CONTROL ROLLBACK'));
