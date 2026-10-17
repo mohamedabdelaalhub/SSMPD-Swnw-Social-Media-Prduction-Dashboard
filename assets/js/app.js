@@ -601,7 +601,7 @@
     if(setupGlobalSearch.dispose)setupGlobalSearch.dispose();
     var input=document.getElementById('global-search-input'),toggle=document.getElementById('global-search-toggle'),panel=document.getElementById('global-search-panel'),resultsBox=document.getElementById('global-search-results'),revision=0,timer;
     if(!input||!toggle||!panel||!resultsBox)return;
-    var navigationOnly=R.isControlledFinance(admin);
+    var navigationOnly=R.isControlledFinance(admin)||(R.isPsychologySpecialist&&R.isPsychologySpecialist(admin));
     function closePanel(focus){clearTimeout(timer);revision++;panel.hidden=true;toggle.setAttribute('aria-expanded','false');hideResults();if(focus)toggle.focus();}
     function openPanel(){panel.hidden=false;toggle.setAttribute('aria-expanded','true');input.focus();input.select();if(input.value.trim().length>=2)runSearch(input.value);}
     toggle.onclick=function(){if(panel.hidden)openPanel();else closePanel(true);};
