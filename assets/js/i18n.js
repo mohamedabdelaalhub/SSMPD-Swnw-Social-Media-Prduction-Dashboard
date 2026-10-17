@@ -1,7 +1,7 @@
 /* Interface-only localization. Data, input values and permissions are never translated. */
 (function () {
   'use strict';
-  var key='ssmpd_language', language='ar', pending=false;
+  var key='ssmpd_language', language='ar', pending=false, pageTitle='';
   try { if(localStorage.getItem(key)==='en')language='en'; } catch(e) {}
   var dict=window.SSMPD_TRANSLATIONS||{};
   function t(ar){return language==='en'&&dict[ar]?dict[ar]:ar;}
@@ -10,7 +10,7 @@
     pending=false;
     document.documentElement.lang=language;
     document.documentElement.dir=language==='en'?'ltr':'rtl';
-    document.title=language==='en'?'Content dashboard — Swnw':'لوحة إنتاج المحتوى — Swnw';
+    document.title=pageTitle?t(pageTitle)+' — Swnw':(language==='en'?'Content dashboard — Swnw':'لوحة إنتاج المحتوى — Swnw');
     var walker=document.createTreeWalker(document.body,128),node;
     while((node=walker.nextNode())){
       if(node.data.indexOf('ssmpd-i18n:')!==0)continue;
@@ -23,7 +23,7 @@
   }
   function set(lang){if(lang!=='ar'&&lang!=='en')return;language=lang;try{localStorage.setItem(key,lang);}catch(e){}apply();document.dispatchEvent(new CustomEvent('ssmpd:languagechange',{detail:{language:lang}}));}
   function button(){return '<button type="button" class="btn ghost sm language-switch" data-language-switch dir="auto">'+(language==='ar'?'EN':'AR')+'</button>';}
-  window.SSMPDI18n={t:t,textHtml:textHtml,set:set,apply:apply,buttonHtml:button,getLanguage:function(){return language;}};
+  window.SSMPDI18n={setPageTitle:function(value){pageTitle=String(value||'');apply();},t:t,textHtml:textHtml,set:set,apply:apply,buttonHtml:button,getLanguage:function(){return language;}};
   document.documentElement.lang=language;document.documentElement.dir=language==='en'?'ltr':'rtl';
   document.addEventListener('click',function(e){if(e.target.closest('[data-language-switch]'))set(language==='ar'?'en':'ar');});
   function start(){apply();new MutationObserver(function(records){if(pending)return;pending=true;queueMicrotask(apply);}).observe(document.body,{childList:true,subtree:true});}
