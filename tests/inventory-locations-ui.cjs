@@ -1,7 +1,7 @@
 const fs=require('fs'),path=require('path'),http=require('http'),assert=require('node:assert/strict');
 const {chromium}=require('playwright');
 const root=path.resolve(__dirname,'..');
-const html=`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/assets/css/styles.css"><link rel="stylesheet" href="/assets/css/inventory.css"></head><body><div id="inventory-navigation" hidden></div><main class="view" id="r"></main>
+const html=`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/assets/css/styles.css"><link rel="stylesheet" href="/assets/css/inventory.css"><link rel="stylesheet" href="/assets/css/finance-cash.css"></head><body><div id="inventory-navigation" hidden></div><main class="view" id="r"></main>
 <script>
 window.calls=[];window.errors=[];window.SSMPDToast={error:function(t){errors.push(t)},success:function(){}};
 var item={id:'i1',name:'كانيولا صفراء',base_unit:'قطعة',units_per_pack:10,category:'مستلزمات',on_hand:50,minimum_quantity:5,current_average_cost:2,current_sale_price:3};
@@ -26,8 +26,8 @@ window.SSMPDDb={taskPeople:function(){throw Error('inventory must not depend on 
    await page.goto('http://localhost:'+server.address().port);await page.waitForSelector('[data-w-location]');
    assert.equal(await page.locator('[data-group]').count(),5,'exactly five primary tabs');
    const beforeNav=await page.evaluate(()=>calls.length);
-   await page.click('[data-group="stock"]');assert.equal(await page.locator('#r [data-inv-table]').count(),0,'group initially shows buttons only');assert.equal(await page.locator('.inv-subnav [data-view]').count(),2);assert.equal(await page.locator('[data-view="transfers"]').count(),0,'unrelated submenus hidden');
-   await page.click('[data-group="operations"]');assert.equal(await page.locator('.inv-subnav [data-view]').count(),5);assert.equal(await page.locator('#r [data-inv-table]').count(),0);assert.equal(await page.evaluate(()=>calls.length),beforeNav,'group navigation is local');
+   await page.click('[data-group="stock"]');assert.equal(await page.locator('#r [data-inv-table]').count(),0,'group initially shows buttons only');assert.equal(await page.locator('.fc-section-grid [data-view]').count(),2);assert.equal(await page.locator('[data-view="transfers"]').count(),0,'unrelated submenus hidden');
+   await page.click('[data-group="operations"]');assert.equal(await page.locator('.fc-section-grid [data-view]').count(),5);assert.equal(await page.locator('#r [data-inv-table]').count(),0);assert.equal(await page.evaluate(()=>calls.length),beforeNav,'group navigation is local');
    if(process.env.INVENTORY_QA_SHOTS)await page.screenshot({path:path.join(process.env.INVENTORY_QA_SHOTS,'inventory-groups-'+width+'.png')});
 
    async function fits(label){const size=await page.evaluate(()=>({screen:innerWidth,doc:document.documentElement.scrollWidth}));assert(size.doc<=size.screen+1,label+' must not widen document: '+JSON.stringify(size));}

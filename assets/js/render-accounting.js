@@ -80,13 +80,18 @@
     [['create','[id^="acc-add-"]'],['update','[data-edit-supply],[data-edit-service],[data-edit-package]'],['delete','[data-del-supply],[data-del-service],[data-del-package]']].forEach(function(pair){if(!R.canModuleAction(a,'accounting',pair[0]))root.querySelectorAll(pair[1]).forEach(function(el){el.hidden=true;el.style.display="none";el.disabled=true;el.onclick=null;});});
   }
   function render(container) {
-    if(!window.SSMPDRoles.canModuleAction(window.SSMPDAuth.currentAdmin,'accounting','view')){container.innerHTML='<p>ليس لديك صلاحية عرض الحسابات.</p>';return;}
+    if(!window.SSMPDRoles.canSeeTab(window.SSMPDAuth.currentAdmin,'accounting')){container.innerHTML='<p>ليس لديك صلاحية عرض الحسابات.</p>';return;}
 
     me = window.SSMPDAuth.currentAdmin;
+    var canFinance = window.SSMPDRoles.canModuleAction(me,"accounting","view");
+    var canInventory = window.SSMPDRoles.canSeeTab(me,"inventory") && !(me.inventory_assigned === false && me.inventory_supply_access === true);
+    if (!canFinance) state.subTab = "inventory";
+    if (state.subTab === "inventory" && !canInventory) state.subTab = "pricing";
     var subs = [
       { key: "pricing", label: "التسعير والخدمات والباكجز" },
-      { key: "cash", label: "الخزينة والدورة المالية" }
-    ];
+      { key: "cash", label: "الخزينة والدورة المالية" },
+      { key: "inventory", label: "المخازن والجرد" }
+    ].filter(function(s) { return s.key === "inventory" ? canInventory : canFinance; });
     var html = '<div class="tabs acc-catalog-nav" style="margin-bottom:16px;">' +
       subs.map(function (s) {
         return '<button class="tab-btn ' + (state.subTab === s.key ? "active" : "") + '" data-sub="' + s.key + '">' + s.label + '</button>';
@@ -100,6 +105,7 @@
       };
     });
     var subView = document.getElementById("acc-sub-view");
+    if (state.subTab === "inventory" && window.SSMPDRenderInventory) { window.SSMPDRenderInventory.render(subView, {embedded:true}); return; }
     if(state.subTab==='cash'&&window.SSMPDFinanceCash){window.SSMPDFinanceCash.render(subView);return;}
     if (!state.loaded) {
       subView.innerHTML = '<p>جاري التحميل...</p>';
@@ -507,7 +513,7 @@
     };
   }
 
-  window.SSMPDRenderAccounting = { render: render };
+  window.SSMPDRenderAccounting = { render: render, openCash: function(section,container) { state.subTab = "cash"; if(window.SSMPDFinanceCash.openSection)window.SSMPDFinanceCash.openSection(section);render(container); }, openInventory: function() { state.subTab = "inventory"; } };
 })();
 
 

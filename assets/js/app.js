@@ -187,7 +187,7 @@
     if (tabs.indexOf("indicator_reports") !== -1) ddItems += '<button class="ud-item" data-goto="indicator_reports">تقارير المؤشرات والإجراءات</button>';
     if (tabs.indexOf("staff_kpi") !== -1) ddItems += '<button class="ud-item" data-goto="staff_kpi">أداء الفريق</button>';
     if (tabs.indexOf("my_kpi") !== -1) ddItems += '<button class="ud-item" data-goto="my_kpi">أدائي</button>';
-    if (tabs.indexOf("inventory") !== -1) ddItems += '<button class="ud-item" data-goto="inventory">'+(admin.inventory_assigned===false&&admin.inventory_supply_access?'طلب مستلزمات':'المخزن والجرد')+'</button>';
+    if (tabs.indexOf("inventory") !== -1 && admin.inventory_assigned===false && admin.inventory_supply_access) ddItems += '<button class="ud-item" data-goto="inventory">'+(admin.inventory_assigned===false&&admin.inventory_supply_access?'طلب مستلزمات':'المخزن والجرد')+'</button>';
     if (tabs.indexOf("contracting_entities") !== -1) ddItems += "<button class=\"ud-item\" data-goto=\"contracting_entities\"> <!--ssmpd-i18n:%D8%AC%D9%87%D8%A7%D8%AA%20%D8%A7%D9%84%D8%AA%D8%B9%D8%A7%D9%82%D8%AF-->جهات التعاقد</button>";
     if (tabs.indexOf("clinic_info") !== -1) ddItems += '<button class="ud-item" data-goto="clinic_info">' + window.SSMPDI18n.textHtml(TAB_LABELS.clinic_info) + "</button>";
     if (tabs.indexOf("accounting") !== -1) ddItems += "<button class=\"ud-item\" data-goto=\"accounting\"> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AD%D8%B3%D8%A7%D8%A8%D8%A7%D8%AA-->الحسابات</button>";
@@ -736,6 +736,7 @@
 
   function switchTab(tab) {
     var activeAdmin=window.SSMPDAuth.currentAdmin;
+    if(tab==="inventory" && !(activeAdmin.inventory_assigned===false && activeAdmin.inventory_supply_access)){window.SSMPDRenderAccounting.openInventory();tab="accounting";}
     if(!tab || !R.canSeeTab(activeAdmin,tab)){var slot=document.getElementById('view-container');if(slot)slot.innerHTML='<div class="section"><h3>لم تُحدد صلاحيات أقسام لهذا الحساب</h3><p>السوبر أدمن يحدد الأقسام المتاحة من لوحة التحكم.</p></div>';return;}
 
     if (tab !== 'patients' && window.SSMPDPatientUI) window.SSMPDPatientUI.clearRoute();
