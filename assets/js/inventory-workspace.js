@@ -105,6 +105,6 @@
   on('assign',function(){c.modal('تحديد مسؤولية مخزن','<div class="inv-form"><label>المخزن<select name="loc">'+opts(c,locations(c),'id',function(l){return locName(c,l.id);},c.state.data.location_id)+'</select></label><label>المستخدم<select name="person">'+opts(c,c.state.people,'id','name')+'</select></label><label>المسؤولية<select name="role">'+Object.keys(responsibilities).map(function(r){return '<option value="'+r+'">'+c.esc(responsibilities[r])+'</option>';}).join('')+'</select></label></div>',function(m){run(c,c.rpc('inventory_assign_location',{p_location:value(m,'loc'),p_admin:value(m,'person'),p_responsibility:value(m,'role')}),m);});});
   on('unassign',function(v){var a=v.split('|');c.modal('إلغاء التكليف','<p>إلغاء مسؤولية المستخدم في المخزن؟</p>',function(m){run(c,c.rpc('inventory_assign_location',{p_location:a[0],p_admin:a[1],p_responsibility:a[2],p_enabled:false}),m);});});
  }
- window.SSMPDInventoryWorkspace={selected:function(){return selected;},reset:function(){selected=null;},header:header,wire:wire,render:function(view,c){return ({usage:usage,balances:balances,transfers:transfers,counts:counts,imports:imports,structure:structure}[view])(c);},parseRows:parseRows,number:num};
+ window.SSMPDInventoryWorkspace={selected:function(){return selected;},select:function(id){selected=id;},reset:function(){selected=null;},header:header,wire:wire,render:function(view,c){return ({usage:usage,balances:balances,transfers:transfers,counts:counts,imports:imports,structure:structure}[view])(c);},parseRows:parseRows,number:num};
 })();
 

@@ -799,6 +799,11 @@
     if(type==='tab'){if(R.canSeeTab(admin,id))switchTab(id);return;}
     if(type==='task'){if(R.canSeeTab(admin,'tasks'))openTaskFromNotif(id,null);return;}
     if(type==='kpi'){if(R.canSeeTab(admin,'staff_kpi'))switchTab('staff_kpi');return;}
+    if(type==='inventory_request'){
+      if(!R.canSeeTab(admin,'accounting')||!R.canSeeTab(admin,'inventory')||!String(id||'').match(/^[0-9a-f-]{36}$/i))return;
+      window.SSMPDPendingInventoryRequest=id;if(window.SSMPDInventoryWorkspace)window.SSMPDInventoryWorkspace.select('00000000-0000-4000-8000-000000000001');
+      window.SSMPDRenderAccounting.openInventory();switchTab('accounting');return;
+    }
     if(type==='supply'){
       if(!R.canSeeTab(admin,'inventory'))return;
       window.SSMPDPendingInventoryView='supplies';switchTab('inventory');return;
