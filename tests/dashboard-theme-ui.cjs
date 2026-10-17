@@ -8,7 +8,7 @@ const mocks=smoke.slice(start,end);
 const scripts=[...html.matchAll(/<script[^>]+src="([^"]+)"/g)].map(m=>m[1].split('?')[0]).filter(f=>!f.startsWith('http'));
 const styles=[...html.matchAll(/<link[^>]+href="([^"]+\.css)[^"]*"/g)].map(m=>m[1]);
 (async()=>{const browser=await chromium.launch({args:['--no-sandbox']});try{
- for(const width of [1280,390,320]){
+ for(const width of [1600,1280,1000,390,320]){
   const page=await browser.newPage({viewport:{width,height:960}}),errors=[];
   page.on('pageerror',e=>errors.push(e.message));
   await page.route('**/*',r=>{const u=new URL(r.request().url()),f=path.resolve(ROOT,'.'+decodeURIComponent(u.pathname));
@@ -36,6 +36,15 @@ const styles=[...html.matchAll(/<link[^>]+href="([^"]+\.css)[^"]*"/g)].map(m=>m[
   const overflow=()=>page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1);
   assert(await overflow(),'summary fits viewport '+width);
   if(process.env.RECEPTION_QA)await page.screenshot({path:path.join(process.env.RECEPTION_QA,'theme-summary-'+width+'.png'),fullPage:true});
+  const summaryColumns=await page.locator('.kpi-grid').nth(1).evaluate(e=>getComputedStyle(e).gridTemplateColumns.split(' ').length);
+  assert.equal(summaryColumns,width>=1000?3:2,'six summary metrics in balanced rows');
+  await page.evaluate(()=>{SSMPDDb.listMetaAdPerformance=async()=>Array.from({length:110},(_,i)=>({ad_id:'ad-'+i,campaign_id:'campaign-'+(i%93),account_name:'حساب اختبار',campaign_name:'حملة اختبار',spend:i?0:122112.13,reach:i?0:2226133,impressions:i?0:3217179,clicks:i?0:60064,msg_conv:i?0:6917,leads:i?0:90}));SSMPDDb.listMetaSpecialtyPerformance=async()=>[];SSMPDDb.listMetaCreativePerformance=async()=>[];SSMPDDb.listMetaLeadAttribution=async()=>[];SSMPDDb.listContentMetaPerformance=async()=>[];document.querySelector('#tabs-bar [data-tab="metaads"]').click();});
+  await page.waitForSelector('#ma-kpis .kpi-card');
+  assert.equal(await page.locator('#ma-kpis .kpi-card').count(),10);
+  assert.equal(await page.locator('#ma-kpis .value').first().textContent(),'122,112.13 ج.م');
+  const metrics=await page.locator('#ma-kpis .kpi-grid').evaluate(e=>({columns:getComputedStyle(e).gridTemplateColumns.split(' ').length,heights:[...e.children].map(c=>c.getBoundingClientRect().height),overflow:[...e.querySelectorAll('.value')].some(v=>v.scrollWidth>v.clientWidth+1),digitWrap:[...e.querySelectorAll('.value')].some(v=>{const t=v.firstChild,m=t.textContent.match(/[0-9][0-9,.]*/);if(!m)return false;const r=document.createRange();r.setStart(t,m.index);r.setEnd(t,m.index+m[0].length);return r.getClientRects().length>1;})}));
+  assert.equal(metrics.columns,width>=1000?5:2);assert.equal(new Set(metrics.heights).size,1,'metric cards have equal heights');assert.equal(metrics.overflow,false,'metric values fit');assert.equal(metrics.digitWrap,false,'numbers never split across lines');assert(await overflow());
+  if(process.env.RECEPTION_QA)await page.locator('#ma-kpis').screenshot({path:path.join(process.env.RECEPTION_QA,'theme-meta-metrics-'+width+'.png')});
   await page.evaluate(()=>document.querySelector('#tabs-bar [data-tab="review"]').click());
   await page.waitForSelector('[data-id="c1"]');
   assert(await overflow(),'review fits viewport '+width);
@@ -69,5 +78,5 @@ const styles=[...html.matchAll(/<link[^>]+href="([^"]+\.css)[^"]*"/g)].map(m=>m[
   await page.emulateMedia({media:'print'});assert.equal(await page.locator('.rx-header').evaluate(e=>getComputedStyle(e).backgroundImage),'none','screen theme excluded from print');
   assert.deepEqual(errors,[]);await page.close();
  }
- console.log('PASS dashboard theme: real summary/review/dialog at 1280/390/320; unchanged texts, form state, visibility and targets; native disabled/readonly/checked controls; click and close handlers; no overflow/runtime errors; print excluded.');
+ console.log('PASS dashboard theme: real summary/review/dialog at 1600/1280/1000/390/320; balanced 6/10 metric grids, equal heights, intact long numbers/currency; unchanged texts, form state, visibility and targets; native disabled/readonly/checked controls; click and close handlers; no overflow/runtime errors; print excluded.');
  }finally{await browser.close();}})().catch(e=>{console.error(e);process.exit(1)});
