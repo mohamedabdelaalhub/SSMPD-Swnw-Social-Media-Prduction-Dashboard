@@ -1298,6 +1298,7 @@
     receptionReport: function(workspace,from,to){return handle(client.rpc("clinic_reception_report",{p_workspace:workspace,p_from:from,p_to:to}));},
     receptionWorkspaces: function(){return handle(client.rpc("clinic_reception_workspaces",{}));},
     receptionBootstrap: function(){return handle(client.rpc("clinic_reception_bootstrap",{}));},
+    receptionCatalogIssues: function(){return handle(client.rpc("clinic_reception_catalog_issues",{}));},
     receptionSnapshot: function(workspace,from,to){return handle(client.rpc("clinic_reception_snapshot",{p_workspace:workspace,p_from:from,p_to:to}));},
     receptionCommand: function(workspace,action,payload,token){return handle(client.rpc("clinic_reception_command",{p_workspace:workspace,p_action:action,p_payload:payload,p_token:token}));},
     financeRegister: function(name,limit){return handle(client.rpc('clinic_finance_register',{p_name:name,p_limit:limit}));},
