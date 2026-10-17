@@ -1,4 +1,7 @@
 window.SSMPD_TRANSLATIONS = {
+  "الأقسام والخدمات": "Sections and services",
+  "فتح القسم": "Open section",
+  "يفتح في تبويب آخر": "Opens in a new tab",
   "الرئيسية الشخصية": "Personal home",
   "تحديث بيانات الشات بوت": "Chatbot information",
   "أداء البوستات": "Post performance",
