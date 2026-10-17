@@ -647,6 +647,17 @@
     listVisitMedicationDoseCompletions: function (visitId) {
       return handle(client.from("patient_medication_dose_completions").select("*, patient_visit_medications!inner(visit_id, medicine_name)").eq("patient_visit_medications.visit_id", visitId).order("scheduled_date", { ascending: false }).order("scheduled_time", { ascending: false }).limit(100));
     },
+    listDevelopmentAssessments: function (patientId) {
+      return handle(client.from("patient_development_assessments").select("*").eq("patient_id", patientId).order("assessment_date", { ascending: false, nullsFirst: false }).order("created_at", { ascending: false }));
+    },
+    saveDevelopmentAssessment: function (patientId, kind, existing, details) {
+      var row = { patient_id: patientId, assessment_kind: kind, assessment_date: details.assessment_date || null, details: details };
+      if (!existing) return handle(client.from("patient_development_assessments").insert(row).select().single());
+      return handle(client.from("patient_development_assessments").update({ assessment_date: row.assessment_date, details: details }).eq("id", existing.id).eq("patient_id", patientId).eq("assessment_kind", kind).eq("updated_at", existing.updated_at).select().maybeSingle()).then(function (saved) {
+        if (!saved) throw new Error("تم تعديل الاستمارة بواسطة مستخدم آخر. أعد فتحها قبل الحفظ.");
+        return saved;
+      });
+    },
     getPatientSpeechProfile: function (patientId) {
       return handle(client.from("patient_speech_profiles").select("*").eq("patient_id", patientId).maybeSingle());
     },
@@ -1188,7 +1199,7 @@
       if (params.from) q = q.gte("appointment_date", params.from);
       if (params.to) q = q.lte("appointment_date", params.to);
       if (params.limit) q = q.limit(params.limit);
-      return handle(q);
+      return handle(q).then(async function(rows){var linked=[];for(var page=0;page<Math.min(params.limit||500,500);page+=100){var report=await handle(client.rpc('clinic_reception_shared_records',{p_context:'bookings',p_id:null,p_from:params.from||null,p_to:params.to||null,p_offset:page}));if(!report)break;var extra=(report.appointments||[]).map(function(a){return {id:'reception:'+a.id,booking_reference:'RX-'+a.id,customer_name:a.patient_name,phone:a.phone,doctor_name:a.provider_name,specialty_name:a.service_name,appointment_date:a.appointment_date,appointment_time:a.appointment_time,status:a.status==='booked'?'confirmed':a.status,created_at:a.created_at,reception_id:a.id};});linked=linked.concat(extra);if(extra.length<100)break;}return (rows||[]).concat(linked).filter(function(r){return !params.status||r.status===params.status;}).sort(function(a,b){return String(a.appointment_date||'').localeCompare(String(b.appointment_date||''))||String(a.appointment_time||'').localeCompare(String(b.appointment_time||''));});});
     },
 
     // ---------- Meta Auto Publisher (قسم ٤٣) ----------
@@ -1257,6 +1268,48 @@
       if (channel) client.removeChannel(channel);
     },
 
+    bookingMessageResolve: function(id,decision,confirmed,note){return handle(client.rpc('clinic_booking_message_resolve',{p_id:id,p_decision:decision,p_confirmed:confirmed,p_note:note}));},
+    financeLegacyAsset: function(action,payload,token){return handle(client.rpc('clinic_finance_legacy_asset',{p_action:action,p_payload:payload,p_token:token}));},
+    bookingCommand: function(action,payload,token){return handle(client.rpc('clinic_booking_command',{p_action:action,p_payload:payload,p_token:token}));},
+    bookingShift: function(action,payload,token){return handle(client.rpc('clinic_booking_shift',{p_action:action,p_payload:payload,p_token:token}));},
+    bookingSnapshot: function(from,to){return handle(client.rpc('clinic_booking_snapshot',{p_from:from,p_to:to}));},
+    financeManualCommand: function(action,payload,token){return handle(client.rpc('clinic_finance_manual_command',{p_action:action,p_payload:payload,p_token:token}));},
+    financeBusinessCommand: function(action,payload,token){return handle(client.rpc('clinic_finance_business_command',{p_action:action,p_payload:payload,p_token:token}));},
+    financeBankCommand: function(action,payload,token){return handle(client.rpc('clinic_finance_bank_command',{p_action:action,p_payload:payload,p_token:token}));},
+    financeSupplierReceive: function(order,lines,reference,token,invoiceDate,documentUrl){if(invoiceDate)return handle(client.rpc('inventory_receive_invoice',{p_order:order,p_lines:lines,p_reference:reference,p_token:token,p_invoice_date:invoiceDate,p_document_url:documentUrl||''}));return handle(client.rpc('clinic_finance_supplier_receive',{p_order:order,p_lines:lines,p_reference:reference,p_token:token}));},
+    financeSupplierCommand: function(action,payload,token){return handle(client.rpc('clinic_finance_supplier_command',{p_action:action,p_payload:payload,p_token:token}));},
+    financeDoctorCommand: function(action,payload,token){return handle(client.rpc('clinic_finance_doctor_command',{p_action:action,p_payload:payload,p_token:token}));},
+    financeBill: function(payload,token){return handle(client.rpc('clinic_finance_bill',{p_payload:payload,p_token:token}));},
+    financeCaseStep: function(id,step,note,responsibility,person,decision){return handle(client.rpc('clinic_finance_case_step',{p_id:id,p_step:step,p_note:note,p_responsibility:responsibility,p_person:person,p_decision:decision}));},
+    financeInsuranceClaim: function(invoice,reference,insurer,amount,token){return handle(client.rpc('clinic_finance_insurance_claim',{p_invoice:invoice,p_reference:reference,p_insurer:insurer,p_amount:amount,p_token:token}));},
+    financeInsuranceAction: function(payload,token){return handle(client.rpc('clinic_finance_insurance_action',{p_payload:payload,p_token:token}));},
+    financeInsuranceReview: function(id,approve,note){return handle(client.rpc('clinic_finance_insurance_review',{p_id:id,p_approve:approve,p_note:note}));},
+    financeSnapshot: function(from,to,offset){return handle(client.rpc('clinic_finance_snapshot',{p_from:from,p_to:to,p_offset:offset||0}));},
+    financeSaveRegister: function(id,name,limit,mode){return handle(client.rpc('clinic_finance_save_register',{p_id:id,p_name:name,p_limit:limit,p_mode:mode}));},
+    receptionLinks: function(workspace){return handle(client.rpc("clinic_reception_links",{p_workspace:workspace}));},
+    receptionDirectory: function(workspace,term){return handle(client.rpc("clinic_reception_directory",{p_workspace:workspace,p_term:term}));},
+    receptionMasters: function(workspace){return handle(client.rpc("clinic_reception_masters",{p_workspace:workspace}));},
+    receptionIndicatorPublication: function(workspace,action,payload){return handle(client.rpc("clinic_reception_indicator_publication",{p_workspace:workspace,p_action:action,p_payload:payload||{}}));},
+    receptionPatientLeads: function(workspace,patient){return handle(client.rpc("clinic_reception_patient_leads",{p_workspace:workspace,p_patient:patient}));},
+    receptionSharedRecords: function(context,id,from,to,offset){return handle(client.rpc("clinic_reception_shared_records",{p_context:context,p_id:id||null,p_from:from||null,p_to:to||null,p_offset:offset||0}));},
+    receptionIndicatorExport: function(workspace,from,to){return handle(client.rpc("clinic_reception_indicator_export",{p_workspace:workspace,p_from:from,p_to:to}));},
+    receptionFinanceOverview: function(from,to){return handle(client.rpc("clinic_reception_finance_overview",{p_from:from,p_to:to}));},
+    receptionMarketing: function(workspace,from,to){return handle(client.rpc("clinic_reception_marketing",{p_workspace:workspace,p_from:from,p_to:to}));},
+    receptionReport: function(workspace,from,to){return handle(client.rpc("clinic_reception_report",{p_workspace:workspace,p_from:from,p_to:to}));},
+    receptionWorkspaces: function(){return handle(client.rpc("clinic_reception_workspaces",{}));},
+    receptionBootstrap: function(){return handle(client.rpc("clinic_reception_bootstrap",{}));},
+    receptionCatalogIssues: function(){return handle(client.rpc("clinic_reception_catalog_issues",{}));},
+    receptionSnapshot: function(workspace,from,to){return handle(client.rpc("clinic_reception_snapshot",{p_workspace:workspace,p_from:from,p_to:to}));},
+    receptionCommand: function(workspace,action,payload,token){return handle(client.rpc("clinic_reception_command",{p_workspace:workspace,p_action:action,p_payload:payload,p_token:token}));},
+    financeRegister: function(name,limit){return handle(client.rpc('clinic_finance_register',{p_name:name,p_limit:limit}));},
+    financeOpenShift: function(register,token){return handle(client.rpc('clinic_finance_open_shift',{p_register:register,p_token:token}));},
+    financeInvoice: function(reference,patient,description,amount,token){return handle(client.rpc('clinic_finance_invoice',{p_reference:reference,p_patient_ref:patient,p_description:description,p_amount:amount,p_token:token}));},
+    financeCollect: function(invoice,shift,method,amount,reference,token,patientFile,visit){if(patientFile!==undefined)return handle(client.rpc('clinic_finance_collect_linked',{p_invoice:invoice,p_shift:shift,p_method:method,p_amount:amount,p_reference:reference,p_token:token,p_patient_file:patientFile,p_visit:visit}));return handle(client.rpc('clinic_finance_collect',{p_invoice:invoice,p_shift:shift,p_method:method,p_amount:amount,p_reference:reference,p_token:token}));},
+    financeRequest: function(payload,token){return handle(client.rpc('clinic_finance_request',{p_payload:payload,p_token:token}));},
+    financeReviewRequest: function(id,approve,note){return handle(client.rpc('clinic_finance_review_request',{p_id:id,p_approve:approve,p_note:note}));},
+    financeCloseShift: function(shift,counts,note){return handle(client.rpc('clinic_finance_close_shift',{p_shift:shift,p_counts:counts,p_note:note}));},
+    financeReviewShift: function(shift,note){return handle(client.rpc('clinic_finance_review_shift',{p_shift:shift,p_note:note}));},
+    financeClosePeriod: function(through){return handle(client.rpc('clinic_finance_close_period',{p_through:through}));},
     // ---------- الحسابات (Accounting): تسعير الخدمات + الباكجز ----------
     listPricingSupplies: function () {
       return handle(client.from("pricing_supplies").select("*").order("name", { ascending: true }));
@@ -1306,6 +1359,16 @@
     deletePricingPackage: function (id) {
       return handle(client.from("pricing_packages").delete().eq("id", id));
     },
+    operationsReports: function () { return handle(client.from("operational_reports").select("id,title,branch,scope,period_from,period_to,source_approved_at").order("period_to",{ascending:false}).order("source_approved_at",{ascending:false}).limit(100)); },
+    operationsReport: function (id) { return handle(client.from("operational_reports").select("*").eq("id",id).single()); },
+    operationsIssues: function () { return handle(client.from("operational_issues").select("id,title,branch,scope,status,appearance_count,updated_at").order("updated_at",{ascending:false}).limit(300)); },
+    operationsIssueDetail: function (id) { return handle(client.rpc("operations_issue_detail",{p_issue_id:id})); },
+    operationsCreateAction: function (args) { return handle(client.rpc("operations_create_action",args)); },
+    operationsRecordOutcome: function (args) { return handle(client.rpc("operations_record_outcome",args)); },
+    operationsTaskContext: function (id) { return handle(client.rpc("operations_task_context",{p_task_id:id})); },
+    operationsContentBrief: function (brand,specialty) { return handle(client.rpc("operations_content_brief",{p_brand:brand,p_specialty:specialty||""})); },
+    operationsAIEnabled: function () { return handle(client.rpc("operations_ai_enabled")).then(function(v){return v===true;}).catch(function(){return false;}); },
+    operationsAdvice: function (id) { return client.functions.invoke("operations-advisor",{body:{issue_id:id}}).then(function(r){if(r.error||r.data?.error)throw Error(r.data?.error||"تعذر تشغيل المستشار. تحقق من التفعيل والرصيد.");return r.data;}); },
     taskListProjects: function () { return handle(client.rpc("task_list_projects")); },
     taskListVisible: function () { return handle(client.rpc("task_list_visible")); },
     taskPeople: function () { return handle(client.rpc("task_people")); },
@@ -1331,6 +1394,8 @@
     taskUpdateDetails: function (taskId, title, description, expectedOutput, assigneeId, dueAt, priority, repeatActive, intervalValue, intervalUnit, endsAt, updateFuture) {
       return handle(client.rpc("task_update_details", { p_task_id:taskId, p_title:title, p_description:description || "", p_expected_output:expectedOutput || "", p_assignee_id:assigneeId, p_due_at:dueAt, p_priority:priority || "normal", p_repeat_active:repeatActive, p_interval_value:intervalValue, p_interval_unit:intervalUnit, p_ends_at:endsAt || null, p_update_future:!!updateFuture }));
     },
+    taskWorkResults: function (id) { return handle(client.from("task_work_results").select("id,request_id,body,link,attachments,status,created_at").eq("task_id",id).order("created_at",{ascending:false}).limit(30)); },
+    taskSubmitWork: function (r) { return handle(client.rpc("task_submit_work",{p_task_id:r.task_id,p_request_id:r.request_id,p_status:r.status,p_body:r.body,p_link:r.link,p_attachments:r.attachments})); },
     taskSetStatus: function (taskId, status, note) {
       return handle(client.rpc("task_set_status", { p_task_id:taskId, p_status:status, p_note:note }));
     },

@@ -22,6 +22,7 @@
     comments: window.SSMPDRenderComments,
     clinic_info: window.SSMPDRenderClinicInfo,
     performance: window.SSMPDRenderPerformance,
+    indicator_reports: window.SSMPDIndicatorReports,
     staff_kpi: window.SSMPDRenderStaffKpi,
     my_kpi: window.SSMPDRenderMyKpi,
     archive: window.SSMPDRenderArchive,
@@ -31,6 +32,8 @@
     admin: window.SSMPDRenderAdmin,
     metaads: window.SSMPDRenderMetaAds,
     mediabuyer: window.SSMPDRenderMediaBuyer,
+    reception_services: window.SSMPDReception,
+    booking_cash: window.SSMPDBookingCash,
     accounting: window.SSMPDRenderAccounting,
     tasks: window.SSMPDRenderTasks,
     inventory: window.SSMPDRenderInventory
@@ -45,6 +48,7 @@
     comments: "التعليقات",
     clinic_info: "تحديث بيانات الشات بوت",
     performance: "أداء البوستات",
+    indicator_reports: "تقارير المؤشرات والإجراءات",
     staff_kpi: "أداء الفريق",
     my_kpi: "أدائي",
     archive: "الأرشيف",
@@ -54,15 +58,19 @@
     admin: "لوحة التحكم",
     metaads: "إعلانات Meta Ads",
     mediabuyer: "وكيل الإعلانات",
+    reception_services: "الاستقبال والخدمات",
+    booking_cash: "خزينة الاستقبال والحجوزات",
     accounting: "الحسابات",
     tasks: "المهام",
     inventory: "المخزن والجرد"
   };
+  if(window.SSMPDUITitles)TAB_LABELS=window.SSMPDUITitles.tabs;
 
   function root() { return document.getElementById("app-root"); }
 
   function showAuthScreen(mode, errorMsg) {
     mode = mode || "login";
+    if(window.SSMPDI18n.setPageTitle)window.SSMPDI18n.setPageTitle("");
     var html = '<div class="auth-screen"><div class="auth-box">' +
       '<img class="logo" src="assets/img/logo.svg" alt="Swnw">' +
       "<h1> <!--ssmpd-i18n:%D9%84%D9%88%D8%AD%D8%A9%20%D8%A5%D9%86%D8%AA%D8%A7%D8%AC%20%D8%A7%D9%84%D9%85%D8%AD%D8%AA%D9%88%D9%89-->لوحة إنتاج المحتوى</h1><p class=\"sub\">" + window.SSMPD_CONFIG.centerName + '</p>' +
@@ -161,7 +169,8 @@
     var admin = window.SSMPDAuth.currentAdmin;
     var tabs = Object.keys(TAB_LABELS).filter(function (t) { return R.canSeeTab(admin, t); });
     var displayName = escapeHtml(admin.name || admin.email);
-    var roleLabel = R.rolesOf(admin).map(function(role){return window.SSMPDI18n.textHtml(R.ALL[role]||role);}).join(' / ');
+    var roleLabel = window.SSMPDUITitles?window.SSMPDUITitles.chips(admin):R.rolesOf(admin).map(function(role){return '<span class="role-badge account-role-chip">'+window.SSMPDI18n.textHtml(R.ALL[role]||role)+'</span>';}).join('');
+    var accountHtml=window.SSMPDUITitles?window.SSMPDUITitles.identity(admin):'<div class="header-account"><b>'+displayName+'</b></div>';
 
     // قائمة منسدلة موحّدة (أيقونة بجانب الاسم) — بالترتيب اللي طلبه المستخدم بالظبط:
     // الاسم، ثم الدور، ثم إنتاج المحتوى، ثم أرشيف المرضى، ثم إدارة الليدز والتواصل، ثم تغيير كلمة السر،
@@ -170,7 +179,7 @@
     // القائمة المنسدلة فقط — اتشالوا من شريط التابات العادي (وقائمة الموبايل
     // القديمة) عشان ميبقوش متكررين في مكانين، ويبانوا بس في المكان اللي
     // المستخدم طلبه (جوه القائمة المنسدلة).
-    var mainSuiteTabs = tabs.filter(function (t) { return ["home", "patients", "leads", "contracting_entities", "clinic_info", "admin", "accounting", "tasks", "inventory", "staff_kpi", "my_kpi"].indexOf(t) === -1; });
+    var mainSuiteTabs = tabs.filter(function (t) { return ["home", "reception_services", "booking_cash", "patients", "leads", "contracting_entities", "clinic_info", "admin", "accounting", "tasks", "inventory", "staff_kpi", "my_kpi", "indicator_reports"].indexOf(t) === -1; });
 
     function tabButtonsHtml() {
       return mainSuiteTabs.map(function (t) { return '<button class="tab-btn" data-tab="' + t + '">' + window.SSMPDI18n.textHtml(TAB_LABELS[t]) + '</button>'; }).join("");
@@ -180,12 +189,15 @@
     if (tabs.indexOf("patients") !== -1) ddItems += "<button class=\"ud-item\" data-goto=\"patients\"> <!--ssmpd-i18n:%D8%A3%D8%B1%D8%B4%D9%8A%D9%81%20%D8%A7%D9%84%D9%85%D8%B1%D8%B6%D9%89-->أرشيف المرضى</button>";
     if (tabs.indexOf("leads") !== -1) ddItems += "<button class=\"ud-item\" data-goto=\"leads\"> <!--ssmpd-i18n:%D8%A5%D8%AF%D8%A7%D8%B1%D8%A9%20%D8%A7%D9%84%D9%84%D9%8A%D8%AF%D8%B2%20%D9%88%D8%A7%D9%84%D8%AA%D9%88%D8%A7%D8%B5%D9%84-->إدارة الليدز والتواصل</button>";
     if (tabs.indexOf("tasks") !== -1) ddItems += '<button class="ud-item" data-goto="tasks">المهام</button>';
+    if (tabs.indexOf("indicator_reports") !== -1) ddItems += '<button class="ud-item" data-goto="indicator_reports">تقارير المؤشرات والإجراءات</button>';
     if (tabs.indexOf("staff_kpi") !== -1) ddItems += '<button class="ud-item" data-goto="staff_kpi">أداء الفريق</button>';
     if (tabs.indexOf("my_kpi") !== -1) ddItems += '<button class="ud-item" data-goto="my_kpi">أدائي</button>';
-    if (tabs.indexOf("inventory") !== -1) ddItems += '<button class="ud-item" data-goto="inventory">'+(admin.inventory_assigned===false&&admin.inventory_supply_access?'طلب مستلزمات':'المخزن والجرد')+'</button>';
+    if (tabs.indexOf("inventory") !== -1 && admin.inventory_assigned===false && admin.inventory_supply_access) ddItems += '<button class="ud-item" data-goto="inventory">'+(admin.inventory_assigned===false&&admin.inventory_supply_access?'طلب مستلزمات':'المخزن والجرد')+'</button>';
     if (tabs.indexOf("contracting_entities") !== -1) ddItems += "<button class=\"ud-item\" data-goto=\"contracting_entities\"> <!--ssmpd-i18n:%D8%AC%D9%87%D8%A7%D8%AA%20%D8%A7%D9%84%D8%AA%D8%B9%D8%A7%D9%82%D8%AF-->جهات التعاقد</button>";
     if (tabs.indexOf("clinic_info") !== -1) ddItems += '<button class="ud-item" data-goto="clinic_info">' + window.SSMPDI18n.textHtml(TAB_LABELS.clinic_info) + "</button>";
     if (tabs.indexOf("accounting") !== -1) ddItems += "<button class=\"ud-item\" data-goto=\"accounting\"> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AD%D8%B3%D8%A7%D8%A8%D8%A7%D8%AA-->الحسابات</button>";
+    if (tabs.indexOf("reception_services") !== -1) ddItems += '<button class="ud-item" data-goto="reception_services">الاستقبال والخدمات</button>';
+    if (tabs.indexOf("booking_cash") !== -1) ddItems += '<button class="ud-item" data-goto="booking_cash">خزينة الاستقبال والحجوزات</button>';
     // لوحة مؤشرات الاستثمار: داشبورد منفصل (sono-dashboard) — رابط بيفتح في تاب جديد، للسوبر أدمن والمدير العام بس
     if (R.isSuperAdmin(admin) || admin.role === "general_manager") {
       ddItems += '<a class="ud-item" href="https://mohamedabdelaalhub.github.io/sono-dashboard/" target="_blank" rel="noopener" style="display:block;text-decoration:none;color:inherit;">' + window.SSMPDI18n.textHtml("لوحة مؤشرات الاستثمار") + ' ↗</a>';
@@ -200,24 +212,25 @@
     // ترتيب محتوى القائمة المنسدلة زي ما طلب المستخدم بالظبط: الاسم، ثم الدور، ثم قائمة التابات، ثم خروج
     var html = '<div class="app-shell"><div class="topbar">' +
       "<div class=\"brand\"><img src=\"assets/img/mark.svg\" alt=\"\"><span id=\"brand-section-name\"> <!--ssmpd-i18n:%D9%85%D8%B1%D9%83%D8%B2%20%D8%B9%D9%8A%D8%A7%D8%AF%D8%A7%D8%AA%20%D8%B3%D9%88%D9%86%D9%88%20%D8%A7%D9%84%D8%AA%D8%AE%D8%B5%D8%B5%D9%8A%D8%A9-->مركز عيادات سونو التخصصية</span></div>" +
-      '<div style="position:relative;flex:1;max-width:280px;margin:0 10px;">' +
-      "<input id=\"global-search-input\" type=\"search\" placeholder=\"بحث (Ctrl+K)…\" data-i18n-placeholder=\"%D8%A8%D8%AD%D8%AB%20(Ctrl%2BK)%E2%80%A6\" data-i18n-placeholder=\"%D8%A8%D8%AD%D8%AB%20(Ctrl%2BK)%E2%80%A6\" autocomplete=\"off\" style=\"width:100%;padding:7px 10px;border-radius:10px;border:1px solid var(--c-border);font-size:12px;\">" +
-      '<div id="global-search-results" hidden style="position:absolute;top:100%;right:0;left:0;background:var(--c-card);border:1px solid var(--c-border);border-radius:10px;margin-top:4px;max-height:340px;overflow:auto;z-index:50;box-shadow:0 6px 18px rgba(0,0,0,.12);"></div>' +
-      '</div>' +
-      '<button class="btn ghost sm" id="kudos-send-btn" type="button" title="ابعت شكر" hidden>🎉 شكر</button>' +
+      '<div class="topbar-tools"><div class="global-search">' +
+      '<button id="global-search-toggle" class="btn ghost sm header-icon" type="button" aria-label="بحث" data-i18n-aria-label="%D8%A8%D8%AD%D8%AB" title="بحث" data-i18n-title="%D8%A8%D8%AD%D8%AB" aria-expanded="false" aria-controls="global-search-panel"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m16 16 4.5 4.5"></path></svg></button>' +
+      '<div id="global-search-panel" class="global-search-panel" role="search" hidden><label for="global-search-input" data-i18n-text="%D8%A8%D8%AD%D8%AB%20%D9%81%D9%8A%20%D8%A7%D9%84%D8%A3%D9%82%D8%B3%D8%A7%D9%85%20%D8%A7%D9%84%D9%85%D8%AA%D8%A7%D8%AD%D8%A9%20%D9%84%D9%83">بحث في الأقسام المتاحة لك</label>' +
+      '<input id="global-search-input" type="search" placeholder="اكتب حرفين على الأقل…" data-i18n-placeholder="%D8%A7%D9%83%D8%AA%D8%A8%20%D8%AD%D8%B1%D9%81%D9%8A%D9%86%20%D8%B9%D9%84%D9%89%20%D8%A7%D9%84%D8%A3%D9%82%D9%84%E2%80%A6" aria-label="البحث في الداشبورد" data-i18n-aria-label="%D8%A7%D9%84%D8%A8%D8%AD%D8%AB%20%D9%81%D9%8A%20%D8%A7%D9%84%D8%AF%D8%A7%D8%B4%D8%A8%D9%88%D8%B1%D8%AF" autocomplete="off" aria-controls="global-search-results">' +
+      '<div id="global-search-results" aria-live="polite" hidden></div></div></div>' +
+      '<button class="btn ghost sm header-icon" id="kudos-send-btn" type="button" title="ابعت شكر" data-i18n-title="%D8%A7%D8%A8%D8%B9%D8%AA%20%D8%B4%D9%83%D8%B1" aria-label="ابعت شكر" data-i18n-aria-label="%D8%A7%D8%A8%D8%B9%D8%AA%20%D8%B4%D9%83%D8%B1" hidden><span aria-hidden="true">🎉</span></button>' +
       '<div style="position:relative;">' +
       "<button class=\"btn ghost sm\" id=\"notif-bell-btn\" type=\"button\" title=\"الإشعارات\" data-i18n-title=\"%D8%A7%D9%84%D8%A5%D8%B4%D8%B9%D8%A7%D8%B1%D8%A7%D8%AA\" data-i18n-title=\"%D8%A7%D9%84%D8%A5%D8%B4%D8%B9%D8%A7%D8%B1%D8%A7%D8%AA\" hidden style=\"position:relative;\">🔔" +
       '<span id="notif-badge" hidden style="position:absolute;top:-6px;left:-6px;background:#D0402A;color:#fff;border-radius:10px;font-size:10px;padding:1px 5px;line-height:1.4;">0</span></button>' +
       '<div id="notif-panel" hidden style="position:absolute;top:100%;left:0;width:300px;background:var(--c-card);border:1px solid var(--c-border);border-radius:10px;margin-top:4px;max-height:360px;overflow:auto;z-index:60;box-shadow:0 6px 18px rgba(0,0,0,.12);"></div>' +
       '</div>' +
-      window.SSMPDI18n.buttonHtml() + '<div class="who"><span class="role-badge">' + roleLabel + '</span> <b>' + displayName + '</b>' +
+      window.SSMPDI18n.buttonHtml() + '<div class="who">' +
       "<button class=\"user-menu-icon\" id=\"user-menu-btn\" type=\"button\" title=\"القائمة\" data-i18n-title=\"%D8%A7%D9%84%D9%82%D8%A7%D8%A6%D9%85%D8%A9\" data-i18n-title=\"%D8%A7%D9%84%D9%82%D8%A7%D8%A6%D9%85%D8%A9\" aria-label=\"القائمة\" data-i18n-aria-label=\"%D8%A7%D9%84%D9%82%D8%A7%D8%A6%D9%85%D8%A9\" data-i18n-aria-label=\"%D8%A7%D9%84%D9%82%D8%A7%D8%A6%D9%85%D8%A9\">☰</button>" +
       " <button class=\"btn ghost sm\" id=\"logout-btn\"> <!--ssmpd-i18n:%D8%AE%D8%B1%D9%88%D8%AC-->خروج</button></div>" +
-      '<button class="menu-toggle" id="menu-toggle-btn" type="button"><b>' + displayName + '</b><span class="mt-arrow">▾</span></button>' +
+      '</div>'+accountHtml+'<button class="menu-toggle" id="menu-toggle-btn" type="button"><b>' + displayName + '</b><span class="mt-arrow">▾</span></button>' +
       '</div>' +
       '<div class="user-dropdown" id="user-dropdown">' +
       '<div class="mm-name">' + displayName + '</div>' +
-      '<div class="mm-role"><span class="role-badge">' + roleLabel + '</span></div>' +
+      '<div class="mm-role">' + roleLabel + '</div>' +
       '<div class="ud-items">' + ddItems + '</div>' +
       "<button class=\"btn ghost sm mm-logout\" id=\"logout-btn-dropdown\"> <!--ssmpd-i18n:%D8%AE%D8%B1%D9%88%D8%AC-->خروج</button>" +
       '</div>' +
@@ -225,7 +238,7 @@
       '<div id="inventory-navigation" hidden></div>' +
       '<div class="mobile-menu" id="mobile-menu">' +
       '<div class="mm-name">' + displayName + '</div>' +
-      '<div class="mm-role"><span class="role-badge">' + roleLabel + '</span></div>' +
+      '<div class="mm-role">' + roleLabel + '</div>' +
       '<div class="mm-tabs">' + tabButtonsHtml() + '</div>' +
       "<button class=\"btn ghost sm mm-logout\" id=\"logout-btn-mobile\"> <!--ssmpd-i18n:%D8%AE%D8%B1%D9%88%D8%AC-->خروج</button>" +
       '</div>' +
@@ -279,6 +292,8 @@
       openChangePasswordModal();
     };
     userDropdown.querySelectorAll("[data-goto]").forEach(function (btn) {
+      var key=btn.getAttribute("data-goto");
+      if(window.SSMPDUITitles&&!(key===mainSuiteTabs[0]&&!R.isControlledFinance(admin)))btn.innerHTML=window.SSMPDI18n.textHtml(window.SSMPDUITitles.label(key,admin));
       btn.onclick = function () {
         switchTab(btn.getAttribute("data-goto"));
         userDropdown.classList.remove("open");
@@ -292,6 +307,7 @@
       };
     });
 
+    if(window.SSMPDNavigationUI)window.SSMPDNavigationUI.mount();
     setupGlobalSearch(admin, tabs);
     setupNotifications(admin);
     setupKudos(admin);
@@ -303,6 +319,7 @@
     var preferred=R.defaultTab(admin);if(tabs.indexOf('home')!==-1)preferred='home';
     try{if(sessionStorage.getItem('ssmpd_active_tab_owner')!==admin.id)savedTab=null;}catch(e){}
     var startTab = (savedTab && tabs.indexOf(savedTab) !== -1) ? savedTab : (tabs.indexOf(preferred)!==-1?preferred:tabs[0]);
+    if (window.SSMPDPatientUI && window.SSMPDPatientUI.route() && tabs.indexOf('patients') !== -1) startTab = 'patients';
     switchTab(startTab);
     setupRealtime();
   }
@@ -578,10 +595,13 @@
   // أرشيف المرضى — كل واحد بس لو الدور عنده وصول للتاب المقابل (تكلفة صفر
   // على أي حد مش هيستخدمه). Ctrl+K/⌘K يفوكّس الحقل، Enter يبحث، Escape يقفل.
   function setupGlobalSearch(admin, tabs) {
-    var input = document.getElementById("global-search-input");
-    if(R.isControlledFinance(admin)){if(input){input.disabled=true;input.placeholder='استخدم البحث والفلاتر داخل القسم';}return;}
-    var resultsBox = document.getElementById("global-search-results");
-    if (!input || !resultsBox) return;
+    if(setupGlobalSearch.dispose)setupGlobalSearch.dispose();
+    var input=document.getElementById('global-search-input'),toggle=document.getElementById('global-search-toggle'),panel=document.getElementById('global-search-panel'),resultsBox=document.getElementById('global-search-results'),revision=0,timer;
+    if(!input||!toggle||!panel||!resultsBox)return;
+    if(R.isControlledFinance(admin)){toggle.disabled=true;toggle.title='استخدم البحث والفلاتر داخل القسم';return;}
+    function closePanel(focus){clearTimeout(timer);revision++;panel.hidden=true;toggle.setAttribute('aria-expanded','false');hideResults();if(focus)toggle.focus();}
+    function openPanel(){panel.hidden=false;toggle.setAttribute('aria-expanded','true');input.focus();input.select();if(input.value.trim().length>=2)runSearch(input.value);}
+    toggle.onclick=function(){if(panel.hidden)openPanel();else closePanel(true);};
 
     function escapeHtml(s) {
       return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -595,16 +615,19 @@
 
     function runSearch(term) {
       term = term.trim();
+      var request=++revision;
       if (term.length < 2) { hideResults(); return; }
       var canContent = tabs.indexOf("review") !== -1 || tabs.indexOf("production") !== -1;
       var canLeads = tabs.indexOf("leads") !== -1;
       var canPatients = tabs.indexOf("patients") !== -1;
 
+      resultsBox.innerHTML='<p class="gsearch-status">'+window.SSMPDI18n.textHtml('جاري البحث…')+'</p>';resultsBox.hidden=false;
       Promise.all([
         canContent ? window.SSMPDDb.searchContentItems(term) : Promise.resolve([]),
         canLeads ? window.SSMPDDb.listLeads({ search: term, page_size: 6 }) : Promise.resolve(null),
         canPatients ? window.SSMPDDb.listPatientsArchive({ search: term, page_size: 6 }) : Promise.resolve(null)
       ]).then(function (res) {
+        if(request!==revision||!input.isConnected||panel.hidden)return;
         var contentItems = res[0] || [];
         var leadsItems = (res[1] && res[1].leads) || [];
         var patientsItems = (res[2] && res[2].patients) || [];
@@ -629,7 +652,7 @@
         resultsBox.querySelectorAll(".gsearch-item").forEach(function (btn) {
           btn.onclick = function () {
             var type = btn.getAttribute("data-type");
-            hideResults();
+            closePanel(true);
             input.value = "";
             if (type === "content") {
               window.SSMPDPendingOpenContentId = btn.getAttribute("data-id");
@@ -643,7 +666,7 @@
             }
           };
         });
-      }).catch(function () { hideResults(); });
+      }).catch(function () {if(request!==revision||!input.isConnected||panel.hidden)return;resultsBox.innerHTML='<p class="gsearch-status">'+window.SSMPDI18n.textHtml('تعذر البحث. حاول مرة أخرى.')+'</p>';resultsBox.hidden=false;});
     }
 
     // تنقّل بالكيبورد (↑/↓) بين نتائج البحث + Enter لاختيار النتيجة المظلّلة
@@ -664,18 +687,16 @@
       if (e.key === "Enter") {
         var active = resultsBox.querySelector(".gsearch-item.active");
         if (active && !resultsBox.hidden) { e.preventDefault(); active.click(); return; }
-        e.preventDefault(); runSearch(input.value);
-      } else if (e.key === "Escape") { input.blur(); hideResults(); }
+        e.preventDefault(); clearTimeout(timer);runSearch(input.value);
+      } else if (e.key === "Escape") {e.preventDefault();closePanel(true);}
       else if (e.key === "ArrowDown") { if (!resultsBox.hidden) { e.preventDefault(); moveActive(1); } }
       else if (e.key === "ArrowUp") { if (!resultsBox.hidden) { e.preventDefault(); moveActive(-1); } }
     });
-    document.addEventListener("click", function (e) {
-      if (!resultsBox.contains(e.target) && e.target !== input) hideResults();
-    });
-    document.addEventListener("keydown", function (e) {
-      var mod = e.ctrlKey || e.metaKey;
-      if (mod && e.key.toLowerCase() === "k") { e.preventDefault(); input.focus(); input.select(); }
-    });
+    input.addEventListener('input',function(){clearTimeout(timer);revision++;hideResults();if(input.value.trim().length>=2)timer=setTimeout(function(){runSearch(input.value);},300);});
+    function outside(e){if(!toggle.isConnected)return;if(!panel.contains(e.target)&&!toggle.contains(e.target))closePanel(false);}
+    function shortcut(e){if(!toggle.isConnected)return;var mod=e.ctrlKey||e.metaKey;if(mod&&e.key.toLowerCase()==='k'){e.preventDefault();openPanel();}else if(e.key==='Escape'&&!panel.hidden)closePanel(true);}
+    document.addEventListener('click',outside);document.addEventListener('keydown',shortcut);
+    setupGlobalSearch.dispose=function(){clearTimeout(timer);revision++;document.removeEventListener('click',outside);document.removeEventListener('keydown',shortcut);};
   }
 
   // مودال "نسيت كلمة السر؟" — بدون أي اعتماد على إيميل Supabase (القرار:
@@ -728,11 +749,14 @@
   }
 
   function switchTab(tab) {
-    var activeAdmin=window.SSMPDAuth.currentAdmin;
+    var activeAdmin=window.SSMPDAuth.currentAdmin,titleTab=tab;
+    if(tab==="inventory" && !(activeAdmin.inventory_assigned===false && activeAdmin.inventory_supply_access)){window.SSMPDRenderAccounting.openInventory();tab="accounting";}
     if(!tab || !R.canSeeTab(activeAdmin,tab)){var slot=document.getElementById('view-container');if(slot)slot.innerHTML='<div class="section"><h3>لم تُحدد صلاحيات أقسام لهذا الحساب</h3><p>السوبر أدمن يحدد الأقسام المتاحة من لوحة التحكم.</p></div>';return;}
 
+    if (tab !== 'patients' && window.SSMPDPatientUI) window.SSMPDPatientUI.clearRoute();
     removeRefreshNotice();
     currentTab = tab;
+    if(window.SSMPDNavigationUI)window.SSMPDNavigationUI.setCurrent(titleTab);
     try { sessionStorage.setItem(ACTIVE_TAB_KEY, tab);sessionStorage.setItem('ssmpd_active_tab_owner',activeAdmin.id); } catch (e) {}
     document.querySelectorAll(".tab-btn").forEach(function (b) {
       b.classList.toggle("active", b.getAttribute("data-tab") === tab);
@@ -740,13 +764,14 @@
 
     // اسم الشعار بيتغيّر حسب السكشن المفتوح دلوقتي: اسم المركز + اسم السكشن
     var brandName = document.getElementById("brand-section-name");
+    if(window.SSMPDI18n.setPageTitle)window.SSMPDI18n.setPageTitle(window.SSMPDUITitles?window.SSMPDUITitles.label(titleTab,activeAdmin):TAB_LABELS[titleTab]);
     if (brandName) {
-      brandName.innerHTML = window.SSMPDI18n.textHtml("مركز عيادات سونو التخصصية") + (TAB_LABELS[tab] ? '<span class="brand-sep">|</span><span class="brand-section">' + window.SSMPDI18n.textHtml(tab==='inventory'&&window.SSMPDAuth.currentAdmin.inventory_assigned===false&&window.SSMPDAuth.currentAdmin.inventory_supply_access?'طلب مستلزمات':TAB_LABELS[tab]) + "</span>" : "");
+      brandName.innerHTML = window.SSMPDUITitles?window.SSMPDUITitles.brand(titleTab,activeAdmin): window.SSMPDI18n.textHtml("مركز عيادات سونو التخصصية") + (TAB_LABELS[tab] ? '<span class="brand-sep">|</span><span class="brand-section">' + window.SSMPDI18n.textHtml(tab==='inventory'&&window.SSMPDAuth.currentAdmin.inventory_assigned===false&&window.SSMPDAuth.currentAdmin.inventory_supply_access?'طلب مستلزمات':TAB_LABELS[tab]) + "</span>" : "");
     }
 
     // فصل بصري: تابات السويت الرئيسي (SSMPD) بتتخفي تماماً لما نكون جوه موديول
     // منفصل (أرشيف المرضى / الليدز / لوحة التحكم) عشان ميظهرش هيدر حاجتين مع بعض
-    var isSeparateModule = ["home", "patients", "leads", "contracting_entities", "clinic_info", "admin", "accounting", "tasks", "inventory", "staff_kpi", "my_kpi"].indexOf(tab) !== -1;
+    var isSeparateModule = ["home", "reception_services", "booking_cash", "patients", "leads", "contracting_entities", "clinic_info", "admin", "accounting", "tasks", "inventory", "staff_kpi", "my_kpi", "indicator_reports"].indexOf(tab) !== -1;
     var tabsBar = document.getElementById("tabs-bar");
     if (tabsBar) tabsBar.style.display = isSeparateModule ? "none" : "";
     var mmTabs = document.querySelector("#mobile-menu .mm-tabs");
@@ -760,11 +785,25 @@
     if(renderer && previousView){var freshView=previousView.cloneNode(false);previousView.replaceWith(freshView);renderer.render(freshView);}
   }
 
+  window.addEventListener('popstate', function () {
+    if (!window.SSMPDPatientUI || !window.SSMPDAuth.currentAdmin) return;
+    var route = window.SSMPDPatientUI.route(), page = document.querySelector('.pp-page');
+    if (!route) { if (page) window.SSMPDPatientUI.closePage(page, false); return; }
+    if (!R.canSeeTab(window.SSMPDAuth.currentAdmin, 'patients')) return;
+    if (page) window.SSMPDPatientUI.closePage(page, false);
+    switchTab('patients');
+  });
+
   function openHomeTarget(type,id){
     var admin=window.SSMPDAuth.currentAdmin;
     if(type==='tab'){if(R.canSeeTab(admin,id))switchTab(id);return;}
     if(type==='task'){if(R.canSeeTab(admin,'tasks'))openTaskFromNotif(id,null);return;}
     if(type==='kpi'){if(R.canSeeTab(admin,'staff_kpi'))switchTab('staff_kpi');return;}
+    if(type==='inventory_request'){
+      if(!R.canSeeTab(admin,'accounting')||!R.canSeeTab(admin,'inventory')||!String(id||'').match(/^[0-9a-f-]{36}$/i))return;
+      window.SSMPDPendingInventoryRequest=id;if(window.SSMPDInventoryWorkspace)window.SSMPDInventoryWorkspace.select('00000000-0000-4000-8000-000000000001');
+      window.SSMPDRenderAccounting.openInventory();switchTab('accounting');return;
+    }
     if(type==='supply'){
       if(!R.canSeeTab(admin,'inventory'))return;
       window.SSMPDPendingInventoryView='supplies';switchTab('inventory');return;
@@ -779,6 +818,7 @@
 
   // جسر تنقّل بسيط للربط العكسي (تاب Meta Ads → فتح المادة المرتبطة) — بيستخدم
   // نفس آلية البحث الموحّد أعلاه (SSMPDPendingOpenContentId + تاب المراجعة)
+  window.SSMPDOpenTask = function(id){if(R.canSeeTab(window.SSMPDAuth.currentAdmin,'tasks'))openTaskFromNotif(id,null);};
   window.SSMPDGotoContent = function (contentId) {
     window.SSMPDPendingOpenContentId = contentId;
     switchTab("review");

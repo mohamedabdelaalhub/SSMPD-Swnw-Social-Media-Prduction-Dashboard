@@ -73,7 +73,7 @@
 
       var html = '<h2 style="margin-bottom:16px;">المستخدمون والصلاحيات</h2>';
       html += '<div id="admin-design-budget" style="margin-bottom:16px;"></div>';
-      html += '<div class="section"><h3>إضافة مستخدم جديد</h3>' +
+      html += '<div class="section" id="admin-add-user"><h3>إضافة مستخدم جديد</h3>' +
         '<div style="display:flex;gap:8px;flex-wrap:wrap;">' +
         "<input id=\"new-email\" placeholder=\"البريد الإلكتروني\" data-i18n-placeholder=\"%D8%A7%D9%84%D8%A8%D8%B1%D9%8A%D8%AF%20%D8%A7%D9%84%D8%A5%D9%84%D9%83%D8%AA%D8%B1%D9%88%D9%86%D9%8A\" data-i18n-placeholder=\"%D8%A7%D9%84%D8%A8%D8%B1%D9%8A%D8%AF%20%D8%A7%D9%84%D8%A5%D9%84%D9%83%D8%AA%D8%B1%D9%88%D9%86%D9%8A\" style=\"flex:1;min-width:200px;padding:9px 12px;border-radius:10px;border:1px solid var(--c-border);\">" +
         "<input id=\"new-name\" placeholder=\"الاسم\" data-i18n-placeholder=\"%D8%A7%D9%84%D8%A7%D8%B3%D9%85\" data-i18n-placeholder=\"%D8%A7%D9%84%D8%A7%D8%B3%D9%85\" style=\"flex:1;min-width:150px;padding:9px 12px;border-radius:10px;border:1px solid var(--c-border);\">" +
@@ -82,7 +82,7 @@
         "</select><button class=\"btn\" id=\"add-admin-btn\"> <!--ssmpd-i18n:%D8%A5%D8%B6%D8%A7%D9%81%D8%A9-->إضافة</button></div>" +
         '<p style="font-size:11px;color:var(--c-muted);margin-top:8px;">هو اللي هيفتح رابط اللوحة ويعمل "حساب جديد" بنفس البريد ده وينشئ كلمة سره — إنت مش بتحط له كلمة سر.</p></div>';
 
-      html += '<div class="section"><h3>كل المستخدمين (' + admins.length + ')</h3>' +
+      html += '<div class="section" id="admin-users"><h3>كل المستخدمين (' + admins.length + ')</h3>' +
         "<table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%A7%D8%B3%D9%85-->الاسم</th><th>البريد</th><th>الدور الأساسي</th><th>أدوار إضافية</th><th> <!--ssmpd-i18n:%D8%A3%D8%B1%D8%B4%D9%8A%D9%81%20%D8%A7%D9%84%D9%85%D8%B1%D8%B6%D9%89-->أرشيف المرضى</th><th>معاينة الأرشيف فقط</th><th>تحقق هوية المرضى</th><th>حذف الليدز</th><th>حذف زيارات التغذية</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AD%D8%A7%D9%84%D8%A9-->الحالة</th><th></th></tr></thead><tbody>";
 
       admins.forEach(function (a) {
@@ -118,7 +118,7 @@
         '<p style="font-size:11px;color:var(--c-muted);margin-top:4px;">"تحقق هوية المرضى" صلاحية حساسة لمراجعة المستندات الرسمية واعتماد/رفض/إلغاء وصول بوابة المريض.</p>' +
         '<p style="font-size:11px;color:var(--c-muted);margin-top:4px;">"حذف الليدز" صلاحية حذف نهائي لأي ليد من موديول إدارة الليدز — متاحة تلقائياً للسوبر أدمن، وممكن تتفعّل لأي مستخدم تاني هنا.</p><p style="font-size:11px;color:var(--c-muted);margin-top:4px;">"حذف زيارات التغذية" صلاحية حساسة: الحذف متاح للسوبر أدمن أو لمن تفعّل له هذا الخيار فقط.</p></div>';
 
-      html += '<div class="section"><h3>إعدادات التنبيهات (SLA)</h3>' +
+      html += '<div class="section" id="admin-alerts"><h3>إعدادات التنبيهات (SLA)</h3>' +
         '<p style="font-size:11px;color:var(--c-muted);margin-bottom:8px;">بعد كام ساعة تظهر تنبيهات "متأخر" في إدارة المحتوى وداشبورد الليدز والنظرة العامة — قابلة للتعديل بدل ما تكون ثابتة في الكود.</p>' +
         '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">' +
         '<div class="field" style="margin:0;"><label>مواد المحتوى (ساعة)</label><input type="number" min="1" id="sla-content-hours" value="' + ((appSettings && appSettings.content_sla_hours) || 48) + '" style="width:100px;"></div>' +
@@ -126,7 +126,7 @@
         "<button class=\"btn sm\" id=\"sla-save-btn\"> <!--ssmpd-i18n:%D8%AD%D9%81%D8%B8-->حفظ</button></div></div>";
 
       var physioDevices = (appSettings && appSettings.physio_devices && appSettings.physio_devices.length) ? appSettings.physio_devices : PHYSIO_DEVICES_DEFAULT;
-      html += '<div class="section"><h3>أجهزة العلاج الطبيعي</h3>' +
+      html += '<div class="section" id="admin-physio"><h3>أجهزة العلاج الطبيعي</h3>' +
         '<p style="font-size:11px;color:var(--c-muted);margin-bottom:8px;">الأجهزة دي بتظهر كخانات اختيار في جلسات "تقرير علاج طبيعي" لأي مريض، وفي طباعة التقرير — إضافة/حذف جهاز هنا بيتحدّث في كل مكان تلقائياً.</p>' +
         '<div id="physio-devices-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">' +
         physioDevices.map(function (d, i) {
@@ -138,12 +138,12 @@
         "<button class=\"btn ghost sm\" id=\"add-physio-device-btn\"> <!--ssmpd-i18n:%2B%20%D8%A5%D8%B6%D8%A7%D9%81%D8%A9-->+ إضافة</button>" +
         "<button class=\"btn sm\" id=\"physio-devices-save-btn\"> <!--ssmpd-i18n:%D8%AD%D9%81%D8%B8-->حفظ</button></div></div>";
 
-      html += '<div class="section"><h3>أداء الموظفين</h3>' +
+      html += '<div class="section" id="admin-performance"><h3>أداء الموظفين</h3>' +
         '<p style="font-size:11px;color:var(--c-muted);margin-bottom:8px;">ملخص إنتاجية كل موظف في موديول المحتوى (إنشاء/تصميم/نشر) في مكان واحد — بدل ما تتجمع يدوياً من شاشات متفرقة.</p>' +
         '<button class="btn ghost sm" id="perf-load-btn">تحميل تقرير الأداء</button>' +
         '<div id="perf-report-box" style="margin-top:12px;"></div></div>';
 
-      html += '<div class="section"><h3>تقرير الاستخدام</h3>' +
+      html += '<div class="section" id="admin-usage"><h3>تقرير الاستخدام</h3>' +
         '<p style="font-size:11px;color:var(--c-muted);margin-bottom:8px;">كل مرة حد بيفتح الداشبورد بيتسجّل كجلسة (وقت الدخول/الخروج والمدة)، وكل عملية رفع/إنشاء مهمة (تصميم، مادة محتوى، مستند مريض، تقرير مؤشرات/إعلانات، إكسيل ليدز، فاتورة حجز) بتتسجّل باسمها في سجل الأنشطة.</p>' +
         '<button class="btn ghost sm" id="usage-load-btn">تحميل تقرير الاستخدام</button>' +
         '<div id="usage-report-box" style="margin-top:12px;"></div></div>';
@@ -318,6 +318,7 @@
             .then(function () { usageBtn.disabled = false; usageBtn.textContent = "تحميل تقرير الاستخدام"; });
         };
       }
+      if(window.SSMPDAdminWorkspace)window.SSMPDAdminWorkspace.mount(container,admins);
     }).catch(function (e) {
       container.innerHTML = '<div class="err-msg">خطأ: ' + e.message + '</div>';
     });

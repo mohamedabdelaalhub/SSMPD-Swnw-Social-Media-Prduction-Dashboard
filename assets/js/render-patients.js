@@ -38,6 +38,15 @@
   function escapeHtml(s) {
     return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
+  function patientNameLink(id, name) {
+    if (!id) return escapeHtml(name || "—");
+    return '<button type="button" class="patient-name-link" data-open="' + escapeHtml(id).replace(/"/g, "&quot;") + '">' + escapeHtml(name || "—") + '</button>';
+  }
+  function bindPatientLinks(view, container) {
+    view.querySelectorAll("[data-open]").forEach(function (btn) {
+      btn.onclick = function () { openPatientModal(view, container, btn.getAttribute("data-open")); };
+    });
+  }
   function fmtBytes(n) {
     if (!n && n !== 0) return "—";
     if (n < 1024) return n + " بايت";
@@ -107,8 +116,17 @@
   }
 
   function render(container) {
+    if (container.querySelector(".pp-page")) return;
     me = window.SSMPDAuth.currentAdmin;
-    if (isDoctorOnly()) { renderDoctorQueue(container); return; }
+    if (isDoctorOnly()) {
+      renderDoctorQueue(container);
+      if (window.SSMPDPatientUI) {
+        window.SSMPDPatientUI.observeArchive(container);
+        var doctorRoute = window.SSMPDPatientUI.route();
+        if (doctorRoute) openPatientModal(null, container, doctorRoute.id);
+      }
+      return;
+    }
     var subs = visibleSubScreens();
     if (subs.indexOf(state.subTab) === -1 && !subs.some(function (s) { return s.key === state.subTab; })) {
       state.subTab = subs[0] ? subs[0].key : "dashboard";
@@ -133,6 +151,11 @@
     else if (state.subTab === "upload") renderUploadScreen(subView, container);
     else if (state.subTab === "review") renderReviewScreen(subView, container);
     else renderBrowseScreen(subView, container);
+    if (window.SSMPDPatientUI) {
+      window.SSMPDPatientUI.observeArchive(container);
+      var profileRoute = window.SSMPDPatientUI.route();
+      if (profileRoute) openPatientModal(subView, container, profileRoute.id);
+    }
   }
 
   // ============ ١) الداشبورد العام ============
@@ -150,9 +173,9 @@
       if (!patients.length) {
         html += '<p style="color:var(--c-muted);font-size:13px;">مفيش إضافات لسه.</p>';
       } else {
-        html += "<table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D9%83%D9%88%D8%AF%20%D8%A7%D9%84%D9%85%D8%B1%D9%8A%D8%B6-->كود المريض</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%A7%D8%B3%D9%85-->الاسم</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%87%D8%A7%D8%AA%D9%81-->الهاتف</th><th> <!--ssmpd-i18n:%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE-->تاريخ</th></tr></thead><tbody>";
+        html += "<table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D9%83%D9%88%D8%AF%20%D8%A7%D9%84%D9%85%D8%B1%D9%8A%D8%B6-->كود المريض</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%A7%D8%B3%D9%85-->الاسم</th><th>أضاف المريض</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%87%D8%A7%D8%AA%D9%81-->الهاتف</th><th> <!--ssmpd-i18n:%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE-->تاريخ</th></tr></thead><tbody>";
         patients.forEach(function (p) {
-          html += '<tr><td>' + escapeHtml(p.patient_code || "—") + '</td><td>' + escapeHtml(p.full_name) + '</td>' +
+          html += '<tr><td>' + escapeHtml(p.patient_code || "—") + '</td><td>' + patientNameLink(p.id, p.full_name) + '</td><td>' + escapeHtml(p.created_by_name || 'غير مسجل') + '</td>' +
             '<td>' + escapeHtml(p.phone || "—") + '</td><td style="font-size:11px;color:var(--c-muted);">' + fmtDate(p.created_at) + '</td></tr>';
         });
         html += '</tbody></table>';
@@ -164,9 +187,9 @@
       if (!files.length) {
         html += '<p style="color:var(--c-muted);font-size:13px;">مفيش ملفات لسه.</p>';
       } else {
-        html += "<table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D9%84%D9%81-->الملف</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%81%D8%A6%D8%A9-->الفئة</th><th>حالة المراجعة</th><th> <!--ssmpd-i18n:%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE-->تاريخ</th></tr></thead><tbody>";
+        html += "<table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D9%84%D9%81-->الملف</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%81%D8%A6%D8%A9-->الفئة</th><th>رافع الملف</th><th>حالة المراجعة</th><th> <!--ssmpd-i18n:%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE-->تاريخ</th></tr></thead><tbody>";
         files.forEach(function (f) {
-          html += '<tr><td>' + escapeHtml(f.file_name) + '</td><td>' + categoryLabel(f.category) + '</td>' +
+          html += '<tr><td>' + escapeHtml(f.file_name) + '</td><td>' + categoryLabel(f.category) + '</td><td>' + escapeHtml(f.uploaded_by_name || 'غير مسجل') + '</td>' +
             '<td><span class="status-pill ' + (REVIEW_PILL[f.review_status] || "draft") + '">' + (REVIEW_LABELS[f.review_status] || f.review_status) + '</span></td>' +
             '<td style="font-size:11px;color:var(--c-muted);">' + fmtDate(f.uploaded_at) + '</td></tr>';
         });
@@ -175,6 +198,7 @@
       html += '</div>';
 
       view.innerHTML = html;
+      bindPatientLinks(view, container);
     }).catch(function (e) {
       view.innerHTML = '<div class="err-msg">خطأ: ' + e.message + '</div>';
     });
@@ -2742,10 +2766,10 @@
         } else {
           html += "<table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%B1%D9%8A%D8%B6-->المريض</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D9%84%D9%81-->الملف</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%81%D8%A6%D8%A9-->الفئة</th><th>رافع الملف</th><th>تاريخ الرفع</th><th></th></tr></thead><tbody>";
           files.forEach(function (f) {
-            html += '<tr><td>' + escapeHtml((f.patients && f.patients.full_name) || "—") + '</td>' +
+            html += '<tr><td>' + patientNameLink(f.patient_id, f.patients && f.patients.full_name) + '</td>' +
               '<td>' + escapeHtml(f.file_name) + (f.other_description ? ' — ' + escapeHtml(f.other_description) : '') + '</td>' +
               '<td>' + categoryLabel(f.category) + '</td>' +
-              '<td style="font-size:11px;">' + escapeHtml(f.uploaded_by_name || "—") + '</td>' +
+              '<td style="font-size:13px;font-weight:600;">' + escapeHtml(f.uploaded_by_name || "غير مسجل") + '</td>' +
               '<td style="font-size:11px;color:var(--c-muted);">' + fmtDate(f.uploaded_at) + '</td>' +
               '<td>' + (state.reviewFilter === "pending" ?
                 '<button class="btn ghost sm" data-view="' + f.id + "\"> <!--ssmpd-i18n:%D8%B9%D8%B1%D8%B6-->عرض</button> <button class=\"btn sm\" data-approve=\"" + f.id + "\"> <!--ssmpd-i18n:%D8%A7%D8%B9%D8%AA%D9%85%D8%A7%D8%AF-->اعتماد</button> <button class=\"btn danger sm\" data-reject=\"" + f.id + "\"> <!--ssmpd-i18n:%D8%B1%D9%81%D8%B6-->رفض</button>" :
@@ -2760,6 +2784,7 @@
         }
         html += '</div>';
         view.innerHTML = html;
+        bindPatientLinks(view, container);
 
         document.getElementById("rv-filter").onchange = function () {
           state.reviewFilter = this.value; state.reviewPage = 1; renderReviewScreen(view, container);
@@ -2976,17 +3001,16 @@
           var canAssign = canAssignDoctor();
           var canEditBrowse = canUpload();
           var canDeleteBrowse = window.SSMPDRoles.hasRole(me, "super_admin");
-          html += "<table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D9%83%D9%88%D8%AF%20%D8%A7%D9%84%D9%85%D8%B1%D9%8A%D8%B6-->كود المريض</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%A7%D8%B3%D9%85-->الاسم</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%87%D8%A7%D8%AA%D9%81-->الهاتف</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%B3%D9%86-->السن</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%86%D9%88%D8%B9-->النوع</th><th>الرقم الطبي</th><th>آخر زيارة</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AD%D8%A7%D9%84%D8%A9-->الحالة</th><th></th></tr></thead><tbody>";
+          html += "<table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D9%83%D9%88%D8%AF%20%D8%A7%D9%84%D9%85%D8%B1%D9%8A%D8%B6-->كود المريض</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%A7%D8%B3%D9%85-->الاسم</th><th>أضاف المريض</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%87%D8%A7%D8%AA%D9%81-->الهاتف</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%B3%D9%86-->السن</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%86%D9%88%D8%B9-->النوع</th><th>الرقم الطبي</th><th>آخر زيارة</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AD%D8%A7%D9%84%D8%A9-->الحالة</th><th></th></tr></thead><tbody>";
           patients.forEach(function (p) {
-            html += '<tr><td>' + escapeHtml(p.patient_code || "—") + '</td><td>' + escapeHtml(p.full_name) + '</td>' +
+            html += '<tr><td>' + escapeHtml(p.patient_code || "—") + '</td><td>' + patientNameLink(p.id, p.full_name) + '</td><td>' + escapeHtml(p.created_by_name || 'غير مسجل') + '</td>' +
               '<td>' + escapeHtml(p.phone || "—") + '</td>' +
               '<td>' + escapeHtml(p.age != null ? String(p.age) : "—") + '</td>' +
               '<td>' + (p.gender === "male" ? "ذكر" : p.gender === "female" ? "أنثى" : "—") + '</td>' +
               '<td>' + escapeHtml(p.medical_record_no || "—") + '</td>' +
               '<td>' + fmtDate(p.last_visit_date) + '</td>' +
               '<td>' + (p.status === "archived" ? '<span class="status-pill draft">مؤرشف</span>' : "<span class=\"status-pill approved\"> <!--ssmpd-i18n:%D9%86%D8%B4%D8%B7-->نشط</span>") + '</td>' +
-              '<td style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;"><button class="btn ghost sm" data-open="' + p.id + "\"> <!--ssmpd-i18n:%D9%81%D8%AA%D8%AD-->فتح</button>" +
-              (canEditBrowse ? '<button class="btn ghost sm" data-edit="' + p.id + '">تعديل البيانات</button>' : '') +
+              '<td style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">' +
               (canAssign ? (function () {
                 var pend = pendingByPatient[p.id];
                 if (pend) {
@@ -2995,6 +3019,8 @@
                 }
                 return '<button class="btn ghost sm" data-assign="' + p.id + '" data-assign-name="' + escapeHtml(p.full_name) + '">تحويل لطبيب سونو</button>';
               })() : '') +
+              '<button class="btn ghost sm" data-open="' + p.id + "\"> <!--ssmpd-i18n:%D9%81%D8%AA%D8%AD-->فتح</button>" +
+              (canEditBrowse ? '<button class="btn ghost sm" data-edit="' + p.id + '">تعديل البيانات</button>' : '') +
               (canDeleteBrowse ? '<button class="btn ghost sm" data-delete-patient="' + p.id + '" data-delete-name="' + escapeHtml(p.full_name) + "\" style=\"color:var(--c-danger,#c33);\"> <!--ssmpd-i18n:%D8%AD%D8%B0%D9%81-->حذف</button>" : '') +
               '</td></tr>';
           });
@@ -3064,7 +3090,7 @@
           btn.onclick = function () {
             var pid = btn.getAttribute("data-delete-patient");
             var pname = btn.getAttribute("data-delete-name");
-            if (!window.confirm("متأكد إنك عايز تمسح ملف \"" + pname + "\" نهائياً؟ الإجراء ده مش هيترجع.")) return;
+            if (!btn.dataset.ppDeleteApproved && !window.confirm("متأكد إنك عايز تمسح ملف \"" + pname + "\" نهائياً؟ الإجراء ده مش هيترجع.")) return;
             btn.disabled = true;
             window.SSMPDDb.deletePatientRecord(pid).then(function () {
               T.show("اتمسح الملف بنجاح");
@@ -3151,8 +3177,11 @@
       '<div class="field"><label>الهدف من الجلسات</label><textarea id="sp-goal" rows="3">' + escapeHtml(profile.therapy_goal || "") + '</textarea></div>' +
       "<div class=\"field\"><label> <!--ssmpd-i18n:%D9%85%D9%84%D8%A7%D8%AD%D8%B8%D8%A7%D8%AA%20%D8%A7%D9%84%D8%A3%D8%AE%D8%B5%D8%A7%D8%A6%D9%8A-->ملاحظات الأخصائي</label><textarea id=\"sp-notes\" rows=\"3\">" + escapeHtml(profile.specialist_notes || "") + '</textarea></div>' +
       '<div class="field"><label>عدد الجلسات المخطط لها</label><input id="sp-planned-sessions" type="number" min="1" max="999" value="' + escapeHtml(profile.planned_sessions || "") + '" placeholder="مثال: 12"></div>' +
+      (window.SSMPDChildAssessments ? window.SSMPDChildAssessments.formHtml('speech', profile.assessment_details || {}, patient, false) : '') +
       '<button class="btn block" id="sp-save-profile">حفظ التقييم</button></div>';
     document.body.appendChild(backdrop);
+    if (window.SSMPDChildAssessments) window.SSMPDChildAssessments.wireForm(backdrop);
+    if (window.SSMPDPatientUI) window.SSMPDPatientUI.organizeSpeechForm(backdrop);
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
     backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
     var issues = backdrop.querySelector("#sp-issues");
@@ -3168,7 +3197,10 @@
       if (planned && (!Number.isInteger(planned) || planned < 1 || planned > 999)) { T.show("راجع عدد الجلسات", "error"); return; }
       var genetic = bool("sp-genetic"), birth = bool("sp-birth"), previous = bool("sp-previous");
       var patch = { first_session_date:backdrop.querySelector("#sp-first-session").value || null, presenting_complaint:backdrop.querySelector("#sp-complaint").value.trim() || null, problem_started:backdrop.querySelector("#sp-started").value.trim() || null, issue_types:selected, issue_other:selected.indexOf("other") > -1 ? backdrop.querySelector("#sp-other").value.trim() || null : null, consanguinity:bool("sp-consanguinity"), genetic_family_history:genetic, genetic_family_history_details:genetic ? backdrop.querySelector("#sp-genetic-details").value.trim() || null : null, pregnancy_birth_issues:birth, pregnancy_birth_issues_details:birth ? backdrop.querySelector("#sp-birth-details").value.trim() || null : null, first_word:backdrop.querySelector("#sp-first-word").value.trim() || null, first_sentence:backdrop.querySelector("#sp-first-sentence").value.trim() || null, previous_speech_therapy:previous, previous_speech_therapy_result:previous ? backdrop.querySelector("#sp-previous-result").value.trim() || null : null, current_understanding_speech:backdrop.querySelector("#sp-current-level").value.trim() || null, therapy_goal:backdrop.querySelector("#sp-goal").value.trim() || null, specialist_notes:backdrop.querySelector("#sp-notes").value.trim() || null, planned_sessions:planned || null };
-      window.SSMPDDb.savePatientSpeechProfile(patient.id, patch, me && me.id).then(function () { T.show("تم حفظ التقييم الأولي للتخاطب"); backdrop.remove(); onSaved(); }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
+      if (window.SSMPDChildAssessments) patch.assessment_details = window.SSMPDChildAssessments.collect(backdrop, profile.assessment_details || {});
+      patch.created_by = profile.created_by || (me && me.id);
+      var saveBtn = backdrop.querySelector('#sp-save-profile'); saveBtn.disabled = true;
+      window.SSMPDDb.savePatientSpeechProfile(patient.id, patch, me && me.id).then(function () { T.show("تم حفظ التقييم الأولي للتخاطب"); backdrop.remove(); onSaved(); }).catch(function (e) { saveBtn.disabled = false; T.show("خطأ: " + e.message, "error"); });
     };
   }
 
@@ -3294,8 +3326,15 @@
   }
 
   function openPatientModal(view, container, patientId) {
+    me = window.SSMPDAuth.currentAdmin;
+    var pendingPage = Array.from(document.querySelectorAll('[data-pp-loading-patient]')).find(function (el) { return el.dataset.ppLoadingPatient === String(patientId); });
+    if (pendingPage) return;
+    var currentPage = document.querySelector('.pp-page');
+    if (currentPage && currentPage.dataset.ppPatientId === String(patientId)) return;
+    if (currentPage && window.SSMPDPatientUI) window.SSMPDPatientUI.closePage(currentPage, false);
     var backdrop = document.createElement("div");
     backdrop.className = "modal-backdrop";
+    backdrop.dataset.ppLoadingPatient = String(patientId);
     backdrop.innerHTML = "<div class=\"modal\"><div class=\"loading\"> <!--ssmpd-i18n:%D8%A8%D9%8A%D8%AD%D9%85%D9%91%D9%84%E2%80%A6-->بيحمّل…</div></div>";
     document.body.appendChild(backdrop);
     backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
@@ -3314,14 +3353,18 @@
         window.SSMPDDb.listRadiologyRequests(patientId).catch(function () { return []; }),
         window.SSMPDDb.listPatientExperienceRatings(patientId).catch(function () { return []; }),
         window.SSMPDDb.listNutritionVisits(patientId).catch(function () { return []; }),
-        window.SSMPDDb.getPatientSpeechProfile(patientId).catch(function () { return null; }),
+        window.SSMPDDb.getPatientSpeechProfile(patientId),
         window.SSMPDDb.listPatientSpeechSessions(patientId).catch(function () { return []; }),
         window.SSMPDDb.getPatientPsychologyProfile(patientId).catch(function () { return null; }),
         window.SSMPDDb.listPatientPsychologySessions(patientId).catch(function () { return []; }),
       ]).then(function (results) {
+        if (!backdrop.isConnected) return;
+        delete backdrop.dataset.ppLoadingPatient;
         var res = results[0], profile = results[1], visits = results[2] || [];
         renderPatientModal(backdrop, view, container, res.patient, res.files || [], profile, visits, results[3] || [], results[4] || [], results[5] || [], results[6] || [], results[7] || [], results[8] || [], results[9] || [], results[10] || [], results[11] || [], results[12] || null, results[13] || [], results[14] || null, results[15] || []);
       }).catch(function (e) {
+        if (!backdrop.isConnected) return;
+        delete backdrop.dataset.ppLoadingPatient;
         backdrop.querySelector(".modal").innerHTML = '<div class="err-msg">خطأ: ' + e.message + '</div>';
       });
     }
@@ -3460,6 +3503,8 @@
         (activeFamily.length ? activeFamily.map(function (f) { return escapeHtml(f.disease || ""); }).join('، ') : 'لا يوجد') + '</p>';
     }
 
+    html += '</div><div class="section" data-visit-section style="padding:12px 14px;">';
+
     html += '<div style="margin-top:12px;display:flex;align-items:center;justify-content:space-between;">' +
       '<b style="font-size:12px;">سجل الزيارات (' + visits.length + ')</b>' +
       (canVisitWrite ? '<button class="btn ghost sm" data-add-visit="1">+ زيارة جديدة</button>' : '') + '</div>';
@@ -3501,7 +3546,7 @@
     var speechAttendance = { attended:"حضر", absent:"غاب", excused:"اعتذر" };
     var speechResponse = { excellent:"ممتاز", good:"جيد", average:"متوسط", weak:"ضعيف" };
     html += '<div class="section" style="padding:12px 14px;">' +
-      '<h3 style="font-size:14px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;"><span>التخاطب</span>' + (canEditMedical ? '<span><button class="btn ghost sm" data-edit-speech-profile="1">التقييم الأولي</button> <button class="btn ghost sm" data-add-speech-session="1">+ جلسة جديدة</button></span>' : '') + '</h3>' +
+      '<h3 style="font-size:14px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;"><span>التخاطب</span><button class="btn ghost sm" data-view-speech-assessment>عرض استمارة التقييم</button>' + (canEditMedical ? '<span><button class="btn ghost sm" data-edit-speech-profile="1">التقييم الأولي</button> <button class="btn ghost sm" data-add-speech-session="1">+ جلسة جديدة</button></span>' : '') + '</h3>' +
       '<div style="font-size:12px;color:var(--c-muted);line-height:1.9;">تاريخ أول جلسة: ' + (speechProfile && speechProfile.first_session_date ? fmtDate(speechProfile.first_session_date) : "—") + '<br>نوع المشكلة: ' + (speechProfile && speechProfile.issue_types && speechProfile.issue_types.length ? speechProfile.issue_types.map(function (x) { return speechIssueLabels[x] || x; }).join("، ") + (speechProfile.issue_other ? " (" + escapeHtml(speechProfile.issue_other) + ")" : "") : "—") + '<br>عدد الجلسات: ' + speechSessions.length + (speechProfile && speechProfile.planned_sessions ? " من " + speechProfile.planned_sessions : "") + '</div>';
     if (!speechSessions.length) html += '<p style="font-size:12px;color:var(--c-muted);margin:10px 0 0;">مفيش جلسات تخاطب مسجلة.</p>';
     else {
@@ -3510,6 +3555,8 @@
       html += '</tbody></table>';
     }
     html += '</div>';
+
+    html += '<div data-development-assessments></div>';
 
     html += '<div class="section" style="padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
       '<b style="font-size:13px;">كل الملفات المرفوعة (' + files.length + ')</b>' +
@@ -3755,6 +3802,11 @@
     html += '</div>';
 
     backdrop.innerHTML = html;
+    if(window.SSMPDSharedReception)window.SSMPDSharedReception.append(backdrop.querySelector('.modal'),{context:'patient',id:patient.id});
+    if (window.SSMPDChildAssessments) {
+      window.SSMPDChildAssessments.mount(backdrop.querySelector('[data-development-assessments]'), patient, canEditMedical, (speechProfile || {}).assessment_details || {});
+      backdrop.querySelector('[data-view-speech-assessment]').onclick = function () { window.SSMPDChildAssessments.showSpeech(patient, speechProfile || {}); };
+    }
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
     backdrop.querySelectorAll("[data-nutrition-status]").forEach(function (el) {
       var visit = nutritionVisits.find(function (v) { return String(v.id) === el.getAttribute("data-nutrition-status"); });
@@ -3763,7 +3815,7 @@
 
     function reloadModal() {
       var refresh = window.SSMPDDb.refreshOverdueFollowups ? window.SSMPDDb.refreshOverdueFollowups().catch(function () { return 0; }) : Promise.resolve(0);
-      refresh.then(function () { return Promise.all([
+      return refresh.then(function () { return Promise.all([
         window.SSMPDDb.getPatientFiles(patient.id),
         window.SSMPDDb.getPatientMedicalProfile(patient.id).catch(function () { return null; }),
         window.SSMPDDb.listPatientVisits(patient.id).catch(function () { return []; }),
@@ -3776,9 +3828,13 @@
         window.SSMPDDb.listRadiologyRequests(patient.id).catch(function () { return []; }),
         window.SSMPDDb.listPatientExperienceRatings(patient.id).catch(function () { return []; }),
         window.SSMPDDb.listNutritionVisits(patient.id).catch(function () { return []; }),
+        window.SSMPDDb.getPatientSpeechProfile(patient.id),
+        window.SSMPDDb.listPatientSpeechSessions(patient.id).catch(function () { return []; }),
+        window.SSMPDDb.getPatientPsychologyProfile(patient.id).catch(function () { return null; }),
+        window.SSMPDDb.listPatientPsychologySessions(patient.id).catch(function () { return []; }),
       ]); }).then(function (results) {
-        renderPatientModal(backdrop, view, container, results[0].patient, results[0].files || [], results[1], results[2] || [], results[3] || [], results[4] || [], results[5] || [], results[6] || [], results[7] || [], results[8] || [], results[9] || [], results[10] || [], results[11] || []);
-      });
+        renderPatientModal(backdrop, view, container, results[0].patient, results[0].files || [], results[1], results[2] || [], results[3] || [], results[4] || [], results[5] || [], results[6] || [], results[7] || [], results[8] || [], results[9] || [], results[10] || [], results[11] || [], results[12] || null, results[13] || [], results[14] || null, results[15] || []);
+      }).catch(function (e) { T.show("تعذر تحديث الملف: " + e.message, "error"); });
     }
 
     var editPersonalBtn = backdrop.querySelector("[data-edit-personal]");
@@ -3796,7 +3852,8 @@
     backdrop.querySelectorAll("[data-del-visit]").forEach(function (btn) {
       btn.onclick = function () {
         var visitId = btn.getAttribute("data-del-visit");
-        window.SSMPDDb.deletePatientVisit(visitId).then(function () {
+        if (!btn.dataset.ppDeleteApproved && !confirm("حذف الزيارة من ملف " + patient.full_name + "؟")) return;
+        return window.SSMPDDb.deletePatientVisit(visitId).then(function () {
           T.show("اتحذفت الزيارة");
           reloadModal();
         }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
@@ -3869,9 +3926,7 @@
         window.SSMPDDb.uploadPatientFile(fd).then(function () {
           if (me) window.SSMPDDb.logUsageActivity(me.id, "رفع مستند مريض", file.name + " (" + categoryLabel(catKey) + ")", "patient", patient.id).catch(function () {});
           T.show("اترفع الملف بنجاح، وهيبقى قيد المراجعة لحد ما مسؤول تاني يعتمده");
-          window.SSMPDDb.getPatientFiles(patient.id).then(function (res) {
-            renderPatientModal(backdrop, view, container, res.patient, res.files || []);
-          });
+          reloadModal();
         }).catch(function (e) {
           statusEl.textContent = "خطأ: " + e.message;
           btn.disabled = false;
@@ -3888,7 +3943,7 @@
       btn.onclick = function () { var row = psychologySessions.filter(function (x) { return String(x.id) === btn.getAttribute("data-edit-psychology-session"); })[0]; if (row) openPsychologySessionFormModal(patient, psychologySessions, row, reloadModal); };
     });
     backdrop.querySelectorAll("[data-del-psychology-session]").forEach(function (btn) {
-      btn.onclick = function () { if (!confirm("حذف الجلسة النفسية دي؟")) return; window.SSMPDDb.deletePatientPsychologySession(btn.getAttribute("data-del-psychology-session")).then(function () { T.show("تم حذف الجلسة"); reloadModal(); }).catch(function (e) { T.show("خطأ: " + e.message, "error"); }); };
+      btn.onclick = function () { if (!btn.dataset.ppDeleteApproved && !confirm("حذف الجلسة النفسية دي؟")) return; return window.SSMPDDb.deletePatientPsychologySession(btn.getAttribute("data-del-psychology-session")).then(function () { T.show("تم حذف الجلسة"); reloadModal(); }).catch(function (e) { T.show("خطأ: " + e.message, "error"); }); };
     });
 
     var editSpeechProfileBtn = backdrop.querySelector("[data-edit-speech-profile]");
@@ -3899,7 +3954,7 @@
       btn.onclick = function () { var row = speechSessions.filter(function (x) { return String(x.id) === btn.getAttribute("data-edit-speech-session"); })[0]; if (row) openSpeechSessionFormModal(patient, speechSessions, row, reloadModal); };
     });
     backdrop.querySelectorAll("[data-del-speech-session]").forEach(function (btn) {
-      btn.onclick = function () { if (!confirm("حذف جلسة التخاطب دي؟")) return; window.SSMPDDb.deletePatientSpeechSession(btn.getAttribute("data-del-speech-session")).then(function () { T.show("تم حذف الجلسة"); reloadModal(); }).catch(function (e) { T.show("خطأ: " + e.message, "error"); }); };
+      btn.onclick = function () { if (!btn.dataset.ppDeleteApproved && !confirm("حذف جلسة التخاطب دي؟")) return; return window.SSMPDDb.deletePatientSpeechSession(btn.getAttribute("data-del-speech-session")).then(function () { T.show("تم حذف الجلسة"); reloadModal(); }).catch(function (e) { T.show("خطأ: " + e.message, "error"); }); };
     });
 
     var printAllBtn = backdrop.querySelector("[data-print-all]");
@@ -3934,8 +3989,8 @@
     });
     backdrop.querySelectorAll("[data-del-medical-report]").forEach(function (btn) {
       btn.onclick = function () {
-        if (!confirm("حذف التقرير الطبي ده؟")) return;
-        window.SSMPDDb.deleteMedicalReport(btn.getAttribute("data-del-medical-report")).then(function () {
+        if (!btn.dataset.ppDeleteApproved && !confirm("حذف التقرير الطبي ده؟")) return;
+        return window.SSMPDDb.deleteMedicalReport(btn.getAttribute("data-del-medical-report")).then(function () {
           T.show("اتحذف التقرير");
           reloadModal();
         }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
@@ -3967,8 +4022,8 @@
     });
     backdrop.querySelectorAll("[data-del-prescription]").forEach(function (btn) {
       btn.onclick = function () {
-        if (!confirm("حذف الروشتة دي؟")) return;
-        window.SSMPDDb.deletePrescription(btn.getAttribute("data-del-prescription")).then(function () {
+        if (!btn.dataset.ppDeleteApproved && !confirm("حذف الروشتة دي؟")) return;
+        return window.SSMPDDb.deletePrescription(btn.getAttribute("data-del-prescription")).then(function () {
           T.show("اتحذفت الروشتة");
           reloadModal();
         }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
@@ -3994,8 +4049,8 @@
     });
     backdrop.querySelectorAll("[data-del-lab-request]").forEach(function (btn) {
       btn.onclick = function () {
-        if (!confirm("حذف طلب التحاليل ده؟")) return;
-        window.SSMPDDb.deleteLabRequest(btn.getAttribute("data-del-lab-request")).then(function () {
+        if (!btn.dataset.ppDeleteApproved && !confirm("حذف طلب التحاليل ده؟")) return;
+        return window.SSMPDDb.deleteLabRequest(btn.getAttribute("data-del-lab-request")).then(function () {
           T.show("اتحذف طلب التحاليل");
           reloadModal();
         }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
@@ -4021,8 +4076,8 @@
     });
     backdrop.querySelectorAll("[data-del-radiology-request]").forEach(function (btn) {
       btn.onclick = function () {
-        if (!confirm("حذف طلب الأشعة ده؟")) return;
-        window.SSMPDDb.deleteRadiologyRequest(btn.getAttribute("data-del-radiology-request")).then(function () {
+        if (!btn.dataset.ppDeleteApproved && !confirm("حذف طلب الأشعة ده؟")) return;
+        return window.SSMPDDb.deleteRadiologyRequest(btn.getAttribute("data-del-radiology-request")).then(function () {
           T.show("اتحذف طلب الأشعة");
           reloadModal();
         }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
@@ -4048,8 +4103,8 @@
     });
     backdrop.querySelectorAll("[data-del-echo-report]").forEach(function (btn) {
       btn.onclick = function () {
-        if (!confirm("حذف تقرير الـEcho ده؟")) return;
-        window.SSMPDDb.deleteEchoReport(btn.getAttribute("data-del-echo-report")).then(function () {
+        if (!btn.dataset.ppDeleteApproved && !confirm("حذف تقرير الـEcho ده؟")) return;
+        return window.SSMPDDb.deleteEchoReport(btn.getAttribute("data-del-echo-report")).then(function () {
           T.show("اتحذف التقرير");
           reloadModal();
         }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
@@ -4075,8 +4130,8 @@
     });
     backdrop.querySelectorAll("[data-del-dental-report]").forEach(function (btn) {
       btn.onclick = function () {
-        if (!confirm("حذف تقرير الأسنان ده؟")) return;
-        window.SSMPDDb.deleteDentalReport(btn.getAttribute("data-del-dental-report")).then(function () {
+        if (!btn.dataset.ppDeleteApproved && !confirm("حذف تقرير الأسنان ده؟")) return;
+        return window.SSMPDDb.deleteDentalReport(btn.getAttribute("data-del-dental-report")).then(function () {
           T.show("اتحذف التقرير");
           reloadModal();
         }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
@@ -4102,8 +4157,8 @@
     });
     backdrop.querySelectorAll("[data-del-physio-report]").forEach(function (btn) {
       btn.onclick = function () {
-        if (!confirm("حذف تقرير العلاج الطبيعي ده؟")) return;
-        window.SSMPDDb.deletePhysioReport(btn.getAttribute("data-del-physio-report")).then(function () {
+        if (!btn.dataset.ppDeleteApproved && !confirm("حذف تقرير العلاج الطبيعي ده؟")) return;
+        return window.SSMPDDb.deletePhysioReport(btn.getAttribute("data-del-physio-report")).then(function () {
           T.show("اتحذف التقرير");
           reloadModal();
         }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
@@ -4132,8 +4187,8 @@
     });
     backdrop.querySelectorAll("[data-del-nutrition-visit]").forEach(function (btn) {
       btn.onclick = function () {
-        if (!confirm("حذف زيارة التغذية دي؟")) return;
-        window.SSMPDDb.deleteNutritionVisit(btn.getAttribute("data-del-nutrition-visit")).then(function () {
+        if (!btn.dataset.ppDeleteApproved && !confirm("حذف زيارة التغذية دي؟")) return;
+        return window.SSMPDDb.deleteNutritionVisit(btn.getAttribute("data-del-nutrition-visit")).then(function () {
           T.show("اتحذفت الزيارة");
           reloadModal();
         }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
@@ -4185,21 +4240,20 @@
 
     backdrop.querySelectorAll("[data-del-file]").forEach(function (btn) {
       btn.onclick = function () {
-        if (btn.classList.contains("confirm-pending")) {
-          var fileId = btn.getAttribute("data-del-file");
-          window.SSMPDDb.deletePatientFile(fileId).then(function () {
-            T.show("اتحذف الملف");
-            window.SSMPDDb.getPatientFiles(patient.id).then(function (res) {
-              renderPatientModal(backdrop, view, container, res.patient, res.files || []);
-            });
-          }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
-        } else {
-          btn.classList.add("confirm-pending");
-          btn.textContent = "متأكد؟ اضغط تاني";
-          setTimeout(function () { btn.classList.remove("confirm-pending"); btn.textContent = "حذف"; }, 3000);
-        }
+        var fileId = btn.getAttribute("data-del-file");
+        if (!btn.dataset.ppDeleteApproved && !confirm("حذف المستند من ملف " + patient.full_name + "؟")) return;
+        return window.SSMPDDb.deletePatientFile(fileId).then(function () {
+          T.show("اتحذف الملف"); return reloadModal();
+        }).catch(function (e) { T.show("خطأ: " + e.message, "error"); });
       };
     });
+    if (window.SSMPDPatientUI) window.SSMPDPatientUI.mountPage(backdrop, container, {
+      patient:patient, profile:profile, files:files, visits:visits, reports:reports,
+      speechProfile:speechProfile, speechSessions:speechSessions, psychologyProfile:psychologyProfile, psychologySessions:psychologySessions,
+      echoReports:echoReports, dentalReports:dentalReports, physioReports:physioReports, nutritionVisits:nutritionVisits,
+      prescriptions:prescriptions, labRequests:labRequests, radiologyRequests:radiologyRequests, reload:reloadModal
+    });
+
   }
 
   // بيستخدمها البحث الموحّد في الشريط العلوي (مرحلة ٦): بتحضّر شاشة "تصفح
@@ -4210,7 +4264,7 @@
   }
 
   window.SSMPDRenderPatients = {
-    render: render, openSearch: openSearch,
+    render: render, openSearch: openSearch, openCreate: function(onCreated) { openNewPatientModal(null,onCreated); },
     openPatientById: function (id) { openPatientModal(null, null, id); },
     openExperienceRatingFormModal: openExperienceRatingFormModal,
     experienceRatingAvg: experienceRatingAvg

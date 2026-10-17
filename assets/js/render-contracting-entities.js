@@ -173,8 +173,10 @@
       input("cee-transfer", "رقم كاش باك / وسيلة التحويل", "text", contract.cashback_transfer_method) +
       "<div class=\"field\"><label for=\"cee-services\"> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AE%D8%AF%D9%85%D8%A7%D8%AA%20%D8%A7%D9%84%D9%85%D8%AA%D9%81%D9%82%20%D8%B9%D9%84%D9%8A%D9%87%D8%A7-->الخدمات المتفق عليها</label><textarea id=\"cee-services\" rows=\"2\">" + esc(contract.services) + '</textarea></div>' +
       '<div class="field"><label for="cee-notes">ملاحظات العقد</label><textarea id="cee-notes" rows="3">' + esc(contract.terms_notes) + '</textarea></div>' +
+      '<fieldset><legend>تطبيق العقد في حجز الخدمات</legend><div class="field"><label>نوع المعاملة</label><select id="cee-booking-kind">'+[['discount','خصم مباشر للمريض'],['insurer','تغطية على الجهة'],['referral','إحالة']].map(function(x){return '<option value="'+x[0]+'" '+(x[0]===(contract.booking_billing_kind||'discount')?'selected':'')+'>'+x[1]+'</option>';}).join('')+'</select></div>'+input('cee-booking-coverage','نسبة تغطية الجهة %','number',contract.booking_coverage||0)+'<div data-contract-services>جاري تحميل الخدمات…</div><p>الخدمات المختارة تستخدم نسبة الخصم أعلاه. التغطية تخص الخدمة دون إضافات المستلزمات.</p></fieldset>' +
       input("cee-signer", "اسم الموقّع على العقد", "text", contract.signed_by_name) +
       "<div style=\"display:flex;gap:8px;flex-wrap:wrap;\"><button type=\"submit\" class=\"btn\" id=\"cee-save\"> <!--ssmpd-i18n:%D8%AD%D9%81%D8%B8%20%D8%A7%D9%84%D8%AA%D8%B9%D8%AF%D9%8A%D9%84%D8%A7%D8%AA-->حفظ التعديلات</button><button type=\"button\" class=\"btn ghost\" id=\"cee-cancel\"> <!--ssmpd-i18n:%D8%A5%D9%84%D8%BA%D8%A7%D8%A1-->إلغاء</button></div></form>");
+    if(window.SSMPDDb.listPricingServices){bd.querySelector('#cee-save').disabled=true;window.SSMPDDb.listPricingServices().then(function(rows){if(!bd.isConnected)return;bd.querySelector('#cee-save').disabled=false;bd.querySelector('[data-contract-services]').innerHTML=(rows.data||rows||[]).filter(function(x){return x.active&&x.booking_enabled;}).map(function(x){return '<label style="display:block"><input type="checkbox" data-contract-service value="'+esc(x.id)+'" '+((contract.booking_service_ids||[]).includes(x.id)?'checked':'')+'> '+esc(x.name)+'</label>';}).join('')||'<p>فعّل خدمات الحجز من التسعير أولًا.</p>';}).catch(function(err){if(bd.isConnected){bd.querySelector('[data-contract-services]').textContent=err.message;bd.querySelector('#cee-save').disabled=true;}});}
     bd.querySelectorAll(".field").forEach(function (field) {
       var control = field.querySelector("input");
       if (control) field.querySelector("label").htmlFor = control.id;
@@ -195,6 +197,8 @@
       var discount = Number(value("discount")), cashback = Number(value("cashback"));
       if (!isFinite(discount) || !isFinite(cashback) || discount < 0 || discount > 100 || cashback < 0 || cashback > 100) return T.show("نسبة الخصم والكاش باك لازم تكون بين 0 و100", "error");
       var patch = {
+        booking_service_ids:Array.from(bd.querySelectorAll('[data-contract-service]:checked')).map(function(x){return x.value;}),
+        booking_billing_kind:value('booking-kind'),booking_coverage:Number(value('booking-coverage')),
         status: value("status"), agreement_date: value("agreement") || null,
         start_date: start, end_date: end || null,
         discount_percent: discount, cashback_percent: cashback,

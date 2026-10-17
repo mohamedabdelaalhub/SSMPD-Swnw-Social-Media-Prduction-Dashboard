@@ -70,7 +70,7 @@ Deno.serve(async (req) => {
   const page = Math.max(1, Number(url.searchParams.get("page") ?? "1") || 1);
   // سقف أعلى (2000) لازم لدعم "تصدير الكل" (Excel/PDF) لقائمة مرضى مفلترة —
   // الافتراضي العادي (20) زي ما هو، الرفع بس لو الواجهة طلبته صراحة وقت التصدير
-  const pageSize = Math.min(2000, Math.max(1, Number(url.searchParams.get("page_size") ?? "20") || 20));
+  const pageSize = Math.min(20000, Math.max(1, Number(url.searchParams.get("page_size") ?? "20") || 20));
   // فلتر تاريخ اختياري لقائمة/بحث المرضى — created_at (تاريخ إضافة المريض)
   // أو last_visit_date (تاريخ آخر زيارة) حسب اختيار المستخدم، مش الاتنين مع بعض
   const dateField = url.searchParams.get("date_field") === "last_visit_date" ? "last_visit_date" : "created_at";
@@ -89,15 +89,15 @@ Deno.serve(async (req) => {
         admin.from("patients").select("id", { count: "exact", head: true }),
         admin.from("patient_files").select("id", { count: "exact", head: true }),
         admin.from("patient_files").select("id", { count: "exact", head: true }).eq("review_status", "pending"),
-        admin.from("patients").select("id, patient_code, full_name, phone, email, created_at").order("created_at", { ascending: false }).limit(8),
-        admin.from("patient_files").select("id, file_name, category, review_status, uploaded_at, patient_id, patients(full_name, patient_code)").order("uploaded_at", { ascending: false }).limit(8),
+        admin.from("patients").select("id, patient_code, full_name, phone, email, created_at, creator:admins!created_by(name)").order("created_at", { ascending: false }).limit(8),
+        admin.from("patient_files").select("id, file_name, category, review_status, uploaded_at, patient_id, patients(full_name, patient_code), uploader:admins!uploaded_by(name)").order("uploaded_at", { ascending: false }).limit(8),
       ]);
     return json({
       total_patients: totalPatients ?? 0,
       total_files: totalFiles ?? 0,
       pending_review: pendingReview ?? 0,
-      recent_patients: recentPatients.data ?? [],
-      recent_files: recentFiles.data ?? [],
+      recent_patients: (recentPatients.data ?? []).map((p: any) => ({ ...p, created_by_name: p.creator?.name ?? null, creator: undefined })),
+      recent_files: (recentFiles.data ?? []).map((f: any) => ({ ...f, uploaded_by_name: f.uploader?.name ?? null, uploader: undefined })),
     });
   }
 
@@ -186,7 +186,7 @@ Deno.serve(async (req) => {
   // من غير patient_id: قائمة/بحث المرضى (اسم أو رقم أو patient_code)
   let query = admin
     .from("patients")
-    .select("id, patient_code, full_name, phone, email, status, gender, age, medical_record_no, last_visit_date, sent_to_nursing_at, created_at", { count: "exact" })
+    .select("id, patient_code, full_name, phone, email, status, gender, age, medical_record_no, last_visit_date, sent_to_nursing_at, created_at, creator:admins!created_by(name)", { count: "exact" })
     .order("created_at", { ascending: false });
 
   if (search) {
@@ -205,5 +205,5 @@ Deno.serve(async (req) => {
   const { data: patients, error, count } = await query.range(from, to);
   if (error) return json({ error: error.message }, 500);
 
-  return json({ patients: patients ?? [], total: count ?? 0, page, page_size: pageSize });
+  return json({ patients: (patients ?? []).map((p: any) => ({ ...p, created_by_name: p.creator?.name ?? null, creator: undefined })), total: count ?? 0, page, page_size: pageSize });
 });

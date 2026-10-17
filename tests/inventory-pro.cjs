@@ -13,7 +13,7 @@ suppliers:[{id:'s1',name:'مورد 1',phone:'010',notes:'',active:true}],can_man
 window.SSMPDAuth={currentAdmin:{id:'a1'}};
 window.SSMPDRoles={canModuleAction:function(){return true},canSeeTab:function(){return true}};
 window.SSMPDDb={taskPeople:function(){return Promise.resolve([{id:'a1',name:'محمد'}])},client:{rpc:function(n,a){calls.push([n,a]);return Promise.resolve({data:n==='inventory_snapshot'?snap:null,error:null});}}};
-</script><script src="/assets/js/render-inventory.js"></script><script>SSMPDRenderInventory.render(document.getElementById('r'))</script></body></html>`;
+</script><script src="/assets/js/inventory-batch-dates.js"></script><script src="/assets/js/inventory-tracking.js"></script><script src="/assets/js/render-inventory.js"></script><script>SSMPDRenderInventory.render(document.getElementById('r'))</script></body></html>`;
 (async()=>{
 const server=http.createServer((req,res)=>{const url=decodeURIComponent(req.url.split('?')[0]);if(url==='/'){res.setHeader('content-type','text/html');return res.end(html);}const f=path.join(root,url);if(!f.startsWith(root)||!fs.existsSync(f)||fs.statSync(f).isDirectory()){res.statusCode=404;return res.end();}const ext=path.extname(f);res.setHeader('content-type',ext==='.css'?'text/css':ext==='.js'?'text/javascript':'application/octet-stream');res.end(fs.readFileSync(f));}).listen(0);
 const port=server.address().port;
@@ -64,10 +64,10 @@ try{
   await page.click('[data-fulfill="r1"]');
   await page.click('[data-save]');
   assert(await page.locator('.inv-modal').count()===1,'expiry required');
-  await page.fill('.inv-receive [name="lot"]','L9');await page.fill('.inv-receive [name="exp"]',new Date(Date.now()+200*86400000).toISOString().slice(0,10));
+  await page.fill('[data-receipt-form] [name="reference"]','SUP-TEST-9');await page.fill('.inv-receive [name="lot"]','L9');await page.fill('.inv-receive [name="exp"]',new Date(Date.now()+200*86400000).toISOString().slice(0,10));
   await page.click('[data-save]');
-  await page.waitForFunction(()=>calls.some(c=>c[0]==='inventory_receive_request'));
-  const rc=await page.evaluate(()=>calls.find(c=>c[0]==='inventory_receive_request')[1].p_lines[0]);
+  await page.waitForFunction(()=>calls.some(c=>c[0]==='inventory_receive_invoice'));
+  const rc=await page.evaluate(()=>calls.find(c=>c[0]==='inventory_receive_invoice')[1].p_lines[0]);
   assert.equal(rc.lot_number,'L9');assert(rc.expiry_date);
   // write-off modal
   await go('items');await page.click('[data-writeoff=""]');

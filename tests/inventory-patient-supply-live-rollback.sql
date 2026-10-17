@@ -1,0 +1,34 @@
+-- All synthetic identities, invoice/stock/financial fixtures roll back. No settings or real visits are changed.
+begin;
+do $$declare w uuid;me uuid;u uuid;person uuid;rp uuid;pr uuid;sv uuid;app uuid;vis uuid;it uuid;lot uuid;res jsonb;payload jsonb;ctx jsonb;k uuid:=gen_random_uuid();blocked boolean:=false;ref text:='TEST-PATIENT-SUPPLY-'||gen_random_uuid();location uuid:='00000000-0000-4000-8000-000000000001';begin
+ select id,owner_id into w,me from clinic_reception.workspaces where mode='live';
+ select user_id into u from public.admins where id=me and active;
+ if u is null then raise exception 'Active connected owner required';end if;
+ insert into public.patients(full_name,phone,created_by) values(ref,'01000000000',me) returning id into person;
+ insert into clinic_reception.patients(workspace_id,patient_id,file_no,name,phone,created_by) select w,id,patient_code,full_name,phone,me from public.patients where id=person returning id into rp;
+ insert into clinic_reception.providers(workspace_id,name,department,branch) values(w,ref,'اختبار متراجع','اختبار') returning id into pr;
+ insert into clinic_reception.services(workspace_id,code,name,department,price,minutes) values(w,ref,ref,'اختبار متراجع',100,20) returning id into sv;
+ insert into clinic_reception.appointments(workspace_id,patient_id,provider_id,service_id,starts_at,ends_at,created_by) values(w,rp,pr,sv,now(),now()+interval '20 minutes',me) returning id into app;
+ insert into clinic_reception.visits(workspace_id,appointment_id,patient_id,opened_by) values(w,app,rp,me) returning id into vis;
+ insert into clinic_reception.orders(workspace_id,visit_id,service_id,provider_id,price,snapshot,created_by) values(w,vis,sv,pr,100,jsonb_build_object('name',ref,'department','اختبار متراجع','bom','[]'::jsonb),me);
+ insert into public.inventory_items(sku,name,category,base_unit,units_per_pack,minimum_quantity,markup_percent,current_sale_price,use_standard_markup,created_by) values(ref,ref,'اختبار','قطعة',1,0,250,7,false,me) returning id into it;
+ insert into public.inventory_lots(item_id,lot_number,expiry_date,received_quantity,unit_cost,created_by) values(it,ref,current_date+365,10,2,me) returning id into lot;
+ insert into public.inventory_movements(item_id,location_id,lot_id,movement_type,quantity_delta,unit_cost,reference_type,created_by) values(it,location,lot,'opening_balance',10,2,'opening',me);
+ perform set_config('request.jwt.claim.sub',u::text,true);execute 'set local role authenticated';
+ ctx:=public.inventory_patient_supply_context(location,it,ref,null);
+ if jsonb_array_length(ctx->'patients')<>1 then raise exception 'Patient search mismatch';end if;
+ payload:=jsonb_build_object('workspace_id',w,'patient_id',person,'visit_id',vis,'invoice_id',null,'location_id',location,'item_id',it,'quantity',2,'sale_price',7,'note','technical rollback test only','repeat_confirmed',false,'patient_confirmed',true);
+ res:=public.inventory_dispense_patient(payload,k);
+ if public.inventory_dispense_patient(payload,k)<>res or (res->>'amount')::numeric<>14 or (res->>'due')::numeric<>14 then raise exception 'Charge or replay mismatch';end if;
+ begin perform public.inventory_dispense_patient(payload,gen_random_uuid());exception when others then if sqlerrm not like '%سبق صرف%' then raise;end if;blocked:=true;end;
+ if not blocked then raise exception 'Duplicate not blocked';end if;
+ ctx:=public.inventory_patient_supply_context(location,it,'',person);
+ if jsonb_array_length(ctx->'previous')<>1 then raise exception 'Previous issue not visible';end if;
+ execute 'reset role';
+ if public.inventory_location_balance(location,it)<>8 or (select count(*) from clinic_reception.patient_supplies where item_id=it)<>1 then raise exception 'Inventory or line duplicated';end if;
+ if (select cost from clinic_reception.patient_supplies where item_id=it)<>4 then raise exception 'Actual stock cost mismatch';end if;
+ if exists(select j.id from clinic_reception.journal j join clinic_reception.journal_lines l on l.entry_id=j.id where j.dimensions->>'patient_supply_id'=res->>'id' group by j.id having sum(l.debit)<>sum(l.credit)) then raise exception 'Unbalanced posting';end if;
+ if not exists(select 1 from public.inventory_movements where item_id=it and patient_invoice_ref='RX-'||(res->>'invoice_no') and quantity_delta=-2) then raise exception 'Native invoice stock link missing';end if;
+end $$;
+rollback;
+select jsonb_build_object('test','patient supply production transaction rolled back','remaining_fixture_items',(select count(*) from inventory_items where sku like 'TEST-PATIENT-SUPPLY-%'),'remaining_fixture_patients',(select count(*) from patients where full_name like 'TEST-PATIENT-SUPPLY-%'),'anon_write_blocked',not has_function_privilege('anon','public.inventory_dispense_patient(jsonb,uuid)','execute'));

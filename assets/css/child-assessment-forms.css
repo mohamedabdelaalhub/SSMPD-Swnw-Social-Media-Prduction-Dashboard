@@ -1,0 +1,12 @@
+.ca-modal{max-width:900px;width:calc(100vw - 32px)}
+.ca-form fieldset{border:1px solid var(--c-border,#e4e9f2);border-radius:12px;margin:16px 0;padding:14px;min-width:0}
+.ca-form legend{padding:0 8px;font-weight:700;font-size:15px}
+.ca-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.ca-form .field{min-width:0;margin:0 0 12px}.ca-form label{display:block;line-height:1.8}
+.ca-form input,.ca-form textarea,.ca-form select{width:100%;font:inherit;box-sizing:border-box;min-width:0}
+.ca-matrix{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.ca-matrix-row{border:1px solid var(--c-border,#e4e9f2);border-radius:10px;padding:12px;display:grid;gap:7px;align-content:start}
+.ca-matrix-row b{line-height:1.8}.ca-answer p{white-space:pre-wrap;overflow-wrap:anywhere;margin:4px 0 12px}
+.ca-plan-row{border-bottom:1px solid var(--c-border,#e4e9f2);padding:12px 0;margin-bottom:12px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.ca-hint{font-size:12px;color:var(--c-muted,#6b7788)}.ca-record{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 0;border-bottom:1px solid var(--c-border,#e4e9f2)}
+@media(max-width:650px){.ca-fields,.ca-matrix,.ca-plan-row{grid-template-columns:minmax(0,1fr)}.ca-form fieldset{padding:10px}.ca-modal{width:calc(100vw - 20px)}}

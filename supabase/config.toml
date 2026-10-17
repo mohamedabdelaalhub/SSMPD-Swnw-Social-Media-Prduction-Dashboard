@@ -62,3 +62,16 @@ verify_jwt = false
 # dashboard by a super admin / general manager (real Supabase Auth JWT validated inside the function), so it must
 # NOT go through platform JWT verification.
 verify_jwt = false
+
+[functions.operations-ingest]
+# Server-to-server HMAC with five-minute timestamp window, checked inside.
+verify_jwt = false
+
+[functions.operations-advisor]
+# Staff Auth token and management role checked inside the function.
+verify_jwt = false
+
+[functions.booking-messages-outbox]
+# Existing booking agent integration secret; the function verifies the
+# X-Booking-Sync-Secret header before calling service-only queue RPCs.
+verify_jwt = false

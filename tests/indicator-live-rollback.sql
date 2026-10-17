@@ -1,0 +1,40 @@
+-- Synthetic integration test on live schema. Entire transaction is rolled back.
+begin;
+do $test$
+declare manager_id uuid; manager_user uuid; worker_id uuid; worker_user uuid; rid uuid; iid uuid; pid uuid; aid uuid; tid uuid; child uuid; detail jsonb; result jsonb;
+begin
+ select id,user_id into manager_id,manager_user from public.admins where active and role='super_admin' limit 1;
+ select id,user_id into worker_id,worker_user from public.admins where active and role='page_manager' and user_id is not null limit 1;
+ if manager_user is null or worker_user is null then raise exception 'Test identities unavailable';end if;
+ perform set_config('request.jwt.claim.sub',manager_user::text,true);
+ result:=public.operations_ingest_snapshot(jsonb_build_object('schema_version',1,'fingerprint',repeat('a',64),'branch','اختبار معاملة','scope','اختبار تراجع','title','اختبار قاعدة البيانات','period_from','2026-09-01','period_to','2026-09-30','kpis','{}'::jsonb,'risks','[{"id":"activation_rollback","title":"مشكلة تجريبية","sev":"high","finding":"بيانات اختبار"}]'::jsonb,'recommendations','[]'::jsonb,'plan','[]'::jsonb),now(),manager_user::text);
+ rid:=(result->>'id')::uuid;
+ select id into iid from public.operational_issues where latest_report_id=rid;
+ pid:=public.task_create_project('اختبار تفعيل سيُتراجع عنه','اختبار تقني',manager_id,'[]'::jsonb);
+ aid:=public.operations_create_action(iid,pid,'مهمة اختبار تقنية','جمع مخرج اختبار','مخرج قابل للتحقق',worker_id,now()+interval '3 days',(now()+interval '4 days')::date,'operations','sono','',jsonb_build_array(jsonb_build_object('title','مرحلة اختبار','output','مخرج المرحلة','due_at',now()+interval '2 days')));
+ select task_id into tid from public.operational_actions where id=aid;
+ select id into child from public.tasks where parent_task_id=tid;
+ if child is null then raise exception 'Phase missing';end if;
+ perform set_config('request.jwt.claim.sub',worker_user::text,true);
+ if not exists(select 1 from public.task_list_visible() where id=tid) then raise exception 'Task not visible to assignee';end if;
+ if public.operations_task_context(child)->>'issue_title'<>'مشكلة تجريبية' then raise exception 'Phase context missing';end if;
+ if public.operations_manager() then raise exception 'Employee unexpectedly manager';end if;
+ perform public.task_set_status(child,'in_progress','بدأ تنفيذ الاختبار');
+ perform public.task_set_status(child,'review','مخرج اختبار للمراجعة');
+ perform set_config('request.jwt.claim.sub',manager_user::text,true);
+ perform public.task_review(child,true,'اعتماد اختبار');
+ perform set_config('request.jwt.claim.sub',worker_user::text,true);
+ perform public.task_set_status(tid,'review','تمت مراحل الاختبار');
+ perform set_config('request.jwt.claim.sub',manager_user::text,true);
+ perform public.task_review(tid,true,'تم التحقق');
+ detail:=public.operations_issue_detail(iid);
+ if detail#>>'{actions,0,task_status}'<>'done' or detail#>>'{actions,0,first_submitted_at}' is null then raise exception 'Timing or acceptance failed';end if;
+ if public.operations_home_snapshot()->>'generated_at' is null then raise exception 'Home snapshot failed';end if;
+ perform set_config('request.jwt.claim.sub',worker_user::text,true);
+ perform set_config('role','authenticated',true);
+ if exists(select 1 from public.operational_reports) then raise exception 'Employee can read financial snapshots';end if;
+ if not public.task_can_access(tid) then raise exception 'Employee lost own task access';end if;
+ perform set_config('role','postgres',true);
+end $test$;
+select 'PASS live task creation, phase workflow, employee visibility/RLS, timing and home snapshot. All test writes rolled back.' result;
+rollback;

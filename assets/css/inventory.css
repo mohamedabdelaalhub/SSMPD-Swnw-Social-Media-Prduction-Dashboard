@@ -55,3 +55,24 @@
 
 .inv-supply-list{display:grid;gap:12px;margin-top:14px;min-width:0}.inv-supply-request{border:1px solid #dfe4ea;border-radius:12px;padding:14px;min-width:0;overflow-wrap:anywhere}.inv-supply-request details{margin-top:12px}.inv-supply-request summary{cursor:pointer;color:#14399c}.inv-supply-request p{line-height:1.7}.inv-supply-line{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) auto;gap:8px;align-items:end;margin-bottom:12px}.inv-supply-line label{display:grid;gap:5px;min-width:0}.inv-subnav .btn[aria-pressed="true"]{background:#eaf0ff;border-color:#14399c;font-weight:700}
 @media(max-width:640px){.inv-supply-line{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.inv-supply-line label:first-child{grid-column:1/-1}.inv-supply-request{padding:10px}.inv-supply-request .inv-tools button{white-space:normal}}
+
+/* Purchase catalog defaults remain separate from the variable delivery data. */
+.inv-request-line{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;border:1px solid #dfe4ea;border-radius:12px;padding:14px;margin:12px 0;align-items:start}
+.inv-request-line>label,.inv-receive>label{display:grid;gap:5px;min-width:0;align-content:start;font-size:13px}
+.inv-request-line>[data-catalog-preview],.inv-request-line>[data-batch-dates],.inv-receive>[data-batch-dates]{grid-column:1/-1;min-width:0;margin:0}
+.inv-catalog-preview{background:#f5f7fb;border:1px solid #dfe4ea;border-radius:10px;padding:12px}
+.inv-catalog-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.inv-catalog-values{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:10px 0 0}
+.inv-catalog-values div{min-width:0}.inv-catalog-values dt{font-size:12px;color:#687482}.inv-catalog-values dd{margin:4px 0 0;overflow-wrap:anywhere}
+.inv-receive{grid-template-columns:repeat(3,minmax(0,1fr));align-items:start;gap:12px;padding:14px;border:1px solid #dfe4ea;border-radius:12px;margin:12px 0}
+.inv-receive input,.inv-request-line input,.inv-request-line select{height:42px;box-sizing:border-box;width:100%;align-self:start}
+.inv-modal [data-batch-dates]{grid-template-columns:repeat(3,minmax(0,1fr));align-items:start}.inv-modal [data-batch-dates] small{grid-column:1/-1}
+.inv-modal [data-batch-dates] label{min-width:0}.inv-batch-help{font-size:13px;line-height:1.8;color:#536170}
+.inv-request-detail{padding:12px;border:1px solid #dfe4ea;border-radius:10px;overflow-wrap:anywhere}.inv-request-detail p{line-height:1.8}
+@media(max-width:640px){.inv-request-line,.inv-receive,.inv-modal [data-batch-dates]{grid-template-columns:minmax(0,1fr)}.inv-catalog-values{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+.inv-receive>[data-receive-catalog]{grid-column:1/-1;min-width:0}.inv-catalog-preview summary{cursor:pointer;font-size:13px;line-height:1.7}.inv-catalog-preview[open] summary{margin-bottom:12px}
+.inv-modal [data-receipt-form]{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.inv-modal [data-receipt-form]>label{display:grid;gap:6px;min-width:0;font-size:13px}.inv-modal [data-receipt-form]>label:nth-of-type(3),.inv-modal [data-receipt-form]>p,.inv-modal [data-receipt-form]>.inv-receive-list{grid-column:1/-1;margin:0}.inv-modal [data-receipt-form]>label input{height:42px;width:100%;box-sizing:border-box}@media(max-width:640px){.inv-modal [data-receipt-form]{grid-template-columns:minmax(0,1fr)}}
+.inv-lot-entry{display:grid;gap:8px;min-width:0;align-content:start}.inv-lot-entry label{min-width:0}.inv-lot-entry small{font-size:12px;color:#687482;line-height:1.7}.inv-modal .inv-lot-entry .inv-check{display:flex;align-items:flex-start;gap:6px}.inv-modal .inv-lot-entry input[type=checkbox],.inv-modal input[name=use_standard],.inv-modal [data-standard-form] input[type=checkbox]{width:16px;height:16px;flex:none}.inv-tracking-code{display:inline-block;user-select:all;white-space:nowrap;font-size:12px}.inv-modal [data-standard-form]>label{display:grid;gap:8px}.inv-modal [data-standard-form] .inv-check{display:flex;align-items:center}.inv-modal [data-standard-form] p{line-height:1.8}
+
+.inv-usage-result{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;border:1px solid #2f7d5c;background:#eef7f1;color:#21553f;padding:14px;border-radius:10px;margin-top:14px;line-height:1.8}.inv-usage-error{border-color:#d0402a;background:#fff3ef;color:#9b2e1d}.inv-usage-result .btn{white-space:normal}.inv-modal [aria-invalid=true],.inv-shell [aria-invalid=true]{border-color:#d0402a}

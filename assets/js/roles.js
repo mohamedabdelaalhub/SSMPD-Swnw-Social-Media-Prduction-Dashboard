@@ -30,6 +30,7 @@
     comments: ["page_manager", "approver", "general_manager", "super_admin"],
     clinic_info: ["page_manager", "customer_service", "general_manager", "super_admin"],
     performance: ["page_manager", "approver", "general_manager", "super_admin"],
+    indicator_reports: ["general_manager", "super_admin"],
     staff_kpi: ["general_manager", "super_admin"],
     my_kpi: ["page_manager", "designer", "approver", "reception", "customer_service", "general_manager"],
     archive: ["page_manager", "designer", "approver", "general_manager", "super_admin"],
@@ -37,6 +38,8 @@
     admin: ["super_admin"],
     metaads: ["page_manager", "approver", "general_manager", "super_admin"],
     mediabuyer: ["page_manager", "approver", "general_manager", "super_admin"],
+    reception_services: ["general_manager", "super_admin", "reception", "customer_service", "nursing", "sono_doctor", "accountant", "financial_manager"],
+    booking_cash: ["reception", "general_manager", "super_admin"],
     accounting: ["general_manager", "super_admin"],
     tasks: ["page_manager", "designer", "approver", "general_manager", "super_admin", "reception", "customer_service", "nursing", "sono_doctor", "contract_manager"],
     contracting_entities: ["contract_manager", "general_manager", "super_admin"],
@@ -97,6 +100,9 @@
     // has_archive_access المنفصلة عن الرول — لسه بيقبل الرول كـ string لوحده كمان
     canSeeTab: function (adminOrRole, tab) {
       var admin = normalizeAdmin(adminOrRole);
+      if(tab==="accounting")return Roles.canModuleAction(admin,"accounting","view") || Roles.canSeeTab(admin,"inventory") && !(admin.inventory_assigned===false && admin.inventory_supply_access===true);
+      if(tab==="booking_cash" && Roles.isControlledFinance(admin))return Roles.canModuleAction(admin,"accounting","view");
+      if(tab==='reception_services'&&Roles.isControlledFinance(admin)&&!Roles.hasAnyRole(admin,['super_admin','general_manager','reception','customer_service','nursing','sono_doctor']))return Roles.canModuleAction(admin,'accounting','view');
       if(tab==="home")return admin.active!==false && !!(admin.id||admin.role);
       if(tab==="inventory" && typeof admin.inventory_assigned==='boolean')return admin.inventory_assigned || admin.inventory_supply_access===true || Roles.hasAnyRole(admin,["super_admin","general_manager"]);
       if (Roles.isControlledFinance(admin) && ["accounting","contracting_entities","tasks"].includes(tab))return Roles.canModuleAction(admin,tab,'view');

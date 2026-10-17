@@ -1,0 +1,11 @@
+const fs=require('fs'),vm=require('vm'),assert=require('node:assert/strict'),ts=require('typescript');
+(async()=>{const {signature,verified,checkedEnvelope}=await import('../supabase/functions/operations-ingest/contract.mjs');let handler,calls=0,useVault=false,vaultCalls=0;
+let code=fs.readFileSync(__dirname+'/../supabase/functions/operations-ingest/index.ts','utf8').replace(/^import .*;\n/gm,'');code=ts.transpileModule(code,{compilerOptions:{target:ts.ScriptTarget.ES2022}}).outputText;
+const secret='test-only-key-with-at-least-thirty-two-characters';const context={Request,Response,JSON,Number,Date,verified,checkedEnvelope,Deno:{env:{get:k=>k==='OPERATIONS_BRIDGE_SECRET'&&useVault?null:secret},serve:f=>handler=f},createClient:()=>({rpc:async(name)=>{if(name==='operations_server_secrets'){vaultCalls++;return {data:{bridge:secret}};}calls++;return {data:{id:'r',duplicate:false},error:null}}})};vm.runInNewContext(code,context);
+let r=await handler(new Request('https://example.invalid',{method:'POST',body:'{}'}));assert.equal(r.status,401);assert.equal(calls,0);
+const envelope={source:'raocrmssjqsozibniujc',approved_by:'00000000-0000-4000-8000-000000000001',approved_at:new Date().toISOString(),snapshot:{schema_version:1,fingerprint:'f'.repeat(64),branch:'فرع أ',scope:'الحجز',title:'تقرير',period_from:'2026-09-01',period_to:'2026-09-30',kpis:{revenue:100},risks:[],recommendations:[],plan:[]}};
+const body=JSON.stringify(envelope),stamp=String(Date.now()),sig=await signature(secret,stamp+'.'+body);
+r=await handler(new Request('https://example.invalid',{method:'POST',headers:{'x-operations-time':stamp,'x-operations-signature':sig},body}));assert.equal(r.status,200);assert.equal((await r.json()).ok,true);assert.equal(calls,1);
+r=await handler(new Request('https://example.invalid',{method:'POST',headers:{'x-operations-time':stamp,'x-operations-signature':sig},body:body+' '}));assert.equal(r.status,401);assert.equal(calls,1);
+useVault=true;r=await handler(new Request('https://example.invalid',{method:'POST',headers:{'x-operations-time':stamp,'x-operations-signature':sig},body}));assert.equal(r.status,200);assert.equal(vaultCalls,1);assert.equal(calls,2);
+console.log('PASS ingress handler: no anonymous DB calls, authenticated signed delivery, tampering rejection');})().catch(e=>{console.error(e);process.exit(1)});

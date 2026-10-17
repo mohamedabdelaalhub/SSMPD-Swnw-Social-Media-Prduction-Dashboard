@@ -13,10 +13,10 @@
   var PRANK={urgent:0,high:1,normal:2,low:3};
   function prank(t){var r=PRANK[t.priority];return r===undefined?2:r;}
   function dayStart(d){return new Date(d.getFullYear(),d.getMonth(),d.getDate());}
-  function isOverdue(t){return t.status!=="done"&&!!t.due_at&&new Date(t.due_at)<new Date();}
+  function isOverdue(t){return t.status!=="done"&&t.status!=="review"&&!!t.due_at&&new Date(t.due_at)<new Date();}
   function daysLeft(t){if(!t.due_at||t.status==="done")return null;var d=new Date(t.due_at);if(isNaN(d))return null;return Math.round((dayStart(d)-dayStart(new Date()))/86400000);}
   function dayWord(n){return n===1?"يوم":(n===2?"يومين":(n<=10?n+" أيام":n+" يوم"));}
-  function dueNote(t){var n=daysLeft(t);if(n===null)return "";if(n<0)return " · متأخرة "+dayWord(-n);if(n===0)return " · ينتهي النهارده";if(n===1)return " · ينتهي بكرة";return " · باقي "+dayWord(n);}
+  function dueNote(t){if(t.status==="review")return " · بانتظار مراجعة المدير";var n=daysLeft(t);if(n===null)return "";if(n<0)return " · متأخرة "+dayWord(-n);if(n===0)return " · ينتهي النهارده";if(n===1)return " · ينتهي بكرة";return " · باقي "+dayWord(n);}
   function dueTime(t){return t.due_at?new Date(t.due_at).getTime():Infinity;}
   function sortTasks(list,mode){
     return list.slice().sort(function(x,y){
@@ -36,23 +36,21 @@
   function fileSize(n){return n>=1048576?(n/1048576).toFixed(1).replace(/\.0$/,"")+" MB":Math.max(1,Math.round(n/1024))+" KB";}
   function store(key,value){try{if(value===undefined)return window.localStorage.getItem("ssmpd.tasks."+key);window.localStorage.setItem("ssmpd.tasks."+key,value);}catch(e){}return null;}
   var NOTE={
-    progress:{title:"تسجيل تحديث",start:"بدء المهمة",label:"إيه اللي اتعمل أو هتشتغل عليه؟",hint:"مثال: خلّصت جرد الرف الأول وهبدأ الرف التاني",required:true,button:"حفظ التحديث"},
+    progress:{title:"حفظ تقدمي",start:"ابدأ المهمة",label:"إيه اللي اتعمل أو هتشتغل عليه؟",hint:"مثال: خلّصت جرد الرف الأول وهبدأ الرف التاني",required:true,button:"حفظ تقدمي"},
     submit:{title:"إرسال للمراجعة",label:"ملخص الإنجاز",hint:"مثال: رفعت الشيت كامل على المنصة وراجعت الأرقام",required:true,button:"إرسال للمراجعة"},
-    blocked:{title:"تحديد المهمة كمتوقفة",label:"سبب التوقف",hint:"مثال: مستني ردّ المورد على الأسعار",required:true,button:"تحديد كمتوقفة"},
+    blocked:{title:"محتاج مساعدة",label:"إيه اللي موقفك؟",hint:"مثال: مستني ردّ المورد على الأسعار",required:true,button:"طلب مساعدة"},
     approve:{title:"اعتماد وإكمال المهمة",label:"ملاحظة الاعتماد (اختياري)",hint:"المهمة هتتقفل كمكتملة بعد الاعتماد.",required:false,button:"اعتماد وإكمال",confirm:true},
-    return:{title:"إرجاع المهمة للتعديل",label:"المطلوب تعديله",hint:"اكتب بوضوح إيه اللي ناقص عشان الموظف يعرف يعدّل",required:true,button:"إرجاع للتعديل"},
+    return:{title:"طلب تعديل",label:"المطلوب تعديله",hint:"اكتب بوضوح إيه اللي ناقص عشان الموظف يعرف يعدّل",required:true,button:"طلب تعديل"},
     archive:{title:"أرشفة المشروع",label:"",hint:"المشروع ومهامه هيختفوا من الشاشة الأساسية، وتقدر ترجّعهم من زر \"عرض المؤرشفة\".",required:false,button:"أرشفة المشروع",confirm:true,noText:true},
     unarchive:{title:"إلغاء أرشفة المشروع",label:"",hint:"المشروع ومهامه هيرجعوا للشاشة الأساسية.",required:false,button:"إلغاء الأرشفة",confirm:true,noText:true}
   };
   function actionsHtml(t,admin,mayManage){
     var html="",own=t.assignee_id===admin.id,R=window.SSMPDRoles;
     if(R.canModuleAction(admin,"tasks","update")&&own&&t.status!=="done"&&t.status!=="review"){
-      if(t.status==="todo"||t.status==="revision") html+='<button class="btn btn-primary" data-action="progress" data-id="'+t.id+'">بدء المهمة</button>';
-      else html+='<button class="btn" data-action="progress" data-id="'+t.id+'">تسجيل تحديث</button><button class="btn btn-primary" data-action="submit" data-id="'+t.id+'">إرسال للمراجعة</button>';
-      html+='<button class="btn" data-action="blocked" data-id="'+t.id+'">تحديد كمتوقفة</button>';
+      html+='<button class="btn btn-primary" data-action="open-task" data-id="'+t.id+'">'+(t.status==="todo"?'ابدأ المهمة':t.status==="revision"?'عدّل المطلوب':'كمّل الشغل')+'</button>';
     }
     if(R.canModuleAction(admin,"tasks","update")&&mayManage&&t.status==="review"){
-      html+='<button class="btn btn-primary" data-action="approve" data-id="'+t.id+'">اعتماد وإكمال</button><button class="btn btn-warn" data-action="return" data-id="'+t.id+'">إرجاع للتعديل</button>';
+      html+='<button class="btn btn-primary" data-action="approve" data-id="'+t.id+'">اعتماد وإكمال</button><button class="btn btn-warn" data-action="return" data-id="'+t.id+'">طلب تعديل</button>';
     }
     return html;
   }
@@ -93,7 +91,8 @@
     if(!window.SSMPDRoles.canModuleAction(window.SSMPDAuth.currentAdmin,"tasks","view")){el.innerHTML="<p>ليس لديك صلاحية عرض المهام.</p>";return;}
     var admin=window.SSMPDAuth.currentAdmin;
     var isAdmin=allManager(admin);
-    var state={projects:[],tasks:[],people:[],notifications:[],archived:{},modal:"",error:"",filter:"all",view:(["board","calendar"].indexOf(store("view"))>=0?store("view"):"list"),checkCounts:{},checklist:[],checkTask:"",calMonth:(function(){var d=new Date();return new Date(d.getFullYear(),d.getMonth(),1);})(),sort:(["smart","manual","due","priority","updated"].indexOf(store("sort"))>=0?store("sort"):(isAdmin?"smart":"manual")),q:"",fProject:"",fAssignee:"",showArchived:false,tab:(["projects","tasks","done","comments","team"].indexOf(store("tab"))>=0?store("tab"):"projects"),openProject:"",pFilter:"all",expanded:{},membersOpen:{},note:null,deleteTarget:null,viewId:"",historyTask:"",history:[],historyAtts:{},pendingFiles:[]};
+    var state={projects:[],tasks:[],people:[],notifications:[],archived:{},modal:"",error:"",filter:"all",view:(["board","calendar"].indexOf(store("view"))>=0?store("view"):"list"),checkCounts:{},checklist:[],checkTask:"",calMonth:(function(){var d=new Date();return new Date(d.getFullYear(),d.getMonth(),1);})(),sort:(["smart","manual","due","priority","updated"].indexOf(store("sort"))>=0?store("sort"):(isAdmin?"smart":"manual")),q:"",fProject:"",fAssignee:"",showArchived:false,tab:(isAdmin?(["projects","tasks","done","comments","team"].indexOf(store("tab"))>=0?store("tab"):"projects"):"mine"),openProject:"",pFilter:"all",expanded:{},membersOpen:{},note:null,deleteTarget:null,viewId:"",historyTask:"",history:[],historyAtts:{},pendingFiles:[],notice:""};
+    var work=window.SSMPDTaskWork.create({el:el,admin:admin,getTask:function(id){return state.tasks.find(function(t){return t.id===id;});},onRedraw:function(){draw();},onSaved:function(message){state.notice=message;state.modal="";return refresh();}});
     function refresh(){return window.SSMPDDb.taskRefreshOverdue().catch(function(){return 0;}).then(function(){return Promise.all([
       window.SSMPDDb.taskListProjects(),window.SSMPDDb.taskListVisible(),window.SSMPDDb.taskPeople(),
       window.SSMPDDb.taskListNotifications(),
@@ -137,13 +136,12 @@
       var parent=t.parent_task_id?state.tasks.find(function(x){return x.id===t.parent_task_id;}):null,kids=state.tasks.filter(function(x){return x.parent_task_id===t.id;});
       var h='<div class="tv-detail g-'+k+'"><div class="tv-d-top"><span class="tv-pill g-'+k+'">'+esc(late?"متأخرة":(STATUS[t.status]||t.status))+'</span><span class="tv-crumb">'+esc(pr.title||t.project_title||"مشروع")+(parent?' › <button type="button" class="tv-link" data-action="open-task" data-id="'+parent.id+'">'+esc(parent.title)+'</button>':"")+'</span></div><h2 class="tv-d-title">'+esc(t.title)+'</h2>';
       h+='<div class="tv-facts"><div><small>المسؤول</small><b>'+esc(t.assignee_name||"—")+'</b></div><div><small>موعد التسليم</small><b class="'+(late?"late":"")+'">'+(t.due_at?date(t.due_at):"بدون موعد")+'</b>'+(dueNote(t)&&t.status!=="done"?'<em>'+esc(dueNote(t).replace(/^ · /,""))+'</em>':"")+'</div><div><small>الأولوية</small><b>'+esc(PRIORITY[t.priority]||"عادية")+'</b></div><div><small>آخر تحديث</small><b>'+esc(relTime(t.updated_at)||"—")+'</b></div></div>';
-      if(t.return_note)h+='<div class="tv-callout"><b>ملاحظة المدير</b><p>'+esc(t.return_note)+'</p></div>';
-      if(t.description)h+='<section class="tv-sec"><h4>المطلوب</h4><p>'+esc(t.description)+'</p></section>';
-      if(t.expected_output)h+='<section class="tv-sec"><h4>النتيجة المتوقعة</h4><p>'+esc(t.expected_output)+'</p></section>';
+      h+='<section class="tv-sec tw-required"><h3>المطلوب منك</h3><p>'+esc(t.description||'راجع المطلوب مع مدير المهمة قبل التسليم.')+'</p><h4>شكل التسليم</h4><p>'+esc(t.expected_output||'اكتب نتيجة شغلك أو أرفق ملفًا أو رابطًا يوضح التنفيذ.')+'</p></section>';
       if(t.recurrence_active)h+='<p class="tv-note">↻ تتكرر كل '+esc(t.recurrence_interval_value)+' '+esc(({day:"يوم",week:"أسبوع",month:"شهر"})[t.recurrence_interval_unit]||"فترة")+'</p>';
-      if(kids.length)h+='<section class="tv-sec"><h4>المهام الفرعية <span>'+kids.filter(function(x){return x.status==="done";}).length+' من '+kids.length+'</span></h4><div class="tv-sublist">'+sortTasks(kids,"manual").map(function(x){return taskRow(x,null,{});}).join("")+'</div></section>';
+      if(kids.length){var ordered=sortTasks(kids,"manual"),current=ordered.find(function(x){return x.status!=="done";}),finished=ordered.filter(function(x){return x.status==="done";});h+='<section class="tv-sec tw-stages"><h3>مراحل المهمة <small>'+finished.length+' من '+kids.length+' معتمدة</small></h3>'+(current?'<p>المرحلة الحالية حسب ترتيب المدير: '+esc(current.title)+'</p>':'<p>كل المراحل معتمدة.</p>')+ordered.filter(function(x){return x.status!=="done";}).map(function(x,i){return '<div class="tw-stage'+(x===current?' current':'')+'"><span>'+ (ordered.indexOf(x)+1) +'</span>'+taskRow(x,null,{})+'</div>';}).join("")+(finished.length?'<details><summary>المراحل المنتهية ('+finished.length+')</summary>'+finished.map(function(x){return taskRow(x,null,{});}).join("")+'</details>':'')+'</section>';}
+      h+=work.html(t,kids);
       h+='<div class="tv-tools"><button type="button" class="tv-tool" data-action="checklist" data-id="'+t.id+'"><span>☑ القائمة الصغيرة</span>'+(cc&&cc.total?'<b>'+cc.done+'/'+cc.total+'</b>':"")+'</button><button type="button" class="tv-tool" data-action="history" data-id="'+t.id+'"><span>💬 التعليقات والسجل</span></button></div>';
-      var pa=actionsHtml(t,admin,may),ma=moreActionsHtml(t,admin,may);
+      var pa=t.assignee_id===admin.id&&t.status!=="review"?"":actionsHtml(t,admin,may),ma=moreActionsHtml(t,admin,may);
       if(pa||ma)h+='<div class="tv-d-actions">'+(pa?'<div class="tv-primary">'+pa+'</div>':"")+(ma?'<div class="tv-more">'+ma+'</div>':"")+'</div>';
       return h+'</div>';
     }
@@ -281,9 +279,14 @@
       items.push(["notices","إشعارات جديدة",unread]);
       return '<div class="tv-needs" role="group" aria-label="محتاج منك دلوقتي">'+items.map(function(i){return '<button type="button" class="tv-need n-'+i[0]+(i[2]?" has":"")+'" data-action="stat" data-id="'+i[0]+'"><b>'+i[2]+'</b><span>'+i[1]+'</span></button>';}).join("")+'</div>';
     }
+    function mineHtml(){
+      var mine=sortTasks(baseTasks().filter(function(t){return t.assignee_id===admin.id&&t.status!=="done";}),"manual"),todo=mine.filter(function(t){return t.status!=="review";}),waiting=mine.filter(function(t){return t.status==="review";});
+      function cards(list){return list.map(function(t,i){var caption=t.status==="review"?"بانتظار مراجعة المدير":t.status==="todo"?"ابدأ المهمة":t.status==="revision"?"عدّل المطلوب":"كمّل الشغل";return '<article class="tw-card s-'+esc(t.status)+'" data-task-id="'+t.id+'"><div class="tw-card-top"><span>'+esc(t.parent_title||t.project_title||projectOf(t).title||"مهمة")+'</span><span class="tv-pill g-'+seg(t)+'">'+esc(STATUS[t.status])+'</span></div><h2>'+esc(t.title)+'</h2><p>'+esc(t.description||t.expected_output||"افتح المهمة لمراجعة المطلوب.")+'</p><div class="tw-card-bottom"><span>'+esc(t.due_at?"التسليم "+date(t.due_at):"بدون موعد")+'</span><button class="btn btn-primary" data-action="open-task" data-id="'+t.id+'">'+caption+'</button></div></article>';}).join("");}
+      return '<section class="tv-body"><p class="tw-order">ابدأ من أول مهمة. الترتيب حسب ترتيب المدير ثم موعد التسليم.</p>'+(todo.length?'<div class="tw-cards">'+cards(todo)+'</div>':'<div class="tv-empty"><h3>مفيش شغل مطلوب منك دلوقتي</h3><p>المهام الجديدة هتظهر هنا.</p></div>')+(waiting.length?'<details class="tw-waiting"><summary>بانتظار مراجعة المدير ('+waiting.length+')</summary><div class="tw-cards">'+cards(waiting)+'</div></details>':'')+'</section>';
+    }
     function tabsBar(base,shownCount){
       var open=base.filter(function(t){return t.status!=="done";}).length,done=base.filter(function(t){return t.status==="done";}).length;
-      var items=[["projects","المشاريع",shownCount],["tasks","كل المهام",open],["done","المنجزة",done],["comments","التعليقات",newCommentsIn(base)||""],["team","الفريق",""]];
+      var items=[["mine","مهامي",base.filter(function(t){return t.assignee_id===admin.id&&t.status!=="done";}).length],["projects","المشاريع",shownCount],["tasks","كل المهام",open],["done","المنجزة",done],["comments","المناقشة",newCommentsIn(base)||""]];if(isAdmin||base.some(function(t){return t.can_manage;}))items.push(["team","الفريق",""]);
       return '<nav class="tv-tabs" role="tablist">'+items.map(function(i){return '<button type="button" role="tab" class="tv-tab'+(state.tab===i[0]?" on":"")+'" data-action="tab" data-id="'+i[0]+'" aria-selected="'+(state.tab===i[0])+'">'+i[1]+(i[2]!==""?' <b>'+i[2]+'</b>':"")+'</button>';}).join("")+'</nav>';
     }
     function teamTable(base,since){
@@ -299,6 +302,7 @@
       return '<div class="tsk-team"><table><thead><tr><th>الموظف</th><th>مفتوحة</th><th>تحديثات الأسبوع</th><th>اكتملت</th><th>بانتظار المراجعة</th><th>متأخرة</th></tr></thead><tbody>'+list.map(function(r){return '<tr><td data-label="الموظف"><b>'+esc(r.name)+'</b></td><td data-label="مفتوحة">'+r.open+'</td><td data-label="تحديثات الأسبوع">'+r.updated+'</td><td data-label="اكتملت">'+r.done+'</td><td data-label="بانتظار المراجعة">'+r.review+'</td><td data-label="متأخرة" class="'+(r.late?"late":"")+'">'+r.late+'</td></tr>';}).join("")+'</tbody></table></div>';
     }
     function draw(){
+      work.capture();
       var unread=state.notifications.filter(function(n){return !n.read_at;}).length;
       var base=baseTasks();
       var since=new Date(Date.now()-7*86400000);
@@ -309,9 +313,11 @@
       var personOpts=state.people.map(function(p){return '<option value="'+p.id+'">'+esc(p.name||p.email)+'</option>';}).join("");
       var banner=state.error?'<div class="tsk-error">'+esc(state.error)+'</div>':"";
       var shownProjects=state.projects.filter(function(p){return state.showArchived||!state.archived[p.id];});
-      var html='<section class="tsk-page tv" dir="rtl"><div class="tv-head"><div><h1>المهام والمشاريع</h1><p>اعرف إيه اللي خلص وإيه اللي لسه شغّال، من غير زحمة.</p></div><div class="tsk-head-actions"><button class="btn btn-quiet tv-bell" data-action="notifications" aria-label="الإشعارات">🔔'+(unread?' <b class="tsk-badge">'+unread+'</b>':"")+'</button>'+(canCreate?'<button class="btn btn-primary" data-action="new-project">+ مشروع / خطة عمل</button>':"")+'</div></div>'+banner;
-      html+=needsStrip(base,unread)+tabsBar(base,shownProjects.length);
-      if(state.tab==="projects"){
+      var html='<section class="tsk-page tv" dir="rtl"><div class="tv-head"><div><h1>'+(isAdmin?"المهام والمشاريع":"مهامي")+'</h1><p>'+(isAdmin?"تابع التنفيذ وراجع الشغل المسلّم.":"شوف المطلوب منك، كمّل شغلك، وسلّمه للمدير.")+'</p></div><div class="tsk-head-actions"><button class="btn btn-quiet tv-bell" data-action="notifications" aria-label="الإشعارات">🔔'+(unread?' <b class="tsk-badge">'+unread+'</b>':"")+'</button>'+(canCreate?'<button class="btn btn-primary" data-action="new-project">+ مشروع / خطة عمل</button>':"")+'</div></div>'+banner;
+      if(state.notice)html+='<div class="tw-success" role="status">'+esc(state.notice)+'</div>';
+      html+=(isAdmin?needsStrip(base,unread):"")+tabsBar(base,shownProjects.length);
+      if(state.tab==="mine"){html+=mineHtml();}
+      else if(state.tab==="projects"){
         var op=state.openProject&&state.projects.find(function(x){return x.id===state.openProject;});
         if(state.openProject&&!op)state.openProject="";
         html+='<section class="tv-body">'+(op?projectPage(op):projectsHome())+'</section>';
@@ -342,7 +348,7 @@
       if(state.modal==="task"){
         var projectId=state.modalProject||"";
         var parentId=state.modalParent||"";
-        html+=modal(parentId?"إضافة مهمة فرعية":"إضافة مهمة",'<form data-form="task"><input type="hidden" name="project_id" value="'+esc(projectId)+'"><input type="hidden" name="parent_task_id" value="'+esc(parentId)+'"><label>عنوان المهمة<input name="title" required maxlength="180"></label><label>وصف المطلوب<textarea name="description" rows="3"></textarea></label><label>النتيجة المتوقعة<textarea name="expected_output" rows="2"></textarea></label><label>المسؤول<select name="assignee_id" required>'+personOpts+'</select></label><div class="tsk-form-row"><label>موعد التسليم<input type="date" name="due_at"></label><label>الأولوية<select name="priority"><option value="normal">عادية</option><option value="low">منخفضة</option><option value="high">عالية</option><option value="urgent">عاجلة</option></select></label></div>'+repeatFields(null)+'<footer><button class="btn btn-primary">إسناد المهمة</button><button type="button" class="btn" data-action="close-modal">إلغاء</button></footer></form>');
+        html+=modal(parentId?"إضافة مهمة فرعية":"إضافة مهمة",'<form data-form="task"><input type="hidden" name="project_id" value="'+esc(projectId)+'"><input type="hidden" name="parent_task_id" value="'+esc(parentId)+'"><label>عنوان المهمة<input name="title" required maxlength="180"></label><label>المطلوب من الموظف<textarea name="description" rows="3" required placeholder="مثال: حددي فئات الجمهور واحتياجات كل فئة للخدمات المسندة إليك"></textarea></label><label>شكل التسليم<textarea name="expected_output" rows="2" required placeholder="مثال: جدول Word أو Excel، لكل فئة الخدمة والاحتياج ومخاوف الجمهور"></textarea></label><label>المسؤول<select name="assignee_id" required>'+personOpts+'</select></label><div class="tsk-form-row"><label>موعد التسليم<input type="date" name="due_at" required></label><label>الأولوية<select name="priority"><option value="normal">عادية</option><option value="low">منخفضة</option><option value="high">عالية</option><option value="urgent">عاجلة</option></select></label></div>'+repeatFields(null)+'<footer><button class="btn btn-primary">إسناد المهمة</button><button type="button" class="btn" data-action="close-modal">إلغاء</button></footer></form>');
       }
       if(state.modal==="edit-task"&&state.editTask){
         var et=state.editTask;
@@ -372,6 +378,9 @@
           '<div class="tsk-history">'+((state.history||[]).map(function(u){return '<article><b>'+esc(u.author_name||"عضو الفريق")+'</b><small>'+esc(stamp(u.created_at))+'</small>'+(u.status_to?'<span class="tsk-hist-status">'+esc((STATUS[u.status_from]||"")+(u.status_from?" ← ":"")+(STATUS[u.status_to]||u.status_to))+'</span>':"")+'<p>'+linkify(u.body)+'</p>'+attsHtml(u.id)+'</article>';}).join("")||'<p class="tsk-empty">لا توجد تعليقات أو تحديثات بعد.</p>')+'</div>');
       }
       el.innerHTML=html;
+      var timingHost=el.querySelector('.tv-detail');
+      if(timingHost&&state.viewId)work.mount(state.viewId);
+      if(timingHost&&state.viewId&&window.SSMPDIndicatorReports)window.SSMPDIndicatorReports.taskContext(timingHost,state.viewId);
     }
     function stamp(v){var d=new Date(v);return isNaN(d)?"":d.toLocaleString("ar-EG-u-nu-latn",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});}
     function attsHtml(updateId){
@@ -417,6 +426,7 @@
       window.SSMPDDb.taskSetOrder(peers.map(function(x){return x.id;})).then(refresh).catch(function(e){state.error=e.message||"تعذر حفظ ترتيب المهام";draw();});
     }
     function focusTask(id){
+      if(work.busy())return false;
       var t=state.tasks.find(function(x){return x.id===id;});if(!t)return;
       state.tab="projects";store("tab","projects");state.openProject=t.project_id;state.pFilter="all";
       if(state.archived[t.project_id])state.showArchived=true;
@@ -442,15 +452,15 @@
       var db=window.SSMPDDb,taskId=state.historyTask;
       Promise.all(files.map(function(f){return db.taskUploadAttachment(taskId,f,(state.tasks.find(function(x){return x.id===taskId;})||{}).title);})).then(function(atts){return db.taskAddComment(taskId,text,atts);}).then(function(){state.pendingFiles=[];openHistory(taskId);}).catch(function(e){if(btn){btn.disabled=false;btn.textContent="إرسال التعليق";}showErr(form,e&&e.message||"تعذر إرسال التعليق");});
     }
-    function onEscape(ev){if(!el.isConnected){document.removeEventListener("keydown",onEscape);return;}if(ev.key==="Escape"&&state.modal){state.modal="";state.note=null;state.pendingFiles=[];draw();}}
+    function onEscape(ev){if(!el.isConnected){document.removeEventListener("keydown",onEscape);return;}if(ev.key==="Escape"&&state.modal){if(work.busy())return;work.capture();state.modal="";state.note=null;state.pendingFiles=[];draw();}}
     document.addEventListener("keydown",onEscape);
     el.onkeydown=function(ev){var tile=ev.target.closest&&ev.target.closest(".tv-proj");if(tile&&ev.target===tile&&(ev.key==="Enter"||ev.key===" ")){ev.preventDefault();tile.click();}};
     el.oninput=function(ev){if(ev.target.matches&&ev.target.matches("[data-search]")){state.q=ev.target.value;drawList();}};
     el.onclick=function(ev){
-      var b=ev.target.closest("[data-action]");if(!b)return;
+      var b=ev.target.closest("[data-action]");if(!b)return;if(work.busy())return;
       if(b.dataset.action==="close-modal"&&ev.target!==b&&ev.target.closest(".tsk-modal"))return;
       var action=b.dataset.action,id=b.dataset.id,t=state.tasks.find(function(x){return x.id===id;});
-      if(action==="close-modal"){state.modal="";state.note=null;state.pendingFiles=[];draw();return;}
+      if(action==="close-modal"){if(work.busy())return;work.capture();state.modal="";state.note=null;state.pendingFiles=[];draw();return;}
       if(action==="confirm-delete"&&state.deleteTarget){
         var target=state.deleteTarget,call=target.kind==="project"?window.SSMPDDb.taskDeleteProject(target.id):window.SSMPDDb.taskDelete(target.id);
         b.disabled=true;call.then(function(){state.modal="";state.deleteTarget=null;return refresh();}).catch(function(e){b.disabled=false;state.error=e.message||"تعذر الحذف";draw();});return;

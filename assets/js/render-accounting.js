@@ -2,9 +2,10 @@
 (function () {
   "use strict";
 
-  var state = { subTab: "pricing", supplies: [], services: [], packages: [], loaded: false };
+  var state = { subTab: "pricing", section: null, supplies: [], services: [], packages: [], loaded: false, pendingRepair: null };
   var me = null;
 
+  function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
   function num(v) { var n = Number(v); return isFinite(n) ? n : 0; }
   function fmt(n) { return num(n).toLocaleString("en-US", { maximumFractionDigits: 2 }); }
   function numSpan(n) { return '<span class="acc-num">' + fmt(n) + '</span>'; }
@@ -70,6 +71,7 @@
       cb();
     }).catch(function (e) {
       state.loaded = true;
+      state.pendingRepair = null;
       window.SSMPDToast && window.SSMPDToast.error ? window.SSMPDToast.error("تعذر تحميل بيانات الحسابات") : null;
       cb();
     });
@@ -77,17 +79,22 @@
 
   function applyPermissions(root){
     var R=window.SSMPDRoles,a=window.SSMPDAuth.currentAdmin;
-    [['create','[id^="acc-add-"]'],['update','[data-edit-supply],[data-edit-service],[data-edit-package]'],['delete','[data-del-supply],[data-del-service],[data-del-package]']].forEach(function(pair){if(!R.canModuleAction(a,'accounting',pair[0]))root.querySelectorAll(pair[1]).forEach(function(el){el.hidden=true;el.disabled=true;el.onclick=null;});});
+    [['create','[id^="acc-add-"]'],['update','[data-edit-supply],[data-edit-service],[data-edit-package]'],['delete','[data-del-supply],[data-del-service],[data-del-package]']].forEach(function(pair){if(!R.canModuleAction(a,'accounting',pair[0]))root.querySelectorAll(pair[1]).forEach(function(el){el.hidden=true;el.style.display="none";el.disabled=true;el.onclick=null;});});
   }
   function render(container) {
-    if(!window.SSMPDRoles.canModuleAction(window.SSMPDAuth.currentAdmin,'accounting','view')){container.innerHTML='<p>ليس لديك صلاحية عرض الحسابات.</p>';return;}
+    if(!window.SSMPDRoles.canSeeTab(window.SSMPDAuth.currentAdmin,'accounting')){container.innerHTML='<p>ليس لديك صلاحية عرض الحسابات.</p>';return;}
 
     me = window.SSMPDAuth.currentAdmin;
+    var canFinance = window.SSMPDRoles.canModuleAction(me,"accounting","view");
+    var canInventory = window.SSMPDRoles.canSeeTab(me,"inventory") && !(me.inventory_assigned === false && me.inventory_supply_access === true);
+    if (!canFinance) state.subTab = "inventory";
+    if (state.subTab === "inventory" && !canInventory) state.subTab = "pricing";
     var subs = [
-      { key: "pricing", label: "تسعير الخدمات" },
-      { key: "packages", label: "الباكجز" }
-    ];
-    var html = '<div class="tabs" style="margin-bottom:16px;">' +
+      { key: "pricing", label: "التسعير والخدمات والباكجز" },
+      { key: "cash", label: "الخزينة والدورة المالية" },
+      { key: "inventory", label: "المخازن والجرد" }
+    ].filter(function(s) { return s.key === "inventory" ? canInventory : canFinance; });
+    var html = '<div class="tabs acc-catalog-nav" style="margin-bottom:16px;">' +
       subs.map(function (s) {
         return '<button class="tab-btn ' + (state.subTab === s.key ? "active" : "") + '" data-sub="' + s.key + '">' + s.label + '</button>';
       }).join("") + '</div>' +
@@ -95,35 +102,83 @@
     container.innerHTML = html;
     container.querySelectorAll("[data-sub]").forEach(function (btn) {
       btn.onclick = function () {
+        state.pendingRepair = null;
         state.subTab = btn.getAttribute("data-sub");
         render(container);
       };
     });
     var subView = document.getElementById("acc-sub-view");
+    if (state.subTab === "inventory" && window.SSMPDRenderInventory) { window.SSMPDRenderInventory.render(subView, {embedded:true}); return; }
+    if(state.subTab==='cash'&&window.SSMPDFinanceCash){window.SSMPDFinanceCash.render(subView);return;}
     if (!state.loaded) {
       subView.innerHTML = '<p>جاري التحميل...</p>';
-      loadAll(function () { renderSub(subView, container); });
+      loadAll(function () { if (subView.isConnected && state.subTab === "pricing") renderSub(subView, container); });
     } else {
       renderSub(subView, container);
     }
   }
 
+  var catalogSections = [
+    { key: "supplies", title: "المستلزمات والإضافات الطبية", description: "تكلفة العبوة والوحدة واستهلاك المستلزمات.", list: "supplies", unit: "مستلزم مسجل" },
+    { key: "services", title: "الخدمات والتسعير", description: "تكلفة الخدمة والمستلزمات وهامش الربح والسعر النهائي.", list: "services", unit: "خدمة مسعرة" },
+    { key: "packages", title: "الباكجز", description: "تجميع الخدمات وتسعير الباكج وهامش الربح.", list: "packages", unit: "باكج مجهز" }
+  ];
+
+  function renderCatalogIssues(root,container){
+    if(!window.SSMPDDb.receptionCatalogIssues)return;
+    var panel=document.createElement('section');panel.className='acc-card';root.appendChild(panel);
+    window.SSMPDDb.receptionCatalogIssues().then(function(rows){if(!panel.isConnected)return;if(!rows.length){panel.remove();return;}
+      panel.innerHTML='<h4>إعدادات خدمات الحجز تحتاج استكمال</h4>'+rows.map(function(x,i){return '<div class="field"><strong>'+esc(x.name)+'</strong><p>'+esc(x.detail)+'</p><button class="btn" type="button" data-catalog-fix="'+i+'">فتح الإعداد الأصلي</button></div>';}).join('');
+      panel.querySelectorAll('[data-catalog-fix]').forEach(function(b){if(!window.SSMPDRoles.canModuleAction(me,'accounting','update')){b.hidden=true;return;}b.onclick=function(){var x=rows[+b.dataset.catalogFix],m=x.detail.match(/^اربط مستلزم (.+) بالصنف ووحدة المخزن من نموذج التسعير$/);if(x.kind==='contracts'){var nav=document.querySelector('[data-goto="contracting_entities"]');if(nav)nav.click();return;}window.SSMPDRenderAccounting.openSetupRepair(m?'supplies':x.kind,m?m[1]:x.name);render(container);};});
+    }).catch(function(){if(panel.isConnected)panel.textContent='تعذر تحميل مراجعة إعدادات الحجز. أعد فتح القسم للمحاولة.';});
+  }
   function renderSub(subView, container) {
-    if (state.subTab === "packages") renderPackagesScreen(subView, container);
-    else renderPricingScreen(subView, container);
-    applyPermissions(subView);
+    var section = catalogSections.filter(function (s) { return s.key === state.section; })[0];
+    if (!section) {
+      subView.innerHTML = '<div class="fc-group-intro"><h4>التسعير والخدمات والباكجز</h4><p>اختار القسم لعرض التفاصيل وإدارة الأسعار.</p></div><div class="fc-section-grid acc-catalog-grid">' +
+        catalogSections.map(function (s) {
+          return '<button type="button" class="fc-section-card" data-acc-section="' + s.key + '"><span class="fc-card-title">' + s.title +
+            '</span><span class="fc-card-description">' + s.description + '</span><span class="fc-card-description">' +
+            state[s.list].length + ' ' + s.unit + '</span><span class="fc-card-open">فتح القسم <span aria-hidden="true">←</span></span></button>';
+        }).join("") + '</div>';
+      subView.querySelectorAll("[data-acc-section]").forEach(function (button) {
+        button.onclick = function () {
+          state.section = button.getAttribute("data-acc-section");
+          renderSub(subView, container);
+          subView.querySelector("[data-acc-heading]").focus();
+        };
+      });
+      renderCatalogIssues(subView,container);
+      return;
+    }
+    subView.innerHTML = '<div class="fc-section-head"><button type="button" class="btn" data-acc-back>رجوع للأقسام</button><h4 tabindex="-1" data-acc-heading>' + section.title + '</h4></div><div data-acc-detail></div>';
+    var detail = subView.querySelector("[data-acc-detail]");
+    if (section.key === "packages") renderPackagesScreen(detail, container);
+    else renderPricingScreen(detail, container);
+    applyPermissions(detail);
+    renderCatalogIssues(subView,container);
+    var repair=state.pendingRepair;
+    if(repair&&repair.section===state.section){
+      state.pendingRepair=null;
+      var matches=state[section.list].filter(function(row){return row.name===repair.name;});
+      if(matches.length===1&&window.SSMPDRoles.canModuleAction(me,'accounting','update')){
+        var back=function(){var nav=document.querySelector('[data-goto="reception_services"]');if(nav)nav.click();else render(container);};
+        if(section.key==='supplies')openSupplyModal(matches[0],back);
+        else if(section.key==='services')openServiceModal(matches[0],back);
+        else if(section.key==='packages')openPackageModal(matches[0],back);
+      }
+    }
+    subView.querySelector("[data-acc-back]").onclick = function () {
+      state.section = null;
+      renderSub(subView, container);
+      subView.querySelector('[data-acc-section="' + section.key + '"]').focus();
+    };
   }
 
   // ============ ١) تسعير الخدمات ============
   function renderPricingScreen(subView, container) {
-    var avgMargin = state.services.length ? state.services.reduce(function (s, x) { return s + num(x.profit_margin_percent); }, 0) / state.services.length : 0;
-
-    var html = '<div class="kpi-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px;">' +
-      '<div class="kpi-card"><div class="label">مستلزمات مسجّلة</div><div class="value">' + state.supplies.length + '</div></div>' +
-      '<div class="kpi-card"><div class="label">خدمات مسعّرة</div><div class="value">' + state.services.length + '</div></div>' +
-      '<div class="kpi-card"><div class="label">متوسط هامش الربح</div><div class="value small acc-num">' + fmt(avgMargin) + '%</div></div>' +
-      '</div>';
-
+    var html = "";
+    if (state.section === "supplies") {
     html += '<div class="acc-card acc-cost">' +
       '<div class="acc-card-head"><div><span class="acc-eyebrow">ضلع التكلفة</span><h3>مستلزمات وإضافات طبية</h3></div>' +
       '<div class="acc-actions"><button class="btn" id="acc-print-supplies">🖨 طباعة</button> ' +
@@ -143,6 +198,8 @@
         : '<div class="acc-empty"><span class="acc-empty-icon">🧾</span>لسه مفيش مستلزمات مضافة — ابدأ بإضافة أول مستلزم عشان تقدر تربطه بالخدمات</div>') +
       '</div>';
 
+    }
+    if (state.section === "services") {
     html += '<div class="acc-card acc-revenue">' +
       '<div class="acc-card-head"><div><span class="acc-eyebrow">ضلع التسعير</span><h3>الخدمات والتسعير</h3></div>' +
       '<div class="acc-actions"><button class="btn" id="acc-print-services">🖨 طباعة</button> ' +
@@ -164,13 +221,15 @@
         : '<div class="acc-empty"><span class="acc-empty-icon">💊</span>لسه مفيش خدمات مسعّرة — ضيف الخدمة الأولى وحدد سعرها الأساسي وهامش الربح</div>') +
       '</div>';
 
+    }
     subView.innerHTML = html;
     wirePricingScreen(subView, container);
   }
 
   function wirePricingScreen(subView, container) {
+    function bind(id, handler) { var button = subView.querySelector("#" + id); if (button) button.onclick = handler; }
     var reload = function () { render(container); };
-    document.getElementById("acc-add-supply").onclick = function () { openSupplyModal(null, reload); };
+    bind("acc-add-supply", function () { openSupplyModal(null, reload); });
     subView.querySelectorAll("[data-edit-supply]").forEach(function (b) {
       b.onclick = function () { openSupplyModal(supplyById(b.getAttribute("data-edit-supply")), reload); };
     });
@@ -182,7 +241,7 @@
         });
       };
     });
-    document.getElementById("acc-add-service").onclick = function () { openServiceModal(null, reload); };
+    bind("acc-add-service", function () { openServiceModal(null, reload); });
     subView.querySelectorAll("[data-edit-service]").forEach(function (b) {
       b.onclick = function () { openServiceModal(serviceById(b.getAttribute("data-edit-service")), reload); };
     });
@@ -194,10 +253,10 @@
         });
       };
     });
-    document.getElementById("acc-print-supplies").onclick = function () { printTable("مستلزمات/إضافات طبية", supTableRows()); };
-    document.getElementById("acc-print-services").onclick = function () { printTable("الخدمات والتسعير", svcTableRows()); };
-    document.getElementById("acc-export-supplies").onclick = function () { exportExcel("مستلزمات", supTableRows()); };
-    document.getElementById("acc-export-services").onclick = function () { exportExcel("الخدمات", svcTableRows()); };
+    bind("acc-print-supplies", function () { printTable("مستلزمات/إضافات طبية", supTableRows()); });
+    bind("acc-print-services", function () { printTable("الخدمات والتسعير", svcTableRows()); });
+    bind("acc-export-supplies", function () { exportExcel("مستلزمات", supTableRows()); });
+    bind("acc-export-services", function () { exportExcel("الخدمات", svcTableRows()); });
   }
 
   function supTableRows() {
@@ -257,10 +316,12 @@
       '<div class="field"><label>نوع الوحدة (علبة/زجاجة/عبوة...)</label><input id="sp-unit" value="' + (supply.unit_type || "") + '"></div>' +
       '<div class="field"><label>عدد الوحدات في العبوة</label><input id="sp-units" type="number" step="any" value="' + (supply.units_per_package != null ? supply.units_per_package : "") + '"></div>' +
       '<div class="field"><label>سعر العبوة</label><input id="sp-price" type="number" step="any" value="' + (supply.package_price != null ? supply.package_price : "") + '"></div>' +
+      '<fieldset><legend>ربط المخزون</legend><div class="field"><label>الصنف من المخزن</label><select id="sp-inventory"><option value="">بدون ربط</option></select></div><div class="field"><label>كمية وحدة المخزن مقابل وحدة التسعير</label><input id="sp-inventory-quantity" type="number" min="0.0001" step="0.0001" value="'+esc(supply.inventory_quantity_per_unit)+'"></div><p>حدد التحويل حسب وحدة المخزن. لا يفترض النظام أن العبوة تساوي قطعة.</p><p data-inventory-error role="status"></p></fieldset>' +
       '<div class="field"><label>كمية الاستهلاك الافتراضية للمريض الواحد</label><input id="sp-consume" type="number" step="any" value="' + (supply.consumption_per_patient != null ? supply.consumption_per_patient : "") + '"></div>' +
       "<div style=\"margin-top:12px;\"><button class=\"btn btn-primary\" id=\"sp-save\"> <!--ssmpd-i18n:%D8%AD%D9%81%D8%B8-->حفظ</button> <button class=\"btn\" id=\"sp-cancel\"> <!--ssmpd-i18n:%D8%A5%D9%84%D8%BA%D8%A7%D8%A1-->إلغاء</button></div>" +
       '</div>';
     document.body.appendChild(backdrop);
+    if(window.SSMPDDb.client){backdrop.querySelector('#sp-save').disabled=true;window.SSMPDDb.client.from('inventory_items').select('id,name,base_unit').eq('active',true).order('name').then(function(res){if(!backdrop.isConnected)return;if(res.error)throw res.error;backdrop.querySelector('#sp-save').disabled=false;backdrop.querySelector('#sp-inventory').innerHTML='<option value="">بدون ربط</option>'+(res.data||[]).map(function(i){return '<option value="'+esc(i.id)+'" '+(supply.inventory_item_id===i.id?'selected':'')+'>'+esc(i.name)+' — '+esc(i.base_unit)+'</option>';}).join('');}).catch(function(err){if(backdrop.isConnected){backdrop.querySelector('[data-inventory-error]').textContent=err.message;backdrop.querySelector('#sp-save').disabled=true;}});}
     document.getElementById("sp-cancel").onclick = function () { backdrop.remove(); };
     document.getElementById("sp-save").onclick = function () {
       var name = document.getElementById("sp-name").value.trim();
@@ -271,7 +332,9 @@
         unit_type: document.getElementById("sp-unit").value.trim(),
         units_per_package: num(document.getElementById("sp-units").value),
         package_price: num(document.getElementById("sp-price").value),
-        consumption_per_patient: num(document.getElementById("sp-consume").value)
+        consumption_per_patient: num(document.getElementById("sp-consume").value),
+        inventory_item_id: backdrop.querySelector('#sp-inventory').value||null,
+        inventory_quantity_per_unit: Number(backdrop.querySelector('#sp-inventory-quantity').value)||null
       };
       window.SSMPDDb.savePricingSupply(patch, me && me.id).then(function () {
         backdrop.remove();
@@ -292,6 +355,7 @@
       "<div class=\"field\"><label> <!--ssmpd-i18n:%D8%A7%D8%B3%D9%85%20%D8%A7%D9%84%D8%AE%D8%AF%D9%85%D8%A9-->اسم الخدمة</label><input id=\"sv-name\" value=\"" + (service.name || "") + '"></div>' +
       '<div class="field"><label>سعر الخدمة (بدون مستلزمات)</label><input id="sv-price" type="number" step="any" value="' + (service.base_price != null ? service.base_price : "") + '"></div>' +
       '<div class="field"><label>هامش الربح %</label><input id="sv-margin" type="number" step="any" value="' + (service.profit_margin_percent != null ? service.profit_margin_percent : "") + '"></div>' +
+      '<fieldset><legend>الحجز والخدمات</legend><label><input id="sv-booking" type="checkbox" '+(service.booking_enabled?'checked':'')+'> متاحة للحجز</label><div class="field"><label>كود الخدمة في عقد الطبيب</label><input id="sv-code" value="'+esc(service.booking_code)+'"></div><div class="field"><label>القسم</label><input id="sv-department" value="'+esc(service.booking_department)+'"></div><div class="field"><label>مدة الخدمة بالدقائق</label><input id="sv-minutes" type="number" min="5" max="480" value="'+esc(service.booking_minutes)+'"></div><label><input id="sv-device" type="checkbox" '+(service.booking_requires_device?'checked':'')+'> تتطلب حجز جهاز</label></fieldset>' +
       '<h4>المستلزمات المستخدمة (غير محدودة)</h4>' +
       '<div id="sv-lines"></div>' +
       '<button class="btn" id="sv-add-line" type="button">+ إضافة مستلزم للخدمة</button>' +
@@ -345,8 +409,14 @@
         name: name,
         base_price: num(document.getElementById("sv-price").value),
         profit_margin_percent: num(document.getElementById("sv-margin").value),
-        supplies_used: cleanLines
+        supplies_used: cleanLines,
+        booking_enabled: backdrop.querySelector('#sv-booking').checked,
+        booking_code: backdrop.querySelector('#sv-code').value.trim()||null,
+        booking_department: backdrop.querySelector('#sv-department').value.trim()||null,
+        booking_minutes: Number(backdrop.querySelector('#sv-minutes').value)||null,
+        booking_requires_device: backdrop.querySelector('#sv-device').checked
       };
+      if(patch.booking_enabled&&(!patch.booking_code||!patch.booking_department||!patch.booking_minutes)){window.SSMPDToast.error('أكمل كود وقسم ومدة الخدمة للحجز');return;}
       window.SSMPDDb.savePricingService(patch, me && me.id).then(function () {
         backdrop.remove();
         state.loaded = false;
@@ -418,6 +488,7 @@
       '<h3>' + (pkg.id ? "تعديل باكج" : "إضافة باكج") + '</h3>' +
       '<div class="field"><label>اسم الباكج</label><input id="pk-name" value="' + (pkg.name || "") + '"></div>' +
       '<div class="field"><label>نسبة الربح % (على إجمالي الباكج)</label><input id="pk-margin" type="number" step="any" value="' + (pkg.profit_margin_percent != null ? pkg.profit_margin_percent : "") + '"></div>' +
+      '<fieldset><legend>زيارات الباكج</legend><label><input id="pk-booking" type="checkbox" '+(pkg.booking_enabled?'checked':'')+'> متاح للتعاقد من الحجز</label><div class="field"><label>عدد الزيارات</label><input id="pk-visits" type="number" min="1" max="365" value="'+esc(pkg.booking_visits||1)+'"></div><div class="field"><label>الصلاحية بالأيام</label><input id="pk-validity" type="number" min="1" max="3650" value="'+esc(pkg.booking_validity_days||30)+'"></div><div class="field"><label>شروط التعاقد والمشمولات</label><textarea id="pk-terms">'+esc(pkg.booking_terms)+'</textarea></div></fieldset>' +
       '<h4>الخدمات المضمومة (غير محدودة)</h4>' +
       '<div id="pk-lines"></div>' +
       '<button class="btn" id="pk-add-line" type="button">+ إضافة خدمة للباكج</button>' +
@@ -435,12 +506,14 @@
       var el = document.getElementById("pk-lines");
       el.innerHTML = lines.map(function (l, i) {
         return '<div class="acc-line-row" data-line="' + i + '">' +
+          '<label>رقم الزيارة<input data-line-visit type="number" min="1" step="1" value="'+esc(l.visit_no||1)+'"></label>'+
           '<select data-line-service style="flex:2;">' + serviceOptions(l.service_id) + '</select>' +
           "<input data-line-qty type=\"number\" step=\"any\" placeholder=\"الكمية\" data-i18n-placeholder=\"%D8%A7%D9%84%D9%83%D9%85%D9%8A%D8%A9\" data-i18n-placeholder=\"%D8%A7%D9%84%D9%83%D9%85%D9%8A%D8%A9\" value=\"" + (l.quantity != null ? l.quantity : 1) + '" style="flex:1;">' +
           "<button class=\"btn-link\" data-line-del type=\"button\"> <!--ssmpd-i18n:%D8%AD%D8%B0%D9%81-->حذف</button></div>";
       }).join("") || '<div class="acc-line-empty">لا يوجد خدمات مضافة لهذا الباكج</div>';
       el.querySelectorAll("[data-line]").forEach(function (row) {
         var idx = Number(row.getAttribute("data-line"));
+        row.querySelector("[data-line-visit]").oninput = function(ev){ lines[idx].visit_no=Number(ev.target.value); };
         row.querySelector("[data-line-service]").onchange = function (e) { lines[idx].service_id = e.target.value; updateTotals(); };
         row.querySelector("[data-line-qty]").oninput = function (e) { lines[idx].quantity = num(e.target.value) || 1; updateTotals(); };
         row.querySelector("[data-line-del]").onclick = function () { lines.splice(idx, 1); renderLines(); updateTotals(); };
@@ -468,7 +541,11 @@
         id: pkg.id,
         name: name,
         profit_margin_percent: num(document.getElementById("pk-margin").value),
-        services_included: cleanLines
+        services_included: cleanLines.map(function(l){return Object.assign({},l,{visit_no:l.visit_no||1});}),
+        booking_enabled: backdrop.querySelector('#pk-booking').checked,
+        booking_visits: Number(backdrop.querySelector('#pk-visits').value)||null,
+        booking_validity_days: Number(backdrop.querySelector('#pk-validity').value)||null,
+        booking_terms: backdrop.querySelector('#pk-terms').value.trim()
       };
       window.SSMPDDb.savePricingPackage(patch, me && me.id).then(function () {
         backdrop.remove();
@@ -478,7 +555,7 @@
     };
   }
 
-  window.SSMPDRenderAccounting = { render: render };
+  window.SSMPDRenderAccounting = { render: render, openSetupRepair: function(section,name){if(!['supplies','services','packages'].includes(section))return;state.subTab='pricing';state.section=section;state.loaded=false;state.pendingRepair={section:section,name:name||null};}, selectSection: function(sub,section){state.pendingRepair=null;state.subTab=sub;state.section=section||null;state.loaded=false;}, openCash: function(section,container) { state.subTab = "cash"; if(window.SSMPDFinanceCash.openSection)window.SSMPDFinanceCash.openSection(section);render(container); }, openInventory: function() { state.subTab = "inventory"; } };
 })();
 
 

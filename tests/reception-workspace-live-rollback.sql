@@ -1,0 +1,24 @@
+begin;
+do $$declare u uuid;w uuid;provider uuid;patient uuid;service uuid;a uuid;v uuid;s jsonb;k uuid:=gen_random_uuid();payload jsonb;d date:=(now() at time zone 'Africa/Cairo')::date+1;t timestamptz;blocked boolean:=false;
+begin
+ select user_id into u from public.admins where role='super_admin' and active and user_id is not null order by id limit 1;
+ if u is null then raise exception 'Existing administrator required';end if;
+ perform set_config('request.jwt.claim.sub',u::text,true);execute 'set local role authenticated';
+ w:=public.clinic_reception_bootstrap();s:=public.clinic_reception_snapshot(w,d,d);
+ if s->'workspace'->>'mode'<>'trial' then raise exception 'Not a trial';end if;
+ provider:=(s->'providers'->0->>'id')::uuid;patient:=(s->'patients'->0->>'id')::uuid;
+ select (x->>'id')::uuid into service from jsonb_array_elements(s->'services') x where x->>'code'='CONSULT';
+ t:=(d::text||' 09:00:00')::timestamp at time zone 'Africa/Cairo';
+ perform public.clinic_reception_command(w,'availability',jsonb_build_object('provider_id',provider,'starts_at',t,'ends_at',t+interval '3 hours'),gen_random_uuid());
+ payload:=jsonb_build_object('provider_id',provider,'patient_id',patient,'service_id',service,'starts_at',t);
+ a:=(public.clinic_reception_command(w,'book',payload,k)->>'id')::uuid;
+ if (public.clinic_reception_command(w,'book',payload,k)->>'id')::uuid<>a then raise exception 'Booking duplicated';end if;
+ begin perform public.clinic_reception_command(w,'book',payload||jsonb_build_object('starts_at',t+interval '10 minutes'),gen_random_uuid());exception when others then if sqlerrm like '%يتداخل%' then blocked:=true;else raise;end if;end;
+ if not blocked then raise exception 'Overlap accepted';end if;
+ v:=(public.clinic_reception_command(w,'arrive',jsonb_build_object('id',a),gen_random_uuid())->>'id')::uuid;
+ if (public.clinic_reception_command(w,'arrive',jsonb_build_object('id',a),gen_random_uuid())->>'id')::uuid<>v then raise exception 'Arrival duplicated';end if;
+ execute 'reset role';
+ if (select count(*) from clinic_reception.orders where visit_id=v)<>1 then raise exception 'Order duplicated';end if;
+end $$;
+rollback;
+select jsonb_build_object('test','reception foundation rollback passed','anon_bootstrap_blocked',not has_function_privilege('anon','public.clinic_reception_bootstrap()','execute'),'anon_command_blocked',not has_function_privilege('anon','public.clinic_reception_command(uuid,text,jsonb,uuid)','execute'));

@@ -12,6 +12,7 @@
 
     var el = document.createElement("div");
     el.className = "toast" + (type === "error" ? " toast-error" : "");
+    el.setAttribute("role", type === "error" ? "alert" : "status");
     el.textContent = message;
     document.body.appendChild(el);
     setTimeout(function () {
@@ -19,6 +20,6 @@
     }, 3800);
   }
 
-  window.SSMPDToast = { show: show };
+  window.SSMPDToast = { show: show, success: function(message){show(message,"success");}, error: function(message){show(message,"error");} };
 })();
 

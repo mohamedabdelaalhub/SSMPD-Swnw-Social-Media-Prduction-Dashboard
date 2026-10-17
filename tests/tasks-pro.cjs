@@ -43,11 +43,12 @@ window.SSMPDDb={
  taskChecklistAdd:function(id,b){calls.push(['chk-add',id,b]);(mock.chk[id]=mock.chk[id]||[]).push({id:'c'+Math.random(),body:b,done:false});return Promise.resolve()},
  taskChecklistToggle:function(id,d){calls.push(['chk-toggle',id,d]);Object.keys(mock.chk).forEach(function(k){mock.chk[k].forEach(function(c){if(c.id===id)c.done=d})});return Promise.resolve()},
  taskChecklistRemove:function(id){calls.push(['chk-rm',id]);Object.keys(mock.chk).forEach(function(k){mock.chk[k]=mock.chk[k].filter(function(c){return c.id!==id})});return Promise.resolve()},
+ taskWorkResults:function(){return Promise.resolve([])},
  taskListAttachments:function(id){return Promise.resolve(mock.atts.slice())},
 
  taskMarkNotificationRead:function(id){calls.push(['read',id]);mock.notices.forEach(function(n){if(n.id===id)n.read_at='x'});return Promise.resolve()}
 };
-</script><script src="/assets/js/render-tasks.js"></script><script>SSMPDRenderTasks.render(document.getElementById('r'))</script></body></html>`;
+</script><script src="/assets/js/task-work.js"></script><script src="/assets/js/render-tasks.js"></script><script>SSMPDRenderTasks.render(document.getElementById('r'))</script></body></html>`;
 (async()=>{
 const server=http.createServer((req,res)=>{const url=decodeURIComponent(req.url.split('?')[0]);if(url==='/'){res.setHeader('content-type','text/html');return res.end(page_html);}const f=path.join(root,url);if(!f.startsWith(root)||!fs.existsSync(f)||fs.statSync(f).isDirectory()){res.statusCode=404;return res.end();}const ext=path.extname(f);res.setHeader('content-type',ext==='.css'?'text/css':ext==='.js'?'text/javascript':'application/octet-stream');res.end(fs.readFileSync(f));}).listen(0);
 const port=server.address().port;
@@ -61,23 +62,23 @@ try{
   assert.equal(await page.locator('.tv-row').count(),0,'home shows projects only, no task rows');
   assert.equal(await page.locator('.tv-proj').count(),1,'archived project hidden');
   const need=async k=>Number(await page.locator('.tv-need.n-'+k+' b').textContent());
-  assert.equal(await need('review'),1);assert.equal(await need('mine'),3);assert.equal(await need('overdue'),1);assert.equal(await need('soon'),1);assert.equal(await need('notices'),1);
+  assert.equal(await need('review'),1);assert.equal(await need('mine'),3);assert.equal(await need('overdue'),0);assert.equal(await need('soon'),1);assert.equal(await need('notices'),1);
   assert(/1 تعليق جديد/.test(await txt('.tv-proj')),'tile shows unread comment line');
-  assert(/التعليقات\s*1/.test(await txt('.tv-tabs')),'comments tab shows unread count');
+  assert(/المناقشة\s*1/.test(await txt('.tv-tabs')),'comments tab shows unread count');
   await page.click('.tv-tab[data-id=comments]');assert.equal(await page.locator('.tv-comment.new').count(),1,'comments tab lists the new comment');
   await page.click('.tv-tab[data-id=projects]');
   const tile=await txt('.tv-proj');
   assert(/من 6 مهمة تمت/.test(tile)&&/33%/.test(tile),'tile summary: done of total + percent');
   assert(await page.locator('.tv-proj .tv-bar i').count()>=3,'segmented bar');
-  assert(/المتبقي\s*4/.test(tile),'remaining count');assert(/شغّالة/.test(tile)&&/متأخرة/.test(tile)&&/لم تبدأ/.test(tile),'legend');
+  assert(/المتبقي\s*4/.test(tile),'remaining count');assert(/شغّالة/.test(tile)&&/مراجعة/.test(tile)&&/لم تبدأ/.test(tile),'legend');
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1),true,'no horizontal overflow (home)');
   // ---- صفحة المشروع ----
   await page.click('.tv-proj');await page.waitForSelector('.tv-page');
-  assert.equal(await page.locator('.tv-group.g-late .tv-row').count(),1,'late group');assert.equal(await page.locator('.tv-group.g-active .tv-row').count(),1,'active group');assert.equal(await page.locator('.tv-group.g-todo .tv-row').count(),1,'todo group (roots only)');
+  assert.equal(await page.locator('.tv-group.g-late .tv-row').count(),0,'review waiting is not employee lateness');assert.equal(await page.locator('.tv-group.g-review .tv-row').count(),1,'manager review group');assert.equal(await page.locator('.tv-group.g-active .tv-row').count(),1,'active group');assert.equal(await page.locator('.tv-group.g-todo .tv-row').count(),1,'todo group (roots only)');
   assert.equal(await page.locator('details.tv-done').getAttribute('open'),null,'done section collapsed');assert(/1/.test(await txt('details.tv-done summary')));
   assert(/☑ 0\/1/.test(await txt('[data-task-id="t1"]')),'checklist counter on row');
   await page.click('[data-action="toggle-sub"][data-id="t1"]');assert.equal(await page.locator('.tv-kids .tv-row').count(),2,'subtasks expand under parent');
-  await page.click('[data-action="pf"][data-id="late"]');assert.equal(await page.locator('.tv-page .tv-row').count(),1,'filter chip narrows list');await page.click('[data-action="pf"][data-id="all"]');
+  await page.click('[data-action="pf"][data-id="review"]');assert.equal(await page.locator('.tv-page .tv-row').count(),1,'filter chip narrows list');await page.click('[data-action="pf"][data-id="all"]');
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1),true,'no horizontal overflow (project)');
   // ---- تفاصيل المهمة ----
   await page.click('[data-task-id="t2"] .tv-row-main');await page.waitForSelector('.tv-detail');
@@ -93,7 +94,7 @@ try{
   // ---- تابات المنجزة وكل المهام وعدادات الشريط ----
   await page.click('[data-action="tab"][data-id="done"]');await page.waitForSelector('.tv-group');assert(await page.locator('.tv-groups .tv-row').count()>=2,'done tab lists finished tasks');assert(/آخر 7 أيام|النهارده|أمس|الأسبوع/.test(await txt('.tv-groups')),'grouped by period');
   await page.click('[data-action="tab"][data-id="projects"]');await page.waitForSelector('.tv-proj');
-  await page.click('.tv-need.n-overdue');await page.waitForSelector('.tv-row');assert.equal(await page.locator('.tv-row').count(),1,'overdue stat filters all-tasks tab');
+  await page.click('.tv-need.n-overdue');await page.waitForSelector('.tv-empty');assert.equal(await page.locator('.tv-row').count(),0,'review waiting does not enter employee-overdue filter');
   await page.click('[data-action="tab"][data-id="team"]');assert(await page.locator('.tsk-week').count()===1,'team tab');
   assert.deepEqual(errors,[],errors.join('|'));await page.close();
  }
