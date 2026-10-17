@@ -1,0 +1,92 @@
+/* Presentation only. Shared homepage language; never changes visibility, order,
+   permissions, data, workflow state or print layouts. Load after module styles. */
+@media screen {
+ :root{--c-bg:#F4F7FD;--c-border:#E4E9F2;--c-muted:#6B7788;--radius:16px;--shadow:0 2px 8px rgba(22,33,46,.035);--ui-soft:#F4F7FD;--ui-line:#E4E9F2;--ui-hero:linear-gradient(120deg,#0F369D,#1c4fc7)}
+ /* Shell and menus retain their existing responsive visibility and positioning. */
+ .app-shell .topbar{border-bottom-color:var(--ui-line);box-shadow:0 2px 10px #16212e04}
+ .app-shell .tabs{gap:6px;border-bottom-color:var(--ui-line)}
+ .app-shell .tab-btn{border-radius:12px;font-size:13px;line-height:1.65;padding:10px 15px;transition:background .15s,color .15s}
+ .app-shell .tab-btn.active{background:#0F369D;box-shadow:0 3px 9px #0f369d14}
+ .app-shell .tab-btn:hover:not(.active){background:#EAF1FF;color:#0F369D}
+ .app-shell :is(.user-dropdown,.mobile-menu){border:1px solid var(--ui-line);border-radius:18px;padding:16px;box-shadow:0 12px 40px #16212e1a}
+ .app-shell :is(.user-dropdown,.mobile-menu) .mm-name{color:#0F369D;line-height:1.8}
+ .app-shell :is(.ud-item,.mm-tabs .tab-btn){border-radius:11px;font-size:13px;padding:10px 12px}
+ .app-shell .ud-item:hover{background:#EAF1FF;color:#0F369D}
+ .app-shell :is(.gsearch-panel,#global-search-panel){border-radius:16px;border-color:var(--ui-line);box-shadow:0 12px 40px #16212e1a}
+ .app-shell .gsearch-item{border-radius:11px}
+ .app-shell .nav-menu-head{padding:12px 14px;border-radius:12px;background:var(--ui-hero);color:#fff}
+ .app-shell .nav-menu-head strong{color:#fff}
+ .app-shell .nav-menu-head button{background:#ffffff18;border-color:#ffffff45;color:#fff}
+ .app-shell .nav-menu-search input{border-radius:11px;background:#FAFCFF}
+ /* Existing page headings, including legacy social tabs. Do not target arbitrary h2s. */
+ #view-container .pc-workspace>h2,
+ #view-container>h2,
+ #view-container>div:has(>h2):first-child,
+ #view-container :is(.module-brand,.cm-head,.website-panel__header,.rx-header,.fc-top,.op-head,.tsk-head,.tv-head,.pp-header,.fc-group-intro){background:var(--ui-hero);color:#fff;border:1px solid #ffffff20;border-radius:18px;padding:20px 22px;box-shadow:0 8px 24px #0f369d20;margin-bottom:18px;gap:12px}
+ #view-container .pc-workspace>h2,#view-container>h2{font-size:23px;line-height:1.65}
+ #view-container>div:has(>h2):first-child>h2,
+ #view-container :is(.module-brand,.cm-head,.website-panel__header,.rx-header,.fc-top,.op-head,.tsk-head,.tv-head,.pp-header,.fc-group-intro) :is(h1,h2,h3,h4){color:#fff;font-size:23px;line-height:1.65;margin:0}
+ #view-container .module-brand span{color:#fff}
+ #view-container .pp-header .modal-close{background:#ffffff18;border:1px solid #ffffff45;color:#fff;border-radius:11px;padding:8px 12px}
+ #view-container :is(.cm-head,.website-panel__header,.rx-header,.fc-top,.op-head,.tsk-head,.tv-head,.pp-header,.fc-group-intro) p{color:#E3EBFF;font-size:13px;margin:6px 0 0;line-height:1.85}
+ #view-container .tsk-eyebrow{color:#E3EBFF}
+ #view-container>div:has(>h2):first-child .btn,
+ #view-container :is(.cm-head,.website-panel__header,.rx-header,.fc-top,.op-head,.tsk-head,.tv-head,.pp-header,.fc-group-intro) .btn{background:#ffffff18;border-color:#ffffff45;color:#fff}
+ #view-container>div:has(>h2):first-child .btn:hover,
+ #view-container :is(.cm-head,.website-panel__header,.rx-header,.fc-top,.op-head,.tsk-head,.tv-head,.pp-header,.fc-group-intro) .btn:hover{background:#ffffff30;border-color:#ffffff80}
+ #view-container>div:has(>h2):first-child .btn:is(.active,[aria-pressed="true"]),
+ #view-container :is(.cm-head,.website-panel__header,.rx-header,.fc-top,.op-head,.tsk-head,.tv-head,.pp-header,.fc-group-intro) .btn:is(.active,[aria-pressed="true"]){background:#fff;color:#0F369D;border-color:#fff}
+ .modal-backdrop .modal>.modal-head :focus-visible,.tsk-modal>header :focus-visible,.app-shell .nav-menu-head :focus-visible{outline:3px solid #F15A22;outline-offset:3px}
+ /* Surface family. Preserve warning borders and project/task hierarchy accents. */
+ #view-container :is(.section,.kpi-card,.kanban-col,.acc-card,.cm-card,.ci-card,.ops-card,.op-card,.inv-card,.rx-card,.tsk-panel,.tsk-project,.tsk-card,.sk-card,.fc-section-card,.aw-section-card,.pp-specialty-card,.pc-card,.nutrition-visit-card,.tv-project,.tv-row,.tw-card){border-radius:16px;box-shadow:0 2px 8px #16212e05}
+ #view-container :is(.section,.kpi-card){border:1px solid var(--ui-line)}
+ #view-container .section{padding:18px 20px;margin-bottom:16px}
+ #view-container .section>h3{font-size:16px;margin-bottom:14px;line-height:1.8}
+ #view-container .kpi-card{position:relative;padding:15px 18px;border-inline-start:3px solid #0F369D}
+ #view-container .kpi-card .value{font-size:27px;line-height:1.4}
+ #view-container .kpi-card .value.small{font-size:20px}
+ #view-container .kpi-card .label{font-size:12px;line-height:1.8;margin-bottom:6px}
+ #view-container :is(.kanban-card,.op-item){border-radius:12px;border-color:var(--ui-line);box-shadow:none}
+ #view-container :is(.fc-section-card,.aw-section-card,.inv-kpi,.tsk-project,.op-item){transition:border-color .15s,box-shadow .15s}
+ #view-container :is(.fc-section-card,.aw-section-card,.inv-kpi,.tsk-project,.op-item):hover{border-color:#0F369D;box-shadow:0 5px 16px #0f369d0a}
+ #view-container :is(.fc-card-title,.aw-section-card b){font-size:16px}
+ #view-container :is(.acc-card-head,.inv-card-head,.inv-catalog-head,.tsk-panel-head){border-bottom:1px solid var(--ui-line);padding-bottom:12px;gap:10px}
+ /* Inner navigation uses the same quiet/selected treatment as the main tabs. */
+ #view-container :is(.tabs,.pp-tabs,.cm-tabs,.website-tabs,.fc-tabs,.inv-nav,.inv-subnav,.rx-subnav,.tv-tabs){border-radius:14px;background:#fff;border:1px solid var(--ui-line);padding:8px;gap:6px;scrollbar-width:thin}
+ #view-container :is(.pp-tab,.fc-group-button){border-radius:12px;font-size:13px;line-height:1.7}
+ #view-container :is(.pp-tab[aria-selected="true"],.fc-group-button[aria-pressed="true"]){background:#0F369D;border-color:#0F369D;color:#fff}
+ /* Controls stay native. Exclude checkboxes, files, ranges and editor canvases. */
+ :is(#view-container,.modal-backdrop,.tsk-modal-backdrop) .btn{border-radius:11px;min-height:38px;line-height:1.65}
+ :is(#view-container,.modal-backdrop,.tsk-modal-backdrop) :is(.field,.fc-field,.rx-form,.inv-form,.tsk-form-row) :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=file]),select,textarea){border-radius:11px;border-color:#D5DEEE;background:#FAFCFF;color:#16212E}
+ :is(#view-container,.modal-backdrop,.tsk-modal-backdrop) :is(.field,.fc-field,.rx-form,.inv-form,.tsk-form-row) :is(input,select,textarea):disabled,
+ :is(#view-container,.modal-backdrop,.tsk-modal-backdrop) :is(.field,.fc-field,.rx-form,.inv-form,.tsk-form-row) input[readonly]{background:#EEF2F8;color:#6B7788}
+ :is(#view-container,.modal-backdrop) :is(.field,.fc-field) label{font-size:12px;line-height:1.8;color:#6B7788}
+ #view-container table.simple th{background:#F4F7FD;font-size:12px;padding:11px 12px}
+ #view-container table.simple td{padding:12px;border-bottom-color:#EDF1F7}
+ /* Shared dialogs, including the content preview in the reported screenshot. */
+ .modal-backdrop>.modal,.modal-backdrop>section>.modal,.tsk-modal-backdrop>.tsk-modal{background:#F4F7FD;border:1px solid var(--ui-line);border-radius:20px;box-shadow:0 24px 80px #16212e24}
+ .modal-backdrop .modal>.modal-head,.tsk-modal>header{background:var(--ui-hero);color:#fff;border-radius:14px;padding:16px 18px;gap:12px;margin-bottom:18px;align-items:flex-start}
+ .modal-backdrop .modal>.modal-head h3,.tsk-modal>header h3{color:#fff;line-height:1.85;font-size:18px;flex:1;min-width:0;overflow-wrap:anywhere}
+ .modal-backdrop .modal>.modal-head .modal-close,.tsk-modal>header .tsk-x{flex-shrink:0;width:36px;height:36px;border:1px solid #ffffff45;border-radius:10px;background:#ffffff18;color:#fff;font-size:23px;line-height:1}
+ .modal-backdrop .modal>.modal-head .modal-close:hover,.tsk-modal>header .tsk-x:hover{background:#ffffff30}
+ .modal-backdrop .modal>.modal-head :is(.brand-badge,.specialty-badge){box-shadow:none}
+ .modal-backdrop .modal :is(.section,.publication-preview,.ppv-card,.comment-thread){border-radius:14px}
+ .modal-backdrop .modal>.dh-form-help{font-size:12px;min-height:32px;margin-bottom:10px;padding:5px 10px;background:#fff;color:#0F369D}
+ .modal-backdrop .modal .field label{margin-bottom:6px}
+ .modal-backdrop .modal .inv-modal-actions,.tsk-modal footer,.rx-form>footer{border-top:1px solid var(--ui-line);padding-top:14px;gap:8px}
+ /* Do not override hidden/display rules, status colors, icons or print CSS. */
+ @media(max-width:700px){
+  main.view{padding:14px}
+  #view-container>h2,#view-container>div:has(>h2):first-child,#view-container :is(.module-brand,.cm-head,.website-panel__header,.rx-header,.fc-top,.op-head,.tsk-head,.tv-head,.pp-header,.fc-group-intro){padding:16px;border-radius:16px}
+  #view-container>h2,#view-container>div:has(>h2):first-child>h2,#view-container :is(.cm-head,.website-panel__header,.rx-header,.fc-top,.op-head,.tsk-head,.tv-head,.pp-header,.fc-group-intro) :is(h1,h2,h3,h4){font-size:20px}
+  #view-container>div:has(>h2):first-child,#view-container :is(.cm-head,.website-panel__header,.fc-top,.op-head,.tsk-head,.tv-head,.pp-header,.fc-group-intro){flex-wrap:wrap}
+  #view-container .section{padding:14px;border-radius:14px}
+  #view-container .kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  #view-container .kpi-card{min-width:0;padding:12px}
+  #view-container .kpi-card .value{font-size:clamp(18px,5vw,24px);overflow-wrap:normal;word-break:normal}
+  .modal-backdrop .modal>.modal-head,.tsk-modal>header{padding:13px 14px;gap:8px}
+  .modal-backdrop .modal>.modal-head h3,.tsk-modal>header h3{font-size:16px}
+  :is(#view-container,.modal-backdrop,.tsk-modal-backdrop) :is(.field,.fc-field,.rx-form,.inv-form,.tsk-form-row) :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=file]),select,textarea){font-size:16px}
+ }
+ @media(prefers-reduced-motion:reduce){.app-shell .tab-btn,#view-container :is(.fc-section-card,.aw-section-card,.inv-kpi,.tsk-project,.op-item){transition:none}}
+}
