@@ -64,11 +64,13 @@
     tasks: "المهام",
     inventory: "المخزن والجرد"
   };
+  if(window.SSMPDUITitles)TAB_LABELS=window.SSMPDUITitles.tabs;
 
   function root() { return document.getElementById("app-root"); }
 
   function showAuthScreen(mode, errorMsg) {
     mode = mode || "login";
+    if(window.SSMPDI18n.setPageTitle)window.SSMPDI18n.setPageTitle("");
     var html = '<div class="auth-screen"><div class="auth-box">' +
       '<img class="logo" src="assets/img/logo.svg" alt="Swnw">' +
       "<h1> <!--ssmpd-i18n:%D9%84%D9%88%D8%AD%D8%A9%20%D8%A5%D9%86%D8%AA%D8%A7%D8%AC%20%D8%A7%D9%84%D9%85%D8%AD%D8%AA%D9%88%D9%89-->لوحة إنتاج المحتوى</h1><p class=\"sub\">" + window.SSMPD_CONFIG.centerName + '</p>' +
@@ -167,7 +169,8 @@
     var admin = window.SSMPDAuth.currentAdmin;
     var tabs = Object.keys(TAB_LABELS).filter(function (t) { return R.canSeeTab(admin, t); });
     var displayName = escapeHtml(admin.name || admin.email);
-    var roleLabel = R.rolesOf(admin).map(function(role){return window.SSMPDI18n.textHtml(R.ALL[role]||role);}).join(' / ');
+    var roleLabel = window.SSMPDUITitles?window.SSMPDUITitles.chips(admin):R.rolesOf(admin).map(function(role){return '<span class="role-badge account-role-chip">'+window.SSMPDI18n.textHtml(R.ALL[role]||role)+'</span>';}).join('');
+    var accountHtml=window.SSMPDUITitles?window.SSMPDUITitles.identity(admin):'<div class="header-account"><b>'+displayName+'</b></div>';
 
     // قائمة منسدلة موحّدة (أيقونة بجانب الاسم) — بالترتيب اللي طلبه المستخدم بالظبط:
     // الاسم، ثم الدور، ثم إنتاج المحتوى، ثم أرشيف المرضى، ثم إدارة الليدز والتواصل، ثم تغيير كلمة السر،
@@ -220,14 +223,14 @@
       '<span id="notif-badge" hidden style="position:absolute;top:-6px;left:-6px;background:#D0402A;color:#fff;border-radius:10px;font-size:10px;padding:1px 5px;line-height:1.4;">0</span></button>' +
       '<div id="notif-panel" hidden style="position:absolute;top:100%;left:0;width:300px;background:var(--c-card);border:1px solid var(--c-border);border-radius:10px;margin-top:4px;max-height:360px;overflow:auto;z-index:60;box-shadow:0 6px 18px rgba(0,0,0,.12);"></div>' +
       '</div>' +
-      window.SSMPDI18n.buttonHtml() + '<div class="who"><span class="role-badge">' + roleLabel + '</span> <b>' + displayName + '</b>' +
+      window.SSMPDI18n.buttonHtml() + '<div class="who">' +
       "<button class=\"user-menu-icon\" id=\"user-menu-btn\" type=\"button\" title=\"القائمة\" data-i18n-title=\"%D8%A7%D9%84%D9%82%D8%A7%D8%A6%D9%85%D8%A9\" data-i18n-title=\"%D8%A7%D9%84%D9%82%D8%A7%D8%A6%D9%85%D8%A9\" aria-label=\"القائمة\" data-i18n-aria-label=\"%D8%A7%D9%84%D9%82%D8%A7%D8%A6%D9%85%D8%A9\" data-i18n-aria-label=\"%D8%A7%D9%84%D9%82%D8%A7%D8%A6%D9%85%D8%A9\">☰</button>" +
       " <button class=\"btn ghost sm\" id=\"logout-btn\"> <!--ssmpd-i18n:%D8%AE%D8%B1%D9%88%D8%AC-->خروج</button></div>" +
-      '</div><button class="menu-toggle" id="menu-toggle-btn" type="button"><b>' + displayName + '</b><span class="mt-arrow">▾</span></button>' +
+      '</div>'+accountHtml+'<button class="menu-toggle" id="menu-toggle-btn" type="button"><b>' + displayName + '</b><span class="mt-arrow">▾</span></button>' +
       '</div>' +
       '<div class="user-dropdown" id="user-dropdown">' +
       '<div class="mm-name">' + displayName + '</div>' +
-      '<div class="mm-role"><span class="role-badge">' + roleLabel + '</span></div>' +
+      '<div class="mm-role">' + roleLabel + '</div>' +
       '<div class="ud-items">' + ddItems + '</div>' +
       "<button class=\"btn ghost sm mm-logout\" id=\"logout-btn-dropdown\"> <!--ssmpd-i18n:%D8%AE%D8%B1%D9%88%D8%AC-->خروج</button>" +
       '</div>' +
@@ -235,7 +238,7 @@
       '<div id="inventory-navigation" hidden></div>' +
       '<div class="mobile-menu" id="mobile-menu">' +
       '<div class="mm-name">' + displayName + '</div>' +
-      '<div class="mm-role"><span class="role-badge">' + roleLabel + '</span></div>' +
+      '<div class="mm-role">' + roleLabel + '</div>' +
       '<div class="mm-tabs">' + tabButtonsHtml() + '</div>' +
       "<button class=\"btn ghost sm mm-logout\" id=\"logout-btn-mobile\"> <!--ssmpd-i18n:%D8%AE%D8%B1%D9%88%D8%AC-->خروج</button>" +
       '</div>' +
@@ -289,6 +292,8 @@
       openChangePasswordModal();
     };
     userDropdown.querySelectorAll("[data-goto]").forEach(function (btn) {
+      var key=btn.getAttribute("data-goto");
+      if(window.SSMPDUITitles&&!(key===mainSuiteTabs[0]&&!R.isControlledFinance(admin)))btn.innerHTML=window.SSMPDI18n.textHtml(window.SSMPDUITitles.label(key,admin));
       btn.onclick = function () {
         switchTab(btn.getAttribute("data-goto"));
         userDropdown.classList.remove("open");
@@ -744,14 +749,14 @@
   }
 
   function switchTab(tab) {
-    var activeAdmin=window.SSMPDAuth.currentAdmin;
+    var activeAdmin=window.SSMPDAuth.currentAdmin,titleTab=tab;
     if(tab==="inventory" && !(activeAdmin.inventory_assigned===false && activeAdmin.inventory_supply_access)){window.SSMPDRenderAccounting.openInventory();tab="accounting";}
     if(!tab || !R.canSeeTab(activeAdmin,tab)){var slot=document.getElementById('view-container');if(slot)slot.innerHTML='<div class="section"><h3>لم تُحدد صلاحيات أقسام لهذا الحساب</h3><p>السوبر أدمن يحدد الأقسام المتاحة من لوحة التحكم.</p></div>';return;}
 
     if (tab !== 'patients' && window.SSMPDPatientUI) window.SSMPDPatientUI.clearRoute();
     removeRefreshNotice();
     currentTab = tab;
-    if(window.SSMPDNavigationUI)window.SSMPDNavigationUI.setCurrent(tab);
+    if(window.SSMPDNavigationUI)window.SSMPDNavigationUI.setCurrent(titleTab);
     try { sessionStorage.setItem(ACTIVE_TAB_KEY, tab);sessionStorage.setItem('ssmpd_active_tab_owner',activeAdmin.id); } catch (e) {}
     document.querySelectorAll(".tab-btn").forEach(function (b) {
       b.classList.toggle("active", b.getAttribute("data-tab") === tab);
@@ -759,8 +764,9 @@
 
     // اسم الشعار بيتغيّر حسب السكشن المفتوح دلوقتي: اسم المركز + اسم السكشن
     var brandName = document.getElementById("brand-section-name");
+    if(window.SSMPDI18n.setPageTitle)window.SSMPDI18n.setPageTitle(window.SSMPDUITitles?window.SSMPDUITitles.label(titleTab,activeAdmin):TAB_LABELS[titleTab]);
     if (brandName) {
-      brandName.innerHTML = window.SSMPDI18n.textHtml("مركز عيادات سونو التخصصية") + (TAB_LABELS[tab] ? '<span class="brand-sep">|</span><span class="brand-section">' + window.SSMPDI18n.textHtml(tab==='inventory'&&window.SSMPDAuth.currentAdmin.inventory_assigned===false&&window.SSMPDAuth.currentAdmin.inventory_supply_access?'طلب مستلزمات':TAB_LABELS[tab]) + "</span>" : "");
+      brandName.innerHTML = window.SSMPDUITitles?window.SSMPDUITitles.brand(titleTab,activeAdmin): window.SSMPDI18n.textHtml("مركز عيادات سونو التخصصية") + (TAB_LABELS[tab] ? '<span class="brand-sep">|</span><span class="brand-section">' + window.SSMPDI18n.textHtml(tab==='inventory'&&window.SSMPDAuth.currentAdmin.inventory_assigned===false&&window.SSMPDAuth.currentAdmin.inventory_supply_access?'طلب مستلزمات':TAB_LABELS[tab]) + "</span>" : "");
     }
 
     // فصل بصري: تابات السويت الرئيسي (SSMPD) بتتخفي تماماً لما نكون جوه موديول
