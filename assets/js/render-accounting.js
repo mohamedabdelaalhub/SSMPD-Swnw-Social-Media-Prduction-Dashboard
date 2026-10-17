@@ -2,7 +2,7 @@
 (function () {
   "use strict";
 
-  var state = { subTab: "pricing", supplies: [], services: [], packages: [], loaded: false };
+  var state = { subTab: "pricing", section: null, supplies: [], services: [], packages: [], loaded: false };
   var me = null;
 
   function num(v) { var n = Number(v); return isFinite(n) ? n : 0; }
@@ -77,18 +77,17 @@
 
   function applyPermissions(root){
     var R=window.SSMPDRoles,a=window.SSMPDAuth.currentAdmin;
-    [['create','[id^="acc-add-"]'],['update','[data-edit-supply],[data-edit-service],[data-edit-package]'],['delete','[data-del-supply],[data-del-service],[data-del-package]']].forEach(function(pair){if(!R.canModuleAction(a,'accounting',pair[0]))root.querySelectorAll(pair[1]).forEach(function(el){el.hidden=true;el.disabled=true;el.onclick=null;});});
+    [['create','[id^="acc-add-"]'],['update','[data-edit-supply],[data-edit-service],[data-edit-package]'],['delete','[data-del-supply],[data-del-service],[data-del-package]']].forEach(function(pair){if(!R.canModuleAction(a,'accounting',pair[0]))root.querySelectorAll(pair[1]).forEach(function(el){el.hidden=true;el.style.display="none";el.disabled=true;el.onclick=null;});});
   }
   function render(container) {
     if(!window.SSMPDRoles.canModuleAction(window.SSMPDAuth.currentAdmin,'accounting','view')){container.innerHTML='<p>ليس لديك صلاحية عرض الحسابات.</p>';return;}
 
     me = window.SSMPDAuth.currentAdmin;
     var subs = [
-      { key: "pricing", label: "تسعير الخدمات" },
-      { key: "packages", label: "الباكجز" },
+      { key: "pricing", label: "التسعير والخدمات والباكجز" },
       { key: "cash", label: "الخزينة والدورة المالية" }
     ];
-    var html = '<div class="tabs" style="margin-bottom:16px;">' +
+    var html = '<div class="tabs acc-catalog-nav" style="margin-bottom:16px;">' +
       subs.map(function (s) {
         return '<button class="tab-btn ' + (state.subTab === s.key ? "active" : "") + '" data-sub="' + s.key + '">' + s.label + '</button>';
       }).join("") + '</div>' +
@@ -104,28 +103,52 @@
     if(state.subTab==='cash'&&window.SSMPDFinanceCash){window.SSMPDFinanceCash.render(subView);return;}
     if (!state.loaded) {
       subView.innerHTML = '<p>جاري التحميل...</p>';
-      loadAll(function () { renderSub(subView, container); });
+      loadAll(function () { if (subView.isConnected && state.subTab === "pricing") renderSub(subView, container); });
     } else {
       renderSub(subView, container);
     }
   }
 
+  var catalogSections = [
+    { key: "supplies", title: "المستلزمات والإضافات الطبية", description: "تكلفة العبوة والوحدة واستهلاك المستلزمات.", list: "supplies", unit: "مستلزم مسجل" },
+    { key: "services", title: "الخدمات والتسعير", description: "تكلفة الخدمة والمستلزمات وهامش الربح والسعر النهائي.", list: "services", unit: "خدمة مسعرة" },
+    { key: "packages", title: "الباكجز", description: "تجميع الخدمات وتسعير الباكج وهامش الربح.", list: "packages", unit: "باكج مجهز" }
+  ];
+
   function renderSub(subView, container) {
-    if (state.subTab === "packages") renderPackagesScreen(subView, container);
-    else renderPricingScreen(subView, container);
-    applyPermissions(subView);
+    var section = catalogSections.filter(function (s) { return s.key === state.section; })[0];
+    if (!section) {
+      subView.innerHTML = '<div class="fc-group-intro"><h4>التسعير والخدمات والباكجز</h4><p>اختار القسم لعرض التفاصيل وإدارة الأسعار.</p></div><div class="fc-section-grid acc-catalog-grid">' +
+        catalogSections.map(function (s) {
+          return '<button type="button" class="fc-section-card" data-acc-section="' + s.key + '"><span class="fc-card-title">' + s.title +
+            '</span><span class="fc-card-description">' + s.description + '</span><span class="fc-card-description">' +
+            state[s.list].length + ' ' + s.unit + '</span><span class="fc-card-open">فتح القسم <span aria-hidden="true">←</span></span></button>';
+        }).join("") + '</div>';
+      subView.querySelectorAll("[data-acc-section]").forEach(function (button) {
+        button.onclick = function () {
+          state.section = button.getAttribute("data-acc-section");
+          renderSub(subView, container);
+          subView.querySelector("[data-acc-heading]").focus();
+        };
+      });
+      return;
+    }
+    subView.innerHTML = '<div class="fc-section-head"><button type="button" class="btn" data-acc-back>رجوع للأقسام</button><h4 tabindex="-1" data-acc-heading>' + section.title + '</h4></div><div data-acc-detail></div>';
+    var detail = subView.querySelector("[data-acc-detail]");
+    if (section.key === "packages") renderPackagesScreen(detail, container);
+    else renderPricingScreen(detail, container);
+    applyPermissions(detail);
+    subView.querySelector("[data-acc-back]").onclick = function () {
+      state.section = null;
+      renderSub(subView, container);
+      subView.querySelector('[data-acc-section="' + section.key + '"]').focus();
+    };
   }
 
   // ============ ١) تسعير الخدمات ============
   function renderPricingScreen(subView, container) {
-    var avgMargin = state.services.length ? state.services.reduce(function (s, x) { return s + num(x.profit_margin_percent); }, 0) / state.services.length : 0;
-
-    var html = '<div class="kpi-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px;">' +
-      '<div class="kpi-card"><div class="label">مستلزمات مسجّلة</div><div class="value">' + state.supplies.length + '</div></div>' +
-      '<div class="kpi-card"><div class="label">خدمات مسعّرة</div><div class="value">' + state.services.length + '</div></div>' +
-      '<div class="kpi-card"><div class="label">متوسط هامش الربح</div><div class="value small acc-num">' + fmt(avgMargin) + '%</div></div>' +
-      '</div>';
-
+    var html = "";
+    if (state.section === "supplies") {
     html += '<div class="acc-card acc-cost">' +
       '<div class="acc-card-head"><div><span class="acc-eyebrow">ضلع التكلفة</span><h3>مستلزمات وإضافات طبية</h3></div>' +
       '<div class="acc-actions"><button class="btn" id="acc-print-supplies">🖨 طباعة</button> ' +
@@ -145,6 +168,8 @@
         : '<div class="acc-empty"><span class="acc-empty-icon">🧾</span>لسه مفيش مستلزمات مضافة — ابدأ بإضافة أول مستلزم عشان تقدر تربطه بالخدمات</div>') +
       '</div>';
 
+    }
+    if (state.section === "services") {
     html += '<div class="acc-card acc-revenue">' +
       '<div class="acc-card-head"><div><span class="acc-eyebrow">ضلع التسعير</span><h3>الخدمات والتسعير</h3></div>' +
       '<div class="acc-actions"><button class="btn" id="acc-print-services">🖨 طباعة</button> ' +
@@ -166,13 +191,15 @@
         : '<div class="acc-empty"><span class="acc-empty-icon">💊</span>لسه مفيش خدمات مسعّرة — ضيف الخدمة الأولى وحدد سعرها الأساسي وهامش الربح</div>') +
       '</div>';
 
+    }
     subView.innerHTML = html;
     wirePricingScreen(subView, container);
   }
 
   function wirePricingScreen(subView, container) {
+    function bind(id, handler) { var button = subView.querySelector("#" + id); if (button) button.onclick = handler; }
     var reload = function () { render(container); };
-    document.getElementById("acc-add-supply").onclick = function () { openSupplyModal(null, reload); };
+    bind("acc-add-supply", function () { openSupplyModal(null, reload); });
     subView.querySelectorAll("[data-edit-supply]").forEach(function (b) {
       b.onclick = function () { openSupplyModal(supplyById(b.getAttribute("data-edit-supply")), reload); };
     });
@@ -184,7 +211,7 @@
         });
       };
     });
-    document.getElementById("acc-add-service").onclick = function () { openServiceModal(null, reload); };
+    bind("acc-add-service", function () { openServiceModal(null, reload); });
     subView.querySelectorAll("[data-edit-service]").forEach(function (b) {
       b.onclick = function () { openServiceModal(serviceById(b.getAttribute("data-edit-service")), reload); };
     });
@@ -196,10 +223,10 @@
         });
       };
     });
-    document.getElementById("acc-print-supplies").onclick = function () { printTable("مستلزمات/إضافات طبية", supTableRows()); };
-    document.getElementById("acc-print-services").onclick = function () { printTable("الخدمات والتسعير", svcTableRows()); };
-    document.getElementById("acc-export-supplies").onclick = function () { exportExcel("مستلزمات", supTableRows()); };
-    document.getElementById("acc-export-services").onclick = function () { exportExcel("الخدمات", svcTableRows()); };
+    bind("acc-print-supplies", function () { printTable("مستلزمات/إضافات طبية", supTableRows()); });
+    bind("acc-print-services", function () { printTable("الخدمات والتسعير", svcTableRows()); });
+    bind("acc-export-supplies", function () { exportExcel("مستلزمات", supTableRows()); });
+    bind("acc-export-services", function () { exportExcel("الخدمات", svcTableRows()); });
   }
 
   function supTableRows() {
