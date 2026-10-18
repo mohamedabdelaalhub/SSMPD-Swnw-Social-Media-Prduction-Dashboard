@@ -41,13 +41,15 @@ Deno.serve(async (req) => {
   const db = createClient(Deno.env.get("SUPABASE_URL")!, key, { auth: { persistSession: false } });
   const today = new Date().toISOString().slice(0, 10);
   const [p, h, o, f, ent, con] = await Promise.all([
-    db.from("clinic_profile").select("*").eq("id", 1).maybeSingle(),
-    db.from("clinic_hours").select("*").eq("active", true).order("sort").order("department"),
-    db.from("clinic_offers").select("*").eq("active", true),
-    db.from("clinic_faqs").select("*").eq("active", true).order("sort"),
+    db.from("clinic_profile").select("address,maps_url,phone,whatsapp,email,website,directions_notes,payment_methods,payment_notes,home_visits,results_notes,booking_policy,agent_notes,updated_at").eq("id", 1).maybeSingle(),
+    db.from("clinic_hours").select("department,days,closed,open_time,close_time,notes").eq("active", true).order("sort").order("department"),
+    db.from("clinic_offers").select("title,price_text,details,starts_on,ends_on").eq("active", true),
+    db.from("clinic_faqs").select("question,answer").eq("active", true).order("sort"),
     db.from("contracting_entities").select("id,name"),
     db.from("contracting_entity_contracts").select("entity_id,status,start_date,end_date,discount_percent,services")
   ]);
+  // An unavailable source is not an empty catalog. Let the caller retain its last good snapshot.
+  if ([p, h, o, f, ent, con].some((r) => r.error)) return json({ ok: false, error: "CLINIC_SOURCE_UNAVAILABLE" }, 503);
   const lines: string[] = [];
   const pr: any = p.data || {};
   const add = (label: string, v: unknown) => { if (v && String(v).trim()) lines.push(`${label}: ${String(v).trim()}`); };

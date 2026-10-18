@@ -1,3 +1,6 @@
+import { websiteClinicFacts, factCache } from "./clinic-facts.ts";
+import { WHATSAPP_RULES } from "../whatsapp-webhook/reply-rules.ts";
+
 // Shared reply logic for comments and private messages: contact block, fixed templates for sensitive
 // cases, and the AI writer (OpenAI, same key as content-ai). Comment/message text is data, never instructions.
 
@@ -77,7 +80,7 @@ export async function decideReply(input: { brand: string; channel: "comment" | "
   const r = await fetch("https://api.openai.com/v1/responses", {
     method: "POST", headers: { Authorization: "Bearer " + apiKey, "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: "gpt-5.6-sol", instructions: RULES,
+      model: "gpt-5.6-sol", instructions: input.channel === "whatsapp" ? WHATSAPP_RULES : RULES,
       input: JSON.stringify({ page: BRAND_INFO[input.brand] || input.brand, channel: input.channel, post: input.post || "", earlier_messages: input.history || [], clinic_info: input.clinicInfo || "", text: input.text }),
       text: { format: { type: "json_schema", name: "reply_decision", strict: true, schema: {
         type: "object", additionalProperties: false, required: ["category", "reply", "specialty"],
@@ -100,21 +103,9 @@ export async function decideReply(input: { brand: string; channel: "comment" | "
   return { ok: true, category, reply: withContact(body) };
 }
 
-// Clinic facts (doctors, specialties, services) from the website studio, cached per run.
-let clinicCache: { at: number; text: string } | null = null;
-export async function clinicInfo(): Promise<string> {
-  if (clinicCache && Date.now() - clinicCache.at < 30 * 60e3) return clinicCache.text;
-  let text = "";
-  try {
-    const r = await fetch("https://staging.swnwclinics.com/WebSite/content/published.json", { signal: AbortSignal.timeout(8000) });
-    const j = await r.json();
-    const c = j?.content || {};
-    const pick = (arr: any[], f: (x: any) => string) => (Array.isArray(arr) ? arr.map(f).filter(Boolean).join("؛ ") : "");
-    const doctors = pick(c.doctor, (d) => [d.title || d.name, d.specialty || d.fields?.specialty, d.degree || d.fields?.degree].filter(Boolean).join(" - "));
-    const specs = pick(c.specialty, (s) => s.title || s.name);
-    const services = pick(c.service, (s) => s.title || s.name);
-    text = [doctors && "الدكاترة: " + doctors, specs && "التخصصات: " + specs, services && "الخدمات: " + services].filter(Boolean).join("\n").slice(0, 3000);
-  } catch { /* site unreachable: reply without clinic facts */ }
-  clinicCache = { at: Date.now(), text };
-  return text;
-}
+// Published site facts are shared, compact, and cached; no Supabase reads added here.
+export const clinicInfo = factCache(async () => {
+  const r = await fetch("https://staging.swnwclinics.com/WebSite/content/published.json", { signal: AbortSignal.timeout(8000) });
+  if (!r.ok) throw new Error("CLINIC_SITE_HTTP_ERROR");
+  return websiteClinicFacts(await r.json());
+}, 30 * 60e3);
