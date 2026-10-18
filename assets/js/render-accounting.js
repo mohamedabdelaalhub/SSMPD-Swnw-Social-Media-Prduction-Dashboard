@@ -349,26 +349,79 @@
   // ---- مودال خدمة (مع إضافات غير محدودة) ----
   function openServiceModal(service, onSaved) {
     service = service || {};
-    var lines = (service.supplies_used || []).slice();
+    var lines = (service.supplies_used || []).map(function(line){return Object.assign({},line);});
     var backdrop = document.createElement("div");
     backdrop.className = "modal-backdrop";
-    backdrop.innerHTML = '<div class="modal" style="max-width:560px;">' +
+    backdrop.innerHTML = '<div class="modal acc-service-modal" style="max-width:560px;">' +
       '<h3>' + (service.id ? "تعديل خدمة" : "إضافة خدمة") + '</h3>' +
-      "<div class=\"field\"><label> <!--ssmpd-i18n:%D8%A7%D8%B3%D9%85%20%D8%A7%D9%84%D8%AE%D8%AF%D9%85%D8%A9-->اسم الخدمة</label><input id=\"sv-name\" value=\"" + (service.name || "") + '"></div>' +
-      '<div class="field"><label>سعر الخدمة (بدون مستلزمات)</label><input id="sv-price" type="number" step="any" value="' + (service.base_price != null ? service.base_price : "") + '"></div>' +
-      '<div class="field"><label>هامش الربح %</label><input id="sv-margin" type="number" step="any" value="' + (service.profit_margin_percent != null ? service.profit_margin_percent : "") + '"></div>' +
-      '<fieldset><legend>الحجز والخدمات</legend><label><input id="sv-booking" type="checkbox" '+(service.booking_enabled?'checked':'')+'> متاحة للحجز</label><div class="field"><label>كود الخدمة في عقد الطبيب</label><input id="sv-code" value="'+esc(service.booking_code)+'"></div><div class="field"><label>القسم</label><input id="sv-department" value="'+esc(service.booking_department)+'"></div><div class="field"><label>مدة الخدمة بالدقائق</label><input id="sv-minutes" type="number" min="5" max="480" value="'+esc(service.booking_minutes)+'"></div><label><input id="sv-device" type="checkbox" '+(service.booking_requires_device?'checked':'')+'> تتطلب حجز جهاز</label></fieldset>' +
+      "<div class=\"field\"><label> <!--ssmpd-i18n:%D8%A7%D8%B3%D9%85%20%D8%A7%D9%84%D8%AE%D8%AF%D9%85%D8%A9-->اسم الخدمة</label><input id=\"sv-name\" value=\"" + esc(service.name) + '"></div>' +
+      '<fieldset><legend>بيانات الطبيب من العقد</legend><div class="field"><label for="sv-contract">الطبيب وعقد الخدمة المعتمد</label><select id="sv-contract" disabled><option value="">جاري تحميل العقود</option></select></div><div id="sv-contract-detail" aria-live="polite"></div><button class="btn" id="sv-contract-retry" type="button" hidden>إعادة تحميل العقود</button></fieldset>' +
+      '<div class="field"><label>سعر الخدمة (بدون مستلزمات)</label><input id="sv-price" type="number" min="0" step="any" value="' + (service.base_price != null ? service.base_price : "") + '"></div>' +
+      '<div class="field"><label>هامش الربح %</label><input id="sv-margin" type="number" min="0" step="any" value="' + (service.profit_margin_percent != null ? service.profit_margin_percent : "") + '"></div>' +
+      '<fieldset><legend>الحجز والخدمات</legend><label><input id="sv-booking" type="checkbox" '+(service.booking_enabled?'checked':'')+'> متاحة للحجز</label><div class="field"><label>كود الخدمة في عقد الطبيب</label><small>كود الخدمة مستقل عن كود الطبيب. يجب أن يطابق نطاق الخدمة في العقد.</small><input id="sv-code" value="'+esc(service.booking_code)+'"></div><div class="field"><label>القسم</label><input id="sv-department" value="'+esc(service.booking_department)+'"></div><div class="field"><label>مدة الخدمة بالدقائق</label><input id="sv-minutes" type="number" min="5" max="480" step="1" value="'+esc(service.booking_minutes)+'"></div><label><input id="sv-device" type="checkbox" '+(service.booking_requires_device?'checked':'')+'> تتطلب حجز جهاز</label></fieldset>' +
       '<h4>المستلزمات المستخدمة (غير محدودة)</h4>' +
       '<div id="sv-lines"></div>' +
       '<button class="btn" id="sv-add-line" type="button">+ إضافة مستلزم للخدمة</button>' +
-      '<div id="sv-totals" style="margin-top:10px;font-size:13px;"></div>' +
+      '<div id="sv-totals" style="margin-top:10px;font-size:13px;"></div><p id="sv-error" role="alert" hidden></p>' +
       "<div style=\"margin-top:12px;\"><button class=\"btn btn-primary\" id=\"sv-save\"> <!--ssmpd-i18n:%D8%AD%D9%81%D8%B8-->حفظ</button> <button class=\"btn\" id=\"sv-cancel\"> <!--ssmpd-i18n:%D8%A5%D9%84%D8%BA%D8%A7%D8%A1-->إلغاء</button></div>" +
       '</div>';
     document.body.appendChild(backdrop);
 
+    var contractSelect = backdrop.querySelector('#sv-contract');
+    var contractDetail = backdrop.querySelector('#sv-contract-detail');
+    var contracts = [], saving = false, autoContractCode = null;
+    function message(text) {
+      var error = backdrop.querySelector('#sv-error');
+      error.hidden = false; error.textContent = text; error.style.color = '#b42318';
+      window.SSMPDToast && window.SSMPDToast.error && window.SSMPDToast.error(text);
+    }
+    function showContract() {
+      var c = contracts.find(function(x){return x.id === contractSelect.value;});
+      contractDetail.textContent = '';
+      if (!c) return;
+      var basis = {performed:'عند تنفيذ الخدمة',collected:'حسب التحصيل'};
+      var scopes = {service:'الخدمة دون بنود المستلزمات',invoice:'إجمالي الفاتورة'};
+      var deductions = {none:'بدون خصم مستلزمات',cost:'خصم تكلفة المستلزمات',sale:'خصم سعر بيع المستلزمات'};
+      var rows = [['الطبيب',c.doctor_name],['كود الطبيب',c.doctor_key],['الخدمة في العقد',c.service_scope],['نسبة الطبيب',fmt(c.rate)+'%'],['أساس الاستحقاق',basis[c.basis]],['وعاء النسبة',scopes[c.base_scope]],['خصم المستلزمات',deductions[c.deduction]],['فترة السريان',c.valid_from+' — '+c.valid_to],['مرجع العقد',c.reference]];
+      contractDetail.innerHTML = '<p>بيانات معتمدة للعرض، تتحدث تلقائيًا باختيار العقد. نسبة الطبيب تختلف عن هامش ربح المركز.</p><dl>'+rows.map(function(r){return '<dt>'+esc(r[0])+'</dt><dd style="margin-inline-start:0;overflow-wrap:anywhere">'+esc(r[1])+'</dd>';}).join('')+'</dl>';
+      var codeInput=backdrop.querySelector('#sv-code');
+      if(!service.id && autoContractCode !== null && codeInput.value === autoContractCode)codeInput.value='';
+      autoContractCode=null;
+      var matches = state.services.filter(function(x){return x.booking_code === c.service_scope;});
+      var nameMatches = state.services.filter(function(x){return x.name === c.service_scope;});
+      var linked = matches.length === 1 ? matches[0] : (!matches.length && nameMatches.length === 1 ? nameMatches[0] : null);
+      if (linked && linked.id !== service.id) {
+        var note = document.createElement('p'); note.textContent = 'الخدمة موجودة بالفعل باسم «'+linked.name+'». افتحها لتعديل سجلها الأصلي بدل إنشاء نسخة أخرى.'; contractDetail.appendChild(note);
+        var open = document.createElement('button'); open.type='button'; open.className='btn'; open.textContent='فتح الخدمة الموجودة'; open.onclick=function(){backdrop.remove();openServiceModal(linked,onSaved);}; contractDetail.appendChild(open);
+      } else if (!linked && !service.id && !backdrop.querySelector('#sv-code').value.trim()) {
+        backdrop.querySelector('#sv-code').value = c.service_scope; autoContractCode=c.service_scope;
+      }
+      if (linked && linked.booking_code !== c.service_scope) {
+        var mismatch = document.createElement('p'); mismatch.textContent='نطاق العقد مسجل باسم الخدمة، بينما كودها هو «'+(linked.booking_code||'غير محدد')+'». يلزم توحيد نطاق العقد مع كود الخدمة من الأطباء والأتعاب وإعادة مراجعته قبل الربط للحجز.';contractDetail.appendChild(mismatch);
+      }
+      if (c.basis !== 'performed' || c.base_scope !== 'service' || !['none','cost'].includes(c.deduction)) {
+        var warning=document.createElement('p');warning.textContent='هذا العقد لا يطابق شروط الحجز الحالية. راجع أساس الاستحقاق ووعاء النسبة وخصم المستلزمات في الأطباء والأتعاب. تظل الشروط المعتمدة كما هي حتى مراجعة عقد مناسب.';contractDetail.appendChild(warning);
+      }
+      var hint=document.createElement('p');hint.textContent='العقد لا يتضمن سعر الخدمة أو هامش ربح المركز أو مدة الحجز أو القسم. بيانات الخدمة المسجلة تظل مصدر هذه التفاصيل. اختيار العقد هنا لا يخصص الخدمة لطبيب واحد؛ استحقاق الطبيب يرتبط بالزيارة والخدمة المنفذة.';contractDetail.appendChild(hint);
+    }
+    function loadContracts() {
+      var retry=backdrop.querySelector('#sv-contract-retry');retry.hidden=true;contractSelect.disabled=true;
+      Promise.resolve().then(function(){return window.SSMPDDb.pricingDoctorContracts();}).then(function(result){
+        if(!backdrop.isConnected)return;contracts=result.data||result||[];
+        contractSelect.innerHTML='<option value="">اختياري — اختر الطبيب وعقد الخدمة</option>'+contracts.map(function(c){return '<option value="'+esc(c.id)+'">'+esc(c.doctor_name+' — '+c.service_scope+' — '+c.rate+'%')+'</option>';}).join('');
+        contractSelect.disabled=false;
+        var related=contracts.filter(function(c){return service.id && (c.service_scope===service.booking_code||c.service_scope===service.name);});
+        if(related.length===1){contractSelect.value=related[0].id;showContract();}
+        else contractDetail.textContent=contracts.length?'اختر العقد لعرض بيانات الطبيب تلقائيًا.':'لا توجد عقود معتمدة وسارية الآن. راجع العقود في الحسابات ← الخزينة والدورة المالية ← الأطباء والأتعاب.';
+      }).catch(function(){if(backdrop.isConnected){contractDetail.textContent='تعذر تحميل عقود الطبيب. أعد المحاولة؛ بيانات الخدمة التي أدخلتها ما زالت موجودة.';retry.hidden=false;}});
+    }
+    contractSelect.onchange=showContract;
+    backdrop.querySelector('#sv-contract-retry').onclick=loadContracts;
+    loadContracts();
+
     function supplyOptions(selected) {
       return "<option value=\"\"> <!--ssmpd-i18n:%E2%80%94%20%D8%A7%D8%AE%D8%AA%D8%B1%20%E2%80%94-->— اختر —</option>" + state.supplies.map(function (s) {
-        return '<option value="' + s.id + '"' + (selected === s.id ? " selected" : "") + '>' + s.name + '</option>';
+        return '<option value="' + s.id + '"' + (selected === s.id ? " selected" : "") + '>' + esc(s.name) + '</option>';
       }).join("");
     }
     function renderLines() {
@@ -403,9 +456,14 @@
 
     document.getElementById("sv-cancel").onclick = function () { backdrop.remove(); };
     document.getElementById("sv-save").onclick = function () {
+      if (saving) return;
+      backdrop.querySelector('#sv-error').hidden = true;
       var name = document.getElementById("sv-name").value.trim();
-      if (!name) { window.SSMPDToast && window.SSMPDToast.error && window.SSMPDToast.error("اكتب اسم الخدمة"); return; }
+      if (!name) { message('اكتب اسم الخدمة'); backdrop.querySelector('#sv-name').focus(); return; }
+      var invalid = Array.from(backdrop.querySelectorAll('input[type="number"]')).find(function(el){return !el.checkValidity();});
+      if (invalid) { message('راجع القيم الرقمية. مدة الخدمة عدد صحيح من 5 إلى 480 دقيقة، والسعر وهامش الربح لا يقلان عن صفر.'); invalid.reportValidity(); return; }
       var cleanLines = lines.filter(function (l) { return l.supply_id; });
+      if (lines.some(function(l){return !l.supply_id || !Number.isFinite(Number(l.quantity)) || Number(l.quantity)<=0;})) {message('اختر الصنف واكتب كمية أكبر من صفر لكل مستلزم، أو احذف السطر غير المستخدم.');return;}
       var patch = {
         id: service.id,
         name: name,
@@ -418,12 +476,20 @@
         booking_minutes: Number(backdrop.querySelector('#sv-minutes').value)||null,
         booking_requires_device: backdrop.querySelector('#sv-device').checked
       };
-      if(patch.booking_enabled&&(!patch.booking_code||!patch.booking_department||!patch.booking_minutes)){window.SSMPDToast.error('أكمل كود وقسم ومدة الخدمة للحجز');return;}
-      window.SSMPDDb.savePricingService(patch, me && me.id).then(function () {
+      if(patch.booking_enabled&&(!patch.booking_code||!patch.booking_department||!patch.booking_minutes)){message('أكمل كود وقسم ومدة الخدمة للحجز');return;}
+      if(patch.booking_code && state.services.some(function(x){return x.id!==service.id && x.booking_code===patch.booking_code;})){message('كود الخدمة مستخدم بالفعل. افتح الخدمة المسجلة وعدّلها أو اختر كودًا مختلفًا للخدمة الجديدة.');return;}
+      var saveButton=backdrop.querySelector('#sv-save');saving=true;saveButton.disabled=true;saveButton.textContent='جاري الحفظ…';
+      Promise.resolve().then(function(){return window.SSMPDDb.savePricingService(patch, me && me.id);}).then(function () {
         backdrop.remove();
         state.loaded = false;
         onSaved();
-      }).catch(function () { window.SSMPDToast && window.SSMPDToast.error && window.SSMPDToast.error("تعذر الحفظ"); });
+      }).catch(function (e) {
+        var detail = e && e.message || '';
+        if(e && e.code==='23505')detail='كود الخدمة مستخدم بالفعل. افتح الخدمة الأصلية أو اختر كودًا مختلفًا.';
+        else if(e && e.code==='42501')detail='حسابك لا يملك صلاحية حفظ الخدمة. راجع صلاحية الإضافة أو التعديل في الحسابات مع مدير النظام.';
+        else if(e && (e.code==='23514'||e.code==='22P02'))detail='راجع كود الخدمة والحقول الرقمية، وخاصة مدة الحجز الصحيحة من 5 إلى 480 دقيقة.';
+        message('لم يتم حفظ الخدمة. '+(detail||'تعذر الاتصال بالخادم؛ أعد المحاولة.'));
+      }).finally(function(){saving=false;saveButton.disabled=false;saveButton.textContent='حفظ';});
     };
   }
 

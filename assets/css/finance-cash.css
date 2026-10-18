@@ -20,3 +20,9 @@
 .inv-modal .modal-head{position:sticky;top:-22px;z-index:3;background:#fff;padding:12px 0}
 
 .le-wide{grid-column:1/-1}.le-line{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:12px;border:1px solid #dce4f2;border-radius:12px;margin:12px 0}.le-line label{display:grid;gap:5px;min-width:0}.le-line input,.le-line select{min-width:0;width:100%;min-height:42px;padding:8px;border:1px solid #cdd7e8;border-radius:8px}.le-entry,.le-tree{padding:14px;margin:14px 0;background:#fff;border:1px solid #dce4f2;border-radius:12px}.le-account{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px;margin-inline-start:calc(var(--le-depth)*12px);border-bottom:1px solid #edf0f5}.le-account>div{min-width:0;overflow-wrap:anywhere}.le-account small{display:block;color:#65748a;margin-top:4px}.le-tree>summary{cursor:pointer;font-weight:700}.le-entry h4{overflow-wrap:anywhere}@media(max-width:600px){.le-line{grid-template-columns:1fr}.le-account{display:block}.le-account .fc-actions{margin-top:9px}}
+.acc-service-modal fieldset{min-inline-size:0;margin:12px 0;padding:14px;border:1px solid var(--c-border,#d5deee);border-radius:14px;background:#fff}
+.acc-service-modal :is(input,select){min-width:0;max-width:100%;box-sizing:border-box}
+.acc-service-modal :is(p,small,dd){overflow-wrap:anywhere;line-height:1.85}
+.acc-service-modal dl{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.6fr);gap:7px 12px;font-size:13px}
+.acc-service-modal dt{color:var(--c-muted,#6b7788)}.acc-service-modal dd{font-weight:600}
+.acc-service-modal .acc-line-row{flex-wrap:wrap}.acc-service-modal .acc-line-row select{flex-basis:50%!important}

@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261018-4",
-    "definitions": 1050,
-    "labels": 832,
+    "definitions": 1051,
+    "labels": 833,
     "files": 65,
-    "groups": 765
+    "groups": 766
   },
   "fields": [
     {
@@ -6435,6 +6435,16 @@
       "tab": "accounting",
       "article": "booking-flow",
       "text_sha256": "9de357e91f68d929da65d3983a861523a19c2d8ad7c1d86737871b762e1c0325"
+    },
+    {
+      "file": "render-accounting.js",
+      "label": "الطبيب وعقد الخدمة المعتمد",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "accounting",
+      "article": "doctor-missing",
+      "text_sha256": "15b191237259591f6e98866834303d300e6bc43217eaa55eafed666e68673281"
     },
     {
       "file": "render-accounting.js",
