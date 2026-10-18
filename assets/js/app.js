@@ -70,7 +70,7 @@
 
   function showAuthScreen(mode, errorMsg) {
     mode = mode || "login";
-    if(window.SSMPDI18n.setPageTitle)window.SSMPDI18n.setPageTitle("");
+    if(window.SSMPDI18n&&window.SSMPDI18n.setPageTitle)window.SSMPDI18n.setPageTitle("");
     var html = '<div class="auth-screen"><div class="auth-box">' +
       '<img class="logo" src="assets/img/logo.svg" alt="Swnw">' +
       "<h1> <!--ssmpd-i18n:%D9%84%D9%88%D8%AD%D8%A9%20%D8%A5%D9%86%D8%AA%D8%A7%D8%AC%20%D8%A7%D9%84%D9%85%D8%AD%D8%AA%D9%88%D9%89-->لوحة إنتاج المحتوى</h1><p class=\"sub\">" + window.SSMPD_CONFIG.centerName + '</p>' +
@@ -754,7 +754,7 @@
 
     // اسم الشعار بيتغيّر حسب السكشن المفتوح دلوقتي: اسم المركز + اسم السكشن
     var brandName = document.getElementById("brand-section-name");
-    if(window.SSMPDI18n.setPageTitle)window.SSMPDI18n.setPageTitle(window.SSMPDUITitles?window.SSMPDUITitles.label(titleTab,activeAdmin):TAB_LABELS[titleTab]);
+    if(window.SSMPDI18n&&window.SSMPDI18n.setPageTitle)window.SSMPDI18n.setPageTitle(window.SSMPDUITitles?window.SSMPDUITitles.label(titleTab,activeAdmin):TAB_LABELS[titleTab]);
     if (brandName) {
       brandName.innerHTML = window.SSMPDUITitles?window.SSMPDUITitles.brand(titleTab,activeAdmin): window.SSMPDI18n.textHtml("مركز عيادات سونو التخصصية") + (TAB_LABELS[tab] ? '<span class="brand-sep">|</span><span class="brand-section">' + window.SSMPDI18n.textHtml(tab==='inventory'&&window.SSMPDAuth.currentAdmin.inventory_assigned===false&&window.SSMPDAuth.currentAdmin.inventory_supply_access?'طلب مستلزمات':TAB_LABELS[tab]) + "</span>" : "");
     }

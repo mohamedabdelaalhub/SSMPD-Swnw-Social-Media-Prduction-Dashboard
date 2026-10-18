@@ -8,6 +8,7 @@ const messages = [];
 const client = { from(table) {
   const query = { update(patch) { saved = { table, patch, filters: {} }; writes++; return this; },
     eq(key, value) { saved.filters[key] = value; return this; }, select() { return this; },
+    order() { return Promise.resolve({ data: [] }); },
     single() { return Promise.resolve(fail ? { error: { message: 'denied' } } : { data: { id: 'contract-1' } }); } };
   return query;
 } };
@@ -15,7 +16,7 @@ const document = {
   body: { appendChild(node) { modal = node; } },
   createElement() {
     const controls = {};
-    return { remove() { this.removed = true; }, querySelectorAll() { return []; },
+    return { isConnected: true, remove() { this.removed = true; }, querySelectorAll() { return []; },
       querySelector(selector) { return controls[selector] ||= { value: '', focus() {}, disabled: false }; } };
   }
 };
@@ -29,8 +30,9 @@ vm.runInContext(ui.replace('window.SSMPDRenderContractingEntities = { render: re
 const contract = { id: 'contract-1', entity_id: 'entity-1', status: 'negotiating',
   agreement_date: '2026-09-01', start_date: '2026-09-01', end_date: '2027-09-01',
   discount_percent: 30, cashback_percent: 10, services: 'خدمات', signed_document_url: 'https://example.invalid/contract.pdf' };
-function open() {
+async function open() {
   window.testEdit(contract, () => refreshed++);
+  await settle();
   const values = { status: 'active', agreement: '2026-09-21', start: '2026-10-01', end: '2027-10-01',
     discount: '30', cashback: '10', recipient: '', transfer: '', services: 'خدمات', notes: '', signer: '' };
   for (const [key, value] of Object.entries(values)) modal.querySelector('#cee-' + key).value = value;
@@ -38,7 +40,7 @@ function open() {
 const submit = () => modal.querySelector('#cee-form').onsubmit({ preventDefault() {} });
 const settle = () => new Promise(resolve => setImmediate(resolve));
 async function main() {
-  open();
+  await open();
   assert.ok(modal.innerHTML.includes('value="negotiating" selected'));
   assert.ok(modal.innerHTML.includes('value="2027-09-01"'));
   modal.querySelector('#cee-end').value = '2026-09-01'; submit();
@@ -57,13 +59,13 @@ async function main() {
   assert.equal('signed_document_url' in saved.patch, false, 'Keep uploaded file metadata untouched');
   assert.equal(refreshed, 1);
   assert.equal(modal.removed, true);
-  open(); modal.querySelector('#cee-end').value = ''; submit(); await settle();
+  await open(); modal.querySelector('#cee-end').value = ''; submit(); await settle();
   assert.equal(saved.patch.end_date, null, 'Allow removing an optional end date');
-  fail = true; open(); submit(); await settle();
+  fail = true; await open(); submit(); await settle();
   assert.equal(modal.removed, undefined, 'Failed save keeps the form open');
   assert.equal(modal.querySelector('#cee-save').disabled, false);
   assert.ok(messages.at(-1).includes('denied'));
-  const before = writes; open(); modal.querySelector('#cee-cancel').onclick();
+  const before = writes; await open(); modal.querySelector('#cee-cancel').onclick();
   assert.equal(writes, before, 'Cancel must not save');
   console.log('PASS contract status/dates, exact record update, validation, retry, cancel and document preservation');
 }

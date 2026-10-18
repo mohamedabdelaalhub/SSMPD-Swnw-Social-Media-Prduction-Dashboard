@@ -7,7 +7,7 @@ async function as(n){await db.exec('reset role');await db.query("select set_conf
 async function call(name,args=[]){return (await db.query(`select public.clinic_finance_${name}(${args.map((_,i)=>'$'+(i+1)).join(',')}) v`,args)).rows[0].v;}
 async function denied(name,args,regex){await assert.rejects(()=>call(name,args),regex);}
 async function owner(q,args=[]){await db.exec('reset role');return (await db.query(q,args)).rows;}
-const key=()=>id(++seq),today=new Date().toISOString().slice(0,10),range=[today.slice(0,4)+'-01-01',today.slice(0,4)+'-12-31'];
+const key=()=>id(++seq),today=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Cairo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()),range=[today.slice(0,4)+'-01-01',today.slice(0,4)+'-12-31'];
 await as(5);await denied('snapshot',range,/صلاحية/);await as(6);await denied('snapshot',range,/صلاحية/);await as(4);assert.equal((await call('snapshot',range)).can_create,false);await denied('invoice',['x1','','Test',10,key()],/صلاحية/);
 await as(1);const register=await call('register',['خزينة اختبار',300]);await as(2);const openKey=key(),shift=await call('open_shift',[register,openKey]);assert.equal(await call('open_shift',[register,openKey]),shift);await denied('open_shift',[register,key()],/duplicate/);
 let snap=await call('snapshot',range);assert(!('expected' in snap.shifts[0]));assert(!('opening_book' in snap.shifts[0]));assert.deepEqual(snap.trial,[]);await assert.rejects(()=>db.query('select * from clinic_finance.shifts'),/permission denied/);await assert.rejects(()=>db.query("select clinic_finance.post('x',$1,'x',null,'1111','1112',1)",[key()]),/permission denied/);
