@@ -5,6 +5,22 @@ p=pathlib.Path('assets/js/dashboard-help-data.js');s=p.read_text();d=json.loads(
 rows=json.loads(subprocess.check_output(['node','scripts/help-field-inventory.cjs','--json'],text=True));rules=[]
 def rule(labels,text,article=None):
  rules.append((set(labels.split('|')),text,article))
+rule('ابحث في الشجرة|البحث بالكود أو اسم الحساب','اكتب جزءًا من اسم الحساب أو كوده لعرض موضعه في الشجرة. البحث لا يغير الحسابات.','ledger-guide')
+rule('نوع الحساب','اختر أصلًا أو التزامًا أو حقوق ملكية أو إيرادًا أو مصروفًا. نوع الابن يجب أن يطابق نوع الأب.','ledger-guide')
+rule('المستوى المحسوب من الأب|المستوى','المستوى الأول بلا أب، وكل ابن يزيد مستوى واحدًا. الحد خمسة مستويات. في معاينة الاستيراد يجب أن يتطابق المستوى مع الأب.','ledger-guide')
+rule('حالة الحساب','اختر مفعّلًا للسماح باستخدام الحساب أو موقوفًا لمنع الحركات الجديدة. لا يمكن إيقاف حساب نظام أو حساب مرتبط بخزينة أو له أبناء مفعّلون.','ledger-guide')
+rule('طبيعة الحساب','الحساب التجميعي يجمع أبناءه ولا يقبل قيودًا مباشرة. حساب الحركة يقبل قيودًا ولا يضم حسابات أبناء.','ledger-guide')
+rule('دور الخزينة','اختر الرئيسية للصرف والاستلام، أو خزينة تحصيل لتلقي النقد وتسليمه إلى الرئيسية. يسمح النظام برئيسية واحدة.','ledger-guide')
+rule('حساب الخزينة في الشجرة','اختر حساب أصل مفعّلًا قابلًا للحركة ومخصصًا لهذه الخزينة. لا تشارك خزينتان نفس الحساب، ولا يتغير ربط حركة قديمة.','ledger-guide')
+rule('الخزينة الرئيسية المستلمة','اختر الخزينة الرئيسية التي تستلم حصيلة خزينة التحصيل. افتح وردية للمستلم قبل اعتماد التسليم.','ledger-guide')
+rule('حد النثريات للإذن بالجنيه','أدخل حد الإذن بالصرف. خزينة التحصيل حدها صفر، والصرف من الرئيسية يخضع للرصيد والاعتماد.','ledger-guide')
+rule('راجعت الأكواد والأسماء والأب والمستويات قبل الإضافة','حدد هذا الاختيار بعد مراجعة كل صف في المعاينة. أي تعديل أو اقتراح جديد يحتاج مراجعة جديدة. المعاينة لا تحفظ حسابات تلقائيًا.','ledger-guide')
+rule('كود الأب','أدخل كود الحساب التجميعي الذي يتبعه هذا الحساب. اتركه فارغًا للمستوى الأول فقط.','ledger-guide')
+rule('وردية التحصيل المفتوحة','اختر ورديتك المفتوحة التي ستسلم حصيلتها. لا يمكنك اختيار وردية موظف آخر.','ledger-guide')
+rule('المبلغ المسلّم فعليًا بالجنيه','أدخل النقد الذي ستسلمه فعليًا. لا يتجاوز رصيد الوردية بعد طرح التسليمات المعلقة، ولا يتغير الرصيد حتى اعتماد المستلم.','ledger-guide')
+rule('رقم مستند التسليم','اكتب رقم سند التسليم الذي يرجع إليه الطرفان عند المراجعة. لا تكرر رقم سند سابق.','ledger-guide')
+rule('سبب التسليم','اكتب سبب التحويل مثل تسليم حصيلة اليوم إلى الخزينة الرئيسية.','ledger-guide')
+rule('ملاحظة الاستلام أو سبب الرفض','بعد عدّ النقد اكتب ملاحظة الاستلام، أو سبب الرفض عند عدم استلامه. لا يعتمد مقدم الطلب طلبه بنفسه.','ledger-guide')
 rule('نص Brief المواعيد','نص للنسخ إلى إضافة منشئ محتوى عيادات سونو. يحتوي اليوم والأسماء والتخصصات والساعات كما أدخلتها، وتعليمات صياغة المنشور دون تغيير الجدول. انسخه للإضافة ثم استورد الرد لاختيار النص.','design-guide')
 rule('نوع التصميم والنشر','اختر منشور 1080×1350 أو ستوري فقط 1080×1920. يحفظ الاختيار مع نسخة التصميم ويستخدمه عامل النشر بعد الاعتماد. الستوري لا تنشر بوستًا في الصفحة، والنص المولد يبقى للمراجعة ولا يظهر ككابشن داخل الستوري.','design-guide')
 rule('يوم جدول العيادات','اختر اليوم الذي يخصه منشور المواعيد. يظهر اسم اليوم في أعلى التصميم، ولا يغير مواعيد الحجز الفعلية.','design-guide')
@@ -493,7 +509,7 @@ def domain(f):
  if f in ['render-patients.js','psychology-workspace.js'] or f.startswith('patient-'):return 'patients'
  if f.startswith('reception-') or f=='render-bookings.js':return 'reception_services'
  if f.startswith('inventory-') or f=='render-inventory.js':return 'inventory'
- if f.startswith(('finance-','ledger-')) or f=='render-accounting.js':return 'accounting'
+ if f=='accountant-workspace.js' or f.startswith(('finance-','ledger-')) or f=='render-accounting.js':return 'accounting'
  return {'navigation-ui.js':'home','comments.js':'comments','render-comments.js':'comments','app.js':'home','render-admin.js':'admin','render-leads.js':'leads','render-clinic-info.js':'clinic_info','render-contracting-entities.js':'contracting_entities','render-metaads.js':'metaads','render-mediabuyer.js':'mediabuyer','indicator-reports.js':'indicator_reports','render-tasks.js':'tasks','task-work.js':'tasks','render-summary.js':'summary','render-staffkpi.js':'staff_kpi','render-review.js':'review','render-publish.js':'publish'}.get(f,'production')
 def default_article(tab):return {'patients':'patient-records','reception_services':'booking-flow','inventory':'purchases','accounting':'ledger-guide','leads':'leads-guide','tasks':'tasks-guide','admin':'access','home':'personal','clinic_info':'chatbot','contracting_entities':'entities','metaads':'ads-guide','mediabuyer':'ads-guide','indicator_reports':'indicators','summary':'indicators','staff_kpi':'indicators','review':'content','publish':'content','production':'content'}.get(tab,'content')
 def explain(row):

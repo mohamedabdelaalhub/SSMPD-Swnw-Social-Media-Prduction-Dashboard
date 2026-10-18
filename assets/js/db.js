@@ -1276,6 +1276,7 @@
     bookingCommand: function(action,payload,token){return handle(client.rpc('clinic_booking_command',{p_action:action,p_payload:payload,p_token:token}));},
     bookingShift: function(action,payload,token){return handle(client.rpc('clinic_booking_shift',{p_action:action,p_payload:payload,p_token:token}));},
     bookingSnapshot: function(from,to){return handle(client.rpc('clinic_booking_snapshot',{p_from:from,p_to:to}));},
+    financeTreasuryCommand:function(action,payload,token){return handle(client.rpc('clinic_finance_treasury_command',{p_action:action,p_payload:payload,p_token:token}));},
     financeLedgerCommand:function(action,payload,token){return handle(client.rpc('clinic_finance_ledger_command',{p_action:action,p_payload:payload,p_token:token}));},
     financeEntryOrigin:function(id){return handle(client.rpc('clinic_finance_entry_origin',{p_entry:id}));},
     financeManualCommand: function(action,payload,token){return handle(client.rpc('clinic_finance_manual_command',{p_action:action,p_payload:payload,p_token:token}));},
