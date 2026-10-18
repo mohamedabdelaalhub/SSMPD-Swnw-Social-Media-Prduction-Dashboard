@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261018-4",
-    "definitions": 1051,
-    "labels": 833,
-    "files": 65,
-    "groups": 766
+    "definitions": 1056,
+    "labels": 838,
+    "files": 66,
+    "groups": 770
   },
   "fields": [
     {
@@ -346,6 +346,56 @@
       "tab": "production",
       "article": "medical-sources",
       "text_sha256": "91898dcb6dba0dedf9068ecf50f6ffddeaa97ac7b1c0c2ccefbe28676c3f604e"
+    },
+    {
+      "file": "daily-clinics.js",
+      "label": "يوم جدول العيادات",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "production",
+      "article": "design-guide",
+      "text_sha256": "07e7d8055dc867c80015f105efcb33d893dea8b6351ecb5af6344949d2e138d5"
+    },
+    {
+      "file": "daily-clinics.js",
+      "label": "اسم الطبيب في جدول اليوم",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "production",
+      "article": "design-guide",
+      "text_sha256": "43bf4fe8bd7dc36d3ffa2a1be2879608f3fcc9c3d7b6d25804c666f8d6893249"
+    },
+    {
+      "file": "daily-clinics.js",
+      "label": "تخصص العيادة في الجدول",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "production",
+      "article": "design-guide",
+      "text_sha256": "532760cd7f85c75da576beb88df0fde662343c7fded4690927a1f17afb7cb9d1"
+    },
+    {
+      "file": "daily-clinics.js",
+      "label": "بداية موعد العيادة",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "production",
+      "article": "design-guide",
+      "text_sha256": "aed349663e34f5afc2c13a63861c2259069f67f6668fa0c305f0bcbc8bfaf05b"
+    },
+    {
+      "file": "daily-clinics.js",
+      "label": "نهاية موعد العيادة",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "production",
+      "article": "design-guide",
+      "text_sha256": "aed349663e34f5afc2c13a63861c2259069f67f6668fa0c305f0bcbc8bfaf05b"
     },
     {
       "file": "design-budget.js",

@@ -928,18 +928,18 @@ function openAgentImportModal(parentBackdrop) {
       "<div class=\"field\"><label> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%A7%D8%AF%D8%A9%20%D8%AF%D9%8A%20%D9%84%D8%B5%D9%81%D8%AD%D8%A9-->المادة دي لصفحة</label>" + W.brandSelectHtml("cf-brand", "") + '</div>' +
       "<div class=\"field\"><label> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AA%D8%AE%D8%B5%D8%B5-->التخصص</label>" + W.specialtySelectHtml("cf-specialty", "") + '</div>' +
       '<div class="field"><label>نص المحتوى</label><textarea id="cf-body" placeholder="اكتب الفكرة والنص..."></textarea></div>' +
-      window.SSMPDDoctorContent.html() + window.SSMPDDinaContent.html() + window.SSMPDBeforeAfterContent.html() + window.SSMPDCarouselContent.html() +
+      window.SSMPDDoctorContent.html() + window.SSMPDDinaContent.html() + window.SSMPDBeforeAfterContent.html() + window.SSMPDCarouselContent.html() + window.SSMPDDailyClinics.html() +
       W.contentIntelligencePanelHtml() +
       '<div class="content-ai-actions"><button type="button" class="btn" id="cf-ai-generate">توليد ٣ أفكار بالذكاء الاصطناعي</button><button type="button" class="btn ghost" id="cf-ai-import">استيراد رد الوكيل يدويًا</button></div>' +
       structuredFieldsHtml() +
       '<div style="text-align:left;margin-top:10px;"><button class="btn" id="cf-submit">إرسال للاعتماد الأولي</button> ' +
       '<button class="btn ghost" id="cf-draft">حفظ كمسودة</button></div></div>';
     document.body.appendChild(backdrop);
-    backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
-    backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
+    backdrop.querySelector(".modal-close").onclick = function () { if(!submitting)backdrop.remove(); };
+    backdrop.onclick = function (e) { if (e.target === backdrop&&!submitting) backdrop.remove(); };
 
     W.wireContentIntelligence(backdrop, function () { return document.getElementById("cf-specialty").value; });
-    window.SSMPDDoctorContent.wire(backdrop); window.SSMPDDinaContent.wire(backdrop); window.SSMPDBeforeAfterContent.wire(backdrop); window.SSMPDCarouselContent.wire(backdrop);
+    window.SSMPDDoctorContent.wire(backdrop); window.SSMPDDinaContent.wire(backdrop); window.SSMPDBeforeAfterContent.wire(backdrop); window.SSMPDCarouselContent.wire(backdrop); window.SSMPDDailyClinics.wire(backdrop);
     var importAgentBtn = document.getElementById("cf-import-agent");
     if (importAgentBtn) importAgentBtn.onclick = function () { openAgentImportModal(backdrop); };
     document.getElementById("cf-ai-generate").onclick = function () {
@@ -950,7 +950,9 @@ function openAgentImportModal(parentBackdrop) {
       W.refreshContentIntelligence(backdrop, function () { return document.getElementById("cf-specialty").value; });
     });
 
-    function submit(stage) {
+    var dailyCreated=null, dailySaved=false, submitting=false;
+    async function submit(stage) {
+      if(submitting)return;
       var title = document.getElementById("cf-title").value.trim();
       var body = document.getElementById("cf-body").value.trim();
       var brand = document.getElementById("cf-brand").value;
@@ -980,11 +982,15 @@ function openAgentImportModal(parentBackdrop) {
       var carouselBrief;try{carouselBrief=window.SSMPDCarouselContent.current(true);}catch(e){alert(e.message);return;}
       if(carouselBrief&&dinaBrief){alert("اختار كاروسيل أو قالب من قوالب د. دينا، مش الاتنين.");return;}
       if(carouselBrief){contentFormat="carousel";agentRaw=JSON.stringify(window.SSMPDCarouselContent.metadata(agentRaw,carouselBrief));}
+      var dailyBrief, dailyPrepared;
+      submitting=true;backdrop.querySelectorAll('#cf-submit,#cf-draft').forEach(function(b){b.disabled=true;});backdrop.querySelector('.modal').inert=true;
+      try{dailyBrief=window.SSMPDDailyClinics.current(true);if(dailyBrief){dailyPrepared=await window.SSMPDDailyClinics.prepare();contentFormat="image_post";agentRaw=JSON.stringify(window.SSMPDDailyClinics.metadata(agentRaw,dailyBrief));}else if(agentRaw){var nonDaily;try{nonDaily=JSON.parse(agentRaw);}catch(ignore){}if(nonDaily&&nonDaily.content_kind==='daily_clinics'){delete nonDaily.content_kind;delete nonDaily.daily_clinics_brief;agentRaw=JSON.stringify(nonDaily);}}}catch(e){submitting=false;backdrop.querySelector('.modal').inert=false;backdrop.querySelectorAll('#cf-submit,#cf-draft').forEach(function(b){b.disabled=false;});alert(e.message);return;}
+      if(dailyBrief&&!body)body=window.SSMPDDailyClinics.description(dailyBrief);
       var me = window.SSMPDAuth.currentAdmin;
-      window.SSMPDDb.createContentItem({
+      (dailyCreated?Promise.resolve(dailyCreated):window.SSMPDDb.createContentItem({
         title: title,
         body: body,
-        stage: stage,
+        stage: dailyBrief?"idea_selection":stage,
         created_by: me.id,
         brand: brand,
         specialty: specialty || null,
@@ -994,7 +1000,7 @@ function openAgentImportModal(parentBackdrop) {
         hook_text: valueOrNull("cf-hook"),
         content_angle: valueOrNull("cf-angle"),
         script_text: valueOrNull("cf-script"),
-        caption_text: valueOrNull("cf-caption"),
+        caption_text: valueOrNull("cf-caption") || (dailyBrief?"مواعيد العيادات اليومية بعيادات سونو التخصصية.\nتفاصيل الأطباء والمواعيد موضحة في التصميم.":null),
         cta_type: valueOrNull("cf-cta-type"),
         cta_text: valueOrNull("cf-cta-text"),
         target_duration_min_seconds: durationMin,
@@ -1002,15 +1008,26 @@ function openAgentImportModal(parentBackdrop) {
         video_template: valueOrNull("cf-video-template"),
         hypothesis_reason: valueOrNull("cf-hypothesis"),
         agent_raw_output: agentRaw
-      })
-        .then(function (row) {
+      }))
+        .then(async function (row) {
+          if(dailyBrief){
+            dailyCreated=row;
+            if(!dailySaved){
+              var saved=await window.SSMPDDailyClinics.attach(row,dailyPrepared,null);
+              Object.assign(row,saved.item);dailySaved=true;
+            }
+            if(stage!==row.stage)Object.assign(row,await window.SSMPDDb.updateContentItem(row.id,{stage:stage}));
+          }
           window.SSMPDDrive.logIdea(row.id, title).catch(function () {});
           window.SSMPDDb.logUsageActivity(me.id, "إنشاء مادة محتوى", title, "content", row.id).catch(function () {});
           return window.SSMPDDb.logActivity({ content_id: row.id, actor_id: me.id, action: "إنشاء", from_stage: null, to_stage: stage });
         }).then(function () {
           backdrop.remove();
           render(document.getElementById("view-container"));
-        }).catch(function (e) { alert("خطأ: " + e.message); });
+        }).catch(function (e) {
+          if(dailyCreated){backdrop.querySelector('#daily-clinics-fields').inert=true;backdrop.querySelectorAll('input,select,textarea').forEach(function(el){el.disabled=true;});}
+          alert((dailyCreated?"تم إنشاء المسودة، لكن لم تكتمل العملية. أعد الضغط للحفظ على نفس المسودة دون تكرارها، أو افتحها من قائمة المحتوى. ":"خطأ: ")+e.message);
+        }).finally(function(){submitting=false;backdrop.querySelector('.modal').inert=false;backdrop.querySelectorAll('#cf-submit,#cf-draft').forEach(function(b){b.disabled=false;});});
     }
     document.getElementById("cf-submit").onclick = function () { submit("initial_approval"); };
     document.getElementById("cf-draft").onclick = function () { submit("idea_selection"); };
