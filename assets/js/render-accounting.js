@@ -382,7 +382,7 @@
       var basis = {performed:'عند تنفيذ الخدمة',collected:'حسب التحصيل'};
       var scopes = {service:'الخدمة دون بنود المستلزمات',invoice:'إجمالي الفاتورة'};
       var deductions = {none:'بدون خصم مستلزمات',cost:'خصم تكلفة المستلزمات',sale:'خصم سعر بيع المستلزمات'};
-      var rows = [['الطبيب',c.doctor_name],['كود الطبيب',c.doctor_key],['الخدمة في العقد',c.service_scope],['نسبة الطبيب',fmt(c.rate)+'%'],['أساس الاستحقاق',basis[c.basis]],['وعاء النسبة',scopes[c.base_scope]],['خصم المستلزمات',deductions[c.deduction]],['فترة السريان',c.valid_from+' — '+c.valid_to],['مرجع العقد',c.reference]];
+      var rows = [['الطبيب',c.doctor_name],['كود الطبيب',c.doctor_key],['الخدمة في العقد',c.service_scope],['نسبة الطبيب',String(c.rate)+'%'],['أساس الاستحقاق',basis[c.basis]],['وعاء النسبة',scopes[c.base_scope]],['خصم المستلزمات',deductions[c.deduction]],['فترة السريان',c.valid_from+' — '+c.valid_to],['مرجع العقد',c.reference]];
       contractDetail.innerHTML = '<p>بيانات معتمدة للعرض، تتحدث تلقائيًا باختيار العقد. نسبة الطبيب تختلف عن هامش ربح المركز.</p><dl>'+rows.map(function(r){return '<dt>'+esc(r[0])+'</dt><dd style="margin-inline-start:0;overflow-wrap:anywhere">'+esc(r[1])+'</dd>';}).join('')+'</dl>';
       var codeInput=backdrop.querySelector('#sv-code');
       if(!service.id && autoContractCode !== null && codeInput.value === autoContractCode)codeInput.value='';
