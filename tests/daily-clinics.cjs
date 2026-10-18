@@ -1,28 +1,34 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),http=require('node:http'),path=require('node:path'),{chromium}=require('playwright'),ts=require('typescript');
 const root=path.resolve(__dirname,'..');
 const source=fs.readFileSync('assets/js/render-production.js','utf8'),ast=ts.createSourceFile('p.js',source,ts.ScriptTarget.Latest,true);
-let create;function visit(n){if(ts.isFunctionDeclaration(n)&&n.name?.text==='openCreateModal')create=n.getText(ast);ts.forEachChild(n,visit);}visit(ast);assert(create);
+let create,helpers=[];function visit(n){if(ts.isFunctionDeclaration(n)&&['openAgentImportModal','importMissingFields','escapeHtml'].includes(n.name?.text))helpers.push(n.getText(ast));if(ts.isFunctionDeclaration(n)&&n.name?.text==='openCreateModal')create=n.getText(ast);ts.forEachChild(n,visit);}visit(ast);assert(create);
 (async()=>{
  const server=http.createServer((req,res)=>{const file=path.resolve(root,'.'+decodeURIComponent(req.url.split('?')[0]));if(!file.startsWith(root+path.sep))return res.writeHead(403).end();fs.readFile(file,(e,b)=>{if(e)return res.writeHead(404).end();res.setHeader('Content-Type',file.endsWith('.js')?'text/javascript; charset=utf-8':file.endsWith('.css')?'text/css; charset=utf-8':file.endsWith('.png')?'image/png':file.endsWith('.woff2')?'font/woff2':'text/html; charset=utf-8');res.end(b);});}).listen(0,'127.0.0.1');await new Promise(r=>server.on('listening',r));let browser;
  try{
  browser=await chromium.launch({headless:true});const page=await browser.newPage();await page.goto('http://127.0.0.1:'+server.address().port+'/README.md');await page.setContent('<link rel="stylesheet" href="assets/css/styles.css"><link rel="stylesheet" href="assets/css/daily-clinics.css"><div id="view-container"></div>');
- await page.addScriptTag({url:'/assets/js/daily-clinics.js'});
- await page.evaluate(create=>{
+ await page.addScriptTag({url:'/assets/js/daily-clinics.js'});await page.addScriptTag({url:'/assets/js/render-production.js'});
+ await page.evaluate(({create,helpers})=>{
   window.alerts=[];window.alert=m=>alerts.push(m);window.calls={create:0,save:0,update:0};window.SSMPDAuth={currentAdmin:{id:'creator'}};
   window.SSMPDDoctorContent={html:()=>'<select id="cf-content-kind"><option value="standard">عام</option></select>',wire(){},current(){return null;}};
   for(const n of ['DinaContent','BeforeAfterContent','CarouselContent'])window['SSMPD'+n]={html:()=>'',wire(){},current(){return null;}};
   window.W={brandSelectHtml:id=>'<select id="'+id+'"><option value="sono">سونو</option></select>',specialtySelectHtml:id=>'<select id="'+id+'"><option value="">عام</option></select>',contentIntelligencePanelHtml:()=>'<select id="ci-format"><option value="image_post">صورة</option></select>',wireContentIntelligence(){}};
-  window.structuredFieldsHtml=()=>'<textarea id="cf-agent-raw"></textarea><textarea id="cf-caption"></textarea>';
+  window.structuredFieldsHtml=()=>'<textarea id="cf-agent-raw"></textarea><textarea id="cf-caption"></textarea>'+['hook','angle','script','cta-type','cta-text','duration-min','duration-max','video-template','hypothesis'].map(k=>'<input id="cf-'+k+'">').join('');
   window.valueOrNull=id=>document.getElementById(id)?.value||null;window.intOrNull=()=>null;window.render=()=>{};
   window.SSMPDDrive={logIdea:async()=>{}};
   window.SSMPDDb={createContentItem:async row=>{calls.create++;window.created={id:'sample',...row};return created;},updateContentItem:async(id,patch)=>{calls.update++;assertBrowser(created.design_file_url,'image before approval');Object.assign(created,patch);return created;},logUsageActivity:async()=>{},logActivity:async()=>{}};
   window.assertBrowser=(x,m)=>{if(!x)throw Error(m);};
   window.SSMPDDesignFiles={canEdit:item=>item.created_by==='creator',latest:async()=>null,save:async(item,blob,src,settings,job,base)=>{calls.save++;assertBrowser(blob.size>10000&&blob.type==='image/png','PNG');assertBrowser(settings.template==='sono-daily-clinics-v1'&&base===null,'private settings');if(calls.save===1)throw Error('simulated storage failure');item.design_file_url='private/output.png';return {version_id:'v1',item};}};
-  eval(create+';openCreateModal();');
- },create);
+  window.parseAgentHypotheses=SSMPDRenderProduction.parseAgentHypotheses;eval(helpers.join('\n')+';window.openAgentImportModal=openAgentImportModal;'+create+';openCreateModal();');
+ },{create,helpers});
  await page.selectOption('#cf-content-kind','daily_clinics');await page.selectOption('[data-daily-day]','السبت');await page.fill('[data-daily-key="name"]','د. محمد أحمد زغلول');await page.fill('[data-daily-key="specialty"]','أوعية دموية');await page.fill('[data-daily-key="from"]','20:00');await page.fill('[data-daily-key="to"]','00:30');
  await page.waitForFunction(()=>document.querySelector('[data-daily-status]').textContent.includes('جاهزة'));
  assert.equal(await page.inputValue('#cf-title'),'مواعيد العيادات اليومية');assert(await page.isDisabled('#cf-ai-generate'));
+ await page.click('[data-daily-copy]');assert((await page.inputValue('[data-daily-brief]')).includes('00:30'));assert.equal(await page.isDisabled('#cf-ai-import'),false);
+ await page.click('[data-daily-import]');
+ const fixture=await page.evaluate(()=>{var b=SSMPDDailyClinics.current(true);return {number:1,title:'جدول عيادات السبت',idea:'إعلان مواعيد العيادات',hook:'اختار تخصصك وراجع المواعيد',angle:'معلومات الحجز',format:'image_post',caption:'مواعيد عيادات السبت موضحة في الصورة. تواصل للحجز.',cta_type:'whatsapp',cta_text:'تواصل معنا على واتساب',hypothesis_reason:'إعلان الجدول الذي أدخله الموظف دون افتراض أداء سابق',sources:[],cover_source_text:'',content_kind:'daily_clinics',daily_clinics_brief:b};});
+ const wrong=JSON.parse(JSON.stringify(fixture));wrong.daily_clinics_brief.rows[0].from='19:00';
+ await page.fill('#agent-import-text','SSMPD_STRUCTURED_JSON\n'+JSON.stringify({ideas:[wrong]}));await page.click('#agent-import-parse');await page.click('[data-agent-pick]');assert((await page.evaluate(()=>alerts.at(-1))).includes('غيّر'));assert.equal(await page.inputValue('[data-daily-key="from"]'),'20:00');
+ await page.fill('#agent-import-text','SSMPD_STRUCTURED_JSON\n'+JSON.stringify({ideas:[fixture]}));await page.click('#agent-import-parse');await page.click('[data-agent-pick]');assert.equal(await page.inputValue('#cf-caption'),fixture.caption);assert.equal(await page.inputValue('[data-daily-day]'),'السبت');await page.evaluate(()=>{alerts=[];});
  await page.click('#cf-submit');await page.waitForFunction(()=>alerts.length===1);assert.equal(await page.evaluate(()=>created.stage),'idea_selection');assert.equal(await page.evaluate(()=>calls.create),1);assert.equal(await page.evaluate(()=>document.querySelector('#daily-clinics-fields').inert),true);
  await page.click('#cf-submit');await page.waitForFunction(()=>!document.querySelector('#cf-submit'));assert.deepEqual(await page.evaluate(()=>calls),{create:1,save:2,update:1});assert.equal(await page.evaluate(()=>created.stage),'initial_approval');assert.equal(await page.evaluate(()=>JSON.parse(created.agent_raw_output).daily_clinics_brief.rows[0].to),'00:30');
  // Validate all 13 slots, different day lengths, overflow, midnight and no permission bypass.
@@ -33,6 +39,8 @@ let create;function visit(n){if(ts.isFunctionDeclaration(n)&&n.name?.text==='ope
   var slot=document.createElement('div');D.mount(slot,{brand:'sono',created_by:'other',agent_raw_output:JSON.stringify(D.metadata(null,b))});
   return {width:c.width,height:c.height,errors:errors.length,buttons:slot.children.length};
  });assert.deepEqual(stats,{width:1080,height:1350,errors:6,buttons:0});await page.screenshot({path:'/tmp/daily-clinics-full.png'});
+ const rendering=await page.evaluate(async()=>{var b={day:'السبت',rows:[{name:'د. أحمد علي',specialty:'أطفال',from:'17:00',to:'19:00'}]},a=document.createElement('canvas'),z=document.createElement('canvas');await SSMPDDailyClinics.render(a,b);await SSMPDDailyClinics.render(z,{...b,rows:[b.rows[0],b.rows[0]]});window.singleRow=a;var p=a.getContext('2d').getImageData(230,410,1,1).data,q=z.getContext('2d').getImageData(230,410,1,1).data;return {different:Array.from(p).some((v,i)=>Math.abs(v-q[i])>5),bold:document.fonts.check('800 25px DailyLatin')};});assert(rendering.different,'unused row must disappear');assert(rendering.bold,'real bold face must load');
+ await page.evaluate(()=>{document.body.replaceChildren(singleRow);singleRow.style.width='540px';});await page.screenshot({path:'/tmp/daily-clinics-single-row.png'});
  // Existing editor restores the newest immutable version and preserves workflow stage.
  await page.evaluate(()=>{
   document.body.innerHTML='<div id="editor-slot"></div>';
