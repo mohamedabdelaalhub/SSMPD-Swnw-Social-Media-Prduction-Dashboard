@@ -601,7 +601,7 @@
     if(setupGlobalSearch.dispose)setupGlobalSearch.dispose();
     var input=document.getElementById('global-search-input'),toggle=document.getElementById('global-search-toggle'),panel=document.getElementById('global-search-panel'),resultsBox=document.getElementById('global-search-results'),revision=0,timer;
     if(!input||!toggle||!panel||!resultsBox)return;
-    var navigationOnly=R.isControlledFinance(admin)||(R.isPsychologySpecialist&&R.isPsychologySpecialist(admin));
+    var navigationOnly=R.isControlledFinance(admin);
     function closePanel(focus){clearTimeout(timer);revision++;panel.hidden=true;toggle.setAttribute('aria-expanded','false');hideResults();if(focus)toggle.focus();}
     function openPanel(){panel.hidden=false;toggle.setAttribute('aria-expanded','true');input.focus();input.select();if(input.value.trim().length>=2)runSearch(input.value);}
     toggle.onclick=function(){if(panel.hidden)openPanel();else closePanel(true);};
@@ -622,7 +622,7 @@
       if (term.length < 2) { hideResults(); return; }
       var canContent = !navigationOnly && (tabs.indexOf("review") !== -1 || tabs.indexOf("production") !== -1);
       var canLeads = !navigationOnly && tabs.indexOf("leads") !== -1;
-      var canPatients = !navigationOnly && tabs.indexOf("patients") !== -1;
+      var canPatients = !navigationOnly && !R.isPsychologySpecialist(admin) && tabs.indexOf("patients") !== -1;
 
       var destinations=window.SSMPDSearchDestinations?window.SSMPDSearchDestinations.find(term,admin,tabs):[];
       var navigationHtml=destinations.length?'<div class="gsearch-group">'+window.SSMPDI18n.textHtml('الأقسام والخدمات')+'</div>'+destinations.map(function(r){return itemBtn('destination',r.id,r.label).replace('</button>','<small class="gsearch-path">'+escapeHtml(r.path)+'</small></button>');}).join(''):'';

@@ -88,21 +88,21 @@
       admins.forEach(function (a) {
         var lastSuper = a.role === "super_admin" && a.active && activeSupers.length === 1;
         var extraRoles = a.extra_roles || [];
-        var psychOnly = a.role==="psychology_specialist" && !extraRoles.some(function(r){return r==="super_admin"||r==="general_manager";});
+        var hasPsychologyRole = a.role==="psychology_specialist" || extraRoles.indexOf("psychology_specialist")!==-1;
         html += '<tr><td>' + escapeHtml(a.name || "—") + '</td><td>' + escapeHtml(a.email) + '</td>' +
           '<td><select data-role="' + a.id + '" ' + (lastSuper ? "disabled" : "") + '>' +
           Object.keys(R.ALL).map(function (k) {
             return '<option value="' + k + '" ' + (k === a.role ? "selected" : "") + '>' + R.label(k) + '</option>';
-          }).join("") + '</select>'+(psychOnly?'<p>هذا الدور يفتح التخصصات الثلاثة فقط. أزل الأدوار الإضافية قبل تعيينه.</p>':'')+'</td>' +
+          }).join("") + '</select>'+(hasPsychologyRole?'<p>الدور يتيح النفسية والتخاطب وتعديل السلوك. يمكنك إضافة أدوار وصلاحيات أخرى لهذا الحساب.</p>':'')+'</td>' +
           '<td>' + Object.keys(R.ALL).filter(function (k) { return k !== a.role; }).map(function (k) {
             return '<label style="display:inline-flex;align-items:center;gap:3px;font-size:11px;margin-inline-end:8px;white-space:nowrap;">' +
               '<input type="checkbox" data-extra-role="' + a.id + '" data-extra-role-value="' + k + '" ' + (extraRoles.indexOf(k) !== -1 ? "checked" : "") + '>' + R.label(k) + '</label>';
           }).join("") + '</td>' +
-          '<td style="text-align:center;"><input type="checkbox" data-archive="' + a.id + '" ' + (psychOnly?'disabled title="صلاحيات الأخصائي محددة بالتخصصات فقط" ':'') + (a.has_archive_access ? "checked" : "") + '></td>' +
-          '<td style="text-align:center;"><input type="checkbox" data-archive-view-only="' + a.id + '" ' + (psychOnly?'disabled title="صلاحيات الأخصائي محددة بالتخصصات فقط" ':'') + (a.has_archive_view_only ? "checked" : "") + '></td>' +
-          '<td style="text-align:center;"><input type="checkbox" data-verification-access="' + a.id + '" ' + (psychOnly?'disabled title="صلاحيات الأخصائي محددة بالتخصصات فقط" ':'') + (a.has_verification_management_access ? "checked" : "") + '></td>' +
-          '<td style="text-align:center;"><input type="checkbox" data-delete-leads="' + a.id + '" ' + (psychOnly?'disabled title="صلاحيات الأخصائي محددة بالتخصصات فقط" ':'') + (a.can_delete_leads ? "checked" : "") + '></td>' +
-          '<td style="text-align:center;"><input type="checkbox" data-delete-nutrition-visits="' + a.id + '" ' + (psychOnly?'disabled title="صلاحيات الأخصائي محددة بالتخصصات فقط" ':'') + (a.can_delete_nutrition_visits ? "checked" : "") + '></td>' +
+          '<td style="text-align:center;"><input type="checkbox" data-archive="' + a.id + '" ' + (a.has_archive_access ? "checked" : "") + '></td>' +
+          '<td style="text-align:center;"><input type="checkbox" data-archive-view-only="' + a.id + '" ' + (a.has_archive_view_only ? "checked" : "") + '></td>' +
+          '<td style="text-align:center;"><input type="checkbox" data-verification-access="' + a.id + '" ' + (a.has_verification_management_access ? "checked" : "") + '></td>' +
+          '<td style="text-align:center;"><input type="checkbox" data-delete-leads="' + a.id + '" ' + (a.can_delete_leads ? "checked" : "") + '></td>' +
+          '<td style="text-align:center;"><input type="checkbox" data-delete-nutrition-visits="' + a.id + '" ' + (a.can_delete_nutrition_visits ? "checked" : "") + '></td>' +
           '<td>' + (a.user_id ? '<span class="status-pill approved">مفعّل</span>' : '<span class="status-pill draft">بانتظار إنشاء الحساب</span>') + '</td>' +
           '<td>' +
           ((a.role==='accountant'||a.role==='financial_manager'||extraRoles.indexOf('accountant')!==-1||extraRoles.indexOf('financial_manager')!==-1)?'<button class="btn ghost sm" data-finance-permissions="'+a.id+'">صلاحيات الأقسام</button> ':'') +
