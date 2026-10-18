@@ -94,7 +94,7 @@ try{
   // ---- تابات المنجزة وكل المهام وعدادات الشريط ----
   await page.click('[data-action="tab"][data-id="done"]');await page.waitForSelector('.tv-group');assert(await page.locator('.tv-groups .tv-row').count()>=2,'done tab lists finished tasks');assert(/آخر 7 أيام|النهارده|أمس|الأسبوع/.test(await txt('.tv-groups')),'grouped by period');
   await page.click('[data-action="tab"][data-id="projects"]');await page.waitForSelector('.tv-proj');
-  await page.click('.tv-need.n-overdue');await page.waitForSelector('.tv-empty');assert.equal(await page.locator('.tv-row').count(),0,'review waiting does not enter employee-overdue filter');
+  await page.click('.tv-need.n-overdue');await page.waitForSelector('.tsk-empty-rich');assert.equal(await page.locator('.tv-row').count(),0,'review waiting does not enter employee-overdue filter');
   await page.click('[data-action="tab"][data-id="team"]');assert(await page.locator('.tsk-week').count()===1,'team tab');
   assert.deepEqual(errors,[],errors.join('|'));await page.close();
  }

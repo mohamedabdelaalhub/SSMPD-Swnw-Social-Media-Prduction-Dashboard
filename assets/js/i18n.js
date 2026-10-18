@@ -8,6 +8,7 @@
   function textHtml(ar){return '<!--ssmpd-i18n:'+encodeURIComponent(ar)+'-->'+String(ar).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
   function apply(){
     pending=false;
+    if(!document||!document.body)return;
     document.documentElement.lang=language;
     document.documentElement.dir=language==='en'?'ltr':'rtl';
     document.title=pageTitle?t(pageTitle)+' — Swnw':(language==='en'?'Content dashboard — Swnw':'لوحة إنتاج المحتوى — Swnw');

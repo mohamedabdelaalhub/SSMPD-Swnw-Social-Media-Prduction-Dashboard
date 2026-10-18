@@ -126,6 +126,13 @@
         '<div class="field" style="margin:0;"><label>ليدز جديدة من غير رد (ساعة)</label><input type="number" min="1" id="sla-leads-hours" value="' + ((appSettings && appSettings.leads_sla_hours) || 24) + '" style="width:100px;"></div>' +
         "<button class=\"btn sm\" id=\"sla-save-btn\"> <!--ssmpd-i18n:%D8%AD%D9%81%D8%B8-->حفظ</button></div></div>";
 
+      html += '<div class="section" id="admin-autoschedule"><h3>الجدولة التلقائية لتاب النشر</h3>' +
+        '<p style="font-size:11px;color:var(--c-muted);margin-bottom:8px;">لو مفعّلة: أي مادة توصل "جاهزة للنشر" وليها صفحة ومنصات محددة بتتجدول تلقائيًا بعد فترة السماح دي، في أفضل وقت تفاعل معروف للصفحة (من تحليل الأداء). مفيش حاجة بتتنشر فورًا — بس تجدولة، زي بالظبط لو حد ضغط زرار "جدولة" بنفسه.</p>' +
+        '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">' +
+        '<label style="display:inline-flex;align-items:center;gap:6px;font-weight:600;"><input type="checkbox" id="autosch-enabled"' + (appSettings && appSettings.auto_schedule_enabled ? ' checked' : '') + '> شغّالة</label>' +
+        '<div class="field" style="margin:0;"><label>فترة السماح قبل الجدولة (دقيقة)</label><input type="number" min="5" id="autosch-grace" value="' + ((appSettings && appSettings.auto_schedule_grace_minutes) || 60) + '" style="width:100px;"></div>' +
+        "<button class=\"btn sm\" id=\"autosch-save-btn\"> <!--ssmpd-i18n:%D8%AD%D9%81%D8%B8-->حفظ</button></div></div>";
+
       var physioDevices = (appSettings && appSettings.physio_devices && appSettings.physio_devices.length) ? appSettings.physio_devices : PHYSIO_DEVICES_DEFAULT;
       html += '<div class="section" id="admin-physio"><h3>أجهزة العلاج الطبيعي</h3>' +
         '<p style="font-size:11px;color:var(--c-muted);margin-bottom:8px;">الأجهزة دي بتظهر كخانات اختيار في جلسات "تقرير علاج طبيعي" لأي مريض، وفي طباعة التقرير — إضافة/حذف جهاز هنا بيتحدّث في كل مكان تلقائياً.</p>' +
@@ -240,6 +247,19 @@
             });
         };
       });
+      var autoschSaveBtn = document.getElementById("autosch-save-btn");
+      if (autoschSaveBtn) {
+        autoschSaveBtn.onclick = function () {
+          var enabled = document.getElementById("autosch-enabled").checked;
+          var grace = parseInt(document.getElementById("autosch-grace").value, 10);
+          if (!grace || grace < 5) { alert("اكتب عدد دقايق صحيح (٥ على الأقل)."); return; }
+          autoschSaveBtn.disabled = true; autoschSaveBtn.textContent = "بيحفظ…";
+          window.SSMPDDb.updateAppSettings({ auto_schedule_enabled: enabled, auto_schedule_grace_minutes: grace, updated_by: myId })
+            .then(function () { window.SSMPDToast.show("اتحفظ"); })
+            .catch(function (e) { alert("خطأ: " + e.message); })
+            .then(function () { autoschSaveBtn.disabled = false; autoschSaveBtn.textContent = "حفظ"; });
+        };
+      }
       var slaSaveBtn = document.getElementById("sla-save-btn");
       if (slaSaveBtn) {
         slaSaveBtn.onclick = function () {
