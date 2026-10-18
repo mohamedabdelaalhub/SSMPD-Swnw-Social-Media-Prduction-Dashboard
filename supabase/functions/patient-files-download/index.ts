@@ -166,10 +166,6 @@ async function authorizePortalAccess(
 }
 
 
-function restrictedPsychology(c:any):boolean {
- const roles=[c.role,...(c.extra_roles||[])];
- return roles.includes("psychology_specialist")&&!roles.includes("super_admin")&&!roles.includes("general_manager");
-}
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS });
   if (req.method !== "GET") return json({ error: "Method not allowed" }, 405);
@@ -206,7 +202,7 @@ Deno.serve(async (req) => {
     // authorization path; non-staff callers fall back to portal authorization.
     caller = await getCallerAdmin(user.id, admin);
     if (caller) {
-      if(restrictedPsychology(caller))return json({error:"دور الأخصائي لا يسمح بتنزيل مرفقات المرضى"},403);
+
       const canReviewOrFull = caller.has_archive_access || caller.has_archive_review_access || isSuperAdmin(caller);
       const doctorOnly = caller.has_archive_view_only && !canReviewOrFull;
       const allowed = canReviewOrFull || caller.has_archive_view_only || isNursing(caller);

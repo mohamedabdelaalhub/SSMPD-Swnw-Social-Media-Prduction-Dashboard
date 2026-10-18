@@ -99,11 +99,12 @@
 
     // بياخد صف admin كامل (مش بس الرول) عشان تاب "أرشيف المرضى" بيتفحص بصلاحية
     // has_archive_access المنفصلة عن الرول — لسه بيقبل الرول كـ string لوحده كمان
-    isPsychologySpecialist: function(a) { return Roles.hasRole(a,"psychology_specialist") && !Roles.hasAnyRole(a,["super_admin","general_manager"]); },
+    // Select the specialty workspace only when no wider patient access was granted.
+    isPsychologySpecialist: function(a) { a=normalizeAdmin(a); return Roles.hasRole(a,"psychology_specialist") && !Roles.hasAnyRole(a,["super_admin","general_manager","nursing"]) && !a.has_archive_access && !a.has_archive_view_only && !a.has_archive_review_access; },
 
     canSeeTab: function (adminOrRole, tab) {
       var admin = normalizeAdmin(adminOrRole);
-      if(Roles.isPsychologySpecialist(admin))return ["home","patients","tasks"].includes(tab);
+      if(tab==="tasks" && Roles.hasRole(admin,"psychology_specialist"))return true;
       if(tab==="accounting")return Roles.canModuleAction(admin,"accounting","view") || Roles.canSeeTab(admin,"inventory") && !(admin.inventory_assigned===false && admin.inventory_supply_access===true);
       if(tab==="booking_cash" && Roles.isControlledFinance(admin))return Roles.canModuleAction(admin,"accounting","view");
       if(tab==='reception_services'&&Roles.isControlledFinance(admin)&&!Roles.hasAnyRole(admin,['super_admin','general_manager','reception','customer_service','nursing','sono_doctor']))return Roles.canModuleAction(admin,'accounting','view');
@@ -111,7 +112,7 @@
       if(tab==="inventory" && typeof admin.inventory_assigned==='boolean')return admin.inventory_assigned || admin.inventory_supply_access===true || Roles.hasAnyRole(admin,["super_admin","general_manager"]);
       if (Roles.isControlledFinance(admin) && ["accounting","contracting_entities","tasks"].includes(tab))return Roles.canModuleAction(admin,tab,'view');
       if (tab === "patients") {
-        return !!admin.has_archive_access || !!admin.has_archive_view_only ||
+        return Roles.hasRole(admin,"psychology_specialist") || !!admin.has_archive_access || !!admin.has_archive_view_only || !!admin.has_archive_review_access ||
           Roles.hasRole(admin, "super_admin") || Roles.hasRole(admin, "nursing");
       }
       var list = TAB_ACCESS[tab];
