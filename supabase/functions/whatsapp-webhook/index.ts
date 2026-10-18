@@ -1,8 +1,9 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { decideReply, clinicInfo } from "../meta-comments/ai.ts";
+import { factCache } from "../meta-comments/clinic-facts.ts";
 
-// WhatsApp Cloud API → Claude replies (Mohamed, 2026-10-18): same reply rules as the Facebook/Instagram
+// WhatsApp Cloud API → OpenAI replies (Mohamed, 2026-10-18): same reply rules as the Facebook/Instagram
 // comments and messages (meta-comments/ai.ts). Every customer message and every reply is saved in
 // public.social_messages (platform "whatsapp"); complaints/emergencies raise the red alert in the dashboard.
 //
@@ -11,7 +12,7 @@ import { decideReply, clinicInfo } from "../meta-comments/ai.ts";
 //   WHATSAPP_VERIFY_TOKEN  any text; the same text goes in Meta's "Verify token" box
 //   WHATSAPP_APP_SECRET    the app's App Secret (checks Meta's X-Hub-Signature-256)
 //   WHATSAPP_TOKEN         access token allowed to send from the number
-//   WHATSAPP_ALLOWED_NUMBERS  optional "2010xxxxxxx,2011xxxxxxx": while testing Claude only answers these
+//   WHATSAPP_ALLOWED_NUMBERS  optional "2010xxxxxxx,2011xxxxxxx": while testing the agent only answers these
 //   WHATSAPP_AUTOREPLY     "on" to answer; anything else = save only, no replies (kill switch)
 //   WHATSAPP_BRANDS        optional JSON {"<phone_number_id>":"dr_dina"}; default brand is sono
 
@@ -41,22 +42,21 @@ function brandFor(phoneNumberId: string): string {
   return "sono";
 }
 
-// Center facts staff keep in the dashboard tab «معلومات المركز» (hours, doctors, services), cached 5 min,
-// plus the website's doctors/specialties. Prices in them are never quoted (rule in ai.ts).
-let knowledge: { at: number; text: string } | null = null;
+// Dashboard facts take precedence over the website. Keep the existing five-minute refresh.
+const dashboardFacts = factCache(async () => {
+  const secret = Deno.env.get("WHATSAPP_ALERT_SECRET");
+  if (!secret) throw new Error("MISSING_CLINIC_KNOWLEDGE_CREDENTIAL");
+  const r = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/clinic-knowledge`, {
+    method: "POST", headers: { "X-WhatsApp-Alert-Secret": secret }, signal: AbortSignal.timeout(8000),
+  });
+  if (!r.ok) throw new Error("CLINIC_KNOWLEDGE_HTTP_ERROR");
+  const d = await r.json();
+  if (!d?.ok || typeof d.text !== "string" || d.text.length > 40000) throw new Error("INVALID_CLINIC_KNOWLEDGE");
+  return d.text;
+}, 5 * 60e3);
 async function centerFacts(): Promise<string> {
-  if (!knowledge || Date.now() - knowledge.at > 5 * 60e3) {
-    let text = "";
-    const secret = Deno.env.get("WHATSAPP_ALERT_SECRET");
-    if (secret) {
-      try {
-        const r = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/clinic-knowledge`, { method: "POST", headers: { "X-WhatsApp-Alert-Secret": secret }, signal: AbortSignal.timeout(8000) });
-        const d = await r.json(); if (d?.ok && typeof d.text === "string") text = d.text.slice(0, 6000);
-      } catch { /* fall back to website facts only */ }
-    }
-    knowledge = { at: Date.now(), text };
-  }
-  return [knowledge.text, await clinicInfo()].filter(Boolean).join("\n");
+  const [dashboard, website] = await Promise.all([dashboardFacts(), clinicInfo()]);
+  return [dashboard, website].filter(Boolean).join("\n\n");
 }
 
 async function send(phoneNumberId: string, to: string, body: string) {
@@ -113,11 +113,12 @@ async function handle(db: any, value: any) {
         ? "أهلاً بيك 🌷 للأسف مش بنقدر نسمع الرسايل الصوتية هنا، ممكن تكتبلنا سؤالك وهنرد عليك على طول؟"
         : "أهلاً بيك 🌷 وصلتنا رسالتك. ممكن تكتبلنا سؤالك أو طلبك بالكلام علشان نقدر نساعدك؟";
     } else {
-      // Last messages of this chat (customer + our replies) so Claude continues the conversation.
-      const { data: past } = await db.from("social_messages").select("message,reply_text,sent_at")
-        .eq("conversation_id", `whatsapp:${from}`).neq("id", id).order("sent_at", { ascending: false }).limit(6);
+      // Last six inbound turns; only successfully sent replies belong in the conversation.
+      const { data: past } = await db.from("social_messages").select("message,reply_text,sent_at,status")
+        .eq("conversation_id", `whatsapp:${from}`).eq("platform", "whatsapp").eq("brand", brand)
+        .neq("id", id).order("sent_at", { ascending: false }).limit(6);
       const history: string[] = [];
-      for (const p of (past || []).reverse()) { history.push(`العميل: ${p.message || ""}`); if (p.reply_text) history.push(`المركز: ${p.reply_text}`); }
+      for (const p of (past || []).reverse()) { history.push(`العميل: ${p.message || ""}`); if (p.status === "replied" && p.reply_text) history.push(`المركز: ${p.reply_text}`); }
       const d = await decideReply({ brand, channel: "whatsapp", text, history, clinicInfo: await centerFacts() });
       if (!d.ok) { await db.from("social_messages").update({ status: "failed", last_error: String(d.error).slice(0, 300), updated_at: now }).eq("id", id); continue; }
       category = d.category || "general";
