@@ -2,9 +2,9 @@ begin;
 do $$
 declare a1 uuid;a2 uuid;a3 uuid;u1 uuid;u2 uuid;u3 uuid;prefix text;code text;parent text;ac jsonb;main jsonb;sub jsonb;ms uuid;ss uuid;t jsonb;reply jsonb;payload jsonb;token uuid;receipt uuid;day date:=(now() at time zone 'Africa/Cairo')::date;ref text:='TEST-ACCOUNTANT-'||gen_random_uuid()::text;n integer;before_income numeric;
 begin
- select id,user_id into a1,u1 from public.admins where role='super_admin' and active and user_id is not null order by id limit 1;
- select id,user_id into a2,u2 from public.admins where role='super_admin' and active and user_id is not null and id<>a1 order by id limit 1;
- select id,user_id into a3,u3 from public.admins where active and user_id is not null and id not in(a1,a2) order by id limit 1;
+ select id,user_id into a1,u1 from public.admins where role='super_admin' and active and user_id is not null order by exists(select 1 from clinic_finance.shifts s where s.cashier_id=admins.id and s.status in('open','submitted')) desc,id limit 1;
+ select id,user_id into a2,u2 from public.admins where role='super_admin' and active and user_id is not null and id<>a1 and not exists(select 1 from clinic_finance.shifts s where s.cashier_id=admins.id and s.status in('open','submitted')) order by id limit 1;
+ select id,user_id into a3,u3 from public.admins where active and user_id is not null and id not in(a1,a2) and not exists(select 1 from clinic_finance.shifts s where s.cashier_id=admins.id and s.status in('open','submitted')) order by id limit 1;
  if u1 is null or u2 is null or u3 is null then raise exception 'Requires two managers and a third staff account';end if;
  perform set_config('request.jwt.claim.sub',u1::text,true);
  delete from public.admin_extra_roles where admin_id=a3;

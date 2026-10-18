@@ -254,6 +254,58 @@
     parts.forEach(function (x) { if (x.type === "hour") out.h = x.value; if (x.type === "minute") out.m = x.value; if (x.type === "dayPeriod") out.p = x.value; });
     return out;
   }
+
+  // المواعيد المقترحة للنشر — حسب الصفحة ونوع المادة (ثابتة دلوقتي، ممكن تتحول
+  // لإعدادات قابلة للتعديل من لوحة الأدمن لاحقًا لو احتاج محمد كذا).
+  var SUGGESTED_TIMES = {
+    sono: { image_post: { h: 7, m: 0 }, link_post: { h: 7, m: 0 }, carousel: { h: 23, m: 0 }, video: { h: 4, m: 0 } },
+    dr_dina: { image_post: { h: 10, m: 0 }, link_post: { h: 10, m: 0 }, carousel: { h: 20, m: 0 }, video: { h: 23, m: 0 } }
+  };
+  function suggestedSlot(brand, format) {
+    var b = SUGGESTED_TIMES[brand];
+    return (b && b[format]) || null;
+  }
+  function suggestedLabel(h, m) {
+    var d = new Date(); d.setHours(h, m, 0, 0);
+    var t = timeParts(d.toISOString());
+    return t.h + ":" + t.m + " " + t.p;
+  }
+  // بيرجع قيمة جاهزة لحقل datetime-local — أقرب حدوث للوقت المقترح (النهارده
+  // لو لسه فاضل عليه ٥ دقايق على الأقل، وإلا بكرة).
+  function nextSlotLocalInput(h, m) {
+    var now = new Date();
+    var d = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, 0, 0);
+    if (d.getTime() <= now.getTime() + 5 * 60000) d.setDate(d.getDate() + 1);
+    var pad = function (n) { return String(n).padStart(2, "0"); };
+    return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()) + "T" + pad(d.getHours()) + ":" + pad(d.getMinutes());
+  }
+  function suggestHintHtml(brand, format, inputId) {
+    var slot = suggestedSlot(brand, format);
+    if (!slot) return "";
+    return '<div style="margin-top:6px;font-size:12px;color:var(--c-muted);">⏱ الوقت المقترح لنوع المادة دي: <b>' + suggestedLabel(slot.h, slot.m) + '</b> ' +
+      '<button type="button" class="btn ghost sm" data-use-suggested-for="' + inputId + '" data-h="' + slot.h + '" data-m="' + slot.m + '" style="margin-inline-start:6px;">استخدم الميعاد المقترح</button></div>';
+  }
+  // يحدّث مربع الميعاد المقترح جوه كارت "جاهزة للنشر" — بيتنفّذ أول مرة مع
+  // الكارت، وتاني مرة كل ما المستخدم يغيّر الصفحة (سونو/د.دينا) من الدروب داون.
+  function updateSuggestSlot(id) {
+    var box = document.getElementById("pb-suggest-" + id);
+    if (!box) return;
+    var wrap = document.getElementById("pb-brand-wrap-" + id);
+    var format = wrap ? wrap.getAttribute("data-content-format") : "";
+    var brand = valueOf("pb-brand-" + id);
+    if (!format) { box.innerHTML = ""; return; }
+    if (!brand) { box.innerHTML = "اختار الصفحة الأول عشان يظهرلك ميعاد مقترح لنوع المادة دي."; return; }
+    box.innerHTML = suggestHintHtml(brand, format, "pb-when-" + id);
+    wireSuggestButtons(box);
+  }
+  function wireSuggestButtons(root) {
+    root.querySelectorAll("[data-use-suggested-for]").forEach(function (btn) {
+      btn.onclick = function () {
+        var input = document.getElementById(btn.getAttribute("data-use-suggested-for"));
+        if (input) input.value = nextSlotLocalInput(parseInt(btn.getAttribute("data-h"), 10), parseInt(btn.getAttribute("data-m"), 10));
+      };
+    });
+  }
   // ثمبنيل التصميم على شمال كل مادة في كروت الأيام: بوست = التصميم، كاروسيل = الكفر (الشريحة الأولى)، فيديو = أول فريم.
   // الصور خاصة فبتتحوّل لرابط مؤقت (SSMPDDesignFiles.resolve) وبتتحمّل وقت ما الصف يظهر على الشاشة بس.
   var thumbCache = new Map();
@@ -515,10 +567,11 @@
     var actionsHtml;
     if (mode === "ready") {
       actionsHtml =
-        "<div class=\"field\"><label> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%A7%D8%AF%D8%A9%20%D8%AF%D9%8A%20%D9%84%D8%B5%D9%81%D8%AD%D8%A9-->المادة دي لصفحة</label>" + W.brandSelectHtml("pb-brand-" + i.id, i.brand || "") + '</div>' +
+        "<div class=\"field\" id=\"pb-brand-wrap-" + i.id + "\" data-content-format=\"" + escapeHtml(i.content_format || "") + "\"><label> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%A7%D8%AF%D8%A9%20%D8%AF%D9%8A%20%D9%84%D8%B5%D9%81%D8%AD%D8%A9-->المادة دي لصفحة</label>" + W.brandSelectHtml("pb-brand-" + i.id, i.brand || "") + '</div>' +
         '<div class="field"><label>هتتنشر على (تقدر تختار أكتر من منصة)</label><div id="pb-platform-' + i.id + '">' + socialPlatformCheckboxes("pb-platform-" + i.id, i.publish_platforms || i.publish_platform || []) + '</div></div>' +
         '<div id="pb-meta-hint-' + i.id + '" style="display:none;margin:6px 0 10px;padding:8px 10px;border:1px solid var(--c-border);border-radius:8px;color:var(--c-muted);font-size:12px;">فيسبوك/انستجرام: رابط المنشور بيتسجل تلقائيًا بعد نجاح النشر.</div>' +
         '<div class="field"><label>معاد النشر المجدول</label><input type="datetime-local" id="pb-when-' + i.id + '"></div>' +
+        '<div id="pb-suggest-' + i.id + '" style="margin:-4px 0 10px;font-size:12px;color:var(--c-muted);"></div>' +
         '<div id="pb-manual-wrap-' + i.id + '" style="display:none;">' +
         '<div class="field"><label>رابط المنشور للمنصات اليدوية فقط (تيكتوك/يوتيوب)</label>' +
         '<input placeholder="https://..." id="pb-url-' + i.id + '"></div>' +
@@ -536,7 +589,7 @@
           '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">' +
           '<input type="datetime-local" id="pb-rewhen-' + i.id + '" value="' + toLocalInput(i.scheduled_publish_at) + '" style="flex:1;min-width:200px;">' +
           '<button class="btn" data-reschedule="' + i.id + '">حفظ الميعاد الجديد</button>' +
-          '</div></div>';
+          '</div>' + suggestHintHtml(i.brand, i.content_format, "pb-rewhen-" + i.id) + '</div>';
       }
       // النشر التلقائي لسه مستني: زرار واحد يلغي النشر التلقائي ويرجّع المادة لجاهزة للنشر (وClaude مايرجعش يجدولها).
       if (job && job.status === "pending") {
@@ -643,6 +696,16 @@
     container.querySelectorAll("[data-cancel-meta-job]").forEach(function (btn) {
       btn.onclick = function () { cancelMetaJob(btn.getAttribute("data-cancel-meta-job")); };
     });
+    // المواعيد المقترحة: نعمّر مربع الاقتراح لكل كارت "جاهزة للنشر" أول مرة،
+    // ونعيد تعميره كل ما المستخدم يغيّر الصفحة (سونو/د.دينا) من الدروب داون.
+    container.querySelectorAll('[id^="pb-suggest-"]').forEach(function (box) {
+      updateSuggestSlot(box.id.replace("pb-suggest-", ""));
+    });
+    container.querySelectorAll('select[id^="pb-brand-"]').forEach(function (sel) {
+      var id = sel.id.replace("pb-brand-", "");
+      sel.addEventListener("change", function () { updateSuggestSlot(id); });
+    });
+    wireSuggestButtons(container);
   }
 
   // بيقفل مودال تفاصيل النشر (لو مفتوح) بعد أي إجراء ناجح — عشان مايفضلش

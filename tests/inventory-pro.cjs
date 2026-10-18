@@ -3,7 +3,7 @@ const {chromium}=require('playwright');
 const root=path.resolve(__dirname,'..');
 const html=`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><link rel="stylesheet" href="/assets/css/styles.css"><link rel="stylesheet" href="/assets/css/inventory.css"></head><body><div id="r"></div>
 <script>
-var d1=function(n){return new Date(Date.now()+n*86400000).toISOString().slice(0,10)};
+var d1=function(n){var d=new Date();d.setDate(d.getDate()+n);return new Intl.DateTimeFormat('en-CA',{year:'numeric',month:'2-digit',day:'2-digit'}).format(d)};
 window.calls=[];
 var items=[];for(var k=1;k<=30;k++)items.push({id:'i'+k,sku:'S'+k,name:'صنف '+k,category:k%2?'مستلزمات':'أدوية',base_unit:'قطعة',units_per_pack:10,minimum_quantity:5,on_hand:k===1?3:50,available:50,current_average_cost:2,current_sale_price:3,markup_percent:50,track_lots:k===2});
 var snap={items:items,requests:[{id:'r1',request_type:'purchase',status:'approved',requester_id:'a1',requester_name:'محمد',supplier_name:'مورد 1',requested_at:new Date().toISOString(),lines:[{item_id:'i2',item_name:'صنف 2',quantity:20,package_cost:20,received_quantity:0,fulfilled_quantity:0,track_lots:true}]},{id:'r2',request_type:'issue',status:'pending',requester_id:'a1',requester_name:'محمد',requested_at:new Date().toISOString(),lines:[{item_id:'i3',item_name:'صنف 3',quantity:2,received_quantity:0,fulfilled_quantity:0}]}],

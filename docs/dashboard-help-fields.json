@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261018-4",
-    "definitions": 1085,
-    "labels": 857,
+    "definitions": 1086,
+    "labels": 858,
     "files": 67,
-    "groups": 796
+    "groups": 797
   },
   "fields": [
     {
@@ -6998,6 +6998,16 @@
       "tab": "admin",
       "article": "access",
       "text_sha256": "dbea0050a8a9ab45a9d32211d526ad16ec3498c0963c1feae63ca74168280854"
+    },
+    {
+      "file": "render-admin.js",
+      "label": "فترة السماح قبل الجدولة (دقيقة)",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "admin",
+      "article": "publishing-guide",
+      "text_sha256": "087883d9da76e783e9fae8081047b8f22c80cd5b0d311e258ed9a7ea24af6e03"
     },
     {
       "file": "render-admin.js",

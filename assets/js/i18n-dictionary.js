@@ -1,4 +1,5 @@
 window.SSMPD_TRANSLATIONS = {
+  "أخصائي نفسية": "Psychology specialist",
   "الأقسام والخدمات": "Sections and services",
   "فتح القسم": "Open section",
   "يفتح في تبويب آخر": "Opens in a new tab",

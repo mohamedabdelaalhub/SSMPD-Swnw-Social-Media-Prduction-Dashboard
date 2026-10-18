@@ -7766,6 +7766,19 @@
       "reviewed": true
     },
     {
+      "title": "فترة السماح قبل الجدولة (دقيقة)",
+      "labels": [
+        "فترة السماح قبل الجدولة (دقيقة)"
+      ],
+      "text": "عدد الدقائق التي تظل فيها المادة الجاهزة متاحة للجدولة اليدوية قبل أن تجدولها المهمة التلقائية. الحد الأدنى 5 دقائق، ويطبق فقط عند تفعيل الجدولة التلقائية.",
+      "article": "publishing-guide",
+      "tabs": [
+        "admin"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "اسم الجهاز الجديد",
       "labels": [
         "اسم الجهاز الجديد"
@@ -11946,9 +11959,9 @@
   ],
   "coverage": {
     "version": "20261018-4",
-    "definitions": 1085,
-    "labels": 857,
+    "definitions": 1086,
+    "labels": 858,
     "files": 67,
-    "groups": 796
+    "groups": 797
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
