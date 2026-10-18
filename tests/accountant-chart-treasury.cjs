@@ -1,0 +1,28 @@
+const boot=require('./helpers/clinic-finance.cjs'),fs=require('fs'),assert=require('assert/strict');
+(async()=>{const x=await boot(['clinic_doctor_settlements','clinic_supplier_finance','clinic_bank_insurance','clinic_payroll_assets_tax','clinic_opening_reports','clinic_booking_advances','clinic_legacy_assets','clinic_register_directions_payments']),{db,as,fin,key,id,range,owner,call}=x;
+for(const p of ['20261017212113_clinic_ledger_chart_actions.sql','20261018205000_accountant_chart_treasury.sql'])await db.exec(fs.readFileSync('supabase/migrations/'+p,'utf8'));
+const chart=(a,p,k=key())=>fin('ledger_command',[a,p,k]),treasury=(a,p,k=key())=>fin('treasury_command',[a,p,k]);await as(1);
+let parent=null,groups=[];for(let level=1;level<=5;level++){const a=await chart('account_create',{code:'01'+'01'.repeat(level-1),name:'مستوى '+level,kind:'asset',parent_code:parent,is_postable:level===5});groups.push(a);parent=a.code;}
+await assert.rejects(()=>chart('account_create',{code:'010101010101',name:'مستوى سادس',kind:'asset',parent_code:parent}),/تجميع|خمسة/);
+await assert.rejects(()=>fin('manual_command',['request',{kind:'correction',reference:'GROUP',note:'رفض حساب تجميعي',lines:[{account:'01',debit:1,credit:0},{account:'3210',debit:0,credit:1}]},key()]),/تجميع/);
+await chart('account_create',{code:'0101010102',name:'خزينة استقبال',kind:'asset',parent_code:'01010101'});
+await chart('account_create',{code:'0101010103',name:'خزينة أخرى',kind:'asset',parent_code:'01010101'});
+let main=await treasury('register_save',{name:'الخزينة الرئيسية',treasury_kind:'main',account_code:parent,assigned_to:id(3),limit:1000});
+let sub=await treasury('register_save',{name:'خزينة استقبال',treasury_kind:'collection',account_code:'0101010102',assigned_to:id(4),parent_register_id:main.id});assert.equal(sub.operation_mode,'receive');
+await assert.rejects(()=>treasury('register_save',{name:'رئيسية ثانية',treasury_kind:'main',account_code:'0101010103',assigned_to:id(1)}),/unique|duplicate/);
+await assert.rejects(()=>chart('account_update',{code:parent,revision:groups[4].revision,name:'تجميع غير مسموح',kind:'asset',parent_code:'01010101',is_postable:false}),/خزينة/);
+await assert.rejects(()=>fin('open_shift',[sub.id,key()]),/موظف آخر/);
+await as(3);const ms=await fin('open_shift',[main.id,key()]);await as(4);const ss=await call('clinic_booking_shift',['open',{register_id:sub.id},key()]);
+const bs=await call('clinic_booking_snapshot',range);assert(!bs.registers.some(r=>r.id===main.id));
+await owner('insert into clinic_finance.entries(source,source_id,description,shift_id,created_by) values($1,$2,$3,$4,$5) returning id',['fixture',key(),'تحصيل اختبار',ss,id(4)]).then(async rows=>{await db.query('insert into clinic_finance.lines(entry_id,account,debit,credit) values($1,$2,100,0),($1,$3,0,100)',[rows[0].id,'1111','4110']);});
+await as(4);const token=key(),payload={from_shift:ss,to_register:main.id,amount:100,reference:'HANDOVER',reason:'تسليم آخر اليوم'};let t=await treasury('transfer_request',payload,token);assert.deepEqual(await treasury('transfer_request',payload,token),t);
+await assert.rejects(()=>call('clinic_booking_shift',['close',{shift_id:ss,counts:{'1':0}},key()]),/تسليم/);
+await assert.rejects(()=>treasury('transfer_review',{id:t.id,approve:true,note:'مراجعة ذاتية'}),/صلاحية|مراجع/);
+await as(3);await treasury('transfer_review',{id:t.id,approve:true,note:'استلمت النقد فعليًا'});
+let snap=await fin('snapshot',range);assert.equal(Number(snap.registers.find(r=>r.id===main.id).balance),100);assert.equal(Number(snap.registers.find(r=>r.id===sub.id).balance),0);assert.equal(Number(snap.trial.find(a=>a.code===parent).balance),100);assert.equal(Number(snap.trial.find(a=>a.code==='1119').balance),0);assert.equal(Number(snap.trial.find(a=>a.code==='4110').balance),-100);
+assert.equal(Number((await owner('select sum(debit-credit) n from clinic_finance.lines'))[0].n),0);
+await owner('insert into clinic_finance.entries(source,source_id,description,shift_id,created_by) values($1,$2,$3,$4,$5) returning id',['expense',key(),'رفض الصرف من الفرعية',ss,id(4)]).then(async rows=>{await assert.rejects(()=>db.query('insert into clinic_finance.lines(entry_id,account,debit,credit) values($1,$2,0,1)',[rows[0].id,'1111']),/الرئيسية/);});
+await as(1);const rows=[{code:'08',name:'مجموعة تجريبية',kind:'asset',level:1,is_postable:false,parent_code:null},{code:'0801',name:'حساب مستورد',kind:'asset',level:2,is_postable:true,parent_code:'08'}];const importKey=key();assert.equal((await treasury('chart_import',{rows},importKey)).imported,2);assert.equal((await treasury('chart_import',{rows},importKey)).imported,2);await assert.rejects(()=>treasury('chart_import',{rows}),/موجود/);
+await assert.rejects(()=>treasury('chart_import',{rows:[{...rows[0],code:'09'},{...rows[1],code:'0999',parent_code:'08'}]}),/كود/);assert.equal((await owner("select count(*) n from clinic_finance.accounts where code='09'"))[0].n,0,'invalid import fully rolls back');
+await as(2);await assert.rejects(()=>treasury('chart_import',{rows}),/صلاحية/);await db.exec('reset role;set role anon');await assert.rejects(()=>treasury('transfer_request',payload),/permission denied/);await db.exec('reset role');assert.equal((await db.query("select has_schema_privilege('authenticated','clinic_finance','usage') b")).rows[0].b,false);await db.close();console.log('PASS five levels/groups, leading zero codes, cash account mapping, assigned cashier scope, reviewed/idempotent transfer without duplicate revenue, primary-only cash payouts, atomic import, private/anon/role guards.');
+})().catch(e=>{console.error(e.message,e.where,e.position,e.stack);process.exit(1)});
