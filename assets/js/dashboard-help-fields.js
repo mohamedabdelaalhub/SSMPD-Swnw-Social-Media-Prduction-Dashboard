@@ -511,6 +511,59 @@
       "reviewed": true
     },
     {
+      "title": "يوم جدول العيادات",
+      "labels": [
+        "يوم جدول العيادات"
+      ],
+      "text": "اختر اليوم الذي يخصه منشور المواعيد. يظهر اسم اليوم في أعلى التصميم، ولا يغير مواعيد الحجز الفعلية.",
+      "article": "design-guide",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "اسم الطبيب في جدول اليوم",
+      "labels": [
+        "اسم الطبيب في جدول اليوم"
+      ],
+      "text": "اكتب اسم الطبيب كما سيظهر للجمهور. راجع الاسم قبل إرسال المادة للاعتماد. هذا الحقل يخص المنشور ولا ينشئ طبيبًا أو عقدًا.",
+      "article": "design-guide",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "تخصص العيادة في الجدول",
+      "labels": [
+        "تخصص العيادة في الجدول"
+      ],
+      "text": "اكتب التخصص المختصر الذي سيظهر بجانب اسم الطبيب. راجع أن النص يناسب مساحة المعاينة؛ لا يغير تخصص الخدمات.",
+      "article": "design-guide",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "بداية موعد العيادة",
+      "labels": [
+        "بداية موعد العيادة",
+        "نهاية موعد العيادة"
+      ],
+      "text": "اختر الساعة والدقيقة مع صباحًا أو مساءً من حقل الوقت. النهاية الأقل من البداية تعني اليوم التالي؛ يجب اختلاف البداية والنهاية. هذه أوقات المنشور فقط وليست حجزًا لمريض.",
+      "article": "design-guide",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "اتجاه التوسيع",
       "labels": [
         "اتجاه التوسيع"
@@ -11479,9 +11532,9 @@
   ],
   "coverage": {
     "version": "20261018-4",
-    "definitions": 1051,
-    "labels": 833,
-    "files": 65,
-    "groups": 766
+    "definitions": 1056,
+    "labels": 838,
+    "files": 66,
+    "groups": 770
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
