@@ -6476,3 +6476,112 @@ create policy "reel cover view" on storage.objects for select to authenticated u
   and exists(select 1 from public.content_items c where c.id::text=split_part(objects.name,'/',1)
    and c.cover_settings->>'cover_image_url' = 'https://uuijfbpgvtdxgaosqpxo.supabase.co/storage/v1/object/authenticated/content-designs/'||objects.name));
 commit;
+
+-- 57) جدولة تلقائية عامة لأي مادة "جاهزة للنشر" (claude_autoschedule_ready) (٢٠٢٦-١٠-١٩)
+begin;
+alter table public.app_settings add column if not exists auto_schedule_enabled boolean not null default false;
+alter table public.app_settings add column if not exists auto_schedule_grace_minutes int not null default 60;
+comment on column public.app_settings.auto_schedule_enabled is 'لو true: claude_autoschedule_ready() بيجدول تلقائيًا أي مادة "جاهزة للنشر" ليها صفحة ومنصات محددة، بعد فترة السماح';
+comment on column public.app_settings.auto_schedule_grace_minutes is 'عدد الدقايق اللي الوركر يستناها بعد ما المادة توصل "جاهزة للنشر" قبل ما يجدولها تلقائيًا (فرصة لحد يراجعها أو يوقفها بـ⏸)';
+
+create or replace function public.claude_autoschedule_ready() returns int
+language plpgsql security definer set search_path = public as $$
+declare
+  r record;
+  slot timestamptz;
+  n int := 0;
+  tries int;
+  h int;
+  grace_minutes int;
+  auto_on boolean;
+  best_daypart text;
+  claude_id uuid := 'a0fbdfee-d147-4282-b988-186a9ae3e88c';
+begin
+  perform set_config('request.jwt.claims', '{"role":"service_role"}', true);
+  select auto_schedule_enabled, coalesce(auto_schedule_grace_minutes, 60)
+    into auto_on, grace_minutes
+    from public.app_settings where id = 1;
+  if not coalesce(auto_on, false) then return 0; end if;
+
+  for r in
+    select c.id, c.brand, c.publish_platforms,
+           (select max((e->>'at')::timestamptz) from jsonb_array_elements(c.stage_history) e
+             where e->>'stage' = 'ready_to_publish') as ready_at
+      from public.content_items c
+     where c.stage = 'ready_to_publish'
+       and c.claude_hold = false
+       and c.brand in ('sono','dr_dina')
+       and jsonb_typeof(c.publish_platforms) = 'array'
+       and jsonb_array_length(c.publish_platforms) > 0
+       and not exists (
+         select 1 from public.meta_publish_jobs j
+          where j.content_id = c.id and j.status in ('pending','processing','published','partial')
+       )
+     order by c.updated_at
+     limit 10
+  loop
+    if r.ready_at is null or r.ready_at > now() - make_interval(mins => grace_minutes) then
+      continue;
+    end if;
+
+    -- أفضل وقت من ترشيحات كلود (content_learnings — أقوى daypart من نوع "do_more" لنفس الصفحة)
+    select value into best_daypart
+      from public.content_learnings
+     where active and dimension = 'daypart' and brand = r.brand and verdict = 'do_more'
+     order by (evidence->>'ratio')::numeric desc
+     limit 1;
+
+    h := case coalesce(best_daypart, 'noon')
+           when 'morning' then 9
+           when 'noon' then 13
+           when 'evening' then 17
+           else 21
+         end;
+
+    slot := (date_trunc('day', now() at time zone 'Africa/Cairo') + make_interval(hours => h))
+            at time zone 'Africa/Cairo';
+    if slot <= now() + interval '30 minutes' then
+      slot := slot + interval '1 day';
+    end if;
+
+    tries := 0;
+    loop
+      exit when tries >= 14 or not exists (
+        select 1 from public.meta_publish_jobs j
+         where j.brand = r.brand and j.status in ('pending','processing','published','partial')
+           and j.scheduled_at between slot - interval '2 hours' and slot + interval '2 hours'
+      );
+      slot := slot + interval '1 day';
+      tries := tries + 1;
+    end loop;
+
+    update public.content_items
+       set stage = 'scheduled', scheduled_publish_at = slot, scheduled_by = claude_id
+     where id = r.id;
+
+    insert into public.meta_publish_jobs (content_id, brand, scheduled_at, publish_facebook, publish_instagram, created_by)
+    select r.id, r.brand, slot,
+           (r.publish_platforms ? 'facebook'), (r.publish_platforms ? 'instagram'), claude_id
+     where (r.publish_platforms ? 'facebook') or (r.publish_platforms ? 'instagram');
+
+    insert into public.activity_log (content_id, actor_id, action, from_stage, to_stage)
+    values (
+      r.id, claude_id,
+      'جدولة تلقائية (Claude) — ميعاد النشر ' || to_char(slot at time zone 'Africa/Cairo', 'YYYY-MM-DD HH24:MI') || ' (توقيت القاهرة)'
+        || case when best_daypart is not null then ' — بناءً على أفضل وقت تفاعل (' || best_daypart || ')' else '' end,
+      'ready_to_publish', 'scheduled'
+    );
+
+    n := n + 1;
+  end loop;
+
+  return n;
+end $$;
+
+-- وركر Cron يشغّل الفنكشن كل ١٥ دقيقة (مش هيعمل حاجة لحد ما تفعّل auto_schedule_enabled=true)
+select cron.schedule(
+  'claude-autoschedule-ready',
+  '*/15 * * * *',
+  $cron$select public.claude_autoschedule_ready();$cron$
+);
+commit;
