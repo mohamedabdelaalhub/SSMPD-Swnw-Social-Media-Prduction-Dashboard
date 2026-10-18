@@ -1,12 +1,345 @@
 {
   "coverage": {
     "version": "20261018-4",
-    "definitions": 1057,
-    "labels": 839,
-    "files": 66,
-    "groups": 771
+    "definitions": 1085,
+    "labels": 857,
+    "files": 67,
+    "groups": 796
   },
   "fields": [
+    {
+      "file": "accountant-workspace.js",
+      "label": "ابحث في الشجرة",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "a5b268575aa1454587fd92d5a58efaa7f173afe99e20892ce520c1edf1d962cb"
+    },
+    {
+      "file": "accountant-workspace.js",
+      "label": "البحث بالكود أو اسم الحساب",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "a5b268575aa1454587fd92d5a58efaa7f173afe99e20892ce520c1edf1d962cb"
+    },
+    {
+      "file": "accountant-workspace.js",
+      "label": "كود الحساب",
+      "name": "code",
+      "kind": "helper",
+      "forms": [
+        "تعديل الحساب",
+        "إضافة حساب للشجرة"
+      ],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "6ab3ee9161d68a830c2115487793f05abd43e46a74d2d76b3e76b7f42cabcbdb"
+    },
+    {
+      "file": "accountant-workspace.js",
+      "label": "اسم الحساب",
+      "name": "name",
+      "kind": "helper",
+      "forms": [
+        "تعديل الحساب",
+        "إضافة حساب للشجرة"
+      ],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "1b669e519c669473c9820368773b0c0864e2fdac05a40729805e65a846c05cca"
+    },
+    {
+      "file": "accountant-workspace.js",
+      "label": "نوع الحساب",
+      "name": "kind",
+      "kind": "helper",
+      "forms": [
+        "تعديل الحساب",
+        "إضافة حساب للشجرة"
+      ],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "7437e2990e6417e80b5feadf8cd0d6fddac2c19fc370dbfa2201d25ccc947532"
+    },
+    {
+      "file": "accountant-workspace.js",
+      "label": "الحساب الأب",
+      "name": "",
+      "kind": "html",
+      "forms": [
+        "تعديل الحساب",
+        "إضافة حساب للشجرة"
+      ],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "c43487d4c510799195cb3824720ed47dc6ca5b8d540f405a8f3be936c3fa4481"
+    },
+    {
+      "file": "accountant-workspace.js",
+      "label": "المستوى المحسوب من الأب",
+      "name": "level",
+      "kind": "helper",
+      "forms": [
+        "تعديل الحساب",
+        "إضافة حساب للشجرة"
+      ],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "8755f7ac1efa79f5ac237df5fc0f01e89c2fed79893fbacc1215b1e99cc0daa8"
+    },
+    {
+      "file": "accountant-workspace.js",
+      "label": "حالة الحساب",
+      "name": "active",
+      "kind": "helper",
+      "forms": [
+        "تعديل الحساب",
+        "إضافة حساب للشجرة"
+      ],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "a139e9e95e57b0646a9d114d6b4d4ae884ba27eec1ddcda3eecf020556817060"
+    },
+    {
+      "file": "accountant-workspace.js",
+      "label": "طبيعة الحساب",
+      "name": "posting",
+      "kind": "helper",
+      "forms": [
+        "تعديل الحساب",
+        "إضافة حساب للشجرة"
+      ],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "6a8fa4a137ab2eb136ce7e65e8f32007ec647056d249b92d2c80dac5aec9d71a"
+    },
+    {
+      "file": "accountant-workspace.js",
+      "label": "اسم الخزينة",
+      "name": "name",
+      "kind": "helper",
+      "forms": [
+        "إعدادات الخزينة",
+        "إضافة خزينة"
+      ],
+      "tab": "accounting",
+      "article": "cash-shifts-guide",
+      "text_sha256": "d4e9634900d12fe8d49e042a72066ba6c8d43f7e2ead0f5deaf50a08965f38a4"
+    },
+    {
+      "file": "accountant-workspace.js",
+      "label": "دور الخزينة",
+      "name": "treasury_kind",
+      "kind": "helper",
+      "forms": [
+        "إعدادات الخزينة",
+        "إضافة خزينة"
+      ],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "ef5979aae389e18874802d69b580c5268f2dd4d79704d328fe10b601e612f8c7"
+    },
+    {
+      "file": "accountant-workspace.js",
+      "label": "حساب الخزينة في الشجرة",
+      "name": "account_code",
+      "kind": "helper",
+      "forms": [
+        "إعدادات الخزينة",
+        "إضافة خزينة"
+      ],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "eb6bbda62b8e57df2b3f4296e747f1eae3834528e05d1edea040415ae6fe80c2"
+    },
+    {
+      "file": "accountant-workspace.js",
+      "label": "الموظف المسؤول",
+      "name": "assigned_to",
+      "kind": "helper",
+      "forms": [
+        "إعدادات الخزينة",
+        "إضافة خزينة"
+      ],
+      "tab": "accounting",
+      "article": "inventory-count",
+      "text_sha256": "3780038927d64b0bf4fe1b6e96498fc2fb5fc2abcdc3429e8ae15c5a13a15385"
+    },
+    {
+      "file": "accountant-workspace.js",
+      "label": "الخزينة الرئيسية المستلمة",
+      "name": "parent_register_id",
+      "kind": "helper",
+      "forms": [
+        "إعدادات الخزينة",
+        "إضافة خزينة"
+      ],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "25864a80cc2f4fd80d18cbe95741eef6085038acc1532441375e16a962e1bb0c"
+    },
+    {
+      "file": "accountant-workspace.js",
+      "label": "حد النثريات للإذن بالجنيه",
+      "name": "limit",
+      "kind": "helper",
+      "forms": [
+        "إعدادات الخزينة",
+        "إضافة خزينة"
+      ],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "7c59253f542bddab5e9ac5999eba3550d327253a943cff179c2bdb6cebe91b46"
+    },
+    {
+      "file": "accountant-workspace.js",
+      "label": "راجعت الأكواد والأسماء والأب والمستويات قبل الإضافة",
+      "name": "",
+      "kind": "label",
+      "forms": [
+        "استيراد الشجرة المحاسبية"
+      ],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "a3f67dfdecdf17ea6492c6d7a49e29a34c36dbfcd29564d304d408380dcbdd47"
+    },
+    {
+      "file": "accountant-workspace.js",
+      "label": "الكود",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "accounting",
+      "article": "supply-map",
+      "text_sha256": "33b376dab9db7cbbbc91dd980dacd497b6853489e867a2cb12f1b216589d2b45"
+    },
+    {
+      "file": "accountant-workspace.js",
+      "label": "الاسم",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "accounting",
+      "article": "supply-map",
+      "text_sha256": "edc721754fff0d043fe910b92a4627b1c8f15376bcaed30a237bf5e5acc283c7"
+    },
+    {
+      "file": "accountant-workspace.js",
+      "label": "كود الأب",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "82c8f54dc1051c041b84afa9d7ea17b1eb19931068f372bfd2250b00a6192585"
+    },
+    {
+      "file": "accountant-workspace.js",
+      "label": "المستوى",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "8755f7ac1efa79f5ac237df5fc0f01e89c2fed79893fbacc1215b1e99cc0daa8"
+    },
+    {
+      "file": "accountant-workspace.js",
+      "label": "النوع",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "68c593718f9e4a670d874fc33a5fb6254f39083bbe1ac70792f1b87046e5dd54"
+    },
+    {
+      "file": "accountant-workspace.js",
+      "label": "طبيعة الحساب",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "6a8fa4a137ab2eb136ce7e65e8f32007ec647056d249b92d2c80dac5aec9d71a"
+    },
+    {
+      "file": "accountant-workspace.js",
+      "label": "وردية التحصيل المفتوحة",
+      "name": "from_shift",
+      "kind": "helper",
+      "forms": [
+        "تسليم التحصيل للخزينة الرئيسية"
+      ],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "7d759359fd6bd6b308349c77cab71675a1433dfac82dcb3c77d6cb7a622e0476"
+    },
+    {
+      "file": "accountant-workspace.js",
+      "label": "المبلغ المسلّم فعليًا بالجنيه",
+      "name": "amount",
+      "kind": "helper",
+      "forms": [
+        "تسليم التحصيل للخزينة الرئيسية"
+      ],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "472227de317d9df41f12c71c1f302ef794cd3c5e1b1b24f11b3e6eccad496370"
+    },
+    {
+      "file": "accountant-workspace.js",
+      "label": "رقم مستند التسليم",
+      "name": "reference",
+      "kind": "helper",
+      "forms": [
+        "تسليم التحصيل للخزينة الرئيسية"
+      ],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "61906cdccf9a6db9756f2e1670a7316e9a97fde9169b74a55592c08d60a08216"
+    },
+    {
+      "file": "accountant-workspace.js",
+      "label": "سبب التسليم",
+      "name": "reason",
+      "kind": "helper",
+      "forms": [
+        "تسليم التحصيل للخزينة الرئيسية"
+      ],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "c315fe2df508c7b2fcde54836ddb3f2dfd69a8d158bae9fb230cbdd5df7d8dbf"
+    },
+    {
+      "file": "accountant-workspace.js",
+      "label": "القرار",
+      "name": "approve",
+      "kind": "helper",
+      "forms": [
+        "مراجعة استلام الخزينة"
+      ],
+      "tab": "accounting",
+      "article": "requests",
+      "text_sha256": "e94fbc6b4acbcb93cd4550a5c0f411b3026a6856a94bfdc920222df26211079d"
+    },
+    {
+      "file": "accountant-workspace.js",
+      "label": "ملاحظة الاستلام أو سبب الرفض",
+      "name": "note",
+      "kind": "helper",
+      "forms": [
+        "مراجعة استلام الخزينة"
+      ],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "bd92e293d973907603dd501f77d022e8a83c6918fdc7071624e7cdf073ef8db5"
+    },
     {
       "file": "ai-clips.js",
       "label": "الحد الشهري (ج.م)",
