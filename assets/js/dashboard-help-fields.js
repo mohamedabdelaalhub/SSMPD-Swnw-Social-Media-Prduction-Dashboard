@@ -7065,6 +7065,20 @@
       "reviewed": true
     },
     {
+      "title": "الطبيب وعقد الخدمة المعتمد",
+      "labels": [
+        "الطبيب وعقد الخدمة المعتمد"
+      ],
+      "text": "اختار الطبيب وعقد الخدمة المعتمد والساري لعرض اسمه وكوده ونسبته ووعاء الاستحقاق وخصم المستلزمات وفترة العقد تلقائيًا. كود الطبيب مستقل عن كود الخدمة. إذا كانت الخدمة موجودة افتح سجلها الأصلي. السعر والقسم والمدة تأتي من تعريف الخدمة؛ النسبة المعتمدة للطبيب لا تساوي هامش ربح المركز.",
+      "article": "doctor-missing",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "سعر الخدمة (بدون مستلزمات)",
       "labels": [
         "سعر الخدمة (بدون مستلزمات)"
@@ -11465,9 +11479,9 @@
   ],
   "coverage": {
     "version": "20261018-4",
-    "definitions": 1050,
-    "labels": 832,
+    "definitions": 1051,
+    "labels": 833,
     "files": 65,
-    "groups": 765
+    "groups": 766
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();

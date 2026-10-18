@@ -1289,6 +1289,7 @@
     financeInsuranceClaim: function(invoice,reference,insurer,amount,token){return handle(client.rpc('clinic_finance_insurance_claim',{p_invoice:invoice,p_reference:reference,p_insurer:insurer,p_amount:amount,p_token:token}));},
     financeInsuranceAction: function(payload,token){return handle(client.rpc('clinic_finance_insurance_action',{p_payload:payload,p_token:token}));},
     financeInsuranceReview: function(id,approve,note){return handle(client.rpc('clinic_finance_insurance_review',{p_id:id,p_approve:approve,p_note:note}));},
+    pricingDoctorContracts: function(){return handle(client.rpc('pricing_doctor_contracts',{}));},
     financeSnapshot: function(from,to,offset){return handle(client.rpc('clinic_finance_snapshot',{p_from:from,p_to:to,p_offset:offset||0}));},
     financeSaveRegister: function(id,name,limit,mode){return handle(client.rpc('clinic_finance_save_register',{p_id:id,p_name:name,p_limit:limit,p_mode:mode}));},
     receptionLinks: function(workspace){return handle(client.rpc("clinic_reception_links",{p_workspace:workspace}));},
