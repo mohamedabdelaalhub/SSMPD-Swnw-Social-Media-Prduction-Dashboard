@@ -564,19 +564,6 @@
       "reviewed": true
     },
     {
-      "title": "نص Brief المواعيد",
-      "labels": [
-        "نص Brief المواعيد"
-      ],
-      "text": "نص للنسخ إلى إضافة منشئ محتوى عيادات سونو. يحتوي اليوم والأسماء والتخصصات والساعات كما أدخلتها، وتعليمات صياغة المنشور دون تغيير الجدول. انسخه للإضافة ثم استورد الرد لاختيار النص.",
-      "article": "design-guide",
-      "tabs": [
-        "production"
-      ],
-      "forms": [],
-      "reviewed": true
-    },
-    {
       "title": "اتجاه التوسيع",
       "labels": [
         "اتجاه التوسيع"
@@ -11545,9 +11532,9 @@
   ],
   "coverage": {
     "version": "20261018-4",
-    "definitions": 1057,
-    "labels": 839,
+    "definitions": 1056,
+    "labels": 838,
     "files": 66,
-    "groups": 771
+    "groups": 770
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
