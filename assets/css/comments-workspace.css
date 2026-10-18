@@ -12,14 +12,14 @@
  .cm-wrap .cm-filters select{min-width:0;max-width:100%;padding:10px 12px;border:1px solid #D5DEEE;border-radius:11px;background:#FAFCFF;font:inherit;color:inherit}
  .cm-wrap .cm-card{min-width:0;padding:20px;border-radius:16px;border-width:1px;box-shadow:0 2px 8px #16212e05;margin-bottom:16px}
  .cm-wrap .cm-meta{gap:7px;line-height:1.8}
- .cm-wrap .cm-badge{display:inline-flex;align-items:center;min-height:25px;padding:3px 10px;line-height:1.6;border-radius:99px}
+ .cm-wrap .cm-badge:not([hidden]){display:inline-flex;align-items:center;min-height:25px;padding:3px 10px;line-height:1.6;border-radius:99px}
  .cm-wrap .cm-msg,.cm-wrap .cm-reply{min-width:0;overflow-wrap:anywhere}
  .cm-wrap .cm-msg>.muted{font-size:11px}
  .cm-wrap .cm-msg>p{margin-top:10px;font-size:14px;line-height:1.9}
  .cm-wrap .cm-input{box-sizing:border-box;border-radius:11px;border-color:#D5DEEE;background:#FAFCFF;padding:12px;line-height:1.85}
  .cm-wrap .cm-input:focus-visible{outline:2px solid #0F369D;outline-offset:2px}
  .cm-wrap .cm-actions{gap:8px;margin:14px 0 0}
- .cm-wrap .cm-open{display:inline-flex;align-items:center;min-height:38px;padding:5px 10px;margin-inline-start:auto;border:1px solid #E4E9F2;border-radius:10px;text-decoration:none;color:#0F369D;line-height:1.65;overflow-wrap:anywhere}
+ .cm-wrap .cm-open:not([hidden]){display:inline-flex;align-items:center;min-height:38px;padding:5px 10px;margin-inline-start:auto;border:1px solid #E4E9F2;border-radius:10px;text-decoration:none;color:#0F369D;line-height:1.65;overflow-wrap:anywhere}
  .cm-wrap .cm-open:hover{background:#EAF1FF;border-color:#0F369D}
  .cm-wrap .cm-open:focus-visible{outline:2px solid #0F369D;outline-offset:2px}
  .cm-wrap .cm-post{min-width:0;overflow-wrap:anywhere}
