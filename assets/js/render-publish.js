@@ -436,16 +436,19 @@
     var html = '<div style="margin-top:8px;padding:8px 10px;border:1px solid var(--c-border);border-radius:8px;font-size:12px;">' +
       '<div><b>حالة النشر التلقائي:</b> <span class="status-pill ' + st.cls + '">' + escapeHtml(st.label) + '</span>' +
       (job.last_attempt_at ? ' <span style="color:var(--c-muted);">— آخر محاولة: ' + new Date(job.last_attempt_at).toLocaleString("ar-EG") + '</span>' : '') + '</div>';
-    if (job.publish_facebook) {
+    if (job.publish_facebook && (job.facebook_permalink || !job.story_facebook_id)) {
       html += '<div>فيسبوك: ' + (job.facebook_permalink
         ? '<a href="' + job.facebook_permalink + '" target="_blank" rel="noopener noreferrer">فتح المنشور ↗</a>'
         : (job.status === "failed" || job.status === "partial" ? 'لسه متنشرش' : 'قيد الانتظار')) + '</div>';
     }
-    if (job.publish_instagram) {
+    if (job.publish_instagram && (job.instagram_permalink || !job.story_instagram_id)) {
       html += '<div>انستجرام: ' + (job.instagram_permalink
         ? '<a href="' + job.instagram_permalink + '" target="_blank" rel="noopener noreferrer">فتح المنشور ↗</a>'
         : (job.status === "failed" || job.status === "partial" ? 'لسه متنشرش' : 'قيد الانتظار')) + '</div>';
     }
+    if (job.story_facebook_id) html += '<div>فيسبوك — تم نشر الستوري</div>';
+    if (job.story_instagram_id) html += '<div>إنستجرام — تم نشر الستوري</div>';
+    if (job.story_error) html += '<div style="color:var(--c-negative);">مشكلة الستوري: '+escapeHtml(job.story_error)+'</div>';
     if (job.error_message && (job.status === "failed" || job.status === "partial")) {
       html += '<div style="color:var(--c-negative);">سبب المشكلة: ' + escapeHtml(job.error_message) + '</div>';
     }

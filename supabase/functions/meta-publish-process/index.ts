@@ -384,11 +384,30 @@ async function processJob(admin: ReturnType<typeof createClient>, job: any) {
     return;
   }
 
-  const contentRes = await admin.from("content_items").select("title, brand, body, caption_text, cta_text, hook_text, design_file_url, published_url, published_urls, content_format, carousel_slides, cover_settings").eq("id", job.content_id).maybeSingle();
+  const contentRes = await admin.from("content_items").select("title, brand, body, caption_text, cta_text, hook_text, design_file_url, published_url, published_urls, content_format, carousel_slides, cover_settings, agent_raw_output").eq("id", job.content_id).maybeSingle();
   const content = contentRes.data as { title: string; brand: string | null; hook_text: string | null; body: string | null; caption_text: string | null; cta_text: string | null; design_file_url: string | null; published_url: string | null; published_urls: Record<string, string> | null; content_format: string | null; carousel_slides: unknown } | null;
   if (!content) {
     await admin.from("meta_publish_jobs").update({ status: "failed", error_code: "CONTENT_NOT_FOUND", error_message: "مادة المحتوى غير موجودة." }).eq("id", job.id);
     return;
+  }
+  // Read the approved immutable design version, including edits after idea creation.
+  // Never infer story-only from dimensions or from an AI-generated response alone.
+  let nativeStoryOnly = false;
+  let raw = (content as any).agent_raw_output;
+  try { if (typeof raw === "string") raw = JSON.parse(raw); } catch { raw = null; }
+  if (raw?.content_kind === "daily_clinics") {
+    const latest = await admin.from("design_versions").select("settings,output_file_url")
+      .eq("content_id", job.content_id).order("created_at", { ascending: false }).order("id", { ascending: false }).limit(1).maybeSingle();
+    if (latest.error || !latest.data || latest.data.output_file_url !== content.design_file_url) {
+      await admin.from("meta_publish_jobs").update({ status: "failed", error_code: "DAILY_DESIGN_VERSION", error_message: "تعذر مطابقة تصميم المواعيد المعتمد. افتح آخر نسخة تصميم وراجعها قبل إعادة الجدولة." }).eq("id", job.id);
+      return;
+    }
+    const settings = latest.data.settings;
+    nativeStoryOnly = settings?.template === "sono-daily-clinics-story-v1";
+    if (nativeStoryOnly && (settings.width !== 1080 || settings.height !== 1920 || content.content_format !== "image_post")) {
+      await admin.from("meta_publish_jobs").update({ status: "failed", error_code: "STORY_DESIGN_INVALID", error_message: "قالب الستوري يحتاج صورة 1080×1920 محفوظة من محرر مواعيد العيادات." }).eq("id", job.id);
+      return;
+    }
   }
   const message: string = (globalThis as any).SSMPDPublicationText.compose(content);
 
@@ -434,6 +453,29 @@ async function processJob(admin: ReturnType<typeof createClient>, job: any) {
       }).eq("id", job.id);
       return;
     }
+  }
+
+  if (nativeStoryOnly) {
+    // This branch never reaches any feed publishing API. Reuse the native PNG.
+    if (!imageUrl) throw new Error("مفيش صورة ستوري محفوظة للمادة.");
+    const result = await publishStories(admin, job, brandCfg, token, { imageUrl, carouselUrls: [], videoUrl: null }, true);
+    const fbId = result.story_facebook_id || job.story_facebook_id;
+    const igId = result.story_instagram_id || job.story_instagram_id;
+    const requested = Number(!!job.publish_facebook) + Number(!!job.publish_instagram);
+    const succeeded = Number(!!(job.publish_facebook && fbId)) + Number(!!(job.publish_instagram && igId));
+    const status = succeeded === 0 ? "failed" : succeeded < requested ? "partial" : "published";
+    const publishedAt = job.published_at || new Date().toISOString();
+    const saved = await admin.from("meta_publish_jobs").update({ status,
+      error_code: result.story_error ? "STORY_PUBLISH_ERROR" : null,
+      error_message: result.story_error || null,
+      ...(succeeded ? { published_at: publishedAt } : {})
+    }).eq("id", job.id);
+    if (saved.error) throw saved.error;
+    if (succeeded) {
+      const updated = await admin.from("content_items").update({ stage: "published", published_at: publishedAt }).eq("id", job.content_id);
+      if (updated.error) throw updated.error;
+    }
+    return;
   }
 
   if (job.publish_facebook) {
@@ -584,30 +626,34 @@ async function publishFacebookVideoStory(pageId: string, token: string, videoUrl
   return { ok: true, id: String(fin.data.post_id || start.data.video_id) };
 }
 
-async function publishStories(admin: ReturnType<typeof createClient>, job: any, cfg: BrandConfig, token: string, m: { imageUrl: string | null; carouselUrls: string[]; videoUrl: string | null }) {
+async function publishStories(admin: ReturnType<typeof createClient>, job: any, cfg: BrandConfig, token: string, m: { imageUrl: string | null; carouselUrls: string[]; videoUrl: string | null }, nativeImage = false): Promise<Record<string, any>> {
   const needFb = job.publish_facebook && !job.story_facebook_id && !!cfg.facebook_page_id;
   const needIg = job.publish_instagram && !job.story_instagram_id && !!cfg.instagram_business_account_id;
-  if (!needFb && !needIg) return;
+  if (!needFb && !needIg && (!job.publish_facebook || cfg.facebook_page_id) && (!job.publish_instagram || cfg.instagram_business_account_id)) return {};
   const patch: Record<string, unknown> = { story_attempts: (job.story_attempts || 0) + 1 };
   const errs: string[] = [];
+  if(job.publish_facebook && !cfg.facebook_page_id) errs.push("فيسبوك: حساب الصفحة غير متصل");
+  if(job.publish_instagram && !cfg.instagram_business_account_id) errs.push("انستجرام: حساب الصفحة غير متصل");
   const video = m.videoUrl || null;
   const still = m.imageUrl || m.carouselUrls[0] || null;
   let storyImage: string | null = null;
   if (!video) {
-    if (!still) { await admin.from("meta_publish_jobs").update({ story_error: "مفيش تصميم نعمل منه ستوري", story_attempts: 99 }).eq("id", job.id); return; }
-    storyImage = await composeStoryImage(admin, job.id, still);
+    if (!still) throw new Error("مفيش تصميم نعمل منه ستوري");
+    storyImage = nativeImage ? still : await composeStoryImage(admin, job.id, still);
   }
   if (needIg) {
     const r = await publishInstagramStory(cfg.instagram_business_account_id as string, token, video ? { videoUrl: video } : { imageUrl: storyImage as string });
-    if (r.ok) patch.story_instagram_id = r.id; else errs.push("انستجرام: " + r.error);
+    if (r.ok) { patch.story_instagram_id = r.id; const saved = await admin.from("meta_publish_jobs").update({ story_instagram_id: r.id }).eq("id", job.id); if(saved.error) throw saved.error; } else errs.push("انستجرام: " + r.error);
   }
   if (needFb) {
     const r = video ? await publishFacebookVideoStory(cfg.facebook_page_id as string, token, video) : await publishFacebookPhotoStory(cfg.facebook_page_id as string, token, storyImage as string);
-    if (r.ok) patch.story_facebook_id = r.id; else errs.push("فيسبوك: " + r.error);
+    if (r.ok) { patch.story_facebook_id = r.id; const saved = await admin.from("meta_publish_jobs").update({ story_facebook_id: r.id }).eq("id", job.id); if(saved.error) throw saved.error; } else errs.push("فيسبوك: " + r.error);
   }
   patch.story_error = errs.length ? errs.join(" | ").slice(0, 500) : null;
   if (!errs.length) patch.story_published_at = new Date().toISOString();
-  await admin.from("meta_publish_jobs").update(patch).eq("id", job.id);
+  const saved = await admin.from("meta_publish_jobs").update(patch).eq("id", job.id);
+  if(saved.error) throw saved.error;
+  return patch;
 }
 
 Deno.serve(async (req) => {
