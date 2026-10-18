@@ -1,0 +1,13 @@
+# Daily clinic schedules — native story layout
+
+In production > new idea/content > daily clinic schedules, select the design/publishing type. The existing post layout remains 1080×1350. “Story only” renders a native 1080×1920 PNG using the same supplied SVG, BigVesta Arabic and bold Hiragino numerals. Artwork, watermark and logo are translated at their original scale. Plain color gradients extend the background beyond its original bounds. Only entered doctor rows appear, with a maximum of 13.
+
+Day, names, specialties, times and the layout are saved with the private immutable design version. The existing three-idea generation button, save/retry behavior, assignment and approval stages remain unchanged. AI suggestions cannot change the selected presentation mode. The editor restores the newest saved layout. Changing it requires a new design version and the existing approval workflow.
+
+The publisher identifies native stories from the newest design version settings, matched to the content's approved design_file_url. Template `sono-daily-clinics-story-v1` requires 1080×1920 and image_post. A missing/mismatched version fails explicitly instead of publishing a feed post. Existing jobs, scheduling and cron claim/retry logic remain in place, with no schema or permission changes.
+
+For this template the worker rehosts the original PNG once and uses only Instagram STORIES and Facebook unpublished photo upload + photo_stories APIs. It skips every feed publisher and skips the old blurred-background story compositor. Successful platform IDs are persisted before moving to another platform. Retry skips completed platforms. Status reflects all requested story platforms, including partial success and missing configuration. Partial or successful publication updates the material to published, as the existing publisher does. Published story IDs/errors appear in publishing status. Story captions are not sent to Meta; the composed caption remains an editorial field.
+
+Other templates retain their existing feed/story behavior. The request does not add a feed-and-story dual-design option, change publishing targets or create new content records automatically.
+
+Validation: `node test/smoke.js`, `node tests/daily-clinics.cjs`, `node tests/daily-story-publish.cjs`, `node tests/daily-clinics-generation.cjs`, `node tests/doctor-content.cjs`, `node tests/dashboard-help-coverage.cjs`. Browser tests cover native background pixel alignment, PNG dimensions, dynamic rows, editor layout restoration, preserving layout after idea selection, existing private save/retry and 1280/390/320 layouts. Publisher tests use mocked Meta and database APIs; no live post was created or approved as a test.

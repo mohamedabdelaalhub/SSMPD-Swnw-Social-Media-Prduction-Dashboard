@@ -511,6 +511,19 @@
       "reviewed": true
     },
     {
+      "title": "نوع التصميم والنشر",
+      "labels": [
+        "نوع التصميم والنشر"
+      ],
+      "text": "اختر منشور 1080×1350 أو ستوري فقط 1080×1920. يحفظ الاختيار مع نسخة التصميم ويستخدمه عامل النشر بعد الاعتماد. الستوري لا تنشر بوستًا في الصفحة، والنص المولد يبقى للمراجعة ولا يظهر ككابشن داخل الستوري.",
+      "article": "design-guide",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "يوم جدول العيادات",
       "labels": [
         "يوم جدول العيادات"
@@ -11532,9 +11545,9 @@
   ],
   "coverage": {
     "version": "20261018-4",
-    "definitions": 1056,
-    "labels": 838,
+    "definitions": 1057,
+    "labels": 839,
     "files": 66,
-    "groups": 770
+    "groups": 771
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();

@@ -41,20 +41,31 @@ let create,helpers=[];function visit(n){if(ts.isFunctionDeclaration(n)&&['openAg
  });assert.deepEqual(stats,{width:1080,height:1350,errors:6,buttons:0});await page.screenshot({path:'/tmp/daily-clinics-full.png'});
  const rendering=await page.evaluate(async()=>{var b={day:'السبت',rows:[{name:'د. أحمد علي',specialty:'أطفال',from:'17:00',to:'19:00'}]},a=document.createElement('canvas'),z=document.createElement('canvas');await SSMPDDailyClinics.render(a,b);await SSMPDDailyClinics.render(z,{...b,rows:[b.rows[0],b.rows[0]]});window.singleRow=a;var p=a.getContext('2d').getImageData(230,410,1,1).data,q=z.getContext('2d').getImageData(230,410,1,1).data;return {different:Array.from(p).some((v,i)=>Math.abs(v-q[i])>5),bold:document.fonts.check('800 25px DailyLatin')};});assert(rendering.different,'unused row must disappear');assert(rendering.bold,'real bold face must load');
  await page.evaluate(()=>{document.body.replaceChildren(singleRow);singleRow.style.width='540px';});await page.screenshot({path:'/tmp/daily-clinics-single-row.png'});
+ // Native story: unchanged background scale, dynamic rows and saved layout after AI import.
+ const storyStats=await page.evaluate(async()=>{
+  var D=SSMPDDailyClinics,b={day:'السبت',layout:'story',rows:[{name:'د. أحمد علي',specialty:'أطفال',from:'17:00',to:'19:00'}]},s=document.createElement('canvas'),p=document.createElement('canvas'),two=document.createElement('canvas');
+  await D.render(s,b);await D.render(p,{...b,layout:'post'});await D.render(two,{...b,rows:[b.rows[0],b.rows[0]]});
+  var matching=true;for(var y=400;y<1000;y+=53){var a=s.getContext('2d').getImageData(1045,y,1,1).data,z=p.getContext('2d').getImageData(1045,y-160,1,1).data;if(Array.from(a).some((v,i)=>Math.abs(v-z[i])>1))matching=false;}
+  var a=s.getContext('2d').getImageData(230,630,1,1).data,z=two.getContext('2d').getImageData(230,630,1,1).data;
+  var saved;SSMPDDesignFiles.save=async(item,blob,src,settings)=>{saved=settings;return {version_id:'story-version',item};};await D.attach({id:'story',created_by:'creator'},{brief:b,output:await new Promise(r=>s.toBlob(r))});
+  window.storyCanvas=s;return {width:s.width,height:s.height,matching,dynamic:Array.from(a).some((v,i)=>Math.abs(v-z[i])>5),saved};
+ });assert.equal(storyStats.width,1080);assert.equal(storyStats.height,1920);assert(storyStats.matching,'watermark and background remain at original scale');assert(storyStats.dynamic);assert.equal(storyStats.saved.template,'sono-daily-clinics-story-v1');assert.equal(storyStats.saved.height,1920);
+ fs.writeFileSync('/tmp/daily-clinics-story-native.png',Buffer.from(await page.evaluate(()=>storyCanvas.toDataURL('image/png').split(',')[1]),'base64'));
  // Existing editor restores the newest immutable version and preserves workflow stage.
  await page.evaluate(()=>{
   document.body.innerHTML='<div id="editor-slot"></div>';
   var b={day:'الجمعة',rows:[{name:'د. أحمد علي',specialty:'أطفال',from:'16:00',to:'18:00'}]};
   window.existing={id:'existing',brand:'sono',created_by:'creator',stage:'in_design',agent_raw_output:JSON.stringify(SSMPDDailyClinics.metadata(null,{...b,day:'السبت'}))};
-  SSMPDDesignFiles.latest=async()=>({id:'version-latest',settings:{daily_clinics_brief:b}});
-  SSMPDDesignFiles.save=async(item,blob,source,settings,job,base)=>{assertBrowser(base==='version-latest','stale base');assertBrowser(settings.daily_clinics_brief.day==='الجمعة','latest brief');window.editorSaved=true;return {version_id:'version-next',item:{...item,design_file_url:'private/next.png'}};};
+  SSMPDDesignFiles.latest=async()=>({id:'version-latest',settings:{template:'sono-daily-clinics-story-v1',daily_clinics_brief:b}});
+  SSMPDDesignFiles.save=async(item,blob,source,settings,job,base)=>{assertBrowser(base==='version-latest','stale base');assertBrowser(settings.daily_clinics_brief.day==='الجمعة','latest brief');assertBrowser(settings.template==='sono-daily-clinics-story-v1'&&settings.height===1920,'story restore');window.editorSaved=true;return {version_id:'version-next',item:{...item,design_file_url:'private/next.png'}};};
   SSMPDDailyClinics.mount(document.getElementById('editor-slot'),existing);
  });
  await page.click('#editor-slot button');await page.waitForFunction(()=>!document.querySelector('[data-daily-save]').disabled);
- assert.equal(await page.inputValue('[data-daily-day]'),'الجمعة');await page.fill('[data-daily-key="name"]','د. أحمد محمد علي');await page.click('[data-daily-save]');await page.waitForFunction(()=>window.editorSaved);assert.equal(await page.evaluate(()=>existing.stage),'in_design');await page.click('.modal-close');
+ assert.equal(await page.inputValue('[data-daily-day]'),'الجمعة');assert.equal(await page.inputValue('[data-daily-layout]'),'story');await page.fill('[data-daily-key="name"]','د. أحمد محمد علي');await page.click('[data-daily-save]');await page.waitForFunction(()=>window.editorSaved);assert.equal(await page.evaluate(()=>existing.stage),'in_design');await page.click('.modal-close');
  // Responsive input form at mobile and desktop widths; hidden content stays hidden.
  await page.evaluate(create=>{document.body.innerHTML='<div id="view-container"></div>';eval(create+';openCreateModal();');},create);
- await page.selectOption('#cf-content-kind','daily_clinics');
+ await page.selectOption('#cf-content-kind','daily_clinics');await page.selectOption('[data-daily-layout]','story');
+ await page.evaluate(()=>{var b={day:'السبت',layout:'story',rows:[{name:'د. أحمد علي',specialty:'أطفال',from:'16:00',to:'18:00'}]};SSMPDDailyClinics.hydrate(b);var imported=SSMPDDailyClinics.checkImport({content_kind:'daily_clinics',format:'image_post',daily_clinics_brief:{day:b.day,rows:b.rows}});SSMPDDailyClinics.hydrate(imported);assertBrowser(SSMPDDailyClinics.current(true).layout==='story','AI selection preserves layout');});
  for(const width of [1280,390,320]){await page.setViewportSize({width,height:900});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'horizontal overflow at '+width);}
  await page.selectOption('#cf-content-kind','standard');assert(await page.isHidden('#daily-clinics-fields'));assert.equal(await page.isDisabled('#cf-ai-generate'),false);
  console.log('PASS daily clinics: one-click automatic generation without specialty or copy/import, ordered facts, stale-input protection, caption fill, bold/dynamic rows, mobile layouts, private save/retry and permissions. Mocked APIs; no live records changed.');

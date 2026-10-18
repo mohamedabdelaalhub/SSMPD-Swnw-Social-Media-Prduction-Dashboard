@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261018-4",
-    "definitions": 1056,
-    "labels": 838,
+    "definitions": 1057,
+    "labels": 839,
     "files": 66,
-    "groups": 770
+    "groups": 771
   },
   "fields": [
     {
@@ -346,6 +346,16 @@
       "tab": "production",
       "article": "medical-sources",
       "text_sha256": "91898dcb6dba0dedf9068ecf50f6ffddeaa97ac7b1c0c2ccefbe28676c3f604e"
+    },
+    {
+      "file": "daily-clinics.js",
+      "label": "نوع التصميم والنشر",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "design-guide",
+      "text_sha256": "65e2818481fe4a6f93d50d300c7f7fd4d23237008663bcd03eff5306f99e4321"
     },
     {
       "file": "daily-clinics.js",

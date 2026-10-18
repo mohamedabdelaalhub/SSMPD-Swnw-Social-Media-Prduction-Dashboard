@@ -1,0 +1,24 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),ts=require('typescript');
+let handler,calls=[],dbWrites=[],mode='story',failIg=false,versionError=false,missingFb=false,composeCount=0;
+const sandbox={console,URL,Request,Response,fetch,Uint8Array,Date,setTimeout,clearTimeout,Deno:{env:{get:k=>k==='SUPABASE_URL'?'https://test.supabase.co':k==='META_PUBLISH_CRON_SECRET'?'cron':'configured'},serve:fn=>handler=fn},createClient:()=>admin};
+let source=fs.readFileSync('supabase/functions/meta-publish-process/index.ts','utf8').replace(/^import .*;\n/gm,'');
+const js=ts.transpileModule(source,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS},reportDiagnostics:true});assert.equal(js.diagnostics.length,0);vm.createContext(sandbox);vm.runInContext(fs.readFileSync('assets/js/publication-text.js','utf8'),sandbox);vm.runInContext(js.outputText,sandbox);
+const content={id:'content',brand:'sono',content_format:'image_post',design_file_url:'https://test/private.png',agent_raw_output:{content_kind:'daily_clinics',daily_clinics_brief:{day:'السبت',rows:[]}}};
+let persisted={};
+const admin={from(table){let patch;return {select(){return this;},eq(){if(patch){dbWrites.push({table,patch});if(table==='meta_publish_jobs')Object.assign(persisted,patch);return Promise.resolve({error:null});}return this;},order(){return this;},limit(){return this;},update(p){patch=p;return this;},maybeSingle:async()=>({data:table==='content_items'?content:table==='meta_brand_config'?{facebook_page_id:missingFb?null:'fb-page',instagram_business_account_id:'ig-account'}:{output_file_url:content.design_file_url,settings:{template:mode==='story'?'sono-daily-clinics-story-v1':'sono-daily-clinics-v1',width:1080,height:mode==='story'?1920:1350}},error:table==='design_versions'&&versionError?{message:'offline'}:null})};}};
+sandbox.admin=admin;sandbox.mockGraph=async(path,payload)=>{calls.push({path,payload});if(failIg&&path==='ig-account/media')return {ok:false,data:{error:{message:'temporary HTTP 429'}}};return {ok:true,data:{id:path==='ig-account/media_publish'?'ig-story':path==='fb-page/photo_stories'?'fb-story':'container',status_code:'FINISHED',permalink:'https://test/post',permalink_url:'https://test/post'}};};
+sandbox.compose=()=>{composeCount++;return 'https://test/composed.jpg';};
+vm.runInContext('graphPost=mockGraph;graphGet=mockGraph;waitInstagramContainers=async()=>null;rehostImageToStorage=async()=>"https://test/native.png";composeStoryImage=compose;',sandbox);
+const job={id:'job',brand:'sono',content_id:'content',publish_facebook:true,publish_instagram:true,publish_story:true,attempt_count:1};
+async function run(j=job){calls=[];dbWrites=[];persisted={};sandbox.job=j;await vm.runInContext('processJob(admin,job)',sandbox);return persisted;}
+(async()=>{
+ let result=await run();assert.equal(result.status,'published');assert.equal(result.story_facebook_id,'fb-story');assert.equal(result.story_instagram_id,'ig-story');assert.equal(composeCount,0);assert(calls.some(c=>c.path==='fb-page/photo_stories'));assert(calls.some(c=>c.payload.media_type==='STORIES'));assert(calls.filter(c=>c.payload.image_url||c.payload.url).every(c=>(c.payload.image_url||c.payload.url)==='https://test/native.png'));assert(!calls.some(c=>c.path.includes('/feed')||c.payload.published==='true'));assert(dbWrites.some(w=>w.table==='content_items'&&w.patch.stage==='published'));
+ failIg=true;result=await run();assert.equal(result.status,'partial');assert.equal(result.story_facebook_id,'fb-story');assert.match(result.error_message,/429/);assert(dbWrites.some(w=>w.table==='content_items'));
+ failIg=false;result=await run({...job,story_facebook_id:'fb-story'});assert.equal(result.status,'published');assert(!calls.some(c=>c.path.startsWith('fb-page/')),'do not repost successful platform');
+ result=await run({...job,story_facebook_id:'fb-story',story_instagram_id:'ig-story'});assert.equal(result.status,'published');assert.equal(calls.length,0);
+ versionError=true;result=await run();assert.equal(result.error_code,'DAILY_DESIGN_VERSION');assert.equal(calls.length,0);versionError=false;
+ missingFb=true;result=await run();assert.equal(result.status,'partial');assert.match(result.error_message,/فيسبوك/);missingFb=false;
+ mode='post';result=await run({...job,publish_story:false});assert.equal(result.status,'published');assert(calls.some(c=>c.path==='fb-page/photos'&&c.payload.published!=='false'));assert(!calls.some(c=>c.payload.media_type==='STORIES'));
+ const response=await handler(new Request('https://test/worker',{method:'POST'}));assert.equal(response.status,401);
+ console.log('PASS native story publisher: story-only APIs, original PNG, partial/failure states, version mismatch, retry without duplicate platform, normal feed unchanged and cron auth. Mocked Meta/database only.');
+})().catch(e=>{console.error(e);process.exitCode=1});
