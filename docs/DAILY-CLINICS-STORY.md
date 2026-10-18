@@ -1,6 +1,6 @@
 # Daily clinic schedules — native story layout
 
-In production > new idea/content > daily clinic schedules, select the design/publishing type. The existing post layout remains 1080×1350. “Story only” renders a native 1080×1920 PNG using the same supplied SVG, BigVesta Arabic and bold Hiragino numerals. Artwork, watermark and logo are translated at their original scale. Plain color gradients extend the background beyond its original bounds. Only entered doctor rows appear, with a maximum of 13.
+In production > new idea/content > daily clinic schedules, select the design/publishing type. New schedules default to Story only; existing saved post versions retain their layout. The existing post layout remains 1080×1350. “Story only” renders a native 1080×1920 PNG using the same supplied SVG, BigVesta Arabic and bold Hiragino numerals. Artwork, watermark and logo are translated at their original scale. Plain color gradients extend the background beyond its original bounds. Only entered doctor rows appear, with a maximum of 13.
 
 Day, names, specialties, times and the layout are saved with the private immutable design version. The existing three-idea generation button, save/retry behavior, assignment and approval stages remain unchanged. AI suggestions cannot change the selected presentation mode. The editor restores the newest saved layout. Changing it requires a new design version and the existing approval workflow.
 
