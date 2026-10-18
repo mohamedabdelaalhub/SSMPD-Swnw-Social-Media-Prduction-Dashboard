@@ -79,7 +79,7 @@
 
   function applyPermissions(root){
     var R=window.SSMPDRoles,a=window.SSMPDAuth.currentAdmin;
-    [['create','[id^="acc-add-"]'],['update','[data-edit-supply],[data-edit-service],[data-edit-package]'],['delete','[data-del-supply],[data-del-service],[data-del-package]']].forEach(function(pair){if(!R.canModuleAction(a,'accounting',pair[0]))root.querySelectorAll(pair[1]).forEach(function(el){el.hidden=true;el.style.display="none";el.disabled=true;el.onclick=null;});});
+    [['create','[id^="acc-add-"],#acc-import-supplies'],['update','[data-edit-supply],[data-edit-service],[data-edit-package]'],['delete','[data-del-supply],[data-del-service],[data-del-package]']].forEach(function(pair){if(!R.canModuleAction(a,'accounting',pair[0]))root.querySelectorAll(pair[1]).forEach(function(el){el.hidden=true;el.style.display="none";el.disabled=true;el.onclick=null;});});
   }
   function render(container) {
     if(!window.SSMPDRoles.canSeeTab(window.SSMPDAuth.currentAdmin,'accounting')){container.innerHTML='<p>ليس لديك صلاحية عرض الحسابات.</p>';return;}
@@ -183,6 +183,7 @@
       '<div class="acc-card-head"><div><span class="acc-eyebrow">ضلع التكلفة</span><h3>مستلزمات وإضافات طبية</h3></div>' +
       '<div class="acc-actions"><button class="btn" id="acc-print-supplies">🖨 طباعة</button> ' +
       '<button class="btn" id="acc-export-supplies">⬇ Excel</button> ' +
+      '<button class="btn" id="acc-import-supplies">رفع مستلزمات وأدوية Excel</button> '+
       '<button class="btn btn-primary" id="acc-add-supply">+ إضافة مستلزم</button></div></div>' +
       (state.supplies.length ?
         '<div style="overflow-x:auto;"><table class="simple acc-table"><thead><tr>' +
@@ -229,6 +230,7 @@
   function wirePricingScreen(subView, container) {
     function bind(id, handler) { var button = subView.querySelector("#" + id); if (button) button.onclick = handler; }
     var reload = function () { render(container); };
+    bind("acc-import-supplies", function () { window.SSMPDInventoryCatalog.open({pricing:true,supplies:state.supplies,onSaved:function(){state.loaded=false;reload();}}); });
     bind("acc-add-supply", function () { openSupplyModal(null, reload); });
     subView.querySelectorAll("[data-edit-supply]").forEach(function (b) {
       b.onclick = function () { openSupplyModal(supplyById(b.getAttribute("data-edit-supply")), reload); };
