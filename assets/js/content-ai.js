@@ -8,8 +8,10 @@
   }
   function normalise(x) {
     x = x || {};
+    var dailyFacts=x.daily_clinics_brief||(x.raw_output&&x.raw_output.daily_clinics_brief);
     if(window.SSMPDDigits)x=window.SSMPDDigits.deep(x);
     if(x.raw_output)x=Object.assign({},x.raw_output,x);
+    if(x.content_kind==='daily_clinics'&&dailyFacts)x.daily_clinics_brief=dailyFacts;
     return {
       raw: x,
       title: x.title || "",
@@ -55,22 +57,26 @@
     };
   }
   function fill(idea) {
+    var dailyImport=window.SSMPDDailyClinics&&window.SSMPDDailyClinics.checkImport(idea.raw);
     var set = function (id, value) { var el = document.getElementById(id); if (el) el.value = value == null ? "" : value; };
     set("cf-title", idea.title); set("cf-body", idea.idea || idea.hook);
     set("cf-hook", idea.hook); set("cf-angle", idea.angle); set("cf-script", idea.script);
     set("cf-caption", idea.caption); set("cf-cta-type", idea.ctaType); set("cf-cta-text", idea.cta);
     set("cf-duration-min", idea.durationMin); set("cf-duration-max", idea.durationMax);
     set("cf-video-template", idea.videoTemplate); set("cf-hypothesis", idea.why);
-    if(idea.raw.dina_brief)window.SSMPDDinaContent.hydrate(idea.raw.dina_brief);
-    if(idea.raw.doctor_brief)window.SSMPDDoctorContent.hydrate(idea.raw.doctor_brief);
-    if(idea.raw.before_after_brief)window.SSMPDBeforeAfterContent.hydrate(idea.raw.before_after_brief);
-    if(idea.raw.carousel_brief)window.SSMPDCarouselContent.hydrate(idea.raw.carousel_brief,idea.raw.carousel_copy);
+    if(dailyImport)window.SSMPDDailyClinics.hydrate(dailyImport);
+    if(!dailyImport&&idea.raw.dina_brief)window.SSMPDDinaContent.hydrate(idea.raw.dina_brief);
+    if(!dailyImport&&idea.raw.doctor_brief)window.SSMPDDoctorContent.hydrate(idea.raw.doctor_brief);
+    if(!dailyImport&&idea.raw.before_after_brief)window.SSMPDBeforeAfterContent.hydrate(idea.raw.before_after_brief);
+    if(!dailyImport&&idea.raw.carousel_brief)window.SSMPDCarouselContent.hydrate(idea.raw.carousel_brief,idea.raw.carousel_copy);
     set("cf-agent-raw", JSON.stringify(idea.raw));
     var format = document.getElementById("ci-format"); if (format && idea.formatKey) format.value = idea.formatKey;
   }
   function openGenerator() {
-    var context = getContext(),doctorBrief,dinaBrief,baBrief;
+    var context = getContext(),doctorBrief,dinaBrief,baBrief,dailyBrief;
     try{doctorBrief=window.SSMPDDoctorContent.current(true);dinaBrief=window.SSMPDDinaContent.current(true);}catch(e){alert(e.message);return;}
+    try{dailyBrief=window.SSMPDDailyClinics&&window.SSMPDDailyClinics.current(true);}catch(e){alert(e.message);return;}
+    if(dailyBrief){context.dailyBrief=dailyBrief;context.format='image_post';context.advertisingObjective=context.advertisingObjective||'messages';}
     if(doctorBrief){context.doctorBrief=doctorBrief;context.format="image_post";}
     baBrief=window.SSMPDBeforeAfterContent&&window.SSMPDBeforeAfterContent.current(false);if(dinaBrief||baBrief)context.format="image_post";
     var carouselBrief=window.SSMPDCarouselContent&&window.SSMPDCarouselContent.current(false);if(carouselBrief&&!doctorBrief)context.format="carousel";else carouselBrief=null;
@@ -105,8 +111,9 @@
       btn.disabled = true; btn.textContent = "جاري التوليد…"; slot.innerHTML = '<div class="loading" style="margin-top:10px;">يتم إعداد ٣ اقتراحات…</div>';
       try{doctorBrief=window.SSMPDDoctorContent.current(true);dinaBrief=window.SSMPDDinaContent.current(true);}catch(e){slot.textContent=e.message;btn.disabled=false;btn.textContent="توليد الاقتراحات";return;}
       try{baBrief=window.SSMPDBeforeAfterContent&&window.SSMPDBeforeAfterContent.current(true);}catch(e){slot.textContent=e.message;btn.disabled=false;btn.textContent="توليد الاقتراحات";return;}
+      try{dailyBrief=window.SSMPDDailyClinics&&window.SSMPDDailyClinics.current(true);}catch(e){slot.textContent=e.message;btn.disabled=false;btn.textContent='توليد الاقتراحات';return;}
       var guidedTopic=baBrief?window.SSMPDBeforeAfterContent.topic(baBrief,topic||context.topic):topic||context.topic;
-      var requestContext = Object.assign({}, context, { topic: guidedTopic,doctorBrief:doctorBrief });
+      var requestContext = Object.assign({}, context, { topic: guidedTopic,doctorBrief:doctorBrief,dailyBrief:dailyBrief });
       Promise.all([
         (window.SSMPDLearningBrief ? window.SSMPDLearningBrief.load(context.brand) : Promise.resolve("")).then(function(){return window.SSMPDWorkflow.getContentAIBrief(requestContext);}),
         window.SSMPDDb.operationsAIEnabled ? window.SSMPDDb.operationsAIEnabled().then(function(enabled){return enabled&&window.SSMPDDb.operationsContentBrief?window.SSMPDDb.operationsContentBrief(context.brand,context.specialty):"";}).catch(function(){return "";}) : Promise.resolve("")
@@ -116,10 +123,10 @@
         mode: mode, brand: context.brand, specialty: context.specialty,
         advertising_objective: context.advertisingObjective, preferred_format: context.format,
         topic: guidedTopic, manual_draft: mode === "develop" ? (context.body || context.title) : "",
-        title: context.title, performance_brief: brief, content_kind:doctorBrief?"doctor_intro":carouselBrief?"carousel":"standard",doctor_brief:doctorBrief,dina_brief:dinaBrief,carousel_brief:carouselBrief
+        title: context.title, performance_brief: brief, content_kind:dailyBrief?"daily_clinics":doctorBrief?"doctor_intro":carouselBrief?"carousel":"standard",doctor_brief:doctorBrief,dina_brief:dinaBrief,carousel_brief:carouselBrief,daily_clinics_brief:dailyBrief
         });
       }).then(function (data) {
-        var ideas = (data.ideas || []).slice(0, 3).map(function(idea){if(doctorBrief)idea=window.SSMPDDoctorContent.metadata(idea,doctorBrief);if(baBrief)idea=window.SSMPDBeforeAfterContent.metadata(idea,baBrief);if(carouselBrief){if(idea.format!=="carousel")throw Error("الوكيل رجع بوست بدل الكاروسيل. انشر تحديث content-ai ثم أعد التوليد.");if(!Array.isArray(idea.carousel_copy))throw Error("حدّث Edge Function content-ai لتفعيل محتوى الكاروسيل.");idea=window.SSMPDCarouselContent.metadata(idea,carouselBrief);}if(dinaBrief&&!idea.dina_brief)throw Error("حدّث Edge Function content-ai لتفعيل محتوى قوالب د. دينا.");return normalise(idea);});
+        var ideas = (data.ideas || []).slice(0, 3).map(function(idea){if(dailyBrief){window.SSMPDDailyClinics.checkImport(idea);}if(doctorBrief)idea=window.SSMPDDoctorContent.metadata(idea,doctorBrief);if(baBrief)idea=window.SSMPDBeforeAfterContent.metadata(idea,baBrief);if(carouselBrief){if(idea.format!=="carousel")throw Error("الوكيل رجع بوست بدل الكاروسيل. انشر تحديث content-ai ثم أعد التوليد.");if(!Array.isArray(idea.carousel_copy))throw Error("حدّث Edge Function content-ai لتفعيل محتوى الكاروسيل.");idea=window.SSMPDCarouselContent.metadata(idea,carouselBrief);}if(dinaBrief&&!idea.dina_brief)throw Error("حدّث Edge Function content-ai لتفعيل محتوى قوالب د. دينا.");return normalise(idea);});
         if (!ideas.length || (ideas.length !== 3 && data.partial !== true)) throw new Error("لم تصل اقتراحات مكتملة. طلبك ما زال في النموذج. أعد المحاولة.");
         slot.innerHTML = (data.partial === true ? '<p role="status">جهزنا ' + ideas.length + ' من ٣ اقتراحات اجتازت مراجعة النصوص. تقدر تختار منها أو تحفظها. باقي الاقتراحات لم تجتز المراجعة بعد محاولات التصحيح.</p>' : "") + ideas.map(function (idea, i) {
           return renderCard(idea, i,
@@ -127,7 +134,7 @@
             '<button class="btn ghost sm" data-save="' + i + '">حفظ لوقت لاحق</button>');
         }).join("");
         slot.querySelectorAll("[data-use]").forEach(function (b) { b.onclick = function () {
-          var idea = ideas[Number(b.getAttribute("data-use"))]; fill(idea);
+          var idea = ideas[Number(b.getAttribute("data-use"))]; try{fill(idea);}catch(e){alert(e.message);return;}
           if (window.SSMPDToast) window.SSMPDToast.show("تم ملء بيانات المادة. يمكنك حفظ باقي الأفكار قبل الرجوع للنموذج.", "success");
           slot.querySelectorAll("[data-use]").forEach(function (button) {
             button.textContent = button === b ? "تم اختيارها" : "اختيار بدلًا منها";
@@ -148,6 +155,7 @@
       }).catch(function (e) { slot.innerHTML = '<div class="err-msg" style="margin-top:10px;">' + esc(e.message) + '</div>'; })
         .finally(function () { btn.disabled = false; btn.textContent = "توليد الاقتراحات"; });
     };
+    if(dailyBrief){backdrop.querySelector('#ai-mode').disabled=true;backdrop.querySelector('#ai-topic').placeholder='توجيه إضافي اختياري لنص منشور المواعيد';backdrop.querySelector('#ai-generate').click();}
   }
   function openIdeaBank() {
     var backdrop = document.createElement("div");

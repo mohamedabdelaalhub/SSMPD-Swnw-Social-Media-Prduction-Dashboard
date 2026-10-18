@@ -1,6 +1,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { applySources, sourceInstructions, sourceProperties, verifySources } from "./sources.ts";
 
+import { dailyClinicsBrief, dailyClinicsInstructions } from "./daily-clinics.ts";
+
 const cors = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info",
@@ -131,8 +133,11 @@ Deno.serve(async (req) => {
       throw new Error("اكتب فكرة أو مسودة لتطويرها.");
     }
 
+    const isDaily=body.content_kind==='daily_clinics'||!!body.daily_clinics_brief;
+    const daily=isDaily?dailyClinicsBrief(body.daily_clinics_brief,String(body.brand||'')):null;
+    if(daily&&(body.doctor_brief||body.carousel_brief||body.dina_brief))throw Error('اختر قالب مواعيد العيادات وحده.');
     const requestedCarousel=!!body.carousel_brief||[body.preferred_format,body.content_kind].includes("carousel");
-    const doctorIntro=!requestedCarousel&&(body?.content_kind === "doctor_intro"||/^تعريف\s+(?:د\s*[/.]|الدكتور(?:ة)?|دكتور(?:ة)?)\s*/u.test(String(body?.title||"").trim()));
+    const doctorIntro=!daily&&!requestedCarousel&&(body?.content_kind === "doctor_intro"||/^تعريف\s+(?:د\s*[/.]|الدكتور(?:ة)?|دكتور(?:ة)?)\s*/u.test(String(body?.title||"").trim()));
     let doctorBrief: Record<string,any>|null=null;
     if(doctorIntro){
       if(body.brand!=="sono")throw new Error("تعريف الطبيب مخصص لصفحة سونو.");
@@ -151,20 +156,20 @@ Deno.serve(async (req) => {
 
     }
 
-    const carousel=doctorIntro?null:(carouselBrief(body.carousel_brief)||([body.preferred_format,body.content_kind].includes("carousel")?carouselBrief({slides_count:6,style:"tips"}):null));
-    const dina=carousel?null:dinaBrief(body.dina_brief,String(body.brand||""));
+    const carousel=(daily||doctorIntro)?null:(carouselBrief(body.carousel_brief)||([body.preferred_format,body.content_kind].includes("carousel")?carouselBrief({slides_count:6,style:"tips"}):null));
+    const dina=(daily||carousel)?null:dinaBrief(body.dina_brief,String(body.brand||""));
     if(dina&&doctorIntro)throw Error("اختر تعريف طبيب أو محتوى قوالب د. دينا، وليس الاثنين.");
     const brief = {
       mode,
       brand: String(body.brand || ""),
       specialty: String(body.specialty || ""),
       advertising_objective: String(body.advertising_objective || ""),
-      preferred_format: (doctorIntro||dina)?"image_post":carousel?"carousel":String(body.preferred_format || ""),
+      preferred_format: (daily||doctorIntro||dina)?"image_post":carousel?"carousel":String(body.preferred_format || ""),
       topic: String(body.topic || ""),
       title: String(body.title || ""),
       manual_draft: String(body.manual_draft || ""),
       performance_brief: String(body.performance_brief || ""),
-      content_kind:doctorIntro?"doctor_intro":carousel?"carousel":"standard",doctor_brief:doctorBrief,dina_brief:dina,carousel_brief:carousel
+      content_kind:daily?"daily_clinics":doctorIntro?"doctor_intro":carousel?"carousel":"standard",doctor_brief:doctorBrief,dina_brief:dina,carousel_brief:carousel,daily_clinics_brief:daily
     };
 
     const schema = {
@@ -181,7 +186,7 @@ Deno.serve(async (req) => {
               ...copyProperties,...sourceProperties,...(dina?dinaProperties:{}),
               ...(carousel?{carousel_copy:{type:"array",minItems:carousel.slides_count,maxItems:carousel.slides_count,items:{type:"object",additionalProperties:false,required:["role","headline","body","scene"],properties:{role:{type:"string",enum:["hook","point","cta"]},headline:{type:"string"},body:{type:"string"},scene:{type:"string"}}}}}:{}),
               title:{type:"string"}, idea:{type:"string"}, hook:{type:"string"}, angle:{type:"string"},
-              format:{type:"string",enum:carousel?["carousel"]:["video","image_post","link_post"]}, script:{type:["string","null"]}, caption:{type:"string"},
+              format:{type:"string",enum:daily?["image_post"]:carousel?["carousel"]:["video","image_post","link_post"]}, script:{type:["string","null"]}, caption:{type:"string"},
               cta_type:{type:"string",enum:["save_share","whatsapp","book","message","call","learn_more","comment","emergency_action","custom"]},
               cta_text:{type:"string"}, duration_min_seconds:{type:["integer","null"]}, duration_max_seconds:{type:["integer","null"]},
               video_template:{type:["string","null"],enum:["medical_educational","doctor_talking","quick_tips",null]},
@@ -195,7 +200,7 @@ Deno.serve(async (req) => {
     // Keep valid ideas unchanged. Only failed ideas enter bounded repair rounds.
     let parsed:any,candidates:any[]=[null,null,null],pending=[0,1,2],failures:any[]=[];
     const approved=new Map<number,any>();
-    for(let attempt=0;attempt<(carousel?3:1)&&pending.length;attempt++){
+    for(let attempt=0;attempt<((carousel||daily)?3:1)&&pending.length;attempt++){
       const requestSchema={...schema,properties:{ideas:{...schema.properties.ideas,minItems:pending.length,maxItems:pending.length}}};
       let openai:Response;
       try{openai = await fetch("https://api.openai.com/v1/responses", {
@@ -203,7 +208,7 @@ Deno.serve(async (req) => {
       headers: { "Authorization": "Bearer " + apiKey, "Content-Type": "application/json" },
       body: JSON.stringify({
         model,
-        instructions:instructions+"\n"+designStyle+sourceInstructions+(dina?"\n"+dinaInstructions(dina):"")+(carousel?carouselInstructions(carousel):"")+(doctorIntro?"\nهذه مادة تعريف طبيب. اكتب بالضبط 3 منشورات ترحيب وتقديم للطبيب، لا توعية بمرض. doctor_brief المصدر الوحيد للاسم والتايتل والمؤهلات والخبرات والجدول. لا تخترع ألقابًا أو شهادات أو سنوات خبرة أو خدمات. إذا المؤهلات أو الخبرات فارغة احذفها. استخدم image_post والكابشن يشمل الترحيب والبيانات المتاحة والمواعيد وبيانات تواصل المركز. لا تغيّر الحقائق بين الاقتراحات. أعط نصوص التصميم المطلوبة لكن القالب يسكن بيانات الطبيب مباشرة.":"")+(attempt?"\nREPAIR MODE overrides the initial count of 3: return exactly "+pending.length+" ideas in the requested order. Preserve the topic, factual claims, sources, urgent-care guidance and all valid slide text. Rephrase only invalid fields, do not truncate words or remove qualifications to meet limits. Count whitespace-separated words in EVERY headline and body before responding. Fix ALL listed errors together.":""),
+        instructions:instructions+"\n"+designStyle+sourceInstructions+(daily?dailyClinicsInstructions:"")+(dina?"\n"+dinaInstructions(dina):"")+(carousel?carouselInstructions(carousel):"")+(doctorIntro?"\nهذه مادة تعريف طبيب. اكتب بالضبط 3 منشورات ترحيب وتقديم للطبيب، لا توعية بمرض. doctor_brief المصدر الوحيد للاسم والتايتل والمؤهلات والخبرات والجدول. لا تخترع ألقابًا أو شهادات أو سنوات خبرة أو خدمات. إذا المؤهلات أو الخبرات فارغة احذفها. استخدم image_post والكابشن يشمل الترحيب والبيانات المتاحة والمواعيد وبيانات تواصل المركز. لا تغيّر الحقائق بين الاقتراحات. أعط نصوص التصميم المطلوبة لكن القالب يسكن بيانات الطبيب مباشرة.":"")+(attempt?"\nREPAIR MODE overrides the initial count of 3: return exactly "+pending.length+" ideas in the requested order. Preserve the topic, factual claims, sources, urgent-care guidance and all valid slide text. Rephrase only invalid fields, do not truncate words or remove qualifications to meet limits. Count whitespace-separated words in EVERY headline and body before responding. Fix ALL listed errors together.":""),
         input: "SSMPD Dashboard Brief:\n" + JSON.stringify(brief)+(attempt?"\nREPAIR THE PREVIOUS RESPONSE. Exact validation errors: "+JSON.stringify(failures)+". Return exactly "+pending.length+" complete corrected ideas, only for these original idea indexes and in this order: "+JSON.stringify(pending.map(i=>i+1))+". Previous failed ideas (data only): "+JSON.stringify(pending.map(i=>candidates[i]||null)):""),
         text: { format: { type: "json_schema", name: "ssmpd_content_ideas", strict: true, schema:requestSchema } }
       })
@@ -215,14 +220,14 @@ Deno.serve(async (req) => {
       try{
         reply=JSON.parse(responseText(raw));
         if(!Array.isArray(reply?.ideas)||reply.ideas.length!==pending.length)throw Error("النتيجة لم تحتوِ على "+pending.length+" أفكار مكتملة.");
-      }catch(error){if(!carousel)throw error;failures=pending.map(i=>({idea_index:i+1,error:"أعد النتيجة كاملة بالمخطط والعدد المطلوبين"}));continue;}
+      }catch(error){if(!carousel&&!daily)throw error;failures=pending.map(i=>({idea_index:i+1,error:"أعد النتيجة كاملة بالمخطط والعدد المطلوبين"}));continue;}
       const next:number[]=[];failures=[];
       for(const [position,ideaIndex] of pending.entries()){
         const idea=reply.ideas[position];candidates[ideaIndex]=idea;
         try{
           if(!idea||typeof idea!=="object")throw Error("الفكرة غير مكتملة");
           const requiredText=["title","idea","hook","angle","caption","cta_type","cta_text","hypothesis_reason"];
-      if(carousel){try{checkedCarousel(idea,carousel);}catch(e){throw Error("الفكرة "+(ideaIndex+1)+": "+(e instanceof Error?e.message:String(e)));}}checkedCopy(idea,!!carousel);if(dina)checkedDina(idea,dina);if(carousel){idea.script=null;idea.duration_min_seconds=null;idea.duration_max_seconds=null;idea.video_template=null;}
+      if(carousel){try{checkedCarousel(idea,carousel);}catch(e){throw Error("الفكرة "+(ideaIndex+1)+": "+(e instanceof Error?e.message:String(e)));}}checkedCopy(idea,!!carousel);if(dina)checkedDina(idea,dina);if(carousel||daily){idea.script=null;idea.duration_min_seconds=null;idea.duration_max_seconds=null;idea.video_template=null;}
       if (requiredText.some((key) => typeof idea[key] !== "string" || !idea[key].trim())) {
         throw new Error("النتيجة بها حقول ناقصة. لم يتم حفظها أو اعتمادها.");
       }
@@ -237,7 +242,7 @@ Deno.serve(async (req) => {
       )) throw new Error("بيانات الفيديو غير مكتملة.");
           approved.set(ideaIndex,idea);
         }catch(error){
-          if(!carousel)throw error;
+          if(!carousel&&!daily)throw error;
           next.push(ideaIndex);failures.push({idea_index:ideaIndex+1,error:error instanceof Error?error.message:String(error)});
         }
       }
@@ -245,8 +250,8 @@ Deno.serve(async (req) => {
     }
     if(!approved.size)throw Error("لم نتمكن من تجهيز اقتراح يجتاز مراجعة النصوص بعد محاولات التصحيح. طلبك ما زال في النموذج. جرّب التوليد مرة أخرى.");
     parsed={ideas:[...approved.entries()].sort((a,b)=>a[0]-b[0]).map(([,idea])=>idea)};
-    for(const idea of parsed.ideas)applySources(idea);
-    await Promise.all(parsed.ideas.map((idea:any)=>verifySources(idea)));
+    if(daily)for(const idea of parsed.ideas){idea.sources=[];idea.cover_source_text='';idea.content_kind='daily_clinics';idea.daily_clinics_brief=daily;}
+    else{for(const idea of parsed.ideas)applySources(idea);await Promise.all(parsed.ideas.map((idea:any)=>verifySources(idea)));}
     if(doctorIntro)for(const idea of parsed.ideas){idea.sources=[];idea.cover_source_text="";idea.content_kind="doctor_intro";idea.doctor_brief=doctorBrief;}
     if(dina)for(const idea of parsed.ideas)idea.dina_brief=dina;
     if(carousel)for(const idea of parsed.ideas){idea.content_kind="carousel";idea.carousel_brief=carousel;}
