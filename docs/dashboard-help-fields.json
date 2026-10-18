@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261018-4",
-    "definitions": 1056,
-    "labels": 838,
+    "definitions": 1057,
+    "labels": 839,
     "files": 66,
-    "groups": 770
+    "groups": 771
   },
   "fields": [
     {
@@ -396,6 +396,16 @@
       "tab": "production",
       "article": "design-guide",
       "text_sha256": "aed349663e34f5afc2c13a63861c2259069f67f6668fa0c305f0bcbc8bfaf05b"
+    },
+    {
+      "file": "daily-clinics.js",
+      "label": "نص Brief المواعيد",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "design-guide",
+      "text_sha256": "b06a7163bed9c861b292f70d402a945d11aa6e65c84a82c1d67b16ce845e5ca7"
     },
     {
       "file": "design-budget.js",

@@ -356,6 +356,8 @@ function openAgentImportModal(parentBackdrop) {
       slot.querySelectorAll("[data-agent-pick]").forEach(function (btn) {
         btn.onclick = function () {
           var h = hypotheses[parseInt(btn.getAttribute("data-agent-pick"), 10)];
+          var dailyImport;
+          try{dailyImport=window.SSMPDDailyClinics.checkImport(h.raw);}catch(e){alert(e.message);return;}
           document.getElementById("cf-title").value = h.title || "";
           document.getElementById("cf-body").value = h.idea || h.hook || "";
           document.getElementById("cf-hook").value = h.hook || "";
@@ -370,10 +372,11 @@ function openAgentImportModal(parentBackdrop) {
           document.getElementById("cf-hypothesis").value = h.why || "";
           document.getElementById("cf-agent-raw").value = h.raw ? JSON.stringify(Object.assign({},h.raw,{original_agent_output:raw})) : raw;
 
-          if(h.raw&&h.raw.dina_brief)window.SSMPDDinaContent.hydrate(h.raw.dina_brief);
-          if(h.raw&&h.raw.doctor_brief)window.SSMPDDoctorContent.hydrate(h.raw.doctor_brief);
-          if(h.raw&&h.raw.before_after_brief)window.SSMPDBeforeAfterContent.hydrate(h.raw.before_after_brief);
-          if(h.formatKey==="carousel"){var carouselBrief=h.raw&&h.raw.carousel_brief||{slides_count:Array.isArray(h.raw&&h.raw.carousel_copy)?h.raw.carousel_copy.length:6,style:"tips",notes:""};window.SSMPDCarouselContent.hydrate(carouselBrief,h.raw&&h.raw.carousel_copy);var selectedRaw=window.SSMPDCarouselContent.metadata(h.raw,carouselBrief);document.getElementById("cf-agent-raw").value=JSON.stringify(Object.assign({},selectedRaw,{original_agent_output:raw}));}
+          if(dailyImport)window.SSMPDDailyClinics.hydrate(dailyImport);
+          if(!dailyImport&&h.raw&&h.raw.dina_brief)window.SSMPDDinaContent.hydrate(h.raw.dina_brief);
+          if(!dailyImport&&h.raw&&h.raw.doctor_brief)window.SSMPDDoctorContent.hydrate(h.raw.doctor_brief);
+          if(!dailyImport&&h.raw&&h.raw.before_after_brief)window.SSMPDBeforeAfterContent.hydrate(h.raw.before_after_brief);
+          if(!dailyImport&&h.formatKey==="carousel"){var carouselBrief=h.raw&&h.raw.carousel_brief||{slides_count:Array.isArray(h.raw&&h.raw.carousel_copy)?h.raw.carousel_copy.length:6,style:"tips",notes:""};window.SSMPDCarouselContent.hydrate(carouselBrief,h.raw&&h.raw.carousel_copy);var selectedRaw=window.SSMPDCarouselContent.metadata(h.raw,carouselBrief);document.getElementById("cf-agent-raw").value=JSON.stringify(Object.assign({},selectedRaw,{original_agent_output:raw}));}
           var fmt = document.getElementById("ci-format");
           if (fmt && h.formatKey) fmt.value = h.formatKey;
 

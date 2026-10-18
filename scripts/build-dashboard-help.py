@@ -5,6 +5,7 @@ p=pathlib.Path('assets/js/dashboard-help-data.js');s=p.read_text();d=json.loads(
 rows=json.loads(subprocess.check_output(['node','scripts/help-field-inventory.cjs','--json'],text=True));rules=[]
 def rule(labels,text,article=None):
  rules.append((set(labels.split('|')),text,article))
+rule('نص Brief المواعيد','نص للنسخ إلى إضافة منشئ محتوى عيادات سونو. يحتوي اليوم والأسماء والتخصصات والساعات كما أدخلتها، وتعليمات صياغة المنشور دون تغيير الجدول. انسخه للإضافة ثم استورد الرد لاختيار النص.','design-guide')
 rule('يوم جدول العيادات','اختر اليوم الذي يخصه منشور المواعيد. يظهر اسم اليوم في أعلى التصميم، ولا يغير مواعيد الحجز الفعلية.','design-guide')
 rule('اسم الطبيب في جدول اليوم','اكتب اسم الطبيب كما سيظهر للجمهور. راجع الاسم قبل إرسال المادة للاعتماد. هذا الحقل يخص المنشور ولا ينشئ طبيبًا أو عقدًا.','design-guide')
 rule('تخصص العيادة في الجدول','اكتب التخصص المختصر الذي سيظهر بجانب اسم الطبيب. راجع أن النص يناسب مساحة المعاينة؛ لا يغير تخصص الخدمات.','design-guide')
