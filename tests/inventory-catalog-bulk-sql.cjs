@@ -1,0 +1,41 @@
+const fs=require('fs'),assert=require('node:assert/strict'),{PGlite}=require('@electric-sql/pglite');
+(async()=>{const db=new PGlite();try{await db.exec(`
+create role anon;create role authenticated;create schema clinic_finance;
+create table admins(id uuid primary key,active boolean);insert into admins values('10000000-0000-4000-8000-000000000001',true);
+create function my_admin_id() returns uuid language sql stable as $$select case when current_setting('test.denied',true)='yes' then null else '10000000-0000-4000-8000-000000000001'::uuid end$$;
+create function inventory_location_can(uuid,text) returns boolean language sql stable as $$select my_admin_id() is not null and $1 is not null$$;
+create function can_manage_all_content() returns boolean language sql stable as $$select my_admin_id() is not null$$;
+create function is_controlled_finance() returns boolean language sql stable as $$select false$$;
+create function finance_module_allowed(text,text) returns boolean language sql stable as $$select false$$;
+create table inventory_items(id uuid primary key default gen_random_uuid(),sku text unique,name text not null,category text not null default 'عام',base_unit text not null,units_per_pack numeric(14,3) not null,minimum_quantity numeric(14,3),markup_percent numeric(8,3),current_sale_price numeric(14,2),track_lots boolean default false,use_standard_markup boolean default false);
+create table inventory_movements(item_id uuid);create table inventory_request_lines(item_id uuid);
+create table pricing_supplies(id uuid primary key default gen_random_uuid(),name text,unit_type text,units_per_package numeric,package_price numeric,consumption_per_patient numeric,category text,created_by uuid,inventory_item_id uuid,inventory_quantity_per_unit numeric);
+create table inventory_audit_events(entity_id uuid,kind text,actor_id uuid,detail text);
+create table clinic_finance.inventory_pricing_settings(id boolean primary key,configured boolean,markup_percent numeric);insert into clinic_finance.inventory_pricing_settings values(true,true,35);
+create function inventory_save_catalog(p_location uuid,p_action text,p_payload jsonb) returns uuid language plpgsql as $$declare v uuid:=nullif(p_payload->>'p_id','')::uuid;begin
+ if p_action='track' then update inventory_items set track_lots=(p_payload->>'p_track')::boolean where id=(p_payload->>'p_item_id')::uuid;return (p_payload->>'p_item_id')::uuid;end if;
+ if v is null then insert into inventory_items(sku,name,base_unit,units_per_pack,minimum_quantity,markup_percent,current_sale_price,category) values(nullif(p_payload->>'p_sku',''),p_payload->>'p_name',p_payload->>'p_base_unit',(p_payload->>'p_units_per_pack')::numeric,(p_payload->>'p_minimum')::numeric,(p_payload->>'p_markup')::numeric,(p_payload->>'p_sale_price')::numeric,p_payload->>'p_category') returning id into v;
+ else update inventory_items set units_per_pack=(p_payload->>'p_units_per_pack')::numeric,base_unit=p_payload->>'p_base_unit' where id=v;end if;return v;end$$;
+create function inventory_workspace_snapshot(p_location uuid default null) returns jsonb language sql as $$select jsonb_build_object('can_manage',coalesce(current_setting('test.viewer',true),'')<>'yes','items',(select coalesce(jsonb_agg(to_jsonb(i)),'[]') from inventory_items i))$$;
+insert into inventory_items(sku,name,base_unit,units_per_pack) values(null,'قديم','قطعة',1),('KEEP-9','كود سابق','وحدة',1);
+`);await db.exec(fs.readFileSync('supabase/migrations/20261018003127_inventory_catalog_bulk_units.sql','utf8'));
+const loc='00000000-0000-4000-8000-000000000001',token='20000000-0000-4000-8000-000000000001';
+async function call(rows,t=token,pricing=true){return (await db.query('select inventory_import_catalog($1,$2::jsonb,$3,$4) v',[loc,JSON.stringify(rows),t,pricing])).rows[0].v;}
+const row={name:'سرنجة اختبار',category:'مستهلكات',base_unit:'سرنجة',pack_unit:'علبة',units_per_pack:100,reference_purchase_price:2,use_standard_markup:true,markup_percent:0,sale_price:null,minimum_quantity:10,track_lots:true,consumption_per_patient:1};
+const out=await call([row]);assert.match(out[0].sku,/^ITM-\d{7,}$/);assert.deepEqual(await call([row]),out,'retry returns same result');
+let item=(await db.query('select * from inventory_items where id=$1',[out[0].id])).rows[0];assert.equal(Number(item.current_sale_price),2.7);assert.equal(Number(item.markup_percent),35);assert.equal(item.pack_unit,'علبة');assert.equal(item.track_lots,true);
+let supply=(await db.query('select * from pricing_supplies')).rows[0];assert.equal(supply.inventory_item_id,item.id);assert.equal(Number(supply.package_price),200);assert.equal(Number(supply.inventory_quantity_per_unit),1);
+const count=async()=>Number((await db.query('select count(*) n from inventory_items')).rows[0].n),n=await count();
+await assert.rejects(()=>call([{...row,name:'جديد قبل الخطأ'},row],'20000000-0000-4000-8000-000000000002'),/السطر 2/);assert.equal(await count(),n,'batch fully rolls back');
+await assert.rejects(()=>call([{...row,name:'نفس الطلب مختلف'}]),/يختلف/);
+for(const patch of [{units_per_pack:0},{units_per_pack:null},{reference_purchase_price:-1},{markup_percent:'NaN'},{sale_price:-1},{units_per_pack:1.00001},{track_lots:'garbage'}])await assert.rejects(()=>call([{...row,use_standard_markup:false,...patch,name:'غير صالح'}],'20000000-0000-4000-8000-000000000003'));
+await db.query("select set_config('test.denied','yes',false)");await assert.rejects(()=>call([row]),/صلاحية/);await db.query("select set_config('test.denied','',false)");
+let snap=(await db.query('select inventory_workspace_snapshot($1) v',[loc])).rows[0].v;assert.equal(snap.items.find(x=>x.id===item.id).reference_purchase_price,2);
+await db.query("select set_config('test.viewer','yes',false)");snap=(await db.query('select inventory_workspace_snapshot($1) v',[loc])).rows[0].v;assert(!('reference_purchase_price' in snap.items.find(x=>x.id===item.id)),'view-only snapshot cannot see reference costs');
+assert.equal((await db.query("select sku from inventory_items where name='كود سابق'")).rows[0].sku,'KEEP-9');
+assert.equal((await db.query('select count(distinct sku)=count(*) ok from inventory_items')).rows[0].ok,true);
+assert.equal((await db.query("select has_function_privilege('anon','public.inventory_import_catalog(uuid,jsonb,uuid,boolean)','EXECUTE') ok")).rows[0].ok,false);
+await db.exec('set role authenticated');await assert.rejects(()=>db.query('select * from clinic_finance.inventory_catalog_prices'));await db.exec('reset role');
+assert.equal(Number((await db.query('select count(*) n from inventory_movements')).rows[0].n),0);
+console.log('PASS catalog SQL: migration, stable auto codes, units/prices, linked pricing, standard margin, atomic rollback, duplicates, retry/payload conflict, permissions, private reference prices and zero stock movements.');
+}finally{await db.close();}})().catch(e=>{console.error(e);process.exitCode=1});

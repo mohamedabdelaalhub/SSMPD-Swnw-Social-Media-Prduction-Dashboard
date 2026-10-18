@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261018-4",
-    "definitions": 1031,
-    "labels": 815,
-    "files": 63,
-    "groups": 747
+    "definitions": 1050,
+    "labels": 832,
+    "files": 65,
+    "groups": 765
   },
   "fields": [
     {
@@ -3331,6 +3331,66 @@
       "text_sha256": "15e2120ae5b03c869c9dd19fa22f51906b582f4d7b4b978f5888c1c9f9c52d6b"
     },
     {
+      "file": "inventory-catalog-import.js",
+      "label": "المخزن المسؤول عن الإضافة",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "inventory",
+      "article": "inventory-catalog-import",
+      "text_sha256": "8a446026df5714b17b367be50eb6a66e75e2957f93e047f6cc2001d577a931ca"
+    },
+    {
+      "file": "inventory-catalog-import.js",
+      "label": "ملف المستلزمات والأدوية",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "inventory",
+      "article": "inventory-catalog-import",
+      "text_sha256": "7f4e7ac8bff6a12eb46d9a64dd660bacf66da1a6e644ac7ae7a24d96ad9c9f47"
+    },
+    {
+      "file": "inventory-catalog-import.js",
+      "label": "الوحدة الكبرى",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "inventory",
+      "article": "inventory-catalog-import",
+      "text_sha256": "5497e1ad304f896ef72f69b859e2aded220b875b15d89fc139ba1b8971f604ac"
+    },
+    {
+      "file": "inventory-catalog-import.js",
+      "label": "سعر شراء الصغرى الاسترشادي قبل الربح",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "inventory",
+      "article": "inventory-catalog-import",
+      "text_sha256": "52aa649d9ba78eb5084ef19a537ecd6324d8eaa358aa6cdbbbcd1eba66e73265"
+    },
+    {
+      "file": "inventory-catalog-import.js",
+      "label": "سعر شراء الكبرى الاسترشادي",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "inventory",
+      "article": "inventory-catalog-import",
+      "text_sha256": "cec88d1a5436d6bd9843a79a0b7208a407a5fa892da3ebc3855c86767ae2cdb6"
+    },
+    {
+      "file": "inventory-catalog-import.js",
+      "label": "سعر بيع الكبرى للجمهور",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "inventory",
+      "article": "inventory-catalog-import",
+      "text_sha256": "5b59481e9c3756a057cd0b51b70a7e7944d725cf28ec160b9e78ee79d50a893d"
+    },
+    {
       "file": "inventory-patient-supplies.js",
       "label": "الصنف",
       "name": "",
@@ -4113,6 +4173,96 @@
       "tab": "patients",
       "article": "patient-records",
       "text_sha256": "8781afaef1012c14a5b9f99b05513e1852e02bb6c191b2fc0b339518d671a4a9"
+    },
+    {
+      "file": "psychology-workspace.js",
+      "label": "اسم المريض من كلمتين على الأقل",
+      "name": "full_name",
+      "kind": "helper",
+      "forms": [],
+      "tab": "patients",
+      "article": "patient-records",
+      "text_sha256": "cefa111256fc781820939eece95f3e9052b1c182f82a9a64533ab044bf7cba2f"
+    },
+    {
+      "file": "psychology-workspace.js",
+      "label": "رقم التليفون",
+      "name": "phone",
+      "kind": "helper",
+      "forms": [],
+      "tab": "patients",
+      "article": "patient-records",
+      "text_sha256": "57a56cdd50c48e9067e70e528bb4784c853c253c569bc87e0865b68655497d63"
+    },
+    {
+      "file": "psychology-workspace.js",
+      "label": "السن بالسنوات",
+      "name": "age",
+      "kind": "helper",
+      "forms": [],
+      "tab": "patients",
+      "article": "patient-records",
+      "text_sha256": "2dd5ed361c2b234c04111377a651a15510c7c2945ff4a48474ff2efb0f770179"
+    },
+    {
+      "file": "psychology-workspace.js",
+      "label": "سبب طلب الاستعراض",
+      "name": "reason",
+      "kind": "helper",
+      "forms": [],
+      "tab": "patients",
+      "article": "patient-records",
+      "text_sha256": "c877f380e1a17e6da8e3c8c11f994dd391b2a1179f5664d7c593200a6cceb54f"
+    },
+    {
+      "file": "psychology-workspace.js",
+      "label": "رقم التليفون أو الملف",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "patients",
+      "article": "patient-records",
+      "text_sha256": "a8f8b42e2281865afa7a0ef15413eb2866a3c3742b5b81137a78beb459f5e75b"
+    },
+    {
+      "file": "psychology-workspace.js",
+      "label": "موعد الجلسة",
+      "name": "session_at",
+      "kind": "helper",
+      "forms": [],
+      "tab": "patients",
+      "article": "patient-records",
+      "text_sha256": "1ce729e7569055b6975418fd7a6ed2b3221845580f243763d8623c2593f6b958"
+    },
+    {
+      "file": "psychology-workspace.js",
+      "label": "القرار",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "patients",
+      "article": "patient-records",
+      "text_sha256": "e94fbc6b4acbcb93cd4550a5c0f411b3026a6856a94bfdc920222df26211079d"
+    },
+    {
+      "file": "psychology-workspace.js",
+      "label": "مدة الاستعراض بالأيام",
+      "name": "days",
+      "kind": "helper",
+      "forms": [],
+      "tab": "patients",
+      "article": "patient-records",
+      "text_sha256": "a8da9c012a74d0ff1e81ea011f91da770d4752d7f2ac7dabc5312bd1430db917"
+    },
+    {
+      "file": "psychology-workspace.js",
+      "label": "سبب القرار",
+      "name": "note",
+      "kind": "helper",
+      "forms": [],
+      "tab": "patients",
+      "article": "patient-records",
+      "text_sha256": "00135b5d6cd282bea537fb8658c57e3e41f428900b403396c1ff4fef0b2d6095"
     },
     {
       "file": "reception-bridge.js",
@@ -6964,13 +7114,23 @@
     },
     {
       "file": "render-inventory.js",
-      "label": "كود الصنف",
+      "label": "يتولد عند الحفظ",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "inventory",
+      "article": "inventory-catalog-import",
+      "text_sha256": "132a7b2cdf67f5a1506ee29aa2f98d5d4a1b9948a5c4d92c01b0e957cba6a98a"
+    },
+    {
+      "file": "render-inventory.js",
+      "label": "كود الصنف — يتولد تلقائيًا",
       "name": "",
       "kind": "html",
       "forms": [],
       "tab": "inventory",
-      "article": "supply-map",
-      "text_sha256": "33b376dab9db7cbbbc91dd980dacd497b6853489e867a2cb12f1b216589d2b45"
+      "article": "inventory-catalog-import",
+      "text_sha256": "132a7b2cdf67f5a1506ee29aa2f98d5d4a1b9948a5c4d92c01b0e957cba6a98a"
     },
     {
       "file": "render-inventory.js",
@@ -6984,23 +7144,23 @@
     },
     {
       "file": "render-inventory.js",
-      "label": "وحدة الصرف",
+      "label": "الوحدة الصغرى — وحدة الصرف",
       "name": "",
       "kind": "html",
       "forms": [],
       "tab": "inventory",
-      "article": "supply-map",
-      "text_sha256": "da9ccff5393971e805e2eeeb3995ddf767883fd8fd827d000078a918808275df"
+      "article": "inventory-catalog-import",
+      "text_sha256": "ced5ab955eb3c102a6264e84a0a276b3fa85b1b0d29516a2c837b1fb8bbf6574"
     },
     {
       "file": "render-inventory.js",
-      "label": "عدد الوحدات في العبوة",
+      "label": "عدد الوحدات الصغرى في الكبرى",
       "name": "",
       "kind": "html",
       "forms": [],
       "tab": "inventory",
-      "article": "supply-map",
-      "text_sha256": "f060f0573e2f54eb5d327cecfe7686a8c2820b44235f450af75c7967863184af"
+      "article": "inventory-catalog-import",
+      "text_sha256": "440241b08eac28b614c121b4f53302e3603d7e7c1c427db0ee3f50222fc24d49"
     },
     {
       "file": "render-inventory.js",
@@ -7540,6 +7700,36 @@
       "tab": "leads",
       "article": "booking-flow",
       "text_sha256": "9de357e91f68d929da65d3983a861523a19c2d8ad7c1d86737871b762e1c0325"
+    },
+    {
+      "file": "render-leads.js",
+      "label": "الاسم من كلمتين",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "leads",
+      "article": "patient-records",
+      "text_sha256": "cefa111256fc781820939eece95f3e9052b1c182f82a9a64533ab044bf7cba2f"
+    },
+    {
+      "file": "render-leads.js",
+      "label": "التليفون",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "leads",
+      "article": "patient",
+      "text_sha256": "8a2950b281e7d62a52011cc1b6e43086544f9d96693cf4517d9d32bd36bd4b17"
+    },
+    {
+      "file": "render-leads.js",
+      "label": "السن",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "leads",
+      "article": "patient-records",
+      "text_sha256": "5419839397dbc5f0b82416add0be92d1172e352356c10b6eceff95cb29c839c5"
     },
     {
       "file": "render-leads.js",
