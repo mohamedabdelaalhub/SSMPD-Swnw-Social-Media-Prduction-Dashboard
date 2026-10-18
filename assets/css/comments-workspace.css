@@ -1,0 +1,59 @@
+/* Swnw presentation for comments and messages. No message, permission or action rules. */
+@media screen {
+ .cm-wrap{max-width:1120px;min-width:0;color:var(--c-dark,#16212E)}
+ .cm-wrap .cm-head{flex-wrap:wrap}
+ .cm-wrap .cm-head>div{flex:1;min-width:min(100%,230px)}
+ .cm-wrap .cm-head p{max-width:72ch;line-height:1.85}
+ .cm-wrap .cm-tabs{margin:16px 0;gap:8px;align-items:center}
+ .cm-wrap .cm-tabs>.btn{min-height:40px;padding:8px 16px;border-radius:11px}
+ .cm-wrap .cm-tabs>.btn:not(.ghost):not(.danger-btn){background:#0F369D;border-color:#0F369D;color:#fff}
+ .cm-wrap .cm-badge.whatsapp{background:#E4F4EC;color:#2F7D5C}
+ .cm-wrap .cm-filters{gap:10px;margin:16px 0}
+ .cm-wrap .cm-filters select{min-width:0;max-width:100%;padding:10px 12px;border:1px solid #D5DEEE;border-radius:11px;background:#FAFCFF;font:inherit;color:inherit}
+ .cm-wrap .cm-card{min-width:0;padding:20px;border-radius:16px;border-width:1px;box-shadow:0 2px 8px #16212e05;margin-bottom:16px}
+ .cm-wrap .cm-meta{gap:7px;line-height:1.8}
+ .cm-wrap .cm-badge{display:inline-flex;align-items:center;min-height:25px;padding:3px 10px;line-height:1.6;border-radius:99px}
+ .cm-wrap .cm-msg,.cm-wrap .cm-reply{min-width:0;overflow-wrap:anywhere}
+ .cm-wrap .cm-msg>.muted{font-size:11px}
+ .cm-wrap .cm-msg>p{margin-top:10px;font-size:14px;line-height:1.9}
+ .cm-wrap .cm-input{box-sizing:border-box;border-radius:11px;border-color:#D5DEEE;background:#FAFCFF;padding:12px;line-height:1.85}
+ .cm-wrap .cm-input:focus-visible{outline:2px solid #0F369D;outline-offset:2px}
+ .cm-wrap .cm-actions{gap:8px;margin:14px 0 0}
+ .cm-wrap .cm-open{display:inline-flex;align-items:center;min-height:38px;padding:5px 10px;margin-inline-start:auto;border:1px solid #E4E9F2;border-radius:10px;text-decoration:none;color:#0F369D;line-height:1.65;overflow-wrap:anywhere}
+ .cm-wrap .cm-open:hover{background:#EAF1FF;border-color:#0F369D}
+ .cm-wrap .cm-open:focus-visible{outline:2px solid #0F369D;outline-offset:2px}
+ .cm-wrap .cm-post{min-width:0;overflow-wrap:anywhere}
+ .cm-wrap .cm-hint,.cm-wrap .cm-lib{line-height:1.85}
+ .cm-wrap .cm-messages-intro{font-size:13px;line-height:1.85;margin:16px 2px}
+ .cm-conversations{min-width:0}
+ .cm-conversation-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;padding-bottom:16px;border-bottom:1px solid #EDF1F7;margin-bottom:18px}
+ .cm-contact{display:flex;align-items:center;gap:12px;min-width:0;flex:1 1 220px}
+ .cm-contact>div{min-width:0}
+ .cm-contact h3{margin:0;font-size:16px;line-height:1.8;overflow-wrap:anywhere}
+ .cm-avatar{display:grid;place-items:center;flex:0 0 42px;width:42px;height:42px;background:#EAF1FF;color:#0F369D;border:1px solid #D5DEEE;border-radius:14px;font-size:18px;font-weight:700}
+ .cm-last-time{display:block;font-size:11px;line-height:1.8}
+ .cm-conversation-head .cm-meta{margin:0;max-width:100%}
+ .cm-thread{display:flex;flex-direction:column;gap:12px;min-width:0}
+ .cm-thread .cm-bubble{align-self:flex-start;box-sizing:border-box;width:fit-content;max-width:min(88%,760px);margin:0;padding:12px 15px;border:1px solid #E4E9F2;border-radius:14px;background:#FAFCFF;font-size:13px;color:#16212E}
+ .cm-thread .cm-bubble.page{align-self:flex-end;background:#EAF1FF;border-color:#D5E1F8}
+ .cm-bubble-meta{display:flex;flex-wrap:wrap;align-items:baseline;gap:5px 12px;line-height:1.8}
+ .cm-bubble-meta b{font-size:12px;font-weight:600;overflow-wrap:anywhere}
+ .cm-bubble-meta .muted{font-size:10px;line-height:1.8}
+ .cm-thread .cm-bubble p{margin:6px 0 0;line-height:1.9;white-space:pre-wrap;overflow-wrap:anywhere}
+ .cm-thread .cm-linkbtn{max-width:100%;white-space:normal;box-sizing:border-box}
+ @media(max-width:700px){
+  .cm-wrap .cm-card{padding:14px;margin-bottom:14px}
+  .cm-wrap .cm-tabs{gap:6px;padding:6px}
+  .cm-wrap .cm-tabs>.btn{padding:8px 10px;font-size:12px;flex:1 1 auto}
+  .cm-wrap .cm-filters select{flex:1 1 130px;font-size:16px}
+  .cm-wrap .cm-input{font-size:16px}
+  .cm-conversation-head{gap:10px;padding-bottom:12px;margin-bottom:14px}
+  .cm-contact{flex-basis:100%}
+  .cm-contact h3{font-size:14px}
+  .cm-conversation-head .cm-meta{width:100%}
+  .cm-thread{gap:10px}
+  .cm-thread .cm-bubble{max-width:94%;padding:10px 12px}
+  .cm-wrap .cm-linkbtn{white-space:normal;max-width:100%}
+  .cm-wrap .cm-actions>.btn{min-height:40px}
+ }
+}

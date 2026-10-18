@@ -1,0 +1,9 @@
+# Comments and messages visual identity
+
+The comments workspace now uses the approved Swnw surfaces, spacing, active-tab treatment and responsive controls. Message conversations have a contact header, initial avatar, existing channel/brand/status/category badges and original external conversation link. Customer and page messages use separate bubble alignment and surfaces. Sender/time metadata wraps independently from message text. WhatsApp badges use the existing positive green palette.
+
+`assets/css/comments-workspace.css` is scoped to this workspace and screen media, loaded after the shared theme. `render-comments.js` changes presentation markup in `messagesHtml` only. The original conversation grouping/order, 80-conversation limit, last six stored messages, conditional stored reply, errors, filters, moderation, template actions and API calls remain unchanged. All message text still passes through the original escaped rich-text renderer. No backend, agent response, channel messaging window, record or access policy changes are included.
+
+`tests/comments-identity-ui.cjs` uses the real renderer and CSS against local mocked data at 1280/390/320 pixels. It checks text preservation across styling, original chronology and reply deduplication, status/danger colors, escaped names/errors, original links, selected tabs, bubble alignment and no overflow. It exercises original template-save, suggest and filter actions against mocks and asserts that navigation/style makes no messaging or moderation calls. It also verifies screen-only CSS under print media. These tests do not authenticate as staff or send messages. Internal QA screenshots use dummy data.
+
+Validation also includes `test/smoke.js`, `test/comment-delete.cjs`, `tests/dashboard-help-coverage.cjs`, syntax checks and diff whitespace checks. The existing smoke fixture may log its known requestAnimationFrame warning while passing.

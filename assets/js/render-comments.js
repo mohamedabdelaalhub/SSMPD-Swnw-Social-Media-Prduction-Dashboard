@@ -158,25 +158,27 @@
   }
   var MSTATUS = { "new": "مستنية رد", replied: "تم الرد", skipped: "سبام", failed: "فشل الإرسال", expired: "فات عليها ٢٤ ساعة" };
   function messagesHtml(convs) {
-    var intro = '<p class="muted">رسايل ماسنجر وانستجرام دايركت. فيسبوك مسموح يترد فيها خلال ٢٤ ساعة بس من آخر رسالة من العميل.</p>';
+    var intro = '<p class="muted cm-messages-intro">رسايل ماسنجر وانستجرام دايركت. فيسبوك مسموح يترد فيها خلال ٢٤ ساعة بس من آخر رسالة من العميل.</p>';
     if (!convs.length) return intro + '<div class="empty">مفيش رسايل لسه — لو الصلاحية pages_messaging مش مفعّلة على توكن الصفحة، الرسايل مش هتتسحب.</div>';
-    return intro + convs.slice(0, 80).map(function (c) {
+    return intro + '<div class="cm-conversations">' + convs.slice(0, 80).map(function (c) {
       var cust = c.list.filter(function (m) { return !m.is_page; });
       var lastCust = cust[cust.length - 1] || c.last;
-      var h = '<div class="cm-card' + (lastCust.alert ? " sensitive" : "") + '"><div class="cm-meta">' +
+      var contact = lastCust.sender_name || 'عميل';
+      var h = '<article class="cm-card cm-conversation' + (lastCust.alert ? " sensitive" : "") + '"><header class="cm-conversation-head"><div class="cm-contact"><span class="cm-avatar" aria-hidden="true">' + esc(contact.trim().charAt(0) || '؟') + '</span><div><h3>' + esc(contact) + '</h3><span class="muted cm-last-time">' + when(c.last.sent_at) + '</span></div></div><div class="cm-meta">' +
         '<span class="cm-badge ' + c.last.platform + '">' + (c.last.platform === "facebook" ? "ماسنجر" : (PLAT[c.last.platform] || c.last.platform)) + "</span>" +
         '<span class="cm-badge">' + (BRANDS[c.last.brand] || c.last.brand) + "</span>" +
         '<span class="cm-badge st-' + lastCust.status + '">' + (MSTATUS[lastCust.status] || lastCust.status) + "</span>" +
         (lastCust.category ? '<span class="cm-badge">' + (CATEGORY[lastCust.category] || lastCust.category) + "</span>" : "") +
-        (c.last.conversation_url ? '<a class="cm-open" href="' + esc(c.last.conversation_url) + '" target="_blank" rel="noopener">افتح المحادثة ↗</a>' : "") + "</div>";
+        (c.last.conversation_url ? '<a class="cm-open" href="' + esc(c.last.conversation_url) + '" target="_blank" rel="noopener">افتح المحادثة ↗</a>' : "") + "</div></header><div class=\"cm-thread\">";
       c.list.slice(-6).forEach(function (m) {
-        h += '<div class="cm-reply' + (m.is_page ? " page" : "") + '"><b>' + esc(m.is_page ? "الصفحة" : (m.sender_name || "عميل")) + '</b> <span class="muted">' + when(m.sent_at) + "</span><p>" + rich(m.message) + "</p></div>";
+        h += '<div class="cm-reply cm-bubble' + (m.is_page ? " page" : "") + '"><div class="cm-bubble-meta"><b>' + esc(m.is_page ? "الصفحة" : (m.sender_name || "عميل")) + '</b> <span class="muted">' + when(m.sent_at) + "</span></div><p>" + rich(m.message) + "</p></div>";
       });
       if (lastCust.status === "replied" && lastCust.reply_text && !c.list.some(function (m) { return m.is_page && new Date(m.sent_at) >= new Date(lastCust.sent_at); }))
-        h += '<div class="cm-reply page"><b>ردنا</b> <span class="muted">' + when(lastCust.replied_at) + "</span><p>" + rich(lastCust.reply_text) + "</p></div>";
+        h += '<div class="cm-reply cm-bubble page"><div class="cm-bubble-meta"><b>ردنا</b> <span class="muted">' + when(lastCust.replied_at) + "</span></div><p>" + rich(lastCust.reply_text) + "</p></div>";
+      h += '</div>';
       if (lastCust.status === "failed" && lastCust.last_error) h += '<div class="err-msg">' + esc(lastCust.last_error) + "</div>";
-      return h + "</div>";
-    }).join("");
+      return h + "</article>";
+    }).join("") + "</div>";
   }
 
   function select(id, value, options) {
