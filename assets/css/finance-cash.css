@@ -26,3 +26,6 @@
 .acc-service-modal dl{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.6fr);gap:7px 12px;font-size:13px}
 .acc-service-modal dt{color:var(--c-muted,#6b7788)}.acc-service-modal dd{font-weight:600}
 .acc-service-modal .acc-line-row{flex-wrap:wrap}.acc-service-modal .acc-line-row select{flex-basis:50%!important}
+
+/* Keep reconciliation tables inside their cards at narrow widths. */
+.st-report-form,.st-report-form [data-st-report],.st-result-cards{min-width:0;max-width:100%}.st-report-form .fc-table table{min-width:0;width:100%;table-layout:fixed}.st-report-form .fc-table th{white-space:normal}.st-report-form .fc-table td,.st-report-form .fc-table th{overflow-wrap:anywhere}.st-report-form p{overflow-wrap:anywhere}
