@@ -1,10 +1,10 @@
 {
   "coverage": {
-    "version": "20261018-4",
-    "definitions": 1086,
-    "labels": 858,
-    "files": 67,
-    "groups": 797
+    "version": "20261019-1",
+    "definitions": 1110,
+    "labels": 876,
+    "files": 68,
+    "groups": 819
   },
   "fields": [
     {
@@ -159,6 +159,19 @@
     },
     {
       "file": "accountant-workspace.js",
+      "label": "ملاحظات الخزينة",
+      "name": "notes",
+      "kind": "helper",
+      "forms": [
+        "إعدادات الخزينة",
+        "إضافة خزينة"
+      ],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "3b7622c9ab3419a4d241a99e22020f222e794abfdbd72fc74c9b5a3f932926fd"
+    },
+    {
+      "file": "accountant-workspace.js",
       "label": "الموظف المسؤول",
       "name": "assigned_to",
       "kind": "helper",
@@ -267,6 +280,18 @@
       "tab": "accounting",
       "article": "ledger-guide",
       "text_sha256": "6a8fa4a137ab2eb136ce7e65e8f32007ec647056d249b92d2c80dac5aec9d71a"
+    },
+    {
+      "file": "accountant-workspace.js",
+      "label": "ملاحظات الجرد",
+      "name": "note",
+      "kind": "helper",
+      "forms": [
+        "إنهاء الوردية وتسليم النقد"
+      ],
+      "tab": "accounting",
+      "article": "cash-shifts-guide",
+      "text_sha256": "ccf7055d2205adc7b62f9e3892f158fe9b1de9f2aee192370ed069aba4a0999e"
     },
     {
       "file": "accountant-workspace.js",
@@ -3110,6 +3135,270 @@
       "tab": "accounting",
       "article": "ledger-guide",
       "text_sha256": "231a38b04b1d5be9ed4794e404aeb409532b132db66efc2beac6d5677c12207c"
+    },
+    {
+      "file": "finance-statement-import.js",
+      "label": "نوع الكشف",
+      "name": "account",
+      "kind": "helper",
+      "forms": [
+        "رفع كشف ومراجعة بياناته"
+      ],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "73171f4f2ac08ab8b8944bd40a70a471f5e9acda501c58b8bdaef3385762c094"
+    },
+    {
+      "file": "finance-statement-import.js",
+      "label": "البنك أو شركة التحصيل",
+      "name": "provider",
+      "kind": "helper",
+      "forms": [
+        "رفع كشف ومراجعة بياناته"
+      ],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "70a64fd175d51b6ec687aaa09599249e37696f31a6ac11c23b18596dc93d8874"
+    },
+    {
+      "file": "finance-statement-import.js",
+      "label": "مرجع الكشف",
+      "name": "reference",
+      "kind": "helper",
+      "forms": [
+        "رفع كشف ومراجعة بياناته"
+      ],
+      "tab": "accounting",
+      "article": "bank",
+      "text_sha256": "85f8798b3f9e3c7863c8ac0ef9a2e5cb5d05bc4dbc40ccb438d814a54e521cee"
+    },
+    {
+      "file": "finance-statement-import.js",
+      "label": "من",
+      "name": "from",
+      "kind": "helper",
+      "forms": [
+        "رفع كشف ومراجعة بياناته"
+      ],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "5124563f386757810c60ae86fc95904a13532f1a872fcd3579613f304338e13d"
+    },
+    {
+      "file": "finance-statement-import.js",
+      "label": "إلى",
+      "name": "to",
+      "kind": "helper",
+      "forms": [
+        "رفع كشف ومراجعة بياناته"
+      ],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "5124563f386757810c60ae86fc95904a13532f1a872fcd3579613f304338e13d"
+    },
+    {
+      "file": "finance-statement-import.js",
+      "label": "رصيد أول الكشف",
+      "name": "opening",
+      "kind": "helper",
+      "forms": [
+        "رفع كشف ومراجعة بياناته"
+      ],
+      "tab": "accounting",
+      "article": "bank",
+      "text_sha256": "5e1334d51c7f2db711d14d35aa77a21a7643d7c1f6d5b4961bf58b5271a1e284"
+    },
+    {
+      "file": "finance-statement-import.js",
+      "label": "رصيد آخر الكشف",
+      "name": "closing",
+      "kind": "helper",
+      "forms": [
+        "رفع كشف ومراجعة بياناته"
+      ],
+      "tab": "accounting",
+      "article": "bank",
+      "text_sha256": "5e1334d51c7f2db711d14d35aa77a21a7643d7c1f6d5b4961bf58b5271a1e284"
+    },
+    {
+      "file": "finance-statement-import.js",
+      "label": "رابط أصل الكشف على Google Drive — اختياري",
+      "name": "source_url",
+      "kind": "helper",
+      "forms": [
+        "رفع كشف ومراجعة بياناته"
+      ],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "a946b0eb9673ee5b4868602ff111a739bbf81d17a7b395b4339345fe39cb18ce"
+    },
+    {
+      "file": "finance-statement-import.js",
+      "label": "ملف PDF أو Excel أو CSV",
+      "name": "",
+      "kind": "label",
+      "forms": [
+        "رفع كشف ومراجعة بياناته"
+      ],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "be77c17d2d9506818ab4ae4aab4fa1c0b1e229c46351610cc998da0158da492a"
+    },
+    {
+      "file": "finance-statement-import.js",
+      "label": "استخدام قراءة الصور OCR للصفحات الممسوحة على الجهاز",
+      "name": "",
+      "kind": "label",
+      "forms": [
+        "رفع كشف ومراجعة بياناته"
+      ],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "449129f7edeefb0b22c41c556db430d71c855d111fa0c3be11174cf7a907b32d"
+    },
+    {
+      "file": "finance-statement-import.js",
+      "label": "عدد العمليات بعد مقارنته بأصل الكشف",
+      "name": "declared_count",
+      "kind": "helper",
+      "forms": [
+        "رفع كشف ومراجعة بياناته"
+      ],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "9655a4f878f625ebe38aa6c2123b98de85f59f87146494f4a092d921b21ca4bc"
+    },
+    {
+      "file": "finance-statement-import.js",
+      "label": "إجمالي المبالغ بإشارتها بعد مراجعته بالكشف",
+      "name": "declared_total",
+      "kind": "helper",
+      "forms": [
+        "رفع كشف ومراجعة بياناته"
+      ],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "a59db9f2b5f81cf53c702e111472acbe064adf99c77f1c1d62fb3e91e023235a"
+    },
+    {
+      "file": "finance-statement-import.js",
+      "label": "راجعت كل الصفحات والمراجع والمبالغ والعدد والإجمالي مقابل أصل الكشف",
+      "name": "",
+      "kind": "label",
+      "forms": [
+        "رفع كشف ومراجعة بياناته"
+      ],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "83b4d10c4411eb0394b8012b49ff49cd262691a76e8ccd72ef6562709605c937"
+    },
+    {
+      "file": "finance-statement-import.js",
+      "label": "دليل الربط وسبب التجميع",
+      "name": "note",
+      "kind": "helper",
+      "forms": [
+        "ربط سطر كشف بحركة أو مجموعة"
+      ],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "8f52b952e0aeecbe5dfe69c2c42ff3fd97e2b9150c7b9e256abee8722a925e81"
+    },
+    {
+      "file": "finance-statement-import.js",
+      "label": "الموظف المكلف بالمراجعة",
+      "name": "assignee",
+      "kind": "helper",
+      "forms": [
+        "تكليف مراجعة اختلاف"
+      ],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "ba1ac37330c9beba14f59117ad44c04d2168cd9d3e4ec9f7433de3aebed942cd"
+    },
+    {
+      "file": "finance-statement-import.js",
+      "label": "موعد الرد",
+      "name": "due",
+      "kind": "helper",
+      "forms": [
+        "تكليف مراجعة اختلاف"
+      ],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "43677c29519726061f95e465bb62023a796181d18079a39d2fdb3791399a2156"
+    },
+    {
+      "file": "finance-statement-import.js",
+      "label": "المطلوب مراجعته",
+      "name": "note",
+      "kind": "helper",
+      "forms": [
+        "تكليف مراجعة اختلاف"
+      ],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "a260d7a1c5985cb34b028a6a392f32753221cdde3a432c7c7628d60973850470"
+    },
+    {
+      "file": "finance-statement-import.js",
+      "label": "شركة التحصيل أو البنك",
+      "name": "provider",
+      "kind": "helper",
+      "forms": [
+        "بيانات إيصال الدفع"
+      ],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "70a64fd175d51b6ec687aaa09599249e37696f31a6ac11c23b18596dc93d8874"
+    },
+    {
+      "file": "finance-statement-import.js",
+      "label": "الرقم المرجعي في الإيصال",
+      "name": "reference",
+      "kind": "helper",
+      "forms": [
+        "بيانات إيصال الدفع"
+      ],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "3664aa3c46d47cde397e80355b96e9dd1371256298d601a271207361d8fe5ed1"
+    },
+    {
+      "file": "finance-statement-import.js",
+      "label": "RRN — اختياري",
+      "name": "rrn",
+      "kind": "helper",
+      "forms": [
+        "بيانات إيصال الدفع"
+      ],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "86318975e8a835a46e9325f0d6c6cbd8e10f6bb9d121cec0a1fda2dd23730eff"
+    },
+    {
+      "file": "finance-statement-import.js",
+      "label": "كود الماكينة — اختياري",
+      "name": "terminal_code",
+      "kind": "helper",
+      "forms": [
+        "بيانات إيصال الدفع"
+      ],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "e58ec1e483385220e1f2c1f3a7214150a5b6327ce4ce25bb33691e2136c39dbd"
+    },
+    {
+      "file": "finance-statement-import.js",
+      "label": "رابط الإيصال على Google Drive — اختياري",
+      "name": "evidence_url",
+      "kind": "helper",
+      "forms": [
+        "بيانات إيصال الدفع"
+      ],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "a946b0eb9673ee5b4868602ff111a739bbf81d17a7b395b4339345fe39cb18ce"
     },
     {
       "file": "finance-suppliers.js",
