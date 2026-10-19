@@ -1,10 +1,10 @@
 {
   "coverage": {
-    "version": "20261019-1",
-    "definitions": 1110,
-    "labels": 876,
+    "version": "20261019-2",
+    "definitions": 1111,
+    "labels": 877,
     "files": 68,
-    "groups": 819
+    "groups": 820
   },
   "fields": [
     {
@@ -34,6 +34,7 @@
       "kind": "helper",
       "forms": [
         "تعديل الحساب",
+        "إضافة حساب فرعي",
         "إضافة حساب للشجرة"
       ],
       "tab": "accounting",
@@ -42,11 +43,26 @@
     },
     {
       "file": "accountant-workspace.js",
+      "label": "اقتراح الكود تلقائيًا من الأب — يمكنك تعديله",
+      "name": "",
+      "kind": "label",
+      "forms": [
+        "تعديل الحساب",
+        "إضافة حساب فرعي",
+        "إضافة حساب للشجرة"
+      ],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "0077fb62fdef753e4ea26be522aa4503465a7069ac3b823dc637c7927846bffc"
+    },
+    {
+      "file": "accountant-workspace.js",
       "label": "اسم الحساب",
       "name": "name",
       "kind": "helper",
       "forms": [
         "تعديل الحساب",
+        "إضافة حساب فرعي",
         "إضافة حساب للشجرة"
       ],
       "tab": "accounting",
@@ -60,6 +76,7 @@
       "kind": "helper",
       "forms": [
         "تعديل الحساب",
+        "إضافة حساب فرعي",
         "إضافة حساب للشجرة"
       ],
       "tab": "accounting",
@@ -73,6 +90,7 @@
       "kind": "html",
       "forms": [
         "تعديل الحساب",
+        "إضافة حساب فرعي",
         "إضافة حساب للشجرة"
       ],
       "tab": "accounting",
@@ -86,6 +104,7 @@
       "kind": "helper",
       "forms": [
         "تعديل الحساب",
+        "إضافة حساب فرعي",
         "إضافة حساب للشجرة"
       ],
       "tab": "accounting",
@@ -99,6 +118,7 @@
       "kind": "helper",
       "forms": [
         "تعديل الحساب",
+        "إضافة حساب فرعي",
         "إضافة حساب للشجرة"
       ],
       "tab": "accounting",
@@ -112,6 +132,7 @@
       "kind": "helper",
       "forms": [
         "تعديل الحساب",
+        "إضافة حساب فرعي",
         "إضافة حساب للشجرة"
       ],
       "tab": "accounting",

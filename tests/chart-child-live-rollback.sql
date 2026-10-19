@@ -1,0 +1,20 @@
+begin;
+create temporary table chart_child_baseline on commit drop as select (select count(*) from clinic_finance.entries) n,md5(string_agg(row_to_json(l)::text,',' order by id)) hash from clinic_finance.lines l;
+do $$declare actor uuid;v jsonb;again jsonb;snap jsonb;token uuid:=gen_random_uuid();payload jsonb:='{"parent_code":"2120","name":"TEST-CHART-CHILD-ROLLBACK","kind":"liability","is_postable":true,"active":true,"auto_code":true}';begin
+ select user_id into actor from public.admins where role='super_admin' and active and user_id is not null order by id limit 1;
+ if actor is null then raise exception 'Test actor missing';end if;
+ perform set_config('request.jwt.claim.sub',actor::text,true);execute 'set local role authenticated';
+ v:=public.clinic_finance_ledger_command('account_child',payload,token);
+ again:=public.clinic_finance_ledger_command('account_child',payload,token);
+ if v<>again or v->>'group_code' is null then raise exception 'Wrapper or retry failed';end if;
+ snap:=public.clinic_finance_snapshot(current_date-30,current_date,0);
+ if not exists(select 1 from jsonb_array_elements(snap->'finance_accounts')x where x->>'code'='2120' and x->>'parent_code'=v->>'group_code' and (x->>'is_system')::boolean and (x->>'is_postable')::boolean) then raise exception 'Original posting account changed';end if;
+ if not exists(select 1 from jsonb_array_elements(snap->'finance_accounts')x where x->>'code'=v->>'code' and (x->>'level')::integer=5) then raise exception 'Child level incorrect';end if;
+ v:=public.clinic_finance_ledger_command('account_child',payload||jsonb_build_object('parent_code',v->>'group_code'),gen_random_uuid());
+ if v=again then raise exception 'Code allocation repeated';end if;
+ execute 'reset role';
+ if (select count(*) from clinic_finance.entries)<>(select n from chart_child_baseline) or (select md5(string_agg(row_to_json(l)::text,',' order by id)) from clinic_finance.lines l)<>(select hash from chart_child_baseline) then raise exception 'Ledger mutated';end if;
+ if exists(select 1 from clinic_finance.account_config where clinic_finance.account_level(code)>5) then raise exception 'Depth exceeded';end if;
+end $$;
+rollback;
+select jsonb_build_object('test','chart child protected wrapper and automatic codes rollback passed','remaining_test_accounts',(select count(*) from clinic_finance.accounts where name='TEST-CHART-CHILD-ROLLBACK'),'entries',(select count(*) from clinic_finance.entries),'imbalance',(select sum(debit-credit) from clinic_finance.lines));
