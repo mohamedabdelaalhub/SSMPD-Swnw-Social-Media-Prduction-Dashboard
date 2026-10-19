@@ -1,0 +1,48 @@
+begin;
+do $$
+declare a1 uuid;a2 uuid;a3 uuid;u1 uuid;u2 uuid;u3 uuid;prefix text;code text;parent text;ac jsonb;main jsonb;sub jsonb;ms uuid;ss uuid;t jsonb;reply jsonb;payload jsonb;token uuid;receipt uuid;st uuid;task uuid;day date:=(now() at time zone 'Africa/Cairo')::date;ref text:='TEST-ACCOUNTANT-'||gen_random_uuid()::text;n integer;before_income numeric;
+begin
+ select id,user_id into a1,u1 from public.admins where role='super_admin' and active and user_id is not null order by exists(select 1 from clinic_finance.shifts s where s.cashier_id=admins.id and s.status in('open','submitted')) desc,id limit 1;
+ select id,user_id into a2,u2 from public.admins where role='super_admin' and active and user_id is not null and id<>a1 and not exists(select 1 from clinic_finance.shifts s where s.cashier_id=admins.id and s.status in('open','submitted')) order by id limit 1;
+ select id,user_id into a3,u3 from public.admins where active and user_id is not null and id not in(a1,a2) and not exists(select 1 from clinic_finance.shifts s where s.cashier_id=admins.id and s.status in('open','submitted')) order by id limit 1;
+ if u1 is null or u2 is null or u3 is null then raise exception 'Requires two managers and a third staff account';end if;
+ perform set_config('request.jwt.claim.sub',u1::text,true);
+ delete from public.admin_extra_roles where admin_id=a3;
+ update public.admins set role='reception' where id=a3;
+ select v::text into prefix from generate_series(90,99) v where not exists(select 1 from clinic_finance.accounts where accounts.code=v::text) limit 1;
+ if prefix is null then raise exception 'No isolated test prefix';end if;
+ execute 'set local role authenticated';parent:=null;
+ for n in 1..5 loop
+ code:=prefix||repeat('01',n-1);
+ ac:=public.clinic_finance_ledger_command('account_create',jsonb_build_object('code',code,'name',ref||' level '||n,'kind','asset','parent_code',parent,'is_postable',n=5,'active',true),gen_random_uuid());parent:=code;
+ end loop;
+ perform public.clinic_finance_ledger_command('account_create',jsonb_build_object('code',prefix||'01010102','name',ref||' collection account','kind','asset','parent_code',prefix||'010101','is_postable',true),gen_random_uuid());
+ main:=public.clinic_finance_treasury_command('register_save',jsonb_build_object('name',ref||' main','treasury_kind','main','assigned_to',a2,'account_code',parent,'limit',1000),gen_random_uuid());
+ sub:=public.clinic_finance_treasury_command('register_save',jsonb_build_object('name',ref||' collection','treasury_kind','collection','assigned_to',a3,'account_code',prefix||'01010102','parent_register_id',main->>'id'),gen_random_uuid());
+ perform set_config('request.jwt.claim.sub',u2::text,true);ms:=public.clinic_finance_open_shift((main->>'id')::uuid,gen_random_uuid());
+ perform set_config('request.jwt.claim.sub',u3::text,true);ss:=public.clinic_booking_shift('open',jsonb_build_object('register_id',sub->>'id'),gen_random_uuid());
+ reply:=public.clinic_booking_snapshot(day,day);
+ if exists(select 1 from jsonb_array_elements(reply->'registers') x where x->>'id'=main->>'id') then raise exception 'Cashier saw another assigned register';end if;
+ receipt:=public.clinic_booking_command('receive',jsonb_build_object('patient_ref',ref,'reference',ref||'-ADV','amount',100,'method','cash','shift_id',ss),gen_random_uuid());
+ token:=gen_random_uuid();payload:=jsonb_build_object('shift_id',ss,'counts',jsonb_build_object('100',1),'note','TEST end shift');
+ reply:=public.clinic_finance_treasury_command('end_shift',payload,token);
+ if public.clinic_finance_treasury_command('end_shift',payload,token)<>reply then raise exception 'Idempotency failed';end if;t:=jsonb_build_object('id',reply->'transfer_id');
+ begin perform public.clinic_booking_shift('close',jsonb_build_object('shift_id',ss,'counts',jsonb_build_object('1',0)),gen_random_uuid());raise exception 'Pending transfer close should fail';exception when others then if sqlerrm='Pending transfer close should fail' then raise;end if;end;
+ perform set_config('request.jwt.claim.sub',u2::text,true);perform public.clinic_finance_treasury_command('transfer_review',jsonb_build_object('id',t->>'id','approve',true,'note','Confirmed receipt in rollback transaction'),gen_random_uuid());
+ reply:=public.clinic_finance_snapshot(day,day,0);
+ if not exists(select 1 from jsonb_array_elements(reply->'registers') x where x->>'id'=main->>'id' and (x->>'balance')::numeric=100) then raise exception 'Main cash balance mismatch';end if;
+ if not exists(select 1 from jsonb_array_elements(reply->'registers') x where x->>'id'=sub->>'id' and (x->>'balance')::numeric=0) then raise exception 'Collection cash balance mismatch';end if;
+ if not exists(select 1 from jsonb_array_elements(reply->'trial') x where x->>'code'=parent and (x->>'balance')::numeric=100) then raise exception 'Cash account mapping not reflected in trial';end if;
+ perform set_config('request.jwt.claim.sub',u2::text,true);
+ st:=public.clinic_finance_bank_command('statement',jsonb_build_object('account','1114','reference',ref||'-STATEMENT','from',day,'to',day,'opening',0,'closing',75,'provider','TEST-PROVIDER','file_hash',repeat('a',64),'file_name','TEST.pdf','declared_count',1,'declared_total',75,'reviewed',true,'rows',jsonb_build_array(jsonb_build_object('day',day,'reference',ref||'-POS','amount',75,'page',1))),gen_random_uuid());
+ reply:=public.clinic_finance_reconciliation_report(st);
+ if jsonb_array_length(reply->'rows')<>1 or reply->>'complete'<>'true' then raise exception 'Report incomplete';end if;
+ token:=gen_random_uuid();task:=public.clinic_finance_reconciliation_task((reply->'rows'->0->>'id')::uuid,a3,now()+interval '1 day','TEST verify reference',token);
+ if public.clinic_finance_reconciliation_task((reply->'rows'->0->>'id')::uuid,a3,now()+interval '1 day','TEST verify reference',token)<>task then raise exception 'Duplicate task';end if;
+ execute 'reset role';
+ if not exists(select 1 from clinic_finance.shifts where id=ss and status='submitted' and end_counted=100) then raise exception 'Ended shift not finalized';end if;
+ if (select sum(l.debit-l.credit) from clinic_finance.entries e join clinic_finance.lines l on l.entry_id=e.id where e.source_id=(t->>'id')::uuid)<>0 then raise exception 'Transfer not balanced';end if;
+ if exists(select 1 from clinic_finance.entries e join clinic_finance.lines l on l.entry_id=e.id join clinic_finance.accounts a on a.code=l.account where e.source_id=(t->>'id')::uuid and a.kind='income') then raise exception 'Transfer created revenue';end if;
+end $$;
+rollback;
+select jsonb_build_object('test','end shift and statement-task authenticated rollback passed','test_registers',(select count(*) from clinic_finance.registers where name like 'TEST-ACCOUNTANT-%'),'test_accounts',(select count(*) from clinic_finance.accounts where name like 'TEST-ACCOUNTANT-%'),'test_transfers',(select count(*) from clinic_finance.treasury_transfers where reference like 'TEST-ACCOUNTANT-%'),'private_schema_blocked',not has_schema_privilege('authenticated','clinic_finance','usage'),'anonymous_blocked',not has_function_privilege('anon','public.clinic_finance_treasury_command(text,jsonb,uuid)','execute'));
