@@ -1,0 +1,212 @@
+[
+  {
+    "code": "01",
+    "name": "الأصول",
+    "kind": "asset",
+    "parent_code": null
+  },
+  {
+    "code": "02",
+    "name": "الخصوم",
+    "kind": "liability",
+    "parent_code": null
+  },
+  {
+    "code": "03",
+    "name": "حقوق الملكية",
+    "kind": "equity",
+    "parent_code": null
+  },
+  {
+    "code": "04",
+    "name": "الإيرادات",
+    "kind": "income",
+    "parent_code": null
+  },
+  {
+    "code": "05",
+    "name": "المصروفات",
+    "kind": "expense",
+    "parent_code": null
+  },
+  {
+    "code": "0101",
+    "name": "الأصول الثابتة",
+    "kind": "asset",
+    "parent_code": "01"
+  },
+  {
+    "code": "0102",
+    "name": "الأصول المتداولة",
+    "kind": "asset",
+    "parent_code": "01"
+  },
+  {
+    "code": "0201",
+    "name": "الخصوم المتداولة",
+    "kind": "liability",
+    "parent_code": "02"
+  },
+  {
+    "code": "0303",
+    "name": "حساب الارباح و الخسائر",
+    "kind": "equity",
+    "parent_code": "03"
+  },
+  {
+    "code": "0401",
+    "name": "إيرادات النشاط الرئيسي",
+    "kind": "income",
+    "parent_code": "04"
+  },
+  {
+    "code": "0504",
+    "name": "مصروفات التشغيل",
+    "kind": "expense",
+    "parent_code": "05"
+  },
+  {
+    "code": "0505",
+    "name": "مصروفات عمومية و ادارية",
+    "kind": "expense",
+    "parent_code": "05"
+  },
+  {
+    "code": "010201",
+    "name": "الصناديق والبنوك",
+    "kind": "asset",
+    "parent_code": "0102"
+  },
+  {
+    "code": "010202",
+    "name": "المخزون",
+    "kind": "asset",
+    "parent_code": "0102"
+  },
+  {
+    "code": "010203",
+    "name": "المدينون",
+    "kind": "asset",
+    "parent_code": "0102"
+  },
+  {
+    "code": "010208",
+    "name": "مدينون و ارصدة مدينة اخرى",
+    "kind": "asset",
+    "parent_code": "0102"
+  },
+  {
+    "code": "010209",
+    "name": "محافظ القنوات الرقمية و الالكترونية",
+    "kind": "asset",
+    "parent_code": "0102"
+  },
+  {
+    "code": "020101",
+    "name": "الموردين و ارصدة دائنة",
+    "kind": "liability",
+    "parent_code": "0201"
+  },
+  {
+    "code": "020102",
+    "name": "ارصدة دائنة اخرى",
+    "kind": "liability",
+    "parent_code": "0201"
+  },
+  {
+    "code": "020103",
+    "name": "مصلحة الضرائب",
+    "kind": "liability",
+    "parent_code": "0201"
+  },
+  {
+    "code": "020104",
+    "name": "مصروفات مستحقة",
+    "kind": "liability",
+    "parent_code": "0201"
+  },
+  {
+    "code": "050401",
+    "name": "مصروفات غازات طبية",
+    "kind": "expense",
+    "parent_code": "0504"
+  },
+  {
+    "code": "050409",
+    "name": "مصروفات نفايات طبية - تشغيلى",
+    "kind": "expense",
+    "parent_code": "0504"
+  },
+  {
+    "code": "050415",
+    "name": "مصروفات مرتبات - تشغيلى",
+    "kind": "expense",
+    "parent_code": "0504"
+  },
+  {
+    "code": "050501",
+    "name": "مصروفات مرتبات - عمومية",
+    "kind": "expense",
+    "parent_code": "0505"
+  },
+  {
+    "code": "050509",
+    "name": "مصروفات الايجارات - عمومية",
+    "kind": "expense",
+    "parent_code": "0505"
+  },
+  {
+    "code": "050512",
+    "name": "مصروفات بنكية",
+    "kind": "expense",
+    "parent_code": "0505"
+  },
+  {
+    "code": "050514",
+    "name": "مصروفات - رسوم و دمغات",
+    "kind": "expense",
+    "parent_code": "0505"
+  },
+  {
+    "code": "050515",
+    "name": "مصروفات - الاهلاك",
+    "kind": "expense",
+    "parent_code": "0505"
+  },
+  {
+    "code": "050516",
+    "name": "مصروفات استهلاك الكهرباء",
+    "kind": "expense",
+    "parent_code": "0505"
+  },
+  {
+    "code": "050517",
+    "name": "مصروفات استهلاك المياه",
+    "kind": "expense",
+    "parent_code": "0505"
+  },
+  {
+    "code": "01020102",
+    "name": "الصناديق",
+    "kind": "asset",
+    "parent_code": "010201"
+  },
+  {
+    "code": "01020301",
+    "name": "العملاء",
+    "kind": "asset",
+    "parent_code": "010203"
+  },
+  {
+    "code": "02010101",
+    "name": "ذمم الموردين",
+    "kind": "liability",
+    "parent_code": "020101"
+  },
+  {
+    "code": "05041505",
+    "name": "مستحقات الاطباء",
+    "kind": "expense",
+    "parent_code": "050415"
+  }
+]
