@@ -77,9 +77,9 @@
       rows = rows || [];
       var allRows = rows;
       rows = rows.filter(function (r) { return (r.category || "cash") === selectedCategory; });
-      var categoryTabs = '<div class="section"><div role="group" aria-label="تصنيفات جهات التعاقد" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;">' + Object.keys(CATEGORIES).map(function (key) {
+      var categoryTabs = '<div class="section"><div role="group" aria-label="تصنيفات جهات التعاقد" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;">' + Object.keys(CATEGORIES).map(function (key) {
         var count = allRows.filter(function (r) { return (r.category || "cash") === key; }).length;
-        return '<button type="button" class="btn ' + (key === selectedCategory ? '' : 'ghost') + '" data-ce-category="' + key + '" aria-pressed="' + (key === selectedCategory) + '" style="min-height:72px;white-space:normal;display:flex;flex-direction:column;gap:6px;"><span>' + label(CATEGORIES[key]) + '</span><span>' + count + ' جهة</span></button>';
+        return '<button type="button" class="btn ' + (key === selectedCategory ? '' : 'ghost') + '" data-ce-category="' + key + '" aria-pressed="' + (key === selectedCategory) + '" style="' + (key === selectedCategory ? 'background:var(--c-primary,#0F369D)!important;color:#fff!important;border-color:var(--c-primary,#0F369D)!important;' : '') + 'min-height:72px;white-space:normal;display:flex;flex-direction:column;gap:6px;"><span>' + label(CATEGORIES[key]) + '</span><span>' + count + ' جهة</span></button>';
       }).join("") + '</div></div>';
       var active = rows.filter(function (r) { return r.contract_status === "active"; });
       var negotiating = rows.filter(function (r) { return r.contract_status === "negotiating"; });
