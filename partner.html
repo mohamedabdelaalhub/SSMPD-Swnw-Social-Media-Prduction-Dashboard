@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>بوابة شركاء عيادات سونو</title>
+<link rel="icon" href="assets/img/mark.svg">
+<link rel="stylesheet" href="assets/css/styles.css">
+<style>
+body{margin:0;background:#f5f7fb;color:#182033;font-family:Arial,Tahoma,sans-serif}.partner-shell{max-width:760px;margin:0 auto;padding:28px 16px 60px}.partner-hero,.partner-card{background:#fff;border:1px solid #e2e7f0;border-radius:18px;padding:22px;margin-bottom:14px}.partner-hero{text-align:center}.partner-hero img{width:64px;height:64px}.partner-hero h1{margin:12px 0 4px;color:#0F369D}.partner-muted{color:#667085;font-size:13px;line-height:1.7}.partner-badge{display:inline-block;padding:5px 10px;border-radius:99px;background:#eef3ff;color:#0F369D;font-size:12px}.partner-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.partner-card .field{margin-bottom:12px}.partner-card label{display:block;margin-bottom:6px;font-size:13px;font-weight:700}.partner-card input,.partner-card textarea{width:100%;box-sizing:border-box;border:1px solid #d7ddea;border-radius:10px;padding:11px;font:inherit}.partner-card button{border:0;background:#0F369D;color:#fff;border-radius:10px;padding:12px 18px;font:inherit;font-weight:700;cursor:pointer;width:100%}.partner-success{background:#ecfdf3;border:1px solid #abefc6;color:#067647;border-radius:12px;padding:16px;line-height:1.8}.partner-error{background:#fef3f2;border:1px solid #fecdca;color:#b42318;border-radius:12px;padding:14px}.partner-hidden{display:none}@media(max-width:620px){.partner-grid{grid-template-columns:1fr}.partner-shell{padding-top:14px}}
+</style>
+</head>
+<body>
+<div class="partner-shell">
+  <section class="partner-hero">
+    <img src="assets/img/mark.svg" alt="Swnw">
+    <div class="partner-badge">برنامج الشراكة المؤسسية</div>
+    <h1 id="partner-name">عيادات سونو التخصصية</h1>
+    <p id="partner-intro" class="partner-muted">جاري تحميل بيانات الشراكة…</p>
+  </section>
+  <section id="partner-error" class="partner-error partner-hidden"></section>
+  <section id="partner-form-card" class="partner-card partner-hidden">
+    <h2 style="margin-top:0">طلب حجز</h2>
+    <p class="partner-muted">أرسل الطلب وسيتواصل فريق عيادات سونو معك لتأكيد الموعد أو تعديله حسب رغبتك وتوافر المواعيد.</p>
+    <div class="partner-grid">
+      <div class="field"><label for="pp-name">الاسم</label><input id="pp-name" autocomplete="name"></div>
+      <div class="field"><label for="pp-phone">رقم الهاتف</label><input id="pp-phone" type="tel" autocomplete="tel"></div>
+      <div class="field"><label for="pp-specialty">التخصص المطلوب</label><input id="pp-specialty"></div>
+      <div class="field"><label for="pp-service">الخدمة المطلوبة</label><input id="pp-service"></div>
+      <div class="field"><label for="pp-date">الموعد المفضل</label><input id="pp-date" type="datetime-local"></div>
+    </div>
+    <div class="field"><label for="pp-notes">ملاحظات</label><textarea id="pp-notes" rows="3"></textarea></div>
+    <button id="pp-submit">إرسال طلب الحجز</button>
+  </section>
+  <section id="partner-success" class="partner-success partner-hidden"></section>
+  <section class="partner-card">
+    <b>خصوصية بياناتك</b>
+    <p class="partner-muted">تستخدم البيانات لتنسيق الحجز والخدمة. الجهة الشريكة لا تحصل من هذه الصفحة على التشخيص أو الملاحظات الطبية أو الملف الطبي.</p>
+  </section>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script src="assets/js/partner-portal.js"></script>
+</body>
+</html>
