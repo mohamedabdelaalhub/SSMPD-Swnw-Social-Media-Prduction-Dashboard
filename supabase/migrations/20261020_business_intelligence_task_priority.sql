@@ -7,6 +7,7 @@ as $$
 declare
   r public.business_recommendations%rowtype;
   tid uuid;
+  requested_priority text;
   task_priority text;
 begin
   if not public.business_manager() then raise exception 'Management access required'; end if;
@@ -14,12 +15,15 @@ begin
   if not found then raise exception 'Recommendation not found'; end if;
   if r.status not in ('proposed','approved') then raise exception 'Recommendation already processed'; end if;
 
-  task_priority := case coalesce(nullif(trim(coalesce(p_priority,'')),''),r.priority)
+  -- Native task priorities can override. Business priorities such as medium/critical
+  -- are otherwise mapped from the recommendation itself.
+  requested_priority := lower(trim(coalesce(p_priority,'')));
+  if requested_priority not in ('low','normal','high','urgent') then requested_priority := r.priority; end if;
+  task_priority := case requested_priority
     when 'low' then 'low'
     when 'high' then 'high'
     when 'critical' then 'urgent'
     when 'urgent' then 'urgent'
-    when 'normal' then 'normal'
     else 'normal'
   end;
 
