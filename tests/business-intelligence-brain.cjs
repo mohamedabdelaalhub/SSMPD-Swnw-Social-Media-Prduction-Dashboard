@@ -6,6 +6,7 @@ const graph=read('supabase/migrations/20261020_business_intelligence_graph_limit
 const priority=read('supabase/migrations/20261020_business_intelligence_task_priority.sql');
 const security=read('supabase/migrations/20261020_business_intelligence_security.sql');
 const strategySql=read('supabase/migrations/20261020_business_intelligence_strategy.sql');
+const measurementSql=read('supabase/migrations/20261020_business_intelligence_measurement_queue.sql');
 const ui=read('assets/js/business-intelligence.js');
 const strategyUi=read('assets/js/business-intelligence-strategy.js');
 const edge=read('supabase/functions/business-intelligence/index.ts');
@@ -37,6 +38,9 @@ assert.match(strategySql,/opportunities/i);
 assert.match(strategySql,/recent_task_digest/i);
 assert.match(strategySql,/top_campaigns/i);
 assert.match(strategySql,/revenue_ready',false/i);
+assert.match(measurementSql,/business_measurement_queue/i);
+assert.match(measurementSql,/converted_to_task','measuring','validated/i);
+assert.match(measurementSql,/revoke all on function public\.business_measurement_queue\(\) from public,anon/i);
 
 assert.match(ui,/hasAnyRole\(a,\['general_manager','super_admin'\]\)/i,'owner workspace must be management-only');
 assert.match(ui,/business_content_brief/i,'content AI must receive approved business memory');
@@ -46,8 +50,11 @@ assert.match(ui,/Scenario Planning/i);
 assert.match(ui,/Owner Copilot/i);
 new Function(ui); new Function(strategyUi);
 
-for(const label of ['يحتاج قراري','الفرص','التسويق والإعلانات','خلاصة المهام','Knowledge Graph'])assert(strategyUi.includes(label),`missing strategic view ${label}`);
+for(const label of ['يحتاج قراري','الفرص','التسويق والإعلانات','خلاصة المهام','القياس والنتائج','Knowledge Graph'])assert(strategyUi.includes(label),`missing strategic view ${label}`);
 assert.match(strategyUi,/Revenue Attribution/i);
+assert.match(strategyUi,/business_measurement_queue/i);
+assert.match(strategyUi,/business_measurement_save/i);
+assert.match(strategyUi,/Feedback Loop/i);
 
 assert.match(edge,/business_ai_allow/i,'external calls must pass the AI usage gate');
 assert.match(edge,/business_copilot_context/i);
@@ -61,4 +68,4 @@ const appPos=html.indexOf('assets/js/app.js');
 assert(biPos>0&&strategyPos>biPos&&appPos>strategyPos,'BI scripts must load after content AI and before app bootstrap');
 assert(html.includes('assets/css/business-intelligence-strategy.css'));
 
-console.log('PASS: Business Intelligence Brain keeps approval, privacy, attribution, AI-gating, knowledge graph, strategic owner views and existing task integration constraints.');
+console.log('PASS: Business Intelligence Brain keeps approval, privacy, attribution, AI-gating, measurement feedback loop, knowledge graph, strategic owner views and existing task integration constraints.');
