@@ -1,0 +1,17 @@
+/* Fine typography/spacing adjustments for partnership drafts and agreements.
+   Intentionally does not touch letterhead/header/footer/background assets. */
+.swnw-page-body .swnw-meta{margin-bottom:0!important;line-height:1.38!important}
+.swnw-page-body .swnw-meta+.swnw-meta{margin-top:-2px!important}
+
+/* Keep each heading closer to its own material, while separating it more clearly
+   from the material that precedes it. */
+.swnw-page-body h3{margin-top:30px!important;margin-bottom:1px!important}
+.swnw-page-body h3:first-of-type{margin-top:22px!important}
+.swnw-page-body h3 + p,
+.swnw-page-body h3 + ul,
+.swnw-page-body h3 + ol{margin-top:0!important}
+
+/* Formal closing: substantially more breathing room above, a little more below. */
+.swnw-letter-closing{margin-top:116px!important;margin-bottom:23px!important;font-weight:700!important}
+.swnw-letter-signature{margin-top:0!important}
+.swnw-letter-signature-text{font-weight:700!important}
