@@ -1,10 +1,10 @@
 {
   "coverage": {
-    "version": "20261020-1",
-    "definitions": 1112,
-    "labels": 878,
-    "files": 68,
-    "groups": 821
+    "version": "20261021-1",
+    "definitions": 1128,
+    "labels": 887,
+    "files": 69,
+    "groups": 834
   },
   "fields": [
     {
@@ -1495,6 +1495,194 @@
       "tab": "production",
       "article": "design-guide",
       "text_sha256": "eec768dae27bf2de3693d2d37ba93ae01c2648aaf8c5e7b69afdb717e662d0c0"
+    },
+    {
+      "file": "finance-account-statements.js",
+      "label": "الخزينة",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "accounting",
+      "article": "cash-shifts-guide",
+      "text_sha256": "d4e9634900d12fe8d49e042a72066ba6c8d43f7e2ead0f5deaf50a08965f38a4"
+    },
+    {
+      "file": "finance-account-statements.js",
+      "label": "الحساب",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "f1aa19ff08bf80a6e3e37b038edbc87f3983439caac252c950d5b4abe83efb6b"
+    },
+    {
+      "file": "finance-account-statements.js",
+      "label": "شامل الحسابات التابعة — أستاذ عام",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "715728cd0ed8411733556bd516e9836cccf2c728f199e528ca842c6729996359"
+    },
+    {
+      "file": "finance-account-statements.js",
+      "label": "من تاريخ",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "5124563f386757810c60ae86fc95904a13532f1a872fcd3579613f304338e13d"
+    },
+    {
+      "file": "finance-account-statements.js",
+      "label": "إلى تاريخ",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "5124563f386757810c60ae86fc95904a13532f1a872fcd3579613f304338e13d"
+    },
+    {
+      "file": "finance-account-statements.js",
+      "label": "نسبة الاستقطاع حسب المستند %",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "1dbd06b17e48260054d14f72dd9cc7e458370b474c694f2cc5f42b6d6481887a"
+    },
+    {
+      "file": "finance-account-statements.js",
+      "label": "الحساب المقابل",
+      "name": "account",
+      "kind": "helper",
+      "forms": [
+        "سند صرف حساب",
+        "سند قبض حساب"
+      ],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "a201751f70e73b41a772b59c56f75c466de014bf91d97a374c66d653fb2f04b6"
+    },
+    {
+      "file": "finance-account-statements.js",
+      "label": "وردية الخزينة الرئيسية",
+      "name": "shift_id",
+      "kind": "helper",
+      "forms": [
+        "سند صرف حساب",
+        "سند قبض حساب"
+      ],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "92d67714cee15be2f3d28d4831dd0c5119b550fb88aa3c8be42943ce59fe331c"
+    },
+    {
+      "file": "finance-account-statements.js",
+      "label": "اسم مستلم النقد أو مسلّمه",
+      "name": "recipient",
+      "kind": "helper",
+      "forms": [
+        "سند صرف حساب",
+        "سند قبض حساب"
+      ],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "5a8f1f501b330165d54d71d3a11f8d4ea3b3f083e75022abc47656422cc62bcc"
+    },
+    {
+      "file": "finance-account-statements.js",
+      "label": "الفرع أو مركز التكلفة",
+      "name": "branch",
+      "kind": "helper",
+      "forms": [
+        "سند صرف حساب",
+        "سند قبض حساب"
+      ],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "fd88c3a8779cc5d8f42946add37df92a89e2c30f743b6652123772f4647a878f"
+    },
+    {
+      "file": "finance-account-statements.js",
+      "label": "إجمالي السند قبل الاستقطاع",
+      "name": "amount",
+      "kind": "helper",
+      "forms": [
+        "سند صرف حساب",
+        "سند قبض حساب"
+      ],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "a218eb49dd281a241b5dbc120a60252e627c0fe02d742f1e5086390727f8777b"
+    },
+    {
+      "file": "finance-account-statements.js",
+      "label": "الضريبة المستقطعة حسب المستند",
+      "name": "withheld",
+      "kind": "helper",
+      "forms": [
+        "سند صرف حساب",
+        "سند قبض حساب"
+      ],
+      "tab": "accounting",
+      "article": "payroll",
+      "text_sha256": "61916d7f5f8338ebcd227da74cc2490828fb6ee6c51e7b13b956c689a485b789"
+    },
+    {
+      "file": "finance-account-statements.js",
+      "label": "مرجع السند",
+      "name": "reference",
+      "kind": "helper",
+      "forms": [
+        "سند صرف حساب",
+        "سند قبض حساب"
+      ],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "1bf774133a6bfa064a8cd003607d94ae6bb194a9f47486d8988d3785af8f45bb"
+    },
+    {
+      "file": "finance-account-statements.js",
+      "label": "بيان السند",
+      "name": "description",
+      "kind": "helper",
+      "forms": [
+        "سند صرف حساب",
+        "سند قبض حساب"
+      ],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "36db37cf10de33fcde2e53dad39e21e0ea1086378f8ad47a86075de9d18cce63"
+    },
+    {
+      "file": "finance-account-statements.js",
+      "label": "القرار",
+      "name": "approve",
+      "kind": "helper",
+      "forms": [
+        "مراجعة سند الحساب"
+      ],
+      "tab": "accounting",
+      "article": "requests",
+      "text_sha256": "e94fbc6b4acbcb93cd4550a5c0f411b3026a6856a94bfdc920222df26211079d"
+    },
+    {
+      "file": "finance-account-statements.js",
+      "label": "سبب القرار وفحص المستند",
+      "name": "note",
+      "kind": "helper",
+      "forms": [
+        "مراجعة سند الحساب"
+      ],
+      "tab": "accounting",
+      "article": "requests",
+      "text_sha256": "00135b5d6cd282bea537fb8658c57e3e41f428900b403396c1ff4fef0b2d6095"
     },
     {
       "file": "finance-advances.js",
