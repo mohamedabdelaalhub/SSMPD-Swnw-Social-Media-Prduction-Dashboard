@@ -1,0 +1,18 @@
+const fs=require('fs'),vm=require('vm'),assert=require('node:assert/strict'),ts=require('typescript');
+(async()=>{let handler,uploads=0,requests=0,rpcCalls=[];const secret='fixture-worker-secret-32-characters-long',profile={id:'10000000-0000-4000-8000-000000000001',asset_path:null,facts:{title:'استشاري'},kind:'doctor'},job={id:'20000000-0000-4000-8000-000000000001',lease:'30000000-0000-4000-8000-000000000001',idea:{title:'ترحيب',caption:'وصف'}};
+const storage={createSignedUrl:async()=>({data:{signedUrl:'https://fixture.invalid/signed'}}),upload:async()=>{uploads++;return {data:{}};}};
+const admin={storage:{from:()=>storage},rpc:async(name,args)=>{rpcCalls.push(args);if(args.p_action==='get'){if(args.p_data.lease!==job.lease)return {error:{message:'stale'}};return {data:{profile,job,source:{name:'اسم موثق'}}};}return {data:null};}};
+const user={rpc:async(name,args)=>{if(!context.allowed)return {error:{message:'denied'}};rpcCalls.push(args);return {data:{profile,source:{name:'اسم موثق'},job:{}}};}};
+const context=vm.createContext({Request,Response,Uint8Array,TextDecoder,TextEncoder,crypto,atob,console,allowed:false,createClient:(_,key)=>key==='service'?admin:user,Deno:{env:{get:k=>({SUPABASE_URL:'https://fixture.invalid',SUPABASE_SERVICE_ROLE_KEY:'service',SUPABASE_ANON_KEY:'anon',WEBSITE_WEBHOOK_SECRET:secret}[k])},serve:h=>handler=h},fetch:async()=>{requests++;throw Error('No paid/network call allowed');}});
+const source=fs.readFileSync('supabase/functions/contract-marketing/index.ts','utf8').replace(/^import .*;\n/,'');vm.runInContext(ts.transpileModule(source,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.None}}).outputText,context);
+const call=(body,token='')=>handler(new Request('https://fixture.invalid',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify(body)}));
+assert.equal((await call({action:'snapshot'},'wrong')).status,401);assert.equal(rpcCalls.length,0);
+assert.equal((await call({action:'profile',kind:'doctor',key:'DOC'},'staff')).status,400);assert.equal(uploads,0);
+context.allowed=true;assert.equal((await call({action:'profile',kind:'doctor',key:'DOC'},'staff')).status,200);
+assert.equal((await call({action:'save',kind:'doctor',key:'DOC',settings:{auto_announce:true,platforms:['facebook'],facts:{title:'ناقص'}}},'staff')).status,400);
+assert.equal((await call({action:'save',kind:'doctor',key:'DOC',settings:{facts:{}},image:{base64:'AAAA',mime:'image/png'}},'staff')).status,400);assert.equal(uploads,0);
+assert.equal((await call({action:'generate',id:job.id,lease:job.lease},secret)).status,200);assert.equal(requests,0);
+assert.equal((await call({action:'finish',id:job.id,lease:'invalid',image:{base64:''}},secret)).status,400);assert.equal(uploads,0);
+assert.equal((await call({action:'finish',id:job.id,lease:job.lease,image:{base64:'AAAA'}},secret)).status,400);
+console.log('PASS Edge boundary: worker secret denial, staff authorization, missing facts/image checks, stale lease rejection, no unauthorized uploads or repeated paid generation.');
+})().catch(e=>{console.error(e);process.exitCode=1});

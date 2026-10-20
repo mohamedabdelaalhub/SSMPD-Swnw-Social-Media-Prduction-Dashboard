@@ -6,7 +6,7 @@ if(!configPath)throw Error('SWNW_CONTRACT_CONFIG is required');
 let busy=false;
 async function tick(){if(busy)return;busy=true;let job,call;
  try{
-  const config=JSON.parse((await fs.readFile(configPath,'utf8')).replace(/^\uFEFF/,''));if(!config.enabled)return;
+  const config=JSON.parse((await fs.readFile(configPath,'utf8')).replace(/^\uFEFF/,''));if(!config.contractMarketingEnabled)return;
   if(typeof config.secret!=='string'||config.secret.length<32)throw Error('Worker secret is not configured');
   call=async data=>{const r=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+config.secret},body:JSON.stringify(data),signal:AbortSignal.timeout(240000)});const result=await r.json();if(!r.ok)throw Error(result.error||'Worker request failed');return result;};
   const snapshot=await call({action:'snapshot'});
@@ -18,6 +18,6 @@ async function tick(){if(busy)return;busy=true;let job,call;
   const output=await renderContract({...claim.profile,name:claim.source.name},bytes,generated.idea);
   await call({action:'finish',id:job.id,lease:job.lease,image:{base64:output.bytes.toString('base64')},settings:output.settings});
   console.log('Contract announcement scheduled:',job.id);
- }catch(error){console.error('Contract automation:',String(error.message).slice(0,300));if(job&&call)try{await call({action:'fail',id:job.id,lease:job.lease,error:error.message,code:error.code});}catch{console.error('Could not record worker failure');}}
+ }catch(error){if(process.argv.includes('--once'))process.exitCode=1;console.error('Contract automation:',String(error.message).slice(0,300));if(job&&call)try{await call({action:'fail',id:job.id,lease:job.lease,error:error.message,code:error.code});}catch{console.error('Could not record worker failure');}}
  finally{busy=false;}}
 await tick();if(!process.argv.includes('--once'))setInterval(tick,60000);

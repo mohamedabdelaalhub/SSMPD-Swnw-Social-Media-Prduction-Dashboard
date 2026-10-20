@@ -7,7 +7,7 @@ create table if not exists contract_marketing.profiles(
  auto_announce boolean not null default false, platforms jsonb not null default '["facebook","instagram"]',
  publication_state text not null default 'active' check(publication_state in ('active','suspended','ended')),
  created_by uuid not null references public.admins(id), updated_at timestamptz not null default now(), revision bigint not null default 1,
- unique(kind,source_key),check(jsonb_typeof(facts)='object'),check(platforms <@ '["facebook","instagram"]'::jsonb and jsonb_array_length(platforms)>0)
+ unique(kind,source_key),check(jsonb_typeof(facts)='object'),check(platforms <@ '["facebook","instagram"]'::jsonb and (not auto_announce or jsonb_array_length(platforms)>0))
 );
 create table if not exists contract_marketing.jobs(
  id uuid primary key default gen_random_uuid(),profile_id uuid not null unique references contract_marketing.profiles(id) on delete cascade,
@@ -23,7 +23,7 @@ begin
  return k='entity' and public.can_manage_contracting_entities() and exists(select 1 from public.contracting_entities where id::text=s);
 end $$;
 create or replace function contract_marketing.source(k text,s text) returns jsonb language sql stable security definer set search_path=pg_catalog,public as $$
- select case when k='doctor' then (select jsonb_build_object('name',max(doctor_name),'eligible',bool_or(status='active' and (now() at time zone 'Africa/Cairo')::date between valid_from and valid_to)) from clinic_finance.doctor_contracts where doctor_key=s)
+ select case when k='doctor' then jsonb_build_object('name',(select doctor_name from clinic_finance.doctor_contracts where doctor_key=s order by (status='active' and (now() at time zone 'Africa/Cairo')::date between valid_from and valid_to) desc,valid_from desc,id desc limit 1),'eligible',exists(select 1 from clinic_finance.doctor_contracts where doctor_key=s and status='active' and (now() at time zone 'Africa/Cairo')::date between valid_from and valid_to))
  else (select jsonb_build_object('name',e.name,'eligible',exists(select 1 from public.contracting_entity_contracts c where c.entity_id=e.id and c.status='active' and c.start_date<=(now() at time zone 'Africa/Cairo')::date and (c.end_date is null or c.end_date>=(now() at time zone 'Africa/Cairo')::date))) from public.contracting_entities e where e.id::text=s) end;
 $$;
 create or replace function public.contract_marketing_profile(p_kind text,p_key text,p_settings jsonb default null) returns jsonb language plpgsql security definer set search_path=pg_catalog,public as $$

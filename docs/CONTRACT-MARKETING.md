@@ -7,7 +7,7 @@ Open الصورة والنشر on a doctor contract or اللوجو والنشر
 - Apply supabase/activation/contract_marketing.sql to project uuijfbpgvtdxgaosqpxo. Tested with PGlite and dry-run on the actual project inside a transaction ending in ROLLBACK.
 - Deploy contract-marketing and the changed content-ai function, using config.toml. Both retain explicit authentication. The worker reuses the existing WEBSITE_WEBHOOK_SECRET.
 - Deploy cms/contract-sync.mjs plus /api/integrations/contracts in cms/server.mjs on the website, and the insurer removed-marker filter. Restart the existing Studio service after deployment.
-- Run scripts/contract-marketing-worker.mjs continuously on the website host with Node 24+ and the repository's locked dependencies. SWNW_CONTRACT_CONFIG must point outside the web root to private JSON with enabled=true and secret matching the existing website integration. Never put this secret in config.js, logs or the repository. A dedicated managed task should restart this worker on exit.
+- Run scripts/contract-marketing-worker.mjs continuously on the website host with Node 22.5+ and the repository's locked dependencies. SWNW_CONTRACT_CONFIG must point outside the web root to private JSON with contractMarketingEnabled=true and secret matching the existing website integration. Never put this secret in config.js, logs or the repository. A dedicated managed task should restart this worker on exit.
 - Merge/deploy frontend files. Configure public facts and picture on a designated contract. Only opt into automatic announcements when automatic public publication is intended. One announcement is created per profile, at least five minutes ahead, respecting a two-hour gap from existing Sono Meta jobs. This is an earliest-free operational slot, not a prediction of engagement.
 
 ## Lifecycle
@@ -23,3 +23,6 @@ Entity jobs wait in waiting_template before paid generation. Add the supplied en
 Focused tests: test/contract-marketing-sql.cjs, test/contract-marketing-ui.cjs, test/contract-marketing-renderer.mjs; website: cms/test/contract-sync.test.mjs and isolated CMS suite. Also verified existing smoke, contract edit/delete/categories, doctor-finance and website queue tests. Existing smoke emits mocked-resource and requestAnimationFrame warnings. Preview uses synthetic data; no paid generation or real public welcome post was made.
 
 Rollback: disable the dedicated worker and profile automation, retain queue records. Core contracts, financial approvals and historical accruals were not rewritten.
+
+## Activation status (2026-10-20)
+Backend functions/schema and managed worker have NOT been activated. Windows reports the current session as Medium Mandatory Level with Administrators deny-only; the private integration config and existing scheduled task both return access denied. Continue activation from an elevated Administrator session. Do not relax their ACLs. The final migration is included in the branch; the prior real-project check ended in rollback.
