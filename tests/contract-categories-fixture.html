@@ -1,0 +1,11 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>تصنيفات جهات التعاقد — محاكاة</title><link rel="stylesheet" href="../assets/css/styles.css"><link rel="stylesheet" href="../assets/css/dashboard-theme.css"><style>body{margin:0}main{padding:12px}.tools{display:flex;gap:8px;padding:12px;flex-wrap:wrap}iframe{display:block;margin:auto;max-width:100%;border:1px solid #E4E9F2}</style></head><body><script>
+if(!new URLSearchParams(location.search).has('frame')){
+ document.body.innerHTML='<div class="tools">بيانات محاكاة فقط<button data-width="1280">حاسوب</button><button data-width="390">هاتف 390</button><button data-width="320">هاتف 320</button></div><iframe id="qa-frame" title="معاينة التصنيفات" width="1280" height="850" src="contract-categories-fixture.html?frame=1"></iframe>';
+ document.querySelectorAll('[data-width]').forEach(b=>b.onclick=()=>document.querySelector('iframe').width=b.dataset.width);
+}else{
+ document.body.innerHTML='<p style="padding:12px">معاينة ببيانات محاكاة</p><main id="root"></main>';
+ window.SSMPDToast={show:console.log};window.SSMPDAuth={currentAdmin:{id:'fixture'}};window.SSMPDRoles={canModuleAction:()=>true,isControlledFinance:()=>false,canDeleteContractingEntity:()=>false};
+ window.SSMPDDb={listContractingEntities:async()=>Array.from({length:27},(_,i)=>({entity_id:'fixture-'+i,entity_name:'جهة تعاقد تجريبية '+(i+1),category:'cash',entity_type:'center',contract_status:'active',patients_count:0,documented_revenue:0})),createContractingEntity:async()=>{throw Error('معاينة فقط');}};
+ let s=document.createElement('script');s.src='../assets/js/render-contracting-entities.js?v=contract-categories-20261020-1';s.onload=()=>SSMPDRenderContractingEntities.render(document.querySelector('#root'));document.body.appendChild(s);
+}
+</script></body></html>
