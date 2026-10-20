@@ -13,18 +13,22 @@ function nativePrint(doc){
   officialize(doc);var pages=Array.from(doc.querySelectorAll('.swnw-page'));if(!pages.length)throw new Error('no-pages');
   var w=window.open('','_blank');if(!w)throw new Error('popup-blocked');
   var css=(window.SSMPDOfficialLetterhead||{}).fontCss||'';
-  w.document.write('<!doctype html><html dir="rtl"><head><meta charset="utf-8"><title>'+name(doc)+'</title><style>'+css+'@page{size:A4;margin:0}html,body{margin:0;background:#fff}.swnw-page{position:relative;width:210mm;height:297mm;overflow:hidden;page-break-after:always;background:#fff}.swnw-page:last-child{page-break-after:auto}.swnw-page-header,.swnw-page-footer,.swnw-page-watermark{display:none!important}.swnw-page-official-artwork{position:absolute;inset:0;width:210mm;height:297mm;max-width:none;object-fit:fill;display:block;z-index:0}.swnw-page-body{position:absolute;z-index:2;top:43mm;bottom:42mm;right:15mm;left:15mm;overflow:hidden;font-family:BigVesta Arabic,Tahoma,sans-serif;font-size:16px;line-height:1.85}h2{font-size:27px;color:#0f369d;text-align:center}h3{font-size:19px;color:#0f369d}p,li{font-size:16px;line-height:1.85}.swnw-latin-number{font-family:Swnw Hiragino,Arial,sans-serif}.swnw-percentage{font-family:Swnw Hiragino,Arial,sans-serif;font-weight:800}.ce-hub-doc-footer{font-size:9.5px;color:#777;text-align:center}</style></head><body>'+pages.map(function(p){return p.outerHTML;}).join('')+'</body></html>');
+  w.document.write('<!doctype html><html dir="rtl"><head><meta charset="utf-8"><title>'+name(doc)+'</title><style>'+css+'@page{size:A4;margin:0}html,body{margin:0;background:#fff}.swnw-page{position:relative;width:210mm;height:297mm;overflow:hidden;page-break-after:always;background:#fff}.swnw-page:last-child{page-break-after:auto}.swnw-page-header,.swnw-page-footer,.swnw-page-watermark{display:none!important}.swnw-page-official-artwork{position:absolute;inset:0;width:210mm;height:297mm;max-width:none;object-fit:fill;display:block;z-index:0}.swnw-page-body{position:absolute;z-index:2;top:43mm;bottom:42mm;right:15mm;left:15mm;overflow:hidden;font-family:BigVesta Arabic,Tahoma,sans-serif;font-size:16px;line-height:1.78}h2{font-size:27px;color:#0f369d;text-align:center}h3{font-size:19px;color:#0f369d}p,li{font-size:16px;line-height:1.78}.swnw-latin-number{font-family:Swnw Hiragino,Arial,sans-serif}.swnw-percentage{font-family:Swnw Hiragino,Arial,sans-serif;font-weight:800}</style></head><body>'+pages.map(function(p){return p.outerHTML;}).join('')+'</body></html>');
   w.document.close();setTimeout(function(){w.focus();w.print();},700);
 }
 function render(doc){
   var api=window.SSMPDOfficialLetterhead||{};if(api.apply)api.apply(doc);if(api.paginate)api.paginate(doc);officialize(doc);
   return load('https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js',function(){return !!(window.html2canvas&&window.jspdf&&window.jspdf.jsPDF);}).then(function(){return Promise.all([document.fonts?document.fonts.ready:Promise.resolve(),waitImages(doc)]);}).then(function(){
+    /* Do not rebuild, resize or restyle the document for export. Capture the exact live preview pixels. */
     var pages=Array.from(doc.querySelectorAll('.swnw-page'));if(!pages.length)throw new Error('no-pages');
-    var PDF=window.jspdf.jsPDF,pdf=new PDF({unit:'mm',format:'a4',orientation:'portrait'});
+    var PDF=window.jspdf.jsPDF,pdf=new PDF({unit:'mm',format:'a4',orientation:'portrait',compress:true});
     var chain=Promise.resolve();
     pages.forEach(function(page,index){chain=chain.then(function(){
-      var rect=page.getBoundingClientRect();
-      return window.html2canvas(page,{scale:2,useCORS:true,backgroundColor:'#fff',logging:false,width:Math.round(rect.width),height:Math.round(rect.height),windowWidth:Math.round(rect.width),windowHeight:Math.round(rect.height),scrollX:0,scrollY:0,onclone:function(cloned){var cp=cloned.querySelector('.swnw-page[data-page="'+page.dataset.page+'"]');if(cp){cp.style.width='210mm';cp.style.height='297mm';cp.style.minWidth='210mm';cp.style.minHeight='297mm';cp.style.margin='0';cp.style.transform='none';cp.style.boxShadow='none';}}}).then(function(canvas){if(index)pdf.addPage();pdf.addImage(canvas.toDataURL('image/jpeg',.98),'JPEG',0,0,210,297,undefined,'FAST');});
+      return window.html2canvas(page,{scale:2,useCORS:true,allowTaint:false,backgroundColor:'#fff',logging:false,scrollX:-window.scrollX,scrollY:-window.scrollY,foreignObjectRendering:false,removeContainer:true}).then(function(canvas){
+        if(index)pdf.addPage('a4','portrait');
+        /* A4 output is only a container for the already-rendered preview snapshot. */
+        pdf.addImage(canvas.toDataURL('image/png'),'PNG',0,0,210,297,undefined,'FAST');
+      });
     });});
     return chain.then(function(){pdf.save(name(doc));});
   });
