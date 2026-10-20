@@ -1,10 +1,10 @@
 {
   "coverage": {
-    "version": "20261019-2",
-    "definitions": 1111,
-    "labels": 877,
+    "version": "20261020-1",
+    "definitions": 1112,
+    "labels": 878,
     "files": 68,
-    "groups": 820
+    "groups": 821
   },
   "fields": [
     {
@@ -7568,6 +7568,18 @@
       "tab": "comments",
       "article": "content",
       "text_sha256": "e79614fb796da87d60501c5ba2ebef5c044e7711461b0d08dcc4c69669efcb4a"
+    },
+    {
+      "file": "render-contracting-entities.js",
+      "label": "تصنيف جهة التعاقد",
+      "name": "",
+      "kind": "label",
+      "forms": [
+        "إضافة جهة تعاقد"
+      ],
+      "tab": "contracting_entities",
+      "article": "entities",
+      "text_sha256": "15406dae56d3d6fc44a7240b1535de0c40c60bf3ae52e714565b58bcb9edba04"
     },
     {
       "file": "render-contracting-entities.js",

@@ -8363,6 +8363,21 @@
       "reviewed": true
     },
     {
+      "title": "تصنيف جهة التعاقد",
+      "labels": [
+        "تصنيف جهة التعاقد"
+      ],
+      "text": "اختار التصنيف الذي ستظهر الجهة داخله. الجهات السابقة موجودة في تعاقدات كاش، والإضافة تبدأ بتصنيف الصفحة المفتوحة. التصنيف منفصل عن نوع الجهة وحالة عقدها.",
+      "article": "entities",
+      "tabs": [
+        "contracting_entities"
+      ],
+      "forms": [
+        "إضافة جهة تعاقد"
+      ],
+      "reviewed": true
+    },
+    {
       "title": "نوع الجهة",
       "labels": [
         "نوع الجهة"
@@ -12338,10 +12353,10 @@
     }
   ],
   "coverage": {
-    "version": "20261019-2",
-    "definitions": 1111,
-    "labels": 877,
+    "version": "20261020-1",
+    "definitions": 1112,
+    "labels": 878,
     "files": 68,
-    "groups": 820
+    "groups": 821
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();

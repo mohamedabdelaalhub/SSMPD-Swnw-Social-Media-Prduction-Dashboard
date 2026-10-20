@@ -716,7 +716,7 @@
     },
     // ---------- جهات التعاقد ----------
     listContractingEntities: function () {
-      return handle(client.rpc("contracting_entities_overview"));
+      return handle(client.rpc("contracting_entities_overview_categories"));
     },
     deleteContractingEntity: function (entityId) {
       return handle(client.rpc("delete_contracting_entity", { p_entity_id: entityId }));
