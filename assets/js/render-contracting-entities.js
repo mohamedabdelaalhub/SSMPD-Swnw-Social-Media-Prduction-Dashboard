@@ -162,6 +162,7 @@
           if (contract) openEditContract(contract, function () { reload(); load(container); });
         }; });
         bd.querySelectorAll("[data-upload-contract]").forEach(function (b) { b.onclick = function () { openContractUpload(b.getAttribute("data-upload-contract"), reload); }; });
+        if(window.SSMPDContractMarketing&&window.SSMPDRoles.canModuleAction(window.SSMPDAuth.currentAdmin,'contracting_entities','update')){var marketing=document.createElement('button');marketing.type='button';marketing.className='btn ghost';marketing.textContent='اللوجو والنشر التلقائي';marketing.onclick=function(){window.SSMPDContractMarketing.open('entity',entityId);};bd.querySelector('.modal-head').after(marketing);}
         applyPermissions(bd);
       }).catch(function (e) { bd.querySelector(".modal").innerHTML = '<div class="modal-head"><h3>خطأ</h3><button class="modal-close">×</button></div><p>' + esc(e.message) + '</p>'; bd.querySelector(".modal-close").onclick = function () { bd.remove(); }; });
     }

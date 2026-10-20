@@ -105,15 +105,29 @@ Deno.serve(async (req) => {
     if (!token) throw new Error("سجّل الدخول أولًا.");
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const authDb = createClient(supabaseUrl, anonKey, { global: { headers: { Authorization: token } } });
+    let body = await req.json();
+    const automation=body?.contract_marketing_job;
+    let authDb;
+    if(automation){
+      const secret=Deno.env.get('WEBSITE_WEBHOOK_SECRET')||'';
+      const hash=async(v:string)=>new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(v)));
+      const [a,b]=await Promise.all([hash(secret),hash(token.replace(/^Bearer /,''))]);
+      if(secret.length<32||a.reduce((n,v,i)=>n|(v^b[i]),0))throw Error('غير مصرح');
+      authDb=createClient(supabaseUrl,Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+      const result=await authDb.rpc('contract_marketing_worker',{p_action:'get',p_data:automation});
+      if(result.error||!result.data)throw Error('طلب التعاقد غير متاح');
+      const {profile,source}=result.data,f=profile.facts;
+      body={brand:'sono',mode:'ideas',preferred_format:'image_post',specialty:f.department||f.title||'تعاقدات',advertising_objective:'Awareness',title:profile.kind==='doctor'?'تعريف '+source.name:'إعلان تعاقد مع '+source.name,topic:'إعلان ترحيب بناءً على البيانات المعتمدة فقط: '+JSON.stringify({name:source.name,announcement:f.announcement})};
+      if(profile.kind==='doctor'){body.content_kind='doctor_intro';body.doctor_brief={prefix:f.prefix||'الدكتور',name:source.name,title:f.title,days:f.days,time_from:f.time_from,time_to:f.time_to,qualifications:f.qualifications||'',experience:f.experience||''};}
+    }else authDb = createClient(supabaseUrl, anonKey, { global: { headers: { Authorization: token } } });
     const active = await authDb.rpc("my_admin_id");
-    if (active.error || !active.data) throw new Error("هذا الحساب غير مسجل كموظف نشط.");
+    if (!automation && (active.error || !active.data)) throw new Error("هذا الحساب غير مسجل كموظف نشط.");
 
     const apiKey = Deno.env.get("OPENAI_API_KEY");
     if (!apiKey) throw new Error("لم يتم إعداد OPENAI_API_KEY في أسرار Supabase بعد.");
 
     const model = Deno.env.get("CONTENT_AI_MODEL") || "gpt-4.1-mini";
-    const body = await req.json();
+
     if(body?.mode === "design_copy") {
       if(!body.content_id)throw new Error("المادة مطلوبة.");
       // Read through the caller's RLS. Never accept replacement content from the browser.

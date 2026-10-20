@@ -75,3 +75,7 @@ verify_jwt = false
 # Existing booking agent integration secret; the function verifies the
 # X-Booking-Sync-Secret header before calling service-only queue RPCs.
 verify_jwt = false
+
+# Worker secret and staff JWT are validated inside this function.
+[functions.contract-marketing]
+verify_jwt = false
