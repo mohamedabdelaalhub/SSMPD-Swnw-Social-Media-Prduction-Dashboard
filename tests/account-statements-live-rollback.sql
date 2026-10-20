@@ -1,0 +1,27 @@
+begin;
+create temporary table statement_qa_result(result jsonb);
+do $$declare creator uuid;reviewer uuid;cashier uuid;reg uuid;sh uuid;acc text;receipt jsonb;payment jsonb;p jsonb;r jsonb;bad boolean;before_hash text;after_hash text;begin
+ select md5(string_agg(to_jsonb(l)::text,'' order by id)) into before_hash from clinic_finance.lines l;
+ select user_id into creator from public.admins where active and role='super_admin' and user_id is not null order by id limit 1;
+ select user_id into reviewer from public.admins where active and user_id is not null and user_id<>creator and role in('super_admin','general_manager','financial_manager') order by id limit 1;
+ if creator is null or reviewer is null then raise exception 'مطلوب مستخدمان قائمان بصلاحيات المراجعة';end if;
+ perform set_config('request.jwt.claim.sub',creator::text,true);
+ select id into reg from clinic_finance.registers where treasury_kind='main' order by id limit 1;if reg is null then raise exception 'الرئيسية غير معرفة';end if;
+ select id,cashier_id into sh,cashier from clinic_finance.shifts where register_id=reg and status<>'reviewed';
+ if sh is not null then select user_id into creator from public.admins where id=cashier;if creator is null then raise exception 'صاحب الوردية غير مربوط بدخول';end if;perform set_config('request.jwt.claim.sub',creator::text,true);if creator=reviewer then select user_id into reviewer from public.admins where active and user_id is not null and user_id<>creator and role='super_admin' limit 1;end if;
+ else sh:=public.clinic_finance_open_shift(reg,gen_random_uuid());end if;
+ if reviewer is null then raise exception 'لا يوجد مراجع مستقل';end if;
+ acc:='98'||left(replace(gen_random_uuid()::text,'-',''),10);acc:=regexp_replace(acc,'[a-f]','1','g');
+ perform public.clinic_finance_ledger_command('account_create',jsonb_build_object('code',acc,'name','اختبار متراجع لسندات الحسابات','kind','expense','is_postable',true),gen_random_uuid());
+ p:=jsonb_build_object('kind','receive','account',acc,'shift_id',sh,'gross',1000,'withheld',0,'reference','QA-STATEMENT-RC-'||gen_random_uuid(),'description','اختبار يتراجع بالكامل','recipient','طرف اختبار متراجع');
+ receipt:=public.clinic_finance_cash_voucher_command('create',p,gen_random_uuid());
+ perform set_config('request.jwt.claim.sub',reviewer::text,true);perform public.clinic_finance_cash_voucher_command('review',jsonb_build_object('id',receipt->>'id','approve',true,'note','اختبار داخل معاملة متراجعة'),gen_random_uuid());
+ perform set_config('request.jwt.claim.sub',creator::text,true);p:=p||jsonb_build_object('kind','pay','gross',1000,'withheld',50,'reference','QA-STATEMENT-PV-'||gen_random_uuid());payment:=public.clinic_finance_cash_voucher_command('create',p,gen_random_uuid());
+ perform set_config('request.jwt.claim.sub',reviewer::text,true);perform public.clinic_finance_cash_voucher_command('review',jsonb_build_object('id',payment->>'id','approve',true,'note','اختبار الصافي950 والاستقطاع50'),gen_random_uuid());
+ r:=public.clinic_finance_account_statement(acc,current_date-1,current_date+1,true,null,0,200,null);
+ if (r->>'debit')::numeric<>1000 or (r->>'credit')::numeric<>1000 or (r->>'closing')::numeric<>0 then raise exception 'الكشف لا يطابق القيود';end if;
+ r:=public.clinic_finance_entry_origin((select id from clinic_finance.entries where source='cash_voucher' and source_id=(payment->>'id')::uuid));if (r->'voucher'->>'withheld')::numeric<>50 then raise exception 'السند الأصلي لم يرتبط';end if;
+ insert into statement_qa_result values(jsonb_build_object('receipt',1000,'payment_gross',1000,'withheld',50,'cash_paid',950,'new_account_balance',0,'voucher_origin',true,'rollback',true,'prior_lines_hash',before_hash));
+end $$;
+select * from statement_qa_result;
+rollback;
