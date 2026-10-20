@@ -6,6 +6,6 @@ if(!new URLSearchParams(location.search).has('frame')){
  document.body.innerHTML='<p style="padding:12px">معاينة ببيانات محاكاة</p><main id="root"></main>';
  window.SSMPDToast={show:console.log};window.SSMPDAuth={currentAdmin:{id:'fixture'}};window.SSMPDRoles={canModuleAction:()=>true,isControlledFinance:()=>false,canDeleteContractingEntity:()=>false};
  window.SSMPDDb={listContractingEntities:async()=>Array.from({length:27},(_,i)=>({entity_id:'fixture-'+i,entity_name:'جهة تعاقد تجريبية '+(i+1),category:'cash',entity_type:'center',contract_status:'active',patients_count:0,documented_revenue:0})),createContractingEntity:async()=>{throw Error('معاينة فقط');}};
- let s=document.createElement('script');s.src='../assets/js/render-contracting-entities.js?v=contract-categories-20261020-1';s.onload=()=>SSMPDRenderContractingEntities.render(document.querySelector('#root'));document.body.appendChild(s);
+ let s=document.createElement('script');s.src='../assets/js/render-contracting-entities.js?v=contract-categories-20261020-2';s.onload=()=>SSMPDRenderContractingEntities.render(document.querySelector('#root'));document.body.appendChild(s);
 }
 </script></body></html>
