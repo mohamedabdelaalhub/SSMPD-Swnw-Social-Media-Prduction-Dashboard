@@ -19,7 +19,7 @@ function clean(s) { try {
         s = decodeURIComponent(s);
 }
 catch (e) { } return s.replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n))).replace(/<(select|textarea|button)\b[^>]*>[\s\S]*?<\/\1>/g, '').replace(/<!--[\s\S]*?-->/g, '').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim(); }
-for (const file of fs.readdirSync('assets/js').filter(x => x.endsWith('.js') && !/dashboard-help|dictionary|doctor-template-map/.test(x))) {
+for (const file of fs.readdirSync('assets/js').filter(x => x.endsWith('.js') && !/dashboard-help|dictionary|doctor-template-map|contracting-partnerships/.test(x))) {
     const code = fs.readFileSync('assets/js/' + file, 'utf8'), sf = ts.createSourceFile(file, code, 99, true);
     function add(label, name = '', kind = 'html') { label = clean(label); if (label && label.length < 180 && !/[{}]|^\+|^<|^\s*$/.test(label))
         out.push({ file, label, name, kind, forms: context(currentNode) }); }
