@@ -17,7 +17,10 @@ function render(doc){
     var pages=Array.from(doc.querySelectorAll('.swnw-page'));if(!pages.length)throw new Error('no-pages');
     var PDF=window.jspdf.jsPDF,pdf=new PDF({unit:'mm',format:'a4',orientation:'portrait'});
     var chain=Promise.resolve();
-    pages.forEach(function(page,index){chain=chain.then(function(){return window.html2canvas(page,{scale:2,useCORS:true,backgroundColor:'#fff',logging:false,width:page.scrollWidth,height:page.scrollHeight,windowWidth:page.scrollWidth,windowHeight:page.scrollHeight}).then(function(canvas){if(index)pdf.addPage();pdf.addImage(canvas.toDataURL('image/jpeg',.98),'JPEG',0,0,210,297,undefined,'FAST');});});});
+    pages.forEach(function(page,index){chain=chain.then(function(){
+      var rect=page.getBoundingClientRect();
+      return window.html2canvas(page,{scale:2,useCORS:true,backgroundColor:'#fff',logging:false,width:Math.round(rect.width),height:Math.round(rect.height),windowWidth:Math.round(rect.width),windowHeight:Math.round(rect.height),scrollX:0,scrollY:0,onclone:function(cloned){var cp=cloned.querySelector('.swnw-page[data-page="'+page.dataset.page+'"]');if(cp){cp.style.width='210mm';cp.style.height='297mm';cp.style.minWidth='210mm';cp.style.minHeight='297mm';cp.style.margin='0';cp.style.transform='none';cp.style.boxShadow='none';}}}).then(function(canvas){if(index)pdf.addPage();pdf.addImage(canvas.toDataURL('image/jpeg',.98),'JPEG',0,0,210,297,undefined,'FAST');});
+    });});
     return chain.then(function(){pdf.save(name(doc));});
   });
 }
