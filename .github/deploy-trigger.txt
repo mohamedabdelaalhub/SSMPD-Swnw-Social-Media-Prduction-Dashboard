@@ -1,0 +1,3 @@
+Redeploy trigger after Business Intelligence Brain merge.
+Commit target: main
+Date: 2026-10-20
