@@ -1,6 +1,6 @@
 /* SSMPD — Business Intelligence Automation
    Adds automatic queued-report processing on manager sessions, a since-last-visit brief,
-   and hierarchy blocker context without creating a parallel source of truth.
+   hierarchy blocker context, and a first-class manager navigation tab.
 */
 (function(root){
   'use strict';
@@ -8,7 +8,7 @@
   function db(){return root.SSMPDDb&&root.SSMPDDb.client;}
   function admin(){return root.SSMPDAuth&&root.SSMPDAuth.currentAdmin;}
   function manager(){var a=admin();return !!(a&&root.SSMPDRoles&&root.SSMPDRoles.hasAnyRole(a,['general_manager','super_admin']));}
-  function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c];});}
+  function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
   function n(v){return Number(v||0).toLocaleString('en-US');}
   function toast(msg,type){if(root.SSMPDToast)root.SSMPDToast.show(msg,type||'success');}
   function count(table,column,since,extra){var q=db().from(table).select('id',{count:'exact',head:true}).gte(column,since);return extra?extra(q):q;}
@@ -59,11 +59,37 @@
     }catch(e){console.warn('BI automatic extraction skipped',e);}
   }
 
+  function openBusinessIntelligence(){
+    if(!manager()||!root.SSMPDBusinessIntelligence)return;
+    var container=document.getElementById('view-container')||document.querySelector('.view-container');
+    if(!container)return;
+    document.querySelectorAll('#tabs-bar .tab-btn').forEach(function(x){x.classList.remove('active');});
+    var tab=document.querySelector('#tabs-bar [data-tab="business_intelligence"]');if(tab)tab.classList.add('active');
+    if(root.SSMPDNavigationUI&&root.SSMPDNavigationUI.setCurrent)root.SSMPDNavigationUI.setCurrent('business_intelligence');
+    container.innerHTML='';
+    root.SSMPDBusinessIntelligence.mount(container);
+    var brand=document.getElementById('brand-section-name');if(brand)brand.textContent='ذكاء الإدارة';
+    var menu=document.getElementById('user-dropdown');if(menu)menu.classList.remove('open');
+  }
+  function ensureNavigation(){
+    if(!manager())return;
+    var bar=document.getElementById('tabs-bar');
+    if(bar&&!bar.querySelector('[data-tab="business_intelligence"]')){
+      var b=document.createElement('button');b.className='tab-btn';b.dataset.tab='business_intelligence';b.textContent='ذكاء الإدارة';b.onclick=openBusinessIntelligence;bar.appendChild(b);
+    }
+    var items=document.querySelector('#user-dropdown .ud-items');
+    if(items&&!items.querySelector('[data-goto="business_intelligence"]')){
+      var m=document.createElement('button');m.className='ud-item';m.dataset.goto='business_intelligence';m.textContent='ذكاء الإدارة';m.onclick=function(e){e.preventDefault();openBusinessIntelligence();};
+      var empty=items.querySelector('.nav-menu-empty');items.insertBefore(m,empty||null);
+    }
+  }
   function attach(){
+    ensureNavigation();
     if(!manager()||!db())return;
     var shell=document.querySelector('[data-business-intelligence]');
     if(shell&&!rendered){rendered=true;sinceLastVisit(shell);autoProcess();}
   }
   function boot(){if(started)return;started=true;attach();var mo=new MutationObserver(function(){attach();});mo.observe(document.documentElement,{childList:true,subtree:true});setTimeout(attach,1200);setTimeout(attach,3500);}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
+  root.SSMPDOpenBusinessIntelligence=openBusinessIntelligence;
 })(window);
