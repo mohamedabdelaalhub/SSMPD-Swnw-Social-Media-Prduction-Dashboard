@@ -24,13 +24,10 @@
     return client;
   };
 
-  /* The html2pdf bundle does not expose window.jspdf consistently on mobile
-     browsers. The delivery helper creates the PDF page-by-page with jsPDF, so
-     load the standalone UMD build first and only then attach the helper. */
   function loadDeliveryHelper(){
     if(document.querySelector('script[data-contracting-document-send]')) return;
     var s=document.createElement('script');
-    s.src='assets/js/contracting-document-send.js?v=contracting-send-pdf-20261021-3';
+    s.src='assets/js/contracting-document-send.js?v=contracting-send-pdf-20261021-4';
     s.async=false;
     s.setAttribute('data-contracting-document-send','1');
     document.head.appendChild(s);
@@ -60,8 +57,6 @@
     },100);
   }
 
-  /* html2canvas must be able to paint the saved-version clone. It lives far
-     outside the viewport, so keeping it renderable does not make it visible. */
   if(!document.getElementById('contracting-offscreen-pdf-style')){
     var st=document.createElement('style');
     st.id='contracting-offscreen-pdf-style';
