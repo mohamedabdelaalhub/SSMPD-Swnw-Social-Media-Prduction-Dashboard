@@ -8,7 +8,7 @@ const edge = fs.readFileSync(path.join(root, 'supabase/functions/leads-update-de
 const migration = fs.readFileSync(path.join(root, 'supabase/migrations/20261021_lead_details_edit.sql'), 'utf8');
 const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 
-assert.match(ui, /id=\"lm-edit-details\"/, 'lead modal must expose an edit-details action');
+assert.match(ui, /btn\.id = "lm-edit-details"/, 'lead modal must expose an edit-details action');
 assert.match(ui, /id=\"lm-edit-name\"/, 'edit form must include customer name');
 assert.match(ui, /id=\"lm-edit-phone\"/, 'edit form must include phone');
 assert.match(ui, /id=\"lm-edit-source\"/, 'edit form must include source');
