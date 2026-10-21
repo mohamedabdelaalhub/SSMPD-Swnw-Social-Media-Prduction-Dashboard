@@ -77,10 +77,28 @@ async function markRead(phoneNumberId: string, messageId: string) {
   }).catch(() => {});
 }
 
+// Keep the live Meta sender available to the contracting delivery function without duplicating secrets.
+async function rememberContractingSender(db: any, value: any, phoneNumberId: string) {
+  try {
+    const displayPhone = String(value?.metadata?.display_phone_number || "").trim();
+    const { data: setting } = await db.from("contracting_partnership_settings")
+      .select("id,clinic_whatsapp,whatsapp_phone_number_id")
+      .order("updated_at", { ascending: false }).limit(1).maybeSingle();
+    if (!setting?.id) return;
+    const patch: Record<string, string> = {};
+    if (setting.whatsapp_phone_number_id !== phoneNumberId) patch.whatsapp_phone_number_id = phoneNumberId;
+    if (displayPhone && setting.clinic_whatsapp !== displayPhone) patch.clinic_whatsapp = displayPhone;
+    if (Object.keys(patch).length) await db.from("contracting_partnership_settings").update(patch).eq("id", setting.id);
+  } catch (err) {
+    console.warn("whatsapp sender cache", String(err?.message || err).slice(0, 180));
+  }
+}
+
 // deno-lint-ignore no-explicit-any
 async function handle(db: any, value: any) {
   const phoneNumberId = String(value?.metadata?.phone_number_id || "");
   if (!phoneNumberId) return;
+  await rememberContractingSender(db, value, phoneNumberId);
   const brand = brandFor(phoneNumberId);
   const names: Record<string, string> = {};
   for (const c of value.contacts || []) if (c?.wa_id) names[c.wa_id] = c.profile?.name || "";
