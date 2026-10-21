@@ -30,7 +30,7 @@
   function loadDeliveryHelper(){
     if(document.querySelector('script[data-contracting-document-send]')) return;
     var s=document.createElement('script');
-    s.src='assets/js/contracting-document-send.js?v=contracting-send-pdf-20261021-2';
+    s.src='assets/js/contracting-document-send.js?v=contracting-send-pdf-20261021-3';
     s.async=false;
     s.setAttribute('data-contracting-document-send','1');
     document.head.appendChild(s);
@@ -58,14 +58,5 @@
       if(window.jspdf && window.jspdf.jsPDF){clearInterval(t);loadDeliveryHelper();}
       else if(tries>=50){clearInterval(t);loadDeliveryHelper();}
     },100);
-  }
-
-  /* html2canvas must be able to paint the saved-version clone. It lives far
-     outside the viewport, so keeping it renderable does not make it visible. */
-  if(!document.getElementById('contracting-offscreen-pdf-style')){
-    var st=document.createElement('style');
-    st.id='contracting-offscreen-pdf-style';
-    st.textContent='body>div[style*="left:-200vw"]{visibility:visible!important}';
-    document.head.appendChild(st);
   }
 })();
