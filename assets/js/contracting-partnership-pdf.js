@@ -2,6 +2,7 @@
 (function(){
 'use strict';
 var OFFICIAL='https://mohamedabdelaalhub.github.io/SSMPD-Swnw-Social-Media-Prduction-Dashboard/assets/img/swnw-official-letterhead.png';
+var PARTNERSHIP_SPACING_CSS='.ce-hub-doc .swnw-page-body .swnw-meta{margin-bottom:0!important;line-height:1.38!important}.ce-hub-doc .swnw-page-body .swnw-meta+.swnw-meta{margin-top:-2px!important}.ce-hub-doc .swnw-page-body h3{margin-top:30px!important;margin-bottom:1px!important}.ce-hub-doc .swnw-page-body h3:first-of-type{margin-top:22px!important}.ce-hub-doc .swnw-page-body h3+p,.ce-hub-doc .swnw-page-body h3+ul,.ce-hub-doc .swnw-page-body h3+ol{margin-top:0!important}.ce-hub-doc .swnw-letter-closing{margin-top:116px!important;margin-bottom:23px!important;font-weight:700!important}.ce-hub-doc .swnw-letter-signature{margin-top:0!important}.ce-hub-doc .swnw-letter-signature-text{font-weight:400!important}.ce-hub-doc .swnw-letter-signature-text strong{font-weight:700!important}';
 function installOfficialArtworkStyle(){
   if(document.getElementById('swnw-partnership-official-artwork-style'))return;
   var s=document.createElement('style');s.id='swnw-partnership-official-artwork-style';
@@ -32,7 +33,7 @@ function name(doc){var t=(doc.querySelector('.swnw-page h2')||doc.querySelector(
 function waitImages(root){var imgs=Array.from(root.querySelectorAll('img'));return Promise.all(imgs.map(function(i){if(i.complete&&i.naturalWidth)return Promise.resolve();return new Promise(function(resolve,reject){i.addEventListener('load',resolve,{once:true});i.addEventListener('error',reject,{once:true});});}));}
 function sharedPrintCss(){
   var ids=['swnw-official-letter-style','swnw-partnership-official-artwork-style'];
-  return ids.map(function(id){var s=document.getElementById(id);return s?s.textContent:'';}).join('\n')+
+  return ids.map(function(id){var s=document.getElementById(id);return s?s.textContent:'';}).join('\n')+'\n'+PARTNERSHIP_SPACING_CSS+
     '@page{size:A4;margin:0!important}html,body{margin:0!important;padding:0!important;background:#fff!important}.swnw-page{margin:0!important;box-shadow:none!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}';
 }
 function nativePrint(doc){
@@ -40,7 +41,7 @@ function nativePrint(doc){
   if(api.paginate)api.paginate(doc);officialize(doc);
   var pages=Array.from(doc.querySelectorAll('.swnw-page'));if(!pages.length)throw new Error('no-pages');
   var w=window.open('','_blank');if(!w)throw new Error('popup-blocked');
-  w.document.write('<!doctype html><html dir="rtl"><head><meta charset="utf-8"><title>'+name(doc)+'</title><style>'+sharedPrintCss()+'</style></head><body>'+pages.map(function(p){return p.outerHTML;}).join('')+'</body></html>');
+  w.document.write('<!doctype html><html dir="rtl"><head><meta charset="utf-8"><title>'+name(doc)+'</title><style>'+sharedPrintCss()+'</style></head><body><div class="ce-hub-doc">'+pages.map(function(p){return p.outerHTML;}).join('')+'</div></body></html>');
   w.document.close();
   var readyFonts=w.document.fonts?w.document.fonts.ready:Promise.resolve();
   Promise.all([readyFonts,waitImages(w.document)]).then(function(){setTimeout(function(){w.focus();w.print();},100);}).catch(function(){setTimeout(function(){w.focus();w.print();},250);});
