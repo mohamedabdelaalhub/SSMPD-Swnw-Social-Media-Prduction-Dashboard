@@ -8,7 +8,11 @@ const boot = fs.readFileSync(path.join(root, 'assets/js/contracting-partnership-
 const edge = fs.readFileSync(path.join(root, 'supabase/functions/contracting-document-send/index.ts'), 'utf8');
 const migration = fs.readFileSync(path.join(root, 'supabase/migrations/20261021_contracting_document_delivery.sql'), 'utf8');
 
-assert.match(boot, /contracting-document-send\.js\?v=contracting-send-pdf-20261021-1/, 'partnership runtime must load the delivery helper');
+assert.match(boot, /contracting-document-send\.js\?v=contracting-send-pdf-20261021-2/, 'partnership runtime must load the current delivery helper');
+assert.match(boot, /jspdf\/2\.5\.1\/jspdf\.umd\.min\.js/, 'mobile bootstrap must preload standalone jsPDF');
+assert.match(boot, /window\.jspdf\s*&&\s*window\.jspdf\.jsPDF/, 'bootstrap must verify the jsPDF global before normal delivery startup');
+assert.ok(boot.indexOf('jp.onload') < boot.indexOf('loadDeliveryHelper();\n    };'), 'delivery helper must be started from the jsPDF load completion path');
+assert.doesNotThrow(() => new Function(boot), 'bootstrap must remain valid JavaScript');
 assert.match(ui, /إرسال بالبريد \+ PDF/, 'email action must state that PDF is attached');
 assert.match(ui, /إرسال واتساب \+ PDF/, 'WhatsApp action must state that PDF is attached');
 assert.match(ui, /contracting-document-send/, 'UI must call the authenticated delivery edge function');
