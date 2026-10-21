@@ -78,6 +78,66 @@ async function markRead(phoneNumberId: string, messageId: string) {
 }
 
 // deno-lint-ignore no-explicit-any
+async function handleStatus(db: any, value: any) {
+  for (const status of value?.statuses || []) {
+    const wamid = String(status?.id || "");
+    const state = String(status?.status || "");
+    if (!wamid || !state) continue;
+
+    const { data: matches } = await db.from("contracting_activity_log")
+      .select("id,entity_id,agreement_id,created_by,metadata")
+      .contains("metadata", { provider_message_id: wamid })
+      .order("created_at", { ascending: false })
+      .limit(1);
+    const base = matches?.[0];
+    if (!base?.agreement_id || !base?.entity_id) continue;
+
+    const actionKey = `whatsapp_${state}`;
+    const { data: duplicate } = await db.from("contracting_activity_log")
+      .select("id")
+      .eq("agreement_id", base.agreement_id)
+      .eq("action_key", actionKey)
+      .contains("metadata", { provider_message_id: wamid })
+      .limit(1);
+    if (duplicate?.length) continue;
+
+    const error = Array.isArray(status?.errors) ? status.errors[0] : null;
+    const timestamp = status?.timestamp ? new Date(Number(status.timestamp) * 1000).toISOString() : new Date().toISOString();
+    const arabicState = state === "delivered" ? "تم التسليم"
+      : state === "read" ? "تمت القراءة"
+      : state === "sent" ? "تم الإرسال من Meta"
+      : state === "failed" ? "فشل التسليم"
+      : state;
+
+    await db.from("contracting_activity_log").insert({
+      entity_id: base.entity_id,
+      agreement_id: base.agreement_id,
+      action_key: actionKey,
+      summary: `${arabicState} عبر واتساب`,
+      metadata: {
+        channel: "whatsapp",
+        provider: "meta_whatsapp",
+        provider_message_id: wamid,
+        delivery_status: state,
+        recipient_id: status?.recipient_id || null,
+        status_at: timestamp,
+        error_code: error?.code || null,
+        error_title: error?.title || null,
+        error_message: error?.message || null,
+        error_details: error?.error_data?.details || null,
+      },
+      created_by: base.created_by || null,
+    });
+
+    if (state === "delivered") {
+      await db.from("contracting_agreements")
+        .update({ status: "sent", sent_at: timestamp })
+        .eq("id", base.agreement_id);
+    }
+  }
+}
+
+// deno-lint-ignore no-explicit-any
 async function handle(db: any, value: any) {
   const phoneNumberId = String(value?.metadata?.phone_number_id || "");
   if (!phoneNumberId) return;
@@ -149,7 +209,13 @@ Deno.serve(async (req) => {
   let body: any; try { body = JSON.parse(raw); } catch { return new Response("bad json", { status: 400 }); }
   const db = createClient(Deno.env.get("SUPABASE_URL")!, key, { auth: { persistSession: false } });
   const work = (async () => {
-    for (const e of body?.entry || []) for (const ch of e?.changes || []) if (ch?.field === "messages" && ch.value?.messages) await handle(db, ch.value);
+    for (const e of body?.entry || []) {
+      for (const ch of e?.changes || []) {
+        if (ch?.field !== "messages") continue;
+        if (ch.value?.statuses) await handleStatus(db, ch.value);
+        if (ch.value?.messages) await handle(db, ch.value);
+      }
+    }
   })().catch((err) => console.error("whatsapp-webhook", String(err?.message || err).slice(0, 200)));
   // Answer Meta right away; the reply is written in the background.
   // deno-lint-ignore no-explicit-any
