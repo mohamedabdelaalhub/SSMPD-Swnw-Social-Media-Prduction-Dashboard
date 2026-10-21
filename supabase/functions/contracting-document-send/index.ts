@@ -72,23 +72,74 @@ function canSend(c: { roles: string[] }) {
   return c.roles.some((r) => ["contract_manager", "general_manager", "super_admin"].includes(r));
 }
 
-function whatsappPhoneNumberId() {
+// Reuse the sender already configured for the live WhatsApp agent. Direct env IDs win,
+// then the optional brand map, then the sender cached in partnership settings. If none is
+// available, discover the WABA targets from the existing WHATSAPP_TOKEN and persist the
+// matching Swnw phone-number ID so subsequent sends do not need discovery again.
+async function whatsappPhoneNumberId(admin: any, token: string) {
   for (const key of ["WHATSAPP_SONO_PHONE_NUMBER_ID", "WHATSAPP_PHONE_NUMBER_ID", "META_WHATSAPP_PHONE_NUMBER_ID"]) {
-    const v = Deno.env.get(key);
+    const v = String(Deno.env.get(key) || "").trim();
     if (v) return v;
   }
   try {
     const brands = JSON.parse(Deno.env.get("WHATSAPP_BRANDS") || "{}");
-    const hit = Object.entries(brands).find(([, brand]) => brand === "sono");
-    if (hit) return hit[0];
+    const entries = Object.entries(brands) as [string, unknown][];
+    const sono = entries.find(([, brand]) => brand === "sono");
+    if (sono?.[0]) return sono[0];
+    if (entries.length === 1 && entries[0][0]) return entries[0][0];
   } catch { /* optional map */ }
+
+  const { data: setting } = await admin.from("contracting_partnership_settings")
+    .select("id,clinic_whatsapp,whatsapp_phone_number_id")
+    .order("updated_at", { ascending: false }).limit(1).maybeSingle();
+  if (setting?.whatsapp_phone_number_id) return String(setting.whatsapp_phone_number_id);
+
+  const { data: profile } = await admin.from("clinic_profile").select("whatsapp").limit(1).maybeSingle();
+  const desiredPhone = normalizePhone(setting?.clinic_whatsapp || profile?.whatsapp || "");
+
+  try {
+    const debug = await fetch(`${GRAPH}debug_token?input_token=${encodeURIComponent(token)}`, {
+      headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(10000),
+    });
+    const debugData = await debug.json().catch(() => ({}));
+    const scopes = Array.isArray(debugData?.data?.granular_scopes) ? debugData.data.granular_scopes : [];
+    const wabas = new Set<string>();
+    for (const scope of scopes) {
+      if (!String(scope?.scope || "").includes("whatsapp_business")) continue;
+      for (const id of scope?.target_ids || []) if (id) wabas.add(String(id));
+    }
+
+    const candidates: { id: string; phone: string }[] = [];
+    for (const waba of wabas) {
+      const r = await fetch(`${GRAPH}${encodeURIComponent(waba)}/phone_numbers?fields=id,display_phone_number,status,verified_name&limit=100`, {
+        headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(10000),
+      });
+      const d = await r.json().catch(() => ({}));
+      for (const row of d?.data || []) {
+        if (!row?.id) continue;
+        candidates.push({ id: String(row.id), phone: normalizePhone(row.display_phone_number || "") });
+      }
+    }
+
+    const selected = (desiredPhone && candidates.find((x) => x.phone === desiredPhone)) || (candidates.length === 1 ? candidates[0] : null);
+    if (selected?.id) {
+      if (setting?.id) await admin.from("contracting_partnership_settings").update({
+        whatsapp_phone_number_id: selected.id,
+        clinic_whatsapp: setting.clinic_whatsapp || profile?.whatsapp || null,
+      }).eq("id", setting.id);
+      return selected.id;
+    }
+  } catch (err) {
+    console.warn("contracting WhatsApp sender discovery failed", String((err as any)?.message || err).slice(0, 250));
+  }
   return "";
 }
 
-async function sendWhatsapp(pdf: Uint8Array, to: string, filename: string, caption: string) {
+async function sendWhatsapp(admin: any, pdf: Uint8Array, to: string, filename: string, caption: string) {
   const token = Deno.env.get("WHATSAPP_TOKEN") || "";
-  const phoneNumberId = whatsappPhoneNumberId();
-  if (!token || !phoneNumberId) return { ok: false, status: 503, code: "WHATSAPP_NOT_CONFIGURED", error: "إعداد إرسال واتساب غير مكتمل" };
+  if (!token) return { ok: false, status: 503, code: "WHATSAPP_NOT_CONFIGURED", error: "توكن واتساب المستخدم في الوكيل غير متاح لوظيفة الإرسال" };
+  const phoneNumberId = await whatsappPhoneNumberId(admin, token);
+  if (!phoneNumberId) return { ok: false, status: 503, code: "WHATSAPP_SENDER_UNKNOWN", error: "تعذر التعرف تلقائيًا على رقم واتساب المرسل من إعدادات الوكيل الحالي" };
 
   const form = new FormData();
   form.set("messaging_product", "whatsapp");
@@ -103,12 +154,7 @@ async function sendWhatsapp(pdf: Uint8Array, to: string, filename: string, capti
   const send = await fetch(`${GRAPH}${phoneNumberId}/messages`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      messaging_product: "whatsapp",
-      to,
-      type: "document",
-      document: { id: uploaded.id, filename, caption: caption.slice(0, 1024) },
-    }),
+    body: JSON.stringify({ messaging_product: "whatsapp", to, type: "document", document: { id: uploaded.id, filename, caption: caption.slice(0, 1024) } }),
   });
   const sent = await send.json().catch(() => ({}));
   if (!send.ok || sent?.error) {
@@ -123,11 +169,7 @@ async function sendEmail(pdfBase64: string, to: string, filename: string, subjec
 
   const resend = Deno.env.get("RESEND_API_KEY");
   if (resend) {
-    const r = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${resend}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from, to: [to], subject, text, attachments: [{ filename, content: pdfBase64 }] }),
-    });
+    const r = await fetch("https://api.resend.com/emails", { method: "POST", headers: { Authorization: `Bearer ${resend}`, "Content-Type": "application/json" }, body: JSON.stringify({ from, to: [to], subject, text, attachments: [{ filename, content: pdfBase64 }] }) });
     const d = await r.json().catch(() => ({}));
     if (!r.ok) return { ok: false, status: 502, code: "EMAIL_SEND_FAILED", error: d?.message || d?.error?.message || "تعذر إرسال البريد" };
     return { ok: true, provider: "resend", messageId: d?.id || null };
@@ -135,13 +177,8 @@ async function sendEmail(pdfBase64: string, to: string, filename: string, subjec
 
   const brevo = Deno.env.get("BREVO_API_KEY");
   if (brevo) {
-    const match = from.match(/<([^>]+)>/);
-    const senderEmail = match ? match[1] : from;
-    const r = await fetch("https://api.brevo.com/v3/smtp/email", {
-      method: "POST",
-      headers: { "api-key": brevo, "Content-Type": "application/json", accept: "application/json" },
-      body: JSON.stringify({ sender: { name: "Swnw Clinics", email: senderEmail }, to: [{ email: to }], subject, textContent: text, attachment: [{ name: filename, content: pdfBase64 }] }),
-    });
+    const match = from.match(/<([^>]+)>/); const senderEmail = match ? match[1] : from;
+    const r = await fetch("https://api.brevo.com/v3/smtp/email", { method: "POST", headers: { "api-key": brevo, "Content-Type": "application/json", accept: "application/json" }, body: JSON.stringify({ sender: { name: "Swnw Clinics", email: senderEmail }, to: [{ email: to }], subject, textContent: text, attachment: [{ name: filename, content: pdfBase64 }] }) });
     const d = await r.json().catch(() => ({}));
     if (!r.ok) return { ok: false, status: 502, code: "EMAIL_SEND_FAILED", error: d?.message || "تعذر إرسال البريد" };
     return { ok: true, provider: "brevo", messageId: d?.messageId || null };
@@ -149,17 +186,8 @@ async function sendEmail(pdfBase64: string, to: string, filename: string, subjec
 
   const sendgrid = Deno.env.get("SENDGRID_API_KEY");
   if (sendgrid) {
-    const match = from.match(/<([^>]+)>/);
-    const senderEmail = match ? match[1] : from;
-    const r = await fetch("https://api.sendgrid.com/v3/mail/send", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${sendgrid}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        personalizations: [{ to: [{ email: to }] }], from: { email: senderEmail, name: "Swnw Clinics" }, subject,
-        content: [{ type: "text/plain", value: text }],
-        attachments: [{ content: pdfBase64, type: "application/pdf", filename, disposition: "attachment" }],
-      }),
-    });
+    const match = from.match(/<([^>]+)>/); const senderEmail = match ? match[1] : from;
+    const r = await fetch("https://api.sendgrid.com/v3/mail/send", { method: "POST", headers: { Authorization: `Bearer ${sendgrid}`, "Content-Type": "application/json" }, body: JSON.stringify({ personalizations: [{ to: [{ email: to }] }], from: { email: senderEmail, name: "Swnw Clinics" }, subject, content: [{ type: "text/plain", value: text }], attachments: [{ content: pdfBase64, type: "application/pdf", filename, disposition: "attachment" }] }) });
     if (!r.ok) return { ok: false, status: 502, code: "EMAIL_SEND_FAILED", error: (await r.text().catch(() => "")) || "تعذر إرسال البريد" };
     return { ok: true, provider: "sendgrid", messageId: r.headers.get("x-message-id") };
   }
@@ -178,8 +206,7 @@ Deno.serve(async (req) => {
   if (!key) return json({ error: "إعداد قاعدة البيانات غير مكتمل" }, 500);
   const admin = createClient(SUPABASE_URL, key, { auth: { persistSession: false } });
 
-  let b: any;
-  try { b = await req.json(); } catch { return json({ error: "بيانات غير صالحة" }, 400); }
+  let b: any; try { b = await req.json(); } catch { return json({ error: "بيانات غير صالحة" }, 400); }
   const agreementId = String(b?.agreement_id || "");
   const channel = b?.channel === "whatsapp" ? "whatsapp" : b?.channel === "email" ? "email" : "";
   const recipient = String(b?.recipient || "").trim();
@@ -191,15 +218,11 @@ Deno.serve(async (req) => {
   const phone = channel === "whatsapp" ? normalizePhone(recipient) : "";
   if (channel === "whatsapp" && phone.length < 10) return json({ error: "رقم واتساب غير صالح" }, 400);
 
-  const { data: agreement, error: agreementError } = await admin.from("contracting_agreements")
-    .select("id,entity_id,document_type,version_no,status")
-    .eq("id", agreementId).maybeSingle();
+  const { data: agreement, error: agreementError } = await admin.from("contracting_agreements").select("id,entity_id,document_type,version_no,status").eq("id", agreementId).maybeSingle();
   if (agreementError || !agreement) return json({ error: "المستند غير موجود" }, 404);
   const { data: entity } = await admin.from("contracting_entities").select("id,name,representative_email,representative_phone").eq("id", agreement.entity_id).maybeSingle();
   if (!entity) return json({ error: "جهة التعاقد غير موجودة" }, 404);
-  const { data: version } = await admin.from("contracting_agreement_versions")
-    .select("id,version_no,file_name,pdf_url,immutable")
-    .eq("agreement_id", agreement.id).eq("version_no", agreement.version_no).maybeSingle();
+  const { data: version } = await admin.from("contracting_agreement_versions").select("id,version_no,file_name,pdf_url,immutable").eq("agreement_id", agreement.id).eq("version_no", agreement.version_no).maybeSingle();
   if (!version) return json({ error: "نسخة المستند غير موجودة" }, 404);
 
   let pdfBytes: Uint8Array;
@@ -209,20 +232,14 @@ Deno.serve(async (req) => {
 
   if (version.immutable && storagePath) {
     if (/^https?:\/\//i.test(storagePath)) {
-      const r = await fetch(storagePath);
-      if (!r.ok) return json({ error: "تعذر قراءة النسخة المحفوظة من PDF" }, 500);
+      const r = await fetch(storagePath); if (!r.ok) return json({ error: "تعذر قراءة النسخة المحفوظة من PDF" }, 500);
       pdfBytes = new Uint8Array(await r.arrayBuffer());
     } else {
       const { data, error } = await admin.storage.from(BUCKET).download(storagePath);
       if (error || !data) return json({ error: "تعذر قراءة النسخة المحفوظة من PDF" }, 500);
       pdfBytes = new Uint8Array(await data.arrayBuffer());
     }
-    if (!pdfBase64) {
-      let s = "";
-      const chunk = 0x8000;
-      for (let i = 0; i < pdfBytes.length; i += chunk) s += String.fromCharCode(...pdfBytes.subarray(i, i + chunk));
-      pdfBase64 = btoa(s);
-    }
+    if (!pdfBase64) { let s = ""; const chunk = 0x8000; for (let i = 0; i < pdfBytes.length; i += chunk) s += String.fromCharCode(...pdfBytes.subarray(i, i + chunk)); pdfBase64 = btoa(s); }
   } else {
     if (!pdfBase64) return json({ error: "ملف PDF مطلوب لأول إرسال لهذه النسخة" }, 400);
     try { pdfBytes = base64Bytes(pdfBase64); } catch { return json({ error: "ملف PDF غير صالح" }, 400); }
@@ -236,26 +253,16 @@ Deno.serve(async (req) => {
 
   const settingsRes = await admin.from("contracting_partnership_settings").select("clinic_email").order("updated_at", { ascending: false }).limit(1).maybeSingle();
   const clinicEmail = settingsRes.data?.clinic_email || "";
-  const sent = channel === "whatsapp"
-    ? await sendWhatsapp(pdfBytes!, phone, filename, message)
-    : await sendEmail(pdfBase64, recipient, filename, subject || `مستند تعاون مع ${entity.name}`, message, clinicEmail);
+  const sent = channel === "whatsapp" ? await sendWhatsapp(admin, pdfBytes!, phone, filename, message) : await sendEmail(pdfBase64, recipient, filename, subject || `مستند تعاون مع ${entity.name}`, message, clinicEmail);
 
   if (!sent.ok) {
-    await admin.from("contracting_activity_log").insert({
-      entity_id: entity.id, agreement_id: agreement.id, action_key: `${channel}_send_failed`,
-      summary: `تعذر إرسال V${agreement.version_no} عبر ${channel === "whatsapp" ? "واتساب" : "البريد"}`,
-      metadata: { channel, recipient, file: filename, storage_path: storagePath, error: sent.error, code: sent.code }, created_by: c.id,
-    });
+    await admin.from("contracting_activity_log").insert({ entity_id: entity.id, agreement_id: agreement.id, action_key: `${channel}_send_failed`, summary: `تعذر إرسال V${agreement.version_no} عبر ${channel === "whatsapp" ? "واتساب" : "البريد"}`, metadata: { channel, recipient, file: filename, storage_path: storagePath, error: sent.error, code: sent.code }, created_by: c.id });
     return json({ error: sent.error, code: sent.code, storage_path: storagePath }, sent.status || 500);
   }
 
   const sentAt = new Date().toISOString();
   await admin.from("contracting_agreements").update({ sent_at: sentAt, status: "sent" }).eq("id", agreement.id);
-  await admin.from("contracting_activity_log").insert({
-    entity_id: entity.id, agreement_id: agreement.id, action_key: channel === "whatsapp" ? "whatsapp_sent" : "email_sent",
-    summary: `تم إرسال ${agreement.document_type === "proposal" ? "الخطاب المبدئي" : "العقد النهائي"} V${agreement.version_no} عبر ${channel === "whatsapp" ? "واتساب" : "البريد"}`,
-    metadata: { channel, recipient, file: filename, storage_path: storagePath, provider: sent.provider, provider_message_id: sent.messageId || null }, created_by: c.id,
-  });
+  await admin.from("contracting_activity_log").insert({ entity_id: entity.id, agreement_id: agreement.id, action_key: channel === "whatsapp" ? "whatsapp_sent" : "email_sent", summary: `تم إرسال ${agreement.document_type === "proposal" ? "الخطاب المبدئي" : "العقد النهائي"} V${agreement.version_no} عبر ${channel === "whatsapp" ? "واتساب" : "البريد"}`, metadata: { channel, recipient, file: filename, storage_path: storagePath, provider: sent.provider, provider_message_id: sent.messageId || null }, created_by: c.id });
 
   return json({ ok: true, channel, provider: sent.provider, message_id: sent.messageId || null, storage_path: storagePath, filename, sent_at: sentAt });
 });
