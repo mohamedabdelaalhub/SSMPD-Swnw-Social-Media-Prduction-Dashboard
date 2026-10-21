@@ -8,6 +8,15 @@
   function db(){return window.SSMPDDb&&window.SSMPDDb.client;}
   function safeName(v){return String(v||'SWNW-Partnership').replace(/[\\/:*?"<>|]+/g,'-').replace(/\.pdf$/i,'')+'.pdf';}
   function load(src,test){return new Promise(function(resolve,reject){if(test())return resolve();var s=document.createElement('script');s.src=src;s.onload=resolve;s.onerror=function(){reject(new Error('تعذر تحميل مكتبة PDF'));};document.head.appendChild(s);});}
+  function ensurePdfLibraries(){
+    return load('https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js',function(){return !!(window.jspdf&&window.jspdf.jsPDF);}).then(function(){
+      if(typeof window.html2canvas==='function')return;
+      return load('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',function(){return typeof window.html2canvas==='function';});
+    }).then(function(){
+      if(!(window.jspdf&&window.jspdf.jsPDF))throw new Error('تعذر تهيئة مكتبة PDF');
+      if(typeof window.html2canvas!=='function')throw new Error('تعذر تهيئة محرك تحويل المستند إلى PDF');
+    });
+  }
   function textAfterInstitution(doc){var nodes=Array.from(doc.querySelectorAll('p,.swnw-meta'));for(var i=0;i<nodes.length;i++){var t=(nodes[i].textContent||'').replace(/\s+/g,' ').trim();if(/^المؤسسة\s*[:：]?/.test(t))return t.replace(/^المؤسسة\s*[:：]?\s*/,'').trim();}return '';}
   function docType(doc){var title=(doc.querySelector('h2')&&doc.querySelector('h2').textContent||'').trim();return title.indexOf('اتفاق تعاون')>-1?'final_contract':'proposal';}
   function subjectFor(type){return type==='proposal'?'عرض تعاون وشراكة مع عيادات سونو التخصصية':'النسخة النهائية من اتفاق التعاون مع عيادات سونو التخصصية';}
@@ -32,7 +41,7 @@
   function pdfBlobFromSaved(ctx){
     var key=ctx.agreement.id+':'+ctx.version.version_no;if(cachedPdf[key])return Promise.resolve(cachedPdf[key]);
     var hidden=makeHiddenDocument(ctx.version.content_html);var doc=hidden.doc;var prep=window.SSMPDPartnershipPdf&&window.SSMPDPartnershipPdf.prepare?window.SSMPDPartnershipPdf.prepare(doc):Promise.resolve();
-    return prep.then(function(){return load('https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js',function(){return !!(window.html2canvas&&window.jspdf&&window.jspdf.jsPDF);});}).then(function(){var pages=Array.from(doc.querySelectorAll('.swnw-page'));if(!pages.length)throw new Error('تعذر تجهيز صفحات PDF');var PDF=window.jspdf.jsPDF,pdf=new PDF({unit:'mm',format:'a4',orientation:'portrait',compress:true});var chain=Promise.resolve();pages.forEach(function(page,index){chain=chain.then(function(){return window.html2canvas(page,{scale:2,useCORS:true,allowTaint:false,backgroundColor:'#fff',logging:false,scrollX:-window.scrollX,scrollY:-window.scrollY,foreignObjectRendering:false,removeContainer:true}).then(function(canvas){if(index)pdf.addPage('a4','portrait');pdf.addImage(canvas.toDataURL('image/png'),'PNG',0,0,210,297,undefined,'FAST');});});});return chain.then(function(){var blob=pdf.output('blob');cachedPdf[key]=blob;return blob;});}).finally(function(){hidden.host.remove();});
+    return prep.then(ensurePdfLibraries).then(function(){var pages=Array.from(doc.querySelectorAll('.swnw-page'));if(!pages.length)throw new Error('تعذر تجهيز صفحات PDF');var PDF=window.jspdf.jsPDF,pdf=new PDF({unit:'mm',format:'a4',orientation:'portrait',compress:true});var chain=Promise.resolve();pages.forEach(function(page,index){chain=chain.then(function(){return window.html2canvas(page,{scale:2,useCORS:true,allowTaint:false,backgroundColor:'#fff',logging:false,scrollX:-window.scrollX,scrollY:-window.scrollY,foreignObjectRendering:false,removeContainer:true}).then(function(canvas){if(index)pdf.addPage('a4','portrait');pdf.addImage(canvas.toDataURL('image/png'),'PNG',0,0,210,297,undefined,'FAST');});});});return chain.then(function(){var blob=pdf.output('blob');cachedPdf[key]=blob;return blob;});}).finally(function(){hidden.host.remove();});
   }
   function blobBase64(blob){return new Promise(function(resolve,reject){var r=new FileReader();r.onload=function(){resolve(String(r.result||'').split(',')[1]||'');};r.onerror=function(){reject(new Error('تعذر قراءة ملف PDF'));};r.readAsDataURL(blob);});}
   function download(blob,name){var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},1500);}
