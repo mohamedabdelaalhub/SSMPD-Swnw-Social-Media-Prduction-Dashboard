@@ -23,7 +23,10 @@ assert.match(ui, /navigator\.share/, 'email must have a file-share fallback when
 assert.match(ui, /html2canvas\/1\.4\.1\/html2canvas\.min\.js/, 'delivery must have a standalone html2canvas fallback');
 assert.match(ui, /typeof window\.html2canvas===['"]function['"]/, 'delivery must verify html2canvas is callable, not only truthy');
 assert.match(ui, /prep\.then\(ensurePdfLibraries\)/, 'PDF rendering must initialize libraries before painting pages');
-new Function(ui);
+assert.match(ui, /jspdf\/2\.5\.1\/jspdf\.umd\.min\.js/, 'delivery must explicitly load standalone jsPDF');
+assert.match(ui, /function pdfCtor\(\)/, 'delivery must tolerate both jsPDF global shapes');
+assert.match(ui, /window\.open\('about:blank','_blank'\)/, 'mobile preview must reserve a tab synchronously');
+assert.doesNotThrow(() => new Function(ui), 'delivery UI must remain valid JavaScript');
 
 assert.match(edge, /type:\s*"document"/, 'WhatsApp must send a document message, not just text');
 assert.match(edge, /\/media`/, 'WhatsApp PDF must be uploaded to Meta media first');
@@ -32,6 +35,12 @@ assert.match(edge, /contracting_agreement_versions/, 'edge function must freeze 
 assert.match(edge, /immutable:\s*true/, 'sent PDF snapshot must be immutable');
 assert.match(edge, /contracting_activity_log/, 'successful and failed sends must be auditable');
 assert.match(edge, /contract_manager/, 'contracting staff must be authorized explicitly');
+assert.match(edge, /me\?fields=businesses/, 'WhatsApp sender ID must be discoverable from the existing Meta token');
+assert.match(edge, /owned_whatsapp_business_accounts/, 'sender discovery must inspect owned WABAs');
+assert.match(edge, /client_whatsapp_business_accounts/, 'sender discovery must inspect shared WABAs');
+assert.match(edge, /phone_numbers\?fields=id,display_phone_number,verified_name/, 'sender discovery must inspect WABA phone numbers');
+assert.match(edge, /clinic_profile/, 'sender discovery must fall back to the clinic WhatsApp number already stored in dashboard data');
+assert.match(edge, /WHATSAPP_PHONE_ID_NOT_FOUND/, 'sender discovery must return a precise configuration error when Meta cannot resolve a sender');
 
 assert.match(migration, /contracting-documents/, 'private contracting document bucket must exist');
 assert.match(migration, /application\/pdf/, 'bucket must only allow PDFs');
