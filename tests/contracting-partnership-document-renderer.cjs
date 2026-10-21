@@ -32,6 +32,6 @@ const letterPos = index.indexOf('assets/js/contracting-partnership-letterhead.js
 const pdfPos = index.indexOf('assets/js/contracting-partnership-pdf.js');
 assert.ok(letterPos >= 0 && pdfPos > letterPos, 'shared renderer must load before PDF export hook');
 assert.match(hub, /function buildDocument\(type,entity,settings,v\)/, 'draft and final contract must enter the same document builder');
-assert.match(hub, /id=\\"ceh-document\\"/, 'both document types must expose the shared document root');
+assert.match(hub, /id="ceh-document"/, 'both document types must expose the shared document root');
 
 console.log('Partnership document renderer regression checks passed');
