@@ -30,6 +30,56 @@
     return window.SSMPDRenderLeads || null;
   }
 
+  function canUseLeads() {
+    var roles = window.SSMPDRoles;
+    var admin = window.SSMPDAuth && window.SSMPDAuth.currentAdmin;
+    return !!(roles && admin && roles.canSeeTab && roles.canSeeTab(admin, "leads"));
+  }
+
+  function renderNoAccess(container) {
+    if (!container) return;
+    container.innerHTML = '<div class="section" style="max-width:620px;margin:20px auto;">' +
+      '<h3>القسم غير متاح لحسابك</h3>' +
+      '<p style="margin:0;color:var(--c-muted);font-size:13px;">لو محتاج إدارة الليدز، اطلب من الإدارة إضافة صلاحية خدمة العملاء أو الاستقبال لحسابك.</p></div>';
+  }
+
+  function ensureStyles() {
+    if (document.getElementById("ssmpd-lead-mobile-fix")) return;
+    var style = document.createElement("style");
+    style.id = "ssmpd-lead-mobile-fix";
+    style.textContent = [
+      '.lead-modal{width:min(760px,calc(100vw - 24px));max-width:760px;}',
+      '.lead-modal>.modal-head h3{word-break:normal;overflow-wrap:break-word;}',
+      '.lead-modal #lm-edit-details{background:#fff;color:#0B2A7A;border:2px solid #fff;box-shadow:0 2px 7px rgba(0,0,0,.12);opacity:1;font-weight:800;}',
+      '.lead-modal #lm-edit-details:hover,.lead-modal #lm-edit-details:focus-visible{background:#EAF1FF;color:#0B2A7A;border-color:#fff;}',
+      '.lead-modal #lm-edit-details:disabled{background:#fff;color:#0B2A7A;border-color:#fff;opacity:.72;}',
+      '.lead-modal #lm-edit-panel{overflow:hidden;}',
+      '.lead-modal #lm-edit-panel input,.lead-modal #lm-edit-panel select,.lead-modal #lm-edit-panel textarea{min-width:0;max-width:100%;}',
+      '@media(max-width:640px){',
+      ' .modal-backdrop:has(>.lead-modal){align-items:flex-start;padding:6px;overflow-y:auto;}',
+      ' .lead-modal{width:100%;max-width:none;max-height:calc(100dvh - 12px);padding:12px;border-radius:16px;}',
+      ' .lead-modal>.modal-head{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 44px;align-items:center;gap:8px;padding:13px;margin-bottom:14px;}',
+      ' .lead-modal>.modal-head h3{grid-column:1/-1;font-size:19px;line-height:1.55;margin:0;min-width:0;word-break:normal;overflow-wrap:break-word;}',
+      ' .lead-modal>.modal-head #lm-delete,.lead-modal>.modal-head #lm-edit-details{margin:0!important;width:100%;min-width:0;min-height:44px;padding:8px 7px;white-space:nowrap;font-size:13px;}',
+      ' .lead-modal>.modal-head .modal-close{margin:0;width:44px;height:44px;min-width:44px;min-height:44px;}',
+      ' .lead-modal #lm-edit-panel{padding:12px!important;}',
+      ' .lead-modal #lm-edit-panel>div:nth-child(2){grid-template-columns:minmax(0,1fr)!important;}',
+      ' .lead-modal #lm-edit-panel label{min-width:0;}',
+      ' .lead-modal #lm-booking-wrap{flex:1 1 100%;flex-wrap:wrap;min-width:0;}',
+      ' .lead-modal #lm-booking-wrap>div{flex:1 1 145px;min-width:0;}',
+      ' .lead-modal #lm-booking{width:100%!important;}',
+      ' .lead-modal .field{min-width:0;}',
+      ' .lead-modal .field select,.lead-modal .field input,.lead-modal .field textarea{max-width:100%;}',
+      '}',
+      '@media(max-width:380px){',
+      ' .lead-modal>.modal-head{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 42px;padding:11px;gap:6px;}',
+      ' .lead-modal>.modal-head h3{font-size:18px;}',
+      ' .lead-modal>.modal-head #lm-delete,.lead-modal>.modal-head #lm-edit-details{font-size:12px;padding-inline:5px;}',
+      '}'
+    ].join("\n");
+    document.head.appendChild(style);
+  }
+
   function patchApi() {
     var api = currentApi();
     if (!api || api.__leadEditPatched) return;
@@ -39,6 +89,7 @@
     if (typeof originalRender === "function") {
       api.render = function (container) {
         lastRenderContainer = container || lastRenderContainer;
+        if (!canUseLeads()) { renderNoAccess(container); return; }
         return originalRender.apply(this, arguments);
       };
     }
@@ -46,6 +97,10 @@
     var originalOpen = api.openLeadById;
     if (typeof originalOpen === "function") {
       api.openLeadById = function (leadId) {
+        if (!canUseLeads()) {
+          if (window.SSMPDToast) window.SSMPDToast.show("القسم غير متاح لحسابك", "error");
+          return;
+        }
         activeLeadId = leadId ? String(leadId) : null;
         return originalOpen.apply(this, arguments);
       };
@@ -118,7 +173,7 @@
       '<div id="lm-edit-error" class="err-msg" style="display:none;margin-top:8px;"></div>' +
       '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px;">' +
         '<button class="btn ghost sm" type="button" id="lm-edit-cancel">إلغاء</button>' +
-        '<button class="btn sm" type="button" id="lm-edit-save">حفظ التعديلات</button>' +
+        '<button class="btn btn-primary sm" type="button" id="lm-edit-save">حفظ التعديلات</button>' +
       '</div>';
 
     var statusBlock = modal.querySelector("#lm-status") && modal.querySelector("#lm-status").closest(".field");
@@ -163,6 +218,8 @@
   function enhanceModal(modal) {
     if (!modal || modal.dataset.leadEditReady === "1" || !modal.querySelector("#lm-save-status")) return;
     if (!activeLeadId) return;
+    ensureStyles();
+    modal.classList.add("lead-modal");
     modal.dataset.leadEditReady = "1";
     modal.dataset.leadId = activeLeadId;
 
@@ -170,9 +227,8 @@
     if (!head) return;
     var btn = document.createElement("button");
     btn.type = "button";
-    btn.className = "btn ghost sm";
+    btn.className = "btn sm lead-edit-action";
     btn.id = "lm-edit-details";
-    btn.style.marginInlineEnd = "8px";
     btn.textContent = "تعديل البيانات";
     var close = head.querySelector(".modal-close");
     if (close) head.insertBefore(btn, close);
@@ -192,6 +248,7 @@
   }
 
   function scan(root) {
+    ensureStyles();
     patchApi();
     if (!root) return;
     if (root.matches && root.matches(".modal") && root.querySelector("#lm-save-status")) enhanceModal(root);
@@ -203,6 +260,7 @@
     if (target) activeLeadId = target.getAttribute("data-open") || activeLeadId;
   }, true);
 
+  ensureStyles();
   patchApi();
   if (typeof MutationObserver !== "undefined") {
     new MutationObserver(function (rows) {
