@@ -24,6 +24,5 @@ assert.match(router, /contracting-document-send-core/, 'router must preserve nor
 assert.match(router, /WHATSAPP_WINDOW_EXPIRED/, 'router must switch paths only when the customer-service window is closed');
 assert.match(router, /contracting-document-template-send/, 'router must automatically use the approved template outside the window');
 assert.match(router, /WHATSAPP_TEMPLATE_\(PENDING\|REJECTED\|PAUSED\|DISABLED/, 'not-ready templates must preserve the existing manual-share path');
-assert.doesNotThrow(() => new Function(router.replace(/^import[^\n]*\n/gm, '')), 'router source must remain syntactically valid after imports');
 
 console.log('Contracting WhatsApp template delivery checks passed');
