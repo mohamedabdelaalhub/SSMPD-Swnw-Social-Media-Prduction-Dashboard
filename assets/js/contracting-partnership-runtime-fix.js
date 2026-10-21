@@ -34,4 +34,13 @@
     s.setAttribute('data-contracting-document-send','1');
     document.head.appendChild(s);
   }
+
+  /* html2canvas must be able to paint the saved-version clone. It lives far
+     outside the viewport, so keeping it renderable does not make it visible. */
+  if(!document.getElementById('contracting-offscreen-pdf-style')){
+    var st=document.createElement('style');
+    st.id='contracting-offscreen-pdf-style';
+    st.textContent='body>div[style*="left:-200vw"]{visibility:visible!important}';
+    document.head.appendChild(st);
+  }
 })();
