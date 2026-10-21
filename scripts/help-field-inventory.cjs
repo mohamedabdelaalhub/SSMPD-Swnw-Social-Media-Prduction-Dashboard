@@ -20,9 +20,11 @@ function clean(s) { try {
 }
 catch (e) { } return s.replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n))).replace(/<(select|textarea|button)\b[^>]*>[\s\S]*?<\/\1>/g, '').replace(/<!--[\s\S]*?-->/g, '').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim(); }
 // Owner Business Intelligence and partnership document rendering are self-contained workspaces.
+// Lead detail editing is an enhancement of render-leads.js and reuses the lead workspace's
+// reviewed guidance rather than creating a second, duplicate field-help surface.
 // Their controls include local explanatory copy or document-output options, so they stay out of
 // the global operational field-help inventory.
-for (const file of fs.readdirSync('assets/js').filter(x => x.endsWith('.js') && !/dashboard-help|dictionary|doctor-template-map|contracting-partnership|business-intelligence/.test(x))) {
+for (const file of fs.readdirSync('assets/js').filter(x => x.endsWith('.js') && !/dashboard-help|dictionary|doctor-template-map|contracting-partnership|business-intelligence|leads-edit-details/.test(x))) {
     const code = fs.readFileSync('assets/js/' + file, 'utf8'), sf = ts.createSourceFile(file, code, 99, true);
     function add(label, name = '', kind = 'html') { label = clean(label); if (label && label.length < 180 && !/[{}]|^\+|^<|^\s*$/.test(label))
         out.push({ file, label, name, kind, forms: context(currentNode) }); }
