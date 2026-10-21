@@ -6,7 +6,7 @@ var PARTNERSHIP_SPACING_CSS='.ce-hub-doc .swnw-page-body .swnw-meta{margin-botto
 function installOfficialArtworkStyle(){
   if(document.getElementById('swnw-partnership-official-artwork-style'))return;
   var s=document.createElement('style');s.id='swnw-partnership-official-artwork-style';
-  s.textContent='.swnw-page>.swnw-page-header,.swnw-page>.swnw-page-footer,.swnw-page>.swnw-page-watermark{display:none!important}.swnw-page>.swnw-letterhead-bg,.swnw-page>.swnw-page-official-artwork{position:absolute!important;inset:0!important;width:210mm!important;height:297mm!important;max-width:none!important;object-fit:fill!important;display:block!important;z-index:0!important;pointer-events:none!important}.swnw-page>.swnw-page-body{z-index:2!important}.swnw-page>.swnw-system-note{z-index:3!important}';
+  s.textContent='.swnw-page>.swnw-page-header,.swnw-page>.swnw-page-footer,.swnw-page>.swnw-page-watermark{display:none!important}.swnw-page>.swnw-letterhead-bg,.swnw-page>.swnw-page-official-artwork{position:absolute!important;top:0!important;bottom:0!important;left:-8mm!important;right:-8mm!important;width:226mm!important;height:297mm!important;max-width:none!important;object-fit:fill!important;display:block!important;z-index:0!important;pointer-events:none!important}.swnw-page>.swnw-page-body{z-index:2!important}.swnw-page>.swnw-system-note{z-index:3!important}';
   document.head.appendChild(s);
 }
 function officialize(root){
