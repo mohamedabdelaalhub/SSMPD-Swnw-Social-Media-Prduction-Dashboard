@@ -24,15 +24,40 @@
     return client;
   };
 
-  /* Direct document delivery is isolated from the legacy partnership builder.
-     Loading it here avoids another permanent index.html dependency and keeps the
-     compatibility shim as the single bootstrap point for partnership add-ons. */
-  if(!document.querySelector('script[data-contracting-document-send]')){
+  /* The html2pdf bundle does not expose window.jspdf consistently on mobile
+     browsers. The delivery helper creates the PDF page-by-page with jsPDF, so
+     load the standalone UMD build first and only then attach the helper. */
+  function loadDeliveryHelper(){
+    if(document.querySelector('script[data-contracting-document-send]')) return;
     var s=document.createElement('script');
-    s.src='assets/js/contracting-document-send.js?v=contracting-send-pdf-20261021-1';
+    s.src='assets/js/contracting-document-send.js?v=contracting-send-pdf-20261021-2';
     s.async=false;
     s.setAttribute('data-contracting-document-send','1');
     document.head.appendChild(s);
+  }
+
+  if(window.jspdf && window.jspdf.jsPDF){
+    loadDeliveryHelper();
+  }else if(!document.querySelector('script[data-contracting-jspdf]')){
+    var jp=document.createElement('script');
+    jp.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+    jp.async=false;
+    jp.setAttribute('data-contracting-jspdf','1');
+    jp.onload=function(){
+      if(!(window.jspdf && window.jspdf.jsPDF)) console.error('Contracting PDF: jsPDF global was not created');
+      loadDeliveryHelper();
+    };
+    jp.onerror=function(){
+      console.error('Contracting PDF: failed to preload jsPDF');
+      loadDeliveryHelper();
+    };
+    document.head.appendChild(jp);
+  }else{
+    var tries=0,t=setInterval(function(){
+      tries++;
+      if(window.jspdf && window.jspdf.jsPDF){clearInterval(t);loadDeliveryHelper();}
+      else if(tries>=50){clearInterval(t);loadDeliveryHelper();}
+    },100);
   }
 
   /* html2canvas must be able to paint the saved-version clone. It lives far
