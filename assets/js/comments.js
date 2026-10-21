@@ -122,4 +122,14 @@
   window.SSMPDComments = Comments;
 })();
 
+/* The social inbox uses a separate data model from content-review comments.
+   Load its post/category filter enhancement from this already-global comments bootstrap. */
+(function () {
+  if (document.querySelector('script[data-social-comment-filters]')) return;
+  var s = document.createElement('script');
+  s.src = 'assets/js/comments-post-filters.js?v=comments-post-filters-20261021-1';
+  s.async = false;
+  s.setAttribute('data-social-comment-filters', '1');
+  document.head.appendChild(s);
+})();
 
