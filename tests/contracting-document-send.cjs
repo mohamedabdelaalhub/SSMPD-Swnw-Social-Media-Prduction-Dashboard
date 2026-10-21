@@ -7,12 +7,14 @@ const ui = fs.readFileSync(path.join(root, 'assets/js/contracting-document-send.
 const boot = fs.readFileSync(path.join(root, 'assets/js/contracting-partnership-runtime-fix.js'), 'utf8');
 const edge = fs.readFileSync(path.join(root, 'supabase/functions/contracting-document-send/index.ts'), 'utf8');
 const migration = fs.readFileSync(path.join(root, 'supabase/migrations/20261021_contracting_document_delivery.sql'), 'utf8');
+const senderMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20261021_contracting_whatsapp_sender_capture.sql'), 'utf8');
 
-assert.match(boot, /contracting-document-send\.js\?v=contracting-send-pdf-20261021-3/, 'partnership runtime must load the current delivery helper');
+assert.match(boot, /contracting-document-send\.js\?v=contracting-send-pdf-20261021-4/, 'partnership runtime must load the current delivery helper');
 assert.match(boot, /jspdf\/2\.5\.1\/jspdf\.umd\.min\.js/, 'mobile bootstrap must preload standalone jsPDF');
 assert.match(boot, /window\.jspdf\s*&&\s*window\.jspdf\.jsPDF/, 'bootstrap must verify the jsPDF global before normal delivery startup');
 assert.ok(boot.indexOf('jp.onload') < boot.indexOf('loadDeliveryHelper();\n    };'), 'delivery helper must be started from the jsPDF load completion path');
 assert.doesNotThrow(() => new Function(boot), 'bootstrap must remain valid JavaScript');
+
 assert.match(ui, /إرسال بالبريد \+ PDF/, 'email action must state that PDF is attached');
 assert.match(ui, /إرسال واتساب \+ PDF/, 'WhatsApp action must state that PDF is attached');
 assert.match(ui, /contracting-document-send/, 'UI must call the authenticated delivery edge function');
@@ -20,13 +22,21 @@ assert.match(ui, /SSMPDPartnershipPdf\.prepare/, 'delivery PDF must use the shar
 assert.match(ui, /contracting_agreement_versions/, 'delivery must be based on a saved document version');
 assert.match(ui, /آخر نسخة محفوظة/, 'unsaved preview changes must not silently replace the immutable sent version');
 assert.match(ui, /navigator\.share/, 'email must have a file-share fallback when no server mail provider is configured');
-assert.match(ui, /html2canvas\/1\.4\.1\/html2canvas\.min\.js/, 'delivery must have a standalone html2canvas fallback');
+assert.match(ui, /html2canvas\/1\.4\.1\/html2canvas\.min\.js/, 'delivery must load standalone html2canvas');
+assert.match(ui, /jspdf\/2\.5\.1\/jspdf\.umd\.min\.js/, 'delivery must load standalone jsPDF');
 assert.match(ui, /typeof window\.html2canvas===['"]function['"]/, 'delivery must verify html2canvas is callable, not only truthy');
-assert.match(ui, /prep\.then\(ensurePdfLibraries\)/, 'PDF rendering must initialize libraries before painting pages');
+assert.match(ui, /Promise\.resolve\(prep\)\.then\(ensurePdfLibraries\)/, 'PDF rendering must initialize libraries before painting pages');
+assert.match(ui, /function errorText\(/, 'UI must normalize non-Error promise rejections instead of showing undefined');
+assert.doesNotMatch(ui, /showError\(e\.message\)/, 'UI must not assume every rejection has a message property');
+assert.match(ui, /تعذر إنشاء صفحة PDF رقم/, 'page rendering errors must identify the failing PDF page');
 new Function(ui);
 
 assert.match(edge, /type:\s*"document"/, 'WhatsApp must send a document message, not just text');
 assert.match(edge, /\/media`/, 'WhatsApp PDF must be uploaded to Meta media first');
+assert.match(edge, /debug_token\?input_token=/, 'sender discovery must reuse the existing WhatsApp token');
+assert.match(edge, /\/phone_numbers\?fields=id,display_phone_number/, 'sender discovery must resolve a Meta phone-number ID');
+assert.match(edge, /whatsapp_phone_number_id/, 'resolved sender ID must be cached in partnership settings');
+assert.match(edge, /WHATSAPP_SENDER_UNKNOWN/, 'sender discovery failure must return a specific actionable code');
 assert.match(edge, /attachments:\s*\[\{ filename, content: pdfBase64 \}\]/, 'email provider must receive the PDF as an attachment');
 assert.match(edge, /contracting_agreement_versions/, 'edge function must freeze the sent version');
 assert.match(edge, /immutable:\s*true/, 'sent PDF snapshot must be immutable');
@@ -36,5 +46,6 @@ assert.match(edge, /contract_manager/, 'contracting staff must be authorized exp
 assert.match(migration, /contracting-documents/, 'private contracting document bucket must exist');
 assert.match(migration, /application\/pdf/, 'bucket must only allow PDFs');
 assert.match(migration, /false, 20971520/, 'bucket must stay private with a bounded file size');
+assert.match(senderMigration, /whatsapp_phone_number_id/, 'partnership settings must persist the discovered WhatsApp sender ID');
 
 console.log('Contracting PDF delivery checks passed');
