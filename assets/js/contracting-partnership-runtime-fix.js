@@ -30,7 +30,7 @@
   function loadDeliveryHelper(){
     if(document.querySelector('script[data-contracting-document-send]')) return;
     var s=document.createElement('script');
-    s.src='assets/js/contracting-document-send.js?v=contracting-send-pdf-20261021-2';
+    s.src='assets/js/contracting-document-send.js?v=contracting-send-pdf-20261021-3';
     s.async=false;
     s.setAttribute('data-contracting-document-send','1');
     document.head.appendChild(s);
