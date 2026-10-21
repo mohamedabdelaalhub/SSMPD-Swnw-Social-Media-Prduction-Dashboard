@@ -23,7 +23,10 @@ assert.match(ui, /navigator\.share/, 'email must have a file-share fallback when
 assert.match(ui, /html2canvas\/1\.4\.1\/html2canvas\.min\.js/, 'delivery must have a standalone html2canvas fallback');
 assert.match(ui, /typeof window\.html2canvas===['"]function['"]/, 'delivery must verify html2canvas is callable, not only truthy');
 assert.match(ui, /prep\.then\(ensurePdfLibraries\)/, 'PDF rendering must initialize libraries before painting pages');
-new Function(ui);
+assert.match(ui, /jspdf\/2\.5\.1\/jspdf\.umd\.min\.js/, 'delivery must explicitly load standalone jsPDF');
+assert.match(ui, /function pdfCtor\(\)/, 'delivery must tolerate both jsPDF global shapes');
+assert.match(ui, /window\.open\('about:blank','_blank'\)/, 'mobile preview must reserve a tab synchronously');
+assert.doesNotThrow(() => new Function(ui), 'delivery UI must remain valid JavaScript');
 
 assert.match(edge, /type:\s*"document"/, 'WhatsApp must send a document message, not just text');
 assert.match(edge, /\/media`/, 'WhatsApp PDF must be uploaded to Meta media first');
