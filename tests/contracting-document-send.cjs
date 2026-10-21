@@ -8,7 +8,7 @@ const boot = fs.readFileSync(path.join(root, 'assets/js/contracting-partnership-
 const edge = fs.readFileSync(path.join(root, 'supabase/functions/contracting-document-send/index.ts'), 'utf8');
 const migration = fs.readFileSync(path.join(root, 'supabase/migrations/20261021_contracting_document_delivery.sql'), 'utf8');
 
-assert.match(boot, /contracting-document-send\.js\?v=contracting-send-pdf-20261021-3/, 'partnership runtime must load the current delivery helper');
+assert.match(boot, /contracting-document-send\.js\?v=contracting-send-pdf-20261021-5/, 'partnership runtime must load the current delivery helper');
 assert.match(boot, /jspdf\/2\.5\.1\/jspdf\.umd\.min\.js/, 'mobile bootstrap must preload standalone jsPDF');
 assert.match(boot, /window\.jspdf\s*&&\s*window\.jspdf\.jsPDF/, 'bootstrap must verify the jsPDF global before normal delivery startup');
 assert.ok(boot.indexOf('jp.onload') < boot.indexOf('loadDeliveryHelper();\n    };'), 'delivery helper must be started from the jsPDF load completion path');
@@ -22,10 +22,13 @@ assert.match(ui, /آخر نسخة محفوظة/, 'unsaved preview changes must n
 assert.match(ui, /navigator\.share/, 'email must have a file-share fallback when no server mail provider is configured');
 assert.match(ui, /html2canvas\/1\.4\.1\/html2canvas\.min\.js/, 'delivery must have a standalone html2canvas fallback');
 assert.match(ui, /typeof window\.html2canvas===['"]function['"]/, 'delivery must verify html2canvas is callable, not only truthy');
-assert.match(ui, /prep\.then\(ensurePdfLibraries\)/, 'PDF rendering must initialize libraries before painting pages');
+assert.match(ui, /Promise\.resolve\(prep\)\.then\(ensurePdfLibraries\)/, 'PDF rendering must initialize libraries before painting pages');
 assert.match(ui, /jspdf\/2\.5\.1\/jspdf\.umd\.min\.js/, 'delivery must explicitly load standalone jsPDF');
 assert.match(ui, /function pdfCtor\(\)/, 'delivery must tolerate both jsPDF global shapes');
 assert.match(ui, /window\.open\('about:blank','_blank'\)/, 'mobile preview must reserve a tab synchronously');
+assert.match(ui, /function errorText\(/, 'delivery must normalize non-Error promise rejections');
+assert.doesNotMatch(ui, /showError\(e\.message\)/, 'delivery must never show undefined just because a rejection has no message property');
+assert.match(ui, /تعذر إنشاء صفحة PDF رقم/, 'PDF render errors must identify the failing page');
 assert.doesNotThrow(() => new Function(ui), 'delivery UI must remain valid JavaScript');
 
 assert.match(edge, /type:\s*"document"/, 'WhatsApp must send a document message, not just text');
