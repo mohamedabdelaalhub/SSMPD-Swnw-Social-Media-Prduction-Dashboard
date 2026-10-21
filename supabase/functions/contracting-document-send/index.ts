@@ -5,6 +5,7 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const GRAPH = "https://graph.facebook.com/v26.0/";
 const BUCKET = "contracting-documents";
+const WHATSAPP_WINDOW_MS = 24 * 60 * 60 * 1000;
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -39,6 +40,30 @@ function normalizePhone(v: unknown) {
   if (/^01[0125]\d{8}$/.test(p)) p = "2" + p;
   if (/^1[0125]\d{8}$/.test(p)) p = "20" + p;
   return p;
+}
+
+function phoneCandidates(v: unknown) {
+  const raw = String(v || "").replace(/\D/g, "");
+  const normalized = normalizePhone(v);
+  const out = new Set<string>();
+  if (raw) out.add(raw);
+  if (normalized) out.add(normalized);
+  if (/^20(1[0125]\d{8})$/.test(normalized)) out.add("0" + normalized.slice(2));
+  if (/^971\d{9}$/.test(normalized)) out.add(normalized);
+  return Array.from(out);
+}
+
+async function recentWhatsappInbound(admin: any, phone: string) {
+  const candidates = phoneCandidates(phone);
+  if (!candidates.length) return null;
+  const { data, error } = await admin.from("social_messages")
+    .select("sender_id,sent_at")
+    .eq("platform", "whatsapp")
+    .in("sender_id", candidates)
+    .order("sent_at", { ascending: false })
+    .limit(1);
+  if (error || !data?.length) return null;
+  return data[0] as { sender_id: string; sent_at: string };
 }
 
 function base64Bytes(value: string) {
@@ -338,6 +363,36 @@ Deno.serve(async (req) => {
     .maybeSingle();
   if (!version) return json({ error: "نسخة المستند غير موجودة" }, 404);
 
+  if (channel === "whatsapp") {
+    const lastInbound = await recentWhatsappInbound(admin, phone);
+    const lastInboundMs = lastInbound?.sent_at ? Date.parse(lastInbound.sent_at) : NaN;
+    const windowOpen = Number.isFinite(lastInboundMs) && (Date.now() - lastInboundMs) < WHATSAPP_WINDOW_MS;
+    if (!windowOpen) {
+      const error = "لا يمكن إرسال ملف PDF مباشرة عبر واتساب لأن الجهة لم تراسل رقم المركز خلال آخر 24 ساعة. يلزم قالب واتساب معتمد، أو مشاركة الملف يدويًا من الجهاز.";
+      await admin.from("contracting_activity_log").insert({
+        entity_id: entity.id,
+        agreement_id: agreement.id,
+        action_key: "whatsapp_window_expired",
+        summary: `لم يتم إرسال V${agreement.version_no}: نافذة واتساب 24 ساعة غير مفتوحة`,
+        metadata: {
+          channel: "whatsapp",
+          recipient,
+          normalized_recipient: phone,
+          last_inbound: lastInbound?.sent_at || null,
+          code: "WHATSAPP_WINDOW_EXPIRED",
+          requires_template: true,
+        },
+        created_by: c.id,
+      });
+      return json({
+        error,
+        code: "WHATSAPP_WINDOW_EXPIRED",
+        last_inbound: lastInbound?.sent_at || null,
+        requires_template: true,
+      }, 409);
+    }
+  }
+
   let pdfBytes: Uint8Array;
   let pdfBase64 = String(b?.pdf_base64 || "").replace(/^data:application\/pdf;base64,/i, "").replace(/\s/g, "");
   let storagePath = String(version.pdf_url || "");
@@ -399,16 +454,39 @@ Deno.serve(async (req) => {
     return json({ error: sent.error, code: sent.code, storage_path: storagePath }, sent.status || 500);
   }
 
-  const sentAt = new Date().toISOString();
-  await admin.from("contracting_agreements").update({ sent_at: sentAt, status: "sent" }).eq("id", agreement.id);
+  const acceptedAt = new Date().toISOString();
+
+  if (channel === "email") {
+    await admin.from("contracting_agreements").update({ sent_at: acceptedAt, status: "sent" }).eq("id", agreement.id);
+  }
+
   await admin.from("contracting_activity_log").insert({
     entity_id: entity.id,
     agreement_id: agreement.id,
-    action_key: channel === "whatsapp" ? "whatsapp_sent" : "email_sent",
-    summary: `تم إرسال ${agreement.document_type === "proposal" ? "الخطاب المبدئي" : "العقد النهائي"} V${agreement.version_no} عبر ${channel === "whatsapp" ? "واتساب" : "البريد"}`,
-    metadata: { channel, recipient, file: filename, storage_path: storagePath, provider: sent.provider, provider_message_id: sent.messageId || null },
+    action_key: channel === "whatsapp" ? "whatsapp_accepted" : "email_sent",
+    summary: channel === "whatsapp"
+      ? `قبلت Meta طلب إرسال ${agreement.document_type === "proposal" ? "الخطاب المبدئي" : "العقد النهائي"} V${agreement.version_no} وجارٍ انتظار تأكيد التسليم`
+      : `تم إرسال ${agreement.document_type === "proposal" ? "الخطاب المبدئي" : "العقد النهائي"} V${agreement.version_no} عبر البريد`,
+    metadata: {
+      channel,
+      recipient,
+      file: filename,
+      storage_path: storagePath,
+      provider: sent.provider,
+      provider_message_id: sent.messageId || null,
+      delivery_status: channel === "whatsapp" ? "accepted" : "sent",
+    },
     created_by: c.id,
   });
 
-  return json({ ok: true, channel, provider: sent.provider, message_id: sent.messageId || null, storage_path: storagePath, filename, sent_at: sentAt });
+  return json({
+    ok: true,
+    channel,
+    provider: sent.provider,
+    message_id: sent.messageId || null,
+    delivery_status: channel === "whatsapp" ? "accepted" : "sent",
+    storage_path: storagePath,
+    filename,
+    accepted_at: acceptedAt,
+  });
 });
