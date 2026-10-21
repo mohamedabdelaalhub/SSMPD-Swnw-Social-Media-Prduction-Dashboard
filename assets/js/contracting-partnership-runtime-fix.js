@@ -23,4 +23,24 @@
     window.supabase.createClient=original;
     return client;
   };
+
+  /* Direct document delivery is isolated from the legacy partnership builder.
+     Loading it here avoids another permanent index.html dependency and keeps the
+     compatibility shim as the single bootstrap point for partnership add-ons. */
+  if(!document.querySelector('script[data-contracting-document-send]')){
+    var s=document.createElement('script');
+    s.src='assets/js/contracting-document-send.js?v=contracting-send-pdf-20261021-1';
+    s.async=false;
+    s.setAttribute('data-contracting-document-send','1');
+    document.head.appendChild(s);
+  }
+
+  /* html2canvas must be able to paint the saved-version clone. It lives far
+     outside the viewport, so keeping it renderable does not make it visible. */
+  if(!document.getElementById('contracting-offscreen-pdf-style')){
+    var st=document.createElement('style');
+    st.id='contracting-offscreen-pdf-style';
+    st.textContent='body>div[style*="left:-200vw"]{visibility:visible!important}';
+    document.head.appendChild(st);
+  }
 })();
