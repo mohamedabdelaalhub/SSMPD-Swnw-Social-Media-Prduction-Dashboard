@@ -309,8 +309,8 @@
         .eq("id", id).eq("stage", "idea_selection").select().single());
     },
     // ---------- Content AI + idea bank ----------
-    proofreadContent: function (fields) {
-      return edgeFetch("content-proofread", { method: "POST", json: { fields: fields } });
+    proofreadContent: function (fields, fieldLabels) {
+      return edgeFetch("content-proofread", { method: "POST", json: { fields: fields, field_labels: fieldLabels || {} } });
     },
     generateContentIdeas: function (payload) {
       return edgeFetch("/content-ai", { method: "POST", json: payload });

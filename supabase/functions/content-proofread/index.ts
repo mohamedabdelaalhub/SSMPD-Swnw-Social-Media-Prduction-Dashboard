@@ -1,11 +1,12 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
 import { fieldsFrom, checkedReview, instructions, schema } from './review.ts';
 const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, apikey, content-type, x-client-info', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Cache-Control': 'no-store' };
-// A small per-isolate burst guard, in addition to one explicit review per save in the UI.
+// Reject concurrent reviews per user in this isolate, without blocking sequential form reviews.
 const calls = new Map<string, number>();
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
   if (req.method !== 'POST') return Response.json({ error: 'POST only' }, { status: 405, headers: cors });
+  let phase='input', providerStatus=0, requestKey='';
   try {
     const token = req.headers.get('Authorization') || '';
     if (!/^Bearer\s+\S+$/i.test(token)) return Response.json({ error: 'سجّل الدخول أولًا.' }, { status: 401, headers: cors });
@@ -16,23 +17,38 @@ Deno.serve(async (req) => {
     if (admin.error || !admin.data) return Response.json({ error: 'هذا الحساب غير مسجل كموظف نشط.' }, { status: 403, headers: cors });
     const raw = await req.text();
     if (raw.length > 35000) throw Error('المحتوى أطول من حد المراجعة.');
-    const fields = fieldsFrom(JSON.parse(raw).fields);
+    const body=JSON.parse(raw),fields = fieldsFrom(body.fields),fieldLabels:Record<string,string>={};
+    for(const key of Object.keys(fields))if(typeof body.field_labels?.[key]==='string')fieldLabels[key]=body.field_labels[key].slice(0,120);
     const key = user.data.user.id, now = Date.now();
-    if (now - (calls.get(key) || 0) < 4000) return Response.json({ error: 'انتظر لحظات ثم أعد المراجعة.' }, { status: 429, headers: cors });
+    if (calls.has(key)) return Response.json({ error: 'المراجعة السابقة جارية. انتظر اكتمالها.' }, { status: 429, headers: cors });
     if (calls.size > 1000) for (const [id, at] of calls) if (now - at > 60000) calls.delete(id);
     calls.set(key, now);
+    requestKey=key;
     const apiKey = Deno.env.get('OPENAI_API_KEY');
+    phase='configuration';
     if (!apiKey) throw Error('خدمة المراجعة اللغوية غير مهيأة حاليًا.');
-    const response = await fetch('https://api.openai.com/v1/responses', { method: 'POST', signal: AbortSignal.timeout(45000), headers: { Authorization: 'Bearer ' + apiKey, 'Content-Type': 'application/json' }, body: JSON.stringify({
-      model: Deno.env.get('CONTENT_AI_MODEL') || 'gpt-4.1-mini', store: false, instructions, input: JSON.stringify({ fields }), max_output_tokens: 10000,
+    const signal=AbortSignal.timeout(45000);
+    for(let attempt=0;attempt<2;attempt++){
+    phase='provider';
+    const response = await fetch('https://api.openai.com/v1/responses', { method: 'POST', signal, headers: { Authorization: 'Bearer ' + apiKey, 'Content-Type': 'application/json' }, body: JSON.stringify({
+      model: Deno.env.get('CONTENT_AI_MODEL') || 'gpt-4.1-mini', store: false, instructions:instructions+(attempt?'\nأعد المراجعة من النص الأصلي. المحاولة السابقة لم تجتز التحقق. استخدم مقتطفات حرفية فريدة غير متداخلة، مع سياق يكفي لتمييز تكرار الكلمات، ولا تغير الأرقام أو الروابط أو فواصل الأسطر. لا ترجع نتيجة جزئية.':''), input: JSON.stringify({ fields,field_labels:fieldLabels }), max_output_tokens: 10000,
       text: { format: { type: 'json_schema', name: 'swnw_proofreading', strict: true, schema } }
     }) });
     const result = await response.json();
-    if (!response.ok || result.status === 'incomplete') throw Error('تعذرت المراجعة اللغوية الآن.');
+    providerStatus=response.status;
+    if (!response.ok) throw Error('تعذرت المراجعة اللغوية الآن.');
+    phase='validation';
     const text = result.output_text || (result.output || []).flatMap((x: any) => x.content || []).map((x: any) => x.text || '').join('');
-    return Response.json(checkedReview(JSON.parse(text), fields), { headers: cors });
+    try {if(result.status==='incomplete')throw Error('incomplete');return Response.json(checkedReview(JSON.parse(text), fields), { headers: cors });}
+    catch(error){if(attempt===1)throw error;}
+    }
+    throw Error('incomplete');
   } catch (_) {
-    // Do not return provider errors, input content, credentials or log submitted text.
-    return Response.json({ error: 'تعذرت المراجعة اللغوية أو لم تكتمل. يمكنك إعادة المحاولة أو المتابعة بالنص الأصلي.' }, { status: 400, headers: cors });
+    // Only diagnostic categories. Never input content, provider bodies or credentials.
+    console.warn(JSON.stringify({event:'proofreading_failed',phase,provider_status:providerStatus}));
+    const messages:Record<string,string>={input:'النص أطول من حد المراجعة أو غير صالح. راجع طول الحقول.',configuration:'خدمة المراجعة غير مهيأة حاليًا.',provider:'تعذر الاتصال بخدمة التصحيح الآن. أعد المحاولة بعد قليل.',validation:'لم تكتمل مطابقة التصحيحات بالنص بعد إعادة المراجعة. أعد المحاولة أو أكمل بالنص الأصلي.'};
+    return Response.json({ error: messages[phase], code:'proofreading_'+phase }, { status: 400, headers: cors });
+  } finally {
+    if(requestKey)calls.delete(requestKey);
   }
 });
