@@ -1,0 +1,12 @@
+<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><base href="../"><title>مراجعة جدول التصميم — محاكاة</title>
+<link rel="stylesheet" href="assets/css/styles.css"><link rel="stylesheet" href="assets/css/daily-clinics.css"><link rel="stylesheet" href="assets/css/dashboard-theme.css"><link rel="stylesheet" href="assets/css/content-proofreading.css?v=proofreading-20261022-2">
+<body style="padding:16px"><main><h2>مراجعة جدول التصميم — بيانات محاكاة</h2><p>لا اتصال بقاعدة البيانات أو النموذج. الرسم ونموذج التحرير من كود التطبيق.</p><div id="preview-slot"></div><p id="result" role="status"></p></main>
+<script>
+if(!location.search.includes('frame')){document.querySelector('main').innerHTML='<h2>معاينة ببيانات محاكاة</h2><button id="w1280">1280</button> <button id="w390">390</button> <button id="w320">320</button><br><iframe id="qa-frame" title="مراجعة الجدول" src="tests/daily-proofreading-fixture.html?frame=1" style="height:850px;width:1280px;max-width:100%;border:1px solid #ddd"></iframe>';[1280,390,320].forEach(n=>document.getElementById('w'+n).onclick=()=>document.getElementById('qa-frame').style.width=n+'px');}
+else {
+var brief={day:'الخميس',layout:'story',rows:[{name:'د/ مصطفي محمد',specialty:'استشاري الباطنة والكلي',from:'20:00',to:'22:00'},{name:'د/ أية مفتاح',specialty:'النساء والتوليد',from:'18:00',to:'20:00'}]},item={id:'mock',brand:'sono',agent_raw_output:JSON.stringify({content_kind:'daily_clinics',daily_clinics_brief:brief})};
+window.SSMPDDb={proofreadContent:async(fields)=>({complete:true,issues:Object.entries(fields).flatMap(([field,text])=>[['مصطفي','مصطفى'],['أية','آية'],['الكلي','الكلى']].filter(([before])=>text.includes(before)).map(([before,after])=>({field,before,after,category:'spelling',reason:'اقتراح إملائي في سياق اسم الطبيب أو تخصص الكلى — محاكاة'})))})};
+window.SSMPDDesignFiles={canEdit:()=>true,latest:async()=>({id:'v1',settings:{daily_clinics_brief:brief}}),save:async(i,png,a,settings)=>{document.querySelector('#result').textContent='محاكاة حفظ التصميم فقط: '+JSON.stringify(settings.daily_clinics_brief);return{version_id:'v2',item:i};}};
+(async()=>{for(const path of ['content-proofreading','daily-clinics'])await new Promise((resolve,reject)=>{var s=document.createElement('script');s.src='assets/js/'+path+'.js?v=proofreading-repair-20261022-1';s.onload=resolve;s.onerror=reject;document.body.append(s);});SSMPDDailyClinics.mount(document.querySelector('#preview-slot'),item);})();
+}
+</script></body></html>

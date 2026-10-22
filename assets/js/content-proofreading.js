@@ -13,6 +13,7 @@
       fields[id] = owner[key]; entries.push({id:id,label:label,set:function (value) { owner[key] = value; }});
     }
     Object.keys(labels).forEach(function (key) { add(copy,key,labels[key]); });
+    if(row._proofreading_daily){copy._proofreading_daily=JSON.parse(JSON.stringify(row._proofreading_daily));(copy._proofreading_daily.rows||[]).forEach(function(r,i){add(r,'name','العيادة '+(i+1)+' — اسم الطبيب');add(r,'specialty','العيادة '+(i+1)+' — التخصص');});}
     // Only known published copy inside the agent envelope. Preserve unrelated metadata and sources.
     var raw, wasString = typeof row.agent_raw_output === 'string';
     try { raw = JSON.parse(wasString ? row.agent_raw_output : JSON.stringify(row.agent_raw_output)); } catch (_) {}
@@ -76,7 +77,8 @@
         try {
           if(data.entries.length>80||Object.values(data.fields).some(function(s){return s.length>16000;})||Object.values(data.fields).join('').length>24000)throw Error('المحتوى أطول من حد المراجعة.');
           var timeout;
-          var result=await Promise.race([window.SSMPDDb.proofreadContent(data.fields),new Promise(function(_,fail){timeout=setTimeout(function(){fail(Error('انتهت مهلة المراجعة.'));},55000);})]).finally(function(){clearTimeout(timeout);});
+          var fieldLabels={};data.entries.forEach(function(entry){fieldLabels[entry.id]=entry.label;});
+          var result=await Promise.race([window.SSMPDDb.proofreadContent(data.fields,fieldLabels),new Promise(function(_,fail){timeout=setTimeout(function(){fail(Error('انتهت مهلة المراجعة.'));},55000);})]).finally(function(){clearTimeout(timeout);});
           if(closed||current!==request)return;
           issues=validate(result,data.fields);
           if(!issues.length){close(row);return;}
@@ -89,9 +91,12 @@
             card.append(compare,node('p',issue.reason,'proofreading-reason'));list.append(card);
           });
           apply.hidden=skip.hidden=false;apply.focus();
-        } catch (_) {
+        } catch (error) {
           if(closed||current!==request)return;
           status.textContent='تعذرت المراجعة اللغوية أو لم تكتمل. النص لم يتغير. أعد المحاولة أو اختر المتابعة بالنص الأصلي.';
+          if(error&&error.data&&error.data.code)status.textContent=error.message+' النص لم يتغير.';
+          if(error&&error.status===401)status.textContent='انتهت جلسة الدخول. سجّل الدخول ثم أعد المراجعة. النص لم يتغير.';
+          if(error&&error.status===429)status.textContent='انتظر لحظات ثم أعد المراجعة. النص لم يتغير.';
           skip.hidden=retry.hidden=false;retry.focus();
         }
       }
@@ -133,5 +138,5 @@
       return submit.call(db,id,patch);
     });});};
   }
-  window.SSMPDProofreading={review:review,collect:collect,validate:validate,correctExisting:correctExisting};
+  window.SSMPDProofreading={review:review,collect:collect,validate:validate,correctExisting:correctExisting,reviewSchedule:async function(brief){return (await review({_proofreading_daily:brief}))._proofreading_daily;}};
 })();
