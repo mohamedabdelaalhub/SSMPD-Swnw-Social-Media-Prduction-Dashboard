@@ -14,7 +14,8 @@
  .proofreading-compare p {white-space:pre-wrap;line-height:1.8;margin:6px 0 0;unicode-bidi:plaintext;}
  .proofreading-after p {color:#2F7D5C;}
  .proofreading-actions {display:flex;flex-wrap:wrap;gap:8px;padding:14px 20px;border-top:1px solid #E4E9F2;background:white;flex-shrink:0;}
- .proofreading-actions .btn {min-height:44px;white-space:normal;}
+ #proofreading-dialog .proofreading-actions .btn {min-height:44px;white-space:normal;}
+ #proofreading-dialog [data-proof-apply] {background:#0F369D;border-color:#0F369D;color:white;}
  .proofreading-modal [hidden] {display:none;}
  .proofreading-modal button:focus-visible {outline:3px solid #F15A22;outline-offset:2px;}
  @media(max-width:520px){.proofreading-compare{grid-template-columns:minmax(0,1fr);}.proofreading-content{padding:12px;}.proofreading-actions{padding:12px;}.proofreading-actions .btn{flex:1 1 100%;}.proofreading-modal .modal-head{padding:12px;}.proofreading-modal .modal-head h3{font-size:16px;}}
