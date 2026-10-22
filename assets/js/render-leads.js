@@ -1139,7 +1139,7 @@
 
       html += '</div>';
       backdrop.innerHTML = html;
-      if(window.SSMPDSharedReception)window.SSMPDSharedReception.append(backdrop.querySelector('.modal'),{context:'lead',id:lead.id});if(lead.patient_id&&window.SSMPDReception){var bookingButton=document.createElement('button');bookingButton.className='btn';bookingButton.type='button';bookingButton.textContent='حجز خدمة من نفس ملف المريض';backdrop.querySelector('.modal').appendChild(bookingButton);bookingButton.onclick=async function(){bookingButton.disabled=true;try{await window.SSMPDReception.openForArchivePatient(lead.patient_id,lead.id);backdrop.remove();}catch(err){T.show(err.message,'error');}finally{bookingButton.disabled=false;}};}
+      if(window.SSMPDSharedReception)window.SSMPDSharedReception.append(backdrop.querySelector('.modal'),{context:'lead',id:lead.id});if(window.SSMPDReception&&window.SSMPDRoles.canSeeTab(window.SSMPDAuth.currentAdmin,'reception_services')){var bookingButton=document.createElement('button');bookingButton.className='btn';bookingButton.type='button';bookingButton.textContent='حجز كشف جديد للمريض';backdrop.querySelector('.modal').appendChild(bookingButton);bookingButton.onclick=async function(){bookingButton.disabled=true;try{await window.SSMPDReception.openForLead(lead.id);backdrop.remove();}catch(err){T.show(err.message,'error');}finally{bookingButton.disabled=false;}};}
       backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
 
       var deleteBtn = document.getElementById("lm-delete");

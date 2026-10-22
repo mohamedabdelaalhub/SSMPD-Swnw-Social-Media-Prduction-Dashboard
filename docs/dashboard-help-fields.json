@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261021-1",
-    "definitions": 1128,
+    "definitions": 1131,
     "labels": 887,
     "files": 69,
-    "groups": 834
+    "groups": 837
   },
   "fields": [
     {
@@ -7166,6 +7166,36 @@
       "tab": "reception_services",
       "article": "requests",
       "text_sha256": "80a0c51a0ba10ff7f4fe6f627b68c4e009f932e1abdff544c26e792f5f0e9e49"
+    },
+    {
+      "file": "reception-workspace.js",
+      "label": "اسم المريض من كلمتين على الأقل",
+      "name": "full_name",
+      "kind": "helper",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "patient-records",
+      "text_sha256": "cefa111256fc781820939eece95f3e9052b1c182f82a9a64533ab044bf7cba2f"
+    },
+    {
+      "file": "reception-workspace.js",
+      "label": "رقم التليفون",
+      "name": "phone",
+      "kind": "helper",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "patient-records",
+      "text_sha256": "57a56cdd50c48e9067e70e528bb4784c853c253c569bc87e0865b68655497d63"
+    },
+    {
+      "file": "reception-workspace.js",
+      "label": "السن بالسنوات",
+      "name": "age",
+      "kind": "helper",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "patient-records",
+      "text_sha256": "2dd5ed361c2b234c04111377a651a15510c7c2945ff4a48474ff2efb0f770179"
     },
     {
       "file": "reel-cover.js",

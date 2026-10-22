@@ -7975,6 +7975,45 @@
       "reviewed": true
     },
     {
+      "title": "اسم المريض من كلمتين على الأقل",
+      "labels": [
+        "اسم المريض من كلمتين على الأقل"
+      ],
+      "text": "اكتب اسم المريض من كلمتين على الأقل. راجع الاسم ورقم الهاتف قبل إنشاء ملف جديد لتجنب تكراره.",
+      "article": "patient-records",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "رقم التليفون",
+      "labels": [
+        "رقم التليفون"
+      ],
+      "text": "اكتب رقم الهاتف الذي يمكن التواصل معه وفق الحقل. في ملف المريض راجع مطابقته للملف الحالي ولا تنشئ ملفًا مكررًا.",
+      "article": "patient-records",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "السن بالسنوات",
+      "labels": [
+        "السن بالسنوات"
+      ],
+      "text": "اكتب سن المريض بالسنوات من0 إلى130 حسب البيانات الموثقة. استكمل الأساسيات قبل حفظ ملف أو جلسة جديدة.",
+      "article": "patient-records",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "كلمة التصنيف (فوق العنوان)",
       "labels": [
         "كلمة التصنيف (فوق العنوان)"
@@ -12566,9 +12605,9 @@
   ],
   "coverage": {
     "version": "20261021-1",
-    "definitions": 1128,
+    "definitions": 1131,
     "labels": 887,
     "files": 69,
-    "groups": 834
+    "groups": 837
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
