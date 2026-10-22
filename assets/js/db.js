@@ -304,11 +304,14 @@
       if (!window.SSMPDContentText.confirmSave(patch)) return Promise.reject(new Error("تم إلغاء الحفظ. عدّل النص ثم احفظه."));
       return handle(client.from("content_items").update(patch).eq("id", id).select().single());
     },
-    submitContentDraft: function (id) {
-      return handle(client.from("content_items").update({stage:"initial_approval"})
+    submitContentDraft: function (id, correctedText) {
+      return handle(client.from("content_items").update(Object.assign({}, correctedText || {}, {stage:"initial_approval"}))
         .eq("id", id).eq("stage", "idea_selection").select().single());
     },
     // ---------- Content AI + idea bank ----------
+    proofreadContent: function (fields) {
+      return edgeFetch("content-proofread", { method: "POST", json: { fields: fields } });
+    },
     generateContentIdeas: function (payload) {
       return edgeFetch("/content-ai", { method: "POST", json: payload });
     },
