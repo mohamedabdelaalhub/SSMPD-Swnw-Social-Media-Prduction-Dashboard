@@ -23,7 +23,7 @@
     }
     return {fields:fields,entries:entries,copy:copy,finish:function(){if(raw)copy.agent_raw_output=wasString?JSON.stringify(raw):raw;return copy;}};
   }
-  function protectedParts(text) { return JSON.stringify(text.match(/https?:\/\/[^\s<>]+|[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}|[#@][\p{L}\p{N}_]+|\p{N}+/gu)||[]); }
+  function protectedParts(text) { return JSON.stringify(text.match(/https?:\/\/[^\s<>]+|[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}|[#@][\p{L}\p{N}_]+|\+?\p{N}+(?:[.,٫٬:/+\-]\p{N}+)*/gu)||[]); }
   function validate(result, fields) {
     if (!result || result.complete !== true || !Array.isArray(result.issues) || result.issues.length>80) throw Error('لم تكتمل المراجعة.');
     var spans = {};
@@ -45,7 +45,7 @@
     if(!data.entries.length)return Promise.resolve(row);
     return new Promise(function(resolve,reject) {
       var overlay=document.createElement('div');overlay.className='modal-backdrop proofreading-backdrop';
-      overlay.innerHTML='<section class="modal proofreading-modal" role="dialog" aria-modal="true" aria-labelledby="proofreading-title" dir="rtl">'+
+      overlay.innerHTML='<section id="proofreading-dialog" class="modal proofreading-modal" role="dialog" aria-modal="true" aria-labelledby="proofreading-title" dir="rtl">'+
         '<header class="modal-head"><h3 id="proofreading-title">مراجعة المحتوى لغويًا</h3><button type="button" class="modal-close" aria-label="الرجوع للمحتوى">×</button></header>'+
         '<div class="proofreading-content"><p class="proofreading-note">مراجعة الإملاء والنحو وعلامات الترقيم والتشكيل الموجود، مع الحفاظ على العامية والمعنى. راجع الاقتراحات قبل تطبيقها.</p>'+
         '<p data-proof-status role="status" aria-live="polite">جاري المراجعة اللغوية…</p><div data-proof-issues></div></div>'+

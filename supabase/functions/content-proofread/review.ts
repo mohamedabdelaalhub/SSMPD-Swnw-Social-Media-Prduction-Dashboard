@@ -11,7 +11,7 @@ export function fieldsFrom(value: any): Record<string, string> {
   return fields;
 }
 function protectedParts(text: string): string {
-  return JSON.stringify(text.match(/https?:\/\/[^\s<>]+|[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}|[#@][\p{L}\p{N}_]+|\p{N}+/gu) || []);
+  return JSON.stringify(text.match(/https?:\/\/[^\s<>]+|[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}|[#@][\p{L}\p{N}_]+|\+?\p{N}+(?:[.,٫٬:/+\-]\p{N}+)*/gu) || []);
 }
 export function checkedReview(value: any, fields: Record<string, string>) {
   if (!value || value.complete !== true || !Array.isArray(value.issues) || value.issues.length > 80) throw Error('لم تكتمل المراجعة اللغوية.');
