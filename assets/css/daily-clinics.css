@@ -1,6 +1,6 @@
 @media screen {
  .daily-clinics { min-width:0; }
- .modal.daily-clinics { width:min(1120px,96vw);max-height:94dvh;overflow:auto; }
+ .modal.daily-clinics { box-sizing:border-box;width:min(1120px,96vw);max-height:94dvh;overflow:auto; }
  .daily-clinics[hidden],.daily-clinics [hidden] { display:none!important; }
  .daily-clinics-layout { display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:start; }
  .daily-clinics label { display:grid;gap:6px;margin:10px 0;font-size:14px;line-height:1.6; }
@@ -12,6 +12,7 @@
  .daily-clinics-times { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px; }
  .daily-clinics-order { display:flex;gap:8px;flex-wrap:wrap; }
  .daily-clinics button { min-height:44px; }
+ .daily-clinics [data-daily-proofread] {max-width:100%;white-space:normal;}
  .daily-clinics canvas { display:block;width:100%;height:auto;max-width:540px;margin:auto;border-radius:12px; }
  .daily-clinics p { font-size:14px;line-height:1.8; }
  @media(max-width:700px){.daily-clinics-layout{grid-template-columns:minmax(0,1fr)}.daily-clinics-times{grid-template-columns:minmax(0,1fr)}}
