@@ -177,6 +177,7 @@
   function itemActionsHtml(item, me) {
     var html = "";
     if (canEditItem(me, item)) html += '<button class="btn ghost sm" data-edit-item="' + item.id + "\"> <!--ssmpd-i18n:%D8%AA%D8%B9%D8%AF%D9%8A%D9%84-->تعديل</button> ";
+    if (canEditItem(me, item) && window.SSMPDProofreading) html += '<button type="button" class="btn ghost sm" data-proofread-item>مراجعة لغوية</button> ';
     if (canDeleteItem(me)) html += '<button class="btn danger sm" data-delete-item="' + item.id + "\"> <!--ssmpd-i18n:%D8%AD%D8%B0%D9%81-->حذف</button>";
     return html;
   }
@@ -300,6 +301,17 @@
 
   // ربط زراير تعديل/حذف داخل أي مودال — استدعيها بعد إضافة المودال للصفحة
   function wireItemActions(backdrop, item, onChanged) {
+    var proofBtn=backdrop.querySelector('[data-proofread-item]');
+    if(proofBtn)proofBtn.onclick=async function(){
+      if(proofBtn.disabled||!canEditItem(window.SSMPDAuth.currentAdmin,item))return;
+      proofBtn.disabled=true;
+      try{
+        var updated=await window.SSMPDProofreading.correctExisting(item);
+        if(updated){backdrop.remove();if(onChanged)onChanged(updated);if(window.SSMPDToast)window.SSMPDToast.show('تم حفظ التصحيحات على المادة','success');}
+        else if(window.SSMPDToast)window.SSMPDToast.show('لم يتغير النص المحفوظ','info');
+      }catch(e){if(e.message!=='تم الرجوع للمحتوى بدون حفظ.')alert(e.message);}
+      finally{proofBtn.disabled=false;}
+    };
     var editBtn = backdrop.querySelector("[data-edit-item]");
     if (editBtn) editBtn.onclick = function () {
       openEditContentModal(item, function (updated) {

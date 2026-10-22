@@ -4,6 +4,7 @@
   var labels = {title:'العنوان',body:'نص المحتوى',hook_text:'الجملة الافتتاحية',content_angle:'زاوية المحتوى',script_text:'السكريبت',caption_text:'كابشن النشر',cta_text:'نص الدعوة للتفاعل',hypothesis_reason:'سبب الفكرة',design_headline:'عنوان التصميم',design_subtitle:'السطر التوضيحي',design_secondary_headline:'العنوان الثانوي',design_body:'نص التصميم',design_cta:'دعوة التصميم للتفاعل'};
   var categories = {spelling:'إملاء',punctuation:'ترقيم وعلامات ترقيم',grammar:'قواعد نحوية',diacritics:'تشكيل'};
   var queue = Promise.resolve();
+  var writeExisting;
   function collect(row) {
     var fields = {}, entries = [], copy = Object.assign({}, row);
     function add(owner, key, label) {
@@ -40,7 +41,7 @@
       return Object.assign({},issue,{start:start,end:end});
     });
   }
-  function run(row) {
+  function run(row, existing) {
     var data=collect(row);
     if(!data.entries.length)return Promise.resolve(row);
     return new Promise(function(resolve,reject) {
@@ -51,6 +52,7 @@
         '<p data-proof-status role="status" aria-live="polite">جاري المراجعة اللغوية…</p><div data-proof-issues></div></div>'+
         '<footer class="proofreading-actions"><button type="button" class="btn" data-proof-apply hidden>تصحيح الأخطاء</button><button type="button" class="btn ghost" data-proof-skip hidden>أكمل بدون تصحيح</button><button type="button" class="btn ghost" data-proof-retry hidden>إعادة المراجعة</button><button type="button" class="btn ghost" data-proof-back>رجوع للمحتوى</button></footer></section>';
       var previous=document.activeElement, siblings=Array.from(document.body.children).map(function(el){return {el:el,inert:el.inert};});
+      if(existing)overlay.querySelector('.proofreading-note').append(document.createTextNode(' التصحيح يحدّث النص المحفوظ في الداشبورد فقط. صورة التصميم والمنشور الموجود على فيسبوك أو إنستجرام لا يتغيران بهذا الزر.'));
       siblings.forEach(function(s){s.el.inert=true;});document.body.appendChild(overlay);
       var apply=overlay.querySelector('[data-proof-apply]'),skip=overlay.querySelector('[data-proof-skip]'),retry=overlay.querySelector('[data-proof-retry]'),status=overlay.querySelector('[data-proof-status]'),list=overlay.querySelector('[data-proof-issues]');
       var closed=false,request=0,issues=[];
@@ -103,9 +105,20 @@
       document.addEventListener('keydown',onKey,true);overlay.querySelector('.modal-close').focus();review();
     });
   }
-  function review(row){var snapshot=JSON.parse(JSON.stringify(row));var pending=queue.then(function(){return run(snapshot);});queue=pending.catch(function(){});return pending;}
+  function review(row,existing){var snapshot=JSON.parse(JSON.stringify(row));var pending=queue.then(function(){return run(snapshot,existing);});queue=pending.catch(function(){});return pending;}
+  async function correctExisting(item) {
+    var fresh=await db.getContentItem(item.id);
+    if(!window.SSMPDWorkflow.canEditItem(window.SSMPDAuth.currentAdmin,fresh))throw Error('ليس لديك صلاحية تعديل هذه المادة.');
+    var checked=await review(fresh,true),patch={};
+    Object.keys(labels).concat(['agent_raw_output']).forEach(function(key){if(JSON.stringify(checked[key])!==JSON.stringify(fresh[key]))patch[key]=checked[key];});
+    if(!Object.keys(patch).length)return null;
+    var current=await db.getContentItem(item.id);
+    if(current.updated_at!==fresh.updated_at||current.stage!==fresh.stage||Object.keys(patch).some(function(key){return JSON.stringify(current[key])!==JSON.stringify(fresh[key]);}))throw Error('المادة اتعدلت أثناء المراجعة. افتحها من جديد وراجع النسخة الحالية.');
+    return writeExisting.call(db,item.id,patch);
+  }
   var db=window.SSMPDDb;
   if(db){
+    writeExisting=db.updateContentItem;
     ['createContentItem','updateContentItem'].forEach(function(name){
       var original=db[name];if(typeof original!=='function')return;
       db[name]=function(){var args=Array.from(arguments),index=name==='createContentItem'?0:1;
@@ -120,5 +133,5 @@
       return submit.call(db,id,patch);
     });});};
   }
-  window.SSMPDProofreading={review:review,collect:collect,validate:validate};
+  window.SSMPDProofreading={review:review,collect:collect,validate:validate,correctExisting:correctExisting};
 })();
