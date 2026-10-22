@@ -1306,6 +1306,7 @@
     receptionDirectory: function(workspace,term){return handle(client.rpc("clinic_reception_directory",{p_workspace:workspace,p_term:term}));},
     receptionMasters: function(workspace){return handle(client.rpc("clinic_reception_masters",{p_workspace:workspace}));},
     receptionIndicatorPublication: function(workspace,action,payload){return handle(client.rpc("clinic_reception_indicator_publication",{p_workspace:workspace,p_action:action,p_payload:payload||{}}));},
+    receptionPrepareLead: function(lead,details){return handle(client.rpc("clinic_reception_prepare_lead",{p_lead:lead,p_details:details||{}}));},
     receptionPatientLeads: function(workspace,patient){return handle(client.rpc("clinic_reception_patient_leads",{p_workspace:workspace,p_patient:patient}));},
     receptionSharedRecords: function(context,id,from,to,offset){return handle(client.rpc("clinic_reception_shared_records",{p_context:context,p_id:id||null,p_from:from||null,p_to:to||null,p_offset:offset||0}));},
     receptionIndicatorExport: function(workspace,from,to){return handle(client.rpc("clinic_reception_indicator_export",{p_workspace:workspace,p_from:from,p_to:to}));},
