@@ -1,0 +1,21 @@
+@media screen {
+ .proofreading-backdrop {z-index:11000;padding:12px;box-sizing:border-box;}
+ .proofreading-backdrop .proofreading-modal {width:min(850px,100%);max-width:100%;max-height:calc(100dvh - 24px);padding:0;display:flex;flex-direction:column;overflow:hidden;background:#F4F7FD;border-radius:20px;box-sizing:border-box;}
+ .proofreading-modal .modal-head {margin:0;padding:16px 20px;background:linear-gradient(120deg,#0F369D,#1C4FC7);color:white;flex-shrink:0;gap:12px;}
+ .proofreading-modal .modal-head h3 {color:inherit;margin:0;font-size:18px;overflow-wrap:anywhere;}
+ .proofreading-modal .modal-close {color:white;min-width:44px;min-height:44px;background:#ffffff1f;border-radius:12px;}
+ .proofreading-content {padding:16px 20px;overflow:auto;min-height:0;overflow-wrap:anywhere;}
+ .proofreading-note,.proofreading-reason {color:#6B7788;font-size:13px;line-height:1.8;}
+ .proofreading-issue {background:white;border:1px solid #E4E9F2;border-radius:16px;padding:14px;margin-block:12px;}
+ .proofreading-issue h4 {margin:0 0 12px;color:#0F369D;font-size:15px;}
+ .proofreading-compare {display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;}
+ .proofreading-compare>div {min-width:0;border:1px solid #E4E9F2;border-radius:12px;padding:12px;background:#FAFCFF;}
+ .proofreading-compare strong {font-size:12px;color:#6B7788;}
+ .proofreading-compare p {white-space:pre-wrap;line-height:1.8;margin:6px 0 0;unicode-bidi:plaintext;}
+ .proofreading-after p {color:#2F7D5C;}
+ .proofreading-actions {display:flex;flex-wrap:wrap;gap:8px;padding:14px 20px;border-top:1px solid #E4E9F2;background:white;flex-shrink:0;}
+ .proofreading-actions .btn {min-height:44px;white-space:normal;}
+ .proofreading-modal [hidden] {display:none;}
+ .proofreading-modal button:focus-visible {outline:3px solid #F15A22;outline-offset:2px;}
+ @media(max-width:520px){.proofreading-compare{grid-template-columns:minmax(0,1fr);}.proofreading-content{padding:12px;}.proofreading-actions{padding:12px;}.proofreading-actions .btn{flex:1 1 100%;}.proofreading-modal .modal-head{padding:12px;}.proofreading-modal .modal-head h3{font-size:16px;}}
+}

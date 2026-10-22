@@ -1,0 +1,18 @@
+const fs=require('fs'),vm=require('vm'),assert=require('assert/strict'),ts=require('typescript');
+function compile(path,sandbox){vm.runInNewContext(ts.transpileModule(fs.readFileSync(path,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,sandbox);return sandbox.exports;}
+const lib=compile('supabase/functions/content-proofread/review.ts',{exports:{}});
+let handler,active=true,logged=true,calls=0,providerBody,mode='ok',clock=100000;
+const sandbox={exports:{},Request,Response,AbortSignal,Date:class extends Date{static now(){return clock+=10000;}},Deno:{env:{get:key=>({SUPABASE_URL:'https://fixture.invalid',SUPABASE_ANON_KEY:'public-fixture',OPENAI_API_KEY:'private-fixture'})[key]},serve:fn=>handler=fn},require:path=>path==='./review.ts'?lib:{createClient:()=>({auth:{getUser:async()=>logged?{data:{user:{id:'employee'}},error:null}:{data:{user:null},error:Error()}},rpc:async()=>({data:active?'admin':null})})},fetch:async(url,opts)=>{calls++;assert.equal(url,'https://api.openai.com/v1/responses');providerBody=JSON.parse(opts.body);assert(!opts.body.includes('private-fixture'));if(mode==='offline')throw Error('provider secret details');return Response.json(mode==='partial'?{status:'incomplete'}:{output_text:JSON.stringify({complete:true,issues:[{field:'f0',category:'spelling',before:'خطا',after:'خطأ',reason:'همزة'}]})});}};
+compile('supabase/functions/content-proofread/index.ts',sandbox);
+const send=(value,token='Bearer employee-token')=>handler(new Request('https://fixture.invalid',{method:'POST',headers:{Authorization:token},body:JSON.stringify(value)}));
+(async()=>{
+ assert.equal((await send({fields:{f0:'خطا'}},'')).status,401);assert.equal(calls,0);
+ logged=false;assert.equal((await send({fields:{f0:'خطا'}})).status,401);logged=true;
+ active=false;assert.equal((await send({fields:{f0:'خطا'}})).status,403);active=true;
+ assert.equal((await send({fields:{unsafe:'خطا'}})).status,400);assert.equal(calls,0);
+ let res=await send({fields:{f0:'خطا'}});assert.equal(res.status,200);assert.equal((await res.json()).issues[0].after,'خطأ');assert.equal(providerBody.store,false);assert.equal(providerBody.text.format.strict,true);assert.equal(providerBody.model,'gpt-4.1-mini');assert.equal(res.headers.get('Cache-Control'),'no-store');
+ mode='partial';assert.equal((await send({fields:{f0:'خطا'}})).status,400);
+ mode='offline';res=await send({fields:{f0:'خطا'}});assert.equal(res.status,400);assert(!(await res.text()).includes('secret'));
+ assert.equal((await handler(new Request('https://fixture.invalid',{method:'GET'}))).status,405);
+ console.log('PASS endpoint auth, active employee, bounded allowlisted input, strict model output, incomplete/provider failure, no-store and no credential/provider detail exposure.');
+})().catch(e=>{console.error(e);process.exitCode=1;});
