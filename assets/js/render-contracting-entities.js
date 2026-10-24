@@ -5,7 +5,7 @@
   var TYPES = { school: "مدرسة", nursery: "حضانة", center: "مركز", clinic: "عيادة", other: "أخرى" };
   var STATUSES = { negotiating: "قيد التفاوض", active: "تم التعاقد", suspended: "معلّق", expired: "منتهي", rejected: "مرفوض" };
   var ACTIVITY = { call: "اتصال", meeting: "اجتماع", whatsapp: "واتساب", email: "بريد", note: "ملاحظة" };
-  var CATEGORIES = { cash: "تعاقدات كاش", doctor_referrals: "تحويلات اطباء", insurance: "شركات التأمين", petroleum: "شركات بترول", unions: "النقابات", government: "جهات حكومية", international: "تعاقدات international", medical_tourism: "سياحة علاجية" };
+  var CATEGORIES = { cash: "تعاقدات كاش", doctor_referrals: "تحويلات الأطباء", insurance: "شركات التأمين", petroleum: "شركات بترول", unions: "النقابات", government: "جهات حكومية", international: "تعاقدات دولية", medical_tourism: "سياحة علاجية" };
   var selectedCategory = "cash";
   var me;
   var openGroups = {};
@@ -74,6 +74,7 @@
   }
 
   function load(container) {
+    if(window.SSMPDContractNavigation){window.SSMPDContractNavigation.render(container,{categories:CATEGORIES,statuses:STATUSES,selectCategory:function(key){selectedCategory=key==='all'?'cash':key;},create:function(){openCreate(container);},open:function(id){openDetails(id,container);}});return;}
     if(selectedCategory==="center"){container.querySelector("#ce-view").innerHTML='<div class="section"><button class="btn ghost" id="ce-back">العودة إلى جهات التعاقد</button></div><div id="ce-price-host"></div>';container.querySelector("#ce-back").onclick=function(){selectedCategory="cash";load(container);};window.SSMPDContractPrices.render(container.querySelector("#ce-price-host"),"center");return;}
     window.SSMPDDb.listContractingEntities().then(function (rows) {
       rows = rows || [];
@@ -120,7 +121,7 @@
   function modal(title, html) {
     var bd = document.createElement("div"); bd.className = "modal-backdrop";
     bd.innerHTML = '<div class="modal" style="max-width:820px;"><div class="modal-head"><h3>' + title + '</h3><button class="modal-close">×</button></div>' + html + '</div>';
-    document.body.appendChild(bd); bd.querySelector(".modal-close").onclick = function () { bd.remove(); }; bd.onclick = function (e) { if (e.target === bd) bd.remove(); }; return bd;
+    bd._returnFocus=document.activeElement;document.body.appendChild(bd); bd.querySelector(".modal-close").onclick = function () { bd.remove(); }; bd.onclick = function (e) { if (e.target === bd) bd.remove(); }; return bd;
   }
   function input(id, label, type, value) { return '<div class="field"><label>' + label + '</label><input id="' + id + '" type="' + (type || "text") + '" value="' + esc(value || "") + '"></div>'; }
 
@@ -167,6 +168,7 @@
         }; });
         bd.querySelectorAll("[data-upload-contract]").forEach(function (b) { b.onclick = function () { openContractUpload(b.getAttribute("data-upload-contract"), reload); }; });
         applyPermissions(bd);
+        if(window.SSMPDContractNavigation)window.SSMPDContractNavigation.file(bd,d,{canSuspend:canSuspend(),canDelete:canDelete(),suspend:function(){suspendEntity(entityId,function(){reload();load(container);});},remove:function(){openDelete(d.entity,function(){bd.remove();load(container);});}});
       }).catch(function (e) { bd.querySelector(".modal").innerHTML = '<div class="modal-head"><h3>خطأ</h3><button class="modal-close">×</button></div><p>' + esc(e.message) + '</p>'; bd.querySelector(".modal-close").onclick = function () { bd.remove(); }; });
     }
     reload();
