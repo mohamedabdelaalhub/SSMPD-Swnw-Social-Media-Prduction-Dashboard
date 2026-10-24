@@ -722,8 +722,14 @@
       return handle(client.from("patient_visits").delete().eq("id", visitId));
     },
     // ---------- جهات التعاقد ----------
-    listContractingEntities: function () {
-      return handle(client.rpc("contracting_entities_overview_categories"));
+    listContractingEntities: function (includeSummary) {
+      return handle(client.rpc("contracting_entities_overview_categories")).then(function(rows){
+        if(!includeSummary || !rows || !rows.length) return rows;
+        return handle(client.from("contracting_entities").select("id,partner_code,contracting_entity_contacts(full_name,is_primary)").in("id",rows.map(function(r){return r.entity_id;}))).then(function(details){
+          var byId={};(details||[]).forEach(function(d){byId[d.id]=d;});
+          return rows.map(function(r){var d=byId[r.entity_id]||{},contacts=d.contracting_entity_contacts||[],primary=contacts.find(function(c){return c.is_primary;})||contacts[0];return Object.assign({},r,{partner_code:d.partner_code||'',primary_contact_name:primary?primary.full_name:''});});
+        });
+      });
     },
     deleteContractingEntity: function (entityId) {
       return handle(client.rpc("delete_contracting_entity", { p_entity_id: entityId }));
