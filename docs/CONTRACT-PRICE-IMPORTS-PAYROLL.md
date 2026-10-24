@@ -32,7 +32,7 @@ The calculator recomputes server-side when preparing the original monthly payrol
 
 Device records only collect type/model/branch and display awaiting-provider. No SDK, device listener, terminal credentials or payment callback has been configured or deployed. POS delivery requires Fawry enablement/documentation for the actual terminal; device registration is not a successful payment or fingerprint connection. No automatic online/offline presence or POS command is claimed. HR presence reflects approved loaded attendance and labels overdue missing exit as uncertain, with no live polling. No employee location tracking is installed.
 
-The two supplied live Sheets were inspected read-only. They are not automatically synchronized or silently imported/approved. Existing catalog prices, physician contracts, staff records and cash balances were not populated or changed for tests.
+The two supplied live Sheets were inspected read-only. The center master was staged as one real draft list with 16 named sections and 1,364 source rows in 16 review batches. No row was silently mapped, no canonical service was created from that source, and no prices were activated. Source dates were absent, so the draft explicitly flags its proposed application dates for review. The booking master is not imported or automatically synchronized. Existing operating prices, physician contracts, staff records and cash balances were not changed for tests.
 
 ## Verification
 
