@@ -95,7 +95,7 @@
           Object.keys(R.ALL).map(function (k) {
             return '<option value="' + k + '" ' + (k === a.role ? "selected" : "") + '>' + R.label(k) + '</option>';
           }).join("") + '</select>'+(hasPsychologyRole?'<p>الدور يتيح النفسية والتخاطب وتعديل السلوك. يمكنك إضافة أدوار وصلاحيات أخرى لهذا الحساب.</p>':'')+(hasHeadNursingRole?'<p>رئيس التمريض يراجع ملفات المرضى المرفوعة ويعتمدها أو يرفضها. أضفه كدور إضافي للاحتفاظ بصلاحيات الحساب الحالية.</p>':'')+'</td>' +
-          '<td>' + Object.keys(R.ALL).filter(function (k) { return k !== a.role; }).map(function (k) {
+          '<td>'+[['has_hr_access','إدارة الموارد البشرية'],['has_price_lists_access','إدارة لوائح الأسعار']].map(function(x){return '<label style="display:block"><input type="checkbox" data-workforce-grant="'+a.id+'" data-workforce-key="'+x[0]+'" '+((a[x[0]]||a.role==='super_admin'||a.role==='general_manager'||extraRoles.indexOf('super_admin')!==-1||extraRoles.indexOf('general_manager')!==-1)?'checked':'')+' '+((a.role==='super_admin'||a.role==='general_manager'||extraRoles.indexOf('super_admin')!==-1||extraRoles.indexOf('general_manager')!==-1)?'disabled':'')+'> '+x[1]+'</label>';}).join('') + Object.keys(R.ALL).filter(function (k) { return k !== a.role; }).map(function (k) {
             return '<label style="display:inline-flex;align-items:center;gap:3px;font-size:11px;margin-inline-end:8px;white-space:nowrap;">' +
               '<input type="checkbox" data-extra-role="' + a.id + '" data-extra-role-value="' + k + '" ' + (extraRoles.indexOf(k) !== -1 ? "checked" : "") + '>' + R.label(k) + '</label>';
           }).join("") + '</td>' +
@@ -196,6 +196,7 @@
             .catch(function (e) { alert("خطأ: " + e.message); render(container); });
         };
       });
+      container.querySelectorAll('[data-workforce-grant]').forEach(function(cb){cb.onchange=function(){var patch={};patch[cb.dataset.workforceKey]=cb.checked;cb.disabled=true;window.SSMPDDb.updateAdmin(cb.dataset.workforceGrant,patch).then(function(){render(container);}).catch(function(err){alert(err.message);render(container);});};});
       container.querySelectorAll("[data-archive-review]").forEach(function(cb){cb.onchange=function(){
         var desired=cb.checked;cb.disabled=true;
         window.SSMPDDb.updateAdmin(cb.getAttribute("data-archive-review"),{has_archive_review_access:desired}).then(function(){render(container);}).catch(function(e){alert("تعذر حفظ صلاحية الاعتماد: "+e.message);render(container);});
