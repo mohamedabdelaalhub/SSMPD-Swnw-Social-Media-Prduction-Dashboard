@@ -252,6 +252,7 @@
       '<main class="view" id="view-container"></main>' +
       "<footer style=\"text-align:center;font-size:11px;color:var(--c-muted);padding:14px 0;\"> <!--ssmpd-i18n:%C2%A9%20%D8%AC%D9%85%D9%8A%D8%B9%20%D8%A7%D9%84%D8%AD%D9%82%D9%88%D9%82%20%D9%85%D8%AD%D9%81%D9%88%D8%B8%D8%A9%20%D9%84%D8%B4%D8%B1%D9%83%D8%A9%20%D8%AF%D8%A7%D8%B1%20%D8%A7%D9%84%D9%86%D9%82%D8%A7%D9%87%D8%A9%20%D8%A7%D9%84%D8%B7%D8%A8%D9%8A%D8%A9-->© جميع الحقوق محفوظة لشركة دار النقاهة الطبية</footer></div>";
     root().innerHTML = html;
+    if(window.SSMPDUpdateNotice)window.SSMPDUpdateNotice.configure({tab:function(){return currentTab;},allowed:function(tab){var a=window.SSMPDAuth.currentAdmin;return !!a&&R.canSeeTab(a,tab);},refresh:refreshOpenView});
     if(window.SSMPDStaffProfile&&window.SSMPDStaffProfile.mountHeader)window.SSMPDStaffProfile.mountHeader(root().querySelector(".header-account"),admin);
 
     var mobileMenu = document.getElementById("mobile-menu");
@@ -838,6 +839,7 @@
   // Realtime must never replace a screen which the user is reading or editing.
   // Keep notifications live, and let the user decide when to redraw the current view.
   function removeRefreshNotice() {
+    if(window.SSMPDUpdateNotice)window.SSMPDUpdateNotice.clear();
     var notice = document.getElementById('ssmpd-refresh-notice');
     if (notice) notice.remove();
   }
@@ -847,8 +849,11 @@
     notice.id = 'ssmpd-refresh-notice';notice.setAttribute('role','status');
     notice.style.cssText='position:fixed;bottom:18px;left:18px;z-index:90;display:flex;gap:10px;align-items:center;max-width:calc(100vw - 36px);padding:10px 12px;background:#fff;border:1px solid #cdd6e3;border-radius:10px;box-shadow:0 4px 20px #16212e22;font-size:12px;direction:rtl';
     notice.innerHTML="<span> <!--ssmpd-i18n:%D9%88%D8%B5%D9%84%D8%AA%20%D8%AA%D8%AD%D8%AF%D9%8A%D8%AB%D8%A7%D8%AA%20%D9%84%D9%84%D8%A8%D9%8A%D8%A7%D9%86%D8%A7%D8%AA-->وصلت تحديثات للبيانات</span><button type=\"button\" class=\"btn ghost sm\" style=\"padding:6px 10px;min-height:34px;\"> <!--ssmpd-i18n:%D8%AA%D8%AD%D8%AF%D9%8A%D8%AB%20%D8%A7%D9%84%D8%B4%D8%A7%D8%B4%D8%A9-->تحديث الشاشة</button>";
-    notice.querySelector('button').onclick=function(){
-      var dialogs=Array.from(document.querySelectorAll('.modal-backdrop,.modal-overlay,.modal,[role="dialog"]')).some(function(el){return !el.hidden && getComputedStyle(el).display!=='none' && getComputedStyle(el).visibility!=='hidden';});
+    notice.querySelector('button').onclick=refreshOpenView;
+    document.body.appendChild(notice);
+  }
+  function refreshOpenView() {
+      var dialogs=Array.from(document.querySelectorAll('.modal-backdrop,.modal-overlay,.modal,[role="dialog"],dialog[open]')).some(function(el){return !el.hidden && getComputedStyle(el).display!=='none' && getComputedStyle(el).visibility!=='hidden';});
       if(dialogs){window.SSMPDToast.show('احفظ المدخلات واقفل النافذة قبل تحديث الشاشة.','info');return;}
       if(isUserEditing() && !window.confirm('تحديث الشاشة قد يمسح مدخلات لم تحفظها. هل حفظت البيانات وتريد المتابعة؟'))return;
       var tab=currentTab,view=document.getElementById('view-container'),renderer=RENDERERS[tab];
@@ -866,13 +871,11 @@
       function finish(){observer.disconnect();clearTimeout(timer);clearTimeout(deadline);}
       observer.observe(view,{childList:true,subtree:true});deadline=setTimeout(finish,10000);
       removeRefreshNotice();renderer.render(view);timer=setTimeout(restore,120);
-    };
-    document.body.appendChild(notice);
   }
   function refreshCurrentTab(payload) {
     // The 45-second fallback refreshes notification counts only.
     // A real database event adds a notice without touching inputs, tabs or scroll.
-    if(payload && payload.eventType)showRefreshNotice();
+    if(payload && payload.eventType){if(window.SSMPDUpdateNotice&&window.SSMPDUpdateNotice.enabled()){window.SSMPDUpdateNotice.receive(payload);}else showRefreshNotice();}
     refreshNotifBadge();
   }
 
@@ -971,9 +974,9 @@
     if (commentsChannel) window.SSMPDDb.unsubscribe(commentsChannel);
     if (leadsChannel) window.SSMPDDb.unsubscribe(leadsChannel);
     if (kudosChannel) window.SSMPDDb.unsubscribe(kudosChannel);
-    realtimeChannel = window.SSMPDDb.subscribeTable("content_items", refreshCurrentTab);
-    commentsChannel = window.SSMPDDb.subscribeTable("comments", refreshCurrentTab);
-    leadsChannel = window.SSMPDDb.subscribeTable("leads", refreshCurrentTab);
+    realtimeChannel = window.SSMPDDb.subscribeTable("content_items", function(payload){refreshCurrentTab(Object.assign({},payload,{table:"content_items"}));});
+    commentsChannel = window.SSMPDDb.subscribeTable("comments", function(payload){refreshCurrentTab(Object.assign({},payload,{table:"comments"}));});
+    leadsChannel = window.SSMPDDb.subscribeTable("leads", function(payload){refreshCurrentTab(Object.assign({},payload,{table:"leads"}));});
     // لوحة الشكر: بانر ظاهر لايف لكل الناس (مش بس اللي بعتها) لما حد يبعت شكر جديد
     kudosChannel = window.SSMPDDb.subscribeTable("kudos", function (payload) {
       if (payload.eventType === "INSERT") showKudosBanner(payload.new);
