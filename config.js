@@ -27,14 +27,14 @@ window.SSMPD_CONFIG = {
   adsExpensesWebAppUrl: "https://script.google.com/macros/s/AKfycbzkks4u3SUsQBLtIzN5o091dBANRA7Or1xm5KCBfG8ms1NyOhRAUG6mtZCcz51jlJrM3g/exec",
 
   // بصمة الكاش — ترفع مع أي تعديل على JS/CSS
-  cacheVersion: 15
+  cacheVersion: 16
 };
 
 // تحسين بطاقة الترحيب في الرئيسية الشخصية بدون المساس بمنطق الصفحة الأساسي.
 (function(){
   if(document.querySelector('script[data-home-welcome-redesign]')) return;
   var script = document.createElement('script');
-  script.src = 'assets/js/home-welcome-redesign.js?v=home-welcome-20261025-1';
+  script.src = 'assets/js/home-welcome-redesign.js?v=home-welcome-20261025-2';
   script.async = false;
   script.dataset.homeWelcomeRedesign = '1';
   document.head.appendChild(script);
