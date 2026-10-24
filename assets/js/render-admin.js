@@ -83,22 +83,24 @@
         '<p style="font-size:11px;color:var(--c-muted);margin-top:8px;">هو اللي هيفتح رابط اللوحة ويعمل "حساب جديد" بنفس البريد ده وينشئ كلمة سره — إنت مش بتحط له كلمة سر.</p></div>';
 
       html += '<div class="section" id="admin-users"><h3>كل المستخدمين (' + admins.length + ')</h3>' +
-        "<table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%A7%D8%B3%D9%85-->الاسم</th><th>البريد</th><th>الدور الأساسي</th><th>أدوار إضافية</th><th> <!--ssmpd-i18n:%D8%A3%D8%B1%D8%B4%D9%8A%D9%81%20%D8%A7%D9%84%D9%85%D8%B1%D8%B6%D9%89-->أرشيف المرضى</th><th>معاينة الأرشيف فقط</th><th>تحقق هوية المرضى</th><th>حذف الليدز</th><th>حذف زيارات التغذية</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AD%D8%A7%D9%84%D8%A9-->الحالة</th><th></th></tr></thead><tbody>";
+        "<table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%A7%D8%B3%D9%85-->الاسم</th><th>البريد</th><th>الدور الأساسي</th><th>أدوار إضافية</th><th> <!--ssmpd-i18n:%D8%A3%D8%B1%D8%B4%D9%8A%D9%81%20%D8%A7%D9%84%D9%85%D8%B1%D8%B6%D9%89-->أرشيف المرضى</th><th>اعتماد ملفات المرضى</th><th>معاينة الأرشيف فقط</th><th>تحقق هوية المرضى</th><th>حذف الليدز</th><th>حذف زيارات التغذية</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AD%D8%A7%D9%84%D8%A9-->الحالة</th><th></th></tr></thead><tbody>";
 
       admins.forEach(function (a) {
         var lastSuper = a.role === "super_admin" && a.active && activeSupers.length === 1;
         var extraRoles = a.extra_roles || [];
+        var hasHeadNursingRole = a.role==="head_nursing" || extraRoles.indexOf("head_nursing")!==-1;
         var hasPsychologyRole = a.role==="psychology_specialist" || extraRoles.indexOf("psychology_specialist")!==-1;
         html += '<tr><td>' + escapeHtml(a.name || "—") + '</td><td>' + escapeHtml(a.email) + '</td>' +
           '<td><select data-role="' + a.id + '" ' + (lastSuper ? "disabled" : "") + '>' +
           Object.keys(R.ALL).map(function (k) {
             return '<option value="' + k + '" ' + (k === a.role ? "selected" : "") + '>' + R.label(k) + '</option>';
-          }).join("") + '</select>'+(hasPsychologyRole?'<p>الدور يتيح النفسية والتخاطب وتعديل السلوك. يمكنك إضافة أدوار وصلاحيات أخرى لهذا الحساب.</p>':'')+'</td>' +
+          }).join("") + '</select>'+(hasPsychologyRole?'<p>الدور يتيح النفسية والتخاطب وتعديل السلوك. يمكنك إضافة أدوار وصلاحيات أخرى لهذا الحساب.</p>':'')+(hasHeadNursingRole?'<p>رئيس التمريض يراجع ملفات المرضى المرفوعة ويعتمدها أو يرفضها. أضفه كدور إضافي للاحتفاظ بصلاحيات الحساب الحالية.</p>':'')+'</td>' +
           '<td>' + Object.keys(R.ALL).filter(function (k) { return k !== a.role; }).map(function (k) {
             return '<label style="display:inline-flex;align-items:center;gap:3px;font-size:11px;margin-inline-end:8px;white-space:nowrap;">' +
               '<input type="checkbox" data-extra-role="' + a.id + '" data-extra-role-value="' + k + '" ' + (extraRoles.indexOf(k) !== -1 ? "checked" : "") + '>' + R.label(k) + '</label>';
           }).join("") + '</td>' +
           '<td style="text-align:center;"><input type="checkbox" data-archive="' + a.id + '" ' + (a.has_archive_access ? "checked" : "") + '></td>' +
+          '<td style="text-align:center;"><input type="checkbox" data-archive-review="' + a.id + '" ' + ((a.has_archive_review_access || hasHeadNursingRole || (a.role==="super_admin" || extraRoles.indexOf("super_admin")!==-1)) ? "checked" : "") + ' '+((hasHeadNursingRole || (a.role==="super_admin" || extraRoles.indexOf("super_admin")!==-1))?'disabled':'')+'>' + ((hasHeadNursingRole || (a.role==="super_admin" || extraRoles.indexOf("super_admin")!==-1))?'<small>متاحة من الدور</small>':'')+'</td>' +
           '<td style="text-align:center;"><input type="checkbox" data-archive-view-only="' + a.id + '" ' + (a.has_archive_view_only ? "checked" : "") + '></td>' +
           '<td style="text-align:center;"><input type="checkbox" data-verification-access="' + a.id + '" ' + (a.has_verification_management_access ? "checked" : "") + '></td>' +
           '<td style="text-align:center;"><input type="checkbox" data-delete-leads="' + a.id + '" ' + (a.can_delete_leads ? "checked" : "") + '></td>' +
@@ -194,6 +196,10 @@
             .catch(function (e) { alert("خطأ: " + e.message); render(container); });
         };
       });
+      container.querySelectorAll("[data-archive-review]").forEach(function(cb){cb.onchange=function(){
+        var desired=cb.checked;cb.disabled=true;
+        window.SSMPDDb.updateAdmin(cb.getAttribute("data-archive-review"),{has_archive_review_access:desired}).then(function(){render(container);}).catch(function(e){alert("تعذر حفظ صلاحية الاعتماد: "+e.message);render(container);});
+      };});
       container.querySelectorAll("[data-archive-view-only]").forEach(function (cb) {
         cb.onchange = function () {
           window.SSMPDDb.updateAdmin(cb.getAttribute("data-archive-view-only"), { has_archive_view_only: cb.checked })

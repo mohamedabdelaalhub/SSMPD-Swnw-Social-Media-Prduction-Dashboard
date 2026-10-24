@@ -11,6 +11,7 @@
     reception: "استقبال",
     customer_service: "خدمة عملاء",
     nursing: "تمريض",
+    head_nursing: "رئيس التمريض",
     sono_doctor: "طبيب سونو",
     psychology_specialist: "أخصائي نفسية",
     contract_manager: "مسؤول التعاقدات",
@@ -42,7 +43,7 @@
     reception_services: ["general_manager", "super_admin", "reception", "customer_service", "nursing", "sono_doctor", "accountant", "financial_manager"],
     booking_cash: ["reception", "general_manager", "super_admin"],
     accounting: ["general_manager", "super_admin"],
-    tasks: ["page_manager", "designer", "approver", "general_manager", "super_admin", "reception", "customer_service", "nursing", "sono_doctor", "contract_manager"],
+    tasks: ["page_manager", "designer", "approver", "general_manager", "super_admin", "reception", "customer_service", "nursing", "head_nursing", "sono_doctor", "contract_manager"],
     contracting_entities: ["contract_manager", "general_manager", "super_admin"],
     inventory: ["general_manager", "super_admin", "nursing", "reception", "sono_doctor"]
   };
@@ -100,7 +101,9 @@
     // بياخد صف admin كامل (مش بس الرول) عشان تاب "أرشيف المرضى" بيتفحص بصلاحية
     // has_archive_access المنفصلة عن الرول — لسه بيقبل الرول كـ string لوحده كمان
     // Select the specialty workspace only when no wider patient access was granted.
-    isPsychologySpecialist: function(a) { a=normalizeAdmin(a); return Roles.hasRole(a,"psychology_specialist") && !Roles.hasAnyRole(a,["super_admin","general_manager","nursing"]) && !a.has_archive_access && !a.has_archive_view_only && !a.has_archive_review_access; },
+    isPsychologySpecialist: function(a) { a=normalizeAdmin(a); return Roles.hasRole(a,"psychology_specialist") && !Roles.hasAnyRole(a,["super_admin","general_manager","nursing","head_nursing"]) && !a.has_archive_access && !a.has_archive_view_only && !a.has_archive_review_access; },
+
+    canReviewArchive: function(a) { a=normalizeAdmin(a); return a.active!==false && (!!a.has_archive_review_access || Roles.hasAnyRole(a,["super_admin","head_nursing"])); },
 
     canSeeTab: function (adminOrRole, tab) {
       var admin = normalizeAdmin(adminOrRole);
@@ -113,7 +116,7 @@
       if (Roles.isControlledFinance(admin) && ["accounting","contracting_entities","tasks"].includes(tab))return Roles.canModuleAction(admin,tab,'view');
       if (tab === "patients") {
         return Roles.hasRole(admin,"psychology_specialist") || !!admin.has_archive_access || !!admin.has_archive_view_only || !!admin.has_archive_review_access ||
-          Roles.hasRole(admin, "super_admin") || Roles.hasRole(admin, "nursing");
+          Roles.hasAnyRole(admin, ["super_admin","nursing","head_nursing"]);
       }
       var list = TAB_ACCESS[tab];
       return !!list && Roles.hasAnyRole(admin, list);
@@ -130,7 +133,7 @@
       }
       if (Roles.hasRole(admin, "contract_manager")) return "contracting_entities";
       if (Roles.hasRole(admin, "reception") || Roles.hasRole(admin, "customer_service")) return "leads";
-      if (Roles.hasRole(admin, "nursing")) return "patients";
+      if (Roles.hasAnyRole(admin, ["nursing","head_nursing"])) return "patients";
       if (Roles.hasRole(admin, "sono_doctor")) return "patients";
       if (Roles.hasRole(admin, "approver")) return "review";
       if (Roles.hasRole(admin, "designer")) return "design";

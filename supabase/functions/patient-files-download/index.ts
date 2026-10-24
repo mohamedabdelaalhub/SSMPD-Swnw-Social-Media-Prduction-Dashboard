@@ -58,6 +58,10 @@ function isSuperAdmin(caller: { role: string; extra_roles?: string[] }): boolean
   return caller.role === "super_admin" || (caller.extra_roles ?? []).includes("super_admin");
 }
 
+function isHeadNursing(caller: { role: string; extra_roles?: string[] }): boolean {
+  return caller.role === "head_nursing" || (caller.extra_roles ?? []).includes("head_nursing");
+}
+
 function isNursing(caller: { role: string; extra_roles?: string[] }): boolean {
   return caller.role === "nursing" || (caller.extra_roles ?? []).includes("nursing");
 }
@@ -203,7 +207,7 @@ Deno.serve(async (req) => {
     caller = await getCallerAdmin(user.id, admin);
     if (caller) {
 
-      const canReviewOrFull = caller.has_archive_access || caller.has_archive_review_access || isSuperAdmin(caller);
+      const canReviewOrFull = caller.has_archive_access || caller.has_archive_review_access || isSuperAdmin(caller) || isHeadNursing(caller);
       const doctorOnly = caller.has_archive_view_only && !canReviewOrFull;
       const allowed = canReviewOrFull || caller.has_archive_view_only || isNursing(caller);
       if (!allowed) return json({ error: "مفيش صلاحية أرشيف المرضى" }, 403);
