@@ -27,15 +27,19 @@ async function importPrivateKey(pem: string): Promise<CryptoKey> {
   );
 }
 
+// The archive is already shared with the publishing reader. The patient-files
+// service account is a separate identity and may not read the archive.
+let driveToken: {value:string;expiresAt:number}|null=null;
 async function getDriveAccessToken(): Promise<string> {
-  const rawKey = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_KEY");
-  if (!rawKey) throw new Error("GOOGLE_SERVICE_ACCOUNT_KEY غير مضبوط");
+  if(driveToken&&driveToken.expiresAt>Date.now()+60000)return driveToken.value;
+  const rawKey = Deno.env.get("META_PUBLISH_GOOGLE_SERVICE_ACCOUNT_KEY") || Deno.env.get("GOOGLE_SERVICE_ACCOUNT_KEY");
+  if (!rawKey) throw new Error("Archive Drive reader is not configured");
   const key = JSON.parse(rawKey);
   const now = Math.floor(Date.now() / 1000);
   const header = { alg: "RS256", typ: "JWT" };
   const claim = {
     iss: key.client_email,
-    scope: "https://www.googleapis.com/auth/drive",
+    scope: "https://www.googleapis.com/auth/drive.readonly",
     aud: "https://oauth2.googleapis.com/token",
     exp: now + 3600,
     iat: now,
@@ -58,8 +62,22 @@ async function getDriveAccessToken(): Promise<string> {
     }),
   });
   const tokenJson = await tokenRes.json();
-  if (!tokenRes.ok) throw new Error("فشل توليد Google access token: " + JSON.stringify(tokenJson));
-  return tokenJson.access_token as string;
+  if (!tokenRes.ok||typeof tokenJson.access_token!=='string') throw new Error("Archive Drive authentication failed");
+  driveToken={value:tokenJson.access_token,expiresAt:Date.now()+Math.max(60,Math.min(3600,Number(tokenJson.expires_in)||3600))*1000};
+  return driveToken.value;
+}
+
+function imageBase64(bytes:Uint8Array):string {
+ let binary='';bytes.forEach(b=>{binary+=String.fromCharCode(b);});return btoa(binary);
+}
+async function readArchivePhoto(fileId:string):Promise<Uint8Array> {
+ const token=await getDriveAccessToken();
+ const r=await fetch('https://www.googleapis.com/drive/v3/files/'+encodeURIComponent(fileId)+'?alt=media&supportsAllDrives=true',{headers:{Authorization:'Bearer '+token},signal:AbortSignal.timeout(20000)});
+ if(!r.ok)throw Error('Archive photo is not readable');
+ if(Number(r.headers.get('Content-Length')||0)>100000)throw Error('Unexpected photo size');
+ const bytes=new Uint8Array(await r.arrayBuffer());
+ if(bytes.length>100000||bytes.length<4||bytes[0]!==255||bytes[1]!==216)throw Error('Invalid archive photo');
+ return bytes;
 }
 
 Deno.serve(async req=>{
@@ -74,8 +92,7 @@ Deno.serve(async req=>{
   if(input.action==='get'){
    const allowed=await client.rpc('staff_photo_allowed',{p_admin_id:target});if(allowed.error||!allowed.data)return json({error:'الصورة غير متاحة'},403);
    const row=await db.from('staff_profile_photos').select('drive_file_id').eq('admin_id',target).maybeSingle();if(row.error)throw Error('تعذر قراءة الصورة');if(!row.data)return json({photo:null});
-   const token=await getDriveAccessToken();const r=await fetch('https://www.googleapis.com/drive/v3/files/'+encodeURIComponent(row.data.drive_file_id)+'?alt=media',{headers:{Authorization:'Bearer '+token},signal:AbortSignal.timeout(20000)});
-   if(!r.ok)throw Error('تعذر تحميل الصورة من جوجل درايف');const bytes=new Uint8Array(await r.arrayBuffer());if(bytes.length>100000)throw Error('حجم الصورة غير متوقع');return json({photo:'data:image/jpeg;base64,'+base64url(bytes).replace(/-/g,'+').replace(/_/g,'/')});
+   const bytes=await readArchivePhoto(row.data.drive_file_id);return json({photo:'data:image/jpeg;base64,'+imageBase64(bytes)});
   }
   if(input.action!=='upload'||target!==me)return json({error:'يمكنك رفع صورتك الشخصية فقط'},403);
   if(typeof input.base64!=='string'||input.base64.length>140000)return json({error:'اختر صورة شخصية صغيرة'},400);
@@ -83,9 +100,11 @@ Deno.serve(async req=>{
   const decoded=jpeg.decode(bytes,{useTArray:true,maxResolutionInMP:1,maxMemoryUsageInMB:32,tolerantDecoding:false});if(decoded.width>512||decoded.height>512||!decoded.width||!decoded.height)return json({error:'الصورة أكبر من الأبعاد المسموحة'},400);
   // Re-encode to strip all EXIF/location metadata and non-image payloads.
   const clean=jpeg.encode(decoded,75).data;if(clean.length>100000)return json({error:'اختر صورة أصغر'},400);
-  const b64=base64url(new Uint8Array(clean)).replace(/-/g,'+').replace(/_/g,'/');
+  const b64=imageBase64(new Uint8Array(clean));
   const uploaded=await fetch(BRIDGE,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({category:'archive',fileName:'staff-profile-'+me+'-'+crypto.randomUUID()+'.jpg',mimeType:'image/jpeg',contentTitle:'صور الموظفين',base64:b64}),signal:AbortSignal.timeout(30000)});
   const file=await uploaded.json();if(!uploaded.ok||!file.ok||!/^[A-Za-z0-9_-]{10,200}$/.test(file.fileId||''))throw Error('تعذر حفظ الصورة على جوجل درايف؛ صورتك السابقة لم تتغير');
+  // Do not report success or replace the old profile until a cold read can retrieve the file.
+  await readArchivePhoto(file.fileId);
   const saved=await db.from('staff_profile_photos').upsert({admin_id:me,drive_file_id:file.fileId,mime_type:'image/jpeg',updated_at:new Date().toISOString()});if(saved.error)throw Error('الصورة رُفعت لكن تعذر ربطها بالبروفايل؛ أعد المحاولة');
   return json({photo:'data:image/jpeg;base64,'+b64});
  }catch(_e){return json({error:'تعذر حفظ أو عرض الصورة. تحقق من اتصال جوجل درايف وأعد المحاولة'},400);}
