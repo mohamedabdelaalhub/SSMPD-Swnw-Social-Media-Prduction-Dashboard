@@ -995,7 +995,9 @@
       if (event === "PASSWORD_RECOVERY") openChangePasswordModal();
     });
     window.SSMPDAuth.getSession().then(function (session) {
-      if (session) return bootAfterAuth();
+      if (session) return bootAfterAuth().then(function(){
+        var welcome=new URL(window.location.href);if(welcome.searchParams.get('staff_welcome')==='1'){welcome.searchParams.delete('staff_welcome');history.replaceState(null,'',welcome.pathname+welcome.search+welcome.hash);if(window.SSMPDAuth.currentAdmin&&!document.getElementById('cp-save'))openChangePasswordModal();}
+      });
       showAuthScreen("login");
     });
   });
