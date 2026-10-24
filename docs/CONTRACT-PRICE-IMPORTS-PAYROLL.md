@@ -1,0 +1,39 @@
+# Contract prices, canonical services and calculated payroll
+
+The price-list tools live inside the existing contracting entity categories. Existing categories and records are not reclassified. Legacy records still fall back to cash. Center prices have a separate entry with the current Cairo year. A legacy price-lists deep link remains available for accounts granted only price-list management. A contracting user without price-list permission gains no pricing access.
+
+## Service identity
+
+`pricing_services.id` remains the canonical operational and reporting identity. An immutable, server-generated `canonical_code` is added without changing booking codes, BOMs, booking eligibility, prices, existing invoices or service UUIDs. A canonical unit is stored for new service proposals. Each price item stores the counterparty's name, code, unit and original source reference. Only independent list approval learns an alias, scoped to the entity (or center), exact source name/code/unit. Conflicting approved mappings abort approval. Similar spelling is only a suggestion requiring explicit confirmation. This is deterministic matching, not a newly deployed AI model. Distinct services are never auto-merged. Existing duplicate histories are not rewritten. Composite counterparty lines still require an explicit reviewed package definition in the existing package module; this release does not auto-split them.
+
+A new canonical service is proposed and approved by a different manager. It is not bookable until the existing service setup is complete. It has no inferred supply BOM or operating price. Empty Arabic names in the approved master use the English service name during import.
+
+## Upload and review
+
+Excel XLSX/XLS/CSV sheet selection, header-row selection and editable column mapping read all selected tabs, up to 10,000 candidate lines per batch. Services + Service_Prices masters join by service_id and reject duplicate/missing price links. The 1,364-row shape is tested. DOCX tables and PDF text/OCR are read in the browser. Legacy binary DOC needs conversion to DOCX. Text extraction and OCR are candidates, not guaranteed table reconstruction; missing/ambiguous amounts remain unresolved. OCR does not send source files to Supabase or an AI endpoint. Runtime parsers download from pinned public CDNs. Importing Word never inserts imported HTML into the live DOM.
+
+A draft list may contain named sections and successive saved batches. Optional source-category splitting creates/finds sections inside the same list. Append rejects duplicate services; update upserts; replace-section affects one explicit section; replace-all affects the list. Replacement acts on a creator-owned draft, never an active list. File digest plus selected source rows prevent replay while allowing different selected sheets from the same original file. Every line needs a selected active service and explicit mapping confirmation (a previously approved exact alias may prefill confirmation), and a positive price before applying the batch. Staged rows, approved price items and immutable historical invoices are separate.
+
+Batches have revisions, ownership and all-or-nothing SQL application. Unsaved field changes are not silently applied. Pending batches must be applied or discarded before submission. List review remains four-eyes, preserves contract eligibility and date/overlap checks, and uses the existing reception price resolver.
+
+Issue year and application year are separate stored fields. Labels show both when different, independent of calendar rollover. New and cloned lists default to the current year. Rates apply only to fixed prices in a creator-owned draft, can target all items or a section, support explicit rounding and preserve source metadata. Independent section changes can be done sequentially. Clone copies section/name/code/unit provenance. Approved lists remain immutable; old invoices retain their snapshots.
+
+## HR and payroll
+
+Attendance import accepts Excel/CSV, all sheets, up to 5,000 planned shifts per atomic transaction. The documented column order is employee code, day, planned in/out, actual in/out. Users explicitly choose Cairo UTC+2 or UTC+3 for unzoned times; full ISO timestamps with offsets are accepted for overnight shifts. Date ambiguity and unknown employee codes fail visibly. Imports create pending attendance records and reject duplicate file hashes. A different reviewer may review the file's pending shifts through the original attendance-review guard.
+
+Pay rules are independently approved, dated, non-overlapping per person and cover a full payroll month: lateness grace and per-minute charge, absent scheduled shift amount, overtime hourly amount. Approved leave does not count as an absent shift. Payroll uses only scheduled attendance rows actually entered and approved; it cannot infer a complete monthly roster. Missing check-out or pending attendance/adjustments blocks calculation. There is no automatic deduction based on device/location uncertainty.
+
+Bonuses/deductions/employee service commissions can be entered or imported as pending documented adjustments and independently reviewed. Commission is calculated from reviewed documented basis times rate, not automatically attributed from every operational invoice. Canonical service link and unique reference are required. Doctors linked to the existing doctor ledger cannot duplicate those percentage earnings in payroll adjustments; salary and percentage settlements remain separate with links to the original accounting module. Existing doctor contracts are not rewritten.
+
+The calculator recomputes server-side when preparing the original monthly payroll request, records its calculation snapshot, and preserves the existing financial approval, posting and duplicate-month guards. Salary deductions have their own ledger source and reduce employee due, preserving opening balances. No salary is paid by the HR form. Tax/insurance/advance recovery require explicit documented input. Existing manual payroll preparation is retained.
+
+## Devices and remaining activation
+
+Device records only collect type/model/branch and display awaiting-provider. No SDK, device listener, terminal credentials or payment callback has been configured or deployed. POS delivery requires Fawry enablement/documentation for the actual terminal; device registration is not a successful payment or fingerprint connection. No automatic online/offline presence or POS command is claimed. HR presence reflects approved loaded attendance and labels overdue missing exit as uncertain, with no live polling. No employee location tracking is installed.
+
+The two supplied live Sheets were inspected read-only. They are not automatically synchronized or silently imported/approved. Existing catalog prices, physician contracts, staff records and cash balances were not populated or changed for tests.
+
+## Verification
+
+New PGlite SQL tests exercise actual migration bodies, quote resolution, staging/revision/year/clone rules, four-eyes approval, aliases, payroll rules, atomic imports, ledger deduction and net due, duplicate monthly payroll and access denial. DOM/parser tests cover dual year labels, form error retention, metadata persistence, strict numbers, scope/unit-aware aliases, 1,364-row multi-sheet joins and explicit time zones. Existing HR/price, contracting categories and finance stock/insurance tests are retained. The broad social smoke has its prior social-tab-count/requestAnimationFrame fixture failure. The browser fixture uses synthetic data and is not proof of a real employee production login.
