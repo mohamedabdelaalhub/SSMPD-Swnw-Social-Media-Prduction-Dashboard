@@ -37,3 +37,13 @@ The two supplied live Sheets were inspected read-only. The center master was sta
 ## Verification
 
 New PGlite SQL tests exercise actual migration bodies, quote resolution, staging/revision/year/clone rules, four-eyes approval, aliases, payroll rules, atomic imports, ledger deduction and net due, duplicate monthly payroll and access denial. DOM/parser tests cover dual year labels, form error retention, metadata persistence, strict numbers, scope/unit-aware aliases, 1,364-row multi-sheet joins and explicit time zones. Existing HR/price, contracting categories and finance stock/insurance tests are retained. The broad social smoke has its prior social-tab-count/requestAnimationFrame fixture failure. The browser fixture uses synthetic data and is not proof of a real employee production login.
+
+## Completing the initial master and staff onboarding
+
+`price_master_command` prepares a center-only source plan and supports a single atomic independent review of canonical definitions and prices. The creator cannot self-approve. A source hash and revision reject stale review; invalid prices, repeated source codes, differing prices for one exact definition and ambiguous existing matches block preparation. Exact name/category/unit groups with identical prices require an explicit duplicate-unification decision before approval. Both original source codes are preserved as aliases and on the source batch. Short approved laboratory names such as LH and PT remain valid. A declined review does not create services or change prices.
+
+Approval creates only missing canonical definitions, applies the reviewed source price items, retains unlisted services at their current base price because the source excludes consultations, and invokes the original submit/review guards. New definitions remain not bookable until their duration, supplies and booking configuration are completed. No operating supply cost or physician commission is inferred.
+
+The real source is now prepared for review: 1,364 source rows form 1,363 proposed service definitions with one identical duplicate pair. This is a pending plan, not an approved merger or activated price list.
+
+Fifteen named existing staff accounts received preliminary profiles with `kind=unclassified` and `status=needs_setup`. Four technical/ambiguous accounts were not silently classified or merged. No employment relationship, salary, hire date, physician key or payroll contract was inferred. A payroll-contract CSV template exports the actual profile codes and names, leaving salary, dates and terms blank for the accountant. No employment contracts exist in the current financial source; calculating actual salaries remains blocked until those terms are supplied and approved.
