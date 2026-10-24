@@ -4,3 +4,5 @@
 .wn-filters[hidden]{display:none!important}.wn-file-dialog .section{max-width:100%;min-width:0}.wn-file-dialog table{min-width:520px}.wn-file-dialog .modal-head h3{overflow-wrap:anywhere}.wn-file-dialog .modal-head button{flex:none;min-width:44px;min-height:44px}
 @media(max-width:600px){.modal-backdrop:has(>.wn-file-dialog){padding:0}.wn-file-dialog .ce-hub-grid{grid-template-columns:minmax(0,1fr)}.wn-file-dialog .field{min-width:0!important}.wn-file-dialog input,.wn-file-dialog select,.wn-file-dialog textarea{max-width:100%;box-sizing:border-box;font-size:16px}.wn-file-dialog .section>div{max-width:100%}}
 .wn-file-dialog{box-sizing:border-box}.wn-entity-card h3{overflow-wrap:anywhere}.wn-panel .wp-actions{margin-block:12px}
+.wn-mobile-file{display:none}.wn-file-dialog .modal-head h3{font-size:18px;min-width:0;flex:1;white-space:normal}.wn-file-dialog .modal-head{padding:12px;gap:10px}.wn-file-dialog .wn-fold .kpis{margin-block:12px!important}
+@media(max-width:600px){.wn-mobile-file{display:grid;margin-block:12px}.wn-file-dialog>.wn-tabs{display:none}.wn-file-dialog .modal-head h3{font-size:16px}}
