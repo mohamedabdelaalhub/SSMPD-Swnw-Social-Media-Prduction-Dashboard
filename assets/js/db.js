@@ -1396,6 +1396,7 @@
     operationsContentBrief: function (brand,specialty) { return handle(client.rpc("operations_content_brief",{p_brand:brand,p_specialty:specialty||""})); },
     operationsAIEnabled: function () { return handle(client.rpc("operations_ai_enabled")).then(function(v){return v===true;}).catch(function(){return false;}); },
     operationsAdvice: function (id) { return client.functions.invoke("operations-advisor",{body:{issue_id:id}}).then(function(r){if(r.error||r.data?.error)throw Error(r.data?.error||"تعذر تشغيل المستشار. تحقق من التفعيل والرصيد.");return r.data;}); },
+    employeeTaskPerformance: function(period,from,to,admin) { return handle(client.rpc("employee_task_performance",{p_period:period,p_from:from,p_to:to,p_admin:admin})); },
     taskListProjects: function () { return handle(client.rpc("task_list_projects")); },
     taskListVisible: function () { return handle(client.rpc("task_list_with_assignment")); },
     taskPeople: function () { return handle(client.rpc("task_people")); },
@@ -1470,6 +1471,7 @@
     },
   };
 
+  ["taskCreate","taskCreateRecurring","taskUpdateDetails","taskSetStatus","taskSubmitWork","taskReview","taskDelete","taskDeleteProject","taskUpdateProject","taskSetProjectArchived"].forEach(function(name){var original=Db[name];if(!original)return;Db[name]=function(){return original.apply(Db,arguments).then(function(result){window.dispatchEvent(new Event("ssmpd-tasks-changed"));return result;});};});
   window.SSMPDDb = Db;
 
   // أسئلة استبيان "تقييم تجربة المريض" الرسمي — نفس الترتيب والنص بالحرف من

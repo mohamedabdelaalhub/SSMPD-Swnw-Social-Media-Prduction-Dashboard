@@ -49,7 +49,8 @@
         '<section class="sk-grid">' + (cards || '<p class="sk-none">لا توجد بيانات مسجّلة باسمك في الفترة دي. سجّل شغلك في الداشبورد أولًا بأول عشان يظهر هنا.</p>') + '</section>' +
         (sm ? '<section class="sk-box"><h2>ملخص الشهر اللي فات</h2><p class="sk-msum-p">💪 ' + esc(sm.strength) + '</p><p class="sk-msum-p">🔧 ' + esc(sm.improve) + '</p><p class="sk-msum-p">➡️ ' + esc(sm.action) + '</p></section>' : "");
     }
-    c.innerHTML = '<section class="sk" dir="rtl">' + head + '<div class="sk-tools"><div class="sk-presets">' + PRESETS.map(function (p) { return '<button type="button" class="sk-preset' + (state.preset === p[0] ? " on" : "") + '" data-p="' + p[0] + '">' + p[1] + '</button>'; }).join("") + '</div></div>' + body + '<p class="sk-foot">الأرقام بتتحسب من اللي بتسجّله في الداشبورد. الهدف إنك تشوف تقدّمك أنت، مش مقارنة مع حد.</p></section>';
+    c.innerHTML = '<section class="sk" dir="rtl">' + head + '<div data-my-task-performance></div><div class="sk-tools"><div class="sk-presets">' + PRESETS.map(function (p) { return '<button type="button" class="sk-preset' + (state.preset === p[0] ? " on" : "") + '" data-p="' + p[0] + '">' + p[1] + '</button>'; }).join("") + '</div></div>' + body + '<p class="sk-foot">الأرقام بتتحسب من اللي بتسجّله في الداشبورد. الهدف إنك تشوف تقدّمك أنت، مش مقارنة مع حد.</p></section>';
+    if(window.SSMPDEmployeePerformance)window.SSMPDEmployeePerformance.mount(c.querySelector("[data-my-task-performance]"),window.SSMPDAuth.currentAdmin.id);
     c.querySelectorAll("[data-p]").forEach(function (b) { b.onclick = function () { state.preset = b.getAttribute("data-p"); load(); draw(); }; });
   }
   window.SSMPDRenderMyKpi = { render: render };
