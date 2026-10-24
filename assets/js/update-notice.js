@@ -1,0 +1,22 @@
+/* Opt-out trial over existing authorized event streams; never fetches or stores record data. */
+(function(w){'use strict';
+var options={},groups=new Set(),eventKeys=new Set(),timer=null,account='',controls=new Set();
+var sources={content_items:{label:'المحتوى',tabs:['home','production','review','design','publish','archive','summary','performance','staff_kpi','my_kpi']},comments:{label:'التعليقات',tabs:['home','production','review','design','publish']},leads:{label:'الليدز',tabs:['leads']},personal_inbox:{label:'إشعاراتك ومهامك',tabs:['home','tasks','my_kpi']}};
+function admin(){return w.SSMPDAuth&&w.SSMPDAuth.currentAdmin;}
+function storeKey(){return 'ssmpd.update-notice-trial.'+(admin()&&admin().id||'');}
+function enabled(){if(w.SSMPD_CONFIG&&w.SSMPD_CONFIG.updateNoticeTrial===false)return false;try{return w.sessionStorage.getItem(storeKey())!=='off';}catch(e){return true;}}
+function reset(){clearTimeout(timer);groups.clear();eventKeys.clear();var n=document.getElementById('ssmpd-refresh-notice');if(n)n.remove();}
+function prepare(){var a=admin(),id=a&&a.id||'';if(account!==id){reset();account=id;}return a;}
+function configure(opts){options=opts||{};prepare();}
+function receive(payload){var a=prepare(),source=payload&&sources[payload.table],tab=options.tab&&options.tab();if(!enabled()||!a||!source||!tab||source.tabs.indexOf(tab)<0||!options.allowed||!options.allowed(tab))return false;
+ if(!['INSERT','UPDATE','DELETE','CHANGED'].includes(payload.eventType))return false;
+ var row=payload.new||payload.old||{},eventKey=[payload.table,payload.eventType,row.id||'',payload.commit_timestamp||''].join('|');if(eventKeys.has(eventKey))return true;
+ if(eventKeys.size<100)eventKeys.add(eventKey);groups.add(source.label);clearTimeout(timer);timer=setTimeout(draw,250);return true;
+}
+function draw(){var a=prepare();if(!a||!enabled()||!groups.size||!options.allowed(options.tab()))return;var n=document.getElementById('ssmpd-refresh-notice');if(n&&!n.dataset.updateTrial)return;if(!n){n=document.createElement('section');n.id='ssmpd-refresh-notice';n.dataset.updateTrial='yes';n.className='update-notice';n.setAttribute('role','status');n.setAttribute('aria-live','polite');n.innerHTML='<div><b data-update-title></b><p data-update-copy></p></div><div class="update-notice-actions"><button type="button" class="btn btn-primary" data-update-refresh></button><button type="button" class="btn ghost" data-update-later></button></div>';document.body.appendChild(n);n.querySelector('[data-update-refresh]').onclick=function(){if(!prepare()||!enabled()||!options.allowed(options.tab())){reset();return;}if(options.refresh)options.refresh();};n.querySelector('[data-update-later]').onclick=function(){reset();};}
+var en=document.documentElement.lang==='en';n.querySelector('[data-update-title]').textContent=en?'Updates are available in this section':'وصلت تحديثات تخص القسم المفتوح';n.querySelector('[data-update-copy]').textContent=en?'Your screen and entries have not been replaced. Review your entries before updating.':'في '+Array.from(groups).join(' و')+'. مدخلاتك زي ما هي. راجع حفظها قبل تحديث القسم.';n.querySelector('[data-update-refresh]').textContent=en?'Update section':'تحديث القسم';n.querySelector('[data-update-later]').textContent=en?'Later':'لاحقًا';}
+function mountControl(root){if(!root||!prepare())return;controls.forEach(function(n){if(!n.isConnected)controls.delete(n);});controls.add(root);renderControl(root);}
+function renderControl(root){var on=enabled(),en=document.documentElement.lang==='en';root.innerHTML='<button type="button" class="btn" data-update-toggle aria-pressed="'+on+'"></button>';root.querySelector('button').textContent=en?'Update notice trial: '+(on?'On':'Off'):'تجربة تنبيهات التحديث: '+(on?'مفعّلة':'متوقفة');root.querySelector('button').onclick=function(){try{w.sessionStorage.setItem(storeKey(),enabled()?'off':'on');}catch(e){return;}reset();controls.forEach(function(n){if(n.isConnected)renderControl(n);else controls.delete(n);});};}
+new MutationObserver(function(){if(groups.size)draw();controls.forEach(function(n){if(n.isConnected)renderControl(n);});}).observe(document.documentElement,{attributes:true,attributeFilter:['lang']});
+w.SSMPDUpdateNotice={configure:configure,receive:receive,clear:reset,enabled:enabled,mountControl:mountControl};
+})(window);
