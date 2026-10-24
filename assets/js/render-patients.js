@@ -82,7 +82,7 @@
   function fmtNum(n) { return (n || 0).toLocaleString("en-US"); }
 
   var me = null; // window.SSMPDAuth.currentAdmin
-  function canReview() { return !!(me && (me.has_archive_review_access || window.SSMPDRoles.hasRole(me, "super_admin"))); }
+  function canReview() { return !!(me && window.SSMPDRoles.canReviewArchive(me)); }
   function canUpload() { return !!(me && (me.has_archive_access || window.SSMPDRoles.hasRole(me, "super_admin"))); }
   // "طبيب سونو" (معاينة محالة فقط): عنده has_archive_view_only بس، من غير أرشيف كامل
   // ولا مراجعة — بيشوف شاشة مختلفة تماماً (طابور الإحالات) بدل الأرشيف العادي

@@ -45,6 +45,10 @@ function isSuperAdmin(caller: { role: string; extra_roles?: string[] }): boolean
   return caller.role === "super_admin" || (caller.extra_roles ?? []).includes("super_admin");
 }
 
+function isHeadNursing(caller: { role: string; extra_roles?: string[] }): boolean {
+  return caller.role === "head_nursing" || (caller.extra_roles ?? []).includes("head_nursing");
+}
+
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS });
@@ -53,7 +57,7 @@ Deno.serve(async (req) => {
   const caller = await getCallerAdmin(req);
   if (!caller) return json({ error: "غير مصرح — سجّل دخولك تاني" }, 401);
 
-  const allowed = caller.has_archive_review_access || isSuperAdmin(caller);
+  const allowed = caller.has_archive_review_access || isSuperAdmin(caller) || isHeadNursing(caller);
   if (!allowed) return json({ error: "مفيش صلاحية مراجعة أرشيف المرضى — دي صلاحية منفصلة عن صلاحية الرفع" }, 403);
 
   let body: Record<string, unknown>;
