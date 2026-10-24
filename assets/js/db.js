@@ -169,6 +169,10 @@
 
     listModulePermissions: function (adminId) { return handle(client.from("admin_module_permissions").select("module_key,can_view,can_create,can_update,can_delete").eq("admin_id",adminId)); },
     saveModulePermissions: function (adminId,permissions) { return handle(client.rpc("set_admin_module_permissions",{p_admin_id:adminId,p_permissions:permissions})); },
+    hrSaveEmployee: function (payload, mode, role, requestId) { return handle(client.rpc('hr_save_employee', {p_payload:payload,p_mode:mode,p_role:role||null,p_request_id:requestId})); },
+    hrAccountStatus: function (personId) { return handle(client.rpc('hr_account_status',{p_person_id:personId})); },
+    staffAccountInvite: function (jobId) { return client.functions.invoke('hr-staff-account',{body:{job_id:jobId}}).then(async function(r){ if(r.error){var b=r.error.context;try {b=await b.json();}catch(_){} throw Error(b&&b.error||'تعذر إرسال الدعوة؛ الملف محفوظ');} if(r.data.error)throw Error(r.data.error); return r.data; }); },
+    staffProfilePhoto: function (body) { return client.functions.invoke('staff-profile-photo',{body:body}).then(function(r){if(r.error||r.data&&r.data.error)throw Error(r.data&&r.data.error||'تعذر الاتصال بجوجل درايف');return r.data;}); },
     // ---------- admins ----------
     getMyAdminRow: function (userId) {
       return handle(client.from("admins").select("*").eq("user_id", userId).maybeSingle());
