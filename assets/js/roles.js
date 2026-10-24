@@ -24,6 +24,8 @@
   // تاب "أرشيف المرضى" مش مبني على الرول — أي رول عنده admins.has_archive_access=true
   // (أو سوبر أدمن) بيشوفه، فمتحط لوش هنا وبيتفحص بشكل خاص في canSeeTab
   var TAB_ACCESS = {
+    human_resources: Object.keys(ROLES),
+    price_lists: ["super_admin","general_manager"],
     summary: ["page_manager", "designer", "approver", "general_manager", "super_admin"],
     production: ["page_manager", "general_manager", "super_admin"],
     review: ["approver", "general_manager", "super_admin"],
@@ -82,6 +84,8 @@
     },
     canModuleAction: function (adminOrRole, module, action) {
       var admin = normalizeAdmin(adminOrRole);
+      if(module==='human_resources')return Roles.hasAnyRole(admin,['super_admin','general_manager'])||admin.has_hr_access===true;
+      if(module==='price_lists')return Roles.hasAnyRole(admin,['super_admin','general_manager'])||admin.has_price_lists_access===true;
       if (Roles.isControlledFinance(admin)) {
         var rows=admin.module_permissions||[], row=rows.find(function(p){return p.module_key===module;});
         return !!row && row.can_view===true && (action==='view'||row['can_'+action]===true) && !(module==='tasks'&&action==='delete');
@@ -107,6 +111,8 @@
 
     canSeeTab: function (adminOrRole, tab) {
       var admin = normalizeAdmin(adminOrRole);
+      if(tab==='human_resources')return admin.active!==false&&!!(admin.id||admin.role);
+      if(tab==='price_lists')return admin.active!==false&&Roles.canModuleAction(admin,'price_lists','view');
       if(tab==="tasks" && Roles.hasRole(admin,"psychology_specialist"))return true;
       if(tab==="accounting")return Roles.canModuleAction(admin,"accounting","view") || Roles.canSeeTab(admin,"inventory") && !(admin.inventory_assigned===false && admin.inventory_supply_access===true);
       if(tab==="booking_cash" && Roles.isControlledFinance(admin))return Roles.canModuleAction(admin,"accounting","view");
