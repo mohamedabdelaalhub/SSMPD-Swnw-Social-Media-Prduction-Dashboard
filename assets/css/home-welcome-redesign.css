@@ -1,0 +1,221 @@
+/* Personal home welcome card redesign — profile photo left, compact actions, role as status badge. */
+.personal-home .ph-welcome.ph-welcome-redesign{
+  position:relative;
+  isolation:isolate;
+  overflow:hidden;
+  direction:ltr;
+  display:grid;
+  grid-template-columns:124px minmax(0,1fr);
+  grid-template-areas:"profile copy";
+  align-items:center;
+  gap:24px;
+  min-height:188px;
+  padding:24px 28px;
+  flex-wrap:unset;
+}
+.personal-home .ph-welcome.ph-welcome-redesign::before{
+  content:"";
+  position:absolute;
+  width:220px;
+  height:220px;
+  left:-72px;
+  bottom:-102px;
+  border-radius:50%;
+  background:rgba(255,255,255,.055);
+  box-shadow:0 0 0 34px rgba(255,255,255,.028);
+  pointer-events:none;
+  z-index:-1;
+}
+.ph-welcome-redesign .ph-hello{
+  grid-area:copy;
+  direction:rtl;
+  text-align:right;
+  min-width:0;
+  width:100%;
+}
+.ph-welcome-redesign .ph-hello>p{
+  margin:0;
+  font-size:13px;
+  line-height:1.55;
+  color:rgba(255,255,255,.78);
+  opacity:1;
+}
+.personal-home .ph-welcome-redesign .ph-hello>h1{
+  margin:6px 0 0;
+  font-size:clamp(25px,3vw,34px);
+  line-height:1.25;
+  color:#fff;
+  overflow-wrap:anywhere;
+}
+.ph-welcome-redesign .ph-welcome-meta{
+  display:flex;
+  direction:rtl;
+  align-items:center;
+  justify-content:flex-start;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-top:14px;
+}
+.ph-welcome-redesign .account-roles{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  margin:0;
+  padding:0;
+  flex-wrap:wrap;
+}
+.ph-welcome-redesign .account-role-chip,
+.ph-welcome-redesign .ph-role{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  min-height:34px;
+  margin:0;
+  padding:6px 12px;
+  border:1px solid rgba(255,255,255,.24);
+  border-radius:999px;
+  background:rgba(255,255,255,.10);
+  color:#fff;
+  box-shadow:none;
+  font-size:12.5px;
+  font-weight:650;
+  line-height:1.2;
+  cursor:default;
+}
+.ph-welcome-redesign.ph-is-super-admin .account-role-chip.is-primary::before{
+  content:"♛";
+  color:#ffd36a;
+  font-size:15px;
+  line-height:1;
+}
+.personal-home .ph-welcome-redesign .ph-welcome-tools{
+  display:flex;
+  width:auto;
+  flex:0 0 auto;
+  flex-direction:row;
+  align-items:center;
+  gap:8px;
+  flex-wrap:nowrap;
+}
+.personal-home .ph-welcome-redesign .ph-welcome-tools .btn{
+  flex:0 0 42px;
+  width:42px;
+  height:42px;
+  min-height:42px;
+  padding:0;
+  border-radius:13px;
+  display:inline-grid;
+  place-items:center;
+  background:rgba(255,255,255,.10);
+  border:1px solid rgba(255,255,255,.26);
+  color:#fff;
+  box-shadow:none;
+}
+.personal-home .ph-welcome-redesign .ph-welcome-tools .btn:hover{
+  background:rgba(255,255,255,.18);
+}
+.ph-welcome-redesign .ph-settings-open [data-home-label="settings"]{
+  display:none!important;
+}
+.ph-welcome-redesign .ph-welcome-tools svg{
+  width:21px;
+  height:21px;
+}
+.ph-welcome-redesign .ph-welcome-profile{
+  grid-area:profile;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  margin:0;
+  padding:0;
+  direction:rtl;
+  min-width:0;
+}
+.ph-welcome-redesign .ph-welcome-profile.staff-profile{
+  margin:0;
+  gap:0;
+  flex-wrap:nowrap;
+}
+.ph-welcome-redesign .ph-welcome-profile .staff-avatar{
+  width:112px;
+  height:112px;
+  border:3px solid rgba(255,255,255,.86);
+  background:rgba(255,255,255,.16);
+  color:rgba(255,255,255,.85);
+  box-shadow:0 10px 28px rgba(3,24,81,.22);
+  font-size:11px;
+}
+.ph-welcome-redesign .ph-welcome-profile .staff-avatar img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+}
+.ph-welcome-redesign .ph-welcome-profile [data-staff-photo]{
+  display:none!important;
+}
+@media(max-width:700px){
+  .personal-home .ph-welcome.ph-welcome-redesign{
+    grid-template-columns:90px minmax(0,1fr);
+    gap:14px;
+    min-height:170px;
+    padding:18px;
+    align-items:center;
+  }
+  .personal-home .ph-welcome-redesign .ph-hello>h1{
+    margin-top:5px;
+    font-size:23px;
+    line-height:1.28;
+  }
+  .ph-welcome-redesign .ph-hello>p{
+    font-size:11.5px;
+  }
+  .ph-welcome-redesign .ph-welcome-meta{
+    gap:8px;
+    margin-top:11px;
+  }
+  .ph-welcome-redesign .account-role-chip,
+  .ph-welcome-redesign .ph-role{
+    min-height:32px;
+    padding:5px 10px;
+    font-size:11.5px;
+  }
+  .personal-home .ph-welcome-redesign .ph-welcome-tools{
+    width:auto;
+    flex-direction:row;
+    gap:7px;
+  }
+  .personal-home .ph-welcome-redesign .ph-welcome-tools .btn,
+  .personal-home .ph-welcome-redesign .ph-welcome-tools .ph-settings-open,
+  .personal-home .ph-welcome-redesign .ph-welcome-tools .ph-refresh-icon{
+    width:38px;
+    height:38px;
+    min-height:38px;
+    flex:0 0 38px;
+    padding:0;
+    border-radius:12px;
+  }
+  .ph-welcome-redesign .ph-welcome-profile .staff-avatar{
+    width:86px;
+    height:86px;
+    border-width:2px;
+  }
+}
+@media(max-width:390px){
+  .personal-home .ph-welcome.ph-welcome-redesign{
+    grid-template-columns:78px minmax(0,1fr);
+    gap:12px;
+    padding:16px 14px;
+  }
+  .ph-welcome-redesign .ph-welcome-profile .staff-avatar{
+    width:74px;
+    height:74px;
+  }
+  .personal-home .ph-welcome-redesign .ph-hello>h1{
+    font-size:21px;
+  }
+}
+@media print{
+  .ph-welcome-redesign .ph-welcome-tools{display:none!important}
+}
