@@ -191,7 +191,7 @@
     }
     var ddItems = '<button class="ud-item" data-goto="home">الرئيسية الشخصية</button>';
     if(tabs.indexOf('human_resources')!==-1)ddItems+='<button class="ud-item" data-goto="human_resources">الموارد البشرية</button>';
-    if(tabs.indexOf('price_lists')!==-1)ddItems+='<button class="ud-item" data-goto="price_lists">الخدمات ولوائح الأسعار</button>';
+    if(tabs.indexOf('price_lists')!==-1&&tabs.indexOf('contracting_entities')===-1)ddItems+='<button class="ud-item" data-goto="price_lists">جهات التعاقد ولوائح الأسعار</button>';
     if (mainSuiteTabs.length) ddItems += '<button class="ud-item" data-goto="'+mainSuiteTabs[0]+'">'+window.SSMPDI18n.textHtml(R.isControlledFinance(admin)?TAB_LABELS[mainSuiteTabs[0]]:'إنتاج المحتوى')+'</button>';
     if (tabs.indexOf("patients") !== -1) ddItems += "<button class=\"ud-item\" data-goto=\"patients\"> <!--ssmpd-i18n:%D8%A3%D8%B1%D8%B4%D9%8A%D9%81%20%D8%A7%D9%84%D9%85%D8%B1%D8%B6%D9%89-->أرشيف المرضى</button>";
     if (tabs.indexOf("leads") !== -1) ddItems += "<button class=\"ud-item\" data-goto=\"leads\"> <!--ssmpd-i18n:%D8%A5%D8%AF%D8%A7%D8%B1%D8%A9%20%D8%A7%D9%84%D9%84%D9%8A%D8%AF%D8%B2%20%D9%88%D8%A7%D9%84%D8%AA%D9%88%D8%A7%D8%B5%D9%84-->إدارة الليدز والتواصل</button>";

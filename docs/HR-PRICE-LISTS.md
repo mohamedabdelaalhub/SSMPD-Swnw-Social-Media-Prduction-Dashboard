@@ -1,5 +1,7 @@
 # Human resources and price lists
 
+Updated import, canonical service identity, contracting placement and calculated-payroll behavior is documented in [CONTRACT-PRICE-IMPORTS-PAYROLL.md](CONTRACT-PRICE-IMPORTS-PAYROLL.md). The sections below describe the initial release and its original limitations.
+
 ## Shared records and authorization
 
 `human_resources` provides employee and collaborating-doctor profiles, canonical account/doctor/payroll key links, departments/branches/managers, dates, emergency contacts and HTTPS document references. Only managers, super admins or accounts explicitly granted `has_hr_access` manage personnel. Other active accounts get their own linked profile and can request leave, permission, overtime, training or an advance. They cannot browse other people. HR access does not grant financial access.
