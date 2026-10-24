@@ -6,3 +6,4 @@
 .wn-file-dialog{box-sizing:border-box}.wn-entity-card h3{overflow-wrap:anywhere}.wn-panel .wp-actions{margin-block:12px}
 .wn-mobile-file{display:none}.wn-file-dialog .modal-head h3{font-size:18px;min-width:0;flex:1;white-space:normal}.wn-file-dialog .modal-head{padding:12px;gap:10px}.wn-file-dialog .wn-fold .kpis{margin-block:12px!important}
 @media(max-width:600px){.wn-mobile-file{display:grid;margin-block:12px}.wn-file-dialog>.wn-tabs{display:none}.wn-file-dialog .modal-head h3{font-size:16px}}
+.wp-modal [hidden],.wp [hidden],.wn-contract-root [hidden],.wn-file-dialog [hidden]{display:none!important}
