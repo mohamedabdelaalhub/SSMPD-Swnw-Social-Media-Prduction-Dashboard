@@ -1387,7 +1387,7 @@
     operationsAIEnabled: function () { return handle(client.rpc("operations_ai_enabled")).then(function(v){return v===true;}).catch(function(){return false;}); },
     operationsAdvice: function (id) { return client.functions.invoke("operations-advisor",{body:{issue_id:id}}).then(function(r){if(r.error||r.data?.error)throw Error(r.data?.error||"تعذر تشغيل المستشار. تحقق من التفعيل والرصيد.");return r.data;}); },
     taskListProjects: function () { return handle(client.rpc("task_list_projects")); },
-    taskListVisible: function () { return handle(client.rpc("task_list_visible")); },
+    taskListVisible: function () { return handle(client.rpc("task_list_with_assignment")); },
     taskPeople: function () { return handle(client.rpc("task_people")); },
     taskListNotifications: function () {
       return handle(client.from("task_notifications").select("*").eq("recipient_id", window.SSMPDAuth.currentAdmin.id).order("created_at", { ascending: false }).limit(40));

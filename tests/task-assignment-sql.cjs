@@ -1,0 +1,27 @@
+const {PGlite}=require('@electric-sql/pglite'),fs=require('fs'),assert=require('node:assert/strict');
+const root=__dirname+'/../',id=n=>'50000000-0000-4000-8000-'+String(n).padStart(12,'0');
+(async()=>{
+ const db=new PGlite();await db.exec(`create role anon;create role authenticated;create role service_role;create schema auth;
+ create table admins(id uuid primary key,name text,email text,role text,active boolean default true);
+ create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('test.admin',true),'')::uuid$$;
+ create function my_admin_id() returns uuid language sql stable as $$select id from public.admins where id=auth.uid() and active$$;
+ create function has_role(r text) returns boolean language sql stable as $$select exists(select 1 from public.admins where id=my_admin_id() and role=r)$$;
+ create function finance_module_allowed(m text,a text) returns boolean language sql stable as $$select my_admin_id() is not null and coalesce(current_setting('test.denied',true),'')<>'yes'$$;
+ grant usage on schema public,auth to authenticated;grant select on admins to authenticated;`);
+ for(const f of ['202610120001_tasks_module.sql','202610130001_task_edit_recurrence.sql','202610130004_task_hierarchy_controls.sql'])await db.exec(fs.readFileSync(root+'supabase/migrations/'+f,'utf8').replace('create extension if not exists pgcrypto;','').split('create extension if not exists pg_cron')[0]);
+ for(const n of [1,2,3])await db.query('insert into admins(id,name,role) values($1,$2,$3)',[id(n),'اسم '+n,n===2?'designer':'super_admin']);
+ const as=async n=>{await db.exec('reset role');await db.query("select set_config('test.admin',$1,false)",[id(n)]);await db.exec('set role authenticated');};
+ const call=async(fn,args=[])=> (await db.query('select '+fn+'('+args.map((_,i)=>'$'+(i+1)).join(',')+') result',args)).rows[0].result;
+ await as(1);const p=await call('task_create_project',['اختبار','',id(1),[]]);
+ const make=()=>call('task_create',[p,null,'مهمة','','',id(2),null,'normal']);const legacy=await make();
+ await db.exec('reset role');const file=process.argv[2]||root+'supabase/migrations/'+fs.readdirSync(root+'supabase/migrations').find(f=>f.endsWith('_task_assignment_identity.sql'));await db.exec(fs.readFileSync(file,'utf8'));
+ await as(1);const task=await make();let list=await call('task_list_with_assignment');
+ assert.equal(list.find(t=>t.id===legacy).assigner_name,null,'unknown legacy assigner stays unknown');assert.equal(list.find(t=>t.id===legacy).creator_name,'اسم 1');
+ assert.equal(list.find(t=>t.id===task).assigner_name,'اسم 1');assert(list.find(t=>t.id===task).assigned_at);
+ await as(3);await db.query('update tasks set assignee_id=$1 where id=$2',[id(3),task]);list=await call('task_list_with_assignment');assert.equal(list.find(t=>t.id===task).assigner_name,'اسم 3');assert.equal(list.find(t=>t.id===task).creator_name,'اسم 1');
+ await db.query('update tasks set assigned_by=$1,assigned_at=null,title=$2 where id=$3',[id(1),'تحديث',task]);list=await call('task_list_with_assignment');assert.equal(list.find(t=>t.id===task).assigner_name,'اسم 3','metadata cannot be spoofed');assert(list.find(t=>t.id===task).assigned_at);
+ await as(2);list=await call('task_list_with_assignment');assert.deepEqual(list.map(t=>t.id),[legacy],'same visible task scope');
+ await db.exec("select set_config('test.denied','yes',false)");assert.deepEqual(await call('task_list_with_assignment'),[]);
+ await db.exec('reset role;set role anon');await assert.rejects(()=>call('task_list_with_assignment'),/permission denied/);
+ await db.close();console.log('PASS task assignment SQL: creation, reassignment, spoof protection, honest legacy, employee/module/anonymous scope.');
+})().catch(e=>{console.error(e);process.exit(1)});
