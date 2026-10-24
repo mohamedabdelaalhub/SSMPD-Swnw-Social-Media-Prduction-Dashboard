@@ -1,0 +1,24 @@
+@media screen {
+  #ssmpd-scroll-top {
+    position:fixed;
+    inset-inline-end:16px;
+    bottom:calc(20px + env(safe-area-inset-bottom, 0px));
+    width:44px;
+    height:44px;
+    padding:0;
+    display:grid;
+    place-items:center;
+    border:1px solid #d5deee;
+    border-radius:50%;
+    background:#fff;
+    color:#0f369d;
+    box-shadow:0 3px 12px rgba(15,54,157,.16);
+    cursor:pointer;
+    z-index:90;
+    touch-action:manipulation;
+  }
+  #ssmpd-scroll-top[hidden] {display:none!important}
+  #ssmpd-scroll-top:hover {background:#eaf1ff}
+  #ssmpd-scroll-top:focus-visible {outline:3px solid #0f369d;outline-offset:3px}
+}
+@media print {#ssmpd-scroll-top {display:none!important}}
