@@ -1,0 +1,97 @@
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { createClient } from "npm:@supabase/supabase-js@2";
+
+const URL = Deno.env.get("SUPABASE_URL")!;
+const SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
+const CLIENT_KEY = Deno.env.get("TIKTOK_CLIENT_KEY")!;
+const CLIENT_SECRET = Deno.env.get("TIKTOK_CLIENT_SECRET")!;
+const DASHBOARD = "https://mohamedabdelaalhub.github.io/SSMPD-Swnw-Social-Media-Prduction-Dashboard/";
+const REDIRECT_URI = URL.replace(/\/+$/, "") + "/functions/v1/tiktok-auth";
+const admin = createClient(URL, SERVICE, { auth: { persistSession: false } });
+const cors = {
+  "Access-Control-Allow-Origin": DASHBOARD.slice(0, -1),
+  "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info",
+  "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+  "Content-Type": "application/json; charset=utf-8"
+};
+const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: cors });
+
+async function currentAdmin(req: Request) {
+  const token = req.headers.get("Authorization")?.replace(/^Bearer\s+/i, "");
+  if (!token) throw new Error("سجّل الدخول للداشبورد الأول.");
+  const client = createClient(URL, ANON, { global: { headers: { Authorization: "Bearer " + token } }, auth: { persistSession: false } });
+  const { data: userData, error: userError } = await client.auth.getUser(token);
+  if (userError || !userData.user) throw new Error("جلسة الدخول انتهت. سجّل الدخول مرة أخرى.");
+  const { data: row, error } = await admin.from("admins").select("id,user_id,role,active").eq("user_id", userData.user.id).maybeSingle();
+  if (error || !row || !row.active || !["page_manager","approver","general_manager","super_admin"].includes(row.role)) {
+    throw new Error("حسابك لا يملك صلاحية ربط حساب TikTok.");
+  }
+  return { user: userData.user, row };
+}
+
+function html(message: string) {
+  const safe = message.replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]!));
+  return new Response(`<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>ربط TikTok</title><body style="font:16px sans-serif;padding:32px;text-align:center"><p>${safe}</p><a href="${DASHBOARD}">الرجوع إلى الداشبورد</a><script>setTimeout(()=>location.replace("${DASHBOARD}"),1800)</script></body></html>`, { headers: { "Content-Type": "text/html; charset=utf-8" } });
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
+  try {
+    if (!CLIENT_KEY || !CLIENT_SECRET) return json({ error: "أسرار تطبيق TikTok غير مضبوطة في Supabase." }, 500);
+    if (req.method === "POST") {
+      const { row } = await currentAdmin(req);
+      const body = await req.json().catch(() => ({}));
+      const brand = body.brand;
+      if (!["sono","dr_dina"].includes(brand)) return json({ error: "اختار صفحة سونو أو د.دينا." }, 400);
+      const stateBytes = crypto.getRandomValues(new Uint8Array(32));
+      const state = Array.from(stateBytes, x => x.toString(16).padStart(2,"0")).join("");
+      const { error } = await admin.from("tiktok_oauth_states").insert({
+        state, brand, admin_user_id: row.user_id, expires_at: new Date(Date.now()+10*60*1000).toISOString()
+      });
+      if (error) throw error;
+      const authorize = new URL("https://www.tiktok.com/v2/auth/authorize/");
+      authorize.searchParams.set("client_key", CLIENT_KEY);
+      authorize.searchParams.set("response_type", "code");
+      authorize.searchParams.set("scope", "user.info.basic,video.publish");
+      authorize.searchParams.set("redirect_uri", REDIRECT_URI);
+      authorize.searchParams.set("state", state);
+      return json({ authorize_url: authorize.toString(), redirect_uri: REDIRECT_URI });
+    }
+    if (req.method !== "GET") return json({ error: "Method not allowed" }, 405);
+    const url = new URL(req.url);
+    if (url.searchParams.get("error")) return html("لم يكتمل ربط حساب TikTok. ارجع للداشبورد وحاول مرة أخرى.");
+    const code = url.searchParams.get("code"), state = url.searchParams.get("state");
+    if (!code || !state) return html("بيانات العودة من TikTok ناقصة.");
+    const { data: stateRow, error: stateError } = await admin.from("tiktok_oauth_states").delete().eq("state",state).gt("expires_at",new Date().toISOString()).select("brand,admin_user_id").maybeSingle();
+    if (stateError || !stateRow) return html("انتهت صلاحية محاولة الربط. ارجع للداشبورد وابدأ الربط مرة أخرى.");
+    const tokenRes = await fetch("https://open.tiktokapis.com/v2/oauth/token/", {
+      method:"POST", headers:{"Content-Type":"application/x-www-form-urlencoded"},
+      body:new URLSearchParams({client_key:CLIENT_KEY,client_secret:CLIENT_SECRET,code,grant_type:"authorization_code",redirect_uri:REDIRECT_URI})
+    });
+    const tokenData = await tokenRes.json().catch(()=>({}));
+    if (!tokenRes.ok || tokenData.error || !tokenData.access_token) {
+      console.error("TikTok OAuth exchange failed", tokenData.error || tokenRes.status);
+      return html("TikTok لم يُكمل التفويض. راجع إعداد Redirect URI في صفحة التطبيق ثم حاول مرة أخرى.");
+    }
+    const profileRes = await fetch("https://open.tiktokapis.com/v2/user/info/?fields=open_id,display_name,avatar_url", {
+      headers:{Authorization:"Bearer "+tokenData.access_token}
+    });
+    const profileData = await profileRes.json().catch(()=>({}));
+    const profile = profileData.data?.user || {};
+    const { error: saveError } = await admin.from("tiktok_accounts").upsert({
+      brand:stateRow.brand, open_id:tokenData.open_id, username:profile.username||null,
+      display_name:profile.display_name||null, avatar_url:profile.avatar_url||null,
+      access_token:tokenData.access_token, refresh_token:tokenData.refresh_token,
+      access_token_expires_at:new Date(Date.now()+Number(tokenData.expires_in||86400)*1000).toISOString(),
+      refresh_token_expires_at:new Date(Date.now()+Number(tokenData.refresh_expires_in||31536000)*1000).toISOString(),
+      scopes:String(tokenData.scope||"").split(",").filter(Boolean), connected_by:stateRow.admin_user_id,
+      updated_at:new Date().toISOString()
+    },{onConflict:"brand"});
+    if (saveError) throw saveError;
+    return html("تم ربط حساب TikTok بنجاح.");
+  } catch (e) {
+    if (req.method === "GET") return html("تعذر ربط الحساب. ارجع للداشبورد وحاول مرة أخرى.");
+    return json({ error: e instanceof Error ? e.message : "تعذر ربط الحساب." }, 400);
+  }
+});
