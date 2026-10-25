@@ -48,7 +48,7 @@ const ALLOWED: [string, RegExp][] = [
   ["POST", /^\/rest\/v1\/meta_publish_jobs(\?|$)/],
   // التقرير الأسبوعي: مهام Claude نفسه فقط (RLS بتمنع أي حاجة تانية)
   ["GET", /^\/rest\/v1\/(tasks|task_updates)\?/],
-  ["POST", /^\/rest\/v1\/rpc\/(task_set_status|task_add_comment)$/],
+  ["POST", /^\/rest\/v1\/rpc\/(task_set_status|task_add_comment|task_add_comment_to)$/],
 ];
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 

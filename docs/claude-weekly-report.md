@@ -45,7 +45,10 @@ Go beyond ranking posts — look for patterns that repeat across at least 3 post
 - Rate every conclusion: **قوي** (≥ 3 posts agree) / **مبدئي** (1–2 posts) / **بيانات ناقصة**.
 
 ## 3. Write the report (Egyptian Arabic, short sentences, tables where numbers matter)
-Sections, in this order:
+**Readability first (Mohamed, 2026-10-26 — the reports were too hard to read):** the Google Doc opens with ONE page he can read in 2 minutes:
+title → «قرارات مطلوبة منك» (max 4, each with your recommendation) → a small numbers table (this week | last week | change) → 3–5 one-line bullets.
+Everything else comes after a line «التفاصيل». Use Doc headings (Heading 1/2), real tables for numbers, bullets instead of paragraphs, no paragraph longer than 3 lines, no raw long URLs (put links behind short text).
+Sections, in this order (after that first page):
 1. **الخلاصة في 5 سطور** (what happened, biggest win, biggest problem, what needs Mohamed, next week focus).
 2. **الأرقام** — small table: this week | last week | change (posts, reach, interactions, leads, booked, scheduled next week).
 3. **المحتوى المُعد والمُعتمد** — published (title · page · format · publish date · link), then waiting approval, then scheduled.
@@ -67,11 +70,11 @@ Sections, in this order:
    - find the open occurrence: GET `/rest/v1/tasks?title=eq.<URL-encoded title>&status=in.(todo,in_progress,revision)&order=due_at.asc&limit=1&select=id,status,due_at,return_note` — if none, stop silently (already submitted). If `status=revision`, read `return_note` and fix exactly that.
    - POST `/rest/v1/rpc/task_set_status` `{p_task_id, p_status:"in_progress", p_note:"بدأت إعداد التقرير"}` (skip if already in_progress).
 3. Save the report as a **Google Doc on Google Drive** (task files live on Drive, never on Supabase Storage): Google Drive connector → folder «تقارير أسبوعية» inside the dashboard archive folder (id `1xghscimJG2f8CB2N3I0lC3fHrhZk2aMO`; create the subfolder once, reuse it) → title `تقرير تسويق سونو الأسبوعي — <YYYY-MM-DD>`. If Doc creation fails, upload the same content as an `.html` file and say so.
-4. POST `/rest/v1/rpc/task_add_comment` `{p_task_id, p_body:"<5-line summary + the Drive link>", p_attachments:[]}`.
+4. POST `/rest/v1/rpc/task_add_comment` `{p_task_id, p_body:"<report card>", p_attachments:[]}` — the body MUST use the report card format in `docs/claude-task-requests.md` §4: `::report تقرير تسويق سونو — <dates> | <one short line>`, then «قرارات مطلوبة منك» (numbered, `|| recommendation`), 4–6 `[kpi]` tiles, 3–5 `-` bullets, `[doc] <Doc link>` and `[wa] <link>` (step 7). No raw long URLs in the text.
 5. POST `/rest/v1/rpc/task_set_status` `{p_task_id, p_status:"review", p_note:"<one-line summary>"}` — submit for review. NEVER mark it done: Mohamed approves.
 6. Archive: `insert into weekly_reports(week_start, week_end, doc_url, summary, decisions, priorities, recommendations) values (...) returning id;` (jsonb for the last three). `priorities` MUST be a JSON array (max 6) of `{"title":"<what, one line>","owner":"<staff name as it appears in the dashboard, or empty>","due_days":<1-7>,"why":"<evidence>","expected":"<deliverable>"}`.
 6b. **Proposals → tasks (automatic)**: `select public.weekly_proposals_to_tasks('<report id>');` — creates one dashboard task per priority in the marketing project (assigned by name, else the project manager, due in `due_days`, with a notification). It is idempotent; never create them by hand. A Wednesday reminder (cron) nudges owners of the ones still open.
-7. **WhatsApp-ready summary**: we have no WhatsApp sending channel, so add to the task comment a tap-to-send link: `https://wa.me/?text=<URL-encoded 5-line summary + the Drive link>` (he taps it, picks a chat, sends). Keep the text under 700 characters.
+7. **WhatsApp-ready summary**: we have no WhatsApp sending channel, so add to the report card a `[wa] https://wa.me/?text=<URL-encoded 5-line summary + the Drive link>` line (it renders as a «ابعت الملخص واتساب» button; he taps it, picks a chat, sends). Keep the text under 500 characters.
 8. Send Mohamed ONE short Egyptian-Arabic message: the 5-line summary, the Drive link, the decisions he must make. Mention any failure plainly.
 
 If the Meta connector reads fail, still deliver the report from stored data and put «تعذّر قراءة ميتا مباشرة: <السبب>» at the top of section 11.

@@ -1489,15 +1489,17 @@
     taskChecklistToggle: function (id, done) { return handle(client.rpc("task_checklist_toggle", { p_id: id, p_done: !!done })); },
     taskChecklistRemove: function (id) { return handle(client.rpc("task_checklist_remove", { p_id: id })); },
     taskListUpdates: function (taskId) {
-      return handle(client.from("task_updates").select("id,task_id,author_id,body,status_from,status_to,created_at").eq("task_id",taskId).order("created_at",{ascending:false}));
+      return handle(client.from("task_updates").select("id,task_id,author_id,body,status_from,status_to,created_at,addressed_to").eq("task_id",taskId).order("created_at",{ascending:false}));
     },
     taskProjectArchives: function () { return handle(client.from("task_projects").select("id,archived_at")); },
     taskSetProjectArchived: function (projectId, on) {
       return handle(client.from("task_projects").update({ archived_at: on ? new Date().toISOString() : null }).eq("id", projectId));
     },
     // تعليق (+ مرفقات اختيارية) عن طريق الدالة اللي بترسل الإشعارات. لو الدالة لسه مش منشورة بنرجع للإدخال المباشر (من غير مرفقات).
-    taskAddComment: function (taskId, body, attachments) {
+    taskAddComment: function (taskId, body, attachments, addressedTo) {
       var atts = attachments || [], text = String(body || "").trim();
+      // تعليق موجّه لشخص بعينه (Claude أو موظف) — بيوصله إشعار، ولو Claude بيتحوّل لطلب شغل
+      if (addressedTo) return handle(client.rpc("task_add_comment_to", { p_task_id: taskId, p_body: text, p_attachments: atts, p_addressed_to: addressedTo }));
       return handle(client.rpc("task_add_comment", { p_task_id: taskId, p_body: text, p_attachments: atts })).catch(function (e) {
         if (atts.length || !/schema cache|could not find (the )?function/i.test(String(e && e.message || ""))) throw e;
         return handle(client.from("task_updates").insert({ task_id: taskId, author_id: window.SSMPDAuth.currentAdmin.id, body: text }));
