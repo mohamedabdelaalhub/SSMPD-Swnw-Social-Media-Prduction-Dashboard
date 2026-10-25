@@ -7,10 +7,11 @@ const ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
 const CLIENT_KEY = Deno.env.get("TIKTOK_CLIENT_KEY")!;
 const CLIENT_SECRET = Deno.env.get("TIKTOK_CLIENT_SECRET")!;
 const DASHBOARD = "https://mohamedabdelaalhub.github.io/SSMPD-Swnw-Social-Media-Prduction-Dashboard/";
+const DASHBOARD_ORIGIN = "https://mohamedabdelaalhub.github.io";
 const REDIRECT_URI = URL.replace(/\/+$/, "") + "/functions/v1/tiktok-auth";
 const admin = createClient(URL, SERVICE, { auth: { persistSession: false } });
 const cors = {
-  "Access-Control-Allow-Origin": DASHBOARD.slice(0, -1),
+  "Access-Control-Allow-Origin": DASHBOARD_ORIGIN,
   "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info",
   "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
   "Content-Type": "application/json; charset=utf-8"
