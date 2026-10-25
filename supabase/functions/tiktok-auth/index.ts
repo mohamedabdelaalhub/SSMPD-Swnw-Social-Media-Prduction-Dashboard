@@ -44,22 +44,9 @@ Deno.serve(async (req) => {
       const body = await req.json().catch(() => ({}));
       const brand = body.brand;
       if (!["sono","dr_dina"].includes(brand)) return json({ error: "اختار صفحة سونو أو د.دينا." }, 400);
-      const stateBytes = crypto.getRandomValues(new Uint8Array(32));
-      const state = Array.from(stateBytes, x => x.toString(16).padStart(2,"0")).join("");
-      const { error } = await admin.from("tiktok_oauth_states").insert({
-        state, brand, admin_user_id: row.user_id, expires_at: new Date(Date.now()+10*60*1000).toISOString()
-      });
-      if (error) throw error;
-      const authorize = new URL("https://www.tiktok.com/v2/auth/authorize/");
-      authorize.searchParams.set("client_key", CLIENT_KEY);
-      authorize.searchParams.set("response_type", "code");
-      authorize.searchParams.set("scope", "user.info.basic,video.publish");
-      authorize.searchParams.set("redirect_uri", REDIRECT_URI);
-      authorize.searchParams.set("state", state);
-      return json({ authorize_url: authorize.toString(), redirect_uri: REDIRECT_URI });
-    }
       if (body.op === "connection") {
-        const { data } = await admin.from("tiktok_accounts").select("brand,display_name,avatar_url,updated_at").eq("brand",brand).maybeSingle();
+        const { data, error } = await admin.from("tiktok_accounts").select("brand,display_name,avatar_url,updated_at").eq("brand",brand).maybeSingle();
+        if(error)throw error;
         return json({ connected:!!data, account:data||null });
       }
       if (body.op === "creator_info") {
@@ -81,6 +68,20 @@ Deno.serve(async (req) => {
         return json({connected:true,creator:data.data||{}});
       }
       if (body.op !== "connect") return json({ error: "عملية غير معروفة." }, 400);
+      const stateBytes = crypto.getRandomValues(new Uint8Array(32));
+      const state = Array.from(stateBytes, x => x.toString(16).padStart(2,"0")).join("");
+      const { error } = await admin.from("tiktok_oauth_states").insert({
+        state, brand, admin_user_id: row.user_id, expires_at: new Date(Date.now()+10*60*1000).toISOString()
+      });
+      if (error) throw error;
+      const authorize = new URL("https://www.tiktok.com/v2/auth/authorize/");
+      authorize.searchParams.set("client_key", CLIENT_KEY);
+      authorize.searchParams.set("response_type", "code");
+      authorize.searchParams.set("scope", "user.info.basic,video.publish");
+      authorize.searchParams.set("redirect_uri", REDIRECT_URI);
+      authorize.searchParams.set("state", state);
+      return json({ authorize_url: authorize.toString(), redirect_uri: REDIRECT_URI });
+    }
     if (req.method !== "GET") return json({ error: "Method not allowed" }, 405);
     const url = new URL(req.url);
     if (url.searchParams.get("error")) return html("لم يكتمل ربط حساب TikTok. ارجع للداشبورد وحاول مرة أخرى.");
