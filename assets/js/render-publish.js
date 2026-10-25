@@ -511,7 +511,7 @@
       html += '<div style="color:var(--c-negative);">سبب المشكلة: ' + escapeHtml(job.error_message) + '</div>';
     }
     if (job.status === "pending") {
-      html += '<div style="margin-top:4px;"><button class="btn ghost sm" data-cancel-meta-job="' + job.id + '">إلغاء النشر التلقائي</button></div>';
+      html += '<div style="margin-top:4px;"><button class="btn ghost sm" data-cancel-meta-job="' + job.id + '" data-meta-job="' + (job.meta_job_id||"") + '" data-tiktok-job="' + (job.tiktok_job_id||"") + '">إلغاء النشر التلقائي</button></div>';
     }
     html += '</div>';
     return html;
