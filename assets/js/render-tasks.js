@@ -31,7 +31,27 @@
     });
   }
   function norm(v){return String(v==null?"":v).toLowerCase().replace(/[ً-ٰٟـ]/g,"").replace(/[أإآ]/g,"ا").replace(/ى/g,"ي").replace(/ة/g,"ه").replace(/[٠-٩]/g,function(c){return String(c.charCodeAt(0)-1632);});}
-  function linkify(text){return esc(text).replace(/(https?:\/\/[^\s<]+)/g,function(u){var clean=u.replace(/[.,،؛)]+$/,""),tail=u.slice(clean.length);return '<a href="'+clean+'" target="_blank" rel="noopener noreferrer">'+clean+'</a>'+tail;});}
+  // روابط قصيرة بدل الروابط الطويلة (واتساب/مستندات Google/Drive) — النص كله بيتعمل له escape الأول
+  var URL_RE=/(https?:\/\/[^\s<>"']+)/g,CLAUDE_ID="a0fbdfee-d147-4282-b988-186a9ae3e88c";
+  function shortLink(raw,label){var url=raw.replace(/[.,،؛)]+$/,""),tail=raw.slice(url.length);
+    if(!label){if(/^https:\/\/wa\.me\//.test(url))label="💬 ابعت واتساب";else if(/docs\.google\.com\/document/.test(url))label="📄 افتح المستند";else if(/docs\.google\.com\/spreadsheets/.test(url))label="📊 افتح الشيت";else if(/docs\.google\.com\/presentation/.test(url))label="🖼️ افتح العرض";else if(/drive\.google\.com/.test(url))label="📎 افتح الملف";else label=url.length>60?url.slice(0,57)+"…":url;}
+    return '<a class="tsk-link" href="'+esc(url)+'" target="_blank" rel="noopener noreferrer">'+esc(label)+'</a>'+esc(tail);}
+  function linkify(text){var out="",last=0,m;text=String(text==null?"":text);URL_RE.lastIndex=0;while((m=URL_RE.exec(text))){out+=esc(text.slice(last,m.index))+shortLink(m[0]);last=m.index+m[0].length;}return out+esc(text.slice(last));}
+  // تقرير Claude: أول سطر «::report العنوان | سطر صغير»، وبعده ## عناوين، [kpi] اسم | رقم | تغيير، 1. بند || ملاحظة، - نقطة، [doc]/[wa] رابط
+  function reportHtml(body){
+    var lines=String(body).split(/\r?\n/),head=lines.shift().replace(/^::report\s*/,"").split("|"),h="",list="",kpis=[],acts=[],dec=false;
+    function flush(){if(kpis.length){h+='<div class="rep-kpis">'+kpis.join("")+'</div>';kpis=[];}if(list){h+=list+(list.indexOf("<ol")===0?"</ol>":"</ul>");list="";}}
+    lines.forEach(function(raw){var l=raw.trim(),m;if(!l)return;
+      if((m=l.match(/^##\s*(.+)$/))){flush();dec=/قرار/.test(m[1]);h+='<h4>'+esc(m[1])+'</h4>';return;}
+      if((m=l.match(/^\[kpi\]\s*(.+)$/i))){if(list){flush();}var k=m[1].split("|").map(function(x){return x.trim();}),ch=k[2]||"",cls=/^[▲+↑]/.test(ch)?"up":(/^[▼\-↓−]/.test(ch)?"dn":"");kpis.push('<div class="rep-kpi"><span>'+esc(k[0]||"")+'</span><b>'+esc(k[1]||"")+'</b>'+(ch?'<em class="'+cls+'">'+esc(ch)+'</em>':"")+'</div>');return;}
+      if((m=l.match(/^\[(doc|wa|link)\]\s*(?:(.+?)\s*\|\s*)?(https?:\/\/\S+)$/i))){var t=m[1].toLowerCase();acts.push(shortLink(m[3],m[2]||(t==="doc"?"📄 افتح التقرير الكامل":t==="wa"?"💬 ابعت الملخص واتساب":null)).replace('class="tsk-link"','class="btn rep-act'+(t==="wa"?" wa":"")+'"'));return;}
+      if(kpis.length)flush();
+      if((m=l.match(/^\d+[.)]\s*(.+)$/))){if(list.indexOf("<ol")!==0){if(list)flush();list='<ol class="'+(dec?"rep-dec":"")+'">';}var parts=m[1].split("||");list+='<li>'+linkify(parts[0].trim())+(parts[1]?'<em>'+linkify(parts[1].trim())+'</em>':"")+'</li>';return;}
+      if((m=l.match(/^[-•*]\s*(.+)$/))){if(list.indexOf("<ul")!==0){if(list)flush();list="<ul>";}list+='<li>'+linkify(m[1])+'</li>';return;}
+      flush();h+='<p>'+linkify(l)+'</p>';});
+    flush();
+    return '<div class="tsk-report"><div class="rep-head"><b>'+esc((head[0]||"تقرير").trim())+'</b>'+(head[1]?'<span>'+esc(head[1].trim())+'</span>':"")+'</div><div class="rep-body">'+h+'</div>'+(acts.length?'<div class="rep-acts">'+acts.join("")+'</div>':"")+'</div>';}
+  function bodyHtml(body){return /^::report\b/.test(String(body||""))?reportHtml(body):'<p>'+linkify(body)+'</p>';}
   var FILE_EXT=["png","jpg","jpeg","webp","gif","pdf","txt","csv","doc","docx","xls","xlsx","ppt","pptx"],MAX_FILES=10,MAX_BYTES=10485760;
   function fileSize(n){return n>=1048576?(n/1048576).toFixed(1).replace(/\.0$/,"")+" MB":Math.max(1,Math.round(n/1024))+" KB";}
   function store(key,value){try{if(value===undefined)return window.localStorage.getItem("ssmpd.tasks."+key);window.localStorage.setItem("ssmpd.tasks."+key,value);}catch(e){}return null;}
@@ -376,8 +396,8 @@
       if(state.modal==="history"){
         var ht=state.tasks.find(function(x){return x.id===state.historyTask;})||{};
         html+=modal("التعليقات وسجل التحديثات",(ht.title?'<p class="tsk-note-for">'+esc(ht.title)+'</p>':"")+
-          '<form data-form="comment" class="tsk-comment-form"><textarea name="comment" rows="3" maxlength="5000" placeholder="اكتب تعليق، أو الصق رابط ملف (Drive مثلاً)…"></textarea><div class="tsk-file-list" data-file-list></div><p class="tsk-field-error" role="alert" hidden></p><div class="tsk-form-actions"><label class="btn tsk-file-btn">📎 إرفاق ملفات<input type="file" multiple data-comment-files accept=".png,.jpg,.jpeg,.webp,.gif,.pdf,.txt,.csv,.doc,.docx,.xls,.xlsx,.ppt,.pptx"></label><button class="btn btn-primary" type="submit">إرسال التعليق</button></div><p class="tsk-hint">حتى 10 ملفات، كل ملف لحد 10 ميجا (صور، PDF، Word، Excel، PowerPoint، نص). الملفات بتتحفظ على Google Drive.</p></form>'+
-          '<div class="tsk-history">'+((state.history||[]).map(function(u){return '<article><b>'+esc(u.author_name||"عضو الفريق")+'</b><small>'+esc(stamp(u.created_at))+'</small>'+(u.status_to?'<span class="tsk-hist-status">'+esc((STATUS[u.status_from]||"")+(u.status_from?" ← ":"")+(STATUS[u.status_to]||u.status_to))+'</span>':"")+'<p>'+linkify(u.body)+'</p>'+attsHtml(u.id)+'</article>';}).join("")||'<p class="tsk-empty">لا توجد تعليقات أو تحديثات بعد.</p>')+'</div>');
+          '<form data-form="comment" class="tsk-comment-form"><textarea name="comment" rows="3" maxlength="5000" placeholder="اكتب تعليق، أو الصق رابط ملف (Drive مثلاً)…"></textarea>'+recipientsHtml(ht)+'<div class="tsk-file-list" data-file-list></div><p class="tsk-field-error" role="alert" hidden></p><div class="tsk-form-actions"><label class="btn tsk-file-btn">📎 إرفاق ملفات<input type="file" multiple data-comment-files accept=".png,.jpg,.jpeg,.webp,.gif,.pdf,.txt,.csv,.doc,.docx,.xls,.xlsx,.ppt,.pptx"></label><button class="btn btn-primary" type="submit">إرسال التعليق</button></div><p class="tsk-hint">حتى 10 ملفات، كل ملف لحد 10 ميجا (صور، PDF، Word، Excel، PowerPoint، نص). الملفات بتتحفظ على Google Drive.</p></form>'+
+          '<div class="tsk-history">'+((state.history||[]).map(function(u){var toName=u.addressed_to?personName(u.addressed_to):"";return '<article><b>'+esc(u.author_name||"عضو الفريق")+'</b>'+(toName?'<span class="tsk-to-tag'+(u.author_id===CLAUDE_ID?" reply":"")+'">'+esc((u.author_id===CLAUDE_ID?"رد على ":"إلى: ")+toName)+'</span>':"")+'<small>'+esc(stamp(u.created_at))+'</small>'+(u.status_to?'<span class="tsk-hist-status">'+esc((STATUS[u.status_from]||"")+(u.status_from?" ← ":"")+(STATUS[u.status_to]||u.status_to))+'</span>':"")+bodyHtml(u.body)+attsHtml(u.id)+'</article>';}).join("")||'<p class="tsk-empty">لا توجد تعليقات أو تحديثات بعد.</p>')+'</div>');
       }
       el.innerHTML=html;
       var timingHost=el.querySelector('.tv-detail');
@@ -410,6 +430,17 @@
     function showErr(form,msg){var p=form.querySelector(".tsk-field-error");if(p){p.textContent=msg;p.hidden=false;}}
     function reloadChecklist(){return window.SSMPDDb.taskChecklistList(state.checkTask).then(function(rows){state.checklist=rows||[];var done=state.checklist.filter(function(c){return c.done;}).length;state.checkCounts[state.checkTask]={total:state.checklist.length,done:done};window.__tskCounts=state.checkCounts;draw();});}
     function openChecklist(id){state.checkTask=id;state.checklist=[];state.modal="checklist";draw();reloadChecklist().catch(function(e){state.modal="";state.error=e&&e.message||"تعذر تحميل القائمة";draw();});}
+    function personName(id){if(id===CLAUDE_ID)return "Claude";var p=state.people.find(function(x){return x.id===id;});return p?(p.name||p.email||"عضو الفريق"):"عضو الفريق";}
+    // التعليق لمين: الكل / Claude (لمدير المشروع) / المسؤول / مدير المشروع / شخص تاني
+    function recipientsHtml(t){var me=(window.SSMPDAuth.currentAdmin||{}).id,seen={},chips=[];
+      function add(id,label){if(!id||id===me||seen[id])return;seen[id]=1;chips.push('<label class="tsk-to-chip"><input type="radio" name="to" value="'+esc(id)+'"><span>'+esc(label)+'</span></label>');}
+      if(t.can_manage)add(CLAUDE_ID,"🤖 Claude");
+      if(t.assignee_id&&t.assignee_id!==CLAUDE_ID)add(t.assignee_id,personName(t.assignee_id)+" (المسؤول)");
+      if(t.project_manager_id)add(t.project_manager_id,personName(t.project_manager_id)+" (مدير المشروع)");
+      var others=state.people.filter(function(p){return p.id!==me&&!seen[p.id];});
+      return '<div class="tsk-to"><b>التعليق لـ:</b><label class="tsk-to-chip"><input type="radio" name="to" value="" checked><span>الكل</span></label>'+chips.join("")+
+        (others.length?'<label class="tsk-to-chip"><input type="radio" name="to" value="other"><span>شخص تاني</span></label><select name="to_other" hidden>'+others.map(function(p){return '<option value="'+esc(p.id)+'">'+esc(p.name||p.email)+'</option>';}).join("")+'</select>':"")+
+        '</div><p class="tsk-to-hint" data-to-hint hidden>Claude هيقرا تعليقك وينفّذه على المهمة دي في أول تشغيل (خلال ساعة تقريبًا)، ويرد عليك هنا بالنتيجة.</p>';}
     function openHistory(id){
       var rows;
       Promise.all([window.SSMPDDb.taskListUpdates(id),window.SSMPDDb.taskListAttachments?window.SSMPDDb.taskListAttachments(id).catch(function(){return [];}):Promise.resolve([])]).then(function(v){
@@ -450,9 +481,10 @@
     function submitComment(form,fd){
       var text=String(fd.get("comment")||"").trim(),files=state.pendingFiles.slice();
       if(!text&&!files.length){showErr(form,"اكتب التعليق أو أرفق ملفاً أولاً.");return;}
+      if(!text&&fd.get("to")===CLAUDE_ID){showErr(form,"اكتب لـ Claude المطلوب منه.");return;}
       var btn=form.querySelector("button[type=submit]");if(btn){btn.disabled=true;if(files.length)btn.textContent="بيرفع الملفات…";}
       var db=window.SSMPDDb,taskId=state.historyTask;
-      Promise.all(files.map(function(f){return db.taskUploadAttachment(taskId,f,(state.tasks.find(function(x){return x.id===taskId;})||{}).title);})).then(function(atts){return db.taskAddComment(taskId,text,atts);}).then(function(){state.pendingFiles=[];openHistory(taskId);}).catch(function(e){if(btn){btn.disabled=false;btn.textContent="إرسال التعليق";}showErr(form,e&&e.message||"تعذر إرسال التعليق");});
+      Promise.all(files.map(function(f){return db.taskUploadAttachment(taskId,f,(state.tasks.find(function(x){return x.id===taskId;})||{}).title);})).then(function(atts){var to=fd.get("to")||"";if(to==="other")to=fd.get("to_other")||"";return db.taskAddComment(taskId,text,atts,to||null);}).then(function(){state.pendingFiles=[];openHistory(taskId);}).catch(function(e){if(btn){btn.disabled=false;btn.textContent="إرسال التعليق";}showErr(form,e&&e.message||"تعذر إرسال التعليق");});
     }
     function onEscape(ev){if(!el.isConnected){document.removeEventListener("keydown",onEscape);return;}if(ev.key==="Escape"&&state.modal){if(work.busy())return;work.capture();state.modal="";state.note=null;state.pendingFiles=[];draw();}}
     document.addEventListener("keydown",onEscape);
@@ -513,6 +545,7 @@
     el.onchange=function(ev){
       if(ev.target.matches&&ev.target.matches("[data-check-id]")){window.SSMPDDb.taskChecklistToggle(ev.target.dataset.checkId,ev.target.checked).then(reloadChecklist).catch(function(e){state.error=e.message||"تعذر الحفظ";draw();});return;}
       if(ev.target.matches&&ev.target.matches("[data-comment-files]")){addFiles(ev.target);return;}
+      if(ev.target.matches&&ev.target.matches('input[name="to"]')){var cf=ev.target.closest("form"),sel=cf.querySelector('select[name="to_other"]'),hint=cf.querySelector("[data-to-hint]");if(sel)sel.hidden=ev.target.value!=="other";if(hint)hint.hidden=ev.target.value!==CLAUDE_ID;return;}
       var s=ev.target.closest&&ev.target.closest("[data-sel]");
       if(s){var k=s.dataset.sel;if(k==="project")state.fProject=s.value;else if(k==="assignee")state.fAssignee=s.value;else{state.sort=s.value;store("sort",s.value);}drawList();return;}
       if(ev.target.matches('input[name="repeat_active"]')){var fields=ev.target.closest("form").querySelector(".tsk-repeat-fields");if(fields)fields.hidden=!ev.target.checked;}
