@@ -105,11 +105,6 @@ async function processJob(job:any){
     if(creator.creator_can_post===false)throw new Error("حساب TikTok لا يستطيع النشر الآن. حاول لاحقًا.");
     if(!job.music_confirmation)throw new Error("يجب تأكيد موافقة TikTok على استخدام الموسيقى قبل النشر.");
     if(job.branded_content&&job.privacy_level==="SELF_ONLY")throw new Error("لا يمكن نشر محتوى الشراكة التجارية بخصوصية خاصة فقط.");
-    const {bytes,type}=await loadVideo(content.design_file_url);
-    const duration=mp4DurationSeconds(bytes);
-    if(!duration)throw new Error("تعذر قراءة مدة الفيديو. استخدم ملف MP4 أو MOV صالحًا.");
-    if(Number(creator.max_video_post_duration_sec)>0&&duration>Number(creator.max_video_post_duration_sec))throw new Error("مدة الفيديو ("+Math.ceil(duration)+" ثانية) تتجاوز الحد المسموح لهذا الحساب ("+creator.max_video_post_duration_sec+" ثانية).");
-    const title=String(content.caption_text||content.body||content.title||"").slice(0,2200);
     if(job.publish_id){
       const status=await api("/v2/post/publish/status/fetch/",account.access_token,{publish_id:job.publish_id});
       const state=status.status||status.publish_status||"";
@@ -127,6 +122,11 @@ async function processJob(job:any){
       await admin.from("tiktok_publish_jobs").update({status:"pending",publish_status:state||"PROCESSING_UPLOAD",scheduled_at:new Date(Date.now()+60000).toISOString(),updated_at:new Date().toISOString()}).eq("id",job.id);
       return;
     }
+    const {bytes,type}=await loadVideo(content.design_file_url);
+    const duration=mp4DurationSeconds(bytes);
+    if(!duration)throw new Error("تعذر قراءة مدة الفيديو. استخدم ملف MP4 أو MOV صالحًا.");
+    if(Number(creator.max_video_post_duration_sec)>0&&duration>Number(creator.max_video_post_duration_sec))throw new Error("مدة الفيديو ("+Math.ceil(duration)+" ثانية) تتجاوز الحد المسموح لهذا الحساب ("+creator.max_video_post_duration_sec+" ثانية).");
+    const title=String(content.caption_text||content.body||content.title||"").slice(0,2200);
     const chunkSize=10_000_000,total=Math.ceil(bytes.length/chunkSize);
     const init=await api("/v2/post/publish/video/init/",account.access_token,{
       post_info:{title,privacy_level:job.privacy_level,disable_comment:job.disable_comment,disable_duet:job.disable_duet,disable_stitch:job.disable_stitch,brand_content_toggle:job.branded_content,brand_organic_toggle:job.your_brand,is_aigc:false},
