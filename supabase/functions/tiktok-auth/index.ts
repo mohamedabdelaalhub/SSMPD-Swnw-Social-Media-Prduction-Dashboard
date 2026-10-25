@@ -58,6 +58,29 @@ Deno.serve(async (req) => {
       authorize.searchParams.set("state", state);
       return json({ authorize_url: authorize.toString(), redirect_uri: REDIRECT_URI });
     }
+      if (body.op === "connection") {
+        const { data } = await admin.from("tiktok_accounts").select("brand,display_name,avatar_url,updated_at").eq("brand",brand).maybeSingle();
+        return json({ connected:!!data, account:data||null });
+      }
+      if (body.op === "creator_info") {
+        const { data: account, error } = await admin.from("tiktok_accounts").select("*").eq("brand",brand).maybeSingle();
+        if(error)throw error;
+        if(!account)return json({ connected:false });
+        let token=account.access_token;
+        if(new Date(account.access_token_expires_at).getTime()<=Date.now()+5*60*1000){
+          if(new Date(account.refresh_token_expires_at).getTime()<=Date.now())return json({connected:true,reauthorize:true});
+          const refresh=await fetch("https://open.tiktokapis.com/v2/oauth/token/",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:new URLSearchParams({client_key:CLIENT_KEY,client_secret:CLIENT_SECRET,grant_type:"refresh_token",refresh_token:account.refresh_token})});
+          const rd=await refresh.json().catch(()=>({}));
+          if(!refresh.ok||rd.error||!rd.access_token)return json({connected:true,reauthorize:true});
+          token=rd.access_token;
+          await admin.from("tiktok_accounts").update({access_token:rd.access_token,refresh_token:rd.refresh_token||account.refresh_token,access_token_expires_at:new Date(Date.now()+Number(rd.expires_in||86400)*1000).toISOString(),refresh_token_expires_at:new Date(Date.now()+Number(rd.refresh_expires_in||31536000)*1000).toISOString(),updated_at:new Date().toISOString()}).eq("brand",brand);
+        }
+        const response=await fetch("https://open.tiktokapis.com/v2/post/publish/creator_info/query/",{method:"POST",headers:{Authorization:"Bearer "+token,"Content-Type":"application/json; charset=UTF-8"},body:"{}"});
+        const data=await response.json().catch(()=>({}));
+        if(!response.ok||data.error?.code&&data.error.code!=="ok")throw new Error(data.error?.message||"تعذر قراءة إعدادات حساب TikTok.");
+        return json({connected:true,creator:data.data||{}});
+      }
+      if (body.op !== "connect") return json({ error: "عملية غير معروفة." }, 400);
     if (req.method !== "GET") return json({ error: "Method not allowed" }, 405);
     const url = new URL(req.url);
     if (url.searchParams.get("error")) return html("لم يكتمل ربط حساب TikTok. ارجع للداشبورد وحاول مرة أخرى.");
