@@ -53,6 +53,20 @@ async function driveToken(){
   googleToken={value:data.access_token,expires:Date.now()+Number(data.expires_in||3600)*1000};return googleToken.value;
 }
 function driveId(url:string){const m=/\/file\/d\/([^/?#]+)/.exec(url);if(m)return m[1];try{const u=new URL(url);if(u.hostname.endsWith("drive.google.com"))return u.searchParams.get("id");}catch{}return null;}
+function mp4DurationSeconds(bytes:Uint8Array):number|null{
+  const view=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength);
+  const type=new TextEncoder().encode("mvhd");
+  for(let i=4;i+32<bytes.length;i++){
+    if(bytes[i]!==type[0]||bytes[i+1]!==type[1]||bytes[i+2]!==type[2]||bytes[i+3]!==type[3])continue;
+    const version=bytes[i+4];
+    try{
+      const scale=version===1?view.getUint32(i+24,false):view.getUint32(i+16,false);
+      const duration=version===1?Number(view.getBigUint64(i+28,false)):view.getUint32(i+20,false);
+      if(scale>0&&duration>0)return duration/scale;
+    }catch{return null;}
+  }
+  return null;
+}
 async function loadVideo(source:string):Promise<{bytes:Uint8Array,type:string}>{
   let res:Response;
   const id=driveId(source);
@@ -92,6 +106,9 @@ async function processJob(job:any){
     if(!job.music_confirmation)throw new Error("يجب تأكيد موافقة TikTok على استخدام الموسيقى قبل النشر.");
     if(job.branded_content&&job.privacy_level==="SELF_ONLY")throw new Error("لا يمكن نشر محتوى الشراكة التجارية بخصوصية خاصة فقط.");
     const {bytes,type}=await loadVideo(content.design_file_url);
+    const duration=mp4DurationSeconds(bytes);
+    if(!duration)throw new Error("تعذر قراءة مدة الفيديو. استخدم ملف MP4 أو MOV صالحًا.");
+    if(Number(creator.max_video_post_duration_sec)>0&&duration>Number(creator.max_video_post_duration_sec))throw new Error("مدة الفيديو ("+Math.ceil(duration)+" ثانية) تتجاوز الحد المسموح لهذا الحساب ("+creator.max_video_post_duration_sec+" ثانية).");
     const title=String(content.caption_text||content.body||content.title||"").slice(0,2200);
     if(job.publish_id){
       const status=await api("/v2/post/publish/status/fetch/",account.access_token,{publish_id:job.publish_id});
