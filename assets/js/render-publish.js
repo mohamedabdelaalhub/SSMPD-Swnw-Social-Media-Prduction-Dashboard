@@ -805,6 +805,7 @@
     var when = valueOf("pb-when-" + id);
     if (!brand) { notify("اختر المادة دي لصفحة سونو ولا د.دينا الأول", "error"); return; }
     if (!platforms.length) { notify("اختر هتتنشر على أنهي منصة (تقدر تختار أكتر من واحدة)", "error"); return; }
+    if (platforms.indexOf("tiktok") >= 0 && !validateTikTokSelection(id)) return;
     if (!when) { notify("حدد معاد النشر المجدول", "error"); return; }
     if (!reviewed) { reviewBeforePublishing(id, "تأكيد الجدولة", function () { schedule(id, true); }); return; }
     var me = window.SSMPDAuth.currentAdmin;
