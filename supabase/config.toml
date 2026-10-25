@@ -23,6 +23,14 @@ verify_jwt = false
 # supabase/functions/media-buyer-pair/index.ts).
 verify_jwt = false
 
+[functions.tiktok-auth]
+# Login callback is public; POST actions validate the dashboard user JWT inside the function.
+verify_jwt = false
+
+[functions.tiktok-publish-process]
+# Called once per minute by pg_cron and checks META_PUBLISH_CRON_SECRET itself.
+verify_jwt = false
+
 [functions.meta-publish-process]
 # This function is called machine-to-machine every minute by pg_cron (via
 # net.http_post), not a Supabase Auth user session — so it must NOT go

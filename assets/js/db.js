@@ -1243,6 +1243,55 @@
     cancelMetaPublishJob: function (id) {
       return handle(client.from("meta_publish_jobs").update({ status: "cancelled" }).eq("id", id).select().single());
     },
+    listPublishJobsForContent: function(contentIds) {
+      if(!contentIds||!contentIds.length)return Promise.resolve([]);
+      return Promise.all([this.listMetaPublishJobsForContent(contentIds),this.listTikTokPublishJobsForContent(contentIds)]).then(function(all){
+        var map=Object.create(null);
+        (all[0]||[]).forEach(function(j){if(!map[j.content_id])map[j.content_id]=Object.assign({meta_job_id:j.id},j);});
+        (all[1]||[]).forEach(function(t){
+          var j=map[t.content_id]||{id:t.id,content_id:t.content_id,status:t.status};
+          j.tiktok_job_id=t.id;j.publish_tiktok=true;j.tiktok_status=t.status;j.tiktok_publish_id=t.publish_id;
+          j.tiktok_publish_status=t.publish_status;j.tiktok_share_url=t.share_url;j.tiktok_post_id=t.post_id;
+          j.tiktok_error=t.error_message;j.tiktok_scheduled_at=t.scheduled_at;
+          if(!j.meta_job_id)j.id=t.id;
+          var statuses=[];
+          if(j.meta_job_id)statuses.push(j.status);
+          statuses.push(t.status);
+          if(statuses.indexOf("processing")>=0)j.status="processing";
+          else if(statuses.indexOf("pending")>=0)j.status="pending";
+          else if(statuses.indexOf("failed")>=0&&statuses.indexOf("published")>=0)j.status="partial";
+          else if(statuses.indexOf("published")>=0)j.status="published";
+          else j.status=statuses[0]||"pending";
+          if(t.error_message&&!j.error_message)j.error_message=t.error_message;
+          map[t.content_id]=j;
+        });
+        return Object.keys(map).map(function(k){return map[k];});
+      });
+    },
+
+    createTikTokPublishJob: function (payload) {
+      return handle(client.from("tiktok_publish_jobs").insert({
+        content_id:payload.contentId,brand:payload.brand,scheduled_at:payload.scheduledAt,
+        privacy_level:payload.privacyLevel,disable_comment:!!payload.disableComment,
+        disable_duet:!!payload.disableDuet,disable_stitch:!!payload.disableStitch,
+        commercial_content:!!payload.commercialContent,your_brand:!!payload.yourBrand,
+        branded_content:!!payload.brandedContent,music_confirmation:!!payload.musicConfirmation,
+        created_by:payload.createdBy||null
+      }).select().single());
+    },
+    listTikTokPublishJobsForContent: function (contentIds) {
+      if(!contentIds||!contentIds.length)return Promise.resolve([]);
+      return handle(client.from("tiktok_publish_jobs").select("*").in("content_id",contentIds).order("created_at",{ascending:false}));
+    },
+    cancelTikTokPublishJob: function (id) {
+      return handle(client.from("tiktok_publish_jobs").update({status:"cancelled"}).eq("id",id).select().single());
+    },
+    tiktokRequest: function(payload) {
+      return client.functions.invoke("tiktok-auth",{body:payload}).then(function(r){if(r.error)throw r.error;if(r.data&&r.data.error)throw new Error(r.data.error);return r.data||{};});
+    },
+    tiktokConnection: function(brand){return this.tiktokRequest({op:"connection",brand:brand});},
+    tiktokCreatorInfo: function(brand){return this.tiktokRequest({op:"creator_info",brand:brand});},
+    tiktokConnect: function(brand){return this.tiktokRequest({op:"connect",brand:brand});},
 
     // ---------- مراجعة طلبات تفعيل بوابة المرضى ----------
     patientVerificationRequest: function (payload) {
