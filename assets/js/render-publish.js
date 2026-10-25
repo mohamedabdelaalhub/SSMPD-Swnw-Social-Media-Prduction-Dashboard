@@ -8,6 +8,8 @@
   var C = window.SSMPDComments;
 
   var META_PLATFORMS = ["facebook", "instagram"];
+  var AUTO_PLATFORMS = ["facebook", "instagram", "tiktok"];
+  var tikTokCreatorCache = Object.create(null);
   var previewPending = new Set();
 
   function reviewBeforePublishing(id, label, proceed) {
@@ -71,7 +73,7 @@
       var ready = items.filter(function (i) { return i.stage === "ready_to_publish"; });
 
       var contentIds = scheduled.concat(ready).map(function (i) { return i.id; });
-      return window.SSMPDDb.listMetaPublishJobsForContent(contentIds).catch(function () { return []; }).then(function (jobs) {
+      return window.SSMPDDb.listPublishJobsForContent(contentIds).catch(function () { return []; }).then(function (jobs) {
         // أحدث job لكل مادة (الاستعلام مرتب created_at desc بالفعل)
         var jobByContent = {};
         jobs.forEach(function (j) { if (!jobByContent[j.content_id]) jobByContent[j.content_id] = j; });
@@ -108,7 +110,7 @@
     var scheduled = ctx.scheduled, ready = ctx.ready, adminsById = ctx.adminsById, jobByContent = ctx.jobByContent;
     var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">' +
       "<h2 style=\"margin:0;\"> <!--ssmpd-i18n:%D8%A7%D9%84%D9%86%D8%B4%D8%B1-->النشر</h2>" + viewToggleHtml() + '</div>' +
-      '<p style="color:var(--c-muted);font-size:12px;margin-top:-10px;margin-bottom:16px;">هنا كل مادة خلصت اعتماد نهائي وتصميم — جاهزة تتجدول أو تتنشر مباشرة. فيسبوك/انستجرام بينشروا تلقائيًا، تيكتوك/يوتيوب بتحتاج تأكيد يدوي. نشر الموقع له قسم مستقل.</p>';
+      '<p style="color:var(--c-muted);font-size:12px;margin-top:-10px;margin-bottom:16px;">هنا كل مادة خلصت اعتماد نهائي وتصميم — جاهزة تتجدول أو تتنشر مباشرة. Facebook وInstagram وTikTok بينشروا تلقائيًا، ويوتيوب يحتاج تأكيد يدوي. نشر الموقع له قسم مستقل.</p>';
 
     html += '<div class="section"><h3>مجدولة للنشر (' + scheduled.length + ')</h3>';
     if (!scheduled.length) {
@@ -493,6 +495,10 @@
         ? '<a href="' + job.facebook_permalink + '" target="_blank" rel="noopener noreferrer">فتح المنشور ↗</a>'
         : (job.status === "failed" || job.status === "partial" ? 'لسه متنشرش' : 'قيد الانتظار')) + '</div>';
     }
+    if (job.publish_tiktok) {
+      html += '<div>TikTok: ' + (job.tiktok_share_url ? '<a href="' + escapeHtml(job.tiktok_share_url) + '" target="_blank" rel="noopener noreferrer">فتح المنشور ↗</a>' : (job.tiktok_status === "failed" ? "فشل النشر" : job.tiktok_status === "published" ? "تم النشر" : "قيد المعالجة")) + (job.tiktok_publish_status ? " — " + escapeHtml(job.tiktok_publish_status) : "") + '</div>';
+      if(job.tiktok_error) html += '<div style="color:var(--c-negative);">TikTok: ' + escapeHtml(job.tiktok_error) + '</div>';
+    }
     if (job.publish_instagram && (job.instagram_permalink || !job.story_instagram_id)) {
       html += '<div>انستجرام: ' + (job.instagram_permalink
         ? '<a href="' + job.instagram_permalink + '" target="_blank" rel="noopener noreferrer">فتح المنشور ↗</a>'
@@ -532,8 +538,10 @@
     return Array.isArray(p) ? p : (p ? [p] : []);
   }
 
+  function hasAutoPlatform(platforms) { return (platforms || []).some(function(p){return AUTO_PLATFORMS.indexOf(p)!==-1;}); }
+
   function nonMetaPlatforms(platforms) {
-    return (platforms || []).filter(function (p) { return META_PLATFORMS.indexOf(p) === -1 && p !== "website"; });
+    return (platforms || []).filter(function (p) { return AUTO_PLATFORMS.indexOf(p) === -1 && p !== "website"; });
   }
 
   function updateManualLinkVisibility(id) {
@@ -541,7 +549,9 @@
     var manualWrap = document.getElementById("pb-manual-wrap-" + id);
     var metaHint = document.getElementById("pb-meta-hint-" + id);
     if (manualWrap) manualWrap.style.display = nonMetaPlatforms(platforms).length ? "block" : "none";
-    if (metaHint) metaHint.style.display = hasMetaPlatform(platforms) ? "block" : "none";
+    if (metaHint) metaHint.style.display = hasAutoPlatform(platforms) ? "block" : "none";
+    var tiktokOptions=document.getElementById("pb-tiktok-options-"+id);
+    if(tiktokOptions){tiktokOptions.style.display=platforms.indexOf("tiktok")>=0?"block":"none";if(platforms.indexOf("tiktok")>=0)loadTikTokCreator(id);}
   }
 
   // datetime-local بيحتاج الوقت المحلي بصيغة YYYY-MM-DDTHH:MM
@@ -569,11 +579,25 @@
       actionsHtml =
         "<div class=\"field\" id=\"pb-brand-wrap-" + i.id + "\" data-content-format=\"" + escapeHtml(i.content_format || "") + "\"><label> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%A7%D8%AF%D8%A9%20%D8%AF%D9%8A%20%D9%84%D8%B5%D9%81%D8%AD%D8%A9-->المادة دي لصفحة</label>" + W.brandSelectHtml("pb-brand-" + i.id, i.brand || "") + '</div>' +
         '<div class="field"><label>هتتنشر على (تقدر تختار أكتر من منصة)</label><div id="pb-platform-' + i.id + '">' + socialPlatformCheckboxes("pb-platform-" + i.id, i.publish_platforms || i.publish_platform || []) + '</div></div>' +
-        '<div id="pb-meta-hint-' + i.id + '" style="display:none;margin:6px 0 10px;padding:8px 10px;border:1px solid var(--c-border);border-radius:8px;color:var(--c-muted);font-size:12px;">فيسبوك/انستجرام: رابط المنشور بيتسجل تلقائيًا بعد نجاح النشر.</div>' +
+        '<div id="pb-meta-hint-' + i.id + '" style="display:none;margin:6px 0 10px;padding:8px 10px;border:1px solid var(--c-border);border-radius:8px;color:var(--c-muted);font-size:12px;">Meta وTikTok: رابط المنشور بيتسجل تلقائيًا بعد نجاح النشر.</div>' +
+        '<div id="pb-tiktok-options-' + i.id + '" style="display:none;margin:8px 0 12px;padding:10px;border:1px solid var(--c-border);border-radius:8px;font-size:12px;">' +
+        '<div id="pb-tiktok-account-' + i.id + '" style="margin-bottom:8px;color:var(--c-muted);">اختر TikTok لقراءة الحساب المتصل</div>' +
+        '<div class="field"><label>خصوصية فيديو TikTok</label><select id="pb-tiktok-privacy-' + i.id + '" required><option value="">اختر الخصوصية يدويًا</option></select></div>' +
+        '<div style="font-weight:700;margin-top:6px;">السماح بالتفاعل</div>' +
+        '<label style="display:block;"><input type="checkbox" id="pb-tiktok-allow-comment-' + i.id + '"> السماح بالتعليقات</label>' +
+        '<label style="display:block;"><input type="checkbox" id="pb-tiktok-allow-duet-' + i.id + '"> السماح بالـDuet</label>' +
+        '<label style="display:block;"><input type="checkbox" id="pb-tiktok-allow-stitch-' + i.id + '"> السماح بالـStitch</label>' +
+        '<label style="display:block;margin-top:8px;"><input type="checkbox" id="pb-tiktok-commercial-' + i.id + '"> الفيديو يروّج لعلامة تجارية أو خدمة</label>' +
+        '<div id="pb-tiktok-commercial-options-' + i.id + '" style="display:none;padding-inline-start:16px;">' +
+        '<label style="display:block;"><input type="checkbox" id="pb-tiktok-your-brand-' + i.id + '"> علامتنا التجارية — محتوى ترويجي</label>' +
+        '<label style="display:block;"><input type="checkbox" id="pb-tiktok-branded-' + i.id + '"> شراكة مدفوعة مع علامة أخرى</label></div>' +
+        '<label style="display:block;margin-top:8px;"><input type="checkbox" id="pb-tiktok-music-' + i.id + '"> أوافق على تأكيد استخدام الموسيقى لدى TikTok</label>' +
+        '<label style="display:block;"><input type="checkbox" id="pb-tiktok-consent-' + i.id + '"> أوافق على إرسال الفيديو للحساب المحدد ونشره في الموعد</label>' +
+        '<div style="color:var(--c-muted);margin-top:5px;">قد يستغرق TikTok بضع دقائق لمعالجة الفيديو بعد الإرسال.</div></div>' +
         '<div class="field"><label>معاد النشر المجدول</label><input type="datetime-local" id="pb-when-' + i.id + '"></div>' +
         '<div id="pb-suggest-' + i.id + '" style="margin:-4px 0 10px;font-size:12px;color:var(--c-muted);"></div>' +
         '<div id="pb-manual-wrap-' + i.id + '" style="display:none;">' +
-        '<div class="field"><label>رابط المنشور للمنصات اليدوية فقط (تيكتوك/يوتيوب)</label>' +
+        '<div class="field"><label>رابط المنشور للمنصات اليدوية فقط (يوتيوب)</label>' +
         '<input placeholder="https://..." id="pb-url-' + i.id + '"></div>' +
         '</div>' +
         '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px;">' +
@@ -607,7 +631,7 @@
             '</div>';
         } else {
           actionsHtml +=
-            '<div style="margin-top:8px;padding:8px 10px;border:1px solid var(--c-border);border-radius:8px;color:var(--c-muted);font-size:12px;">روابط Facebook/Instagram هتتسجل تلقائيًا بعد نجاح النشر.</div>' +
+            '<div style="margin-top:8px;padding:8px 10px;border:1px solid var(--c-border);border-radius:8px;color:var(--c-muted);font-size:12px;">روابط Facebook/Instagram/TikTok هتتسجل تلقائيًا بعد نجاح النشر.</div>' +
             '<div style="display:flex;gap:8px;margin-top:6px;">' +
             '<button class="btn ghost" data-cancel-schedule="' + i.id + '">إلغاء الجدولة</button>' +
             '</div>';
@@ -650,7 +674,7 @@
     container.querySelectorAll('[data-prepublish-edit]').forEach(function(button){button.onclick=async function(){button.disabled=true;try{
       var item=await window.SSMPDDb.getContentItem(button.dataset.prepublishEdit);
       if(!canRevise(item))throw new Error('المادة لم تعد متاحة للتعديل قبل النشر. حدّث القائمة.');
-      var jobs=await window.SSMPDDb.listMetaPublishJobsForContent([item.id]);
+      var jobs=await window.SSMPDDb.listPublishJobsForContent([item.id]);
       if(jobs.some(function(job){return ['processing','published','partial'].indexOf(job.status)>=0;}))throw new Error('النشر بدأ أو تم جزئيًا. حدّث الحالة قبل التعديل.');
       W.openEditContentModal(item,function(){closePublishModal();render(document.getElementById('view-container'));notify('تم حفظ التعديل وإلغاء الجدولة. المادة الآن في الاعتماد النهائي.');},{beforePublish:true,save:async function(id,patch){
         if(!window.SSMPDContentText.confirmSave(patch))throw new Error('تم إلغاء الحفظ.');
@@ -675,6 +699,8 @@
         if (m) updateManualLinkVisibility(m[1]);
       });
     });
+    container.querySelectorAll('[id^="pb-tiktok-commercial-"]').forEach(function(el){var id=el.id.replace("pb-tiktok-commercial-","");el.addEventListener("change",function(){var box=document.getElementById("pb-tiktok-commercial-options-"+id);if(box)box.style.display=el.checked?"block":"none";});});
+    container.querySelectorAll("[data-tiktok-connect]").forEach(function(btn){btn.onclick=function(){connectTikTok(btn.getAttribute("data-tiktok-connect"),btn);};});
     container.querySelectorAll("[data-schedule]").forEach(function (btn) {
       btn.onclick = function () { schedule(btn.getAttribute("data-schedule")); };
     });
@@ -694,7 +720,7 @@
       btn.onclick = function () { reschedule(btn.getAttribute("data-reschedule"), btn); };
     });
     container.querySelectorAll("[data-cancel-meta-job]").forEach(function (btn) {
-      btn.onclick = function () { cancelMetaJob(btn.getAttribute("data-cancel-meta-job")); };
+      btn.onclick = function () { cancelMetaJob(btn.getAttribute("data-meta-job")||btn.getAttribute("data-cancel-meta-job"),btn.getAttribute("data-tiktok-job")); };
     });
     // المواعيد المقترحة: نعمّر مربع الاقتراح لكل كارت "جاهزة للنشر" أول مرة،
     // ونعيد تعميره كل ما المستخدم يغيّر الصفحة (سونو/د.دينا) من الدروب داون.
@@ -703,7 +729,7 @@
     });
     container.querySelectorAll('select[id^="pb-brand-"]').forEach(function (sel) {
       var id = sel.id.replace("pb-brand-", "");
-      sel.addEventListener("change", function () { updateSuggestSlot(id); });
+      sel.addEventListener("change", function () { updateSuggestSlot(id);var options=document.getElementById("pb-tiktok-options-"+id);if(options&&options.style.display!=="none"){delete tikTokCreatorCache[sel.value];loadTikTokCreator(id);} });
     });
     wireSuggestButtons(container);
   }
@@ -721,17 +747,53 @@
     else alert(msg);
   }
 
+  function connectTikTok(id,button){
+    var brand=valueOf("pb-brand-"+id);if(!brand){notify("اختار صفحة سونو أو د.دينا الأول.","error");return;}
+    if(button)button.disabled=true;
+    window.SSMPDDb.tiktokConnect(brand).then(function(r){if(!r.authorize_url)throw new Error("تعذر بدء ربط TikTok.");window.location.href=r.authorize_url;}).catch(function(e){if(button)button.disabled=false;notify(e.message,"error");});
+  }
+  function loadTikTokCreator(id){
+    var brand=valueOf("pb-brand-"+id),slot=document.getElementById("pb-tiktok-account-"+id);
+    if(!brand||!slot)return;
+    slot.textContent="جاري قراءة حساب TikTok...";
+    if(tikTokCreatorCache[brand]){renderTikTokCreator(id,tikTokCreatorCache[brand]);return;}
+    window.SSMPDDb.tiktokCreatorInfo(brand).then(function(result){tikTokCreatorCache[brand]=result;renderTikTokCreator(id,result);}).catch(function(){slot.textContent="تعذر قراءة الحساب. أعد تحميل التفاصيل.";});
+  }
+  function renderTikTokCreator(id,result){
+    var slot=document.getElementById("pb-tiktok-account-"+id),privacy=document.getElementById("pb-tiktok-privacy-"+id);
+    if(!slot)return;
+    if(result.reauthorize){slot.innerHTML='انتهت صلاحية الربط. <button type="button" class="btn ghost sm" data-tiktok-connect="'+id+'">إعادة ربط TikTok</button>';var rb=slot.querySelector("[data-tiktok-connect]");if(rb)rb.onclick=function(){connectTikTok(id,rb);};return;}
+    if(!result.connected||!result.creator){slot.innerHTML='حساب TikTok غير مربوط. <button type="button" class="btn ghost sm" data-tiktok-connect="'+id+'">ربط حساب TikTok</button>';var b=slot.querySelector("[data-tiktok-connect]");if(b)b.onclick=function(){connectTikTok(id,b);};return;}
+    var c=result.creator;slot.textContent="الحساب المستهدف: "+(c.creator_nickname||"TikTok");
+    if(privacy){var opts=Array.isArray(c.privacy_level_options)?c.privacy_level_options:[];privacy.innerHTML='<option value="">اختر الخصوصية يدويًا</option>'+opts.map(function(v){var labels={PUBLIC_TO_EVERYONE:"عام",MUTUAL_FOLLOW_FRIENDS:"الأصدقاء المتبادلون",FOLLOWER_OF_CREATOR:"المتابعون",SELF_ONLY:"أنا فقط"};return '<option value="'+escapeHtml(v)+'">'+(labels[v]||escapeHtml(v))+'</option>';}).join("");}
+    [["comment",c.comment_disabled],["duet",c.duet_disabled],["stitch",c.stitch_disabled]].forEach(function(pair){var el=document.getElementById("pb-tiktok-allow-"+pair[0]+"-"+id);if(el){el.disabled=!!pair[1];el.checked=false;el.title=pair[1]?"هذا التفاعل مغلق في إعدادات حساب TikTok":"";}});
+  }
+  function validateTikTokSelection(id){
+    var wrap=document.getElementById("pb-brand-wrap-"+id),format=wrap&&wrap.getAttribute("data-content-format");
+    if(format!=="video"){notify("النشر التلقائي على TikTok متاح للفيديوهات فقط.","error");return false;}
+    var privacy=valueOf("pb-tiktok-privacy-"+id),music=document.getElementById("pb-tiktok-music-"+id),consent=document.getElementById("pb-tiktok-consent-"+id);
+    var commercial=document.getElementById("pb-tiktok-commercial-"+id),your=document.getElementById("pb-tiktok-your-brand-"+id),third=document.getElementById("pb-tiktok-branded-"+id);
+    if(!privacy){notify("اختار خصوصية منشور TikTok يدويًا.","error");return false;}
+    if(!music||!music.checked||!consent||!consent.checked){notify("أكد موافقتك على شروط TikTok وإرسال الفيديو قبل النشر.","error");return false;}
+    if(commercial&&commercial.checked&&!(your&&your.checked)&&!(third&&third.checked)){notify("حدد هل الفيديو يروّج لعلامتك أو لعلامة أخرى.","error");return false;}
+    if(third&&third.checked&&privacy==="SELF_ONLY"){notify("محتوى الشراكة المدفوعة لا يمكن ضبطه على «أنا فقط».","error");return false;}
+    return true;
+  }
+  function createTikTokJob(id,brand,platforms,scheduledAt){
+    if(platforms.indexOf("tiktok")<0)return Promise.resolve(null);
+    if(!validateTikTokSelection(id))return Promise.reject(new Error("راجع اختيارات النشر على TikTok."));
+    var read=function(n){var el=document.getElementById("pb-tiktok-"+n+"-"+id);return el?el.value:"";};
+    var on=function(n){var el=document.getElementById("pb-tiktok-"+n+"-"+id);return !!(el&&el.checked);};
+    return window.SSMPDDb.createTikTokPublishJob({contentId:id,brand:brand,scheduledAt:scheduledAt,privacyLevel:read("privacy"),disableComment:!on("allow-comment"),disableDuet:!on("allow-duet"),disableStitch:!on("allow-stitch"),commercialContent:on("commercial"),yourBrand:on("your-brand"),brandedContent:on("branded"),musicConfirmation:on("music"),createdBy:window.SSMPDAuth.currentAdmin.id});
+  }
+
   // بيعمل meta_publish_job لو من ضمن المنصات المختارة فيسبوك/انستجرام —
   // بيتنفّذ فعليًا بواسطة Edge Function meta-publish-process (كل دقيقة).
   function maybeCreateMetaJob(id, brand, platforms, scheduledAtIso) {
-    if (!hasMetaPlatform(platforms)) return Promise.resolve(null);
-    var me = window.SSMPDAuth.currentAdmin;
-    return window.SSMPDDb.createMetaPublishJob({
-      contentId: id, brand: brand, scheduledAt: scheduledAtIso,
-      publishFacebook: platforms.indexOf("facebook") !== -1,
-      publishInstagram: platforms.indexOf("instagram") !== -1,
-      createdBy: me.id
-    });
+    var me=window.SSMPDAuth.currentAdmin,tasks=[];
+    if(hasMetaPlatform(platforms))tasks.push(window.SSMPDDb.createMetaPublishJob({contentId:id,brand:brand,scheduledAt:scheduledAtIso,publishFacebook:platforms.indexOf("facebook")!==-1,publishInstagram:platforms.indexOf("instagram")!==-1,createdBy:me.id}));
+    if(platforms.indexOf("tiktok")!==-1)tasks.push(createTikTokJob(id,brand,platforms,scheduledAtIso));
+    return Promise.all(tasks);
   }
 
   // جدولة مادة "جاهزة للنشر" لمعاد محدد — بتنقلها لحالة "مجدولة للنشر"، وبتعمل
@@ -755,7 +817,7 @@
     }).then(function () {
       return maybeCreateMetaJob(id, brand, platforms, whenIso);
     }).then(function () {
-      notify(hasMetaPlatform(platforms) ? "تمت الجدولة — فيسبوك/انستجرام هينشروا تلقائيًا في المعاد ده" : "تمت الجدولة");
+      notify(hasAutoPlatform(platforms) ? "تمت الجدولة — المنصات المختارة هتنشر تلقائيًا في المعاد ده" : "تمت الجدولة");
       closePublishModal(); render(document.getElementById("view-container"));
     }).catch(function (e) { notify("خطأ: " + e.message, "error"); });
   }
@@ -769,17 +831,19 @@
     var platforms = W.readPlatformCheckboxes("pb-platform-" + id);
     var url = valueOf("pb-url-" + id);
     var metaSelected = hasMetaPlatform(platforms);
-    var others = platforms.filter(function (p) { return META_PLATFORMS.indexOf(p) === -1 && p !== "website"; });
+    var autoSelected = hasAutoPlatform(platforms);
+    var others = platforms.filter(function (p) { return AUTO_PLATFORMS.indexOf(p) === -1 && p !== "website"; });
     if (!brand) { notify("اختر المادة دي لصفحة سونو ولا د.دينا الأول", "error"); return; }
     if (!platforms.length) { notify("اختر هتتنشر على أنهي منصة (تقدر تختار أكتر من واحدة)", "error"); return; }
-    if (others.length && !url) { notify("حط رابط المنشور للمنصات غير فيسبوك/انستجرام", "error"); return; }
-    if (!others.length && !metaSelected) { notify("مفيش منصة مختارة", "error"); return; }
+    if (platforms.indexOf("tiktok")>=0 && !validateTikTokSelection(id)) return;
+    if (others.length && !url) { notify("حط رابط المنشور ليوتيوب", "error"); return; }
+    if (!others.length && !autoSelected) { notify("مفيش منصة مختارة", "error"); return; }
     if (!reviewed) { reviewBeforePublishing(id, "تأكيد النشر", function () { publishNow(id, true); }); return; }
 
     var me = window.SSMPDAuth.currentAdmin;
     var nowIso = new Date().toISOString();
 
-    if (metaSelected) {
+    if (autoSelected) {
       // فيسبوك/انستجرام: جدولة فورية (stage="scheduled" بمعاد = الآن) —
       // بتتحول لـ"published" تلقائيًا بعد ما الـEdge Function تنشر فعليًا.
       // رابط المنصات التانية (لو موجود) بيتسجّل في published_urls لكل منصة
@@ -909,8 +973,8 @@
 
   // إلغاء job النشر التلقائي (فيسبوك/انستجرام) لسه pending — الـRLS بتمنع
   // إلغاء job خلص معالجة (processing/published/...) عن قصد.
-  function cancelMetaJob(jobId) {
-    window.SSMPDDb.cancelMetaPublishJob(jobId).then(function () {
+  function cancelMetaJob(jobId,tiktokJobId) {
+    Promise.all([jobId?window.SSMPDDb.cancelMetaPublishJob(jobId):Promise.resolve(),tiktokJobId?window.SSMPDDb.cancelTikTokPublishJob(tiktokJobId):Promise.resolve()]).then(function () {
       notify("اتلغى النشر التلقائي لهذه المادة");
       closePublishModal(); render(document.getElementById("view-container"));
     }).catch(function (e) { notify("خطأ: " + e.message, "error"); });
