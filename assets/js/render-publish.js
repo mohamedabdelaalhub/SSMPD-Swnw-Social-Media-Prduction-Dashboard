@@ -618,7 +618,7 @@
       // النشر التلقائي لسه مستني: زرار واحد يلغي النشر التلقائي ويرجّع المادة لجاهزة للنشر (وClaude مايرجعش يجدولها).
       if (job && job.status === "pending") {
         actionsHtml += '<div style="display:flex;gap:8px;margin-top:6px;">' +
-          '<button class="btn ghost" data-cancel-schedule="' + i.id + '" data-job="' + job.id + '">إلغاء الجدولة</button>' +
+          '<button class="btn ghost" data-cancel-schedule="' + i.id + '" data-job="' + job.id + '" data-meta-job="' + (job.meta_job_id||"") + '" data-tiktok-job="' + (job.tiktok_job_id||"") + '">إلغاء الجدولة</button>' +
           '</div>';
       }
       if (!jobIsLive) {
@@ -940,7 +940,8 @@
     }
     if (btn && btn._cancelTimer) clearTimeout(btn._cancelTimer);
     var me = window.SSMPDAuth.currentAdmin, jobId = btn && btn.getAttribute("data-job");
-    (jobId ? window.SSMPDDb.cancelMetaPublishJob(jobId) : Promise.resolve())
+    var metaJobId=btn&&btn.getAttribute("data-meta-job"),tiktokJobId=btn&&btn.getAttribute("data-tiktok-job");
+    Promise.all([metaJobId?window.SSMPDDb.cancelMetaPublishJob(metaJobId):(jobId&&!tiktokJobId?window.SSMPDDb.cancelMetaPublishJob(jobId).catch(function(){ }):Promise.resolve()),tiktokJobId?window.SSMPDDb.cancelTikTokPublishJob(tiktokJobId):Promise.resolve()])
       .then(function () { return holdPatch(id, { stage: "ready_to_publish", scheduled_publish_at: null, scheduled_by: null, claude_hold: true }); })
       .then(function () {
         return window.SSMPDDb.logActivity({ content_id: id, actor_id: me.id, action: "إلغاء جدولة النشر", from_stage: "scheduled", to_stage: "ready_to_publish" });
