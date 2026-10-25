@@ -523,20 +523,25 @@
       if(form.dataset.form==="note"){submitNote(form,fd);return;}
       if(form.dataset.form==="comment"){submitComment(form,fd);return;}
       if(form.dataset.form==="check-add"){var cb=String(fd.get("body")||"").trim();if(!cb)return;window.SSMPDDb.taskChecklistAdd(state.checkTask,cb).then(reloadChecklist).catch(function(e){state.error=e.message||"تعذر الإضافة";draw();});return;}
-      if(form.dataset.form==="project"||form.dataset.form==="project-edit"){
+      // ضغطتين على «إسناد المهمة»/«حفظ» كانوا بيعملوا مهمتين (أو سلسلتين تكرار) — زرار واحد = طلب واحد
+      if(form.dataset.busy==="1")return;
+      var saveBtn=form.querySelector("footer .btn-primary");
+      function lockSave(){form.dataset.busy="1";if(saveBtn)saveBtn.disabled=true;}
+      function unlockSave(){form.dataset.busy="";if(saveBtn)saveBtn.disabled=false;}
+      if(form.dataset.form==="project"||form.dataset.form==="project-edit"){lockSave();
         var members=Array.from(form.querySelectorAll('input[name="member"]:checked')).map(function(x){return {admin_id:x.value,role_name:fd.get("role_"+x.value)||"contributor"};});
         var projectSave=form.dataset.form==="project-edit"
           ?window.SSMPDDb.taskUpdateProject(fd.get("project_id"),fd.get("title"),fd.get("description"),fd.get("manager_id"),members)
           :window.SSMPDDb.taskCreateProject(fd.get("title"),fd.get("description"),fd.get("manager_id"),members);
-        projectSave.then(function(){state.modal="";state.editProject=null;return refresh();}).catch(function(e){window.alert(e.message);});
-      }else if(form.dataset.form==="task-edit"){
+        projectSave.then(function(){state.modal="";state.editProject=null;return refresh();}).catch(function(e){unlockSave();window.alert(e.message);});
+      }else if(form.dataset.form==="task-edit"){lockSave();
         var editDue=fd.get("due_at"),recurring=fd.get("repeat_active")==="on";
-        window.SSMPDDb.taskUpdateDetails(fd.get("task_id"),fd.get("title"),fd.get("description"),fd.get("expected_output"),fd.get("assignee_id"),editDue?new Date(editDue+"T23:59:00").toISOString():null,fd.get("priority"),recurring,Number(fd.get("repeat_interval")||1),fd.get("repeat_unit")||"day",fd.get("repeat_until")||null,fd.get("update_future")==="on").then(function(){state.modal="";state.editTask=null;return refresh();}).catch(function(e){window.alert(e.message);});
-      }else{
+        window.SSMPDDb.taskUpdateDetails(fd.get("task_id"),fd.get("title"),fd.get("description"),fd.get("expected_output"),fd.get("assignee_id"),editDue?new Date(editDue+"T23:59:00").toISOString():null,fd.get("priority"),recurring,Number(fd.get("repeat_interval")||1),fd.get("repeat_unit")||"day",fd.get("repeat_until")||null,fd.get("update_future")==="on").then(function(){state.modal="";state.editTask=null;return refresh();}).catch(function(e){unlockSave();window.alert(e.message);});
+      }else{lockSave();
         var due=fd.get("due_at"),repeat=fd.get("repeat_active")==="on";
         var args=[fd.get("project_id"),fd.get("parent_task_id")||null,fd.get("title"),fd.get("description"),fd.get("expected_output"),fd.get("assignee_id"),due?new Date(due+"T23:59:00").toISOString():null,fd.get("priority")];
         var createPromise=repeat?window.SSMPDDb.taskCreateRecurring.apply(null,args.concat([Number(fd.get("repeat_interval")||1),fd.get("repeat_unit")||"day",fd.get("repeat_until")||null])):window.SSMPDDb.taskCreate.apply(null,args);
-        createPromise.then(function(){state.modal="";return refresh();}).catch(function(e){window.alert(e.message);});
+        createPromise.then(function(){state.modal="";return refresh();}).catch(function(e){unlockSave();window.alert(e.message);});
       }
     };
     refresh().then(function(){liveTimer=setInterval(function(){if(!el.isConnected){clearInterval(liveTimer);liveTimer=null;return;}refresh();},90000);});

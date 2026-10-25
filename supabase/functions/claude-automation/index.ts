@@ -20,9 +20,14 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 //        The text first goes through the pronunciation list (kit file tts/pronunciations.json,
 //        plus the built-in defaults below): words Mohamed flagged are rewritten before speaking.
 //   POST ?op=download&bucket=video-inputs|content-designs&path=<p>  -> file bytes
-//   POST ?op=stock                            {q,type?,orientation?} -> Pixabay hits
-//   POST ?op=fetch_media&url=<pixabay url>                       -> file bytes
-//   POST ?op=image                             {prompt,size?,quality?} -> PNG (OpenAI)
+//   POST ?op=stock                            {q,type?,orientation?,brand,content_id?} -> Pixabay hits
+//        NO-REPEAT RULE (Mohamed, 2026-10-25): with brand, hits already used in that page's last
+//        20 items are removed (excluded_recent tells how many). allow_repeat:true skips the filter.
+//   POST ?op=fetch_media&url=<pixabay url>&brand=<sono|dr_dina>&id=<pixabay hit id>&kind=<photo|video>[&content_id=&q=]
+//        -> file bytes; logs the use. 409 if that hit was used in the page's last 20 items.
+//   POST ?op=image                             {prompt,brand,content_id?,size?,quality?} -> PNG (OpenAI)
+//        logs the prompt; 409 if the exact same prompt was used in the page's last 20 items.
+//   POST ?op=media_recent                     {brand, items?} -> what that page used lately (keys, queries, prompts)
 //   POST ?op=kit_get&name=<file>                                 -> file bytes (private kit)
 //   POST ?op=kit_put&name=<file>               body = bytes     -> {ok}
 //   POST {op:"rest", method, path, body?, prefer?}               -> REST response
@@ -58,6 +63,27 @@ const DEFAULT_PRONUNCIATIONS: Record<string, string> = {
   "العظام": "العِظام", "العضام": "العِظام",
 };
 let kitPronunciations: { at: number; map: Record<string, string> } | null = null;
+
+// ---- No-repeat rule for stock / generated media (per page, last N items) ----
+const BRANDS = ["sono", "dr_dina"];
+const RECENT_ITEMS = 20;
+// deno-lint-ignore no-explicit-any
+// exceptContent: media the same item already used (a revision re-using its own photo) is not a repeat.
+async function recentMedia(admin: any, brand: string, items = RECENT_ITEMS, exceptContent = "") {
+  const { data, error } = await admin.rpc("automation_recent_media", { p_brand: brand, p_items: items });
+  if (error) throw new Error("recent media: " + error.message);
+  // deno-lint-ignore no-explicit-any
+  return ((data || []) as any[]).filter((u) => !exceptContent || u.content_id !== exceptContent);
+}
+async function sha256(text: string): Promise<string> {
+  const d = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text.trim().replace(/\s+/g, " ").toLowerCase()));
+  return Array.from(new Uint8Array(d)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+// deno-lint-ignore no-explicit-any
+async function logMedia(admin: any, row: Record<string, unknown>) {
+  const { error } = await admin.from("automation_media_usage").insert(row);
+  if (error) console.error("media log", error.message);
+}
 
 function serviceKey(): string | null {
   const raw = Deno.env.get("SUPABASE_SECRET_KEYS");
@@ -175,7 +201,25 @@ Deno.serve(async (req) => {
       // deno-lint-ignore no-explicit-any
       ? { id: h.id, tags: h.tags, duration: h.duration, files: Object.fromEntries(Object.entries(h.videos || {}).filter(([, v]: any) => v?.url).map(([k, v]: any) => [k, { url: v.url, width: v.width, height: v.height }])) }
       : { id: h.id, tags: h.tags, width: h.imageWidth, height: h.imageHeight, preview: h.webformatURL, large: h.largeImageURL });
-    return json({ ok: true, total: d.totalHits || 0, hits });
+    const brand = String(b?.brand || "");
+    if (!brand || b?.allow_repeat === true) {
+      return json({ ok: true, total: d.totalHits || 0, hits, excluded_recent: 0, note: brand ? "allow_repeat" : "pass brand to drop media this page used recently" });
+    }
+    if (!BRANDS.includes(brand)) return json({ ok: false, error: "brand must be sono or dr_dina" }, 400);
+    const used = new Set((await recentMedia(admin, brand, RECENT_ITEMS, UUID.test(String(b?.content_id || "")) ? String(b.content_id) : "")).map((u) => u.media_key));
+    const kind = video ? "video" : "photo";
+    // deno-lint-ignore no-explicit-any
+    const fresh = hits.filter((h: any) => !used.has(`pixabay:${kind}:${h.id}`));
+    return json({ ok: true, total: d.totalHits || 0, hits: fresh, excluded_recent: hits.length - fresh.length,
+      note: fresh.length ? undefined : "all hits were used recently for this page — change the search words (synonyms, another scene/angle) or ask for per_page 50" });
+  }
+
+  if (op === "media_recent") {
+    const b = await req.json().catch(() => ({}));
+    const brand = String(b?.brand || "");
+    if (!BRANDS.includes(brand)) return json({ ok: false, error: "brand must be sono or dr_dina" }, 400);
+    const rows = await recentMedia(admin, brand, Math.min(Math.max(Number(b?.items || RECENT_ITEMS), 1), 100));
+    return json({ ok: true, brand, items: Number(b?.items || RECENT_ITEMS), used: rows });
   }
 
   // Download a Pixabay file found by op=stock (the run's shell can't reach pixabay directly).
@@ -183,8 +227,21 @@ Deno.serve(async (req) => {
     const src = q.get("url") || "";
     let host = ""; try { host = new URL(src).hostname; } catch { /* bad url */ }
     if (!/(^|\.)pixabay\.com$/.test(host)) return json({ ok: false, error: "pixabay URLs only" }, 400);
+    const brand = q.get("brand") || "", hitId = q.get("id") || "", kind = q.get("kind") === "video" ? "video" : "photo";
+    const cid = q.get("content_id") || "";
+    if (!BRANDS.includes(brand) || !/^\d{1,15}$/.test(hitId)) {
+      return json({ ok: false, error: "no-repeat rule: pass &brand=sono|dr_dina&id=<pixabay hit id>&kind=photo|video (and &content_id= when you have it)" }, 400);
+    }
+    const key = `pixabay:${kind}:${hitId}`;
+    if (q.get("allow_repeat") !== "1" && (await recentMedia(admin, brand, RECENT_ITEMS, UUID.test(cid) ? cid : "")).some((u) => u.media_key === key)) {
+      return json({ ok: false, error: "used_recently", detail: "this " + kind + " was already used in one of this page's last " + RECENT_ITEMS + " items — pick another hit" }, 409);
+    }
     const r = await fetch(src);
     if (!r.ok) return json({ ok: false, error: "fetch " + r.status }, 502);
+    // Same item re-downloading the same file (retry, cover + reel) counts once.
+    const { data: dup } = await admin.from("automation_media_usage").select("id").eq("brand", brand).eq("media_key", key)
+      .eq("content_id", UUID.test(cid) ? cid : "00000000-0000-0000-0000-000000000000").limit(1);
+    if (!dup?.length) await logMedia(admin, { brand, content_id: UUID.test(cid) ? cid : null, provider: "pixabay", media_kind: kind, media_key: key, search_query: (q.get("q") || "").slice(0, 200) || null });
     return new Response(r.body, { headers: { "Content-Type": r.headers.get("Content-Type") || "application/octet-stream" } });
   }
 
@@ -195,6 +252,12 @@ Deno.serve(async (req) => {
     const b = await req.json().catch(() => ({}));
     const prompt = String(b?.prompt || "").trim();
     if (!prompt || prompt.length > 3000) return json({ ok: false, error: "prompt 1..3000 chars" }, 400);
+    const brand = String(b?.brand || ""), cid = String(b?.content_id || "");
+    if (!BRANDS.includes(brand)) return json({ ok: false, error: "no-repeat rule: pass brand (sono|dr_dina) and content_id" }, 400);
+    const key = "openai:" + await sha256(prompt);
+    if (b?.allow_repeat !== true && (await recentMedia(admin, brand, RECENT_ITEMS, UUID.test(cid) ? cid : "")).some((u) => u.media_key === key)) {
+      return json({ ok: false, error: "used_recently", detail: "the same prompt was used in one of this page's last " + RECENT_ITEMS + " items — change the person, place, angle or action" }, 409);
+    }
     const size = ["1024x1024", "1024x1536", "1536x1024"].includes(b?.size) ? b.size : "1024x1536";
     const quality = ["low", "medium", "high"].includes(b?.quality) ? b.quality : "medium";
     const r = await fetch("https://api.openai.com/v1/images/generations", {
@@ -204,6 +267,7 @@ Deno.serve(async (req) => {
     const d = await r.json().catch(() => null);
     const b64 = d?.data?.[0]?.b64_json;
     if (!r.ok || !b64) return json({ ok: false, error: "openai " + r.status + " " + JSON.stringify(d?.error?.message || "").slice(0, 200) }, 502);
+    await logMedia(admin, { brand, content_id: UUID.test(cid) ? cid : null, provider: "openai", media_kind: "photo", media_key: key, prompt: prompt.slice(0, 1000) });
     return new Response(Uint8Array.from(atob(b64), (c) => c.charCodeAt(0)), { headers: { "Content-Type": "image/png" } });
   }
 
