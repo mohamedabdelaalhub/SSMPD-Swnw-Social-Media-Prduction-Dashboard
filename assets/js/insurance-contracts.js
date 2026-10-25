@@ -28,6 +28,15 @@
     .insurance-entry p{margin:3px 0 0;color:var(--c-muted,#667085);font-size:12px}.insurance-modal-backdrop{position:fixed;inset:0;z-index:10050;background:rgba(15,23,42,.48);display:flex;align-items:flex-start;justify-content:center;padding:4vh 14px;overflow:auto}.insurance-modal{width:min(1050px,100%);background:var(--c-card,#fff);color:var(--c-text,#172033);border-radius:18px;box-shadow:0 24px 70px rgba(0,0,0,.22);overflow:hidden}.insurance-modal-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--c-border,#e4e7ec)}.insurance-modal-head h3{margin:0}.insurance-modal-head button{border:0;background:transparent;font-size:28px;cursor:pointer}.insurance-modal-body{padding:18px}.insurance-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}.insurance-card{border:1px solid var(--c-border,#e4e7ec);border-radius:14px;padding:14px;background:var(--c-card,#fff)}.insurance-card h4{margin:0 0 6px}.insurance-card p{margin:3px 0;color:var(--c-muted,#667085);font-size:12px}.insurance-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.insurance-field{display:flex;flex-direction:column;gap:5px}.insurance-field input,.insurance-field select,.insurance-field textarea{min-height:40px;border:1px solid var(--c-border,#d0d5dd);border-radius:10px;padding:8px;background:var(--c-card,#fff);color:inherit}.insurance-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:14px}.insurance-summary>div{padding:12px;border-radius:12px;background:var(--c-soft,#f6f8fb)}.insurance-summary b{display:block;font-size:18px;margin-top:4px}.insurance-note{padding:10px 12px;border-radius:10px;background:#fff8e7;color:#704c00;font-size:12px;margin:10px 0}.insurance-table{width:100%;border-collapse:collapse}.insurance-table th,.insurance-table td{padding:8px;border-bottom:1px solid var(--c-border,#e4e7ec);text-align:right;font-size:12px}.insurance-patient-box{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}.insurance-patient-box label{display:flex;flex-direction:column;gap:5px;font-size:12px}.insurance-patient-box select,.insurance-patient-box input{min-height:40px;border:1px solid var(--c-border,#d0d5dd);border-radius:9px;padding:7px}@media(max-width:650px){.insurance-patient-box{grid-template-columns:1fr}.insurance-modal-body{padding:12px}}';document.head.appendChild(s);
   }
 
+  function ensureBilling(){
+    if(w.__SSMPDInsuranceBillingV1 || document.querySelector('script[data-insurance-billing-v1]')) return;
+    var s=document.createElement('script');
+    s.src='assets/js/insurance-billing.js?v=insurance-billing-20261026-1';
+    s.async=false;
+    s.dataset.insuranceBillingV1='1';
+    document.head.appendChild(s);
+  }
+
   async function openManager(){
     ensureCss();
     var bd=modal('إدارة التأمين وفئات الكارنيه','<p role="status">جاري تحميل بيانات التأمين…</p>');
@@ -108,16 +117,13 @@
     ensureCss();
     var root=document.querySelector('#ce-view')||document.querySelector('[data-contract-navigation]')||document.querySelector('main');
     if(!root||document.getElementById('insurance-management-entry')) return;
-    var text=root.textContent||'';
-    if(text.indexOf('شركات التأمين')<0) return;
-    var h=[].slice.call(root.querySelectorAll('h2,h3,button')).find(function(x){return (x.textContent||'').trim()==='شركات التأمين';});
+    var h=[].slice.call(root.querySelectorAll('h2,h3')).find(function(x){return (x.textContent||'').trim()==='شركات التأمين';});
     if(!h) return;
     var box=document.createElement('div');box.id='insurance-management-entry';box.className='insurance-entry';box.innerHTML='<div><b>إدارة التأمين والكروت والتحمل</b><p>فئات الكارنيه، لوائح الأسعار، تحمل المريض، صافي الشركة، المطالبات والتحصيل.</p></div><button class="btn" type="button">فتح إدارة التأمين</button>';
     var target=h.closest('.section')||h.parentElement;target.insertAdjacentElement('afterend',box);box.querySelector('button').onclick=openManager;
   }
 
   async function contractOptions(contractId){ if(!contractId)return {is_insurance:false,plans:[]}; return await rpc('insurance_contract_options',{p_contract:contractId}); }
-  function removePatientInsurance(box){if(box)box.remove();}
   function addPatientInsurance(select,mode){
     if(!select||select.dataset.insuranceBound) return;select.dataset.insuranceBound='1';
     var box=document.createElement('div');box.className='insurance-patient-box';box.dataset.insurancePatientBox='1';box.hidden=true;box.innerHTML='<label>فئة الكارنيه<select data-ins-plan><option value="">اختر الفئة</option></select></label><label>رقم الكارنيه / العضوية<input data-ins-member placeholder="اختياري"></label>';
@@ -140,7 +146,7 @@
     if(D.updatePatientVisit){var origUpdate=D.updatePatientVisit;D.updatePatientVisit=function(id,patch){var box=document.querySelector('[data-insurance-patient-box]');if(box&&!box.hidden&&Object.prototype.hasOwnProperty.call(patch,'contract_id')){var plan=box.querySelector('[data-ins-plan]').value;if(!plan)return Promise.reject(new Error('اختر فئة الكارنيه لهذه الزيارة'));patch=Object.assign({},patch,{insurance_plan_id:plan});}else if(Object.prototype.hasOwnProperty.call(patch,'contract_id')&&!patch.contract_id){patch=Object.assign({},patch,{insurance_plan_id:null});}return origUpdate.call(D,id,patch);};}
   }
 
-  function boot(){ensureCss();wrapDb();injectEntry();bindPatientDom();var obs=new MutationObserver(function(){wrapDb();injectEntry();bindPatientDom();});obs.observe(document.documentElement,{childList:true,subtree:true});}
+  function boot(){ensureCss();ensureBilling();wrapDb();injectEntry();bindPatientDom();var obs=new MutationObserver(function(){wrapDb();injectEntry();bindPatientDom();});obs.observe(document.documentElement,{childList:true,subtree:true});}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
   w.SSMPDInsurance={open:openManager,quote:openQuote};
 })(window);
