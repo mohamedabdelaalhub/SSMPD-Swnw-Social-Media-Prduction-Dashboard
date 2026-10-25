@@ -116,6 +116,7 @@ async function processJob(job:any){
       source_info:{source:"FILE_UPLOAD",video_size:bytes.length,chunk_size:Math.min(chunkSize,bytes.length),total_chunk_count:total}
     });
     if(!init.publish_id||!init.upload_url)throw new Error("TikTok لم يرجع رابط رفع صالحًا.");
+    await admin.from("tiktok_publish_jobs").update({publish_id:init.publish_id,publish_status:"PROCESSING_UPLOAD",updated_at:new Date().toISOString()}).eq("id",job.id);
     for(let start=0;start<bytes.length;start+=chunkSize){
       const end=Math.min(bytes.length,start+chunkSize),part=bytes.slice(start,end);
       const up=await fetch(init.upload_url,{method:"PUT",headers:{"Content-Type":type,"Content-Length":String(part.length),"Content-Range":`bytes ${start}-${end-1}/${bytes.length}`},body:part});
@@ -124,7 +125,13 @@ async function processJob(job:any){
     await admin.from("tiktok_publish_jobs").update({publish_id:init.publish_id,publish_status:"PROCESSING_UPLOAD",status:"pending",scheduled_at:new Date(Date.now()+60000).toISOString(),updated_at:new Date().toISOString(),error_message:null}).eq("id",job.id);
   }catch(e){
     const message=e instanceof Error?e.message:"حدث خطأ أثناء نشر TikTok.";
-    await admin.from("tiktok_publish_jobs").update({status:"failed",error_message:message.slice(0,1000),updated_at:new Date().toISOString()}).eq("id",job.id);
+    const retryable=/rate_limit_exceeded|internal_error|video_pull_failed|fetch failed|network|HTTP 5[0-9]{2}|timed out/i.test(message);
+    if(retryable&&(job.attempts||0)<5){
+      const delay=Math.min(15*60_000,60_000*Math.pow(2,Math.max(0,(job.attempts||1)-1)));
+      await admin.from("tiktok_publish_jobs").update({status:"pending",scheduled_at:new Date(Date.now()+delay).toISOString(),error_message:message.slice(0,1000),updated_at:new Date().toISOString()}).eq("id",job.id);
+    }else{
+      await admin.from("tiktok_publish_jobs").update({status:"failed",error_message:message.slice(0,1000),updated_at:new Date().toISOString()}).eq("id",job.id);
+    }
   }
 }
 Deno.serve(async(req)=>{
