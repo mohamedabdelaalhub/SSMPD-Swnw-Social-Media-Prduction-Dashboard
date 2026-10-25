@@ -1,15 +1,15 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-const URL = Deno.env.get("SUPABASE_URL")!;
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
 const CLIENT_KEY = Deno.env.get("TIKTOK_CLIENT_KEY")!;
 const CLIENT_SECRET = Deno.env.get("TIKTOK_CLIENT_SECRET")!;
 const DASHBOARD = "https://mohamedabdelaalhub.github.io/SSMPD-Swnw-Social-Media-Prduction-Dashboard/";
 const DASHBOARD_ORIGIN = "https://mohamedabdelaalhub.github.io";
-const REDIRECT_URI = URL.replace(/\/+$/, "") + "/functions/v1/tiktok-auth";
-const admin = createClient(URL, SERVICE, { auth: { persistSession: false } });
+const REDIRECT_URI = SUPABASE_URL.replace(/\/+$/, "") + "/functions/v1/tiktok-auth";
+const admin = createClient(SUPABASE_URL, SERVICE, { auth: { persistSession: false } });
 const cors = {
   "Access-Control-Allow-Origin": DASHBOARD_ORIGIN,
   "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info",
@@ -21,7 +21,7 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
 async function currentAdmin(req: Request) {
   const token = req.headers.get("Authorization")?.replace(/^Bearer\s+/i, "");
   if (!token) throw new Error("سجّل الدخول للداشبورد الأول.");
-  const client = createClient(URL, ANON, { global: { headers: { Authorization: "Bearer " + token } }, auth: { persistSession: false } });
+  const client = createClient(SUPABASE_URL, ANON, { global: { headers: { Authorization: "Bearer " + token } }, auth: { persistSession: false } });
   const { data: userData, error: userError } = await client.auth.getUser(token);
   if (userError || !userData.user) throw new Error("جلسة الدخول انتهت. سجّل الدخول مرة أخرى.");
   const { data: row, error } = await admin.from("admins").select("id,user_id,role,active").eq("user_id", userData.user.id).maybeSingle();
