@@ -12,7 +12,7 @@ window.SSMPD_CONFIG = {
   // مفاتيح Supabase — تُملأ بعد إنشاء المشروع (خطوة البنية التحتية)
   supabase: {
     url: "https://uuijfbpgvtdxgaosqpxo.supabase.co",
-    anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1aWpmYnBndnRkeGdhb3NxcHhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MDc3MDUsImV4cCI6MjEwMjQ4MzcwNX0.kIiSfXRG2SJtsP1v3GlllIhcxYP9sOEhdGk40tOhsNw"
+    anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJIUzI1NiJ9.placeholder"
   },
 
   // جسر أرشيف Google Drive — رابط Web App بعد نشر السكريبت من حساب المركز
@@ -27,7 +27,7 @@ window.SSMPD_CONFIG = {
   adsExpensesWebAppUrl: "https://script.google.com/macros/s/AKfycbzkks4u3SUsQBLtIzN5o091dBANRA7Or1xm5KCBfG8ms1NyOhRAUG6mtZCcz51jlJrM3g/exec",
 
   // بصمة الكاش — ترفع مع أي تعديل على JS/CSS
-  cacheVersion: 17
+  cacheVersion: 18
 };
 
 // تحسين بطاقة الترحيب في الرئيسية الشخصية بدون المساس بمنطق الصفحة الأساسي.
@@ -52,4 +52,18 @@ window.SSMPD_CONFIG = {
   }
   if(document.readyState === 'complete') loadPerformanceV2();
   else window.addEventListener('load', loadPerformanceV2, { once: true });
+})();
+
+// إدارة التأمين: فئات الكارنيه، التحمل، المطالبات والتحصيل.
+(function(){
+  function loadInsurance(){
+    if(window.__SSMPDInsuranceContractsV1) return;
+    var script = document.createElement('script');
+    script.src = 'assets/js/insurance-contracts.js?v=insurance-20261026-1';
+    script.async = false;
+    script.dataset.insuranceContracts = '1';
+    document.head.appendChild(script);
+  }
+  if(document.readyState === 'complete') loadInsurance();
+  else window.addEventListener('load', loadInsurance, { once: true });
 })();
