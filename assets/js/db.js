@@ -1244,6 +1244,30 @@
       return handle(client.from("meta_publish_jobs").update({ status: "cancelled" }).eq("id", id).select().single());
     },
 
+    createTikTokPublishJob: function (payload) {
+      return handle(client.from("tiktok_publish_jobs").insert({
+        content_id:payload.contentId,brand:payload.brand,scheduled_at:payload.scheduledAt,
+        privacy_level:payload.privacyLevel,disable_comment:!!payload.disableComment,
+        disable_duet:!!payload.disableDuet,disable_stitch:!!payload.disableStitch,
+        commercial_content:!!payload.commercialContent,your_brand:!!payload.yourBrand,
+        branded_content:!!payload.brandedContent,music_confirmation:!!payload.musicConfirmation,
+        created_by:payload.createdBy||null
+      }).select().single());
+    },
+    listTikTokPublishJobsForContent: function (contentIds) {
+      if(!contentIds||!contentIds.length)return Promise.resolve([]);
+      return handle(client.from("tiktok_publish_jobs").select("*").in("content_id",contentIds).order("created_at",{ascending:false}));
+    },
+    cancelTikTokPublishJob: function (id) {
+      return handle(client.from("tiktok_publish_jobs").update({status:"cancelled"}).eq("id",id).select().single());
+    },
+    tiktokRequest: function(payload) {
+      return client.functions.invoke("tiktok-auth",{body:payload}).then(function(r){if(r.error)throw r.error;if(r.data&&r.data.error)throw new Error(r.data.error);return r.data||{};});
+    },
+    tiktokConnection: function(brand){return this.tiktokRequest({op:"connection",brand:brand});},
+    tiktokCreatorInfo: function(brand){return this.tiktokRequest({op:"creator_info",brand:brand});},
+    tiktokConnect: function(brand){return this.tiktokRequest({op:"connect",brand:brand});},
+
     // ---------- مراجعة طلبات تفعيل بوابة المرضى ----------
     patientVerificationRequest: function (payload) {
       return client.functions.invoke("patient-verification-review", { body: payload }).then(function (res) {
