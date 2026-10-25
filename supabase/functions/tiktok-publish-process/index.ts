@@ -97,8 +97,10 @@ async function processJob(job:any){
       const status=await api("/v2/post/publish/status/fetch/",account.access_token,{publish_id:job.publish_id});
       const state=status.status||status.publish_status||"";
       if(state==="PUBLISH_COMPLETE"){
-        const share=status.share_url||status.publicaly_available_post_id&&("https://www.tiktok.com/@"+(creator.creator_username||"")+"/video/"+status.publicaly_available_post_id);
-        const patch={status:"published",publish_status:state,share_url:share||null,post_id:status.publicaly_available_post_id||null,published_at:new Date().toISOString(),error_message:null,updated_at:new Date().toISOString()};
+        const postIds=Array.isArray(status.publicaly_available_post_id)?status.publicaly_available_post_id:[];
+        const postId=postIds.length?String(postIds[0]):null;
+        const share=status.share_url||(postId?"https://www.tiktok.com/@"+(creator.creator_username||"")+"/video/"+postId:null);
+        const patch={status:"published",publish_status:state,share_url:share||null,post_id:postId,published_at:new Date().toISOString(),error_message:null,updated_at:new Date().toISOString()};
         await admin.from("tiktok_publish_jobs").update(patch).eq("id",job.id);
         const urls=Object.assign({},content.published_urls||{});if(share)urls.tiktok=share;
         await admin.from("content_items").update({stage:"published",published_at:patch.published_at,published_url:content.published_url||share||null,published_urls:urls}).eq("id",content.id);
