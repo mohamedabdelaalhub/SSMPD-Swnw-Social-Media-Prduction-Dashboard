@@ -105,6 +105,11 @@ function render(root){homeRoot=root;var sequence=0;var admin=window.SSMPDAuth.cu
    var openAction=item.key==='notices'?'<button type="button" class="btn ghost sm" data-home-all-notices>كل الإشعارات</button>':tabButtons;
    var tile=document.createElement('article');tile.className='ph-card ph-summary-card';tile.innerHTML='<button type="button" class="ph-summary-open" data-home-detail="'+item.key+'" aria-haspopup="dialog"><span class="ph-summary-title">'+esc(item.title)+'</span><strong class="ph-summary-count">'+esc(item.count==null?0:item.count)+'</strong><span class="ph-summary-line">'+esc(item.lines[0])+'</span><span class="ph-summary-more">عرض التفاصيل</span></button><div class="ph-summary-actions">'+openAction+'</div>';
    if(item.key!=='notices')tile.querySelector('.ph-summary-actions').innerHTML=tabs.length?tabButton(tabs[0]):'<span class="ph-note">لا يوجد قسم متاح لهذا الحساب</span>';
+   if(item.key==='mine'&&t){
+    var preview=(t.mine||[]).filter(function(task){return task.status!=='review'&&task.status!=='done';}).slice(0,2);
+    if(preview.length){var brief=document.createElement('div');brief.className='ph-task-preview';brief.setAttribute('aria-label','مهام تبدأ بها');brief.innerHTML=taskRows(preview);tile.querySelector('.ph-summary-actions').before(brief);}
+    tile.querySelector('.ph-summary-more').textContent='عرض كل المهام';
+   }
    grid.appendChild(tile);
    var dialog=document.createElement('dialog');dialog.className='ph-section-dialog';dialog.dataset.homeDialog=item.key;dialog.setAttribute('aria-labelledby','ph-dialog-title-'+item.key);dialog.innerHTML='<div class="ph-dialog-header"><h2 id="ph-dialog-title-'+item.key+'">'+esc(item.title)+'</h2><button type="button" class="btn ghost sm" data-home-close aria-label="إغلاق التفاصيل">إغلاق</button></div><div class="ph-dialog-actions">'+openAction+'</div>';dialog.appendChild(panel);root.querySelector('.personal-home').appendChild(dialog);
    function close(){if(typeof dialog.close==='function')dialog.close();else dialog.removeAttribute('open');if(dialog._returnFocus&&dialog._returnFocus.isConnected)dialog._returnFocus.focus();}

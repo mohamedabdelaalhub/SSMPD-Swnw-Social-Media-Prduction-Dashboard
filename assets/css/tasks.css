@@ -306,3 +306,17 @@ button.tsk-chip-more{font:inherit;font-size:12px;cursor:pointer;background:#eaf1
   .tsk-history .tsk-update-meta>small{flex-basis:100%;margin-inline-start:0}
  }
 }
+
+/* Compact personal task cards; full instructions stay in the existing task view. */
+@media screen {
+ .tw-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:16px}
+ .tw-summary>div{display:grid;gap:5px;border:1px solid #E4E9F2;border-radius:14px;background:#FAFCFF;padding:12px;text-align:center;min-width:0}
+ .tw-summary strong{font-size:24px;color:#0F369D;font-variant-numeric:tabular-nums}.tw-summary span{font-size:12px;color:#6B7788}.tw-summary-late strong{color:#D0402A}
+ .tw-cards>.tw-card,.tw-subtask-list>.tw-card{padding:16px;gap:10px}.tw-card h2{font-size:16px;line-height:1.7}.tw-card .tw-help{font-size:11px;line-height:1.7}
+ .tw-card .tw-card-bottom{padding-top:10px;flex-wrap:wrap}.tw-card-bottom>span{line-height:1.7}.tw-card-bottom>.late{color:#D0402A}.tw-card-late{border-inline-start:4px solid #D0402A}
+ .tw-card-progress{display:grid;gap:7px;color:#6B7788;font-size:11px}.tw-card-progress progress{appearance:none;display:block;width:100%;height:5px;border:0;border-radius:999px;overflow:hidden;background:#E4E9F2;accent-color:#0F369D;direction:inherit}
+ .tw-card-progress progress::-webkit-progress-bar{background:#E4E9F2}.tw-card-progress progress::-webkit-progress-value{background:#0F369D;border-radius:999px}.tw-card-progress progress::-moz-progress-bar{background:#0F369D;border-radius:999px}
+ .tw-subtasks{border-top:1px solid #E4E9F2;margin-top:2px;padding-top:4px}.tw-subtasks>summary{cursor:pointer;min-height:44px;padding-block:10px;box-sizing:border-box;font-size:12px;color:#0F369D;font-weight:700}.tw-subtasks>summary>span{float:inline-end;color:#6B7788;font-size:11px}
+ .tw-subtasks>summary:focus-visible{outline:2px solid #0F369D;outline-offset:2px;border-radius:8px}.tw-subtask-list{display:grid;gap:10px}.tw-subtask-list .tw-card{background:#FAFCFF;box-shadow:none}.tw-subtask-list .tw-card h2{font-size:14px}.tw-subtask-list .tw-card-top{font-size:11px}
+ @media(max-width:480px){.tw-summary{gap:6px}.tw-summary>div{padding:10px 6px}.tw-summary strong{font-size:22px}.tw-summary span{font-size:11px}.tw-card .tw-card-bottom .btn{width:auto;margin-inline-start:auto}.tw-subtask-list .tw-card{padding:12px}}
+}
