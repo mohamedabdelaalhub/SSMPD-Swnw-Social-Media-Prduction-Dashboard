@@ -37,7 +37,7 @@ async function route(page,html){await page.route('https://compact.test/**',r=>{c
   assert.deepEqual(errors,[]);await page.close();
  }
  for(const width of [320,390,1280]){
-  const page=await browser.newPage({viewport:{width,height:900}}),errors=[];page.on('pageerror',e=>errors.push(e.message));await route(page,tasks);await page.locator('.tv-proj').waitFor();await page.locator('[data-action=tab][data-id=mine]').click();
+  const page=await browser.newPage({viewport:{width,height:900}}),errors=[];page.on('pageerror',e=>errors.push(e.message));await route(page,tasks);await page.locator('.tv-proj').waitFor();await page.locator('[data-action=tab][data-id=mine]').click();assert.equal(await page.locator('.tw-admin-needs').getAttribute('open'),null,'admin shortcuts stay collapsed on personal tasks');await page.locator('.tw-admin-needs>summary').click();assert(await page.locator('.tw-admin-needs .tv-need.n-review').isVisible(),'admin review action is still available');await page.locator('.tw-admin-needs>summary').click();
   assert.equal(await page.locator('.tw-cards>.tw-card').filter({visible:true}).count(),2,'two top-level assigned tasks');assert.equal(await page.locator('.tw-summary strong').allTextContents().then(a=>a.join(',')),'3,0,0');
   const group=page.locator('.tw-card[data-task-id=t1]>.tw-subtasks');assert.equal(await group.getAttribute('open'),null);assert(!(await group.locator('[data-task-id=t4]').isVisible()));
   const progress=page.locator('.tw-card[data-task-id=t1]>.tw-card-progress progress');assert.equal(await progress.getAttribute('value'),'1');assert.equal(await progress.getAttribute('max'),'2','subtask progress uses actual approved counts');

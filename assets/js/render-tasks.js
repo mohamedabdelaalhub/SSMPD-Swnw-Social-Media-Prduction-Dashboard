@@ -372,7 +372,7 @@
       var shownProjects=state.projects.filter(function(p){return state.showArchived||!state.archived[p.id];});
       var html='<section class="tsk-page tv" dir="rtl"><div class="tv-head"><div><h1>'+(isAdmin?"المهام والمشاريع":"مهامي")+'</h1><p>'+(isAdmin?"تابع التنفيذ وراجع الشغل المسلّم.":"شوف المطلوب منك، كمّل شغلك، وسلّمه للمدير.")+'</p></div><div class="tsk-head-actions"><button class="btn btn-quiet tv-bell" data-action="notifications" aria-label="الإشعارات">🔔'+(unread?' <b class="tsk-badge">'+unread+'</b>':"")+'</button>'+(canCreate?'<button class="btn btn-primary" data-action="new-project">+ مشروع / خطة عمل</button>':"")+'</div></div>'+banner;
       if(state.notice)html+='<div class="tw-success" role="status">'+esc(state.notice)+'</div>';
-      html+=(isAdmin?needsStrip(base,unread):"")+tabsBar(base,shownProjects.length);
+      html+=(isAdmin?(state.tab==="mine"?'<details class="tw-admin-needs"><summary>متابعة الإدارة <span>إجراءات ومهام الفريق</span></summary>'+needsStrip(base,unread)+'</details>':needsStrip(base,unread)):"")+tabsBar(base,shownProjects.length);
       if(state.tab==="mine"){html+=mineHtml();}
       else if(state.tab==="projects"){
         var op=state.openProject&&state.projects.find(function(x){return x.id===state.openProject;});

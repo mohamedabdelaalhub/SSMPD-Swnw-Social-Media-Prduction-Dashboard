@@ -320,3 +320,11 @@ button.tsk-chip-more{font:inherit;font-size:12px;cursor:pointer;background:#eaf1
  .tw-subtasks>summary:focus-visible{outline:2px solid #0F369D;outline-offset:2px;border-radius:8px}.tw-subtask-list{display:grid;gap:10px}.tw-subtask-list .tw-card{background:#FAFCFF;box-shadow:none}.tw-subtask-list .tw-card h2{font-size:14px}.tw-subtask-list .tw-card-top{font-size:11px}
  @media(max-width:480px){.tw-summary{gap:6px}.tw-summary>div{padding:10px 6px}.tw-summary strong{font-size:22px}.tw-summary span{font-size:11px}.tw-card .tw-card-bottom .btn{width:auto;margin-inline-start:auto}.tw-subtask-list .tw-card{padding:12px}}
 }
+
+@media screen {
+ .tw-admin-needs{border:1px solid #E4E9F2;border-radius:14px;background:#fff;padding:0 12px;margin-bottom:14px}
+ .tw-admin-needs>summary{padding:12px 0;min-height:44px;box-sizing:border-box;cursor:pointer;color:#0F369D;font-size:13px;font-weight:700}
+ .tw-admin-needs>summary span{font-size:11px;font-weight:400;color:#6B7788;margin-inline-start:8px}
+ .tw-admin-needs>.tv-needs{margin-top:4px;margin-bottom:12px}
+ .tw-admin-needs>summary:focus-visible{outline:2px solid #0F369D;outline-offset:2px;border-radius:8px}
+}
