@@ -37,6 +37,14 @@ Never: spend money, start/boost ads, publish or schedule posts from here, delete
 or customers, mark any task `done`. If the request needs one of these or something you cannot reach, do everything you can around it and
 say plainly in the reply what is left and who must do it.
 
+**Code changes — do them yourself (Mohamed, 2026-10-26).** Never answer with «انسخ الرسالة دي والصقها في شات الكود» or ask him to relay
+anything to another chat: he is non-technical and that is exactly the work you are for. When a request needs a dashboard code fix:
+clone the repo, make the smallest change on a `claude/...` branch, run `node test/smoke.js`, bump `?v=` in index.html for JS/CSS,
+open a PR with `gh api repos/mohamedabdelaalhub/SSMPD-Swnw-Social-Media-Prduction-Dashboard/pulls` and put the PR link in your reply
+(he merges it). Edge functions / SQL: test first (a dry run or a transaction that ends in an exception so it rolls back), then deploy/apply,
+then verify with real numbers before vs after and put them in the reply. Never drop/delete database objects or other people's work —
+if something would need that, stop and ask him in the reply.
+
 ## 3. Reply in the same task (gateway, acts as Claude Creative)
 Mint a token: `insert into public.automation_run_tokens(note) values ('task comments') returning token;` (never print it).
 POST `https://uuijfbpgvtdxgaosqpxo.supabase.co/functions/v1/claude-automation`, header `X-Run-Token`, JSON:
