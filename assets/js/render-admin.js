@@ -73,6 +73,7 @@
 
       var html = '<h2 style="margin-bottom:16px;">المستخدمون والصلاحيات</h2>';
       html += '<div id="admin-design-budget" style="margin-bottom:16px;"></div>';
+      html += '<div id="admin-claude-controls" style="margin-bottom:16px;"></div>';
       html += '<div class="section" id="admin-add-user"><h3>إضافة مستخدم جديد</h3>' +
         '<div style="display:flex;gap:8px;flex-wrap:wrap;">' +
         "<input id=\"new-email\" placeholder=\"البريد الإلكتروني\" data-i18n-placeholder=\"%D8%A7%D9%84%D8%A8%D8%B1%D9%8A%D8%AF%20%D8%A7%D9%84%D8%A5%D9%84%D9%83%D8%AA%D8%B1%D9%88%D9%86%D9%8A\" data-i18n-placeholder=\"%D8%A7%D9%84%D8%A8%D8%B1%D9%8A%D8%AF%20%D8%A7%D9%84%D8%A5%D9%84%D9%83%D8%AA%D8%B1%D9%88%D9%86%D9%8A\" style=\"flex:1;min-width:200px;padding:9px 12px;border-radius:10px;border:1px solid var(--c-border);\">" +
@@ -161,6 +162,7 @@
       html += '<div class="section" id="brand-logo-settings"></div>';
       container.innerHTML = html;
       if(window.SSMPDDesignBudget)window.SSMPDDesignBudget.mount(container.querySelector('#admin-design-budget'));
+      if(window.SSMPDClaudeControls)window.SSMPDClaudeControls.mount(container.querySelector('#admin-claude-controls'));
       renderBrandLogos(container.querySelector('#brand-logo-settings'));
 
       container.querySelectorAll('[data-supply-permissions]').forEach(function(b){b.onclick=function(){var a=admins.find(function(x){return x.id===b.dataset.supplyPermissions;});if(a)window.SSMPDSupplyRequests.openPermissions(a);};});
