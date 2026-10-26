@@ -7072,3 +7072,537 @@ begin
       case when p_approve then 'تم اعتماد المهمة: ' else 'أُعيدت المهمة للتعديل: ' end||v_task.title)
     on conflict do nothing;
 end $function$;
+
+
+-- ---- 20261027000100_claude_permissions_tasks.sql (2026-10-27) ----
+-- صلاحيات Claude Creative في إدارة المهام — بحدود على مستوى القاعدة (محمد، 2026-10-27)
+--
+-- • claude_capabilities: مفتاح تشغيل/إيقاف + حد يومي لكل صلاحية (محمد يقدر يقفل أي واحدة).
+-- • claude_action_log: سجل بكل استخدام لصلاحية محدودة (أساس العدّاد اليومي).
+-- • claude_task_create / claude_task_update: إنشاء وتعديل مهام لـ Claude بس في مشروع هو «مدير» فيه،
+--   والمسؤول لازم يكون عضو في المشروع أصلاً (task_create العادية كانت بتضيف أي حد للمشروع بمجرد الإسناد).
+-- • تريجر على tasks: Claude ما بيعتمدش ولا بيقفل مهمة (done) ولا بيحذف — حتى لو نادى task_review.
+--   الرجوع للتعديل (review → revision) مسموح وبعدّاد يومي.
+-- • تريجر على task_updates: تعليقات Claude للفريق بعدّاد يومي (مفيش لوب).
+-- ملاحظة: الحراسة دي بتحمي المسار اللي بيشتغل بحساب Claude (البوابة). مسار Supabase MCP بصلاحية الخادم
+-- مش بيتحمى بالحراسة دي، وده معروف ومحكوم بتعليمات المهام المجدولة.
+
+create table if not exists public.claude_capabilities (
+  key text primary key,
+  label text not null,
+  enabled boolean not null default true,
+  daily_limit integer check (daily_limit is null or daily_limit >= 0),
+  note text,
+  updated_by uuid references public.admins(id) on delete set null,
+  updated_at timestamptz not null default now()
+);
+insert into public.claude_capabilities(key,label,enabled,daily_limit) values
+  ('tasks_create','إنشاء مهام وإسنادها',true,30),
+  ('tasks_edit','تعديل مهام',true,60),
+  ('tasks_return','إرجاع مهمة للتعديل',true,30),
+  ('internal_messages','تعليقات وتنبيهات للفريق',true,80),
+  ('ads_propose','اقتراح خطط حملات إعلانية',true,5)
+on conflict (key) do nothing;
+
+create table if not exists public.claude_action_log (
+  id bigserial primary key,
+  at timestamptz not null default now(),
+  action text not null,
+  detail jsonb not null default '{}'::jsonb
+);
+create index if not exists claude_action_log_action_at on public.claude_action_log(action, at desc);
+
+alter table public.claude_capabilities enable row level security;
+alter table public.claude_action_log enable row level security;
+drop policy if exists claude_capabilities_read on public.claude_capabilities;
+create policy claude_capabilities_read on public.claude_capabilities for select to authenticated using (public.can_manage_all_content());
+drop policy if exists claude_capabilities_write on public.claude_capabilities;
+create policy claude_capabilities_write on public.claude_capabilities for update to authenticated using (public.is_super()) with check (public.is_super());
+drop policy if exists claude_action_log_read on public.claude_action_log;
+create policy claude_action_log_read on public.claude_action_log for select to authenticated using (public.can_manage_all_content());
+grant select, update on public.claude_capabilities to authenticated;
+grant select on public.claude_action_log to authenticated;
+
+-- يفحص الصلاحية (مفعّلة؟ والحد اليومي بتوقيت القاهرة) ويسجّل الاستخدام. بيرمي خطأ واضح لو ممنوعة.
+create or replace function public.claude_cap_use(p_key text, p_detail jsonb default '{}'::jsonb)
+ returns void language plpgsql security definer set search_path to 'public' as $$
+declare c public.claude_capabilities%rowtype; n integer;
+begin
+  select * into c from public.claude_capabilities where key = p_key;
+  if not found or not c.enabled then
+    raise exception 'صلاحية «%» مقفولة لـ Claude حاليًا (من إعدادات الصلاحيات)', coalesce(c.label, p_key);
+  end if;
+  if c.daily_limit is not null then
+    select count(*) into n from public.claude_action_log
+      where action = p_key and (at at time zone 'Africa/Cairo')::date = (now() at time zone 'Africa/Cairo')::date;
+    if n >= c.daily_limit then
+      raise exception 'Claude وصل للحد اليومي (%) في «%» — يكمّل بكرة أو محمد يرفع الحد', c.daily_limit, c.label;
+    end if;
+  end if;
+  insert into public.claude_action_log(action, detail) values (p_key, coalesce(p_detail, '{}'::jsonb));
+end $$;
+revoke all on function public.claude_cap_use(text, jsonb) from public, anon, authenticated;
+
+-- هل المسؤول عضو (أو مدير) في المشروع؟
+create or replace function public.claude_assignee_ok(p_project uuid, p_assignee uuid)
+ returns boolean language sql stable security definer set search_path to 'public' as $$
+  select exists(select 1 from public.admins a where a.id = p_assignee and a.active)
+     and (exists(select 1 from public.task_project_members m where m.project_id = p_project and m.admin_id = p_assignee)
+          or exists(select 1 from public.task_projects p where p.id = p_project and p.manager_id = p_assignee));
+$$;
+revoke all on function public.claude_assignee_ok(uuid, uuid) from public, anon, authenticated;
+
+create or replace function public.claude_task_create(
+  p_project_id uuid, p_title text, p_description text, p_expected_output text,
+  p_assignee_id uuid, p_due_at timestamptz, p_priority text default 'normal', p_parent_task_id uuid default null
+) returns uuid language plpgsql security definer set search_path to 'public' as $$
+declare claude constant uuid := 'a0fbdfee-d147-4282-b988-186a9ae3e88c'; v_id uuid;
+begin
+  if public.my_admin_id() is distinct from claude then raise exception 'الدالة دي لحساب Claude Creative بس'; end if;
+  if not public.task_can_manage_project(p_project_id) then raise exception 'Claude مش مدير في المشروع ده'; end if;
+  if not public.claude_assignee_ok(p_project_id, p_assignee_id) then
+    raise exception 'الشخص ده مش عضو في المشروع — ضيفه من الداشبورد الأول (Claude مبيضيفش أعضاء)';
+  end if;
+  if length(trim(coalesce(p_title,''))) < 2 then raise exception 'عنوان المهمة قصير'; end if;
+  if length(trim(coalesce(p_description,''))) < 5 or length(trim(coalesce(p_expected_output,''))) < 3 then
+    raise exception 'اكتب المطلوب وشكل التسليم بوضوح';
+  end if;
+  perform public.claude_cap_use('tasks_create', jsonb_build_object('project', p_project_id, 'assignee', p_assignee_id, 'title', left(p_title, 80)));
+  v_id := public.task_create(p_project_id, p_parent_task_id, p_title, p_description, p_expected_output, p_assignee_id, p_due_at, p_priority);
+  return v_id;
+end $$;
+
+create or replace function public.claude_task_update(
+  p_task_id uuid, p_title text default null, p_description text default null, p_expected_output text default null,
+  p_assignee_id uuid default null, p_due_at timestamptz default null, p_priority text default null
+) returns void language plpgsql security definer set search_path to 'public' as $$
+declare claude constant uuid := 'a0fbdfee-d147-4282-b988-186a9ae3e88c'; t public.tasks%rowtype;
+begin
+  if public.my_admin_id() is distinct from claude then raise exception 'الدالة دي لحساب Claude Creative بس'; end if;
+  select * into t from public.tasks where id = p_task_id;
+  if not found then raise exception 'المهمة مش موجودة'; end if;
+  if not public.task_can_manage_project(t.project_id) then raise exception 'Claude مش مدير في المشروع ده'; end if;
+  if t.status = 'done' then raise exception 'المهمة مقفولة'; end if;
+  if t.recurrence_id is not null then raise exception 'مهمة متكررة — تتعدّل من الداشبورد'; end if;
+  if p_assignee_id is not null and p_assignee_id is distinct from t.assignee_id
+     and not public.claude_assignee_ok(t.project_id, p_assignee_id) then
+    raise exception 'الشخص ده مش عضو في المشروع — ضيفه من الداشبورد الأول';
+  end if;
+  perform public.claude_cap_use('tasks_edit', jsonb_build_object('task', p_task_id));
+  perform public.task_update_details(p_task_id,
+    coalesce(p_title, t.title), coalesce(p_description, t.description), coalesce(p_expected_output, t.expected_output),
+    coalesce(p_assignee_id, t.assignee_id), coalesce(p_due_at, t.due_at), coalesce(p_priority, t.priority),
+    false, 1, 'day', null, false);
+end $$;
+revoke all on function public.claude_task_create(uuid, text, text, text, uuid, timestamptz, text, uuid) from public, anon;
+revoke all on function public.claude_task_update(uuid, text, text, text, uuid, timestamptz, text) from public, anon;
+grant execute on function public.claude_task_create(uuid, text, text, text, uuid, timestamptz, text, uuid) to authenticated;
+grant execute on function public.claude_task_update(uuid, text, text, text, uuid, timestamptz, text) to authenticated;
+
+-- حراسة على tasks: Claude لا يعتمد ولا يقفل ولا يحذف، والرجوع للتعديل بعدّاد
+create or replace function public.claude_task_guard() returns trigger
+ language plpgsql security definer set search_path to 'public' as $$
+declare claude constant uuid := 'a0fbdfee-d147-4282-b988-186a9ae3e88c';
+begin
+  if public.my_admin_id() is distinct from claude then return coalesce(new, old); end if;
+  if tg_op = 'DELETE' then raise exception 'Claude لا يحذف مهام — الحذف من الداشبورد بس'; end if;
+  if new.project_id is distinct from old.project_id then raise exception 'Claude لا ينقل مهام بين المشاريع'; end if;
+  if new.status = 'done' and old.status is distinct from 'done' then
+    raise exception 'Claude لا يعتمد ولا يقفل مهام — الاعتماد ليك أو لمدير المشروع من البشر';
+  end if;
+  if new.status = 'revision' and old.status = 'review' then
+    perform public.claude_cap_use('tasks_return', jsonb_build_object('task', new.id));
+  end if;
+  return new;
+end $$;
+drop trigger if exists claude_task_guard_trg on public.tasks;
+create trigger claude_task_guard_trg before update or delete on public.tasks
+  for each row execute function public.claude_task_guard();
+
+-- تعليقات Claude للفريق (مش سجل تغيير الحالة) بعدّاد يومي
+create or replace function public.claude_task_update_guard() returns trigger
+ language plpgsql security definer set search_path to 'public' as $$
+declare claude constant uuid := 'a0fbdfee-d147-4282-b988-186a9ae3e88c';
+begin
+  if new.author_id = claude and new.status_to is null then
+    perform public.claude_cap_use('internal_messages', jsonb_build_object('task', new.task_id));
+  end if;
+  return new;
+end $$;
+drop trigger if exists claude_task_update_guard_trg on public.task_updates;
+create trigger claude_task_update_guard_trg before insert on public.task_updates
+  for each row execute function public.claude_task_update_guard();
+
+notify pgrst, 'reload schema';
+
+
+-- ---- 20261027000200_ads_spend_limits.sql (2026-10-27) ----
+-- حدود الصرف الإعلاني بفترات (يومي / أسبوعي / شهري / إجمالي بتاريخ) — محمد، 2026-10-27
+--
+-- • ads_spend_limits: حد بالجنيه لكل فترة، لكل الصفحات أو لصفحة بعينها.
+-- • الحد بيتفحص وقت اعتماد خطة حملة (media_buyer_plans → approved/executing/live) وعند تعديل ميزانيتها أو تواريخها:
+--   لو المخطط الصرف (خطط معتمدة + دي) بيعدّي أي حد في أي فترة ⇒ الاعتماد بيتمنع برسالة واضحة.
+-- • مفيش حدود مفعّلة ⇒ مفيش فحص على اعتماد محمد (زي ما هو)، لكن Claude مبيقدرش يقترح خطة بفلوس من غير حد مفعّل.
+-- • إجراءات التنفيذ (إنشاء حملة/مجموعة/إعلان/زيادة ميزانية) لازم تتربط بخطة معتمدة، وزيادة الميزانية مش بتعدّي ميزانية الخطة.
+-- • الأسبوع بيبدأ السبت (الأسبوع المصري).
+-- Claude بيقترح بس: claude_propose_ad_plan بتحط الخطة pending_approval، ومحمد هو اللي يعتمد من «مركز مدير الإعلانات».
+
+create table if not exists public.ads_spend_limits (
+  id uuid primary key default gen_random_uuid(),
+  label text not null,
+  brand text check (brand is null or brand in ('sono','dr_dina')),
+  period text not null check (period in ('day','week','month','custom')),
+  amount numeric not null check (amount >= 0),
+  currency text not null default 'EGP' check (currency = 'EGP'),
+  starts_on date,
+  ends_on date,
+  active boolean not null default true,
+  note text,
+  created_by uuid references public.admins(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint ads_spend_limits_custom_dates check (period <> 'custom' or (starts_on is not null and ends_on is not null and ends_on >= starts_on))
+);
+alter table public.ads_spend_limits enable row level security;
+create policy ads_spend_limits_read on public.ads_spend_limits for select to authenticated using (public.can_manage_all_content());
+create policy ads_spend_limits_write on public.ads_spend_limits for all to authenticated using (public.is_super()) with check (public.is_super());
+grant select, insert, update, delete on public.ads_spend_limits to authenticated;
+
+-- بداية ونهاية ومعدل الصرف اليومي للخطة
+create or replace function public.ads_plan_span(p public.media_buyer_plans, out s date, out e date, out rate numeric)
+ language plpgsql stable set search_path to 'public' as $$
+declare days integer; total numeric;
+begin
+  s := coalesce(p.start_date, current_date);
+  e := coalesce(p.end_date, s + 29);
+  if e < s then e := s; end if;
+  days := (e - s) + 1;
+  if p.total_budget is not null and p.total_budget > 0 then
+    total := least(coalesce(p.daily_budget * days, p.total_budget), p.total_budget);
+    rate := total / days;
+  else
+    rate := coalesce(p.daily_budget, 0);
+  end if;
+end $$;
+
+-- صرف الخطة المتوقع جوه نافذة [ws, we]
+create or replace function public.ads_plan_spend_in(p public.media_buyer_plans, ws date, we date)
+ returns numeric language plpgsql stable set search_path to 'public' as $$
+declare sp record;
+begin
+  select * into sp from public.ads_plan_span(p);
+  return sp.rate * greatest(0, least(sp.e, we) - greatest(sp.s, ws) + 1);
+end $$;
+
+-- الحدود اللي الخطة بتعدّيها (لو فيه). الخطة المرشّحة بتتحسب كأنها معتمدة.
+create or replace function public.ads_plan_violations(p public.media_buyer_plans)
+ returns table(limit_label text, period text, period_start date, period_end date, projected numeric, limit_amount numeric, this_plan numeric)
+ language plpgsql stable security definer set search_path to 'public' as $$
+declare l public.ads_spend_limits%rowtype; sp record; lo date; hi date; d date; ws date; we date; tot numeric; mine numeric; q public.media_buyer_plans; guard integer;
+begin
+  select * into sp from public.ads_plan_span(p);
+  for l in select * from public.ads_spend_limits x where x.active and (x.brand is null or x.brand = p.brand) order by x.created_at loop
+    lo := greatest(sp.s, coalesce(l.starts_on, sp.s));
+    hi := least(sp.e, coalesce(l.ends_on, sp.e));
+    if hi < lo then continue; end if;
+    d := lo; guard := 0;
+    while d <= hi and guard < 400 loop
+      guard := guard + 1;
+      if l.period = 'custom' then ws := l.starts_on; we := l.ends_on;
+      elsif l.period = 'day' then ws := d; we := d;
+      elsif l.period = 'week' then ws := d - ((extract(dow from d)::int + 1) % 7); we := ws + 6;
+      else ws := date_trunc('month', d)::date; we := (date_trunc('month', d) + interval '1 month - 1 day')::date;
+      end if;
+      mine := public.ads_plan_spend_in(p, ws, we);
+      tot := mine;
+      for q in select * from public.media_buyer_plans z
+               where z.status in ('approved','executing','live') and z.id is distinct from p.id
+                 and (l.brand is null or z.brand = l.brand) loop
+        tot := tot + public.ads_plan_spend_in(q, ws, we);
+      end loop;
+      if tot > l.amount + 0.005 then
+        limit_label := l.label; period := l.period; period_start := ws; period_end := we;
+        projected := round(tot, 2); limit_amount := l.amount; this_plan := round(mine, 2);
+        return next;
+      end if;
+      d := we + 1;
+    end loop;
+  end loop;
+end $$;
+
+create or replace function public.ads_period_ar(p text) returns text language sql immutable as $$
+  select case p when 'day' then 'يومي' when 'week' then 'أسبوعي' when 'month' then 'شهري' else 'إجمالي للفترة' end;
+$$;
+
+-- حارس اعتماد الخطة
+create or replace function public.ads_plan_limits_guard() returns trigger
+ language plpgsql security definer set search_path to 'public' as $$
+declare v record;
+begin
+  if new.status not in ('approved','executing','live') then return new; end if;
+  if tg_op = 'UPDATE' then
+    if old.status in ('approved','executing','live')
+       and old.daily_budget is not distinct from new.daily_budget and old.total_budget is not distinct from new.total_budget
+       and old.start_date is not distinct from new.start_date and old.end_date is not distinct from new.end_date
+       and old.brand is not distinct from new.brand then
+      return new;
+    end if;
+  end if;
+  if not exists (select 1 from public.ads_spend_limits where active) then return new; end if;
+  if coalesce(new.currency, 'EGP') <> 'EGP' then raise exception 'حدود الصرف بالجنيه بس — عملة الخطة %', new.currency; end if;
+  if new.daily_budget is null and new.total_budget is null then
+    raise exception 'حدّد ميزانية يومية أو إجمالية للخطة قبل الاعتماد (فيه حدود صرف مفعّلة)';
+  end if;
+  select * into v from public.ads_plan_violations(new) vv order by (vv.projected - vv.limit_amount) desc limit 1;
+  if found then
+    raise exception 'الخطة بتتخطى حد «%» (%): المخطط % ج من حد % ج في الفترة % ← % — قلّل الميزانية أو ارفع الحد الأول',
+      v.limit_label, public.ads_period_ar(v.period), v.projected, v.limit_amount, v.period_start, v.period_end;
+  end if;
+  return new;
+end $$;
+create trigger ads_plan_limits_guard_trg before insert or update on public.media_buyer_plans
+  for each row execute function public.ads_plan_limits_guard();
+
+-- حارس إجراءات الصرف: لازم تتربط بخطة معتمدة، وزيادة الميزانية مش بتعدّي ميزانية الخطة
+create or replace function public.ads_action_limits_guard() returns trigger
+ language plpgsql security definer set search_path to 'public' as $$
+declare pl public.media_buyer_plans%rowtype; nb numeric;
+begin
+  if new.status is distinct from 'approved' or old.status is not distinct from 'approved' then return new; end if;
+  if new.action_type is null or new.action_type not in ('create_campaign','create_adset','create_ad','increase_budget') then return new; end if;
+  if not exists (select 1 from public.ads_spend_limits where active) then return new; end if;
+  select * into pl from public.media_buyer_plans where id = new.plan_id;
+  if not found or pl.status not in ('approved','executing','live') then
+    raise exception 'إجراء الصرف ده لازم يتربط بخطة حملة معتمدة (فيه حدود صرف مفعّلة)';
+  end if;
+  if new.action_type = 'increase_budget' then
+    nb := coalesce(nullif(new.proposed_payload->>'daily_budget','')::numeric, nullif(new.proposed_payload->>'new_daily_budget','')::numeric);
+    if nb is not null and pl.daily_budget is not null and nb > pl.daily_budget then
+      raise exception 'زيادة الميزانية (% ج) أكبر من ميزانية الخطة المعتمدة (% ج) — عدّل الخطة واعتمدها الأول', nb, pl.daily_budget;
+    end if;
+  end if;
+  return new;
+end $$;
+create trigger ads_action_limits_guard_trg before update on public.media_buyer_actions
+  for each row execute function public.ads_action_limits_guard();
+
+-- حالة الحدود للفترة الحالية (للوحة التحكم وللمتابعة اليومية)
+create or replace function public.ads_limits_status()
+ returns table(id uuid, label text, brand text, period text, amount numeric, window_start date, window_end date, committed numeric, remaining numeric, pct integer)
+ language plpgsql stable security definer set search_path to 'public' as $$
+declare l public.ads_spend_limits%rowtype; ws date; we date; tot numeric; q public.media_buyer_plans; today date := (now() at time zone 'Africa/Cairo')::date;
+begin
+  for l in select * from public.ads_spend_limits x where x.active order by x.created_at loop
+    if l.period = 'custom' then ws := l.starts_on; we := l.ends_on;
+    elsif l.period = 'day' then ws := today; we := today;
+    elsif l.period = 'week' then ws := today - ((extract(dow from today)::int + 1) % 7); we := ws + 6;
+    else ws := date_trunc('month', today)::date; we := (date_trunc('month', today) + interval '1 month - 1 day')::date;
+    end if;
+    tot := 0;
+    for q in select * from public.media_buyer_plans z where z.status in ('approved','executing','live') and (l.brand is null or z.brand = l.brand) loop
+      tot := tot + public.ads_plan_spend_in(q, ws, we);
+    end loop;
+    id := l.id; label := l.label; brand := l.brand; period := l.period; amount := l.amount;
+    window_start := ws; window_end := we; committed := round(tot, 2); remaining := round(l.amount - tot, 2);
+    pct := case when l.amount > 0 then round(100 * tot / l.amount)::int else 100 end;
+    return next;
+  end loop;
+end $$;
+revoke all on function public.ads_limits_status() from public, anon;
+grant execute on function public.ads_limits_status() to authenticated, service_role;
+
+-- Claude بيقترح خطة (مش بيعتمدها ولا بيصرف): pending_approval + فحص الحدود قبل ما تتسجّل
+create or replace function public.claude_propose_ad_plan(
+  p_title text, p_brand text, p_objective text, p_daily_budget numeric, p_total_budget numeric,
+  p_start date, p_end date, p_targeting text, p_strategy text, p_rationale text, p_content_item uuid default null
+) returns uuid language plpgsql security definer set search_path to 'public' as $$
+declare claude constant uuid := 'a0fbdfee-d147-4282-b988-186a9ae3e88c'; v public.media_buyer_plans; x record; headroom numeric; v_id uuid := gen_random_uuid();
+begin
+  if p_brand not in ('sono','dr_dina') then raise exception 'الصفحة لازم تكون sono أو dr_dina'; end if;
+  if length(trim(coalesce(p_title,''))) < 5 then raise exception 'عنوان الخطة قصير'; end if;
+  if length(trim(coalesce(p_objective,''))) < 2 then raise exception 'حدّد هدف الحملة (messages / leads / traffic ...)'; end if;
+  if p_daily_budget is null and p_total_budget is null then raise exception 'حدّد ميزانية يومية أو إجمالية'; end if;
+  if coalesce(p_daily_budget, 1) <= 0 or coalesce(p_total_budget, 1) <= 0 then raise exception 'الميزانية لازم تكون أكبر من صفر'; end if;
+  if p_start is null or p_end is null or p_end < p_start or p_start < (now() at time zone 'Africa/Cairo')::date or p_end - p_start > 90 then
+    raise exception 'التواريخ لازم تبدأ من النهارده أو بعده وماتزيدش عن 90 يوم';
+  end if;
+  if length(trim(coalesce(p_strategy,''))) < 20 or length(trim(coalesce(p_rationale,''))) < 20 then
+    raise exception 'اكتب الاستراتيجية والسبب بوضوح (بالأرقام اللي بتدعمها)';
+  end if;
+  if not exists (select 1 from public.ads_spend_limits where active) then
+    raise exception 'مفيش حدود صرف مفعّلة — محمد لازم يحدد حد صرف الأول قبل ما Claude يقترح خطة بفلوس';
+  end if;
+  perform public.claude_cap_use('ads_propose', jsonb_build_object('title', left(p_title, 80), 'brand', p_brand));
+  v.id := v_id; v.brand := p_brand; v.status := 'approved'; v.currency := 'EGP';
+  v.daily_budget := p_daily_budget; v.total_budget := p_total_budget; v.start_date := p_start; v.end_date := p_end;
+  select * into x from public.ads_plan_violations(v) vv order by (vv.projected - vv.limit_amount) desc limit 1;
+  if found then
+    headroom := greatest(0, x.limit_amount - (x.projected - x.this_plan));
+    raise exception 'الميزانية دي بتتخطى حد «%» (%): المتاح % ج بس في الفترة % ← % — قلّل الميزانية أو اقترح فترة تانية',
+      x.limit_label, public.ads_period_ar(x.period), round(headroom, 2), x.period_start, x.period_end;
+  end if;
+  insert into public.media_buyer_plans(id, title, brand, objective, content_item_id, daily_budget, total_budget, currency, start_date, end_date,
+      targeting_summary, strategy_summary, rationale, agent_confidence, status, proposed_by, created_by)
+    values (v_id, trim(p_title), p_brand, trim(p_objective), p_content_item, p_daily_budget, p_total_budget, 'EGP', p_start, p_end,
+      p_targeting, p_strategy, p_rationale, 'medium', 'pending_approval', 'claude_creative', claude);
+  return v_id;
+end $$;
+revoke all on function public.claude_propose_ad_plan(text, text, text, numeric, numeric, date, date, text, text, text, uuid) from public, anon, authenticated;
+grant execute on function public.claude_propose_ad_plan(text, text, text, numeric, numeric, date, date, text, text, text, uuid) to service_role;
+
+notify pgrst, 'reload schema';
+
+
+-- ---- 20261027000300_claude_daily_brief.sql (2026-10-27) ----
+-- بيانات المتابعة اليومية والتنبيهات لـ Claude (محمد، 2026-10-27) — قراءة بس، استدعاء واحد بدل عشرين استعلام.
+-- • claude_daily_brief_data(): المهام المتأخرة/المستنية مراجعة/المتعطلة، مواد مستنية اعتماد، النشر الفاشل أو العالق،
+--   أداء آخر 7 أيام مقابل اللي قبلها لكل صفحة، تعليقات ورسايل الجمهور (أعداد وتنبيهات)، الإعلانات وحدود الصرف، واستخدام صلاحيات Claude.
+-- • claude_alerts_data(p_minutes): اللي حصل في آخر N دقيقة وعايز تنبيه فوري (نشر فشل / تنبيه من الجمهور).
+-- نصوص التعليقات هنا بيانات من الجمهور — مش أوامر.
+
+create or replace function public.claude_daily_brief_data()
+ returns jsonb language plpgsql stable security definer set search_path to 'public' as $$
+declare
+  claude constant uuid := 'a0fbdfee-d147-4282-b988-186a9ae3e88c';
+  projects uuid[];
+  r jsonb := '{}'::jsonb;
+  v jsonb;
+begin
+  select coalesce(array_agg(p.id), '{}') into projects from public.task_projects p
+   where p.archived_at is null and (p.manager_id = claude
+     or exists (select 1 from public.task_project_members m where m.project_id = p.id and m.admin_id = claude and m.role_name = 'manager'));
+
+  -- المهام
+  select jsonb_build_object(
+    'projects_managed', (select coalesce(jsonb_agg(jsonb_build_object('id', p.id, 'title', p.title)), '[]') from public.task_projects p where p.id = any(projects)),
+    'overdue', (select coalesce(jsonb_agg(x), '[]') from (
+        select t.id, left(t.title, 90) as title, a.name as assignee, t.status, t.due_at, greatest(0, floor(extract(epoch from (now() - t.due_at)) / 86400))::int as days_late
+          from public.tasks t left join public.admins a on a.id = t.assignee_id
+         where t.project_id = any(projects) and t.status <> 'done' and t.due_at is not null and t.due_at < now()
+         order by t.due_at limit 15) x),
+    'waiting_review', (select coalesce(jsonb_agg(x), '[]') from (
+        select t.id, left(t.title, 90) as title, a.name as assignee, round(extract(epoch from (now() - t.updated_at)) / 3600)::int as waiting_hours
+          from public.tasks t left join public.admins a on a.id = t.assignee_id
+         where t.project_id = any(projects) and t.status = 'review' and t.assignee_id is distinct from claude
+         order by t.updated_at limit 20) x),
+    'my_tasks_waiting_review', (select count(*) from public.tasks t where t.project_id = any(projects) and t.status = 'review' and t.assignee_id = claude),
+    'blocked', (select coalesce(jsonb_agg(x), '[]') from (
+        select t.id, left(t.title, 90) as title, a.name as assignee, round(extract(epoch from (now() - t.updated_at)) / 86400)::int as days
+          from public.tasks t left join public.admins a on a.id = t.assignee_id
+         where t.project_id = any(projects) and t.status = 'blocked' order by t.updated_at limit 10) x),
+    'stale_revision', (select coalesce(jsonb_agg(x), '[]') from (
+        select t.id, left(t.title, 90) as title, a.name as assignee, round(extract(epoch from (now() - t.updated_at)) / 86400)::int as days
+          from public.tasks t left join public.admins a on a.id = t.assignee_id
+         where t.project_id = any(projects) and t.status = 'revision' and t.updated_at < now() - interval '3 days' order by t.updated_at limit 10) x),
+    'due_next_48h', (select count(*) from public.tasks t where t.project_id = any(projects) and t.status not in ('done') and t.due_at >= now() and t.due_at < now() + interval '48 hours'),
+    'not_started', (select count(*) from public.tasks t where t.project_id = any(projects) and t.status = 'todo' and t.created_at < now() - interval '2 days'),
+    'open_total', (select count(*) from public.tasks t where t.project_id = any(projects) and t.status <> 'done')
+  ) into v;
+  r := r || jsonb_build_object('tasks', v);
+
+  -- المحتوى والنشر
+  select jsonb_build_object(
+    'waiting_approval_48h', (select coalesce(jsonb_agg(x), '[]') from (
+        select c.id, left(c.title, 80) as title, c.brand, c.stage, round(extract(epoch from (now() - c.updated_at)) / 3600)::int as hours
+          from public.content_items c where c.stage in ('initial_approval', 'final_approval') and c.updated_at < now() - interval '48 hours'
+         order by c.updated_at limit 15) x),
+    'needs_revision', (select count(*) from public.content_items c where c.stage = 'needs_revision'),
+    'needs_revision_over_24h', (select count(*) from public.content_items c where c.stage = 'needs_revision' and c.updated_at < now() - interval '24 hours'),
+    'scheduled_next_24h', (select coalesce(jsonb_agg(x), '[]') from (
+        select c.brand, c.content_format, count(*) as n from public.content_items c
+         where c.stage = 'scheduled' and c.scheduled_publish_at >= now() and c.scheduled_publish_at < now() + interval '24 hours' group by 1, 2) x),
+    'meta_failed_24h', (select coalesce(jsonb_agg(x), '[]') from (
+        select j.id, j.brand, j.status, left(coalesce(j.error_message, ''), 140) as error, left(coalesce(c.title, ''), 70) as title, j.updated_at
+          from public.meta_publish_jobs j left join public.content_items c on c.id = j.content_id
+         where j.status not in ('pending', 'processing', 'published', 'cancelled') and j.updated_at > now() - interval '24 hours'
+         order by j.updated_at desc limit 10) x),
+    'meta_stuck_processing', (select count(*) from public.meta_publish_jobs j where j.status = 'processing' and coalesce(j.last_attempt_at, j.updated_at) < now() - interval '2 hours'),
+    'tiktok_failed_24h', (select coalesce(jsonb_agg(x), '[]') from (
+        select j.id, j.brand, j.status, left(coalesce(j.error_message, ''), 140) as error, j.updated_at
+          from public.tiktok_publish_jobs j where j.status in ('failed', 'partial') and j.updated_at > now() - interval '24 hours' order by j.updated_at desc limit 10) x)
+  ) into v;
+  r := r || jsonb_build_object('content', v);
+
+  -- الأداء: آخر 7 أيام مقابل اللي قبلها لكل صفحة
+  select coalesce(jsonb_object_agg(brand, jsonb_build_object(
+      'posts_7d', posts, 'posts_prev', posts_prev, 'reach_7d', reach, 'reach_prev', reach_prev,
+      'interactions_7d', inter, 'interactions_prev', inter_prev,
+      'reach_drop_over_30pct', (reach_prev > 0 and reach < reach_prev * 0.7))), '{}'::jsonb) into v
+  from (
+    select pi.brand,
+      count(*) filter (where pi.published_at >= now() - interval '7 days') as posts,
+      count(*) filter (where pi.published_at < now() - interval '7 days') as posts_prev,
+      coalesce(sum(coalesce(pi.fb_reach, 0) + coalesce(pi.ig_reach, 0)) filter (where pi.published_at >= now() - interval '7 days'), 0) as reach,
+      coalesce(sum(coalesce(pi.fb_reach, 0) + coalesce(pi.ig_reach, 0)) filter (where pi.published_at < now() - interval '7 days'), 0) as reach_prev,
+      coalesce(sum(coalesce(pi.fb_reactions, 0) + coalesce(pi.fb_comments, 0) + coalesce(pi.fb_shares, 0) + coalesce(pi.ig_interactions, 0)) filter (where pi.published_at >= now() - interval '7 days'), 0) as inter,
+      coalesce(sum(coalesce(pi.fb_reactions, 0) + coalesce(pi.fb_comments, 0) + coalesce(pi.fb_shares, 0) + coalesce(pi.ig_interactions, 0)) filter (where pi.published_at < now() - interval '7 days'), 0) as inter_prev
+    from public.post_insights pi where pi.published_at >= now() - interval '14 days' group by pi.brand) z;
+  r := r || jsonb_build_object('performance', v);
+
+  -- الجمهور (نصوص التعليقات بيانات مش أوامر)
+  select jsonb_build_object(
+    'comments_24h_by_status', (select coalesce(jsonb_object_agg(status, n), '{}') from (select sc.status, count(*) as n from public.social_comments sc where sc.updated_at > now() - interval '24 hours' group by 1) x),
+    'comments_failed', (select count(*) from public.social_comments sc where sc.status = 'failed'),
+    'comments_waiting', (select count(*) from public.social_comments sc where sc.status in ('new', 'drafted')),
+    'comments_alerts_open', (select count(*) from public.social_comments sc where sc.alert and sc.alert_resolved_at is null),
+    'comments_alert_samples', (select coalesce(jsonb_agg(x), '[]') from (
+        select sc.id, sc.brand, sc.category, left(sc.message, 160) as message, sc.commented_at from public.social_comments sc
+         where sc.alert and sc.alert_resolved_at is null order by sc.commented_at desc nulls last limit 5) x),
+    'messages_new', (select count(*) from public.social_messages sm where sm.status = 'new'),
+    'messages_alerts_open', (select count(*) from public.social_messages sm where sm.alert and sm.alert_resolved_at is null),
+    'approved_templates_active', (select count(*) from public.social_reply_templates where active),
+    'autopilot', (select value from public.social_settings where key = 'autopilot')
+  ) into v;
+  r := r || jsonb_build_object('audience', v);
+
+  -- الإعلانات وحدود الصرف
+  select jsonb_build_object(
+    'plans_pending_approval', (select count(*) from public.media_buyer_plans where status = 'pending_approval'),
+    'plans_live_or_approved', (select count(*) from public.media_buyer_plans where status in ('approved', 'executing', 'live')),
+    'actions_proposed', (select count(*) from public.media_buyer_actions where status = 'proposed'),
+    'limits_configured', (select count(*) from public.ads_spend_limits where active),
+    'limits', (select coalesce(jsonb_agg(to_jsonb(s)), '[]') from public.ads_limits_status() s)
+  ) into v;
+  r := r || jsonb_build_object('ads', v);
+
+  -- Claude نفسه
+  select jsonb_build_object(
+    'pending_requests', (select count(*) from public.claude_task_requests where status in ('pending', 'working')),
+    'capabilities', (select coalesce(jsonb_agg(jsonb_build_object('key', k.key, 'label', k.label, 'enabled', k.enabled, 'daily_limit', k.daily_limit,
+        'used_today', (select count(*) from public.claude_action_log l where l.action = k.key and (l.at at time zone 'Africa/Cairo')::date = (now() at time zone 'Africa/Cairo')::date))), '[]')
+      from public.claude_capabilities k)
+  ) into v;
+  r := r || jsonb_build_object('claude', v);
+
+  return r || jsonb_build_object('generated_at_cairo', to_char(now() at time zone 'Africa/Cairo', 'YYYY-MM-DD HH24:MI'));
+end $$;
+revoke all on function public.claude_daily_brief_data() from public, anon, authenticated;
+grant execute on function public.claude_daily_brief_data() to service_role;
+
+create or replace function public.claude_alerts_data(p_minutes integer default 65)
+ returns jsonb language plpgsql stable security definer set search_path to 'public' as $$
+declare m interval := make_interval(mins => greatest(5, least(coalesce(p_minutes, 65), 1440)));
+begin
+  return jsonb_build_object(
+    'since_minutes', extract(epoch from m) / 60,
+    'meta_failed', (select coalesce(jsonb_agg(x), '[]') from (
+        select j.id, j.brand, j.status, left(coalesce(j.error_message, ''), 140) as error, left(coalesce(c.title, ''), 70) as title
+          from public.meta_publish_jobs j left join public.content_items c on c.id = j.content_id
+         where j.status not in ('pending', 'processing', 'published', 'cancelled') and j.updated_at > now() - m limit 10) x),
+    'tiktok_failed', (select coalesce(jsonb_agg(x), '[]') from (
+        select j.id, j.brand, left(coalesce(j.error_message, ''), 140) as error from public.tiktok_publish_jobs j
+         where j.status in ('failed', 'partial') and j.updated_at > now() - m limit 10) x),
+    'new_comment_alerts', (select coalesce(jsonb_agg(x), '[]') from (
+        select sc.id, sc.brand, sc.category, left(sc.message, 160) as message from public.social_comments sc
+         where sc.alert and sc.alert_resolved_at is null and sc.updated_at > now() - m limit 5) x),
+    'new_message_alerts', (select count(*) from public.social_messages sm where sm.alert and sm.alert_resolved_at is null and sm.updated_at > now() - m),
+    -- بس اللي عدّى ساعتين خلال آخر نافذة (عشان التنبيه ماييجيش كل ساعة على نفس العالقين)
+    'newly_stuck_publishing', (select count(*) from public.meta_publish_jobs j where j.status = 'processing'
+        and coalesce(j.last_attempt_at, j.updated_at) < now() - interval '2 hours'
+        and coalesce(j.last_attempt_at, j.updated_at) >= now() - interval '2 hours' - m)
+  );
+end $$;
+revoke all on function public.claude_alerts_data(integer) from public, anon, authenticated;
+grant execute on function public.claude_alerts_data(integer) to service_role;
+
+notify pgrst, 'reload schema';
