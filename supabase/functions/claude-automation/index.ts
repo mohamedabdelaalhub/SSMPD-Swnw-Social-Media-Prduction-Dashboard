@@ -48,7 +48,11 @@ const ALLOWED: [string, RegExp][] = [
   ["POST", /^\/rest\/v1\/meta_publish_jobs(\?|$)/],
   // التقرير الأسبوعي: مهام Claude نفسه فقط (RLS بتمنع أي حاجة تانية)
   ["GET", /^\/rest\/v1\/(tasks|task_updates)\?/],
-  ["POST", /^\/rest\/v1\/rpc\/(task_set_status|task_add_comment|task_add_comment_to)$/],
+  ["POST", /^\/rest\/v1\/rpc\/(task_set_status|task_add_comment|task_add_comment_to|task_review)$/],
+  // 2026-10-27: Claude-only RPCs (claude_task_create / claude_task_update / ...). Each one checks it is Claude, the
+  // capability switch + daily limit (claude_capabilities) and the project membership inside the database. The database
+  // also stops Claude from approving/closing/deleting tasks (claude_task_guard), whatever is called here.
+  ["POST", /^\/rest\/v1\/rpc\/claude_[a-z_]+$/],
 ];
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 

@@ -33,8 +33,10 @@ If the task is the weekly report («التقرير الأسبوعي لتسويق
 Do exactly what the comment asks, as well as you can with your tools: read/analyse dashboard data (read-only SQL), Meta read-only insights,
 web research, write a Google Doc / Sheet on Google Drive (folder «تقارير أسبوعية» or a subfolder «مهام Claude» inside the archive folder
 `1xghscimJG2f8CB2N3I0lC3fHrhZk2aMO`; create once, reuse — task files never go to Supabase Storage), draft texts, plans, checklists.
+Since 2026-10-27 you may also create/edit/assign tasks and send a task back for revision — exactly as in `docs/claude-permissions.md`
+(read it for the exact calls, the daily caps and what the database refuses).
 Never: spend money, start/boost ads, publish or schedule posts from here, delete anything, change settings/permissions, message patients
-or customers, mark any task `done`. If the request needs one of these or something you cannot reach, do everything you can around it and
+or customers, approve or close (`done`) any task. If the request needs one of these or something you cannot reach, do everything you can around it and
 say plainly in the reply what is left and who must do it.
 
 **Code changes — do them yourself (Mohamed, 2026-10-26).** Never answer with «انسخ الرسالة دي والصقها في شات الكود» or ask him to relay
