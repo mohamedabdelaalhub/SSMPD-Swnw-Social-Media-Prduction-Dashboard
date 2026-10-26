@@ -7,7 +7,28 @@
   function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
   function date(v){if(!v)return "بدون موعد";var d=new Date(v);return isNaN(d)?"":d.toLocaleDateString("ar-EG-u-nu-latn",{year:"numeric",month:"short",day:"numeric"});}
   function dateValue(v){if(!v)return "";var d=new Date(v);if(isNaN(d))return "";return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
-  function repeatFields(t){t=t||{};var active=!!t.recurrence_active;return '<label class="tsk-repeat-toggle"><input type="checkbox" name="repeat_active" '+(active?"checked":"")+'><span>تكرار المهمة تلقائياً</span></label><div class="tsk-repeat-fields" '+(active?"":"hidden")+'><div class="tsk-form-row"><label>كل<input type="number" name="repeat_interval" min="1" max="365" value="'+esc(t.recurrence_interval_value||1)+'"></label><label>الفترة<select name="repeat_unit"><option value="day" '+(t.recurrence_interval_unit==="day"?"selected":"")+'>يوم</option><option value="week" '+(t.recurrence_interval_unit==="week"?"selected":"")+'>أسبوع</option><option value="month" '+(t.recurrence_interval_unit==="month"?"selected":"")+'>شهر</option></select></label></div><label>إيقاف التكرار في (اختياري)<input type="date" name="repeat_until" value="'+dateValue(t.recurrence_ends_at)+'"></label><small>سيتم إنشاء مهمة جديدة تلقائياً بالبيانات نفسها وإسنادها للمسؤول.</small></div>';}
+  function repeatFields(t){t=t||{};var active=!!t.recurrence_active;return '<label class="tsk-repeat-toggle"><input type="checkbox" name="repeat_active" '+(active?"checked":"")+'><span>تكرار المهمة تلقائياً</span></label><div class="tsk-repeat-fields" '+(active?"":"hidden")+'><div class="tsk-form-row"><label>كل<input type="number" name="repeat_interval" min="1" max="365" value="'+esc(t.recurrence_interval_value||1)+'"></label><label>الفترة<select name="repeat_unit"><option value="day" '+(t.recurrence_interval_unit==="day"?"selected":"")+'>يوم</option><option value="week" '+(t.recurrence_interval_unit==="week"?"selected":"")+'>أسبوع</option><option value="month" '+(t.recurrence_interval_unit==="month"?"selected":"")+'>شهر</option></select></label></div><label>إيقاف التكرار في (اختياري)<input type="date" name="repeat_until" aria-describedby="tsk-repeat-error tsk-repeat-hint" value="'+dateValue(t.recurrence_ends_at)+'"></label><p id="tsk-repeat-error" class="tsk-field-error" role="alert" hidden></p><small id="tsk-repeat-hint">اترك تاريخ الإيقاف فارغًا للاستمرار بدون تاريخ نهاية. سيتم إنشاء مهمة جديدة تلقائياً بالبيانات نفسها وإسنادها للمسؤول.</small></div>';}
+  var REPEAT_DATE_ERROR="تاريخ إيقاف التكرار لا يمكن أن يكون قبل اليوم. اختار اليوم أو تاريخًا بعده، أو امسح التاريخ للاستمرار بدون تاريخ نهاية.";
+  function repeatError(form,message){
+    var field=form.querySelector('[name="repeat_until"]'),error=form.querySelector('#tsk-repeat-error');
+    if(field){field.setCustomValidity(message);field.setAttribute("aria-invalid",message?"true":"false");}
+    if(error){error.textContent=message;error.hidden=!message;}
+  }
+  function syncRepeat(form){
+    var field=form.querySelector('[name="repeat_until"]'),toggle=form.querySelector('[name="repeat_active"]');
+    if(!field||!toggle)return true;
+    // Supabase validates against current_date (UTC). Compare date strings, not local timestamps.
+    field.min=new Date().toISOString().slice(0,10);
+    field.disabled=!toggle.checked;
+    var fields=form.querySelector(".tsk-repeat-fields");if(fields){fields.hidden=!toggle.checked;fields.querySelectorAll("input,select").forEach(function(control){control.disabled=!toggle.checked;});}
+    var message=toggle.checked&&field.value&&field.value<field.min?REPEAT_DATE_ERROR:"";
+    repeatError(form,message);return !message;
+  }
+  function taskSaveError(form,error){
+    if(/Recurrence end date must be in the future/i.test(error.message||"")){
+      repeatError(form,REPEAT_DATE_ERROR);var field=form.querySelector('[name="repeat_until"]');if(field)field.focus();
+    }else window.alert(error.message);
+  }
   function allManager(a){return window.SSMPDRoles.hasAnyRole(a,["general_manager","super_admin"]);}
   function modal(title,body,cls){return '<div class="tsk-modal-backdrop" data-action="close-modal"><section class="tsk-modal'+(cls?' '+cls:'')+'" role="dialog" aria-modal="true"><header><h3>'+esc(title)+'</h3><button type="button" class="tsk-x" data-action="close-modal" aria-label="إغلاق">×</button></header>'+body+'</section></div>';}
   var PRANK={urgent:0,high:1,normal:2,low:3};
@@ -401,9 +422,10 @@
         var ht=state.tasks.find(function(x){return x.id===state.historyTask;})||{};
         html+=modal("التعليقات وسجل التحديثات",(ht.title?'<p class="tsk-note-for">'+esc(ht.title)+'</p>':"")+
           '<form data-form="comment" class="tsk-comment-form"><textarea name="comment" rows="3" maxlength="5000" placeholder="اكتب تعليق، أو الصق رابط ملف (Drive مثلاً)…"></textarea>'+recipientsHtml(ht)+'<div class="tsk-file-list" data-file-list></div><p class="tsk-field-error" role="alert" hidden></p><div class="tsk-form-actions"><label class="btn tsk-file-btn">📎 إرفاق ملفات<input type="file" multiple data-comment-files accept=".png,.jpg,.jpeg,.webp,.gif,.pdf,.txt,.csv,.doc,.docx,.xls,.xlsx,.ppt,.pptx"></label><button class="btn btn-primary" type="submit">إرسال التعليق</button></div><p class="tsk-hint">حتى 10 ملفات، كل ملف لحد 10 ميجا (صور، PDF، Word، Excel، PowerPoint، نص). الملفات بتتحفظ على Google Drive.</p></form>'+
-          '<div class="tsk-history">'+((state.history||[]).map(function(u){var toName=u.addressed_to?personName(u.addressed_to):"";return '<article><b>'+esc(u.author_name||"عضو الفريق")+'</b>'+(toName?'<span class="tsk-to-tag'+(u.author_id===CLAUDE_ID?" reply":"")+'">'+esc((u.author_id===CLAUDE_ID?"رد على ":"إلى: ")+toName)+'</span>':"")+'<small>'+esc(stamp(u.created_at))+'</small>'+(u.status_to?'<span class="tsk-hist-status">'+esc((STATUS[u.status_from]||"")+(u.status_from?" ← ":"")+(STATUS[u.status_to]||u.status_to))+'</span>':"")+bodyHtml(u.body)+attsHtml(u.id)+'</article>';}).join("")||'<p class="tsk-empty">لا توجد تعليقات أو تحديثات بعد.</p>')+'</div>');
+          '<div class="tsk-history">'+((state.history||[]).map(function(u){var toName=u.addressed_to?personName(u.addressed_to):"";return '<article><div class="tsk-update-meta"><b>'+esc(u.author_name||"عضو الفريق")+'</b>'+(toName?'<span class="tsk-to-tag'+(u.author_id===CLAUDE_ID?" reply":"")+'">'+esc((u.author_id===CLAUDE_ID?"رد على ":"إلى: ")+toName)+'</span>':"")+'<small>'+esc(stamp(u.created_at))+'</small>'+(u.status_to?'<span class="tsk-hist-status">'+esc((STATUS[u.status_from]||"")+(u.status_from?" ← ":"")+(STATUS[u.status_to]||u.status_to))+'</span>':"")+'</div>'+bodyHtml(u.body)+attsHtml(u.id)+'</article>';}).join("")||'<p class="tsk-empty">لا توجد تعليقات أو تحديثات بعد.</p>')+'</div>');
       }
       el.innerHTML=html;
+      el.querySelectorAll('form[data-form="task"],form[data-form="task-edit"]').forEach(syncRepeat);
       var timingHost=el.querySelector('.tv-detail');
       if(timingHost&&state.viewId)work.mount(state.viewId);
       if(timingHost&&state.viewId&&window.SSMPDIndicatorReports)window.SSMPDIndicatorReports.taskContext(timingHost,state.viewId);
@@ -493,7 +515,7 @@
     function onEscape(ev){if(!el.isConnected){document.removeEventListener("keydown",onEscape);return;}if(ev.key==="Escape"&&state.modal){if(work.busy())return;work.capture();state.modal="";state.note=null;state.pendingFiles=[];draw();}}
     document.addEventListener("keydown",onEscape);
     el.onkeydown=function(ev){var tile=ev.target.closest&&ev.target.closest(".tv-proj");if(tile&&ev.target===tile&&(ev.key==="Enter"||ev.key===" ")){ev.preventDefault();tile.click();}};
-    el.oninput=function(ev){if(ev.target.matches&&ev.target.matches("[data-search]")){state.q=ev.target.value;drawList();}};
+    el.oninput=function(ev){if(ev.target.matches&&ev.target.matches('[name="repeat_until"]'))syncRepeat(ev.target.closest("form"));if(ev.target.matches&&ev.target.matches("[data-search]")){state.q=ev.target.value;drawList();}};
     el.onclick=function(ev){
       var b=ev.target.closest("[data-action]");if(!b)return;if(work.busy())return;
       if(b.dataset.action==="close-modal"&&ev.target!==b&&ev.target.closest(".tsk-modal"))return;
@@ -552,10 +574,13 @@
       if(ev.target.matches&&ev.target.matches('input[name="to"]')){var cf=ev.target.closest("form"),sel=cf.querySelector('select[name="to_other"]'),hint=cf.querySelector("[data-to-hint]");if(sel)sel.hidden=ev.target.value!=="other";if(hint)hint.hidden=ev.target.value!==CLAUDE_ID;return;}
       var s=ev.target.closest&&ev.target.closest("[data-sel]");
       if(s){var k=s.dataset.sel;if(k==="project")state.fProject=s.value;else if(k==="assignee")state.fAssignee=s.value;else{state.sort=s.value;store("sort",s.value);}drawList();return;}
-      if(ev.target.matches('input[name="repeat_active"]')){var fields=ev.target.closest("form").querySelector(".tsk-repeat-fields");if(fields)fields.hidden=!ev.target.checked;}
+      if(ev.target.matches('[name="repeat_active"],[name="repeat_until"]'))syncRepeat(ev.target.closest("form"));
     };
     el.onsubmit=function(ev){
       var form=ev.target.closest("form[data-form]");if(!form)return;ev.preventDefault();
+      if((form.dataset.form==="task"||form.dataset.form==="task-edit")&&!syncRepeat(form)){
+        form.querySelector('[name="repeat_until"]').focus();return;
+      }
       var fd=new FormData(form);
       if(form.dataset.form==="note"){submitNote(form,fd);return;}
       if(form.dataset.form==="comment"){submitComment(form,fd);return;}
@@ -573,12 +598,12 @@
         projectSave.then(function(){state.modal="";state.editProject=null;return refresh();}).catch(function(e){unlockSave();window.alert(e.message);});
       }else if(form.dataset.form==="task-edit"){lockSave();
         var editDue=fd.get("due_at"),recurring=fd.get("repeat_active")==="on";
-        window.SSMPDDb.taskUpdateDetails(fd.get("task_id"),fd.get("title"),fd.get("description"),fd.get("expected_output"),fd.get("assignee_id"),editDue?new Date(editDue+"T23:59:00").toISOString():null,fd.get("priority"),recurring,Number(fd.get("repeat_interval")||1),fd.get("repeat_unit")||"day",fd.get("repeat_until")||null,fd.get("update_future")==="on").then(function(){state.modal="";state.editTask=null;return refresh();}).catch(function(e){unlockSave();window.alert(e.message);});
+        window.SSMPDDb.taskUpdateDetails(fd.get("task_id"),fd.get("title"),fd.get("description"),fd.get("expected_output"),fd.get("assignee_id"),editDue?new Date(editDue+"T23:59:00").toISOString():null,fd.get("priority"),recurring,Number(fd.get("repeat_interval")||1),fd.get("repeat_unit")||"day",fd.get("repeat_until")||null,fd.get("update_future")==="on").then(function(){state.modal="";state.editTask=null;return refresh();}).catch(function(e){unlockSave();taskSaveError(form,e);});
       }else{lockSave();
         var due=fd.get("due_at"),repeat=fd.get("repeat_active")==="on";
         var args=[fd.get("project_id"),fd.get("parent_task_id")||null,fd.get("title"),fd.get("description"),fd.get("expected_output"),fd.get("assignee_id"),due?new Date(due+"T23:59:00").toISOString():null,fd.get("priority")];
         var createPromise=repeat?window.SSMPDDb.taskCreateRecurring.apply(null,args.concat([Number(fd.get("repeat_interval")||1),fd.get("repeat_unit")||"day",fd.get("repeat_until")||null])):window.SSMPDDb.taskCreate.apply(null,args);
-        createPromise.then(function(){state.modal="";return refresh();}).catch(function(e){unlockSave();window.alert(e.message);});
+        createPromise.then(function(){state.modal="";return refresh();}).catch(function(e){unlockSave();taskSaveError(form,e);});
       }
     };
     refresh().then(function(){liveTimer=setInterval(function(){if(!el.isConnected){clearInterval(liveTimer);liveTimer=null;return;}refresh();},90000);});
