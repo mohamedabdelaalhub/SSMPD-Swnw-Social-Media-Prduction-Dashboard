@@ -7596,7 +7596,10 @@ begin
         select sc.id, sc.brand, sc.category, left(sc.message, 160) as message from public.social_comments sc
          where sc.alert and sc.alert_resolved_at is null and sc.updated_at > now() - m limit 5) x),
     'new_message_alerts', (select count(*) from public.social_messages sm where sm.alert and sm.alert_resolved_at is null and sm.updated_at > now() - m),
-    'stuck_publishing', (select count(*) from public.meta_publish_jobs j where j.status = 'processing' and coalesce(j.last_attempt_at, j.updated_at) < now() - interval '2 hours')
+    -- بس اللي عدّى ساعتين خلال آخر نافذة (عشان التنبيه ماييجيش كل ساعة على نفس العالقين)
+    'newly_stuck_publishing', (select count(*) from public.meta_publish_jobs j where j.status = 'processing'
+        and coalesce(j.last_attempt_at, j.updated_at) < now() - interval '2 hours'
+        and coalesce(j.last_attempt_at, j.updated_at) >= now() - interval '2 hours' - m)
   );
 end $$;
 revoke all on function public.claude_alerts_data(integer) from public, anon, authenticated;
