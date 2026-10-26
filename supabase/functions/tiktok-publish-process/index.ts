@@ -139,15 +139,21 @@ async function processJob(job:any){
     if(!duration)throw new Error("تعذر قراءة مدة الفيديو. استخدم ملف MP4 أو MOV صالحًا.");
     if(Number(creator.max_video_post_duration_sec)>0&&duration>Number(creator.max_video_post_duration_sec))throw new Error("مدة الفيديو ("+Math.ceil(duration)+" ثانية) تتجاوز الحد المسموح لهذا الحساب ("+creator.max_video_post_duration_sec+" ثانية).");
     const title=String(content.caption_text||content.body||content.title||"").slice(0,2200);
-    const chunkSize=10_000_000,total=Math.ceil(bytes.length/chunkSize);
+    // قاعدة TikTok الرسمية: total_chunk_count = floor(video_size / chunk_size)
+    // (مش ceil) — الباقي بينضم للتشانك الأخير. ولو النتيجة طلعت تشانك واحد
+    // بس (الفيديو كله في تشانك واحد)، لازم chunk_size يبقى = حجم الفيديو
+    // بالكامل (مش الحجم النظري 10MB) وإلا TikTok يرفض بـ"chunk size is invalid".
+    const CHUNK=10_000_000;
+    const total=Math.max(1,Math.floor(bytes.length/CHUNK));
+    const chunkSizeField=total===1?bytes.length:CHUNK;
     const init=await api("/v2/post/publish/video/init/",account.access_token,{
       post_info:{title,privacy_level:job.privacy_level,disable_comment:job.disable_comment,disable_duet:job.disable_duet,disable_stitch:job.disable_stitch,brand_content_toggle:job.branded_content,brand_organic_toggle:job.your_brand,is_aigc:false},
-      source_info:{source:"FILE_UPLOAD",video_size:bytes.length,chunk_size:Math.min(chunkSize,bytes.length),total_chunk_count:total}
+      source_info:{source:"FILE_UPLOAD",video_size:bytes.length,chunk_size:chunkSizeField,total_chunk_count:total}
     });
     if(!init.publish_id||!init.upload_url)throw new Error("TikTok لم يرجع رابط رفع صالحًا.");
     await admin.from("tiktok_publish_jobs").update({publish_id:init.publish_id,publish_status:"PROCESSING_UPLOAD",updated_at:new Date().toISOString()}).eq("id",job.id);
-    for(let start=0;start<bytes.length;start+=chunkSize){
-      const end=Math.min(bytes.length,start+chunkSize),part=bytes.slice(start,end);
+    for(let i=0;i<total;i++){
+      const start=i*chunkSizeField,end=(i===total-1)?bytes.length:start+chunkSizeField,part=bytes.slice(start,end);
       const up=await fetch(init.upload_url,{method:"PUT",headers:{"Content-Type":type,"Content-Length":String(part.length),"Content-Range":`bytes ${start}-${end-1}/${bytes.length}`},body:part});
       if(!up.ok)throw new Error("فشل رفع جزء الفيديو إلى TikTok (HTTP "+up.status+").");
     }
