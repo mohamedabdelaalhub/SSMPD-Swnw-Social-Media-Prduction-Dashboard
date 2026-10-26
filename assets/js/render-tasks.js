@@ -72,6 +72,10 @@
     if(R.canModuleAction(admin,"tasks","update")&&mayManage&&t.status==="review"){
       html+='<button class="btn btn-primary" data-action="approve" data-id="'+t.id+'">اعتماد وإكمال</button><button class="btn btn-warn" data-action="return" data-id="'+t.id+'">طلب تعديل</button>';
     }
+    // تعليق المدير بيرجّع المهمة «للتعديل» — المدير يقدر برضه يعتمدها من غير ما يستنى تسليم جديد
+    if(R.canModuleAction(admin,"tasks","update")&&mayManage&&t.status==="revision"&&!own){
+      html+='<button class="btn btn-primary" data-action="approve" data-id="'+t.id+'">اعتماد وإكمال</button>';
+    }
     return html;
   }
   function moreActionsHtml(t,admin,mayManage){
