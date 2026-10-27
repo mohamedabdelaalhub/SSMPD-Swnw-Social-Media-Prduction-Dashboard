@@ -27,7 +27,7 @@ window.SSMPD_CONFIG = {
   adsExpensesWebAppUrl: "https://script.google.com/macros/s/AKfycbzkks4u3SUsQBLtIzN5o091dBANRA7Or1xm5KCBfG8ms1NyOhRAUG6mtZCcz51jlJrM3g/exec",
 
   // بصمة الكاش — ترفع مع أي تعديل على JS/CSS
-  cacheVersion: 19
+  cacheVersion: 20
 };
 
 // تحسين بطاقة الترحيب في الرئيسية الشخصية بدون المساس بمنطق الصفحة الأساسي.
@@ -73,7 +73,7 @@ window.SSMPD_CONFIG = {
   function loadTaskStageNavigation(){
     if(window.__SWNWTaskStageNavigation) return;
     var script = document.createElement('script');
-    script.src = 'assets/js/task-stage-navigation.js?v=task-stage-nav-20261027-1';
+    script.src = 'assets/js/task-stage-navigation.js?v=task-stage-nav-20261027-2';
     script.async = false;
     script.dataset.taskStageNavigation = '1';
     document.head.appendChild(script);
