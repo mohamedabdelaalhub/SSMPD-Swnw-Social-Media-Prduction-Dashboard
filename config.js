@@ -110,16 +110,15 @@ window.SSMPD_CONFIG = {
   else window.addEventListener('load', loadLeadsArchiveControlPanel, { once: true });
 })();
 
-// صلاحية أرشيف الليدز تُحقن قبل تحويل جدول المستخدمين إلى كروت الموبايل.
+// صلاحية أرشيف الليدز لازم تسبق تحويل جدول المستخدمين إلى كروت، لذلك تُحمّل فورًا.
 (function(){
   function loadLeadsArchivePermissionColumn(){
-    if(window.__SWNWLeadsArchivePermissionColumnV2) return;
+    if(window.__SWNWLeadsArchivePermissionColumnV2 || document.querySelector('script[data-leads-archive-permission-column]')) return;
     var script = document.createElement('script');
     script.src = 'assets/js/leads-archive-permission-column.js?v=leads-archive-permission-20261027-2';
     script.async = false;
     script.dataset.leadsArchivePermissionColumn = '1';
     document.head.appendChild(script);
   }
-  if(document.readyState === 'complete') loadLeadsArchivePermissionColumn();
-  else window.addEventListener('load', loadLeadsArchivePermissionColumn, { once: true });
+  loadLeadsArchivePermissionColumn();
 })();
