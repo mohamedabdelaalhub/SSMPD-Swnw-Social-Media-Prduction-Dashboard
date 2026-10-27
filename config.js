@@ -27,7 +27,7 @@ window.SSMPD_CONFIG = {
   adsExpensesWebAppUrl: "https://script.google.com/macros/s/AKfycbzkks4u3SUsQBLtIzN5o091dBANRA7Or1xm5KCBfG8ms1NyOhRAUG6mtZCcz51jlJrM3g/exec",
 
   // بصمة الكاش — ترفع مع أي تعديل على JS/CSS
-  cacheVersion: 22
+  cacheVersion: 23
 };
 
 // تحسين بطاقة الترحيب في الرئيسية الشخصية بدون المساس بمنطق الصفحة الأساسي.
@@ -108,4 +108,18 @@ window.SSMPD_CONFIG = {
   }
   if(document.readyState === 'complete') loadLeadsArchiveControlPanel();
   else window.addEventListener('load', loadLeadsArchiveControlPanel, { once: true });
+})();
+
+// عمود صلاحية أرشيف الليدز داخل جدول المستخدمين — تحميل مستقل موثوق حتى مع إعادة رسم الجدول.
+(function(){
+  function loadLeadsArchivePermissionColumn(){
+    if(window.__SWNWLeadsArchivePermissionColumn) return;
+    var script = document.createElement('script');
+    script.src = 'assets/js/leads-archive-permission-column.js?v=leads-archive-permission-20261027-1';
+    script.async = false;
+    script.dataset.leadsArchivePermissionColumn = '1';
+    document.head.appendChild(script);
+  }
+  if(document.readyState === 'complete') loadLeadsArchivePermissionColumn();
+  else window.addEventListener('load', loadLeadsArchivePermissionColumn, { once: true });
 })();
