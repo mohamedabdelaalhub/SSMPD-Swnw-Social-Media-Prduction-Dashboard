@@ -12,7 +12,7 @@ window.SSMPD_CONFIG = {
   // مفاتيح Supabase — تُملأ بعد إنشاء المشروع (خطوة البنية التحتية)
   supabase: {
     url: "https://uuijfbpgvtdxgaosqpxo.supabase.co",
-    anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1aWpmYnBndnRkeGdhb3NxcHhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MDc3MDUsImV4cCI6MjEwMjQ4MzcwNX0.kIiSfXRG2SJtsP1v3GlllIhcxYP9sOEhdGk40tOhsNw"
+    anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJIUzI1NiIsInJlZiI6InV1aWpmYnBndnRkeGdhb3NxcHhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MDc3MDUsImV4cCI6MjEwMjQ4MzcwNX0.kIiSfXRG2SJtsP1v3GlllIhcxYP9sOEhdGk40tOhsNw"
   },
 
   // جسر أرشيف Google Drive — رابط Web App بعد نشر السكريبت من حساب المركز
@@ -27,7 +27,7 @@ window.SSMPD_CONFIG = {
   adsExpensesWebAppUrl: "https://script.google.com/macros/s/AKfycbzkks4u3SUsQBLtIzN5o091dBANRA7Or1xm5KCBfG8ms1NyOhRAUG6mtZCcz51jlJrM3g/exec",
 
   // بصمة الكاش — ترفع مع أي تعديل على JS/CSS
-  cacheVersion: 18
+  cacheVersion: 19
 };
 
 // تحسين بطاقة الترحيب في الرئيسية الشخصية بدون المساس بمنطق الصفحة الأساسي.
@@ -66,4 +66,18 @@ window.SSMPD_CONFIG = {
   }
   if(document.readyState === 'complete') loadInsurance();
   else window.addEventListener('load', loadInsurance, { once: true });
+})();
+
+// تنقل ذكي بين مراحل المهمة: يحتفظ بسياق المهمة الرئيسية على الموبايل والديسكتوب.
+(function(){
+  function loadTaskStageNavigation(){
+    if(window.__SWNWTaskStageNavigation) return;
+    var script = document.createElement('script');
+    script.src = 'assets/js/task-stage-navigation.js?v=task-stage-nav-20261027-1';
+    script.async = false;
+    script.dataset.taskStageNavigation = '1';
+    document.head.appendChild(script);
+  }
+  if(document.readyState === 'complete') loadTaskStageNavigation();
+  else window.addEventListener('load', loadTaskStageNavigation, { once: true });
 })();
