@@ -35,10 +35,24 @@
 
   function stageList(section) {
     if (!section) return [];
-    return Array.prototype.slice.call(section.querySelectorAll('.tv-row-main[data-action="open-task"][data-id]')).map(function (b) {
+    var allButtons = Array.prototype.slice.call(section.querySelectorAll('.tv-row-main[data-action="open-task"][data-id]'));
+    var total = allButtons.length;
+    var placed = [], used = {};
+    Array.prototype.slice.call(section.querySelectorAll('.tw-stage')).forEach(function (stage) {
+      var b = stage.querySelector('.tv-row-main[data-action="open-task"][data-id]');
+      var num = parseInt((stage.firstElementChild && stage.firstElementChild.textContent || "").trim(), 10);
+      if (!b || !num) return;
       var title = b.querySelector(".tv-row-title");
-      return { id: b.dataset.id, title: (title ? title.textContent : b.textContent || "").trim() };
+      placed.push({ id: b.dataset.id, title: (title ? title.textContent : b.textContent || "").trim(), position: num });
+      used[num] = true;
     });
+    var missing = [];
+    for (var i = 1; i <= total; i++) if (!used[i]) missing.push(i);
+    Array.prototype.slice.call(section.querySelectorAll('details .tv-row-main[data-action="open-task"][data-id]')).forEach(function (b, i) {
+      var title = b.querySelector(".tv-row-title");
+      placed.push({ id: b.dataset.id, title: (title ? title.textContent : b.textContent || "").trim(), position: missing[i] || total + i + 1 });
+    });
+    return placed.sort(function (a, b) { return a.position - b.position; });
   }
 
   function dispatchOpen(id, returnChildId) {
@@ -101,7 +115,8 @@
     var nav = document.createElement("div");
     nav.className = "swnw-stage-nav";
     var total = siblings.length;
-    var position = index >= 0 ? index + 1 : 0;
+    var current = index >= 0 ? siblings[index] : null;
+    var position = current && current.position || (index >= 0 ? index + 1 : 0);
     var prev = index > 0 ? siblings[index - 1] : null;
     var next = index >= 0 && index < total - 1 ? siblings[index + 1] : null;
     nav.innerHTML =
