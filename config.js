@@ -27,7 +27,7 @@ window.SSMPD_CONFIG = {
   adsExpensesWebAppUrl: "https://script.google.com/macros/s/AKfycbzkks4u3SUsQBLtIzN5o091dBANRA7Or1xm5KCBfG8ms1NyOhRAUG6mtZCcz51jlJrM3g/exec",
 
   // بصمة الكاش — ترفع مع أي تعديل على JS/CSS
-  cacheVersion: 21
+  cacheVersion: 22
 };
 
 // تحسين بطاقة الترحيب في الرئيسية الشخصية بدون المساس بمنطق الصفحة الأساسي.
@@ -94,4 +94,18 @@ window.SSMPD_CONFIG = {
   }
   if(document.readyState === 'complete') loadLeadsArchiveAccess();
   else window.addEventListener('load', loadLeadsArchiveAccess, { once: true });
+})();
+
+// زر واضح داخل تاب لوحة التحكم لفتح أرشيف الليدز، مع بقاء وصول الموظف من الرئيسية الشخصية.
+(function(){
+  function loadLeadsArchiveControlPanel(){
+    if(window.__SWNWLeadsArchiveControlPanel) return;
+    var script = document.createElement('script');
+    script.src = 'assets/js/leads-archive-control-panel.js?v=leads-archive-control-panel-20261027-1';
+    script.async = false;
+    script.dataset.leadsArchiveControlPanel = '1';
+    document.head.appendChild(script);
+  }
+  if(document.readyState === 'complete') loadLeadsArchiveControlPanel();
+  else window.addEventListener('load', loadLeadsArchiveControlPanel, { once: true });
 })();
