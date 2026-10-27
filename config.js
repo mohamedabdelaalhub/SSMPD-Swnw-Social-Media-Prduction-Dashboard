@@ -27,7 +27,7 @@ window.SSMPD_CONFIG = {
   adsExpensesWebAppUrl: "https://script.google.com/macros/s/AKfycbzkks4u3SUsQBLtIzN5o091dBANRA7Or1xm5KCBfG8ms1NyOhRAUG6mtZCcz51jlJrM3g/exec",
 
   // بصمة الكاش — ترفع مع أي تعديل على JS/CSS
-  cacheVersion: 20
+  cacheVersion: 21
 };
 
 // تحسين بطاقة الترحيب في الرئيسية الشخصية بدون المساس بمنطق الصفحة الأساسي.
@@ -80,4 +80,18 @@ window.SSMPD_CONFIG = {
   }
   if(document.readyState === 'complete') loadTaskStageNavigation();
   else window.addEventListener('load', loadTaskStageNavigation, { once: true });
+})();
+
+// وصول مستقل للقراءة إلى أرشيف الليدز + تحكم السوبر أدمن في منح الصلاحية.
+(function(){
+  function loadLeadsArchiveAccess(){
+    if(window.__SWNWLeadsArchiveAccess) return;
+    var script = document.createElement('script');
+    script.src = 'assets/js/leads-archive-access.js?v=leads-archive-access-20261027-1';
+    script.async = false;
+    script.dataset.leadsArchiveAccess = '1';
+    document.head.appendChild(script);
+  }
+  if(document.readyState === 'complete') loadLeadsArchiveAccess();
+  else window.addEventListener('load', loadLeadsArchiveAccess, { once: true });
 })();
