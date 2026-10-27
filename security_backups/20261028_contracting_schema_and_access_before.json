@@ -1,0 +1,1332 @@
+{
+  "tables": [
+    {
+      "name": "contracting_activity_log",
+      "owner": "postgres",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "default": "gen_random_uuid()",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "entity_id",
+          "type": "uuid",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "agreement_id",
+          "type": "uuid",
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "action_key",
+          "type": "text",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "summary",
+          "type": "text",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "metadata",
+          "type": "jsonb",
+          "default": "'{}'::jsonb",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "created_by",
+          "type": "uuid",
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX contracting_activity_log_pkey ON public.contracting_activity_log USING btree (id)"
+      ],
+      "triggers": [],
+      "constraints": [
+        {
+          "name": "contracting_activity_log_agreement_id_fkey",
+          "definition": "FOREIGN KEY (agreement_id) REFERENCES contracting_agreements(id) ON DELETE SET NULL"
+        },
+        {
+          "name": "contracting_activity_log_entity_id_fkey",
+          "definition": "FOREIGN KEY (entity_id) REFERENCES contracting_entities(id) ON DELETE CASCADE"
+        },
+        {
+          "name": "contracting_activity_log_pkey",
+          "definition": "PRIMARY KEY (id)"
+        }
+      ],
+      "acl_before_change": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+      "policies_before_change": [],
+      "rls_enabled_before_change": false
+    },
+    {
+      "name": "contracting_agreement_presets",
+      "owner": "postgres",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "default": "gen_random_uuid()",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "preset_key",
+          "type": "text",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "name_ar",
+          "type": "text",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "description_ar",
+          "type": "text",
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "default_discount",
+          "type": "numeric(5,2)",
+          "default": "20",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "settlement_cycle",
+          "type": "text",
+          "default": "'monthly'::text",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "services",
+          "type": "text[]",
+          "default": "'{}'::text[]",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "extras",
+          "type": "jsonb",
+          "default": "'{}'::jsonb",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "active",
+          "type": "boolean",
+          "default": "true",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX contracting_agreement_presets_pkey ON public.contracting_agreement_presets USING btree (id)",
+        "CREATE UNIQUE INDEX contracting_agreement_presets_preset_key_key ON public.contracting_agreement_presets USING btree (preset_key)"
+      ],
+      "triggers": [],
+      "constraints": [
+        {
+          "name": "contracting_agreement_presets_pkey",
+          "definition": "PRIMARY KEY (id)"
+        },
+        {
+          "name": "contracting_agreement_presets_preset_key_key",
+          "definition": "UNIQUE (preset_key)"
+        }
+      ],
+      "acl_before_change": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+      "policies_before_change": [],
+      "rls_enabled_before_change": false
+    },
+    {
+      "name": "contracting_agreement_versions",
+      "owner": "postgres",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "default": "gen_random_uuid()",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "agreement_id",
+          "type": "uuid",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "version_no",
+          "type": "integer",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "content_html",
+          "type": "text",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "file_name",
+          "type": "text",
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "pdf_url",
+          "type": "text",
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "word_url",
+          "type": "text",
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "immutable",
+          "type": "boolean",
+          "default": "false",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "created_by",
+          "type": "uuid",
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX contracting_agreement_versions_pkey ON public.contracting_agreement_versions USING btree (id)",
+        "CREATE UNIQUE INDEX contracting_agreement_versions_agreement_id_version_no_key ON public.contracting_agreement_versions USING btree (agreement_id, version_no)"
+      ],
+      "triggers": [],
+      "constraints": [
+        {
+          "name": "contracting_agreement_versions_agreement_id_fkey",
+          "definition": "FOREIGN KEY (agreement_id) REFERENCES contracting_agreements(id) ON DELETE CASCADE"
+        },
+        {
+          "name": "contracting_agreement_versions_agreement_id_version_no_key",
+          "definition": "UNIQUE (agreement_id, version_no)"
+        },
+        {
+          "name": "contracting_agreement_versions_pkey",
+          "definition": "PRIMARY KEY (id)"
+        }
+      ],
+      "acl_before_change": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+      "policies_before_change": [],
+      "rls_enabled_before_change": false
+    },
+    {
+      "name": "contracting_agreements",
+      "owner": "postgres",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "default": "gen_random_uuid()",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "entity_id",
+          "type": "uuid",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "document_type",
+          "type": "text",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "preset_key",
+          "type": "text",
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "default": "'draft'::text",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "version_no",
+          "type": "integer",
+          "default": "1",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "member_discount",
+          "type": "numeric(5,2)",
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "settlement_cycle",
+          "type": "text",
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "duration_months",
+          "type": "integer",
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "services",
+          "type": "text[]",
+          "default": "'{}'::text[]",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "selected_options",
+          "type": "jsonb",
+          "default": "'{}'::jsonb",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "terms_snapshot",
+          "type": "jsonb",
+          "default": "'{}'::jsonb",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "created_by",
+          "type": "uuid",
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "reviewed_by",
+          "type": "uuid",
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "approved_by",
+          "type": "uuid",
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "approved_at",
+          "type": "timestamp with time zone",
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "sent_at",
+          "type": "timestamp with time zone",
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "signed_at",
+          "type": "timestamp with time zone",
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX contracting_agreements_pkey ON public.contracting_agreements USING btree (id)"
+      ],
+      "triggers": [],
+      "constraints": [
+        {
+          "name": "contracting_agreements_document_type_check",
+          "definition": "CHECK (document_type = ANY (ARRAY['proposal'::text, 'final_contract'::text]))"
+        },
+        {
+          "name": "contracting_agreements_entity_id_fkey",
+          "definition": "FOREIGN KEY (entity_id) REFERENCES contracting_entities(id) ON DELETE CASCADE"
+        },
+        {
+          "name": "contracting_agreements_pkey",
+          "definition": "PRIMARY KEY (id)"
+        }
+      ],
+      "acl_before_change": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+      "policies_before_change": [],
+      "rls_enabled_before_change": false
+    },
+    {
+      "name": "contracting_incentive_tiers",
+      "owner": "postgres",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "default": "gen_random_uuid()",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "entity_id",
+          "type": "uuid",
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "preset_key",
+          "type": "text",
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "min_amount",
+          "type": "numeric(14,2)",
+          "default": "0",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "max_amount",
+          "type": "numeric(14,2)",
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "rate_percent",
+          "type": "numeric(6,3)",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "sort_order",
+          "type": "integer",
+          "default": "0",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "active",
+          "type": "boolean",
+          "default": "true",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX contracting_incentive_tiers_pkey ON public.contracting_incentive_tiers USING btree (id)"
+      ],
+      "triggers": [],
+      "constraints": [
+        {
+          "name": "contracting_incentive_tiers_entity_id_fkey",
+          "definition": "FOREIGN KEY (entity_id) REFERENCES contracting_entities(id) ON DELETE CASCADE"
+        },
+        {
+          "name": "contracting_incentive_tiers_pkey",
+          "definition": "PRIMARY KEY (id)"
+        }
+      ],
+      "acl_before_change": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+      "policies_before_change": [],
+      "rls_enabled_before_change": false
+    },
+    {
+      "name": "contracting_partner_transactions",
+      "owner": "postgres",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "default": "gen_random_uuid()",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "entity_id",
+          "type": "uuid",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "referral_id",
+          "type": "uuid",
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "patient_id",
+          "type": "uuid",
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "invoice_id",
+          "type": "uuid",
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "service_name",
+          "type": "text",
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "eligible",
+          "type": "boolean",
+          "default": "true",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "gross_amount",
+          "type": "numeric(14,2)",
+          "default": "0",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "member_discount_amount",
+          "type": "numeric(14,2)",
+          "default": "0",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "collected_amount",
+          "type": "numeric(14,2)",
+          "default": "0",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "refunded_amount",
+          "type": "numeric(14,2)",
+          "default": "0",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "eligible_amount",
+          "type": "numeric(14,2)",
+          "default": "GREATEST((collected_amount - refunded_amount), (0)::numeric)",
+          "identity": "",
+          "not_null": false,
+          "generated": "s"
+        },
+        {
+          "name": "transaction_date",
+          "type": "date",
+          "default": "CURRENT_DATE",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX contracting_partner_transactions_pkey ON public.contracting_partner_transactions USING btree (id)"
+      ],
+      "triggers": [],
+      "constraints": [
+        {
+          "name": "contracting_partner_transactions_entity_id_fkey",
+          "definition": "FOREIGN KEY (entity_id) REFERENCES contracting_entities(id) ON DELETE CASCADE"
+        },
+        {
+          "name": "contracting_partner_transactions_pkey",
+          "definition": "PRIMARY KEY (id)"
+        },
+        {
+          "name": "contracting_partner_transactions_referral_id_fkey",
+          "definition": "FOREIGN KEY (referral_id) REFERENCES contracting_referrals(id) ON DELETE SET NULL"
+        }
+      ],
+      "acl_before_change": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+      "policies_before_change": [],
+      "rls_enabled_before_change": false
+    },
+    {
+      "name": "contracting_partner_users",
+      "owner": "postgres",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "default": "gen_random_uuid()",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "entity_id",
+          "type": "uuid",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "full_name",
+          "type": "text",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "email",
+          "type": "text",
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "phone",
+          "type": "text",
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "active",
+          "type": "boolean",
+          "default": "true",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "auth_user_id",
+          "type": "uuid",
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "role_key",
+          "type": "text",
+          "default": "'partner_staff'::text",
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX contracting_partner_users_pkey ON public.contracting_partner_users USING btree (id)",
+        "CREATE UNIQUE INDEX contracting_partner_users_auth_uidx ON public.contracting_partner_users USING btree (auth_user_id) WHERE (auth_user_id IS NOT NULL)",
+        "CREATE INDEX contracting_partner_users_email_idx ON public.contracting_partner_users USING btree (lower(email)) WHERE (email IS NOT NULL)"
+      ],
+      "triggers": [],
+      "constraints": [
+        {
+          "name": "contracting_partner_users_entity_id_fkey",
+          "definition": "FOREIGN KEY (entity_id) REFERENCES contracting_entities(id) ON DELETE CASCADE"
+        },
+        {
+          "name": "contracting_partner_users_pkey",
+          "definition": "PRIMARY KEY (id)"
+        }
+      ],
+      "acl_before_change": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+      "policies_before_change": [],
+      "rls_enabled_before_change": false
+    },
+    {
+      "name": "contracting_partnership_settings",
+      "owner": "postgres",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "default": "gen_random_uuid()",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "clinic_name",
+          "type": "text",
+          "default": "'عيادات سونو التخصصية'::text",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "clinic_address",
+          "type": "text",
+          "default": "'حدائق الأهرام – بوابة 3 – منطقة الخزان'::text",
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "clinic_representative_name",
+          "type": "text",
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "clinic_representative_title",
+          "type": "text",
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "clinic_email",
+          "type": "text",
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "clinic_whatsapp",
+          "type": "text",
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "letterhead_logo_url",
+          "type": "text",
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "letterhead_header_html",
+          "type": "text",
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "letterhead_footer_html",
+          "type": "text",
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "signature_url",
+          "type": "text",
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "whatsapp_phone_number_id",
+          "type": "text",
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "whatsapp_waba_id",
+          "type": "text",
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "whatsapp_template_id",
+          "type": "text",
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "whatsapp_template_name",
+          "type": "text",
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "whatsapp_template_language",
+          "type": "text",
+          "default": "'ar'::text",
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX contracting_partnership_settings_pkey ON public.contracting_partnership_settings USING btree (id)"
+      ],
+      "triggers": [],
+      "constraints": [
+        {
+          "name": "contracting_partnership_settings_pkey",
+          "definition": "PRIMARY KEY (id)"
+        }
+      ],
+      "acl_before_change": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+      "policies_before_change": [],
+      "rls_enabled_before_change": false
+    },
+    {
+      "name": "contracting_referrals",
+      "owner": "postgres",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "default": "gen_random_uuid()",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "entity_id",
+          "type": "uuid",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "contract_id",
+          "type": "uuid",
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "patient_id",
+          "type": "uuid",
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "patient_name",
+          "type": "text",
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "patient_phone",
+          "type": "text",
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "specialty",
+          "type": "text",
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "service_name",
+          "type": "text",
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "preferred_at",
+          "type": "timestamp with time zone",
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "source",
+          "type": "text",
+          "default": "'partner_portal'::text",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "default": "'new'::text",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "booking_id",
+          "type": "uuid",
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "submitted_by_name",
+          "type": "text",
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "submitted_by_user_id",
+          "type": "uuid",
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX contracting_referrals_pkey ON public.contracting_referrals USING btree (id)",
+        "CREATE INDEX contracting_referrals_entity_status_idx ON public.contracting_referrals USING btree (entity_id, status, created_at DESC)"
+      ],
+      "triggers": [],
+      "constraints": [
+        {
+          "name": "contracting_referrals_contract_id_fkey",
+          "definition": "FOREIGN KEY (contract_id) REFERENCES contracting_entity_contracts(id) ON DELETE SET NULL"
+        },
+        {
+          "name": "contracting_referrals_entity_id_fkey",
+          "definition": "FOREIGN KEY (entity_id) REFERENCES contracting_entities(id) ON DELETE CASCADE"
+        },
+        {
+          "name": "contracting_referrals_pkey",
+          "definition": "PRIMARY KEY (id)"
+        }
+      ],
+      "acl_before_change": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+      "policies_before_change": [],
+      "rls_enabled_before_change": false
+    },
+    {
+      "name": "contracting_settlements",
+      "owner": "postgres",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "default": "gen_random_uuid()",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "entity_id",
+          "type": "uuid",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "period_start",
+          "type": "date",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "period_end",
+          "type": "date",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "eligible_revenue",
+          "type": "numeric(14,2)",
+          "default": "0",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "referral_count",
+          "type": "integer",
+          "default": "0",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "completed_count",
+          "type": "integer",
+          "default": "0",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "incentive_amount",
+          "type": "numeric(14,2)",
+          "default": "0",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "adjustments",
+          "type": "numeric(14,2)",
+          "default": "0",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "default": "'under_review'::text",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "reviewed_by",
+          "type": "uuid",
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "approved_by",
+          "type": "uuid",
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "paid_at",
+          "type": "timestamp with time zone",
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX contracting_settlements_pkey ON public.contracting_settlements USING btree (id)",
+        "CREATE UNIQUE INDEX contracting_settlements_entity_id_period_start_period_end_key ON public.contracting_settlements USING btree (entity_id, period_start, period_end)"
+      ],
+      "triggers": [],
+      "constraints": [
+        {
+          "name": "contracting_settlements_entity_id_fkey",
+          "definition": "FOREIGN KEY (entity_id) REFERENCES contracting_entities(id) ON DELETE CASCADE"
+        },
+        {
+          "name": "contracting_settlements_entity_id_period_start_period_end_key",
+          "definition": "UNIQUE (entity_id, period_start, period_end)"
+        },
+        {
+          "name": "contracting_settlements_pkey",
+          "definition": "PRIMARY KEY (id)"
+        }
+      ],
+      "acl_before_change": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}",
+      "policies_before_change": [],
+      "rls_enabled_before_change": false
+    }
+  ],
+  "functions": [
+    {
+      "name": "contracting_partner_claim_access",
+      "definition": "CREATE OR REPLACE FUNCTION public.contracting_partner_claim_access()\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public', 'auth'\nAS $function$\ndeclare\n  v_uid uuid := auth.uid();\n  v_email text := lower(coalesce(auth.jwt()->>'email',''));\n  v_row public.contracting_partner_users%rowtype;\nbegin\n  if v_uid is null or v_email='' then raise exception 'Authentication required'; end if;\n  select * into v_row from public.contracting_partner_users\n  where active=true and lower(email)=v_email\n  order by created_at asc limit 1;\n  if v_row.id is null then raise exception 'This email is not authorized for a partner account'; end if;\n  if v_row.auth_user_id is null then\n    update public.contracting_partner_users set auth_user_id=v_uid where id=v_row.id;\n    v_row.auth_user_id:=v_uid;\n  elsif v_row.auth_user_id<>v_uid then\n    raise exception 'Partner account is linked to another user';\n  end if;\n  return jsonb_build_object('entity_id',v_row.entity_id,'name',v_row.full_name,'role',v_row.role_key);\nend;\n$function$\n",
+      "identity_args": "",
+      "security_definer": true,
+      "acl_before_change": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "proconfig_before_change": [
+        "search_path=public, auth"
+      ]
+    },
+    {
+      "name": "contracting_partner_snapshot",
+      "definition": "CREATE OR REPLACE FUNCTION public.contracting_partner_snapshot(p_entity_id uuid)\n RETURNS jsonb\n LANGUAGE sql\n STABLE\n SET search_path TO 'pg_catalog', 'public'\nAS $function$\n  with r as (\n    select count(*) referrals,\n      count(*) filter (where status in ('confirmed','attended','completed','collected')) confirmed,\n      count(*) filter (where status in ('attended','completed','collected')) attended,\n      count(*) filter (where status in ('completed','collected')) completed\n    from public.contracting_referrals where entity_id=p_entity_id\n  ), t as (\n    select coalesce(sum(eligible_amount) filter (where eligible),0) eligible_revenue\n    from public.contracting_partner_transactions where entity_id=p_entity_id\n  )\n  select jsonb_build_object(\n    'referrals',r.referrals,'confirmed',r.confirmed,'attended',r.attended,'completed',r.completed,\n    'eligible_revenue',t.eligible_revenue,\n    'incentive',public.contracting_progressive_incentive(t.eligible_revenue,p_entity_id,'standard')\n  ) from r,t;\n$function$\n",
+      "identity_args": "p_entity_id uuid",
+      "security_definer": false,
+      "acl_before_change": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "proconfig_before_change": null
+    },
+    {
+      "name": "contracting_partner_staff_dashboard",
+      "definition": "CREATE OR REPLACE FUNCTION public.contracting_partner_staff_dashboard()\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public', 'auth'\nAS $function$\ndeclare\n  v_entity uuid;\n  v_entity_name text;\n  v_revenue numeric := 0;\n  v_incentive numeric := 0;\n  v_referrals integer := 0;\n  v_confirmed integer := 0;\n  v_attended integer := 0;\n  v_completed integer := 0;\nbegin\n  select u.entity_id into v_entity from public.contracting_partner_users u\n  where u.auth_user_id=auth.uid() and u.active=true limit 1;\n  if v_entity is null then raise exception 'Partner access is not authorized'; end if;\n  select name into v_entity_name from public.contracting_entities where id=v_entity;\n  select count(*),count(*) filter(where status in('confirmed','attended','completed','collected')),\n    count(*) filter(where status in('attended','completed','collected')),\n    count(*) filter(where status in('completed','collected'))\n  into v_referrals,v_confirmed,v_attended,v_completed\n  from public.contracting_referrals where entity_id=v_entity;\n  select coalesce(sum(eligible_amount) filter(where eligible),0) into v_revenue\n  from public.contracting_partner_transactions where entity_id=v_entity;\n  v_incentive:=public.contracting_progressive_incentive(v_revenue,v_entity,'standard');\n  return jsonb_build_object(\n    'entity_id',v_entity,'entity_name',v_entity_name,\n    'referrals',v_referrals,'confirmed',v_confirmed,'attended',v_attended,'completed',v_completed,\n    'eligible_revenue',v_revenue,'incentive',v_incentive,\n    'recent_referrals',coalesce((select jsonb_agg(x) from (\n      select id,left(coalesce(patient_name,'مريض'),1)||'***' patient,status,created_at,specialty\n      from public.contracting_referrals where entity_id=v_entity order by created_at desc limit 30\n    ) x),'[]'::jsonb),\n    'settlements',coalesce((select jsonb_agg(x) from (\n      select period_start,period_end,eligible_revenue,incentive_amount,status\n      from public.contracting_settlements where entity_id=v_entity order by period_end desc limit 12\n    ) x),'[]'::jsonb)\n  );\nend;\n$function$\n",
+      "identity_args": "",
+      "security_definer": true,
+      "acl_before_change": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "proconfig_before_change": [
+        "search_path=public, auth"
+      ]
+    },
+    {
+      "name": "contracting_progressive_incentive",
+      "definition": "CREATE OR REPLACE FUNCTION public.contracting_progressive_incentive(p_amount numeric, p_entity_id uuid DEFAULT NULL::uuid, p_preset_key text DEFAULT 'standard'::text)\n RETURNS numeric\n LANGUAGE plpgsql\n STABLE\n SET search_path TO 'pg_catalog', 'public'\nAS $function$\ndeclare\n  r record;\n  v_amount numeric := greatest(coalesce(p_amount,0),0);\n  v_total numeric := 0;\n  v_slice numeric;\nbegin\n  for r in\n    select min_amount,max_amount,rate_percent\n    from public.contracting_incentive_tiers\n    where active=true\n      and ((p_entity_id is not null and entity_id=p_entity_id)\n        or (entity_id is null and preset_key=p_preset_key\n            and not exists(select 1 from public.contracting_incentive_tiers z where z.entity_id=p_entity_id and z.active=true)))\n    order by sort_order,min_amount\n  loop\n    if v_amount <= r.min_amount then continue; end if;\n    v_slice := least(v_amount,coalesce(r.max_amount,v_amount)) - r.min_amount;\n    if v_slice > 0 then v_total := v_total + (v_slice * r.rate_percent / 100); end if;\n  end loop;\n  return round(v_total,2);\nend;\n$function$\n",
+      "identity_args": "p_amount numeric, p_entity_id uuid, p_preset_key text",
+      "security_definer": false,
+      "acl_before_change": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "proconfig_before_change": null
+    }
+  ],
+  "captured_after_hardening": true,
+  "note": "Structural definitions are unchanged from before the patch. ACLs, policies, and function ACL/proconfig fields marked before_change preserve the observed pre-migration values. No application rows, secrets, or credentials were read."
+}

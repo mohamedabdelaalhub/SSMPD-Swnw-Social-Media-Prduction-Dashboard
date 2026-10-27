@@ -1,0 +1,4 @@
+-- Snapshot taken before removing anon EXECUTE from the sensitive SECURITY DEFINER RPCs.
+-- Every listed overload had this ACL: postgres, anon, authenticated, service_role = EXECUTE.
+-- Other attributes and function definitions are unchanged by the migration.
+-- Function identities are preserved exactly in the companion migration/rollback.

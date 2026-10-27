@@ -1,0 +1,18 @@
+-- Pre-change security state snapshot, captured 2026-10-28 UTC.
+-- No row data, secrets, patient records, or credentials are included.
+-- Table definitions are unchanged by the migration; the changes concern ACL, RLS, and policies.
+-- All ten relations had RLS disabled and ACL:
+-- {postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}
+-- No RLS policies existed on the ten affected relations.
+-- Authenticated and anon had SELECT on every column, including patient identifiers/contact fields,
+-- auth_user_id, document URLs, WhatsApp integration identifiers, and financial amounts.
+-- Rollback script restores the original grants, disables RLS, and restores public execute for the
+-- two utility RPCs whose public access is revoked by the migration.
+-- A schema-only live backup is not needed to restore this patch because no table or column DDL changes.
+-- Pre-change function state:
+-- contracting_partner_snapshot(uuid), contracting_progressive_incentive(numeric,uuid,text)
+-- had NULL proconfig (role-mutable search_path); both were invoker functions.
+-- contracting_partner_claim_access() and contracting_partner_staff_dashboard()
+-- were SECURITY DEFINER with EXECUTE granted to PUBLIC, anon, and authenticated.
+-- contracting_partner_public_profile(text) and contracting_partner_submit_referral(...)
+-- remain anonymously callable by design as limited partner-link operations.

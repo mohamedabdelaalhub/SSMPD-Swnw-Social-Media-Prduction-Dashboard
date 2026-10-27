@@ -1,0 +1,6 @@
+-- Pre-change ACL snapshot from information_schema.table_privileges.
+-- Every targeted public table listed below had ALL seven table privileges for anon:
+-- DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE.
+-- The migration only revokes these grants from anon; authenticated grants/policies are untouched.
+-- Targets: public.patient_* (39 tables), public.patients, public.admins,
+-- public.admin_extra_roles, public.leads.

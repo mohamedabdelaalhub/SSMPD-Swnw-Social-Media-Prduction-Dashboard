@@ -1,0 +1,8 @@
+-- Pre-change metadata snapshot: anon had SELECT on all of these SECURITY INVOKER views;
+-- authenticated also had SELECT. No view definitions were changed by the access migration.
+-- public.vw_content_intelligence_patterns
+-- public.vw_content_meta_performance
+-- public.vw_lead_meta_attribution
+-- public.vw_meta_ad_performance
+-- public.vw_meta_creative_performance
+-- public.vw_meta_specialty_performance
