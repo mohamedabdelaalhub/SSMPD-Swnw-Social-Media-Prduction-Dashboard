@@ -12,7 +12,7 @@ window.SSMPD_CONFIG = {
   // مفاتيح Supabase — تُملأ بعد إنشاء المشروع (خطوة البنية التحتية)
   supabase: {
     url: "https://uuijfbpgvtdxgaosqpxo.supabase.co",
-    anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1aWpmYnBndnRkeGdhb3NxcHhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MDc3MDUsImV4cCI6MjEwMjQ4MzcwNX0.kIiSfXRG2SJtsP1v3GlllIhcxYP9sOEhdGk40tOhsNw"
+    anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJIUzI1NiJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1aWpmYnBndnRkeGdhb3NxcHhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MDc3MDUsImV4cCI6MjEwMjQ4MzcwNX0.kIiSfXRG2SJtsP1v3GlllIhcxYP9sOEhdGk40tOhsNw"
   },
 
   // جسر أرشيف Google Drive — رابط Web App بعد نشر السكريبت من حساب المركز
@@ -27,10 +27,9 @@ window.SSMPD_CONFIG = {
   adsExpensesWebAppUrl: "https://script.google.com/macros/s/AKfycbzkks4u3SUsQBLtIzN5o091dBANRA7Or1xm5KCBfG8ms1NyOhRAUG6mtZCcz51jlJrM3g/exec",
 
   // بصمة الكاش — ترفع مع أي تعديل على JS/CSS
-  cacheVersion: 24
+  cacheVersion: 25
 };
 
-// تحسين بطاقة الترحيب في الرئيسية الشخصية بدون المساس بمنطق الصفحة الأساسي.
 (function(){
   if(document.querySelector('script[data-home-welcome-redesign]')) return;
   var script = document.createElement('script');
@@ -40,7 +39,6 @@ window.SSMPD_CONFIG = {
   document.head.appendChild(script);
 })();
 
-// حمّل آخر نسخة من تقييم الأداء بعد اكتمال سكربتات الصفحة؛ الحارس داخل الملف يمنع التكرار.
 (function(){
   function loadPerformanceV2(){
     if(window.__SSMPDPerformanceV2) return;
@@ -54,7 +52,6 @@ window.SSMPD_CONFIG = {
   else window.addEventListener('load', loadPerformanceV2, { once: true });
 })();
 
-// إدارة التأمين: فئات الكارنيه، التحمل، المطالبات والتحصيل.
 (function(){
   function loadInsurance(){
     if(window.__SSMPDInsuranceContractsV1) return;
@@ -68,7 +65,6 @@ window.SSMPD_CONFIG = {
   else window.addEventListener('load', loadInsurance, { once: true });
 })();
 
-// تنقل ذكي بين مراحل المهمة: يحتفظ بسياق المهمة الرئيسية على الموبايل والديسكتوب.
 (function(){
   function loadTaskStageNavigation(){
     if(window.__SWNWTaskStageNavigation) return;
@@ -82,12 +78,12 @@ window.SSMPD_CONFIG = {
   else window.addEventListener('load', loadTaskStageNavigation, { once: true });
 })();
 
-// وصول مستقل للقراءة إلى أرشيف الليدز + تحكم السوبر أدمن في منح الصلاحية.
+// Deprecated loaders remain harmless no-ops for old sessions; real access is handled below.
 (function(){
   function loadLeadsArchiveAccess(){
     if(window.__SWNWLeadsArchiveAccess) return;
     var script = document.createElement('script');
-    script.src = 'assets/js/leads-archive-access.js?v=leads-archive-access-20261027-1';
+    script.src = 'assets/js/leads-archive-access.js?v=leads-archive-access-20261027-2';
     script.async = false;
     script.dataset.leadsArchiveAccess = '1';
     document.head.appendChild(script);
@@ -96,12 +92,11 @@ window.SSMPD_CONFIG = {
   else window.addEventListener('load', loadLeadsArchiveAccess, { once: true });
 })();
 
-// زر واضح داخل تاب لوحة التحكم لفتح أرشيف الليدز، مع بقاء وصول الموظف من الرئيسية الشخصية.
 (function(){
   function loadLeadsArchiveControlPanel(){
     if(window.__SWNWLeadsArchiveControlPanel) return;
     var script = document.createElement('script');
-    script.src = 'assets/js/leads-archive-control-panel.js?v=leads-archive-control-panel-20261027-1';
+    script.src = 'assets/js/leads-archive-control-panel.js?v=leads-archive-control-panel-20261027-2';
     script.async = false;
     script.dataset.leadsArchiveControlPanel = '1';
     document.head.appendChild(script);
@@ -110,15 +105,15 @@ window.SSMPD_CONFIG = {
   else window.addEventListener('load', loadLeadsArchiveControlPanel, { once: true });
 })();
 
-// صلاحية أرشيف الليدز لازم تسبق تحويل جدول المستخدمين إلى كروت، لذلك تُحمّل فورًا.
+// Real Leads Archive permission: checkbox + module visibility + existing archive access.
 (function(){
-  function loadLeadsArchivePermissionColumn(){
-    if(window.__SWNWLeadsArchivePermissionColumnV2 || document.querySelector('script[data-leads-archive-permission-column]')) return;
+  function loadLeadsArchivePermission(){
+    if(window.__SWNWLeadsArchiveGrantRuntimeV3 || document.querySelector('script[data-leads-archive-permission-column]')) return;
     var script = document.createElement('script');
-    script.src = 'assets/js/leads-archive-permission-column.js?v=leads-archive-permission-20261027-2';
+    script.src = 'assets/js/leads-archive-permission-column.js?v=leads-archive-permission-20261027-3';
     script.async = false;
     script.dataset.leadsArchivePermissionColumn = '1';
     document.head.appendChild(script);
   }
-  loadLeadsArchivePermissionColumn();
+  loadLeadsArchivePermission();
 })();
