@@ -74,6 +74,7 @@
   }
 
   function load(container) {
+    if(container._ceFile&&container._ceFile.isConnected&&container._ceRefresh){container._ceRefresh().catch(function(){});return;}
     if(window.SSMPDContractNavigation){window.SSMPDContractNavigation.render(container,{categories:CATEGORIES,statuses:STATUSES,selectCategory:function(key){selectedCategory=key==='all'?'cash':key;},create:function(){openCreate(container);},open:function(id){openDetails(id,container);}});return;}
     if(selectedCategory==="center"){container.querySelector("#ce-view").innerHTML='<div class="section"><button class="btn ghost" id="ce-back">العودة إلى جهات التعاقد</button></div><div id="ce-price-host"></div>';container.querySelector("#ce-back").onclick=function(){selectedCategory="cash";load(container);};window.SSMPDContractPrices.render(container.querySelector("#ce-price-host"),"center");return;}
     window.SSMPDDb.listContractingEntities().then(function (rows) {
@@ -152,6 +153,7 @@
 
   function openDetails(entityId, container) {
     var bd = modal("ملف جهة التعاقد", '<div class="loading">بيحمّل الملف…</div>');
+    if(window.SSMPDContractNavigation&&container.querySelector('#ce-view')){var returnFocus=bd._returnFocus;bd.classList.add('wn-inline-file');bd.onclick=null;container.append(bd);container._ceFile=bd;container.querySelector('#ce-view').hidden=true;bd._ceFinish=function(){bd.remove();container._ceFile=null;var view=container.querySelector('#ce-view');if(view)view.hidden=false;if(container._ceRefresh)container._ceRefresh().catch(function(){});if(returnFocus&&returnFocus.isConnected)returnFocus.focus();};bd.addEventListener('click',function(ev){if(ev.target.closest('.modal-close')){ev.preventDefault();ev.stopImmediatePropagation();bd._ceFinish();}},true);}
     function reload() {
       window.SSMPDDb.getContractingEntityDetails(entityId).then(function (d) {
         var activeContract = d.contracts.filter(function (c) { return c.status === "active"; })[0] || d.contracts[0];
@@ -172,7 +174,7 @@
         }; });
         bd.querySelectorAll("[data-upload-contract]").forEach(function (b) { b.onclick = function () { openContractUpload(b.getAttribute("data-upload-contract"), reload); }; });
         applyPermissions(bd);
-        if(window.SSMPDContractNavigation)window.SSMPDContractNavigation.file(bd,d,{canSuspend:canSuspend(),canDelete:canDelete(),suspend:function(){suspendEntity(entityId,function(){reload();load(container);});},remove:function(){openDelete(d.entity,function(){bd.remove();load(container);});}});
+        if(window.SSMPDContractNavigation)window.SSMPDContractNavigation.file(bd,d,{canSuspend:canSuspend(),canDelete:canDelete(),suspend:function(){suspendEntity(entityId,function(){reload();load(container);});},remove:function(){openDelete(d.entity,function(){if(bd._ceFinish)bd._ceFinish();else{bd.remove();load(container);}});}});
       }).catch(function (e) { bd.querySelector(".modal").innerHTML = '<div class="modal-head"><h3>خطأ</h3><button class="modal-close">×</button></div><p>' + esc(e.message) + '</p>'; bd.querySelector(".modal-close").onclick = function () { bd.remove(); }; });
     }
     reload();
