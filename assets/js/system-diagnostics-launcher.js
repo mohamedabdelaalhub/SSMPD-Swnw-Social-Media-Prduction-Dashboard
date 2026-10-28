@@ -25,24 +25,17 @@
   }
   function paintIndicator(node,status){
     if(!node)return;var m=statusMeta(status.level);
-    node.dataset.healthLevel=status.level;
-    node.title=m.label+(status.count?" — "+status.count+" تنبيه":"");
-    node.setAttribute("aria-label",node.title);
-    node.style.background=m.color;node.style.color="#fff";node.style.border="0";node.style.borderRadius="999px";node.style.minWidth="34px";node.style.width="34px";node.style.height="34px";node.style.padding="0";node.style.display="inline-flex";node.style.alignItems="center";node.style.justifyContent="center";node.style.fontWeight="900";node.style.boxShadow="0 0 0 3px rgba(255,255,255,.8),0 2px 8px rgba(0,0,0,.12)";
-    node.textContent=m.symbol;
+    node.dataset.healthLevel=status.level;node.title=m.label+(status.count?" — "+status.count+" تنبيه":"");node.setAttribute("aria-label",node.title);
+    node.style.background=m.color;node.style.color="#fff";node.style.border="0";node.style.borderRadius="999px";node.style.minWidth="34px";node.style.width="34px";node.style.height="34px";node.style.padding="0";node.style.display="inline-flex";node.style.alignItems="center";node.style.justifyContent="center";node.style.fontWeight="900";node.style.boxShadow="0 0 0 3px rgba(255,255,255,.8),0 2px 8px rgba(0,0,0,.12)";node.textContent=m.symbol;
   }
-  function refreshStatus(){
-    var s=getStatus();paintIndicator(document.getElementById("system-diagnostics-toggle"),s);
-    var badge=document.querySelector("[data-system-diagnostics-admin-status]");
-    if(badge){var m=statusMeta(s.level);badge.textContent=m.label+(s.count?" — "+s.count+" تنبيه":"");badge.style.color=m.color;}
-  }
+  function refreshStatus(){var s=getStatus();paintIndicator(document.getElementById("system-diagnostics-toggle"),s);var badge=document.querySelector("[data-system-diagnostics-admin-status]");if(badge){var m=statusMeta(s.level);badge.textContent=m.label+(s.count?" — "+s.count+" تنبيه":"");badge.style.color=m.color;}}
 
   function addLoginLink(){
     var box=document.querySelector(".auth-box");if(!box||box.querySelector("[data-system-diagnostics-login]"))return;
     var wrap=document.createElement("div");wrap.dataset.systemDiagnosticsLogin="1";wrap.style.cssText="margin-top:14px;text-align:center;font-size:12px;";
     var a=document.createElement("a");a.href=DIAG_URL;a.target="_blank";a.rel="noopener noreferrer";a.textContent="🩺 تشخيص النظام";a.style.cssText="color:#0f3a8d;font-weight:700;text-decoration:underline;";wrap.appendChild(a);box.appendChild(wrap);
     var err=box.querySelector(".err-msg");if(err&&/failed to fetch|networkerror|network request|load failed/i.test(err.textContent||"")){
-      var quick=document.createElement("button");quick.type="button";quick.textContent="فتح تشخيص النظام";quick.style.cssText="width:100%;margin-top:8px;padding:9px 12px;border:1px solid #f0b4ae;border-radius:10px;background:#fff;color:#9f2d20;font-weight:700;cursor:pointer;";quick.onclick=openDiagnostics;err.insertAdjacentElement("afterend",quick);
+      var quick=document.createElement("a");quick.href=DIAG_URL;quick.target="_blank";quick.rel="noopener noreferrer";quick.textContent="فتح تشخيص النظام";quick.style.cssText="display:block;text-align:center;width:100%;margin-top:8px;padding:9px 12px;border:1px solid #f0b4ae;border-radius:10px;background:#fff;color:#9f2d20;font-weight:700;text-decoration:none;";err.insertAdjacentElement("afterend",quick);
     }
   }
   function addHeaderButton(){
@@ -52,9 +45,8 @@
   function addAdminCard(){
     var users=document.getElementById("admin-users");if(!users||document.querySelector("[data-system-diagnostics-admin-card]"))return;
     var card=document.createElement("div");card.className="section";card.dataset.systemDiagnosticsAdminCard="1";
-    card.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;"><div><h3 style="margin:0 0 5px;">تشخيص النظام</h3><p style="margin:0;color:var(--c-muted);font-size:12px;line-height:1.6;">فحص الشبكة والخدمات، وشرح مبسط لآخر أخطاء الجهاز مع الحل المقترح.</p><div data-system-diagnostics-admin-status style="font-weight:800;font-size:12px;margin-top:6px;"></div></div><button class="btn" type="button" data-open-system-diagnostics>فتح تشخيص النظام</button></div>';
-    users.parentNode.insertBefore(card,users);
-    var b=card.querySelector("[data-open-system-diagnostics]");if(b)b.onclick=openDiagnostics;refreshStatus();
+    card.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;"><div><h3 style="margin:0 0 5px;">تشخيص النظام</h3><p style="margin:0;color:var(--c-muted);font-size:12px;line-height:1.6;">فحص الشبكة والخدمات، وشرح مبسط لآخر أخطاء الجهاز مع الحل المقترح.</p><div data-system-diagnostics-admin-status style="font-weight:800;font-size:12px;margin-top:6px;"></div></div><a class="btn" href="connection-test.html" target="_blank" rel="noopener noreferrer">فتح تشخيص النظام</a></div>';
+    users.parentNode.insertBefore(card,users);refreshStatus();
   }
   function inject(){addLoginLink();addHeaderButton();addAdminCard();refreshStatus();}
   function scheduleInject(){if(scheduled)return;scheduled=true;requestAnimationFrame(function(){scheduled=false;inject();});}
