@@ -136,14 +136,20 @@
     try{isSuper=sessionStorage.getItem(SUPER_MARKER)==='1';}catch(_){}
     applyAccess();
     try{
-      var session=storedSession();if(!session||!session.user||!session.user.id)return;
+      var session=storedSession();
+      if(!session||!session.access_token)return;
       var cfg=await fetch('config.js?diag-role='+Date.now(),{cache:'no-store'}).then(function(r){return r.text();});
       var m=cfg.match(/anonKey\s*:\s*["']([^"']+)["']/);if(!m)return;
-      var url=SUPA+'/rest/v1/admins?select=role,active&user_id=eq.'+encodeURIComponent(session.user.id)+'&limit=1';
-      var res=await fetch(url,{headers:{apikey:m[1],Authorization:'Bearer '+session.access_token},cache:'no-store'});
-      if(!res.ok)return;
-      var rows=await res.json();
-      isSuper=!!(rows&&rows[0]&&rows[0].active&&rows[0].role==='super_admin');
+      var headers={apikey:m[1],Authorization:'Bearer '+session.access_token,'Content-Type':'application/json'};
+      var rpc=await fetch(SUPA+'/rest/v1/rpc/is_super',{method:'POST',headers:headers,body:'{}',cache:'no-store'});
+      if(rpc.ok){
+        var value=await rpc.json();
+        isSuper=(value===true||value==='true');
+      }else if(session.user&&session.user.id){
+        var url=SUPA+'/rest/v1/admins?select=role,active&user_id=eq.'+encodeURIComponent(session.user.id)+'&limit=1';
+        var res=await fetch(url,{headers:headers,cache:'no-store'});
+        if(res.ok){var rows=await res.json();isSuper=!!(rows&&rows[0]&&rows[0].active&&rows[0].role==='super_admin');}
+      }
       try{sessionStorage.setItem(SUPER_MARKER,isSuper?'1':'0');}catch(_){}
       applyAccess();
     }catch(_){applyAccess();}
