@@ -15,6 +15,8 @@
     s = s.replace(/eyJ[A-Za-z0-9_\-.]{20,}/g, "[token-hidden]");
     s = s.replace(/([?&](?:apikey|api_key|token|access_token|refresh_token|key|secret)=)[^&#\s]+/ig, "$1[hidden]");
     s = s.replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/ig, "[email-hidden]");
+    s = s.replace(/\b[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\b/ig, "[id-hidden]");
+    s = s.replace(/\+?\d[\d\s().-]{7,}\d/g, "[number-hidden]");
     s = s.replace(/https?:\/\/([^\s/?#]+)([^\s?#]*)[^\s]*/ig, function (_, host, path) { return "https://" + host + (path || ""); });
     return s.replace(/\s+/g, " ").trim().slice(0, max || 260);
   }
