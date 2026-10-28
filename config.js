@@ -25,14 +25,14 @@ window.SSMPD_CONFIG = {
   adsExpensesWebAppUrl: "https://script.google.com/macros/s/AKfycbzkks4u3SUsQBLtIzN5o091dBANRA7Or1xm5KCBfG8ms1NyOhRAUG6mtZCcz51jlJrM3g/exec",
 
   // بصمة الكاش — ترفع مع أي تعديل على JS/CSS
-  cacheVersion: 29
+  cacheVersion: 30
 };
 
 // مراقب أخطاء خفيف: يسجل فقط الأخطاء الفعلية وآخر زر مرتبط بها، بدون أسرار.
 (function loadSystemErrorMonitor(){
   if(window.__SWNWSystemErrorMonitor || document.querySelector('script[data-system-error-monitor]')) return;
   var script=document.createElement('script');
-  script.src='assets/js/system-error-monitor.js?v=system-errors-20261028-2';
+  script.src='assets/js/system-error-monitor.js?v=system-errors-20261028-3';
   script.async=false;
   script.dataset.systemErrorMonitor='1';
   document.head.appendChild(script);
