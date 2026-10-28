@@ -25,8 +25,18 @@ window.SSMPD_CONFIG = {
   adsExpensesWebAppUrl: "https://script.google.com/macros/s/AKfycbzkks4u3SUsQBLtIzN5o091dBANRA7Or1xm5KCBfG8ms1NyOhRAUG6mtZCcz51jlJrM3g/exec",
 
   // بصمة الكاش — ترفع مع أي تعديل على JS/CSS
-  cacheVersion: 26
+  cacheVersion: 27
 };
+
+// مدخل خفيف وثابت لصفحة تشخيص النظام. لا يشغل أي فحوصات في الخلفية.
+(function loadSystemDiagnosticsLauncher(){
+  if(window.__SWNWSystemDiagnosticsLauncher || document.querySelector('script[data-system-diagnostics-launcher]')) return;
+  var script=document.createElement('script');
+  script.src='assets/js/system-diagnostics-launcher.js?v=system-diagnostics-20261028-1';
+  script.async=false;
+  script.dataset.systemDiagnosticsLauncher='1';
+  document.head.appendChild(script);
+})();
 
 // حماية مبكرة ضد تقطيع الشبكة: config.js يتحمل قبل auth.js، لذلك نلف SSMPDAuth
 // لحظة إنشائه. ده يضمن الـ retry حتى لو المتصفح ماسك نسخة أقدم من auth.js.
