@@ -22,98 +22,75 @@ window.SSMPD_CONFIG = {
   },
 
   // مصروفات الإعلانات الفعلية — Apps Script Web App (OAuth، حساب المركز)
-  // بيرجّع ملخص شهري جاهز كـJSON مباشرة (مفيش قراءة Drive API بمفتاح من
-  // المتصفح تاني — كانت بتفشل بـ503 على alt=media). راجع render-summary.js → loadAdsExpenses
   adsExpensesWebAppUrl: "https://script.google.com/macros/s/AKfycbzkks4u3SUsQBLtIzN5o091dBANRA7Or1xm5KCBfG8ms1NyOhRAUG6mtZCcz51jlJrM3g/exec",
 
   // بصمة الكاش — ترفع مع أي تعديل على JS/CSS
-  cacheVersion: 25
+  cacheVersion: 26
 };
 
-(function(){
-  if(document.querySelector('script[data-home-welcome-redesign]')) return;
-  var script = document.createElement('script');
-  script.src = 'assets/js/home-welcome-redesign.js?v=home-welcome-20261025-2';
-  script.async = false;
-  script.dataset.homeWelcomeRedesign = '1';
-  document.head.appendChild(script);
+// حماية مبكرة ضد تقطيع الشبكة: config.js يتحمل قبل auth.js، لذلك نلف SSMPDAuth
+// لحظة إنشائه. ده يضمن الـ retry حتى لو المتصفح ماسك نسخة أقدم من auth.js.
+(function installAuthNetworkResilience(){
+  var stored;
+  function networkError(err){
+    var m=String(err&&err.message||err||"");
+    return /Failed to fetch|NetworkError|Load failed|fetch failed|network request failed/i.test(m);
+  }
+  function retry(work,left,delay){
+    return Promise.resolve().then(work).catch(function(err){
+      if(!networkError(err)||left<=1) throw err;
+      return new Promise(function(resolve){setTimeout(resolve,delay);})
+        .then(function(){return retry(work,left-1,Math.min(Math.round(delay*1.7),1400));});
+    });
+  }
+  function wrap(auth){
+    if(!auth||auth.__networkResilienceV1) return auth;
+    ["signIn","signUp","getSession","loadCurrentAdmin","resetPasswordForEmail"].forEach(function(name){
+      if(typeof auth[name]!=="function") return;
+      var original=auth[name];
+      auth[name]=function(){
+        var self=this,args=arguments;
+        return retry(function(){return original.apply(self,args);},2,450);
+      };
+    });
+    auth.__networkResilienceV1=true;
+    return auth;
+  }
+  try{
+    Object.defineProperty(window,"SSMPDAuth",{
+      configurable:true,
+      get:function(){return stored;},
+      set:function(value){
+        stored=wrap(value);
+        Object.defineProperty(window,"SSMPDAuth",{value:stored,writable:true,configurable:true});
+      }
+    });
+  }catch(e){}
 })();
 
+// الموديولات الإضافية لا نحمّلها على شاشة الدخول. ننتظر نجاح الدخول أولًا،
+// وده يقلل طلبات الشبكة والـ observers وقت فتح الصفحة على الكمبيوتر والموبايل.
 (function(){
-  function loadPerformanceV2(){
-    if(window.__SSMPDPerformanceV2) return;
-    var script = document.createElement('script');
-    script.src = 'assets/js/employee-performance.js?v=performance-v2-20261025-3';
-    script.async = false;
-    script.dataset.employeePerformanceV2 = '1';
+  function afterAdminReady(fn){
+    function check(){
+      if(window.SSMPDAuth&&window.SSMPDAuth.currentAdmin){ fn(); return; }
+      setTimeout(check,1500);
+    }
+    if(document.readyState==="complete") check();
+    else window.addEventListener("load",check,{once:true});
+  }
+  function loadOnce(flag,src,dataKey){
+    if(window[flag]||document.querySelector('script[data-post-login="'+dataKey+'"]')) return;
+    var script=document.createElement("script");
+    script.src=src; script.async=false; script.dataset.postLogin=dataKey;
     document.head.appendChild(script);
   }
-  if(document.readyState === 'complete') loadPerformanceV2();
-  else window.addEventListener('load', loadPerformanceV2, { once: true });
-})();
 
-(function(){
-  function loadInsurance(){
-    if(window.__SSMPDInsuranceContractsV1) return;
-    var script = document.createElement('script');
-    script.src = 'assets/js/insurance-contracts.js?v=insurance-20261026-1';
-    script.async = false;
-    script.dataset.insuranceContracts = '1';
-    document.head.appendChild(script);
-  }
-  if(document.readyState === 'complete') loadInsurance();
-  else window.addEventListener('load', loadInsurance, { once: true });
-})();
-
-(function(){
-  function loadTaskStageNavigation(){
-    if(window.__SWNWTaskStageNavigation) return;
-    var script = document.createElement('script');
-    script.src = 'assets/js/task-stage-navigation.js?v=task-stage-nav-20261027-2';
-    script.async = false;
-    script.dataset.taskStageNavigation = '1';
-    document.head.appendChild(script);
-  }
-  if(document.readyState === 'complete') loadTaskStageNavigation();
-  else window.addEventListener('load', loadTaskStageNavigation, { once: true });
-})();
-
-// Deprecated loaders remain harmless no-ops for old sessions; real access is handled below.
-(function(){
-  function loadLeadsArchiveAccess(){
-    if(window.__SWNWLeadsArchiveAccess) return;
-    var script = document.createElement('script');
-    script.src = 'assets/js/leads-archive-access.js?v=leads-archive-access-20261027-2';
-    script.async = false;
-    script.dataset.leadsArchiveAccess = '1';
-    document.head.appendChild(script);
-  }
-  if(document.readyState === 'complete') loadLeadsArchiveAccess();
-  else window.addEventListener('load', loadLeadsArchiveAccess, { once: true });
-})();
-
-(function(){
-  function loadLeadsArchiveControlPanel(){
-    if(window.__SWNWLeadsArchiveControlPanel) return;
-    var script = document.createElement('script');
-    script.src = 'assets/js/leads-archive-control-panel.js?v=leads-archive-control-panel-20261027-2';
-    script.async = false;
-    script.dataset.leadsArchiveControlPanel = '1';
-    document.head.appendChild(script);
-  }
-  if(document.readyState === 'complete') loadLeadsArchiveControlPanel();
-  else window.addEventListener('load', loadLeadsArchiveControlPanel, { once: true });
-})();
-
-// Real Leads Archive permission: checkbox + module visibility + existing archive access.
-(function(){
-  function loadLeadsArchivePermission(){
-    if(window.__SWNWLeadsArchiveGrantRuntimeV3 || document.querySelector('script[data-leads-archive-permission-column]')) return;
-    var script = document.createElement('script');
-    script.src = 'assets/js/leads-archive-permission-column.js?v=leads-archive-permission-20261027-3';
-    script.async = false;
-    script.dataset.leadsArchivePermissionColumn = '1';
-    document.head.appendChild(script);
-  }
-  loadLeadsArchivePermission();
+  afterAdminReady(function(){
+    loadOnce("__SSMPDHomeWelcomeRedesign","assets/js/home-welcome-redesign.js?v=home-welcome-20261025-2","home-welcome");
+    loadOnce("__SSMPDPerformanceV2","assets/js/employee-performance.js?v=performance-v2-20261025-3","performance-v2");
+    loadOnce("__SSMPDInsuranceContractsV1","assets/js/insurance-contracts.js?v=insurance-20261026-1","insurance");
+    loadOnce("__SWNWTaskStageNavigation","assets/js/task-stage-navigation.js?v=task-stage-nav-20261027-2","task-stage-navigation");
+    loadOnce("__SWNWLeadsArchiveGrantRuntimeV3","assets/js/leads-archive-permission-column.js?v=leads-archive-permission-20261028-1","leads-archive-permission");
+  });
 })();
