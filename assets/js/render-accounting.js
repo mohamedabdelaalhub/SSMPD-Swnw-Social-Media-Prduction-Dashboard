@@ -2,7 +2,7 @@
 (function () {
   "use strict";
 
-  var state = { subTab: "pricing", section: null, supplies: [], services: [], packages: [], loaded: false, pendingRepair: null };
+  var state = { subTab: "pricing", section: null, serviceFilter: "all", supplies: [], services: [], packages: [], loaded: false, pendingRepair: null };
   var me = null;
 
   function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
@@ -201,25 +201,28 @@
 
     }
     if (state.section === "services") {
+    var uncategorized = state.services.filter(function(s){return !String(s.category || "").trim();});
+    var visibleServices = state.serviceFilter === "uncategorized" ? uncategorized : state.services;
     html += '<div class="acc-card acc-revenue">' +
       '<div class="acc-card-head"><div><span class="acc-eyebrow">ضلع التسعير</span><h3>الخدمات والتسعير</h3></div>' +
       '<div class="acc-actions"><button class="btn" id="acc-print-services">🖨 طباعة</button> ' +
       '<button class="btn" id="acc-export-services">⬇ Excel</button> ' +
       '<button class="btn btn-primary" id="acc-add-service">+ إضافة خدمة</button></div></div>' +
-      (state.services.length ?
+      ('<div class="acc-actions" role="tablist" aria-label="تصنيف الخدمات"><button type="button" class="btn" role="tab" id="acc-services-all" aria-selected="'+(state.serviceFilter==='all')+'">كل الخدمات ('+state.services.length+')</button><button type="button" class="btn" role="tab" id="acc-services-uncategorized" aria-selected="'+(state.serviceFilter==='uncategorized')+'">خدمات بدون أقسام ('+uncategorized.length+')</button></div>') +
+      (visibleServices.length ?
         '<div style="overflow-x:auto;"><table class="simple acc-table"><thead><tr>' +
         "<th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AE%D8%AF%D9%85%D8%A9-->الخدمة</th><th>سعر الخدمة</th><th>تكلفة المستلزمات</th><th> <!--ssmpd-i18n:%D8%A5%D8%AC%D9%85%D8%A7%D9%84%D9%8A%20%D8%A7%D9%84%D8%AA%D9%83%D9%84%D9%81%D8%A9-->إجمالي التكلفة</th>" +
         "<th>هامش الربح</th><th> <!--ssmpd-i18n:%D9%82%D9%8A%D9%85%D8%A9%20%D8%A7%D9%84%D8%B1%D8%A8%D8%AD-->قيمة الربح</th><th>السعر النهائي</th><th></th></tr></thead><tbody>" +
-        state.services.map(function (s) {
+        visibleServices.map(function (s) {
           var t = serviceTotals(s);
-          return '<tr><td>' + s.name + '</td><td class="acc-col-num">' + numSpan(s.base_price) + '</td><td class="acc-col-num">' + numSpan(t.materialsCost) + '</td>' +
+          return '<tr><td>' + esc(s.name) + '<small style="display:block">'+esc(s.category || 'بدون قسم')+'</small></td><td class="acc-col-num">' + numSpan(s.base_price) + '</td><td class="acc-col-num">' + numSpan(t.materialsCost) + '</td>' +
             '<td class="acc-col-num">' + numSpan(t.totalCost) + '</td><td class="acc-col-num">' + pill("acc-margin", fmt(t.margin) + "%") + '</td>' +
             '<td class="acc-col-num">' + pill("acc-profit", fmt(t.profitValue)) + '</td>' +
             '<td class="acc-col-num">' + pill("acc-final", fmt(t.finalPrice)) + '</td>' +
             '<td><button class="btn-link" data-edit-service="' + s.id + "\"> <!--ssmpd-i18n:%D8%AA%D8%B9%D8%AF%D9%8A%D9%84-->تعديل</button> " +
             '<button class="btn-link" data-del-service="' + s.id + "\"> <!--ssmpd-i18n:%D8%AD%D8%B0%D9%81-->حذف</button></td></tr>";
         }).join("") + '</tbody></table></div>'
-        : '<div class="acc-empty"><span class="acc-empty-icon">💊</span>لسه مفيش خدمات مسعّرة — ضيف الخدمة الأولى وحدد سعرها الأساسي وهامش الربح</div>') +
+        : '<div class="acc-empty">لا توجد خدمات في هذا التاب</div>') +
       '</div>';
 
     }
@@ -243,6 +246,8 @@
         });
       };
     });
+    bind("acc-services-all", function(){state.serviceFilter="all";renderPricingScreen(subView,container);});
+    bind("acc-services-uncategorized", function(){state.serviceFilter="uncategorized";renderPricingScreen(subView,container);});
     bind("acc-add-service", function () { openServiceModal(null, reload); });
     subView.querySelectorAll("[data-edit-service]").forEach(function (b) {
       b.onclick = function () { openServiceModal(serviceById(b.getAttribute("data-edit-service")), reload); };
@@ -355,6 +360,7 @@
     backdrop.innerHTML = '<div class="modal acc-service-modal" style="max-width:560px;">' +
       '<h3>' + (service.id ? "تعديل خدمة" : "إضافة خدمة") + '</h3>' +
       "<div class=\"field\"><label> <!--ssmpd-i18n:%D8%A7%D8%B3%D9%85%20%D8%A7%D9%84%D8%AE%D8%AF%D9%85%D8%A9-->اسم الخدمة</label><input id=\"sv-name\" value=\"" + esc(service.name) + '"></div>' +
+      '<div class="field"><label for="sv-category">قسم الخدمة في سونو</label><input id="sv-category" list="sv-category-options" value="'+esc(service.category)+'"><datalist id="sv-category-options">'+Array.from(new Set(state.services.map(function(s){return String(s.category||"").trim();}).filter(Boolean))).sort().map(function(c){return '<option value="'+esc(c)+'"></option>';}).join('')+'</datalist></div>' +
       '<fieldset><legend>بيانات الطبيب من العقد</legend><div class="field"><label for="sv-contract">الطبيب وعقد الخدمة المعتمد</label><select id="sv-contract" disabled><option value="">جاري تحميل العقود</option></select></div><div id="sv-contract-detail" aria-live="polite"></div><button class="btn" id="sv-contract-retry" type="button" hidden>إعادة تحميل العقود</button></fieldset>' +
       '<div class="field"><label>سعر الخدمة (بدون مستلزمات)</label><input id="sv-price" type="number" min="0" step="any" value="' + (service.base_price != null ? service.base_price : "") + '"></div>' +
       '<div class="field"><label>هامش الربح %</label><input id="sv-margin" type="number" min="0" step="any" value="' + (service.profit_margin_percent != null ? service.profit_margin_percent : "") + '"></div>' +
@@ -467,6 +473,7 @@
       var patch = {
         id: service.id,
         name: name,
+        category: backdrop.querySelector("#sv-category").value.trim() || null,
         base_price: num(document.getElementById("sv-price").value),
         profit_margin_percent: num(document.getElementById("sv-margin").value),
         supplies_used: cleanLines,
