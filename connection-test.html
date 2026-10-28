@@ -3,40 +3,225 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>اختبار اتصال SWNW</title>
+<meta name="color-scheme" content="light">
+<title>تشخيص النظام — SWNW</title>
 <style>
-body{font-family:Arial,sans-serif;background:#f4f7fb;margin:0;padding:24px;color:#172033}main{max-width:640px;margin:auto;background:#fff;border:1px solid #e4e9f2;border-radius:18px;padding:22px;box-shadow:0 10px 30px rgba(0,0,0,.05)}h1{font-size:24px;margin:0 0 10px}.muted{color:#6b7280}.row{border:1px solid #e5e7eb;border-radius:14px;padding:14px;margin-top:12px}.ok{background:#ecfdf3;border-color:#bbf7d0}.bad{background:#fff1f2;border-color:#fecdd3}.wait{background:#fffbeb;border-color:#fde68a}button,a.btn{display:inline-block;margin-top:14px;padding:12px 16px;border-radius:12px;border:0;background:#0f3a8d;color:#fff;text-decoration:none;font-weight:700;cursor:pointer}code{direction:ltr;display:inline-block;font-size:12px;word-break:break-all}</style>
+:root{--blue:#0f3a8d;--blue2:#174db8;--ink:#172033;--muted:#667085;--bg:#f4f7fb;--line:#e5eaf2;--ok:#067647;--okbg:#ecfdf3;--warn:#b54708;--warnbg:#fffaeb;--bad:#b42318;--badbg:#fff1f2;--card:#fff}
+*{box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Tahoma,Arial,sans-serif;background:var(--bg);margin:0;color:var(--ink)}
+main{max-width:920px;margin:0 auto;padding:24px 16px 48px}.hero{background:linear-gradient(135deg,#fff,#f8fbff);border:1px solid var(--line);border-radius:24px;padding:22px;box-shadow:0 12px 34px rgba(15,58,141,.06)}
+.top{display:flex;align-items:flex-start;justify-content:space-between;gap:18px}.eyebrow{font-size:13px;color:var(--blue);font-weight:800;margin-bottom:6px}h1{font-size:28px;margin:0 0 8px}.muted{color:var(--muted);line-height:1.7;margin:0}
+.badge{min-width:145px;text-align:center;border-radius:16px;padding:12px 14px;font-weight:800;background:#eef4ff;color:var(--blue)}.badge.ok{background:var(--okbg);color:var(--ok)}.badge.warn{background:var(--warnbg);color:var(--warn)}.badge.bad{background:var(--badbg);color:var(--bad)}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}button,a.btn{appearance:none;border:0;border-radius:12px;padding:11px 15px;font:inherit;font-weight:750;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:7px}
+.primary{background:var(--blue);color:#fff}.secondary{background:#fff;color:var(--blue);border:1px solid #cfd8e8}.ghost{background:#eef4ff;color:var(--blue)}
+.meta{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:16px}.meta div{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px}.meta b{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}.meta span{font-size:13px;word-break:break-word}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:18px}.test{background:var(--card);border:1px solid var(--line);border-radius:17px;padding:15px;min-height:142px}.test-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.test h2{font-size:16px;margin:0}.status{font-size:12px;font-weight:800;border-radius:999px;padding:5px 9px;background:#f2f4f7;color:#475467;white-space:nowrap}.test.ok{border-color:#b7ebcd}.test.ok .status{background:var(--okbg);color:var(--ok)}.test.warn{border-color:#fedf89}.test.warn .status{background:var(--warnbg);color:var(--warn)}.test.bad{border-color:#fecdca}.test.bad .status{background:var(--badbg);color:var(--bad)}
+.detail{color:var(--muted);font-size:13px;line-height:1.65;margin-top:10px}.latency{font-size:12px;color:#475467;margin-top:8px}.bar{height:6px;border-radius:99px;background:#eef2f6;overflow:hidden;margin-top:10px}.bar i{display:block;height:100%;width:0;background:var(--blue);transition:width .25s}
+.panel{margin-top:16px;background:#fff;border:1px solid var(--line);border-radius:18px;padding:17px}.panel h2{font-size:18px;margin:0 0 8px}.diagnosis{font-weight:800;font-size:16px;margin-bottom:8px}.steps{margin:8px 0 0;padding:0 20px 0 0;color:#344054;line-height:1.85}.privacy{font-size:12px;color:var(--muted);margin-top:10px}
+.report{width:100%;min-height:200px;border:1px solid var(--line);border-radius:12px;padding:12px;background:#f8fafc;color:#344054;font:12px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;direction:ltr;text-align:left;resize:vertical}
+.small{font-size:12px}.hidden{display:none!important}
+@media(max-width:700px){main{padding:12px 10px 32px}.top{display:block}.badge{margin-top:14px;width:100%}.grid{grid-template-columns:1fr}.meta{grid-template-columns:1fr 1fr}h1{font-size:24px}.actions button,.actions a{flex:1 1 45%}}
+</style>
 </head>
-<body><main>
-<h1>اختبار اتصال الداشبورد</h1>
-<p class="muted">الصفحة دي خفيفة جدًا وبتختبر GitHub Pages وخادم Supabase مباشرة من جهازك.</p>
-<div id="github" class="row ok">✅ GitHub Pages يعمل — الصفحة وصلت لجهازك.</div>
-<div id="supabase" class="row wait">⏳ جاري اختبار الاتصال بخادم Supabase…</div>
-<div id="details" class="row" style="display:none"></div>
-<button id="retry">إعادة الاختبار</button>
-<a class="btn" href="./">الرجوع للداشبورد</a>
+<body>
+<main>
+<section class="hero">
+  <div class="top">
+    <div>
+      <div class="eyebrow">SWNW SYSTEM DIAGNOSTICS</div>
+      <h1>تشخيص النظام</h1>
+      <p class="muted">فحص مستقل وخفيف يحدد هل العطل من الجهاز أو الشبكة أو GitHub Pages أو خدمات Supabase أو ملفات التحميل الخارجية.</p>
+    </div>
+    <div id="overall" class="badge">جاهز للفحص</div>
+  </div>
+  <div class="actions">
+    <button id="run" class="primary">🩺 تشغيل الفحص الكامل</button>
+    <button id="copy" class="secondary" disabled>📋 نسخ تقرير التشخيص</button>
+    <button id="download" class="secondary" disabled>⬇️ حفظ التقرير</button>
+    <a class="btn ghost" href="./">↩ الرجوع للداشبورد</a>
+  </div>
+  <div class="meta">
+    <div><b>حالة الإنترنت</b><span id="online">—</span></div>
+    <div><b>المتصفح</b><span id="browser">—</span></div>
+    <div><b>نوع الشبكة</b><span id="network">—</span></div>
+    <div><b>وقت الفحص</b><span id="when">—</span></div>
+  </div>
+</section>
+
+<section class="grid" id="tests">
+  <article class="test" data-id="pages"><div class="test-head"><h2>GitHub Pages</h2><span class="status">لم يبدأ</span></div><div class="detail">يتأكد أن موقع الداشبورد نفسه يصل لجهازك.</div><div class="latency"></div><div class="bar"><i></i></div></article>
+  <article class="test" data-id="asset"><div class="test-head"><h2>ملفات الداشبورد</h2><span class="status">لم يبدأ</span></div><div class="detail">يفحص تحميل ملف JavaScript فعلي من المشروع بدون الاعتماد على الكاش.</div><div class="latency"></div><div class="bar"><i></i></div></article>
+  <article class="test" data-id="supabase-auth"><div class="test-head"><h2>Supabase — Auth</h2><span class="status">لم يبدأ</span></div><div class="detail">يفحص الوصول إلى خدمة تسجيل الدخول، بدون إرسال بريد أو كلمة سر.</div><div class="latency"></div><div class="bar"><i></i></div></article>
+  <article class="test" data-id="supabase-api"><div class="test-head"><h2>Supabase — API</h2><span class="status">لم يبدأ</span></div><div class="detail">يفحص الوصول إلى واجهة البيانات. أي استجابة HTTP تعني أن الطريق إلى الخادم يعمل.</div><div class="latency"></div><div class="bar"><i></i></div></article>
+  <article class="test" data-id="jsdelivr"><div class="test-head"><h2>مكتبة Supabase الخارجية</h2><span class="status">لم يبدأ</span></div><div class="detail">يفحص jsDelivr؛ الداشبورد يعتمد عليه لتحميل مكتبة Supabase في البداية.</div><div class="latency"></div><div class="bar"><i></i></div></article>
+  <article class="test" data-id="cdnjs"><div class="test-head"><h2>مكتبة Excel الخارجية</h2><span class="status">لم يبدأ</span></div><div class="detail">يفحص cdnjs؛ حجب الـCDN قد يبطئ فتح الداشبورد حتى لو Supabase يعمل.</div><div class="latency"></div><div class="bar"><i></i></div></article>
+  <article class="test" data-id="drive"><div class="test-head"><h2>Google Apps Script</h2><span class="status">لم يبدأ</span></div><div class="detail">يفحص إمكانية الوصول إلى جسر Google Drive المستخدم في الأرشيف والملفات.</div><div class="latency"></div><div class="bar"><i></i></div></article>
+  <article class="test" data-id="storage"><div class="test-head"><h2>تخزين المتصفح</h2><span class="status">لم يبدأ</span></div><div class="detail">يتأكد أن Local Storage متاح للجلسات والإعدادات. لا يقرأ القيم المخزنة.</div><div class="latency"></div><div class="bar"><i></i></div></article>
+</section>
+
+<section id="advice" class="panel">
+  <h2>النتيجة والتوصية</h2>
+  <div id="diagnosis" class="diagnosis">شغّل الفحص الكامل للحصول على تشخيص.</div>
+  <ol id="steps" class="steps"></ol>
+  <div class="privacy">🔒 التقرير لا يحتوي على كلمة السر أو Tokens أو مفاتيح API أو محتوى Local Storage. بيانات المتصفح المضمنة عامة ومفيدة للتشخيص فقط.</div>
+</section>
+
+<section class="panel">
+  <h2>تقرير قابل للمشاركة</h2>
+  <p class="muted small">انسخه وأرسله للدعم أو ضعه في الشات بدل إرسال صور متعددة.</p>
+  <textarea id="report" class="report" readonly placeholder="سيظهر التقرير هنا بعد الفحص."></textarea>
+</section>
+
 <script>
 (function(){
-  var endpoint='https://uuijfbpgvtdxgaosqpxo.supabase.co/auth/v1/health';
-  var box=document.getElementById('supabase'),details=document.getElementById('details');
-  async function run(){
-    box.className='row wait'; box.textContent='⏳ جاري اختبار الاتصال بخادم Supabase…'; details.style.display='none';
-    var controller=new AbortController(); var timer=setTimeout(function(){controller.abort();},8000);
-    var started=performance.now();
-    try{
-      var r=await fetch(endpoint,{method:'GET',cache:'no-store',signal:controller.signal});
-      clearTimeout(timer);
-      var ms=Math.round(performance.now()-started);
-      box.className='row ok'; box.textContent='✅ الاتصال بـ Supabase ناجح — استجابة '+r.status+' خلال '+ms+' ms';
-      details.style.display='block'; details.innerHTML='<b>النتيجة:</b> المشكلة ليست حظرًا للشبكة. ارجع للداشبورد وجرب الدخول مرة أخرى.<br><code>'+endpoint+'</code>';
-    }catch(e){
-      clearTimeout(timer);
-      var ms=Math.round(performance.now()-started);
-      box.className='row bad'; box.textContent='❌ الجهاز لم يستطع الوصول إلى Supabase';
-      details.style.display='block'; details.innerHTML='<b>الخطأ:</b> '+String(e&&e.name||'Error')+' — '+String(e&&e.message||e)+'<br><b>الزمن:</b> '+ms+' ms<br><br>ده معناه إن الطلب اتوقف قبل خادم Supabase. جرّب شبكة مختلفة/Hotspot أو أوقف VPN/Content Filter، ثم أعد الاختبار.<br><code>'+endpoint+'</code>';
-    }
+  "use strict";
+  var SUPABASE="https://uuijfbpgvtdxgaosqpxo.supabase.co";
+  var DRIVE="https://script.google.com/macros/s/AKfycbzEs73BE101-gIlSx_qwdF625nSalQ2i6mob7mGqH3oN4x40NlZoowjNta3KtKaXYjTYA/exec";
+  var results={};
+  var els={
+    overall:document.getElementById("overall"), report:document.getElementById("report"),
+    diagnosis:document.getElementById("diagnosis"), steps:document.getElementById("steps"),
+    copy:document.getElementById("copy"), download:document.getElementById("download")
+  };
+  function now(){return new Date().toLocaleString("ar-EG");}
+  function browserName(){
+    var ua=navigator.userAgent||"";
+    if(/Firefox\//.test(ua))return "Firefox "+((ua.match(/Firefox\/([\d.]+)/)||[])[1]||"");
+    if(/Edg\//.test(ua))return "Edge "+((ua.match(/Edg\/([\d.]+)/)||[])[1]||"");
+    if(/Chrome\//.test(ua))return "Chrome "+((ua.match(/Chrome\/([\d.]+)/)||[])[1]||"");
+    if(/Safari\//.test(ua))return "Safari "+((ua.match(/Version\/([\d.]+)/)||[])[1]||"");
+    return "متصفح غير محدد";
   }
-  document.getElementById('retry').onclick=run; run();
+  function netInfo(){
+    var c=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
+    if(!c)return "غير متاح من المتصفح";
+    var parts=[]; if(c.effectiveType)parts.push(c.effectiveType); if(c.downlink)parts.push(c.downlink+" Mbps"); if(c.rtt)parts.push("RTT "+c.rtt+"ms");
+    return parts.join(" • ")||"غير متاح";
+  }
+  function card(id){return document.querySelector('.test[data-id="'+id+'"]');}
+  function setCard(id,state,title,detail,ms){
+    var el=card(id); if(!el)return;
+    el.className="test "+state;
+    el.querySelector(".status").textContent=title;
+    if(detail)el.querySelector(".detail").textContent=detail;
+    el.querySelector(".latency").textContent=typeof ms==="number" ? "زمن الاستجابة: "+ms+" ms" : "";
+    var width=typeof ms!=="number"?0:(ms<250?25:ms<700?50:ms<1500?72:100);
+    el.querySelector(".bar i").style.width=width+"%";
+  }
+  function errText(e){return String((e&&e.name?e.name+": ":"")+(e&&e.message?e.message:e||"خطأ غير معروف")).replace(/\s+/g," ").slice(0,180);}
+  async function timedFetch(url,opt,timeout){
+    var ctl=new AbortController(),timer=setTimeout(function(){ctl.abort();},timeout||8000),started=performance.now();
+    try{
+      var r=await fetch(url,Object.assign({cache:"no-store",signal:ctl.signal},opt||{}));
+      if(r.body&&r.body.cancel)try{r.body.cancel();}catch(_){}
+      return {ok:true,status:r.status,type:r.type,ms:Math.round(performance.now()-started)};
+    }catch(e){
+      return {ok:false,error:errText(e),ms:Math.round(performance.now()-started)};
+    }finally{clearTimeout(timer);}
+  }
+  async function testHttp(id,url,options){
+    setCard(id,"","جاري…","يتم الاختبار الآن.",null);
+    var r=await timedFetch(url,options&&options.fetch,options&&options.timeout);
+    var reachable=r.ok && (!options || !options.require2xx || (r.status>=200&&r.status<400));
+    results[id]={state:reachable?"ok":"bad",ms:r.ms,status:r.status||null,error:r.error||null,note:options&&options.note||""};
+    if(reachable){
+      var msg=(options&&options.okText)||"الاتصال ناجح.";
+      if(r.status)msg+=" HTTP "+r.status+".";
+      setCard(id,"ok","سليم",msg,r.ms);
+    }else{
+      setCard(id,"bad","فشل",(options&&options.failText)||("تعذر الوصول: "+(r.error||("HTTP "+r.status))),r.ms);
+    }
+    return results[id];
+  }
+  function testStorage(){
+    var started=performance.now(),key="__swnw_diag_"+Date.now();
+    try{localStorage.setItem(key,"1");localStorage.removeItem(key);var ms=Math.round(performance.now()-started);results.storage={state:"ok",ms:ms};setCard("storage","ok","سليم","Local Storage يعمل. لم تتم قراءة أي بيانات محفوظة.",ms);}
+    catch(e){var ms=Math.round(performance.now()-started);results.storage={state:"bad",ms:ms,error:errText(e)};setCard("storage","bad","فشل","المتصفح يمنع Local Storage: "+errText(e),ms);}
+  }
+  function buildDiagnosis(){
+    var bad=Object.keys(results).filter(function(k){return results[k].state==="bad";});
+    var warn=Object.keys(results).filter(function(k){return results[k].state==="warn";});
+    var sbad=bad.indexOf("supabase-auth")>=0||bad.indexOf("supabase-api")>=0;
+    var ghbad=bad.indexOf("pages")>=0||bad.indexOf("asset")>=0;
+    var cdnbad=bad.indexOf("jsdelivr")>=0||bad.indexOf("cdnjs")>=0;
+    var text,steps=[];
+    if(!bad.length&&!warn.length){
+      text="كل الاختبارات الأساسية سليمة.";
+      steps=["لو الداشبورد ما زال يظهر خطأ، أعد فتحه وجرب تسجيل الدخول ثم شارك تقرير التشخيص هنا.","لو المشكلة متقطعة، أعد الفحص وقت ظهور الخطأ للمقارنة."];
+      els.overall.className="badge ok";els.overall.textContent="النظام سليم";
+    }else if(sbad&&!ghbad){
+      text="الموقع يصل لجهازك، لكن نطاق Supabase غير قابل للوصول من هذا الجهاز أو الشبكة.";
+      steps=["جرّب Hotspot من الموبايل. لو نجح، فالمشكلة من شبكة الـWi‑Fi أو DNS.","أوقف مؤقتًا VPN / Content Filter / Web Shield إن كان مفعّلًا ثم أعد الاختبار.","على Mac يمكن تجربة DNS عام مثل 1.1.1.1 أو 8.8.8.8 ثم إعادة الاختبار.","بعد أي تغيير شغّل الفحص مرة أخرى قبل تجربة تسجيل الدخول."];
+      els.overall.className="badge bad";els.overall.textContent="مشكلة اتصال Supabase";
+    }else if(ghbad){
+      text="فيه مشكلة في الوصول إلى GitHub Pages أو ملفات المشروع نفسها.";
+      steps=["جرّب شبكة مختلفة أو Hotspot.","أعد تحميل الصفحة بعد التأكد أن github.io غير محجوب.","لو GitHub Pages فقط بطيء، شارك التقرير لمراجعة زمن تحميل الملفات."];
+      els.overall.className="badge bad";els.overall.textContent="مشكلة تحميل الموقع";
+    }else if(cdnbad){
+      text="الموقع وSupabase يعملان، لكن واحدة أو أكثر من مكتبات CDN الخارجية لا تصل للجهاز.";
+      steps=["جرّب شبكة مختلفة أو أوقف فلتر المحتوى مؤقتًا.","ده قد يسبب صفحة بيضاء أو تحميل بطيء قبل ظهور شاشة الدخول.","شارك التقرير لتحديد المكتبة المحجوبة."];
+      els.overall.className="badge warn";els.overall.textContent="مشكلة مكتبات خارجية";
+    }else{
+      text="فيه عطل جزئي يحتاج مراجعة النتيجة التفصيلية.";
+      steps=["انسخ تقرير التشخيص وأرسله للدعم.","أعد الفحص مرة ثانية للتأكد إن الخطأ ثابت وليس تقطيعًا لحظيًا."];
+      els.overall.className="badge warn";els.overall.textContent="عطل جزئي";
+    }
+    els.diagnosis.textContent=text;
+    els.steps.innerHTML=steps.map(function(s){return "<li>"+s+"</li>";}).join("");
+  }
+  function buildReport(){
+    var lines=[
+      "SWNW SYSTEM DIAGNOSTICS",
+      "Time: "+new Date().toISOString(),
+      "Page: "+location.origin+location.pathname,
+      "Browser: "+browserName(),
+      "Platform: "+(navigator.platform||"unknown"),
+      "Online: "+String(navigator.onLine),
+      "Network: "+netInfo(),
+      "Language: "+(navigator.language||"unknown"),
+      ""
+    ];
+    Object.keys(results).forEach(function(k){
+      var r=results[k]; lines.push(k+": "+r.state.toUpperCase()+" | "+(r.ms!=null?r.ms+"ms":"n/a")+(r.status?" | HTTP "+r.status:"")+(r.error?" | "+r.error:""));
+    });
+    lines.push("","Diagnosis: "+els.diagnosis.textContent,"Security: no passwords, tokens, API keys, or local-storage values included.");
+    els.report.value=lines.join("\n");els.copy.disabled=false;els.download.disabled=false;
+  }
+  async function run(){
+    results={}; els.copy.disabled=true;els.download.disabled=true;els.report.value="";
+    els.overall.className="badge";els.overall.textContent="جاري الفحص…";
+    document.getElementById("when").textContent=now();
+    var stamp=Date.now();
+    var jobs=[
+      testHttp("pages","./connection-test.html?diag="+stamp,{require2xx:true,okText:"GitHub Pages يعمل والصفحة تصل بدون الاعتماد على الكاش.",failText:"تعذر إعادة تحميل صفحة التشخيص من GitHub Pages."}),
+      testHttp("asset","./assets/js/auth.js?diag="+stamp,{require2xx:true,okText:"ملف JavaScript من المشروع يُحمّل بنجاح.",failText:"تعذر تحميل ملف JavaScript أساسي من المشروع."}),
+      testHttp("supabase-auth",SUPABASE+"/auth/v1/health?diag="+stamp,{require2xx:true,okText:"خدمة Supabase Auth متاحة.",failText:"الجهاز لم يستطع الوصول إلى Supabase Auth."}),
+      testHttp("supabase-api",SUPABASE+"/rest/v1/?diag="+stamp,{require2xx:false,okText:"خادم Supabase REST قابل للوصول.",failText:"الجهاز لم يستطع الوصول إلى Supabase REST."}),
+      testHttp("jsdelivr","https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js?diag="+stamp,{require2xx:true,okText:"jsDelivr متاح ومكتبة Supabase قابلة للتحميل.",failText:"تعذر تحميل مكتبة Supabase من jsDelivr."}),
+      testHttp("cdnjs","https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js?diag="+stamp,{require2xx:true,okText:"cdnjs متاح.",failText:"تعذر الوصول إلى cdnjs."}),
+      testHttp("drive",DRIVE+"?diag=1&t="+stamp,{require2xx:false,fetch:{mode:"no-cors"},okText:"تم الوصول إلى Google Apps Script من الجهاز.",failText:"تعذر الوصول إلى Google Apps Script."})
+    ];
+    testStorage();
+    await Promise.all(jobs);
+    buildDiagnosis();buildReport();
+  }
+  document.getElementById("online").textContent=navigator.onLine?"متصل":"غير متصل";
+  document.getElementById("browser").textContent=browserName();
+  document.getElementById("network").textContent=netInfo();
+  document.getElementById("when").textContent=now();
+  window.addEventListener("online",function(){document.getElementById("online").textContent="متصل";});
+  window.addEventListener("offline",function(){document.getElementById("online").textContent="غير متصل";});
+  document.getElementById("run").onclick=run;
+  els.copy.onclick=async function(){
+    try{await navigator.clipboard.writeText(els.report.value);var old=this.textContent;this.textContent="✅ تم النسخ";setTimeout(function(){els.copy.textContent=old;},1500);}
+    catch(e){els.report.focus();els.report.select();document.execCommand("copy");}
+  };
+  els.download.onclick=function(){
+    var blob=new Blob([els.report.value],{type:"text/plain;charset=utf-8"}),a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);a.download="swnw-diagnostics-"+new Date().toISOString().replace(/[:.]/g,"-")+".txt";document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(a.href);},1000);
+  };
+  run();
 })();
 </script>
-</main></body></html>
+</main>
+</body>
+</html>
