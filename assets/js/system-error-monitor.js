@@ -8,7 +8,7 @@
   var MAX_ITEMS = 24;
   var STATUS_WINDOW = 24 * 60 * 60 * 1000;
   var lastAction = null, lastFingerprint = "", lastFingerprintAt = 0;
-  var requestVersion = 0, errorVersion = 0, probeTimer = null, probeObserver = null;
+  var foregroundRequestVersion = 0, errorVersion = 0, probeTimer = null, probeObserver = null;
 
   function cleanText(value, max) {
     var s = String(value == null ? "" : value);
@@ -48,17 +48,17 @@
   function actionLabel(el){if(!el)return"";return cleanText(el.getAttribute("aria-label")||el.getAttribute("title")||el.textContent||el.value||"",100);}
   function startActionProbe(target,action){
     if(probeTimer)clearTimeout(probeTimer);if(probeObserver)probeObserver.disconnect();
-    var changed=false,r0=requestVersion,e0=errorVersion,root=document.getElementById("app-root")||document.body;
+    var changed=false,r0=foregroundRequestVersion,e0=errorVersion,root=document.getElementById("app-root")||document.body;
     probeObserver=new MutationObserver(function(){changed=true;});
     if(root)probeObserver.observe(root,{childList:true,subtree:true,attributes:true,attributeFilter:["class","hidden","disabled","aria-expanded"]});
-    probeTimer=setTimeout(function(){if(probeObserver)probeObserver.disconnect();probeObserver=null;probeTimer=null;if(errorVersion!==e0)return;if(requestVersion!==r0||changed){resolveAction(action);return;}if(target.isConnected&&!target.disabled)record("noop","No visible response after action: "+action,{kind:"noop"});},3200);
+    probeTimer=setTimeout(function(){if(probeObserver)probeObserver.disconnect();probeObserver=null;probeTimer=null;if(errorVersion!==e0)return;if(foregroundRequestVersion!==r0||changed){resolveAction(action);return;}if(target.isConnected&&!target.disabled)record("noop","No visible response after action: "+action,{kind:"noop"});},3200);
   }
 
   document.addEventListener("click",function(event){var target=event.target&&event.target.closest?event.target.closest("button,[role='button'],input[type='submit'],a"):null;if(!target)return;if(target.closest("#swnw-error-diagnostic-hint")||target.id==="system-diagnostics-toggle")return;var label=actionLabel(target);if(!label)return;lastAction={label:label,ts:Date.now()};if(target.tagName==="A"&&target.getAttribute("href"))return;startActionProbe(target,label);},true);
   window.addEventListener("error",function(event){var m=event&&(event.message||(event.error&&event.error.message));if(m)record("javascript",m,{});});
   window.addEventListener("unhandledrejection",function(event){var r=event&&event.reason;record("promise",r&&r.message?r.message:r,{});});
 
-  if(window.fetch&&!window.fetch.__swnwErrorMonitorWrapped){var nativeFetch=window.fetch;var wrapped=function(input,init){requestVersion++;var method=(init&&init.method)||"GET",endpoint="";try{var u=new URL(typeof input==="string"?input:input.url,location.href);endpoint=u.origin+u.pathname;}catch(_){}return nativeFetch.apply(this,arguments).then(function(res){if(res&&res.ok)resolveEndpoint(endpoint);else if(res&&res.status>=400)record("http","HTTP "+res.status+" أثناء "+method,{status:res.status,endpoint:endpoint});return res;}).catch(function(err){record("network",err&&err.message?err.message:err,{endpoint:endpoint});throw err;});};wrapped.__swnwErrorMonitorWrapped=true;window.fetch=wrapped;}
+  if(window.fetch&&!window.fetch.__swnwErrorMonitorWrapped){var nativeFetch=window.fetch;var wrapped=function(input,init){var method=(init&&init.method)||"GET",endpoint="",actionAtRequest=lastAction&&Date.now()-lastAction.ts<1200?lastAction.label:"";if(actionAtRequest)foregroundRequestVersion++;try{var u=new URL(typeof input==="string"?input:input.url,location.href);endpoint=u.origin+u.pathname;}catch(_){}return nativeFetch.apply(this,arguments).then(function(res){if(res&&res.ok){resolveEndpoint(endpoint);if(actionAtRequest)resolveAction(actionAtRequest);}else if(res&&res.status>=400)record("http","HTTP "+res.status+" أثناء "+method,{status:res.status,endpoint:endpoint});return res;}).catch(function(err){record("network",err&&err.message?err.message:err,{endpoint:endpoint});throw err;});};wrapped.__swnwErrorMonitorWrapped=true;window.fetch=wrapped;}
   function patchToast(){var T=window.SSMPDToast;if(!T||typeof T.show!=="function"||T.show.__swnwErrorMonitorWrapped)return false;var original=T.show,wrapped=function(message,type){if(String(type||"").toLowerCase()==="error")record("toast",message,{});return original.apply(this,arguments);};wrapped.__swnwErrorMonitorWrapped=true;T.show=wrapped;return true;}
   var tries=0;(function waitToast(){tries++;if(patchToast()||tries>=24)return;setTimeout(waitToast,250);})();
   window.addEventListener("storage",function(e){if(e.key===STORAGE_KEY)emitStatus();});
