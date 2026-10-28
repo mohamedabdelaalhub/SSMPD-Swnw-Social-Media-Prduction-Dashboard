@@ -94,7 +94,8 @@
   function renderLeadCard(lead) {
     var fields = lead.missing_fields || [];
     var name = String(lead.customer_name || "").trim();
-    var displayName = fields.indexOf("name") >= 0 ? (name && name !== "بدون اسم" ? name + ' <span style="color:#b54708;font-size:11px;">(غير ثلاثي)</span>' : "اسم غير مكتمل") : name;
+    var safeName = esc(name);
+    var displayName = fields.indexOf("name") >= 0 ? (name && name !== "بدون اسم" ? safeName + ' <span style="color:#b54708;font-size:11px;">(غير ثلاثي)</span>' : "اسم غير مكتمل") : (safeName || "اسم غير مكتمل");
     var phone = lead.phone_raw || lead.phone_normalized || "—";
     var actionLabel = lead.current_status === "missing_data" ? "استكمال البيانات" : "فتح واستكمال";
     return '<article class="swnw-md-card" data-missing-lead-card="' + esc(lead.id) + '">' +
