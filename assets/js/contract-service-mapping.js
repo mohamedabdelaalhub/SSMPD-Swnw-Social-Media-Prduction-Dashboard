@@ -7,7 +7,7 @@ function toast(msg){if(w.SSMPDToast&&w.SSMPDToast.show)w.SSMPDToast.show(msg);el
 async function rpc(name,args){var r=await w.SSMPDDb.client.rpc(name,args||{});if(r.error)throw Error(r.error.message||'تعذر تنفيذ العملية');return r.data;}
 function serviceName(data,id){var s=(data.services||[]).find(function(x){return x.id===id;});return s?s.name:'خدمة غير معروفة';}
 function sectionName(sections,id){if(!id)return 'بدون قسم';var s=sections.find(function(x){return x.id===id;});return s?s.name:'بدون قسم';}
-function isEditable(l){var a=w.SSMPDAuth&&w.SSMPDAuth.currentAdmin;return !!(a&&l&&l.status==='draft'&&l.created_by===a.id);}
+function isEditable(l){var a=w.SSMPDAuth&&w.SSMPDAuth.currentAdmin;return !!(a&&l&&l.status==='draft'&&(l.can_edit!==undefined?l.can_edit:l.created_by===a.id));}
 
 async function open(listId){
   var origin=document.activeElement,priceRoot=origin&&origin.closest?origin.closest('.wp'):null,refreshHost=priceRoot?priceRoot.parentElement:null,changed=false,data=null;

@@ -113,6 +113,6 @@ window.SSMPD_CONFIG = {
     loadOnce("__SWNWTaskStageNavigation","assets/js/task-stage-navigation.js?v=task-stage-nav-20261027-2","task-stage-navigation");
     loadOnce("__SWNWLeadsArchiveGrantRuntimeV3","assets/js/leads-archive-permission-column.js?v=leads-archive-permission-20261028-1","leads-archive-permission");
     loadOnce("__SWNWLeadsMissingDataEnhancement","assets/js/leads-missing-data-enhancement.js?v=leads-missing-data-20261028-2","leads-missing-data");
-    loadOnce("__SWNWContractServiceMapping","assets/js/contract-service-mapping.js?v=contract-service-mapping-20261028-1","contract-service-mapping");
+    loadOnce("__SWNWContractServiceMapping","assets/js/contract-service-mapping.js?v=shared-tariffs-20261029-1","contract-service-mapping");
   });
 })();
