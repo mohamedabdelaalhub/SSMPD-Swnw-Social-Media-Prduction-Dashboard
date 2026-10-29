@@ -1,0 +1,31 @@
+const boot=require('./clinic-finance.cjs'),fs=require('fs');
+module.exports=async()=>{
+ const b=await boot(['clinic_doctor_settlements','clinic_supplier_finance','clinic_bank_insurance','clinic_payroll_assets_tax','clinic_opening_reports','clinic_booking_advances','clinic_legacy_assets','clinic_register_directions_payments','inventory_accounting_links']);
+ await b.db.exec(`
+ alter table admins add column has_price_lists_access boolean default false;
+ create function can_manage_contracting_entities() returns boolean language sql stable as $$select has_role('super_admin') or has_role('general_manager') or has_role('contract_manager')$$;
+ create table patients(id uuid primary key default gen_random_uuid(),full_name text,patient_code text,medical_record_no text);
+ create table pricing_services(id uuid primary key default gen_random_uuid(),name text,category text,base_price numeric,supplies_used jsonb default '[]',profit_margin_percent numeric default 0,active boolean default true);
+ create table pricing_supplies(id uuid primary key default gen_random_uuid(),name text,package_price numeric,units_per_package numeric,active boolean default true);
+ create table contracting_entities(id uuid primary key default gen_random_uuid(),name text,category text,receivable_account_code text);
+ create table contracting_entity_contracts(id uuid primary key default gen_random_uuid(),entity_id uuid,status text,contract_number text,start_date date,end_date date,discount_percent numeric default 0,booking_billing_kind text default 'discount',booking_service_ids uuid[],created_at timestamptz default now());
+ create table insurance_plans(id uuid primary key default gen_random_uuid(),contract_id uuid,name text,code text,price_list_id uuid,copay_type text,copay_value numeric,active boolean default true,valid_from date,valid_to date);
+ create table insurance_plan_service_rules(plan_id uuid,service_id uuid,copay_type text,copay_value numeric);
+ create table patient_visits(id uuid primary key default gen_random_uuid(),patient_id uuid,contract_id uuid,insurance_plan_id uuid,visit_date date,visit_number text,doctor_name text,specialty text);
+ create table contract_patient_links(contract_id uuid,patient_id uuid,member_reference text);
+ alter table clinic_finance.invoices add column if not exists visit_ref text;
+ alter table clinic_finance.shifts add column if not exists ended_at timestamptz;
+ alter table clinic_finance.payments add column if not exists patient_file_ref text;
+ alter table clinic_finance.payments add column if not exists visit_ref text;
+ alter table clinic_finance.insurance_claims add column contract_id uuid,add column insurance_plan_id uuid,add column service_id uuid,add column center_price numeric,add column contracted_price numeric,add column contractual_discount numeric,add column patient_copay numeric,add column receivable_account_code text,add column collected_amount numeric default 0,add column status text default 'submitted',add column updated_at timestamptz default now();
+ create table clinic_finance.insurance_claim_receipts(id uuid primary key default gen_random_uuid(),claim_id uuid,amount numeric,method text,shift_id uuid,reference text,created_by uuid,token uuid,created_at timestamptz default now(),unique(created_by,token));
+ `);
+ let prices=fs.readFileSync('supabase/migrations/20261024162707_price_lists_workspace.sql','utf8');
+ await b.db.exec(prices.slice(0,prices.indexOf('create function public.price_lists_workspace'))+'commit;');
+ let shared=fs.readFileSync('supabase/migrations/20261028215551_shared_price_references_and_list_permissions.sql','utf8');
+ let start=shared.indexOf('create or replace function clinic_prices.resolve_explicit_list');
+ await b.db.exec(shared.slice(start,shared.indexOf('end $$;',start)+7));
+ await b.db.exec(fs.readFileSync('tests/fixtures/entity-claims-existing-collection.sql','utf8'));
+ await b.db.exec('revoke all on function public.clinic_finance_collect_linked(uuid,uuid,text,numeric,text,uuid,text,text) from public;grant execute on function public.clinic_finance_collect_linked(uuid,uuid,text,numeric,text,uuid,text,text) to authenticated;');
+ return b;
+};

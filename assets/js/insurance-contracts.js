@@ -31,7 +31,7 @@
   function ensureBilling(){
     if(w.__SSMPDInsuranceBillingV1 || document.querySelector('script[data-insurance-billing-v1]')) return;
     var s=document.createElement('script');
-    s.src='assets/js/insurance-billing.js?v=insurance-billing-20261026-1';
+    s.src='assets/js/insurance-billing.js?v=entity-claims-20261029-1';
     s.async=false;
     s.dataset.insuranceBillingV1='1';
     document.head.appendChild(s);

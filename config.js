@@ -109,7 +109,7 @@ window.SSMPD_CONFIG = {
   afterAdminReady(function(){
     loadOnce("__SSMPDHomeWelcomeRedesign","assets/js/home-welcome-redesign.js?v=home-welcome-20261025-2","home-welcome");
     loadOnce("__SSMPDPerformanceV2","assets/js/employee-performance.js?v=performance-v2-20261025-3","performance-v2");
-    loadOnce("__SSMPDInsuranceContractsV1","assets/js/insurance-contracts.js?v=insurance-20261026-1","insurance");
+    loadOnce("__SSMPDInsuranceContractsV1","assets/js/insurance-contracts.js?v=entity-claims-20261029-1","insurance");
     loadOnce("__SWNWTaskStageNavigation","assets/js/task-stage-navigation.js?v=task-stage-nav-20261027-2","task-stage-navigation");
     loadOnce("__SWNWLeadsArchiveGrantRuntimeV3","assets/js/leads-archive-permission-column.js?v=leads-archive-permission-20261028-1","leads-archive-permission");
     loadOnce("__SWNWLeadsMissingDataEnhancement","assets/js/leads-missing-data-enhancement.js?v=leads-missing-data-20261028-2","leads-missing-data");
