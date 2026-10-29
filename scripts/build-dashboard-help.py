@@ -533,14 +533,18 @@ def norm(v):
 def canon(v):
  v=re.sub(r'\s*\([^)]*(?:اختياري|إن وجد|ان وجد)[^)]*\)','',v);v=re.sub(r'\s*(?:إن وجد|إن وجدت|اختياري)$','',v);return norm(v)
 def domain(f):
+ if f=='contract-marketing.js':return 'accounting'
  if f in ['render-patients.js','psychology-workspace.js'] or f.startswith('patient-'):return 'patients'
  if f.startswith('reception-') or f=='render-bookings.js':return 'reception_services'
  if f.startswith('inventory-') or f=='render-inventory.js':return 'inventory'
  if f=='accountant-workspace.js' or f.startswith(('finance-','ledger-')) or f=='render-accounting.js':return 'accounting'
  return {'navigation-ui.js':'home','comments.js':'comments','render-comments.js':'comments','app.js':'home','render-admin.js':'admin','render-leads.js':'leads','render-clinic-info.js':'clinic_info','render-contracting-entities.js':'contracting_entities','render-metaads.js':'metaads','render-mediabuyer.js':'mediabuyer','indicator-reports.js':'indicator_reports','render-tasks.js':'tasks','task-work.js':'tasks','render-summary.js':'summary','render-staffkpi.js':'staff_kpi','render-review.js':'review','render-publish.js':'publish'}.get(f,'production')
 def default_article(tab):return {'patients':'patient-records','reception_services':'booking-flow','inventory':'purchases','accounting':'ledger-guide','leads':'leads-guide','tasks':'tasks-guide','admin':'access','home':'personal','clinic_info':'chatbot','contracting_entities':'entities','metaads':'ads-guide','mediabuyer':'ads-guide','indicator_reports':'indicators','summary':'indicators','staff_kpi':'indicators','review':'content','publish':'content','production':'content'}.get(tab,'content')
+contract_help=json.loads(re.search(r"var fieldDescriptions=(.*);",pathlib.Path("assets/js/contract-marketing.js").read_text(encoding="utf-8")).group(1))
+
 def explain(row):
  label=row['label'];tab=domain(row['file'])
+ if row['file']=='contract-marketing.js' and label in contract_help:return contract_help[label],'entities'
  if label=='المصدر' and row['file']=='render-leads.js':return 'اختار القناة التي جاء منها الاستفسار أو الليد مثل فيسبوك أو واتساب وفق القائمة. سجل المصدر من الإفادة أو الدليل المتاح ولا تعتبره تتبع إعلان مؤكدًا بلا ربط.','leads-guide'
  if label=='المصدر' and row['file']=='reception-controls.js':return 'اختار قناة مصدر الحجز في إجراء الإسناد، ثم حدد دليل الإسناد ومرجعه. اختيار فيسبوك وحده لا يثبت أن الحجز جاء من إعلان بعينه.','booking-source'
  if label=='الوزن' and row['file']=='render-staffkpi.js':return 'أهمية المؤشر في مجموع النقاط من0 إلى10. الوزن0 يستبعد المؤشر من المتوسط؛ هذا ليس وزن جسم موظف أو مريض.','indicators'
@@ -561,6 +565,7 @@ def explain(row):
   if any(norm(label)==norm(k) for k in f['match'].split('|')):return f['text'],f['article']
  return None
 def tabs_for(tab,file):
+ if file=='contract-marketing.js':return ['accounting','contracting_entities']
  if file.startswith(('design-','video-','studio-')) or file in ['ai-clips.js','before-after-content.js','carousel-content.js','dina-content.js','doctor-content.js','reel-cover.js','workflow.js','content-ai.js','content-sources.js','content-rating.js','weekly-plan.js']:return ['production','review','design','publish','archive']
  if tab=='inventory':return ['inventory','accounting']
  if tab=='accounting':return ['accounting','booking_cash']
