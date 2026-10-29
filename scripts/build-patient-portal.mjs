@@ -6,8 +6,14 @@ export function buildPortal(source,output){
  source=path.resolve(source);output=path.resolve(output);
  if(output===source||source.startsWith(output+path.sep)||output.startsWith(path.join(source,'patient-portal')+path.sep))throw Error('Unsafe output path');
  if(fs.existsSync(output))throw Error('Output directory must be new');
- const context={window:{}};vm.createContext(context);vm.runInContext(fs.readFileSync(path.join(source,'config.js'),'utf8'),context,{timeout:1000});
- const config=context.window.SSMPD_CONFIG?.supabase;
+ // Capture the static configuration assignment, without running dashboard-only DOM loaders.
+ // The package deliberately exports only the public Supabase settings below.
+ const context={window:{}},captured={};const assigned={};
+ Object.defineProperty(context.window,'SSMPD_CONFIG',{set(value){captured.value=value;throw assigned;}});
+ vm.createContext(context);
+ try{vm.runInContext(fs.readFileSync(path.join(source,'config.js'),'utf8'),context,{timeout:1000});}
+ catch(error){if(error!==assigned)throw error;}
+ const config=captured.value?.supabase;
  if(!config?.url||!config?.anonKey||new URL(config.url).protocol!=='https:')throw Error('Missing public Supabase settings');
  if(!config.anonKey.startsWith('sb_publishable_')){
   let role;try{role=JSON.parse(Buffer.from(config.anonKey.split('.')[1],'base64url').toString()).role;}catch{}

@@ -3,7 +3,7 @@ import fs from 'node:fs';import os from 'node:os';import path from 'node:path';i
 const temp=fs.mkdtempSync(path.join(os.tmpdir(),'portal-package-'));const source=path.join(temp,'source');
 function put(file,text){fs.mkdirSync(path.dirname(path.join(source,file)),{recursive:true});fs.writeFileSync(path.join(source,file),text);}
 const key=role=>'x.'+Buffer.from(JSON.stringify({role})).toString('base64url')+'.x';
-put('config.js','window.SSMPD_CONFIG='+JSON.stringify({supabase:{url:'https://example.supabase.co',anonKey:key('anon')},privateSecret:'must-not-export'})+';');
+put('config.js','window.SSMPD_CONFIG='+JSON.stringify({supabase:{url:'https://example.supabase.co',anonKey:key('anon')},privateSecret:'must-not-export'})+';document.createElement("script");throw new Error("Dashboard loaders must not execute");');
 put('patient-portal/index.html','<html><head><link href="styles.css"><script src="../config.js"></script><script src="app.js"></script></head></html>');
 put('patient-portal/styles.css','');put('patient-portal/app.js','/* unchanged */');
 for(const f of ['assets/js/nutrition-view.js','assets/css/nutrition.css','assets/img/logo.svg','assets/img/mark.svg','assets/fonts/test.woff2','deploy/patient-portal.web.config'])put(f,'fixture');
