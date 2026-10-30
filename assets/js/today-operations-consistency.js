@@ -7,7 +7,7 @@ var installed=false,dirty=false;
 function loadCallsLayer(){
  if(window.__SWNWTodayOperationsCalls||document.querySelector('script[data-today-operations-calls]'))return;
  var s=document.createElement('script');
- s.src='assets/js/today-operations-calls.js?v=patient-journey-20261030-1';
+ s.src='assets/js/today-operations-calls.js?v=patient-journey-20261030-2';
  s.async=false;
  s.dataset.todayOperationsCalls='1';
  document.head.appendChild(s);
