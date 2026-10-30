@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>تسجيل الوصول — Swnw</title>
+<meta name="theme-color" content="#0b3b77">
+<style>
+:root{font-family:Arial,"Noto Sans Arabic",sans-serif;color:#172033;background:#f5f8fc}*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:20px;background:linear-gradient(180deg,#eef5ff,#f8fafc)}main{width:min(520px,100%);background:#fff;border:1px solid #dce5f1;border-radius:24px;padding:24px;box-shadow:0 14px 45px rgba(16,24,40,.09)}header{display:flex;align-items:center;gap:12px;margin-bottom:22px}.mark{width:48px;height:48px;border-radius:14px;background:#0b3b77;color:#fff;display:grid;place-items:center;font-weight:800;font-size:20px}h1{font-size:21px;margin:0}header p{margin:4px 0 0;color:#667085;font-size:13px}.card{display:grid;gap:12px}.hint{padding:12px;border-radius:12px;background:#f2f7ff;color:#344054;font-size:13px;line-height:1.7}.field{display:grid;gap:6px}.field span{font-size:13px;font-weight:700}.field input{width:100%;min-height:48px;border:1px solid #cfd8e6;border-radius:12px;padding:10px 12px;font-size:16px;direction:ltr;text-align:left}.btn{border:0;border-radius:12px;min-height:48px;padding:10px 14px;font-size:15px;font-weight:700;cursor:pointer;background:#eaf1fb;color:#15365f}.btn.primary{background:#0b3b77;color:#fff}.btn:disabled{opacity:.55;cursor:default}.status{min-height:24px;font-size:13px;line-height:1.7}.status.error{color:#b42318}.status.ok{color:#027a48}.choices{display:grid;gap:10px}.choice{border:1px solid #dce5f1;border-radius:14px;padding:13px;display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}.choice h3,.choice p{margin:0}.choice h3{font-size:14px}.choice p{font-size:12px;color:#667085;margin-top:4px}.success{text-align:center;padding:14px 0}.success .tick{width:64px;height:64px;border-radius:50%;display:grid;place-items:center;background:#ecfdf3;color:#027a48;margin:0 auto 14px;font-size:30px}.success h2{font-size:20px;margin:0 0 8px}.success p{color:#667085;line-height:1.7}.footer{margin-top:18px;padding-top:14px;border-top:1px solid #edf0f4;color:#667085;font-size:12px;text-align:center}@media(max-width:520px){body{padding:0;place-items:stretch}main{border-radius:0;min-height:100vh;border:0;padding:22px 18px}.choice{grid-template-columns:1fr}.choice .btn{width:100%}}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+</head>
+<body>
+<main>
+<header><div class="mark">S</div><div><h1>تسجيل الوصول</h1><p>مركز عيادات Swnw التخصصية — حدائق الأهرام</p></div></header>
+<div id="app"></div>
+<div class="footer">45ع شارع الخزان، حدائق الأهرام، الجيزة — أمام خزان المياه</div>
+</main>
+<script>
+(function(){
+'use strict';
+var SUPABASE_URL='https://uuijfbpgvtdxgaosqpxo.supabase.co';
+var SUPABASE_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJIUzI1NiIsInJlZiI6InV1aWpmYnBndnRkeGdhb3NxcHhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MDc3MDUsImV4cCI6MjEwMjQ4MzcwNX0.kIiSfXRG2SJtsP1v3GlllIhcxYP9sOEhdGk40tOhsNw';
+var db=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON,{auth:{persistSession:false,autoRefreshToken:false}}),app=document.getElementById('app'),params=new URLSearchParams(location.search),directToken=params.get('token'),phone='';
+function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function tm(v){return new Date(v).toLocaleTimeString('ar-EG-u-nu-latn',{timeZone:'Africa/Cairo',hour:'2-digit',minute:'2-digit'});}
+function status(msg,type){var el=app.querySelector('[data-status]');if(!el)return;el.className='status '+(type||'');el.textContent=msg||'';}
+function rpc(name,args){return db.rpc(name,args).then(function(r){if(r.error)throw r.error;return r.data;});}
+function geo(){return new Promise(function(resolve,reject){if(!navigator.geolocation){reject(Error('هذا الجهاز لا يدعم تحديد الموقع'));return;}navigator.geolocation.getCurrentPosition(function(p){resolve({lat:p.coords.latitude,lng:p.coords.longitude,accuracy:p.coords.accuracy});},function(){reject(Error('فعّل خدمة الموقع ثم أعد المحاولة'));},{enableHighAccuracy:true,timeout:15000,maximumAge:0});});}
+function success(data){app.innerHTML='<section class="success"><div class="tick">✓</div><h2>تم تسجيل وصولك</h2><p>'+esc(data.patient_name||'')+(data.provider_name?'<br>موعدك مع '+esc(data.provider_name):'')+'<br>أصبحت الآن ضمن قائمة الانتظار.</p></section>';}
+function direct(){app.innerHTML='<section class="card"><div class="hint">هذا الرابط خاص بحجزك. اضغط تسجيل الوصول وسيتم التحقق من وجودك داخل نطاق المركز.</div><button class="btn primary" data-direct>تسجيل الوصول الآن</button><div class="status" data-status></div></section>';app.querySelector('[data-direct]').onclick=function(){var b=this;b.disabled=true;status('جاري التحقق من الموقع…');geo().then(function(g){return rpc('clinic_reception_checkin_public',{p_token:directToken,p_lat:g.lat,p_lng:g.lng,p_accuracy:g.accuracy});}).then(success).catch(function(e){b.disabled=false;status(e.message||'تعذر تسجيل الوصول','error');});};}
+function form(){app.innerHTML='<section class="card"><div class="hint">اكتب رقم الهاتف المستخدم في الحجز. سنعرض مواعيد اليوم فقط. بعد اختيار الموعد سيتحقق النظام من موقعك داخل المركز.</div><label class="field"><span>رقم هاتف الحجز</span><input type="tel" inputmode="tel" autocomplete="tel" placeholder="01xxxxxxxxx" data-phone></label><button class="btn primary" data-find>البحث عن حجز اليوم</button><div class="status" data-status></div><div class="choices" data-choices></div></section>';var input=app.querySelector('[data-phone]'),btn=app.querySelector('[data-find]');btn.onclick=function(){phone=input.value.trim();if(phone.replace(/\D/g,'').length<8){status('اكتب رقم الهاتف كاملًا','error');return;}btn.disabled=true;status('جاري البحث…');rpc('clinic_reception_checkin_candidates',{p_phone:phone}).then(function(rows){btn.disabled=false;renderChoices(rows||[]);}).catch(function(e){btn.disabled=false;status(e.message||'تعذر البحث','error');});};}
+function renderChoices(rows){var box=app.querySelector('[data-choices]');if(!rows.length){status('لم نجد حجزًا متاحًا اليوم بهذا الرقم','error');box.innerHTML='';return;}status(rows.length===1?'وجدنا حجز اليوم.':'اختر الموعد المطلوب.','ok');box.innerHTML=rows.map(function(a){return '<article class="choice"><div><h3>'+esc(a.provider_name)+'</h3><p>'+esc(a.service_name)+' · '+tm(a.starts_at)+'</p></div><button class="btn" data-checkin="'+esc(a.appointment_id)+'">تسجيل الوصول</button></article>';}).join('');box.querySelectorAll('[data-checkin]').forEach(function(b){b.onclick=function(){var id=b.dataset.checkin;b.disabled=true;status('جاري التحقق من موقعك…');geo().then(function(g){return rpc('clinic_reception_checkin_static',{p_appointment:id,p_phone:phone,p_lat:g.lat,p_lng:g.lng,p_accuracy:g.accuracy});}).then(success).catch(function(e){b.disabled=false;status(e.message||'تعذر تسجيل الوصول','error');});};});}
+if(directToken)direct();else form();
+})();
+</script>
+</body>
+</html>
