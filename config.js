@@ -25,7 +25,7 @@ window.SSMPD_CONFIG = {
   adsExpensesWebAppUrl: "https://script.google.com/macros/s/AKfycbzkks4u3SUsQBLtIzN5o091dBANRA7Or1xm5KCBfG8ms1NyOhRAUG6mtZCcz51jlJrM3g/exec",
 
   // بصمة الكاش — ترفع مع أي تعديل على JS/CSS
-  cacheVersion: 38
+  cacheVersion: 39
 };
 
 // مراقب أخطاء خفيف: يسجل فقط الأخطاء الفعلية وآخر زر مرتبط بها، بدون أسرار.
@@ -116,6 +116,6 @@ window.SSMPD_CONFIG = {
     loadOnce("__SWNWContractServiceMapping","assets/js/contract-service-mapping.js?v=shared-tariffs-20261029-1","contract-service-mapping");
     loadOnce("__SWNWTodayOperationsV1","assets/js/today-operations.js?v=patient-journey-20261030-2","today-operations");
     loadOnce("__SWNWTodayOperationsConsistency","assets/js/today-operations-consistency.js?v=patient-journey-20261030-2","today-operations-consistency");
-    loadOnce("__SWNWTodayOperationsDisplayV1","assets/js/today-operations-display.js?v=reception-display-20261030-1","today-operations-display");
+    loadOnce("__SWNWTodayOperationsDisplayV1","assets/js/today-operations-display.js?v=reception-display-20261030-2","today-operations-display");
   });
 })();
