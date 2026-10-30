@@ -24,14 +24,22 @@ function inject(){
    bar.insertBefore(b,bar.firstChild);
  });
 }
+function refreshReceptionIfOpen(){
+ var shell=document.querySelector('.rx-shell');
+ if(!shell||!window.SSMPDReception||typeof window.SSMPDReception.render!=='function')return;
+ var receptionHost=shell.parentElement;
+ if(receptionHost)window.SSMPDReception.render(receptionHost);
+}
 function install(){
  var base=window.SSMPDReceptionModules;
- if(!base||base.__swnwDisplayWrapped){setTimeout(install,120);return;}
+ if(!base){setTimeout(install,120);return;}
+ if(base.__swnwDisplayWrapped)return;
  var wrapped={};Object.keys(base).forEach(function(k){wrapped[k]=base[k];});
  wrapped.panel=function(section,c){if(section==='journey')context=c;var html=base.panel?base.panel(section,c):'';setTimeout(inject,0);return html;};
  wrapped.__swnwDisplayWrapped=true;
  window.SSMPDReceptionModules=wrapped;
  observer=new MutationObserver(inject);observer.observe(document.documentElement,{childList:true,subtree:true});inject();
+ setTimeout(refreshReceptionIfOpen,0);
 }
 install();
 })();
