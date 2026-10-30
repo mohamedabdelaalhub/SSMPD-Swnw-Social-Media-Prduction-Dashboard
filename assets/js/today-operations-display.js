@@ -8,6 +8,7 @@ function toast(msg,kind){if(window.SSMPDToast&&window.SSMPDToast.show)window.SSM
 function rpc(name,args){return window.SSMPDDb.client.rpc(name,args).then(function(r){if(r.error)throw r.error;return r.data;});}
 function displayUrl(token){var u=new URL('checkin-display.html',location.href);u.search='';u.hash='';u.searchParams.set('display',token);return u.toString();}
 function openDisplay(){
+ if(document.querySelector('[data-journey-mode="trial"]')){toast('شاشة تسجيل الوصول الفعلية غير متاحة داخل التجربة','error');return;}
  if(!context||!context.workspace){toast('افتح تشغيل اليوم ثم حاول مرة أخرى','error');return;}
  var popup=window.open('about:blank','swnw-checkin-display');
  if(popup){try{popup.document.write('<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><title>Swnw</title><body style="font-family:Arial;text-align:center;padding:60px">جاري تجهيز شاشة تسجيل الوصول…</body></html>');popup.document.close();}catch(e){}}
@@ -18,6 +19,7 @@ function openDisplay(){
  }).catch(function(err){if(popup&&!popup.closed)popup.close();toast(err.message||'تعذر فتح شاشة تسجيل الوصول','error');});
 }
 function inject(){
+ if(!window.document)return;
  document.querySelectorAll('.journey-toolbar-actions').forEach(function(bar){
    if(bar.querySelector('[data-tv-checkin-display]'))return;
    var b=document.createElement('button');b.type='button';b.className='btn btn-primary';b.dataset.tvCheckinDisplay='1';b.textContent='شاشة تسجيل الوصول';b.onclick=function(e){e.preventDefault();openDisplay();};

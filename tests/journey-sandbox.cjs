@@ -1,0 +1,57 @@
+const assert=require('node:assert/strict'),boot=require('./helpers/journey-sandbox.cjs');
+async function run(keepOpen=false){
+ const b=await boot(),{db,owner,as,call,id,key}=b;
+ const realTables=['public.patients','public.patient_visits','public.customer_bookings','public.inventory_movements','clinic_finance.entries','clinic_finance.lines','clinic_reception.settings'];
+ async function fingerprint(){const result={};for(const t of realTables)result[t]=(await owner('select md5(coalesce(jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text)::text,\'[]\')) fingerprint from '+t+' t'))[0].fingerprint;return result;}
+ const before=await fingerprint();await as(1);
+ const d=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Cairo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+ let model=await call('clinic_reception_sandbox_open',[d]);const w=model.workspace;
+ const cmd=(a,p={},k=key())=>call('clinic_reception_sandbox_command',[w,a,p,k]);
+ const snap=()=>call('clinic_reception_sandbox_snapshot',[w,d]);
+ assert.equal(model.mode,'trial');assert.equal(model.catalog.workspace.mode,'trial');assert(model.catalog.patients.every(p=>p.file_no.startsWith('DEMO-')));
+ const seed={patient_id:model.catalog.patients[0].id,provider_id:model.catalog.providers[0].id,service_id:model.catalog.services[0].id,starts_at:model.catalog.availability[0].starts_at};
+ const token=key(),booking=await cmd('book',seed,token);assert.deepEqual(await cmd('book',seed,token),booking);
+ await assert.rejects(()=>cmd('book',{...seed,starts_at:new Date(Date.parse(seed.starts_at)+60000).toISOString()}),/يتداخل/);
+ await assert.rejects(()=>cmd('book',{...seed,patient_id:key()}),/خارج مساحة/);
+ await assert.rejects(()=>cmd('settings',{}),/غير متاح/);
+ await assert.rejects(()=>cmd('patient_attach',{patient_id:key()}),/غير متاح/);
+ await assert.rejects(()=>cmd('feedback',{appointment_id:booking.id,rating:5}),/لا يوجد طلب تقييم/);
+ for(const action of ['on_the_way','arrive','call','consultation_start','hold','resume','consultation_start'])await cmd(action,{appointment_id:booking.id});
+ model=await snap();const app=model.journey.appointments.find(a=>a.id===booking.id);assert.equal(app.queue_status,'in_service');assert(app.visit_id);
+ await cmd('help_requested',{appointment_id:booking.id,kind:'assistance',message:'طلب تجربة'});
+ await cmd('doctor_status',{provider_id:seed.provider_id,session_date:d,status:'delayed',eta_minutes:15});
+ await cmd('request_service',{appointment_id:booking.id,service_id:model.catalog.services[1].id,provider_id:seed.provider_id,quantity:1,request_kind:'service'});
+ model=await snap();const orders=model.catalog.orders.filter(o=>o.visit_id===app.visit_id);assert.equal(orders.length,2);
+ await assert.rejects(()=>cmd('visit_complete',{appointment_id:booking.id}),/تنفيذ|إلغاء|خدمات/);
+ for(const order of orders)await cmd('execute',{id:order.id});
+ await cmd('visit_complete',{appointment_id:booking.id,reason:'اكتمال تجربة'});
+ const feedbackToken=key(),feedback=await cmd('feedback',{appointment_id:booking.id,rating:5,comment:'تقييم تجريبي'},feedbackToken);
+ assert.deepEqual(await cmd('feedback',{appointment_id:booking.id,rating:5,comment:'تقييم تجريبي'},feedbackToken),feedback);
+ await assert.rejects(()=>cmd('feedback',{appointment_id:booking.id,rating:4}),/بالفعل/);
+ const simulated=await cmd('simulate_messages');assert.equal(simulated.sent,0);assert(simulated.simulated>=4);
+ model=await snap();assert.equal(model.journey.appointments.find(a=>a.id===booking.id).queue_status,'completed');assert(model.journey.outbox.every(o=>o.simulated_at));
+ // Worker has communications enabled, but no trial message may ever be claimed.
+ await owner("update clinic_reception.patients set phone='971543393891' where workspace_id=$1",[w]);
+ await owner("insert into clinic_reception.consents(workspace_id,patient_id,allowed,reference,recorded_by) values($1,$2,true,'local test only',$3)",[w,seed.patient_id,id(1)]);
+ const claimed=(await owner('select clinic_reception_message_claim(10) result'))[0].result;
+ assert.equal(claimed.filter(m=>model.journey.outbox.some(o=>o.id===m.id)).length,0);
+ await as(2);await assert.rejects(()=>call('clinic_reception_sandbox_snapshot',[w,d]),/مالكة/);
+ await owner("insert into admins(id,name,role) values($1,'Other trial manager','general_manager')",[id(5)]);await as(5);
+ const own=await call('clinic_reception_sandbox_open',[d]);assert.notEqual(own.workspace,w);
+ await as(3);await assert.rejects(()=>call('clinic_reception_sandbox_open',[d]),/للإدارة/);
+ await as(1);await assert.rejects(()=>call('clinic_reception_journey_snapshot',[w,d]),/مساحة|تدريب/);
+ const live=(await owner("insert into clinic_reception.workspaces(name,mode,owner_id) values('live isolation check','live',$1) returning id",[id(1)]))[0].id;
+ await as(1);await assert.rejects(()=>call('clinic_reception_sandbox_command',[live,'simulate_messages',{},key()]),/مالكة/);
+ assert.deepEqual(await fingerprint(),before);assert.equal((await owner("select count(*)::int n from clinic_reception.patients where workspace_id=$1 and patient_id is not null",[w]))[0].n,0);
+ await as(1);await assert.rejects(()=>call('clinic_reception_sandbox_command',[w,'book',{...seed,source:'different'},token]),/مرتبط بطلب آخر/);
+ await db.exec('set role anon');await assert.rejects(()=>call('clinic_reception_sandbox_open',[d]),/permission denied/);
+ assert.equal((await owner('select count(*)::int n from clinic_reception.appointments where workspace_id=$1',[w]))[0].n,1);
+ console.log('PASS Journey sandbox: real SQL booking to service completion, extra service, help/delay/feedback, idempotency, overlap, ownership/role denial, worker exclusion, and unchanged clinical/booking/inventory/finance fingerprints.');
+ if(keepOpen)return {b,model,day:d,w,cmd,snap,seed};
+ await db.exec('reset role');await db.exec(require('node:fs').readFileSync('supabase/rollback/patient_journey_sandbox.sql','utf8'));await as(1);
+ await assert.rejects(()=>call('clinic_reception_sandbox_open',[d]),/permission denied/);
+ assert.deepEqual((await call('clinic_reception_journey_snapshot',[live,d])).appointments,[]);
+ console.log('PASS sandbox rollback: new RPCs revoked, original live access preserved, training data retained.');
+ await db.close();
+}
+module.exports=run;if(require.main===module)run().catch(e=>{console.error(e.message,e.where,e.stack);process.exit(1);});
