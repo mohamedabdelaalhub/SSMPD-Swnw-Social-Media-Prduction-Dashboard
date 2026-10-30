@@ -4,6 +4,14 @@
 if(window.__SWNWTodayOperationsConsistency)return;
 window.__SWNWTodayOperationsConsistency=true;
 var installed=false,dirty=false;
+function loadCallsLayer(){
+ if(window.__SWNWTodayOperationsCalls||document.querySelector('script[data-today-operations-calls]'))return;
+ var s=document.createElement('script');
+ s.src='assets/js/today-operations-calls.js?v=patient-journey-20261030-1';
+ s.async=false;
+ s.dataset.todayOperationsCalls='1';
+ document.head.appendChild(s);
+}
 function install(){
  if(installed)return;
  if(!window.SSMPDDb||!window.SSMPDDb.client||!window.SSMPDReceptionModules){setTimeout(install,250);return;}
@@ -24,6 +32,7 @@ function install(){
   }
   return html;
  };
+ loadCallsLayer();
 }
 install();
 })();
