@@ -12,7 +12,7 @@ window.SSMPD_CONFIG = {
   // مفاتيح Supabase — تُملأ بعد إنشاء المشروع (خطوة البنية التحتية)
   supabase: {
     url: "https://uuijfbpgvtdxgaosqpxo.supabase.co",
-    anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJIUzI1NiIsInJlZiI6InV1aWpmYnBndnRkeGdhb3NxcHhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MDc3MDUsImV4cCI6MjEwMjQ4MzcwNX0.kIiSfXRG2SJtsP1v3GlllIhcxYP9sOEhdGk40tOhsNw"
+    anonKey: "sb_publishable_QZ_h12VmRVm7PoK69bKjpg_2ATE1zNj"
   },
 
   // جسر أرشيف Google Drive — رابط Web App بعد نشر السكريبت من حساب المركز
@@ -25,7 +25,7 @@ window.SSMPD_CONFIG = {
   adsExpensesWebAppUrl: "https://script.google.com/macros/s/AKfycbzkks4u3SUsQBLtIzN5o091dBANRA7Or1xm5KCBfG8ms1NyOhRAUG6mtZCcz51jlJrM3g/exec",
 
   // بصمة الكاش — ترفع مع أي تعديل على JS/CSS
-  cacheVersion: 40
+  cacheVersion: 41
 };
 
 // مراقب أخطاء خفيف: يسجل فقط الأخطاء الفعلية وآخر زر مرتبط بها، بدون أسرار.
