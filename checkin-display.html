@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#07366f">
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+<title>شاشة تسجيل الوصول — Swnw</title>
+<style>
+:root{font-family:Arial,"Noto Sans Arabic",sans-serif;color:#15243a;background:#eef4fb}*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden}body{background:radial-gradient(circle at 50% 34%,#fff 0,#f7faff 38%,#eaf2fc 100%)}main{height:100%;display:grid;grid-template-rows:auto 1fr auto;padding:clamp(20px,3vw,48px);gap:18px}.top{display:flex;align-items:center;justify-content:space-between;gap:20px}.brand{display:flex;align-items:center;gap:14px}.mark{width:64px;height:64px;border-radius:20px;background:#0b3b77;color:#fff;display:grid;place-items:center;font-size:25px;font-weight:800;box-shadow:0 10px 30px rgba(11,59,119,.18)}.brand h1{margin:0;font-size:clamp(24px,3vw,42px)}.brand p{margin:6px 0 0;color:#68778c;font-size:clamp(13px,1.4vw,20px)}.clock{text-align:left;direction:ltr}.clock strong{display:block;font-size:clamp(22px,2.8vw,38px)}.clock span{color:#68778c;font-size:14px}.stage{display:grid;grid-template-columns:minmax(360px,1fr) minmax(300px,.82fr);align-items:center;justify-items:center;gap:clamp(28px,5vw,80px);min-height:0}.qr-card{background:#fff;border:1px solid #d9e3f0;border-radius:32px;padding:clamp(20px,2.4vw,34px);box-shadow:0 22px 60px rgba(28,56,96,.12);display:grid;place-items:center;gap:15px}.qr{width:min(42vw,440px);height:min(42vw,440px);display:grid;place-items:center}.qr img,.qr canvas{width:100%!important;height:100%!important}.count{font-size:clamp(16px,1.7vw,24px);color:#36506f}.count strong{font-variant-numeric:tabular-nums;color:#0b3b77}.guide{max-width:620px}.guide h2{margin:0 0 18px;font-size:clamp(30px,4vw,58px);line-height:1.2}.guide ol{margin:0;padding:0 24px 0 0;display:grid;gap:18px;font-size:clamp(18px,2vw,30px);line-height:1.55;color:#33465f}.guide .safe{margin-top:26px;padding:16px 18px;border-radius:18px;background:#e9f3ff;color:#164d86;font-size:clamp(14px,1.4vw,19px);line-height:1.7}.bottom{display:flex;justify-content:space-between;align-items:center;gap:16px;color:#66778d;font-size:14px}.status{display:flex;align-items:center;gap:8px}.dot{width:10px;height:10px;border-radius:50%;background:#16a46b;box-shadow:0 0 0 5px rgba(22,164,107,.1)}.status.error .dot{background:#c83f49;box-shadow:0 0 0 5px rgba(200,63,73,.1)}button{border:1px solid #cad7e7;background:#fff;color:#173a66;border-radius:12px;padding:10px 15px;font-weight:700;cursor:pointer}@media(max-width:900px){.stage{grid-template-columns:1fr}.guide{text-align:center}.guide ol{text-align:right}.qr{width:min(58vh,70vw);height:min(58vh,70vw)}.top .brand p{display:none}}@media(max-height:720px){main{padding:18px}.mark{width:48px;height:48px;border-radius:14px}.stage{grid-template-columns:1fr 1fr;gap:28px}.qr{width:min(52vh,38vw);height:min(52vh,38vw)}.guide h2{font-size:34px}.guide ol{font-size:19px;gap:10px}.guide .safe{margin-top:12px}.bottom{font-size:12px}}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+<main>
+  <header class="top">
+    <div class="brand"><div class="mark">S</div><div><h1>Swnw</h1><p>مركز عيادات سونو التخصصية — حدائق الأهرام</p></div></div>
+    <div class="clock"><strong data-clock>--:--</strong><span data-date></span></div>
+  </header>
+  <section class="stage">
+    <div class="qr-card">
+      <div class="qr" data-qr><span>جاري تجهيز الكود…</span></div>
+      <div class="count">يتجدد الكود تلقائيًا خلال <strong data-count>03:00</strong></div>
+    </div>
+    <div class="guide">
+      <h2>سجّل وصولك بدون انتظار</h2>
+      <ol>
+        <li>افتح كاميرا هاتفك وامسح الكود.</li>
+        <li>فعّل الموقع واكتب رقم هاتف الحجز.</li>
+        <li>اختر موعدك واضغط تسجيل الوصول.</li>
+      </ol>
+      <div class="safe">لن يظهر حجزك إلا بعد التحقق من وجودك داخل نطاق المركز. يتغير هذا الكود تلقائيًا كل 3 دقائق.</div>
+    </div>
+  </section>
+  <footer class="bottom">
+    <div class="status" data-status><span class="dot"></span><span>الشاشة متصلة وتعمل تلقائيًا</span></div>
+    <button type="button" data-fullscreen>ملء الشاشة</button>
+  </footer>
+</main>
+<script>
+(function(){
+'use strict';
+var SUPABASE_URL='https://uuijfbpgvtdxgaosqpxo.supabase.co';
+var SUPABASE_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJIUzI1NiIsInJlZiI6InV1aWpmYnBndnRkeGdhb3NxcHhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MDc3MDUsImV4cCI6MjEwMjQ4MzcwNX0.kIiSfXRG2SJtsP1v3GlllIhcxYP9sOEhdGk40tOhsNw';
+var db=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON,{auth:{persistSession:false,autoRefreshToken:false}});
+var params=new URLSearchParams(location.search),displayToken=params.get('display'),qrBox=document.querySelector('[data-qr]'),countEl=document.querySelector('[data-count]'),statusEl=document.querySelector('[data-status]');
+var refreshAt=0,expiresAt=0,rotating=false,retryAt=0,wakeLock=null;
+function rpc(name,args){return db.rpc(name,args).then(function(r){if(r.error)throw r.error;return r.data;});}
+function patientUrl(qrToken){var u=new URL('patient-checkin.html',location.href);u.search='';u.hash='';u.searchParams.set('screen',qrToken);return u.toString();}
+function setStatus(text,error){statusEl.className='status'+(error?' error':'');statusEl.querySelector('span:last-child').textContent=text;}
+function draw(token){qrBox.innerHTML='';new QRCode(qrBox,{text:patientUrl(token),width:440,height:440,correctLevel:QRCode.CorrectLevel.M});}
+function rotate(){if(rotating||!displayToken)return;rotating=true;setStatus('جاري تحديث كود تسجيل الوصول…',false);rpc('clinic_reception_display_qr_rotate',{p_display_token:displayToken}).then(function(data){draw(data.qr_token);refreshAt=new Date(data.refresh_at).getTime();expiresAt=new Date(data.expires_at).getTime();retryAt=0;setStatus('الشاشة متصلة وتعمل تلقائيًا',false);}).catch(function(err){retryAt=Date.now()+10000;if(!expiresAt||Date.now()>expiresAt){qrBox.innerHTML='<div style="text-align:center;color:#b42318;line-height:1.8">تعذر تحديث الكود<br><small>سيحاول النظام مرة أخرى تلقائيًا</small></div>';}setStatus(err.message||'تعذر تحديث الكود',true);}).finally(function(){rotating=false;});}
+function tick(){var now=Date.now();if(refreshAt&&now>=refreshAt)rotate();else if(retryAt&&now>=retryAt)rotate();var left=Math.max(0,Math.ceil(((refreshAt||now)-now)/1000)),m=Math.floor(left/60),s=left%60;countEl.textContent=String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');var d=new Date();document.querySelector('[data-clock]').textContent=d.toLocaleTimeString('ar-EG-u-nu-latn',{timeZone:'Africa/Cairo',hour:'2-digit',minute:'2-digit'});document.querySelector('[data-date]').textContent=d.toLocaleDateString('ar-EG',{timeZone:'Africa/Cairo',weekday:'long',day:'numeric',month:'long'});}
+function keepAwake(){if(!('wakeLock' in navigator)||document.visibilityState!=='visible')return;navigator.wakeLock.request('screen').then(function(lock){wakeLock=lock;}).catch(function(){});}
+document.querySelector('[data-fullscreen]').onclick=function(){var el=document.documentElement;if(!document.fullscreenElement&&el.requestFullscreen){el.requestFullscreen().catch(function(){});}keepAwake();};
+document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'){keepAwake();if(!refreshAt||Date.now()>=refreshAt)rotate();}});
+if(!displayToken){qrBox.innerHTML='<div style="text-align:center;color:#b42318;line-height:1.8">رابط الشاشة غير مكتمل</div>';setStatus('افتح شاشة تسجيل الوصول من داخل تشغيل اليوم',true);}else{rotate();setInterval(tick,1000);tick();keepAwake();}
+})();
+</script>
+</body>
+</html>
