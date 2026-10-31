@@ -1,0 +1,18 @@
+/* SWNW Patient Journey — service request UX V3. The executor is chosen at execution time. */
+(function(){
+'use strict';
+if(window.__SWNWJourneyServiceRequestV3)return;
+window.__SWNWJourneyServiceRequestV3=true;
+var context=null,wrapped=null;
+function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function toast(m,k){if(window.SSMPDToast&&window.SSMPDToast.show)window.SSMPDToast.show(m,k||'success');}
+function rpc(n,a){return window.SSMPDDb.client.rpc(n,a).then(function(r){if(r.error)throw r.error;return r.data;});}
+function mode(){var r=document.querySelector('[data-journey-root]');return r&&r.dataset.journeyMode==='trial'?'trial':'live';}
+function day(){var x=document.querySelector('[data-journey-day]');return x&&x.value?x.value:new Date().toISOString().slice(0,10);}
+function group(s){var t=((s.department||'')+' '+(s.name||'')+' '+(s.code||'')).toLowerCase();if(/تحاليل|معمل|مختبر|lab|patholog/.test(t))return ['lab','التحاليل'];if(/أشعة|اشعة|radiolog|imaging|سونار|موجات|x-ray|xray|mri|ct scan|ct-sc/.test(t))return ['imaging','الأشعة'];if(/علاج طبيعي|physio|physical therapy|rehab/.test(t))return ['physio','العلاج الطبيعي'];return ['other','خدمات أخرى'];}
+function install(){var m=window.SSMPDReceptionModules;if(!m){setTimeout(install,250);return;}if(m===wrapped&&m.__serviceRequestV3)return;var p=m.panel;m.panel=function(section,c){if(section==='journey')context=c;return p?p.call(m,section,c):'';};m.__serviceRequestV3=true;wrapped=m;}install();setInterval(install,1200);
+function catalog(){if(!context)throw Error('افتح تشغيل اليوم مرة أخرى');if(mode()==='trial')return rpc('clinic_reception_sandbox_open',{p_day:day()});return Promise.resolve({workspace:context.workspace,catalog:context.data||{}});}
+function options(services){var order=['lab','imaging','physio','other'],g={};services.forEach(function(s){var x=group(s);(g[x[0]]||(g[x[0]]={label:x[1],rows:[]})).rows.push(s);});return order.map(function(k){var x=g[k];if(!x||!x.rows.length)return'';return '<optgroup label="'+esc(x.label)+'">'+x.rows.map(function(s){return '<option value="'+esc(s.id)+'">'+esc(s.name)+(s.department?' — '+esc(s.department):'')+'</option>';}).join('')+'</optgroup>';}).join('');}
+function open(id){catalog().then(function(model){var services=(model.catalog&&model.catalog.services)||[];if(!services.length)throw Error('لا توجد خدمات متاحة');var body='<p data-wide>اختر الخدمة المطلوبة فقط. النظام يصنفها تلقائيًا كتحاليل أو أشعة أو علاج طبيعي أو خدمة أخرى. المنفذ يتحدد وقت تنفيذ الخدمة، والطلب هنا يمثل خدمة واحدة لذلك لا توجد خانة عدد.</p><label>الخدمة المطلوبة<select name="service_id" required><option value="">اختر الخدمة</option>'+options(services)+'</select></label>';context.modal('طلب خدمة أثناء الزيارة',body,function(v){return rpc('clinic_reception_journey_request_service',{p_workspace:model.workspace,p_appointment:id,p_service:v.service_id,p_token:crypto.randomUUID()}).then(function(r){if(window.SWNTodayOperations&&window.SWNTodayOperations.refresh)return Promise.resolve(window.SWNTodayOperations.refresh()).then(function(){return r;});return r;});});}).catch(function(e){toast(e.message||'تعذر فتح طلب الخدمة','error');});}
+document.addEventListener('click',function(e){var b=e.target.closest('[data-journey-action="request_service"]');if(!b||!b.closest('[data-journey-root]'))return;e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();open(b.dataset.id);},true);
+})();
