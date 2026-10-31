@@ -12,6 +12,14 @@ function loadCallsLayer(){
  s.dataset.todayOperationsCalls='1';
  document.head.appendChild(s);
 }
+function loadV2(){
+ if(window.__SWNWTodayOperationsUXV2||document.querySelector('script[data-today-operations-v2]'))return;
+ var s=document.createElement('script');
+ s.src='assets/js/today-operations-v2.js?v=patient-journey-v2-20261031-1';
+ s.async=false;
+ s.dataset.todayOperationsV2='1';
+ document.head.appendChild(s);
+}
 function install(){
  if(installed)return;
  if(!window.SSMPDDb||!window.SSMPDDb.client||!window.SSMPDReceptionModules){setTimeout(install,250);return;}
@@ -19,7 +27,7 @@ function install(){
  var client=window.SSMPDDb.client,originalRpc=client.rpc.bind(client);
  client.rpc=function(name,args,options){
   return originalRpc(name,args,options).then(function(result){
-   if(name==='clinic_reception_journey_command'&&result&&!result.error)dirty=true;
+   if(['clinic_reception_journey_command','clinic_reception_sandbox_command','clinic_reception_journey_reschedule','clinic_reception_journey_prepare_finish'].includes(name)&&result&&!result.error)dirty=true;
    return result;
   });
  };
@@ -33,6 +41,7 @@ function install(){
   return html;
  };
  loadCallsLayer();
+ loadV2();
 }
 install();
 })();
