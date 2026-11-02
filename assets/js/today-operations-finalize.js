@@ -8,6 +8,7 @@ var firstEntryAttempted=false;
 function roles(){return window.SSMPDRoles&&window.SSMPDAuth?window.SSMPDRoles.rolesOf(window.SSMPDAuth.currentAdmin):[];}
 function has(role){return roles().indexOf(role)!==-1;}
 function clinical(){return has('super_admin')||has('general_manager')||has('sono_doctor')||has('nursing')||has('head_nursing');}
+function hideLegacyCash(){document.querySelectorAll('[data-goto="booking_cash"]').forEach(function(node){node.hidden=true;node.setAttribute('aria-hidden','true');});}
 function journeyStatus(id){
  var safe=(window.CSS&&CSS.escape)?CSS.escape(id):String(id).replace(/"/g,'\\"');
  var old=document.querySelector('.journey-card[data-appointment="'+safe+'"]');if(!old)return '';
@@ -55,7 +56,7 @@ function autoOpenJourney(){
  if(journey){journey.click();return;}
  var reload=document.querySelector('[data-rx-action="reload"]');if(reload&&!reload.dataset.unifiedReloaded){reload.dataset.unifiedReloaded='1';reload.click();setTimeout(autoOpenJourney,180);}
 }
-function refresh(){enhanceCards();fixPresentMetric();}
+function refresh(){hideLegacyCash();enhanceCards();fixPresentMetric();}
 var observer=new MutationObserver(function(){setTimeout(refresh,0);});observer.observe(document.documentElement,{childList:true,subtree:true});
 
 document.addEventListener('click',function(e){
@@ -63,6 +64,6 @@ document.addEventListener('click',function(e){
  var nav=e.target.closest('[data-goto="reception_services"]');if(nav&&has('reception')&&!has('super_admin')&&!has('general_manager'))setTimeout(autoOpenJourney,160);
 },true);
 
-setTimeout(function(){if(firstEntryAttempted)return;firstEntryAttempted=true;autoOpenJourney();},600);
+setTimeout(function(){hideLegacyCash();if(firstEntryAttempted)return;firstEntryAttempted=true;autoOpenJourney();},600);
 setInterval(refresh,1200);
 })();
