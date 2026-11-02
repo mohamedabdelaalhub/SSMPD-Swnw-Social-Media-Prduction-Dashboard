@@ -25,7 +25,7 @@ window.SSMPD_CONFIG = {
   adsExpensesWebAppUrl: "https://script.google.com/macros/s/AKfycbzkks4u3SUsQBLtIzN5o091dBANRA7Or1xm5KCBfG8ms1NyOhRAUG6mtZCcz51jlJrM3g/exec",
 
   // بصمة الكاش — ترفع مع أي تعديل على JS/CSS
-  cacheVersion: 46
+  cacheVersion: 47
 };
 
 // مراقب أخطاء خفيف: يسجل فقط الأخطاء الفعلية وآخر زر مرتبط بها، بدون أسرار.
@@ -120,6 +120,6 @@ window.SSMPD_CONFIG = {
     loadOnce("__SWNWTodayOperationsConsistency","assets/js/today-operations-consistency.js?v=patient-journey-v3-20261031-2","today-operations-consistency");
     loadOnce("__SWNWTodayOperationsDisplayV1","assets/js/today-operations-display.js?v=journey-sandbox-20261031-1","today-operations-display");
     loadOnce("__SWNWTodayOperationsUnifiedV1","assets/js/today-operations-unified.js?v=unified-reception-20261103-1","today-operations-unified");
-    loadOnce("__SWNWTodayOperationsFinalizeV1","assets/js/today-operations-finalize.js?v=unified-reception-20261103-3","today-operations-finalize");
+    loadOnce("__SWNWTodayOperationsFinalizeV1","assets/js/today-operations-finalize.js?v=unified-reception-20261103-4","today-operations-finalize");
   });
 })();
