@@ -4,11 +4,13 @@
 if(window.__SWNWTodayOperationsFinalizeV1)return;
 window.__SWNWTodayOperationsFinalizeV1=true;
 
+var firstEntryAttempted=false;
 function roles(){return window.SSMPDRoles&&window.SSMPDAuth?window.SSMPDRoles.rolesOf(window.SSMPDAuth.currentAdmin):[];}
 function has(role){return roles().indexOf(role)!==-1;}
 function clinical(){return has('super_admin')||has('general_manager')||has('sono_doctor')||has('nursing')||has('head_nursing');}
 function journeyStatus(id){
- var old=document.querySelector('.journey-card[data-appointment="'+CSS.escape(id)+'"]');if(!old)return '';
+ var safe=(window.CSS&&CSS.escape)?CSS.escape(id):String(id).replace(/"/g,'\\"');
+ var old=document.querySelector('.journey-card[data-appointment="'+safe+'"]');if(!old)return '';
  var badge=old.querySelector('.journey-badge');if(!badge)return '';
  var cls=Array.from(badge.classList).find(function(x){return x.indexOf('journey-badge-')===0&&x!=='journey-badge';});
  return cls?cls.replace('journey-badge-',''):'';
@@ -61,5 +63,6 @@ document.addEventListener('click',function(e){
  var nav=e.target.closest('[data-goto="reception_services"]');if(nav&&has('reception')&&!has('super_admin')&&!has('general_manager'))setTimeout(autoOpenJourney,160);
 },true);
 
-setInterval(function(){refresh();var grid=document.querySelector('.fc-section-grid');if(grid&&grid.closest('[data-page],main,section'))autoOpenJourney();},1200);
+setTimeout(function(){if(firstEntryAttempted)return;firstEntryAttempted=true;autoOpenJourney();},600);
+setInterval(refresh,1200);
 })();
