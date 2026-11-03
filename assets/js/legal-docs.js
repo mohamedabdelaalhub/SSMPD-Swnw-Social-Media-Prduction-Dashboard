@@ -1,9 +1,9 @@
 /* Legal documents hub (read-only): lists the public privacy/terms pages per system with view + copy-link actions. No data access, no editing. */
 (function(root){'use strict';
 var DOCS=[
- {system:'Swnw Server Backups',note:'النسخ الاحتياطي المشفّر لخوادم المركز على Google Drive (تطبيق داخلي للمسؤول).',items:[
-  {kind:'الخصوصية',title:'سياسة الخصوصية',file:'backup-privacy.html'},
-  {kind:'الشروط',title:'شروط الاستخدام',file:'backup-terms.html'}]},
+ {system:'Swnw Server Backups',note:'النسخ الاحتياطي لخوادم المركز على Google Drive (تطبيق داخلي للمسؤول) — يُنشر على نطاق مستقل legal.swnwclinics.com.',items:[
+  {kind:'الخصوصية',title:'سياسة الخصوصية',url:'https://legal.swnwclinics.com/privacy'},
+  {kind:'الشروط',title:'شروط الاستخدام',url:'https://legal.swnwclinics.com/terms'}]},
  {system:'لوحة إنتاج المحتوى SSMPD',note:'لوحة تنظيم ونشر محتوى السوشيال ميديا (ربط TikTok).',items:[
   {kind:'الخصوصية',title:'سياسة الخصوصية',file:'privacy.html'},
   {kind:'الشروط',title:'شروط الاستخدام',file:'terms.html'}]},
@@ -27,7 +27,7 @@ function mount(host){
   if(/^[A-Za-z]/.test(group.system))title.className='ld-en';
   head.append(title,node('span','',group.note));card.appendChild(head);
   group.items.forEach(function(doc){
-   var url=publicUrl(doc.file),row=node('div','ld-row'),info=node('div','ld-info'),name=node('span',doc.en?'ld-en':'',doc.title),kind=node('small','',doc.kind),link=node('code','ld-url',url);
+   var url=doc.url||publicUrl(doc.file),row=node('div','ld-row'),info=node('div','ld-info'),name=node('span',doc.en?'ld-en':'',doc.title),kind=node('small','',doc.kind),link=node('code','ld-url',url);
    info.append(name,kind,link);
    var actions=node('div','ld-actions'),view=node('a','btn ghost sm','عرض');view.href=url;view.target='_blank';view.rel='noopener';view.setAttribute('aria-label','عرض '+doc.title+' — '+group.system);
    var copy=node('button','btn ghost sm','نسخ الرابط');copy.type='button';copy.setAttribute('aria-label','نسخ رابط '+doc.title+' — '+group.system);
