@@ -1,5 +1,7 @@
 (function(w){
   'use strict';
+  if(w.__SSMPD_ADMIN_ASSISTANT_LOADED__)return;
+  w.__SSMPD_ADMIN_ASSISTANT_LOADED__=true;
   var mounted=false,client=null,panel=null,launch=null,refreshTimer=null,ownerAdminId=null,lastData=null;
   var ACCESS_LABELS={hr_access:'إدارة الموارد البشرية',price_lists_access:'إدارة لوائح الأسعار',archive_access:'أرشيف المرضى',archive_review:'اعتماد ملفات المرضى',verification_management:'إدارة تحقق هوية المرضى',accounting_view:'الحسابات — عرض فقط','role:contract_manager':'جهات التعاقد','role:page_manager':'إنتاج وإدارة المحتوى','role:designer':'التصميم','role:approver':'اعتماد المحتوى','role:reception':'الاستقبال وخزينة الحجز','role:customer_service':'خدمة العملاء وإدارة الليدز','role:nursing':'التمريض','role:super_admin':'لوحة تحكم السوبر أدمن'};
   function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
@@ -13,6 +15,8 @@
   function currentAdmin(){return w.SSMPDAuth&&w.SSMPDAuth.currentAdmin;}
   function cfg(){return w.SSMPD_CONFIG&&w.SSMPD_CONFIG.supabase;}
   function initClient(){if(client)return client;var c=cfg();if(!c||!w.supabase)return null;client=w.supabase.createClient(c.url,c.anonKey,{auth:{persistSession:true,autoRefreshToken:true}});return client;}
+  function actionLabel(a){return {approved:'اعتمد',returned:'رجع للتعديل',needs_owner:'يحتاجك',overdue_nudge:'طلب تحديث'}[a]||a||'إجراء';}
+  function reviewSummaryHtml(run){if(!run)return '<div class="ssmpd-aa-empty">لم تُسجّل دورة مراجعة بعد.</div>';var actions=Array.isArray(run.actions)?run.actions:[];return '<div class="ssmpd-aa-review-kpis"><span>اعتمد <b>'+Number(run.approved||0)+'</b></span><span>رجع <b>'+Number(run.returned||0)+'</b></span><span>يحتاجك <b>'+Number(run.needs_owner||0)+'</b></span><span>متأخر <b>'+Number(run.overdue_nudged||0)+'</b></span></div><small>آخر دورة '+relative(run.completed_at||run.started_at)+'</small>'+actions.slice(0,6).map(function(a){return '<div class="ssmpd-aa-item compact"><b>'+esc(actionLabel(a.action))+' · '+esc(a.title||'مهمة')+'</b><div>'+esc(a.summary||a.owner_followup||'')+'</div></div>';}).join('');}
   function shell(){
     launch=document.createElement('button');launch.className='ssmpd-aa-launch';launch.type='button';launch.textContent='المساعد الإداري';launch.hidden=true;
     panel=document.createElement('aside');panel.className='ssmpd-aa-panel';panel.hidden=true;panel.setAttribute('aria-label','المساعد الإداري');
@@ -21,6 +25,8 @@
     panel.addEventListener('click',function(e){
       if(e.target.closest('[data-aa-close]'))panel.hidden=true;
       if(e.target.closest('[data-aa-refresh]'))refresh();
+      if(e.target.closest('[data-aa-review-now]'))runTaskReview();
+      if(e.target.closest('[data-aa-open-center]')&&w.SSMPDAdministrativeAssistantCenter){panel.hidden=true;w.SSMPDAdministrativeAssistantCenter.open();}
       var approve=e.target.closest('[data-aa-access-approve]');if(approve)approveAccess(approve.getAttribute('data-aa-access-approve'),false);
       var reject=e.target.closest('[data-aa-access-reject]');if(reject)rejectAccess(reject.getAttribute('data-aa-access-reject'));
       if(e.target.closest('[data-aa-command-send]'))runOwnerCommand();
@@ -35,10 +41,12 @@
     var open=reqs.slice(0,12).map(function(r){if(r.source==='access_request')return accessRequestHtml(r);return '<div class="ssmpd-aa-item"><b>'+esc(r.priority==='critical'?'حرج':r.priority==='urgent'?'عاجل':'طلب')+'</b><div>'+esc(r.body)+'</div><small>'+esc(r.source)+' · '+relative(r.created_at)+'</small></div>';}).join('');
     var ruleRows=rules.slice(0,6).map(function(r){return '<div class="ssmpd-aa-item"><b>'+esc(r.title)+'</b><div>'+esc(r.instruction)+'</div><small>'+esc(r.scope)+' · '+esc(r.approval_mode)+'</small></div>';}).join('');
     var command=isOwner(currentAdmin())?'<section class="ssmpd-aa-section ssmpd-aa-form"><h3>قولي قرارك</h3><div style="display:flex;gap:8px;align-items:flex-end"><textarea data-aa-command rows="2" placeholder="مثال: موافق · موافق على صلاحية الحسابات لمحمود"></textarea><button class="btn" data-aa-command-send type="button">تنفيذ</button></div><div class="ssmpd-aa-status" data-aa-command-status></div></section>':'';
+    var reviewActions=isOwner(currentAdmin())?'<div class="ssmpd-aa-inline-actions"><button class="btn sm" data-aa-review-now type="button">راجع المهام الآن</button><button class="btn ghost sm" data-aa-open-center type="button">فتح مركز المساعد</button></div>':'<div class="ssmpd-aa-inline-actions"><button class="btn ghost sm" data-aa-open-center type="button">فتح مركز المساعد</button></div>';
     panel.innerHTML='<div class="ssmpd-aa-head"><h2>المساعد الإداري</h2><div><button class="btn ghost sm" data-aa-refresh type="button">تحديث</button> <button class="ssmpd-aa-close" data-aa-close type="button">×</button></div></div>'+
-      '<div class="ssmpd-aa-mode">'+esc(modeLabel(c.mode))+(c.auto_execute_enabled?' · تنفيذ تلقائي مفعل':' · التنفيذ التلقائي متوقف')+'</div>'+
+      '<div class="ssmpd-aa-mode">'+esc(modeLabel(c.mode))+(c.auto_execute_enabled?' · تنفيذ تلقائي مفعل':' · التنفيذ التلقائي متوقف')+'</div>'+reviewActions+
       '<div class="ssmpd-aa-grid"><div class="ssmpd-aa-kpi"><b>'+Number(counts.pending||0)+'</b><span>قيد المراجعة</span></div><div class="ssmpd-aa-kpi"><b>'+Number(counts.waiting_owner||0)+'</b><span>مطلوب منك</span></div><div class="ssmpd-aa-kpi"><b>'+Number(counts.urgent||0)+'</b><span>عاجل</span></div></div>'+
       '<div class="ssmpd-aa-grid"><div class="ssmpd-aa-kpi"><b>'+Number(data.task_overdue||0)+'</b><span>مهام متأخرة</span></div><div class="ssmpd-aa-kpi"><b>'+Number(data.claude_pending||0)+'</b><span>Claude جاري</span></div><div class="ssmpd-aa-kpi"><b>'+rules.length+'</b><span>قواعد نشطة</span></div></div>'+
+      '<section class="ssmpd-aa-section"><h3>آخر مراجعة للمهام</h3><div data-aa-review-status class="ssmpd-aa-status"></div>'+reviewSummaryHtml(data.task_review_last)+'</section>'+
       '<div class="ssmpd-aa-grid"><div class="ssmpd-aa-kpi"><b>'+Number(data.payroll_pending||0)+'</b><span>رواتب معلقة</span></div><div class="ssmpd-aa-kpi"><b>'+Number(data.payroll_attention||0)+'</b><span>رواتب تحتاجك</span></div><div class="ssmpd-aa-kpi"><b>'+Number((data.payroll_pending||0)-(data.payroll_attention||0)>0?(data.payroll_pending||0)-(data.payroll_attention||0):0)+'</b><span>رواتب طبيعية</span></div></div>'+
       '<section class="ssmpd-aa-section"><h3>طلبات الموظفين والمطلوب منك</h3>'+(open||'<div class="ssmpd-aa-empty">لا توجد طلبات مفتوحة الآن.</div>')+'</section>'+command+
       '<section class="ssmpd-aa-section"><h3>قواعدي الحالية</h3>'+(ruleRows||'<div class="ssmpd-aa-empty">لا توجد قواعد بعد.</div>')+'</section>'+
@@ -46,18 +54,10 @@
     var teach=panel.querySelector('[data-aa-teach]');if(teach)teach.onclick=saveInstruction;
   }
   async function refresh(){var a=currentAdmin(),database=initClient();if(!a||!isManager(a)||!database)return;try{var res=await database.rpc('administrative_assistant_dashboard');if(res.error)throw res.error;if(res.data&&res.data.error)throw new Error('غير مصرح');render(res.data||{});}catch(err){panel.innerHTML=errorHtml('تعذر تحميل المساعد: '+(err&&err.message?err.message:err));}}
+  async function runTaskReview(){if(!isOwner(currentAdmin()))return;var status=panel&&panel.querySelector('[data-aa-review-status]');if(status)status.textContent='جارٍ مراجعة المهام…';try{var res=await initClient().functions.invoke('assistant-review-tasks',{body:{trigger:'manual'}});if(res.error)throw res.error;var d=res.data||{};if(status)status.textContent='تمت المراجعة: '+Number(d.approved||0)+' اعتماد، '+Number(d.returned||0)+' رجوع، '+Number(d.needs_owner||0)+' تحتاجك.';setTimeout(refresh,400);w.dispatchEvent(new CustomEvent('ssmpd-assistant-review-complete',{detail:d}));}catch(e){if(status)status.textContent='تعذر تشغيل المراجعة: '+(e.message||e);}}
   async function getRequest(id){var res=await initClient().from('administrative_assistant_requests').select('*').eq('id',id).single();if(res.error)throw res.error;return res.data;}
   async function updateRequest(id,patch){patch.updated_at=new Date().toISOString();var res=await initClient().from('administrative_assistant_requests').update(patch).eq('id',id);if(res.error)throw res.error;}
-  async function invokeGrant(id,confirmCritical){
-    var res=await initClient().functions.invoke('assistant-grant-access',{body:{request_id:id,confirm_critical:confirmCritical===true}}),payload=res.data||null;
-    if(res.error){
-      if(!payload&&res.error.context&&typeof res.error.context.json==='function'){try{payload=await res.error.context.json();}catch(_){} }
-      if(payload&&payload.error==='critical_confirmation_required'){if(!confirm('الطلب يمنح صلاحية Super Admin كاملة. هل تؤكد منحها الآن؟'))return null;return invokeGrant(id,true);}
-      throw new Error(payload&&payload.error?payload.error:(res.error.message||'تعذر منح الصلاحية'));
-    }
-    if(payload&&payload.error){if(payload.error==='critical_confirmation_required'){if(!confirm('الطلب يمنح صلاحية Super Admin كاملة. هل تؤكد منحها الآن؟'))return null;return invokeGrant(id,true);}throw new Error(payload.error);}
-    return payload||{};
-  }
+  async function invokeGrant(id,confirmCritical){var res=await initClient().functions.invoke('assistant-grant-access',{body:{request_id:id,confirm_critical:confirmCritical===true}}),payload=res.data||null;if(res.error){if(!payload&&res.error.context&&typeof res.error.context.json==='function'){try{payload=await res.error.context.json();}catch(_){} }if(payload&&payload.error==='critical_confirmation_required'){if(!confirm('الطلب يمنح صلاحية Super Admin كاملة. هل تؤكد منحها الآن؟'))return null;return invokeGrant(id,true);}throw new Error(payload&&payload.error?payload.error:(res.error.message||'تعذر منح الصلاحية'));}if(payload&&payload.error){if(payload.error==='critical_confirmation_required'){if(!confirm('الطلب يمنح صلاحية Super Admin كاملة. هل تؤكد منحها الآن؟'))return null;return invokeGrant(id,true);}throw new Error(payload.error);}return payload||{};}
   async function approveAccess(id,skipConfirm){if(!isOwner(currentAdmin()))return;try{var r=await getRequest(id),a=r.suggested_action||{},label=accessLabel(a);if(!ACCESS_LABELS[String(a.access_key||'')])throw new Error('نوع الصلاحية غير معروف ولا يمكن منحه');if(!skipConfirm&&!confirm('الموافقة على طلب '+(a.requester_name||'الموظف')+' وفتح «'+label+'» فورًا؟'))return;var result=await invokeGrant(id,false);if(!result)return;if(w.SSMPDToast)w.SSMPDToast.show('تم فتح الصلاحية وإبلاغ الموظف.');await refresh();}catch(e){alert(e.message||'تعذر اعتماد الطلب');}}
   function openAccessRequests(){var reqs=Array.isArray(lastData&&lastData.requests)?lastData.requests:[];return reqs.filter(function(r){var a=r.suggested_action||{};return r.source==='access_request'&&ACCESS_LABELS[String(a.access_key||'')]&&['waiting_owner','pending','reviewing'].indexOf(r.status)!==-1;});}
   function meaningfulCommandTokens(q){var noise=['موافق','وافق','اعتمد','تمام','ادي','اديه','اديله','افتح','الصلاحيه','صلاحية','صلاحيات','علي','على','عن','في','من','له','لها','لو','ده','دي','دا','الطلب','طلب'];return norm(q).split(' ').filter(function(x){return x.length>2&&noise.indexOf(x)===-1;});}
@@ -67,5 +67,6 @@
   async function saveInstruction(){var a=currentAdmin(),box=panel.querySelector('[data-aa-instruction]'),status=panel.querySelector('[data-aa-status]'),text=String(box&&box.value||'').trim();if(!text){status.textContent='اكتب التعليمة أولًا.';return;}status.textContent='جارٍ الحفظ…';try{var title=text.length>70?text.slice(0,67)+'…':text;var row={title:title,instruction:text,scope:'general',action_type:'owner_instruction',conditions:{source:'assistant_panel'},approval_mode:'owner_each_time',active:true,created_by:a.id,approved_by:a.id,approved_at:new Date().toISOString()};var res=await initClient().from('administrative_assistant_rules').insert(row);if(res.error)throw res.error;box.value='';status.textContent='تم حفظ التعليمة كقاعدة معتمدة.';setTimeout(refresh,350);}catch(err){status.textContent='تعذر الحفظ: '+(err&&err.message?err.message:err);}}
   function mount(){if(mounted)return;var a=currentAdmin();if(!a||!document.body)return;if(!isManager(a))return;mounted=true;shell();launch.hidden=false;refresh();refreshTimer=setInterval(function(){if(panel&&!panel.hidden)refresh();},60000);w.addEventListener('ssmpd-tasks-changed',function(){if(panel&&!panel.hidden)refresh();});}
   function wait(){var a=currentAdmin();if(a&&document.getElementById('app-root')){mount();if(!mounted)setTimeout(wait,1000);}else setTimeout(wait,700);}
+  w.SSMPDAdministrativeAssistant={open:function(){if(panel){panel.hidden=false;refresh();}},refresh:refresh,reviewNow:runTaskReview};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',wait);else wait();
 })(window);
