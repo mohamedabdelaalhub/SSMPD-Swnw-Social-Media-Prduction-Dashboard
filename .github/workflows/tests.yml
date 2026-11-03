@@ -19,6 +19,7 @@ jobs:
       - name: Check digital team and Sia JavaScript
         run: |
           node --check assets/js/digital-team.js
+          node --check assets/js/patient360.js
           node --check assets/js/sia-ui.js
           node --check assets/js/employee-assistant.js
           node --check assets/js/ui-titles.js
@@ -28,7 +29,9 @@ jobs:
 
       - run: npm ci
       - name: Check digital team navigation and launcher accessibility
-        run: node tests/digital-team-navigation.cjs
+        run: |
+          node tests/digital-team-navigation.cjs
+          node tests/patient360-navigation.cjs
 
   tests:
     runs-on: ubuntu-24.04
