@@ -3,7 +3,7 @@
   if(w.__SSMPD_PATIENT360_LOADED__)return;
   w.__SSMPD_PATIENT360_LOADED__=true;
   var db=null,records=[],selected=null,details=null,navObserver=null,seq=0;
-  var esc=function(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c];});};
+  var esc=function(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});};
   var roles=function(a){var r=Array.isArray(a&&a.roles)?a.roles.slice():[];if(a&&a.role&&r.indexOf(a.role)<0)r.push(a.role);return r;};
   var admin=function(){return w.SSMPDAuth&&w.SSMPDAuth.currentAdmin;};
   var manager=function(){return roles(admin()).some(function(r){return r==='super_admin'||r==='general_manager';});};
@@ -51,7 +51,6 @@
     var ff=v.querySelector('[data-p360-follow-form]');if(ff)ff.onsubmit=function(e){e.preventDefault();submitFollowup(ff);};
     v.querySelectorAll('[data-p360-confirm]').forEach(function(b){b.onclick=function(){confirmInsight(b.getAttribute('data-p360-confirm'));};});
   }
-  async function query(table,columns,filters){var q=client().from(table).select(columns).eq('contact_id',selected).order('created_at',{ascending:false}).limit(50);if(table==='patient360_messages')q=client().from(table).select(columns).eq('contact_id',selected).order('sent_at',{ascending:false}).limit(100);return q;}
   async function loadDetails(){
     if(!selected||!currentView())return;var id=selected,stamp=++seq;
     try{var [m,i,c,f]=await Promise.all([
