@@ -1,0 +1,27 @@
+.p360-root{max-width:1580px;margin:auto;padding:8px 0 30px;color:var(--c-text,#17202a)}
+.p360-head{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;padding:22px;border:1px solid var(--c-border,#d9e0e7);border-radius:18px;background:var(--c-card,#fff)}
+.p360-head h1{font-size:25px;margin:2px 0 6px}.p360-head p{margin:0;color:var(--c-muted,#667085)}
+.p360-eyebrow{font-size:11px;font-weight:700;letter-spacing:.05em;color:var(--c-primary,#164e8a)!important}
+.p360-status{font-size:12px;color:var(--c-muted,#667085);margin:12px 3px;min-height:16px}
+.p360-layout{display:grid;grid-template-columns:minmax(240px,300px) minmax(0,1fr);gap:12px;align-items:start}
+.p360-sidebar,.p360-main{background:var(--c-card,#fff);border:1px solid var(--c-border,#d9e0e7);border-radius:17px;min-width:0}
+.p360-sidebar{padding:12px;max-height:75vh;overflow:auto;position:sticky;top:10px}
+.p360-sidebar input{width:100%;padding:10px;border:1px solid var(--c-border,#d9e0e7);border-radius:10px;background:var(--c-card,#fff);color:inherit;font:inherit;box-sizing:border-box;margin-bottom:12px}
+.p360-contact{display:flex;flex-direction:column;align-items:stretch;width:100%;gap:4px;text-align:right;border:1px solid var(--c-border,#d9e0e7);border-radius:12px;padding:12px;margin-bottom:7px;background:transparent;color:inherit;cursor:pointer;font:inherit}
+.p360-contact:hover,.p360-contact.selected{background:var(--c-soft,#eef3f8);border-color:var(--c-primary,#164e8a)}
+.p360-contact-name{font-weight:700;font-size:14px}.p360-contact span:nth-child(2),.p360-contact small{font-size:11px;color:var(--c-muted,#667085)}
+.p360-main{padding:17px}.p360-detail-head{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.p360-detail-head h2{font-size:20px;margin:0}.p360-detail-head span,.p360-detail-head small{font-size:12px;color:var(--c-muted,#667085)}
+.p360-detail-head small{width:100%}.p360-hint{margin:10px 0;background:var(--c-soft,#f4f7fa);padding:10px;border-radius:10px;font-size:12px;color:var(--c-muted,#667085)}
+.p360-placeholder{text-align:center;padding:60px 10px;color:var(--c-muted,#667085)}.p360-section{padding-top:20px;margin-top:16px;border-top:1px solid var(--c-border,#e0e5ea)}
+.p360-section h3{font-size:16px;margin:0 0 12px}.p360-section h3 small{font-size:11px;font-weight:400;color:var(--c-muted,#667085);margin-inline-start:8px}
+.p360-messages{display:flex;flex-direction:column;gap:8px;max-height:350px;overflow:auto;background:var(--c-soft,#f8fafc);border-radius:13px;padding:12px}
+.p360-message{padding:10px 13px;max-width:min(88%,680px);border-radius:12px;background:var(--c-card,#fff);border:1px solid var(--c-border,#d9e0e7);align-self:flex-start}
+.p360-message.outbound{align-self:flex-end;background:var(--c-card,#fff);border-inline-start:3px solid var(--c-primary,#164e8a)}
+.p360-message-label{color:var(--c-muted,#667085);font-size:10px;margin-bottom:5px}.p360-message-body{font-size:13px;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.7}
+.p360-cards{display:grid;gap:8px}.p360-line{border:1px solid var(--c-border,#d9e0e7);border-radius:12px;padding:12px}.p360-line p{font-size:13px;line-height:1.7;white-space:pre-wrap;margin:6px 0}.p360-line small{display:block;font-size:11px;color:var(--c-muted,#667085);margin-bottom:6px}
+.p360-urgent{margin-top:8px;font-size:12px;color:#a43c2b}.p360-muted{color:var(--c-muted,#667085);font-size:12px}
+.p360-form{margin-top:12px;display:grid;gap:8px;padding:12px;border:1px solid var(--c-border,#d9e0e7);border-radius:12px;background:var(--c-soft,#f8fafc)}
+.p360-form input,.p360-form textarea,.p360-form select{width:100%;padding:10px 11px;box-sizing:border-box;background:var(--c-card,#fff);color:inherit;border:1px solid var(--c-border,#d9e0e7);border-radius:9px;font:inherit;font-size:12px;min-width:0}
+.p360-form textarea{min-height:75px;resize:vertical}.p360-form-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}.p360-form button{justify-self:start}
+.p360-date-label{display:grid;gap:4px;color:var(--c-muted,#667085);font-size:12px}
+@media(max-width:850px){.p360-layout{grid-template-columns:1fr}.p360-sidebar{position:static;max-height:220px}.p360-head{padding:16px;flex-wrap:wrap}.p360-head h1{font-size:22px}.p360-main{padding:12px}.p360-message{max-width:95%}}
