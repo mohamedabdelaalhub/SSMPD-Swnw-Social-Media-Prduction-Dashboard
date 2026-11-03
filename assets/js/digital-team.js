@@ -47,7 +47,7 @@
     var bar=document.getElementById('tabs-bar');if(bar)bar.style.display='';
     var mobileTabs=document.querySelector('#mobile-menu .mm-tabs');if(mobileTabs)mobileTabs.style.display='';
     var brand=document.getElementById('brand-section-name');
-    if(brand)brand.innerHTML=w.SSMPDUITitles&&w.SSMPDI18n?w.SSMPDUITitles.brand('digital_team',a):'مركز عيادات سونو التخصصية · الفريق الرقمي';
+    if(brand)brand.innerHTML='<span class="brand-center">مركز عيادات سونو التخصصية</span><span class="brand-section">الفريق الرقمي</span>';
     if(w.SSMPDI18n&&w.SSMPDI18n.setPageTitle)w.SSMPDI18n.setPageTitle('الفريق الرقمي');
     var mobile=document.getElementById('mobile-menu');if(mobile)mobile.classList.remove('open');
     var dropdown=document.getElementById('user-dropdown');if(dropdown)dropdown.classList.remove('open');
