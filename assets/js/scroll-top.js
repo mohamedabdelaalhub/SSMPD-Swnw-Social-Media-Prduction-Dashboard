@@ -31,4 +31,20 @@
     window.scrollTo({top:0, behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth'});
   });
   document.addEventListener('visibilitychange', function () { if(document.hidden) hide(); });
+
+  // إضافات مستقلة لا تغيّر منطق التنقل أو الشِل الرئيسي.
+  if (!document.querySelector('link[data-ssmpd-aa]')) {
+    var style = document.createElement('link');
+    style.rel = 'stylesheet';
+    style.href = 'assets/css/administrative-assistant.css?v=administrative-assistant-v1';
+    style.setAttribute('data-ssmpd-aa', 'style');
+    document.head.appendChild(style);
+  }
+  if (!document.querySelector('script[data-ssmpd-aa]')) {
+    var script = document.createElement('script');
+    script.src = 'assets/js/administrative-assistant.js?v=administrative-assistant-v1';
+    script.defer = true;
+    script.setAttribute('data-ssmpd-aa', 'script');
+    document.body.appendChild(script);
+  }
 })();
