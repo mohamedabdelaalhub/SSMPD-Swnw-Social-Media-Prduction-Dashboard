@@ -8,6 +8,23 @@ on:
     branches: [main]
 
 jobs:
+  feature-syntax:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check digital team and Sia JavaScript
+        run: |
+          node --check assets/js/digital-team.js
+          node --check assets/js/sia-ui.js
+          node --check assets/js/ui-titles.js
+          node --check assets/js/scroll-top.js
+          node --check assets/js/administrative-assistant.js
+          node --check assets/js/administrative-assistant-center.js
+
   tests:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
