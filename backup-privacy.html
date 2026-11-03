@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>سياسة الخصوصية — Swnw Server Backups</title>
+<meta name="description" content="سياسة الخصوصية لتطبيق Swnw Server Backups: النسخ الاحتياطي المشفّر لخوادم مركز عيادات Swnw التخصصية على Google Drive.">
+<link rel="stylesheet" href="assets/css/legal-pages.css?v=backup-legal-20261104-1">
+</head>
+<body>
+<header class="lp-top"><div class="lp-top-in">
+<a class="lp-brand" href="backup-privacy.html"><span>Swnw</span></a>
+<nav class="lp-nav" aria-label="المستندات القانونية لتطبيق Swnw Server Backups">
+<a href="backup-privacy.html" aria-current="page">سياسة الخصوصية</a>
+<a href="backup-terms.html">شروط الاستخدام</a>
+</nav></div></header>
+<main class="lp-wrap"><article class="lp-card">
+<p class="lp-eyebrow">مركز عيادات Swnw التخصصية — أنظمة الخوادم الداخلية</p>
+<h1>سياسة الخصوصية — <span class="en">Swnw Server Backups</span></h1>
+<div class="lp-meta"><strong>تاريخ هذه النسخة:</strong> 4 نوفمبر 2026 · <strong>الجهة المسؤولة:</strong> مركز عيادات Swnw التخصصية · <strong>للتواصل:</strong> <a href="mailto:swnwclinics@gmail.com">swnwclinics@gmail.com</a></div>
+<p>تشرح هذه الصفحة كيف يستخدم تطبيق <strong class="en">Swnw Server Backups</strong> حساب Google Drive الخاص بمركز Swnw لحفظ نسخ احتياطية مشفّرة من خوادم المركز الداخلية. هذا التطبيق أداة تشغيل داخلية يستخدمها مسؤول النظام فقط؛ وهو <strong>ليس</strong> الموقع الإلكتروني للمركز الذي يتعامل معه المرضى، وليس لوحة نشر المحتوى (SSMPD)، ولا يظهر لأي مستخدم من الجمهور.</p>
+
+<h2>الغرض من التطبيق</h2>
+<p>الغرض الوحيد هو حفظ نسخ احتياطية مشفّرة لإعدادات وبيانات خوادم المركز التشغيلية حتى يمكن استرجاعها عند حدوث عطل أو فقدان بيانات (استرجاع الكوارث). لا يُستخدم التطبيق لأي غرض إعلاني أو تحليلي أو تسويقي.</p>
+
+<h2>صلاحية Google المطلوبة وموافقة المالك</h2>
+<ul>
+<li>يطلب التطبيق صلاحية واحدة فقط من Google Drive هي <code>drive.file</code>، وهي صلاحية تقتصر على الملفات التي ينشئها التطبيق نفسه، ولا تمنحه الاطلاع على بقية ملفات الحساب.</li>
+<li>لا يطلب التطبيق الوصول إلى البريد أو جهات الاتصال أو التقويم أو أي خدمة أخرى من Google.</li>
+<li>تتم الموافقة (Consent) مرة واحدة من مالك حساب Google الخاص بالمركز بنفسه، ويمكنه سحبها في أي وقت (انظر قسم «السحب والحذف»).</li>
+</ul>
+
+<h2>البيانات التي يتعامل معها التطبيق</h2>
+<ul>
+<li><strong>بيانات تقنية للخوادم:</strong> ملفات إعدادات وتشغيل وقواعد بيانات وسجلات خاصة بأنظمة المركز الداخلية، بالقدر الذي يحدده مسؤول النظام لأغراض الاسترجاع.</li>
+<li><strong>بيانات حساب Google:</strong> رمز تفويض (Token) يخص حساب المركز لدى Google Drive، يُحفظ على الخادم في ملف مقيّد الصلاحيات ولا يُنشر ولا يُشارَك.</li>
+<li>التطبيق ليس موجهًا لجمع بيانات من الجمهور، ولا يجمع بيانات شخصية من زوار أي موقع.</li>
+<li>قد تتضمن أنظمة المركز التي يُؤخذ لها نسخ احتياطي بيانات تخص المركز. تُحفظ هذه البيانات مشفّرة قبل خروجها من الخادم، ولا يطّلع عليها أي طرف آخر بما في ذلك Google.</li>
+</ul>
+
+<h2>كيف تُحمى البيانات</h2>
+<ul>
+<li><strong>تشفير من جهة الخادم:</strong> تُشفَّر النسخ الاحتياطية بأداة النسخ الاحتياطي <span class="en">restic</span> قبل رفعها، بكلمة مرور يحتفظ بها مالك النظام في مدير كلمات مرور، ولا تُحفظ داخل Google Drive.</li>
+<li>يُحفظ رمز التفويض والمفاتيح على الخادم في ملفات مقيّدة بحساب النظام الأعلى صلاحية فقط، ولا تُرسل في رسائل أو تذاكر أو مستودعات عامة.</li>
+<li>الوصول إلى الخادم مقيّد بمفاتيح SSH وجدار حماية، ولا يتم أي إجراء ذي صلاحيات مرتفعة إلا بموافقة مسؤول النظام.</li>
+</ul>
+<div class="lp-note">لا يوجد نظام آمن بنسبة مطلقة؛ نطبّق الضوابط المذكورة أعلاه ولا نقدّم ضمانًا قانونيًا يتجاوز ما هو مذكور في هذه الصفحة.</div>
+
+<h2>المشاركة مع أطراف أخرى</h2>
+<p>لا نبيع البيانات ولا نؤجّرها ولا نشاركها مع أي طرف ثالث. تُخزَّن النسخ المشفّرة داخل Google Drive الخاص بالمركز فقط، وتخضع لشروط خدمة Google بصفتها مزوّد التخزين. لا يُنقل أي محتوى من Google Drive لأغراض الإعلانات أو لتدريب نماذج ذكاء اصطناعي عامة.</p>
+
+<h2>الالتزام بسياسة بيانات مستخدمي خدمات Google</h2>
+<p class="en" style="direction:ltr;text-align:left">Swnw Server Backups' use and transfer to any other app of information received from Google APIs will adhere to the <a href="https://developers.google.com/terms/api-services-user-data-policy" rel="noopener">Google API Services User Data Policy</a>, including the Limited Use requirements.</p>
+
+<h2>مدة الاحتفاظ</h2>
+<p>تُحفظ النسخ الاحتياطية بسياسة احتفاظ دورية: يُحتفظ بعدد محدود من أحدث النسخ، وتُزال النسخ الأقدم بحسب السياسة المعتمدة لدى مسؤول النظام. قد تبقى الملفات المحذوفة في سلة محذوفات Google Drive لفترة وفق إعدادات Google.</p>
+
+<h2>السحب والحذف</h2>
+<ul>
+<li><strong>سحب الموافقة:</strong> يستطيع مالك حساب Google إلغاء وصول التطبيق في أي وقت من صفحة <a href="https://myaccount.google.com/permissions" rel="noopener">أذونات حساب Google</a>. بعد الإلغاء يتوقف التطبيق عن رفع نسخ جديدة.</li>
+<li><strong>حذف البيانات:</strong> تُحذف الملفات التي أنشأها التطبيق من Google Drive الخاص بالمركز، ويمكن إزالة رمز التفويض المحفوظ على الخادم. للطلبات المتعلقة بالحذف راسلنا على البريد أدناه.</li>
+</ul>
+
+<h2>التحديثات</h2>
+<p>قد نحدّث هذه الصفحة عند تغيّر طريقة عمل التطبيق، ويظهر تاريخ آخر نسخة في أعلى الصفحة.</p>
+
+<h2>التواصل</h2>
+<p>لأي استفسار عن الخصوصية: <a href="mailto:swnwclinics@gmail.com">swnwclinics@gmail.com</a></p>
+
+<p class="lp-foot">مركز عيادات Swnw التخصصية. هذه الصفحة مستقلة عن سياسات الموقع الإلكتروني للمركز ولوحة نشر المحتوى (SSMPD) ولا تغيّر أيًا منها.</p>
+</article></main>
+</body>
+</html>
