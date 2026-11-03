@@ -2,9 +2,9 @@
   'use strict';
   if(w.__SSMPD_DIGITAL_TEAM_LOADED__)return;
   w.__SSMPD_DIGITAL_TEAM_LOADED__=true;
-  var mounted=false,client=null;
+  var client=null,navObserver=null;
   function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
-  function roles(a){return Array.isArray(a&&a.roles)&&a.roles.length?a.roles:(a&&a.role?[a.role]:[]);}
+  function roles(a){var r=Array.isArray(a&&a.roles)?a.roles.slice():[];if(a&&a.role&&r.indexOf(a.role)===-1)r.push(a.role);return r;}
   function isManager(a){var r=roles(a);return r.indexOf('super_admin')!==-1||r.indexOf('general_manager')!==-1;}
   function currentAdmin(){return w.SSMPDAuth&&w.SSMPDAuth.currentAdmin;}
   function initClient(){if(client)return client;var c=w.SSMPD_CONFIG&&w.SSMPD_CONFIG.supabase;if(!c||!w.supabase)return null;client=w.supabase.createClient(c.url,c.anonKey,{auth:{persistSession:true,autoRefreshToken:true}});return client;}
@@ -12,7 +12,7 @@
   function rel(iso){if(!iso)return 'لا يوجد نشاط مسجل';var m=Math.max(0,Math.round((Date.now()-new Date(iso).getTime())/60000));if(m<1)return 'الآن';if(m<60)return 'من '+m+' دقيقة';var h=Math.round(m/60);if(h<24)return 'من '+h+' ساعة';return 'من '+Math.round(h/24)+' يوم';}
   function roleLabel(r){return {page_manager:'مسؤول المحتوى',designer:'مصمم جرافيك',approver:'مسؤول اعتماد',digital_agent:'موظف رقمي'}[r]||r||'';}
   function icon(code){
-    if(code==='sia')return '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.2"></circle><path d="M5.5 20c.8-4 3.2-6 6.5-6s5.7 2 6.5 6"></path><path d="M18.5 4.5v4M16.5 6.5h4"></path></svg>';
+    if(code==='sia')return '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="7" width="16" height="13" rx="4"></rect><path d="M12 7V4m-2 0h4M7 20v2l3-2M9 12h.01M15 12h.01M9.5 16h5"></path></svg>';
     if(code==='hapi')return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5h16v11H9l-5 3v-14z"></path><path d="M8 10h8M8 13h5"></path></svg>';
     return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.2 4.8L19 10l-4.8 2.2L12 17l-2.2-4.8L5 10l4.8-2.2L12 3z"></path><path d="M18.5 15.5l.8 1.7 1.7.8-1.7.8-.8 1.7-.8-1.7-1.7-.8 1.7-.8.8-1.7z"></path></svg>';
   }
@@ -40,9 +40,38 @@
     var b=view.querySelector('[data-dt-refresh]');if(b)b.onclick=load;
   }
   async function load(){var db=initClient(),view=document.getElementById('view-container');if(!db||!view)return;view.innerHTML='<div class="dt-loading">جارٍ تحميل الفريق الرقمي…</div>';try{var r=await db.rpc('digital_team_dashboard');if(r.error)throw r.error;render(r.data||{});}catch(e){view.innerHTML='<div class="dt-loading">تعذر تحميل الفريق الرقمي: '+esc(e.message||e)+'</div>';}}
-  function open(){var a=currentAdmin();if(!a||!isManager(a))return;document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});document.querySelectorAll('[data-digital-team-tab]').forEach(function(b){b.classList.add('active');});var brand=document.getElementById('brand-section-name');if(brand)brand.textContent='مركز عيادات سونو التخصصية · الفريق الرقمي';var mobile=document.getElementById('mobile-menu');if(mobile)mobile.classList.remove('open');load();}
-  function mount(){if(mounted)return;var a=currentAdmin(),bar=document.getElementById('tabs-bar');if(!a||!isManager(a)||!bar)return;mounted=true;var d=document.createElement('button');d.className='tab-btn dt-tab';d.type='button';d.setAttribute('data-digital-team-tab','1');d.textContent='الفريق الرقمي';d.onclick=open;bar.appendChild(d);var mm=document.querySelector('#mobile-menu .mm-tabs');if(mm){var m=document.createElement('button');m.className='tab-btn';m.type='button';m.setAttribute('data-digital-team-tab','1');m.textContent='الفريق الرقمي';m.onclick=open;mm.appendChild(m);}}
-  function wait(){if(mounted)return;mount();if(!mounted)setTimeout(wait,700);}
+  function open(){
+    var a=currentAdmin();if(!a||!isManager(a))return;
+    document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
+    document.querySelectorAll('[data-digital-team-tab]').forEach(function(b){b.classList.add('active');});
+    var bar=document.getElementById('tabs-bar');if(bar)bar.style.display='';
+    var mobileTabs=document.querySelector('#mobile-menu .mm-tabs');if(mobileTabs)mobileTabs.style.display='';
+    var brand=document.getElementById('brand-section-name');
+    if(brand)brand.innerHTML='<span class="brand-center">مركز عيادات سونو التخصصية</span><span class="brand-section">الفريق الرقمي</span>';
+    if(w.SSMPDI18n&&w.SSMPDI18n.setPageTitle)w.SSMPDI18n.setPageTitle('الفريق الرقمي');
+    var mobile=document.getElementById('mobile-menu');if(mobile)mobile.classList.remove('open');
+    var dropdown=document.getElementById('user-dropdown');if(dropdown)dropdown.classList.remove('open');
+    load();
+  }
+  function addNav(parent,cls,label){
+    if(!parent||parent.querySelector('[data-digital-team-tab]'))return;
+    var b=document.createElement('button');b.className=cls;b.type='button';
+    b.setAttribute('data-digital-team-tab','1');b.textContent=label;b.onclick=open;
+    parent.appendChild(b);
+  }
+  function mount(){
+    var a=currentAdmin();if(!a||!isManager(a))return;
+    addNav(document.getElementById('tabs-bar'),'tab-btn dt-tab','الفريق الرقمي');
+    addNav(document.querySelector('#mobile-menu .mm-tabs'),'tab-btn dt-tab','الفريق الرقمي');
+    addNav(document.querySelector('#user-dropdown .ud-items'),'ud-item dt-dropdown-tab','الفريق الرقمي');
+  }
+  function start(){
+    mount();
+    if(navObserver)return;
+    var host=document.getElementById('app-root')||document.body;
+    navObserver=new MutationObserver(mount);
+    navObserver.observe(host,{childList:true});
+  }
   w.SSMPDDigitalTeam={open:open,refresh:load};
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',wait);else wait();
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
 })(window);

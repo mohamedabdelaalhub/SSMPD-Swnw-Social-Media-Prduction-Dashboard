@@ -36,7 +36,7 @@
   if (!document.querySelector('link[data-ssmpd-ea]')) {
     var employeeStyle = document.createElement('link');
     employeeStyle.rel = 'stylesheet';
-    employeeStyle.href = 'assets/css/employee-assistant.css?v=employee-assistant-v1';
+    employeeStyle.href = 'assets/css/employee-assistant.css?v=employee-assistant-v2';
     employeeStyle.setAttribute('data-ssmpd-ea', 'style');
     document.head.appendChild(employeeStyle);
   }

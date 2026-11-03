@@ -20,10 +20,15 @@ jobs:
         run: |
           node --check assets/js/digital-team.js
           node --check assets/js/sia-ui.js
+          node --check assets/js/employee-assistant.js
           node --check assets/js/ui-titles.js
           node --check assets/js/scroll-top.js
           node --check assets/js/administrative-assistant.js
           node --check assets/js/administrative-assistant-center.js
+
+      - run: npm ci
+      - name: Check digital team navigation and launcher accessibility
+        run: node tests/digital-team-navigation.cjs
 
   tests:
     runs-on: ubuntu-24.04
