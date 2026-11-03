@@ -2,7 +2,7 @@ const {JSDOM,VirtualConsole}=require('jsdom'),fs=require('fs'),path=require('pat
 const root=path.join(__dirname,'..'),read=n=>fs.readFileSync(path.join(root,'assets/js',n+'.js'),'utf8'),tick=()=>new Promise(r=>setTimeout(r,12));
 (async()=>{
  // 1. Isolated legal site (legal-site/): standalone, local fonts, no scripts, no external requests, same-domain cross-links, honest planned-vs-deployed wording.
- const site=path.join(root,'legal-site'),B='https://legal.swnwclinics.com';
+ const site=path.join(root,'legal-site'),B='https://backup-legal.swnwclinics.com';
  for(const f of ['index.html','privacy.html','terms.html']){
   const h=fs.readFileSync(path.join(site,f),'utf8');
   assert.ok(/<html lang="ar" dir="rtl">/.test(h),f+' is RTL Arabic');
@@ -34,13 +34,13 @@ const root=path.join(__dirname,'..'),read=n=>fs.readFileSync(path.join(root,'ass
  card.click();const panel=d.querySelector('[data-admin-panel=legal]');assert.equal(panel.hidden,false);
  assert.equal(panel.querySelectorAll('.ld-group').length,3);assert.equal(panel.querySelectorAll('.ld-row').length,6);
  const links=[...panel.querySelectorAll('.ld-actions a')].map(a=>a.getAttribute('href'));
- assert.deepEqual(links.map(u=>u.replace('https://example.invalid/app/','')),['https://legal.swnwclinics.com/privacy','https://legal.swnwclinics.com/terms','privacy.html','terms.html','privacy-policy.html','data-deletion.html']);
- for(const u of links)if(!u.startsWith('https://legal.'))assert.ok(fs.existsSync(path.join(root,u.replace('https://example.invalid/app/',''))),u+' exists');
+ assert.deepEqual(links.map(u=>u.replace('https://example.invalid/app/','')),['https://backup-legal.swnwclinics.com/privacy','https://backup-legal.swnwclinics.com/terms','privacy.html','terms.html','privacy-policy.html','data-deletion.html']);
+ for(const u of links)if(!u.startsWith('https://backup-legal.'))assert.ok(fs.existsSync(path.join(root,u.replace('https://example.invalid/app/',''))),u+' exists');
  assert.ok(links.every(u=>u.startsWith('https://')),'absolute public links');
  assert.ok([...panel.querySelectorAll('.ld-actions a')].every(a=>a.target==='_blank'&&/noopener/.test(a.rel)));
  let copied=null;Object.defineProperty(w,'isSecureContext',{value:true});Object.defineProperty(w.navigator,'clipboard',{value:{writeText:async t=>{copied=t;}}});
  panel.querySelector('.ld-actions button').click();await tick();
- assert.equal(copied,'https://legal.swnwclinics.com/privacy');assert.ok(/تم نسخ رابط/.test(panel.querySelector('.ld-status').textContent));
+ assert.equal(copied,'https://backup-legal.swnwclinics.com/privacy');assert.ok(/تم نسخ رابط/.test(panel.querySelector('.ld-status').textContent));
  assert.equal(calls.filter(c=>/^(update|add|remove|save|delete|upsert|insert|set)/i.test(c)).length,0,'hub performs no writes');
  assert.deepEqual(errors,[]);
  // 3. Without the module the admin panel is unchanged (6 cards, no legal panel).

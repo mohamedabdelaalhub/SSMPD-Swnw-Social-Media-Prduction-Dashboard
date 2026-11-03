@@ -1,9 +1,9 @@
 /* Legal documents hub (read-only): lists the public privacy/terms pages per system with view + copy-link actions. No data access, no editing. */
 (function(root){'use strict';
 var DOCS=[
- {system:'Swnw Server Backups',note:'النسخ الاحتياطي لخوادم المركز على Google Drive (تطبيق داخلي للمسؤول) — يُنشر على نطاق مستقل legal.swnwclinics.com.',items:[
-  {kind:'الخصوصية',title:'سياسة الخصوصية',url:'https://legal.swnwclinics.com/privacy'},
-  {kind:'الشروط',title:'شروط الاستخدام',url:'https://legal.swnwclinics.com/terms'}]},
+ {system:'Swnw Server Backups',note:'النسخ الاحتياطي لخوادم المركز على Google Drive (تطبيق داخلي للمسؤول) — يُنشر على نطاق مستقل backup-legal.swnwclinics.com.',items:[
+  {kind:'الخصوصية',title:'سياسة الخصوصية',url:'https://backup-legal.swnwclinics.com/privacy'},
+  {kind:'الشروط',title:'شروط الاستخدام',url:'https://backup-legal.swnwclinics.com/terms'}]},
  {system:'لوحة إنتاج المحتوى SSMPD',note:'لوحة تنظيم ونشر محتوى السوشيال ميديا (ربط TikTok).',items:[
   {kind:'الخصوصية',title:'سياسة الخصوصية',file:'privacy.html'},
   {kind:'الشروط',title:'شروط الاستخدام',file:'terms.html'}]},
