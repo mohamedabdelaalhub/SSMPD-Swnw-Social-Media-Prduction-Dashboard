@@ -9,4 +9,12 @@ function identity(admin){var name=admin.name||admin.email||'حسابي',list=rol
 function label(tab,admin){var R=root.SSMPDRoles;if(tab==='inventory'&&admin.inventory_assigned===false&&admin.inventory_supply_access)return 'طلب مستلزمات';if(tab==='accounting'&&!R.canModuleAction(admin,'accounting','view')&&R.canSeeTab(admin,'inventory'))return 'المخزن والجرد';return tabs[tab]||tab;}
 function brand(tab,admin){return '<span class="brand-center">'+root.SSMPDI18n.textHtml('مركز عيادات سونو التخصصية')+'</span><span class="brand-section">'+root.SSMPDI18n.textHtml(label(tab,admin))+'</span>';}
 root.SSMPDUITitles={tabs:tabs,roles:roles,chips:chips,identity:identity,label:label,brand:brand};
+
+(function loadAdministrativeAssistant(){
+  if(root.__SSMPD_ADMIN_ASSISTANT_ASSETS_REQUESTED__)return;
+  root.__SSMPD_ADMIN_ASSISTANT_ASSETS_REQUESTED__=true;
+  var version='assistant-task-review-20261103-2';
+  ['assets/css/administrative-assistant.css','assets/css/administrative-assistant-center.css'].forEach(function(href){var link=document.createElement('link');link.rel='stylesheet';link.href=href+'?v='+version;document.head.appendChild(link);});
+  var quick=document.createElement('script');quick.src='assets/js/administrative-assistant.js?v='+version;quick.async=false;quick.onload=function(){var center=document.createElement('script');center.src='assets/js/administrative-assistant-center.js?v='+version;center.async=false;document.head.appendChild(center);};document.head.appendChild(quick);
+})();
 })(window);
