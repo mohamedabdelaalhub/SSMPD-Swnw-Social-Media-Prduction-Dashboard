@@ -2,7 +2,7 @@
   'use strict';
   if(window.__SSMPD_SIA_UI_LOADED__)return;
   window.__SSMPD_SIA_UI_LOADED__=true;
-  var assistantIcon='<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.2"></circle><path d="M5.5 20c.8-4 3.2-6 6.5-6s5.7 2 6.5 6"></path><path d="M18.5 4.5v4M16.5 6.5h4"></path></svg>';
+  var assistantIcon='<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="7" width="16" height="13" rx="4"></rect><path d="M12 7V4m-2 0h4M7 20v2l3-2M9 12h.01M15 12h.01M9.5 16h5"></path></svg>';
   function patch(){
     var b=document.querySelector('.ssmpd-aa-launch');
     if(b&&!b.dataset.siaBranded){b.dataset.siaBranded='1';b.innerHTML=assistantIcon;b.setAttribute('aria-label','سيا — المساعد الإداري');b.title='سيا — المساعد الإداري';}
