@@ -70,7 +70,7 @@
     if(navObserver)return;
     var host=document.getElementById('app-root')||document.body;
     navObserver=new MutationObserver(mount);
-    navObserver.observe(host,{childList:true,subtree:true});
+    navObserver.observe(host,{childList:true});
   }
   w.SSMPDDigitalTeam={open:open,refresh:load};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
