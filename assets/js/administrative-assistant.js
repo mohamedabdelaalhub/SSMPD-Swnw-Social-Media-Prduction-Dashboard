@@ -1,10 +1,10 @@
 (function(w){
   'use strict';
-  var mounted=false, client=null, panel=null, launch=null, refreshTimer=null;
+  var mounted=false,client=null,panel=null,launch=null,refreshTimer=null,ownerAdminId=null;
   function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
   function roles(a){return Array.isArray(a&&a.roles)&&a.roles.length?a.roles:(a&&a.role?[a.role]:[]);}
   function isManager(a){var r=roles(a);return r.indexOf('super_admin')!==-1||r.indexOf('general_manager')!==-1;}
-  function isOwner(a){return !!a&&a.id==='bd5a528f-af8d-4ada-afe9-ce64e68b1d92';}
+  function isOwner(a){return !!a&&!!ownerAdminId&&a.id===ownerAdminId;}
   function modeLabel(v){return {read_only:'قراءة فقط',shadow:'وضع الظل',approval:'تنفيذ بعد الموافقة',delegated:'تفويض مسبق'}[v]||v||'غير محدد';}
   function relative(iso){if(!iso)return '';var m=Math.max(0,Math.round((Date.now()-new Date(iso).getTime())/60000));if(m<1)return 'الآن';if(m<60)return 'من '+m+' دقيقة';var h=Math.round(m/60);if(h<24)return 'من '+h+' ساعة';return 'من '+Math.round(h/24)+' يوم';}
   function currentAdmin(){return w.SSMPDAuth&&w.SSMPDAuth.currentAdmin;}
@@ -15,12 +15,20 @@
     panel=document.createElement('aside');panel.className='ssmpd-aa-panel';panel.hidden=true;panel.setAttribute('aria-label','المساعد الإداري');
     document.body.appendChild(launch);document.body.appendChild(panel);
     launch.onclick=function(){panel.hidden=!panel.hidden;if(!panel.hidden)refresh();};
-    panel.addEventListener('click',function(e){if(e.target.closest('[data-aa-close]'))panel.hidden=true;if(e.target.closest('[data-aa-refresh]'))refresh();});
+    panel.addEventListener('click',function(e){
+      if(e.target.closest('[data-aa-close]'))panel.hidden=true;
+      if(e.target.closest('[data-aa-refresh]'))refresh();
+      var approve=e.target.closest('[data-aa-access-approve]');if(approve)approveAccess(approve.getAttribute('data-aa-access-approve'));
+      var reject=e.target.closest('[data-aa-access-reject]');if(reject)rejectAccess(reject.getAttribute('data-aa-access-reject'));
+      var open=e.target.closest('[data-aa-access-open]');if(open)openAccessPanel(open.getAttribute('data-aa-access-open'));
+      var done=e.target.closest('[data-aa-access-done]');if(done)markAccessDone(done.getAttribute('data-aa-access-done'));
+    });
   }
   function errorHtml(msg){return '<div class="ssmpd-aa-head"><h2>المساعد الإداري</h2><button class="ssmpd-aa-close" data-aa-close type="button">×</button></div><p class="ssmpd-aa-empty">'+esc(msg)+'</p>';}
+  function accessRequestHtml(r){var a=r.suggested_action||{},label=a.access_label||'صلاحية',name=a.requester_name||'الموظف',waiting=r.status==='waiting_owner'||r.status==='pending';var buttons='';if(isOwner(currentAdmin())){buttons=waiting?'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><button class="btn sm" data-aa-access-approve="'+esc(r.id)+'" type="button">أوافق</button><button class="btn ghost sm" data-aa-access-reject="'+esc(r.id)+'" type="button">أرفض</button></div>':'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><button class="btn sm" data-aa-access-open="'+esc(r.id)+'" type="button">فتح صلاحيات الموظف</button><button class="btn ghost sm" data-aa-access-done="'+esc(r.id)+'" type="button">تم فتح الصلاحية</button></div>';}else buttons='<small>الطلب ينتظر قرار المالك.</small>';return '<div class="ssmpd-aa-item"><b>طلب صلاحية · '+esc(label)+'</b><div><strong>'+esc(name)+'</strong> طلب الوصول.</div><div>السبب: '+esc(r.body)+'</div><small>'+relative(r.created_at)+(r.status==='reviewing'?' · وافق المالك مبدئيًا':'')+'</small>'+buttons+'</div>';}
   function render(data){
-    var c=data&&data.config||{}, counts=data&&data.counts||{}, reqs=Array.isArray(data&&data.requests)?data.requests:[], rules=Array.isArray(data&&data.rules)?data.rules:[];
-    var open=reqs.slice(0,8).map(function(r){return '<div class="ssmpd-aa-item"><b>'+esc(r.priority==='critical'?'حرج':r.priority==='urgent'?'عاجل':'طلب')+'</b><div>'+esc(r.body)+'</div><small>'+esc(r.source)+' · '+relative(r.created_at)+'</small></div>';}).join('');
+    var c=data&&data.config||{}, counts=data&&data.counts||{}, reqs=Array.isArray(data&&data.requests)?data.requests:[], rules=Array.isArray(data&&data.rules)?data.rules:[];ownerAdminId=c.owner_admin_id||null;
+    var open=reqs.slice(0,12).map(function(r){if(r.source==='access_request')return accessRequestHtml(r);return '<div class="ssmpd-aa-item"><b>'+esc(r.priority==='critical'?'حرج':r.priority==='urgent'?'عاجل':'طلب')+'</b><div>'+esc(r.body)+'</div><small>'+esc(r.source)+' · '+relative(r.created_at)+'</small></div>';}).join('');
     var ruleRows=rules.slice(0,6).map(function(r){return '<div class="ssmpd-aa-item"><b>'+esc(r.title)+'</b><div>'+esc(r.instruction)+'</div><small>'+esc(r.scope)+' · '+esc(r.approval_mode)+'</small></div>';}).join('');
     panel.innerHTML='<div class="ssmpd-aa-head"><h2>المساعد الإداري</h2><div><button class="btn ghost sm" data-aa-refresh type="button">تحديث</button> <button class="ssmpd-aa-close" data-aa-close type="button">×</button></div></div>'+
       '<div class="ssmpd-aa-mode">'+esc(modeLabel(c.mode))+(c.auto_execute_enabled?' · تنفيذ تلقائي مفعل':' · التنفيذ التلقائي متوقف')+'</div>'+
@@ -32,22 +40,15 @@
       (isOwner(currentAdmin())?'<section class="ssmpd-aa-section ssmpd-aa-form"><h3>علّمني قاعدة</h3><textarea data-aa-instruction placeholder="مثال: لو كشف المرتبات طبيعي ومطابق للحضور اعتمده، ولو فيه فرق استناني."></textarea><button class="btn" data-aa-teach type="button">حفظ التعليمة</button><div class="ssmpd-aa-status" data-aa-status></div></section>':'');
     var teach=panel.querySelector('[data-aa-teach]');if(teach)teach.onclick=saveInstruction;
   }
-  async function refresh(){
-    var a=currentAdmin(), db=initClient();if(!a||!isManager(a)||!db)return;
-    try{var res=await db.rpc('administrative_assistant_dashboard');if(res.error)throw res.error;if(res.data&&res.data.error)throw new Error('غير مصرح');render(res.data||{});}catch(err){panel.innerHTML=errorHtml('تعذر تحميل المساعد: '+(err&&err.message?err.message:err));}
-  }
-  async function saveInstruction(){
-    var a=currentAdmin(), box=panel.querySelector('[data-aa-instruction]'), status=panel.querySelector('[data-aa-status]'), text=String(box&&box.value||'').trim();
-    if(!text){status.textContent='اكتب التعليمة أولًا.';return;}
-    status.textContent='جارٍ الحفظ…';
-    try{
-      var title=text.length>70?text.slice(0,67)+'…':text;
-      var row={title:title,instruction:text,scope:'general',action_type:'owner_instruction',conditions:{source:'assistant_panel'},approval_mode:'owner_each_time',active:true,created_by:a.id,approved_by:a.id,approved_at:new Date().toISOString()};
-      var res=await initClient().from('administrative_assistant_rules').insert(row);if(res.error)throw res.error;
-      box.value='';status.textContent='تم حفظ التعليمة كقاعدة معتمدة.';setTimeout(refresh,350);
-    }catch(err){status.textContent='تعذر الحفظ: '+(err&&err.message?err.message:err);}
-  }
-  function mount(){if(mounted)return;var a=currentAdmin();if(!a||!document.body)return;if(!isManager(a)){return;}mounted=true;shell();launch.hidden=false;refresh();refreshTimer=setInterval(function(){if(panel&&!panel.hidden)refresh();},60000);w.addEventListener('ssmpd-tasks-changed',function(){if(panel&&!panel.hidden)refresh();});}
+  async function refresh(){var a=currentAdmin(),database=initClient();if(!a||!isManager(a)||!database)return;try{var res=await database.rpc('administrative_assistant_dashboard');if(res.error)throw res.error;if(res.data&&res.data.error)throw new Error('غير مصرح');render(res.data||{});}catch(err){panel.innerHTML=errorHtml('تعذر تحميل المساعد: '+(err&&err.message?err.message:err));}}
+  async function getRequest(id){var res=await initClient().from('administrative_assistant_requests').select('*').eq('id',id).single();if(res.error)throw res.error;return res.data;}
+  async function updateRequest(id,patch){patch.updated_at=new Date().toISOString();var res=await initClient().from('administrative_assistant_requests').update(patch).eq('id',id);if(res.error)throw res.error;}
+  async function approveAccess(id){if(!isOwner(currentAdmin()))return;try{var r=await getRequest(id),a=r.suggested_action||{};if(!confirm('الموافقة على طلب '+(a.requester_name||'الموظف')+' للوصول إلى «'+(a.access_label||'الصلاحية')+'»؟'))return;await updateRequest(id,{status:'reviewing',decision_summary:'وافق المالك مبدئيًا على منح الصلاحية'});if(w.SSMPDToast)w.SSMPDToast.show('تمت الموافقة. افتح صلاحيات الموظف لتطبيقها.');await refresh();}catch(e){alert(e.message||'تعذر اعتماد الطلب');}}
+  async function rejectAccess(id){if(!isOwner(currentAdmin()))return;var reason=prompt('اكتب سبب الرفض ليظهر للموظف:','');if(reason===null)return;reason=String(reason||'').trim();if(reason.length<3){alert('اكتب سبب الرفض بوضوح.');return;}try{await updateRequest(id,{status:'rejected',decision_summary:reason});if(w.SSMPDToast)w.SSMPDToast.show('تم رفض الطلب وسيظهر السبب للموظف.');await refresh();}catch(e){alert(e.message||'تعذر رفض الطلب');}}
+  async function openAccessPanel(id){if(!isOwner(currentAdmin()))return;try{var r=await getRequest(id),name=r.suggested_action&&r.suggested_action.requester_name||'';panel.hidden=true;var adminTab=document.querySelector('.tab-btn[data-tab="admin"]');if(adminTab)adminTab.click();setTimeout(function(){var input=document.querySelector('.aw-user-tools input[type="search"],#admin-users input[type="search"]');if(input&&name){input.value=name;input.dispatchEvent(new Event('input',{bubbles:true}));input.focus();}},700);}catch(e){alert(e.message||'تعذر فتح لوحة الصلاحيات');}}
+  async function markAccessDone(id){if(!isOwner(currentAdmin()))return;try{await updateRequest(id,{status:'executed',decision_summary:'وافق المالك وتم فتح الصلاحية من لوحة المستخدمين'});if(w.SSMPDToast)w.SSMPDToast.show('تم إبلاغ الموظف أن الصلاحية اتفتحت.');await refresh();}catch(e){alert(e.message||'تعذر إغلاق الطلب');}}
+  async function saveInstruction(){var a=currentAdmin(),box=panel.querySelector('[data-aa-instruction]'),status=panel.querySelector('[data-aa-status]'),text=String(box&&box.value||'').trim();if(!text){status.textContent='اكتب التعليمة أولًا.';return;}status.textContent='جارٍ الحفظ…';try{var title=text.length>70?text.slice(0,67)+'…':text;var row={title:title,instruction:text,scope:'general',action_type:'owner_instruction',conditions:{source:'assistant_panel'},approval_mode:'owner_each_time',active:true,created_by:a.id,approved_by:a.id,approved_at:new Date().toISOString()};var res=await initClient().from('administrative_assistant_rules').insert(row);if(res.error)throw res.error;box.value='';status.textContent='تم حفظ التعليمة كقاعدة معتمدة.';setTimeout(refresh,350);}catch(err){status.textContent='تعذر الحفظ: '+(err&&err.message?err.message:err);}}
+  function mount(){if(mounted)return;var a=currentAdmin();if(!a||!document.body)return;if(!isManager(a))return;mounted=true;shell();launch.hidden=false;refresh();refreshTimer=setInterval(function(){if(panel&&!panel.hidden)refresh();},60000);w.addEventListener('ssmpd-tasks-changed',function(){if(panel&&!panel.hidden)refresh();});}
   function wait(){var a=currentAdmin();if(a&&document.getElementById('app-root')){mount();if(!mounted)setTimeout(wait,1000);}else setTimeout(wait,700);}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',wait);else wait();
 })(window);
