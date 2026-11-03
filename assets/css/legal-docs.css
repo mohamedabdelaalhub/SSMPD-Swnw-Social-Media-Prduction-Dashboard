@@ -1,0 +1,15 @@
+/* Legal documents hub inside the admin control panel. Reuses dashboard tokens; no new visual system. */
+.ld-hub{display:grid;gap:14px;min-width:0}.ld-hub *{box-sizing:border-box}
+.ld-hub h3{margin:0;color:var(--c-primary,#0F369D)}
+.ld-intro{margin:0;color:var(--c-muted,#6B7688);font-size:13px}
+.ld-status{margin:0;min-height:20px;font-size:13px;color:var(--c-muted,#6B7688)}
+.ld-status.ok{color:var(--c-positive,#2F7D5C)}.ld-status.err{color:var(--c-negative,#D0402A)}
+.ld-group{background:var(--c-card,#fff);border:1px solid var(--c-border,#E3E8F2);border-radius:var(--radius,14px);padding:14px 16px;display:grid;gap:10px;min-width:0}
+.ld-head{display:grid;gap:2px}.ld-head strong{color:var(--c-dark,#16212E);font-size:16px}.ld-head span{color:var(--c-muted,#6B7688);font-size:13px}
+.ld-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:10px;border-top:1px solid var(--c-border,#E3E8F2);flex-wrap:wrap;min-width:0}
+.ld-info{display:grid;gap:2px;min-width:0;flex:1 1 240px}.ld-info small{color:var(--c-muted,#6B7688)}
+.ld-url{direction:ltr;unicode-bidi:isolate;display:block;overflow-wrap:anywhere;font-size:12px;color:var(--c-muted,#6B7688);background:transparent;padding:0}
+.ld-en{direction:ltr;unicode-bidi:isolate}
+.ld-actions{display:flex;gap:8px;flex-wrap:wrap}
+.ld-actions a.btn{text-decoration:none;display:inline-flex;align-items:center}
+@media(max-width:600px){.ld-actions{width:100%}.ld-actions .btn{flex:1 1 0;justify-content:center}}

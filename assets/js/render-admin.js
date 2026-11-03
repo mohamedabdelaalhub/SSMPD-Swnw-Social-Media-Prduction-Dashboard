@@ -160,10 +160,12 @@
         '<div id="usage-report-box" style="margin-top:12px;"></div></div>';
 
       html += '<div class="section" id="brand-logo-settings"></div>';
+      html += '<div class="section" id="admin-legal-docs"></div>';
       container.innerHTML = html;
       if(window.SSMPDDesignBudget)window.SSMPDDesignBudget.mount(container.querySelector('#admin-design-budget'));
       if(window.SSMPDClaudeControls)window.SSMPDClaudeControls.mount(container.querySelector('#admin-claude-controls'));
       renderBrandLogos(container.querySelector('#brand-logo-settings'));
+      if(window.SSMPDLegalDocs)window.SSMPDLegalDocs.mount(container.querySelector('#admin-legal-docs'));
 
       container.querySelectorAll('[data-supply-permissions]').forEach(function(b){b.onclick=function(){var a=admins.find(function(x){return x.id===b.dataset.supplyPermissions;});if(a)window.SSMPDSupplyRequests.openPermissions(a);};});
       container.querySelectorAll('[data-finance-permissions]').forEach(function(button){button.onclick=function(){var admin=admins.find(function(a){return a.id===button.dataset.financePermissions;});if(admin)window.SSMPDFinancePermissions.open(admin);};});
