@@ -20,7 +20,7 @@
  function pane(){var r=root();return r&&r.querySelector('[data-dtc-panel]');}
  function status(s){var x=pane()?.querySelector('[data-dtc-status]');if(x)x.textContent=s;}
  function shell(){
-   var r=root();if(!r||r.querySelector('[data-dtc-panel]'))return;
+   var r=root();if(!r||r.querySelector('[data-dtc-panel]')||!w.SSMPDDigitalTeam?.isOwner?.())return;
    var section=document.createElement('section');section.className='dtc-panel';section.setAttribute('data-dtc-panel','');
    section.innerHTML='<header class="dtc-heading"><div><p class="dt-eyebrow">Digital Team Coordination</p><h2>مراسلات الفريق الرقمي</h2><p>مين كلم مين، نوع الرسالة، الرد، المشاكل، وحالة التنفيذ الفعلية.</p></div><button class="btn ghost sm" type="button" data-dtc-refresh>تحديث السجل</button></header>'+
     '<div class="dtc-hint">الاستلام هنا يعني استلام صندوق التنسيق فقط. رد الوكيل الاستشاري لا يعني تنفيذ إجراء في الحجز أو واتساب أو حسابات المركز. المحركات غير المربوطة هتظهر بوضوح.</div>'+
