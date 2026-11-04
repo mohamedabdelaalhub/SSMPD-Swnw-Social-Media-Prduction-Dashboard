@@ -2,7 +2,7 @@
   'use strict';
   if(w.__SSMPD_DIGITAL_TEAM_LOADED__)return;
   w.__SSMPD_DIGITAL_TEAM_LOADED__=true;
-  var client=null,navObserver=null,cachedData=null,recentReviews={},isOwner=false;
+  var client=null,navObserver=null,cachedData=null,recentReviews={},isOwner=false,metricCode='',agentMessages={},discussionStatus={},openDiscussionCode='';
   function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
   function roles(a){var r=Array.isArray(a&&a.roles)?a.roles.slice():[];if(a&&a.role&&r.indexOf(a.role)===-1)r.push(a.role);return r;}
   function isManager(a){var r=roles(a);return r.indexOf('super_admin')!==-1||r.indexOf('general_manager')!==-1;}
@@ -20,7 +20,10 @@
     if(code==='maat')return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M5 7h14M4 19h16M6 7l-3 7h6L6 7zm12 0-3 7h6l-3-7z"></path></svg>';
     return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.2 4.8L19 10l-4.8 2.2L12 17l-2.2-4.8L5 10l4.8-2.2L12 3z"></path><path d="M18.5 15.5l.8 1.7 1.7.8-1.7.8-.8 1.7-.8-1.7-1.7-.8 1.7-.8.8-1.7z"></path></svg>';
   }
-  function stat(label,value){return '<div class="dt-stat"><b>'+esc(value)+'</b><span>'+esc(label)+'</span></div>';}
+  function stat(label,value){
+    var key=Object.keys(metricLabels).find(function(k){return metricLabels[k]===label;})||label;
+    return '<button class="dt-stat dt-stat-action" type="button" data-dt-metric-code="'+esc(metricCode)+'" data-dt-metric-key="'+esc(key)+'" data-dt-metric-label="'+esc(label)+'" data-dt-metric-value="'+esc(value)+'" aria-label="تفاصيل '+esc(label)+'"><b>'+esc(value)+'</b><span>'+esc(label)+'</span></button>';
+  }
   function chip(text,kind){return '<span class="dt-chip '+(kind||'')+'">'+esc(text)+'</span>';}
 
   var specialistCodes={hor:true,hotep:true,nefer:true,maat:true};
@@ -57,7 +60,28 @@
       (r?'<div class="dt-stats">'+pairs+'</div><div class="dt-review-findings">'+findingsHtml+'</div>':'<p class="dt-placeholder">اضغط فحص المؤشرات للحصول على تحليل مجمع واقتراحات للمراجعة البشرية.</p>')+
       '<div class="dt-foot">'+last+state+'</div>'+controls+'</div>';
   }
+
+  function discussionBlock(m){
+    var msgs=Array.isArray(agentMessages[m.code])?agentMessages[m.code]:[];
+    var history=msgs.slice(-10).map(function(a){
+      var mine=a.kind!=='reply',name=mine?'تعليمات الإدارة':'رد استشاري';
+      var kind=mine?(a.kind==='instruction'?'تعليمات':a.kind==='question'?'سؤال':'تعليق'):'اقتراح دون تنفيذ';
+      return '<div class="dt-chat-message '+(mine?'owner':'agent')+'"><div class="dt-chat-label">'+esc(name)+' · '+esc(kind)+'</div><p>'+esc(a.body)+'</p><small>'+esc(rel(a.created_at))+'</small></div>';
+    }).join('');
+    var note=m.code==='claude_creative'?
+      'التوجيه هنا استشاري، ولا يصل تلقائيًا لمحرك Claude Creative. للتنفيذ استخدم المهام والصلاحيات الحالية.'
+      :m.code==='hapi'?
+      'التوجيه هنا استشاري، ولا يصل تلقائيًا لمحرك حابي أو أي عميل على واتساب.'
+      :'تقدر تسأل عن خطة أو تحفظ تعليمات للمراجعة. لا يبدأ تنفيذ أي إجراء تلقائيًا.';
+    return '<details class="dt-discussion" data-dt-discuss="'+esc(m.code)+'"'+(openDiscussionCode===m.code?' open':'')+'>'+
+     '<summary>تعليمات وتعليقات '+(msgs.length?'('+msgs.length+')':'')+'</summary><div class="dt-discussion-body">'+
+     '<p class="dt-discussion-note">'+esc(note)+'</p>'+
+     '<div class="dt-chat-history">'+(history||'<p class="dt-placeholder">لا توجد مناقشات لهذا الوكيل بعد.</p>')+'</div>'+
+     (isOwner?'<form data-dt-message-form="'+esc(m.code)+'"><select name="kind" aria-label="نوع الرسالة"><option value="question">اسأل الوكيل</option><option value="instruction">تعليمات للتخطيط</option><option value="comment">تعليق</option></select><textarea name="body" required minlength="2" maxlength="4000" rows="3" placeholder="اكتب المطلوب أو سؤالك بالتفصيل..."></textarea><button class="btn sm" type="submit">إرسال للنقاش</button></form>':'<p class="dt-placeholder">إرسال التعليمات متاح للمالك.</p>')+
+     '<div class="dt-discussion-status" data-dt-discussion-status="'+esc(m.code)+'">'+esc(discussionStatus[m.code]||'')+'</div></div></details>';
+  }
   function memberCard(m){
+    metricCode=m.code;
     var x=m.metrics||{},special=!!specialistCodes[m.code],head='<div class="dt-member-head"><div class="dt-avatar '+esc(m.code)+'">'+icon(m.code)+'</div><div class="dt-id"><div class="dt-name-row"><h2>'+esc(m.display_name)+'</h2>'+chip(special?'مراجعة عند الطلب':(m.active?'نشط':'متوقف'),special?'safe':(m.active?'ok':'off'))+'</div><p>'+esc(m.title_ar)+'</p><div class="dt-chips">'+chip(special?'محرك تحليل':m.member_kind==='external_agent'?'وكيل خارجي':m.member_kind==='system_identity'?'هوية نظام':'حساب قائم','type')+(m.code==='claude_creative'?chip('الحساب الحالي محفوظ','safe'):'')+'</div></div></div>';
     var body='';
     if(m.code==='sia'){
@@ -72,7 +96,7 @@
       var live=x.live_enabled===true,comms=x.communications_enabled===true;
       body='<div class="dt-stats">'+stat('التشغيل',live?'مفعل':'غير مفعل')+stat('التواصل',comms?'مفعل':'غير مفعل')+stat('رسائل معلقة',n(x.pending_messages))+stat('رسائل فشلت',n(x.failed_messages))+stat('طلبات مساعدة',n(x.open_help_requests))+stat('مكالمات غير محلولة',n(x.unresolved_missed_calls))+'</div><div class="dt-foot"><span>وكيل خدمة العملاء والحجز</span><span>بدون حساب دخول للداشبورد</span></div>';
     }
-    return '<article class="dt-member">'+head+'<p class="dt-authority">'+esc(m.authority_note||'')+'</p>'+body+'</article>';
+    return '<article class="dt-member">'+head+'<p class="dt-authority">'+esc(m.authority_note||'')+'</p>'+body+discussionBlock(m)+'</article>';
   }
   function render(data){
     var view=document.getElementById('view-container');if(!view)return;
@@ -86,8 +110,87 @@
     view.querySelectorAll('[data-dt-decision]').forEach(function(btn){
       btn.onclick=function(){decide(btn.getAttribute('data-dt-review-id'),btn.getAttribute('data-dt-decision'),btn);};
     });
+    view.querySelectorAll('[data-dt-metric-code]').forEach(function(btn){
+      btn.onclick=function(){showMetric(btn);};
+    });
+    view.querySelectorAll('[data-dt-message-form]').forEach(function(form){
+      form.onsubmit=function(e){e.preventDefault();sendAgentMessage(form);};
+    });
+    view.querySelectorAll('[data-dt-discuss]').forEach(function(el){
+      el.addEventListener('toggle',function(){if(el.open)openDiscussionCode=el.getAttribute('data-dt-discuss');});
+    });
   }
 
+
+  async function loadMessages(){
+    var db=initClient();if(!db)return;
+    var r=await db.from('digital_agent_messages').select('id,agent_code,kind,body,created_at,origin')
+      .order('created_at',{ascending:false}).limit(160);
+    if(r.error)throw r.error;
+    agentMessages={};
+    (r.data||[]).reverse().forEach(function(row){
+      if(!agentMessages[row.agent_code])agentMessages[row.agent_code]=[];
+      agentMessages[row.agent_code].push(row);
+    });
+    if(document.querySelector('.digital-team')&&cachedData)render(cachedData);
+  }
+  function discussionFeedback(code,message){
+    discussionStatus[code]=message;
+    var e=document.querySelector('[data-dt-discussion-status="'+code+'"]');
+    if(e)e.textContent=message;
+  }
+  async function sendAgentMessage(form){
+    if(!isOwner)return;
+    var code=form.getAttribute('data-dt-message-form');
+    var kind=form.elements.kind.value,body=String(form.elements.body.value||'').trim();
+    if(body.length<2||body.length>4000)return;
+    openDiscussionCode=code;
+    var b=form.querySelector('button[type=submit]');b.disabled=true;
+    discussionFeedback(code,'جارٍ حفظ التوجيه…');
+    try{
+      var r=await initClient().rpc('digital_agent_post_message',{p_agent_code:code,p_kind:kind,p_body:body});
+      if(r.error)throw r.error;
+      await loadMessages();
+      discussionFeedback(code,'التوجيه محفوظ. جارٍ إعداد رد استشاري دون تنفيذ أي إجراء…');
+      try{
+        var answer=await initClient().functions.invoke('digital-agent-advice',{body:{message_id:r.data}});
+        if(answer.error||!answer.data||!answer.data.ok)throw Error(answer.data?.error||answer.error?.message||'الرد غير متاح');
+        await loadMessages();
+        discussionFeedback(code,'تم تسجيل الرد الاستشاري. لم يُنفَّذ أي إجراء.');
+      }catch(e){
+        discussionFeedback(code,'تم حفظ توجيهك. تعذر الرد الاستشاري: '+(e.message||e)+'. لم يُنفَّذ أي إجراء.');
+      }
+    }catch(e){discussionFeedback(code,'تعذر حفظ التوجيه: '+(e.message||e));}
+    finally{b.disabled=false;}
+  }
+  async function showMetric(btn){
+    var code=btn.getAttribute('data-dt-metric-code')||'';
+    var key=btn.getAttribute('data-dt-metric-key')||'';
+    var label=btn.getAttribute('data-dt-metric-label')||'';
+    var value=btn.getAttribute('data-dt-metric-value')||'';
+    var root=document.querySelector('.digital-team');if(!root)return;
+    var prev=root.querySelector('.dt-detail-backdrop');if(prev)prev.remove();
+    var wrap=document.createElement('div');wrap.className='dt-detail-backdrop';
+    wrap.innerHTML='<section class="dt-detail-dialog" role="dialog" aria-modal="true" aria-label="تفاصيل المؤشر">'+
+      '<header><div><p class="dt-eyebrow">تفاصيل المؤشر</p><h2>'+esc(label)+'</h2></div><button type="button" data-dt-close aria-label="إغلاق">×</button></header>'+
+      '<div class="dt-detail-value">'+esc(value)+'</div><p class="dt-placeholder">جارٍ تحميل مصدر المؤشر وتفاصيله…</p></section>';
+    root.appendChild(wrap);
+    var close=function(){wrap.remove();};wrap.querySelector('[data-dt-close]').onclick=close;
+    wrap.onclick=function(e){if(e.target===wrap)close();};
+    try{
+      var r=await initClient().rpc('digital_agent_metric_detail',{p_code:code,p_key:key});
+      if(r.error)throw r.error;
+      if(!wrap.isConnected)return;
+      var data=r.data||{},rows=Array.isArray(data.breakdown)?data.breakdown:[];
+      wrap.querySelector('.dt-detail-dialog').innerHTML='<header><div><p class="dt-eyebrow">تفاصيل المؤشر</p><h2>'+esc(label)+'</h2></div><button type="button" data-dt-close aria-label="إغلاق">×</button></header>'+
+        '<div class="dt-detail-value">'+esc(value)+'</div>'+
+        '<p>'+esc(data.explanation||'هذه قراءة لمؤشر مجمع ولا تكفي وحدها للحكم على حالة فردية.')+'</p>'+
+        '<p><b>المصدر:</b> '+esc(data.source||'غير متاح')+'</p><p><b>الفترة:</b> '+esc(data.period||'وفق المؤشر')+'</p>'+
+        '<div class="dt-detail-breakdown">'+rows.map(function(x){return '<div class="dt-detail-row"><span>'+esc(x.label)+'</span><b>'+esc(x.count)+'</b></div>';}).join('')+'</div>'+
+        '<p class="dt-discussion-note">الأرقام هنا مجمعة، ولا تتضمن سجلات مرضى أو بيانات شخصية.</p>';
+      wrap.querySelector('[data-dt-close]').onclick=close;
+    }catch(e){if(wrap.isConnected){var e1=wrap.querySelector('.dt-placeholder');if(e1)e1.textContent='تعذر تحميل تفاصيل المؤشر: '+(e.message||e);}}
+  }
   async function latest(){
     var db=initClient();if(!db)return;
     var r=await db.rpc('digital_agent_recent_reviews');if(r.error)throw r.error;
@@ -128,6 +231,7 @@
       var r=await db.rpc('digital_team_dashboard');if(r.error)throw r.error;
       cachedData=r.data||{};render(cachedData);
       try{await latest();}catch(e){var el=document.querySelector('[data-dt-global-status]');if(el)el.textContent='مراجعات الوكلاء الأربعة غير متاحة مؤقتًا: '+(e.message||e);}
+      try{await loadMessages();}catch(e){var el2=document.querySelector('[data-dt-global-status]');if(el2)el2.textContent='سجل المناقشات غير متاح مؤقتًا: '+(e.message||e);}
     }catch(e){view.innerHTML='<div class="dt-loading">تعذر تحميل الفريق الرقمي: '+esc(e.message||e)+'</div>';}
   }
   function open(){
