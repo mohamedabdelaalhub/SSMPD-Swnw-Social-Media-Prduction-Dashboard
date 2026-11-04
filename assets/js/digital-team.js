@@ -305,8 +305,6 @@
   }
   function mount(){
     var a=currentAdmin();if(!a||!isManager(a))return;
-    addNav(document.getElementById('tabs-bar'),'tab-btn dt-tab','الفريق الرقمي');
-    addNav(document.querySelector('#mobile-menu .mm-tabs'),'tab-btn dt-tab','الفريق الرقمي');
     addNav(document.querySelector('#user-dropdown .ud-items'),'ud-item dt-dropdown-tab','الفريق الرقمي');
   }
   function start(){
