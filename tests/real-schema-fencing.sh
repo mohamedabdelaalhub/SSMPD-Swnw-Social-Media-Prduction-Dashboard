@@ -92,6 +92,8 @@ UPD2=$(P -c "set role authenticated; with u as (update public.video_jobs set pro
 P -c "drop policy tmp_permissive on public.video_jobs" >/dev/null
 [ "$UPD2" -ge 1 ] && ok "S27 FRAGILITY: one future permissive policy would immediately expose full DML to authenticated (the grants are the only other barrier)" || bad "S27 upd2=$UPD2"
 P -c "select string_agg(a::text,'|' order by a::text) from pg_class c, unnest(c.relacl) a where c.oid='public.video_jobs'::regclass" > "$D/acl_before.txt"
+P -c "create publication supabase_realtime_test for table public.video_jobs" >/dev/null 2>&1
+POL0=$(P -c "select string_agg(policyname||':'||cmd||':'||roles::text||':'||coalesce(qual,''),'|' order by policyname) from pg_policies where schemaname='public' and tablename='video_jobs'")
 python3 - "$ROOT" "$D/revoke.sql" "$D/rollback.sql" <<'PY'
 import sys
 t=open(sys.argv[1]+'/supabase/drafts/20261104_video_jobs_revoke_api_privileges.sql').read()
@@ -113,6 +115,10 @@ TR=$(P -c "set role authenticated; truncate public.video_jobs cascade" 2>&1 | gr
 TR2=$(P -c "set role anon; truncate public.video_jobs cascade" 2>&1 | grep -c "permission denied")
 SRU=$(P -c "set role service_role; with u as (update public.video_jobs set progress_percent=9 returning 1) select count(*) from u")
 [ "$SEL" -ge 0 ] 2>/dev/null && [ "$ANONSEL" = 1 ] && [ "$TR" = 1 ] && [ "$TR2" = 1 ] && [ "$SRU" -ge 1 ] && ok "S30 after REVOKE: authenticated SELECT still works (dashboard/realtime need), anon SELECT denied, TRUNCATE denied for both, service_role UPDATE still works ($SRU row(s))" || bad "S30 sel=$SEL anonsel=$ANONSEL tr=$TR tr2=$TR2 sru=$SRU"
+POL1=$(P -c "select string_agg(policyname||':'||cmd||':'||roles::text||':'||coalesce(qual,''),'|' order by policyname) from pg_policies where schemaname='public' and tablename='video_jobs'")
+PUB=$(P -c "select count(*) from pg_publication_tables where pubname='supabase_realtime_test' and tablename='video_jobs'")
+SELP=$(P -c "select has_table_privilege('authenticated','public.video_jobs','SELECT')")
+[ "$POL0" = "$POL1" ] && [ -n "$POL0" ] && [ "$PUB" = 1 ] && [ "$SELP" = t ] && ok "S32 realtime-relevant state (review #124: video_jobs IS in the live supabase_realtime publication): after REVOKE the RLS policy set is byte-identical, authenticated keeps SELECT (the two things postgres_changes authorizes with), publication membership is untouched" || bad "S32 pol0=$POL0 pol1=$POL1 pub=$PUB sel=$SELP"
 P -v ON_ERROR_STOP=1 -f "$D/rollback.sql" >/dev/null 2>&1; P -c "select string_agg(a::text,'|' order by a::text) from pg_class c, unnest(c.relacl) a where c.oid='public.video_jobs'::regclass" > "$D/acl_after.txt"
 cmp -s "$D/acl_before.txt" "$D/acl_after.txt" && ok "S31 documented rollback restores the original ACL (same set of entries; entry order inside relacl may differ, which has no effect)" || { bad "S31 rollback differs"; cat "$D/acl_before.txt" "$D/acl_after.txt"; diff "$D/acl_before.txt" "$D/acl_after.txt" | head -5; }
 exit $FAIL
