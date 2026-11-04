@@ -186,4 +186,27 @@ print(sum(1 for x in st if x.split()[0].lower() not in ('select','with')))
 PY
 )
 [ "$RC2" = 0 ] && [ -n "$OUT2" ] && [ "$NW2" = 0 ] && ok "S37 operator packet 2 (X1-X5: per-table grants/RLS/policies, write-activity counters, function facts, anon/PUBLIC write policies, default privileges) executes on the real schema, every statement SELECT/WITH (non-read: $NW2)" || bad "S37 rc=$RC2 nw=$NW2 $(echo "$OUT2" | grep -m2 ERROR)"
+
+# ---- S38/S39 (owner escalation 6641559416): the SINGLE read-only operator query for F1, and the exact final ACL the draft must produce.
+reset_acl
+P -f "$ROOT/supabase/drafts/20261104_video_jobs_f1_single_query.sql" > "$D/f1q.out" 2>"$D/f1q.err"; RCQ=$?
+python3 - "$D/f1q.out" "$ROOT/supabase/drafts/20261104_video_jobs_f1_single_query.sql" > "$D/f1q.check" <<'PY'
+import json,re,sys
+out=open(sys.argv[1]).read(); sql=open(sys.argv[2]).read()
+try: j=json.loads(out)
+except Exception as e: print('BADJSON',e); sys.exit(0)
+need=['packet','server_version_num','relowner','relacl_raw','acl_sorted_value','acl_entries','rollback_statements','column_acl_entries','rls_enabled','rls_forced','policies','dependent_views','fk_out','fk_in','user_triggers','publications','replica_identity']
+miss=[k for k in need if k not in j]
+code=re.sub(r"'[^']*'","''",re.sub(r'--[^\n]*','',sql))
+st=[x.strip() for x in code.split(';') if x.strip()]
+nonread=[x.split()[0] for x in st if x.split()[0].lower() not in ('select','with')]
+reads_rows=bool(re.search(r'\bfrom\s+public\.video_jobs\b',code,re.I))
+print('OK' if not miss and not nonread and not reads_rows and len(st)==1 else 'FAIL miss=%s nonread=%s rows=%s stmts=%d'%(miss,nonread,reads_rows,len(st)))
+print('rollback_statements=%d policies=%d rls=%s'%(len(j['rollback_statements']),len(j['policies']),j['rls_enabled']))
+PY
+head -1 "$D/f1q.check" | grep -q '^OK' && [ "$RCQ" = 0 ] && ok "S38 the F1 single operator query is ONE statement, SELECT-only, never reads rows of video_jobs (catalog references only), runs on the real schema and returns valid JSON with every field F1 needs (ACL baseline and rollback statements, RLS flags and policies, dependents, publications, replica identity): $(tail -1 "$D/f1q.check")" || { bad "S38 rc=$RCQ $(cat "$D/f1q.check") $(head -2 "$D/f1q.err")"; }
+P -v ON_ERROR_STOP=1 -f "$D/revoke.sql" >/dev/null 2>&1
+FINAL=$(P -f "$D/q1v.sql")
+[ "$FINAL" = "authenticated=r/postgres|postgres=arwdDxtm/postgres|service_role=arwdDxtm/postgres" ] && ok "S39 EXACT final ACL after the draft (fixture): authenticated=r/postgres (SELECT only), postgres and service_role unchanged (arwdDxtm), the anon entry gone: $FINAL (the privilege letters of the owner entry depend on the PostgreSQL version; the shape is what the post-check compares)" || bad "S39 final ACL: $FINAL"
+reset_acl
 exit $FAIL
