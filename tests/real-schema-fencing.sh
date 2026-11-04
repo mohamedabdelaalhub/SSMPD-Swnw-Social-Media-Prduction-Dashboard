@@ -122,23 +122,41 @@ SELP=$(P -c "select has_table_privilege('authenticated','public.video_jobs','SEL
 P -v ON_ERROR_STOP=1 -f "$D/rollback.sql" >/dev/null 2>&1; P -c "select string_agg(a::text,'|' order by a::text) from pg_class c, unnest(c.relacl) a where c.oid='public.video_jobs'::regclass" > "$D/acl_after.txt"
 cmp -s "$D/acl_before.txt" "$D/acl_after.txt" && ok "S31 documented rollback restores the original ACL (same set of entries; entry order inside relacl may differ, which has no effect)" || { bad "S31 rollback differs"; cat "$D/acl_before.txt" "$D/acl_after.txt"; diff "$D/acl_before.txt" "$D/acl_after.txt" | head -5; }
 
-# ---- S33/S34 (review #125): rollback generated from the ACL snapshot, and the read-only operator packet runs on a real schema.
-P -v ON_ERROR_STOP=1 -f "$D/revoke.sql" >/dev/null 2>&1
-python3 - "$ROOT" "$D/q1.sql" <<'PY'
-import sys,re
+# ---- S33-S37 (reviews #125/#127): snapshot-based rollback on ACLs shaped like live PLUS explicit grantees, grant options, PUBLIC, non-owner grantors; operator packet; Q3 de-duplication.
+P -c "create role extra_reader nologin; create role chain_a nologin; create role chain_b nologin; create role chain_base nologin; create role diamond_member nologin" >/dev/null
+P -c "grant chain_base to chain_a, chain_b; grant chain_a, chain_b to diamond_member; grant chain_a to authenticated; grant chain_b to authenticated" >/dev/null
+python3 - "$ROOT" "$D/q1.sql" "$D/q1v.sql" <<'PY'
+import sys
 t=open(sys.argv[1]+'/supabase/drafts/20261104_video_jobs_revoke_operator_checks.sql').read()
-q1=t.split('-- Q1',1)[1].split('-- Q2',1)[0]
-q1=q1.split('\n',1)[1]
-open(sys.argv[2],'w').write(q1)
+body=t.split('-- Q1 ',1)[1].split('-- Q2',1)[0]
+q1=body.split('-- Q1v',1)[0]; q1v=body.split('-- Q1v',1)[1]
+open(sys.argv[2],'w').write(q1.split('\n',1)[1])
+open(sys.argv[3],'w').write(q1v.split('\n',1)[1])
 PY
-P -c "grant all on table public.video_jobs to anon, authenticated" >/dev/null
-P -c "select string_agg(a::text,'|' order by a::text) from pg_class c, unnest(c.relacl) a where c.oid='public.video_jobs'::regclass" > "$D/acl33_orig.txt"
-P -F '|' -f "$D/q1.sql" 2>&1 | grep '^rollback_stmt|' | sed 's/^rollback_stmt|//' > "$D/gen_rollback.sql"
-NGEN=$(grep -c '^grant' "$D/gen_rollback.sql")
-P -v ON_ERROR_STOP=1 -f "$D/revoke.sql" >/dev/null 2>&1
-P -v ON_ERROR_STOP=1 -f "$D/gen_rollback.sql" >/dev/null 2>&1
-P -c "select string_agg(a::text,'|' order by a::text) from pg_class c, unnest(c.relacl) a where c.oid='public.video_jobs'::regclass" > "$D/acl33_after.txt"
-[ "$NGEN" -ge 3 ] && cmp -s "$D/acl33_orig.txt" "$D/acl33_after.txt" && ok "S33 the rollback script GENERATED from the ACL snapshot (Q1, $NGEN statements) restores the original ACL exactly after the REVOKE, with no hard-coded grants" || { bad "S33 gen=$NGEN"; cat "$D/gen_rollback.sql" "$D/acl33_orig.txt" "$D/acl33_after.txt"; }
+snap() { P -f "$D/q1v.sql"; }
+reset_acl() { P -c "revoke all on table public.video_jobs from extra_reader, chain_base, chain_a, public cascade; revoke all on table public.video_jobs from anon, authenticated cascade; grant all on table public.video_jobs to anon, authenticated" >/dev/null 2>&1; }
+# Case A: owner-granted explicit grantee WITH GRANT OPTION + PUBLIC + untouched non-owner-grantor entry (chain_base=r/extra_reader)
+reset_acl; P -c "grant select on table public.video_jobs to extra_reader with grant option; grant select on table public.video_jobs to public" >/dev/null
+P -c "set role extra_reader; grant select on table public.video_jobs to chain_base" >/dev/null 2>&1
+P -F '|' -f "$D/q1.sql" > "$D/q1.out" 2>&1
+V0=$(snap); grep '^rollback_stmt|' "$D/q1.out" | sed 's/^rollback_stmt|//' > "$D/gen_rollback.sql"
+NGEN=$(grep -c '^grant' "$D/gen_rollback.sql"); NFLAG=$(grep -c 'NON-OWNER GRANTOR' "$D/gen_rollback.sql")
+P -v ON_ERROR_STOP=1 -f "$D/revoke.sql" >/dev/null 2>&1; VMID=$(snap)
+P -v ON_ERROR_STOP=1 -f "$D/gen_rollback.sql" >/dev/null 2>&1; V1=$(snap)
+[ "$NGEN" = 2 ] && [ "$NFLAG" = 0 ] && [ "$V0" != "$VMID" ] && [ "$V0" = "$V1" ] && ok "S33 ACL with an owner-granted GRANT OPTION grantee, PUBLIC and an untouched non-owner-grantor entry (chain_base=r/extra_reader): the REVOKE changes the ACL, the snapshot-generated rollback ($NGEN statements, only the grantees the draft removes) restores it exactly: Q1v before == after (raw relacl kept as canonical)" || { bad "S33 gen=$NGEN flag=$NFLAG"; echo "V0=$V0"; echo "VMID=$VMID"; echo "V1=$V1"; cat "$D/gen_rollback.sql"; }
+# Case B: anon/authenticated entries carrying a NON-OWNER grantor: the generated statement is flagged and the inexactness is DETECTED by Q1v, not hidden
+reset_acl; P -c "grant select on table public.video_jobs to extra_reader with grant option; revoke all on table public.video_jobs from authenticated" >/dev/null
+P -c "set role extra_reader; grant select on table public.video_jobs to authenticated" >/dev/null 2>&1
+P -F '|' -f "$D/q1.sql" > "$D/q1b.out" 2>&1; VB0=$(snap); grep '^rollback_stmt|' "$D/q1b.out" | sed 's/^rollback_stmt|//' > "$D/gen_rollback_b.sql"
+NFB=$(grep -c 'NON-OWNER GRANTOR' "$D/gen_rollback_b.sql")
+P -v ON_ERROR_STOP=1 -f "$D/revoke.sql" >/dev/null 2>&1; P -v ON_ERROR_STOP=1 -f "$D/gen_rollback_b.sql" >/dev/null 2>&1; VB1=$(snap)
+[ "$NFB" -ge 1 ] && [ "$VB0" != "$VB1" ] && ok "S33b KNOWN LIMIT, DETECTED: when an anon/authenticated ACL entry was granted by a NON-OWNER role (authenticated=r/extra_reader), the generated statement carries a NON-OWNER GRANTOR flag and replaying it as the owner records the owner as grantor, so Q1v after != before (mismatch shown, not hidden): such a rollback must be replayed with SET ROLE to that grantor or accepted as inexact" || { bad "S33b flag=$NFB"; echo "VB0=$VB0"; echo "VB1=$VB1"; }
+# Case C: a dependent grant (authenticated granted onward) makes the draft's plain REVOKE fail safely: transaction aborted, ACL unchanged
+reset_acl; P -c "revoke all on table public.video_jobs from authenticated; grant select on table public.video_jobs to authenticated with grant option" >/dev/null
+P -c "set role authenticated; grant select on table public.video_jobs to chain_a" >/dev/null 2>&1
+VC0=$(snap); P -v ON_ERROR_STOP=1 -f "$D/revoke.sql" >/dev/null 2>&1; RCC=$?; VC1=$(snap)
+[ "$RCC" != 0 ] && [ "$VC0" = "$VC1" ] && ok "S36 a dependent grant (authenticated holds GRANT OPTION and granted onward) makes the draft's plain REVOKE fail with a dependency error; the single transaction rolls back and the ACL is unchanged (the draft never uses CASCADE; the operator must decide separately)" || bad "S36 rc=$RCC"
+reset_acl
 OUT=$(P -v ON_ERROR_STOP=1 -f "$ROOT/supabase/drafts/20261104_video_jobs_revoke_operator_checks.sql" 2>&1); RC=$?
 NW=$(python3 - "$ROOT/supabase/drafts/20261104_video_jobs_revoke_operator_checks.sql" <<'PY'
 import sys,re
@@ -147,5 +165,14 @@ st=[x.strip() for x in t.split(';') if x.strip()]
 print(sum(1 for x in st if x.split()[0].lower() not in ('select','with')))
 PY
 )
-[ "$RC" = 0 ] && [ -n "$OUT" ] && [ "$NW" = 0 ] && ok "S34 the operator packet (Q1-Q7) executes without error on the real schema and every statement starts with SELECT or WITH (non-read statements: $NW)" || bad "S34 rc=$RC nw=$NW $(echo "$OUT" | grep -m2 ERROR)"
+[ "$RC" = 0 ] && [ -n "$OUT" ] && [ "$NW" = 0 ] && ok "S34 the operator packet (Q1, Q1v, Q2-Q7) executes without error on the real schema and every statement starts with SELECT or WITH (non-read statements: $NW)" || bad "S34 rc=$RC nw=$NW $(echo "$OUT" | grep -m2 ERROR)"
+python3 - "$ROOT" "$D/q3.sql" <<'PY'
+import sys
+t=open(sys.argv[1]+'/supabase/drafts/20261104_video_jobs_revoke_operator_checks.sql').read()
+open(sys.argv[2],'w').write(t.split('-- Q3 ',1)[1].split('-- Q4',1)[0].split('\n',1)[1])
+PY
+P -F '|' -f "$D/q3.sql" > "$D/q3.out" 2>&1
+ROWS=$(grep -c '^api_role_is_member_of|' "$D/q3.out"); UNIQ=$(grep '^api_role_is_member_of|' "$D/q3.out" | cut -d'|' -f2 | sort -u | wc -l | tr -d ' ')
+HASBASE=$(grep -c '^api_role_is_member_of|chain_base' "$D/q3.out")
+[ "$ROWS" = "$UNIQ" ] && [ "$HASBASE" = 1 ] && [ "$ROWS" -ge 3 ] && ok "S35 Q3 membership closure is de-duplicated: a diamond (authenticated -> chain_a, chain_b -> chain_base) reports chain_base exactly once ($ROWS rows, $UNIQ distinct roles); inherit_option is read version-agnostically" || { bad "S35 rows=$ROWS uniq=$UNIQ base=$HASBASE"; cat "$D/q3.out"; }
 exit $FAIL
