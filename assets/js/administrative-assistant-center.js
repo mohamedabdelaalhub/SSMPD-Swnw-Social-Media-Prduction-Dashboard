@@ -22,7 +22,15 @@
   async function load(){var db=initClient(),view=document.getElementById('view-container');if(!db||!view)return;view.innerHTML='<div class="aa-center-loading">جارٍ تحميل مركز المساعد…</div>';try{var res=await db.rpc('administrative_assistant_dashboard');if(res.error)throw res.error;if(res.data&&res.data.error)throw Error('غير مصرح');render(res.data||{});}catch(e){view.innerHTML='<div class="aa-center-loading">تعذر تحميل مركز المساعد: '+esc(e.message||e)+'</div>';}}
   async function runReview(){if(!isOwner())return;var status=document.querySelector('[data-aa-center-status]');if(status)status.textContent='المساعد يراجع المهام الآن…';try{var res=await initClient().functions.invoke('assistant-review-tasks',{body:{trigger:'manual'}});if(res.error)throw res.error;var d=res.data||{};if(status)status.textContent='تمت المراجعة: '+Number(d.approved||0)+' اتقفلت، '+Number(d.returned||0)+' رجعت، '+Number(d.needs_owner||0)+' محتاجاك، '+Number(d.overdue_nudged||0)+' تنبيه تأخير.';setTimeout(load,500);}catch(e){if(status)status.textContent='تعذر تشغيل المراجعة: '+(e.message||e);}}
   function open(){var a=currentAdmin();if(!a||!isManager(a))return;document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});document.querySelectorAll('[data-aa-center-tab]').forEach(function(b){b.classList.add('active');});var brand=document.getElementById('brand-section-name');if(brand)brand.textContent='مركز عيادات سونو التخصصية · مركز المساعد الإداري';var mobile=document.getElementById('mobile-menu');if(mobile)mobile.classList.remove('open');load();}
-  function mount(){if(mounted)return;var a=currentAdmin(),bar=document.getElementById('tabs-bar');if(!a||!isManager(a)||!bar)return;mounted=true;var desktop=document.createElement('button');desktop.className='tab-btn aa-center-tab';desktop.type='button';desktop.setAttribute('data-aa-center-tab','1');desktop.textContent='مركز المساعد الإداري';desktop.onclick=open;bar.appendChild(desktop);var mm=document.querySelector('#mobile-menu .mm-tabs');if(mm){var mobile=document.createElement('button');mobile.className='tab-btn';mobile.type='button';mobile.setAttribute('data-aa-center-tab','1');mobile.textContent='مركز المساعد الإداري';mobile.onclick=open;mm.appendChild(mobile);}w.addEventListener('ssmpd-assistant-review-complete',function(){if(document.querySelector('.aa-center'))load();});}
+  function mount(){
+    if(mounted)return;var a=currentAdmin(),items=document.querySelector('#user-dropdown .ud-items');
+    if(!a||!isManager(a)||!items)return;
+    mounted=true;
+    var entry=document.createElement('button');entry.className='ud-item';entry.type='button';
+    entry.setAttribute('data-aa-center-tab','1');entry.textContent='مركز المساعد الإداري';entry.onclick=open;
+    items.appendChild(entry);
+    w.addEventListener('ssmpd-assistant-review-complete',function(){if(document.querySelector('.aa-center'))load();});
+  }
   function wait(){if(mounted)return;mount();if(!mounted)setTimeout(wait,700);}
   w.SSMPDAdministrativeAssistantCenter={open:open,refresh:load};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',wait);else wait();
