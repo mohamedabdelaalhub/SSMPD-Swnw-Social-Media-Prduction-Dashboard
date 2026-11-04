@@ -15,7 +15,7 @@ function human(){return w.SSMPDAuth?.currentAdmin?.name||'الإدارة';}
 function make(){
  var h=host();if(!h||!w.SSMPDDigitalTeam?.isOwner?.()||h.querySelector('[data-chat-launcher]'))return;
  var launch=document.createElement('button');launch.type='button';launch.className='dc-launcher';launch.setAttribute('data-chat-launcher','');
- launch.innerHTML='<span class="dc-launch-icon" aria-hidden="true">◉</span><span>دردشة الفريق</span>';
+ launch.innerHTML='<span class="dc-launch-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 8.5-8.5h.5a8.5 8.5 0 0 1 8 8v.5Z"/><path d="M8 12h.01M12 12h.01M16 12h.01"/></svg></span><span>دردشة الفريق</span>';
  launch.onclick=function(){openWindow();};h.appendChild(launch);
  var box=document.createElement('section');box.className='dc-window';box.setAttribute('data-chat-window','');box.dir='rtl';box.hidden=!shown;
  box.innerHTML='<header class="dc-top"><div><b>دردشة الفريق الرقمي</b><small>رسائل فردية وجماعية · متابعة التعليمات</small></div>'+
@@ -42,6 +42,7 @@ function make(){
  box.querySelector('[data-chat-compose]').onsubmit=function(e){e.preventDefault();send(box.querySelector('[data-chat-compose]'));};
  var form=box.querySelector('[data-chat-compose]');
  form.elements.kind.onchange=updateKind;
+ form.querySelector('[name="body"]').addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();form.requestSubmit();}});
  form.elements.repeat.onchange=updateKind;
  form.elements.frequency.onchange=updateKind;
  form.elements.time.onchange=function(){};
@@ -149,10 +150,11 @@ function bubble(m){
  if(m.sender_type==='system')return '<div class="dc-bubble system"><span>'+esc(m.body)+'</span><small>'+esc(date(m.created_at))+'</small></div>';
  var owner=m.sender_type==='owner';
  var person=owner?human():name(m.agent_code);
+ var simulated=!owner&&m.verification==='runtime_unavailable';
  var typeLabels={chat:'رسالة',question:'سؤال',instruction:'تعليمات',task:'مهمة',reply:'رد',schedule_notice:'متابعة دورية'};
  var type=typeLabels[m.kind]||m.kind;
  return '<article class="dc-bubble '+(owner?'mine':'theirs')+'">'+
- '<div class="dc-bubble-name">'+esc(person)+' <small>'+esc(type)+(owner?'':' · رد تحليلي')+'</small></div>'+
+ '<div class="dc-bubble-name">'+esc(person)+(simulated?' <span class="dc-simulated">محاكاة</span>':'')+' <small>'+esc(type)+(owner?'':simulated?' · غير متصل بالمحرك الفعلي':' · رد تحليلي')+'</small></div>'+
  '<p>'+esc(m.body)+'</p><div class="dc-bubble-footer">'+esc(date(m.created_at))+
  (m.process_state==='processing'?' · جاري الرد':m.process_state==='failed'?' · لم يكتمل الرد':'')+'</div></article>';
 }
