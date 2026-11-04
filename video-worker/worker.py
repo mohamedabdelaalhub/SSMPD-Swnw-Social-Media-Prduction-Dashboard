@@ -598,7 +598,7 @@ def split_script(text: str) -> list[str]:
     # "د." is the doctor abbreviation, not a sentence end: keep it with the name that follows.
     merged: list[str] = []
     for chunk in chunks:
-        if merged and merged[-1].split()[-1:] == ["د."]:
+        if merged and merged[-1].split()[-1:] in (["د."], ["أ.د."], ["أ.د"]):
             merged[-1] = merged[-1] + " " + chunk
         else:
             merged.append(chunk)
@@ -613,7 +613,9 @@ def short_caption_chunks(text: str, words_per_caption: int = 5) -> list[str]:
     out: list[str] = []
 
     def clean(word: str) -> str:
-        return re.sub(r"[،,.!؟؛:]+", "", word).strip()
+        # Keep a separator that sits between two digits ("120.5", "1,000", "١٢٠٫٥") so numbers are never rewritten; strip all other punctuation.
+        word = re.sub(r"(?<![0-9\u0660-\u0669])[،,.!؟؛:٫]+|[،,.!؟؛:٫]+(?![0-9\u0660-\u0669])", "", word)
+        return word.strip()
 
     for sentence in split_script(text):
         words = sentence.split()
@@ -621,10 +623,11 @@ def short_caption_chunks(text: str, words_per_caption: int = 5) -> list[str]:
         index = 0
         while index < len(words):
             word = words[index]
-            if word in ("د.", "د", "دكتور") and index + 2 < len(words):
+            if word in ("د.", "د", "دكتور", "أ.د.", "أ.د") and index + 2 < len(words):
                 name = " ".join(clean(part) for part in words[index + 1:index + 3] if clean(part))
                 if name:
-                    units.append(("دكتور " + name, 3))
+                    title = "أستاذ دكتور " if word.startswith("أ") else "دكتور "
+                    units.append((title + name, 3 if not word.startswith("أ") else 4))
                     index += 3
                     continue
 

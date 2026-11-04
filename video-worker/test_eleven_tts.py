@@ -140,15 +140,17 @@ class CaptionMedicalTitleRegressionTests(unittest.TestCase):
         for text in ('د. هبة والدكتور محمد معنا اليوم في العيادة.', 'تابعوا مع د. دينا حسني في العيادة اليوم.'):
             self.assertTrue(all(len(c.split()) <= 5 for c in self.chunks(text)), text)
 
-    @unittest.expectedFailure
-    def test_known_gap_professor_abbreviation(self):
-        # "أ.د." (professor) is still split into a lone 'أد' chunk: not fixed by the 'د.' change; needs a decision.
-        self.assertFalse(any(c.strip() == 'أد' for c in self.chunks('أ.د. أحمد علي يشرح الحالة اليوم.')))
+    def test_professor_abbreviation_is_kept_with_the_name(self):
+        out = self.chunks('أ.د. أحمد علي يشرح الحالة اليوم.')
+        self.assertFalse(any(c.strip() == 'أد' for c in out)); self.assertTrue(any('أستاذ دكتور أحمد علي' in c for c in out))
 
-    @unittest.expectedFailure
-    def test_known_gap_decimal_numbers_keep_their_dot(self):
-        # clean() strips every dot, so '120.5' becomes '1205' in captions (existing behaviour, medically misleading): needs a decision.
+    def test_decimal_numbers_keep_their_separator(self):
         self.assertTrue(any('120.5' in c for c in self.chunks('ضغط الدم 120.5 مهم جدا للمتابعة.')))
+        self.assertTrue(any('1,000' in c for c in self.chunks('الجرعة 1,000 وحدة يوميا.')))
+        self.assertTrue(any('٣٧٫٥' in c for c in self.chunks('الحرارة ٣٧٫٥ درجة اليوم.')))
+
+    def test_sentence_final_punctuation_after_numbers_is_still_stripped(self):
+        self.assertFalse(any(c.endswith('.') or c.endswith('،') for c in self.chunks('الجرعة 500. ثم ننتظر، بعدها نتابع.')))
 
 
 if __name__ == '__main__':
