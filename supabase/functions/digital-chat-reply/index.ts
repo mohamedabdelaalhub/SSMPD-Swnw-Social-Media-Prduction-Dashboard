@@ -77,10 +77,17 @@ async function processMessage(db:any,id:string,onlyAgent:string|null=null){
   const current=agents.slice(i,i+2);
   const settled=await Promise.allSettled(current.map(async agent=>{
    if(operationalUnavailable.has(agent)){
+    // The conversational preview answers as a clearly labelled simulation, never as the live Windows/Claude runtime.
+    if(API){
+      try{
+        const draft=await chatModel(agent,message.body,context,[],null);
+        await append(db,thread,agent,"reply",draft,id,"complete","runtime_unavailable");
+      }catch(_){/* The runtime status below remains accurate even when the simulation model fails. */}
+    }
     await append(db,thread,null,"blocker",identities[agent].name+
-      " مسجل في المحادثة، لكن محركه الفعلي غير متصل بالشات الجديد. مش هعرض ردًا منسوبًا إليه أو تأكيد تنفيذ غير حقيقي.",id,
+      ": الرد الظاهر تجربة محادثة، مش من المحرك التشغيلي الحالي. الطلب لم يصل إلى حسابه أو نظام الحجز، ولم يبدأ تنفيذ.",id,
       "awaiting_runtime","runtime_unavailable");
-    return {agent,state:"awaiting_runtime"};
+    return {agent,state:"awaiting_runtime",operational_delivery:false};
    }
    const [r,ins]=await Promise.all([
     db.from("digital_agent_reviews").select("metrics,reviewed_at").eq("agent_code",agent)
