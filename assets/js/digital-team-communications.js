@@ -34,20 +34,21 @@
     '<div class="dtc-tools"><h3>سجل التواصل والمتابعة</h3><div class="dtc-filters"><select data-dtc-agent aria-label="فلترة حسب الوكيل"><option value="all">كل الوكلاء</option>'+
      Object.keys(roles).map(function(k){return '<option value="'+escape(k)+'">'+escape(roles[k])+'</option>';}).join('')+
      '</select><select data-dtc-kind aria-label="فلترة حسب نوع الرسالة"><option value="all">كل الأنواع</option><option value="question">أسئلة</option><option value="instruction">تعليمات</option><option value="task">مهام</option><option value="handoff">تواصل بين الوكلاء</option></select></div></div>'+
-    '<div class="dtc-feed" data-dtc-feed><p class="dt-placeholder">جارٍ تحميل السجل…</p></div>';
+    '<div class="dtc-feed" data-dtc-feed><p class="dt-placeholder">جارٍ تحميل السجل…</p></div>'+
+    '<section class="dtc-scans"><h3>الفحص التلقائي لمرفقات المهام</h3><p>الفحص بيتم بعد تسليم المرفق ومن خلال الجدولة. لا يحتاج الضغط على زر لفحص كل ملف.</p><div data-dtc-scans>جارٍ قراءة حالة الفحص…</div></section>';
    r.appendChild(section);
    var form=section.querySelector('[data-dtc-form]');
    form.onsubmit=function(e){e.preventDefault();send(form);};
    section.querySelector('[data-dtc-refresh]').onclick=refresh;
    var a=section.querySelector('[data-dtc-agent]');a.value=filters.agent;a.onchange=function(v){filters.agent=a.value;refresh();};
    var k=section.querySelector('[data-dtc-kind]');k.value=filters.kind;k.onchange=function(v){filters.kind=k.value;refresh();};
-   refresh();
+   refresh();loadScans();
  }
  function line(e){
   var from=name(e.from_agent_code),to=name(e.to_agent_code);
   var type=kinds[e.message_type]||e.message_type;
   var flag=e.provenance==='agent_ai'?'رد من محرك التحليل':e.provenance==='external_verified'?'إجراء موثق':e.provenance==='owner'?'رسالة الإدارة':'حدث النظام';
-  return '<div class="dtc-event '+escape(e.message_type)+'"><div class="dtc-event-head"><b>'+escape(from)+' ← '+escape(to)+'</b><span>'+escape(type)+'</span><small>'+escape(fmt(e.created_at))+'</small></div>'+
+  return '<div class="dtc-event '+escape(e.message_type)+'"><div class="dtc-event-head"><b>'من '+escape(from)+' إلى '+escape(to)+'</b><span>'+escape(type)+'</span><small>'+escape(fmt(e.created_at))+'</small></div>'+
    '<p>'+escape(e.content)+'</p><small>'+escape(flag)+(e.execution_verified?' · تنفيذ متحقق منه':'')+'</small></div>';
  }
  function card(d,events){
@@ -58,6 +59,23 @@
    '<div class="dtc-request">'+escape(d.body)+'</div><div class="dtc-events">'+e.map(line).join('')+'</div>'+
    (d.blocked_reason?'<div class="dtc-blocked">'+escape(d.blocked_reason)+'</div>':'')+
    '<div class="dtc-verification">'+(d.state==='execution_verified'?'يوجد تحقق تنفيذ مسجل':'لا يوجد اعتماد لتنفيذ خارجي من صندوق التنسيق')+'</div></article>';
+ }
+
+ async function loadScans(){
+  var el=pane()?.querySelector('[data-dtc-scans]');if(!el||!client())return;
+  try{
+   var r=await client().rpc('task_file_scan_overview',{p_limit:24});if(r.error)throw r.error;
+   var data=r.data||{},counts=data.counts||{},recent=Array.isArray(data.recent)?data.recent:[];
+   var names={pending:'بانتظار الفحص',processing:'جارٍ الفحص',scanned:'تم التحليل',needs_access:'تحتاج صلاحية Drive',unsupported:'تحتاج طريقة قراءة أخرى',restricted:'مراجعة بشرية محمية',retry:'إعادة محاولة',failed:'تعذر الفحص'};
+   var stats=Object.keys(names).map(function(k){return counts[k]?'<span class="dtc-scan-count">'+escape(names[k])+' <b>'+escape(counts[k])+'</b></span>':'';}).join('');
+   var rows=recent.map(function(x){
+     var a=x.analysis||{},note=Array.isArray(a.findings)?a.findings.slice(0,2).join('، '):'';
+     return '<article class="dtc-scan-row"><div><b>'+escape(x.file_name)+'</b><span>'+escape(names[x.state]||x.state)+'</span></div>'+
+       (x.summary?'<p>'+escape(x.summary)+'</p>':'')+(note?'<small>ملاحظات: '+escape(note)+'</small>':'')+'</article>';
+   }).join('');
+   el.innerHTML='<div class="dtc-scan-counts">'+(stats||'لم يبدأ فحص مرفقات بعد.')+'</div>'+
+      '<div class="dtc-scan-list">'+(rows||'<p class="dt-placeholder">لا توجد مرفقات.</p>')+'</div>';
+  }catch(e){el.textContent='تعذر قراءة حالة الفحص: '+(e.message||e);}
  }
  async function refresh(){
   var target=pane();if(!target||!client()||loading)return;loading=true;
@@ -79,7 +97,7 @@
    if(ticket!==seq||!pane())return;
    pane().querySelector('[data-dtc-feed]').innerHTML=dispatches.length?dispatches.map(function(x){return card(x,events);}).join(''):'<p class="dt-placeholder">مفيش مراسلات مسجلة بهذه الفلترة حتى الآن.</p>';
   }catch(e){if(ticket===seq&&pane())pane().querySelector('[data-dtc-feed]').textContent='تعذر تحميل سجل التنسيق: '+(e.message||e);}
-  finally{loading=false;}
+  finally{loading=false;loadScans();}
  }
  async function send(form){
   var b=form.querySelector('button[type=submit]'),recipient=form.elements.recipient.value,kind=form.elements.kind.value,body=String(form.elements.body.value||'').trim();
