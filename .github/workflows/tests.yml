@@ -19,6 +19,8 @@ jobs:
       - name: Check digital team and Sia JavaScript
         run: |
           node --check assets/js/digital-team.js
+          node --check assets/js/task-work.js
+          node --check assets/js/db.js
           node --check assets/js/patient360.js
           node --check assets/js/sia-ui.js
           node --check assets/js/employee-assistant.js
@@ -33,6 +35,8 @@ jobs:
           node tests/digital-team-navigation.cjs
           node tests/patient360-navigation.cjs
           node tests/specialist-agent-reviews.cjs
+          node tests/digital-agent-conversations.cjs
+          node tests/digital-agent-edge-syntax.cjs
 
   tests:
     runs-on: ubuntu-24.04
