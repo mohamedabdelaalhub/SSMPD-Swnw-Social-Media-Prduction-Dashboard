@@ -24,7 +24,7 @@ approve إذا أنجز المسؤول المطلوب منه بوضوح.
 return فقط عندما يوجد نقص فعلي في شغل نفس المسؤول ويمكنه إصلاحه. اكتب تعليمات تنفيذية تخص مسؤوليته فقط.
 needs_owner عندما لا يمكن التحقق من دليل مهم، أو المهمة نفسها قرار مالي أو قانوني أو طبي أو نشر يحتاج المالك، أو يوجد غموض يمنع الحكم.
 بيانات مثل الاسم الرسمي للمسؤول، رقم التواصل الرسمي، نسب الخصم، الباقات، الميزانية أو قرار الاعتماد هي مدخلات إدارية. لا ترجع مهمة الموظف لمجرد أنها غير محددة إذا كان المطلوب منه مسودة أو صياغة.
-لا تعاقب التأخير وحده. لا تخترع محتوى المرفقات. تعليق المالك الصريح بعد التسليم بالموافقة أو الإغلاق دليل قوي.`;
+لا تعاقب التأخير وحده. لا تخترع محتوى المرفقات. قد تتلقى نص مرفق مع علامة verified_content: جُلب عن طريق اتصال Drive مخول، لكن لا تفترض أنه كامل أو حديث دون مطابقة تاريخه. أما unverified_client_text فهو مقتطف مقدم من جهاز الموظف وليس تحققًا مستقلًا. عند تعارض الملخص مع الملف اقتبس موضع التعارض باختصار واطلب مراجعة مالك المهمة، ولا توافق أو تعيد للموظف آليًا بسبب الملف. تعليق المالك الصريح بعد التسليم بالموافقة أو الإغلاق دليل قوي.`;
   const r=await fetch("https://api.openai.com/v1/responses",{method:"POST",headers:{Authorization:`Bearer ${OPENAI}`,"Content-Type":"application/json"},body:JSON.stringify({model:MODEL,instructions,input:JSON.stringify({tasks}),text:{format:{type:"json_schema",name:"swnw_task_review",strict:true,schema}}})});
   const d=await r.json(); if(!r.ok)throw Error(d?.error?.message||"AI review failed"); return JSON.parse(responseText(d)).decisions||[];
 }
@@ -68,11 +68,26 @@ Deno.serve(async req=>{
   if(rv.error||od.error)return json({error:(rv.error||od.error)?.message},500);
   const last=new Map<string,any>();
   for(const x of ah.data||[]){const id=String(x.detail?.task_id||"");if(id&&!last.has(id))last.set(id,x)}
-  const fresh=(rv.data||[]).filter((t:any)=>t.assignee_id!==owner&&t.assignee_id!==assistant).filter((t:any)=>{const x=last.get(t.id);return !x||new Date(x.at).getTime()<new Date(t.updated_at||0).getTime()}).slice(0,24);
+  // A newly verified attachment may justify another owner review even without mutating the original task.
+  const allReviewIds=(rv.data||[]).map((t:any)=>t.id);
+  let availableEvidence:any[]=[];
+  if(allReviewIds.length){
+    const ev=await db.from("task_attachment_evidence")
+      .select("task_id,work_result_id,drive_file_id,file_name,content_excerpt,verification_state,extraction_at")
+      .in("task_id",allReviewIds).in("verification_state",["verified_content","unverified_client_text"])
+      .order("extraction_at",{ascending:false}).limit(150);
+    if(!ev.error)availableEvidence=ev.data||[];
+  }
+  const evidenceLast=new Map<string,number>();
+  for(const e of availableEvidence){const ms=new Date(e.extraction_at).getTime();if(ms>(evidenceLast.get(e.task_id)||0))evidenceLast.set(e.task_id,ms)}
+  const fresh=(rv.data||[]).filter((t:any)=>t.assignee_id!==owner&&t.assignee_id!==assistant).filter((t:any)=>{
+    const x=last.get(t.id);
+    return !x||new Date(x.at).getTime()<Math.max(new Date(t.updated_at||0).getTime(),evidenceLast.get(t.id)||0);
+  }).slice(0,24);
   const ids=fresh.map((t:any)=>t.id),assignees=[...new Set(fresh.map((t:any)=>t.assignee_id).filter(Boolean))];
   let wr:any[]=[],up:any[]=[],ch:any[]=[],ad:any[]=[];
   if(ids.length){const q=await Promise.all([
-    db.from("task_work_results").select("task_id,body,link,attachments,created_at").in("task_id",ids).order("created_at",{ascending:false}).limit(500),
+    db.from("task_work_results").select("id,task_id,body,link,attachments,created_at").in("task_id",ids).order("created_at",{ascending:false}).limit(500),
     db.from("task_updates").select("task_id,author_id,body,status_from,status_to,created_at").in("task_id",ids).order("created_at",{ascending:false}).limit(800),
     db.from("tasks").select("parent_task_id,status").in("parent_task_id",ids),
     assignees.length?db.from("admins").select("id,name,role").in("id",assignees):Promise.resolve({data:[],error:null})
@@ -81,7 +96,24 @@ Deno.serve(async req=>{
   for(const x of wr)if(!latest.has(x.task_id))latest.set(x.task_id,x);
   for(const x of up){const a=updates.get(x.task_id)||[];if(a.length<6){a.push(x);updates.set(x.task_id,a)}}
   for(const x of ch)if(x.status!=="done")openKids.set(x.parent_task_id,(openKids.get(x.parent_task_id)||0)+1);
-  const ctx=fresh.map((t:any)=>{const w=latest.get(t.id)||null,u=updates.get(t.id)||[],atts=Array.isArray(w?.attachments)?w.attachments:[],ownerMsgs=u.filter((x:any)=>x.author_id===owner).map((x:any)=>clip(x.body,1200));return{task_id:t.id,title:clip(t.title,300),description:clip(t.description,2200),expected_output:clip(t.expected_output,2200),assignee:names.get(t.assignee_id)||"غير معروف",priority:t.priority,due_at:t.due_at,open_child_tasks:openKids.get(t.id)||0,latest_work:w?{body:clip(w.body,4200),link:clip(w.link,500),attachments:atts.map((a:any)=>({name:clip(a?.name,200),mime:clip(a?.mime,120)})),created_at:w.created_at}:null,recent_updates:u.map((x:any)=>({author_is_owner:x.author_id===owner,body:clip(x.body,1300),status_from:x.status_from,status_to:x.status_to,created_at:x.created_at})),owner_messages:ownerMsgs}});
+  const ctx=fresh.map((t:any)=>{
+    const w=latest.get(t.id)||null,u=updates.get(t.id)||[],atts=Array.isArray(w?.attachments)?w.attachments:[],
+      ownerMsgs=u.filter((x:any)=>x.author_id===owner).map((x:any)=>clip(x.body,1200));
+    const linked=availableEvidence.filter((e:any)=>e.work_result_id===w?.id);
+    return {task_id:t.id,title:clip(t.title,300),description:clip(t.description,2200),
+      expected_output:clip(t.expected_output,2200),assignee:names.get(t.assignee_id)||"غير معروف",
+      priority:t.priority,due_at:t.due_at,open_child_tasks:openKids.get(t.id)||0,
+      latest_work:w?{body:clip(w.body,4200),link:clip(w.link,500),
+        attachments:atts.map((a:any)=>{const ev=linked.find((e:any)=>e.drive_file_id===a?.file_id);
+          return {name:clip(a?.name,200),mime:clip(a?.mime,120),
+            extraction_status:ev?.verification_state||"not_read",
+            content_excerpt:ev?clip(ev.content_excerpt,10500):null,
+            extracted_at:ev?.extraction_at||null};
+        }),created_at:w.created_at}:null,
+      recent_updates:u.map((x:any)=>({author_is_owner:x.author_id===owner,body:clip(x.body,1300),
+        status_from:x.status_from,status_to:x.status_to,created_at:x.created_at})),owner_messages:ownerMsgs
+    };
+  });
   const decisions=new Map<string,any>();
   for(let i=0;i<ctx.length;i+=6)for(const d of await aiReview(ctx.slice(i,i+6)))if(ctx.some((x:any)=>x.task_id===d.task_id))decisions.set(d.task_id,d);
   const run:any={model:MODEL,assistant_id:assistant,assistant_name:"سيا",considered:fresh.length,approved:0,returned:0,needs_owner:0,overdue_nudged:0,actions:[],started_at:new Date().toISOString()};
@@ -94,7 +126,16 @@ Deno.serve(async req=>{
     const reviewDeliverable=/(موافقة|تعديلات مكتوبة|ملاحظات|مراجعة)/.test(c.expected_output)&&String(w?.body||"").length>100&&/(موافق|موافقة|تعديل|ملاحظة|مراجعة)/.test(String(w?.body||""));
     const materialAttachment=atts.length>0&&/(ملف|جدول|سجل|اكسيل|إكسيل|excel|word|مرفق)/i.test(c.expected_output)&&String(w?.body||"").length<800&&!ownerExplicit;
     if(c.open_child_tasks>0&&d.action==="approve")d={...d,action:"needs_owner",summary:"هناك مهام فرعية غير مكتملة. "+d.summary};
-    if(materialAttachment&&d.action==="approve")d={...d,action:"needs_owner",summary:"جزء جوهري من الدليل موجود في مرفق لا يمكن فحص محتواه مباشرة. "+d.summary};
+    if(materialAttachment&&d.action==="approve"){
+      const verified=atts.some((a:any)=>a.extraction_status==="verified_content");
+      d={...d,action:"needs_owner",summary:(verified
+        ?"اطلعت على مقتطف موثّق من المرفق، لكن اعتماد محتواه النهائي يتطلب مراجعة إدارية. "
+        :"المرفق يحتاج تحققًا مستقلًا من محتواه قبل الاعتماد. ")+d.summary};
+    }
+    // Never automatically close or return a document-driven task based on partial file extraction.
+    if(materialAttachment&&atts.some((a:any)=>a.extraction_status==="verified_content")&&d.action==="return"){
+      d={...d,action:"needs_owner",summary:"توجد ملاحظات على المرفق تحتاج تأكيدًا بشريًا قبل إرجاع المهمة للموظف. "+d.summary};
+    }
     if(reviewDeliverable&&c.open_child_tasks===0&&!materialAttachment)d={...d,action:"approve",confidence:Math.max(Number(d.confidence)||0,0.95),summary:"تم تنفيذ مهمة المراجعة المطلوبة وكتابة الملاحظات بوضوح. "+d.summary};
     if(d.action==="return"&&ownerOnlyGap(d))d={...d,action:"approve",confidence:Math.max(Number(d.confidence)||0,0.93),owner_followup_required:true,owner_followup:clip(d.instructions||d.summary,1800),instructions:"",summary:"شغل الموظف المطلوب مكتمل، والمتبقي مدخل أو قرار إداري. "+d.summary};
 
