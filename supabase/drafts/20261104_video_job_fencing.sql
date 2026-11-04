@@ -10,7 +10,7 @@
 --   L0 reversible, no SQL: stop the fenced worker (or restart it WITHOUT SSMPD_FENCED_CLAIMS / SSMPD_ATTEMPT_ARCHIVE); the old worker keeps using the old claim and old Drive action.
 --   L1 reversible, no drops: alter table public.video_jobs disable trigger video_jobs_fence_guard;   (re-enable with: enable trigger ...)
 --   L2 only after L0 and a drain (query below returns 0): drop trigger video_jobs_fence_guard on public.video_jobs; drop function public.video_jobs_fence_guard();
---      drop function public.video_job_commit_fenced(uuid,uuid,integer,jsonb); drop function public.video_job_update_fenced(uuid,uuid,jsonb);
+--      drop function public.video_job_commit_fenced(uuid,uuid,integer,jsonb); drop function public.video_commit_validate(integer,jsonb); drop function public.video_job_update_fenced(uuid,uuid,jsonb);
 --      drop function public.claim_next_video_job_fenced(text,integer);   -- KEEPS the columns claim_token / committed_attempt and all drive_* values
 --   L3 optional, much later, only when no fenced worker exists and the drain query is 0: alter table public.video_jobs drop column claim_token; ... drop column committed_attempt;
 -- Drain query (must return 0 before L2/L3): select count(*) from public.video_jobs where claim_token is not null and status in ('preparing','rendering','uploading');
@@ -120,6 +120,49 @@ revoke all on function public.video_job_update_fenced(uuid,uuid,jsonb) from publ
 grant execute on function public.claim_next_video_job_fenced(text,integer) to service_role;
 grant execute on function public.video_job_update_fenced(uuid,uuid,jsonb) to service_role;
 
+
+-- Defence in depth for the commit payload (review #108): the worker already validates, the database does not trust it.
+create or replace function public.video_commit_validate(p_attempt integer, p_result jsonb)
+returns void
+language plpgsql
+immutable
+set search_path = public
+as $$
+declare
+  cand jsonb;
+  drive_re constant text := '^https://drive\.google\.com/[A-Za-z0-9_./?=&%-]+$';
+  key text;
+begin
+  if p_attempt is null or p_attempt < 1 or p_attempt > 99 then
+    raise exception 'invalid attempt';
+  end if;
+  if p_result is null or jsonb_typeof(p_result) <> 'object' or octet_length(p_result::text) > 65536 then
+    raise exception 'invalid result';
+  end if;
+  foreach key in array array['drive_video_url','drive_folder_url','cover_url'] loop
+    if p_result ? key and (jsonb_typeof(p_result -> key) <> 'string' or (p_result ->> key) !~ drive_re) then
+      raise exception 'invalid result: % must be a drive.google.com https url', key;
+    end if;
+  end loop;
+  if p_result ? 'cover_candidates' then
+    if jsonb_typeof(p_result -> 'cover_candidates') <> 'array' or jsonb_array_length(p_result -> 'cover_candidates') > 5 then
+      raise exception 'invalid result: cover_candidates';
+    end if;
+    for cand in select * from jsonb_array_elements(p_result -> 'cover_candidates') loop
+      if jsonb_typeof(cand) <> 'object'
+         or jsonb_typeof(cand -> 'candidate_index') <> 'number' or (cand ->> 'candidate_index') !~ '^[1-5]$'
+         or jsonb_typeof(cand -> 'timestamp_seconds') <> 'number' or (cand ->> 'timestamp_seconds')::numeric < 0
+         or jsonb_typeof(cand -> 'storage_path') <> 'string' or length(cand ->> 'storage_path') not between 1 and 300
+         or (cand ->> 'storage_path') ~ '(^/|\.\.|[[:cntrl:]])'
+         or jsonb_typeof(cand -> 'drive_url') <> 'string' or (cand ->> 'drive_url') !~ drive_re then
+        raise exception 'invalid result: cover candidate';
+      end if;
+    end loop;
+  end if;
+end;
+$$;
+revoke all on function public.video_commit_validate(integer,jsonb) from public, anon, authenticated;
+
 -- v4: attempt-scoped archive COMMIT. Drive holds one folder per attempt; the DATABASE decides which attempt wins. Only the current token holder can
 -- commit, exactly once; a zombie's staged files stay in its own attempt folder and are never referenced. Idempotent for the winner (a lost response
 -- can be retried safely).
@@ -140,6 +183,7 @@ begin
   if p_claim_token is null or p_attempt is null or p_attempt < 1 then
     raise exception 'claim token and attempt required';
   end if;
+  perform public.video_commit_validate(p_attempt, p_result);
   if coalesce(p_result ->> 'drive_video_url', '') = '' or coalesce(p_result ->> 'drive_video_id', '') = '' then
     raise exception 'drive_video_url and drive_video_id required';
   end if;
@@ -148,7 +192,7 @@ begin
     -- idempotent retry of the winning commit; it also RESTORES the cover-candidate rows (reconciliation after an unknown outcome), winner only
     for cand in select * from jsonb_array_elements(coalesce(p_result -> 'cover_candidates', '[]'::jsonb)) loop
       insert into public.video_cover_candidates (id, job_id, candidate_index, timestamp_seconds, storage_path, drive_url)
-      values (coalesce((cand ->> 'id')::uuid, gen_random_uuid()), p_job_id, (cand ->> 'candidate_index')::integer, (cand ->> 'timestamp_seconds')::numeric, cand ->> 'storage_path', cand ->> 'drive_url')
+      values (gen_random_uuid(), p_job_id, (cand ->> 'candidate_index')::integer, (cand ->> 'timestamp_seconds')::numeric, cand ->> 'storage_path', cand ->> 'drive_url')
       on conflict (job_id, candidate_index) do update set timestamp_seconds = excluded.timestamp_seconds, storage_path = excluded.storage_path, drive_url = excluded.drive_url;
     end loop;
     return to_jsonb(cur);
@@ -167,7 +211,7 @@ begin
   -- same transaction: either the job becomes ready WITH its candidate rows or nothing changes (a bad candidate rolls the whole commit back)
   for cand in select * from jsonb_array_elements(coalesce(p_result -> 'cover_candidates', '[]'::jsonb)) loop
     insert into public.video_cover_candidates (id, job_id, candidate_index, timestamp_seconds, storage_path, drive_url)
-    values (coalesce((cand ->> 'id')::uuid, gen_random_uuid()), p_job_id, (cand ->> 'candidate_index')::integer, (cand ->> 'timestamp_seconds')::numeric, cand ->> 'storage_path', cand ->> 'drive_url')
+    values (gen_random_uuid(), p_job_id, (cand ->> 'candidate_index')::integer, (cand ->> 'timestamp_seconds')::numeric, cand ->> 'storage_path', cand ->> 'drive_url')
     on conflict (job_id, candidate_index) do update set timestamp_seconds = excluded.timestamp_seconds, storage_path = excluded.storage_path, drive_url = excluded.drive_url;
   end loop;
   return to_jsonb(updated);
