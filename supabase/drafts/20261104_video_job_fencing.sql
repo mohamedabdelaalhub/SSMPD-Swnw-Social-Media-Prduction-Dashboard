@@ -31,9 +31,7 @@ begin
     return null;
   end if;
   job_id := (claimed ->> 'id')::uuid;
-  perform set_config('swnw.fenced', '1', true);
   update public.video_jobs set claim_token = token where id = job_id;
-  perform set_config('swnw.fenced', '', true);
   return claimed || jsonb_build_object('claim_token', token);
 end;
 $$;
@@ -68,7 +66,6 @@ begin
     raise exception 'stale claim: the job was reclaimed, finished or the token is wrong';
   end if;
   r := jsonb_populate_record(cur, p_patch);     -- keys absent from the patch keep their current value; explicit null clears (PostgREST PATCH semantics)
-  perform set_config('swnw.fenced', '1', true);
   update public.video_jobs v
   set status = r.status, progress_percent = r.progress_percent, progress_stage = r.progress_stage, error_message = r.error_message,
       output_video_url = r.output_video_url, cover_url = r.cover_url, voiceover_url = r.voiceover_url, subtitles_url = r.subtitles_url,
@@ -77,33 +74,27 @@ begin
       drive_folder_url = r.drive_folder_url, archived_at = r.archived_at
   where v.id = p_job_id
   returning v.* into updated;
-  perform set_config('swnw.fenced', '', true);
   return to_jsonb(updated);
 end;
 $$;
 
--- Transition guard (applies to service_role writers only, i.e. workers): while a job is in a working state AND holds a claim token, a plain (unfenced) update may not change it, except the
--- recovery transitions the existing claim function performs on stale rows (working -> pending/failed after 30 min). Claiming a pending row
--- through the legacy function clears any old token so an old fenced holder is locked out and the legacy worker keeps working.
+-- Transition guard v3. It applies ONLY when the statement runs as the database role service_role, i.e. a worker writing through PostgREST with a
+-- service_role key (an OLD worker, or a zombie). It is keyed on current_user (a real role switch made by PostgREST from the verified JWT), NOT on
+-- JWT claims or a settable GUC, so nothing a client can send makes a statement exempt.
+-- Exempt by construction: the SECURITY DEFINER functions (they run as their owner, not as service_role): claim_next_video_job and its stale
+-- recovery, claim_next_video_job_fenced, video_job_update_fenced, and the dashboard RPCs (create/cancel/retry/select cover). anon/authenticated have
+-- no UPDATE privilege on video_jobs at all (only SELECT through RLS), so they never reach this trigger directly.
+-- A (re)claim of a pending row clears any previous token for everyone; the fenced wrapper sets the new token in a later statement.
 create or replace function public.video_jobs_fence_guard()
 returns trigger
 language plpgsql
 as $$
 begin
-  if coalesce(current_setting('swnw.fenced', true), '') = '1' then
-    return new;
-  end if;
-  if coalesce(auth.role(), '') <> 'service_role' then
-    return new;                   -- dashboard users (cancel, retry, pick cover) stay governed by RLS as today; a cancel makes the worker's next fenced call fail = abort
-  end if;
   if old.status = 'pending' and new.status = 'preparing' then
-    new.claim_token := null;      -- (re)claim by the legacy function: the previous token dies
+    new.claim_token := null;
     return new;
   end if;
-  if old.claim_token is not null and old.status in ('preparing','rendering','uploading') then
-    if new.status in ('pending','failed') and old.updated_at < now() - interval '30 minutes' then
-      return new;                 -- stale recovery by claim_next_video_job
-    end if;
+  if current_user = 'service_role' and old.claim_token is not null and old.status in ('preparing','rendering','uploading') then
     raise exception 'job is held under a claim token: use video_job_update_fenced' using errcode = '42501';
   end if;
   return new;

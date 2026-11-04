@@ -117,9 +117,16 @@ O=$(RAW "update public.video_jobs set status='failed' where id='$J'"); grep -q "
 P -c "truncate public.video_jobs; insert into public.video_jobs(id) values('$J')"; Q "select public.claim_next_video_job('oldA',4)->>'id'" >/dev/null
 RAW "update public.video_jobs set output_video_url='oldB-overwrite' where id='$J'" | grep -q ERROR && bad "G9 unexpected block" || ok "G9 KNOWN LIMIT: two legacy workers can still overwrite each other (job without token); drain legacy workers before the switch"
 
-# G10 dashboard user cancels a job held under a token: allowed (RLS governs users), and the worker's next fenced call fails = abort signal
-P -c "truncate public.video_jobs; insert into public.video_jobs(id) values('$J'); grant select, update on public.video_jobs to authenticated"
+# G10/G11 real-privilege model: authenticated/anon have only SELECT on video_jobs; dashboard actions go through SECURITY DEFINER RPCs (owner postgres)
+P -c "truncate public.video_jobs; insert into public.video_jobs(id) values('$J'); revoke all on public.video_jobs from authenticated, anon; grant select on public.video_jobs to authenticated;
+create function public.test_cancel(p_id uuid) returns void language plpgsql security definer set search_path=public as \$\$ begin update public.video_jobs set status='cancelled' where id=p_id; end \$\$;
+revoke all on function public.test_cancel(uuid) from public, anon; grant execute on function public.test_cancel(uuid) to authenticated;"
 TH=$(Q "select public.claim_next_video_job_fenced('n',4)->>'claim_token'")
-O=$(P -c "set role authenticated; select set_config('test.role','authenticated',false) is not null; update public.video_jobs set status='cancelled' where id='$J'" 2>&1 || true); grep -q ERROR <<<"$O" && bad "G10 user cancel blocked: $O" || ok "G10 dashboard user can still cancel a held job"
+O=$(P -c "set role authenticated; select set_config('test.role','authenticated',false) is not null; update public.video_jobs set status='ready' where id='$J'" 2>&1 || true); grep -q "permission denied" <<<"$O" && ok "G11 authenticated has no direct UPDATE on video_jobs" || bad "G11 $O"
+O=$(P -c "set role anon; update public.video_jobs set status='ready' where id='$J'" 2>&1 || true); grep -q "permission denied" <<<"$O" && ok "G11 anon denied" || bad "G11 anon $O"
+O=$(P -c "set role authenticated; select set_config('test.role','authenticated',false) is not null; select public.test_cancel('$J')" 2>&1 || true); grep -q ERROR <<<"$O" && bad "G10 cancel via definer RPC blocked: $O" || ok "G10 dashboard cancel through a definer RPC still works on a held job"
 Q "select public.video_job_update_fenced('$J','$TH','{\"status\":\"rendering\"}')" | grep -q "stale claim" && ok "G10 worker's next fenced call fails after cancel (abort signal)" || bad "G10 abort"
+# G12 spoofing attempts by a service_role client cannot exempt a plain UPDATE: fake JWT claims and the old GUC name change nothing
+P -c "truncate public.video_jobs; insert into public.video_jobs(id) values('$J')"; Q "select public.claim_next_video_job_fenced('n',4)->>'id'" >/dev/null
+O=$(P -c "set role service_role; select set_config('request.jwt.claims','{\"role\":\"postgres\"}',false), set_config('swnw.fenced','1',false), set_config('test.role','authenticated',false); update public.video_jobs set output_video_url='spoof' where id='$J'" 2>&1 || true); grep -q "claim token" <<<"$O" && ok "G12 spoofed claims / GUC do not exempt an old worker's UPDATE" || bad "G12 $O"
 exit $FAIL
