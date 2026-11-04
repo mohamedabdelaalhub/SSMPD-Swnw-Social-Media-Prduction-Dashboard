@@ -2,7 +2,8 @@
 -- The dashboard is LIVE PRODUCTION: nothing here writes, impersonates a user, or tests a write. If any statement is denied, STOP that statement and report the error; do not work around it.
 -- Supplier: ChatGPT via its existing A0 read-only access, or the owner. Claude Code has no production access.
 
--- X1 per-table live grants + RLS + applicable policy commands (table names and flags only). Compare with the repo-derived matrix (tests/real-schema-exposure-matrix.sh).
+-- X1 per-table live grants + RLS + an INVENTORY of the policy commands whose role list matches (authenticated|public) / (anon|public) (table names and flags only).
+-- The policy columns are a regex inventory of role lists, NOT a determination of how permissive any policy is: the USING / WITH CHECK expressions decide (see X4 for those expressions). Compare with the repo-derived matrix (tests/real-schema-exposure-matrix.sh).
 select c.relname as table_name, c.relrowsecurity::int as rls, c.relforcerowsecurity::int as rls_forced,
  has_table_privilege('anon',c.oid,'SELECT')::int as a_sel, has_table_privilege('anon',c.oid,'INSERT')::int as a_ins, has_table_privilege('anon',c.oid,'UPDATE')::int as a_upd, has_table_privilege('anon',c.oid,'DELETE')::int as a_del, has_table_privilege('anon',c.oid,'TRUNCATE')::int as a_trunc,
  has_table_privilege('authenticated',c.oid,'SELECT')::int as u_sel, has_table_privilege('authenticated',c.oid,'INSERT')::int as u_ins, has_table_privilege('authenticated',c.oid,'UPDATE')::int as u_upd, has_table_privilege('authenticated',c.oid,'DELETE')::int as u_del, has_table_privilege('authenticated',c.oid,'TRUNCATE')::int as u_trunc,
@@ -10,7 +11,8 @@ select c.relname as table_name, c.relrowsecurity::int as rls, c.relforcerowsecur
  (select string_agg(distinct p.cmd, ',' order by p.cmd) from pg_policies p where p.schemaname='public' and p.tablename=c.relname and p.roles::text ~ '(anon|public)') as anon_or_public_policy_cmds
 from pg_class c where c.relnamespace = 'public'::regnamespace and c.relkind in ('r','p') order by 1;
 
--- X2 LIVE WRITE ACTIVITY per table since the statistics were last reset (counters only; no row contents). Zero counters over a long window = candidate for write-revoke, NOT proof.
+-- X2 cumulative WRITE COUNTERS per table since the statistics were last reset (no row contents). These counters are summed over ALL roles and processes (service_role workers, Edge Functions, cron, the owner, migrations, authenticated and anon users):
+-- they are NOT per-role and NOT evidence of authenticated use; a zero count is NOT proof that a privilege is unnecessary (it may be used rarely, or after a stats reset).
 select s.relname as table_name, s.n_tup_ins as inserts, s.n_tup_upd as updates, s.n_tup_del as deletes, (select stats_reset from pg_stat_database where datname = current_database()) as stats_reset_at
 from pg_stat_user_tables s where s.schemaname = 'public' order by (s.n_tup_ins + s.n_tup_upd + s.n_tup_del) desc, 1;
 
