@@ -87,7 +87,7 @@ for r in anon authenticated; do P -c "set role $r; select public.claim_next_vide
 # F7 rollback: draft rollback notes restore the previous state and plain claim still works (back-compat)
 P -c "truncate public.video_jobs; insert into public.video_jobs(id) values('$J')"
 Q "select public.claim_next_video_job('legacy',4)->>'id'" | grep -q "$J" && ok "F7 legacy unfenced claim still works with the column present (back-compat)" || bad "F7 legacy"
-P -c "drop trigger video_jobs_fence_guard on public.video_jobs; drop function public.video_jobs_fence_guard(); drop function public.video_job_update_fenced(uuid,uuid,jsonb); drop function public.claim_next_video_job_fenced(text,integer); alter table public.video_jobs drop column claim_token;" && ok "F7 rollback statements execute cleanly" || bad "F7 rollback"
+P -c "drop trigger video_jobs_fence_guard on public.video_jobs; drop function public.video_jobs_fence_guard(); drop function public.video_job_commit_fenced(uuid,uuid,integer,jsonb); drop function public.video_job_update_fenced(uuid,uuid,jsonb); drop function public.claim_next_video_job_fenced(text,integer); alter table public.video_jobs drop column claim_token; alter table public.video_jobs drop column committed_attempt;" && ok "F7 rollback statements execute cleanly" || bad "F7 rollback"
 Q "select public.claim_next_video_job('legacy2',4) is null" | grep -q t && ok "F7 original claim function intact after rollback" || bad "F7 post-rollback"
 
 # ---- Part G: transition safety (OLD unfenced worker during the switch); draft re-applied to a clean state
@@ -129,4 +129,21 @@ Q "select public.video_job_update_fenced('$J','$TH','{\"status\":\"rendering\"}'
 # G12 spoofing attempts by a service_role client cannot exempt a plain UPDATE: fake JWT claims and the old GUC name change nothing
 P -c "truncate public.video_jobs; insert into public.video_jobs(id) values('$J')"; Q "select public.claim_next_video_job_fenced('n',4)->>'id'" >/dev/null
 O=$(P -c "set role service_role; select set_config('request.jwt.claims','{\"role\":\"postgres\"}',false), set_config('swnw.fenced','1',false), set_config('test.role','authenticated',false); update public.video_jobs set output_video_url='spoof' where id='$J'" 2>&1 || true); grep -q "claim token" <<<"$O" && ok "G12 spoofed claims / GUC do not exempt an old worker's UPDATE" || bad "G12 $O"
+
+# ---- Part H: attempt-scoped archive commit (DB is the arbiter; Drive folders are per attempt)
+P -c "truncate public.video_jobs; insert into public.video_jobs(id) values('$J')"
+HT1=$(Q "select public.claim_next_video_job_fenced('wA',4)->>'claim_token'"); staleize $J
+HT2=$(Q "select public.claim_next_video_job_fenced('wB',4)->>'claim_token'")
+RES='{"drive_video_url":"https://drive/x","drive_video_id":"id","drive_folder_url":"https://drive/f"}'
+rm -f "$D"/h*
+for i in $(seq 1 10); do ( Q "select public.video_job_commit_fenced('$J','$HT1',1,'{\"drive_video_url\":\"https://drive/ZOMBIE\",\"drive_video_id\":\"zid\"}')" | grep -q ERROR || echo WON >> "$D/h1_$i" ) & ( Q "select public.video_job_commit_fenced('$J','$HT2',2,'$RES')" | grep -q ERROR || echo WON >> "$D/h2_$i" ) & done; wait
+Z=$( (ls "$D"/h1_* 2>/dev/null || true) | wc -l | tr -d ' '); W=$( (ls "$D"/h2_* 2>/dev/null || true) | wc -l | tr -d ' ')
+[ "$Z" = 0 ] && ok "H1 20 parallel commits: the zombie token never commits (0 of 10)" || bad "H1 zombie committed $Z"
+[ "$W" -ge 1 ] && ok "H2 the current holder commits and its retries are idempotent ($W of 10 returned success)" || bad "H2 winner $W"
+[ "$(P -c "select status||'|'||committed_attempt||'|'||drive_video_url from public.video_jobs where id='$J'")" = "ready|2|https://drive/x" ] && ok "H3 final state is exactly the winner's commit (attempt 2, winner's url)" || bad "H3 $(P -c "select status,committed_attempt,drive_video_url from public.video_jobs where id='$J'")"
+Q "select public.video_job_commit_fenced('$J','$HT1',1,'$RES')" | grep -q "stale claim" && ok "H4 late zombie commit after the winner is rejected" || bad "H4"
+Q "select public.video_job_commit_fenced('$J','$HT2',2,'{\"drive_video_url\":\"https://drive/CHANGED\",\"drive_video_id\":\"id2\"}')->>'drive_video_url'" | grep -q "https://drive/x" && ok "H5 winner's repeated commit returns the stored result, cannot change it" || bad "H5"
+P -c "truncate public.video_jobs; insert into public.video_jobs(id) values('$J')"; Q "select public.claim_next_video_job_fenced('w',4)->>'id'" >/dev/null
+Q "select public.video_job_commit_fenced('$J',null,1,'$RES')" | grep -q "required" && ok "H6 null token rejected" || bad "H6"
+for r in anon authenticated; do P -c "set role $r; select public.video_job_commit_fenced('$J','$HT2',1,'$RES')" >/dev/null 2>&1 && bad "H7 $r" || ok "H7 $r commit denied"; done
 exit $FAIL

@@ -6,10 +6,11 @@
 -- v2 changes vs v1 (found by comparing with video-worker/worker.py update_job): the whitelist now covers every column the worker really writes
 -- (generation_state, archive_status, archive_error, drive_video_url/id, drive_folder_url, archived_at) and patch semantics match PostgREST PATCH
 -- (explicit null clears a column, absent key keeps it).
--- Rollback (in this order): drop trigger video_jobs_fence_guard on public.video_jobs; drop function public.video_jobs_fence_guard();
+-- Rollback (in this order): drop function public.video_job_commit_fenced(uuid,uuid,integer,jsonb); drop trigger video_jobs_fence_guard on public.video_jobs; drop function public.video_jobs_fence_guard();
 --   drop function public.video_job_update_fenced(uuid,uuid,jsonb); drop function public.claim_next_video_job_fenced(text,integer);
---   alter table public.video_jobs drop column claim_token; the previous claim_next_video_job body from migration 20261006 is never touched.
+--   alter table public.video_jobs drop column claim_token; alter table public.video_jobs drop column committed_attempt; the previous claim_next_video_job body from migration 20261006 is never touched.
 alter table public.video_jobs add column if not exists claim_token uuid;
+alter table public.video_jobs add column if not exists committed_attempt integer;   -- v4: which attempt's archive was committed (NULL for legacy jobs)
 
 -- Thin wrapper: the existing claim function and its tests stay intact; the token is issued here.
 create or replace function public.claim_next_video_job_fenced(p_worker_id text, p_max_input_schema_version integer)
@@ -109,3 +110,46 @@ revoke all on function public.claim_next_video_job_fenced(text,integer) from pub
 revoke all on function public.video_job_update_fenced(uuid,uuid,jsonb) from public, anon, authenticated;
 grant execute on function public.claim_next_video_job_fenced(text,integer) to service_role;
 grant execute on function public.video_job_update_fenced(uuid,uuid,jsonb) to service_role;
+
+-- v4: attempt-scoped archive COMMIT. Drive holds one folder per attempt; the DATABASE decides which attempt wins. Only the current token holder can
+-- commit, exactly once; a zombie's staged files stay in its own attempt folder and are never referenced. Idempotent for the winner (a lost response
+-- can be retried safely).
+create or replace function public.video_job_commit_fenced(p_job_id uuid, p_claim_token uuid, p_attempt integer, p_result jsonb)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  cur public.video_jobs%rowtype;
+  updated public.video_jobs%rowtype;
+begin
+  if coalesce(auth.role(), '') <> 'service_role' then
+    raise exception 'service_role required';
+  end if;
+  if p_claim_token is null or p_attempt is null or p_attempt < 1 then
+    raise exception 'claim token and attempt required';
+  end if;
+  if coalesce(p_result ->> 'drive_video_url', '') = '' or coalesce(p_result ->> 'drive_video_id', '') = '' then
+    raise exception 'drive_video_url and drive_video_id required';
+  end if;
+  select * into cur from public.video_jobs where id = p_job_id for update;
+  if found and cur.claim_token = p_claim_token and cur.committed_attempt = p_attempt and cur.status = 'ready' then
+    return to_jsonb(cur);                                  -- idempotent retry of the winning commit
+  end if;
+  if not found or cur.claim_token is distinct from p_claim_token or cur.status not in ('preparing','rendering','uploading') then
+    raise exception 'stale claim: the job was reclaimed, finished or the token is wrong';
+  end if;
+  update public.video_jobs v
+  set status = 'ready', archive_status = 'archived', archive_error = null, error_message = null, committed_attempt = p_attempt,
+      drive_video_url = p_result ->> 'drive_video_url', drive_video_id = p_result ->> 'drive_video_id',
+      drive_folder_url = p_result ->> 'drive_folder_url', cover_url = coalesce(p_result ->> 'cover_url', v.cover_url),
+      output_video_url = coalesce(p_result ->> 'output_video_url', v.output_video_url),
+      archived_at = now(), render_finished_at = now(), progress_percent = 100, progress_stage = 'اكتمل'
+  where v.id = p_job_id
+  returning v.* into updated;
+  return to_jsonb(updated);
+end;
+$$;
+revoke all on function public.video_job_commit_fenced(uuid,uuid,integer,jsonb) from public, anon, authenticated;
+grant execute on function public.video_job_commit_fenced(uuid,uuid,integer,jsonb) to service_role;

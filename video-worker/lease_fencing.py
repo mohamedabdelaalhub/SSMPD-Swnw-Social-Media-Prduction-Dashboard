@@ -35,16 +35,23 @@ class LeaseGuard:
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
 
-    def update(self, patch: dict) -> Any:
+    def _call(self, name: str, payload: dict) -> Any:
         if self._lost.is_set():
             raise LeaseLost(self.job_id)
         try:
-            return self._rpc("video_job_update_fenced", {"p_job_id": self.job_id, "p_claim_token": self._token, "p_patch": patch})
+            return self._rpc(name, payload)
         except Exception as e:                      # transient network errors are NOT a lost lease; only the server's stale answer is
             if STALE_MARK in str(e):
                 self._lost.set()
                 raise LeaseLost(self.job_id) from e
             raise
+
+    def update(self, patch: dict) -> Any:
+        return self._call("video_job_update_fenced", {"p_job_id": self.job_id, "p_claim_token": self._token, "p_patch": patch})
+
+    def commit(self, attempt: int, result: dict) -> Any:
+        """Server-authorized archive commit (video_job_commit_fenced): exactly one attempt can ever win; safe to retry."""
+        return self._call("video_job_commit_fenced", {"p_job_id": self.job_id, "p_claim_token": self._token, "p_attempt": int(attempt), "p_result": result})
 
     def touch(self) -> None:
         self.update({})                            # empty patch: extends the lease (updated_at) or reveals that it is gone
