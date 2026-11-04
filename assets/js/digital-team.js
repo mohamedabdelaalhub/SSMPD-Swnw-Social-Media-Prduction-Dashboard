@@ -80,6 +80,51 @@
      (isOwner?'<form data-dt-message-form="'+esc(m.code)+'"><select name="kind" aria-label="نوع الرسالة"><option value="question">اسأل الوكيل</option><option value="instruction">تعليمات للتخطيط</option><option value="comment">تعليق</option></select><textarea name="body" required minlength="2" maxlength="4000" rows="3" placeholder="اكتب المطلوب أو سؤالك بالتفصيل..."></textarea><button class="btn sm" type="submit">إرسال للنقاش</button></form>':'<p class="dt-placeholder">إرسال التعليمات متاح للمالك.</p>')+
      '<div class="dt-discussion-status" data-dt-discussion-status="'+esc(m.code)+'">'+esc(discussionStatus[m.code]||'')+'</div></div></details>';
   }
+
+  function siaEvidenceBlock(m){
+    if(m.code!=='sia'||!isOwner)return '';
+    return '<details class="dt-sia-evidence" data-dt-sia-evidence><summary>مراجعة ملفات المهام مع سيا</summary>'+
+      '<div class="dt-sia-evidence-body"><p class="dt-discussion-note">مراجعة قراءة فقط. لا تغير حالة المهمة ولا تعيدها للموظف ولا تعتمدها.</p>'+
+      '<select data-dt-sia-task aria-label="اختر مهمة بها مرفق"><option value="">افتح القائمة لتحميل المهام...</option></select>'+
+      '<button type="button" class="btn sm" data-dt-sia-run>افحص ملف المهمة</button>'+
+      '<div class="dt-sia-evidence-status" data-dt-sia-evidence-status></div>'+
+      '<div class="dt-sia-evidence-output" data-dt-sia-evidence-output></div></div></details>';
+  }
+  async function loadSiaEvidenceTasks(root){
+    var select=root.querySelector('[data-dt-sia-task]');
+    var status=root.querySelector('[data-dt-sia-evidence-status]');
+    if(!select||select.dataset.loaded==='1')return;
+    status.textContent='جارٍ البحث عن مهام المراجعة ذات المرفقات…';
+    try{
+      var db=initClient(),a=await db.from('tasks').select('id,title,status').eq('status','review').order('updated_at',{ascending:false}).limit(40);
+      if(a.error)throw a.error;
+      var tasks=a.data||[],ids=tasks.map(function(x){return x.id;});
+      if(!ids.length){select.innerHTML='<option value="">لا توجد مهام بانتظار المراجعة</option>';status.textContent='';return;}
+      var b=await db.from('task_work_results').select('task_id,attachments').in('task_id',ids).order('created_at',{ascending:false}).limit(100);
+      if(b.error)throw b.error;
+      var eligible=new Set((b.data||[]).filter(function(x){return Array.isArray(x.attachments)&&x.attachments.length>0;}).map(function(x){return x.task_id;}));
+      var options=tasks.filter(function(t){return eligible.has(t.id);});
+      select.innerHTML='<option value="">اختر المهمة...</option>'+options.map(function(t){return '<option value="'+esc(t.id)+'">'+esc(t.title)+'</option>';}).join('');
+      select.dataset.loaded='1';status.textContent=options.length+' مهمة لديها مرفقات في التسليم.';
+    }catch(e){status.textContent='تعذر قراءة قائمة الملفات: '+(e.message||e);}
+  }
+  async function runSiaEvidenceReview(root){
+    var select=root.querySelector('[data-dt-sia-task]'),button=root.querySelector('[data-dt-sia-run]');
+    var status=root.querySelector('[data-dt-sia-evidence-status]'),out=root.querySelector('[data-dt-sia-evidence-output]');
+    var taskId=select&&select.value;if(!taskId){status.textContent='اختر المهمة أولًا.';return;}
+    button.disabled=true;out.innerHTML='';status.textContent='سيا يراجع المقتطفات المتحقق منها…';
+    try{
+      var r=await initClient().functions.invoke('assistant-task-evidence-review',{body:{task_id:taskId}});
+      if(r.error||!r.data||!r.data.ok)throw Error(r.data?.error||r.error?.message||'المراجعة غير متاحة');
+      var data=r.data||{},statusLabel=data.assessment==='inconsistent'?'يوجد تعارض يحتاج مراجعة':data.assessment==='consistent'?'لا يظهر تعارض في المقتطفات المتاحة':'المعلومات غير كافية';
+      var differences=Array.isArray(data.differences)?data.differences:[];
+      out.innerHTML='<h4>'+esc(data.available?statusLabel:'لا تتوفر أدلة متحقق منها')+'</h4>'+
+       '<p>'+esc(data.summary||'')+'</p>'+differences.map(function(x){return '<article class="dt-evidence-difference"><b>'+esc(x.finding)+'</b><small>'+esc(x.file_evidence)+'</small></article>';}).join('')+
+       (data.owner_action?'<div class="dt-suggestion">المطلوب من الإدارة: '+esc(data.owner_action)+'</div>':'');
+      status.textContent='مراجعة قراءة فقط. حالة المهمة لم تتغير.';
+    }catch(e){status.textContent='تعذر فحص المرفق: '+(e.message||e);}
+    finally{button.disabled=false;}
+  }
   function memberCard(m){
     metricCode=m.code;
     var x=m.metrics||{},special=!!specialistCodes[m.code],head='<div class="dt-member-head"><div class="dt-avatar '+esc(m.code)+'">'+icon(m.code)+'</div><div class="dt-id"><div class="dt-name-row"><h2>'+esc(m.display_name)+'</h2>'+chip(special?'مراجعة عند الطلب':(m.active?'نشط':'متوقف'),special?'safe':(m.active?'ok':'off'))+'</div><p>'+esc(m.title_ar)+'</p><div class="dt-chips">'+chip(special?'محرك تحليل':m.member_kind==='external_agent'?'وكيل خارجي':m.member_kind==='system_identity'?'هوية نظام':'حساب قائم','type')+(m.code==='claude_creative'?chip('الحساب الحالي محفوظ','safe'):'')+'</div></div></div>';
@@ -96,7 +141,7 @@
       var live=x.live_enabled===true,comms=x.communications_enabled===true;
       body='<div class="dt-stats">'+stat('التشغيل',live?'مفعل':'غير مفعل')+stat('التواصل',comms?'مفعل':'غير مفعل')+stat('رسائل معلقة',n(x.pending_messages))+stat('رسائل فشلت',n(x.failed_messages))+stat('طلبات مساعدة',n(x.open_help_requests))+stat('مكالمات غير محلولة',n(x.unresolved_missed_calls))+'</div><div class="dt-foot"><span>وكيل خدمة العملاء والحجز</span><span>بدون حساب دخول للداشبورد</span></div>';
     }
-    return '<article class="dt-member">'+head+'<p class="dt-authority">'+esc(m.authority_note||'')+'</p>'+body+discussionBlock(m)+'</article>';
+    return '<article class="dt-member">'+head+'<p class="dt-authority">'+esc(m.authority_note||'')+'</p>'+body+siaEvidenceBlock(m)+discussionBlock(m)+'</article>';
   }
   function render(data){
     var view=document.getElementById('view-container');if(!view)return;
@@ -119,6 +164,11 @@
     view.querySelectorAll('[data-dt-discuss]').forEach(function(el){
       el.addEventListener('toggle',function(){if(el.open)openDiscussionCode=el.getAttribute('data-dt-discuss');});
     });
+    var evidence=view.querySelector('[data-dt-sia-evidence]');
+    if(evidence){
+      evidence.addEventListener('toggle',function(){if(evidence.open)loadSiaEvidenceTasks(evidence);});
+      evidence.querySelector('[data-dt-sia-run]').onclick=function(){runSiaEvidenceReview(evidence);};
+    }
   }
 
 

@@ -37,6 +37,7 @@ jobs:
           node tests/specialist-agent-reviews.cjs
           node tests/digital-agent-conversations.cjs
           node tests/digital-agent-edge-syntax.cjs
+          node tests/sia-task-evidence-review.cjs
 
   tests:
     runs-on: ubuntu-24.04

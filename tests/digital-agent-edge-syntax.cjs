@@ -4,7 +4,8 @@ const ts=require('typescript');
 const files=[
  'supabase/functions/digital-agent-advice/index.ts',
  'supabase/functions/task-attachment-preview/index.ts',
- 'supabase/functions/assistant-review-tasks/index.ts'
+ 'supabase/functions/assistant-review-tasks/index.ts',
+ 'supabase/functions/assistant-task-evidence-review/index.ts'
 ];
 for(const name of files){
  const source=fs.readFileSync(name,'utf8');
