@@ -242,4 +242,10 @@ echo "info S43 SECURITY INVOKER public functions that mention video_jobs and are
 case "$INV" in *writes=true*) bad "S43 an invoker function WRITES video_jobs: the REVOKE would break it";; *) ok "S43 no SECURITY INVOKER function in the repo schema writes video_jobs (listed above; live function sources not inspected by the author)";; esac
 P -c "alter table public.video_jobs drop constraint if exists probe_content_fk; drop table if exists public.probe_parent cascade" >/dev/null 2>&1
 reset_acl
+# ---- S44: which lock does the draft take on video_jobs? (observed, not assumed; PostgreSQL 18 fixture, the live server is 17.6)
+reset_acl
+LOCKS=$(P -c "begin; set local lock_timeout='3s'; revoke all on table public.video_jobs from anon; revoke all on table public.video_jobs from authenticated; grant select on table public.video_jobs to authenticated; select coalesce(string_agg(mode,',' order by mode),'none') from pg_locks where relation='public.video_jobs'::regclass and pid=pg_backend_pid(); rollback" 2>&1 | tail -1)
+echo "info S44 locks held on video_jobs inside the draft transaction (observed): $LOCKS"
+case "$LOCKS" in *AccessExclusiveLock*) bad "S44 the draft takes ACCESS EXCLUSIVE on video_jobs: $LOCKS";; *) ok "S44 the draft transaction holds NO ACCESS EXCLUSIVE lock on video_jobs (observed locks: $LOCKS), so it does not block concurrent reads, realtime or the worker";; esac
+reset_acl
 exit $FAIL
