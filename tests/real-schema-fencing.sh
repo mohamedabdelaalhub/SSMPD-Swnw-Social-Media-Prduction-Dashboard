@@ -121,4 +121,31 @@ SELP=$(P -c "select has_table_privilege('authenticated','public.video_jobs','SEL
 [ "$POL0" = "$POL1" ] && [ -n "$POL0" ] && [ "$PUB" = 1 ] && [ "$SELP" = t ] && ok "S32 realtime-relevant state (review #124: video_jobs IS in the live supabase_realtime publication): after REVOKE the RLS policy set is byte-identical, authenticated keeps SELECT (the two things postgres_changes authorizes with), publication membership is untouched" || bad "S32 pol0=$POL0 pol1=$POL1 pub=$PUB sel=$SELP"
 P -v ON_ERROR_STOP=1 -f "$D/rollback.sql" >/dev/null 2>&1; P -c "select string_agg(a::text,'|' order by a::text) from pg_class c, unnest(c.relacl) a where c.oid='public.video_jobs'::regclass" > "$D/acl_after.txt"
 cmp -s "$D/acl_before.txt" "$D/acl_after.txt" && ok "S31 documented rollback restores the original ACL (same set of entries; entry order inside relacl may differ, which has no effect)" || { bad "S31 rollback differs"; cat "$D/acl_before.txt" "$D/acl_after.txt"; diff "$D/acl_before.txt" "$D/acl_after.txt" | head -5; }
+
+# ---- S33/S34 (review #125): rollback generated from the ACL snapshot, and the read-only operator packet runs on a real schema.
+P -v ON_ERROR_STOP=1 -f "$D/revoke.sql" >/dev/null 2>&1
+python3 - "$ROOT" "$D/q1.sql" <<'PY'
+import sys,re
+t=open(sys.argv[1]+'/supabase/drafts/20261104_video_jobs_revoke_operator_checks.sql').read()
+q1=t.split('-- Q1',1)[1].split('-- Q2',1)[0]
+q1=q1.split('\n',1)[1]
+open(sys.argv[2],'w').write(q1)
+PY
+P -c "grant all on table public.video_jobs to anon, authenticated" >/dev/null
+P -c "select string_agg(a::text,'|' order by a::text) from pg_class c, unnest(c.relacl) a where c.oid='public.video_jobs'::regclass" > "$D/acl33_orig.txt"
+P -F '|' -f "$D/q1.sql" 2>&1 | grep '^rollback_stmt|' | sed 's/^rollback_stmt|//' > "$D/gen_rollback.sql"
+NGEN=$(grep -c '^grant' "$D/gen_rollback.sql")
+P -v ON_ERROR_STOP=1 -f "$D/revoke.sql" >/dev/null 2>&1
+P -v ON_ERROR_STOP=1 -f "$D/gen_rollback.sql" >/dev/null 2>&1
+P -c "select string_agg(a::text,'|' order by a::text) from pg_class c, unnest(c.relacl) a where c.oid='public.video_jobs'::regclass" > "$D/acl33_after.txt"
+[ "$NGEN" -ge 3 ] && cmp -s "$D/acl33_orig.txt" "$D/acl33_after.txt" && ok "S33 the rollback script GENERATED from the ACL snapshot (Q1, $NGEN statements) restores the original ACL exactly after the REVOKE, with no hard-coded grants" || { bad "S33 gen=$NGEN"; cat "$D/gen_rollback.sql" "$D/acl33_orig.txt" "$D/acl33_after.txt"; }
+OUT=$(P -v ON_ERROR_STOP=1 -f "$ROOT/supabase/drafts/20261104_video_jobs_revoke_operator_checks.sql" 2>&1); RC=$?
+NW=$(python3 - "$ROOT/supabase/drafts/20261104_video_jobs_revoke_operator_checks.sql" <<'PY'
+import sys,re
+t=re.sub(r'--[^\n]*','',open(sys.argv[1]).read())
+st=[x.strip() for x in t.split(';') if x.strip()]
+print(sum(1 for x in st if x.split()[0].lower() not in ('select','with')))
+PY
+)
+[ "$RC" = 0 ] && [ -n "$OUT" ] && [ "$NW" = 0 ] && ok "S34 the operator packet (Q1-Q7) executes without error on the real schema and every statement starts with SELECT or WITH (non-read statements: $NW)" || bad "S34 rc=$RC nw=$NW $(echo "$OUT" | grep -m2 ERROR)"
 exit $FAIL
