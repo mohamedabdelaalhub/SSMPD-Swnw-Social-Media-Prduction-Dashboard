@@ -16,7 +16,7 @@ create role service_role nologin; create role anon nologin; create role authenti
 create schema auth; create function auth.role() returns text language sql stable as $$ select nullif(current_setting('test.role',true),'') $$;
 create table public.video_jobs(id uuid primary key default gen_random_uuid(), status text not null default 'pending', worker_id text, attempt_count int not null default 0, error_message text,
  render_started_at timestamptz, render_finished_at timestamptz, progress_percent int not null default 0, progress_stage text not null default 'wait',
- input_schema_version int not null default 1, output_video_url text, cover_url text, voiceover_url text, subtitles_url text,
+ input_schema_version int not null default 1, output_video_url text, cover_url text, voiceover_url text, subtitles_url text, generation_state jsonb not null default '{}'::jsonb, archive_status text not null default 'pending', archive_error text, drive_video_url text, drive_video_id text, drive_folder_url text, archived_at timestamptz,
  created_at timestamptz not null default now(), updated_at timestamptz not null default now());
 create table public.video_worker_heartbeats(worker_id text primary key, status text not null default 'idle', current_job_id uuid, last_seen_at timestamptz not null default now(), updated_at timestamptz not null default now());
 create function public.touch() returns trigger language plpgsql as $$ begin new.updated_at=now(); return new; end $$;
@@ -51,12 +51,12 @@ for r in anon authenticated; do P -c "set role $r; select public.claim_next_vide
 P -f "$ROOT/supabase/drafts/20261104_video_job_fencing.sql"
 SR="set role service_role; select set_config('test.role','service_role',false) is not null;"
 Q() { local o; o="$(P -c "$SR $1" 2>&1 || true)"; if grep -q "ERROR" <<<"$o"; then grep -m1 "ERROR" <<<"$o"; else tail -1 <<<"$o"; fi; }
-staleize() { P -c "alter table public.video_jobs disable trigger video_jobs_touch; update public.video_jobs set updated_at=now()-interval '40 minutes' where id='$1'; alter table public.video_jobs enable trigger video_jobs_touch"; }
+staleize() { P -c "alter table public.video_jobs disable trigger user; update public.video_jobs set updated_at=now()-interval '40 minutes' where id='$1'; alter table public.video_jobs enable trigger user"; }
 P -c "truncate public.video_jobs; insert into public.video_jobs(id) values('00000000-0000-0000-0000-0000000000f1')"
 J=00000000-0000-0000-0000-0000000000f1
 T1=$(Q "select public.claim_next_video_job_fenced('wA',4)->>'claim_token'")
 [ -n "$T1" ] && [ "$(P -c "select claim_token::text from public.video_jobs where id='$J'")" = "$T1" ] && ok "F1 token issued and stored" || bad "F1"
-Q "select public.video_job_update_fenced('$J','$T1','{\"status\":\"rendering\",\"progress_percent\":50}')->>'status'" | grep -q rendering && ok "F2 holder updates whitelisted columns" || bad "F2"
+O=$(Q "select public.video_job_update_fenced('$J','$T1','{\"status\":\"rendering\",\"progress_percent\":50}')->>'status'"); [ "$O" = rendering ] && ok "F2 holder updates whitelisted columns" || bad "F2 got: $O"
 for col in attempt_count worker_id claim_token id; do O=$(Q "select public.video_job_update_fenced('$J','$T1','{\"$col\":\"x\"}')"); echo "$O" | grep -q "column not allowed" && ok "F3 $col rejected" || bad "F3 $col"; done
 # F4 concurrent zombie vs reclaimer: job goes stale, 1 reclaimer claims while 20 zombie sessions keep writing with the OLD token
 staleize $J
@@ -64,17 +64,21 @@ rm -f "$D"/z* "$D"/n*
 ( Q "select coalesce(public.claim_next_video_job_fenced('wB',4)->>'claim_token','NULL')" > "$D/n1" ) &
 for i in $(seq 1 20); do ( for k in 1 2 3 4 5; do Q "select public.video_job_update_fenced('$J','$T1','{\"status\":\"ready\",\"output_video_url\":\"zombie$i\"}')" | grep -q ERROR || echo WROTE >> "$D/z$i"; done ) & done; wait
 T2=$(cat "$D/n1")
+ST=$(P -c "select status||'|'||coalesce(worker_id,'')||'|'||coalesce(claim_token::text,'') from public.video_jobs where id='$J'")
 if [ "$T2" != NULL ] && [ "$T2" != "$T1" ]; then
- # zombie writes before the reclaim reset are possible ONLY while the job still holds the old token; check final state integrity instead
- ST=$(P -c "select status||'|'||coalesce(worker_id,'')||'|'||coalesce(claim_token::text,'') from public.video_jobs where id='$J'")
- echo "info F4 state after race: $ST (zombie WROTE files: $(ls "$D"/z* 2>/dev/null | wc -l | tr -d ' '))"
+ echo "info F4 reclaimer won: $ST (zombie writes accepted before the reclaim: $(ls "$D"/z* 2>/dev/null | wc -l | tr -d ' '))"
  ok "F4 reclaimer obtained a NEW token during the zombie storm"
-else bad "F4 reclaim/token (T2=$T2)"; fi
+elif [ "$T2" = NULL ]; then
+ # legitimate lease semantics: a zombie that is still writing keeps updated_at fresh, so the job is NOT stale and nobody may take it
+ [ "$(P -c "select claim_token::text from public.video_jobs where id='$J'")" = "$T1" ] && ok "F4 (race outcome B) live token holder kept the job; no second holder was created" || bad "F4 outcome B state $ST"
+else bad "F4 reclaim returned the old token"; fi
+# make the following checks deterministic regardless of the race outcome above: force a clean stale reclaim without concurrent writers
+if [ "$T2" = NULL ]; then staleize $J; T2=$(Q "select coalesce(public.claim_next_video_job_fenced('wB',4)->>'claim_token','NULL')"); fi
 # F5 after the reclaim completed, the old token is dead for good; the new holder works; finished jobs are frozen
 Q "select public.video_job_update_fenced('$J','$T1','{\"status\":\"ready\"}')" 2>&1 | grep -q "stale claim" && ok "F5 old token rejected after reclaim" || bad "F5 old token"
 if [ "$T2" != NULL ]; then
  # make sure state is a working state held by wB before testing the new holder
- P -c "update public.video_jobs set status='rendering', output_video_url=null where id='$J' and claim_token='$T2'" >/dev/null
+ P -c "alter table public.video_jobs disable trigger user; update public.video_jobs set status='rendering', output_video_url=null where id='$J' and claim_token='$T2'; alter table public.video_jobs enable trigger user" >/dev/null
  Q "select public.video_job_update_fenced('$J','$T2','{\"status\":\"ready\",\"output_video_url\":\"good\"}')->>'output_video_url'" | grep -q good && ok "F5 new holder commits" || bad "F5 new holder"
  Q "select public.video_job_update_fenced('$J','$T2','{\"status\":\"failed\"}')" 2>&1 | grep -q "stale claim" && ok "F5 finished job frozen" || bad "F5 frozen"
 fi
@@ -83,6 +87,39 @@ for r in anon authenticated; do P -c "set role $r; select public.claim_next_vide
 # F7 rollback: draft rollback notes restore the previous state and plain claim still works (back-compat)
 P -c "truncate public.video_jobs; insert into public.video_jobs(id) values('$J')"
 Q "select public.claim_next_video_job('legacy',4)->>'id'" | grep -q "$J" && ok "F7 legacy unfenced claim still works with the column present (back-compat)" || bad "F7 legacy"
-P -c "drop function public.video_job_update_fenced(uuid,uuid,jsonb); drop function public.claim_next_video_job_fenced(text,integer); alter table public.video_jobs drop column claim_token;" && ok "F7 rollback statements execute cleanly" || bad "F7 rollback"
+P -c "drop trigger video_jobs_fence_guard on public.video_jobs; drop function public.video_jobs_fence_guard(); drop function public.video_job_update_fenced(uuid,uuid,jsonb); drop function public.claim_next_video_job_fenced(text,integer); alter table public.video_jobs drop column claim_token;" && ok "F7 rollback statements execute cleanly" || bad "F7 rollback"
 Q "select public.claim_next_video_job('legacy2',4) is null" | grep -q t && ok "F7 original claim function intact after rollback" || bad "F7 post-rollback"
+
+# ---- Part G: transition safety (OLD unfenced worker during the switch); draft re-applied to a clean state
+P -c "truncate public.video_jobs; insert into public.video_jobs(id) values('$J')"
+P -f "$ROOT/supabase/drafts/20261104_video_job_fencing.sql"
+RAW() { P -c "$SR $1" 2>&1 || true; }     # raw legacy-style statements as the OLD worker sends them (PostgREST PATCH = plain UPDATE as service_role)
+TF=$(Q "select public.claim_next_video_job_fenced('new',4)->>'claim_token'")
+O=$(RAW "update public.video_jobs set output_video_url='OLD-ZOMBIE', status='ready' where id='$J'"); grep -q "claim token" <<<"$O" && ok "G1 old unfenced worker cannot overwrite a fenced job (status/outputs)" || bad "G1 $O"
+O=$(RAW "update public.video_jobs set progress_percent=99 where id='$J'"); grep -q "claim token" <<<"$O" && ok "G2 old worker cannot even touch progress on a fenced job" || bad "G2 $O"
+[ "$(P -c "select coalesce(output_video_url,'-')||'|'||status from public.video_jobs where id='$J'")" = "-|preparing" ] && ok "G3 fenced job unchanged by the rejected old-worker writes" || bad "G3"
+Q "select public.video_job_update_fenced('$J','$TF','{\"archive_status\":\"uploading\",\"generation_state\":{\"k\":1},\"status\":\"uploading\"}')->>'archive_status'" | grep -q uploading && ok "G4 fenced RPC accepts the real worker columns (archive_status, generation_state, ...)" || bad "G4"
+Q "select public.video_job_update_fenced('$J','$TF','{\"output_video_url\":null,\"drive_video_url\":\"d\"}')->>'drive_video_url'" | grep -q d && ok "G5 explicit null and new value applied like a PostgREST PATCH" || bad "G5"
+# G6 transition: fenced worker holds job, it goes stale, OLD worker claims through the LEGACY function: token dies, legacy writes work, fenced zombie is locked out
+staleize $J
+O=$(Q "select public.claim_next_video_job('legacy-old',4)->>'worker_id'"); [ "$O" = legacy-old ] && ok "G6 legacy claim reclaims the stale fenced job" || bad "G6 $O"
+[ "$(P -c "select coalesce(claim_token::text,'NULL') from public.video_jobs where id='$J'")" = NULL ] && ok "G6 token cleared by the legacy claim" || bad "G6 token"
+RAW "update public.video_jobs set status='rendering' where id='$J'" | grep -q ERROR && bad "G6 legacy write" || ok "G6 legacy worker can continue its own job"
+Q "select public.video_job_update_fenced('$J','$TF','{\"status\":\"ready\"}')" | grep -q "stale claim" && ok "G6 old fenced token locked out after legacy reclaim" || bad "G6 old token"
+# G7 stale recovery by the claim function itself still works for a fenced job (guard allows working->pending/failed only when stale)
+P -c "truncate public.video_jobs; insert into public.video_jobs(id) values('$J')"
+TG=$(Q "select public.claim_next_video_job_fenced('n',4)->>'claim_token'"); staleize $J
+O=$(Q "select coalesce(public.claim_next_video_job('r',4)->>'attempt_count','NULL')"); [ "$O" = 2 ] && ok "G7 stale fenced job recovered by the unmodified claim function (attempt 2)" || bad "G7 $O"
+# G8 fresh (not stale) fenced job cannot be force-failed by an old worker
+P -c "truncate public.video_jobs; insert into public.video_jobs(id) values('$J')"; Q "select public.claim_next_video_job_fenced('n',4)->>'id'" >/dev/null
+O=$(RAW "update public.video_jobs set status='failed' where id='$J'"); grep -q "claim token" <<<"$O" && ok "G8 old worker cannot fail a fresh fenced job" || bad "G8 $O"
+# G9 two LEGACY workers: documented NON-protection (old zombie vs old holder) -> requires stop/drain before enabling fenced claims
+P -c "truncate public.video_jobs; insert into public.video_jobs(id) values('$J')"; Q "select public.claim_next_video_job('oldA',4)->>'id'" >/dev/null
+RAW "update public.video_jobs set output_video_url='oldB-overwrite' where id='$J'" | grep -q ERROR && bad "G9 unexpected block" || ok "G9 KNOWN LIMIT: two legacy workers can still overwrite each other (job without token); drain legacy workers before the switch"
+
+# G10 dashboard user cancels a job held under a token: allowed (RLS governs users), and the worker's next fenced call fails = abort signal
+P -c "truncate public.video_jobs; insert into public.video_jobs(id) values('$J'); grant select, update on public.video_jobs to authenticated"
+TH=$(Q "select public.claim_next_video_job_fenced('n',4)->>'claim_token'")
+O=$(P -c "set role authenticated; select set_config('test.role','authenticated',false) is not null; update public.video_jobs set status='cancelled' where id='$J'" 2>&1 || true); grep -q ERROR <<<"$O" && bad "G10 user cancel blocked: $O" || ok "G10 dashboard user can still cancel a held job"
+Q "select public.video_job_update_fenced('$J','$TH','{\"status\":\"rendering\"}')" | grep -q "stale claim" && ok "G10 worker's next fenced call fails after cancel (abort signal)" || bad "G10 abort"
 exit $FAIL
