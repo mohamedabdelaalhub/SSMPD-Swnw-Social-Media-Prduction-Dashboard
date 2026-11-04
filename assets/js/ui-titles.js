@@ -13,7 +13,7 @@ root.SSMPDUITitles={tabs:tabs,roles:roles,chips:chips,identity:identity,label:la
 (function loadAdministrativeAssistant(){
   if(root.__SSMPD_ADMIN_ASSISTANT_ASSETS_REQUESTED__)return;
   root.__SSMPD_ADMIN_ASSISTANT_ASSETS_REQUESTED__=true;
-  var version='patient360-20261103-1';
+  var version='digital-specialists-20261104-1';
   ['assets/css/administrative-assistant.css','assets/css/administrative-assistant-center.css','assets/css/digital-team.css','assets/css/patient360.css'].forEach(function(href){var link=document.createElement('link');link.rel='stylesheet';link.href=href+'?v='+version;document.head.appendChild(link);});
   function addScript(src,onload){var s=document.createElement('script');s.src=src+'?v='+version;s.async=false;if(onload)s.onload=onload;document.head.appendChild(s);}
   addScript('assets/js/administrative-assistant.js',function(){
