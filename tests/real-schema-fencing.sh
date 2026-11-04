@@ -11,10 +11,11 @@ trap '"$PGBIN/pg_ctl" -D "$D/data" -m immediate stop >/dev/null 2>&1 || true; rm
 "$PGBIN/createdb" -h "$D" -p "$PORT" -U postgres t
 P() { "$PGBIN/psql" -h "$D" -p "$PORT" -U postgres -d t -qtAX "$@"; }
 ok(){ echo "PASS $*"; }; bad(){ echo "FAIL $*"; FAIL=1; }
-P -v ON_ERROR_STOP=1 -f "$ROOT/tests/real-schema-stubs.sql" >/dev/null 2>&1 || { echo "FAIL stubs"; exit 2; }
-P -f "$ROOT/supabase/setup.sql" >/dev/null 2>&1
-MERR=0; : >"$D/migrations.err"; for f in $(ls "$ROOT"/supabase/migrations/*.sql | sort); do e=$(P -f "$f" 2>>"$D/migrations.err" >/dev/null; grep -c ERROR "$D/migrations.err"); MERR=$e; done; echo "info: migration load errors by kind (all unrelated to video_jobs unless listed below):"; grep ERROR "$D/migrations.err" | sed "s/^psql:[^ ]* //" | sed "s/\"[^\"]*\"/X/g" | sort | uniq -c | sort -rn | head -6; echo "info: errors mentioning video: $(grep ERROR "$D/migrations.err" | grep -ci video)"
-[ "$(P -c "select count(*) from pg_proc where proname='claim_next_video_job'")" = 2 ] && ok "S0 real schema loaded: setup.sql + $(ls "$ROOT"/supabase/migrations/*.sql | wc -l | tr -d ' ') migrations ($MERR migration errors), both claim_next_video_job versions present" || bad "S0 real schema load"
+. "$ROOT/tests/real-schema-lib.sh"
+load_real_schema || { echo "FAIL stubs"; exit 2; }
+MERR=$((TOTAL-OKN))
+echo "info: $OKN of $TOTAL migration files apply with 0 errors ($MERR still failing; classified by tests/real-schema-report.sh)"
+[ "$(P -c "select count(*) from pg_proc where proname='claim_next_video_job'")" = 2 ] && ok "S0 real schema loaded: setup.sql + migrations ($MERR files still failing), both claim_next_video_job versions present" || bad "S0 real schema load"
 # Supabase gives service_role ALL on public tables through default privileges (not part of setup.sql), so the stub grants it after loading.
 P -c "grant all on all tables in schema public to service_role; grant all on all sequences in schema public to service_role; grant usage on schema public to anon, authenticated, service_role" >/dev/null
 # Fixture simplification (documented in the report): the parent rows (content_items, admins) are not created, so the two parent FKs of video_jobs are dropped in THIS throwaway DB only.
