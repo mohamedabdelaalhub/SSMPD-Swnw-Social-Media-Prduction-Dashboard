@@ -61,4 +61,19 @@ N0=$(P -c "set role service_role; with u as (update public.video_jobs set progre
 P -c "alter role service_role bypassrls"
 N1=$(P -c "set role service_role; with u as (update public.video_jobs set progress_percent=34 where id='$J3' returning 1) select count(*) from u")
 [ "$N0" = 0 ] && [ "$N1" = 1 ] && ok "S20 without BYPASSRLS a service_role UPDATE affects 0 rows silently (legacy worker and guard would both be inert); with it 1 row: live service_role MUST have BYPASSRLS, so the live check is a precondition, not an option" || bad "S20 n0=$N0 n1=$N1"
+
+# ---- S21-S24 (review #120): the LIVE claim_next_video_job(text,integer) is the 20260921_image_storyboard definition (md5(pg_get_functiondef) matched offline), not 20261006.
+python3 - "$ROOT" "$D/claim_live.sql" <<'PY'
+import re,sys
+s=open(sys.argv[1]+'/supabase/migrations/20260921_image_storyboard.sql').read()
+m=re.search(r'(create\s+or\s+replace\s+function\s+public\.claim_next_video_job\s*\(p_worker_id text,\s*p_max_input_schema_version integer\).*?\bas\s+(\$[A-Za-z_]*\$).*?\2\s*;)',s,re.I|re.S)
+open(sys.argv[2],'w').write(m.group(1)+'\n')
+PY
+P -v ON_ERROR_STOP=1 -f "$D/claim_live.sql" >/dev/null 2>&1 && [ "$(P -c "select md5(pg_get_functiondef('public.claim_next_video_job(text,integer)'::regprocedure))")" = ff2f643124012e0277fb2323439dae06 ] && ok "S21 offline definition of the 20260921 claim function reproduces the LIVE md5(pg_get_functiondef) ff2f6431... exactly" || bad "S21"
+P -c "truncate public.video_jobs cascade"
+L1=$(job); TL=$(Q "select public.claim_next_video_job_fenced('wl',4)->>'claim_token'")
+[ -n "$TL" ] && ok "S22 fenced claim works through the LIVE-version claim function" || bad "S22"
+staleize "$L1"; Q "select coalesce(public.claim_next_video_job('legacy',4)->>'attempt_count','NULL')" | grep -q 2 && ok "S23 stale fenced job reclaimed by the LIVE-version claim function (attempt 2)" || bad "S23"
+P -c "truncate public.video_jobs cascade"; L2=$(job); P -c "update public.video_jobs set input_schema_version=4 where id='$L2'"
+[ "$(Q "select coalesce(public.claim_next_video_job('w',4)->>'id','NULL')")" = NULL ] && [ "$(Q "select coalesce(public.claim_next_video_job_fenced('w',4)->>'id','NULL')")" = NULL ] && ok "S24 BEHAVIOUR OF THE LIVE VERSION (unchanged by the wrapper): a job with input_schema_version 4 (studio storyboard) is NEVER claimed because the cap is least(p_max,3); the repo-latest 20261006 version raises it to 4" || bad "S24"
 exit $FAIL

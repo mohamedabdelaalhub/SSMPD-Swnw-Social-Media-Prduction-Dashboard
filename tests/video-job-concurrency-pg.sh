@@ -1,7 +1,7 @@
 #!/bin/bash
 # Real-PostgreSQL concurrency test for claim_next_video_job and the DRAFT fencing functions.
 # Throwaway local cluster on a random port in a temp dir; dummy rows only; no network, no Supabase.
-# Usage: PGBIN=/Library/PostgreSQL/18/bin tests/video-job-concurrency-pg.sh
+# Usage: PGBIN=/Library/PostgreSQL/18/bin [CLAIM_MIGRATION=20260921_image_storyboard.sql] tests/video-job-concurrency-pg.sh
 set -euo pipefail
 PGBIN="${PGBIN:-$(dirname "$(command -v postgres)")}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -26,7 +26,7 @@ grant usage on schema public, auth to service_role, anon, authenticated; grant a
 SQL
 python3 - "$ROOT" "$D/claim.sql" <<'PY'
 import sys
-r=sys.argv[1]; m=open(r+'/supabase/migrations/20261006_video_studio.sql').read()
+r=sys.argv[1]; import os; m=open(r+'/supabase/migrations/'+os.environ.get('CLAIM_MIGRATION','20261006_video_studio.sql')).read()   # CLAIM_MIGRATION=20260921_image_storyboard.sql tests the version that is LIVE (md5-matched, review #120)
 a=m.index('create or replace function public.claim_next_video_job(p_worker_id text, p_max_input_schema_version integer)')
 e='grant execute on function public.claim_next_video_job(text,integer) to service_role;'
 b=m.index(e,a)+len(e); open(sys.argv[2],'w').write(m[a:b])
