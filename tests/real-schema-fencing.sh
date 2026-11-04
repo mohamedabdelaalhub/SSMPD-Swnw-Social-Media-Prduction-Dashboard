@@ -142,7 +142,7 @@ P -c "select string_agg(a::text,'|' order by a::text) from pg_class c, unnest(c.
 OUT=$(P -v ON_ERROR_STOP=1 -f "$ROOT/supabase/drafts/20261104_video_jobs_revoke_operator_checks.sql" 2>&1); RC=$?
 NW=$(python3 - "$ROOT/supabase/drafts/20261104_video_jobs_revoke_operator_checks.sql" <<'PY'
 import sys,re
-t=re.sub(r'--[^\n]*','',open(sys.argv[1]).read())
+t=re.sub(r"'[^']*'","''",re.sub(r'--[^\n]*','',open(sys.argv[1]).read()))
 st=[x.strip() for x in t.split(';') if x.strip()]
 print(sum(1 for x in st if x.split()[0].lower() not in ('select','with')))
 PY
