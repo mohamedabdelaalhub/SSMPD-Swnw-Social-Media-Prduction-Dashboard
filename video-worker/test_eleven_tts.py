@@ -121,5 +121,35 @@ class ElevenTests(unittest.TestCase):
             config.assert_not_called()
             claim.assert_not_called()
 
+class CaptionMedicalTitleRegressionTests(unittest.TestCase):
+    """Arabic medical title / number examples for short_caption_chunks (added for review; see FINDINGS in Issue #1)."""
+    def chunks(self, text):
+        return worker.short_caption_chunks(text)
+
+    def test_doctor_abbreviation_with_two_word_name(self):
+        self.assertEqual(self.chunks('تابعوا مع د. دينا حسني في العيادة اليوم.'), ['تابعوا مع دكتور دينا حسني', 'في العيادة اليوم'])
+
+    def test_consultant_then_doctor(self):
+        self.assertTrue(any('دكتور سامي يوسف' in c for c in self.chunks('استشاري د. سامي يوسف متاح غدا.')))
+
+    def test_no_chunk_is_a_lone_abbreviation(self):
+        for text in ('تابعوا مع د. دينا حسني في العيادة اليوم.', 'استشاري د. سامي يوسف متاح غدا.', 'د. هبة والدكتور محمد معنا اليوم في العيادة.'):
+            self.assertFalse(any(c.strip() in ('د', 'د.') for c in self.chunks(text)), text)
+
+    def test_five_word_limit_still_holds(self):
+        for text in ('د. هبة والدكتور محمد معنا اليوم في العيادة.', 'تابعوا مع د. دينا حسني في العيادة اليوم.'):
+            self.assertTrue(all(len(c.split()) <= 5 for c in self.chunks(text)), text)
+
+    @unittest.expectedFailure
+    def test_known_gap_professor_abbreviation(self):
+        # "أ.د." (professor) is still split into a lone 'أد' chunk: not fixed by the 'د.' change; needs a decision.
+        self.assertFalse(any(c.strip() == 'أد' for c in self.chunks('أ.د. أحمد علي يشرح الحالة اليوم.')))
+
+    @unittest.expectedFailure
+    def test_known_gap_decimal_numbers_keep_their_dot(self):
+        # clean() strips every dot, so '120.5' becomes '1205' in captions (existing behaviour, medically misleading): needs a decision.
+        self.assertTrue(any('120.5' in c for c in self.chunks('ضغط الدم 120.5 مهم جدا للمتابعة.')))
+
+
 if __name__ == '__main__':
     unittest.main()
