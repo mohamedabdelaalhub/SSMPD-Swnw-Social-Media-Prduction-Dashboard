@@ -114,7 +114,8 @@ async function processOne(db:any,j:any,token:string){
  const {data:task}=await db.from("tasks").select("title,description,expected_output").eq("id",j.task_id).maybeSingle();
  const brief=limit((task?.title||"")+" "+(task?.description||"")+" "+(task?.expected_output||""),1800);
  const name=String(j.file_name||"").toLowerCase();
- const sensitive=/(ملف طبي|تشخيص|مريض|تحاليل طبية|أشعة|كشف طبي|patient record|diagnosis|medical|رواتب|حساب بنكي|بطاقة هوية)/i.test(brief+" "+name);
+ const patientScreenshot=/\.(png|jpe?g|webp)$/i.test(name)&&/(تعليقات الجمهور|رسائل العملاء|رسائل المرضى|شكاوى المرضى|أسئلة الجمهور|مخاوف الجمهور)/i.test(brief);
+ const sensitive=patientScreenshot||/(ملف طبي|تشخيص|مريض|تحاليل طبية|أشعة|كشف طبي|patient record|diagnosis|medical|رواتب|حساب بنكي|بطاقة هوية)/i.test(brief+" "+name);
  if(sensitive){await set("restricted","الملف يحتاج مراجعة بشرية داخل صلاحيات النظام؛ لم يُرسل محتواه إلى نموذج خارجي.",{requires_human:true},"SENSITIVE_REVIEW");return {id:j.id,state:"restricted"};}
  try{
   const f=await getFile(j.drive_file_id,token);
