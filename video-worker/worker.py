@@ -12,6 +12,8 @@ import studio_generation
 import threading
 from drive_archive import upload as archive_upload
 from lease_fencing import LeaseGuard, LeaseLost, attempt_object_path
+import archive_protocol
+import drive_archive
 from brand_identity import logo_asset
 import json
 import os
@@ -1061,7 +1063,53 @@ def process_job(base_url: str, key: str, job: dict[str, Any]) -> None:
             _GUARDS.pop(job_id, None)
 
 
+def archive_rendered_job_attempt(base_url: str, key: str, job: dict[str, Any], output: Path) -> None:
+    """DRAFT attempt-scoped archive (SSMPD_ATTEMPT_ARCHIVE=1 and a fenced job): stage in Drive per attempt, the DATABASE commit decides the winner,
+    and only the winner writes cover-candidate rows. A zombie can never reference or overwrite the winner's files."""
+    job_id = str(job["id"])
+    attempt = int(job["attempt_count"])
+    guard = _GUARDS[job_id]
+    update_job(base_url, key, job_id, {"status": "uploading", "archive_status": "uploading"})
+    try:
+        ffmpeg, ffprobe = ffmpeg_paths()
+        if probe_duration(ffprobe, output) <= 0:
+            raise WorkerError("Rendered output is missing or invalid.")
+        cover = output.parent / "cover.jpg"
+        if not cover.exists():
+            run([ffmpeg, "-y", "-ss", "0", "-i", str(output), "-frames:v", "1", "-q:v", "2", str(cover)])
+        from cover_candidates import build as build_covers
+        candidates = build_covers(job, output, ffmpeg, probe_duration(ffprobe, output), template_dir=brand_template_dir(job))
+        files: dict[str, Path] = {"video": output}
+        if candidates:
+            for candidate in candidates:
+                files["cover_" + str(candidate["index"])] = Path(candidate["path"])
+        else:
+            files["cover"] = cover
+        staged: dict[str, dict] = {}
+        archive_protocol.archive_attempt(job, attempt, files, archive_protocol.DriveBridge(drive_archive.post), guard, staged_out=staged)
+        # From here on this worker IS the committed winner (the database said so).
+        for candidate in candidates:
+            storage_path = upload_cover_preview(base_url, key, job, candidate)
+            request_json("POST", base_url + "/rest/v1/video_cover_candidates?on_conflict=job_id,candidate_index", key, {
+                "id": str(uuid.uuid5(uuid.UUID(job_id), "cover-" + str(candidate["index"]))),
+                "job_id": job_id, "candidate_index": candidate["index"],
+                "timestamp_seconds": candidate["timestamp_seconds"], "storage_path": storage_path,
+                "drive_url": staged["cover_" + str(candidate["index"])]["fileUrl"],
+            }, {"Prefer": "resolution=merge-duplicates,return=minimal"})
+    except LeaseLost:
+        raise
+    except Exception as e:
+        message = safe_error_message(e, 1000)
+        update_job(base_url, key, job_id, {
+            "status": "failed", "archive_status": "failed", "archive_error": message,
+            "error_message": "Render retained locally. Retry archive without rendering: " + message,
+        })
+        raise
+
+
 def archive_rendered_job(base_url: str, key: str, job: dict[str, Any], output: Path) -> None:
+    if job.get("claim_token") and os.environ.get("SSMPD_ATTEMPT_ARCHIVE") == "1":
+        return archive_rendered_job_attempt(base_url, key, job, output)
     job_id = str(job["id"])
     update_job(base_url, key, job_id, {"status": "uploading", "archive_status": "uploading"})
     try:

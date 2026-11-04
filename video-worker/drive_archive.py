@@ -46,3 +46,11 @@ def upload(job, path, kind):
         if not str(result.get(field, "")).startswith("https://drive.google.com/"):
             raise RuntimeError("Drive bridge returned an invalid archive link.")
     return result
+
+
+def post(payload):
+    """POST one JSON action to the existing Drive bridge URL and return the parsed answer (used by the attempt-scoped archive draft)."""
+    req = urllib.request.Request(bridge_url(), data=json.dumps(payload).encode(),
+                                 headers={"Content-Type": "text/plain;charset=utf-8"}, method="POST")
+    with urllib.request.urlopen(req, timeout=180) as response:
+        return json.load(response)

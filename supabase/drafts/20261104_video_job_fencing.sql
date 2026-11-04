@@ -6,9 +6,15 @@
 -- v2 changes vs v1 (found by comparing with video-worker/worker.py update_job): the whitelist now covers every column the worker really writes
 -- (generation_state, archive_status, archive_error, drive_video_url/id, drive_folder_url, archived_at) and patch semantics match PostgREST PATCH
 -- (explicit null clears a column, absent key keeps it).
--- Rollback (in this order): drop function public.video_job_commit_fenced(uuid,uuid,integer,jsonb); drop trigger video_jobs_fence_guard on public.video_jobs; drop function public.video_jobs_fence_guard();
---   drop function public.video_job_update_fenced(uuid,uuid,jsonb); drop function public.claim_next_video_job_fenced(text,integer);
---   alter table public.video_jobs drop column claim_token; alter table public.video_jobs drop column committed_attempt; the previous claim_next_video_job body from migration 20261006 is never touched.
+-- ROLLBACK LADDER (review #104: never drop claim/guard columns while a fenced worker is active; prefer reversible steps; keep committed references):
+--   L0 reversible, no SQL: stop the fenced worker (or restart it WITHOUT SSMPD_FENCED_CLAIMS / SSMPD_ATTEMPT_ARCHIVE); the old worker keeps using the old claim and old Drive action.
+--   L1 reversible, no drops: alter table public.video_jobs disable trigger video_jobs_fence_guard;   (re-enable with: enable trigger ...)
+--   L2 only after L0 and a drain (query below returns 0): drop trigger video_jobs_fence_guard on public.video_jobs; drop function public.video_jobs_fence_guard();
+--      drop function public.video_job_commit_fenced(uuid,uuid,integer,jsonb); drop function public.video_job_update_fenced(uuid,uuid,jsonb);
+--      drop function public.claim_next_video_job_fenced(text,integer);   -- KEEPS the columns claim_token / committed_attempt and all drive_* values
+--   L3 optional, much later, only when no fenced worker exists and the drain query is 0: alter table public.video_jobs drop column claim_token; ... drop column committed_attempt;
+-- Drain query (must return 0 before L2/L3): select count(*) from public.video_jobs where claim_token is not null and status in ('preparing','rendering','uploading');
+-- The previous claim_next_video_job body from migration 20261006 is never touched. committed output references live in the plain columns drive_video_url/drive_video_id/drive_folder_url/cover_url and are never dropped.
 alter table public.video_jobs add column if not exists claim_token uuid;
 alter table public.video_jobs add column if not exists committed_attempt integer;   -- v4: which attempt's archive was committed (NULL for legacy jobs)
 

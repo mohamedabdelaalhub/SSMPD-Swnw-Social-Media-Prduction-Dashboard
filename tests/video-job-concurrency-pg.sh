@@ -87,7 +87,7 @@ for r in anon authenticated; do P -c "set role $r; select public.claim_next_vide
 # F7 rollback: draft rollback notes restore the previous state and plain claim still works (back-compat)
 P -c "truncate public.video_jobs; insert into public.video_jobs(id) values('$J')"
 Q "select public.claim_next_video_job('legacy',4)->>'id'" | grep -q "$J" && ok "F7 legacy unfenced claim still works with the column present (back-compat)" || bad "F7 legacy"
-P -c "drop trigger video_jobs_fence_guard on public.video_jobs; drop function public.video_jobs_fence_guard(); drop function public.video_job_commit_fenced(uuid,uuid,integer,jsonb); drop function public.video_job_update_fenced(uuid,uuid,jsonb); drop function public.claim_next_video_job_fenced(text,integer); alter table public.video_jobs drop column claim_token; alter table public.video_jobs drop column committed_attempt;" && ok "F7 rollback statements execute cleanly" || bad "F7 rollback"
+P -c "drop trigger video_jobs_fence_guard on public.video_jobs; drop function public.video_jobs_fence_guard(); drop function public.video_job_commit_fenced(uuid,uuid,integer,jsonb); drop function public.video_job_update_fenced(uuid,uuid,jsonb); drop function public.claim_next_video_job_fenced(text,integer); alter table public.video_jobs drop column claim_token; alter table public.video_jobs drop column committed_attempt;" && ok "F7 full rollback (L3 drops) executes cleanly on a drained table" || bad "F7 rollback"
 Q "select public.claim_next_video_job('legacy2',4) is null" | grep -q t && ok "F7 original claim function intact after rollback" || bad "F7 post-rollback"
 
 # ---- Part G: transition safety (OLD unfenced worker during the switch); draft re-applied to a clean state
@@ -146,4 +146,24 @@ Q "select public.video_job_commit_fenced('$J','$HT2',2,'{\"drive_video_url\":\"h
 P -c "truncate public.video_jobs; insert into public.video_jobs(id) values('$J')"; Q "select public.claim_next_video_job_fenced('w',4)->>'id'" >/dev/null
 Q "select public.video_job_commit_fenced('$J',null,1,'$RES')" | grep -q "required" && ok "H6 null token rejected" || bad "H6"
 for r in anon authenticated; do P -c "set role $r; select public.video_job_commit_fenced('$J','$HT2',1,'$RES')" >/dev/null 2>&1 && bad "H7 $r" || ok "H7 $r commit denied"; done
+
+# ---- Part I: rollback ladder (review #104)
+P -c "truncate public.video_jobs; insert into public.video_jobs(id) values('$J')"
+P -f "$ROOT/supabase/drafts/20261104_video_job_fencing.sql" >/dev/null 2>&1
+IT=$(Q "select public.claim_next_video_job_fenced('w',4)->>'claim_token'")
+DRAIN="select count(*) from public.video_jobs where claim_token is not null and status in ('preparing','rendering','uploading')"
+[ "$(P -c "$DRAIN")" = 1 ] && ok "I0 drain query reports the active fenced job (1) so L2/L3 are NOT allowed yet" || bad "I0"
+RAW "update public.video_jobs set progress_percent=5 where id='$J'" | grep -q "claim token" && ok "I1a guard is active" || bad "I1a"
+P -c "alter table public.video_jobs disable trigger video_jobs_fence_guard"
+RAW "update public.video_jobs set progress_percent=6 where id='$J'" | grep -q ERROR && bad "I1b legacy write after L1" || ok "I1b L1 (disable trigger) re-opens legacy writes with nothing dropped"
+Q "select public.video_job_update_fenced('$J','$IT','{\"progress_percent\":7}')->>'progress_percent'" | grep -q 7 && ok "I1c a still-running fenced worker keeps working under L1 (no break)" || bad "I1c"
+P -c "alter table public.video_jobs enable trigger video_jobs_fence_guard"
+RAW "update public.video_jobs set progress_percent=8 where id='$J'" | grep -q "claim token" && ok "I1d L1 is reversible (re-enabled guard blocks again)" || bad "I1d"
+Q "select public.video_job_commit_fenced('$J','$IT',1,'{\"drive_video_url\":\"https://drive/keep\",\"drive_video_id\":\"kid\",\"drive_folder_url\":\"https://drive/kf\"}')->>'status'" | grep -q ready && ok "I2a job committed before rollback" || bad "I2a"
+[ "$(P -c "$DRAIN")" = 0 ] && ok "I2b drain query is 0 after the job finished: L2 allowed" || bad "I2b"
+P -c "drop trigger video_jobs_fence_guard on public.video_jobs; drop function public.video_jobs_fence_guard(); drop function public.video_job_commit_fenced(uuid,uuid,integer,jsonb); drop function public.video_job_update_fenced(uuid,uuid,jsonb); drop function public.claim_next_video_job_fenced(text,integer);" >/dev/null && ok "I2c L2 executes (functions + trigger dropped, columns kept)" || bad "I2c"
+[ "$(P -c "select drive_video_url||'|'||committed_attempt||'|'||status from public.video_jobs where id='$J'")" = "https://drive/keep|1|ready" ] && ok "I2d committed output references and committed_attempt survive L2" || bad "I2d"
+Q "select public.video_job_update_fenced('$J','$IT','{}')" | grep -qi "does not exist" && ok "I3 a fenced worker that is still running after L2 fails loudly (function missing): stop it BEFORE L2" || bad "I3"
+P -c "insert into public.video_jobs(id) values('00000000-0000-0000-0000-0000000000f2')"
+Q "select public.claim_next_video_job('legacy',4)->>'id'" | grep -q f2 && RAW "update public.video_jobs set output_video_url='legacy-ok' where id='00000000-0000-0000-0000-0000000000f2'" | grep -q ERROR && bad "I4 legacy after L2" || ok "I4 legacy worker claims and writes normally after L2"
 exit $FAIL

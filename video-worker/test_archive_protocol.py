@@ -44,7 +44,7 @@ class FakeBridge:
         if key in self.files and self.files[key] != sha: raise RuntimeError('same-attempt conflict')
         self.files[key] = sha                                                           # same attempt + same sha = idempotent reuse
         return {'fileId': f'{attempt}-{kind}', 'fileUrl': f'https://drive/attempt-{attempt:02d}/{kind}', 'folderUrl': f'https://drive/attempt-{attempt:02d}'}
-    def cleanup(self, job, attempts):
+    def cleanup(self, job, attempts, keep_attempt=None):
         self.cleanups.append(list(attempts))
         for k in [k for k in self.files if k[0] == job['id'] and k[1] in attempts]: del self.files[k]
     def attempts_present(self): return sorted({k[1] for k in self.files})
