@@ -3,6 +3,28 @@
 function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function safeUrl(v){try{var u=new URL(v);return /^https?:$/.test(u.protocol)?u.href:'';}catch(e){return '';}}
 function text(v){return esc(v).replace(/https?:\/\/[^\s<]+/g,function(u){return '<a href="'+u+'" target="_blank" rel="noopener noreferrer">'+u+'</a>';});}
+async function taskAttachmentPreview(file){
+  if(!file||file.size>2*1024*1024||!/\.(csv|xlsx|xls|txt)$/i.test(file.name))return '';
+  try {
+    var ext=(file.name.split('.').pop()||'').toLowerCase(),result='';
+    if(ext==='txt'){result=(await file.text()).slice(0,12000);}
+    else {
+      if(!root.XLSX||!root.XLSX.read||!root.XLSX.utils||!root.XLSX.utils.sheet_to_json)return '';
+      var buf=await file.arrayBuffer(),wb=root.XLSX.read(buf,{type:'array',cellFormula:false,cellHTML:false,sheetRows:95});
+      var parts=[];
+      for(var name of wb.SheetNames.slice(0,3)){
+        var rows=root.XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,raw:false,defval:'',blankrows:false});
+        var lines=rows.slice(0,90).map(function(row){return (Array.isArray(row)?row:[]).slice(0,24).map(function(v){return String(v==null?'':v).replace(/[\t\n\r|]/g,' ').slice(0,180);}).join(' | ');});
+        parts.push('ورقة: '+name+' | إجمالي الصفوف المقروءة: '+rows.length+'\n'+lines.join('\n'));
+      }
+      result=parts.join('\n----\n').slice(0,12000);
+    }
+    // An employee-side preview is unverified and never authorizes approving a task.
+    return result.replace(/\b(?:\+?20|0)?1[0125]\d{8}\b/g,'[هاتف محجوب]')
+      .replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi,'[بريد محجوب]')
+      .replace(/\b\d{14}\b/g,'[رقم هوية محجوب]').slice(0,11000);
+  }catch(e){return '';}
+}
 var currentCapture=function(){};root.addEventListener("pagehide",function(){currentCapture();});
 function create(opts){
  currentCapture();
@@ -41,11 +63,28 @@ function create(opts){
   if(!d.request){if(!d.body.trim()&&!d.link.trim()&&!d.files.length){error(form,'اكتب شغلك أو أضف ملفًا أو رابطًا قبل الحفظ.');return;}if(d.link.trim()&&!safeUrl(d.link.trim())){error(form,'اكتب رابطًا يبدأ بـ https:// أو http://.');return;}if(d.link.length>2000){error(form,'الرابط أطول من 2000 حرف.');return;}if(d.body.length>50000){error(form,'النص أطول من 50000 حرف. ارفعه كملف.');return;}}
   var buttons=Array.from(form.querySelectorAll('button,input,textarea'));saving=true;buttons.forEach(function(b){b.disabled=true;});
   try{
+   var evidencePreviews=[];
    if(!d.request){
-    for(var f of d.files){if(!f.uploaded){var file=d.selected[f.key];if(!file)throw Error('اختار الملف «'+f.name+'» تاني من جهازك قبل التسليم.');f.uploaded=await root.SSMPDDb.taskUploadAttachment(id,file,t.title);persist(id);}}
+    for(var f of d.files){
+      var file=d.selected[f.key];
+      if(!f.uploaded){
+        if(!file)throw Error('اختار الملف «'+f.name+'» تاني من جهازك قبل التسليم.');
+        f.uploaded=await root.SSMPDDb.taskUploadAttachment(id,file,t.title);persist(id);
+      }
+      if(file&&f.uploaded&&f.uploaded.file_id){
+        var excerpt=await taskAttachmentPreview(file);
+        if(excerpt.length>=10)evidencePreviews.push({drive_file_id:f.uploaded.file_id,file_name:f.uploaded.name,content_excerpt:excerpt});
+      }
+    }
     d.request={task_id:id,request_id:root.crypto.randomUUID(),status:status,body:d.body.trim(),link:d.link.trim(),attachments:d.files.map(function(f){return f.uploaded;})};persist(id);
    }
-   var r=d.request;await root.SSMPDDb.taskSubmitWork(r);delete entries[id];try{localStorage.removeItem(key(id));}catch(e){}saving=false;active='';await saved(r.status==='review'?'تم تسليم شغلك للمدير. المهمة بانتظار المراجعة.':'تم حفظ تقدمك وإرساله للمدير.');
+   var r=d.request,workResultId=await root.SSMPDDb.taskSubmitWork(r);
+   // Non-blocking evidence preview; task submission and its original attachments never depend on this.
+   if(workResultId&&evidencePreviews.length&&root.SSMPDDb.taskSaveAttachmentPreview){
+     Promise.allSettled(evidencePreviews.map(function(item){
+       return root.SSMPDDb.taskSaveAttachmentPreview(Object.assign({work_result_id:workResultId},item));
+     })).catch(function(){});
+   }delete entries[id];try{localStorage.removeItem(key(id));}catch(e){}saving=false;active='';await saved(r.status==='review'?'تم تسليم شغلك للمدير. المهمة بانتظار المراجعة.':'تم حفظ تقدمك وإرساله للمدير.');
   }catch(e){saving=false;if(e&&e.code&&(/^(P0001|22)/.test(e.code))){d.request=null;persist(id);if(opts.onRedraw){opts.onRedraw();var fresh=el.querySelector('[data-work-form]');if(fresh)error(fresh,e.message||'راجع بيانات التسليم.');return;}}buttons.forEach(function(b){b.disabled=false;});if(d.request){form.querySelectorAll('textarea,input,[data-work-save],[data-work-progress],[data-work-start],[data-work-remove]').forEach(function(b){b.disabled=true;});form.querySelector('[data-work-submit]').textContent='إعادة المحاولة';}error(form,(e&&e.message||'تعذر التسليم.')+(d.request?' مسودتك محفوظة. إعادة المحاولة تستخدم نفس التسليم.':''));updateFiles(id);}
  }
  currentCapture=capture;

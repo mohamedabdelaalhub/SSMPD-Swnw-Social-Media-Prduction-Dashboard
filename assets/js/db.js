@@ -1473,6 +1473,7 @@
     },
     taskWorkResults: function (id) { return handle(client.from("task_work_results").select("id,request_id,body,link,attachments,status,created_at").eq("task_id",id).order("created_at",{ascending:false}).limit(30)); },
     taskSubmitWork: function (r) { return handle(client.rpc("task_submit_work",{p_task_id:r.task_id,p_request_id:r.request_id,p_status:r.status,p_body:r.body,p_link:r.link,p_attachments:r.attachments})); },
+    taskSaveAttachmentPreview: function (payload) { return edgeFetch("task-attachment-preview",{method:"POST",json:payload}); },
     taskSetStatus: function (taskId, status, note) {
       return handle(client.rpc("task_set_status", { p_task_id:taskId, p_status:status, p_note:note }));
     },
