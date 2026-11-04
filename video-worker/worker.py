@@ -11,6 +11,7 @@ import studio_storyboard
 import studio_generation
 import threading
 from drive_archive import upload as archive_upload
+from lease_fencing import LeaseGuard, LeaseLost, attempt_object_path
 from brand_identity import logo_asset
 import json
 import os
@@ -260,7 +261,20 @@ def request_json(method: str, url: str, key: str, payload: Any | None = None, ex
         raise WorkerError(f"HTTP {e.code}: {body[:800]}") from e
 
 
+# Opt-in fencing (DRAFT): active only when SSMPD_FENCED_CLAIMS=1 AND the server hands out a claim_token. Otherwise the legacy path is unchanged.
+_GUARDS: dict[str, LeaseGuard] = {}
+
+
+def lease_check(job_id: str) -> None:
+    guard = _GUARDS.get(str(job_id))
+    if guard:
+        guard.touch()    # a real server round trip (empty fenced update): proves the lease is still ours right now, not only "not yet noticed lost"
+
+
 def claim_job(base_url: str, key: str) -> dict[str, Any] | None:
+    if os.environ.get("SSMPD_FENCED_CLAIMS") == "1":
+        return request_json("POST", base_url + "/rest/v1/rpc/claim_next_video_job_fenced", key,
+                            {"p_worker_id": WORKER_ID, "p_max_input_schema_version": 4})
     try:
         return request_json("POST", base_url + "/rest/v1/rpc/claim_next_video_job", key,
                             {"p_worker_id": WORKER_ID, "p_max_input_schema_version": 4})
@@ -291,6 +305,10 @@ def update_job(base_url: str, key: str, job_id: str, patch: dict[str, Any]) -> N
             patch["progress_percent"] = progress[0]
             patch["progress_stage"] = progress[1]
 
+    guard = _GUARDS.get(str(job_id))
+    if guard:
+        guard.update(patch)      # fenced RPC: raises LeaseLost when the job was reclaimed, finished or cancelled
+        return
     encoded = urllib.parse.quote(job_id, safe="")
     request_json(
         "PATCH",
@@ -422,8 +440,9 @@ def uploaded_asset_paths(job: dict[str, Any], asset_type: str) -> list[Path]:
     return out
 
 
-def upload_mp4(base_url: str, key: str, job_id: str, path: Path) -> str:
-    object_path = urllib.parse.quote(job_id + ".mp4", safe="/")
+def upload_mp4(base_url: str, key: str, job_id: str, path: Path, attempt: int | None = None) -> str:
+    name = job_id + ".mp4" if attempt is None else attempt_object_path(job_id, attempt, "output.mp4")   # per-attempt path only for fenced jobs
+    object_path = urllib.parse.quote(name, safe="/")
     url = base_url + "/storage/v1/object/video-outputs/" + object_path
     data = path.read_bytes()
     headers = api_headers(key, json_content=False)
@@ -969,6 +988,12 @@ def process_job(base_url: str, key: str, job: dict[str, Any]) -> None:
     job_dir.mkdir(parents=True, exist_ok=True)
     (job_dir / "job.json").write_text(json.dumps(job, ensure_ascii=False, indent=2), encoding="utf-8")
 
+    guard = None
+    if job.get("claim_token"):
+        rpc = lambda name, payload: request_json("POST", base_url + "/rest/v1/rpc/" + name, key, payload)
+        guard = LeaseGuard(rpc, job_id, str(job["claim_token"]), interval=30.0)
+        _GUARDS[job_id] = guard
+        guard.__enter__()
     heartbeat(base_url, key, "working", job_id)
     stop_heartbeat = threading.Event()
     def keep_alive():
@@ -979,6 +1004,7 @@ def process_job(base_url: str, key: str, job: dict[str, Any]) -> None:
     try:
         logo_asset(job)
         job["_downloaded_assets"] = download_job_assets(base_url, key, job, job_dir)
+        lease_check(job_id)
         if job.get('media_mode') == 'studio_storyboard':
             def checkpoint(state):
                 update_job(base_url, key, job_id, {'generation_state': state, 'progress_stage': 'تجهيز المشاهد المولدة'})
@@ -1001,9 +1027,15 @@ def process_job(base_url: str, key: str, job: dict[str, Any]) -> None:
             (job_dir / 'job.json').write_text(json.dumps(job, ensure_ascii=False, indent=2), encoding='utf-8')
         update_job(base_url, key, job_id, {"status": "rendering"})
         output, voice = render(job, job_dir)
+        lease_check(job_id)
         archive_rendered_job(base_url, key, job, output)
         heartbeat(base_url, key, "idle")
         print(f"READY {job_id} | voice={voice} | Google Drive", flush=True)
+    except LeaseLost:
+        # Reclaimed, finished or cancelled elsewhere: write nothing (no failed/ready), drop local files, go back to idle.
+        shutil.rmtree(job_dir, ignore_errors=True)
+        heartbeat(base_url, key, "idle")
+        print(f"LEASE LOST {job_id}: stopped without writing", flush=True)
     except Exception as e:
         msg = safe_error_message(e)
         heartbeat(base_url, key, "error", job_id)
@@ -1024,6 +1056,9 @@ def process_job(base_url: str, key: str, job: dict[str, Any]) -> None:
     finally:
         stop_heartbeat.set()
         pulse.join(timeout=2)
+        if guard:
+            guard.__exit__(None, None, None)
+            _GUARDS.pop(job_id, None)
 
 
 def archive_rendered_job(base_url: str, key: str, job: dict[str, Any], output: Path) -> None:
@@ -1043,9 +1078,12 @@ def archive_rendered_job(base_url: str, key: str, job: dict[str, Any], output: P
         )
         # Build the local branded covers before the archive bridge is contacted.
         # This preserves previewable cover files even if Google Drive is unavailable.
+        lease_check(job_id)      # the Drive bridge is first-writer-wins per job: never upload as a zombie
         video = archive_upload(job, output, "video")
+        lease_check(job_id)
         thumbnail = archive_upload(job, cover, "cover") if not candidates else None
         for candidate in candidates:
+            lease_check(job_id)
             archived = archive_upload(job, candidate["path"], "cover_" + str(candidate["index"]))
             storage_path = upload_cover_preview(base_url, key, job, candidate)
             request_json("POST", base_url + "/rest/v1/video_cover_candidates?on_conflict=job_id,candidate_index", key, {
@@ -1059,7 +1097,8 @@ def archive_rendered_job(base_url: str, key: str, job: dict[str, Any], output: P
         # The archive is primary. Direct publishing copies are explicitly opt-in.
         staged = None
         if os.environ.get("SSMPD_VIDEO_STAGE_OUTPUT") == "1":
-            staged = upload_mp4(base_url, key, job_id, output)
+            lease_check(job_id)
+            staged = upload_mp4(base_url, key, job_id, output, attempt=int(job["attempt_count"]) if job.get("claim_token") else None)
         update_job(base_url, key, job_id, {
             "status": "ready", "archive_status": "archived", "archive_error": None,
             "drive_video_url": video["fileUrl"], "drive_video_id": video["fileId"],
