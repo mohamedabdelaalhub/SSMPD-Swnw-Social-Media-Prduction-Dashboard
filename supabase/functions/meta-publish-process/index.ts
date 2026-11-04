@@ -128,6 +128,27 @@ function googleDriveFileId(url: string): string | null {
   }
 }
 
+// Allowlisted content sources (review #116). design_file_url / cover_image_url are editable by dashboard users, so the publisher must never fetch an
+// arbitrary URL. Allowed: Google Drive (strict parser above) and OUR Supabase Storage over https on the project's own origin:
+//   /storage/v1/object/authenticated/(content-designs|video-inputs)/...  -> read with the service client (as before)
+//   /storage/v1/object/public/(video-outputs|meta-publish-assets)/...    -> plain fetch of the same origin, redirects refused
+// Everything else (other hosts, other buckets such as patient files, REST/auth/functions paths, signed URLs, traversal) is rejected.
+const PUBLIC_CONTENT_BUCKETS = ["video-outputs", "meta-publish-assets"];
+function contentSource(sourceUrl, supabaseUrl) {
+  try {
+    const u = new URL(sourceUrl), origin = new URL(supabaseUrl).origin;
+    if (u.protocol !== "https:" || u.origin !== origin || u.username || u.password) return null;
+    const m = /^\/storage\/v1\/object\/(authenticated|public)\/([a-z0-9-]+)\/(.+)$/.exec(u.pathname);
+    if (!m) return null;
+    const key = decodeURIComponent(m[3]);
+    if (key.split("/").some((part) => part === ".." || part === "." || part === "") || key.includes("\0")) return null;
+    if (m[1] === "authenticated") return m[2] === "content-designs" || m[2] === "video-inputs" ? { kind: "private", bucket: m[2], key } : null;
+    return PUBLIC_CONTENT_BUCKETS.includes(m[2]) ? { kind: "public", url: u.origin + u.pathname } : null;
+  } catch {
+    return null;
+  }
+}
+
 function getServiceRoleKey(): string | null {
   const secretKeysRaw = Deno.env.get("SUPABASE_SECRET_KEYS");
   if (secretKeysRaw) {
@@ -191,19 +212,19 @@ async function rehostImageToStorage(admin: ReturnType<typeof createClient>, jobI
       { headers: { Authorization: `Bearer ${googleAccessToken}` } }
     );
   } else {
-    const source = new URL(sourceUrl);
-    const privateMatch = /^\/storage\/v1\/object\/authenticated\/(content-designs|video-inputs)\/(.+)$/.exec(source.pathname);
-    if (source.origin === new URL(Deno.env.get("SUPABASE_URL")!).origin && privateMatch) {
-      const file = await admin.storage.from(privateMatch[1]).download(decodeURIComponent(privateMatch[2]));
+    const src = contentSource(sourceUrl, Deno.env.get("SUPABASE_URL")!);
+    if (!src) throw new Error("UNSUPPORTED_FILE_SOURCE: ملف التصميم لازم يكون على Supabase Storage أو Google Drive");
+    if (src.kind === "private") {
+      const file = await admin.storage.from(src.bucket).download(src.key);
       if (file.error || !file.data) throw new Error("تعذّر تحميل التصميم من التخزين");
       res = new Response(file.data, { headers: { "content-type": file.data.type } });
     } else {
-      res = await fetch(sourceUrl);
+      res = await fetch(src.url, { redirect: "error" });
     }
   }
 
   if (!res.ok) {
-    const body = await res.text().catch(() => "");
+    const body = driveId ? await res.text().catch(() => "") : "";   // response bodies are only echoed for the trusted Drive API, never for other sources
     throw new Error(
       `تعذّر تحميل ملف التصميم${driveId ? " من Google Drive بحساب الخدمة" : ""} (HTTP ${res.status})` +
       (body ? `: ${body.slice(0, 180)}` : "")

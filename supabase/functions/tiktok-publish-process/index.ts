@@ -1,12 +1,12 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-const URL = Deno.env.get("SUPABASE_URL")!;
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;   // was named URL in this repo copy, which shadowed the global URL class (deployed text uses SUPABASE_URL)
 const SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const CRON_SECRET = Deno.env.get("META_PUBLISH_CRON_SECRET");
 const CLIENT_KEY = Deno.env.get("TIKTOK_CLIENT_KEY")!;
 const CLIENT_SECRET = Deno.env.get("TIKTOK_CLIENT_SECRET")!;
-const admin = createClient(URL, SERVICE, { auth: { persistSession: false } });
+const admin = createClient(SUPABASE_URL, SERVICE, { auth: { persistSession: false } });
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
   status, headers: { "Content-Type": "application/json; charset=utf-8" }
@@ -55,6 +55,27 @@ async function driveToken(){
 // Strict Drive file id (review #114): https only, no userinfo/port, host EXACTLY drive.google.com, /file/d/<id> or /open|/uc with ?id= (optional /u/<n>/ prefix).
 // The previous version matched /file/d/<id> anywhere in the string before checking the host (same rules as website-publish-process driveImageId now).
 function driveId(url:string):string|null{try{const u=new URL(url);if(u.protocol!=="https:"||u.username||u.password||u.port||u.hostname!=="drive.google.com")return null;const m=/^\/(?:u\/\d{1,2}\/)?file\/d\/([\w-]+)(?:\/|$)/.exec(u.pathname);const id=m?m[1]:/^\/(?:u\/\d{1,2}\/)?(?:open|uc)$/.test(u.pathname)?u.searchParams.get("id"):null;return id&&/^[\w-]{10,200}$/.test(id)?id:null;}catch{return null;}}
+// Allowlisted content sources (review #116). design_file_url / cover_image_url are editable by dashboard users, so the publisher must never fetch an
+// arbitrary URL. Allowed: Google Drive (strict parser above) and OUR Supabase Storage over https on the project's own origin:
+//   /storage/v1/object/authenticated/(content-designs|video-inputs)/...  -> read with the service client (as before)
+//   /storage/v1/object/public/(video-outputs|meta-publish-assets)/...    -> plain fetch of the same origin, redirects refused
+// Everything else (other hosts, other buckets such as patient files, REST/auth/functions paths, signed URLs, traversal) is rejected.
+const PUBLIC_CONTENT_BUCKETS = ["video-outputs", "meta-publish-assets"];
+function contentSource(sourceUrl, supabaseUrl) {
+  try {
+    const u = new URL(sourceUrl), origin = new URL(supabaseUrl).origin;
+    if (u.protocol !== "https:" || u.origin !== origin || u.username || u.password) return null;
+    const m = /^\/storage\/v1\/object\/(authenticated|public)\/([a-z0-9-]+)\/(.+)$/.exec(u.pathname);
+    if (!m) return null;
+    const key = decodeURIComponent(m[3]);
+    if (key.split("/").some((part) => part === ".." || part === "." || part === "") || key.includes("\0")) return null;
+    if (m[1] === "authenticated") return m[2] === "content-designs" || m[2] === "video-inputs" ? { kind: "private", bucket: m[2], key } : null;
+    return PUBLIC_CONTENT_BUCKETS.includes(m[2]) ? { kind: "public", url: u.origin + u.pathname } : null;
+  } catch {
+    return null;
+  }
+}
+
 function mp4DurationSeconds(bytes:Uint8Array):number|null{
   const view=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength);
   const type=new TextEncoder().encode("mvhd");
@@ -74,9 +95,10 @@ async function loadVideo(source:string):Promise<{bytes:Uint8Array,type:string}>{
   const id=driveId(source);
   if(id)res=await fetch("https://www.googleapis.com/drive/v3/files/"+encodeURIComponent(id)+"?alt=media&supportsAllDrives=true",{headers:{Authorization:"Bearer "+await driveToken()}});
   else{
-    const u=new URL(source),m=/^\/storage\/v1\/object\/authenticated\/(content-designs|video-inputs)\/(.+)$/.exec(u.pathname);
-    if(u.origin===new URL(URL).origin&&m){const f=await admin.storage.from(m[1]).download(decodeURIComponent(m[2]));if(f.error||!f.data)throw new Error("تعذر تحميل ملف الفيديو من التخزين.");res=new Response(f.data,{headers:{"content-type":f.data.type}});}
-    else res=await fetch(source);
+    const src=contentSource(source,SUPABASE_URL);
+    if(!src)throw new Error("UNSUPPORTED_FILE_SOURCE: ملف الفيديو لازم يكون على Supabase Storage أو Google Drive.");
+    if(src.kind==="private"){const f=await admin.storage.from(src.bucket).download(src.key);if(f.error||!f.data)throw new Error("تعذر تحميل ملف الفيديو من التخزين.");res=new Response(f.data,{headers:{"content-type":f.data.type}});}
+    else res=await fetch(src.url,{redirect:"error"});
   }
   if(!res.ok)throw new Error("تعذر تحميل ملف الفيديو (HTTP "+res.status+").");
   const type=(res.headers.get("content-type")||"video/mp4").split(";")[0].trim().toLowerCase();
