@@ -66,11 +66,13 @@ Deno.serve(async(req:Request)=>{
  const result={ok:true,available:true,assessment:parsed.assessment,summary:limit(parsed.summary,2400),
   differences:Array.isArray(parsed.differences)?parsed.differences.slice(0,5).map((x:any)=>({finding:limit(x.finding,700),file_evidence:limit(x.file_evidence,600)})):[],
   owner_action:limit(parsed.owner_action,1400),verified_files:trusted.length,executed:false,task_status_unchanged:true};
- await db.from("administrative_assistant_audit").insert({
-  actor_type:"assistant",actor_id:config.data.assistant_admin_id,
-  event_type:"task_evidence_manual_review",
-  detail:{task_id:taskId,assessment:result.assessment,verified_files:trusted.length,
-   summary:limit(result.summary,500),authorized_by:account.data.id,read_only:true}
- }).catch(()=>{});
+ try {
+   await db.from("administrative_assistant_audit").insert({
+    actor_type:"assistant",actor_id:config.data.assistant_admin_id,
+    event_type:"task_evidence_manual_review",
+    detail:{task_id:taskId,assessment:result.assessment,verified_files:trusted.length,
+     summary:limit(result.summary,500),authorized_by:account.data.id,read_only:true}
+   });
+ } catch (_) { /* An audit transport failure must never mutate the task. */ }
  return send(result);
 });
