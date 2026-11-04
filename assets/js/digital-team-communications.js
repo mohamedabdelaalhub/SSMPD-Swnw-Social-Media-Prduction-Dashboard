@@ -48,7 +48,7 @@
   var from=name(e.from_agent_code),to=name(e.to_agent_code);
   var type=kinds[e.message_type]||e.message_type;
   var flag=e.provenance==='agent_ai'?'رد من محرك التحليل':e.provenance==='external_verified'?'إجراء موثق':e.provenance==='owner'?'رسالة الإدارة':'حدث النظام';
-  return '<div class="dtc-event '+escape(e.message_type)+'"><div class="dtc-event-head"><b>'من '+escape(from)+' إلى '+escape(to)+'</b><span>'+escape(type)+'</span><small>'+escape(fmt(e.created_at))+'</small></div>'+
+  return '<div class="dtc-event '+escape(e.message_type)+'"><div class="dtc-event-head"><b>'+'من '+escape(from)+' إلى '+escape(to)+'</b><span>'+escape(type)+'</span><small>'+escape(fmt(e.created_at))+'</small></div>'+
    '<p>'+escape(e.content)+'</p><small>'+escape(flag)+(e.execution_verified?' · تنفيذ متحقق منه':'')+'</small></div>';
  }
  function card(d,events){
