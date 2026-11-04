@@ -103,10 +103,7 @@
     if(!parent||parent.querySelector('[data-p360-nav]'))return;
     var b=document.createElement('button');b.type='button';b.className=cls;b.textContent='علاقة المريض 360';b.setAttribute('data-p360-nav','1');b.onclick=open;parent.appendChild(b);
   }
-  function mount(){
-    if(!manager())return;
-    nav(document.querySelector('#user-dropdown .ud-items'),'ud-item p360-menu');
-  }
+  function mount(){return; /* Navigation lives only in SSMPDManagementNavigation. */}
   function init(){
     mount();if(navObserver)return;
     var host=document.getElementById('app-root')||document.body;
