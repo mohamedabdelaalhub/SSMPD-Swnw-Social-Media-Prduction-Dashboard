@@ -113,16 +113,19 @@ async function getGoogleDriveAccessToken(): Promise<string> {
   return data.access_token;
 }
 
+// Strict Drive file id (review #114): https only, no userinfo/port, host EXACTLY drive.google.com, /file/d/<id> or /open|/uc with ?id=
+// (an optional /u/<n>/ account prefix is accepted). The previous version matched /file/d/<id> anywhere in the string before looking at the host, so
+// https://evil.example/file/d/<id> made the drive.readonly service account read that Drive file. Same rules as website-publish-process (driveImageId).
 function googleDriveFileId(url: string): string | null {
-  const pathMatch = /\/file\/d\/([^/?#]+)/.exec(url);
-  if (pathMatch) return pathMatch[1];
   try {
     const u = new URL(url);
-    if (u.hostname.endsWith("drive.google.com")) return u.searchParams.get("id");
+    if (u.protocol !== "https:" || u.username || u.password || u.port || u.hostname !== "drive.google.com") return null;
+    const m = /^\/(?:u\/\d{1,2}\/)?file\/d\/([\w-]+)(?:\/|$)/.exec(u.pathname);
+    const id = m ? m[1] : /^\/(?:u\/\d{1,2}\/)?(?:open|uc)$/.test(u.pathname) ? u.searchParams.get("id") : null;
+    return id && /^[\w-]{10,200}$/.test(id) ? id : null;
   } catch {
-    // not a URL we understand
+    return null; // not a URL we understand
   }
-  return null;
 }
 
 function getServiceRoleKey(): string | null {

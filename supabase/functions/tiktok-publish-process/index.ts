@@ -52,7 +52,9 @@ async function driveToken(){
   const data=await res.json().catch(()=>({}));if(!res.ok||!data.access_token)throw new Error("تعذر الوصول لملف الفيديو في Drive.");
   googleToken={value:data.access_token,expires:Date.now()+Number(data.expires_in||3600)*1000};return googleToken.value;
 }
-function driveId(url:string){const m=/\/file\/d\/([^/?#]+)/.exec(url);if(m)return m[1];try{const u=new URL(url);if(u.hostname.endsWith("drive.google.com"))return u.searchParams.get("id");}catch{}return null;}
+// Strict Drive file id (review #114): https only, no userinfo/port, host EXACTLY drive.google.com, /file/d/<id> or /open|/uc with ?id= (optional /u/<n>/ prefix).
+// The previous version matched /file/d/<id> anywhere in the string before checking the host (same rules as website-publish-process driveImageId now).
+function driveId(url:string):string|null{try{const u=new URL(url);if(u.protocol!=="https:"||u.username||u.password||u.port||u.hostname!=="drive.google.com")return null;const m=/^\/(?:u\/\d{1,2}\/)?file\/d\/([\w-]+)(?:\/|$)/.exec(u.pathname);const id=m?m[1]:/^\/(?:u\/\d{1,2}\/)?(?:open|uc)$/.test(u.pathname)?u.searchParams.get("id"):null;return id&&/^[\w-]{10,200}$/.test(id)?id:null;}catch{return null;}}
 function mp4DurationSeconds(bytes:Uint8Array):number|null{
   const view=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength);
   const type=new TextEncoder().encode("mvhd");
