@@ -74,9 +74,16 @@ class AttemptScoped(Base):
         with self.assertRaises(RuntimeError): self.bridge.legacy_upload(JOB, 'video', self.files(b'attempt2-DIFFERENT')['video'])
     def test_A3_toctou_lease_lost_between_touch_and_upload_is_harmless(self):
         self.bridge.on_stage = lambda attempt, kind: setattr(self.db, 'token', 'T2')           # reclaimed AFTER the touch, DURING the upload
-        with self.assertRaises(lf.LeaseLost): ap.archive_attempt(JOB, 1, self.files(b'ZOMBIE'), self.bridge, self.guard('T1'))
+        with self.assertRaises(lf.LeaseLost): ap.archive_attempt(JOB, 1, self.files(b'ZOMBIE'), self.bridge, self.guard('T1'), read_committed=lambda: None)
         self.assertEqual(self.db.status, 'uploading'); self.assertIsNone(self.db.committed_attempt)    # nothing committed
-        self.assertEqual(self.bridge.attempts_present(), [])                                   # zombie removed its own folder
+        self.assertEqual(self.bridge.attempts_present(), [])                                   # zombie removed its own folder (DB proved it is not the committed one)
+
+    def test_A3b_loser_cleanup_is_skipped_when_the_outcome_is_ambiguous(self):
+        for reader in (lambda: 1, lambda: (_ for _ in ()).throw(OSError('db down')), None):   # own attempt IS committed / DB unreadable / no reader
+            self.bridge, self.db = FakeBridge(), FakeDB()
+            self.bridge.on_stage = lambda attempt, kind: setattr(self.db, 'token', 'T2')
+            with self.assertRaises(lf.LeaseLost): ap.archive_attempt(JOB, 1, self.files(), self.bridge, self.guard('T1'), read_committed=reader)
+            self.assertEqual(self.bridge.cleanups, []); self.assertEqual(self.bridge.attempts_present(), [1])   # never delete files that might be the winner's
     def test_A4_zombie_finishing_after_the_winner_cannot_touch_the_winners_archive(self):
         self.db.token = 'T2'
         win = ap.archive_attempt(JOB, 2, self.files(b'WIN'), self.bridge, self.guard('T2'))

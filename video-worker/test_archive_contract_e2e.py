@@ -16,7 +16,7 @@ GS = (Path(__file__).resolve().parent.parent / 'apps-script/drafts/VideoArchiveA
 class DB(FakeSupabase):
     def __init__(self, *a, **k):
         super().__init__(*a, **k)
-        self.committed, self.commit_calls, self.lose_commit_responses, self.candidates = None, 0, 0, []
+        self.committed, self.commit_calls, self.lose_commit_responses, self.candidates, self.plain_candidate_posts = None, 0, 0, [], []
     def request_json(self, method, url, key, payload=None, headers=None):
         if url.endswith('/rpc/video_job_commit_fenced'):
             self.requests.append((method, url)); self.commit_calls += 1
@@ -25,11 +25,14 @@ class DB(FakeSupabase):
                 raise worker.WorkerError('HTTP 400: stale claim: the job was reclaimed, finished or the token is wrong')
             if not idem:
                 self.status, self.committed, self.result = 'ready', payload['p_attempt'], payload['p_result']
+            self.candidates = [dict(c) for c in payload['p_result'].get('cover_candidates', [])]      # the real RPC upserts these atomically (restores them on a repeated commit)
             if self.lose_commit_responses > 0:
                 self.lose_commit_responses -= 1; raise OSError('response lost')
             return dict(self.result)
         if 'video_cover_candidates' in url:
-            self.requests.append((method, url)); self.candidates.append(payload); return None
+            self.plain_candidate_posts.append(payload); return None      # legacy path only; attempt mode must never get here
+        if method == 'GET' and 'select=committed_attempt' in url:
+            return [{'committed_attempt': self.committed}]
         return super().request_json(method, url, key, payload, headers)
 
 
@@ -67,7 +70,7 @@ class Base(unittest.TestCase):
         for t, v in [('worker.WORK_ROOT', self.tmp), ('worker.request_json', self.db.request_json), ('worker.heartbeat', lambda *a, **k: None),
                      ('worker.logo_asset', lambda j: None), ('worker.download_job_assets', lambda *a, **k: []), ('worker.render', fake_render),
                      ('worker.ffmpeg_paths', lambda: ('ffmpeg', 'ffprobe')), ('worker.probe_duration', lambda *a, **k: 10), ('cover_candidates.build', fake_build),
-                     ('worker.upload_cover_preview', lambda *a, **k: 'previews/p.jpg'), ('drive_archive.post', self.gs.post),
+                     ('worker.upload_cover_preview', lambda b, k, job, cand, attempt=None: 'previews/' + str(attempt) + '/' + str(cand['index']) + '.jpg'), ('drive_archive.post', self.gs.post),
                      ('worker.archive_upload', lambda job, path, kind: self.legacy_uploads.append(kind) or {'fileUrl': 'https://drive.google.com/f', 'fileId': 'x', 'folderUrl': 'https://drive.google.com/d'})]:
             p = patch(t, v); p.start(); self.addCleanup(p.stop)
         p = patch.dict(os.environ, {'SSMPD_ATTEMPT_ARCHIVE': '1'}); p.start(); self.addCleanup(p.stop)
@@ -93,15 +96,16 @@ class Contract(unittest.TestCase):
 class E2E(Base):
     def test_E1_full_run_stages_per_attempt_commits_then_writes_candidates(self):
         worker.process_job('u', 'k', self.job)
-        self.assertEqual((self.db.status, self.db.committed), ('ready', 1)); self.assertEqual(self.legacy_uploads, [])
+        self.assertEqual((self.db.status, self.db.committed), ('ready', 1)); self.assertEqual(self.legacy_uploads, []); self.assertEqual(self.db.plain_candidate_posts, [])
         self.assertEqual(self.db.result['drive_video_url'], 'https://drive.google.com/file/d/1-video'); self.assertEqual(self.gs.attempts(), [1])
-        self.assertEqual([c['drive_url'] for c in self.db.candidates], ['https://drive.google.com/file/d/1-cover_1'])
+        self.assertEqual([(c['candidate_index'], c['drive_url'], c['storage_path']) for c in self.db.candidates],
+                         [(1, 'https://drive.google.com/file/d/1-cover_1', 'previews/1/1.jpg')])      # written by the commit, attempt-scoped preview path
     def test_E2_unknown_commit_outcome_commit_applied_response_lost(self):
         self.db.lose_commit_responses = 99                          # every response is lost, but the first commit WAS applied
         worker.process_job('u', 'k', self.job)                      # failure write is rejected (job is 'ready' server side) -> handled as lease loss
         self.assertEqual((self.db.status, self.db.committed), ('ready', 1)); self.assertEqual(self.db.commit_calls, 3)
         self.assertEqual(self.gs.attempts(), [1]); self.assertEqual(self.gs.trashed, [])        # no cleanup while the outcome is unknown
-        self.assertEqual(self.db.candidates, [])    # KNOWN GAP: winner crashed before writing candidate rows; needs the existing retry-archive/reconcile step
+        self.assertEqual(len(self.db.candidates), 1)                # GAP CLOSED: candidate rows are part of the commit, nothing to reconcile after a lost response
     def test_E3_duplicate_callbacks_are_harmless(self):
         worker.process_job('u', 'k', self.job)
         b = ap.DriveBridge(self.gs.post); f = self.tmp / 'o.mp4'; f.write_bytes(b'video-A')
@@ -112,7 +116,7 @@ class E2E(Base):
     def test_E4_zombie_then_winner_only_the_winner_is_referenced(self):
         def rotate(): self.db.token = 'TOK2'                         # attempt 1 loses the lease during render
         self.hook = rotate; worker.process_job('u', 'k', self.job)
-        self.assertEqual((self.gs.attempts(), self.db.candidates, self.db.committed), ([], [], None))
+        self.assertEqual((self.gs.attempts(), self.db.candidates, self.db.committed), ([], [], None))   # previews of the zombie went to ITS attempt path only
         self.hook = None; self.db.status = 'preparing'; self.bytes = b'video-B-different'; self.job.update(claim_token='TOK2', attempt_count=2)
         worker.process_job('u', 'k', self.job)
         self.assertEqual((self.db.committed, self.gs.attempts()), (2, [2])); self.assertEqual(self.db.result['drive_video_url'], 'https://drive.google.com/file/d/2-video')
@@ -120,15 +124,61 @@ class E2E(Base):
         self.db.token = 'TOK2'; self.job.update(attempt_count=2, claim_token='TOK2'); worker.process_job('u', 'k', self.job)
         self.job.update(attempt_count=1, claim_token='TOK1'); self.db.status = 'uploading'         # a late zombie (old token) starts archiving
         worker.process_job('u', 'k', self.job)
-        self.assertEqual((self.db.committed, self.gs.attempts(), len(self.db.candidates)), (2, [2], 1))
+        self.assertEqual((self.db.committed, self.gs.attempts(), len(self.db.candidates)), (2, [2], 1)); self.assertEqual(self.db.candidates[0]['storage_path'], 'previews/2/1.jpg')
     def test_E6_backward_compatibility(self):
         legacy = dict(self.job); legacy.pop('claim_token')
         with patch.object(worker, 'upload_cover_preview', lambda *a, **k: 'p'):
             worker.process_job('u', 'k', legacy)
-        self.assertEqual(self.legacy_uploads[:1], ['video']); self.assertEqual([c for c in self.gs.log if c['action'].startswith('video_archive_')], [])
+        self.assertEqual(self.legacy_uploads[:1], ['video']); self.assertEqual([c for c in self.gs.log if c['action'].startswith('video_archive_')], []); self.assertEqual(len(self.db.plain_candidate_posts), 1)
         self.legacy_uploads.clear(); self.db.status = 'preparing'
         with patch.dict(os.environ, {'SSMPD_ATTEMPT_ARCHIVE': '0'}): worker.process_job('u', 'k', dict(self.job))
         self.assertEqual(self.legacy_uploads[:1], ['video'])          # fenced job without the opt-in flag still uses the existing archive action
+
+
+class Ambiguous(Base):
+    def test_E7_stale_after_own_commit_never_deletes_the_committed_files(self):
+        worker.process_job('u', 'k', self.job)                       # attempt 1 committed
+        real = self.db.request_json
+        def stale_commit(method, url, key, payload=None, headers=None):
+            if url.endswith('/rpc/video_job_commit_fenced'): raise worker.WorkerError('HTTP 400: stale claim: the job was reclaimed, finished or the token is wrong')
+            return real(method, url, key, payload, headers)
+        self.db.status = 'preparing'                                 # dashboard re-queued/reclaimed AFTER our commit, our retry now sees "stale"
+        with patch('worker.request_json', stale_commit):
+            worker.process_job('u', 'k', self.job)
+        self.assertEqual(self.gs.attempts(), [1]); self.assertEqual(self.gs.trashed, [])       # committed_attempt == 1 -> cleanup skipped
+    def test_E8_malformed_bridge_answers_fail_before_commit_and_clean_nothing(self):
+        for bad in ({}, {'ok': False}, {'ok': True, 'archiveVersion': 1, 'fileId': 'x'}, {'ok': True, 'archiveVersion': 2, 'attempt': 9, 'fileId': 'x'},
+                    {'ok': True, 'archiveVersion': 2, 'attempt': 1, 'fileId': 'x', 'fileUrl': 'https://evil.example/f', 'folderUrl': 'https://drive.google.com/d'}):
+            self.db = DB(); self.gs = AppsScript(); calls = []
+            def post(p, bad=bad): calls.append(p['action']); return bad
+            with patch('worker.request_json', self.db.request_json), patch('drive_archive.post', post):
+                with self.assertRaises(RuntimeError): worker.process_job('u', 'k', dict(self.job))
+            self.assertEqual((self.db.commit_calls, self.gs.trashed, calls), (0, [], ['video_archive_attempt']))
+    def test_E9_stage_timeout_after_success_is_safe_to_retry(self):
+        state = {'n': 0}
+        def flaky(p):
+            r = self.gs.post(p)
+            if p['action'] == 'video_archive_attempt' and state['n'] == 0:
+                state['n'] += 1; raise OSError('timeout after the bridge already stored the file')
+            return r
+        with patch('drive_archive.post', flaky):
+            with self.assertRaises(OSError): worker.process_job('u', 'k', dict(self.job))        # job marked failed server-side (retry-archive path), files stay
+            self.db.status = 'preparing'
+            worker.process_job('u', 'k', dict(self.job))                                           # retry: idempotent stage, then commit
+        self.assertEqual((self.db.committed, self.gs.attempts()), (1, [1])); self.assertEqual(len([k for k in self.gs.files if k[2] == 'video']), 1)
+    def test_E10_cleanup_timeout_is_harmless_and_never_changes_job_state(self):
+        calls = {'c': 0}
+        def flaky(p):
+            r = self.gs.post(p)
+            if p['action'] == 'video_archive_cleanup':
+                calls['c'] += 1; raise OSError('timeout after the cleanup already ran')
+            return r
+        self.db.token = 'TOK2'; self.job.update(claim_token='TOK2', attempt_count=2)
+        b = ap.DriveBridge(self.gs.post); f = self.tmp / 'old.mp4'; f.write_bytes(b'attempt1'); b.stage(dict(self.job), 1, 'video', f)
+        with patch('drive_archive.post', flaky): worker.process_job('u', 'k', dict(self.job))
+        self.assertEqual((self.db.status, self.db.committed, calls['c']), ('ready', 2, 1)); self.assertEqual(self.gs.attempts(), [2])
+        ap.DriveBridge(self.gs.post).cleanup(self.job, [1], keep_attempt=2)                        # a repeated cleanup is harmless
+        self.assertEqual(self.gs.attempts(), [2])
 
 
 if __name__ == '__main__':

@@ -21,8 +21,11 @@ class Bridge(Protocol):
 
 
 def archive_attempt(job: dict, attempt: int, files: dict[str, Path], bridge: Bridge, guard: LeaseGuard,
-                    staged_out: dict | None = None) -> dict[str, Any]:
-    """files maps kind ('video', 'cover', 'cover_1'...) to a local path; 'video' is required."""
+                    staged_out: dict | None = None, candidates: list[dict] | None = None,
+                    read_committed: Callable[[], int | None] | None = None) -> dict[str, Any]:
+    """files maps kind ('video', 'cover', 'cover_1'...) to a local path; 'video' is required.
+    candidates: [{'index', 'timestamp_seconds', 'storage_path'}] for the cover_N files; their rows are written BY THE COMMIT (atomic, winner only).
+    read_committed: returns the committed attempt from the database (or raises); used to make a loser's cleanup safe after an ambiguous outcome."""
     if "video" not in files:
         raise ValueError("video file required")
     guard.touch()
@@ -38,6 +41,9 @@ def archive_attempt(job: dict, attempt: int, files: dict[str, Path], bridge: Bri
         result = {"drive_video_url": video["fileUrl"], "drive_video_id": video["fileId"], "drive_folder_url": video["folderUrl"]}
         if cover:
             result["cover_url"] = cover["fileUrl"]
+        if candidates:
+            result["cover_candidates"] = [{"candidate_index": int(c["index"]), "timestamp_seconds": c["timestamp_seconds"], "storage_path": c["storage_path"],
+                                           "drive_url": staged["cover_" + str(c["index"])]["fileUrl"]} for c in candidates]
         committed = None
         for tries in range(COMMIT_RETRIES):
             try:
@@ -49,10 +55,22 @@ def archive_attempt(job: dict, attempt: int, files: dict[str, Path], bridge: Bri
                 if tries == COMMIT_RETRIES - 1:
                     raise                                           # unknown outcome: do NOT clean up, the commit may have succeeded
     except LeaseLost:
-        _quiet_cleanup(bridge, job, [attempt], None)                # lost: remove only our own attempt folder
+        if _own_attempt_is_not_committed(read_committed, attempt):
+            _quiet_cleanup(bridge, job, [attempt], None)            # lost: remove only our own attempt folder, and only when the DB proves it is not the committed one
         raise
     _quiet_cleanup(bridge, job, list(range(1, attempt)), attempt)   # won: earlier attempts are losers; the bridge also refuses to touch `attempt`
     return committed
+
+
+def _own_attempt_is_not_committed(read_committed: Callable[[], int | None] | None, attempt: int) -> bool:
+    """Ambiguous outcomes must never lead to deleting the winner's files: without a successful DB read that shows a DIFFERENT (or no) committed attempt, skip cleanup."""
+    if read_committed is None:
+        return False
+    try:
+        committed = read_committed()
+    except Exception:
+        return False
+    return committed != attempt
 
 
 def _quiet_cleanup(bridge: Bridge, job: dict, attempts: list[int], keep: int | None) -> None:

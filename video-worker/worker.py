@@ -1085,17 +1085,17 @@ def archive_rendered_job_attempt(base_url: str, key: str, job: dict[str, Any], o
                 files["cover_" + str(candidate["index"])] = Path(candidate["path"])
         else:
             files["cover"] = cover
-        staged: dict[str, dict] = {}
-        archive_protocol.archive_attempt(job, attempt, files, archive_protocol.DriveBridge(drive_archive.post), guard, staged_out=staged)
-        # From here on this worker IS the committed winner (the database said so).
+        previews = []
         for candidate in candidates:
-            storage_path = upload_cover_preview(base_url, key, job, candidate)
-            request_json("POST", base_url + "/rest/v1/video_cover_candidates?on_conflict=job_id,candidate_index", key, {
-                "id": str(uuid.uuid5(uuid.UUID(job_id), "cover-" + str(candidate["index"]))),
-                "job_id": job_id, "candidate_index": candidate["index"],
-                "timestamp_seconds": candidate["timestamp_seconds"], "storage_path": storage_path,
-                "drive_url": staged["cover_" + str(candidate["index"])]["fileUrl"],
-            }, {"Prefer": "resolution=merge-duplicates,return=minimal"})
+            lease_check(job_id)
+            previews.append({"index": candidate["index"], "timestamp_seconds": candidate["timestamp_seconds"],
+                             "storage_path": upload_cover_preview(base_url, key, job, candidate, attempt=attempt)})
+        def read_committed():
+            rows = request_json("GET", base_url + "/rest/v1/video_jobs?id=eq." + urllib.parse.quote(job_id, safe="") + "&select=committed_attempt", key)
+            return rows[0].get("committed_attempt") if rows else None
+        # The DATABASE commit writes the job result AND the candidate rows atomically for the winner only; nothing is written afterwards.
+        archive_protocol.archive_attempt(job, attempt, files, archive_protocol.DriveBridge(drive_archive.post), guard,
+                                         candidates=previews, read_committed=read_committed)
     except LeaseLost:
         raise
     except Exception as e:
@@ -1165,8 +1165,10 @@ def archive_rendered_job(base_url: str, key: str, job: dict[str, Any], output: P
         raise
 
 
-def upload_cover_preview(base_url, key, job, candidate):
-    storage_path = f'{job["created_by"]}/{job["content_id"]}/covers/{job["id"]}/{candidate["index"]}.jpg'
+def upload_cover_preview(base_url, key, job, candidate, attempt=None):
+    # attempt is set only for fenced attempt-scoped archives: a zombie can then never overwrite the winner's preview object
+    folder = f'{job["id"]}' if attempt is None else f'{job["id"]}/attempt-{int(attempt):02d}'
+    storage_path = f'{job["created_by"]}/{job["content_id"]}/covers/{folder}/{candidate["index"]}.jpg'
     headers = api_headers(key, json_content=False)
     headers.update({"Content-Type": "image/jpeg", "x-upsert": "true"})
     req = urllib.request.Request(base_url + "/storage/v1/object/video-inputs/" + storage_path,
