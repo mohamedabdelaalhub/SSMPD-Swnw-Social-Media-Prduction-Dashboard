@@ -95,7 +95,7 @@ class ElevenTests(unittest.TestCase):
 
     def test_caption_keeps_doctor_abbreviation_with_name(self):
         chunks = worker.short_caption_chunks('تابعوا مع د. دينا حسني في العيادة اليوم.')
-        self.assertTrue(any('دكتور دينا حسني' in chunk for chunk in chunks))   # short_caption_chunks expands the abbreviation to the spoken form
+        self.assertTrue(any('الدكتورة دينا حسني' in chunk for chunk in chunks))   # registered name -> registered title (data-driven, no gender guessing)
         self.assertFalse(any(chunk.strip() == 'د.' for chunk in chunks))
 
     def test_ebaatlena_is_spoken_smoothly_without_changing_script(self):
@@ -127,10 +127,10 @@ class CaptionMedicalTitleRegressionTests(unittest.TestCase):
         return worker.short_caption_chunks(text)
 
     def test_doctor_abbreviation_with_two_word_name(self):
-        self.assertEqual(self.chunks('تابعوا مع د. دينا حسني في العيادة اليوم.'), ['تابعوا مع دكتور دينا حسني', 'في العيادة اليوم'])
+        self.assertEqual(self.chunks('تابعوا مع د. دينا حسني في العيادة اليوم.'), ['تابعوا مع الدكتورة دينا حسني', 'في العيادة اليوم'])
 
     def test_consultant_then_doctor(self):
-        self.assertTrue(any('دكتور سامي يوسف' in c for c in self.chunks('استشاري د. سامي يوسف متاح غدا.')))
+        self.assertTrue(any('د. سامي يوسف' in c for c in self.chunks('استشاري د. سامي يوسف متاح غدا.')))   # NOT registered: abbreviation kept, no title/gender invented
 
     def test_no_chunk_is_a_lone_abbreviation(self):
         for text in ('تابعوا مع د. دينا حسني في العيادة اليوم.', 'استشاري د. سامي يوسف متاح غدا.', 'د. هبة والدكتور محمد معنا اليوم في العيادة.'):
@@ -142,7 +142,7 @@ class CaptionMedicalTitleRegressionTests(unittest.TestCase):
 
     def test_professor_abbreviation_is_kept_with_the_name(self):
         out = self.chunks('أ.د. أحمد علي يشرح الحالة اليوم.')
-        self.assertFalse(any(c.strip() == 'أد' for c in out)); self.assertTrue(any('أستاذ دكتور أحمد علي' in c for c in out))
+        self.assertFalse(any(c.strip() == 'أد' for c in out)); self.assertTrue(any('أ.د. أحمد علي' in c for c in out))     # unregistered: abbreviation kept intact in one chunk
 
     def test_decimal_numbers_keep_their_separator(self):
         self.assertTrue(any('120.5' in c for c in self.chunks('ضغط الدم 120.5 مهم جدا للمتابعة.')))
@@ -151,6 +151,36 @@ class CaptionMedicalTitleRegressionTests(unittest.TestCase):
 
     def test_sentence_final_punctuation_after_numbers_is_still_stripped(self):
         self.assertFalse(any(c.endswith('.') or c.endswith('،') for c in self.chunks('الجرعة 500. ثم ننتظر، بعدها نتابع.')))
+
+
+class DoctorTitleRegistryTests(unittest.TestCase):
+    REG = [{"name": "دينا حسني", "title": "الدكتورة", "spoken_name": "دينا حُسْني"}, {"name": "سامي يوسف", "title": "الدكتور"}]
+
+    def test_registered_names_get_their_own_title_no_guessing(self):
+        import doctor_titles as dt
+        self.assertEqual(dt.caption_unit(self.REG, 'د.', 'دينا حسني'), 'الدكتورة دينا حسني')
+        self.assertEqual(dt.caption_unit(self.REG, 'د.', 'سامي يوسف'), 'الدكتور سامي يوسف')
+        self.assertEqual(dt.caption_unit(self.REG, 'د.', 'هبة علي'), 'د. هبة علي')          # unknown: no title, no gender
+        self.assertEqual(dt.caption_unit(self.REG, 'أ.د.', 'هبة علي'), 'أ.د. هبة علي')
+
+    def test_spoken_registry_preserves_the_existing_special_case(self):
+        self.assertEqual(worker.spoken_script('تابعوا مع د. دينا حسني اليوم'), 'تابعوا مع الدكتورة دينا حُسْني اليوم')
+        self.assertEqual(worker.spoken_script('د.دينا حسني'), 'الدكتورة دينا حُسْني')
+        self.assertEqual(worker.spoken_script('دينا حسني'), 'دينا حُسْني')
+        self.assertEqual(worker.spoken_script('ابعتلنا'), 'ابعَت لنا')
+
+    def test_spoken_script_leaves_unregistered_titles_numbers_and_units_untouched(self):
+        for text in ('قابلوا د. سامي يوسف غدا', 'أ.د. أحمد علي معنا', 'ضغط الدم 120.5 مهم', 'الجرعة 1,000 وحدة', 'الحرارة ٣٧٫٥ درجة',
+                     'خد 5 ملجم مرتين', 'التركيز 0.5 mg/dL', 'ضغط 120/80 mmHg', 'نسبة 12.5% فقط'):
+            self.assertEqual(worker.spoken_script(text), text)               # current behaviour is "pass through to the TTS engine"; documents what is NOT normalised
+
+    def test_optin_number_normaliser_is_off_by_default_and_deterministic(self):
+        import doctor_titles as dt
+        self.assertEqual(dt.spoken_numbers('ضغط الدم 120.5 مهم'), 'ضغط الدم 120 فاصلة 5 مهم')
+        self.assertEqual(dt.spoken_numbers('الجرعة 1,000 وحدة'), 'الجرعة 1000 وحدة')
+        self.assertEqual(dt.spoken_numbers('الحرارة ٣٧٫٥ درجة'), 'الحرارة ٣٧ فاصلة ٥ درجة')
+        self.assertEqual(dt.spoken_numbers('انتظر. ثم 5 ملجم'), 'انتظر. ثم 5 ملجم')    # sentence punctuation and units untouched
+        self.assertEqual(worker.spoken_script('ضغط 120.5'), 'ضغط 120.5')               # the normaliser is NOT applied by spoken_script
 
 
 if __name__ == '__main__':

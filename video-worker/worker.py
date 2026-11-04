@@ -11,6 +11,7 @@ import studio_storyboard
 import studio_generation
 import threading
 from drive_archive import upload as archive_upload
+import doctor_titles
 from brand_identity import logo_asset
 import json
 import os
@@ -532,13 +533,7 @@ def macos_synthesize(script: str, out_aiff: Path) -> str:
 
 def spoken_script(script: str) -> str:
     """Keep published copy intact while guiding Egyptian Arabic pronunciation."""
-    return (
-        script
-        .replace("د. دينا حسني", "الدكتورة دينا حُسْني")
-        .replace("د.دينا حسني", "الدكتورة دينا حُسْني")
-        .replace("دينا حسني", "دينا حُسْني")
-        .replace("ابعتلنا", "ابعَت لنا")
-    )
+    return doctor_titles.spoken(doctor_titles.DEFAULT_REGISTRY, script).replace("ابعتلنا", "ابعَت لنا")
 
 
 def synthesize(script: str, job_dir: Path, job: dict[str, Any]) -> tuple[Path, str]:
@@ -626,8 +621,8 @@ def short_caption_chunks(text: str, words_per_caption: int = 5) -> list[str]:
             if word in ("د.", "د", "دكتور", "أ.د.", "أ.د") and index + 2 < len(words):
                 name = " ".join(clean(part) for part in words[index + 1:index + 3] if clean(part))
                 if name:
-                    title = "أستاذ دكتور " if word.startswith("أ") else "دكتور "
-                    units.append((title + name, 3 if not word.startswith("أ") else 4))
+                    abbreviation = word if word in ("د.", "أ.د.") else ("أ.د." if word.startswith("أ") else "د.")
+                    units.append((doctor_titles.caption_unit(doctor_titles.DEFAULT_REGISTRY, abbreviation, name), 3 if not word.startswith("أ") else 4))
                     index += 3
                     continue
 
