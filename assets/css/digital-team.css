@@ -23,3 +23,36 @@
 .dt-avatar.nefer{background:rgba(119,80,165,.10)}
 .dt-avatar.maat{background:rgba(170,119,46,.11)}
 @media(max-width:700px){.dt-review-intro{align-items:flex-start}.dt-specialist .dt-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+
+/* KPI drilldown and owner-to-agent advisory discussions. */
+.dt-stat-action{appearance:none;cursor:pointer;text-align:center;font:inherit;color:inherit;width:100%;transition:border-color .15s,transform .15s}
+.dt-stat-action:hover{border-color:var(--c-primary,#165489);transform:translateY(-1px)}
+.dt-stat-action:focus-visible,.dt-discussion summary:focus-visible{outline:2px solid var(--c-primary,#165489);outline-offset:2px}
+.dt-discussion{margin-top:12px;border-top:1px solid var(--c-border,#d9e0e7);padding-top:14px}
+.dt-discussion summary{cursor:pointer;font-size:13px;font-weight:700;list-style:none;display:flex;align-items:center;justify-content:space-between}
+.dt-discussion summary:after{content:'+';font-size:18px;color:var(--c-muted,#667085)}
+.dt-discussion[open] summary:after{content:'−'}
+.dt-discussion-body{padding-top:12px;display:grid;gap:12px}
+.dt-discussion-note{margin:0;background:var(--c-soft,#f3f7fc);border-radius:9px;padding:10px 12px;font-size:11px;line-height:1.7;color:var(--c-muted,#667085)}
+.dt-chat-history{display:grid;gap:9px;max-height:340px;overflow:auto;scrollbar-width:thin}
+.dt-chat-message{border:1px solid var(--c-border,#d9e0e7);border-radius:10px;padding:10px 12px;background:var(--c-card,#fff);max-width:95%}
+.dt-chat-message.owner{border-right:3px solid var(--c-primary,#165489)}
+.dt-chat-message.agent{background:var(--c-soft,#f3f7fc);border-right:3px solid var(--c-muted,#657180)}
+.dt-chat-message .dt-chat-label,.dt-chat-message small{font-size:10px;color:var(--c-muted,#667085)}
+.dt-chat-message p{font-size:12px;line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere;margin:8px 0}
+.dt-discussion form{display:grid;gap:9px}
+.dt-discussion select,.dt-discussion textarea{width:100%;box-sizing:border-box;font:inherit;color:inherit;font-size:12px;background:var(--c-card,#fff);border:1px solid var(--c-border,#d9e0e7);border-radius:9px;padding:10px}
+.dt-discussion textarea{min-height:80px;resize:vertical}
+.dt-discussion form button{justify-self:start}
+.dt-discussion-status{font-size:11px;color:var(--c-muted,#667085);line-height:1.7}
+.dt-detail-backdrop{position:fixed;inset:0;z-index:6000;background:rgba(10,26,47,.48);display:grid;place-items:center;padding:16px}
+.dt-detail-dialog{background:var(--c-card,#fff);color:var(--c-text,#17202a);border-radius:17px;padding:24px;width:min(100%,580px);max-height:85dvh;overflow:auto;box-shadow:0 12px 60px rgba(0,0,0,.2)}
+.dt-detail-dialog header{display:flex;justify-content:space-between;align-items:start;gap:10px;margin-bottom:15px}
+.dt-detail-dialog header h2{margin:4px 0 0;font-size:19px}
+.dt-detail-dialog [data-dt-close]{border:1px solid var(--c-border,#d9e0e7);background:transparent;color:inherit;font-size:22px;width:34px;height:34px;cursor:pointer;border-radius:8px}
+.dt-detail-value{font-size:32px;font-weight:700;color:var(--c-primary,#165489);margin:12px 0}
+.dt-detail-dialog>p{font-size:12px;line-height:1.8}
+.dt-detail-breakdown{display:grid;gap:6px;margin:12px 0}
+.dt-detail-row{display:flex;justify-content:space-between;align-items:center;padding:10px;background:var(--c-soft,#f3f7fc);border-radius:8px;font-size:12px}
+@media(max-width:650px){.dt-detail-dialog{padding:15px}.dt-chat-message{max-width:100%}}
