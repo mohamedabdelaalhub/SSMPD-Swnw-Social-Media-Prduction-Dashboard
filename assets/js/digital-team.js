@@ -149,6 +149,8 @@
     cachedData=data;
     view.innerHTML='<section class="digital-team" dir="rtl"><header class="dt-hero"><div><p class="dt-eyebrow">Swnw Digital Team</p><h1>الفريق الرقمي</h1><p>هويات تشغيلية واضحة، صلاحيات منفصلة، ومؤشرات خاصة بكل وكيل.</p></div><div class="dt-hero-actions"><button class="btn ghost sm" data-dt-refresh type="button">تحديث</button></div></header><div class="dt-principles"><span>Claude Creative مرتبط بحسابه الحالي بدون تغيير</span><span>الوكلاء الرقميون خارج الحضور والرواتب البشرية</span><span>كل إجراء له مصدر صلاحية واضح</span></div><div class="dt-grid">'+members.map(memberCard).join('')+'</div><div class="dt-global-status" data-dt-global-status></div></section>';
     var b=view.querySelector('[data-dt-refresh]');if(b)b.onclick=load;
+    w.dispatchEvent(new Event('ssmpd-digital-team-rendered'));
+
     view.querySelectorAll('[data-dt-run]').forEach(function(btn){
       btn.onclick=function(){runReview(btn.getAttribute('data-dt-run'),btn);};
     });
