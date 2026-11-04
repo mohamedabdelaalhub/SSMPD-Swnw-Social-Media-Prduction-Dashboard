@@ -29,8 +29,10 @@ function sync(){
   pages.forEach(function(p){
    var links=items.querySelectorAll('[data-management-page="'+p.key+'"]');
    var button=links[0]||document.createElement('button');
-   button.className='ud-item sw-management-link';button.type='button';button.textContent=p.label;
-   button.setAttribute('data-management-page',p.key);
+   if(button.className!=='ud-item sw-management-link')button.className='ud-item sw-management-link';
+   button.type='button';
+   if(button.textContent!==p.label)button.textContent=p.label;
+   if(button.getAttribute('data-management-page')!==p.key)button.setAttribute('data-management-page',p.key);
    button.onclick=function(){p.open();enter(p.key);};
    if(button.parentNode!==group)group.appendChild(button);
    Array.from(links).slice(1).forEach(function(x){x.remove();});
