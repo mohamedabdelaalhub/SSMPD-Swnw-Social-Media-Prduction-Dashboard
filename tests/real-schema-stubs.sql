@@ -1,5 +1,10 @@
 -- Minimal Supabase stand-ins so the repo's real supabase/setup.sql can be loaded into a THROWAWAY local PostgreSQL (no network, dummy data only).
 create role anon nologin; create role authenticated nologin; create role service_role nologin bypassrls;   -- Supabase's service_role bypasses RLS create role authenticator nologin; create role supabase_admin nologin;
+-- Supabase gives anon/authenticated/service_role ALL on every NEW object in public through default privileges (observed live on video_jobs, review #122).
+-- Without this the fixture under-reported the real grants. Set BEFORE setup.sql/migrations are loaded; RLS and explicit revokes in the repo still apply on top.
+alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
+alter default privileges in schema public grant all on sequences to anon, authenticated, service_role;
+alter default privileges in schema public grant all on functions to anon, authenticated, service_role;
 create schema if not exists extensions; create extension if not exists pgcrypto;
 create schema auth;
 create table auth.users(id uuid primary key default gen_random_uuid(), email text, raw_user_meta_data jsonb default '{}'::jsonb, created_at timestamptz default now());

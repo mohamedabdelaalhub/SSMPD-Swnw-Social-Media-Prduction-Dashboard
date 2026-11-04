@@ -85,7 +85,7 @@ begin
 end;
 $$;
 
--- Transition guard v3 (created DISABLED, see the end of this block). It applies ONLY when the statement runs as the database role service_role, i.e. a worker writing through PostgREST with a
+-- Transition guard v5 (created DISABLED, see the end of this block). It applies when the statement runs as an API database role (service_role, and since v5 also authenticated/anon, because live those roles hold full table privileges), i.e. a worker writing through PostgREST with a
 -- service_role key (an OLD worker, or a zombie). It is keyed on current_user (a real role switch made by PostgREST from the verified JWT), NOT on
 -- JWT claims or a settable GUC, so nothing a client can send makes a statement exempt.
 -- Exempt by construction: the SECURITY DEFINER functions (they run as their owner, not as service_role): claim_next_video_job and its stale
@@ -101,7 +101,7 @@ begin
     new.claim_token := null;
     return new;
   end if;
-  if current_user = 'service_role' and old.claim_token is not null and old.status in ('preparing','rendering','uploading') then
+  if current_user in ('service_role','authenticated','anon') and old.claim_token is not null and old.status in ('preparing','rendering','uploading') then   -- v5: ALL API roles (live anon/authenticated hold full table privileges, review #122)
     raise exception 'job is held under a claim token: use video_job_update_fenced' using errcode = '42501';
   end if;
   return new;

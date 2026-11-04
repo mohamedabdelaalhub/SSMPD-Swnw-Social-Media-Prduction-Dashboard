@@ -23,7 +23,8 @@ P -c "do \$\$ declare c record; begin for c in select conname from pg_constraint
 Q() { local o; o="$(P -c "set role service_role; select set_config('test.role','service_role',false) is not null; $1" 2>&1 || true)"; if grep -q ERROR <<<"$o"; then grep -m1 ERROR <<<"$o"; else tail -1 <<<"$o"; fi; }
 job() { P -c "set session_replication_role=replica; insert into public.video_jobs(content_id,created_by,duration_min_seconds,duration_max_seconds,script_text,title,video_template) values (gen_random_uuid(),gen_random_uuid(),10,30,'s','t','quick_tips') returning id" | head -1; }
 staleize() { P -c "alter table public.video_jobs disable trigger user; update public.video_jobs set updated_at=now()-interval '40 minutes' where id='$1'; alter table public.video_jobs enable trigger user"; }
-[ "$(P -c "select string_agg(privilege_type,',') from information_schema.role_table_grants where table_schema='public' and table_name='video_jobs' and grantee='authenticated'")" = SELECT ] && [ -z "$(P -c "select 1 from information_schema.role_table_grants where table_schema='public' and table_name='video_jobs' and grantee='anon'")" ] && ok "S1 REAL grants: authenticated SELECT only, anon none (the guard's exemption assumption holds in the repo schema)" || bad "S1 grants"
+ALLP="DELETE,INSERT,REFERENCES,SELECT,TRIGGER,TRUNCATE,UPDATE"
+[ "$(P -c "select string_agg(privilege_type,',' order by privilege_type) from information_schema.role_table_grants where table_schema='public' and table_name='video_jobs' and grantee='authenticated'")" = "$ALLP" ] && [ "$(P -c "select string_agg(privilege_type,',' order by privilege_type) from information_schema.role_table_grants where table_schema='public' and table_name='video_jobs' and grantee='anon'")" = "$ALLP" ] && ok "S1 LIVE-LIKE grants (review #122): with Supabase default privileges in the fixture anon AND authenticated hold all 7 table privileges on video_jobs, as the live read-only check found" || bad "S1 grants"
 [ "$(P -c "select count(*) from pg_policies where tablename='video_jobs' and cmd<>'SELECT'")" = 0 ] && ok "S2 REAL RLS: only a SELECT policy exists on video_jobs (no UPDATE policy for users)" || bad "S2"
 P -v ON_ERROR_STOP=1 -f "$ROOT/supabase/drafts/20261104_video_job_fencing.sql" >/dev/null 2>"$D/draft.err" && ok "S3 the draft applies cleanly on the REAL schema" || bad "S3 $(head -2 "$D/draft.err")"
 [ "$(P -c "select tgenabled::text from pg_trigger where tgname='video_jobs_fence_guard'")" = D ] && ok "S4 initial state: guard disabled" || bad "S4"
@@ -76,4 +77,42 @@ L1=$(job); TL=$(Q "select public.claim_next_video_job_fenced('wl',4)->>'claim_to
 staleize "$L1"; Q "select coalesce(public.claim_next_video_job('legacy',4)->>'attempt_count','NULL')" | grep -q 2 && ok "S23 stale fenced job reclaimed by the LIVE-version claim function (attempt 2)" || bad "S23"
 P -c "truncate public.video_jobs cascade"; L2=$(job); P -c "update public.video_jobs set input_schema_version=4 where id='$L2'"
 [ "$(Q "select coalesce(public.claim_next_video_job('w',4)->>'id','NULL')")" = NULL ] && [ "$(Q "select coalesce(public.claim_next_video_job_fenced('w',4)->>'id','NULL')")" = NULL ] && ok "S24 BEHAVIOUR OF THE LIVE VERSION (unchanged by the wrapper): a job with input_schema_version 4 (studio storyboard) is NEVER claimed because the cap is least(p_max,3); the repo-latest 20261006 version raises it to 4" || bad "S24"
+
+# ---- S25-S31 (review #122): effective privilege risk of the live anon/authenticated ALL grants, and the minimal REVOKE draft.
+P -c "truncate public.video_jobs cascade"; P -c "alter table public.video_jobs disable trigger video_jobs_fence_guard" >/dev/null 2>&1
+R1=$(job); R2=$(job)
+DEL=$(P -c "set role anon; with d as (delete from public.video_jobs returning 1) select count(*) from d")
+UPD=$(P -c "set role authenticated; with u as (update public.video_jobs set progress_percent=5 returning 1) select count(*) from u")
+INS=$(P -c "set role authenticated; insert into public.video_jobs(content_id,created_by,duration_min_seconds,duration_max_seconds,script_text,title,video_template) values (gen_random_uuid(),gen_random_uuid(),10,30,'s','t','quick_tips')" 2>&1 | grep -c "row-level security")
+[ "$DEL" = 0 ] && [ "$UPD" = 0 ] && [ "$INS" = 1 ] && ok "S25 RLS (SELECT policy only) still stops row DML despite the grants: anon DELETE 0 rows, authenticated UPDATE 0 rows, authenticated INSERT violates RLS" || bad "S25 del=$DEL upd=$UPD ins=$INS"
+P -c "set role anon; truncate public.video_jobs cascade" >/dev/null 2>&1; [ "$(P -c "select count(*) from public.video_jobs")" = 0 ] && ok "S26 RISK DEMONSTRATED (throwaway DB): anon can TRUNCATE video_jobs with the live-like grants; RLS does not apply to TRUNCATE" || bad "S26 truncate was blocked"
+R3=$(job)
+P -c "create policy tmp_permissive on public.video_jobs for all to authenticated using (true) with check (true)" >/dev/null
+UPD2=$(P -c "set role authenticated; with u as (update public.video_jobs set progress_percent=7 returning 1) select count(*) from u")
+P -c "drop policy tmp_permissive on public.video_jobs" >/dev/null
+[ "$UPD2" -ge 1 ] && ok "S27 FRAGILITY: one future permissive policy would immediately expose full DML to authenticated (the grants are the only other barrier)" || bad "S27 upd2=$UPD2"
+P -c "select string_agg(a::text,'|' order by a::text) from pg_class c, unnest(c.relacl) a where c.oid='public.video_jobs'::regclass" > "$D/acl_before.txt"
+python3 - "$ROOT" "$D/revoke.sql" "$D/rollback.sql" <<'PY'
+import sys
+t=open(sys.argv[1]+'/supabase/drafts/20261104_video_jobs_revoke_api_privileges.sql').read()
+body=[l for l in t.splitlines() if not l.startswith('--')]
+open(sys.argv[2],'w').write('\n'.join(body))
+rb=[l[len('--   '):] for l in t.splitlines() if l.startswith('--   begin; grant all')]
+open(sys.argv[3],'w').write('\n'.join(rb))
+PY
+[ -s "$D/rollback.sql" ] || bad "S28 rollback text not found in the draft"
+P -v ON_ERROR_STOP=1 -f "$D/revoke.sql" >/dev/null 2>&1 && ok "S28 REVOKE draft applies cleanly (one transaction)" || bad "S28 revoke failed"
+AUTHP=$(P -c "select string_agg(privilege_type,',' order by privilege_type) from information_schema.role_table_grants where table_schema='public' and table_name='video_jobs' and grantee='authenticated'")
+ANONP=$(P -c "select count(*) from information_schema.role_table_grants where table_schema='public' and table_name='video_jobs' and grantee='anon'")
+COLP=$(P -c "select count(*) from information_schema.column_privileges where table_schema='public' and table_name='video_jobs' and grantee='anon'")
+SRP=$(P -c "select string_agg(privilege_type,',' order by privilege_type) from information_schema.role_table_grants where table_schema='public' and table_name='video_jobs' and grantee='service_role'")
+[ "$AUTHP" = SELECT ] && [ "$ANONP" = 0 ] && [ "$COLP" = 0 ] && [ "$SRP" = "$ALLP" ] && ok "S29 after REVOKE: authenticated SELECT only, anon nothing (table and column level), service_role unchanged (all 7)" || bad "S29 auth=$AUTHP anon=$ANONP col=$COLP sr=$SRP"
+SEL=$(P -c "set role authenticated; select count(*) from public.video_jobs")
+ANONSEL=$(P -c "set role anon; select count(*) from public.video_jobs" 2>&1 | grep -c "permission denied")
+TR=$(P -c "set role authenticated; truncate public.video_jobs cascade" 2>&1 | grep -c "permission denied")
+TR2=$(P -c "set role anon; truncate public.video_jobs cascade" 2>&1 | grep -c "permission denied")
+SRU=$(P -c "set role service_role; with u as (update public.video_jobs set progress_percent=9 returning 1) select count(*) from u")
+[ "$SEL" -ge 0 ] 2>/dev/null && [ "$ANONSEL" = 1 ] && [ "$TR" = 1 ] && [ "$TR2" = 1 ] && [ "$SRU" -ge 1 ] && ok "S30 after REVOKE: authenticated SELECT still works (dashboard/realtime need), anon SELECT denied, TRUNCATE denied for both, service_role UPDATE still works ($SRU row(s))" || bad "S30 sel=$SEL anonsel=$ANONSEL tr=$TR tr2=$TR2 sru=$SRU"
+P -v ON_ERROR_STOP=1 -f "$D/rollback.sql" >/dev/null 2>&1; P -c "select string_agg(a::text,'|' order by a::text) from pg_class c, unnest(c.relacl) a where c.oid='public.video_jobs'::regclass" > "$D/acl_after.txt"
+cmp -s "$D/acl_before.txt" "$D/acl_after.txt" && ok "S31 documented rollback restores the original ACL (same set of entries; entry order inside relacl may differ, which has no effect)" || { bad "S31 rollback differs"; cat "$D/acl_before.txt" "$D/acl_after.txt"; diff "$D/acl_before.txt" "$D/acl_after.txt" | head -5; }
 exit $FAIL
