@@ -104,10 +104,10 @@ Deno.serve(async req=>{
       expected_output:clip(t.expected_output,2200),assignee:names.get(t.assignee_id)||"غير معروف",
       priority:t.priority,due_at:t.due_at,open_child_tasks:openKids.get(t.id)||0,
       latest_work:w?{body:clip(w.body,4200),link:clip(w.link,500),
-        attachments:atts.map((a:any)=>{const ev=linked.find((e:any)=>e.drive_file_id===a?.file_id);
+        attachments:atts.map((a:any,index:number)=>{const ev=index<3?linked.find((e:any)=>e.drive_file_id===a?.file_id):null;
           return {name:clip(a?.name,200),mime:clip(a?.mime,120),
             extraction_status:ev?.verification_state||"not_read",
-            content_excerpt:ev?clip(ev.content_excerpt,10500):null,
+            content_excerpt:ev?clip(ev.content_excerpt,4000):null,
             extracted_at:ev?.extraction_at||null};
         }),created_at:w.created_at}:null,
       recent_updates:u.map((x:any)=>({author_is_owner:x.author_id===owner,body:clip(x.body,1300),
