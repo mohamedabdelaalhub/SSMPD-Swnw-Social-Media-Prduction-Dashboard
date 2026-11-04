@@ -23,7 +23,7 @@ create or replace function public.claim_next_video_job_fenced(p_worker_id text, 
 returns jsonb
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, pg_temp
 as $$
 declare
   claimed jsonb;
@@ -48,7 +48,7 @@ create or replace function public.video_job_update_fenced(p_job_id uuid, p_claim
 returns jsonb
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, pg_temp
 as $$
 declare
   allowed text[] := array['status','progress_percent','progress_stage','error_message','output_video_url','cover_url','voiceover_url','subtitles_url',
@@ -126,7 +126,7 @@ create or replace function public.video_commit_validate(p_attempt integer, p_res
 returns void
 language plpgsql
 immutable
-set search_path = public
+set search_path = public, pg_temp
 as $$
 declare
   cand jsonb;
@@ -170,7 +170,7 @@ create or replace function public.video_job_commit_fenced(p_job_id uuid, p_claim
 returns jsonb
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, pg_temp
 as $$
 declare
   cur public.video_jobs%rowtype;
