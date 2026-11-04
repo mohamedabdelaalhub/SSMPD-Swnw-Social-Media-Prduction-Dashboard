@@ -156,6 +156,8 @@ Deno.serve(async req=>{
  const token=req.headers.get("X-SW-Scan-Token")||"";
  const {data:valid,error:tokenErr}=await db.rpc("task_file_scan_token_valid",{p_token:token});
  if(tokenErr||valid!==true)return out({error:"Forbidden"},403);
+ let payload:any={};try{payload=await req.json();}catch(_){}
+ if(payload.action==="identity"){const key=JSON.parse(Deno.env.get("GOOGLE_SERVICE_ACCOUNT_KEY")||"{}");return out({ok:true,service_account_email:key.client_email||null});}
  const {data:jobs,error}=await db.rpc("task_file_scan_claim",{p_count:3});
  if(error)return out({error:"Queue unavailable"},503);
  if(!jobs?.length)return out({ok:true,processed:0,results:[]});
