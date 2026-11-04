@@ -209,4 +209,37 @@ P -v ON_ERROR_STOP=1 -f "$D/revoke.sql" >/dev/null 2>&1
 FINAL=$(P -f "$D/q1v.sql")
 [ "$FINAL" = "authenticated=r/postgres|postgres=arwdDxtm/postgres|service_role=arwdDxtm/postgres" ] && ok "S39 EXACT final ACL after the draft (fixture): authenticated=r/postgres (SELECT only), postgres and service_role unchanged (arwdDxtm), the anon entry gone: $FINAL (the privilege letters of the owner entry depend on the PostgreSQL version; the shape is what the post-check compares)" || bad "S39 final ACL: $FINAL"
 reset_acl
+
+# ---- S40-S43 (ChatGPT 6641847835, live F1 result: fk_in 1, fk_out 2, PostgreSQL 17): does the draft preserve the FK-dependent behaviour?
+# Live shape: video_jobs.content_id -> content_items ON DELETE CASCADE, video_jobs.created_by -> admins, video_cover_candidates.job_id -> video_jobs ON DELETE CASCADE.
+# Question: with anon/authenticated REVOKEd on video_jobs, does deleting a parent row by a role that has NO privilege on video_jobs / candidates still cascade, and do child inserts still validate? (RI triggers run as the table owner.)
+reset_acl
+P -c "truncate public.video_jobs cascade; drop table if exists public.probe_parent cascade; create table public.probe_parent(id uuid primary key); create role probe_del nologin; create role probe_ins nologin bypassrls;
+      grant usage on schema public to probe_del, probe_ins; grant select, delete on public.probe_parent to probe_del; grant insert on public.video_cover_candidates to probe_ins;
+      alter table public.video_jobs add constraint probe_content_fk foreign key (content_id) references public.probe_parent(id) on delete cascade" >/dev/null 2>"$D/probe.err"
+P -v ON_ERROR_STOP=1 -f "$D/revoke.sql" >/dev/null 2>&1
+ACLP=$(P -f "$D/q1v.sql")
+PID=$(P -c "insert into public.probe_parent values (gen_random_uuid()) returning id")
+JID=$(P -c "set session_replication_role=replica; insert into public.video_jobs(content_id,created_by,duration_min_seconds,duration_max_seconds,script_text,title,video_template) values ('$PID',gen_random_uuid(),10,30,'s','t','quick_tips') returning id")
+P -c "set session_replication_role=replica; insert into public.video_cover_candidates(id,job_id,candidate_index,timestamp_seconds,storage_path,drive_url) values (gen_random_uuid(),'$JID',1,1.0,'p','d')" >/dev/null 2>&1
+HASNOPRIV=$(P -c "select (not has_table_privilege('probe_del','public.video_jobs','DELETE') and not has_table_privilege('probe_del','public.video_cover_candidates','DELETE') and not has_table_privilege('probe_del','public.video_jobs','SELECT'))::text")
+DELOUT=$(P -c "set role probe_del; delete from public.probe_parent where id='$PID'" 2>&1)
+LEFTJ=$(P -c "select count(*) from public.video_jobs where id='$JID'"); LEFTC=$(P -c "select count(*) from public.video_cover_candidates where job_id='$JID'")
+[ "$ACLP" = "authenticated=r/postgres|postgres=arwdDxtm/postgres|service_role=arwdDxtm/postgres" ] && [ "$HASNOPRIV" = true ] && [ "$LEFTJ" = 0 ] && [ "$LEFTC" = 0 ] && ok "S40 FK CASCADE after the REVOKE (fk_out shape: video_jobs.content_id -> parent ON DELETE CASCADE): a role with DELETE on the PARENT and NO privilege at all on video_jobs or video_cover_candidates deletes the parent row and the job and its candidate disappear by cascade, no permission error (the RI trigger runs as the table owner): live employees deleting content items keep working; ACL at that moment = $ACLP" || bad "S40 acl=$ACLP nopriv=$HASNOPRIV leftJ=$LEFTJ leftC=$LEFTC out=$DELOUT $(cat "$D/probe.err" | head -2)"
+# fk_in: a child insert by a role with INSERT on candidates only (no privilege on the parent video_jobs) still validates the FK
+P -c "set session_replication_role=replica; insert into public.video_jobs(content_id,created_by,duration_min_seconds,duration_max_seconds,script_text,title,video_template) values (gen_random_uuid(),gen_random_uuid(),10,30,'s','t','quick_tips')" >/dev/null 2>&1
+J2=$(P -c "select id from public.video_jobs limit 1")
+OKINS=$(P -c "set role probe_ins; insert into public.video_cover_candidates(id,job_id,candidate_index,timestamp_seconds,storage_path,drive_url) values (gen_random_uuid(),'$J2',1,1.0,'p','d')" 2>&1 | grep -ci "error")
+BADINS=$(P -c "set role probe_ins; insert into public.video_cover_candidates(id,job_id,candidate_index,timestamp_seconds,storage_path,drive_url) values (gen_random_uuid(),gen_random_uuid(),1,1.0,'p','d')" 2>&1)
+echo "$BADINS" | grep -qi "foreign key" && ! echo "$BADINS" | grep -qi "permission denied" && [ "$OKINS" = 0 ] && ok "S41 FK CHECK on the child side (fk_in shape: video_cover_candidates.job_id -> video_jobs): a role with INSERT on candidates and NO privilege on video_jobs inserts a row for an existing job and gets a real foreign-key violation (not permission denied) for a missing job, so referential checks do not depend on the caller's privileges on video_jobs" || bad "S41 okins_errors=$OKINS bad=$BADINS"
+# the REFERENCES privilege matters only when CREATING a foreign key (DDL), which API roles never do: nothing in the repo or the dashboard issues DDL as anon/authenticated
+RESTOK=$(P -c "set role authenticated; create table public.probe_ddl_try(x uuid references public.video_jobs(id))" 2>&1 | grep -ci "permission denied")
+P -c "drop table if exists public.probe_ddl_try" >/dev/null 2>&1
+[ "$RESTOK" -ge 1 ] && ok "S42 after the REVOKE an API role cannot create a foreign key to video_jobs (permission denied; this does not isolate REFERENCES alone because CREATE on the schema is also restricted for API roles): harmless, DDL is never issued as anon or authenticated" || bad "S42 restok=$RESTOK"
+# invoker (non-definer) functions in the repo schema that mention video_jobs and are executable by authenticated: would break if they WRITE video_jobs
+INV=$(P -c "select coalesce(string_agg(p.oid::regprocedure::text || ' writes=' || (p.prosrc ~* '(insert\\s+into|update|delete\\s+from)\\s+(public\\.)?video_jobs')::text, E'\\n'),'none') from pg_proc p where p.pronamespace='public'::regnamespace and not p.prosecdef and p.prosrc ~* 'video_jobs' and has_function_privilege('authenticated',p.oid,'EXECUTE')")
+echo "info S43 SECURITY INVOKER public functions that mention video_jobs and are executable by authenticated (repo schema): $INV"
+case "$INV" in *writes=true*) bad "S43 an invoker function WRITES video_jobs: the REVOKE would break it";; *) ok "S43 no SECURITY INVOKER function in the repo schema writes video_jobs (listed above; live function sources not inspected by the author)";; esac
+P -c "alter table public.video_jobs drop constraint if exists probe_content_fk; drop table if exists public.probe_parent cascade" >/dev/null 2>&1
+reset_acl
 exit $FAIL
