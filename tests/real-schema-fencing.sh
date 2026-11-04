@@ -175,4 +175,15 @@ P -F '|' -f "$D/q3.sql" > "$D/q3.out" 2>&1
 ROWS=$(grep -c '^api_role_is_member_of|' "$D/q3.out"); UNIQ=$(grep '^api_role_is_member_of|' "$D/q3.out" | cut -d'|' -f2 | sort -u | wc -l | tr -d ' ')
 HASBASE=$(grep -c '^api_role_is_member_of|chain_base' "$D/q3.out")
 [ "$ROWS" = "$UNIQ" ] && [ "$HASBASE" = 1 ] && [ "$ROWS" -ge 3 ] && ok "S35 Q3 membership closure is de-duplicated: a diamond (authenticated -> chain_a, chain_b -> chain_base) reports chain_base exactly once ($ROWS rows, $UNIQ distinct roles); inherit_option is read version-agnostically" || { bad "S35 rows=$ROWS uniq=$UNIQ base=$HASBASE"; cat "$D/q3.out"; }
+
+# ---- S37 (review #129): operator packet 2 (exposure triage) executes on the real schema and is SELECT/WITH only.
+OUT2=$(P -v ON_ERROR_STOP=1 -f "$ROOT/supabase/drafts/20261104_exposure_triage_operator_checks.sql" 2>&1); RC2=$?
+NW2=$(python3 - "$ROOT/supabase/drafts/20261104_exposure_triage_operator_checks.sql" <<'PY'
+import sys,re
+t=re.sub(r"'[^']*'","''",re.sub(r'--[^\n]*','',open(sys.argv[1]).read()))
+st=[x.strip() for x in t.split(';') if x.strip()]
+print(sum(1 for x in st if x.split()[0].lower() not in ('select','with')))
+PY
+)
+[ "$RC2" = 0 ] && [ -n "$OUT2" ] && [ "$NW2" = 0 ] && ok "S37 operator packet 2 (X1-X5: per-table grants/RLS/policies, write-activity counters, function facts, anon/PUBLIC write policies, default privileges) executes on the real schema, every statement SELECT/WITH (non-read: $NW2)" || bad "S37 rc=$RC2 nw=$NW2 $(echo "$OUT2" | grep -m2 ERROR)"
 exit $FAIL
