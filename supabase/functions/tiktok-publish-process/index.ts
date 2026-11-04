@@ -1,12 +1,22 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-const URL = Deno.env.get("SUPABASE_URL")!;
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const CRON_SECRET = Deno.env.get("META_PUBLISH_CRON_SECRET");
-const CLIENT_KEY = Deno.env.get("TIKTOK_CLIENT_KEY")!;
-const CLIENT_SECRET = Deno.env.get("TIKTOK_CLIENT_SECRET")!;
-const admin = createClient(URL, SERVICE, { auth: { persistSession: false } });
+const admin = createClient(SUPABASE_URL, SERVICE, { auth: { persistSession: false } });
+
+// كل صفحة (brand) لها تطبيق TikTok منفصل، بمفتاحين خاصين بيها في أسرار Supabase
+// (نفس آلية tiktok-auth). لما يتعمل تطبيق TikTok لصفحة د.دينا، يتضاف
+// TIKTOK_CLIENT_KEY_DR_DINA / TIKTOK_CLIENT_SECRET_DR_DINA بدون تعديل تاني هنا.
+const BRAND_ENV_SUFFIX: Record<string, string> = { sono: "SWNW", dr_dina: "DR_DINA" };
+function credsFor(brand: string) {
+  const envSuffix = BRAND_ENV_SUFFIX[brand] || brand.toUpperCase();
+  const key = Deno.env.get(`TIKTOK_CLIENT_KEY_${envSuffix}`);
+  const secret = Deno.env.get(`TIKTOK_CLIENT_SECRET_${envSuffix}`);
+  if (!key || !secret) return null;
+  return { key, secret };
+}
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
   status, headers: { "Content-Type": "application/json; charset=utf-8" }
@@ -17,12 +27,12 @@ type TikTokAccount = {
   access_token_expires_at:string; refresh_token_expires_at:string;
 };
 
-async function refreshIfNeeded(account:TikTokAccount):Promise<TikTokAccount> {
+async function refreshIfNeeded(account:TikTokAccount,creds:{key:string,secret:string}):Promise<TikTokAccount> {
   if (new Date(account.access_token_expires_at).getTime() > Date.now()+5*60*1000) return account;
   if (new Date(account.refresh_token_expires_at).getTime() <= Date.now()) throw new Error("انتهت صلاحية ربط TikTok. افصل الحساب وأعد ربطه.");
   const response=await fetch("https://open.tiktokapis.com/v2/oauth/token/",{
     method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},
-    body:new URLSearchParams({client_key:CLIENT_KEY,client_secret:CLIENT_SECRET,grant_type:"refresh_token",refresh_token:account.refresh_token})
+    body:new URLSearchParams({client_key:creds.key,client_secret:creds.secret,grant_type:"refresh_token",refresh_token:account.refresh_token})
   });
   const data=await response.json().catch(()=>({}));
   if(!response.ok||data.error||!data.access_token) throw new Error("تعذر تجديد صلاحية TikTok. أعد ربط الحساب من الداشبورد.");
@@ -73,7 +83,7 @@ async function loadVideo(source:string):Promise<{bytes:Uint8Array,type:string}>{
   if(id)res=await fetch("https://www.googleapis.com/drive/v3/files/"+encodeURIComponent(id)+"?alt=media&supportsAllDrives=true",{headers:{Authorization:"Bearer "+await driveToken()}});
   else{
     const u=new URL(source),m=/^\/storage\/v1\/object\/authenticated\/(content-designs|video-inputs)\/(.+)$/.exec(u.pathname);
-    if(u.origin===new URL(URL).origin&&m){const f=await admin.storage.from(m[1]).download(decodeURIComponent(m[2]));if(f.error||!f.data)throw new Error("تعذر تحميل ملف الفيديو من التخزين.");res=new Response(f.data,{headers:{"content-type":f.data.type}});}
+    if(u.origin===new URL(SUPABASE_URL).origin&&m){const f=await admin.storage.from(m[1]).download(decodeURIComponent(m[2]));if(f.error||!f.data)throw new Error("تعذر تحميل ملف الفيديو من التخزين.");res=new Response(f.data,{headers:{"content-type":f.data.type}});}
     else res=await fetch(source);
   }
   if(!res.ok)throw new Error("تعذر تحميل ملف الفيديو (HTTP "+res.status+").");
@@ -99,7 +109,9 @@ async function processJob(job:any){
     if(!content||content.content_format!=="video"||!content.design_file_url)throw new Error("النشر التلقائي على TikTok متاح للفيديوهات التي لها ملف معتمد فقط.");
     if(accountError)throw accountError;
     if(!rawAccount)throw new Error("اربط حساب TikTok لصفحة المحتوى من بطاقة النشر.");
-    const account=await refreshIfNeeded(rawAccount);
+    const creds=credsFor(job.brand);
+    if(!creds)throw new Error("تطبيق TikTok الخاص بهذه الصفحة مش مضبوط لسه.");
+    const account=await refreshIfNeeded(rawAccount,creds);
     const creator=await api("/v2/post/publish/creator_info/query/",account.access_token,{});
     if(!Array.isArray(creator.privacy_level_options)||!creator.privacy_level_options.includes(job.privacy_level))throw new Error("اختيار الخصوصية لم يعد متاحًا لهذا الحساب. افتح تفاصيل المادة واختر الخصوصية مرة أخرى.");
     if(creator.creator_can_post===false)throw new Error("حساب TikTok لا يستطيع النشر الآن. حاول لاحقًا.");
@@ -127,15 +139,21 @@ async function processJob(job:any){
     if(!duration)throw new Error("تعذر قراءة مدة الفيديو. استخدم ملف MP4 أو MOV صالحًا.");
     if(Number(creator.max_video_post_duration_sec)>0&&duration>Number(creator.max_video_post_duration_sec))throw new Error("مدة الفيديو ("+Math.ceil(duration)+" ثانية) تتجاوز الحد المسموح لهذا الحساب ("+creator.max_video_post_duration_sec+" ثانية).");
     const title=String(content.caption_text||content.body||content.title||"").slice(0,2200);
-    const chunkSize=10_000_000,total=Math.ceil(bytes.length/chunkSize);
+    // قاعدة TikTok الرسمية: total_chunk_count = floor(video_size / chunk_size)
+    // (مش ceil) — الباقي بينضم للتشانك الأخير. ولو النتيجة طلعت تشانك واحد
+    // بس (الفيديو كله في تشانك واحد)، لازم chunk_size يبقى = حجم الفيديو
+    // بالكامل (مش الحجم النظري 10MB) وإلا TikTok يرفض بـ"chunk size is invalid".
+    const CHUNK=10_000_000;
+    const total=Math.max(1,Math.floor(bytes.length/CHUNK));
+    const chunkSizeField=total===1?bytes.length:CHUNK;
     const init=await api("/v2/post/publish/video/init/",account.access_token,{
       post_info:{title,privacy_level:job.privacy_level,disable_comment:job.disable_comment,disable_duet:job.disable_duet,disable_stitch:job.disable_stitch,brand_content_toggle:job.branded_content,brand_organic_toggle:job.your_brand,is_aigc:false},
-      source_info:{source:"FILE_UPLOAD",video_size:bytes.length,chunk_size:Math.min(chunkSize,bytes.length),total_chunk_count:total}
+      source_info:{source:"FILE_UPLOAD",video_size:bytes.length,chunk_size:chunkSizeField,total_chunk_count:total}
     });
     if(!init.publish_id||!init.upload_url)throw new Error("TikTok لم يرجع رابط رفع صالحًا.");
     await admin.from("tiktok_publish_jobs").update({publish_id:init.publish_id,publish_status:"PROCESSING_UPLOAD",updated_at:new Date().toISOString()}).eq("id",job.id);
-    for(let start=0;start<bytes.length;start+=chunkSize){
-      const end=Math.min(bytes.length,start+chunkSize),part=bytes.slice(start,end);
+    for(let i=0;i<total;i++){
+      const start=i*chunkSizeField,end=(i===total-1)?bytes.length:start+chunkSizeField,part=bytes.slice(start,end);
       const up=await fetch(init.upload_url,{method:"PUT",headers:{"Content-Type":type,"Content-Length":String(part.length),"Content-Range":`bytes ${start}-${end-1}/${bytes.length}`},body:part});
       if(!up.ok)throw new Error("فشل رفع جزء الفيديو إلى TikTok (HTTP "+up.status+").");
     }
@@ -154,7 +172,7 @@ async function processJob(job:any){
 Deno.serve(async(req)=>{
   if(req.method!=="POST")return json({ok:false,error:"POST only"},405);
   if(!CRON_SECRET||req.headers.get("X-Cron-Secret")!==CRON_SECRET)return json({ok:false,error:"unauthorized"},401);
-  if(!SERVICE||!CLIENT_KEY||!CLIENT_SECRET)return json({ok:false,error:"TikTok worker is not configured"},500);
+  if(!SERVICE)return json({ok:false,error:"TikTok worker is not configured"},500);
   const {data:jobs,error}=await admin.rpc("claim_due_tiktok_publish_jobs",{p_limit:3});
   if(error)return json({ok:false,error:error.message},500);
   for(const job of jobs||[])await processJob(job);
