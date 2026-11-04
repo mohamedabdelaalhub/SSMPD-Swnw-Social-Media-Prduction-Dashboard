@@ -37,7 +37,7 @@ async function chatModel(agent:string,body:string,history:any[],rules:any[],revi
  }));
  const payload={incoming_message:safe(body,3000),conversation:convo,
   standing_instructions:rules.slice(0,14).map((x:any)=>safe(x.body,500)),
-  latest_aggregate_metrics:review?.metrics||{},metrics_review_date:review?.reviewed_at||null,
+  latest_aggregate_metrics:review?.metrics||{},metrics_review_date:review?.reviewed_at||null,metric_source:review?.source||null,
   operational_scope:"advisory_only",existing_runtime_access:false};
  const response=await fetch("https://api.openai.com/v1/responses",{
   method:"POST",headers:{"Authorization":"Bearer "+API,"Content-Type":"application/json"},
@@ -89,19 +89,23 @@ async function processMessage(db:any,id:string,onlyAgent:string|null=null){
       "awaiting_runtime","runtime_unavailable");
     return {agent,state:"awaiting_runtime",operational_delivery:false};
    }
-   const [r,ins]=await Promise.all([
+   const [r,ins,fresh]=await Promise.all([
     db.from("digital_agent_reviews").select("metrics,reviewed_at").eq("agent_code",agent)
       .order("reviewed_at",{ascending:false}).limit(1).maybeSingle(),
     db.from("digital_chat_instructions").select("body").eq("agent_code",agent)
-      .eq("status","advisory_active").order("created_at",{ascending:false}).limit(14)
+      .eq("status","advisory_active").order("created_at",{ascending:false}).limit(14),
+    db.rpc("digital_chat_aggregate_snapshot",{p_agent:agent})
    ]);
+   const contextSnapshot=fresh.data&&!fresh.error?{
+    metrics:fresh.data.metrics,reviewed_at:fresh.data.generated_at,source:fresh.data.source
+   }:r.data||null;
    if(!API){
     await append(db,thread,null,"blocker","محرك محادثة "+identities[agent].name+" غير متاح حاليًا.",id,
      "failed","system");
     return {agent,state:"failed"};
    }
    try{
-    const response=await chatModel(agent,message.body,context,ins.data||[],r.data||null);
+    const response=await chatModel(agent,message.body,context,ins.data||[],contextSnapshot);
     await append(db,thread,agent,"reply",response,id);
     return {agent,state:"responded"};
    }catch(_){
