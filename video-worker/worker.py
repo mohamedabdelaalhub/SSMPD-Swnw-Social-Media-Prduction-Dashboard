@@ -595,6 +595,14 @@ def ass_escape(text: str) -> str:
 def split_script(text: str) -> list[str]:
     chunks = re.split(r"(?<=[.!؟!])\s+|[\r\n]+", text.strip())
     chunks = [c.strip() for c in chunks if c.strip()]
+    # "د." is the doctor abbreviation, not a sentence end: keep it with the name that follows.
+    merged: list[str] = []
+    for chunk in chunks:
+        if merged and merged[-1].split()[-1:] == ["د."]:
+            merged[-1] = merged[-1] + " " + chunk
+        else:
+            merged.append(chunk)
+    chunks = merged
     if not chunks and text.strip():
         chunks = [text.strip()]
     return chunks

@@ -95,7 +95,7 @@ class ElevenTests(unittest.TestCase):
 
     def test_caption_keeps_doctor_abbreviation_with_name(self):
         chunks = worker.short_caption_chunks('تابعوا مع د. دينا حسني في العيادة اليوم.')
-        self.assertTrue(any('د. دينا' in chunk for chunk in chunks))
+        self.assertTrue(any('دكتور دينا حسني' in chunk for chunk in chunks))   # short_caption_chunks expands the abbreviation to the spoken form
         self.assertFalse(any(chunk.strip() == 'د.' for chunk in chunks))
 
     def test_ebaatlena_is_spoken_smoothly_without_changing_script(self):
