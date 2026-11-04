@@ -85,7 +85,7 @@ begin
 end;
 $$;
 
--- Transition guard v3. It applies ONLY when the statement runs as the database role service_role, i.e. a worker writing through PostgREST with a
+-- Transition guard v3 (created DISABLED, see the end of this block). It applies ONLY when the statement runs as the database role service_role, i.e. a worker writing through PostgREST with a
 -- service_role key (an OLD worker, or a zombie). It is keyed on current_user (a real role switch made by PostgREST from the verified JWT), NOT on
 -- JWT claims or a settable GUC, so nothing a client can send makes a statement exempt.
 -- Exempt by construction: the SECURITY DEFINER functions (they run as their owner, not as service_role): claim_next_video_job and its stale
@@ -111,6 +111,9 @@ $$;
 drop trigger if exists video_jobs_fence_guard on public.video_jobs;
 create trigger video_jobs_fence_guard before update on public.video_jobs
   for each row execute function public.video_jobs_fence_guard();
+-- INITIAL STATE = DISABLED (review #106): the guard is created but NOT active. Enabling it is a separate, later step that needs an independent security review:
+--   alter table public.video_jobs enable trigger video_jobs_fence_guard;
+alter table public.video_jobs disable trigger video_jobs_fence_guard;
 
 revoke all on function public.claim_next_video_job_fenced(text,integer) from public, anon, authenticated;
 revoke all on function public.video_job_update_fenced(uuid,uuid,jsonb) from public, anon, authenticated;
@@ -129,6 +132,7 @@ as $$
 declare
   cur public.video_jobs%rowtype;
   updated public.video_jobs%rowtype;
+  cand jsonb;
 begin
   if coalesce(auth.role(), '') <> 'service_role' then
     raise exception 'service_role required';
@@ -141,7 +145,13 @@ begin
   end if;
   select * into cur from public.video_jobs where id = p_job_id for update;
   if found and cur.claim_token = p_claim_token and cur.committed_attempt = p_attempt and cur.status = 'ready' then
-    return to_jsonb(cur);                                  -- idempotent retry of the winning commit
+    -- idempotent retry of the winning commit; it also RESTORES the cover-candidate rows (reconciliation after an unknown outcome), winner only
+    for cand in select * from jsonb_array_elements(coalesce(p_result -> 'cover_candidates', '[]'::jsonb)) loop
+      insert into public.video_cover_candidates (id, job_id, candidate_index, timestamp_seconds, storage_path, drive_url)
+      values (coalesce((cand ->> 'id')::uuid, gen_random_uuid()), p_job_id, (cand ->> 'candidate_index')::integer, (cand ->> 'timestamp_seconds')::numeric, cand ->> 'storage_path', cand ->> 'drive_url')
+      on conflict (job_id, candidate_index) do update set timestamp_seconds = excluded.timestamp_seconds, storage_path = excluded.storage_path, drive_url = excluded.drive_url;
+    end loop;
+    return to_jsonb(cur);
   end if;
   if not found or cur.claim_token is distinct from p_claim_token or cur.status not in ('preparing','rendering','uploading') then
     raise exception 'stale claim: the job was reclaimed, finished or the token is wrong';
@@ -154,6 +164,12 @@ begin
       archived_at = now(), render_finished_at = now(), progress_percent = 100, progress_stage = 'اكتمل'
   where v.id = p_job_id
   returning v.* into updated;
+  -- same transaction: either the job becomes ready WITH its candidate rows or nothing changes (a bad candidate rolls the whole commit back)
+  for cand in select * from jsonb_array_elements(coalesce(p_result -> 'cover_candidates', '[]'::jsonb)) loop
+    insert into public.video_cover_candidates (id, job_id, candidate_index, timestamp_seconds, storage_path, drive_url)
+    values (coalesce((cand ->> 'id')::uuid, gen_random_uuid()), p_job_id, (cand ->> 'candidate_index')::integer, (cand ->> 'timestamp_seconds')::numeric, cand ->> 'storage_path', cand ->> 'drive_url')
+    on conflict (job_id, candidate_index) do update set timestamp_seconds = excluded.timestamp_seconds, storage_path = excluded.storage_path, drive_url = excluded.drive_url;
+  end loop;
   return to_jsonb(updated);
 end;
 $$;
