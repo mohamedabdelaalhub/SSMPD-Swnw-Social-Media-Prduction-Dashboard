@@ -90,7 +90,7 @@ class ElevenTests(unittest.TestCase):
 
     def test_short_caption_chunks_use_five_words_or_fewer(self):
         chunks = worker.short_caption_chunks('إحنا هنا عشان نسمعك ونفهم إيه اللي تاعبك ونشرح لك كل خطوة.')
-        self.assertEqual(chunks, ['إحنا هنا عشان نسمعك ونفهم', 'إيه اللي تاعبك ونشرح لك', 'كل خطوة.'])
+        self.assertEqual(chunks, ['إحنا هنا عشان نسمعك ونفهم', 'إيه اللي تاعبك ونشرح لك', 'كل خطوة'])   # captions are intentionally free of trailing punctuation (docstring of short_caption_chunks)
         self.assertTrue(all(len(chunk.split()) <= 5 for chunk in chunks))
 
     def test_caption_keeps_doctor_abbreviation_with_name(self):

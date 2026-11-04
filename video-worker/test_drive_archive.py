@@ -30,7 +30,8 @@ class ArchiveTests(unittest.TestCase):
     def test_ready_requires_video_and_cover_without_staging(self, *_):
         with patch.object(worker, 'archive_upload', return_value=self.result) as upload, \
              patch.object(worker, 'update_job') as update, \
-             patch.object(worker, 'upload_mp4') as stage, patch.dict(os.environ, {}, clear=True):
+             patch.object(worker, 'upload_mp4') as stage, patch.dict(os.environ, {}, clear=True), \
+             patch('cover_candidates.build', return_value=[]):   # cover rendering needs a title and background.mp4 now; this test covers the archive flow only
             worker.archive_rendered_job('url', 'key', self.job, self.output)
         self.assertEqual([call.args[2] for call in upload.call_args_list], ['video', 'cover'])
         stage.assert_not_called()
@@ -87,6 +88,7 @@ class ArchiveTests(unittest.TestCase):
 
     def test_enabled_covers_require_brand_logo(self):
         import cover_candidates
+        self.output.with_name('background.mp4').write_bytes(b'visual-track')   # build() now requires the approved visual track before it checks the logo
         with self.assertRaisesRegex(RuntimeError, 'brand logo'):
             cover_candidates.build(dict(self.job, title='Title', cover_settings={'enabled': True}), self.output, 'ffmpeg', 10)
 
