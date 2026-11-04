@@ -1,5 +1,6 @@
 """ElevenLabs TTS. Credentials remain in the current Mac user's Keychain."""
 import getpass
+from secret_source import env_or_file
 import json
 import os
 from pathlib import Path
@@ -22,7 +23,7 @@ class ElevenTTSError(RuntimeError):
 
 
 def config():
-    key = os.environ.get("SSMPD_ELEVENLABS_API_KEY", "").strip()
+    key = env_or_file("SSMPD_ELEVENLABS_API_KEY")
     if not key and sys.platform == "darwin":
         result = subprocess.run(
             ["/usr/bin/security", "find-generic-password", "-s",
@@ -41,7 +42,7 @@ def config():
 
 def synthesize(script: str, output: Path, key: str, voice: str):
     if not key:
-        raise ElevenTTSError("مفتاح ElevenLabs غير محفوظ في Keychain.")
+        raise ElevenTTSError("مفتاح ElevenLabs غير مضبوط (SSMPD_ELEVENLABS_API_KEY أو SSMPD_ELEVENLABS_API_KEY_FILE أو Keychain على macOS).")
     if not re.fullmatch(r"[A-Za-z0-9]{20}", voice):
         raise ElevenTTSError("معرّف صوت ElevenLabs غير صالح.")
     if not script.strip():

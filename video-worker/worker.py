@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import argparse
+from secret_source import env_or_file
 import eleven_tts
 import image_storyboard
 import studio_storyboard
@@ -58,6 +59,8 @@ def run(cmd: list[str], check: bool = True) -> subprocess.CompletedProcess[str]:
 
 
 def keychain_get(account: str) -> str:
+    if sys.platform != "darwin" or not shutil.which("security"):
+        return ""
     p = subprocess.run(
         ["security", "find-generic-password", "-s", KEYCHAIN_SERVICE, "-a", account, "-w"],
         text=True,
@@ -67,18 +70,18 @@ def keychain_get(account: str) -> str:
 
 
 def config() -> tuple[str, str]:
-    url = os.environ.get("SSMPD_SUPABASE_URL", "").strip() or keychain_get(KEYCHAIN_URL_ACCOUNT)
-    key = os.environ.get("SSMPD_SUPABASE_SERVICE_ROLE_KEY", "").strip() or keychain_get(KEYCHAIN_KEY_ACCOUNT)
+    url = env_or_file("SSMPD_SUPABASE_URL") or keychain_get(KEYCHAIN_URL_ACCOUNT)
+    key = env_or_file("SSMPD_SUPABASE_SERVICE_ROLE_KEY") or keychain_get(KEYCHAIN_KEY_ACCOUNT)
     if not url:
-        raise WorkerError("Supabase URL is not configured in Keychain.")
+        raise WorkerError("Supabase URL is not configured (SSMPD_SUPABASE_URL, SSMPD_SUPABASE_URL_FILE or the macOS Keychain).")
     if not key:
-        raise WorkerError("Supabase service_role key is not configured in Keychain.")
+        raise WorkerError("Supabase service_role key is not configured (SSMPD_SUPABASE_SERVICE_ROLE_KEY, SSMPD_SUPABASE_SERVICE_ROLE_KEY_FILE or the macOS Keychain).")
     return url.rstrip("/"), key
 
 
 def azure_tts_config() -> tuple[str, str, str]:
-    key = os.environ.get("SSMPD_AZURE_SPEECH_KEY", "").strip() or keychain_get(KEYCHAIN_AZURE_TTS_KEY_ACCOUNT)
-    region = os.environ.get("SSMPD_AZURE_SPEECH_REGION", "").strip() or keychain_get(KEYCHAIN_AZURE_TTS_REGION_ACCOUNT)
+    key = env_or_file("SSMPD_AZURE_SPEECH_KEY") or keychain_get(KEYCHAIN_AZURE_TTS_KEY_ACCOUNT)
+    region = env_or_file("SSMPD_AZURE_SPEECH_REGION") or keychain_get(KEYCHAIN_AZURE_TTS_REGION_ACCOUNT)
     voice = (
         os.environ.get("SSMPD_AZURE_TTS_VOICE", "").strip()
         or keychain_get(KEYCHAIN_AZURE_TTS_VOICE_ACCOUNT)
@@ -1203,7 +1206,10 @@ def main() -> int:
                 if probe_duration(ffprobe, audio) <= 0:
                     raise WorkerError("تعذر قراءة مدة الصوت.")
                 print("تم توليد الصوت من ElevenLabs. جاري التشغيل.", flush=True)
-                subprocess.run(["/usr/bin/afplay", str(audio)], check=True)
+                if sys.platform != "darwin" or not Path("/usr/bin/afplay").exists():
+                    print("تم توليد الصوت. التشغيل المباشر متاح على macOS فقط؛ لم يُشغَّل الصوت.")
+                else:
+                    subprocess.run(["/usr/bin/afplay", str(audio)], check=True)
             print("اختبار الصوت اكتمل. لم يتم تشغيل أي مهمة فيديو.")
             return 0
         except Exception as error:
