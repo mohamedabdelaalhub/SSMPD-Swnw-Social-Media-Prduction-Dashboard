@@ -13,8 +13,8 @@ const fixture=()=>'<div id="tabs-bar" style="display:none"><button class="tab-bt
   d.getElementById('app-root').innerHTML=fixture();
   d.dispatchEvent(new w.Event('DOMContentLoaded'));
   await sleep(40);
-  assert(d.querySelector('#tabs-bar [data-digital-team-tab]'),'desktop tab is mounted');
-  assert(d.querySelector('#mobile-menu [data-digital-team-tab]'),'mobile tab is mounted');
+  assert(!d.querySelector('#tabs-bar [data-digital-team-tab]'),'team does not occupy content tabs');
+  assert(!d.querySelector('#mobile-menu [data-digital-team-tab]'),'team does not occupy mobile content tabs');
   assert(d.querySelector('#user-dropdown [data-digital-team-tab]'),'visible account menu entry exists even when tab strip hidden');
   d.querySelector('#user-dropdown [data-digital-team-tab]').click();
   await sleep(20);
@@ -22,7 +22,7 @@ const fixture=()=>'<div id="tabs-bar" style="display:none"><button class="tab-bt
   assert.equal(d.getElementById('tabs-bar').style.display,'','team tab is visible when selected');
   d.getElementById('app-root').innerHTML=fixture();
   await sleep(40);
-  assert.equal(d.querySelectorAll('#tabs-bar [data-digital-team-tab]').length,1,'tab recreated once after shell rerender');
+  assert.equal(d.querySelectorAll('#tabs-bar [data-digital-team-tab]').length,0,'management page stays outside content tabs');
   assert.equal(d.querySelectorAll('#user-dropdown [data-digital-team-tab]').length,1,'menu entry recreated once after shell rerender');
   const sia=fs.readFileSync('assets/js/sia-ui.js','utf8'),employee=fs.readFileSync('assets/js/employee-assistant.js','utf8');
   assert(sia.includes('M12 7V4'),'Sia uses robot assistant glyph instead of add-person');

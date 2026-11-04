@@ -105,8 +105,6 @@
   }
   function mount(){
     if(!manager())return;
-    nav(document.getElementById('tabs-bar'),'tab-btn p360-tab');
-    nav(document.querySelector('#mobile-menu .mm-tabs'),'tab-btn p360-tab');
     nav(document.querySelector('#user-dropdown .ud-items'),'ud-item p360-menu');
   }
   function init(){

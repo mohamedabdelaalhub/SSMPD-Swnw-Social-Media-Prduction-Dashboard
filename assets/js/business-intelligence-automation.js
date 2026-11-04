@@ -74,9 +74,6 @@
   function ensureNavigation(){
     if(!manager())return;
     var bar=document.getElementById('tabs-bar');
-    if(bar&&!bar.querySelector('[data-tab="business_intelligence"]')){
-      var b=document.createElement('button');b.className='tab-btn';b.dataset.tab='business_intelligence';b.textContent='ذكاء الإدارة';b.onclick=openBusinessIntelligence;bar.appendChild(b);
-    }
     var items=document.querySelector('#user-dropdown .ud-items');
     if(items&&!items.querySelector('[data-goto="business_intelligence"]')){
       var m=document.createElement('button');m.className='ud-item';m.dataset.goto='business_intelligence';m.textContent='ذكاء الإدارة';m.onclick=function(e){e.preventDefault();openBusinessIntelligence();};
