@@ -166,7 +166,16 @@ function handleTaskAttachmentUpload_(payload) {
   var bytes = Utilities.base64Decode(payload.base64);
   var file = monthFolder.createFile(Utilities.newBlob(bytes, mimeType, fileName));
   file.setDescription("SSMPD Task attachment | taskId: " + (payload.taskId || "") + " | " + (payload.contentTitle || ""));
-  return jsonOut({ ok: true, fileUrl: file.getUrl(), folderUrl: monthFolder.getUrl(), fileId: file.getId() });
+  // Grant READ-ONLY access to the dedicated task-scanning service account, never public access.
+  // Upload success must not depend on analytics or permission transport.
+  var scanShare = "granted";
+  try {
+    file.addViewer("dashboard-drive-access@swnw-operations-dashboard.iam.gserviceaccount.com");
+  } catch (scanError) {
+    scanShare = "needs_access";
+    console.warn("Task file scan viewer grant failed: " + String(scanError && scanError.message || scanError));
+  }
+  return jsonOut({ ok: true, fileUrl: file.getUrl(), folderUrl: monthFolder.getUrl(), fileId: file.getId(), scanShare: scanShare });
 }
 
 // أرشفة وسائط محتوى منشور (بتتنادى من Edge Function content-archive-process بعد يومين من النشر):
