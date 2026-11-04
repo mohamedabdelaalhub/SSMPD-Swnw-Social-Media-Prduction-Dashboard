@@ -10,7 +10,7 @@ async function taskAttachmentPreview(file){
     if(ext==='txt'){result=(await file.text()).slice(0,12000);}
     else {
       if(!root.XLSX||!root.XLSX.read||!root.XLSX.utils||!root.XLSX.utils.sheet_to_json)return '';
-      var buf=await file.arrayBuffer(),wb=root.XLSX.read(buf,{type:'array',cellFormula:false,cellHTML:false});
+      var buf=await file.arrayBuffer(),wb=root.XLSX.read(buf,{type:'array',cellFormula:false,cellHTML:false,sheetRows:95});
       var parts=[];
       for(var name of wb.SheetNames.slice(0,3)){
         var rows=root.XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,raw:false,defval:'',blankrows:false});
