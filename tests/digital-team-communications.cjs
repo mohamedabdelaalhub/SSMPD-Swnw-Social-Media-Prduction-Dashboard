@@ -30,6 +30,7 @@ async function main(){
   events.push({id:'e100',dispatch_id:dispatches[0].id,from_agent_code:'hotep',to_agent_code:'sia',message_type:'handoff_answer',content:'راجع شكوى المريض مع التشغيل',provenance:'agent_ai',created_at:new Date().toISOString()});
   return {data:{ok:true,dispatches:dispatches.map(x=>({id:x.id,state:x.state})),external_actions_executed:false},error:null};
  }}};
+ w.SSMPDDigitalTeam={isOwner:()=>true};
  w.SSMPD_CONFIG={supabase:{url:'https://local.invalid',anonKey:'mock'}};
  w.supabase={createClient:()=>client};
  w.eval(fs.readFileSync('assets/js/digital-team-communications.js','utf8'));
