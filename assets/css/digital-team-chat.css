@@ -93,3 +93,4 @@ body.sw-management-view #tabs-bar,body.sw-management-view #mobile-menu .mm-tabs{
  .swnw-scan-summary{padding:12px}.ss-counters{gap:5px}.ss-counters>div{padding:10px}.ss-counters b{font-size:19px}
  .ss-file summary{gap:7px}.ss-head h2{font-size:18px}
 }
+.dc-simulated{font-size:10px;font-weight:600;padding:3px 6px;border-radius:6px;border:1px solid var(--c-border,#d9e0e7);color:var(--c-muted,#667085);background:var(--c-soft,#f2f5f9)}
