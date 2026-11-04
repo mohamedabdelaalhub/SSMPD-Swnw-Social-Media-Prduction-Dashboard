@@ -32,6 +32,7 @@ jobs:
         run: |
           node tests/digital-team-navigation.cjs
           node tests/patient360-navigation.cjs
+          node tests/specialist-agent-reviews.cjs
 
   tests:
     runs-on: ubuntu-24.04
