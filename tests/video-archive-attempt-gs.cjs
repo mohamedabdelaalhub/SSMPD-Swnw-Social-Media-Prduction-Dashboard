@@ -44,5 +44,29 @@ let n=0;const ok=m=>{n++;console.log('PASS',m);};
  assert.equal(clean([3]).removed,0);ok('G10 cleanup of a never-staged attempt is a no-op');
  assert.throws(()=>att(1,'video',Buffer.from('x'),{sha256:'0'.repeat(64)}),/Checksum mismatch/);assert.throws(()=>att(0,'video',Buffer.from('x')),/Invalid attempt/);assert.throws(()=>att(1,'video',Buffer.from('x'),{jobId:'nope'}),/Invalid video identity/);assert.throws(()=>att(1,'evil',Buffer.from('x')),/Invalid archive kind/);ok('G11 validation: checksum, attempt, identity, kind');
  const jf=clean([9],{jobId:'33333333-3333-3333-3333-333333333333'});assert.equal(jf.removed,0);ok('G12 cleanup for an unknown job does not create folders and removes nothing');
+
+ // ---- adversarial / race cases (review #108). Apps Script serialises calls with the script lock, so races are modelled as the two possible orders.
+ const JOB2='44444444-4444-4444-4444-444444444444';
+ const att2=(attempt,kind,bytes)=>JSON.parse(sandbox.handleVideoArchiveAttempt_({jobId:JOB2,contentId:CONTENT,brand:'sono',createdAt:'2026-09-08T00:00:00Z',contentTitle:'t',attempt,kind,sha256:sha(bytes),base64:Buffer.from(bytes).toString('base64')}).s);
+ const jf2=()=>ROOT.folders[0].folders[0].folders[0].folders[0].folders.find(f=>f.n===CONTENT+'_'+JOB2);
+ att2(1,'video',Buffer.from('J2-A1'));att2(2,'video',Buffer.from('J2-A2'));
+ const before=names(jf2()).join();clean([2]);assert.equal(names(jf2()).join(),before);ok('R1 cleanup for job A never touches job B folders (cross-job isolation, same brand/date)');
+ att(2,'video',Buffer.from('A2-RESTAGED'));   // R1 removed job A's attempt-02 on purpose; stage it again as the 'committed' attempt
+ // order 1: cleanup(1) then a LATE stage for attempt 1 (a zombie still uploading): the folder is re-created but is never referenced by the DB, and attempt-02 is untouched
+ clean([1],{keepAttempt:2});att(1,'video',Buffer.from('ZOMBIE-LATE'));assert.ok(names(jobFolder()).includes('attempt-01')&&names(jobFolder()).includes('attempt-02'));ok('R2 late zombie stage after cleanup re-creates only ITS attempt folder; the committed attempt is untouched');
+ // order 2: stage then cleanup of the same attempt
+ clean([1],{keepAttempt:2});assert.deepEqual(names(jobFolder()),['attempt-02']);ok('R3 the other order (stage, then cleanup) leaves only the committed attempt');
+ // duplicates / odd lists
+ assert.equal(clean([1,1,1],{keepAttempt:2}).removed,0);ok('R4 duplicate attempt numbers in one cleanup call are harmless');
+ assert.throws(()=>clean([2,3],{keepAttempt:2}),/Refusing to remove the kept attempt/);assert.ok(names(jobFolder()).includes('attempt-02'));ok('R5 keepAttempt wins even when it is mixed into a larger list (nothing is removed, call refused)');
+ // a non-attempt folder with a similar name is never touched
+ jobFolder().createFolder('attempt-02-backup');jobFolder().createFolder('attempt-2');jobFolder().createFolder('final');
+ clean([2]);const left=names(jobFolder());assert.ok(left.includes('attempt-02-backup')&&left.includes('attempt-2')&&left.includes('final')&&!left.includes('attempt-02'));ok('R6 cleanup matches the exact folder name attempt-NN only (similar names, final/ and other folders are never touched)');
+ // trashed folders are not resurrected and re-staging creates a fresh one
+ att(2,'video',Buffer.from('A2-REDO'));assert.ok(names(jobFolder()).includes('attempt-02'));ok('R7 after trashing attempt-02 a new stage creates a fresh attempt-02 (trashed folders are ignored, no conflict with old bytes)');
+ // hostile text fields cannot escape the folder structure
+ const h=JSON.parse(sandbox.handleVideoArchiveAttempt_({jobId:JOB,contentId:CONTENT,brand:'../../Etc/..\\x',createdAt:'2026-09-08T00:00:00Z',contentTitle:"x'; DROP --",attempt:3,kind:'video',sha256:sha(Buffer.from('H')),base64:Buffer.from('H').toString('base64')}).s);
+ assert.equal(h.ok,true);const brands=ROOT.folders[0].folders.map(f=>f.n);assert.ok(brands.every(b=>!/[\/\\]/.test(b)));ok('R8 hostile brand text is sanitised into a single folder name (no path separators), title text is only stored in the description');
+ console.log('PASS adversarial/race cases R1-R8');
  console.log('PASS draft Apps Script attempt actions: '+n+' checks against the real Code.gs helpers and legacy handler');
 })().catch(e=>{console.error(e);process.exit(1);});
