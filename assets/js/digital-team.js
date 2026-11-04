@@ -305,10 +305,7 @@
     b.setAttribute('data-digital-team-tab','1');b.textContent=label;b.onclick=open;
     parent.appendChild(b);
   }
-  function mount(){
-    var a=currentAdmin();if(!a||!isManager(a))return;
-    addNav(document.querySelector('#user-dropdown .ud-items'),'ud-item dt-dropdown-tab','الفريق الرقمي');
-  }
+  function mount(){return; /* Navigation lives only in SSMPDManagementNavigation. */}
   function start(){
     mount();
     if(navObserver)return;
