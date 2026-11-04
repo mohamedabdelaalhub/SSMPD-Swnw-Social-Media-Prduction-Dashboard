@@ -141,15 +141,20 @@
       var live=x.live_enabled===true,comms=x.communications_enabled===true;
       body='<div class="dt-stats">'+stat('التشغيل',live?'مفعل':'غير مفعل')+stat('التواصل',comms?'مفعل':'غير مفعل')+stat('رسائل معلقة',n(x.pending_messages))+stat('رسائل فشلت',n(x.failed_messages))+stat('طلبات مساعدة',n(x.open_help_requests))+stat('مكالمات غير محلولة',n(x.unresolved_missed_calls))+'</div><div class="dt-foot"><span>وكيل خدمة العملاء والحجز</span><span>بدون حساب دخول للداشبورد</span></div>';
     }
-    return '<article class="dt-member">'+head+'<p class="dt-authority">'+esc(m.authority_note||'')+'</p>'+body+siaEvidenceBlock(m)+discussionBlock(m)+'</article>';
+    return '<article class="dt-member" data-dt-agent-code="'+esc(m.code)+'">'+head+'<p class="dt-authority">'+esc(m.authority_note||'')+'</p>'+body+siaEvidenceBlock(m)+(isOwner?'<div class="dt-agent-chat"><button type="button" data-open-digital-chat="'+esc(m.code)+'">محادثة مع '+esc(m.display_name)+'</button></div>':'')+'</article>';
   }
   function render(data){
     var view=document.getElementById('view-container');if(!view)return;
     var members=Array.isArray(data&&data.members)?data.members:[];
     cachedData=data;
-    view.innerHTML='<section class="digital-team" dir="rtl"><header class="dt-hero"><div><p class="dt-eyebrow">Swnw Digital Team</p><h1>الفريق الرقمي</h1><p>هويات تشغيلية واضحة، صلاحيات منفصلة، ومؤشرات خاصة بكل وكيل.</p></div><div class="dt-hero-actions"><button class="btn ghost sm" data-dt-refresh type="button">تحديث</button></div></header><div class="dt-principles"><span>Claude Creative مرتبط بحسابه الحالي بدون تغيير</span><span>الوكلاء الرقميون خارج الحضور والرواتب البشرية</span><span>كل إجراء له مصدر صلاحية واضح</span></div><div class="dt-grid">'+members.map(memberCard).join('')+'</div><div class="dt-global-status" data-dt-global-status></div></section>';
+    view.innerHTML='<section class="digital-team" dir="rtl"><header class="dt-hero"><div><p class="dt-eyebrow">Swnw Digital Team</p><h1>الفريق الرقمي</h1><p>هويات تشغيلية واضحة، صلاحيات منفصلة، ومؤشرات خاصة بكل وكيل.</p></div><div class="dt-hero-actions">'+(isOwner?'<button class="dt-group-chat-button" type="button" data-dt-open-group>دردشة جماعية</button>':'')+'<button class="btn ghost sm" data-dt-refresh type="button">تحديث</button></div></header><div class="dt-principles"><span>Claude Creative مرتبط بحسابه الحالي بدون تغيير</span><span>الوكلاء الرقميون خارج الحضور والرواتب البشرية</span><span>كل إجراء له مصدر صلاحية واضح</span></div><div class="dt-grid">'+members.map(memberCard).join('')+'</div><div class="dt-global-status" data-dt-global-status></div></section>';
     var b=view.querySelector('[data-dt-refresh]');if(b)b.onclick=load;
     w.dispatchEvent(new Event('ssmpd-digital-team-rendered'));
+    view.querySelectorAll('[data-open-digital-chat]').forEach(function(btn){
+      btn.onclick=function(){w.SSMPDDigitalChat?.openDirect(btn.getAttribute('data-open-digital-chat'));};
+    });
+    var groupChat=view.querySelector('[data-dt-open-group]');
+    if(groupChat)groupChat.onclick=function(){w.SSMPDDigitalChat?.openGroup();};
 
     view.querySelectorAll('[data-dt-run]').forEach(function(btn){
       btn.onclick=function(){runReview(btn.getAttribute('data-dt-run'),btn);};
@@ -283,7 +288,7 @@
       var r=await db.rpc('digital_team_dashboard');if(r.error)throw r.error;
       cachedData=r.data||{};render(cachedData);
       try{await latest();}catch(e){var el=document.querySelector('[data-dt-global-status]');if(el)el.textContent='مراجعات الوكلاء الأربعة غير متاحة مؤقتًا: '+(e.message||e);}
-      try{await loadMessages();}catch(e){var el2=document.querySelector('[data-dt-global-status]');if(el2)el2.textContent='سجل المناقشات غير متاح مؤقتًا: '+(e.message||e);}
+      // New chat is backed by separate owner-only threads and does not use the old advisory forms.
     }catch(e){view.innerHTML='<div class="dt-loading">تعذر تحميل الفريق الرقمي: '+esc(e.message||e)+'</div>';}
   }
   function open(){
