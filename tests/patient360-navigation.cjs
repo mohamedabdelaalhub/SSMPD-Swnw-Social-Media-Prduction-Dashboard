@@ -19,7 +19,7 @@ async function run(){
  w.eval(fs.readFileSync('assets/js/patient360.js','utf8'));
  d.dispatchEvent(new w.Event('DOMContentLoaded'));await sleep(20);
  assert(d.querySelector('#user-dropdown [data-p360-nav]'),'manager account menu entry');
- assert(d.querySelector('#mobile-menu [data-p360-nav]'),'mobile entry');
+ assert(!d.querySelector('#mobile-menu [data-p360-nav]'),'patient 360 stays outside mobile content tabs');
  d.querySelector('#user-dropdown [data-p360-nav]').click();await sleep(35);
  assert(d.querySelector('[data-p360-root]'),'Patient 360 opens');
  assert(d.querySelector('.p360-message-body').textContent.includes('مواعيد الخدمة'),'message history shown');
