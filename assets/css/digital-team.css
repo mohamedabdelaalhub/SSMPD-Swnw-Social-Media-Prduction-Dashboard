@@ -56,3 +56,16 @@
 .dt-detail-breakdown{display:grid;gap:6px;margin:12px 0}
 .dt-detail-row{display:flex;justify-content:space-between;align-items:center;padding:10px;background:var(--c-soft,#f3f7fc);border-radius:8px;font-size:12px}
 @media(max-width:650px){.dt-detail-dialog{padding:15px}.dt-chat-message{max-width:100%}}
+
+
+.dt-sia-evidence{margin-top:12px;border-top:1px solid var(--c-border,#d9e0e7);padding-top:14px}
+.dt-sia-evidence summary{cursor:pointer;font-size:13px;font-weight:700}
+.dt-sia-evidence-body{display:grid;gap:10px;padding-top:12px}
+.dt-sia-evidence select{width:100%;padding:10px;background:var(--c-card,#fff);color:inherit;border:1px solid var(--c-border,#d9e0e7);border-radius:9px;font:inherit;font-size:12px}
+.dt-sia-evidence button{justify-self:start}
+.dt-sia-evidence-status{font-size:12px;color:var(--c-muted,#667085);line-height:1.7}
+.dt-sia-evidence-output h4{font-size:14px;margin:8px 0}
+.dt-sia-evidence-output p{font-size:12px;line-height:1.8;white-space:pre-wrap}
+.dt-evidence-difference{margin:8px 0;border:1px solid var(--c-border,#d9e0e7);padding:10px;border-radius:9px}
+.dt-evidence-difference b{font-size:12px;display:block}
+.dt-evidence-difference small{font-size:11px;display:block;margin-top:5px;line-height:1.7}
