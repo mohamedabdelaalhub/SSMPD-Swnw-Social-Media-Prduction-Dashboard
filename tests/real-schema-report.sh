@@ -27,5 +27,17 @@ while IFS=$'\t' read -r b n first; do echo "$(classify "$first")"; done < "$D/fi
 echo "-- video-related migrations (file name matches video|claim|worker|cover|studio|storyboard):"
 grep -iE "video|claim|worker|cover|studio|storyboard" "$D/files.tsv" | while IFS=$'\t' read -r b n first; do echo "  $(classify "$first") | $b | errors=$n | $first" | cut -c1-200; done
 echo "-- FAILING migrations that reference video_jobs (fixture gaps that could matter for this review):"; awk -F'\t' '$3!="OK"{print $1}' "$D/files.tsv" | while read -r b; do grep -q "video_jobs" "$ROOT/supabase/migrations/$b" && echo "  $b: $(awk -F'\t' -v x="$b" '$1==x{print $3}' "$D/files.tsv" | cut -c1-110)"; done
+
+echo "-- root cause per failing file: missing object -> where the repo creates it (or NONE-IN-REPO = other project / applied by hand):"
+awk -F'\t' '$3!="OK"{print $1"\t"$3}' "$D/files.tsv" | while IFS=$'\t' read -r b first; do
+  obj=$(echo "$first" | sed -nE 's/.*(relation|function|schema|extension|column) "?([A-Za-z0-9_.]+)"?.*/\2/p' | head -1)
+  short=${obj##*.}; kind=$(echo "$first" | sed -nE 's/.*(relation|function|schema|extension|column).*/\1/p' | head -1)
+  if [ -z "$obj" ]; then where="(no object named: $(echo "$first" | cut -c1-60))"
+  elif [ "$kind" = schema ]; then where=$(grep -lE "create schema( if not exists)? $short\b" "$ROOT"/supabase/setup.sql "$ROOT"/supabase/migrations/*.sql 2>/dev/null | head -1 | xargs -I{} basename {}); [ -z "$where" ] && where="NONE-IN-REPO (Supabase-managed or other project)"
+  elif [ "$kind" = extension ]; then where="NONE-IN-REPO (Supabase extension)"
+  else where=$(grep -liE "create (or replace )?(table|function|view)( if not exists)? (public\.|clinic_[a-z]+\.)?$short\b" "$ROOT"/supabase/setup.sql "$ROOT"/supabase/migrations/*.sql 2>/dev/null | head -1 | xargs -I{} basename {}); [ -z "$where" ] && where="NONE-IN-REPO"; fi
+  echo "  $b: needs $obj -> ${where:-NONE-IN-REPO}" | cut -c1-210
+done | sort | uniq
+echo "-- video relevance of the failures: failing files mentioning video_jobs/video_cover_candidates/video_assets/claim_next_video_job: $(awk -F'\t' '$3!="OK"{print $1}' "$D/files.tsv" | while read -r b; do grep -lE "video_jobs|video_cover_candidates|video_assets|claim_next_video_job" "$ROOT/supabase/migrations/$b"; done | wc -l | tr -d ' ')"
 [ "${1:-}" = "--list" ] && { echo "-- all failing files:"; awk -F'\t' '$3!="OK"' "$D/files.tsv" | while IFS=$'\t' read -r b n first; do echo "  $(classify "$first") | $b | $first" | cut -c1-170; done; }
 echo "-- statements of video_jobs final shape present? media_mode check: $(P -c "select pg_get_constraintdef(oid) from pg_constraint where conname='video_jobs_media_mode_check'" | grep -c studio_storyboard) (1 = latest migration applied); claim versions: $(P -c "select count(*) from pg_proc where proname='claim_next_video_job'")"
