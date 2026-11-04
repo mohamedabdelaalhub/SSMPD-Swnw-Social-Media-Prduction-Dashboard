@@ -316,6 +316,6 @@
     navObserver=new MutationObserver(mount);
     navObserver.observe(host,{childList:true});
   }
-  w.SSMPDDigitalTeam={open:open,refresh:load};
+  w.SSMPDDigitalTeam={open:open,refresh:load,isOwner:function(){return isOwner;}};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
 })(window);
