@@ -31,41 +31,59 @@ CAND_A=$(P -c "select id from public.video_cover_candidates where job_id='$JA'")
 snap() { P -c "select md5(coalesce((select string_agg(t::text,';' order by id) from public.video_jobs t),'')||coalesce((select string_agg(t::text,';' order by id) from public.video_cover_candidates t),'')||coalesce((select string_agg(t::text,';' order by id) from public.video_assets t),'')||coalesce((select string_agg(t::text,';' order by id) from public.content_items t),''))"; }
 as() { local role="$1" uid="$2"; shift 2; P -c "set role $role; select set_config('request.jwt.claim.sub','$uid',false), set_config('request.jwt.claim.role','$role',false) is not null; $*" 2>&1 | grep -E "ERROR|permission" | head -1; }
 FUNCS=("select public.create_video_job('$CB')" "select public.select_video_cover('$JB','$CAND_B')" "select public.register_video_asset('$CB','image','$UA/$CB/x.png','x.png','image/png',100)" "select public.delete_video_asset_record('$ASSET_B')" "select public.save_video_storyboard('$CB','{\"version\":\"2\"}'::jsonb)" "select public.get_video_studio_capabilities()" "select public.submit_ai_design('$CB')")
-S0=$(snap)
-# M1: anon cannot execute any of the 7 (EXECUTE denied)
-n=0; for q in "${FUNCS[@]}"; do o=$(as anon "$UA" "$q"); grep -q "permission denied" <<<"$o" && n=$((n+1)); done
-[ "$n" = 7 ] && ok "M1 anon: EXECUTE denied on all 7 authenticated-callable definer functions" || bad "M1 anon denied only $n of 7"
-# M2: a user with no admin row (valid login, not an employee) is rejected by every function, state unchanged
-n=0; for q in "${FUNCS[@]}"; do o=$(as authenticated "$UD" "$q"); grep -q "ERROR" <<<"$o" && n=$((n+1)); done
-[ "$n" = 7 ] && [ "$(snap)" = "$S0" ] && ok "M2 authenticated NON-employee: all 7 raise an error and nothing in video_jobs/candidates/assets/content_items changed" || bad "M2 rejected $n of 7 or state changed"
-# M3: inactive admin
-n=0; for q in "${FUNCS[@]}"; do o=$(as authenticated "$UC" "$q"); grep -q "ERROR" <<<"$o" && n=$((n+1)); done
-[ "$n" = 7 ] && [ "$(snap)" = "$S0" ] && ok "M3 INACTIVE admin: all 7 rejected, no state change" || bad "M3 rejected $n of 7 or state changed"
-# M4: page_manager A acting on page_manager B's content/job/asset (IDOR): every mutating function rejects (get_video_studio_capabilities has no object target)
-n=0; for q in "${FUNCS[@]:0:5}" "${FUNCS[6]}"; do o=$(as authenticated "$UA" "$q"); grep -q "ERROR" <<<"$o" && n=$((n+1)); done
-[ "$n" = 6 ] && [ "$(snap)" = "$S0" ] && ok "M4 IDOR: page_manager A cannot create/select-cover/register/delete/storyboard/submit on page_manager B's objects (6 of 6 rejected, state unchanged)" || bad "M4 rejected $n of 6 or state changed"
-# M5: owner on a HELD (fenced, working) job: create_video_job returns the existing job without touching it; select_video_cover refuses (job not ready)
-P -c "set session_replication_role=replica; insert into public.video_jobs(id,content_id,created_by,status,duration_min_seconds,duration_max_seconds,script_text,title,video_template,claim_token,worker_id,attempt_count) values ('$JH','$CA','$AA','rendering',10,30,'s','A2','quick_tips',gen_random_uuid(),'w1',1)" >/dev/null
-H0=$(P -c "select md5(t::text) from public.video_jobs t where id='$JH'"); [ -n "$H0" ] || bad "M5 held-job fixture missing"
-as authenticated "$UA" "select public.create_video_job('$CA')" >/dev/null
-o=$(as authenticated "$UA" "select public.select_video_cover('$JH','$CAND_A')")
-[ "$(P -c "select md5(t::text) from public.video_jobs t where id='$JH'")" = "$H0" ] && grep -q ERROR <<<"$o" && ok "M5 held job: owner calls create_video_job (idempotent return) and select_video_cover (refused: not ready) and the held row is byte-identical afterwards (token, status, outputs untouched)" || bad "M5 held row changed or select_video_cover allowed: $o"
-# M6: owner on own READY job: select_video_cover may only point cover_url at a candidate of the SAME job
-o=$(as authenticated "$UA" "select public.select_video_cover('$JA','$CAND_B')")
-grep -q ERROR <<<"$o" && [ "$(P -c "select cover_url from public.video_jobs where id='$JA'")" = "https://drive.google.com/file/d/ca0" ] && ok "M6a select_video_cover with another job's candidate is refused, cover unchanged" || bad "M6a $o"
-as authenticated "$UA" "select public.select_video_cover('$JA','$CAND_A')" >/dev/null
-[ "$(P -c "select cover_url from public.video_jobs where id='$JA'")" = "https://drive.google.com/file/d/ca1" ] && [ "$(P -c "select count(*) from public.video_jobs where id='$JA' and drive_video_url='https://drive.google.com/file/d/a'")" = 1 ] && ok "M6b owner picking its own candidate changes ONLY cover_url/selected_cover_id (drive_video_url untouched): the intended behaviour" || bad "M6b"
-# M7: temp-object shadowing: an authenticated user creates temp tables with the names of the real tables, then calls definers; results must still come from public.*
-as authenticated "$UA" "create temp table admins(id uuid, user_id uuid, active boolean, role text); create temp table video_jobs(id uuid); create temp table content_items(id uuid); select 1" >/dev/null
-o=$(P -c "set role authenticated; select set_config('request.jwt.claim.sub','$UA',false) is not null; create temp table admins(id uuid, user_id uuid, active boolean, role text); create temp table video_assets(id uuid); select public.get_video_studio_capabilities()" 2>&1 | tail -1)
-grep -q schema_version <<<"$o" && ok "M7 temp tables named admins/video_assets created by an authenticated user do NOT shadow the definer functions (all references are schema-qualified): get_video_studio_capabilities still sees the real admin" || bad "M7 $o"
-o=$(P -c "set role authenticated; create function public.pwn() returns int language sql as 'select 1'" 2>&1 | grep -m1 -E "ERROR|permission"); grep -q -E "denied|permission" <<<"$o" && ok "M8 authenticated cannot create objects in schema public (no function/operator shadowing in the definers' search_path)" || bad "M8 $o"
+suite() {
+  local L="$1"
+  P -c "update public.video_jobs set cover_url='https://drive.google.com/file/d/ca0', selected_cover_id=null where id='$JA'" >/dev/null   # reset state mutated by M6b in an earlier run
+  S0=$(snap)
+  # M1: anon cannot execute any of the 7 (EXECUTE denied)
+  n=0; for q in "${FUNCS[@]}"; do o=$(as anon "$UA" "$q"); grep -q "permission denied" <<<"$o" && n=$((n+1)); done
+  [ "$n" = 7 ] && ok "$L M1 anon: EXECUTE denied on all 7 authenticated-callable definer functions" || bad "$L M1 anon denied only $n of 7"
+  # M2: a user with no admin row (valid login, not an employee) is rejected by every function, state unchanged
+  n=0; for q in "${FUNCS[@]}"; do o=$(as authenticated "$UD" "$q"); grep -q "ERROR" <<<"$o" && n=$((n+1)); done
+  [ "$n" = 7 ] && [ "$(snap)" = "$S0" ] && ok "$L M2 authenticated NON-employee: all 7 raise an error and nothing in video_jobs/candidates/assets/content_items changed" || bad "$L M2 rejected $n of 7 or state changed"
+  # M3: inactive admin
+  n=0; for q in "${FUNCS[@]}"; do o=$(as authenticated "$UC" "$q"); grep -q "ERROR" <<<"$o" && n=$((n+1)); done
+  [ "$n" = 7 ] && [ "$(snap)" = "$S0" ] && ok "$L M3 INACTIVE admin: all 7 rejected, no state change" || bad "$L M3 rejected $n of 7 or state changed"
+  # M4: page_manager A acting on page_manager B's content/job/asset (IDOR): every mutating function rejects (get_video_studio_capabilities has no object target)
+  n=0; for q in "${FUNCS[@]:0:5}" "${FUNCS[6]}"; do o=$(as authenticated "$UA" "$q"); grep -q "ERROR" <<<"$o" && n=$((n+1)); done
+  [ "$n" = 6 ] && [ "$(snap)" = "$S0" ] && ok "$L M4 IDOR: page_manager A cannot create/select-cover/register/delete/storyboard/submit on page_manager B's objects (6 of 6 rejected, state unchanged)" || bad "$L M4 rejected $n of 6 or state changed"
+  # M5: owner on a HELD (fenced, working) job: create_video_job returns the existing job without touching it; select_video_cover refuses (job not ready)
+  P -c "set session_replication_role=replica; insert into public.video_jobs(id,content_id,created_by,status,duration_min_seconds,duration_max_seconds,script_text,title,video_template,claim_token,worker_id,attempt_count) values ('$JH','$CA','$AA','rendering',10,30,'s','A2','quick_tips',gen_random_uuid(),'w1',1) on conflict (id) do nothing" >/dev/null
+  H0=$(P -c "select md5(t::text) from public.video_jobs t where id='$JH'"); [ -n "$H0" ] || bad "$L M5 held-job fixture missing"
+  as authenticated "$UA" "select public.create_video_job('$CA')" >/dev/null
+  o=$(as authenticated "$UA" "select public.select_video_cover('$JH','$CAND_A')")
+  [ "$(P -c "select md5(t::text) from public.video_jobs t where id='$JH'")" = "$H0" ] && grep -q ERROR <<<"$o" && ok "$L M5 held job: owner calls create_video_job (idempotent return) and select_video_cover (refused: not ready) and the held row is byte-identical afterwards (token, status, outputs untouched)" || bad "$L M5 held row changed or select_video_cover allowed: $o"
+  # M6: owner on own READY job: select_video_cover may only point cover_url at a candidate of the SAME job
+  o=$(as authenticated "$UA" "select public.select_video_cover('$JA','$CAND_B')")
+  grep -q ERROR <<<"$o" && [ "$(P -c "select cover_url from public.video_jobs where id='$JA'")" = "https://drive.google.com/file/d/ca0" ] && ok "$L M6a select_video_cover with another job's candidate is refused, cover unchanged" || bad "$L M6a $o"
+  as authenticated "$UA" "select public.select_video_cover('$JA','$CAND_A')" >/dev/null
+  [ "$(P -c "select cover_url from public.video_jobs where id='$JA'")" = "https://drive.google.com/file/d/ca1" ] && [ "$(P -c "select count(*) from public.video_jobs where id='$JA' and drive_video_url='https://drive.google.com/file/d/a'")" = 1 ] && ok "$L M6b owner picking its own candidate changes ONLY cover_url/selected_cover_id (drive_video_url untouched): the intended behaviour" || bad "$L M6b"
+  # M7: temp-object shadowing: an authenticated user creates temp tables with the names of the real tables, then calls definers; results must still come from public.*
+  as authenticated "$UA" "create temp table admins(id uuid, user_id uuid, active boolean, role text); create temp table video_jobs(id uuid); create temp table content_items(id uuid); select 1" >/dev/null
+  o=$(P -c "set role authenticated; select set_config('request.jwt.claim.sub','$UA',false) is not null; create temp table admins(id uuid, user_id uuid, active boolean, role text); create temp table video_assets(id uuid); select public.get_video_studio_capabilities()" 2>&1 | tail -1)
+  grep -q schema_version <<<"$o" && ok "$L M7 temp tables named admins/video_assets created by an authenticated user do NOT shadow the definer functions (all references are schema-qualified): get_video_studio_capabilities still sees the real admin" || bad "$L M7 $o"
+  o=$(P -c "set role authenticated; create function public.pwn() returns int language sql as 'select 1'" 2>&1 | grep -m1 -E "ERROR|permission"); grep -q -E "denied|permission" <<<"$o" && ok "$L M8 authenticated cannot create objects in schema public (no function/operator shadowing in the definers' search_path)" || bad "$L M8 $o"
+
+}
+suite "[before hardening]"
 # M9: guard + definer interplay: definers are exempt from the fence guard BY DESIGN; confirm none of the 7 can change status/output columns of a held job (covered by M5) and list which of them contain UPDATE video_jobs
 echo "info M9 (guard enabled; definers run as their owner and are exempt by design)"; echo "info M9 definer bodies that UPDATE video_jobs: $(P -c "select string_agg(proname,', ') from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname in ('create_video_job','select_video_cover','register_video_asset','delete_video_asset_record','save_video_storyboard','get_video_studio_capabilities','submit_ai_design') and prosrc ~* 'update +public\.video_jobs'")"
+# M11: independent review of the hardening: catalog snapshot of the 11 functions before/after/rollback (body, owner, grants, security, volatility must NOT change; only proconfig)
+FN="'create_video_job','select_video_cover','register_video_asset','delete_video_asset_record','save_video_storyboard','get_video_studio_capabilities','submit_ai_design','my_admin_id','my_role','has_role','can_manage_all_content'"
+cat_snap() { P -c "select string_agg(p.oid::regprocedure::text||'|'||md5(p.prosrc)||'|'||pg_get_userbyid(p.proowner)||'|'||coalesce(p.proacl::text,'NULL')||'|'||p.prosecdef::text||'|'||p.provolatile::text||'|'||p.prokind::text||'|'||coalesce(p.proconfig::text,'NOCONFIG'),E'\n' order by p.oid::regprocedure::text) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname in ($FN)"; }
+cat_nocfg() { cat_snap | sed -E 's/\|[^|]*$//'; }
+C0=$(cat_snap); C0N=$(cat_nocfg)
 # M10: the remediation proposal applies cleanly, changes only search_path, and the whole suite above still holds
 P -v ON_ERROR_STOP=1 -f "$ROOT/supabase/drafts/20261104_video_definer_search_path_hardening.sql" >/dev/null 2>"$D/h.err" && ok "M10a hardening draft applies cleanly on the real schema" || bad "M10a $(head -2 "$D/h.err")"
 [ "$(P -c "select count(*) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname in ('create_video_job','select_video_cover','register_video_asset','delete_video_asset_record','save_video_storyboard','get_video_studio_capabilities','submit_ai_design','my_admin_id','my_role','has_role','can_manage_all_content') and p.proconfig::text ~ 'search_path=public, pg_temp'")" = 11 ] && ok "M10b all 11 functions now list pg_temp last" || bad "M10b"
-S1=$(snap); n=0; for q in "${FUNCS[@]}"; do o=$(as authenticated "$UD" "$q"); grep -q ERROR <<<"$o" && n=$((n+1)); done; o=$(as authenticated "$UA" "select public.get_video_studio_capabilities()")
-[ "$n" = 7 ] && [ "$(snap)" = "$S1" ] && ok "M10c after hardening: non-employee still rejected on all 7, owner still works (behaviour unchanged)" || bad "M10c"
-P -c "alter function public.create_video_job(uuid) set search_path = public; alter function public.my_admin_id() set search_path = public" >/dev/null && ok "M10d rollback statement form executes (alter function ... set search_path = public)" || bad "M10d"
+suite "[after hardening]"
+ok "M10c the ENTIRE suite M1-M8 was re-run after the hardening (see the [after hardening] lines above)"
+C1=$(cat_snap); C1N=$(cat_nocfg)
+[ "$C1N" = "$C0N" ] && [ "$C1" != "$C0" ] && ok "M11a after hardening ONLY proconfig differs for the 11 functions: bodies (md5), owner, ACL (grants), SECURITY DEFINER flag, volatility and kind are byte-identical" || bad "M11a"
+P -c "alter function public.create_video_job(uuid) set search_path = public; alter function public.delete_video_asset_record(uuid) set search_path = public; alter function public.get_video_studio_capabilities() set search_path = public; alter function public.register_video_asset(uuid, text, text, text, text, bigint) set search_path = public; alter function public.save_video_storyboard(uuid, jsonb) set search_path = public; alter function public.select_video_cover(uuid, uuid) set search_path = public; alter function public.submit_ai_design(uuid) set search_path = public; alter function public.my_admin_id() set search_path = public; alter function public.my_role() set search_path = public; alter function public.has_role(text) set search_path = public; alter function public.can_manage_all_content() set search_path = public" >/dev/null && ok "M10d the documented rollback (alter function ... set search_path = public for all 11) executes" || bad "M10d"
+[ "$(cat_snap)" = "$C0" ] && ok "M11b after the rollback the catalog snapshot of the 11 functions is IDENTICAL to the original (proconfig {search_path=public} restored exactly)" || bad "M11b"
+OTHER0=$(P -c "select md5(string_agg(p.oid::regprocedure::text||coalesce(p.proconfig::text,''),';' order by p.oid::regprocedure::text)) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname not in ($FN) and p.proname not in ('claim_next_video_job_fenced','video_job_update_fenced','video_job_commit_fenced','video_commit_validate','video_jobs_fence_guard')")
+echo "info M11c settings of ALL OTHER public functions (hash, for the owner to compare after a live change): $OTHER0"
+P -v ON_ERROR_STOP=1 -f "$ROOT/supabase/drafts/20261104_video_definer_search_path_hardening.sql" >/dev/null 2>&1; OTHER1=$(P -c "select md5(string_agg(p.oid::regprocedure::text||coalesce(p.proconfig::text,''),';' order by p.oid::regprocedure::text)) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname not in ($FN) and p.proname not in ('claim_next_video_job_fenced','video_job_update_fenced','video_job_commit_fenced','video_commit_validate','video_jobs_fence_guard')")
+[ "$OTHER1" = "$OTHER0" ] && ok "M11d the hardening touches no other function: hash of every other public function's settings is unchanged" || bad "M11d"
 exit $FAIL
