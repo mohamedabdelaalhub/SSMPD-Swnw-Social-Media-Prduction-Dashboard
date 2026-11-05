@@ -22,6 +22,7 @@ async function main(){
  const client={
   from:lookup,
   rpc:async (name,p)=>{
+   if(name==='digital_chat_create')return{data:tid,error:null};
    if(name==='digital_chat_retry'){retryCalls++;if(p.p_message!==mid||messages[0].process_state!=='failed')return{data:false,error:null};messages[0].process_state='queued';return{data:true,error:null};}
    if(name==='digital_chat_send'){sendCalls++;return{data:null,error:null};}
    throw Error('unexpected rpc '+name);
@@ -40,6 +41,7 @@ async function main(){
  w.dispatchEvent(new w.Event('ssmpd-digital-team-rendered'));
  await w.SSMPDDigitalChat.openDirect('sia');await wait(65);
  const button=d.querySelector('[data-chat-retry]');
+ if(!button)console.log('DEBUG_CHAT_RENDER',{status:d.querySelector('[data-chat-status]')?.textContent,thread:d.querySelector('[data-chat-threads]')?.textContent,body:d.querySelector('[data-chat-messages]')?.innerHTML?.slice(0,900)});
  assert(button,'failed owner bubble offers retry');
  button.click();await wait(70);
  assert.equal(retryCalls,1);assert.equal(invokeCalls,1);assert.equal(sendCalls,0,'no second owner message created');
