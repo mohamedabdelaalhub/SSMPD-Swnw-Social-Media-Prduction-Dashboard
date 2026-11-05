@@ -11,7 +11,7 @@ try {
   "create table public.patient360_audit(id bigint generated always as identity primary key,at timestamptz not null default now(),contact_id uuid,entity_type text not null,entity_id uuid,operation text not null,actor_auth_uid uuid,detail jsonb not null default '{}'::jsonb);"
  ].join("\n"));
  await db.exec(fs.readFileSync("proposals/patient360/staged_patient360_ingest.sql","utf8"));
- const scope={tenant:"synthetic-clinic",account:"synthetic-account"};
+ const scope={tenant:"synthetic-clinic",account:"synthetic-account",contactKey:"test-constant-contact-hmac-key-do-not-use-in-prod-1234"};
  const ordered=v=>Array.isArray(v)?v.map(ordered):v&&typeof v==="object"?Object.fromEntries(Object.keys(v).sort().map(k=>[k,ordered(v[k])])):v;
  const prepare=async(key,kind,extra={})=>{
    const e={tenant:scope.tenant,account:scope.account,key,kind,...extra};
