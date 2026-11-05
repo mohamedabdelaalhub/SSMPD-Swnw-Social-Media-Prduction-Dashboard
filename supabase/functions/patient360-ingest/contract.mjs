@@ -74,7 +74,15 @@ export async function prepareEnvelope(raw, scope) {
   let sourceKey = null, contactHash = null;
   if (normalized) {
     sourceKey = "p360:v1:" + await digestUtf8(JSON.stringify([tenant, account, direction, metaId]));
-    contactHash = await digestUtf8(JSON.stringify([tenant, account, e.contact]));
+    if (typeof scope.contactKey !== "string" || scope.contactKey.length < 32) fail("CONTACT_HASH_NOT_CONFIGURED");
+    const key = await crypto.subtle.importKey(
+      "raw", new TextEncoder().encode(scope.contactKey),
+      { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
+    );
+    const signature = await crypto.subtle.sign(
+      "HMAC", key, new TextEncoder().encode(JSON.stringify([tenant, account, e.contact]))
+    );
+    contactHash = [...new Uint8Array(signature)].map(b => b.toString(16).padStart(2, "0")).join("");
   }
   return {
     p_event_key: raw.event_key, p_digest: raw.digest,
