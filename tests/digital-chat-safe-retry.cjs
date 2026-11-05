@@ -40,6 +40,7 @@ async function main(){
  w.dispatchEvent(new w.Event('ssmpd-digital-team-rendered'));
  await w.SSMPDDigitalChat.openDirect('sia');await wait(65);
  const button=d.querySelector('[data-chat-retry]');
+ if(!button)console.log('RETRY_TEST_DEBUG',{threadCount:threads.length,messages:messages.length,html:d.querySelector('[data-chat-window]')?.innerHTML?.slice(-1400)});
  assert(button,'failed owner bubble offers retry');
  button.click();await wait(70);
  assert.equal(retryCalls,1);assert.equal(invokeCalls,1);assert.equal(sendCalls,0,'no second owner message created');
