@@ -31,6 +31,9 @@ const bill=invoice({id:'consult',price:300},[
 assert.equal(bill.lines.length,3);
 assert.deepEqual(bill.totals,{before:420,discount:60,after:360,copay:24,insurerNet:336});
 assert.equal(bill.lines[1].discount,0);
+const dflt=invoice({id:'consult',price:300},[{id:'med1',type:'medicine',price:50,quantity:2}],{discountPercent:20,copayPercent:10});
+assert.equal(dflt.lines[1].copay,100);assert.equal(dflt.lines[1].insurerNet,0); // medicines: patient pays 100% by default
+
 assert.throws(()=>invoice({id:'consult',price:300},[{id:'other',type:'service',price:50}]),/Invalid linked/);
 assert.throws(()=>invoice({id:'consult',price:300},[{id:'m',type:'medicine',price:50,quantity:-1}]),/quantity/);
 assert.deepEqual(quote({servicePrice:0.1+0.2}),{before:0.3,discount:0,after:0.3,copay:0,insurerNet:0.3});

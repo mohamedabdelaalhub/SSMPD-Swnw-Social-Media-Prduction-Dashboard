@@ -47,7 +47,7 @@
     cents(matches[0].price);
     return matches[0];
   }
-  function invoice(service,items,{discountPercent=0,copayPercent=0,supplyCopayPercent=0}={}){
+  function invoice(service,items,{discountPercent=0,copayPercent=0,supplyCopayPercent=100}={}){
     if(!service||!service.id)throw Error('One service required per invoice');
     if(!Array.isArray(items))throw Error('Invoice items required');
     const serviceQuote=quote({servicePrice:service.price,discountPercent,copayPercent});
