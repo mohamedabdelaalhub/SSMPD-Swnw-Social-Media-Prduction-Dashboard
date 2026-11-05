@@ -7,6 +7,7 @@ import signal
 import subprocess
 import threading
 import time
+import uuid
 import re
 import tomllib
 from pathlib import Path
@@ -148,3 +149,77 @@ class Codex:
             for stream in (proc.stdin,proc.stdout):
                 if stream:
                     stream.close()
+
+
+class ClaudeChat:
+    """Read-only Claude Code chat adapter (`claude -p`, no tools). Owner subscription login only.
+
+    Never passes ANTHROPIC_API_KEY or any browser token; all tools and MCP are disabled."""
+    def __init__(self, binary, workspace, timeout=180, popen=subprocess.Popen):
+        self.binary=str(Path(binary).resolve(strict=True))
+        self.workspace=str(Path(workspace).resolve(strict=True))
+        self.timeout=timeout
+        self.popen=popen
+
+    def command(self, thread):
+        sid=thread or str(uuid.uuid4())
+        args=[self.binary,'-p','--output-format','stream-json','--verbose','--tools','',
+              '--strict-mcp-config','--disable-slash-commands','--permission-mode','plan',
+              '--setting-sources','user',
+              '--append-system-prompt','أنت Claude Code في محادثة سونو. أجب بالعربية. هذه قناة نقاش للقراءة فقط: لا تنفذ أوامر ولا تعدل ملفات ولا تدّع تنفيذ مهمة. طلبات التنفيذ تنتظر موافقة المالك.']
+        args += ['--resume',thread] if thread else ['--session-id',sid]
+        return args,sid
+
+    def answer(self, history, thread, on_thread, progress, cancelled):
+        args,sid=self.command(thread)
+        env={k:v for k,v in os.environ.items() if k in ('PATH','HOME','LANG','SSL_CERT_FILE','SSL_CERT_DIR','HTTP_PROXY','HTTPS_PROXY','NO_PROXY')}
+        proc=self.popen(args,cwd=self.workspace,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,
+                        text=True,env=env,start_new_session=True,bufsize=1)
+        incoming=queue.Queue()
+        def reader():
+            try:
+                for line in proc.stdout:
+                    if len(line)>1000000:
+                        incoming.put(RuntimeFailure('x'));break
+                    incoming.put(json.loads(line))
+            except (ValueError,OSError):
+                incoming.put(RuntimeFailure('x'))
+            finally:
+                incoming.put(None)
+        threading.Thread(target=reader,daemon=True).start()
+        try:
+            proc.stdin.write(json.dumps(history,ensure_ascii=False));proc.stdin.close()
+            deadline=time.monotonic()+self.timeout; text=''; final=None; saved=False
+            while True:
+                if cancelled():raise RuntimeFailure('أُوقف الطلب')
+                if time.monotonic()>deadline:raise RuntimeFailure('انتهت مهلة المحادثة؛ أعد المحاولة بعد المراجعة')
+                try:v=incoming.get(timeout=.2)
+                except queue.Empty:continue
+                if v is None or isinstance(v,Exception):
+                    if final is None:raise RuntimeFailure('توقف محرك Claude')
+                    break
+                if not saved and v.get('session_id'):
+                    on_thread(v['session_id']);saved=True
+                kind=v.get('type')
+                if kind=='assistant':
+                    for block in v.get('message',{}).get('content',[]):
+                        if block.get('type')=='text':
+                            text+=block.get('text','')
+                            if len(text)>24000:raise RuntimeFailure('الرد يتجاوز الحد')
+                            progress(text)
+                        elif block.get('type')=='tool_use':
+                            raise RuntimeFailure('محرك المحادثة حاول استخدام أداة؛ أوقف التشغيل للمراجعة')
+                elif kind=='result':
+                    if v.get('is_error'):raise RuntimeFailure('لم يكتمل رد Claude')
+                    final=v.get('result') or text
+                    break
+            if not final or not final.strip():raise RuntimeFailure('لم يصل نص من Claude')
+            return final
+        finally:
+            if proc.poll() is None:
+                try:os.killpg(proc.pid,signal.SIGTERM)
+                except ProcessLookupError:pass
+            try:proc.wait(timeout=3)
+            except subprocess.TimeoutExpired:
+                os.killpg(proc.pid,signal.SIGKILL);proc.wait(timeout=3)
+            if proc.stdout:proc.stdout.close()

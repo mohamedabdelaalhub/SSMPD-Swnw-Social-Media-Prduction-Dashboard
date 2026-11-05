@@ -1,14 +1,18 @@
 """Durable server-side team conversations. No Supabase chat writes or shell execution."""
 import contextlib
 import json
+import os
 import sqlite3
 import threading
 import time
 import uuid
 from dataclasses import dataclass
 
-AGENTS = {'codex': 'Codex', 'sia': 'سيا', 'hapi': 'حابي', 'claude_creative': 'Claude Creative',
+AGENTS = {'codex': 'Codex', 'claude': 'Claude Code', 'sia': 'سيا', 'hapi': 'حابي', 'claude_creative': 'Claude Creative',
           'hor': 'حور', 'hotep': 'حتب', 'nefer': 'نفر', 'maat': 'ماعت'}
+
+ENGINES = ('codex', 'claude')  # agents with a real runtime adapter in this gateway
+DAILY_LIMIT = int(os.environ.get('SWNW_CHAT_DAILY_LIMIT', '4'))
 
 class Denied(Exception):
     pass
@@ -120,7 +124,7 @@ class Store:
             return {'me': {'id': actor.id, 'name': actor.name, 'owner': actor.owner},
                     'agents': [{'code': a, 'name': n, 'chat': self.permission(actor, a),
                                 'task': self.permission(actor, a, 'task'),
-                                'runtime': 'codex' if a == 'codex' else 'unconnected'} for a, n in AGENTS.items()]}
+                                'runtime': a if a in ENGINES else 'unconnected'} for a, n in AGENTS.items()]}
 
     def set_grant(self, actor, data, directory):
         if not actor.owner:
@@ -305,7 +309,7 @@ class Store:
                             (mid,room,actor.id,actor.name,kind,body.strip(),now,key,json.dumps(sorted(targets))))
             rev=self.db.execute('SELECT revision FROM rooms WHERE id=?',(room,)).fetchone()[0]
             for a in targets:
-                state = 'awaiting_owner' if kind=='task' else ('queued' if a=='codex' else 'unconnected')
+                state = 'awaiting_owner' if kind=='task' else ('queued' if a in ENGINES else 'unconnected')
                 self.db.execute('INSERT INTO jobs VALUES(?,?,?,?,?,?,?,?,?,?)',
                                 (str(uuid.uuid4()),room,mid,actor.id,a,rev,state,'','',now))
             self.db.execute('UPDATE rooms SET updated=? WHERE id=?',(now,room))
@@ -319,7 +323,7 @@ class Store:
                 return None
             day=time.strftime('%Y-%m-%d',time.gmtime())
             used=self.db.execute('SELECT calls FROM usage WHERE day=?',(day,)).fetchone()
-            if used and used[0]>=4:
+            if used and used[0]>=DAILY_LIMIT:
                 self.db.execute("UPDATE jobs SET state='limited',error='بلغت حصة المحادثات اليومية',updated=? WHERE id=?",(time.time(),job['id']))
                 return None
             self.db.execute('INSERT INTO usage VALUES(?,1) ON CONFLICT(day) DO UPDATE SET calls=calls+1',(day,))

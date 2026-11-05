@@ -1,20 +1,29 @@
 """Loopback-only HTTP API for the existing Swnw dashboard. Python standard library."""
 import json
 import os
+import socket
+import socketserver
+import stat
 import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlsplit,parse_qs
 from auth import Auth
-from runtime import Codex, RuntimeFailure
-from store import Store, Denied, Invalid
+from runtime import Codex, ClaudeChat, RuntimeFailure
+from store import Store, Denied, Invalid, ENGINES
 
 PREFIX='/api/digital-team'
 
 class Service:
-    def __init__(self, store, auth, runtime=None, shared_codex=False):
+    def __init__(self, store, auth, runtime=None, shared_codex=False, claude=None):
         self.store,self.auth,self.runtime,self.shared_codex=store,auth,runtime,shared_codex
+        self.engines={k:v for k,v in (('codex',runtime),('claude',claude)) if v}
+
+    def available(self, agent, actor):
+        # Claude Code runs on the owner's personal subscription: owner-only, never shared via a flag.
+        if agent not in self.engines:return False
+        return actor.owner or (agent=='codex' and self.shared_codex)
         self.tokens={}; self.tokens_lock=threading.Lock()
 
     def handle(self, method, path, token, data=None):
@@ -24,8 +33,8 @@ class Service:
         if method=='GET' and parts==['bootstrap']:
             out=self.store.bootstrap(a)
             for agent in out['agents']:
-                if agent['code']=='codex':
-                    agent['connected']=bool(self.runtime and (a.owner or self.shared_codex))
+                if agent['code'] in ENGINES:
+                    agent['connected']=self.available(agent['code'],a)
             return out
         if method=='GET' and parts==['users']:
             return {'users':directory()}
@@ -41,9 +50,14 @@ class Service:
             if len(parts)==3 and parts[2]=='messages':
                 if method=='GET':return self.store.history(a,room,parse_qs(u.query).get('before',[None])[0])
                 if method=='POST':
-                    if 'codex' in data.get('targets',[]) or self.store.room_agents(room)==['codex']:
-                        if not self.runtime or (not a.owner and not self.shared_codex):
-                            raise Invalid('ربط Codex لهذا الحساب لم يُفعّل بعد')
+                    targets=data.get('targets',[])
+                    targets=targets if isinstance(targets,list) else []
+                    wanted=[x for x in targets if x in ENGINES]
+                    if not wanted and len(self.store.room_agents(room))==1 and self.store.room_agents(room)[0] in ENGINES:
+                        wanted=self.store.room_agents(room)
+                    for engine in wanted:
+                        if not self.available(engine,a):
+                            raise Invalid('ربط المحرك لهذا الحساب لم يُفعّل بعد')
                     out=self.store.send(a,room,data)
                     # Token kept in RAM only for re-verifying queued work; never persist it or pass it to Codex.
                     with self.tokens_lock:
@@ -68,7 +82,8 @@ class Service:
             actor=self.auth.actor(saved[0])
             with self.store.lock:
                 self.store.membership(actor,job['room'],send=True)
-            if not self.runtime or (not actor.owner and not self.shared_codex):
+            engine=self.engines.get(job['agent'])
+            if not engine or not self.available(job['agent'],actor):
                 raise RuntimeFailure('المحرك غير متصل لهذا الحساب')
             history,thread=self.store.context(job)
             def cancelled():
@@ -77,7 +92,7 @@ class Service:
                     try:self.store.membership(actor,job['room'],send=True)
                     except Denied:return True
                 return False
-            answer=self.runtime.answer(history,thread,lambda t:self.store.session(job,t),
+            answer=engine.answer(history,thread,lambda t:self.store.session(job,t),
                 lambda text:self.store.progress(job,text),cancelled)
             self.store.finish(job,answer)
         except (Denied,Invalid,RuntimeFailure):
@@ -133,6 +148,22 @@ def handler(service,origin):
     return Handler
 
 
+class UnixServer(ThreadingHTTPServer):
+    """HTTP over a Unix socket (no TCP port at all). Directory/mode decide who may connect."""
+    address_family=socket.AF_UNIX
+    def server_bind(self):
+        path=self.server_address
+        try:
+            if stat.S_ISSOCK(os.lstat(path).st_mode):os.unlink(path)
+        except FileNotFoundError:pass
+        socketserver.TCPServer.server_bind(self)
+        os.chmod(path,0o660)
+        self.server_name,self.server_port='unix',0
+    def get_request(self):
+        request,_=self.socket.accept()
+        return request,('unix',0)
+
+
 def main():
     os.umask(0o077)
     state=Path(os.environ['SWNW_CHAT_STATE']).resolve();state.mkdir(mode=0o700,parents=True,exist_ok=True)
@@ -141,9 +172,16 @@ def main():
     if os.environ.get('SWNW_CHAT_CODEX_ENABLED')=='1':
         # Operator must run and retain installed-version protocol/isolation checks before enabling.
         runtime=Codex(os.environ['SWNW_CHAT_CODEX_BIN'],os.environ['SWNW_CHAT_WORKSPACE'],os.environ['SWNW_CHAT_SHARED_LOCK'])
-    service=Service(Store(str(state/'chat.sqlite3')),auth,runtime,os.environ.get('SWNW_CHAT_SHARED_CODEX')=='1')
+    claude=None
+    if os.environ.get('SWNW_CHAT_CLAUDE_ENABLED')=='1':
+        claude=ClaudeChat(os.environ['SWNW_CHAT_CLAUDE_BIN'],os.environ['SWNW_CHAT_WORKSPACE'])
+    service=Service(Store(str(state/'chat.sqlite3')),auth,runtime,os.environ.get('SWNW_CHAT_SHARED_CODEX')=='1',claude)
     threading.Thread(target=service.worker,daemon=True).start()
-    server=ThreadingHTTPServer(('127.0.0.1',int(os.environ.get('SWNW_CHAT_PORT','18092'))),handler(service,os.environ['SWNW_CHAT_ORIGIN']))
+    sock=os.environ.get('SWNW_CHAT_SOCKET')
+    if sock:
+        server=UnixServer(sock,handler(service,os.environ['SWNW_CHAT_ORIGIN']))
+    else:
+        server=ThreadingHTTPServer(('127.0.0.1',int(os.environ.get('SWNW_CHAT_PORT','18092'))),handler(service,os.environ['SWNW_CHAT_ORIGIN']))
     server.serve_forever()
 
 if __name__=='__main__':main()
