@@ -30,7 +30,7 @@ function sync(){
    var links=items.querySelectorAll('[data-management-page="'+p.key+'"]');
    var button=links[0]||document.createElement('button');
    if(button.className!=='ud-item sw-management-link')button.className='ud-item sw-management-link';
-   button.type='button';
+   if(button.type!=='button')button.type='button';
    if(button.textContent!==p.label)button.textContent=p.label;
    if(button.getAttribute('data-management-page')!==p.key)button.setAttribute('data-management-page',p.key);
    button.onclick=function(){p.open();enter(p.key);};
