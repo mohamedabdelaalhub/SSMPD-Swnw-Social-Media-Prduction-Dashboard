@@ -5,7 +5,7 @@ const ts = require("typescript");
 (async () => {
  const { prepareEnvelope, digestUtf8, constantTimeHex, ContractError } =
    await import("../supabase/functions/patient360-ingest/contract.mjs");
- const scope = { tenant: "synthetic-clinic", account: "synthetic-account" };
+ const scope = { tenant: "synthetic-clinic", account: "synthetic-account", contactKey: "test-constant-contact-hmac-key-do-not-use-in-prod-1234" };
  const cases = [
   ["5a29875bb65c50dd8b472156a63408bc5d88fad7de56179a89c958c7c72afb0c","9375cb5b6e566218ed8a7ae84a74cc377b1dabdafc5518804c36da64daff4c4f", '["synthetic-clinic","synthetic-account","in:wamid.synthetic-in"]', '{"account":"synthetic-account","at":"1","contact":"synthetic-contact","content":{"text":{"body":"synthetic text"},"type":"text"},"key":"in:wamid.synthetic-in","kind":"inbound","meta_id":"wamid.synthetic-in","tenant":"synthetic-clinic"}'],
   ["1ddb8c7323dd185ed44b7ee2ed187cd0ce8274733b2fce120cd3a077661c2d1b","7bfec96a31c6b6f65c468fcc2512ca2d688b4037f110bd80616f6d8a4b936f5b",'["synthetic-clinic","synthetic-account","attempt:00000000000000000000000000000001"]','{"account":"synthetic-account","at":1.5,"attempt_id":"00000000000000000000000000000001","contact":"synthetic-contact","content":{"text":{"body":"synthetic reply"},"type":"text"},"key":"attempt:00000000000000000000000000000001","kind":"outbound_attempt","tenant":"synthetic-clinic"}'],
