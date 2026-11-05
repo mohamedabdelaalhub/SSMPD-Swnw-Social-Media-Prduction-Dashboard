@@ -47,6 +47,7 @@ jobs:
           node tests/digital-team-messenger.cjs
           node tests/task-file-scan-summary.cjs
           node tests/digital-chat-edge-syntax.cjs
+          node tests/digital-chat-safe-retry.cjs
           node tests/team-coordination-edge-syntax.cjs
 
   tests:
