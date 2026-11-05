@@ -15,7 +15,7 @@ async function main(){
  const threads=[{id:tid,title:'سيا',updated_at:now}],participants=[{thread_id:tid,agent_code:'sia'}];
  let messages=[{id:mid,thread_id:tid,sender_type:'owner',kind:'chat',body:'اختبار استرجاع الرد',process_state:'failed',created_at:now,verification:'owner'}];
  let retryCalls=0,invokeCalls=0,sendCalls=0;
- const lookup=table=>({filters:{},select(){return this;},eq(k,v){this.filters[k]=v;return this;},in(k,v){this.filters[k]=v;return this;},order(){return this;},limit(){
+ const lookup=table=>({filters:{},select(){return this;},eq(k,v){this.filters[k]=v;return this;},in(k,v){this.filters[k]=v;return this;},order(){return this;},then(resolve,reject){return this.limit().then(resolve,reject);},limit(){
   const data={digital_chat_threads:threads,digital_chat_participants:participants,digital_chat_messages:messages,digital_chat_instructions:[],digital_chat_schedules:[]}[table]||[];
   return Promise.resolve({data:data.filter(x=>Object.keys(this.filters).every(k=>Array.isArray(this.filters[k])?this.filters[k].includes(x[k]):x[k]===this.filters[k])).slice().reverse(),error:null});
  }});
@@ -40,7 +40,6 @@ async function main(){
  w.dispatchEvent(new w.Event('ssmpd-digital-team-rendered'));
  await w.SSMPDDigitalChat.openDirect('sia');await wait(65);
  const button=d.querySelector('[data-chat-retry]');
- if(!button)console.log('RETRY_TEST_DEBUG',{threadCount:threads.length,messages:messages.length,html:d.querySelector('[data-chat-window]')?.innerHTML?.slice(-1400)});
  assert(button,'failed owner bubble offers retry');
  button.click();await wait(70);
  assert.equal(retryCalls,1);assert.equal(invokeCalls,1);assert.equal(sendCalls,0,'no second owner message created');
