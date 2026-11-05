@@ -48,7 +48,8 @@ Deno.serve(async req => {
   // Never expose a CORS policy for this server-to-server endpoint.
   const scope = await caller(req);
   if (!scope) return reply({ error: "UNAUTHORIZED" }, 401);
-  if (!api || !serviceKey()) return reply({ error: "NOT_CONFIGURED" }, 503);
+  const contactKey = Deno.env.get("P360_CONTACT_HMAC_KEY") || "";
+  if (!api || !serviceKey() || contactKey.length < 32) return reply({ error: "NOT_CONFIGURED" }, 503);
   const length = Number(req.headers.get("Content-Length") || 0);
   if (!Number.isFinite(length) || length > 65536) return reply({ error: "PAYLOAD_TOO_LARGE" }, 413);
   let body;
@@ -58,7 +59,7 @@ Deno.serve(async req => {
     body = JSON.parse(raw);
   } catch { return reply({ error: "INVALID_JSON" }, 400); }
   let args;
-  try { args = await prepareEnvelope(body, scope); }
+  try { args = await prepareEnvelope(body, { ...scope, contactKey }); }
   catch (e) {
     if (e instanceof ContractError) return reply({ error: e.code }, e.http);
     return reply({ error: "INVALID_CONTRACT" }, 422);
