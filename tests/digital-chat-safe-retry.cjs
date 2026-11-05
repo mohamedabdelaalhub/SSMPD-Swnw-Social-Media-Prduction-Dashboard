@@ -17,7 +17,7 @@ async function main(){
  let retryCalls=0,invokeCalls=0,sendCalls=0;
  const lookup=table=>({filters:{},select(){return this;},eq(k,v){this.filters[k]=v;return this;},in(k,v){this.filters[k]=v;return this;},order(){return this;},limit(){
   const data={digital_chat_threads:threads,digital_chat_participants:participants,digital_chat_messages:messages,digital_chat_instructions:[],digital_chat_schedules:[]}[table]||[];
-  return Promise.resolve({data:data.filter(x=>Object.keys(this.filters).every(k=>x[k]===this.filters[k])).slice().reverse(),error:null});
+  return Promise.resolve({data:data.filter(x=>Object.keys(this.filters).every(k=>Array.isArray(this.filters[k])?this.filters[k].includes(x[k]):x[k]===this.filters[k])).slice().reverse(),error:null});
  }});
  const client={
   from:lookup,
