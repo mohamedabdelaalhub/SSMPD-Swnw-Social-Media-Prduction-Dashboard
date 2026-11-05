@@ -136,25 +136,27 @@ const fakeClient = {
 
 // ---------- jsdom ----------
 const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
-const dom = new JSDOM(html, { url: "https://example.test/", runScripts: "outside-only", resources: "usable" });
+const dom = new JSDOM(html, { url: "https://example.test/", runScripts: "outside-only", pretendToBeVisual: true });
 const { window } = dom;
-window.onerror = (msg, src, line, col, err) => { console.error("WINDOW ERROR:", msg, line, err && err.stack); };
-process.on("unhandledRejection", (e) => console.error("UNHANDLED:", e && e.stack || e));
+window.onerror = (msg, src, line, col, err) => { console.error("WINDOW ERROR:", msg, line, err && err.stack); process.exitCode = 1; };
+process.on("unhandledRejection", (e) => { console.error("UNHANDLED:", e && e.stack || e); process.exitCode = 1; });
 
 // نضحّي بمكتبة Supabase الحقيقية ونحقن نسخة مموّهة قبل تحميل db.js
+// Use a fake configuration regardless of checkout contents; never load live config or external resources.
+window.SSMPD_CONFIG = { supabase: { url: "https://supabase.test.invalid", anonKey: "fake-test-key" } };
 window.supabase = { createClient: () => fakeClient };
 // Edge functions answer with an empty, successful JSON (the smoke test checks the screens, not the functions).
 window.fetch = () => Promise.resolve({ ok: true, status: 200, headers: { get: () => null }, json: () => Promise.resolve({ ok: true }), text: () => Promise.resolve("{}"), blob: () => Promise.resolve(new window.Blob([])) });
 
 // Load the dashboard scripts exactly as index.html does (same order), skipping CDN libraries.
 const files = [...html.matchAll(/<script[^>]+src="([^"]+)"/g)].map(m => m[1].split("?")[0])
-  .filter(src => !/^https?:/.test(src) && fs.existsSync(path.join(ROOT, src)));
+  .filter(src => src !== "config.js" && !/^https?:/.test(src) && fs.existsSync(path.join(ROOT, src)));
 
 files.forEach(f => {
   const code = fs.readFileSync(path.join(ROOT, f), "utf8");
   // Some files find their assets through document.currentScript.src, like a real <script> tag.
   Object.defineProperty(window.document, "currentScript", { configurable: true, get: () => ({ src: "https://example.test/" + f }) });
-  try { window.eval(code + "\n//# sourceURL=" + f); } catch (e) { console.error("LOAD ERROR in " + f + ": " + e.message); }
+  window.eval(code + "\n//# sourceURL=" + f);
 });
 
 // شغّل bootstrap زي DOMContentLoaded
