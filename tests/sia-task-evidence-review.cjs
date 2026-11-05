@@ -21,7 +21,7 @@ const sleep=t=>new Promise(r=>setTimeout(r,t));
  w.SSMPD_CONFIG={supabase:{url:'https://fake.invalid',anonKey:'mock'}};
  w.supabase={createClient:()=>fake};
  w.eval(fs.readFileSync('assets/js/digital-team.js','utf8'));d.dispatchEvent(new w.Event('DOMContentLoaded'));
- await sleep(20);d.querySelector('#user-dropdown [data-digital-team-tab]').click();await sleep(40);
+ await sleep(20);w.SSMPDDigitalTeam.open();await sleep(40);
  assert.equal(d.querySelectorAll('.dt-member').length,7);
  const section=d.querySelector('[data-dt-sia-evidence]');assert(section,'Sia evidence review available to owner');
  section.open=true;section.dispatchEvent(new w.Event('toggle'));await sleep(35);

@@ -75,10 +75,7 @@
     if(!manager())return;
     var bar=document.getElementById('tabs-bar');
     var items=document.querySelector('#user-dropdown .ud-items');
-    if(items&&!items.querySelector('[data-goto="business_intelligence"]')){
-      var m=document.createElement('button');m.className='ud-item';m.dataset.goto='business_intelligence';m.textContent='ذكاء الإدارة';m.onclick=function(e){e.preventDefault();openBusinessIntelligence();};
-      var empty=items.querySelector('.nav-menu-empty');items.insertBefore(m,empty||null);
-    }
+
   }
   function attach(){
     ensureNavigation();

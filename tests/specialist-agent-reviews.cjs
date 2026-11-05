@@ -33,8 +33,8 @@ async function test(){
   d.getElementById('app-root').innerHTML=markup();
   w.eval(fs.readFileSync('assets/js/digital-team.js','utf8'));
   d.dispatchEvent(new w.Event('DOMContentLoaded'));await sleep(30);
-  assert(d.querySelector('#user-dropdown [data-digital-team-tab]'),'existing navigation preserved');
-  d.querySelector('#user-dropdown [data-digital-team-tab]').click();await sleep(35);
+  assert(!d.querySelector('#user-dropdown [data-digital-team-tab]'),'no duplicated legacy navigation');
+  w.SSMPDDigitalTeam.open();await sleep(35);
   assert.equal(d.querySelectorAll('.dt-member').length,7,'seven team members');
   assert(d.body.textContent.includes('صلاحيات Claude الحالية'),'Claude existing rights panel remains');
   assert(d.body.textContent.includes('الحد اليومي'),'Claude daily limits visible');
@@ -48,7 +48,7 @@ async function test(){
   assert.deepEqual(decisions,['accepted_for_planning'],'decision marked for planning, not execution');
   assert.equal(d.querySelectorAll('.dt-member').length,7,'Claude and other cards preserved');
   d.getElementById('app-root').innerHTML=markup();await sleep(30);
-  assert.equal(d.querySelectorAll('#user-dropdown [data-digital-team-tab]').length,1,'navigation rebuilt without duplicate');
+  assert.equal(d.querySelectorAll('#user-dropdown [data-digital-team-tab]').length,0,'management menu owns navigation');
   dom.window.close();console.log('PASS four review-only specialists, approval-only path, preserved Claude UI');
 }
 test().catch(e=>{console.error(e);process.exit(1);});
