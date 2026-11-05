@@ -3,7 +3,8 @@
 const IDENT = /^[a-zA-Z0-9._-]{1,64}$/;
 const ACCOUNT = /^[a-zA-Z0-9._-]{1,128}$/;
 const HEX64 = /^[0-9a-f]{64}$/;
-const META = /^[a-zA-Z0-9._:-]{4,255}$/;
+// Meta IDs are opaque and can contain standard Base64 padding/symbols.
+const META = /^[a-zA-Z0-9._:+/=-]{4,255}$/;
 const ATTEMPT = /^[0-9a-f]{32}$/;
 const KIND = new Set(["inbound", "outbound_attempt", "outbound_outcome", "status"]);
 const STATUS = new Set(["sent", "delivered", "read", "failed"]);
