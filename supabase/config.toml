@@ -83,3 +83,9 @@ verify_jwt = false
 # Existing booking agent integration secret; the function verifies the
 # X-Booking-Sync-Secret header before calling service-only queue RPCs.
 verify_jwt = false
+
+# REVIEW ONLY: this endpoint is not deployed and is deliberately disabled until pilot gates.
+# Machine-to-machine caller authentication is enforced in index.ts with a scoped,
+# expiring dedicated bearer token (P360_INGEST_SCOPES_JSON). Do not reuse other keys.
+[functions.patient360-ingest]
+verify_jwt = false
