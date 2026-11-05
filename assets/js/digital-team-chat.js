@@ -156,7 +156,8 @@ function bubble(m){
  return '<article class="dc-bubble '+(owner?'mine':'theirs')+'">'+
  '<div class="dc-bubble-name">'+esc(person)+(simulated?' <span class="dc-simulated">محاكاة</span>':'')+' <small>'+esc(type)+(owner?'':simulated?' · غير متصل بالمحرك الفعلي':' · رد تحليلي')+'</small></div>'+
  '<p>'+esc(m.body)+'</p><div class="dc-bubble-footer">'+esc(date(m.created_at))+
- (m.process_state==='processing'?' · جاري الرد':m.process_state==='failed'?' · لم يكتمل الرد':'')+'</div></article>';
+ (m.process_state==='processing'?' · جاري الرد':m.process_state==='failed'?' · لم يكتمل الرد':'')+'</div>'+
+ (owner&&m.process_state==='failed'?'<button type="button" data-chat-retry="'+esc(m.id)+'" class="dc-retry">إعادة الرد دون تكرار الرسالة</button>':'')+'</article>';
 }
 async function loadMessages(id,scroll){
  var ticket=++seq;
@@ -166,7 +167,22 @@ async function loadMessages(id,scroll){
  if(id!==active||ticket!==seq||!panel())return;
  var e=panel().querySelector('[data-chat-messages]');
  e.innerHTML=(r.data||[]).length?(r.data||[]).reverse().map(bubble).join(''):'<div class="dc-empty">قول مساء الخير، أو اسأل عن شغل الوكيل.</div>';
+ e.querySelectorAll('[data-chat-retry]').forEach(function(button){button.onclick=function(){retryMessage(button.dataset.chatRetry);};});
  if(scroll)e.scrollTop=e.scrollHeight;
+}
+async function retryMessage(id){
+ if(!active||processing||!id)return;
+ processing=true;
+ try{
+  textStatus('جارٍ التحقق وإعادة الرد على الرسالة المحفوظة…');
+  var result=await db().rpc('digital_chat_retry',{p_message:id});
+  if(result.error)throw result.error;
+  if(result.data!==true)throw Error('لا يمكن إعادة الرسالة لأنها ليست فاشلة، أو يوجد رد سابق. لم يتم إنشاء رسالة مكررة.');
+  var answer=await db().functions.invoke('digital-chat-reply',{body:{message_id:id}});
+  if(answer.error||!answer.data?.ok)throw Error(answer.data?.error||answer.error?.message||'تعذر الرد');
+  textStatus('تمت إعادة محاولة الرد دون إعادة حفظ الرسالة أو التعليمات.');
+ }catch(e){textStatus('تعذرت إعادة المحاولة: '+(e.message||e));}
+ finally{processing=false;if(active){await loadMessages(active,true).catch(function(){});await loadSaved(active).catch(function(){});}}
 }
 async function loadSaved(id){
  if(id!==active||!panel())return;
