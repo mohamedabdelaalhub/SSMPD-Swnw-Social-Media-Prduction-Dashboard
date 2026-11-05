@@ -58,7 +58,7 @@ create or replace function public.patient360_ingest_event(
  p_outcome text, p_status text, p_error_codes jsonb,
  p_occurred_at timestamptz
 ) returns jsonb
-language plpgsql security definer
+language plpgsql security invoker
 set search_path=public,pg_temp
 as $function$
 declare
