@@ -18,7 +18,7 @@ Chat stays read-only and owner-only (tools off, no execution path). This adds re
 ## Build / deploy (after owner approval; nothing here is automatic)
     python3 scripts/build-sono-knowledge.py --repo <checkout at release sha> --out /var/lib/swnw-team-chat/knowledge-<sha7>
     ln -sfn /var/lib/swnw-team-chat/knowledge-<sha7> /var/lib/swnw-team-chat/knowledge
-    # env: SWNW_CHAT_KNOWLEDGE_DIR=/var/lib/swnw-team-chat/knowledge  SWNW_CHAT_RELEASE_FILE=/opt/swnw-data/dashboard-parallel/CURRENT
+    # env: SWNW_CHAT_KNOWLEDGE_DIR=/var/lib/swnw-team-chat/knowledge  SWNW_CHAT_RELEASE_FILE=/var/lib/swnw-team-chat/RELEASE
     # CURRENT = live Contabo release id (first 12 chars of the commit; verified 96338fea33cd on 2026-11-06). NOT /usr/local/lib/swnw-dashboard/REVIEWED-COMMIT (stale: last reviewed, not released).
     # The gateway (user swnw) cannot read it yet: /opt/swnw-data/dashboard-parallel is 750 root. Needs an OWNER-approved fix, e.g. chmod 751 on that directory only (file is 644, children stay 750).
     # Note: GitHub Pages serves the same dashboard and may be newer than Contabo; the pack/release comparison describes Contabo only.
@@ -37,3 +37,10 @@ supabase/, migrations, config, .env, Secrets, i18n dictionary, help data (alread
 ids, emails, phones, IPs or instruction-like text are dropped (counts only in manifest). The engine never opens files:
 the server selects at most 6 items (max 3 code) and passes them as DATA. Ranking: idf-weighted Arabic tokens with
 light synonyms; a result must cover >=25% of the question weight, docs/help get x1.6 over code.
+
+## Release id copy (fix 2026-11-07)
+A release recreated /opt/swnw-data/dashboard-parallel as 750 root and swnw could no longer read CURRENT (pack sync failed,
+gateway status became unknown). The sync unit now copies CURRENT as root (`ExecStartPre=+install ...`) to
+/var/lib/swnw-team-chat/RELEASE; both the sync script and the gateway (SWNW_CHAT_RELEASE_FILE) read that copy. The .path unit
+(root/systemd) still triggers on CURRENT. No chmod on the release directory is needed. Between a release and the next sync run
+(seconds) the copy is the previous id, so status is briefly `mismatch`, never wrongly `match`.

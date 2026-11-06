@@ -5,6 +5,10 @@ Type=oneshot
 User=swnw
 Group=swnw
 UMask=0027
+# The release dir is root-only and a release may recreate it with any mode, so root copies just the id
+# (a hex string) to a file the gateway user can always read. No permission on the release dir is changed.
+ExecStartPre=+/usr/bin/install -m 644 -o swnw -g swnw /opt/swnw-data/dashboard-parallel/CURRENT /var/lib/swnw-team-chat/RELEASE
+Environment=SONO_RELEASE_FILE=/var/lib/swnw-team-chat/RELEASE
 ExecStart=/usr/local/lib/swnw-sono/sono-pack-sync.sh
 NoNewPrivileges=true
 PrivateTmp=true
