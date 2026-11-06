@@ -1,0 +1,25 @@
+'use strict';
+// Synthetic-only contract checks for the existing production document renderer.
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const vm=require('node:vm');
+const source=fs.readFileSync(require('node:path').join(__dirname,'../assets/js/entity-claims-print.js'),'utf8');
+const w={location:{href:'https://example.test/'}};
+vm.runInNewContext(source,{window:w,URL},{filename:'entity-claims-print.js'});
+const D=w.SSMPDEntityDocuments;
+const invoice={reference:'INV-TEST',patient_name:'مريض اختبار',medical_record_no:'MR-001',entity_name:'جهة اختبار',member_reference:'CARD-001',service_date:'2026-11-05',doctor_name:'طبيب اختبار',specialty:'باطنة',service_category:'كشف',service_name:'كشف باطنة',total:260,patient_total:44,entity_total:216,lines:[{name:'كشف باطنة',kind:'service',quantity:1,unit:'خدمة',gross:300,discount:60,net:240,patient:24,entity:216},{name:'مستلزم',kind:'supply',quantity:1,unit:'قطعة',gross:20,discount:0,net:20,patient:20,entity:0}]};
+const markup=D.html('invoice',invoice);
+for(const field of ['MR-001','CARD-001','طبيب اختبار','باطنة','INV-TEST','تحمل المريض','الآجل على الجهة'])assert.ok(markup.includes(field),field);
+const claim={...invoice,invoice_id:'invoice-1',claimed_amount:216};
+const batch={reference:'CLAIM-TEST',entity_name:'جهة اختبار',period_from:'2026-11-01',period_to:'2026-11-30',status:'draft',lines:[claim]};
+const claimMarkup=D.html('batch',batch);
+for(const field of ['CLAIM-TEST','CARD-001','نوع الخدمة','قيمة الخصم','قيمة التحمل','صافي الجهة','INV-TEST'])assert.ok(claimMarkup.includes(field),field);
+assert.equal(D.claimRows(batch)[0][9],'216.00');
+const invoiceSheets=D.sheets('invoice',invoice),batchSheets=D.sheets('batch',batch);
+assert.equal(invoiceSheets.length,2);
+assert.equal(batchSheets[0].rows.length,2);
+assert.equal(batchSheets[1].rows.length,3);
+assert.equal(batchSheets[0].rows[1][3],'CARD-001');
+assert.equal(batchSheets[0].rows[1][14],216);
+assert.ok(!markup.includes('undefined'));
+console.log('Existing invoice and insurer claim document contract passed');

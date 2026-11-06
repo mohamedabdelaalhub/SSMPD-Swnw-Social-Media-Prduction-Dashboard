@@ -89,3 +89,7 @@ verify_jwt = false
 # expiring dedicated bearer token (P360_INGEST_SCOPES_JSON). Do not reuse other keys.
 [functions.patient360-ingest]
 verify_jwt = false
+
+[functions.service-report-notify]
+# REVIEW ONLY until deployed. Runs under the staff user JWT (no service-role key); platform verifies the JWT.
+verify_jwt = true
