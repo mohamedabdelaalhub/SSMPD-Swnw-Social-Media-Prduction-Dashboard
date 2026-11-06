@@ -24,7 +24,7 @@ function frame(){
  returnFocus=document.activeElement;
  dialog=document.createElement('dialog');dialog.className='sc-dialog';dialog.dir='rtl';dialog.setAttribute('aria-label','محادثات الفريق على السيرفر');
  dialog.innerHTML='<header class="sc-header"><div><h2>محادثات الفريق</h2><p>Codex على كونتابو · سجل محفوظ</p></div>'+button('إغلاق','data-sc-close')+'</header>'+
- '<div class="sc-toolbar">'+button('محادثة جديدة','data-sc-new')+button('المشاركون','data-sc-members disabled')+(identity.owner?button('إدارة الوصول','data-sc-access'):'')+(identity.owner?button('تصدير','data-sc-export'):'')+'</div>'+
+ '<div class="sc-toolbar">'+button('محادثة جديدة','data-sc-new')+button('المشاركون','data-sc-members disabled')+(identity.owner?button('إدارة الوصول','data-sc-access'):'')+(identity.owner?button('تصدير','data-sc-export'):'')+(identity.owner?button('الحصة اليومية','data-sc-limit'):'')+'</div>'+
  '<div class="sc-layout"><aside aria-label="المحادثات" data-sc-rooms></aside><section class="sc-conversation"><h3 data-sc-title>اختر محادثة</h3><div class="sc-tools" data-sc-tools hidden></div><div class="sc-messages" data-sc-messages aria-live="polite"></div>'+
  '<form data-sc-form class="sc-compose"><div class="sc-compose-options"><select name="kind" aria-label="نوع الرسالة"><option value="chat">رسالة</option><option value="question">سؤال</option><option value="instruction">تعليمات للنقاش</option><option value="task">طلب تنفيذ</option></select><select name="target" aria-label="الوكيل المطلوب"></select></div><div class="sc-send"><textarea name="body" rows="2" maxlength="4000" required placeholder="اكتب رسالتك…" aria-label="نص الرسالة"></textarea><button type="submit">إرسال</button></div></form><p class="sc-status" role="status" data-sc-status></p></section></div>';
  document.body.appendChild(dialog);dialog.showModal();
@@ -34,6 +34,7 @@ function frame(){
  node('[data-sc-members]').onclick=membersForm;
  if(identity.owner)node('[data-sc-access]').onclick=accessForm;
  if(identity.owner)node('[data-sc-export]').onclick=exportForm;
+ if(identity.owner)node('[data-sc-limit]').onclick=limitForm;
  node('[data-sc-form]').onsubmit=function(e){e.preventDefault();send();};
  node('[name=body]').addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();node('[data-sc-form]').requestSubmit();}});
  node('[name=body]').addEventListener('input',function(){pending=null;});
@@ -167,6 +168,15 @@ function exportForm(){
    setTimeout(function(){w.URL.revokeObjectURL(a.href);},1000);status('تم التصدير: '+out.rows.length+' رسالة');
   }catch(e){status(e.message);}finally{b.disabled=false;}
  };
+}
+
+async function limitForm(){
+ try{var info=await api('/limit');
+ tools('<h4>الحصة اليومية لرسائل المحركات</h4><p data-sc-limit-info></p><label>الحد اليومي (1 إلى '+esc(info.max)+')<input type="number" name="sc-limit" min="'+esc(info.min)+'" max="'+esc(info.max)+'" step="1" value="'+esc(info.limit)+'"></label>'+button('حفظ','data-sc-limit-save')+button('إغلاق','data-sc-dismiss'));
+ var show=function(i){node('[data-sc-limit-info]').textContent='المستخدم اليوم: '+i.used+' من '+i.limit+' · يتجدد 00:00 بتوقيت UTC';};show(info);
+ node('[data-sc-dismiss]').onclick=function(){node('[data-sc-tools]').hidden=true;node('.sc-conversation').classList.remove('sc-editing');poll(false);};
+ node('[data-sc-limit-save]').onclick=async function(){var b=this;b.disabled=true;try{var v=Number(node('[name=sc-limit]').value);if(!Number.isInteger(v)||v<info.min||v>info.max){status('أدخل رقمًا صحيحًا من '+info.min+' إلى '+info.max);return;}show(await api('/limit',{limit:v}));status('تم حفظ الحصة اليومية');}catch(e){status(e.message);}finally{b.disabled=false;}};
+ }catch(e){status(e.message);}
 }
 async function openWorkspace(){
  try{var boot=await api('/bootstrap');identity=boot.me;agents=boot.agents;

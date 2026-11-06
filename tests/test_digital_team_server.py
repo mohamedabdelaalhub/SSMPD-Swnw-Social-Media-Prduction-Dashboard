@@ -217,3 +217,21 @@ class ExportRouteTest(StoreTest):
         out=svc.handle('GET','/api/digital-team/export?from=2026-11-06T00:00&to=2026-11-07T00:00','o')
         self.assertEqual(len(out['rows']),1)
         with self.assertRaises(Denied):svc.handle('GET','/api/digital-team/export?from=2026-11-06T00:00&to=2026-11-07T00:00','e')
+
+
+class LimitTest(StoreTest):
+    def test_default_owner_only_bounds_and_effect(self):
+        self.assertEqual(self.s.limit_info(self.owner)['limit'],4)
+        with self.assertRaises(Denied):self.s.limit_info(self.a)
+        with self.assertRaises(Denied):self.s.set_limit(self.a,10)
+        for bad in (0,201,'5',True,None,2.5):
+            with self.assertRaises(Invalid):self.s.set_limit(self.owner,bad)
+        self.assertEqual(self.s.set_limit(self.owner,2)['limit'],2)
+        self.assertEqual(self.s.daily_limit(),2)
+        room=self.room()
+        for i in range(3):
+            self.send(room,key='request-%04d'%(i+10))
+        got=[self.s.claim() for _ in range(3)]
+        self.assertEqual(len([g for g in got if g]),2)
+        self.assertEqual(self.s.limit_info(self.owner)['used'],2)
+        self.s.set_limit(self.owner,200);self.assertEqual(self.s.daily_limit(),200)

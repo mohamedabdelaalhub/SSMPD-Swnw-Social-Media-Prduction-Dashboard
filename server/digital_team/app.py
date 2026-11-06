@@ -45,6 +45,9 @@ class Service:
         if parts==['rooms']:
             if method=='GET':return {'rooms':self.store.rooms(a)}
             if method=='POST':return {'id':self.store.create(a,data,directory())}
+        if parts==['limit']:
+            if method=='GET':return self.store.limit_info(a)
+            if method=='POST':return self.store.set_limit(a,data.get('limit'))
         if method=='GET' and parts==['export']:
             q=parse_qs(u.query);g=lambda k:q.get(k,[None])[0]
             return self.store.export(a,g('from'),g('to'),g('room'))

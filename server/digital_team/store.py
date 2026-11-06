@@ -361,6 +361,30 @@ class Store:
             self.audit(actor,'message',mid)
             return {'message_id':mid,'duplicate':False}
 
+    def daily_limit(self):
+        row = self.db.execute("SELECT value FROM meta WHERE key='daily_limit'").fetchone()
+        try:
+            return max(1, min(200, int(row[0]))) if row else DAILY_LIMIT
+        except ValueError:
+            return DAILY_LIMIT
+
+    def limit_info(self, actor):
+        if not actor.owner:
+            raise Denied('إعداد الحصة للمالك فقط')
+        day = time.strftime('%Y-%m-%d', time.gmtime())
+        used = self.db.execute('SELECT calls FROM usage WHERE day=?', (day,)).fetchone()
+        return {'limit': self.daily_limit(), 'used': used[0] if used else 0, 'day': day, 'resets': '00:00 UTC', 'min': 1, 'max': 200}
+
+    def set_limit(self, actor, value):
+        if not actor.owner:
+            raise Denied('إعداد الحصة للمالك فقط')
+        if isinstance(value, bool) or not isinstance(value, int) or not 1 <= value <= 200:
+            raise Invalid('الحصة اليومية يجب أن تكون رقمًا من 1 إلى 200')
+        with self.tx():
+            self.db.execute("INSERT INTO meta VALUES('daily_limit',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value", (str(value),))
+            self.audit(actor, 'daily_limit', str(value))
+        return self.limit_info(actor)
+
     def claim(self):
         with self.tx():
             job=self.db.execute("SELECT * FROM jobs WHERE state='queued' ORDER BY updated LIMIT 1").fetchone()
@@ -368,7 +392,7 @@ class Store:
                 return None
             day=time.strftime('%Y-%m-%d',time.gmtime())
             used=self.db.execute('SELECT calls FROM usage WHERE day=?',(day,)).fetchone()
-            if used and used[0]>=DAILY_LIMIT:
+            if used and used[0]>=self.daily_limit():
                 self.db.execute("UPDATE jobs SET state='limited',error='بلغت حصة المحادثات اليومية',updated=? WHERE id=?",(time.time(),job['id']))
                 return None
             self.db.execute('INSERT INTO usage VALUES(?,1) ON CONFLICT(day) DO UPDATE SET calls=calls+1',(day,))
