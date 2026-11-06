@@ -154,6 +154,23 @@ class UploadServiceTest(StoreTest):
         svc.handle('POST','/api/digital-team/rooms/%s/messages'%room,'o',{'body':'x','request_key':'request-3002','attachments':[a['id']]})
         svc.work_once()
         job=self.s.history(self.owner,room)['jobs'][0];self.assertEqual(job['state'],'failed');self.assertIn('PDF',job['error'])
+    def test_claude_room_uses_claude_engine_owner_only_shared_limit(self):
+        cx, cl = FakeEngine(), FakeEngine()
+        svc = Service(self.s, FakeAuth({'o': self.owner, 'e': self.a}), cx, False, cl)
+        room = self.room(agents=['claude'])
+        svc.handle('POST', '/api/digital-team/rooms/%s/messages' % room, 'o', {'body': 'سؤال', 'request_key': 'request-4000'})
+        self.assertTrue(svc.work_once())
+        self.assertEqual((len(cx.calls), len(cl.calls)), (0, 1))
+        self.assertEqual(self.s.history(self.owner, room)['messages'][-1]['author'], 'agent:claude')
+        self.grant(self.a, agent='claude')
+        r2 = self.room(agents=['claude'], users=['a'])
+        with self.assertRaises(Invalid):
+            svc.handle('POST', '/api/digital-team/rooms/%s/messages' % r2, 'e', {'body': 'x', 'request_key': 'request-4001'})
+        room3 = self.room(agents=['codex'])
+        svc.handle('POST', '/api/digital-team/rooms/%s/messages' % room3, 'o', {'body': 'y', 'request_key': 'request-4002'})
+        svc.work_once()
+        self.assertEqual(len(cx.calls), 1)
+        self.assertEqual(self.s.db.execute('select count(*) from usage').fetchone()[0], 1)  # one counter shared by both engines
     def test_employee_cannot_upload(self):
         self.grant(self.a);room=self.room(users=['a']);svc=self.svc()
         with self.assertRaises(Denied):svc.handle('POST','/api/digital-team/rooms/%s/attachments'%room,'e',payload(PNG))

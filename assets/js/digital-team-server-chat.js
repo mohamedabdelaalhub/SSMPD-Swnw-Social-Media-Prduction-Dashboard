@@ -114,7 +114,7 @@ async function selectRoom(id){
  node('[name=target]').innerHTML='<option value="">'+(r.agents.length===1?'الرد من '+esc(name(r.agents[0])):'رسالة للمشاركين')+'</option>'+r.agents.map(function(a){return '<option value="'+esc(a)+'">@'+esc(name(a))+'</option>';}).join('')+(r.agents.length>1?'<option value="all">اطلب رأي الوكلاء المشاركين</option>':'');
  refreshRooms().catch(function(e){status(e.message);});await poll(true);
 }
-var stateNames={limited:'بلغت حصة المحادثات اليومية',queued:'في الانتظار',running:'Codex يرد الآن',complete:'اكتمل الرد',failed:'تعذر الرد',interrupted:'انقطع التشغيل',cancelled:'أُوقف',awaiting_owner:'طلب تنفيذ ينتظر مراجعة المالك',unconnected:'محرك الوكيل لم يُربط بهذه القناة بعد'};
+var stateNames={limited:'بلغت حصة المحادثات اليومية',queued:'في الانتظار',running:'يرد الآن',complete:'اكتمل الرد',failed:'تعذر الرد',interrupted:'انقطع التشغيل',cancelled:'أُوقف',awaiting_owner:'طلب تنفيذ ينتظر مراجعة المالك',unconnected:'محرك الوكيل لم يُربط بهذه القناة بعد'};
 async function poll(scroll){
  if(!dialog||!active)return;var room=active,ticket=revision;
  try{
@@ -182,7 +182,11 @@ function grantTable(){
 function mount(){var root=document.querySelector('.digital-team');if(!root||root.querySelector('[data-server-team-chat]'))return;
  var card=document.createElement('article');card.className='dt-member sc-codex-card';card.innerHTML='<div class="dt-member-head"><div class="dt-id"><h2>Codex</h2><p>تطوير الأنظمة · كونتابو</p></div></div><p>محادثة محفوظة مع نسخة السيرفر. الاتصال والصلاحيات يتحقق منهما عند الفتح.</p>'+button('محادثة Codex','data-server-team-chat')+button('محادثات السيرفر','data-server-team-all');
  if(identity&&!identity.owner&&!agents.find(function(a){return a.code==='codex';})?.chat){card.querySelector('[data-server-team-chat]').remove();}
- (root.querySelector('.dt-grid')||root).prepend(card);var direct=card.querySelector('[data-server-team-chat]');if(direct)direct.onclick=function(){open('codex');};card.querySelector('[data-server-team-all]').onclick=function(){open();};
+ var grid=root.querySelector('.dt-grid')||root;grid.prepend(card);var direct=card.querySelector('[data-server-team-chat]');if(direct)direct.onclick=function(){open('codex');};card.querySelector('[data-server-team-all]').onclick=function(){open();};
+ if(!(identity&&!identity.owner&&!agents.find(function(a){return a.code==='claude';})?.chat)){
+  var cc=document.createElement('article');cc.className='dt-member sc-codex-card sc-claude-card';cc.innerHTML='<div class="dt-member-head"><div class="dt-id"><h2>Claude Code</h2><p>تطوير الأنظمة · كونتابو</p></div></div><p>محادثة حقيقية مع Claude Code على السيرفر، للقراءة والتحليل والاقتراح فقط: بلا أدوات تنفيذ ولا تعديل ملفات. تُحتسب ضمن نفس الحصة اليومية المشتركة مع Codex.</p>'+button('محادثة Claude Code','data-server-team-claude');
+  card.after(cc);cc.querySelector('[data-server-team-claude]').onclick=function(){open('claude');};
+ }
 }
 async function refreshAccess(){
  var id=w.SSMPDAuth?.currentAdmin?.id||'';
@@ -229,7 +233,7 @@ async function openWorkspace(){
  try{var boot=await api('/bootstrap');identity=boot.me;agents=boot.agents;
  var view=document.getElementById('view-container');if(!view)return;
  view.innerHTML='<section class="digital-team" dir="rtl"><header class="dt-hero"><div><h1>الفريق الرقمي</h1><p>المحادثات المتاحة لحسابك</p></div></header><div class="dt-grid"></div></section>';
- agents.filter(function(a){return a.chat&&a.code!=='codex';}).forEach(function(a){var card=document.createElement('article');card.className='dt-member';card.innerHTML='<h2>'+esc(a.name)+'</h2>'+button('محادثة','data-sc-other');card.querySelector('button').onclick=function(){open(a.code);};view.querySelector('.dt-grid').appendChild(card);});
+ agents.filter(function(a){return a.chat&&a.code!=='codex'&&a.code!=='claude';}).forEach(function(a){var card=document.createElement('article');card.className='dt-member';card.innerHTML='<h2>'+esc(a.name)+'</h2>'+button('محادثة','data-sc-other');card.querySelector('button').onclick=function(){open(a.code);};view.querySelector('.dt-grid').appendChild(card);});
  mount();await open();
  }catch(e){w.alert(e.message);}
 }

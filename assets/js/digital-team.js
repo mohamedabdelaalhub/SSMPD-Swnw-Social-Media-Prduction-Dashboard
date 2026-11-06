@@ -69,7 +69,7 @@
       return '<div class="dt-chat-message '+(mine?'owner':'agent')+'"><div class="dt-chat-label">'+esc(name)+' · '+esc(kind)+'</div><p>'+esc(a.body)+'</p><small>'+esc(rel(a.created_at))+'</small></div>';
     }).join('');
     var note=m.code==='claude_creative'?
-      'التوجيه هنا استشاري، ولا يصل تلقائيًا لمحرك Claude Creative. للتنفيذ استخدم المهام والصلاحيات الحالية.'
+      'التوجيه هنا استشاري، ولا يصل تلقائيًا لمحرك Claude Creative. للمحادثة الحقيقية مع Claude Code على السيرفر استخدم زر «محادثة Claude Code» أسفل هذا الصندوق.'
       :m.code==='hapi'?
       'التوجيه هنا استشاري، ولا يصل تلقائيًا لمحرك حابي أو أي عميل على واتساب.'
       :'تقدر تسأل عن خطة أو تحفظ تعليمات للمراجعة. لا يبدأ تنفيذ أي إجراء تلقائيًا.';
@@ -77,7 +77,7 @@
      '<summary>تعليمات وتعليقات '+(msgs.length?'('+msgs.length+')':'')+'</summary><div class="dt-discussion-body">'+
      '<p class="dt-discussion-note">'+esc(note)+'</p>'+
      '<div class="dt-chat-history">'+(history||'<p class="dt-placeholder">لا توجد مناقشات لهذا الوكيل بعد.</p>')+'</div>'+
-     (isOwner?'<form data-dt-message-form="'+esc(m.code)+'"><select name="kind" aria-label="نوع الرسالة"><option value="question">اسأل الوكيل</option><option value="instruction">تعليمات للتخطيط</option><option value="comment">تعليق</option></select><textarea name="body" required minlength="2" maxlength="4000" rows="3" placeholder="اكتب المطلوب أو سؤالك بالتفصيل..."></textarea><button class="btn sm" type="submit">إرسال للنقاش</button></form>':'<p class="dt-placeholder">إرسال التعليمات متاح للمالك.</p>')+
+     (m.code==='claude_creative'&&isOwner?'<button class="btn sm" type="button" data-dt-open-claude-code>محادثة Claude Code</button>':'')+(isOwner?'<form data-dt-message-form="'+esc(m.code)+'"><select name="kind" aria-label="نوع الرسالة"><option value="question">اسأل الوكيل</option><option value="instruction">تعليمات للتخطيط</option><option value="comment">تعليق</option></select><textarea name="body" required minlength="2" maxlength="4000" rows="3" placeholder="اكتب المطلوب أو سؤالك بالتفصيل..."></textarea><button class="btn sm" type="submit">إرسال للنقاش</button></form>':'<p class="dt-placeholder">إرسال التعليمات متاح للمالك.</p>')+
      '<div class="dt-discussion-status" data-dt-discussion-status="'+esc(m.code)+'">'+esc(discussionStatus[m.code]||'')+'</div></div></details>';
   }
 
@@ -168,6 +168,7 @@
     view.querySelectorAll('[data-dt-message-form]').forEach(function(form){
       form.onsubmit=function(e){e.preventDefault();sendAgentMessage(form);};
     });
+    view.querySelectorAll('[data-dt-open-claude-code]').forEach(function(b){b.addEventListener('click',function(){if(w.SSMPDServerTeamChat&&w.SSMPDServerTeamChat.open)w.SSMPDServerTeamChat.open('claude');});});
     view.querySelectorAll('[data-dt-discuss]').forEach(function(el){
       el.addEventListener('toggle',function(){if(el.open)openDiscussionCode=el.getAttribute('data-dt-discuss');});
     });
