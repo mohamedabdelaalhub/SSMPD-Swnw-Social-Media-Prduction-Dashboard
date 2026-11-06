@@ -40,9 +40,16 @@
     employeeStyle.setAttribute('data-ssmpd-ea', 'style');
     document.head.appendChild(employeeStyle);
   }
+  if (!document.querySelector('script[data-ssmpd-sono-ai]')) {
+    var sonoAiScript = document.createElement('script');
+    sonoAiScript.src = 'assets/js/sono-ai-assist.js?v=sono-ai-20261106-1';
+    sonoAiScript.defer = true;
+    sonoAiScript.setAttribute('data-ssmpd-sono-ai', 'script');
+    document.body.appendChild(sonoAiScript);
+  }
   if (!document.querySelector('script[data-ssmpd-ea]')) {
     var employeeScript = document.createElement('script');
-    employeeScript.src = 'assets/js/employee-assistant.js?v=coach-20261106-2';
+    employeeScript.src = 'assets/js/employee-assistant.js?v=sono-ai-20261106-1';
     employeeScript.defer = true;
     employeeScript.setAttribute('data-ssmpd-ea', 'script');
     document.body.appendChild(employeeScript);

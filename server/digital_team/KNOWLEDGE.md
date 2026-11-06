@@ -27,3 +27,13 @@ Rollback: remove `SWNW_CHAT_KNOWLEDGE_DIR` from the env file and restart (featur
 
 ## Tests
     python3 -m unittest discover -s tests -p "test_digital_team_*.py"
+
+## Source tier (phase 2b)
+The builder now also writes source.json: ~1.4k excerpts of assets/js UI code, each mapped to the tab it implements
+(SOURCE_RULES in scripts/build-sono-knowledge.py) and given that tab access rule from roles.js. Strict tabs
+(accounting, HR, patients, inventory, ...) are managers only; any file with no rule is OWNER ONLY (fail closed).
+Owner docs now include every docs/**/*.md (except docs/chatgpt-plugin) plus 4 root guides. Never indexed: SQL,
+supabase/, migrations, config, .env, Secrets, i18n dictionary, help data (already articles). Chunks containing secrets,
+ids, emails, phones, IPs or instruction-like text are dropped (counts only in manifest). The engine never opens files:
+the server selects at most 6 items (max 3 code) and passes them as DATA. Ranking: idf-weighted Arabic tokens with
+light synonyms; a result must cover >=25% of the question weight, docs/help get x1.6 over code.

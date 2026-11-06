@@ -27,7 +27,7 @@ class Service:
     def available(self, agent, actor):
         # Claude Code runs on the owner's personal subscription: owner-only, never shared via a flag.
         if agent not in self.engines:return False
-        return actor.owner or (agent=='codex' and self.shared_codex)
+        return actor.owner or (agent=='codex' and (self.shared_codex or self.store.employees_enabled()))
 
     def handle(self, method, path, token, data=None):
         a=self.auth.actor(token);self.store.remember(a)
@@ -48,6 +48,9 @@ class Service:
         if parts==['rooms']:
             if method=='GET':return {'rooms':self.store.rooms(a)}
             if method=='POST':return {'id':self.store.create(a,data,directory())}
+        if parts==['employees']:
+            if method=='GET':return self.store.employees_info(a)
+            if method=='POST':return self.store.set_employees(a,data)
         if parts==['limit']:
             if method=='GET':return self.store.limit_info(a)
             if method=='POST':return self.store.set_limit(a,data.get('limit'))

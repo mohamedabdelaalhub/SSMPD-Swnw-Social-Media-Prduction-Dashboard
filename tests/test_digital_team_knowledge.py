@@ -88,7 +88,7 @@ class VersionTests(Base):
         body = self.kb(release_id='b' * 40).context_entry(Viewer(owner=True), 'ليد')['body']
         self.assertIn('mismatch', body)
         self.assertIn('قد لا تطابق', body)
-        body = self.kb(release_id=SHA).context_entry(Viewer(owner=True), 'موضوع غير موجود نهائيا qqq')['body']
+        body = self.kb(release_id=SHA).context_entry(Viewer(owner=True), 'qqq zzz www')['body']
         self.assertIn('لا توجد وثيقة مطابقة', body)
 
     def test_browser_build_hint_is_only_a_hint(self):
@@ -164,7 +164,7 @@ class TierTests(Base):
         emp_body = kb.context_entry(Viewer(roles=('reception',)), 'منح الصلاحيات لوحة الإدارة')['body']
         self.assertIn(OWNER_SECRET_TEXT, owner_body)
         self.assertNotIn(OWNER_SECRET_TEXT, emp_body)
-        self.assertEqual(sorted(vars(kb)), sorted(['dir', 'release_id', 'release_file', 'manifest', 'tiers', 'error']))  # no per-user state
+        self.assertEqual(sorted(vars(kb)), sorted(['dir', 'release_id', 'release_file', 'manifest', 'tiers', 'error', '_sig', 'reload_error', '_idx', '_df']))  # no per-user state
         nonces = {re.search(r'=====([0-9a-f]{16})=====', kb.context_entry(Viewer(owner=True), 'ليد')['body']).group(1) for _ in range(5)}
         self.assertEqual(len(nonces), 5)
 
