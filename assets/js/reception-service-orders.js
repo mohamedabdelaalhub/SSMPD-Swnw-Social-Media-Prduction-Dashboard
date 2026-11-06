@@ -158,7 +158,7 @@ function nameOf(list,id,key,label){var r=(list||[]).find(function(x){return x[ke
 function setupTab(tab,S){
   var sv=S.services.map(function(x){return [x.id,x.name];}),dr=S.doctors.map(function(x){return [x.doctor_key,x.name];}),labs=S.providers.filter(function(p){return p.kind==='lab';}).map(function(x){return [x.id,x.name];});
   function rm(kind,payload){return '<button type="button" class="btn" data-so-rm="'+esc(JSON.stringify({kind:kind,payload:payload}))+'">حذف</button>';}
-  function form(kind,fields,label){return '<form data-so-form="'+kind+'" class="rx-actions">'+fields+'<button class="btn btn-primary" type="submit">'+esc(label||'إضافة')+'</button></form>';}
+  function form(kind,fields,label){return '<div data-so-form="'+kind+'" class="rx-actions">'+fields+'<button class="btn btn-primary" type="button" data-so-submit>'+esc(label||'إضافة')+'</button></div>';}
   var h='';
   if(tab==='spec'){
     h+=form('service_specialty',opt('service_id','الخدمة',sv,'','required')+'<label>التخصص<input name="specialty_id" list="so-specs" required maxlength="80"></label><datalist id="so-specs">'+Array.from(new Set(S.service_specialties.map(function(x){return x.specialty_id;}))).map(function(x){return '<option value="'+esc(x)+'">';}).join('')+'</datalist>');
@@ -188,17 +188,24 @@ function setup(c){
   function reload(){return db.serviceOrdersSetupLoad(c.workspace).then(function(d){S=d;paint();});}
   function run(p){msg('جاري الحفظ…');return p.then(function(){msg('تم الحفظ');return reload();}).catch(function(e){msg((e&&e.message)||'تعذر الحفظ');});}
   root.addEventListener('click',function(e){
-    var t=e.target.closest('[data-so-tab],[data-so-rm],[data-so-toggle]');if(!t)return;
+    var t=e.target.closest('[data-so-tab],[data-so-rm],[data-so-toggle],[data-so-submit]');if(!t)return;
+    if(t.hasAttribute('data-so-submit'))return submitForm(t.closest('[data-so-form]'));
     if(t.dataset.soTab){tab=t.dataset.soTab;msg('');paint();return;}
     if(t.dataset.soRm){var x=JSON.parse(t.dataset.soRm);run(db.serviceOrdersSetupSave(c.workspace,x.kind,x.payload));return;}
     if(t.dataset.soToggle){var p=S.providers.find(function(q){return q.id===t.dataset.soToggle;});if(!p)return;
       var v={id:p.id,name:p.name,kind:p.kind,phone:p.phone||'',active:p.active?'0':'1',providerSharePercent:(p.terms||{}).providerSharePercent,centerSharePercent:(p.terms||{}).centerSharePercent};
       run(db.serviceOrdersSetupSave(c.workspace,'provider',buildSetup('provider',v)));}
   });
-  root.addEventListener('submit',function(e){
-    var f=e.target.closest('[data-so-form]');if(!f)return;e.preventDefault();e.stopPropagation();
-    var v={};new FormData(f).forEach(function(val,k){v[k]=val;});
+  function submitForm(f){
+    if(!f)return;
+    var v={},bad=false;
+    Array.prototype.forEach.call(f.querySelectorAll('input,select,textarea'),function(el){if(!el.name)return;if(el.required&&!String(el.value).trim())bad=true;v[el.name]=el.value;});
+    if(bad){msg('اكمل الحقول المطلوبة');return;}
     try{run(db.serviceOrdersSetupSave(c.workspace,f.dataset.soForm,buildSetup(f.dataset.soForm,v)));}catch(err){msg(err.message);}
+  }
+  root.addEventListener('keydown',function(e){
+    var f=e.key==='Enter'&&e.target.closest&&e.target.closest('[data-so-form]');
+    if(f&&e.target.tagName!=='BUTTON'){e.preventDefault();submitForm(f);}
   },true);
   reload().catch(function(e){root.querySelector('[data-so-body]').textContent=(e&&e.message)||'تعذر التحميل';});
 }

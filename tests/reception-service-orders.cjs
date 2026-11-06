@@ -52,7 +52,7 @@ const S0={services:[{id:'s1',name:'<i>X</i>'}],doctors:[{doctor_key:'d1',name:'D
  performers:[{service_id:'s1',doctor_key:'d1'}],referral_rates:[{id:'r1',doctor_key:'d1',category:'lab',percent:5,valid_from:'2026-01-01',valid_to:null}],
  providers:[{id:'p1',name:'Lab',kind:'lab',phone:'1',terms:{},active:true},{id:'p2',name:'Rad',kind:'radiology',phone:'2',terms:{providerSharePercent:70},active:false}],
  costs:[{provider_id:'p1',service_id:'s1',year:2026,cost:40}]};
-for(const t of ['spec','perf','rate','prov','cost']){const h=B.setupTab(t,S0);assert.ok(h.includes('data-so-form')||t==='x');assert.ok(!h.includes('<i>X</i>'));}
+for(const t of ['spec','perf','rate','prov','cost']){const h=B.setupTab(t,S0);assert.ok(h.includes('data-so-form')||t==='x');assert.ok(!h.includes('<form'),'setup tabs render inside the modal <form>: nested forms are dropped by the browser');assert.ok(h.includes('data-so-submit'));assert.ok(!h.includes('<i>X</i>'));}
 assert.ok(B.setupTab('rate',S0).includes('مستمرة'));
 assert.ok(B.setupTab('prov',S0).includes('تفعيل'));
 console.log('setup screen tests passed');
