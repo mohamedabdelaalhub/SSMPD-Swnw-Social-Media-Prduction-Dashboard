@@ -192,7 +192,7 @@ def main():
         runtime=Codex(os.environ['SWNW_CHAT_CODEX_BIN'],os.environ['SWNW_CHAT_WORKSPACE'],os.environ['SWNW_CHAT_SHARED_LOCK'])
     claude=None
     if os.environ.get('SWNW_CHAT_CLAUDE_ENABLED')=='1':
-        claude=ClaudeChat(os.environ['SWNW_CHAT_CLAUDE_BIN'],os.environ['SWNW_CHAT_WORKSPACE'])
+        claude=ClaudeChat(os.environ['SWNW_CHAT_CLAUDE_BIN'],os.environ['SWNW_CHAT_WORKSPACE'],code_dir=os.environ.get('SWNW_CHAT_CODE_DIR') or None)
     service=Service(Store(str(state/'chat.sqlite3')),auth,runtime,os.environ.get('SWNW_CHAT_SHARED_CODEX')=='1',claude)
     threading.Thread(target=service.worker,daemon=True).start()
     sock=os.environ.get('SWNW_CHAT_SOCKET')

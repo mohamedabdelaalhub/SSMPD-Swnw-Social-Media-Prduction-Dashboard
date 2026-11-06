@@ -2,6 +2,7 @@ import base64
 import json
 import os
 import stat
+import subprocess
 import sys
 import tempfile
 import threading
@@ -262,6 +263,62 @@ class EngineFilesTest(unittest.TestCase):
         self.assertEqual([b['type'] for b in blocks],['text','image','document'])
         self.assertEqual(base64.b64decode(blocks[1]['source']['data']),PNG);self.assertEqual(blocks[2]['source']['media_type'],'application/pdf')
         self.assertIn('سري 123',blocks[0]['text'])
+
+FAKE_CLAUDE = """#!PYTHON
+import sys
+sys.stdin.read()
+print(open('SCRIPT').read(), end='')
+"""
+
+class ReadCodeTest(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory();self.root = Path(self.tmp.name)
+        self.code = self.root / 'src';self.code.mkdir();(self.code / 'a.js').write_text('x')
+        self.ws = self.root / 'ws';self.ws.mkdir()
+        (self.root / 'secret.txt').write_text('s');(self.code / 'link').symlink_to(self.root / 'secret.txt')
+    def tearDown(self):self.tmp.cleanup()
+    def engine(self, lines=None):
+        fake = self.root / 'fake-claude';script = self.root / 'script.txt'
+        script.write_text('\n'.join(json.dumps(x) for x in (lines or [])) + '\n')
+        fake.write_text(FAKE_CLAUDE.replace('PYTHON', sys.executable).replace('SCRIPT', str(script)));fake.chmod(0o700)
+        return ClaudeChat(str(fake), str(self.ws), code_dir=str(self.code))
+    def test_gate_decisions(self):
+        import read_gate
+        d = str(self.code.resolve())
+        ok = [('Read', {'file_path': d + '/a.js'}), ('Read', {'file_path': 'a.js'}), ('Grep', {'pattern': 'x'}),
+              ('Grep', {'pattern': 'x', 'path': d, 'glob': '!**/secrets/**'}), ('Glob', {'pattern': '**/*.js', 'path': d})]
+        bad = [('Read', {'file_path': '/etc/passwd'}), ('Read', {'file_path': d + '/../secret.txt'}), ('Read', {'file_path': d + '/link'}),
+               ('Read', {}), ('Grep', {'pattern': 'x', 'path': '/home'}), ('Grep', {'pattern': 'x', 'glob': '/etc/*'}),
+               ('Glob', {'pattern': '/etc/*'}), ('Glob', {'pattern': '../*'}), ('Bash', {'command': 'ls'}), ('Write', {'file_path': d + '/a.js'}),
+               ('Read', 'text'), (None, {})]
+        for n, i in ok:self.assertTrue(read_gate.decide(d, n, i), (n, i))
+        for n, i in bad:self.assertFalse(read_gate.decide(d, n, i), (n, i))
+    def test_hook_script_fails_closed(self):
+        gate = str(Path(__file__).resolve().parents[1] / 'server/digital_team/read_gate.py');d = str(self.code.resolve())
+        run = lambda payload, arg=d: subprocess.run([sys.executable, gate, arg], input=payload, text=True, capture_output=True).returncode
+        self.assertEqual(run(json.dumps({'tool_name': 'Read', 'tool_input': {'file_path': d + '/a.js'}})), 0)
+        self.assertEqual(run(json.dumps({'tool_name': 'Read', 'tool_input': {'file_path': '/etc/passwd'}})), 2)
+        self.assertEqual(run('not json'), 2);self.assertEqual(run('{}'), 2)
+    def test_flags_only_with_code_dir(self):
+        plain = ClaudeChat(sys.executable, str(self.ws)).command(None)[0]
+        self.assertEqual(plain[plain.index('--tools') + 1], '');self.assertNotIn('--settings', plain)
+        args = self.engine().command(None)[0]
+        self.assertEqual(args[args.index('--tools') + 1], 'Read,Grep,Glob')
+        hooks = json.loads(args[args.index('--settings') + 1])['hooks']['PreToolUse'][0]
+        self.assertEqual(hooks['matcher'], '*');self.assertIn('read_gate.py', hooks['hooks'][0]['command'])
+        self.assertIn('Bash', args[args.index('--disallowedTools') + 1:]);self.assertIn('--add-dir', args)
+    def test_answer_allows_inside_read_and_stops_on_anything_else(self):
+        d = str(self.code.resolve())
+        use = lambda name, inp: {'type': 'assistant', 'session_id': 's1', 'message': {'content': [{'type': 'tool_use', 'name': name, 'input': inp}]}}
+        done = [{'type': 'assistant', 'session_id': 's1', 'message': {'content': [{'type': 'text', 'text': 'تم'}]}}, {'type': 'result', 'result': 'تم'}]
+        call = lambda eng: eng.answer([{'name': 'م', 'body': 'x'}], None, lambda t: None, lambda t: None, lambda: False)
+        self.assertEqual(call(self.engine([use('Read', {'file_path': d + '/a.js'})] + done)), 'تم')
+        for name, inp in (('Read', {'file_path': '/etc/passwd'}), ('Bash', {'command': 'ls'}), ('Write', {'file_path': d + '/x'}), ('Grep', {'pattern': 'x', 'path': '/'})):
+            with self.assertRaises(RuntimeFailure):call(self.engine([use(name, inp)] + done))
+        with self.assertRaises(RuntimeFailure):call(self.engine([use('Read', {'file_path': d + '/a.js'})] * 31 + done))
+    def test_no_code_dir_keeps_every_tool_forbidden(self):
+        eng = self.engine();eng.code_dir = None
+        self.assertFalse(eng.tool_allowed({'name': 'Read', 'input': {'file_path': str(self.code / 'a.js')}}))
 
 import unittest.mock
 if __name__=='__main__':unittest.main()
