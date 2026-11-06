@@ -9,7 +9,7 @@ const wait=()=>new Promise(r=>setTimeout(r,20));
  w.SSMPDAuth={currentAdmin:{id:'owner',name:'محمد',role:'super_admin'}};
  w.SSMPD_CONFIG={supabase:{url:'https://fixture.invalid',anonKey:'test'}};
  w.supabase={createClient:()=>({auth:{getSession:async()=>({data:{session:{access_token:'fixture-auth-token'}}})}})};
- let noteTotal=0,readCalls=[],attachCalls=[],rooms=[],members={},messages={},calls=[],savedGrants=[],sendCount=0,failOnce=false,limitVal=4,empState={enabled:false,per_user:3,total:30};
+ let noteTotal=0,grantsSeed=[],readCalls=[],attachCalls=[],rooms=[],members={},messages={},calls=[],savedGrants=[],sendCount=0,failOnce=false,limitVal=4,empState={enabled:false,per_user:3,total:30};
  const agents=[{code:'codex',name:'Codex',chat:true,task:true,connected:true},{code:'claude',name:'Claude Code',chat:true,task:true,connected:true},{code:'sia',name:'سيا',chat:true,task:true}];
  w.fetch=async(url,opts)=>{
   assert.equal(opts.headers.Authorization,'Bearer fixture-auth-token');
@@ -19,7 +19,7 @@ const wait=()=>new Promise(r=>setTimeout(r,20));
   else if(url.endsWith('/read'))readCalls.push(url);
   else if(url.endsWith('/archive')){rooms.find(r=>r.id===url.split('/')[4]).archived=data.archived;value={ok:true};}
   else if(url.endsWith('/bootstrap'))value={me:{id:'owner',name:'محمد',owner:true},agents};
-  else if(url.endsWith('/grants')){if(data)savedGrants.push(data);value={grants:savedGrants};}
+  else if(url.endsWith('/grants')){if(data)savedGrants.push(data);value={grants:[...grantsSeed,...savedGrants]};}
   else if(url.endsWith('/attachments')){attachCalls.push(data);value={id:'att'+attachCalls.length,name:data.name,kind:'image',mime:data.mime,size:3};}
   else if(url.endsWith('/users'))value={users:[{id:'owner',name:'محمد'},{id:'staff',name:'موظف الاختبار'}]};
   else if(url.endsWith('/rooms')){
@@ -55,7 +55,18 @@ const wait=()=>new Promise(r=>setTimeout(r,20));
  d.querySelector('[data-sc-close]').click();await w.SSMPDServerTeamChat.open('codex');await wait();
  assert.equal(rooms.length,1,'private direct thread resumes');
  d.querySelector('[data-sc-new]').click();await wait();
- d.querySelector('[data-sc-agent=codex]').checked=true;d.querySelector('[data-sc-agent=sia]').checked=true;d.querySelector('[data-sc-user=staff]').checked=true;
+ {
+  // new-chat form guards: counter, missing-grant reason + shortcut, create disabled
+  d.querySelector('[data-sc-agent=codex]').checked=true;d.querySelector('[data-sc-agent=sia]').checked=true;d.querySelector('[data-sc-user=staff]').checked=true;
+  d.querySelector('[data-sc-user=staff]').dispatchEvent(new w.Event('change'));
+  assert(d.querySelector('[data-sc-count]').textContent.includes('2/8'),'agent counter');
+  assert(!d.querySelector('[data-sc-reason]').hidden&&d.querySelector('[data-sc-reason]').textContent.includes('موظف الاختبار'),'missing grant reason names the user');
+  assert.equal(d.querySelector('[data-sc-create]').disabled,true,'create disabled without grants');
+  d.querySelector('[data-sc-open-access]').click();await wait();assert(d.querySelector('[data-sc-grant-user]'),'shortcut opens access management');
+  grantsSeed.push({user_id:'staff',agent:'codex',chat:1},{user_id:'staff',agent:'sia',chat:1});
+  d.querySelector('[data-sc-new]').click();await wait();
+ }
+ d.querySelector('[data-sc-agent=codex]').checked=true;d.querySelector('[data-sc-agent=sia]').checked=true;d.querySelector('[data-sc-user=staff]').checked=true;d.querySelector('[data-sc-user=staff]').dispatchEvent(new w.Event('change'));
  d.querySelector('[data-sc-create]').click();await wait();await wait();
  assert.equal(rooms.length,2,'mixed group created');
  assert.deepEqual(rooms[1].agents,['codex','sia']);
@@ -122,6 +133,23 @@ const wait=()=>new Promise(r=>setTimeout(r,20));
  Object.defineProperty(w.navigator,'clipboard',{configurable:true,value:undefined});let execd=false,execText=null;d.execCommand=(c)=>{execd=c==='copy';execText=d.activeElement&&d.activeElement.value;return true;};
  copyButtons[0].click();await wait();assert(execd,'fallback uses execCommand when the Clipboard API is missing');
  assert(!d.querySelector('dialog textarea[readonly]'),'fallback textarea removed');
+ {
+  const ta=d.querySelector('[name=body]');ta.value='مرحبا @co';ta.dispatchEvent(new w.Event('input'));
+  const mb=d.querySelector('[data-sc-mention=codex]');assert(mb&&!d.querySelector('[data-sc-mentions]').hidden,'@ opens the agent list');
+  mb.click();assert.equal(d.querySelector('[name=target]').value,'codex','mention selects the target');assert.equal(ta.value,'مرحبا ','mention token removed');
+  ta.value='';ta.dispatchEvent(new w.Event('input'));assert(d.querySelector('[data-sc-mentions]').hidden);
+  assert(d.querySelector('.sc-settings [data-sc-access]'),'admin actions live inside the settings menu');assert(d.querySelector('.sc-toolbar > [data-sc-new]'),'new chat stays primary');
+ }
+ {
+  messages['room-1'].push({id:'agent2',seq:3,author:'agent:codex',name:'Codex',body:'**مهم** والأمر `ls` <img src=x onerror=alert(1)>\n- بند ١\n- بند ٢\n```\necho hi\n```',created:Date.now()/1000,attachments:[]});
+  await new Promise(r=>setTimeout(r,3100));
+  const am=Array.from(d.querySelectorAll('.sc-message.agent')).at(-1);
+  assert(am.querySelector('strong'),'bold rendered');assert(am.querySelector('code'),'inline code');assert.equal(am.querySelectorAll('li').length,2,'list rendered');assert(am.querySelector('pre code').textContent.includes('echo hi'),'fenced block');
+  assert.equal(am.querySelector('img'),null,'raw HTML never rendered');assert(am.textContent.includes('<img src=x'),'html shown as text');
+  assert(am.querySelector('.sc-avatar.agent'),'agent avatar');assert(d.querySelectorAll('.sc-day').length>=1,'date separator');
+  const q=d.querySelector('[data-sc-room-search]');q.value='ماليس';q.dispatchEvent(new w.Event('input'));await wait();assert.equal(d.querySelectorAll('[data-sc-room]').length,0,'room search filters');
+  q.value='';q.dispatchEvent(new w.Event('input'));await wait();assert(d.querySelectorAll('[data-sc-room]').length>=2);
+ }
  // attach
  assert(d.querySelector('[data-sc-warn]').textContent.includes('بيانات تعريف المرضى'),'patient-identifier warning shown');
  const pick=d.querySelector('[data-sc-file]');assert(pick.accept.includes('application/pdf'));

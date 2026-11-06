@@ -3,7 +3,7 @@
 'use strict';
 if(w.SSMPDServerTeamChat)return;
 var db=null,identity=null,rooms=[],users=[],agents=[],active='',dialog=null,timer=null,busy=false,revision=0,returnFocus=null;
-var notif={total:0,items:[]},noteTimer=null,showArchived=false;
+var notif={total:0,items:[]},noteTimer=null,showArchived=false,roomQuery='';
 var ICON_MSG='<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>';
 var base='/api/digital-team',files=[],texts={},uploading=0,pending=null,lastDraw='',grants=[],access=false,authId='';
 function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
@@ -20,11 +20,43 @@ function status(text){if(dialog)dialog.querySelector('[data-sc-status]').textCon
 function name(code){return agents.find(function(a){return a.code===code;})?.name||code;}
 function node(q){return dialog?.querySelector(q);}
 function button(label,attr){return '<button type="button" '+attr+'>'+esc(label)+'</button>';}
+function closeMenu(){var m=node('[data-sc-settings]');if(m)m.open=false;}
 function kill(){clearTimeout(timer);timer=null;}
 var MAX_FILE=700000,MAX_FILES=3,ICON_COPY='<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M9 9h10v10H9zM5 15V5h10"/></svg>',ICON_OK='<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" d="M5 12l5 5 9-10"/></svg>';
 function copyButton(id){return '<button type="button" class="sc-copy" data-sc-copy="'+esc(id)+'" aria-label="نسخ نص الرسالة" title="نسخ">'+ICON_COPY+'</button>';}
 function chips(list){return (list&&list.length)?'<ul class="sc-chips">'+list.map(function(f){return '<li>📎 '+esc(f.name)+'</li>';}).join('')+'</ul>':'';}
-function messageHtml(m,mine){texts[m.id]=m.body;return '<article class="sc-message '+(mine?'mine':'')+'"><div class="sc-msg-head"><b>'+esc(m.name)+'</b>'+copyButton(m.id)+'</div><p>'+esc(m.body)+'</p>'+chips(m.attachments)+'<small>'+esc(new Date(m.created*1000).toLocaleString('ar-EG'))+'</small></article>';}
+function md(text){
+ // Safe subset: everything is escaped first, then only a few fixed patterns become tags. No links, no raw HTML.
+ var parts=String(text==null?'':text).split(/```/),out='';
+ parts.forEach(function(part,i){
+  if(i%2===1){out+='<pre class="sc-code"><code>'+esc(part.replace(/^[^\n]*\n/,function(m){return /^[\w+-]{0,12}\n$/.test(m)?'':m;}).replace(/\n$/,''))+'</code></pre>';return;}
+  var lines=esc(part).split('\n'),html='',list='';
+  function endList(){if(list){html+='</'+list+'>';list='';}}
+  lines.forEach(function(l){
+   var li=/^\s*[-*•]\s+(.*)$/.exec(l),ol=/^\s*\d+[.)]\s+(.*)$/.exec(l);
+   if(li||ol){var t=li?'ul':'ol';if(list!==t){endList();html+='<'+t+'>';list=t;}html+='<li>'+inline((li||ol)[1])+'</li>';return;}
+   endList();html+=inline(l)+'<br>';
+  });
+  endList();out+=html.replace(/(<br>)+$/,'');
+ });
+ return out;
+}
+function inline(t){return t.replace(/`([^`\n]+)`/g,'<code>$1</code>').replace(/\*\*([^*\n]+)\*\*/g,'<strong>$1</strong>');}
+function avatar(m){
+ var agent=String(m.author||'').indexOf('agent:')===0,key=agent?String(m.author):String(m.author||m.name||''),h=0;
+ for(var i=0;i<key.length;i++)h=(h*31+key.charCodeAt(i))%360;
+ var label=String(m.name||'?').trim().charAt(0)||'?';
+ return '<span class="sc-avatar'+(agent?' agent':'')+'" style="--h:'+h+'" aria-hidden="true">'+esc(label)+'</span>';
+}
+function dayLabel(sec){
+ var d=new Date(sec*1000),now=new Date(),y=new Date(now.getTime()-864e5),same=function(a,b){return a.toDateString()===b.toDateString();};
+ return same(d,now)?'اليوم':same(d,y)?'أمس':d.toLocaleDateString('ar-EG',{year:'numeric',month:'long',day:'numeric'});
+}
+function messageHtml(m,mine,prev){
+ texts[m.id]=m.body;var agent=String(m.author||'').indexOf('agent:')===0;
+ var sep=(!prev||new Date(prev.created*1000).toDateString()!==new Date(m.created*1000).toDateString())?'<div class="sc-day" role="separator">'+esc(dayLabel(m.created))+'</div>':'';
+ return sep+'<article class="sc-message '+(mine?'mine':'')+(agent?' agent':'')+'">'+avatar(m)+'<div class="sc-msg-body"><div class="sc-msg-head"><b>'+esc(m.name)+'</b>'+copyButton(m.id)+'</div><p>'+(agent?md(m.body):esc(m.body))+'</p>'+chips(m.attachments)+'<small>'+esc(new Date(m.created*1000).toLocaleString('ar-EG'))+'</small></div></article>';
+}
 async function copyText(text){
  try{if(w.navigator.clipboard&&w.navigator.clipboard.writeText){await w.navigator.clipboard.writeText(text);return true;}}catch(_){}
  var ta=document.createElement('textarea');ta.value=text;ta.setAttribute('readonly','');ta.setAttribute('aria-hidden','true');ta.style.cssText='position:fixed;top:0;inset-inline-start:0;opacity:0;pointer-events:none';
@@ -82,22 +114,24 @@ function close(){kill();revision++;files=[];texts={};uploading=0;dialog?.remove(
 function frame(){
  returnFocus=document.activeElement;
  dialog=document.createElement('dialog');dialog.className='sc-dialog';dialog.dir='rtl';dialog.setAttribute('aria-label','محادثات الفريق على السيرفر');
- dialog.innerHTML='<header class="sc-header"><div><h2>محادثات الفريق</h2><p>Codex على كونتابو · سجل محفوظ</p></div>'+button('إغلاق','data-sc-close')+'</header>'+
- '<div class="sc-toolbar">'+button('محادثة جديدة','data-sc-new')+button('المشاركون','data-sc-members disabled')+(identity.owner?button('إدارة الوصول','data-sc-access'):'')+(identity.owner?button('تصدير','data-sc-export'):'')+(identity.owner?button('الحصة اليومية','data-sc-limit'):'')+(identity.owner?button('سونو للموظفين','data-sc-emp'):'')+'</div>'+
- '<div class="sc-layout"><aside aria-label="المحادثات" data-sc-rooms></aside><section class="sc-conversation"><h3 data-sc-title>اختر محادثة</h3><div class="sc-tools" data-sc-tools hidden></div><div class="sc-messages" data-sc-messages aria-live="polite"></div>'+
- '<form data-sc-form class="sc-compose"><div class="sc-compose-options"><select name="kind" aria-label="نوع الرسالة"><option value="chat">رسالة</option><option value="question">سؤال</option><option value="instruction">تعليمات للنقاش</option><option value="task">طلب تنفيذ</option></select><select name="target" aria-label="الوكيل المطلوب"></select></div>'+(identity.owner?'<p class="sc-attach-warn" data-sc-warn>تنبيه: لا ترفع ملفات أو صورًا فيها بيانات تعريف المرضى (الاسم أو الهوية أو الهاتف أو رقم الملف). المرفقات تُحفظ على السيرفر وتُرسل إلى محرك الذكاء الاصطناعي.</p><div class="sc-files" data-sc-files aria-live="polite"></div>':'')+'<div class="sc-send">'+(identity.owner?'<button type="button" class="sc-attach" data-sc-attach aria-label="إرفاق ملف أو صورة" title="إرفاق ملف أو صورة (png / jpg / webp / pdf / txt / csv / md — حتى 700 ك.ب)">📎</button><input type="file" data-sc-file hidden multiple accept="image/png,image/jpeg,image/webp,application/pdf,.txt,.csv,.md,text/plain,text/csv,text/markdown">':'')+'<textarea name="body" rows="2" maxlength="200000" placeholder="اكتب رسالتك…" aria-label="نص الرسالة"></textarea><button type="submit">إرسال</button></div></form><p class="sc-status" role="status" data-sc-status></p></section></div>';
+ dialog.innerHTML='<header class="sc-header"><div><button type="button" class="sc-drawer" data-sc-drawer aria-label="قائمة المحادثات">☰</button><h2>محادثات الفريق</h2><p>Codex على كونتابو · سجل محفوظ</p></div>'+button('إغلاق','data-sc-close')+'</header>'+
+ '<div class="sc-toolbar">'+button('محادثة جديدة','data-sc-new class="sc-primary"')+button('المشاركون','data-sc-members disabled')+(identity.owner?'<details class="sc-settings" data-sc-settings><summary>إعدادات</summary><div class="sc-settings-menu">'+button('إدارة الوصول','data-sc-access')+button('الحصة اليومية','data-sc-limit')+button('سونو للموظفين','data-sc-emp')+button('تصدير','data-sc-export')+'</div></details>':'')+'</div>'+
+ '<div class="sc-layout"><aside aria-label="المحادثات" class="sc-side"><input type="search" data-sc-room-search placeholder="ابحث في المحادثات" aria-label="بحث في المحادثات"><div data-sc-rooms></div></aside><section class="sc-conversation"><h3 data-sc-title>اختر محادثة</h3><div class="sc-tools" data-sc-tools hidden></div><div class="sc-messages" data-sc-messages aria-live="polite"></div>'+
+ '<form data-sc-form class="sc-compose"><div class="sc-compose-options"><label class="sc-opt">النوع <select name="kind" aria-label="نوع الرسالة"><option value="chat">رسالة</option><option value="question">سؤال</option><option value="instruction">تعليمات للنقاش</option><option value="task">طلب تنفيذ</option></select></label><label class="sc-opt">إلى <select name="target" aria-label="الوكيل المطلوب"></select></label></div>'+(identity.owner?'<details class="sc-warn-wrap"><summary>ⓘ تنبيه المرفقات</summary><p class="sc-attach-warn" data-sc-warn>تنبيه: لا ترفع ملفات أو صورًا فيها بيانات تعريف المرضى (الاسم أو الهوية أو الهاتف أو رقم الملف). المرفقات تُحفظ على السيرفر وتُرسل إلى محرك الذكاء الاصطناعي.</p></details><div class="sc-files" data-sc-files aria-live="polite"></div>':'')+'<div class="sc-send">'+(identity.owner?'<button type="button" class="sc-attach" data-sc-attach aria-label="إرفاق ملف أو صورة" title="إرفاق ملف أو صورة (png / jpg / webp / pdf / txt / csv / md — حتى 700 ك.ب)">📎</button><input type="file" data-sc-file hidden multiple accept="image/png,image/jpeg,image/webp,application/pdf,.txt,.csv,.md,text/plain,text/csv,text/markdown">':'')+'<div class="sc-input"><div class="sc-mentions" data-sc-mentions hidden></div><textarea name="body" rows="2" maxlength="200000" placeholder="اكتب رسالتك… (@ لاختيار وكيل)" aria-label="نص الرسالة"></textarea></div><button type="submit">إرسال</button></div><p class="sc-hint">Enter للإرسال · Shift+Enter سطر جديد · @ لاستدعاء وكيل</p></form><p class="sc-status" role="status" data-sc-status></p></section></div>';
  document.body.appendChild(dialog);dialog.showModal();
  node('[data-sc-close]').onclick=close;
+ node('[data-sc-room-search]').oninput=function(){roomQuery=this.value;refreshRooms().catch(function(e){status(e.message);});};
+ node('[data-sc-drawer]').onclick=function(){node('.sc-layout').classList.toggle('show-rooms');};
  dialog.addEventListener('cancel',function(e){e.preventDefault();close();});
  node('[data-sc-new]').onclick=createForm;
  node('[data-sc-members]').onclick=membersForm;
- if(identity.owner)node('[data-sc-access]').onclick=accessForm;
- if(identity.owner)node('[data-sc-export]').onclick=exportForm;
- if(identity.owner)node('[data-sc-limit]').onclick=limitForm;
- if(identity.owner)node('[data-sc-emp]').onclick=empForm;
+ if(identity.owner)node('[data-sc-access]').onclick=function(){closeMenu();accessForm();};
+ if(identity.owner)node('[data-sc-export]').onclick=function(){closeMenu();exportForm();};
+ if(identity.owner)node('[data-sc-limit]').onclick=function(){closeMenu();limitForm();};
+ if(identity.owner)node('[data-sc-emp]').onclick=function(){closeMenu();empForm();};
  node('[data-sc-form]').onsubmit=function(e){e.preventDefault();send();};
  node('[name=body]').addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();node('[data-sc-form]').requestSubmit();}});
- node('[name=body]').addEventListener('input',function(){pending=null;});
+ node('[name=body]').addEventListener('input',function(){pending=null;mentionList();});
  node('[data-sc-messages]').addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('[data-sc-copy]');if(b)onCopy(b);});
  if(identity.owner){var pick=node('[data-sc-file]');node('[data-sc-attach]').onclick=function(){pick.click();};pick.onchange=function(){var list=Array.from(pick.files||[]);pick.value='';attach(list);};}
  node('[name=kind]').onchange=function(){pending=null;};node('[name=target]').onchange=function(){pending=null;};
@@ -119,7 +153,7 @@ async function open(code){
 async function refreshRooms(){
  var data=await api('/rooms');rooms=data.rooms;
  if(!dialog)return;
- var live=rooms.filter(function(r){return !r.archived;}),arch=rooms.filter(function(r){return r.archived;});
+ var q=roomQuery.trim().toLocaleLowerCase(),hit=function(r){return !q||String(r.title).toLocaleLowerCase().indexOf(q)>=0;},live=rooms.filter(function(r){return !r.archived&&hit(r);}),arch=rooms.filter(function(r){return r.archived&&hit(r);});
  function row(r){
   var badge=r.unread?'<span class="sc-unread">'+(r.unread>99?'99+':r.unread)+'</span>':(r.invited?'<span class="sc-new">جديدة</span>':'');
   var sub=r.invited&&r.invited_by?'أضافك '+esc(r.invited_by):(r.last?esc(r.last.name)+': '+esc(r.last.body):'');
@@ -133,6 +167,7 @@ async function refreshRooms(){
  var tg=node('[data-sc-archived]');if(tg)tg.onclick=function(){showArchived=!showArchived;refreshRooms().catch(function(e){status(e.message);});};
 }
 async function selectRoom(id){
+ var lay=node('.sc-layout');if(lay)lay.classList.remove('show-rooms');
  active=id;revision++;pending=null;lastDraw='';files=[];texts={};renderFiles();kill();node('[data-sc-tools]').hidden=true;node('.sc-conversation').classList.remove('sc-editing');
  var r=rooms.find(function(x){return x.id===id;});if(!r)return;
  node('[data-sc-title]').textContent=r.title;node('[data-sc-members]').disabled=!r.can_manage;
@@ -147,8 +182,9 @@ async function poll(scroll){
   var data=await api('/rooms/'+room+'/messages');if(!dialog||room!==active||ticket!==revision)return;
   var hash=JSON.stringify(data),box=node('[data-sc-messages]'),nearEnd=box.scrollHeight-box.scrollTop-box.clientHeight<80;
   if(hash!==lastDraw){var firstDraw=lastDraw==='';lastDraw=hash;if(!firstDraw){markRead(room);refreshRooms().catch(function(){});}
-   box.innerHTML=(data.before?button('رسائل أقدم','data-sc-older="'+data.before+'"'):'')+data.messages.map(function(m){return messageHtml(m,m.author===identity.id);}).join('')+
-    data.jobs.filter(function(j){return j.state!=='complete';}).map(function(j){return '<article class="sc-job"><b>'+esc(name(j.agent))+' · '+esc(stateNames[j.state]||j.state)+'</b><p>'+esc(j.state==='running'?j.text:j.error)+'</p>'+(['queued','running','awaiting_owner'].includes(j.state)?button('إيقاف','data-sc-cancel="'+esc(j.id)+'"'):'')+'</article>';}).join('');
+   box.innerHTML=(data.before?button('رسائل أقدم','data-sc-older="'+data.before+'"'):'')+data.messages.map(function(m,i){return messageHtml(m,m.author===identity.id,data.messages[i-1]);}).join('')+
+    data.jobs.filter(function(j){return j.state!=='complete';}).map(function(j){var live=j.state==='queued'||j.state==='running',bad=['failed','interrupted','limited'].indexOf(j.state)>=0;return '<article class="sc-job'+(live?' typing':'')+'"><b>'+esc(name(j.agent))+' · '+esc(stateNames[j.state]||j.state)+(live?'<span class="sc-dots" aria-hidden="true"><i></i><i></i><i></i></span>':'')+'</b><p>'+esc(j.state==='running'?j.text:j.error)+'</p>'+(['queued','running','awaiting_owner'].includes(j.state)?button('إيقاف','data-sc-cancel="'+esc(j.id)+'"'):'')+(bad&&texts[j.message_id]?button('إعادة المحاولة','data-sc-retry="'+esc(j.id)+'" data-agent="'+esc(j.agent)+'" data-msg="'+esc(j.message_id)+'"'):'')+'</article>';}).join('');
+   box.querySelectorAll('[data-sc-retry]').forEach(function(b){b.onclick=async function(){b.disabled=true;try{await api('/rooms/'+room+'/messages',{body:texts[b.dataset.msg],kind:'question',targets:[b.dataset.agent],request_key:w.crypto.randomUUID()});poll(false);}catch(e){status(e.message);b.disabled=false;}};});
    box.querySelectorAll('[data-sc-cancel]').forEach(function(b){b.onclick=async function(){try{await api('/rooms/'+room+'/cancel/'+b.dataset.scCancel,{});poll(false);}catch(e){status(e.message);}};});
    var older=box.querySelector('[data-sc-older]');if(older)older.onclick=function(){loadOlder(older,room);};
    if(scroll||nearEnd)box.scrollTop=box.scrollHeight;
@@ -175,11 +211,33 @@ function userChoices(selected,editing){return users.map(function(u){var m=(selec
 function agentChoices(selected){return agents.filter(function(a){return a.chat;}).map(function(a){return '<label class="sc-person"><input type="checkbox" data-sc-agent="'+esc(a.code)+'" '+(selected?.includes(a.code)?'checked':'')+'>'+esc(a.name)+'</label>';}).join('');}
 function selectedAgents(){return Array.from(dialog.querySelectorAll('[data-sc-agent]:checked')).map(function(x){return x.dataset.scAgent;});}
 async function createForm(){
- try{users=(await api('/users')).users.filter(function(u){return u.id!==identity.id;});
- tools('<h4>محادثة جديدة</h4><label>اسم المحادثة<input name="sc-title" maxlength="120" value="محادثة الفريق"></label><h5>الوكلاء</h5>'+agentChoices([])+'<h5>المستخدمون</h5><input data-sc-user-search placeholder="ابحث عن مستخدم" aria-label="البحث عن مستخدم">'+userChoices([])+button('إنشاء','data-sc-create')+button('إلغاء','data-sc-dismiss'));
+ try{var vals=await Promise.all([api('/users'),identity.owner?api('/grants').catch(function(){return {grants:[]};}):Promise.resolve({grants:[]}),identity.owner?api('/employees').catch(function(){return {};}):Promise.resolve({})]);
+ users=vals[0].users.filter(function(u){return u.id!==identity.id;});grants=vals[1].grants||[];var codexOpen=!!vals[2].enabled;
+ tools('<h4>محادثة جديدة</h4><label>اسم المحادثة<input name="sc-title" maxlength="120" value="محادثة الفريق"></label><h5>الوكلاء <span class="sc-count" data-sc-count></span></h5>'+agentChoices([])+'<h5>المستخدمون</h5><input data-sc-user-search placeholder="ابحث عن مستخدم" aria-label="البحث عن مستخدم">'+userChoices([])+'<div class="sc-reason" data-sc-reason hidden></div>'+button('إنشاء','data-sc-create')+button('إلغاء','data-sc-dismiss'));
  filterUsers();node('[data-sc-dismiss]').onclick=function(){node('[data-sc-tools]').hidden=true;node('.sc-conversation').classList.remove('sc-editing');poll(false);};
+ function refresh(){
+  var sel=selectedAgents(),picked=Array.from(dialog.querySelectorAll('[data-sc-user]:checked')).map(function(x){return x.dataset.scUser;}),now=Date.now()/1000,missing=[];
+  node('[data-sc-count]').textContent=sel.length+'/8';
+  if(identity.owner)picked.forEach(function(uid){sel.forEach(function(a){
+   var ok=(a==='codex'&&codexOpen)||grants.some(function(g){return g.user_id===uid&&g.agent===a&&g.chat&&(!g.expires||g.expires>now);});
+   if(!ok)missing.push((users.find(function(u){return u.id===uid;})||{}).name+' ← '+name(a));});});
+  var box=node('[data-sc-reason]');box.hidden=!missing.length&&sel.length<=8;
+  box.innerHTML=(sel.length>8?'<p>الحد الأقصى 8 وكلاء في المحادثة الواحدة.</p>':'')+(missing.length?'<p>ناقص صلاحية محادثة: '+missing.map(esc).join('، ')+'</p>'+button('افتح إدارة الوصول','data-sc-open-access'):'');
+  var go=node('[data-sc-open-access]');if(go)go.onclick=accessForm;
+  node('[data-sc-create]').disabled=sel.length>8||missing.length>0;
+ }
+ dialog.querySelectorAll('[data-sc-agent],[data-sc-user]').forEach(function(x){x.addEventListener('change',refresh);});refresh();
  node('[data-sc-create]').onclick=async function(){var b=this;b.disabled=true;try{var r=await api('/rooms',{title:node('[name=sc-title]').value,agents:selectedAgents(),users:Array.from(dialog.querySelectorAll('[data-sc-user]:checked')).map(function(x){return x.dataset.scUser;})});await refreshRooms();await selectRoom(r.id);}catch(e){status(e.message);}finally{b.disabled=false;}};
  }catch(e){status(e.message);}
+}
+function mentionList(){
+ var box=node('[data-sc-mentions]'),ta=node('[name=body]');if(!box||!ta)return;
+ var r=rooms.find(function(x){return x.id===active;}),m=/(?:^|\s)@([^\s@]*)$/.exec(ta.value);
+ if(!r||!m){box.hidden=true;box.innerHTML='';return;}
+ var q=m[1].toLocaleLowerCase(),list=r.agents.filter(function(a){return name(a).toLocaleLowerCase().indexOf(q)>=0||a.indexOf(q)>=0;});
+ if(!list.length){box.hidden=true;box.innerHTML='';return;}
+ box.hidden=false;box.innerHTML=list.map(function(a){return button('@'+name(a),'data-sc-mention="'+esc(a)+'"');}).join('');
+ box.querySelectorAll('[data-sc-mention]').forEach(function(b){b.onclick=function(){ta.value=ta.value.replace(/(^|\s)@[^\s@]*$/,'$1');node('[name=target]').value=b.dataset.scMention;pending=null;box.hidden=true;ta.focus();};});
 }
 function filterUsers(){var input=node('[data-sc-user-search]');if(input)input.oninput=function(){var q=input.value.trim().toLocaleLowerCase();dialog.querySelectorAll('.sc-person:has([data-sc-user])').forEach(function(row){row.hidden=!row.textContent.toLocaleLowerCase().includes(q);});};}
 async function membersForm(){
