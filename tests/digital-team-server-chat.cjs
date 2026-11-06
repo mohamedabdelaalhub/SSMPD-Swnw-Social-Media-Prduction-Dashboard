@@ -205,6 +205,10 @@ const wait=()=>new Promise(r=>setTimeout(r,20));
   d.querySelector('[data-sc-ask]').requestSubmit();await new Promise(r=>setTimeout(r,120));await wait();
   const ans=d.querySelector('[data-sc-answer]');assert(ans.querySelector('strong'),'answer rendered');assert(ans.textContent.includes('إضافة حجز'),'source shown');
   ans.querySelector('[data-sc-rate][data-value="-1"]').click();await wait();await wait();assert.equal(ratingCalls.at(-1).data.value,-1);
+  { let copied2=null;Object.defineProperty(w.navigator,'clipboard',{configurable:true,value:{writeText:async x=>{copied2=x;}}});let went=0;const nav=d.createElement('button');nav.dataset.goto='tasks';nav.onclick=()=>went++;d.body.appendChild(nav);
+    ans.querySelector('[data-sc-task]').click();await wait();await wait();
+    assert(copied2&&copied2.startsWith('عنوان المهمة: الخطوات هنا')&&copied2.includes('التفاصيل:'),'task text copied');assert.equal(went,1,'tasks screen opened');assert(d.querySelector('.sc-toast'),'toast shown');assert(!d.querySelector('dialog'),'chat closed');nav.remove();
+    await w.SSMPDServerTeamChat.open();await wait();await wait(); }
   d.querySelector('[data-sc-full]').click();await wait();await wait();assert(d.querySelector('.sc-layout'),'full chat reachable');
   d.querySelector('[data-sc-close]').click();isOwner=true;
  }

@@ -54,7 +54,7 @@ function dayLabel(sec){
 }
 function rateRow(m){
  var src=(m.sources&&m.sources.length)?'<span class="sc-sources">المصدر: '+m.sources.map(function(x){return esc(x.title);}).join('، ')+'</span>':'';
- return '<div class="sc-rate">'+button('👍','data-sc-rate="'+esc(m.id)+'" data-value="1" aria-label="رد مفيد" aria-pressed="'+(m.my_rating===1)+'"')+button('👎','data-sc-rate="'+esc(m.id)+'" data-value="-1" aria-label="رد غير مفيد" aria-pressed="'+(m.my_rating===-1)+'"')+src+'</div>';
+ return '<div class="sc-rate">'+button('👍','data-sc-rate="'+esc(m.id)+'" data-value="1" aria-label="رد مفيد" aria-pressed="'+(m.my_rating===1)+'"')+button('👎','data-sc-rate="'+esc(m.id)+'" data-value="-1" aria-label="رد غير مفيد" aria-pressed="'+(m.my_rating===-1)+'"')+button('📝 حوّل إلى مهمة','data-sc-task="'+esc(m.id)+'" title="ينسخ عنوان المهمة وتفاصيلها ثم يفتح شاشة المهام"')+src+'</div>';
 }
 function messageHtml(m,mine,prev){
  texts[m.id]=m.body;var agent=String(m.author||'').indexOf('agent:')===0;
@@ -64,6 +64,15 @@ function messageHtml(m,mine,prev){
 async function rate(btn){
  var want=Number(btn.dataset.value),on=btn.getAttribute('aria-pressed')==='true';
  try{await api('/messages/'+btn.dataset.scRate+'/rating',{value:on?0:want});lastDraw='';await poll(false);loadBar();}catch(e){status(e.message);}
+}
+function toast(msg){var t=document.createElement('div');t.className='sc-toast';t.setAttribute('role','status');t.textContent=msg;document.body.appendChild(t);w.setTimeout(function(){t.remove();},5000);}
+async function toTask(btn){
+ var body=texts[btn.dataset.scTask];if(body==null)return;
+ var lines=String(body).split('\n').map(function(l){return l.replace(/[*`#>-]+/g,'').trim();}).filter(Boolean),title=(lines[0]||'مهمة').slice(0,80);
+ var ok=await copyText('عنوان المهمة: '+title+'\n\nالتفاصيل:\n'+body);
+ var nav=document.querySelector('[data-goto="tasks"]');
+ if(ok){close();if(nav)nav.click();toast('اتنسخ نص المهمة. اضغط «مهمة جديدة» في المشروع المناسب والصق.');}
+ else status('تعذر النسخ؛ انسخ الرد يدويًا');
 }
 async function copyText(text){
  try{if(w.navigator.clipboard&&w.navigator.clipboard.writeText){await w.navigator.clipboard.writeText(text);return true;}}catch(_){}
@@ -149,6 +158,7 @@ function frame(){
  node('[name=body]').addEventListener('input',function(){pending=null;mentionList();});
  node('[data-sc-messages]').addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('[data-sc-copy]');if(b)onCopy(b);
   var r=e.target.closest&&e.target.closest('[data-sc-rate]');if(r)rate(r);
+  var tk=e.target.closest&&e.target.closest('[data-sc-task]');if(tk)toTask(tk);
   var p=e.target.closest&&e.target.closest('[data-sc-prompt]');if(p){var ta=node('[name=body]');ta.value=p.dataset.scPrompt;ta.focus();}});
  if(identity.owner){var pick=node('[data-sc-file]');node('[data-sc-attach]').onclick=function(){pick.click();};pick.onchange=function(){var list=Array.from(pick.files||[]);pick.value='';attach(list);};}
  node('[name=kind]').onchange=function(){pending=null;};node('[name=target]').onchange=function(){pending=null;};
@@ -202,6 +212,7 @@ async function askSono(){
     if(dialog!==mine)return;texts[reply.id]=reply.body;
     out.innerHTML='<article class="sc-message agent"><span class="sc-avatar agent" style="--h:210" aria-hidden="true">س</span><div class="sc-msg-body"><div class="sc-msg-head"><b>سونو</b>'+copyButton(reply.id)+'</div><p>'+md(reply.body)+'</p>'+rateRow(reply)+'</div></article>';
     out.querySelector('[data-sc-copy]').onclick=function(){onCopy(this);};
+    out.querySelector('[data-sc-task]').onclick=function(){toTask(this);};
     out.querySelectorAll('[data-sc-rate]').forEach(function(b){b.onclick=async function(){var on=b.getAttribute('aria-pressed')==='true';try{await api('/messages/'+b.dataset.scRate+'/rating',{value:on?0:Number(b.dataset.value)});b.setAttribute('aria-pressed',String(!on));var o=out.querySelector('[data-sc-rate][aria-pressed=true]');out.querySelectorAll('[data-sc-rate]').forEach(function(x){if(x!==b)x.setAttribute('aria-pressed','false');});}catch(e){status(e.message);}};});
     form.elements.q.value='';loadBar();return;
    }

@@ -50,4 +50,5 @@
 .sc-hit{text-align:start}.sc-hit small{display:block;opacity:.75;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.sc-side h6{margin:8px 0 4px;font-size:12px;opacity:.7}
 .sc-dialog.sc-focus .sc-toolbar,.sc-dialog.sc-focus .sc-bar{display:none}.sc-dialog.sc-focus .sc-layout{grid-template-columns:minmax(0,1fr)}.sc-dialog.sc-focus .sc-layout aside:not(:focus-within){display:none}.sc-dialog.sc-focus.sc-focus .sc-layout.show-rooms aside{display:block}
 .sc-simple-body{padding:16px;display:grid;gap:12px;overflow:auto;align-content:start}.sc-ask{display:grid;gap:8px}.sc-ask textarea{min-height:90px}.sc-answer .sc-message{max-width:100%}.sc-simple{height:min(640px,calc(100dvh - 32px))}
+.sc-toast{position:fixed;inset-block-end:24px;inset-inline:16px;margin:auto;max-width:420px;z-index:2147483647;background:#0b1d4a;color:#fff;padding:12px 16px;border-radius:12px;box-shadow:0 10px 30px #0b1d4a66;text-align:center;font-size:14px}
 }
