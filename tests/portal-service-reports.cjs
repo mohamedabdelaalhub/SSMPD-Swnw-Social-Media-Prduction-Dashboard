@@ -1,0 +1,11 @@
+'use strict';
+const assert=require('node:assert/strict');
+global.window=global;require('../assets/js/../../patient-portal/portal-service-reports.js');
+const P=window.SSMPDPortalServiceReports._pure;
+assert.equal(P.cardHtml([]),'');assert.equal(P.cardHtml(null),'');assert.equal(P.cardHtml(undefined),'');
+const h=P.cardHtml([{service:'<script>x</script>',uploaded_at:'2026-11-06T10:00:00Z',file_name:'a"b.pdf',path:'w/o/a.pdf'}]);
+assert.ok(!h.includes('<script>'));assert.ok(h.includes('&lt;script&gt;'));assert.ok(!h.includes('a"b'));
+assert.ok(h.includes('data-service-report="w/o/a.pdf"'));assert.ok(h.includes('تقارير الخدمات'));
+assert.ok(!/price|سعر|عمولة|referral/i.test(h));
+assert.equal(P.esc('"<&>'),'&quot;&lt;&amp;&gt;');
+console.log('portal-service-reports tests passed');
