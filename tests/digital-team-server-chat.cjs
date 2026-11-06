@@ -21,7 +21,7 @@ const wait=()=>new Promise(r=>setTimeout(r,20));
   else if(url.endsWith('/rooms')){
    if(data){let id='room-'+(rooms.length+1);rooms.push({id,title:data.title,creator:'owner',agents:data.agents,can_manage:true,can_send:true});members[id]=[{user_id:'owner',name:'محمد',can_send:true,can_manage:true},...data.users.map(id=>({user_id:id,name:'موظف الاختبار',can_send:true,can_manage:false}))];messages[id]=[];value={id};}
    else value={rooms};
-  }else{
+  }else if(url.includes('/export')){value={rows:[{time:'2026-11-06 15:00:00',room:'غرفة',sender:'محمد',agent:'Codex',text:'=HYPERLINK("x")'},{time:'2026-11-06 15:01:00',room:'غرفة',sender:'Codex',agent:'Codex',text:'رد "مقتبس"'}]};}else{
    const room=url.split('/')[4];
    if(url.endsWith('/members')){
     if(data){members[room]=data.users.map(u=>({user_id:u.id,can_send:u.send,can_manage:u.manage}));rooms.find(r=>r.id===room).agents=data.agents;}
@@ -60,6 +60,11 @@ const wait=()=>new Promise(r=>setTimeout(r,20));
  d.querySelector('[data-sc-access]').click();await wait();
  const grant=d.querySelector('[data-sc-grant=codex]');grant.querySelector('[name=chat]').checked=true;grant.querySelector('[data-sc-save-grant]').click();await wait();
  assert.equal(savedGrants[0].user_id,'staff');assert(savedGrants[0].chat);
+ let saved=null;w.Blob=class{constructor(p,o){this.p=p;this.o=o;saved=this;}};w.URL.createObjectURL=()=>'blob:x';w.URL.revokeObjectURL=()=>{};
+ d.querySelector('[data-sc-export]').click();await wait();
+ d.querySelector('[data-sc-export-go]').click();await wait();
+ const ex=calls.filter(c=>c.url.includes('/export')).at(-1);assert(/from=.*T00%3A00&to=.*T23%3A59/.test(ex.url),'export range sent');
+ assert(saved&&saved.p[0].startsWith('\ufeff'),'CSV has BOM');assert(saved.p[0].includes("'=HYPERLINK"),'formula injection neutralised');assert(saved.p[0].includes('"رد ""مقتبس"""'),'quotes escaped');
  w.SSMPDAuth.currentAdmin=null;d.getElementById('app-root').appendChild(d.createElement('div'));await wait();
  assert(!d.querySelector('dialog'),'logout removes private conversation');
  dom.window.close();

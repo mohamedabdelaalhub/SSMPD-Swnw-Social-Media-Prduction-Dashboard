@@ -278,6 +278,51 @@ class Store:
             return {'messages':list(reversed(rows)), 'jobs':[j for j in jobs if j['message_id'] in ids],
                     'before': rows[-1]['seq'] if len(rows)==100 else None}
 
+    def export(self, actor, frm, to, room=None):
+        """Rows for export. Owner only (first release). from/to are Africa/Cairo wall-clock 'YYYY-MM-DDTHH:MM'; stored times are UTC epoch.
+        Honors membership and the since_seq history fence exactly like history()."""
+        from zoneinfo import ZoneInfo
+        from datetime import datetime, timezone
+        if not actor.owner:
+            raise Denied('التصدير متاح للمالك فقط')
+        cairo = ZoneInfo('Africa/Cairo')
+        def parse(v):
+            try:
+                return datetime.strptime(str(v), '%Y-%m-%dT%H:%M').replace(tzinfo=cairo).timestamp()
+            except ValueError:
+                raise Invalid('صيغة الوقت غير صحيحة')
+        start, end = parse(frm), parse(to)
+        if end <= start:
+            raise Invalid('نهاية الفترة قبل بدايتها')
+        if end - start > 366 * 86400:
+            raise Invalid('الفترة أطول من سنة')
+        with self.lock:
+            if room:
+                room_ids = [room]
+            else:
+                room_ids = [r['room'] for r in self.rows('SELECT room FROM members WHERE user_id=?', (actor.id,))]
+            out = []
+            for rid in room_ids:
+                try:
+                    m = self.membership(actor, rid)
+                except Denied:
+                    if room:
+                        raise
+                    continue
+                title = self.db.execute('SELECT title FROM rooms WHERE id=?', (rid,)).fetchone()['title']
+                for r in self.rows('SELECT * FROM messages WHERE room=? AND seq>=? AND created>=? AND created<? ORDER BY created,seq LIMIT 20001',
+                                   (rid, m['since_seq'], start, end)):
+                    agent = AGENTS.get(r['author'][6:], '') if r['author'].startswith('agent:') else ', '.join(AGENTS.get(a, a) for a in json.loads(r['targets']))
+                    out.append({'time': datetime.fromtimestamp(r['created'], timezone.utc).astimezone(cairo).strftime('%Y-%m-%d %H:%M:%S'),
+                                'room': title, 'sender': r['name'], 'agent': agent, 'text': r['body'], '_t': r['created']})
+            if len(out) > 20000:
+                raise Invalid('النتائج أكثر من 20000 رسالة؛ ضيّق الفترة')
+            out.sort(key=lambda x: x['_t'])
+            for x in out:
+                del x['_t']
+            self.audit(actor, 'export', room or '*')
+            return {'rows': out}
+
     def send(self, actor, room, data):
         body, key, kind = data.get('body'),data.get('request_key'),data.get('kind','chat')
         targets = data.get('targets',[])

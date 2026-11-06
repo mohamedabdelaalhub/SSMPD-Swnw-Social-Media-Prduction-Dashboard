@@ -45,6 +45,9 @@ class Service:
         if parts==['rooms']:
             if method=='GET':return {'rooms':self.store.rooms(a)}
             if method=='POST':return {'id':self.store.create(a,data,directory())}
+        if method=='GET' and parts==['export']:
+            q=parse_qs(u.query);g=lambda k:q.get(k,[None])[0]
+            return self.store.export(a,g('from'),g('to'),g('room'))
         if len(parts)>=2 and parts[0]=='rooms':
             room=parts[1]
             if len(parts)==3 and parts[2]=='messages':
