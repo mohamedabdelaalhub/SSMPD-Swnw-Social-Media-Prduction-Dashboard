@@ -1,0 +1,28 @@
+[Unit]
+Description=Swnw Digital Team conversation gateway
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=swnw
+Group=swnw
+WorkingDirectory=/opt/swnw-team-chat/server/digital_team
+EnvironmentFile=/etc/swnw-team-chat/environment
+ExecStart=/usr/bin/python3 /opt/swnw-team-chat/server/digital_team/app.py
+Restart=on-failure
+RestartSec=5
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+# Confirm these paths against actual deployment. CODEX_HOME must not be guessed or replaced.
+ReadWritePaths=/var/lib/swnw-team-chat /home/swnw/.codex
+MemoryMax=1G
+CPUQuota=100%
+TasksMax=64
+TimeoutStopSec=15
+
+[Install]
+WantedBy=multi-user.target

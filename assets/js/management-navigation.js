@@ -9,7 +9,8 @@ var pages=[
  {key:'patient360',label:'علاقة المريض 360',open:function(){w.SSMPDPatient360?.open();}},
  {key:'assistant_center',label:'مركز المساعد الإداري',open:function(){w.SSMPDAdministrativeAssistantCenter?.open();}}
 ];
-function allow(){var a=w.SSMPDAuth?.currentAdmin||{},r=Array.isArray(a.roles)?a.roles:[];return ['super_admin','general_manager'].includes(a.role)||r.includes('super_admin')||r.includes('general_manager');}
+function manager(){var a=w.SSMPDAuth?.currentAdmin||{},r=Array.isArray(a.roles)?a.roles:[];return ['super_admin','general_manager'].includes(a.role)||r.includes('super_admin')||r.includes('general_manager');}
+function allow(){return manager()||!!w.SSMPDServerTeamChat?.canAccess();}
 function enter(key){
  document.body.classList.add('sw-management-view');
  document.body.setAttribute('data-management-active',key);
@@ -20,20 +21,22 @@ function enter(key){
 }
 function exit(){document.body.classList.remove('sw-management-view');document.body.removeAttribute('data-management-active');}
 function sync(){
- if(busy||!allow())return;
+ if(busy)return;
+ if(!allow()){document.querySelector('[data-management-nav]')?.remove();return;}
  var items=document.querySelector('#user-dropdown .ud-items');if(!items)return;
  busy=true;
  try{
   var group=items.querySelector('[data-management-nav]');
   if(!group){group=document.createElement('div');group.className='sw-management-nav';group.dataset.managementNav='1';var title=document.createElement('div');title.className='sw-management-title';title.textContent='الإدارة والتشغيل';group.appendChild(title);items.appendChild(group);}
-  pages.forEach(function(p){
+  if(!manager())group.querySelectorAll('[data-management-page]:not([data-management-page="digital_team"])').forEach(function(x){x.remove();});
+  pages.filter(function(p){return manager()||p.key==='digital_team';}).forEach(function(p){
    var links=items.querySelectorAll('[data-management-page="'+p.key+'"]');
    var button=links[0]||document.createElement('button');
    if(button.className!=='ud-item sw-management-link')button.className='ud-item sw-management-link';
    if(button.type!=='button')button.type='button';
    if(button.textContent!==p.label)button.textContent=p.label;
    if(button.getAttribute('data-management-page')!==p.key)button.setAttribute('data-management-page',p.key);
-   button.onclick=function(){p.open();enter(p.key);};
+   button.onclick=function(){if(!manager()&&p.key==='digital_team')w.SSMPDServerTeamChat?.openWorkspace();else p.open();enter(p.key);};
    if(button.parentNode!==group)group.appendChild(button);
    Array.from(links).slice(1).forEach(function(x){x.remove();});
   });
