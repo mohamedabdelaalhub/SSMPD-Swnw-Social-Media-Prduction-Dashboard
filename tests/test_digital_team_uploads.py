@@ -173,6 +173,31 @@ class UploadServiceTest(StoreTest):
         finally:server.shutdown();server.server_close()
 
 
+class LongMessageTest(StoreTest):
+    def test_long_message_ok_and_cap(self):
+        import store
+        room=self.room();long='س'*150000
+        self.send(room,body=long)
+        self.assertEqual(len(self.s.history(self.owner,room)['messages'][0]['body']),150000)
+        job=self.s.claim();hist,_=self.s.context(job);self.assertEqual(len(hist[-1]['body']),150000)
+        with self.assertRaises(Invalid) as e:self.send(room,key='request-4001',body='x'*(store.MAX_BODY+1))
+        self.assertIn('200000',str(e.exception))
+    def test_http_long_message(self):
+        eng=FakeEngine();svc=Service(self.s,FakeAuth({'o':self.owner}),eng,False,eng);room=self.room()
+        server=ThreadingHTTPServer(('127.0.0.1',0),handler(svc,'https://dashboard.swnwclinics.com'))
+        threading.Thread(target=server.serve_forever,daemon=True).start()
+        def post(body):
+            req=urllib.request.Request('http://127.0.0.1:%d/api/digital-team/rooms/%s/messages'%(server.server_port,room),data=json.dumps(body,ensure_ascii=False).encode(),
+                headers={'Authorization':'Bearer o','Content-Type':'application/json'})
+            try:
+                with urllib.request.urlopen(req) as r:return r.status
+            except urllib.error.HTTPError as e:return e.code
+        try:
+            self.assertEqual(post({'body':'س'*190000,'request_key':'request-5000'}),200)
+            self.assertEqual(post({'body':'س'*200001,'request_key':'request-5001'}),400)
+        finally:server.shutdown();server.server_close()
+
+
 FAKE_CODEX='''#!PYTHON
 import json,sys
 for line in sys.stdin:

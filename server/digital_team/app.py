@@ -154,7 +154,9 @@ def handler(service,origin):
                     if self.headers.get('Content-Type','').split(';')[0]!='application/json':raise Invalid('JSON مطلوب')
                     size=int(self.headers.get('Content-Length','0'))
                     upload=self.path.split('?')[0].rstrip('/').endswith('/attachments')
-                    if not 1<=size<=(uploads.MAX_REQUEST if upload else 24000):raise Invalid('حجم الطلب غير صالح')
+                    message=self.path.split('?')[0].rstrip('/').endswith('/messages')
+                    limit=uploads.MAX_REQUEST if upload else uploads.MAX_MESSAGE_REQUEST if message else 24000
+                    if not 1<=size<=limit:raise Invalid('حجم الطلب غير صالح' if not message else 'الرسالة أكبر من الحد التقني؛ قسّمها أو أرفقها كملف نصي')
                     data=json.loads(self.rfile.read(size))
                     if not isinstance(data,dict):raise Invalid('طلب غير صالح')
                 self.respond(200,service.handle(self.command,self.path,auth[7:],data))

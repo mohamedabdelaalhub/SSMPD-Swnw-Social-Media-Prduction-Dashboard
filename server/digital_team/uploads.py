@@ -10,6 +10,7 @@ import unicodedata
 from pathlib import Path
 
 MAX_BYTES = 700_000          # per file; base64 JSON body must stay under the 1 MB default of the same-origin proxy
+MAX_MESSAGE_REQUEST = 950_000  # JSON body of a message: 200k chars of Arabic ~ 400 KB; stays under the proxy's 1 MB default
 MAX_REQUEST = 1_000_000      # raw HTTP body for the upload route only (all other routes stay at 24 KB)
 MAX_PER_MESSAGE = 3
 MAX_PENDING = 12             # unattached uploads kept per owner

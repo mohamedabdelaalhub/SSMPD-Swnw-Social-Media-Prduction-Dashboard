@@ -14,6 +14,7 @@ AGENTS = {'codex': 'Codex', 'claude': 'Claude Code', 'sia': 'سيا', 'hapi': '�
           'hor': 'حور', 'hotep': 'حتب', 'nefer': 'نفر', 'maat': 'ماعت'}
 
 ENGINES = ('codex', 'claude')  # agents with a real runtime adapter in this gateway
+MAX_BODY = 200_000  # chars per message (was 4000); technical safety cap only
 DAILY_LIMIT = int(os.environ.get('SWNW_CHAT_DAILY_LIMIT', '4'))
 
 class Denied(Exception):
@@ -342,7 +343,9 @@ class Store:
             raise Invalid('المرفقات غير صالحة (الحد 3 ملفات)')
         if isinstance(body,str) and ids and not body.strip():
             body = '(مرفقات)'
-        if not isinstance(body,str) or not 1<=len(body.strip())<=4000 or not isinstance(key,str) or not 8<=len(key)<=80:
+        if isinstance(body,str) and len(body.strip())>MAX_BODY:
+            raise Invalid('الرسالة أطول من الحد التقني (%d حرف)؛ قسّمها أو أرفقها كملف نصي' % MAX_BODY)
+        if not isinstance(body,str) or not 1<=len(body.strip())<=MAX_BODY or not isinstance(key,str) or not 8<=len(key)<=80:
             raise Invalid('نص الرسالة أو معرّف الإرسال غير صالح')
         if kind not in ('chat','question','instruction','task') or not isinstance(targets,list) or any(not isinstance(a,str) for a in targets):
             raise Invalid('نوع الرسالة غير صالح')
