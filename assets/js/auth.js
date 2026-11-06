@@ -25,7 +25,9 @@
 
     signIn: function (email, password) {
       return retryNetwork(function () {
-        return client.auth.signInWithPassword({ email: email, password: password })
+        return window.SSMPDTurnstile.token().then(function (ct) {
+          return client.auth.signInWithPassword({ email: email, password: password, options: { captchaToken: ct } });
+        })
           .then(function (res) {
             if (res.error) throw res.error;
             return res.data;
@@ -35,9 +37,11 @@
 
     signUp: function (email, password, name) {
       return retryNetwork(function () {
-        return client.auth.signUp({
+        return window.SSMPDTurnstile.token().then(function (ct) {
+          return client.auth.signUp({
           email: email, password: password,
-          options: { data: { name: name } }
+          options: { data: { name: name }, captchaToken: ct }
+        });
         }).then(function (res) {
           if (res.error) throw res.error;
           return res.data;
@@ -123,7 +127,9 @@
     resetPasswordForEmail: function (email) {
       var redirectTo = window.location.href.split("#")[0].split("?")[0];
       return retryNetwork(function () {
-        return client.auth.resetPasswordForEmail(email, { redirectTo: redirectTo }).then(function (res) {
+        return window.SSMPDTurnstile.token().then(function (ct) {
+          return client.auth.resetPasswordForEmail(email, { redirectTo: redirectTo, captchaToken: ct });
+        }).then(function (res) {
           if (res.error) throw res.error;
           return res.data;
         });
