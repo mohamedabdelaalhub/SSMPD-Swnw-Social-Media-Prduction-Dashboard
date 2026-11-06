@@ -24,7 +24,7 @@ function frame(){
  returnFocus=document.activeElement;
  dialog=document.createElement('dialog');dialog.className='sc-dialog';dialog.dir='rtl';dialog.setAttribute('aria-label','محادثات الفريق على السيرفر');
  dialog.innerHTML='<header class="sc-header"><div><h2>محادثات الفريق</h2><p>Codex على كونتابو · سجل محفوظ</p></div>'+button('إغلاق','data-sc-close')+'</header>'+
- '<div class="sc-toolbar">'+button('محادثة جديدة','data-sc-new')+button('المشاركون','data-sc-members disabled')+(identity.owner?button('إدارة الوصول','data-sc-access'):'')+'</div>'+
+ '<div class="sc-toolbar">'+button('محادثة جديدة','data-sc-new')+button('المشاركون','data-sc-members disabled')+(identity.owner?button('إدارة الوصول','data-sc-access'):'')+(identity.owner?button('تصدير','data-sc-export'):'')+(identity.owner?button('الحصة اليومية','data-sc-limit'):'')+'</div>'+
  '<div class="sc-layout"><aside aria-label="المحادثات" data-sc-rooms></aside><section class="sc-conversation"><h3 data-sc-title>اختر محادثة</h3><div class="sc-tools" data-sc-tools hidden></div><div class="sc-messages" data-sc-messages aria-live="polite"></div>'+
  '<form data-sc-form class="sc-compose"><div class="sc-compose-options"><select name="kind" aria-label="نوع الرسالة"><option value="chat">رسالة</option><option value="question">سؤال</option><option value="instruction">تعليمات للنقاش</option><option value="task">طلب تنفيذ</option></select><select name="target" aria-label="الوكيل المطلوب"></select></div><div class="sc-send"><textarea name="body" rows="2" maxlength="4000" required placeholder="اكتب رسالتك…" aria-label="نص الرسالة"></textarea><button type="submit">إرسال</button></div></form><p class="sc-status" role="status" data-sc-status></p></section></div>';
  document.body.appendChild(dialog);dialog.showModal();
@@ -33,6 +33,8 @@ function frame(){
  node('[data-sc-new]').onclick=createForm;
  node('[data-sc-members]').onclick=membersForm;
  if(identity.owner)node('[data-sc-access]').onclick=accessForm;
+ if(identity.owner)node('[data-sc-export]').onclick=exportForm;
+ if(identity.owner)node('[data-sc-limit]').onclick=limitForm;
  node('[data-sc-form]').onsubmit=function(e){e.preventDefault();send();};
  node('[name=body]').addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();node('[data-sc-form]').requestSubmit();}});
  node('[name=body]').addEventListener('input',function(){pending=null;});
@@ -141,6 +143,41 @@ async function refreshAccess(){
  if(!id)return;
  try{var boot=await api('/bootstrap');if(authId!==id)return;identity=boot.me;agents=boot.agents;access=identity.owner||agents.some(function(a){return a.chat;});w.SSMPDManagementNavigation?.refresh();}catch(_){}
 }
+
+function csvCell(v){v=String(v==null?'':v);if(/^[=+\-@\t\r]/.test(v))v="'"+v;return '"'+v.replace(/"/g,'""')+'"';}
+function exportText(rows,format){
+ if(format==='txt')return rows.map(function(r){return '['+r.time+'] '+r.room+' | '+r.sender+(r.agent?' -> '+r.agent:'')+'\n'+r.text+'\n';}).join('\n');
+ return '﻿'+['الوقت','المحادثة','المرسل','الوكيل','النص'].map(csvCell).join(',')+'\r\n'+rows.map(function(r){return [r.time,r.room,r.sender,r.agent,r.text].map(csvCell).join(',');}).join('\r\n')+'\r\n';
+}
+function exportForm(){
+ var now=new Date(),pad=function(n){return String(n).padStart(2,'0');},day=now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate());
+ tools('<h4>تصدير المحادثات</h4><p>التوقيت بتوقيت القاهرة. تُصدَّر المحادثات التي أنت عضو فيها فقط.</p>'+
+ '<label>من<input type="datetime-local" name="sc-from" value="'+day+'T00:00"></label><label>إلى<input type="datetime-local" name="sc-to" value="'+day+'T23:59"></label>'+
+ '<label>المحادثة<select name="sc-export-room"><option value="">كل محادثاتي</option>'+rooms.map(function(r){return '<option value="'+esc(r.id)+'"'+(r.id===active?' selected':'')+'>'+esc(r.title)+'</option>';}).join('')+'</select></label>'+
+ '<label>الصيغة<select name="sc-format"><option value="csv">CSV (Excel)</option><option value="txt">نص عادي</option></select></label>'+button('تنزيل','data-sc-export-go')+button('إلغاء','data-sc-dismiss'));
+ node('[data-sc-dismiss]').onclick=function(){node('[data-sc-tools]').hidden=true;node('.sc-conversation').classList.remove('sc-editing');poll(false);};
+ node('[data-sc-export-go]').onclick=async function(){
+  var b=this,from=node('[name=sc-from]').value,to=node('[name=sc-to]').value,room=node('[name=sc-export-room]').value,format=node('[name=sc-format]').value;
+  if(!from||!to){status('اختر بداية ونهاية الفترة');return;}
+  b.disabled=true;
+  try{
+   var out=await api('/export?from='+encodeURIComponent(from)+'&to='+encodeURIComponent(to)+(room?'&room='+encodeURIComponent(room):''));
+   if(!out.rows.length){status('لا توجد رسائل في هذه الفترة');return;}
+   var blob=new w.Blob([exportText(out.rows,format)],{type:format==='txt'?'text/plain;charset=utf-8':'text/csv;charset=utf-8'}),a=document.createElement('a');
+   a.href=w.URL.createObjectURL(blob);a.download='swnw-team-chat-'+from.replace(/[^0-9]/g,'').slice(0,12)+'.'+format;document.body.appendChild(a);a.click();a.remove();
+   setTimeout(function(){w.URL.revokeObjectURL(a.href);},1000);status('تم التصدير: '+out.rows.length+' رسالة');
+  }catch(e){status(e.message);}finally{b.disabled=false;}
+ };
+}
+
+async function limitForm(){
+ try{var info=await api('/limit');
+ tools('<h4>الحصة اليومية لرسائل المحركات</h4><p data-sc-limit-info></p><label>الحد اليومي (1 إلى '+esc(info.max)+')<input type="number" name="sc-limit" min="'+esc(info.min)+'" max="'+esc(info.max)+'" step="1" value="'+esc(info.limit)+'"></label>'+button('حفظ','data-sc-limit-save')+button('إغلاق','data-sc-dismiss'));
+ var show=function(i){node('[data-sc-limit-info]').textContent='المستخدم اليوم: '+i.used+' من '+i.limit+' · يتجدد 00:00 بتوقيت UTC';};show(info);
+ node('[data-sc-dismiss]').onclick=function(){node('[data-sc-tools]').hidden=true;node('.sc-conversation').classList.remove('sc-editing');poll(false);};
+ node('[data-sc-limit-save]').onclick=async function(){var b=this;b.disabled=true;try{var v=Number(node('[name=sc-limit]').value);if(!Number.isInteger(v)||v<info.min||v>info.max){status('أدخل رقمًا صحيحًا من '+info.min+' إلى '+info.max);return;}show(await api('/limit',{limit:v}));status('تم حفظ الحصة اليومية');}catch(e){status(e.message);}finally{b.disabled=false;}};
+ }catch(e){status(e.message);}
+}
 async function openWorkspace(){
  try{var boot=await api('/bootstrap');identity=boot.me;agents=boot.agents;
  var view=document.getElementById('view-container');if(!view)return;
@@ -154,5 +191,5 @@ w.addEventListener('ssmpd-auth-changed',refreshAccess);
 var authObserver=new MutationObserver(function(){refreshAccess();if(dialog&&!dialog.isConnected)close();});
 authObserver.observe(document.getElementById('app-root')||document.body,{childList:true,subtree:true});
 refreshAccess();
-w.SSMPDServerTeamChat={open:open,mount:mount,openWorkspace:openWorkspace,canAccess:function(){return access;}};mount();
+w.SSMPDServerTeamChat={open:open,mount:mount,openWorkspace:openWorkspace,canAccess:function(){return access;},exportText:exportText};mount();
 })(window);

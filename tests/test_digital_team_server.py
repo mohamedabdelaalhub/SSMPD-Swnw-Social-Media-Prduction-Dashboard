@@ -166,3 +166,72 @@ class ServiceTest(unittest.TestCase):
         auth.actor('long-enough-session-token');self.assertEqual(len(calls),3)
 
 if __name__=='__main__':unittest.main()
+
+
+class ExportTest(StoreTest):
+    def _fixture(self):
+        self.grant(self.a)
+        room=self.room(users=['a'])
+        self.send(room,key='request-0001')
+        now=time.time()
+        self.s.db.execute('UPDATE messages SET created=?',(1793970000.0,))  # 2026-11-06 ~13:00 UTC = 15:00 Cairo (UTC+2)
+        return room
+    def test_owner_only(self):
+        room=self._fixture()
+        with self.assertRaises(Denied):self.s.export(self.a,'2026-11-06T00:00','2026-11-07T00:00')
+    def test_range_cairo_and_columns(self):
+        room=self._fixture()
+        r=self.s.export(self.owner,'2026-11-06T15:00','2026-11-06T16:00')['rows']
+        self.assertEqual(len(r),1);self.assertEqual(r[0]['time'][:16],'2026-11-06 15:00'.replace('15:00','15:00'))
+        self.assertEqual(set(r[0]),{'time','room','sender','agent','text'})
+        self.assertEqual(self.s.export(self.owner,'2026-11-06T16:00','2026-11-06T17:00')['rows'],[])
+        self.assertEqual(self.s.export(self.owner,'2026-11-06T14:00','2026-11-06T15:00')['rows'],[])
+    def test_history_fence_and_membership(self):
+        room=self._fixture()
+        other=self.room(users=[]);self.send(other,key='request-0002')
+        self.s.db.execute('UPDATE messages SET created=?',(1793970000.0,))
+        self.assertEqual(len(self.s.export(self.owner,'2026-11-06T00:00','2026-11-07T00:00')['rows']),2)
+        self.assertEqual(len(self.s.export(self.owner,'2026-11-06T00:00','2026-11-07T00:00',room)['rows']),1)
+        with self.assertRaises(Denied):self.s.export(self.owner,'2026-11-06T00:00','2026-11-07T00:00','missing')
+        # owner removed from a room can no longer export it
+        self.s.db.execute('DELETE FROM members WHERE room=? AND user_id=?',(other,'owner'))
+        self.assertEqual(len(self.s.export(self.owner,'2026-11-06T00:00','2026-11-07T00:00')['rows']),1)
+        with self.assertRaises(Denied):self.s.export(self.owner,'2026-11-06T00:00','2026-11-07T00:00',other)
+        # since_seq fence
+        self.s.db.execute('UPDATE members SET since_seq=? WHERE room=? AND user_id=?',(10**6,room,'owner'))
+        self.assertEqual(self.s.export(self.owner,'2026-11-06T00:00','2026-11-07T00:00')['rows'],[])
+    def test_bad_input(self):
+        for a,b in (('x','y'),('2026-11-07T00:00','2026-11-06T00:00'),('2020-01-01T00:00','2026-01-01T00:00')):
+            with self.assertRaises(Invalid):self.s.export(self.owner,a,b)
+
+
+class ExportRouteTest(StoreTest):
+    class FakeAuth:
+        def __init__(self,actors):self.actors=actors
+        def actor(self,token):return self.actors[token]
+        def directory(self,token,a):return []
+    def test_route_owner_ok_and_employee_403(self):
+        self.grant(self.a);room=self.room(users=['a']);self.send(room)
+        self.s.db.execute('UPDATE messages SET created=?',(1793970000.0,))
+        svc=Service(self.s,self.FakeAuth({'o':self.owner,'e':self.a}))
+        out=svc.handle('GET','/api/digital-team/export?from=2026-11-06T00:00&to=2026-11-07T00:00','o')
+        self.assertEqual(len(out['rows']),1)
+        with self.assertRaises(Denied):svc.handle('GET','/api/digital-team/export?from=2026-11-06T00:00&to=2026-11-07T00:00','e')
+
+
+class LimitTest(StoreTest):
+    def test_default_owner_only_bounds_and_effect(self):
+        self.assertEqual(self.s.limit_info(self.owner)['limit'],4)
+        with self.assertRaises(Denied):self.s.limit_info(self.a)
+        with self.assertRaises(Denied):self.s.set_limit(self.a,10)
+        for bad in (0,201,'5',True,None,2.5):
+            with self.assertRaises(Invalid):self.s.set_limit(self.owner,bad)
+        self.assertEqual(self.s.set_limit(self.owner,2)['limit'],2)
+        self.assertEqual(self.s.daily_limit(),2)
+        room=self.room()
+        for i in range(3):
+            self.send(room,key='request-%04d'%(i+10))
+        got=[self.s.claim() for _ in range(3)]
+        self.assertEqual(len([g for g in got if g]),2)
+        self.assertEqual(self.s.limit_info(self.owner)['used'],2)
+        self.s.set_limit(self.owner,200);self.assertEqual(self.s.daily_limit(),200)

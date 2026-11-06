@@ -19,12 +19,12 @@ class Service:
     def __init__(self, store, auth, runtime=None, shared_codex=False, claude=None):
         self.store,self.auth,self.runtime,self.shared_codex=store,auth,runtime,shared_codex
         self.engines={k:v for k,v in (('codex',runtime),('claude',claude)) if v}
+        self.tokens={}; self.tokens_lock=threading.Lock()
 
     def available(self, agent, actor):
         # Claude Code runs on the owner's personal subscription: owner-only, never shared via a flag.
         if agent not in self.engines:return False
         return actor.owner or (agent=='codex' and self.shared_codex)
-        self.tokens={}; self.tokens_lock=threading.Lock()
 
     def handle(self, method, path, token, data=None):
         a=self.auth.actor(token);self.store.remember(a)
@@ -45,6 +45,12 @@ class Service:
         if parts==['rooms']:
             if method=='GET':return {'rooms':self.store.rooms(a)}
             if method=='POST':return {'id':self.store.create(a,data,directory())}
+        if parts==['limit']:
+            if method=='GET':return self.store.limit_info(a)
+            if method=='POST':return self.store.set_limit(a,data.get('limit'))
+        if method=='GET' and parts==['export']:
+            q=parse_qs(u.query);g=lambda k:q.get(k,[None])[0]
+            return self.store.export(a,g('from'),g('to'),g('room'))
         if len(parts)>=2 and parts[0]=='rooms':
             room=parts[1]
             if len(parts)==3 and parts[2]=='messages':

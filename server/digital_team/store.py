@@ -278,6 +278,51 @@ class Store:
             return {'messages':list(reversed(rows)), 'jobs':[j for j in jobs if j['message_id'] in ids],
                     'before': rows[-1]['seq'] if len(rows)==100 else None}
 
+    def export(self, actor, frm, to, room=None):
+        """Rows for export. Owner only (first release). from/to are Africa/Cairo wall-clock 'YYYY-MM-DDTHH:MM'; stored times are UTC epoch.
+        Honors membership and the since_seq history fence exactly like history()."""
+        from zoneinfo import ZoneInfo
+        from datetime import datetime, timezone
+        if not actor.owner:
+            raise Denied('التصدير متاح للمالك فقط')
+        cairo = ZoneInfo('Africa/Cairo')
+        def parse(v):
+            try:
+                return datetime.strptime(str(v), '%Y-%m-%dT%H:%M').replace(tzinfo=cairo).timestamp()
+            except ValueError:
+                raise Invalid('صيغة الوقت غير صحيحة')
+        start, end = parse(frm), parse(to)
+        if end <= start:
+            raise Invalid('نهاية الفترة قبل بدايتها')
+        if end - start > 366 * 86400:
+            raise Invalid('الفترة أطول من سنة')
+        with self.lock:
+            if room:
+                room_ids = [room]
+            else:
+                room_ids = [r['room'] for r in self.rows('SELECT room FROM members WHERE user_id=?', (actor.id,))]
+            out = []
+            for rid in room_ids:
+                try:
+                    m = self.membership(actor, rid)
+                except Denied:
+                    if room:
+                        raise
+                    continue
+                title = self.db.execute('SELECT title FROM rooms WHERE id=?', (rid,)).fetchone()['title']
+                for r in self.rows('SELECT * FROM messages WHERE room=? AND seq>=? AND created>=? AND created<? ORDER BY created,seq LIMIT 20001',
+                                   (rid, m['since_seq'], start, end)):
+                    agent = AGENTS.get(r['author'][6:], '') if r['author'].startswith('agent:') else ', '.join(AGENTS.get(a, a) for a in json.loads(r['targets']))
+                    out.append({'time': datetime.fromtimestamp(r['created'], timezone.utc).astimezone(cairo).strftime('%Y-%m-%d %H:%M:%S'),
+                                'room': title, 'sender': r['name'], 'agent': agent, 'text': r['body'], '_t': r['created']})
+            if len(out) > 20000:
+                raise Invalid('النتائج أكثر من 20000 رسالة؛ ضيّق الفترة')
+            out.sort(key=lambda x: x['_t'])
+            for x in out:
+                del x['_t']
+            self.audit(actor, 'export', room or '*')
+            return {'rows': out}
+
     def send(self, actor, room, data):
         body, key, kind = data.get('body'),data.get('request_key'),data.get('kind','chat')
         targets = data.get('targets',[])
@@ -316,6 +361,30 @@ class Store:
             self.audit(actor,'message',mid)
             return {'message_id':mid,'duplicate':False}
 
+    def daily_limit(self):
+        row = self.db.execute("SELECT value FROM meta WHERE key='daily_limit'").fetchone()
+        try:
+            return max(1, min(200, int(row[0]))) if row else DAILY_LIMIT
+        except ValueError:
+            return DAILY_LIMIT
+
+    def limit_info(self, actor):
+        if not actor.owner:
+            raise Denied('إعداد الحصة للمالك فقط')
+        day = time.strftime('%Y-%m-%d', time.gmtime())
+        used = self.db.execute('SELECT calls FROM usage WHERE day=?', (day,)).fetchone()
+        return {'limit': self.daily_limit(), 'used': used[0] if used else 0, 'day': day, 'resets': '00:00 UTC', 'min': 1, 'max': 200}
+
+    def set_limit(self, actor, value):
+        if not actor.owner:
+            raise Denied('إعداد الحصة للمالك فقط')
+        if isinstance(value, bool) or not isinstance(value, int) or not 1 <= value <= 200:
+            raise Invalid('الحصة اليومية يجب أن تكون رقمًا من 1 إلى 200')
+        with self.tx():
+            self.db.execute("INSERT INTO meta VALUES('daily_limit',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value", (str(value),))
+            self.audit(actor, 'daily_limit', str(value))
+        return self.limit_info(actor)
+
     def claim(self):
         with self.tx():
             job=self.db.execute("SELECT * FROM jobs WHERE state='queued' ORDER BY updated LIMIT 1").fetchone()
@@ -323,7 +392,7 @@ class Store:
                 return None
             day=time.strftime('%Y-%m-%d',time.gmtime())
             used=self.db.execute('SELECT calls FROM usage WHERE day=?',(day,)).fetchone()
-            if used and used[0]>=DAILY_LIMIT:
+            if used and used[0]>=self.daily_limit():
                 self.db.execute("UPDATE jobs SET state='limited',error='بلغت حصة المحادثات اليومية',updated=? WHERE id=?",(time.time(),job['id']))
                 return None
             self.db.execute('INSERT INTO usage VALUES(?,1) ON CONFLICT(day) DO UPDATE SET calls=calls+1',(day,))
