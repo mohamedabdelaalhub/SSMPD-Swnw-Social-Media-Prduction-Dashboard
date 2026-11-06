@@ -10,7 +10,7 @@ const wait=()=>new Promise(r=>setTimeout(r,20));
  w.SSMPD_CONFIG={supabase:{url:'https://fixture.invalid',anonKey:'test'}};
  w.supabase={createClient:()=>({auth:{getSession:async()=>({data:{session:{access_token:'fixture-auth-token'}}})}})};
  let attachCalls=[],rooms=[],members={},messages={},calls=[],savedGrants=[],sendCount=0,failOnce=false,limitVal=4;
- const agents=[{code:'codex',name:'Codex',chat:true,task:true,connected:true},{code:'sia',name:'سيا',chat:true,task:true}];
+ const agents=[{code:'codex',name:'Codex',chat:true,task:true,connected:true},{code:'claude',name:'Claude Code',chat:true,task:true,connected:true},{code:'sia',name:'سيا',chat:true,task:true}];
  w.fetch=async(url,opts)=>{
   assert.equal(opts.headers.Authorization,'Bearer fixture-auth-token');
   assert(!url.includes('fixture-auth-token'),'token never in URL');
@@ -37,6 +37,7 @@ const wait=()=>new Promise(r=>setTimeout(r,20));
  };
  w.eval(fs.readFileSync('assets/js/digital-team-server-chat.js','utf8'));await wait();
  assert(d.querySelector('[data-server-team-chat]'),'Codex is a team member');
+ assert(d.querySelector('[data-server-team-claude]'),'Claude Code card is present for the owner');
  await w.SSMPDServerTeamChat.open('codex');await wait();
  assert.equal(rooms.length,1);assert(d.querySelector('dialog[open]'));
  let form=d.querySelector('[data-sc-form]');form.elements.body.value='<script>not executable</script>';
