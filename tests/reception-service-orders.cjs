@@ -88,3 +88,8 @@ assert.ok(B.notifyMessage(null).includes('تعذر'));
 assert.ok(B.boardTable([{order_id:'o9',patient_name:'N',phone:'1',service:'S',provider:'P',status:'report_uploaded'}]).includes('data-so-notify="o9"'));
 assert.ok(!B.boardTable([{order_id:'o9',patient_name:'N',phone:'1',service:'S',provider:'P',status:'patient_notified'}]).includes('data-so-notify'));
 console.log('notification UI tests passed');
+// claim print wiring
+{const R=require("../assets/js/service-orders-rules.js");
+ const l=P.claimOrders([{id:"o1",visit_id:"v1",service_id:"s1",quantity:2,status:"ordered",snapshot:{name:"X"}},{id:"o2",visit_id:"v1",service_id:"s1",status:"cancelled"},{id:"o3",visit_id:"v2",service_id:"s1"}],[{id:"s1",price:100}],"v1",{discount:10,copay:20});
+ assert.equal(l.length,1);assert.equal(l[0].quantity,2);
+ const r=R.buildInvoices(l).invoices[0].totals;assert.equal(r.after,180);assert.equal(r.patientShare,36);assert.equal(r.insurerShare,144);}

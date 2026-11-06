@@ -74,12 +74,13 @@ function decorate(c,section){
   if(section!=='operations'||!c.host)return;
   var shell=c.host.querySelector('.rx-shell');if(!shell)return;
   var node=document.createElement('section');
-  node.innerHTML='<div class="rx-actions">'+c.btn('so-order','','تفاصيل طلب الخدمة (إحالة / تنفيذ / مزوّد)')+c.btn('so-board','','لوحة المزوّدين الخارجيين')+(c.data.can_manage?c.btn('so-setup','','إعداد طلبات الخدمة'):'')+'</div>';
+  node.innerHTML='<div class="rx-actions">'+c.btn('so-order','','تفاصيل طلب الخدمة (إحالة / تنفيذ / مزوّد)')+c.btn('so-board','','لوحة المزوّدين الخارجيين')+c.btn('so-print','','طباعة مطالبة تأمينية')+(c.data.can_manage?c.btn('so-setup','','إعداد طلبات الخدمة'):'')+'</div>';
   shell.appendChild(node);
 }
 function act(a,id,c){
   if(a==='so-order'){orderForm(c);return true;}
   if(a==='so-board'){board(c);return true;}
+  if(a==='so-print'){printClaim(c);return true;}
   if(a==='so-setup'){setup(c);return true;}
   return false;
 }
@@ -106,6 +107,33 @@ function orderForm(c){
     }
     ['order_id','kind','mode'].forEach(function(n){root.querySelector('[name="'+n+'"]').addEventListener('change',sync);});sync();
   }).catch(function(e){c.modal('تعذر تحميل البيانات','<p>'+esc(e&&e.message||e)+'</p>',function(){return Promise.resolve();});});
+}
+function claimOrders(orders,services,visitId,pct){
+  return (orders||[]).filter(function(o){return o.visit_id===visitId&&o.status!=='cancelled';}).map(function(o){
+    var sv=(services||[]).find(function(x){return x.id===o.service_id;})||{};
+    var price=Number(sv.price!=null?sv.price:(o.snapshot&&o.snapshot.price));
+    return {id:o.id,kind:'service',service:{id:String(o.service_id||o.id),name:(o.snapshot&&o.snapshot.name)||sv.name||'خدمة',price:Number.isFinite(price)?price:0},
+      quantity:Number(o.quantity)>0?Math.floor(Number(o.quantity)):1,contract:{discountPercent:pct.discount,copayPercent:pct.copay}};
+  });
+}
+function printClaim(c){
+  var d=c.data,R=w.SWNWServiceOrderRules,PR=w.SSMPDServiceInvoicePrint;
+  var visits=(d.visits||[]).map(function(v){return [v.id,c.lookup('patients',v.patient_id)+' — زيارة '+(v.visit_no||'')];});
+  var body='<p>تُحسب المطالبة من الخدمات المسجلة في الزيارة. أدخل شروط جهة التأمين.</p>'+c.select('visit_id','الزيارة',visits,'')+
+    '<label>جهة التأمين<input name="insurer" type="text" required></label><label>رقم العضوية<input name="member" type="text"></label>'+
+    '<label>نسبة الخصم %<input name="discount" type="number" min="0" max="100" step="0.01" value="0" required></label>'+
+    '<label>نسبة تحمّل المريض %<input name="copay" type="number" min="0" max="100" step="0.01" value="0" required></label>';
+  var root=c.modal('طباعة مطالبة تأمينية',body,function(v){
+    if(!R||!PR)return Promise.reject(Error('وحدة الطباعة غير محمّلة'));
+    if(!v.visit_id)return Promise.reject(Error('اختر الزيارة'));
+    var list=claimOrders(d.orders,d.services,v.visit_id,{discount:Number(v.discount),copay:Number(v.copay)});
+    if(!list.length)return Promise.reject(Error('لا توجد خدمات في هذه الزيارة'));
+    var visit=(d.visits||[]).find(function(x){return x.id===v.visit_id;})||{};
+    var inv=R.buildInvoices(list).invoices;
+    if(!inv.length)return Promise.reject(Error('لا توجد بنود قابلة للفوترة'));
+    try{PR.openPrint(inv,{patientName:c.lookup('patients',visit.patient_id),insurerName:v.insurer,memberNo:v.member,invoiceNo:'',date:new Date().toISOString().slice(0,10)});}catch(e){return Promise.reject(e);}
+    return Promise.resolve();});
+  return root;
 }
 function board(c){
   var db=w.SSMPDDb;
@@ -209,5 +237,5 @@ function setup(c){
   },true);
   reload().catch(function(e){root.querySelector('[data-so-body]').textContent=(e&&e.message)||'تعذر التحميل';});
 }
-w.SSMPDReceptionServiceOrders={decorate:decorate,act:act,_pure:{externalAllowed:externalAllowed,needsBillingParty:needsBillingParty,providersFor:providersFor,performersFor:performersFor,referrers:referrers,nextStatuses:nextStatuses,buildExt:buildExt,boardTable:boardTable,validateReportFile:validateReportFile,notifyMessage:notifyMessage,safeFileName:safeFileName,reportPath:reportPath,buildSetup:buildSetup,setupTab:setupTab}};
+w.SSMPDReceptionServiceOrders={decorate:decorate,act:act,_pure:{claimOrders:claimOrders,externalAllowed:externalAllowed,needsBillingParty:needsBillingParty,providersFor:providersFor,performersFor:performersFor,referrers:referrers,nextStatuses:nextStatuses,buildExt:buildExt,boardTable:boardTable,validateReportFile:validateReportFile,notifyMessage:notifyMessage,safeFileName:safeFileName,reportPath:reportPath,buildSetup:buildSetup,setupTab:setupTab}};
 })(typeof window!=='undefined'?window:globalThis);
