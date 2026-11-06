@@ -225,10 +225,14 @@ class Store:
                     self.db.execute('INSERT OR REPLACE INTO people VALUES(?,?)',(p['id'],p['name']))
             return directory
         if not self.db.execute('SELECT 1 FROM grants WHERE user_id=? AND chat=1 AND (expires IS NULL OR expires>?)',(actor.id,time.time())).fetchone():
+            if self.employees_enabled():
+                return []  # owner's switch: Codex-alone rooms only, nobody to invite and no names disclosed
             raise Denied('صلاحية الشات مطلوبة')
         directory=self.rows('SELECT id,name FROM people')
-        # Only users with any active chat grant can be invited to human conversations.
-        return [p for p in directory if self.allowed(p['id'],'codex') or self.db.execute('SELECT 1 FROM grants WHERE user_id=? AND chat=1 AND (expires IS NULL OR expires>?)', (p['id'], time.time())).fetchone()]
+        # Only the owner or users with an active chat grant can be invited to human conversations
+        # (the employee switch must not widen this list).
+        is_owner = lambda u: bool(self.db.execute("SELECT 1 FROM meta WHERE key='owner' AND value=?",(u,)).fetchone())
+        return [p for p in directory if is_owner(p['id']) or self.db.execute('SELECT 1 FROM grants WHERE user_id=? AND chat=1 AND (expires IS NULL OR expires>?)', (p['id'], time.time())).fetchone()]
 
     def create(self, actor, data, directory):
         agents = data.get('agents', [])
