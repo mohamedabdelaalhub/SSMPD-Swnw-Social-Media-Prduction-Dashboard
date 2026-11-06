@@ -134,6 +134,7 @@ function printClaim(c){
     if(!inv.length)return Promise.reject(Error('لا توجد بنود قابلة للفوترة'));
     try{PR.openPrint(inv,{patientName:c.lookup('patients',visit.patient_id),insurerName:v.insurer,memberNo:v.member,invoiceNo:'',date:new Date().toISOString().slice(0,10)});}catch(e){return Promise.reject(e);}
     return Promise.resolve();});
+  if(root){var sb=root.querySelector('[type="submit"]');if(sb)sb.textContent='طباعة';}
   return root;
 }
 function board(c,all){

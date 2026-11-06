@@ -1,0 +1,38 @@
+/* Presentation only: "Sonu glass" layer. Loaded after dashboard-theme.css.
+   Never changes layout, visibility, order, permissions, data or print output.
+   No backdrop-filter on elements that can contain fixed-position children (topbar, cards). */
+@media screen{
+ :root{--glass-fill:rgba(255,255,255,.66);--glass-edge:rgba(255,255,255,.85);--glass-line:rgba(15,54,157,.10);--glass-shadow:0 10px 30px rgba(15,54,157,.09);--glass-shadow-hover:0 14px 36px rgba(15,54,157,.15);--sonu-orange:#F15A22}
+ /* soft ambient light behind everything so translucent surfaces have something to refract */
+ body{background-image:radial-gradient(900px 520px at 92% -6%,rgba(28,79,199,.10),transparent 60%),radial-gradient(700px 460px at 4% 8%,rgba(241,90,34,.06),transparent 60%);background-attachment:fixed}
+ /* hero headers: gradient + light sheen + glass edge */
+ #view-container :is(.rx-header,.cm-head,.website-panel__header,.fc-top,.op-head,.tsk-head,.tv-head,.pp-header,.fc-group-intro),
+ #view-container .pc-workspace>h2,#view-container>h2{background-image:radial-gradient(120% 160% at 88% -30%,rgba(255,255,255,.26),transparent 55%),var(--ui-hero);box-shadow:0 12px 32px rgba(15,54,157,.22),inset 0 1px 0 rgba(255,255,255,.35)}
+ /* surface family: translucent glass cards with a bright top edge */
+ #view-container :is(.section,.kpi-card,.rx-card,.ops-card,.op-card,.inv-card,.acc-card,.cm-card,.ci-card,.tsk-panel,.sk-card,.fc-section-card,.aw-section-card){background-color:var(--glass-fill);border-color:var(--glass-line);box-shadow:var(--glass-shadow),inset 0 1px 0 var(--glass-edge);transition:box-shadow .2s ease,transform .2s ease,border-color .2s ease}
+ #view-container :is(.kpi-card,.rx-card,.ops-card,.op-card,.inv-card,.cm-card):hover{box-shadow:var(--glass-shadow-hover),inset 0 1px 0 var(--glass-edge);border-color:rgba(15,54,157,.22);transform:translateY(-2px)}
+ /* info banners: calmer, so the working area is not pushed below the fold */
+ #view-container .rx-mode-card{padding:12px 16px;font-size:13px;line-height:1.8;background:linear-gradient(90deg,rgba(255,255,255,.7),rgba(242,245,252,.7));box-shadow:0 4px 14px rgba(15,54,157,.06)}
+ #view-container .rx-mode-card h3{font-size:14px;margin-bottom:4px}
+ #view-container .rx-mode-card p{margin:4px 0}
+ /* buttons and fields: tactile feedback, visible keyboard focus */
+ .btn{transition:background .15s,box-shadow .15s,transform .1s}
+ .btn:active{transform:scale(.98)}
+ #view-container :is(input,select,textarea):focus-visible,.modal :is(input,select,textarea):focus-visible{outline:2px solid #0F369D;outline-offset:1px;box-shadow:0 0 0 4px rgba(15,54,157,.12)}
+ .btn:focus-visible,.tab-btn:focus-visible,button:focus-visible{outline:3px solid var(--sonu-orange);outline-offset:2px}
+ /* dialogs: frosted backdrop (overlay only) and glass panel */
+ .modal-backdrop{background:rgba(15,32,77,.38)}
+ @supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  .modal-backdrop{-webkit-backdrop-filter:blur(6px) saturate(1.2);backdrop-filter:blur(6px) saturate(1.2)}
+ }
+ .modal-backdrop .modal{background-color:rgba(255,255,255,.94);border:1px solid var(--glass-edge);box-shadow:0 24px 64px rgba(15,32,77,.28)}
+}
+@media screen and (prefers-reduced-motion:reduce){
+ #view-container :is(.kpi-card,.rx-card,.ops-card,.op-card,.inv-card,.cm-card):hover{transform:none}
+ .btn:active{transform:none}
+ *{transition-duration:.01ms!important}
+}
+@media screen and (prefers-contrast:more),(forced-colors:active){
+ #view-container :is(.section,.kpi-card,.rx-card,.ops-card,.op-card,.inv-card,.acc-card,.cm-card,.ci-card,.tsk-panel,.sk-card,.fc-section-card,.aw-section-card){background-color:#fff;box-shadow:none}
+ .modal-backdrop{-webkit-backdrop-filter:none;backdrop-filter:none}
+}
