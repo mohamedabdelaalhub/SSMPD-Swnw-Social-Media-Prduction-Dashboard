@@ -74,7 +74,9 @@ class Knowledge:
         self.dir = Path(directory)
         self.release_id, self.release_file = release_id, release_file
         self.manifest, self.tiers, self.error = None, {}, None
+        self._sig, self.reload_error = None, None
         try:
+            self._sig = self._signature()
             self._load()
         except (OSError, ValueError, KeyError, PackError) as e:
             self.error = type(e).__name__
@@ -94,6 +96,28 @@ class Knowledge:
             raise PackError('pack-hash')
         self.manifest, self.tiers = m, tiers
 
+    def _signature(self):
+        st = (self.dir / 'manifest.json').stat()
+        return (str((self.dir / 'manifest.json').resolve()), st.st_mtime_ns)
+
+    def refresh(self):
+        """Pick up a rebuilt pack (symlink swap) without a restart. A broken new pack is NOT served:
+        the previous verified pack stays and the failure is recorded."""
+        try:
+            sig = self._signature()
+        except OSError:
+            return
+        if sig == self._sig:
+            return
+        old = (self.manifest, self.tiers)
+        try:
+            self._load()
+            self.error, self.reload_error = None, None
+        except (OSError, ValueError, KeyError, PackError) as e:
+            self.manifest, self.tiers = old
+            self.reload_error = type(e).__name__
+        self._sig = sig
+
     # -- version ---------------------------------------------------------------------------------
     def live_release(self):
         """The server's own release id (file wins over static env so a new release is seen at once)."""
@@ -107,6 +131,7 @@ class Knowledge:
         return val if val and re.fullmatch(r'[0-9a-f]{7,40}', val) else None
 
     def status(self):
+        self.refresh()
         live = self.live_release()
         if not self.manifest:
             return 'unavailable'
@@ -118,6 +143,7 @@ class Knowledge:
 
     # -- selection -------------------------------------------------------------------------------
     def select(self, viewer, question):
+        self.refresh()
         pool = list(self.tiers.get('employee', []))
         if viewer.owner:
             pool += self.tiers.get('owner_admin', [])  # tier gate: only the owner ever reaches this file

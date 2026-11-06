@@ -1,0 +1,7 @@
+[Unit]
+Description=Rebuild the Sono pack when a new dashboard release is made current
+[Path]
+PathChanged=/opt/swnw-data/dashboard-parallel/CURRENT
+Unit=swnw-sono-pack.service
+[Install]
+WantedBy=multi-user.target

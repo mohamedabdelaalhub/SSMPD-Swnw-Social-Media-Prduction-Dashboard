@@ -68,7 +68,7 @@ function frame(){
  returnFocus=document.activeElement;
  dialog=document.createElement('dialog');dialog.className='sc-dialog';dialog.dir='rtl';dialog.setAttribute('aria-label','محادثات الفريق على السيرفر');
  dialog.innerHTML='<header class="sc-header"><div><h2>محادثات الفريق</h2><p>Codex على كونتابو · سجل محفوظ</p></div>'+button('إغلاق','data-sc-close')+'</header>'+
- '<div class="sc-toolbar">'+button('محادثة جديدة','data-sc-new')+button('المشاركون','data-sc-members disabled')+(identity.owner?button('إدارة الوصول','data-sc-access'):'')+(identity.owner?button('تصدير','data-sc-export'):'')+(identity.owner?button('الحصة اليومية','data-sc-limit'):'')+'</div>'+
+ '<div class="sc-toolbar">'+button('محادثة جديدة','data-sc-new')+button('المشاركون','data-sc-members disabled')+(identity.owner?button('إدارة الوصول','data-sc-access'):'')+(identity.owner?button('تصدير','data-sc-export'):'')+(identity.owner?button('الحصة اليومية','data-sc-limit'):'')+(identity.owner?button('سونو للموظفين','data-sc-emp'):'')+'</div>'+
  '<div class="sc-layout"><aside aria-label="المحادثات" data-sc-rooms></aside><section class="sc-conversation"><h3 data-sc-title>اختر محادثة</h3><div class="sc-tools" data-sc-tools hidden></div><div class="sc-messages" data-sc-messages aria-live="polite"></div>'+
  '<form data-sc-form class="sc-compose"><div class="sc-compose-options"><select name="kind" aria-label="نوع الرسالة"><option value="chat">رسالة</option><option value="question">سؤال</option><option value="instruction">تعليمات للنقاش</option><option value="task">طلب تنفيذ</option></select><select name="target" aria-label="الوكيل المطلوب"></select></div>'+(identity.owner?'<p class="sc-attach-warn" data-sc-warn>تنبيه: لا ترفع ملفات أو صورًا فيها بيانات تعريف المرضى (الاسم أو الهوية أو الهاتف أو رقم الملف). المرفقات تُحفظ على السيرفر وتُرسل إلى محرك الذكاء الاصطناعي.</p><div class="sc-files" data-sc-files aria-live="polite"></div>':'')+'<div class="sc-send">'+(identity.owner?'<button type="button" class="sc-attach" data-sc-attach aria-label="إرفاق ملف أو صورة" title="إرفاق ملف أو صورة (png / jpg / webp / pdf / txt / csv / md — حتى 700 ك.ب)">📎</button><input type="file" data-sc-file hidden multiple accept="image/png,image/jpeg,image/webp,application/pdf,.txt,.csv,.md,text/plain,text/csv,text/markdown">':'')+'<textarea name="body" rows="2" maxlength="200000" placeholder="اكتب رسالتك…" aria-label="نص الرسالة"></textarea><button type="submit">إرسال</button></div></form><p class="sc-status" role="status" data-sc-status></p></section></div>';
  document.body.appendChild(dialog);dialog.showModal();
@@ -79,6 +79,7 @@ function frame(){
  if(identity.owner)node('[data-sc-access]').onclick=accessForm;
  if(identity.owner)node('[data-sc-export]').onclick=exportForm;
  if(identity.owner)node('[data-sc-limit]').onclick=limitForm;
+ if(identity.owner)node('[data-sc-emp]').onclick=empForm;
  node('[data-sc-form]').onsubmit=function(e){e.preventDefault();send();};
  node('[name=body]').addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();node('[data-sc-form]').requestSubmit();}});
  node('[name=body]').addEventListener('input',function(){pending=null;});
@@ -227,6 +228,14 @@ async function limitForm(){
  var show=function(i){node('[data-sc-limit-info]').textContent='المستخدم اليوم: '+i.used+' من '+i.limit+' · يتجدد 00:00 بتوقيت UTC';};show(info);
  node('[data-sc-dismiss]').onclick=function(){node('[data-sc-tools]').hidden=true;node('.sc-conversation').classList.remove('sc-editing');poll(false);};
  node('[data-sc-limit-save]').onclick=async function(){var b=this;b.disabled=true;try{var v=Number(node('[name=sc-limit]').value);if(!Number.isInteger(v)||v<info.min||v>info.max){status('أدخل رقمًا صحيحًا من '+info.min+' إلى '+info.max);return;}show(await api('/limit',{limit:v}));status('تم حفظ الحصة اليومية');}catch(e){status(e.message);}finally{b.disabled=false;}};
+ }catch(e){status(e.message);}
+}
+async function empForm(){
+ try{var info=await api('/employees'),lim=info.limits;
+ tools('<h4>سونو الذكي للموظفين</h4><p data-sc-emp-state></p><label><input type="checkbox" name="sc-emp-on"> السماح للموظفين بسؤال سونو الذكي (Codex، قراءة فقط)</label><label>حد كل موظف في اليوم ('+esc(lim.per_user[0])+' إلى '+esc(lim.per_user[1])+')<input type="number" name="sc-emp-user" min="'+esc(lim.per_user[0])+'" max="'+esc(lim.per_user[1])+'" step="1"></label><label>الحد الكلي لكل الموظفين في اليوم ('+esc(lim.total[0])+' إلى '+esc(lim.total[1])+')<input type="number" name="sc-emp-total" min="'+esc(lim.total[0])+'" max="'+esc(lim.total[1])+'" step="1"></label><div data-sc-emp-users></div>'+button('حفظ','data-sc-emp-save')+button('إغلاق','data-sc-dismiss'));
+ var show=function(x){node('[name=sc-emp-on]').checked=!!x.enabled;node('[name=sc-emp-user]').value=x.per_user;node('[name=sc-emp-total]').value=x.total;node('[data-sc-emp-state]').textContent=(x.enabled?'شغّال':'متوقف')+' · استخدام الموظفين اليوم: '+x.used_total+' من '+x.total+' · يتجدد 00:00 بتوقيت UTC';node('[data-sc-emp-users]').innerHTML=x.users.length?'<ul>'+x.users.map(function(u){return '<li>'+esc(u.name)+': '+esc(u.calls)+'</li>';}).join('')+'</ul>':'<small>لا استخدام اليوم</small>';};show(info);
+ node('[data-sc-dismiss]').onclick=function(){node('[data-sc-tools]').hidden=true;node('.sc-conversation').classList.remove('sc-editing');poll(false);};
+ node('[data-sc-emp-save]').onclick=async function(){var b=this;b.disabled=true;try{var u=Number(node('[name=sc-emp-user]').value),t=Number(node('[name=sc-emp-total]').value);if(!Number.isInteger(u)||u<lim.per_user[0]||u>lim.per_user[1]||!Number.isInteger(t)||t<lim.total[0]||t>lim.total[1]){status('أدخل أرقامًا صحيحة داخل النطاق');return;}show(await api('/employees',{enabled:node('[name=sc-emp-on]').checked,per_user:u,total:t}));status('تم الحفظ');}catch(e){status(e.message);}finally{b.disabled=false;}};
  }catch(e){status(e.message);}
 }
 async function openWorkspace(){

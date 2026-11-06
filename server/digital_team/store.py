@@ -16,6 +16,8 @@ AGENTS = {'codex': 'Codex', 'claude': 'Claude Code', 'sia': 'سيا', 'hapi': '�
 ENGINES = ('codex', 'claude')  # agents with a real runtime adapter in this gateway
 MAX_BODY = 200_000  # chars per message (was 4000); technical safety cap only
 DAILY_LIMIT = int(os.environ.get('SWNW_CHAT_DAILY_LIMIT', '4'))
+EMP_PER_USER = 3   # default employee messages per person per UTC day (owner can change, 1..50)
+EMP_TOTAL = 30     # default employee messages for ALL employees per UTC day (owner can change, 1..500)
 
 class Denied(Exception):
     pass
@@ -41,6 +43,7 @@ class Store:
         PRAGMA busy_timeout=5000;
         CREATE TABLE IF NOT EXISTS meta(key TEXT PRIMARY KEY,value TEXT NOT NULL);
         CREATE TABLE IF NOT EXISTS usage(day TEXT PRIMARY KEY,calls INTEGER NOT NULL);
+        CREATE TABLE IF NOT EXISTS usage_user(day TEXT NOT NULL,user_id TEXT NOT NULL,calls INTEGER NOT NULL,PRIMARY KEY(day,user_id));
         CREATE TABLE IF NOT EXISTS agents(code TEXT PRIMARY KEY, name TEXT NOT NULL);
         CREATE TABLE IF NOT EXISTS people(id TEXT PRIMARY KEY, name TEXT NOT NULL);
         CREATE TABLE IF NOT EXISTS grants(user_id TEXT, agent TEXT REFERENCES agents(code),
@@ -96,15 +99,65 @@ class Store:
             if actor.owner:
                 self.db.execute("INSERT OR REPLACE INTO meta VALUES('owner',?)",(actor.id,))
 
+    # ---- employee access (owner-controlled switch + limits; Codex chat only, never tasks or Claude) ----
+    def _meta_int(self, key, default, lo, hi):
+        row = self.db.execute('SELECT value FROM meta WHERE key=?', (key,)).fetchone()
+        try:
+            return max(lo, min(hi, int(row[0]))) if row else default
+        except ValueError:
+            return default
+
+    def employees_enabled(self):
+        row = self.db.execute("SELECT value FROM meta WHERE key='employees_enabled'").fetchone()
+        return bool(row and row[0] == '1')
+
+    def employees_info(self, actor):
+        if not actor.owner:
+            raise Denied('إعدادات الموظفين للمالك فقط')
+        day = time.strftime('%Y-%m-%d', time.gmtime())
+        rows = self.rows('SELECT u.user_id,u.calls,p.name FROM usage_user u LEFT JOIN people p ON p.id=u.user_id WHERE u.day=? ORDER BY u.calls DESC LIMIT 50', (day,))
+        owner = self.db.execute("SELECT value FROM meta WHERE key='owner'").fetchone()
+        rows = [r for r in rows if not owner or r['user_id'] != owner[0]]
+        return {'enabled': self.employees_enabled(), 'per_user': self._meta_int('emp_per_user', EMP_PER_USER, 1, 50),
+                'total': self._meta_int('emp_total', EMP_TOTAL, 1, 500), 'day': day, 'resets': '00:00 UTC',
+                'used_total': sum(r['calls'] for r in rows), 'users': [{'name': r['name'] or 'موظف', 'calls': r['calls']} for r in rows],
+                'limits': {'per_user': [1, 50], 'total': [1, 500]}}
+
+    def set_employees(self, actor, data):
+        if not actor.owner:
+            raise Denied('إعدادات الموظفين للمالك فقط')
+        if not isinstance(data, dict):
+            raise Invalid('طلب غير صالح')
+        changes = {}
+        if 'enabled' in data:
+            if not isinstance(data['enabled'], bool):
+                raise Invalid('قيمة التفعيل غير صالحة')
+            changes['employees_enabled'] = '1' if data['enabled'] else '0'
+        for key, meta, lo, hi in (('per_user', 'emp_per_user', 1, 50), ('total', 'emp_total', 1, 500)):
+            if key in data:
+                v = data[key]
+                if isinstance(v, bool) or not isinstance(v, int) or not lo <= v <= hi:
+                    raise Invalid('الحد يجب أن يكون رقمًا من %d إلى %d' % (lo, hi))
+                changes[meta] = str(v)
+        if not changes:
+            raise Invalid('لا توجد تغييرات')
+        with self.tx():
+            for k, v in changes.items():
+                self.db.execute('INSERT INTO meta VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value', (k, v))
+            self.audit(actor, 'employees', json.dumps(changes, sort_keys=True))
+        return self.employees_info(actor)
+
     def allowed(self, user, agent, action='chat'):
         if self.db.execute("SELECT 1 FROM meta WHERE key='owner' AND value=?",(user,)).fetchone():
             return True
+        if agent == 'codex' and action == 'chat' and self.employees_enabled():
+            return True  # owner's switch; per-person grants still decide everything else (tasks, other agents)
         col = 'task' if action == 'task' else 'chat'
         return bool(self.db.execute(f'SELECT 1 FROM grants WHERE user_id=? AND agent=? AND chat=1 AND {col}=1 AND (expires IS NULL OR expires>?)',
                                     (user, agent, time.time())).fetchone())
 
     def has_chat(self, user):
-        return bool(self.db.execute("SELECT 1 FROM meta WHERE key='owner' AND value=?",(user,)).fetchone() or self.db.execute('SELECT 1 FROM grants WHERE user_id=? AND chat=1 AND (expires IS NULL OR expires>?)',(user,time.time())).fetchone())
+        return self.employees_enabled() or bool(self.db.execute("SELECT 1 FROM meta WHERE key='owner' AND value=?",(user,)).fetchone() or self.db.execute('SELECT 1 FROM grants WHERE user_id=? AND chat=1 AND (expires IS NULL OR expires>?)',(user,time.time())).fetchone())
 
     def permission(self, actor, agent, action='chat'):
         return actor.owner or self.allowed(actor.id, agent, action)
@@ -467,6 +520,28 @@ class Store:
             if not job:
                 return None
             day=time.strftime('%Y-%m-%d',time.gmtime())
+            owner=self.db.execute("SELECT value FROM meta WHERE key='owner'").fetchone()
+            is_employee=bool(owner and job['user_id']!=owner[0])
+            if is_employee and not self.employees_enabled():
+                if not self.allowed(job['user_id'],job['agent']):  # no personal grant: the owner's switch is off
+                    self.db.execute("UPDATE jobs SET state='limited',error=?,updated=? WHERE id=?",('سونو للموظفين متوقفة مؤقتًا',time.time(),job['id']))
+                    return None
+                is_employee=False  # personal grant: legacy path (shared global counter), as before this switch existed
+            if is_employee:
+                # Employee job: separate counters, never spend the owner's quota (and vice versa).
+                why=''
+                mine=self.db.execute('SELECT calls FROM usage_user WHERE day=? AND user_id=?',(day,job['user_id'])).fetchone()
+                total=self.db.execute('SELECT COALESCE(SUM(calls),0) FROM usage_user WHERE day=?',(day,)).fetchone()[0]
+                if mine and mine[0]>=self._meta_int('emp_per_user',EMP_PER_USER,1,50):
+                    why='بلغت حصتك اليومية من أسئلة سونو؛ تتجدد 00:00 UTC'
+                elif total>=self._meta_int('emp_total',EMP_TOTAL,1,500):
+                    why='بلغت حصة الموظفين اليومية؛ حاول غدًا'
+                if why:
+                    self.db.execute("UPDATE jobs SET state='limited',error=?,updated=? WHERE id=?",(why,time.time(),job['id']))
+                    return None
+                self.db.execute('INSERT INTO usage_user VALUES(?,?,1) ON CONFLICT(day,user_id) DO UPDATE SET calls=calls+1',(day,job['user_id']))
+                self.db.execute("UPDATE jobs SET state='running',updated=? WHERE id=?",(time.time(),job['id']))
+                return dict(job)
             used=self.db.execute('SELECT calls FROM usage WHERE day=?',(day,)).fetchone()
             if used and used[0]>=self.daily_limit():
                 self.db.execute("UPDATE jobs SET state='limited',error='بلغت حصة المحادثات اليومية',updated=? WHERE id=?",(time.time(),job['id']))

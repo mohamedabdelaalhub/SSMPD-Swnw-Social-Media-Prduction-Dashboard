@@ -1,0 +1,8 @@
+[Unit]
+Description=Safety net: re-check that the Sono pack matches the live release
+[Timer]
+OnCalendar=hourly
+Persistent=true
+Unit=swnw-sono-pack.service
+[Install]
+WantedBy=timers.target

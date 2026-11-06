@@ -164,7 +164,7 @@ class TierTests(Base):
         emp_body = kb.context_entry(Viewer(roles=('reception',)), 'منح الصلاحيات لوحة الإدارة')['body']
         self.assertIn(OWNER_SECRET_TEXT, owner_body)
         self.assertNotIn(OWNER_SECRET_TEXT, emp_body)
-        self.assertEqual(sorted(vars(kb)), sorted(['dir', 'release_id', 'release_file', 'manifest', 'tiers', 'error']))  # no per-user state
+        self.assertEqual(sorted(vars(kb)), sorted(['dir', 'release_id', 'release_file', 'manifest', 'tiers', 'error', '_sig', 'reload_error']))  # no per-user state
         nonces = {re.search(r'=====([0-9a-f]{16})=====', kb.context_entry(Viewer(owner=True), 'ليد')['body']).group(1) for _ in range(5)}
         self.assertEqual(len(nonces), 5)
 

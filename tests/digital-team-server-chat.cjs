@@ -9,7 +9,7 @@ const wait=()=>new Promise(r=>setTimeout(r,20));
  w.SSMPDAuth={currentAdmin:{id:'owner',name:'محمد',role:'super_admin'}};
  w.SSMPD_CONFIG={supabase:{url:'https://fixture.invalid',anonKey:'test'}};
  w.supabase={createClient:()=>({auth:{getSession:async()=>({data:{session:{access_token:'fixture-auth-token'}}})}})};
- let attachCalls=[],rooms=[],members={},messages={},calls=[],savedGrants=[],sendCount=0,failOnce=false,limitVal=4;
+ let attachCalls=[],rooms=[],members={},messages={},calls=[],savedGrants=[],sendCount=0,failOnce=false,limitVal=4,empState={enabled:false,per_user:3,total:30};
  const agents=[{code:'codex',name:'Codex',chat:true,task:true,connected:true},{code:'claude',name:'Claude Code',chat:true,task:true,connected:true},{code:'sia',name:'سيا',chat:true,task:true}];
  w.fetch=async(url,opts)=>{
   assert.equal(opts.headers.Authorization,'Bearer fixture-auth-token');
@@ -22,6 +22,7 @@ const wait=()=>new Promise(r=>setTimeout(r,20));
   else if(url.endsWith('/rooms')){
    if(data){let id='room-'+(rooms.length+1);rooms.push({id,title:data.title,creator:'owner',agents:data.agents,can_manage:true,can_send:true});members[id]=[{user_id:'owner',name:'محمد',can_send:true,can_manage:true},...data.users.map(id=>({user_id:id,name:'موظف الاختبار',can_send:true,can_manage:false}))];messages[id]=[];value={id};}
    else value={rooms};
+  }else if(url.includes('/employees')){if(data)empState={...empState,...data};value={enabled:empState.enabled,per_user:empState.per_user,total:empState.total,day:'2026-11-06',used_total:2,users:[{name:'موظف <b>أ</b>',calls:2}],limits:{per_user:[1,50],total:[1,500]}};
   }else if(url.includes('/limit')){if(data)limitVal=data.limit;value={limit:limitVal,used:2,day:'2026-11-06',min:1,max:200};}else if(url.includes('/export')){value={rows:[{time:'2026-11-06 15:00:00',room:'غرفة',sender:'محمد',agent:'Codex',text:'=HYPERLINK("x")'},{time:'2026-11-06 15:01:00',room:'غرفة',sender:'Codex',agent:'Codex',text:'رد "مقتبس"'}]};}else{
    const room=url.split('/')[4];
    if(url.endsWith('/members')){
@@ -72,6 +73,14 @@ const wait=()=>new Promise(r=>setTimeout(r,20));
  d.querySelector('[name=sc-limit]').value='25';d.querySelector('[data-sc-limit-save]').click();await wait();
  assert.equal(limitVal,25,'limit saved');assert(d.querySelector('[data-sc-limit-info]').textContent.includes('2 من 25'));
  d.querySelector('[name=sc-limit]').value='999';const nBefore=calls.length;d.querySelector('[data-sc-limit-save]').click();await wait();assert.equal(calls.length,nBefore,'out-of-range not sent');
+ d.querySelector('[data-sc-emp]').click();await wait();
+ assert(d.querySelector('[data-sc-emp-state]').textContent.includes('متوقف'),'employees default off');
+ assert.equal(d.querySelector('[data-sc-emp-users] b'),null,'employee names are escaped');
+ assert(d.querySelector('[data-sc-emp-users]').textContent.includes('<b>'),'name shown as text');
+ d.querySelector('[name=sc-emp-on]').checked=true;d.querySelector('[name=sc-emp-user]').value='5';d.querySelector('[name=sc-emp-total]').value='40';d.querySelector('[data-sc-emp-save]').click();await wait();
+ assert.deepEqual(empState,{enabled:true,per_user:5,total:40},'employee switch and limits saved');
+ assert(d.querySelector('[data-sc-emp-state]').textContent.includes('شغّال'),'state shown');
+ d.querySelector('[name=sc-emp-user]').value='99';{const n2=calls.length;d.querySelector('[data-sc-emp-save]').click();await wait();assert.equal(calls.length,n2,'out-of-range employee limit not sent');}
 
  // --- copy buttons + attachments (room-1 holds the 'Codex' private chat with the escaped message)
  d.querySelector('[data-sc-room=room-1]').click();await wait();await wait();

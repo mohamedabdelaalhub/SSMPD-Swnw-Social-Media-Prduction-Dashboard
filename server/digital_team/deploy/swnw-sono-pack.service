@@ -1,0 +1,13 @@
+[Unit]
+Description=Rebuild the Sono knowledge pack for the live dashboard release
+[Service]
+Type=oneshot
+User=swnw
+Group=swnw
+UMask=0027
+ExecStart=/usr/local/lib/swnw-sono/sono-pack-sync.sh
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/var/lib/swnw-team-chat
