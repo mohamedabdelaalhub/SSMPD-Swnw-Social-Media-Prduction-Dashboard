@@ -51,4 +51,5 @@
 .sc-dialog.sc-focus .sc-toolbar,.sc-dialog.sc-focus .sc-bar{display:none}.sc-dialog.sc-focus .sc-layout{grid-template-columns:minmax(0,1fr)}.sc-dialog.sc-focus .sc-layout aside:not(:focus-within){display:none}.sc-dialog.sc-focus.sc-focus .sc-layout.show-rooms aside{display:block}
 .sc-simple-body{padding:16px;display:grid;gap:12px;overflow:auto;align-content:start}.sc-ask{display:grid;gap:8px}.sc-ask textarea{min-height:90px}.sc-answer .sc-message{max-width:100%}.sc-simple{height:min(640px,calc(100dvh - 32px))}
 .sc-toast{position:fixed;inset-block-end:24px;inset-inline:16px;margin:auto;max-width:420px;z-index:2147483647;background:#0b1d4a;color:#fff;padding:12px 16px;border-radius:12px;box-shadow:0 10px 30px #0b1d4a66;text-align:center;font-size:14px}
+.sc-task-panel{display:grid;gap:8px;margin-top:12px;padding:12px;border:1px solid var(--c-border,#E4E9F2);border-radius:12px;background:var(--c-card,#fff)}.sc-task-panel label,.sc-tools label{display:grid;gap:4px;font-size:13px}
 }

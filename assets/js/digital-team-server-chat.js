@@ -66,13 +66,28 @@ async function rate(btn){
  try{await api('/messages/'+btn.dataset.scRate+'/rating',{value:on?0:want});lastDraw='';await poll(false);loadBar();}catch(e){status(e.message);}
 }
 function toast(msg){var t=document.createElement('div');t.className='sc-toast';t.setAttribute('role','status');t.textContent=msg;document.body.appendChild(t);w.setTimeout(function(){t.remove();},5000);}
-async function toTask(btn){
+function toTask(btn){
  var body=texts[btn.dataset.scTask];if(body==null)return;
- var lines=String(body).split('\n').map(function(l){return l.replace(/[*`#>-]+/g,'').trim();}).filter(Boolean),title=(lines[0]||'مهمة').slice(0,80);
- var ok=await copyText('عنوان المهمة: '+title+'\n\nالتفاصيل:\n'+body);
- var nav=document.querySelector('[data-goto="tasks"]');
- if(ok){close();if(nav)nav.click();toast('اتنسخ نص المهمة. اضغط «مهمة جديدة» في المشروع المناسب والصق.');}
- else status('تعذر النسخ؛ انسخ الرد يدويًا');
+ var lines=String(body).split('\n').map(function(l){return l.replace(/[*`#>-]+/g,'').trim();}).filter(Boolean),title=(lines[0]||'مهمة').slice(0,120);
+ var html='<h4>طلب مهمة لـ Claude Creative</h4><p class="sc-hint">Claude Creative ينشئ المهمة في المشروع المناسب ويوكلها لمن يخصه الموضوع (المتابعة كل ساعة تقريبًا)، وبيوصلك إشعار.</p>'+
+  '<label>عنوان المهمة<input name="sc-task-title" maxlength="160" value="'+esc(title)+'"></label><label>التفاصيل<textarea name="sc-task-body" rows="6" maxlength="8000">'+esc(body)+'</textarea></label>'+
+  '<label>مين المسؤول أو أي مشروع؟ (اختياري)<input name="sc-task-hint" maxlength="300" placeholder="مثال: سارة من التسويق"></label><p class="sc-reason" data-sc-task-msg hidden></p>'+button('ابعت الطلب','data-sc-task-send class="sc-primary"')+button('إلغاء','data-sc-task-cancel');
+ var host=node('[data-sc-tools]');
+ if(host&&!node('[data-sc-answer]'))tools(html);
+ else{var box=node('[data-sc-answer]');var old=box.querySelector('[data-sc-task-panel]');if(old)old.remove();var d=document.createElement('div');d.className='sc-task-panel';d.setAttribute('data-sc-task-panel','');d.innerHTML=html;box.appendChild(d);}
+ var cancel=node('[data-sc-task-cancel]');
+ cancel.onclick=function(){var p=node('[data-sc-task-panel]');if(p)p.remove();else{node('[data-sc-tools]').hidden=true;node('.sc-conversation').classList.remove('sc-editing');poll(false);}};
+ node('[data-sc-task-send]').onclick=async function(){
+  var b=this,msg=node('[data-sc-task-msg]');b.disabled=true;
+  try{
+   var r=await client().rpc('chat_task_request_submit',{p_title:node('[name=sc-task-title]').value,p_body:node('[name=sc-task-body]').value,p_hint:node('[name=sc-task-hint]').value||null});
+   if(r.error)throw r.error;
+   cancel.click();toast('اتسجّل الطلب. Claude Creative هيعمل المهمة ويوكلها وهيوصلك إشعار.');
+  }catch(e){
+   var m=String(e&&e.message||e);
+   msg.hidden=false;msg.textContent=/chat_task_request_submit|function .* does not exist|schema cache/i.test(m)?'الميزة لسه ما اتفعلتش على الداشبورد (محتاجة ترقية قاعدة البيانات).':m;b.disabled=false;
+  }
+ };
 }
 async function copyText(text){
  try{if(w.navigator.clipboard&&w.navigator.clipboard.writeText){await w.navigator.clipboard.writeText(text);return true;}}catch(_){}

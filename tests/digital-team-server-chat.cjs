@@ -8,7 +8,8 @@ const wait=()=>new Promise(r=>setTimeout(r,20));
  w.HTMLDialogElement.prototype.showModal=function(){this.setAttribute('open','');};
  w.SSMPDAuth={currentAdmin:{id:'owner',name:'محمد',role:'super_admin'}};
  w.SSMPD_CONFIG={supabase:{url:'https://fixture.invalid',anonKey:'test'}};
- w.supabase={createClient:()=>({auth:{getSession:async()=>({data:{session:{access_token:'fixture-auth-token'}}})}})};
+ let rpcCalls=[],rpcFail=null;
+ w.supabase={createClient:()=>({rpc:async(n,p)=>{rpcCalls.push({n,p});return rpcFail?{error:{message:rpcFail}}:{data:'req1',error:null};},auth:{getSession:async()=>({data:{session:{access_token:'fixture-auth-token'}}})}})};
  let isOwner=true,jobsMap={},ratingCalls=[],noteTotal=0,grantsSeed=[],readCalls=[],attachCalls=[],rooms=[],members={},messages={},calls=[],savedGrants=[],sendCount=0,failOnce=false,limitVal=4,empState={enabled:false,per_user:3,total:30};
  const agents=[{code:'codex',name:'Codex',chat:true,task:true,connected:true},{code:'claude',name:'Claude Code',chat:true,task:true,connected:true},{code:'sia',name:'سيا',chat:true,task:true}];
  w.fetch=async(url,opts)=>{
@@ -205,9 +206,15 @@ const wait=()=>new Promise(r=>setTimeout(r,20));
   d.querySelector('[data-sc-ask]').requestSubmit();await new Promise(r=>setTimeout(r,120));await wait();
   const ans=d.querySelector('[data-sc-answer]');assert(ans.querySelector('strong'),'answer rendered');assert(ans.textContent.includes('إضافة حجز'),'source shown');
   ans.querySelector('[data-sc-rate][data-value="-1"]').click();await wait();await wait();assert.equal(ratingCalls.at(-1).data.value,-1);
-  { let copied2=null;Object.defineProperty(w.navigator,'clipboard',{configurable:true,value:{writeText:async x=>{copied2=x;}}});let went=0;const nav=d.createElement('button');nav.dataset.goto='tasks';nav.onclick=()=>went++;d.body.appendChild(nav);
-    ans.querySelector('[data-sc-task]').click();await wait();await wait();
-    assert(copied2&&copied2.startsWith('عنوان المهمة: الخطوات هنا')&&copied2.includes('التفاصيل:'),'task text copied');assert.equal(went,1,'tasks screen opened');assert(d.querySelector('.sc-toast'),'toast shown');assert(!d.querySelector('dialog'),'chat closed');nav.remove();
+  {
+    ans.querySelector('[data-sc-task]').click();
+    assert.equal(d.querySelector('[name=sc-task-title]').value,'الخطوات هنا','title from first line');assert(d.querySelector('[name=sc-task-body]').value.includes('الخطوات'));
+    d.querySelector('[name=sc-task-hint]').value='سارة - التسويق';
+    rpcFail='Could not find the function public.chat_task_request_submit in the schema cache';d.querySelector('[data-sc-task-send]').click();await wait();await wait();
+    assert(d.querySelector('[data-sc-task-msg]').textContent.includes('لسه ما اتفعلتش'),'friendly message before the migration is applied');
+    rpcFail=null;d.querySelector('[data-sc-task-send]').click();await wait();await wait();
+    assert.equal(rpcCalls.at(-1).n,'chat_task_request_submit');{const p=rpcCalls.at(-1).p;assert.equal(p.p_title,'الخطوات هنا');assert.equal(p.p_hint,'سارة - التسويق');assert(p.p_body.includes('الخطوات'));}
+    assert(d.querySelector('.sc-toast'),'confirmation toast');assert.equal(d.querySelector('[data-sc-task-panel]'),null,'panel closed');
     await w.SSMPDServerTeamChat.open();await wait();await wait(); }
   d.querySelector('[data-sc-full]').click();await wait();await wait();assert(d.querySelector('.sc-layout'),'full chat reachable');
   d.querySelector('[data-sc-close]').click();isOwner=true;
