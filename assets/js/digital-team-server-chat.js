@@ -3,7 +3,7 @@
 'use strict';
 if(w.SSMPDServerTeamChat)return;
 var db=null,identity=null,rooms=[],users=[],agents=[],active='',dialog=null,timer=null,busy=false,revision=0,returnFocus=null;
-var base='/api/digital-team',pending=null,lastDraw='',grants=[],access=false,authId='';
+var base='/api/digital-team',files=[],texts={},uploading=0,pending=null,lastDraw='',grants=[],access=false,authId='';
 function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function client(){if(db)return db;var c=w.SSMPD_CONFIG?.supabase;if(!c||!w.supabase)throw Error('سجّل الدخول أولًا');return db=w.supabase.createClient(c.url,c.anonKey,{auth:{persistSession:true,autoRefreshToken:true}});}
 async function api(path,body){
@@ -19,14 +19,58 @@ function name(code){return agents.find(function(a){return a.code===code;})?.name
 function node(q){return dialog?.querySelector(q);}
 function button(label,attr){return '<button type="button" '+attr+'>'+esc(label)+'</button>';}
 function kill(){clearTimeout(timer);timer=null;}
-function close(){kill();revision++;dialog?.remove();dialog=null;returnFocus?.focus();lastDraw='';}
+var MAX_FILE=700000,MAX_FILES=3,ICON_COPY='<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M9 9h10v10H9zM5 15V5h10"/></svg>',ICON_OK='<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" d="M5 12l5 5 9-10"/></svg>';
+function copyButton(id){return '<button type="button" class="sc-copy" data-sc-copy="'+esc(id)+'" aria-label="نسخ نص الرسالة" title="نسخ">'+ICON_COPY+'</button>';}
+function chips(list){return (list&&list.length)?'<ul class="sc-chips">'+list.map(function(f){return '<li>📎 '+esc(f.name)+'</li>';}).join('')+'</ul>':'';}
+function messageHtml(m,mine){texts[m.id]=m.body;return '<article class="sc-message '+(mine?'mine':'')+'"><div class="sc-msg-head"><b>'+esc(m.name)+'</b>'+copyButton(m.id)+'</div><p>'+esc(m.body)+'</p>'+chips(m.attachments)+'<small>'+esc(new Date(m.created*1000).toLocaleString('ar-EG'))+'</small></article>';}
+async function copyText(text){
+ try{if(w.navigator.clipboard&&w.navigator.clipboard.writeText){await w.navigator.clipboard.writeText(text);return true;}}catch(_){}
+ var ta=document.createElement('textarea');ta.value=text;ta.setAttribute('readonly','');ta.setAttribute('aria-hidden','true');ta.style.cssText='position:fixed;top:0;inset-inline-start:0;opacity:0;pointer-events:none';
+ (dialog||document.body).appendChild(ta);ta.select();var ok=false;try{ok=!!document.execCommand('copy');}catch(_){ok=false;}ta.remove();return ok;
+}
+async function onCopy(btn){
+ var text=texts[btn.dataset.scCopy];if(text==null)return;var ok=await copyText(text);
+ if(!btn.isConnected)btn=node('[data-sc-copy="'+btn.dataset.scCopy+'"]');
+ if(btn){btn.innerHTML=ok?ICON_OK:ICON_COPY;btn.classList.toggle('done',ok);btn.setAttribute('aria-label',ok?'تم النسخ':'تعذر النسخ');btn.title=ok?'تم النسخ':'تعذر النسخ';
+  w.setTimeout(function(){if(btn.isConnected){btn.innerHTML=ICON_COPY;btn.classList.remove('done');btn.setAttribute('aria-label','نسخ نص الرسالة');btn.title='نسخ';}},1600);}
+ status(ok?'تم النسخ':'تعذر النسخ؛ حدّد النص وانسخه يدويًا');
+}
+function sizeLabel(n){return n>=1000?Math.round(n/1000)+' ك.ب':n+' بايت';}
+function renderFiles(){var box=node('[data-sc-files]');if(!box)return;
+ box.innerHTML=files.map(function(f,i){return '<span class="sc-file">📎 '+esc(f.name)+' <small>'+esc(sizeLabel(f.size))+'</small><button type="button" data-sc-unfile="'+i+'" aria-label="إزالة المرفق '+esc(f.name)+'">×</button></span>';}).join('')+(uploading?'<span class="sc-file">جارٍ الرفع…</span>':'');
+ box.querySelectorAll('[data-sc-unfile]').forEach(function(b){b.onclick=function(){files.splice(Number(b.dataset.scUnfile),1);pending=null;renderFiles();};});
+}
+function readBase64(blob){return new Promise(function(res,rej){var r=new w.FileReader();r.onload=function(){res(String(r.result).split(',')[1]||'');};r.onerror=function(){rej(Error('تعذر قراءة الملف'));};r.readAsDataURL(blob);});}
+async function shrink(file){
+ // Large photos are downscaled in the browser so they fit the upload limit; failure falls back to the original.
+ if(!/^image\/(png|jpeg|webp)$/.test(file.type)||file.size<=MAX_FILE*0.8||!w.createImageBitmap)return file;
+ try{var bmp=await w.createImageBitmap(file),scale=Math.min(1,1600/Math.max(bmp.width,bmp.height)),c=document.createElement('canvas');
+  c.width=Math.max(1,Math.round(bmp.width*scale));c.height=Math.max(1,Math.round(bmp.height*scale));var g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);g.drawImage(bmp,0,0,c.width,c.height);
+  var blob=await new Promise(function(r){c.toBlob(r,'image/jpeg',0.82);});
+  if(blob)return new w.File([blob],file.name.replace(/\.[^.]+$/,'')+'.jpg',{type:'image/jpeg'});}catch(_){}
+ return file;
+}
+async function attach(list){
+ var room=active;if(!room||!identity?.owner)return;
+ for(var i=0;i<list.length;i++){
+  if(files.length+uploading>=MAX_FILES){status('الحد الأقصى '+MAX_FILES+' ملفات لكل رسالة');break;}
+  var f=await shrink(list[i]);
+  if(f.size>MAX_FILE){status('الملف "'+f.name+'" أكبر من 700 كيلوبايت');continue;}
+  uploading++;renderFiles();
+  try{var data=await readBase64(f);var out=await api('/rooms/'+room+'/attachments',{name:f.name,mime:f.type||'',data:data});
+   if(room===active&&dialog){files.push(out);pending=null;status('تم رفع المرفق: '+out.name);}}
+  catch(e){if(dialog)status(e.message);}
+  finally{uploading--;if(dialog)renderFiles();}
+ }
+}
+function close(){kill();revision++;files=[];texts={};uploading=0;dialog?.remove();dialog=null;returnFocus?.focus();lastDraw='';}
 function frame(){
  returnFocus=document.activeElement;
  dialog=document.createElement('dialog');dialog.className='sc-dialog';dialog.dir='rtl';dialog.setAttribute('aria-label','محادثات الفريق على السيرفر');
  dialog.innerHTML='<header class="sc-header"><div><h2>محادثات الفريق</h2><p>Codex على كونتابو · سجل محفوظ</p></div>'+button('إغلاق','data-sc-close')+'</header>'+
  '<div class="sc-toolbar">'+button('محادثة جديدة','data-sc-new')+button('المشاركون','data-sc-members disabled')+(identity.owner?button('إدارة الوصول','data-sc-access'):'')+(identity.owner?button('تصدير','data-sc-export'):'')+(identity.owner?button('الحصة اليومية','data-sc-limit'):'')+'</div>'+
  '<div class="sc-layout"><aside aria-label="المحادثات" data-sc-rooms></aside><section class="sc-conversation"><h3 data-sc-title>اختر محادثة</h3><div class="sc-tools" data-sc-tools hidden></div><div class="sc-messages" data-sc-messages aria-live="polite"></div>'+
- '<form data-sc-form class="sc-compose"><div class="sc-compose-options"><select name="kind" aria-label="نوع الرسالة"><option value="chat">رسالة</option><option value="question">سؤال</option><option value="instruction">تعليمات للنقاش</option><option value="task">طلب تنفيذ</option></select><select name="target" aria-label="الوكيل المطلوب"></select></div><div class="sc-send"><textarea name="body" rows="2" maxlength="4000" required placeholder="اكتب رسالتك…" aria-label="نص الرسالة"></textarea><button type="submit">إرسال</button></div></form><p class="sc-status" role="status" data-sc-status></p></section></div>';
+ '<form data-sc-form class="sc-compose"><div class="sc-compose-options"><select name="kind" aria-label="نوع الرسالة"><option value="chat">رسالة</option><option value="question">سؤال</option><option value="instruction">تعليمات للنقاش</option><option value="task">طلب تنفيذ</option></select><select name="target" aria-label="الوكيل المطلوب"></select></div>'+(identity.owner?'<p class="sc-attach-warn" data-sc-warn>تنبيه: لا ترفع ملفات أو صورًا فيها بيانات تعريف المرضى (الاسم أو الهوية أو الهاتف أو رقم الملف). المرفقات تُحفظ على السيرفر وتُرسل إلى محرك الذكاء الاصطناعي.</p><div class="sc-files" data-sc-files aria-live="polite"></div>':'')+'<div class="sc-send">'+(identity.owner?'<button type="button" class="sc-attach" data-sc-attach aria-label="إرفاق ملف أو صورة" title="إرفاق ملف أو صورة (png / jpg / webp / pdf / txt / csv / md — حتى 700 ك.ب)">📎</button><input type="file" data-sc-file hidden multiple accept="image/png,image/jpeg,image/webp,application/pdf,.txt,.csv,.md,text/plain,text/csv,text/markdown">':'')+'<textarea name="body" rows="2" maxlength="4000" placeholder="اكتب رسالتك…" aria-label="نص الرسالة"></textarea><button type="submit">إرسال</button></div></form><p class="sc-status" role="status" data-sc-status></p></section></div>';
  document.body.appendChild(dialog);dialog.showModal();
  node('[data-sc-close]').onclick=close;
  dialog.addEventListener('cancel',function(e){e.preventDefault();close();});
@@ -38,6 +82,8 @@ function frame(){
  node('[data-sc-form]').onsubmit=function(e){e.preventDefault();send();};
  node('[name=body]').addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();node('[data-sc-form]').requestSubmit();}});
  node('[name=body]').addEventListener('input',function(){pending=null;});
+ node('[data-sc-messages]').addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('[data-sc-copy]');if(b)onCopy(b);});
+ if(identity.owner){var pick=node('[data-sc-file]');node('[data-sc-attach]').onclick=function(){pick.click();};pick.onchange=function(){var list=Array.from(pick.files||[]);pick.value='';attach(list);};}
  node('[name=kind]').onchange=function(){pending=null;};node('[name=target]').onchange=function(){pending=null;};
 }
 async function open(code){
@@ -61,7 +107,7 @@ async function refreshRooms(){
  dialog.querySelectorAll('[data-sc-room]').forEach(function(b){b.onclick=function(){selectRoom(b.dataset.scRoom);};});
 }
 async function selectRoom(id){
- active=id;revision++;pending=null;lastDraw='';kill();node('[data-sc-tools]').hidden=true;node('.sc-conversation').classList.remove('sc-editing');
+ active=id;revision++;pending=null;lastDraw='';files=[];texts={};renderFiles();kill();node('[data-sc-tools]').hidden=true;node('.sc-conversation').classList.remove('sc-editing');
  var r=rooms.find(function(x){return x.id===id;});if(!r)return;
  node('[data-sc-title]').textContent=r.title;node('[data-sc-members]').disabled=!r.can_manage;
  node('[data-sc-form]').hidden=!r.can_send;
@@ -75,7 +121,7 @@ async function poll(scroll){
   var data=await api('/rooms/'+room+'/messages');if(!dialog||room!==active||ticket!==revision)return;
   var hash=JSON.stringify(data),box=node('[data-sc-messages]'),nearEnd=box.scrollHeight-box.scrollTop-box.clientHeight<80;
   if(hash!==lastDraw){lastDraw=hash;
-   box.innerHTML=(data.before?button('رسائل أقدم','data-sc-older="'+data.before+'"'):'')+data.messages.map(function(m){var mine=m.author===identity.id;return '<article class="sc-message '+(mine?'mine':'')+'"><b>'+esc(m.name)+'</b><p>'+esc(m.body)+'</p><small>'+esc(new Date(m.created*1000).toLocaleString('ar-EG'))+'</small></article>';}).join('')+
+   box.innerHTML=(data.before?button('رسائل أقدم','data-sc-older="'+data.before+'"'):'')+data.messages.map(function(m){return messageHtml(m,m.author===identity.id);}).join('')+
     data.jobs.filter(function(j){return j.state!=='complete';}).map(function(j){return '<article class="sc-job"><b>'+esc(name(j.agent))+' · '+esc(stateNames[j.state]||j.state)+'</b><p>'+esc(j.state==='running'?j.text:j.error)+'</p>'+(['queued','running','awaiting_owner'].includes(j.state)?button('إيقاف','data-sc-cancel="'+esc(j.id)+'"'):'')+'</article>';}).join('');
    box.querySelectorAll('[data-sc-cancel]').forEach(function(b){b.onclick=async function(){try{await api('/rooms/'+room+'/cancel/'+b.dataset.scCancel,{});poll(false);}catch(e){status(e.message);}};});
    var older=box.querySelector('[data-sc-older]');if(older)older.onclick=function(){loadOlder(older,room);};
@@ -86,14 +132,15 @@ async function poll(scroll){
  finally{if(dialog&&ticket===revision){kill();timer=w.setTimeout(function(){poll(false);},3000);}}
 }
 async function loadOlder(b,room){try{var data=await api('/rooms/'+room+'/messages?before='+encodeURIComponent(b.dataset.scOlder));if(room!==active||!dialog)return;
- var wrap=document.createElement('div');wrap.innerHTML=data.messages.map(function(m){return '<article class="sc-message"><b>'+esc(m.name)+'</b><p>'+esc(m.body)+'</p></article>';}).join('');b.after(wrap);if(data.before)b.dataset.scOlder=data.before;else b.remove();}catch(e){status(e.message);}}
+ var wrap=document.createElement('div');wrap.innerHTML=data.messages.map(function(m){return messageHtml(m,false);}).join('');b.after(wrap);if(data.before)b.dataset.scOlder=data.before;else b.remove();}catch(e){status(e.message);}}
 async function send(){
- if(!active||busy)return;var f=node('[data-sc-form]'),body=f.elements.body.value.trim();if(!body)return;
+ if(!active||busy)return;var f=node('[data-sc-form]'),body=f.elements.body.value.trim();if(!body&&files.length)body='(مرفقات)';if(!body)return;
  var r=rooms.find(function(x){return x.id===active;}),target=f.elements.target.value;
  var targets=target==='all'?r.agents:target?[target]:[];
- var data={body:body,kind:f.elements.kind.value,targets:targets,request_key:pending||w.crypto.randomUUID()};pending=data.request_key;
+ if(uploading){status('انتظر اكتمال رفع المرفق');return;}
+ var data={body:body,kind:f.elements.kind.value,targets:targets,request_key:pending||w.crypto.randomUUID()};if(files.length)data.attachments=files.map(function(x){return x.id;});pending=data.request_key;
  var room=active;busy=true;f.querySelector('button[type=submit]').disabled=true;
- try{await api('/rooms/'+room+'/messages',data);if(dialog&&room===active){f.elements.body.value='';pending=null;await poll(true);}}
+ try{await api('/rooms/'+room+'/messages',data);if(dialog&&room===active){f.elements.body.value='';pending=null;files=[];renderFiles();await poll(true);}}
  catch(e){status(e.message+'؛ إعادة الإرسال بنفس النص لن تكرر الرسالة.');}
  finally{busy=false;if(dialog)node('[type=submit]').disabled=false;}
 }
@@ -146,8 +193,8 @@ async function refreshAccess(){
 
 function csvCell(v){v=String(v==null?'':v);if(/^[=+\-@\t\r]/.test(v))v="'"+v;return '"'+v.replace(/"/g,'""')+'"';}
 function exportText(rows,format){
- if(format==='txt')return rows.map(function(r){return '['+r.time+'] '+r.room+' | '+r.sender+(r.agent?' -> '+r.agent:'')+'\n'+r.text+'\n';}).join('\n');
- return '﻿'+['الوقت','المحادثة','المرسل','الوكيل','النص'].map(csvCell).join(',')+'\r\n'+rows.map(function(r){return [r.time,r.room,r.sender,r.agent,r.text].map(csvCell).join(',');}).join('\r\n')+'\r\n';
+ if(format==='txt')return rows.map(function(r){return '['+r.time+'] '+r.room+' | '+r.sender+(r.agent?' -> '+r.agent:'')+'\n'+r.text+(r.attachments?'\n[مرفقات: '+r.attachments+']':'')+'\n';}).join('\n');
+ return '﻿'+['الوقت','المحادثة','المرسل','الوكيل','النص','المرفقات'].map(csvCell).join(',')+'\r\n'+rows.map(function(r){return [r.time,r.room,r.sender,r.agent,r.text,r.attachments].map(csvCell).join(',');}).join('\r\n')+'\r\n';
 }
 function exportForm(){
  var now=new Date(),pad=function(n){return String(n).padStart(2,'0');},day=now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate());

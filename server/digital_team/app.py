@@ -10,7 +10,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlsplit,parse_qs
 from auth import Auth
-from runtime import Codex, ClaudeChat, RuntimeFailure
+from runtime import Codex, ClaudeChat, RuntimeFailure, Unsupported
+import uploads
 from store import Store, Denied, Invalid, ENGINES
 
 PREFIX='/api/digital-team'
@@ -69,6 +70,8 @@ class Service:
                     with self.tokens_lock:
                         self.tokens[(room,a.id)]=(token,time.time()+240)
                     return out
+            if len(parts)==3 and parts[2]=='attachments' and method=='POST':
+                return self.store.add_attachment(a,room,data)
             if len(parts)==3 and parts[2]=='members':
                 if method=='GET':return {'members':self.store.members(a,room),'agents':self.store.room_agents(room)}
                 if method=='POST':
@@ -98,9 +101,14 @@ class Service:
                     try:self.store.membership(actor,job['room'],send=True)
                     except Denied:return True
                 return False
+            files=self.store.job_attachments(job)
+            extra={'attachments':files} if files else {}  # engines without file support never see the kwarg
             answer=engine.answer(history,thread,lambda t:self.store.session(job,t),
-                lambda text:self.store.progress(job,text),cancelled)
+                lambda text:self.store.progress(job,text),cancelled,**extra)
             self.store.finish(job,answer)
+        except Unsupported as e:
+            # Clear, user-facing reason (e.g. engine cannot read PDFs); the file is never silently ignored.
+            self.store.finish(job,error=str(e))
         except (Denied,Invalid,RuntimeFailure):
             self.store.finish(job,error='تعذر إكمال الرد؛ تحقق من الاتصال والصلاحية ثم أرسل رسالة جديدة')
         except Exception:
@@ -145,7 +153,8 @@ def handler(service,origin):
                 if self.command=='POST':
                     if self.headers.get('Content-Type','').split(';')[0]!='application/json':raise Invalid('JSON مطلوب')
                     size=int(self.headers.get('Content-Length','0'))
-                    if not 1<=size<=24000:raise Invalid('حجم الطلب غير صالح')
+                    upload=self.path.split('?')[0].rstrip('/').endswith('/attachments')
+                    if not 1<=size<=(uploads.MAX_REQUEST if upload else 24000):raise Invalid('حجم الطلب غير صالح')
                     data=json.loads(self.rfile.read(size))
                     if not isinstance(data,dict):raise Invalid('طلب غير صالح')
                 self.respond(200,service.handle(self.command,self.path,auth[7:],data))

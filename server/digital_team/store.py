@@ -7,6 +7,8 @@ import threading
 import time
 import uuid
 from dataclasses import dataclass
+from pathlib import Path
+import uploads
 
 AGENTS = {'codex': 'Codex', 'claude': 'Claude Code', 'sia': 'سيا', 'hapi': 'حابي', 'claude_creative': 'Claude Creative',
           'hor': 'حور', 'hotep': 'حتب', 'nefer': 'نفر', 'maat': 'ماعت'}
@@ -29,6 +31,7 @@ class Actor:
 class Store:
     def __init__(self, path):
         self.lock = threading.RLock()
+        self.upload_dir = Path(path).resolve().parent / 'uploads'  # under the gateway data dir, never a web root
         self.db = sqlite3.connect(path, check_same_thread=False, isolation_level=None)
         self.db.row_factory = sqlite3.Row
         self.db.executescript('''
@@ -58,6 +61,9 @@ class Store:
           UNIQUE(message_id,agent));
         CREATE TABLE IF NOT EXISTS sessions(room TEXT, agent TEXT, revision INTEGER, thread TEXT NOT NULL,
           PRIMARY KEY(room,agent,revision));
+        CREATE TABLE IF NOT EXISTS attachments(id TEXT PRIMARY KEY, room TEXT REFERENCES rooms(id), owner TEXT NOT NULL,
+          message_id TEXT, name TEXT NOT NULL, kind TEXT NOT NULL, mime TEXT NOT NULL, size INTEGER NOT NULL,
+          stored TEXT NOT NULL, sha256 TEXT NOT NULL, created REAL NOT NULL);
         CREATE TABLE IF NOT EXISTS audit(id INTEGER PRIMARY KEY, actor TEXT NOT NULL, action TEXT NOT NULL,
           target TEXT NOT NULL, created REAL NOT NULL);
         ''')
@@ -275,6 +281,9 @@ class Store:
             rows = self.rows('SELECT * FROM messages WHERE room=? AND seq>=? AND seq<? ORDER BY seq DESC LIMIT 100', (room,m['since_seq'],ceiling))
             ids = [r['id'] for r in rows]
             jobs = self.rows('SELECT id,message_id,agent,state,text,error FROM jobs WHERE room=? ORDER BY updated DESC LIMIT 100',(room,))
+            files = self.attachments_for(ids)
+            for r in rows:
+                r['attachments'] = files.get(r['id'], [])
             return {'messages':list(reversed(rows)), 'jobs':[j for j in jobs if j['message_id'] in ids],
                     'before': rows[-1]['seq'] if len(rows)==100 else None}
 
@@ -313,7 +322,9 @@ class Store:
                 for r in self.rows('SELECT * FROM messages WHERE room=? AND seq>=? AND created>=? AND created<? ORDER BY created,seq LIMIT 20001',
                                    (rid, m['since_seq'], start, end)):
                     agent = AGENTS.get(r['author'][6:], '') if r['author'].startswith('agent:') else ', '.join(AGENTS.get(a, a) for a in json.loads(r['targets']))
-                    out.append({'time': datetime.fromtimestamp(r['created'], timezone.utc).astimezone(cairo).strftime('%Y-%m-%d %H:%M:%S'),
+                    files = self.attachments_for([r['id']]).get(r['id'], [])
+                    out.append({'attachments': '; '.join(f"{f['name']} ({f['mime']}, {f['size']} bytes)" for f in files),
+                                'time': datetime.fromtimestamp(r['created'], timezone.utc).astimezone(cairo).strftime('%Y-%m-%d %H:%M:%S'),
                                 'room': title, 'sender': r['name'], 'agent': agent, 'text': r['body'], '_t': r['created']})
             if len(out) > 20000:
                 raise Invalid('النتائج أكثر من 20000 رسالة؛ ضيّق الفترة')
@@ -326,12 +337,19 @@ class Store:
     def send(self, actor, room, data):
         body, key, kind = data.get('body'),data.get('request_key'),data.get('kind','chat')
         targets = data.get('targets',[])
+        ids = data.get('attachments',[])
+        if not isinstance(ids,list) or len(ids)>uploads.MAX_PER_MESSAGE or any(not isinstance(i,str) for i in ids) or len(set(ids))!=len(ids):
+            raise Invalid('المرفقات غير صالحة (الحد 3 ملفات)')
+        if isinstance(body,str) and ids and not body.strip():
+            body = '(مرفقات)'
         if not isinstance(body,str) or not 1<=len(body.strip())<=4000 or not isinstance(key,str) or not 8<=len(key)<=80:
             raise Invalid('نص الرسالة أو معرّف الإرسال غير صالح')
         if kind not in ('chat','question','instruction','task') or not isinstance(targets,list) or any(not isinstance(a,str) for a in targets):
             raise Invalid('نوع الرسالة غير صالح')
         with self.tx():
             self.membership(actor,room,send=True)
+            if ids and not actor.owner:
+                raise Denied('إرفاق الملفات للمالك فقط')
             available = self.room_agents(room)
             if any(a not in available for a in targets):
                 raise Denied('الوكيل ليس في المحادثة')
@@ -342,7 +360,8 @@ class Store:
                 raise Denied('التكليف غير مصرح به')
             old = self.db.execute('SELECT * FROM messages WHERE room=? AND author=? AND request_key=?',(room,actor.id,key)).fetchone()
             if old:
-                if old['body'] != body.strip() or old['kind'] != kind or json.loads(old['targets']) != sorted(targets):
+                if old['body'] != body.strip() or old['kind'] != kind or json.loads(old['targets']) != sorted(targets) \
+                        or sorted(f['id'] for f in self.attachments_for([old['id']]).get(old['id'], [])) != sorted(ids):
                     raise Invalid('معرّف الإرسال مستخدم لرسالة مختلفة')
                 return {'message_id':old['id'],'duplicate':True}
             if self.db.execute("SELECT COUNT(*) FROM jobs WHERE state IN ('queued','running')").fetchone()[0]>=20:
@@ -350,8 +369,13 @@ class Store:
             if self.db.execute('SELECT COUNT(*) FROM messages WHERE author=? AND created>?',(actor.id,time.time()-60)).fetchone()[0]>=12:
                 raise Invalid('انتظر قليلًا قبل إرسال رسالة أخرى')
             mid = str(uuid.uuid4()); now=time.time()
+            for i in ids:
+                if not self.db.execute('SELECT 1 FROM attachments WHERE id=? AND room=? AND owner=? AND message_id IS NULL',(i,room,actor.id)).fetchone():
+                    raise Invalid('مرفق غير متاح؛ أعد رفعه')
             self.db.execute('INSERT INTO messages(id,room,author,name,kind,body,created,request_key,targets) VALUES(?,?,?,?,?,?,?,?,?)',
                             (mid,room,actor.id,actor.name,kind,body.strip(),now,key,json.dumps(sorted(targets))))
+            for i in ids:
+                self.db.execute('UPDATE attachments SET message_id=? WHERE id=?',(mid,i))
             rev=self.db.execute('SELECT revision FROM rooms WHERE id=?',(room,)).fetchone()[0]
             for a in targets:
                 state = 'awaiting_owner' if kind=='task' else ('queued' if a in ENGINES else 'unconnected')
@@ -360,6 +384,55 @@ class Store:
             self.db.execute('UPDATE rooms SET updated=? WHERE id=?',(now,room))
             self.audit(actor,'message',mid)
             return {'message_id':mid,'duplicate':False}
+
+    # ---- attachments (owner only; content-validated; stored under the gateway data dir) ----
+    def attachments_for(self, message_ids):
+        if not message_ids:
+            return {}
+        marks = ','.join('?' * len(message_ids))
+        out = {}
+        for r in self.rows(f'SELECT id,message_id,name,kind,mime,size FROM attachments WHERE message_id IN ({marks}) ORDER BY created', tuple(message_ids)):
+            out.setdefault(r.pop('message_id'), []).append(r)
+        return out
+
+    def purge_pending(self):
+        """Delete uploads that were never sent with a message (caller holds the transaction)."""
+        for r in self.rows('SELECT id,stored FROM attachments WHERE message_id IS NULL AND created<?', (time.time()-uploads.PENDING_TTL,)):
+            self.db.execute('DELETE FROM attachments WHERE id=?', (r['id'],))
+            try:(self.upload_dir / r['stored']).unlink()
+            except FileNotFoundError:pass
+
+    def add_attachment(self, actor, room, data):
+        if not actor.owner:
+            raise Denied('إرفاق الملفات للمالك فقط')
+        try:
+            name, raw, kind, mime, ext = uploads.decode_payload(data)
+        except uploads.UploadRejected as e:
+            raise Invalid(str(e)) from None
+        import hashlib
+        with self.tx():
+            self.membership(actor, room, send=True)
+            self.purge_pending()
+            if self.db.execute('SELECT COUNT(*) FROM attachments WHERE owner=? AND message_id IS NULL', (actor.id,)).fetchone()[0] >= uploads.MAX_PENDING:
+                raise Invalid('مرفقات كثيرة بلا إرسال؛ أرسل رسالة أو انتظر قليلًا')
+            if (self.db.execute('SELECT COALESCE(SUM(size),0) FROM attachments').fetchone()[0] + len(raw)) > uploads.MAX_STORE_BYTES:
+                raise Invalid('مساحة المرفقات ممتلئة؛ يلزم تنظيف من المشغّل')
+            stored = uploads.write_private(self.upload_dir, raw, ext)
+            aid = uuid.uuid4().hex
+            try:
+                self.db.execute('INSERT INTO attachments VALUES(?,?,?,?,?,?,?,?,?,?,?)',
+                                (aid, room, actor.id, None, name, kind, mime, len(raw), stored, hashlib.sha256(raw).hexdigest(), time.time()))
+            except BaseException:
+                (self.upload_dir / stored).unlink(missing_ok=True)
+                raise
+            self.audit(actor, 'upload', aid)
+        return {'id': aid, 'name': name, 'kind': kind, 'mime': mime, 'size': len(raw)}
+
+    def job_attachments(self, job):
+        """Files of the message that triggered this job, with absolute paths (internal use by engines only)."""
+        with self.lock:
+            rows = self.rows('SELECT id,name,kind,mime,size,stored FROM attachments WHERE message_id=? ORDER BY created', (job['message_id'],))
+        return [{**r, 'path': str(self.upload_dir / r['stored'])} for r in rows]
 
     def daily_limit(self):
         row = self.db.execute("SELECT value FROM meta WHERE key='daily_limit'").fetchone()
@@ -410,7 +483,12 @@ class Store:
                 raise Denied('تغير المشاركون أو أُلغي الطلب')
             floor=self.db.execute('SELECT COALESCE(MAX(since_seq),0) FROM members WHERE room=?',(job['room'],)).fetchone()[0]
             end=self.db.execute('SELECT seq FROM messages WHERE id=?',(job['message_id'],)).fetchone()[0]
-            rows=self.rows('SELECT name,body,kind FROM messages WHERE room=? AND seq>=? AND seq<=? ORDER BY seq DESC LIMIT 40',(job['room'],floor,end))
+            rows=self.rows('SELECT id,name,body,kind FROM messages WHERE room=? AND seq>=? AND seq<=? ORDER BY seq DESC LIMIT 40',(job['room'],floor,end))
+            files=self.attachments_for([r['id'] for r in rows])
+            for r in rows:
+                if files.get(r['id']):
+                    r['body']+='\n[مرفقات: '+'، '.join(f['name'] for f in files[r['id']])+']'
+                del r['id']
             # No persistent engine thread is reused after membership changes.
             session=self.db.execute('SELECT thread FROM sessions WHERE room=? AND agent=? AND revision=?',(job['room'],job['agent'],job['revision'])).fetchone()
             bounded=[];size=0

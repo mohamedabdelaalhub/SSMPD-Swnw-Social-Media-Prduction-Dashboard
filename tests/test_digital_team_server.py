@@ -183,7 +183,7 @@ class ExportTest(StoreTest):
         room=self._fixture()
         r=self.s.export(self.owner,'2026-11-06T15:00','2026-11-06T16:00')['rows']
         self.assertEqual(len(r),1);self.assertEqual(r[0]['time'][:16],'2026-11-06 15:00'.replace('15:00','15:00'))
-        self.assertEqual(set(r[0]),{'time','room','sender','agent','text'})
+        self.assertEqual(set(r[0]),{'time','room','sender','agent','text','attachments'})
         self.assertEqual(self.s.export(self.owner,'2026-11-06T16:00','2026-11-06T17:00')['rows'],[])
         self.assertEqual(self.s.export(self.owner,'2026-11-06T14:00','2026-11-06T15:00')['rows'],[])
     def test_history_fence_and_membership(self):

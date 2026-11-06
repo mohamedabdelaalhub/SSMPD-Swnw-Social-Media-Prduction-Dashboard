@@ -27,5 +27,14 @@ Same-origin `/api/digital-team` prefix; existing Supabase access token in Author
 | `/rooms/{id}/messages` | GET / POST | Visibility-fenced history / idempotent send |
 | `/rooms/{id}/members` | GET / POST | Membership listing / authorized changes |
 | `/rooms/{id}/cancel/{job}` | POST | Cancel own request or owner's room request |
+| `/rooms/{id}/attachments` | POST | Owner only: upload one file as JSON `{name,mime?,data(base64)}`; returns an id to pass as `attachments:[id]` on send |
 
 Initial task messages create pending owner requests only. Other engines are explicitly unconnected in this gateway; their pre-existing dashboard flows stay unchanged.
+
+## Attachments (owner only)
+
+- Allowlist **by content** (magic bytes), not by name/declared type: png, jpg, webp, pdf, and UTF-8 txt/csv/md. SVG/HTML/archives/executables are rejected. Max 700 KB per file (keeps the base64 JSON body under the proxy's 1 MB default, so no nginx change), 3 files per message, 12 pending uploads, 512 MB total.
+- Stored under `<state>/uploads/` (the gateway data dir, never a web root) with random names, mode 0600, never served back and never executed. Unsent uploads are purged after 1 h. Filenames are only metadata.
+- Engines: Codex gets images as `localImage` and text files inlined; PDFs are refused with a clear Arabic message. Claude gets images and PDFs as base64 content blocks (`--input-format stream-json`, tools stay disabled) and text inlined. File text is framed as data, not instructions.
+- Owner export lists attachment names/types/sizes per message (file contents are not exported).
+- Do not upload patient identifiers; files are sent to the AI provider.
