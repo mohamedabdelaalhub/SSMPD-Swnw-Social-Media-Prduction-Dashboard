@@ -21,6 +21,41 @@ from pathlib import Path
 
 SCHEMA = 1
 MAX_SECTION = 2600
+CODE_CHUNK = 2400
+ROOT_DOCS = ['BUSINESS-INTELLIGENCE.md', 'OPERATIONS-INTEGRATION.md', 'TASK-WORKFLOW.md', 'WEBSITE-INTEGRATION.md']
+DOC_SKIP_DIRS = ('docs/chatgpt-plugin/',)
+
+# UI source -> the tab it implements. First match wins; no match => owner only (fail closed).
+# Files that are pure noise or already covered by the reviewed help articles are skipped entirely.
+SKIP_SOURCE = re.compile(r'^(i18n-dictionary|dashboard-help-data|dashboard-help-fields|turnstile-gate|latin-digits|employee-assistant|sono-ai-assist|navigation-ui|ui-titles|toast|scroll-top)\.js$')
+SOURCE_RULES = [
+    (r'^(render-accounting|finance-.*|accountant-workspace|ledger-editor|insurance-.*|service-invoice-print)\.js$', 'accounting'),
+    (r'^(reception-services|reception-service-orders|service-.*)\.js$', 'reception_services'),
+    (r'^(reception-.*|today-operations.*)\.js$', 'reception_services'),
+    (r'^render-bookings\.js$', 'booking_cash'),
+    (r'^(render-inventory|inventory-.*)\.js$', 'inventory'),
+    (r'^(hr-.*|staff-profile|workforce-prices)\.js$', 'human_resources'),
+    (r'^(price-.*|contract-price-workspace)\.js$', 'price_lists'),
+    (r'^(render-leads|leads-.*)\.js$', 'leads'),
+    (r'^(render-patients|patient-.*|patient360|nutrition-view|child-assessment-forms|psychology-workspace|render-patient-verification)\.js$', 'patients'),
+    (r'^(render-contracting-entities|contracting-.*|contract-.*|entity-claims.*|center-master-review)\.js$', 'contracting_entities'),
+    (r'^(render-tasks|task-.*|weekly-plan|workflow)\.js$', 'tasks'),
+    (r'^render-summary\.js$', 'summary'),
+    (r'^(render-production|content-.*|carousel-content|before-after-content|dina-content|doctor-content|doctor-.*|publication-.*)\.js$', 'production'),
+    (r'^render-review\.js$', 'review'),
+    (r'^(render-design|design-.*|video-.*|reel-cover|studio-storyboard|ai-clips)\.js$', 'design'),
+    (r'^(render-publish|website-publish)\.js$', 'publish'),
+    (r'^(render-comments|comments.*)\.js$', 'comments'),
+    (r'^render-clinic-info\.js$', 'clinic_info'),
+    (r'^render-performance\.js$', 'performance'),
+    (r'^(render-metaads)\.js$', 'metaads'),
+    (r'^render-mediabuyer\.js$', 'mediabuyer'),
+    (r'^render-archive\.js$', 'archive'),
+    (r'^render-mykpi\.js$', 'my_kpi'),
+    (r'^(render-staffkpi|employee-performance)\.js$', 'staff_kpi'),
+    (r'^indicator-reports\.js$', 'indicator_reports'),
+    (r'^(personal-home|home-welcome-redesign|update-notice)\.js$', 'home'),
+]
 
 # Owner/admin knowledge: explicit allow-list (new docs are NOT picked up automatically).
 OWNER_DOCS = [
@@ -121,9 +156,18 @@ def employee_items(repo, tab_roles, excluded):
     return data.get('version', ''), items
 
 
+def doc_list(repo):
+    extra = sorted(str(p.relative_to(repo)) for p in (repo / 'docs').rglob('*.md')
+                   if not any(str(p.relative_to(repo)).startswith(d) for d in DOC_SKIP_DIRS))
+    out = list(OWNER_DOCS)
+    out += [r for r in extra if r not in out]
+    out += [r for r in ROOT_DOCS if (repo / r).is_file()]
+    return out
+
+
 def owner_items(repo, excluded):
     items = []
-    for rel in OWNER_DOCS:
+    for rel in doc_list(repo):
         p = repo / rel
         if not p.is_file():
             excluded.append({'source': rel, 'reason': ['missing']})
@@ -148,6 +192,63 @@ def owner_items(repo, excluded):
     return items
 
 
+_AR = re.compile(r'[\u0600-\u06FF]')
+_STR = re.compile(r"""(['"`])((?:(?!\1)[^\n\\]){3,90})\1""")
+_FN = re.compile(r'(?:function\s+([A-Za-z_$][\w$]*)|([A-Za-z_$][\w$]*)\s*[:=]\s*(?:async\s*)?function)')
+
+
+def split_code(text, limit=CODE_CHUNK):
+    out, i = [], 0
+    while i < len(text):
+        j = min(len(text), i + limit)
+        if j < len(text):
+            cut = max(text.rfind('\n', i, j), text.rfind('}', i, j), text.rfind(';', i, j))
+            j = cut + 1 if cut > i + limit // 2 else j
+        piece = text[i:j].strip()
+        if len(piece) >= 120:
+            out.append(piece)
+        i = j
+    return out
+
+
+def source_items(repo, tab_roles, excluded):
+    items, skipped_reasons = [], {}
+    for p in sorted((repo / 'assets/js').glob('*.js')):
+        name = p.name
+        if SKIP_SOURCE.match(name):
+            continue
+        tab = next((t for rx, t in SOURCE_RULES if re.match(rx, name)), None)
+        access = access_for(tab, tab_roles) if tab else {'mode': 'owner'}
+        try:
+            text = clean(p.read_text(encoding='utf8'))
+        except UnicodeDecodeError:
+            continue
+        for n, piece in enumerate(split_code(text)):
+            bad = problems(piece)
+            sid = 'src:%s#%d' % (name, n)
+            if bad:
+                for b in bad:
+                    skipped_reasons[b] = skipped_reasons.get(b, 0) + 1
+                continue
+            fns = []
+            for m in _FN.finditer(piece):
+                f = m.group(1) or m.group(2)
+                if f not in fns:
+                    fns.append(f)
+            strs = []
+            for m in _STR.finditer(piece):
+                v = m.group(2).strip()
+                if _AR.search(v) and v not in strs:
+                    strs.append(v)
+            items.append({'id': sid, 'title': '%s · %s' % (name, ' '.join(fns[:3])) if fns else name,
+                          'tab': tab or '', 'terms': ' '.join(strs[:80] + fns[:20]),
+                          'text': 'كود واجهة (للفهم فقط) — ملف assets/js/%s\n%s' % (name, piece),
+                          'access': access, 'source': 'assets/js/' + name, 'kind': 'code'})
+    if skipped_reasons:
+        excluded.append({'source': 'assets/js/*', 'reason': ['%s x%d' % kv for kv in sorted(skipped_reasons.items())]})
+    return items
+
+
 def dump(path, obj):
     raw = json.dumps(obj, ensure_ascii=False, sort_keys=True, indent=1).encode('utf8')
     path.write_bytes(raw)
@@ -169,7 +270,8 @@ def main():
     tab_roles = parse_tab_roles((repo / 'assets/js/roles.js').read_text(encoding='utf8'))
     version, emp = employee_items(repo, tab_roles, excluded)
     own = owner_items(repo, excluded)
-    files = {'employee': ('employee.json', emp), 'owner_admin': ('owner-admin.json', own)}
+    src = source_items(repo, tab_roles, excluded)
+    files = {'employee': ('employee.json', emp), 'owner_admin': ('owner-admin.json', own), 'source': ('source.json', src)}
     manifest = {'schema': SCHEMA, 'commit_sha': sha, 'help_version': version, 'built_at': int(time.time()),
                 'tab_roles': tab_roles, 'excluded': excluded, 'tiers': {}}
     for tier, (name, items) in files.items():
@@ -177,7 +279,7 @@ def main():
         manifest['tiers'][tier] = {'file': name, 'sha256': digest, 'count': len(items)}
     manifest['pack_sha256'] = hashlib.sha256(json.dumps(manifest['tiers'], sort_keys=True).encode() + sha.encode()).hexdigest()
     (out / 'manifest.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=1), encoding='utf8')
-    print('pack %s sha=%s employee=%d owner_admin=%d excluded=%d' % (out, sha[:12], len(emp), len(own), len(excluded)))
+    print('pack %s sha=%s employee=%d owner_admin=%d source=%d excluded=%d' % (out, sha[:12], len(emp), len(own), len(src), len(excluded)))
 
 
 if __name__ == '__main__':

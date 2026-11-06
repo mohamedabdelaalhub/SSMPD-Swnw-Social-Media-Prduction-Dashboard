@@ -8,13 +8,15 @@ No network, no database, no secrets. Stateless per call: nothing is cached per u
 """
 import hashlib
 import json
+import math
 import re
 import secrets
 from dataclasses import dataclass
 from pathlib import Path
 
-MAX_ITEMS = 5
-MAX_CHARS = 7000
+MAX_ITEMS = 6
+MAX_CHARS = 9000
+MAX_CODE = 3
 CONTROLLED_FINANCE = {'accountant', 'financial_manager'}
 
 _STOP = set('انا عايز عاوز اعمل ازاي ليه ايه هو هي في من علي على عن الي اللي دا ده دي لو لما لكن علشان المفروض عندي ممكن فيه مش ما هوه ان بيبقي يبقى اكتب هنا'.split())
@@ -26,8 +28,25 @@ def norm(v):
     return re.sub(r'[^\w]+', ' ', v).strip()
 
 
+_SYN = {'طبيب': 'دكتور', 'اطباء': 'دكتور', 'دكاتره': 'دكتور', 'دكاتر': 'دكتور', 'موعد': 'حجز', 'مواعيد': 'حجز', 'حجوزات': 'حجز',
+        'خدمات': 'خدمه', 'تحصيل': 'دفعه', 'دفعات': 'دفعه', 'مدفوعات': 'دفعه', 'خزنه': 'خزينه', 'كاش': 'خزينه', 'نقديه': 'خزينه',
+        'عقود': 'عقد', 'مرتبات': 'مرتب', 'رواتب': 'مرتب', 'فواتير': 'فاتوره', 'فاتورة': 'فاتوره', 'مخزن': 'مخزون'}
+
+
+def canon(w):
+    if len(w) > 3 and w[0] == 'و':
+        w = w[1:]
+    if len(w) > 4 and w.startswith('ال'):
+        w = w[2:]
+    return _SYN.get(w, w)
+
+
 def tokens(q):
-    return {w for w in norm(q).split() if len(w) > 1 and w not in _STOP}
+    return {canon(w) for w in norm(q).split() if len(w) > 1 and w not in _STOP}
+
+
+def _terms(text):
+    return {canon(w) for w in norm(text).split() if len(w) > 1}
 
 
 @dataclass(frozen=True)
@@ -52,13 +71,30 @@ def allowed(item, viewer):
     return False  # 'owner' and anything unknown
 
 
-def rank(items, question):
+def rank(items, question, idx=None, df=None):
+    """Rank items for a question. With a precomputed index (idf weights) rare words count more and a result
+    must cover a fair share of the question's meaning; without one it falls back to plain overlap."""
     q = tokens(question)
+    n = max(len(idx), 1) if idx else 1
+
+    def w(t):
+        return math.log(1 + n / (1 + df.get(t, 0))) if df is not None else 1.0
+
+    total = sum(w(t) for t in q) or 1.0
     scored = []
     for it in items:
-        head = set(norm(it.get('title', '') + ' ' + it.get('terms', '')).split())
-        body = set(norm(it.get('text', '')).split())
-        s = 6 * len(q & head) + len(q & body)
+        if idx is not None and it['id'] in idx:
+            head, body = idx[it['id']]
+        else:
+            head = _terms(it.get('title', '') + ' ' + it.get('terms', ''))
+            body = _terms(it.get('text', ''))
+        hit_h, hit_b = q & head, (q & body) - (q & head)
+        matched = sum(w(t) for t in hit_h | hit_b)
+        if df is not None and matched / total < 0.25:
+            continue
+        s = 6 * sum(w(t) for t in hit_h) + sum(w(t) for t in hit_b)
+        if it['id'][:4] in ('doc:', 'help'):
+            s *= 1.6  # explanations beat raw code excerpts for the same wording
         if s:
             scored.append((s, it['id'], it))
     scored.sort(key=lambda x: (-x[0], x[1]))
@@ -95,6 +131,7 @@ class Knowledge:
         if want != m.get('pack_sha256'):
             raise PackError('pack-hash')
         self.manifest, self.tiers = m, tiers
+        self._build_index()
 
     def _signature(self):
         st = (self.dir / 'manifest.json').stat()
@@ -117,6 +154,17 @@ class Knowledge:
             self.manifest, self.tiers = old
             self.reload_error = type(e).__name__
         self._sig = sig
+
+    def _build_index(self):
+        idx, df = {}, {}
+        for items in self.tiers.values():
+            for it in items:
+                head = _terms(it.get('title', '') + ' ' + it.get('terms', ''))
+                body = _terms(it.get('text', ''))
+                idx[it['id']] = (head, body)
+                for t in head | body:
+                    df[t] = df.get(t, 0) + 1
+        self._idx, self._df = idx, df
 
     # -- version ---------------------------------------------------------------------------------
     def live_release(self):
@@ -145,13 +193,16 @@ class Knowledge:
     def select(self, viewer, question):
         self.refresh()
         pool = list(self.tiers.get('employee', []))
+        pool += self.tiers.get('source', [])  # UI source excerpts: each carries its own access rule (default owner-only)
         if viewer.owner:
             pool += self.tiers.get('owner_admin', [])  # tier gate: only the owner ever reaches this file
         pool = [i for i in pool if allowed(i, viewer)]  # permission filter BEFORE ranking/context
         out, size = [], 0
-        for it in rank(pool, question):
+        for it in rank(pool, question, getattr(self, '_idx', None), getattr(self, '_df', None)):
             if len(out) >= MAX_ITEMS or size + len(it['text']) > MAX_CHARS and out:
                 break
+            if it.get('kind') == 'code' and sum(1 for o in out if o.get('kind') == 'code') >= MAX_CODE:
+                continue  # leave room for explanatory docs
             out.append(it)
             size += len(it['text'])
         return out
@@ -181,6 +232,7 @@ class Knowledge:
         if hint and self.manifest and hint[:7] != self.manifest['commit_sha'][:7]:
             lines.append('تلميح غير موثوق من المتصفح: نسخة الصفحة المفتوحة قد تكون قديمة (لا يغيّر أي صلاحية).')
         docs = self.select(viewer, question) if self.manifest else []
+        lines.append('بعض الوثائق مقتطفات من كود الواجهة (نوعها code): استخدمها لفهم ما تفعله الشاشة فقط، واشرح للمستخدم بلغة بسيطة بدون عرض الكود.')
         lines.append('عدد الوثائق المختارة: %d' % len(docs))
         if not docs and self.manifest:
             lines.append('لا توجد وثيقة مطابقة لهذا السؤال؛ قل ذلك صراحة.')
