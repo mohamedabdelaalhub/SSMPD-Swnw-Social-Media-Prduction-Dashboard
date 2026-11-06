@@ -3,19 +3,22 @@ const fs=require('node:fs');
 const {JSDOM}=require('jsdom');
 const wait=()=>new Promise(r=>setTimeout(r,20));
 (async()=>{
- const dom=new JSDOM('<!doctype html><html lang="ar" dir="rtl"><body><div id="app-root"><div id="user-dropdown"><div class="ud-items"></div></div><main id="view-container"><section class="digital-team"><div class="dt-grid"></div></section></main></div></body></html>',{url:'https://dashboard.swnwclinics.com',runScripts:'outside-only'});
+ const dom=new JSDOM('<!doctype html><html lang="ar" dir="rtl"><body><div id="app-root"><div class="topbar-tools"><button id="notif-bell-btn"></button></div><div id="user-dropdown"><div class="ud-items"></div></div><main id="view-container"><section class="digital-team"><div class="dt-grid"></div></section></main></div></body></html>',{url:'https://dashboard.swnwclinics.com',runScripts:'outside-only'});
  const w=dom.window,d=w.document;
  w.HTMLDialogElement.prototype.showModal=function(){this.setAttribute('open','');};
  w.SSMPDAuth={currentAdmin:{id:'owner',name:'محمد',role:'super_admin'}};
  w.SSMPD_CONFIG={supabase:{url:'https://fixture.invalid',anonKey:'test'}};
  w.supabase={createClient:()=>({auth:{getSession:async()=>({data:{session:{access_token:'fixture-auth-token'}}})}})};
- let attachCalls=[],rooms=[],members={},messages={},calls=[],savedGrants=[],sendCount=0,failOnce=false,limitVal=4,empState={enabled:false,per_user:3,total:30};
+ let noteTotal=0,readCalls=[],attachCalls=[],rooms=[],members={},messages={},calls=[],savedGrants=[],sendCount=0,failOnce=false,limitVal=4,empState={enabled:false,per_user:3,total:30};
  const agents=[{code:'codex',name:'Codex',chat:true,task:true,connected:true},{code:'claude',name:'Claude Code',chat:true,task:true,connected:true},{code:'sia',name:'سيا',chat:true,task:true}];
  w.fetch=async(url,opts)=>{
   assert.equal(opts.headers.Authorization,'Bearer fixture-auth-token');
   assert(!url.includes('fixture-auth-token'),'token never in URL');
   const data=opts.body?JSON.parse(opts.body):null;calls.push({url,data});let value={};let status=200;
-  if(url.endsWith('/bootstrap'))value={me:{id:'owner',name:'محمد',owner:true},agents};
+  if(url.endsWith('/notifications'))value={total:noteTotal,items:[]};
+  else if(url.endsWith('/read'))readCalls.push(url);
+  else if(url.endsWith('/archive')){rooms.find(r=>r.id===url.split('/')[4]).archived=data.archived;value={ok:true};}
+  else if(url.endsWith('/bootstrap'))value={me:{id:'owner',name:'محمد',owner:true},agents};
   else if(url.endsWith('/grants')){if(data)savedGrants.push(data);value={grants:savedGrants};}
   else if(url.endsWith('/attachments')){attachCalls.push(data);value={id:'att'+attachCalls.length,name:data.name,kind:'image',mime:data.mime,size:3};}
   else if(url.endsWith('/users'))value={users:[{id:'owner',name:'محمد'},{id:'staff',name:'موظف الاختبار'}]};
@@ -82,6 +85,29 @@ const wait=()=>new Promise(r=>setTimeout(r,20));
  assert(d.querySelector('[data-sc-emp-state]').textContent.includes('شغّال'),'state shown');
  d.querySelector('[name=sc-emp-user]').value='99';{const n2=calls.length;d.querySelector('[data-sc-emp-save]').click();await wait();assert.equal(calls.length,n2,'out-of-range employee limit not sent');}
 
+ // --- messenger bell, unread, invitation, archive
+
+ {
+  const bell=d.getElementById('sc-msg-btn');assert(bell,'messenger icon injected into the header');
+  assert.equal(bell.nextElementSibling.id,'notif-bell-btn','placed before the notification bell');
+  noteTotal=3;await w.SSMPDServerTeamChat.refreshNotifications();
+  assert.equal(bell.querySelector('.sc-bell-badge').textContent,'3');assert(!bell.querySelector('.sc-bell-badge').hidden,'badge visible');
+  noteTotal=0;await w.SSMPDServerTeamChat.refreshNotifications();assert(bell.querySelector('.sc-bell-badge').hidden,'badge hidden at zero');
+  rooms[1].unread=2;rooms[1].invited=true;rooms[1].invited_by='<i>محمد</i>';rooms[1].last={name:'محمد',body:'<b>مرحبا</b>',created:1};
+  d.querySelector('[data-sc-room=room-1]').click();await wait();await wait();
+  const r2=d.querySelector('[data-sc-room=room-2]');assert(r2.textContent.includes('2'),'unread badge in the room list');assert(r2.textContent.includes('أضافك'),'invitation shown');
+  assert.equal(r2.querySelector('i'),null,'inviter name escaped');assert.equal(r2.querySelector('b'),null,'last message escaped');
+  const before=readCalls.length;r2.click();await wait();await wait();
+  assert(readCalls.some(u=>u.endsWith('/rooms/room-2/read')),'opening a room marks it read');assert(readCalls.length>before);
+  rooms[1].unread=0;rooms[1].invited=false;
+  d.querySelector('[data-sc-arch=room-2]').click();await wait();await wait();
+  assert.equal(rooms[1].archived,true,'archive sent');assert.equal(d.querySelector('[data-sc-room=room-2]'),null,'archived room leaves the main list');
+  d.querySelector('[data-sc-archived]').click();await wait();await wait();
+  assert(d.querySelector('[data-sc-room=room-2]'),'archive section lists it');
+  d.querySelector('[data-sc-arch=room-2]').click();await wait();await wait();
+  assert.equal(rooms[1].archived,false,'unarchive sent');
+  d.querySelector('[data-sc-room=room-1]').click();await wait();await wait();
+ }
  // --- copy buttons + attachments (room-1 holds the 'Codex' private chat with the escaped message)
  d.querySelector('[data-sc-room=room-1]').click();await wait();await wait();
  messages['room-1'].push({id:'agent1',seq:2,author:'agent:codex',name:'Codex',body:'رد "مقتبس" <b>x</b>',created:Date.now()/1000,attachments:[]});

@@ -68,6 +68,9 @@ class Store:
         CREATE TABLE IF NOT EXISTS attachments(id TEXT PRIMARY KEY, room TEXT REFERENCES rooms(id), owner TEXT NOT NULL,
           message_id TEXT, name TEXT NOT NULL, kind TEXT NOT NULL, mime TEXT NOT NULL, size INTEGER NOT NULL,
           stored TEXT NOT NULL, sha256 TEXT NOT NULL, created REAL NOT NULL);
+        CREATE TABLE IF NOT EXISTS member_state(room TEXT NOT NULL, user_id TEXT NOT NULL, last_read REAL NOT NULL DEFAULT 0,
+          archived INTEGER NOT NULL DEFAULT 0, invited INTEGER NOT NULL DEFAULT 0, invited_by TEXT NOT NULL DEFAULT '',
+          PRIMARY KEY(room,user_id));
         CREATE TABLE IF NOT EXISTS audit(id INTEGER PRIMARY KEY, actor TEXT NOT NULL, action TEXT NOT NULL,
           target TEXT NOT NULL, created REAL NOT NULL);
         ''')
@@ -271,6 +274,10 @@ class Store:
             for p in directory:
                 if p['id'] in users:
                     self.db.execute('INSERT OR REPLACE INTO people VALUES(?,?)', (p['id'],p['name']))
+            now = time.time()
+            for u in users:
+                self.db.execute('INSERT OR IGNORE INTO member_state(room,user_id,last_read,invited,invited_by) VALUES(?,?,?,?,?)',
+                                (room, u, now if u == actor.id else 0, int(u != actor.id), '' if u == actor.id else actor.name))
             self.audit(actor, 'create_room', room)
             return room
 
@@ -282,9 +289,51 @@ class Store:
                     m = self.membership(actor, r['id'])
                 except Denied:
                     continue
+                st = self._state(r['id'], actor.id)
+                unread = self.db.execute('SELECT COUNT(*) FROM messages WHERE room=? AND seq>=? AND author!=? AND created>?',
+                                         (r['id'], m['since_seq'], actor.id, st['last_read'])).fetchone()[0]
+                last = self.db.execute('SELECT name,body,created FROM messages WHERE room=? AND seq>=? ORDER BY seq DESC LIMIT 1',
+                                       (r['id'], m['since_seq'])).fetchone()
                 result.append({**r, 'agents': self.room_agents(r['id']), 'can_send': bool(m['can_send']),
-                               'can_manage': bool(actor.owner or m['can_manage'])})
+                               'can_manage': bool(actor.owner or m['can_manage']),
+                               'unread': unread, 'invited': bool(st['invited']), 'invited_by': st['invited_by'],
+                               'archived': bool(st['archived']),
+                               'last': {'name': last['name'], 'body': last['body'][:90], 'created': last['created']} if last else None})
             return result
+
+    def _state(self, room, user):
+        """Per-user read cursor / archive flag. Rooms that predate this table start fully read."""
+        row = self.db.execute('SELECT * FROM member_state WHERE room=? AND user_id=?', (room, user)).fetchone()
+        if not row:
+            self.db.execute('INSERT OR IGNORE INTO member_state(room,user_id,last_read) VALUES(?,?,?)', (room, user, time.time()))
+            row = self.db.execute('SELECT * FROM member_state WHERE room=? AND user_id=?', (room, user)).fetchone()
+        return row
+
+    def mark_read(self, actor, room):
+        with self.tx():
+            self.membership(actor, room)
+            self._state(room, actor.id)
+            self.db.execute('UPDATE member_state SET last_read=?,invited=0 WHERE room=? AND user_id=?', (time.time(), room, actor.id))
+        return {'ok': True}
+
+    def set_archived(self, actor, room, flag):
+        if not isinstance(flag, bool):
+            raise Invalid('قيمة الأرشفة غير صالحة')
+        with self.tx():
+            self.membership(actor, room)
+            self._state(room, actor.id)
+            self.db.execute('UPDATE member_state SET archived=? WHERE room=? AND user_id=?', (int(flag), room, actor.id))
+        return {'ok': True}
+
+    def notifications(self, actor):
+        items = []
+        for r in self.rooms(actor):
+            if r['archived'] or not (r['unread'] or r['invited']):
+                continue
+            items.append({'room': r['id'], 'title': r['title'], 'unread': r['unread'], 'invited': r['invited'],
+                          'invited_by': r['invited_by'], 'last': r['last'], 'updated': r['updated']})
+        items.sort(key=lambda i: -i['updated'])
+        return {'total': sum(i['unread'] + (1 if i['invited'] and not i['unread'] else 0) for i in items), 'items': items[:20]}
 
     def members(self, actor, room):
         with self.lock:
@@ -327,6 +376,14 @@ class Store:
                 self.db.execute('INSERT INTO members VALUES(?,?,?,?,?)',(room,u['id'],floor,int(u['send']),int(u.get('manage',False))))
                 if u['id'] in valid:
                     self.db.execute('INSERT OR REPLACE INTO people VALUES(?,?)',(u['id'],valid[u['id']]['name']))
+            now = time.time()
+            for u in ids:
+                if u not in old:
+                    self.db.execute('INSERT OR REPLACE INTO member_state(room,user_id,last_read,invited,invited_by) VALUES(?,?,?,?,?)',
+                                    (room, u, 0, 1, actor.name))
+            for u in old:
+                if u not in ids:
+                    self.db.execute('DELETE FROM member_state WHERE room=? AND user_id=?', (room, u))
             self.db.execute('DELETE FROM room_agents WHERE room=?',(room,))
             self.db.executemany('INSERT INTO room_agents VALUES(?,?)',[(room,a) for a in agents])
             self.rotate(room)
@@ -442,6 +499,8 @@ class Store:
                 self.db.execute('INSERT INTO jobs VALUES(?,?,?,?,?,?,?,?,?,?)',
                                 (str(uuid.uuid4()),room,mid,actor.id,a,rev,state,'','',now))
             self.db.execute('UPDATE rooms SET updated=? WHERE id=?',(now,room))
+            self._state(room, actor.id)
+            self.db.execute('UPDATE member_state SET last_read=?,invited=0 WHERE room=? AND user_id=?', (now, room, actor.id))
             self.audit(actor,'message',mid)
             return {'message_id':mid,'duplicate':False}
 

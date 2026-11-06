@@ -3,6 +3,8 @@
 'use strict';
 if(w.SSMPDServerTeamChat)return;
 var db=null,identity=null,rooms=[],users=[],agents=[],active='',dialog=null,timer=null,busy=false,revision=0,returnFocus=null;
+var notif={total:0,items:[]},noteTimer=null,showArchived=false;
+var ICON_MSG='<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>';
 var base='/api/digital-team',files=[],texts={},uploading=0,pending=null,lastDraw='',grants=[],access=false,authId='';
 function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function client(){if(db)return db;var c=w.SSMPD_CONFIG?.supabase;if(!c||!w.supabase)throw Error('سجّل الدخول أولًا');return db=w.supabase.createClient(c.url,c.anonKey,{auth:{persistSession:true,autoRefreshToken:true}});}
@@ -63,7 +65,20 @@ async function attach(list){
   finally{uploading--;if(dialog)renderFiles();}
  }
 }
-function close(){kill();revision++;files=[];texts={};uploading=0;dialog?.remove();dialog=null;returnFocus?.focus();lastDraw='';}
+function ensureBell(){
+ if(!access)return null;var host=document.querySelector('.topbar-tools');if(!host)return null;
+ var b=document.getElementById('sc-msg-btn');
+ if(!b){b=document.createElement('button');b.type='button';b.id='sc-msg-btn';b.className='sc-bell';b.title='رسائل الفريق';b.innerHTML=ICON_MSG+'<span class="sc-bell-badge" hidden></span>';
+  var ref=document.getElementById('notif-bell-btn');if(ref&&ref.parentNode===host)host.insertBefore(b,ref);else host.prepend(b);
+  b.onclick=function(){open();};}
+ return b;
+}
+function paintBell(){var b=ensureBell();if(!b)return;var s=b.querySelector('.sc-bell-badge'),n=Number(notif.total)||0;s.hidden=!n;s.textContent=n>99?'99+':String(n);b.setAttribute('aria-label','رسائل الفريق'+(n?' — '+n+' جديد':''));}
+async function pollNotes(){if(!access||!authId)return;try{var n=await api('/notifications');notif={total:Number(n.total)||0,items:n.items||[]};}catch(_){}paintBell();}
+function startNotes(){clearInterval(noteTimer);ensureBell();pollNotes();noteTimer=w.setInterval(function(){if(!document.hidden)pollNotes();},45000);}
+function stopNotes(){clearInterval(noteTimer);noteTimer=null;notif={total:0,items:[]};var b=document.getElementById('sc-msg-btn');if(b)b.remove();}
+function markRead(id){return api('/rooms/'+id+'/read',{}).then(function(){return pollNotes();}).catch(function(){});}
+function close(){kill();revision++;files=[];texts={};uploading=0;dialog?.remove();dialog=null;returnFocus?.focus();lastDraw='';pollNotes();}
 function frame(){
  returnFocus=document.activeElement;
  dialog=document.createElement('dialog');dialog.className='sc-dialog';dialog.dir='rtl';dialog.setAttribute('aria-label','محادثات الفريق على السيرفر');
@@ -104,8 +119,18 @@ async function open(code){
 async function refreshRooms(){
  var data=await api('/rooms');rooms=data.rooms;
  if(!dialog)return;
- node('[data-sc-rooms]').innerHTML=rooms.map(function(r){return button(r.title,'data-sc-room="'+esc(r.id)+'" aria-current="'+(active===r.id?'true':'false')+'"');}).join('')||'<p class="sc-empty">ابدأ محادثة مع Codex</p>';
+ var live=rooms.filter(function(r){return !r.archived;}),arch=rooms.filter(function(r){return r.archived;});
+ function row(r){
+  var badge=r.unread?'<span class="sc-unread">'+(r.unread>99?'99+':r.unread)+'</span>':(r.invited?'<span class="sc-new">جديدة</span>':'');
+  var sub=r.invited&&r.invited_by?'أضافك '+esc(r.invited_by):(r.last?esc(r.last.name)+': '+esc(r.last.body):'');
+  return '<div class="sc-room'+((r.unread||r.invited)?' has-new':'')+'"><button type="button" data-sc-room="'+esc(r.id)+'" aria-current="'+(active===r.id?'true':'false')+'"><span class="sc-room-title">'+esc(r.title)+'</span>'+badge+(sub?'<small>'+sub+'</small>':'')+'</button>'+
+   '<button type="button" class="sc-arch" data-sc-arch="'+esc(r.id)+'" data-flag="'+(r.archived?'0':'1')+'" title="'+(r.archived?'إلغاء الأرشفة':'أرشفة')+'" aria-label="'+(r.archived?'إلغاء أرشفة المحادثة':'أرشفة المحادثة')+'">'+(r.archived?'↩':'🗄')+'</button></div>';
+ }
+ node('[data-sc-rooms]').innerHTML=(live.map(row).join('')||'<p class="sc-empty">ابدأ محادثة مع Codex</p>')+
+  (arch.length?'<button type="button" class="sc-arch-toggle" data-sc-archived aria-expanded="'+showArchived+'">الأرشيف ('+arch.length+')</button>'+(showArchived?arch.map(row).join(''):''):'');
  dialog.querySelectorAll('[data-sc-room]').forEach(function(b){b.onclick=function(){selectRoom(b.dataset.scRoom);};});
+ dialog.querySelectorAll('[data-sc-arch]').forEach(function(b){b.onclick=async function(){try{await api('/rooms/'+b.dataset.scArch+'/archive',{archived:b.dataset.flag==='1'});await refreshRooms();pollNotes();}catch(e){status(e.message);}};});
+ var tg=node('[data-sc-archived]');if(tg)tg.onclick=function(){showArchived=!showArchived;refreshRooms().catch(function(e){status(e.message);});};
 }
 async function selectRoom(id){
  active=id;revision++;pending=null;lastDraw='';files=[];texts={};renderFiles();kill();node('[data-sc-tools]').hidden=true;node('.sc-conversation').classList.remove('sc-editing');
@@ -113,7 +138,7 @@ async function selectRoom(id){
  node('[data-sc-title]').textContent=r.title;node('[data-sc-members]').disabled=!r.can_manage;
  node('[data-sc-form]').hidden=!r.can_send;
  node('[name=target]').innerHTML='<option value="">'+(r.agents.length===1?'الرد من '+esc(name(r.agents[0])):'رسالة للمشاركين')+'</option>'+r.agents.map(function(a){return '<option value="'+esc(a)+'">@'+esc(name(a))+'</option>';}).join('')+(r.agents.length>1?'<option value="all">اطلب رأي الوكلاء المشاركين</option>':'');
- refreshRooms().catch(function(e){status(e.message);});await poll(true);
+ await markRead(id);refreshRooms().catch(function(e){status(e.message);});await poll(true);
 }
 var stateNames={limited:'بلغت حصة المحادثات اليومية',queued:'في الانتظار',running:'يرد الآن',complete:'اكتمل الرد',failed:'تعذر الرد',interrupted:'انقطع التشغيل',cancelled:'أُوقف',awaiting_owner:'طلب تنفيذ ينتظر مراجعة المالك',unconnected:'محرك الوكيل لم يُربط بهذه القناة بعد'};
 async function poll(scroll){
@@ -121,7 +146,7 @@ async function poll(scroll){
  try{
   var data=await api('/rooms/'+room+'/messages');if(!dialog||room!==active||ticket!==revision)return;
   var hash=JSON.stringify(data),box=node('[data-sc-messages]'),nearEnd=box.scrollHeight-box.scrollTop-box.clientHeight<80;
-  if(hash!==lastDraw){lastDraw=hash;
+  if(hash!==lastDraw){var firstDraw=lastDraw==='';lastDraw=hash;if(!firstDraw){markRead(room);refreshRooms().catch(function(){});}
    box.innerHTML=(data.before?button('رسائل أقدم','data-sc-older="'+data.before+'"'):'')+data.messages.map(function(m){return messageHtml(m,m.author===identity.id);}).join('')+
     data.jobs.filter(function(j){return j.state!=='complete';}).map(function(j){return '<article class="sc-job"><b>'+esc(name(j.agent))+' · '+esc(stateNames[j.state]||j.state)+'</b><p>'+esc(j.state==='running'?j.text:j.error)+'</p>'+(['queued','running','awaiting_owner'].includes(j.state)?button('إيقاف','data-sc-cancel="'+esc(j.id)+'"'):'')+'</article>';}).join('');
    box.querySelectorAll('[data-sc-cancel]').forEach(function(b){b.onclick=async function(){try{await api('/rooms/'+room+'/cancel/'+b.dataset.scCancel,{});poll(false);}catch(e){status(e.message);}};});
@@ -191,9 +216,9 @@ function mount(){var root=document.querySelector('.digital-team');if(!root||root
 }
 async function refreshAccess(){
  var id=w.SSMPDAuth?.currentAdmin?.id||'';
- if(id===authId)return;authId=id;close();identity=null;db=null;rooms=[];active='';pending=null;access=false;
+ if(id===authId)return;authId=id;close();identity=null;db=null;rooms=[];active='';pending=null;access=false;stopNotes();
  if(!id)return;
- try{var boot=await api('/bootstrap');if(authId!==id)return;identity=boot.me;agents=boot.agents;access=identity.owner||agents.some(function(a){return a.chat;});w.SSMPDManagementNavigation?.refresh();}catch(_){}
+ try{var boot=await api('/bootstrap');if(authId!==id)return;identity=boot.me;agents=boot.agents;access=identity.owner||agents.some(function(a){return a.chat;});w.SSMPDManagementNavigation?.refresh();if(access)startNotes();}catch(_){}
 }
 
 function csvCell(v){v=String(v==null?'':v);if(/^[=+\-@\t\r]/.test(v))v="'"+v;return '"'+v.replace(/"/g,'""')+'"';}
@@ -251,5 +276,5 @@ w.addEventListener('ssmpd-auth-changed',refreshAccess);
 var authObserver=new MutationObserver(function(){refreshAccess();if(dialog&&!dialog.isConnected)close();});
 authObserver.observe(document.getElementById('app-root')||document.body,{childList:true,subtree:true});
 refreshAccess();
-w.SSMPDServerTeamChat={open:open,mount:mount,openWorkspace:openWorkspace,canAccess:function(){return access;},exportText:exportText};mount();
+w.SSMPDServerTeamChat={open:open,mount:mount,openWorkspace:openWorkspace,canAccess:function(){return access;},notifications:function(){return notif;},refreshNotifications:pollNotes,exportText:exportText};mount();
 })(window);

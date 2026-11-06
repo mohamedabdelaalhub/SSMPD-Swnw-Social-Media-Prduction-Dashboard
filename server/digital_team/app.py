@@ -48,6 +48,8 @@ class Service:
         if parts==['rooms']:
             if method=='GET':return {'rooms':self.store.rooms(a)}
             if method=='POST':return {'id':self.store.create(a,data,directory())}
+        if method=='GET' and parts==['notifications']:
+            return self.store.notifications(a)
         if parts==['employees']:
             if method=='GET':return self.store.employees_info(a)
             if method=='POST':return self.store.set_employees(a,data)
@@ -82,6 +84,10 @@ class Service:
                 if method=='GET':return {'members':self.store.members(a,room),'agents':self.store.room_agents(room)}
                 if method=='POST':
                     self.store.set_members(a,room,data,directory());return {'ok':True}
+            if len(parts)==3 and parts[2]=='read' and method=='POST':
+                return self.store.mark_read(a,room)
+            if len(parts)==3 and parts[2]=='archive' and method=='POST':
+                return self.store.set_archived(a,room,data.get('archived'))
             if len(parts)==4 and parts[2]=='cancel' and method=='POST':
                 self.store.cancel(a,room,parts[3]);return {'ok':True}
         raise Invalid('مسار غير مدعوم')
