@@ -226,6 +226,16 @@ class HotReloadTests(tk.Base):
         self.assertTrue(kb.select(Viewer(owner=True), 'تسجيل ليد جديد'))
 
 
+class SyncUnitTests(unittest.TestCase):
+    def test_release_id_is_copied_by_root_and_read_from_the_copy(self):
+        unit = (ROOT / 'server/digital_team/deploy/swnw-sono-pack.service').read_text()
+        self.assertIn('ExecStartPre=+/usr/bin/install -m 644 -o swnw -g swnw /opt/swnw-data/dashboard-parallel/CURRENT /var/lib/swnw-team-chat/RELEASE', unit)
+        self.assertIn('Environment=SONO_RELEASE_FILE=/var/lib/swnw-team-chat/RELEASE', unit)
+        self.assertIn('ReadWritePaths=/var/lib/swnw-team-chat', unit)  # swnw can still write only there
+        self.assertNotIn('chmod', unit)
+        self.assertIn('SWNW_CHAT_RELEASE_FILE=/var/lib/swnw-team-chat/RELEASE', (ROOT / 'server/digital_team/deploy/environment.example').read_text())
+
+
 class SyncScriptTests(unittest.TestCase):
     def sh(self, *args, env=None, cwd=None):
         e = dict(os.environ, GIT_AUTHOR_NAME='t', GIT_AUTHOR_EMAIL='t@e.invalid', GIT_COMMITTER_NAME='t', GIT_COMMITTER_EMAIL='t@e.invalid', **(env or {}))
