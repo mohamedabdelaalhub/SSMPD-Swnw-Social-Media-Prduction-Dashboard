@@ -23,7 +23,7 @@ function pageHtml(inv,ctx,rows,last,no,of){
   return '<section class="pg"><img class="bg" crossorigin="anonymous" src="'+BASE+'assets/img/swnw-official-letterhead.png" alt=""><div class="bd">'+
    '<h2>مطالبة تأمينية — '+esc(DEPT[inv.department]||inv.department)+'</h2>'+
    '<div class="meta"><div><b>المريض:</b> '+esc(ctx.patientName)+'</div><div><b>جهة التأمين:</b> '+esc(ctx.insurerName||'—')+'</div>'+
-   '<div><b>رقم الفاتورة:</b> '+'<span dir="ltr">'+esc(ctx.invoiceNo||'—')+'</span></div><div><b>التاريخ:</b> <span dir="ltr">'+esc(ctx.date||'')+'</span>+'</div>'+
+   '<div><b>رقم الفاتورة:</b> '+'<span dir="ltr">'+esc(ctx.invoiceNo||'—')+'</span></div><div><b>التاريخ:</b> <span dir="ltr">'+esc(ctx.date||'')+'</span></div>'+
    '<div><b>رقم العضوية:</b> '+'<span dir="ltr">'+esc(ctx.memberNo||'—')+'</span></div><div><b>صفحة:</b> '+no+' / '+of+'</div></div>'+
    '<table>'+head+rows+tot+'</table>'+sig+'</div></section>';
 }
