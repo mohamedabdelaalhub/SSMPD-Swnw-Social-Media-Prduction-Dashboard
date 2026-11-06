@@ -22,7 +22,7 @@ assert.throws(()=>P.buildExt({kind:'lab',mode:'external'}),/اختر المزو�
 const html=P.boardTable([{order_id:'o1',patient_name:'<b>Mona</b>',phone:'0100',service:'CBC',provider:'Lab A',status:'done'},
  {order_id:'o2',patient_name:'Ali',phone:'0101',service:'US',provider:'Rad B',status:'referred'}]);
 assert.ok(!html.includes('<b>Mona'));assert.ok(html.includes('&lt;b&gt;Mona'));                 // escaped
-assert.ok(html.includes('data-so-report="o1"'));assert.ok(html.includes('data-so-status="scheduled"'));
+assert.ok(html.includes('data-so-upload="o1"'));assert.ok(html.includes('type="file"'));assert.ok(!html.includes('data-so-open="o1"'));assert.ok(html.includes('data-so-status="scheduled"'));
 assert.ok(!/price|سعر|عمولة/.test(html));                                                          // no money on the board
 assert.ok(P.boardTable([]).includes('لا توجد'));
 console.log('reception-service-orders tests passed');
@@ -56,3 +56,22 @@ for(const t of ['spec','perf','rate','prov','cost']){const h=B.setupTab(t,S0);as
 assert.ok(B.setupTab('rate',S0).includes('مستمرة'));
 assert.ok(B.setupTab('prov',S0).includes('تفعيل'));
 console.log('setup screen tests passed');
+
+// ---- report upload ----
+assert.equal(B.validateReportFile({type:'application/pdf',size:1000}),true);
+assert.throws(()=>B.validateReportFile({type:'application/x-msdownload',size:1000}),/PDF/);
+assert.throws(()=>B.validateReportFile({type:'application/pdf',size:0}),/حجم/);
+assert.throws(()=>B.validateReportFile({type:'application/pdf',size:20971521}),/حجم/);
+assert.throws(()=>B.validateReportFile(null),/PDF/);
+assert.equal(B.safeFileName('تقرير الدم 2026.pdf','application/pdf'),'2026.pdf');
+assert.equal(B.safeFileName('../../etc/passwd','application/pdf'),'etc-passwd.pdf');
+assert.equal(B.safeFileName('a..b.png','image/png'),'a.b.png');
+assert.equal(B.safeFileName('!!!','image/jpeg'),'report.jpg');
+assert.equal(B.safeFileName('x'.repeat(200)+'.pdf','application/pdf').length<=80,true);
+const WS='00000000-0000-0000-0000-000000000000',OR='00000000-0000-0000-0000-000000000001';
+const pth=B.reportPath(WS,OR,'CBC result.pdf','application/pdf','abcd1234');
+assert.equal(pth,WS+'/'+OR+'/abcd1234-CBC-result.pdf');
+assert.ok(/^[0-9a-f-]{36}\/[0-9a-f-]{36}\/[A-Za-z0-9._-]{1,120}$/.test(pth)&&!pth.includes('..'));       // matches the server path rule
+const open=B.boardTable([{order_id:'o3',patient_name:'N',phone:'1',service:'S',provider:'P',status:'report_uploaded'}]);
+assert.ok(open.includes('data-so-open="o3"')&&!open.includes('data-so-upload'));
+console.log('report upload tests passed');

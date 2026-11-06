@@ -34,11 +34,29 @@ function buildExt(v){
 }
 function opt(name,title,rows,chosen,extra){return '<label>'+esc(title)+'<select name="'+name+'" '+(extra||'')+'><option value="">—</option>'+rows.map(function(r){return '<option value="'+esc(r[0])+'" '+(r[0]===chosen?'selected':'')+'>'+esc(r[1])+'</option>';}).join('')+'</select></label>';}
 function doctorRows(list){return list.map(function(d){return [d.doctor_key,d.name];});}
+
+var REPORT_TYPES={'application/pdf':'pdf','image/jpeg':'jpg','image/png':'png'},REPORT_MAX=20971520;
+function validateReportFile(f){
+  if(!f||!REPORT_TYPES[f.type])throw Error('الملف لازم يكون PDF أو صورة JPG/PNG');
+  if(!(f.size>0)||f.size>REPORT_MAX)throw Error('حجم الملف لازم يكون أقل من 20 ميجا');
+  return true;
+}
+function safeFileName(name,type){
+  var n=String(name||'').replace(/[^A-Za-z0-9._-]+/g,'-').replace(/\.{2,}/g,'.').replace(/^[-.]+/,'').slice(-80);
+  if(!n||n.indexOf('.')<0)n=(n||'report')+'.'+(REPORT_TYPES[type]||'bin');
+  return n;
+}
+function reportPath(workspace,order,name,type,rand){return workspace+'/'+order+'/'+rand+'-'+safeFileName(name,type);}
+function sha256Hex(file){
+  if(!(w.crypto&&w.crypto.subtle&&file.arrayBuffer))return Promise.resolve(null);
+  return file.arrayBuffer().then(function(b){return w.crypto.subtle.digest('SHA-256',b);}).then(function(d){return Array.from(new Uint8Array(d)).map(function(x){return ('0'+x.toString(16)).slice(-2);}).join('');});
+}
 function boardTable(rows){
   if(!rows.length)return '<p>لا توجد حالات خارجية.</p>';
   return '<div class="rx-table"><table><thead><tr><th>المريض</th><th>التليفون</th><th>الخدمة</th><th>المزوّد</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody>'+rows.map(function(r){
     var acts=nextStatuses(r.status).map(function(s){return '<button type="button" class="btn" data-so-status="'+esc(s)+'" data-order="'+esc(r.order_id)+'">'+esc(STATUS[s]||s)+'</button>';}).join('');
-    if(r.status==='done')acts+='<input data-so-file="'+esc(r.order_id)+'" placeholder="مرجع ملف التقرير" maxlength="300"><button type="button" class="btn" data-so-report="'+esc(r.order_id)+'">رفع التقرير</button>';
+    if(r.status==='done')acts+='<input type="file" data-so-file="'+esc(r.order_id)+'" accept="application/pdf,image/jpeg,image/png"><button type="button" class="btn" data-so-upload="'+esc(r.order_id)+'">رفع التقرير</button>';
+    if(r.status==='report_uploaded'||r.status==='patient_notified')acts+='<button type="button" class="btn" data-so-open="'+esc(r.order_id)+'">فتح التقرير</button>';
     return '<tr><td>'+esc(r.patient_name)+'</td><td dir="ltr">'+esc(r.phone)+'</td><td>'+esc(r.service)+'</td><td>'+esc(r.provider)+'</td><td>'+esc(STATUS[r.status]||r.status)+'</td><td>'+acts+'</td></tr>';
   }).join('')+'</tbody></table></div>';
 }
@@ -83,14 +101,27 @@ function board(c){
   var db=w.SSMPDDb;
   function paint(root,rows){var holder=root.querySelector('[data-so-rows]');holder.innerHTML=boardTable(rows);}
   function reload(root){return db.serviceOrdersBoard(c.workspace,null).then(function(rows){paint(root,rows||[]);});}
-  var root=c.modal('لوحة المزوّدين الخارجيين','<p>بيانات المريض المعروضة: الاسم والتليفون فقط.</p><div data-so-rows>جاري التحميل…</div>',function(){return Promise.resolve();});
+  var root=c.modal('لوحة المزوّدين الخارجيين','<p>بيانات المريض المعروضة: الاسم والتليفون فقط.</p><p data-so-note role="status"></p><div data-so-rows>جاري التحميل…</div>',function(){return Promise.resolve();});
   if(!root)return;root.querySelector('[type="submit"]').hidden=true;
+  function note(t){var m=root.querySelector('[data-so-note]');if(m)m.textContent=t||'';}
   root.addEventListener('click',function(e){
-    var t=e.target.closest('[data-so-status],[data-so-report]');if(!t)return;
+    var t=e.target.closest('[data-so-status],[data-so-upload],[data-so-open]');if(!t)return;
     var p;
     if(t.dataset.soStatus)p=db.serviceOrderStatus(c.workspace,t.dataset.order,t.dataset.soStatus);
-    else{var input=root.querySelector('[data-so-file="'+t.dataset.soReport+'"]');p=db.serviceOrderReport(c.workspace,t.dataset.soReport,(input&&input.value||'').trim());}
-    t.disabled=true;p.then(function(){return reload(root);}).catch(function(err){t.disabled=false;alert(err&&err.message||err);});
+    else if(t.dataset.soUpload){
+      var order=t.dataset.soUpload,input=root.querySelector('[data-so-file="'+order+'"]'),file=input&&input.files&&input.files[0];
+      try{validateReportFile(file);}catch(err){note(err.message);return;}
+      var rand=(w.crypto&&w.crypto.randomUUID?w.crypto.randomUUID():String(Date.now())).slice(0,8);
+      var path=reportPath(c.workspace,order,file.name,file.type,rand);
+      note('جاري رفع التقرير…');
+      p=sha256Hex(file).then(function(sum){return db.serviceOrderReportUpload(c.workspace,order,path,file,sum);}).then(function(){note('تم رفع التقرير وظهر للمريض في ملفه');});
+    }else{
+      note('جاري فتح التقرير…');
+      p=db.serviceOrderReports(c.workspace,t.dataset.soOpen).then(function(list){
+        if(!list||!list.length)throw Error('لا يوجد تقرير');return db.serviceOrderReportUrl(list[0].path);
+      }).then(function(url){w.open(url,'_blank','noopener');note('');});
+    }
+    t.disabled=true;p.then(function(){t.disabled=false;return reload(root);}).catch(function(err){t.disabled=false;note((err&&err.message)||'تعذر التنفيذ');});
   });
   reload(root).catch(function(err){root.querySelector('[data-so-rows]').textContent=(err&&err.message)||'تعذر التحميل';});
 }
@@ -157,5 +188,5 @@ function setup(c){
   },true);
   reload().catch(function(e){root.querySelector('[data-so-body]').textContent=(e&&e.message)||'تعذر التحميل';});
 }
-w.SSMPDReceptionServiceOrders={decorate:decorate,act:act,_pure:{externalAllowed:externalAllowed,needsBillingParty:needsBillingParty,providersFor:providersFor,performersFor:performersFor,referrers:referrers,nextStatuses:nextStatuses,buildExt:buildExt,boardTable:boardTable,buildSetup:buildSetup,setupTab:setupTab}};
+w.SSMPDReceptionServiceOrders={decorate:decorate,act:act,_pure:{externalAllowed:externalAllowed,needsBillingParty:needsBillingParty,providersFor:providersFor,performersFor:performersFor,referrers:referrers,nextStatuses:nextStatuses,buildExt:buildExt,boardTable:boardTable,validateReportFile:validateReportFile,safeFileName:safeFileName,reportPath:reportPath,buildSetup:buildSetup,setupTab:setupTab}};
 })(typeof window!=='undefined'?window:globalThis);

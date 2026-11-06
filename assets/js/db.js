@@ -1382,6 +1382,16 @@
     serviceOrderStatus: function(workspace,order,to){return handle(client.rpc("clinic_reception_so_set_status",{p_workspace:workspace,p_order:order,p_to:to}));},
     serviceOrderReport: function(workspace,order,fileRef){return handle(client.rpc("clinic_reception_so_attach_report",{p_workspace:workspace,p_order:order,p_file_ref:fileRef}));},
     serviceOrdersBoard: function(workspace,provider){return handle(client.rpc("clinic_reception_so_provider_board",{p_workspace:workspace,p_provider:provider||null}));},
+    serviceOrderReportUpload: function(workspace,order,path,file,checksum){
+      return client.storage.from("service-reports").upload(path,file,{upsert:false,contentType:file.type}).then(function(res){
+        if(res.error)throw res.error;
+        return handle(client.rpc("clinic_reception_so_register_report",{p_workspace:workspace,p_order:order,p_path:path,p_name:file.name||"report",p_mime:file.type,p_size:file.size,p_checksum:checksum||null}));
+      });
+    },
+    serviceOrderReports: function(workspace,order){return handle(client.rpc("clinic_reception_so_reports",{p_workspace:workspace,p_order:order}));},
+    serviceOrderReportUrl: function(path){
+      return client.storage.from("service-reports").createSignedUrl(path,300).then(function(res){if(res.error)throw res.error;return res.data.signedUrl;});
+    },
     serviceOrdersSetupLoad: function(workspace){return handle(client.rpc("clinic_reception_so_setup_load",{p_workspace:workspace}));},
     serviceOrdersSetupSave: function(workspace,kind,payload){return handle(client.rpc("clinic_reception_so_setup_save",{p_workspace:workspace,p_kind:kind,p_payload:payload}));},
     financeRegister: function(name,limit){return handle(client.rpc('clinic_finance_register',{p_name:name,p_limit:limit}));},
