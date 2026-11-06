@@ -28,6 +28,7 @@ Deno.serve(async (req) => {
     resend: Deno.env.get("RESEND_API_KEY") || "",
     brevo: Deno.env.get("BREVO_API_KEY") || "",
     sendgrid: Deno.env.get("SENDGRID_API_KEY") || "",
+    gmail: { id: Deno.env.get("GMAIL_CLIENT_ID") || "", secret: Deno.env.get("GMAIL_CLIENT_SECRET") || "", refresh: Deno.env.get("GMAIL_REFRESH_TOKEN") || "", from: Deno.env.get("GMAIL_FROM") || "" },
   }, p.to!, buildEmail());
   await db.rpc("clinic_reception_so_notify_result", { p_id: p.id, p_ok: sent.ok, p_error: sent.ok ? null : (sent.code || "EMAIL_SEND_FAILED") });
   return json(sent.ok ? { status: "sent" } : { status: "failed", code: sent.code });
