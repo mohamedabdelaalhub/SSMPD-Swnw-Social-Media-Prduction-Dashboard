@@ -52,10 +52,18 @@ function dayLabel(sec){
  var d=new Date(sec*1000),now=new Date(),y=new Date(now.getTime()-864e5),same=function(a,b){return a.toDateString()===b.toDateString();};
  return same(d,now)?'اليوم':same(d,y)?'أمس':d.toLocaleDateString('ar-EG',{year:'numeric',month:'long',day:'numeric'});
 }
+function rateRow(m){
+ var src=(m.sources&&m.sources.length)?'<span class="sc-sources">المصدر: '+m.sources.map(function(x){return esc(x.title);}).join('، ')+'</span>':'';
+ return '<div class="sc-rate">'+button('👍','data-sc-rate="'+esc(m.id)+'" data-value="1" aria-label="رد مفيد" aria-pressed="'+(m.my_rating===1)+'"')+button('👎','data-sc-rate="'+esc(m.id)+'" data-value="-1" aria-label="رد غير مفيد" aria-pressed="'+(m.my_rating===-1)+'"')+src+'</div>';
+}
 function messageHtml(m,mine,prev){
  texts[m.id]=m.body;var agent=String(m.author||'').indexOf('agent:')===0;
  var sep=(!prev||new Date(prev.created*1000).toDateString()!==new Date(m.created*1000).toDateString())?'<div class="sc-day" role="separator">'+esc(dayLabel(m.created))+'</div>':'';
- return sep+'<article class="sc-message '+(mine?'mine':'')+(agent?' agent':'')+'">'+avatar(m)+'<div class="sc-msg-body"><div class="sc-msg-head"><b>'+esc(m.name)+'</b>'+copyButton(m.id)+'</div><p>'+(agent?md(m.body):esc(m.body))+'</p>'+chips(m.attachments)+'<small>'+esc(new Date(m.created*1000).toLocaleString('ar-EG'))+'</small></div></article>';
+ return sep+'<article class="sc-message '+(mine?'mine':'')+(agent?' agent':'')+'">'+avatar(m)+'<div class="sc-msg-body"><div class="sc-msg-head"><b>'+esc(m.name)+'</b>'+copyButton(m.id)+'</div><p>'+(agent?md(m.body):esc(m.body))+'</p>'+chips(m.attachments)+(agent?rateRow(m):'')+'<small>'+esc(new Date(m.created*1000).toLocaleString('ar-EG'))+'</small></div></article>';
+}
+async function rate(btn){
+ var want=Number(btn.dataset.value),on=btn.getAttribute('aria-pressed')==='true';
+ try{await api('/messages/'+btn.dataset.scRate+'/rating',{value:on?0:want});lastDraw='';await poll(false);loadBar();}catch(e){status(e.message);}
 }
 async function copyText(text){
  try{if(w.navigator.clipboard&&w.navigator.clipboard.writeText){await w.navigator.clipboard.writeText(text);return true;}}catch(_){}
@@ -102,7 +110,7 @@ function ensureBell(){
  var b=document.getElementById('sc-msg-btn');
  if(!b){b=document.createElement('button');b.type='button';b.id='sc-msg-btn';b.className='sc-bell';b.title='رسائل الفريق';b.innerHTML=ICON_MSG+'<span class="sc-bell-badge" hidden></span>';
   var ref=document.getElementById('notif-bell-btn');if(ref&&ref.parentNode===host)host.insertBefore(b,ref);else host.prepend(b);
-  b.onclick=function(){open();};}
+  b.onclick=function(){open(undefined,{full:true});};}
  return b;
 }
 function paintBell(){var b=ensureBell();if(!b)return;var s=b.querySelector('.sc-bell-badge'),n=Number(notif.total)||0;s.hidden=!n;s.textContent=n>99?'99+':String(n);b.setAttribute('aria-label','رسائل الفريق'+(n?' — '+n+' جديد':''));}
@@ -114,17 +122,24 @@ function close(){kill();revision++;files=[];texts={};uploading=0;dialog?.remove(
 function frame(){
  returnFocus=document.activeElement;
  dialog=document.createElement('dialog');dialog.className='sc-dialog';dialog.dir='rtl';dialog.setAttribute('aria-label','محادثات الفريق على السيرفر');
- dialog.innerHTML='<header class="sc-header"><div><button type="button" class="sc-drawer" data-sc-drawer aria-label="قائمة المحادثات">☰</button><h2>محادثات الفريق</h2><p>Codex على كونتابو · سجل محفوظ</p></div>'+button('إغلاق','data-sc-close')+'</header>'+
- '<div class="sc-toolbar">'+button('محادثة جديدة','data-sc-new class="sc-primary"')+button('المشاركون','data-sc-members disabled')+(identity.owner?'<details class="sc-settings" data-sc-settings><summary>إعدادات</summary><div class="sc-settings-menu">'+button('إدارة الوصول','data-sc-access')+button('الحصة اليومية','data-sc-limit')+button('سونو للموظفين','data-sc-emp')+button('تصدير','data-sc-export')+'</div></details>':'')+'</div>'+
- '<div class="sc-layout"><aside aria-label="المحادثات" class="sc-side"><input type="search" data-sc-room-search placeholder="ابحث في المحادثات" aria-label="بحث في المحادثات"><div data-sc-rooms></div></aside><section class="sc-conversation"><h3 data-sc-title>اختر محادثة</h3><div class="sc-tools" data-sc-tools hidden></div><div class="sc-messages" data-sc-messages aria-live="polite"></div>'+
+ dialog.innerHTML='<header class="sc-header"><div><button type="button" class="sc-drawer" data-sc-drawer aria-label="قائمة المحادثات">☰</button><h2>محادثات الفريق</h2><p>Codex على كونتابو · سجل محفوظ</p></div>'+'<span class="sc-header-actions">'+button('تركيز','data-sc-focus aria-pressed="false" title="وضع التركيز (إخفاء القوائم)"')+button('إغلاق','data-sc-close')+'</span></header><div class="sc-bar" data-sc-bar hidden></div>'+
+ '<div class="sc-toolbar">'+button('محادثة جديدة','data-sc-new class="sc-primary"')+button('المشاركون','data-sc-members disabled')+(identity.owner?'<details class="sc-settings" data-sc-settings><summary>إعدادات</summary><div class="sc-settings-menu">'+button('لوحة المالك','data-sc-panel')+button('إدارة الوصول','data-sc-access')+button('الحصة اليومية','data-sc-limit')+button('سونو للموظفين','data-sc-emp')+button('تصدير','data-sc-export')+'</div></details>':'')+'</div>'+
+ '<div class="sc-layout"><aside aria-label="المحادثات" class="sc-side"><input type="search" data-sc-room-search placeholder="ابحث في المحادثات" aria-label="بحث في المحادثات"><button type="button" class="sc-msg-search" data-sc-msg-search hidden>ابحث في الرسائل</button><div data-sc-hits></div><div data-sc-rooms></div></aside><section class="sc-conversation"><h3 data-sc-title>اختر محادثة</h3><div class="sc-tools" data-sc-tools hidden></div><div class="sc-messages" data-sc-messages aria-live="polite"></div>'+
  '<form data-sc-form class="sc-compose"><div class="sc-compose-options"><label class="sc-opt">النوع <select name="kind" aria-label="نوع الرسالة"><option value="chat">رسالة</option><option value="question">سؤال</option><option value="instruction">تعليمات للنقاش</option><option value="task">طلب تنفيذ</option></select></label><label class="sc-opt">إلى <select name="target" aria-label="الوكيل المطلوب"></select></label></div>'+(identity.owner?'<details class="sc-warn-wrap"><summary>ⓘ تنبيه المرفقات</summary><p class="sc-attach-warn" data-sc-warn>تنبيه: لا ترفع ملفات أو صورًا فيها بيانات تعريف المرضى (الاسم أو الهوية أو الهاتف أو رقم الملف). المرفقات تُحفظ على السيرفر وتُرسل إلى محرك الذكاء الاصطناعي.</p></details><div class="sc-files" data-sc-files aria-live="polite"></div>':'')+'<div class="sc-send">'+(identity.owner?'<button type="button" class="sc-attach" data-sc-attach aria-label="إرفاق ملف أو صورة" title="إرفاق ملف أو صورة (png / jpg / webp / pdf / txt / csv / md — حتى 700 ك.ب)">📎</button><input type="file" data-sc-file hidden multiple accept="image/png,image/jpeg,image/webp,application/pdf,.txt,.csv,.md,text/plain,text/csv,text/markdown">':'')+'<div class="sc-input"><div class="sc-mentions" data-sc-mentions hidden></div><textarea name="body" rows="2" maxlength="200000" placeholder="اكتب رسالتك… (@ لاختيار وكيل)" aria-label="نص الرسالة"></textarea></div><button type="submit">إرسال</button></div><p class="sc-hint">Enter للإرسال · Shift+Enter سطر جديد · @ لاستدعاء وكيل</p></form><p class="sc-status" role="status" data-sc-status></p></section></div>';
  document.body.appendChild(dialog);dialog.showModal();
  node('[data-sc-close]').onclick=close;
- node('[data-sc-room-search]').oninput=function(){roomQuery=this.value;refreshRooms().catch(function(e){status(e.message);});};
+ node('[data-sc-room-search]').oninput=function(){roomQuery=this.value;node('[data-sc-msg-search]').hidden=roomQuery.trim().length<2;node('[data-sc-hits]').innerHTML='';refreshRooms().catch(function(e){status(e.message);});};
+ node('[data-sc-msg-search]').onclick=searchMessages;
+ node('[data-sc-focus]').onclick=function(){var on=dialog.classList.toggle('sc-focus');this.setAttribute('aria-pressed',String(on));};
+ dialog.addEventListener('keydown',function(e){
+  if((e.ctrlKey||e.metaKey)&&String(e.key).toLowerCase()==='k'){e.preventDefault();var i=node('[data-sc-room-search]');if(i){dialog.classList.remove('sc-focus');node('.sc-layout').classList.add('show-rooms');i.focus();}}
+  else if((e.ctrlKey||e.metaKey)&&e.key==='Enter'&&node('[data-sc-form]')&&!node('[data-sc-form]').hidden){e.preventDefault();node('[data-sc-form]').requestSubmit();}
+ });
  node('[data-sc-drawer]').onclick=function(){node('.sc-layout').classList.toggle('show-rooms');};
  dialog.addEventListener('cancel',function(e){e.preventDefault();close();});
  node('[data-sc-new]').onclick=createForm;
  node('[data-sc-members]').onclick=membersForm;
+  if(identity.owner)node('[data-sc-panel]').onclick=function(){closeMenu();ownerPanel('usage');};
  if(identity.owner)node('[data-sc-access]').onclick=function(){closeMenu();accessForm();};
  if(identity.owner)node('[data-sc-export]').onclick=function(){closeMenu();exportForm();};
  if(identity.owner)node('[data-sc-limit]').onclick=function(){closeMenu();limitForm();};
@@ -132,14 +147,18 @@ function frame(){
  node('[data-sc-form]').onsubmit=function(e){e.preventDefault();send();};
  node('[name=body]').addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();node('[data-sc-form]').requestSubmit();}});
  node('[name=body]').addEventListener('input',function(){pending=null;mentionList();});
- node('[data-sc-messages]').addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('[data-sc-copy]');if(b)onCopy(b);});
+ node('[data-sc-messages]').addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('[data-sc-copy]');if(b)onCopy(b);
+  var r=e.target.closest&&e.target.closest('[data-sc-rate]');if(r)rate(r);
+  var p=e.target.closest&&e.target.closest('[data-sc-prompt]');if(p){var ta=node('[name=body]');ta.value=p.dataset.scPrompt;ta.focus();}});
  if(identity.owner){var pick=node('[data-sc-file]');node('[data-sc-attach]').onclick=function(){pick.click();};pick.onchange=function(){var list=Array.from(pick.files||[]);pick.value='';attach(list);};}
  node('[name=kind]').onchange=function(){pending=null;};node('[name=target]').onchange=function(){pending=null;};
 }
-async function open(code){
+async function open(code,opts){
  try{
   var boot=await api('/bootstrap');identity=boot.me;agents=boot.agents;
+  if(!code&&!identity.owner&&!(opts&&opts.full)&&!dialog&&agents.some(function(a){return a.code==='codex'&&a.chat;}))return openSimple();
   if(!dialog)frame();
+  loadBar();
   await refreshRooms();
   if(code){var existing=rooms.find(function(r){return r.agents.length===1&&r.agents[0]===code&&r.creator===identity.id;});
    // Do not silently reuse a group containing other people as a private direct conversation.
@@ -150,6 +169,49 @@ async function open(code){
   else if(rooms.length)await selectRoom(rooms[0].id);
  }catch(e){if(dialog)status(e.message);else w.alert(e.message);}
 }
+async function ensureSonoRoom(){
+ var r=(await api('/rooms')).rooms.find(function(x){return x.title===SONO_TITLE&&x.agents.length===1&&x.agents[0]==='codex'&&x.creator===identity.id;});
+ return r?r.id:(await api('/rooms',{agents:['codex'],users:[],title:SONO_TITLE})).id;
+}
+var SONO_TITLE='سونو الذكي — إرشاد';
+async function openSimple(){
+ returnFocus=document.activeElement;
+ dialog=document.createElement('dialog');dialog.className='sc-dialog sc-simple';dialog.dir='rtl';dialog.setAttribute('aria-label','اسأل سونو');
+ dialog.innerHTML='<header class="sc-header"><div><h2>اسأل سونو</h2><p>إرشاد عن شاشات الداشبورد وخطواتها</p></div><span class="sc-header-actions">'+button('كل المحادثات','data-sc-full')+button('إغلاق','data-sc-close')+'</span></header><div class="sc-bar" data-sc-bar hidden></div>'+
+  '<div class="sc-simple-body"><form data-sc-ask class="sc-ask"><textarea name="q" rows="3" maxlength="4000" placeholder="اكتب سؤالك عن الداشبورد…" aria-label="سؤالك"></textarea><button type="submit" class="sc-primary">اسأل</button></form>'+
+  '<div class="sc-prompts" data-sc-examples>'+PROMPTS.map(function(t){return button(t,'data-sc-example="'+esc(t)+'"');}).join('')+'</div><div class="sc-answer" data-sc-answer aria-live="polite"></div><p class="sc-status" role="status" data-sc-status></p></div>';
+ document.body.appendChild(dialog);dialog.showModal();
+ node('[data-sc-close]').onclick=close;dialog.addEventListener('cancel',function(e){e.preventDefault();close();});
+ node('[data-sc-full]').onclick=function(){close();open(undefined,{full:true});};
+ dialog.querySelectorAll('[data-sc-example]').forEach(function(b){b.onclick=function(){var ta=node('[name=q]');ta.value=b.dataset.scExample;ta.focus();};});
+ var form=node('[data-sc-ask]');form.onsubmit=function(e){e.preventDefault();askSono();};
+ form.elements.q.addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();form.requestSubmit();}});
+ loadBar();
+}
+async function askSono(){
+ if(busy)return;var form=node('[data-sc-ask]'),q=form.elements.q.value.trim();if(!q)return;
+ var out=node('[data-sc-answer]'),mine=dialog;busy=true;form.querySelector('button[type=submit]').disabled=true;out.innerHTML='<p class="sc-job typing">سونو بيراجع الدليل<span class="sc-dots" aria-hidden="true"><i></i><i></i><i></i></span></p>';
+ try{
+  var room=await ensureSonoRoom(),sent=await api('/rooms/'+room+'/messages',{body:q,kind:'question',targets:['codex'],request_key:w.crypto.randomUUID()}),deadline=Date.now()+150000;
+  while(Date.now()<deadline&&dialog===mine){
+   await new Promise(function(r){setTimeout(r,SIMPLE_POLL);});
+   var h=await api('/rooms/'+room+'/messages'),job=(h.jobs||[]).find(function(j){return j.message_id===sent.message_id;});
+   if(!job)continue;
+   if(job.state==='complete'){
+    var reply=h.messages.filter(function(m){return String(m.author).indexOf('agent:')===0;}).pop();
+    if(dialog!==mine)return;texts[reply.id]=reply.body;
+    out.innerHTML='<article class="sc-message agent"><span class="sc-avatar agent" style="--h:210" aria-hidden="true">س</span><div class="sc-msg-body"><div class="sc-msg-head"><b>سونو</b>'+copyButton(reply.id)+'</div><p>'+md(reply.body)+'</p>'+rateRow(reply)+'</div></article>';
+    out.querySelector('[data-sc-copy]').onclick=function(){onCopy(this);};
+    out.querySelectorAll('[data-sc-rate]').forEach(function(b){b.onclick=async function(){var on=b.getAttribute('aria-pressed')==='true';try{await api('/messages/'+b.dataset.scRate+'/rating',{value:on?0:Number(b.dataset.value)});b.setAttribute('aria-pressed',String(!on));var o=out.querySelector('[data-sc-rate][aria-pressed=true]');out.querySelectorAll('[data-sc-rate]').forEach(function(x){if(x!==b)x.setAttribute('aria-pressed','false');});}catch(e){status(e.message);}};});
+    form.elements.q.value='';loadBar();return;
+   }
+   if(['failed','limited','cancelled','interrupted'].indexOf(job.state)>=0){out.innerHTML='<p class="sc-job">'+esc(job.error||stateNames[job.state]||'تعذر الرد الآن')+'</p>';return;}
+  }
+  if(dialog===mine)out.innerHTML='<p class="sc-job">الرد تأخر؛ جرّب بعد قليل</p>';
+ }catch(e){if(dialog===mine)out.innerHTML='<p class="sc-job">'+esc(e.message)+'</p>';}
+ finally{busy=false;if(dialog===mine)form.querySelector('button[type=submit]').disabled=false;}
+}
+var SIMPLE_POLL=1500;
 async function refreshRooms(){
  var data=await api('/rooms');rooms=data.rooms;
  if(!dialog)return;
@@ -182,6 +244,7 @@ async function poll(scroll){
   var data=await api('/rooms/'+room+'/messages');if(!dialog||room!==active||ticket!==revision)return;
   var hash=JSON.stringify(data),box=node('[data-sc-messages]'),nearEnd=box.scrollHeight-box.scrollTop-box.clientHeight<80;
   if(hash!==lastDraw){var firstDraw=lastDraw==='';lastDraw=hash;if(!firstDraw){markRead(room);refreshRooms().catch(function(){});}
+   if(!data.messages.length&&!data.jobs.length){box.innerHTML='<div class="sc-prompts"><p>جرّب سؤالًا سريعًا:</p>'+PROMPTS.map(function(t){return button(t,'data-sc-prompt="'+esc(t)+'"');}).join('')+'</div>';}else
    box.innerHTML=(data.before?button('رسائل أقدم','data-sc-older="'+data.before+'"'):'')+data.messages.map(function(m,i){return messageHtml(m,m.author===identity.id,data.messages[i-1]);}).join('')+
     data.jobs.filter(function(j){return j.state!=='complete';}).map(function(j){var live=j.state==='queued'||j.state==='running',bad=['failed','interrupted','limited'].indexOf(j.state)>=0;return '<article class="sc-job'+(live?' typing':'')+'"><b>'+esc(name(j.agent))+' · '+esc(stateNames[j.state]||j.state)+(live?'<span class="sc-dots" aria-hidden="true"><i></i><i></i><i></i></span>':'')+'</b><p>'+esc(j.state==='running'?j.text:j.error)+'</p>'+(['queued','running','awaiting_owner'].includes(j.state)?button('إيقاف','data-sc-cancel="'+esc(j.id)+'"'):'')+(bad&&texts[j.message_id]?button('إعادة المحاولة','data-sc-retry="'+esc(j.id)+'" data-agent="'+esc(j.agent)+'" data-msg="'+esc(j.message_id)+'"'):'')+'</article>';}).join('');
    box.querySelectorAll('[data-sc-retry]').forEach(function(b){b.onclick=async function(){b.disabled=true;try{await api('/rooms/'+room+'/messages',{body:texts[b.dataset.msg],kind:'question',targets:[b.dataset.agent],request_key:w.crypto.randomUUID()});poll(false);}catch(e){status(e.message);b.disabled=false;}};});
@@ -202,7 +265,7 @@ async function send(){
  if(uploading){status('انتظر اكتمال رفع المرفق');return;}
  var data={body:body,kind:f.elements.kind.value,targets:targets,request_key:pending||w.crypto.randomUUID()};if(files.length)data.attachments=files.map(function(x){return x.id;});pending=data.request_key;
  var room=active;busy=true;f.querySelector('button[type=submit]').disabled=true;
- try{await api('/rooms/'+room+'/messages',data);if(dialog&&room===active){f.elements.body.value='';pending=null;files=[];renderFiles();await poll(true);}}
+ try{await api('/rooms/'+room+'/messages',data);if(dialog&&room===active){f.elements.body.value='';pending=null;files=[];renderFiles();await poll(true);loadBar();}}
  catch(e){status(e.message+'؛ إعادة الإرسال بنفس النص لن تكرر الرسالة.');}
  finally{busy=false;if(dialog)node('[type=submit]').disabled=false;}
 }
@@ -230,6 +293,42 @@ async function createForm(){
  node('[data-sc-create]').onclick=async function(){var b=this;b.disabled=true;try{var r=await api('/rooms',{title:node('[name=sc-title]').value,agents:selectedAgents(),users:Array.from(dialog.querySelectorAll('[data-sc-user]:checked')).map(function(x){return x.dataset.scUser;})});await refreshRooms();await selectRoom(r.id);}catch(e){status(e.message);}finally{b.disabled=false;}};
  }catch(e){status(e.message);}
 }
+async function searchMessages(){
+ var q=roomQuery.trim(),box=node('[data-sc-hits]');if(q.length<2)return;
+ try{var res=(await api('/search?q='+encodeURIComponent(q))).results||[];
+  box.innerHTML=res.length?'<h6>نتائج الرسائل</h6>'+res.map(function(r){return '<button type="button" class="sc-hit" data-sc-hit="'+esc(r.room)+'"><b>'+esc(r.title)+'</b><small>'+esc(r.name)+': '+esc(r.snippet)+'</small></button>';}).join(''):'<p class="sc-empty">لا نتائج في رسائلك</p>';
+  box.querySelectorAll('[data-sc-hit]').forEach(function(b){b.onclick=function(){selectRoom(b.dataset.scHit);};});
+ }catch(e){status(e.message);}
+}
+function chip(k,v){return '<span class="sc-pill"><small>'+esc(k)+'</small> <b>'+esc(v)+'</b></span>';}
+async function loadBar(){
+ var bar=node('[data-sc-bar]');if(!bar)return;
+ try{
+  var html;
+  if(identity.owner){
+   var o=await api('/overview'),chatty=agents.filter(function(a){return a.chat;});
+   html=chip('الوكلاء المتصلون',chatty.filter(function(a){return a.connected;}).length+'/'+chatty.length)+chip('حصة اليوم',o.quota.used+'/'+o.quota.limit)+chip('سونو للموظفين',o.employees?'شغّال':'متوقف')+
+    button('غير موثّق: '+o.unanswered,'data-sc-bar-unans class="sc-pill"')+chip('التقييم','👍 '+o.ratings.up+' · 👎 '+o.ratings.down);
+  }else{var q=await api('/quota');html=chip('المتبقي لك اليوم',q.remaining+' من '+q.limit);}
+  if(!dialog)return;bar.innerHTML=html;bar.hidden=false;
+  var u=bar.querySelector('[data-sc-bar-unans]');if(u)u.onclick=function(){ownerPanel('unans');};
+ }catch(_){bar.hidden=true;}
+}
+function table(head,rows){return '<div class="sc-table-scroll"><table><thead><tr>'+head.map(function(h){return '<th>'+esc(h)+'</th>';}).join('')+'</tr></thead><tbody>'+(rows.length?rows.map(function(r){return '<tr>'+r.map(function(c){return '<td>'+esc(c)+'</td>';}).join('')+'</tr>';}).join(''):'<tr><td colspan="'+head.length+'">لا بيانات</td></tr>')+'</tbody></table></div>';}
+function when(sec){return new Date(sec*1000).toLocaleString('ar-EG');}
+async function ownerPanel(tab){
+ tab=tab||'usage';
+ try{
+  var body='';
+  if(tab==='usage'){var u=await api('/usage'),e=await api('/employees');body='<h5>استدعاءات آخر ٧ أيام</h5>'+table(['اليوم','الاستدعاءات'],(u.days||[]).map(function(d){return [d.day,d.calls];}))+'<h5>الموظفون (٧ أيام)</h5>'+table(['الموظف','عدد الأسئلة'],(u.users||[]).map(function(x){return [x.name,x.calls];}))+'<p>سونو للموظفين: '+(e.enabled?'شغّال':'متوقف')+' · حد الموظف '+esc(e.per_user)+' يوميًا</p>';}
+  else if(tab==='unans'){var q=await api('/unanswered');body='<h5>أسئلة ردّ عليها الوكيل بـ«غير موثّق»</h5><p class="sc-hint">كل سطر ثغرة محتملة في دليل المساعدة: أضف مقالًا يغطيها.</p>'+table(['الوقت','السائل','السؤال','المحادثة'],(q.items||[]).map(function(i){return [when(i.created),i.asker,i.question,i.title];}));}
+  else{var a=await api('/audit');body='<h5>سجل النشاط</h5>'+table(['الوقت','المنفّذ','الإجراء','الهدف'],(a.items||[]).map(function(i){return [when(i.created),i.actor,i.action,i.target];}));}
+  tools('<h4>لوحة المالك</h4><div class="sc-tabs">'+[['usage','الاستخدام'],['unans','أسئلة بلا إجابة'],['audit','سجل النشاط']].map(function(t){return button(t[1],'data-sc-tab="'+t[0]+'" aria-pressed="'+(t[0]===tab)+'"');}).join('')+'</div>'+body+button('رجوع','data-sc-dismiss'));
+  node('[data-sc-dismiss]').onclick=function(){node('[data-sc-tools]').hidden=true;node('.sc-conversation').classList.remove('sc-editing');poll(false);};
+  dialog.querySelectorAll('[data-sc-tab]').forEach(function(b){b.onclick=function(){ownerPanel(b.dataset.scTab);};});
+ }catch(e){status(e.message);}
+}
+var PROMPTS=['ازاي أضيف حجز جديد؟','فين أطبع تقرير اليوم؟','إزاي أضيف دكتور وخدمة؟','اشرح لي شاشة المصروفات'];
 function mentionList(){
  var box=node('[data-sc-mentions]'),ta=node('[name=body]');if(!box||!ta)return;
  var r=rooms.find(function(x){return x.id===active;}),m=/(?:^|\s)@([^\s@]*)$/.exec(ta.value);
@@ -334,5 +433,5 @@ w.addEventListener('ssmpd-auth-changed',refreshAccess);
 var authObserver=new MutationObserver(function(){refreshAccess();if(dialog&&!dialog.isConnected)close();});
 authObserver.observe(document.getElementById('app-root')||document.body,{childList:true,subtree:true});
 refreshAccess();
-w.SSMPDServerTeamChat={open:open,mount:mount,openWorkspace:openWorkspace,canAccess:function(){return access;},notifications:function(){return notif;},refreshNotifications:pollNotes,exportText:exportText};mount();
+w.SSMPDServerTeamChat={open:open,mount:mount,openWorkspace:openWorkspace,canAccess:function(){return access;},notifications:function(){return notif;},refreshNotifications:pollNotes,exportText:exportText,_pollMs:function(ms){SIMPLE_POLL=ms;}};mount();
 })(window);

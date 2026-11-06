@@ -9,7 +9,7 @@ const wait=()=>new Promise(r=>setTimeout(r,20));
  w.SSMPDAuth={currentAdmin:{id:'owner',name:'محمد',role:'super_admin'}};
  w.SSMPD_CONFIG={supabase:{url:'https://fixture.invalid',anonKey:'test'}};
  w.supabase={createClient:()=>({auth:{getSession:async()=>({data:{session:{access_token:'fixture-auth-token'}}})}})};
- let noteTotal=0,grantsSeed=[],readCalls=[],attachCalls=[],rooms=[],members={},messages={},calls=[],savedGrants=[],sendCount=0,failOnce=false,limitVal=4,empState={enabled:false,per_user:3,total:30};
+ let isOwner=true,jobsMap={},ratingCalls=[],noteTotal=0,grantsSeed=[],readCalls=[],attachCalls=[],rooms=[],members={},messages={},calls=[],savedGrants=[],sendCount=0,failOnce=false,limitVal=4,empState={enabled:false,per_user:3,total:30};
  const agents=[{code:'codex',name:'Codex',chat:true,task:true,connected:true},{code:'claude',name:'Claude Code',chat:true,task:true,connected:true},{code:'sia',name:'سيا',chat:true,task:true}];
  w.fetch=async(url,opts)=>{
   assert.equal(opts.headers.Authorization,'Bearer fixture-auth-token');
@@ -18,7 +18,14 @@ const wait=()=>new Promise(r=>setTimeout(r,20));
   if(url.endsWith('/notifications'))value={total:noteTotal,items:[]};
   else if(url.endsWith('/read'))readCalls.push(url);
   else if(url.endsWith('/archive')){rooms.find(r=>r.id===url.split('/')[4]).archived=data.archived;value={ok:true};}
-  else if(url.endsWith('/bootstrap'))value={me:{id:'owner',name:'محمد',owner:true},agents};
+  else if(url.endsWith('/overview'))value={quota:{used:2,limit:25},employees:true,unanswered:3,ratings:{up:4,down:1}};
+  else if(url.endsWith('/quota'))value={remaining:2,limit:3,used:1};
+  else if(url.endsWith('/usage'))value={days:[{day:'2026-11-06',calls:5}],users:[{name:'موظف <b>أ</b>',calls:2}]};
+  else if(url.endsWith('/unanswered'))value={items:[{created:1,asker:'موظف',question:'<i>سؤال</i>',title:'سونو'}]};
+  else if(url.endsWith('/audit'))value={items:[{created:1,actor:'محمد',action:'grant',target:'staff'}]};
+  else if(url.includes('/search?'))value={results:[{room:'room-1',title:'Codex',name:'محمد',snippet:'<b>نتيجة</b>'}]};
+  else if(url.endsWith('/rating')){ratingCalls.push({url,data});value={ok:true};}
+  else if(url.endsWith('/bootstrap'))value={me:{id:'owner',name:'محمد',owner:isOwner},agents};
   else if(url.endsWith('/grants')){if(data)savedGrants.push(data);value={grants:[...grantsSeed,...savedGrants]};}
   else if(url.endsWith('/attachments')){attachCalls.push(data);value={id:'att'+attachCalls.length,name:data.name,kind:'image',mime:data.mime,size:3};}
   else if(url.endsWith('/users'))value={users:[{id:'owner',name:'محمد'},{id:'staff',name:'موظف الاختبار'}]};
@@ -33,8 +40,9 @@ const wait=()=>new Promise(r=>setTimeout(r,20));
     value={members:members[room],agents:rooms.find(r=>r.id===room)?.agents};
    }else if(url.includes('/messages')){
     if(data){sendCount++;if(failOnce){failOnce=false;throw Error('انقطع الاتصال');}
-     messages[room].push({id:'m'+(messages[room].length+1),seq:1,author:'owner',name:'محمد',body:data.body,created:Date.now()/1000,attachments:(data.attachments||[]).map(i=>({id:i,name:'scan.png'}))});value={message_id:'m1'};}
-    else value={messages:messages[room],jobs:[]};
+     messages[room].push({id:'m'+(messages[room].length+1),seq:1,author:'owner',name:'محمد',body:data.body,created:Date.now()/1000,attachments:(data.attachments||[]).map(i=>({id:i,name:'scan.png'}))});value={message_id:'m1'};
+     if(String(rooms.find(r=>r.id===room).title).includes('سونو')){messages[room].push({id:'sono-r1',seq:9,author:'agent:codex',name:'Codex',body:'الخطوات **هنا**',created:Date.now()/1000,attachments:[],my_rating:0,sources:[{id:'help:x',title:'إضافة حجز'}]});jobsMap[room]=[{id:'j1',message_id:'m1',agent:'codex',state:'complete',text:'',error:''}];}}
+    else value={messages:messages[room],jobs:jobsMap[room]||[]};
    }
   }
   return{ok:status===200,status,json:async()=>value};
@@ -150,6 +158,26 @@ const wait=()=>new Promise(r=>setTimeout(r,20));
   const q=d.querySelector('[data-sc-room-search]');q.value='ماليس';q.dispatchEvent(new w.Event('input'));await wait();assert.equal(d.querySelectorAll('[data-sc-room]').length,0,'room search filters');
   q.value='';q.dispatchEvent(new w.Event('input'));await wait();assert(d.querySelectorAll('[data-sc-room]').length>=2);
  }
+ {
+  // owner status bar, panel tabs, rating, message search, focus mode
+  await w.SSMPDServerTeamChat.open('codex');await wait();await wait();
+  const bar=d.querySelector('[data-sc-bar]');assert(!bar.hidden,'status bar shown');
+  for(const x of ['2/25','شغّال','غير موثّق: 3','👍 4']) assert(bar.textContent.includes(x),'bar has '+x);
+  d.querySelector('[data-sc-bar-unans]').click();await wait();await wait();
+  assert(d.querySelector('[data-sc-tools]').textContent.includes('سؤال'),'unanswered list shown');assert.equal(d.querySelector('[data-sc-tools] i'),null,'question escaped');
+  d.querySelector('[data-sc-tab=usage]').click();await wait();await wait();assert(d.querySelector('[data-sc-tools]').textContent.includes('<b>'),'usage names escaped as text');assert.equal(d.querySelector('[data-sc-tools] b'),null);
+  d.querySelector('[data-sc-tab=audit]').click();await wait();await wait();assert(d.querySelector('[data-sc-tools]').textContent.includes('grant'));
+  d.querySelector('[data-sc-dismiss]').click();await wait();
+  d.querySelector('[data-sc-room=room-1]').click();await wait();await wait();
+  const rb=d.querySelector('[data-sc-rate][data-value="1"]');assert(rb,'agent replies have rating buttons');rb.click();await wait();await wait();
+  assert.equal(ratingCalls.at(-1).data.value,1,'rating sent');assert(/messages\/[^/]+\/rating$/.test(ratingCalls.at(-1).url));
+  const sq=d.querySelector('[data-sc-room-search]');sq.value='نتيجة';sq.dispatchEvent(new w.Event('input'));
+  assert(!d.querySelector('[data-sc-msg-search]').hidden);d.querySelector('[data-sc-msg-search]').click();await wait();await wait();
+  assert(d.querySelector('[data-sc-hit=room-1]'),'message search hit');assert.equal(d.querySelector('[data-sc-hits] b:not(:first-child)'),null);assert(d.querySelector('[data-sc-hits]').textContent.includes('<b>نتيجة</b>'),'snippet escaped');
+  sq.value='';sq.dispatchEvent(new w.Event('input'));
+  d.querySelector('[data-sc-focus]').click();assert(d.querySelector('dialog').classList.contains('sc-focus'),'focus mode on');d.querySelector('[data-sc-focus]').click();
+  sq.dispatchEvent(new w.KeyboardEvent('keydown',{key:'k',ctrlKey:true,bubbles:true}));assert.equal(d.activeElement,sq,'Ctrl+K focuses the search');
+ }
  // attach
  assert(d.querySelector('[data-sc-warn]').textContent.includes('بيانات تعريف المرضى'),'patient-identifier warning shown');
  const pick=d.querySelector('[data-sc-file]');assert(pick.accept.includes('application/pdf'));
@@ -167,6 +195,18 @@ const wait=()=>new Promise(r=>setTimeout(r,20));
  exportCheck: {
   const txt=w.SSMPDServerTeamChat.exportText([{time:'t',room:'r',sender:'s',agent:'a',text:'x',attachments:'scan.png (image/png, 3 bytes)'}],'csv');
   assert(txt.includes('المرفقات')&&txt.includes('scan.png'),'export carries attachments');
+ }
+ {
+  // employee: simple Sono view with quota, example chips, answer, sources, rating
+  d.querySelector('[data-sc-close]').click();isOwner=false;w.SSMPDServerTeamChat._pollMs(5);
+  await w.SSMPDServerTeamChat.open();await wait();await wait();
+  assert(d.querySelector('.sc-simple'),'employees land on the simple view');assert(d.querySelector('[data-sc-bar]').textContent.includes('2 من 3'),'remaining quota shown');
+  d.querySelector('[data-sc-example]').click();assert(d.querySelector('[name=q]').value.length>3,'example chip fills the box');
+  d.querySelector('[data-sc-ask]').requestSubmit();await new Promise(r=>setTimeout(r,120));await wait();
+  const ans=d.querySelector('[data-sc-answer]');assert(ans.querySelector('strong'),'answer rendered');assert(ans.textContent.includes('إضافة حجز'),'source shown');
+  ans.querySelector('[data-sc-rate][data-value="-1"]').click();await wait();await wait();assert.equal(ratingCalls.at(-1).data.value,-1);
+  d.querySelector('[data-sc-full]').click();await wait();await wait();assert(d.querySelector('.sc-layout'),'full chat reachable');
+  d.querySelector('[data-sc-close]').click();isOwner=true;
  }
  w.SSMPDAuth.currentAdmin=null;d.getElementById('app-root').appendChild(d.createElement('div'));await wait();
  assert(!d.querySelector('dialog'),'logout removes private conversation');
