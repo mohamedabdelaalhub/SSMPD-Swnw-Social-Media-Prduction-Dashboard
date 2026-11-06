@@ -12,15 +12,17 @@ from urllib.parse import urlsplit,parse_qs
 from auth import Auth
 from runtime import Codex, ClaudeChat, RuntimeFailure, Unsupported
 import uploads
+import knowledge
 from store import Store, Denied, Invalid, ENGINES
 
 PREFIX='/api/digital-team'
 
 class Service:
-    def __init__(self, store, auth, runtime=None, shared_codex=False, claude=None):
+    def __init__(self, store, auth, runtime=None, shared_codex=False, claude=None, knowledge_base=None):
         self.store,self.auth,self.runtime,self.shared_codex=store,auth,runtime,shared_codex
         self.engines={k:v for k,v in (('codex',runtime),('claude',claude)) if v}
         self.tokens={}; self.tokens_lock=threading.Lock()
+        self.knowledge_base=knowledge_base; self.build_hints={}  # hints only: never used for permissions
 
     def available(self, agent, actor):
         # Claude Code runs on the owner's personal subscription: owner-only, never shared via a flag.
@@ -69,6 +71,7 @@ class Service:
                     # Token kept in RAM only for re-verifying queued work; never persist it or pass it to Codex.
                     with self.tokens_lock:
                         self.tokens[(room,a.id)]=(token,time.time()+240)
+                    self.build_hints[(room,a.id)]=str(data.get('client_build',''))[:40]
                     return out
             if len(parts)==3 and parts[2]=='attachments' and method=='POST':
                 return self.store.add_attachment(a,room,data)
@@ -95,6 +98,7 @@ class Service:
             if not engine or not self.available(job['agent'],actor):
                 raise RuntimeFailure('المحرك غير متصل لهذا الحساب')
             history,thread=self.store.context(job)
+            history=self.with_knowledge(history,actor,saved[0],job)
             def cancelled():
                 with self.store.lock:
                     if not self.store.current(job):return True
@@ -118,6 +122,19 @@ class Service:
             with self.tokens_lock:
                 self.tokens={k:v for k,v in self.tokens.items() if v[1]>time.time()}
         return True
+
+    def with_knowledge(self, history, actor, token, job):
+        """Phase 1 Sono knowledge: server-side filtered, labelled DATA entry prepended to the engine input."""
+        kb=self.knowledge_base
+        if kb is None:return history
+        try:
+            if actor.owner:viewer=knowledge.Viewer(owner=True)
+            else:viewer=knowledge.Viewer(owner=False,roles=tuple(self.auth.viewer_roles(token,actor.id) or ()))
+            question=history[-1]['body'] if history else ''
+            hint=self.build_hints.get((job['room'],job['user_id']))
+            return [kb.context_entry(viewer,question,hint)]+list(history)
+        except Exception:
+            return [{'name':'مرجع-النظام','kind':'reference_data','body':'حزمة المعرفة غير متاحة الآن؛ قل ذلك صراحة ولا تجب من الذاكرة عن شاشات الداشبورد.'}]+list(history)
 
     def worker(self):
         while True:
@@ -193,7 +210,10 @@ def main():
     claude=None
     if os.environ.get('SWNW_CHAT_CLAUDE_ENABLED')=='1':
         claude=ClaudeChat(os.environ['SWNW_CHAT_CLAUDE_BIN'],os.environ['SWNW_CHAT_WORKSPACE'],code_dir=os.environ.get('SWNW_CHAT_CODE_DIR') or None)
-    service=Service(Store(str(state/'chat.sqlite3')),auth,runtime,os.environ.get('SWNW_CHAT_SHARED_CODEX')=='1',claude)
+    kb=None
+    if os.environ.get("SWNW_CHAT_KNOWLEDGE_DIR"):
+        kb=knowledge.Knowledge(os.environ["SWNW_CHAT_KNOWLEDGE_DIR"],os.environ.get("SWNW_CHAT_RELEASE_ID"),os.environ.get("SWNW_CHAT_RELEASE_FILE"))
+    service=Service(Store(str(state/"chat.sqlite3")),auth,runtime,os.environ.get("SWNW_CHAT_SHARED_CODEX")=="1",claude,kb)
     threading.Thread(target=service.worker,daemon=True).start()
     sock=os.environ.get('SWNW_CHAT_SOCKET')
     if sock:

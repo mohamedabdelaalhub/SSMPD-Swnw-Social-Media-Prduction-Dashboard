@@ -12,3 +12,8 @@ SWNW_CHAT_CODEX_BIN=/OBSERVED/ABSOLUTE/PATH/codex
 SWNW_CHAT_WORKSPACE=/var/lib/swnw-team-chat/discussion-workspace
 # MUST be the exact same lock inode as the existing Issue runner, not a second unrelated lock.
 SWNW_CHAT_SHARED_LOCK=/OBSERVED/EXISTING/RUNNER/lock
+# Sono knowledge pack (phase 1, optional; unset = feature off, current behaviour). Paths only, no secrets.
+SWNW_CHAT_KNOWLEDGE_DIR=<dir built by scripts/build-sono-knowledge.py>
+# The SERVER's own deployed release id. File wins over the static value; first token = commit sha.
+SWNW_CHAT_RELEASE_FILE=<file whose first line is the live release commit sha>
+SWNW_CHAT_RELEASE_ID=<fallback commit sha>
