@@ -1,0 +1,36 @@
+const {PGlite}=require('@electric-sql/pglite');
+const fs=require('fs'),assert=require('assert/strict'),path=require('path'),root=path.resolve(__dirname,'..');
+(async()=>{
+ const db=new PGlite();
+ await db.exec(`create role authenticated; create role anon;
+ create function public.my_admin_id() returns uuid language sql as $$select nullif(current_setting('test.me',true),'')::uuid$$;
+ create function public.can_manage_all_content() returns boolean language sql as $$select current_setting('test.role',true) in ('super_admin','general_manager')$$;
+ create function public.finance_module_allowed(m text,a text) returns boolean language sql as $$select coalesce(current_setting('test.tasks',true),'on')='on'$$;
+ create table public.admins(id uuid primary key); create table public.tasks(id uuid primary key);
+ insert into public.admins values ('00000000-0000-0000-0000-000000000001'),('00000000-0000-0000-0000-000000000002');`);
+ const sql=fs.readFileSync(path.join(root,'supabase/migrations/20261107120000_chat_task_requests.sql'),'utf8');
+ await db.exec(sql);await db.exec(sql); // repeatable
+ const as=async(me,role='staff',tasks='on')=>db.exec(`select set_config('test.me','${me}',false),set_config('test.role','${role}',false),set_config('test.tasks','${tasks}',false)`);
+ const U1='00000000-0000-0000-0000-000000000001',U2='00000000-0000-0000-0000-000000000002';
+ await as(U1);
+ const ok=await db.query(`select public.chat_task_request_submit('  عنوان  ','تفاصيل المهمة','سارة - التسويق') as id`);
+ assert(ok.rows[0].id,'created');
+ const row=(await db.query(`select * from public.chat_task_requests`)).rows[0];
+ assert.equal(row.title,'عنوان');assert.equal(row.status,'pending');assert.equal(row.requested_by,U1);assert.equal(row.hint,'سارة - التسويق');
+ await assert.rejects(()=>db.query(`select public.chat_task_request_submit('x','تفاصيل','')`),/title|check/,'short title refused');
+ await assert.rejects(()=>db.query(`select public.chat_task_request_submit('عنوان','x','')`),/check/,'short body refused');
+ await as(U1,'staff','off');
+ await assert.rejects(()=>db.query(`select public.chat_task_request_submit('عنوان','تفاصيل المهمة','')`),/صلاحية/,'needs tasks module');
+ await as('', 'staff');
+ await assert.rejects(()=>db.query(`select public.chat_task_request_submit('عنوان','تفاصيل المهمة','')`),/سجّل/,'anonymous refused');
+ await as(U1);
+ for(let i=0;i<19;i++)await db.query(`select public.chat_task_request_submit('عنوان ${i}','تفاصيل المهمة','')`);
+ await assert.rejects(()=>db.query(`select public.chat_task_request_submit('زيادة','تفاصيل المهمة','')`),/الحد اليومي/,'daily cap 20');
+ await as(U2);
+ await db.query(`select public.chat_task_request_submit('من الثاني','تفاصيل المهمة','')`);
+ assert.equal((await db.query(`select count(*)::int c from public.chat_task_requests where requested_by='${U2}'`)).rows[0].c,1,'cap is per user');
+ const ddl=sql.toLowerCase();
+ assert(!/grant (insert|update|delete)/.test(ddl),'no direct write grants');assert(ddl.includes('enable row level security'));
+ assert(ddl.includes('revoke all on function public.chat_task_request_submit'));
+ console.log('PASS chat task requests: submit, validation, tasks permission, per-user cap, repeatable, RLS on');
+})().catch(e=>{console.error(e);process.exit(1);});

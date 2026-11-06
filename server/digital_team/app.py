@@ -48,6 +48,16 @@ class Service:
         if parts==['rooms']:
             if method=='GET':return {'rooms':self.store.rooms(a)}
             if method=='POST':return {'id':self.store.create(a,data,directory())}
+        if method=='GET' and parts==['overview']:return self.store.overview(a)
+        if method=='GET' and parts==['usage']:return self.store.usage_report(a)
+        if method=='GET' and parts==['unanswered']:return self.store.unanswered(a)
+        if method=='GET' and parts==['audit']:return self.store.audit_log(a)
+        if method=='GET' and parts==['quota']:return self.store.my_quota(a)
+        if method=='GET' and parts==['search']:return self.store.search(a,parse_qs(u.query).get('q',[''])[0])
+        if method=='POST' and len(parts)==3 and parts[0]=='messages' and parts[2]=='rating':
+            v=data.get('value');return self.store.rate(a,parts[1],v if isinstance(v,int) else 99)
+        if method=='GET' and parts==['notifications']:
+            return self.store.notifications(a)
         if parts==['employees']:
             if method=='GET':return self.store.employees_info(a)
             if method=='POST':return self.store.set_employees(a,data)
@@ -82,6 +92,10 @@ class Service:
                 if method=='GET':return {'members':self.store.members(a,room),'agents':self.store.room_agents(room)}
                 if method=='POST':
                     self.store.set_members(a,room,data,directory());return {'ok':True}
+            if len(parts)==3 and parts[2]=='read' and method=='POST':
+                return self.store.mark_read(a,room)
+            if len(parts)==3 and parts[2]=='archive' and method=='POST':
+                return self.store.set_archived(a,room,data.get('archived'))
             if len(parts)==4 and parts[2]=='cancel' and method=='POST':
                 self.store.cancel(a,room,parts[3]);return {'ok':True}
         raise Invalid('مسار غير مدعوم')
@@ -135,6 +149,8 @@ class Service:
             else:viewer=knowledge.Viewer(owner=False,roles=tuple(self.auth.viewer_roles(token,actor.id) or ()))
             question=history[-1]['body'] if history else ''
             hint=self.build_hints.get((job['room'],job['user_id']))
+            try:self.store.set_sources(job['id'],[{'id':d['id'],'title':d['title']} for d in kb.select(viewer,question)])
+            except Exception:pass
             return [kb.context_entry(viewer,question,hint)]+list(history)
         except Exception:
             return [{'name':'مرجع-النظام','kind':'reference_data','body':'حزمة المعرفة غير متاحة الآن؛ قل ذلك صراحة ولا تجب من الذاكرة عن شاشات الداشبورد.'}]+list(history)
