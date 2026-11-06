@@ -17,3 +17,4 @@
   .ssmpd-ea-launch{left:12px;bottom:calc(116px + env(safe-area-inset-bottom,0px))}
   .ssmpd-ea-panel{left:6px;right:6px;bottom:6px;width:auto;height:min(78vh,680px);max-height:78vh}
 }
+.ssmpd-ea-actions .ssmpd-ea-coach{background:#0F369D;color:#fff;border-color:#0F369D;font-weight:700;padding:8px 12px}

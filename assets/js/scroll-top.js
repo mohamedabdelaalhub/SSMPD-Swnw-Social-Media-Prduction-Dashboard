@@ -36,13 +36,13 @@
   if (!document.querySelector('link[data-ssmpd-ea]')) {
     var employeeStyle = document.createElement('link');
     employeeStyle.rel = 'stylesheet';
-    employeeStyle.href = 'assets/css/employee-assistant.css?v=employee-assistant-v2';
+    employeeStyle.href = 'assets/css/employee-assistant.css?v=coach-20261106-2';
     employeeStyle.setAttribute('data-ssmpd-ea', 'style');
     document.head.appendChild(employeeStyle);
   }
   if (!document.querySelector('script[data-ssmpd-ea]')) {
     var employeeScript = document.createElement('script');
-    employeeScript.src = 'assets/js/employee-assistant.js?v=employee-assistant-v1';
+    employeeScript.src = 'assets/js/employee-assistant.js?v=coach-20261106-2';
     employeeScript.defer = true;
     employeeScript.setAttribute('data-ssmpd-ea', 'script');
     document.body.appendChild(employeeScript);
