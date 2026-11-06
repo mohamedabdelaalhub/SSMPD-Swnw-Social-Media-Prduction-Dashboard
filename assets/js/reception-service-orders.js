@@ -46,12 +46,13 @@ function decorate(c,section){
   if(section!=='operations'||!c.host)return;
   var shell=c.host.querySelector('.rx-shell');if(!shell)return;
   var node=document.createElement('section');
-  node.innerHTML='<div class="rx-actions">'+c.btn('so-order','','تفاصيل طلب الخدمة (إحالة / تنفيذ / مزوّد)')+c.btn('so-board','','لوحة المزوّدين الخارجيين')+'</div>';
+  node.innerHTML='<div class="rx-actions">'+c.btn('so-order','','تفاصيل طلب الخدمة (إحالة / تنفيذ / مزوّد)')+c.btn('so-board','','لوحة المزوّدين الخارجيين')+(c.data.can_manage?c.btn('so-setup','','إعداد طلبات الخدمة'):'')+'</div>';
   shell.appendChild(node);
 }
 function act(a,id,c){
   if(a==='so-order'){orderForm(c);return true;}
   if(a==='so-board'){board(c);return true;}
+  if(a==='so-setup'){setup(c);return true;}
   return false;
 }
 function orderForm(c){
@@ -93,5 +94,68 @@ function board(c){
   });
   reload(root).catch(function(err){root.querySelector('[data-so-rows]').textContent=(err&&err.message)||'تعذر التحميل';});
 }
-w.SSMPDReceptionServiceOrders={decorate:decorate,act:act,_pure:{externalAllowed:externalAllowed,needsBillingParty:needsBillingParty,providersFor:providersFor,performersFor:performersFor,referrers:referrers,nextStatuses:nextStatuses,buildExt:buildExt,boardTable:boardTable}};
+
+var RATE_CATS=[['consult','كشف'],['followup','متابعة'],['consultation','استشارة'],['procedure','إجراء'],['radiology','أشعة'],['lab','معمل']];
+function num(v,name,min,max){var n=Number(v);if(v===''||v==null||!Number.isFinite(n)||n<min||(max!=null&&n>max))throw Error(name);return n;}
+function buildSetup(kind,v){
+  if(kind==='service_specialty'){if(!v.service_id||!String(v.specialty_id||'').trim())throw Error('اختر الخدمة واكتب التخصص');return {op:'add',service_id:v.service_id,specialty_id:String(v.specialty_id).trim()};}
+  if(kind==='performer'){var dk=v.doctor_key||'',sp=String(v.specialty_id||'').trim();if(!v.service_id||(!!dk===!!sp))throw Error('اختر الخدمة، ثم طبيبًا أو تخصصًا (واحد فقط)');
+    var o={op:'add',service_id:v.service_id};if(dk)o.doctor_key=dk;else o.specialty_id=sp;return o;}
+  if(kind==='referral_rate'){if(!v.doctor_key||!v.category)throw Error('اختر الطبيب والتصنيف');var r={op:'set',doctor_key:v.doctor_key,category:v.category,percent:num(v.percent,'النسبة بين 0 و100',0,100)};if(v.valid_from)r.valid_from=v.valid_from;return r;}
+  if(kind==='provider'){var name=String(v.name||'').trim();if(!name||!v.kind)throw Error('اكتب اسم المزوّد واختر نوعه');var pr={name:name,kind:v.kind,phone:String(v.phone||'').trim(),active:v.active!=='0',terms:{}};
+    if(v.kind==='radiology'){if(v.providerSharePercent!==''&&v.providerSharePercent!=null)pr.terms.providerSharePercent=num(v.providerSharePercent,'نسبة المزوّد بين 0 و100',0,100);
+      if(v.centerSharePercent!==''&&v.centerSharePercent!=null)pr.terms.centerSharePercent=num(v.centerSharePercent,'نسبة المركز بين 0 و100',0,100);}
+    if(v.id)pr.id=v.id;return pr;}
+  if(kind==='cost'){if(!v.provider_id||!v.service_id)throw Error('اختر المعمل والخدمة');return {op:'set',provider_id:v.provider_id,service_id:v.service_id,year:num(v.year,'السنة غير صحيحة',2020,2100),cost:num(v.cost,'التكلفة غير صحيحة',0,null)};}
+  throw Error('نوع الإعداد غير معروف');
+}
+function nameOf(list,id,key,label){var r=(list||[]).find(function(x){return x[key||'id']===id;});return r?r[label||'name']:'—';}
+function setupTab(tab,S){
+  var sv=S.services.map(function(x){return [x.id,x.name];}),dr=S.doctors.map(function(x){return [x.doctor_key,x.name];}),labs=S.providers.filter(function(p){return p.kind==='lab';}).map(function(x){return [x.id,x.name];});
+  function rm(kind,payload){return '<button type="button" class="btn" data-so-rm="'+esc(JSON.stringify({kind:kind,payload:payload}))+'">حذف</button>';}
+  function form(kind,fields,label){return '<form data-so-form="'+kind+'" class="rx-actions">'+fields+'<button class="btn btn-primary" type="submit">'+esc(label||'إضافة')+'</button></form>';}
+  var h='';
+  if(tab==='spec'){
+    h+=form('service_specialty',opt('service_id','الخدمة',sv,'','required')+'<label>التخصص<input name="specialty_id" list="so-specs" required maxlength="80"></label><datalist id="so-specs">'+Array.from(new Set(S.service_specialties.map(function(x){return x.specialty_id;}))).map(function(x){return '<option value="'+esc(x)+'">';}).join('')+'</datalist>');
+    h+='<div class="rx-table"><table><thead><tr><th>الخدمة</th><th>التخصص</th><th></th></tr></thead><tbody>'+S.service_specialties.map(function(x){return '<tr><td>'+esc(nameOf(S.services,x.service_id))+'</td><td>'+esc(x.specialty_id)+'</td><td>'+rm('service_specialty',{op:'remove',service_id:x.service_id,specialty_id:x.specialty_id})+'</td></tr>';}).join('')+'</tbody></table></div>';
+  }else if(tab==='perf'){
+    h+='<p>لو الخدمة ليها قائمة منفّذين، لا ينفذها غيرهم. الخدمات بدون قائمة مفتوحة للجميع.</p>'+form('performer',opt('service_id','الخدمة',sv,'','required')+opt('doctor_key','طبيب',dr,'')+'<label>أو تخصص<input name="specialty_id" maxlength="80"></label>');
+    h+='<div class="rx-table"><table><thead><tr><th>الخدمة</th><th>المنفّذ</th><th></th></tr></thead><tbody>'+S.performers.map(function(x){return '<tr><td>'+esc(nameOf(S.services,x.service_id))+'</td><td>'+esc(x.doctor_key?nameOf(S.doctors,x.doctor_key,'doctor_key'):'تخصص: '+x.specialty_id)+'</td><td>'+rm('performer',{op:'remove',service_id:x.service_id,doctor_key:x.doctor_key||'',specialty_id:x.specialty_id||''})+'</td></tr>';}).join('')+'</tbody></table></div>';
+  }else if(tab==='rate'){
+    h+='<p>النسبة تُحسب من الصافي بعد الخصم، للخدمات فقط وليس الأدوية. تسجيل نسبة جديدة يُنهي القديمة تلقائيًا.</p>'+form('referral_rate',opt('doctor_key','الطبيب',dr,'','required')+opt('category','التصنيف',RATE_CATS,'consult','required')+'<label>النسبة %<input name="percent" type="number" min="0" max="100" step="0.01" required></label><label>تسري من<input name="valid_from" type="date"></label>','حفظ');
+    h+='<div class="rx-table"><table><thead><tr><th>الطبيب</th><th>التصنيف</th><th>النسبة</th><th>من</th><th>إلى</th><th></th></tr></thead><tbody>'+S.referral_rates.map(function(x){return '<tr><td>'+esc(nameOf(S.doctors,x.doctor_key,'doctor_key'))+'</td><td>'+esc(nameOf(RATE_CATS.map(function(r){return {id:r[0],name:r[1]};}),x.category))+'</td><td>'+esc(x.percent)+'%</td><td>'+esc(x.valid_from)+'</td><td>'+esc(x.valid_to||'مستمرة')+'</td><td>'+rm('referral_rate',{op:'remove',id:x.id})+'</td></tr>';}).join('')+'</tbody></table></div>';
+  }else if(tab==='prov'){
+    h+=form('provider','<label>الاسم<input name="name" required maxlength="120"></label>'+opt('kind','النوع',[['lab','معمل'],['radiology','أشعة']],'lab','required')+'<label>التليفون<input name="phone" maxlength="40"></label><label>نسبة المزوّد % (أشعة خارجية يحاسبها المركز)<input name="providerSharePercent" type="number" min="0" max="100" step="0.01"></label><label>نسبة المركز % (أشعة يحاسبها المزوّد)<input name="centerSharePercent" type="number" min="0" max="100" step="0.01"></label>','إضافة مزوّد');
+    h+='<div class="rx-table"><table><thead><tr><th>الاسم</th><th>النوع</th><th>التليفون</th><th>نسب</th><th>الحالة</th><th></th></tr></thead><tbody>'+S.providers.map(function(p){var t=p.terms||{};return '<tr><td>'+esc(p.name)+'</td><td>'+(p.kind==='lab'?'معمل':'أشعة')+'</td><td dir="ltr">'+esc(p.phone||'')+'</td><td>'+esc(p.kind==='radiology'?('مزوّد '+(t.providerSharePercent==null?'—':t.providerSharePercent)+'% / مركز '+(t.centerSharePercent==null?'—':t.centerSharePercent)+'%'):'سعر تكلفة')+'</td><td>'+(p.active?'نشط':'موقوف')+'</td><td><button type="button" class="btn" data-so-toggle="'+esc(p.id)+'">'+(p.active?'إيقاف':'تفعيل')+'</button></td></tr>';}).join('')+'</tbody></table></div>';
+  }else{
+    h+='<p>المعمل الخارجي: المركز يدفع للمعمل سعر التكلفة، والمريض يدفع حسب قائمة أسعار المركز.</p>'+form('cost',opt('provider_id','المعمل',labs,'','required')+opt('service_id','الخدمة',sv,'','required')+'<label>السنة<input name="year" type="number" min="2020" max="2100" value="'+new Date().getFullYear()+'" required></label><label>سعر التكلفة<input name="cost" type="number" min="0" step="0.01" required></label>','حفظ');
+    h+='<div class="rx-table"><table><thead><tr><th>المعمل</th><th>الخدمة</th><th>السنة</th><th>التكلفة</th><th></th></tr></thead><tbody>'+S.costs.map(function(x){return '<tr><td>'+esc(nameOf(S.providers,x.provider_id))+'</td><td>'+esc(nameOf(S.services,x.service_id))+'</td><td>'+esc(x.year)+'</td><td>'+esc(x.cost)+'</td><td>'+rm('cost',{op:'remove',provider_id:x.provider_id,service_id:x.service_id,year:x.year})+'</td></tr>';}).join('')+'</tbody></table></div>';
+  }
+  return h;
+}
+var TABS=[['spec','الخدمات والتخصصات'],['perf','المنفّذون'],['rate','نسب الإحالة'],['prov','المزوّدون'],['cost','أسعار تكلفة المعامل']];
+function setup(c){
+  var db=w.SSMPDDb,S=null,tab='spec';
+  var root=c.modal('إعداد طلبات الخدمة','<div class="rx-actions" data-so-tabs>'+TABS.map(function(t){return '<button type="button" class="btn" data-so-tab="'+t[0]+'">'+esc(t[1])+'</button>';}).join('')+'</div><p data-so-msg role="status"></p><div data-so-body>جاري التحميل…</div>',function(){return Promise.resolve();});
+  if(!root)return;root.querySelector('[type="submit"]').hidden=true;
+  function paint(){root.querySelector('[data-so-body]').innerHTML=S?setupTab(tab,S):'';root.querySelectorAll('[data-so-tab]').forEach(function(b){b.setAttribute('aria-pressed',b.dataset.soTab===tab?'true':'false');});}
+  function msg(t){root.querySelector('[data-so-msg]').textContent=t||'';}
+  function reload(){return db.serviceOrdersSetupLoad(c.workspace).then(function(d){S=d;paint();});}
+  function run(p){msg('جاري الحفظ…');return p.then(function(){msg('تم الحفظ');return reload();}).catch(function(e){msg((e&&e.message)||'تعذر الحفظ');});}
+  root.addEventListener('click',function(e){
+    var t=e.target.closest('[data-so-tab],[data-so-rm],[data-so-toggle]');if(!t)return;
+    if(t.dataset.soTab){tab=t.dataset.soTab;msg('');paint();return;}
+    if(t.dataset.soRm){var x=JSON.parse(t.dataset.soRm);run(db.serviceOrdersSetupSave(c.workspace,x.kind,x.payload));return;}
+    if(t.dataset.soToggle){var p=S.providers.find(function(q){return q.id===t.dataset.soToggle;});if(!p)return;
+      var v={id:p.id,name:p.name,kind:p.kind,phone:p.phone||'',active:p.active?'0':'1',providerSharePercent:(p.terms||{}).providerSharePercent,centerSharePercent:(p.terms||{}).centerSharePercent};
+      run(db.serviceOrdersSetupSave(c.workspace,'provider',buildSetup('provider',v)));}
+  });
+  root.addEventListener('submit',function(e){
+    var f=e.target.closest('[data-so-form]');if(!f)return;e.preventDefault();e.stopPropagation();
+    var v={};new FormData(f).forEach(function(val,k){v[k]=val;});
+    try{run(db.serviceOrdersSetupSave(c.workspace,f.dataset.soForm,buildSetup(f.dataset.soForm,v)));}catch(err){msg(err.message);}
+  },true);
+  reload().catch(function(e){root.querySelector('[data-so-body]').textContent=(e&&e.message)||'تعذر التحميل';});
+}
+w.SSMPDReceptionServiceOrders={decorate:decorate,act:act,_pure:{externalAllowed:externalAllowed,needsBillingParty:needsBillingParty,providersFor:providersFor,performersFor:performersFor,referrers:referrers,nextStatuses:nextStatuses,buildExt:buildExt,boardTable:boardTable,buildSetup:buildSetup,setupTab:setupTab}};
 })(typeof window!=='undefined'?window:globalThis);

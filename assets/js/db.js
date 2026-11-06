@@ -1382,6 +1382,8 @@
     serviceOrderStatus: function(workspace,order,to){return handle(client.rpc("clinic_reception_so_set_status",{p_workspace:workspace,p_order:order,p_to:to}));},
     serviceOrderReport: function(workspace,order,fileRef){return handle(client.rpc("clinic_reception_so_attach_report",{p_workspace:workspace,p_order:order,p_file_ref:fileRef}));},
     serviceOrdersBoard: function(workspace,provider){return handle(client.rpc("clinic_reception_so_provider_board",{p_workspace:workspace,p_provider:provider||null}));},
+    serviceOrdersSetupLoad: function(workspace){return handle(client.rpc("clinic_reception_so_setup_load",{p_workspace:workspace}));},
+    serviceOrdersSetupSave: function(workspace,kind,payload){return handle(client.rpc("clinic_reception_so_setup_save",{p_workspace:workspace,p_kind:kind,p_payload:payload}));},
     financeRegister: function(name,limit){return handle(client.rpc('clinic_finance_register',{p_name:name,p_limit:limit}));},
     financeOpenShift: function(register,token){return handle(client.rpc('clinic_finance_open_shift',{p_register:register,p_token:token}));},
     financeInvoice: function(reference,patient,description,amount,token){return handle(client.rpc('clinic_finance_invoice',{p_reference:reference,p_patient_ref:patient,p_description:description,p_amount:amount,p_token:token}));},

@@ -26,3 +26,33 @@ assert.ok(html.includes('data-so-report="o1"'));assert.ok(html.includes('data-so
 assert.ok(!/price|سعر|عمولة/.test(html));                                                          // no money on the board
 assert.ok(P.boardTable([]).includes('لا توجد'));
 console.log('reception-service-orders tests passed');
+
+// ---- setup screens ----
+const B=window.SSMPDReceptionServiceOrders._pure;
+assert.deepEqual(B.buildSetup('service_specialty',{service_id:'s',specialty_id:' neuro '}),{op:'add',service_id:'s',specialty_id:'neuro'});
+assert.throws(()=>B.buildSetup('service_specialty',{service_id:'s',specialty_id:' '}),/اختر/);
+assert.deepEqual(B.buildSetup('performer',{service_id:'s',doctor_key:'drA'}),{op:'add',service_id:'s',doctor_key:'drA'});
+assert.deepEqual(B.buildSetup('performer',{service_id:'s',specialty_id:'obgyn'}),{op:'add',service_id:'s',specialty_id:'obgyn'});
+assert.throws(()=>B.buildSetup('performer',{service_id:'s',doctor_key:'drA',specialty_id:'x'}),/واحد فقط/);
+assert.throws(()=>B.buildSetup('performer',{service_id:'s'}),/واحد فقط/);
+assert.deepEqual(B.buildSetup('referral_rate',{doctor_key:'d',category:'lab',percent:'7.5',valid_from:'2026-01-01'}),{op:'set',doctor_key:'d',category:'lab',percent:7.5,valid_from:'2026-01-01'});
+assert.throws(()=>B.buildSetup('referral_rate',{doctor_key:'d',category:'lab',percent:'101'}),/النسبة/);
+assert.throws(()=>B.buildSetup('referral_rate',{doctor_key:'d',category:'lab',percent:''}),/النسبة/);
+assert.throws(()=>B.buildSetup('referral_rate',{doctor_key:'',category:'lab',percent:'5'}),/اختر/);
+assert.deepEqual(B.buildSetup('provider',{name:'Rad',kind:'radiology',phone:'1',providerSharePercent:'70',centerSharePercent:'30'}).terms,{providerSharePercent:70,centerSharePercent:30});
+assert.deepEqual(B.buildSetup('provider',{name:'Lab',kind:'lab',providerSharePercent:'70'}).terms,{});          // labs carry no percent terms
+assert.throws(()=>B.buildSetup('provider',{name:'Rad',kind:'radiology',providerSharePercent:'170'}),/نسبة المزوّد/);
+assert.throws(()=>B.buildSetup('provider',{name:' ',kind:'lab'}),/اسم/);
+assert.equal(B.buildSetup('provider',{id:'p',name:'L',kind:'lab',active:'0'}).active,false);
+assert.deepEqual(B.buildSetup('cost',{provider_id:'p',service_id:'s',year:'2026',cost:'40'}),{op:'set',provider_id:'p',service_id:'s',year:2026,cost:40});
+assert.throws(()=>B.buildSetup('cost',{provider_id:'p',service_id:'s',year:'2026',cost:'-1'}),/التكلفة/);
+assert.throws(()=>B.buildSetup('cost',{provider_id:'p',service_id:'s',year:'1999',cost:'1'}),/السنة/);
+assert.throws(()=>B.buildSetup('bogus',{}),/غير معروف/);
+const S0={services:[{id:'s1',name:'<i>X</i>'}],doctors:[{doctor_key:'d1',name:'Dr'}],service_specialties:[{service_id:'s1',specialty_id:'neuro'}],
+ performers:[{service_id:'s1',doctor_key:'d1'}],referral_rates:[{id:'r1',doctor_key:'d1',category:'lab',percent:5,valid_from:'2026-01-01',valid_to:null}],
+ providers:[{id:'p1',name:'Lab',kind:'lab',phone:'1',terms:{},active:true},{id:'p2',name:'Rad',kind:'radiology',phone:'2',terms:{providerSharePercent:70},active:false}],
+ costs:[{provider_id:'p1',service_id:'s1',year:2026,cost:40}]};
+for(const t of ['spec','perf','rate','prov','cost']){const h=B.setupTab(t,S0);assert.ok(h.includes('data-so-form')||t==='x');assert.ok(!h.includes('<i>X</i>'));}
+assert.ok(B.setupTab('rate',S0).includes('مستمرة'));
+assert.ok(B.setupTab('prov',S0).includes('تفعيل'));
+console.log('setup screen tests passed');
