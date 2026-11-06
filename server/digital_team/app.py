@@ -19,12 +19,12 @@ class Service:
     def __init__(self, store, auth, runtime=None, shared_codex=False, claude=None):
         self.store,self.auth,self.runtime,self.shared_codex=store,auth,runtime,shared_codex
         self.engines={k:v for k,v in (('codex',runtime),('claude',claude)) if v}
+        self.tokens={}; self.tokens_lock=threading.Lock()
 
     def available(self, agent, actor):
         # Claude Code runs on the owner's personal subscription: owner-only, never shared via a flag.
         if agent not in self.engines:return False
         return actor.owner or (agent=='codex' and self.shared_codex)
-        self.tokens={}; self.tokens_lock=threading.Lock()
 
     def handle(self, method, path, token, data=None):
         a=self.auth.actor(token);self.store.remember(a)
