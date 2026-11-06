@@ -1,0 +1,15 @@
+const assert=require('node:assert/strict');
+const {JSDOM}=require('jsdom');
+const fs=require('node:fs');
+const dom=new JSDOM('<html><body><div id="app-root"><div id="user-dropdown"><div class="ud-items"></div></div></div></body></html>',{runScripts:'outside-only'});
+const w=dom.window,d=w.document;let allowed=false,opened=0;
+w.SSMPDAuth={currentAdmin:{id:'staff',role:'designer'}};
+w.SSMPDServerTeamChat={canAccess:()=>allowed,openWorkspace:()=>opened++};
+w.eval(fs.readFileSync('assets/js/management-navigation.js','utf8'));
+w.SSMPDManagementNavigation.refresh();assert.equal(d.querySelectorAll('[data-management-page]').length,0);
+allowed=true;w.SSMPDManagementNavigation.refresh();assert.equal(d.querySelectorAll('[data-management-page]').length,1);
+d.querySelector('[data-management-page=digital_team]').click();assert.equal(opened,1);
+w.SSMPDAuth.currentAdmin={id:'owner',role:'super_admin'};w.SSMPDManagementNavigation.refresh();assert.equal(d.querySelectorAll('[data-management-page]').length,4);
+w.SSMPDAuth.currentAdmin={id:'staff',role:'designer'};w.SSMPDManagementNavigation.refresh();assert.equal(d.querySelectorAll('[data-management-page]').length,1);
+allowed=false;w.SSMPDManagementNavigation.refresh();assert.equal(d.querySelectorAll('[data-management-page]').length,0);
+dom.window.close();console.log('PASS delegated team-only navigation, manager preservation, account switch and revocation');

@@ -13,14 +13,15 @@ root.SSMPDUITitles={tabs:tabs,roles:roles,chips:chips,identity:identity,label:la
 (function loadAdministrativeAssistant(){
   if(root.__SSMPD_ADMIN_ASSISTANT_ASSETS_REQUESTED__)return;
   root.__SSMPD_ADMIN_ASSISTANT_ASSETS_REQUESTED__=true;
-  var version='team-messenger-20261105-1';
-  ['assets/css/administrative-assistant.css','assets/css/administrative-assistant-center.css','assets/css/digital-team.css','assets/css/digital-team-chat.css','assets/css/patient360.css'].forEach(function(href){var link=document.createElement('link');link.rel='stylesheet';link.href=href+'?v='+version;document.head.appendChild(link);});
+  var version='codex-server-chat-20261105-1';
+  ['assets/css/administrative-assistant.css','assets/css/administrative-assistant-center.css','assets/css/digital-team.css','assets/css/digital-team-chat.css','assets/css/digital-team-server-chat.css','assets/css/patient360.css'].forEach(function(href){var link=document.createElement('link');link.rel='stylesheet';link.href=href+'?v='+version;document.head.appendChild(link);});
   function addScript(src,onload){var s=document.createElement('script');s.src=src+'?v='+version;s.async=false;if(onload)s.onload=onload;document.head.appendChild(s);}
   addScript('assets/js/administrative-assistant.js',function(){
     addScript('assets/js/administrative-assistant-center.js');
     addScript('assets/js/sia-ui.js');
     addScript('assets/js/digital-team.js');
     addScript('assets/js/digital-team-chat.js');
+    addScript('assets/js/digital-team-server-chat.js');
     addScript('assets/js/task-file-scan-summary.js');
     addScript('assets/js/patient360.js');
     addScript('assets/js/management-navigation.js');

@@ -1,0 +1,14 @@
+# Public project identifier + public anon/publishable key only; no service_role key.
+SWNW_CHAT_SUPABASE_URL=https://uuijfbpgvtdxgaosqpxo.supabase.co
+SWNW_CHAT_SUPABASE_ANON_KEY=REPLACE_WITH_EXISTING_PUBLIC_ANON_KEY
+SWNW_CHAT_ORIGIN=https://dashboard.swnwclinics.com
+SWNW_CHAT_STATE=/var/lib/swnw-team-chat
+SWNW_CHAT_PORT=18092
+# Enable only after installed 0.166.0 protocol/tool-isolation and real-account smoke checks.
+SWNW_CHAT_CODEX_ENABLED=0
+SWNW_CHAT_SHARED_CODEX=0
+# Supply observed paths. Do not reuse example paths without inspection.
+SWNW_CHAT_CODEX_BIN=/OBSERVED/ABSOLUTE/PATH/codex
+SWNW_CHAT_WORKSPACE=/var/lib/swnw-team-chat/discussion-workspace
+# MUST be the exact same lock inode as the existing Issue runner, not a second unrelated lock.
+SWNW_CHAT_SHARED_LOCK=/OBSERVED/EXISTING/RUNNER/lock
