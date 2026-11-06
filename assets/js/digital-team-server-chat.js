@@ -184,7 +184,7 @@ function mount(){var root=document.querySelector('.digital-team');if(!root||root
  if(identity&&!identity.owner&&!agents.find(function(a){return a.code==='codex';})?.chat){card.querySelector('[data-server-team-chat]').remove();}
  var grid=root.querySelector('.dt-grid')||root;grid.prepend(card);var direct=card.querySelector('[data-server-team-chat]');if(direct)direct.onclick=function(){open('codex');};card.querySelector('[data-server-team-all]').onclick=function(){open();};
  if(!(identity&&!identity.owner&&!agents.find(function(a){return a.code==='claude';})?.chat)){
-  var cc=document.createElement('article');cc.className='dt-member sc-codex-card sc-claude-card';cc.innerHTML='<div class="dt-member-head"><div class="dt-id"><h2>Claude Code</h2><p>تطوير الأنظمة · كونتابو</p></div></div><p>محادثة حقيقية مع Claude Code على السيرفر، للقراءة والتحليل والاقتراح فقط: بلا أدوات تنفيذ ولا تعديل ملفات. تُحتسب ضمن نفس الحصة اليومية المشتركة مع Codex.</p>'+button('محادثة Claude Code','data-server-team-claude');
+  var cc=document.createElement('article');cc.className='dt-member sc-codex-card sc-claude-card';cc.innerHTML='<div class="dt-member-head"><div class="dt-id"><h2>Claude Code</h2><p>تطوير الأنظمة · كونتابو</p></div></div><p>محادثة حقيقية مع Claude Code على السيرفر، للقراءة والتحليل والاقتراح فقط: يقرأ كود اللوحة ووثائق البنية (نسخة للقراءة قد تتأخر عن آخر إصدار) ولا يرى بيانات Supabase الحية (الحجوزات والعقود والمرضى). لا ينفذ ولا يعدّل. تُحتسب ضمن نفس الحصة اليومية المشتركة مع Codex.</p>'+button('محادثة Claude Code','data-server-team-claude');
   card.after(cc);cc.querySelector('[data-server-team-claude]').onclick=function(){open('claude');};
  }
 }

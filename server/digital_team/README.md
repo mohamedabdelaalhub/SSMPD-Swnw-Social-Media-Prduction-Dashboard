@@ -38,3 +38,12 @@ Initial task messages create pending owner requests only. Other engines are expl
 - Engines: Codex gets images as `localImage` and text files inlined; PDFs are refused with a clear Arabic message. Claude gets images and PDFs as base64 content blocks (`--input-format stream-json`, tools stay disabled) and text inlined. File text is framed as data, not instructions.
 - Owner export lists attachment names/types/sizes per message (file contents are not exported).
 - Do not upload patient identifiers; files are sent to the AI provider.
+
+## Claude Code read-only code access (optional)
+
+Set `SWNW_CHAT_CODE_DIR` to a snapshot built by `deploy/make-code-snapshot.sh <repo> <ref> <dir>` (text source only: no secrets, `.env`,
+`CLAUDE.md`, binaries, data dumps, symlinks or git history; refuses to publish if secret-like content is found). With it set, the Claude
+engine gets only `Read`/`Grep`/`Glob`. Two independent gates keep every call inside the snapshot: a `PreToolUse` hook (`read_gate.py`,
+blocks BEFORE the tool runs, fails closed) and a stream check in `runtime.py` that stops the run on any other tool, any outside path or
+more than 30 calls. The CLI permission flags alone do NOT confine reads (verified), which is why the hook exists. Unset the variable to
+return to the no-tools chat. Refresh the snapshot after each dashboard release.
