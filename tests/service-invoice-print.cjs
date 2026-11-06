@@ -16,3 +16,4 @@ const hp=P.invoiceHtml(big,{patientName:'x'});
 assert.equal((hp.match(/class="pg"/g)||[]).length,3);assert.equal((hp.match(/class="tot"/g)||[]).length,1);
 assert.throws(()=>P.invoiceHtml({lines:[]},{patientName:'x'}));assert.throws(()=>P.invoiceHtml(invoices[0],{}));
 console.log('service-invoice-print tests passed');
+assert.ok(P.invoiceHtml(R.buildInvoices([{id:1,kind:'service',service:{id:'s',name:'x',price:10,category:'consult'},quantity:1}]).invoices[0],{patientName:'x'}).includes('الكشوفات والخدمات'));

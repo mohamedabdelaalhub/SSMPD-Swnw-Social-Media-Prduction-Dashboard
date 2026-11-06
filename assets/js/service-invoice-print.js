@@ -1,7 +1,7 @@
 /* Insurance invoice / claim sheet on the official Swnw letterhead (A4). Pure renderer + print window. Input = one invoice from buildInvoices(). */
 (function(w){'use strict';
 var BASE='https://mohamedabdelaalhub.github.io/SSMPD-Swnw-Social-Media-Prduction-Dashboard/';
-var DEPT={service:'الكشوفات والخدمات',radiology:'الأشعة',lab:'المعامل',pharmacy:'الأدوية',supplies:'المستلزمات'};
+var DEPT={consult:'الكشوفات والخدمات',service:'الكشوفات والخدمات',radiology:'الأشعة',lab:'المعامل',pharmacy:'الأدوية',supplies:'المستلزمات'};
 var PER_PAGE=14;
 function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function money(n){return Number(n||0).toFixed(2);}
