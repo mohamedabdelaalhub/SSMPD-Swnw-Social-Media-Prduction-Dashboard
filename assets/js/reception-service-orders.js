@@ -51,12 +51,22 @@ function sha256Hex(file){
   if(!(w.crypto&&w.crypto.subtle&&file.arrayBuffer))return Promise.resolve(null);
   return file.arrayBuffer().then(function(b){return w.crypto.subtle.digest('SHA-256',b);}).then(function(d){return Array.from(new Uint8Array(d)).map(function(x){return ('0'+x.toString(16)).slice(-2);}).join('');});
 }
+function notifyMessage(r){
+  if(!r)return 'تعذر إرسال الإشعار';
+  if(r.status==='sent')return 'تم إرسال إيميل للمريض';
+  if(r.status==='already_sent')return 'تم إشعار المريض من قبل';
+  if(r.status==='in_progress')return 'الإشعار قيد الإرسال، انتظر دقيقة';
+  if(r.status==='skipped')return 'المريض ماعندوش بريد مفعّل في البوابة — بلّغه بالتليفون';
+  if(r.status==='failed_final')return 'فشل الإرسال 3 مرات — بلّغ المريض بالتليفون';
+  if(r.status==='failed')return (r.code==='EMAIL_NOT_CONFIGURED'||r.code==='EMAIL_FROM_NOT_CONFIGURED')?'خدمة البريد غير مهيأة بعد — بلّغ المريض بالتليفون':'تعذر إرسال الإيميل، جرّب مرة تانية';
+  return 'تعذر إرسال الإشعار';
+}
 function boardTable(rows){
   if(!rows.length)return '<p>لا توجد حالات خارجية.</p>';
   return '<div class="rx-table"><table><thead><tr><th>المريض</th><th>التليفون</th><th>الخدمة</th><th>المزوّد</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody>'+rows.map(function(r){
     var acts=nextStatuses(r.status).map(function(s){return '<button type="button" class="btn" data-so-status="'+esc(s)+'" data-order="'+esc(r.order_id)+'">'+esc(STATUS[s]||s)+'</button>';}).join('');
     if(r.status==='done')acts+='<input type="file" data-so-file="'+esc(r.order_id)+'" accept="application/pdf,image/jpeg,image/png"><button type="button" class="btn" data-so-upload="'+esc(r.order_id)+'">رفع التقرير</button>';
-    if(r.status==='report_uploaded'||r.status==='patient_notified')acts+='<button type="button" class="btn" data-so-open="'+esc(r.order_id)+'">فتح التقرير</button>';
+    if(r.status==='report_uploaded'||r.status==='patient_notified')acts+='<button type="button" class="btn" data-so-open="'+esc(r.order_id)+'">فتح التقرير</button>'+(r.status==='report_uploaded'?'<button type="button" class="btn" data-so-notify="'+esc(r.order_id)+'">إشعار المريض بالإيميل</button>':'');
     return '<tr><td>'+esc(r.patient_name)+'</td><td dir="ltr">'+esc(r.phone)+'</td><td>'+esc(r.service)+'</td><td>'+esc(r.provider)+'</td><td>'+esc(STATUS[r.status]||r.status)+'</td><td>'+acts+'</td></tr>';
   }).join('')+'</tbody></table></div>';
 }
@@ -105,7 +115,7 @@ function board(c){
   if(!root)return;root.querySelector('[type="submit"]').hidden=true;
   function note(t){var m=root.querySelector('[data-so-note]');if(m)m.textContent=t||'';}
   root.addEventListener('click',function(e){
-    var t=e.target.closest('[data-so-status],[data-so-upload],[data-so-open]');if(!t)return;
+    var t=e.target.closest('[data-so-status],[data-so-upload],[data-so-open],[data-so-notify]');if(!t)return;
     var p;
     if(t.dataset.soStatus)p=db.serviceOrderStatus(c.workspace,t.dataset.order,t.dataset.soStatus);
     else if(t.dataset.soUpload){
@@ -114,7 +124,11 @@ function board(c){
       var rand=(w.crypto&&w.crypto.randomUUID?w.crypto.randomUUID():String(Date.now())).slice(0,8);
       var path=reportPath(c.workspace,order,file.name,file.type,rand);
       note('جاري رفع التقرير…');
-      p=sha256Hex(file).then(function(sum){return db.serviceOrderReportUpload(c.workspace,order,path,file,sum);}).then(function(){note('تم رفع التقرير وظهر للمريض في ملفه');});
+      p=sha256Hex(file).then(function(sum){return db.serviceOrderReportUpload(c.workspace,order,path,file,sum);}).then(function(){note('تم رفع التقرير وظهر للمريض في ملفه. جاري إشعار المريض…');
+        return db.serviceOrderNotify(c.workspace,order).then(function(r){note('تم رفع التقرير. '+notifyMessage(r));},function(){note('تم رفع التقرير. تعذر إشعار المريض — جرّب زر الإشعار');});});
+    }else if(t.dataset.soNotify){
+      note('جاري إرسال الإشعار…');
+      p=db.serviceOrderNotify(c.workspace,t.dataset.soNotify).then(function(r){note(notifyMessage(r));});
     }else{
       note('جاري فتح التقرير…');
       p=db.serviceOrderReports(c.workspace,t.dataset.soOpen).then(function(list){
@@ -188,5 +202,5 @@ function setup(c){
   },true);
   reload().catch(function(e){root.querySelector('[data-so-body]').textContent=(e&&e.message)||'تعذر التحميل';});
 }
-w.SSMPDReceptionServiceOrders={decorate:decorate,act:act,_pure:{externalAllowed:externalAllowed,needsBillingParty:needsBillingParty,providersFor:providersFor,performersFor:performersFor,referrers:referrers,nextStatuses:nextStatuses,buildExt:buildExt,boardTable:boardTable,validateReportFile:validateReportFile,safeFileName:safeFileName,reportPath:reportPath,buildSetup:buildSetup,setupTab:setupTab}};
+w.SSMPDReceptionServiceOrders={decorate:decorate,act:act,_pure:{externalAllowed:externalAllowed,needsBillingParty:needsBillingParty,providersFor:providersFor,performersFor:performersFor,referrers:referrers,nextStatuses:nextStatuses,buildExt:buildExt,boardTable:boardTable,validateReportFile:validateReportFile,notifyMessage:notifyMessage,safeFileName:safeFileName,reportPath:reportPath,buildSetup:buildSetup,setupTab:setupTab}};
 })(typeof window!=='undefined'?window:globalThis);

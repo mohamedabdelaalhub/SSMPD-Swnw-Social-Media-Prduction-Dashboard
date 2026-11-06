@@ -75,3 +75,16 @@ assert.ok(/^[0-9a-f-]{36}\/[0-9a-f-]{36}\/[A-Za-z0-9._-]{1,120}$/.test(pth)&&!pt
 const open=B.boardTable([{order_id:'o3',patient_name:'N',phone:'1',service:'S',provider:'P',status:'report_uploaded'}]);
 assert.ok(open.includes('data-so-open="o3"')&&!open.includes('data-so-upload'));
 console.log('report upload tests passed');
+
+// ---- notification ----
+assert.ok(B.notifyMessage({status:'sent'}).includes('تم إرسال'));
+assert.ok(B.notifyMessage({status:'skipped',reason:'no_verified_portal_email'}).includes('بلّغه بالتليفون'));
+assert.ok(B.notifyMessage({status:'failed',code:'EMAIL_NOT_CONFIGURED'}).includes('غير مهيأة'));
+assert.ok(B.notifyMessage({status:'failed',code:'EMAIL_SEND_FAILED'}).includes('جرّب'));
+assert.ok(B.notifyMessage({status:'failed_final'}).includes('3 مرات'));
+assert.ok(B.notifyMessage({status:'already_sent'}).includes('من قبل'));
+assert.ok(B.notifyMessage({status:'in_progress'}).includes('دقيقة'));
+assert.ok(B.notifyMessage(null).includes('تعذر'));
+assert.ok(B.boardTable([{order_id:'o9',patient_name:'N',phone:'1',service:'S',provider:'P',status:'report_uploaded'}]).includes('data-so-notify="o9"'));
+assert.ok(!B.boardTable([{order_id:'o9',patient_name:'N',phone:'1',service:'S',provider:'P',status:'patient_notified'}]).includes('data-so-notify'));
+console.log('notification UI tests passed');

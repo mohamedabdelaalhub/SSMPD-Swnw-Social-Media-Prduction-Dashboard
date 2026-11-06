@@ -1388,6 +1388,11 @@
         return handle(client.rpc("clinic_reception_so_register_report",{p_workspace:workspace,p_order:order,p_path:path,p_name:file.name||"report",p_mime:file.type,p_size:file.size,p_checksum:checksum||null}));
       });
     },
+    serviceOrderNotify: function(workspace,order){
+      return client.functions.invoke("service-report-notify",{body:{workspace:workspace,order:order}}).then(function(r){
+        if(r.error)throw r.error;return r.data;
+      });
+    },
     serviceOrderReports: function(workspace,order){return handle(client.rpc("clinic_reception_so_reports",{p_workspace:workspace,p_order:order}));},
     serviceOrderReportUrl: function(path){
       return client.storage.from("service-reports").createSignedUrl(path,300).then(function(res){if(res.error)throw res.error;return res.data.signedUrl;});
