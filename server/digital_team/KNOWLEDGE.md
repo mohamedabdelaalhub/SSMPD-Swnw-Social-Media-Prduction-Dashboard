@@ -18,7 +18,10 @@ Chat stays read-only and owner-only (tools off, no execution path). This adds re
 ## Build / deploy (after owner approval; nothing here is automatic)
     python3 scripts/build-sono-knowledge.py --repo <checkout at release sha> --out /var/lib/swnw-team-chat/knowledge-<sha7>
     ln -sfn /var/lib/swnw-team-chat/knowledge-<sha7> /var/lib/swnw-team-chat/knowledge
-    # env: SWNW_CHAT_KNOWLEDGE_DIR=/var/lib/swnw-team-chat/knowledge  SWNW_CHAT_RELEASE_FILE=<file with the live release sha>
+    # env: SWNW_CHAT_KNOWLEDGE_DIR=/var/lib/swnw-team-chat/knowledge  SWNW_CHAT_RELEASE_FILE=/opt/swnw-data/dashboard-parallel/CURRENT
+    # CURRENT = live Contabo release id (first 12 chars of the commit; verified 96338fea33cd on 2026-11-06). NOT /usr/local/lib/swnw-dashboard/REVIEWED-COMMIT (stale: last reviewed, not released).
+    # The gateway (user swnw) cannot read it yet: /opt/swnw-data/dashboard-parallel is 750 root. Needs an OWNER-approved fix, e.g. chmod 751 on that directory only (file is 644, children stay 750).
+    # Note: GitHub Pages serves the same dashboard and may be newer than Contabo; the pack/release comparison describes Contabo only.
     # copy app.py auth.py knowledge.py to /opt/swnw-team-chat/server/digital_team, then: systemctl restart swnw-digital-team
 Rollback: remove `SWNW_CHAT_KNOWLEDGE_DIR` from the env file and restart (feature off), or restore the previous gateway files from the backup dir.
 
