@@ -62,7 +62,7 @@ function notifyMessage(r){
   return 'تعذر إرسال الإشعار';
 }
 function boardTable(rows){
-  if(!rows.length)return '<p>لا توجد حالات خارجية.</p>';
+  if(!rows.length)return '<p>لا توجد طلبات.</p>';
   return '<div class="rx-table"><table><thead><tr><th>المريض</th><th>التليفون</th><th>الخدمة</th><th>المزوّد</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody>'+rows.map(function(r){
     var acts=nextStatuses(r.status).map(function(s){return '<button type="button" class="btn" data-so-status="'+esc(s)+'" data-order="'+esc(r.order_id)+'">'+esc(STATUS[s]||s)+'</button>';}).join('');
     if(r.status==='done')acts+='<input type="file" data-so-file="'+esc(r.order_id)+'" accept="application/pdf,image/jpeg,image/png"><button type="button" class="btn" data-so-upload="'+esc(r.order_id)+'">رفع التقرير</button>';
@@ -74,12 +74,13 @@ function decorate(c,section){
   if(section!=='operations'||!c.host)return;
   var shell=c.host.querySelector('.rx-shell');if(!shell)return;
   var node=document.createElement('section');
-  node.innerHTML='<div class="rx-actions">'+c.btn('so-order','','تفاصيل طلب الخدمة (إحالة / تنفيذ / مزوّد)')+c.btn('so-board','','لوحة المزوّدين الخارجيين')+c.btn('so-print','','طباعة مطالبة تأمينية')+(c.data.can_manage?c.btn('so-setup','','إعداد طلبات الخدمة'):'')+'</div>';
+  node.innerHTML='<div class="rx-actions">'+c.btn('so-order','','تفاصيل طلب الخدمة (إحالة / تنفيذ / مزوّد)')+c.btn('so-board','','لوحة المزوّدين الخارجيين')+c.btn('so-list','','حالة كل طلبات الخدمة')+c.btn('so-print','','طباعة مطالبة تأمينية')+(c.data.can_manage?c.btn('so-setup','','إعداد طلبات الخدمة'):'')+'</div>';
   shell.appendChild(node);
 }
 function act(a,id,c){
   if(a==='so-order'){orderForm(c);return true;}
   if(a==='so-board'){board(c);return true;}
+  if(a==='so-list'){board(c,true);return true;}
   if(a==='so-print'){printClaim(c);return true;}
   if(a==='so-setup'){setup(c);return true;}
   return false;
@@ -135,11 +136,11 @@ function printClaim(c){
     return Promise.resolve();});
   return root;
 }
-function board(c){
+function board(c,all){
   var db=w.SSMPDDb;
   function paint(root,rows){var holder=root.querySelector('[data-so-rows]');holder.innerHTML=boardTable(rows);}
-  function reload(root){return db.serviceOrdersBoard(c.workspace,null).then(function(rows){paint(root,rows||[]);});}
-  var root=c.modal('لوحة المزوّدين الخارجيين','<p>بيانات المريض المعروضة: الاسم والتليفون فقط.</p><p data-so-note role="status"></p><div data-so-rows>جاري التحميل…</div>',function(){return Promise.resolve();});
+  function reload(root){return (all?db.serviceOrdersList(c.workspace,200):db.serviceOrdersBoard(c.workspace,null)).then(function(rows){paint(root,rows||[]);});}
+  var root=c.modal(all?'حالة كل طلبات الخدمة':'لوحة المزوّدين الخارجيين','<p>بيانات المريض المعروضة: الاسم والتليفون فقط.</p><p data-so-note role="status"></p><div data-so-rows>جاري التحميل…</div>',function(){return Promise.resolve();});
   if(!root)return;root.querySelector('[type="submit"]').hidden=true;
   function note(t){var m=root.querySelector('[data-so-note]');if(m)m.textContent=t||'';}
   root.addEventListener('click',function(e){

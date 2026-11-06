@@ -1381,6 +1381,7 @@
     serviceOrderAttach: function(workspace,order,ext){return handle(client.rpc("clinic_reception_so_attach",{p_workspace:workspace,p_order:order,p_ext:ext}));},
     serviceOrderStatus: function(workspace,order,to){return handle(client.rpc("clinic_reception_so_set_status",{p_workspace:workspace,p_order:order,p_to:to}));},
     serviceOrderReport: function(workspace,order,fileRef){return handle(client.rpc("clinic_reception_so_attach_report",{p_workspace:workspace,p_order:order,p_file_ref:fileRef}));},
+    serviceOrdersList: function(workspace,limit){return handle(client.rpc("clinic_reception_so_orders_list",{p_workspace:workspace,p_limit:limit||200}));},
     serviceOrdersBoard: function(workspace,provider){return handle(client.rpc("clinic_reception_so_provider_board",{p_workspace:workspace,p_provider:provider||null}));},
     serviceOrderReportUpload: function(workspace,order,path,file,checksum){
       return client.storage.from("service-reports").upload(path,file,{upsert:false,contentType:file.type}).then(function(res){
