@@ -90,6 +90,13 @@ class SourceIndexTests(unittest.TestCase):
             got = self.kb.select(Viewer(True, ()), q)
             self.assertLessEqual(sum(1 for i in got if i.get('kind') == 'code'), MAX_CODE)
 
+    def test_add_doctor_question_finds_the_how_to_article(self):
+        q = 'ازاي اضيف دكتور واربط خدمة وحجز'
+        for v in (Viewer(True, ()), Viewer(False, ('reception',)), Viewer(False, ('general_manager',))):
+            ids = [i['id'] for i in self.kb.select(v, q)]
+            self.assertIn('help:add-doctor-service-booking', ids[:3], ids)
+        self.assertNotIn('help:add-doctor-service-booking', [i['id'] for i in self.kb.select(Viewer(False, ('designer',)), q)])
+
     def test_nonsense_question_matches_nothing(self):
         self.assertEqual(self.kb.select(Viewer(False, ('reception',)), 'qqq zzz www'), [])
 
