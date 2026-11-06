@@ -50,6 +50,19 @@ class Auth:
             self.cache[key]=(time.time()+15,a)
         return a
 
+    def viewer_roles(self, token, admin_id):
+        """Roles of the CALLER (primary + extra), read with the caller's own token under RLS. None on any failure
+        (the knowledge filter then fails closed)."""
+        q=urllib.parse.quote(str(admin_id),safe='')
+        try:
+            base=self.request(token,'/rest/v1/admins?select=id,role&id=eq.'+q)
+            extra=self.request(token,'/rest/v1/admin_extra_roles?select=admin_id,role&admin_id=eq.'+q)
+        except Denied:
+            return None
+        roles={r['role'] for r in base if r.get('id')==admin_id and isinstance(r.get('role'),str)}
+        roles|={r['role'] for r in extra if r.get('admin_id')==admin_id and isinstance(r.get('role'),str)}
+        return sorted(roles)
+
     def directory(self, token, actor):
         # Existing admins RLS determines which directory entries this caller may discover.
         rows=self.request(token,'/rest/v1/admins?select=id,name,active,user_id,is_system_identity&active=eq.true&is_system_identity=eq.false&limit=1000')
