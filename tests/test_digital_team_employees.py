@@ -97,6 +97,29 @@ class AccessTests(Base):
             self.ask(self.b, ra)
 
 
+class DirectoryTests(Base):
+    def test_switch_user_gets_empty_directory_not_denied(self):
+        self.enable()
+        self.assertEqual(self.s.directory(self.a, self.directory), [])
+        rid = self.s.create(self.a, {'agents': ['codex'], 'users': [], 'title': 'سونو'}, self.s.directory(self.a, self.directory))
+        self.assertTrue(rid)
+
+    def test_switch_off_still_denies_without_grant(self):
+        with self.assertRaises(Denied):
+            self.s.directory(self.a, self.directory)
+
+    def test_switch_does_not_widen_directory_for_grant_users(self):
+        self.s.set_grant(self.owner, {'user_id': 'a', 'agent': 'codex', 'chat': True}, self.directory)
+        self.enable()
+        names = {p['id'] for p in self.s.directory(self.a, self.directory)}
+        self.assertEqual(names, {'owner', 'a'})  # b is not listed just because the switch is on
+
+    def test_switch_user_cannot_invite_others(self):
+        self.enable()
+        with self.assertRaises(Denied):
+            self.s.create(self.a, {'agents': ['codex'], 'users': ['b'], 'title': 'x'}, self.s.directory(self.a, self.directory))
+
+
 class LimitTests(Base):
     def run_jobs(self, actor, room, n):
         out = []
