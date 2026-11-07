@@ -105,7 +105,7 @@ test('marking displayed notices read refreshes immediately after the write', asy
 });
 test('realtime event objects cannot bypass the cooldown', async () => {
   const f = fixture(); await f.mount(); const pending = f.api.refreshNotifications({eventType: 'INSERT'});
-  await flush(); assert.equal(f.calls.length, 1); await f.tick(3600000); await pending; assert.equal(f.calls.length, 2);
+  await flush(); assert.equal(f.calls.length, 1); await f.tick(299999); assert.equal(f.calls.length, 1); await f.tick(1); await pending; assert.equal(f.calls.length, 2);
 });
 test('RPC failure releases flight and allows a later retry', async () => {
   const f = fixture(); await f.mount(); f.state.fail = true; await f.api.refreshNotifications(true);
@@ -129,12 +129,12 @@ test('return within ten minutes without missed notices makes no RPC', async () =
   const f = fixture(); await f.mount(); f.visibility(true); await f.tick(599999); f.visibility(false); await flush();
   assert.equal(f.calls.length, 1);
 });
-test('inventory bursts refresh at most once per ten minutes', async () => {
+test('shared data events refresh at most once per five minutes', async () => {
   const f = fixture(); await f.mount();
-  for (let i=0; i<30; i++) {f.handlers.inventory_requests({eventType: 'UPDATE'}); await f.tick(10000);}
-  assert.equal(f.calls.length, 1); await f.tick(300000); assert.equal(f.calls.length, 2);
-  for (let i=0; i<30; i++) {f.handlers.inventory_requests({eventType: 'UPDATE'}); await f.tick(10000);}
-  assert.equal(f.calls.length, 2); await f.tick(300000); assert.equal(f.calls.length, 3);
+  for (let i=0; i<29; i++) {f.handlers.inventory_requests({eventType: 'UPDATE'}); f.api.refreshNotifications({eventType: 'INSERT'}); await f.tick(10000);}
+  assert.equal(f.calls.length, 1); await f.tick(10000); assert.equal(f.calls.length, 2);
+  for (let i=0; i<29; i++) {f.api.refreshNotifications({eventType: 'UPDATE'}); await f.tick(10000);}
+  assert.equal(f.calls.length, 2); await f.tick(10000); assert.equal(f.calls.length, 3);
   await f.tick(3600000); assert.equal(f.calls.length, 3);
 });
 test('inventory events while hidden make no RPC and stop clears the inventory timer', async () => {

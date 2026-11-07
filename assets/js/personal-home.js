@@ -3,15 +3,15 @@
 'use strict';
 var owner=null,options={},inbox=null,noticeError='',flight=null,seen=null,audio=null,clickOutside=null,live=null,homeRoot=null,homeReload=null,unlockHandler=null,generation=0;
 var inboxRefreshTimer=null,pendingInboxRefresh=null,lastInboxRefreshAt=null,visibilityHandler=null;
-// Background refresh (45s app poll, shared realtime events) runs at most once an hour.
-// Personal task notices stay instant; inventory changes at most every 10 minutes; a tab
-// coming back after 10+ minutes catches up once; the panel button refreshes on demand.
-var INBOX_REFRESH_INTERVAL=3600000,RETURN_REFRESH_GAP=600000,INVENTORY_REFRESH_GAP=600000;
+// The blind 45s app poll refreshes at most once an hour. Personal task notices stay instant.
+// Shared data events (content, comments, leads, inventory) refresh at most every 5 minutes.
+// A tab coming back after 10+ minutes catches up once; the panel button refreshes on demand.
+var INBOX_REFRESH_INTERVAL=3600000,RETURN_REFRESH_GAP=600000,DATA_EVENT_REFRESH_GAP=300000;
 var manualInboxRefresh=false,lastInboxSuccessAt=null,missedPersonalNotice=false,inventoryTimer=null;
 function inboxAge(){return lastInboxRefreshAt===null?Infinity:Date.now()-lastInboxRefreshAt;}
 function clearInventoryTimer(){if(inventoryTimer!==null)clearTimeout(inventoryTimer);inventoryTimer=null;}
 function personalEvent(){if(!owner)return;if(document.hidden){missedPersonalNotice=true;return;}refresh(true);}
-function inventoryEvent(){if(!owner||document.hidden||inventoryTimer!==null)return;var wait=Math.max(0,INVENTORY_REFRESH_GAP-inboxAge());if(!wait){refresh(true);return;}var account=owner.id,epoch=generation;inventoryTimer=setTimeout(function(){inventoryTimer=null;if(!owner||owner.id!==account||generation!==epoch||document.hidden)return;if(inboxAge()>=INVENTORY_REFRESH_GAP)refresh(true);},wait);}
+function dataEvent(){if(!owner||document.hidden||inventoryTimer!==null)return;var wait=Math.max(0,DATA_EVENT_REFRESH_GAP-inboxAge());if(!wait){refresh(true);return;}var account=owner.id,epoch=generation;inventoryTimer=setTimeout(function(){inventoryTimer=null;if(!owner||owner.id!==account||generation!==epoch||document.hidden)return;if(inboxAge()>=DATA_EVENT_REFRESH_GAP)refresh(true);},wait);}
 var LABELS={indicator_reports:'تقارير المؤشرات والإجراءات',tasks:'المهام',production:'إنتاج المحتوى',review:'إدارة المحتوى والاعتماد',design:'التصميم',publish:'النشر',leads:'الليدز والتواصل',patients:'أرشيف المرضى',inventory:'المخزن والجرد',accounting:'الحسابات',contracting_entities:'جهات التعاقد',clinic_info:'بيانات الشات بوت',admin:'لوحة التحكم',summary:'ملخص إنتاج المحتوى',archive:'الأرشيف',performance:'أداء البوستات',staff_kpi:'أداء الفريق',my_kpi:'أدائي',metaads:'إعلانات Meta Ads',mediabuyer:'وكيل الإعلانات'};
 if(window.SSMPDUITitles)LABELS=Object.assign({},window.SSMPDUITitles.tabs);delete LABELS.home;
 var STATUS={todo:'لم تبدأ',in_progress:'جاري العمل',review:'بانتظار المراجعة',revision:'أُعيدت للتعديل',done:'مكتملة',blocked:'متوقفة'};
@@ -44,6 +44,7 @@ function cancelPendingInboxRefresh(){
 }
 function refresh(force){
  if(!owner)return Promise.resolve();
+ if(force&&typeof force==='object'){dataEvent();return Promise.resolve();}
  if(force!==true&&document.hidden)return Promise.resolve();
  if(flight)return flight;
  var remaining=lastInboxRefreshAt===null?0:Math.max(0,INBOX_REFRESH_INTERVAL-(Date.now()-lastInboxRefreshAt));
@@ -73,7 +74,7 @@ function drawPanel(){var p=document.getElementById('notif-panel');if(!p)return;p
 function stop(){generation++;cancelPendingInboxRefresh();clearInventoryTimer();lastInboxRefreshAt=null;lastInboxSuccessAt=null;missedPersonalNotice=false;manualInboxRefresh=false;if(visibilityHandler)document.removeEventListener('visibilitychange',visibilityHandler);visibilityHandler=null;flight=null;if(live){try{window.SSMPDDb.unsubscribe(live);}catch(e){}live=null;}if(clickOutside)document.removeEventListener('click',clickOutside);clickOutside=null;if(unlockHandler)document.removeEventListener('pointerdown',unlockHandler);unlockHandler=null;homeReload=null;owner=null;inbox=null;homeRoot=null;noticeError='';if(audio){audio.close().catch(function(){});audio=null;}}
 function mount(admin,opts){stop();owner=admin;options=opts||{};seen=null;var b=document.getElementById('notif-bell-btn'),p=document.getElementById('notif-panel');if(!b||!p)return;b.hidden=false;b.onclick=function(e){e.stopPropagation();p.hidden=!p.hidden;if(!p.hidden){p.dataset.homeLegacy='';drawPanel();refresh(true);}};clickOutside=function(e){if(!p.hidden&&!p.contains(e.target)&&!b.contains(e.target))p.hidden=true;};document.addEventListener('click',clickOutside);
  visibilityHandler=function(){if(document.hidden){cancelPendingInboxRefresh();clearInventoryTimer();return;}if(missedPersonalNotice||inboxAge()>=RETURN_REFRESH_GAP)refresh(true);};document.addEventListener('visibilitychange',visibilityHandler);
- var client=window.SSMPDDb.client;if(client&&typeof client.channel==='function')live=client.channel('personal-inbox-'+admin.id).on('postgres_changes',{event:'*',schema:'public',table:'task_notifications',filter:'recipient_id=eq.'+admin.id},personalEvent).on('postgres_changes',{event:'*',schema:'public',table:'inventory_requests'},inventoryEvent).subscribe();refresh(true);
+ var client=window.SSMPDDb.client;if(client&&typeof client.channel==='function')live=client.channel('personal-inbox-'+admin.id).on('postgres_changes',{event:'*',schema:'public',table:'task_notifications',filter:'recipient_id=eq.'+admin.id},personalEvent).on('postgres_changes',{event:'*',schema:'public',table:'inventory_requests'},dataEvent).subscribe();refresh(true);
  // Previously-enabled sound still needs a fresh interaction if the browser suspended audio.
  var unlock=function(){if(!owner||!soundEnabled())return;try{var C=window.AudioContext||window.webkitAudioContext;if(C&&!audio)audio=new C();if(audio)audio.resume().catch(function(){});}catch(e){}};
  unlockHandler=unlock;document.addEventListener('pointerdown',unlock,{once:true});
