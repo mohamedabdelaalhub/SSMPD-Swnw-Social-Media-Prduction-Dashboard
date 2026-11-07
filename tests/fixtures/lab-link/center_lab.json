@@ -1,0 +1,13 @@
+[
+{"id":"a0000000-0000-4000-8000-000000000001","name":"ADA - Adenosine Deaminase In Serum","base_price":"50","category":"التحاليل","canonical_code":"T-1"},
+{"id":"a0000000-0000-4000-8000-000000000002","name":"ADA - Adenosine Deaminase In Fluid","base_price":"40","category":"التحاليل","canonical_code":"T-2"},
+{"id":"a0000000-0000-4000-8000-000000000003","name":"TSH (Thyroid Stimulating H)","base_price":"25","category":"التحاليل","canonical_code":"T-3"},
+{"id":"a0000000-0000-4000-8000-000000000004","name":"TSH Receptor (Ab)","base_price":"175","category":"التحاليل","canonical_code":"T-4"},
+{"id":"a0000000-0000-4000-8000-000000000005","name":"Mg In Urine","base_price":"20","category":"التحاليل","canonical_code":"T-5"},
+{"id":"a0000000-0000-4000-8000-000000000006","name":"Magnesium In Serum","base_price":"25","category":"التحاليل","canonical_code":"T-6"},
+{"id":"a0000000-0000-4000-8000-000000000007","name":"CMV - IgG","base_price":"30","category":"التحاليل","canonical_code":"T-7"},
+{"id":"a0000000-0000-4000-8000-000000000008","name":"CMV - IgM","base_price":"30","category":"التحاليل","canonical_code":"T-8"},
+{"id":"a0000000-0000-4000-8000-000000000009","name":"Glucose \"Random\"","base_price":"10","category":"التحاليل","canonical_code":"T-9"},
+{"id":"a0000000-0000-4000-8000-00000000000a","name":"Urine Analysis","base_price":"15","category":"التحاليل","canonical_code":"T-10"},
+{"id":"a0000000-0000-4000-8000-00000000000b","name":"Thrombophilia Gene Screen","base_price":"500","category":"باقي التحاليل","canonical_code":"T-11"}
+]

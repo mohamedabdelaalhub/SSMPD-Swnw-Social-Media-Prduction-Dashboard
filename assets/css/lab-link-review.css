@@ -1,0 +1,34 @@
+/* Partner-lab link review: same look as the price-list workspace (wp-*), adds only ll-* rules. */
+.ll-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.ll-tabs button{border:1px solid #D5DEEE;background:#fff;color:#16212E;border-radius:12px;min-height:44px;padding:8px 18px;font:inherit;cursor:pointer}
+.ll-tabs button.on{background:#0F369D;border-color:#0F369D;color:#fff}
+.ll{min-width:0}
+.ll-stats{display:flex;gap:8px;flex-wrap:wrap}
+.ll-chip{border:1px solid #D5DEEE;background:#fff;border-radius:999px;min-height:44px;padding:8px 16px;font:inherit;cursor:pointer;color:#16212E}
+.ll-chip.on{background:#EAF1FF;border-color:#0F369D;color:#0F369D}
+.ll-filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;align-items:end}
+.ll-check{display:flex;align-items:center;gap:8px;min-height:44px}
+.ll-check input{width:22px;height:22px}
+.ll-bulk{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:#FFF8E6;border:1px solid #F0D58A;border-radius:14px;padding:12px 16px}
+.ll-list{display:grid;gap:12px}
+.ll-row{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,3fr);gap:16px;background:#fff;border:1px solid #E4E9F2;border-radius:16px;padding:16px;min-width:0}
+.ll-lab,.ll-side{display:grid;gap:8px;align-content:start;min-width:0;overflow-wrap:anywhere}
+.ll-lab small,.ll-meta{color:#6B7788;margin:0}
+.ll-cost b{font-size:16px}
+.ll-cand{display:grid;gap:6px;border:1px solid #E4E9F2;background:#FAFCFF;border-radius:12px;padding:12px;border-inline-start:5px solid #B8C4D9}
+.ll-cand.ll-high{border-inline-start-color:#2F7D5C}
+.ll-cand.ll-med{border-inline-start-color:#C58A10}
+.ll-cand.ll-low{border-inline-start-color:#D0402A}
+.ll-cand.ll-chosen{background:#E7F3EC}
+.ll-cand-main{display:grid;gap:2px}
+.ll-cand-main small{color:#6B7788}
+.ll-cand-money{display:flex;gap:16px;flex-wrap:wrap}
+.ll-gain b{color:#2F7D5C}
+.ll-loss b{color:#D0402A}
+.ll-badges,.ll-btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.ll-pill{border-radius:999px;background:#EDF1F7;color:#33415C;padding:3px 10px;font-size:12px}
+.ll-pill.ll-warn{background:#FDECE8;color:#B3321F}
+.ll-rejected summary{cursor:pointer;color:#6B7788}
+.ll-empty{padding:24px;text-align:center;color:#6B7788}
+.ll-pager{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+@media (max-width:760px){.ll-row{grid-template-columns:minmax(0,1fr)}.ll .btn{min-height:44px}}

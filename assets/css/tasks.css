@@ -329,3 +329,23 @@ button.tsk-chip-more{font:inherit;font-size:12px;cursor:pointer;background:#eaf1
  .tw-admin-needs>summary:focus-visible{outline:2px solid #0F369D;outline-offset:2px;border-radius:8px}
 }
 .tw-lock{background:#fff8ec;border:1px solid #f3d9a8;border-radius:12px;padding:14px;font-size:13px;line-height:1.8;color:#5b4314}.tw-lock p{margin:0 0 8px}.tw-lock ul{list-style:none;margin:0;padding:0;display:grid;gap:8px}.tw-lock li{display:flex;gap:10px;align-items:center;justify-content:space-between;background:#fff;border-radius:10px;padding:10px 12px}.tw-lock li>span{min-width:0;overflow-wrap:anywhere}.tw-lock small{display:block;font-size:12px;color:#7a5c1e}.tw-lock .btn{min-height:44px;flex-shrink:0}
+/* ===== 2026-11-08 — تحسينات تاب المهام (تنقل، اعتماد سريع، شكل أخف) ===== */
+.tv-quick{display:flex;gap:6px;padding:0 12px 0 0;margin-inline-start:auto}.tv-quick .btn{min-height:34px;padding:5px 14px;font-size:13px;border-radius:10px}
+.tv-row .tv-quick+.tv-sub{padding-inline-start:6px}
+.tv-stage-nav{position:sticky;top:-6px;z-index:5;padding:10px;background:rgba(247,249,253,.97);border:1px solid #dfe7f2;border-radius:14px;box-shadow:0 4px 14px rgba(28,54,90,.07);backdrop-filter:blur(8px)}
+.tv-stage-nav-meta{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;font-size:12px;color:#607089}.tv-stage-nav-meta b{color:#1f3652;font-size:13px}.tv-stage-nav-meta span{max-width:65%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tv-stage-nav-btns{display:grid;grid-template-columns:1fr 1.35fr 1fr;gap:8px}.tv-stage-nav button{font:inherit;min-height:40px;border:1px solid #d9e2ee;border-radius:11px;background:#fff;color:#25415f;font-weight:700;cursor:pointer;padding:6px 8px}.tv-stage-nav button.parent{background:#0F369D;border-color:#0F369D;color:#fff}.tv-stage-nav button:disabled{opacity:.38;cursor:default}
+.tv-facts-line{display:flex;flex-wrap:wrap;gap:8px}.tv-facts-line>span{display:inline-flex;align-items:baseline;gap:6px;background:#F6F8FC;border-radius:99px;padding:6px 12px;font-size:13px}.tv-facts-line small{color:#6B7785;font-size:12px}.tv-facts-line b{font-weight:700}.tv-facts-line em{font-style:normal;font-size:12px;color:#6B7785}.tv-facts-line .late b,.tv-facts-line .late em{color:#D0402A}
+.tv-by{margin:-8px 0 0;font-size:12px;color:#6B7785}
+.tv-stepper{list-style:none;margin:6px 0 12px;padding:0;display:flex;gap:4px;overflow-x:auto;scrollbar-width:thin}.tv-stepper li{flex:1 1 0;min-width:58px;position:relative}
+.tv-stepper li:not(:last-child)::after{content:"";position:absolute;top:16px;inset-inline-start:calc(50% + 17px);inset-inline-end:calc(-50% + 17px);height:2px;background:#E2E8F0}
+.tv-stepper button{all:unset;cursor:pointer;display:grid;justify-items:center;gap:5px;width:100%;text-align:center}.tv-stepper button:focus-visible span{outline:3px solid rgba(15,54,157,.35)}
+.tv-stepper span{width:32px;height:32px;border-radius:99px;display:grid;place-items:center;font-weight:800;font-size:13px;background:#EEF1F6;color:#5B6878;border:2px solid #fff;box-shadow:0 0 0 1px #E2E8F0}
+.tv-stepper small{font-size:11px;line-height:1.35;color:#4B5767;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;max-width:110px}
+.tv-stepper .g-done span{background:#2F7D5C;color:#fff}.tv-stepper .g-review span{background:#E5A93B;color:#fff}.tv-stepper .g-late span{background:#D0402A;color:#fff}.tv-stepper .g-active span{background:#0F369D;color:#fff}.tv-stepper .g-blocked span{background:#8A94A6;color:#fff}
+.tv-flash{animation:tvFlash 1.5s ease}.tv-flash.tv-row,.tv-flash .tv-row{box-shadow:0 0 0 3px rgba(15,54,157,.22)}@keyframes tvFlash{0%,100%{background:transparent}35%{background:#EEF4FF}}
+.tsk-modal.tv-wide .tv-d-main{position:sticky;bottom:-10px;z-index:4;background:#fff;margin:0 -14px;padding:12px 14px;box-shadow:0 -8px 18px rgba(16,24,40,.06);border-radius:0 0 18px 18px}
+.tw-error-strong{font-size:14px;font-weight:700;padding:12px 14px;border:1px solid #f3b9a9;box-shadow:0 0 0 3px rgba(208,64,42,.08)}
+@media(max-width:600px){.tv-quick{width:100%;padding:0 12px 12px;margin:0}.tv-quick .btn{flex:1}.tv-stage-nav-btns{grid-template-columns:1fr 1.25fr 1fr;gap:6px}.tv-stage-nav button{font-size:12px;padding:5px 4px}.tv-facts-line>span{padding:5px 10px;font-size:12px}}
+
+.tv-d-more+.tv-d-main{border-top:0;padding-top:12px}
