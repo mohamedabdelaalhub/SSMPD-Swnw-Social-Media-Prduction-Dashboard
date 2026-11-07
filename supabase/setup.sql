@@ -96,11 +96,27 @@ create policy "claim own invite"
 
 create or replace function public.guard_admin_changes()
 returns trigger language plpgsql security definer set search_path = public as $$
+declare
+  o jsonb;
+  n jsonb;
+  k text;
 begin
   if public.is_super() then return new; end if;
   if new.role is distinct from old.role or new.active is distinct from old.active then
     raise exception 'غير مسموح بتغيير الدور أو الحالة';
   end if;
+  -- 20261107180000: no self-grant of has_*/can_*/is_system_identity, no re-binding a linked account
+  if old.user_id is not null and new.user_id is distinct from old.user_id then
+    raise exception 'غير مسموح بتغيير ربط الحساب';
+  end if;
+  o := to_jsonb(old);
+  n := to_jsonb(new);
+  for k in select jsonb_object_keys(n) loop
+    if (k like 'has\_%' or k like 'can\_%' or k = 'is_system_identity')
+       and (n -> k) is distinct from (o -> k) then
+      raise exception 'غير مسموح بتغيير الصلاحيات (%)', k;
+    end if;
+  end loop;
   return new;
 end $$;
 
