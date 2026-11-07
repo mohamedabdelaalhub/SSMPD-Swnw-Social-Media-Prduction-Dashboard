@@ -80,6 +80,7 @@
     progress:{title:"حفظ تقدمي",start:"ابدأ المهمة",label:"إيه اللي اتعمل أو هتشتغل عليه؟",hint:"مثال: خلّصت جرد الرف الأول وهبدأ الرف التاني",required:true,button:"حفظ تقدمي"},
     submit:{title:"إرسال للمراجعة",label:"ملخص الإنجاز",hint:"مثال: رفعت الشيت كامل على المنصة وراجعت الأرقام",required:true,button:"إرسال للمراجعة"},
     blocked:{title:"محتاج مساعدة",label:"إيه اللي موقفك؟",hint:"مثال: مستني ردّ المورد على الأسعار",required:true,button:"طلب مساعدة"},
+    approve_direct:{title:"اعتماد مباشر وإقفال المهمة",label:"سبب الاعتماد المباشر",hint:"الموظف ماسلّمش المهمة رسميًا. اكتب ليه بتقفلها (مثلًا: الشغل اتسلّم في التعليقات)، والسبب هيتسجل في سجل المهمة.",required:true,button:"اعتماد وإقفال",confirm:true},
     approve:{title:"اعتماد وإكمال المهمة",label:"ملاحظة الاعتماد (اختياري)",hint:"المهمة هتتقفل كمكتملة بعد الاعتماد.",required:false,button:"اعتماد وإكمال",confirm:true},
     return:{title:"طلب تعديل",label:"المطلوب تعديله",hint:"اكتب بوضوح إيه اللي ناقص عشان الموظف يعرف يعدّل",required:true,button:"طلب تعديل"},
     archive:{title:"أرشفة المشروع",label:"",hint:"المشروع ومهامه هيختفوا من الشاشة الأساسية، وتقدر ترجّعهم من زر \"عرض المؤرشفة\".",required:false,button:"أرشفة المشروع",confirm:true,noText:true},
@@ -96,6 +97,10 @@
     // تعليق المدير بيرجّع المهمة «للتعديل» — المدير يقدر برضه يعتمدها من غير ما يستنى تسليم جديد
     if(R.canModuleAction(admin,"tasks","update")&&mayManage&&t.status==="revision"&&!own){
       html+='<button class="btn btn-primary" data-action="approve" data-id="'+t.id+'">اعتماد وإكمال</button>';
+    }
+    // اعتماد مباشر: المدير يقفل مهمة مفتوحة حتى لو الموظف ماسلّمهاش رسميًا (لازم سبب)
+    if(R.canModuleAction(admin,"tasks","update")&&mayManage&&!own&&["todo","in_progress","blocked"].indexOf(t.status)>=0){
+      html+='<button class="btn" data-action="approve_direct" data-id="'+t.id+'">اعتماد مباشر</button>';
     }
     return html;
   }
@@ -136,7 +141,7 @@
     if(!window.SSMPDRoles.canModuleAction(window.SSMPDAuth.currentAdmin,"tasks","view")){el.innerHTML="<p>ليس لديك صلاحية عرض المهام.</p>";return;}
     var admin=window.SSMPDAuth.currentAdmin;
     var isAdmin=allManager(admin);
-    var state={projects:[],tasks:[],people:[],notifications:[],archived:{},modal:"",error:"",filter:"all",view:(["board","calendar"].indexOf(store("view"))>=0?store("view"):"list"),checkCounts:{},checklist:[],checkTask:"",calMonth:(function(){var d=new Date();return new Date(d.getFullYear(),d.getMonth(),1);})(),sort:(["smart","manual","due","priority","updated"].indexOf(store("sort"))>=0?store("sort"):(isAdmin?"smart":"manual")),q:"",fProject:"",fAssignee:"",showArchived:false,tab:(isAdmin?(["projects","tasks","done","comments","team"].indexOf(store("tab"))>=0?store("tab"):"projects"):"mine"),openProject:"",pFilter:"all",expanded:{},membersOpen:{},note:null,deleteTarget:null,viewId:"",historyTask:"",history:[],historyAtts:{},pendingFiles:[],notice:""};
+    var state={projects:[],tasks:[],people:[],notifications:[],archived:{},modal:"",error:"",filter:"all",view:(["board","calendar"].indexOf(store("view"))>=0?store("view"):"list"),checkCounts:{},checklist:[],checkTask:"",calMonth:(function(){var d=new Date();return new Date(d.getFullYear(),d.getMonth(),1);})(),sort:(["smart","manual","due","priority","updated"].indexOf(store("sort"))>=0?store("sort"):(isAdmin?"smart":"manual")),q:"",fProject:"",fAssignee:"",showArchived:false,tab:(isAdmin?(["projects","tasks","done","comments","team"].indexOf(store("tab"))>=0?store("tab"):"projects"):"mine"),openProject:"",pFilter:"all",expanded:{},membersOpen:{},note:null,deleteTarget:null,viewId:"",historyTask:"",history:[],historyAtts:{},pendingFiles:[],notice:"",viewStack:[],backView:"",flashId:""};
     var work=window.SSMPDTaskWork.create({el:el,admin:admin,getTask:function(id){return state.tasks.find(function(t){return t.id===id;});},onRedraw:function(){draw();},onSaved:function(message){state.notice=message;state.modal="";return refresh();}});
     function refresh(){return window.SSMPDDb.taskRefreshOverdue().catch(function(){return 0;}).then(function(){return Promise.all([
       window.SSMPDDb.taskListProjects(),window.SSMPDDb.taskListVisible(),window.SSMPDDb.taskPeople(),
@@ -169,27 +174,48 @@
       var late=isOverdue(t),n=daysLeft(t),note=dueNote(t).replace(/^ · /,""),cc=state.checkCounts[t.id],meta=[],k=seg(t);
       if(opts.showProject)meta.push('<span class="tv-chip proj">'+esc(t.project_title||projectOf(t).title||"مشروع")+'</span>');
       meta.push('<span class="tv-chip">'+esc(t.assignee_name||"بدون مسؤول")+'</span>');
-      if(t.assigner_name)meta.push('<span class="tv-chip">أسندها: '+esc(t.assigner_name)+'</span>');
-      if(t.due_at&&t.status!=="done")meta.push('<span class="tv-chip due'+(late?" late":(n!==null&&n<=1?" soon":""))+'">'+esc(note||date(t.due_at))+'</span>');
+      if(t.due_at&&t.status!=="done"&&t.status!=="review"&&!late)meta.push('<span class="tv-chip due'+(late?" late":(n!==null&&n<=1?" soon":""))+'">'+esc(note||date(t.due_at))+'</span>');
       if(t.status==="done")meta.push('<span class="tv-chip ok">✓ '+esc(relTime(t.completed_at||t.updated_at))+'</span>');
       if(t.priority==="urgent"||t.priority==="high")meta.push('<span class="tv-chip prio p-'+t.priority+'">'+PRIORITY[t.priority]+'</span>');
       if(cc&&cc.total)meta.push('<span class="tv-chip">☑ '+cc.done+'/'+cc.total+'</span>');
       if(newComments(t.id))meta.push('<span class="tv-chip new">💬 تعليق جديد</span>');
-      return '<div class="tv-row g-'+k+(t.parent_task_id?" is-sub":"")+'" data-task-id="'+t.id+'"><button type="button" class="tv-row-main" data-action="open-task" data-id="'+t.id+'"><span class="tv-dot"></span><span class="tv-row-title">'+esc(t.title)+'</span><span class="tv-row-meta">'+meta.join("")+'</span><span class="tv-pill g-'+k+'">'+esc(late?"متأخرة":(STATUS[t.status]||t.status))+'</span></button>'+(sub?'<button type="button" class="tv-sub" data-action="toggle-sub" data-id="'+t.id+'" aria-expanded="'+(sub.open?"true":"false")+'">'+(sub.open?"▾":"▸")+' '+sub.done+'/'+sub.total+' فرعية</button>':"")+'</div>';
+      return '<div class="tv-row g-'+k+(t.parent_task_id?" is-sub":"")+'" data-task-id="'+t.id+'"><button type="button" class="tv-row-main" data-action="open-task" data-id="'+t.id+'"><span class="tv-dot"></span><span class="tv-row-title">'+esc(t.title)+'</span><span class="tv-row-meta">'+meta.join("")+'</span><span class="tv-pill g-'+k+'">'+esc(late?(note||"متأخرة"):(STATUS[t.status]||t.status))+'</span></button>'+quickReview(t)+(sub?'<button type="button" class="tv-sub" data-action="toggle-sub" data-id="'+t.id+'" aria-expanded="'+(sub.open?"true":"false")+'">'+(sub.open?"▾":"▸")+' '+sub.done+'/'+sub.total+' فرعية</button>':"")+'</div>';
+    }
+    // اعتماد/إرجاع سريع من القايمة نفسها لأي مهمة «بانتظار المراجعة» (المدير بس)
+    function quickReview(t){
+      if(t.status!=="review"||!(isAdmin||t.can_manage)||!window.SSMPDRoles.canModuleAction(admin,"tasks","update"))return "";
+      return '<div class="tv-quick"><button type="button" class="btn btn-primary" data-action="approve" data-id="'+t.id+'">اعتماد</button><button type="button" class="btn btn-warn" data-action="return" data-id="'+t.id+'">إرجاع</button></div>';
+    }
+    // شريط التنقل بين مراحل المهمة الرئيسية (السابق / المهمة الرئيسية / التالي)
+    function stageNav(t,parent){
+      var sib=sortTasks(state.tasks.filter(function(x){return x.parent_task_id===parent.id;}),"manual"),i=sib.findIndex(function(x){return x.id===t.id;});
+      var prev=i>0?sib[i-1]:null,next=i>=0&&i<sib.length-1?sib[i+1]:null;
+      function b(label,x,cls,act){return '<button type="button"'+(cls?' class="'+cls+'"':"")+' data-action="'+act+'" data-id="'+(x?x.id:"")+'"'+(x?"":" disabled")+'>'+label+'</button>';}
+      return '<nav class="tv-stage-nav" aria-label="التنقل بين المراحل"><div class="tv-stage-nav-meta"><b>'+(i>=0?'مرحلة '+(i+1)+' من '+sib.length:'مهمة فرعية')+'</b><span>'+esc(parent.title)+'</span></div><div class="tv-stage-nav-btns">'+b("‹ السابق",prev,"","nav-sibling")+b("↩ المهمة الرئيسية",parent,"parent","nav-parent")+b("التالي ›",next,"","nav-sibling")+'</div></nav>';
+    }
+    // خط تقدّم المراحل: دايرة لكل مرحلة بلون حالتها، تدوس عليها تفتحها
+    function stageStepper(ordered){
+      return '<ol class="tv-stepper">'+ordered.map(function(x,i){var g=seg(x);return '<li class="g-'+g+'"><button type="button" data-action="open-task" data-id="'+x.id+'" title="'+esc(x.title)+' — '+esc(g==="late"?"متأخرة":(STATUS[x.status]||x.status))+'"><span>'+(x.status==="done"?"✓":(i+1))+'</span><small>'+esc(x.title)+'</small></button></li>';}).join("")+'</ol>';
     }
     function taskDetail(t){
       var late=isOverdue(t),may=isAdmin||t.can_manage,pr=projectOf(t),k=seg(t),cc=state.checkCounts[t.id];
       var parent=t.parent_task_id?state.tasks.find(function(x){return x.id===t.parent_task_id;}):null,kids=state.tasks.filter(function(x){return x.parent_task_id===t.id;});
-      var h='<div class="tv-detail g-'+k+'"><div class="tv-d-top"><span class="tv-pill g-'+k+'">'+esc(late?"متأخرة":(STATUS[t.status]||t.status))+'</span><span class="tv-crumb">'+esc(pr.title||t.project_title||"مشروع")+(parent?' › <button type="button" class="tv-link" data-action="open-task" data-id="'+parent.id+'">'+esc(parent.title)+'</button>':"")+'</span></div><h2 class="tv-d-title">'+esc(t.title)+'</h2>';
-      h+='<div class="tv-facts"><div><small>المسؤول</small><b>'+esc(t.assignee_name||"—")+'</b></div><div><small>موعد التسليم</small><b class="'+(late?"late":"")+'">'+(t.due_at?date(t.due_at):"بدون موعد")+'</b>'+(dueNote(t)&&t.status!=="done"?'<em>'+esc(dueNote(t).replace(/^ · /,""))+'</em>':"")+'</div><div><small>الأولوية</small><b>'+esc(PRIORITY[t.priority]||"عادية")+'</b></div><div><small>آخر تحديث</small><b>'+esc(relTime(t.updated_at)||"—")+'</b></div></div>';
-      h+='<div class="tv-facts"><div><small>أسندها للموظف</small><b>'+esc(t.assigner_name||'غير مسجل')+'</b>'+(t.assigned_at?'<em>'+esc(stamp(t.assigned_at))+'</em>':'<em>بيانات الإسناد القديم غير مسجلة</em>')+'</div><div><small>أنشأها</small><b>'+esc(t.creator_name||'غير مسجل')+'</b></div></div>';
+      var h='<div class="tv-detail g-'+k+'">'+(parent?stageNav(t,parent):"")+'<div class="tv-d-top"><span class="tv-pill g-'+k+'">'+esc(late?"متأخرة":(STATUS[t.status]||t.status))+'</span><span class="tv-crumb">'+esc(pr.title||t.project_title||"مشروع")+(parent?' › <button type="button" class="tv-link" data-action="nav-parent" data-id="'+parent.id+'">'+esc(parent.title)+'</button>':"")+'</span></div><h2 class="tv-d-title">'+esc(t.title)+'</h2>';
+      var dn=dueNote(t).replace(/^ · /,""),facts=['<span><small>المسؤول</small><b>'+esc(t.assignee_name||"—")+'</b></span>','<span class="'+(late?"late":"")+'"><small>التسليم</small><b>'+(t.due_at?date(t.due_at):"بدون موعد")+'</b>'+(dn&&t.status!=="done"?'<em>'+esc(dn)+'</em>':"")+'</span>'];
+      if(t.priority&&t.priority!=="normal")facts.push('<span><small>الأولوية</small><b>'+esc(PRIORITY[t.priority]||t.priority)+'</b></span>');
+      facts.push('<span><small>آخر تحديث</small><b>'+esc(relTime(t.updated_at)||"—")+'</b></span>');
+      h+='<div class="tv-facts-line">'+facts.join("")+'</div>';
+      var by=[];if(t.assigner_name)by.push('أسندها '+esc(t.assigner_name)+(t.assigned_at?' · '+esc(stamp(t.assigned_at)):""));if(t.creator_name&&t.creator_name!==t.assigner_name)by.push('أنشأها '+esc(t.creator_name));
+      if(by.length)h+='<p class="tv-by">'+by.join(" — ")+'</p>';
       h+='<section class="tv-sec tw-required"><h3>المطلوب منك</h3><p>'+esc(t.description||'راجع المطلوب مع مدير المهمة قبل التسليم.')+'</p><h4>شكل التسليم</h4><p>'+esc(t.expected_output||'اكتب نتيجة شغلك أو أرفق ملفًا أو رابطًا يوضح التنفيذ.')+'</p></section>';
       if(t.recurrence_active)h+='<p class="tv-note">↻ تتكرر كل '+esc(t.recurrence_interval_value)+' '+esc(({day:"يوم",week:"أسبوع",month:"شهر"})[t.recurrence_interval_unit]||"فترة")+'</p>';
-      if(kids.length){var ordered=sortTasks(kids,"manual"),current=ordered.find(function(x){return x.status!=="done";}),finished=ordered.filter(function(x){return x.status==="done";});h+='<section class="tv-sec tw-stages"><h3>مراحل المهمة <small>'+finished.length+' من '+kids.length+' معتمدة</small></h3>'+(current?'<p>المرحلة الحالية حسب ترتيب المدير: '+esc(current.title)+'</p>':'<p>كل المراحل معتمدة.</p>')+ordered.filter(function(x){return x.status!=="done";}).map(function(x,i){return '<div class="tw-stage'+(x===current?' current':'')+'"><span>'+ (ordered.indexOf(x)+1) +'</span>'+taskRow(x,null,{})+'</div>';}).join("")+(finished.length?'<details><summary>المراحل المنتهية ('+finished.length+')</summary>'+finished.map(function(x){return taskRow(x,null,{});}).join("")+'</details>':'')+'</section>';}
+      if(kids.length){var ordered=sortTasks(kids,"manual"),current=ordered.find(function(x){return x.status!=="done";}),finished=ordered.filter(function(x){return x.status==="done";});h+='<section class="tv-sec tw-stages"><h3>مراحل المهمة <small>'+finished.length+' من '+kids.length+' معتمدة</small></h3>'+stageStepper(ordered)+(current?'<p>المرحلة الحالية حسب ترتيب المدير: '+esc(current.title)+'</p>':'<p>كل المراحل معتمدة.</p>')+ordered.filter(function(x){return x.status!=="done";}).map(function(x,i){return '<div class="tw-stage'+(x===current?' current':'')+'"><span>'+ (ordered.indexOf(x)+1) +'</span>'+taskRow(x,null,{})+'</div>';}).join("")+(finished.length?'<details><summary>المراحل المنتهية ('+finished.length+')</summary>'+finished.map(function(x){return taskRow(x,null,{});}).join("")+'</details>':'')+'</section>';}
       h+=work.html(t,kids);
       h+='<div class="tv-tools"><button type="button" class="tv-tool" data-action="checklist" data-id="'+t.id+'"><span>☑ القائمة الصغيرة</span>'+(cc&&cc.total?'<b>'+cc.done+'/'+cc.total+'</b>':"")+'</button><button type="button" class="tv-tool" data-action="history" data-id="'+t.id+'"><span>💬 التعليقات والسجل</span></button></div>';
       var pa=t.assignee_id===admin.id&&t.status!=="review"?"":actionsHtml(t,admin,may),ma=moreActionsHtml(t,admin,may);
-      if(pa||ma)h+='<div class="tv-d-actions">'+(pa?'<div class="tv-primary">'+pa+'</div>':"")+(ma?'<div class="tv-more">'+ma+'</div>':"")+'</div>';
+      // أدوات الإدارة (تعديل/حذف/ترتيب) تحت عادي، والإجراء الأساسي (اعتماد/إرجاع/كمّل) شريط ثابت تحت الشاشة
+      if(ma)h+='<div class="tv-d-actions tv-d-more"><div class="tv-more">'+ma+'</div></div>';
+      if(pa)h+='<div class="tv-d-actions tv-d-main"><div class="tv-primary">'+pa+'</div></div>';
       return h+'</div>';
     }
     function miniCard(t){
@@ -324,6 +350,7 @@
       items.push(["overdue","متأخرة",base.filter(isOverdue).length]);
       items.push(["soon","تنتهي خلال يومين",poolFor(base,"soon").length]);
       items.push(["notices","إشعارات جديدة",unread]);
+      items=items.filter(function(i){return i[2]||i[0]==="review"||i[0]==="overdue";});
       return '<div class="tv-needs" role="group" aria-label="محتاج منك دلوقتي">'+items.map(function(i){return '<button type="button" class="tv-need n-'+i[0]+(i[2]?" has":"")+'" data-action="stat" data-id="'+i[0]+'"><b>'+i[2]+'</b><span>'+i[1]+'</span></button>';}).join("")+'</div>';
     }
     function mineHtml(){
@@ -360,6 +387,9 @@
     }
     function draw(){
       work.capture();
+      if(state.modal&&state.modal!=="task-view"&&drawn.modal==="task-view"&&!state.backView)state.backView=drawn.view;
+      if(state.modal==="task-view")state.backView="";
+      if(!state.modal){state.viewStack=[];state.backView="";}
       var unread=state.notifications.filter(function(n){return !n.read_at;}).length;
       var base=baseTasks();
       var since=new Date(Date.now()-7*86400000);
@@ -439,6 +469,9 @@
       el.querySelectorAll('form[data-form="task"],form[data-form="task-edit"]').forEach(syncRepeat);
       var timingHost=el.querySelector('.tv-detail');
       if(timingHost&&state.viewId)work.mount(state.viewId);
+      drawn.modal=state.modal;drawn.view=state.viewId;
+      if(state.flashId){var fid=state.flashId;state.flashId="";flashRow(fid);}
+      syncHistory();
       if(timingHost&&state.viewId&&window.SSMPDIndicatorReports)window.SSMPDIndicatorReports.taskContext(timingHost,state.viewId);
     }
     function stamp(v){var d=new Date(v);return isNaN(d)?"":d.toLocaleString("ar-EG-u-nu-latn",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});}
@@ -495,13 +528,68 @@
       var moved=peers.splice(at,1)[0];peers.splice(to,0,moved);
       window.SSMPDDb.taskSetOrder(peers.map(function(x){return x.id;})).then(refresh).catch(function(e){state.error=e.message||"تعذر حفظ ترتيب المهام";draw();});
     }
+    // ---- التنقل: كل قفل/رجوع بيرجّعك خطوة واحدة للمكان اللي جيت منه ----
+    var drawn={modal:"",view:""},hist={depth:0,skip:0};
+    function findTask(id){return state.tasks.find(function(x){return x.id===id;});}
+    function flashRow(id){
+      var scope=el.querySelector(".tsk-modal")||el,row=scope.querySelector('.tv-row[data-task-id="'+id+'"]');if(!row)return;
+      var det=row.closest("details");if(det)det.open=true;
+      var box=row.closest(".tw-stage")||row;box.classList.add("tv-flash");setTimeout(function(){box.classList.remove("tv-flash");},1600);
+      if(box.scrollIntoView)setTimeout(function(){box.scrollIntoView({behavior:"smooth",block:"center"});},40);
+    }
+    function openView(id,replace){
+      if(state.modal==="task-view"&&state.viewId&&state.viewId!==id){
+        var at=state.viewStack.indexOf(id);
+        if(at>=0){state.flashId=state.viewStack[at+1]||state.viewId;state.viewStack=state.viewStack.slice(0,at);}
+        else if(!replace)state.viewStack.push(state.viewId);
+      }else if(state.modal!=="task-view"){state.viewStack=[];state.backView="";}
+      state.viewId=id;state.modal="task-view";draw();
+    }
+    function closeLayer(){
+      if(work.busy())return;work.capture();state.note=null;state.pendingFiles=[];
+      if(state.modal&&state.modal!=="task-view"&&state.backView&&findTask(state.backView)){state.viewId=state.backView;state.modal="task-view";}
+      else if(state.modal==="task-view"&&state.viewStack.length){var child=state.viewId;state.viewId=state.viewStack.pop();state.flashId=child;}
+      else{if(state.modal==="task-view")state.flashId=state.viewId;state.modal="";}
+      draw();
+    }
+    // بعد حفظ ناجح (اعتماد/إرجاع/تعديل/مهمة فرعية): ارجع للمهمة اللي فتحت منها، ولو اعتمدت مرحلة وانت جواها ارجع للمهمة الرئيسية
+    function returnAfterSave(actedId,action){
+      state.note=null;
+      if(state.backView&&findTask(state.backView)){
+        state.viewId=state.backView;state.modal="task-view";
+        if((action==="approve"||action==="approve_direct"||action==="return")&&state.viewStack.length&&state.viewId===actedId){state.flashId=actedId;state.viewId=state.viewStack.pop();}
+      }else{state.modal="";if(actedId)state.flashId=actedId;}
+    }
+    // refresh() مابيرسمش لو فيه نافذة مفتوحة (عشان مايمسحش كتابة)، بعد الحفظ لازم نرسم
+    function refreshAndShow(){return refresh().then(function(){if(state.modal)draw();});}
+    function layers(){return state.modal?1+state.viewStack.length+(state.modal!=="task-view"&&state.backView?1:0):0;}
+    function syncHistory(){
+      if(!window.history||!history.pushState)return;
+      var want=layers();
+      try{
+        while(hist.depth<want){history.pushState(Object.assign({},history.state,{ssmpdTasks:hist.depth+1}),"");hist.depth++;}
+        if(hist.depth>want){var n=hist.depth-want;hist.depth=want;hist.skip++;history.go(-n);}
+      }catch(e){}
+    }
+    var popOwner={};el.__tskPopOwner=popOwner;
+    function onPop(){
+      // لو الشاشة اترسمت تاني على نفس العنصر، النسخة القديمة ماتردش على زرار الرجوع
+      if(!el.isConnected||el.__tskPopOwner!==popOwner){window.removeEventListener("popstate",onPop);return;}
+      if(hist.skip){hist.skip--;return;}
+      if(hist.depth<=0)return;
+      hist.depth--;
+      if(!state.modal)return;
+      if(work.busy()){try{history.pushState(Object.assign({},history.state,{ssmpdTasks:hist.depth+1}),"");hist.depth++;}catch(e){}return;}
+      closeLayer();
+    }
+    window.addEventListener("popstate",onPop);
     function focusTask(id){
       if(work.busy())return false;
       var t=state.tasks.find(function(x){return x.id===id;});if(!t)return;
       state.tab="projects";store("tab","projects");state.openProject=t.project_id;state.pFilter="all";
       if(state.archived[t.project_id])state.showArchived=true;
       if(t.parent_task_id)state.expanded[t.parent_task_id]=true;
-      state.viewId=id;state.modal="task-view";draw();return true;
+      state.viewStack=[];state.backView="";state.viewId=id;state.modal="task-view";draw();return true;
     }
     currentFocus=focusTask;
     function submitNote(form,fd){
@@ -511,9 +599,9 @@
       var btn=form.querySelector("button[type=submit]");if(btn)btn.disabled=true;
       var db=window.SSMPDDb,call;
       if(n.action==="archive"||n.action==="unarchive")call=db.taskSetProjectArchived(n.id,n.action==="archive");
-      else if(n.action==="approve"||n.action==="return")call=db.taskReview(n.id,n.action==="approve",text);
+      else if(n.action==="approve"||n.action==="return"||n.action==="approve_direct")call=db.taskReview(n.id,n.action!=="return",text);
       else call=db.taskSetStatus(n.id,n.action==="blocked"?"blocked":(n.action==="submit"?"review":"in_progress"),text);
-      call.then(function(){state.modal="";state.note=null;return refresh();}).catch(function(e){if(btn)btn.disabled=false;showErr(form,e&&e.message||"تعذر الحفظ");});
+      call.then(function(){returnAfterSave(n.id,n.action);return refreshAndShow();}).catch(function(e){if(btn)btn.disabled=false;showErr(form,e&&e.message||"تعذر الحفظ");});
     }
     function submitComment(form,fd){
       var text=String(fd.get("comment")||"").trim(),files=state.pendingFiles.slice();
@@ -523,7 +611,7 @@
       var db=window.SSMPDDb,taskId=state.historyTask;
       Promise.all(files.map(function(f){return db.taskUploadAttachment(taskId,f,(state.tasks.find(function(x){return x.id===taskId;})||{}).title);})).then(function(atts){var to=fd.get("to")||"";if(to==="other")to=fd.get("to_other")||"";return db.taskAddComment(taskId,text,atts,to||null);}).then(function(){state.pendingFiles=[];openHistory(taskId);}).catch(function(e){if(btn){btn.disabled=false;btn.textContent="إرسال التعليق";}showErr(form,e&&e.message||"تعذر إرسال التعليق");});
     }
-    function onEscape(ev){if(!el.isConnected){document.removeEventListener("keydown",onEscape);return;}if(ev.key==="Escape"&&state.modal){if(work.busy())return;work.capture();state.modal="";state.note=null;state.pendingFiles=[];draw();}}
+    function onEscape(ev){if(!el.isConnected){document.removeEventListener("keydown",onEscape);return;}if(ev.key==="Escape"&&state.modal){closeLayer();}}
     document.addEventListener("keydown",onEscape);
     el.onkeydown=function(ev){var tile=ev.target.closest&&ev.target.closest(".tv-proj");if(tile&&ev.target===tile&&(ev.key==="Enter"||ev.key===" ")){ev.preventDefault();tile.click();}};
     el.oninput=function(ev){if(ev.target.matches&&ev.target.matches('[name="repeat_until"]'))syncRepeat(ev.target.closest("form"));if(ev.target.matches&&ev.target.matches("[data-search]")){state.q=ev.target.value;drawList();}};
@@ -531,10 +619,10 @@
       var b=ev.target.closest("[data-action]");if(!b)return;if(work.busy())return;
       if(b.dataset.action==="close-modal"&&ev.target!==b&&ev.target.closest(".tsk-modal"))return;
       var action=b.dataset.action,id=b.dataset.id,t=state.tasks.find(function(x){return x.id===id;});
-      if(action==="close-modal"){if(work.busy())return;work.capture();state.modal="";state.note=null;state.pendingFiles=[];draw();return;}
+      if(action==="close-modal"){closeLayer();return;}
       if(action==="confirm-delete"&&state.deleteTarget){
         var target=state.deleteTarget,call=target.kind==="project"?window.SSMPDDb.taskDeleteProject(target.id):window.SSMPDDb.taskDelete(target.id);
-        b.disabled=true;call.then(function(){state.modal="";state.deleteTarget=null;return refresh();}).catch(function(e){b.disabled=false;state.error=e.message||"تعذر الحذف";draw();});return;
+        b.disabled=true;call.then(function(){var gone=target.id;state.deleteTarget=null;if(state.backView===gone){state.backView=state.viewStack.length?state.viewStack.pop():"";}state.viewStack=state.viewStack.filter(function(x){return x!==gone;});returnAfterSave("","delete");return refreshAndShow();}).catch(function(e){b.disabled=false;state.error=e.message||"تعذر الحذف";draw();});return;
       }
       if(action==="filter"){state.filter=id;drawList();return;}
       if(action==="stat"){
@@ -550,7 +638,9 @@
       if(action==="view"){state.view=id==="board"||id==="calendar"?id:"list";store("view",state.view);draw();return;}
       if(action==="clear-filters"){state.q="";state.fProject="";state.fAssignee="";state.filter="all";draw();return;}
       if(action==="toggle-sub"){state.expanded[id]=!state.expanded[id];draw();return;}
-      if(action==="open-task"&&t){state.viewId=id;state.modal="task-view";draw();return;}
+      if(action==="open-task"&&t){openView(id);return;}
+      if(action==="nav-sibling"&&t){openView(id,true);return;}
+      if(action==="nav-parent"&&t){state.flashId=state.viewId;openView(id,true);return;}
       if(action==="move-task"&&t){moveTask(t,b.dataset.direction);return;}
       if(action==="delete-task"&&t){state.deleteTarget={kind:"task",id:t.id,title:t.title,children:state.tasks.filter(function(x){return x.parent_task_id===t.id;}).length};state.modal="confirm-delete";draw();return;}
       if(action==="delete-project"){var dp=state.projects.find(function(x){return x.id===b.dataset.project;});if(dp){state.deleteTarget={kind:"project",id:dp.id,title:dp.title,children:state.tasks.filter(function(x){return x.project_id===dp.id;}).length};state.modal="confirm-delete";draw();}return;}
@@ -573,7 +663,7 @@
       }
       if(action==="history"){state.pendingFiles=[];state.historyTask="";openHistory(id);return;}
       if(action==="remove-file"){state.pendingFiles.splice(Number(id),1);renderFiles();return;}
-      if(action==="progress"||action==="submit"||action==="blocked"||action==="approve"||action==="return"){
+      if(action==="progress"||action==="submit"||action==="blocked"||action==="approve"||action==="return"||action==="approve_direct"){
         if(!t)return;
         state.note={action:action,id:id,starting:t.status==="todo"||t.status==="revision",subject:t.title};
         state.modal="note";draw();
@@ -609,12 +699,12 @@
         projectSave.then(function(){state.modal="";state.editProject=null;return refresh();}).catch(function(e){unlockSave();window.alert(e.message);});
       }else if(form.dataset.form==="task-edit"){lockSave();
         var editDue=fd.get("due_at"),recurring=fd.get("repeat_active")==="on";
-        window.SSMPDDb.taskUpdateDetails(fd.get("task_id"),fd.get("title"),fd.get("description"),fd.get("expected_output"),fd.get("assignee_id"),editDue?new Date(editDue+"T23:59:00").toISOString():null,fd.get("priority"),recurring,Number(fd.get("repeat_interval")||1),fd.get("repeat_unit")||"day",fd.get("repeat_until")||null,fd.get("update_future")==="on").then(function(){state.modal="";state.editTask=null;return refresh();}).catch(function(e){unlockSave();taskSaveError(form,e);});
+        window.SSMPDDb.taskUpdateDetails(fd.get("task_id"),fd.get("title"),fd.get("description"),fd.get("expected_output"),fd.get("assignee_id"),editDue?new Date(editDue+"T23:59:00").toISOString():null,fd.get("priority"),recurring,Number(fd.get("repeat_interval")||1),fd.get("repeat_unit")||"day",fd.get("repeat_until")||null,fd.get("update_future")==="on").then(function(){state.editTask=null;returnAfterSave("","edit");return refreshAndShow();}).catch(function(e){unlockSave();taskSaveError(form,e);});
       }else{lockSave();
         var due=fd.get("due_at"),repeat=fd.get("repeat_active")==="on";
         var args=[fd.get("project_id"),fd.get("parent_task_id")||null,fd.get("title"),fd.get("description"),fd.get("expected_output"),fd.get("assignee_id"),due?new Date(due+"T23:59:00").toISOString():null,fd.get("priority")];
         var createPromise=repeat?window.SSMPDDb.taskCreateRecurring.apply(null,args.concat([Number(fd.get("repeat_interval")||1),fd.get("repeat_unit")||"day",fd.get("repeat_until")||null])):window.SSMPDDb.taskCreate.apply(null,args);
-        createPromise.then(function(){state.modal="";return refresh();}).catch(function(e){unlockSave();taskSaveError(form,e);});
+        createPromise.then(function(){returnAfterSave("","create");return refreshAndShow();}).catch(function(e){unlockSave();taskSaveError(form,e);});
       }
     };
     refresh().then(function(){liveTimer=setInterval(function(){if(!el.isConnected){clearInterval(liveTimer);liveTimer=null;return;}refresh();},90000);});
