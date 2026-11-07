@@ -12,6 +12,18 @@
 -- Additive (new function + new trigger). Rollback: supabase/rollbacks/20261107200000_contracting_settlement_server_calc.rollback.sql
 begin;
 
+-- ON CONFLICT below needs the (entity_id, period_start, period_end) unique key; stop (and roll back) if it is missing.
+do $chk$ begin
+  if not exists (
+    select 1 from pg_index i
+    where i.indrelid = 'public.contracting_settlements'::regclass and i.indisunique
+      and (select array_agg(a.attname::text order by a.attname)
+             from pg_attribute a where a.attrelid = i.indrelid and a.attnum = any(i.indkey))
+          = array['entity_id','period_end','period_start']) then
+    raise exception 'contracting_settlements unique (entity_id, period_start, period_end) is missing - nothing applied';
+  end if;
+end $chk$;
+
 create or replace function public.contracting_settlement_guard()
 returns trigger language plpgsql security definer set search_path = pg_catalog, public as $$
 begin
