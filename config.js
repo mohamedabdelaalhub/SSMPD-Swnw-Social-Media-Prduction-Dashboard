@@ -116,10 +116,10 @@ window.SSMPD_CONFIG = {
     loadOnce("__SWNWContractServiceMapping","assets/js/contract-service-mapping.js?v=shared-tariffs-20261029-1","contract-service-mapping");
     loadOnce("__SWNWHRAccountLinkingFix","assets/js/hr-account-linking-fix.js?v=hr-account-link-20261102-1","hr-account-linking-fix");
     loadOnce("SWNJourneySandbox","assets/js/today-operations-sandbox.js?v=journey-sandbox-20261031-1","journey-sandbox");
-    loadOnce("__SWNWTodayOperationsV1","assets/js/today-operations.js?v=journey-sandbox-20261031-1","today-operations");
-    loadOnce("__SWNWTodayOperationsConsistency","assets/js/today-operations-consistency.js?v=patient-journey-v3-20261031-2","today-operations-consistency");
+    loadOnce("__SWNWTodayOperationsV1","assets/js/today-operations.js?v=today-board-20261107-1","today-operations");
+    loadOnce("__SWNWTodayOperationsConsistency","assets/js/today-operations-consistency.js?v=today-board-20261107-1","today-operations-consistency");
     loadOnce("__SWNWTodayOperationsDisplayV1","assets/js/today-operations-display.js?v=journey-sandbox-20261031-1","today-operations-display");
-    loadOnce("__SWNWTodayOperationsUnifiedV1","assets/js/today-operations-unified.js?v=unified-reception-20261103-1","today-operations-unified");
-    loadOnce("__SWNWTodayOperationsFinalizeV1","assets/js/today-operations-finalize.js?v=unified-reception-20261103-4","today-operations-finalize");
+    loadOnce("__SWNWTodayOperationsUnifiedV1","assets/js/today-operations-unified.js?v=today-board-20261107-1","today-operations-unified");
+    loadOnce("__SWNWTodayOperationsFinalizeV1","assets/js/today-operations-finalize.js?v=today-board-20261107-1","today-operations-finalize");
   });
 })();

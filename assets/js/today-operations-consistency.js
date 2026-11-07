@@ -23,7 +23,7 @@ function loadServiceRequestV3(){
 function loadV2(){
  if(window.__SWNWTodayOperationsUXV2||document.querySelector('script[data-today-operations-v2]'))return;
  var s=document.createElement('script');
- s.src='assets/js/today-operations-v2.js?v=patient-journey-v2-20261031-1';
+ s.src='assets/js/today-operations-v2.js?v=today-board-20261107-1';
  s.async=false;
  s.dataset.todayOperationsV2='1';
  document.head.appendChild(s);

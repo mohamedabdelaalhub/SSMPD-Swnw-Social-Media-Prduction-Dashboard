@@ -5,10 +5,10 @@ if(window.__SWNWTodayOperationsV1)return;
 window.__SWNWTodayOperationsV1=true;
 
 var css=document.createElement('link');
-css.rel='stylesheet';css.href='assets/css/today-operations.css?v=journey-sandbox-20261031-1';css.dataset.todayOperations='1';
+css.rel='stylesheet';css.href='assets/css/today-operations.css?v=today-board-20261107-1';css.dataset.todayOperations='1';
 if(!document.querySelector('link[data-today-operations]'))document.head.appendChild(css);
 
-var state={day:null,workspace:null,data:null,loading:false,error:null,refreshTimer:null,context:null,sandbox:null,owner:null,generation:0};
+var state={day:null,workspace:null,data:null,loading:false,error:null,refreshTimer:null,context:null,sandbox:null,owner:null,generation:0,query:'',filter:'all'};
 var base=window.SSMPDReceptionModules||{sections:function(){return[];},panel:function(){return'';},act:function(){return false;},bookingFields:function(){return'';},bookingWire:function(){}};
 
 function cairoDay(value){
@@ -41,76 +41,136 @@ function switchMode(c,trial){
  return window.SWNJourneySandbox.open(state.day).then(function(model){if(generation!==state.generation)return;state.sandbox=model;state.data=model.journey;state.loading=false;paint(c);}).catch(function(error){if(generation!==state.generation)return;state.loading=false;state.error=error;paint(c);});
 }
 
-function load(c,force){
+function metric(label,value,sub){return '<article class="journey-metric"><span>'+esc(label)+'</span><strong>'+esc(value)+'</strong>'+(sub?'<small>'+esc(sub)+'</small>':'')+'</article>';}
+function action(name,id,label,cls){return '<button type="button" class="btn '+(cls||'')+'" data-journey-action="'+name+'" data-id="'+esc(id||'')+'">'+esc(label)+'</button>';}
+function badge(status){var map={expected:'متوقع',on_the_way:'في الطريق',waiting:'ينتظر',called:'تم الاستدعاء',in_service:'داخل الخدمة',on_hold:'انتظار نتيجة',completed:'انتهى',no_show:'لم يحضر',cancelled:'ملغي'};return '<span class="journey-badge journey-badge-'+esc(status)+'">'+esc(map[status]||status)+'</span>';}
+function load(c,force,silent){
  if(c.sandbox)c=state.context;
  state.context=c;state.workspace=c.workspace;
  if(!state.day)state.day=cairoDay();
  if(state.loading&&!force)return;
  state.loading=true;state.error=null;
- var root=currentRoot();if(root)root.innerHTML='<div class="journey-loading">جاري تحميل تشغيل اليوم…</div>';
+ var root=currentRoot();if(root&&!silent)root.innerHTML='<div class="journey-loading">جاري تحميل تشغيل اليوم…</div>';
  var generation=++state.generation,trial=!!state.sandbox;
- return (trial?window.SWNJourneySandbox.open(state.day):rpc('clinic_reception_journey_snapshot',{p_workspace:c.workspace,p_day:state.day})).then(function(data){
+ var live=function(){return rpc('clinic_reception_journey_hub_snapshot',{p_workspace:c.workspace,p_day:state.day}).catch(function(err){if(!/does not exist|not find|schema cache/i.test(String(err&&err.message||'')))throw err;return rpc('clinic_reception_journey_snapshot',{p_workspace:c.workspace,p_day:state.day});});};
+ return (trial?window.SWNJourneySandbox.open(state.day):live()).then(function(data){
   if(generation!==state.generation||state.workspace!==c.workspace)return;
   if(trial){Object.assign(state.sandbox,data);data=data.journey;}
   state.data=data||{};state.loading=false;paint(c);
- }).catch(function(err){if(generation!==state.generation)return;state.loading=false;state.error=err;paint(c);});
+ }).catch(function(err){if(generation!==state.generation)return;state.loading=false;if(silent&&state.data)return;state.error=err;paint(c);});
 }
 
-function metric(label,value,sub){return '<article class="journey-metric"><span>'+esc(label)+'</span><strong>'+esc(value)+'</strong>'+(sub?'<small>'+esc(sub)+'</small>':'')+'</article>';}
-function action(name,id,label,cls){return '<button type="button" class="btn '+(cls||'')+'" data-journey-action="'+name+'" data-id="'+esc(id||'')+'">'+esc(label)+'</button>';}
-function badge(status){var map={expected:'متوقع',on_the_way:'في الطريق',waiting:'ينتظر',called:'تم الاستدعاء',in_service:'داخل الخدمة',on_hold:'انتظار نتيجة',completed:'انتهى',no_show:'لم يحضر',cancelled:'ملغي'};return '<span class="journey-badge journey-badge-'+esc(status)+'">'+esc(map[status]||status)+'</span>';}
-function journeyBar(a){
- var steps=['موعد','وصول','انتظار','كشف','انتهاء'],idx=0,s=a.queue_status;
- if(['on_the_way'].includes(s))idx=0;if(['waiting','called'].includes(s))idx=2;if(['in_service','on_hold'].includes(s))idx=3;if(s==='completed')idx=4;
- return '<div class="journey-bar" aria-label="رحلة المريض">'+steps.map(function(x,i){return '<span class="'+(i<idx?'done':i===idx?'current':'')+'">'+x+'</span>';}).join('')+'</div>';
+/* One board for the reception day: coming -> waiting -> inside -> done. One main button per card, the rest in the "⋯" menu. */
+var LANES=[['coming','جاي'],['waiting','مستني'],['inside','جوه'],['done','خلص']];
+var PRIORITY={'1':'أولوية إنسانية','2':'مساعدة حركة','3':'ظرف خاص','4':'عاجل','5':'حالة حرجة'};
+function money(v){return Number(v||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})+' ج.م';}
+function lane(a){var s=a.queue_status||'expected';if(s==='expected'||s==='on_the_way')return 'coming';if(s==='waiting'||s==='called')return 'waiting';if(s==='in_service'||s==='on_hold')return 'inside';return 'done';}
+function waitLimit(){return Number(((state.data||{}).settings||{}).max_wait_minutes||20);}
+function lateMinutes(a){if(lane(a)!=='coming'||!a.starts_at||state.day!==cairoDay())return 0;var m=Math.floor((Date.now()-Date.parse(a.starts_at))/60000);return m>0?m:0;}
+function hasDue(a){return !!a.can_view_finance&&Number(a.patient_due)>0;}
+function roles(){return window.SSMPDRoles&&window.SSMPDRoles.rolesOf&&window.SSMPDAuth?window.SSMPDRoles.rolesOf(window.SSMPDAuth.currentAdmin):[];}
+function hasRole(list){var mine=roles(),admin=window.SSMPDAuth&&window.SSMPDAuth.currentAdmin;if(admin&&list.indexOf(admin.role)!==-1)return true;return list.some(function(r){return mine.indexOf(r)!==-1;});}
+function financeAllowed(kind){var a=window.SSMPDAuth&&window.SSMPDAuth.currentAdmin,r=window.SSMPDRoles;return !!(a&&r&&r.isControlledFinance&&r.isControlledFinance(a)&&r.canModuleAction&&r.canModuleAction(a,'accounting',kind));}
+function can(kind){
+ if(hasRole(['super_admin','general_manager']))return true;
+ if(kind==='book')return hasRole(['reception','customer_service']);
+ if(kind==='finance')return hasRole(['reception'])||financeAllowed('view');
+ if(kind==='collect')return hasRole(['reception'])||financeAllowed('create');
+ return false;
+}
+function v2(name,id,label){return '<button type="button" class="btn" data-journey-v2-action="'+name+'" data-id="'+esc(id||'')+'">'+esc(label)+'</button>';}
+function more(items,label){return items?'<details class="journey-more"><summary aria-label="'+esc(label||'إجراءات أخرى')+'" title="'+esc(label||'إجراءات أخرى')+'">⋯</summary><div class="journey-more-menu">'+items+'</div></details>':'';}
+function cardActions(a,c){
+ var s=a.queue_status||'expected',main='',rest='',detail=a.visit_id?action('visit_detail',a.visit_id,'تفاصيل الزيارة'):'';
+ if(s==='expected'){main=action('arrive',a.id,'وصل','btn-primary');rest=action('on_the_way',a.id,'في الطريق')+action('no_show',a.id,'لم يحضر')+action('qr',a.id,'QR خاص')+v2('reschedule',a.id,'تغيير اليوم والساعة');}
+ else if(s==='on_the_way'){main=action('arrive',a.id,'وصل','btn-primary');rest=action('qr',a.id,'QR خاص')+v2('reschedule',a.id,'تغيير اليوم والساعة');}
+ else if(s==='waiting'){main=action('call',a.id,'نادي','btn-primary');rest=action('priority',a.id,'تحديد الأولوية')+action('help',a.id,'طلب دعم');}
+ else if(s==='called'){main=action('consultation_start',a.id,'بدأ الكشف','btn-primary');rest=action('call',a.id,'إعادة النداء')+action('priority',a.id,'تحديد الأولوية')+action('help',a.id,'طلب دعم');}
+ else if(s==='in_service'){main=action('visit_complete',a.id,'إنهاء الزيارة','btn-primary');rest=action('hold',a.id,'انتظار تحليل/إجراء')+action('request_service',a.id,'طلب خدمة')+detail;}
+ else if(s==='on_hold'){main=action('resume',a.id,'عودة للطبيب','btn-primary');rest=action('request_service',a.id,'طلب خدمة')+detail+v2('finish',a.id,'إنهاء الزيارة وانتظار النتيجة')+action('help',a.id,'طلب دعم');}
+ if(hasDue(a)&&can('collect')&&a.due_invoices&&a.due_invoices.length){if(!main)main=action('collect_due',a.id,'حصّل','btn-primary');else rest=action('collect_due',a.id,'تحصيل '+money(a.patient_due))+rest;}
+ if(c.sandbox&&s==='completed')rest+=action('sandbox_feedback',a.id,'تقييم التجربة');
+ if(c.sandbox&&['expected','on_the_way'].includes(s))rest+=action('cancel',a.id,'إلغاء الحجز');
+ rest+=action('account',a.id,'التفاصيل والحساب')+action('timeline',a.id,'الخط الزمني');
+ return main+more(rest);
 }
 function card(a,c){
- var s=a.queue_status||'expected',buttons='';
- if(s==='expected')buttons+=action('on_the_way',a.id,'في الطريق')+action('arrive',a.id,'وصل','btn-primary')+action('no_show',a.id,'لم يحضر')+action('qr',a.id,'QR خاص');
- if(s==='on_the_way')buttons+=action('arrive',a.id,'تسجيل الوصول','btn-primary')+action('qr',a.id,'QR خاص');
- if(s==='waiting')buttons+=action('call',a.id,'استدعاء','btn-primary')+action('priority',a.id,'الأولوية')+action('help',a.id,'مساعدة');
- if(s==='called')buttons+=action('consultation_start',a.id,'بدأ الكشف','btn-primary')+action('call',a.id,'إعادة النداء')+action('priority',a.id,'الأولوية');
- if(s==='in_service')buttons+=action('hold',a.id,'انتظار تحليل/إجراء')+action('request_service',a.id,'طلب خدمة')+action('visit_detail',a.visit_id,'تفاصيل الزيارة')+action('visit_complete',a.id,'إنهاء الزيارة','btn-primary');
- if(s==='on_hold')buttons+=action('resume',a.id,'عودة للطبيب','btn-primary')+action('request_service',a.id,'طلب خدمة')+action('visit_detail',a.visit_id,'تفاصيل الزيارة');
- if(['completed','no_show','cancelled'].includes(s))buttons+=action('timeline',a.id,'الخط الزمني');
- if(c.sandbox&&['expected','on_the_way'].includes(s))buttons+=action('sandbox_reschedule',a.id,'تغيير الموعد')+action('cancel',a.id,'إلغاء الحجز');
- if(c.sandbox&&s==='completed')buttons+=action('sandbox_feedback',a.id,'تقييم التجربة');
- var wait=a.wait_minutes?'<span class="journey-wait '+(a.wait_minutes>Number((state.data.settings||{}).max_wait_minutes||20)?'late':'')+'">انتظار '+num(a.wait_minutes)+' د</span>':'';
- return '<article class="journey-card" data-appointment="'+esc(a.id)+'"><header><div><h4>'+esc(a.patient_name)+'</h4><p>'+esc(a.file_no||'')+' · '+esc(a.provider_name)+' · '+time(a.starts_at)+'</p></div>'+badge(s)+'</header>'+journeyBar(a)+'<div class="journey-card-meta"><span>'+esc(a.service_name)+'</span>'+wait+(a.priority>0?'<span>أولوية '+num(a.priority)+(a.priority_reason?' · '+esc(a.priority_reason):'')+'</span>':'')+'</div><div class="journey-card-actions">'+buttons+'</div></article>';
+ var s=a.queue_status||'expected',tags='',late=lateMinutes(a);
+ if(late>0)tags+='<span class="journey-tag journey-tag-late">متأخر '+num(late)+' د</span>';
+ if(a.wait_minutes)tags+='<span class="journey-wait '+(Number(a.wait_minutes)>waitLimit()?'late':'')+'">مستني '+num(a.wait_minutes)+' د</span>';
+ if(a.priority>0)tags+='<span class="journey-tag">'+esc(PRIORITY[String(a.priority)]||('أولوية '+num(a.priority)))+(a.priority_reason?' · '+esc(a.priority_reason):'')+'</span>';
+ if(a.can_view_finance&&a.patient_due!=null)tags+=hasDue(a)?'<span class="journey-tag journey-tag-due">عليه '+money(a.patient_due)+'</span>':(a.visit_id&&Number(a.patient_payable_total)>0?'<span class="journey-tag journey-tag-paid">مدفوع</span>':'');
+ return '<article class="journey-card" data-appointment="'+esc(a.id)+'" data-lane="'+lane(a)+'"><header><div><h4>'+esc(a.patient_name)+'</h4><p>'+time(a.starts_at)+' · '+esc(a.provider_name)+'</p></div>'+badge(s)+'</header><p class="journey-card-service">'+esc(a.service_name)+(a.file_no?' · ملف '+esc(a.file_no):'')+'</p>'+(tags?'<div class="journey-card-meta">'+tags+'</div>':'')+'<div class="journey-card-actions">'+cardActions(a,c)+'</div></article>';
 }
-function column(title,key,items,c){return '<section class="journey-column"><header><h3>'+esc(title)+'</h3><span>'+num(items.length)+'</span></header><div class="journey-column-body">'+(items.map(function(a){return card(a,c);}).join('')||'<p class="journey-empty">لا يوجد مرضى هنا.</p>')+'</div></section>';}
-function doctorCards(data){
- var by={},sessions={};(data.doctor_sessions||[]).forEach(function(s){sessions[s.provider_id]=s;});
- (data.appointments||[]).forEach(function(a){if(!by[a.provider_id])by[a.provider_id]={id:a.provider_id,name:a.provider_name,department:a.department,total:0,waiting:0,inService:0};by[a.provider_id].total++;if(['waiting','called','on_hold'].includes(a.queue_status))by[a.provider_id].waiting++;if(a.queue_status==='in_service')by[a.provider_id].inService++;});
- return Object.keys(by).map(function(id){var d=by[id],s=sessions[id]||{},status=s.status||'scheduled';return '<article class="journey-doctor"><div><h4>'+esc(d.name)+'</h4><p>'+esc(d.department||'')+' · '+num(d.waiting)+' ينتظر · '+num(d.inService)+' داخل الكشف</p></div><div class="journey-doctor-status">'+esc({scheduled:'مجدول',on_the_way:'في الطريق',arrived:'وصل',started:'بدأ العيادة',delayed:'متأخر',ended:'انتهى',cancelled:'ملغي'}[status]||status)+'</div><div class="journey-doctor-actions">'+action('doctor_on_the_way',id,'في الطريق')+action('doctor_arrived',id,'وصل')+action('doctor_started',id,'بدأ')+action('doctor_delayed',id,'تأخير')+action('doctor_ended',id,'انتهى')+'</div></article>';}).join('')||'<p class="journey-empty">لا توجد عيادات في هذا اليوم.</p>';
+function column(key,title,items,c){return '<section class="journey-column" data-journey-lane="'+key+'"><header><h3>'+esc(title)+'</h3><span>'+num(items.length)+'</span></header><div class="journey-column-body">'+(items.map(function(a){return card(a,c);}).join('')||'<p class="journey-empty">مفيش حد هنا.</p>')+'</div></section>';}
+function doctorStrip(data){
+ var by={},sessions={},labels={scheduled:'مجدول',on_the_way:'في الطريق',arrived:'وصل',started:'بدأ العيادة',delayed:'متأخر',ended:'انتهى',cancelled:'ملغي'};(data.doctor_sessions||[]).forEach(function(s){sessions[s.provider_id]=s;});
+ (data.appointments||[]).forEach(function(a){if(!by[a.provider_id])by[a.provider_id]={name:a.provider_name,waiting:0,inside:0};if(lane(a)==='waiting')by[a.provider_id].waiting++;if(lane(a)==='inside')by[a.provider_id].inside++;});
+ var ids=Object.keys(by);if(!ids.length)return '';
+ return '<section class="journey-doctors" aria-label="حالة الأطباء">'+ids.map(function(id){var d=by[id],s=sessions[id]||{},status=s.status||'scheduled',late=status==='delayed'?' '+num(s.eta_minutes||0)+' د':'';return '<article class="journey-doctor journey-doctor-'+esc(status)+'"><div><h4>'+esc(d.name)+'</h4><p><span class="journey-doctor-status">'+esc((labels[status]||status)+late)+'</span> · '+num(d.waiting)+' مستني · '+num(d.inside)+' جوه</p></div>'+more(action('doctor_on_the_way',id,'في الطريق')+action('doctor_arrived',id,'وصل')+action('doctor_started',id,'بدأ')+action('doctor_delayed',id,'تأخير')+action('doctor_ended',id,'انتهى'),'حالة الطبيب')+'</article>';}).join('')+'</section>';
 }
 function actionCenter(data){
- var alerts=[],limit=Number((data.settings||{}).max_wait_minutes||20);
- (data.appointments||[]).forEach(function(a){if(['waiting','called','on_hold'].includes(a.queue_status)&&Number(a.wait_minutes)>limit)alerts.push({type:'wait',title:a.patient_name,text:'ينتظر منذ '+a.wait_minutes+' دقيقة · '+a.provider_name,id:a.id});});
+ var alerts=[],limit=waitLimit();
+ (data.appointments||[]).forEach(function(a){if(['waiting','called','on_hold'].includes(a.queue_status)&&Number(a.wait_minutes)>limit)alerts.push({type:'wait',title:a.patient_name,text:'مستني من '+a.wait_minutes+' دقيقة · '+a.provider_name,id:a.id});});
  (data.help_requests||[]).forEach(function(h){alerts.push({type:'help',title:h.patient_name,text:(h.message||'طلب مساعدة')+' · '+h.provider_name,id:h.id});});
  (data.doctor_sessions||[]).filter(function(s){return s.status==='delayed';}).forEach(function(s){alerts.push({type:'doctor',title:s.provider_name,text:'تأخير '+(s.eta_minutes||'—')+' دقيقة'+(s.delay_reason?' · '+s.delay_reason:''),id:s.provider_id});});
- return alerts.map(function(a){return '<article class="journey-alert"><div><strong>'+esc(a.title)+'</strong><p>'+esc(a.text)+'</p></div>'+(a.type==='help'?action('resolve_help',a.id,'تم التعامل','btn-primary'):a.type==='wait'?action('priority',a.id,'فتح المريض'):'')+'</article>';}).join('')||'<p class="journey-empty">لا توجد حالات تحتاج تدخل الآن.</p>';
+ return alerts.map(function(a){return '<article class="journey-alert"><div><strong>'+esc(a.title)+'</strong><p>'+esc(a.text)+'</p></div>'+(a.type==='help'?action('resolve_help',a.id,'تم التعامل','btn-primary'):a.type==='wait'?action('priority',a.id,'تحديد الأولوية'):'')+'</article>';}).join('')||'<p class="journey-empty">لا توجد حالات تحتاج تدخل الآن.</p>';
+}
+var FILTERS={all:function(){return true;},coming:function(a){return lane(a)==='coming';},late:function(a){return lateMinutes(a)>0;},waiting:function(a){return lane(a)==='waiting';},inside:function(a){return lane(a)==='inside';},done:function(a){return lane(a)==='done';},due:hasDue};
+function visibleApps(){
+ var apps=((state.data||{}).appointments||[]).slice().sort(function(x,y){return (Number(y.priority)||0)-(Number(x.priority)||0)||Date.parse(x.starts_at)-Date.parse(y.starts_at);});
+ var f=FILTERS[state.filter]||FILTERS.all,q=String(state.query||'').trim().toLowerCase();
+ return apps.filter(function(a){if(!f(a))return false;if(!q)return true;return [a.patient_name,a.phone,a.file_no].some(function(v){return String(v||'').toLowerCase().indexOf(q)!==-1;});});
+}
+function metricsHtml(apps){
+ var n=function(f){return apps.filter(f).length;},dueSum=apps.filter(hasDue).reduce(function(t,a){return t+Number(a.patient_due||0);},0),finance=apps.some(function(a){return a.can_view_finance;});
+ var done=apps.filter(FILTERS.done),noShow=done.filter(function(a){return a.queue_status==='no_show';}).length,cancelled=done.filter(function(a){return a.queue_status==='cancelled';}).length;
+ var tiles=[['coming','جاي',n(FILTERS.coming),''],['late','متأخر',n(FILTERS.late),''],['waiting','مستني',n(FILTERS.waiting),''],['inside','جوه',n(FILTERS.inside),''],['done','خلص',done.length-noShow-cancelled,(noShow||cancelled)?'لم يحضر '+num(noShow)+' · ملغي '+num(cancelled):'']];
+ if(finance)tiles.push(['due','عليه فلوس',n(hasDue),money(dueSum)]);
+ return '<div class="journey-metrics">'+tiles.map(function(t){return '<button type="button" class="journey-metric'+(state.filter===t[0]?' is-active':'')+(t[0]==='late'&&t[2]?' is-alert':'')+'" data-journey-filter="'+t[0]+'" aria-pressed="'+(state.filter===t[0])+'"><span>'+esc(t[1])+'</span><strong>'+num(t[2])+'</strong>'+(t[3]?'<small>'+esc(t[3])+'</small>':'')+'</button>';}).join('')+'</div>';
+}
+function paintBoard(c){
+ var root=currentRoot();if(!root)return;var host=root.querySelector('[data-journey-board-host]');if(!host)return;
+ var apps=visibleApps(),filtered=state.filter!=='all'||String(state.query||'').trim();
+ host.innerHTML=metricsHtml((state.data||{}).appointments||[])+(filtered?'<p class="journey-filter-note" role="status">بيظهر '+num(apps.length)+' من '+num(((state.data||{}).appointments||[]).length)+' '+action('clear_filter','','عرض الكل')+'</p>':'')+'<div class="journey-board">'+LANES.map(function(l){return column(l[0],l[1],apps.filter(function(a){return lane(a)===l[0];}),c);}).join('')+'</div>';
 }
 function paint(c){
  var root=currentRoot();if(!root)return;
  c=effectiveContext(c);root.dataset.journeyMode=c.sandbox?'trial':'live';
  if(state.error){root.innerHTML=sandboxChoice()+'<section class="journey-error"><p>'+esc(state.error.message||'تعذر تحميل تشغيل اليوم')+'</p>'+action('refresh','','إعادة المحاولة','btn-primary')+'</section>';bind(root,c);return;}
- var d=state.data||{},apps=d.appointments||[];
- var expected=apps.filter(function(a){return ['expected','on_the_way'].includes(a.queue_status);});
- var waiting=apps.filter(function(a){return ['waiting','called','on_hold'].includes(a.queue_status);});
- var service=apps.filter(function(a){return a.queue_status==='in_service';});
- var done=apps.filter(function(a){return ['completed','no_show','cancelled'].includes(a.queue_status);});
- var waits=apps.filter(function(a){return Number(a.wait_minutes)>0;}).map(function(a){return Number(a.wait_minutes);});
- var avg=waits.length?Math.round(waits.reduce(function(x,y){return x+y;},0)/waits.length):0,max=waits.length?Math.max.apply(Math,waits):0;
- root.innerHTML=sandboxChoice()+'<div class="journey-toolbar"><div class="journey-date-nav">'+action('prev','','اليوم السابق')+'<input aria-label="يوم الرحلة" type="date" data-journey-day value="'+esc(state.day)+'">'+action('next','','اليوم التالي')+action('today','','اليوم','btn-primary')+'</div><div class="'+(c.sandbox?'journey-sandbox-actions':'journey-toolbar-actions')+'">'+(c.sandbox?action('sandbox_book','','حجز تجريبي جديد','btn-primary'):action('static_qr','','QR الاستقبال')+action('settings','','إعدادات التشغيل'))+action('refresh','','تحديث')+'</div></div>'+
- '<div class="journey-metrics">'+metric('حجوزات اليوم',apps.length)+metric('متوقع وصولهم',expected.length)+metric('في الانتظار',waiting.length)+metric('داخل الخدمة',service.length)+metric('انتهوا',done.filter(function(a){return a.queue_status==='completed';}).length)+metric('لم يحضر',done.filter(function(a){return a.queue_status==='no_show';}).length)+metric('متوسط الانتظار',avg+' د')+metric('أطول انتظار',max+' د')+'</div>'+
- '<div class="journey-layout"><main><div class="journey-board">'+column('متوقع وصولهم','expected',expected,c)+column('في الانتظار','waiting',waiting,c)+column('داخل الخدمة','service',service,c)+column('انتهوا','done',done,c)+'</div><section class="journey-section"><div class="journey-section-head"><h3>حالة العيادات والأطباء</h3></div><div class="journey-doctors">'+doctorCards(d)+'</div></section></main><aside><section class="journey-section journey-action-center"><div class="journey-section-head"><h3>يحتاج تدخل</h3></div>'+actionCenter(d)+'</section><section class="journey-section"><div class="journey-section-head"><h3>اتصال الوكيل</h3></div><p>'+num((d.outbox||[]).filter(function(o){return !o.delivered_at;}).length)+' رسالة رحلة لم تُسلّم بعد.</p><p>'+num((d.outbox||[]).filter(function(o){return !!o.delivered_at;}).length)+' رسالة تم تسليمها.</p></section></aside></div>';
+ var d=state.data||{},open=root.querySelector('details.journey-tools[open]');
+ var tools=c.sandbox?'':more(action('static_qr','','QR الاستقبال')+action('settings','','إعدادات التشغيل')+action('patient_search','','بحث في ملفات المرضى')+(can('collect')?action('quick_collect','','تحصيل سريع'):'')+(can('finance')?action('finance_section','','الخزينة والوردية'):''),'أدوات الاستقبال').replace('class="journey-more"','class="journey-more journey-tools"').replace('class="journey-more-menu"','class="journey-more-menu journey-toolbar-actions"');
+ var book=c.sandbox?action('sandbox_book','','حجز تجريبي جديد','btn-primary'):(can('book')?action('new_booking','','حجز جديد','btn-primary'):'');
+ root.innerHTML=sandboxChoice()+'<div class="journey-toolbar"><div class="journey-toolbar-main">'+book+'<input type="search" class="journey-search" data-journey-search aria-label="ابحث بالاسم أو التليفون أو رقم الملف" placeholder="ابحث بالاسم أو التليفون أو رقم الملف" value="'+esc(state.query||'')+'"></div><div class="journey-date-nav">'+action('prev','','‹ السابق')+'<input aria-label="يوم الرحلة" type="date" data-journey-day value="'+esc(state.day)+'">'+action('next','','التالي ›')+(state.day!==cairoDay()?action('today','','اليوم','btn-primary'):'')+action('refresh','','تحديث')+tools+'</div></div>'+
+ doctorStrip(d)+'<div class="journey-layout"><main data-journey-board-host></main><aside><section class="journey-section journey-action-center"><div class="journey-section-head"><h3>يحتاج تدخل</h3></div>'+actionCenter(d)+'</section><section class="journey-section"><div class="journey-section-head"><h3>اتصال الوكيل</h3></div><p>'+num((d.outbox||[]).filter(function(o){return !o.delivered_at;}).length)+' رسالة رحلة لم تُسلّم بعد.</p><p>'+num((d.outbox||[]).filter(function(o){return !!o.delivered_at;}).length)+' رسالة تم تسليمها.</p></section></aside></div>';
+ if(open){var t=root.querySelector('details.journey-tools');if(t)t.open=true;}
+ paintBoard(c);
  if(c.sandbox){var aside=root.querySelector('aside');aside.lastElementChild.remove();aside.insertAdjacentHTML('beforeend',window.SWNJourneySandbox.messages(state.sandbox));}
  bind(root,c);
 }
 function bind(root,c){
- root.onclick=function(e){var b=e.target.closest('[data-journey-action]');if(!b)return;e.preventDefault();handle(b.dataset.journeyAction,b.dataset.id,c);};
+ root.onclick=function(e){
+  var f=e.target.closest('[data-journey-filter]');if(f){e.preventDefault();state.filter=state.filter===f.dataset.journeyFilter?'all':f.dataset.journeyFilter;paintBoard(c);return;}
+  var b=e.target.closest('[data-journey-action]');if(!b)return;e.preventDefault();var menu=b.closest('details.journey-more');if(menu)menu.open=false;handle(b.dataset.journeyAction,b.dataset.id,c);
+ };
  var input=root.querySelector('[data-journey-day]');if(input)input.onchange=function(){state.day=input.value;load(c,true);};
+ var search=root.querySelector('[data-journey-search]');if(search)search.oninput=function(){state.query=search.value;paintBoard(c);};
+}
+function openSection(c,key,after){
+ var host=c&&c.host;if(!host)return;var back=host.querySelector('[data-rx-action="back"]');if(back)back.click();
+ setTimeout(function(){var s=host.querySelector('[data-rx-section="'+key+'"]');if(!s){toast('هذا القسم غير متاح حسب صلاحيتك','error');return;}s.click();if(after)setTimeout(function(){var b=host.querySelector('[data-rx-action="'+after+'"]');if(b)b.click();},40);},40);
+}
+function collectDue(c,a){
+ var inv=a&&a.due_invoices&&a.due_invoices[0];if(!inv)return;
+ var known=((c.data||{}).invoices||[]).some(function(x){return x.id===inv.id;});
+ if(known&&base.act&&base.act('collect-invoice',inv.id,c))return;
+ toast('افتح «التحصيل والمستلزمات» لتحصيل فاتورة '+(inv.invoice_no||''),'error');openSection(c,'operations');
+}
+function accountModal(c,id){
+ var a=findAppointment(id);if(!a)return;
+ var finance=a.can_view_finance?'<section><h4>الحساب</h4><p>المطلوب من المريض '+money(a.patient_payable_total)+' · المدفوع '+money(a.patient_paid)+' · المتبقي '+money(a.patient_due)+'</p>'+(hasDue(a)&&can('collect')&&a.due_invoices&&a.due_invoices.length?'<button type="button" class="btn btn-primary" data-journey-account-collect>تحصيل المتبقي</button>':'')+'</section>':'';
+ var m=infoModal(c,a.patient_name,'<div class="journey-account" data-wide><section><h4>الحجز</h4><p>'+time(a.starts_at)+' · '+esc(a.provider_name)+' · '+esc(a.service_name)+'</p><p>'+(a.file_no?'ملف '+esc(a.file_no)+' · ':'')+(a.phone?esc(a.phone):'')+'</p></section>'+finance+'</div>');
+ var b=m&&m.querySelector('[data-journey-account-collect]');if(b)b.onclick=function(){m.remove();collectDue(c,a);};
 }
 function findAppointment(id){return ((state.data||{}).appointments||[]).find(function(a){return a.id===id;});}
 function refresh(c){return load(c,true);}
@@ -143,6 +203,13 @@ function handle(name,id,c){
    if(name==='sandbox_feedback'){window.SWNJourneySandbox.feedback(c,id,save);return;}
    if(name==='sandbox_messages'){run(c,'simulate_messages',{}).catch(function(e){toast(e.message,'error');});return;}
   }
+  if(name==='clear_filter'){state.filter='all';state.query='';paint(c);return;}
+  if(name==='account'){accountModal(c,id);return;}
+  if(name==='collect_due'){collectDue(c,findAppointment(id));return;}
+  if(name==='new_booking'){openSection(c,'appointments','book');return;}
+  if(name==='patient_search'){openSection(c,'patients');return;}
+  if(name==='finance_section'){openSection(c,'operations');return;}
+  if(name==='quick_collect'){if(base.act&&base.act('collect','',c))return;openSection(c,'operations');return;}
   if(name==='refresh'){refresh(c);return;}if(name==='prev'){state.day=shiftDay(state.day,-1);refresh(c);return;}if(name==='next'){state.day=shiftDay(state.day,1);refresh(c);return;}if(name==='today'){state.day=cairoDay();refresh(c);return;}if(name==='settings'){settingsModal(c);return;}if(name==='static_qr'){showQr(c,'QR تسجيل الوصول العام',checkinUrl(),'ضع هذا الكود على كاونتر الاستقبال أو منطقة الانتظار. المريض يدخل رقم هاتف الحجز ويؤكد موقعه.');return;}if(name==='timeline'){timelineModal(c,id);return;}if(name==='visit_detail'){if(id&&base.act)base.act('visit-detail',id,c);return;}if(name==='priority'){priorityModal(c,id);return;}if(name==='help'){helpModal(c,id);return;}if(name==='request_service'){serviceModal(c,id);return;}if(name==='resolve_help'){run(c,'resolve_help',{id:id,status:'resolved'});return;}
   if(name==='qr'){run(c,'checkin_token',{appointment_id:id}).then(function(r){showQr(c,'QR خاص بالحجز',checkinUrl(r.token),'هذا الكود خاص بهذا الحجز ويعمل خلال الفترة المحددة.');});return;}
   if(name.indexOf('doctor_')===0){doctorStatus(c,id,name.replace('doctor_',''));return;}
@@ -166,6 +233,9 @@ function panel(c){
  return '<section class="journey-shell"><header class="journey-title"><div><h2>تشغيل اليوم</h2><p>رحلة المريض والطابور وحالة الأطباء والتدخلات في شاشة واحدة.</p></div></header><div data-journey-root><div class="journey-loading">جاري تحميل تشغيل اليوم…</div></div></section>';
 }
 
+function autoRefresh(){var root=currentRoot();if(!root||!root.isConnected||!state.context||state.loading||document.hidden||document.querySelector('.rx-modal')||root.querySelector('details.journey-more[open]')||(document.activeElement&&document.activeElement.matches&&document.activeElement.matches('[data-journey-search],[data-journey-day]')))return;load(state.context,false,true);}
+if(!state.refreshTimer)state.refreshTimer=setInterval(autoRefresh,60000);
+document.addEventListener('click',function(e){var inMenuButton=e.target.closest&&e.target.closest('details.journey-more button');document.querySelectorAll('details.journey-more[open]').forEach(function(d){if(!d.contains(e.target)||inMenuButton&&d.contains(inMenuButton))d.open=false;});},true);
 var wrapped={};Object.keys(base).forEach(function(k){wrapped[k]=base[k];});
 wrapped.sections=function(c){var rows=base.sections?base.sections(c):[];if(!rows.some(function(x){return x[0]==='journey';}))rows=rows.concat([['journey','تشغيل اليوم','رحلة المريض والطابور وحالة الأطباء والتنبيهات اللحظية.']]);return rows;};
 wrapped.panel=function(section,c){if(section==='journey')return panel(c);return base.panel?base.panel(section,c):'';};
