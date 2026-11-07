@@ -328,3 +328,4 @@ button.tsk-chip-more{font:inherit;font-size:12px;cursor:pointer;background:#eaf1
  .tw-admin-needs>.tv-needs{margin-top:4px;margin-bottom:12px}
  .tw-admin-needs>summary:focus-visible{outline:2px solid #0F369D;outline-offset:2px;border-radius:8px}
 }
+.tw-lock{background:#fff8ec;border:1px solid #f3d9a8;border-radius:12px;padding:14px;font-size:13px;line-height:1.8;color:#5b4314}.tw-lock p{margin:0 0 8px}.tw-lock ul{list-style:none;margin:0;padding:0;display:grid;gap:8px}.tw-lock li{display:flex;gap:10px;align-items:center;justify-content:space-between;background:#fff;border-radius:10px;padding:10px 12px}.tw-lock li>span{min-width:0;overflow-wrap:anywhere}.tw-lock small{display:block;font-size:12px;color:#7a5c1e}.tw-lock .btn{min-height:44px;flex-shrink:0}
