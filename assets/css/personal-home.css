@@ -118,3 +118,6 @@
  .ph-task-preview .ph-meta{gap:5px}.ph-task-preview .ph-chip{font-size:10px;padding:3px 6px}.ph-task-preview .ph-chip-who{display:none}
  .ph-task-preview .ph-row:hover{background:#EAF1FF;border-color:#0F369D}
 }
+
+.ph-inbox-head .ph-last-refresh{flex-basis:100%;order:9;font-size:12px;color:var(--c-muted,#6B7688)}
+.ph-inbox-head .ph-refresh-now{color:var(--c-primary,#0F369D);border:1px solid var(--c-primary,#0F369D)}

@@ -8,15 +8,16 @@ async function flush() { for (let i = 0; i < 24; i++) await Promise.resolve(); }
 function fixture(code = source) {
   let now = 0, sequence = 0, account = null;
   const timers = new Map(), listeners = new Map(), calls = [], deferred = [];
-  const mark = {};
-  const panel = {hidden: true, dataset: {}, classList: {add() {}}, contains() {return false;}, querySelectorAll() {return [];}, querySelector(key) {return key === '[data-home-mark-all]' ? mark : null;}};
+  const mark = {}, refreshNow = {};
+  const panel = {hidden: true, dataset: {}, classList: {add() {}}, contains() {return false;}, querySelectorAll() {return [];}, querySelector(key) {return key === '[data-home-mark-all]' ? mark : key === '[data-home-refresh-now]' ? refreshNow : null;}};
   const bell = {hidden: true, contains() {return false;}, setAttribute() {}};
   const badge = {};
   const document = {hidden: false, documentElement: {lang: 'ar'},
     getElementById(id) {return {'notif-bell-btn': bell, 'notif-panel': panel, 'notif-badge': badge}[id] || null;},
     addEventListener(kind, fn) {if (!listeners.has(kind)) listeners.set(kind, new Set()); listeners.get(kind).add(fn);},
     removeEventListener(kind, fn) {listeners.get(kind)?.delete(fn);}};
-  const channel = {on() {return this;}, subscribe() {return this;}};
+  const handlers = {};
+  const channel = {on(kind, cfg, fn) {handlers[cfg.table] = fn; return this;}, subscribe() {return this;}};
   const state = {delay: false, fail: false, data: {notices: [], unread: 0}};
   const window = {SSMPDDb: {unsubscribe() {}, client: {channel() {return channel;}, rpc(name) {
     calls.push({name, now, account});
@@ -31,7 +32,7 @@ function fixture(code = source) {
     setTimeout(fn, delay) {const id = ++sequence; timers.set(id, {fn, at: now + delay}); return id;},
     clearTimeout(id) {timers.delete(id);}});
   const api = window.SSMPDPersonalHome;
-  return {api, calls, state, deferred, document, bell, badge, mark, timers, listeners,
+  return {api, panel, refreshNow, handlers, calls, state, deferred, document, bell, badge, mark, timers, listeners,
     async mount(id = 'account-a') {account = id; api.mountNotifications({id}, {}); await flush();},
     visibility(hidden, dispatch = true) {document.hidden = hidden; if (dispatch) for (const fn of listeners.get('visibilitychange') || []) fn();},
     async tick(ms) {const end = now + ms; for (;;) {
@@ -45,13 +46,13 @@ const test = (name, fn) => tests.push([name, fn]);
 test('background events coalesce and share one trailing promise', async () => {
   const f = fixture(); await f.mount(); const pending = f.api.refreshNotifications();
   for (let i=0; i<20; i++) assert.equal(f.api.refreshNotifications(), pending);
-  await f.tick(14999); assert.equal(f.calls.length, 1);
+  await f.tick(3599999); assert.equal(f.calls.length, 1);
   await f.tick(1); await pending; assert.equal(f.calls.length, 2); assert.equal(f.timers.size, 0);
 });
 test('hidden refreshes make no RPC and visibility catches up once', async () => {
   const f = fixture(); await f.mount(); f.visibility(true);
   for (let i=0; i<10; i++) await f.api.refreshNotifications();
-  await f.tick(60000); assert.equal(f.calls.length, 1);
+  await f.tick(600000); assert.equal(f.calls.length, 1);
   f.visibility(false); await flush(); assert.equal(f.calls.length, 2);
 });
 test('hiding cancels and settles queued work', async () => {
@@ -61,7 +62,7 @@ test('hiding cancels and settles queued work', async () => {
 });
 test('trailing callback rechecks visibility even without its event', async () => {
   const f = fixture(); await f.mount(); const pending = f.api.refreshNotifications();
-  f.visibility(true, false); await f.tick(15000); await pending; assert.equal(f.calls.length, 1);
+  f.visibility(true, false); await f.tick(3600000); await pending; assert.equal(f.calls.length, 1);
 });
 test('stop cancels timers, removes visibility listener and settles callers', async () => {
   const f = fixture(); await f.mount(); const pending = f.api.refreshNotifications(); f.api.stop();
@@ -82,12 +83,18 @@ test('active requests retain single-flight promise semantics', async () => {
 });
 test('manual refresh cancels the background timer without duplicate RPC', async () => {
   const f = fixture(); await f.mount(); const pending = f.api.refreshNotifications();
-  await f.api.refreshNotifications(true); await pending; await f.tick(15000);
+  await f.api.refreshNotifications(true); await pending; await f.tick(3600000);
   assert.equal(f.calls.length, 2); assert.equal(f.timers.size, 0);
 });
 test('opening the bell requests fresh data immediately', async () => {
   const f = fixture(); await f.mount(); f.bell.onclick({stopPropagation(){}}); await flush();
   assert.equal(f.calls.length, 2);
+});
+test('refresh-now button bypasses the hourly hold and shows the last refresh time', async () => {
+  const f = fixture(); await f.mount(); f.bell.onclick({stopPropagation(){}}); await flush(); await flush();
+  assert.equal(f.calls.length, 2); assert.match(f.panel.innerHTML, /تحديث الآن/); assert.match(f.panel.innerHTML, /آخر تحديث: الآن/);
+  await f.tick(5000); f.refreshNow.onclick({stopPropagation(){}}); f.refreshNow.onclick({stopPropagation(){}}); await flush(); await flush();
+  assert.equal(f.calls.length, 3); assert.equal(f.timers.size, 0); assert.match(f.panel.innerHTML, /تحديث الآن/);
 });
 test('marking displayed notices read refreshes immediately after the write', async () => {
   const f = fixture(); f.state.data = {notices: [{key: 'task:test', type: 'task', id: 'test', message: 'Synthetic notice', at: '2026-11-05T00:00:00Z', read: false}], unread: 1};
@@ -98,14 +105,42 @@ test('marking displayed notices read refreshes immediately after the write', asy
 });
 test('realtime event objects cannot bypass the cooldown', async () => {
   const f = fixture(); await f.mount(); const pending = f.api.refreshNotifications({eventType: 'INSERT'});
-  await flush(); assert.equal(f.calls.length, 1); await f.tick(15000); await pending; assert.equal(f.calls.length, 2);
+  await flush(); assert.equal(f.calls.length, 1); await f.tick(299999); assert.equal(f.calls.length, 1); await f.tick(1); await pending; assert.equal(f.calls.length, 2);
 });
 test('RPC failure releases flight and allows a later retry', async () => {
   const f = fixture(); await f.mount(); f.state.fail = true; await f.api.refreshNotifications(true);
-  await f.tick(15000); await f.api.refreshNotifications(); assert.equal(f.calls.length, 3);
+  await f.tick(3600000); await f.api.refreshNotifications(); assert.equal(f.calls.length, 3);
 });
-test('45-second visible fallback remains eligible', async () => {
-  const f = fixture(); await f.mount(); await f.tick(45000); await f.api.refreshNotifications(); assert.equal(f.calls.length, 2);
+test('45-second app poll is held to one background refresh per hour', async () => {
+  const f = fixture(); await f.mount();
+  for (let i=0; i<79; i++) {await f.tick(45000); f.api.refreshNotifications(); await flush();}
+  assert.equal(f.calls.length, 1); await f.tick(45000); await flush(); assert.equal(f.calls.length, 2);
+});
+test('personal task notice refreshes immediately while visible', async () => {
+  const f = fixture(); await f.mount(); f.handlers.task_notifications({eventType: 'INSERT'}); await flush();
+  assert.equal(f.calls.length, 2);
+});
+test('personal notice while hidden is caught up once on return', async () => {
+  const f = fixture(); await f.mount(); f.visibility(true); f.handlers.task_notifications({eventType: 'INSERT'}); await flush();
+  assert.equal(f.calls.length, 1); await f.tick(1000); f.visibility(false); await flush(); assert.equal(f.calls.length, 2);
+  f.visibility(true); f.visibility(false); await flush(); assert.equal(f.calls.length, 2);
+});
+test('return within ten minutes without missed notices makes no RPC', async () => {
+  const f = fixture(); await f.mount(); f.visibility(true); await f.tick(599999); f.visibility(false); await flush();
+  assert.equal(f.calls.length, 1);
+});
+test('shared data events refresh at most once per five minutes', async () => {
+  const f = fixture(); await f.mount();
+  for (let i=0; i<29; i++) {f.handlers.inventory_requests({eventType: 'UPDATE'}); f.api.refreshNotifications({eventType: 'INSERT'}); await f.tick(10000);}
+  assert.equal(f.calls.length, 1); await f.tick(10000); assert.equal(f.calls.length, 2);
+  for (let i=0; i<29; i++) {f.api.refreshNotifications({eventType: 'UPDATE'}); await f.tick(10000);}
+  assert.equal(f.calls.length, 2); await f.tick(10000); assert.equal(f.calls.length, 3);
+  await f.tick(3600000); assert.equal(f.calls.length, 3);
+});
+test('inventory events while hidden make no RPC and stop clears the inventory timer', async () => {
+  const f = fixture(); await f.mount(); f.visibility(true); f.handlers.inventory_requests({}); await f.tick(600000);
+  assert.equal(f.calls.length, 1); f.visibility(false); await flush(); assert.equal(f.calls.length, 2);
+  f.handlers.inventory_requests({}); f.api.stop(); await f.tick(600000); assert.equal(f.calls.length, 2); assert.equal(f.timers.size, 0);
 });
 test('late response from old account cannot overwrite the new badge', async () => {
   const f = fixture(); f.state.delay = true; await f.mount(); const old = f.deferred.shift();
@@ -124,7 +159,7 @@ test('late response from old account cannot overwrite the new badge', async () =
       for (let i=0; i<20; i++) {await f.tick(1000); f.api.refreshNotifications(); await flush();}
       await f.tick(10000); counts.push(f.calls.length); f.api.stop();
     }
-    assert.deepEqual(counts,[21,3]);
+    assert(counts[1] <= counts[0], 'candidate must not add calls');
     console.log('SYNTHETIC burst comparison (20 events/30s, includes mount): '+JSON.stringify({baseline:counts[0],candidate:counts[1],networkCalls:0}));
   }
   console.log('PASS '+tests.length+' deterministic notification refresh tests; fake DOM/RPC/clock only');

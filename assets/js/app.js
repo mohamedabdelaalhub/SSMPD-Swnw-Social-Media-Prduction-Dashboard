@@ -478,8 +478,8 @@
       el.onkeydown = function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } };
     });
   }
-  function refreshNotifBadge() {
-    if(window.SSMPDPersonalHome){window.SSMPDPersonalHome.refreshNotifications();return;}
+  function refreshNotifBadge(payload) {
+    if(window.SSMPDPersonalHome){window.SSMPDPersonalHome.refreshNotifications(payload&&payload.eventType?payload:undefined);return;}
     var admin = window.SSMPDAuth.currentAdmin;
     var badge = document.getElementById("notif-badge");
     var bellBtn = document.getElementById("notif-bell-btn");
@@ -876,7 +876,7 @@
     // The 45-second fallback refreshes notification counts only.
     // A real database event adds a notice without touching inputs, tabs or scroll.
     if(payload && payload.eventType){if(window.SSMPDUpdateNotice&&window.SSMPDUpdateNotice.enabled()){window.SSMPDUpdateNotice.receive(payload);}else showRefreshNotice();}
-    refreshNotifBadge();
+    refreshNotifBadge(payload);
   }
 
   // ---------- لوحة الشكر (Kudos) ----------

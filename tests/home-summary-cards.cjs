@@ -27,7 +27,7 @@ const tick=()=>new Promise(r=>setImmediate(r));
  root.querySelector('[data-home-detail="rating"]').click();
  root.querySelector('[data-rate="strong"]').click();await tick();assert(root.querySelector('.ph-thanks'));
  root.querySelector('[data-home-detail="content"]').click();assert(root.querySelector('[data-home-dialog="content"] #ph-supplies'));
- const before=root.querySelector('[data-home-dialog="rating"]');notices=[...notices,{key:'two',type:'task',id:'t4',message:'إشعار آخر',read:false}];await w.SSMPDPersonalHome.refreshNotifications();
+ const before=root.querySelector('[data-home-dialog="rating"]');notices=[...notices,{key:'two',type:'task',id:'t4',message:'إشعار آخر',read:false}];await w.SSMPDPersonalHome.refreshNotifications(true);
  assert.equal(root.querySelector('[data-home-detail="notices"] .ph-summary-count').textContent,'2');assert.equal(root.querySelector('[data-home-dialog="rating"]'),before,'background refresh preserves open details');
  root.querySelector('.ph-summary-actions [data-home-tab]').click();assert.equal(opened.at(-1)[0],'tab');
  w.SSMPDPersonalHome.stop();dom.window.close();console.log('PASS six cards, detail dialogs, existing actions, tab links, supply grouping, live counts, background refresh preservation.');
