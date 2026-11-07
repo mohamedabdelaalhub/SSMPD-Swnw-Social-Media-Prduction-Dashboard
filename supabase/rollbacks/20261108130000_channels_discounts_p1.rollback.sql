@@ -1,5 +1,5 @@
 -- Rollback for 20261108130000_channels_discounts_p1.sql.
--- Restores the original doctor_sync (copied verbatim from 20261017010341) and the previous snapshot, then drops what the migration added.
+-- Restores doctor_sync as it was BEFORE this migration (the 20261017010341 body with the returned_deduction patch of 20261017011033 applied) and moves the previous public snapshot back, then drops what the migration added.
 -- WARNING: drops channel_rules and channel_allocations. Invoices already booked with a channel keep their amounts, but their doctor accrual stays
 -- as it was computed (net of the platform share) and will no longer be re-derived with it on refunds. Export first:
 --   select * from clinic_finance.channel_rules; select * from clinic_finance.channel_allocations;
@@ -24,7 +24,7 @@ begin
  select coalesce(sum(x.amount),0) into adjustment from clinic_finance.insurance_actions x join clinic_finance.insurance_claims c on c.id=x.claim_id where c.invoice_id=i.id and x.kind='contractual' and x.status='approved';
  revenue:=case when i.voided then 0 else greatest(0,i.amount-refund-adjustment) end;
  collected:=greatest(0,coalesce((select sum(amount) from clinic_finance.payments where invoice_id=i.id),0)-refund+coalesce((select sum(x.amount) from clinic_finance.insurance_actions x join clinic_finance.insurance_claims c on c.id=x.claim_id where c.invoice_id=i.id and x.kind='payment' and x.status='approved'),0));
- target:=greatest(0,a.original_base*revenue/i.amount-a.original_deduction)*(a.terms->>'rate')::numeric/100;
+ target:=greatest(0,a.original_base*revenue/i.amount-greatest(0,a.original_deduction-a.returned_deduction))*(a.terms->>'rate')::numeric/100;
  if a.terms->>'basis'='collected' then target:=case when revenue>0 then target*least(1,collected/revenue) else 0 end;end if;
  target:=round(target,2);delta:=target-a.earned;
  if delta<>0 then insert into clinic_finance.doctor_accruals(invoice_id,doctor_key,delta) values(i.id,a.doctor_key,delta) returning id into event_id;

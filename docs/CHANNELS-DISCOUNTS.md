@@ -20,11 +20,14 @@ Draft PR. **Not applied to production.** Migration `20261108130000_channels_disc
 
 - `clinic_finance.channel_rules` (maker-checker, versioned, status pending/active/rejected/retired), `clinic_finance.channel_allocations` (one frozen row per invoice).
 - AFTER INSERT trigger on invoices reads the channel fields from `bill_payload`; rejects an inactive/out-of-date rule or an amount that does not equal `consultation + services − discount`.
-- `clinic_finance.doctor_sync` re-created with an extra `channel_share × revenue / amount` deduction term; the migration has a guard that aborts if the live function is not the expected version. The rollback restores the original verbatim.
+- `clinic_finance.doctor_sync` re-created with an extra `channel_share × revenue / amount` deduction term; the migration has a guard that aborts if the live function is not the expected version (the one with the `returned_deduction` patch of 20261017011033) or if the finance snapshot chain is not complete. The rollback restores the pre-migration definition (same body without the channel term).
 - RPC `clinic_finance_channel_command(action, payload, token)`: `create`, `review`, `retire`. The finance snapshot gains `channel_rules`, `channel_allocations`, `channel_payables`.
 - Browser rounding is integer-cent half-up to match Postgres `round(numeric)`.
 
 ## Limits (by design in Phase 1)
+
+0. `consultation_gross` / `services_gross` are sent by the client and only checked for consistency with the invoice amount; deriving them from the service catalogue is a later phase.
+0. A contract has ONE rate per invoice. A mixed consultation + services invoice gets a single rate (e.g. a 50% contract, consultation 100 + services 200 on an external platform: doctor 137.5, while the owner's service rates are 40% or lower). Known Phase-1 limit.
 
 1. One rate set per invoice (a mixed club + platform invoice is not modelled).
 2. Payables are a **report only** — no ledger posting or payment tracking yet.

@@ -7,11 +7,11 @@ begin;
 -- Safety: this migration replaces doctor_sync and wraps the snapshot. Refuse to run if the live definitions are not the ones this file was written against.
 do $$ begin
   if to_regprocedure('clinic_finance.doctor_sync(uuid)') is null
-     or position('greatest(0,a.original_base*revenue/i.amount-a.original_deduction)' in pg_get_functiondef('clinic_finance.doctor_sync(uuid)'::regprocedure)) = 0 then
+     or position('greatest(0,a.original_base*revenue/i.amount-greatest(0,a.original_deduction-a.returned_deduction))' in pg_get_functiondef('clinic_finance.doctor_sync(uuid)'::regprocedure)) = 0 then
     raise exception 'clinic_finance.doctor_sync غير مطابقة للمتوقع؛ لا تطبق هذا الملف قبل مراجعة الفرق';
   end if;
-  if to_regprocedure('clinic_finance.doctor_snapshot_base(date,date,integer)') is null then
-    raise exception 'غلاف لقطة الأطباء غير موجود؛ طبق migration عقود الأطباء أولًا';
+  if to_regprocedure('clinic_finance.group_snapshot_base(date,date,integer)') is null then
+    raise exception 'سلسلة لقطة المالية غير مكتملة (group_snapshot_base)؛ طبق migrations المالية السابقة أولًا';
   end if;
 end $$;
 
@@ -44,7 +44,8 @@ create table clinic_finance.channel_rules (
   check (valid_from <= valid_to),
   check (patient_discount_percent + platform_share_percent <= 100),
   check (kind <> 'internal' or payable_kind = 'none'),
-  check (payable_kind = 'none' or platform_share_percent > 0)
+  check (payable_kind = 'none' or platform_share_percent > 0),
+  check (length(payload::text) <= 8000)
 );
 
 -- Frozen copy of the rule that applied when the invoice was booked + the amounts it produced.
@@ -106,7 +107,7 @@ begin
   return greatest(0, i.amount - refund - adjustment);
 end $$;
 
--- doctor_sync: identical to 20261017010341 except for ONE extra term: the platform/internal share of the invoice (scaled with revenue like the base) is taken off the doctor base.
+-- doctor_sync: identical to the CURRENT definition (20261017010341 + the returned_deduction patch of 20261017011033) except for ONE extra term: the platform/internal share of the invoice (scaled with revenue like the base) is taken off the doctor base.
 -- With no channel row the term is 0 and the result is bit-for-bit the old one.
 create or replace function clinic_finance.doctor_sync(p_invoice uuid) returns void language plpgsql security definer set search_path = pg_catalog, public as $$
 declare a clinic_finance.doctor_allocations%rowtype;i clinic_finance.invoices%rowtype;refund numeric;adjustment numeric;revenue numeric;collected numeric;target numeric;delta numeric;event_id uuid;channel_share numeric;
@@ -117,7 +118,7 @@ begin
  select coalesce(sum(platform_share),0) into channel_share from clinic_finance.channel_allocations where invoice_id=i.id;
  revenue:=case when i.voided then 0 else greatest(0,i.amount-refund-adjustment) end;
  collected:=greatest(0,coalesce((select sum(amount) from clinic_finance.payments where invoice_id=i.id),0)-refund+coalesce((select sum(x.amount) from clinic_finance.insurance_actions x join clinic_finance.insurance_claims c on c.id=x.claim_id where c.invoice_id=i.id and x.kind='payment' and x.status='approved'),0));
- target:=greatest(0,a.original_base*revenue/i.amount-a.original_deduction-channel_share*revenue/i.amount)*(a.terms->>'rate')::numeric/100;
+ target:=greatest(0,a.original_base*revenue/i.amount-greatest(0,a.original_deduction-a.returned_deduction)-channel_share*revenue/i.amount)*(a.terms->>'rate')::numeric/100;
  if a.terms->>'basis'='collected' then target:=case when revenue>0 then target*least(1,collected/revenue) else 0 end;end if;
  target:=round(target,2);delta:=target-a.earned;
  if delta<>0 then insert into clinic_finance.doctor_accruals(invoice_id,doctor_key,delta) values(i.id,a.doctor_key,delta) returning id into event_id;
@@ -136,7 +137,9 @@ begin
     d := coalesce(nullif(p_payload->>'patient_discount_percent', '')::numeric, 0); s := coalesce(nullif(p_payload->>'platform_share_percent', '')::numeric, 0);
     if d::text in ('NaN', 'Infinity', '-Infinity') or s::text in ('NaN', 'Infinity', '-Infinity') or d < 0 or s < 0 or d + s > 100 then raise exception 'راجع نسبة خصم المريض ونسبة المنصة (المجموع لا يتجاوز 100%%)'; end if;
     select coalesce(array_agg(distinct lower(trim(x))), '{}') into codes from jsonb_array_elements_text(coalesce(p_payload->'source_codes', '[]')) x where length(trim(x)) > 0;
-    select coalesce(max(version), 0) + 1 into vers from clinic_finance.channel_rules where code = p_payload->>'code';
+    if p_payload->>'kind' = 'internal' and coalesce(nullif(p_payload->>'payable_kind', ''), 'none') <> 'none' then raise exception 'القناة الداخلية لا يكون لها مستحق لجهة خارجية'; end if;
+    if coalesce(nullif(p_payload->>'payable_kind', ''), 'none') <> 'none' and s <= 0 then raise exception 'حدد نسبة حصة للجهة عند اختيار عمولة أو كاش باك'; end if;
+    select coalesce(max(version), 0) + 1 into vers from clinic_finance.channel_rules where code = trim(p_payload->>'code');
     insert into clinic_finance.channel_rules(code, version, name, kind, applies_to, patient_discount_percent, platform_share_percent, payable_kind, payable_when, source_codes, valid_from, valid_to, notes, payload, created_by, token)
     values (trim(p_payload->>'code'), vers, trim(p_payload->>'name'), p_payload->>'kind', p_payload->>'applies_to', d, s, coalesce(nullif(p_payload->>'payable_kind', ''), 'none'), coalesce(trim(p_payload->>'payable_when'), ''), codes,
             (p_payload->>'valid_from')::date, (p_payload->>'valid_to')::date, coalesce(trim(p_payload->>'notes'), ''), p_payload, me, p_token) returning id into v_id;
@@ -176,14 +179,14 @@ begin
     'channel_allocations', (select coalesce(jsonb_agg(x), '[]') from (select to_jsonb(a) - 'rule' || jsonb_build_object('invoice_reference', i.reference, 'invoice_amount', i.amount, 'voided', i.voided) x
         from clinic_finance.channel_allocations a join clinic_finance.invoices i on i.id = a.invoice_id
         where (reviewer or i.created_by = me) and (i.created_at at time zone 'Africa/Cairo')::date between p_from and p_to order by i.created_at desc, a.invoice_id desc limit 200 offset p_offset) t),
-    'channel_payables', (select coalesce(jsonb_agg(x order by x->>'month' desc, x->>'channel_code'), '[]') from (
+    'channel_payables', case when not reviewer then '[]'::jsonb else (select coalesce(jsonb_agg(x order by x->>'month' desc, x->>'channel_code'), '[]') from (
         select jsonb_build_object('channel_code', a.channel_code, 'channel_name', a.channel_name, 'kind', a.kind, 'payable_kind', a.payable_kind,
                'month', date_trunc('month', i.created_at at time zone 'Africa/Cairo')::date, 'invoices', count(*),
                'gross', sum(a.gross_consultation + a.gross_services), 'patient_discount', sum(a.patient_discount),
                'share_due', sum(round(a.platform_share * clinic_finance.invoice_revenue(i.id) / i.amount, 2))) x
         from clinic_finance.channel_allocations a join clinic_finance.invoices i on i.id = a.invoice_id
         where (i.created_at at time zone 'Africa/Cairo')::date between p_from and p_to
-        group by a.channel_code, a.channel_name, a.kind, a.payable_kind, date_trunc('month', i.created_at at time zone 'Africa/Cairo')::date) t));
+        group by a.channel_code, a.channel_name, a.kind, a.payable_kind, date_trunc('month', i.created_at at time zone 'Africa/Cairo')::date) t) end);
 end $$;
 
 revoke all on all functions in schema clinic_finance from public, anon, authenticated;

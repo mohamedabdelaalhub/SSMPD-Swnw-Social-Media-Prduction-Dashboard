@@ -11,7 +11,9 @@ const root = path.resolve('.'), id = n => '30000000-0000-4000-8000-' + String(n)
   await db.exec(`create table admin_module_permissions(admin_id uuid,module_key text,can_view boolean,can_create boolean,can_update boolean);
     create function finance_module_allowed(m text,a text) returns boolean language sql stable security definer as $$select exists(select 1 from admin_module_permissions where admin_id=my_admin_id() and module_key=m and can_view and case a when 'create' then can_create when 'update' then can_update else true end)$$;`);
   const mig = n => fs.readFileSync('supabase/migrations/' + n, 'utf8');
-  for (const n of ['20261017003349_clinic_cash_control.sql', '20261017004849_clinic_stock_insurance_controls.sql', '20261017010341_clinic_doctor_settlements.sql']) await db.exec(mig(n));
+  for (const n of ['20261017003349_clinic_cash_control.sql', '20261017004849_clinic_stock_insurance_controls.sql', '20261017010341_clinic_doctor_settlements.sql', '20261017011033_clinic_supplier_finance.sql']) await db.exec(mig(n));
+  // The real chain wraps the public snapshot ~15 more times (bank, payroll, ..., group matches). The slice cannot load those, so emulate the LAST wrapper (group_snapshot_base) that production has.
+  await db.exec('alter function public.clinic_finance_snapshot(date,date,integer) set schema clinic_finance; alter function clinic_finance.clinic_finance_snapshot(date,date,integer) rename to group_snapshot_base; create function public.clinic_finance_snapshot(p_from date,p_to date,p_offset integer default 0) returns jsonb language sql stable security definer set search_path=pg_catalog,public as $$ select clinic_finance.group_snapshot_base(p_from,p_to,p_offset) $$; grant execute on function public.clinic_finance_snapshot(date,date,integer) to authenticated;');
   for (const [n, role] of [[1, 'super_admin'], [2, 'accountant'], [3, 'financial_manager'], [4, 'reception'], [5, 'accountant']]) await db.query('insert into admins(id,name,role) values($1,$2,$3)', [id(n), 'Test ' + n, role]);
   await db.exec(`insert into admin_module_permissions values('${id(2)}','accounting',true,true,true),('${id(3)}','accounting',true,true,true),('${id(5)}','accounting',true,true,true)`);
   const as = async n => { await db.exec('reset role'); await db.query("select set_config('test.admin',$1,false)", [id(n)]); await db.exec('set role authenticated'); };
@@ -44,8 +46,24 @@ const root = path.resolve('.'), id = n => '30000000-0000-4000-8000-' + String(n)
   const accrualsBefore = (await owner('select count(*)::int n from clinic_finance.doctor_accruals'))[0].n;
   const entriesBefore = (await owner('select count(*)::int n from clinic_finance.entries'))[0].n;
 
+  // keep a copy of the CURRENT production doctor_sync (with the returned_deduction patch) to compare against after the migration
+  const oldDef = (await owner("select pg_get_functiondef('clinic_finance.doctor_sync(uuid)'::regprocedure) d"))[0].d;
+  assert(oldDef.includes('greatest(0,a.original_deduction-a.returned_deduction)'), 'fixture really carries the supplier-finance patch');
+  await db.exec(oldDef.replace('clinic_finance.doctor_sync(', 'clinic_finance.doctor_sync_old('));
+  const earnedWith = async (fn, inv, od, rd) => {
+    await db.exec('reset role'); await db.exec('begin');
+    await db.query('update clinic_finance.doctor_allocations set original_deduction=$2, returned_deduction=$3, earned=0 where invoice_id=$1', [inv, od, rd]);
+    await db.query('select clinic_finance.' + fn + '($1)', [inv]);
+    const r = Number((await db.query('select earned from clinic_finance.doctor_allocations where invoice_id=$1', [inv])).rows[0].earned);
+    await db.exec('rollback'); return r;
+  };
+
   // ---- APPLY the new migration
   await db.exec(mig('20261108130000_channels_discounts_p1.sql'));
+  // REGRESSION: old vs new doctor_sync on invoices WITHOUT a channel, including returned_deduction cases, must be identical
+  for (const inv of [oldPlain, oldRefund, oldSimple]) for (const [od, rd] of [[0, 0], [30, 0], [30, 10], [30, 50], [0, 5], [250, 250]])
+    assert.equal(await earnedWith('doctor_sync', inv, od, rd), await earnedWith('doctor_sync_old', inv, od, rd), 'no-channel parity od=' + od + ' rd=' + rd);
+  assert.notEqual(await earnedWith('doctor_sync', oldPlain, 30, 10), await earnedWith('doctor_sync', oldPlain, 30, 0), 'returned_deduction still matters');
   for (const inv of [oldPlain, oldRefund, oldSimple]) await owner('select clinic_finance.doctor_sync($1)', [inv]);
   assert.deepEqual({ plain: await earned(oldPlain), refunded: await earned(oldRefund), simple: await earned(oldSimple) }, before, 'existing invoices compute identically');
   assert.equal((await owner('select count(*)::int n from clinic_finance.doctor_accruals'))[0].n, accrualsBefore, 'no new accrual events for old invoices');
@@ -68,7 +86,7 @@ const root = path.resolve('.'), id = n => '30000000-0000-4000-8000-' + String(n)
   await assert.rejects(() => fin('channel_command', ['review', { id: selfRule, approve: true, note: 'اعتماد ذاتي' }, key()]), /اعتماد قاعدتك/);
   await assert.rejects(() => fin('channel_command', ['review', { id: pendingRule, approve: true, note: '' }, key()]), /اعتماد قاعدتك|غير متاحة/);
   await as(2); await assert.rejects(() => fin('channel_command', ['create', rule({ code: 'too_much', patient_discount_percent: 70, platform_share_percent: 40 }), key()]), /المجموع لا يتجاوز/);
-  await assert.rejects(() => fin('channel_command', ['create', rule({ code: 'bad_internal', kind: 'internal' }), key()]), /check/i);
+  await assert.rejects(() => fin('channel_command', ['create', rule({ code: 'bad_internal', kind: 'internal' }), key()]), /داخلية/);
   await assert.rejects(() => fin('channel_command', ['create', rule({ code: 'Bad Code!' }), key()]), /check/i);
   const tk = key(); const same = await fin('channel_command', ['create', rule({ code: 'idem' }), tk]);
   assert.equal(await fin('channel_command', ['create', rule({ code: 'idem' }), tk]), same);
@@ -170,6 +188,7 @@ const root = path.resolve('.'), id = n => '30000000-0000-4000-8000-' + String(n)
 
   // ---- rollback: everything the migration added goes, the old behaviour comes back, data of old invoices is untouched
   await db.exec(fs.readFileSync('supabase/rollbacks/20261108130000_channels_discounts_p1.rollback.sql', 'utf8'));
+  assert.equal((await owner("select pg_get_functiondef('clinic_finance.doctor_sync(uuid)'::regprocedure) d"))[0].d, oldDef, 'rollback restores the exact pre-migration doctor_sync');
   assert.equal((await db.query("select count(*)::int n from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='clinic_finance' and c.relname like 'channel_%'")).rows[0].n, 0);
   assert.equal((await db.query("select count(*)::int n from pg_proc where proname in ('channel_invoice_snapshot','invoice_revenue','clinic_finance_channel_command','channels_snapshot_base')")).rows[0].n, 0);
   assert.equal((await db.query("select count(*)::int n from pg_trigger where tgname='channel_invoice_snapshot'")).rows[0].n, 0);
