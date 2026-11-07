@@ -1,19 +1,18 @@
--- تعليقات سيا على مهمة مسندة لـ Claude Creative تتوجّه لـ Claude تلقائيًا (محمد، 2026-11-08)
--- زي ما الموظف بيختار «التعليق لـ: Claude» تحت خانة التعليق: التعليق بيتعلّم «إلى: Claude»،
--- وبيتعمل طلب في claude_task_requests عشان Claude يشوفه في أول تشغيل كل ساعة ويرد في نفس المهمة.
+-- تعليقات سيا بتتوجّه تلقائيًا للمسؤول عن المهمة (محمد، 2026-11-08) — زي ما الموظف بيختار «التعليق لـ: …»
+-- تحت خانة التعليق: التعليق بيتعلّم «إلى: <المسؤول>» (لينا/زينة/…/Claude).
+-- ولو المسؤول Claude Creative بيتعمل كمان طلب في claude_task_requests عشان Claude يشوفه في أول تشغيل كل ساعة ويرد.
 -- منع التكرار: طلب واحد مفتوح بس من سيا لكل مهمة (تذكيرات سيا اليومية مابتعملش طلب جديد كل يوم).
 create or replace function public.task_updates_route_sia_to_claude()
 returns trigger language plpgsql security definer set search_path to 'public' as $$
-declare v_claude uuid; v_sia uuid;
+declare v_sia uuid;
 begin
   if new.addressed_to is not null then return new; end if;
   select admin_id into v_sia from public.digital_team_members where code='sia' and active;
   if v_sia is null or new.author_id is distinct from v_sia then return new; end if;
-  select admin_id into v_claude from public.digital_team_members where code='claude_creative' and active;
-  if v_claude is null then return new; end if;
-  if exists(select 1 from public.tasks where id=new.task_id and assignee_id=v_claude) then
-    new.addressed_to := v_claude;
-  end if;
+  -- وجّه التعليق للمسؤول عن المهمة (لو موجود ونشط أو هوية نظام زي Claude)
+  select t.assignee_id into new.addressed_to
+  from public.tasks t join public.admins a on a.id=t.assignee_id
+  where t.id=new.task_id and t.assignee_id<>v_sia and (a.active or a.is_system_identity);
   return new;
 end $$;
 
