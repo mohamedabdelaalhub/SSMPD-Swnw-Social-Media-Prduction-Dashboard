@@ -51,7 +51,7 @@ assert.match(legacy, /الخدمات: Hearing/);
   now += 30001; fail = false; assert.equal(await get(), 'complete facts');
 
   let promptRequests = [], websiteReads = 0;
-  const ai = load(['meta-comments/clinic-facts.ts', 'whatsapp-webhook/reply-rules.ts', 'meta-comments/ai.ts'], {
+  const ai = load(['meta-comments/clinic-facts.ts', 'meta-comments/clinic-catalog.ts', 'whatsapp-webhook/reply-rules.ts', 'meta-comments/ai.ts'], {
     Deno: { env: { get: () => 'test-key-not-a-real-secret' } },
     fetch: async (url, options) => {
       if (url.includes('published.json')) { websiteReads++; return Response.json(site); }
@@ -63,7 +63,7 @@ assert.match(legacy, /الخدمات: Hearing/);
   const clinic = await ai.clinicInfo(); await ai.clinicInfo(); assert.equal(websiteReads, 1);
   await ai.decideReply({ brand: 'sono', channel: 'whatsapp', text: 'عندكو مخ وأعصاب', clinicInfo: clinic, history: ['العميل: دينا حسني'] });
   const wa = promptRequests.at(-1), payload = JSON.parse(wa.input);
-  assert.equal(payload.clinic_info, facts); assert.deepEqual(payload.earlier_messages, ['العميل: دينا حسني']);
+  assert.equal(payload.clinic_info, ai.catalogText() + "\n\n" + facts); assert.deepEqual(payload.earlier_messages, ['العميل: دينا حسني']);
   assert.match(wa.instructions, /عدم ذكر خدمة أو تخصص مش دليل إنه غير موجود/);
   assert.match(wa.instructions, /أرسل رابط «لوكيشن الخريطة» الموجود نفسه/);
   assert.match(wa.instructions, /لا تؤكد حجزًا أو تحويلًا/);

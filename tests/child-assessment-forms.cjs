@@ -4,7 +4,7 @@ const dom=new JSDOM('<div id="root"></div>',{runScripts:'outside-only',url:'http
 const p={id:'patient-test',full_name:'طفل <تجريبي>',age:5};
 let speech={patient_id:p.id,created_by:'original-author',first_word:'سنتان',first_sentence:'ثلاث سنوات',previous_speech_therapy:true,previous_speech_therapy_result:'تفاصيل سابقة',assessment_details:{unknown:'preserve'}};
 let records=[],speechLoads=0,saved;
-w.SSMPDToast={show(){}};w.SSMPDAuth={currentAdmin:{id:'admin-test',role:'super_admin'}};w.SSMPDRoles={hasRole:(a,r)=>a.role===r};
+w.SSMPDToast={show(){}};w.SSMPDAuth={currentAdmin:{id:'admin-test',role:'super_admin'}};w.SSMPDRoles={hasRole:(a,r)=>a.role===r,canReviewArchive:a=>a.role==="super_admin"||a.role==="head_nursing"};
 w.SSMPDDb=new Proxy({
  getPatientArchiveStats:async()=>({}),getPatientFiles:async()=>({patient:p,files:[]}),
  getPatientSpeechProfile:async()=>{speechLoads++;return speech},getPatientPsychologyProfile:async()=>({main_issues:[]}),

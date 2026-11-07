@@ -8,7 +8,7 @@ const f = {id:'file-1', patient_id:p.id, patients:p, uploaded_by_name:'موظف 
 let opened=[];
 w.SSMPDToast={show(){}};
 w.SSMPDAuth={currentAdmin:{id:'admin-1',role:'super_admin'}};
-w.SSMPDRoles={hasRole:(a,r)=>a.role===r};
+w.SSMPDRoles={hasRole:(a,r)=>a.role===r,canReviewArchive:a=>a.role==="super_admin"||a.role==="head_nursing"};
 w.SSMPDDb=new Proxy({
  getPatientArchiveStats:async()=>({recent_patients:[p],recent_files:[f]}),
  listFilesForReview:async()=>({files:[f],total:1}),

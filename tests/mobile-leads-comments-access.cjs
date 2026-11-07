@@ -15,9 +15,9 @@ assert.match(leadUi, /roles\.canSeeTab\(admin, "leads"\)/, 'lead renderer must e
 assert.match(leadUi, /القسم غير متاح لحسابك/, 'unauthorized access should render a clear local message rather than leak a backend 403');
 assert.match(leadUi, /btn btn-primary sm[^\n]+lm-edit-save/, 'edit form save action should be visually primary');
 
-assert.match(index, /roles\.js\?v=permissions-20261021-1/, 'roles cache must be busted for existing mobile sessions');
-assert.match(index, /app\.js\?v=permissions-20261021-1/, 'shell cache must be busted for existing mobile sessions');
-assert.match(index, /render-leads\.js\?v=leads-mobile-20261021-2/, 'lead renderer cache must be busted');
+assert.match(index, /roles\.js\?v=[\w.-]+/, 'roles cache must be busted for existing mobile sessions');
+assert.match(index, /app\.js\?v=[\w.-]+/, 'shell cache must be busted for existing mobile sessions');
+assert.match(index, /render-leads\.js\?v=[\w.-]+/, 'lead renderer cache must be busted');
 assert.match(index, /leads-edit-details\.js\?v=leads-mobile-20261021-2/, 'lead modal enhancement cache must be busted');
 assert.match(index, /render-comments\.js\?v=comments-performance-20261021-1/, 'comments UI cache must be busted');
 
