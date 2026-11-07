@@ -4,5 +4,5 @@ select s,r,
  (select string_agg(conname||' '||pg_get_constraintdef(x.oid),' ;; ' order by conname) from pg_constraint x where x.conrelid=t.oid) cons,
  (select string_agg(pg_get_indexdef(i.indexrelid),' ;; ') from pg_index i where i.indrelid=t.oid and not i.indisprimary and not i.indisunique) idx,
  rls,
- (select string_agg(p.polname||' '||p.polcmd||' '||coalesce(pg_get_expr(p.polqual,p.polrelid),'')||coalesce(' check '||pg_get_expr(p.polwithcheck,p.polrelid),''),' ;; ') from pg_policy p where p.polrelid=t.oid) pols
+ (select string_agg(p.polname||' '||p.polcmd::text||' '||coalesce(pg_get_expr(p.polqual,p.polrelid),'')||coalesce(' check '||pg_get_expr(p.polwithcheck,p.polrelid),''),' ;; ') from pg_policy p where p.polrelid=t.oid) pols
 from t order by 1,2;
