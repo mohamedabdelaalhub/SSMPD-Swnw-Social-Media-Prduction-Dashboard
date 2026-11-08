@@ -1,6 +1,7 @@
 -- FIXED-AMOUNT doctor fees + a second performer on one invoice (owner request 2026-11-08: nursing 100 EGP per home visit; doctors who ask a fixed amount per outside visit).
 --
 -- (1) FIXED FEE. doctor_contracts gains fee_kind ('percent' default | 'fixed') and fixed_amount. A fixed contract has rate = 0 and deduction = 'none' (CHECK), so every reader of `rate` sees a harmless 0.
+--     Owner decision 2026-11-08: the fee comes OUT OF the service price the patient paid (the center keeps the remainder), so a fixed fee never exceeds the price of its line: per line least(fixed amount, line price).
 --     Accrual: ONE fixed amount per performed SERVICE LINE of the invoice that resolves to that contract (an invoice without service lines: one amount per invoice).
 --     It follows exactly the percent rules for the money side: refund / contractual discount shrink it in proportion (revenue/invoice amount), a voided invoice earns 0, and on a 'collected'
 --     contract it is scaled by min(1, collected/revenue). Percent contracts, invoices and ledger postings are byte-for-byte unchanged (invoices with NO fixed contract delegate to the previous doctor_sync).
@@ -130,13 +131,13 @@ begin
   for x in select * from clinic_finance.doctor_extra_allocations where invoice_id = p_invoice order by doctor_key for update loop
     target := 0;
     for g in
-      select e.contract_id, max(k.fee_kind) kind, max((e.terms->>'rate')::numeric) rate, max(k.fixed_amount) fixed,
+      select e.contract_id, max(k.fee_kind) kind, max((e.terms->>'rate')::numeric) rate, sum(least(k.fixed_amount, l.amount)) fixed,
              count(*) n, sum(l.amount) base, sum(e.line_deduction) ded
       from clinic_finance.doctor_extra_lines e join clinic_finance.doctor_allocation_lines l on l.invoice_id = e.invoice_id and l.line_no = e.line_no
            join clinic_finance.doctor_contracts k on k.id = e.contract_id
       where e.invoice_id = p_invoice and e.doctor_key = x.doctor_key group by e.contract_id
     loop
-      if g.kind = 'fixed' then target := target + g.fixed * g.n * m.revenue / m.amount;
+      if g.kind = 'fixed' then target := target + g.fixed * m.revenue / m.amount;   -- g.fixed = sum over the lines of least(fixed amount, line price)
       else target := target + greatest(0, g.base * m.revenue / m.amount - g.ded) * g.rate / 100; end if;
     end loop;
     if x.basis = 'collected' then target := case when m.revenue > 0 then target * least(1, m.collected / m.revenue) else 0 end; end if;
@@ -164,17 +165,17 @@ begin
     for g in
       with l as (select x.*, k.fee_kind, k.fixed_amount, sum(x.amount) over () tot, sum(case when x.is_consultation then x.amount else 0 end) over () cons_tot
                  from clinic_finance.doctor_allocation_lines x join clinic_finance.doctor_contracts k on k.id = x.contract_id where x.invoice_id = p_invoice)
-      select contract_id, max(fee_kind) kind, max((terms->>'rate')::numeric) rate, max(fixed_amount) fixed, count(*) n, sum(amount) base, sum(line_deduction) ded,
+      select contract_id, max(fee_kind) kind, max((terms->>'rate')::numeric) rate, sum(least(fixed_amount, amount)) fixed, count(*) n, sum(amount) base, sum(line_deduction) ded,
              channel_share * case when max(cons_tot) > 0 then sum(case when is_consultation then amount else 0 end) / max(cons_tot) else sum(amount) / max(tot) end ch
       from l group by contract_id
     loop
-      if g.kind = 'fixed' then target := target + g.fixed * g.n * m.revenue / m.amount;
+      if g.kind = 'fixed' then target := target + g.fixed * m.revenue / m.amount;
       else target := target + greatest(0, g.base * m.revenue / m.amount
           - greatest(0, g.ded - case when a.original_deduction > 0 then a.returned_deduction * g.ded / a.original_deduction else 0 end)
           - g.ch * m.revenue / m.amount) * g.rate / 100; end if;
     end loop;
   else
-    target := (select k.fixed_amount from clinic_finance.doctor_contracts k where k.id = a.contract_id) * m.revenue / m.amount;   -- invoice without lines: one fixed amount per invoice
+    target := (select least(k.fixed_amount, i.amount) from clinic_finance.doctor_contracts k where k.id = a.contract_id) * m.revenue / m.amount;   -- invoice without lines: one fixed amount per invoice
   end if;
   if a.terms->>'basis' = 'collected' then target := case when m.revenue > 0 then target * least(1, m.collected / m.revenue) else 0 end; end if;
   target := round(target, 2); delta := target - a.earned;

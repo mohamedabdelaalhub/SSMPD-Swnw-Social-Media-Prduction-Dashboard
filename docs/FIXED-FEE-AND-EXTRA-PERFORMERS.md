@@ -60,7 +60,10 @@ clinic_finance_doctor_command('contract_batch', {doctor_key:'EMP-000007', …, s
 -- Doctor asking 300 EGP per outside visit: same as the nurse block with his doctor_key and fixed_amount:300.
 ```
 
-## 4. Owner questions (do not decide)
+## 4. Owner decision (2026-11-08): the fee comes OUT OF the service price
+The fixed fee (and the nurse percentage) is a deduction from what the patient paid for the service; the center keeps the remainder, nothing is settled on top. Ledger-wise this is how the accrual already works (Dr 5111 / Cr 2120, patient pays the full price). Added rule: a fixed fee never exceeds the price of its line (`least(fixed, line price)`, tested: 100 on a 60 EGP line = 60). Still open: when doctor and nurse share one invoice, is the doctor's percent computed on the full price or on the price after the nurse's fixed amount? (Current: full price, each performer independently.)
+
+## 5. Other owner questions
 
 1. هل المبلغ الثابت بيتخصم من اللي دفعه المريض للخدمة، ولا المركز بيسدده لوحده؟ (التنفيذ الحالي = زي النسبة تمامًا: المريض بيدفع سعر الخدمة كامل، والمبلغ بيتسجّل مستحق للطبيب/الممرضة على المركز (حساب 2120) ويتصرف بالتسوية. لو عايزه يتخصم من سعر الخدمة نفسه ده قرار تسعير مختلف.)
 2. إيه أكواد الخدمات الخارجية / الزيارة المنزلية، وإيه أسماء الممرضين (كود الموظف) والدكاترة اللي ليهم مبلغ ثابت وكام؟

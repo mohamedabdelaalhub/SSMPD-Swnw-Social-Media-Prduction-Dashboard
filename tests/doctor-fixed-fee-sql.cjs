@@ -204,6 +204,9 @@ const root = path.resolve('.'), id = n => '30000000-0000-4000-8000-' + String(n)
   await refund(fx, 250); assert.equal(await earned(fx), 50, 'refund of half the invoice halves the fixed fee (proportional_revenue, same as percent)');
   await owner('update clinic_finance.invoices set voided=true where id=$1', [fx2]); await owner('select clinic_finance.doctor_sync($1)', [fx2]); assert.equal(await earned(fx2), 0, 'voided invoice earns 0');
   assert.equal(await bal('EMP-N'), 50);
+  // owner decision: the fee comes out of the service price -> never more than the line price (100 fixed on a 60 EGP line = 60; 80 fixed on a 100 line = 80)
+  await mkf('EMP-CAP', 'HV', 100); const cap = await hvBill('FX-CAP', 'EMP-CAP', 60, [lbl('HV', 60)]); assert.equal(await earned(cap), 60, 'fixed fee capped at the line price'); await refund(cap, 30); assert.equal(await earned(cap), 30);
+  const capm = await hvBill('FX-CAP2', 'EMP-CAP', 560, [lbl('HV', 60), lbl('HV', 500)]); assert.equal(await earned(capm), 160, 'per line: min(100,60) + min(100,500)');
   // collected basis
   await mkf('EMP-C', 'HV', 100, { basis: 'collected' });
   const fc = await hvBill('FX-C', 'EMP-C', 500, [lbl('HV', 500)]); assert.equal(await earned(fc), 0, 'collected basis: nothing collected yet');
