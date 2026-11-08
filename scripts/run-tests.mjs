@@ -12,7 +12,7 @@ const known = {
   'test/contract-edit.cjs': 'stale: edit modal was redesigned (save is a button handler, not a form submit); needs a rewrite',
   'test/portal-routes.mjs': 'stale: portal page script reads a config object the harness does not provide',
   'tests/dashboard-help-coverage.cjs': 'content gap: help guide lacks reviewed explanations for newer screens and fields',
-  'tests/dashboard-help-dom.cjs': 'content gap: no help article for the human_resources tab',
+  'tests/dashboard-help-dom.cjs': 'content gap: no help article for the price_lists tab (human_resources added 2026-11-08)',
   'tests/header-titles-dom.cjs': 'content gap: no English translation for the human_resources tab title',
   'tests/employee-performance-dom.cjs': 'behaviour drift: concurrent profile reads are no longer deduplicated; check intent',
   'tests/organized-workspaces-dom.cjs': 'stale: the contracting workbench no longer has the insurance category chip this test clicks',
