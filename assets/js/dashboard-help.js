@@ -1,7 +1,7 @@
 /* Contextual, source-reviewed help. Questions stay in this browser. */
 (function(root){'use strict';
 var config=null,panel=null,previous=null,background=[],oldOverflow='',contextFields=[],timer=null,generation=0,dirtyForms=new WeakSet(),observer=null;
-var D=function(){return root.SSMPDHelpData;},doc=root.document,fieldArticleCache=null;
+var EMPTY={articles:[],fields:[]},D=function(){return root.SSMPDHelpData||EMPTY;},doc=root.document,fieldArticleCache=null;
 function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function norm(v){return String(v||'').normalize('NFKD').replace(/[\u064b-\u065f\u0670\u0640]/g,'').replace(/[أإآٱ]/g,'ا').replace(/ى/g,'ي').replace(/ة/g,'ه').toLowerCase().replace(/[^\p{L}\p{N}_]+/gu,' ').trim().replace(/(^| )ال/g,'$1');}
 var stops=norm('انا عايز عاوز اعمل ازاي ليه ايه هو هي في من علي على عن الي اللي دا ده دي لو لما لكن علشان المفروض عندي ممكن فيه مش ما هوه ان بيبقي يبقى اكتب هنا').split(' ');
@@ -68,7 +68,13 @@ function coachStart(id){if(!config||!admin())return;var a=D().articles.concat(fi
 function coachRestore(){var raw=null;try{raw=root.sessionStorage.getItem(COACH_KEY);}catch(e){}if(!raw)return;var c=null;try{c=JSON.parse(raw);}catch(e){}if(!c||!c.id||!admin()||c.admin!==admin().id){coach=null;coachSave();return;}coach={id:String(c.id),i:Math.max(0,parseInt(c.i,10)||0),admin:c.admin};coachRender();}
 function track(e){if(!e.target.closest('.dh-backdrop')&&e.target.form&&e.target.closest('#view-container,.modal-backdrop'))dirtyForms.add(e.target.form);}
 function enhance(){doc.querySelectorAll('.modal-backdrop .modal,[role="dialog"]').forEach(function(el){if(el.closest('.dh-backdrop')||el.querySelector('[data-dashboard-help]'))return;var b=doc.createElement('button');b.type='button';b.className='btn dh-form-help';b.dataset.dashboardHelp='1';b.textContent='شرح النموذج';b.onclick=function(){open();fieldGuide();};el.prepend(b);});}
-function mount(c){dispose();config=c;var b=doc.getElementById('dashboard-help-toggle');if(b)b.onclick=function(){open();};doc.addEventListener('input',track);doc.addEventListener('change',track);observer=new MutationObserver(enhance);observer.observe(doc.body,{childList:true,subtree:true});enhance();coachRestore();}
+function mount(c){dispose();config=c;var b=doc.getElementById('dashboard-help-toggle');if(b)b.onclick=function(){open();};doc.addEventListener('input',track);doc.addEventListener('change',track);observer=new MutationObserver(enhance);observer.observe(doc.body,{childList:true,subtree:true});enhance();coachRestore();setTimeout(function(){if(config)loadData().catch(function(){});},4000);}
 function dispose(){close();coachRemove();if(observer)observer.disconnect();observer=null;doc.removeEventListener('input',track);doc.removeEventListener('change',track);dirtyForms=new WeakSet();config=null;}
-root.SSMPDDashboardHelp={coachStart:coachStart,coachStop:coachStop,mount:mount,open:open,close:close,dispose:dispose,search:search,fields:fields,fieldHelp:fieldHelp};
+var DATA_FILES=['assets/js/dashboard-help-data.js?v=doctor-contract-20261018-1','assets/js/dashboard-help-fields.js?v=booking-staff-20261022-1'],dataPromise=null;
+function dataReady(){var d=root.SSMPDHelpData;return !!(d&&d.fieldCoverage);}
+function addScript(src){return new Promise(function(ok,fail){var x=doc.createElement('script');x.src=src;x.async=false;x.onload=ok;x.onerror=function(){fail(Error('help'));};doc.head.appendChild(x);});}
+function loadData(){if(dataReady())return Promise.resolve();if(dataPromise)return dataPromise;dataPromise=addScript(DATA_FILES[0]).then(function(){return addScript(DATA_FILES[1]);}).then(function(){fieldArticleCache=null;var p=root.SSMPDHelpPending||[];root.SSMPDHelpPending=[];p.forEach(function(f){root.SSMPDHelpData.fields.push(f);});if(config)coachRestore();}).catch(function(e){dataPromise=null;throw e;});return dataPromise;}
+var openNow=open;open=function(id){if(dataReady())return openNow(id);loadData().then(function(){openNow(id);}).catch(function(){openNow(id);});};
+var coachStartNow=coachStart;coachStart=function(id){if(dataReady())return coachStartNow(id);loadData().then(function(){coachStartNow(id);});};
+root.SSMPDDashboardHelp={loadData:loadData,coachStart:coachStart,coachStop:coachStop,mount:mount,open:open,close:close,dispose:dispose,search:search,fields:fields,fieldHelp:fieldHelp};
 })(window);
