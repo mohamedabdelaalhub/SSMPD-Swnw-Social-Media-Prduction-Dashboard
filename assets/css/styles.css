@@ -707,3 +707,14 @@ table.simple.acc-table td.acc-col-num{text-align:left;}
 
 /* Search navigation results keep their destination inside the clickable row. */
 .gsearch-group{padding:7px 10px;font-size:11px;color:var(--c-muted)}.gsearch-path{display:block;margin-top:3px;color:var(--c-muted);font-size:10px;overflow-wrap:anywhere}.gsearch-item{overflow-wrap:anywhere;text-align:start!important}.gsearch-item:hover,.gsearch-item:focus-visible{background:#EDF2FF!important;outline:2px solid #0F369D;outline-offset:-2px}
+
+/* القائمة في مجموعات (2026-11-08) */
+.user-dropdown .ud-group{flex:none;border:1px solid var(--c-border,#E3E8F2);border-radius:13px;overflow:hidden;background:var(--c-card,#fff);margin:2px 0}
+.user-dropdown .ud-group>summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:8px;padding:11px 12px;font-weight:800;font-size:13px;color:var(--c-primary,#0F369D)}
+.user-dropdown .ud-group>summary::-webkit-details-marker{display:none}
+.user-dropdown .ud-group>summary span::before{content:"‹";display:inline-block;margin-inline-end:8px;transition:transform .2s}
+.user-dropdown .ud-group[open]>summary span::before{transform:rotate(-90deg)}
+.user-dropdown .ud-group[open]>summary{background:#EDF2FF}
+.user-dropdown .ud-group>summary em{font-style:normal;font-size:11px;background:var(--c-primary,#0F369D);color:#fff;border-radius:999px;padding:1px 8px}
+.user-dropdown .ud-group>.ud-item{margin:2px 8px;width:calc(100% - 16px)}
+.user-dropdown .ud-group>.ud-item:last-child{margin-bottom:8px}
