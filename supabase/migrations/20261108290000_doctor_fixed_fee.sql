@@ -16,7 +16,7 @@
 -- (3) GUARDS. A fixed contract cannot carry a lab/external cost or the first_payment mode (nothing to deduct from a fixed amount); a reception order agreement (clinic_reception.doctor_agreements)
 --     cannot be linked to a fixed contract (that path copies the percent); doctor_held_fees (payout cap) and the statement line display learn about fixed fees / extra performers when those objects exist.
 -- ADDITIVE: 2 columns + 1 CHECK on doctor_contracts (existing rows = 'percent', unchanged), 2 new tables, new functions, wrappers over bill / doctor_sync / clinic_finance_doctor_command (moved, not edited).
--- ORDER: after 20261108260000_dental_external_cost.sql and 20261108240000_contract_revisions.sql. Rollback: supabase/rollbacks/20261108270000_doctor_fixed_fee.rollback.sql
+-- ORDER: after 20261108260000_dental_external_cost.sql and 20261108240000_contract_revisions.sql. Rollback: supabase/rollbacks/20261108290000_doctor_fixed_fee.rollback.sql
 begin;
 
 do $$ declare d text; begin

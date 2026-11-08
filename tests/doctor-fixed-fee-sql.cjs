@@ -1,4 +1,4 @@
-// Fixed-amount doctor fees + extra performers on one invoice (20261108270000): SQL rehearsal on PGlite. Loads the REAL chain (departments, service lines, dental external cost, revisions, statement) then applies the migration.
+// Fixed-amount doctor fees + extra performers on one invoice (20261108290000): SQL rehearsal on PGlite. Loads the REAL chain (departments, service lines, dental external cost, revisions, statement) then applies the migration.
 // Percent contracts must compute byte-for-byte as before; fixed fee per service line; refund/void/collected; contract_revise; overlap; extra performers (doctor + nurse); guards; rollback.
 
 const { PGlite } = require('@electric-sql/pglite'), fs = require('fs'), path = require('path'), crypto = require('crypto'), assert = require('node:assert/strict');
@@ -138,7 +138,7 @@ const root = path.resolve('.'), id = n => '30000000-0000-4000-8000-' + String(n)
   const pre = await db.dumpDataDir();   // for the rollback rehearsal on a clone
 
   // ---- APPLY
-  const fmig = () => fs.readFileSync('supabase/migrations/20261108270000_doctor_fixed_fee.sql', 'utf8');
+  const fmig = () => fs.readFileSync('supabase/migrations/20261108290000_doctor_fixed_fee.sql', 'utf8');
   await db.exec('reset role'); await db.exec(fmig());
   await assert.rejects(async () => { await db.exec('reset role'); await db.exec(fmig()); }, /تم تطبيق هذا الملف/, 'a second apply is refused'); await db.exec('rollback');
   for (const s of SIG3.slice(0, 3)) assert.equal(await aclOf(s), defBefore[s].acl.replace(/^\{|\}$/g, '').split(',').sort().join(','), 'wrapper has exactly the privileges of the function it wraps: ' + s);
@@ -288,7 +288,7 @@ const root = path.resolve('.'), id = n => '30000000-0000-4000-8000-' + String(n)
   }
 
   // ---- ROLLBACK
-  const rb = () => fs.readFileSync('supabase/rollbacks/20261108270000_doctor_fixed_fee.rollback.sql', 'utf8');
+  const rb = () => fs.readFileSync('supabase/rollbacks/20261108290000_doctor_fixed_fee.rollback.sql', 'utf8');
   await assert.rejects(async () => { await db.exec('reset role'); await db.exec(rb()); }, /بمبلغ ثابت|مشاركون/, 'rollback refused while fixed contracts / extra performers exist'); await db.exec('rollback');
   // rehearsal on a clone made BEFORE the migration: apply, use percent only, roll back -> byte-identical functions and no new objects
   const db2 = await PGlite.create({ loadDataDir: pre }); const o2 = async (q, a = []) => (await db2.query(q, a)).rows;
