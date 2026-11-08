@@ -15,7 +15,7 @@ assert.doesNotThrow(() => new Function(runtime), 'runtime shim must remain valid
 
 assert.match(edge, /whatsapp_phone_number_id/, 'contract delivery must read the saved Meta Phone Number ID');
 assert.match(edge, /cachedPhoneNumberId/, 'saved sender ID must be passed to WhatsApp delivery');
-assert.match(edge, /\^\\d\+\$/.test\(cached\)/, 'cached sender ID must be validated before use');
+assert.match(edge, /\/\^\\d\+\$\/\.test\(cached\)/, 'cached sender ID must be validated before use');
 assert.match(edge, /assigned_whatsapp_business_accounts/, 'system-user WABA discovery remains available as fallback');
 assert.match(edge, /WHATSAPP_WINDOW_EXPIRED/, 'closed service windows must not be reported as successful delivery');
 
