@@ -164,7 +164,9 @@ setTimeout(() => {
   const rootEl = window.document.getElementById("app-root");
   const text = rootEl.innerHTML;
 
-  assert(rootEl.querySelector('#user-dropdown [data-goto="summary"]').textContent.trim() === "إنتاج المحتوى", "اسم إنتاج المحتوى ظاهر في القائمة");
+  // grouped menu (#391): every tab is listed under its own name; the content-production entry is the "production" tab
+  assert(rootEl.querySelector('#user-dropdown [data-goto="production"]').textContent.trim() === "إنتاج المحتوى", "اسم إنتاج المحتوى ظاهر في القائمة");
+  assert(rootEl.querySelector('#user-dropdown [data-goto="summary"]').textContent.trim() === "الملخص العام", "الملخص العام ظاهر في القائمة باسمه");
   assert(/سوبر أدمن/.test(text), "بادچ الدور ظاهر (سوبر أدمن)");
   // أرشيف المرضى/إدارة الليدز/لوحة التحكم بقوا تابات القائمة المنسدلة فقط —
   // مش مكررين في شريط التابات العادي ولا قائمة الموبايل القديمة (بالظبط زي
