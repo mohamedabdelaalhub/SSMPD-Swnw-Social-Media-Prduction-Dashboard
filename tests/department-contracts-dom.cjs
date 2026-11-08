@@ -31,7 +31,7 @@ const tick = (ms = 20) => new Promise(r => setTimeout(r, ms));
   // ---- listing shows a readable label for department scopes and leaves exact scopes alone
   const html = C().panel('doctors', data, h);
   assert(html.includes('كل خدمات قسم الاسنان'), 'department contract label');
-  assert(html.includes('D-1 — 2026-01-01'), 'exact scope shown as is');
+  assert(html.includes('>D-1</span> — 2026-01-01'), 'exact scope shown as is');
   assert(!html.includes('قسم:الاسنان'), 'raw storage format is not shown');
 
   // ---- form: service kind is the default and behaves exactly like before
