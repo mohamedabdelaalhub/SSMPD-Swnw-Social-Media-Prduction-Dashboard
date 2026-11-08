@@ -93,10 +93,14 @@ begin
       raise exception 'توجد خدمة بنفس الاسم في هذا القسم؛ اربط بها بدل إنشاء خدمة جديدة';
     end if;
     -- A missing partner cost can be filled right here (same rule as set_cost: only when empty), with the request note as the source.
+    -- The cost typed in the form belongs to the NEW service (stored on the request). The lab item's own cost is never changed,
+    -- except to fill it when it was empty.
     v_cost := it.cost;
-    if v_cost is null and nullif(p_payload->>'cost', '') is not null then
+    if nullif(p_payload->>'cost', '') is not null then
       begin v_cost := round((p_payload->>'cost')::numeric, 2); exception when others then v_cost := null; end;
-      if v_cost is null or v_cost < 0 or v_cost::text in ('NaN', 'Infinity') then raise exception 'تكلفة المعمل غير صحيحة'; end if;
+      if v_cost is null or v_cost < 0 or v_cost::text in ('NaN', 'Infinity') then raise exception 'التكلفة غير صحيحة'; end if;
+    end if;
+    if it.cost is null and v_cost is not null then
       update clinic_labs.price_items set cost = v_cost where id = v_item;
       insert into clinic_labs.audit(actor_id, action, item_id, details) values (me, 'set_cost', v_item, jsonb_build_object('cost', v_cost, 'note', v_note, 'via', 'propose_service'));
     end if;

@@ -72,18 +72,19 @@ const submit = (w, d) => d.querySelector('.wp-modal form').dispatchEvent(new w.E
   host.querySelector('[data-item-row=i1] [data-ll=newsvc]').click();
   const f = d.querySelector('.wp-modal form');
   assert.equal(f.elements.name.value, 'HbA1c Special'); assert.equal(f.elements.sample.value, 'EDTA');
-  assert(d.querySelector('.wp-modal').textContent.includes('80.00'), 'lab cost shown as the cost price');
-  assert(!f.elements.cost, 'cost input only when the lab cost is missing');
+  assert(d.querySelector('.wp-modal').textContent.includes('سعر التكلفة'));
+  assert.equal(f.elements.cost.value, '80'); assert(!f.elements.cost.required, 'lab cost prefilled and editable');
   assert(f.elements.selling_price.required && f.elements.note.required && f.elements.booking_enabled.checked);
   assert.deepEqual([...f.elements.category.options].map(o => o.value), ['التحاليل', 'باقي التحاليل']);
   f.elements.selling_price.value = '60'; f.elements.selling_price.dispatchEvent(new w.Event('input'));
   assert(d.querySelector('.wp-modal [data-margin]').textContent.includes('السعر أقل من تكلفة المعمل'), 'loss warning');
   f.elements.selling_price.value = '150'; f.elements.selling_price.dispatchEvent(new w.Event('input'));
   assert(d.querySelector('.wp-modal [data-margin]').textContent.includes('70.00'));
+  f.elements.name.value = 'HbA1c (مركز)'; f.elements.sample.value = 'Whole blood'; f.elements.cost.value = '85';
   f.elements.note.value = 'طلب من الأطباء'; submit(w, d); await tick(80);
   const p = calls.filter(c => c.fn === 'lab_links_service_command').pop();
   assert.equal(p.args.p_action, 'propose');
-  assert.equal(JSON.stringify(p.args.p_payload), JSON.stringify({ item_id: 'i1', name: 'HbA1c Special', category: 'التحاليل', sample: 'EDTA', selling_price: 150, booking_enabled: true, note: 'طلب من الأطباء' }));
+  assert.equal(JSON.stringify(p.args.p_payload), JSON.stringify({ item_id: 'i1', name: 'HbA1c (مركز)', category: 'التحاليل', sample: 'Whole blood', selling_price: 150, booking_enabled: true, note: 'طلب من الأطباء', cost: 85 }));
   assert(toasts.some(t => t[0].includes('للاعتماد')));
   const mine = host.querySelector('[data-item-row=i1]');
   assert(mine.textContent.includes('يلزم مراجع آخر') && !mine.querySelector('[data-ll=svc-approve]'), 'the creator cannot approve');
@@ -92,7 +93,7 @@ const submit = (w, d) => d.querySelector('.wp-modal form').dispatchEvent(new w.E
   // missing lab cost: the form lets staff set it now
   host.querySelector('[data-item-row=i2] [data-ll=newsvc]').click();
   const f2 = d.querySelector('.wp-modal form');
-  assert(f2.elements.cost && !f2.elements.cost.required, 'cost entry present for a test without cost');
+  assert(f2.elements.cost && f2.elements.cost.value === '' && !f2.elements.cost.required);
   f2.elements.cost.value = '22.5'; f2.elements.selling_price.value = '90'; f2.elements.booking_enabled.checked = false; f2.elements.note.value = 'خدمة جديدة'; submit(w, d); await tick(80);
   const p2 = calls.filter(c => c.fn === 'lab_links_service_command').pop().args.p_payload;
   assert.equal(p2.cost, 22.5); assert.equal(p2.booking_enabled, false); assert.equal(p2.selling_price, 90);

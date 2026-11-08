@@ -89,10 +89,10 @@
       return '<div class="ll-btns"><button type="button" class="btn" data-ll="newsvc" data-item="' + id + '">إضافة خدمة جديدة بالمركز</button></div>' +
         (rj ? '<p class="ll-meta">طلب سابق رُفض: ' + esc(rj.name) + ' — ' + esc(rj.review_note || '') + '</p>' : '');
     }
-    var m = margin(p.selling_price, it.cost != null ? it.cost : p.cost_price), mine = p.created_by === data.sreq.me;
+    var shownCost = p.cost_price != null ? p.cost_price : it.cost, m = margin(p.selling_price, shownCost), mine = p.created_by === data.sreq.me;
     var h = '<div class="ll-newsvc" data-req="' + esc(p.id) + '"><b>طلب خدمة جديدة بانتظار الاعتماد</b>' +
       '<span>' + esc(p.name) + ' · ' + esc(p.category) + '</span>' +
-      '<span>سعر البيع <b>' + money(p.selling_price) + '</b> · تكلفة المعمل <b>' + money(it.cost != null ? it.cost : p.cost_price) + '</b>' +
+      '<span>سعر البيع <b>' + money(p.selling_price) + '</b> · التكلفة <b>' + money(shownCost) + '</b>' +
       (m ? ' · <span class="' + (m.loss ? 'll-loss' : 'll-gain') + '">الهامش <b>' + money(m.amount) + '</b></span>' : '') + '</span>' +
       '<small>طلبه ' + esc(p.created_by_name || '') + (p.booking_enabled ? ' · ستظهر في الحجز بعد الاعتماد' : ' · بدون إتاحة في الحجز') + ' — ' + esc(p.note || '') + '</small>';
     if (mine) return h + '<p class="ll-meta">يلزم مراجع آخر غيرك لاعتماد الطلب.</p></div>';
@@ -203,22 +203,22 @@
         U.field('name', 'اسم الخدمة في المركز', 'text', item.test_name, 'required minlength="3" maxlength="200"') +
         '<label class="wp-field">القسم<select name="category">' + CATEGORIES.map(function (c) { return '<option>' + esc(c) + '</option>'; }).join('') + '</select></label>' +
         U.field('sample', 'العينة', 'text', item.sample || '') +
-        (missing ? U.field('cost', 'تكلفة المعمل (غير مسجلة — سجّلها الآن)', 'number', '', 'min="0" step="0.01"') : '<p class="wp-wide">سعر التكلفة (تكلفة المعمل): <b>' + money(item.cost) + '</b></p>') +
+        U.field('cost', missing ? 'سعر التكلفة (تكلفة المعمل غير مسجلة — سجّلها الآن)' : 'سعر التكلفة (من المعمل، يمكن تعديله للخدمة الجديدة فقط)', 'number', missing ? '' : item.cost, 'min="0" step="0.01"') +
         U.field('selling_price', 'سعر البيع في المركز (جنيه)', 'number', '', 'required min="0.01" step="0.01"') +
         '<p class="wp-wide" data-margin role="status"></p>' +
         '<label class="ll-check wp-wide"><input type="checkbox" name="booking_enabled" checked> إتاحة الخدمة في الحجز بعد الاعتماد</label>' +
         U.field('note', 'سبب الإضافة', 'text', '', 'required minlength="3"'),
         function (v) {
           var p = { item_id: item.id, name: v.name, category: v.category, sample: v.sample, selling_price: Number(v.selling_price), booking_enabled: !!v.booking_enabled, note: v.note };
-          if (missing && v.cost !== '' && v.cost != null) p.cost = Number(v.cost);
+          if (v.cost !== '' && v.cost != null) p.cost = Number(v.cost);
           return runSvc('propose', p).then(function () { if (w.SSMPDToast) w.SSMPDToast.show('تم إرسال طلب الخدمة للاعتماد'); });
         });
       function hint() {
-        var cost = missing ? (f2.elements.cost.value === '' ? null : Number(f2.elements.cost.value)) : item.cost, m = margin(f2.elements.selling_price.value === '' ? null : Number(f2.elements.selling_price.value), cost);
+        var cost = f2.elements.cost.value === '' ? null : Number(f2.elements.cost.value), m = margin(f2.elements.selling_price.value === '' ? null : Number(f2.elements.selling_price.value), cost);
         f2.querySelector('[data-margin]').innerHTML = m ? 'الهامش المتوقع: <b class="' + (m.loss ? 'll-loss' : 'll-gain') + '">' + money(m.amount) + '</b>' + (m.percent == null ? '' : ' (' + m.percent.toFixed(0) + '%)') + (m.loss ? ' — السعر أقل من تكلفة المعمل' : '') : (cost == null ? 'لا يمكن حساب الهامش بدون تكلفة المعمل.' : '');
       }
       f2.elements.selling_price.oninput = hint;
-      if (missing) f2.elements.cost.oninput = hint;
+      f2.elements.cost.oninput = hint;
       hint();
     }
     function chooseModal(item) {
