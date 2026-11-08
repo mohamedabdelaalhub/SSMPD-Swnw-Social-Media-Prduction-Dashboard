@@ -36,7 +36,7 @@
     performance: ["page_manager", "approver", "general_manager", "super_admin"],
     indicator_reports: ["general_manager", "super_admin"],
     staff_kpi: ["general_manager", "super_admin"],
-    my_kpi: ["page_manager", "designer", "approver", "reception", "customer_service", "general_manager"],
+    my_kpi: ["page_manager", "designer", "approver", "reception", "customer_service", "general_manager", "nursing", "head_nursing", "sono_doctor"],
     archive: ["page_manager", "designer", "approver", "general_manager", "super_admin"],
     leads: ["reception", "customer_service", "general_manager", "super_admin"],
     admin: ["super_admin"],
