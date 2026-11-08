@@ -3,9 +3,9 @@ const { JSDOM } = require('jsdom'), fs = require('fs'), assert = require('node:a
 const tick = (ms = 20) => new Promise(r => setTimeout(r, ms));
 (async () => {
   const dom = new JSDOM('<main></main>', { url: 'https://test.invalid', runScripts: 'outside-only' }), w = dom.window, d = w.document;
-  const calls = [];
+  const calls = [], bills = [];
   const deptList = [{ name: 'الاسنان' }, { name: 'التحاليل' }];
-  w.SSMPDDb = { financeContractDepartments: async () => deptList, financeDoctorCommand: async (a, p, k) => { calls.push([a, p]); return 'id'; }, financeBill: async () => 'id' };
+  w.SSMPDDb = { financeContractDepartments: async () => deptList, financeDoctorCommand: async (a, p, k) => { calls.push([a, p]); return 'id'; }, financeBill: async (p) => { bills.push(p); return 'id'; } };
   w.eval(fs.readFileSync('assets/js/finance-controls.js', 'utf8'));
   w.eval(fs.readFileSync('assets/js/finance-doctors.js', 'utf8'));
   const esc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -71,5 +71,29 @@ const tick = (ms = 20) => new Promise(r => setTimeout(r, ms));
   C().act('invoice', '', data, h);
   const opts = [...d.querySelectorAll('.fc-modal select[name=doctor_contract] option')].map(o => o.textContent);
   assert(opts.some(t => t.includes('كل خدمات قسم الاسنان')) && opts.some(t => t.includes('D-1')), 'invoice picker lists department and exact contracts');
-  console.log('PASS department contracts DOM: labels, service/department toggle, department list, no restricted confirmation, payload shape, invoice picker');
+  // ---- invoice with per-service lines: rows, running total, payload shape, and the guard against a wrong total
+  d.querySelectorAll('.fc-modal').forEach(m => m.remove());
+  C().act('invoice', '', data, h);
+  const inv = d.querySelector('.fc-modal form'), ctr = inv.elements.doctor_contract;
+  assert(inv.querySelector('[data-doctor-lines]') && !inv.querySelector('[data-line-rows]').children.length, 'the lines block is collapsed until a doctor is chosen');
+  inv.elements.lines_doctor.value = 'DOC-A'; inv.elements.lines_doctor.dispatchEvent(new w.Event('change'));
+  assert(ctr.disabled && inv.querySelectorAll('[data-line-row]').length === 1, 'choosing a doctor opens one line and disables the single-contract picker');
+  inv.querySelector('[data-line-add]').click();
+  const rowsEl = inv.querySelectorAll('[data-line-row]');
+  rowsEl[0].querySelector('[data-line-code]').value = 'D-1'; rowsEl[0].querySelector('[data-line-amount]').value = '300';
+  rowsEl[1].querySelector('[data-line-code]').value = 'D-2'; rowsEl[1].querySelector('[data-line-amount]').value = '200';
+  fill(inv, { reference: 'INV-L1', patient: 'م', description: 'خدمتان أسنان', amount: '400' }); inv.querySelector('.fc-check input').checked = true;
+  inv.querySelector('[data-line-rows]').dispatchEvent(new w.Event('input', { bubbles: true }));
+  assert(inv.querySelector('[data-line-total]').textContent.includes('يجب أن يتساويا'), 'running total flags a mismatch');
+  await assert.rejects(() => submit(), /يجب أن يساوي قيمة الخدمة/, 'a wrong total never reaches the server');
+  inv.elements.amount.value = '500'; inv.elements.amount.dispatchEvent(new w.Event('input', { bubbles: true }));
+  assert(inv.querySelector('[data-line-total]').textContent.includes('✔'));
+  await submit(); const bp = bills.pop();
+  assert.equal(bp.doctor_key, 'DOC-A'); assert.equal(bp.doctor_contract_id, null); assert.equal(bp.service_amount, 500);
+  assert.equal(JSON.stringify(bp.service_lines), JSON.stringify([{ code: 'D-1', amount: 300, kind: 'service' }, { code: 'D-2', amount: 200, kind: 'service' }]));
+  // without a doctor choice the payload is the legacy one (no service_lines)
+  C().act('invoice', '', data, h); const inv2 = d.querySelector('.fc-modal form');
+  fill(inv2, { reference: 'INV-L2', patient: 'م', description: 'خدمة أسنان', amount: '100' }); inv2.querySelector('.fc-check input').checked = true; await submit();
+  assert(!('service_lines' in bills.pop()), 'legacy payload unchanged without a doctor split');
+  console.log('PASS department contracts DOM: invoice service lines, labels, service/department toggle, department list, no restricted confirmation, payload shape, invoice picker');
 })().catch(e => { console.error(e.stack || e.message); process.exitCode = 1; });
