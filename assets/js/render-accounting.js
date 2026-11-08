@@ -388,11 +388,17 @@
       var basis = {performed:'عند تنفيذ الخدمة',collected:'حسب التحصيل'};
       var scopes = {service:'الخدمة دون بنود المستلزمات',invoice:'إجمالي الفاتورة'};
       var deductions = {none:'بدون خصم مستلزمات',cost:'خصم تكلفة المستلزمات',sale:'خصم سعر بيع المستلزمات'};
-      var rows = [['الطبيب',c.doctor_name],['كود الطبيب',c.doctor_key],['الخدمة في العقد',c.service_scope],['نسبة الطبيب',String(c.rate)+'%'],['أساس الاستحقاق',basis[c.basis]],['وعاء النسبة',scopes[c.base_scope]],['خصم المستلزمات',deductions[c.deduction]],['فترة السريان',c.valid_from+' — '+c.valid_to],['مرجع العقد',c.reference]];
+      var deptScope = c.scope_kind === 'department' || String(c.service_scope||'').indexOf('قسم:') === 0, deptName = deptScope ? String(c.service_scope).slice(4) : '';
+      var rows = [['الطبيب',c.doctor_name],['كود الطبيب',c.doctor_key],[deptScope ? 'نطاق العقد' : 'الخدمة في العقد', deptScope ? 'كل خدمات قسم '+deptName : c.service_scope],['نسبة الطبيب',String(c.rate)+'%'],['أساس الاستحقاق',basis[c.basis]],['وعاء النسبة',scopes[c.base_scope]],['خصم المستلزمات',deductions[c.deduction]],['فترة السريان',c.valid_from+' — '+c.valid_to],['مرجع العقد',c.reference]];
       contractDetail.innerHTML = '<p>بيانات معتمدة للعرض، تتحدث تلقائيًا باختيار العقد. نسبة الطبيب تختلف عن هامش ربح المركز.</p><dl>'+rows.map(function(r){return '<dt>'+esc(r[0])+'</dt><dd style="margin-inline-start:0;overflow-wrap:anywhere">'+esc(r[1])+'</dd>';}).join('')+'</dl>';
       var codeInput=backdrop.querySelector('#sv-code');
       if(!service.id && autoContractCode !== null && codeInput.value === autoContractCode)codeInput.value='';
       autoContractCode=null;
+      if (deptScope) {
+        var dn = document.createElement('p'); dn.textContent = 'عقد قسم: يسري على خدمات قسم «'+deptName+'» التي ليس للطبيب فيها عقد خدمة محددة. عقد الخدمة المحددة له الأولوية. لا يغيّر هذا الاختيار كود الخدمة.'; contractDetail.appendChild(dn);
+        if (autoContractCode !== null && backdrop.querySelector('#sv-code').value === autoContractCode) backdrop.querySelector('#sv-code').value = '';
+        autoContractCode = null; return;
+      }
       var matches = state.services.filter(function(x){return x.booking_code === c.service_scope;});
       var nameMatches = state.services.filter(function(x){return x.name === c.service_scope;});
       var linked = matches.length === 1 ? matches[0] : (!matches.length && nameMatches.length === 1 ? nameMatches[0] : null);
@@ -414,10 +420,12 @@
       var retry=backdrop.querySelector('#sv-contract-retry');retry.hidden=true;contractSelect.disabled=true;
       Promise.resolve().then(function(){return window.SSMPDDb.pricingDoctorContracts();}).then(function(result){
         if(!backdrop.isConnected)return;contracts=result.data||result||[];
-        contractSelect.innerHTML='<option value="">اختياري — اختر الطبيب وعقد الخدمة</option>'+contracts.map(function(c){return '<option value="'+esc(c.id)+'">'+esc(c.doctor_name+' — '+c.service_scope+' — '+c.rate+'%')+'</option>';}).join('');
+        contractSelect.innerHTML='<option value="">اختياري — اختر الطبيب وعقد الخدمة</option>'+contracts.map(function(c){return '<option value="'+esc(c.id)+'">'+esc(c.doctor_name+' — '+(String(c.service_scope||'').indexOf('قسم:')===0?'كل خدمات قسم '+String(c.service_scope).slice(4):c.service_scope)+' — '+c.rate+'%')+'</option>';}).join('');
         contractSelect.disabled=false;
         var related=contracts.filter(function(c){return service.id && (c.service_scope===service.booking_code||c.service_scope===service.name);});
+        var deptRelated=contracts.filter(function(c){var dep=String(service.booking_department||service.category||'').trim();return service.id && dep && c.service_scope==='قسم:'+dep;});
         if(related.length===1){contractSelect.value=related[0].id;showContract();}
+        else if(!related.length&&deptRelated.length===1){contractSelect.value=deptRelated[0].id;showContract();}
         else contractDetail.textContent=contracts.length?'اختر العقد لعرض بيانات الطبيب تلقائيًا.':'لا توجد عقود معتمدة وسارية الآن. راجع العقود في الحسابات ← الخزينة والدورة المالية ← الأطباء والأتعاب.';
       }).catch(function(){if(backdrop.isConnected){contractDetail.textContent='تعذر تحميل عقود الطبيب. أعد المحاولة؛ بيانات الخدمة التي أدخلتها ما زالت موجودة.';retry.hidden=false;}});
     }
