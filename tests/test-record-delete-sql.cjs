@@ -1,4 +1,4 @@
-// Owner-only «حذف سجل تجريبي» (20261109110000): flag as test (reason + confirmation) -> delete with full archive in ONE transaction. PGlite with the REAL finance migrations.
+// Owner-only «حذف سجل تجريبي» (20261109130000): flag as test (reason + confirmation) -> delete with full archive in ONE transaction. PGlite with the REAL finance migrations.
 // Covers: owner-only access, unflagged refusal, every refusal (payments, payouts, claims, closed period, stock, linked records), archive == deleted rows, rollback on error, append-only archive, rollback script.
 const { PGlite } = require('@electric-sql/pglite'), fs = require('fs'), path = require('path'), crypto = require('crypto'), assert = require('node:assert/strict');
 const root = path.resolve('.'), id = n => '30000000-0000-4000-8000-' + String(n).padStart(12, '0'), key = () => crypto.randomUUID();
@@ -158,7 +158,7 @@ const root = path.resolve('.'), id = n => '30000000-0000-4000-8000-' + String(n)
   await db.exec('reset role'); await db.exec(mig(M));
 
   // ===================== TEST-RECORD DELETE =====================
-  const T = '20261109110000_test_record_delete.sql', TR = 'supabase/rollbacks/20261109110000_test_record_delete.rollback.sql';
+  const T = '20261109130000_test_record_delete.sql', TR = 'supabase/rollbacks/20261109130000_test_record_delete.rollback.sql';
   // extra tables of production that the slice does not load (stubs with the real column names used by the migration)
   const ddl = async q => { await db.exec('reset role'); await db.exec(q); };
   await ddl(`create schema if not exists clinic_reception;

@@ -8,7 +8,7 @@
 --   Supported: invoice (+journal entry/lines/audit/doctor accrual+allocation(+lines)/channel allocation), doctor_contract, doctor_key (whole test doctor: contracts + accruals + allocations(+lines)),
 --              inventory_item (+reception item, alerts, price history, catalog price), pricing_supply.
 -- ADDITIVE: 3 new tables (RLS closed, no direct grants), helper functions, 5 owner RPCs. No existing table/function is changed. Nothing is deleted by applying this file.
--- Rollback: supabase/rollbacks/20261109110000_test_record_delete.rollback.sql (refuses while the archive/flags hold rows).
+-- Rollback: supabase/rollbacks/20261109130000_test_record_delete.rollback.sql (refuses while the archive/flags hold rows).
 begin;
 
 do $$ begin

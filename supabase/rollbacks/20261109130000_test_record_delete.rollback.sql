@@ -1,4 +1,4 @@
--- Rollback of 20261109110000_test_record_delete.sql. Refuses while the flags or the deletion archive hold rows (the archive is the only copy of deleted test data).
+-- Rollback of 20261109130000_test_record_delete.sql. Refuses while the flags or the deletion archive hold rows (the archive is the only copy of deleted test data).
 begin;
 do $$ begin
   if to_regclass('clinic_finance.test_flags') is not null and (exists(select 1 from clinic_finance.test_flags) or exists(select 1 from clinic_finance.test_deletions)) then
