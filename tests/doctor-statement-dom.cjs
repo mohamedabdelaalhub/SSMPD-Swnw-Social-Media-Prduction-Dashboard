@@ -38,6 +38,23 @@ const { JSDOM } = require('jsdom'), fs = require('fs'), assert = require('node:a
   // RPC fails (migration not applied yet) -> clear message
   d.querySelectorAll('.fc-modal').forEach(x => x.remove()); w.SSMPDDb.financeDoctorStatement = async () => { throw new Error('404'); };
   w.SSMPDFinanceControls.act('doctor-statement', 'EMP-1', data, h); await tick(); assert(d.querySelector('.fc-modal form').textContent.includes('تعذر تحميل'));
+  // ---- detail RPC: patient/insurer split + services without an active contract; falls back to the base statement when the detail RPC fails
+  const DET = JSON.parse(JSON.stringify(STMT)); DET.has_active_contract = true;
+  DET.invoices[1] = Object.assign(DET.invoices[1], { patient_open: 150, insurer_open: 300, claim_amount: 600 });
+  DET.invoices.push({ invoice_id: 'i5', reference: 'INV-5', patient_ref: '', date: '2026-11-05', net: 500, collected: 200, status: 'insurance', insurer: 'شركة ج', fee: 50, patient_open: 0, insurer_open: 300, claim_amount: 300, lines: [] });
+  DET.uncovered = [{ order_id: 'o1', date: '2026-11-03', service_code: 'L-1', service_name: 'تحليل', department: 'التحاليل', amount: 360, reason: 'none' }, { order_id: 'o2', date: '2026-10-01', service_code: 'D-2', service_name: 'حشو', department: 'الاسنان', amount: 100, reason: 'starts_later' }];
+  let detCalls = 0; w.SSMPDDb.financeDoctorStatementDetail = async (k, f, t) => { detCalls++; return DET; }; w.SSMPDDb.financeDoctorStatement = async () => STMT;
+  d.querySelectorAll('.fc-modal').forEach(x => x.remove()); w.SSMPDFinanceControls.act('doctor-statement', 'EMP-1', data, h); await tick();
+  const dt = d.querySelector('.fc-modal form').textContent; assert.equal(detCalls, 1, 'detail RPC preferred');
+  for (const s2 of ['بانتظار حصة المريض — متبقي 150.00', 'بانتظار التأمين (شركة ب) — متبقي 300.00', 'بانتظار التأمين (شركة ج) — متبقي 300.00', 'خدمات بدون عقد ساري (2)', 'مفيش عقد ساري يغطي الخدمة', 'العقد بيبدأ بعد تاريخ التنفيذ', 'تحليل', '360.00', 'أوردرات الاستقبال']) assert(dt.includes(s2), 'detail shows ' + s2);
+  assert(!dt.includes('بانتظار حصة المريض — متبقي 0.00'), 'a closed part is not shown'); assert.equal((dt.match(/بانتظار حصة المريض/g) || []).length, 1, 'patient part only where it is open');
+  // doctor without an active contract: no uncovered section
+  DET.uncovered = null; d.querySelectorAll('.fc-modal').forEach(x => x.remove()); w.SSMPDFinanceControls.act('doctor-statement', 'EMP-1', data, h); await tick(); assert(!d.querySelector('.fc-modal form').textContent.includes('بدون عقد ساري'));
+  DET.uncovered = []; d.querySelectorAll('.fc-modal').forEach(x => x.remove()); w.SSMPDFinanceControls.act('doctor-statement', 'EMP-1', data, h); await tick(); assert(d.querySelector('.fc-modal form').textContent.includes('مفيش خدمات منفذة من غير عقد ساري'));
+  // detail RPC not applied yet -> base statement still works
+  w.SSMPDDb.financeDoctorStatementDetail = async () => { throw new Error('404'); }; d.querySelectorAll('.fc-modal').forEach(x => x.remove()); w.SSMPDFinanceControls.act('doctor-statement', 'EMP-1', data, h); await tick();
+  assert(d.querySelector('.fc-modal form').textContent.includes('INV-1') && !d.querySelector('.fc-modal form').textContent.includes('بدون عقد ساري'), 'fallback to the base statement');
+  delete w.SSMPDDb.financeDoctorStatementDetail; d.querySelectorAll('.fc-modal').forEach(x => x.remove());
   // ---- contracts status filter
   d.body.append(box);
   const fd = Object.assign({}, data, { doctor_contracts: [mk('f1', 'active'), mk('f2', 'pending'), Object.assign(mk('f3', 'rejected'), { doctor_key: 'EMP-2', doctor_name: 'د. ب' })] });

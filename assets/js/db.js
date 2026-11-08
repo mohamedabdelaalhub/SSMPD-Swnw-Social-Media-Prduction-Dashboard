@@ -1351,6 +1351,7 @@
     financeSupplierCommand: function(action,payload,token){return handle(client.rpc('clinic_finance_supplier_command',{p_action:action,p_payload:payload,p_token:token}));},
     financeDoctorCommand: function(action,payload,token){return handle(client.rpc('clinic_finance_doctor_command',{p_action:action,p_payload:payload,p_token:token}));},
     financeDoctorStatement: function(doctorKey,from,to){return handle(client.rpc('clinic_finance_doctor_statement',{p_doctor_key:doctorKey,p_from:from,p_to:to}));},
+    financeDoctorStatementDetail: function(doctorKey,from,to){return handle(client.rpc('clinic_finance_doctor_statement_detail',{p_doctor_key:doctorKey,p_from:from,p_to:to}));},
     financeDoctorAccounts: function(){return handle(client.rpc('clinic_finance_doctor_accounts'));},
     financeHrStaff: function(){return handle(client.rpc('clinic_finance_hr_staff'));},
     financeChannelCommand: function(action,payload,token){return handle(client.rpc('clinic_finance_channel_command',{p_action:action,p_payload:payload,p_token:token}));},
