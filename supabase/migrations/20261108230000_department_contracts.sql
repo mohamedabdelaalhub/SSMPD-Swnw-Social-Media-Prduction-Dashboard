@@ -1,6 +1,7 @@
 -- Department-scope doctor contracts: ONE contract can cover every service of a department (specialty = department).
 -- Scope format in clinic_finance.doctor_contracts.service_scope:  قسم:<department>   (e.g. قسم:الاسنان). Anything else is an exact service code/name, exactly as before.
--- ADDITIVE: 4 new functions, 1 wrapper (clinic_finance_doctor_command moved + wrapped), 2 re-created functions (sync_doctor_contract, pricing_doctor_contracts).
+-- Labs, radiology and emergency are ordinary departments here (no special guard): maker-checker approval is the control against an accidental contract.
+-- ADDITIVE: 3 new functions, 1 wrapper (clinic_finance_doctor_command moved + wrapped), 2 re-created functions (sync_doctor_contract, pricing_doctor_contracts).
 -- No table or column changes. doctor_sync / billing / channel logic are NOT touched (a bill copies the chosen contract's terms into doctor_allocations as before).
 -- Rollback: supabase/rollbacks/20261108230000_department_contracts.rollback.sql
 begin;
@@ -15,6 +16,12 @@ do $$ begin
      or position('doctor_contract_for_service' in pg_get_functiondef('clinic_reception.sync_doctor_contract(uuid,uuid,uuid)'::regprocedure)) > 0 then
     raise exception 'sync_doctor_contract غير مطابقة للمتوقع؛ راجع الفرق قبل التطبيق';
   end if;
+  -- exact text audited against production (md5 of pg_get_functiondef); a drifted function is refused instead of silently overwritten
+  if md5(pg_get_functiondef('clinic_reception.sync_doctor_contract(uuid,uuid,uuid)'::regprocedure)) <> '9940a1df7a26af0005b3dd3b9ab96348'
+     or to_regprocedure('public.pricing_doctor_contracts()') is null
+     or md5(pg_get_functiondef('public.pricing_doctor_contracts()'::regprocedure)) <> '2d64788544ad0c556ed070853df21d09' then
+    raise exception 'sync_doctor_contract أو pricing_doctor_contracts تغيّرت عن نسخة الإنتاج المدقَّقة؛ راجع الفرق قبل التطبيق';
+  end if;
   if to_regclass('clinic_reception.services') is null or to_regclass('public.pricing_services') is null then
     raise exception 'جداول الخدمات (استقبال/تسعير) غير موجودة';
   end if;
@@ -23,11 +30,6 @@ end $$;
 -- 'قسم:X' -> 'X' ; NULL for anything that is not a well-formed department scope.
 create function clinic_finance.department_scope_name(p_scope text) returns text language sql immutable set search_path = pg_catalog, public as $$
   select case when p_scope like 'قسم:%' then nullif(btrim(substr(p_scope, 5)), '') end
-$$;
-
--- Labs and emergency are never covered by a department contract unless it was created for them with an explicit confirmation.
-create function clinic_finance.department_restricted(p_department text) returns boolean language sql immutable set search_path = pg_catalog, public as $$
-  select coalesce(p_department ~ '(معمل|مختبر|تحاليل|طوار)', false)
 $$;
 
 -- Departments that exist today (reception services + price list categories).
@@ -42,7 +44,7 @@ $$;
 create function public.clinic_finance_contract_departments() returns jsonb language plpgsql stable security definer set search_path = pg_catalog, public as $$
 begin
   perform clinic_finance.require_access('view');
-  return coalesce((select jsonb_agg(jsonb_build_object('name', d, 'restricted', clinic_finance.department_restricted(d)) order by d) from clinic_finance.contract_departments() d), '[]'::jsonb);
+  return coalesce((select jsonb_agg(jsonb_build_object('name', d) order by d) from clinic_finance.contract_departments() d), '[]'::jsonb);
 end $$;
 
 -- Contract creation: validate department scopes, then delegate to the existing function unchanged (same payload, same idempotency, same maker-checker).
@@ -60,9 +62,6 @@ begin
     if not exists (select 1 from clinic_finance.contract_departments() d where d = dep) then
       raise exception 'القسم «%» غير موجود في الخدمات المسجلة', dep;
     end if;
-    if clinic_finance.department_restricted(dep) and coalesce(p_payload->>'allow_restricted', '') <> 'true' then
-      raise exception 'أقسام المعامل والطوارئ لا يشملها عقد قسم إلا بتأكيد صريح عند إنشاء العقد';
-    end if;
   end if;
   return clinic_finance.doctor_command_before_departments(p_action, p_payload, p_token);
 end $$;
@@ -76,7 +75,6 @@ returns setof clinic_finance.doctor_contracts language sql stable security defin
     select * from live c where c.service_scope = p_code or (p_name is not null and c.service_scope = p_name)
   ), dept as (
     select * from live c where nullif(btrim(p_department), '') is not null and c.service_scope = 'قسم:' || btrim(p_department)
-      and (not clinic_finance.department_restricted(btrim(p_department)) or c.payload->>'allow_restricted' = 'true')
   )
   select * from exact union all select * from dept where not exists (select 1 from exact)
 $$;
@@ -119,7 +117,7 @@ begin
 end;
 $$;
 
-revoke all on function clinic_finance.department_scope_name(text), clinic_finance.department_restricted(text), clinic_finance.contract_departments(), clinic_finance.doctor_contract_for_service(text, text, text, text, date), clinic_finance.doctor_command_before_departments(text, jsonb, uuid) from public, anon, authenticated;
+revoke all on function clinic_finance.department_scope_name(text), clinic_finance.contract_departments(), clinic_finance.doctor_contract_for_service(text, text, text, text, date), clinic_finance.doctor_command_before_departments(text, jsonb, uuid) from public, anon, authenticated;
 revoke all on function public.clinic_finance_contract_departments(), public.clinic_finance_doctor_command(text, jsonb, uuid) from public, anon;
 grant execute on function public.clinic_finance_contract_departments(), public.clinic_finance_doctor_command(text, jsonb, uuid) to authenticated;
 revoke all on function public.pricing_doctor_contracts() from public, anon;

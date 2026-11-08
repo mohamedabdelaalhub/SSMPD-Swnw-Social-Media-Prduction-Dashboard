@@ -45,6 +45,9 @@ const root = path.resolve('.'), id = n => '30000000-0000-4000-8000-' + String(n)
   const SIGS = ['clinic_reception.sync_doctor_contract(uuid,uuid,uuid)', 'public.pricing_doctor_contracts()', 'public.clinic_finance_doctor_command(text,jsonb,uuid)'];
   const before = {}; for (const s of SIGS) before[s] = await def(s);
 
+  // NOTE on md5s: this test loads only a PARTIAL migration chain (the finance slice + channels), so md5 of public.clinic_finance_doctor_command here is NOT the production md5
+  // (production's copy is also patched by 20261017015715). sync_doctor_contract and pricing_doctor_contracts are loaded verbatim from their own migrations, so their md5s
+  // (9940a1df7a26af0005b3dd3b9ab96348 / 2d64788544ad0c556ed070853df21d09) are the ones the migration guard asserts against production.
   if (process.env.PRINT_MD5) for (const s of SIGS) console.log('md5', crypto.createHash('md5').update(before[s]).digest('hex'), s);
 
   // ---- exact-service contracts keep working exactly as before the migration
@@ -63,12 +66,10 @@ const root = path.resolve('.'), id = n => '30000000-0000-4000-8000-' + String(n)
   assert.equal((await rows('DOC-A', 'D-1', 'الاسنان')).length, 1, 'exact contract still resolves');
   assert.equal((await rows('DOC-A', 'D-2', 'الاسنان')).length, 0, 'an exact contract for D-1 does not cover D-2');
 
-  // ---- creation: format, existing department, restricted departments, maker-checker, idempotency
+  // ---- creation: format, existing department, maker-checker, idempotency (labs/radiology/emergency are ordinary departments: no special guard)
   await as(2);
   await assert.rejects(() => fin('doctor_command', ['contract', { doctor_key: 'DOC-B', doctor_name: 'طبيب ب', scope: 'قسم: الاسنان', from: shift(-30), to: shift(30), rate: 40, basis: 'performed', base_scope: 'service', deduction: 'none', refund_policy: 'proportional_revenue', reference: 'مرجع' }, key()]), /صيغة نطاق القسم/);
   await assert.rejects(() => mkc('DOC-B', 'قسم:غير موجود', 40), /غير موجود/);
-  await assert.rejects(() => mkc('DOC-B', 'قسم:التحاليل', 40), /تأكيد صريح/);
-  await assert.rejects(() => mkc('DOC-B', 'قسم:الطوارئ', 40), /تأكيد صريح/);
   await as(4); await assert.rejects(() => fin('doctor_command', ['contract', { doctor_key: 'DOC-B', doctor_name: 'طبيب ب', scope: 'قسم:الاسنان', from: shift(-30), to: shift(30), rate: 40, basis: 'performed', base_scope: 'service', deduction: 'none', refund_policy: 'x', reference: 'مرجع' }, key()]), /صلاحية/);
   const deptB = await mkc('DOC-B', 'قسم:الاسنان', 40);
   const tk = key(); await as(2);
@@ -81,8 +82,11 @@ const root = path.resolve('.'), id = n => '30000000-0000-4000-8000-' + String(n)
   const dup = await mkc('DOC-B', 'قسم:الاسنان', 45, {}, false);
   await as(3); await assert.rejects(() => fin('doctor_command', ['contract_review', { id: dup, approve: true, note: 'اعتماد' }, key()]), /تتداخل/);
   const other = await mkc('DOC-B', 'قسم:الجلدية', 45); assert(other);
-  const lab = await mkc('DOC-L', 'قسم:التحاليل', 20, { allow_restricted: true });
-  assert.equal((await rows('DOC-L', 'L-1', 'التحاليل')).length, 1, 'a lab department contract created explicitly matches lab services');
+  const lab = await mkc('DOC-L', 'قسم:التحاليل', 10); assert(lab);
+  assert.equal((await rows('DOC-L', 'L-1', 'التحاليل')).length, 1, 'a lab department contract is an ordinary department contract');
+  const emg = await mkc('DOC-M', 'قسم:الطوارئ', 20); assert(emg);
+  assert.equal((await rows('DOC-M', 'E-1', 'الطوارئ')).length, 1, 'same for emergency');
+  assert.equal((await rows('DOC-L', 'E-1', 'الطوارئ')).length, 0, 'a lab contract does not cover emergency');
 
   // ---- resolution + precedence
   const exactC = await mkc('DOC-C', 'D-1', 30), deptC = await mkc('DOC-C', 'قسم:الاسنان', 60);
@@ -94,9 +98,6 @@ const root = path.resolve('.'), id = n => '30000000-0000-4000-8000-' + String(n)
   assert.equal((await rows('DOC-B', 'E-1', 'الطوارئ')).length, 0, 'dental department contract never covers emergency');
   assert.equal((await rows('DOC-B', 'S-1', 'الجلدية')).length, 1, 'DOC-B has its own dermatology contract');
   assert.equal((await rows('DOC-B', 'D-2', null)).length, 0, 'unknown department -> nothing');
-  // a lab/emergency department contract inserted WITHOUT the explicit flag (bypass attempt) is ignored by the resolver
-  await owner(`insert into clinic_finance.doctor_contracts(doctor_key,doctor_name,service_scope,valid_from,valid_to,rate,basis,base_scope,deduction,refund_policy,reference,payload,created_by,token,status,reviewed_by) values('DOC-X','x','قسم:الطوارئ',$1,$2,10,'performed','service','none','proportional_revenue','x','{}',$3,$4,'active',$5)`, [shift(-5), shift(5), id(2), key(), id(3)]);
-  assert.equal((await rows('DOC-X', 'E-1', 'الطوارئ')).length, 0, 'restricted department without explicit flag is ignored');
 
   // ---- reception execution (sync_doctor_contract) uses the same precedence
   const O1 = id(910), O2 = id(911), O3 = id(912), O4 = id(913);
@@ -115,7 +116,7 @@ const root = path.resolve('.'), id = n => '30000000-0000-4000-8000-' + String(n)
   assert.equal(list.find(c => c.id === exactA).scope_kind, 'service'); assert.equal(list.find(c => c.id === exactA).department, null);
   const deps = await fin('contract_departments');
   assert.deepEqual(deps.map(x => x.name), ['الاسنان', 'التحاليل', 'الجلدية', 'الطوارئ']);
-  assert.deepEqual(deps.filter(x => x.restricted).map(x => x.name), ['التحاليل', 'الطوارئ']);
+  assert(deps.every(x => Object.keys(x).join() === 'name'), 'the department list carries only names (no restricted flag)');
   await as(4); await assert.rejects(() => fin('contract_departments'), /صلاحية/);
 
   // ---- billing with a department contract + channel share still works (doctor_sync untouched)
@@ -133,9 +134,9 @@ const root = path.resolve('.'), id = n => '30000000-0000-4000-8000-' + String(n)
   // ---- ROLLBACK: byte-identical restore of every replaced function; department contracts become inert, exact ones keep working
   await db.exec('reset role'); await db.exec(fs.readFileSync('supabase/rollbacks/20261108230000_department_contracts.rollback.sql', 'utf8'));
   for (const s of SIGS) assert.equal(await def(s), before[s], 'rollback restores ' + s + ' byte-for-byte');
-  assert.equal((await owner("select count(*)::int n from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='clinic_finance' and p.proname in ('doctor_contract_for_service','department_scope_name','department_restricted','contract_departments','doctor_command_before_departments')"))[0].n, 0, 'helpers dropped');
+  assert.equal((await owner("select count(*)::int n from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='clinic_finance' and p.proname in ('doctor_contract_for_service','department_scope_name','contract_departments','doctor_command_before_departments')"))[0].n, 0, 'helpers dropped');
   await as(2); const old = await fin('doctor_command', ['contract', { doctor_key: 'DOC-Z', doctor_name: 'طبيب ز', scope: 'D-9', from: shift(-30), to: shift(30), rate: 40, basis: 'performed', base_scope: 'service', deduction: 'none', refund_policy: 'proportional_revenue', reference: 'مرجع' }, key()]);
   assert(old, 'contract creation works after rollback');
   await db.exec('reset role'); await db.exec(mig('20261108230000_department_contracts.sql')); // can be applied again after a rollback
-  console.log('PASS department contracts SQL: format/existence/restricted checks, maker-checker, overlap, exact-over-department precedence, labs/emergency excluded, reception sync, pickers, channel share unaffected, byte-identical rollback');
+  console.log('PASS department contracts SQL: format/existence checks, maker-checker, overlap, exact-over-department precedence, labs/emergency as ordinary departments, reception sync, pickers, channel share unaffected, byte-identical rollback');
 })().catch(e => { console.error(e.message, e.where || '', e.position || ''); process.exitCode = 1; });

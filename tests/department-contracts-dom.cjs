@@ -4,7 +4,7 @@ const tick = (ms = 20) => new Promise(r => setTimeout(r, ms));
 (async () => {
   const dom = new JSDOM('<main></main>', { url: 'https://test.invalid', runScripts: 'outside-only' }), w = dom.window, d = w.document;
   const calls = [];
-  const deptList = [{ name: 'الاسنان', restricted: false }, { name: 'التحاليل', restricted: true }];
+  const deptList = [{ name: 'الاسنان' }, { name: 'التحاليل' }];
   w.SSMPDDb = { financeContractDepartments: async () => deptList, financeDoctorCommand: async (a, p, k) => { calls.push([a, p]); return 'id'; }, financeBill: async () => 'id' };
   w.eval(fs.readFileSync('assets/js/finance-controls.js', 'utf8'));
   w.eval(fs.readFileSync('assets/js/finance-doctors.js', 'utf8'));
@@ -52,26 +52,24 @@ const tick = (ms = 20) => new Promise(r => setTimeout(r, ms));
   assert(f.elements.scope.disabled && !f.elements.scope.required && !f.elements.department.disabled && f.elements.department.required);
   assert(!f.querySelector('[data-scope-dept]').hidden && f.querySelector('[data-scope-service]').hidden);
   assert.deepEqual([...f.elements.department.options].map(o => o.value), ['', 'الاسنان', 'التحاليل']);
-  assert(f.elements.department.options[2].textContent.includes('يحتاج تأكيدًا'), 'restricted departments are flagged in the list');
-  assert(f.querySelector('[data-scope-restricted]').hidden && f.elements.allow_restricted.disabled);
+  assert(!f.elements.allow_restricted && !f.querySelector('[data-scope-restricted]'), 'no restricted-department confirmation exists');
   fill(f, { ...common, department: 'الاسنان' }); f.elements.department.dispatchEvent(new w.Event('change'));
   f.querySelector('.fc-check input[type=checkbox]:not([name])').checked = true;
   await submit(); [a, p] = calls.pop();
   assert.equal(p.scope, 'قسم:الاسنان'); assert(!('scope_kind' in p) && !('department' in p) && !('allow_restricted' in p));
 
-  // ---- restricted department needs the explicit confirmation, which is then sent as true
+  // ---- labs / emergency are ordinary departments: picking one needs no confirmation
   C().act('doctor-contract', '', data, h); await tick();
   f = d.querySelector('.fc-modal form');
   fill(f, { scope_kind: 'department' }); f.elements.scope_kind.dispatchEvent(new w.Event('change'));
   fill(f, { ...common, department: 'التحاليل' }); f.elements.department.dispatchEvent(new w.Event('change'));
-  assert(!f.querySelector('[data-scope-restricted]').hidden && f.elements.allow_restricted.required && !f.elements.allow_restricted.disabled);
-  f.elements.allow_restricted.checked = true; f.querySelector('.fc-check input[type=checkbox]:not([name])').checked = true;
+  f.querySelector('.fc-check input[type=checkbox]:not([name])').checked = true;
   await submit(); [a, p] = calls.pop();
-  assert.equal(p.scope, 'قسم:التحاليل'); assert.strictEqual(p.allow_restricted, true);
+  assert.equal(p.scope, 'قسم:التحاليل'); assert(!('allow_restricted' in p));
 
   // ---- invoice contract picker shows the readable label
   C().act('invoice', '', data, h);
   const opts = [...d.querySelectorAll('.fc-modal select[name=doctor_contract] option')].map(o => o.textContent);
   assert(opts.some(t => t.includes('كل خدمات قسم الاسنان')) && opts.some(t => t.includes('D-1')), 'invoice picker lists department and exact contracts');
-  console.log('PASS department contracts DOM: labels, service/department toggle, department list, restricted confirmation, payload shape, invoice picker');
+  console.log('PASS department contracts DOM: labels, service/department toggle, department list, no restricted confirmation, payload shape, invoice picker');
 })().catch(e => { console.error(e.stack || e.message); process.exitCode = 1; });

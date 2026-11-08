@@ -47,7 +47,6 @@ $$;
 drop function if exists public.clinic_finance_contract_departments();
 drop function if exists clinic_finance.doctor_contract_for_service(text, text, text, text, date);
 drop function if exists clinic_finance.contract_departments();
-drop function if exists clinic_finance.department_restricted(text);
 drop function if exists clinic_finance.department_scope_name(text);
 revoke all on function public.pricing_doctor_contracts() from public, anon;
 grant execute on function public.pricing_doctor_contracts() to authenticated;
