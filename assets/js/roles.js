@@ -109,8 +109,18 @@
 
     canReviewArchive: function(a) { a=normalizeAdmin(a); return a.active!==false && (!!a.has_archive_review_access || Roles.hasAnyRole(a,["super_admin","head_nursing"])); },
 
+    // التمريض ورئيس التمريض: «الاستقبال والخدمات» = لوحة «تشغيل اليوم» بس (من غير الحجز والخزينة).
+    // معاينة للمالك على حساب التجربة بس لحد ما يوافق (2026-11-08) — بعد الموافقة يتشال شرط الإيميل.
+    NURSING_DAY_PREVIEW: ["swnwclinics+staff@gmail.com"],
+    isNursingDayOnly: function (a) {
+      a = normalizeAdmin(a);
+      if (Roles.NURSING_DAY_PREVIEW.indexOf(String(a.email || "").toLowerCase()) === -1) return false;
+      return Roles.hasAnyRole(a, ["nursing", "head_nursing"]) && !Roles.hasAnyRole(a, ["super_admin", "general_manager", "reception", "customer_service", "accountant", "financial_manager", "sono_doctor"]);
+    },
+
     canSeeTab: function (adminOrRole, tab) {
       var admin = normalizeAdmin(adminOrRole);
+      if(tab==='reception_services'&&Roles.isNursingDayOnly(admin))return true;
       if(tab==='human_resources')return admin.active!==false&&!!(admin.id||admin.role);
       if(tab==='price_lists')return admin.active!==false&&Roles.canModuleAction(admin,'price_lists','view');
       if(tab==="tasks" && Roles.hasRole(admin,"psychology_specialist"))return true;
