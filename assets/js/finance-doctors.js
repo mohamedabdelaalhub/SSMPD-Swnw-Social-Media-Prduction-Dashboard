@@ -36,9 +36,15 @@ function statementHtml(r,h){var e=h.esc,m=h.money,t=h.table,u=r.summary||{},inv=
 var cards=[['إجمالي المستحق',u.accrued,''],['مستحق الصرف الآن',u.payable_invoices,'ok'],['بانتظار التحصيل',u.pending,'wait'],['المصروف',u.paid_out,''],['الرصيد الحالي',u.balance,''],['المتاح للصرف',u.available_to_pay,'ok']];
 var html='<div class="fc-st-cards">'+cards.map(function(c){return '<div class="fc-st-card'+(c[2]?' '+c[2]:'')+'"><span>'+e(c[0])+'</span><strong>'+m(c[1])+'</strong></div>';}).join('')+'</div>';
 html+='<p class="fc-note">الأتعاب بتبقى «مستحقة للصرف» بعد ما الفاتورة تتسدد بالكامل (من المريض ودفعات التأمين المعتمدة). الفاتورة الآجل أو التأمين اللي لسه ماتسددتش بتحجز أتعابها هي بس، وباقي الفواتير ماتتأثرش.'+(Number(u.other_credits)?' الرصيد فيه '+m(u.other_credits)+' من رصيد افتتاحي أو حسابات الاستقبال، وده مش مفصّل بالفواتير هنا.':'')+'</p>';
-html+=t(['التاريخ','الفاتورة','الخدمات','صافي الفاتورة','المحصّل','الحالة','الأتعاب'],inv.map(function(i){var lines=(i.lines||[]).map(function(l){return e((l.service_name||l.service_code)+' ('+m(l.amount)+' × '+m(l.rate)+'%)');}).join('<br>')||'—';
-var label=stLabel[i.status]||i.status;if(i.status==='insurance'&&i.insurer)label+=' — '+i.insurer;
-return [e(i.date),e(i.reference)+(i.patient_ref?'<br><small>'+e(i.patient_ref)+'</small>':''),lines,m(i.net),m(i.collected),'<span class="fc-st-badge '+e(i.status)+'">'+e(label)+'</span>',m(i.fee)];}));
+function svc(i){return (i.lines||[]).map(function(l){return e((l.service_name||l.service_code)+' ('+m(l.amount)+' × '+m(l.rate)+'%)');}).join('<br>')||'—';}
+function head(i){return [e(i.date),e(i.reference)+(i.patient_ref?'<br><small>'+e(i.patient_ref)+'</small>':''),svc(i)];}
+function left(i){return Math.max(0,Math.round((Number(i.net)-Number(i.collected))*100)/100);}
+function why(i){var r=m(left(i)),c=Number(i.collected)>0;if(i.status==='insurance')return 'بانتظار دفعة التأمين'+(i.insurer?' ('+i.insurer+')':'')+' — متبقي '+r;return c?'مدفوعة جزئيًا — متبقي '+r:'آجل — لم يُسدَّد شيء';}
+var paid=inv.filter(function(i){return i.status==='paid';}),wait=inv.filter(function(i){return i.status==='insurance'||i.status==='credit';}),sum=function(a,f){return a.reduce(function(s,i){return s+Number(f(i)||0);},0);};
+html+='<h4 class="fc-st-h">مستحق للصرف الآن ('+paid.length+') — الأتعاب '+m(sum(paid,function(i){return i.fee;}))+'</h4>';
+html+=paid.length?t(['التاريخ','الفاتورة','الخدمات','صافي الفاتورة','المحصّل','الأتعاب'],paid.map(function(i){return head(i).concat([m(i.net),m(i.collected),m(i.fee)]);})):'<p class="fc-note">مفيش فواتير اتسددت بالكامل في الفترة دي.</p>';
+html+='<h4 class="fc-st-h">غير مستحق بعد ('+wait.length+') — أتعاب محجوزة '+m(sum(wait,function(i){return i.fee;}))+' — متبقي للتحصيل '+m(sum(wait,left))+'</h4>';
+html+=wait.length?t(['التاريخ','الفاتورة','الخدمات','صافي الفاتورة','المحصّل','المتبقي','السبب','الأتعاب'],wait.map(function(i){return head(i).concat([m(i.net),m(i.collected),m(left(i)),'<span class="fc-st-badge '+e(i.status)+'">'+e(why(i))+'</span>',m(i.fee)]);})):'<p class="fc-note">مفيش فواتير بانتظار التحصيل في الفترة دي.</p>';
 return html;}
 window.SSMPDDoctorStatement={html:statementHtml};
 function act(action,id,d,h){var f=h.field,s=h.select,modal=h.modal,db=window.SSMPDDb;
