@@ -1364,6 +1364,7 @@
     financeContractDepartments: function(){return handle(client.rpc('clinic_finance_contract_departments',{}));},
     financeLinesEnabled: function(){return handle(client.rpc('clinic_finance_lines_enabled',{}));},
     financeFixedFeeEnabled: function(){return handle(client.rpc('clinic_finance_fixed_fee_enabled',{}));},
+    financeExternalServiceEnabled: function(){return handle(client.rpc('clinic_finance_external_service_enabled',{}));},
     financeContractServices: function(){return handle(client.rpc('clinic_finance_contract_services',{}));},
     financeAccountStatement: function(code,from,to,children,register,offset,limit,asof){return handle(client.rpc('clinic_finance_account_statement',{p_code:code||null,p_from:from,p_to:to,p_children:children!==false,p_register:register||null,p_offset:offset||0,p_limit:limit||200,p_asof:asof==null?null:asof}));},
     financeCashVouchers: function(from,to,offset){return handle(client.rpc('clinic_finance_cash_vouchers',{p_from:from,p_to:to,p_offset:offset||0}));},
