@@ -1,35 +1,64 @@
-# Department-scope doctor contracts
+# Doctor contracts: department scope, many services at once, and one rate per service line
 
-Draft PR. **Not applied to production.** Migration `20261108230000_department_contracts.sql`, rollback `supabase/rollbacks/20261108230000_department_contracts.rollback.sql`.
+Draft PR. **Not applied to production.** Two additive migrations, each with a rollback:
+
+| Migration | Rollback | What it adds |
+|---|---|---|
+| `20261108230000_department_contracts.sql` | `supabase/rollbacks/20261108230000_department_contracts.rollback.sql` | department-scope contracts, batch contract creation / review, service list |
+| `20261108231000_doctor_service_lines.sql` | `supabase/rollbacks/20261108231000_doctor_service_lines.rollback.sql` | per-service-line doctor fee allocation on an invoice |
+
+Order: `…230000` → (`20261108130000_channels_discounts_p1.sql` if/when PR #355 is applied) → `…231000`.
 
 ## ما الجديد (للمحاسب)
 
-- في الحسابات ← الأطباء والأتعاب ← «إضافة عقد»: حقل **نطاق العقد**: «خدمة محددة» (كما كان) أو **«كل خدمات قسم»** مع قائمة بالأقسام الموجودة فعلًا.
-- عقد القسم الواحد يغطي كل خدمات القسم (مثال: الأسنان) بدل عقد لكل خدمة (1391 خدمة).
-- **عقد الخدمة المحددة له الأولوية** على عقد القسم لنفس الطبيب. عقد القسم يسري فقط على الخدمات التي ليس للطبيب فيها عقد خدمة خاص.
-- **المعامل والطوارئ** لا يدخلان تحت عقد قسم آخر أبدًا، ولا يمكن إنشاء عقد لقسم منهما إلا بتأكيد صريح في النموذج.
-- الاعتماد كما هو: منشئ العقد لا يعتمده، يحتاج سببًا مكتوبًا، ولا يوجد اعتماد تلقائي.
-- لا يتغير حساب الأتعاب ولا الفواتير القديمة ولا قنوات/خصومات PR #355.
+- **نطاق العقد** في «إضافة عقد»: «خدمة محددة» أو **«عدة خدمات محددة بنفس النسبة»** (بحث + تحديد متعدد؛ نسبة واحدة تنشئ عقدًا لكل خدمة، كلها بانتظار الاعتماد وتُعتمد معًا بزر «مراجعة المجموعة») أو **«كل خدمات قسم»**.
+- **عقد الخدمة المحددة له الأولوية** على عقد القسم لنفس الطبيب.
+- **لا استثناء للمعامل والأشعة والطوارئ**: هي أقسام عادية. الحماية من عقد خاطئ هي الاعتماد من شخص آخر بسبب مكتوب (كما كان).
+- **فاتورة بأكثر من خدمة بنسب مختلفة**: في نموذج الفاتورة، اختر الطبيب في «توزيع الخدمات على الطبيب» وأدخل سطر لكل خدمة (كود/اسم + قيمة، وعلامة «كشف» لسطر الكشف). كل سطر يأخذ نسبة عقد خدمته (أو قسمه)، ومجموع الأتعاب = مجموع الأسطر. بدون هذا الاختيار الفاتورة تعمل كما كانت (عقد واحد).
+
+## Why a new table (what the invoice stored)
+
+Before this change an invoice stored one total (`clinic_finance.invoices.amount`), the stock lines (`bill_items`) and ONE doctor contract (`doctor_allocations.contract_id`, one rate). **No per-service detail was kept.** A 40% service and a 30% service on one invoice could not both be honoured, whichever contract the accountant picked.
+`clinic_finance.doctor_allocation_lines` (additive, one row per service line: code, name, department, amount, contract, a frozen copy of the contract terms, the line's share of the stock deduction) is the minimal store for the split.
 
 ## Design
 
-- Storage format in `clinic_finance.doctor_contracts.service_scope`: `قسم:<department>` (no space after the colon, department text exactly as in `clinic_reception.services.department` / `pricing_services.category`). Everything else is an exact service code/name as before. **No table or column change.**
-- `public.clinic_finance_doctor_command` is moved to `clinic_finance.doctor_command_before_departments` and wrapped: for `contract` with a `قسم:` scope it validates the format, that the department exists (`clinic_finance.contract_departments()`), and that labs/emergency (`department_restricted`: معمل|مختبر|تحاليل|طوار) carry `allow_restricted = true`; then it delegates unchanged (same payload, token idempotency, maker-checker, overlap check). The existing overlap check already compares `doctor_key + service_scope` exactly, so two active contracts for the same doctor and the same department cannot overlap; different departments (or a department + an exact service) can coexist.
-- `clinic_finance.doctor_contract_for_service(doctor, code, name, department, on_date)`: exact code/name contracts first; only if none, the department contract (restricted departments only when the contract carries `allow_restricted`, defence in depth).
-- `clinic_reception.sync_doctor_contract` (reception execution): identical function except it resolves the contract with the resolver above; behaviour for exact contracts is unchanged.
-- `public.pricing_doctor_contracts()`: same output plus `scope_kind` (`service|department`) and `department`.
-- `public.clinic_finance_contract_departments()`: department list for the form (`name`, `restricted`).
-- JS: contract form (`finance-doctors.js`), readable labels in the contracts table / invoice picker, service editor (`render-accounting.js`) auto-selects a department contract when the service's department matches and no exact contract exists.
-- `doctor_sync`, `doctor_bill_base`, `channel_*` are **not replaced**: a bill copies the chosen contract's terms into `doctor_allocations`, so department contracts need no change there.
+### Department scope (`…230000`)
+- `service_scope = 'قسم:<department>'` (no table change); department names come from `clinic_reception.services.department` ∪ `pricing_services.category`.
+- `clinic_finance_doctor_command` is moved to `clinic_finance.doctor_command_before_departments` and wrapped: department scopes are validated (format, department exists), then the unchanged function does the work (same payload, idempotency, maker-checker, overlap check by exact doctor+scope).
+- `clinic_finance.doctor_contract_for_service(doctor, code, name, department, on_date)`: exact service contract first, else the department contract (same doctor, active, inside its dates).
+- `clinic_reception.sync_doctor_contract` uses that resolver; `pricing_doctor_contracts()` returns `scope_kind` / `department`.
+- No labs/emergency guard (removed on purpose).
+- Guard: refuses to apply unless `sync_doctor_contract` and `pricing_doctor_contracts` have exactly the audited production md5 (`9940a1df7a26af0005b3dd3b9ab96348`, `2d64788544ad0c556ed070853df21d09`), or if already applied.
+
+### Batch (`…230000`, same wrapper)
+- `contract_batch`: the contract payload with `scopes: [...]` instead of `scope`; one pending contract per scope through the unchanged base function in one transaction (all or none); tokens derived from (batch token, scope) so a replay is idempotent. 1–200 scopes, no duplicates.
+- `contract_review_batch`: `{ids, approve, note}`; each contract is reviewed by the unchanged base (creator still cannot approve; an overlap on any row rejects the whole batch).
+- `clinic_finance_contract_services()`: read-only service list (code, name, department) for the multi-select.
+
+### Per-line allocation (`…231000`)
+- `public.clinic_finance_bill` → moved to `clinic_finance.bill_before_lines` and wrapped. **No `service_lines` in the payload ⇒ delegates unchanged.** With `service_lines: [{code, amount, kind?, name?, department?}]` + `doctor_key` (and no `doctor_contract_id`):
+  - the lines must sum to the service amount without stock items (`invoice.amount − Σ stock sales`);
+  - per line the contract is resolved by `doctor_contract_for_service` (department derived from the service code); **no contract ⇒ the whole bill is rejected** (nothing is saved); several contracts ⇒ rejected;
+  - contracts must be on the service (not invoice base) and share the same accrual basis (performed / collected);
+  - stock deduction (`cost` / `sale`) is shared across lines by amount, each line using its own contract's deduction kind.
+- `clinic_finance.doctor_sync` → moved to `clinic_finance.doctor_sync_base` and wrapped. **An invoice without lines delegates to the base untouched** (so every existing invoice, refund, `returned_deduction` and `channel_share` case computes exactly as before). For invoices with lines, per contract: `greatest(0, base·revenue/amount − greatest(0, deduction − returned share) − channel share·revenue/amount) · rate/100`, summed; collected-basis scaling, rounding and the accrual posting are the same as the base. With one contract this is the base formula (tested for parity incl. refund and platform share).
+- Platform (channel) share: taken off the **consultation** lines when the invoice has any (`kind: "consultation"`), otherwise spread over the lines by amount.
+- The wrappers get exactly the privileges of the functions they wrap.
+- Wrapping order: applying PR #355's channel migration AFTER this one would replace the wrapper (and its own guard would refuse); apply it before. Without channels (production today) `channel_share` is 0.
 
 ## Limitations
 
-1. The reception pilot/native cut-over pickers (`native_doctor_options`, doctor selection by department in the management pilot) still list only doctors that have a per-service contract; a doctor with only a department contract is resolved at execution (`sync_doctor_contract`) and in the accounting invoice, but is not offered by those two reception pickers yet (follow-up).
-2. Invoice contract picking is still manual by id; an invoice has no single service, so the picker lists all active contracts (department ones labelled «كل خدمات قسم …»).
-3. A department contract must use `base_scope = service` and `deduction none|cost` to be usable by reception execution (existing rule).
-4. Department text is matched exactly; a renamed department needs a new contract (or an exact-text rename).
-5. The restricted list is a name pattern (`معمل|مختبر|تحاليل|طوار`), not a table.
+1. Reception pickers (`native_doctor_options`, pilot doctor selection) still list only doctors with per-service contracts; a department-only doctor is resolved at execution and in accounting invoices (follow-up).
+2. Without lines, the invoice contract is still picked manually (one rate for the invoice) — the lines block is the way to mix rates.
+3. A service line's department comes from `clinic_reception.services` by code (falls back to the `department` sent by the client); a service unknown to reception only matches an exact-service contract.
+4. Platform share attribution for mixed rates is by the rule above (consultation lines first); it is an allocation rule, not stored per line.
+5. Rollback of the lines migration keeps the stored splits in `doctor_allocation_lines_rolled_back`; those invoices then fall back to the single contract on their allocation row until corrected.
+6. A department contract must be `base_scope = service` and deduction `none|cost` to be used by reception execution (existing rule).
 
 ## Tests
 
-`node tests/department-contracts-sql.cjs` (real finance migrations + channels on PGlite, reception stubs, byte-identical rollback of every replaced function), `node tests/department-contracts-dom.cjs`.
+- `node tests/department-contracts-sql.cjs`, `node tests/doctor-service-lines-sql.cjs`, `node tests/doctor-service-lines-nochannels-sql.cjs` (production state: no channel tables): real finance migrations on PGlite; byte-identical rollbacks incl. privileges.
+- `node tests/department-contracts-dom.cjs`: contract form (single / many / department), group review, invoice lines block.
+- The `sync_doctor_contract` / `pricing_doctor_contracts` md5s in the test are for the partial chain loaded there; `clinic_finance_doctor_command`'s md5 in the test slice is not production's (production also carries the `20261017015715` patch).
+- Docker rehearsal (PG16, production function definitions): apply, second apply refused, behaviour, rollback byte-identical, re-apply.
