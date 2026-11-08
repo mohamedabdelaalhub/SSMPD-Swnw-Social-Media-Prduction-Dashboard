@@ -5,7 +5,8 @@ const tick = (ms = 20) => new Promise(r => setTimeout(r, ms));
   const dom = new JSDOM('<main></main>', { url: 'https://test.invalid', runScripts: 'outside-only' }), w = dom.window, d = w.document;
   const calls = [], bills = [];
   const deptList = [{ name: 'الاسنان' }, { name: 'التحاليل' }];
-  w.SSMPDDb = { financeContractDepartments: async () => deptList, financeDoctorCommand: async (a, p, k) => { calls.push([a, p]); return 'id'; }, financeBill: async (p) => { bills.push(p); return 'id'; } };
+  const svcList = [{ code: 'D-1', name: 'حشو', department: 'الاسنان' }, { code: 'D-2', name: 'خلع', department: 'الاسنان' }, { code: 'S-1', name: 'جلدية', department: 'الجلدية' }];
+  w.SSMPDDb = { financeContractServices: async () => svcList, financeContractDepartments: async () => deptList, financeDoctorCommand: async (a, p, k) => { calls.push([a, p]); return 'id'; }, financeBill: async (p) => { bills.push(p); return 'id'; } };
   w.eval(fs.readFileSync('assets/js/finance-controls.js', 'utf8'));
   w.eval(fs.readFileSync('assets/js/finance-doctors.js', 'utf8'));
   const esc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -71,6 +72,37 @@ const tick = (ms = 20) => new Promise(r => setTimeout(r, ms));
   C().act('invoice', '', data, h);
   const opts = [...d.querySelectorAll('.fc-modal select[name=doctor_contract] option')].map(o => o.textContent);
   assert(opts.some(t => t.includes('كل خدمات قسم الاسنان')) && opts.some(t => t.includes('D-1')), 'invoice picker lists department and exact contracts');
+  // ---- multi-service contract: search, select many, ONE rate -> one batch call with every selected code
+  d.querySelectorAll('.fc-modal').forEach(m => m.remove());
+  C().act('doctor-contract', '', data, h); await tick();
+  f = d.querySelector('.fc-modal form');
+  fill(f, { scope_kind: 'services' }); f.elements.scope_kind.dispatchEvent(new w.Event('change'));
+  assert(!f.querySelector('[data-scope-multi]').hidden && f.elements.scope.disabled && !f.elements.scope.required && f.querySelector('[data-scope-service]').hidden && f.querySelector('[data-scope-dept]').hidden);
+  assert.equal(f.querySelectorAll('[data-svc-list] input').length, 3, 'the whole service list is offered');
+  const search = f.querySelector('[data-svc-search]'); search.value = 'خلع'; search.dispatchEvent(new w.Event('input'));
+  assert.deepEqual([...f.querySelectorAll('[data-svc-list] input')].map(x => x.value), ['D-2'], 'search narrows the list by name');
+  f.querySelector('[data-svc-list] input').checked = true; f.querySelector('[data-svc-list]').dispatchEvent(new w.Event('change', { bubbles: true }));
+  search.value = 'الاسنان'; search.dispatchEvent(new w.Event('input'));
+  assert.deepEqual([...f.querySelectorAll('[data-svc-list] input')].map(x => x.value), ['D-1', 'D-2'], 'search by department; the earlier pick stays selected');
+  assert(f.querySelector('[data-svc-list] input[value="D-2"]').checked);
+  f.querySelector('[data-svc-pick]').click();
+  assert(f.querySelector('[data-svc-count]').textContent.includes('2'), 'the count of selected services is shown');
+  fill(f, common); f.querySelector('.fc-check input[type=checkbox]:not([name]):not([value])').checked = true;
+  await submit(); [a, p] = calls.pop();
+  assert.equal(a, 'contract_batch'); assert.equal(JSON.stringify(p.scopes), JSON.stringify(['D-1', 'D-2'])); assert(!('scope' in p) && !('scope_kind' in p)); assert.equal(p.rate, 45);
+  C().act('doctor-contract', '', data, h); await tick(); f = d.querySelector('.fc-modal form');
+  fill(f, { scope_kind: 'services' }); f.elements.scope_kind.dispatchEvent(new w.Event('change')); fill(f, common); f.querySelector('.fc-check input[type=checkbox]:not([name]):not([value])').checked = true;
+  await assert.rejects(() => submit(), /خدمة واحدة على الأقل/, 'a batch with nothing selected is refused in the form');
+  d.querySelectorAll('.fc-modal').forEach(m => m.remove());
+
+  // ---- batch review: pending contracts created together are offered as one group
+  for (const n of ['p1', 'p2']) data.doctor_contracts.push({ id: n, doctor_key: 'DOC-Z', doctor_name: 'طبيب ز', service_scope: n === 'p1' ? 'D-1' : 'D-2', valid_from: '2026-01-01', valid_to: '2026-12-31', rate: 35, base_scope: 'service', deduction: 'none', basis: 'performed', status: 'pending', created_by: 'x', reference: 'دفعة' });
+  assert(C().panel('doctors', data, h).includes('مراجعة المجموعة (2)'), 'a group button appears for pending contracts created together');
+  C().act('doctor-contract-review-batch', 'p1', data, h);
+  f = d.querySelector('.fc-modal form'); fill(f, { approval: 'yes', note: 'اعتماد الدفعة' }); await submit(); [a, p] = calls.pop();
+  assert.equal(a, 'contract_review_batch'); assert.equal(JSON.stringify(p.ids), JSON.stringify(['p1', 'p2'])); assert.equal(p.approve, true);
+  data.doctor_contracts.splice(-2, 2);
+
   // ---- invoice with per-service lines: rows, running total, payload shape, and the guard against a wrong total
   d.querySelectorAll('.fc-modal').forEach(m => m.remove());
   C().act('invoice', '', data, h);
@@ -95,5 +127,5 @@ const tick = (ms = 20) => new Promise(r => setTimeout(r, ms));
   C().act('invoice', '', data, h); const inv2 = d.querySelector('.fc-modal form');
   fill(inv2, { reference: 'INV-L2', patient: 'م', description: 'خدمة أسنان', amount: '100' }); inv2.querySelector('.fc-check input').checked = true; await submit();
   assert(!('service_lines' in bills.pop()), 'legacy payload unchanged without a doctor split');
-  console.log('PASS department contracts DOM: invoice service lines, labels, service/department toggle, department list, no restricted confirmation, payload shape, invoice picker');
+  console.log('PASS department contracts DOM: multi-service batch + group review, invoice service lines, labels, service/department toggle, department list, no restricted confirmation, payload shape, invoice picker');
 })().catch(e => { console.error(e.stack || e.message); process.exitCode = 1; });

@@ -1,8 +1,8 @@
 -- Department-scope doctor contracts: ONE contract can cover every service of a department (specialty = department).
 -- Scope format in clinic_finance.doctor_contracts.service_scope:  قسم:<department>   (e.g. قسم:الاسنان). Anything else is an exact service code/name, exactly as before.
 -- Labs, radiology and emergency are ordinary departments here (no special guard): maker-checker approval is the control against an accidental contract.
--- ADDITIVE: 3 new functions, 1 wrapper (clinic_finance_doctor_command moved + wrapped), 2 re-created functions (sync_doctor_contract, pricing_doctor_contracts).
--- No table or column changes. doctor_sync / billing / channel logic are NOT touched (a bill copies the chosen contract's terms into doctor_allocations as before).
+-- ADDITIVE: 6 new functions (department scope name + check, department list, service list, per-service resolver) and 1 wrapper (clinic_finance_doctor_command, which also gains the contract_batch / contract_review_batch actions), 2 re-created functions (sync_doctor_contract, pricing_doctor_contracts).
+-- No table or column changes. doctor_sync / billing / channel logic are NOT touched here (the per-service-line allocation is the separate file 20261108231000_doctor_service_lines.sql).
 -- Rollback: supabase/rollbacks/20261108230000_department_contracts.rollback.sql
 begin;
 
@@ -47,21 +47,65 @@ begin
   return coalesce((select jsonb_agg(jsonb_build_object('name', d) order by d) from clinic_finance.contract_departments() d), '[]'::jsonb);
 end $$;
 
--- Contract creation: validate department scopes, then delegate to the existing function unchanged (same payload, same idempotency, same maker-checker).
-alter function public.clinic_finance_doctor_command(text, jsonb, uuid) set schema clinic_finance;
-alter function clinic_finance.clinic_finance_doctor_command(text, jsonb, uuid) rename to doctor_command_before_departments;
-create function public.clinic_finance_doctor_command(p_action text, p_payload jsonb, p_token uuid) returns uuid language plpgsql security definer set search_path = pg_catalog, public as $$
+-- Department scope validation (format + the department exists). A no-op for any other (service) scope.
+create function clinic_finance.check_department_scope(p_scope text) returns void language plpgsql stable security definer set search_path = pg_catalog, public as $$
 declare sc text; dep text;
 begin
-  if p_action = 'contract' and coalesce(p_payload->>'scope', '') ~ '^\s*قسم\s*:' then
-    perform clinic_finance.require_access('create');
-    sc := btrim(p_payload->>'scope'); dep := clinic_finance.department_scope_name(sc);
+  if coalesce(p_scope, '') ~ '^\s*قسم\s*:' then
+    sc := btrim(p_scope); dep := clinic_finance.department_scope_name(sc);
     if dep is null or sc <> 'قسم:' || dep or dep ~ '\s{2,}' or length(sc) > 120 then
       raise exception 'صيغة نطاق القسم: قسم:اسم القسم، مثال قسم:الاسنان (بدون مسافات زائدة)';
     end if;
     if not exists (select 1 from clinic_finance.contract_departments() d where d = dep) then
       raise exception 'القسم «%» غير موجود في الخدمات المسجلة', dep;
     end if;
+  end if;
+end $$;
+
+-- Services the contract form can offer (code is what a contract's exact scope matches). Read-only, same permission as the contract list.
+create function public.clinic_finance_contract_services() returns jsonb language plpgsql stable security definer set search_path = pg_catalog, public as $$
+begin
+  perform clinic_finance.require_access('view');
+  return coalesce((select jsonb_agg(jsonb_build_object('code', btrim(x.booking_code), 'name', x.name, 'department', coalesce(nullif(btrim(x.booking_department), ''), nullif(btrim(x.category), ''))) order by x.name, x.booking_code)
+                   from public.pricing_services x where x.active and nullif(btrim(x.booking_code), '') is not null), '[]'::jsonb);
+end $$;
+
+-- Contract creation: validate department scopes, then delegate to the existing function unchanged (same payload, same idempotency, same maker-checker).
+-- Two batch actions on top (each row still goes through the unchanged base function, in ONE transaction, so all rows are created or none):
+--   contract_batch:        payload = the usual contract payload with `scopes` (array of service codes / قسم:X) instead of `scope`; one PENDING contract per scope, same doctor/rate/dates/reference.
+--                          Each row gets a token derived from (batch token, scope), so replaying the batch is idempotent.
+--   contract_review_batch: payload = {ids:[...], approve, note}; reviews every listed contract with the same decision and note (creator still cannot approve; overlap still refused per row).
+alter function public.clinic_finance_doctor_command(text, jsonb, uuid) set schema clinic_finance;
+alter function clinic_finance.clinic_finance_doctor_command(text, jsonb, uuid) rename to doctor_command_before_departments;
+create function public.clinic_finance_doctor_command(p_action text, p_payload jsonb, p_token uuid) returns uuid language plpgsql security definer set search_path = pg_catalog, public as $$
+declare s text; v uuid; first_id uuid; n integer; i uuid;
+begin
+  if p_action = 'contract_batch' then
+    perform clinic_finance.require_access('create');
+    if jsonb_typeof(p_payload->'scopes') is distinct from 'array' then raise exception 'اختر خدمة واحدة على الأقل'; end if;
+    n := jsonb_array_length(p_payload->'scopes');
+    if n not between 1 and 200 then raise exception 'اختر من 1 إلى 200 خدمة في الدفعة الواحدة'; end if;
+    if (select count(distinct btrim(x)) from jsonb_array_elements_text(p_payload->'scopes') x) <> n or exists (select 1 from jsonb_array_elements_text(p_payload->'scopes') x where btrim(x) = '') then
+      raise exception 'قائمة الخدمات فيها تكرار أو عنصر فارغ';
+    end if;
+    for s in select btrim(x) from jsonb_array_elements_text(p_payload->'scopes') x loop
+      perform clinic_finance.check_department_scope(s);
+      v := clinic_finance.doctor_command_before_departments('contract', (p_payload - 'scopes') || jsonb_build_object('scope', s), md5(p_token::text || '|' || s)::uuid);
+      first_id := coalesce(first_id, v);
+    end loop;
+    return first_id;
+  elsif p_action = 'contract_review_batch' then
+    perform clinic_finance.require_access('review');
+    if jsonb_typeof(p_payload->'ids') is distinct from 'array' or jsonb_array_length(p_payload->'ids') not between 1 and 200 then raise exception 'حدد من 1 إلى 200 عقدًا للمراجعة'; end if;
+    for i in select distinct x::uuid from jsonb_array_elements_text(p_payload->'ids') x loop
+      v := clinic_finance.doctor_command_before_departments('contract_review', (p_payload - 'ids') || jsonb_build_object('id', i), gen_random_uuid());
+      first_id := coalesce(first_id, v);
+    end loop;
+    return first_id;
+  end if;
+  if p_action = 'contract' then
+    perform clinic_finance.require_access('create');
+    perform clinic_finance.check_department_scope(p_payload->>'scope');
   end if;
   return clinic_finance.doctor_command_before_departments(p_action, p_payload, p_token);
 end $$;
@@ -117,9 +161,9 @@ begin
 end;
 $$;
 
-revoke all on function clinic_finance.department_scope_name(text), clinic_finance.contract_departments(), clinic_finance.doctor_contract_for_service(text, text, text, text, date), clinic_finance.doctor_command_before_departments(text, jsonb, uuid) from public, anon, authenticated;
-revoke all on function public.clinic_finance_contract_departments(), public.clinic_finance_doctor_command(text, jsonb, uuid) from public, anon;
-grant execute on function public.clinic_finance_contract_departments(), public.clinic_finance_doctor_command(text, jsonb, uuid) to authenticated;
+revoke all on function clinic_finance.department_scope_name(text), clinic_finance.check_department_scope(text), clinic_finance.contract_departments(), clinic_finance.doctor_contract_for_service(text, text, text, text, date), clinic_finance.doctor_command_before_departments(text, jsonb, uuid) from public, anon, authenticated;
+revoke all on function public.clinic_finance_contract_departments(), public.clinic_finance_contract_services(), public.clinic_finance_doctor_command(text, jsonb, uuid) from public, anon;
+grant execute on function public.clinic_finance_contract_departments(), public.clinic_finance_contract_services(), public.clinic_finance_doctor_command(text, jsonb, uuid) to authenticated;
 revoke all on function public.pricing_doctor_contracts() from public, anon;
 grant execute on function public.pricing_doctor_contracts() to authenticated;
 

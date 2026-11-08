@@ -45,6 +45,8 @@ begin
 end;
 $$;
 drop function if exists public.clinic_finance_contract_departments();
+drop function if exists public.clinic_finance_contract_services();
+drop function if exists clinic_finance.check_department_scope(text);
 drop function if exists clinic_finance.doctor_contract_for_service(text, text, text, text, date);
 drop function if exists clinic_finance.contract_departments();
 drop function if exists clinic_finance.department_scope_name(text);

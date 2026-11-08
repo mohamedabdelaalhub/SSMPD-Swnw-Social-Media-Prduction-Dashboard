@@ -32,7 +32,7 @@ const root = path.resolve('.'), id = n => '30000000-0000-4000-8000-' + String(n)
     create table clinic_reception.providers(workspace_id uuid, id uuid primary key, doctor_key text, department text);
     create table clinic_reception.orders(workspace_id uuid, id uuid primary key, provider_id uuid, snapshot jsonb);
     create table clinic_reception.doctor_agreements(workspace_id uuid, provider_id uuid, service_code text, rate numeric, deduct_material_cost boolean, valid_from date, valid_to date, reference text, status text, created_by uuid, reviewed_by uuid, finance_contract_id uuid);
-    create table public.pricing_services(id uuid default gen_random_uuid(), category text, active boolean default true);`);
+    create table public.pricing_services(id uuid default gen_random_uuid(), name text, booking_code text, booking_department text, category text, active boolean default true);`);
   // the ORIGINAL production text of the two functions the migration re-creates (verbatim from their migrations)
   const canon = mig('20261017130324_reception_canonical_catalog.sql'), a0 = canon.indexOf('create function clinic_reception.sync_doctor_contract(');
   await db.exec(canon.slice(a0, canon.indexOf('\nend $$;', a0) + 8));
@@ -119,6 +119,45 @@ const root = path.resolve('.'), id = n => '30000000-0000-4000-8000-' + String(n)
   assert(deps.every(x => Object.keys(x).join() === 'name'), 'the department list carries only names (no restricted flag)');
   await as(4); await assert.rejects(() => fin('contract_departments'), /صلاحية/);
 
+  // ---- service list for the multi-select
+  await owner(`insert into public.pricing_services(name, booking_code, booking_department, category) values ('حشو','D-1','الاسنان','الاسنان'),('خلع','D-2',null,'الاسنان'),('بدون كود',null,null,'الاسنان')`);
+  await as(2); const svc = await fin('contract_services');
+  assert.deepEqual(svc.map(x => [x.code, x.name, x.department]), [['D-2', 'خلع', 'الاسنان'], ['D-1', 'حشو', 'الاسنان']].sort((a, b) => a[1] < b[1] ? -1 : 1), 'services with a booking code, department falls back to the category');
+  await as(4); await assert.rejects(() => fin('contract_services'), /صلاحية/);
+
+  // ---- batch contracts: ONE rate -> one pending contract per selected service, same doctor/rate/dates/reference, atomic and idempotent
+  const bpay = { doctor_key: 'DOC-BT', doctor_name: 'طبيب بت', from: shift(-30), to: shift(30), rate: 35, basis: 'performed', base_scope: 'service', deduction: 'none', refund_policy: 'proportional_revenue', reference: 'دفعة اختبار' };
+  const bcnt = async () => (await owner("select count(*)::int n from clinic_finance.doctor_contracts where doctor_key='DOC-BT'"))[0].n;
+  const btk = key(); await as(2);
+  const bfirst = await fin('doctor_command', ['contract_batch', { ...bpay, scopes: ['D-1', 'D-2', 'قسم:الجلدية'] }, btk]);
+  assert(bfirst); assert.equal(await bcnt(), 3);
+  const brows = await owner("select id, service_scope, status, rate::float r, reference, valid_from::text f, valid_to::text t, created_by from clinic_finance.doctor_contracts where doctor_key='DOC-BT' order by service_scope");
+  assert.deepEqual(brows.map(x => x.service_scope), ['D-1', 'D-2', 'قسم:الجلدية']);
+  assert(brows.every(x => x.status === 'pending' && x.r === 35 && x.reference === 'دفعة اختبار' && x.f === shift(-30) && x.t === shift(30) && x.created_by === id(2)), 'identical terms, all pending');
+  assert.equal(await fin('doctor_command', ['contract_batch', { ...bpay, scopes: ['D-1', 'D-2', 'قسم:الجلدية'] }, btk]), bfirst, 'replaying the batch with the same token is idempotent');
+  assert.equal(await bcnt(), 3);
+  await assert.rejects(() => fin('doctor_command', ['contract_batch', { ...bpay, scopes: ['D-7', 'قسم:غير موجود'] }, key()]), /غير موجود/);
+  assert.equal((await owner("select count(*)::int n from clinic_finance.doctor_contracts where service_scope='D-7'"))[0].n, 0, 'a failing batch creates nothing (atomic)');
+  await assert.rejects(() => fin('doctor_command', ['contract_batch', { ...bpay, scopes: ['D-1', ' D-1 '] }, key()]), /تكرار/);
+  await assert.rejects(() => fin('doctor_command', ['contract_batch', { ...bpay, scopes: [] }, key()]), /من 1 إلى 200/);
+  await assert.rejects(() => fin('doctor_command', ['contract_batch', { ...bpay, scopes: 'D-1' }, key()]), /خدمة واحدة/);
+  await as(4); await assert.rejects(() => fin('doctor_command', ['contract_batch', { ...bpay, scopes: ['D-1'] }, key()]), /صلاحية/);
+  const bids = brows.map(x => x.id);
+  await as(2); await assert.rejects(() => fin('doctor_command', ['contract_review_batch', { ids: bids, approve: true, note: 'اعتماد من المنشئ' }, key()]), /صلاحية|اعتماد عقدك|غير متاح/, 'the creator cannot approve the batch');
+  // overlap: a second batch whose D-1 overlaps the first (once approved) must be refused as a whole
+  await as(3); await fin('doctor_command', ['contract_review_batch', { ids: bids, approve: true, note: 'اعتماد الدفعة' }, key()]);
+  assert.deepEqual((await owner("select distinct status from clinic_finance.doctor_contracts where doctor_key='DOC-BT'")).map(x => x.status), ['active'], 'the whole batch is approved together');
+  assert.equal((await rows('DOC-BT', 'D-2', 'الاسنان')).length, 1); assert.equal((await rows('DOC-BT', 'S-1', 'الجلدية')).length, 1, 'a department entry inside the batch works');
+  await as(2); await fin('doctor_command', ['contract_batch', { ...bpay, scopes: ['D-1', 'D-5'], rate: 50 }, key()]);
+  const second = (await owner("select id from clinic_finance.doctor_contracts where doctor_key='DOC-BT' and status='pending' order by service_scope")).map(x => x.id);
+  await as(3); await assert.rejects(() => fin('doctor_command', ['contract_review_batch', { ids: second, approve: true, note: 'اعتماد الدفعة الثانية' }, key()]), /تتداخل/);
+  assert.deepEqual((await owner("select distinct status from clinic_finance.doctor_contracts where id = any($1::uuid[])", [second])).map(x => x.status), ['pending'], 'an overlap rejects the whole review batch');
+  // exact service > department still holds for batch-created contracts
+  const bx = await mkc('DOC-BX', 'قسم:الاسنان', 20); await as(2);
+  await fin('doctor_command', ['contract_batch', { ...bpay, doctor_key: 'DOC-BX', doctor_name: 'طبيب بكس', scopes: ['D-1'], rate: 45 }, key()]);
+  await as(3); await fin('doctor_command', ['contract_review_batch', { ids: (await owner("select id from clinic_finance.doctor_contracts where doctor_key='DOC-BX' and status='pending'")).map(x => x.id), approve: true, note: 'اعتماد' }, key()]);
+  assert.equal((await rows('DOC-BX', 'D-1', 'الاسنان'))[0].rate, '45.0000'); assert.equal((await rows('DOC-BX', 'D-2', 'الاسنان'))[0].id, bx);
+
   // ---- billing with a department contract + channel share still works (doctor_sync untouched)
   const rule = (o) => ({ code: 'x', name: 'قاعدة', kind: 'external', applies_to: 'consultation', patient_discount_percent: 0, platform_share_percent: 25, payable_kind: 'commission', payable_when: 'آخر الشهر', source_codes: [], valid_from: shift(-5), valid_to: shift(300), notes: '', ...o });
   await as(2); const vez = await fin('channel_command', ['create', rule({ code: 'vezeeta', name: 'فيزيتا' }), key()]);
@@ -138,5 +177,5 @@ const root = path.resolve('.'), id = n => '30000000-0000-4000-8000-' + String(n)
   await as(2); const old = await fin('doctor_command', ['contract', { doctor_key: 'DOC-Z', doctor_name: 'طبيب ز', scope: 'D-9', from: shift(-30), to: shift(30), rate: 40, basis: 'performed', base_scope: 'service', deduction: 'none', refund_policy: 'proportional_revenue', reference: 'مرجع' }, key()]);
   assert(old, 'contract creation works after rollback');
   await db.exec('reset role'); await db.exec(mig('20261108230000_department_contracts.sql')); // can be applied again after a rollback
-  console.log('PASS department contracts SQL: format/existence checks, maker-checker, overlap, exact-over-department precedence, labs/emergency as ordinary departments, reception sync, pickers, channel share unaffected, byte-identical rollback');
+  console.log('PASS department contracts SQL: batch contracts (atomic, idempotent, approved together), format/existence checks, maker-checker, overlap, exact-over-department precedence, labs/emergency as ordinary departments, reception sync, pickers, channel share unaffected, byte-identical rollback');
 })().catch(e => { console.error(e.message, e.where || '', e.position || ''); process.exitCode = 1; });
