@@ -1,5 +1,5 @@
 -- NOT EXECUTED. Prepared 2026-11-09 for the owner's go. Registers PENDING nursing contracts (a second admin approves them, as for every other contract).
--- Run AFTER migration 20261109100000_external_service_nurse.sql (and 20261108270000_doctor_fixed_fee.sql, which adds fee_kind / fixed_amount) is applied.
+-- Run AFTER migration 20261109130000_external_service_nurse.sql (and 20261108290000_doctor_fixed_fee.sql, which adds fee_kind / fixed_amount) is applied.
 -- Parameters (psql):  psql -v valid_from=2026-11-09 -v valid_to=2027-12-31 -f nurse_contracts.sql   (defaults below if not given)
 -- Owner rules (2026-11-09):
 --   * nurse ALONE on an external service  = 20% of the amount COLLECTED, after supplies/medications  -> scope 'تمريض:وحده', percent 20, basis collected, base_scope service (supplies excluded), deduction none

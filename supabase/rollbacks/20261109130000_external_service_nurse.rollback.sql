@@ -1,4 +1,4 @@
--- Rollback of 20261109100000_external_service_nurse.sql: restores clinic_finance_bill (moved, not edited) and doctor_extra_sync exactly as the fixed-fee migration created them.
+-- Rollback of 20261109130000_external_service_nurse.sql: restores clinic_finance_bill (moved, not edited) and doctor_extra_sync exactly as the fixed-fee migration created them.
 -- REFUSED while invoices that used the external-service amount or a nurse option exist (their amount/accruals depend on the new code): void/refund them first.
 begin;
 do $$ begin

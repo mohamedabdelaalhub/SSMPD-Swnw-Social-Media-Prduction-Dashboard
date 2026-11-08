@@ -5,7 +5,7 @@
 ## ما الذي اتبنى
 | البند | الملف |
 |---|---|
-| خيار «خدمة خارجية» (مبلغ إضافي يُضاف على فاتورة المريض) + اختيار المنفّذ «ممرض وحده / ممرض مع طبيب» | `supabase/migrations/20261109100000_external_service_nurse.sql` (+ rollback) |
+| خيار «خدمة خارجية» (مبلغ إضافي يُضاف على فاتورة المريض) + اختيار المنفّذ «ممرض وحده / ممرض مع طبيب» | `supabase/migrations/20261109130000_external_service_nurse.sql` (+ rollback) |
 | واجهة نموذج الفاتورة (مظهرها يشتغل بس لما الـmigration يتطبق) | `assets/js/finance-doctors.js`, `finance-controls.js`, `db.js` |
 | عقود التمريض الخمسة (10 عقود معلّقة) | `docs/apply/nurse_contracts.sql` |
 | قواعد القنوات العشر | `docs/apply/channel_rules.sql` |
@@ -21,13 +21,13 @@
 ## ترتيب التطبيق على الإنتاج (كله بموافقة المالك، واحدة واحدة)
 1. #378 متدمج ومتطبّق (المبلغ الثابت) — شرط.
 2. نسخة احتياطية + بروفة على Postgres محلي (Docker) للـmigration الجديد وrollback.
-3. تطبيق `20261109100000_external_service_nurse.sql`. الواجهة تظهر تلقائيًا بعدها (`clinic_finance_external_service_enabled()`).
+3. تطبيق `20261109130000_external_service_nurse.sql`. الواجهة تظهر تلقائيًا بعدها (`clinic_finance_external_service_enabled()`).
 4. `docs/apply/nurse_contracts.sql` (عقود معلّقة: `-v valid_from=2026-11-09 -v valid_to=2027-12-31`) ثم اعتماد من مستخدم تاني.
 5. `docs/apply/channel_rules.sql` (`-v maker_user=<auth id> -v valid_from=<يوم التطبيق>`) ثم اعتماد كل قاعدة من مدير تاني.
 6. إصدار الواجهة (release) بعد الدمج.
 
 ## تراجع
-`supabase/rollbacks/20261109100000_external_service_nurse.rollback.sql` (بيرفض لو فيه فواتير استخدمت الخيارات). العقود المعلّقة: ترفض من الشاشة. قواعد القنوات المعلّقة: ترفض.
+`supabase/rollbacks/20261109130000_external_service_nurse.rollback.sql` (بيرفض لو فيه فواتير استخدمت الخيارات). العقود المعلّقة: ترفض من الشاشة. قواعد القنوات المعلّقة: ترفض.
 
 ## حدود معروفة
 * الخيار موجود في **نموذج الفاتورة** (المحاسبة). حجز الاستقبال (`clinic_reception.orders`) ما اتغيرش.

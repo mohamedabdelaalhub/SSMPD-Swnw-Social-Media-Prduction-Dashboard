@@ -11,13 +11,13 @@
 --       scope 'تمريض:مع طبيب'  (fixed 100)                                                                 -> nurse with a doctor: the nurse is an EXTRA performer (doctor_extra_*), ONE flat amount per
 --                               invoice (never per line, never a percentage), added on top of the doctor's share (it does not reduce it). Needs the doctor's service_lines.
 -- ADDITIVE: 1 new table, 1 new function, doctor_extra_sync re-created (same text + the once-per-invoice rule for nursing contracts), clinic_finance_bill wrapped (moved, not edited).
--- ORDER: after 20261108270000_doctor_fixed_fee.sql. Rollback: supabase/rollbacks/20261109100000_external_service_nurse.rollback.sql
+-- ORDER: after 20261108290000_doctor_fixed_fee.sql. Rollback: supabase/rollbacks/20261109130000_external_service_nurse.rollback.sql
 begin;
 
 do $$ declare d text; begin
   if not exists (select 1 from information_schema.columns where table_schema='clinic_finance' and table_name='doctor_contracts' and column_name='fee_kind')
      or to_regprocedure('clinic_finance.bill_before_fixed(jsonb,uuid)') is null or to_regprocedure('clinic_finance.doctor_extra_sync(uuid)') is null then
-    raise exception 'طبّق ملف المبلغ الثابت (20261108270000_doctor_fixed_fee) أولًا';
+    raise exception 'طبّق ملف المبلغ الثابت (20261108290000_doctor_fixed_fee) أولًا';
   end if;
   if to_regclass('clinic_finance.invoice_external') is not null or to_regprocedure('clinic_finance.bill_before_external_service(jsonb,uuid)') is not null then
     raise exception 'تم تطبيق هذا الملف من قبل';

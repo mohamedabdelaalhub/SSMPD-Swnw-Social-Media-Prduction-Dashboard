@@ -138,11 +138,11 @@ const root = path.resolve('.'), id = n => '30000000-0000-4000-8000-' + String(n)
   const pre = await db.dumpDataDir();   // for the rollback rehearsal on a clone
 
   // ---- APPLY
-  const fmig = () => fs.readFileSync('supabase/migrations/20261108270000_doctor_fixed_fee.sql', 'utf8');
+  const fmig = () => fs.readFileSync('supabase/migrations/20261108290000_doctor_fixed_fee.sql', 'utf8');
   await db.exec('reset role'); await db.exec(fmig());
   // ===================== external service + nurse options (20261109100000), on top of the fixed-fee chain =====================
-  const xmig = () => fs.readFileSync('supabase/migrations/20261109100000_external_service_nurse.sql', 'utf8');
-  const xrb = () => fs.readFileSync('supabase/rollbacks/20261109100000_external_service_nurse.rollback.sql', 'utf8');
+  const xmig = () => fs.readFileSync('supabase/migrations/20261109130000_external_service_nurse.sql', 'utf8');
+  const xrb = () => fs.readFileSync('supabase/rollbacks/20261109130000_external_service_nurse.rollback.sql', 'utf8');
   const lbl = (code, amount, kind) => ({ code, amount, kind });
   const bal = async k => Number((await owner('select clinic_finance.doctor_balance($1) b', [k]))[0].b);
   const cmd = async (n, a, p, tk) => { await as(n); return fin('doctor_command', [a, p, tk || key()]); };
