@@ -248,6 +248,10 @@ const root = path.resolve('.'), id = n => '30000000-0000-4000-8000-' + String(n)
   assert.equal(await bal('DOC-H') - hb, 150); assert.equal(await bal('EMP-N') - nb, 100, 'each balance is by doctor_key');
   assert.equal((await owner('select count(*)::int n from clinic_finance.doctor_accruals where invoice_id=$1', [H]))[0].n, 2, 'two accrual events on one invoice');
   await refund(H, 250); assert.equal(await earned(H), 75); assert.deepEqual((await ex(H))[0].e, 50, 'refund shrinks both');
+  // owner example: price 500, doctor 50% of the FULL price = 250, nurse fixed 100 from the same invoice, the center keeps 150
+  await mkp('DOC-50', 'HV', 50);
+  const O = await bill(2, { reference: 'HX-OWNER', service_amount: 500, doctor_key: 'DOC-50', service_lines: [lbl('HV', 500)], extra_performers: [{ doctor_key: 'EMP-CAP' }] });
+  assert.equal(await earned(O), 250); assert.equal((await ex(O))[0].e, 100); assert.equal(500 - await earned(O) - (await ex(O))[0].e, 150, 'center keeps 150');
   // replay with the same token does not duplicate
   const tkx = key(), pl2 = { reference: 'HX-IDEM', service_amount: 500, doctor_key: 'DOC-H', service_lines: [lbl('HV', 500)], extra_performers: [{ doctor_key: 'EMP-N' }] };
   const h1 = await bill(2, pl2, tkx), h2 = await bill(2, pl2, tkx); assert.equal(h1, h2); assert.equal((await ex(h1)).length, 1); assert.equal((await ex(h1))[0].e, 100);
