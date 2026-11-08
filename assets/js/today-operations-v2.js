@@ -196,7 +196,7 @@ function translateTimeline(){
  var map={'appointment.rescheduled':'تم تغيير الموعد','result.ready':'ظهرت النتيجة','service.requested':'تم طلب خدمة','lab.requested':'تم طلب تحليل','imaging.requested':'تم طلب أشعة'};
  document.querySelectorAll('.journey-timeline strong').forEach(function(x){if(map[x.textContent])x.textContent=map[x.textContent];});
 }
-function enhance(){var r=journeyRoot();if(!r)return;metricCancelled(r);labelPriority(r);addButtons(r);translateTimeline();}
+function enhance(){var r=journeyRoot();if(!r)return;labelPriority(r);addButtons(r);translateTimeline();}
 var observer=new MutationObserver(function(){enhance();});observer.observe(document.documentElement,{childList:true,subtree:true});setInterval(enhance,1000);enhance();
 
 document.addEventListener('click',function(e){

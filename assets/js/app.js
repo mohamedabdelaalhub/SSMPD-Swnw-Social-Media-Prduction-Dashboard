@@ -136,6 +136,8 @@
     if (m === "INACTIVE") return "حسابك موقوف حالياً. تواصل مع مدير المركز.";
     if (/Invalid login credentials/i.test(m)) return "البريد أو كلمة السر غلط.";
     if (/Email not confirmed/i.test(m)) return "البريد لسه محتاج تأكيد.";
+    if (/already (been )?registered|already exists/i.test(m)) return "الإيميل ده عليه حساب دخول بالفعل (ممكن يكون حساب في بوابة المرضى). لو حسابك، ادخل من «عندك حساب؟ سجّل الدخول» بنفس الباسورد أو استخدم «نسيت كلمة السر؟». لو ده إيميل بوابة مرضى، اطلب من المدير يضيفك بإيميل تاني.";
+    if (/captcha/i.test(m)) return "تحقق الأمان ما اكتملش. حدّث الصفحة وجرّب تاني، ولو استمر جرّب متصفح Chrome.";
     return m;
   }
 

@@ -13,6 +13,6 @@ const fs=require('node:fs'),path=require('node:path'),http=require('node:http'),
  await page.screenshot({path:path.join(out,'desktop.png'),fullPage:true});
  await page.setViewportSize({width:390,height:844});await page.screenshot({path:path.join(out,'mobile.png'),fullPage:true});
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false,'Page must not overflow horizontally');
- await page.locator('[data-journey-action="call"]').click();await page.locator('[data-journey-action="consultation_start"]').click();await page.locator('[data-journey-action="visit_detail"]').click();await page.locator('[data-sandbox-orders]').waitFor();await page.screenshot({path:path.join(out,'mobile-services.png'),fullPage:true});
+ await page.locator('[data-journey-action="call"]').click();await page.locator('[data-journey-action="consultation_start"]').click();await page.locator('.journey-card:has([data-journey-action="visit_detail"]) .journey-more>summary').click();await page.locator('[data-journey-action="visit_detail"]').click();await page.locator('[data-sandbox-orders]').waitFor();await page.screenshot({path:path.join(out,'mobile-services.png'),fullPage:true});
  assert.deepEqual(errors,[]);await browser.close();await new Promise(r=>server.close(r));await b.db.close();console.log('PASS desktop/mobile RTL, no outer overflow or browser errors. Screenshots: '+out);
 })().catch(e=>{console.error(e);process.exit(1);});
