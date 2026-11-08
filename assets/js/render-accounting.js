@@ -3,7 +3,8 @@
   "use strict";
 
   var state = { subTab: "pricing", section: null, serviceFilter: "all", supplies: [], services: [], packages: [], loaded: false, pendingRepair: null };
-  var me = null;
+  var me = null, navRestored = false;
+  function saveNav(){if(window.SSMPDNavState)window.SSMPDNavState.set('accounting',{sub:state.subTab,section:state.section||''});}
 
   function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
   function num(v) { var n = Number(v); return isFinite(n) ? n : 0; }
@@ -94,6 +95,8 @@
       { key: "cash", label: "الخزينة والدورة المالية" },
       { key: "inventory", label: "المخازن والجرد" }
     ].filter(function(s) { return s.key === "inventory" ? canInventory : canFinance; });
+    if(!navRestored){navRestored=true;var ns=window.SSMPDNavState&&window.SSMPDNavState.once('accounting');if(ns&&subs.some(function(s){return s.key===ns.sub;})&&!state.pendingRepair){state.subTab=ns.sub;state.section=catalogSections.some(function(s){return s.key===ns.section;})?ns.section:null;}}
+    saveNav();
     var html = '<div class="tabs acc-catalog-nav" style="margin-bottom:16px;">' +
       subs.map(function (s) {
         return '<button class="tab-btn ' + (state.subTab === s.key ? "active" : "") + '" data-sub="' + s.key + '">' + s.label + '</button>';
@@ -133,6 +136,7 @@
     }).catch(function(){if(panel.isConnected)panel.textContent='تعذر تحميل مراجعة إعدادات الحجز. أعد فتح القسم للمحاولة.';});
   }
   function renderSub(subView, container) {
+    saveNav();
     var section = catalogSections.filter(function (s) { return s.key === state.section; })[0];
     if (!section) {
       subView.innerHTML = '<div class="fc-group-intro"><h4>التسعير والخدمات والباكجز</h4><p>اختار القسم لعرض التفاصيل وإدارة الأسعار.</p></div><div class="fc-section-grid acc-catalog-grid">' +
@@ -638,7 +642,7 @@
     };
   }
 
-  window.SSMPDRenderAccounting = { render: render, openSetupRepair: function(section,name){if(!['supplies','services','packages'].includes(section))return;state.subTab='pricing';state.section=section;state.loaded=false;state.pendingRepair={section:section,name:name||null};}, selectSection: function(sub,section){state.pendingRepair=null;state.subTab=sub;state.section=section||null;state.loaded=false;}, openCash: function(section,container) { state.subTab = "cash"; if(window.SSMPDFinanceCash.openSection)window.SSMPDFinanceCash.openSection(section);render(container); }, openInventory: function() { state.subTab = "inventory"; } };
+  window.SSMPDRenderAccounting = { render: render, openSetupRepair: function(section,name){if(!['supplies','services','packages'].includes(section))return;navRestored=true;state.subTab='pricing';state.section=section;state.loaded=false;state.pendingRepair={section:section,name:name||null};}, selectSection: function(sub,section){navRestored=true;state.pendingRepair=null;state.subTab=sub;state.section=section||null;state.loaded=false;}, openCash: function(section,container) { navRestored=true;state.subTab = "cash"; if(window.SSMPDFinanceCash.openSection)window.SSMPDFinanceCash.openSection(section);render(container); }, openInventory: function() { navRestored=true;state.subTab = "inventory"; } };
 })();
 
 
