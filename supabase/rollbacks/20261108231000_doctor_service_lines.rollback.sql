@@ -9,6 +9,7 @@ do $$ begin
   end if;
 end $$;
 
+drop function if exists public.clinic_finance_lines_enabled();
 drop function public.clinic_finance_bill(jsonb, uuid);
 alter function clinic_finance.bill_before_lines(jsonb, uuid) set schema public;
 alter function public.bill_before_lines(jsonb, uuid) rename to clinic_finance_bill;

@@ -37,8 +37,13 @@ const root = path.resolve('.'), id = n => '30000000-0000-4000-8000-' + String(n)
   await db.exec(canon.slice(a0, canon.indexOf('\nend $$;', a0) + 8));
   await db.exec(mig('20261018005957_pricing_doctor_contract_lookup.sql'));
   await db.exec('reset role'); await db.exec(mig('20261108230000_department_contracts.sql'));
+  // The migration pins the exact PRODUCTION md5s of the functions it wraps. This test loads a partial chain, so it substitutes the md5s of the local definitions for the pins
+  // (after asserting the pins are the audited production values) and separately proves that a drifted function is refused.
+  const PINS = { e0d8058554453f61b8e2c11a0839e98c: 'clinic_finance.doctor_sync(uuid)', a8aeb2de4795afda4424863bf9170352: 'public.clinic_finance_bill(jsonb,uuid)', '2661fea092b3a191e0099e5b4f2745b9': 'clinic_finance.doctor_bill_base(jsonb,uuid)' };
+  const lmig = async (wrong) => { let t = mig('20261108231000_doctor_service_lines.sql'); for (const [pin, sig] of Object.entries(PINS)) { assert(t.includes(pin), 'production pin present: ' + sig); const m = wrong === sig ? '0'.repeat(32) : (await owner('select md5(pg_get_functiondef($1::regprocedure)) m', [sig]))[0].m; t = t.replace(pin, m); } return t; };
+  await owner(`do $$ begin if not exists(select 1 from pg_roles where rolname='anon') then create role anon; end if; if not exists(select 1 from pg_roles where rolname='service_role') then create role service_role; end if; end $$`);
   const W = id(900);
-  await owner(`insert into clinic_reception.services(workspace_id, code, department) values ($1,'D-1','الاسنان'),($1,'D-2','الاسنان'),($1,'L-1','التحاليل')`, [W]);
+  await owner(`insert into clinic_reception.services(workspace_id, code, department) values ($1,'D-1','الاسنان'),($1,'D-2','الاسنان'),($1,'L-1','التحاليل'),($1,'CONS','الكشف')`, [W]);
   await owner(`insert into public.pricing_services(category) values ('الاسنان'),('التحاليل')`);
 
   const mkc = async (doctor, scope, rate, extra = {}) => {
@@ -53,11 +58,13 @@ const root = path.resolve('.'), id = n => '30000000-0000-4000-8000-' + String(n)
   await as(2); const vez = await fin('channel_command', ['create', rule(), key()]); await as(3); await fin('channel_command', ['review', { id: vez, approve: true, note: 'اعتماد اختبار' }, key()]);
   const fn = async sig => (await owner("select pg_get_functiondef($1::regprocedure) d, coalesce(proacl::text,'') acl from pg_proc where oid=$1::regprocedure", [sig]))[0];
   const SIGS = ['clinic_finance.doctor_sync(uuid)', 'public.clinic_finance_bill(jsonb,uuid)'];
+  // production privileges: bill = postgres+authenticated+service_role (no anon); doctor_sync = postgres only. Supabase default privileges would hand every NEW public function to anon too.
+  await db.exec("reset role; alter default privileges in schema public grant execute on functions to anon, authenticated, service_role; revoke all on function public.clinic_finance_bill(jsonb,uuid) from public, anon; grant execute on function public.clinic_finance_bill(jsonb,uuid) to authenticated, service_role; revoke all on function clinic_finance.doctor_sync(uuid) from public");
   const before = {}; for (const s of SIGS) before[s] = await fn(s);
 
   // ---- contracts used below (all on the service, no deduction)
   const dept30 = await mkc('DOC-Q', 'قسم:الاسنان', 30), exact40 = await mkc('DOC-Q', 'D-1', 40), cons30 = await mkc('DOC-Q', 'CONS', 30);
-  const single50 = await mkc('DOC-S', 'قسم:الاسنان', 50);
+  const single50 = await mkc('DOC-S', 'قسم:الاسنان', 50); await mkc('DOC-S', 'CONS', 50);
 
   // ---- LEGACY invoices created BEFORE the lines migration (one contract per invoice, channel, refund) are the reference for byte-identical behaviour
   const legacy = async tag => {
@@ -71,11 +78,15 @@ const root = path.resolve('.'), id = n => '30000000-0000-4000-8000-' + String(n)
   assert.deepEqual(legacyBefore, [100, 287.5, 75, 100], 'reference numbers: plain 100, channel (600-25)*50%, refund 75, returned deduction 100');
 
   // ---- APPLY
-  await db.exec('reset role'); await db.exec(mig('20261108231000_doctor_service_lines.sql'));
-  await assert.rejects(async () => { await db.exec('reset role'); await db.exec(mig('20261108231000_doctor_service_lines.sql')); }, /تم تطبيق هذا الملف/, 'a second apply is refused'); await db.exec('rollback');
+  for (const sig of ['clinic_finance.doctor_bill_base(jsonb,uuid)', 'public.clinic_finance_bill(jsonb,uuid)']) { await assert.rejects(async () => { await db.exec('reset role'); await db.exec(await lmig(sig)); }, /المدقَّقة/, 'a drifted ' + sig + ' is refused'); await db.exec('rollback'); }
+  await db.exec('reset role'); await db.exec(await lmig());
+  await assert.rejects(async () => { await db.exec('reset role'); await db.exec(await lmig()); }, /تم تطبيق هذا الملف/, 'a second apply is refused'); await db.exec('rollback');
   assert.deepEqual(await legacy('2'), legacyBefore, 'invoices WITHOUT lines compute byte-for-byte as before (plain, channel_share, refund, returned_deduction)');
   const aclOf = async sig => (await fn(sig)).acl.replace(/^\{|\}$/g, '').split(',').sort().join(',');
   for (const s of SIGS) assert.equal(await aclOf(s), before[s].acl.replace(/^\{|\}$/g, '').split(',').sort().join(','), 'wrapper has exactly the privileges of the function it wraps: ' + s);
+  assert(!(await fn('public.clinic_finance_bill(jsonb,uuid)')).acl.includes('anon='), 'anon never gets the bill wrapper');
+  assert.deepEqual((await fn('clinic_finance.doctor_sync(uuid)')).acl.replace(/^\{|\}$/g, '').split(',').map(x => x.split('=')[0]), ['postgres'], 'doctor_sync stays postgres-only');
+  await as(2); assert.equal(await call('clinic_finance_lines_enabled'), true, 'capability probe'); await db.exec('reset role');
 
   const lines = (...l) => ({ doctor_key: 'DOC-Q', service_lines: l.map(([code, amount, kind]) => ({ code, amount, kind })) });
   const q = async inv => (await owner('select line_no, service_code, department, amount::float a, contract_id from clinic_finance.doctor_allocation_lines where invoice_id=$1 order by line_no', [inv]));
@@ -83,6 +94,7 @@ const root = path.resolve('.'), id = n => '30000000-0000-4000-8000-' + String(n)
   // ---- (1) two services, two rates on ONE invoice: D-1 300 @40% (exact), D-2 200 @30% (department)
   const m1 = await bill(2, { reference: 'LN-1', service_amount: 500, ...lines(['D-1', 300], ['D-2', 200]) });
   assert.equal(await earned(m1), 180, '300*40% + 200*30%');
+  assert.deepEqual((await owner('select terms->>\'multi_rate\' m, terms->>\'line_count\' n from clinic_finance.doctor_allocations where invoice_id=$1', [m1]))[0], { m: 'true', n: '2' }, 'lines invoices are marked multi-rate for the reports');
   const ln = await q(m1); assert.deepEqual(ln.map(x => [x.service_code, x.department, x.a, x.contract_id]), [['D-1', 'الاسنان', 300, exact40], ['D-2', 'الاسنان', 200, dept30]]);
   assert.equal((await owner('select earned::float e, original_base::float b from clinic_finance.doctor_allocations where invoice_id=$1', [m1]))[0].b, 500);
   assert.equal((await owner("select count(*)::int n from clinic_finance.doctor_accruals where invoice_id=$1", [m1]))[0].n, 1, 'one accrual posted');
@@ -97,7 +109,7 @@ const root = path.resolve('.'), id = n => '30000000-0000-4000-8000-' + String(n)
   assert.equal(await earned(sameL), await earned(sameLeg)); assert.equal(await earned(sameL), 250);
   await refund(sameL, 100); await refund(sameLeg, 100);
   assert.equal(await earned(sameL), await earned(sameLeg), 'a refund moves the lines invoice exactly like the legacy invoice'); assert.equal(await earned(sameL), 200);
-  const sameC = await bill(2, { reference: 'LN-2C', service_amount: 600, channel_id: vez, consultation_gross: 100, services_gross: 500, doctor_key: 'DOC-S', service_lines: [{ code: 'D-1', amount: 300 }, { code: 'D-2', amount: 300 }] });
+  const sameC = await bill(2, { reference: 'LN-2C', service_amount: 600, channel_id: vez, consultation_gross: 100, services_gross: 500, doctor_key: 'DOC-S', service_lines: [{ code: 'CONS', amount: 100, kind: 'consultation' }, { code: 'D-1', amount: 200 }, { code: 'D-2', amount: 300 }] });
   const sameCL = await bill(2, { reference: 'LN-2CL', service_amount: 600, channel_id: vez, consultation_gross: 100, services_gross: 500, doctor_contract_id: single50 });
   assert.equal(await earned(sameC), await earned(sameCL)); assert.equal(await earned(sameC), 287.5, 'channel share: same as the legacy invoice with one contract');
 
@@ -122,7 +134,13 @@ const root = path.resolve('.'), id = n => '30000000-0000-4000-8000-' + String(n)
   await assert.rejects(() => bill(2, { reference: 'ER-8', service_amount: 500, doctor_key: 'DOC-R', service_lines: [{ code: 'D-1', amount: 300 }, { code: 'D-2', amount: 200 }] }), /أساس الاستحقاق/);
   await mkc('DOC-I', 'D-1', 20, { base_scope: 'invoice' });
   await assert.rejects(() => bill(2, { reference: 'ER-9', service_amount: 500, doctor_key: 'DOC-I', service_lines: [{ code: 'D-1', amount: 500 }] }), /على الخدمة دون المستلزمات/);
-  assert.equal(await invCount(), n0, 'a rejected bill leaves no invoice behind');
+  await assert.rejects(() => bill(2, { reference: 'ER-11', service_amount: 500, ...lines(['ZZ-9', 500]) }), /غير موجودة في كتالوج/);
+  assert.equal(await earned(await bill(2, { reference: 'ER-12', service_amount: 500, doctor_key: 'DOC-Q', service_lines: [{ code: 'D-2', amount: 500, department: 'التحاليل' }] })), 150, 'a client-supplied department is ignored (catalog department الاسنان -> 30%)');
+  await mkc('DOC-MX', 'D-1', 20, { deduction: 'cost' }); await mkc('DOC-MX', 'D-2', 20);
+  await assert.rejects(() => bill(2, { reference: 'ER-13', service_amount: 500, doctor_key: 'DOC-MX', service_lines: [{ code: 'D-1', amount: 300 }, { code: 'D-2', amount: 200 }] }), /خصم المستلزمات/, 'mixed deduction kinds are refused');
+  await assert.rejects(() => bill(2, { reference: 'ER-14', service_amount: 600, channel_id: vez, consultation_gross: 100, services_gross: 500, ...lines(['CONS', 60, 'consultation'], ['D-1', 300], ['D-2', 240]) }), /سطور الكشف/, 'flagged consultation lines must equal the channel consultation');
+  await assert.rejects(() => bill(2, { reference: 'ER-15', service_amount: 600, channel_id: vez, consultation_gross: 100, services_gross: 500, ...lines(['CONS', 100], ['D-1', 300], ['D-2', 200]) }), /سطور الكشف/, 'unflagged consultation with a channel is refused');
+  assert.equal(await invCount(), n0 + 1, 'rejected bills leave no invoice behind (only the one valid ER-12 invoice exists)');
   await as(4); await assert.rejects(() => fin('bill', [{ reference: 'ER-10', patient_ref: 'T', description: 'x', items: [], service_amount: 500, ...lines(['D-1', 500]) }, key()]), /صلاحية/, 'permissions unchanged');
   // idempotent replay with the same token
   const tk = key(), pay = { reference: 'IDEM', service_amount: 500, ...lines(['D-1', 300], ['D-2', 200]) };
@@ -138,6 +156,6 @@ const root = path.resolve('.'), id = n => '30000000-0000-4000-8000-' + String(n)
   assert.equal((await owner('select count(*)::int n from clinic_finance.doctor_allocation_lines_rolled_back'))[0].n, rows0, 'the stored line splits are kept in a renamed table');
   assert.equal((await owner("select count(*)::int n from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='clinic_finance' and p.proname in ('doctor_sync_base','bill_before_lines')"))[0].n, 0, 'helpers gone');
   assert.deepEqual(await legacy('3'), legacyBefore, 'after the rollback the legacy invoices compute as before');
-  await db.exec('reset role'); await db.exec(mig('20261108231000_doctor_service_lines.sql')); // can be applied again after a rollback
+  await db.exec('reset role'); await db.exec(await lmig()); // can be applied again after a rollback
   console.log('PASS doctor service lines SQL: per-line contract resolution (exact > department), mixed 40%/30% on one invoice, parity with legacy for one contract (refund, channel_share, returned_deduction), platform share on the consultation line, loud failures, idempotency, byte-identical rollback with data kept');
 })().catch(e => { console.error(e.message, e.where || '', e.position || ''); process.exitCode = 1; });

@@ -34,7 +34,14 @@ const root = path.resolve('.'), id = n => '30000000-0000-4000-8000-' + String(n)
   const canon = mig('20261017130324_reception_canonical_catalog.sql'), a0 = canon.indexOf('create function clinic_reception.sync_doctor_contract(');
   await db.exec(canon.slice(a0, canon.indexOf('\nend $$;', a0) + 8));
   await db.exec(mig('20261018005957_pricing_doctor_contract_lookup.sql'));
-  await db.exec('reset role'); await db.exec(mig('20261108230000_department_contracts.sql')); await db.exec(mig('20261108231000_doctor_service_lines.sql'));
+  // The migration pins the exact PRODUCTION md5s of the functions it wraps. This test loads a partial chain, so it substitutes the md5s of the local definitions for the pins
+  // (after asserting the pins are the audited production values) and separately proves that a drifted function is refused.
+  const PINS = { e0d8058554453f61b8e2c11a0839e98c: 'clinic_finance.doctor_sync(uuid)', a8aeb2de4795afda4424863bf9170352: 'public.clinic_finance_bill(jsonb,uuid)', '2661fea092b3a191e0099e5b4f2745b9': 'clinic_finance.doctor_bill_base(jsonb,uuid)' };
+  const lmig = async (wrong) => { let t = mig('20261108231000_doctor_service_lines.sql'); for (const [pin, sig] of Object.entries(PINS)) { assert(t.includes(pin), 'production pin present: ' + sig); const m = wrong === sig ? '0'.repeat(32) : (await owner('select md5(pg_get_functiondef($1::regprocedure)) m', [sig]))[0].m; t = t.replace(pin, m); } return t; };
+  await owner(`do $$ begin if not exists(select 1 from pg_roles where rolname='anon') then create role anon; end if; if not exists(select 1 from pg_roles where rolname='service_role') then create role service_role; end if; end $$`);
+  await db.exec('reset role'); await db.exec(mig('20261108230000_department_contracts.sql'));
+  await assert.rejects(async () => { await db.exec('reset role'); await db.exec(await lmig('clinic_finance.doctor_sync(uuid)')); }, /ليست نسخة الإنتاج/, 'a drifted doctor_sync is refused'); await db.exec('rollback');
+  await db.exec('reset role'); await db.exec(await lmig());
   assert((await owner("select pg_get_functiondef('clinic_finance.doctor_sync_base(uuid)'::regprocedure) d"))[0].d.includes('original_base*revenue/i.amount-greatest(0,a.original_deduction-a.returned_deduction))'), 'wrapped the production doctor_sync (no channel term)');
   assert.equal((await owner("select to_regclass('clinic_finance.channel_allocations') t"))[0].t, null);
   await owner(`insert into clinic_reception.services(workspace_id, code, department) values ($1,'D-1','الاسنان'),($1,'D-2','الاسنان')`, [id(900)]);

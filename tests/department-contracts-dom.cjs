@@ -3,10 +3,10 @@ const { JSDOM } = require('jsdom'), fs = require('fs'), assert = require('node:a
 const tick = (ms = 20) => new Promise(r => setTimeout(r, ms));
 (async () => {
   const dom = new JSDOM('<main></main>', { url: 'https://test.invalid', runScripts: 'outside-only' }), w = dom.window, d = w.document;
-  const calls = [], bills = [];
+  const calls = [], bills = []; let linesProbe = 'on';
   const deptList = [{ name: 'الاسنان' }, { name: 'التحاليل' }];
   const svcList = [{ code: 'D-1', name: 'حشو', department: 'الاسنان' }, { code: 'D-2', name: 'خلع', department: 'الاسنان' }, { code: 'S-1', name: 'جلدية', department: 'الجلدية' }];
-  w.SSMPDDb = { financeContractServices: async () => svcList, financeContractDepartments: async () => deptList, financeDoctorCommand: async (a, p, k) => { calls.push([a, p]); return 'id'; }, financeBill: async (p) => { bills.push(p); return 'id'; } };
+  w.SSMPDDb = { financeLinesEnabled: async () => { if (linesProbe === 'missing') throw new Error('function clinic_finance_lines_enabled does not exist'); return linesProbe === 'on'; }, financeContractServices: async () => svcList, financeContractDepartments: async () => deptList, financeDoctorCommand: async (a, p, k) => { calls.push([a, p]); return 'id'; }, financeBill: async (p) => { bills.push(p); return 'id'; } };
   w.eval(fs.readFileSync('assets/js/finance-controls.js', 'utf8'));
   w.eval(fs.readFileSync('assets/js/finance-doctors.js', 'utf8'));
   const esc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -69,7 +69,7 @@ const tick = (ms = 20) => new Promise(r => setTimeout(r, ms));
   assert.equal(p.scope, 'قسم:التحاليل'); assert(!('allow_restricted' in p));
 
   // ---- invoice contract picker shows the readable label
-  C().act('invoice', '', data, h);
+  C().act('invoice', '', data, h); await tick();
   const opts = [...d.querySelectorAll('.fc-modal select[name=doctor_contract] option')].map(o => o.textContent);
   assert(opts.some(t => t.includes('كل خدمات قسم الاسنان')) && opts.some(t => t.includes('D-1')), 'invoice picker lists department and exact contracts');
   // ---- multi-service contract: search, select many, ONE rate -> one batch call with every selected code
@@ -105,7 +105,15 @@ const tick = (ms = 20) => new Promise(r => setTimeout(r, ms));
 
   // ---- invoice with per-service lines: rows, running total, payload shape, and the guard against a wrong total
   d.querySelectorAll('.fc-modal').forEach(m => m.remove());
-  C().act('invoice', '', data, h);
+  // feature gate: the per-line block exists only when the SQL probe succeeds (an old SQL would silently drop the doctor allocation)
+  for (const state of ['missing', 'off']) {
+    linesProbe = state; C().act('invoice', '', data, h); await tick();
+    const g = d.querySelector('.fc-modal form'); assert(!g.querySelector('[data-doctor-lines]') && g.elements.doctor_contract, 'probe ' + state + ': old single-contract UI only');
+    fill(g, { reference: 'INV-G' + state, patient: 'م', description: 'خدمة أسنان', amount: '100' }); g.querySelector('.fc-check input').checked = true; await submit();
+    assert(!('service_lines' in bills.pop()) && true, 'probe ' + state + ': legacy payload');
+  }
+  linesProbe = 'on';
+  C().act('invoice', '', data, h); await tick();
   const inv = d.querySelector('.fc-modal form'), ctr = inv.elements.doctor_contract;
   assert(inv.querySelector('[data-doctor-lines]') && !inv.querySelector('[data-line-rows]').children.length, 'the lines block is collapsed until a doctor is chosen');
   inv.elements.lines_doctor.value = 'DOC-A'; inv.elements.lines_doctor.dispatchEvent(new w.Event('change'));
@@ -124,7 +132,7 @@ const tick = (ms = 20) => new Promise(r => setTimeout(r, ms));
   assert.equal(bp.doctor_key, 'DOC-A'); assert.equal(bp.doctor_contract_id, null); assert.equal(bp.service_amount, 500);
   assert.equal(JSON.stringify(bp.service_lines), JSON.stringify([{ code: 'D-1', amount: 300, kind: 'service' }, { code: 'D-2', amount: 200, kind: 'service' }]));
   // without a doctor choice the payload is the legacy one (no service_lines)
-  C().act('invoice', '', data, h); const inv2 = d.querySelector('.fc-modal form');
+  C().act('invoice', '', data, h); await tick(); const inv2 = d.querySelector('.fc-modal form');
   fill(inv2, { reference: 'INV-L2', patient: 'م', description: 'خدمة أسنان', amount: '100' }); inv2.querySelector('.fc-check input').checked = true; await submit();
   assert(!('service_lines' in bills.pop()), 'legacy payload unchanged without a doctor split');
   console.log('PASS department contracts DOM: multi-service batch + group review, invoice service lines, labels, service/department toggle, department list, no restricted confirmation, payload shape, invoice picker');

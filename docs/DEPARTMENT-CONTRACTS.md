@@ -45,15 +45,20 @@ Before this change an invoice stored one total (`clinic_finance.invoices.amount`
 - `clinic_finance.doctor_sync` → moved to `clinic_finance.doctor_sync_base` and wrapped. **An invoice without lines delegates to the base untouched** (so every existing invoice, refund, `returned_deduction` and `channel_share` case computes exactly as before). For invoices with lines, per contract: `greatest(0, base·revenue/amount − greatest(0, deduction − returned share) − channel share·revenue/amount) · rate/100`, summed; collected-basis scaling, rounding and the accrual posting are the same as the base. With one contract this is the base formula (tested for parity incl. refund and platform share).
 - Platform (channel) share: taken off the **consultation** lines when the invoice has any (`kind: "consultation"`), otherwise spread over the lines by amount.
 - The wrappers get exactly the privileges of the functions they wrap.
+- **Guard**: refuses to apply unless `doctor_sync` has the audited production md5 (`e0d8058554453f61b8e2c11a0839e98c`) or is the channels version (channel tables present), and `clinic_finance_bill` / `doctor_bill_base` have the production md5s (`a8aeb2de4795afda4424863bf9170352` / `2661fea092b3a191e0099e5b4f2745b9`).
+- **Privileges**: Supabase default privileges grant new public functions to `anon` too, so the wrapper first revokes from `public, anon, authenticated, service_role` and then re-grants exactly the base function's ACL (production: `clinic_finance_bill` = postgres/authenticated/service_role; `doctor_sync` = postgres only). Tested with default privileges simulated.
+- **UI gate**: the invoice lines block appears only if `clinic_finance_lines_enabled()` answers true. If the SQL is not deployed the form keeps the old single-contract behaviour (an old `clinic_finance_bill` would otherwise ignore `service_lines` and save the invoice with no doctor allocation).
+- Rules enforced per invoice: all line contracts share the same accrual basis **and the same stock-deduction kind**; if a channel applies, the lines flagged `consultation` must add up to the channel's consultation amount.
+- The doctor allocations table shows «متعدد (n خدمات)» as the rate for line invoices (`terms.multi_rate`).
 - Wrapping order: applying PR #355's channel migration AFTER this one would replace the wrapper (and its own guard would refuse); apply it before. Without channels (production today) `channel_share` is 0.
 
 ## Limitations
 
 1. Reception pickers (`native_doctor_options`, pilot doctor selection) still list only doctors with per-service contracts; a department-only doctor is resolved at execution and in accounting invoices (follow-up).
 2. Without lines, the invoice contract is still picked manually (one rate for the invoice) — the lines block is the way to mix rates.
-3. A service line's department comes from `clinic_reception.services` by code (falls back to the `department` sent by the client); a service unknown to reception only matches an exact-service contract.
+3. A service line is identified by its **service code**; its department comes only from `clinic_reception.services` (a department sent by the client is ignored). A code that is not in the catalog is rejected.
 4. Platform share attribution for mixed rates is by the rule above (consultation lines first); it is an allocation rule, not stored per line.
-5. Rollback of the lines migration keeps the stored splits in `doctor_allocation_lines_rolled_back`; those invoices then fall back to the single contract on their allocation row until corrected.
+5. **Before any rollback of the lines migration, snapshot `doctor_allocations` (`earned`) and `doctor_allocation_lines`**: the rollback keeps the stored splits in `doctor_allocation_lines_rolled_back`; those invoices then fall back to the single contract on their allocation row until corrected.
 6. A department contract must be `base_scope = service` and deduction `none|cost` to be used by reception execution (existing rule).
 
 ## Tests

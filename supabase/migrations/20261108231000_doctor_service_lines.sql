@@ -11,6 +11,7 @@
 --     refund, returned_deduction and channel_share case computes exactly as before. Only invoices that HAVE lines use the per-line formula below.
 -- ORDER: apply AFTER 20261108230000_department_contracts.sql and, if it is going to be applied, AFTER 20261108130000_channels_discounts_p1.sql (the wrapper wraps whatever doctor_sync exists;
 --   applying channels afterwards would replace the wrapper and its guard would refuse to run on it).
+-- BEFORE ANY ROLLBACK snapshot doctor_allocations (earned) and doctor_allocation_lines: after a rollback the invoices that were split by lines are recomputed with the single first-line contract.
 -- Rollback: supabase/rollbacks/20261108231000_doctor_service_lines.rollback.sql
 begin;
 
@@ -23,12 +24,20 @@ do $$ begin
      or to_regprocedure('clinic_finance.bill_before_lines(jsonb,uuid)') is not null then
     raise exception 'doctor_sync غير موجودة أو تم تطبيق هذا الملف من قبل';
   end if;
-  if position('a.original_base*revenue/i.amount' in pg_get_functiondef('clinic_finance.doctor_sync(uuid)'::regprocedure)) = 0
-     or position('a.returned_deduction' in pg_get_functiondef('clinic_finance.doctor_sync(uuid)'::regprocedure)) = 0 then
-    raise exception 'doctor_sync غير مطابقة للمتوقع؛ راجع الفرق قبل التطبيق';
+  -- exact production text (md5 of pg_get_functiondef), or doctor_sync as replaced by the channels migration (20261108130000: has the channel_share term and the channel tables)
+  if md5(pg_get_functiondef('clinic_finance.doctor_sync(uuid)'::regprocedure)) <> 'e0d8058554453f61b8e2c11a0839e98c'
+     and not (to_regclass('clinic_finance.channel_allocations') is not null
+              and position('channel_share' in pg_get_functiondef('clinic_finance.doctor_sync(uuid)'::regprocedure)) > 0
+              and position('a.original_base*revenue/i.amount' in pg_get_functiondef('clinic_finance.doctor_sync(uuid)'::regprocedure)) > 0
+              and position('a.returned_deduction' in pg_get_functiondef('clinic_finance.doctor_sync(uuid)'::regprocedure)) > 0) then
+    raise exception 'doctor_sync ليست نسخة الإنتاج المدقَّقة ولا نسخة القنوات؛ راجع الفرق قبل التطبيق';
   end if;
   if to_regprocedure('public.clinic_finance_bill(jsonb,uuid)') is null or to_regprocedure('clinic_finance.doctor_bill_base(jsonb,uuid)') is null then
     raise exception 'سلسلة فاتورة الأطباء غير مكتملة (clinic_finance_bill / doctor_bill_base)';
+  end if;
+  if md5(pg_get_functiondef('public.clinic_finance_bill(jsonb,uuid)'::regprocedure)) <> 'a8aeb2de4795afda4424863bf9170352'
+     or md5(pg_get_functiondef('clinic_finance.doctor_bill_base(jsonb,uuid)'::regprocedure)) <> '2661fea092b3a191e0099e5b4f2745b9' then
+    raise exception 'clinic_finance_bill أو doctor_bill_base ليست نسخة الإنتاج المدقَّقة؛ راجع الفرق قبل التطبيق';
   end if;
   if to_regclass('clinic_reception.services') is null then raise exception 'جدول خدمات الاستقبال غير موجود'; end if;
 end $$;
@@ -91,7 +100,7 @@ alter function public.clinic_finance_bill(jsonb, uuid) set schema clinic_finance
 alter function clinic_finance.clinic_finance_bill(jsonb, uuid) rename to bill_before_lines;
 create function public.clinic_finance_bill(p_payload jsonb, p_token uuid) returns uuid language plpgsql security definer set search_path = pg_catalog, public as $$
 declare v_id uuid; i clinic_finance.invoices%rowtype; c clinic_finance.doctor_contracts%rowtype; r record; v_doc text; v_lines jsonb; v_sales numeric; v_cost numeric; v_total numeric := 0; v_cnt integer;
-        v_dep text; v_code text; v_amt numeric; v_basis text; v_ded numeric; v_tded numeric := 0; v_first boolean := true; v_today date := (now() at time zone 'Africa/Cairo')::date;
+        v_dep text; v_code text; v_amt numeric; v_basis text; v_ded numeric; v_tded numeric := 0; v_first boolean := true; v_dedkind text; v_cons numeric := 0; v_gc numeric; v_n integer := 0; v_today date := (now() at time zone 'Africa/Cairo')::date;
 begin
  if p_payload->'service_lines' is null or jsonb_typeof(p_payload->'service_lines') = 'null' then
   return clinic_finance.bill_before_lines(p_payload, p_token);
@@ -116,15 +125,19 @@ begin
  -- pass 2: resolve the contract of every line (exact service first, then department) and store the split
  for r in select x.value v, x.ordinality n from jsonb_array_elements(v_lines) with ordinality x loop
   v_code := btrim(r.v->>'code'); v_amt := (r.v->>'amount')::numeric;
-  v_dep := coalesce((select btrim(s.department) from clinic_reception.services s where s.code = v_code and s.active and btrim(coalesce(s.department, '')) <> '' order by s.workspace_id limit 1), nullif(btrim(coalesce(r.v->>'department', '')), ''));
+  -- the department comes ONLY from the service catalog (a client-supplied department is ignored); an unknown service code is rejected
+  if not exists (select 1 from clinic_reception.services s where s.code = v_code and s.active) then raise exception 'الخدمة % غير موجودة في كتالوج الخدمات؛ استخدم كود الخدمة', v_code; end if;
+  v_dep := (select nullif(btrim(s.department), '') from clinic_reception.services s where s.code = v_code and s.active order by s.workspace_id limit 1);
   select count(*) into v_cnt from clinic_finance.doctor_contract_for_service(v_doc, v_code, nullif(btrim(coalesce(r.v->>'name', '')), ''), v_dep, v_today);
   if v_cnt = 0 then raise exception 'لا يوجد عقد معتمد للطبيب % للخدمة % (لا عقد خدمة ولا عقد قسم)', v_doc, v_code; end if;
   if v_cnt > 1 then raise exception 'يوجد أكثر من عقد معتمد للطبيب % للخدمة %؛ حدد عقدًا واحدًا', v_doc, v_code; end if;
   select * into c from clinic_finance.doctor_contract_for_service(v_doc, v_code, nullif(btrim(coalesce(r.v->>'name', '')), ''), v_dep, v_today) limit 1;
   if c.base_scope <> 'service' then raise exception 'عقد الخدمة % يجب أن يكون على الخدمة دون المستلزمات ليُستخدم في توزيع السطور', v_code; end if;
+  if v_dedkind is null then v_dedkind := c.deduction; elsif v_dedkind <> c.deduction then raise exception 'عقود سطور الفاتورة يجب أن تتفق في نوع خصم المستلزمات'; end if;
   if v_basis is null then v_basis := c.basis; elsif v_basis <> c.basis then raise exception 'عقود سطور الفاتورة يجب أن تتفق في أساس الاستحقاق (عند التنفيذ أو حسب التحصيل)'; end if;
   v_ded := case c.deduction when 'cost' then v_cost * v_amt / v_total when 'sale' then v_sales * v_amt / v_total else 0 end;
-  v_tded := v_tded + v_ded;
+  v_tded := v_tded + v_ded; v_n := v_n + 1;
+  if (r.v->>'kind') = 'consultation' then v_cons := v_cons + v_amt; end if;
   if v_first then
    insert into clinic_finance.doctor_allocations(invoice_id, contract_id, doctor_key, doctor_name, terms, original_base, original_deduction)
    values (i.id, c.id, c.doctor_key, c.doctor_name, to_jsonb(c), v_total, 0);
@@ -133,7 +146,12 @@ begin
   insert into clinic_finance.doctor_allocation_lines(invoice_id, line_no, service_code, service_name, department, is_consultation, amount, contract_id, terms, line_deduction)
   values (i.id, r.n, v_code, nullif(btrim(coalesce(r.v->>'name', '')), ''), v_dep, coalesce((r.v->>'kind') = 'consultation', false), v_amt, c.id, to_jsonb(c), v_ded);
  end loop;
- update clinic_finance.doctor_allocations set original_deduction = round(v_tded, 2) where invoice_id = i.id;
+ -- when a channel applies, the lines flagged as consultation must add up to the consultation the channel was computed on
+ if to_regclass('clinic_finance.channel_allocations') is not null then
+  execute 'select gross_consultation from clinic_finance.channel_allocations where invoice_id = $1' into v_gc using i.id;
+  if v_gc is not null and v_cons <> v_gc then raise exception 'مجموع سطور الكشف (%) يجب أن يساوي قيمة الكشف في القناة (%)', v_cons, v_gc; end if;
+ end if;
+ update clinic_finance.doctor_allocations set original_deduction = round(v_tded, 2), terms = terms || jsonb_build_object('multi_rate', true, 'line_count', v_n) where invoice_id = i.id;
  perform clinic_finance.doctor_sync(i.id);
  return v_id;
 end $$;
@@ -144,12 +162,18 @@ do $$ declare r record; w record;
 begin
  for w in select * from (values ('clinic_finance.doctor_sync(uuid)', 'clinic_finance.doctor_sync_base(uuid)'), ('public.clinic_finance_bill(jsonb,uuid)', 'clinic_finance.bill_before_lines(jsonb,uuid)')) t(f, b) loop
   if (select proacl is not null from pg_proc where oid = w.b::regprocedure) then
-   execute format('revoke all on function %s from public', w.f);
+   -- Supabase's default privileges also grant new public functions to anon / authenticated / service_role: take everything away first, then give back exactly the base's grants
+   execute format('revoke all on function %s from public, anon, authenticated, service_role', w.f);
    for r in select a.grantee, a.privilege_type from pg_proc p, aclexplode(p.proacl) a where p.oid = w.b::regprocedure and a.grantee <> p.proowner loop
     execute format('grant %s on function %s to %s', r.privilege_type, w.f, case when r.grantee = 0 then 'public' else quote_ident(pg_get_userbyid(r.grantee)) end);
    end loop;
   end if;
  end loop;
 end $$;
+
+-- Capability probe for the UI: it only shows the per-line block when this migration is deployed (otherwise the old bill would silently ignore service_lines).
+create function public.clinic_finance_lines_enabled() returns boolean language sql stable security definer set search_path = pg_catalog, public as $$ select true $$;
+revoke all on function public.clinic_finance_lines_enabled() from public, anon;
+grant execute on function public.clinic_finance_lines_enabled() to authenticated;
 
 commit;
