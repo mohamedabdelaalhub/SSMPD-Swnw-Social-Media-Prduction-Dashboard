@@ -94,7 +94,7 @@ const root = path.resolve('.'), id = n => '30000000-0000-4000-8000-' + String(n)
   const emig = () => fs.readFileSync('supabase/migrations/20261108260000_dental_external_cost.sql', 'utf8');
   const pinOf = emig().match(/md5\(d\) <> '([0-9a-f]{32})'/)[1];
   assert.equal(pinOf, (await owner("select md5(pg_get_functiondef('public.clinic_finance_bill(jsonb,uuid)'::regprocedure)) m"))[0].m, 'the md5 pin equals the wrapper created by 20261108231000');
-  const billBefore = await fn('public.clinic_finance_bill(jsonb,uuid)');
+  const billBefore = await fn('public.clinic_finance_bill(jsonb,uuid)'), syncBefore = await fn('clinic_finance.doctor_sync(uuid)'), collBefore = await fn('public.clinic_finance_collect(uuid,uuid,text,numeric,text,uuid)');
   const oldM1 = await bill(2, { reference: 'PRE-1', service_amount: 500, ...lines(['D-1', 300], ['D-2', 200]) }); assert.equal(await earned(oldM1), 180);
   await db.exec('reset role'); await db.exec(emig());
   await assert.rejects(async () => { await db.exec('reset role'); await db.exec(emig()); }, /تم تطبيق هذا الملف/, 'a second apply is refused'); await db.exec('rollback');
@@ -149,6 +149,32 @@ const root = path.resolve('.'), id = n => '30000000-0000-4000-8000-' + String(n)
   assert.equal(proportional.at(-1), firstPaymentModel.at(-1), 'both models agree once the invoice is fully paid');
   assert.equal((await owner('select count(*)::int n from clinic_finance.payments where invoice_id=$1', [D]))[0].n, paid.length, 'one invoice carries the whole installment series');
 
+  // (F) ORTHO, owner rule: lab taken from the FIRST payment, then 30% on every installment. Total 20000, lab 3000, down payment 5000 (~25%) + 24 monthly installments of 625 (2 years)
+  const fp = o => ({ doctor_key: 'DOC-COL', service_lines: [ext('D-1', o.total, o.lab, 'LAB-F' + o.tag)].map(x => ({ ...x, external_mode: 'first_payment' })) });
+  const F = await bill(2, { reference: 'EX-F', service_amount: 20000, ...fp({ total: 20000, lab: 3000, tag: 1 }) });
+  assert.equal((await owner('select external_mode m from clinic_finance.doctor_allocation_lines where invoice_id=$1', [F]))[0].m, 'first_payment');
+  assert.equal(await earned(F), 0);
+  await assert.rejects(() => pay_(F, 2000), /الدفعة الأولى .* أقل من تكلفة المعمل/, 'a first payment below the lab cost is refused');
+  assert.equal((await owner('select count(*)::int n from clinic_finance.payments where invoice_id=$1', [F]))[0].n, 0, 'nothing recorded by the refused payment');
+  await pay_(F, 5000); assert.equal(await earned(F), 600, '30% * (5000 - 3000): the lab comes out of the down payment');
+  const series = [];
+  for (let k = 1; k <= 24; k++) { await pay_(F, 625); series.push(await earned(F)); }
+  assert.equal(series[0], 787.5, 'first installment earns the full 30%: +187.5'); assert.equal(series.at(-1), 5100, '30% * (20000 - 3000) after 24 installments');
+  assert.deepEqual(series.map((x, i) => x - (i ? series[i - 1] : 600)).filter(d => Math.abs(d - 187.5) > 1e-9), [], 'every installment adds exactly 30% of it');
+  assert.equal((await owner('select count(*)::int n from clinic_finance.payments where invoice_id=$1', [F]))[0].n, 25, 'one invoice, 25 payments');
+  // two years: back-date the payments one month apart; the fee depends on amounts, not dates
+  await owner("update clinic_finance.payments p set created_at = now() - ((25 - x.rn) * interval '30 days') from (select id, row_number() over (order by created_at, id) rn from clinic_finance.payments where invoice_id=$1) x where p.id = x.id", [F]);
+  await owner('select clinic_finance.doctor_sync($1)', [F]); assert.equal(await earned(F), 5100, 'unchanged when payments span 2 years');
+  // refund after full payment: collected 15000 -> 30% * (15000 - 3000) = 3600 (= 30% * (revenue 15000 - lab))
+  await refund(F, 5000); assert.equal(await earned(F), 3600);
+  // a first_payment invoice cannot be mixed
+  await assert.rejects(() => bill(2, { reference: 'EX-F2', service_amount: 10000, doctor_key: 'DOC-COL', service_lines: [{ ...ext('D-1', 6000, 1000, 'LAB-G'), external_mode: 'first_payment' }, { code: 'D-2', amount: 4000 }] }), /سطر خدمة واحد/);
+  await assert.rejects(() => bill(2, { reference: 'EX-F3', service_amount: 10000, doctor_key: 'DOC-IMP', service_lines: [{ ...ext('D-1', 10000, 1000, 'LAB-G'), external_mode: 'first_payment' }] }), /أساس التحصيل/);
+  await assert.rejects(() => bill(2, { reference: 'EX-F4', service_amount: 10000, doctor_key: 'DOC-COL', service_lines: [{ code: 'D-1', amount: 10000, external_mode: 'first_payment' }] }), /تكلفة معمل أكبر من صفر|فارغة|رقم فاتورة/);
+  await assert.rejects(() => bill(2, { reference: 'EX-F5', service_amount: 10000, doctor_key: 'DOC-COL', service_lines: [{ ...ext('D-1', 10000, 1000, 'LAB-G'), external_mode: 'zzz' }] }), /نمط/);
+  // pro-rata invoices and plain invoices collect as before (no first-payment rule)
+  const Dn = await bill(2, { reference: 'EX-F6', service_amount: 12000, doctor_key: 'DOC-COL', service_lines: [ext('D-1', 12000, 3000, 'LAB-H')] }); await pay_(Dn, 1000); assert.equal(await earned(Dn), 225);
+
   // (E) loud failures leave nothing behind
   const invCount = async () => (await owner('select count(*)::int n from clinic_finance.invoices'))[0].n; const n1 = await invCount();
   await assert.rejects(() => bill(2, { reference: 'EX-E1', service_amount: 10000, doctor_key: 'DOC-IMP', service_lines: [ext('D-1', 10000, 3000)] }), /رقم فاتورة المعمل/);
@@ -167,10 +193,11 @@ const root = path.resolve('.'), id = n => '30000000-0000-4000-8000-' + String(n)
   const eA = await earned(A), eC = await earned(C), eD = await earned(D);
   await db.exec('reset role'); await db.exec(fs.readFileSync('supabase/rollbacks/20261108260000_dental_external_cost.rollback.sql', 'utf8'));
   const after = await fn('public.clinic_finance_bill(jsonb,uuid)'); assert.equal(after.d, billBefore.d, 'rollback restores the wrapper byte-for-byte'); assert.equal(after.acl, billBefore.acl, 'and its privileges');
+  for (const [sig, b] of [['clinic_finance.doctor_sync(uuid)', syncBefore], ['public.clinic_finance_collect(uuid,uuid,text,numeric,text,uuid)', collBefore]]) { const x = await fn(sig); assert.equal(x.d, b.d, 'rollback restores ' + sig); assert.equal(x.acl, b.acl); }
   assert.equal((await owner("select count(*)::int n from information_schema.columns where table_schema='clinic_finance' and table_name='doctor_allocation_lines' and column_name in ('external_cost','external_ref')"))[0].n, 0);
   assert((await owner('select count(*)::int n from clinic_finance.doctor_allocation_lines_external_backup'))[0].n >= 5, 'external costs preserved in the backup table');
   await owner('select clinic_finance.doctor_sync($1)', [A]); await owner('select clinic_finance.doctor_sync($1)', [D]);
   assert.equal(await earned(A), eA, 'fee unchanged after rollback + resync (line_deduction kept)'); assert.equal(await earned(D), eD); assert.equal(await earned(C), eC);
   await owner('drop table clinic_finance.doctor_allocation_lines_external_backup'); await db.exec('reset role'); await db.exec(emig());
-  console.log('PASS dental external cost SQL: implants 30%*(paid-lab), mixed lines, collected-basis installments on one invoice (ortho), refund, replay, floor at 0, loud failures, legacy parity, byte-identical rollback');
+  console.log('PASS dental external cost SQL: ortho first-payment lab + 24 installments over 2 years, implants 30%*(paid-lab), mixed lines, collected-basis installments on one invoice (ortho), refund, replay, floor at 0, loud failures, legacy parity, byte-identical rollback');
 })().catch(e => { console.error(e.message, e.where || '', e.position || ''); process.exitCode = 1; });

@@ -31,7 +31,12 @@ One invoice for the whole treatment + several `clinic_finance_collect` payments 
 
 Both end at `30% * (12000-3000)`. They only differ in timing.
 
-## Owner decision (not decided here)
+ ## Orthodontics — owner decision applied (lab from the FIRST payment)
+`external_mode:'first_payment'` on the single service line (collected contract, no channel): cumulative fee = `rate * max(0, collected - lab)` capped at `rate * (revenue - lab)`. Example (test): total 20000, lab 3000, down payment 5000 (~25%) + 24 installments of 625 over 2 years: after the down payment 600, every installment +187.5, final 5100 = 30%*(20000-3000). Payment dates do not matter (24 monthly payments back-dated over 2 years give the same result); a refund of 5000 afterwards gives 3600.
+Validation instead of special accrual: `clinic_finance_collect` refuses a FIRST payment smaller than the lab cost (clear Arabic message; nothing is recorded). The 25% down payment is NOT a rule, only test data. `doctor_sync` and `clinic_finance_collect` are wrapped (rename-and-wrap, privileges copied, rollback restores them byte-for-byte).
+The pro-rata table above remains the default (`external_mode` omitted).
+
+## (superseded) earlier open question
 If the first payment is smaller than the lab cost, should the doctor's fee stay **zero until the cost is covered** (cumulative fee = `30% * max(0, collected - lab)`), or is the lab spread pro-rata over the payments (built, never zero after a payment)? The first needs one more additive wrapper over `doctor_sync` (an `external_mode` flag on the line); say the word and it is built and tested the same way.
 
 ## Test
