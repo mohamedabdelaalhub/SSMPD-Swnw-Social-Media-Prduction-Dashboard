@@ -1,5 +1,5 @@
 /* «سجلات تجريبية» — OWNER-ONLY panel (super_admin) to flag a record as «تجريبي» and then delete it safely.
-   Card in the admin area (above «كل المستخدمين»). Everything is enforced by the database (migration 20261109110000_test_record_delete.sql, not applied until the owner approves):
+   Card in the admin area (above «كل المستخدمين»). Everything is enforced by the database (migration 20261109130000_test_record_delete.sql, not applied until the owner approves):
    only the owner role, only records carrying a «تجريبي» flag, a full archive copy before the delete, refusal when the record is tied to payments/payouts/claims/stock/closed periods.
    This file only shows the owner what will happen and sends the typed confirmations. If the migration is missing the panel says so and does nothing. */
 (function () {
