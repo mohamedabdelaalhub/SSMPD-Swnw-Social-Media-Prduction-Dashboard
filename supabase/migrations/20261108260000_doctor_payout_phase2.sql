@@ -1,12 +1,12 @@
 -- Doctor payout, Phase 2 (owner decisions 2026-11-08): payout cap = "payable now", tax + withholding percentages, payout review by the financial manager.
--- ADDITIVE ONLY: no table/column change, no existing row touched, no existing ledger posting changed. Nothing here moves money by itself.
+-- ADDITIVE ONLY: one new tiny settings table (payout_settings, fallback flag), no existing table/column change, no existing row touched, no existing ledger posting changed. Nothing here moves money by itself.
 --   (a) clinic_finance.invoice_fully_paid(invoice)       : fully paid = patient payments + APPROVED insurer payments - approved refunds >= invoice amount - refunds - approved contractual discounts.
 --                                                          Credit (آجل) behaves like insurance: it is "unpaid" until the money is actually collected (no payment row = not paid).
 --       clinic_finance.doctor_held_fees(doctor)          : sum of the fee earned on invoices that are NOT fully paid. An unpaid invoice holds ONLY its own fee.
 --       clinic_finance.doctor_payable_now(doctor)        : greatest(0, doctor_balance - held fees).
 --       public.clinic_finance_doctor_payable(key)        : read-only RPC for the payout form (balance / held / payable now / pending / available + the held invoices of one doctor).
 --   (b) payout review is restricted to the FINANCIAL MANAGER (clinic_finance.payout_reviewer_allowed). Maker-checker unchanged (the creator can never review).
---       super_admin / general_manager keep review ONLY as a FALLBACK while there is no active financial manager with the accounting module; the day one exists, they lose payout review automatically.
+--       super_admin / general_manager keep review ONLY as a FALLBACK while there is no active financial manager with the accounting module AND payout_settings.manager_fallback is true (default true; super_admin turns it off with public.clinic_finance_set_payout_fallback(false)); the day one exists, they lose payout review automatically.
 --       Contract review and every other review action are NOT changed (clinic_finance.allowed('review') is untouched).
 --   (c) payout payload must carry tax_pct and withholding_pct (0..100 each, sum <= 100, max 2 decimals); withheld must equal round(gross*tax_pct/100,2)+round(gross*withholding_pct/100,2); net = gross - withheld.
 --       Ledger posting is the existing one (net to cash/bank, withheld to 2141). The split and the percentages are kept in the payout payload and in clinic_finance.audit.
@@ -69,6 +69,21 @@ begin
   return found;
 end $$;
 
+-- Fallback flag (single row). true (default) = super_admin / general_manager may review payouts while NO active financial manager exists; false = payout review is strictly financial-manager only.
+create table clinic_finance.payout_settings(id boolean primary key default true check(id), manager_fallback boolean not null default true, updated_by uuid references public.admins(id), updated_at timestamptz not null default now());
+insert into clinic_finance.payout_settings(id) values (true);
+alter table clinic_finance.payout_settings enable row level security;
+revoke all on clinic_finance.payout_settings from public, anon, authenticated;
+create function public.clinic_finance_set_payout_fallback(p_enabled boolean) returns boolean language plpgsql security definer set search_path = pg_catalog, public as $$
+declare me uuid := public.my_admin_id();
+begin
+  if me is null or not public.has_role('super_admin') then raise exception 'تغيير هذا الإعداد للسوبر أدمن فقط' using errcode = '42501'; end if;
+  if p_enabled is null then raise exception 'قيمة غير صالحة'; end if;
+  update clinic_finance.payout_settings set manager_fallback = p_enabled, updated_by = me, updated_at = now() where id;
+  insert into clinic_finance.audit(actor, action, detail) values (me, 'payout_manager_fallback', jsonb_build_object('enabled', p_enabled));
+  return p_enabled;
+end $$;
+
 -- 'financial_manager' = the current user holds the financial_manager role and the accounting module (allowed('review') for a non-manager role already needs both).
 -- 'fallback_manager' = no financial manager exists yet, so super_admin / general_manager may still review (audited as a fallback).
 -- null = not allowed to review payouts.
@@ -76,7 +91,7 @@ create function clinic_finance.payout_review_mode() returns text language plpgsq
 begin
   if public.my_admin_id() is null or not clinic_finance.allowed('review') then return null; end if;
   if public.has_role('financial_manager') then return 'financial_manager'; end if;
-  if (public.has_role('super_admin') or public.has_role('general_manager')) and not clinic_finance.has_financial_manager() then return 'fallback_manager'; end if;
+  if (public.has_role('super_admin') or public.has_role('general_manager')) and (select manager_fallback from clinic_finance.payout_settings where id) and not clinic_finance.has_financial_manager() then return 'fallback_manager'; end if;
   return null;
 end $$;
 
@@ -151,7 +166,7 @@ end $$;
 
 revoke all on function clinic_finance.invoice_fully_paid(uuid), clinic_finance.doctor_held_fees(text), clinic_finance.doctor_payable_now(text), clinic_finance.has_financial_manager(),
   clinic_finance.payout_review_mode(), clinic_finance.doctor_command_before_payout2(text, jsonb, uuid) from public, anon, authenticated;
-revoke all on function public.clinic_finance_doctor_payable(text), public.clinic_finance_doctor_command(text, jsonb, uuid) from public, anon;
-grant execute on function public.clinic_finance_doctor_payable(text), public.clinic_finance_doctor_command(text, jsonb, uuid) to authenticated;
+revoke all on function public.clinic_finance_set_payout_fallback(boolean), public.clinic_finance_doctor_payable(text), public.clinic_finance_doctor_command(text, jsonb, uuid) from public, anon;
+grant execute on function public.clinic_finance_set_payout_fallback(boolean), public.clinic_finance_doctor_payable(text), public.clinic_finance_doctor_command(text, jsonb, uuid) to authenticated;
 
 commit;

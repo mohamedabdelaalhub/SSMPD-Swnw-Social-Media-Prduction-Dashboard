@@ -83,6 +83,13 @@ const boot = require('./helpers/clinic-finance.cjs'), assert = require('node:ass
   await owner("update admins set active=false where id=$1", [id(3)]);
   await as(5); await cmd('payout_review', { id: f1, approve: true, note: 'مدير عام احتياطي' });
   au = await owner("select detail from clinic_finance.audit where action='doctor_payout_review_gate' and entity_id=$1", [f1]); assert.equal(au[0].detail.review_mode, 'fallback_manager');
+  // flag: super_admin can switch the fallback off -> payout review becomes strictly financial-manager only, even with no active FM
+  await as(2); const f3 = await cmd('payout', P('DOC-A', 50, 0, 0));
+  await as(5); await assert.rejects(() => fin('set_payout_fallback', [false]), /للسوبر أدمن/);
+  await as(1); assert.equal(await fin('set_payout_fallback', [false]), false);
+  await as(5); await assert.rejects(() => cmd('payout_review', { id: f3, approve: true, note: 'مغلق' }), /للمدير المالي فقط/);
+  await as(1); await fin('set_payout_fallback', [true]); await as(5); await cmd('payout_review', { id: f3, approve: false, note: 'إلغاء احتياطي' });
+  assert.equal((await owner("select count(*) n from clinic_finance.audit where action='payout_manager_fallback'"))[0].n, 2);
   await owner("update admins set active=true where id=$1", [id(3)]);
 
   // ---- cap re-checked on approval: payable now can drop after the request was made

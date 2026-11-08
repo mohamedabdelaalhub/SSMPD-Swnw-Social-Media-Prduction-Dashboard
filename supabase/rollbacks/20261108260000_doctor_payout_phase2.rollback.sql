@@ -10,10 +10,12 @@ do $$ begin
 end $$;
 revoke all on function public.clinic_finance_doctor_command(text, jsonb, uuid) from public, anon;
 grant execute on function public.clinic_finance_doctor_command(text, jsonb, uuid) to authenticated;
+drop function if exists public.clinic_finance_set_payout_fallback(boolean);
 drop function if exists public.clinic_finance_doctor_payable(text);
 drop function if exists clinic_finance.payout_review_mode();
 drop function if exists clinic_finance.has_financial_manager();
 drop function if exists clinic_finance.doctor_payable_now(text);
 drop function if exists clinic_finance.doctor_held_fees(text);
 drop function if exists clinic_finance.invoice_fully_paid(uuid);
+drop table if exists clinic_finance.payout_settings;
 commit;
