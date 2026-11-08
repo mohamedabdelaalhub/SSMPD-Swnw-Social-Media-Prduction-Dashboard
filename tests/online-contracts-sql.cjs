@@ -1,5 +1,11 @@
 // Online doctor contracts: SQL rehearsal on PGlite with the REAL finance base migrations (contracts + maker-checker) and the new migration.
 const { PGlite } = require('@electric-sql/pglite'), fs = require('fs'), path = require('path'), crypto = require('crypto'), assert = require('node:assert/strict');
+const zlib = require('zlib');
+const crc = b => { let c, t = []; for (let n = 0; n < 256; n++) { c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } c = 0xffffffff; for (const x of b) c = t[(c ^ x) & 255] ^ (c >>> 8); return (c ^ 0xffffffff) >>> 0; };
+const chunk = (ty, d) => { const l = Buffer.alloc(4); l.writeUInt32BE(d.length); const td = Buffer.concat([Buffer.from(ty), d]), c = Buffer.alloc(4); c.writeUInt32BE(crc(td)); return Buffer.concat([l, td, c]); };
+const makePng = () => { const w = 24, h = 24, ih = Buffer.alloc(13); ih.writeUInt32BE(w, 0); ih.writeUInt32BE(h, 4); ih[8] = 8; ih[9] = 6; const raw = Buffer.concat(Array.from({ length: h }, () => Buffer.concat([Buffer.from([0]), crypto.randomBytes(w * 4)])));
+  return Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), chunk('IHDR', ih), chunk('IDAT', zlib.deflateSync(raw)), chunk('IEND', Buffer.alloc(0))]); };
+const PNG = 'data:image/png;base64,' + makePng().toString('base64'), JPG = 'data:image/jpeg;base64,' + Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), crypto.randomBytes(300)]).toString('base64');
 const root = path.resolve('.'), id = n => '40000000-0000-4000-8000-' + String(n).padStart(12, '0'), key = () => crypto.randomUUID();
 (async () => {
   const db = new PGlite();
@@ -33,7 +39,8 @@ const root = path.resolve('.'), id = n => '40000000-0000-4000-8000-' + String(n)
   await db.exec('reset role'); await db.exec(mig('20261108280000_online_contracts.sql'));
   const tmpls = await owner('select kind,version,published,placeholder from clinic_finance.contract_templates order by kind');
   assert.deepEqual(tmpls.map(t => [t.kind, t.version, t.published, t.placeholder]), [['consent', 1, false, true], ['contract', 1, false, true]], 'seeded placeholders are unpublished');
-  for (const t of ['contract_templates', 'signature_requests', 'acceptances']) {
+  assert.deepEqual((await owner('select rule, start_date from clinic_finance.contract_settings order by rule')).map(r => [r.rule, r.start_date]), [['consent', null], ['contract_signature', null]], 'both rules are OFF by default');
+  for (const t of ['contract_templates', 'signature_requests', 'acceptances', 'contract_settings']) {
     await as(2); await fails(db.query(`select * from clinic_finance.${t}`), /permission denied/);
   }
   await fails(owner('select 1').then(() => db.exec('reset role; set role anon; select public.doctor_contract_inbox()')), /permission denied/);
@@ -73,20 +80,35 @@ const root = path.resolve('.'), id = n => '40000000-0000-4000-8000-' + String(n)
   assert.equal(inbox.linked, true); assert.equal(inbox.doctor_key, 'DOC-Q'); assert.equal(inbox.requests.length, 1); assert.equal(inbox.pending, 1); assert.equal(inbox.consent, null, 'consent template still unpublished');
   await as(5); inbox = await call('doctor_contract_inbox'); assert.equal(inbox.doctor_key, 'DOC-S'); assert.equal(inbox.requests.length, 0, 'doctor S sees nothing of Q');
   await as(6); inbox = await call('doctor_contract_inbox'); assert.equal(inbox.linked, false); assert.equal(inbox.requests.length, 0);
-  await as(5); await fails(call('doctor_contract_decide', [r1, true, null, req.text_sha256, 'UA']), /الطلب غير متاح/);
-  await as(6); await fails(call('doctor_contract_decide', [r1, true, null, req.text_sha256, 'UA']), /غير مربوط/);
-  await as(2); await fails(call('doctor_contract_decide', [r1, true, null, req.text_sha256, 'UA']), /غير مربوط/);
+  await as(5); await fails(call('doctor_contract_decide', [r1, true, null, req.text_sha256, 'UA', 'drawn', PNG]), /الطلب غير متاح/);
+  await as(6); await fails(call('doctor_contract_decide', [r1, true, null, req.text_sha256, 'UA', 'drawn', PNG]), /غير مربوط/);
+  await as(2); await fails(call('doctor_contract_decide', [r1, true, null, req.text_sha256, 'UA', 'drawn', PNG]), /غير مربوط/);
 
   // ---- accept: sha must match, idempotent, opposite decision refused
-  await as(4); await fails(call('doctor_contract_decide', [r1, true, null, 'f'.repeat(64), 'UA']), /لا يطابق/);
+  await as(4); await fails(call('doctor_contract_decide', [r1, true, null, 'f'.repeat(64), 'UA', 'drawn', PNG]), /لا يطابق/);
   const ua = 'Mozilla/5.0 test ' + 'x'.repeat(400);
-  const d1 = await call('doctor_contract_decide', [r1, true, null, req.text_sha256, ua]); assert.equal(d1.status, 'accepted'); assert.equal(d1.repeated, false);
-  const d2 = await call('doctor_contract_decide', [r1, true, null, req.text_sha256, ua]); assert.equal(d2.repeated, true); assert.equal(d2.decided_at, d1.decided_at);
+  // accepting needs a valid signature (drawn / uploaded PNG|JPEG); nothing is recorded when it is missing or bad
+  await fails(call('doctor_contract_decide', [r1, true, null, req.text_sha256, ua]), /اختر طريقة التوقيع/);
+  await fails(call('doctor_contract_decide', [r1, true, null, req.text_sha256, ua, 'drawn', 'data:image/png;base64,AAAA']), /غير صالحة/);
+  await fails(call('doctor_contract_decide', [r1, true, null, req.text_sha256, ua, 'drawn', 'data:text/html;base64,' + Buffer.from('<script>x</script>'.repeat(20)).toString('base64')]), /غير صالحة/);
+  await fails(call('doctor_contract_decide', [r1, true, null, req.text_sha256, ua, 'scribble', PNG]), /اختر طريقة التوقيع/);
+  await fails(call('doctor_contract_decide', [r1, true, null, req.text_sha256, ua, 'drawn', 'data:image/png;base64,' + 'A'.repeat(400001)]), /كبيرة/);
+  assert.equal((await owner("select count(*)::int n from clinic_finance.acceptances"))[0].n, 0, 'rejected signatures record nothing');
+  const d1 = await call('doctor_contract_decide', [r1, true, null, req.text_sha256, ua, 'drawn', PNG]); assert.equal(d1.status, 'accepted'); assert.equal(d1.repeated, false);
+  const d2 = await call('doctor_contract_decide', [r1, true, null, req.text_sha256, ua, 'drawn', PNG]); assert.equal(d2.repeated, true); assert.equal(d2.decided_at, d1.decided_at);
   await fails(call('doctor_contract_decide', [r1, false, 'سبب الرفض', req.text_sha256, ua]), /من قبل/);
+  const d2b = await call('doctor_contract_decide', [r1, true, null, req.text_sha256, ua, 'uploaded', JPG]); assert.equal(d2b.repeated, true, 'a repeat with another signature is still just the first record');
   const accs = await owner('select * from clinic_finance.acceptances where request_id=$1', [r1]);
   assert.equal(accs.length, 1, 'double accept stays ONE record'); assert.equal(accs[0].admin_id, id(4)); assert.equal(accs[0].doctor_key, 'DOC-Q'); assert.equal(accs[0].text_sha256, req.text_sha256); assert.equal(accs[0].template_version, 1); assert.equal(accs[0].user_agent.length, 300);
+  assert.equal(accs[0].signature_kind, 'drawn'); assert.equal(accs[0].signature_image, PNG); assert.equal(accs[0].signature_sha256, crypto.createHash('sha256').update(Buffer.from(PNG.split(',')[1], 'base64')).digest('hex'), 'signature stored with its sha256');
   assert(!('ip' in accs[0]) && !Object.keys(accs[0]).some(k => /ip_|^ip/.test(k)), 'no IP column');
   await as(2); st = await fin('contract_signature_status'); assert.equal(st.contracts[c1].state, 'accepted'); assert(st.contracts[c1].at);
+  assert.equal(st.contracts[c1].signature_kind, 'drawn'); assert(!JSON.stringify(st).includes(PNG.slice(30, 80)), 'status list never carries the signature image');
+  const sd = await fin('contract_signed_document', [st.contracts[c1].acceptance_id]);
+  assert.equal(sd.signature_image, PNG); assert.equal(sd.text, req.rendered_text); assert.equal(sd.text_sha256, req.text_sha256); assert.equal(sd.template_version, 1); assert.equal(sd.doctor_key, 'DOC-Q');
+  await as(7); await fails(fin('contract_signed_document', [st.contracts[c1].acceptance_id]), /صلاحية/); await as(4); await fails(fin('contract_signed_document', [st.contracts[c1].acceptance_id]), /صلاحية|permission/);
+  inbox = await call('doctor_contract_inbox'); assert.equal(inbox.requests[0].signature_image, PNG, 'the doctor sees his own signature on the signed contract');
+  await as(5); inbox = await call('doctor_contract_inbox'); assert(!JSON.stringify(inbox).includes(PNG.slice(30, 80)), 'doctor S never sees doctor Q signature'); await as(2);
 
   // ---- accruals untouched: acceptance changes nothing in the finance tables
   assert.equal((await owner("select count(*)::int n from clinic_finance.doctor_accruals"))[0].n, 0);
@@ -94,12 +116,13 @@ const root = path.resolve('.'), id = n => '40000000-0000-4000-8000-' + String(n)
   // ---- template version change invalidates a PENDING request (accepted ones stay history)
   await as(2); const r2 = await fin('contract_signature_command', ['send', { doctor_key: 'DOC-S', reference: 'اتفاق ثاني' }, key()]);
   const req2 = (await owner('select * from clinic_finance.signature_requests where id=$1', [r2]))[0];
-  await as(3); await fin('contract_signature_command', ['template_publish', { kind: 'contract', title: 'نص المحامي النهائي', body: 'نص نهائي للعقد: {{doctor_name}} {{reference}} — نسخة {{template_version}}' }, key()]);
+  await as(3); await fin('contract_signature_command', ['template_save', { kind: 'contract', title: 'نص المحامي النهائي', body: 'نص نهائي للعقد: {{doctor_name}} {{reference}} — نسخة {{template_version}}', clauses: ['البند الأول للطبيب {{doctor_name}}', '', 'البند الثاني'], publish: true }, key()]);
   await as(5); inbox = await call('doctor_contract_inbox'); assert.equal(inbox.requests[0].stale, true); assert.equal(inbox.pending, 0, 'stale requests are not counted as pending');
-  await fails(call('doctor_contract_decide', [r2, true, null, req2.text_sha256, 'UA']), /اتغيّرت/);
+  await fails(call('doctor_contract_decide', [r2, true, null, req2.text_sha256, 'UA', 'drawn', PNG]), /اتغيّرت/);
   await as(2); st = await fin('contract_signature_command', ['send', { doctor_key: 'DOC-S', reference: 'اتفاق ثاني' }, key()]).then(async r3 => ({ r3 })); // resend on the new version
   const req3 = (await owner('select * from clinic_finance.signature_requests where id=$1', [st.r3]))[0];
   assert.equal(req3.template_version, 2); assert(req3.rendered_text.startsWith('نص نهائي للعقد: طبيب DOC-S اتفاق ثاني — نسخة 2'));
+  assert(req3.rendered_text.includes('1. البند الأول للطبيب طبيب DOC-S\n2. البند الثاني'), 'clauses are numbered, blanks dropped, placeholders replaced');
   assert.equal((await owner('select status from clinic_finance.signature_requests where id=$1', [r2]))[0].status, 'void', 'older pending request voided by the resend');
   await as(5); await fails(call('doctor_contract_decide', [r2, true, null, req2.text_sha256, 'UA']), /الطلب غير متاح/);
   const d3 = await call('doctor_contract_decide', [st.r3, false, 'ab', req3.text_sha256, 'UA']).catch(e => e.message); assert(/سبب الرفض/.test(d3), 'reject needs a reason');
@@ -116,15 +139,46 @@ const root = path.resolve('.'), id = n => '40000000-0000-4000-8000-' + String(n)
 
   // ---- consent: shown until accepted, idempotent, version bump asks again, never blocks anything
   await as(3); await fin('contract_signature_command', ['template_publish', { id: (await owner("select id from clinic_finance.contract_templates where kind='consent'"))[0].id }, key()]);
-  await as(4); inbox = await call('doctor_contract_inbox'); assert(inbox.consent && !inbox.consent.accepted_at && inbox.consent.body.includes('المسؤول مهنيًا'));
-  await fails(call('doctor_consent_accept', [inbox.consent.template_id, 'a'.repeat(64), 'UA']), /لا يطابق/);
-  const c = await call('doctor_consent_accept', [inbox.consent.template_id, inbox.consent.sha256, 'UA']); const c2r = await call('doctor_consent_accept', [inbox.consent.template_id, inbox.consent.sha256, 'UA']);
-  assert.equal(c2r.repeated, true); assert.equal((await owner("select count(*)::int n from clinic_finance.acceptances where kind='consent'"))[0].n, 1);
+  await fails(fin('contract_signature_command', ['template_publish', { id: (await owner("select id from clinic_finance.contract_templates where kind='consent'"))[0].id }, key()]), /منشور من قبل/);
+  await as(4); inbox = await call('doctor_contract_inbox'); assert(inbox.consent && !inbox.consent.accepted_at && inbox.consent.body.includes('المسؤول مهنيًا') && inbox.consent.body.includes('2. أقر بأنني المسؤول'), 'consent = intro + numbered clauses');
+  await fails(call('doctor_consent_accept', [inbox.consent.template_id, 'a'.repeat(64), 'UA', 'drawn', PNG]), /لا يطابق/);
+  await fails(call('doctor_consent_accept', [inbox.consent.template_id, inbox.consent.sha256, 'UA']), /اختر طريقة التوقيع/);
+  const c = await call('doctor_consent_accept', [inbox.consent.template_id, inbox.consent.sha256, 'UA', 'uploaded', JPG]); const c2r = await call('doctor_consent_accept', [inbox.consent.template_id, inbox.consent.sha256, 'UA', 'drawn', PNG]);
+  assert.equal(c2r.repeated, true); assert.equal((await owner("select count(*)::int n from clinic_finance.acceptances where kind='consent'"))[0].n, 1); assert.equal((await owner("select signature_kind k from clinic_finance.acceptances where kind='consent'"))[0].k, 'uploaded', 'first signature kept; the repeat does not overwrite');
   await as(5); inbox = await call('doctor_contract_inbox'); assert(!inbox.consent.accepted_at, 'doctor S has not accepted the consent');
-  await as(3); await fin('contract_signature_command', ['template_publish', { kind: 'consent', title: 'إقرار نهائي', body: 'نص الإقرار النهائي من المحامي، نسخة جديدة' }, key()]);
+  await as(3); await fin('contract_signature_command', ['template_save', { kind: 'consent', title: 'إقرار نهائي', body: 'نص الإقرار النهائي من المحامي، نسخة جديدة', clauses: ['بند 1', 'بند 2'], publish: true }, key()]);
   await as(4); inbox = await call('doctor_contract_inbox'); assert.equal(inbox.consent.version, 2); assert(!inbox.consent.accepted_at, 'new version asks again');
-  await fails(call('doctor_consent_accept', [(await owner("select id from clinic_finance.contract_templates where kind='consent' and version=1"))[0].id, 'x', 'UA']), /أحدث/);
+  await fails(call('doctor_consent_accept', [(await owner("select id from clinic_finance.contract_templates where kind='consent' and version=1"))[0].id, 'x', 'UA', 'drawn', PNG]), /أحدث/);
   await as(2); assert.equal((await fin('contract_signature_status')).consents['DOC-Q'].version, 1);
+
+  // ---- owner edits the text: draft -> re-save -> publish; accountant cannot; old versions stay untouched
+  await as(2); await fails(fin('contract_signature_command', ['template_save', { kind: 'consent', title: 'x y z', body: 'مقدمة طويلة بما يكفي للقبول', clauses: [] }, key()]), /صلاحية/);
+  await as(3); await fails(fin('contract_signature_command', ['template_save', { kind: 'consent', title: 'x', body: 'مقدمة طويلة بما يكفي للقبول', clauses: [] }, key()]), /عنوان/);
+  const dr = await fin('contract_signature_command', ['template_save', { kind: 'consent', title: 'مسودة', body: 'مقدمة المسودة الأولى للإقرار', clauses: ['أ'] }, key()]);
+  assert.equal((await owner('select version, published from clinic_finance.contract_templates where id=$1', [dr]))[0].version, 3); assert.equal((await owner('select count(*)::int n from clinic_finance.contract_templates where kind=\'consent\'' ))[0].n, 3);
+  const dr2 = await fin('contract_signature_command', ['template_save', { id: dr, kind: 'consent', title: 'مسودة معدلة', body: 'مقدمة المسودة المعدلة للإقرار', clauses: ['أ', 'ب', 'ج'] }, key()]);
+  assert.equal(dr2, dr, 'a draft is updated in place'); assert.deepEqual((await owner('select clauses, published from clinic_finance.contract_templates where id=$1', [dr]))[0].clauses, ['أ', 'ب', 'ج']);
+  await as(4); inbox = await call('doctor_contract_inbox'); assert.equal(inbox.consent.version, 2, 'a draft is invisible to the doctor');
+  await as(3); await fin('contract_signature_command', ['template_save', { id: dr, kind: 'consent', title: 'مسودة معدلة', body: 'مقدمة المسودة المعدلة للإقرار', clauses: ['أ', 'ب', 'ج'], publish: true }, key()]);
+  await fails(fin('contract_signature_command', ['template_save', { id: dr, kind: 'consent', title: 'بعد النشر', body: 'مقدمة بعد النشر للإقرار الجديد', clauses: ['د'] }, key()]).then(async nid => { assert.notEqual(nid, dr, 'published version is never edited: save makes version 4'); assert.equal((await owner('select version from clinic_finance.contract_templates where id=$1', [nid]))[0].version, 4); throw new Error('ok-new-version'); }), /ok-new-version/);
+  assert.equal((await owner("select title from clinic_finance.contract_templates where kind='consent' and version=2"))[0].title, 'إقرار نهائي', 'old versions untouched');
+  await as(4); inbox = await call('doctor_contract_inbox'); assert.equal(inbox.consent.version, 3); assert(!inbox.consent.accepted_at, 'published v3 asks again');
+  const c3 = await call('doctor_consent_accept', [inbox.consent.template_id, inbox.consent.sha256, 'UA', 'drawn', PNG]);
+  assert.deepEqual((await owner("select template_version v from clinic_finance.acceptances where kind='consent' and doctor_key='DOC-Q' order by template_version")).map(r => r.v), [1, 3], 'each acceptance records the version the doctor saw');
+
+  // ---- enforcement start dates: OFF by default, owner-set, never in the past; compliance computed, NOTHING blocked here
+  await as(2); let comp = (await fin('contract_signature_status')).compliance;
+  assert.equal(comp['DOC-S'].contract_ok, false); assert.equal(comp['DOC-S'].contract_blocked, false, 'off by default: nothing blocked'); assert.equal(comp['DOC-S'].consent_blocked, false);
+  await fails(fin('contract_signature_command', ['set_enforcement', { rule: 'consent', start_date: shift(5) }, key()]), /صلاحية/); // accountant cannot
+  await as(3); await fails(fin('contract_signature_command', ['set_enforcement', { rule: 'consent', start_date: shift(-1) }, key()]), /الماضي/);
+  await fails(fin('contract_signature_command', ['set_enforcement', { rule: 'nope', start_date: shift(5) }, key()]), /غير معروفة/);
+  await fin('contract_signature_command', ['set_enforcement', { rule: 'consent', start_date: shift(5) }, key()]); await fin('contract_signature_command', ['set_enforcement', { rule: 'contract_signature', start_date: today }, key()]);
+  let stt = await fin('contract_signature_status'); assert.equal(stt.enforcement.consent.active, false); assert.equal(stt.enforcement.consent.start_date, shift(5)); assert.equal(stt.enforcement.contract_signature.active, true);
+  assert.equal(stt.compliance['DOC-S'].consent_blocked, false, 'future date: not yet'); assert.equal(stt.compliance['DOC-S'].contract_blocked, true, 'date reached and S rejected -> would be blocked'); assert.equal(stt.compliance['DOC-Q'].contract_ok, false, 'Q signed, but c1 terms changed afterwards -> signature no longer covers it'); assert.equal(stt.compliance['DOC-Q'].contract_blocked, true);
+  await as(4); inbox = await call('doctor_contract_inbox'); assert.equal(inbox.enforcement.consent.start_date, shift(5)); assert.equal(typeof inbox.compliance.contract_ok, 'boolean');
+  await as(3); await fin('contract_signature_command', ['set_enforcement', { rule: 'contract_signature', start_date: null }, key()]);
+  stt = await fin('contract_signature_status'); assert.equal(stt.enforcement.contract_signature.start_date, null, 'owner can switch a rule back off'); assert.equal(stt.compliance['DOC-S'].contract_blocked, false);
+  assert.equal((await owner("select count(*)::int n from clinic_finance.doctor_accruals"))[0].n, 0, 'still nothing wired into accruals');
 
   // ---- void + rollback
   await as(2); await fin('contract_signature_command', ['void', { id: r4, note: 'غلط' }, key()]);

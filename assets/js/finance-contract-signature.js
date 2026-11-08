@@ -1,7 +1,9 @@
 /* Online doctor contracts, accountant side (separate file; chains onto SSMPDFinanceControls like finance-channels.js, does not touch finance-doctors.js or db.js).
    - next to each doctor's group of ACTIVE contracts (same reference): «إرسال للتوقيع» (creates a signature request for that doctor + contract set + current published template version)
    - on each contract row: «وافق الطبيب بتاريخ …» / «بانتظار موافقة الطبيب» / «رفض: السبب» / «النص اتغيّر — أعد الإرسال»  (a recorded status only; accruals are NOT affected)
-   - a small block for the published contract / consent texts, with «نشر نص جديد» for the financial manager (the lawyer's final wording goes in here)
+   - a block for the contract / consent texts with «تعديل النص» (owner/financial manager): title, intro, add / remove / reorder clauses; every save is a new VERSION (draft, or published at once)
+   - a block with the owner-set ENFORCEMENT START DATE per rule (unsigned contract / no declaration): empty = off (default). This only records the date and shows who would be affected; nothing is blocked by this file.
+   - «عرض العقد الموقّع» on signed rows: the text + the doctor's signature image (drawn or uploaded) + version, sha256 and time
    The server (migration 20261108280000) decides everything; this file only shows and sends. Nothing is painted when the migration is not applied (RPC missing). */
 (function () {
   'use strict';
@@ -29,6 +31,14 @@
     if (s.state === 'stale') return 'النص أو الشروط اتغيّرت — أعد الإرسال';
     return 'بانتظار موافقة الطبيب';
   }
+  function sigWord(k) { return k === 'drawn' ? 'رسم باليد' : k === 'uploaded' ? 'صورة مرفوعة' : ''; }
+  function compText(key, enf) {
+    var c = info && info.compliance && info.compliance[key]; if (!c) return '';
+    var e = enf || {}, a = [];
+    a.push('العقد: ' + (c.contract_ok ? 'موقّع' : 'غير موقّع' + (e.contract_signature && e.contract_signature.start_date ? ' (يُشترط من ' + e.contract_signature.start_date + ')' : '')));
+    a.push('الإقرار: ' + (c.consent_ok ? 'تم' : 'لم يتم' + (e.consent && e.consent.start_date ? ' (يُشترط من ' + e.consent.start_date + ')' : '')));
+    return a.join(' — ');
+  }
   function order(d) { var o = [], seen = {}; (d.doctor_contracts || []).forEach(function (c) { if (!seen[c.doctor_key]) { seen[c.doctor_key] = 1; o.push(c.doctor_key); } }); return o; }
   function groupsOf(list) { // active contracts of one doctor split by reference
     var by = {}, o = [];
@@ -49,10 +59,13 @@
       [].forEach.call(rows, function (tr, ri) {
         var c = cs[ri], s = c && map[c.id]; if (!s || !tr.children[5]) return;
         var el = document.createElement('small'); el.className = 'fc-sig-state'; el.setAttribute('data-sig-state', s.state); el.style.display = 'block'; el.textContent = stateText(s);
+        if (s.acceptance_id && s.state === 'accepted') { var v = document.createElement('button'); v.type = 'button'; v.className = 'btn ghost sm'; v.setAttribute('data-fin-action', 'contract-signed-view'); v.setAttribute('data-id', s.acceptance_id); v.textContent = 'عرض العقد الموقّع' + (s.signature_kind ? ' (' + sigWord(s.signature_kind) + ')' : ''); el.appendChild(v); }
         tr.children[5].appendChild(el);
       });
+      var sum = g.querySelector('summary'), ct = compText(key, info.enforcement);
+      if (ct && sum) { var cs0 = document.createElement('small'); cs0.className = 'fc-sig-state fc-comp'; cs0.setAttribute('data-sig-comp', key); cs0.textContent = ct; sum.appendChild(cs0);
+        var cc = info.consents && info.consents[key]; if (cc && cc.acceptance_id) { var vb = document.createElement('button'); vb.type = 'button'; vb.className = 'btn ghost sm fc-sig-btn'; vb.setAttribute('data-fin-action', 'contract-signed-view'); vb.setAttribute('data-id', cc.acceptance_id); vb.textContent = 'عرض الإقرار الموقّع'; sum.appendChild(vb); } }
       if (d.can_create) {
-        var sum = g.querySelector('summary');
         groupsOf(cs).forEach(function (gr) {
           var b = document.createElement('button'); b.type = 'button'; b.className = 'btn ghost sm fc-sig-btn'; b.setAttribute('data-fin-action', 'contract-signature-send'); b.setAttribute('data-id', gr.contracts[0].id);
           b.textContent = 'إرسال للتوقيع' + (groupsOf(cs).length > 1 ? ' (' + gr.reference + ')' : '');
@@ -69,9 +82,64 @@
     var box = document.createElement('div'); box.setAttribute('data-sig-templates', 'yes'); box.className = 'fc-note';
     box.innerHTML = '<h4>نصوص العقد الإلكتروني</h4>' + ['contract', 'consent'].map(function (k) {
       var t = cur[k]; return '<p><strong>' + KIND[k] + ':</strong> ' + (t ? 'المنشور: نسخة ' + t.version + ' — ' + esc(t.title) : 'لا يوجد نص منشور — لا يمكن إرسال عقود للتوقيع قبل نشره') +
-        (d.can_review ? ' <button type="button" class="btn ghost sm" data-fin-action="contract-template-publish" data-id="' + k + '">نشر نص جديد</button>' : '') + '</p>';
+        (d.can_review ? ' <button type="button" class="btn ghost sm" data-fin-action="contract-template-edit" data-id="' + k + '">تعديل النص</button>' : '') + (list.some(function (x) { return x.kind === k && !x.published; }) ? ' <small>(في مسودة غير منشورة)</small>' : '') + '</p>';
     }).join('') + (list.some(function (t) { return t.placeholder && !t.published; }) ? '<p><small>النصوص المبدئية الموجودة مجرد مسودة بانتظار المستشار القانوني ولا تُعرض للأطباء قبل نشرها.</small></p>' : '');
+    var en = info.enforcement || {};
+    box.innerHTML += '<h4>بداية التطبيق (يحددها المالك)</h4><p><small>افتراضيًا لا شيء يمنع أي شغل أو استحقاق. حدّد تاريخ بداية لكل قاعدة عند الجاهزية؛ قبل التاريخ يظهر التنبيه فقط.</small></p>' +
+      [['contract_signature', 'عقد غير موقّع'], ['consent', 'عدم الإقرار بالمسؤولية']].map(function (r) {
+        var e = en[r[0]] || {};
+        return '<p><label>' + r[1] + ' — يُطبَّق من: <input type="date" data-enf-rule="' + r[0] + '" value="' + esc(e.start_date || '') + '"' + (d.can_review ? '' : ' disabled') + '></label> ' +
+          (e.start_date ? (e.active ? '<strong>مُفعّل الآن</strong>' : 'سيبدأ في ' + esc(e.start_date)) : 'غير مفعّل') +
+          (d.can_review ? ' <button type="button" class="btn ghost sm" data-fin-action="contract-enforcement-save" data-id="' + r[0] + '">حفظ</button>' : '') + '</p>';
+      }).join('');
     host.insertBefore(box, host.firstChild);
+  }
+
+  function cmd(action, payload, token) { return window.SSMPDDb.client.rpc('clinic_finance_contract_signature_command', { p_action: action, p_payload: payload, p_token: token }).then(function (r) { if (r.error) throw r.error; return r.data; }); }
+  function newToken() { return (window.crypto && window.crypto.randomUUID) ? window.crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) { var r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 3 | 8)).toString(16); }); }
+  function overlay(html) {
+    var o = document.createElement('div'); o.className = 'modal-backdrop fc-sig-overlay'; o.innerHTML = '<div class="modal" role="dialog" aria-modal="true" dir="rtl" style="max-width:820px;width:96vw;max-height:92vh;overflow:auto">' + html + '</div>';
+    document.body.appendChild(o); o.addEventListener('click', function (e) { if (e.target.closest && e.target.closest('[data-sig-close]')) o.remove(); }); return o;
+  }
+  function clauseRow(text) {
+    return '<div class="fc-clause" data-clause style="display:flex;gap:6px;margin:6px 0"><textarea rows="2" data-clause-text style="flex:1">' + esc(text) + '</textarea>' +
+      '<button type="button" class="btn ghost sm" data-clause-up aria-label="أعلى">↑</button><button type="button" class="btn ghost sm" data-clause-down aria-label="أسفل">↓</button><button type="button" class="btn ghost sm" data-clause-del aria-label="حذف البند">✕</button></div>';
+  }
+  function editor(kind, d) {
+    var list = (info && info.templates || []).filter(function (t) { return t.kind === kind; }), t = list[0] || { title: '', body: '', clauses: [] };
+    var draft = t.id && !t.published ? t : null;
+    var o = overlay('<div class="modal-head"><h2>تعديل ' + KIND[kind] + '</h2><button type="button" class="modal-close" aria-label="إغلاق" data-sig-close>×</button></div>' +
+      '<p class="fc-note">' + (draft ? 'بتعدّل مسودة (نسخة ' + draft.version + ') غير منشورة.' : 'الحفظ هيعمل نسخة جديدة (رقم ' + ((t.version || 0) + 1) + '). كل موافقة بتتسجل برقم النسخة اللي الطبيب شافها، والنسخ القديمة بتفضل محفوظة.') +
+      (kind === 'contract' ? ' تقدر تستخدم في المقدمة والبنود: {{doctor_name}} {{doctor_key}} {{reference}} {{template_version}}. جدول الشروط المالية بيتضاف تلقائيًا بعد البنود.' : '') + '</p>' +
+      '<label class="fc-field">العنوان<input name="title" data-tpl-title value="' + esc(t.title) + '"></label>' +
+      '<label class="fc-field">المقدمة<textarea name="body" rows="5" data-tpl-body>' + esc(t.body) + '</textarea></label>' +
+      '<h4>البنود</h4><div data-clauses>' + (t.clauses || []).map(clauseRow).join('') + '</div>' +
+      '<p><button type="button" class="btn ghost sm" data-clause-add>＋ إضافة بند</button></p><p role="status" data-tpl-msg></p>' +
+      '<div class="fc-actions"><button type="button" class="btn ghost" data-tpl-save="draft">حفظ كمسودة</button> <button type="button" class="btn" data-tpl-save="publish">نشر كنسخة جديدة</button> <button type="button" class="btn ghost" data-sig-close>إلغاء</button></div>');
+    var msg = function (m) { o.querySelector('[data-tpl-msg]').textContent = m || ''; }, armed = false;
+    o.addEventListener('click', function (e) {
+      var b = e.target.closest && e.target.closest('button'); if (!b) return; var row = b.closest('[data-clause]'), box = o.querySelector('[data-clauses]');
+      if (b.hasAttribute('data-clause-add')) { box.insertAdjacentHTML('beforeend', clauseRow('')); return; }
+      if (b.hasAttribute('data-clause-del') && row) { row.remove(); return; }
+      if (b.hasAttribute('data-clause-up') && row && row.previousElementSibling) { box.insertBefore(row, row.previousElementSibling); return; }
+      if (b.hasAttribute('data-clause-down') && row && row.nextElementSibling) { box.insertBefore(row.nextElementSibling, row); return; }
+      var mode = b.getAttribute('data-tpl-save'); if (!mode) return;
+      if (mode === 'publish' && !armed) { armed = true; b.textContent = 'تأكيد النشر (لا يمكن التراجع)'; return; }
+      var payload = { kind: kind, title: o.querySelector('[data-tpl-title]').value, body: o.querySelector('[data-tpl-body]').value, publish: mode === 'publish',
+        clauses: [].map.call(o.querySelectorAll('[data-clause-text]'), function (x) { return x.value; }).filter(function (x) { return x.trim(); }) };
+      if (draft) payload.id = draft.id;
+      cmd('template_save', payload, newToken()).then(function () { o.remove(); return refresh(); }).then(function () { paint(d); }, function (er) { armed = false; msg((er && er.message) || 'تعذر الحفظ'); });
+    });
+    return o;
+  }
+  function signedView(id) {
+    return window.SSMPDDb.client.rpc('clinic_finance_contract_signed_document', { p_acceptance: id }).then(function (r) {
+      if (r.error) throw r.error; var x = r.data;
+      return overlay('<div class="modal-head"><h2>' + (x.kind === 'consent' ? 'الإقرار الموقّع' : 'العقد الموقّع') + ' — ' + esc(x.doctor_key) + '</h2><button type="button" class="modal-close" aria-label="إغلاق" data-sig-close>×</button></div>' +
+        '<div style="white-space:pre-wrap" data-signed-text>' + esc(x.text) + '</div>' +
+        (x.signature_image ? '<p>التوقيع (' + esc(sigWord(x.signature_kind)) + '):</p><img data-signed-image alt="توقيع الطبيب" style="max-width:360px;max-height:160px;background:#fff;border:1px solid #ccc" src="' + esc(x.signature_image) + '">' : '') +
+        '<p><small>نسخة النص ' + esc(x.template_version) + ' — ' + esc(String(x.decided_at).slice(0, 19).replace('T', ' ')) + ' — بصمة النص ' + esc(String(x.text_sha256).slice(0, 16)) + '… — بصمة التوقيع ' + esc(String(x.signature_sha256 || '').slice(0, 16)) + '…</small></p>');
+    });
   }
 
   function panel(tab, d, h) {
@@ -95,12 +163,11 @@
         function (v, k) { return window.SSMPDDb.client.rpc('clinic_finance_contract_signature_command', { p_action: 'send', p_payload: { doctor_key: c.doctor_key, reference: c.reference }, p_token: k }).then(function (r) { if (r.error) throw r.error; return r.data; }); });
       return true;
     }
-    if (action === 'contract-template-publish') {
-      var kind = id;
-      h.modal('نشر ' + KIND[kind] + ' جديد',
-        '<p class="fc-note">النص هيتنشر كنسخة جديدة، وأي طلب توقيع لسه معلّق على نسخة أقدم هيحتاج إعادة إرسال. في نص العقد تقدر تستخدم: {{doctor_name}} {{doctor_key}} {{reference}} {{template_version}}.</p>' +
-        h.field('title', 'عنوان النص') + '<label class="fc-field">النص<textarea name="body" rows="12" required minlength="20"></textarea></label>',
-        function (v, k) { return window.SSMPDDb.client.rpc('clinic_finance_contract_signature_command', { p_action: 'template_publish', p_payload: { kind: kind, title: v.title, body: v.body }, p_token: k }).then(function (r) { if (r.error) throw r.error; return r.data; }); });
+    if (action === 'contract-template-edit') { editor(id, d); return true; }
+    if (action === 'contract-signed-view') { signedView(id).catch(function (e) { h.modal('تعذر العرض', '<p class="fc-note">' + esc((e && e.message) || '') + '</p>', function () { return Promise.resolve(); }); }); return true; }
+    if (action === 'contract-enforcement-save') {
+      var inp = document.querySelector('[data-enf-rule="' + id + '"]'); if (!inp) return true;
+      cmd('set_enforcement', { rule: id, start_date: inp.value || null }, newToken()).then(function () { return refresh(); }).then(function () { paint(d); }, function (e) { h.modal('تعذر الحفظ', '<p class="fc-note">' + esc((e && e.message) || '') + '</p>', function () { return Promise.resolve(); }); });
       return true;
     }
     return prior.act(action, id, d, h);
