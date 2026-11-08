@@ -7,11 +7,12 @@
   if (!U) return;
   var esc = U.escape, PAGE = 25;
   var CONF = { high: ['ثقة عالية', 'll-high'], medium: ['ثقة متوسطة', 'll-med'], low: ['ثقة ضعيفة', 'll-low'], none: ['بلا اقتراح', 'll-none'] };
-  var STATES = [['needs_review', 'تحتاج مراجعة'], ['confirmed', 'مؤكدة'], ['no_match', 'بلا مقابل'], ['all', 'الكل']];
+  var STATES = [['needs_review', 'تحتاج مراجعة'], ['confirmed', 'مؤكدة'], ['no_match', 'بلا مقابل'], ['removed', 'محذوفة'], ['all', 'الكل']];
 
   function money(v) { return v == null || v === '' ? '—' : Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
   function norm(s) { return String(s == null ? '' : s).toLowerCase().replace(/[^a-z0-9؀-ۿ]+/g, ' ').trim(); }
   function stateOf(item) {
+    if (item.removed_at) return 'removed';
     if (item.links.some(function (l) { return l.status === 'confirmed'; })) return 'confirmed';
     if (item.links.some(function (l) { return l.status === 'no_match'; })) return 'no_match';
     return 'needs_review';
@@ -31,7 +32,7 @@
   function view(data, f) {
     var services = {};
     data.services.forEach(function (s) { services[s.id] = s; });
-    var counts = { needs_review: 0, confirmed: 0, no_match: 0, all: data.items.length };
+    var counts = { needs_review: 0, confirmed: 0, no_match: 0, removed: 0, all: data.items.length };
     var q = norm(f.q), rows = data.items.filter(function (it) {
       var st = stateOf(it);
       counts[st]++;
@@ -77,15 +78,20 @@
       var l = it.links.filter(function (x) { return x.status === 'confirmed'; })[0];
       h += candidateHtml(it, l, svc, st) + '<p class="ll-meta">أكد الربط: ' + esc((data.reviewers || {})[l.reviewed_by] || '—') + ' · ' + esc(String(l.reviewed_at || '').slice(0, 10)) + (l.review_note ? ' — ' + esc(l.review_note) : '') + '</p>' +
         '<div class="ll-btns"><button type="button" class="btn ghost" data-ll="reopen" data-item="' + esc(it.id) + '">إعادة فتح الربط</button></div>';
+    } else if (st === 'removed') {
+      h += '<p class="ll-meta">صف محذوف من المراجعة (التكلفة محفوظة) — ' + esc((data.reviewers || {})[it.removed_by] || '—') + ' · ' + esc(String(it.removed_at || '').slice(0, 10)) + ': ' + esc(it.removed_note || '') + '</p>' +
+        '<div class="ll-btns"><button type="button" class="btn ghost" data-ll="restore_row" data-item="' + esc(it.id) + '">استرجاع الصف</button></div>';
     } else if (st === 'no_match') {
       var n = it.links.filter(function (x) { return x.status === 'no_match'; })[0];
       h += '<p class="ll-meta">بلا مقابل في قائمة المركز — ' + esc((data.reviewers || {})[n.reviewed_by] || '—') + ': ' + esc(n.review_note || '') + '</p>' +
-        '<div class="ll-btns"><button type="button" class="btn ghost" data-ll="reopen" data-item="' + esc(it.id) + '">إعادة فتح</button></div>';
+        '<div class="ll-btns"><button type="button" class="btn ghost" data-ll="reopen" data-item="' + esc(it.id) + '">إعادة فتح</button>' +
+        '<button type="button" class="btn ghost" data-ll="remove_row" data-item="' + esc(it.id) + '">حذف الصف</button></div>';
     } else {
       var cands = pending(it);
       h += cands.length ? cands.map(function (l) { return candidateHtml(it, l, svc, st); }).join('') : '<p class="ll-meta">لا يوجد اقتراح تلقائي؛ اختر خدمة يدويًا أو سجّل أنه بلا مقابل.</p>';
       h += '<div class="ll-btns"><button type="button" class="btn ghost" data-ll="choose" data-item="' + esc(it.id) + '">اختيار خدمة أخرى</button>' +
-        '<button type="button" class="btn ghost" data-ll="no_match" data-item="' + esc(it.id) + '">لا يوجد مقابل</button></div>';
+        '<button type="button" class="btn ghost" data-ll="no_match" data-item="' + esc(it.id) + '">لا يوجد مقابل</button>' +
+        '<button type="button" class="btn ghost" data-ll="remove_row" data-item="' + esc(it.id) + '">حذف الصف</button></div>';
       var rej = it.links.filter(function (x) { return x.status === 'rejected'; });
       if (rej.length) {
         h += '<details class="ll-rejected"><summary>اقتراحات مرفوضة (' + rej.length + ')</summary>' + rej.map(function (x) {
@@ -132,7 +138,7 @@
       var ver = data.version || {};
       el.innerHTML = '<section class="wp ll"><header class="wp-head"><div><h1>ربط تحاليل ' + esc(ver.lab_name || 'المعمل الشريك') + ' بقائمة المركز</h1><p>' + esc(ver.source_name || '') + ' — إصدار ' + esc(ver.version) +
         '. الاقتراحات تلقائية للمساعدة فقط؛ لا يُعتمد أي ربط إلا بتأكيد موظف، ويُسجل اسمه.</p></div></header>' +
-        '<div class="ll-stats">' + STATES.map(function (s) { return '<button type="button" class="ll-chip' + (f.state === s[0] ? ' on' : '') + '" data-ll="state" data-value="' + s[0] + '">' + esc(s[1]) + ' <b>' + v.counts[s[0]] + '</b></button>'; }).join('') + '</div>' +
+        '<div class="ll-stats">' + STATES.filter(function (s) { return s[0] !== 'removed' || v.counts.removed > 0; }).map(function (s) { return '<button type="button" class="ll-chip' + (f.state === s[0] ? ' on' : '') + '" data-ll="state" data-value="' + s[0] + '">' + esc(s[1]) + ' <b>' + v.counts[s[0]] + '</b></button>'; }).join('') + '</div>' +
         '<div class="ll-filters"><label class="wp-field">بحث<input type="search" data-ll-q value="' + esc(f.q) + '" placeholder="اسم التحليل أو الخدمة"></label>' +
         '<label class="wp-field">العينة<select data-ll-sample><option value="">الكل</option>' + Object.keys(samples).sort().map(function (s) { return '<option ' + (f.sample === s ? 'selected' : '') + '>' + esc(s) + '</option>'; }).join('') + '</select></label>' +
         '<label class="wp-field">الثقة<select data-ll-conf><option value="">الكل</option>' + ['high', 'medium', 'low', 'none'].map(function (c) { return '<option value="' + c + '" ' + (f.conf === c ? 'selected' : '') + '>' + esc(CONF[c][0]) + '</option>'; }).join('') + '</select></label>' +
@@ -180,6 +186,8 @@
       if (a === 'reject') return noteModal('رفض الاقتراح', 'سجّل سبب رفض هذا الاقتراح (مثلًا: عينة مختلفة).', 'سبب الرفض', function (note) { return run('reject', { item_id: b.dataset.item, service_id: b.dataset.service, note: note }); });
       if (a === 'restore') return run('restore', { item_id: b.dataset.item, service_id: b.dataset.service });
       if (a === 'no_match') return noteModal('لا يوجد مقابل', 'هذا التحليل غير موجود في قائمة المركز: اكتب السبب.', 'السبب', function (note) { return run('no_match', { item_id: b.dataset.item, note: note }); });
+      if (a === 'remove_row') return noteModal('حذف الصف من المراجعة', 'يُخفى هذا التحليل من قوائم المراجعة لأنه بلا مقابل في المركز. تكلفة المعمل تبقى محفوظة ويمكن استرجاع الصف لاحقًا.', 'سبب الحذف', function (note) { return run('remove_row', { item_id: b.dataset.item, note: note }); });
+      if (a === 'restore_row') return run('restore_row', { item_id: b.dataset.item });
       if (a === 'reopen') return noteModal('إعادة فتح القرار', 'سيعود التحليل إلى «تحتاج مراجعة».', 'سبب إعادة الفتح', function (note) { return run('reopen', { item_id: b.dataset.item, note: note }); });
       if (a === 'choose') return chooseModal(item);
       if (a === 'cost') return U.modal('تسجيل تكلفة المعمل — ' + item.test_name, U.field('cost', 'التكلفة (جنيه)', 'number', '', 'required min="0" step="0.01"') + U.field('note', 'مصدر الرقم', 'text', '', 'required minlength="3"'), function (v) { return run('set_cost', { item_id: item.id, cost: Number(v.cost), note: v.note }); });
