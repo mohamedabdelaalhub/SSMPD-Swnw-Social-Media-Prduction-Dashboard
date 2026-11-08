@@ -34,6 +34,7 @@
     loading = Promise.all([call('financeDoctorAccounts'), call('financeHrStaff')]).then(function (r) {
       var next = { acc: r[0], hr: r[1] }, changed = !cache || sig(next) !== sig(cache);
       cache = next; cacheAt = Date.now(); loading = false;
+      paintBadges();
       return { changed: changed };
     }, function () { loading = false; return { changed: false }; });
     return loading;
@@ -43,6 +44,39 @@
     if (!force && cache && Date.now() - cacheAt < TTL) return;
     fetchAll().then(function (r) { if (r.changed || force) redraw(tabId); });
   }
+
+  /* ---- notification badge: number of HR doctors without a contract.
+     Loaded once when the finance entry first appears, then at most once per hour (HOUR timer below, nothing shorter, no realtime), and re-read after a contract is created (see act). */
+  var HOUR = 60 * 60 * 1000, started = false;
+  var BADGE_HOSTS = '#tabs-bar [data-tab="accounting"],[data-goto="accounting"],[data-fc-group="dues"],[data-fc-tab="doctor-accounts"]';
+  function needCount() { return cache && cache.hr.ok ? doctorsNeedingContract().length : 0; }
+  function paintBadges() {
+    var n = needCount(), hosts = document.querySelectorAll(BADGE_HOSTS);
+    [].forEach.call(hosts, function (host) {
+      var b = host.querySelector(':scope > [data-da-badge]');
+      if (!n) { if (b) b.remove(); return; }
+      if (!b) {
+        b = document.createElement('span'); b.setAttribute('data-da-badge', '');
+        b.setAttribute('style', 'display:inline-block;background:#D0402A;color:#fff;border-radius:10px;font-size:11px;line-height:1.4;padding:0 6px;margin-inline-start:6px;font-weight:600');
+        host.appendChild(b);
+      }
+      var t = n > 99 ? '99+' : String(n), label = n + ' طبيب في الموارد البشرية ملهمش عقد';
+      if (b.textContent !== t) b.textContent = t;
+      if (b.getAttribute('title') !== label) { b.setAttribute('title', label); b.setAttribute('aria-label', label); }
+    });
+  }
+  var painting = false;
+  function onDomChange() {
+    if (painting) return; painting = true;
+    Promise.resolve().then(function () {
+      painting = false;
+      if (!started && document.querySelector('#tabs-bar [data-tab="accounting"],[data-goto="accounting"]')) { started = true; fetchAll(); }
+      paintBadges();
+    });
+  }
+  if (typeof MutationObserver === 'function' && document.body) new MutationObserver(onDomChange).observe(document.body, { childList: true, subtree: true });
+  setInterval(function () { if (started && document.querySelector('#tabs-bar [data-tab="accounting"],[data-goto="accounting"]')) fetchAll(); }, HOUR);
+  onDomChange();
 
   function doctorsNeedingContract() {
     if (!cache || !cache.hr.ok) return [];
@@ -82,7 +116,7 @@
     }).join(' ') + '<input type="search" class="fc-name-filter" data-da-name placeholder="بحث باسم الدكتور أو كوده" value="' + e(nameFilter) + '"></div>';
     html += '<div class="fc-da-table">' + (rows.length ? accountsRows(rows, h) : '<p>مفيش أطباء ليهم حساب لسه.</p>') + '</div>';
     html += needsHtml(d, h);
-    setTimeout(applyFilter, 0);
+    Promise.resolve().then(applyFilter);
     return html + '</div>';
   }
 

@@ -115,5 +115,30 @@ const { JSDOM } = require('jsdom'), fs = require('fs'), assert = require('node:a
   assert(box2.textContent.includes('تحتاج تطبيق تحديث قاعدة البيانات'), 'clear message when the RPC is missing'); assert(!box2.querySelector('.fc-da-table'));
   w2.SSMPDFinanceControls.act('doctor-contract', '', data, h2); await tick(); const f2 = d2.querySelector('.fc-modal form');
   assert.equal(f2.elements.doctor_key.readOnly, false, 'manual entry still possible'); assert(f2.textContent.includes('تعذر تحميل قائمة الموارد البشرية'));
+
+  // ---- notification badge: count of HR doctors without a contract; loaded once, refreshed at most hourly (and after a contract is created); NO short timers anywhere
+  const src = fs.readFileSync('assets/js/finance-doctor-accounts.js', 'utf8');
+  assert(!/setTimeout/.test(src), 'no setTimeout in the module'); const ivs = src.match(/setInterval\([\s\S]*?\},\s*([A-Za-z0-9_* ]+)\)/g) || []; assert.equal(ivs.length, 1, 'exactly one interval'); assert(/HOUR\)/.test(ivs[0]) && /HOUR\s*=\s*60\s*\*\s*60\s*\*\s*1000/.test(src), 'the interval is the 60-minute constant');
+  const dom3 = new JSDOM('<body><div id="tabs-bar"><button class="tab-btn" data-tab="accounting">الحسابات</button></div><button class="ud-item" data-goto="accounting">الحسابات</button><button data-fc-group="dues">الصرف</button></body>', { url: 'https://test.invalid', runScripts: 'outside-only' }), w3 = dom3.window, d3 = w3.document;
+  const timers = [], intervals = []; const st0 = w3.setTimeout.bind(w3);
+  w3.setTimeout = (f, ms, ...a) => { timers.push(ms || 0); return st0(f, ms, ...a); }; w3.setInterval = (f, ms) => { timers.push(ms); intervals.push(f); return 1; };
+  let people3 = JSON.parse(JSON.stringify(PEOPLE)), hr3 = 0;
+  w3.SSMPDDb = { financeDoctorAccounts: async () => ACC, financeHrStaff: async () => { hr3++; return people3; }, financeContractServices: async () => [], financeContractDepartments: async () => [], financeDoctorCommand: async () => ({}), financeLinesEnabled: async () => true };
+  w3.eval(fs.readFileSync('assets/js/finance-controls.js', 'utf8')); w3.eval(fs.readFileSync('assets/js/finance-doctors.js', 'utf8')); w3.eval(src);
+  await tick();
+  const bad = () => [...d3.querySelectorAll('[data-da-badge]')].map(b => b.textContent);
+  assert.deepEqual(bad(), ['2', '2', '2'], 'badge on the top menu entry, the dropdown entry and the dues group'); assert.equal(hr3, 1, 'loaded once when the finance entry appears');
+  for (let i = 0; i < 5; i++) { d3.body.append(d3.createElement('div')); await tick(); } assert.equal(hr3, 1, 'DOM changes never trigger another request');
+  assert(timers.every(ms => ms >= 3600000), 'every timer is >= 60 minutes: ' + timers.join(',')); assert.equal(intervals.length, 1);
+  d3.querySelector('[data-fc-group="dues"]').remove(); const card = d3.createElement('button'); card.setAttribute('data-fc-tab', 'doctor-accounts'); card.textContent = 'حساب الأطباء'; d3.body.append(card); await tick(); assert.equal(card.querySelector('[data-da-badge]').textContent, '2', 'badge on the new tab card too, re-added when the workspace re-draws');
+  // hourly refresh picks up changes
+  people3.people[0].needs_contract = false; await intervals[0](); await tick(); assert.equal(hr3, 2); assert.deepEqual([...d3.querySelectorAll('[data-da-badge]')].map(b => b.textContent), ['1', '1', '1']);
+  // creating a contract re-reads right after (next panel draw), not on a timer
+  const h3 = { esc, money: v => Number(v || 0).toFixed(2), btn, table, field, select, stamp: x => x, modal: (t, b) => { const fm = d3.createElement('form'); fm.innerHTML = b; const wr = d3.createElement('div'); wr.className = 'fc-modal'; wr.append(fm); d3.body.append(wr); } };
+  w3.SSMPDFinanceCash = { navigate: () => {} };
+  w3.SSMPDFinanceControls.act('doctor-contract', '', data, h3); d3.querySelectorAll('.fc-modal').forEach(x => x.remove()); people3.people[3].needs_contract = false; w3.SSMPDFinanceControls.panel('doctors', data, h3); await tick(); await tick();
+  assert.equal(hr3, 3, 'one re-read after a contract was started/saved'); assert.deepEqual(bad(), [], 'both remaining doctors now have contracts -> no badge');
+  people3.people[0].needs_contract = true; await intervals[0](); await tick(); assert.deepEqual(bad(), ['1', '1', '1'], 'comes back on the next hourly read');
+  [w, w2, w3].forEach(x => x.close());
   console.log('PASS doctor accounts DOM: tab rows/cards/filters, statement reuse, no re-draw loop, needs-contract list, HR picker prefill + manual fallback, clean submit payload, RPC-missing fallbacks');
-})().catch(e => { console.error(e); process.exitCode = 1; });
+})().then(() => process.exit(0), e => { console.error(e); process.exit(1); }); // the module's hourly interval is real inside jsdom: exit explicitly
