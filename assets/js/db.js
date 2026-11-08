@@ -1352,6 +1352,8 @@
     financeDoctorCommand: function(action,payload,token){return handle(client.rpc('clinic_finance_doctor_command',{p_action:action,p_payload:payload,p_token:token}));},
     financeDoctorStatement: function(doctorKey,from,to){return handle(client.rpc('clinic_finance_doctor_statement',{p_doctor_key:doctorKey,p_from:from,p_to:to}));},
     financeDoctorStatementDetail: function(doctorKey,from,to){return handle(client.rpc('clinic_finance_doctor_statement_detail',{p_doctor_key:doctorKey,p_from:from,p_to:to}));},
+    financeDoctorDues: function(doctorKey,from,to){return handle(client.rpc('clinic_finance_doctor_dues',{p_doctor_key:doctorKey,p_from:from,p_to:to}));},
+    financePayoutInvoices: function(doctorKey,invoiceIds,taxPct,withholdingPct,method,shiftId,reference,from,to,token){return handle(client.rpc('clinic_finance_doctor_payout_invoices',{p_doctor_key:doctorKey,p_invoice_ids:invoiceIds,p_tax_pct:taxPct,p_withholding_pct:withholdingPct,p_method:method,p_shift_id:shiftId,p_reference:reference,p_from:from,p_to:to,p_token:token}));},
     financeDoctorAccounts: function(){return handle(client.rpc('clinic_finance_doctor_accounts'));},
     financeHrStaff: function(){return handle(client.rpc('clinic_finance_hr_staff'));},
     financeChannelCommand: function(action,payload,token){return handle(client.rpc('clinic_finance_channel_command',{p_action:action,p_payload:payload,p_token:token}));},
