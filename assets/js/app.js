@@ -123,7 +123,7 @@
         action = window.SSMPDAuth.signIn(email, pass);
       }
 
-      action.then(function () { try{sessionStorage.removeItem(ACTIVE_TAB_KEY);}catch(e){} return bootAfterAuth(); })
+      action.then(function () { try{sessionStorage.removeItem(ACTIVE_TAB_KEY);}catch(e){} if(window.SSMPDNavState)window.SSMPDNavState.clear(); return bootAfterAuth(); })
         .catch(function (err) {
           showAuthScreen(mode, translateAuthError(err));
         });
@@ -266,6 +266,7 @@
       if(window.SSMPDDashboardHelp)window.SSMPDDashboardHelp.dispose();
       if(window.SSMPDPersonalHome)window.SSMPDPersonalHome.stop();
       try { sessionStorage.removeItem(ACTIVE_TAB_KEY); } catch (e) {}
+      if(window.SSMPDNavState)window.SSMPDNavState.clear();
       if (usageHeartbeatTimer) { clearInterval(usageHeartbeatTimer); usageHeartbeatTimer = null; }
       var finish = function () { window.SSMPDAuth.signOut().then(function () { location.reload(); }); };
       if (usageSessionId) { window.SSMPDDb.endLoginSession(usageSessionId).then(finish, finish); } else { finish(); }
