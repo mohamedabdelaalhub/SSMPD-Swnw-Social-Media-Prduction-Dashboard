@@ -12,7 +12,7 @@
 -- (2) texts are editable by the owner: title + intro + a list of clauses (add/remove/reorder), every save is a new VERSION, acceptances record the version + sha256.
 -- (3) accepting needs a signature: drawn (canvas PNG) or uploaded image (PNG/JPEG), stored with the acceptance (+ its sha256) and shown on the signed document.
 -- ADDITIVE: 4 tables, helper + public functions. No existing table/function is touched.
--- Rollback: supabase/rollbacks/20261108280000_online_contracts.rollback.sql
+-- Rollback: supabase/rollbacks/20261109110000_online_contracts.rollback.sql
 begin;
 
 do $$ begin

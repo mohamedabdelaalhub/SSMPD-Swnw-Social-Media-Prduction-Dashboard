@@ -1,4 +1,4 @@
--- Rollback of 20261108280000_online_contracts.sql. Refused once any signature request or acceptance exists (those are signed records; export them first, then drop manually).
+-- Rollback of 20261109110000_online_contracts.sql. Refused once any signature request or acceptance exists (those are signed records; export them first, then drop manually).
 begin;
 do $$ begin
   if exists (select 1 from clinic_finance.acceptances) or exists (select 1 from clinic_finance.signature_requests) then

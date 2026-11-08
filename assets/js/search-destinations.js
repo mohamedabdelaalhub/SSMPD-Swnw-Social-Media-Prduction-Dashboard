@@ -6,6 +6,7 @@ var features=[
  ['ledger-manual','الأرصدة والتصحيحات','قيد مسودة افتتاحي تصحيح عكس تعديل حذف journal draft correction','cash','manual'],
  ['ledger-trial','القيود وميزان المراجعة','قيود ميزان مراجعة ledger trial balance','cash','ledger'],
  ['doctor-contracts','الأطباء والأتعاب','عقود الأطباء اعتماد مراجعة عقد طبيب دكتور دكاترة نسب اتعاب doctors contracts','cash','doctors'],
+ ['doctor-accounts','حساب الأطباء','حساب الأطباء رصيد الدكتور مستحق كشف حساب دكتور دكاترة مستحقات الأطباء doctor accounts statement','cash','doctor-accounts'],
  ['pricing-services','الخدمات والتسعير','تسعير خدمة اسعار سعر تكلفة services pricing prices','pricing','services'],
  ['pricing-packages','الباكجز','باقة باقات باكج باكدج packages bundles','pricing','packages'],
  ['pricing-supplies','المستلزمات والتسعير','مستلزم مستلزمات تكلفة supplies pricing','pricing','supplies'],

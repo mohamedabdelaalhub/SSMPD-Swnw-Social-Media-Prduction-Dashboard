@@ -36,7 +36,7 @@ const root = path.resolve('.'), id = n => '40000000-0000-4000-8000-' + String(n)
   const approve = async cid => { await as(3); await fin('doctor_command', ['contract_review', { id: cid, approve: true, note: 'اعتماد اختبار' }, key()]); };
 
   // ---- APPLY (+ privileges as production: authenticated only, no anon)
-  await db.exec('reset role'); await db.exec(mig('20261108280000_online_contracts.sql'));
+  await db.exec('reset role'); await db.exec(mig('20261109110000_online_contracts.sql'));
   const tmpls = await owner('select kind,version,published,placeholder from clinic_finance.contract_templates order by kind');
   assert.deepEqual(tmpls.map(t => [t.kind, t.version, t.published, t.placeholder]), [['consent', 1, false, true], ['contract', 1, false, true]], 'seeded placeholders are unpublished');
   assert.deepEqual((await owner('select rule, start_date from clinic_finance.contract_settings order by rule')).map(r => [r.rule, r.start_date]), [['consent', null], ['contract_signature', null]], 'both rules are OFF by default');
@@ -183,12 +183,12 @@ const root = path.resolve('.'), id = n => '40000000-0000-4000-8000-' + String(n)
   // ---- void + rollback
   await as(2); await fin('contract_signature_command', ['void', { id: r4, note: 'غلط' }, key()]);
   await db.exec('reset role');
-  await fails(db.exec(fs.readFileSync('supabase/rollbacks/20261108280000_online_contracts.rollback.sql', 'utf8')), /منفصل|مسجّلة/);
+  await fails(db.exec(fs.readFileSync('supabase/rollbacks/20261109110000_online_contracts.rollback.sql', 'utf8')), /منفصل|مسجّلة/);
   await db.exec('rollback; delete from clinic_finance.acceptances; delete from clinic_finance.signature_requests;');
-  await db.exec(fs.readFileSync('supabase/rollbacks/20261108280000_online_contracts.rollback.sql', 'utf8'));
+  await db.exec(fs.readFileSync('supabase/rollbacks/20261109110000_online_contracts.rollback.sql', 'utf8'));
   assert.equal((await owner("select to_regclass('clinic_finance.acceptances') t"))[0].t, null);
   assert.equal((await owner("select count(*)::int n from pg_proc p join pg_namespace n on n.oid=p.pronamespace where p.proname in ('doctor_contract_inbox','doctor_contract_decide','doctor_consent_accept','contract_render','request_stale','clinic_finance_contract_signature_status')"))[0].n, 0, 'rollback removes all functions');
-  await db.exec(mig('20261108280000_online_contracts.sql'));  // re-applies cleanly after rollback
+  await db.exec(mig('20261109110000_online_contracts.sql'));  // re-applies cleanly after rollback
   console.log('online-contracts-sql: OK');
   process.exit(0);
 })().catch(e => { console.error(e); process.exit(1); });

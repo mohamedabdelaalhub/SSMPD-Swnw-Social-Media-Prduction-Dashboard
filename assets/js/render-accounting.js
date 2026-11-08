@@ -3,7 +3,8 @@
   "use strict";
 
   var state = { subTab: "pricing", section: null, serviceFilter: "all", supplies: [], services: [], packages: [], loaded: false, pendingRepair: null };
-  var me = null;
+  var me = null, navRestored = false;
+  function saveNav(){if(window.SSMPDNavState)window.SSMPDNavState.set('accounting',{sub:state.subTab,section:state.section||''});}
 
   function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
   function num(v) { var n = Number(v); return isFinite(n) ? n : 0; }
@@ -94,6 +95,8 @@
       { key: "cash", label: "الخزينة والدورة المالية" },
       { key: "inventory", label: "المخازن والجرد" }
     ].filter(function(s) { return s.key === "inventory" ? canInventory : canFinance; });
+    if(!navRestored){navRestored=true;var ns=window.SSMPDNavState&&window.SSMPDNavState.once('accounting');if(ns&&subs.some(function(s){return s.key===ns.sub;})&&!state.pendingRepair){state.subTab=ns.sub;state.section=catalogSections.some(function(s){return s.key===ns.section;})?ns.section:null;}}
+    saveNav();
     var html = '<div class="tabs acc-catalog-nav" style="margin-bottom:16px;">' +
       subs.map(function (s) {
         return '<button class="tab-btn ' + (state.subTab === s.key ? "active" : "") + '" data-sub="' + s.key + '">' + s.label + '</button>';
@@ -133,6 +136,7 @@
     }).catch(function(){if(panel.isConnected)panel.textContent='تعذر تحميل مراجعة إعدادات الحجز. أعد فتح القسم للمحاولة.';});
   }
   function renderSub(subView, container) {
+    saveNav();
     var section = catalogSections.filter(function (s) { return s.key === state.section; })[0];
     if (!section) {
       subView.innerHTML = '<div class="fc-group-intro"><h4>التسعير والخدمات والباكجز</h4><p>اختار القسم لعرض التفاصيل وإدارة الأسعار.</p></div><div class="fc-section-grid acc-catalog-grid">' +
@@ -389,7 +393,7 @@
       var scopes = {service:'الخدمة دون بنود المستلزمات',invoice:'إجمالي الفاتورة'};
       var deductions = {none:'بدون خصم مستلزمات',cost:'خصم تكلفة المستلزمات',sale:'خصم سعر بيع المستلزمات'};
       var deptScope = c.scope_kind === 'department' || String(c.service_scope||'').indexOf('قسم:') === 0, deptName = deptScope ? String(c.service_scope).slice(4) : '';
-      var rows = [['الطبيب',c.doctor_name],['كود الطبيب',c.doctor_key],[deptScope ? 'نطاق العقد' : 'الخدمة في العقد', deptScope ? 'كل خدمات قسم '+deptName : c.service_scope],['نسبة الطبيب',String(c.rate)+'%'],['أساس الاستحقاق',basis[c.basis]],['وعاء النسبة',scopes[c.base_scope]],['خصم المستلزمات',deductions[c.deduction]],['فترة السريان',c.valid_from+' — '+c.valid_to],['مرجع العقد',c.reference]];
+      var rows = [['الطبيب',c.doctor_name],['كود الطبيب',c.doctor_key],[deptScope ? 'نطاق العقد' : 'الخدمة في العقد', deptScope ? 'كل خدمات قسم '+deptName : c.service_scope],(c.fee_kind==='fixed'?['مبلغ ثابت لكل خدمة',String(c.fixed_amount)+' ج']:['نسبة الطبيب',String(c.rate)+'%']),['أساس الاستحقاق',basis[c.basis]],['وعاء النسبة',scopes[c.base_scope]],['خصم المستلزمات',deductions[c.deduction]],['فترة السريان',c.valid_from+' — '+c.valid_to],['مرجع العقد',c.reference]];
       contractDetail.innerHTML = '<p>بيانات معتمدة للعرض، تتحدث تلقائيًا باختيار العقد. نسبة الطبيب تختلف عن هامش ربح المركز.</p><dl>'+rows.map(function(r){return '<dt>'+esc(r[0])+'</dt><dd style="margin-inline-start:0;overflow-wrap:anywhere">'+esc(r[1])+'</dd>';}).join('')+'</dl>';
       var codeInput=backdrop.querySelector('#sv-code');
       if(!service.id && autoContractCode !== null && codeInput.value === autoContractCode)codeInput.value='';
@@ -420,7 +424,7 @@
       var retry=backdrop.querySelector('#sv-contract-retry');retry.hidden=true;contractSelect.disabled=true;
       Promise.resolve().then(function(){return window.SSMPDDb.pricingDoctorContracts();}).then(function(result){
         if(!backdrop.isConnected)return;contracts=result.data||result||[];
-        contractSelect.innerHTML='<option value="">اختياري — اختر الطبيب وعقد الخدمة</option>'+contracts.map(function(c){return '<option value="'+esc(c.id)+'">'+esc(c.doctor_name+' — '+(String(c.service_scope||'').indexOf('قسم:')===0?'كل خدمات قسم '+String(c.service_scope).slice(4):c.service_scope)+' — '+c.rate+'%')+'</option>';}).join('');
+        contractSelect.innerHTML='<option value="">اختياري — اختر الطبيب وعقد الخدمة</option>'+contracts.map(function(c){return '<option value="'+esc(c.id)+'">'+esc(c.doctor_name+' — '+(String(c.service_scope||'').indexOf('قسم:')===0?'كل خدمات قسم '+String(c.service_scope).slice(4):c.service_scope)+' — '+(c.fee_kind==='fixed'?c.fixed_amount+' ج ثابت':c.rate+'%'))+'</option>';}).join('');
         contractSelect.disabled=false;
         var related=contracts.filter(function(c){return service.id && (c.service_scope===service.booking_code||c.service_scope===service.name);});
         var deptRelated=contracts.filter(function(c){var dep=String(service.booking_department||service.category||'').trim();return service.id && dep && c.service_scope==='قسم:'+dep;});
@@ -638,7 +642,7 @@
     };
   }
 
-  window.SSMPDRenderAccounting = { render: render, openSetupRepair: function(section,name){if(!['supplies','services','packages'].includes(section))return;state.subTab='pricing';state.section=section;state.loaded=false;state.pendingRepair={section:section,name:name||null};}, selectSection: function(sub,section){state.pendingRepair=null;state.subTab=sub;state.section=section||null;state.loaded=false;}, openCash: function(section,container) { state.subTab = "cash"; if(window.SSMPDFinanceCash.openSection)window.SSMPDFinanceCash.openSection(section);render(container); }, openInventory: function() { state.subTab = "inventory"; } };
+  window.SSMPDRenderAccounting = { render: render, openSetupRepair: function(section,name){if(!['supplies','services','packages'].includes(section))return;navRestored=true;state.subTab='pricing';state.section=section;state.loaded=false;state.pendingRepair={section:section,name:name||null};}, selectSection: function(sub,section){navRestored=true;state.pendingRepair=null;state.subTab=sub;state.section=section||null;state.loaded=false;}, openCash: function(section,container) { navRestored=true;state.subTab = "cash"; if(window.SSMPDFinanceCash.openSection)window.SSMPDFinanceCash.openSection(section);render(container); }, openInventory: function() { navRestored=true;state.subTab = "inventory"; } };
 })();
 
 
