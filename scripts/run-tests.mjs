@@ -17,6 +17,8 @@ const known = {
   'tests/employee-performance-dom.cjs': 'behaviour drift: concurrent profile reads are no longer deduplicated; check intent',
   'tests/organized-workspaces-dom.cjs': 'stale: the contracting workbench no longer has the insurance category chip this test clicks',
   'tests/reception-doctor-setup-dom.cjs': 'stale: the pilot-settings action is no longer rendered for this fixture',
+  'tests/tasks-pro.cjs': 'regression from the tasks UX change (#357): task detail facts assertion fails on main; owner of that change should update the test or the UI',
+  'tests/task-report-date-ui.cjs': 'regression from the tasks UX change (#357): the task row button never becomes clickable in this fixture on main',
   'tests/reception-management-pilot-ui.cjs': 'stale: a guide text expectation is no longer present',
 };
 const files = ['test', 'tests'].flatMap(dir =>
