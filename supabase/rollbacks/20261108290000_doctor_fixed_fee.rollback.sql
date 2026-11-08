@@ -1,4 +1,4 @@
--- Rollback of 20261108270000_doctor_fixed_fee.sql: restores bill / doctor_sync / clinic_finance_doctor_command exactly as they were (they were only moved/renamed),
+-- Rollback of 20261108290000_doctor_fixed_fee.sql: restores bill / doctor_sync / clinic_finance_doctor_command exactly as they were (they were only moved/renamed),
 -- the statement and doctor_held_fees texts, and removes the fixed-fee columns and the extra-performer tables.
 -- REFUSED while anything still depends on the new features (a percent-only function would silently recompute a fixed fee as 0 and reverse the accrual):
 --   active/pending fixed contracts, invoices allocated to a fixed contract, or invoices with extra performers. Reject/expire those first.

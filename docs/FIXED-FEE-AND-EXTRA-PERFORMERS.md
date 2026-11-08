@@ -1,6 +1,6 @@
 # Fixed-amount doctor fees + a second performer on one invoice (2026-11-08)
 
-Migration `supabase/migrations/20261108270000_doctor_fixed_fee.sql` (+ `supabase/rollbacks/20261108270000_doctor_fixed_fee.rollback.sql`). **Not applied to production.** Additive. Tests: `tests/doctor-fixed-fee-sql.cjs`, `tests/doctor-fixed-fee-dom.cjs`.
+Migration `supabase/migrations/20261108290000_doctor_fixed_fee.sql` (+ `supabase/rollbacks/20261108290000_doctor_fixed_fee.rollback.sql`). **Not applied to production.** Additive. Tests: `tests/doctor-fixed-fee-sql.cjs`, `tests/doctor-fixed-fee-dom.cjs`.
 
 ## What the owner asked
 

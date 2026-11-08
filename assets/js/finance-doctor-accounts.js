@@ -91,11 +91,11 @@
       })) + '</div>';
   }
 
-  function accountsRows(rows, h) {
+  function accountsRows(rows, h, d) {
     var e = h.esc, b = h.btn, m = h.money;
     return h.table(['الطبيب', 'الكود', 'الرصيد', 'مستحق للصرف الآن', 'بانتظار التحصيل', 'طلبات صرف معلّقة', 'المصروف', 'الإجراء'], rows.map(function (r) {
       var wait = m(r.waiting) + (Number(r.waiting_invoices) ? ' <small>(' + Number(r.waiting_invoices) + ' فاتورة)</small>' : '');
-      return [b('doctor-statement', r.doctor_key, r.doctor_name || r.doctor_key) + (r.has_active_contract ? '' : ' <small>بدون عقد معتمد</small>'), e(r.doctor_key), m(r.balance), '<strong>' + m(r.payable_now) + '</strong>', wait, m(r.pending_payouts), m(r.paid_out), b('doctor-statement', r.doctor_key, 'فتح الحساب')];
+      return [b('doctor-statement', r.doctor_key, r.doctor_name || r.doctor_key) + (r.has_active_contract ? '' : ' <small>بدون عقد معتمد</small>'), e(r.doctor_key), m(r.balance), '<strong>' + m(r.payable_now) + '</strong>', wait, m(r.pending_payouts), m(r.paid_out), b('doctor-statement', r.doctor_key, 'فتح الحساب') + (d && d.can_create ? ' ' + b('doctor-dues', r.doctor_key, 'صرف بالفواتير') : '')];
     }));
   }
   function accountsPanel(d, h) {
@@ -114,7 +114,7 @@
     html += '<div class="fc-filter-bar">' + [['all', 'الكل (' + rows.length + ')'], ['owed', 'ليهم مستحق الآن (' + owed + ')'], ['waiting', 'عندهم أتعاب بانتظار التحصيل']].map(function (c) {
       return '<button type="button" class="btn ghost sm fc-chip' + (filterKey === c[0] ? ' active' : '') + '" data-da-filter="' + c[0] + '">' + e(c[1]) + '</button>';
     }).join(' ') + '<input type="search" class="fc-name-filter" data-da-name placeholder="بحث باسم الدكتور أو كوده" value="' + e(nameFilter) + '"></div>';
-    html += '<div class="fc-da-table">' + (rows.length ? accountsRows(rows, h) : '<p>مفيش أطباء ليهم حساب لسه.</p>') + '</div>';
+    html += '<div class="fc-da-table">' + (rows.length ? accountsRows(rows, h, d) : '<p>مفيش أطباء ليهم حساب لسه.</p>') + '</div>';
     html += needsHtml(d, h);
     Promise.resolve().then(applyFilter);
     return html + '</div>';
