@@ -1354,6 +1354,8 @@
     financeDoctorStatementDetail: function(doctorKey,from,to){return handle(client.rpc('clinic_finance_doctor_statement_detail',{p_doctor_key:doctorKey,p_from:from,p_to:to}));},
     financeDoctorDues: function(doctorKey,from,to){return handle(client.rpc('clinic_finance_doctor_dues',{p_doctor_key:doctorKey,p_from:from,p_to:to}));},
     financePayoutInvoices: function(doctorKey,invoiceIds,taxPct,withholdingPct,method,shiftId,reference,from,to,token){return handle(client.rpc('clinic_finance_doctor_payout_invoices',{p_doctor_key:doctorKey,p_invoice_ids:invoiceIds,p_tax_pct:taxPct,p_withholding_pct:withholdingPct,p_method:method,p_shift_id:shiftId,p_reference:reference,p_from:from,p_to:to,p_token:token}));},
+    financeTaxMonth: function(month,type){return handle(client.rpc('clinic_finance_tax_month',{p_month:month,p_type:type||'salary_income'}));},
+    financeTaxPay: function(month,type,amount,method,shiftId,reference,note,token){return handle(client.rpc('clinic_finance_tax_pay',{p_month:month,p_type:type||'salary_income',p_amount:amount,p_method:method,p_shift:shiftId||null,p_reference:reference,p_note:note,p_token:token}));},
     financeInsuranceMonth: function(month){return handle(client.rpc('clinic_finance_insurance_month',{p_month:month}));},
     financeInsurancePay: function(month,amount,method,shiftId,reference,note,token){return handle(client.rpc('clinic_finance_insurance_pay',{p_month:month,p_amount:amount,p_method:method,p_shift:shiftId||null,p_reference:reference,p_note:note,p_token:token}));},
     financeDoctorAccounts: function(){return handle(client.rpc('clinic_finance_doctor_accounts'));},
