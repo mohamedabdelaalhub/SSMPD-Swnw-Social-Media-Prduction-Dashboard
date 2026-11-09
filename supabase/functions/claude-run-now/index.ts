@@ -1,13 +1,15 @@
 // «نفّذ الآن» — يشغّل مهمة Claude Creative (طابور التصميم) فورًا بدل انتظار ميعادها المجدول.
 // بيتنادى من الداشبورد بعد تسجيل طلب في claude_design_requests. لا يكتب أي حاجة في القاعدة.
 // الأسرار المطلوبة (Supabase → Edge Functions → Secrets):
-//   CLAUDE_DESIGN_QUEUE_FIRE_URL   = رابط الـ API trigger بتاع المهمة (https://api.anthropic.com/v1/claude_code/routines/trig_…/fire)
+//   CLAUDE_DESIGN_QUEUE_FIRE_URL   = (اختياري) رابط الـ API trigger لو مختلف عن الافتراضي تحت
 //   CLAUDE_DESIGN_QUEUE_FIRE_TOKEN = التوكن اللي بيتولّد مرة واحدة من صفحة المهمة (sk-ant-oat01-…)
 // لو الأسرار مش موجودة بيرجّع not_configured والطلب يفضل في الطابور للميعاد المجدول.
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
 const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, apikey, content-type, x-client-info', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Cache-Control': 'no-store' };
 const reply = (body: unknown, status = 200) => Response.json(body, { status, headers: cors });
 // تشغيلة واحدة بتاخد كل الطلبات المعلّقة، فمفيش داعي لأكتر من تشغيلة كل دقيقتين.
+// رابط مهمة «SSMPD Claude design queue» — مش سر (التوكن هو السر). السر CLAUDE_DESIGN_QUEUE_FIRE_URL بيغيّره لو المهمة اتغيّرت.
+const DEFAULT_FIRE_URL = 'https://api.anthropic.com/v1/claude_code/routines/trig_01SAEQfiumGsNeV3KwwbSpC7/fire';
 let lastFiredAt = 0;
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
@@ -23,7 +25,7 @@ Deno.serve(async (req) => {
     const pending = await db.from('claude_design_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending');
     if (pending.error) return reply({ ok: false, reason: 'lookup_failed' }, 500);
     if (!pending.count) return reply({ ok: false, reason: 'no_pending' });
-    const url = Deno.env.get('CLAUDE_DESIGN_QUEUE_FIRE_URL') || '', secret = Deno.env.get('CLAUDE_DESIGN_QUEUE_FIRE_TOKEN') || '';
+    const url = Deno.env.get('CLAUDE_DESIGN_QUEUE_FIRE_URL') || DEFAULT_FIRE_URL, secret = Deno.env.get('CLAUDE_DESIGN_QUEUE_FIRE_TOKEN') || '';
     if (!/^https:\/\/api\.anthropic\.com\/v1\/claude_code\/routines\/[A-Za-z0-9_]+\/fire$/.test(url) || !secret) return reply({ ok: false, reason: 'not_configured' });
     const now = Date.now();
     if (now - lastFiredAt < 120000) return reply({ ok: true, started: false, reason: 'already_started' });
