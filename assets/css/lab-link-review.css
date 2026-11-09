@@ -32,3 +32,7 @@
 .ll-empty{padding:24px;text-align:center;color:#6B7788}
 .ll-pager{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 @media (max-width:760px){.ll-row{grid-template-columns:minmax(0,1fr)}.ll .btn{min-height:44px}}
+
+/* New center service requested from a lab test */
+.ll-newsvc{display:grid;gap:6px;border:1px dashed #0F369D;background:#F1F6FF;border-radius:12px;padding:12px;min-width:0;overflow-wrap:anywhere}
+.ll-newsvc small{color:#6B7788}
