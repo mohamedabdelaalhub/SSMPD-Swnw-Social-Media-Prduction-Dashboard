@@ -931,6 +931,7 @@ function openAgentImportModal(parentBackdrop) {
       "<div class=\"field\"><label> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%A7%D8%AF%D8%A9%20%D8%AF%D9%8A%20%D9%84%D8%B5%D9%81%D8%AD%D8%A9-->المادة دي لصفحة</label>" + W.brandSelectHtml("cf-brand", "") + '</div>' +
       "<div class=\"field\"><label> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AA%D8%AE%D8%B5%D8%B5-->التخصص</label>" + W.specialtySelectHtml("cf-specialty", "") + '</div>' +
       '<div class="field"><label>نص المحتوى</label><textarea id="cf-body" placeholder="اكتب الفكرة والنص..."></textarea></div>' +
+      (window.SSMPDDesignInputs ? window.SSMPDDesignInputs.createHtml() : '') +
       window.SSMPDDoctorContent.html() + window.SSMPDDinaContent.html() + window.SSMPDBeforeAfterContent.html() + window.SSMPDCarouselContent.html() + window.SSMPDDailyClinics.html() +
       W.contentIntelligencePanelHtml() +
       '<div class="content-ai-actions"><button type="button" class="btn" id="cf-ai-generate">توليد ٣ أفكار بالذكاء الاصطناعي</button><button type="button" class="btn ghost" id="cf-ai-import">استيراد رد الوكيل يدويًا</button></div>' +
@@ -986,6 +987,10 @@ function openAgentImportModal(parentBackdrop) {
       if(carouselBrief&&dinaBrief){alert("اختار كاروسيل أو قالب من قوالب د. دينا، مش الاتنين.");return;}
       if(carouselBrief){contentFormat="carousel";agentRaw=JSON.stringify(window.SSMPDCarouselContent.metadata(agentRaw,carouselBrief));}
       var dailyBrief, dailyPrepared;
+      var inputsError = window.SSMPDDesignInputs ? window.SSMPDDesignInputs.pendingError(backdrop) : "";
+      if (inputsError) { alert(inputsError); return; }
+      var claudeChoice = window.SSMPDDesignInputs ? window.SSMPDDesignInputs.createChoice(backdrop) : { direct: false, kind: "" };
+      if (claudeChoice.direct && contentFormat === "video") { alert("تصميم Claude المباشر للبوست والكاروسيل بس. شيل العلامة أو غيّر نوع المحتوى."); return; }
       submitting=true;backdrop.querySelectorAll('#cf-submit,#cf-draft').forEach(function(b){b.disabled=true;});backdrop.querySelector('.modal').inert=true;
       try{dailyBrief=window.SSMPDDailyClinics.current(true);if(dailyBrief){dailyPrepared=await window.SSMPDDailyClinics.prepare();dailyBrief=dailyPrepared.brief;contentFormat="image_post";agentRaw=JSON.stringify(window.SSMPDDailyClinics.metadata(agentRaw,dailyBrief));}else if(agentRaw){var nonDaily;try{nonDaily=JSON.parse(agentRaw);}catch(ignore){}if(nonDaily&&nonDaily.content_kind==='daily_clinics'){delete nonDaily.content_kind;delete nonDaily.daily_clinics_brief;agentRaw=JSON.stringify(nonDaily);}}}catch(e){submitting=false;backdrop.querySelector('.modal').inert=false;backdrop.querySelectorAll('#cf-submit,#cf-draft').forEach(function(b){b.disabled=false;});alert(e.message);return;}
       if(dailyBrief&&!body)body=window.SSMPDDailyClinics.description(dailyBrief);
@@ -1020,6 +1025,21 @@ function openAgentImportModal(parentBackdrop) {
               Object.assign(row,saved.item);dailySaved=true;
             }
             if(stage!==row.stage)Object.assign(row,await window.SSMPDDb.updateContentItem(row.id,{stage:stage}));
+          }
+          if (window.SSMPDDesignInputs && contentFormat !== "video") {
+            var failedInputs = await window.SSMPDDesignInputs.uploadPending(backdrop, row.id, me.id).catch(function () { return ["المرفقات"]; });
+            if (failedInputs.length) alert("المادة اتحفظت، بس المرفقات دي ما اترفعتش: " + failedInputs.join("، ") + ". افتح المادة وارفعها من صندوق «مرفقات لتصميم Claude».");
+          }
+          // تصميم Claude مباشرة: عند «إرسال» (مش مسودة) ولغير الفيديو ولغير قالب العيادات اليومية اللي ليه تصميمه
+          if (claudeChoice.direct && stage === "initial_approval" && contentFormat !== "video" && !dailyBrief) {
+            try {
+              var claudeNote = (window.SSMPDCarouselContent && window.SSMPDCarouselContent.designNote(row)) || (claudeChoice.kind === "offer" ? JSON.stringify({ task: "offer" }) : null);
+              await window.SSMPDDb.requestClaudeDesignDirect(row.id, "photo", claudeNote);
+              window.SSMPDDb.logActivity({ content_id: row.id, actor_id: me.id, action: "طلب تصميم Claude مباشر", from_stage: stage, to_stage: "in_design" }).catch(function () {});
+              if (window.SSMPDToast) window.SSMPDToast.show("المادة راحت لـ Claude للتصميم — هتظهر في الاعتماد النهائي", "success");
+            } catch (e) {
+              alert("المادة اتحفظت واتبعتت للاعتماد الأولي العادي، بس طلب تصميم Claude المباشر ما اتسجلش: " + e.message);
+            }
           }
           window.SSMPDDrive.logIdea(row.id, title).catch(function () {});
           window.SSMPDDb.logUsageActivity(me.id, "إنشاء مادة محتوى", title, "content", row.id).catch(function () {});

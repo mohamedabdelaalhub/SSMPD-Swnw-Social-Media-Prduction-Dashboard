@@ -89,5 +89,47 @@
     });
     refresh();
   }
-  window.SSMPDDesignInputs = { html: html, wire: wire };
+  // نموذج «فكرة/محتوى جديد»: نفس الخانتين قبل ما المادة تتحفظ. الملفات بتفضل في المتصفح وتترفع أول ما المادة تتسجل.
+  function createHtml() {
+    return '<div data-claude-inputs-new style="margin-top:12px;padding:12px;border:1px solid var(--c-border,#DCE5F5);border-radius:12px;">' +
+      '<b>تصميم Claude</b>' +
+      '<label style="display:flex;gap:8px;align-items:center;margin:8px 0 4px;"><input type="checkbox" id="cf-claude-direct"> Claude يصمم المادة دي على طول (بوست أو كاروسيل)</label>' +
+      '<p style="font-size:12px;color:var(--c-muted);margin:0 0 8px;">لو اخترت ده، المادة تروح لـ Claude أول ما تبعتها، والتصميم يظهر في الاعتماد النهائي.</p>' +
+      '<div class="field" style="margin:0 0 8px;max-width:320px;"><label for="cf-claude-kind">نوع التصميم</label>' +
+      '<select id="cf-claude-kind"><option value="">عادي — القوالب المعتمدة</option><option value="offer">عرض / حملة / تصميم حر بمثال</option></select></div>' +
+      '<p style="font-size:12px;color:var(--c-muted);margin:6px 0;">مرفقات اختيارية: صور عايزها تظهر في التصميم، ومثال للشكل اللي عايزه. بتترفع مع حفظ المادة.</p>' +
+      '<div style="display:flex;gap:12px;flex-wrap:wrap;">' +
+      Object.keys(KINDS).map(function (kind) {
+        return '<div class="field" style="margin:0;flex:1;min-width:220px;"><label for="cf-ci-' + kind + '">' + KINDS[kind] + '</label>' +
+          '<input id="cf-ci-' + kind + '" type="file" multiple accept="image/jpeg,image/png,image/webp" data-ci-new="' + kind + '"></div>';
+      }).join("") + '</div></div>';
+  }
+  function pendingFiles(root) {
+    var out = [];
+    (root ? root.querySelectorAll("[data-ci-new]") : []).forEach(function (input) {
+      Array.prototype.slice.call(input.files || []).forEach(function (f) { out.push({ kind: input.getAttribute("data-ci-new"), file: f }); });
+    });
+    return out;
+  }
+  // بيتنادى قبل الحفظ: يرجّع رسالة خطأ لو فيه ملف مش صورة مسموحة أو أكبر من الحد، وإلا "".
+  function pendingError(root) {
+    var bad = pendingFiles(root).filter(function (x) { return x.file.size > MAX || !/^image\/(jpeg|png|webp)$/.test(x.file.type); })[0];
+    return bad ? "المرفق " + bad.file.name + " لازم يكون صورة JPG أو PNG أو WebP وأقل من 20MB." : "";
+  }
+  // بيتنادى بعد إنشاء المادة. بيرجّع أسماء الملفات اللي فشل رفعها (المادة نفسها اتحفظت خلاص).
+  function uploadPending(root, contentId, adminId) {
+    var failed = [], chain = Promise.resolve();
+    pendingFiles(root).forEach(function (x) {
+      chain = chain.then(function () { return shrink(x.file); })
+        .then(function (small) { return window.SSMPDDb.uploadClaudeDesignInput(contentId, adminId, x.kind, small); })
+        .then(function () {}, function () { failed.push(x.file.name); });
+    });
+    return chain.then(function () { return failed; });
+  }
+  // اختيارات «تصميم Claude» في نموذج الإنشاء: { direct: bool, kind: ""|"offer" }
+  function createChoice(root) {
+    var d = root && root.querySelector("#cf-claude-direct"), k = root && root.querySelector("#cf-claude-kind");
+    return { direct: !!(d && d.checked), kind: k ? k.value : "" };
+  }
+  window.SSMPDDesignInputs = { html: html, wire: wire, createHtml: createHtml, createChoice: createChoice, pendingError: pendingError, uploadPending: uploadPending };
 })();
