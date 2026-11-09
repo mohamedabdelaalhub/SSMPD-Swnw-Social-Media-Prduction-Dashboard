@@ -92,8 +92,12 @@
   // نموذج «فكرة/محتوى جديد»: نفس الخانتين قبل ما المادة تتحفظ. الملفات بتفضل في المتصفح وتترفع أول ما المادة تتسجل.
   function createHtml() {
     return '<div data-claude-inputs-new style="margin-top:12px;padding:12px;border:1px solid var(--c-border,#DCE5F5);border-radius:12px;">' +
-      '<b>مرفقات لتصميم Claude</b>' +
-      '<p style="font-size:12px;color:var(--c-muted);margin:6px 0;">اختياري (للبوست والكاروسيل): صور عايزها تظهر في التصميم، ومثال للشكل اللي عايزه. بتترفع مع حفظ المادة.</p>' +
+      '<b>تصميم Claude</b>' +
+      '<label style="display:flex;gap:8px;align-items:center;margin:8px 0 4px;"><input type="checkbox" id="cf-claude-direct"> Claude يصمم المادة دي على طول (بوست أو كاروسيل)</label>' +
+      '<p style="font-size:12px;color:var(--c-muted);margin:0 0 8px;">لو اخترت ده، المادة تروح لـ Claude أول ما تبعتها، والتصميم يظهر في الاعتماد النهائي.</p>' +
+      '<div class="field" style="margin:0 0 8px;max-width:320px;"><label for="cf-claude-kind">نوع التصميم</label>' +
+      '<select id="cf-claude-kind"><option value="">عادي — القوالب المعتمدة</option><option value="offer">عرض / حملة / تصميم حر بمثال</option></select></div>' +
+      '<p style="font-size:12px;color:var(--c-muted);margin:6px 0;">مرفقات اختيارية: صور عايزها تظهر في التصميم، ومثال للشكل اللي عايزه. بتترفع مع حفظ المادة.</p>' +
       '<div style="display:flex;gap:12px;flex-wrap:wrap;">' +
       Object.keys(KINDS).map(function (kind) {
         return '<div class="field" style="margin:0;flex:1;min-width:220px;"><label for="cf-ci-' + kind + '">' + KINDS[kind] + '</label>' +
@@ -122,5 +126,10 @@
     });
     return chain.then(function () { return failed; });
   }
-  window.SSMPDDesignInputs = { html: html, wire: wire, createHtml: createHtml, pendingError: pendingError, uploadPending: uploadPending };
+  // اختيارات «تصميم Claude» في نموذج الإنشاء: { direct: bool, kind: ""|"offer" }
+  function createChoice(root) {
+    var d = root && root.querySelector("#cf-claude-direct"), k = root && root.querySelector("#cf-claude-kind");
+    return { direct: !!(d && d.checked), kind: k ? k.value : "" };
+  }
+  window.SSMPDDesignInputs = { html: html, wire: wire, createHtml: createHtml, createChoice: createChoice, pendingError: pendingError, uploadPending: uploadPending };
 })();

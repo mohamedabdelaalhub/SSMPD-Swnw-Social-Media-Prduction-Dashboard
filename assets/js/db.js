@@ -239,6 +239,10 @@
         return client.storage.from("video-inputs").remove([row.storage_path]).then(function () {}, function () {});
       });
     },
+    // تصميم Claude مباشرة من نموذج الإنشاء: المادة تروح «قيد التصميم» عند Claude Creative من غير الاعتماد الأولي (دالة قاعدة البيانات هي اللي بتتحقق)
+    requestClaudeDesignDirect: function (contentId, style, note) {
+      return handle(client.rpc("request_claude_design_direct", { p_content_id: contentId, p_style: style || "photo", p_note: note || null }));
+    },
     latestClaudeDesignRequest: function (contentId) {
       return handle(client.from("claude_design_requests").select("*").eq("content_id", contentId)
         .order("created_at", { ascending: false }).limit(1)).then(function (rows) { return (rows && rows[0]) || null; });
