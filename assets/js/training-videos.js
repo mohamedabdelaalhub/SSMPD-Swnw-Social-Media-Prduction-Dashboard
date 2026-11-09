@@ -1,7 +1,7 @@
 /* «فيديوهات الشرح»: training videos (Swnw voice, trial/test data only) per role, opened from the main menu.
    Videos live in assets/videos. Shows only the videos for the user's roles (managers see all). */
 (function(root){'use strict';
-var V='?v=training-20261109-1';
+var V='?v=training-20261109-2';
 var ALL=['super_admin','general_manager'];
 var LIST=[
  {f:'01-booking-arrival.mp4',t:'حجز موعد وتسجيل وصول',g:'الاستقبال: «تشغيل اليوم»',r:['reception','customer_service']},
@@ -12,6 +12,7 @@ var LIST=[
  {f:'05-my-tasks.mp4',t:'مهامي: إزاي تشتغل على مهمة وتسلّمها',g:'لكل الموظفين',r:['*']},
  {f:'07-my-kpi.mp4',t:'أدائي: إزاي تتابع مؤشر أدائك',g:'لكل الموظفين',r:['*']},
  {f:'08-menu-search-help.mp4',t:'القايمة والبحث والمساعدة',g:'لكل الموظفين',r:['*']},
+ {f:'11-hr-self.mp4',t:'الموارد البشرية: ملفي وحضوري وطلباتي',g:'لكل الموظفين',r:['*']},
  {f:'06-manager-tasks.mp4',t:'المهام للمديرين: إسناد ومراجعة',g:'للمديرين',r:['general_manager','head_nursing','approver']},
  {f:'10-content.mp4',t:'فريق المحتوى: من الفكرة للنشر',g:'فريق المحتوى',r:['page_manager','designer','approver']}];
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
