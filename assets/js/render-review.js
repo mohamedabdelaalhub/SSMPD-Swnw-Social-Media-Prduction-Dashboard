@@ -2,11 +2,11 @@
 (function () {
   // ===== Claude Creative: "نفّذ التصميم" =====
   // لما مصمم المادة يكون Claude Creative: اختيار (صور حقيقية / رسوم) + زرار. الطلب بيتسجل،
-  // وClaude بيصمم (أو يمنتج الفيديوهات المرفوعة) خلال ساعة ويوصّل المادة للاعتماد النهائي.
+  // وClaude بيصمم (أو يمنتج الفيديوهات المرفوعة) فورًا لو التشغيل الفوري متظبط، وإلا في أقرب تشغيل مجدول، ويوصّل المادة للاعتماد النهائي.
   // الاعتماد بيفضل بضغطة من مسؤول الاعتماد، وبعدها Claude بيجدولها في الميعاد اللي اقترحه.
   var CLAUDE_DESIGNER_ID = "a0fbdfee-d147-4282-b988-186a9ae3e88c";
   var CLAUDE_REQ_STATUS = {
-    pending: "في الطابور — Claude هيبدأ خلال ساعة",
+    pending: "في الطابور — Claude هيبدأ في أقرب تشغيل",
     working: "Claude شغال على التصميم دلوقتي…",
     done: "التصميم جاهز في الاعتماد النهائي — مستني اعتمادك",
     scheduled: "اتعتمد واتجدول للنشر ✅",
@@ -28,6 +28,9 @@
       ('<div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin:8px 0;">' +
       '<label style="display:inline-flex;gap:5px;align-items:center;"><input type="radio" name="claude-style" value="photo" checked> صور حقيقية</label>' +
       '<label style="display:inline-flex;gap:5px;align-items:center;"><input type="radio" name="claude-style" value="illustration"> رسوم</label></div>') +
+      (!isVideo && item.content_format !== "carousel" ? '<div class="field" style="margin:8px 0;max-width:320px;"><label for="claude-design-kind">نوع التصميم</label>' +
+        '<select id="claude-design-kind"><option value="">عادي — القوالب المعتمدة</option><option value="offer">عرض / حملة / تصميم حر بمثال</option></select></div>' : '') +
+      (window.SSMPDDesignInputs ? window.SSMPDDesignInputs.html(item) : '') +
       (item.stage === "needs_revision" ? '<p style="font-size:12px;color:var(--c-muted);margin:6px 0;">Claude هيطبّق كومنتات «طلب تعديل» المكتوبة على المادة. لو عايز تصميم جديد من الأول اكتب في الكومنت: أعد التصميم من الأول.</p>' : '') +
       '<button class="btn sm" id="claude-design-go">' + (item.stage === "needs_revision" ? "نفّذ التعديل" : isVideo ? "نفّذ المونتاج" : item.content_format === "carousel" ? "نفّذ الكاروسيل" : "نفّذ التصميم") + '</button>' +
       '<p id="claude-design-status" role="status" style="font-size:12px;color:var(--c-muted);margin:6px 0 0;"></p></div>';
@@ -38,16 +41,29 @@
     var statusEl = box.querySelector("#claude-design-status"), btn = box.querySelector("#claude-design-go");
     function show(req) {
       if (!req) { statusEl.textContent = ""; btn.disabled = false; return; }
-      var note=req.note||"";try{var plan=JSON.parse(note);if(plan.task==="carousel")note="كاروسيل "+plan.slides_count+" شرايح";}catch(ignore){}
+      var note=req.note||"";try{var plan=JSON.parse(note);if(plan.task==="carousel")note="كاروسيل "+plan.slides_count+" شرايح";else if(plan.task==="offer")note="تصميم عرض / حملة";}catch(ignore){}
       statusEl.textContent = "آخر طلب: " + (CLAUDE_REQ_STATUS[req.status] || req.status) + (note ? " — " + note : "");
       btn.disabled = req.status === "pending" || req.status === "working";
     }
+    if (window.SSMPDDesignInputs) window.SSMPDDesignInputs.wire(box, item);
+    // بعد تسجيل الطلب: شغّل Claude فورًا. لو التشغيل الفوري مش متاح الطلب بيفضل في الطابور للميعاد المجدول.
+    function runNow(req) {
+      show(req);
+      if (!req || req.status !== "pending" || !window.SSMPDDb.runClaudeDesignQueueNow) return;
+      var base = statusEl.textContent;
+      window.SSMPDDb.runClaudeDesignQueueNow().then(function (r) {
+        if (!statusEl.isConnected) return;
+        statusEl.textContent = r && r.ok ? "آخر طلب: Claude بدأ يشتغل عليه دلوقتي — التصميم هيوصل الاعتماد النهائي خلال دقايق" : base;
+      });
+    }
     window.SSMPDDb.latestClaudeDesignRequest(item.id).then(show, function () { statusEl.textContent = ""; });
     btn.onclick = function () {
+      var kindEl = box.querySelector("#claude-design-kind");
+      var kindNote = kindEl && kindEl.value === "offer" ? JSON.stringify({ task: "offer" }) : null;
       var picked = box.querySelector('input[name="claude-style"]:checked');
       var style = picked ? picked.value : "photo";
       btn.disabled = true;
-      window.SSMPDDb.requestClaudeDesign(item.id, style, (window.SSMPDAuth.currentAdmin || {}).id, window.SSMPDCarouselContent&&window.SSMPDCarouselContent.designNote(item)).then(show, function (e) {
+      window.SSMPDDb.requestClaudeDesign(item.id, style, (window.SSMPDAuth.currentAdmin || {}).id, (window.SSMPDCarouselContent&&window.SSMPDCarouselContent.designNote(item))||kindNote).then(runNow, function (e) {
         btn.disabled = false;
         statusEl.textContent = /claude_design_requests/.test(e.message) ? "شغّل ملف تحديث قاعدة البيانات الخاص بتصميم Claude أولاً." : "خطأ: " + e.message;
       });
