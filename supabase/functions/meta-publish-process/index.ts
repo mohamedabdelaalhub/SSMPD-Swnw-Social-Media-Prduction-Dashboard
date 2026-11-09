@@ -3,6 +3,15 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { Image } from "https://deno.land/x/imagescript@1.3.0/mod.ts";
 
+// Optional: serve Meta-facing media through the VPS caching proxy (MEDIA_PUBLIC_BASE, e.g. https://media.example.com)
+// so each file leaves Supabase Storage once. Unset = unchanged behaviour.
+function mediaPublicUrl(url: string): string {
+  const base = (Deno.env.get("MEDIA_PUBLIC_BASE") || "").replace(/\/+$/, "");
+  if (!base) return url;
+  try { const u = new URL(url); return base + u.pathname + u.search; } catch { return url; }
+}
+
+
 // Meta Auto Publisher — Phase 43
 //
 // بتتنادى كل دقيقة عن طريق pg_cron (net.http_post، هيدر X-Cron-Secret بس —
@@ -229,7 +238,7 @@ async function rehostImageToStorage(admin: ReturnType<typeof createClient>, jobI
     .upload(path, bytes, { contentType, upsert: true });
   if (up.error) throw new Error("فشل رفع الصورة لـSupabase Storage: " + up.error.message);
 
-  return admin.storage.from("meta-publish-assets").getPublicUrl(path).data.publicUrl;
+  return mediaPublicUrl(admin.storage.from("meta-publish-assets").getPublicUrl(path).data.publicUrl);
 }
 
 async function publishFacebookPhoto(pageId: string, token: string, imageUrl: string, message: string) {
@@ -594,7 +603,7 @@ async function composeStoryImage(admin: ReturnType<typeof createClient>, jobId: 
   const path = `${jobId}-story.jpg`;
   const up = await admin.storage.from("meta-publish-assets").upload(path, jpg, { contentType: "image/jpeg", upsert: true });
   if (up.error) throw new Error("فشل رفع صورة الستوري: " + up.error.message);
-  return admin.storage.from("meta-publish-assets").getPublicUrl(path).data.publicUrl;
+  return mediaPublicUrl(admin.storage.from("meta-publish-assets").getPublicUrl(path).data.publicUrl);
 }
 
 async function publishInstagramStory(igUserId: string, token: string, media: { imageUrl?: string; videoUrl?: string }) {
