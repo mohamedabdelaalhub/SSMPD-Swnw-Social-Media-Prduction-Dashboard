@@ -5,7 +5,7 @@
 --        ->  completion: his doctor contracts end on the last day, his file is closed (status ended), his dashboard account is locked from the last day, and ordinary payouts to him are blocked.
 -- Money: the sheet computes the net (for him minus on him) from the existing books; the actual payment of the net is recorded by reference (no new posting path is created here).
 -- ADDITIVE ONLY: 4 new tables (RLS on, no direct grants), new SECURITY DEFINER functions, and 2 BEFORE INSERT guard triggers that only act for a person with an approved case. No existing function is replaced.
--- Rollback: supabase/rollbacks/20261109140000_hr_offboarding.rollback.sql
+-- Rollback: supabase/rollbacks/20261109160000_hr_offboarding.rollback.sql
 begin;
 
 do $$ begin

@@ -1,6 +1,6 @@
 (function (w) {
   'use strict';
-  // End of service and final settlement («إنهاء خدمة / مخالصة»). Server: hr_offboarding_workspace / hr_offboarding_command / hr_offboarding_template (migration 20261109140000).
+  // End of service and final settlement («إنهاء خدمة / مخالصة»). Server: hr_offboarding_workspace / hr_offboarding_command / hr_offboarding_template (migration 20261109160000).
   // One component, two homes: the HR tab «إنهاء الخدمة» and the accounting tab «مخالصات الموظفين». Every button is shown by the role flags the server returns; the server enforces them again.
   // Order that the screen follows: open -> accountant sheet -> financial-manager approval -> print -> HR uploads the signed file -> experience certificate (locked until then) -> insurance stop -> net payment recorded -> close.
   var STATUS = { requested: 'قيد إعداد الكشف', sheet_ready: 'بانتظار الاعتماد', approved: 'معتمدة — بانتظار الملف الموقع', signed: 'موقعة', completed: 'مغلقة', cancelled: 'ملغاة' };

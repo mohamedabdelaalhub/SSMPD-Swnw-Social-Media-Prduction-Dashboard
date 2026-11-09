@@ -10,7 +10,7 @@ const fs = require('fs'), assert = require('node:assert/strict'), boot = require
     for (const suffix of ['human_resources_workspace', 'price_lists_workspace', 'price_lists_booking_integration']) await db.exec(fs.readFileSync('supabase/migrations/' + fs.readdirSync('supabase/migrations').find(n => n.endsWith('_' + suffix + '.sql')), 'utf8'));
     await db.exec(fs.readFileSync('supabase/migrations/20261024183344_contract_price_imports_and_service_identity.sql', 'utf8'));
     await db.exec(fs.readFileSync('supabase/migrations/20261024183400_hr_attendance_import_and_calculated_payroll.sql', 'utf8'));
-    const MIG = fs.readFileSync('supabase/migrations/20261109140000_hr_offboarding.sql', 'utf8');
+    const MIG = fs.readFileSync('supabase/migrations/20261109160000_hr_offboarding.sql', 'utf8');
     await assert.rejects(() => db.exec(MIG), /طبّق ملف سجل العهد/, 'needs custody first'); await db.exec('rollback');
     await db.exec(mig('_hr_custody_register.sql')); await db.exec(mig('_hr_insurance.sql'));
     await db.exec(MIG);
@@ -169,7 +169,7 @@ const fs = require('fs'), assert = require('node:assert/strict'), boot = require
     await as(5); w = await call('hr_offboarding_workspace'); assert.equal(w.can_manage, true); assert(!w.people.some(x => x.id === P3 || x.id === P1), 'ended people and people with an open case are not offered'); assert(w.templates.length >= 3);
     await assert.rejects(() => db.query('select * from clinic_people.offboarding_cases'), /permission denied/);
     await db.exec('reset role; set role anon'); await assert.rejects(() => call('hr_offboarding_workspace'), /permission denied/);
-    await db.exec('reset role'); await db.exec(fs.readFileSync('supabase/rollbacks/20261109140000_hr_offboarding.rollback.sql', 'utf8'));
+    await db.exec('reset role'); await db.exec(fs.readFileSync('supabase/rollbacks/20261109160000_hr_offboarding.rollback.sql', 'utf8'));
     assert.equal((await owner("select to_regclass('clinic_people.offboarding_cases') t"))[0].t, null);
     assert.equal((await owner('select status from clinic_people.people where id=$1', [P1]))[0].status, 'ended', 'completed facts stay');
     assert((await owner("select count(*)::int n from clinic_people.audit where action like 'offboarding_%'"))[0].n > 10);

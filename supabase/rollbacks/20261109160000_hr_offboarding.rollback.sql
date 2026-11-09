@@ -1,4 +1,4 @@
--- Rollback of 20261109140000_hr_offboarding.sql.
+-- Rollback of 20261109160000_hr_offboarding.sql.
 -- WARNING: drops cases, sheet lines and template versions. Export first if anything was recorded:
 --   select * from clinic_people.offboarding_cases;  select * from clinic_people.offboarding_lines;  select * from clinic_people.offboarding_templates;
 -- NOT undone by design (they were real events): contracts already ended, people already set to «ended», accounts already locked, insurance already stopped.
