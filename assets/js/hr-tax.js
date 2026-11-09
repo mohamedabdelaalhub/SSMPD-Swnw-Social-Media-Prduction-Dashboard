@@ -1,6 +1,6 @@
 (function (w) {
   'use strict';
-  // HR monthly register of income tax withheld from salaries (ضريبة الدخل). Server: hr_tax_workspace / hr_tax_command (migration 20261109130000).
+  // HR monthly register of income tax withheld from salaries (ضريبة الدخل). Server: hr_tax_workspace / hr_tax_command (migration 20261109150000).
   // Mounted by hr-navigation.js into the «ضريبة الدخل» section; loads only when open. Amounts are typed from the tax document (nothing is computed here).
   // tax_type: only «salary_income» exists today; the server returns the active types, so doctors' / center taxes will appear here without a new screen once the owner sends their details.
   function esc(v) { return w.SSMPDWorkforceUtils.escape(v); }

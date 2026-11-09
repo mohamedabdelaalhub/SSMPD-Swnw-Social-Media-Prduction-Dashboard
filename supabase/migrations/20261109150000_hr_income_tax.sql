@@ -5,7 +5,7 @@
 -- EXTENSIBLE: every row carries a tax_type that points at clinic_finance.tax_types. Only «salary_income» exists now. Doctors' professional tax (ضريبة مهن غير تجارية) and the
 --          center's taxes / stamp duties are NOT built: the owner will send details, and each will be one new row in tax_types (+ its own entry screen), not a schema change.
 -- ADDITIVE ONLY: 3 new tables (RLS on, no direct grants) + 7 new SECURITY DEFINER functions. Nothing existing is changed.
--- Rollback: supabase/rollbacks/20261109130000_hr_income_tax.rollback.sql
+-- Rollback: supabase/rollbacks/20261109150000_hr_income_tax.rollback.sql
 begin;
 
 do $$ begin

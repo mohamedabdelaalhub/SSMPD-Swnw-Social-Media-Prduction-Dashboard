@@ -1,4 +1,4 @@
--- Rollback of 20261109130000_hr_income_tax.sql.
+-- Rollback of 20261109150000_hr_income_tax.sql.
 -- WARNING: drops the monthly tax register, the payment links and tax_types. Export first if anything was recorded:
 --   select * from clinic_people.tax_entries;  select * from clinic_finance.tax_payments;
 -- Payments already posted to the books stay (normal statutory_payment requests + journal lines). clinic_people.audit rows (action like 'tax_%') are kept.

@@ -7,7 +7,7 @@ const fs = require('fs'), assert = require('node:assert/strict'), boot = require
     for (const suffix of ['human_resources_workspace', 'price_lists_workspace', 'price_lists_booking_integration']) await db.exec(fs.readFileSync('supabase/migrations/' + fs.readdirSync('supabase/migrations').find(n => n.endsWith('_' + suffix + '.sql')), 'utf8'));
     await db.exec(fs.readFileSync('supabase/migrations/20261024183344_contract_price_imports_and_service_identity.sql', 'utf8'));
     await db.exec(fs.readFileSync('supabase/migrations/20261024183400_hr_attendance_import_and_calculated_payroll.sql', 'utf8'));
-    const MIG = fs.readFileSync('supabase/migrations/20261109130000_hr_income_tax.sql', 'utf8');
+    const MIG = fs.readFileSync('supabase/migrations/20261109150000_hr_income_tax.sql', 'utf8');
     await assert.rejects(() => db.exec(MIG), /طبّق ملف التأمينات/, 'needs the insurance migration first'); await db.exec('rollback');
     await db.exec(fs.readFileSync('supabase/migrations/20261109120000_hr_insurance.sql', 'utf8'));
     await db.exec(MIG);
@@ -92,7 +92,7 @@ const fs = require('fs'), assert = require('node:assert/strict'), boot = require
     // ---- lockdown, rollback, re-apply
     await assert.rejects(() => db.query('select * from clinic_people.tax_entries'), /permission denied/); await assert.rejects(() => db.query('select * from clinic_finance.tax_types'), /permission denied/);
     await db.exec('reset role; set role anon'); await assert.rejects(() => call('hr_tax_workspace', ['2026-10-01']), /permission denied/);
-    await db.exec('reset role'); await db.exec(fs.readFileSync('supabase/rollbacks/20261109130000_hr_income_tax.rollback.sql', 'utf8'));
+    await db.exec('reset role'); await db.exec(fs.readFileSync('supabase/rollbacks/20261109150000_hr_income_tax.rollback.sql', 'utf8'));
     assert.equal((await owner("select to_regclass('clinic_people.tax_entries') t"))[0].t, null);
     assert.equal((await owner("select status from clinic_finance.business_requests where id=$1", [p1]))[0].status, 'approved');
     assert((await owner("select count(*)::int n from clinic_people.audit where action like 'tax_%'"))[0].n >= 4);
