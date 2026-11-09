@@ -212,6 +212,33 @@
         content_id: contentId, style: style, requested_by: requestedBy || null, note: note || null
       }).select().single());
     },
+    // «نفّذ الآن»: يشغّل مهمة طابور تصميم Claude فورًا (Edge Function claude-run-now). الفشل هنا لا يلغي الطلب — بيفضل في الطابور.
+    runClaudeDesignQueueNow: function () {
+      return client.functions.invoke("claude-run-now", { body: {} }).then(function (res) {
+        if (res.error) return { ok: false, reason: "unreachable" };
+        return res.data || { ok: false, reason: "unreachable" };
+      }, function () { return { ok: false, reason: "unreachable" }; });
+    },
+    // مرفقات طلب تصميم Claude (صور للاستخدام + مثال للشكل المطلوب)
+    listClaudeDesignInputs: function (contentId) {
+      return handle(client.from("claude_design_inputs").select("*").eq("content_id", contentId).order("created_at", { ascending: true }));
+    },
+    uploadClaudeDesignInput: function (contentId, adminId, kind, file) {
+      var safeName = String(file.name || "image").replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/^-+|-+$/g, "") || "image";
+      var storagePath = adminId + "/claude-inputs/" + contentId + "/" + kind + "-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8) + "-" + safeName;
+      var bucket = client.storage.from("video-inputs");
+      return bucket.upload(storagePath, file, { cacheControl: "3600", upsert: false, contentType: file.type || undefined }).then(function (res) {
+        if (res.error) throw res.error;
+        return handle(client.from("claude_design_inputs").insert({
+          content_id: contentId, kind: kind, storage_path: storagePath, file_name: file.name || safeName, created_by: adminId
+        }).select().single()).catch(function (e) { bucket.remove([storagePath]).catch(function () {}); throw e; });
+      });
+    },
+    deleteClaudeDesignInput: function (row) {
+      return handle(client.from("claude_design_inputs").delete().eq("id", row.id)).then(function () {
+        return client.storage.from("video-inputs").remove([row.storage_path]).then(function () {}, function () {});
+      });
+    },
     latestClaudeDesignRequest: function (contentId) {
       return handle(client.from("claude_design_requests").select("*").eq("content_id", contentId)
         .order("created_at", { ascending: false }).limit(1)).then(function (rows) { return (rows && rows[0]) || null; });
