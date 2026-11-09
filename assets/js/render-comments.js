@@ -312,6 +312,7 @@
     });
   }
   function pollBadge() {
+    if (document.hidden) return;
     if (!window.SSMPDDb || !window.SSMPDDb.client || !document.querySelector('.tab-btn[data-tab="comments"]')) return;
     // نفس اللي بيظهر في قسم "محتاج رد" بالظبط: تعليقات آخر ٦٠ يوم المستنية رد + التنبيهات المفتوحة.
     var since = new Date(Date.now() - 60 * 864e5).toISOString();
