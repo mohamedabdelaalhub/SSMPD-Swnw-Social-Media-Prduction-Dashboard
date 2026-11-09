@@ -987,7 +987,7 @@
 
     // نسخة احتياطية: ريفريش تلقائي دوري لو الاتصال اللحظي (WebSocket) انقطع أو اتأخر
     if (pollTimer) clearInterval(pollTimer);
-    pollTimer = setInterval(refreshCurrentTab, 45000);
+    pollTimer = setInterval(function () { if (!document.hidden) refreshCurrentTab(); }, 45000);
   }
 
   function escapeHtml(s) {

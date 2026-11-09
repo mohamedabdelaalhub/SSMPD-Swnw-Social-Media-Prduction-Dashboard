@@ -707,7 +707,7 @@
         createPromise.then(function(){returnAfterSave("","create");return refreshAndShow();}).catch(function(e){unlockSave();taskSaveError(form,e);});
       }
     };
-    refresh().then(function(){liveTimer=setInterval(function(){if(!el.isConnected){clearInterval(liveTimer);liveTimer=null;return;}refresh();},90000);});
+    refresh().then(function(){liveTimer=setInterval(function(){if(!el.isConnected){clearInterval(liveTimer);liveTimer=null;return;}if(document.hidden)return;refresh();},90000);});
   }
   window.SSMPDRenderTasks={render:render,focus:function(id){return currentFocus?currentFocus(id):false;}};
 })();

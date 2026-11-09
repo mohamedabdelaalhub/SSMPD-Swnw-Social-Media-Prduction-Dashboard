@@ -312,18 +312,27 @@
     });
   }
   function pollBadge() {
+    if (document.hidden) return;
     if (!window.SSMPDDb || !window.SSMPDDb.client || !document.querySelector('.tab-btn[data-tab="comments"]')) return;
     // نفس اللي بيظهر في قسم "محتاج رد" بالظبط: تعليقات آخر ٦٠ يوم المستنية رد + التنبيهات المفتوحة.
     var since = new Date(Date.now() - 60 * 864e5).toISOString();
+    var base = function () {
+      return db().from("social_comments").select("id", { count: "exact", head: true })
+        .in("status", ["new", "drafted", "failed"]).eq("author_is_page", false).is("parent_comment_id", null).gte("commented_at", since);
+    };
+    var overdueFrom = new Date(Date.now() - 7 * 864e5).toISOString();
+    var overdueTo = new Date(Date.now() - OVERDUE_MIN * 60000).toISOString();
+    // عدّ بس (head) بدل تنزيل ٥٠٠ صف كل دقيقة — نفس الأرقام بحجم شبكة ~صفر.
     Promise.all([
-      db().from("social_comments").select("commented_at,status,author_is_page,parent_comment_id")
-        .in("status", ["new", "drafted", "failed"]).eq("author_is_page", false).is("parent_comment_id", null).gte("commented_at", since).limit(500),
+      base(),
+      base().gte("commented_at", overdueFrom).lte("commented_at", overdueTo),
       db().from("social_comments").select("id", { count: "exact", head: true }).eq("alert", true).is("alert_resolved_at", null),
       db().from("social_messages").select("conversation_id").eq("alert", true).is("alert_resolved_at", null).limit(200)
     ]).then(function (r) {
-      var rows = r[0].error ? [] : (r[0].data || []);
-      var alerts = (r[1].error ? 0 : (r[1].count || 0)) + (r[2].error ? 0 : Object.keys((r[2].data || []).reduce(function (m, x) { m[x.conversation_id] = 1; return m; }, {})).length);
-      updateTabBadge(rows.length + alerts, rows.filter(isOverdue).length + alerts);
+      var pending = r[0].error ? 0 : (r[0].count || 0);
+      var overdue = r[1].error ? 0 : (r[1].count || 0);
+      var alerts = (r[2].error ? 0 : (r[2].count || 0)) + (r[3].error ? 0 : Object.keys((r[3].data || []).reduce(function (m, x) { m[x.conversation_id] = 1; return m; }, {})).length);
+      updateTabBadge(pending + alerts, overdue + alerts);
     }).catch(function () { updateTabBadge(0, 0); });
   }
   setTimeout(pollBadge, 4000);
