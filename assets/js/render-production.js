@@ -935,6 +935,7 @@ function openAgentImportModal(parentBackdrop) {
       W.contentIntelligencePanelHtml() +
       '<div class="content-ai-actions"><button type="button" class="btn" id="cf-ai-generate">توليد ٣ أفكار بالذكاء الاصطناعي</button><button type="button" class="btn ghost" id="cf-ai-import">استيراد رد الوكيل يدويًا</button></div>' +
       structuredFieldsHtml() +
+      (window.SSMPDDesignInputs ? window.SSMPDDesignInputs.createHtml() : '') +
       '<div style="text-align:left;margin-top:10px;"><button class="btn" id="cf-submit">إرسال للاعتماد الأولي</button> ' +
       '<button class="btn ghost" id="cf-draft">حفظ كمسودة</button></div></div>';
     document.body.appendChild(backdrop);
@@ -986,6 +987,8 @@ function openAgentImportModal(parentBackdrop) {
       if(carouselBrief&&dinaBrief){alert("اختار كاروسيل أو قالب من قوالب د. دينا، مش الاتنين.");return;}
       if(carouselBrief){contentFormat="carousel";agentRaw=JSON.stringify(window.SSMPDCarouselContent.metadata(agentRaw,carouselBrief));}
       var dailyBrief, dailyPrepared;
+      var inputsError = window.SSMPDDesignInputs ? window.SSMPDDesignInputs.pendingError(backdrop) : "";
+      if (inputsError) { alert(inputsError); return; }
       submitting=true;backdrop.querySelectorAll('#cf-submit,#cf-draft').forEach(function(b){b.disabled=true;});backdrop.querySelector('.modal').inert=true;
       try{dailyBrief=window.SSMPDDailyClinics.current(true);if(dailyBrief){dailyPrepared=await window.SSMPDDailyClinics.prepare();dailyBrief=dailyPrepared.brief;contentFormat="image_post";agentRaw=JSON.stringify(window.SSMPDDailyClinics.metadata(agentRaw,dailyBrief));}else if(agentRaw){var nonDaily;try{nonDaily=JSON.parse(agentRaw);}catch(ignore){}if(nonDaily&&nonDaily.content_kind==='daily_clinics'){delete nonDaily.content_kind;delete nonDaily.daily_clinics_brief;agentRaw=JSON.stringify(nonDaily);}}}catch(e){submitting=false;backdrop.querySelector('.modal').inert=false;backdrop.querySelectorAll('#cf-submit,#cf-draft').forEach(function(b){b.disabled=false;});alert(e.message);return;}
       if(dailyBrief&&!body)body=window.SSMPDDailyClinics.description(dailyBrief);
@@ -1020,6 +1023,10 @@ function openAgentImportModal(parentBackdrop) {
               Object.assign(row,saved.item);dailySaved=true;
             }
             if(stage!==row.stage)Object.assign(row,await window.SSMPDDb.updateContentItem(row.id,{stage:stage}));
+          }
+          if (window.SSMPDDesignInputs && contentFormat !== "video") {
+            var failedInputs = await window.SSMPDDesignInputs.uploadPending(backdrop, row.id, me.id).catch(function () { return ["المرفقات"]; });
+            if (failedInputs.length) alert("المادة اتحفظت، بس المرفقات دي ما اترفعتش: " + failedInputs.join("، ") + ". افتح المادة وارفعها من صندوق «مرفقات لتصميم Claude».");
           }
           window.SSMPDDrive.logIdea(row.id, title).catch(function () {});
           window.SSMPDDb.logUsageActivity(me.id, "إنشاء مادة محتوى", title, "content", row.id).catch(function () {});
