@@ -178,8 +178,8 @@ function metricCancelled(root){
  var count=root.querySelectorAll('.journey-badge-cancelled').length,card=document.createElement('article');card.className='journey-metric';card.dataset.v2CancelledMetric='1';card.innerHTML='<span>ملغاة</span><strong>'+count.toLocaleString('en-US')+'</strong>';metrics.appendChild(card);
 }
 function labelPriority(root){
- root.querySelectorAll('.journey-card-meta span').forEach(function(s){var m=s.textContent.match(/^أولوية\s+([0-5])(?:\s+·\s*(.*))?$/);if(!m)return;s.textContent=priorityLabels[m[1]]+(m[2]?' · '+m[2]:'');});
- root.querySelectorAll('[data-journey-action="priority"]').forEach(function(b){b.textContent='تحديد الأولوية';});
+ root.querySelectorAll('.journey-card-meta span').forEach(function(s){var m=s.textContent.match(/^أولوية\s+([0-5])(?:\s+·\s*(.*))?$/);if(!m)return;var t=priorityLabels[m[1]]+(m[2]?' · '+m[2]:'');if(s.textContent!==t)s.textContent=t;});
+ root.querySelectorAll('[data-journey-action="priority"]').forEach(function(b){if(b.textContent!=='تحديد الأولوية')b.textContent='تحديد الأولوية';});
 }
 function addButtons(root){
  root.querySelectorAll('.journey-card').forEach(function(card){
@@ -190,7 +190,7 @@ function addButtons(root){
   if(active&&!actions.querySelector('[data-journey-action="help"], [data-journey-v2-action="help"]')){var h=document.createElement('button');h.type='button';h.className='btn';h.dataset.journeyV2Action='help';h.dataset.id=id;h.textContent='طلب دعم';actions.appendChild(h);}
   if(card.querySelector('.journey-badge-on_hold')&&!actions.querySelector('[data-journey-action="visit_complete"], [data-journey-v2-action="finish"]')){var f=document.createElement('button');f.type='button';f.className='btn btn-primary';f.dataset.journeyV2Action='finish';f.dataset.id=id;f.textContent='إنهاء الزيارة وانتظار النتيجة';actions.appendChild(f);}
  });
- root.querySelectorAll('[data-journey-action="help"]').forEach(function(b){b.textContent='طلب دعم';});
+ root.querySelectorAll('[data-journey-action="help"]').forEach(function(b){if(b.textContent!=='طلب دعم')b.textContent='طلب دعم';});
 }
 function translateTimeline(){
  var map={'appointment.rescheduled':'تم تغيير الموعد','result.ready':'ظهرت النتيجة','service.requested':'تم طلب خدمة','lab.requested':'تم طلب تحليل','imaging.requested':'تم طلب أشعة'};

@@ -1,7 +1,7 @@
 /* «سداد ضريبة المرتبات» — accounting tab for the employee income tax withheld from salaries and paid to the tax authority.
    Shows, for a month: the total due (from the HR tax register), what payroll actually withheld, what was already paid (approved / waiting for approval),
    what is left, and the balance of the liability account (2142). «تسجيل سداد» creates the EXISTING statutory_payment request (Dr 2142 / Cr cash or bank) which a different person approves.
-   Server: clinic_finance_tax_month / clinic_finance_tax_pay (migration 20261109130000, not applied until the owner approves).
+   Server: clinic_finance_tax_month / clinic_finance_tax_pay (migration 20261109150000, not applied until the owner approves).
    Chains onto SSMPDFinanceControls like finance-doctor-accounts.js does; registered in finance-cash.js (group «الصرف والمستحقات»). */
 (function () {
   'use strict';
