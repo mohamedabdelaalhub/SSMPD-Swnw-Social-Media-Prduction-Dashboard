@@ -18,3 +18,13 @@ Read with `pg_get_functiondef`. These files are NOT migrations. Nothing here was
   super_admin / service_role inside SECURITY DEFINER code. Intentional for cron use, but worth checking who can EXECUTE them.
 - `legacy_dashboard.app_secrets` still has an `api_key` text column while the key now lives in Vault. Worth checking (read-only: count non-null) whether an old plaintext key is still stored there.
 - `legacy_dashboard.app_settings` policy "all read settings" is USING (true): readable by every role that has SELECT. Contents are non-secret flags.
+
+## Drift re-check 2026-11-09 (read-only, main 93719eb)
+- Live functions in public, legacy_dashboard, performance_private, clinic_reception, clinic_finance, clinic_prices, clinic_people: 844. Every one has a trace in repo SQL (migrations or this folder).
+  Many `clinic_finance.*_base` / `clinic_reception.*_before_*` functions are created by `alter function ... rename` or dynamic SQL in migrations, so a plain `create function` search does not find them.
+- Live tables in the same schemas plus hub and psychcare: 405. Only 4 had no trace:
+  - `public.clinic_specialties` - captured here (20261109_addendum_clinic_specialties.sql).
+  - `clinic_reception.appointment_external`, `clinic_reception.apply_external_extra`, `clinic_reception.command_before_external_booking`, `public.clinic_reception_external_enabled` - belong to PR #390 (migration 20261109140000_reception_booking_external.sql), applied live before merge; they enter the repo with that PR.
+  - `clinic_finance.doctor_contracts_bak_20261109`, `..._bak_20261109b` - temporary backup tables made by other sessions, not schema.
+- `legacy_dashboard.app_secrets.api_key`: 0 non-null rows out of 1 (checked, values not read). The plaintext key concern above is closed.
+- Still true: these files are reference, not a runnable baseline. A clean rebuild (Contabo) still needs migrations + these captures applied in order on a Postgres with the Supabase auth/storage schemas.
