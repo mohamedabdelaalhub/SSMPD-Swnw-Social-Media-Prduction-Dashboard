@@ -6,8 +6,9 @@ const services=[
  {id:'s3',code:'D1',name:'حشو عصب',department:'أسنان',price:500,minutes:30},
  {id:'s4',code:'D2',name:'إزالة جير ٌ',department:'أسنان',price:250,minutes:30},
  {id:'s5',code:'E1',name:'Ultrasound Pelvic',department:'أشعة',price:400,minutes:20},
- {id:'s6',code:'X1',name:'خدمة بلا قسم',department:'',price:100,minutes:10}];
-const providers=[{id:'p1',name:'د. منى',department:'نساء'},{id:'p2',name:'د. هالة',department:'نساء'},{id:'p3',name:'د. أحمد',department:'أسنان'},{id:'p4',name:'د. سامي',department:'أشعة'}];
+ {id:'s6',code:'X1',name:'خدمة بلا قسم',department:'',price:100,minutes:10},
+ {id:'s7',code:'K1',name:'كشف عام',department:'خدمات الكشف',price:150,minutes:10}];
+const providers=[{id:'p5',name:'د. كشف',department:'خدمات الكشف'},{id:'p1',name:'د. منى',department:'نساء'},{id:'p2',name:'د. هالة',department:'نساء'},{id:'p3',name:'د. أحمد',department:'أسنان'},{id:'p4',name:'د. سامي',department:'أشعة'}];
 const snap={workspace:{id:'w',mode:'trial'},patients:[{id:'pt',file_no:'1',name:'مريض'}],services,providers,availability:[],appointments:[],visits:[],orders:[],packages:[],catalog_unavailable:[{kind:'services',name:'خدمة غير جاهزة'}],can_manage:true};
 const d=new JSDOM('<main id="root"></main>',{url:'https://reception.test/',runScripts:'outside-only'}),w=d.window,errors=[];
 Object.defineProperty(w,'crypto',{value:webcrypto});w.addEventListener('error',e=>errors.push(e.message));
@@ -24,7 +25,7 @@ const provs=()=>[...q('[name=provider_id]').options].filter(o=>o.value).map(o=>o
 w.SSMPDReception.render(q('#root'));await wait(()=>q('[data-rx-section]'));q('[data-guide-skip]').click();
 q('[data-rx-section="appointments"]').click();q('[data-rx-action="book"]').click();
 // baseline: all departments, native select keeps every service, no providers until a service is picked
-assert(q('.rx-modal [data-rx-dept]'));assert(q('[name=service_id]').classList.contains('rx-combo-native'));assert.deepEqual(natives(),['s1','s2','s3','s4','s5','s6']);assert.deepEqual(provs(),[]);
+assert(q('.rx-modal [data-rx-dept]'));assert(q('[name=service_id]').classList.contains('rx-combo-native'));assert.deepEqual(natives(),['s1','s2','s3','s4','s5','s6','s7']);assert.deepEqual(provs(),[]);
 assert.equal(q('#rx-svc-q').getAttribute('role'),'combobox');assert.equal(q('#rx-svc-list').hidden,true);
 // 1 letter: hint only; 2 letters: matches
 type('#rx-svc-q','ن');assert.equal(opts().length,0);assert(q('#rx-svc-list').textContent.includes('حرفين'));
@@ -54,7 +55,7 @@ type('#rx-svc-q','حشو');assert.equal(q('#rx-svc-list').hidden,false);key('Esc
 q('#rx-svc-q').dispatchEvent(new w.KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true}));assert.equal(q('.rx-modal'),null);
 // department filter
 q('[data-rx-action="book"]').click();
-const deptOpts=[...q('[data-rx-dept]').options].map(o=>o.value);assert.deepEqual(deptOpts,['','أسنان','أشعة','نساء','__none__']);
+const deptOpts=[...q('[data-rx-dept]').options].map(o=>o.value);assert.deepEqual(deptOpts.slice().sort(),['','أسنان','أشعة','نساء','خدمات الكشف','__none__'].sort());
 const dept=v=>{q('[data-rx-dept]').value=v;q('[data-rx-dept]').dispatchEvent(new w.Event('change',{bubbles:true}));};
 dept('أسنان');assert.deepEqual(natives(),['s3','s4']);assert.deepEqual(provs(),['د. أحمد']);
 type('#rx-svc-q','كشف');assert(q('#rx-svc-list').textContent.includes('لا توجد'));assert(q('#rx-svc-list').textContent.includes('في هذا القسم'));
@@ -62,9 +63,12 @@ type('#rx-svc-q','حشو');key('Enter');assert.equal(q('[name=service_id]').valu
 dept('نساء');assert.equal(q('[name=service_id]').value,'s3'.replace('s3',''));assert.deepEqual(natives(),['s1','s2']);assert.deepEqual(provs(),['د. منى','د. هالة']);assert.equal(q('#rx-svc-q').value,'');
 type('#rx-svc-q','حمل');key('Enter');assert.deepEqual(provs(),['د. منى','د. هالة']);
 dept('__none__');assert.deepEqual(natives(),['s6']);assert.deepEqual(provs(),[]);
-dept('');assert.deepEqual(natives(),['s1','s2','s3','s4','s5','s6']);
+dept('خدمات الكشف');assert.deepEqual(natives(),['s7']);assert.deepEqual(provs().sort(),['د. كشف','د. منى','د. هالة','د. أحمد','د. سامي'].sort());type('#rx-svc-q','كشف عام');key('Enter');assert.deepEqual(provs().length,5);
+dept('');type('#rx-svc-q','كشف عام');key('Enter');assert.equal(q('[name=service_id]').value,'s7');assert.equal(provs().length,5); // no dept chosen: consultation service also lists everyone
+dept('أسنان');dept('');type('#rx-svc-q','حمل');key('Enter');assert.deepEqual(provs(),['د. منى','د. هالة']); // other services unchanged
+
 // submit requires a chosen service; chosen service is what gets saved
-q('.rx-modal [name=patient_id]').value='pt';q('.rx-modal form [type=submit]').click();await new Promise(r=>setTimeout(r,30));assert.equal(submitted,null);assert.equal(q('.rx-modal [name=service_id]').value,'');
+q('.rx-combo-clear').click();q('.rx-modal [name=patient_id]').value='pt';q('.rx-modal form [type=submit]').click();await new Promise(r=>setTimeout(r,30));assert.equal(submitted,null);assert.equal(q('.rx-modal [name=service_id]').value,'');
 assert.equal(errors.length,0,errors.join('|'));
 console.log('PASS booking service combobox + department filter: DOM');
 process.exit(0);
