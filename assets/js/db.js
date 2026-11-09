@@ -1360,6 +1360,8 @@
     financeTestUnflag: function(type,key,reason){return handle(client.rpc('clinic_finance_test_unflag',{p_type:type,p_key:key,p_reason:reason}));},
     financeTestDelete: function(type,key,reason,confirm){return handle(client.rpc('clinic_finance_test_delete',{p_type:type,p_key:key,p_reason:reason,p_confirm:confirm}));},
     financePayoutInvoices: function(doctorKey,invoiceIds,taxPct,withholdingPct,method,shiftId,reference,from,to,token){return handle(client.rpc('clinic_finance_doctor_payout_invoices',{p_doctor_key:doctorKey,p_invoice_ids:invoiceIds,p_tax_pct:taxPct,p_withholding_pct:withholdingPct,p_method:method,p_shift_id:shiftId,p_reference:reference,p_from:from,p_to:to,p_token:token}));},
+    financeInsuranceMonth: function(month){return handle(client.rpc('clinic_finance_insurance_month',{p_month:month}));},
+    financeInsurancePay: function(month,amount,method,shiftId,reference,note,token){return handle(client.rpc('clinic_finance_insurance_pay',{p_month:month,p_amount:amount,p_method:method,p_shift:shiftId||null,p_reference:reference,p_note:note,p_token:token}));},
     financeDoctorAccounts: function(){return handle(client.rpc('clinic_finance_doctor_accounts'));},
     financeHrStaff: function(){return handle(client.rpc('clinic_finance_hr_staff'));},
     financeChannelCommand: function(action,payload,token){return handle(client.rpc('clinic_finance_channel_command',{p_action:action,p_payload:payload,p_token:token}));},
