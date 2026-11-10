@@ -11,8 +11,8 @@ window.SSMPD_CONFIG = {
 
   // مفاتيح Supabase — تُملأ بعد إنشاء المشروع (خطوة البنية التحتية)
   supabase: {
-    url: "https://uuijfbpgvtdxgaosqpxo.supabase.co",
-    anonKey: "sb_publishable_QZ_h12VmRVm7PoK69bKjpg_2ATE1zNj"
+    url: "https://api.swnwclinics.com",   // self-hosted Supabase on our server since 2026-11-10 (was https://uuijfbpgvtdxgaosqpxo.supabase.co)
+    anonKey: "sb_publishable_FB80ujYJoicE5K1kBCABbP_gSZFYFzk"
   },
 
   // جسر أرشيف Google Drive — رابط Web App بعد نشر السكريبت من حساب المركز
