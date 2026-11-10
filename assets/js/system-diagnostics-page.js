@@ -3,7 +3,7 @@
 
   var ERROR_KEY='swnw_system_errors_v1';
   var SUPER_MARKER='swnw_diag_super_v1';
-  var SUPA='https://uuijfbpgvtdxgaosqpxo.supabase.co';
+  var SUPA='https://api.swnwclinics.com';
   var DRIVE='https://script.google.com/macros/s/AKfycbzEs73BE101-gIlSx_qwdF625nSalQ2i6mob7mGqH3oN4x40NlZoowjNta3KtKaXYjTYA/exec';
   var results={};
   var isSuper=false;

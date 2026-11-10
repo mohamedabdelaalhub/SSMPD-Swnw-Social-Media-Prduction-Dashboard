@@ -19,8 +19,8 @@
 <script>
 (function(){
 'use strict';
-var SUPABASE_URL='https://uuijfbpgvtdxgaosqpxo.supabase.co';
-var SUPABASE_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJIUzI1NiIsInJlZiI6InV1aWpmYnBndnRkeGdhb3NxcHhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5MDc3MDUsImV4cCI6MjEwMjQ4MzcwNX0.kIiSfXRG2SJtsP1v3GlllIhcxYP9sOEhdGk40tOhsNw';
+var SUPABASE_URL='https://api.swnwclinics.com';
+var SUPABASE_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzk0MzQzMzI1LCJleHAiOjE5NTIwMjMzMjV9.BsprU5Z6n5kZzzLL7XvUQsk57J-t83heDn5DP3zGggc';
 var db=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON,{auth:{persistSession:false,autoRefreshToken:false}}),app=document.getElementById('app'),params=new URLSearchParams(location.search),directToken=params.get('token'),screenToken=params.get('screen'),phone='',lastGeo=null;
 function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function tm(v){return new Date(v).toLocaleTimeString('ar-EG-u-nu-latn',{timeZone:'Africa/Cairo',hour:'2-digit',minute:'2-digit'});}
