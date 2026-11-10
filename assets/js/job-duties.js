@@ -23,10 +23,8 @@ function resolve(admin,person){
   if(m[0]==='chairman')set.chairman_ceo_founder=1;
   else if(m[0]==='founder')set.founder_partner=1;
   else set[m[0]]=1;});
- /* the owner's combined entry already covers founder + executive duties */
+ /* conservative: the chairman/CEO/founder entry already covers founder + executive duties, so it is shown alone (no duplicates) */
  if(set.chairman_ceo_founder){delete set.founder_partner;delete set.ceo;}
- /* the «المدير التنفيذي» entry describes the executive director role; a combined managing-director title is not it */
- if(set.ceo&&set.managing_director&&title.indexOf("العضو المنتدب")>=0)delete set.ceo;
  return ORDER.filter(function(k){return set[k];});
 }
 function entries(keys){var data=root.SSMPDJobDutiesData,list=(data&&data.roles)||[];return keys.map(function(k){return list.filter(function(r){return r.key===k;})[0];}).filter(Boolean);}

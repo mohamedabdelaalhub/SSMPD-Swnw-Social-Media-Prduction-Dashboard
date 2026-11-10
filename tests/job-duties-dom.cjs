@@ -17,7 +17,7 @@ async function show(admin,people,fail){const w=boot(people,fail),host=w.document
  const w0=boot();const data=w0.SSMPDJobDutiesData;assert.equal(data.roles.length,12);
  for(const r of data.roles){for(const f of ['title','daily','periodic','notAuthorized','reportsTo'])assert(r[f]&&String(r[f]).length>2,r.key+'.'+f);}
  assert.equal(new Set(data.roles.map(r=>r.key)).size,12);
- const owner=data.roles.find(r=>r.key==='chairman_ceo_founder');assert.equal(owner.title,'رئيس مجلس الإدارة والرئيس التنفيذي - المؤسس');assert(/منفردًا/.test(owner.notAuthorized)&&/الأرباح/.test(owner.notAuthorized));
+ const owner=data.roles.find(r=>r.key==='chairman_ceo_founder');assert.equal(owner.title,'رئيس مجلس الإدارة والرئيس التنفيذي - المؤسس');assert(/بمفرده/.test(owner.notAuthorized)&&/الأرباح/.test(owner.notAuthorized));
  // role mapping (accounts)
  assert.deepEqual(keys(w0,{id:'1',role:'accountant'}),['accountant']);
  assert.deepEqual(keys(w0,{id:'1',role:'financial_manager'}),['financial_manager']);
@@ -29,7 +29,7 @@ async function show(admin,people,fail){const w=boot(people,fail),host=w.document
  for(const r of ['super_admin','general_manager','page_manager','designer','approver','contract_manager','psychology_specialist','digital_agent'])assert.deepEqual(keys(w0,{id:'1',role:r}),[],r);
  // job title / kind refinement
  assert.deepEqual(keys(w0,{id:'2',role:'super_admin',roles:['super_admin','accountant']},{job_title:'رئيس مجلس الادارة- المؤسس ',kind:'unclassified',department:'الادارة'}),['chairman_ceo_founder','accountant']);
- assert.deepEqual(keys(w0,{id:'3',role:'super_admin',roles:['super_admin','sono_doctor']},{job_title:'مدير تنفيذي - العضو المنتدب - شريك مؤسس',kind:'both'}),['founder_partner','managing_director','doctor']);
+ assert.deepEqual(keys(w0,{id:'3',role:'super_admin',roles:['super_admin','sono_doctor']},{job_title:'مدير تنفيذي - العضو المنتدب - شريك مؤسس',kind:'both'}),['founder_partner','managing_director','ceo','doctor']);
  assert.deepEqual(keys(w0,{id:'4',role:'super_admin'},{job_title:'مدير تنفيذي'}),['ceo']);
  assert.deepEqual(keys(w0,{id:'5',role:'general_manager'},{job_title:'مدير إداري',department:'الإدارة'}),[]);
  assert.deepEqual(keys(w0,{id:'6',role:'reception'},{job_title:'مسؤول الشؤون القانونية'}),['reception','legal']);
@@ -40,7 +40,7 @@ async function show(admin,people,fail){const w=boot(people,fail),host=w.document
  assert.equal(r.host.querySelector('.ph-duties summary h2').textContent,'مهامي الوظيفية');
  assert.equal(r.host.querySelectorAll('[role=tab]').length,0);
  assert.equal(r.host.querySelector('.ph-duty-single h3').textContent,'المحاسب');
- const txt=r.host.textContent;for(const s of ['تسجيل القيود، مطابقة الخزينة والبنوك، تجهيز كشوف الصرف','إعداد كشوف المرتبات والمخالصات والتسويات، تجهيز تقارير الإقفال','اعتماد ما أعدّه','المدير المالي'])assert(txt.includes(s),s);
+ const txt=r.host.textContent;for(const s of ['تسجيل القيود، مطابقة الخزينة والبنوك، تجهيز كشوف الصرف','إعداد كشوف المرتبات والمخالصات والتسويات، تجهيز تقارير الإقفال','اعتماد ما أُعِدّ بواسطة صاحب الدور نفسه','المدير المالي'])assert(txt.includes(s),s);
  assert.equal(r.host.querySelectorAll('.ph-duty-field').length,4);
  // render: three further single roles
  for(const [role,title] of [['reception','الاستقبال'],['customer_service','خدمة العملاء'],['nursing','رئيس التمريض / التمريض'],['financial_manager','المدير المالي'],['sono_doctor','الطبيب']]){r=await show({id:'s'+role,role});assert.equal(r.host.querySelector('.ph-duty-single h3').textContent,title);}
@@ -78,6 +78,19 @@ async function show(admin,people,fail){const w=boot(people,fail),host=w.document
  const w1=boot([]);const h=w1.document.getElementById('root');w1.SSMPDJobDuties.mount(h,{id:'e3',role:'page_manager'});assert(h.textContent.includes('جاري تحميل'));assert(!h.textContent.includes('تواصل مع الإدارة'));await tick();assert(h.textContent.includes('تواصل مع الإدارة'));
  // no HTML injection from data
  assert.equal(w0.SSMPDJobDuties._norm('الإدارة'),'الاداره');
+ // gender-neutral wording: no gendered possessives on the "not authorized" lines or anywhere in the data
+ for(const x of data.roles)for(const f of ['daily','periodic','notAuthorized']){assert(!/(مرتبه|مرتبها|أتعابها|مخالصتها|مستحقاته|نصيبه|توزيعاته|بنفسه|بنفسها)(\s|$|،)/.test(String(x[f])),x.key+'.'+f);}
+ assert(data.roles.find(x=>x.key==='managing_director').notAuthorized.includes('صاحب الدور'));
+ // the owner-specific items live only in the chairman/CEO/founder entry; the generic executive entry has none of them
+ const ceoE=data.roles.find(x=>x.key==='ceo');assert(!/الهوية|الاستراتيجية|المنتجات الرقمية|التسويق والسوشيال/.test(ceoE.daily+ceoE.periodic+ceoE.notAuthorized));assert(/بمفرده/.test(ceoE.notAuthorized)&&ceoE.reportsTo==='الشركاء');
+ assert(/الهوية/.test(owner.daily)&&/الإدارة الاستراتيجية/.test(owner.daily)&&/المنتجات الرقمية والحلول البرمجية/.test(owner.daily));
+ // Dina sees both the managing-director and the executive-director entries
+ r=await show({id:'dn',role:'super_admin',roles:['super_admin','sono_doctor']},[{admin_id:'dn',job_title:'مدير تنفيذي - العضو المنتدب - شريك مؤسس',kind:'both'}]);
+ assert.deepEqual([...r.host.querySelectorAll('[role=tab]')].map(t=>t.textContent),['الشريك المؤسس','العضو المنتدب / المدير الطبي والإداري','المدير التنفيذي','الطبيب']);
+ // the owner sees the chairman/CEO/founder entry only (no duplicate generic executive entry)
+ assert(!keys(w0,{id:'o',role:'super_admin'},{job_title:'رئيس مجلس الإدارة والرئيس التنفيذي - المؤسس'}).includes('ceo'));
+ // roles without approved text keep the neutral empty message
+ for(const role of ['contract_manager','psychology_specialist','page_manager','designer','approver','digital_agent']){r=await show({id:'u'+role,role},[]);assert(r.host.textContent.includes('تواصل مع الإدارة'),role);}
 
  // home integration: personal-home.js renders the host element and mounts the card
  const dom=new JSDOM('<button id="notif-bell-btn"></button><span id="notif-badge"></span><div id="notif-panel" hidden></div><div id="root"></div>',{url:'https://example.test',runScripts:'outside-only',pretendToBeVisual:true});
