@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { makeKitStore } from "./kit-store.ts";
 
 // Claude daily-content gateway ("البوابة").
 // Who can call it: only a request carrying X-Run-Token = an unexpired row in
@@ -28,7 +29,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 //   POST ?op=image                             {prompt,brand,content_id?,size?,quality?} -> PNG (OpenAI)
 //        logs the prompt; 409 if the exact same prompt was used in the page's last 20 items.
 //   POST ?op=media_recent                     {brand, items?} -> what that page used lately (keys, queries, prompts)
-//   POST ?op=kit_get&name=<file>                                 -> file bytes (private kit)
+//   POST ?op=kit_get&name=<file>                                 -> file bytes (private kit; our server first, header X-Kit-Source)
 //   POST ?op=kit_put&name=<file>               body = bytes     -> {ok}
 //   POST {op:"rest", method, path, body?, prefer?}               -> REST response
 //
@@ -54,6 +55,12 @@ const ALLOWED: [string, RegExp][] = [
   // also stops Claude from approving/closing/deleting tasks (claude_task_guard), whatever is called here.
   ["POST", /^\/rest\/v1\/rpc\/claude_[a-z_]+$/],
 ];
+// 2026-11-10 (owner decision: content files on our server, not Supabase Storage): with SWNW_FILES_BASE set, kit_get reads
+// <base>/f/kit/<name> first and kit_put also writes there; anything the server can't serve comes from the bucket as before.
+const kit = makeKitStore((Deno.env.get("SWNW_FILES_BASE") || "").replace(/\/+$/, ""), fetch, (p) => {
+  // deno-lint-ignore no-explicit-any
+  const rt = (globalThis as any).EdgeRuntime; if (rt?.waitUntil) rt.waitUntil(p.catch(() => {})); else p.catch(() => {});
+});
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 // Words the voice said wrong (Mohamed, 2026-10-11). Whole words only; the kit file adds more.
@@ -182,14 +189,14 @@ Deno.serve(async (req) => {
     const name = q.get("name") || "";
     if (!/^[\w\-. \/]{1,120}$/.test(name) || name.includes("..")) return json({ ok: false, error: "name" }, 400);
     if (op === "kit_get") {
-      const { data, error } = await admin.storage.from("automation-kit").download(name);
-      if (error || !data) return json({ ok: false, error: "not found" }, 404);
-      return new Response(data, { headers: { "Content-Type": "application/octet-stream" } });
+      const got = await kit.get(admin, name, tok);
+      if (!got) return json({ ok: false, error: "not found" }, 404);
+      return new Response(got.body, { headers: { "Content-Type": "application/octet-stream", "X-Kit-Source": got.source } });
     }
     const bytes = new Uint8Array(await req.arrayBuffer());
-    const { error } = await admin.storage.from("automation-kit").upload(name, bytes, { upsert: true, contentType: "application/octet-stream" });
+    const error = await kit.put(admin, name, bytes, tok);
     if (name === "tts/pronunciations.json") kitPronunciations = null;
-    return error ? json({ ok: false, error: error.message }, 500) : json({ ok: true });
+    return error ? json({ ok: false, error }, 500) : json({ ok: true });
   }
 
   // Read a staff-uploaded file (raw center videos / images) attached to a content item.
