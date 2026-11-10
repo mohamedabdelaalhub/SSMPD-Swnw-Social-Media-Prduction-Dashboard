@@ -29,7 +29,7 @@
  async function save(item,output,source,settings,sceneJobId,baseVersion){
   var folder=item.id+'/'+crypto.randomUUID()+'/',outputPath=folder+'output.png',sourcePath=source?folder+'source.png':null;
   var storage=client().storage.from(bucket);
-  for(var entry of [[outputPath,output],[sourcePath,source]]){if(!entry[0])continue;var upload=await storage.upload(entry[0],entry[1],{contentType:'image/png',upsert:false});if(upload.error)throw new Error('تعذر حفظ التصميم الخاص. تأكد من تشغيل ملف تفعيل التخزين في Supabase. '+upload.error.message);}
+  for(var entry of [[outputPath,output],[sourcePath,source]]){if(!entry[0])continue;var upload=await storage.upload(entry[0],entry[1],{contentType:'image/png',upsert:false});if(upload.error)throw new Error('تعذر حفظ التصميم الخاص. تأكد من تشغيل ملف تفعيل التخزين في Supabase. '+upload.error.message);window.SSMPDDb.mirrorToServer&&window.SSMPDDb.mirrorToServer(bucket,entry[0],entry[1]);}
   var result=await client().rpc('save_private_design_version',{p_content_id:item.id,p_output_url:base()+outputPath,p_source_url:sourcePath?base()+sourcePath:null,p_scene_job_id:sceneJobId||null,p_settings:settings,p_base_version:baseVersion||null});
   if(result.error)throw result.error;return result.data;
  }
@@ -41,6 +41,7 @@
    var key=item.id+'/'+crypto.randomUUID()+'/output.png';
    var upload=await storage.upload(key,blobs[i],{contentType:'image/png',upsert:false});
    if(upload.error)throw new Error('تعذر حفظ الشريحة '+(i+1)+'. '+upload.error.message);
+   window.SSMPDDb.mirrorToServer&&window.SSMPDDb.mirrorToServer(bucket,key,blobs[i]);
    urls.push(base()+key);
   }
   var result=await client().rpc('save_private_carousel',{p_content_id:item.id,p_output_urls:urls,p_settings:settings||{}});

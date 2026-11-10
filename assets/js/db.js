@@ -164,6 +164,9 @@
     return data;
   }
 
+  // Phase 3a: copy a fresh upload to our server; any error is swallowed (see Db.mirrorToServer).
+  function mirrorUpload(bucket, path, file) { try { if (window.SSMPDDb && window.SSMPDDb.mirrorToServer) window.SSMPDDb.mirrorToServer(bucket, path, file); } catch (e) { /* ignore */ } }
+
   var Db = {
     client: client,
 
@@ -219,6 +222,23 @@
         return res.data || { ok: false, reason: "unreachable" };
       }, function () { return { ok: false, reason: "unreachable" }; });
     },
+    // Phase 3a (owner decision 2026-11-10): after a successful upload to Supabase Storage, keep a copy of the same
+    // file on our server (files.swnwclinics.com, f/<bucket>/<same path>) so publishing/previews read it from there
+    // instead of Supabase. Fire-and-forget: it never delays, blocks or fails the save. The server only accepts it
+    // from an active staff session, never overwrites a different file, and only server jobs can read it back.
+    mirrorToServer: function (bucket, path, blob) {
+      try {
+        if (!blob || !path || !/^(content-designs|video-inputs)$/.test(bucket)) return;
+        var base = (window.SSMPD_CONFIG && window.SSMPD_CONFIG.filesBase) || "https://files.swnwclinics.com";
+        Promise.resolve(client.auth.getSession()).then(function (r) {
+          var token = r && r.data && r.data.session && r.data.session.access_token;
+          if (!token) return;
+          return fetch(base + "/v1/f/" + bucket + "/" + String(path).split("/").map(encodeURIComponent).join("/"), {
+            method: "PUT", headers: { Authorization: "Bearer " + token }, body: blob
+          });
+        }).catch(function () {});
+      } catch (e) { /* never affects the dashboard */ }
+    },
     // مرفقات طلب تصميم Claude (صور للاستخدام + مثال للشكل المطلوب)
     listClaudeDesignInputs: function (contentId) {
       return handle(client.from("claude_design_inputs").select("*").eq("content_id", contentId).order("created_at", { ascending: true }));
@@ -229,6 +249,7 @@
       var bucket = client.storage.from("video-inputs");
       return bucket.upload(storagePath, file, { cacheControl: "3600", upsert: false, contentType: file.type || undefined }).then(function (res) {
         if (res.error) throw res.error;
+        mirrorUpload("video-inputs", storagePath, file);
         return handle(client.from("claude_design_inputs").insert({
           content_id: contentId, kind: kind, storage_path: storagePath, file_name: file.name || safeName, created_by: adminId
         }).select().single()).catch(function (e) { bucket.remove([storagePath]).catch(function () {}); throw e; });
@@ -468,6 +489,7 @@
         contentType: file.type || undefined
       }).then(function (res) {
         if (res.error) throw res.error;
+        mirrorUpload("video-inputs", storagePath, file);
         return handle(client.rpc("register_video_asset", {
           p_content_id: contentId,
           p_asset_type: assetType,
