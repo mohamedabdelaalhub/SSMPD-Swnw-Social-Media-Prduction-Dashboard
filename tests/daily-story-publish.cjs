@@ -1,6 +1,6 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),ts=require('typescript');
 let handler,calls=[],dbWrites=[],mode='story',failIg=false,versionError=false,missingFb=false,composeCount=0;
-const sandbox={console,URL,Request,Response,fetch,Uint8Array,Date,setTimeout,clearTimeout,Deno:{env:{get:k=>k==='SUPABASE_URL'?'https://test.supabase.co':k==='META_PUBLISH_CRON_SECRET'?'cron':'configured'},serve:fn=>handler=fn},createClient:()=>admin};
+const sandbox={console,URL,Request,Response,fetch,Uint8Array,Date,setTimeout,clearTimeout,Deno:{env:{get:k=>k==='SUPABASE_URL'?'https://test.supabase.co':k==='META_PUBLISH_CRON_SECRET'?'cron':'configured'},serve:fn=>handler=fn},createClient:()=>admin,makePublishAssetStore:()=>async()=>'https://test/stored.png'};
 let source=fs.readFileSync('supabase/functions/meta-publish-process/index.ts','utf8').replace(/^import .*;\n/gm,'');
 const js=ts.transpileModule(source,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS},reportDiagnostics:true});assert.equal(js.diagnostics.length,0);vm.createContext(sandbox);vm.runInContext(fs.readFileSync('assets/js/publication-text.js','utf8'),sandbox);vm.runInContext(js.outputText,sandbox);
 const content={id:'content',brand:'sono',content_format:'image_post',design_file_url:'https://test/private.png',agent_raw_output:{content_kind:'daily_clinics',daily_clinics_brief:{day:'السبت',rows:[]}}};
