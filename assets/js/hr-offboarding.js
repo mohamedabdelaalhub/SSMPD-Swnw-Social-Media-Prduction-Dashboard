@@ -157,7 +157,7 @@
       if (action === 'cancel') return U.modal('إلغاء إنهاء الخدمة', U.field('reason', 'سبب الإلغاء', 'text', '', 'required minlength="3"'), function (v) { return command('cancel', { id: c.id, reason: v.reason }); });
       if (action === 'lastday') return U.modal('تغيير آخر يوم', U.field('last_day', 'آخر يوم عمل', 'date', day(c.last_day), 'required'), function (v) { return command('change_last_day', { id: c.id, last_day: v.last_day }); });
       if (action === 'addline') {
-        return U.modal('إضافة بند للكشف', U.select('kind', 'النوع', opts(KIND), 'due_on_him') + U.field('label', 'الوصف', 'text', '', 'required minlength="2"') + U.field('amount', 'القيمة (للمستند 0)', 'number', 0, 'min="0" step="0.01"'), function (v) {
+        return U.modal('إضافة بند للكشف', U.select('kind', 'النوع', opts(KIND), opts(KIND)[0][0]) + U.field('label', 'الوصف', 'text', '', 'required minlength="2"') + U.field('amount', 'القيمة (للمستند 0)', 'number', 0, 'min="0" step="0.01"'), function (v) {
           return command('add_line', { id: c.id, kind: v.kind, label: v.label, amount: v.amount });
         });
       }

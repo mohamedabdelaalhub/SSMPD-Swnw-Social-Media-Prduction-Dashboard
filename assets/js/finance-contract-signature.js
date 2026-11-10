@@ -50,7 +50,7 @@
     var root = document.querySelector('.fc-workspace') || document;
     var groups = root.querySelectorAll('.fc-doctor-group'), keys = order(d);
     [].forEach.call(root.querySelectorAll('.fc-sig-btn,.fc-sig-state,[data-sig-templates]'), function (n) { n.remove(); });
-    if (!info || !groups.length) { if (info) templates(d, root); return; }
+    if (!info || !groups.length) { if (info) { templates(d, root); wire(d, root); } return; }
     var map = info.contracts || {};
     [].forEach.call(groups, function (g, gi) {
       var key = keys[gi]; if (!key) return;
@@ -74,6 +74,18 @@
       }
     });
     templates(d, root);
+    wire(d, root);
+  }
+  // The buttons painted here are added after the finance panel bound its [data-fin-action] click handlers, so they would do nothing: bind them here.
+  function wire(d, root) {
+    [].forEach.call(root.querySelectorAll('.fc-sig-btn,.fc-sig-state,[data-sig-templates]'), function (n) {
+      [].forEach.call(n.hasAttribute('data-fin-action') ? [n] : n.querySelectorAll('[data-fin-action]'), function (b) {
+        b.onclick = function () {
+          var cash = window.SSMPDFinanceCash, h = cash && cash.helpers, a = window.SSMPDFinanceControls && window.SSMPDFinanceControls.act;
+          if (a && h) a(b.getAttribute('data-fin-action'), b.getAttribute('data-id'), d, h);
+        };
+      });
+    });
   }
   function templates(d, root) {
     var host = root.querySelector('.fc-doctor-group'); host = host && host.parentNode; if (!host || !info) return;
@@ -106,16 +118,20 @@
       '<button type="button" class="btn ghost sm" data-clause-up aria-label="أعلى">↑</button><button type="button" class="btn ghost sm" data-clause-down aria-label="أسفل">↓</button><button type="button" class="btn ghost sm" data-clause-del aria-label="حذف البند">✕</button></div>';
   }
   function editor(kind, d) {
-    var list = (info && info.templates || []).filter(function (t) { return t.kind === kind; }), t = list[0] || { title: '', body: '', clauses: [] };
-    var draft = t.id && !t.published ? t : null;
+    var list = (info && info.templates || []).filter(function (t) { return t.kind === kind; }), draft = list.filter(function (x) { return !x.published; })[0], t = draft;
+    if (!draft) { // published texts are immutable: only an unpublished draft can be edited
+      return overlay('<div class="modal-head"><h2>' + KIND[kind] + '</h2><button type="button" class="modal-close" aria-label="إغلاق" data-sig-close>×</button></div>' +
+        '<p class="fc-note" role="status" data-tpl-locked>هذا النص منشور ولا يمكن تعديله بعد النشر. المنشور يظل كما وقّع عليه الأطباء، ولا توجد مسودة غير منشورة لتعديلها.</p>' +
+        '<div class="fc-actions"><button type="button" class="btn ghost" data-sig-close>إغلاق</button></div>');
+    }
     var o = overlay('<div class="modal-head"><h2>تعديل ' + KIND[kind] + '</h2><button type="button" class="modal-close" aria-label="إغلاق" data-sig-close>×</button></div>' +
-      '<p class="fc-note">' + (draft ? 'بتعدّل مسودة (نسخة ' + draft.version + ') غير منشورة.' : 'الحفظ هيعمل نسخة جديدة (رقم ' + ((t.version || 0) + 1) + '). كل موافقة بتتسجل برقم النسخة اللي الطبيب شافها، والنسخ القديمة بتفضل محفوظة.') +
+      '<p class="fc-note">' + 'بتعدّل مسودة (نسخة ' + draft.version + ') غير منشورة. بعد النشر النص بيتقفل ومبيتعدّلش.' +
       (kind === 'contract' ? ' تقدر تستخدم في المقدمة والبنود: {{doctor_name}} {{doctor_key}} {{reference}} {{template_version}}. جدول الشروط المالية بيتضاف تلقائيًا بعد البنود.' : '') + '</p>' +
       '<label class="fc-field">العنوان<input name="title" data-tpl-title value="' + esc(t.title) + '"></label>' +
       '<label class="fc-field">المقدمة<textarea name="body" rows="5" data-tpl-body>' + esc(t.body) + '</textarea></label>' +
       '<h4>البنود</h4><div data-clauses>' + (t.clauses || []).map(clauseRow).join('') + '</div>' +
       '<p><button type="button" class="btn ghost sm" data-clause-add>＋ إضافة بند</button></p><p role="status" data-tpl-msg></p>' +
-      '<div class="fc-actions"><button type="button" class="btn ghost" data-tpl-save="draft">حفظ كمسودة</button> <button type="button" class="btn" data-tpl-save="publish">نشر كنسخة جديدة</button> <button type="button" class="btn ghost" data-sig-close>إلغاء</button></div>');
+      '<div class="fc-actions"><button type="button" class="btn ghost" data-tpl-save="draft">حفظ كمسودة</button> <button type="button" class="btn" data-tpl-save="publish">نشر هذه المسودة</button> <button type="button" class="btn ghost" data-sig-close>إلغاء</button></div>');
     var msg = function (m) { o.querySelector('[data-tpl-msg]').textContent = m || ''; }, armed = false;
     o.addEventListener('click', function (e) {
       var b = e.target.closest && e.target.closest('button'); if (!b) return; var row = b.closest('[data-clause]'), box = o.querySelector('[data-clauses]');
@@ -127,7 +143,7 @@
       if (mode === 'publish' && !armed) { armed = true; b.textContent = 'تأكيد النشر (لا يمكن التراجع)'; return; }
       var payload = { kind: kind, title: o.querySelector('[data-tpl-title]').value, body: o.querySelector('[data-tpl-body]').value, publish: mode === 'publish',
         clauses: [].map.call(o.querySelectorAll('[data-clause-text]'), function (x) { return x.value; }).filter(function (x) { return x.trim(); }) };
-      if (draft) payload.id = draft.id;
+      payload.id = draft.id;
       cmd('template_save', payload, newToken()).then(function () { o.remove(); return refresh(); }).then(function () { paint(d); }, function (er) { armed = false; msg((er && er.message) || 'تعذر الحفظ'); });
     });
     return o;
