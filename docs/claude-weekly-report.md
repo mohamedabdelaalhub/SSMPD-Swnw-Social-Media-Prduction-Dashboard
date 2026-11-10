@@ -5,7 +5,7 @@ It is generated every Friday (~15:45 Cairo) and due the same day 22:59 Cairo. Th
 
 Reader: Mohamed (owner, non-technical, Egyptian Arabic). He wants to know in 2 minutes: what happened, what it means, what he must decide, what happens next. No jargon, no padding, no invented numbers.
 
-## 1. Gather (read-only, Supabase MCP `execute_sql`, project `uuijfbpgvtdxgaosqpxo`)
+## 1. Gather (read-only, SQL through `bash scripts/claude-db.sh sql` — see docs/claude-server-access.md; never the Supabase MCP)
 1. `select public.weekly_marketing_report_data(7);` — the ONE source for numbers (published posts + links + reach/interactions, previous-week totals, top/weakest posts, format and hour-of-day performance, next-7-days schedule, items waiting approval, ad campaigns, lead counts, social messages, followers, marketing-project tasks).
 2. Last week's report: `select * from weekly_reports order by week_end desc limit 1;` — compare: which recommendations were followed, which priorities were met.
 3. Partnerships / outreach / audience research evidence (done by staff): 
@@ -65,8 +65,8 @@ Sections, in this order (after that first page):
 13. **مقترحات التنفيذ** — max 5 concrete proposals ranked by (impact ÷ effort), each with the owner (موظف الصفحات/المصمم/الاستقبال/Claude), the date, and the expected effect. Anything that needs spend or a decision goes into section 7 instead; never start ads or change settings yourself.
 
 ## 4. Deliver
-1. Mint a run token: `insert into public.automation_run_tokens(note) values ('weekly report') returning token;` (never print it).
-2. Gateway: POST `https://uuijfbpgvtdxgaosqpxo.supabase.co/functions/v1/claude-automation` header `X-Run-Token`, JSON `{"op":"rest",...}`:
+1. Mint a run token: `bash scripts/claude-db.sh token "weekly report"` (never print it).
+2. Gateway: POST `https://api.swnwclinics.com/functions/v1/claude-automation` header `X-Run-Token`, JSON `{"op":"rest",...}`:
    - find the open occurrence: GET `/rest/v1/tasks?title=eq.<URL-encoded title>&status=in.(todo,in_progress,revision)&order=due_at.asc&limit=1&select=id,status,due_at,return_note` — if none, stop silently (already submitted). If `status=revision`, read `return_note` and fix exactly that.
    - POST `/rest/v1/rpc/task_set_status` `{p_task_id, p_status:"in_progress", p_note:"بدأت إعداد التقرير"}` (skip if already in_progress).
 3. Save the report as a **Google Doc on Google Drive** (task files live on Drive, never on Supabase Storage): Google Drive connector → folder «تقارير أسبوعية» inside the dashboard archive folder (id `1xghscimJG2f8CB2N3I0lC3fHrhZk2aMO`; create the subfolder once, reuse it) → title `تقرير تسويق سونو الأسبوعي — <YYYY-MM-DD>`. If Doc creation fails, upload the same content as an `.html` file and say so.

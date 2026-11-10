@@ -2,6 +2,8 @@
 
 Run once per month, between the 1st and the 3rd (Cairo time), for the **previous** month. Reader: Mohamed (owner) and the general manager — Egyptian Arabic, short, fair, specific, never humiliating. This is a coaching note, not a verdict.
 
+All SQL below runs through `bash scripts/claude-db.sh sql "..."` (see docs/claude-server-access.md) — never the Supabase MCP connector, which is the old cloud copy since 2026-11-10.
+
 ## 1. Check whether it is needed
 `select count(*) from staff_monthly_summaries where month = (date_trunc('month', now() at time zone 'Africa/Cairo') - interval '1 month')::date and source = 'claude';`
 If every active staff member with data already has a `claude` summary → stop silently. (On the 3rd a database fallback writes a rule-based `system` summary for anyone still missing; your version replaces it.)
