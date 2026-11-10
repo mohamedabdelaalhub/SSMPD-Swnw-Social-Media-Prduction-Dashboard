@@ -121,3 +121,20 @@
 
 .ph-inbox-head .ph-last-refresh{flex-basis:100%;order:9;font-size:12px;color:var(--c-muted,#6B7688)}
 .ph-inbox-head .ph-refresh-now{color:var(--c-primary,#0F369D);border:1px solid var(--c-primary,#0F369D)}
+/* مهامي الوظيفية (read-only duties card) */
+.ph-duties>summary{display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;list-style:none}
+.ph-duties>summary::-webkit-details-marker{display:none}
+.ph-duties>summary::after{content:"▾";color:var(--ph-mute);margin-inline-start:8px}
+.ph-duties[open]>summary::after{content:"▴"}
+.ph-duties>summary:focus-visible,.ph-duty-tab:focus-visible,.ph-duty-panel:focus-visible{outline:2px solid var(--ph-brand);outline-offset:2px}
+.ph-duties-count{font-size:12px;color:var(--ph-mute);margin-inline-start:auto}
+.ph-duties-body{margin-top:10px}
+.ph-duty-tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.ph-duty-tab{border:1px solid var(--ph-line);background:var(--ph-soft);color:var(--ph-ink);border-radius:99px;padding:6px 14px;font:inherit;font-size:13px;cursor:pointer}
+.ph-duty-tab.on{background:var(--ph-brand);border-color:var(--ph-brand);color:#fff}
+.ph-duty-single h3{margin:0 0 8px;font-size:15px}
+.ph-duty-field{padding:8px 0;border-top:1px solid var(--ph-line)}
+.ph-duty-field:first-child{border-top:0}
+.ph-duty-field h4{margin:0 0 4px;font-size:13px;color:var(--ph-mute)}
+.ph-duty-field p,.ph-duty-field ul{margin:0;line-height:1.8;font-size:14px}
+.ph-duty-field ul{padding-inline-start:20px}
