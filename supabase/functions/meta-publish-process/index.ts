@@ -2,6 +2,8 @@ import "../../../assets/js/publication-text.js";
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { Image } from "https://deno.land/x/imagescript@1.3.0/mod.ts";
+import { composeStoryBitmap } from "./story-compose.ts";
+import { makePublishAssetStore } from "./files-store.ts";
 
 // Meta Auto Publisher — Phase 43
 //
@@ -17,6 +19,11 @@ import { Image } from "https://deno.land/x/imagescript@1.3.0/mod.ts";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const CRON_SECRET = Deno.env.get("META_PUBLISH_CRON_SECRET");
 const GRAPH_VERSION = "v26.0";
+// 2026-11-10 (owner decision: content files live on our server, not Supabase Storage — cuts Supabase egress):
+// when SWNW_FILES_BASE is set (https://files.swnwclinics.com), publish copies are PUT to <base>/v1/p/meta/<name> and Meta
+// fetches them from our server. Unset = old behaviour. Any server failure falls back to the old Supabase bucket, so
+// publishing never breaks because of the server.
+const storePublishAsset = makePublishAssetStore((Deno.env.get("SWNW_FILES_BASE") || "").replace(/\/+$/, ""));
 
 type GoogleServiceAccount = {
   client_email: string;
@@ -224,12 +231,7 @@ async function rehostImageToStorage(admin: ReturnType<typeof createClient>, jobI
   const ext = extByType[contentType] || contentType.split("/")[1] || "jpg";
   const path = `${jobId}${suffix}.${ext}`;
 
-  const up = await admin.storage
-    .from("meta-publish-assets")
-    .upload(path, bytes, { contentType, upsert: true });
-  if (up.error) throw new Error("فشل رفع الصورة لـSupabase Storage: " + up.error.message);
-
-  return admin.storage.from("meta-publish-assets").getPublicUrl(path).data.publicUrl;
+  return await storePublishAsset(admin, path, bytes, contentType);
 }
 
 async function publishFacebookPhoto(pageId: string, token: string, imageUrl: string, message: string) {
@@ -574,27 +576,16 @@ async function processJob(admin: ReturnType<typeof createClient>, job: any) {
 }
 
 // ---------- ستوري (٩:١٦) على فيسبوك وانستجرام ----------
-// الصورة: خلفية مطموسة من نفس التصميم + التصميم في النص بعرض ١٠٠٠px. الريل: نفس الفيديو (٩:١٦ أصلاً).
-async function composeStoryImage(admin: ReturnType<typeof createClient>, jobId: string, srcUrl: string): Promise<string> {
+// الصورة (2026-11-09، معتمد من محمد): خلفية بلور ناعم من نفس التصميم متلوّنة بألوان هوية الصفحة
+// + التصميم في النص بحواف مدوّرة وظل + خط لون مميز تحته. الريل: نفس الفيديو (٩:١٦ أصلاً).
+async function composeStoryImage(admin: ReturnType<typeof createClient>, jobId: string, srcUrl: string, brand: string | null): Promise<string> {
   const res = await fetch(srcUrl);
   if (!res.ok) throw new Error("تعذّر قراءة التصميم لعمل الستوري (HTTP " + res.status + ")");
   const src = await Image.decode(new Uint8Array(await res.arrayBuffer()));
-  const W = 1080, H = 1920;
-  const bg = src.clone();
-  const k = Math.max(W / bg.width, H / bg.height);
-  bg.resize(Math.ceil(bg.width * k), Math.ceil(bg.height * k));
-  bg.crop(Math.floor((bg.width - W) / 2), Math.floor((bg.height - H) / 2), W, H);
-  bg.resize(54, 96).resize(W, H); // طمس
-  try { bg.lightness(0.82); } catch { /* optional */ }
-  const fg = src.clone();
-  const fw = 1000;
-  fg.resize(fw, Math.round(fg.height * fw / fg.width));
-  bg.composite(fg, Math.round((W - fw) / 2), Math.max(0, Math.round((H - fg.height) / 2)));
-  const jpg = await bg.encodeJPEG(88);
+  const out = composeStoryBitmap(Image, src, brand);
+  const jpg = await out.encodeJPEG(88);
   const path = `${jobId}-story.jpg`;
-  const up = await admin.storage.from("meta-publish-assets").upload(path, jpg, { contentType: "image/jpeg", upsert: true });
-  if (up.error) throw new Error("فشل رفع صورة الستوري: " + up.error.message);
-  return admin.storage.from("meta-publish-assets").getPublicUrl(path).data.publicUrl;
+  return await storePublishAsset(admin, path, jpg, "image/jpeg");
 }
 
 async function publishInstagramStory(igUserId: string, token: string, media: { imageUrl?: string; videoUrl?: string }) {
@@ -639,7 +630,7 @@ async function publishStories(admin: ReturnType<typeof createClient>, job: any, 
   let storyImage: string | null = null;
   if (!video) {
     if (!still) throw new Error("مفيش تصميم نعمل منه ستوري");
-    storyImage = nativeImage ? still : await composeStoryImage(admin, job.id, still);
+    storyImage = nativeImage ? still : await composeStoryImage(admin, job.id, still, job.brand || null);
   }
   if (needIg) {
     const r = await publishInstagramStory(cfg.instagram_business_account_id as string, token, video ? { videoUrl: video } : { imageUrl: storyImage as string });
@@ -679,4 +670,3 @@ Deno.serve(async (req) => {
   }
   return json({ ok: true, processed: jobs.length });
 });
-
