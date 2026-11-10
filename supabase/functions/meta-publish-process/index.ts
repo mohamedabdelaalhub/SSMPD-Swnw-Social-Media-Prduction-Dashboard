@@ -3,6 +3,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { Image } from "https://deno.land/x/imagescript@1.3.0/mod.ts";
 import { composeStoryBitmap } from "./story-compose.ts";
+import { makePublishAssetStore } from "./files-store.ts";
 
 // Meta Auto Publisher — Phase 43
 //
@@ -18,6 +19,11 @@ import { composeStoryBitmap } from "./story-compose.ts";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const CRON_SECRET = Deno.env.get("META_PUBLISH_CRON_SECRET");
 const GRAPH_VERSION = "v26.0";
+// 2026-11-10 (owner decision: content files live on our server, not Supabase Storage — cuts Supabase egress):
+// when SWNW_FILES_BASE is set (https://files.swnwclinics.com), publish copies are PUT to <base>/v1/p/meta/<name> and Meta
+// fetches them from our server. Unset = old behaviour. Any server failure falls back to the old Supabase bucket, so
+// publishing never breaks because of the server.
+const storePublishAsset = makePublishAssetStore((Deno.env.get("SWNW_FILES_BASE") || "").replace(/\/+$/, ""));
 
 type GoogleServiceAccount = {
   client_email: string;
@@ -225,12 +231,7 @@ async function rehostImageToStorage(admin: ReturnType<typeof createClient>, jobI
   const ext = extByType[contentType] || contentType.split("/")[1] || "jpg";
   const path = `${jobId}${suffix}.${ext}`;
 
-  const up = await admin.storage
-    .from("meta-publish-assets")
-    .upload(path, bytes, { contentType, upsert: true });
-  if (up.error) throw new Error("فشل رفع الصورة لـSupabase Storage: " + up.error.message);
-
-  return admin.storage.from("meta-publish-assets").getPublicUrl(path).data.publicUrl;
+  return await storePublishAsset(admin, path, bytes, contentType);
 }
 
 async function publishFacebookPhoto(pageId: string, token: string, imageUrl: string, message: string) {
@@ -584,9 +585,7 @@ async function composeStoryImage(admin: ReturnType<typeof createClient>, jobId: 
   const out = composeStoryBitmap(Image, src, brand);
   const jpg = await out.encodeJPEG(88);
   const path = `${jobId}-story.jpg`;
-  const up = await admin.storage.from("meta-publish-assets").upload(path, jpg, { contentType: "image/jpeg", upsert: true });
-  if (up.error) throw new Error("فشل رفع صورة الستوري: " + up.error.message);
-  return admin.storage.from("meta-publish-assets").getPublicUrl(path).data.publicUrl;
+  return await storePublishAsset(admin, path, jpg, "image/jpeg");
 }
 
 async function publishInstagramStory(igUserId: string, token: string, media: { imageUrl?: string; videoUrl?: string }) {
