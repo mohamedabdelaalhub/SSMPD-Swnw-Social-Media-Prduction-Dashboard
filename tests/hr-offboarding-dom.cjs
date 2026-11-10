@@ -56,7 +56,7 @@ const tick = () => new Promise(r => setTimeout(r, 25));
   calls.length = 0;
   aroot.querySelector('[data-offb=defaults]').click(); await tick(); assert.deepEqual([calls[0].p_action, calls[0].p_payload.id], ['load_defaults', 'c1']);
   aroot.querySelector('[data-offb=submit]').click(); await tick(); assert.equal(calls[1].p_action, 'submit_sheet');
-  aroot.querySelector('[data-offb=addline]').click(); f = d.querySelector('.wp-modal form'); f.elements.kind.value = 'due_on_him'; f.elements.label.value = 'غرامة'; f.elements.amount.value = '50'; await submit();
+  aroot.querySelector('[data-offb=addline]').click(); f = d.querySelector('.wp-modal form'); assert.equal(f.elements.kind.options[0].value, 'due_to_him'); assert.equal(f.elements.kind.value, 'due_to_him', 'saved default = first visible option'); f.elements.kind.value = 'due_on_him'; f.elements.label.value = 'غرامة'; f.elements.amount.value = '50'; await submit();
   assert.deepEqual([calls[2].p_action, calls[2].p_payload.kind, calls[2].p_payload.label, calls[2].p_payload.amount], ['add_line', 'due_on_him', 'غرامة', '50']);
   [...aroot.querySelectorAll('[data-offb=resolve]')].find(b => b.dataset.id === 'l4').click(); f = d.querySelector('.wp-modal form'); f.elements.resolution.value = 'waived'; f.elements.note.value = 'تنازل مدير'; await submit();
   assert.deepEqual([calls[3].p_action, calls[3].p_payload.line_id, calls[3].p_payload.resolution, calls[3].p_payload.note], ['resolve_line', 'l4', 'waived', 'تنازل مدير']);

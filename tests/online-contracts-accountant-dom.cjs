@@ -53,7 +53,14 @@ const { JSDOM } = require('jsdom'), fs = require('fs'), assert = require('node:a
   // signed view shows the stored signature image and escapes the text
   w.SSMPDFinanceControls.act('contract-signed-view', 'acc-1', data, h); await new Promise(r => setTimeout(r, 20));
   const sv = d.querySelector('.fc-sig-overlay'); assert(sv && sv.querySelector('[data-signed-image]').getAttribute('src') === 'data:image/png;base64,QUJD' && sv.textContent.includes('نص موقّع <i>x</i>') && !sv.querySelector('i')); sv.querySelector('[data-sig-close]').click(); assert(!d.querySelector('.fc-sig-overlay'));
-  // template editor: loads the latest text, add / remove / reorder clauses, publish needs a second click, saves a new version
+  // template editor (drafts only): loads the draft text, add / remove / reorder clauses, publish needs a second click, saves a new version
+  // the buttons are painted after the panel bound its handlers: a REAL click must open the editor. A published text is immutable: clear message, no editor, nothing saved.
+  w.SSMPDFinanceCash = { helpers: h }; const nLock = calls.filter(c => c[0] === 'clinic_finance_contract_signature_command').length;
+  host.querySelector('[data-sig-templates] [data-fin-action="contract-template-edit"][data-id="contract"]').click(); const lk = d.querySelector('.fc-sig-overlay');
+  assert(lk && lk.querySelector('[data-tpl-locked]').textContent.includes('منشور ولا يمكن تعديله') && !lk.querySelector('[data-tpl-save],[data-tpl-title]'), 'published text: message only'); lk.remove();
+  assert.equal(calls.filter(c => c[0] === 'clinic_finance_contract_signature_command').length, nLock);
+  host.querySelector('[data-sig-templates] [data-fin-action="contract-template-edit"][data-id="consent"]').click(); const cd = d.querySelector('.fc-sig-overlay'); assert(cd && cd.querySelector('[data-tpl-title]').value === 'إقرار', 'draft opens by a real click'); cd.remove();
+  status.templates.unshift({ id: 'dc', kind: 'contract', version: 2, title: 'عقد', body: 'مقدمة العقد الأولى هنا', clauses: ['بند أ', 'بند ب'], published: false, placeholder: false });
   w.SSMPDFinanceControls.act('contract-template-edit', 'contract', data, h); let ed = d.querySelector('.fc-sig-overlay'); assert(ed);
   assert.equal(ed.querySelector('[data-tpl-title]').value, 'عقد'); assert.equal(ed.querySelectorAll('[data-clause]').length, 2);
   ed.querySelector('[data-clause-add]').click(); const rows = () => [...ed.querySelectorAll('[data-clause-text]')]; rows()[2].value = 'بند جديد';
@@ -63,7 +70,7 @@ const { JSDOM } = require('jsdom'), fs = require('fs'), assert = require('node:a
   ed.querySelector('[data-tpl-save="publish"]').click(); assert.equal(calls.filter(c => c[0] === 'clinic_finance_contract_signature_command').length, nCmd, 'publishing needs a confirming second click'); assert(ed.querySelector('[data-tpl-save="publish"]').textContent.includes('تأكيد'));
   ed.querySelector('[data-tpl-save="publish"]').click(); await new Promise(r => setTimeout(r, 30));
   const sv2 = calls.filter(c => c[0] === 'clinic_finance_contract_signature_command').pop()[1]; assert.equal(sv2.p_action, 'template_save');
-  assert.equal(JSON.stringify(sv2.p_payload), JSON.stringify({ kind: 'contract', title: 'عقد', body: 'مقدمة معدلة من المالك للعقد', publish: true, clauses: ['بند جديد', 'بند أ'] })); assert(!d.querySelector('.fc-sig-overlay'), 'closed after save');
+  assert.equal(JSON.stringify(sv2.p_payload), JSON.stringify({ kind: 'contract', title: 'عقد', body: 'مقدمة معدلة من المالك للعقد', publish: true, clauses: ['بند جديد', 'بند أ'], id: 'dc' })); assert(!d.querySelector('.fc-sig-overlay'), 'closed after save');
   // editing a DRAFT updates it in place (payload carries its id) and a draft save does not publish
   status.templates.unshift({ id: 'd1', kind: 'consent', version: 2, title: 'مسودة', body: 'مقدمة مسودة الإقرار', clauses: [], published: false, placeholder: false });
   w.SSMPDFinanceControls.act('contract-template-edit', 'consent', data, h); ed = d.querySelector('.fc-sig-overlay'); assert(ed.textContent.includes('مسودة (نسخة 2)'));
