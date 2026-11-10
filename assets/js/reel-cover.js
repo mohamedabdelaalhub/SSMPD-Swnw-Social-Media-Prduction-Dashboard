@@ -138,6 +138,7 @@
         var key = item.id + '/' + crypto.randomUUID() + '/reel-cover.png', client = window.SSMPDDb.client;
         var up = await client.storage.from('content-designs').upload(key, blob, { contentType: 'image/png', upsert: false });
         if (up.error) throw new Error(/row-level security/i.test(up.error.message) ? 'صلاحية حفظ الغلاف لسه مش متفعّلة في قاعدة البيانات (محتاجة تشغيل سكريبت reel-cover في Supabase مرة واحدة).' : 'تعذر حفظ الغلاف. ' + up.error.message);
+        if (window.SSMPDDb.mirrorToServer) window.SSMPDDb.mirrorToServer('content-designs', key, blob);
         var url = window.SSMPD_CONFIG.supabase.url.replace(/\/+$/, '') + '/storage/v1/object/authenticated/content-designs/' + key;
         var settings = Object.assign({}, item.cover_settings || {}, { cover_image_url: url, cover_tag: q('tag').value.trim(), cover_highlight: q('highlight').value.trim(), cover_subtitle: q('subtitle').value.trim(), title: q('title').value.trim() });
         await window.SSMPDDb.updateContentItem(item.id, { cover_settings: settings });

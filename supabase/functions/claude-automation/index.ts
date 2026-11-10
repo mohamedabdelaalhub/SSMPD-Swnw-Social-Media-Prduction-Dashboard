@@ -55,9 +55,9 @@ const ALLOWED: [string, RegExp][] = [
   // also stops Claude from approving/closing/deleting tasks (claude_task_guard), whatever is called here.
   ["POST", /^\/rest\/v1\/rpc\/claude_[a-z_]+$/],
 ];
-// 2026-11-10 (owner decision: content files on our server, not Supabase Storage): with SWNW_FILES_BASE set, kit_get reads
+// 2026-11-10 (owner decision: content files on our server, not Supabase Storage): with SWNW_GATEWAY_FILES_BASE (or SWNW_FILES_BASE) set, kit_get reads
 // <base>/f/kit/<name> first and kit_put also writes there; anything the server can't serve comes from the bucket as before.
-const kit = makeKitStore((Deno.env.get("SWNW_FILES_BASE") || "").replace(/\/+$/, ""), fetch, (p) => {
+const kit = makeKitStore((Deno.env.get("SWNW_GATEWAY_FILES_BASE") || Deno.env.get("SWNW_FILES_BASE") || "").replace(/\/+$/, ""), fetch, (p) => {
   // deno-lint-ignore no-explicit-any
   const rt = (globalThis as any).EdgeRuntime; if (rt?.waitUntil) rt.waitUntil(p.catch(() => {})); else p.catch(() => {});
 });
@@ -103,13 +103,27 @@ function serviceKey(): string | null {
 }
 const json = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { "Content-Type": "application/json" } });
 
-async function store(jwt: string, bucket: string, path: string, bytes: Uint8Array, type: string) {
+async function store(jwt: string, bucket: string, path: string, bytes: Uint8Array, type: string, runToken = "") {
   const r = await fetch(`${SB}/storage/v1/object/${bucket}/${path}`, {
     method: "POST", body: bytes,
     headers: { apikey: ANON, Authorization: `Bearer ${jwt}`, "Content-Type": type, "x-upsert": "false" },
   });
   if (!r.ok) throw new Error(`upload ${r.status} ${(await r.text()).slice(0, 300)}`);
+  if (runToken) mirrorCopy(bucket, path, bytes, runToken);
   return `${SB}/storage/v1/object/authenticated/${bucket}/${path}`;
+}
+
+// Phase 3a (owner decision 2026-11-10): keep a copy of every fresh upload on our server (f/<bucket>/<same path>) so the
+// server publisher reads it from disk instead of Supabase. Background only: never delays or fails the upload.
+// Base: secret SWNW_GATEWAY_FILES_BASE (unset = off). The caller's run token is passed on; the server checks it.
+const MIRROR_BASE = (Deno.env.get("SWNW_GATEWAY_FILES_BASE") || "").replace(/\/+$/, "");
+function mirrorCopy(bucket: string, path: string, bytes: Uint8Array, runToken: string) {
+  if (!MIRROR_BASE) return;
+  const p = fetch(`${MIRROR_BASE}/v1/f/${bucket}/${path.split("/").map(encodeURIComponent).join("/")}`, {
+    method: "PUT", headers: { "X-Run-Token": runToken }, body: bytes as BodyInit,
+  }).then((r) => r.body?.cancel()).catch(() => {});
+  // deno-lint-ignore no-explicit-any
+  const rt = (globalThis as any).EdgeRuntime; if (rt?.waitUntil) rt.waitUntil(p);
 }
 
 // deno-lint-ignore no-explicit-any
@@ -354,14 +368,14 @@ Deno.serve(async (req) => {
       if (!UUID.test(cid)) return json({ ok: false, error: "content_id" }, 400);
       const bytes = new Uint8Array(await req.arrayBuffer());
       if (bytes.length < 100 || bytes.length > 12_000_000 || bytes[0] !== 0x89 || bytes[1] !== 0x50) return json({ ok: false, error: "PNG only (<12MB)" }, 400);
-      return json({ ok: true, url: await store(jwt, "content-designs", `${cid}/${crypto.randomUUID()}/output.png`, bytes, "image/png") });
+      return json({ ok: true, url: await store(jwt, "content-designs", `${cid}/${crypto.randomUUID()}/output.png`, bytes, "image/png", tok) });
     }
     if (op === "upload_cover") {
       const cid = q.get("content_id") || "";
       if (!UUID.test(cid)) return json({ ok: false, error: "content_id" }, 400);
       const bytes = new Uint8Array(await req.arrayBuffer());
       if (bytes.length < 100 || bytes.length > 12_000_000 || bytes[0] !== 0x89 || bytes[1] !== 0x50) return json({ ok: false, error: "PNG only (<12MB)" }, 400);
-      const url = await store(jwt, "content-designs", `${cid}/${crypto.randomUUID()}/reel-cover.png`, bytes, "image/png");
+      const url = await store(jwt, "content-designs", `${cid}/${crypto.randomUUID()}/reel-cover.png`, bytes, "image/png", tok);
       // Link it on the item, keeping the rest of cover_settings.
       const h = { apikey: ANON, Authorization: `Bearer ${jwt}`, "Content-Type": "application/json" };
       const cur = await fetch(`${SB}/rest/v1/content_items?id=eq.${cid}&select=cover_settings`, { headers: h }).then((r) => r.json()).catch(() => null);
@@ -372,7 +386,7 @@ Deno.serve(async (req) => {
     if (op === "upload_video") {
       const bytes = new Uint8Array(await req.arrayBuffer());
       if (bytes.length < 1000 || bytes.length > 200_000_000) return json({ ok: false, error: "MP4 size" }, 400);
-      return json({ ok: true, url: await store(jwt, "video-inputs", `${CLAUDE_ADMIN_ID}/${crypto.randomUUID()}/reel.mp4`, bytes, "video/mp4") });
+      return json({ ok: true, url: await store(jwt, "video-inputs", `${CLAUDE_ADMIN_ID}/${crypto.randomUUID()}/reel.mp4`, bytes, "video/mp4", tok) });
     }
   } catch (e) {
     return json({ ok: false, error: String((e as Error).message || e) }, 502);
