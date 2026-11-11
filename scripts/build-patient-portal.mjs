@@ -21,7 +21,7 @@ export function buildPortal(source,output){
  }
  fs.mkdirSync(output,{recursive:true});
  fs.cpSync(path.join(source,'patient-portal'),path.join(output,'patient-portal'),{recursive:true});
- const assets=['assets/js/nutrition-view.js','assets/css/nutrition.css','assets/img/logo.svg','assets/img/mark.svg'];
+ const assets=['assets/js/pages-redirect.js','assets/js/turnstile-gate.js','assets/js/nutrition-view.js','assets/css/nutrition.css','assets/img/logo.svg','assets/img/mark.svg'];
  for(const entry of fs.readdirSync(path.join(source,'assets/fonts')))if(/\.(woff2?|ttf|otf)$/i.test(entry))assets.push('assets/fonts/'+entry);
  for(const asset of assets){fs.mkdirSync(path.dirname(path.join(output,asset)),{recursive:true});fs.copyFileSync(path.join(source,asset),path.join(output,asset));}
  const publicConfig={supabase:{url:config.url,anonKey:config.anonKey}};
