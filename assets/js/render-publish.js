@@ -8,7 +8,8 @@
   var C = window.SSMPDComments;
 
   var META_PLATFORMS = ["facebook", "instagram"];
-  var AUTO_PLATFORMS = ["facebook", "instagram", "tiktok"];
+  var AUTO_PLATFORMS = ["facebook", "instagram", "tiktok", "youtube"];
+  var youTubeStatusCache = Object.create(null);
   var tikTokCreatorCache = Object.create(null);
   var previewPending = new Set();
 
@@ -499,6 +500,10 @@
       html += '<div>TikTok: ' + (job.tiktok_share_url ? '<a href="' + escapeHtml(job.tiktok_share_url) + '" target="_blank" rel="noopener noreferrer">فتح المنشور ↗</a>' : (job.tiktok_status === "failed" ? "فشل النشر" : job.tiktok_status === "published" ? "تم النشر" : "قيد المعالجة")) + (job.tiktok_publish_status ? " — " + escapeHtml(job.tiktok_publish_status) : "") + '</div>';
       if(job.tiktok_error) html += '<div style="color:var(--c-negative);">TikTok: ' + escapeHtml(job.tiktok_error) + '</div>';
     }
+    if (job.publish_youtube) {
+      html += '<div>يوتيوب: ' + (job.youtube_url ? '<a href="' + escapeHtml(job.youtube_url) + '" target="_blank" rel="noopener noreferrer">فتح الفيديو ↗</a>' : (job.youtube_status === "failed" ? "فشل الرفع" : job.youtube_status === "processing" ? "جاري الرفع" : "قيد الانتظار")) + '</div>';
+      if (job.youtube_error && job.youtube_status !== "published") html += '<div style="color:var(--c-negative);">يوتيوب: ' + escapeHtml(job.youtube_error) + '</div>';
+    }
     if (job.publish_instagram && (job.instagram_permalink || !job.story_instagram_id)) {
       html += '<div>انستجرام: ' + (job.instagram_permalink
         ? '<a href="' + job.instagram_permalink + '" target="_blank" rel="noopener noreferrer">فتح المنشور ↗</a>'
@@ -511,7 +516,7 @@
       html += '<div style="color:var(--c-negative);">سبب المشكلة: ' + escapeHtml(job.error_message) + '</div>';
     }
     if (job.status === "pending") {
-      html += '<div style="margin-top:4px;"><button class="btn ghost sm" data-cancel-meta-job="' + job.id + '" data-meta-job="' + (job.meta_job_id||"") + '" data-tiktok-job="' + (job.tiktok_job_id||"") + '">إلغاء النشر التلقائي</button></div>';
+      html += '<div style="margin-top:4px;"><button class="btn ghost sm" data-cancel-meta-job="' + job.id + '" data-meta-job="' + (job.meta_job_id||"") + '" data-tiktok-job="' + (job.tiktok_job_id||"") + '" data-youtube-job="' + (job.youtube_job_id||"") + '">إلغاء النشر التلقائي</button></div>';
     }
     html += '</div>';
     return html;
@@ -552,6 +557,8 @@
     if (metaHint) metaHint.style.display = hasAutoPlatform(platforms) ? "block" : "none";
     var tiktokOptions=document.getElementById("pb-tiktok-options-"+id);
     if(tiktokOptions){tiktokOptions.style.display=platforms.indexOf("tiktok")>=0?"block":"none";if(platforms.indexOf("tiktok")>=0)loadTikTokCreator(id);}
+    var youtubeOptions=document.getElementById("pb-youtube-options-"+id);
+    if(youtubeOptions){youtubeOptions.style.display=platforms.indexOf("youtube")>=0?"block":"none";if(platforms.indexOf("youtube")>=0)loadYouTubeStatus(id);}
   }
 
   // datetime-local بيحتاج الوقت المحلي بصيغة YYYY-MM-DDTHH:MM
@@ -579,7 +586,7 @@
       actionsHtml =
         "<div class=\"field\" id=\"pb-brand-wrap-" + i.id + "\" data-content-format=\"" + escapeHtml(i.content_format || "") + "\"><label> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%A7%D8%AF%D8%A9%20%D8%AF%D9%8A%20%D9%84%D8%B5%D9%81%D8%AD%D8%A9-->المادة دي لصفحة</label>" + W.brandSelectHtml("pb-brand-" + i.id, i.brand || "") + '</div>' +
         '<div class="field"><label>هتتنشر على (تقدر تختار أكتر من منصة)</label><div id="pb-platform-' + i.id + '">' + socialPlatformCheckboxes("pb-platform-" + i.id, i.publish_platforms || i.publish_platform || []) + '</div></div>' +
-        '<div id="pb-meta-hint-' + i.id + '" style="display:none;margin:6px 0 10px;padding:8px 10px;border:1px solid var(--c-border);border-radius:8px;color:var(--c-muted);font-size:12px;">Meta وTikTok: رابط المنشور بيتسجل تلقائيًا بعد نجاح النشر.</div>' +
+        '<div id="pb-meta-hint-' + i.id + '" style="display:none;margin:6px 0 10px;padding:8px 10px;border:1px solid var(--c-border);border-radius:8px;color:var(--c-muted);font-size:12px;">Meta وTikTok ويوتيوب: رابط المنشور بيتسجل تلقائيًا بعد نجاح النشر.</div>' +
         '<div id="pb-tiktok-options-' + i.id + '" style="display:none;margin:8px 0 12px;padding:10px;border:1px solid var(--c-border);border-radius:8px;font-size:12px;">' +
         '<div id="pb-tiktok-account-' + i.id + '" style="margin-bottom:8px;color:var(--c-muted);">اختر TikTok لقراءة الحساب المتصل</div>' +
         '<div class="field"><label>خصوصية فيديو TikTok</label><select id="pb-tiktok-privacy-' + i.id + '" required><option value="">اختر الخصوصية يدويًا</option></select></div>' +
@@ -594,10 +601,16 @@
         '<label style="display:block;margin-top:8px;"><input type="checkbox" id="pb-tiktok-music-' + i.id + '"> أوافق على تأكيد استخدام الموسيقى لدى TikTok</label>' +
         '<label style="display:block;"><input type="checkbox" id="pb-tiktok-consent-' + i.id + '"> أوافق على إرسال الفيديو للحساب المحدد ونشره في الموعد</label>' +
         '<div style="color:var(--c-muted);margin-top:5px;">قد يستغرق TikTok بضع دقائق لمعالجة الفيديو بعد الإرسال.</div></div>' +
+        '<div id="pb-youtube-options-' + i.id + '" style="display:none;margin:8px 0 12px;padding:10px;border:1px solid var(--c-border);border-radius:8px;font-size:12px;">' +
+        '<div id="pb-youtube-account-' + i.id + '" style="margin-bottom:8px;color:var(--c-muted);">جاري قراءة قناة يوتيوب...</div>' +
+        '<div class="field"><label>عنوان فيديو يوتيوب (لحد ١٠٠ حرف)</label><input id="pb-youtube-title-' + i.id + '" maxlength="100" value="' + escapeHtml(String(i.title || "").slice(0, 100)) + '"></div>' +
+        '<div class="field"><label>الظهور على يوتيوب</label><select id="pb-youtube-privacy-' + i.id + '"><option value="public">عام (Public)</option><option value="unlisted">بالرابط بس (Unlisted)</option><option value="private">خاص (Private)</option></select></div>' +
+        '<label style="display:block;"><input type="checkbox" id="pb-youtube-short-' + i.id + '" checked> Short (فيديو طولي لحد ٣ دقايق)</label>' +
+        '<div style="color:var(--c-muted);margin-top:5px;">الوصف = نص المنشور. لحد ما جوجل توافق على تطبيقنا، يوتيوب بيخلّي الفيديو خاص — تخليه عام من تطبيق YouTube Studio بضغطة.</div></div>' +
         '<div class="field"><label>معاد النشر المجدول</label><input type="datetime-local" id="pb-when-' + i.id + '"></div>' +
         '<div id="pb-suggest-' + i.id + '" style="margin:-4px 0 10px;font-size:12px;color:var(--c-muted);"></div>' +
         '<div id="pb-manual-wrap-' + i.id + '" style="display:none;">' +
-        '<div class="field"><label>رابط المنشور للمنصات اليدوية فقط (يوتيوب)</label>' +
+        '<div class="field"><label>رابط المنشور للمنصات اليدوية فقط</label>' +
         '<input placeholder="https://..." id="pb-url-' + i.id + '"></div>' +
         '</div>' +
         '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px;">' +
@@ -618,7 +631,7 @@
       // النشر التلقائي لسه مستني: زرار واحد يلغي النشر التلقائي ويرجّع المادة لجاهزة للنشر (وClaude مايرجعش يجدولها).
       if (job && job.status === "pending") {
         actionsHtml += '<div style="display:flex;gap:8px;margin-top:6px;">' +
-          '<button class="btn ghost" data-cancel-schedule="' + i.id + '" data-job="' + job.id + '" data-meta-job="' + (job.meta_job_id||"") + '" data-tiktok-job="' + (job.tiktok_job_id||"") + '">إلغاء الجدولة</button>' +
+          '<button class="btn ghost" data-cancel-schedule="' + i.id + '" data-job="' + job.id + '" data-meta-job="' + (job.meta_job_id||"") + '" data-tiktok-job="' + (job.tiktok_job_id||"") + '" data-youtube-job="' + (job.youtube_job_id||"") + '">إلغاء الجدولة</button>' +
           '</div>';
       }
       if (!jobIsLive) {
@@ -720,7 +733,7 @@
       btn.onclick = function () { reschedule(btn.getAttribute("data-reschedule"), btn); };
     });
     container.querySelectorAll("[data-cancel-meta-job]").forEach(function (btn) {
-      btn.onclick = function () { cancelMetaJob(btn.getAttribute("data-meta-job")||btn.getAttribute("data-cancel-meta-job"),btn.getAttribute("data-tiktok-job")); };
+      btn.onclick = function () { cancelMetaJob(btn.getAttribute("data-meta-job")||(btn.getAttribute("data-tiktok-job")||btn.getAttribute("data-youtube-job")?"":btn.getAttribute("data-cancel-meta-job")),btn.getAttribute("data-tiktok-job"),btn.getAttribute("data-youtube-job")); };
     });
     // المواعيد المقترحة: نعمّر مربع الاقتراح لكل كارت "جاهزة للنشر" أول مرة،
     // ونعيد تعميره كل ما المستخدم يغيّر الصفحة (سونو/د.دينا) من الدروب داون.
@@ -729,7 +742,7 @@
     });
     container.querySelectorAll('select[id^="pb-brand-"]').forEach(function (sel) {
       var id = sel.id.replace("pb-brand-", "");
-      sel.addEventListener("change", function () { updateSuggestSlot(id);var options=document.getElementById("pb-tiktok-options-"+id);if(options&&options.style.display!=="none"){delete tikTokCreatorCache[sel.value];loadTikTokCreator(id);} });
+      sel.addEventListener("change", function () { updateSuggestSlot(id);var options=document.getElementById("pb-tiktok-options-"+id);if(options&&options.style.display!=="none"){delete tikTokCreatorCache[sel.value];loadTikTokCreator(id);}var yo=document.getElementById("pb-youtube-options-"+id);if(yo&&yo.style.display!=="none"){delete youTubeStatusCache[sel.value];loadYouTubeStatus(id);} });
     });
     wireSuggestButtons(container);
   }
@@ -787,12 +800,61 @@
     return window.SSMPDDb.createTikTokPublishJob({contentId:id,brand:brand,scheduledAt:scheduledAt,privacyLevel:read("privacy"),disableComment:!on("allow-comment"),disableDuet:!on("allow-duet"),disableStitch:!on("allow-stitch"),commercialContent:on("commercial"),yourBrand:on("your-brand"),brandedContent:on("branded"),musicConfirmation:on("music"),createdBy:window.SSMPDAuth.currentAdmin.id});
   }
 
+  // ---------- يوتيوب ----------
+  function loadYouTubeStatus(id){
+    var brand=valueOf("pb-brand-"+id),slot=document.getElementById("pb-youtube-account-"+id);
+    if(!slot)return;
+    if(!brand){slot.textContent="اختار الصفحة (سونو أو د.دينا) الأول.";return;}
+    if(youTubeStatusCache[brand]){renderYouTubeStatus(id,youTubeStatusCache[brand]);return;}
+    slot.textContent="جاري قراءة قناة يوتيوب...";
+    window.SSMPDDb.youtubeStatus(brand).then(function(r){youTubeStatusCache[brand]=r;renderYouTubeStatus(id,r);}).catch(function(e){slot.textContent="تعذر قراءة حالة يوتيوب: "+e.message;});
+  }
+  function renderYouTubeStatus(id,r){
+    var slot=document.getElementById("pb-youtube-account-"+id);if(!slot)return;
+    if(!r.app_ready){
+      if(!r.is_super){slot.textContent="ربط يوتيوب لسه متظبطش — السوبر أدمن محتاج يحط بيانات تطبيق Google الأول.";return;}
+      slot.innerHTML='<div style="color:var(--c-text);font-weight:700;margin-bottom:6px;">إعداد تطبيق Google (مرة واحدة)</div>'+
+        '<div style="margin-bottom:6px;">رابط الرجوع اللي يتحط في تطبيق Google: <code style="direction:ltr;display:inline-block;">'+escapeHtml(r.redirect_uri||"")+'</code></div>'+
+        '<div class="field"><label>Client ID</label><input id="pb-yt-cid-'+id+'" dir="ltr" autocomplete="off"></div>'+
+        '<div class="field"><label>Client Secret</label><input id="pb-yt-csec-'+id+'" type="password" dir="ltr" autocomplete="off"></div>'+
+        '<button type="button" class="btn sm" data-yt-save-app="'+id+'">حفظ بيانات التطبيق</button>';
+      var sb=slot.querySelector("[data-yt-save-app]");
+      sb.onclick=function(){sb.disabled=true;window.SSMPDDb.youtubeSaveApp(valueOf("pb-yt-cid-"+id),valueOf("pb-yt-csec-"+id)).then(function(){youTubeStatusCache=Object.create(null);notify("اتحفظت بيانات تطبيق Google — اربط القناة دلوقتي.");loadYouTubeStatus(id);}).catch(function(e){sb.disabled=false;notify(e.message,"error");});};
+      return;
+    }
+    if(!r.connected){slot.innerHTML='قناة يوتيوب للصفحة دي مش مربوطة. <button type="button" class="btn ghost sm" data-yt-connect="'+id+'">ربط قناة يوتيوب</button>';}
+    else{slot.innerHTML='القناة المستهدفة: <b>'+escapeHtml((r.channel&&r.channel.channel_title)||"يوتيوب")+'</b> <button type="button" class="btn ghost sm" data-yt-connect="'+id+'">إعادة ربط</button>';}
+    var b=slot.querySelector("[data-yt-connect]");if(b)b.onclick=function(){connectYouTube(id,b);};
+  }
+  function connectYouTube(id,button){
+    var brand=valueOf("pb-brand-"+id);if(!brand){notify("اختار صفحة سونو أو د.دينا الأول.","error");return;}
+    if(button)button.disabled=true;
+    window.SSMPDDb.youtubeConnect(brand).then(function(r){if(!r.authorize_url)throw new Error("تعذر بدء ربط يوتيوب.");window.location.href=r.authorize_url;}).catch(function(e){if(button)button.disabled=false;notify(e.message,"error");});
+  }
+  function validateYouTubeSelection(id){
+    var wrap=document.getElementById("pb-brand-wrap-"+id),format=wrap&&wrap.getAttribute("data-content-format");
+    if(format!=="video"){notify("النشر التلقائي على يوتيوب للفيديوهات بس.","error");return false;}
+    var title=valueOf("pb-youtube-title-"+id).trim();
+    if(!title){notify("اكتب عنوان فيديو يوتيوب.","error");return false;}
+    if(/[<>]/.test(title)){notify("عنوان يوتيوب مينفعش يكون فيه علامة < أو >.","error");return false;}
+    var st=youTubeStatusCache[valueOf("pb-brand-"+id)];
+    if(st&&(!st.app_ready||!st.connected)){notify("اربط قناة يوتيوب للصفحة دي الأول (من خانة يوتيوب).","error");return false;}
+    return true;
+  }
+  function createYouTubeJob(id,brand,platforms,scheduledAt){
+    if(platforms.indexOf("youtube")<0)return Promise.resolve(null);
+    if(!validateYouTubeSelection(id))return Promise.reject(new Error("راجع اختيارات يوتيوب."));
+    var shortBox=document.getElementById("pb-youtube-short-"+id);
+    return window.SSMPDDb.createYouTubePublishJob({contentId:id,brand:brand,scheduledAt:scheduledAt,title:valueOf("pb-youtube-title-"+id).trim().slice(0,100),privacy:valueOf("pb-youtube-privacy-"+id)||"public",isShort:!!(shortBox&&shortBox.checked),createdBy:window.SSMPDAuth.currentAdmin.id});
+  }
+
   // بيعمل meta_publish_job لو من ضمن المنصات المختارة فيسبوك/انستجرام —
   // بيتنفّذ فعليًا بواسطة Edge Function meta-publish-process (كل دقيقة).
   function maybeCreateMetaJob(id, brand, platforms, scheduledAtIso) {
     var me=window.SSMPDAuth.currentAdmin,tasks=[];
     if(hasMetaPlatform(platforms))tasks.push(window.SSMPDDb.createMetaPublishJob({contentId:id,brand:brand,scheduledAt:scheduledAtIso,publishFacebook:platforms.indexOf("facebook")!==-1,publishInstagram:platforms.indexOf("instagram")!==-1,createdBy:me.id}));
     if(platforms.indexOf("tiktok")!==-1)tasks.push(createTikTokJob(id,brand,platforms,scheduledAtIso));
+    if(platforms.indexOf("youtube")!==-1)tasks.push(createYouTubeJob(id,brand,platforms,scheduledAtIso));
     return Promise.all(tasks);
   }
 
@@ -806,6 +868,7 @@
     if (!brand) { notify("اختر المادة دي لصفحة سونو ولا د.دينا الأول", "error"); return; }
     if (!platforms.length) { notify("اختر هتتنشر على أنهي منصة (تقدر تختار أكتر من واحدة)", "error"); return; }
     if (platforms.indexOf("tiktok") >= 0 && !validateTikTokSelection(id)) return;
+    if (platforms.indexOf("youtube") >= 0 && !validateYouTubeSelection(id)) return;
     if (!when) { notify("حدد معاد النشر المجدول", "error"); return; }
     if (!reviewed) { reviewBeforePublishing(id, "تأكيد الجدولة", function () { schedule(id, true); }); return; }
     var me = window.SSMPDAuth.currentAdmin;
@@ -837,7 +900,8 @@
     if (!brand) { notify("اختر المادة دي لصفحة سونو ولا د.دينا الأول", "error"); return; }
     if (!platforms.length) { notify("اختر هتتنشر على أنهي منصة (تقدر تختار أكتر من واحدة)", "error"); return; }
     if (platforms.indexOf("tiktok")>=0 && !validateTikTokSelection(id)) return;
-    if (others.length && !url) { notify("حط رابط المنشور ليوتيوب", "error"); return; }
+    if (platforms.indexOf("youtube")>=0 && !validateYouTubeSelection(id)) return;
+    if (others.length && !url) { notify("حط رابط المنشور للمنصات اليدوية", "error"); return; }
     if (!others.length && !autoSelected) { notify("مفيش منصة مختارة", "error"); return; }
     if (!reviewed) { reviewBeforePublishing(id, "تأكيد النشر", function () { publishNow(id, true); }); return; }
 
@@ -941,8 +1005,8 @@
     }
     if (btn && btn._cancelTimer) clearTimeout(btn._cancelTimer);
     var me = window.SSMPDAuth.currentAdmin, jobId = btn && btn.getAttribute("data-job");
-    var metaJobId=btn&&btn.getAttribute("data-meta-job"),tiktokJobId=btn&&btn.getAttribute("data-tiktok-job");
-    Promise.all([metaJobId?window.SSMPDDb.cancelMetaPublishJob(metaJobId):(jobId&&!tiktokJobId?window.SSMPDDb.cancelMetaPublishJob(jobId).catch(function(){ }):Promise.resolve()),tiktokJobId?window.SSMPDDb.cancelTikTokPublishJob(tiktokJobId):Promise.resolve()])
+    var metaJobId=btn&&btn.getAttribute("data-meta-job"),tiktokJobId=btn&&btn.getAttribute("data-tiktok-job"),youtubeJobId=btn&&btn.getAttribute("data-youtube-job");
+    Promise.all([metaJobId?window.SSMPDDb.cancelMetaPublishJob(metaJobId):(jobId&&!tiktokJobId&&!youtubeJobId?window.SSMPDDb.cancelMetaPublishJob(jobId).catch(function(){ }):Promise.resolve()),tiktokJobId?window.SSMPDDb.cancelTikTokPublishJob(tiktokJobId):Promise.resolve(),youtubeJobId?window.SSMPDDb.cancelYouTubePublishJob(youtubeJobId):Promise.resolve()])
       .then(function () { return holdPatch(id, { stage: "ready_to_publish", scheduled_publish_at: null, scheduled_by: null, claude_hold: true }); })
       .then(function () {
         return window.SSMPDDb.logActivity({ content_id: id, actor_id: me.id, action: "إلغاء جدولة النشر", from_stage: "scheduled", to_stage: "ready_to_publish" });
@@ -975,8 +1039,8 @@
 
   // إلغاء job النشر التلقائي (فيسبوك/انستجرام) لسه pending — الـRLS بتمنع
   // إلغاء job خلص معالجة (processing/published/...) عن قصد.
-  function cancelMetaJob(jobId,tiktokJobId) {
-    Promise.all([jobId?window.SSMPDDb.cancelMetaPublishJob(jobId):Promise.resolve(),tiktokJobId?window.SSMPDDb.cancelTikTokPublishJob(tiktokJobId):Promise.resolve()]).then(function () {
+  function cancelMetaJob(jobId,tiktokJobId,youtubeJobId) {
+    Promise.all([jobId?window.SSMPDDb.cancelMetaPublishJob(jobId):Promise.resolve(),tiktokJobId?window.SSMPDDb.cancelTikTokPublishJob(tiktokJobId):Promise.resolve(),youtubeJobId?window.SSMPDDb.cancelYouTubePublishJob(youtubeJobId):Promise.resolve()]).then(function () {
       notify("اتلغى النشر التلقائي لهذه المادة");
       closePublishModal(); render(document.getElementById("view-container"));
     }).catch(function (e) { notify("خطأ: " + e.message, "error"); });
