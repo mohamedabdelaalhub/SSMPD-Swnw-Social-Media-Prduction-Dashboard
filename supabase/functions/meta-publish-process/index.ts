@@ -179,6 +179,45 @@ async function graphPost(path: string, params: Record<string, string>) {
   return { ok: res.ok && !data.error, data };
 }
 
+// ---------- منع التكرار (2026-11-11) ----------
+// يوم ١١/١١ ريل اتنشر مرتين: التشغيلة الأولى نشرت فعلاً لكنها اتقطعت قبل ما تحفظ رقم المنشور، فاتعادت ونشرت تاني.
+// دلوقتي قبل أي نشر بندوّر في منشورات الصفحة اللي اتعملت من وقت إنشاء الـjob على نفس النص بالظبط؛ لو لقيناه
+// بنسجّله ومبننشرش تاني. ولو الفحص نفسه فشل في إعادة محاولة، مبننشرش (التكرار أسوأ من التأخير).
+const STORY_UNCONFIRMED = "unconfirmed";   // ستوري اتبعتت ومحدش أكّد نتيجتها: مبنعيدهاش
+function captionKey(s: unknown): string {
+  return String(s ?? "").normalize("NFC").replace(/\s+/g, " ").trim().slice(0, 200);
+}
+function jobSinceMs(job: any): number {
+  const t = Date.parse(job.created_at || job.scheduled_at || "");
+  return (Number.isFinite(t) ? t : Date.now() - 3 * 86400_000) - 5 * 60_000;
+}
+type Existing = { found: true; id: string; permalink: string | null } | { found: false; unknown?: boolean };
+async function findExistingFacebook(pageId: string, token: string, message: string, isVideo: boolean, sinceMs: number): Promise<Existing> {
+  const key = captionKey(message);
+  if (!key) return { found: false };
+  const r = isVideo
+    ? await graphGet(`${pageId}/videos`, { fields: "id,description,created_time,permalink_url", limit: "25", access_token: token })
+    : await graphGet(`${pageId}/published_posts`, { fields: "id,message,created_time,permalink_url", limit: "25", since: String(Math.floor(sinceMs / 1000)), access_token: token });
+  if (!r.ok || !Array.isArray(r.data?.data)) return { found: false, unknown: true };
+  const hit = r.data.data.find((x: any) => Date.parse(x.created_time) >= sinceMs && captionKey(isVideo ? x.description : x.message) === key);
+  if (!hit) return { found: false };
+  const link = String(hit.permalink_url || "");
+  return { found: true, id: hit.id, permalink: link ? (link.startsWith("http") ? link : "https://www.facebook.com" + link) : `https://www.facebook.com/${hit.id}` };
+}
+async function findExistingInstagram(igUserId: string, token: string, caption: string, sinceMs: number): Promise<Existing> {
+  const key = captionKey(caption);
+  if (!key) return { found: false };
+  const r = await graphGet(`${igUserId}/media`, { fields: "id,caption,timestamp,permalink", limit: "25", access_token: token });
+  if (!r.ok || !Array.isArray(r.data?.data)) return { found: false, unknown: true };
+  const hit = r.data.data.find((x: any) => Date.parse(x.timestamp) >= sinceMs && captionKey(x.caption) === key);
+  return hit ? { found: true, id: hit.id, permalink: hit.permalink || null } : { found: false };
+}
+// نحفظ رقم المنشور أول ما يطلع، من غير ما نستنى باقي المنصات (لو التشغيلة اتقطعت بعدها، المنشور ميتعادش).
+async function saveNow(admin: any, jobId: string, fields: Record<string, unknown>) {
+  const r = await admin.from("meta_publish_jobs").update(fields).eq("id", jobId);
+  if (r?.error) console.error(JSON.stringify({ event: "checkpoint_failed", job: jobId, error: r.error.message || String(r.error) }));
+}
+
 // بند ٤: لو design_file_url مش رابط تحميل مباشر (زي رابط Google Drive
 // viewer العادي)، بنجيب البايتات ونرفعها لـSupabase Storage (bucket عام
 // "meta-publish-assets") عشان يبقى عندنا رابط ثابت Meta تقدر تجيبه مباشرة
@@ -365,6 +404,7 @@ async function processJob(admin: ReturnType<typeof createClient>, job: any) {
   const patch: Record<string, unknown> = {};
   const errors: string[] = [];
   var igPending = false;
+  let igPrior: Existing = { found: false };
   var successCount = 0, requestedCount = 0;
 
   const token = pageTokenForBrand(job.brand);
@@ -487,6 +527,14 @@ async function processJob(admin: ReturnType<typeof createClient>, job: any) {
     } else if (job.facebook_post_id) {
       successCount++; // اتنشر في تشغيلة سابقة (الريل كان لسه بيتعالج على انستجرام)
     } else {
+      const prior = await findExistingFacebook(brandCfg.facebook_page_id, token, message, !!videoUrl, jobSinceMs(job));
+      if (prior.found) {
+        patch.facebook_post_id = prior.id; patch.facebook_permalink = prior.permalink; successCount++;
+        await saveNow(admin, job.id, { facebook_post_id: prior.id, facebook_permalink: prior.permalink });
+        console.log(JSON.stringify({ event: "duplicate_prevented", platform: "facebook", job: job.id }));
+      } else if (prior.unknown && (job.attempt_count || 0) > 1) {
+        errors.push("فيسبوك: مقدرناش نتأكد إن المنشور ما اتنشرش في المحاولة اللي فاتت — مانشرناش تاني عشان ميتكررش. راجع الصفحة.");
+      } else {
       const r = videoUrl
         ? await publishFacebookVideo(brandCfg.facebook_page_id, token, videoUrl, message)
         : carouselUrls.length
@@ -496,8 +544,10 @@ async function processJob(admin: ReturnType<typeof createClient>, job: any) {
         : await publishFacebookTextOnly(brandCfg.facebook_page_id, token, message);
       if (r.ok) {
         patch.facebook_post_id = r.postId; patch.facebook_permalink = r.permalink; successCount++;
+        await saveNow(admin, job.id, { facebook_post_id: r.postId, facebook_permalink: r.permalink });
       } else {
         errors.push("فيسبوك: " + r.error);
+      }
       }
     }
   }
@@ -510,10 +560,17 @@ async function processJob(admin: ReturnType<typeof createClient>, job: any) {
       successCount++; // اتنشر في تشغيلة سابقة (إعادة محاولة بسبب فيسبوك أو ستوري)
     } else if (!imageUrl && !carouselUrls.length && !videoUrl) {
       errors.push("انستجرام: لازم صورة أو فيديو — مفيش ملف تصميم متاح.");
+    } else if ((igPrior = await findExistingInstagram(brandCfg.instagram_business_account_id, token, message, jobSinceMs(job))).found) {
+      patch.instagram_media_id = igPrior.id; patch.instagram_permalink = igPrior.permalink; successCount++;
+      await saveNow(admin, job.id, { instagram_media_id: igPrior.id, instagram_permalink: igPrior.permalink });
+      console.log(JSON.stringify({ event: "duplicate_prevented", platform: "instagram", job: job.id }));
+    } else if (igPrior.unknown && (job.attempt_count || 0) > 1) {
+      errors.push("انستجرام: مقدرناش نتأكد إن المنشور ما اتنشرش في المحاولة اللي فاتت — مانشرناش تاني عشان ميتكررش. راجع الحساب.");
     } else if (videoUrl) {
       const r = await publishInstagramReel(brandCfg.instagram_business_account_id, token, videoUrl, message, job.instagram_container_id || null, coverUrl) as any;
       if (r.ok) {
         patch.instagram_container_id = r.containerId; patch.instagram_media_id = r.mediaId; patch.instagram_permalink = r.permalink; successCount++;
+        await saveNow(admin, job.id, { instagram_container_id: r.containerId, instagram_media_id: r.mediaId, instagram_permalink: r.permalink });
       } else if (r.pending) {
         patch.instagram_container_id = r.containerId; igPending = true;
       } else {
@@ -526,6 +583,7 @@ async function processJob(admin: ReturnType<typeof createClient>, job: any) {
         : await publishInstagramSingleImage(brandCfg.instagram_business_account_id, token, imageUrl as string, message);
       if (r.ok) {
         patch.instagram_container_id = r.containerId; patch.instagram_media_id = r.mediaId; patch.instagram_permalink = r.permalink; successCount++;
+        await saveNow(admin, job.id, { instagram_container_id: r.containerId, instagram_media_id: r.mediaId, instagram_permalink: r.permalink });
       } else {
         if (r.containerId) patch.instagram_container_id = r.containerId;
         errors.push("انستجرام: " + r.error);
@@ -633,12 +691,14 @@ async function publishStories(admin: ReturnType<typeof createClient>, job: any, 
     storyImage = nativeImage ? still : await composeStoryImage(admin, job.id, still, job.brand || null);
   }
   if (needIg) {
+    await saveNow(admin, job.id, { story_instagram_id: STORY_UNCONFIRMED });
     const r = await publishInstagramStory(cfg.instagram_business_account_id as string, token, video ? { videoUrl: video } : { imageUrl: storyImage as string });
-    if (r.ok) { patch.story_instagram_id = r.id; const saved = await admin.from("meta_publish_jobs").update({ story_instagram_id: r.id }).eq("id", job.id); if(saved.error) throw saved.error; } else errs.push("انستجرام: " + r.error);
+    if (r.ok) { patch.story_instagram_id = r.id; const saved = await admin.from("meta_publish_jobs").update({ story_instagram_id: r.id }).eq("id", job.id); if(saved.error) throw saved.error; } else { errs.push("انستجرام: " + r.error); patch.story_instagram_id = null; }
   }
   if (needFb) {
+    await saveNow(admin, job.id, { story_facebook_id: STORY_UNCONFIRMED });
     const r = video ? await publishFacebookVideoStory(cfg.facebook_page_id as string, token, video) : await publishFacebookPhotoStory(cfg.facebook_page_id as string, token, storyImage as string);
-    if (r.ok) { patch.story_facebook_id = r.id; const saved = await admin.from("meta_publish_jobs").update({ story_facebook_id: r.id }).eq("id", job.id); if(saved.error) throw saved.error; } else errs.push("فيسبوك: " + r.error);
+    if (r.ok) { patch.story_facebook_id = r.id; const saved = await admin.from("meta_publish_jobs").update({ story_facebook_id: r.id }).eq("id", job.id); if(saved.error) throw saved.error; } else { errs.push("فيسبوك: " + r.error); patch.story_facebook_id = null; }
   }
   patch.story_error = errs.length ? errs.join(" | ").slice(0, 500) : null;
   if (!errs.length) patch.story_published_at = new Date().toISOString();
