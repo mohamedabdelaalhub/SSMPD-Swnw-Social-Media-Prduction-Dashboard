@@ -15,7 +15,7 @@ const tick = () => new Promise(r => setTimeout(r, 25));
     people: [{ id: 'p1', code: 'EMP-1', full_name: 'موظف أول', department: 'الاستقبال' }, { id: 'p2', code: 'EMP-2', full_name: 'موظف ثان', department: '' }],
     rows: [
       row({ device_user_id: 3, person_id: 'p1', mapped: true, full_name: 'موظف أول', code: 'EMP-1', department: 'الاستقبال', last_in_at: iso(185), last_punch_at: iso(185), minutes_since: 185 }),
-      row({ device_user_id: 9, person_id: 'p2', mapped: true, full_name: 'ثان <img src=x onerror=window.__xss=1>', code: 'EMP-2', state: 'break', last_punch: 2, last_punch_at: iso(5), minutes_since: 5, last_in_at: iso(300) }),
+      row({ device_user_id: 9, person_id: 'p2', mapped: true, full_name: 'ثان <img src=x onerror=window.__xss=1>', code: 'EMP-2', department: 'استقبال ', state: 'break', last_punch: 2, last_punch_at: iso(5), minutes_since: 5, last_in_at: iso(300) }),
       row({ device_user_id: 6, person_id: 'p3', mapped: true, full_name: 'منصرف', code: 'EMP-3', state: 'out', last_punch: 1, last_punch_at: iso(40), last_out_at: iso(40), last_in_at: iso(500), minutes_since: 40 }),
       row({ device_user_id: 24, state: 'in', last_in_at: iso(15 * 60), last_punch_at: iso(15 * 60), minutes_since: 15 * 60 }),
       row({ device_user_id: 40, person_id: 'p4', mapped: true, full_name: 'لم يبصم', code: 'EMP-4', state: 'none', last_punch: null, last_punch_at: null, last_in_at: null, minutes_since: null, punches: 0 })] });
@@ -48,6 +48,13 @@ const tick = () => new Promise(r => setTimeout(r, 25));
   assert(root().querySelector('[data-presence-warn]'), 'very long open shift is flagged'); assert(root().querySelector('[data-presence-warn]').textContent.includes('تحقق من بصمة الخروج'));
   assert.equal(w.__xss, undefined); assert(!root().querySelector('img'), 'names are escaped'); assert(root().textContent.includes('<img src=x'), 'escaped markup shown as text');
   assert(!root().querySelector('[data-stale]'), 'fresh feed is not flagged'); assert(root().querySelector('[data-presence-feed]').textContent.includes('منذ'));
+
+  // ---- «موجودون الآن» is split into one card per department (typing variants grouped), unmapped numbers in their own card
+  const depts = [...root().querySelectorAll('[data-presence-dept]')]; assert.equal(depts.length, 2, 'reception (two spellings grouped) + unmapped numbers');
+  const rec = depts.find(c => c.dataset.dept === 'الاستقبال'); assert(rec, 'one clean department name'); assert.equal(rec.querySelectorAll('[data-presence-person]').length, 2, 'both spellings land in the same card');
+  assert(rec.textContent.includes('موظف أول') && rec.textContent.includes('في استراحة') && rec.textContent.includes('(2)'), 'names, break state and count in the card');
+  const unm = depts.find(c => c.dataset.dept === 'أرقام غير مربوطة بموظف'); assert(unm && unm.textContent.includes('رقم الجهاز 24') && unm.querySelector('[data-presence=map]'), 'unmapped numbers get their own card with the map button');
+  assert.equal(depts[depts.length - 1], unm, 'the unmapped card is last');
 
   // ---- map an unmapped device number
   const mapBtn = [...root().querySelectorAll('[data-presence=map]')].find(b => b.dataset.id.startsWith('24|')); assert(mapBtn, 'map button on the unmapped number');
