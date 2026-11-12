@@ -31,7 +31,8 @@ const styles=[...html.matchAll(/<link[^>]+href="([^"]+\.css)[^"]*"/g)].map(m=>m[
    controls:[...document.querySelectorAll('input,select,textarea,button,a')].map(e=>({tag:e.tagName,id:e.id,value:e.value,checked:e.checked,disabled:e.disabled,hidden:e.hidden,href:e.getAttribute('href'),display:getComputedStyle(e).display==='none'}))
   }));
   // The summary keeps adding widgets after the first KPI card appears; wait until the set of controls stops changing so "before" is a stable baseline.
-  for(let last=-1,i=0;i<40;i++){const n=await page.evaluate(()=>document.querySelectorAll('input,select,textarea,button,a').length);if(n===last)break;last=n;await page.waitForTimeout(300);}
+  // Compare the whole snapshot (not just the count) and require several identical reads in a row, so a slow CI machine cannot add a late widget between "before" and "after".
+  for(let last='',same=0,i=0;i<80&&same<4;i++){const cur=JSON.stringify(await snapshot());same=cur===last?same+1:0;last=cur;await page.waitForTimeout(300);}
   const before=await snapshot();await page.addStyleTag({url:'https://theme.test/assets/css/dashboard-theme.css'});
   assert.deepEqual(await snapshot(),before,'theme preserves content, form state, targets and visibility');
   assert(await page.locator('#view-container>h2').evaluate(e=>getComputedStyle(e).backgroundImage.includes('linear-gradient')));
