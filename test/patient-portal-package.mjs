@@ -6,7 +6,7 @@ const key=role=>'x.'+Buffer.from(JSON.stringify({role})).toString('base64url')+'
 put('config.js','window.SSMPD_CONFIG='+JSON.stringify({supabase:{url:'https://example.supabase.co',anonKey:key('anon')},privateSecret:'must-not-export'})+';document.createElement("script");throw new Error("Dashboard loaders must not execute");');
 put('patient-portal/index.html','<html><head><link href="styles.css"><script src="../config.js"></script><script src="app.js"></script></head></html>');
 put('patient-portal/styles.css','');put('patient-portal/app.js','/* unchanged */');
-for(const f of ['assets/js/nutrition-view.js','assets/css/nutrition.css','assets/img/logo.svg','assets/img/mark.svg','assets/fonts/test.woff2','deploy/patient-portal.web.config'])put(f,'fixture');
+for(const f of ['assets/js/pages-redirect.js','assets/js/turnstile-gate.js','assets/js/nutrition-view.js','assets/css/nutrition.css','assets/img/logo.svg','assets/img/mark.svg','assets/fonts/test.woff2','deploy/patient-portal.web.config'])put(f,'fixture');
 const output=path.join(temp,'output');buildPortal(source,output);
 assert.match(fs.readFileSync(path.join(output,'index.html'),'utf8'),/<base href="\/patient-portal\/">/);
 assert.equal(fs.readFileSync(path.join(output,'patient-portal/app.js'),'utf8'),'/* unchanged */');
