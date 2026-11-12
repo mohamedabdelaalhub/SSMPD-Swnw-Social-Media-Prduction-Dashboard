@@ -2,11 +2,15 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 // Lead intake — machine-to-machine (WhatsApp agent on the Egypt server, Messenger/Instagram inbox sync).
-// Auth: X-Lead-Ingest-Secret (Edge secret LEAD_INGEST_SECRET). Creates or reuses a lead through public.ingest_lead
+// Auth: reuses the secret the WhatsApp agent already shares with the server (header X-WhatsApp-Alert-Secret =
+// WHATSAPP_ALERT_SECRET, same as whatsapp-alert), or X-Lead-Ingest-Secret = LEAD_INGEST_SECRET if one is ever set. Creates or reuses a lead through public.ingest_lead
 // (idempotent on event_id, de-duplicates by phone). Ad ids come from the Click-to-WhatsApp referral Meta sends with
 // the first message (referral.source_id = ad id). Never reads or writes anything on Meta.
 
-const SECRET = Deno.env.get("LEAD_INGEST_SECRET");
+const SECRETS = [
+  ["X-WhatsApp-Alert-Secret", Deno.env.get("WHATSAPP_ALERT_SECRET")],
+  ["X-Lead-Ingest-Secret", Deno.env.get("LEAD_INGEST_SECRET")],
+].filter((s): s is [string, string] => !!s[1]);
 const SOURCES = new Set(["whatsapp", "messenger", "instagram"]);
 
 function serviceKey(): string | null {
@@ -25,8 +29,8 @@ const idOnly = (v: unknown) => { const s = clip(v, 40).replace(/[^\d]/g, ""); re
 
 Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ ok: false, error: "POST only" }, 405);
-  if (!SECRET) return json({ ok: false, error: "MISCONFIGURED" }, 500);
-  if (!safeEqual(req.headers.get("X-Lead-Ingest-Secret") || "", SECRET)) return json({ ok: false, error: "UNAUTHORIZED" }, 401);
+  if (!SECRETS.length) return json({ ok: false, error: "MISCONFIGURED" }, 500);
+  if (!SECRETS.some(([h, v]) => safeEqual(req.headers.get(h) || "", v))) return json({ ok: false, error: "UNAUTHORIZED" }, 401);
   const key = serviceKey();
   if (!key) return json({ ok: false, error: "MISCONFIGURED" }, 500);
 

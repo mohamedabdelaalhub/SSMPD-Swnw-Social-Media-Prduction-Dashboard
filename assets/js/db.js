@@ -1187,6 +1187,9 @@
     },
 
     // ---------- إدارة الليدز (Edge Functions) ----------
+    saveMetaAdsToken: function (token) {
+      return edgeFetch("meta-ads-sync", { method: "POST", json: { op: "save_token", token: token } });
+    },
     createLead: function (payload) {
       invalidateRegistration();
       return edgeFetch("leads-create", { method: "POST", json: payload });
