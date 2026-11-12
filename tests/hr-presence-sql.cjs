@@ -85,11 +85,63 @@ const fs = require('fs'), assert = require('node:assert/strict'), boot = require
     }
     await db.exec('reset role');
 
+    // ---- heartbeat migration: new key, table denied to API roles, rollback restores the previous function, re-apply works
+    const HB = fs.readFileSync('supabase/migrations/20261112110000_live_presence_heartbeat.sql', 'utf8');
+    await owner("update clinic_people.people set status='active' where id=$1", [P.p2]);
+    assert.equal((await snap()).last_seen_at, undefined, 'no heartbeat key before the migration');
+    await db.exec(HB); await assert.rejects(() => db.exec(HB), /تم تطبيق هذا الملف من قبل/); await db.exec('rollback');
+    s = await snap(); assert.equal(s.last_seen_at, null, 'key exists, empty until the first heartbeat');
+    await owner("insert into clinic_people.device_feed(device_id,last_seen_at) values('k14',now()-interval '2 minutes')");
+    await owner("insert into clinic_people.device_feed(device_id,last_seen_at) values('k14b',now()-interval '30 seconds')");
+    s = await snap(); assert(s.last_seen_at, 'heartbeat reported'); assert.equal(s.rows.length > 0, true, 'rows unchanged by the new key');
+    await as(6); await assert.rejects(() => snap(), /تحتاج إدارة الموارد البشرية/, 'still HR only'); await as(5);
+    for (const r of ['authenticated', 'anon']) { await db.exec('reset role; set role ' + r); await assert.rejects(() => db.query('select * from clinic_people.device_feed'), /permission denied/); }
+    await db.exec('reset role');
+    await owner("insert into clinic_people.device_feed(device_id,last_seen_at) values('bad id',now())").then(() => assert.fail('bad device id accepted'), e => assert(/check constraint|violates/.test(e.message)));
+    await db.exec(fs.readFileSync('supabase/rollbacks/20261112110000_live_presence_heartbeat.rollback.sql', 'utf8'));
+    assert.equal((await owner("select to_regclass('clinic_people.device_feed') t"))[0].t, null); assert.equal((await snap()).last_seen_at, undefined, 'previous function restored'); assert((await snap()).rows.length > 0);
+    await db.exec(HB); // re-apply after rollback
+    await db.exec(fs.readFileSync('supabase/rollbacks/20261112110000_live_presence_heartbeat.rollback.sql', 'utf8'));
+
+    // ---- administrative staff only (third migration, on top of the heartbeat one)
+    await db.exec(HB);
+    const ADM = fs.readFileSync('supabase/migrations/20261112120000_live_presence_admin_staff_only.sql', 'utf8');
+    await db.exec(ADM); await assert.rejects(() => db.exec(ADM), /تم تطبيق هذا الملف من قبل/); await db.exec('rollback');
+    const ign = (uid, flag, dev = 'k14') => call('hr_presence_ignore', [dev, uid, flag]);
+    const doc = (await owner("insert into clinic_people.people(full_name,status,kind,created_by) values('طبيب','active','doctor',$1) returning id", [id(1)]))[0].id;
+    await punch(77, 5, 0); // a number we will ignore
+    s = await snap(); assert(!s.people.some(p => p.id === doc), 'doctors are not offered for mapping'); assert(s.people.some(p => p.id === P.p1), 'administrative staff still offered'); assert.deepEqual(s.ignored, []);
+    await assert.rejects(() => map('k14', 77, doc), /للموظفين الإداريين فقط/);
+    // ignore an unmapped number: it leaves the live rows, lands in "ignored" with its last punch, nothing is deleted
+    assert(row(s, 77), 'visible before ignoring'); await ign(77, true); s = await snap();
+    assert.equal(row(s, 77), undefined, 'ignored number hidden'); assert(s.ignored.some(i => i.device_user_id === 77 && i.last_punch_at), 'listed as ignored');
+    assert.equal((await owner('select count(*)::int n from clinic_people.device_punches where device_user_id=77'))[0].n, 1, 'its punches are kept');
+    await ign(77, true); assert.equal((await snap()).ignored.length, 1, 'ignoring twice is harmless');
+    await ign(77, false); s = await snap(); assert(row(s, 77) && row(s, 77).mapped === false, 'un-ignore brings it back'); assert.deepEqual(s.ignored, []);
+    // ignoring a mapped number removes its mapping; mapping an ignored number clears the ignore
+    await map('k14', 3, P.p1); await ign(3, true); s = await snap();
+    assert.equal(row(s, 3), undefined); assert.equal((await owner("select count(*)::int n from clinic_people.device_user_map where device_user_id=3"))[0].n, 0, 'mapping removed');
+    await map('k14', 3, P.p1); s = await snap(); assert.equal(row(s, 3).person_id, P.p1); assert.deepEqual(s.ignored, [], 'mapping clears the ignore');
+    // access + validation + denial
+    await as(6); await assert.rejects(() => ign(77, true), /تحتاج إدارة الموارد البشرية/); await as(5);
+    await assert.rejects(() => ign(0, true), /راجع رقم الجهاز/); await assert.rejects(() => ign(77, null), /راجع رقم الجهاز/); await assert.rejects(() => ign(77, true, 'bad id'), /راجع رقم الجهاز/);
+    for (const r of ['authenticated', 'anon']) { await db.exec('reset role; set role ' + r); await assert.rejects(() => db.query('select * from clinic_people.device_user_ignore'), /permission denied/); }
+    await db.exec('reset role'); await as(5);
+    await ign(77, true); await ign(77, false);
+    assert((await owner("select count(*)::int n from clinic_people.audit where action in ('presence_ignore','presence_unignore')"))[0].n >= 4, 'ignore changes are audited');
+    // rollback restores the previous functions (doctors offered again, no ignored key), re-apply works
+    await db.exec(fs.readFileSync('supabase/rollbacks/20261112120000_live_presence_admin_staff_only.rollback.sql', 'utf8'));
+    assert.equal((await owner("select to_regclass('clinic_people.device_user_ignore') t"))[0].t, null);
+    s = await snap(); assert.equal(s.ignored, undefined, 'previous snapshot restored'); assert(s.people.some(p => p.id === doc), 'doctors offered again after rollback'); await map('k14', 78, doc);
+    await db.exec(ADM); s = await snap(); assert(!s.people.some(p => p.id === doc)); assert.deepEqual(s.ignored, []);
+    await db.exec(fs.readFileSync('supabase/rollbacks/20261112120000_live_presence_admin_staff_only.rollback.sql', 'utf8'));
+    await db.exec(fs.readFileSync('supabase/rollbacks/20261112110000_live_presence_heartbeat.rollback.sql', 'utf8'));
+
     // ---- rollback leaves the HR schema intact
     await db.exec(fs.readFileSync('supabase/rollbacks/20261112100000_live_presence.rollback.sql', 'utf8'));
     assert.equal((await owner("select to_regclass('clinic_people.device_punches') t"))[0].t, null);
     assert.equal((await owner("select count(*)::int n from clinic_people.audit where action='presence_map'"))[0].n >= 5, true, 'audit rows kept on rollback');
-    assert.equal((await owner('select count(*)::int n from clinic_people.people'))[0].n, 4);
+    assert.equal((await owner('select count(*)::int n from clinic_people.people'))[0].n, 5);
     await db.exec(MIG); // re-apply works after a rollback
     console.log('PASS hr presence SQL: states from latest punch, lookback, night shift, unmapped listing, mapping (move/change/remove), ended guard, audit, HR-only, direct denial, rollback + re-apply');
   } finally { await db.close(); }
