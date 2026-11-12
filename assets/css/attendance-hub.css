@@ -187,7 +187,7 @@
 .att-hub .card h4{margin:0 0 10px;font-size:15px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .att-hub .card h4 .seg{margin-inline-start:auto}
 .att-hub svg.chart{width:100%;height:auto;display:block;direction:ltr}
-.att-hub .heat{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;direction:rtl}
+.att-hub .heat{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;direction:rtl}
 .att-hub .heat div{aspect-ratio:2.6;border-radius:5px;display:grid;place-items:center;font-size:10.5px;min-height:18px}
 .att-hub .heat .hd{background:transparent;color:var(--muted);aspect-ratio:auto;min-height:0}
 .att-hub .hbar{display:grid;grid-template-columns:110px minmax(0,1fr) 46px;gap:8px;align-items:center;font-size:13.5px;margin:9px 0}
@@ -240,16 +240,16 @@
 .att-hub .dr select{height:36px;border:1px solid var(--border);border-radius:9px;padding:0 8px;max-width:170px}
 .att-hub .mini{border:1px solid var(--border);background:#fff;border-radius:9px;height:36px;padding:0 12px;font-weight:700;color:var(--primary);display:inline-flex;gap:5px;align-items:center}
 .att-hub .mini.solid{background:var(--primary);color:#fff;border-color:var(--primary)}
-@media(max-width:1180px){.att-hub .layout{grid-template-columns:1fr}
+@media(max-width:1180px){.att-hub .layout{grid-template-columns:minmax(0,1fr)}
 .att-hub .side{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
 .att-hub .kpis,.att-hub .rkpis{grid-template-columns:repeat(3,1fr)}
-.att-hub .grid2{grid-template-columns:1fr}
+.att-hub .grid2{grid-template-columns:minmax(0,1fr)}
 }
-@media(max-width:900px){.att-hub .ins{grid-template-columns:1fr}
-.att-hub .trio{grid-template-columns:1fr}
+@media(max-width:900px){.att-hub .ins{grid-template-columns:minmax(0,1fr)}
+.att-hub .trio{grid-template-columns:minmax(0,1fr)}
 .att-hub .row.abs{grid-template-columns:38px minmax(0,1fr) auto}
 .att-hub .row.abs .acts-c{grid-column:2/-1}
-.att-hub .grid3{grid-template-columns:1fr}
+.att-hub .grid3{grid-template-columns:minmax(0,1fr)}
 .att-hub .lr{grid-template-columns:minmax(0,1fr) 92px 72px}
 .att-hub .lr>:nth-child(2),.att-hub .lr>:nth-child(4),.att-hub .lr>:nth-child(5),.att-hub .lr>:nth-child(6){display:none}
 .att-hub .tl-head,.att-hub .tl-row{grid-template-columns:100px minmax(0,1fr)}
