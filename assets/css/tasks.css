@@ -349,3 +349,7 @@ button.tsk-chip-more{font:inherit;font-size:12px;cursor:pointer;background:#eaf1
 @media(max-width:600px){.tv-quick{width:100%;padding:0 12px 12px;margin:0}.tv-quick .btn{flex:1}.tv-stage-nav-btns{grid-template-columns:1fr 1.25fr 1fr;gap:6px}.tv-stage-nav button{font-size:12px;padding:5px 4px}.tv-facts-line>span{padding:5px 10px;font-size:12px}}
 
 .tv-d-more+.tv-d-main{border-top:0;padding-top:12px}
+
+/* «ملغاة» (cancelled) task status — 2026-11-12 */
+.s-cancelled,.tsk-tree-status.s-cancelled{background:#eef0f3;color:#6b7684}.tsk-card.s-cancelled{border-inline-start-color:#9aa4b1;opacity:.8}.tsk-col.s-cancelled{border-top-color:#9aa4b1}
+.tv-bar i.g-cancelled,.tv-leg.g-cancelled i,.tv-row.g-cancelled .tv-dot{background:#9aa4b1}.tv-stepper .g-cancelled span{background:#9aa4b1;color:#fff}.tv-pill.g-cancelled{background:#eef0f3;color:#6b7684}.tv-row.g-cancelled .tv-row-main{opacity:.75;text-decoration:line-through;text-decoration-color:#9aa4b1}
