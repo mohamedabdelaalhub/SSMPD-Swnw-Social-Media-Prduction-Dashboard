@@ -1,0 +1,53 @@
+{
+ "status": "مقترح - لسه محمد ما أكدش",
+ "characters": [
+  {
+   "id": "dr_hanafi",
+   "ar": "الدكتور",
+   "voice": "doctor_male",
+   "kit": "kit_687385225 (أجزاء) أو kit_639683044 (22 وضعية جاهزة)"
+  },
+  {
+   "id": "dr_senior",
+   "ar": "الدكتور الكبير",
+   "voice": "elder_man",
+   "kit": "singles/elderly_doctor_cartoon.png أو kit_1127429795"
+  },
+  {
+   "id": "dr_woman",
+   "ar": "الدكتورة",
+   "voice": "woman_1",
+   "kit": "kit_1057129943 أو kit_1068373289"
+  },
+  {
+   "id": "mama",
+   "ar": "الأم",
+   "voice": "woman_2",
+   "kit": "kit_1623976375 (المرأة)"
+  },
+  {
+   "id": "hagga",
+   "ar": "الحجة",
+   "voice": "elder_woman",
+   "kit": "kit_1623976375 (الجدة بشعر رمادي) أو الرؤوس المحجبة"
+  },
+  {
+   "id": "boy",
+   "ar": "الطفل",
+   "voice": "child_boy",
+   "kit": "kit_1623976375 (الولد)"
+  },
+  {
+   "id": "girl",
+   "ar": "الطفلة",
+   "voice": "child_girl",
+   "kit": "kit_1623976375 (البنت)"
+  },
+  {
+   "id": "abu_nazara",
+   "ar": "أبو نظارة (استيكمان)",
+   "voice": "male_2",
+   "kit": "video-lab/anim4.py (رسم كود)"
+  }
+ ]
+}

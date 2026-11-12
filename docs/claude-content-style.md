@@ -276,3 +276,6 @@ The dashboard can start this task right after «نفّذ التصميم» (Edge 
 
 ### 6. Direct requests from the new-content form (Mohamed, 2026-11-10)
 Staff can tick «Claude يصمم المادة دي على طول» while creating a post or carousel. The item then arrives already at `in_design`, assigned to Claude Creative, with a normal pending `claude_design_requests` row (database function `request_claude_design_direct`) — it has NOT had a human initial approval, so the final approval is the only human check: design it exactly like any other request, bring it to final approval only, and never approve or schedule it yourself before a human approves.
+
+## Character reels — weekly (Mohamed, 2026-11-12)
+- Once every 7 days per page the day's reel is a cartoon-character reel (comic problem → serious tip, own voice per character, same fixed ending). Instructions, kit parts, voices and the production steps are in `docs/claude-character-videos.md`; read it before making one. If it cannot be finished, make the normal reel and say so.
