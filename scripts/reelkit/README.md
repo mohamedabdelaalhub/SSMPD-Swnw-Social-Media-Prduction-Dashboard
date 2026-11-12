@@ -8,7 +8,7 @@ python3 scripts/reelkit/build.py story.json OUTDIR --kit BRANDKIT [--dry] [--no-
 - `BRANDKIT`: فولدر فيه `sono_logo_web.png`, `sono_music_<calm|upbeat|serious>.mp3`, `sono_contact_video.jpg`, `sono_outro.mp4` (من البوابة `op=kit_get&name=sono/...`).
 - `--dry`: من غير ElevenLabs (توقيت تقديري، مفيش تكلفة) — للتجربة.
 - متطلبات: python3 + numpy، node + playwright (Chromium)، ffmpeg. الفونتات من `assets/fonts` في المستودع (`SSMPD_REPO` لو مختلف).
-- صوت ElevenLabs: Network secret بهيدر `xi-api-key` (البروكسي بيحطه). الأصوات في `voices.py` (doctor_male, male_2, woman_1, woman_2, elder_man, elder_woman, narrator). أصوات الأطفال مش متاحة بعد.
+- صوت ElevenLabs: لو البيئة فيها Network secret بيتكلّم مباشرة، ولو لأ (المهام المجدولة) بيروح تلقائي على البوابة `op=tts {voice,timestamps}` بتوكن التشغيل. Network secret بهيدر `xi-api-key` (البروكسي بيحطه). الأصوات في `voices.py` (doctor_male, male_2, woman_1, woman_2, elder_man, elder_woman, narrator). أصوات الأطفال مش متاحة بعد.
 
 ## أسلوبين بصريين (بدّل بينهم للتنويع، أو اخلطهم)
 1. **كارتون (ستيكمان)**: `look` من `person.py` — abu, man_tie, man_beard, mama_hair, mama_hijab, boy, girl, grandpa, grandma, doctor_m, doctor_f.
