@@ -62,7 +62,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Install Chromium (retry: apt on the runner sometimes fails with code 100)
+      - name: Install Chromium (with retries, the runner apt step sometimes fails)
         run: |
           for attempt in 1 2 3; do
             npx playwright install --with-deps chromium && exit 0
