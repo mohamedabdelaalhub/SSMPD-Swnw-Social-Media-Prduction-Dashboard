@@ -182,3 +182,49 @@ create table if not exists public.meta_ads_config (
   updated_at timestamptz not null default now(), updated_by uuid references public.admins(id)
 );
 alter table public.meta_ads_config enable row level security;  -- بدون policies: service_role بس، ومحدش من الواجهة يقدر يقراه
+
+-- ========== ٥) تذكير الاستقبال اليومي (9 بالليل بتوقيت القاهرة) عبر task_notifications ==========
+alter table public.task_notifications drop constraint if exists task_notifications_kind_check;
+alter table public.task_notifications add constraint task_notifications_kind_check
+  check (kind in ('assigned','status','review','returned','overdue','comment','due_soon','lead_reminder'));
+
+-- بيشتغل ساعتين بالـUTC (18 و19) وبينفذ فقط لما الساعة في القاهرة = 21، فيمشي مع التوقيت الصيفي.
+-- ما بيبعتش حاجة لو مفيش نقص. تذكير واحد بس لكل موظف في اليوم.
+create or replace function public.lead_reminders_run(p_force boolean default false) returns integer
+ language plpgsql security definer set search_path to 'public' as $$
+declare cairo timestamp := now() at time zone 'Africa/Cairo'; d date := (now() at time zone 'Africa/Cairo')::date;
+        g record; n integer := 0; r record; msg text;
+begin
+  if not p_force and extract(hour from cairo) <> 21 then return 0; end if;
+  select * into g from public.lead_capture_gap(d);
+  -- موظفو الاستقبال: لو فيه محادثات اليوم ما اتسجلش لها ليد
+  if g.gap > 0 then
+    for r in select a.id from public.admins a where a.active and a.role = 'reception' loop
+      msg := 'تذكير الليدز: النهارده ' || g.conversations || ' محادثة جديدة و' || g.leads_logged || ' ليد مسجّل. سجّل الناقص قبل ما تقفل.';
+      insert into public.task_notifications(recipient_id, task_id, kind, message, reference_date)
+        select r.id, null, 'lead_reminder', msg, d
+         where not exists (select 1 from public.task_notifications t where t.recipient_id = r.id and t.kind = 'lead_reminder' and t.reference_date = d);
+      if found then n := n + 1; end if;
+    end loop;
+  end if;
+  -- المسؤول عن ليدز لسه (جديد/جاري) ومتحدّثتش النهارده
+  for r in select l.assigned_to as id, count(*)::int c from public.leads l
+            where l.assigned_to is not null and l.current_status in ('new','in_progress')
+              and (l.updated_at at time zone 'Africa/Cairo')::date < d group by l.assigned_to loop
+    msg := 'تذكير الليدز: عندك ' || r.c || ' ليد محتاج تحديث حالة.';
+    insert into public.task_notifications(recipient_id, task_id, kind, message, reference_date)
+      select r.id, null, 'lead_reminder', msg, d
+       where not exists (select 1 from public.task_notifications t where t.recipient_id = r.id and t.kind = 'lead_reminder' and t.reference_date = d);
+    if found then n := n + 1; end if;
+  end loop;
+  return n;
+end $$;
+revoke all on function public.lead_reminders_run(boolean) from public, anon, authenticated;
+grant execute on function public.lead_reminders_run(boolean) to service_role;
+
+-- الجدولة (pg_cron). بتتسجل بس لو الإضافة موجودة، ومفيش فيها أي سر.
+do $$ begin
+  if exists (select 1 from pg_extension where extname = 'pg_cron') then
+    perform cron.schedule('lead-reminders-21-cairo', '2 18,19 * * *', 'select public.lead_reminders_run()');
+  end if;
+end $$;
