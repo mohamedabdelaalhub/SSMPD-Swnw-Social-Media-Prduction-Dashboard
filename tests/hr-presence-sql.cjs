@@ -85,6 +85,24 @@ const fs = require('fs'), assert = require('node:assert/strict'), boot = require
     }
     await db.exec('reset role');
 
+    // ---- heartbeat migration: new key, table denied to API roles, rollback restores the previous function, re-apply works
+    const HB = fs.readFileSync('supabase/migrations/20261112110000_live_presence_heartbeat.sql', 'utf8');
+    await owner("update clinic_people.people set status='active' where id=$1", [P.p2]);
+    assert.equal((await snap()).last_seen_at, undefined, 'no heartbeat key before the migration');
+    await db.exec(HB); await assert.rejects(() => db.exec(HB), /تم تطبيق هذا الملف من قبل/); await db.exec('rollback');
+    s = await snap(); assert.equal(s.last_seen_at, null, 'key exists, empty until the first heartbeat');
+    await owner("insert into clinic_people.device_feed(device_id,last_seen_at) values('k14',now()-interval '2 minutes')");
+    await owner("insert into clinic_people.device_feed(device_id,last_seen_at) values('k14b',now()-interval '30 seconds')");
+    s = await snap(); assert(s.last_seen_at, 'heartbeat reported'); assert.equal(s.rows.length > 0, true, 'rows unchanged by the new key');
+    await as(6); await assert.rejects(() => snap(), /تحتاج إدارة الموارد البشرية/, 'still HR only'); await as(5);
+    for (const r of ['authenticated', 'anon']) { await db.exec('reset role; set role ' + r); await assert.rejects(() => db.query('select * from clinic_people.device_feed'), /permission denied/); }
+    await db.exec('reset role');
+    await owner("insert into clinic_people.device_feed(device_id,last_seen_at) values('bad id',now())").then(() => assert.fail('bad device id accepted'), e => assert(/check constraint|violates/.test(e.message)));
+    await db.exec(fs.readFileSync('supabase/rollbacks/20261112110000_live_presence_heartbeat.rollback.sql', 'utf8'));
+    assert.equal((await owner("select to_regclass('clinic_people.device_feed') t"))[0].t, null); assert.equal((await snap()).last_seen_at, undefined, 'previous function restored'); assert((await snap()).rows.length > 0);
+    await db.exec(HB); // re-apply after rollback
+    await db.exec(fs.readFileSync('supabase/rollbacks/20261112110000_live_presence_heartbeat.rollback.sql', 'utf8'));
+
     // ---- rollback leaves the HR schema intact
     await db.exec(fs.readFileSync('supabase/rollbacks/20261112100000_live_presence.rollback.sql', 'utf8'));
     assert.equal((await owner("select to_regclass('clinic_people.device_punches') t"))[0].t, null);

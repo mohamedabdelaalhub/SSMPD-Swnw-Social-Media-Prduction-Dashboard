@@ -67,6 +67,15 @@ const tick = () => new Promise(r => setTimeout(r, 25));
   assert(root().querySelector('[data-presence-cards]').textContent.includes('2') , 'cards updated by the refresh');
   mode = 'down'; const before = root().innerHTML; await refresh(); await tick(); assert.equal(root().innerHTML, before, 'failed refresh keeps the last picture'); mode = 'ok';
 
+  // ---- heartbeat: no punches for an hour is NOT a dead link when the agent still pings
+  snap = fresh(); snap.last_received_at = iso(60); snap.last_seen_at = iso(1); snap.rows = snap.rows.slice(0, 2);
+  await refresh(); await tick();
+  assert(!root().querySelector('[data-stale]'), 'a live heartbeat clears the stale warning even with an old last punch');
+  assert(root().querySelector('[data-presence-feed]').textContent.includes('آخر اتصال من لاب المركز'), 'feed card is about the link');
+  assert(root().querySelector('[data-presence-lastpunch]').textContent.includes('آخر بصمة وصلت'), 'last punch is shown separately');
+  snap.last_seen_at = iso(9); await refresh(); await tick();
+  assert(root().querySelector('[data-stale]') && root().textContent.includes('الربط متوقف'), 'a silent heartbeat (9 min) is flagged');
+
   // ---- manual refresh button
   const n0 = snapCalls; root().querySelector('[data-presence=refresh]').click(); await tick(); assert.equal(snapCalls, n0 + 1);
 

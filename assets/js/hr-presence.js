@@ -73,10 +73,15 @@
       var left = rows.filter(function (r) { return r.state === 'out'; });
       var absent = rows.filter(function (r) { return r.state === 'none' && r.mapped; });
       var unmapped = rows.filter(function (r) { return !r.mapped; });
-      var feedAge = data.last_received_at ? minutesBetween(data.last_received_at, data.now) : null;
+      // The link is judged by the agent's heartbeat (last_seen_at), not by the last punch: no punches for an hour is normal, a silent link is not.
+      // Older servers without the heartbeat fall back to the last received punch.
+      var hasBeat = !!data.last_seen_at, linkAt = hasBeat ? data.last_seen_at : data.last_received_at;
+      var feedAge = linkAt ? minutesBetween(linkAt, data.now) : null;
       var stale = feedAge == null || feedAge > STALE_MINUTES;
-      var fresh = '<div class="wp-card" data-presence-feed' + (stale ? ' data-stale' : '') + '><b>آخر استلام من جهاز البصمة</b><span>' +
-        (data.last_received_at ? esc(when(data.last_received_at, data.now)) + ' (منذ ' + esc(span(feedAge)) + ')' : 'لم يصل شيء بعد') + '</span>' +
+      var lastPunch = data.last_received_at ? 'آخر بصمة وصلت: ' + when(data.last_received_at, data.now) + ' (منذ ' + span(minutesBetween(data.last_received_at, data.now)) + ')' : 'لم تصل بصمات بعد';
+      var fresh = '<div class="wp-card" data-presence-feed' + (stale ? ' data-stale' : '') + '><b>' + (hasBeat ? 'آخر اتصال من لاب المركز' : 'آخر استلام من جهاز البصمة') + '</b><span>' +
+        (linkAt ? esc(when(linkAt, data.now)) + ' (منذ ' + esc(span(feedAge)) + ')' : 'لم يصل شيء بعد') + '</span>' +
+        (hasBeat ? '<small data-presence-lastpunch>' + esc(lastPunch) + '</small>' : '') +
         (stale ? '<small role="alert">الربط متوقف أو متأخر — الأسماء قد لا تعكس الوضع الحالي</small>' : '') + '</div>';
       host.innerHTML = '<div class="wp-grid" data-presence-cards>' +
         '<div class="wp-card"><b>موجودون الآن</b><span>' + inside.length + '</span></div>' +
