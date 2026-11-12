@@ -1,0 +1,103 @@
+{
+ "dr_poses": {
+  "type": "pose",
+  "kit": "kit_639683044",
+  "target_px": 900,
+  "idle": "p001",
+  "poses": {
+   "idle": "p001",
+   "present": "p002",
+   "talk_a": "p003",
+   "talk_b": "p014",
+   "talk_c": "p002",
+   "phone": "p005",
+   "wave": "p006",
+   "point": "p007",
+   "clip": "p008",
+   "think": "p009",
+   "walk": "p010",
+   "walk_bag": "p011",
+   "chart": "p013",
+   "sit_drink": "p015",
+   "sit_tablet": "p016",
+   "podium": "p017",
+   "podium_xray": "p018",
+   "lab": "p019",
+   "microscope": "p020",
+   "desk": "p021",
+   "stress": "p022"
+  }
+ },
+ "dr_f_auburn": {
+  "type": "puppet",
+  "kit": "kit_1068373289",
+  "body": "p064",
+  "ppu_ref": "p064",
+  "target_px": 900,
+  "heads": {
+   "neutral": "p009",
+   "talk1": "p010",
+   "talk2": "p011",
+   "blink": "p004",
+   "happy": "p012",
+   "ouch": "p005",
+   "angry": "p007",
+   "think": "p006",
+   "scared": "p011"
+  }
+ },
+ "kit_girl": {
+  "type": "puppet",
+  "kit": "kit_1623976375",
+  "body": "p007",
+  "ppu_ref": "p007",
+  "target_px": 640,
+  "heads": {
+   "neutral": "p013",
+   "talk1": "p013",
+   "talk2": "p017",
+   "blink": "p015",
+   "happy": "p018",
+   "ouch": "p016",
+   "angry": "p014",
+   "think": "p015",
+   "scared": "p017"
+  }
+ },
+ "kit_boy": {
+  "type": "puppet",
+  "kit": "kit_1623976375",
+  "body": "p001",
+  "ppu_ref": "p001",
+  "target_px": 760,
+  "heads": {
+   "neutral": "p031",
+   "talk1": "p031",
+   "talk2": "p035",
+   "blink": "p033",
+   "happy": "p036",
+   "ouch": "p034",
+   "angry": "p032",
+   "think": "p033",
+   "scared": "p035"
+  }
+ },
+ "kit_woman": {
+  "type": "puppet",
+  "kit": "kit_1623976375",
+  "body": "p037",
+  "ppu_ref": "p037",
+  "target_px": 800,
+  "heads": {
+   "neutral": "p024",
+   "talk1": "p030",
+   "talk2": "p029",
+   "blink": "p028",
+   "happy": "p030",
+   "ouch": "p029",
+   "angry": "p026",
+   "think": "p028",
+   "scared": "p029"
+  }
+ }
+}
