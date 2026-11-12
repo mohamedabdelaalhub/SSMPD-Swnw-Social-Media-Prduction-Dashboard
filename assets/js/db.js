@@ -1298,7 +1298,7 @@
     },
     listPublishJobsForContent: function(contentIds) {
       if(!contentIds||!contentIds.length)return Promise.resolve([]);
-      return Promise.all([this.listMetaPublishJobsForContent(contentIds),this.listTikTokPublishJobsForContent(contentIds)]).then(function(all){
+      return Promise.all([this.listMetaPublishJobsForContent(contentIds),this.listTikTokPublishJobsForContent(contentIds),this.listYouTubePublishJobsForContent(contentIds).catch(function(){return [];})]).then(function(all){
         var map=Object.create(null);
         (all[0]||[]).forEach(function(j){if(!map[j.content_id])map[j.content_id]=Object.assign({meta_job_id:j.id},j);});
         (all[1]||[]).forEach(function(t){
@@ -1317,6 +1317,21 @@
           else j.status=statuses[0]||"pending";
           if(t.error_message&&!j.error_message)j.error_message=t.error_message;
           map[t.content_id]=j;
+        });
+        var seenYt=Object.create(null);
+        (all[2]||[]).forEach(function(y){
+          if(seenYt[y.content_id])return;seenYt[y.content_id]=true;
+          var j=map[y.content_id]||{id:y.id,content_id:y.content_id,status:y.status};
+          j.youtube_job_id=y.id;j.publish_youtube=true;j.youtube_status=y.status;j.youtube_url=y.video_url;
+          j.youtube_error=y.error_message;j.youtube_privacy=y.privacy_status;j.youtube_started=!!y.upload_url;
+          if(!j.meta_job_id&&!j.tiktok_job_id)j.id=y.id;
+          var st=[j.status,y.status];
+          if(st.indexOf("processing")>=0)j.status="processing";
+          else if(st.indexOf("pending")>=0)j.status="pending";
+          else if(st.indexOf("failed")>=0&&(st.indexOf("published")>=0||st.indexOf("partial")>=0))j.status="partial";
+          else if(st.indexOf("published")>=0)j.status=st.indexOf("partial")>=0?"partial":"published";
+          if(y.error_message&&!j.error_message)j.error_message="يوتيوب: "+y.error_message;
+          map[y.content_id]=j;
         });
         return Object.keys(map).map(function(k){return map[k];});
       });
@@ -1345,6 +1360,28 @@
     tiktokConnection: function(brand){return this.tiktokRequest({op:"connection",brand:brand});},
     tiktokCreatorInfo: function(brand){return this.tiktokRequest({op:"creator_info",brand:brand});},
     tiktokConnect: function(brand){return this.tiktokRequest({op:"connect",brand:brand});},
+
+    // ---------- يوتيوب (2026-11-11) ----------
+    createYouTubePublishJob: function (payload) {
+      return handle(client.from("youtube_publish_jobs").insert({
+        content_id:payload.contentId,brand:payload.brand,scheduled_at:payload.scheduledAt,
+        title:payload.title,privacy_status:payload.privacy||"public",is_short:!!payload.isShort,
+        created_by:payload.createdBy||null
+      }).select().single());
+    },
+    listYouTubePublishJobsForContent: function (contentIds) {
+      if(!contentIds||!contentIds.length)return Promise.resolve([]);
+      return handle(client.from("youtube_publish_jobs").select("*").in("content_id",contentIds).order("created_at",{ascending:false}));
+    },
+    cancelYouTubePublishJob: function (id) {
+      return handle(client.from("youtube_publish_jobs").update({status:"cancelled"}).eq("id",id).select().single());
+    },
+    youtubeRequest: function(payload) {
+      return client.functions.invoke("youtube-auth",{body:payload}).then(function(r){if(r.error)throw r.error;if(r.data&&r.data.error)throw new Error(r.data.error);return r.data||{};});
+    },
+    youtubeStatus: function(brand){return this.youtubeRequest({op:"status",brand:brand});},
+    youtubeConnect: function(brand){return this.youtubeRequest({op:"connect",brand:brand});},
+    youtubeSaveApp: function(clientId,clientSecret){return this.youtubeRequest({op:"save_app",client_id:clientId,client_secret:clientSecret});},
 
     // ---------- مراجعة طلبات تفعيل بوابة المرضى ----------
     patientVerificationRequest: function (payload) {
@@ -1576,6 +1613,9 @@
     taskSetStatus: function (taskId, status, note) {
       return handle(client.rpc("task_set_status", { p_task_id:taskId, p_status:status, p_note:note }));
     },
+    // إلغاء/إعادة فتح مهمة (مدير المشروع) — 2026-11-12
+    taskCancel: function (taskId, reason) { return handle(client.rpc("task_cancel", { p_task_id:taskId, p_reason:reason || "" })); },
+    taskReopen: function (taskId, note) { return handle(client.rpc("task_reopen", { p_task_id:taskId, p_note:note || null })); },
     taskReview: function (taskId, approve, note) {
       return handle(client.rpc("task_review", { p_task_id:taskId, p_approve:approve, p_note:note || "" }));
     },
@@ -1622,7 +1662,7 @@
     },
   };
 
-  ["taskCreate","taskCreateRecurring","taskUpdateDetails","taskSetStatus","taskSubmitWork","taskReview","taskDelete","taskDeleteProject","taskUpdateProject","taskSetProjectArchived"].forEach(function(name){var original=Db[name];if(!original)return;Db[name]=function(){return original.apply(Db,arguments).then(function(result){window.dispatchEvent(new Event("ssmpd-tasks-changed"));return result;});};});
+  ["taskCreate","taskCreateRecurring","taskUpdateDetails","taskSetStatus","taskSubmitWork","taskReview","taskCancel","taskReopen","taskDelete","taskDeleteProject","taskUpdateProject","taskSetProjectArchived"].forEach(function(name){var original=Db[name];if(!original)return;Db[name]=function(){return original.apply(Db,arguments).then(function(result){window.dispatchEvent(new Event("ssmpd-tasks-changed"));return result;});};});
   window.SSMPDDb = Db;
 
   // أسئلة استبيان "تقييم تجربة المريض" الرسمي — نفس الترتيب والنص بالحرف من

@@ -14,7 +14,7 @@ function personalEvent(){if(!owner)return;if(document.hidden){missedPersonalNoti
 function dataEvent(){if(!owner||document.hidden||inventoryTimer!==null)return;var wait=Math.max(0,DATA_EVENT_REFRESH_GAP-inboxAge());if(!wait){refresh(true);return;}var account=owner.id,epoch=generation;inventoryTimer=setTimeout(function(){inventoryTimer=null;if(!owner||owner.id!==account||generation!==epoch||document.hidden)return;if(inboxAge()>=DATA_EVENT_REFRESH_GAP)refresh(true);},wait);}
 var LABELS={indicator_reports:'تقارير المؤشرات والإجراءات',tasks:'المهام',production:'إنتاج المحتوى',review:'إدارة المحتوى والاعتماد',design:'التصميم',publish:'النشر',leads:'الليدز والتواصل',patients:'أرشيف المرضى',inventory:'المخزن والجرد',accounting:'الحسابات',contracting_entities:'جهات التعاقد',clinic_info:'بيانات الشات بوت',admin:'لوحة التحكم',summary:'ملخص إنتاج المحتوى',archive:'الأرشيف',performance:'أداء البوستات',staff_kpi:'أداء الفريق',my_kpi:'أدائي',metaads:'إعلانات Meta Ads',mediabuyer:'وكيل الإعلانات'};
 if(window.SSMPDUITitles)LABELS=Object.assign({},window.SSMPDUITitles.tabs);delete LABELS.home;
-var STATUS={todo:'لم تبدأ',in_progress:'جاري العمل',review:'بانتظار المراجعة',revision:'أُعيدت للتعديل',done:'مكتملة',blocked:'متوقفة'};
+var STATUS={todo:'لم تبدأ',in_progress:'جاري العمل',review:'بانتظار المراجعة',revision:'أُعيدت للتعديل',cancelled:'ملغاة',done:'مكتملة',blocked:'متوقفة'};
 function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function rpc(n,a){return window.SSMPDDb.client.rpc(n,a||{}).then(function(r){if(r.error)throw r.error;return r.data;});}
 function allowed(tab){return !!owner&&window.SSMPDRoles.canSeeTab(owner,tab);}
