@@ -19,7 +19,19 @@
       return '<option value="' + escapeHtml(d.id) + '"' + (d.id === selectedId ? ' selected' : '') + '>' + escapeHtml(d.name || d.email) + '</option>';
     }).join("");
   }
+  // ريلات الشخصيات (content_angle = character_reel): Claude بينتجها تلقائيًا بالمولّد — الموظفين مايقدروش يدوسوا نفّذ المونتاج/التعديل
+  // (القاعدة بترفض برضه: migration 20261113120000). المدير العام/السوبر أدمن بس هو اللي بيشوف الزرار.
+  function isCharacterReelLocked(item) {
+    if (!item || item.content_angle !== "character_reel") return false;
+    var role = ((window.SSMPDAuth && window.SSMPDAuth.currentAdmin) || {}).role;
+    return role !== "super_admin" && role !== "general_manager";
+  }
   function claudeDesignHtml(item) {
+    if (isCharacterReelLocked(item)) {
+      return ["in_design", "needs_revision"].indexOf(item.stage) === -1 ? "" :
+        '<div id="claude-design-locked" style="margin-top:12px;padding:12px;border:1px dashed var(--c-muted,#8a94a6);border-radius:12px;font-size:13px;color:var(--c-muted);">' +
+        '<b>ريل شخصيات — Claude بينتجه بنفسه</b><br>مفيش زرار تنفيذ هنا. لو عايز تعديل اكتب كومنت «طلب تعديل» أو كلّم المدير.</div>';
+    }
     if (item.assigned_designer !== CLAUDE_DESIGNER_ID || ["in_design", "needs_revision"].indexOf(item.stage) === -1) return "";
     var isVideo = item.content_format === "video";
     return '<div id="claude-design-box" style="margin-top:12px;padding:12px;border:1px dashed var(--c-primary,#0F369D);border-radius:12px;">' +
