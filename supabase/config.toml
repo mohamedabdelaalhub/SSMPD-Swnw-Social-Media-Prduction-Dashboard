@@ -93,3 +93,11 @@ verify_jwt = false
 [functions.service-report-notify]
 # REVIEW ONLY until deployed. Runs under the staff user JWT (no service-role key); platform verifies the JWT.
 verify_jwt = true
+
+[functions.leads-ingest]
+# Machine-to-machine (WhatsApp agent / inbox sync). Authenticates with X-Lead-Ingest-Secret inside the function.
+verify_jwt = false
+
+[functions.meta-ads-sync]
+# pg_cron (X-Cron-Secret) or a real super-admin session (save_token) — both verified inside the function.
+verify_jwt = false
