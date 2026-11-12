@@ -50,16 +50,21 @@
       });
     }
 
+    function key(r) { return r.device_user_id + '|' + r.device_id; }
+    function acts(r) {
+      if (!data.can_manage) return '';
+      return btn('map', r.mapped ? 'تغيير الربط' : 'ربط', key(r)) + (r.mapped ? '' : btn('ignore', 'تجاهل (غير إداري)', key(r)));
+    }
     function personRow(r, kind) {
       var name = r.mapped ? '<b>' + esc(r.full_name) + '</b><br><small>' + esc([r.code, r.department, r.job_title].filter(Boolean).join(' · ')) + '</small>'
         : '<b>رقم الجهاز ' + esc(r.device_user_id) + '</b><br><small>غير مربوط بموظف</small>';
       if (kind === 'in') {
         var mins = r.last_in_at ? minutesBetween(r.last_in_at, data.now) : null;
         var warn = mins != null && mins > LONG_IN_MINUTES ? '<br><small data-presence-warn>مدة طويلة جدًا — تحقق من بصمة الخروج</small>' : '';
-        return [name, STATE[r.state] || '', when(r.last_in_at, data.now), span(mins) + warn, data.can_manage ? btn('map', r.mapped ? 'تغيير الربط' : 'ربط', r.device_user_id + '|' + r.device_id) : ''];
+        return [name, STATE[r.state] || '', when(r.last_in_at, data.now), span(mins) + warn, acts(r)];
       }
-      if (kind === 'out') return [name, when(r.last_punch_at, data.now), span(r.minutes_since), data.can_manage ? btn('map', r.mapped ? 'تغيير الربط' : 'ربط', r.device_user_id + '|' + r.device_id) : ''];
-      return [name, data.can_manage ? btn('map', 'تغيير الربط', r.device_user_id + '|' + r.device_id) : ''];
+      if (kind === 'out') return [name, when(r.last_punch_at, data.now), span(r.minutes_since), acts(r)];
+      return [name, acts(r)];
     }
 
     function section(title, count, headers, rows, empty) {
@@ -73,6 +78,7 @@
       var left = rows.filter(function (r) { return r.state === 'out'; });
       var absent = rows.filter(function (r) { return r.state === 'none' && r.mapped; });
       var unmapped = rows.filter(function (r) { return !r.mapped; });
+      var ignored = data.ignored || [];
       // The link is judged by the agent's heartbeat (last_seen_at), not by the last punch: no punches for an hour is normal, a silent link is not.
       // Older servers without the heartbeat fall back to the last received punch.
       var hasBeat = !!data.last_seen_at, linkAt = hasBeat ? data.last_seen_at : data.last_received_at;
@@ -91,6 +97,10 @@
         section('موجودون الآن', inside.length, ['الموظف', 'الحالة', 'دخل الساعة', 'المدة', ''], inside.map(function (r) { return personRow(r, 'in'); }), 'لا أحد مسجّل حاضرًا حاليًا') +
         section('انصرفوا', left.length, ['الموظف', 'آخر بصمة', 'منذ', ''], left.map(function (r) { return personRow(r, 'out'); }), 'لا توجد انصرافات في الفترة') +
         (unmapped.length ? section('أرقام على الجهاز غير مربوطة بموظف', unmapped.length, ['رقم الجهاز', 'آخر بصمة', 'منذ', ''], unmapped.map(function (r) { return personRow(r, 'out'); }), '') : '') +
+        (ignored.length ? section('أرقام متجاهلة (غير إدارية)', ignored.length, ['رقم الجهاز', 'آخر بصمة', ''], ignored.map(function (r) {
+          return ['<b>رقم الجهاز ' + esc(r.device_user_id) + '</b><br><small>لا يظهر في الحضور الآن</small>', r.last_punch_at ? when(r.last_punch_at, data.now) : '—',
+            data.can_manage ? btn('unignore', 'إلغاء التجاهل', key(r)) : ''];
+        }), '') : '') +
         (absent.length ? section('مربوطون ولم يبصموا', absent.length, ['الموظف', ''], absent.map(function (r) { return personRow(r, 'none'); }), '') : '');
       bind();
     }
@@ -101,6 +111,13 @@
           var a = n.dataset.presence;
           if (a === 'refresh' || a === 'retry') { data = a === 'retry' ? null : data; load(); return; }
           if (a === 'map') openMap(n.dataset.id);
+          if (a === 'ignore' || a === 'unignore') {
+            var parts = String(n.dataset.id).split('|');
+            if (a === 'ignore' && !w.confirm('تجاهل رقم الجهاز ' + parts[0] + '؟ لن يظهر في «الحضور الآن» (البصمات تبقى محفوظة، ويمكن إلغاء التجاهل).')) return;
+            n.disabled = true;
+            U.rpc('hr_presence_ignore', { p_device_id: parts.slice(1).join('|'), p_device_user_id: Number(parts[0]), p_ignore: a === 'ignore' }).then(function () { return load(true); })
+              .catch(function (err) { n.disabled = false; if (w.SSMPDToast) w.SSMPDToast.show(err.message, 'error'); });
+          }
         };
       });
     }

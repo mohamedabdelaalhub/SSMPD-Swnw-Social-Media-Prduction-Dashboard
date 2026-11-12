@@ -11,6 +11,7 @@ const tick = () => new Promise(r => setTimeout(r, 25));
   const iso = min => new Date(new Date(NOW).getTime() - min * 60000).toISOString();
   const row = (o) => Object.assign({ device_id: 'k14', device_user_id: 1, person_id: null, mapped: false, full_name: null, code: null, department: null, job_title: null, state: 'in', last_punch: 0, last_punch_at: iso(10), last_in_at: iso(10), last_out_at: null, punches: 1, minutes_since: 10 }, o);
   const fresh = () => ({ can_manage: true, now: NOW, lookback_hours: 16, last_received_at: iso(1), last_punch_at: iso(10),
+    ignored: [{ device_id: 'k14', device_user_id: 55, last_punch_at: iso(120) }],
     people: [{ id: 'p1', code: 'EMP-1', full_name: 'موظف أول', department: 'الاستقبال' }, { id: 'p2', code: 'EMP-2', full_name: 'موظف ثان', department: '' }],
     rows: [
       row({ device_user_id: 3, person_id: 'p1', mapped: true, full_name: 'موظف أول', code: 'EMP-1', department: 'الاستقبال', last_in_at: iso(185), last_punch_at: iso(185), minutes_since: 185 }),
@@ -19,12 +20,13 @@ const tick = () => new Promise(r => setTimeout(r, 25));
       row({ device_user_id: 24, state: 'in', last_in_at: iso(15 * 60), last_punch_at: iso(15 * 60), minutes_since: 15 * 60 }),
       row({ device_user_id: 40, person_id: 'p4', mapped: true, full_name: 'لم يبصم', code: 'EMP-4', state: 'none', last_punch: null, last_punch_at: null, last_in_at: null, minutes_since: null, punches: 0 })] });
   let snap = fresh(), calls = [], snapCalls = 0, mode = 'ok';
-  w.SSMPDAuth = { currentAdmin: { id: 'hr', role: 'reception', has_hr_access: true } }; w.SSMPDToast = { show: () => {} };
+  w.confirm = () => true; w.SSMPDAuth = { currentAdmin: { id: 'hr', role: 'reception', has_hr_access: true } }; w.SSMPDToast = { show: () => {} };
   w.eval(fs.readFileSync('assets/js/roles.js', 'utf8'));
   w.SSMPDDb = { client: { rpc: async (fn, args) => {
     if (fn === 'hr_workspace') return { data: hrData };
     if (fn === 'hr_presence_snapshot') { snapCalls++; if (mode === 'missing') return { error: { message: 'Could not find the function public.hr_presence_snapshot in the schema cache' } }; if (mode === 'down') return { error: { message: 'network down' } }; return { data: snap }; }
     if (fn === 'hr_presence_map') { calls.push(args); return { data: null }; }
+    if (fn === 'hr_presence_ignore') { calls.push(args); return { data: null }; }
     return { data: { rules: [], adjustments: [], devices: [], imports: [], services: [] } }; } } };
   // run the 15s refresh quickly without waiting
   let intervals = [];
@@ -59,6 +61,16 @@ const tick = () => new Promise(r => setTimeout(r, 25));
   assert.equal(f.elements.person.value, 'p1', 'current person preselected'); f.elements.person.value = '';
   f.dispatchEvent(new w.Event('submit', { cancelable: true })); await tick(); await tick();
   assert.deepEqual(JSON.parse(JSON.stringify(calls[1])), { p_device_id: 'k14', p_device_user_id: 3, p_person_id: null });
+
+  // ---- ignore a non-administrative number, and bring an ignored one back
+  assert(root().textContent.includes('أرقام متجاهلة') && root().textContent.includes('رقم الجهاز 55'), 'ignored section lists the ignored numbers');
+  const ig = [...root().querySelectorAll('[data-presence=ignore]')].find(b => b.dataset.id.startsWith('24|')); assert(ig, 'unmapped rows can be ignored');
+  assert(![...root().querySelectorAll('[data-presence=ignore]')].some(b => b.dataset.id.startsWith('6|')), 'mapped rows have no ignore button');
+  const nBefore = calls.length, sBefore = snapCalls; ig.click(); await tick(); await tick();
+  assert.deepEqual(JSON.parse(JSON.stringify(calls[nBefore])), { p_device_id: 'k14', p_device_user_id: 24, p_ignore: true }); assert.equal(snapCalls, sBefore + 1, 'reloaded after ignoring');
+  const un = root().querySelector('[data-presence=unignore]'); assert(un && un.dataset.id.startsWith('55|'));
+  un.click(); await tick(); await tick(); assert.deepEqual(JSON.parse(JSON.stringify(calls[nBefore + 1])), { p_device_id: 'k14', p_device_user_id: 55, p_ignore: false });
+  w.confirm = () => false; const nn = calls.length; [...root().querySelectorAll('[data-presence=ignore]')][0].click(); await tick(); assert.equal(calls.length, nn, 'declining the confirmation sends nothing'); w.confirm = () => true;
 
   // ---- auto refresh picks up a new punch and a stale feed; a failed refresh keeps the last good picture
   snap = fresh(); snap.last_received_at = iso(9); snap.rows[0].state = 'out'; snap.rows[0].last_punch = 1; snap.rows[0].last_punch_at = iso(1); snap.rows[0].last_out_at = iso(1); snap.rows[0].minutes_since = 1;
