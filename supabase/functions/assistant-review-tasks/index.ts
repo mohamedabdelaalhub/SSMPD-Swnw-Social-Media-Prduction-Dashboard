@@ -95,7 +95,7 @@ Deno.serve(async req=>{
   const names=new Map(ad.map((a:any)=>[a.id,a.name])),latest=new Map<string,any>(),updates=new Map<string,any[]>(),openKids=new Map<string,number>();
   for(const x of wr)if(!latest.has(x.task_id))latest.set(x.task_id,x);
   for(const x of up){const a=updates.get(x.task_id)||[];if(a.length<6){a.push(x);updates.set(x.task_id,a)}}
-  for(const x of ch)if(x.status!=="done")openKids.set(x.parent_task_id,(openKids.get(x.parent_task_id)||0)+1);
+  for(const x of ch)if(x.status!=="done"&&x.status!=="cancelled")openKids.set(x.parent_task_id,(openKids.get(x.parent_task_id)||0)+1);
   const ctx=fresh.map((t:any)=>{
     const w=latest.get(t.id)||null,u=updates.get(t.id)||[],atts=Array.isArray(w?.attachments)?w.attachments:[],
       ownerMsgs=u.filter((x:any)=>x.author_id===owner).map((x:any)=>clip(x.body,1200));

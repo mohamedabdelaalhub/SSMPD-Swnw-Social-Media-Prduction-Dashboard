@@ -1613,6 +1613,9 @@
     taskSetStatus: function (taskId, status, note) {
       return handle(client.rpc("task_set_status", { p_task_id:taskId, p_status:status, p_note:note }));
     },
+    // إلغاء/إعادة فتح مهمة (مدير المشروع) — 2026-11-12
+    taskCancel: function (taskId, reason) { return handle(client.rpc("task_cancel", { p_task_id:taskId, p_reason:reason || "" })); },
+    taskReopen: function (taskId, note) { return handle(client.rpc("task_reopen", { p_task_id:taskId, p_note:note || null })); },
     taskReview: function (taskId, approve, note) {
       return handle(client.rpc("task_review", { p_task_id:taskId, p_approve:approve, p_note:note || "" }));
     },
@@ -1659,7 +1662,7 @@
     },
   };
 
-  ["taskCreate","taskCreateRecurring","taskUpdateDetails","taskSetStatus","taskSubmitWork","taskReview","taskDelete","taskDeleteProject","taskUpdateProject","taskSetProjectArchived"].forEach(function(name){var original=Db[name];if(!original)return;Db[name]=function(){return original.apply(Db,arguments).then(function(result){window.dispatchEvent(new Event("ssmpd-tasks-changed"));return result;});};});
+  ["taskCreate","taskCreateRecurring","taskUpdateDetails","taskSetStatus","taskSubmitWork","taskReview","taskCancel","taskReopen","taskDelete","taskDeleteProject","taskUpdateProject","taskSetProjectArchived"].forEach(function(name){var original=Db[name];if(!original)return;Db[name]=function(){return original.apply(Db,arguments).then(function(result){window.dispatchEvent(new Event("ssmpd-tasks-changed"));return result;});};});
   window.SSMPDDb = Db;
 
   // أسئلة استبيان "تقييم تجربة المريض" الرسمي — نفس الترتيب والنص بالحرف من
