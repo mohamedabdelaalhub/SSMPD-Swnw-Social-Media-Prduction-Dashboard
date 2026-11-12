@@ -1,0 +1,57 @@
+{
+ "settings": {
+  "model": "eleven_multilingual_v2",
+  "stability": 0.5,
+  "similarity_boost": 0.75,
+  "style": 0,
+  "speed": 1.0,
+  "use_speaker_boost": true,
+  "output": "mp3_44100_128"
+ },
+ "note": "التوليد من مباشرة api.elevenlabs.io بمفتاح 'Swnw Claude Video' (Network secrets، هيدر xi-api-key). مرة واحدة لكل سكريبت، لا جملة جملة.",
+ "voices": {
+  "narrator_default_female": {
+   "id": "VXERCtS1keFWRMOi7czu",
+   "name": "SSMPD Egyptian Female 02",
+   "role": "الراوي/المقاطع العامة (بوابة الداشبورد)"
+  },
+  "doctor_male": {
+   "id": "DWMVT5WflKt0P8OPpIrY",
+   "name": "SWNW Doctor - Hanafi",
+   "role": "الدكتور"
+  },
+  "male_2": {
+   "id": "LXrTqFIgiubkrMkwvOUr",
+   "name": "SWNW Male 2 - Masry",
+   "role": "رجل تاني/حوار"
+  },
+  "woman_1": {
+   "id": "I3u6waC588j43py1kDN2",
+   "name": "SWNW Woman - Fatima",
+   "role": "ست مصرية (تعبيرية)"
+  },
+  "woman_2": {
+   "id": "xPcC3nehhziQaOrIeAwv",
+   "name": "SWNW Woman - Ghozlan",
+   "role": "ست مصرية (ناعمة)"
+  },
+  "elder_man": {
+   "id": "Jez3JdhBInQTvlAvDOWR",
+   "name": "SWNW Elder Man - Moncellence",
+   "role": "شيخ كبير"
+  },
+  "elder_woman": {
+   "id": "mS4cERRqrNy5Kmlx8Udf",
+   "name": "SWNW Elder Woman - Sawsan",
+   "role": "حجة كبيرة"
+  },
+  "child_boy": {
+   "id": null,
+   "role": "طفل مصري - لسه (Voice Design)"
+  },
+  "child_girl": {
+   "id": null,
+   "role": "طفلة مصرية - لسه (Voice Design)"
+  }
+ }
+}
