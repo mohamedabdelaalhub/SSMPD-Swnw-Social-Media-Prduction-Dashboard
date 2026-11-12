@@ -18,10 +18,22 @@ Kit ids: `kit_1057129943`, `kit_1068373289`, `kit_1091716457`, `kit_1127429795`,
 
 **Known problems (do not ignore):** in `kit_1394067155` the faces render black and in `kit_1247394394` the mouths render as black boxes (transparency in the source). Use the poses, hands and walk-cycle frames of the first and the bodies/limbs of the second, or re-cut from a raster render (`gs -sDEVICE=pngalpha -dEPSCrop -r150`). Bodies are complete figures (head + body + arms); swapping heads for lip-sync needs the head removed from the body (not solved for every kit).
 
-## 2. When to make one
-Per brand, once every 7 days. Check with the SQL mailbox before making the day's reel:
-`select count(*) from content_items where brand='<brand>' and content_format='video' and title ilike '%ريل كوميدي%' and created_at > now() - interval '7 days';`
-If 0, today's reel for that brand is a character reel (titles end with `(ريل كوميدي)`; this is the marker for the check above). Dr. Dina reels stay Facebook + Instagram only. If the character reel cannot be finished (render, voice or quota problem), make the normal reel instead and say so in the final message — never leave the day without its reel.
+## 2. When to make one — weekly by default, adjusted by the audience's response
+**Marker.** Every character reel carries `content_angle = 'character_reel'` (set it when you create/patch the item) and its title ends with `(ريل كوميدي)`. Never mark anything else that way.
+
+**Default rate:** one character reel per page every 7 days. Check with the mailbox before making the day's reel:
+`select count(*) from content_items where brand='<brand>' and content_angle='character_reel' and stage in ('scheduled','published','final_approval','ready_to_publish') and coalesce(scheduled_publish_at, created_at) > now() - interval '<N> days';` where N = the page's current interval (7 unless the rule below changed it). If 0, today's reel for that page is a character reel.
+
+**Idea pool.** Ideas already sitting in `idea_selection` with `content_angle='character_reel'` (created by Claude Creative or staff) are the preferred topics: take the oldest one for that page, PATCH that same item (do not create a duplicate), and continue its stages. If none fits, write a new topic as for any reel. Never touch ideas that are not marked as character reels.
+
+**Measure and adjust (every Friday run, and whenever the daily run has fresh data).** Compare character reels with the page's normal reels published in the same period, from `post_insights` joined to `content_items` (use reach-normalised engagement: (fb_reactions + fb_comments + fb_shares + ig_interactions) / nullif(fb_reach + ig_reach, 0), plus shares and saves separately):
+- Need at least 4 character reels with 3+ days of insights per page before changing anything; below that keep the default and say "لسه بنجمع بيانات".
+- Character reels clearly better (median engagement ≥ 1.3× the normal reels AND shares or reach also higher) → raise the rate one step: 7 days → 4 days (about 2 per week). Never above 2 per week per page, and never two on the same day.
+- Clearly worse (median ≤ 0.7× the normal reels) → lower one step: 7 → 14 days. If still worse after 4 more reels, stop making them and ask Mohamed.
+- In between → keep the rate and try a different format of the style (cartoon vs kit style, different cast/set) before judging the style itself.
+- Judge topic and hour separately from style (a bad topic is not a bad style). Medical-safety rules never change with performance.
+- Record the decision where the other run summaries go: current interval per page, the numbers behind it, and the one line «ريل الشخصيات: X× مقابل الريل العادي → <قرار>». Only a changed interval is a decision to tell Mohamed; do not change the interval more than once every 14 days.
+If the character reel cannot be finished (render, voice or quota problem), make the normal reel instead and say so in the final message — never leave the day without its reel.
 
 ## 3. Rules
 - Cartoon characters only. Never a real patient, never a generated or edited picture of Dr. Dina or any doctor. No real faces, no patient data.
@@ -39,6 +51,12 @@ Voices and settings: `docs/character-library/voices.json` (the voices were added
 4. Before generating, read the remaining quota (`GET /v1/user/subscription`; if it is refused, go ahead). A character reel needs about 350–450 characters. If less than that is left, make the normal reel.
 5. Cut each take at its natural pauses (`ffmpeg -af silencedetect=noise=-38dB:d=0.18`) and place the pieces on the scenes; derive captions timing from the voice (proportional by characters inside each speech segment, with the measured pauses) and mouth movement from the voice envelope (rms every 1/24 s). See `example-cold-drink/plan.py`, `audio.py`, `anim.py`.
 6. Tashkeel only on words the voice misreads (السِّنّة، المِينا، اللِّثّة، اسْتَشِر). Egyptian dialect; short sentences.
+
+## 4b. Production tool — `scripts/reelkit/` (use this, do not hand-build)
+Write a storyboard JSON (cast, scenes, lines; format and ready examples in `scripts/reelkit/README.md` and `scripts/reelkit/stories/`) and run one command:
+`python3 scripts/reelkit/build.py story.json OUT --kit <KITDIR>` (`--dry` first for a free timing check). It makes the voices (one ElevenLabs request per character), captions (blue box with orange border, white text, key words highlighted), lip-sync, camera moves, transitions, SFX, music, contact card and outro.
+Vary every reel: two visual styles (cartoon stickman looks, or the kit style: `dr_poses`, `kit_dr_f_auburn`, `kit_woman`, `kit_girl`, `kit_boy`), 8 sets, props, gestures, transitions, different cast and story shape than the last character reel (check the last two with the same marker). Put the chosen style/cast/set in `hypothesis_reason` so the next run can avoid repeating it.
+Child voices are not available yet: do not give a kid a voice of an adult unless the story is a comic one and the owner has accepted that look.
 
 ## 5. Steps
 1. Pick the topic as for any reel (performance + no repeats in the last 45 days), then the cast: one or two characters, one voice each.

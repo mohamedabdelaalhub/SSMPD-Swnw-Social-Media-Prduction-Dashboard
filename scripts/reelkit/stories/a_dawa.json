@@ -1,0 +1,13 @@
+{"meta":{"brand":true,"title":"الدوا ما يتوقفش من نفسك","music":"calm","seed":11,"file":"a_dawa.mp4"},
+ "cast":{"dr":{"look":"dr_poses","voice":"doctor_male"},"mama":{"look":"kit_woman","voice":"woman_1"}},
+ "scenes":[
+  {"set":"clinic","cam":{"z0":1.0,"z1":1.1},"trans":"cut","actors":{"dr":{"x":0.72,"s":1.5},"mama":{"x":0.28,"s":1.5}},
+   "beats":[
+    {"say":{"who":"mama","text":"يا دكتور، ابني الحرارة نزلت وبقى كويس. أوقف المضاد الحيوي؟","hl":["أوقف"]}},
+    {"say":{"who":"dr","text":"استني! المضاد الحيوي بيتاخد بالمدة اللي الدكتور حدّدها.","hl":["المدة"],"gesture":"point"}}]},
+  {"set":"pharmacy","cam":{"z0":1.12,"z1":1.0},"trans":"slide","actors":{"dr":{"x":0.7,"s":1.5},"mama":{"x":0.3,"s":1.5}},
+   "beats":[
+    {"say":{"who":"dr","text":"لو وقفتيه بدري، ممكن العدوى ترجع تاني.","hl":["ترجع"],"gesture":"think"}},
+    {"say":{"who":"mama","text":"يعني أكمّل لحد ما الدكتور يقول؟","hl":["الدكتور"]}},
+    {"say":{"who":"dr","text":"بالظبط. وأي سؤال عن الجرعة، اسأل الدكتور أو الصيدلي.","hl":["الجرعة"],"gesture":"wave"}}]}
+ ]}
