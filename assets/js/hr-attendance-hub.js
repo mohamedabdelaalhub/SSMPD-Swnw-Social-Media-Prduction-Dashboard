@@ -45,7 +45,15 @@
       if (!mod) { panel.innerHTML = '<div class="att-msg err" role="alert">هذه الشاشة غير محمّلة</div>'; return; }
       mod.mount(panel, true, ctx);
     }
-    root.querySelector('[data-att=refresh]').onclick = function () { if (refreshFn) refreshFn(); else open(tab); };
+    root.querySelector('[data-att=refresh]').onclick = function () {
+      // Visible feedback: the reload itself is silent when nothing changed, which made the button look dead.
+      var b = this, label = b.innerHTML;
+      if (b.disabled) return;
+      b.disabled = true; b.textContent = 'جاري التحديث…';
+      function done(ok) { b.textContent = ok ? 'تم التحديث ✓' : 'تعذّر التحديث'; setTimeout(function () { b.innerHTML = label; b.disabled = false; }, 1200); }
+      var r; try { r = refreshFn ? refreshFn() : (open(tab), null); } catch (e) { done(false); return; }
+      Promise.resolve(r).then(function () { done(true); }, function () { done(false); });
+    };
     drawLive(); open(tab);
   }
 

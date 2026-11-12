@@ -105,7 +105,7 @@ const workspace = () => ({ can_manage: true, today: '2026-11-12', templates: [{ 
   mode = 'down'; const before2 = root().innerHTML; await refresh(); await t.tick(); assert.equal(root().innerHTML, before2, 'failed refresh keeps the last picture'); mode = 'ok';
   snap = fresh(); snap.last_received_at = iso(60); snap.last_seen_at = iso(1); await refresh(); await t.tick(); assert(!root().querySelector('[data-stale]'), 'live heartbeat clears the warning even with an old last punch');
   snap.last_seen_at = iso(9); await refresh(); await t.tick(); assert(root().querySelector('[data-stale]'), 'silent heartbeat (9 min) flagged');
-  const n0 = t.count('hr_presence_snapshot'); d.querySelector('[data-att=refresh]').click(); await t.tick(); await t.tick(); assert.equal(t.count('hr_presence_snapshot'), n0 + 1, 'header refresh button reloads');
+  const n0 = t.count('hr_presence_snapshot'); d.querySelector('[data-att=refresh]').click(); await t.tick(); await t.tick(); assert.equal(t.count('hr_presence_snapshot'), n0 + 1, 'header refresh button reloads'); assert(d.querySelector('[data-att=refresh]').textContent.includes('تم التحديث') || d.querySelector('[data-att=refresh]').textContent.includes('جاري'), 'refresh button shows visible feedback');
 
   // ---- leaving the section stops the polling
   t.host.innerHTML = ''; const live = t.refresher(); const n1 = t.count('hr_presence_snapshot'); await live(); await t.tick(); assert.equal(t.count('hr_presence_snapshot'), n1, 'no requests after the section is gone');
