@@ -1,0 +1,479 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>الحضور والانصراف — نموذج التصميم (بيانات محاكاة)</title>
+<style>
+@font-face{font-family:"TajawalP";src:url(fonts/Tajawal-Regular.ttf);font-weight:400}
+@font-face{font-family:"TajawalP";src:url(fonts/Tajawal-Medium.ttf);font-weight:500}
+@font-face{font-family:"TajawalP";src:url(fonts/Tajawal-Bold.ttf);font-weight:700}
+:root{--primary:#0F369D;--primary-d:#0B2A7A;--primary-t:#E8EEFB;--alert:#F15A22;--dark:#16212E;--pos:#2F7D5C;--pos-t:#E4F3EC;--neg:#D0402A;--neg-t:#FBE9E5;
+--amber:#B86F00;--amber-t:#FDF1DC;--blue:#2B6CB0;--blue-t:#E6F0FA;--out:#6B7688;--out-t:#EEF1F6;--bg:#F4F6FB;--card:#fff;--border:#E3E8F2;--muted:#6B7688;--r:14px;
+--shadow:0 1px 3px rgba(22,33,46,.06),0 8px 24px rgba(22,33,46,.05);--font:"TajawalP","Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif}
+*{box-sizing:border-box}html,body{margin:0}
+body{font-family:var(--font);background:var(--bg);color:var(--dark);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+button,input,select{font-family:inherit;font-size:14px;color:inherit}button{cursor:pointer}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.wrap{max-width:1360px;margin:0 auto;padding:16px}
+:focus-visible{outline:2px solid var(--alert);outline-offset:2px}
+.hero{background:linear-gradient(120deg,#0F369D,#1C4FC7);color:#fff;border-radius:18px;padding:16px 22px 0;overflow:hidden}
+.hero-top{display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.hero h1{margin:0;font-size:24px;display:flex;align-items:center;gap:10px}.hero p{margin:2px 0 0;opacity:.85;font-size:14px}
+.live{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.28);border-radius:999px;padding:7px 14px;font-size:13.5px}
+.dot{width:10px;height:10px;border-radius:50%;background:#47D18C;animation:pulse 2s infinite;flex:none}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(71,209,140,.7)}70%{box-shadow:0 0 0 9px rgba(71,209,140,0)}100%{box-shadow:0 0 0 0 rgba(71,209,140,0)}}
+.hbtn{background:#fff;color:var(--primary);border:0;border-radius:10px;padding:8px 14px;font-weight:700;display:flex;gap:6px;align-items:center}
+.tabs-main{display:flex;gap:4px;margin-top:14px;overflow-x:auto}
+.tabs-main button{background:transparent;border:0;color:rgba(255,255,255,.82);padding:11px 18px;border-radius:12px 12px 0 0;display:flex;gap:8px;align-items:center;font-weight:700;white-space:nowrap}
+.tabs-main button[aria-selected=true]{background:var(--bg);color:var(--primary)}
+.tabs-main .nb{background:var(--alert);color:#fff;border-radius:999px;font-size:12px;padding:0 7px;line-height:20px}
+.alerts{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0 0}
+.alert{display:flex;gap:10px;align-items:center;border-radius:12px;padding:9px 14px;font-size:14px;border:1px solid;flex:1 1 260px}
+.alert button{margin-inline-start:auto;border:0;background:transparent;font-weight:700;text-decoration:underline;padding:0;white-space:nowrap}
+.al-neg{background:var(--neg-t);border-color:#F3C9BF;color:#8C2A1A}.al-amber{background:var(--amber-t);border-color:#F1D9A7;color:#7A4A00}.al-blue{background:var(--blue-t);border-color:#BED7EE;color:#1E4D7B}.al-pos{background:var(--pos-t);border-color:#BFE0CF;color:#1F5A41}
+.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin:14px 0}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;display:flex;gap:11px;align-items:center;text-align:start;box-shadow:var(--shadow);transition:.15s}
+.kpi:hover{transform:translateY(-1px)}.kpi[aria-pressed=true]{outline:2px solid var(--primary);outline-offset:-2px}
+.kpi .ico{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;flex:none}
+.kpi b{display:block;font-size:25px;line-height:1.1}.kpi .l{display:block;font-size:13px;color:var(--muted)}.kpi small{display:block;font-size:11.5px;color:var(--muted)}
+.k-in .ico{background:var(--pos-t);color:var(--pos)}.k-late .ico{background:var(--amber-t);color:var(--amber)}.k-abs .ico{background:var(--neg-t);color:var(--neg)}.k-leave .ico{background:var(--blue-t);color:var(--blue)}.k-up .ico{background:var(--primary-t);color:var(--primary)}.k-out .ico{background:var(--out-t);color:var(--out)}
+.bar{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;box-shadow:var(--shadow)}
+.bar.sticky{position:sticky;top:8px;z-index:5}
+.search{display:flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:10px;padding:0 10px;background:#fff;min-width:200px;flex:1 1 200px;max-width:320px;height:40px;color:var(--muted)}
+.search input{border:0;outline:0;flex:1;min-width:0;height:100%;background:transparent;color:var(--dark)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;flex:2 1 300px}
+.chip{display:flex;align-items:center;gap:6px;border:1px solid var(--border);background:#fff;border-radius:999px;padding:5px 12px 5px 10px;height:36px}
+.chip i{font-style:normal;background:var(--out-t);border-radius:999px;padding:0 7px;font-size:12px;color:var(--muted)}
+.chip[aria-pressed=true]{background:var(--primary);border-color:var(--primary);color:#fff}.chip[aria-pressed=true] i{background:rgba(255,255,255,.22);color:#fff}
+.seg{display:flex;background:var(--out-t);border-radius:10px;padding:3px;gap:2px}
+.seg button{border:0;background:transparent;border-radius:8px;padding:6px 12px;display:flex;gap:6px;align-items:center;color:var(--muted);height:34px;white-space:nowrap}
+.seg button[aria-pressed=true]{background:#fff;color:var(--primary);font-weight:700;box-shadow:0 1px 3px rgba(22,33,46,.12)}
+.tool{border:1px solid var(--border);background:#fff;border-radius:10px;height:40px;padding:0 12px;display:flex;gap:6px;align-items:center;color:var(--primary);font-weight:700;white-space:nowrap}
+.tool .badge{background:var(--alert);color:#fff;border-radius:999px;font-size:12px;padding:0 7px}
+select.sel{height:40px;border:1px solid var(--border);border-radius:10px;padding:0 10px;background:#fff}
+input.dt{height:40px;border:1px solid var(--border);border-radius:10px;padding:0 8px;background:#fff}
+.trio{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:14px 0}
+.box{background:var(--card);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column}
+.box>header{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--border)}
+.box>header .bi{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;flex:none}
+.box>header h3{margin:0;font-size:16px;flex:1}.box>header h3 small{display:block;font-weight:400;color:var(--muted);font-size:12.5px}
+.box>header .cnt{font-size:24px;font-weight:700}
+.b-neg>header{background:linear-gradient(180deg,#FDF1EE,#fff)}.b-neg .bi{background:var(--neg-t);color:var(--neg)}.b-neg .cnt{color:var(--neg)}
+.b-amber>header{background:linear-gradient(180deg,#FEF7E8,#fff)}.b-amber .bi{background:var(--amber-t);color:var(--amber)}.b-amber .cnt{color:var(--amber)}
+.b-blue>header{background:linear-gradient(180deg,#EEF5FC,#fff)}.b-blue .bi{background:var(--blue-t);color:var(--blue)}.b-blue .cnt{color:var(--blue)}
+.rows{list-style:none;margin:0;padding:4px 8px 8px;display:grid;gap:2px}
+.row{display:grid;grid-template-columns:38px minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 6px;border-radius:10px}.row:hover{background:#F8FAFD}.row.abs{grid-template-columns:38px minmax(0,1fr) auto}.acts-c .acts{margin:0}
+.av{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:13.5px;color:#fff;background:var(--col,#6B7688);position:relative;flex:none}
+.av.sm{width:32px;height:32px;font-size:12px}
+.av[class*=st-]::after{content:"";position:absolute;inset-inline-end:-1px;bottom:-1px;width:12px;height:12px;border-radius:50%;border:2px solid #fff;background:var(--sc)}
+.st-in{--sc:var(--pos)}.st-break{--sc:#E39A1F}.st-out{--sc:#9AA4B5}.st-none{--sc:var(--neg)}.st-up{--sc:#9DB3E6}.st-leave{--sc:var(--blue)}
+.nm{font-weight:700;min-width:0}.nm .t{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.nm small{display:block;font-weight:400;color:var(--muted);font-size:12.5px}
+.meta{text-align:end;font-size:12.5px;color:var(--muted);display:grid;gap:3px;justify-items:end}
+.pill{display:inline-flex;gap:5px;align-items:center;border-radius:999px;padding:1px 9px;font-size:12px;font-weight:700;white-space:nowrap}
+.pill .ic{width:14px;height:14px}
+.p-in{background:var(--pos-t);color:var(--pos)}.p-break{background:var(--amber-t);color:var(--amber)}.p-out{background:var(--out-t);color:var(--out)}.p-none{background:var(--neg-t);color:var(--neg)}.p-late{background:var(--amber-t);color:var(--amber)}.p-up{background:var(--primary-t);color:var(--primary)}.p-leave{background:var(--blue-t);color:var(--blue)}.p-warn{background:var(--neg-t);color:var(--neg)}
+.acts{display:flex;gap:4px;margin-top:2px}
+.ib{width:30px;height:30px;border-radius:9px;border:1px solid var(--border);background:#fff;color:var(--primary);display:grid;place-items:center;padding:0;text-decoration:none}.ib:hover{background:var(--primary-t)}.ib.wa{color:#1E8E5A}.ib .ic{width:16px;height:16px}
+.empty{text-align:center;color:var(--muted);padding:22px 10px;list-style:none}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:14px;margin-top:14px;align-items:start}
+.cards{columns:310px;column-gap:14px}.cards>.dept{break-inside:avoid;margin-bottom:14px}
+.dept{background:var(--card);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
+.dept>header{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,var(--tint),#fff)}
+.dept .di{width:38px;height:38px;border-radius:11px;background:var(--col);color:#fff;display:grid;place-items:center;flex:none}
+.dept h3{margin:0;font-size:16px;flex:1}.dept h3 small{display:block;font-weight:400;color:var(--muted);font-size:12.5px}
+.ring{--p:0;--rc:var(--col);width:44px;height:44px;border-radius:50%;background:conic-gradient(var(--rc) calc(var(--p)*1%),var(--out-t) 0);display:grid;place-items:center;flex:none}
+.ring b{width:34px;height:34px;border-radius:50%;background:#fff;display:grid;place-items:center;font-size:12.5px}.ring.low{--rc:var(--neg)}
+.cov{font-size:12px;border-radius:999px;padding:0 8px;font-weight:700;white-space:nowrap;display:inline-block}.cov.ok{background:var(--pos-t);color:var(--pos)}.cov.low{background:var(--neg-t);color:var(--neg)}
+.people{list-style:none;margin:0;padding:6px 8px 8px;display:grid;gap:2px}
+.person{display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:10px;align-items:center;padding:7px 6px;border-radius:10px;position:relative}
+.person:hover{background:#F8FAFD}.person .av{width:40px;height:40px}
+.bar8{width:84px;height:5px;border-radius:99px;background:var(--out-t);overflow:hidden}.bar8 i{display:block;height:100%;background:var(--pos);border-radius:99px}
+.kebab{position:absolute;inset-inline-start:2px;top:6px;opacity:0;border:0;background:#fff;border-radius:8px;width:28px;height:28px;color:var(--muted);display:grid;place-items:center;box-shadow:0 1px 4px rgba(22,33,46,.18)}
+.person:hover .kebab,.kebab:focus{opacity:1}
+.more{border:0;background:transparent;color:var(--primary);font-weight:700;padding:8px 14px;text-align:start;border-top:1px solid var(--border);display:flex;gap:6px;align-items:center;width:100%}
+.side{display:grid;gap:14px}
+.panel{background:var(--card);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);padding:14px}
+.panel h4{margin:0 0 10px;font-size:15px;display:flex;gap:8px;align-items:center}
+.feed{list-style:none;margin:0;padding:0}.feed li{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)}.feed li:last-child{border:0}
+.fi{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;flex:none}.fi.in{background:var(--pos-t);color:var(--pos)}.fi.out{background:var(--out-t);color:var(--out)}.fi.break{background:var(--amber-t);color:var(--amber)}
+.feed b{display:block;font-size:14px;line-height:1.3}.feed span{font-size:12.5px;color:var(--muted)}.feed time{margin-inline-start:auto;font-size:12.5px;color:var(--muted);direction:ltr}
+.health{display:grid;gap:8px;font-size:13.5px}.health div{display:flex;justify-content:space-between;gap:8px}.health b{direction:ltr}
+.smart{display:grid;gap:8px}.smart div{display:flex;gap:8px;font-size:13.5px;background:var(--bg);border-radius:10px;padding:8px 10px}.smart .ic{width:18px;height:18px;margin-top:2px}
+.hint{background:var(--primary-t);color:var(--primary-d);border-radius:12px;padding:10px 12px;font-size:13px;display:flex;gap:8px}
+.tl{background:var(--card);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);padding:12px 14px;overflow:hidden}
+.tl-head,.tl-row{display:grid;grid-template-columns:150px minmax(0,1fr);gap:12px;align-items:center}
+.tl-axis{position:relative;height:24px;direction:ltr;border-bottom:1px solid var(--border)}.tl-axis span{position:absolute;transform:translateX(-50%);font-size:12px;color:var(--muted);top:0}
+.tl-group{margin:12px 0 4px;display:flex;gap:8px;align-items:center;font-weight:700;color:var(--col)}
+.tl-row{padding:4px 0;border-bottom:1px dashed #EEF1F6}
+.tl-track{position:relative;height:26px;direction:ltr;background:repeating-linear-gradient(90deg,#F6F8FC 0 1px,transparent 1px 5%)}
+.tl-band{position:absolute;top:2px;height:22px;border-radius:8px;background:repeating-linear-gradient(135deg,rgba(15,54,157,.10) 0 6px,rgba(15,54,157,.04) 6px 12px);border:1px dashed rgba(15,54,157,.3)}
+.tl-bar{position:absolute;top:6px;height:14px;border-radius:99px;background:var(--col)}.tl-bar.live{background:linear-gradient(90deg,var(--col),#47D18C)}
+.tl-miss{position:absolute;top:2px;height:22px;width:3px;background:var(--neg);border-radius:2px}
+.tl-now{position:absolute;top:0;bottom:0;width:2px;background:var(--alert);z-index:2}
+.tl-lab{position:absolute;top:5px;font-size:12px;color:var(--primary);white-space:nowrap}
+.tl-nm{font-weight:700;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tl-nm small{color:var(--muted);font-weight:400}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-bottom:8px;align-items:center}.legend i{display:inline-block;vertical-align:middle;margin-inline-end:5px}
+.list{background:var(--card);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
+.lr{display:grid;grid-template-columns:minmax(190px,2fr) 120px 110px 80px minmax(120px,1fr) 44px;gap:10px;align-items:center;padding:9px 14px;border-bottom:1px solid var(--border)}
+.lr.h{background:#F8FAFD;color:var(--muted);font-size:12.5px;font-weight:700}.lr:last-child{border:0}
+.lr .who{display:flex;gap:10px;align-items:center;min-width:0}
+.rkpis{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin:14px 0}
+.rk{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;box-shadow:var(--shadow)}
+.rk .l{font-size:13px;color:var(--muted);display:flex;gap:6px;align-items:center}.rk .l .ic{width:17px;height:17px}.rk b{display:block;font-size:26px;line-height:1.25;margin-top:2px}
+.delta{font-size:12px;font-weight:700;display:inline-flex;gap:3px;align-items:center;border-radius:999px;padding:0 8px}
+.d-good{background:var(--pos-t);color:var(--pos)}.d-bad{background:var(--neg-t);color:var(--neg)}.d-flat{background:var(--out-t);color:var(--out)}
+.grid2{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:14px;margin-bottom:14px;align-items:start}.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:14px;align-items:start}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);padding:14px}
+.card h4{margin:0 0 10px;font-size:15px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}.card h4 .seg{margin-inline-start:auto}
+svg.chart{width:100%;height:auto;display:block;direction:ltr}
+.heat{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;direction:rtl}.heat div{aspect-ratio:2.6;border-radius:5px;display:grid;place-items:center;font-size:10.5px;min-height:18px}
+.heat .hd{background:transparent;color:var(--muted);aspect-ratio:auto;min-height:0}
+.hbar{display:grid;grid-template-columns:110px minmax(0,1fr) 46px;gap:8px;align-items:center;font-size:13.5px;margin:9px 0}.hbar .tr{height:10px;border-radius:99px;background:var(--out-t);overflow:hidden}.hbar .tr i{display:block;height:100%;border-radius:99px;background:var(--col)}
+.lb{list-style:none;margin:0;padding:0;display:grid;gap:4px}.lb li{display:grid;grid-template-columns:24px 32px minmax(0,1fr) auto;gap:8px;align-items:center;padding:5px 0}
+.rank{width:24px;height:24px;border-radius:50%;background:var(--out-t);display:grid;place-items:center;font-size:12px;font-weight:700}.rank.r1{background:#FCE9B8;color:#8A5A00}
+.tbl{width:100%;border-collapse:collapse;font-size:13.5px}.tbl th{background:#F8FAFD;color:var(--muted);font-size:12.5px;text-align:start;padding:9px 10px;white-space:nowrap;cursor:pointer;user-select:none}.tbl td{padding:8px 10px;border-top:1px solid var(--border);white-space:nowrap}
+.tbl tr:hover td{background:#FAFBFE}.pb{display:inline-block;width:70px;height:7px;border-radius:99px;background:var(--out-t);vertical-align:middle;margin-inline-start:6px;overflow:hidden}.pb i{display:block;height:100%}
+.scroll{overflow-x:auto}
+.ins{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:14px}
+.ins>div{border-radius:var(--r);padding:12px 14px;display:flex;gap:10px;font-size:14px;border:1px solid var(--border);background:#fff;box-shadow:var(--shadow)}.ins .ic{margin-top:2px}.ins b{display:block}.ins small{display:block;font-size:12.5px}
+.sg{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}.sg th{background:#F8FAFD;padding:8px 6px;text-align:center;font-size:12.5px;color:var(--muted)}.sg th.today{background:var(--primary-t);color:var(--primary)}
+.sg td{padding:5px 4px;border-top:1px solid var(--border);text-align:center}.sg td.n{text-align:start;white-space:nowrap;background:#fff;padding-inline:10px}
+.sc{border:0;border-radius:8px;min-width:58px;height:30px;font-weight:700;font-size:12.5px}
+.sc-M{background:#DDF3EA;color:#14735A}.sc-E{background:#FDECD3;color:#A15A00}.sc-N{background:#E7E3FA;color:#4B3BB0}.sc-D{background:#E1E9FA;color:#0F369D}.sc-off{background:#F1F3F7;color:#8A94A6}.sc-leave{background:var(--blue-t);color:var(--blue)}
+.covrow td{background:#FAFBFE;font-size:12px}.cv{display:block;border-radius:6px;padding:1px 4px;margin:1px 0}.cv.ok{color:var(--pos)}.cv.low{background:var(--neg-t);color:var(--neg);font-weight:700}
+.banner{border-radius:var(--r);padding:12px 16px;background:linear-gradient(120deg,#EEF3FD,#fff);border:1px solid #CFDAF3;display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:14px 0}.banner b{display:block}
+.btn{border:1px solid var(--primary);background:var(--primary);color:#fff;border-radius:10px;height:40px;padding:0 16px;font-weight:700;display:inline-flex;gap:6px;align-items:center}.btn.ghost{background:#fff;color:var(--primary)}
+dialog{border:0;border-radius:18px;padding:0;width:min(640px,94vw);box-shadow:0 20px 60px rgba(22,33,46,.3)}dialog::backdrop{background:rgba(22,33,46,.45)}
+dialog>header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border)}dialog>header h3{margin:0;display:flex;gap:8px;align-items:center}
+.dtabs{display:flex;gap:6px;padding:10px 18px 0;overflow-x:auto}.dtabs button{border:0;background:transparent;padding:8px 12px;border-radius:10px 10px 0 0;color:var(--muted);border-bottom:2px solid transparent;white-space:nowrap}.dtabs button[aria-selected=true]{color:var(--primary);font-weight:700;border-color:var(--primary)}
+.dlg-body{padding:12px 18px 18px;display:grid;gap:8px;max-height:60vh;overflow:auto}
+.dr{display:flex;align-items:center;gap:10px;border:1px solid var(--border);border-radius:12px;padding:10px 12px;flex-wrap:wrap}.dr .num{width:44px;height:44px;border-radius:12px;background:var(--primary-t);color:var(--primary);display:grid;place-items:center;font-weight:700}
+.dr .tx{flex:1;min-width:140px}.dr .tx small{display:block;color:var(--muted)}.dr select{height:36px;border:1px solid var(--border);border-radius:9px;padding:0 8px;max-width:170px}
+.mini{border:1px solid var(--border);background:#fff;border-radius:9px;height:36px;padding:0 12px;font-weight:700;color:var(--primary);display:inline-flex;gap:5px;align-items:center}.mini.solid{background:var(--primary);color:#fff;border-color:var(--primary)}
+.toast{position:fixed;inset-inline:0;bottom:22px;margin:auto;width:max-content;max-width:92vw;background:var(--dark);color:#fff;border-radius:12px;padding:10px 16px;font-size:14px;box-shadow:0 10px 30px rgba(0,0,0,.3);z-index:50;opacity:0;pointer-events:none;transition:.25s;transform:translateY(10px)}.toast.on{opacity:1;transform:none}
+@media(max-width:1180px){.layout{grid-template-columns:1fr}.side{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}.kpis,.rkpis{grid-template-columns:repeat(3,1fr)}.grid2{grid-template-columns:1fr}}
+@media(max-width:900px){.ins{grid-template-columns:1fr}.trio{grid-template-columns:1fr}.row.abs{grid-template-columns:38px minmax(0,1fr) auto}.row.abs .acts-c{grid-column:2/-1}.grid3{grid-template-columns:1fr}.lr{grid-template-columns:minmax(0,1fr) 92px 72px}.lr>:nth-child(2),.lr>:nth-child(4),.lr>:nth-child(5),.lr>:nth-child(6){display:none}.tl-head,.tl-row{grid-template-columns:100px minmax(0,1fr)}}
+@media(max-width:560px){.wrap{padding:10px}.hero{padding:14px 14px 0}.hero h1{font-size:20px}.kpis,.rkpis{grid-template-columns:repeat(2,1fr)}.cards{columns:1}.chips{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;flex:1 1 100%}.chip{flex:none}.search{max-width:none}.bar.sticky{top:0}.kpi b,.rk b{font-size:22px}.tabs-main button{padding:10px 12px}}
+@media print{.live,.hbtn,.bar,.tabs-main{display:none}}
+.strip{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 0}.sch{display:flex;gap:8px;align-items:center;border:1px solid var(--border);background:#fff;border-radius:999px;padding:6px 14px;font-size:13.5px;box-shadow:var(--shadow)}.sch .ic{width:17px;height:17px}.sch button{border:0;background:transparent;font-weight:700;text-decoration:underline;padding:0;color:var(--primary)}.sch.ok{color:var(--pos)}.sch.warn{color:var(--neg);border-color:#F3C9BF;background:#FDF3F0}.sch.info{color:var(--blue)}
+.abs-line{margin:2px 8px 4px;padding:7px 10px;border-radius:10px;background:var(--neg-t);color:#8C2A1A;font-size:13px;display:flex;gap:8px;align-items:flex-start}.abs-line .ic{width:17px;height:17px;margin-top:2px}.abs-line b{font-weight:700}
+.ltr{direction:ltr;unicode-bidi:isolate;display:inline-block}.tdh{font-weight:700;text-align:center}.wk{display:inline-block;min-width:34px;text-align:center;border-radius:7px;padding:2px 4px;font-weight:700;font-size:12.5px}
+.mode{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.trio-tabs{display:none;margin:14px 0 0;width:100%}.trio-tabs button{flex:1;justify-content:center}
+.watch{display:grid;gap:10px}.wi{display:grid;grid-template-columns:38px minmax(0,1fr) auto;gap:10px;align-items:center;border:1px solid var(--border);border-radius:12px;padding:10px 12px}.wi .why{display:flex;gap:6px;flex-wrap:wrap;margin-top:3px}.wi .wacts{display:flex;gap:6px;flex-wrap:wrap}
+@media(max-width:900px){.trio-tabs{display:flex}.trio[data-show="abs"]>.box:not([data-b="abs"]),.trio[data-show="late"]>.box:not([data-b="late"]),.trio[data-show="leave"]>.box:not([data-b="leave"]){display:none}.trio{margin-top:10px}.wi{grid-template-columns:38px minmax(0,1fr)}.wi .wacts{grid-column:1/-1}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/></symbol>
+<symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+<symbol id="i-coffee" viewBox="0 0 24 24"><path d="M17 8h1a4 4 0 0 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><line x1="6" y1="2" x2="6" y2="4"/><line x1="10" y1="2" x2="10" y2="4"/><line x1="14" y1="2" x2="14" y2="4"/></symbol>
+<symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></symbol>
+<symbol id="i-login" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></symbol>
+<symbol id="i-userx" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="17" y1="8" x2="22" y2="13"/><line x1="22" y1="8" x2="17" y2="13"/></symbol>
+<symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></symbol>
+<symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
+<symbol id="i-refresh" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></symbol>
+<symbol id="i-nurse" viewBox="0 0 24 24"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/><path d="M3.22 12H9.5l.5-1 2 4.5 2-7 1.5 3.5h5.27"/></symbol>
+<symbol id="i-desk" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></symbol>
+<symbol id="i-brief" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></symbol>
+<symbol id="i-head" viewBox="0 0 24 24"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></symbol>
+<symbol id="i-calc" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><path d="M16 14v4M16 10h.01M12 10h.01M8 10h.01M12 14h.01M8 14h.01M12 18h.01M8 18h.01"/></symbol>
+<symbol id="i-cards" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></symbol>
+<symbol id="i-gantt" viewBox="0 0 24 24"><rect x="3" y="4" width="10" height="4" rx="1"/><rect x="9" y="10" width="12" height="4" rx="1"/><rect x="5" y="16" width="8" height="4" rx="1"/></symbol>
+<symbol id="i-list" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></symbol>
+<symbol id="i-warn" viewBox="0 0 24 24"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></symbol>
+<symbol id="i-wifi" viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></symbol>
+<symbol id="i-dots" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="12" cy="19" r="1.3"/></symbol>
+<symbol id="i-eyeoff" viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></symbol>
+<symbol id="i-x" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
+<symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
+<symbol id="i-chev" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></symbol>
+<symbol id="i-alarm" viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="M5 3 2 6M22 6l-3-3"/></symbol>
+<symbol id="i-hour" viewBox="0 0 24 24"><path d="M5 22h14M5 2h14M17 22v-4.17a2 2 0 0 0-.59-1.42L12 12l-4.41 4.41A2 2 0 0 0 7 17.83V22M7 2v4.17a2 2 0 0 0 .59 1.42L12 12l4.41-4.41A2 2 0 0 0 17 6.17V2"/></symbol>
+<symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></symbol>
+<symbol id="i-phone" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></symbol>
+<symbol id="i-msg" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></symbol>
+<symbol id="i-chart" viewBox="0 0 24 24"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></symbol>
+<symbol id="i-down" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></symbol>
+<symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></symbol>
+<symbol id="i-up" viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></symbol>
+<symbol id="i-print" viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></symbol>
+<symbol id="i-bulb" viewBox="0 0 24 24"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.7.6 1 1.4 1 2.3h6c0-.9.3-1.7 1-2.3A7 7 0 0 0 12 2z"/></symbol>
+<symbol id="i-ok" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></symbol>
+<symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+  <header class="hero">
+    <div class="hero-top">
+      <div><h1><svg class="ic" style="width:28px;height:28px"><use href="#i-check"/></svg> الحضور والانصراف</h1><p id="today">—</p></div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <div class="live"><span class="dot"></span><span>متصل — آخر نبضة من لاب المركز منذ 20 ث</span></div>
+        <button class="hbtn" id="refresh"><svg class="ic"><use href="#i-refresh"/></svg>تحديث</button>
+      </div>
+    </div>
+    <nav class="tabs-main" role="tablist" id="tabs"></nav>
+  </header>
+  <div id="app"></div>
+</div>
+<dialog id="dlg"><header><h3><svg class="ic"><use href="#i-link"/></svg>إدارة ربط أرقام الجهاز</h3><button class="mini" id="closeDlg" aria-label="إغلاق"><svg class="ic"><use href="#i-x"/></svg></button></header><div class="dtabs" id="dtabs" role="tablist"></div><div class="dlg-body" id="dbody"></div></dialog>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+/* بيانات محاكاة (أسماء وهمية). الوقت التجريبي: 09:20 صباحًا. */
+const $=s=>document.querySelector(s),E=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const ico=(id,c='')=>`<svg class="ic ${c}"><use href="#${id}"/></svg>`;
+const GRACE=10,SIM=9*60+20,WIN_PAST=16*60,WIN_FUT=4*60,NH=120;
+const TODAY=new Date(),DOW=['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+const MONTHS=['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+const dateOf=i=>{const d=new Date(TODAY);d.setDate(d.getDate()+i);return d};
+const dlabel=i=>{const d=dateOf(i);return `${d.getDate()} ${MONTHS[d.getMonth()]}`};
+const hhmm=m=>{m=((Math.round(m)%1440)+1440)%1440;return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0')};
+const dur=m=>{if(m==null)return'—';m=Math.round(m);if(m<1)return'الآن';const h=Math.floor(m/60),r=m%60;return h?`${h} س${r?` ${r} د`:''}`:`${r} د`};
+const initials=n=>n.split(' ').slice(0,2).map(w=>w[0]).join('');
+function rng(seed){return()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const R=rng(20261113);
+const DEPTS={nurse:{n:'التمريض',icon:'i-nurse',col:'#1B9A7B',tint:'#EAF7F3',min:5},reception:{n:'الاستقبال',icon:'i-desk',col:'#0F369D',tint:'#EAEFFB',min:3},cs:{n:'خدمة العملاء',icon:'i-head',col:'#D9780F',tint:'#FDF1E3',min:2},admin:{n:'الإدارة',icon:'i-brief',col:'#7A4CE0',tint:'#F1ECFC',min:2},acc:{n:'المحاسبة والمالية',icon:'i-calc',col:'#0E7490',tint:'#E6F4F8',min:2}};
+const SH={M:{n:'صباحية',s:420,e:900,col:'#14735A'},E:{n:'مسائية',s:900,e:1380,col:'#A15A00'},N:{n:'ليلية',s:1380,e:420,col:'#4B3BB0'},D:{n:'إدارية',s:540,e:1020,col:'#0F369D'}};
+const RAW=[
+['أحمد سالم','nurse','تمريض','M',5,.12,.02,'ok'],['شهد مراد','nurse','تمريض','M',5,.5,.03,'late:32'],['وفاء حسين','nurse','تمريض أول','M',4,.08,.01,'ok'],['محمود عادل','nurse','تمريض','M',5,.2,.03,'break'],['هدى إبراهيم','nurse','ممرضة أسنان','M',5,.15,.06,'absent'],
+['نورا فتحي','nurse','تمريض','N',3,.1,.02,'out'],['ياسمين علي','nurse','تمريض','N',3,.18,.03,'out'],['إيمان رضا','nurse','تمريض','E',5,.22,.02,'up'],['كريم سعد','nurse','تمريض','E',5,.1,.02,'leave:إجازة سنوية:3'],
+['منار موسى','reception','استقبال','M',5,.1,.01,'ok'],['مازن أحمد','reception','استقبال','M',5,.14,.02,'ok'],['مريم هشام','reception','استقبال','M',4,.38,.03,'late:18'],['علا سمير','reception','استقبال','E',5,.2,.02,'up'],['دعاء حسن','reception','استقبال','M',5,.25,.08,'absent'],['رنا فؤاد','reception','استقبال','E',6,.09,.01,'up'],
+['سمر بحر','cs','خدمة عملاء','D',5,.08,.01,'ok'],['لينا حسني','cs','خدمة عملاء','D',5,.34,.02,'late:15'],['هبة نبيل','cs','خدمة عملاء','E',5,.12,.02,'up'],['يوسف طارق','cs','خدمة عملاء','D',5,.3,.07,'absent'],
+['شروق رأفت','admin','مدير إداري','D',5,.04,.01,'ok'],['زياد سعيد','admin','أمن','N',2,.08,.02,'longin'],['خالد منصور','admin','سائق','D',5,.1,.02,'leave:إجازة عارضة:1'],['ليلى حسن','admin','سكرتارية','D',5,.1,.01,'ok'],
+['رنا كمال','acc','محاسب','D',5,.1,.01,'ok'],['محمود عبدالعال','acc','مدير مالي','D',5,.05,.01,'ok'],['سلمى أحمد','acc','محاسب','D',5,.18,.02,'ok']];
+const EMP=RAW.map((r,i)=>({id:i,name:r[0],dept:r[1],role:r[2],sh:r[3],off:r[4],pl:r[5],pa:r[6],tc:r[7],phone:'01000000'+String(100+i)}));
+const H={};
+EMP.forEach(e=>{const rec={};let leaveLeft=0;
+ for(let d=-(NH-1);d<=-1;d++){const dow=dateOf(d).getDay();
+  if(dow===e.off){rec[d]={k:'off'};continue}
+  if(leaveLeft>0){leaveLeft--;rec[d]={k:'leave'};continue}
+  if(R()<.012){leaveLeft=Math.floor(R()*3);rec[d]={k:'leave'};continue}
+  if(R()<e.pa){rec[d]={k:'absent'};continue}
+  let late=0;if(R()<e.pl){late=11+Math.floor(R()*48)}else late=Math.floor(R()*9)-2;
+  const early=R()<.05?10+Math.floor(R()*50):0,ot=R()<.07?20+Math.floor(R()*70):0,inc=R()<.02;
+  rec[d]={k:'present',late:Math.max(late,0),isLate:late>GRACE,early,ot,inc}}
+ H[e.id]=rec});
+EMP.forEach(e=>{const sh=SH[e.sh],t={start:sh.s};const [c,a,b]=e.tc.split(':');
+ if(c==='leave'){t.kind='leave';t.leaveType=a;t.back=+b}
+ else if(c==='up'){t.kind='up';t.startsIn=sh.s-SIM}
+ else if(c==='out'){t.kind='out';t.inAgo=SIM+1440-sh.s-Math.floor(R()*6);t.outAgo=SIM-(420+Math.floor(R()*20));t.worked=t.inAgo-t.outAgo}
+ else if(c==='absent'){t.kind='absent';t.sinceStart=SIM-sh.s}
+ else if(c==='longin'){t.kind='in';t.late=0;t.inAgo=SIM+1440-sh.s;t.long=true}
+ else{t.kind='in';const late=c==='late'?+a:Math.floor(R()*8)-4;t.late=Math.max(late,0);t.inAgo=SIM-(sh.s+late);t.brk=c==='break';if(t.brk)t.brkAgo=12}
+ e.t=t});
+const stateOf=e=>{const t=e.t;if(t.kind==='in')return t.brk?'break':'in';return t.kind};
+const isLateToday=e=>e.t.kind==='in'&&e.t.late>GRACE;
+const FEED=[['in','لينا حسني','cs',5],['break','محمود عادل','nurse',12],['in','سمر بحر','cs',22],['in','شهد مراد','nurse',108],['in','مريم هشام','reception',122],['out','نورا فتحي','nurse',130],['out','ياسمين علي','nurse',133],['in','أحمد سالم','nurse',140]];
+const UNMAPPED=[{num:52,last:12},{num:57,last:95}],IGNORED=[{num:41,last:330},{num:44,last:400},{num:45,last:70}];
+let TT;const toast=m=>{const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(TT);TT=setTimeout(()=>t.classList.remove('on'),2600)};
+
+const S={tab:'now',now:{view:'cards',dept:'all',state:'all',q:'',openOut:{},trio:'abs'},rep:{period:'month',dept:'all',q:'',metric:'late',type:'all',money:false,from:-29,to:0,sort:'lateMin',dir:-1,group:'day',tbl:'sum',by:'dept',compare:true,showAll:false},sched:null};
+const DAYSW=[6,0,1,2,3,4,5];
+function buildSched(){const s={},tc=(TODAY.getDay()+1)%7;EMP.forEach(e=>{s[e.id]={};DAYSW.forEach((dw,i)=>{const di=i-tc,h=H[e.id][di];let v=dw===e.off?'off':e.sh;if(h&&h.k==='leave')v='leave';if(di===0&&e.t.kind==='leave')v='leave';s[e.id][i]=v})});return s}
+S.sched=buildSched();
+
+/* ---------- حسابات التقارير ---------- */
+function periodRange(p){const dow=(TODAY.getDay()+1)%7,dm=TODAY.getDate();
+ if(p==='today')return[0,0];if(p==='week')return[-dow,0];if(p==='month')return[-(dm-1),0];
+ if(p==='last')return[-(dm-1)-new Date(TODAY.getFullYear(),TODAY.getMonth(),0).getDate(),-dm];
+ if(p==='90')return[-89,0];if(p==='all')return[-(NH-1),0];return[S.rep.from,S.rep.to]}
+function rec(e,d){if(d===0){const t=e.t;if(t.kind==='leave')return{k:'leave'};if(t.kind==='absent')return t.sinceStart>GRACE?{k:'absent'}:{k:'future'};if(t.kind==='up')return{k:'future'};
+  const late=t.late||0;return{k:'present',late,isLate:late>GRACE,early:0,ot:0,inc:!!t.long}}
+ return H[e.id][d]}
+function agg(from,to,f){const emps=EMP.filter(e=>(f.dept==='all'||e.dept===f.dept)&&(!f.q||(e.name+DEPTS[e.dept].n+e.role).includes(f.q)));
+ const per=emps.map(e=>({e,sched:0,present:0,late:0,lateMin:0,absent:0,leave:0,onTime:0,early:0,ot:0,inc:0,weeks:[0,0,0,0,0,0,0,0],dr:new Array(to-from+1).fill(null)}));
+ const days=[];for(let d=from;d<=to;d++)days.push({d,late:0,lateMin:0,absent:0,present:0,sched:0});
+ per.forEach(p=>{for(let d=from;d<=to;d++){const r=rec(p.e,d);if(!r||r.k==='off'||r.k==='future')continue;const dd=days[d-from];
+  if(r.k==='leave'){p.leave++;continue}p.sched++;dd.sched++;
+  if(r.k==='absent'){p.absent++;dd.absent++;p.dr[d-from]={l:0,lm:0,a:1};continue}
+  p.present++;dd.present++;p.dr[d-from]={l:r.isLate?1:0,lm:r.isLate?r.late:0,a:0};if(r.isLate){p.late++;p.lateMin+=r.late;dd.late++;dd.lateMin+=r.late;p.weeks[Math.min(7,Math.floor((to-d)/7))]++}else p.onTime++;p.early+=r.early>0?1:0;p.ot+=r.ot;p.inc+=r.inc?1:0}});
+ const tot=per.reduce((a,p)=>({sched:a.sched+p.sched,present:a.present+p.present,late:a.late+p.late,lateMin:a.lateMin+p.lateMin,absent:a.absent+p.absent,leave:a.leave+p.leave,onTime:a.onTime+p.onTime,inc:a.inc+p.inc,early:a.early+p.early}),{sched:0,present:0,late:0,lateMin:0,absent:0,leave:0,onTime:0,inc:0,early:0});
+ tot.commit=tot.sched?Math.round(tot.onTime/tot.sched*100):0;tot.avgLate=tot.late?Math.round(tot.lateMin/tot.late):0;
+ per.forEach(p=>{p.commit=p.sched?Math.round(p.onTime/p.sched*100):0});return{per,days,tot}}
+const delta=(cur,prev,goodDown=true,suffix='')=>{if(prev===undefined||prev===null)return'';const d=cur-prev;if(d===0)return`<span class="delta d-flat">— ثابت</span>`;const good=goodDown?d<0:d>0;return`<span class="delta ${good?'d-good':'d-bad'}">${d>0?'▲':'▼'} ${Math.abs(d)}${suffix}</span>`};
+function bucketize(a,mode,from){const bk=[],map={};a.days.forEach((d,i)=>{const dt=dateOf(d.d);let key,lab,tip;
+  if(mode==='week'){const off=(dt.getDay()+1)%7,st=Math.max(from,d.d-off);key='w'+(d.d-off);lab=String(dateOf(st).getDate());tip='أسبوع '+dlabel(st)}
+  else if(mode==='month'){key='m'+dt.getFullYear()*12+dt.getMonth();lab=MONTHS[dt.getMonth()];tip=lab}
+  else{key='d'+d.d;lab=String(dt.getDate());tip=dlabel(d.d)}
+  if(!(key in map)){map[key]=bk.length;bk.push({key,lab,tip,late:0,lateMin:0,absent:0,idx:[]})}const b=bk[map[key]];b.late+=d.late;b.lateMin+=d.lateMin;b.absent+=d.absent;b.idx.push(i)});
+ const per=a.per.map(p=>({e:p.e,vals:bk.map(b=>b.idx.reduce((x,i)=>{const r=p.dr[i];return r?{late:x.late+r.l,lateMin:x.lateMin+r.lm,absent:x.absent+r.a}:x},{late:0,lateMin:0,absent:0}))}));return{bk,per}}
+function barChart(days,key,col){const W=640,HH=190,pl=34,pb=26,pt=10,max=Math.max(1,...days.map(d=>d[key]));const n=days.length,bw=(W-pl-8)/n,g=Math.min(6,bw*.25);
+ const lines=[0,.5,1].map(t=>{const y=pt+(HH-pt-pb)*(1-t);return`<line x1="${pl}" x2="${W}" y1="${y}" y2="${y}" stroke="#E9EDF5"/><text x="${pl-6}" y="${y+4}" text-anchor="end" font-size="11" fill="#6B7688">${Math.round(max*t)}</text>`}).join('');
+ const bars=days.map((d,i)=>{const v=d[key],h=(HH-pt-pb)*(v/max),x=pl+i*bw+g/2;const lab=n<=16||i%Math.ceil(n/12)===0?`<text x="${x+(bw-g)/2}" y="${HH-8}" text-anchor="middle" font-size="10.5" fill="#6B7688">${d.lab||dateOf(d.d).getDate()}</text>`:'';
+  return`<g><title>${d.tip||dlabel(d.d)}: ${v}</title><rect x="${x}" y="${pt+(HH-pt-pb)-h}" width="${Math.max(1,bw-g)}" height="${Math.max(h,v?2:0)}" rx="3" fill="${col}" opacity=".9"/>${lab}</g>`}).join('');
+ return`<svg class="chart" viewBox="0 0 ${W} ${HH}" role="img">${lines}${bars}</svg>`}
+function spark(vals,col='#D9780F'){const W=84,Hh=24,max=Math.max(1,...vals),n=vals.length;const pts=vals.map((v,i)=>`${(i/(n-1))*W},${Hh-3-(Hh-6)*(v/max)}`).join(' ');return`<svg width="${W}" height="${Hh}" viewBox="0 0 ${W} ${Hh}" style="direction:ltr;vertical-align:middle"><polyline fill="none" stroke="${col}" stroke-width="2" points="${pts}"/></svg>`}
+
+/* ---------- شاشة «الآن» ---------- */
+function matchState(e,s){const st=stateOf(e);if(s==='in')return st==='in'||st==='break';if(s==='late')return isLateToday(e);if(s==='abs')return st==='absent';if(s==='leave')return st==='leave';if(s==='up')return st==='up';if(s==='out')return st==='out';return true}
+function nowFiltered(){const f=S.now,q=f.q.trim();return EMP.filter(e=>(f.dept==='all'||e.dept===f.dept)&&(!q||(e.name+DEPTS[e.dept].n+e.role).includes(q))&&(f.state==='all'||matchState(e,f.state)))}
+const cnt=f=>EMP.filter(f).length;
+function alertsHtml(){const longE=EMP.filter(e=>e.t.long);
+ return`<div class="strip"><div class="sch info" style="color:var(--primary)">${ico('i-clock')}<span>الوردية الحالية: <b>صباحية</b> <span class="ltr">07:00–15:00</span> · تنتهي بعد ${dur(900-SIM)} · القادمة: مسائية (${cnt(e=>e.sh==='E'&&e.t.kind==='up')} مجدولين)</span></div><div class="sch ok">${ico('i-wifi')}<span>الربط سليم — آخر بصمة <b>${hhmm(SIM-5)}</b></span></div><div class="sch info">${ico('i-cal')}<span>طلب إجازة معلّق (16 نوفمبر)</span><button data-toast="يفتح شاشة الإجازات والطلبات">مراجعة</button></div>${longE.map(e=>`<div class="sch warn">${ico('i-warn')}<span><b>${E(e.name)}</b> داخل من ${dur(e.t.inAgo)} ولم يبصم خروج</span><button data-toast="يفتح تصحيح البصمة الناقصة">تصحيح</button></div>`).join('')}</div>`}
+function kpisHtml(){const inn=cnt(e=>['in','break'].includes(stateOf(e))),la=cnt(isLateToday),ab=cnt(e=>stateOf(e)==='absent'),lv=cnt(e=>stateOf(e)==='leave'),up=cnt(e=>stateOf(e)==='up'),out=cnt(e=>stateOf(e)==='out'),sched=EMP.length-lv;
+ const T=[['in','k-in','i-check',inn,'موجودون الآن',`من ${sched} مجدولين اليوم`],['late','k-late','i-alarm',la,'متأخرون','وصلوا بعد الموعد + 10 د'],['abs','k-abs','i-userx',ab,'غايبون','مجدولون ولم يصلوا'],['leave','k-leave','i-sun',lv,'في إجازة','إجازة معتمدة اليوم'],['up','k-up','i-hour',up,'لم يبدأوا بعد','ورديتهم لسه ما بدأت'],['out','k-out','i-logout',out,'انصرفوا','أنهوا ورديتهم']];
+ return`<section class="kpis">${T.map(t=>`<button class="kpi ${t[1]}" data-k="${t[0]}" aria-pressed="${S.now.state===t[0]}"><span class="ico">${ico(t[2])}</span><span><b>${t[3]}</b><span class="l">${t[4]}</span><small>${t[5]}</small></span></button>`).join('')}</section>`}
+const acts=e=>`<div class="acts"><a class="ib" href="tel:${e.phone}" title="اتصال" aria-label="اتصال">${ico('i-phone')}</a><a class="ib wa" href="https://wa.me/2${e.phone}" title="واتساب" aria-label="واتساب">${ico('i-msg')}</a><button class="ib" data-toast="يسجّل عذرًا ويستبعده من الغياب" title="تسجيل عذر" aria-label="تسجيل عذر">${ico('i-ok')}</button></div>`;
+function trio(){const abs=EMP.filter(e=>stateOf(e)==='absent').sort((a,b)=>b.t.sinceStart-a.t.sinceStart),late=EMP.filter(isLateToday).sort((a,b)=>b.t.late-a.t.late),lv=EMP.filter(e=>stateOf(e)==='leave');
+ const rep=e=>{const r=agg(-6,0,{dept:'all',q:e.name}).per[0];return r?r.late:0};
+ const absRow=e=>`<li class="row abs"><span class="av st-none" style="--col:${DEPTS[e.dept].col}">${E(initials(e.name))}</span><div class="nm"><span class="t">${E(e.name)}</span><small>${DEPTS[e.dept].n} · وردية ${hhmm(e.t.start)}</small><span class="pill p-none" style="margin-top:3px">لم يصل منذ ${dur(e.t.sinceStart)}</span></div><div class="acts-c">${acts(e)}</div></li>`;
+ const lateRow=e=>{const n=rep(e);return`<li class="row"><span class="av st-in" style="--col:${DEPTS[e.dept].col}">${E(initials(e.name))}</span><div class="nm"><span class="t">${E(e.name)}</span><small>${DEPTS[e.dept].n} · الموعد ${hhmm(e.t.start)}${n>=2?` · <b style="color:var(--neg)">${n} مرات هذا الأسبوع</b>`:''}</small></div><div class="meta"><span class="pill p-late">${ico('i-alarm')} متأخر ${e.t.late} د</span><span>وصل ${hhmm(e.t.start+e.t.late)}</span></div></li>`};
+ const lvRow=e=>`<li class="row"><span class="av st-leave" style="--col:${DEPTS[e.dept].col}">${E(initials(e.name))}</span><div class="nm"><span class="t">${E(e.name)}</span><small>${DEPTS[e.dept].n} · ${E(e.role)}</small></div><div class="meta"><span class="pill p-leave">${E(e.t.leaveType)}</span><span>يعود بعد ${e.t.back} ${e.t.back>1?'أيام':'يوم'}</span></div></li>`;
+ const bx={'b-neg':'abs','b-amber':'late','b-blue':'leave'};const box=(cls,icn,t,sub,n,rows,empty)=>`<section class="box ${cls}" data-b="${bx[cls]}"><header><span class="bi">${ico(icn)}</span><h3>${t}<small>${sub}</small></h3><span class="cnt">${n}</span></header><ul class="rows">${rows||`<li class="empty">${empty}</li>`}</ul></section>`;
+ return`<div class="seg trio-tabs" role="group" aria-label="المتابعة العاجلة">${[['abs','غايبون',abs.length],['late','متأخرون',late.length],['leave','إجازات',lv.length]].map(t=>`<button data-bx="${t[0]}" aria-pressed="${S.now.trio===t[0]}">${t[1]} (${t[2]})</button>`).join('')}</div><div class="trio" data-show="${S.now.trio}">${box('b-neg','i-userx','الغايبون الآن','كان المفروض يحضروا ولم يبصموا',abs.length,abs.map(absRow).join(''),'لا يوجد غايبون 👏')}${box('b-amber','i-alarm','المتأخرون اليوم','بصموا بعد الموعد + سماح 10 دقايق',late.length,late.map(lateRow).join(''),'لا يوجد متأخرون')}${box('b-blue','i-sun','في إجازة اليوم','إجازات معتمدة',lv.length,lv.map(lvRow).join(''),'لا أحد في إجازة')}</div>`}
+function personRow(e){const t=e.t,st=stateOf(e),col=DEPTS[e.dept].col;let meta='';
+ if(st==='in'||st==='break'){const pct=Math.min(100,Math.round(t.inAgo/480*100));
+  meta=`<span class="pill ${st==='break'?'p-break':'p-in'}">${st==='break'?ico('i-coffee')+' استراحة '+dur(t.brkAgo):'دخل '+hhmm(SIM-t.inAgo)}</span>${isLateToday(e)?`<span class="pill p-late">متأخر ${t.late} د</span>`:`<span>${st==='break'?'دخل '+hhmm(SIM-t.inAgo):dur(t.inAgo)}</span>`}${st==='in'&&!t.long?`<span class="bar8"><i style="width:${pct}%"></i></span>`:''}`}
+ else if(st==='absent')meta=`<span class="pill p-none">لم يصل منذ ${dur(t.sinceStart)}</span><span>وردية ${hhmm(t.start)}</span>`;
+ else if(st==='up')meta=`<span class="pill p-up">${ico('i-hour')} تبدأ ${hhmm(t.start)}</span><span>بعد ${dur(t.startsIn)}</span>`;
+ else if(st==='leave')meta=`<span class="pill p-leave">${E(t.leaveType)}</span>`;
+ else meta=`<span class="pill p-out">انصرف ${hhmm(SIM-t.outAgo)}</span><span>عمل ${dur(t.worked)}</span>`;
+ return`<li class="person"><span class="av st-${st==='absent'?'none':st}" style="--col:${col}">${E(initials(e.name))}</span><div class="nm"><span class="t">${E(e.name)}</span><small>${E(e.role)}</small>${t.long?`<span class="pill p-warn">${ico('i-warn')}تحقق من الخروج</span>`:''}</div><div class="meta">${meta}</div><button class="kebab" aria-label="خيارات">${ico('i-dots')}</button></li>`}
+function cardsView(){const list=nowFiltered(),keys=Object.keys(DEPTS).filter(k=>list.some(e=>e.dept===k)),filt=S.now.state!=='all';
+ if(!keys.length)return`<div class="panel empty">لا توجد نتائج مطابقة.</div>`;
+ return`<div class="cards">`+keys.map(k=>{const d=DEPTS[k],all=EMP.filter(e=>e.dept===k),ls=list.filter(e=>e.dept===k);
+  const pres=all.filter(e=>['in','break'].includes(stateOf(e))).length,sched=all.filter(e=>stateOf(e)!=='leave').length,low=pres<d.min&&all.some(e=>stateOf(e)==='absent');
+  const ord={in:1,break:1};const main=ls.filter(e=>ord[stateOf(e)]!==undefined).sort((a,b)=>(b.t.inAgo||0)-(a.t.inAgo||0));const absL=ls.filter(e=>stateOf(e)==='absent');
+  const rest=ls.filter(e=>ord[stateOf(e)]===undefined&&stateOf(e)!=='absent'),open=S.now.openOut[k]||(filt&&S.now.state!=='abs');
+  return`<section class="dept" style="--col:${d.col};--tint:${d.tint}"><header><span class="di">${ico(d.icon)}</span><h3>${d.n}<small>${pres} من ${sched} مجدولين · <span class="cov ${low?'low':'ok'}">الحد الأدنى ${d.min}</span></small></h3><span class="ring ${low?'low':''}" style="--p:${Math.round(pres/Math.max(1,sched)*100)}"><b>${pres}</b></span></header>
+  ${absL.length?`<div class="abs-line">${ico('i-userx')}<span><b>لم يصل:</b> ${absL.map(e=>`${E(e.name)} <small>(منذ ${dur(e.t.sinceStart)})</small>`).join('، ')}</span></div>`:''}${main.length?`<ul class="people">${main.map(personRow).join('')}</ul>`:(filt?'':`<ul class="people"><li class="empty" style="padding:12px">لا أحد حاضرًا الآن</li></ul>`)}
+  ${rest.length?(filt?'':`<button class="more" data-out="${k}">${ico('i-chev')}${open?'إخفاء':'عرض'} القادمون والمنصرفون والإجازات (${rest.length})</button>`)+(open?`<ul class="people" style="${main.length||!filt?'border-top:1px dashed var(--border)':''}">${rest.map(personRow).join('')}</ul>`:''):''}</section>`}).join('')+`</div>`}
+function timelineView(){const list=nowFiltered(),keys=Object.keys(DEPTS).filter(k=>list.some(e=>e.dept===k)),W=WIN_PAST+WIN_FUT;
+ if(!keys.length)return`<div class="panel empty">لا توجد نتائج مطابقة.</div>`;
+ const x=m=>Math.max(0,Math.min(100,(m+WIN_PAST)/W*100));const ticks=[];for(let h=-16;h<=4;h+=2)ticks.push([x(h*60),hhmm(SIM+h*60)]);
+ const row=e=>{const t=e.t,sh=SH[e.sh],col=DEPTS[e.dept].col;let sR=sh.s-SIM,eR=(sh.e<=sh.s?sh.e+1440:sh.e)-SIM;if(e.sh==='N'){sR-=1440;eR-=1440}
+  const band=t.kind==='leave'?'':`<div class="tl-band" style="left:${x(sR)}%;width:${Math.max(.4,x(eR)-x(sR))}%"></div>`;let bar='';
+  if(t.kind==='in'||t.kind==='out'){const s=-t.inAgo,en=t.kind==='out'?-t.outAgo:0;bar=`<div class="tl-bar ${t.kind==='in'?'live':''}" style="left:${x(s)}%;width:${Math.max(.8,x(en)-x(s))}%"></div>`}
+  if(t.kind==='absent')bar=`<div class="tl-miss" style="left:${x(sR)}%" title="لم يصل"></div>`;
+  if(t.kind==='up')bar=`<span class="tl-lab" style="right:6px">تبدأ ${hhmm(t.start)} ←</span>`;
+  if(t.kind==='leave')bar=`<div class="tl-band" style="left:0;width:100%;background:var(--blue-t);border-color:#BED7EE;text-align:center;font-size:12px;color:var(--blue);line-height:20px">${E(t.leaveType)}</div>`;
+  return`<div class="tl-row" style="--col:${col}"><div class="tl-nm">${E(e.name)}<br><small>${SH[e.sh].n}</small></div><div class="tl-track">${band}${bar}<div class="tl-now" style="left:${x(0)}%"></div></div></div>`};
+ return`<div class="tl"><div class="legend"><span><i style="background:var(--pos);width:18px;height:8px;border-radius:99px"></i>داخل المركز</span><span><i style="background:#8794A8;width:18px;height:8px;border-radius:99px"></i>أنهى وردية</span><span><i style="background:rgba(15,54,157,.15);border:1px dashed rgba(15,54,157,.4);width:18px;height:10px;border-radius:3px"></i>ميعاد الوردية</span><span><i style="background:var(--neg);width:3px;height:14px"></i>لم يصل</span><span><i style="background:var(--alert);width:3px;height:14px"></i>الآن</span></div><div class="tl-head"><div></div><div class="tl-axis">${ticks.map(t=>`<span style="left:${t[0]}%">${t[1]}</span>`).join('')}</div></div>`+keys.map(k=>`<div class="tl-group" style="--col:${DEPTS[k].col}">${ico(DEPTS[k].icon)}${DEPTS[k].n}</div>`+list.filter(e=>e.dept===k).map(row).join('')).join('')+`</div>`}
+function listView(){const order={absent:0,in:1,break:1,up:2,out:3,leave:4};const list=nowFiltered().sort((a,b)=>order[stateOf(a)]-order[stateOf(b)]);if(!list.length)return`<div class="panel empty">لا توجد نتائج مطابقة.</div>`;
+ const LAB={in:['p-in','حاضر'],break:['p-break','استراحة'],absent:['p-none','لم يصل'],up:['p-up','لم يبدأ'],out:['p-out','انصرف'],leave:['p-leave','إجازة']};
+ return`<div class="list"><div class="lr h"><span>الموظف</span><span>القسم</span><span>الحالة</span><span>دخل</span><span>التفصيل</span><span></span></div>`+list.map(e=>{const st=stateOf(e),t=e.t,d=DEPTS[e.dept],l=LAB[st];const det=st==='in'||st==='break'?(isLateToday(e)?`متأخر ${t.late} د`:dur(t.inAgo)):st==='absent'?`منذ ${dur(t.sinceStart)}`:st==='up'?`تبدأ ${hhmm(t.start)}`:st==='out'?`عمل ${dur(t.worked)}`:E(t.leaveType);
+  return`<div class="lr"><span class="who"><span class="av sm st-${st==='absent'?'none':st}" style="--col:${d.col}">${E(initials(e.name))}</span><span class="nm"><span class="t">${E(e.name)}</span><small>${E(e.role)}</small></span></span><span>${d.n}</span><span><span class="pill ${l[0]}">${l[1]}</span></span><span>${t.inAgo!=null?hhmm(SIM-t.inAgo):'—'}</span><span>${det}</span><span><button class="mini" style="width:36px;padding:0;justify-content:center" aria-label="خيارات">${ico('i-dots')}</button></span></div>`}).join('')+`</div>`}
+function sideNow(){const F=[...FEED].sort((a,b)=>a[3]-b[3]);
+ return`<aside class="side"><section class="panel"><h4>${ico('i-clock')}آخر الحركات</h4><ul class="feed">${F.map(f=>`<li><span class="fi ${f[0]}">${ico(f[0]==='in'?'i-login':f[0]==='out'?'i-logout':'i-coffee')}</span><div><b>${E(f[1])}</b><span>${f[0]==='in'?'دخول':f[0]==='out'?'خروج':'بداية استراحة'} · ${DEPTS[f[2]].n}</span></div><time>${hhmm(SIM-f[3])}</time></li>`).join('')}</ul></section>
+ <section class="panel"><h4>${ico('i-bulb')}تنبيهات ذكية</h4><div class="smart"><div style="color:var(--neg)">${ico('i-warn')}<span><b>زياد سعيد</b> داخل من 10 ساعات ولم يبصم خروج</span></div><div style="color:var(--amber)">${ico('i-coffee')}<span><b>محمود عادل</b> في استراحة من 12 دقيقة (الحد 30 د)</span></div><div style="color:var(--blue)">${ico('i-up')}<span>التمريض: الموجود <b>4 من 5</b> المطلوبة بسبب غياب هدى</span></div></div></section>
+ <section class="panel"><h4>${ico('i-wifi')}حالة الربط</h4><div class="health"><div><span>اتصال لاب المركز</span><b style="color:var(--pos)">متصل</b></div><div><span>آخر نبضة</span><b>منذ 20 ث</b></div><div><span>آخر بصمة وصلت</span><b>${hhmm(SIM-5)}</b></div><div><span>جهاز البصمة</span><b>K14 Pro</b></div></div></section>
+ <div class="hint">${ico('i-warn')}<span>نموذج تصميم ببيانات محاكاة (أسماء وهمية). الوقت التجريبي ${hhmm(SIM)}.</span></div></aside>`}
+function renderNow(){const f=S.now;const items=[['all','الكل','i-users',EMP.length]].concat(Object.keys(DEPTS).map(k=>[k,DEPTS[k].n,DEPTS[k].icon,EMP.filter(e=>e.dept===k).length]));
+ $('#app').innerHTML=alertsHtml()+kpisHtml()+trio()+`<div class="bar sticky"><label class="search">${ico('i-search')}<span class="sr">بحث</span><input id="q" value="${E(f.q)}" placeholder="ابحث باسم الموظف أو القسم…" autocomplete="off"></label><div class="chips" role="group" aria-label="الأقسام">${items.map(i=>`<button class="chip" data-d="${i[0]}" aria-pressed="${f.dept===i[0]}">${ico(i[2])}${i[1]}<i>${i[3]}</i></button>`).join('')}</div><div class="seg" role="group" aria-label="طريقة العرض">${[['cards','بطاقات','i-cards'],['timeline','جدول زمني','i-gantt'],['list','قائمة','i-list']].map(v=>`<button data-v="${v[0]}" aria-pressed="${f.view===v[0]}">${ico(v[2])}${v[1]}</button>`).join('')}</div><button class="tool" id="openLink">${ico('i-link')}إدارة الربط<span class="badge">${UNMAPPED.length}</span></button></div>
+ <div class="layout"><main>${f.state!=='all'?`<div class="legend" style="margin-bottom:10px"><span>فلتر نشط: <b style="color:var(--dark)">${{in:'الموجودون',late:'المتأخرون',abs:'الغايبون',leave:'في إجازة',up:'لم يبدأوا',out:'المنصرفون'}[f.state]}</b></span><button class="mini" id="clearState" style="height:28px">إلغاء الفلتر ${ico('i-x')}</button></div>`:''}${f.view==='cards'?cardsView():f.view==='timeline'?timelineView():listView()}</main>${sideNow()}</div>`;
+ const A=$('#app');
+ A.querySelectorAll('.kpi').forEach(b=>b.onclick=()=>{S.now.state=S.now.state===b.dataset.k?'all':b.dataset.k;renderNow()});
+ A.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{S.now.state=b.dataset.go;renderNow();window.scrollTo({top:A.querySelector('.bar').offsetTop-8,behavior:'smooth'})});
+ A.querySelectorAll('[data-toast]').forEach(b=>b.onclick=()=>toast(b.dataset.toast));
+ A.querySelectorAll('[data-bx]').forEach(b=>b.onclick=()=>{S.now.trio=b.dataset.bx;renderNow()});
+ A.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{S.now.dept=b.dataset.d;renderNow()});
+ A.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{S.now.view=b.dataset.v;renderNow()});
+ const q=$('#q');q.oninput=ev=>{S.now.q=ev.target.value;const pos=ev.target.selectionStart;renderNow();const n=$('#q');n.focus();n.setSelectionRange(pos,pos)};
+ A.querySelectorAll('[data-out]').forEach(b=>b.onclick=()=>{S.now.openOut[b.dataset.out]=!S.now.openOut[b.dataset.out];renderNow()});
+ const c=$('#clearState');if(c)c.onclick=()=>{S.now.state='all';renderNow()};
+ $('#openLink').onclick=()=>openDlg('unmapped')}
+
+/* ---------- الورديات ---------- */
+function warnChips(cov,MINC,names){const out=[];cov.forEach((c,i)=>['M','E','N','D'].forEach(k=>{const m=MINC(k,i);if(m&&c[k]<m)out.push(`<div class="sch warn">${ico('i-warn')}<span><b>نقص تغطية:</b> ${SH[k].n} ${names[i]} (${c[k]} من ${m})</span></div>`)}));
+ const startOf={M:420,E:900,N:1380,D:540},endOf={M:900,E:1380,N:1860,D:1020};let conf=0;EMP.forEach(e=>{for(let i=0;i<6;i++){const a=S.sched[e.id][i],b=S.sched[e.id][i+1];if(endOf[a]&&startOf[b]!==undefined&&(startOf[b]+1440-endOf[a])<660){conf++;out.push(`<div class="sch warn">${ico('i-clock')}<span><b>${E(e.name)}:</b> ${SH[a].n} ${names[i]} ثم ${SH[b].n} ${names[i+1]} (راحة أقل من 11 ساعة)</span></div>`)}}});
+ if(!out.length)out.push(`<div class="sch ok">${ico('i-ok')}<span>الجدول متوازن: لا نقص تغطية ولا تعارض راحة</span></div>`);return out.slice(0,5).join('')}
+function renderShifts(){const tc=(TODAY.getDay()+1)%7,names=['السبت','الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة'];
+ const cov=DAYSW.map((_,i)=>{const c={M:0,E:0,N:0,D:0};EMP.forEach(e=>{const v=S.sched[e.id][i];if(c[v]!==undefined)c[v]++});return c});const MINC=(k,i)=>({M:[7,7,7,7,7,7,2],E:[4,4,4,4,4,4,1],N:[2,2,2,2,2,2,2],D:[7,7,7,7,7,7,0]})[k][i];
+ const rows=Object.keys(DEPTS).map(k=>`<tr><td class="n" style="background:${DEPTS[k].tint};color:${DEPTS[k].col};font-weight:700">${ico(DEPTS[k].icon)} ${DEPTS[k].n}</td>${names.map(()=>`<td style="background:${DEPTS[k].tint}"></td>`).join('')}<td style="background:${DEPTS[k].tint}"></td></tr>`+EMP.filter(e=>e.dept===k).map(e=>`<tr><td class="n"><b>${E(e.name)}</b> <small style="color:var(--muted)">${E(e.role)}</small></td>${DAYSW.map((_,i)=>{const v=S.sched[e.id][i];return`<td><button class="sc sc-${v}" data-e="${e.id}" data-i="${i}">${{M:'ص <span class="ltr">07–15</span>',E:'م <span class="ltr">15–23</span>',N:'ل <span class="ltr">23–07</span>',D:'إ <span class="ltr">09–17</span>',off:'راحة',leave:'إجازة'}[v]}</button></td>`}).join('')}${(()=>{const h=DAYSW.reduce((x,_,i)=>x+(['M','E','N','D'].includes(S.sched[e.id][i])?8:0),0);return`<td><b style="color:${h>48?'var(--neg)':'var(--dark)'}">${h}</b> <small style="color:var(--muted)">س</small>${h>48?'<br><small style="color:var(--neg)">فوق 48</small>':''}</td>`})()}</tr>`).join('')).join('');
+ $('#app').innerHTML=`<div class="banner">${ico('i-bulb')}<div style="flex:1;min-width:220px"><b>الجدول هو أساس معرفة «الغايب» و«المتأخر»</b><span style="color:var(--muted);font-size:13.5px">حاليًا مفيش جدول ورديات محمّل في الداشبورد (0 وردية)، فالنظام ما يقدرش يقول مين غايب. استنتجنا الوردية المعتادة لكل موظف من 8 شهور بصمات، وتقدر تعتمدها وتعدّلها.</span></div><button class="btn" data-toast="يحوّل الاقتراح المستنتج لجدول الأسبوع (مثال)">${ico('i-ok')}اعتمد الاقتراح التلقائي</button><button class="btn ghost" data-toast="نسخ جدول الأسبوع الماضي">${ico('i-cal')}انسخ الأسبوع الماضي</button><button class="btn ghost" data-toast="ينشر الجدول ويرسل لكل موظف وردياته (واتساب/إشعار)">${ico('i-msg')}انشر وأخطر الموظفين</button></div>
+ <div class="strip" style="margin:0 0 14px">${warnChips(cov,MINC,names)}</div>
+ <div class="bar" style="margin-bottom:14px"><div class="legend" style="margin:0">${Object.keys(SH).map(k=>`<span class="pill" style="background:${{M:'#DDF3EA',E:'#FDECD3',N:'#E7E3FA',D:'#E1E9FA'}[k]};color:${SH[k].col}">${SH[k].n} <span class="ltr">${hhmm(SH[k].s)}–${hhmm(SH[k].e)}</span></span>`).join('')}<span class="pill p-out">راحة</span><span class="pill p-leave">إجازة</span></div><span style="margin-inline-start:auto;color:var(--muted);font-size:13px">اضغط على أي خانة لتغيير الوردية</span></div>
+ <div class="card scroll" style="padding:0"><table class="sg"><thead><tr><th style="text-align:start;padding-inline:10px">الموظف</th>${names.map((n,i)=>`<th class="${i===tc?'today':''}">${n}<br><small>${dlabel(i-tc)}</small></th>`).join('')}<th>ساعات الأسبوع</th></tr></thead><tbody>${rows}<tr class="covrow"><td class="n"><b>التغطية</b></td>${cov.map(c=>`<td>${['M','E','N','D'].map(k=>{const m=MINC(k,cov.indexOf(c));return m?`<span class="cv ${c[k]>=m?'ok':'low'}">${SH[k].n} ${c[k]}/${m}</span>`:''}).join('')}</td>`).join('')}</tr></tbody></table></div>
+ <div class="card" style="margin-top:14px"><h4>${ico('i-chart')}الورديات المستنتجة من البصمات (آخر 60 يوم)</h4><div class="scroll"><table class="tbl"><thead><tr><th>الموظف</th><th>أيام العمل</th><th>متوسط الدخول</th><th>الانتظام</th><th>الاقتراح</th></tr></thead><tbody>${EMP.slice(0,8).map((e,i)=>{const cons=[92,64,88,71,95,58,83,90][i];return`<tr><td><b>${E(e.name)}</b></td><td>${38+i} يوم</td><td>${hhmm(SH[e.sh].s+[3,-4,6,12,0,18,-2,5][i])}</td><td><span class="pb" style="margin:0"><i style="width:${cons}%;background:${cons>75?'var(--pos)':'var(--alert)'}"></i></span> ${cons}%</td><td><span class="pill" style="background:#EEF1F6">${SH[e.sh].n}</span> ${cons<70?'<small style="color:var(--amber)">غير ثابتة — راجعها</small>':''}</td></tr>`}).join('')}</tbody></table></div></div>`;
+ $('#app').querySelectorAll('.sc').forEach(b=>b.onclick=()=>{const cyc=['M','E','N','D','off','leave'],cur=S.sched[b.dataset.e][b.dataset.i];S.sched[b.dataset.e][b.dataset.i]=cyc[(cyc.indexOf(cur)+1)%cyc.length];renderShifts()});
+ $('#app').querySelectorAll('[data-toast]').forEach(b=>b.onclick=()=>toast(b.dataset.toast))}
+
+/* ---------- التقارير ---------- */
+function insights(a,prev){const out=[];const dowC=[0,0,0,0,0,0,0];a.days.forEach(d=>{dowC[dateOf(d.d).getDay()]+=d.late});const mx=Math.max(...dowC),di=dowC.indexOf(mx);
+ if(mx>0)out.push(['i-alarm','var(--amber)',`أكتر يوم تأخيرًا: ${DOW[di]}`,`${mx} مرة تأخير في الفترة`]);
+ const byD={};a.per.forEach(p=>{(byD[p.e.dept]=byD[p.e.dept]||{o:0,s:0});byD[p.e.dept].o+=p.onTime;byD[p.e.dept].s+=p.sched});const dl=Object.entries(byD).filter(x=>x[1].s>0).map(([k,v])=>[k,Math.round(v.o/v.s*100)]).sort((x,y)=>y[1]-x[1]);
+ if(dl.length>1)out.push(['i-ok','var(--pos)',`أعلى التزام: ${DEPTS[dl[0][0]].n} (${dl[0][1]}%)`,`وأقل التزام: ${DEPTS[dl[dl.length-1][0]].n} (${dl[dl.length-1][1]}%)`]);
+ const bs={};a.per.forEach(p=>{(bs[p.e.sh]=bs[p.e.sh]||{l:0,p:0});bs[p.e.sh].l+=p.late;bs[p.e.sh].p+=p.present});const sl=Object.entries(bs).filter(x=>x[1].p>0).map(([k,v])=>[k,Math.round(v.l/v.p*100)]).sort((x,y)=>y[1]-x[1]);
+ if(sl.length>1)out.push(['i-clock','var(--amber)',`أكتر وردية تأخيرًا: ${SH[sl[0][0]].n} (${sl[0][1]}%)`,`وأقلها: ${SH[sl[sl.length-1][0]].n} (${sl[sl.length-1][1]}%)`]);
+ const rep=a.per.filter(p=>p.late>=4).sort((x,y)=>y.late-x.late).slice(0,3);if(rep.length)out.push(['i-warn','var(--neg)',`${rep.length} موظفين متكرر تأخيرهم`,rep.map(p=>`${p.e.name} (${p.late})`).join('، ')]);
+ if(prev){const d=a.tot.absent-prev.tot.absent;out.push(['i-up',d>0?'var(--neg)':'var(--pos)',d===0?'الغياب ثابت عن الفترة السابقة':`الغياب ${d>0?'زاد':'قلّ'} ${Math.abs(d)} يوم عن الفترة السابقة`,`${a.tot.absent} يوم غياب مقابل ${prev.tot.absent}`])}
+ if(a.tot.inc)out.push(['i-clock','var(--blue)',`${a.tot.inc} بصمات ناقصة (دخول بلا خروج)`,'تحتاج مراجعة وتصحيح قبل حساب الراتب']);return out.slice(0,6)}
+function renderReports(){const r=S.rep,[from,to]=periodRange(r.period),len=to-from+1,f={dept:r.dept,q:r.q};const a=agg(from,to,f),prev=(r.compare&&r.period!=='all')?agg(from-len,from-1,f):null;
+ const P=[['today','اليوم'],['week','هذا الأسبوع'],['month','هذا الشهر'],['last','الشهر الماضي'],['90','آخر 90 يوم'],['all','الفترة كلها'],['custom','مخصص']];
+ const T=a.tot,PT=prev&&prev.tot;
+ const K=[['i-ok','نسبة الالتزام',T.commit+'%',delta(T.commit,PT&&PT.commit,false,'%')],['i-alarm','مرات التأخير',T.late,delta(T.late,PT&&PT.late)],['i-clock','دقائق التأخير',T.lateMin,delta(T.lateMin,PT&&PT.lateMin)],['i-hour','متوسط التأخير',T.avgLate+' د',delta(T.avgLate,PT&&PT.avgLate,true,' د')],['i-userx','أيام الغياب',T.absent,delta(T.absent,PT&&PT.absent)],['i-sun','أيام الإجازات',T.leave,delta(T.leave,PT&&PT.leave,false)]];
+ const key={late:'late',min:'lateMin',abs:'absent'}[r.metric],col={late:'#D9780F',min:'#B86F00',abs:'#D0402A'}[r.metric];
+ const B=bucketize(a,r.group,from);let cd=B.bk.map(b=>({lab:b.lab,tip:b.tip,late:b.late,lateMin:b.lateMin,absent:b.absent}));if(cd.length>62)cd=cd.slice(-62);
+ const dowT=(TODAY.getDay()+1)%7,hm=agg(-89+dowT,0,f),hmax=Math.max(1,...hm.days.map(d=>d.lateMin)),cells=[],start=-(11*7+dowT);
+ for(let d=start;d<=0;d++){const x=hm.days[d-hm.days[0].d];cells.push(x?{d,v:x.lateMin,n:x.late}:{d,v:0,n:0})}
+ const lvl=v=>v===0?'#EEF1F6':`rgba(217,120,15,${.18+.8*Math.min(1,v/hmax)})`;
+ const heat=`<div class="heat">${['س','ح','ن','ث','ر','خ','ج'].map(x=>`<div class="hd">${x}</div>`).join('')}${cells.map(c=>`<div title="${dlabel(c.d)}: ${c.n} تأخير، ${c.v} د" style="background:${lvl(c.v)};color:${c.v/hmax>.5?'#fff':'#6B7688'}">${dateOf(c.d).getDate()}</div>`).join('')}</div>`;
+ const grpKey=r.by==='dept'?(p=>p.e.dept):(p=>p.e.sh),grpName=r.by==='dept'?(k=>DEPTS[k].n):(k=>SH[k].n),grpCol=r.by==='dept'?(k=>DEPTS[k].col):(k=>SH[k].col);
+ const gm={};a.per.forEach(p=>{const k=grpKey(p);(gm[k]=gm[k]||{s:0,o:0});gm[k].s+=p.sched;gm[k].o+=p.onTime});
+ const bd=Object.entries(gm).filter(x=>x[1].s>0).map(([k,v])=>[k,Math.round(v.o/v.s*100)]).sort((x,y)=>y[1]-x[1]);
+ const comp=a.per.filter(p=>p.sched>=5),worst=[...comp].sort((x,y)=>y.late-x.late||y.lateMin-x.lateMin).slice(0,5),best=[...comp].sort((x,y)=>y.commit-x.commit||x.lateMin-y.lateMin).slice(0,5);
+ const lbRow=(p,i,t)=>`<li><span class="rank ${i===0?'r1':''}">${i+1}</span><span class="av sm" style="--col:${DEPTS[p.e.dept].col}">${E(initials(p.e.name))}</span><div class="nm"><span class="t">${E(p.e.name)}</span><small>${DEPTS[p.e.dept].n}</small></div><b style="color:${t==='w'?'var(--amber)':'var(--pos)'}">${t==='w'?p.late+' مرة':p.commit+'%'}</b></li>`;
+ const th=(k,l)=>`<th data-s="${k}">${l}${r.sort===k?(r.dir<0?' ▼':' ▲'):''}</th>`,ins=insights(a,prev);
+ // ---- جدول الموظفين: ملخص / أسبوعي / شهري ----
+ let head='',rows='';
+ const maxCell=1;
+ if(r.tbl==='sum'){const sorted=[...a.per].sort((x,y)=>(y[r.sort]-x[r.sort])*(r.dir*-1));const shown=r.showAll?sorted:sorted.slice(0,12);
+  head=`<tr><th>الموظف</th>${th('sched','أيام العمل')}${th('late','مرات التأخير')}${th('lateMin','دقائق')}${th('absent','غياب')}${th('leave','إجازات')}${th('early','انصراف مبكر')}${th('ot','إضافي (س)')}${th('commit','الالتزام')}<th>آخر 8 أسابيع</th>${r.money?'<th>أثر تقديري*</th>':''}</tr>`;
+  rows=shown.map(p=>`<tr><td><b>${E(p.e.name)}</b> <small style="color:var(--muted)">${DEPTS[p.e.dept].n}</small></td><td>${p.sched}</td><td>${p.late}</td><td>${p.lateMin}</td><td>${p.absent}</td><td>${p.leave}</td><td>${p.early}</td><td>${(p.ot/60).toFixed(1)}</td><td>${p.commit}%<span class="pb"><i style="width:${p.commit}%;background:${p.commit>=90?'var(--pos)':p.commit>=75?'#E39A1F':'var(--neg)'}"></i></span></td><td>${spark([...p.weeks].reverse())}</td>${r.money?`<td>${Math.round(p.lateMin*1.5).toLocaleString('en')} ج</td>`:''}</tr>`).join('');
+  r._total=sorted.length}
+ else{const WB=bucketize(a,r.tbl,from);const vmax=Math.max(1,...WB.per.flatMap(x=>x.vals.map(v=>v.late)));const sorted=[...WB.per].sort((x,y)=>y.vals.reduce((s2,v)=>s2+v.late,0)-x.vals.reduce((s2,v)=>s2+v.late,0));const shown=r.showAll?sorted:sorted.slice(0,12);
+  head=`<tr><th>الموظف</th>${WB.bk.map(b=>`<th class="tdh" title="${b.tip}">${r.tbl==='week'?b.lab+' '+MONTHS[dateOf(Number(b.key.slice(1))).getMonth()].slice(0,3):b.lab}</th>`).join('')}<th class="tdh">الإجمالي</th></tr>`;
+  rows=shown.map(x=>{const tot=x.vals.reduce((s2,v)=>s2+v.late,0),totm=x.vals.reduce((s2,v)=>s2+v.lateMin,0);return`<tr><td><b>${E(x.e.name)}</b> <small style="color:var(--muted)">${DEPTS[x.e.dept].n}</small></td>${x.vals.map(v=>`<td class="tdh"><span class="wk" title="${v.late} تأخير · ${v.lateMin} د · ${v.absent} غياب" style="background:${v.late?`rgba(217,120,15,${.15+.8*v.late/vmax})`:'#F3F5F9'};color:${v.late/vmax>.55?'#fff':'#6B7688'}">${v.late||'·'}</span></td>`).join('')}<td class="tdh"><b>${tot}</b> <small style="color:var(--muted)">(${totm} د)</small></td></tr>`}).join('');
+  r._total=sorted.length}
+ $('#app').innerHTML=`<div class="bar sticky" style="margin-top:14px"><div class="chips" role="group" aria-label="الفترة">${P.map(p=>`<button class="chip" data-p="${p[0]}" aria-pressed="${r.period===p[0]}">${p[0]==='custom'?ico('i-cal'):''}${p[1]}</button>`).join('')}</div>${r.period==='custom'?`<input type="date" class="dt" id="dFrom" value="${dateOf(r.from).toISOString().slice(0,10)}" aria-label="من"><span>←</span><input type="date" class="dt" id="dTo" value="${dateOf(r.to).toISOString().slice(0,10)}" aria-label="إلى">`:''}<span style="margin-inline-start:auto;color:var(--muted);font-size:13px">${dlabel(from)} ← ${dlabel(to)} · ${len} يوم${prev?' · مقارنة مع '+len+' يوم قبلها':''}</span></div>
+ <div class="bar" style="margin-top:10px"><label class="search">${ico('i-search')}<span class="sr">بحث</span><input id="rq" value="${E(r.q)}" placeholder="موظف أو قسم…" autocomplete="off"></label><select class="sel" id="rd" aria-label="القسم"><option value="all">كل الأقسام</option>${Object.keys(DEPTS).map(k=>`<option value="${k}" ${r.dept===k?'selected':''}>${DEPTS[k].n}</option>`).join('')}</select><select class="sel" id="rt" aria-label="النوع"><option value="all">كل الحالات</option><option value="late" ${r.type==='late'?'selected':''}>التأخير فقط</option><option value="abs" ${r.type==='abs'?'selected':''}>الغياب فقط</option></select><label class="tool" style="cursor:pointer"><input type="checkbox" id="rc" ${r.compare?'checked':''}> قارن بالفترة السابقة</label>
+ <span style="margin-inline-start:auto;display:flex;gap:8px;flex-wrap:wrap"><label class="tool" style="cursor:pointer"><input type="checkbox" id="rm" ${r.money?'checked':''}> الأثر المالي</label><button class="tool" id="sch">${ico('i-cal')}جدولة التقرير</button><button class="tool" id="csv">${ico('i-down')}تصدير CSV</button><button class="tool" id="prt">${ico('i-print')}طباعة</button></span></div>
+ <section class="rkpis">${K.map(k=>`<div class="rk"><span class="l">${ico(k[0])}${k[1]}</span><b>${k[2]}</b>${k[3]||'<span class="delta d-flat">—</span>'}</div>`).join('')}</section>
+ ${ins.length?`<section class="ins">${ins.map(i=>`<div style="color:${i[1]}">${ico(i[0])}<span style="color:var(--dark)"><b>${E(i[2])}</b><small style="color:var(--muted)">${E(i[3])}</small></span></div>`).join('')}</section>`:''}
+ <div class="grid2"><section class="card"><h4>${ico('i-chart')}${{late:'مرات التأخير',min:'دقائق التأخير',abs:'أيام الغياب'}[r.metric]} ${{day:'حسب اليوم',week:'حسب الأسبوع',month:'حسب الشهر'}[r.group]}</h4><div class="mode"><span class="seg" role="group" aria-label="المؤشر">${[['late','مرات'],['min','دقائق'],['abs','غياب']].map(m=>`<button data-m="${m[0]}" aria-pressed="${r.metric===m[0]}">${m[1]}</button>`).join('')}</span><span class="seg" role="group" aria-label="التجميع">${[['day','يومي'],['week','أسبوعي'],['month','شهري']].map(m=>`<button data-g="${m[0]}" aria-pressed="${r.group===m[0]}">${m[1]}</button>`).join('')}</span></div>${barChart(cd,key,col)}</section>
+ <section class="card"><h4>${ico('i-grid')}الالتزام حسب ${r.by==='dept'?'القسم':'الوردية'}<span class="seg" role="group">${[['dept','قسم'],['shift','وردية']].map(m=>`<button data-by="${m[0]}" aria-pressed="${r.by===m[0]}">${m[1]}</button>`).join('')}</span></h4>${bd.map(x=>`<div class="hbar" style="--col:${grpCol(x[0])}"><span>${grpName(x[0])}</span><div class="tr"><i style="width:${x[1]}%"></i></div><b>${x[1]}%</b></div>`).join('')||'<div class="empty">لا بيانات</div>'}</section></div>
+ <div class="grid3"><section class="card"><h4>${ico('i-cal')}خريطة التأخير (آخر 12 أسبوع)</h4>${heat}<div class="legend" style="margin:8px 0 0"><span>أفتح = أقل</span><span>أغمق = دقائق تأخير أكتر</span></div></section><section class="card"><h4>${ico('i-alarm')}الأكثر تأخيرًا</h4><ul class="lb">${worst.map((p,i)=>lbRow(p,i,'w')).join('')||'<li class="empty">لا بيانات</li>'}</ul></section><section class="card"><h4>${ico('i-ok')}الأكثر التزامًا</h4><ul class="lb">${best.map((p,i)=>lbRow(p,i,'b')).join('')||'<li class="empty">لا بيانات</li>'}</ul></section></div>
+ ${(()=>{const w=a.per.filter(p=>p.sched>=6&&(p.commit<75||p.late>=5||p.absent>=3)).sort((x,y)=>x.commit-y.commit).slice(0,4);return w.length?`<section class="card" style="margin-bottom:14px"><h4>${ico('i-warn')}تحتاج قرارًا منك <small style="color:var(--muted);font-weight:400">(التزام أقل من 75% أو تأخير متكرر أو غياب)</small></h4><div class="watch">${w.map(p=>`<div class="wi"><span class="av" style="--col:${DEPTS[p.e.dept].col}">${E(initials(p.e.name))}</span><div class="nm"><span class="t">${E(p.e.name)}</span><small>${DEPTS[p.e.dept].n} · ${E(p.e.role)}</small><div class="why"><span class="pill p-none">التزام ${p.commit}%</span>${p.late?`<span class="pill p-late">${p.late} تأخير (${p.lateMin} د)</span>`:''}${p.absent?`<span class="pill p-none">${p.absent} غياب</span>`:''}</div></div><div class="wacts"><button class="mini" data-toast="يفتح ملف الموظف وسجل حضوره">${ico('i-users')}ملف الموظف</button><button class="mini" data-toast="يرسل تنبيهًا ودّيًا للموظف">${ico('i-msg')}تنبيه</button><button class="mini" data-toast="يفتح جدول الورديات لتعديل وردية الموظف">${ico('i-cal')}راجع الوردية</button></div></div>`).join('')}</div></section>`:''})()}
+ <section class="card"><h4>${ico('i-users')}تفصيل الموظفين</h4><div class="mode"><span class="seg" role="group" aria-label="نوع الجدول">${[['sum','ملخص الفترة'],['week','أسبوعيًا'],['month','شهريًا']].map(m=>`<button data-t="${m[0]}" aria-pressed="${r.tbl===m[0]}">${m[1]}</button>`).join('')}</span><small style="color:var(--muted)">${r.tbl==='sum'?'اضغط على العنوان للترتيب':'الأرقام = مرات التأخير في كل '+(r.tbl==='week'?'أسبوع':'شهر')+'. مرّر الماوس لرؤية الدقائق والغياب'}</small></div><div class="scroll"><table class="tbl"><thead>${head}</thead><tbody>${rows}</tbody></table></div>${r._total>12?`<div style="text-align:center;margin-top:10px"><button class="mini" id="showAll">${r.showAll?'عرض أقل':'عرض كل الموظفين ('+r._total+')'}</button></div>`:''}${r.money&&r.tbl==='sum'?'<small style="color:var(--muted)">* تقدير بسعر 1.5 ج للدقيقة (قيمة تجريبية). قواعد الأجر الفعلية لسه ما اتعتمدتش في الداشبورد، فده مؤشر فقط.</small>':''}</section>`;
+ const A=$('#app');
+ A.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{r.period=b.dataset.p;renderReports()});
+ A.querySelectorAll('[data-toast]').forEach(b=>b.onclick=()=>toast(b.dataset.toast));
+ A.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{r.metric=b.dataset.m;renderReports()});
+ A.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>{r.group=b.dataset.g;renderReports()});
+ A.querySelectorAll('[data-by]').forEach(b=>b.onclick=()=>{r.by=b.dataset.by;renderReports()});
+ A.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{r.tbl=b.dataset.t;renderReports()});
+ A.querySelectorAll('th[data-s]').forEach(h=>h.onclick=()=>{const k=h.dataset.s;r.dir=r.sort===k?-r.dir:-1;r.sort=k;renderReports()});
+ const sa=$('#showAll');if(sa)sa.onclick=()=>{r.showAll=!r.showAll;renderReports()};
+ $('#rd').onchange=e=>{r.dept=e.target.value;renderReports()};$('#rt').onchange=e=>{r.type=e.target.value;r.metric=e.target.value==='abs'?'abs':'late';renderReports()};
+ $('#rm').onchange=e=>{r.money=e.target.checked;renderReports()};$('#rc').onchange=e=>{r.compare=e.target.checked;renderReports()};
+ $('#rq').oninput=ev=>{r.q=ev.target.value;const p2=ev.target.selectionStart;renderReports();const n=$('#rq');n.focus();n.setSelectionRange(p2,p2)};
+ const df=$('#dFrom'),dt=$('#dTo');if(df){const toIdx=v=>Math.round((new Date(v+'T00:00:00')-new Date(TODAY.getFullYear(),TODAY.getMonth(),TODAY.getDate()))/864e5);df.onchange=()=>{r.from=Math.max(-(NH-1),toIdx(df.value));renderReports()};dt.onchange=()=>{r.to=Math.min(0,toIdx(dt.value));renderReports()}}
+ $('#prt').onclick=()=>window.print();$('#sch').onclick=()=>toast('يرسل هذا التقرير تلقائيًا للمدير كل أسبوع (واتساب/إيميل) — فكرة قيد الاعتماد');
+ $('#csv').onclick=()=>{const rows2=[['الموظف','القسم','أيام العمل','مرات التأخير','دقائق التأخير','الغياب','الإجازات','الالتزام%']].concat(a.per.map(p=>[p.e.name,DEPTS[p.e.dept].n,p.sched,p.late,p.lateMin,p.absent,p.leave,p.commit]));const blob=new Blob(['﻿'+rows2.map(x=>x.join(',')).join('\n')],{type:'text/csv'});const u=URL.createObjectURL(blob),l=document.createElement('a');l.href=u;l.download='attendance-report.csv';l.click();URL.revokeObjectURL(u);toast('تم تصدير التقرير (بيانات محاكاة)')}}
+
+/* ---------- نافذة الربط + التنقل ---------- */
+let dtab='unmapped';
+function openDlg(t){dtab=t||'unmapped';drawDlg();$('#dlg').showModal()}
+function drawDlg(){const tabs=[['unmapped','غير مربوطة',UNMAPPED.length],['ignored','متجاهلة (غير إدارية)',IGNORED.length],['none','مربوطون ولم يبصموا',cnt(e=>stateOf(e)==='absent')]];
+ $('#dtabs').innerHTML=tabs.map(t=>`<button role="tab" aria-selected="${dtab===t[0]}" data-t="${t[0]}">${t[1]} (${t[2]})</button>`).join('');
+ const opts=EMP.map(p=>`<option>${E(p.name)} — ${DEPTS[p.dept].n}</option>`).join('');let h='';
+ if(dtab==='unmapped')h=UNMAPPED.map(u=>`<div class="dr"><span class="num">${u.num}</span><div class="tx"><b>رقم الجهاز ${u.num}</b><small>آخر بصمة ${hhmm(SIM-u.last)} · منذ ${dur(u.last)}</small></div><select aria-label="اختر الموظف"><option>اختر الموظف…</option>${opts}</select><button class="mini solid">ربط</button><button class="mini" title="لا يظهر في الحضور (مثل الأطباء)">${ico('i-eyeoff')} تجاهل</button></div>`).join('');
+ if(dtab==='ignored')h=IGNORED.map(u=>`<div class="dr"><span class="num" style="background:var(--out-t);color:var(--out)">${u.num}</span><div class="tx"><b>رقم الجهاز ${u.num}</b><small>مخفي من «الحضور» · آخر بصمة ${hhmm(SIM-u.last)}</small></div><button class="mini">إلغاء التجاهل</button></div>`).join('');
+ if(dtab==='none')h=EMP.filter(e=>stateOf(e)==='absent').map(p=>`<div class="dr"><span class="num">${E(initials(p.name))}</span><div class="tx"><b>${E(p.name)}</b><small>${DEPTS[p.dept].n} · ${E(p.role)}</small></div><button class="mini">تغيير الربط</button></div>`).join('');
+ $('#dbody').innerHTML=h||'<div class="empty">لا يوجد شيء هنا.</div>';$('#dtabs').querySelectorAll('button').forEach(b=>b.onclick=()=>{dtab=b.dataset.t;drawDlg()})}
+$('#closeDlg').onclick=()=>$('#dlg').close();
+function tabs(){const n=cnt(e=>stateOf(e)==='absent');$('#tabs').innerHTML=[['now','الآن (مباشر)','i-check',n],['shifts','الورديات','i-cal',0],['reports','التقارير','i-chart',0]].map(t=>`<button role="tab" data-t="${t[0]}" aria-selected="${S.tab===t[0]}">${ico(t[2])}${t[1]}${t[3]?`<span class="nb">${t[3]}</span>`:''}</button>`).join('');
+ $('#tabs').querySelectorAll('button').forEach(b=>b.onclick=()=>{S.tab=b.dataset.t;render()})}
+function render(){tabs();({now:renderNow,shifts:renderShifts,reports:renderReports})[S.tab]()}
+$('#today').textContent=new Intl.DateTimeFormat('ar-EG-u-nu-latn',{timeZone:'Africa/Cairo',weekday:'long',day:'numeric',month:'long',year:'numeric'}).format(TODAY)+' — '+hhmm(SIM);
+$('#refresh').onclick=()=>{render();toast('تم التحديث')};
+const url=new URLSearchParams(location.search);if(url.get('tab'))S.tab=url.get('tab');if(url.get('view'))S.now.view=url.get('view');if(url.get('period'))S.rep.period=url.get('period');if(url.get('group'))S.rep.group=url.get('group');if(url.get('tbl'))S.rep.tbl=url.get('tbl');if(url.get('by'))S.rep.by=url.get('by');if(url.get('all'))S.rep.showAll=true;if(url.get('state'))S.now.state=url.get('state');if(url.get('money'))S.rep.money=true;if(url.get('out'))Object.keys(DEPTS).forEach(k=>S.now.openOut[k]=true);
+render();if(url.get('dlg'))openDlg(url.get('dlg'));document.body.dataset.ready='1';
+</script>
+</body>
+</html>
