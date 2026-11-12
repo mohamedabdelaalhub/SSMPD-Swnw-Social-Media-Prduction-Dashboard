@@ -56,7 +56,7 @@ Voices and settings: `docs/character-library/voices.json` (the voices were added
 Write a storyboard JSON (cast, scenes, lines; format and ready examples in `scripts/reelkit/README.md` and `scripts/reelkit/stories/`) and run one command:
 `python3 scripts/reelkit/build.py story.json OUT --kit <KITDIR>` (`--dry` first for a free timing check). It makes the voices (one ElevenLabs request per character), captions (blue box with orange border, white text, key words highlighted), lip-sync, camera moves, transitions, SFX, music, contact card and outro.
 Vary every reel: two visual styles (cartoon stickman looks, or the kit style: `dr_poses`, `kit_dr_f_auburn`, `kit_woman`, `kit_girl`, `kit_boy`), 8 sets, props, gestures, transitions, different cast and story shape than the last character reel (check the last two with the same marker). Put the chosen style/cast/set in `hypothesis_reason` so the next run can avoid repeating it.
-Child voices are not available yet: do not give a kid a voice of an adult unless the story is a comic one and the owner has accepted that look.
+Child voices (owner decision 2026-11-13): there are NONE. ElevenLabs refuses Voice Design for children, and a pitched-up adult voice was tried and rejected as not good. So kids NEVER speak: they react with expressions, gestures, sound effects and a short caption/thought bubble, and the dialogue is carried by adults (mama, doctor, grandfather, grandmother, papa). `male_2` is an adult man voice (approved for variety), not a boy.
 
 ## 5. Steps
 1. Pick the topic as for any reel (performance + no repeats in the last 45 days), then the cast: one or two characters, one voice each.
