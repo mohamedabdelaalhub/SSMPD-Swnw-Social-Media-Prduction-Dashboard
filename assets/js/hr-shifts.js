@@ -1,97 +1,104 @@
 (function (w) {
   'use strict';
-  // Shifts (الورديات والمواعيد): the weekly work times of the administrative staff + today's board (who arrived on time / late / absent).
-  // Server: hr_shifts_workspace / hr_shifts_command / hr_attendance_today (migration 20261113100000). Mounted lazily by hr-navigation.js into the «الورديات والمواعيد» section.
-  var STATUS = { on_time: ['في الميعاد', 'in'], late: ['متأخر', 'late'], absent: ['غائب', 'absent'], waiting: ['في فترة السماح', 'unknown'], upcoming: ['لم يحن موعده', 'out'], leave: ['إجازة', 'out'], unmapped: ['غير مربوط بالبصمة', 'unknown'] };
+  // Shifts («الورديات»): the weekly work times of the administrative staff — shift types and a weekly grid per employee.
+  // Server: hr_shifts_workspace / hr_shifts_command (template_save, schedule_save) from migration 20261113100000. Mounted by hr-attendance-hub.js as the second inner tab.
+  var C = w.SSMPDAttCore, esc = C.esc, ico = C.ico;
   var DAYS = [[6, 'السبت'], [0, 'الأحد'], [1, 'الاثنين'], [2, 'الثلاثاء'], [3, 'الأربعاء'], [4, 'الخميس'], [5, 'الجمعة']];
-  var REFRESH_MS = 30000;
-  function esc(v) { return w.SSMPDWorkforceUtils.escape(v); }
-  function clock(iso) { return iso ? new Intl.DateTimeFormat('en-GB', { timeZone: 'Africa/Cairo', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(iso)) : '—'; }
-  function span(m) { if (m == null || m <= 0) return '—'; var h = Math.floor(m / 60), r = m % 60; return h ? h + ' س' + (r ? ' ' + r + ' د' : '') : r + ' د'; }
-  function btn(action, label, id) { return '<button type="button" class="btn ghost" data-shifts="' + action + '" data-id="' + esc(id || '') + '">' + esc(label) + '</button>'; }
+  var MIN_REST_MINUTES = 11 * 60, MAX_WEEK_HOURS = 48;
+  function safeColor(c) { return /^#[0-9A-Fa-f]{6}$/.test(c || '') ? c : '#0F369D'; }
+  function mins(t) { return Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5)); }
+  function shortTime(t) { return t.slice(0, 2) + (t.slice(3, 5) === '00' ? '' : ':' + t.slice(3, 5)); }
+  function span(t) { var s = mins(t.start_time), e = mins(t.end_time); return (e <= s ? e + 1440 : e) - s; }
 
-  function mount(shell, active) {
+  function mount(shell, active, ctx) {
     if (!shell || !active) return;
     var U = w.SSMPDWorkforceUtils, owner = w.SSMPDAuth && w.SSMPDAuth.currentAdmin && w.SSMPDAuth.currentAdmin.id;
-    var ws = null, board = null, day = '', serial = 0, timer = null, host = document.createElement('div');
+    var ws = null, serial = 0, host = document.createElement('div');
     host.dataset.hrShifts = ''; shell.append(host);
     function live() { return host.isConnected && w.SSMPDAuth.currentAdmin && w.SSMPDAuth.currentAdmin.id === owner; }
-    function stop() { if (timer) { clearInterval(timer); timer = null; } }
-    function isToday() { return !ws || !day || day === ws.today; }
+    function btn(action, label, id, cls) { return '<button type="button" class="' + (cls || 'btn ghost') + '" data-shifts="' + action + '" data-id="' + esc(id || '') + '">' + esc(label) + '</button>'; }
 
     function load(quiet) {
       var n = ++serial;
-      if (!quiet && !board) host.innerHTML = '<p role="status">جاري تحميل الورديات…</p>';
-      return Promise.all([U.rpc('hr_shifts_workspace'), U.rpc('hr_attendance_today', { p_day: day || null })]).then(function (r) {
+      if (!quiet && !ws) host.innerHTML = '<div class="att-msg" role="status">جاري تحميل الورديات…</div>';
+      return U.rpc('hr_shifts_workspace').then(function (r) {
         if (!live() || n !== serial) return;
-        ws = r[0]; board = r[1]; if (!day) day = ws.today; draw();
+        ws = r; draw();
       }).catch(function (err) {
-        if (!live()) { stop(); return; }
-        if (board) return;
-        var missing = /hr_shifts_workspace|hr_attendance_today|404|schema cache/i.test(err.message || '');
-        host.innerHTML = '<p role="alert">' + esc(missing ? 'الورديات غير مفعّلة بعد على قاعدة البيانات' : err.message) + '</p>' + btn('retry', 'إعادة المحاولة');
+        if (!live() || ws) return;
+        var missing = /hr_shifts_workspace|404|schema cache/i.test(err.message || '');
+        host.innerHTML = '<div class="att-msg err" role="alert">' + esc(missing ? 'الورديات غير مفعّلة بعد على قاعدة البيانات' : err.message) + '</div>' + btn('retry', 'إعادة المحاولة');
         bind();
       });
     }
+    function tpl(id) { return ws.templates.filter(function (x) { return x.id === id; })[0]; }
+    function chipStyle(t) { var c = safeColor(t.color); return 'background:' + c + '1f;color:' + c; }
 
-    function tplName(id) { var t = ws.templates.filter(function (x) { return x.id === id; })[0]; return t ? t.name : ''; }
-    function tplChip(id) {
-      var t = ws.templates.filter(function (x) { return x.id === id; })[0];
-      return t ? '<span class="hrp-state" style="background:' + esc(t.color) + '1a;color:' + esc(t.color) + '">' + esc(t.name) + '</span>' : '<small>راحة</small>';
-    }
-
-    function boardHtml() {
-      var rows = board.rows || [], c = {};
-      rows.forEach(function (r) { c[r.status] = (c[r.status] || 0) + 1; });
-      var pending = (c.waiting || 0) + (c.upcoming || 0);
-      var note = !board.has_schedule ? '<p class="wn-empty" data-shifts-empty>لم تُحدَّد ورديات بعد — أضف وردية ثم حدّد أيام عمل كل موظف من الأسفل ليظهر هنا من وصل في ميعاده ومن تأخر.</p>'
-        : board.unscheduled ? '<p role="status" data-shifts-unscheduled>' + esc(board.unscheduled) + ' موظف بدون جدول ورديات (لا يظهرون في هذا الكشف).</p>' : '';
-      var cards = '<div class="wp-grid" data-shifts-cards>' +
-        '<div class="wp-card" data-card="on_time"><b>في الميعاد</b><span>' + (c.on_time || 0) + '</span></div>' +
-        '<div class="wp-card" data-card="late"><b>متأخرون</b><span>' + (c.late || 0) + '</span></div>' +
-        '<div class="wp-card" data-card="absent"><b>غائبون</b><span>' + (c.absent || 0) + '</span></div>' +
-        '<div class="wp-card" data-card="pending"><b>لم يحن موعدهم / في السماح</b><span>' + pending + '</span></div>' +
-        '<div class="wp-card" data-card="leave"><b>إجازة</b><span>' + (c.leave || 0) + '</span></div>' +
-        '<div class="wp-card" data-card="unmapped"><b>غير مربوطين بالبصمة</b><span>' + (c.unmapped || 0) + '</span></div></div>';
-      var body = rows.map(function (r) {
-        var st = STATUS[r.status] || [r.status, 'out'];
-        var detail = r.status === 'late' ? 'تأخر ' + span(r.late_min) : r.status === 'absent' ? 'تأخر ' + span(r.since_start) + ' بلا بصمة' : r.status === 'on_time' && r.late_min > 0 ? 'ضمن السماح (' + r.late_min + ' د)' : '';
-        var week = (r.late_week || r.absent_week) ? 'آخر 6 أيام: تأخر ' + r.late_week + ' · غياب ' + r.absent_week : '';
-        return ['<b>' + esc(r.full_name) + '</b><br><small>' + esc([r.code, r.department, r.job_title].filter(Boolean).join(' · ')) + '</small>',
-          '<span class="hrp-state hrp-' + st[1] + '">' + esc(st[0]) + '</span>' + (r.excused && (r.status === 'absent' || r.status === 'late') ? '<br><small>بإذن معتمد</small>' : '') + (detail ? '<br><small>' + esc(detail) + '</small>' : ''),
-          esc(r.template_name || '') + '<br><small>' + esc(clock(r.exp_start) + ' → ' + clock(r.exp_end)) + '</small>', esc(clock(r.first_in)), '<small>' + esc(week) + '</small>'];
+    function warnChips() {
+      var out = [];
+      ws.people.forEach(function (p) {
+        for (var i = 0; i < 6; i++) {
+          var a = tpl(p.days && p.days[DAYS[i][0]]), b = tpl(p.days && p.days[DAYS[i + 1][0]]); if (!a || !b) continue;
+          var endA = mins(a.end_time) <= mins(a.start_time) ? mins(a.end_time) + 1440 : mins(a.end_time);
+          if (mins(b.start_time) + 1440 - endA < MIN_REST_MINUTES) out.push('<div class="sch warn" data-shifts-conflict>' + ico('clock') + '<span><b>' + esc(p.full_name) + ':</b> ' + esc(a.name) + ' ' + esc(DAYS[i][1]) + ' ثم ' + esc(b.name) + ' ' + esc(DAYS[i + 1][1]) + ' (راحة أقل من 11 ساعة)</span></div>');
+        }
       });
-      return '<section class="wp-detail" data-shifts-board><h3>كشف الحضور بالمواعيد</h3>' +
-        '<p><label class="wp-field">اليوم <input type="date" name="day" value="' + esc(day) + '" data-shifts-day></label> ' + btn('refresh', 'تحديث الآن') + '</p>' + note + cards +
-        (rows.length ? U.table(['الموظف', 'الحالة', 'الوردية', 'أول بصمة دخول', 'ملاحظات'], body) : (board.has_schedule ? '<p class="wn-empty">لا يوجد موظفون عليهم وردية في هذا اليوم</p>' : '')) + '</section>';
+      if (!out.length) out.push('<div class="sch ok" data-shifts-ok>' + ico('ok') + '<span>الجدول متوازن: لا تعارض راحة بين الورديات</span></div>');
+      return out.slice(0, 5).join('');
     }
-
+    function bannerHtml() {
+      var scheduled = ws.people.filter(function (p) { return p.days && Object.keys(p.days).length; }).length, unscheduled = ws.people.length - scheduled;
+      if (!ws.templates.length || !scheduled) return '<div class="banner" data-shifts-empty>' + ico('bulb') + '<div style="flex:1;min-width:220px"><b>الجدول هو أساس معرفة «الغايب» و«المتأخر»</b><span style="color:var(--muted);font-size:13.5px">لم تُحدَّد ورديات بعد — أضف وردية (مثلًا «صباحي» من 09:00 إلى 17:00) ثم حدّد أيام عمل كل موظف من الجدول ليظهر من وصل في ميعاده ومن تأخر.</span></div>' + btn('tpl', 'إضافة وردية', '', 'btn') + '</div>';
+      if (unscheduled) return '<div class="banner" data-shifts-unscheduled>' + ico('warn') + '<div style="flex:1;min-width:220px"><b>' + unscheduled + ' موظف بدون جدول ورديات</b><span style="color:var(--muted);font-size:13.5px">لا يظهرون في الغياب والتأخير حتى يُحدَّد جدولهم. اضغط على اسم الموظف في الجدول.</span></div></div>';
+      return '';
+    }
+    function gridHtml() {
+      var tIdx = DAYS.map(function (d) { return d[0]; }).indexOf(new Date(ws.today + 'T12:00:00Z').getUTCDay());
+      var dayLabel = function (i) { var d = new Date(ws.today + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + i - tIdx); return d.getUTCDate() + '/' + (d.getUTCMonth() + 1); };
+      var groups = {}, order = [];
+      ws.people.forEach(function (p) { var d = C.dept(p.department); if (!groups[d.id]) { groups[d.id] = { d: d, p: [] }; order.push(d.id); } groups[d.id].p.push(p); });
+      var rows = order.map(function (k) {
+        var g = groups[k], d = g.d;
+        return '<tr data-shifts-dept><td class="n" style="background:' + esc(d.tint) + ';color:' + esc(d.col) + ';font-weight:700">' + ico(d.icon) + ' ' + esc(d.name) + '</td>' + DAYS.map(function () { return '<td style="background:' + esc(d.tint) + '"></td>'; }).join('') + '<td style="background:' + esc(d.tint) + '"></td></tr>' +
+          g.p.map(function (p) {
+            var hours = 0;
+            var cells = DAYS.map(function (dy, i) {
+              var has = p.days && Object.prototype.hasOwnProperty.call(p.days, dy[0]), t = has ? tpl(p.days[dy[0]]) : null;
+              if (t) hours += span(t) / 60;
+              var b = t ? '<button type="button" class="sc" style="' + chipStyle(t) + '" data-shifts="sched" data-id="' + esc(p.id) + '" title="' + esc(t.name) + '">' + esc(t.name) + ' <span class="ltr">' + esc(shortTime(t.start_time) + '–' + shortTime(t.end_time)) + '</span></button>'
+                : '<button type="button" class="sc sc-off" data-shifts="sched" data-id="' + esc(p.id) + '">' + (has ? 'راحة' : '—') + '</button>';
+              return '<td class="' + (i === tIdx ? 'today' : '') + '">' + b + '</td>';
+            }).join('');
+            return '<tr data-shifts-person><td class="n"><button type="button" data-shifts="sched" data-id="' + esc(p.id) + '" style="border:0;background:none;padding:0;text-align:start"><b>' + esc(p.full_name) + '</b></button> <small style="color:var(--muted)">' + esc([p.code, p.job_title].filter(Boolean).join(' · ')) + '</small></td>' + cells +
+              '<td><b style="color:' + (hours > MAX_WEEK_HOURS ? 'var(--neg)' : 'var(--dark)') + '">' + Math.round(hours * 10) / 10 + '</b> <small style="color:var(--muted)">س</small>' + (hours > MAX_WEEK_HOURS ? '<br><small style="color:var(--neg)">فوق ' + MAX_WEEK_HOURS + '</small>' : '') + '</td></tr>';
+          }).join('');
+      }).join('');
+      var cov = '<tr class="covrow"><td class="n"><b>التغطية</b></td>' + DAYS.map(function (dy) {
+        var c = {}; ws.people.forEach(function (p) { var id = p.days && p.days[dy[0]]; if (id) c[id] = (c[id] || 0) + 1; });
+        return '<td>' + ws.templates.filter(function (t) { return c[t.id]; }).map(function (t) { return '<span class="cv ok">' + esc(t.name) + ' ' + c[t.id] + '</span>'; }).join('') + '</td>';
+      }).join('') + '<td></td></tr>';
+      return '<div class="card scroll" style="padding:0" data-shifts-schedule><table class="sg"><thead><tr><th style="text-align:start;padding-inline:10px">الموظف <small>(' + ws.people.length + ')</small></th>' + DAYS.map(function (d, i) { return '<th class="' + (i === tIdx ? 'today' : '') + '">' + d[1] + '<br><small>' + dayLabel(i) + '</small></th>'; }).join('') + '<th>ساعات الأسبوع</th></tr></thead><tbody>' +
+        (ws.people.length ? rows + cov : '<tr><td colspan="9" class="empty">لا يوجد موظفون</td></tr>') + '</tbody></table></div>';
+    }
     function templatesHtml() {
       var rows = ws.templates.map(function (t) {
-        return [tplChip(t.id) + (t.active ? '' : ' <small>متوقفة</small>'), esc(t.start_time + ' → ' + t.end_time) + (t.overnight ? ' <small>(تعبر منتصف الليل)</small>' : ''), esc(t.grace_minutes) + ' د', btn('tpl', 'تعديل', t.id)];
-      });
-      return '<section class="wp-detail" data-shifts-templates><h3>أنواع الورديات <small>(' + ws.templates.length + ')</small></h3><p>' + btn('tpl', 'إضافة وردية', '') + '</p>' +
-        (rows.length ? U.table(['الوردية', 'من → إلى', 'السماح', ''], rows) : '<p class="wn-empty">لا توجد ورديات — أضف مثلًا «صباحي» من 09:00 إلى 17:00</p>') + '</section>';
+        var c = safeColor(t.color);
+        return '<div class="tpl-row" data-shifts-tpl><span class="tpl-sw" style="background:' + c + '">' + esc(shortTime(t.start_time)) + '</span><div class="nm"><span class="t">' + esc(t.name) + (t.active ? '' : ' <small>(متوقفة)</small>') + '</span><small><span class="ltr">' + esc(t.start_time + ' → ' + t.end_time) + '</span>' + (t.overnight ? ' (تعبر منتصف الليل)' : '') + ' · سماح ' + esc(t.grace_minutes) + ' د</small></div>' + btn('tpl', 'تعديل', t.id, 'mini') + '</div>';
+      }).join('');
+      return '<section class="card" style="margin-top:14px" data-shifts-templates><h4>' + ico('clock') + 'أنواع الورديات <small style="color:var(--muted);font-weight:400">(' + ws.templates.length + ')</small><span style="margin-inline-start:auto">' + btn('tpl', 'إضافة وردية', '', 'mini solid') + '</span></h4>' +
+        (rows || '<div class="empty">لا توجد ورديات — أضف مثلًا «صباحي» من 09:00 إلى 17:00</div>') + '</section>';
     }
-
-    function scheduleHtml() {
-      var rows = ws.people.map(function (p) {
-        var cells = DAYS.map(function (d) { return p.days && p.days[d[0]] ? tplChip(p.days[d[0]]) : '<small>' + (p.days && Object.prototype.hasOwnProperty.call(p.days, d[0]) ? 'راحة' : '—') + '</small>'; });
-        return ['<b>' + esc(p.full_name) + '</b><br><small>' + esc([p.code, p.department].filter(Boolean).join(' · ')) + '</small>'].concat(cells, [btn('sched', 'تعديل الجدول', p.id)]);
-      });
-      return '<section class="wp-detail" data-shifts-schedule><h3>جدول الأسبوع لكل موظف <small>(' + ws.people.length + ')</small></h3>' +
-        (rows.length ? U.table(['الموظف'].concat(DAYS.map(function (d) { return d[1]; }), ['']), rows) : '<p class="wn-empty">لا يوجد موظفون</p>') + '</section>';
+    function draw() {
+      var legend = ws.templates.filter(function (t) { return t.active; }).map(function (t) { return '<span class="pill" style="' + chipStyle(t) + '">' + esc(t.name) + ' <span class="ltr">' + esc(shortTime(t.start_time) + '–' + shortTime(t.end_time)) + '</span></span>'; }).join('');
+      host.innerHTML = bannerHtml() + '<div class="strip" style="margin:0 0 14px">' + warnChips() + '</div>' +
+        '<div class="bar" style="margin-bottom:14px"><div class="legend" style="margin:0">' + legend + '<span class="pill p-out">راحة</span></div><span style="margin-inline-start:auto;color:var(--muted);font-size:13px">اضغط على أي خانة أو اسم لتعديل جدول الموظف</span></div>' + gridHtml() + templatesHtml();
+      bind();
     }
-
-    function draw() { host.innerHTML = boardHtml() + templatesHtml() + scheduleHtml(); bind(); }
-
     function bind() {
-      var dp = host.querySelector('[data-shifts-day]');
-      if (dp) dp.onchange = function () { if (dp.value) { day = dp.value; board = null; load(); } };
       host.querySelectorAll('[data-shifts]').forEach(function (n) {
         n.onclick = function () {
           var a = n.dataset.shifts;
-          if (a === 'refresh' || a === 'retry') { if (a === 'retry') board = null; load(); }
+          if (a === 'retry') { ws = null; load(); }
           if (a === 'tpl') openTemplate(n.dataset.id);
           if (a === 'sched') openSchedule(n.dataset.id);
         };
@@ -99,7 +106,7 @@
     }
 
     function openTemplate(id) {
-      var t = id ? ws.templates.filter(function (x) { return x.id === id; })[0] : null;
+      var t = id ? tpl(id) : null;
       U.modal(t ? 'تعديل وردية' : 'إضافة وردية',
         U.field('name', 'اسم الوردية', 'text', t ? t.name : '', 'required maxlength="40"') + U.field('start_time', 'تبدأ', 'time', t ? t.start_time : '09:00', 'required') + U.field('end_time', 'تنتهي', 'time', t ? t.end_time : '17:00', 'required') +
         U.field('grace_minutes', 'دقائق السماح قبل احتساب التأخير', 'number', t ? t.grace_minutes : 10, 'required min="0" max="120"') + U.field('color', 'اللون', 'color', t ? t.color : '#0F369D') +
@@ -120,14 +127,14 @@
       U.modal('جدول ' + p.full_name, fill + days + U.field('valid_from', 'يسري من', 'date', ws.today, 'required') + '<p class="wp-wide">الجدول الجديد يسري من هذا التاريخ ولا يغيّر حضور الأيام السابقة.</p>',
         function (v) {
           var map = {}; DAYS.forEach(function (d) { map[String(d[0])] = v['d' + d[0]] || null; });
-          return U.rpc('hr_shifts_command', { p_action: 'schedule_save', p_payload: { person_id: p.id, days: map, valid_from: v.valid_from } }).then(function () { board = null; return load(true); });
+          return U.rpc('hr_shifts_command', { p_action: 'schedule_save', p_payload: { person_id: p.id, days: map, valid_from: v.valid_from } }).then(function () { return load(true); });
         });
       var f = document.querySelector('.wp-overlay [name=fill]');
       if (f) f.onchange = function () { if (!f.value) return; DAYS.forEach(function (d) { var s = document.querySelector('.wp-overlay [name=d' + d[0] + ']'); if (s) s.value = d[0] === 5 ? '' : f.value; }); };
     }
 
+    if (ctx && ctx.onRefresh) ctx.onRefresh(function () { return load(); });
     load();
-    timer = setInterval(function () { if (!live()) { stop(); return; } if (isToday()) load(true); }, REFRESH_MS);
   }
 
   w.SSMPDHRShifts = { mount: mount };
