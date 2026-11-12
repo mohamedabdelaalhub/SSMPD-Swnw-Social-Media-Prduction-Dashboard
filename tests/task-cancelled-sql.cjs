@@ -54,5 +54,10 @@ const id=n=>'60000000-0000-4000-8000-'+String(n).padStart(12,'0');
  const gen=mig.slice(mig.indexOf('-- ---------- generated from live definitions'));
  assert(!/(?<![a-z_])status\s*<>\s*'done'/i.test(gen),'no bare status <> done left');
  for(const f of gen.split(/CREATE OR REPLACE FUNCTION /).slice(1))assert(/'cancelled'/.test(f),'cancelled handled in '+f.slice(0,60));
- console.log('PASS task cancelled status: manager-only cancel with reason, stages cascade, done protected, employee blocked, reopen, generated predicates');
+ // totals: cancelled is not counted anywhere (weekly report, nudge totals, staff samples, digest, inbox, project progress, cohorts)
+ for(const needle of ["t.title <> 'التقرير الأسبوعي لتسويق سونو' and t.status <> 'cancelled'","description like '%[weekly:' || r.id || ':%' and status <> 'cancelled';","where t.assignee_id=subject and t.status<>'cancelled' and not exists","where t.completed_at>=from_ts and t.status<>'cancelled'","n.recipient_id=me and t.status<>'cancelled'","on t.project_id=p.id and t.status<>'cancelled' where","where t.assignee_id=subject and t.status<>'cancelled' and (p.archived_at"])assert(mig.includes(needle),'total excludes cancelled: '+needle.slice(0,50));
+ const ui=fs.readFileSync(__dirname+'/../assets/js/render-tasks.js','utf8');
+ assert(/Object\.keys\(STATUS\)\.filter\(function\(k\)\{return k!=="cancelled"/.test(ui),'no «ملغاة» kanban column');
+ assert(ui.includes('total=mine.length-c.cancelled'),'project totals exclude cancelled');
+ console.log('PASS task cancelled status: manager-only cancel with reason, stages cascade, done protected, employee blocked, reopen, generated predicates, cancelled excluded from all totals, no kanban column');
 })().catch(e=>{console.error(e);process.exit(1);});

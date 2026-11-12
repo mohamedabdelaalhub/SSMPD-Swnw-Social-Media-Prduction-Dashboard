@@ -1,6 +1,7 @@
 -- Task status «ملغاة» (cancelled) — owner request «ضيف حالة إلغاء للمهام» (2026-11-11).
--- A cancelled task is neither done nor late: it leaves every open/overdue/due-soon count, Sia/Claude follow-ups,
--- KPIs and project progress, but stays visible in task lists (filter «ملغاة»). Only project managers / super admin /
+-- A cancelled task is neither done nor late and is not counted anywhere (owner: «نشيل المهام الملغاة من العدد»): it
+-- leaves every open/overdue/due-soon count, totals, Sia/Claude follow-ups, KPIs, reports and project progress, but stays
+-- reachable in task lists through the «ملغاة» filter (no kanban column: «نخفي عمود ملغاة»). Only project managers / super admin /
 -- content managers can cancel (with a reason) or reopen (back to «لم تبدأ»). Built from the LIVE definitions
 -- (2026-11-12); the generated block below only changes "open = status <> 'done'" into
 -- "open = status not in ('done','cancelled')" (+ cancelled tasks excluded from project progress and employee cohorts).
@@ -654,7 +655,7 @@ begin
 
   with base as (
     select t.*,case t.priority when 'urgent' then 4 when 'high' then 3 when 'normal' then 2 else 1 end::numeric wt
-    from public.tasks t where t.assignee_id=subject and not exists(select 1 from public.tasks c where c.parent_task_id=t.id)
+    from public.tasks t where t.assignee_id=subject and t.status<>'cancelled' and not exists(select 1 from public.tasks c where c.parent_task_id=t.id)
       and t.first_submitted_at>=p_from and t.first_submitted_at<p_to
   )
   select count(*)::int,count(*) filter(where first_submission_due_at is not null)::int,
@@ -666,7 +667,7 @@ begin
   if v_task_sample>=2 then
     with base as (
       select t.id,case t.priority when 'urgent' then 4 when 'high' then 3 when 'normal' then 2 else 1 end::numeric wt,t.first_submitted_at
-      from public.tasks t where t.assignee_id=subject and not exists(select 1 from public.tasks c where c.parent_task_id=t.id)
+      from public.tasks t where t.assignee_id=subject and t.status<>'cancelled' and not exists(select 1 from public.tasks c where c.parent_task_id=t.id)
         and t.first_submitted_at>=p_from and t.first_submitted_at<p_to
     )
     select count(*)::int,100*coalesce(sum(wt) filter(where not exists(select 1 from public.task_updates u where u.task_id=base.id and u.status_from='review' and u.status_to='revision' and u.created_at>=base.first_submitted_at)),0)/nullif(sum(wt),0)
@@ -1038,7 +1039,7 @@ begin
   -- مهام مشروع التسويق (حالة كل مهمة + مسؤولها)
   select coalesce(jsonb_agg(jsonb_build_object('title', t.title, 'status', t.status, 'assignee', a.name, 'due', t.due_at, 'overdue', t.status not in ('done','cancelled') and t.due_at < now(), 'updated_at', t.updated_at) order by t.due_at), '[]'::jsonb) into v_tasks
     from public.tasks t left join public.admins a on a.id = t.assignee_id
-   where t.project_id = '1b618cc4-7e28-4d9d-bb0a-17f3bdf71f32' and t.title <> 'التقرير الأسبوعي لتسويق سونو';
+   where t.project_id = '1b618cc4-7e28-4d9d-bb0a-17f3bdf71f32' and t.title <> 'التقرير الأسبوعي لتسويق سونو' and t.status <> 'cancelled';
 
   return jsonb_build_object(
     'period', jsonb_build_object('from', v_from, 'to', v_to, 'days', greatest(1, least(coalesce(p_days,7), 31))),
@@ -1059,7 +1060,7 @@ begin
   select * into r from public.weekly_reports where week_end >= current_date - 10 order by week_end desc, created_at desc limit 1;
   if not found then return 0; end if;
   select count(*), count(*) filter (where status not in ('done','cancelled')) into total, open_n
-    from public.tasks where project_id = proj and description like '%[weekly:' || r.id || ':%';
+    from public.tasks where project_id = proj and description like '%[weekly:' || r.id || ':%' and status <> 'cancelled';
   if total = 0 or open_n = 0 then return 0; end if;
   select manager_id into mgr from public.task_projects where id = proj;
   for rec in
@@ -1082,4 +1083,74 @@ begin
     n := n + 1;
   end if;
   return n;
+end $function$;
+
+-- ---------- totals: cancelled tasks are not counted anywhere (owner «نشيل المهام الملغاة من العدد») ----------
+CREATE OR REPLACE FUNCTION public.business_strategy_snapshot(p_period text DEFAULT 'week'::text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+declare from_ts timestamptz; result jsonb;
+begin
+ if not public.business_manager() then raise exception 'Management access required'; end if;
+ from_ts:=case p_period when 'today' then date_trunc('day',now()) when 'month' then date_trunc('month',now()) else date_trunc('week',now()) end;
+ select jsonb_build_object(
+ 'period',p_period,'generated_at',now(),
+ 'needs_decision',jsonb_build_object(
+   'recommendations',coalesce((select jsonb_agg(to_jsonb(r) order by case r.priority when 'critical' then 1 when 'high' then 2 when 'medium' then 3 else 4 end,r.created_at desc) from (select id,title,rationale,recommendation_type,priority,status,expected_metric,expected_direction,brand,specialty,service,measure_after,created_at from public.business_recommendations where status in ('proposed','approved') order by created_at desc limit 30) r),'[]'::jsonb),
+   'decisions_due',coalesce((select jsonb_agg(to_jsonb(d) order by d.review_on,d.decided_at desc) from (select id,title,decision,reason,scope,expected_metric,review_on,status,decided_at from public.business_decisions where status in ('active','review_due') and review_on is not null and review_on<=current_date order by review_on,decided_at desc limit 30) d),'[]'::jsonb),
+   'knowledge_review_due',coalesce((select jsonb_agg(to_jsonb(k) order by k.review_after) from (select id,knowledge_type,title,statement,status,confidence,review_after,expires_at from public.business_knowledge_items where status in ('manager_approved','validated_by_data') and review_after is not null and review_after<=now() order by review_after limit 30) k),'[]'::jsonb)
+ ),
+ 'opportunities',coalesce((select jsonb_agg(to_jsonb(k) order by (k.status='validated_by_data') desc,k.confidence desc,k.created_at desc) from (select id,knowledge_type,title,statement,status,confidence,confidence_reason,brand,specialty,service,audience,tags,review_after,expires_at,created_at from public.business_knowledge_items where status in ('manager_approved','validated_by_data') and (expires_at is null or expires_at>now()) and knowledge_type in ('marketing_opportunity','service_insight','sales_insight','audience_insight','content_insight') order by (status='validated_by_data') desc,confidence desc,created_at desc limit 40) k),'[]'::jsonb),
+ 'recent_task_digest',coalesce((select jsonb_agg(to_jsonb(x) order by x.completed_at desc) from (select t.id,t.title,t.status,t.completed_at,t.due_at,p.id project_id,p.title project_title,a.id author_id,a.name author_name,wr.created_at result_created_at,case when wr.body is null then '' else left(regexp_replace(wr.body,E'[\\n\\r\\t ]+',' ','g'),420) end result_preview from public.tasks t left join public.task_projects p on p.id=t.project_id left join lateral (select w.* from public.task_work_results w where w.task_id=t.id and w.status='review' order by w.created_at desc limit 1) wr on true left join public.admins a on a.id=wr.author_id where t.completed_at>=from_ts and t.status<>'cancelled' order by t.completed_at desc limit 40) x),'[]'::jsonb),
+ 'top_campaigns',coalesce((select jsonb_agg(to_jsonb(x) order by x.cost_per_result asc nulls last,x.results desc) from (select c.id,c.campaign_name,round(coalesce(sum(p.spend),0),2) spend,round(coalesce(sum(p.results),0),2) results,round(coalesce(sum(p.leads),0),2) leads,round(case when sum(p.results)>0 then sum(p.spend)/sum(p.results) end,2) cost_per_result,round(case when sum(p.leads)>0 then sum(p.spend)/sum(p.leads) end,2) cost_per_lead,round(case when sum(p.spend)>0 then sum(p.ctr*p.spend)/sum(p.spend) end,2) weighted_ctr,max(p.updated_at) performance_updated_at from public.meta_campaigns c join public.meta_ads a on a.campaign_id=c.id join public.meta_ad_performance_lifetime p on p.ad_id=a.id group by c.id,c.campaign_name having sum(p.spend)>0 order by cost_per_result asc nulls last,results desc limit 15) x),'[]'::jsonb),
+ 'creative_signals',jsonb_build_object(
+   'specialties',coalesce((select jsonb_agg(to_jsonb(x) order by x.results desc,x.spend desc) from (select coalesce(nullif(trim(a.specialty),''),'غير مصنف') label,round(sum(p.spend),2) spend,round(sum(p.results),2) results,round(sum(p.leads),2) leads,round(case when sum(p.results)>0 then sum(p.spend)/sum(p.results) end,2) cpr from public.meta_ads a join public.meta_ad_performance_lifetime p on p.ad_id=a.id group by 1 having sum(p.spend)>0 order by results desc,spend desc limit 10) x),'[]'::jsonb),
+   'angles',coalesce((select jsonb_agg(to_jsonb(x) order by x.results desc,x.spend desc) from (select coalesce(nullif(trim(a.content_angle),''),'غير مصنف') label,round(sum(p.spend),2) spend,round(sum(p.results),2) results,round(sum(p.leads),2) leads,round(case when sum(p.results)>0 then sum(p.spend)/sum(p.results) end,2) cpr from public.meta_ads a join public.meta_ad_performance_lifetime p on p.ad_id=a.id group by 1 having sum(p.spend)>0 order by results desc,spend desc limit 10) x),'[]'::jsonb),
+   'hooks',coalesce((select jsonb_agg(to_jsonb(x) order by x.results desc,x.spend desc) from (select coalesce(nullif(trim(a.hook_type),''),'غير مصنف') label,round(sum(p.spend),2) spend,round(sum(p.results),2) results,round(sum(p.leads),2) leads,round(case when sum(p.results)>0 then sum(p.spend)/sum(p.results) end,2) cpr from public.meta_ads a join public.meta_ad_performance_lifetime p on p.ad_id=a.id group by 1 having sum(p.spend)>0 order by results desc,spend desc limit 10) x),'[]'::jsonb),
+   'creative_types',coalesce((select jsonb_agg(to_jsonb(x) order by x.results desc,x.spend desc) from (select coalesce(nullif(trim(a.creative_type),''),'غير مصنف') label,round(sum(p.spend),2) spend,round(sum(p.results),2) results,round(sum(p.leads),2) leads,round(case when sum(p.results)>0 then sum(p.spend)/sum(p.results) end,2) cpr from public.meta_ads a join public.meta_ad_performance_lifetime p on p.ad_id=a.id group by 1 having sum(p.spend)>0 order by results desc,spend desc limit 10) x),'[]'::jsonb),
+   'ctas',coalesce((select jsonb_agg(to_jsonb(x) order by x.results desc,x.spend desc) from (select coalesce(nullif(trim(a.cta_type),''),'غير مصنف') label,round(sum(p.spend),2) spend,round(sum(p.results),2) results,round(sum(p.leads),2) leads,round(case when sum(p.results)>0 then sum(p.spend)/sum(p.results) end,2) cpr from public.meta_ads a join public.meta_ad_performance_lifetime p on p.ad_id=a.id group by 1 having sum(p.spend)>0 order by results desc,spend desc limit 10) x),'[]'::jsonb)
+ ),
+ 'attribution',jsonb_build_object('revenue_ready',false,'booked_meta_attributed',(select count(*) from public.vw_lead_meta_attribution v join public.leads l on l.id=v.lead_id where l.received_at>=from_ts and v.matched_meta_ad_id is not null and (l.booking_date is not null or l.booking_reference is not null)),'explanation','Meta spend/results are lifetime. Lead-to-booking attribution is available. Revenue/profit attribution is not yet deterministic, so ROAS is intentionally not calculated.')
+ ) into result;
+ return result;
+end $function$;
+
+CREATE OR REPLACE FUNCTION clinic_finance.home_inbox_before_inventory_stages()
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+declare me uuid:=public.my_admin_id(); tasks jsonb:='[]'; contents jsonb; supplies jsonb; kpis jsonb:='[]'; notices jsonb; unread integer;
+begin
+ if not exists(select 1 from public.admins where id=me and active) then raise exception 'سجّل الدخول'; end if;
+ if public.personal_home_tasks_allowed() then
+  select coalesce(jsonb_agg(to_jsonb(x)),'[]') into tasks from (
+   select 'task:'||n.id::text key,'task' type,n.task_id id,n.created_at at,
+   case when n.kind='assigned' then 'تم تعيين مهمة جديدة لك: '||t.title||'. برجاء البدء في التنفيذ في أقرب وقت.' else n.message end message,
+   n.read_at is not null native_read
+   from public.task_notifications n join public.tasks t on t.id=n.task_id join public.task_projects p on p.id=t.project_id
+   where p.archived_at is null and n.recipient_id=me and t.status<>'cancelled' and public.task_can_access(n.task_id)
+   order by n.created_at desc limit 40) x;
+ end if;
+ select coalesce(jsonb_agg(to_jsonb(x)),'[]') into contents from (
+ select 'content:'||id::text||':'||stage||':'||extract(epoch from changed_at)::text key,'content' type,id,changed_at at,
+ case bucket when 'approval' then 'مادة في انتظار اعتمادك: ' when 'revision' then 'مادة مطلوب تعديلها: ' when 'design' then 'مادة في انتظار التصميم: ' else 'مادة جاهزة للنشر: ' end||title message,false native_read
+ from public.personal_home_content() where bucket in ('approval','revision','design','publish') order by changed_at desc limit 100) x;
+ select coalesce(jsonb_agg(jsonb_build_object('key','supply:'||(r->>'id')||':'||(r->>'status')||':'||(r->>'at'),
+ 'type','supply','id',r->>'id','at',r->>'at','message',case when r->>'status'='pending' then 'طلب مستلزمات بانتظار الصرف — '||(r->>'requester_name') when r->>'status'='rejected' then 'تم رفض طلب المستلزمات؛ راجع ملاحظة المسؤول' else 'تم صرف مستلزماتك — برجاء تأكيد الاستلام' end,'native_read',false)),'[]')
+ into supplies from jsonb_array_elements(public.personal_home_supplies()) r;
+ if public.my_role() in ('super_admin','general_manager') then
+  select coalesce(jsonb_agg(to_jsonb(x)),'[]') into kpis from (
+   select 'kpi:'||a.id::text key,'kpi' type,a.id id,a.created_at at,a.message message,(a.acknowledged_at is not null) native_read
+   from public.staff_kpi_alerts a where a.created_at > now()-interval '21 days' order by a.created_at desc limit 20) x;
+ end if;
+ with all_items as (select value n from jsonb_array_elements(tasks||contents||supplies||kpis)),
+ marked as (select n||jsonb_build_object('read',coalesce((n->>'native_read')::boolean,false) or exists(select 1 from public.personal_notice_reads r where r.admin_id=me and r.notice_key=n->>'key')) n from all_items),
+ latest as (select n from marked order by (n->>'at')::timestamptz desc limit 80)
+ select coalesce(jsonb_agg(n order by (n->>'at')::timestamptz desc),'[]'),count(*) filter(where not (n->>'read')::boolean) into notices,unread from latest;
+ return jsonb_build_object('notices',notices,'unread',unread,'limited',jsonb_array_length(tasks||contents||supplies||kpis)>80,'generated_at',now());
 end $function$;

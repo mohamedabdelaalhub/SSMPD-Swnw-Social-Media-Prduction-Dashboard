@@ -139,13 +139,13 @@
     return "todo";
   }
   var SEG_LABEL={done:"تمت",late:"متأخرة",review:"مراجعة",active:"شغّالة",blocked:"متوقفة",todo:"لم تبدأ",cancelled:"ملغاة"};
-  var SEG_ORDER=["done","active","review","late","blocked","todo","cancelled"];
+  var SEG_ORDER=["done","active","review","late","blocked","todo","cancelled"],SEG_BAR=SEG_ORDER.filter(function(k){return k!=="cancelled";});
   function segCounts(list){var c={done:0,late:0,review:0,active:0,blocked:0,todo:0,cancelled:0};list.forEach(function(t){c[seg(t)]++;});return c;}
   function segBar(c,total){
     if(!total)return '<div class="tv-bar"><i class="empty" style="width:100%"></i></div>';
-    return '<div class="tv-bar" role="img" aria-label="'+SEG_ORDER.filter(function(k){return c[k];}).map(function(k){return SEG_LABEL[k]+" "+c[k];}).join("، ")+'">'+SEG_ORDER.filter(function(k){return c[k];}).map(function(k){return '<i class="g-'+k+'" style="width:'+(c[k]*100/total)+'%"></i>';}).join("")+'</div>';
+    return '<div class="tv-bar" role="img" aria-label="'+SEG_BAR.filter(function(k){return c[k];}).map(function(k){return SEG_LABEL[k]+" "+c[k];}).join("، ")+'">'+SEG_BAR.filter(function(k){return c[k];}).map(function(k){return '<i class="g-'+k+'" style="width:'+(c[k]*100/total)+'%"></i>';}).join("")+'</div>';
   }
-  function segLegend(c){return SEG_ORDER.filter(function(k){return c[k];}).map(function(k){return '<span class="tv-leg g-'+k+'"><i></i>'+SEG_LABEL[k]+' <b>'+c[k]+'</b></span>';}).join("");}
+  function segLegend(c){return SEG_BAR.filter(function(k){return c[k];}).map(function(k){return '<span class="tv-leg g-'+k+'"><i></i>'+SEG_LABEL[k]+' <b>'+c[k]+'</b></span>';}).join("");}
   function render(el){
     if(!window.SSMPDRoles.canModuleAction(window.SSMPDAuth.currentAdmin,"tasks","view")){el.innerHTML="<p>ليس لديك صلاحية عرض المهام.</p>";return;}
     var admin=window.SSMPDAuth.currentAdmin;
@@ -268,14 +268,14 @@
       if(!vis.length)return html+emptyHtml("filtered",canMakeTask);
       if(state.view==="calendar")return html+calendarHtml(vis);
       if(board){
-        return html+'<div class="tsk-board">'+Object.keys(STATUS).map(function(k){var col=vis.filter(function(t){return t.status===k;});return '<section class="tsk-col s-'+k+'"><header><span>'+STATUS[k]+'</span><b>'+col.length+'</b></header><div class="tsk-col-body">'+(col.map(miniCard).join("")||'<p class="tsk-col-empty">لا توجد مهام</p>')+'</div></section>';}).join("")+'</div>';
+        return html+'<div class="tsk-board">'+Object.keys(STATUS).filter(function(k){return k!=="cancelled"||state.filter==="cancelled";}).map(function(k){var col=vis.filter(function(t){return t.status===k;});return '<section class="tsk-col s-'+k+'"><header><span>'+STATUS[k]+'</span><b>'+col.length+'</b></header><div class="tsk-col-body">'+(col.map(miniCard).join("")||'<p class="tsk-col-empty">لا توجد مهام</p>')+'</div></section>';}).join("")+'</div>';
       }
       var visIds={},kidsOf={};vis.forEach(function(t){visIds[t.id]=true;});
       vis.forEach(function(t){if(t.parent_task_id&&visIds[t.parent_task_id])(kidsOf[t.parent_task_id]=kidsOf[t.parent_task_id]||[]).push(t);});
       var out="";
       vis.filter(function(t){return !(t.parent_task_id&&visIds[t.parent_task_id]);}).forEach(function(t){
         var kids=kidsOf[t.id],open=filtering||!!state.expanded[t.id],sub=null;
-        if(kids){var all=base.filter(function(x){return x.parent_task_id===t.id;});sub={total:all.length,done:all.filter(function(x){return x.status==="done";}).length,open:open};}
+        if(kids){var all=base.filter(function(x){return x.parent_task_id===t.id;});sub={total:all.filter(function(x){return x.status!=="cancelled";}).length,done:all.filter(function(x){return x.status==="done";}).length,open:open};}
         out+=cardFor(t,sub);
         if(kids&&open)out+=kids.map(function(k){return cardFor(k);}).join("");
       });
@@ -305,10 +305,10 @@
     }
     function projTasks(p){return state.tasks.filter(function(t){return t.project_id===p.id;});}
     function projectTile(p){
-      var m=state.people.find(function(x){return x.id===p.manager_id;}),mine=projTasks(p),c=segCounts(mine),total=mine.length,done=c.done,left=total-done,archived=!!state.archived[p.id];
+      var m=state.people.find(function(x){return x.id===p.manager_id;}),mine=projTasks(p),c=segCounts(mine),total=mine.length-c.cancelled,done=c.done,left=total-done,archived=!!state.archived[p.id];
       var open=mine.filter(function(t){return !closed(t)&&t.due_at;}).sort(function(a,b){return dueTime(a)-dueTime(b);})[0];
       var last=mine.reduce(function(mx,t){return Math.max(mx,new Date(t.updated_at||0).getTime());},0);
-      var health=!total?["none","بدون مهام"]:(c.late?["late",c.late+" متأخرة"]:(done+c.cancelled===total?["done","مكتمل"]:(c.review?["review","بانتظار مراجعة"]:(c.active?["active","شغّال"]:["idle","لم يبدأ"]))));
+      var health=!total?["none","بدون مهام"]:(c.late?["late",c.late+" متأخرة"]:(done===total?["done","مكتمل"]:(c.review?["review","بانتظار مراجعة"]:(c.active?["active","شغّال"]:["idle","لم يبدأ"]))));
       var members=(p.members||[]).slice(0,4).map(function(x){return '<span class="tv-av" title="'+esc(x.name)+'">'+esc(initials(x.name))+'</span>';}).join("")+((p.members||[]).length>4?'<span class="tv-av more">+'+((p.members||[]).length-4)+'</span>':"");
       return '<article class="tv-proj'+(archived?" is-archived":"")+'" role="button" tabindex="0" data-action="open-project" data-project="'+p.id+'" data-project-id="'+p.id+'"><div class="tv-proj-top"><span class="tv-logo">'+esc(String(p.title||"م").trim().charAt(0))+'</span><div class="tv-proj-name"><b>'+esc(p.title)+(archived?' <em class="tv-arch">مؤرشف</em>':"")+'</b><small>'+esc(m?m.name:"—")+'</small></div><span class="tv-health h-'+health[0]+'">'+esc(health[1])+'</span></div>'+(newCommentsIn(mine)?'<div class="tv-newline">💬 '+newCommentsIn(mine)+' تعليق جديد</div>':"")+
         (p.description?'<p class="tv-proj-desc">'+esc(p.description)+'</p>':"")+
@@ -317,14 +317,14 @@
         '<div class="tv-proj-foot"><span class="tv-avs">'+members+'</span><small>'+(last?"آخر نشاط "+esc(relTime(last)):"")+'</small></div></article>';
     }
     function projectPage(p){
-      var m=state.people.find(function(x){return x.id===p.manager_id;}),mine=projTasks(p),c=segCounts(mine),total=mine.length,done=c.done,archived=!!state.archived[p.id];
+      var m=state.people.find(function(x){return x.id===p.manager_id;}),mine=projTasks(p),c=segCounts(mine),total=mine.length-c.cancelled,done=c.done,archived=!!state.archived[p.id];
       var canUpdate=window.SSMPDRoles.canModuleAction(admin,"tasks","update"),canAdd=window.SSMPDRoles.canModuleAction(admin,"tasks","create");
       var roots=sortTasks(mine.filter(function(t){return !t.parent_task_id;}),"manual"),f=state.pFilter;
       function kidsOf(t){return mine.filter(function(x){return x.parent_task_id===t.id;});}
-      function rowWithKids(t){var kids=kidsOf(t),sub=kids.length?{total:kids.length,done:kids.filter(function(x){return x.status==="done";}).length,open:!!state.expanded[t.id]}:null;return taskRow(t,sub,{})+(sub&&sub.open?'<div class="tv-kids">'+sortTasks(kids,"manual").map(function(k){return taskRow(k,null,{});}).join("")+'</div>':"");}
+      function rowWithKids(t){var kids=kidsOf(t),sub=kids.length?{total:kids.filter(function(x){return x.status!=="cancelled";}).length,done:kids.filter(function(x){return x.status==="done";}).length,open:!!state.expanded[t.id]}:null;return taskRow(t,sub,{})+(sub&&sub.open?'<div class="tv-kids">'+sortTasks(kids,"manual").map(function(k){return taskRow(k,null,{});}).join("")+'</div>':"");}
       function rootSeg(t){return seg(t);}
       var body="";
-      if(!total)body='<div class="tv-empty"><div>🗂️</div><h3>المشروع لسه فاضي</h3><p>ابدأ بإضافة أول مهمة وحدّد مسؤول وموعد.</p>'+(p.can_manage&&canAdd&&!archived?'<button class="btn btn-primary" data-action="new-task" data-project="'+p.id+'">+ مهمة</button>':"")+'</div>';
+      if(!mine.length)body='<div class="tv-empty"><div>🗂️</div><h3>المشروع لسه فاضي</h3><p>ابدأ بإضافة أول مهمة وحدّد مسؤول وموعد.</p>'+(p.can_manage&&canAdd&&!archived?'<button class="btn btn-primary" data-action="new-task" data-project="'+p.id+'">+ مهمة</button>':"")+'</div>';
       else if(f!=="all"){
         var list=roots.filter(function(t){return rootSeg(t)===f||kidsOf(t).some(function(k){return seg(k)===f;});});
         body=list.length?'<div class="tv-list">'+list.map(rowWithKids).join("")+'</div>':'<div class="tv-empty"><h3>مفيش مهام بالحالة دي</h3></div>';
