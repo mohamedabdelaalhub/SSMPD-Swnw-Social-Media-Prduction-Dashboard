@@ -7,14 +7,14 @@ HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, HERE)
 import numpy as np
 
 ap = argparse.ArgumentParser(); ap.add_argument("story"); ap.add_argument("out")
-ap.add_argument("--kit", default=os.environ.get("KIT", ".")); ap.add_argument("--repo", default=os.environ.get("SSMPD_REPO", "."))
+ap.add_argument("--kit", default=os.environ.get("KIT", ".")); ap.add_argument("--repo", default=os.environ.get("SSMPD_REPO", os.path.abspath(os.path.join(HERE, "..", ".."))))
 ap.add_argument("--dry", action="store_true"); ap.add_argument("--no-end", action="store_true"); ap.add_argument("--max-sec", type=float, default=0)
 ap.add_argument("--fps", type=int, default=24); ap.add_argument("--workers", type=int, default=4); ap.add_argument("--frames-only", action="store_true")
 args = ap.parse_args()
 os.environ["KIT"] = args.kit; os.environ["SSMPD_REPO"] = args.repo
 import base as B, engine as E, voices as V, sfxlib as S
 
-sb = json.load(open(args.story)); os.makedirs(args.out, exist_ok=True); FPS = args.fps
+args.out = os.path.abspath(args.out); sb = json.load(open(args.story)); os.makedirs(args.out, exist_ok=True); FPS = args.fps
 SR = 44100
 def decode(path):
     raw = subprocess.run(["ffmpeg", "-v", "error", "-i", path, "-f", "f32le", "-ac", "1", "-ar", str(SR), "-"], capture_output=True).stdout
