@@ -21,6 +21,8 @@ def decode(path):
     return np.frombuffer(raw, dtype=np.float32).astype(np.float64)
 
 TASHKEEL = re.compile('[\u064B-\u0652\u0670]')
+# pronunciation spellings written for the voice that must read normally on screen
+DISPLAY_FIX = {'إستشر': 'استشر'}
 
 def chunk_spans(text, hl):
     """same grouping rule as engine.split_chunks but keeps character spans"""
@@ -35,6 +37,7 @@ def chunk_spans(text, hl):
     out = []
     for g in groups:
         s0, s1 = g[0][1], g[-1][2]; s = TASHKEEL.sub("", text[s0:s1])  # diacritics are for the VOICE only (owner, 2026-11-13): never shown on screen
+        for k_, v_ in DISPLAY_FIX.items(): s = s.replace(k_, v_)
         s = s.rstrip('.')  # no full stop at the end of a caption; the voice still gets the punctuation
         for h in hl or []:
             h = TASHKEEL.sub("", h)
