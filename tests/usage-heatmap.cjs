@@ -7,7 +7,7 @@ const {PGlite}=require('@electric-sql/pglite'),{JSDOM}=require('jsdom'),fs=requi
   create table public.admins(id uuid primary key default gen_random_uuid(),user_id uuid,role text,active boolean default true,email text);
   insert into public.admins(user_id,role,email) values('00000000-0000-0000-0000-0000000000a1','reception','r@x.com'),('00000000-0000-0000-0000-0000000000b1','nursing','n@x.com'),('00000000-0000-0000-0000-0000000000c1','reception','swnwclinics+staff@gmail.com');`);
  const mig=fs.readFileSync('supabase/migrations/20261113230000_ui_usage_heatmap.sql','utf8');await db.exec(mig);await db.exec(mig);
- await db.exec(fs.readFileSync('supabase/migrations/20261113233000_ui_usage_skip_test_accounts.sql','utf8'));
+ await db.exec(fs.readFileSync('supabase/migrations/20261113233000_ui_usage_skip_test_accounts.sql','utf8'));await db.exec(fs.readFileSync('supabase/migrations/20261114000000_ui_usage_per_employee.sql','utf8'));
  const call=async(uid,items)=>{await db.exec(`set t.uid='${uid}'`);return (await db.query('select public.ui_usage_track($1::jsonb) n',[JSON.stringify(items)])).rows[0].n;};
  assert.equal(await call('00000000-0000-0000-0000-0000000000a1',[{a:'home',e:'goto:tasks',n:3},{a:'tasks',e:'view'}]),2);
  assert.equal(await call('00000000-0000-0000-0000-0000000000a1',[{a:'home',e:'goto:tasks',n:2},{a:'',e:'x'},{a:'home',e:'y'.repeat(81)}]),1,'invalid rows skipped');
@@ -16,11 +16,12 @@ const {PGlite}=require('@electric-sql/pglite'),{JSDOM}=require('jsdom'),fs=requi
  const rows=(await db.query("select role,area,element,hits from public.ui_usage_daily order by role,area")).rows;
  assert.deepEqual(rows.map(r=>[r.role,r.area,r.element,r.hits]),[['nursing','home','goto:tasks',500],['reception','home','goto:tasks',5],['reception','tasks','view',1]]);
  const cols=(await db.query("select column_name from information_schema.columns where table_name='ui_usage_daily'")).rows.map(r=>r.column_name).sort();
- assert.deepEqual(cols,['area','day','element','hits','role'],'no user column');
- await db.exec(fs.readFileSync('supabase/rollbacks/20261113230000_ui_usage_heatmap.rollback.sql','utf8'));assert.equal((await db.query("select to_regclass('public.ui_usage_daily') t")).rows[0].t,null);await db.close();
+ assert.deepEqual(cols,['area','day','element','hits','role'],'role table has no user column');
+ const per=(await db.query("select a.role,u.area,u.element,u.hits from public.ui_usage_daily_admin u join public.admins a on a.id=u.admin_id order by a.role,u.area")).rows.map(r=>[r.role,r.area,r.element,r.hits]);assert.deepEqual(per,[['nursing','home','goto:tasks',500],['reception','home','goto:tasks',5],['reception','tasks','view',1]],'per-employee counters');
+ await db.exec(fs.readFileSync('supabase/rollbacks/20261114000000_ui_usage_per_employee.rollback.sql','utf8'));assert.equal((await db.query("select to_regclass('public.ui_usage_daily_admin') t")).rows[0].t,null);await db.exec(fs.readFileSync('supabase/rollbacks/20261113230000_ui_usage_heatmap.rollback.sql','utf8'));assert.equal((await db.query("select to_regclass('public.ui_usage_daily') t")).rows[0].t,null);await db.close();
  const dom=new JSDOM('<main><button data-goto="tasks">المهام</button><button data-action="open-task" data-id="123e4567-e89b-12d3-a456-426614174000">فتح المهمة</button><button>حفظ</button><button>01001234567</button><table><tr><td><button>أحمد محمود</button></td></tr></table><button id="user-menu-btn">☰</button><article data-patient-id="p1"><button>منى علي</button></article></main>',{runScripts:'outside-only',url:'https://dash.test/'});
  const w=dom.window;w.sessionStorage.setItem('ssmpd_active_tab','reception_services');w.eval(fs.readFileSync('assets/js/usage-heatmap.js','utf8'));
- w.document.querySelectorAll('button').forEach(b=>b.click());
+ w.document.querySelectorAll('main button').forEach(b=>b.click());w.SSMPDAuth={currentAdmin:{id:'emp1'}};assert.equal(w.SSMPDUsageHeatmap.notice(),true);assert(w.document.querySelector('.usage-notice'),'notice shown');w.document.querySelector('[data-usage-ok]').click();assert(!w.document.querySelector('.usage-notice'));w.SSMPDUsageHeatmap.notice();assert(!w.document.querySelector('.usage-notice'),'shown once');
  const keys=Object.keys(w.SSMPDUsageHeatmap._buf()).map(k=>k.replace('\u0001','|')).sort();
  assert.deepEqual(keys,['menu|goto:tasks','reception_services|#user-menu-btn','reception_services|action:open-task','reception_services|text:حفظ']);
  dom.window.close();console.log('PASS usage heatmap: per-role daily counters, invalid/unknown skipped, hits capped, no user column, rollback; tracker keeps keys/short labels only (no ids, phones, names in tables).');
