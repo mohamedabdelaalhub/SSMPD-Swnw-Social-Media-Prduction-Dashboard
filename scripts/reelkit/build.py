@@ -33,6 +33,7 @@ def chunk_spans(text, hl):
     out = []
     for g in groups:
         s0, s1 = g[0][1], g[-1][2]; s = text[s0:s1]
+        s = s.rstrip('.')  # no full stop at the end of a caption (owner, 2026-11-13); the voice still gets the punctuation
         for h in hl or []:
             if h in s and "*" not in s: s = s.replace(h, "*" + h + "*")
         out.append((s, s0, s1))
@@ -87,18 +88,22 @@ if args.frames_only: sys.exit(0)
 
 # ---------------------------------------------------------------- audio
 contact = 0.0 if args.no_end else 3.0; total = dur + contact
-mx = S.Mix(total)
+mx = S.Mix(total); LEVEL = {}; TARGET_RMS = 0.12
 for v in tl.voice:
     mp3, ta, tb = audio_src[(v["si"], v["bi"])]
     if mp3 is None: continue
-    wav = decode(mp3); seg = wav[int(ta * SR):int(tb * SR) + int(0.05 * SR)].copy(); f = int(0.012 * SR)
+    wav = decode(mp3)
+    if mp3 not in LEVEL:  # every speaker is brought to the same speech loudness (a quiet voice next to a loud one was the owner's complaint)
+        act = np.abs(wav)[np.abs(wav) > 0.02]
+        LEVEL[mp3] = float(np.clip(TARGET_RMS / max(np.sqrt(np.mean(act ** 2)) if len(act) else TARGET_RMS, 1e-6), 0.4, 4.0))
+    seg = wav[int(ta * SR):int(tb * SR) + int(0.05 * SR)].copy() * LEVEL[mp3]; seg = np.tanh(seg / 0.9) * 0.9; f = int(0.012 * SR)
     seg[:f] *= np.linspace(0, 1, f); seg[-f:] *= np.linspace(1, 0, f); mx.add(seg, v["t"], 1.0)
 for t0, nm, g in tl.sfx:
     if t0 < dur: mx.sfx(nm, t0, g * 0.8)
 mood = sb.get("meta", {}).get("music", "upbeat"); mf = os.path.join(args.kit, f"sono_music_{mood}.mp3")
 if os.path.exists(mf):
     m = decode(mf); m0 = sb.get("meta", {}).get("music_from", 1.0); i0 = int(m0 * SR); mus = np.zeros(mx.N); L = min(len(m), mx.N - i0); mus[i0:i0 + L] = m[:L]
-    tm = np.arange(mx.N) / SR; mus *= np.clip((tm - m0) / 1.2, 0, 1) * np.clip((total - tm) / 1.8, 0, 1) * 0.14; mx.a += mus
+    tm = np.arange(mx.N) / SR; mus *= np.clip((tm - m0) / 1.2, 0, 1) * np.clip((total - tm) / 1.8, 0, 1) * 0.10; mx.a += mus
 a = mx.a / max(1e-9, np.max(np.abs(mx.a))) * 0.9; pcm = (a * 32767).astype(np.int16)
 import wave
 with wave.open(os.path.join(args.out, "audio.wav"), "wb") as w_:
