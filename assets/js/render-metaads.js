@@ -213,6 +213,30 @@
     };
   }
 
+  // توكن قراءة Meta (System User + ads_read): خانة كتابة فقط للسوبر أدمن. السيرفر بيحفظه ومبيرجعش أبداً.
+  function tokenBoxHtml() {
+    var a = window.SSMPDAuth && window.SSMPDAuth.currentAdmin;
+    if (!a || a.role !== "super_admin") return "";
+    return '<div class="section"><h3>ربط قراءة Meta (للسوبر أدمن بس)</h3>' +
+      '<p style="font-size:12px;color:var(--c-muted);">الصق توكن System User بصلاحية قراءة الأداء (ads_read) فقط. بيتحفظ على السيرفر ومش بيظهر تاني لأي حد.</p>' +
+      '<input id="ma-token" type="password" autocomplete="off" spellcheck="false" style="width:100%;max-width:420px;" placeholder="الصق التوكن هنا"> ' +
+      '<button class="btn sm" id="ma-token-save">حفظ</button> <span id="ma-token-msg" style="font-size:12px;"></span></div>';
+  }
+  function wireTokenBox() {
+    var btn = document.getElementById("ma-token-save");
+    if (!btn) return;
+    btn.onclick = function () {
+      var input = document.getElementById("ma-token"), msg = document.getElementById("ma-token-msg");
+      var v = (input.value || "").trim();
+      if (v.length < 30) { msg.textContent = "التوكن قصير — اتأكد إنك نسخته كامل"; return; }
+      btn.disabled = true; msg.textContent = "بيتحفظ…";
+      window.SSMPDDb.saveMetaAdsToken(v).then(function () {
+        input.value = ""; msg.textContent = "اتحفظ ✅ (مش هيظهر تاني)";
+      }).catch(function (e) { msg.textContent = "فشل الحفظ: " + (e.message || "خطأ"); })
+        .then(function () { btn.disabled = false; });
+    };
+  }
+
   function renderAll(el) {
     var filtered = applyFilters(adRows);
     var html = "<div class=\"section\"><h3> <!--ssmpd-i18n:%D8%A5%D8%B9%D9%84%D8%A7%D9%86%D8%A7%D8%AA%20Meta%20Ads-->إعلانات Meta Ads</h3>" + filterBarHtml() +
@@ -221,11 +245,13 @@
       '<div class="section"><h3>أداء الكرييتف (حسب Creative Group)</h3>' + creativeTableHtml() + '</div>' +
       '<div class="section"><h3>تفاصيل الإعلانات</h3><div id="ma-ads-table">' + adsTableHtml(filtered) + '</div></div>' +
       '<div class="section"><h3>إسناد الليدز لإعلانات Meta</h3>' + leadAttributionHtml() + '</div>' +
+      tokenBoxHtml() +
       '<div class="section"><h3>الربط بالمحتوى</h3>' +
       '<p style="font-size:12px;color:var(--c-muted);">الربط بيتم يدويًا من مودال المادة نفسها (تابات إنتاج المحتوى/إدارة المحتوى/التصميم — قسم «أداء إعلانات Meta»). ' +
       'لما مادة تبقى مرتبطة، اسمها بيظهر في عمود «المحتوى المرتبط» بجداول الكرييتف والإعلانات فوق — دوس عليه للفتح.</p></div>';
     el.innerHTML = html;
     wireFilters();
+    wireTokenBox();
     wireGotoContentButtons(el);
   }
 

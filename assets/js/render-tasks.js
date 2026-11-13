@@ -462,7 +462,7 @@
           '<p class="tsk-field-error" role="alert" hidden></p><div class="tsk-form-actions"><button type="submit" class="btn btn-primary">'+esc(nc.button)+'</button><button type="button" class="btn" data-action="close-modal">إلغاء</button></div></form>');
       }
       if(state.modal==="notifications"){
-        html+=modal("إشعارات المهام",'<div class="tsk-notifications">'+(state.notifications.map(function(n){return '<button class="tsk-notice '+(n.read_at?"":"unread")+'" data-action="read-notice" data-id="'+n.id+'"><b>'+esc(n.message)+'</b><small>'+esc(stamp(n.created_at))+(n.task_id?" · اضغط لفتح المهمة":"")+'</small></button>';}).join("")||'<div class="tsk-empty tsk-empty-rich"><div class="tsk-empty-icon">🔔</div><h3>مفيش إشعارات</h3><p>هتظهر هنا لما حد يحدّث مهمة أو يسند لك مهمة.</p></div>')+'</div>');
+        html+=modal("إشعارات المهام",'<div class="tsk-notifications">'+(state.notifications.map(function(n){return '<button class="tsk-notice '+(n.read_at?"":"unread")+'" data-action="read-notice" data-id="'+n.id+'"><b>'+esc(n.message)+'</b><small>'+esc(stamp(n.created_at))+(n.task_id?" · اضغط لفتح المهمة":(n.kind==="lead_reminder"?" · اضغط لفتح الليدز":""))+'</small></button>';}).join("")||'<div class="tsk-empty tsk-empty-rich"><div class="tsk-empty-icon">🔔</div><h3>مفيش إشعارات</h3><p>هتظهر هنا لما حد يحدّث مهمة أو يسند لك مهمة.</p></div>')+'</div>');
       }
       if(state.modal==="checklist"){
         var ct=state.tasks.find(function(x){return x.id===state.checkTask;})||{};
@@ -670,7 +670,7 @@
       if(action==="read-notice"){
         var notice=state.notifications.find(function(x){return x.id===id;});
         state.modal="";
-        window.SSMPDDb.taskMarkNotificationRead(id).catch(function(){}).then(refresh).then(function(){if(notice&&notice.task_id)focusTask(notice.task_id);});
+        window.SSMPDDb.taskMarkNotificationRead(id).catch(function(){}).then(refresh).then(function(){if(notice&&notice.task_id)focusTask(notice.task_id);else if(notice&&notice.kind==="lead_reminder"&&window.SSMPDGotoTab)window.SSMPDGotoTab("leads");});
         return;
       }
       if(action==="history"){state.pendingFiles=[];state.historyTask="";openHistory(id);return;}
