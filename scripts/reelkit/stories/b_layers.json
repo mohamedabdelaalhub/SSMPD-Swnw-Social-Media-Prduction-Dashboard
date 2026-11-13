@@ -8,12 +8,12 @@
  },
  "cast": {
   "nana": {
-   "look": "grandma",
-   "voice": "elder_woman"
+   "look": "grandpa",
+   "voice": "elder_man"
   },
   "mama": {
    "look": "mama_hijab",
-   "voice": "woman_2"
+   "voice": "woman_1"
   },
   "kid": {
    "look": "boy"
