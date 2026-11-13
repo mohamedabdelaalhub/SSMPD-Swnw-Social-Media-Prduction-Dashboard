@@ -52,6 +52,23 @@ def chunk_spans(text, vtext, hl):
         out.append((s, s0, s1))
     return out
 
+
+# ---- speech check (added 2026-11-13): the voice model sometimes invents words (a take once contained "كل قواظ وقرب باباكوا" that is not in the script).
+# After generating a take we transcribe it (ElevenLabs scribe) and compare with the script; below the threshold the take is regenerated (max 3 tries).
+import difflib
+def _norm(t): return re.sub(r"[^\u0621-\u064A ]", "", TASHKEEL.sub("", t)).replace("ة", "ه").replace("أ", "ا").replace("إ", "ا").replace("ى", "ي").replace("ؤ", "و").replace("ئ", "ي")
+def transcribe(path):
+    try:
+        r = subprocess.run(["curl", "-s", "-m", "120", "-X", "POST", "https://api.elevenlabs.io/v1/speech-to-text", "-F", "model_id=scribe_v1", "-F", "language_code=ara", "-F", "file=@" + path], capture_output=True, text=True)
+        return json.loads(r.stdout).get("text")
+    except Exception:
+        return None
+def speech_ok(path, expected, threshold=0.85):
+    t = transcribe(path)
+    if t is None: return True, None  # no transcription available (e.g. scheduled environment): cannot check, accept
+    sc = difflib.SequenceMatcher(None, _norm(t), _norm(expected)).ratio()
+    return sc >= threshold, round(sc, 2)
+
 # ---------------------------------------------------------------- voices
 lines = E.collect_lines(sb); line_timing = {}; envs = {}; audio_src = {}
 hl_of = {(si, bi): sb["scenes"][si]["beats"][bi]["say"].get("hl") for lst in lines.values() for si, bi, _ in lst}
@@ -60,7 +77,14 @@ for spk, lst in lines.items():
     if not args.dry:
         left = V.quota()
         if left is not None and left < len(joined) + 50: print("WARNING: ElevenLabs quota too low, using dry timing for", spk)
-        else: al = V.speak(spk, joined, mp3)
+        else:
+            al = V.speak(spk, joined, mp3); shown = " ".join(TASHKEEL.sub("", x[2]) for x in lst)
+            for attempt in range(3):
+                if al is None: break
+                good, sc = speech_ok(mp3, shown)
+                print(f"speech check {spk}: score={sc} {'ok' if good else 'MISMATCH - regenerating'}")
+                if good or attempt == 2: break
+                al = V.speak(spk, joined, mp3)
         if al is None: print("WARNING: voice failed for", spk, "-> dry timing (no audio)")
     dry = al is None
     if not dry: json.dump(al, open(os.path.join(args.out, f'voice_{spk}.json'), 'w'))  # kept for debugging caption timing
