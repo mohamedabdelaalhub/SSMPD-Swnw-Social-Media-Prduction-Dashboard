@@ -132,6 +132,15 @@ function render(root){homeRoot=root;var sequence=0;var admin=window.SSMPDAuth.cu
    {key:'team',title:'متابعة الفريق',count:t?t.team_open:0,lines:[t?'مهام متأخرة '+t.team_late:'لا توجد متابعة متاحة لهذا الحساب'],tabs:['tasks']},
    {key:'content',title:sup.length?(c&&c.items.some(function(q){return q.bucket!=='approval';})?'المحتوى والمستلزمات':'طلبات المستلزمات'):'شغلك في إنتاج المحتوى',count:(c?c.design+c.revision+c.publish:0)+sup.length,lines:[sup.length?'طلبات مستلزمات '+sup.length:'تصميم '+(c?c.design:0)+' · تعديل '+(c?c.revision:0)],tabs:['production','design','publish','inventory']}
   ];
+  // كل مربع يظهر بس للي ليه علاقة بيه (المالك 2026-11-13): موظف الاستقبال مثلًا مالوش «متابعة الفريق» ولا «المحتوى».
+  var R=window.SSMPDRoles,isManager=!!(owner&&R&&R.hasAnyRole&&R.hasAnyRole(owner,['super_admin','general_manager']));
+  var relevant={
+   approvals:approvals>0||isManager||allowed('review'),
+   rating:rq.length>0||allowed('performance'),
+   team:isManager||!!(t&&((t.team&&t.team.length)||t.team_open>0)),
+   content:sup.length>0||!!(c&&c.items&&c.items.length)||allowed('production')||allowed('design')||allowed('publish')
+  };
+  sections=sections.filter(function(item){return relevant[item.key]!==false;});
   sections.forEach(function(item){
    var panel=root.querySelector('#ph-'+item.key);
    if(!panel){panel=document.createElement('section');panel.className='ph-card';panel.id='ph-'+item.key;panel.innerHTML='<p class="ph-empty">لا توجد عناصر متاحة حاليًا</p>';}
