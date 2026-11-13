@@ -17,7 +17,9 @@ import { makeKitStore } from "./kit-store.ts";
 //   POST ?op=upload_cover&content_id=<uuid>   body = PNG bytes  -> {url, linked}  reel cover (video items):
 //        saved as <id>/<uuid>/reel-cover.png and merged into content_items.cover_settings.cover_image_url
 //   POST ?op=tts_quota                                           -> ElevenLabs characters used/limit/reset date
-//   POST ?op=tts                               {text, model?, stability?, style?, speed?, chunk?} -> MP3 bytes (ElevenLabs)
+//   POST ?op=tts                               {text, model?, stability?, style?, speed?, chunk?, voice?, timestamps?} -> MP3 bytes (ElevenLabs)
+//        voice = one of narrator|doctor_male|male_2|woman_1|woman_2|elder_man|elder_woman (default: the approved narrator).
+//        timestamps:true -> JSON {ok, audio_base64, alignment{characters,start,end}} (one request, no chunking) for lip-sync/captions.
 //        The text first goes through the pronunciation list (kit file tts/pronunciations.json,
 //        plus the built-in defaults below): words Mohamed flagged are rewritten before speaking.
 //   POST ?op=download&bucket=video-inputs|content-designs&path=<p>  -> file bytes
@@ -41,6 +43,11 @@ const ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
 const CLAUDE_EMAIL = "claude.swnw@gmail.com";
 const CLAUDE_ADMIN_ID = "a0fbdfee-d147-4282-b988-186a9ae3e88c";
 const VOICE_ID = Deno.env.get("SSMPD_ELEVENLABS_VOICE_ID") || "VXERCtS1keFWRMOi7czu";
+// Character-reel voices (docs/character-library/voices.json): op=tts {voice:<name>} may only pick one of these.
+const TTS_VOICES: Record<string, string> = {
+  narrator: "VXERCtS1keFWRMOi7czu", doctor_male: "DWMVT5WflKt0P8OPpIrY", male_2: "LXrTqFIgiubkrMkwvOUr",
+  woman_1: "I3u6waC588j43py1kDN2", woman_2: "xPcC3nehhziQaOrIeAwv", elder_man: "Jez3JdhBInQTvlAvDOWR", elder_woman: "mS4cERRqrNy5Kmlx8Udf",
+};
 const ALLOWED: [string, RegExp][] = [
   ["GET", /^\/rest\/v1\/(content_items|post_insights|meta_publish_jobs|design_versions)\?/],
   ["POST", /^\/rest\/v1\/content_items(\?|$)/],
@@ -335,6 +342,18 @@ Deno.serve(async (req) => {
     const settings = model === "eleven_v3"
       ? { stability: num(b?.stability, 0.5, 0, 1), similarity_boost: 0.75, use_speaker_boost: true }
       : { speed: num(b?.speed, 1.0, 0.7, 1.2), stability: num(b?.stability, 0.5, 0, 1), similarity_boost: 0.75, style: num(b?.style, 0, 0, 1), use_speaker_boost: true };
+    const voiceId = TTS_VOICES[String(b?.voice || "")] || VOICE_ID;
+    if (b?.timestamps === true) {
+      const body: Record<string, unknown> = { text, model_id: model, voice_settings: settings };
+      if (model === "eleven_v3" || model.includes("2_5")) body.language_code = "ar";
+      const r = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/with-timestamps?output_format=mp3_44100_128`, {
+        method: "POST", headers: { "xi-api-key": el, "Content-Type": "application/json" }, body: JSON.stringify(body),
+      });
+      if (!r.ok) return json({ ok: false, error: `elevenlabs ${r.status} ${(await r.text()).slice(0, 200)}` }, 502);
+      const d = await r.json();
+      const a = d.alignment || d.normalized_alignment || null;
+      return json({ ok: true, audio_base64: d.audio_base64, alignment: a ? { characters: a.characters, start: a.character_start_times_seconds, end: a.character_end_times_seconds } : null, spoken_text: text });
+    }
     // Sentence-by-sentence made the voice worse (Mohamed, 2026-10-11): off by default, opt-in with chunk:true.
     const chunks = b?.chunk === true ? splitSentences(text) : [text];
     const parts: Uint8Array[] = [];
@@ -342,7 +361,7 @@ Deno.serve(async (req) => {
       const body: Record<string, unknown> = { text: chunks[i], model_id: model, voice_settings: settings };
       if (model === "eleven_v3" || model.includes("2_5")) body.language_code = "ar";
       if (model !== "eleven_v3") { if (i > 0) body.previous_text = chunks.slice(0, i).join(" ").slice(-400); if (i < chunks.length - 1) body.next_text = chunks.slice(i + 1).join(" ").slice(0, 300); }
-      const r = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}?output_format=mp3_44100_128`, {
+      const r = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`, {
         method: "POST",
         headers: { "xi-api-key": el, "Content-Type": "application/json", Accept: "audio/mpeg" },
         body: JSON.stringify(body),
