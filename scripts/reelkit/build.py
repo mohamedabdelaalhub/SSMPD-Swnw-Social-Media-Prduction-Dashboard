@@ -49,6 +49,8 @@ for spk, lst in lines.items():
         else: al = V.speak(spk, joined, mp3)
         if al is None: print("WARNING: voice failed for", spk, "-> dry timing (no audio)")
     dry = al is None
+    if not dry: json.dump(al, open(os.path.join(args.out, f'voice_{spk}.json'), 'w'))  # kept for debugging caption timing
+    if not dry: json.dump(al, open(os.path.join(args.out, f'voice_{spk}.json'), 'w'))
     if dry: al = V.estimate(joined)
     st, en = al["start"], al["end"]; n = len(st); wav = decode(mp3) if not dry else None
     p95 = np.percentile(np.abs(wav), 95) if wav is not None and len(wav) else 1.0
@@ -57,7 +59,7 @@ for spk, lst in lines.items():
         a, b = pos, pos + len(text); pos = b + 2
         ia, ib = min(a, n - 1), min(max(b - 1, a), n - 1)
         ta, tb = st[ia], en[ib]
-        words = [(html, st[min(s0, n - 1)] - ta, en[min(max(s1 - 1, s0), n - 1)] - ta) for html, s0, s1 in chunk_spans(text, hl_of[(si, bi)])]
+        words = [(html, st[min(a + s0, n - 1)] - ta, en[min(max(a + s1 - 1, a + s0), n - 1)] - ta) for html, s0, s1 in chunk_spans(text, hl_of[(si, bi)])]
         line_timing[(si, bi)] = dict(dur=tb - ta + 0.05, words=words, env_key=(si, bi))
         audio_src[(si, bi)] = (mp3 if not dry else None, ta, tb)
         if wav is not None:
@@ -67,6 +69,8 @@ for spk, lst in lines.items():
 
 tl = E.plan(sb, line_timing)
 dur = min(tl.dur, args.max_sec) if args.max_sec else tl.dur
+if os.environ.get("RK_DEBUG"):
+    print("SCENES", [(round(x["t0"],2), round(x["t1"],2)) for x in tl.scenes]); print("CAPS", [(round(a, 2), round(b, 2), h[:14]) for a, b, h in tl.caps])
 print(f"timeline {tl.dur:.1f}s, {len(tl.scenes)} scenes, {sum(len(a['say']) for a in tl.actors.values())} lines, voices={'dry' if args.dry else 'ElevenLabs'}")
 
 # ---------------------------------------------------------------- frames

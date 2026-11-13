@@ -1,14 +1,127 @@
-{"meta":{"brand":true,"title":"لبس الطبقات للأطفال","music":"upbeat","seed":5,"file":"b_layers.mp4"},
- "cast":{"nana":{"look":"grandma","voice":"elder_woman"},"mama":{"look":"mama_hijab","voice":"woman_2"},"kid":{"look":"boy","voice":"male_2"}},
- "scenes":[
-  {"set":"living","cam":{"z0":1.0,"z1":1.08},"trans":"cut","actors":{"nana":{"x":0.17,"s":1.2},"mama":{"x":0.52,"s":1.2},"kid":{"x":0.85,"s":1.2,"face":"scared"}},
-   "beats":[
-    {"say":{"who":"nana","text":"البس الواد خمس طبقات يا بنتي، البرد بيموّت!","hl":["خمس"],"gesture":"point"}},
-    {"fx":{"kind":"burst","text":"!!"}},
-    {"say":{"who":"mama","text":"يا ماما، كتير كده بيعرّقه، وبعدين يبرد.","hl":["يعرّقه"],"gesture":"shrug"}}]},
-  {"set":"bedroom","cam":{"z0":1.1,"z1":1.0},"trans":"fade","actors":{"mama":{"x":0.35,"s":1.2},"kid":{"x":0.7,"s":1.2}},
-   "beats":[
-    {"say":{"who":"mama","text":"طبقتين أو تلاتة خفاف أحسن من واحدة تقيلة.","hl":["خفاف"],"gesture":"present"}},
-    {"act":{"who":"kid","do":"happy","dur":1.2},"say":{"who":"kid","text":"أنا مرتاح كده!","hl":["مرتاح"]}},
-    {"say":{"who":"mama","text":"وللحرارة والأعراض، استشر الدكتور.","hl":["استشر"],"gesture":"nod"}}]}
- ]}
+{
+ "meta": {
+  "brand": true,
+  "title": "لبس الطبقات للأطفال",
+  "music": "upbeat",
+  "seed": 5,
+  "file": "b_layers.mp4"
+ },
+ "cast": {
+  "nana": {
+   "look": "grandma",
+   "voice": "elder_woman"
+  },
+  "mama": {
+   "look": "mama_hijab",
+   "voice": "woman_2"
+  },
+  "kid": {
+   "look": "boy"
+  }
+ },
+ "scenes": [
+  {
+   "set": "living",
+   "cam": {
+    "z0": 1.0,
+    "z1": 1.08
+   },
+   "trans": "cut",
+   "actors": {
+    "nana": {
+     "x": 0.17,
+     "s": 1.2
+    },
+    "mama": {
+     "x": 0.52,
+     "s": 1.2
+    },
+    "kid": {
+     "x": 0.85,
+     "s": 1.2,
+     "face": "scared"
+    }
+   },
+   "beats": [
+    {
+     "say": {
+      "who": "nana",
+      "text": "لبِّسي الواد خمس طبقات يا بنتي، البرد وحش عليه!",
+      "hl": [
+       "خمس"
+      ],
+      "gesture": "point"
+     }
+    },
+    {
+     "fx": {
+      "kind": "burst",
+      "text": "!!"
+     }
+    },
+    {
+     "say": {
+      "who": "mama",
+      "text": "يا ماما، كتير كده بيعرّقه، وبعدين يبرد.",
+      "hl": [
+       "يعرّقه"
+      ],
+      "gesture": "shrug"
+     }
+    }
+   ]
+  },
+  {
+   "set": "bedroom",
+   "cam": {
+    "z0": 1.1,
+    "z1": 1.0
+   },
+   "trans": "fade",
+   "actors": {
+    "mama": {
+     "x": 0.35,
+     "s": 1.2
+    },
+    "kid": {
+     "x": 0.7,
+     "s": 1.2
+    }
+   },
+   "beats": [
+    {
+     "say": {
+      "who": "mama",
+      "text": "طبقتين أو تلاتة خفاف أحسن من واحدة تقيلة.",
+      "hl": [
+       "خفاف"
+      ],
+      "gesture": "present"
+     }
+    },
+    {
+     "act": {
+      "who": "kid",
+      "do": "happy",
+      "dur": 1.8
+     },
+     "bubble": {
+      "who": "kid",
+      "text": "مرتاح كده!",
+      "kind": "say"
+     }
+    },
+    {
+     "say": {
+      "who": "mama",
+      "text": "وللحرارة والأعراض، استشر الدكتور.",
+      "hl": [
+       "استشر"
+      ],
+      "gesture": "nod"
+     }
+    }
+   ]
+  }
+ ]
+}
