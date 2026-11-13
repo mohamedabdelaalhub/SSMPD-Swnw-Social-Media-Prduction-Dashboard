@@ -1230,6 +1230,12 @@
     listEmployees: function () {
       return edgeFetch("leads-list" + qs({ list_employees: 1 }));
     },
+    getLeadsConversion: function (params) {
+      return edgeFetch("leads-list" + qs(Object.assign({ conversion: 1 }, params || {})));
+    },
+    getLeadsConversionDetail: function (params) {
+      return edgeFetch("leads-list" + qs(Object.assign({ conversion_detail: 1 }, params || {})));
+    },
     getLeadsStats: function (filters) {
       var f = filters || {};
       return edgeFetch("leads-list" + qs({ stats: 1, from: f.from || undefined, to: f.to || undefined }));
