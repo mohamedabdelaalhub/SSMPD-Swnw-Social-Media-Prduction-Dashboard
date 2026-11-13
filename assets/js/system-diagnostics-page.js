@@ -22,7 +22,9 @@
   function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
   function loadErrors(){try{var x=JSON.parse(localStorage.getItem(ERROR_KEY)||'[]');return Array.isArray(x)?x:[];}catch(_){return[];}}
   function renderErrors(){
-    var items=loadErrors().slice(0,12);
+    // نخفي المحلول والمؤقت بعد ساعة، والباقي بعد ٢٤ ساعة — عشان السجل ميفضلش ظاهر على الفاضي
+    var now=Date.now();
+    var items=loadErrors().filter(function(x){var age=now-(x.ts?new Date(x.ts).getTime():now);return (x.resolved||x.transient)?age<60*60*1000:age<24*60*60*1000;}).slice(0,12);
     if(!items.length){E.errors.innerHTML='<div class="empty">لا توجد أخطاء مسجلة على هذا الجهاز حاليًا.</div>';return;}
     E.errors.innerHTML=items.map(function(x){
       var t='';try{t=new Date(x.ts).toLocaleString('ar-EG');}catch(_){}
@@ -130,6 +132,7 @@
   }
   function applyAccess(){
     if(E.services)E.services.hidden=!isSuper;
+    var re=document.getElementById('recent-errors');if(re)re.hidden=!isSuper;   // سجل الأخطاء للسوبر أدمن بس
     renderErrors();
   }
   async function verifySuper(){
