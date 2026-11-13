@@ -18,7 +18,7 @@ import { makeKitStore } from "./kit-store.ts";
 //        saved as <id>/<uuid>/reel-cover.png and merged into content_items.cover_settings.cover_image_url
 //   POST ?op=tts_quota                                           -> ElevenLabs characters used/limit/reset date
 //   POST ?op=tts                               {text, model?, stability?, style?, speed?, chunk?, voice?, timestamps?} -> MP3 bytes (ElevenLabs)
-//        voice = one of narrator|doctor_male|male_2|woman_1|woman_2|elder_man|elder_woman (default: the approved narrator).
+//        voice = one of narrator|doctor_male|male_2|woman_1|woman_2|elder_man (default: the approved narrator).
 //        timestamps:true -> JSON {ok, audio_base64, alignment{characters,start,end}} (one request, no chunking) for lip-sync/captions.
 //        The text first goes through the pronunciation list (kit file tts/pronunciations.json,
 //        plus the built-in defaults below): words Mohamed flagged are rewritten before speaking.
@@ -46,7 +46,7 @@ const VOICE_ID = Deno.env.get("SSMPD_ELEVENLABS_VOICE_ID") || "VXERCtS1keFWRMOi7
 // Character-reel voices (docs/character-library/voices.json): op=tts {voice:<name>} may only pick one of these.
 const TTS_VOICES: Record<string, string> = {
   narrator: "VXERCtS1keFWRMOi7czu", doctor_male: "DWMVT5WflKt0P8OPpIrY", male_2: "LXrTqFIgiubkrMkwvOUr",
-  woman_1: "I3u6waC588j43py1kDN2", woman_2: "xPcC3nehhziQaOrIeAwv", elder_man: "Jez3JdhBInQTvlAvDOWR", elder_woman: "mS4cERRqrNy5Kmlx8Udf",
+  woman_1: "L10lEremDiJfPicq5CPh", woman_2: "L10lEremDiJfPicq5CPh", elder_man: "Jez3JdhBInQTvlAvDOWR",
 };
 const ALLOWED: [string, RegExp][] = [
   ["GET", /^\/rest\/v1\/(content_items|post_insights|meta_publish_jobs|design_versions)\?/],

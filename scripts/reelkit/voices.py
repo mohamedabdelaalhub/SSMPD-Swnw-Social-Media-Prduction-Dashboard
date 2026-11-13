@@ -4,8 +4,7 @@ import json, os, subprocess, base64, tempfile, math
 
 VOICES = {  # name -> ElevenLabs voice id (see docs/character-library/voices.json)
     "narrator": "VXERCtS1keFWRMOi7czu", "doctor_male": "DWMVT5WflKt0P8OPpIrY", "male_2": "LXrTqFIgiubkrMkwvOUr",
-    "woman_1": "I3u6waC588j43py1kDN2", "woman_2": "xPcC3nehhziQaOrIeAwv", "elder_man": "Jez3JdhBInQTvlAvDOWR",
-    "elder_woman": "mS4cERRqrNy5Kmlx8Udf"}
+    "woman_1": "L10lEremDiJfPicq5CPh", "woman_2": "L10lEremDiJfPicq5CPh", "elder_man": "Jez3JdhBInQTvlAvDOWR"}
 SETTINGS = {"stability": 0.5, "similarity_boost": 0.75, "style": 0, "speed": 1.0, "use_speaker_boost": True}
 
 def quota():

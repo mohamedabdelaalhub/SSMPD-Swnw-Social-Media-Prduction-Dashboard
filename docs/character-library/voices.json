@@ -8,7 +8,7 @@
   "use_speaker_boost": true,
   "output": "mp3_44100_128"
  },
- "note": "التوليد من مباشرة api.elevenlabs.io بمفتاح 'Swnw Claude Video' (Network secrets، هيدر xi-api-key). مرة واحدة لكل سكريبت، لا جملة جملة.",
+ "note": "التوليد من مباشرة api.elevenlabs.io بمفتاح 'Swnw Claude Video' (Network secrets، هيدر xi-api-key). مرة واحدة لكل سكريبت، لا جملة جملة. — اختبار 2026-11-13: المصري الصح عند محمد = doctor_male (Hanafi) وwoman_1 (Yasmine) وغالبًا male_2/elder_man؛ Fatima وGhozlan وSawsan قافهم مفخّمة (مرفوضين).",
  "voices": {
   "narrator_default_female": {
    "id": "VXERCtS1keFWRMOi7czu",
@@ -26,14 +26,14 @@
    "role": "رجل تاني/حوار"
   },
   "woman_1": {
-   "id": "I3u6waC588j43py1kDN2",
-   "name": "SWNW Woman - Fatima",
-   "role": "ست مصرية (تعبيرية)"
+   "id": "L10lEremDiJfPicq5CPh",
+   "name": "SWNW Woman - Yasmine",
+   "role": "ست مصرية — الصوت الوحيد المعتمد للستات (محمد 2026-11-13: القاف عند الباقيين مفخّمة)"
   },
   "woman_2": {
-   "id": "xPcC3nehhziQaOrIeAwv",
-   "name": "SWNW Woman - Ghozlan",
-   "role": "ست مصرية (ناعمة)"
+   "id": "L10lEremDiJfPicq5CPh",
+   "name": "SWNW Woman - Yasmine",
+   "role": "نفس woman_1 (alias)"
   },
   "elder_man": {
    "id": "Jez3JdhBInQTvlAvDOWR",
@@ -43,7 +43,7 @@
   "elder_woman": {
    "id": "mS4cERRqrNy5Kmlx8Udf",
    "name": "SWNW Elder Woman - Sawsan",
-   "role": "حجة كبيرة"
+   "role": "مرفوض — قاف مفخّمة، ماتستخدمهوش. لا توجد حجة بصوت: استخدم شيخ كبير (elder_man) بدلها"
   },
   "child_boy": {
    "id": null,
