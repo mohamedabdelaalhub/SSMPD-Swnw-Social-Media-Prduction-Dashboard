@@ -18,7 +18,9 @@ function serviceKey(): string | null {
   if (raw) { try { const p = JSON.parse(raw); if (typeof p?.default === "string" && p.default) return p.default; } catch { /* legacy */ } }
   return Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || null;
 }
-const json = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { "Content-Type": "application/json" } });
+// Browser calls (super-admin token box) come from the dashboard origin; cron calls ignore these headers.
+const CORS = { "Access-Control-Allow-Origin": "https://dashboard.swnwclinics.com", "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info", "Access-Control-Allow-Methods": "POST, OPTIONS", "Vary": "Origin" };
+const json = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { ...CORS, "Content-Type": "application/json" } });
 function safeEqual(a: string, b: string) {
   if (a.length !== b.length) return false;
   let d = 0; for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i);
@@ -79,6 +81,7 @@ async function notify(text: string) {
 }
 
 Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return json({ ok: false, error: "POST only" }, 405);
   const key = serviceKey();
   if (!key) return json({ ok: false, error: "MISCONFIGURED" }, 500);
