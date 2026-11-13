@@ -13,7 +13,7 @@ const fixture = () => ({ from: '2026-05-17', to: '2026-11-12', today: '2026-11-1
     R('2026-11-01', 'B', 'on_time', { template_name: 'مسائي', color: '#F15A22' }), R('2026-11-02', 'B', 'on_time', { template_name: 'مسائي', color: '#F15A22' }), R('2026-11-03', 'B', 'absent', { excused: true, template_name: 'مسائي', color: '#F15A22' }), R('2026-11-12', 'B', 'upcoming'), R('2026-11-10', 'B', 'unmapped')] });
 (async () => {
   let data = fixture(), mode = 'ok';
-  const t = await makeEnv({ rpc: async (fn, a) => {
+  const t = await makeEnv({ now: '2026-11-12T10:00:00Z', rpc: async (fn, a) => {
     if (fn === 'hr_attendance_range') { if (mode === 'missing') return { error: { message: 'Could not find the function public.hr_attendance_range in the schema cache' } }; if (mode === 'down') return { error: { message: 'boom' } };
       return { data: Object.assign({}, data, { from: a.p_from, to: a.p_to, rows: data.rows.filter(r => r.day >= a.p_from && r.day <= a.p_to) }) }; }
     if (fn === 'hr_presence_snapshot') return { data: { can_manage: true, now: '2026-11-12T10:00:00Z', lookback_hours: 16, rows: [], people: [], ignored: [] } };
