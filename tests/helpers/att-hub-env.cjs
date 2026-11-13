@@ -1,8 +1,10 @@
 // Shared JSDOM environment for the attendance hub DOM tests (الآن / الورديات / التقارير): the real HR page + the real hub modules, RPCs mocked.
 const fs = require('fs'), { JSDOM } = require('jsdom');
 const tick = (n = 25) => new Promise(r => setTimeout(r, n));
-module.exports = async function env({ manager = true, rpc, people } = {}) {
+module.exports = async function env({ manager = true, rpc, people, now } = {}) {
   const dom = new JSDOM('<main></main>', { url: 'https://test.invalid', runScripts: 'outside-only', pretendToBeVisual: true }), w = dom.window, d = w.document;
+  // `now` (ISO) freezes the page's clock so date-dependent fixtures keep passing after the real date moves on.
+  if (now) { const RealDate = w.Date, t0 = RealDate.parse(now); w.Date = class extends RealDate { constructor(...a) { if (a.length) super(...a); else super(t0); } static now() { return t0; } }; }
   const hrData = { can_manage: manager, people: people || [{ id: 'p1', admin_id: 'hr', full_name: 'موظف أول', code: 'EMP-1', kind: 'employee', department: 'الاستقبال', branch: 'الفرع', status: 'active', revision: 2, leave_balance: 5, phone: '010 1234 5678' }], requests: [], attendance: [], documents: [], accounts: [], doctor_keys: [], employee_keys: [] };
   const calls = [], intervals = [];
   w.confirm = () => true; w.SSMPDAuth = { currentAdmin: { id: 'hr', role: 'reception', has_hr_access: manager } }; w.SSMPDToast = { show: (m, k) => { (w.__toasts = w.__toasts || []).push([m, k]); } };
