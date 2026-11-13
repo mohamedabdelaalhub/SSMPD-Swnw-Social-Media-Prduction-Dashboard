@@ -21,12 +21,20 @@ def decode(path):
     return np.frombuffer(raw, dtype=np.float32).astype(np.float64)
 
 TASHKEEL = re.compile('[\u064B-\u0652\u0670]')
-# pronunciation spellings written for the voice that must read normally on screen
-DISPLAY_FIX = {'إستشر': 'استشر'}
+# Pronunciation (owner, 2026-11-13): the story text is written plain (it is what the screen shows). What the VOICE reads comes from pron.json
+# (+ optional meta.pron in the story): word -> spelling with diacritics / Egyptian qaf written as hamza (e.g. أوقف -> أوَأف). Keys have no diacritics.
+PRON = json.load(open(os.path.join(HERE, "pron.json")))
+PRON.update({TASHKEEL.sub("", k): v for k, v in (sb.get("meta", {}).get("pron") or {}).items()})
+_PUNCT = "،,.؟?!:؛\"«»()"
+def voice_text(text, pron):
+    def one(m):
+        tok = m.group(); core = tok.strip(_PUNCT); key = TASHKEEL.sub("", core)
+        return tok.replace(core, pron[key], 1) if core and key in pron else tok
+    return re.sub(r"\S+", one, text)
 
-def chunk_spans(text, hl):
-    """same grouping rule as engine.split_chunks but keeps character spans"""
-    words = [(m.group(), m.start(), m.end()) for m in re.finditer(r"\S+", text)]
+def chunk_spans(text, vtext, hl):
+    """same grouping rule as engine.split_chunks; the display words come from `text`, the character spans (for the voice timing) from `vtext`"""
+    words = [(m.group(), v.start(), v.end()) for m, v in zip(re.finditer(r"\S+", text), re.finditer(r"\S+", vtext))]
     groups, cur = [], []
     for w in words:
         cur.append(w)
@@ -36,8 +44,7 @@ def chunk_spans(text, hl):
         else: groups.append(cur)
     out = []
     for g in groups:
-        s0, s1 = g[0][1], g[-1][2]; s = TASHKEEL.sub("", text[s0:s1])  # diacritics are for the VOICE only (owner, 2026-11-13): never shown on screen
-        for k_, v_ in DISPLAY_FIX.items(): s = s.replace(k_, v_)
+        s0, s1 = g[0][1], g[-1][2]; s = TASHKEEL.sub("", " ".join(w[0] for w in g))  # diacritics are for the VOICE only: never shown on screen
         s = s.rstrip('.')  # no full stop at the end of a caption; the voice still gets the punctuation
         for h in hl or []:
             h = TASHKEEL.sub("", h)
@@ -49,7 +56,7 @@ def chunk_spans(text, hl):
 lines = E.collect_lines(sb); line_timing = {}; envs = {}; audio_src = {}
 hl_of = {(si, bi): sb["scenes"][si]["beats"][bi]["say"].get("hl") for lst in lines.values() for si, bi, _ in lst}
 for spk, lst in lines.items():
-    joined = "\n\n".join(x[2] for x in lst); mp3 = os.path.join(args.out, f"voice_{spk}.mp3"); al = None
+    joined = "\n\n".join(voice_text(x[2], PRON) for x in lst); mp3 = os.path.join(args.out, f"voice_{spk}.mp3"); al = None
     if not args.dry:
         left = V.quota()
         if left is not None and left < len(joined) + 50: print("WARNING: ElevenLabs quota too low, using dry timing for", spk)
@@ -63,10 +70,10 @@ for spk, lst in lines.items():
     p95 = np.percentile(np.abs(wav), 95) if wav is not None and len(wav) else 1.0
     pos = 0
     for si, bi, text in lst:
-        a, b = pos, pos + len(text); pos = b + 2
+        vtxt = voice_text(text, PRON); a, b = pos, pos + len(vtxt); pos = b + 2
         ia, ib = min(a, n - 1), min(max(b - 1, a), n - 1)
         ta, tb = st[ia], en[ib]
-        words = [(html, st[min(a + s0, n - 1)] - ta, en[min(max(a + s1 - 1, a + s0), n - 1)] - ta) for html, s0, s1 in chunk_spans(text, hl_of[(si, bi)])]
+        words = [(html, st[min(a + s0, n - 1)] - ta, en[min(max(a + s1 - 1, a + s0), n - 1)] - ta) for html, s0, s1 in chunk_spans(text, vtxt, hl_of[(si, bi)])]
         line_timing[(si, bi)] = dict(dur=tb - ta + 0.05, words=words, env_key=(si, bi))
         audio_src[(si, bi)] = (mp3 if not dry else None, ta, tb)
         if wav is not None:
