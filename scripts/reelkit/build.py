@@ -20,6 +20,8 @@ def decode(path):
     raw = subprocess.run(["ffmpeg", "-v", "error", "-i", path, "-f", "f32le", "-ac", "1", "-ar", str(SR), "-"], capture_output=True).stdout
     return np.frombuffer(raw, dtype=np.float32).astype(np.float64)
 
+TASHKEEL = re.compile('[\u064B-\u0652\u0670]')
+
 def chunk_spans(text, hl):
     """same grouping rule as engine.split_chunks but keeps character spans"""
     words = [(m.group(), m.start(), m.end()) for m in re.finditer(r"\S+", text)]
@@ -32,9 +34,10 @@ def chunk_spans(text, hl):
         else: groups.append(cur)
     out = []
     for g in groups:
-        s0, s1 = g[0][1], g[-1][2]; s = text[s0:s1]
-        s = s.rstrip('.')  # no full stop at the end of a caption (owner, 2026-11-13); the voice still gets the punctuation
+        s0, s1 = g[0][1], g[-1][2]; s = TASHKEEL.sub("", text[s0:s1])  # diacritics are for the VOICE only (owner, 2026-11-13): never shown on screen
+        s = s.rstrip('.')  # no full stop at the end of a caption; the voice still gets the punctuation
         for h in hl or []:
+            h = TASHKEEL.sub("", h)
             if h in s and "*" not in s: s = s.replace(h, "*" + h + "*")
         out.append((s, s0, s1))
     return out
