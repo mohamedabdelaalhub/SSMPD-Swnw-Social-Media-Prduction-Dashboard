@@ -12,6 +12,9 @@ const root=path.resolve(__dirname,'..'),file=path.join(root,'docs/templates/reel
       assert.equal(await p.evaluate(()=>document.body.dataset.ready),'1',brand+' font loaded');
       const r=await p.evaluate(f=>{const c=document.getElementById('c');return{fam:getComputedStyle(c).fontFamily,hl:getComputedStyle(c.querySelector('.hl')).color,text:c.textContent,w:c.getBoundingClientRect().width}},fam);
       assert.equal(r.fam,fam);assert.equal(r.hl,hl);assert.equal(r.text,'رجلك نمّلت وإنت قاعد؟');assert(r.w<=960&&r.w>200,'box hugs text');
+      // نفس المسافة فوق وتحت الكلام جوه البوكس (طلب المالك 2026-11-14): مستطيل الحبر = #t، والبوكس = #c
+      const g=await p.evaluate(()=>{const c=document.getElementById('c').getBoundingClientRect(),t=document.getElementById('t').getBoundingClientRect();return [t.top-c.top,c.bottom-t.bottom];});
+      assert(Math.abs(g[0]-g[1])<=1,brand+' equal space above/below: '+g);
       const png=await p.screenshot({omitBackground:true});assert(png.length>1000);
       if(process.env.CAPTION_SHOT)fs.writeFileSync(process.env.CAPTION_SHOT+'-'+brand+'.png',png);
     }

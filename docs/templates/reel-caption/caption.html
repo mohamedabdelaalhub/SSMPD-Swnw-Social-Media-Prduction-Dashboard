@@ -9,23 +9,36 @@
 @font-face{font-family:SwnwCap;src:url(../../../assets/fonts/BigVesta-Bold.woff2) format('woff2');font-weight:700}
 @font-face{font-family:DinaCap;src:url(../../../assets/fonts/Tajawal-Bold.ttf) format('truetype');font-weight:700}
 html,body{margin:0;width:1080px;height:1920px;background:transparent;overflow:hidden}
+.t{display:block}
 .wrap{position:absolute;left:60px;right:60px;bottom:430px;display:flex;justify-content:center}
-.cap{display:inline-block;max-width:960px;background:#fff;color:#16212E;border-radius:34px;padding:14px 28px 22px;
+.cap{display:inline-block;max-width:960px;background:#fff;color:#16212E;border-radius:34px;padding:24px 28px;
   font-weight:700;font-size:68px;line-height:1.25;text-align:center;white-space:nowrap;box-shadow:0 6px 22px rgba(0,0,0,.22)}
 body.sono .cap{font-family:SwnwCap} body.sono .hl{color:#F15A22}
 body.dina .cap{font-family:DinaCap} body.dina .hl{color:#E3141B}
 </style></head><body>
-<div class="wrap"><div class="cap" id="c"></div></div>
+<div class="wrap"><div class="cap" id="c"><div class="t" id="t"><div id="w"></div></div></div></div>
 <script>
 var q=new URLSearchParams(location.search),brand=q.get('brand')==='dina'?'dina':'sono';
 document.body.className=brand;
 var hl=(q.get('hl')||'').split(/\s+/).filter(Boolean);
 function esc(s){return s.replace(/[&<>]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;'}[c];});}
-document.getElementById('c').innerHTML=(q.get('text')||'').replace(/[.،,]+$/,'').split(/\s+/).map(function(w){
+document.getElementById('w').innerHTML=(q.get('text')||'').replace(/[.،,]+$/,'').split(/\s+/).map(function(w){
   var b=w.replace(/[؟?!.,،]/g,'');return hl.indexOf(b)>-1||hl.indexOf(b.replace(/^و/,''))>-1?'<span class="hl">'+esc(w)+'</span>':esc(w);}).join(' ');
 var fam=brand==='dina'?'DinaCap':'SwnwCap';
 document.fonts.load('700 68px '+fam).then(function(){return document.fonts.ready;}).then(function(){
-  var c=document.getElementById('c'),z=68;while(c.scrollWidth>960&&z>44){z-=2;c.style.fontSize=z+'px';}
+  var c=document.getElementById('c'),t=document.getElementById('t'),z=68;while(c.scrollWidth>960&&z>44){z-=2;c.style.fontSize=z+'px';}
+  // Equal space above and below the words (Mohamed 2026-11-14): measure the real ink of THIS caption
+  // (dots, shadda and descenders change per word) and size the line to it, so the 24px padding is the visible gap.
+  var fs=z,cv=document.createElement('canvas');cv.width=1400;cv.height=fs*3;var g=cv.getContext('2d');
+  g.font='700 '+fs+'px '+fam;g.direction='rtl';g.textAlign='right';g.textBaseline='alphabetic';var base=fs*2;
+  g.fillText(t.textContent,1380,base);var px=g.getImageData(0,0,cv.width,cv.height).data,top=-1,bot=-1;
+  for(var y=0;y<cv.height;y++){for(var x=3,row=y*cv.width*4;x<cv.width*4;x+=4){if(px[row+x]>40){if(top<0)top=y;bot=y;break;}}}
+  if(top>=0){var asc=base-top,desc=bot+1-base,w=document.getElementById('w');
+    // where the browser really put the baseline: a zero-size marker sitting on it
+    var mk=document.createElement('span');mk.style.cssText='display:inline-block;width:0;height:0;vertical-align:baseline';w.appendChild(mk);
+    t.style.height=(asc+desc)+'px';t.style.overflow='visible';w.style.position='relative';w.style.top='0px';
+    var baseY=mk.getBoundingClientRect().bottom,tTop=t.getBoundingClientRect().top;
+    w.style.top=(tTop-(baseY-asc))+'px';mk.remove();}
   document.body.dataset.ready=document.fonts.check('700 68px '+fam)?'1':'font-missing';
 },function(){document.body.dataset.ready='font-missing';});
 </script></body></html>
