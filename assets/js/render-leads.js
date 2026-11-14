@@ -22,7 +22,7 @@
   // في lead-invoice-upload Edge Function)
   var INVOICE_ALLOWED_STATUSES = ["booked", "booked_on_system", "service_done"];
   // طلب الفريق: إضافة "تليفون"/"عيادة" كمصدر استلام ليد بجانب واتساب/ماسنجر
-  var SOURCE_LABELS = { whatsapp: "واتساب", messenger: "ماسنجر", phone: "تليفون", clinic: "عيادة", doctor_referral: "تحويل من طبيب العيادة" };
+  var SOURCE_LABELS = { whatsapp: "واتساب", messenger: "ماسنجر", instagram: "إنستجرام", facebook_form: "فورم فيسبوك", phone: "تليفون", clinic: "عيادة", doctor_referral: "تحويل من طبيب العيادة" };
   // تصنيف مصدر اهتمام الليد: طبيعي (وصل من نفسه) مقابل إعلان مدفوع — مختلف عن
   // "source" (قناة التواصل واتساب/ماسنجر/تليفون/عيادة)، وطلب الفريق عرضه بشكل
   // واضح بالداشبورد. ("طبيعي" هو المصطلح التسويقي الصحيح المقابل لـ organic)
