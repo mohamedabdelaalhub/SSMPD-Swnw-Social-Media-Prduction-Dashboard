@@ -166,6 +166,7 @@
             '</ul></div>';
         }
 
+        if (window.SSMPDCommentLessons) html += '<div style="margin:0 0 8px;">' + window.SSMPDCommentLessons.buttonHtml() + "</div>";
         html += reviewViewToggleHtml();
         var visible = items.filter(function (i) {
           if (viewState.stage && i.stage !== viewState.stage) return false;
@@ -226,6 +227,7 @@
         container.innerHTML = html;
         container.querySelectorAll("[data-rv-mode]").forEach(function (b) { b.onclick = function () { viewState.mode = b.getAttribute("data-rv-mode"); draw(); }; });
         var stageSel = container.querySelector("#rv-stage"); if (stageSel) stageSel.onchange = function () { viewState.stage = stageSel.value; draw(); };
+        if (window.SSMPDCommentLessons) window.SSMPDCommentLessons.wire(container);
         var formatSel = container.querySelector("#rv-format"); if (formatSel) formatSel.onchange = function () { viewState.format = formatSel.value; draw(); };
         var allBox = container.querySelector("#rv-all"); if (allBox) allBox.onchange = function () { viewState.all = allBox.checked; draw(); };
         if (viewState.mode !== "kanban") { window.SSMPDDaysCards.mountThumbs(container, items); window.SSMPDDaysCards.wireKeys(container); }
