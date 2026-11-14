@@ -9,7 +9,9 @@ var DOCS=[
   {kind:'الشروط',title:'شروط الاستخدام',file:'terms.html'}]},
  {system:'Swnw Social Publisher',note:'النشر الآلي على صفحات Meta (Facebook وInstagram).',items:[
   {kind:'الخصوصية',title:'Privacy Policy',file:'privacy-policy.html',en:true},
-  {kind:'حذف البيانات',title:'Data Deletion Instructions',file:'data-deletion.html',en:true}]}
+  {kind:'حذف البيانات',title:'Data Deletion Instructions',file:'data-deletion.html',en:true}]},
+ {system:'نماذج الإعلانات والتواصل (للجمهور)',note:'رابط الخصوصية اللي بيتحط في فورم إعلانات Meta (Lead Ads) وفي إعلانات الواتساب. صفحة عامة بالعربي مع ملخص بالإنجليزي.',items:[
+  {kind:'الخصوصية',title:'سياسة الخصوصية — نماذج الإعلانات والتواصل (رابط فورم Meta)',file:'lead-forms-privacy.html'}]}
 ];
 function node(tag,cls,text){var n=document.createElement(tag);if(cls)n.className=cls;if(text!=null)n.textContent=text;return n;}
 function publicUrl(file){return new URL(file,document.baseURI).href;}
