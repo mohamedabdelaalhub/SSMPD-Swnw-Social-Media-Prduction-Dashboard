@@ -43,8 +43,39 @@ def _filter_escape(value):
     return str(value).replace('\\', r'\\').replace(':', r'\:').replace("'", r"\'")
 
 
+FONT_FILES = ('BigVesta-Regular.woff2', 'BigVesta-Bold.woff2')
+FONTS_SOURCE = ('https://raw.githubusercontent.com/mohamedabdelaalhub/'
+                'SSMPD-Swnw-Social-Media-Prduction-Dashboard/main/video-worker/fonts/')
+
+
+def ensure_fonts():
+    """Download the brand fonts next to the worker if an older Update.command did not."""
+    import urllib.request
+    try:
+        FONTS_DIR.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        return False
+    for name in FONT_FILES:
+        target = FONTS_DIR / name
+        if target.is_file() and target.stat().st_size > 1000:
+            continue
+        try:
+            req = urllib.request.Request(FONTS_SOURCE + name, headers={'User-Agent': 'ssmpd-video-worker'})
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                data = resp.read()
+            if data[:4] != b'wOF2':
+                continue
+            tmp = target.with_suffix('.part')
+            tmp.write_bytes(data)
+            tmp.replace(target)
+        except Exception:
+            continue
+    return all((FONTS_DIR / n).is_file() for n in FONT_FILES)
+
+
 def ass_filter(ass_path):
     """ffmpeg ass= filter that always loads the bundled brand fonts when present."""
+    ensure_fonts()
     value = "ass=filename='" + _filter_escape(ass_path) + "'"
     if FONTS_DIR.is_dir() and any(FONTS_DIR.glob('*.woff2')):
         value += ":fontsdir='" + _filter_escape(FONTS_DIR) + "'"

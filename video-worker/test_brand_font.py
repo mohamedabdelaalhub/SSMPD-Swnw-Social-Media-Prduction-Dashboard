@@ -20,6 +20,28 @@ class BrandFontTest(unittest.TestCase):
         self.assertTrue((FONTS_DIR / 'BigVesta-Bold.woff2').is_file())
         self.assertIn(':fontsdir=', ass_filter(Path('/tmp/x.ass')))
 
+    def test_missing_fonts_are_downloaded(self):
+        import brand_identity as bi
+        from unittest import mock
+        with tempfile.TemporaryDirectory() as tmp:
+            payload = (FONTS_DIR / 'BigVesta-Regular.woff2').read_bytes()
+
+            class Resp:
+                def __enter__(self): return self
+                def __exit__(self, *a): return False
+                def read(self): return payload
+
+            seen = []
+            def fake_open(req, timeout=0):
+                seen.append(req.full_url)
+                return Resp()
+            with mock.patch.object(bi, 'FONTS_DIR', Path(tmp) / 'fonts'), mock.patch('urllib.request.urlopen', fake_open):
+                self.assertTrue(bi.ensure_fonts())
+                self.assertEqual(len(seen), 2)
+                self.assertTrue(all(u.endswith('.woff2') for u in seen))
+                self.assertTrue(bi.ensure_fonts())
+                self.assertEqual(len(seen), 2, 'no second download when present')
+
     @unittest.skipUnless(shutil.which('ffmpeg'), 'ffmpeg not installed')
     def test_libass_selects_bigvesta(self):
         with tempfile.TemporaryDirectory() as tmp:
