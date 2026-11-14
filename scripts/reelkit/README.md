@@ -24,3 +24,7 @@ python3 scripts/reelkit/build.py story.json OUTDIR --kit BRANDKIT [--dry] [--no-
 - مفيش وعود علاج ولا تخويف؛ أي معلومة طبية "استشر الدكتور" وتتراجع من دكتور قبل النشر.
 - مفيش بيانات/صور مرضى. اسم المركز `Swnw` بالإنجليزي في أي نص ظاهر.
 - راجع رصيد ElevenLabs قبل التوليد؛ نوّع الأسلوب والمواقف والـ sets عن الريلات السابقة.
+
+
+## من حوار لريل
+`python3 scripts/reelkit/from_dialogue.py dialogue.json story.json` يحوّل حوار «المتكلم: الجملة» لـstoryboard كامل (تنويع + أصوات معتمدة + الأطفال بيتفاعلوا بصمت). أمثلة في `dialogues/`. التفاصيل في `docs/claude-character-videos.md` §4d.

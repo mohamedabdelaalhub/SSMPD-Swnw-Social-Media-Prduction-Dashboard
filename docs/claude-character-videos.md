@@ -59,6 +59,15 @@ Write a storyboard JSON (cast, scenes, lines; format and ready examples in `scri
 Vary every reel: two visual styles (cartoon stickman looks, or the kit style: `dr_poses`, `kit_dr_f_auburn`, `kit_woman`, `kit_girl`, `kit_boy`), 8 sets, props, gestures, transitions, different cast and story shape than the last character reel (check the last two with the same marker). Put the chosen style/cast/set in `hypothesis_reason` so the next run can avoid repeating it.
 Child voices are not available yet: do not give a kid a voice of an adult unless the story is a comic one and the owner has accepted that look.
 
+## 4d. Writing the dialogue (so the script suits this format) — `scripts/reelkit/from_dialogue.py`
+Claude does not hand-write a storyboard: write ONLY the dialogue, the compiler picks cast, looks, sets, gestures, camera and transitions (varied by seed) and checks the rules:
+`python3 scripts/reelkit/from_dialogue.py dialogue.json story.json` then `python3 scripts/reelkit/build.py story.json OUT --kit KIT`. Examples: `scripts/reelkit/dialogues/`.
+- Script shape: 4–8 short lines, one idea. Problem or myth in the first line (a mother's question or a family belief), the doctor/parent answers with ONE clear fact and ONE tip, last line = «استشر الدكتور» in a natural way. 250–450 spoken characters (20–40 s). Egyptian colloquial, no fear, no cure promises, no diagnosis. Never medical claims that cannot be sourced.
+- Speakers (voiced): الأم، الأب، الدكتور، الدكتورة، الجد. Kids (الولد، البنت…) never speak: their line becomes a short reaction bubble. There is NO grandmother voice (the compiler refuses it).
+- Pick two speakers with different voices (mother + doctor, grandfather + mother). The compiler warns on the same voice twice.
+- Looks available (`kitstyle.json`): doctors `dr_poses`, `kit_dr_m_scrubs` (bearded, scrubs), `kit_dr_f_black`, `kit_dr_f_auburn`; family `kit_woman`, `kit_hijab`, `kit_man`, `kit_beard`, `kit_grandpa`, `kit_boy`, `kit_girl`; cartoon looks in `person.py`. Kit looks with real mouth shapes: dr_poses (poses), kit_dr_m_scrubs, kit_dr_f_black, kit_dr_f_auburn, kit_woman, kit_man, kit_boy, kit_girl. `kit_grandpa/kit_hijab/kit_beard/kit_grandma` have no mouth shapes (a small bob while talking instead).
+- Staff-written or AI-written ideas: the dashboard's AI generator writes ONE plain voice-over (no speaker labels). If the item's topic fits a dialogue and Claude is its designer, Claude may rewrite the script as a dialogue for this format and keep the original as the caption source; say so in the summary.
+
 ## 5. Steps
 1. Pick the topic as for any reel (performance + no repeats in the last 45 days), then the cast: one or two characters, one voice each.
 2. Write the script: hook in the first 3 s, a comic problem, a short serious fact, one tip, CTA. 25–40 s of content (the contact card + outro add ≈7 s; keep the total ≤ 45 s).
