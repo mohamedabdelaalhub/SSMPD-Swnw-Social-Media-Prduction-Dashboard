@@ -169,8 +169,9 @@
 
   function leadAttributionHtml() {
     var total = leadRows.length;
-    var attributed = leadRows.filter(function (l) { return l.matched_meta_ad_id; }).length;
-    var recent = leadRows.filter(function (l) { return l.matched_meta_ad_id; }).slice(0, 30);
+    var isAd = function (l) { return l.matched_meta_ad_id || l.has_ad; };
+    var attributed = leadRows.filter(isAd).length;
+    var recent = leadRows.filter(isAd).slice(0, 30);
     var html = '<div class="kpi-grid">' +
       kpiCard("إجمالي الليدز", fmtNum(total)) +
       kpiCard("ليدز مرتبطة بإعلان Meta", fmtNum(attributed)) +
@@ -181,7 +182,7 @@
       html += "<div style=\"max-height:300px;overflow:auto;\"><table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%B9%D9%85%D9%8A%D9%84-->العميل</th><th>تاريخ الاستلام</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%A5%D8%B9%D9%84%D8%A7%D9%86-->الإعلان</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AD%D9%85%D9%84%D8%A9-->الحملة</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AA%D8%AE%D8%B5%D8%B5-->التخصص</th></tr></thead><tbody>";
       recent.forEach(function (l) {
         html += '<tr><td>' + escapeHtml(l.customer_name) + '</td><td>' + fmtDate(l.received_at) + '</td>' +
-          '<td style="font-size:11px;">' + escapeHtml(l.matched_ad_name) + '</td>' +
+          '<td style="font-size:11px;">' + escapeHtml(l.matched_ad_name || (l.meta_ad_id ? ('إعلان ' + l.meta_ad_id) : '—')) + '</td>' +
           '<td style="font-size:11px;">' + escapeHtml(l.matched_campaign_name) + '</td>' +
           '<td>' + escapeHtml(l.matched_specialty) + '</td></tr>';
       });
