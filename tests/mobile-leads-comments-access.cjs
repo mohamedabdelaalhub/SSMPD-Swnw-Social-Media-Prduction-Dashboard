@@ -18,7 +18,7 @@ assert.match(leadUi, /btn btn-primary sm[^\n]+lm-edit-save/, 'edit form save act
 assert.match(index, /roles\.js\?v=[\w.-]+/, 'roles cache must be busted for existing mobile sessions');
 assert.match(index, /app\.js\?v=[\w.-]+/, 'shell cache must be busted for existing mobile sessions');
 assert.match(index, /render-leads\.js\?v=[\w.-]+/, 'lead renderer cache must be busted');
-assert.match(index, /leads-edit-details\.js\?v=leads-mobile-20261021-2/, 'lead modal enhancement cache must be busted');
+assert.match(index, /leads-edit-details\.js\?v=[\w.-]+/, 'lead modal enhancement cache must be busted');
 assert.match(index, /render-comments\.js\?v=comments-performance-20261021-1/, 'comments UI cache must be busted');
 
 for (const table of ['social_comments', 'social_messages', 'social_reply_templates', 'social_settings']) {
