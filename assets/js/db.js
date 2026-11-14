@@ -1131,6 +1131,16 @@
     staffReviewHistory: function (adminId) { return handle(client.from("staff_reviews").select("month,rating,note").eq("admin_id", adminId).order("month", { ascending: false }).limit(12)); },
     saveStaffReview: function (adminId, month, rating, note) { return handle(client.from("staff_reviews").upsert({ admin_id: adminId, month: month, rating: rating, note: String(note || "").slice(0, 1000), reviewed_by: window.SSMPDAuth.currentAdmin.id, updated_at: new Date().toISOString() }, { onConflict: "admin_id,month" })); },
     // تقييم الموظف لأداء مادة منشورة (strong/ok/weak + سبب) — بيغذّي ذاكرة التعلّم
+    // «اللي اتعلمته من تعليقاتك» — دروس من تعليقات التعديل (content_comment_lessons)
+    listCommentLessons: function () {
+      return handle(client.from("content_comment_lessons").select("id,brand,content_format,category,lesson,example_comment,hits,status,updated_at").order("status").order("hits", { ascending: false }).limit(300));
+    },
+    listActiveCommentLessons: function (brand) {
+      return handle(client.from("content_comment_lessons").select("brand,content_format,category,lesson,hits").eq("status", "active").or("brand.is.null,brand.eq." + brand).order("hits", { ascending: false }).limit(40));
+    },
+    setCommentLessonStatus: function (id, status) {
+      return handle(client.rpc("content_comment_lesson_set_status", { p_id: id, p_status: status }));
+    },
     getContentLearningBrief: function (brand) {
       return handle(client.rpc("content_learning_brief_staff", { p_brand: brand }));
     },

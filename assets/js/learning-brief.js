@@ -10,7 +10,20 @@
   var SPEC = { obgyn: "نساء وتوليد", pediatrics: "أطفال", dermatology: "جلدية", internal: "باطنة", neurology: "مخ وأعصاب", ent: "أنف وأذن", dentistry: "أسنان", nutrition: "تغذية", physio: "علاج طبيعي", psychiatry: "نفسية", general: "عام" };
   function val(r) { var v = r.value; return r.dimension === "format" ? (FORMATS[v] || v) : r.dimension === "daypart" ? (DAYPART[v] || v) : r.dimension === "weekday" ? (WEEKDAY[v] || v) : r.dimension === "specialty" ? (SPEC[v] || v) : v; }
   function item(r) { var ev = r.evidence || {}; return (DIM[r.dimension] || r.dimension) + " = " + val(r) + " (" + (r.confidence === "strong" ? "قوي" : "مبدئي") + (ev.posts ? "، " + ev.posts + " منشورات" : "") + (ev.ratio ? "، " + ev.ratio + "× متوسط الصفحة" : "") + ")"; }
-  function build(j) {
+  var FMT_OF = { video: "فيديو/ريل", image_post: "بوست", carousel: "كاروسيل", link_post: "بوست رابط" };
+  // دروس من تعليقات التعديل بتاعة المالك — بتتطبّق من أول نسخة (أعلى من ذاكرة الأداء، أقل من السلامة الطبية والـBrief الحالي)
+  function lessonsBlock(lessons) {
+    lessons = (lessons || []).slice(0, 25);
+    if (!lessons.length) return "";
+    return "=== OWNER EDIT LESSONS (اتعلمناها من تعليقات التعديل المتكررة — طبّقها من أول نسخة عشان المالك مايكررش نفس التعليق) ===\n" +
+      lessons.map(function (l) { return "- " + (l.content_format ? "[" + (FMT_OF[l.content_format] || l.content_format) + "] " : "") + l.lesson; }).join("\n");
+  }
+  function build(j, lessons) {
+    var lb = lessonsBlock(lessons);
+    var perf = buildPerf(j);
+    return lb && perf ? lb + "\n" + perf : (lb || perf);
+  }
+  function buildPerf(j) {
     if (!j || !j.mix) return "";
     var L = [], up = (j.do_more || []).slice(0, 8), down = (j.do_less || []).slice(0, 8), tests = (j.experiments || []).slice(0, 3);
     var weak = (j.staff_weak_ratings_30d || []).slice(0, 4), strong = (j.staff_strong_ratings_30d || []).slice(0, 3);
@@ -33,8 +46,10 @@
   function load(brand) {
     if (!brand || !window.SSMPDDb || !window.SSMPDDb.getContentLearningBrief) return Promise.resolve("");
     var c = cache[brand]; if (c && Date.now() - c.at < 5 * 60000) return Promise.resolve(c.text);
-    return window.SSMPDDb.getContentLearningBrief(brand).then(function (j) { var t = build(j); cache[brand] = { text: t, at: Date.now() }; return t; }).catch(function () { return ""; });
+    var lessonsP = window.SSMPDDb.listActiveCommentLessons ? window.SSMPDDb.listActiveCommentLessons(brand).catch(function () { return []; }) : Promise.resolve([]);
+    var perfP = window.SSMPDDb.getContentLearningBrief(brand).catch(function () { return null; });
+    return Promise.all([perfP, lessonsP]).then(function (r) { var t = build(r[0], r[1]); cache[brand] = { text: t, at: Date.now() }; return t; }).catch(function () { return ""; });
   }
   function block(brand) { return brand && cache[brand] ? cache[brand].text : ""; }
-  window.SSMPDLearningBrief = { load: load, block: block, build: build };
+  window.SSMPDLearningBrief = { load: load, block: block, build: build, lessonsBlock: lessonsBlock };
 })();
