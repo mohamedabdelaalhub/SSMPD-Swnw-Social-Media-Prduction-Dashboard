@@ -584,16 +584,20 @@
   }
 
   // شارة كبيرة أعلى كارت المادة حتى يميّز فريق المحتوى الفيديو من البوست بسرعة.
-  function contentFormatBadgeHtml(item) {
+  // نوع المادة الموحّد (video / image_post / carousel / link_post) أو "" لو مش محدد — نفس منطق الشارة، ويستخدمه فلتر «النوع».
+  function contentFormatKey(item) {
     item = item || {};
     var key = item.content_format || "";
-    if (!Object.prototype.hasOwnProperty.call(CONTENT_FORMATS, key)) {
-      var raw = String(item.format || item.content_type || "").toLowerCase();
-      if (/video|reel|فيديو/.test(raw)) key = "video";
-      else if (/carousel|كاروسيل/.test(raw)) key = "carousel";
-      else if (/link|رابط/.test(raw)) key = "link_post";
-      else if (/image|post|بوست|صورة/.test(raw)) key = "image_post";
-    }
+    if (Object.prototype.hasOwnProperty.call(CONTENT_FORMATS, key)) return key;
+    var raw = String(item.format || item.content_type || "").toLowerCase();
+    if (/video|reel|فيديو/.test(raw)) return "video";
+    if (/carousel|كاروسيل/.test(raw)) return "carousel";
+    if (/link|رابط/.test(raw)) return "link_post";
+    if (/image|post|بوست|صورة/.test(raw)) return "image_post";
+    return "";
+  }
+  function contentFormatBadgeHtml(item) {
+    var key = contentFormatKey(item);
     var format = CONTENT_FORMATS[key];
     if (!format) return '<span class="content-format-badge unknown">نوع غير محدد</span>';
     var icon = key === "video" ? "فيديو" : (key === "carousel" ? "كاروسيل" : "بوست");
@@ -1473,6 +1477,7 @@ function ciCopyFallbackBrief(ctx, returnOnly) {
     specialtyBadgeHtml: specialtyBadgeHtml,
     contentFormatDetailsHtml: contentFormatDetailsHtml,
     contentFormatBadgeHtml: contentFormatBadgeHtml,
+    contentFormatKey: contentFormatKey,
     specialtySelectHtml: specialtySelectHtml,
     platformSelectHtml: platformSelectHtml,
     platformCheckboxesHtml: platformCheckboxesHtml,

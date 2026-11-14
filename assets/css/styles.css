@@ -729,3 +729,9 @@ table.simple.acc-table td.acc-col-num{text-align:left;}
 .tv-player video{width:100%;border-radius:12px;background:#000;display:block}
 .tv-now{margin:6px 4px 0;font-weight:800;color:var(--c-primary,#0F369D);font-size:14px}
 .tv-note{margin:12px 4px 0;font-size:12px;color:var(--c-muted,#6B7688)}
+
+/* ترتيب جدول «كل البوستات» (2026-11-13) */
+.pf-table .pf-sort{all:unset;cursor:pointer;font-weight:800;display:inline-flex;gap:4px;align-items:center;white-space:nowrap}
+.pf-table .pf-sort span{font-size:11px;color:var(--c-muted,#6B7688)}
+.pf-table th[aria-sort] .pf-sort span{color:var(--c-primary,#0F369D)}
+.pf-table .pf-sort:focus-visible{outline:2px solid var(--c-primary,#0F369D);outline-offset:2px;border-radius:6px}

@@ -32,7 +32,7 @@ window.SSMPD_CONFIG = {
 (function loadSystemErrorMonitor(){
   if(window.__SWNWSystemErrorMonitor || document.querySelector('script[data-system-error-monitor]')) return;
   var script=document.createElement('script');
-  script.src='assets/js/system-error-monitor.js?v=system-errors-20261106-4';
+  script.src='assets/js/system-error-monitor.js?v=system-errors-20261114-1';
   script.async=false;
   script.dataset.systemErrorMonitor='1';
   document.head.appendChild(script);
@@ -42,7 +42,7 @@ window.SSMPD_CONFIG = {
 (function loadSystemDiagnosticsLauncher(){
   if(window.__SWNWSystemDiagnosticsLauncher || document.querySelector('script[data-system-diagnostics-launcher]')) return;
   var script=document.createElement('script');
-  script.src='assets/js/system-diagnostics-launcher.js?v=system-diagnostics-20261028-4';
+  script.src='assets/js/system-diagnostics-launcher.js?v=system-diagnostics-20261114-1';
   script.async=false;
   script.dataset.systemDiagnosticsLauncher='1';
   document.head.appendChild(script);

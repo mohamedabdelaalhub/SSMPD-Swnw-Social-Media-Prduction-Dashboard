@@ -19,7 +19,19 @@
       return '<option value="' + escapeHtml(d.id) + '"' + (d.id === selectedId ? ' selected' : '') + '>' + escapeHtml(d.name || d.email) + '</option>';
     }).join("");
   }
+  // ريلات الشخصيات (content_angle = character_reel): Claude بينتجها تلقائيًا بالمولّد — الموظفين مايقدروش يدوسوا نفّذ المونتاج/التعديل
+  // (القاعدة بترفض برضه: migration 20261113120000). المدير العام/السوبر أدمن بس هو اللي بيشوف الزرار.
+  function isCharacterReelLocked(item) {
+    if (!item || item.content_angle !== "character_reel") return false;
+    var role = ((window.SSMPDAuth && window.SSMPDAuth.currentAdmin) || {}).role;
+    return role !== "super_admin" && role !== "general_manager";
+  }
   function claudeDesignHtml(item) {
+    if (isCharacterReelLocked(item)) {
+      return ["in_design", "needs_revision"].indexOf(item.stage) === -1 ? "" :
+        '<div id="claude-design-locked" style="margin-top:12px;padding:12px;border:1px dashed var(--c-muted,#8a94a6);border-radius:12px;font-size:13px;color:var(--c-muted);">' +
+        '<b>ريل شخصيات — Claude بينتجه بنفسه</b><br>مفيش زرار تنفيذ هنا. لو عايز تعديل اكتب كومنت «طلب تعديل» أو كلّم المدير.</div>';
+    }
     if (item.assigned_designer !== CLAUDE_DESIGNER_ID || ["in_design", "needs_revision"].indexOf(item.stage) === -1) return "";
     var isVideo = item.content_format === "video";
     return '<div id="claude-design-box" style="margin-top:12px;padding:12px;border:1px dashed var(--c-primary,#0F369D);border-radius:12px;">' +
@@ -75,7 +87,9 @@
   var C = window.SSMPDComments;
 
   // عرض إدارة المحتوى: كروت الأيام (الأساسي) / كانبان / قائمة — الكانبان هو العرض القديم زي ما هو
-  var viewState = { mode: "days", stage: "", all: false };
+  var viewState = { mode: "days", stage: "", format: "", all: false };
+  // فلتر نوع المادة (طلب المالك 2026-11-14): فيديو/ريل · بوست · كاروسيل · بوست رابط · غير محدد
+  var FORMAT_FILTERS = [["", "كل الأنواع"], ["video", "فيديو / ريل"], ["image_post", "بوست"], ["carousel", "كاروسيل"], ["link_post", "بوست رابط"], ["none", "نوع غير محدد"]];
   var RECENT_DAYS = 14;
   function stageClass(stage) {
     return { published: "published", needs_revision: "revision", scheduled: "received", ready_to_publish: "approved", idea_selection: "draft" }[stage] || "approval";
@@ -87,6 +101,9 @@
     }).join("");
     var filters = viewState.mode === "kanban" ? "" :
       '<select id="rv-stage" style="max-width:190px;">' + stageOpts + "</select>" +
+      '<select id="rv-format" style="max-width:170px;" aria-label="نوع المادة">' + FORMAT_FILTERS.map(function (f) {
+        return '<option value="' + f[0] + '"' + (viewState.format === f[0] ? " selected" : "") + ">" + f[1] + "</option>";
+      }).join("") + "</select>" +
       '<label style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--c-muted);"><input type="checkbox" id="rv-all"' + (viewState.all ? " checked" : "") + "> كل المواد (مش آخر " + RECENT_DAYS + " يوم بس)</label>";
     return '<div class="pbr-bar"><div style="display:flex;gap:6px;">' + btn("days", "كروت الأيام") + btn("kanban", "كانبان") + btn("list", "قائمة") + "</div>" + filters + "</div>";
   }
@@ -152,6 +169,7 @@
         html += reviewViewToggleHtml();
         var visible = items.filter(function (i) {
           if (viewState.stage && i.stage !== viewState.stage) return false;
+          if (viewState.format && (W.contentFormatKey(i) || "none") !== viewState.format) return false;
           return viewState.all || !i.updated_at || (nowTs - new Date(i.updated_at).getTime()) <= RECENT_DAYS * 86400000;
         });
         var stuckIds = {}; stuckItems.forEach(function (i) { stuckIds[i.id] = true; });
@@ -208,6 +226,7 @@
         container.innerHTML = html;
         container.querySelectorAll("[data-rv-mode]").forEach(function (b) { b.onclick = function () { viewState.mode = b.getAttribute("data-rv-mode"); draw(); }; });
         var stageSel = container.querySelector("#rv-stage"); if (stageSel) stageSel.onchange = function () { viewState.stage = stageSel.value; draw(); };
+        var formatSel = container.querySelector("#rv-format"); if (formatSel) formatSel.onchange = function () { viewState.format = formatSel.value; draw(); };
         var allBox = container.querySelector("#rv-all"); if (allBox) allBox.onchange = function () { viewState.all = allBox.checked; draw(); };
         if (viewState.mode !== "kanban") { window.SSMPDDaysCards.mountThumbs(container, items); window.SSMPDDaysCards.wireKeys(container); }
         container.querySelectorAll("[data-id]").forEach(function (el) {

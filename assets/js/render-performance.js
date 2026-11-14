@@ -133,14 +133,29 @@
       tableCard("أنهي يوم في الأسبوع أحسن؟", byDay, function (k) { return DAYS[k]; }) + "</div>";
 
     html += '<h3 class="pf-h">كل البوستات</h3><div class="pf-table-wrap"><table class="pf-table"><thead><tr>' +
-      "<th>البوست</th><th>الصفحة</th><th>النوع</th><th>اتنشر</th><th>وصول فيسبوك</th><th>تفاعل فيسبوك</th><th>وصول انستجرام</th><th>حفظ</th><th>مشاركة</th><th>نسبة التفاعل</th></tr></thead><tbody>" +
+      ["البوست","الصفحة","النوع","اتنشر","وصول فيسبوك","تفاعل فيسبوك","وصول انستجرام","حفظ","مشاركة","نسبة التفاعل"].map(function (h, i) { return '<th><button type="button" class="pf-sort" data-pf-sort="' + i + '" aria-label="ترتيب حسب ' + h + '">' + h + ' <span aria-hidden="true">↕</span></button></th>'; }).join("") + "</tr></thead><tbody>" +
       (rows.length ? rows.map(function (r) {
-        return "<tr><td>" + esc(r.item.title || "—") + "</td><td>" + (BRANDS[r.brand] || r.brand) + "</td><td>" + (FORMATS[r.item.content_format] || "—") + "</td>" +
-          "<td>" + (r.published_at ? new Date(r.published_at).toLocaleString("ar-EG", { timeZone: "Africa/Cairo", weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }) : "—") + "</td>" +
-          "<td>" + n(r.fb_reach) + "</td><td>" + n(num(r.fb_reactions) + num(r.fb_comments) + num(r.fb_shares)) + "</td><td>" + n(r.ig_reach) + "</td>" +
-          "<td>" + n(r.ig_saves) + "</td><td>" + n(r.m.shares) + "</td><td>" + pct(r.m.rate) + "</td></tr>";
+        return "<tr><td data-v=\"" + esc(r.item.title || "") + "\">" + esc(r.item.title || "—") + "</td><td data-v=\"" + esc(BRANDS[r.brand] || r.brand || "") + "\">" + (BRANDS[r.brand] || r.brand) + "</td><td data-v=\"" + esc(FORMATS[r.item.content_format] || "") + "\">" + (FORMATS[r.item.content_format] || "—") + "</td>" +
+          "<td data-v=\"" + (r.published_at ? new Date(r.published_at).getTime() : 0) + "\">" + (r.published_at ? new Date(r.published_at).toLocaleString("ar-EG", { timeZone: "Africa/Cairo", weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }) : "—") + "</td>" +
+          "<td data-v=\"" + num(r.fb_reach) + "\">" + n(r.fb_reach) + "</td><td data-v=\"" + (num(r.fb_reactions) + num(r.fb_comments) + num(r.fb_shares)) + "\">" + n(num(r.fb_reactions) + num(r.fb_comments) + num(r.fb_shares)) + "</td><td data-v=\"" + num(r.ig_reach) + "\">" + n(r.ig_reach) + "</td>" +
+          "<td data-v=\"" + num(r.ig_saves) + "\">" + n(r.ig_saves) + "</td><td data-v=\"" + num(r.m.shares) + "\">" + n(r.m.shares) + "</td><td data-v=\"" + (Number(r.m.rate) || 0) + "\">" + pct(r.m.rate) + "</td></tr>";
       }).join("") : '<tr><td colspan="10">لا توجد بوستات ضمن الاختيار الحالي.</td></tr>') + "</tbody></table></div></div>";
     container.innerHTML = html;
+    // ترتيب جدول «كل البوستات» بالضغط على عنوان العمود: أول ضغطة من الأكبر/الأحدث للأصغر/الأقدم، والتانية بالعكس (المالك 2026-11-13).
+    var ptable = container.querySelector(".pf-table");
+    if (ptable) ptable.addEventListener("click", function (ev) {
+      var btn = ev.target.closest("[data-pf-sort]"); if (!btn) return;
+      var col = +btn.dataset.pfSort, desc = btn.dataset.dir !== "desc", body = ptable.tBodies[0];
+      var trs = Array.prototype.slice.call(body.rows).filter(function (tr) { return tr.cells.length > 1; });
+      trs.sort(function (a, b) {
+        var x = a.cells[col].dataset.v || "", y = b.cells[col].dataset.v || "", nx = parseFloat(x), ny = parseFloat(y), cmp;
+        cmp = (!isNaN(nx) && !isNaN(ny) && col > 2) ? nx - ny : String(x).localeCompare(String(y), "ar");
+        return desc ? -cmp : cmp;
+      });
+      trs.forEach(function (tr) { body.appendChild(tr); });
+      ptable.querySelectorAll("[data-pf-sort]").forEach(function (b) { b.dataset.dir = ""; b.querySelector("span").textContent = "↕"; b.removeAttribute("aria-sort"); });
+      btn.dataset.dir = desc ? "desc" : "asc"; btn.querySelector("span").textContent = desc ? "▼" : "▲"; btn.closest("th").setAttribute("aria-sort", desc ? "descending" : "ascending");
+    });
     if (window.SSMPDOpsPanels) window.SSMPDOpsPanels.learningPanel(container);
     var form = container.querySelector(".pf-filters"), fields = form.elements;
     function sync() {

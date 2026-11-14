@@ -819,6 +819,7 @@
 
   // جسر تنقّل بسيط للربط العكسي (تاب Meta Ads → فتح المادة المرتبطة) — بيستخدم
   // نفس آلية البحث الموحّد أعلاه (SSMPDPendingOpenContentId + تاب المراجعة)
+  window.SSMPDGotoTab = function(tab){var a=window.SSMPDAuth.currentAdmin;if(a&&R.canSeeTab(a,tab))switchTab(tab);};
   window.SSMPDOpenTask = function(id){if(R.canSeeTab(window.SSMPDAuth.currentAdmin,'tasks'))openTaskFromNotif(id,null);};
   window.SSMPDGotoContent = function (contentId) {
     window.SSMPDPendingOpenContentId = contentId;

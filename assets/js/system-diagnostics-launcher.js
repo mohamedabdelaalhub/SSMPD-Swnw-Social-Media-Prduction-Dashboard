@@ -27,13 +27,14 @@
   function getStatus(){
     if(window.SWNWErrorMonitor&&typeof window.SWNWErrorMonitor.getStatus==="function")return window.SWNWErrorMonitor.getStatus();
     var now=Date.now(),items=safeItems().filter(function(x){return !x.resolved&&(!x.ts||now-new Date(x.ts).getTime()<STATUS_WINDOW);});
-    if(items.some(function(x){return x.severity==="red";}))return{level:"red",count:items.length};
+    items=items.filter(function(x){return !x.transient;});if(items.some(function(x){return x.severity==="red";}))return{level:"red",count:items.length};
     if(items.length)return{level:"orange",count:items.length};
     return{level:"green",count:0};
   }
   function statusMeta(level){
     if(level==="red")return{color:"#d92d20",symbol:"×",label:"يوجد عطل يحتاج الانتباه"};
     if(level==="orange")return{color:"#f79009",symbol:"!",label:"يوجد تنبيه أو صلاحية تحتاج مراجعة"};
+    if(level==="neutral")return{color:"#0F369D",symbol:"؟",label:"تشخيص النظام"};
     return{color:"#12b76a",symbol:"✓",label:"النظام سليم على هذا الجهاز"};
   }
   function paintIndicator(node,status){
@@ -41,7 +42,7 @@
     node.dataset.healthLevel=status.level;node.title=m.label+(status.count?" — "+status.count+" تنبيه":"");node.setAttribute("aria-label",node.title);
     node.style.background=m.color;node.style.color="#fff";node.style.border="0";node.style.borderRadius="999px";node.style.minWidth="34px";node.style.width="34px";node.style.height="34px";node.style.padding="0";node.style.display="inline-flex";node.style.alignItems="center";node.style.justifyContent="center";node.style.fontWeight="900";node.style.boxShadow="0 0 0 3px rgba(255,255,255,.8),0 2px 8px rgba(0,0,0,.12)";node.textContent=m.symbol;
   }
-  function refreshStatus(){var s=getStatus();paintIndicator(document.getElementById("system-diagnostics-toggle"),s);var badge=document.querySelector("[data-system-diagnostics-admin-status]");if(badge){var m=statusMeta(s.level);badge.textContent=m.label+(s.count?" — "+s.count+" تنبيه":"");badge.style.color=m.color;}}
+  function refreshStatus(){var s=isSuperAdmin()?getStatus():{level:"neutral",count:0};paintIndicator(document.getElementById("system-diagnostics-toggle"),s);var badge=document.querySelector("[data-system-diagnostics-admin-status]");if(badge){var m=statusMeta(s.level);badge.textContent=m.label+(s.count?" — "+s.count+" تنبيه":"");badge.style.color=m.color;}}
 
   function addLoginLink(){
     var box=document.querySelector(".auth-box");if(!box||box.querySelector("[data-system-diagnostics-login]"))return;
