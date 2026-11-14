@@ -1,7 +1,7 @@
 const fs=require('fs'),vm=require('vm'),assert=require('assert/strict'),{stripTypeScriptTypes}=require('module'),{webcrypto}=require('crypto');
 (async()=>{for(const name of ['patients-create','patient-files-list','patient-files-upload','patient-files-review','patient-files-delete','patient-files-download']){
- let handler,caller,writes=0,network=0;
- const client={auth:{getUser:async()=>({data:{user:{id:'auth-user'}}})},from:table=>{const q={select:()=>q,eq:()=>q,order:()=>q,range:async()=>({data:[],count:0}),maybeSingle:async()=>({data:table==='admins'?caller:table==='patient_files'?{id:'file',patient_id:'patient',category:'medical_report',drive_file_id:'mock-file'}:null}),insert:()=>{writes++;throw Error('unexpected write');}};return q;}};
+ let handler,caller,createdPatient,writes=0,network=0;
+ const client={auth:{getUser:async()=>({data:{user:{id:'auth-user'}}})},from:table=>{const q={select:()=>q,eq:()=>q,order:()=>q,range:async()=>({data:[],count:0}),maybeSingle:async()=>({data:table==='admins'?caller:table==='patient_files'?{id:'file',patient_id:'patient',category:'medical_report',drive_file_id:'mock-file'}:null}),single:async()=>({data:{id:'new-patient',...createdPatient}}),insert:payload=>{if(table==='patients'&&name==='patients-create'){createdPatient=payload;return q;}writes++;throw Error('unexpected write');}};return q;}};
  const context={Deno:{env:{get:k=>k==='GOOGLE_SERVICE_ACCOUNT_JSON'?'{}':'https://example.test'},serve:f=>handler=f},createClient:()=>client,Response,Request,URL,crypto:webcrypto,Uint8Array,console,fetch:async()=>{network++;throw Error('Network must not be called');}};
  vm.createContext(context);vm.runInContext(stripTypeScriptTypes(fs.readFileSync('supabase/functions/'+name+'/index.ts','utf8').replace(/^import .*\n/gm,'')),context);
  const method=['patient-files-list','patient-files-download'].includes(name)?'GET':'POST';async function run(payload={}){return handler(new Request('https://edge.test?file_id=file',{method,headers:{Authorization:'Bearer fixture','Content-Type':'application/json'},...(method==='POST'?{body:JSON.stringify(payload)}:{})}));}
@@ -9,6 +9,18 @@ const fs=require('fs'),vm=require('vm'),assert=require('assert/strict'),{stripTy
  for(const role of ['psychology_specialist','designer']){caller={...base,role,admin_extra_roles:role==='designer'?[{role:'psychology_specialist'}]:[]};assert.equal((await run()).status,403,name+' standalone/no clinical grants');}
  const grant=name==='patient-files-review'?'has_archive_review_access':'has_archive_access';
  for(const role of ['psychology_specialist','reception']){caller={...base,role,[grant]:true,admin_extra_roles:role==='reception'?[{role:'psychology_specialist'}]:[]};const r=await run();assert.equal(r.status,name==='patient-files-list'?200:name==='patient-files-download'?502:400,name+' explicit grant honored');}
+ if(name==='patients-create'){
+   for(const roles of [{role:'reception',admin_extra_roles:[]},{role:'designer',admin_extra_roles:[{role:'reception'}]}]){
+     caller={...base,...roles};
+     assert.equal((await run()).status,400,'reception reaches registration validation without archive access');
+     const response=await run({full_name:'مريض اختبار',phone:'01012345678',age:30});
+     assert.equal(response.status,200);
+     assert.equal((await response.json()).patient.id,'new-patient');
+     assert.equal(createdPatient.created_by,base.id);
+   }
+   caller={...base,role:'customer_service'};
+   assert.equal((await run()).status,403,'unrelated booking role cannot create through the archive endpoint');
+ }
  // A review or assigned-only grant must never permit writes.
  if(['patients-create','patient-files-upload','patient-files-delete'].includes(name)){caller={...base,has_archive_review_access:true,has_archive_view_only:true};assert.equal((await run()).status,403,name+' review cannot write');}
  if(name==='patients-create'){caller={...base,has_archive_access:true};for(const payload of [{full_name:'اسم',phone:'01012345678',age:3},{full_name:'اسم كامل',phone:'01012345678'},{full_name:'اسم كامل',age:3}])assert.equal((await run(payload)).status,400);}
