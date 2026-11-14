@@ -18,6 +18,8 @@ const styles=[...html.matchAll(/<link[^>]+href="([^"]+\.css)[^"]*"/g)].map(m=>m[
   await page.goto('https://theme.test/');
   await page.setContent('<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><div id="app-root"></div></body></html>');
   await page.addScriptTag({content:mocks+`;window.supabase={createClient:()=>fakeClient};window.__fixture={TABLES,ME};TABLES.content_items[0].title="تمارين لتخفيف آلام الرقبة والظهر في المنزل";TABLES.content_items[0].content_format="video";`});
+  // The one-time «ملحوظة عن استخدام الداشبورد» notice (usage-heatmap.js) is a modal that would cover the clicks below; acknowledge it like a returning user.
+  await page.evaluate(()=>{const me=window.__fixture&&window.__fixture.ME;if(me&&me.id)localStorage.setItem('ssmpd_usage_notice_v1_'+me.id,'test');});
   // Load the production cascade, including the new theme; retain the late psychology sheet.
   for(const f of styles)if(!f.endsWith('dashboard-theme.css'))await page.addStyleTag({url:'https://theme.test/'+f});
   for(const f of scripts)await page.addScriptTag({url:'https://theme.test/'+f});
