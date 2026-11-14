@@ -122,6 +122,17 @@ Dr. Dina — render with the dashboard's OWN renderer so it matches the studio e
 - Motion (Mohamed, 2026-10-11): key words must MOVE, not sit as plain text. Symptom / list words (e.g. صداع، تنميل، دوخة) pop in one after another (scale 0.6→1.08→1 with a short slide-up, ~0.25 s each, highlight colour), numbers count/pop, the hook line slides in. Keep it smooth and readable — no shaking, no fast flashing.
 - Highlighted words in on-screen text: Swnw = ORANGE #F15A22 (never blue); Dr. Dina = her red #E3141B. The rest of the text stays dark (#16212E) on the white box.
 
+## Reel on-screen text — font must really load (Mohamed 2026-11-14: «الفونت ضارب»)
+A published Swnw reel showed its Arabic captions in a substitute font. Every frame with Arabic text must use the brand font for real:
+- Swnw = BigVesta (`assets/fonts/BigVesta-Bold.woff2` / `-Regular.woff2`). Dr. Dina = Tajawal (`assets/fonts/Tajawal-*.ttf`).
+- **HTML/Playwright** (the overlay/cover templates, the caption box): load the font with `@font-face` from `assets/fonts`, and `await page.evaluate(() => document.fonts.ready)` BEFORE every screenshot. Then check `document.fonts.check('700 80px BV')` (or the family you declared) is true. If it is false, stop and fix it; never screenshot with the fallback font.
+- **ffmpeg + ASS/subtitles**:
+  - The style's Fontname is the FAMILY name: `BigVesta Arabic Beta` or `Tajawal`. Never `BigVestaArabicBeta`: that name matches nothing, and libass silently falls back.
+  - Always pass `fontsdir=` pointing at `assets/fonts`.
+  - Run once with `-v verbose` and confirm the `fontselect:` line shows `BigVestaArabicBeta-Bold` / `Tajawal`, with no `Glyph … not found`.
+- **Never** burn Arabic with ffmpeg `drawtext`: it does not join or shape the letters.
+- Before uploading, extract one captioned frame (`ffmpeg -ss 3 -i out.mp4 -frames:v 1 check.png`) and LOOK at it. Letters must be joined, right-to-left, and in the brand font. If not, fix and re-render.
+
 ## Reel text styles — two options (Mohamed, 2026-10-11)
 Read `content_items.cover_settings.caption_style` (staff pick it on the video item):
 - `box` → white rounded caption box that hugs the words, short 2–5 word chunks (see "Reel on-screen look").
