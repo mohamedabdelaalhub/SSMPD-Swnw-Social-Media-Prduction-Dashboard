@@ -27,14 +27,21 @@
 <ul>
   <li>بيانات حسابات موظفي الفريق (الاسم، البريد الإلكتروني، الدور الوظيفي) — لإدارة الصلاحيات داخل اللوحة.</li>
   <li>محتوى المنشورات (نصوص، صور، فيديوهات) المُعدّة للنشر على صفحات المركز الرسمية.</li>
-  <li>رموز الوصول (Access/Refresh Tokens) الخاصة بربط حسابات التواصل الاجتماعي الرسمية للمركز (Facebook، Instagram، TikTok) — تُخزَّن بشكل مشفّر، ولا تُستخدم إلا لنشر المحتوى المعتمد من المركز نفسه.</li>
+  <li>رموز الوصول (Access/Refresh Tokens) الخاصة بربط حسابات التواصل الاجتماعي الرسمية للمركز (Facebook، Instagram، TikTok، YouTube) — تُخزَّن بشكل مشفّر، ولا تُستخدم إلا لنشر المحتوى المعتمد من المركز نفسه.</li>
 </ul>
 
 <h2>كيف نستخدم بيانات TikTok تحديدًا</h2>
 <p>عند ربط حساب TikTok الرسمي للمركز، تُستخدم صلاحيات <code>user.info.basic</code> و<code>video.publish</code> حصرًا لنشر مقاطع الفيديو (Reels) المعتمدة من فريق المركز مباشرة على حساب المركز نفسه. لا تُنشر اللوحة أي محتوى بدون اعتماد بشري مسبق داخل سير العمل، ولا تصل إلى أي بيانات تخص متابعي الحساب أو محتوى حسابات أخرى.</p>
 
+<h2>كيف نستخدم بيانات YouTube تحديدًا</h2>
+<p>تستخدم اللوحة <strong>خدمات YouTube API</strong>. عند ربط قناة YouTube الرسمية للمركز، تُستخدم صلاحية <code>youtube.upload</code> حصرًا لرفع الفيديوهات المعتمدة من فريق المركز على قنوات المركز نفسه في الميعاد المحدد، وصلاحية <code>youtube.readonly</code> لقراءة اسم القناة وصورتها وحالة الفيديوهات التي رفعناها فقط. لا نقرأ المشتركين ولا التعليقات ولا أي بيانات للمشاهدين. نحتفظ برمز التفويض (Refresh Token) على خادم المركز فقط، ولا يظهر لأي مستخدم، ويُحذف عند فصل القناة.</p>
+<p>باستخدامك لهذه الخاصية فأنت توافق على <a href="https://www.youtube.com/t/terms" rel="noopener">شروط خدمة YouTube</a>، وتسري <a href="https://policies.google.com/privacy" rel="noopener">سياسة خصوصية Google</a>. يمكن إلغاء وصول التطبيق في أي وقت من <a href="https://myaccount.google.com/permissions" rel="noopener">أذونات حساب Google</a>، ولطلب حذف البيانات المخزّنة راسلنا على البريد أدناه.</p>
+<div dir="ltr" style="text-align:left">
+<p><strong>YouTube API Services.</strong> This dashboard uses YouTube API Services to upload the clinic's approved videos to the clinic's own YouTube channels. Scopes: <code>youtube.upload</code> (upload approved videos) and <code>youtube.readonly</code> (read the connected channel's name/thumbnail and the status of our own uploads). We do not access viewer, subscriber, comment or analytics data. The OAuth refresh token is stored only on our server, is never shown to users or shared with third parties, and is deleted when the channel is disconnected or on request. By using this feature you agree to the <a href="https://www.youtube.com/t/terms" rel="noopener">YouTube Terms of Service</a>; see also the <a href="https://policies.google.com/privacy" rel="noopener">Google Privacy Policy</a>. You can revoke access at any time at <a href="https://myaccount.google.com/permissions" rel="noopener">Google Account permissions</a>. Our use and transfer of information received from Google APIs adheres to the <a href="https://developers.google.com/terms/api-services-user-data-policy" rel="noopener">Google API Services User Data Policy</a>, including the Limited Use requirements.</p>
+</div>
+
 <h2>مشاركة البيانات</h2>
-<p>لا تتم مشاركة أي بيانات مع أي طرف ثالث غير منصات التواصل الاجتماعي ذاتها (Meta، TikTok) للغرض الوحيد وهو نشر المحتوى المعتمد، وخدمة Google Drive لأرشفة ملفات الإنتاج الخاصة بالمركز.</p>
+<p>لا تتم مشاركة أي بيانات مع أي طرف ثالث غير منصات التواصل الاجتماعي ذاتها (Meta، TikTok، YouTube) للغرض الوحيد وهو نشر المحتوى المعتمد، وخدمة Google Drive لأرشفة ملفات الإنتاج الخاصة بالمركز.</p>
 
 <h2>الأمان</h2>
 <p>الوصول للوحة مقيّد بتسجيل دخول فردي وصلاحيات حسب الدور (Role-Based Access)، وقاعدة البيانات محمية بسياسات أمان على مستوى الصفوف (Row Level Security).</p>
@@ -42,7 +49,7 @@
 <h2>التواصل</h2>
 <p>لأي استفسار بخصوص هذه السياسة: <a href="mailto:swnwclinics@gmail.com">swnwclinics@gmail.com</a></p>
 
-<p class="muted">آخر تحديث: أكتوبر 2026 — مركز عيادات Swnw التخصصية</p>
+<p class="muted">آخر تحديث: نوفمبر 2026 — مركز عيادات Swnw التخصصية</p>
 </div>
 </body>
 </html>
