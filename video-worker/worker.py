@@ -11,7 +11,7 @@ import studio_storyboard
 import studio_generation
 import threading
 from drive_archive import upload as archive_upload
-from brand_identity import logo_asset
+from brand_identity import logo_asset, brand_font_family, ass_filter as brand_ass_filter
 import json
 import os
 import re
@@ -640,11 +640,7 @@ def short_caption_chunks(text: str, words_per_caption: int = 5) -> list[str]:
 
 
 def brand_font(job: dict[str, Any]) -> str:
-    settings = job.get("cover_settings") or {}
-    configured = str(settings.get("font_family") or "").strip()
-    if configured:
-        return configured
-    return "BigVestaArabicBeta"
+    return brand_font_family(job)
 
 
 def has_static_brand_ending(job: dict[str, Any]) -> bool:
@@ -899,7 +895,7 @@ def render(job: dict[str, Any], job_dir: Path) -> tuple[Path, str]:
     out = job_dir / "output.mp4"
     captioned = job_dir / "output-captioned.mp4"
     visual_out = job_dir / "output-visual.mp4"
-    ass_filter = "ass=filename='" + filter_path(ass) + "'"
+    ass_filter = brand_ass_filter(ass)
     visual_background = (studio_storyboard.render(ffmpeg, job, job_dir, target, spoken_duration, run)
                          if job.get("media_mode") == "studio_storyboard" else image_storyboard.render(ffmpeg, job, job_dir, target, spoken_duration, run)
                          if job.get("media_mode") == "image_storyboard"
