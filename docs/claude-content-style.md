@@ -160,6 +160,9 @@ A published Swnw reel showed its Arabic captions in a substitute font. Every fra
 ## Reel text styles — two options (Mohamed, 2026-10-11)
 Read `content_items.cover_settings.caption_style` (staff pick it on the video item):
 - `box` → white rounded caption box that hugs the words, short 2–5 word chunks (see "Reel on-screen look").
+  - Render every chunk with the ready template `docs/templates/reel-caption/caption.html?brand=sono|dina&text=<chunk>&hl=<words>` (Playwright, omitBackground, one transparent PNG per chunk), then overlay each PNG with ffmpeg for that chunk's time.
+  - Wait until `document.body.dataset.ready` is set. If it is `font-missing`, STOP: the font did not load, and the text would come out in a substitute font (the 2026-11-13 Dr. Dina reel «رجلك نمّلت» went out like that). Do not build your own caption renderer.
+  - The template loads Tajawal for Dr. Dina and BigVesta for Swnw. Do not override the font.
 - `headline` → big headline ON the video, no box (Mohamed liked this look): `docs/templates/sono-reel-text/overlay.html` or `docs/templates/dina-reel-text/overlay.html` — transparent 1080×1920 PNG (render with omitBackground, params tag/title/hl/sub, title lines split with \n, max 2 lines), overlaid on the footage with ffmpeg; dark brand gradient at the bottom, tag pill (Swnw orange, Dina red), white headline centred with the key word coloured (Swnw light blue #6EC6F5 in this style, Dina red), one subtitle line. Change the overlay per scene (a new headline every 3–6 s, fade/slide in), keep the same key-word motion.
 - empty → you choose; alternate between the two so the page doesn't look the same every day.
 
