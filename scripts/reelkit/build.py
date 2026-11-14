@@ -20,9 +20,21 @@ def decode(path):
     raw = subprocess.run(["ffmpeg", "-v", "error", "-i", path, "-f", "f32le", "-ac", "1", "-ar", str(SR), "-"], capture_output=True).stdout
     return np.frombuffer(raw, dtype=np.float32).astype(np.float64)
 
-def chunk_spans(text, hl):
-    """same grouping rule as engine.split_chunks but keeps character spans"""
-    words = [(m.group(), m.start(), m.end()) for m in re.finditer(r"\S+", text)]
+TASHKEEL = re.compile('[\u064B-\u0652\u0670]')
+# Pronunciation (owner, 2026-11-13): the story text is written plain (it is what the screen shows). What the VOICE reads comes from pron.json
+# (+ optional meta.pron in the story): word -> spelling with diacritics / Egyptian qaf written as hamza (e.g. أوقف -> أوَأف). Keys have no diacritics.
+PRON = json.load(open(os.path.join(HERE, "pron.json")))
+PRON.update({TASHKEEL.sub("", k): v for k, v in (sb.get("meta", {}).get("pron") or {}).items()})
+_PUNCT = "،,.؟?!:؛\"«»()"
+def voice_text(text, pron):
+    def one(m):
+        tok = m.group(); core = tok.strip(_PUNCT); key = TASHKEEL.sub("", core)
+        return tok.replace(core, pron[key], 1) if core and key in pron else tok
+    return re.sub(r"\S+", one, text)
+
+def chunk_spans(text, vtext, hl):
+    """same grouping rule as engine.split_chunks; the display words come from `text`, the character spans (for the voice timing) from `vtext`"""
+    words = [(m.group(), v.start(), v.end()) for m, v in zip(re.finditer(r"\S+", text), re.finditer(r"\S+", vtext))]
     groups, cur = [], []
     for w in words:
         cur.append(w)
@@ -32,32 +44,60 @@ def chunk_spans(text, hl):
         else: groups.append(cur)
     out = []
     for g in groups:
-        s0, s1 = g[0][1], g[-1][2]; s = text[s0:s1]
+        s0, s1 = g[0][1], g[-1][2]; s = TASHKEEL.sub("", " ".join(w[0] for w in g))  # diacritics are for the VOICE only: never shown on screen
+        s = s.rstrip('.')  # no full stop at the end of a caption; the voice still gets the punctuation
         for h in hl or []:
+            h = TASHKEEL.sub("", h)
             if h in s and "*" not in s: s = s.replace(h, "*" + h + "*")
         out.append((s, s0, s1))
     return out
+
+
+# ---- speech check (added 2026-11-13): the voice model sometimes invents words (a take once contained "كل قواظ وقرب باباكوا" that is not in the script).
+# After generating a take we transcribe it (ElevenLabs scribe) and compare with the script; below the threshold the take is regenerated (max 3 tries).
+import difflib
+def _norm(t): return re.sub(r"[^\u0621-\u064A ]", "", TASHKEEL.sub("", t)).replace("ة", "ه").replace("أ", "ا").replace("إ", "ا").replace("ى", "ي").replace("ؤ", "و").replace("ئ", "ي")
+def transcribe(path):
+    try:
+        r = subprocess.run(["curl", "-s", "-m", "120", "-X", "POST", "https://api.elevenlabs.io/v1/speech-to-text", "-F", "model_id=scribe_v1", "-F", "language_code=ara", "-F", "file=@" + path], capture_output=True, text=True)
+        return json.loads(r.stdout).get("text")
+    except Exception:
+        return None
+def speech_ok(path, expected, threshold=0.85):
+    t = transcribe(path)
+    if t is None: return True, None  # no transcription available (e.g. scheduled environment): cannot check, accept
+    sc = difflib.SequenceMatcher(None, _norm(t), _norm(expected)).ratio()
+    return sc >= threshold, round(sc, 2)
 
 # ---------------------------------------------------------------- voices
 lines = E.collect_lines(sb); line_timing = {}; envs = {}; audio_src = {}
 hl_of = {(si, bi): sb["scenes"][si]["beats"][bi]["say"].get("hl") for lst in lines.values() for si, bi, _ in lst}
 for spk, lst in lines.items():
-    joined = "\n\n".join(x[2] for x in lst); mp3 = os.path.join(args.out, f"voice_{spk}.mp3"); al = None
+    joined = "\n\n".join(voice_text(x[2], PRON) for x in lst); mp3 = os.path.join(args.out, f"voice_{spk}.mp3"); al = None
     if not args.dry:
         left = V.quota()
         if left is not None and left < len(joined) + 50: print("WARNING: ElevenLabs quota too low, using dry timing for", spk)
-        else: al = V.speak(spk, joined, mp3)
+        else:
+            al = V.speak(spk, joined, mp3); shown = " ".join(TASHKEEL.sub("", x[2]) for x in lst)
+            for attempt in range(3):
+                if al is None: break
+                good, sc = speech_ok(mp3, shown)
+                print(f"speech check {spk}: score={sc} {'ok' if good else 'MISMATCH - regenerating'}")
+                if good or attempt == 2: break
+                al = V.speak(spk, joined, mp3)
         if al is None: print("WARNING: voice failed for", spk, "-> dry timing (no audio)")
     dry = al is None
+    if not dry: json.dump(al, open(os.path.join(args.out, f'voice_{spk}.json'), 'w'))  # kept for debugging caption timing
+    if not dry: json.dump(al, open(os.path.join(args.out, f'voice_{spk}.json'), 'w'))
     if dry: al = V.estimate(joined)
     st, en = al["start"], al["end"]; n = len(st); wav = decode(mp3) if not dry else None
     p95 = np.percentile(np.abs(wav), 95) if wav is not None and len(wav) else 1.0
     pos = 0
     for si, bi, text in lst:
-        a, b = pos, pos + len(text); pos = b + 2
+        vtxt = voice_text(text, PRON); a, b = pos, pos + len(vtxt); pos = b + 2
         ia, ib = min(a, n - 1), min(max(b - 1, a), n - 1)
         ta, tb = st[ia], en[ib]
-        words = [(html, st[min(s0, n - 1)] - ta, en[min(max(s1 - 1, s0), n - 1)] - ta) for html, s0, s1 in chunk_spans(text, hl_of[(si, bi)])]
+        words = [(html, st[min(a + s0, n - 1)] - ta, en[min(max(a + s1 - 1, a + s0), n - 1)] - ta) for html, s0, s1 in chunk_spans(text, vtxt, hl_of[(si, bi)])]
         line_timing[(si, bi)] = dict(dur=tb - ta + 0.05, words=words, env_key=(si, bi))
         audio_src[(si, bi)] = (mp3 if not dry else None, ta, tb)
         if wav is not None:
@@ -67,6 +107,8 @@ for spk, lst in lines.items():
 
 tl = E.plan(sb, line_timing)
 dur = min(tl.dur, args.max_sec) if args.max_sec else tl.dur
+if os.environ.get("RK_DEBUG"):
+    print("SCENES", [(round(x["t0"],2), round(x["t1"],2)) for x in tl.scenes]); print("CAPS", [(round(a, 2), round(b, 2), h[:14]) for a, b, h in tl.caps])
 print(f"timeline {tl.dur:.1f}s, {len(tl.scenes)} scenes, {sum(len(a['say']) for a in tl.actors.values())} lines, voices={'dry' if args.dry else 'ElevenLabs'}")
 
 # ---------------------------------------------------------------- frames
@@ -83,18 +125,22 @@ if args.frames_only: sys.exit(0)
 
 # ---------------------------------------------------------------- audio
 contact = 0.0 if args.no_end else 3.0; total = dur + contact
-mx = S.Mix(total)
+mx = S.Mix(total); LEVEL = {}; TARGET_RMS = 0.12
 for v in tl.voice:
     mp3, ta, tb = audio_src[(v["si"], v["bi"])]
     if mp3 is None: continue
-    wav = decode(mp3); seg = wav[int(ta * SR):int(tb * SR) + int(0.05 * SR)].copy(); f = int(0.012 * SR)
+    wav = decode(mp3)
+    if mp3 not in LEVEL:  # every speaker is brought to the same speech loudness (a quiet voice next to a loud one was the owner's complaint)
+        act = np.abs(wav)[np.abs(wav) > 0.02]
+        LEVEL[mp3] = float(np.clip(TARGET_RMS / max(np.sqrt(np.mean(act ** 2)) if len(act) else TARGET_RMS, 1e-6), 0.4, 4.0))
+    seg = wav[int(ta * SR):int(tb * SR) + int(0.05 * SR)].copy() * LEVEL[mp3]; seg = np.tanh(seg / 0.9) * 0.9; f = int(0.012 * SR)
     seg[:f] *= np.linspace(0, 1, f); seg[-f:] *= np.linspace(1, 0, f); mx.add(seg, v["t"], 1.0)
 for t0, nm, g in tl.sfx:
     if t0 < dur: mx.sfx(nm, t0, g * 0.8)
 mood = sb.get("meta", {}).get("music", "upbeat"); mf = os.path.join(args.kit, f"sono_music_{mood}.mp3")
 if os.path.exists(mf):
     m = decode(mf); m0 = sb.get("meta", {}).get("music_from", 1.0); i0 = int(m0 * SR); mus = np.zeros(mx.N); L = min(len(m), mx.N - i0); mus[i0:i0 + L] = m[:L]
-    tm = np.arange(mx.N) / SR; mus *= np.clip((tm - m0) / 1.2, 0, 1) * np.clip((total - tm) / 1.8, 0, 1) * 0.14; mx.a += mus
+    tm = np.arange(mx.N) / SR; mus *= np.clip((tm - m0) / 1.2, 0, 1) * np.clip((total - tm) / 1.8, 0, 1) * 0.10; mx.a += mus
 a = mx.a / max(1e-9, np.max(np.abs(mx.a))) * 0.9; pcm = (a * 32767).astype(np.int16)
 import wave
 with wave.open(os.path.join(args.out, "audio.wav"), "wb") as w_:
