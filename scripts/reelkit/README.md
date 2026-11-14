@@ -24,3 +24,7 @@ python3 scripts/reelkit/build.py story.json OUTDIR --kit BRANDKIT [--dry] [--no-
 - مفيش وعود علاج ولا تخويف؛ أي معلومة طبية "استشر الدكتور" وتتراجع من دكتور قبل النشر.
 - مفيش بيانات/صور مرضى. اسم المركز `Swnw` بالإنجليزي في أي نص ظاهر.
 - راجع رصيد ElevenLabs قبل التوليد؛ نوّع الأسلوب والمواقف والـ sets عن الريلات السابقة.
+
+
+## الغلاف
+`python3 scripts/reelkit/cover.py OUT "العنوان مع *كلمة* مفتاحية" "التاج" "سطر فرعي"` بعد `build.py` ← `OUT/reel-cover.png` بقالب غلاف الريل المعتمد (يرفع بـ `?op=upload_cover`). `build.py` بيحفظ كمان `speech check` (نسخ الصوت ومقارنته بالنص) و`voice_<speaker>.json` للتشخيص.

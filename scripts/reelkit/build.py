@@ -120,6 +120,13 @@ for k in range(args.workers):
     a, b = k * q, min(N, (k + 1) * q)
     if a < b: procs.append(subprocess.Popen(["node", os.path.join(HERE, "render_frames.js"), fr, jp, "jpg", str(a), str(b)], stdout=subprocess.DEVNULL))
 for p in procs: p.wait()
+# clean frame (no logo, no captions) for the reel cover: scripts/reelkit/cover.py puts the approved cover template on top of it
+try:
+    tc = float(sb.get("meta", {}).get("cover_t", min(2.0, tl.scenes[0]["t1"] - 0.3)))
+    svgp = os.path.join(args.out, "cover_frame.svg"); open(svgp, "w").write(E.frame_svg(tl, tc, envs, {"no_caps": True, "no_chrome": True}))
+    subprocess.run(["node", os.path.join(HERE, "shot_svg.js"), svgp, os.path.join(args.out, "cover_frame.png"), "1080", "1920"], check=True, stdout=subprocess.DEVNULL)
+except Exception as e:
+    print("WARNING: cover frame failed:", e)
 print("frames rendered:", len(os.listdir(jp)))
 if args.frames_only: sys.exit(0)
 
