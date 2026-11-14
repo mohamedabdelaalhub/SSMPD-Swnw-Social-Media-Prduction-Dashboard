@@ -1,7 +1,7 @@
 """Branded portrait cover options generated from the clean visual track."""
 from pathlib import Path
 import subprocess
-from brand_identity import logo_asset
+from brand_identity import logo_asset, brand_font_family, ass_filter
 
 
 def cover_title(title: str, words_per_line: int = 4) -> str:
@@ -36,7 +36,7 @@ def build(job, output, ffmpeg, duration, template_dir=None):
             pass
     else:
         raise RuntimeError("لا يوجد مسار مشاهد للكفر. أعد الإنتاج باستخدام مشاهد معتمدة.")
-    font = str(settings.get("font_family") or "BigVestaArabicBeta").strip()
+    font = brand_font_family(job)
     clean_title = title.replace("\\", " ").replace("{", "").replace("}", " ")
     words = clean_title.split()
     # The one-line card is used only when the title will remain readable.
@@ -72,7 +72,7 @@ def build(job, output, ffmpeg, duration, template_dir=None):
                 "drawbox=x=54:y=1120:w=972:h=420:color=white@0.94:t=fill[background];"
                 "[1:v]scale=240:150:force_original_aspect_ratio=decrease,format=rgba[logo];"
                 "[background][logo]overlay=x=54:y=54:format=auto,"
-                "ass=filename='cover-title.ass'[out]"
+                + ass_filter("cover-title.ass") + "[out]"
             )
             command = [
                 ffmpeg, "-y", "-ss", f"{at:.3f}", "-i", str(source.resolve()),
