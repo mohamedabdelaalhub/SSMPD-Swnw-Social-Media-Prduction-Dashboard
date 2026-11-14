@@ -66,6 +66,7 @@
     { key: "cs", label: "خدمة العملاء" },
     { key: "experience_ratings", label: "تقييمات العملاء" },
     { key: "dashboard", label: "داشبورد الإدارة" },
+    { key: "conversion", label: "نسب التحويل" },
     { key: "booked", label: "الحجوزات الفعلية" },
     { key: "archive", label: "أرشيف الليدز" },
     { key: "referrals", label: "تحويلات الأطباء" },
@@ -82,6 +83,7 @@
     booked: { search: "", bookedBy: "", page: 1, pageSize: 20 },
     bulk: { rows: [], fileName: "", result: null },
     dashboard: { from: "", to: "" },
+    conversion: { from: "", to: "" },
     experience_ratings: { from: "", to: "", searchTerm: "", searchResults: [] }
   };
 
@@ -92,6 +94,7 @@
       if (s.key === "experience_ratings") return isCS() || isManager();
       if (s.key === "bulk") return isReception();
       if (s.key === "dashboard") return isManager() || isCS();
+      if (s.key === "conversion") return isManager();
       if (s.key === "missing_data") return isReception() || isCS() || isManager();
       return isManager();
     });
@@ -148,6 +151,7 @@
       else if (state.subTab === "cs") renderCsScreen(subView, container);
       else if (state.subTab === "experience_ratings") renderExperienceRatingsScreen(subView, container);
       else if (state.subTab === "dashboard") renderDashboardScreen(subView, container);
+      else if (state.subTab === "conversion") renderConversionScreen(subView, container);
       else if (state.subTab === "booked") renderBookedScreen(subView, container);
       else if (state.subTab === "archive") renderArchiveScreen(subView, container);
       else if (state.subTab === "referrals") renderReferralsScreen(subView, container);
@@ -448,6 +452,117 @@
   }
 
   // ============ ٣) داشبورد الإدارة ============
+  // ---------- نسب التحويل: مؤشرات إجمالية، وكل رقم بيتدوس عليه يفتح تفاصيل الليدز ----------
+  // "اتحجز/اتعمل" = تم الحجز + تم الحجز على سيستم المركز + تم إجراء الخدمة. قراءة بس.
+  var CONV_BUCKET_LABELS = {
+    total: "كل الليدز", converted: "اتحجز/اتعمل", service_done: "تم إجراء الخدمة", no_response: "لا يوجد رد",
+    rejected: "مرفوض", invalid_number: "رقم غير صحيح", open: "لسه مفتوحة"
+  };
+  function convServiceLabel(k) { return k === "all" ? "كل الخدمات" : (k === "unspecified" ? "غير محدد" : (SERVICE_LABELS[k] || k)); }
+  function convPct(n, d) { return d ? Math.round(100 * n / d) + "%" : "—"; }
+  function convNum(n) { return fmtNum(Math.round(n || 0)); }
+
+  function renderConversionScreen(view, container) {
+    var c = state.conversion;
+    view.innerHTML = '<div class="section" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px;">' +
+      '<div class="field" style="margin:0;"><label>من تاريخ</label><input type="date" id="cv-from" value="' + escapeHtml(c.from) + '"></div>' +
+      '<div class="field" style="margin:0;"><label>إلى تاريخ</label><input type="date" id="cv-to" value="' + escapeHtml(c.to) + '"></div>' +
+      '<button class="btn sm" id="cv-apply">تطبيق</button>' +
+      (c.from || c.to ? '<button class="btn ghost sm" id="cv-clear">مسح الفلتر</button>' : '') +
+      '<span style="font-size:11px;color:var(--c-muted);">دوس على أي رقم تشوف الليدز اللي وراه. الفلتر على تاريخ إضافة الليد.</span></div>' +
+      '<div id="cv-body"><div class="loading">بيحمّل…</div></div>';
+    document.getElementById("cv-apply").onclick = function () {
+      c.from = document.getElementById("cv-from").value; c.to = document.getElementById("cv-to").value;
+      renderConversionScreen(view, container);
+    };
+    var clr = document.getElementById("cv-clear");
+    if (clr) clr.onclick = function () { c.from = ""; c.to = ""; renderConversionScreen(view, container); };
+
+    window.SSMPDDb.getLeadsConversion({ from: c.from, to: c.to }).then(function (res) {
+      var by = res.by_service || {}, inc = res.income_by_service || {};
+      var keys = Object.keys(by).sort(function (a, b) { return by[b].total - by[a].total; });
+      var tot = { total: 0, converted: 0, service_done: 0, no_response: 0, rejected: 0, invalid_number: 0, open: 0 };
+      keys.forEach(function (k) { Object.keys(tot).forEach(function (f) { tot[f] += by[k][f] || 0; }); });
+      var totalIncome = 0; Object.keys(inc).forEach(function (k) { totalIncome += inc[k].total || 0; });
+
+      function numBtn(service, bucket, n) {
+        if (!n) return '<span style="color:var(--c-muted);">0</span>';
+        return '<button class="btn ghost sm" style="font-size:13px;padding:2px 8px;" data-cv-service="' + service + '" data-cv-bucket="' + bucket + '">' + fmtNum(n) + '</button>';
+      }
+      function kpi(label, value, service, bucket, n) {
+        var inner = '<div class="label">' + label + '</div><div class="value">' + value + '</div>';
+        if (service && n) return '<button class="kpi-card" style="cursor:pointer;text-align:inherit;" data-cv-service="' + service + '" data-cv-bucket="' + bucket + '">' + inner + '</button>';
+        return '<div class="kpi-card">' + inner + '</div>';
+      }
+      var html = '<div class="kpi-grid">' +
+        kpi("إجمالي الليدز", fmtNum(tot.total), "all", "total", tot.total) +
+        kpi("اتحجز/اتعمل", fmtNum(tot.converted), "all", "converted", tot.converted) +
+        kpi("نسبة التحويل", convPct(tot.converted, tot.total)) +
+        kpi("لا يوجد رد", fmtNum(tot.no_response) + ' <small>(' + convPct(tot.no_response, tot.total) + ')</small>', "all", "no_response", tot.no_response) +
+        kpi("لسه مفتوحة", fmtNum(tot.open), "all", "open", tot.open) +
+        kpi("الدخل من الفواتير", convNum(totalIncome) + " ج") + '</div>';
+
+      html += '<div class="section" style="margin-top:14px;"><h3>حسب الخدمة</h3><div style="overflow-x:auto;"><table class="simple"><thead><tr>' +
+        '<th>الخدمة</th><th>ليدز</th><th>اتحجز/اتعمل</th><th>نسبة التحويل</th><th>تم الخدمة</th><th>لا يوجد رد</th><th>نسبة «لا رد»</th><th>مرفوض</th><th>لسه مفتوحة</th><th>الدخل (ج)</th></tr></thead><tbody>';
+      keys.forEach(function (k) {
+        var r = by[k], i = inc[k] || { total: 0, invoices: 0 };
+        html += '<tr><td>' + escapeHtml(convServiceLabel(k)) + '</td>' +
+          '<td>' + numBtn(k, "total", r.total) + '</td><td>' + numBtn(k, "converted", r.converted) + '</td>' +
+          '<td><b>' + convPct(r.converted, r.total) + '</b></td><td>' + numBtn(k, "service_done", r.service_done) + '</td>' +
+          '<td>' + numBtn(k, "no_response", r.no_response) + '</td><td>' + convPct(r.no_response, r.total) + '</td>' +
+          '<td>' + numBtn(k, "rejected", r.rejected) + '</td><td>' + numBtn(k, "open", r.open) + '</td>' +
+          '<td>' + (i.invoices ? convNum(i.total) + ' <small style="color:var(--c-muted);">(' + i.invoices + ' فاتورة)</small>' : '—') + '</td></tr>';
+      });
+      html += '</tbody></table></div>' +
+        '<p style="font-size:11px;color:var(--c-muted);margin-top:8px;">نسبة التحويل = اتحجز/اتعمل ÷ كل الليدز. الأعداد الصغيرة اتجاه مش حكم. الدخل من فواتير الخدمات المرفوعة على الليدز فقط.</p></div>';
+      document.getElementById("cv-body").innerHTML = html;
+      document.getElementById("cv-body").querySelectorAll("[data-cv-service]").forEach(function (b) {
+        b.onclick = function () { openConversionDetail(view, container, b.getAttribute("data-cv-service"), b.getAttribute("data-cv-bucket")); };
+      });
+    }).catch(function (e) { document.getElementById("cv-body").innerHTML = '<div class="err-msg">خطأ: ' + escapeHtml(e.message || e) + '</div>'; });
+  }
+
+  function openConversionDetail(view, container, service, bucket) {
+    var c = state.conversion, page = 1, size = 20;
+    var backdrop = document.createElement("div");
+    backdrop.className = "modal-backdrop";
+    backdrop.innerHTML = '<div class="modal" style="max-width:860px;"><div class="modal-head"><h3>' + escapeHtml(convServiceLabel(service) + " — " + (CONV_BUCKET_LABELS[bucket] || bucket)) +
+      '</h3><button class="modal-close">×</button></div><div id="cv-detail-body"><div class="loading">بيحمّل…</div></div></div>';
+    document.body.appendChild(backdrop);
+    backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
+    backdrop.addEventListener("click", function (e) { if (e.target === backdrop) backdrop.remove(); });
+
+    function load() {
+      var box = backdrop.querySelector("#cv-detail-body");
+      window.SSMPDDb.getLeadsConversionDetail({ service: service, bucket: bucket, from: c.from, to: c.to, page: page, page_size: size }).then(function (res) {
+        var leads = res.leads || [], total = res.total || 0, pages = Math.max(1, Math.ceil(total / size));
+        var html = '<p style="font-size:12px;color:var(--c-muted);">' + fmtNum(total) + ' ليد</p>';
+        if (!leads.length) html += '<div class="empty">مفيش ليدز</div>';
+        else {
+          html += '<div style="overflow-x:auto;"><table class="simple"><thead><tr><th>العميل</th><th>التليفون</th><th>الخدمة</th><th>المصدر</th><th>الحالة</th><th>التاريخ</th><th></th></tr></thead><tbody>';
+          leads.forEach(function (l) {
+            html += '<tr><td>' + escapeHtml(l.customer_name || "—") + '</td><td dir="ltr">' + escapeHtml(l.phone_raw || "—") + '</td>' +
+              '<td>' + escapeHtml(convServiceLabel(l.interested_service || "unspecified")) + '</td><td>' + escapeHtml(SOURCE_LABELS[l.source] || l.source || "—") + '</td>' +
+              '<td><span class="pill ' + (STATUS_PILL_CLASS[l.current_status] || "draft") + '">' + escapeHtml(STATUS_LABELS[l.current_status] || l.current_status) + '</span></td>' +
+              '<td>' + escapeHtml(fmtDateOnly(l.created_at)) + '</td><td><button class="btn ghost sm" data-open="' + l.id + '">فتح</button></td></tr>';
+          });
+          html += '</tbody></table></div>';
+        }
+        html += '<div style="display:flex;gap:8px;justify-content:center;margin-top:10px;">' +
+          '<button class="btn ghost sm" id="cv-prev"' + (page <= 1 ? " disabled" : "") + '>السابق</button><span>' + page + ' / ' + pages + '</span>' +
+          '<button class="btn ghost sm" id="cv-next"' + (page >= pages ? " disabled" : "") + '>التالي</button></div>';
+        box.innerHTML = html;
+        var pv = box.querySelector("#cv-prev"), nx = box.querySelector("#cv-next");
+        if (pv) pv.onclick = function () { if (page > 1) { page--; load(); } };
+        if (nx) nx.onclick = function () { if (page < pages) { page++; load(); } };
+        box.querySelectorAll("[data-open]").forEach(function (b) {
+          b.onclick = function () { openLeadModal(view, container, b.getAttribute("data-open"), function () { load(); }); };
+        });
+      }).catch(function (e) { box.innerHTML = '<div class="err-msg">خطأ: ' + escapeHtml(e.message || e) + '</div>'; });
+    }
+    load();
+  }
+
   function renderDashboardScreen(view, container) {
     var d = state.dashboard;
     view.innerHTML = '<div class="section" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px;">' +

@@ -171,6 +171,80 @@ Deno.serve(async (req) => {
     });
   }
 
+
+  // نسب التحويل (مقصور على المدير العام/السوبر أدمن): تجميع حسب الخدمة × الحالة + الدخل من الفواتير.
+  // "اتحجز/اتعمل" = booked + booked_on_system + service_done. قراءة بس.
+  const CONVERTED = ["booked", "booked_on_system", "service_done"];
+  const ALL_STATUSES = ["new", "in_progress", "booked", "booked_on_system", "service_done", "interested_undecided", "rejected", "no_response", "invalid_number", "missing_data"];
+  const SERVICES = ["checkup", "consultation", "radiology", "lab", "nursing", "physiotherapy", "treatment", "dental", "speech_therapy", "psychiatry", "cosmetic_laser", "emergency", "other"];
+  const isDate = (v: string | null) => !!v && /^\d{4}-\d{2}-\d{2}$/.test(v);
+  if (url.searchParams.get("conversion") === "1" || url.searchParams.get("conversion_detail") === "1") {
+    if (!roleIn(caller, ["general_manager", "super_admin"])) return json({ error: "نسب التحويل مقصورة على المدير العام/السوبر أدمن" }, 403);
+    const cf = url.searchParams.get("from")?.trim() || null;
+    const ct = url.searchParams.get("to")?.trim() || null;
+    if ((cf && !isDate(cf)) || (ct && !isDate(ct))) return json({ error: "تاريخ غير صالح" }, 400);
+    const cAdmin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+    const withDates = (q: any, col: string) => {
+      if (cf) q = q.gte(col, cf);
+      if (ct) q = q.lte(col, ct + "T23:59:59");
+      return q;
+    };
+
+    if (url.searchParams.get("conversion_detail") === "1") {
+      const svc = url.searchParams.get("service")?.trim() || "all";
+      const bucket = url.searchParams.get("bucket")?.trim() || "total";
+      const BUCKETS: Record<string, string[] | null> = {
+        total: null, converted: CONVERTED, service_done: ["service_done"], no_response: ["no_response"],
+        rejected: ["rejected"], invalid_number: ["invalid_number"],
+        open: ALL_STATUSES.filter((s) => !CLOSED_STATUSES.includes(s)),
+      };
+      if (!(bucket in BUCKETS)) return json({ error: "bucket غير صالح" }, 400);
+      if (svc !== "all" && svc !== "unspecified" && !SERVICES.includes(svc)) return json({ error: "الخدمة غير صالحة" }, 400);
+      const dPage = Math.max(1, Number(url.searchParams.get("page") ?? "1") || 1);
+      const dSize = Math.min(50, Math.max(1, Number(url.searchParams.get("page_size") ?? "20") || 20));
+      let dq = cAdmin.from("leads")
+        .select("id, customer_name, phone_raw, source, current_status, interested_service, acquisition_type, created_at", { count: "exact" })
+        .order("created_at", { ascending: false });
+      if (svc === "unspecified") dq = dq.is("interested_service", null);
+      else if (svc !== "all") dq = dq.eq("interested_service", svc);
+      const sts = BUCKETS[bucket];
+      if (sts) dq = dq.in("current_status", sts);
+      dq = withDates(dq, "created_at").range((dPage - 1) * dSize, dPage * dSize - 1);
+      const { data: dRows, count: dCount, error: dErr } = await dq;
+      if (dErr) return json({ error: "تعذّر تحميل التفاصيل" }, 500);
+      return json({ leads: dRows ?? [], total: dCount ?? 0, page: dPage, page_size: dSize, service: svc, bucket });
+    }
+
+    const rows: { interested_service: string | null; current_status: string }[] = [];
+    for (let from = 0; from < 50000; from += 1000) {
+      const { data, error } = await withDates(cAdmin.from("leads").select("interested_service, current_status"), "created_at").range(from, from + 999);
+      if (error) return json({ error: "تعذّر تحميل البيانات" }, 500);
+      rows.push(...(data ?? []));
+      if (!data || data.length < 1000) break;
+    }
+    const byService: Record<string, Record<string, number>> = {};
+    for (const r of rows) {
+      const k = r.interested_service ?? "unspecified";
+      const o = byService[k] ?? (byService[k] = { total: 0, converted: 0, service_done: 0, no_response: 0, rejected: 0, invalid_number: 0, open: 0 });
+      o.total++;
+      if (CONVERTED.includes(r.current_status)) o.converted++;
+      if (r.current_status === "service_done") o.service_done++;
+      if (r.current_status === "no_response") o.no_response++;
+      if (r.current_status === "rejected") o.rejected++;
+      if (r.current_status === "invalid_number") o.invalid_number++;
+      if (!CLOSED_STATUSES.includes(r.current_status)) o.open++;
+    }
+    const income: Record<string, { total: number; invoices: number }> = {};
+    const { data: inv } = await withDates(cAdmin.from("lead_invoices").select("amount, uploaded_at, lead:leads!inner(interested_service)"), "uploaded_at");
+    for (const r of (inv ?? []) as any[]) {
+      const l = Array.isArray(r.lead) ? r.lead[0] : r.lead;
+      const k = l?.interested_service ?? "unspecified";
+      const o = income[k] ?? (income[k] = { total: 0, invoices: 0 });
+      o.total += Number(r.amount) || 0; o.invoices++;
+    }
+    return json({ by_service: byService, income_by_service: income, filter_from: cf, filter_to: ct });
+  }
+
   const status = url.searchParams.get("status")?.trim();
   const search = url.searchParams.get("search")?.trim();
   const openOnly = url.searchParams.get("open_only") === "true";
