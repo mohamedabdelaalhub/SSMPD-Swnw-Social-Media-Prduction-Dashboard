@@ -80,7 +80,7 @@ Deno.serve(async (req) => {
         let count = 0, err: string | null = null;
         try {
           let page: any = await graphGet(`${formId}/leads`, {
-            fields: "id,created_time,field_data,ad_id,adset_id,campaign_id",
+            fields: "id,created_time,field_data,ad_id,adset_id,campaign_id,platform",
             filtering: JSON.stringify([{ field: "time_created", operator: "GREATER_THAN", value: Math.floor(sinceMs / 1000) }]),
             limit: "100",
           }, pageToken);
@@ -93,7 +93,7 @@ Deno.serve(async (req) => {
               const c = pickContact(lead.field_data ?? []);
               const { data, error } = await admin.rpc("ingest_lead", {
                 p_event_id: `fbform:${lead.id}`, p_source: "facebook_form", p_name: c.name || null, p_phone: c.phone || null,
-                p_message: `فورم فيسبوك: ${String(f.name ?? formId).slice(0, 200)}`, p_received_at: new Date(t).toISOString(),
+                p_message: `فورم فيسبوك: ${String(f.name ?? formId).slice(0, 200)}${lead.platform === "ig" ? " · ظهر على: إنستجرام" : lead.platform === "fb" ? " · ظهر على: فيسبوك" : ""}`, p_received_at: new Date(t).toISOString(),
                 p_ad_id: lead.ad_id ?? null, p_adset_id: lead.adset_id ?? null, p_campaign_id: lead.campaign_id ?? null,
               });
               if (error) throw new Error("ingest_failed");
