@@ -2,7 +2,7 @@
 (function () {
   "use strict";
 
-  var SOURCE_LABELS = { whatsapp: "واتساب", messenger: "ماسنجر", phone: "تليفون", clinic: "عيادة", doctor_referral: "تحويل من طبيب العيادة" };
+  var SOURCE_LABELS = { whatsapp: "واتساب", messenger: "ماسنجر", instagram: "إنستجرام", facebook_form: "فورم فيسبوك", phone: "تليفون", clinic: "عيادة", doctor_referral: "تحويل من طبيب العيادة" };
   var SERVICE_LABELS = {
     checkup: "كشف", consultation: "استشارة", radiology: "أشعة", lab: "تحاليل", nursing: "تمريض",
     physiotherapy: "علاج طبيعي", treatment: "علاج", dental: "أسنان", speech_therapy: "تخاطب",
