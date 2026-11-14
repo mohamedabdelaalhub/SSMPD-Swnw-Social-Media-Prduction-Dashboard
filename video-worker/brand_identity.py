@@ -16,3 +16,36 @@ def logo_asset(job, downloaded=False):
             or not str(logo.get('storage_path', '')).startswith(brand + '/')):
         raise RuntimeError('Brand logo does not match the video brand.')
     return logo
+
+
+# --- Brand caption font -----------------------------------------------------
+# libass looks fonts up by *family* name. The BigVesta files declare the family
+# "BigVesta Arabic Beta"; the old value "BigVestaArabicBeta" (no spaces) matched
+# nothing, so captions silently fell back to another font. The font files ship
+# next to the worker and are passed to libass with fontsdir= so rendering does
+# not depend on what is installed on the render machine.
+from pathlib import Path as _Path
+
+BRAND_FONT_FAMILY = 'BigVesta Arabic Beta'
+FONTS_DIR = _Path(__file__).resolve().parent / 'fonts'
+_LEGACY_FONT_NAMES = {'bigvestaarabicbeta', 'bigvestaarabic', 'bigvesta'}
+
+
+def brand_font_family(job):
+    settings = job.get('cover_settings') or {}
+    configured = str(settings.get('font_family') or '').strip()
+    if not configured or configured.replace(' ', '').replace('-', '').lower() in _LEGACY_FONT_NAMES:
+        return BRAND_FONT_FAMILY
+    return configured
+
+
+def _filter_escape(value):
+    return str(value).replace('\\', r'\\').replace(':', r'\:').replace("'", r"\'")
+
+
+def ass_filter(ass_path):
+    """ffmpeg ass= filter that always loads the bundled brand fonts when present."""
+    value = "ass=filename='" + _filter_escape(ass_path) + "'"
+    if FONTS_DIR.is_dir() and any(FONTS_DIR.glob('*.woff2')):
+        value += ":fontsdir='" + _filter_escape(FONTS_DIR) + "'"
+    return value
