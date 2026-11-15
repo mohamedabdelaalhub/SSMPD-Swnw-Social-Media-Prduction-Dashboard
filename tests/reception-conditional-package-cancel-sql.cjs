@@ -58,7 +58,7 @@ await as(2);await assert.rejects(()=>cmd('request_review',{id:r5,approve:true,no
 // rejection still works through the original path
 await cmd('request_review',{id:r5,approve:false,note:'يحتاج طلب جديد'});await as(1);assert.equal((await owner('select status from clinic_reception.requests where id=$1',[r5]))[0].status,'rejected');
 // migration re-runs cleanly
-await db.exec('reset role');await db.exec(fs.readFileSync('supabase/migrations/20261116110000_reception_conditional_package_cancel.sql','utf8'));await as(1);assert.equal((await rpc('clinic_reception_package_cancel_quote',{p_workspace:w,p_package:p3})).method,'conditional');
+await db.exec('reset role');await db.exec(fs.readFileSync('supabase/migrations/20261116130000_reception_conditional_package_cancel.sql','utf8'));await as(1);assert.equal((await rpc('clinic_reception_package_cancel_quote',{p_workspace:w,p_package:p3})).method,'conditional');
 await db.exec('reset role');assert.equal((await db.query('select j.id from clinic_reception.journal j join clinic_reception.journal_lines l on l.entry_id=j.id group by j.id having sum(debit)<>sum(credit)')).rows.length,0);
 await db.close();console.log('PASS conditional package cancel: flag snapshotted at sale (terms + standalone prices), conditional re-pricing (refund 300, forfeit 100 to revenue, liability cleared), pro-rata unchanged, shortfall never charged, maker≠checker, stale numbers refused, rejection path, rerunnable migration, balanced journal.');
 })().catch(e=>{console.error(e);process.exit(1);});
