@@ -42,8 +42,9 @@ language sql security definer stable set search_path = public as $$
   where c.file_id is null
     and f.uploaded_at > now() - make_interval(days => greatest(1, least(p_days, 365)))
     and (f.mime_type ilike 'image/%' or f.mime_type = 'application/pdf'
+         or f.mime_type = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
          -- many uploads carry an empty/generic mime type: fall back to the file extension
-         or lower(f.file_name) ~ '\.(jpe?g|png|webp|tiff?|bmp|pdf)$')
+         or lower(f.file_name) ~ '\.(jpe?g|png|webp|tiff?|bmp|pdf|xlsx)$')
     and coalesce(f.mime_type, '') not in ('image/heic', 'image/heif')
   order by f.uploaded_at desc
   limit greatest(1, least(p_limit, 200));

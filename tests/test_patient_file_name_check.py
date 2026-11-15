@@ -109,3 +109,34 @@ class Worker(unittest.TestCase):
         text = worker.extract_text(os.path.join(work, "src"), "application/octet-stream", work, run=run, file_name="Scan.PDF")
         self.assertEqual(seen, ["pdftotext", "pdftoppm", "tesseract"])
         self.assertIn("محمد", text)
+
+
+import zipfile  # noqa: E402
+
+
+def _xlsx(path, rows):
+    ns = 'xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"'
+    strings, xml_rows = [], []
+    for r, row in enumerate(rows, 1):
+        cells = []
+        for c, val in enumerate(row):
+            if isinstance(val, str):
+                strings.append(val)
+                cells.append('<c r="%s%d" t="s"><v>%d</v></c>' % ("ABCDEFG"[c], r, len(strings) - 1))
+            else:
+                cells.append('<c r="%s%d"><v>%s</v></c>' % ("ABCDEFG"[c], r, val))
+        xml_rows.append('<row r="%d">%s</row>' % (r, "".join(cells)))
+    with zipfile.ZipFile(path, "w") as z:
+        z.writestr("xl/sharedStrings.xml", "<sst %s>%s</sst>" % (ns, "".join("<si><t>%s</t></si>" % s for s in strings)))
+        z.writestr("xl/worksheets/sheet1.xml", "<worksheet %s><sheetData>%s</sheetData></worksheet>" % (ns, "".join(xml_rows)))
+
+
+class Xlsx(unittest.TestCase):
+    def test_label_cell_next_to_name_cell(self):
+        d = tempfile.mkdtemp(); p = os.path.join(d, "r.xlsx")
+        _xlsx(p, [["معمل التحاليل"], ["اسم المريض", "سارة محمود حسن"], ["السن", 40], ["Hemoglobin", 13.5, "g/dL"]])
+        text = worker.extract_text(p, worker.XLSX_MIME, d)
+        self.assertIn("اسم المريض : سارة محمود حسن", text)
+        self.assertEqual(check(P, text)["verdict"], "mismatch")
+        _xlsx(p, [["اسم المريض", "محمد أحمد عبد الله"], ["Hemoglobin", 13.5, "g/dL normal range result"]])
+        self.assertEqual(check(P, worker.extract_text(p, "", d, file_name="R.XLSX"))["verdict"], "match")

@@ -2,7 +2,7 @@
 
 One run (`python3 -m patient_file_name_check.worker --once`) takes up to BATCH new patient files
 from the patient_file_name_check_queue RPC, downloads each from Google Drive with the archive
-service account into a RAM-only work dir, extracts text locally (pdftotext, else pdftoppm +
+service account into a RAM-only work dir, extracts text locally (xlsx cells, pdftotext, else pdftoppm +
 tesseract ara+eng), compares the name with the patient record (match.py) and stores only the
 verdict via patient_file_name_check_record. The file and its text are deleted at once and never
 logged or sent anywhere else. Logs carry file ids and verdicts only.
@@ -12,7 +12,8 @@ Environment (read from the process env; secrets come from a root-only env file /
   GOOGLE_SERVICE_ACCOUNT_KEY_FILE                 path to the service-account JSON (read-only mount)
   WORK_DIR (default /work, a tmpfs)  BATCH (10)  MAX_BYTES (15 MB)  PDF_PAGES (2)
 """
-import base64, json, os, shutil, subprocess, sys, tempfile, time, urllib.parse, urllib.request
+import base64, json, os, re, shutil, subprocess, sys, tempfile, time, urllib.parse, urllib.request, zipfile
+from xml.etree import ElementTree as ET
 
 try:
     from .match import check
@@ -66,7 +67,49 @@ def drive_download(token, file_id, dest, max_bytes):
             out.write(chunk)
 
 
+XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+_NS = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"
+
+
+def xlsx_text(path, max_rows=60, max_sheets=3, max_xml=5_000_000):
+    """Cell text of the first rows of the first sheets. Cells of a row are joined with ' : ' so a
+    'الاسم' cell next to the name cell reads like a labeled line for the matcher."""
+    with zipfile.ZipFile(path) as z:
+        names = z.namelist()
+        def read(n):
+            info = z.getinfo(n)
+            if info.file_size > max_xml:
+                raise ValueError("sheet too large")
+            return z.read(n)
+        shared = []
+        if "xl/sharedStrings.xml" in names:
+            for si in ET.fromstring(read("xl/sharedStrings.xml")).iter(_NS + "si"):
+                shared.append("".join(t.text or "" for t in si.iter(_NS + "t")))
+        sheets = sorted((n for n in names if re.match(r"xl/worksheets/sheet\d+\.xml$", n)),
+                        key=lambda n: int(re.findall(r"\d+", n)[-1]))[:max_sheets]
+        lines = []
+        for sh in sheets:
+            for i, row in enumerate(ET.fromstring(read(sh)).iter(_NS + "row")):
+                if i >= max_rows:
+                    break
+                cells = []
+                for c in row.iter(_NS + "c"):
+                    v = c.find(_NS + "v")
+                    if c.get("t") == "s" and v is not None and (v.text or "").isdigit() and int(v.text) < len(shared):
+                        cells.append(shared[int(v.text)])
+                    elif c.get("t") == "inlineStr":
+                        cells.append("".join(t.text or "" for t in c.iter(_NS + "t")))
+                    elif v is not None and v.text:
+                        cells.append(v.text)
+                cells = [x.strip() for x in cells if x and x.strip()]
+                if cells:
+                    lines.append(" : ".join(cells))
+        return "\n".join(lines)
+
+
 def extract_text(path, mime, workdir, run=run_cmd, pdf_pages=2, file_name=""):
+    if mime == XLSX_MIME or str(file_name).lower().endswith(".xlsx"):
+        return xlsx_text(path)
     if mime == "application/pdf" or str(file_name).lower().endswith(".pdf"):
         text = run(["pdftotext", "-l", str(pdf_pages), "-enc", "UTF-8", path, "-"]).decode("utf-8", "replace")
         if len(text.strip()) >= 40:
