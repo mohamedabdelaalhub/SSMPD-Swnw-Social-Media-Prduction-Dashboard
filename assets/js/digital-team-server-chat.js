@@ -14,7 +14,8 @@ async function api(path,body){
  if(!token)throw Error('سجّل الدخول أولًا');
  var response=await w.fetch(base+path,{method:body?'POST':'GET',headers:{Authorization:'Bearer '+token,...(body?{'Content-Type':'application/json'}:{})},body:body?JSON.stringify(body):undefined,credentials:'same-origin',cache:'no-store'});
  var data;try{data=await response.json();}catch(_){throw Error('خدمة محادثات السيرفر لم تُربط بهذه النسخة بعد');}
- if(!response.ok)throw Error(data.error||'تعذر الوصول للمحادثة');return data;
+ // 401/403 من التحقق من الحساب أو أي عطل خادم = الخدمة نفسها مش متاحة، مش مشكلة في حساب الموظف
+ if(!response.ok)throw Error(response.status>=500||((response.status===401||response.status===403)&&/تعذر التحقق من حسابك/.test(data.error||''))?'المحادثة غير متاحة مؤقتًا. جرّب تاني بعد شوية.':(data.error||'تعذر الوصول للمحادثة'));return data;
 }
 function status(text){if(dialog)dialog.querySelector('[data-sc-status]').textContent=text;}
 function name(code){return agents.find(function(a){return a.code===code;})?.name||code;}
