@@ -2,7 +2,7 @@
  * (rarely used + the edge runtime evicts idle workers): ~1 s boot on the first click.
  * When a patient list is on screen, or the pointer approaches a patient row, send one cheap
  * HEAD request so the worker boots before the click. HEAD returns 405 at the top of the function:
- * no auth, no database, no patient data. At most once every 3 minutes. */
+ * no database query, no patient data. At most once every 3 minutes. */
 (function (w, d) {
   "use strict";
   var EVERY_MS = 3 * 60 * 1000, last = 0;
@@ -10,11 +10,21 @@
     var c = w.SSMPD_CONFIG && w.SSMPD_CONFIG.supabase;
     return c && c.url ? { url: c.url.replace(/\/+$/, "") + "/functions/v1/patient-files-list", key: c.anonKey } : null;
   }
+  // The edge router requires a user JWT for this function, so the HEAD carries the signed-in
+  // staff member's token (no session -> no request).
+  function sessionToken() {
+    var c = w.SSMPDDb && w.SSMPDDb.client;
+    if (!c || !c.auth || !c.auth.getSession) return Promise.resolve(null);
+    return c.auth.getSession().then(function (r) { return r && r.data && r.data.session && r.data.session.access_token || null; }, function () { return null; });
+  }
   function warm() {
     var b = base(), now = Date.now();
     if (!b || now - last < EVERY_MS || !w.fetch) return false;
     last = now;
-    try { w.fetch(b.url, { method: "HEAD", headers: { apikey: b.key }, cache: "no-store", keepalive: true }).catch(function () {}); } catch (e) { /* ignore */ }
+    sessionToken().then(function (token) {
+      if (!token) { last = 0; return; }
+      return w.fetch(b.url, { method: "HEAD", headers: { apikey: b.key, Authorization: "Bearer " + token }, cache: "no-store", keepalive: true });
+    }).catch(function () {});
     return true;
   }
   function hasPatientRows() { return !!d.querySelector("[data-open],[data-pick]"); }
