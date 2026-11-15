@@ -7,10 +7,11 @@
   "file": "lzf1f.mp4",
   "cover_t": 1.5,
   "voice_settings": {
-   "stability": 0.5,
-   "style": 0.2,
-   "speed": 0.96
+   "stability": 0.55,
+   "style": 0.1,
+   "speed": 0.98
   },
+  "voice_continuous": true,
   "prepend_clip": "/root/.claude/uploads/d4cfeb82-593e-5033-90e6-dc2f0a1d367c/fa229957-WhatsApp_Video_2026-11-15_at_6.10.22_AM.mp4"
  },
  "cast": {
@@ -29,54 +30,23 @@
     "cx": 0.5
    },
    "cam": {},
-   "trans": "fade",
-   "tail": 0.1,
-   "actors": {},
-   "beats": [
-    {
-     "say": {
-      "who": "v",
-      "text": "الوش، والدراع، والرجلين",
-      "hl": [
-       "الوش"
-      ],
-      "silent": false,
-      "pad": 0.2,
-      "sep": false
-     }
-    },
-    {
-     "wait": 0.15
-    }
-   ]
-  },
-  {
-   "set": "clear",
-   "bg": {
-    "video": "/root/.claude/uploads/d4cfeb82-593e-5033-90e6-dc2f0a1d367c/2c52d99c-WhatsApp_Video_2026-11-15_at_6.04.54_AM.mp4",
-    "start": 4.4,
-    "fit": "blur",
-    "cx": 0.5
-   },
-   "cam": {},
    "trans": "cut",
-   "tail": 0.1,
+   "tail": 0.0,
    "actors": {},
    "beats": [
     {
      "say": {
       "who": "v",
-      "text": "اختاري المنطقة اللي تناسبك",
+      "text": "الوش، والدراع، والرجلين، اختاري المنطقة اللي تناسبك.",
       "hl": [
        "اختاري"
       ],
       "silent": false,
-      "pad": 0.2,
-      "sep": false
+      "pad": 0.0
      }
     },
     {
-     "wait": 0.15
+     "wait": 0.0
     }
    ]
   },
@@ -90,67 +60,22 @@
    },
    "cam": {},
    "trans": "cut",
-   "tail": 0.1,
+   "tail": 0.0,
    "actors": {},
    "beats": [
     {
      "say": {
       "who": "v",
-      "text": "والجلسة مش بتزيد عن نص ساعة",
+      "text": "والجلسة مش بتزيد عن نص ساعة.",
       "hl": [
        "نص ساعة"
       ],
       "silent": false,
-      "pad": 0.2,
-      "sep": false
+      "pad": 0.0
      }
     },
     {
-     "wait": 0.15
-    }
-   ]
-  },
-  {
-   "set": "clear",
-   "bg": {
-    "video": "/root/.claude/uploads/d4cfeb82-593e-5033-90e6-dc2f0a1d367c/f353714c-WhatsApp_Video_2026-11-15_at_6.05.22_AM.mp4",
-    "start": 0.2,
-    "fit": "blur",
-    "cx": 0.5
-   },
-   "cam": {},
-   "trans": "cut",
-   "tail": 0.1,
-   "actors": {},
-   "beats": [
-    {
-     "badge": {
-      "text": "عيادات سونو — حدائق الأهرام",
-      "kind": "label",
-      "y": 1190,
-      "dur": 1.8
-     }
-    },
-    {
-     "wait": 1.8
-    }
-   ]
-  },
-  {
-   "set": "clear",
-   "bg": {
-    "video": "/root/.claude/uploads/d4cfeb82-593e-5033-90e6-dc2f0a1d367c/6974b84b-WhatsApp_Video_2026-11-15_at_6.03.47_AM.mp4",
-    "start": 2.0,
-    "fit": "blur",
-    "cx": 0.5
-   },
-   "cam": {},
-   "trans": "cut",
-   "tail": 0.1,
-   "actors": {},
-   "beats": [
-    {
-     "wait": 1.8
+     "wait": 0.0
     }
    ]
   },
@@ -164,23 +89,22 @@
    },
    "cam": {},
    "trans": "cut",
-   "tail": 0.1,
+   "tail": 0.0,
    "actors": {},
    "beats": [
     {
      "say": {
       "who": "v",
-      "text": "بإشراف أطباء متخصصين فقط",
+      "text": "كله بإشراف أطباء متخصصين فقط، في حدائق الأهرام.",
       "hl": [
        "متخصصين"
       ],
       "silent": false,
-      "pad": 0.2,
-      "sep": false
+      "pad": 0.0
      }
     },
     {
-     "wait": 0.3
+     "wait": 0.0
     }
    ]
   },
@@ -192,8 +116,8 @@
     "z1": 1.12
    },
    "cam": {},
-   "trans": "flash",
-   "tail": 0.1,
+   "trans": "cut",
+   "tail": 0.0,
    "actors": {},
    "beats": [
     {
@@ -202,24 +126,23 @@
       "sub": "على باقات الليزر حتى آخر ديسمبر",
       "kind": "offer",
       "y": 1200,
-      "dur": 6.0
+      "dur": 4.0
      }
     },
     {
      "say": {
       "who": "v",
-      "text": "وفي خصم عشرين في المية على باقات الليزر، لحد آخر ديسمبر",
+      "text": "وعلى باقات الليزر، خصم عشرين في المية، لحد آخر ديسمبر.",
       "hl": [
        "عشرين",
        "ديسمبر"
       ],
       "silent": true,
-      "pad": 0.2,
-      "sep": false
+      "pad": 0.0
      }
     },
     {
-     "wait": 0.8
+     "wait": 0.0
     }
    ]
   },
@@ -232,7 +155,7 @@
    },
    "cam": {},
    "trans": "cut",
-   "tail": 0.8,
+   "tail": 0.4,
    "actors": {},
    "beats": [
     {
@@ -240,23 +163,22 @@
       "text": "سجّلي بياناتك",
       "kind": "button",
       "y": 1290,
-      "dur": 5.0
+      "dur": 3.0
      }
     },
     {
      "say": {
       "who": "v",
-      "text": "سجّلي بياناتك، وهنتواصل معاكي",
+      "text": "سجّلي بياناتك دلوقتي، وهنتواصل معاكي.",
       "hl": [
        "سجّلي"
       ],
       "silent": true,
-      "pad": 0.2,
-      "sep": false
+      "pad": 0.0
      }
     },
     {
-     "wait": 1.2
+     "wait": 0.0
     }
    ]
   }

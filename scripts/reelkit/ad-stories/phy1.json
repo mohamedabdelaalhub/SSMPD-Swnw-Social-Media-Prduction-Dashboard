@@ -7,10 +7,11 @@
   "file": "phy1.mp4",
   "cover_t": 1.5,
   "voice_settings": {
-   "stability": 0.5,
-   "style": 0.2,
-   "speed": 0.96
+   "stability": 0.55,
+   "style": 0.1,
+   "speed": 0.98
   },
+  "voice_continuous": true,
   "prepend_clip": "/root/.claude/uploads/d4cfeb82-593e-5033-90e6-dc2f0a1d367c/86ddeb97-WhatsApp_Video_2026-11-15_at_6.21.02_AM.mp4"
  },
  "cast": {
@@ -28,51 +29,24 @@
     "z1": 1.12
    },
    "cam": {},
-   "trans": "fade",
-   "tail": 0.1,
-   "actors": {},
-   "beats": [
-    {
-     "say": {
-      "who": "v",
-      "text": "جلسات بأجهزة، وتحت إشراف أخصائيين",
-      "hl": [
-       "أخصائيين"
-      ],
-      "silent": false,
-      "pad": 0.2
-     }
-    },
-    {
-     "wait": 0.15
-    }
-   ]
-  },
-  {
-   "set": "clear",
-   "bg": {
-    "photo": "/tmp/ad/phy_woman.png",
-    "z0": 1.12,
-    "z1": 1.0
-   },
-   "cam": {},
    "trans": "cut",
-   "tail": 0.1,
+   "tail": 0.0,
    "actors": {},
    "beats": [
     {
      "say": {
       "who": "v",
-      "text": "لكل الأعمار",
+      "text": "جلسات بأجهزة، وتحت إشراف أخصائيين، لكل الأعمار.",
       "hl": [
+       "أخصائيين",
        "الأعمار"
       ],
       "silent": false,
-      "pad": 0.2
+      "pad": 0.0
      }
     },
     {
-     "wait": 0.15
+     "wait": 0.0
     }
    ]
   },
@@ -80,53 +54,27 @@
    "set": "clear",
    "bg": {
     "photo": "/tmp/ad/phy_elder.png",
-    "z0": 1.0,
-    "z1": 1.12
+    "z0": 1.12,
+    "z1": 1.0
    },
    "cam": {},
    "trans": "cut",
-   "tail": 0.1,
+   "tail": 0.0,
    "actors": {},
    "beats": [
     {
      "say": {
       "who": "v",
-      "text": "من الشباب لكبار السن، وأخصائي معاك في كل خطوة",
+      "text": "من الشباب لكبار السن، وأخصائي معاك في كل خطوة.",
       "hl": [
        "خطوة"
       ],
       "silent": false,
-      "pad": 0.2
+      "pad": 0.0
      }
     },
     {
-     "wait": 0.15
-    }
-   ]
-  },
-  {
-   "set": "clear",
-   "bg": {
-    "video": "/root/.claude/uploads/d4cfeb82-593e-5033-90e6-dc2f0a1d367c/f353714c-WhatsApp_Video_2026-11-15_at_6.05.22_AM.mp4",
-    "start": 0.2,
-    "fit": "blur",
-    "cx": 0.5
-   },
-   "cam": {},
-   "trans": "cut",
-   "tail": 0.1,
-   "actors": {},
-   "beats": [
-    {
-     "badge": {
-      "text": "عيادات سونو — حدائق الأهرام",
-      "kind": "label",
-      "y": 1190,
-      "dur": 2.6
-     }
-    },
-    {
-     "wait": 2.6
+     "wait": 0.0
     }
    ]
   },
@@ -138,8 +86,8 @@
     "z1": 1.12
    },
    "cam": {},
-   "trans": "flash",
-   "tail": 0.1,
+   "trans": "cut",
+   "tail": 0.0,
    "actors": {},
    "beats": [
     {
@@ -148,23 +96,23 @@
       "sub": "على أول جلسة",
       "kind": "offer",
       "y": 1200,
-      "dur": 5.0
+      "dur": 3.0
      }
     },
     {
      "say": {
       "who": "v",
-      "text": "وعلى أول جلسة، خصم عشرين في المية",
+      "text": "وعلى أول جلسة، خصم عشرين في المية.",
       "hl": [
        "عشرين",
        "أول جلسة"
       ],
       "silent": true,
-      "pad": 0.2
+      "pad": 0.0
      }
     },
     {
-     "wait": 0.8
+     "wait": 0.0
     }
    ]
   },
@@ -177,22 +125,22 @@
    },
    "cam": {},
    "trans": "cut",
-   "tail": 0.1,
+   "tail": 0.0,
    "actors": {},
    "beats": [
     {
      "say": {
       "who": "v",
-      "text": "ابعتلنا على واتساب، وهنحدد معاك خطة الجلسات المناسبة",
+      "text": "ابعتلنا على واتساب، وهنحدد معاك خطة الجلسات المناسبة.",
       "hl": [
        "واتساب"
       ],
       "silent": false,
-      "pad": 0.2
+      "pad": 0.0
      }
     },
     {
-     "wait": 0.15
+     "wait": 0.0
     }
    ]
   },
@@ -205,7 +153,7 @@
    },
    "cam": {},
    "trans": "cut",
-   "tail": 0.8,
+   "tail": 0.4,
    "actors": {},
    "beats": [
     {
@@ -213,22 +161,22 @@
       "text": "احجز موعدك",
       "kind": "button",
       "y": 1290,
-      "dur": 4.0
+      "dur": 3.0
      }
     },
     {
      "say": {
       "who": "v",
-      "text": "احجز موعدك دلوقتي",
+      "text": "احجز موعدك دلوقتي.",
       "hl": [
        "احجز"
       ],
       "silent": true,
-      "pad": 0.2
+      "pad": 0.0
      }
     },
     {
-     "wait": 1.2
+     "wait": 0.0
     }
    ]
   }

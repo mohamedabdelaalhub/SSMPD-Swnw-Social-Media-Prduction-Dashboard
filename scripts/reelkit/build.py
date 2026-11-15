@@ -95,7 +95,7 @@ for spk, lst in lines.items():
     if dry: al = V.estimate(joined)
     st, en = al["start"], al["end"]; n = len(st); wav = decode(mp3) if not dry else None
     p95 = np.percentile(np.abs(wav), 95) if wav is not None and len(wav) else 1.0
-    pos = 0
+    pos = 0; got = []
     for si, bi, text in lst:
         vtxt = voice_text(text, PRON); a, b = pos, pos + len(vtxt); pos = b + 2
         ia, ib = min(a, n - 1), min(max(b - 1, a), n - 1)
@@ -103,10 +103,18 @@ for spk, lst in lines.items():
         words = [(html, st[min(a + s0, n - 1)] - ta, en[min(max(a + s1 - 1, a + s0), n - 1)] - ta) for html, s0, s1 in chunk_spans(text, vtxt, hl_of[(si, bi)])]
         line_timing[(si, bi)] = dict(dur=tb - ta + 0.05, words=words, env_key=(si, bi))
         audio_src[(si, bi)] = (mp3 if not dry else None, ta, tb)
+        got.append((si, bi, ta, tb))
         if wav is not None:
             seg = wav[int(ta * SR):int(tb * SR)]; w = int(SR / FPS)
             r = np.array([np.sqrt(np.mean(seg[i:i + w] ** 2)) if len(seg[i:i + w]) else 0 for i in range(0, max(len(seg) - w, 1), w)])
             e = np.clip(r / max(p95, 1e-6), 0, 1) ** 0.8; envs[(si, bi)] = np.convolve(e, [0.25, 0.5, 0.25], mode="same").tolist()
+
+    if (sb.get("meta") or {}).get("voice_continuous") and len(got) > 1 and not spk.count(chr(35)):
+        # the whole take plays as ONE continuous stream (its natural breathing is kept); each scene lasts from its sentence start to the next one's start
+        for k, (si, bi, ta, tb) in enumerate(got):
+            tend = got[k + 1][2] if k + 1 < len(got) else tb + 0.35
+            line_timing[(si, bi)]["dur"] = tend - ta
+            audio_src[(si, bi)] = (mp3 if not dry else None, ta, tend, True, k == 0, k == len(got) - 1)
 
 tl = E.plan(sb, line_timing)
 dur = min(tl.dur, args.max_sec) if args.max_sec else tl.dur
@@ -115,6 +123,7 @@ if os.environ.get("RK_DEBUG"):
 print(f"timeline {tl.dur:.1f}s, {len(tl.scenes)} scenes, {sum(len(a['say']) for a in tl.actors.values())} lines, voices={'dry' if args.dry else 'ElevenLabs'}")
 
 # ---------------------------------------------------------------- frames
+XF = 0.3  # crossfade between background shots (seconds)
 ALPHA = any("bg" in sc for sc in sb["scenes"])  # scenes with a video/photo background composed under transparent overlay frames
 fr = os.path.join(args.out, "frames_svg"); jp = os.path.join(args.out, "frames"); shutil.rmtree(fr, ignore_errors=True); shutil.rmtree(jp, ignore_errors=True); os.makedirs(fr)
 N = int(dur * FPS)
@@ -138,13 +147,18 @@ if args.frames_only: sys.exit(0)
 contact = 0.0 if args.no_end else 3.0; total = dur + contact
 mx = S.Mix(total); LEVEL = {}; TARGET_RMS = 0.12
 for v in tl.voice:
-    mp3, ta, tb = audio_src[(v["si"], v["bi"])]
+    src = audio_src[(v["si"], v["bi"])]; mp3, ta, tb = src[:3]; cont = len(src) > 3
     if mp3 is None: continue
     wav = decode(mp3)
     if mp3 not in LEVEL:  # every speaker is brought to the same speech loudness (a quiet voice next to a loud one was the owner's complaint)
         act = np.abs(wav)[np.abs(wav) > 0.02]
         LEVEL[mp3] = float(np.clip(TARGET_RMS / max(np.sqrt(np.mean(act ** 2)) if len(act) else TARGET_RMS, 1e-6), 0.4, 4.0))
-    seg = wav[int(ta * SR):int(tb * SR) + int(0.24 * SR)].copy() * LEVEL[mp3]; seg = np.tanh(seg / 0.9) * 0.9; f = int(0.012 * SR); seg[-int(0.12 * SR):] *= np.linspace(1, 0, int(0.12 * SR))  # keep the word ending, fade out softly
+    if cont:  # continuous take: no cuts between sentences, only a soft entrance on the first and a soft end on the last
+        seg = wav[int(ta * SR):int(tb * SR)].copy() * LEVEL[mp3]; seg = np.tanh(seg / 0.9) * 0.9
+        if src[4]: f = int(0.04 * SR); seg[:f] *= np.linspace(0, 1, f)
+        if src[5]: f = int(0.15 * SR); seg[-f:] *= np.linspace(1, 0, f)
+        mx.add(seg, v["t"], 1.0); continue
+    seg = wav[int(ta * SR):int(tb * SR) + int(0.24 * SR)].copy() * LEVEL[mp3]; seg = np.tanh(seg / 0.9) * 0.9; f = int(0.04 * SR); seg[-int(0.12 * SR):] *= np.linspace(1, 0, int(0.12 * SR))  # keep the word ending, fade out softly
     seg[:f] *= np.linspace(0, 1, f); seg[-f:] *= np.linspace(1, 0, f); mx.add(seg, v["t"], 1.0)
 for t0, nm, g in tl.sfx:
     if t0 < dur: mx.sfx(nm, t0, g * 0.8)
@@ -162,9 +176,9 @@ content = os.path.join(args.out, "content.mp4")
 if not ALPHA:
     subprocess.run(["ffmpeg", "-v", "error", "-y", "-framerate", str(FPS), "-i", f"{jp}/f_%04d.jpg", "-c:v", "libx264", "-preset", "medium", "-crf", "18", "-pix_fmt", "yuv420p", content], check=True)
 else:
-    segs = []
+    segs = []; OVF = round(XF * FPS)
     for i, sc in enumerate(tl.scenes):
-        n = max(1, round(sc["t1"] * FPS) - round(sc["t0"] * FPS)); bg = sb["scenes"][i].get("bg") or {}; sg = os.path.join(args.out, f"bg_{i:02d}.mp4")
+        n = max(1, round(sc["t1"] * FPS) - round(sc["t0"] * FPS)) + (OVF if i < len(tl.scenes) - 1 else 0); bg = sb["scenes"][i].get("bg") or {}; sg = os.path.join(args.out, f"bg_{i:02d}.mp4")
         if bg.get("video"):
             fit = bg.get("fit", "blur"); cx = bg.get("cx", 0.5)
             if fit == "fill": vf = "scale=1080:1920:force_original_aspect_ratio=increase:flags=lanczos,crop=1080:1920"
@@ -178,8 +192,16 @@ else:
             vf = f"scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,scale=2160:3840,zoompan=z='{z0}+({z1}-{z0})*on/{n}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:s=1080x1920:fps={FPS}"
             cmd = ["ffmpeg", "-v", "error", "-y", "-loop", "1", "-i", bg["photo"], "-vf", vf, "-frames:v", str(n), "-c:v", "libx264", "-crf", "18", "-pix_fmt", "yuv420p", sg]
         subprocess.run(cmd, check=True); segs.append(sg)
-    lst = os.path.join(args.out, "bg_list.txt"); open(lst, "w").write("".join(f"file '{x}'\n" for x in segs))
-    bgall = os.path.join(args.out, "bg.mp4"); subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", lst, "-c:v", "libx264", "-crf", "18", "-pix_fmt", "yuv420p", bgall], check=True)
+    bgall = os.path.join(args.out, "bg.mp4"); cmd = ["ffmpeg", "-v", "error", "-y"]
+    for sg in segs: cmd += ["-i", sg]
+    if len(segs) == 1: fc, last = "[0:v]null[x0]", "x0"
+    else:
+        parts = []; last = "0:v"
+        for i in range(1, len(segs)):
+            off = max(0.0, tl.scenes[i]["t0"] - XF); parts.append(f"[{last}][{i}:v]xfade=transition=fade:duration={XF}:offset={off:.3f}[x{i}]"); last = f"x{i}"
+        fc = ";".join(parts)
+    cmd += ["-filter_complex", fc, "-map", f"[{last}]" if len(segs) > 1 else "[x0]", "-frames:v", str(round(tl.dur * FPS)), "-c:v", "libx264", "-crf", "18", "-pix_fmt", "yuv420p", bgall]
+    subprocess.run(cmd, check=True)
     subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", bgall, "-framerate", str(FPS), "-i", f"{jp}/f_%04d.png", "-filter_complex", "[0:v][1:v]overlay=0:0:format=auto,format=yuv420p[v]", "-map", "[v]", "-c:v", "libx264", "-preset", "medium", "-crf", "18", content], check=True)
 final = os.path.join(args.out, sb.get("meta", {}).get("file", "reel.mp4"))
 if args.no_end:
