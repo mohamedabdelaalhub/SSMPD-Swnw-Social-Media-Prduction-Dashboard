@@ -6,6 +6,8 @@ await db.exec("create table public.admins(id uuid primary key);insert into publi
 const sql=fs.readFileSync('supabase/activation/contract_marketing.sql','utf8');await db.exec(sql);await db.exec(sql);
 // The heartbeat activation replaces contract_marketing_worker; it must keep the same self-hosted design-link check.
 const heartbeat=fs.readFileSync('supabase/activation/contract_sync_heartbeat.sql','utf8');await db.exec(heartbeat);await db.exec(heartbeat);
+// Live order: the self-host URL migration, then the heartbeat restore (it must leave the heartbeat and the URL check in place).
+for(const m of ['20261115020000_contract_marketing_selfhost_url','20261115140000_contract_marketing_heartbeat_restore'])await db.exec(fs.readFileSync('supabase/migrations/'+m+'.sql','utf8'));
 await db.exec("insert into clinic_finance.doctor_contracts(doctor_key,doctor_name,status,valid_from,valid_to) values('DOC','د. طبيب','active',current_date-1,current_date+1),('DOC','اسم غير معتمد','pending',current_date-1,current_date+5),('FUTURE','مستقبل','active',current_date+1,current_date+3);insert into public.contracting_entities values('20000000-0000-4000-8000-000000000001','جهة');insert into public.contracting_entity_contracts(entity_id,status,start_date,end_date) values('20000000-0000-4000-8000-000000000001','active',current_date-1,current_date+1),('20000000-0000-4000-8000-000000000001','suspended',current_date-1,current_date+1);");
 const profile=async(kind,key,settings)=> (await db.query('select public.contract_marketing_profile($1,$2,$3::jsonb) v',[kind,key,settings==null?null:JSON.stringify(settings)])).rows[0].v;
 const worker=async(action,data={})=>(await db.query('select public.contract_marketing_worker($1,$2::jsonb) v',[action,JSON.stringify(data)])).rows[0].v;
