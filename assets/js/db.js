@@ -586,6 +586,9 @@
     listMetaCreativePerformance: function () {
       return handle(client.from("vw_meta_creative_performance").select("*").order("spend", { ascending: false, nullsFirst: false }));
     },
+    getLeadAdInfo: function (leadId) {
+      return handle(client.from("vw_lead_meta_attribution").select("meta_ad_id,meta_campaign_id,matched_ad_name,matched_campaign_name,matched_brand").eq("lead_id", leadId).maybeSingle());
+    },
     listMetaLeadAttribution: function () {
       return handle(client.from("vw_lead_meta_attribution").select("*").order("received_at", { ascending: false }));
     },

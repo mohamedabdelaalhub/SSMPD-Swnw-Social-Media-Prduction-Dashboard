@@ -1056,6 +1056,7 @@
         'مريض: ' + (lead.patient_type === "existing" ? "قديم" : "جديد") + '<br>' +
         (lead.interested_service ? ('مهتم بـ: ' + (SERVICE_LABELS[lead.interested_service] || lead.interested_service) + '<br>') : '') +
         (lead.acquisition_type ? ('مصدر الاهتمام: ' + (ACQUISITION_LABELS[lead.acquisition_type] || lead.acquisition_type) + '<br>') : '') +
+        ((lead.meta_ad_id || lead.meta_campaign_id) ? '<span id="lm-adinfo">الإعلان: <span style="color:var(--c-muted);">جاري التحميل…</span><br></span>' : '') +
         (lead.message_text ? ('الرسالة: ' + escapeHtml(lead.message_text) + '<br>') : '') +
         (lead.assigned_to ? ('مُسند لـ: ' + escapeHtml(employeeName(lead.assigned_to)) + '<br>') : '') +
         'تاريخ الاستلام: ' + fmtDate(lead.created_at) +
@@ -1139,6 +1140,21 @@
 
       html += '</div>';
       backdrop.innerHTML = html;
+      // الإعلان اللي جه منه الليد (اسم الإعلان والحملة والصفحة) — لو الاسم مش متاح لحسابك، بيظهر رقم الإعلان بس
+      if (lead.meta_ad_id || lead.meta_campaign_id) {
+        var adBox = backdrop.querySelector("#lm-adinfo");
+        var adFallback = function () {
+          if (adBox) adBox.innerHTML = 'الإعلان: ' + (lead.meta_ad_id ? ('رقم ' + escapeHtml(lead.meta_ad_id)) : ('حملة رقم ' + escapeHtml(lead.meta_campaign_id))) + '<br>';
+        };
+        Promise.resolve().then(function () { return window.SSMPDDb.getLeadAdInfo(lead.id); }).then(function (a) {
+          if (!adBox) return;
+          if (!a || (!a.matched_ad_name && !a.matched_campaign_name)) return adFallback();
+          var page = a.matched_brand === "dr_dina" ? "د. دينا" : (a.matched_brand === "sono" ? "سونو" : "");
+          adBox.innerHTML = 'الإعلان: <b>' + escapeHtml(a.matched_ad_name || ('رقم ' + (lead.meta_ad_id || '—'))) + '</b><br>' +
+            (a.matched_campaign_name ? ('الحملة: ' + escapeHtml(a.matched_campaign_name) + '<br>') : '') +
+            (page ? ('صفحة الإعلان: ' + page + '<br>') : '');
+        }).catch(adFallback);
+      }
       if(window.SSMPDSharedReception)window.SSMPDSharedReception.append(backdrop.querySelector('.modal'),{context:'lead',id:lead.id});if(window.SSMPDReception&&window.SSMPDRoles.canSeeTab(window.SSMPDAuth.currentAdmin,'reception_services')){var bookingButton=document.createElement('button');bookingButton.className='btn';bookingButton.type='button';bookingButton.textContent='حجز كشف جديد للمريض';backdrop.querySelector('.modal').appendChild(bookingButton);bookingButton.onclick=async function(){bookingButton.disabled=true;try{await window.SSMPDReception.openForLead(lead.id);backdrop.remove();}catch(err){T.show(err.message,'error');}finally{bookingButton.disabled=false;}};}
       backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
 

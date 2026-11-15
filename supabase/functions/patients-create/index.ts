@@ -46,8 +46,9 @@ async function getCallerAdmin(req: Request) {
   return { ...row, extra_roles: (extra ?? []).map((r: { role: string }) => r.role) };
 }
 
-function isSuperAdmin(caller: { role: string; extra_roles?: string[] }): boolean {
-  return caller.role === "super_admin" || (caller.extra_roles ?? []).includes("super_admin");
+function canCreatePatient(caller: { role: string; extra_roles: string[]; has_archive_access: boolean }): boolean {
+  const roles = [caller.role, ...caller.extra_roles];
+  return caller.has_archive_access || roles.includes("super_admin") || roles.includes("reception");
 }
 
 Deno.serve(async (req) => {
@@ -56,7 +57,7 @@ Deno.serve(async (req) => {
 
   const caller = await getCallerAdmin(req);
   if (!caller) return json({ error: "غير مصرح — سجّل دخولك تاني" }, 401);
-  const allowed = caller.has_archive_access || isSuperAdmin(caller);
+  const allowed = canCreatePatient(caller);
   if (!allowed) return json({ error: "مفيش صلاحية أرشيف المرضى" }, 403);
 
   let body: any;

@@ -32,9 +32,9 @@ const root=path.join(__dirname,'..'),read=n=>fs.readFileSync(path.join(root,'ass
  const card=d.querySelector('[data-admin-view=legal]');assert.ok(card,'legal card exists on the admin home');assert.equal(card.textContent.includes('المستندات القانونية'),true);
  assert.equal(d.querySelectorAll('.aw-section-card').length,7,'6 existing cards + 1 legal');
  card.click();const panel=d.querySelector('[data-admin-panel=legal]');assert.equal(panel.hidden,false);
- assert.equal(panel.querySelectorAll('.ld-group').length,3);assert.equal(panel.querySelectorAll('.ld-row').length,6);
+ assert.equal(panel.querySelectorAll('.ld-group').length,4);assert.equal(panel.querySelectorAll('.ld-row').length,7);
  const links=[...panel.querySelectorAll('.ld-actions a')].map(a=>a.getAttribute('href'));
- assert.deepEqual(links.map(u=>u.replace('https://example.invalid/app/','')),['https://backup-legal.swnwclinics.com/privacy','https://backup-legal.swnwclinics.com/terms','privacy.html','terms.html','privacy-policy.html','data-deletion.html']);
+ assert.deepEqual(links.map(u=>u.replace('https://example.invalid/app/','')),['https://backup-legal.swnwclinics.com/privacy','https://backup-legal.swnwclinics.com/terms','privacy.html','terms.html','privacy-policy.html','data-deletion.html','lead-forms-privacy.html']);
  for(const u of links)if(!u.startsWith('https://backup-legal.'))assert.ok(fs.existsSync(path.join(root,u.replace('https://example.invalid/app/',''))),u+' exists');
  assert.ok(links.every(u=>u.startsWith('https://')),'absolute public links');
  assert.ok([...panel.querySelectorAll('.ld-actions a')].every(a=>a.target==='_blank'&&/noopener/.test(a.rel)));

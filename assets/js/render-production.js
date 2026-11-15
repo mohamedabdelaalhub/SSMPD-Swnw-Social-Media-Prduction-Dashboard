@@ -394,7 +394,7 @@ function openAgentImportModal(parentBackdrop) {
       rows.push('<div style="margin-bottom:8px;"><b>' + escapeHtml(label) + ':</b><div style="white-space:pre-wrap;">' + escapeHtml(value) + '</div></div>');
     }
     add("Hook", item.hook_text);
-    add("Angle", item.content_angle);
+    add("Angle", item.content_angle === "character_reel" ? "ريل شخصيات كارتونية" : item.content_angle);
     add("Script / Voice-over", item.script_text);
     add("Caption", item.caption_text);
     add("CTA Type", item.cta_type);

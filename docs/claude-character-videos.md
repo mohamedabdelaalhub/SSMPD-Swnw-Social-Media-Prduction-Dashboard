@@ -26,13 +26,20 @@ Kit ids: `kit_1057129943`, `kit_1068373289`, `kit_1091716457`, `kit_1127429795`,
 
 **Idea pool.** Ideas already sitting in `idea_selection` with `content_angle='character_reel'` (created by Claude Creative or staff) are the preferred topics: take the oldest one for that page, PATCH that same item (do not create a duplicate), and continue its stages. If none fits, write a new topic as for any reel. Never touch ideas that are not marked as character reels.
 
-**Measure and adjust (every Friday run, and whenever the daily run has fresh data).** Compare character reels with the page's normal reels published in the same period, from `post_insights` joined to `content_items` (use reach-normalised engagement: (fb_reactions + fb_comments + fb_shares + ig_interactions) / nullif(fb_reach + ig_reach, 0), plus shares and saves separately):
-- Need at least 4 character reels with 3+ days of insights per page before changing anything; below that keep the default and say "لسه بنجمع بيانات".
-- Character reels clearly better (median engagement ≥ 1.3× the normal reels AND shares or reach also higher) → raise the rate one step: 7 days → 4 days (about 2 per week). Never above 2 per week per page, and never two on the same day.
-- Clearly worse (median ≤ 0.7× the normal reels) → lower one step: 7 → 14 days. If still worse after 4 more reels, stop making them and ask Mohamed.
-- In between → keep the rate and try a different format of the style (cartoon vs kit style, different cast/set) before judging the style itself.
-- Judge topic and hour separately from style (a bad topic is not a bad style). Medical-safety rules never change with performance.
-- Record the decision where the other run summaries go: current interval per page, the numbers behind it, and the one line «ريل الشخصيات: X× مقابل الريل العادي → <قرار>». Only a changed interval is a decision to tell Mohamed; do not change the interval more than once every 14 days.
+**Measure and adjust (every run; stateless — nothing is stored between runs, the interval is recomputed from the data each time).** Compare the page's character reels with its normal reels (content_format='video', not character_reel) using real reach-normalised engagement, with ONE mailbox request:
+```sql
+select (c.content_angle = 'character_reel') as is_char, count(*) as reels,
+  percentile_cont(0.5) within group (order by (coalesce(i.fb_reactions,0)+coalesce(i.fb_comments,0)+coalesce(i.fb_shares,0)+coalesce(i.ig_interactions,0))::numeric / nullif(coalesce(i.fb_reach,0)+coalesce(i.ig_reach,0),0)) as median_eng,
+  percentile_cont(0.5) within group (order by coalesce(i.fb_shares,0)) as median_shares,
+  percentile_cont(0.5) within group (order by coalesce(i.fb_reach,0)+coalesce(i.ig_reach,0)) as median_reach
+from public.post_insights i join public.content_items c on c.id = i.content_id
+where c.brand = '<brand>' and c.content_format = 'video' and i.published_at > now() - interval '60 days' and i.published_at < now() - interval '3 days'
+group by 1;
+```
+- Use it only when the character row has at least 4 reels; otherwise keep the default interval (7 days) and say "لسه بنجمع بيانات".
+- ratio = median_eng(char) / median_eng(normal). ratio ≥ 1.3 and (median_shares or median_reach also higher) → interval 4 days (max 2 per week per page, never two on the same day). ratio ≤ 0.7 → interval 14 days. Otherwise 7 days. If it stays ≤ 0.7 with 4 more reels, stop making them and ask Mohamed.
+- Judge topic and hour separately from style (a bad topic is not a bad style); medical-safety rules never change with performance.
+- Summary: write «ريل الشخصيات: X× مقابل الريل العادي → فاصل N يوم» per page; tell Mohamed only when the interval differs from the previous run's.
 If the character reel cannot be finished (render, voice or quota problem), make the normal reel instead and say so in the final message — never leave the day without its reel.
 
 ## 3. Rules
@@ -57,7 +64,14 @@ Voices and settings: `docs/character-library/voices.json` (the voices were added
 Write a storyboard JSON (cast, scenes, lines; format and ready examples in `scripts/reelkit/README.md` and `scripts/reelkit/stories/`) and run one command:
 `python3 scripts/reelkit/build.py story.json OUT --kit <KITDIR>` (`--dry` first for a free timing check). It makes the voices (one ElevenLabs request per character), captions (blue box with orange border, white text, key words highlighted), lip-sync, camera moves, transitions, SFX, music, contact card and outro.
 Vary every reel: two visual styles (cartoon stickman looks, or the kit style: `dr_poses`, `kit_dr_f_auburn`, `kit_woman`, `kit_girl`, `kit_boy`), 8 sets, props, gestures, transitions, different cast and story shape than the last character reel (check the last two with the same marker). Put the chosen style/cast/set in `hypothesis_reason` so the next run can avoid repeating it.
-Child voices are not available yet: do not give a kid a voice of an adult unless the story is a comic one and the owner has accepted that look.
+Child voices (owner decision 2026-11-13): there are NONE. ElevenLabs refuses Voice Design for children, and a pitched-up adult voice was tried and rejected as not good. So kids NEVER speak: they react with expressions, gestures, sound effects and a short caption/thought bubble, and the dialogue is carried by adults (mama, doctor, grandfather, grandmother, papa). `male_2` is an adult man voice (approved for variety), not a boy.
+
+## 4c. Item fields and cover (so the dashboard machinery works)
+- Create the item like any reel (see the task prompt) with: `content_angle='character_reel'`, title ending `(ريل كوميدي)`, `video_template='medical_educational'`, `publish_platforms` as for any sono reel, `script_text` = the dialogue with speaker names, `hypothesis_reason` = style + cast + set used (so the next run avoids repeating it) + "محتاج مراجعة دكتور" for medical claims.
+- ALWAYS save the storyboard in `video_storyboard` (the JSON you gave `build.py`): a reel that comes back in `needs_revision` is rebuilt from it (apply the comments to the text/cast, re-run `build.py`, re-export with the current ending, keep the same item).
+- Cover: `python3 scripts/reelkit/cover.py OUT "<title with *key* words, \\n for line breaks>" "<tag>" "<subtitle>"` after `build.py` (it uses the clean frame `cover_frame.png` that build saves and the approved cover template, brand font checked), then upload `OUT/reel-cover.png` with `?op=upload_cover&content_id=<id>`. No diacritics on screen, ever (they are for the voice only, see `pron.json`).
+- Sources: only a page you actually fetched and that answered; if the official site is unreachable from the environment, leave `sources` empty and flag it (never invent one).
+- Staff cannot press «نفّذ» on these items and cannot edit them (database guard); only managers and Claude can.
 
 ## 4d. Writing the dialogue (so the script suits this format) — `scripts/reelkit/from_dialogue.py`
 Claude does not hand-write a storyboard: write ONLY the dialogue, the compiler picks cast, looks, sets, gestures, camera and transitions (varied by seed) and checks the rules:

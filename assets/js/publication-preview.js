@@ -63,7 +63,7 @@
    (coverDrive&&/^[\w-]+$/.test(coverDrive)?Promise.resolve(driveThumb(coverDrive,480)):signed(coverUrl)).then(function(u){var safe=safeUrl(u);if(safe&&root.isConnected){if(coverDrive)cimg.referrerPolicy='no-referrer';cimg.src=safe;var v=media.querySelector('video');if(v)v.poster=safe;}}).catch(function(){cover.append(el('p','publication-preview__empty','تعذر تحميل الغلاف'));});}
   if(options.details!==false){
    var details=el('details','publication-preview__details');details.append(el('summary',null,'الفكرة والسكريبت وتفاصيل المحتوى'));
-   var fields=[['وصف الفكرة',item.body],['الهوك / الافتتاحية',item.hook_text],['زاوية المحتوى',item.content_angle],['السكريبت',item.script_text],['نص التواصل / CTA',item.cta_text],['نوع التواصل',item.cta_type],['الموضوع / الخدمة',item.topic_service],['سبب الفكرة',item.hypothesis_reason]];
+   var fields=[['وصف الفكرة',item.body],['الهوك / الافتتاحية',item.hook_text],['زاوية المحتوى',item.content_angle==='character_reel'?'ريل شخصيات كارتونية':item.content_angle],['السكريبت',item.script_text],['نص التواصل / CTA',item.cta_text],['نوع التواصل',item.cta_type],['الموضوع / الخدمة',item.topic_service],['سبب الفكرة',item.hypothesis_reason]];
    fields.forEach(function(field){if(!field[1])return;var row=el('div','publication-preview__detail');row.append(el('strong',null,field[0]));var text=el('p',null,field[1]);text.dir='auto';row.append(text);details.append(row);});
    if(item.target_duration_min_seconds!=null||item.target_duration_max_seconds!=null)details.append(el('p',null,'مدة الفيديو '+(item.target_duration_min_seconds==null?'—':item.target_duration_min_seconds)+' إلى '+(item.target_duration_max_seconds==null?'—':item.target_duration_max_seconds)+' ثانية'));
    if(details.children.length>1)root.append(details);

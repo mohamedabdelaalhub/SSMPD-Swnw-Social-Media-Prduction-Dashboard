@@ -299,7 +299,7 @@ def frame_svg(tl, t, envs, opts=None):
     for c in tl.cards: o += B.card(t, c["t0"], c["t1"], c["idx"], c["text"], c["y"])
     if not opts.get("no_caps"):
         for a, b, h in tl.caps: o += B.capbox(t, a, b, h)
-    o += B.chrome() if B.LOGO_URI else ""
+    o += B.chrome() if (B.LOGO_URI and not opts.get("no_chrome")) else ""
     # scene transition-in
     tr = sc["trans"]; tin = t - sc["t0"]
     if tin < 0.35 and tr != "cut":
