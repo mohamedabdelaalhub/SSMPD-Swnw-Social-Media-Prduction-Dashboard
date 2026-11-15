@@ -739,3 +739,5 @@ table.simple.acc-table td.acc-col-num{text-align:left;}
 /* Patient-portal visibility control (portal-visibility-controls.js) */
 .portal-visibility-select{font:inherit;font-size:12px;padding:3px 6px;margin-inline-start:6px;border:1px solid #c9d3ea;border-radius:8px;background:#fff;color:#0F369D;max-width:190px;vertical-align:middle}
 .portal-visibility-select:disabled{opacity:.6}
+.file-name-check-badge{display:inline-flex;flex-wrap:wrap;align-items:center;gap:6px;margin:6px 0 0;padding:6px 10px;border-radius:10px;background:#fff4ee;border:1px solid #F15A22;color:#16212E;font-size:12.5px;line-height:1.5}
+.file-name-check-badge b{color:#D0402A}
