@@ -19,7 +19,7 @@ A successful `status: published` is shown as published. A successful `pendingRev
 ## Portal
 `patient-portal/?view=login`, `?view=activate`, `?view=reset` select existing screens. `reset=1` and the Auth PASSWORD_RECOVERY event preserve the original recovery flow. `returnUrl` accepts only absolute HTTPS URLs with origins `https://swnwclinics.com` or `https://staging.swnwclinics.com`, no credentials, alternate ports or protocol-relative URLs. After successful login/activation (or an existing session), redirect to the validated destination. No token or medical data is appended. Account verification, patient file authorization, and session storage remain unchanged.
 
-`portal.swnwclinics.com` is not configured: decide where to host it and configure DNS, TLS and Supabase allowed redirect URLs first. Adding a CNAME to this GitHub Pages repository affects the whole dashboard, so do not do that as an incidental portal change.
+`patientportal.swnwclinics.com` is not configured: decide where to host it and configure DNS, TLS and Supabase allowed redirect URLs first. Adding a CNAME to this GitHub Pages repository affects the whole dashboard, so do not do that as an incidental portal change.
 
 ## Focused tests
 `node test/website-integration.mjs` uses Node built-ins, mocked delivery, and tests routes, allowlist, payload/image limits and response states.

@@ -575,7 +575,7 @@ Deno.serve(async (req) => {
     let resetUrl: string;
     try {
       const target = new URL(portalBase);
-      const allowed = target.origin === "https://portal.swnwclinics.com" ||
+      const allowed = target.origin === "https://patientportal.swnwclinics.com" ||
         (target.origin === "https://mohamedabdelaalhub.github.io" && target.pathname === "/SSMPD-Swnw-Social-Media-Prduction-Dashboard/patient-portal/");
       if (!allowed || target.username || target.password || target.search || target.hash) throw new Error("Invalid portal URL");
       target.searchParams.set("reset", "1");
