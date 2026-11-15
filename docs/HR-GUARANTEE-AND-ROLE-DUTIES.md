@@ -45,3 +45,17 @@ Both migrations redefine existing functions with `create or replace`, copied fro
 - `task_generate_due_recurrences`, from `20261112150000`.
 
 Before applying, compare the live `pg_get_functiondef` of these three with the repository. Stop if the live versions have drifted.
+
+## 3. Replacing an approved pay rule (supersede)
+
+An approved pay rule could not be changed or ended. Any corrected rule was then refused by the overlap guard. For example, two rules approved before «حد أدنى مضمون» existed could not have the option turned on.
+
+- `pay_rules.supersedes` points to the approved rule of the same person that a new pending rule replaces. A new status, `superseded`, exists.
+- Nothing changes until a different reviewer approves the new rule. On that approval, in the same transaction, the old rule is either:
+  - marked `superseded`, when the new rule starts on or before the old one's start; or
+  - shortened to the day before the new rule starts.
+- The change is audited as `rule_superseded`, with before and after data. A rejected replacement leaves the old rule untouched.
+- Without `supersedes`, overlapping rules are still refused.
+- Screen: «قواعد حساب الأجر» has a «تحل محل قاعدة معتمدة» choice.
+- Migration: `20261115120000_hr_pay_rule_supersede.sql`. It redefines `hr_payroll_command` from `20261115100000`.
+- Test: `tests/hr-pay-rule-supersede-sql.cjs`.
