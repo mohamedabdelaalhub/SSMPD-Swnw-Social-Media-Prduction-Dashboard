@@ -51,5 +51,10 @@ function boot(role, responses) {
   assert.notEqual(w.SWNWErrorMonitor.getRecent()[0].title, "صلاحية غير كافية");
   w.SWNWErrorMonitor.record("toast", "Method not allowed", {});
   assert.notEqual(w.SWNWErrorMonitor.getRecent()[0].title, "صلاحية غير كافية");
+  // 6) الفريق الرقمي (خدمة منفصلة بتعرض حالتها في لوحتها): رفضه مايتسجلش في «أخطاء حديثة»
+  w = boot("super_admin", [403]);
+  await w.fetch("https://dashboard.example/api/digital-team/bootstrap");
+  assert.equal(w.SWNWErrorMonitor.getRecent().length, 0);
+  assert.equal(w.document.getElementById("swnw-error-diagnostic-hint"), null);
   console.log("system-error-monitor tests: ok");
 })().catch((err) => { console.error(err); process.exit(1); });

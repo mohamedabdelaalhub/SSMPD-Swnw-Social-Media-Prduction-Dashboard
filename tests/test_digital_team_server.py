@@ -155,7 +155,10 @@ class ServiceTest(unittest.TestCase):
                 self.assertEqual(r.headers['Cache-Control'],'no-store');self.assertEqual(json.load(r)['me']['id'],'owner')
         finally:server.shutdown();server.server_close()
     def test_auth_uses_verified_user_and_active_row(self):
-        auth=Auth('https://uuijfbpgvtdxgaosqpxo.supabase.co','anon');calls=[]
+        # The retired cloud project must be refused; only Swnw's own server is accepted.
+        for bad in ('https://uuijfbpgvtdxgaosqpxo.supabase.co','http://api.swnwclinics.com','https://evil.invalid'):
+            with self.assertRaises(ValueError):Auth(bad,'anon')
+        auth=Auth('https://api.swnwclinics.com','anon');calls=[]
         def upstream(token,path,body=None):
             calls.append(path)
             if path=='/auth/v1/user':return {'id':'actual','user_metadata':{'role':'super_admin'}}
