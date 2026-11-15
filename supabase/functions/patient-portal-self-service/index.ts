@@ -5,6 +5,29 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 
+// --- portal visibility (keep identical in every patient-portal function; checked by test/portal-visibility.cjs) ---
+// A record reaches the patient portal 24h after it was created, unless a doctor/staff member
+// approved it earlier ("approved") or hid it ("hidden"). Fails closed if the lookup fails.
+const PORTAL_VISIBILITY_DELAY_MS = 24 * 60 * 60 * 1000;
+// deno-lint-ignore no-explicit-any
+async function loadPortalVisibility(admin: any, patientIds: string[]): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
+  if (!patientIds.length) return map;
+  const { data, error } = await admin.from("patient_portal_visibility")
+    .select("entity_type, entity_id, portal_status").in("patient_id", patientIds);
+  if (error) throw new Error("PORTAL_VISIBILITY_UNAVAILABLE");
+  for (const r of data || []) map.set(r.entity_type + ":" + r.entity_id, r.portal_status);
+  return map;
+}
+function isPortalVisible(map: Map<string, string>, entityType: string, entityId: string, createdAt: unknown, now = Date.now()): boolean {
+  const status = map.get(entityType + ":" + entityId);
+  if (status === "approved") return true;
+  if (status === "hidden" || status === "internal") return false;
+  const t = new Date(String(createdAt || "")).getTime();
+  return Number.isFinite(t) && t > 0 && now - t >= PORTAL_VISIBILITY_DELAY_MS;
+}
+// --- end portal visibility ---
+
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -215,7 +238,10 @@ async function portalFilesPayload(
   const patientsById = Object.fromEntries((patientRows || []).map((p: any) => [p.id, p]));
   const accessByPatient = Object.fromEntries(activeAccess.map((a: any) => [a.patient_id, a]));
 
-  const files = (fileRows || []).map((f: any) => {
+  const visibility = await loadPortalVisibility(admin, patientIds);
+  const files = (fileRows || [])
+    .filter((f: any) => isPortalVisible(visibility, "patient_file", f.id, f.uploaded_at))
+    .map((f: any) => {
     const p = patientsById[f.patient_id] || null;
     const a = accessByPatient[f.patient_id] || null;
     return {

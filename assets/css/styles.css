@@ -735,3 +735,7 @@ table.simple.acc-table td.acc-col-num{text-align:left;}
 .pf-table .pf-sort span{font-size:11px;color:var(--c-muted,#6B7688)}
 .pf-table th[aria-sort] .pf-sort span{color:var(--c-primary,#0F369D)}
 .pf-table .pf-sort:focus-visible{outline:2px solid var(--c-primary,#0F369D);outline-offset:2px;border-radius:6px}
+
+/* Patient-portal visibility control (portal-visibility-controls.js) */
+.portal-visibility-select{font:inherit;font-size:12px;padding:3px 6px;margin-inline-start:6px;border:1px solid #c9d3ea;border-radius:8px;background:#fff;color:#0F369D;max-width:190px;vertical-align:middle}
+.portal-visibility-select:disabled{opacity:.6}
