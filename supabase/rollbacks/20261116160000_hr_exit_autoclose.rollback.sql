@@ -1,4 +1,4 @@
--- Rollback of 20261116130000_hr_exit_autoclose.sql: restore hr_attendance_from_punches from 20261116100000.
+-- Rollback of 20261116160000_hr_exit_autoclose.sql: restore hr_attendance_from_punches from 20261116100000.
 begin;
 
 create or replace function public.hr_attendance_from_punches(p_month date) returns jsonb
