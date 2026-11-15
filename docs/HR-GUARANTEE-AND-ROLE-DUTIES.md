@@ -59,3 +59,27 @@ An approved pay rule could not be changed or ended. Any corrected rule was then 
 - Screen: «قواعد حساب الأجر» has a «تحل محل قاعدة معتمدة» choice.
 - Migration: `20261115120000_hr_pay_rule_supersede.sql`. It redefines `hr_payroll_command` from `20261115100000`.
 - Test: `tests/hr-pay-rule-supersede-sql.cjs`.
+
+## 4. The fingerprint is the basis of payroll attendance
+
+Owner decision 2026-11-15. Until this change, punches and shift schedules fed only the live board and the reports. Payroll read `clinic_people.attendance`, which was filled by hand or from an Excel file.
+
+`hr_attendance_from_punches(month)` (HR managers only) covers every completed day of the month, up to yesterday (Cairo). It turns the day's shift and punches into **pending** attendance rows, through the existing governed import (`hr_payroll_command 'import_attendance'`).
+
+How each day is filled:
+- **Scheduled start and end:** from the shift template, the same as the live board.
+- **Arrival:** the first check-in punch.
+- **Leaving:** the last check-out punch, up to 6 hours after the shift end.
+- **No arrival punch:** the day is recorded as an absence.
+- **Approved leave:** no row is created, so the day is never counted as absent.
+- **Approved permission:** excuses that day's lateness or absence.
+- **Arrival but no exit punch:** leaving is set to the shift end (no overtime), and the note says so.
+
+Rules for the run:
+- Days that already have a row are never touched, and running it again adds only the new days.
+- People without a fingerprint code are listed for HR to map. They are never recorded as absent.
+- A **different** HR reviewer approves the whole batch with «مراجعة ورديات الملف», or day by day. Payroll then computes lateness, absence and overtime with the person's approved pay rule.
+
+On screen: «الحضور والورديات» → «تحويل بصمات الشهر للمراجعة».
+
+Migration: `20261115130000_hr_attendance_from_punches.sql` (additive, one RPC). Test: `tests/hr-attendance-from-punches-sql.cjs`.
