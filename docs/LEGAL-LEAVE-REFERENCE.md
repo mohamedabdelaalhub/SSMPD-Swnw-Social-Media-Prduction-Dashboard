@@ -42,12 +42,31 @@ Its issuing article 1 limits it to **jobs in ministries, government departments 
 | 53 | Leave without pay | A spouse travelling abroad; other reasons at the employer's discretion; child care: up to 2 years each time, 6 years over a career. |
 | 54–56 | — | Part-time work; conscripts; no paid work for others during a leave. |
 
-## What the dashboard currently follows (owner decisions)
+## What the dashboard follows (owner decisions 2026-11-15, migration `20261116100000_hr_leave_rules.sql`)
 
-Internal rules, checked against Labor Law 14/2025:
-- Notice before a leave: 1 day → 48 h; 2–3 days → 3 days; 4–7 days → 7 days; over 7 days → 14 days. The manager can make an exception, with a written reason.
-  This is an internal rule. It must not block casual leave (sudden by nature) or the 6 consecutive annual days the law guarantees; the employer sets annual-leave dates (art. 125).
-- Casual leave: 7 days a year, at most 2 at a time, **deducted from the annual balance** (art. 128). Pacing rule: still to be confirmed.
-- Child birth: 1 paid day, not deducted, at most 3 times (art. 128).
-- Work on an official holiday: double pay, or a compensatory day on written request (art. 129).
-- Sick leave: needs a medical certificate; pay per Social Insurance; can be converted to annual leave if the balance allows (art. 131). Notice deadline: an internal rule, still to be confirmed.
+Each leave request has a type (`clinic_people.requests.leave_type`):
+
+| Type | Rule | Balance |
+|---|---|---|
+| Annual (سنوية) | Notice before it starts: 1 day → 2 days; 2–3 days → 3; 4–7 days → 7; over 7 days → 14 (internal rule). | Annual balance |
+| Casual (عارضة) | Reported the same day, no notice. **Hard legal caps:** 2 days at a time, 7 a year (art. 128). **Pacing (owner):** at most 2 days a calendar month and 3 a calendar quarter. | Annual balance (art. 128) |
+| Sick (مرضية) | Reported before the shift, or the same day in an emergency. Medical certificate (a link) within 48 hours. Until then, the fingerprint run waits; after that, the day is an absence. | Not deducted |
+| Child birth (ولادة طفل) | 1 day, at most 3 times (art. 128). | Not deducted |
+| Excused (استثناء من غياب) | Management only: excuses a day already counted absent. | Not deducted |
+
+**Exceptions (owner: «موافق مع توفير استثناء»):**
+- A request outside the internal rules is accepted only with a written exception reason. It is marked with what it breaks.
+- The reviewer, who is never the person who filed it, decides. The reviewer's note is recorded as the exception, under the reviewer's name (`exception_by`).
+- **Any other HR reviewer** can approve: short notice, a retroactive annual or casual leave, and casual pacing.
+- **Only the general manager or super admin** can approve: sick leave without a certificate in 48 h, sick leave reported after its day, and an excused absence. Owner decision: «حتى لو مابلغش والداشبورد حسبته غياب وطلع الظرف فعلًا قوي، يمكنني استثناء الشخص من الخصومات بشكل عكسي».
+- Legal caps (2 casual days at a time, 7 a year, 3 birth days) are never bypassed.
+
+**Reversing a deduction:**
+- Once the leave is approved, a recalculation no longer counts those days as absent.
+- If that month's salary was already sent to finance, a **pending** «رد خصم غياب» bonus is created for the current month, at the rule's absence-day rate. A different HR reviewer approves it.
+
+**Not implemented, owner decision:** double pay for work on official holidays (art. 129). The owner declined it on 2026-11-15, after being told the article requires double pay or a compensatory day at the worker's written request.
+
+**Not implemented yet:** automatic annual entitlement (15/21/30/45 days) and the 6-consecutive-days rule. HR still adds the yearly balance by hand («إضافة رصيد إجازات»).
+
+Tests: `tests/hr-leave-rules-sql.cjs` (it also applies the rollback) and `tests/hr-leave-rules-dom.cjs`. Rollback: `supabase/rollbacks/20261116100000_hr_leave_rules.rollback.sql`.
