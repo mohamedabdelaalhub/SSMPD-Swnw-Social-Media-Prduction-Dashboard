@@ -1,5 +1,5 @@
 # Public project identifier + public anon/publishable key only; no service_role key.
-SWNW_CHAT_SUPABASE_URL=https://uuijfbpgvtdxgaosqpxo.supabase.co
+SWNW_CHAT_SUPABASE_URL=https://api.swnwclinics.com
 SWNW_CHAT_SUPABASE_ANON_KEY=REPLACE_WITH_EXISTING_PUBLIC_ANON_KEY
 SWNW_CHAT_ORIGIN=https://dashboard.swnwclinics.com
 SWNW_CHAT_STATE=/var/lib/swnw-team-chat

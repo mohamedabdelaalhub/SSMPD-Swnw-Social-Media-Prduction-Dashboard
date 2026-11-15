@@ -10,8 +10,9 @@ from store import Actor, Denied
 
 class Auth:
     def __init__(self, url, anon_key):
-        if not url.startswith('https://') or urllib.parse.urlsplit(url).hostname != 'uuijfbpgvtdxgaosqpxo.supabase.co':
-            raise ValueError('Use the approved Swnw Supabase project')
+        # Since 2026-11-10 logins are issued by Swnw's own server; the old cloud project is retired and rejects them.
+        if not url.startswith('https://') or urllib.parse.urlsplit(url).hostname != 'api.swnwclinics.com':
+            raise ValueError('Use the approved Swnw Supabase server (https://api.swnwclinics.com)')
         self.url, self.key = url.rstrip('/'), anon_key
         self.cache = {}; self.lock=threading.Lock()
 
