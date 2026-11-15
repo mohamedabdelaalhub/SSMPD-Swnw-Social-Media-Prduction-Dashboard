@@ -65,7 +65,11 @@ Each leave request has a type (`clinic_people.requests.leave_type`):
 - Once the leave is approved, a recalculation no longer counts those days as absent.
 - If that month's salary was already sent to finance, a **pending** «رد خصم غياب» bonus is created for the current month, at the rule's absence-day rate. A different HR reviewer approves it.
 
-**Not implemented, owner decision:** double pay for work on official holidays (art. 129). The owner declined it on 2026-11-15, after being told the article requires double pay or a compensatory day at the worker's written request.
+**Work on an official holiday (art. 129): a compensatory day, at the employee's written request** (owner decision 2026-11-15; migration `20261116110000_hr_holiday_comp_day.sql`). The owner chose this instead of double pay.
+- Request kind `holiday_comp` («يوم بديل عن شغل في إجازة رسمية»): one day of an **approved center closure** (20261115230000) on which the employee actually worked (a check-in punch, or an approved attendance row). It is filed today or later, once per day, and the note is the written request.
+- A different HR reviewer approves it. Approval adds one approved `leave_credit` day to the annual balance, linked by `source_request_id` and audited as `holiday_comp_credit`.
+- ⚠️ The law gives the compensatory day **at the worker's written request**. A worker who does not request it is still owed double pay for that day; that case is left to HR.
+- Test: `tests/hr-holiday-comp-sql.cjs`.
 
 **Not implemented yet:** automatic annual entitlement (15/21/30/45 days) and the 6-consecutive-days rule. HR still adds the yearly balance by hand («إضافة رصيد إجازات»).
 
