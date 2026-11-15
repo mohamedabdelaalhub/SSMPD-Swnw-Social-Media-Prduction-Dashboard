@@ -1,5 +1,5 @@
 // Contract marketing worker keys: the printed public key verifies the worker's own signatures, and the
-// edge-function verifier accepts the Windows key plus keys from CONTRACT_MARKETING_WORKER_PUBKEYS only.
+// edge-function verifier accepts keys from CONTRACT_MARKETING_WORKER_PUBKEYS only (no built-in key).
 import assert from 'node:assert/strict';import fs from 'node:fs/promises';import os from 'node:os';import path from 'node:path';
 import {execFileSync} from 'node:child_process';import crypto from 'node:crypto';
 const dir=await fs.mkdtemp(path.join(os.tmpdir(),'cmk-'));const cfg=path.join(dir,'c.json');const secret='x'.repeat(40);
@@ -14,7 +14,7 @@ for(const fn of ['contract-marketing','content-ai']){
  src=src.replace(/:Promise<boolean>/g,'').replace(/:string\[\]/g,'').replace(/\(value:string,extra:string\|undefined=/,'(value,extra=').replace(/\(extra:string\|undefined\)/,'(extra)').replace(/\(s:string\)/g,'(s)');
  const mod=path.join(dir,fn+'.mjs');await fs.writeFile(mod,'const Deno={env:{get:()=>undefined}};\n'+src);
  const {verifyWorkerToken,workerPublicKeys}=await import(mod);
- assert.equal(workerPublicKeys('').length,1);assert.equal(workerPublicKeys('bad, '+pub).length,2);
+ assert.equal(workerPublicKeys('').length,0);assert.equal(workerPublicKeys('bad, '+pub).length,1);
  assert.equal(await verifyWorkerToken('Bearer CM.'+stamp+'.'+sig,''),false,fn+': unknown key refused');
  assert.equal(await verifyWorkerToken('Bearer CM.'+stamp+'.'+sig,pub),true,fn+': extra key accepted');
  assert.equal(await verifyWorkerToken('Bearer CM.'+String(Date.now()-600000)+'.'+sig,pub),false,fn+': stale stamp refused');

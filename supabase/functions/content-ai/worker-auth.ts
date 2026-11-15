@@ -1,9 +1,9 @@
 // Public verification keys only. Each signing seed stays in its own worker's protected config:
-// the built-in key is the Windows website worker; CONTRACT_MARKETING_WORKER_PUBKEYS (comma-separated, base64url raw Ed25519)
-// adds others, e.g. the dashboard-server rendering worker (print its key with `contract-marketing-worker.mjs --print-public-key`).
-const WINDOWS_WORKER='i_pF3iv0zH2m7O4oNV48j_wQowbW46Z2vDg-2R-OHs4';
+// every accepted key comes from CONTRACT_MARKETING_WORKER_PUBKEYS (comma-separated, base64url raw Ed25519): the Windows website
+// worker and the dashboard-server rendering worker (print a key with `contract-marketing-worker.mjs --print-public-key`).
+// No built-in key: the old built-in Windows key was derived from a secret rotated on 2026-11-15 and must not verify any more.
 export function workerPublicKeys(extra:string|undefined):string[]{
- return [WINDOWS_WORKER,...String(extra||'').split(',').map(k=>k.trim()).filter(k=>/^[A-Za-z0-9_-]{43}$/.test(k))];
+ return [...String(extra||'').split(',').map(k=>k.trim()).filter(k=>/^[A-Za-z0-9_-]{43}$/.test(k))];
 }
 export async function verifyWorkerToken(value:string,extra:string|undefined=Deno.env.get('CONTRACT_MARKETING_WORKER_PUBKEYS')):Promise<boolean>{
  const token=value.replace(/^Bearer /,'');const parts=token.split('.');
