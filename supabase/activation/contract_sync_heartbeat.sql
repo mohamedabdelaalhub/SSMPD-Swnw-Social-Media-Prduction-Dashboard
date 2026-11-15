@@ -33,7 +33,7 @@ begin
   if j.idea is null then raise exception 'المحتوى غير مكتمل';end if;
   -- Only a file uploaded by the worker under this exact job can be published.
   out_url:=p_data->>'output_url';
-  if out_url not like 'https://uuijfbpgvtdxgaosqpxo.supabase.co/storage/v1/object/authenticated/content-designs/'||j.id::text||'/%/output.png' then raise exception 'ملف التصميم غير صالح';end if;
+  if out_url not like 'https://api.swnwclinics.com/storage/v1/object/authenticated/content-designs/'||j.id::text||'/%/output.png' then raise exception 'ملف التصميم غير صالح';end if;
   if not exists(select 1 from storage.objects where bucket_id='content-designs' and name=split_part(out_url,'/content-designs/',2)) then raise exception 'ملف التصميم غير موجود';end if;
   slot:=date_trunc('minute',now())+interval '5 minutes';
   while exists(select 1 from public.meta_publish_jobs where brand='sono' and status in ('pending','processing','published','partial') and scheduled_at between slot-interval '2 hours' and slot+interval '2 hours') loop slot:=slot+interval '5 minutes';end loop;
