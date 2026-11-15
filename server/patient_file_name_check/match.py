@@ -13,6 +13,7 @@ import re
 import unicodedata
 
 _TASHKEEL = re.compile(r"[ؐ-ًؚ-ٰٟۖ-ۭـ]")
+_BIDI = re.compile(r"[\u200e\u200f\u202a-\u202e\u2066-\u2069\u061c\ufeff]")
 _NON_WORD = re.compile(r"[^\w\s]", re.UNICODE)
 _LABEL = re.compile(
     r"(?:اسم\s*المريض(?:ه|ة)?|اسم\s*المريضة|الاسم|المريض(?:ه|ة)?|patient\s*name|name\s*of\s*patient|patient|name)"
@@ -26,7 +27,7 @@ _PREFIXES = ("عبد ",)
 
 
 def normalize(text: str) -> str:
-    t = unicodedata.normalize("NFKC", text or "").lower()
+    t = unicodedata.normalize("NFKC", _BIDI.sub("", text or "")).lower()
     t = _TASHKEEL.sub("", t)
     t = (t.replace("أ", "ا").replace("إ", "ا").replace("آ", "ا").replace("ٱ", "ا")
           .replace("ى", "ي").replace("ة", "ه").replace("ؤ", "و").replace("ئ", "ي"))
@@ -73,7 +74,7 @@ def name_score(patient_name: str, candidate_words) -> float:
 
 def labeled_names(text: str):
     out = []
-    for m in _LABEL.finditer(text or ""):
+    for m in _LABEL.finditer(_BIDI.sub("", text or "")):  # PDF text carries bidi marks
         words = tokens(m.group(1))[:4]
         if len(words) >= 2:
             out.append(words)

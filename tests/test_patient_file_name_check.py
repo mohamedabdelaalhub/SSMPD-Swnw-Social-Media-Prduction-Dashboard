@@ -34,6 +34,11 @@ class NameCheck(unittest.TestCase):
         r = check(P, "Hemoglobin 13.5 g/dL  WBC 6.2  Platelets 250  all within reference range")
         self.assertEqual(r["verdict"], "no_name_found")
 
+    def test_pdf_bidi_marks(self):
+        # pdftotext wraps Arabic runs in U+202B/U+202C/U+202A marks around the colon
+        r = check(P, "\u202bمعمل التحاليل الطبية\u202c\n\u202bاسم المريض\u202a :\u202cسارة محمود حسن\u202c\n\u202bنتيجة صورة دم كاملة\u202a :\u202cطبيعية\u202c")
+        self.assertEqual(r["verdict"], "mismatch")
+
     def test_unreadable(self):
         self.assertEqual(check(P, " ~ ")["verdict"], "unreadable")
 
