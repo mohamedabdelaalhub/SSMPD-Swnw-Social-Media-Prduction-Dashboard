@@ -44,13 +44,15 @@ const root=path.join(__dirname,'..');
       insert into admins values ('00000000-0000-4000-8000-0000000000a1');
       insert into patients values ('00000000-0000-4000-8000-0000000000b1','Test');
       insert into patient_files values ('${F1}','00000000-0000-4000-8000-0000000000b1','lab_result','a.pdf','application/pdf','d1',false,now()),
-        ('${F2}','00000000-0000-4000-8000-0000000000b1','other','b.docx','application/msword','d2',false,now());`);
+        ('${F2}','00000000-0000-4000-8000-0000000000b1','other','b.docx','application/msword','d2',false,now()),
+        ('44444444-4444-4444-8444-444444444444','00000000-0000-4000-8000-0000000000b1','other','IMG_1.JPG','application/octet-stream','d3',false,now()),
+        ('55555555-5555-4555-8555-555555555555','00000000-0000-4000-8000-0000000000b1','other','p.heic','image/heic','d4',false,now());`);
     const mig=copy(path.join(root,'supabase/migrations/20261115170000_patient_file_name_checks.sql'));psql(null,mig);psql(null,mig);
-    assert.equal(psql(`select string_agg(file_id::text,',') from patient_file_name_check_queue(10,30)`),F1,'queue: only images/PDFs without a verdict');
+    assert.equal(psql(`select string_agg(file_id::text,',' order by file_id) from patient_file_name_check_queue(10,30)`),F1+',44444444-4444-4444-8444-444444444444','queue: images/PDFs by mime or extension, no HEIC/docx');
     for(const r of ['anon','authenticated'])assert.equal(psql(`select has_function_privilege('${r}','patient_file_name_check_record(uuid,text,numeric,text,text)','EXECUTE')`),'f');
     assert.equal(psql(`select has_function_privilege('authenticated','patient_file_name_check_queue(integer,integer)','EXECUTE')`),'f');
     psql(`select patient_file_name_check_record('${F1}','mismatch',0.33,'ساره محمود','tesseract')`);
-    assert.equal(psql(`select count(*) from patient_file_name_check_queue(10,30)`),'0','checked file leaves the queue');
+    assert.equal(psql(`select count(*) from patient_file_name_check_queue(10,30)`),'1','checked file leaves the queue');
     assert.throws(()=>psql(`select patient_file_name_check_record('${F1}','maybe',0,null,null)`),/check/i,'verdict constrained');
     assert.throws(()=>psql(`begin; set local t.role='nurse'; set local t.admin='00000000-0000-4000-8000-0000000000a1'; select patient_file_name_check_review('${F1}','x'); commit;`),/NOT_ALLOWED/);
     psql(`begin; set local t.role='archive'; set local t.admin='00000000-0000-4000-8000-0000000000a1'; select patient_file_name_check_review('${F1}','same patient'); commit;`);

@@ -17,7 +17,7 @@ so staff can see what is wrong. This is a warning only: uploads are never blocke
 ## Server setup (main chat, after the owner's «انشر»)
 1. Apply `supabase/migrations/20261115170000_patient_file_name_checks.sql`.
 2. Build the image: `cd server/patient_file_name_check && docker build -f deploy/Dockerfile -t swnw-file-name-check:latest .`
-3. Create `~/.config/swnw/file-name-check.env` (chmod 600) with `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`.
+3. Create `~/.config/swnw/file-name-check.env` (chmod 600) with `SUPABASE_URL=http://127.0.0.1:18200` (local PostgREST; the container uses host networking) and `SUPABASE_SERVICE_ROLE_KEY`.
    Place the archive Drive service-account JSON at `~/.config/swnw/drive-service-account.json` (chmod 600).
 4. Copy `deploy/run-once.sh` to `~/claude-work/file-name-check/`. Install the user units.
    Run one pass by hand and check that the journal shows only file ids and verdicts.

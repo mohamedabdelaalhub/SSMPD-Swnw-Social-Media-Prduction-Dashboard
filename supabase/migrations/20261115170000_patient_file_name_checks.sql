@@ -41,7 +41,10 @@ language sql security definer stable set search_path = public as $$
   left join public.patient_file_name_checks c on c.file_id = f.id
   where c.file_id is null
     and f.uploaded_at > now() - make_interval(days => greatest(1, least(p_days, 365)))
-    and (f.mime_type ilike 'image/%' or f.mime_type = 'application/pdf')
+    and (f.mime_type ilike 'image/%' or f.mime_type = 'application/pdf'
+         -- many uploads carry an empty/generic mime type: fall back to the file extension
+         or lower(f.file_name) ~ '\.(jpe?g|png|webp|tiff?|bmp|pdf)$')
+    and coalesce(f.mime_type, '') not in ('image/heic', 'image/heif')
   order by f.uploaded_at desc
   limit greatest(1, least(p_limit, 200));
 $$;

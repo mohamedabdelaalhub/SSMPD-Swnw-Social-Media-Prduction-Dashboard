@@ -69,7 +69,7 @@ class Worker(unittest.TestCase):
                 raise OSError("network")
             open(dest, "wb").write(b"%PDF")
         return worker.process_one(row, self.rpc, lambda: "tok", download,
-                                  lambda p, m, w: text, self.base, log=self.logs.append)
+                                  lambda p, m, w, n="": text, self.base, log=self.logs.append)
 
     def test_mismatch_recorded_with_detected_name_and_cleaned_up(self):
         v = self.run_one({"file_id": "f1", "patient_name": P, "drive_file_id": "d", "mime_type": "application/pdf"},
@@ -106,6 +106,6 @@ class Worker(unittest.TestCase):
                 open(args[-1] + "-1.png", "wb").write(b"x"); return b""
             return "الاسم: محمد احمد عبدالله".encode()
         work = tempfile.mkdtemp()
-        text = worker.extract_text(os.path.join(work, "src"), "application/pdf", work, run=run)
+        text = worker.extract_text(os.path.join(work, "src"), "application/octet-stream", work, run=run, file_name="Scan.PDF")
         self.assertEqual(seen, ["pdftotext", "pdftoppm", "tesseract"])
         self.assertIn("محمد", text)

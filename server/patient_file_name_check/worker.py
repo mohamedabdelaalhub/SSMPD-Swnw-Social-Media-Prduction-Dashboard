@@ -66,8 +66,8 @@ def drive_download(token, file_id, dest, max_bytes):
             out.write(chunk)
 
 
-def extract_text(path, mime, workdir, run=run_cmd, pdf_pages=2):
-    if mime == "application/pdf":
+def extract_text(path, mime, workdir, run=run_cmd, pdf_pages=2, file_name=""):
+    if mime == "application/pdf" or str(file_name).lower().endswith(".pdf"):
         text = run(["pdftotext", "-l", str(pdf_pages), "-enc", "UTF-8", path, "-"]).decode("utf-8", "replace")
         if len(text.strip()) >= 40:
             return text
@@ -103,7 +103,7 @@ def process_one(row, rpc, token_fn, download, extract, base_workdir, log=print):
     try:
         src = os.path.join(work, "src")
         download(token_fn(), row["drive_file_id"], src)
-        result = check(row.get("patient_name") or "", extract(src, row.get("mime_type") or "", work))
+        result = check(row.get("patient_name") or "", extract(src, row.get("mime_type") or "", work, row.get("file_name") or ""))
         verdict = result["verdict"]
         rpc("patient_file_name_check_record", {"p_file_id": fid, "p_verdict": verdict, "p_score": result["score"],
                                                "p_detected_name": result["detected_name"] if verdict == "mismatch" else None,
@@ -137,7 +137,7 @@ def main(argv=None):
     rows = rpc("patient_file_name_check_queue", {"p_limit": int(env.get("BATCH", "10")), "p_days": 30}) or []
     for row in rows:
         process_one(row, rpc, token, lambda t, f, d: drive_download(t, f, d, max_bytes),
-                    lambda p, m, w: extract_text(p, m, w, pdf_pages=pages), workdir)
+                    lambda p, m, w, n="": extract_text(p, m, w, pdf_pages=pages, file_name=n), workdir)
     return 0
 
 
