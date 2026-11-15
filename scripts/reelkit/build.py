@@ -160,6 +160,10 @@ for v in tl.voice:
         mx.add(seg, v["t"], 1.0); continue
     seg = wav[int(ta * SR):int(tb * SR) + int(0.24 * SR)].copy() * LEVEL[mp3]; seg = np.tanh(seg / 0.9) * 0.9; f = int(0.04 * SR); seg[-int(0.12 * SR):] *= np.linspace(1, 0, int(0.12 * SR))  # keep the word ending, fade out softly
     seg[:f] *= np.linspace(0, 1, f); seg[-f:] *= np.linspace(1, 0, f); mx.add(seg, v["t"], 1.0)
+bed = (sb.get("meta") or {}).get("bed_audio")
+if bed:  # the owner's live clip: its own sound plays as one continuous stream from bed["t0"], whatever the scenes show on top
+    bw = decode(bed["path"]); act = np.abs(bw)[np.abs(bw) > 0.02]; g = float(np.clip(0.12 / max(np.sqrt(np.mean(act ** 2)) if len(act) else 0.12, 1e-6), 0.4, 4.0))
+    bw = np.tanh(bw * g / 0.9) * 0.9; f = int(0.02 * SR); bw[:f] *= np.linspace(0, 1, f); bw[-f:] *= np.linspace(1, 0, f); mx.add(bw, bed.get("t0", 0.0), 1.0)
 for t0, nm, g in tl.sfx:
     if t0 < dur: mx.sfx(nm, t0, g * 0.8)
 mood = sb.get("meta", {}).get("music", "upbeat"); mf = os.path.join(args.kit, f"sono_music_{mood}.mp3")
@@ -200,7 +204,8 @@ else:
         for i in range(1, len(segs)):
             off = max(0.0, tl.scenes[i]["t0"] - XF); parts.append(f"[{last}][{i}:v]xfade=transition=fade:duration={XF}:offset={off:.3f}[x{i}]"); last = f"x{i}"
         fc = ";".join(parts)
-    cmd += ["-filter_complex", fc, "-map", f"[{last}]" if len(segs) > 1 else "[x0]", "-frames:v", str(round(tl.dur * FPS)), "-c:v", "libx264", "-crf", "18", "-pix_fmt", "yuv420p", bgall]
+    fc += f";[{last}]tpad=stop_mode=clone:stop_duration=1[xo]" if len(segs) > 1 else ""
+    cmd += ["-filter_complex", fc, "-map", "[xo]" if len(segs) > 1 else "[x0]", "-frames:v", str(round(tl.dur * FPS)), "-c:v", "libx264", "-crf", "18", "-pix_fmt", "yuv420p", bgall]
     subprocess.run(cmd, check=True)
     subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", bgall, "-framerate", str(FPS), "-i", f"{jp}/f_%04d.png", "-filter_complex", "[0:v][1:v]overlay=0:0:format=auto,format=yuv420p[v]", "-map", "[v]", "-c:v", "libx264", "-preset", "medium", "-crf", "18", content], check=True)
 final = os.path.join(args.out, sb.get("meta", {}).get("file", "reel.mp4"))

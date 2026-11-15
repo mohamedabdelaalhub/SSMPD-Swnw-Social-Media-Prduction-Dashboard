@@ -12,7 +12,11 @@
    "speed": 0.98
   },
   "voice_continuous": true,
-  "prepend_clip": "/root/.claude/uploads/d4cfeb82-593e-5033-90e6-dc2f0a1d367c/fa229957-WhatsApp_Video_2026-11-15_at_6.10.22_AM.mp4"
+  "bed_audio": {
+   "path": "/root/.claude/uploads/d4cfeb82-593e-5033-90e6-dc2f0a1d367c/7ffa9ca3-WhatsApp_Video_2026-11-15_at_6.56.07_AM.mp4",
+   "t0": 0.0
+  },
+  "music_from": 10.0
  },
  "cast": {
   "v": {
@@ -21,6 +25,36 @@
   }
  },
  "scenes": [
+  {
+   "set": "clear",
+   "bg": {
+    "video": "/root/.claude/uploads/d4cfeb82-593e-5033-90e6-dc2f0a1d367c/7ffa9ca3-WhatsApp_Video_2026-11-15_at_6.56.07_AM.mp4",
+    "start": 0.0,
+    "fit": "fill",
+    "cx": 0.5
+   },
+   "cam": {},
+   "trans": "cut",
+   "tail": 0.0,
+   "actors": {},
+   "beats": [
+    {
+     "wait": 5.6
+    },
+    {
+     "badge": {
+      "text": "خصم 20%",
+      "sub": "على باقات الليزر حتى آخر ديسمبر",
+      "kind": "offer",
+      "y": 1250,
+      "dur": 3.6
+     }
+    },
+    {
+     "wait": 4.4830000000000005
+    }
+   ]
+  },
   {
    "set": "clear",
    "bg": {
