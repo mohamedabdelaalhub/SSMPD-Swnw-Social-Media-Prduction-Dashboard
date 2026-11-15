@@ -6,5 +6,5 @@ After=network-online.target docker.service
 Type=oneshot
 Nice=15
 IOSchedulingClass=idle
-ExecStart=%h/claude-work/file-name-check/run-once.sh
+ExecStart=/usr/bin/sg docker -c %h/claude-work/file-name-check/run-once.sh
 TimeoutStartSec=20min
