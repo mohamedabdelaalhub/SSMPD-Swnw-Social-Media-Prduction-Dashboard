@@ -83,3 +83,35 @@ Rules for the run:
 On screen: «الحضور والورديات» → «تحويل بصمات الشهر للمراجعة».
 
 Migration: `20261115130000_hr_attendance_from_punches.sql` (additive, one RPC). Test: `tests/hr-attendance-from-punches-sql.cjs`.
+
+## 5. «تبديل وردية» (shift swap)
+
+Owner approval 2026-11-15, in the main chat. Migration `20261115200000_hr_shift_swaps.sql`; rollback `supabase/rollbacks/20261115200000_hr_shift_swaps.rollback.sql`.
+
+**Flow:**
+1. The employee requests the swap for himself; HR can request on anyone's behalf.
+2. The colleague accepts or declines. HR can answer for a colleague, but not the HR person who filed the request.
+3. An HR manager approves or rejects, with a reason. The approver must be neither the person who filed the request nor the person who accepted it.
+4. Notifications go to the people involved, through `task_notifications` with no task.
+5. Before approval, a request can be withdrawn. After approval, HR can reverse it with a reason. Every step is audited (`shift_swap_*`).
+
+**The two kinds:**
+- **`same_day`:** the two people exchange their shift times on that day.
+- **`cross_day`:** «أشتغل يومك وتشتغل يومي». The requester is off on his working day A and works the colleague's day B with her shift. The colleague is off on day B and works day A with his shift.
+
+Both people must have a weekly schedule on those days. Any other active or pending swap on the same person-day is refused.
+
+**What approval writes:** `clinic_people.shift_overrides` rows, one per person and day; a null template means off that day. These override the weekly `person_shifts` for that date only.
+
+**Effect on attendance:**
+- `clinic_people.attendance_eval` keeps its signature and reads the overrides. It feeds the live board, `hr_attendance_today`/`range` and `hr_attendance_from_punches`.
+- A person who is off because of a swap is `leave`, named «إجازة بتبديل». They are never absent, no attendance row is created, and payroll makes no deduction.
+- The person working the extra day is scheduled with that day's shift. Punches stay the source of actual times.
+
+**Screen:**
+- HR: a «تبديل الورديات» block under the weekly grid in the shifts tab.
+- Employees: the same block in «حضوري ووردياتي».
+
+**Before applying:** the body of `attendance_eval` = `20261113100000` + the override step. Compare the live body with `20261113100000` first.
+
+**Tests:** `tests/hr-shift-swaps-sql.cjs` (it also applies the rollback) and `tests/hr-shift-swaps-dom.cjs`.
