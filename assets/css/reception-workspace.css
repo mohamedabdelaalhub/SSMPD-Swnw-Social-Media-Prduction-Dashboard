@@ -50,14 +50,15 @@
 .rx-tl-wd.on b{color:#0F369D}
 .rx-tl-wd:focus-visible,.rx-tl-name:focus-visible{outline:3px solid #F15A22;outline-offset:2px}
 .rx-tl-sum{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
-.rx-tl .st-all{--st:#0F369D}
-.rx-tl-stat{display:grid;justify-items:center;gap:0;padding:10px 4px;border-radius:14px;border:1px solid var(--glass-line,rgba(15,54,157,.10));background:var(--glass-fill,rgba(255,255,255,.66));box-shadow:var(--glass-shadow,0 10px 30px rgba(15,54,157,.09)),inset 0 1px 0 var(--glass-edge,rgba(255,255,255,.85));color:#344054;font:inherit;cursor:pointer;transition:transform .15s,background .2s,color .2s,box-shadow .2s}
-.rx-tl-stat b{font-size:22px;line-height:1.2;color:var(--st)}
-.rx-tl-stat span{font-size:12.5px;font-weight:700}
+.rx-tl .st-all{--st:var(--st-booked)}
+/* أزرار الملخص: ثابتة = إطار بلون الحالة على زجاج، هوفر/مختار = مليانة بنفس اللون */
+.rx-tl-stat{display:grid;justify-items:center;gap:0;padding:10px 4px;border-radius:14px;border:2px solid var(--st);background:var(--glass-fill,rgba(255,255,255,.66));box-shadow:var(--glass-shadow,0 10px 30px rgba(15,54,157,.09)),inset 0 1px 0 var(--glass-edge,rgba(255,255,255,.85));color:var(--st);font:inherit;cursor:pointer;transition:transform .15s,background-color .2s,color .2s,box-shadow .2s}
+.rx-tl-stat b{font-size:22px;line-height:1.2;color:inherit}
+.rx-tl-stat span{font-size:12.5px;font-weight:700;color:inherit}
 .rx-tl-stat:active{transform:scale(.96)}
-.rx-tl-stat.on{background:var(--st);border-color:var(--st);color:#fff;box-shadow:0 10px 24px color-mix(in srgb,var(--st) 32%,transparent)}
-.rx-tl-stat.on b{color:#fff}
-.rx-tl-stat.st-no_show.on,.rx-tl-stat.st-no_show.on b{color:#16212E}
+.rx-tl-stat:is(:hover,.on){background-color:var(--st);color:#fff;box-shadow:0 10px 24px color-mix(in srgb,var(--st) 32%,transparent),inset 0 1px 0 rgba(255,255,255,.35)}
+.rx-tl-stat.st-no_show:is(:hover,.on){color:#16212E}
+@media (hover:none){.rx-tl-stat:hover:not(.on){background-color:var(--glass-fill,rgba(255,255,255,.66));color:var(--st);box-shadow:var(--glass-shadow,0 10px 30px rgba(15,54,157,.09)),inset 0 1px 0 var(--glass-edge,rgba(255,255,255,.85))}}
 .rx-tl-stat:focus-visible{outline:3px solid #F15A22;outline-offset:2px}
 .rx-tl-tools{display:grid;gap:10px}
 .rx-tl-pair{display:grid;grid-template-columns:1fr 1fr;gap:10px}

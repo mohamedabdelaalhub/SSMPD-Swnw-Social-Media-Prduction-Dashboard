@@ -32,6 +32,12 @@ const cairoDay=(t)=>new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Cairo',yea
  const navOrder=await page.locator('.rx-tl-nav > *').evaluateAll(l=>l.map(x=>x.matches('.rx-tl-pickwrap')?'cal':x.getAttribute('aria-label')||x.textContent));assert.deepEqual(navOrder.slice(-4),['الأسبوع اللي فات','cal','الأسبوع الجاي','صوت التكة والاهتزاز']);
  await page.locator('[data-tl-pick]').evaluate((i,v)=>{i.value=v;i.dispatchEvent(new Event('change',{bubbles:true}));},tomorrow);await page.waitForFunction(t=>document.querySelector('.rx-tl-wd.on')&&document.querySelector('.rx-tl-wd.on').dataset.id===t,tomorrow);
  await page.locator(`.rx-tl-nav [data-id="${today}"]`).click();await page.waitForFunction(t=>document.querySelector('.rx-tl-wd.on').dataset.id===t,today);
+ // Summary buttons: resting = outline in the status colour; selected/hover = filled with it.
+ const look=sel=>page.locator(sel).evaluate(e=>{const c=getComputedStyle(e);return {border:c.borderTopColor,bg:c.backgroundColor,color:c.color};});
+ const rest=await look('.rx-tl-stat[data-tl-stat="confirmed"]');assert.equal(rest.border,'rgb(47, 125, 92)');assert.equal(rest.color,'rgb(47, 125, 92)');assert.notEqual(rest.bg,'rgb(47, 125, 92)');
+ assert.equal((await look('.rx-tl-stat[data-tl-stat="arrived"]')).border,'rgb(15, 54, 157)');assert.equal((await look('.rx-tl-stat[data-tl-stat="no_show"]')).border,'rgb(241, 90, 34)');
+ const all=await look('.rx-tl-stat[data-tl-stat=""]');assert.equal(all.bg,'rgb(100, 116, 139)','«حجز» selected by default, filled gray');
+ if(width===1280){await page.locator('.rx-tl-stat[data-tl-stat="confirmed"]').hover();await page.waitForTimeout(300);assert.equal((await look('.rx-tl-stat[data-tl-stat="confirmed"]')).bg,'rgb(47, 125, 92)','hover fills');if(process.env.RECEPTION_QA)await page.locator('.rx-tl-sum').screenshot({path:process.env.RECEPTION_QA+'/timeline-stats-hover.png'});await page.mouse.move(0,0);}
  // Summary buttons filter by status; tapping again shows all.
  await page.locator('.rx-tl-stat[data-tl-stat="confirmed"]').click();assert.equal(await page.locator('.rx-tl-name:not([hidden])').count(),1);assert.equal(await page.locator('[data-tl-status-filter]').inputValue(),'confirmed');
  await page.locator('.rx-tl-stat[data-tl-stat="confirmed"]').click();assert.equal(await page.locator('.rx-tl-name:not([hidden])').count(),4);
