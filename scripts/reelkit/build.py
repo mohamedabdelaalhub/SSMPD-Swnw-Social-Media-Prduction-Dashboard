@@ -77,7 +77,10 @@ lines = E.collect_lines(sb); line_timing = {}; envs = {}; audio_src = {}
 hl_of = {(si, bi): sb["scenes"][si]["beats"][bi]["say"].get("hl") for lst in lines.values() for si, bi, _ in lst}
 for spk, lst in lines.items():
     joined = "\n\n".join(voice_text(x[2], PRON) for x in lst); mp3 = os.path.join(args.out, f"voice_{spk.replace(chr(35), chr(95))}.mp3"); al = None
-    if not args.dry:
+    reuse = os.environ.get("RK_REUSE"); rj = os.path.join(reuse, f"voice_{spk.replace(chr(35), chr(95))}.json") if reuse else None
+    if reuse and rj and os.path.exists(rj):
+        import shutil as _sh; _sh.copy(os.path.join(reuse, f"voice_{spk.replace(chr(35), chr(95))}.mp3"), mp3); al = json.load(open(rj)); print("reusing voice take", spk)
+    elif not args.dry:
         left = V.quota()
         if left is not None and left < len(joined) + 50: print("WARNING: ElevenLabs quota too low, using dry timing for", spk)
         else:
@@ -188,8 +191,11 @@ else:
             if fit == "fill": vf = "scale=1080:1920:force_original_aspect_ratio=increase:flags=lanczos,crop=1080:1920"
             elif fit == "cover": vf = f"scale=-2:1920:flags=lanczos,crop=1080:1920:(iw-1080)*{cx}:0"
             else: vf = "split[a][b];[a]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=40:8,eq=brightness=-0.12[bgv];[b]scale=1080:-2:flags=lanczos[fgv];[bgv][fgv]overlay=(W-w)/2:(H-h)/2"
-            tr = f"trim=start={bg.get('start', 0)},setpts=PTS-STARTPTS,"
-            vf = (tr + vf) if "[" not in vf else ("trim=start=%s,setpts=PTS-STARTPTS," % bg.get("start", 0)) + vf
+            spd = float(bg.get("speed", 1.0)); st0 = float(bg.get("start", 0)); en0 = st0 + (n / FPS) * spd
+            pre = f"trim=start={st0}:end={en0:.3f},setpts=(PTS-STARTPTS)/{spd}," + (f"minterpolate=fps={FPS}:mi_mode=blend," if spd < 0.99 else "")
+            if bg.get("crop"):  # [x, y, w, h] as fractions of the clip: zoom into a region (e.g. the device, away from faces)
+                cx_, cy_, cw_, ch_ = bg["crop"]; pre += f"crop=iw*{cw_}:ih*{ch_}:iw*{cx_}:ih*{cy_},"
+            vf = pre + vf
             cmd = ["ffmpeg", "-v", "error", "-y", "-i", bg["video"], "-an", "-filter_complex" if "[" in vf else "-vf", vf, "-r", str(FPS), "-frames:v", str(n), "-c:v", "libx264", "-crf", "18", "-pix_fmt", "yuv420p", sg]
         else:
             z0, z1 = bg.get("z0", 1.0), bg.get("z1", 1.12)
@@ -201,10 +207,13 @@ else:
     if len(segs) == 1: fc, last = "[0:v]null[x0]", "x0"
     else:
         parts = []; last = "0:v"
+        def nfr(path): return int(subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v", "-count_frames", "-show_entries", "stream=nb_read_frames", "-of", "csv=p=0", path], capture_output=True, text=True).stdout.strip() or 0)
+        lens = [nfr(x) / FPS for x in segs]; acc = lens[0]
         for i in range(1, len(segs)):
-            off = max(0.0, tl.scenes[i]["t0"] - XF); parts.append(f"[{last}][{i}:v]xfade=transition=fade:duration={XF}:offset={off:.3f}[x{i}]"); last = f"x{i}"
+            off = max(0.0, acc - XF); acc = off + lens[i]; parts.append(f"[{last}][{i}:v]xfade=transition=fade:duration={XF}:offset={off:.3f}[x{i}]"); last = f"x{i}"
         fc = ";".join(parts)
     fc += f";[{last}]tpad=stop_mode=clone:stop_duration=1[xo]" if len(segs) > 1 else ""
+    if os.environ.get("RK_DEBUG"): print("XFADE", fc, [round(x["t0"], 2) for x in tl.scenes])
     cmd += ["-filter_complex", fc, "-map", "[xo]" if len(segs) > 1 else "[x0]", "-frames:v", str(round(tl.dur * FPS)), "-c:v", "libx264", "-crf", "18", "-pix_fmt", "yuv420p", bgall]
     subprocess.run(cmd, check=True)
     subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", bgall, "-framerate", str(FPS), "-i", f"{jp}/f_%04d.png", "-filter_complex", "[0:v][1:v]overlay=0:0:format=auto,format=yuv420p[v]", "-map", "[v]", "-c:v", "libx264", "-preset", "medium", "-crf", "18", content], check=True)
