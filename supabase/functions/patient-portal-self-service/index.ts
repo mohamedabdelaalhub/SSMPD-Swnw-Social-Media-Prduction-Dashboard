@@ -463,15 +463,17 @@ Deno.serve(async (req) => {
       .limit(5);
     if (codesError) return json({ error: codesError.message }, 500);
 
+    // Every guess counts against every live code of the account, so exhausting the newest
+    // code cannot leave older codes open to unlimited guessing.
+    const liveCodes = (codes || []).filter((r: any) => Number(r.attempts || 0) < Number(r.max_attempts || 0));
+    if (!liveCodes.length) return json({ error: "INVALID_ACTIVATION_CODE" }, 400);
     const inputHash = await sha256(code);
-    const matched = (codes || []).find((r: any) => r.code_hash === inputHash && r.attempts < r.max_attempts);
+    const matched = liveCodes.find((r: any) => r.code_hash === inputHash);
     if (!matched) {
-      const newest = (codes || [])[0];
-      if (newest) {
-        await admin.from("patient_activation_codes")
-          .update({ attempts: Number(newest.attempts || 0) + 1 })
-          .eq("id", newest.id);
-      }
+      await Promise.all(liveCodes.map((r: any) =>
+        admin.from("patient_activation_codes")
+          .update({ attempts: Number(r.attempts || 0) + 1 })
+          .eq("id", r.id)));
       return json({ error: "INVALID_ACTIVATION_CODE" }, 400);
     }
 
