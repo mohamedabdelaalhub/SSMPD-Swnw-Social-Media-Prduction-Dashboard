@@ -37,7 +37,7 @@ const workspace = () => ({ can_manage: true, today: '2026-11-12', templates: [{ 
   assert.equal(t.count('hr_presence_snapshot'), 0, 'nothing loads until opened');
   tab.click(); await t.tick(); await t.tick();
   assert(d.querySelector('.att-hub'), 'hub mounted, scoped under .att-hub'); assert.equal(t.count('hr_presence_snapshot'), 1); assert.equal(t.count('hr_attendance_today'), 1); assert.equal(t.count('hr_shifts_workspace'), 1);
-  assert.deepEqual([...d.querySelectorAll('[data-att-tabs] button')].map(b => b.textContent.replace(/\d+$/, '')), ['الآن (مباشر)', 'الورديات', 'التقارير']);
+  assert.deepEqual([...d.querySelectorAll('[data-att-tabs] button')].map(b => b.textContent.replace(/\d+$/, '')), ['الآن (مباشر)', 'الورديات', 'التقارير', 'أجازات المركز']);
   assert.equal(d.querySelector('[data-att-badge]').textContent, '1', 'badge = absent count on the «الآن» tab');
   assert(d.querySelector('[data-att-live]').textContent.includes('متصل'), 'header shows a live link');
 
