@@ -49,6 +49,12 @@
 .rx-tl-wd.on{background:#eef2fb;color:#0F369D}
 .rx-tl-wd.on b{color:#0F369D}
 .rx-tl-wd:focus-visible,.rx-tl-name:focus-visible{outline:3px solid #F15A22;outline-offset:2px}
+.rx-tl-wd.off{background:repeating-linear-gradient(135deg,rgba(152,162,179,.14) 0 6px,transparent 6px 12px);color:#98A2B3}
+.rx-tl-wd.off b{color:#98A2B3;text-decoration:line-through}
+.rx-tl-wd.off.on{outline:2px solid #98A2B3}
+.rx-tl-wd em{font-style:normal;font-size:10.5px;font-weight:700;color:#667085;line-height:1}
+.rx-tl-closed{display:grid;gap:2px;padding:12px 14px;border-radius:14px;border:1px solid rgba(152,162,179,.45);border-inline-start:5px solid #98A2B3;background:var(--glass-fill,rgba(255,255,255,.66));color:#344054}
+.rx-tl-closed b{color:#16212E;font-size:15px}
 .rx-tl-sum{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
 .rx-tl .st-all{--st:var(--st-booked)}
 /* أزرار الملخص: ثابتة = إطار بلون الحالة على زجاج، هوفر/مختار = مليانة بنفس اللون */
