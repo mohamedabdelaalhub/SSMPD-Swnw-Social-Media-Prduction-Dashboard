@@ -3,7 +3,7 @@
   // «الحضور اللحظي» hub: one page with three inner tabs — «الآن (مباشر)» (hr-presence.js), «الورديات» (hr-shifts.js), «التقارير» (hr-attendance-reports.js).
   // Mounted by hr-navigation.js into the 'presence' section (the old 'shifts' section key is redirected here). Everything is styled under .att-hub (attendance-hub.css).
   var C = w.SSMPDAttCore, esc = C.esc, ico = C.ico;
-  var TABS = [['now', 'الآن (مباشر)', 'check', 'SSMPDHRPresence'], ['shifts', 'الورديات', 'cal', 'SSMPDHRShifts'], ['reports', 'التقارير', 'chart', 'SSMPDHRReports']];
+  var TABS = [['now', 'الآن (مباشر)', 'check', 'SSMPDHRPresence'], ['shifts', 'الورديات', 'cal', 'SSMPDHRShifts'], ['reports', 'التقارير', 'chart', 'SSMPDHRReports'], ['holidays', 'أجازات المركز', 'sun', 'SSMPDHRClosures']];
   var last = 'now';
 
   function mount(shell, active, opts) {
