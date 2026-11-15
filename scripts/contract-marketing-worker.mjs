@@ -4,15 +4,25 @@ import {renderContract} from './contract-template-renderer.mjs';
 const endpoint='https://api.swnwclinics.com/functions/v1/contract-marketing';
 const configPath=process.env.SWNW_CONTRACT_CONFIG;
 if(!configPath)throw Error('SWNW_CONTRACT_CONFIG is required');
+// all (default, Windows website server): website card sync + welcome-post rendering.
+// jobs (dashboard server): rendering only. sync: website cards only. Job leases are exclusive, so two workers never render the same job.
+const mode=process.env.SWNW_CONTRACT_MODE||'all';
+if(!['all','jobs','sync'].includes(mode))throw Error('SWNW_CONTRACT_MODE must be all, jobs or sync');
+const keyFrom=secret=>crypto.createPrivateKey({key:Buffer.concat([Buffer.from('302e020100300506032b657004220420','hex'),crypto.createHash('sha256').update(secret).digest()]),format:'der',type:'pkcs8'});
+// Prints only the PUBLIC verification key (for CONTRACT_MARKETING_WORKER_PUBKEYS); the secret never leaves the config file.
+if(process.argv.includes('--print-public-key')){const c=JSON.parse((await fs.readFile(configPath,'utf8')).replace(/^\uFEFF/,''));if(typeof c.secret!=='string'||c.secret.length<32)throw Error('Worker secret is not configured');console.log(crypto.createPublicKey(keyFrom(c.secret)).export({format:'der',type:'spki'}).subarray(-32).toString('base64url'));process.exit(0);}
 let busy=false;
 async function tick(){if(busy)return;busy=true;let job,call;
  try{
   const config=JSON.parse((await fs.readFile(configPath,'utf8')).replace(/^\uFEFF/,''));if(!config.contractMarketingEnabled)return;
   if(typeof config.secret!=='string'||config.secret.length<32)throw Error('Worker secret is not configured');
-  const privateKey=crypto.createPrivateKey({key:Buffer.concat([Buffer.from('302e020100300506032b657004220420','hex'),crypto.createHash('sha256').update(config.secret).digest()]),format:'der',type:'pkcs8'});
+  const privateKey=keyFrom(config.secret);
   call=async data=>{const stamp=String(Date.now()),signature=crypto.sign(null,Buffer.from(stamp),privateKey).toString('base64url');const r=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer CM.'+stamp+'.'+signature},body:JSON.stringify(data),signal:AbortSignal.timeout(240000)});const result=await r.json();if(!r.ok)throw Error(result.error||'Worker request failed');return result;};
+  if(mode!=='jobs'){
   const snapshot=await call({action:'snapshot'});
   for(const item of snapshot.items){try{const response=await fetch('http://127.0.0.1:8787/api/integrations/contracts',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+config.secret},body:JSON.stringify({...item,observedAt:snapshot.observedAt}),signal:AbortSignal.timeout(30000)});if(!response.ok)throw Error('Website contract synchronization failed: '+response.status);}catch(error){console.error('Contract card sync failed:',item.id,String(error.message).slice(0,100));}}
+  }
+  if(mode==='sync')return;
   const claim=await call({action:'claim'});if(!claim.job)return;job=claim.job;
   if(claim.profile.kind!=='doctor'){const e=new Error('قالب إعلان الجهات بانتظار الإضافة');e.code='TEMPLATE_NOT_READY';throw e;}
   const generated=await call({action:'generate',id:job.id,lease:job.lease});
