@@ -20,25 +20,34 @@ const cairoDay=(t)=>new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Cairo',yea
  await page.addScriptTag({content:`window.SSMPDAuth={currentAdmin:{id:'me',role:'super_admin'}};window.SSMPDRoles={canSeeTab:()=>true};window.SSMPDDb={receptionBootstrap:()=>rxRpc('clinic_reception_bootstrap'),receptionSnapshot:(w,f,t)=>rxRpc('clinic_reception_snapshot',{p_workspace:w,p_from:f,p_to:t}),receptionCommand:(w,a,p,k)=>rxRpc('clinic_reception_command',{p_workspace:w,p_action:a,p_payload:p,p_token:k})};`});
  await page.addScriptTag({content:fs.readFileSync('assets/js/reception-workspace.js','utf8')});await page.evaluate(()=>SSMPDReception.render(document.querySelector('#root')));await page.waitForSelector('[data-rx-section]');await page.locator('[data-guide-skip]').click();
  await page.locator('[data-rx-section="appointments"]').click();await page.waitForSelector('.rx-tl-week');
- assert.equal(await page.locator('.rx-tl-title').textContent(),'النهارده');assert.equal(await page.locator('.rx-tl-wd').count(),7);assert.equal(await page.locator('.rx-tl-wd').first().locator('span').textContent(),'سبت');
- assert.equal(await page.locator('.rx-tl-wd.on').getAttribute('data-id'),today);assert.equal(await page.locator(`.rx-tl-wd[data-id="${tomorrow}"] i`).isHidden(),false,'dot on a day with bookings');
+ const weekday=new Date(today+'T12:00:00Z').toLocaleDateString('ar-EG',{weekday:'long',timeZone:'UTC'});
+ assert.equal(await page.locator('.rx-tl-title').textContent(),weekday,'day name as the big title');assert.doesNotMatch(await page.locator('.rx-tl-date').textContent(),new RegExp(weekday),'small date has no weekday');assert.match(await page.locator('.rx-tl-date').textContent(),/النهارده/);
+ assert.equal(await page.locator('.rx-tl-wd').count(),7);assert.equal(await page.locator('.rx-tl-wd').first().locator('span').textContent(),'سبت');assert.equal(await page.locator('.rx-tl-wd.on').getAttribute('data-id'),today);assert.equal(await page.locator(`.rx-tl-wd[data-id="${tomorrow}"] i`).isHidden(),false);
+ // Arrows are SVG (no bidi-mirrored characters): «previous» points right, «next» points left.
+ assert.equal(await page.locator('.rx-tl-arrow svg').count(),2);assert.equal(await page.locator('.rx-tl-arrow[aria-label="الأسبوع اللي فات"] path').getAttribute('d'),'M9 6l6 6-6 6');
  assert.match(await page.locator('.rx-tl-sum').textContent(),/^4 حجز — 1 مؤكد — 1 حضروا — 0 لم يحضر$/);
- // Cancelled hidden by default; order by time; the 10:00 booking is «now» (highlighted).
- assert.equal(await page.locator('.rx-tl-item:not([hidden])').count(),4);assert.equal(await page.locator('.rx-tl-item.now').count(),1);assert.match(await page.locator('.rx-tl-item.now time').textContent(),/10:00/);
- const bg=await page.locator('.rx-tl-item.now .rx-tl-card').evaluate(e=>getComputedStyle(e).backgroundColor);assert.equal(bg,'rgb(15, 54, 157)');
+ // Hours to the right of the line, hour by hour 9→15, names only, cards closed.
+ const hours=await page.locator('.rx-tl-hr').evaluateAll(l=>l.map(x=>x.dataset.tlHour));assert.deepEqual(hours,['9','10','11','12','13','14','15']);
+ const hr=await page.locator('.rx-tl-hr').first().evaluate(li=>{const t=li.querySelector('.rx-tl-h').getBoundingClientRect(),d=li.querySelector('.rx-tl-dot').getBoundingClientRect(),n=li.querySelector('.rx-tl-names').getBoundingClientRect();return {t:t.left,d:d.left,n:n.left};});assert(hr.t>hr.d&&hr.d>hr.n,'time | dot | names from right to left');
+ assert.equal(await page.locator('.rx-tl-hr.now').getAttribute('data-tl-hour'),'10');assert.equal(await page.locator('.rx-tl-card:not([hidden])').count(),0);
+ assert.equal(await page.locator('.rx-tl-name:not([hidden])').count(),4,'cancelled hidden by default');
+ const colour=async sel=>page.locator(sel).first().evaluate(e=>getComputedStyle(e.querySelector('i')).backgroundColor);
+ assert.equal(await colour('.rx-tl-name.st-arrived'),'rgb(15, 54, 157)');assert.equal(await colour('.rx-tl-name.st-confirmed'),'rgb(47, 125, 92)');assert.notEqual(await colour('.rx-tl-name.st-booked'),await colour('.rx-tl-name.st-confirmed'));
+ // Tap a name → its big card opens in its status colour; tap again closes.
+ await page.locator('.rx-tl-name.st-confirmed').click();const card=page.locator('.rx-tl-card:not([hidden])');assert.equal(await card.count(),1);assert.equal(await card.evaluate(e=>getComputedStyle(e).backgroundColor),'rgb(47, 125, 92)');assert.match(await card.innerText(),/مؤكد/);
  if(process.env.RECEPTION_QA){await page.locator('.rx-tl-head').evaluate(e=>e.scrollIntoView({block:'start'}));await page.screenshot({path:process.env.RECEPTION_QA+'/timeline-'+width+'.png'});}
- // Status chip, doctor filter and search are instant and keep focus.
- await page.locator('.rx-tl-chip[data-id="cancelled"]').click();assert.equal(await page.locator('.rx-tl-item:not([hidden])').count(),1);
- await page.locator('.rx-tl-chip[data-id="confirmed"]').click();assert.equal(await page.locator('.rx-tl-item:not([hidden])').count(),1);assert.match(await page.locator('.rx-tl-item:not([hidden]) .rx-confirmed').textContent(),/مؤكد/);
- await page.locator('.rx-tl-chip[data-id=""]').click();const name=(await page.locator('.rx-tl-item:not([hidden]) h4').first().textContent()).trim();
- await page.locator('[data-tl-q]').fill('لا يوجد اسم كده');assert.equal(await page.locator('.rx-tl-nomatch').isHidden(),false);assert.equal(await page.evaluate(()=>document.activeElement.matches('[data-tl-q]')),true);
- await page.locator('[data-tl-q]').fill(name.slice(0,4));assert((await page.locator('.rx-tl-item:not([hidden])').count())>=1);await page.locator('[data-tl-q]').fill('');
- // Other day: «بكره»; then back to today with the «النهارده» button.
- await page.locator(`.rx-tl-wd[data-id="${tomorrow}"]`).click();assert.equal(await page.locator('.rx-tl-title').textContent(),'بكره');assert.equal(await page.locator('.rx-tl-item').count(),1);assert.equal(await page.locator('.rx-tl-item.now').count(),0);
- await page.locator(`.rx-tl-nav [data-id="${today}"]`).click();assert.equal(await page.locator('.rx-tl-title').textContent(),'النهارده');
- // «⋯» menu holds the secondary actions; floating «+» opens booking.
- await page.locator('.rx-tl-item.now .rx-tl-more summary').click();assert(await page.locator('.rx-tl-item.now .rx-tl-more [data-rx-action="reschedule"]').isVisible());await page.keyboard.press('Escape');
- await page.locator('.rx-tl-fab').click();await page.waitForSelector('.rx-modal');assert.match(await page.locator('.rx-modal').innerText(),/حجز موعد/);await page.locator('.rx-modal [data-rx-close], .rx-modal .rx-close, .rx-modal button[aria-label="إغلاق"]').first().click().catch(()=>page.keyboard.press('Escape'));
+ await page.locator('.rx-tl-name.st-confirmed').click();assert.equal(await page.locator('.rx-tl-card:not([hidden])').count(),0);
+ // Two dropdowns side by side: الأطباء / الحالة; plus search that keeps focus.
+ const pair=await page.locator('.rx-tl-pair label').evaluateAll(l=>l.map(x=>x.getBoundingClientRect().top));assert.equal(pair.length,2);assert(Math.abs(pair[0]-pair[1])<2,'side by side');
+ await page.locator('[data-tl-status-filter]').selectOption('cancelled');assert.equal(await page.locator('.rx-tl-name:not([hidden])').count(),1);
+ await page.locator('[data-tl-status-filter]').selectOption('');await page.locator('[data-tl-doctor-filter]').selectOption({index:1});assert.equal(await page.locator('.rx-tl-name:not([hidden])').count(),4);
+ await page.locator('[data-tl-q]').fill('لا يوجد اسم كده');assert.equal(await page.locator('.rx-tl-nomatch').isHidden(),false);assert(await page.evaluate(()=>document.activeElement.matches('[data-tl-q]')));await page.locator('[data-tl-q]').fill('');
+ // Actions still work from the opened card; card stays open after the redraw.
+ await page.locator('.rx-tl-name.current').click();await page.locator('.rx-tl-card:not([hidden]) [data-rx-action="confirm"]').click();await page.waitForSelector('.rx-tl-card:not([hidden]).st-confirmed');
+ // Other day.
+ await page.locator(`.rx-tl-wd[data-id="${tomorrow}"]`).click();assert.match(await page.locator('.rx-tl-date').textContent(),/بكره/);assert.equal(await page.locator('.rx-tl-name').count(),1);
+ await page.locator(`.rx-tl-nav [data-id="${today}"]`).click();assert.equal(await page.locator('.rx-tl-wd.on').getAttribute('data-id'),today);
+ await page.locator('.rx-tl-fab').click();await page.waitForSelector('.rx-modal');assert.match(await page.locator('.rx-modal').innerText(),/حجز موعد/);await page.keyboard.press('Escape');
  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'no overflow '+width);assert.deepEqual(errors,[]);await page.close();await db.close();}
- console.log('PASS reception timeline at 1280/390: «النهارده» + week strip (Sat→Fri, dots), summary, cancelled hidden, current card in #0F369D, status/doctor/search filters with focus kept, day switch «بكره», ⋯ menu, floating +, no overflow/errors.');
+ console.log('PASS reception timeline at 1280/390: day name title, SVG arrows, week strip, hours right of the line 9→15, names coloured by status, tap opens card in status colour, الأطباء/الحالة side by side, search keeps focus, actions from card, «بكره», floating +, no overflow/errors.');
 }finally{await browser.close();}})().catch(e=>{console.error(e);process.exitCode=1;});

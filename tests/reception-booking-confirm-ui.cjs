@@ -9,7 +9,7 @@ if(process.env.RECEPTION_QA){await choice.selectOption('30');await page.locator(
 await page.locator('[name="starts_at"]').selectOption({index:1});await page.locator('.rx-modal [type="submit"]').click();await page.waitForSelector('.rx-modal',{state:'detached'});
 await db.exec('reset role');let ap=(await db.query('select id,extract(epoch from ends_at-starts_at)/60 m,confirmed_at from clinic_reception.appointments')).rows;assert.equal(ap.length,1);assert.equal(Number(ap[0].m),30);assert.equal(ap[0].confirmed_at,null);
 // Confirm, see «مؤكد ✓», undo.
-await page.locator('[data-rx-action="confirm"]').click();await page.waitForSelector('.rx-confirmed');if(process.env.RECEPTION_QA)await page.screenshot({path:process.env.RECEPTION_QA+'/booking-confirmed-'+width+'.png'});assert.match(await page.locator('.rx-confirmed').textContent(),/مؤكد/);
+await page.locator('.rx-tl-name').first().click();await page.locator('[data-rx-action="confirm"]').click();await page.waitForSelector('.rx-confirmed');if(process.env.RECEPTION_QA)await page.screenshot({path:process.env.RECEPTION_QA+'/booking-confirmed-'+width+'.png'});assert.match(await page.locator('.rx-confirmed').textContent(),/مؤكد/);
 assert.equal(await page.locator('[data-rx-action="confirm"]').count(),0);
 ap=(await db.query('select confirmed_at from clinic_reception.appointments')).rows;assert(ap[0].confirmed_at);
 await page.locator('.rx-tl-more summary').first().click();await page.locator('[data-rx-action="unconfirm"]').click();await page.waitForSelector('[data-rx-action="confirm"]');assert.equal(await page.locator('.rx-confirmed').count(),0);
