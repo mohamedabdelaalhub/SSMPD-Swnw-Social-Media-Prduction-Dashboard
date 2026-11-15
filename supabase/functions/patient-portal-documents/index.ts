@@ -5,6 +5,29 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 
+// --- portal visibility (keep identical in every patient-portal function; checked by test/portal-visibility.cjs) ---
+// A record reaches the patient portal 24h after it was created, unless a doctor/staff member
+// approved it earlier ("approved") or hid it ("hidden"). Fails closed if the lookup fails.
+const PORTAL_VISIBILITY_DELAY_MS = 24 * 60 * 60 * 1000;
+// deno-lint-ignore no-explicit-any
+async function loadPortalVisibility(admin: any, patientIds: string[]): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
+  if (!patientIds.length) return map;
+  const { data, error } = await admin.from("patient_portal_visibility")
+    .select("entity_type, entity_id, portal_status").in("patient_id", patientIds);
+  if (error) throw new Error("PORTAL_VISIBILITY_UNAVAILABLE");
+  for (const r of data || []) map.set(r.entity_type + ":" + r.entity_id, r.portal_status);
+  return map;
+}
+function isPortalVisible(map: Map<string, string>, entityType: string, entityId: string, createdAt: unknown, now = Date.now()): boolean {
+  const status = map.get(entityType + ":" + entityId);
+  if (status === "approved") return true;
+  if (status === "hidden" || status === "internal") return false;
+  const t = new Date(String(createdAt || "")).getTime();
+  return Number.isFinite(t) && t > 0 && now - t >= PORTAL_VISIBILITY_DELAY_MS;
+}
+// --- end portal visibility ---
+
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -146,7 +169,7 @@ Deno.serve(async (req) => {
     }
   }
 
-  const [medicalReports, echoReports, dentalReports, physioReports, prescriptions, labRequests, radiologyRequests] = await Promise.all([
+  const [medicalReportsAll, echoReportsAll, dentalReportsAll, physioReportsAll, prescriptionsAll, labRequestsAll, radiologyRequestsAll] = await Promise.all([
     safeRows("patient_medical_reports"),
     safeRows("patient_echo_reports"),
     safeRows("patient_dental_reports"),
@@ -155,6 +178,18 @@ Deno.serve(async (req) => {
     safeRows("patient_lab_requests"),
     safeRows("patient_radiology_requests"),
   ]);
+
+  let visibility: Map<string, string>;
+  try { visibility = await loadPortalVisibility(admin, patientIds); }
+  catch (e) { return json({ error: String((e as Error).message || e) }, 500); }
+  const visibleRows = (rows: any[], entityType: string) =>
+    rows.filter((r: any) => isPortalVisible(visibility, entityType, r.id, r.created_at));
+  const [medicalReports, echoReports, dentalReports, physioReports, prescriptions, labRequests, radiologyRequests] = [
+    visibleRows(medicalReportsAll, "medical_report"), visibleRows(echoReportsAll, "echo_report"),
+    visibleRows(dentalReportsAll, "dental_report"), visibleRows(physioReportsAll, "physio_report"),
+    visibleRows(prescriptionsAll, "prescription"), visibleRows(labRequestsAll, "lab_request"),
+    visibleRows(radiologyRequestsAll, "radiology_request"),
+  ];
 
   const documents: any[] = [];
 
