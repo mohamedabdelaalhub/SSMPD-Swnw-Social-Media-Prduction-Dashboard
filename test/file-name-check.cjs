@@ -46,9 +46,10 @@ const root=path.join(__dirname,'..');
       insert into patient_files values ('${F1}','00000000-0000-4000-8000-0000000000b1','lab_result','a.pdf','application/pdf','d1',false,now()),
         ('${F2}','00000000-0000-4000-8000-0000000000b1','other','b.docx','application/msword','d2',false,now()),
         ('44444444-4444-4444-8444-444444444444','00000000-0000-4000-8000-0000000000b1','other','IMG_1.JPG','application/octet-stream','d3',false,now()),
-        ('55555555-5555-4555-8555-555555555555','00000000-0000-4000-8000-0000000000b1','other','p.heic','image/heic','d4',false,now());`);
+        ('55555555-5555-4555-8555-555555555555','00000000-0000-4000-8000-0000000000b1','other','p.heic','image/heic','d4',false,now()),
+        ('66666666-6666-4666-8666-666666666666','00000000-0000-4000-8000-0000000000b1','invoice','inv.xlsx','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','d5',false,now());`);
     const mig=copy(path.join(root,'supabase/migrations/20261115170000_patient_file_name_checks.sql'));psql(null,mig);psql(null,mig);
-    assert.equal(psql(`select string_agg(file_id::text,',' order by file_id) from patient_file_name_check_queue(10,30)`),F1+',44444444-4444-4444-8444-444444444444','queue: images/PDFs by mime or extension, no HEIC/docx');
+    assert.equal(psql(`select string_agg(file_id::text,',' order by file_id) from patient_file_name_check_queue(10,30)`),F1+',44444444-4444-4444-8444-444444444444','queue: images/PDFs by mime or extension; no HEIC, docx or system invoices');
     for(const r of ['anon','authenticated'])assert.equal(psql(`select has_function_privilege('${r}','patient_file_name_check_record(uuid,text,numeric,text,text)','EXECUTE')`),'f');
     assert.equal(psql(`select has_function_privilege('authenticated','patient_file_name_check_queue(integer,integer)','EXECUTE')`),'f');
     psql(`select patient_file_name_check_record('${F1}','mismatch',0.33,'ساره محمود','tesseract')`);
