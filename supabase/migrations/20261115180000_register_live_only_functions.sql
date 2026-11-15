@@ -1,8 +1,6 @@
 -- Register functions that existed only on live (owner: "سجلهم"). Bodies copied verbatim from
 -- live pg_get_functiondef on 2026-11-15, ACLs as live after #480. Applying this on live is a
 -- no-op; it makes a rebuild from the repo produce the same functions.
--- kpi_hub_aggregates depends on public.kpi_norm_name(text), registered separately once its live
--- body is captured (see 20261115180100 if present).
 
 create or replace function public.patient_portal_service_reports()
  returns jsonb language sql stable security definer set search_path to 'pg_catalog', 'public'
@@ -18,6 +16,13 @@ as $function$
    and a.revoked_at is null and (a.expires_at is null or a.expires_at>now()) $function$;
 revoke all on function public.patient_portal_service_reports() from public, anon;
 grant execute on function public.patient_portal_service_reports() to authenticated, service_role;
+
+-- Used by kpi_hub_aggregates: strips "د/", "دكتور", "Dr." and normalizes Arabic letters. Pure; default ACL.
+create or replace function public.kpi_norm_name(p text)
+ returns text language sql immutable set search_path to 'public'
+as $function$
+  select nullif(translate(trim(regexp_replace(regexp_replace(coalesce(p,''), '^\s*(د\s*[/\.]\s*|دكتور[ةه]?\s+|Dr\.?\s*)', ''), '\s+', ' ', 'g')), 'ىةأإآ', 'يهااا'), '')
+$function$;
 
 create or replace function public.kpi_hub_aggregates(p_weeks integer default 12)
  returns jsonb language sql stable security definer set search_path to 'public', 'clinic_reception', 'auth'
