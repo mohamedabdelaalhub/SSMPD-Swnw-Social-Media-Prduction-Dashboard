@@ -21,7 +21,7 @@ def speak_gateway(voice, text, out_mp3):
     Needs the gateway version that accepts voice + timestamps (supabase/functions/claude-automation)."""
     try:
         tok = open(os.path.expanduser("~/.swnw-run-token")).read().strip()
-        body = json.dumps({"text": text, "voice": voice if voice in VOICES else "narrator", "timestamps": True}, ensure_ascii=False)
+        body = json.dumps({"text": text, "voice": voice if voice in VOICES else "narrator", "timestamps": True, "stability": SETTINGS["stability"], "style": SETTINGS["style"], "speed": SETTINGS["speed"]}, ensure_ascii=False)
         r = subprocess.run(["curl", "-s", "-m", "180", "-A", "claude-task", "-X", "POST", GATEWAY + "?op=tts", "-H", "X-Run-Token: " + tok,
                             "-H", "Content-Type: application/json", "--data-binary", body], capture_output=True, text=True)
         d = json.loads(r.stdout)

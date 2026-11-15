@@ -86,7 +86,10 @@ def collect_lines(sb):
     for si, sc in enumerate(sb["scenes"]):
         for bi, b in enumerate(sc.get("beats", [])):
             sy = b.get("say")
-            if sy: out.setdefault(sb["cast"][sy["who"]].get("voice", "narrator"), []).append((si, bi, sy["text"]))
+            if sy:
+                v = sb["cast"][sy["who"]].get("voice", "narrator")
+                if sy.get("sep"): v = f"{v}#{si}_{bi}"  # own voice take (brand names read better alone)
+                out.setdefault(v, []).append((si, bi, sy["text"]))
     return out
 
 def plan(sb, line_timing, seed=1):

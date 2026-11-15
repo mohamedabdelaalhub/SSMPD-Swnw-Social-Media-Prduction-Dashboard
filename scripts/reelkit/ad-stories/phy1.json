@@ -5,7 +5,13 @@
   "music": "upbeat",
   "seed": 22,
   "file": "phy1.mp4",
-  "cover_t": 1.5
+  "cover_t": 1.5,
+  "voice_settings": {
+   "stability": 0.5,
+   "style": 0.2,
+   "speed": 0.96
+  },
+  "prepend_clip": "/root/.claude/uploads/d4cfeb82-593e-5033-90e6-dc2f0a1d367c/86ddeb97-WhatsApp_Video_2026-11-15_at_6.21.02_AM.mp4"
  },
  "cast": {
   "v": {
@@ -15,93 +21,45 @@
  },
  "scenes": [
   {
-   "set": "photo:/tmp/ad/phy_young.png",
-   "cam": {
+   "set": "clear",
+   "bg": {
+    "photo": "/tmp/ad/phy_young.png",
     "z0": 1.0,
-    "z1": 1.12,
-    "x0": 0,
-    "x1": -30,
-    "y0": 0,
-    "y1": 0
+    "z1": 1.12
    },
-   "trans": "cut",
-   "tail": 0.8,
-   "actors": {},
-   "beats": [
-    {
-     "say": {
-      "who": "v",
-      "text": "علاج طبيعي في سونو",
-      "hl": [
-       "سونو"
-      ],
-      "silent": false
-     }
-    },
-    {
-     "wait": 3.4
-    }
-   ]
-  },
-  {
-   "set": "photo:/tmp/ad/phy_young.png",
-   "cam": {
-    "z0": 1.12,
-    "z1": 1.0,
-    "x0": -30,
-    "x1": 20,
-    "y0": 0,
-    "y1": 0
-   },
+   "cam": {},
    "trans": "fade",
-   "tail": 0.8,
+   "tail": 0.1,
    "actors": {},
    "beats": [
     {
-     "badge": {
-      "text": "أجهزة وإشراف أخصائيين",
-      "kind": "label",
-      "y": 1190,
-      "dur": 5.0
-     }
-    },
-    {
      "say": {
       "who": "v",
-      "text": "أجهزة وإشراف أخصائيين",
+      "text": "جلسات بأجهزة، وتحت إشراف أخصائيين",
       "hl": [
        "أخصائيين"
       ],
-      "silent": true
+      "silent": false,
+      "pad": 0.2
      }
     },
     {
-     "wait": 3.2
+     "wait": 0.15
     }
    ]
   },
   {
-   "set": "photo:/tmp/ad/phy_woman.png",
-   "cam": {
-    "z0": 1.0,
-    "z1": 1.15,
-    "x0": 0,
-    "x1": 0,
-    "y0": 0,
-    "y1": 0
+   "set": "clear",
+   "bg": {
+    "photo": "/tmp/ad/phy_woman.png",
+    "z0": 1.12,
+    "z1": 1.0
    },
-   "trans": "slide",
-   "tail": 0.8,
+   "cam": {},
+   "trans": "cut",
+   "tail": 0.1,
    "actors": {},
    "beats": [
-    {
-     "badge": {
-      "text": "لكل الأعمار",
-      "kind": "label",
-      "y": 1190,
-      "dur": 3.2
-     }
-    },
     {
      "say": {
       "who": "v",
@@ -109,82 +67,79 @@
       "hl": [
        "الأعمار"
       ],
-      "silent": true
+      "silent": false,
+      "pad": 0.2
      }
     },
     {
-     "wait": 3.4
+     "wait": 0.15
     }
    ]
   },
   {
-   "set": "photo:/tmp/ad/phy_elder.png",
-   "cam": {
-    "z0": 1.1,
-    "z1": 1.0,
-    "x0": 20,
-    "x1": -20,
-    "y0": 0,
-    "y1": 0
+   "set": "clear",
+   "bg": {
+    "photo": "/tmp/ad/phy_elder.png",
+    "z0": 1.0,
+    "z1": 1.12
    },
-   "trans": "slide",
-   "tail": 0.8,
+   "cam": {},
+   "trans": "cut",
+   "tail": 0.1,
    "actors": {},
    "beats": [
     {
      "say": {
       "who": "v",
-      "text": "وأخصائيين معاك في كل خطوة",
+      "text": "من الشباب لكبار السن، وأخصائي معاك في كل خطوة",
       "hl": [
        "خطوة"
       ],
-      "silent": false
+      "silent": false,
+      "pad": 0.2
      }
     },
     {
-     "wait": 3.6
+     "wait": 0.15
     }
    ]
   },
   {
-   "set": "photo:/tmp/ad/phy_young.png",
-   "cam": {
-    "z0": 1.2,
-    "z1": 1.1,
-    "x0": 40,
-    "x1": 0,
-    "y0": 0,
-    "y1": 0
+   "set": "clear",
+   "bg": {
+    "video": "/root/.claude/uploads/d4cfeb82-593e-5033-90e6-dc2f0a1d367c/f353714c-WhatsApp_Video_2026-11-15_at_6.05.22_AM.mp4",
+    "start": 0.2,
+    "fit": "blur",
+    "cx": 0.5
    },
-   "trans": "fade",
-   "tail": 0.8,
+   "cam": {},
+   "trans": "cut",
+   "tail": 0.1,
    "actors": {},
    "beats": [
     {
      "badge": {
-      "text": "جلسات بأجهزة",
+      "text": "عيادات سونو — حدائق الأهرام",
       "kind": "label",
       "y": 1190,
-      "dur": 3.0
+      "dur": 2.6
      }
     },
     {
-     "wait": 3.0
+     "wait": 2.6
     }
    ]
   },
   {
-   "set": "photo:/tmp/ad/phy_woman.png",
-   "cam": {
-    "z0": 1.15,
-    "z1": 1.0,
-    "x0": 0,
-    "x1": 0,
-    "y0": 0,
-    "y1": 0
+   "set": "clear",
+   "bg": {
+    "photo": "/tmp/ad/phy_woman.png",
+    "z0": 1.0,
+    "z1": 1.12
    },
+   "cam": {},
    "trans": "flash",
-   "tail": 0.8,
+   "tail": 0.1,
    "actors": {},
    "beats": [
     {
@@ -193,93 +148,64 @@
       "sub": "على أول جلسة",
       "kind": "offer",
       "y": 1200,
-      "dur": 6.5
+      "dur": 5.0
      }
     },
     {
      "say": {
       "who": "v",
-      "text": "وفي خصم عشرين في المية على أول جلسة",
+      "text": "وعلى أول جلسة، خصم عشرين في المية",
       "hl": [
        "عشرين",
        "أول جلسة"
       ],
-      "silent": true
+      "silent": true,
+      "pad": 0.2
      }
     },
     {
-     "wait": 3.6
+     "wait": 0.8
     }
    ]
   },
   {
-   "set": "photo:/tmp/ad/phy_elder.png",
-   "cam": {
-    "z0": 1.0,
-    "z1": 1.1,
-    "x0": -10,
-    "x1": 30,
-    "y0": 0,
-    "y1": 0
+   "set": "clear",
+   "bg": {
+    "photo": "/tmp/ad/phy_young.png",
+    "z0": 1.12,
+    "z1": 1.0
    },
-   "trans": "fade",
-   "tail": 0.8,
+   "cam": {},
+   "trans": "cut",
+   "tail": 0.1,
    "actors": {},
    "beats": [
     {
      "say": {
       "who": "v",
-      "text": "ابعتلنا على واتساب وهنحدد خطة الجلسات المناسبة",
+      "text": "ابعتلنا على واتساب، وهنحدد معاك خطة الجلسات المناسبة",
       "hl": [
        "واتساب"
       ],
-      "silent": false
+      "silent": false,
+      "pad": 0.2
      }
     },
     {
-     "wait": 3.4
+     "wait": 0.15
     }
    ]
   },
   {
-   "set": "photo:/tmp/ad/phy_young.png",
-   "cam": {
+   "set": "clear",
+   "bg": {
+    "photo": "/tmp/ad/phy_elder.png",
     "z0": 1.0,
-    "z1": 1.12,
-    "x0": 0,
-    "x1": 0,
-    "y0": 0,
-    "y1": 0
+    "z1": 1.12
    },
-   "trans": "fade",
+   "cam": {},
+   "trans": "cut",
    "tail": 0.8,
-   "actors": {},
-   "beats": [
-    {
-     "badge": {
-      "text": "عيادات سونو — حدائق الأهرام",
-      "kind": "label",
-      "y": 1190,
-      "dur": 3.2
-     }
-    },
-    {
-     "wait": 3.2
-    }
-   ]
-  },
-  {
-   "set": "photo:/tmp/ad/phy_woman.png",
-   "cam": {
-    "z0": 1.0,
-    "z1": 1.14,
-    "x0": 0,
-    "x1": 0,
-    "y0": 0,
-    "y1": 0
-   },
-   "trans": "fade",
-   "tail": 1.4,
    "actors": {},
    "beats": [
     {
@@ -287,21 +213,22 @@
       "text": "احجز موعدك",
       "kind": "button",
       "y": 1290,
-      "dur": 7.0
+      "dur": 4.0
      }
     },
     {
      "say": {
       "who": "v",
-      "text": "احجز موعدك",
+      "text": "احجز موعدك دلوقتي",
       "hl": [
        "احجز"
       ],
-      "silent": true
+      "silent": true,
+      "pad": 0.2
      }
     },
     {
-     "wait": 4.2
+     "wait": 1.2
     }
    ]
   }

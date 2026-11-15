@@ -2,10 +2,16 @@
  "meta": {
   "brand": true,
   "title": "إعلان ريل LZF1-F — موجة 1",
-  "music": "calm",
+  "music": "upbeat",
   "seed": 21,
   "file": "lzf1f.mp4",
-  "cover_t": 1.5
+  "cover_t": 1.5,
+  "voice_settings": {
+   "stability": 0.5,
+   "style": 0.2,
+   "speed": 0.96
+  },
+  "prepend_clip": "/root/.claude/uploads/d4cfeb82-593e-5033-90e6-dc2f0a1d367c/fa229957-WhatsApp_Video_2026-11-15_at_6.10.22_AM.mp4"
  },
  "cast": {
   "v": {
@@ -15,176 +21,76 @@
  },
  "scenes": [
   {
-   "set": "photo:/tmp/ad/lzf_arm.png",
-   "cam": {
-    "z0": 1.0,
-    "z1": 1.12,
-    "x0": 0,
-    "x1": -30,
-    "y0": 0,
-    "y1": 0
+   "set": "clear",
+   "bg": {
+    "video": "/root/.claude/uploads/d4cfeb82-593e-5033-90e6-dc2f0a1d367c/2c52d99c-WhatsApp_Video_2026-11-15_at_6.04.54_AM.mp4",
+    "start": 0.0,
+    "fit": "cover",
+    "cx": 0.5
    },
-   "trans": "cut",
-   "tail": 0.8,
-   "actors": {},
-   "beats": [
-    {
-     "say": {
-      "who": "v",
-      "text": "ليزر كانديلا في سونو",
-      "hl": [
-       "كانديلا"
-      ],
-      "silent": false
-     }
-    },
-    {
-     "wait": 3.4
-    }
-   ]
-  },
-  {
-   "set": "photo:/tmp/ad/lzf_arm.png",
-   "cam": {
-    "z0": 1.12,
-    "z1": 1.0,
-    "x0": -30,
-    "x1": 20,
-    "y0": 0,
-    "y1": 0
-   },
+   "cam": {},
    "trans": "fade",
-   "tail": 0.8,
+   "tail": 0.1,
    "actors": {},
    "beats": [
     {
-     "badge": {
-      "text": "بإشراف أطباء متخصصين فقط",
-      "kind": "label",
-      "y": 1190,
-      "dur": 5.0
-     }
-    },
-    {
      "say": {
       "who": "v",
-      "text": "جلسات بإشراف أطباء متخصصين فقط",
-      "hl": [
-       "متخصصين"
-      ],
-      "silent": true
-     }
-    },
-    {
-     "wait": 3.2
-    }
-   ]
-  },
-  {
-   "set": "photo:/tmp/ad/lzf_face.png",
-   "cam": {
-    "z0": 1.0,
-    "z1": 1.15,
-    "x0": 0,
-    "x1": 0,
-    "y0": 0,
-    "y1": 0
-   },
-   "trans": "slide",
-   "tail": 0.8,
-   "actors": {},
-   "beats": [
-    {
-     "badge": {
-      "text": "الوش",
-      "kind": "label",
-      "y": 1190,
-      "dur": 3.4
-     }
-    },
-    {
-     "say": {
-      "who": "v",
-      "text": "الوش",
+      "text": "الوش، والدراع، والرجلين",
       "hl": [
        "الوش"
       ],
-      "silent": true
+      "silent": false,
+      "pad": 0.2,
+      "sep": false
      }
     },
     {
-     "wait": 3.4
+     "wait": 0.15
     }
    ]
   },
   {
-   "set": "photo:/tmp/ad/lzf_arm.png",
-   "cam": {
-    "z0": 1.2,
-    "z1": 1.1,
-    "x0": 40,
-    "x1": 0,
-    "y0": 0,
-    "y1": 0
+   "set": "clear",
+   "bg": {
+    "video": "/root/.claude/uploads/d4cfeb82-593e-5033-90e6-dc2f0a1d367c/2c52d99c-WhatsApp_Video_2026-11-15_at_6.04.54_AM.mp4",
+    "start": 4.4,
+    "fit": "blur",
+    "cx": 0.5
    },
-   "trans": "slide",
-   "tail": 0.8,
-   "actors": {},
-   "beats": [
-    {
-     "badge": {
-      "text": "الدراع",
-      "kind": "label",
-      "y": 1190,
-      "dur": 3.0
-     }
-    },
-    {
-     "wait": 2.6
-    }
-   ]
-  },
-  {
-   "set": "photo:/tmp/ad/lzf_legs.png",
-   "cam": {
-    "z0": 1.1,
-    "z1": 1.0,
-    "x0": 20,
-    "x1": -20,
-    "y0": 0,
-    "y1": 0
-   },
-   "trans": "slide",
-   "tail": 0.8,
+   "cam": {},
+   "trans": "cut",
+   "tail": 0.1,
    "actors": {},
    "beats": [
     {
      "say": {
       "who": "v",
-      "text": "الرجلين. اختاري المنطقة اللي تناسبك",
+      "text": "اختاري المنطقة اللي تناسبك",
       "hl": [
        "اختاري"
       ],
-      "silent": false
+      "silent": false,
+      "pad": 0.2,
+      "sep": false
      }
     },
     {
-     "wait": 3.4
+     "wait": 0.15
     }
    ]
   },
   {
-   "set": "photo:/tmp/ad/lzf_face.png",
-   "cam": {
-    "z0": 1.15,
-    "z1": 1.0,
-    "x0": 0,
-    "x1": 0,
-    "y0": 0,
-    "y1": 0
+   "set": "clear",
+   "bg": {
+    "video": "/root/.claude/uploads/d4cfeb82-593e-5033-90e6-dc2f0a1d367c/2c52d99c-WhatsApp_Video_2026-11-15_at_6.04.54_AM.mp4",
+    "start": 6.2,
+    "fit": "cover",
+    "cx": 0.45
    },
-   "trans": "fade",
-   "tail": 0.8,
+   "cam": {},
+   "trans": "cut",
+   "tail": 0.1,
    "actors": {},
    "beats": [
     {
@@ -194,26 +100,100 @@
       "hl": [
        "نص ساعة"
       ],
-      "silent": false
+      "silent": false,
+      "pad": 0.2,
+      "sep": false
      }
     },
     {
-     "wait": 3.4
+     "wait": 0.15
     }
    ]
   },
   {
-   "set": "photo:/tmp/ad/lzf_arm.png",
-   "cam": {
-    "z0": 1.0,
-    "z1": 1.1,
-    "x0": -10,
-    "x1": 30,
-    "y0": 0,
-    "y1": 0
+   "set": "clear",
+   "bg": {
+    "video": "/root/.claude/uploads/d4cfeb82-593e-5033-90e6-dc2f0a1d367c/f353714c-WhatsApp_Video_2026-11-15_at_6.05.22_AM.mp4",
+    "start": 0.2,
+    "fit": "blur",
+    "cx": 0.5
    },
+   "cam": {},
+   "trans": "cut",
+   "tail": 0.1,
+   "actors": {},
+   "beats": [
+    {
+     "badge": {
+      "text": "عيادات سونو — حدائق الأهرام",
+      "kind": "label",
+      "y": 1190,
+      "dur": 1.8
+     }
+    },
+    {
+     "wait": 1.8
+    }
+   ]
+  },
+  {
+   "set": "clear",
+   "bg": {
+    "video": "/root/.claude/uploads/d4cfeb82-593e-5033-90e6-dc2f0a1d367c/6974b84b-WhatsApp_Video_2026-11-15_at_6.03.47_AM.mp4",
+    "start": 2.0,
+    "fit": "blur",
+    "cx": 0.5
+   },
+   "cam": {},
+   "trans": "cut",
+   "tail": 0.1,
+   "actors": {},
+   "beats": [
+    {
+     "wait": 1.8
+    }
+   ]
+  },
+  {
+   "set": "clear",
+   "bg": {
+    "video": "/root/.claude/uploads/d4cfeb82-593e-5033-90e6-dc2f0a1d367c/6974b84b-WhatsApp_Video_2026-11-15_at_6.03.47_AM.mp4",
+    "start": 5.6,
+    "fit": "blur",
+    "cx": 0.5
+   },
+   "cam": {},
+   "trans": "cut",
+   "tail": 0.1,
+   "actors": {},
+   "beats": [
+    {
+     "say": {
+      "who": "v",
+      "text": "بإشراف أطباء متخصصين فقط",
+      "hl": [
+       "متخصصين"
+      ],
+      "silent": false,
+      "pad": 0.2,
+      "sep": false
+     }
+    },
+    {
+     "wait": 0.3
+    }
+   ]
+  },
+  {
+   "set": "clear",
+   "bg": {
+    "photo": "/tmp/ad/lzf_face.png",
+    "z0": 1.0,
+    "z1": 1.12
+   },
+   "cam": {},
    "trans": "flash",
-   "tail": 0.8,
+   "tail": 0.1,
    "actors": {},
    "beats": [
     {
@@ -222,7 +202,7 @@
       "sub": "على باقات الليزر حتى آخر ديسمبر",
       "kind": "offer",
       "y": 1200,
-      "dur": 7.0
+      "dur": 6.0
      }
     },
     {
@@ -233,53 +213,26 @@
        "عشرين",
        "ديسمبر"
       ],
-      "silent": true
+      "silent": true,
+      "pad": 0.2,
+      "sep": false
      }
     },
     {
-     "wait": 3.6
+     "wait": 0.8
     }
    ]
   },
   {
-   "set": "photo:/tmp/ad/lzf_legs.png",
-   "cam": {
-    "z0": 1.0,
-    "z1": 1.12,
-    "x0": 0,
-    "x1": 0,
-    "y0": 0,
-    "y1": 0
+   "set": "clear",
+   "bg": {
+    "photo": "/tmp/ad/lzf_arm.png",
+    "z0": 1.12,
+    "z1": 1.0
    },
-   "trans": "fade",
+   "cam": {},
+   "trans": "cut",
    "tail": 0.8,
-   "actors": {},
-   "beats": [
-    {
-     "badge": {
-      "text": "عيادات سونو — حدائق الأهرام",
-      "kind": "label",
-      "y": 1190,
-      "dur": 3.2
-     }
-    },
-    {
-     "wait": 2.4
-    }
-   ]
-  },
-  {
-   "set": "photo:/tmp/ad/lzf_face.png",
-   "cam": {
-    "z0": 1.0,
-    "z1": 1.14,
-    "x0": 0,
-    "x1": 0,
-    "y0": 0,
-    "y1": 0
-   },
-   "trans": "fade",
-   "tail": 1.4,
    "actors": {},
    "beats": [
     {
@@ -287,21 +240,23 @@
       "text": "سجّلي بياناتك",
       "kind": "button",
       "y": 1290,
-      "dur": 8.0
+      "dur": 5.0
      }
     },
     {
      "say": {
       "who": "v",
-      "text": "سجّلي بياناتك وهنتواصل معاكي",
+      "text": "سجّلي بياناتك، وهنتواصل معاكي",
       "hl": [
        "سجّلي"
       ],
-      "silent": true
+      "silent": true,
+      "pad": 0.2,
+      "sep": false
      }
     },
     {
-     "wait": 3.8
+     "wait": 1.2
     }
    ]
   }

@@ -15,7 +15,7 @@ const css=`@font-face{font-family:'BigVesta Arabic';font-weight:400;src:url(data
  const a=start?+start:0,b=end?+end:files.length;
  fs.mkdirSync(outdir,{recursive:true});
  const br=await chromium.launch();const pg=await br.newPage({viewport:{width:1080,height:1920}});
- await pg.setContent(`<html><head><style>${css}</style></head><body style="margin:0;background:#fff"><span style="font-family:'BigVesta Arabic';font-weight:700">ابج</span><span style="font-family:'BigVesta Arabic';font-weight:400">ابج</span><span style="font-family:'Hiragino Kaku';font-weight:400">Swnw 123</span></body></html>`);
+ await pg.setContent(`<html><head><style>${css}</style></head><body style="margin:0;background:${process.env.RF_ALPHA?'transparent':'#fff'}"><span style="font-family:'BigVesta Arabic';font-weight:700">ابج</span><span style="font-family:'BigVesta Arabic';font-weight:400">ابج</span><span style="font-family:'Hiragino Kaku';font-weight:400">Swnw 123</span></body></html>`);
  await pg.evaluate(async()=>{await document.fonts.load('700 40px "BigVesta Arabic"');await document.fonts.load('400 40px "BigVesta Arabic"');await document.fonts.load('400 40px "Hiragino Kaku"');await document.fonts.ready;});
  for(let i=a;i<b;i++){
   let svg=fs.readFileSync(path.join(dir,files[i]),'utf8');
@@ -29,7 +29,7 @@ const css=`@font-face{font-family:'BigVesta Arabic';font-weight:400;src:url(data
         r.setAttribute('x',bb.x-pad);r.setAttribute('width',bb.width+pad*2);r.setAttribute('y',bb.y-12+dy);r.setAttribute('height',bb.height+24);}
     });
   },svg);
-  await pg.screenshot({path:path.join(outdir,files[i].replace('.svg','.'+ext)),type:ext==='jpg'?'jpeg':'png',quality:ext==='jpg'?90:undefined});
+  await pg.screenshot({path:path.join(outdir,files[i].replace('.svg','.'+ext)),type:ext==='jpg'?'jpeg':'png',quality:ext==='jpg'?90:undefined,omitBackground:!!process.env.RF_ALPHA});
  }
  await br.close();console.log('done',a,b);
 })();

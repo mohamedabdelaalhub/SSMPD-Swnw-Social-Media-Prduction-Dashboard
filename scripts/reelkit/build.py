@@ -67,27 +67,30 @@ def speech_ok(path, expected, threshold=0.85):
     t = transcribe(path)
     if t is None: return True, None  # no transcription available (e.g. scheduled environment): cannot check, accept
     sc = difflib.SequenceMatcher(None, _norm(t), _norm(expected)).ratio()
+    t_chk = re.sub(r"(?i)\b(laser|whatsapp|facebook|instagram|ok)\b", "", t)  # common loan words are fine; a BRAND name in Latin letters means the voice read it in English
+    if re.search(r"[A-Za-z]", t_chk): return False, round(min(sc, 0.5), 2)  # the voice pronounced a name in English (e.g. Sono / laser): regenerate
     return sc >= threshold, round(sc, 2)
 
 # ---------------------------------------------------------------- voices
+V.SETTINGS.update((sb.get("meta") or {}).get("voice_settings") or {})  # e.g. a livelier ad read: {"stability":0.4,"style":0.35,"speed":1.03}
 lines = E.collect_lines(sb); line_timing = {}; envs = {}; audio_src = {}
 hl_of = {(si, bi): sb["scenes"][si]["beats"][bi]["say"].get("hl") for lst in lines.values() for si, bi, _ in lst}
 for spk, lst in lines.items():
-    joined = "\n\n".join(voice_text(x[2], PRON) for x in lst); mp3 = os.path.join(args.out, f"voice_{spk}.mp3"); al = None
+    joined = "\n\n".join(voice_text(x[2], PRON) for x in lst); mp3 = os.path.join(args.out, f"voice_{spk.replace(chr(35), chr(95))}.mp3"); al = None
     if not args.dry:
         left = V.quota()
         if left is not None and left < len(joined) + 50: print("WARNING: ElevenLabs quota too low, using dry timing for", spk)
         else:
-            al = V.speak(spk, joined, mp3); shown = " ".join(TASHKEEL.sub("", x[2]) for x in lst)
-            for attempt in range(3):
+            al = V.speak(spk.split(chr(35))[0], joined, mp3); shown = " ".join(TASHKEEL.sub("", x[2]) for x in lst)
+            for attempt in range(7):
                 if al is None: break
                 good, sc = speech_ok(mp3, shown)
                 print(f"speech check {spk}: score={sc} {'ok' if good else 'MISMATCH - regenerating'}")
-                if good or attempt == 2: break
-                al = V.speak(spk, joined, mp3)
+                if good or attempt == 6: break
+                al = V.speak(spk.split(chr(35))[0], joined, mp3)
         if al is None: print("WARNING: voice failed for", spk, "-> dry timing (no audio)")
     dry = al is None
-    if not dry: json.dump(al, open(os.path.join(args.out, f'voice_{spk}.json'), 'w'))  # kept for debugging caption timing
+    if not dry: json.dump(al, open(os.path.join(args.out, f'voice_{spk.replace(chr(35), chr(95))}.json'), 'w'))  # kept for debugging caption timing
     if not dry: json.dump(al, open(os.path.join(args.out, f'voice_{spk}.json'), 'w'))
     if dry: al = V.estimate(joined)
     st, en = al["start"], al["end"]; n = len(st); wav = decode(mp3) if not dry else None
@@ -112,13 +115,14 @@ if os.environ.get("RK_DEBUG"):
 print(f"timeline {tl.dur:.1f}s, {len(tl.scenes)} scenes, {sum(len(a['say']) for a in tl.actors.values())} lines, voices={'dry' if args.dry else 'ElevenLabs'}")
 
 # ---------------------------------------------------------------- frames
+ALPHA = any("bg" in sc for sc in sb["scenes"])  # scenes with a video/photo background composed under transparent overlay frames
 fr = os.path.join(args.out, "frames_svg"); jp = os.path.join(args.out, "frames"); shutil.rmtree(fr, ignore_errors=True); shutil.rmtree(jp, ignore_errors=True); os.makedirs(fr)
 N = int(dur * FPS)
 for i in range(N): open(f"{fr}/f_{i:04d}.svg", "w").write(E.frame_svg(tl, i / FPS, envs))
 q = N // args.workers + 1; procs = []
 for k in range(args.workers):
     a, b = k * q, min(N, (k + 1) * q)
-    if a < b: procs.append(subprocess.Popen(["node", os.path.join(HERE, "render_frames.js"), fr, jp, "jpg", str(a), str(b)], stdout=subprocess.DEVNULL))
+    if a < b: procs.append(subprocess.Popen(["node", os.path.join(HERE, "render_frames.js"), fr, jp, "png" if ALPHA else "jpg", str(a), str(b)], stdout=subprocess.DEVNULL, env=dict(os.environ, **({"RF_ALPHA": "1"} if ALPHA else {}))))
 for p in procs: p.wait()
 # clean frame (no logo, no captions) for the reel cover: scripts/reelkit/cover.py puts the approved cover template on top of it
 try:
@@ -140,7 +144,7 @@ for v in tl.voice:
     if mp3 not in LEVEL:  # every speaker is brought to the same speech loudness (a quiet voice next to a loud one was the owner's complaint)
         act = np.abs(wav)[np.abs(wav) > 0.02]
         LEVEL[mp3] = float(np.clip(TARGET_RMS / max(np.sqrt(np.mean(act ** 2)) if len(act) else TARGET_RMS, 1e-6), 0.4, 4.0))
-    seg = wav[int(ta * SR):int(tb * SR) + int(0.05 * SR)].copy() * LEVEL[mp3]; seg = np.tanh(seg / 0.9) * 0.9; f = int(0.012 * SR)
+    seg = wav[int(ta * SR):int(tb * SR) + int(0.24 * SR)].copy() * LEVEL[mp3]; seg = np.tanh(seg / 0.9) * 0.9; f = int(0.012 * SR); seg[-int(0.12 * SR):] *= np.linspace(1, 0, int(0.12 * SR))  # keep the word ending, fade out softly
     seg[:f] *= np.linspace(0, 1, f); seg[-f:] *= np.linspace(1, 0, f); mx.add(seg, v["t"], 1.0)
 for t0, nm, g in tl.sfx:
     if t0 < dur: mx.sfx(nm, t0, g * 0.8)
@@ -155,7 +159,28 @@ with wave.open(os.path.join(args.out, "audio.wav"), "wb") as w_:
 
 # ---------------------------------------------------------------- mux
 content = os.path.join(args.out, "content.mp4")
-subprocess.run(["ffmpeg", "-v", "error", "-y", "-framerate", str(FPS), "-i", f"{jp}/f_%04d.jpg", "-c:v", "libx264", "-preset", "medium", "-crf", "18", "-pix_fmt", "yuv420p", content], check=True)
+if not ALPHA:
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-framerate", str(FPS), "-i", f"{jp}/f_%04d.jpg", "-c:v", "libx264", "-preset", "medium", "-crf", "18", "-pix_fmt", "yuv420p", content], check=True)
+else:
+    segs = []
+    for i, sc in enumerate(tl.scenes):
+        n = max(1, round(sc["t1"] * FPS) - round(sc["t0"] * FPS)); bg = sb["scenes"][i].get("bg") or {}; sg = os.path.join(args.out, f"bg_{i:02d}.mp4")
+        if bg.get("video"):
+            fit = bg.get("fit", "blur"); cx = bg.get("cx", 0.5)
+            if fit == "fill": vf = "scale=1080:1920:force_original_aspect_ratio=increase:flags=lanczos,crop=1080:1920"
+            elif fit == "cover": vf = f"scale=-2:1920:flags=lanczos,crop=1080:1920:(iw-1080)*{cx}:0"
+            else: vf = "split[a][b];[a]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=40:8,eq=brightness=-0.12[bgv];[b]scale=1080:-2:flags=lanczos[fgv];[bgv][fgv]overlay=(W-w)/2:(H-h)/2"
+            tr = f"trim=start={bg.get('start', 0)},setpts=PTS-STARTPTS,"
+            vf = (tr + vf) if "[" not in vf else ("trim=start=%s,setpts=PTS-STARTPTS," % bg.get("start", 0)) + vf
+            cmd = ["ffmpeg", "-v", "error", "-y", "-i", bg["video"], "-an", "-filter_complex" if "[" in vf else "-vf", vf, "-r", str(FPS), "-frames:v", str(n), "-c:v", "libx264", "-crf", "18", "-pix_fmt", "yuv420p", sg]
+        else:
+            z0, z1 = bg.get("z0", 1.0), bg.get("z1", 1.12)
+            vf = f"scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,scale=2160:3840,zoompan=z='{z0}+({z1}-{z0})*on/{n}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:s=1080x1920:fps={FPS}"
+            cmd = ["ffmpeg", "-v", "error", "-y", "-loop", "1", "-i", bg["photo"], "-vf", vf, "-frames:v", str(n), "-c:v", "libx264", "-crf", "18", "-pix_fmt", "yuv420p", sg]
+        subprocess.run(cmd, check=True); segs.append(sg)
+    lst = os.path.join(args.out, "bg_list.txt"); open(lst, "w").write("".join(f"file '{x}'\n" for x in segs))
+    bgall = os.path.join(args.out, "bg.mp4"); subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", lst, "-c:v", "libx264", "-crf", "18", "-pix_fmt", "yuv420p", bgall], check=True)
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", bgall, "-framerate", str(FPS), "-i", f"{jp}/f_%04d.png", "-filter_complex", "[0:v][1:v]overlay=0:0:format=auto,format=yuv420p[v]", "-map", "[v]", "-c:v", "libx264", "-preset", "medium", "-crf", "18", content], check=True)
 final = os.path.join(args.out, sb.get("meta", {}).get("file", "reel.mp4"))
 if args.no_end:
     subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", content, "-i", os.path.join(args.out, "audio.wav"), "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-shortest", "-movflags", "+faststart", final], check=True)
@@ -163,9 +188,19 @@ else:
     cc = os.path.join(args.out, "contact.mp4")
     subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", os.path.join(args.kit, "sono_contact_video.jpg"), "-vf", "zoompan=z='min(1+0.0007*on,1.07)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=90:s=1080x1920:fps=30", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "18", cc], check=True)
     out_ = os.path.join(args.kit, "sono_outro.mp4")
+    clip = (sb.get("meta") or {}).get("prepend_clip")
+    if clip:  # an existing clip (the owner's live presenter clip) goes FIRST, its own sound kept, then the generated content
+        main = os.path.join(args.out, "main.mp4")
+        subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", content, "-i", os.path.join(args.out, "audio.wav"), "-i", clip,
+                        "-filter_complex", "[2:v]fps=30,scale=1080:1920:flags=lanczos,setsar=1[v1];[0:v]fps=30,scale=1080:1920,setsar=1[v0];[v1][v0]concat=n=2:v=1:a=0[v];"
+                        f"[1:a]atrim=0:{dur:.3f},asetpts=PTS-STARTPTS,aresample=48000,aformat=channel_layouts=stereo[a0];[2:a]aresample=48000,aformat=channel_layouts=stereo,loudnorm=I=-16:TP=-1.5:LRA=11[a1];[a1][a0]concat=n=2:v=0:a=1,apad=pad_dur=3[a]",
+                        "-map", "[v]", "-map", "[a]", "-c:v", "libx264", "-preset", "medium", "-crf", "18", "-pix_fmt", "yuv420p", "-r", "30", "-c:a", "aac", "-b:a", "192k", main], check=True)
+        content_in, audio_in = main, main
+    else:
+        content_in, audio_in = content, os.path.join(args.out, "audio.wav")
     flt = ("[0:v]fps=30,scale=1080:1920,setsar=1[v0];[1:v]fps=30,scale=1080:1920,setsar=1[v1];[2:v]fps=30,scale=1080:1920,setsar=1[v2];[v0][v1][v2]concat=n=3:v=1:a=0[v];"
            "[3:a]aresample=48000,aformat=channel_layouts=stereo[a0];[2:a]aresample=48000,aformat=channel_layouts=stereo[a2];[a0][a2]concat=n=2:v=0:a=1,loudnorm=I=-16:TP=-1.5:LRA=11[a]")
-    subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", content, "-i", cc, "-i", out_, "-i", os.path.join(args.out, "audio.wav"), "-filter_complex", flt, "-map", "[v]", "-map", "[a]",
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", content_in, "-i", cc, "-i", out_, "-i", audio_in, "-filter_complex", flt, "-map", "[v]", "-map", "[a]",
                     "-c:v", "libx264", "-preset", "medium", "-crf", "19", "-pix_fmt", "yuv420p", "-r", "30", "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", final], check=True)
 print("DONE", final)
 json.dump(dict(title=sb.get("meta", {}).get("title"), dur=tl.dur, tags=sb.get("meta", {}).get("tags", {})), open(os.path.join(args.out, "info.json"), "w"), ensure_ascii=False)
