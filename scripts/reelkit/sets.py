@@ -97,5 +97,14 @@ def garden(W, H, F):
 SETS = {"kitchen": kitchen, "clinic": clinic, "bedroom": bedroom, "street": street, "school": school,
         "living": living, "pharmacy": pharmacy, "garden": garden}
 
+def photo(path, W, H, floor):
+    """full-bleed photo scene ("set": "photo:/path.jpg"): render_frames.js swaps PHOTO::<path> for the image data. Gradients keep the logo and captions readable."""
+    s = f'<image href="PHOTO::{path}" x="-40" y="-40" width="{W + 80}" height="{H + 80}" preserveAspectRatio="xMidYMid slice"/>'
+    s += f'<defs><linearGradient id="pg1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0F369D" stop-opacity="0.55"/><stop offset="1" stop-color="#0F369D" stop-opacity="0"/></linearGradient>' \
+         f'<linearGradient id="pg2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0a2a7c" stop-opacity="0"/><stop offset="1" stop-color="#0a2a7c" stop-opacity="0.75"/></linearGradient></defs>'
+    s += f'<rect x="-40" y="-40" width="{W + 80}" height="420" fill="url(#pg1)"/><rect x="-40" y="{H - 760}" width="{W + 80}" height="840" fill="url(#pg2)"/>'
+    return s
+
 def set_svg(name, W=1080, H=1920, floor=1560):
+    if name.startswith("photo:"): return photo(name[6:], W, H, floor)
     return SETS[name](W, H, floor)

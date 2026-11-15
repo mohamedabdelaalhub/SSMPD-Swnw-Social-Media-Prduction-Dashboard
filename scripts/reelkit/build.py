@@ -38,7 +38,7 @@ def chunk_spans(text, vtext, hl):
     groups, cur = [], []
     for w in words:
         cur.append(w)
-        if len(cur) >= 4 or (len(cur) >= 2 and re.search(r"[،,.؟?!:]$", w[0])): groups.append(cur); cur = []
+        if len(cur) >= 4 or sum(len(x[0]) for x in cur) >= 19 or (len(cur) >= 2 and re.search(r"[،,.؟?!:]$", w[0])): groups.append(cur); cur = []
     if cur:
         if groups and len(cur) == 1: groups[-1].extend(cur)
         else: groups.append(cur)

@@ -92,7 +92,7 @@ def collect_lines(sb):
 def plan(sb, line_timing, seed=1):
     """line_timing[(si,bi)] = dict(dur=seconds, words=[(chunk_text, t0, t1)] or None)"""
     rnd = random.Random(sb.get("meta", {}).get("seed", seed))
-    tl = Timeline(); tl.scenes = []; tl.actors = {}; tl.caps = []; tl.cards = []; tl.fx = []; tl.sfx = []; tl.voice = []; tl.setprops = []; tl.bubbles = []
+    tl = Timeline(); tl.scenes = []; tl.actors = {}; tl.caps = []; tl.cards = []; tl.fx = []; tl.sfx = []; tl.voice = []; tl.setprops = []; tl.bubbles = []; tl.badges = []
     for aid, a in sb["cast"].items():
         tl.actors[aid] = dict(look=a["look"], x=[], s=[], y=FLOOR + 20, faces=[], gest=[], props=[], say=[], walk=[], jumps=[], vis=[], z=len(tl.actors))
     t = 0.0
@@ -161,6 +161,8 @@ def plan(sb, line_timing, seed=1):
                 if f["kind"] == "flash": tl.sfx.append((t, "ding", 0.3))
             if "card" in b:
                 c = b["card"]; tl.cards.append(dict(t0=t, idx=c.get("idx", 1), text=c["text"], y=c.get("y", 380 + 130 * (c.get("idx", 1) - 1)), scene=si)); tl.sfx.append((t, "pop", 0.3))
+            if "badge" in b:  # {"text","sub","kind":"offer|button|label","y","dur"}: offer = orange pill with big text, button = call-to-action pill, label = soft white tag
+                e = b["badge"]; tl.badges.append(dict(t0=t, t1=t + e.get("dur", 3.0), text=e["text"], sub=e.get("sub", ""), kind=e.get("kind", "offer"), y=e.get("y", 560), scene=si)); tl.sfx.append((t, "pop", 0.3))
             if "set_prop" in b:
                 e = b["set_prop"]; tl.setprops.append(dict(t0=t, t1=None, scene=si, name=e["name"], x=e.get("x", 0.5) * W, y=e.get("y", FLOOR + 10), s=e.get("s", 1.2), rot=e.get("rot", 0)))
             if "bubble" in b:
@@ -263,6 +265,18 @@ def _bubble(t, bb, p):
     s += B.T(0, 18, bb["text"], 54, B.BLUE, 800) + '</g>'
     return s
 
+def _badge(t, bd):
+    if not (bd["t0"] <= t < bd["t1"]): return ""
+    u = B.pop(t, bd["t0"], 0.28); fade = 1 - B.ss((t - (bd["t1"] - 0.25)) / 0.25) if t > bd["t1"] - 0.25 else 1
+    size = {"offer": 92, "button": 70, "label": 58}.get(bd["kind"], 80); n = len(bd["text"])
+    w = min(980, max(n * size * 0.5, len(bd["sub"]) * 19) + 110); h = size + 70 + (50 if bd["sub"] else 0)
+    fill, tc, st = {"offer": ("#F15A22", "#ffffff", "#ffffff"), "button": ("#F15A22", "#ffffff", "#ffffff"), "label": ("#ffffff", "#0F369D", "#0F369D")}.get(bd["kind"], ("#F15A22", "#ffffff", "#ffffff"))
+    o = f'<g transform="translate(540,{bd["y"]}) scale({max(u, 0.001):.3f})" opacity="{fade:.2f}">'
+    o += f'<rect x="{-w / 2:.0f}" y="{-h / 2:.0f}" width="{w:.0f}" height="{h:.0f}" rx="{h / 2 if bd["kind"] == "button" else 34}" fill="{fill}" stroke="{st}" stroke-width="5"/>'
+    o += B.T(0, (size * 0.3) - (25 if bd["sub"] else 0), bd["text"], size, tc, 800)
+    if bd["sub"]: o += B.T(0, size * 0.3 + 52, bd["sub"], 38, tc, 700)
+    return o + '</g>'
+
 def frame_svg(tl, t, envs, opts=None):
     opts = opts or {}
     sc = next((s for s in tl.scenes if s["t0"] <= t < s["t1"]), tl.scenes[-1])
@@ -296,6 +310,7 @@ def frame_svg(tl, t, envs, opts=None):
         if f["kind"] == "burst": o += _burst(t, f)
         if f["kind"] == "flash" and f["t0"] <= t < f["t0"] + 0.3: o += f'<rect width="{W}" height="{H}" fill="#fff" opacity="{0.8 * (1 - (t - f["t0"]) / 0.3):.2f}"/>'
     o += '</g>'
+    for bd in tl.badges: o += _badge(t, bd)
     for c in tl.cards: o += B.card(t, c["t0"], c["t1"], c["idx"], c["text"], c["y"])
     if not opts.get("no_caps"):
         for a, b, h in tl.caps: o += B.capbox(t, a, b, h)

@@ -1,0 +1,309 @@
+{
+ "meta": {
+  "brand": true,
+  "title": "إعلان ريل LZF1-F — موجة 1",
+  "music": "calm",
+  "seed": 21,
+  "file": "lzf1f.mp4",
+  "cover_t": 1.5
+ },
+ "cast": {
+  "v": {
+   "look": "narr",
+   "voice": "woman_1"
+  }
+ },
+ "scenes": [
+  {
+   "set": "photo:/tmp/ad/lzf_arm.png",
+   "cam": {
+    "z0": 1.0,
+    "z1": 1.12,
+    "x0": 0,
+    "x1": -30,
+    "y0": 0,
+    "y1": 0
+   },
+   "trans": "cut",
+   "tail": 0.8,
+   "actors": {},
+   "beats": [
+    {
+     "say": {
+      "who": "v",
+      "text": "ليزر كانديلا في سونو",
+      "hl": [
+       "كانديلا"
+      ],
+      "silent": false
+     }
+    },
+    {
+     "wait": 3.4
+    }
+   ]
+  },
+  {
+   "set": "photo:/tmp/ad/lzf_arm.png",
+   "cam": {
+    "z0": 1.12,
+    "z1": 1.0,
+    "x0": -30,
+    "x1": 20,
+    "y0": 0,
+    "y1": 0
+   },
+   "trans": "fade",
+   "tail": 0.8,
+   "actors": {},
+   "beats": [
+    {
+     "badge": {
+      "text": "بإشراف أطباء متخصصين فقط",
+      "kind": "label",
+      "y": 1190,
+      "dur": 5.0
+     }
+    },
+    {
+     "say": {
+      "who": "v",
+      "text": "جلسات بإشراف أطباء متخصصين فقط",
+      "hl": [
+       "متخصصين"
+      ],
+      "silent": true
+     }
+    },
+    {
+     "wait": 3.2
+    }
+   ]
+  },
+  {
+   "set": "photo:/tmp/ad/lzf_face.png",
+   "cam": {
+    "z0": 1.0,
+    "z1": 1.15,
+    "x0": 0,
+    "x1": 0,
+    "y0": 0,
+    "y1": 0
+   },
+   "trans": "slide",
+   "tail": 0.8,
+   "actors": {},
+   "beats": [
+    {
+     "badge": {
+      "text": "الوش",
+      "kind": "label",
+      "y": 1190,
+      "dur": 3.4
+     }
+    },
+    {
+     "say": {
+      "who": "v",
+      "text": "الوش",
+      "hl": [
+       "الوش"
+      ],
+      "silent": true
+     }
+    },
+    {
+     "wait": 3.4
+    }
+   ]
+  },
+  {
+   "set": "photo:/tmp/ad/lzf_arm.png",
+   "cam": {
+    "z0": 1.2,
+    "z1": 1.1,
+    "x0": 40,
+    "x1": 0,
+    "y0": 0,
+    "y1": 0
+   },
+   "trans": "slide",
+   "tail": 0.8,
+   "actors": {},
+   "beats": [
+    {
+     "badge": {
+      "text": "الدراع",
+      "kind": "label",
+      "y": 1190,
+      "dur": 3.0
+     }
+    },
+    {
+     "wait": 2.6
+    }
+   ]
+  },
+  {
+   "set": "photo:/tmp/ad/lzf_legs.png",
+   "cam": {
+    "z0": 1.1,
+    "z1": 1.0,
+    "x0": 20,
+    "x1": -20,
+    "y0": 0,
+    "y1": 0
+   },
+   "trans": "slide",
+   "tail": 0.8,
+   "actors": {},
+   "beats": [
+    {
+     "say": {
+      "who": "v",
+      "text": "الرجلين. اختاري المنطقة اللي تناسبك",
+      "hl": [
+       "اختاري"
+      ],
+      "silent": false
+     }
+    },
+    {
+     "wait": 3.4
+    }
+   ]
+  },
+  {
+   "set": "photo:/tmp/ad/lzf_face.png",
+   "cam": {
+    "z0": 1.15,
+    "z1": 1.0,
+    "x0": 0,
+    "x1": 0,
+    "y0": 0,
+    "y1": 0
+   },
+   "trans": "fade",
+   "tail": 0.8,
+   "actors": {},
+   "beats": [
+    {
+     "say": {
+      "who": "v",
+      "text": "والجلسة مش بتزيد عن نص ساعة",
+      "hl": [
+       "نص ساعة"
+      ],
+      "silent": false
+     }
+    },
+    {
+     "wait": 3.4
+    }
+   ]
+  },
+  {
+   "set": "photo:/tmp/ad/lzf_arm.png",
+   "cam": {
+    "z0": 1.0,
+    "z1": 1.1,
+    "x0": -10,
+    "x1": 30,
+    "y0": 0,
+    "y1": 0
+   },
+   "trans": "flash",
+   "tail": 0.8,
+   "actors": {},
+   "beats": [
+    {
+     "badge": {
+      "text": "خصم 20%",
+      "sub": "على باقات الليزر حتى آخر ديسمبر",
+      "kind": "offer",
+      "y": 1200,
+      "dur": 7.0
+     }
+    },
+    {
+     "say": {
+      "who": "v",
+      "text": "وفي خصم عشرين في المية على باقات الليزر، لحد آخر ديسمبر",
+      "hl": [
+       "عشرين",
+       "ديسمبر"
+      ],
+      "silent": true
+     }
+    },
+    {
+     "wait": 3.6
+    }
+   ]
+  },
+  {
+   "set": "photo:/tmp/ad/lzf_legs.png",
+   "cam": {
+    "z0": 1.0,
+    "z1": 1.12,
+    "x0": 0,
+    "x1": 0,
+    "y0": 0,
+    "y1": 0
+   },
+   "trans": "fade",
+   "tail": 0.8,
+   "actors": {},
+   "beats": [
+    {
+     "badge": {
+      "text": "عيادات سونو — حدائق الأهرام",
+      "kind": "label",
+      "y": 1190,
+      "dur": 3.2
+     }
+    },
+    {
+     "wait": 2.4
+    }
+   ]
+  },
+  {
+   "set": "photo:/tmp/ad/lzf_face.png",
+   "cam": {
+    "z0": 1.0,
+    "z1": 1.14,
+    "x0": 0,
+    "x1": 0,
+    "y0": 0,
+    "y1": 0
+   },
+   "trans": "fade",
+   "tail": 1.4,
+   "actors": {},
+   "beats": [
+    {
+     "badge": {
+      "text": "سجّلي بياناتك",
+      "kind": "button",
+      "y": 1290,
+      "dur": 8.0
+     }
+    },
+    {
+     "say": {
+      "who": "v",
+      "text": "سجّلي بياناتك وهنتواصل معاكي",
+      "hl": [
+       "سجّلي"
+      ],
+      "silent": true
+     }
+    },
+    {
+     "wait": 3.8
+    }
+   ]
+  }
+ ]
+}
