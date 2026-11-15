@@ -115,3 +115,20 @@ Both people must have a weekly schedule on those days. Any other active or pendi
 **Before applying:** the body of `attendance_eval` = `20261113100000` + the override step. Compare the live body with `20261113100000` first.
 
 **Tests:** `tests/hr-shift-swaps-sql.cjs` (it also applies the rollback) and `tests/hr-shift-swaps-dom.cjs`.
+
+### 5b. Swap rules and «يوم بديل» (owner decisions 2026-11-15)
+
+Migration `20261115210000_hr_shift_swap_rules_credit.sql`. Rollback: `supabase/rollbacks/20261115210000_hr_shift_swap_rules_credit.rollback.sql`; it refuses while any cover or credit swap exists.
+
+**Rules:**
+- **Same department only:** a swap is allowed only between people of the same department (استقبال مع استقبال، تمريض مع تمريض).
+- **24 hours' notice:** a swap is requested at least 24 h before the first shift it touches. An HR manager can file a same-day emergency (`emergency`).
+- **No consecutive-days block:** the owner didn't want one.
+
+**«يوم بديل» (replacement day):**
+- **`cover`:** the colleague, who is free that day, works the requester's day. On approval the colleague earns a credit (`clinic_people.shift_credits`), valid for 30 days from the covered date.
+- **`credit_use`:** the credit holder takes one of their working days off within that validity. There is no colleague step: a different HR manager approves, and the oldest valid credit is used.
+- **Lapse:** an unused credit lapses when it expires. It is not paid.
+- **Reversals:** reversing a use gives the credit back. A cover can't be reversed while its credit is in use; reversing the cover voids the credit.
+
+**Tests:** `tests/hr-shift-swap-rules-credit-sql.cjs`; `tests/hr-shift-swaps-dom.cjs` is extended.
