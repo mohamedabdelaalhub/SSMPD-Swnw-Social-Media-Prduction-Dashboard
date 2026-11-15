@@ -12,7 +12,7 @@ await db.exec('reset role');let ap=(await db.query('select id,extract(epoch from
 await page.locator('[data-rx-action="confirm"]').click();await page.waitForSelector('.rx-confirmed');if(process.env.RECEPTION_QA)await page.screenshot({path:process.env.RECEPTION_QA+'/booking-confirmed-'+width+'.png'});assert.match(await page.locator('.rx-confirmed').textContent(),/مؤكد/);
 assert.equal(await page.locator('[data-rx-action="confirm"]').count(),0);
 ap=(await db.query('select confirmed_at from clinic_reception.appointments')).rows;assert(ap[0].confirmed_at);
-await page.locator('[data-rx-action="unconfirm"]').click();await page.waitForSelector('[data-rx-action="confirm"]');assert.equal(await page.locator('.rx-confirmed').count(),0);
+await page.locator('.rx-tl-more summary').first().click();await page.locator('[data-rx-action="unconfirm"]').click();await page.waitForSelector('[data-rx-action="confirm"]');assert.equal(await page.locator('.rx-confirmed').count(),0);
 assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'no overflow '+width);
 if(process.env.RECEPTION_QA)await page.screenshot({path:process.env.RECEPTION_QA+'/booking-confirm-'+width+'.png',fullPage:true});
 assert.deepEqual(errors,[]);await page.close();await db.close();}
