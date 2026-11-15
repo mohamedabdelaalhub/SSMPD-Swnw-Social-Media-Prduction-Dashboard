@@ -99,5 +99,135 @@
    "think": "p028",
    "scared": "p029"
   }
+ },
+ "kit_dr_f_black": {
+  "type": "puppet",
+  "kit": "kit_1057129943",
+  "body": "p059",
+  "ppu_ref": "p059",
+  "target_px": 900,
+  "heads": {
+   "neutral": "p009",
+   "talk1": "p012",
+   "talk2": "p008",
+   "blink": "p015",
+   "happy": "p011",
+   "ouch": "p013",
+   "angry": "p010",
+   "think": "p007",
+   "scared": "p008"
+  }
+ },
+ "kit_dr_m_scrubs": {
+  "type": "puppet",
+  "kit": "kit_1091716457",
+  "body": "p050",
+  "ppu_ref": "p050",
+  "target_px": 900,
+  "heads": {
+   "neutral": "p012",
+   "talk1": "p007",
+   "talk2": "p005",
+   "blink": "p015",
+   "happy": "p011",
+   "ouch": "p013",
+   "angry": "p006",
+   "think": "p014",
+   "scared": "p005"
+  }
+ },
+ "kit_man": {
+  "type": "puppet",
+  "kit": "kit_1623976375",
+  "body": "p051",
+  "ppu_ref": "p051",
+  "target_px": 900,
+  "heads": {
+   "neutral": "p045",
+   "talk1": "p047",
+   "talk2": "p049",
+   "blink": "p047",
+   "happy": "p050",
+   "ouch": "p048",
+   "angry": "p046",
+   "think": "p050",
+   "scared": "p049"
+  }
+ },
+ "kit_grandma": {
+  "type": "puppet",
+  "kit": "kit_1623976375",
+  "body": "p037",
+  "ppu_ref": "p037",
+  "target_px": 780,
+  "heads": {
+   "neutral": "p041",
+   "talk1": "p041",
+   "talk2": "p041",
+   "blink": "p041",
+   "happy": "p041",
+   "ouch": "p041",
+   "angry": "p041",
+   "think": "p041",
+   "scared": "p041"
+  },
+  "static_head": true
+ },
+ "kit_grandpa": {
+  "type": "puppet",
+  "kit": "kit_1623976375",
+  "body": "p051",
+  "ppu_ref": "p051",
+  "target_px": 860,
+  "heads": {
+   "neutral": "p055",
+   "talk1": "p055",
+   "talk2": "p055",
+   "blink": "p055",
+   "happy": "p055",
+   "ouch": "p055",
+   "angry": "p055",
+   "think": "p055",
+   "scared": "p055"
+  },
+  "static_head": true
+ },
+ "kit_hijab": {
+  "type": "puppet",
+  "kit": "kit_1623976375",
+  "body": "p037",
+  "ppu_ref": "p037",
+  "target_px": 800,
+  "heads": {
+   "neutral": "p080",
+   "talk1": "p080",
+   "talk2": "p080",
+   "blink": "p080",
+   "happy": "p080",
+   "ouch": "p080",
+   "angry": "p080",
+   "think": "p080",
+   "scared": "p080"
+  },
+  "static_head": true
+ },
+ "kit_beard": {
+  "type": "puppet",
+  "kit": "kit_1623976375",
+  "body": "p051",
+  "ppu_ref": "p051",
+  "target_px": 900,
+  "heads": {
+   "neutral": "p068",
+   "talk1": "p068",
+   "talk2": "p068",
+   "blink": "p068",
+   "happy": "p068",
+   "ouch": "p068",
+   "angry": "p068",
+   "think": "p068",
+   "scared": "p068"
+  },
+  "static_head": true
  }
 }

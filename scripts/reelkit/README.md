@@ -26,5 +26,7 @@ python3 scripts/reelkit/build.py story.json OUTDIR --kit BRANDKIT [--dry] [--no-
 - راجع رصيد ElevenLabs قبل التوليد؛ نوّع الأسلوب والمواقف والـ sets عن الريلات السابقة.
 
 
+## من حوار لريل
+`python3 scripts/reelkit/from_dialogue.py dialogue.json story.json` يحوّل حوار «المتكلم: الجملة» لـstoryboard كامل (تنويع + أصوات معتمدة + الأطفال بيتفاعلوا بصمت). أمثلة في `dialogues/`. التفاصيل في `docs/claude-character-videos.md` §4d.
 ## الغلاف
 `python3 scripts/reelkit/cover.py OUT "العنوان مع *كلمة* مفتاحية" "التاج" "سطر فرعي"` بعد `build.py` ← `OUT/reel-cover.png` بقالب غلاف الريل المعتمد (يرفع بـ `?op=upload_cover`). `build.py` بيحفظ كمان `speech check` (نسخ الصوت ومقارنته بالنص) و`voice_<speaker>.json` للتشخيص.

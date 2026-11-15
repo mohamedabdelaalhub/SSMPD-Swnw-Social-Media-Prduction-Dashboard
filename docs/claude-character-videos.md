@@ -73,6 +73,15 @@ Child voices (owner decision 2026-11-13): there are NONE. ElevenLabs refuses Voi
 - Sources: only a page you actually fetched and that answered; if the official site is unreachable from the environment, leave `sources` empty and flag it (never invent one).
 - Staff cannot press «نفّذ» on these items and cannot edit them (database guard); only managers and Claude can.
 
+## 4d. Writing the dialogue (so the script suits this format) — `scripts/reelkit/from_dialogue.py`
+Claude does not hand-write a storyboard: write ONLY the dialogue, the compiler picks cast, looks, sets, gestures, camera and transitions (varied by seed) and checks the rules:
+`python3 scripts/reelkit/from_dialogue.py dialogue.json story.json` then `python3 scripts/reelkit/build.py story.json OUT --kit KIT`. Examples: `scripts/reelkit/dialogues/`.
+- Script shape: 4–8 short lines, one idea. Problem or myth in the first line (a mother's question or a family belief), the doctor/parent answers with ONE clear fact and ONE tip, last line = «استشر الدكتور» in a natural way. 250–450 spoken characters (20–40 s). Egyptian colloquial, no fear, no cure promises, no diagnosis. Never medical claims that cannot be sourced.
+- Speakers (voiced): الأم، الأب، الدكتور، الدكتورة، الجد. Kids (الولد، البنت…) never speak: their line becomes a short reaction bubble. There is NO grandmother voice (the compiler refuses it).
+- Pick two speakers with different voices (mother + doctor, grandfather + mother). The compiler warns on the same voice twice.
+- Looks available (`kitstyle.json`): doctors `dr_poses`, `kit_dr_m_scrubs` (bearded, scrubs), `kit_dr_f_black`, `kit_dr_f_auburn`; family `kit_woman`, `kit_hijab`, `kit_man`, `kit_beard`, `kit_grandpa`, `kit_boy`, `kit_girl`; cartoon looks in `person.py`. Kit looks with real mouth shapes: dr_poses (poses), kit_dr_m_scrubs, kit_dr_f_black, kit_dr_f_auburn, kit_woman, kit_man, kit_boy, kit_girl. `kit_grandpa/kit_hijab/kit_beard/kit_grandma` have no mouth shapes (a small bob while talking instead).
+- Ideas from the dashboard's AI generator (content-ai, PR 463) may carry `agent_raw_output.dialogue` (array of {who,text}) and `dialogue_shape` (myth_fact, mother_asks_doctor, grandpa_tradition, father_mistake, two_opinions, what_not_to_do, kid_reaction_gag, when_to_worry). When the item's designer is Claude and `dialogue` exists, build the reel from it: write it to a dialogue file ({title, lines: dialogue}) and run `from_dialogue.py` (it enforces the same rules). `script_text` stays the plain single-voice script; never overwrite it. Record the shape in `hypothesis_reason` and do not repeat the same shape or speaker pair as the last two character reels of that page. If `dialogue` is null or the topic is not a good fit, make the normal reel.
+
 ## 5. Steps
 1. Pick the topic as for any reel (performance + no repeats in the last 45 days), then the cast: one or two characters, one voice each.
 2. Write the script: hook in the first 3 s, a comic problem, a short serious fact, one tip, CTA. 25–40 s of content (the contact card + outro add ≈7 s; keep the total ≤ 45 s).
