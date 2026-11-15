@@ -35,7 +35,7 @@ const root=path.join(__dirname,'..');
     run(bin+'/pg_ctl',['-D',dir+'/data','-l',dir+'/pg.log','-o',`-p ${port} -k ${dir} -c listen_addresses=''`,'-w','start']);
     psql(`create role anon; create role authenticated; create role service_role;
       create table admins(id uuid primary key); create table patients(id uuid primary key, full_name text);
-      create table patient_files(id uuid primary key, patient_id uuid references patients(id), category text, file_name text, mime_type text, drive_file_id text, uploaded_at timestamptz default now());
+      create table patient_files(id uuid primary key, patient_id uuid references patients(id), category text, file_name text, mime_type text, drive_file_id text, is_encrypted boolean not null default false, uploaded_at timestamptz default now());
       create function my_admin_id() returns uuid language sql as $$ select nullif(current_setting('t.admin',true),'')::uuid $$;
       create function is_super() returns boolean language sql as $$ select false $$;
       create function has_archive_access() returns boolean language sql as $$ select current_setting('t.role',true)='archive' $$;
@@ -43,8 +43,8 @@ const root=path.join(__dirname,'..');
       create function is_assigned_doctor_for_patient(uuid) returns boolean language sql as $$ select false $$;
       insert into admins values ('00000000-0000-4000-8000-0000000000a1');
       insert into patients values ('00000000-0000-4000-8000-0000000000b1','Test');
-      insert into patient_files values ('${F1}','00000000-0000-4000-8000-0000000000b1','lab_result','a.pdf','application/pdf','d1',now()),
-        ('${F2}','00000000-0000-4000-8000-0000000000b1','other','b.docx','application/msword','d2',now());`);
+      insert into patient_files values ('${F1}','00000000-0000-4000-8000-0000000000b1','lab_result','a.pdf','application/pdf','d1',false,now()),
+        ('${F2}','00000000-0000-4000-8000-0000000000b1','other','b.docx','application/msword','d2',false,now());`);
     const mig=copy(path.join(root,'supabase/migrations/20261115170000_patient_file_name_checks.sql'));psql(null,mig);psql(null,mig);
     assert.equal(psql(`select string_agg(file_id::text,',') from patient_file_name_check_queue(10,30)`),F1,'queue: only images/PDFs without a verdict');
     for(const r of ['anon','authenticated'])assert.equal(psql(`select has_function_privilege('${r}','patient_file_name_check_record(uuid,text,numeric,text,text)','EXECUTE')`),'f');

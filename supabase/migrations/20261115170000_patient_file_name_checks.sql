@@ -33,9 +33,9 @@ revoke all on table public.patient_file_name_checks from anon;
 
 -- Worker queue: recent files without a verdict (service_role only).
 create or replace function public.patient_file_name_check_queue(p_limit integer default 20, p_days integer default 30)
-returns table (file_id uuid, patient_id uuid, patient_name text, file_name text, mime_type text, drive_file_id text, uploaded_at timestamptz)
+returns table (file_id uuid, patient_id uuid, patient_name text, file_name text, mime_type text, drive_file_id text, is_encrypted boolean, uploaded_at timestamptz)
 language sql security definer stable set search_path = public as $$
-  select f.id, f.patient_id, p.full_name, f.file_name, f.mime_type, f.drive_file_id, f.uploaded_at
+  select f.id, f.patient_id, p.full_name, f.file_name, f.mime_type, f.drive_file_id, f.is_encrypted, f.uploaded_at
   from public.patient_files f
   join public.patients p on p.id = f.patient_id
   left join public.patient_file_name_checks c on c.file_id = f.id
