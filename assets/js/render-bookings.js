@@ -49,6 +49,7 @@
     var html = '<div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:14px;">' +
       '<div><h2 style="margin:0;">حجوزات الوكيل</h2><div style="font-size:12px;color:var(--c-muted);margin-top:4px;">مرآة متابعة فقط — نظام الحجز الرسمي هو مصدر الحقيقة.</div></div>' +
       "<button class=\"btn ghost sm\" id=\"bookings-refresh\"> <!--ssmpd-i18n:%D8%AA%D8%AD%D8%AF%D9%8A%D8%AB-->تحديث</button></div>" +
+      '<div id="portal-booking-requests"></div>' +
       '<div class="kpi-grid" style="margin-bottom:14px;">' +
         '<div class="kpi-card"><div class="label">إجمالي الظاهر</div><div class="value small">' + rowsCache.length + '</div></div>' +
         "<div class=\"kpi-card\"><div class=\"label\"> <!--ssmpd-i18n:%D9%85%D8%A4%D9%83%D8%AF-->مؤكد</div><div class=\"value small\">" + confirmed + '</div></div>' +
@@ -72,6 +73,7 @@
     document.getElementById("booking-search").oninput = applyFilters;
     document.getElementById("booking-status").onchange = applyFilters;
     applyFilters();
+    if (window.SSMPDPortalBookingRequests) window.SSMPDPortalBookingRequests.render(document.getElementById("portal-booking-requests"));
   }
 
   function applyFilters() {
