@@ -21,12 +21,12 @@ assert.equal(slots(),0); // today: no availability
 set('day',tomorrow); // outside the loaded period -> must fetch that day
 await wait(()=>slots()>0);
 assert.equal(slots(),4); // 21:00-23:00 / 30 min
-assert.deepEqual(calls[calls.length-1],[tomorrow,tomorrow]);
+assert(calls.some(c=>c[0]<=tomorrow&&c[1]>=tomorrow),'tomorrow was fetched'); // its own day, or the timeline's week
 const n=calls.length;set('day',today);set('day',tomorrow);await new Promise(r=>setTimeout(r,40));assert.equal(calls.length,n); // fetched once per day
 assert.equal(slots(),4);
-// a booking already made that evening is excluded after the fetch
+// a booking already made that evening is excluded after the fetch (d2 lies beyond the timeline's loaded week)
 apps=[{id:'x1',provider_id:'p1',status:'booked',starts_at:h.cairoISO(tomorrow+'T21:00'),ends_at:h.cairoISO(tomorrow+'T21:30')}];
-const d2=h.day(Date.now()+84*3600*1000);avail.push({id:'a2',provider_id:'p1',starts_at:h.cairoISO(d2+'T21:00'),ends_at:h.cairoISO(d2+'T22:00')});apps.push({id:'x2',provider_id:'p1',status:'booked',starts_at:h.cairoISO(d2+'T21:00'),ends_at:h.cairoISO(d2+'T21:30')});
+const d2=h.day(Date.now()+10*24*3600*1000);avail.push({id:'a2',provider_id:'p1',starts_at:h.cairoISO(d2+'T21:00'),ends_at:h.cairoISO(d2+'T22:00')});apps.push({id:'x2',provider_id:'p1',status:'booked',starts_at:h.cairoISO(d2+'T21:00'),ends_at:h.cairoISO(d2+'T21:30')});
 set('day',d2);await wait(()=>slots()>0);assert.equal(slots(),1);
 assert.equal(errors.length,0,errors.join('|'));
 console.log('PASS booking modal loads availability and bookings for a day outside the loaded period');process.exit(0);
