@@ -1,4 +1,4 @@
--- Rollback of 20261115200000_center_closures.sql: restores the previous attendance, booking and snapshot functions.
+-- Rollback of 20261115230000_center_closures.sql: restores the previous attendance, booking and snapshot functions.
 -- The payroll patch is reverted by re-running the hr_payroll_calculate definition from 20261115100000_hr_pay_guaranteed_minimum.sql
 -- (or the latest migration that redefines it) after this file. Holiday records are kept in a backup table.
 begin;

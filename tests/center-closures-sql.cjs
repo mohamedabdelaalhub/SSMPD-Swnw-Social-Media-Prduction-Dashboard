@@ -23,7 +23,7 @@ create function public.clinic_reception_command(p_workspace uuid,p_action text,p
 create function public.clinic_reception_snapshot(p_workspace uuid,p_from date default current_date,p_to date default current_date) returns jsonb language plpgsql security definer as $$begin return jsonb_build_object('appointments','[]'::jsonb);end $$;`);
 const people=[[1,'سوبر','super_admin',false],[2,'مدير عام','general_manager',false],[3,'موارد بشرية','hr_employee',true],[4,'استقبال','reception',false]];
 for(const [n,name,role,hr] of people)await db.query('insert into admins(id,name,role,has_hr_access) values($1,$2,$3,$4)',[id(n),name,role,hr]);
-await db.exec(fs.readFileSync('supabase/migrations/20261115200000_center_closures.sql','utf8'));
+await db.exec(fs.readFileSync('supabase/migrations/20261115230000_center_closures.sql','utf8'));
 const as=async n=>{await db.exec('reset role');await db.query("select set_config('test.admin',$1,false)",[id(n)]);await db.exec('set role authenticated');};
 const q=async(sql,a=[])=>(await db.query(sql,a)).rows;
 const cmd=(a,p)=>q('select public.center_closure_command($1,$2) v',[a,p]).then(r=>r[0].v);
