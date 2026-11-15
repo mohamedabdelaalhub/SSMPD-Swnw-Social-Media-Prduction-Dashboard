@@ -40,6 +40,16 @@ try{
   psql(null,copy(path.join(root,'supabase/rollbacks/20261115150000_patient_portal_anon_hardening.rollback.sql')));
   for(const f of fns)assert.equal(fnPriv('anon',f),'t','rollback '+f);
   for(const t of tables)assert.equal(tPriv('anon',t,'SELECT'),'t','rollback '+t);
+  // Phase 1b
+  const fns1b=['kpi_hub_aggregates(integer)','refresh_overdue_followups()','insurance_billable_visits(text)','entity_billing_visits(text, uuid)','insurance_visit_billing_context(uuid)','entity_billing_context(uuid)','digital_chat_aggregate_snapshot(text)','digital_agent_metric_detail(text, text)','staff_comprehensive_performance(timestamptz, timestamptz, uuid)','digital_agent_run_review(text)','delete_contracting_entity(uuid)','insurance_bill_visit(uuid, uuid, text, text, text, uuid, uuid)','entity_service_bill(jsonb, uuid)'];
+  psql(fns1b.map(f=>`create function public.${f.replace(/\(.*\)/,'')}(${f.match(/\((.*)\)/)[1]}) returns void language sql security definer as 'select';`).join('\n')+`\ncreate function public.clinic_reception_checkin_public(uuid) returns void language sql security definer as 'select';`);
+  const lock=path.join(root,'supabase/migrations/20261115151000_anon_definer_function_lockdown.sql');
+  psql(null,copy(lock));psql(null,copy(lock));
+  for(const f of fns1b){assert.equal(fnPriv('anon','public.'+f),'f',f);assert.equal(fnPriv('service_role','public.'+f),'t',f);
+    assert.equal(fnPriv('authenticated','public.'+f),f.startsWith('kpi_hub')?'f':'t',f);}
+  assert.equal(fnPriv('anon','public.clinic_reception_checkin_public(uuid)'),'t','public check-in must stay open');
+  psql(null,copy(path.join(root,'supabase/rollbacks/20261115151000_anon_definer_function_lockdown.rollback.sql')));
+  for(const f of fns1b)assert.equal(fnPriv('anon','public.'+f),'t','rollback '+f);
   console.log('patient portal anon hardening SQL: OK');
 }finally{
   try{run(bin+'/pg_ctl',['-D',dir+'/data','-m','immediate','stop']);}catch(e){}
