@@ -69,11 +69,11 @@ Owner decision 2026-11-15. Until this change, punches and shift schedules fed on
 How each day is filled:
 - **Scheduled start and end:** from the shift template, the same as the live board.
 - **Arrival:** the first check-in punch.
-- **Leaving:** the last check-out punch, up to 6 hours after the shift end.
+- **Leaving:** the last check-out punch, up to 10 hours after the shift end (was 6 hours before `20261116130000`).
 - **No arrival punch:** the day is recorded as an absence.
 - **Approved leave:** no row is created, so the day is never counted as absent.
 - **Approved permission:** excuses that day's lateness or absence.
-- **Arrival but no exit punch:** leaving is set to the shift end (no overtime), and the note says so.
+- **Arrival but no exit punch:** the day waits until **10 hours after the shift end** (an exit punch up to then still counts). After that, leaving is set to the shift end (no overtime), and the note says «مفيش بصمة انصراف خلال 10 ساعات». Owner request 2026-11-15; migration `20261116130000_hr_exit_autoclose.sql`, test `tests/hr-exit-autoclose-sql.cjs`.
 
 Rules for the run:
 - Days that already have a row are never touched, and running it again adds only the new days.
