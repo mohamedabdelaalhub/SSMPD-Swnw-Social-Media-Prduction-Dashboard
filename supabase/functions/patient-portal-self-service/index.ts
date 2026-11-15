@@ -543,6 +543,7 @@ Deno.serve(async (req) => {
   }
 
   if (op === "request_password_reset") {
+    const captchaToken = typeof body.captcha_token === "string" ? body.captcha_token.slice(0, 4096) : undefined;
     const email = normalizeEmail(body.email);
     // رسالة موحّدة تمنع كشف ما إذا كان البريد مسجلاً أم لا.
     const accepted = () => json({ ok: true });
@@ -585,7 +586,9 @@ Deno.serve(async (req) => {
     const recover = await fetch(SUPABASE_URL + "/auth/v1/recover", {
       method: "POST",
       headers: { "Content-Type": "application/json", apikey: ANON_KEY },
-      body: JSON.stringify({ email, redirect_to: resetUrl }),
+      // Forward the browser's Turnstile token so GoTrue CAPTCHA (when enabled) still gates
+      // this public endpoint; GoTrue ignores it while CAPTCHA is off.
+      body: JSON.stringify({ email, redirect_to: resetUrl, gotrue_meta_security: { captcha_token: captchaToken } }),
     });
     if (!recover.ok) return json({ error: "PASSWORD_RESET_EMAIL_FAILED" }, 500);
 

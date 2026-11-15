@@ -97,7 +97,7 @@ function forgotPasswordView(message){
     var btn=this,email=document.getElementById("forgot-email").value.trim().toLowerCase();
     if(!email){forgotPasswordView({type:"error",text:"اكتب البريد الإلكتروني."});return;}
     btn.disabled=true;btn.textContent="جاري الإرسال…";
-    invoke("patient-portal-self-service",{op:"request_password_reset",email:email}).then(function(){
+    window.SSMPDTurnstile.token().then(function(ct){return invoke("patient-portal-self-service",{op:"request_password_reset",email:email,captcha_token:ct});}).then(function(){
       forgotPasswordView({type:"ok",text:"إذا كان البريد مرتبطًا بحساب مريض مفعل، أرسلنا رابط تغيير كلمة السر إليه."});
     }).catch(function(e){forgotPasswordView({type:"error",text:errText(e)});});
   };
