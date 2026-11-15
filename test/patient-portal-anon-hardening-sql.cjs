@@ -50,6 +50,7 @@ try{
   assert.equal(fnPriv('anon','public.clinic_reception_checkin_public(uuid)'),'t','public check-in must stay open');
   psql(null,copy(path.join(root,'supabase/rollbacks/20261115151000_anon_definer_function_lockdown.rollback.sql')));
   for(const f of fns1b)assert.equal(fnPriv('anon','public.'+f),'t','rollback '+f);
+  assert.equal(fnPriv('postgres','public.kpi_hub_aggregates(integer)'),'t','hub builder keeps access');
   console.log('patient portal anon hardening SQL: OK');
 }finally{
   try{run(bin+'/pg_ctl',['-D',dir+'/data','-m','immediate','stop']);}catch(e){}

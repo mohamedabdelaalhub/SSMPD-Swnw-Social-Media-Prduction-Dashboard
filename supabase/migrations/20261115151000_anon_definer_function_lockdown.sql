@@ -22,7 +22,7 @@ begin
   ] loop
     if to_regprocedure(fn) is null then raise exception 'lockdown: function % missing', fn; end if;
     execute format('revoke execute on function %s from public, anon, authenticated', fn);
-    execute format('grant execute on function %s to service_role', fn);
+    execute format('grant execute on function %s to service_role, postgres', fn);  -- postgres: server-side KPI hub builder
   end loop;
 
   foreach fn in array array[
