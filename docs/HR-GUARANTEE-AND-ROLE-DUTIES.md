@@ -132,3 +132,23 @@ Migration `20261115210000_hr_shift_swap_rules_credit.sql`. Rollback: `supabase/r
 - **Reversals:** reversing a use gives the credit back. A cover can't be reversed while its credit is in use; reversing the cover voids the credit.
 
 **Tests:** `tests/hr-shift-swap-rules-credit-sql.cjs`; `tests/hr-shift-swaps-dom.cjs` is extended.
+
+## 6. «يوم كامل» counts as two shifts in payroll
+
+Owner decision 2026-11-15: «دي بتتحسب شفتين مش شفت واحد». Migration: `20261116120000_hr_double_shift_payroll.sql`. Rollback: `supabase/rollbacks/20261116120000_hr_double_shift_payroll.rollback.sql`.
+
+A scheduled attendance row longer than 12 hours (the «يوم كامل» template, 08:00–00:00) counts as **two shifts**, split at its midpoint:
+- **Absent the whole day:** 2 absences (2 × `absence_day`).
+- **Worked only one half:** 1 absence. That is, arrived at or after the midpoint, or left at or before it.
+- **Worked the whole day:** 2 shifts, with no absence.
+- **Came only for the second half:** lateness counts from the midpoint (16:00), not from 08:00.
+
+`approved_shifts` counts a full day as 2. Ordinary shifts are unchanged.
+
+**Punches:** one check-in and one check-out are enough. If staff punch four times, the system takes the first check-in and the last check-out, and the break in the middle is not deducted.
+
+**One exception:** a day with no exit punch is completed to the shift end by `hr_attendance_from_punches`, with a note. If someone worked only the morning and did not punch out, the reviewer has to correct that row before approving it.
+
+**How it is applied:** the migration patches the live body of `hr_payroll_calculate` in place, the same technique as the center-closures migration. It refuses to run if the expected fragments are missing, so a drifted body is never half-patched.
+
+**Test:** `tests/hr-double-shift-payroll-sql.cjs`.
