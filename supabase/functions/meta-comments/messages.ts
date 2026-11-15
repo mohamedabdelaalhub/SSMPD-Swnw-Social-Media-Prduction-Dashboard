@@ -3,6 +3,7 @@
 // reply rules as comments. Complaints raise a red alert in the dashboard.
 import { decideReply, clinicInfo } from "./ai.ts";
 import { advance, serviceLabel } from "./flow.mjs";
+import { reviewHandoffs } from "./review.ts";
 
 const GRAPH = "https://graph.facebook.com/v26.0/";
 const WINDOW_MS = 23.5 * 3600e3; // stay inside Meta's 24h standard messaging window
@@ -97,11 +98,15 @@ export async function syncMessages(db: any, brand: string, cfg: any, token: stri
         decision = { ...decision, category: flow.handoff === "emergency" ? "emergency" : flow.handoff === "complaint" ? "complaint" : decision.category, reply };
         const s = flow.state;
         const row = { conversation_id: conv.id, platform: plat, brand, sender_id: recipient, stage: s.stage, name: s.name, phone: s.phone, service: s.service,
-          preferred_time: s.preferred_time, expect: s.expect, unclear: s.unclear, handoff_reason: s.handoff_reason, updated_at: now };
+          preferred_time: s.preferred_time, expect: s.expect, unclear: s.unclear, handoff_reason: s.handoff_reason, updated_at: now,
+          ...((flow.handoff || flow.ready) && !st?.handoff_at ? { handoff_at: now } : {}) };
         let leadId = st?.lead_id || null;
         if (flow.ready) {
+          // Ad attribution from the webhook referral (if the webhook is live); campaign/adset come from the synced ad rows.
+          const { data: ref } = await db.from("messenger_referrals").select("ad_id").eq("sender_id", recipient).eq("page_id", pageId).maybeSingle();
+          const { data: adRow } = ref?.ad_id ? await db.from("meta_ads_daily").select("adset_id,campaign_id").eq("ad_id", ref.ad_id).limit(1).maybeSingle() : { data: null };
           const { data: lead, error: le } = await db.rpc("ingest_lead", { p_event_id: `${plat}:flow:${conv.id}`, p_source: platform, p_name: s.name, p_phone: s.phone,
-            p_message: `حجز ${serviceLabel(s.service)} — الوقت المفضل: ${s.preferred_time}` });
+            p_message: `حجز ${serviceLabel(s.service)} — الوقت المفضل: ${s.preferred_time}`, p_ad_id: ref?.ad_id || null, p_adset_id: adRow?.adset_id || null, p_campaign_id: adRow?.campaign_id || null });
           if (le) { report.errors.push(`${brand} ingest_lead: ${le.message}`); continue; }
           leadId = Array.isArray(lead) ? lead[0]?.lead_id : lead?.lead_id;
           await db.rpc("messenger_flow_notify", { p_message: `حجز جديد من ${platform === "messenger" ? "ماسنجر" : "انستجرام"}: ${s.name} — ${serviceLabel(s.service)} — ${s.phone} — ${s.preferred_time}` });
@@ -125,4 +130,5 @@ export async function syncMessages(db: any, brand: string, cfg: any, token: stri
       }
     }
   }
+  await reviewHandoffs(db, brand, token, new Set([pageId, igId].filter(Boolean)), report).catch((e) => report.errors.push(`${brand} flow review: ${e?.message}`));
 }
