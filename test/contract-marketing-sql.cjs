@@ -16,7 +16,7 @@ const j=await worker('claim');assert(j.job.lease);assert.equal(await worker('cla
 await assert.rejects(()=>worker('get',{...proof,lease:'30000000-0000-4000-8000-000000000001'}),/صلاحية/);
 await worker('begin_generation',proof);await assert.rejects(()=>worker('begin_generation',proof),/توليد سابقة/);
 await worker('idea',{...proof,idea:{title:'ترحيب',idea:'وصف',caption:'مرحبًا'}});
-const output='https://uuijfbpgvtdxgaosqpxo.supabase.co/storage/v1/object/authenticated/content-designs/'+j.job.id+'/40000000-0000-4000-8000-000000000001/output.png';
+const output='https://api.swnwclinics.com/storage/v1/object/authenticated/content-designs/'+j.job.id+'/40000000-0000-4000-8000-000000000001/output.png';
 await db.query('insert into storage.objects values($1,$2)',['content-designs',output.split('/content-designs/')[1]]);
 await db.query("insert into public.meta_publish_jobs(brand,scheduled_at) values('sono',now()+interval '5 minutes')");
 const result=await worker('finish',{...proof,output_url:output,settings:{template:'sono-doctor-v1'}});assert(Date.parse(result.scheduled_at)>Date.now()+120*60000);

@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import {renderContract} from './contract-template-renderer.mjs';
-const endpoint='https://uuijfbpgvtdxgaosqpxo.supabase.co/functions/v1/contract-marketing';
+const endpoint='https://api.swnwclinics.com/functions/v1/contract-marketing';
 const configPath=process.env.SWNW_CONTRACT_CONFIG;
 if(!configPath)throw Error('SWNW_CONTRACT_CONFIG is required');
 let busy=false;
