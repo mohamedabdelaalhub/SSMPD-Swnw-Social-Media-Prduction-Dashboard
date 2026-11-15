@@ -33,3 +33,65 @@ button.journey-metric.is-alert strong{color:#b42318}
 .journey-account section{margin-bottom:12px}.journey-account h4{margin:0 0 4px}.journey-account p{margin:0 0 4px}
 @media(max-width:1300px){.journey-metrics{grid-template-columns:repeat(3,minmax(100px,1fr))}}
 @media(max-width:760px){.journey-toolbar-main{flex-basis:100%}.journey-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}.journey-metric{padding:8px}.journey-metric strong{font-size:18px}.journey-card-actions{display:flex}.journey-date-nav .journey-more{grid-column:auto}}
+/* Owner 2026-11-15: compact name buttons (tap to open details), managers' «حجوزات الموظفين», Sonu Glass. */
+.journey-shell [data-journey-root]{--g-fill:var(--glass-fill,rgba(255,255,255,.66));--g-line:var(--glass-line,rgba(15,54,157,.10));--g-shadow:var(--glass-shadow,0 10px 30px rgba(15,54,157,.09));--g-edge:var(--glass-edge,rgba(255,255,255,.85))}
+.journey-shell .journey-column,.journey-shell .journey-section,.journey-shell .journey-doctor,.journey-shell .journey-metric{background:var(--g-fill);border:1px solid var(--g-line);box-shadow:var(--g-shadow),inset 0 1px 0 var(--g-edge);border-radius:16px}
+.journey-shell .journey-column>header{background:linear-gradient(135deg,#0F369D,#1C4FC7);color:#fff;border-bottom:0}
+.journey-shell .journey-column>header h3{color:#fff}
+.journey-shell .journey-column>header span{background:rgba(255,255,255,.18);color:#fff;font-weight:700}
+.journey-shell .journey-column{min-height:160px}
+.journey-shell .journey-column-body{gap:6px;padding:8px}
+.journey-shell .journey-metric{border-width:2px;border-color:color-mix(in srgb,#0F369D 30%,transparent);color:#0F369D;cursor:pointer;transition:background-color .2s,color .2s,transform .15s}
+.journey-shell .journey-metric span,.journey-shell .journey-metric small{color:inherit}
+.journey-shell .journey-metric:is(:hover,.is-active){background:#0F369D;color:#fff}
+.journey-shell .journey-metric.is-alert{border-color:#F15A22;color:#B4400F}
+.journey-shell .journey-metric.is-alert:is(:hover,.is-active){background:#F15A22;color:#16212E}
+.journey-shell .journey-metric:active{transform:scale(.97)}
+/* status colour per card */
+.journey-card.is-compact{--st:#64748B;padding:0;border:0;background:none;box-shadow:none}
+.journey-card.is-compact[data-status=on_the_way]{--st:#6D4AD6}
+.journey-card.is-compact:is([data-status=waiting],[data-status=called],[data-status=arrived]){--st:#0F369D}
+.journey-card.is-compact:is([data-status=in_service],[data-status=on_hold]){--st:#1C4FC7}
+.journey-card.is-compact:is([data-status=completed]){--st:#2F7D5C}
+.journey-card.is-compact:is([data-status=no_show],[data-status=cancelled]){--st:#D0402A}
+.journey-chip{display:flex;align-items:center;gap:8px;width:100%;min-height:36px;padding:6px 12px;border:1px solid color-mix(in srgb,var(--st) 35%,#fff);border-radius:999px;background:color-mix(in srgb,var(--st) 9%,rgba(255,255,255,.75));box-shadow:0 4px 12px rgba(15,54,157,.06),inset 0 1px 0 rgba(255,255,255,.9);color:#16212E;font:inherit;font-size:14px;font-weight:700;text-align:start;cursor:pointer;transition:background-color .2s,color .2s,transform .15s}
+.journey-chip:before{content:"";flex:none;width:9px;height:9px;border-radius:50%;background:var(--st)}
+.journey-chip-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.journey-chip:hover{background:color-mix(in srgb,var(--st) 18%,#fff)}
+.journey-chip:active{transform:scale(.98)}
+.journey-chip:focus-visible{outline:3px solid #F15A22;outline-offset:2px}
+.journey-card.is-late .journey-chip{border-color:#F15A22;border-width:2px}
+.journey-card.is-late .journey-chip:before{background:#F15A22}
+.journey-card.is-long-wait .journey-chip{border-color:#F15A22;border-width:2px}
+.journey-card.is-due .journey-chip:after{content:"";flex:none;margin-inline-start:auto;width:8px;height:8px;border-radius:2px;background:#F15A22}
+.journey-card.is-open .journey-chip{background:var(--st);border-color:var(--st);color:#fff}
+.journey-card.is-open .journey-chip:before{background:#fff}
+.journey-card-detail{margin-top:6px;padding:12px;border-radius:14px;border:1px solid color-mix(in srgb,var(--st) 40%,#fff);border-top:4px solid var(--st);background:rgba(255,255,255,.94);box-shadow:var(--glass-shadow,0 10px 30px rgba(15,54,157,.09))}
+.journey-card-detail[hidden]{display:none}
+.journey-card-detail>header{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.journey-card-detail h4{font-size:14px;margin:0 0 4px}
+.journey-card-detail p{font-size:12px;margin:0;color:var(--muted,#667085)}
+/* managers' staff bookings */
+.journey-toolbar .btn.is-active{background:#0F369D;color:#fff;border-color:#0F369D}
+.journey-staff{display:grid;gap:10px}
+.journey-staff-hint{margin:0;font-size:12px;color:var(--muted,#667085)}
+.journey-staff-filters{display:flex;flex-wrap:wrap;gap:10px;align-items:end}
+.journey-staff-quick,.journey-staff-counts{display:flex;flex-wrap:wrap;gap:6px}
+.journey-staff-field{display:grid;gap:3px;font-size:12px;color:var(--muted,#667085)}
+.journey-staff-field :is(input,select){min-height:38px;border:1px solid var(--g-line,rgba(15,54,157,.15));border-radius:10px;padding:5px 10px;background:rgba(255,255,255,.85);color:#16212E;font:inherit}
+.journey-staff-field :is(input,select):focus{outline:2px solid #0F369D;outline-offset:1px}
+.journey-pill{display:inline-flex;align-items:center;gap:8px;min-height:34px;padding:5px 14px;border:2px solid #0F369D;border-radius:999px;background:var(--glass-fill,rgba(255,255,255,.66));color:#0F369D;font:inherit;font-size:13px;font-weight:700;cursor:pointer;transition:background-color .2s,color .2s}
+.journey-pill strong{font-size:15px}
+.journey-pill:is(:hover,.is-active){background:#0F369D;color:#fff}
+.journey-pill:focus-visible{outline:3px solid #F15A22;outline-offset:2px}
+.journey-staff-total{margin:0;font-weight:700;color:#16212E}
+.journey-staff-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:6px;align-items:start}
+.journey-staff-dl{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;margin:0;font-size:13px}
+.journey-staff-dl dt{color:var(--muted,#667085)}
+.journey-staff-dl dd{margin:0;color:#16212E;font-weight:600}
+@media(max-width:760px){.journey-staff-filters{display:grid;grid-template-columns:1fr 1fr}.journey-staff-quick,.journey-staff-filters>label:last-child{grid-column:1/-1}.journey-staff-list{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){.journey-chip,.journey-pill,.journey-shell .journey-metric{transition:none}.journey-chip:active,.journey-shell .journey-metric:active{transform:none}}
+@media(forced-colors:active){.journey-chip,.journey-pill,.journey-card-detail{border:1px solid CanvasText}}
+.journey-shell .journey-title{background-image:radial-gradient(120% 160% at 88% -30%,rgba(255,255,255,.26),transparent 55%),linear-gradient(135deg,#0F369D,#1C4FC7);border:0;border-radius:18px;color:#fff;box-shadow:0 12px 32px rgba(15,54,157,.22),inset 0 1px 0 rgba(255,255,255,.35)}
+.journey-shell .journey-title h2{color:#fff}.journey-shell .journey-title p{color:rgba(255,255,255,.86)}
+@media(forced-colors:active){.journey-shell .journey-title{background:Canvas;color:CanvasText;border:1px solid CanvasText}}
