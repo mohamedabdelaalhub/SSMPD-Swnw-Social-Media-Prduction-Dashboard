@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { buildPayload,imageBytes,deliver,privateKey } from './transport.mjs';
+import { buildPayload,imageBytes,deliver,privateKey,posterSize,downscaleOnWhite } from './transport.mjs';
+import { Image } from 'https://deno.land/x/imagescript@1.3.0/mod.ts';
 
 // Website image sources: existing private storage and legacy Drive files.
 // Begin website-image helpers (also exercised with mocked network/storage).
@@ -143,6 +144,24 @@ async function readWebsiteImage(db,sourceUrl,origin) {
 }
 // End website-image helpers.
 
+// The dashboard cover of a video post: the cover chosen on the content item, else the selected (or latest) video-job cover.
+async function videoCoverUrl(db,contentId:string):Promise<string|null>{
+ const {data:item}=await db.from('content_items').select('cover_settings').eq('id',contentId).maybeSingle();
+ const chosen=item?.cover_settings&&typeof item.cover_settings==='object'?item.cover_settings.cover_image_url:null;
+ if(typeof chosen==='string'&&chosen)return chosen;
+ const {data:jobs}=await db.from('video_jobs').select('cover_url,selected_cover_id').eq('content_id',contentId).not('cover_url','is',null).order('created_at',{ascending:false}).limit(10);
+ const pick=(jobs||[]).find((j:any)=>j.selected_cover_id)||(jobs||[])[0];
+ return typeof pick?.cover_url==='string'&&pick.cover_url?pick.cover_url:null;
+}
+// Small JPEG poster (≤ 720 px wide, ~80 KB) so the website cards stay light.
+async function posterJpeg(bytes:Uint8Array):Promise<Uint8Array>{
+ const src=await Image.decode(bytes);const [w,h]=posterSize(src.width,src.height);
+ const out=new Image(w,h);out.bitmap.set(downscaleOnWhite(src.bitmap,src.width,src.height,w,h));
+ let quality=80,jpg=await out.encodeJPEG(quality);
+ while(jpg.length>85*1024&&quality>50){quality-=10;jpg=await out.encodeJPEG(quality);}
+ return jpg;
+}
+
 const cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization,apikey,content-type,x-client-info','Access-Control-Allow-Methods':'POST,OPTIONS'};
 Deno.serve(async(req)=>{
  const reply=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{...cors,'Content-Type':'application/json'}});
@@ -196,6 +215,11 @@ Deno.serve(async(req)=>{
     const {data:signed,error:signError}=await db.storage.from('video-inputs').createSignedUrl(k,7200);
     if(signError||!signed)throw Error('VIDEO_DOWNLOAD_FAILED');
     body.video={url:signed.signedUrl,mime:'video/mp4',expiresInSeconds:7200};
+   }
+   if(job.action==='upsert' && job.payload._videoUrl){
+    // Poster for the video card (Studio keeps no poster when a video publish omits it). A missing/broken cover never blocks the video.
+    const cover=await videoCoverUrl(db,job.content_id);
+    if(cover){try{body.image=imageBytes(await posterJpeg(await readWebsiteImage(db,cover,new URL(url).origin)));}catch(e){console.warn('website poster skipped',job.content_id,String((e as Error)?.message||e).slice(0,80));}}
    }
    result=await deliver(target.href,secret,body);
    if(result.status==='failed'||result.status==='retry')reason='HTTP_'+result.http;
