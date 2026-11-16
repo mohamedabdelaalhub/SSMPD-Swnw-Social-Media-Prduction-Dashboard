@@ -747,7 +747,15 @@
         window.SSMPDToast.show("اتغيّرت كلمة السر بنجاح");
         close();
       }).catch(function (err) {
-        window.SSMPDToast.show("خطأ: " + (err && err.message ? err.message : err), "error");
+        var m = String(err && err.message ? err.message : err);
+        if (/session missing|session_not_found|not authenticated|JWT/i.test(m)) {
+          // Expired/used reset link: no recovery session exists. Say so in Arabic and offer a new link.
+          window.SSMPDToast.show("رابط تغيير كلمة السر انتهى أو اتستخدم قبل كده. اطلب رابط جديد من «نسيت كلمة السر؟» وافتحه خلال ساعة.", "error");
+          close();
+          if (typeof showAuthScreen === "function") showAuthScreen("login");
+          return;
+        }
+        window.SSMPDToast.show("خطأ: " + m, "error");
       });
     };
   }
