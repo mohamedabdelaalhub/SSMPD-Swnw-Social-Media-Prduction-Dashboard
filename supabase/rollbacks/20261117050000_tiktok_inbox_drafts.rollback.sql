@@ -1,4 +1,4 @@
--- Rollback for 20261117030000_tiktok_inbox_drafts.sql (send to TikTok as a draft).
+-- Rollback for 20261117050000_tiktok_inbox_drafts.sql (send to TikTok as a draft).
 -- Draft rows (pending or sent) are deleted, because they have no privacy_level
 -- and privacy_level goes back to NOT NULL. Direct-post rows are untouched.
 begin;

@@ -166,14 +166,14 @@ opens the full Direct Post panel (caption, privacy, interactions, disclosure) an
 **Setup, in order** (the main chat deploys; the owner does the portal step):
 1. TikTok portal → our app → Products → Content Posting API: make sure **Upload** is on and the scope
    `video.upload` is added. Press Submit/Save. If TikTok asks for an app review for the new scope, wait for it.
-2. Apply migration `20261117030000_tiktok_inbox_drafts.sql`. Deploy `tiktok-auth` and `tiktok-publish-process`.
+2. Apply migration `20261117050000_tiktok_inbox_drafts.sql`. Deploy `tiktok-auth` and `tiktok-publish-process`.
 3. The owner reconnects the Sono TikTok account once from the dashboard: Publish → a video → TikTok →
    "ربط حساب TikTok". That grants `video.upload`.
    - Until then, the button answers "أعد ربط حساب TikTok…".
    - Do not deploy the new `tiktok-auth` before step 1. Reconnecting with a scope the app doesn't have fails
      on TikTok's page.
 
-Rollback: `supabase/rollbacks/20261117030000_tiktok_inbox_drafts.rollback.sql`. It deletes the draft rows.
+Rollback: `supabase/rollbacks/20261117050000_tiktok_inbox_drafts.rollback.sql`. It deletes the draft rows.
 
 ## After approval
 

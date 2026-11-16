@@ -1,4 +1,4 @@
-// SQL rehearsal of 20261117020000_tiktok_audit_post_settings.sql and its rollback on PGlite. Synthetic data only.
+// SQL rehearsal of 20261117040000_tiktok_audit_post_settings.sql and its rollback on PGlite. Synthetic data only.
 const { PGlite } = require('@electric-sql/pglite'), fs = require('fs'), assert = require('node:assert/strict');
 const uid = n => '50000000-0000-4000-8000-' + String(n).padStart(12, '0');
 (async () => {
@@ -16,7 +16,7 @@ const uid = n => '50000000-0000-4000-8000-' + String(n).padStart(12, '0');
     insert into content_items values ('${uid(9)}');
     -- an old row (before the migration) that the new rules would refuse must stay untouched
     insert into tiktok_publish_jobs(content_id,brand,scheduled_at,privacy_level,commercial_content) values ('${uid(9)}','sono',now(),'SELF_ONLY',true);`);
-  const mig = fs.readFileSync('supabase/migrations/20261117020000_tiktok_audit_post_settings.sql', 'utf8');
+  const mig = fs.readFileSync('supabase/migrations/20261117040000_tiktok_audit_post_settings.sql', 'utf8');
   await db.exec(mig); await db.exec(mig); // idempotent
   const as = async n => { await db.exec('reset role'); await db.query("select set_config('test.admin',$1,false)", [uid(n)]); await db.exec('set role authenticated'); };
   const ins = (o = {}) => db.query(`insert into tiktok_publish_jobs(content_id,brand,scheduled_at,privacy_level,commercial_content,your_brand,branded_content,music_confirmation,title,is_aigc,created_by)
@@ -37,7 +37,7 @@ const uid = n => '50000000-0000-4000-8000-' + String(n).padStart(12, '0');
   await db.exec('reset role');
   assert.equal((await db.query("select count(*)::int n from tiktok_publish_jobs where privacy_level='SELF_ONLY' and commercial_content")).rows[0].n, 1, 'old row kept');
   // rollback restores the old shape
-  await db.exec(fs.readFileSync('supabase/rollbacks/20261117020000_tiktok_audit_post_settings.rollback.sql', 'utf8'));
+  await db.exec(fs.readFileSync('supabase/rollbacks/20261117040000_tiktok_audit_post_settings.rollback.sql', 'utf8'));
   const cols = (await db.query("select column_name from information_schema.columns where table_name='tiktok_publish_jobs' and column_name in ('title','is_aigc')")).rows;
   assert.equal(cols.length, 0);
   await as(1); assert.ok((await db.query(`insert into tiktok_publish_jobs(content_id,brand,scheduled_at,privacy_level,created_by) values($1,'sono',now(),'PUBLIC',$2) returning id`, [uid(9), uid(1)])).rows[0].id);
