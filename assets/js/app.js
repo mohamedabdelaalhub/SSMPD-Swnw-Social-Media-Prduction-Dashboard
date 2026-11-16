@@ -143,6 +143,9 @@
     return m;
   }
 
+  // supabase-js reports PASSWORD_RECOVERY only after getSession() has already resolved, so detect a
+  // reset link from the URL itself while the scripts load (the hash is still present at this point).
+  var recoveryMode = /(^|[#&?])type=recovery(&|$)/.test(String(window.location.hash || "") + "&" + String(window.location.search || ""));
   function bootAfterAuth() {
     return window.SSMPDAuth.getSession().then(function (session) {
       if (!session) { showAuthScreen("login"); return; }
@@ -152,6 +155,8 @@
         startUsageSession();
       });
     }).catch(function (err) {
+      if (window.console) console.error("dashboard boot failed", err);
+      if (recoveryMode) return; // never drop a recovery session before the new password is saved
       window.SSMPDAuth.signOut();
       showAuthScreen("login", translateAuthError(err));
     });
@@ -746,8 +751,17 @@
       window.SSMPDAuth.changePassword(p1).then(function () {
         window.SSMPDToast.show("اتغيّرت كلمة السر بنجاح");
         close();
+        if (recoveryMode) { recoveryMode = false; bootAfterAuth(); }
       }).catch(function (err) {
-        window.SSMPDToast.show("خطأ: " + (err && err.message ? err.message : err), "error");
+        var m = String(err && err.message ? err.message : err);
+        if (/session missing|session_not_found|not authenticated|JWT/i.test(m)) {
+          // Expired/used reset link: no recovery session exists. Say so in Arabic and offer a new link.
+          window.SSMPDToast.show("رابط تغيير كلمة السر انتهى أو اتستخدم قبل كده. اطلب رابط جديد من «نسيت كلمة السر؟» وافتحه خلال ساعة.", "error");
+          close();
+          if (typeof showAuthScreen === "function") showAuthScreen("login");
+          return;
+        }
+        window.SSMPDToast.show("خطأ: " + m, "error");
       });
     };
   }
@@ -1003,9 +1017,13 @@
     // لينك "نسيت كلمة السر" بيرجّع المستخدم هنا بجلسة مؤقتة تلقائية —
     // Supabase بيطلق الحدث ده، فبنفتحله مودال "تغيير كلمة السر" مباشرة
     window.SSMPDAuth.onAuthChange(function (event) {
-      if (event === "PASSWORD_RECOVERY") openChangePasswordModal();
+      if (event === "PASSWORD_RECOVERY") { recoveryMode = true; openChangePasswordModal(); }
     });
     window.SSMPDAuth.getSession().then(function (session) {
+      // A reset link gives a short recovery session: keep it for the password change only and do not
+      // boot the dashboard yet (a boot failure there used to sign the session out ~3 s later, so
+      // saving the new password failed with "Auth session missing!"). Boot after the password is saved.
+      if (session && recoveryMode) { showAuthScreen("login"); return; }
       if (session) return bootAfterAuth().then(function(){
         var welcome=new URL(window.location.href);if(welcome.searchParams.get('staff_welcome')==='1'){welcome.searchParams.delete('staff_welcome');history.replaceState(null,'',welcome.pathname+welcome.search+welcome.hash);if(window.SSMPDAuth.currentAdmin&&!document.getElementById('cp-save'))openChangePasswordModal();}
       });
