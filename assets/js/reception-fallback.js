@@ -2,7 +2,7 @@
 // الاستقبال بيشوفها هنا في قسم المواعيد: تأكيد بالتليفون، فكّ الحجز المؤقت لو اتسجل كموعد عادي، أو إلغاء بسبب.
 // الوكيل هو اللي بيسجلها على ماسا لما يرجع؛ لو ماسا رفض الميعاد تظهر «كلّم المريض».
 (function(){
-  var LABELS={pending:'مستني يتسجل على ماسا',replayed:'اتسجل على ماسا ✓',conflict:'⚠ ماسا رفض الميعاد — كلّم المريض واحجزله ميعاد تاني',cancel_pending:'اتلغى — مستني يتلغي من ماسا',cancelled:'ملغي'};
+  var LABELS={pending:'مستني يتسجل على ماسا',replayed:'اتسجل على ماسا ✓',conflict:'⚠ ماسا رفض الميعاد — راجع ماسا الأول (ممكن يكون اتسجل فعلاً)، وبعدين كلّم المريض',cancel_pending:'اتلغى — مستني يتلغي من ماسا',cancelled:'ملغي'};
   var SOURCES={whatsapp:'واتساب',website:'الموقع'};
   function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
   function rpc(ws,action,payload){var c=window.SSMPDDb&&window.SSMPDDb.client;if(!c||typeof c.rpc!=='function')return Promise.reject(new Error('تعذر الاتصال'));
@@ -18,7 +18,7 @@
       (actions?'<div class="rx-actions">'+actions+'</div>':'')+'</article>';}
   function paint(box,ws,list){if(!list.length){box.innerHTML='';box.hidden=true;return;}box.hidden=false;
     var open=list.filter(function(b){return b.status==='conflict';}).length;
-    box.innerHTML='<section class="rx-mode-card rx-fallback"><h4>حجوزات احتياطية ('+list.length+')'+(open?' — ⚠ '+open+' محتاجين تكلّم المريض':'')+'</h4><p>دي حجوزات اتعملت من الواتساب أو الموقع وماسا كان واقف. الميعاد محجوز للمريض هنا لحد ما تتلغي أو تفكّها.</p>'+list.map(row).join('')+'</section>';
+    box.innerHTML='<section class="rx-mode-card rx-fallback"><h4>حجوزات احتياطية ('+list.length+')'+(open?' — ⚠ '+open+' محتاجين مراجعة على ماسا':'')+'</h4><p>دي حجوزات اتعملت من الواتساب أو الموقع وماسا كان واقف. الميعاد محجوز للمريض هنا لحد ما تتلغي أو تفكّها.</p>'+list.map(row).join('')+'</section>';
     box.querySelectorAll('[data-fb-act]').forEach(function(btn){btn.onclick=function(){var a=btn.getAttribute('data-fb-act'),id=btn.getAttribute('data-id'),p={id:id};
       if(a==='cancel'){var reason=window.prompt('سبب الإلغاء؟');if(!reason||!reason.trim())return;p.reason=reason.trim();}
       if(a==='release'&&!window.confirm('هتفك الحجز المؤقت عشان تسجّل المريض كموعد عادي في نفس الوقت؟'))return;

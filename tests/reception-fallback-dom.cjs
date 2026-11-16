@@ -12,8 +12,8 @@ const q=s=>w.document.querySelector(s),qa=s=>[...w.document.querySelectorAll(s)]
 w.SSMPDReception.render(q('#root'));await sleep(80);const sk=q('[data-guide-skip]');if(sk)sk.click();
 q('[data-rx-section="appointments"]').click();await sleep(60);
 const box=q('[data-rx-fallback]');assert(box&&!box.hidden,'panel shown in المواعيد');
-assert(/حجوزات احتياطية \(3\)/.test(box.textContent)&&/1 محتاجين تكلّم المريض/.test(box.textContent));
-assert(!box.innerHTML.includes('<b>واحد'),'names escaped');assert(/الموقع/.test(q('.rx-fb-conflict').textContent)&&/كلّم المريض/.test(q('.rx-fb-conflict').textContent));
+assert(/حجوزات احتياطية \(3\)/.test(box.textContent)&&/1 محتاجين مراجعة على ماسا/.test(box.textContent));
+assert(!box.innerHTML.includes('<b>واحد'),'names escaped');assert(/الموقع/.test(q('.rx-fb-conflict').textContent)&&/راجع ماسا الأول/.test(q('.rx-fb-conflict').textContent));
 assert.equal(qa('[data-fb-act="confirm"]').length,1,'confirm only for unconfirmed non-conflict');assert.equal(qa('[data-fb-act="release"]').length,2);assert.equal(qa('[data-fb-act="cancel"]').length,3);
 w.prompt=()=>'  ';q('[data-fb-act="cancel"][data-id="f2"]').click();await sleep(20);assert(!rpcs.some(r=>r[1].p_action==='cancel'),'no reason → nothing sent');
 w.prompt=()=>'المريض اعتذر';q('[data-fb-act="cancel"][data-id="f2"]').click();await sleep(30);
