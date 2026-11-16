@@ -10,14 +10,16 @@ const css=`@font-face{font-family:'BigVesta Arabic';font-weight:400;src:url(data
 @font-face{font-family:'Hiragino Kaku';font-weight:900;src:url(data:font/woff2;base64,${f('Hiragino-W8.woff2')}) format('woff2')}`;
 (async()=>{
  const [dir,outdir,ext,start,end]=process.argv.slice(2);
+ const PH={};
  const files=fs.readdirSync(dir).filter(x=>x.endsWith('.svg')).sort();
  const a=start?+start:0,b=end?+end:files.length;
  fs.mkdirSync(outdir,{recursive:true});
  const br=await chromium.launch();const pg=await br.newPage({viewport:{width:1080,height:1920}});
- await pg.setContent(`<html><head><style>${css}</style></head><body style="margin:0;background:#fff"><span style="font-family:'BigVesta Arabic';font-weight:700">ابج</span><span style="font-family:'BigVesta Arabic';font-weight:400">ابج</span><span style="font-family:'Hiragino Kaku';font-weight:400">Swnw 123</span></body></html>`);
+ await pg.setContent(`<html><head><style>${css}</style></head><body style="margin:0;background:${process.env.RF_ALPHA?'transparent':'#fff'}"><span style="font-family:'BigVesta Arabic';font-weight:700">ابج</span><span style="font-family:'BigVesta Arabic';font-weight:400">ابج</span><span style="font-family:'Hiragino Kaku';font-weight:400">Swnw 123</span></body></html>`);
  await pg.evaluate(async()=>{await document.fonts.load('700 40px "BigVesta Arabic"');await document.fonts.load('400 40px "BigVesta Arabic"');await document.fonts.load('400 40px "Hiragino Kaku"');await document.fonts.ready;});
  for(let i=a;i<b;i++){
-  const svg=fs.readFileSync(path.join(dir,files[i]),'utf8');
+  let svg=fs.readFileSync(path.join(dir,files[i]),'utf8');
+  svg=svg.replace(/PHOTO::([^"']+)/g,(m,p1)=>{if(!PH[p1]){const ext=path.extname(p1).slice(1).toLowerCase().replace('jpg','jpeg');PH[p1]='data:image/'+ext+';base64,'+fs.readFileSync(p1).toString('base64');}return PH[p1];});
   await pg.evaluate(s=>{
     document.body.innerHTML=s;
     document.querySelectorAll('g.cap').forEach(g=>{
@@ -27,7 +29,7 @@ const css=`@font-face{font-family:'BigVesta Arabic';font-weight:400;src:url(data
         r.setAttribute('x',bb.x-pad);r.setAttribute('width',bb.width+pad*2);r.setAttribute('y',bb.y-12+dy);r.setAttribute('height',bb.height+24);}
     });
   },svg);
-  await pg.screenshot({path:path.join(outdir,files[i].replace('.svg','.'+ext)),type:ext==='jpg'?'jpeg':'png',quality:ext==='jpg'?90:undefined});
+  await pg.screenshot({path:path.join(outdir,files[i].replace('.svg','.'+ext)),type:ext==='jpg'?'jpeg':'png',quality:ext==='jpg'?90:undefined,omitBackground:!!process.env.RF_ALPHA});
  }
  await br.close();console.log('done',a,b);
 })();

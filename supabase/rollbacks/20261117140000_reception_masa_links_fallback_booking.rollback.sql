@@ -1,4 +1,4 @@
--- Rollback for 20261117130000_reception_masa_links_fallback_booking.sql
+-- Rollback for 20261117140000_reception_masa_links_fallback_booking.sql
 -- Check first that no fallback booking is still waiting (they hold patient bookings that exist nowhere else):
 --   select status, count(*) from clinic_reception.fallback_bookings group by 1;
 drop trigger if exists appointments_respect_fallback on clinic_reception.appointments;

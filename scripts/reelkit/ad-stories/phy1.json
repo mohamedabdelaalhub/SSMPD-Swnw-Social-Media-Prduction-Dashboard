@@ -1,0 +1,253 @@
+{
+ "meta": {
+  "brand": true,
+  "title": "إعلان ريل PHY1 — موجة 1",
+  "music": "upbeat",
+  "seed": 22,
+  "file": "phy1.mp4",
+  "cover_t": 1.5,
+  "voice_settings": {
+   "stability": 0.55,
+   "style": 0.1,
+   "speed": 0.98
+  },
+  "voice_continuous": true,
+  "bed_audio": {
+   "path": "/root/.claude/uploads/d4cfeb82-593e-5033-90e6-dc2f0a1d367c/e59dbf4f-WhatsApp_Video_2026-11-15_at_7.00.02_AM.mp4",
+   "t0": 0.0
+  },
+  "music_from": 10.0
+ },
+ "cast": {
+  "v": {
+   "look": "narr",
+   "voice": "woman_1"
+  }
+ },
+ "scenes": [
+  {
+   "set": "clear",
+   "bg": {
+    "video": "/root/.claude/uploads/d4cfeb82-593e-5033-90e6-dc2f0a1d367c/e59dbf4f-WhatsApp_Video_2026-11-15_at_7.00.02_AM.mp4",
+    "start": 0.0,
+    "fit": "fill",
+    "cx": 0.5
+   },
+   "cam": {},
+   "trans": "cut",
+   "tail": 0.0,
+   "actors": {},
+   "beats": [
+    {
+     "wait": 3.917
+    }
+   ]
+  },
+  {
+   "set": "clear",
+   "bg": {
+    "photo": "/tmp/ad/phy_young.png",
+    "z0": 1.0,
+    "z1": 1.08
+   },
+   "cam": {},
+   "trans": "cut",
+   "tail": 0.0,
+   "actors": {},
+   "beats": [
+    {
+     "wait": 2.425
+    }
+   ]
+  },
+  {
+   "set": "clear",
+   "bg": {
+    "video": "/root/.claude/uploads/d4cfeb82-593e-5033-90e6-dc2f0a1d367c/e59dbf4f-WhatsApp_Video_2026-11-15_at_7.00.02_AM.mp4",
+    "start": 6.042,
+    "fit": "fill",
+    "cx": 0.5
+   },
+   "cam": {},
+   "trans": "cut",
+   "tail": 0.0,
+   "actors": {},
+   "beats": [
+    {
+     "wait": 0.5
+    },
+    {
+     "badge": {
+      "text": "خصم 20%",
+      "sub": "على أول جلسة",
+      "kind": "offer",
+      "y": 1250,
+      "dur": 3.0
+     }
+    },
+    {
+     "wait": 3.241
+    }
+   ]
+  },
+  {
+   "set": "clear",
+   "bg": {
+    "photo": "/tmp/ad/phy_young.png",
+    "z0": 1.0,
+    "z1": 1.12
+   },
+   "cam": {},
+   "trans": "cut",
+   "tail": 0.0,
+   "actors": {},
+   "beats": [
+    {
+     "say": {
+      "who": "v",
+      "text": "جلسات بأجهزة، وتحت إشراف أخصائيين، لكل الأعمار.",
+      "hl": [
+       "أخصائيين",
+       "الأعمار"
+      ],
+      "silent": false,
+      "pad": 0.0
+     }
+    },
+    {
+     "wait": 0.0
+    }
+   ]
+  },
+  {
+   "set": "clear",
+   "bg": {
+    "photo": "/tmp/ad/phy_elder.png",
+    "z0": 1.12,
+    "z1": 1.0
+   },
+   "cam": {},
+   "trans": "cut",
+   "tail": 0.0,
+   "actors": {},
+   "beats": [
+    {
+     "say": {
+      "who": "v",
+      "text": "من الشباب لكبار السن، وأخصائي معاك في كل خطوة.",
+      "hl": [
+       "خطوة"
+      ],
+      "silent": false,
+      "pad": 0.0
+     }
+    },
+    {
+     "wait": 0.0
+    }
+   ]
+  },
+  {
+   "set": "clear",
+   "bg": {
+    "photo": "/tmp/ad/phy_woman.png",
+    "z0": 1.0,
+    "z1": 1.12
+   },
+   "cam": {},
+   "trans": "cut",
+   "tail": 0.0,
+   "actors": {},
+   "beats": [
+    {
+     "badge": {
+      "text": "خصم 20%",
+      "sub": "على أول جلسة",
+      "kind": "offer",
+      "y": 1200,
+      "dur": 3.0
+     }
+    },
+    {
+     "say": {
+      "who": "v",
+      "text": "وعلى أول جلسة، خصم عشرين في المية.",
+      "hl": [
+       "عشرين",
+       "أول جلسة"
+      ],
+      "silent": true,
+      "pad": 0.0
+     }
+    },
+    {
+     "wait": 0.0
+    }
+   ]
+  },
+  {
+   "set": "clear",
+   "bg": {
+    "photo": "/tmp/ad/phy_young.png",
+    "z0": 1.12,
+    "z1": 1.0
+   },
+   "cam": {},
+   "trans": "cut",
+   "tail": 0.0,
+   "actors": {},
+   "beats": [
+    {
+     "say": {
+      "who": "v",
+      "text": "ابعتلنا على واتساب، وهنحدد معاك خطة الجلسات المناسبة.",
+      "hl": [
+       "واتساب"
+      ],
+      "silent": false,
+      "pad": 0.0
+     }
+    },
+    {
+     "wait": 0.0
+    }
+   ]
+  },
+  {
+   "set": "clear",
+   "bg": {
+    "photo": "/tmp/ad/phy_elder.png",
+    "z0": 1.0,
+    "z1": 1.12
+   },
+   "cam": {},
+   "trans": "cut",
+   "tail": 0.4,
+   "actors": {},
+   "beats": [
+    {
+     "badge": {
+      "text": "احجز موعدك",
+      "kind": "button",
+      "y": 1290,
+      "dur": 3.0
+     }
+    },
+    {
+     "say": {
+      "who": "v",
+      "text": "احجز موعدك دلوقتي.",
+      "hl": [
+       "احجز"
+      ],
+      "silent": true,
+      "pad": 0.0
+     }
+    },
+    {
+     "wait": 0.0
+    }
+   ]
+  }
+ ]
+}

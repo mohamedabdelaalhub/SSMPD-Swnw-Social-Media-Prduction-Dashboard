@@ -3,7 +3,7 @@
 const fs=require('fs'),path=require('path'),assert=require('node:assert/strict');
 const src=fs.readFileSync(path.join(__dirname,'reception-bridge.cjs'),'utf8');const cut=src.indexOf('// A legacy inventory use');
 assert(cut>0&&src.includes('await boot()'),'reception-bridge.cjs setup markers moved; update this test');
-const prefix=src.slice(0,cut).replace('await boot()',"await boot(['reception_booking_confirm_duration','reception_weekly_schedule_walk_in','reception_masa_links_fallback_booking'])").replace("require('./helpers/reception-bridge.cjs')",'require('+JSON.stringify(path.join(__dirname,'helpers','reception-bridge.cjs'))+')');
+const prefix=src.slice(0,cut).replace('await boot()',"await boot(['reception_consultation_eligibility','reception_provider_service_scopes','reception_booking_confirm_duration','reception_weekly_schedule_walk_in','reception_basic_services_readiness','reception_masa_links_fallback_booking'])").replace("require('./helpers/reception-bridge.cjs')",'require('+JSON.stringify(path.join(__dirname,'helpers','reception-bridge.cjs'))+')');
 const body=`
 {const q=async(sql,a)=>{const r=await owner(sql,a);await as(1);return r;};await as(1);
 const api=async(op,p)=>(await q('select clinic_reception.fallback_api($1,$2::jsonb) v',[op,JSON.stringify(p||{})]))[0].v;
@@ -81,7 +81,7 @@ assert.equal((await api('health')).ok,true);
 await assert.rejects(()=>db.query("select clinic_reception.fallback_api('health','{}')"),/permission|denied/);
 await assert.rejects(()=>db.query("select public.clinic_reception_fallback_api('health','{}')"),/permission|denied/);
 }
-await db.exec('reset role');await db.exec(require('fs').readFileSync(${JSON.stringify(path.join(__dirname,'..','supabase','rollbacks','20261117130000_reception_masa_links_fallback_booking.rollback.sql'))},'utf8'));
+await db.exec('reset role');await db.exec(require('fs').readFileSync(${JSON.stringify(path.join(__dirname,'..','supabase','rollbacks','20261117140000_reception_masa_links_fallback_booking.rollback.sql'))},'utf8'));
 assert.equal((await db.query("select to_regclass('clinic_reception.fallback_bookings') t, to_regclass('clinic_reception.masa_doctor_links') l")).rows[0].t,null,'rollback drops the tables');
 await db.exec("insert into clinic_reception.appointments select * from clinic_reception.appointments limit 0");
 await db.close();console.log('PASS Masa links + fallback booking: seed by normalized dashboard name (two Masa ids → one doctor, inactive, pending), slots from weekly availability, idempotent book, no double-booking either way, reception list/confirm/release/cancel, replay lease/retry/once, conflict holds the slot, Masa cancel, link fixes, service-role only; rollback clean.');})().catch(e=>{console.error(e);process.exit(1);});`;

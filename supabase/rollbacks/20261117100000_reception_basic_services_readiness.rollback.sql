@@ -1,0 +1,11 @@
+drop function if exists public.clinic_reception_snapshot(uuid,date,date);
+alter function clinic_reception.snapshot_before_basic_services(uuid,date,date) set schema public;
+alter function public.snapshot_before_basic_services(uuid,date,date) rename to clinic_reception_snapshot;
+grant execute on function public.clinic_reception_snapshot(uuid,date,date) to authenticated;
+drop function if exists public.clinic_reception_booking_readiness(uuid);
+drop function if exists clinic_reception.consultation_scopes(text,date);
+alter function clinic_reception.consultation_scopes_contract(text,date) rename to consultation_scopes;
+drop function if exists clinic_reception.has_provider_service_scope(uuid,text,date);
+alter function clinic_reception.has_provider_service_scope_contract(uuid,text,date) rename to has_provider_service_scope;
+drop function if exists clinic_reception.is_basic_service(text,text);
+drop function if exists clinic_reception.norm_ar(text);
