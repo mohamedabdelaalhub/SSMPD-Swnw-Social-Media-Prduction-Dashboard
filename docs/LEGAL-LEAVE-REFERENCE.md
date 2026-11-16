@@ -42,6 +42,25 @@ Its issuing article 1 limits it to **jobs in ministries, government departments 
 | 53 | Leave without pay | A spouse travelling abroad; other reasons at the employer's discretion; child care: up to 2 years each time, 6 years over a career. |
 | 54–56 | — | Part-time work; conscripts; no paid work for others during a leave. |
 
+## ⚠️ Owner decision 2026-11-16: one unpaid leave balance, temporary
+
+This decision departs from Labor Law 14/2025 art. 124 (paid annual leave). Revisit it at social-insurance registration. Migration: `20261117020000_hr_unpaid_leave_balance.sql`.
+
+The owner's words: «الموظفين لسة مش بعقود ومفيش أجازات سنوية لحين دخول الشركة هيئة التأمينات الاجتماعية بس لازم يبقي فيه رصيد أجازات علشان الناس تعرف تقدم طلبات الأجازة علي الداشبورد ودايرة التشغيل تبقي سليمة وما يخصمش لموظف طالب أجازة فهتعتبره غايب».
+
+Follow-up answers: «بدل السنوية المدفوعة», «خليهم ٣٠ أيام», «كل أنواع الأجازات بدون راتب حاليا ما عدا الراحة الأسبوعية». On sick and birth leave: «بدون مرتب وبيتخصموا من الرصيد». On renewal: «ايوة». On the label: «يظهر أجازة». Over the limit: «يحتاج اعتماد مني».
+
+**What applies:**
+- **Balance:** every employee has **30 days a calendar year** (`clinic_people.leave_allowance(year)`) with no carry-over, plus approved credits (manual credits and «يوم بديل»).
+- **Unpaid leave:** every approved leave type (annual, casual, sick, birth) uses that balance and is **unpaid**.
+  - Payroll deducts **one day's wage (contract ÷ 30)** per leave day, never an absence penalty.
+  - Center-closure days inside a leave are not deducted.
+  - Attendance shows «إجازة».
+- **Excused absence (owner's exception):** stays outside the balance and outside the unpaid deduction.
+- **Over the balance:** not refused. Only the general manager or super admin can approve it. It is marked «أكتر من رصيد الأجازات», and the review note is the reason.
+- **Leave approved after the salary went to finance:** the refund is the absence penalty minus the day's wage.
+- **Still applies:** the notice, casual-pacing and certificate rules below. Casual leave also keeps its 2-at-a-time and 7-a-year caps.
+
 ## What the dashboard follows (owner decisions 2026-11-15, migration `20261116100000_hr_leave_rules.sql`)
 
 Each leave request has a type (`clinic_people.requests.leave_type`):
