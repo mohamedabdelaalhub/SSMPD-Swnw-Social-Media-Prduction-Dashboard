@@ -83,10 +83,24 @@ async function loadVideo(source:string):Promise<{bytes:Uint8Array,type:string}>{
   if(!bytes.length||bytes.length>512*1024*1024)throw new Error("حجم الفيديو غير صالح أو أكبر من حد المعالجة.");
   return {bytes,type};
 }
+// TikTok error codes that mean "this account can't post right now" or "the app isn't audited yet":
+// shown to the team in Arabic and never retried automatically.
+const TIKTOK_BLOCKING_ERRORS:Record<string,string>={
+  spam_risk_too_many_posts:"حساب TikTok وصل للحد اليومي للنشر. جرّب بكرة.",
+  spam_risk_user_banned_from_posting:"TikTok موقّف النشر على الحساب ده مؤقتًا. افتح تطبيق TikTok وشوف التنبيهات.",
+  reached_active_user_cap:"تطبيق الداشبورد وصل لحد المستخدمين اليومي عند TikTok. جرّب بكرة.",
+  unaudited_client_can_only_post_to_private_accounts:"تطبيق الداشبورد لسه مستني مراجعة TikTok — قبل المراجعة TikTok بيسمح بالنشر لحسابات مقفولة (Private) بس.",
+  privacy_level_option_mismatch:"اختيار الخصوصية مش متاح للحساب ده دلوقتي. اختار الخصوصية تاني من بطاقة النشر.",
+};
+export function tikTokErrorMessage(code:string,message:string,status:number){
+  if(code&&TIKTOK_BLOCKING_ERRORS[code])return TIKTOK_BLOCKING_ERRORS[code];
+  if(/integration guidelines|content-sharing-guidelines/i.test(message||""))return TIKTOK_BLOCKING_ERRORS.unaudited_client_can_only_post_to_private_accounts;
+  return message||code||"TikTok API returned HTTP "+status;
+}
 async function api(path:string,token:string,body:unknown){
   const res=await fetch("https://open.tiktokapis.com"+path,{method:"POST",headers:{Authorization:"Bearer "+token,"Content-Type":"application/json; charset=UTF-8"},body:JSON.stringify(body)});
   const data=await res.json().catch(()=>({}));
-  if(!res.ok||data.error?.code&&data.error.code!=="ok")throw new Error(data.error?.message||data.error?.code||"TikTok API returned HTTP "+res.status);
+  if(!res.ok||data.error?.code&&data.error.code!=="ok")throw new Error(tikTokErrorMessage(String(data.error?.code||""),String(data.error?.message||""),res.status));
   return data.data||{};
 }
 async function processJob(job:any){
@@ -100,18 +114,15 @@ async function processJob(job:any){
     if(accountError)throw accountError;
     if(!rawAccount)throw new Error("اربط حساب TikTok لصفحة المحتوى من بطاقة النشر.");
     const account=await refreshIfNeeded(rawAccount);
-    const creator=await api("/v2/post/publish/creator_info/query/",account.access_token,{});
-    if(!Array.isArray(creator.privacy_level_options)||!creator.privacy_level_options.includes(job.privacy_level))throw new Error("اختيار الخصوصية لم يعد متاحًا لهذا الحساب. افتح تفاصيل المادة واختر الخصوصية مرة أخرى.");
-    if(creator.creator_can_post===false)throw new Error("حساب TikTok لا يستطيع النشر الآن. حاول لاحقًا.");
-    if(!job.music_confirmation)throw new Error("يجب تأكيد موافقة TikTok على استخدام الموسيقى قبل النشر.");
-    if(job.branded_content&&job.privacy_level==="SELF_ONLY")throw new Error("لا يمكن نشر محتوى الشراكة التجارية بخصوصية خاصة فقط.");
     if(job.publish_id){
+      // Already sent: only poll the status. A creator_info hiccup (e.g. the daily post cap) must not fail a video that is already posted.
+      const creator=await api("/v2/post/publish/creator_info/query/",account.access_token,{}).catch(()=>({} as Record<string,unknown>));
       const status=await api("/v2/post/publish/status/fetch/",account.access_token,{publish_id:job.publish_id});
       const state=status.status||status.publish_status||"";
       if(state==="PUBLISH_COMPLETE"){
         const postIds=Array.isArray(status.publicaly_available_post_id)?status.publicaly_available_post_id:[];
         const postId=postIds.length?String(postIds[0]):null;
-        const share=status.share_url||(postId?"https://www.tiktok.com/@"+(creator.creator_username||"")+"/video/"+postId:null);
+        const share=status.share_url||(postId?"https://www.tiktok.com/@"+(creator.creator_username||rawAccount.username||"")+"/video/"+postId:null);
         const patch={status:"published",publish_status:state,share_url:share||null,post_id:postId,published_at:new Date().toISOString(),error_message:null,updated_at:new Date().toISOString()};
         await admin.from("tiktok_publish_jobs").update(patch).eq("id",job.id);
         const urls=Object.assign({},content.published_urls||{});if(share)urls.tiktok=share;
@@ -122,14 +133,22 @@ async function processJob(job:any){
       await admin.from("tiktok_publish_jobs").update({status:"pending",publish_status:state||"PROCESSING_UPLOAD",scheduled_at:new Date(Date.now()+60000).toISOString(),updated_at:new Date().toISOString()}).eq("id",job.id);
       return;
     }
+    // Fresh creator_info right before sending anything: the account's options may have changed since the post was scheduled.
+    const creator=await api("/v2/post/publish/creator_info/query/",account.access_token,{});
+    if(!Array.isArray(creator.privacy_level_options)||!creator.privacy_level_options.includes(job.privacy_level))throw new Error("اختيار الخصوصية لم يعد متاحًا لهذا الحساب. افتح تفاصيل المادة واختر الخصوصية مرة أخرى.");
+    if(!job.music_confirmation)throw new Error("يجب تأكيد موافقة TikTok على استخدام الموسيقى قبل النشر.");
+    if(job.branded_content&&job.privacy_level==="SELF_ONLY")throw new Error("لا يمكن نشر محتوى الشراكة التجارية بخصوصية خاصة فقط.");
+    if(job.commercial_content&&!job.your_brand&&!job.branded_content)throw new Error("حدد هل الفيديو بيروّج لعلامتنا ولا لعلامة تانية.");
+    if((!job.disable_comment&&creator.comment_disabled)||(!job.disable_duet&&creator.duet_disabled)||(!job.disable_stitch&&creator.stitch_disabled))throw new Error("إعدادات التفاعل اتقفلت من حساب TikTok. افتح بطاقة النشر واختار التفاعل تاني.");
     const {bytes,type}=await loadVideo(content.design_file_url);
     const duration=mp4DurationSeconds(bytes);
     if(!duration)throw new Error("تعذر قراءة مدة الفيديو. استخدم ملف MP4 أو MOV صالحًا.");
     if(Number(creator.max_video_post_duration_sec)>0&&duration>Number(creator.max_video_post_duration_sec))throw new Error("مدة الفيديو ("+Math.ceil(duration)+" ثانية) تتجاوز الحد المسموح لهذا الحساب ("+creator.max_video_post_duration_sec+" ثانية).");
-    const title=String(content.caption_text||content.body||content.title||"").slice(0,2200);
+    // The caption the user reviewed and edited in the post screen; old jobs fall back to the content caption.
+    const title=String(job.title!=null?job.title:(content.caption_text||content.body||content.title||"")).slice(0,2200);
     const chunkSize=10_000_000,total=Math.ceil(bytes.length/chunkSize);
     const init=await api("/v2/post/publish/video/init/",account.access_token,{
-      post_info:{title,privacy_level:job.privacy_level,disable_comment:job.disable_comment,disable_duet:job.disable_duet,disable_stitch:job.disable_stitch,brand_content_toggle:job.branded_content,brand_organic_toggle:job.your_brand,is_aigc:false},
+      post_info:{title,privacy_level:job.privacy_level,disable_comment:job.disable_comment,disable_duet:job.disable_duet,disable_stitch:job.disable_stitch,brand_content_toggle:job.branded_content,brand_organic_toggle:job.your_brand,is_aigc:job.is_aigc===true},
       source_info:{source:"FILE_UPLOAD",video_size:bytes.length,chunk_size:Math.min(chunkSize,bytes.length),total_chunk_count:total}
     });
     if(!init.publish_id||!init.upload_url)throw new Error("TikTok لم يرجع رابط رفع صالحًا.");

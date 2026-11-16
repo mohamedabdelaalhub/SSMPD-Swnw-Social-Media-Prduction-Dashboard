@@ -1360,6 +1360,7 @@
         disable_duet:!!payload.disableDuet,disable_stitch:!!payload.disableStitch,
         commercial_content:!!payload.commercialContent,your_brand:!!payload.yourBrand,
         branded_content:!!payload.brandedContent,music_confirmation:!!payload.musicConfirmation,
+        title:payload.title==null?null:String(payload.title).slice(0,2200),is_aigc:!!payload.isAigc,
         created_by:payload.createdBy||null
       }).select().single());
     },

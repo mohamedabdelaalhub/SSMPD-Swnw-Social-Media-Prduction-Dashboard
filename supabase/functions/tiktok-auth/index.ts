@@ -64,8 +64,11 @@ Deno.serve(async (req) => {
         }
         const response=await fetch("https://open.tiktokapis.com/v2/post/publish/creator_info/query/",{method:"POST",headers:{Authorization:"Bearer "+token,"Content-Type":"application/json; charset=UTF-8"},body:"{}"});
         const data=await response.json().catch(()=>({}));
-        if(!response.ok||data.error?.code&&data.error.code!=="ok")throw new Error(data.error?.message||"تعذر قراءة إعدادات حساب TikTok.");
-        return json({connected:true,creator:data.data||{}});
+        const code=String(data.error?.code||"");
+        // TikTok answers "can't post now" with an error code: the post screen must stop the user, with the reason.
+        if(["spam_risk_too_many_posts","spam_risk_user_banned_from_posting","reached_active_user_cap"].includes(code))return json({connected:true,can_post:false,reason:code});
+        if(!response.ok||code&&code!=="ok")throw new Error(data.error?.message||"تعذر قراءة إعدادات حساب TikTok.");
+        return json({connected:true,can_post:true,creator:data.data||{}});
       }
       if (body.op !== "connect") return json({ error: "عملية غير معروفة." }, 400);
       const stateBytes = crypto.getRandomValues(new Uint8Array(32));

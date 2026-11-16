@@ -10,7 +10,6 @@
   var META_PLATFORMS = ["facebook", "instagram"];
   var AUTO_PLATFORMS = ["facebook", "instagram", "tiktok", "youtube"];
   var youTubeStatusCache = Object.create(null);
-  var tikTokCreatorCache = Object.create(null);
   var previewPending = new Set();
 
   function reviewBeforePublishing(id, label, proceed) {
@@ -556,7 +555,7 @@
     if (manualWrap) manualWrap.style.display = nonMetaPlatforms(platforms).length ? "block" : "none";
     if (metaHint) metaHint.style.display = hasAutoPlatform(platforms) ? "block" : "none";
     var tiktokOptions=document.getElementById("pb-tiktok-options-"+id);
-    if(tiktokOptions){tiktokOptions.style.display=platforms.indexOf("tiktok")>=0?"block":"none";if(platforms.indexOf("tiktok")>=0)loadTikTokCreator(id);}
+    if(tiktokOptions){var tiktokOn=platforms.indexOf("tiktok")>=0;tiktokOptions.style.display=tiktokOn?"block":"none";if(tiktokOn)loadTikTokCreator(id);else window.SSMPDTikTokPanel.gate(id,false);}
     var youtubeOptions=document.getElementById("pb-youtube-options-"+id);
     if(youtubeOptions){youtubeOptions.style.display=platforms.indexOf("youtube")>=0?"block":"none";if(platforms.indexOf("youtube")>=0)loadYouTubeStatus(id);}
   }
@@ -587,20 +586,7 @@
         "<div class=\"field\" id=\"pb-brand-wrap-" + i.id + "\" data-content-format=\"" + escapeHtml(i.content_format || "") + "\"><label> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%A7%D8%AF%D8%A9%20%D8%AF%D9%8A%20%D9%84%D8%B5%D9%81%D8%AD%D8%A9-->المادة دي لصفحة</label>" + W.brandSelectHtml("pb-brand-" + i.id, i.brand || "") + '</div>' +
         '<div class="field"><label>هتتنشر على (تقدر تختار أكتر من منصة)</label><div id="pb-platform-' + i.id + '">' + socialPlatformCheckboxes("pb-platform-" + i.id, i.publish_platforms || i.publish_platform || []) + '</div></div>' +
         '<div id="pb-meta-hint-' + i.id + '" style="display:none;margin:6px 0 10px;padding:8px 10px;border:1px solid var(--c-border);border-radius:8px;color:var(--c-muted);font-size:12px;">Meta وTikTok ويوتيوب: رابط المنشور بيتسجل تلقائيًا بعد نجاح النشر.</div>' +
-        '<div id="pb-tiktok-options-' + i.id + '" style="display:none;margin:8px 0 12px;padding:10px;border:1px solid var(--c-border);border-radius:8px;font-size:12px;">' +
-        '<div id="pb-tiktok-account-' + i.id + '" style="margin-bottom:8px;color:var(--c-muted);">اختر TikTok لقراءة الحساب المتصل</div>' +
-        '<div class="field"><label>خصوصية فيديو TikTok</label><select id="pb-tiktok-privacy-' + i.id + '" required><option value="">اختر الخصوصية يدويًا</option></select></div>' +
-        '<div style="font-weight:700;margin-top:6px;">السماح بالتفاعل</div>' +
-        '<label style="display:block;"><input type="checkbox" id="pb-tiktok-allow-comment-' + i.id + '"> السماح بالتعليقات</label>' +
-        '<label style="display:block;"><input type="checkbox" id="pb-tiktok-allow-duet-' + i.id + '"> السماح بالـDuet</label>' +
-        '<label style="display:block;"><input type="checkbox" id="pb-tiktok-allow-stitch-' + i.id + '"> السماح بالـStitch</label>' +
-        '<label style="display:block;margin-top:8px;"><input type="checkbox" id="pb-tiktok-commercial-' + i.id + '"> الفيديو يروّج لعلامة تجارية أو خدمة</label>' +
-        '<div id="pb-tiktok-commercial-options-' + i.id + '" style="display:none;padding-inline-start:16px;">' +
-        '<label style="display:block;"><input type="checkbox" id="pb-tiktok-your-brand-' + i.id + '"> علامتنا التجارية — محتوى ترويجي</label>' +
-        '<label style="display:block;"><input type="checkbox" id="pb-tiktok-branded-' + i.id + '"> شراكة مدفوعة مع علامة أخرى</label></div>' +
-        '<label style="display:block;margin-top:8px;"><input type="checkbox" id="pb-tiktok-music-' + i.id + '"> أوافق على تأكيد استخدام الموسيقى لدى TikTok</label>' +
-        '<label style="display:block;"><input type="checkbox" id="pb-tiktok-consent-' + i.id + '"> أوافق على إرسال الفيديو للحساب المحدد ونشره في الموعد</label>' +
-        '<div style="color:var(--c-muted);margin-top:5px;">قد يستغرق TikTok بضع دقائق لمعالجة الفيديو بعد الإرسال.</div></div>' +
+        window.SSMPDTikTokPanel.html(i) +
         '<div id="pb-youtube-options-' + i.id + '" style="display:none;margin:8px 0 12px;padding:10px;border:1px solid var(--c-border);border-radius:8px;font-size:12px;">' +
         '<div id="pb-youtube-account-' + i.id + '" style="margin-bottom:8px;color:var(--c-muted);">جاري قراءة قناة يوتيوب...</div>' +
         '<div class="field"><label>عنوان فيديو يوتيوب (لحد ١٠٠ حرف)</label><input id="pb-youtube-title-' + i.id + '" maxlength="100" value="' + escapeHtml(String(i.title || "").slice(0, 100)) + '"></div>' +
@@ -614,8 +600,8 @@
         '<input placeholder="https://..." id="pb-url-' + i.id + '"></div>' +
         '</div>' +
         '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px;">' +
-        '<button class="btn" data-schedule="' + i.id + '">جدولة</button>' +
-        '<button class="btn ghost" data-publish-now="' + i.id + '">نشر السوشيال الآن</button>' +
+        '<button class="btn" data-schedule="' + i.id + '">' + (window.SSMPDI18n?window.SSMPDI18n.textHtml("جدولة"):"جدولة") + '</button>' +
+        '<button class="btn ghost" data-publish-now="' + i.id + '">' + (window.SSMPDI18n?window.SSMPDI18n.textHtml("نشر السوشيال الآن"):"نشر السوشيال الآن") + '</button>' +
         '</div>' + jobHtml;
     } else {
       actionsHtml = jobHtml;
@@ -712,7 +698,6 @@
         if (m) updateManualLinkVisibility(m[1]);
       });
     });
-    container.querySelectorAll('[id^="pb-tiktok-commercial-"]').forEach(function(el){var id=el.id.replace("pb-tiktok-commercial-","");el.addEventListener("change",function(){var box=document.getElementById("pb-tiktok-commercial-options-"+id);if(box)box.style.display=el.checked?"block":"none";});});
     container.querySelectorAll("[data-tiktok-connect]").forEach(function(btn){btn.onclick=function(){connectTikTok(btn.getAttribute("data-tiktok-connect"),btn);};});
     container.querySelectorAll("[data-schedule]").forEach(function (btn) {
       btn.onclick = function () { schedule(btn.getAttribute("data-schedule")); };
@@ -742,7 +727,7 @@
     });
     container.querySelectorAll('select[id^="pb-brand-"]').forEach(function (sel) {
       var id = sel.id.replace("pb-brand-", "");
-      sel.addEventListener("change", function () { updateSuggestSlot(id);var options=document.getElementById("pb-tiktok-options-"+id);if(options&&options.style.display!=="none"){delete tikTokCreatorCache[sel.value];loadTikTokCreator(id);}var yo=document.getElementById("pb-youtube-options-"+id);if(yo&&yo.style.display!=="none"){delete youTubeStatusCache[sel.value];loadYouTubeStatus(id);} });
+      sel.addEventListener("change", function () { updateSuggestSlot(id);var options=document.getElementById("pb-tiktok-options-"+id);if(options&&options.style.display!=="none")loadTikTokCreator(id);var yo=document.getElementById("pb-youtube-options-"+id);if(yo&&yo.style.display!=="none"){delete youTubeStatusCache[sel.value];loadYouTubeStatus(id);} });
     });
     wireSuggestButtons(container);
   }
@@ -765,39 +750,21 @@
     if(button)button.disabled=true;
     window.SSMPDDb.tiktokConnect(brand).then(function(r){if(!r.authorize_url)throw new Error("تعذر بدء ربط TikTok.");window.location.href=r.authorize_url;}).catch(function(e){if(button)button.disabled=false;notify(e.message,"error");});
   }
+  // TikTok panel lives in tiktok-post-panel.js (Content Sharing Guidelines); creator_info is read fresh every time it opens.
   function loadTikTokCreator(id){
-    var brand=valueOf("pb-brand-"+id),slot=document.getElementById("pb-tiktok-account-"+id);
-    if(!brand||!slot)return;
-    slot.textContent="جاري قراءة حساب TikTok...";
-    if(tikTokCreatorCache[brand]){renderTikTokCreator(id,tikTokCreatorCache[brand]);return;}
-    window.SSMPDDb.tiktokCreatorInfo(brand).then(function(result){tikTokCreatorCache[brand]=result;renderTikTokCreator(id,result);}).catch(function(){slot.textContent="تعذر قراءة الحساب. أعد تحميل التفاصيل.";});
-  }
-  function renderTikTokCreator(id,result){
-    var slot=document.getElementById("pb-tiktok-account-"+id),privacy=document.getElementById("pb-tiktok-privacy-"+id);
-    if(!slot)return;
-    if(result.reauthorize){slot.innerHTML='انتهت صلاحية الربط. <button type="button" class="btn ghost sm" data-tiktok-connect="'+id+'">إعادة ربط TikTok</button>';var rb=slot.querySelector("[data-tiktok-connect]");if(rb)rb.onclick=function(){connectTikTok(id,rb);};return;}
-    if(!result.connected||!result.creator){slot.innerHTML='حساب TikTok غير مربوط. <button type="button" class="btn ghost sm" data-tiktok-connect="'+id+'">ربط حساب TikTok</button>';var b=slot.querySelector("[data-tiktok-connect]");if(b)b.onclick=function(){connectTikTok(id,b);};return;}
-    var c=result.creator;slot.textContent="الحساب المستهدف: "+(c.creator_nickname||"TikTok");
-    if(privacy){var opts=Array.isArray(c.privacy_level_options)?c.privacy_level_options:[];privacy.innerHTML='<option value="">اختر الخصوصية يدويًا</option>'+opts.map(function(v){var labels={PUBLIC_TO_EVERYONE:"عام",MUTUAL_FOLLOW_FRIENDS:"الأصدقاء المتبادلون",FOLLOWER_OF_CREATOR:"المتابعون",SELF_ONLY:"أنا فقط"};return '<option value="'+escapeHtml(v)+'">'+(labels[v]||escapeHtml(v))+'</option>';}).join("");}
-    [["comment",c.comment_disabled],["duet",c.duet_disabled],["stitch",c.stitch_disabled]].forEach(function(pair){var el=document.getElementById("pb-tiktok-allow-"+pair[0]+"-"+id);if(el){el.disabled=!!pair[1];el.checked=false;el.title=pair[1]?"هذا التفاعل مغلق في إعدادات حساب TikTok":"";}});
+    return window.SSMPDTikTokPanel.load(id,valueOf("pb-brand-"+id),function(brand){return window.SSMPDDb.tiktokCreatorInfo(brand);},connectTikTok);
   }
   function validateTikTokSelection(id){
     var wrap=document.getElementById("pb-brand-wrap-"+id),format=wrap&&wrap.getAttribute("data-content-format");
     if(format!=="video"){notify("النشر التلقائي على TikTok متاح للفيديوهات فقط.","error");return false;}
-    var privacy=valueOf("pb-tiktok-privacy-"+id),music=document.getElementById("pb-tiktok-music-"+id),consent=document.getElementById("pb-tiktok-consent-"+id);
-    var commercial=document.getElementById("pb-tiktok-commercial-"+id),your=document.getElementById("pb-tiktok-your-brand-"+id),third=document.getElementById("pb-tiktok-branded-"+id);
-    if(!privacy){notify("اختار خصوصية منشور TikTok يدويًا.","error");return false;}
-    if(!music||!music.checked||!consent||!consent.checked){notify("أكد موافقتك على شروط TikTok وإرسال الفيديو قبل النشر.","error");return false;}
-    if(commercial&&commercial.checked&&!(your&&your.checked)&&!(third&&third.checked)){notify("حدد هل الفيديو يروّج لعلامتك أو لعلامة أخرى.","error");return false;}
-    if(third&&third.checked&&privacy==="SELF_ONLY"){notify("محتوى الشراكة المدفوعة لا يمكن ضبطه على «أنا فقط».","error");return false;}
-    return true;
+    return window.SSMPDTikTokPanel.validate(id);
   }
   function createTikTokJob(id,brand,platforms,scheduledAt){
     if(platforms.indexOf("tiktok")<0)return Promise.resolve(null);
     if(!validateTikTokSelection(id))return Promise.reject(new Error("راجع اختيارات النشر على TikTok."));
-    var read=function(n){var el=document.getElementById("pb-tiktok-"+n+"-"+id);return el?el.value:"";};
-    var on=function(n){var el=document.getElementById("pb-tiktok-"+n+"-"+id);return !!(el&&el.checked);};
-    return window.SSMPDDb.createTikTokPublishJob({contentId:id,brand:brand,scheduledAt:scheduledAt,privacyLevel:read("privacy"),disableComment:!on("allow-comment"),disableDuet:!on("allow-duet"),disableStitch:!on("allow-stitch"),commercialContent:on("commercial"),yourBrand:on("your-brand"),brandedContent:on("branded"),musicConfirmation:on("music"),createdBy:window.SSMPDAuth.currentAdmin.id});
+    var p=window.SSMPDTikTokPanel.payload(id);
+    p.contentId=id;p.brand=brand;p.scheduledAt=scheduledAt;p.createdBy=window.SSMPDAuth.currentAdmin.id;
+    return window.SSMPDDb.createTikTokPublishJob(p);
   }
 
   // ---------- يوتيوب ----------
