@@ -31,7 +31,8 @@ create index if not exists masa_doctor_links_provider_idx on clinic_reception.ma
 alter table clinic_reception.masa_doctor_links enable row level security;
 revoke all on clinic_reception.masa_doctor_links from public, anon, authenticated;
 
--- Seed: Masa catalog of 2026-11-16 (56 doctors; 1097 and 1113 left the centre and are excluded by the agent).
+-- Seed: Masa catalog of 2026-11-16 (56 doctors the agent books; 1097 and 1113 left the centre and are excluded by the agent),
+-- plus 1140 and 1142 from the raw bridge catalog. Masa ids for «د.شريف زكريا» and «د.أحمد متولي» were not found.
 -- target = dashboard name when it differs; 'inactive' = owner said 2026-11-16 the doctor no longer works here.
 create or replace function clinic_reception.masa_link_seed(p_workspace uuid) returns int
 language plpgsql security definer set search_path = pg_catalog, public as $$
@@ -57,7 +58,9 @@ begin
     (1130,'داليا سعيد',400,null,null),(1131,'شادي حسام عبد الفتاح',400,'شادي حسام',null),(1132,'داليا سعيد',409,null,null),
     (1133,'حسين محمد',401,null,null),(1134,'محمد عبد الرحمن',407,null,null),(1135,'محمد عبد الشافي',407,null,null),
     (1137,'شيماء خليفة علي',400,'شيماء خليفة',null),(1138,'عبد المؤمن بركات',397,null,'inactive'),(1144,'احمد رشيدي',409,'أحمد الرشيدي',null),
-    (1146,'راضي منصور',406,null,null)
+    (1146,'راضي منصور',406,null,null),
+    -- raw /catalog only (no specialization in Masa / radiology is service-only, so the agent skips them today):
+    (1140,'د\اسماء سعيد (اخصائي)',402,'أسماء سعيد',null),(1142,'د\محمد رشاد (اخصائي)',415,'محمد رشاد',null)
   ) v(mid,mname,spec,target,state) loop
     if r.state = 'inactive' then
       insert into clinic_reception.masa_doctor_links(masa_doctor_id,workspace_id,masa_name,masa_specialization_id,status,note)
