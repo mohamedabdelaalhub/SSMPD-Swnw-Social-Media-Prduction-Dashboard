@@ -65,6 +65,10 @@ begin
     else
       select array_agg(p.id) into hits from clinic_reception.providers p
        where p.workspace_id = p_workspace and p.active and clinic_reception.masa_norm(p.name) = clinic_reception.masa_norm(coalesce(r.target,r.mname));
+      if hits is null then  -- e.g. «د.هاجر محي» (1118) is switched off on the dashboard: link her anyway; the fallback refuses until she is active
+        select array_agg(p.id) into hits from clinic_reception.providers p
+         where p.workspace_id = p_workspace and clinic_reception.masa_norm(p.name) = clinic_reception.masa_norm(coalesce(r.target,r.mname));
+      end if;
       insert into clinic_reception.masa_doctor_links(masa_doctor_id,workspace_id,provider_id,masa_name,masa_specialization_id,status,note)
       values (r.mid,p_workspace,case when cardinality(hits)=1 then hits[1] end,r.mname,r.spec,
               case when cardinality(hits)=1 then 'linked' else 'pending' end,
