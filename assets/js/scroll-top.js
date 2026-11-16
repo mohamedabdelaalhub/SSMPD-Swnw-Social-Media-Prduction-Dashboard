@@ -49,7 +49,7 @@
   }
   if (!document.querySelector('script[data-ssmpd-ea]')) {
     var employeeScript = document.createElement('script');
-    employeeScript.src = 'assets/js/employee-assistant.js?v=sono-ai-20261106-1';
+    employeeScript.src = 'assets/js/employee-assistant.js?v=org-legal-20261117-1';
     employeeScript.defer = true;
     employeeScript.setAttribute('data-ssmpd-ea', 'script');
     document.body.appendChild(employeeScript);
