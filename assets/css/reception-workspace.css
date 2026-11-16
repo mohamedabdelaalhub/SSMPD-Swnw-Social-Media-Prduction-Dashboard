@@ -118,3 +118,10 @@
 @keyframes rxTlOpen{from{opacity:0;transform:translateY(-6px) scale(.98)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){.rx-tl-h,.rx-tl-dot,.rx-tl-card{transition:none!important;animation:none!important}.rx-tl-hr.focus .rx-tl-h,.rx-tl-hr.focus .rx-tl-dot{transform:none}}
 @media (max-width:520px){.rx-tl-title{font-size:28px}.rx-tl-wd{padding:6px 0}.rx-tl-wd b{font-size:16px}.rx-tl-hr{grid-template-columns:58px 22px minmax(0,1fr);gap:8px}.rx-tl-h{font-size:13px}.rx-tl-card{padding:12px}.rx-tl-card header{flex-direction:column;gap:2px}}
+/* Owner 2026-11-16: «جاهزية الحجز لكل دكتور». */
+.rx-ready-sum{margin:0 0 10px;font-size:14px}
+.rx-ready-list{display:grid;gap:8px;max-height:60vh;overflow:auto}
+.rx-ready{padding:10px 12px;border-radius:12px;background:var(--glass-fill,rgba(255,255,255,.8));border:1px solid var(--glass-line,rgba(15,54,157,.10));border-inline-start:5px solid #2F7D5C}
+.rx-ready.bad{border-inline-start-color:#D0402A}
+.rx-ready header{display:flex;flex-wrap:wrap;gap:8px;align-items:baseline}.rx-ready header span{color:var(--muted,#667085);font-size:12px}.rx-ready header b{margin-inline-start:auto;font-size:12px;color:#2F7D5C}.rx-ready.bad header b{color:#D0402A}
+.rx-ready p{margin:4px 0 0;font-size:12.5px;color:#344054}.rx-ready ul{margin:6px 0 0;padding-inline-start:18px;font-size:12.5px;color:#B42318}
