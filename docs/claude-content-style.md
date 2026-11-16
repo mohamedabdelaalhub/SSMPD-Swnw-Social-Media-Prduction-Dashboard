@@ -317,3 +317,6 @@ Staff can tick «Claude يصمم المادة دي على طول» while creatin
 
 ## Character reels — weekly, adaptive (Mohamed, 2026-11-12)
 - Per page, by default once every 7 days the day's reel is a cartoon-character reel (comic problem → serious tip, own voice per character, same fixed ending), marked `content_angle='character_reel'`. The rate goes up or down from how the audience reacts (rules, measurement and limits in `docs/claude-character-videos.md` §2). Use the generator in `scripts/reelkit/` (§4b there), take topics from the marked ideas in `idea_selection` first, and read that file before making one. If it cannot be finished, make the normal reel and say so.
+
+## Video writing styles in the Brief (Mohamed, 2026-11-17)
+If the item's `angle` starts with a style marker (`[curiosity_loop]`, `[health_story]`, `[health_twist]`, `[egyptian_catchphrase]`, `[numbered_content]`), follow `docs/claude-video-styles.md` for the edit points, on-screen label and delivery notes. No marker = the usual way.
