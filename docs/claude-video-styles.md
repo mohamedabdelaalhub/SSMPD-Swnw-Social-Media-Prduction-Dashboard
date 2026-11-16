@@ -39,7 +39,11 @@ A startling title (for example «ما تشربش مية كتير!»), then withi
 ## 6. `[numbered_content]` — numbered content
 Signs, steps, questions before the reveal, common mistakes, comparison, documented facts or a countdown. The number in the title must equal the number of points shown and spoken. Each point pops on screen as it is spoken (see "Reel on-screen look"). Medical numbers only with a reliable source and clear context (`sources`).
 
-## 7. Shared rules
+## 7. Approval and quota (Mohamed, 2026-11-17) — MANDATORY
+- A video made in any of these styles is **never approved automatically**. Leave it in `final_approval` with `claude_hold` active; only Mohamed gives the final approval that makes it ready to publish. Do not move it to `ready_to_publish`, do not schedule it, and do not let any auto-approve/auto-schedule path take it (set the hold, and say in the delivery notes that it waits for Mohamed).
+- These videos are **extra content, outside the agreed daily numbers**. Do not count them in the usual 3 items per page per day, and do not skip or replace a normal item because one of these exists.
+
+## 8. Shared rules
 - One idea per video and one practical benefit. No remote diagnosis, no treatment promises, no scare. Medical information is reviewed by a specialist before publishing.
 - Combine two styles only when it serves the idea («story + curiosity_loop», «catchphrase + numbered_content»).
 - Report in the delivery notes: the style marker(s) found, the chosen catchphrase (if any), and the cut times.
