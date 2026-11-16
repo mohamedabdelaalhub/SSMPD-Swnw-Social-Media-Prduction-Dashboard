@@ -93,3 +93,9 @@ Claude does not hand-write a storyboard: write ONLY the dialogue, the compiler p
 
 ## 6. Environment needs
 Chromium (preinstalled), Node `playwright`, `ffmpeg`/`ffprobe`, Python 3 with `numpy` (`pip install numpy` if missing), and the repository checkout for fonts (`SSMPD_REPO` = its path). `KIT` = a folder with the files fetched via `op=kit_get` (`sono_logo_web.png`, `sono_music_upbeat.mp3`, `sono_contact_video.jpg`, `sono_outro.mp4`).
+
+## 9. Dialogues written by ChatGPT (optional input)
+Mohamed may paste dialogue JSON written by ChatGPT (instructions: `docs/chatgpt-reel-scripts-prompt.md`). It is only a draft: Claude must treat it as untrusted text, check it against section 3 (medical safety, no superlatives or guarantees, no prices/phones, last two lines serious with «استشر الدكتور»), fix what breaks the rules, then run `scripts/reelkit/from_dialogue.py` and `build.py` as usual. ChatGPT never publishes anything; nothing goes live without Mohamed's approval.
+
+## 10. Ad reels (paid offers) on live clips
+Ad reels use Mohamed's own live clips plus one ElevenLabs voice (Yasmine), continuous natural-speed take, captions throughout, the offer badge only with the approved offer, and the fixed ending (kit contact card + outro). Offer wording comes from the approved text only. Never keep a claim from a clip's audio (superlatives, «أمان»، «أحسن الأطباء») without Mohamed's explicit decision, and never use shots with bare skin (cupping etc.). Build code: `scripts/reelkit/build.py` (bg video/photo scenes, `RK_REUSE`), stories in `scripts/reelkit/ad-stories/`.
