@@ -83,7 +83,7 @@ do $$ declare ws uuid; br text; begin
   if ws is null then return; end if;
   select branch into br from clinic_reception.providers where workspace_id = ws and active group by branch order by count(*) desc limit 1;
   if not exists (select 1 from clinic_reception.providers where workspace_id = ws and clinic_reception.masa_norm(name) = clinic_reception.masa_norm('راضي منصور')) then
-    insert into clinic_reception.providers(workspace_id,name,department,branch) values (ws,'راضي منصور','الكيماوي',coalesce(br,'حدائق الأهرام'));
+    insert into clinic_reception.providers(workspace_id,name,department,branch) values (ws,'د.راضي منصور','الكيماوي',coalesce(br,'حدائق الأهرام'));
   end if;
   perform clinic_reception.masa_link_seed(ws);
 end $$;

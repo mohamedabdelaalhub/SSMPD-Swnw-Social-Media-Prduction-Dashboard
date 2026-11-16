@@ -11,11 +11,13 @@ const fb=(a,p)=>call('clinic_reception_fallback',[live,a,p||{}]);
 // providers: dashboard names are canonical; Masa spellings differ («ا/», «ى», spaces)
 const dalia=(await cmd(live,'provider',{name:'د/ داليا سعيد',department:'جلدية',branch:'حدائق الأهرام'})).id;
 const lina=(await cmd(live,'provider',{name:'لينا الحسيني',department:'النفسية والتخاطب',branch:'حدائق الأهرام'})).id;
+const aya=(await cmd(live,'provider',{name:'د.أية مفتاح',department:'النسا والتوليد',branch:'حدائق الأهرام'})).id;
+const hagar=(await cmd(live,'provider',{name:'د.هاجر محي',department:'الاسنان',branch:'حدائق الأهرام'})).id;await q('update clinic_reception.providers set active=false where id=$1',[hagar]);
 assert.equal(+(await q('select clinic_reception.masa_link_seed($1) n',[live]))[0].n,56);
 const links=Object.fromEntries((await q('select masa_doctor_id m,status,provider_id from clinic_reception.masa_doctor_links where workspace_id=$1',[live])).map(r=>[r.m,r]));
 assert.equal(links[1130].provider_id,dalia);assert.equal(links[1132].provider_id,dalia,'two Masa ids, one dashboard provider');
 assert.equal(links[1075].provider_id,lina,'Masa «ا/ لينا الحسيني» → dashboard «لينا الحسيني»');
-assert.equal(links[1063].status,'inactive');assert.equal(links[1054].status,'pending','no provider with that name');
+assert.equal(links[1099].provider_id,aya,'Masa «آية» → dashboard «د.أية» (prefix, hamza)');assert.equal(links[1118].status,'pending','inactive dashboard doctor is not linked');assert.equal(links[1063].status,'inactive');assert.equal(links[1054].status,'pending','no provider with that name');
 assert.equal(+(await q('select clinic_reception.masa_link_seed($1) n',[live]))[0].n,56);
 assert.equal(+(await q('select count(*) n from clinic_reception.masa_doctor_links'))[0].n,56,'re-seed adds nothing');
 // weekly 10:00–12:00 every day, then slots
