@@ -790,7 +790,17 @@
     deleteContractingEntity: function (entityId) {
       return handle(client.rpc("delete_contracting_entity", { p_entity_id: entityId }));
     },
+    // Reception can't read contracts directly (RLS); the registration RPC returns id + entity name only.
     listActiveContracts: function () {
+      var fallback = function () { return handle(client.from("contracting_entity_contracts")
+        .select("id, entity_id, start_date, end_date, status, contracting_entities(name)")
+        .eq("status", "active").order("start_date", { ascending: false })); };
+      return client.rpc("list_active_contracts_for_registration").then(function (r) {
+        if (r.error) { if (/function|schema cache|does not exist|not find/i.test(String(r.error.message || ""))) return fallback(); throw r.error; }
+        return (r.data || []).map(function (c) { return { id: c.contract_id, start_date: c.start_date, end_date: c.end_date, status: "active", contracting_entities: { name: c.entity_name } }; });
+      });
+    },
+    listActiveContractsDirect: function () {
       return handle(client.from("contracting_entity_contracts")
         .select("id, entity_id, start_date, end_date, status, contracting_entities(name)")
         .eq("status", "active").order("start_date", { ascending: false }));
