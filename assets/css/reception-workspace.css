@@ -131,3 +131,4 @@
 .rx-week-day legend{font-weight:700;color:#0F369D;padding:0 4px}
 .rx-week-day label{display:grid;gap:2px;font-size:12px;color:var(--muted,#667085)}
 .rx-walkin{display:flex;gap:8px;align-items:center;padding:8px 10px;border-radius:10px;background:#FFF4EE;border:1px solid #F7C3A8;font-weight:700;color:#7A2E0E}
+.rx-fallback{border-inline-start-color:#F15A22}.rx-fb-row{border-top:1px solid #d7dff2;padding:10px 0;display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;line-height:1.8}.rx-fb-row small{color:#4b5563}.rx-fb-conflict{background:#fdecea;border-radius:8px;padding:10px}.rx-fb-conflict small{color:#D0402A;font-weight:700}
