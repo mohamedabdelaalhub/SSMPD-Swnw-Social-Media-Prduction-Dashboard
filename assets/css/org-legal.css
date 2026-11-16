@@ -1,0 +1,19 @@
+/* تاب بيانات الشركة والفروع — بيستخدم ci-card/ci-row من styles.css، دي إضافات بسيطة بس */
+.ol-wrap .ol-h{margin:4px 0 10px;font-size:15px;color:#0F369D}
+.ol-wrap .ol-val{white-space:pre-wrap;word-break:break-word}
+.ol-wrap .ol-actions{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.ol-badge{display:inline-block;font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;margin-inline-start:6px;vertical-align:middle}
+.ol-badge.ol-ok{background:rgba(47,125,92,.12);color:#2F7D5C}
+.ol-badge.ol-soon{background:rgba(241,90,34,.14);color:#B53E0E}
+.ol-badge.ol-expired{background:rgba(208,64,42,.14);color:#D0402A}
+.ol-alerts{background:rgba(241,90,34,.08);border:1px solid rgba(241,90,34,.35);border-radius:12px;padding:10px 14px;margin:10px 0;line-height:2}
+.ol-doc{display:flex;gap:10px;justify-content:space-between;align-items:flex-start;padding:10px 0;border-bottom:1px solid rgba(15,54,157,.08)}
+.ol-doc:last-of-type{border-bottom:0}
+.ol-doc-main{min-width:0;flex:1}
+.ol-doc-meta{font-size:12px;margin-top:2px}
+.ol-doc-btns{display:flex;gap:6px;flex-shrink:0}
+.ol-upload{margin-top:10px}
+.ol-upload>summary{list-style:none;display:inline-block;cursor:pointer}
+.ol-upload>summary::-webkit-details-marker{display:none}
+.ol-upload[open]>div{margin-top:10px}
+@media (max-width:640px){.ol-doc{flex-direction:column}.ol-doc-btns{width:100%}.ol-doc-btns .btn{flex:1}}
