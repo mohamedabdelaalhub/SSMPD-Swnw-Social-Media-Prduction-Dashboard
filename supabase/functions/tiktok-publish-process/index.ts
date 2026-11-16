@@ -103,6 +103,22 @@ async function api(path:string,token:string,body:unknown){
   if(!res.ok||data.error?.code&&data.error.code!=="ok")throw new Error(tikTokErrorMessage(String(data.error?.code||""),String(data.error?.message||""),res.status));
   return data.data||{};
 }
+// TikTok FILE_UPLOAD chunk rules: total_chunk_count = video_size / chunk_size rounded DOWN, the leftover bytes ride
+// in the last chunk, and a video under one chunk goes up whole. (Rounding up sent a tiny extra chunk TikTok rejects.)
+export function chunkPlan(size:number,chunk=10_000_000){
+  if(size<=chunk)return {chunk_size:size,total_chunk_count:1};
+  return {chunk_size:chunk,total_chunk_count:Math.floor(size/chunk)};
+}
+async function uploadChunks(job:any,init:any,bytes:Uint8Array,type:string,plan:{chunk_size:number,total_chunk_count:number}){
+  if(!init.publish_id||!init.upload_url)throw new Error("TikTok لم يرجع رابط رفع صالحًا.");
+  await admin.from("tiktok_publish_jobs").update({publish_id:init.publish_id,publish_status:"PROCESSING_UPLOAD",updated_at:new Date().toISOString()}).eq("id",job.id);
+  for(let i=0;i<plan.total_chunk_count;i++){
+    const start=i*plan.chunk_size,end=i===plan.total_chunk_count-1?bytes.length:start+plan.chunk_size,part=bytes.slice(start,end);
+    const up=await fetch(init.upload_url,{method:"PUT",headers:{"Content-Type":type,"Content-Length":String(part.length),"Content-Range":`bytes ${start}-${end-1}/${bytes.length}`},body:part});
+    if(!up.ok)throw new Error("فشل رفع جزء الفيديو إلى TikTok (HTTP "+up.status+").");
+  }
+  await admin.from("tiktok_publish_jobs").update({publish_id:init.publish_id,publish_status:"PROCESSING_UPLOAD",status:"pending",scheduled_at:new Date(Date.now()+60000).toISOString(),updated_at:new Date().toISOString(),error_message:null}).eq("id",job.id);
+}
 async function processJob(job:any){
   try{
     const [{data:content,error:contentError},{data:rawAccount,error:accountError}]=await Promise.all([
@@ -114,6 +130,20 @@ async function processJob(job:any){
     if(accountError)throw accountError;
     if(!rawAccount)throw new Error("اربط حساب TikTok لصفحة المحتوى من بطاقة النشر.");
     const account=await refreshIfNeeded(rawAccount);
+    const inbox=job.mode==="inbox";
+    if(job.publish_id&&inbox){
+      // Draft sent to the owner's TikTok inbox: done once TikTok delivers it. The content item is not touched
+      // (the owner finishes the post in the TikTok app; the dashboard never treats a draft as published).
+      const status=await api("/v2/post/publish/status/fetch/",account.access_token,{publish_id:job.publish_id});
+      const state=status.status||status.publish_status||"";
+      if(state==="SEND_TO_USER_INBOX"||state==="PUBLISH_COMPLETE"){
+        await admin.from("tiktok_publish_jobs").update({status:"published",publish_status:state,published_at:new Date().toISOString(),error_message:null,updated_at:new Date().toISOString()}).eq("id",job.id);
+        return;
+      }
+      if(state==="FAILED")throw new Error(status.fail_reason||status.error_message||"TikTok لم يستلم المسودة.");
+      await admin.from("tiktok_publish_jobs").update({status:"pending",publish_status:state||"PROCESSING_UPLOAD",scheduled_at:new Date(Date.now()+60000).toISOString(),updated_at:new Date().toISOString()}).eq("id",job.id);
+      return;
+    }
     if(job.publish_id){
       // Already sent: only poll the status. A creator_info hiccup (e.g. the daily post cap) must not fail a video that is already posted.
       const creator=await api("/v2/post/publish/creator_info/query/",account.access_token,{}).catch(()=>({} as Record<string,unknown>));
@@ -133,6 +163,16 @@ async function processJob(job:any){
       await admin.from("tiktok_publish_jobs").update({status:"pending",publish_status:state||"PROCESSING_UPLOAD",scheduled_at:new Date(Date.now()+60000).toISOString(),updated_at:new Date().toISOString()}).eq("id",job.id);
       return;
     }
+    if(inbox){
+      // Upload flow (video.upload): no privacy/interaction/disclosure here — the owner sets them in the TikTok app.
+      const {bytes,type}=await loadVideo(content.design_file_url);
+      const plan=chunkPlan(bytes.length);
+      const init=await api("/v2/post/publish/inbox/video/init/",account.access_token,{
+        source_info:{source:"FILE_UPLOAD",video_size:bytes.length,chunk_size:plan.chunk_size,total_chunk_count:plan.total_chunk_count}
+      });
+      await uploadChunks(job,init,bytes,type,plan);
+      return;
+    }
     // Fresh creator_info right before sending anything: the account's options may have changed since the post was scheduled.
     const creator=await api("/v2/post/publish/creator_info/query/",account.access_token,{});
     if(!Array.isArray(creator.privacy_level_options)||!creator.privacy_level_options.includes(job.privacy_level))throw new Error("اختيار الخصوصية لم يعد متاحًا لهذا الحساب. افتح تفاصيل المادة واختر الخصوصية مرة أخرى.");
@@ -146,19 +186,12 @@ async function processJob(job:any){
     if(Number(creator.max_video_post_duration_sec)>0&&duration>Number(creator.max_video_post_duration_sec))throw new Error("مدة الفيديو ("+Math.ceil(duration)+" ثانية) تتجاوز الحد المسموح لهذا الحساب ("+creator.max_video_post_duration_sec+" ثانية).");
     // The caption the user reviewed and edited in the post screen; old jobs fall back to the content caption.
     const title=String(job.title!=null?job.title:(content.caption_text||content.body||content.title||"")).slice(0,2200);
-    const chunkSize=10_000_000,total=Math.ceil(bytes.length/chunkSize);
+    const plan=chunkPlan(bytes.length);
     const init=await api("/v2/post/publish/video/init/",account.access_token,{
       post_info:{title,privacy_level:job.privacy_level,disable_comment:job.disable_comment,disable_duet:job.disable_duet,disable_stitch:job.disable_stitch,brand_content_toggle:job.branded_content,brand_organic_toggle:job.your_brand,is_aigc:job.is_aigc===true},
-      source_info:{source:"FILE_UPLOAD",video_size:bytes.length,chunk_size:Math.min(chunkSize,bytes.length),total_chunk_count:total}
+      source_info:{source:"FILE_UPLOAD",video_size:bytes.length,chunk_size:plan.chunk_size,total_chunk_count:plan.total_chunk_count}
     });
-    if(!init.publish_id||!init.upload_url)throw new Error("TikTok لم يرجع رابط رفع صالحًا.");
-    await admin.from("tiktok_publish_jobs").update({publish_id:init.publish_id,publish_status:"PROCESSING_UPLOAD",updated_at:new Date().toISOString()}).eq("id",job.id);
-    for(let start=0;start<bytes.length;start+=chunkSize){
-      const end=Math.min(bytes.length,start+chunkSize),part=bytes.slice(start,end);
-      const up=await fetch(init.upload_url,{method:"PUT",headers:{"Content-Type":type,"Content-Length":String(part.length),"Content-Range":`bytes ${start}-${end-1}/${bytes.length}`},body:part});
-      if(!up.ok)throw new Error("فشل رفع جزء الفيديو إلى TikTok (HTTP "+up.status+").");
-    }
-    await admin.from("tiktok_publish_jobs").update({publish_id:init.publish_id,publish_status:"PROCESSING_UPLOAD",status:"pending",scheduled_at:new Date(Date.now()+60000).toISOString(),updated_at:new Date().toISOString(),error_message:null}).eq("id",job.id);
+    await uploadChunks(job,init,bytes,type,plan);
   }catch(e){
     const message=e instanceof Error?e.message:"حدث خطأ أثناء نشر TikTok.";
     const retryable=/rate_limit_exceeded|internal_error|video_pull_failed|fetch failed|network|HTTP 5[0-9]{2}|timed out/i.test(message);

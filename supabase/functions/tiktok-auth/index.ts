@@ -45,7 +45,7 @@ Deno.serve(async (req) => {
       const brand = body.brand;
       if (!["sono","dr_dina"].includes(brand)) return json({ error: "اختار صفحة سونو أو د.دينا." }, 400);
       if (body.op === "connection") {
-        const { data, error } = await admin.from("tiktok_accounts").select("brand,display_name,avatar_url,updated_at").eq("brand",brand).maybeSingle();
+        const { data, error } = await admin.from("tiktok_accounts").select("brand,display_name,avatar_url,scopes,updated_at").eq("brand",brand).maybeSingle();
         if(error)throw error;
         return json({ connected:!!data, account:data||null });
       }
@@ -80,7 +80,8 @@ Deno.serve(async (req) => {
       const authorize = new URL("https://www.tiktok.com/v2/auth/authorize/");
       authorize.searchParams.set("client_key", CLIENT_KEY);
       authorize.searchParams.set("response_type", "code");
-      authorize.searchParams.set("scope", "user.info.basic,video.publish");
+      // video.upload = "send to TikTok as a draft" (inbox); the app must have the Upload product enabled in the TikTok portal.
+      authorize.searchParams.set("scope", "user.info.basic,video.publish,video.upload");
       authorize.searchParams.set("redirect_uri", REDIRECT_URI);
       authorize.searchParams.set("state", state);
       return json({ authorize_url: authorize.toString(), redirect_uri: REDIRECT_URI });

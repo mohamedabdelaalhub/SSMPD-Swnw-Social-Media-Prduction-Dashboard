@@ -82,6 +82,7 @@
         if (viewState.mode === "calendar") renderCalendarView(container, ctx);
         else if (viewState.mode === "days") renderDaysView(container, ctx);
         else renderListView(container, ctx);
+        mountTikTokDrafts(container);
 
       });
     }).catch(function (e) {
@@ -97,13 +98,18 @@
       '</div>';
   }
 
+  // Super admin only: videos with no TikTok link yet → "send to TikTok as a draft" (tiktok-drafts.js).
+  function mountTikTokDrafts(container) {
+    if (window.SSMPDTikTokDrafts && !container.querySelector("#tiktok-drafts")) window.SSMPDTikTokDrafts.mount(container);
+  }
+
   function wireViewToggle(container, ctx) {
     var listBtn = document.getElementById("pb-view-list");
     var calBtn = document.getElementById("pb-view-calendar");
     var daysBtn = document.getElementById("pb-view-days");
-    if (daysBtn) daysBtn.onclick = function () { viewState.mode = "days"; renderDaysView(container, ctx); };
-    if (listBtn) listBtn.onclick = function () { viewState.mode = "list"; renderListView(container, ctx); };
-    if (calBtn) calBtn.onclick = function () { viewState.mode = "calendar"; renderCalendarView(container, ctx); };
+    if (daysBtn) daysBtn.onclick = function () { viewState.mode = "days"; renderDaysView(container, ctx); mountTikTokDrafts(container); };
+    if (listBtn) listBtn.onclick = function () { viewState.mode = "list"; renderListView(container, ctx); mountTikTokDrafts(container); };
+    if (calBtn) calBtn.onclick = function () { viewState.mode = "calendar"; renderCalendarView(container, ctx); mountTikTokDrafts(container); };
   }
 
   function renderListView(container, ctx) {

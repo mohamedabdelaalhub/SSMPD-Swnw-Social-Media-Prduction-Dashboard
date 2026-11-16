@@ -135,6 +135,46 @@ says so. If you prefer, record steps 1–12, then show the failure message.
 
 ⚠️ Recording this video publishes a real post. Do it only after the owner approves that specific video.
 
+## "Send to TikTok as a draft" (works before the audit)
+
+Approved by the owner on 2026-11-16 ("موافق على زرار المسودة").
+
+**What it is**
+- It uses the Content Posting API **Upload** flow (scope `video.upload`, `/v2/post/publish/inbox/video/init/`).
+- The video lands in the TikTok app's inbox as a draft. The owner pastes the caption, picks the cover and taps
+  Post in TikTok.
+- Third-party guides agree this flow works for unaudited apps and public accounts. The audit restriction is on
+  Direct Post. TikTok's own docs could not be opened from the build environment, so re-check this once in the
+  portal.
+- One guide mentions a limit of about 5 pending drafts per 24 hours. Send a few at a time.
+
+**Where the button is**
+- Dashboard → Publish tab → bottom box "TikTok — فيديوهات لسه ماتنشرتش عليه". Only the super admin sees it.
+- The box lists videos with a file and no TikTok link.
+- A press does three things:
+  1. Copies the caption to the clipboard.
+  2. Calls `queue_tiktok_inbox_draft(content_id)`. This is super admin only, refuses a second draft of the
+     same reel unless the first failed, and writes to `activity_log`.
+  3. The `tiktok-publish-process` worker uploads the video within a minute.
+- The content item itself is never changed.
+- The hub page (hub.swnwclinics.com/assets/tiktok-reels/) can keep showing the reels. For sending, open the
+  dashboard's Publish tab: this needs no new endpoint, no CORS and no CSP change on the hub.
+
+**After the audit passes:** set `tiktokDirectPostAudited: true` in `config.js` (one line). The same button then
+opens the full Direct Post panel (caption, privacy, interactions, disclosure) and posts directly.
+
+**Setup, in order** (the main chat deploys; the owner does the portal step):
+1. TikTok portal → our app → Products → Content Posting API: make sure **Upload** is on and the scope
+   `video.upload` is added. Press Submit/Save. If TikTok asks for an app review for the new scope, wait for it.
+2. Apply migration `20261117030000_tiktok_inbox_drafts.sql`. Deploy `tiktok-auth` and `tiktok-publish-process`.
+3. The owner reconnects the Sono TikTok account once from the dashboard: Publish → a video → TikTok →
+   "ربط حساب TikTok". That grants `video.upload`.
+   - Until then, the button answers "أعد ربط حساب TikTok…".
+   - Do not deploy the new `tiktok-auth` before step 1. Reconnecting with a scope the app doesn't have fails
+     on TikTok's page.
+
+Rollback: `supabase/rollbacks/20261117030000_tiktok_inbox_drafts.rollback.sql`. It deletes the draft rows.
+
 ## After approval
 
 - Nothing to change in the code: the same screen posts publicly.
