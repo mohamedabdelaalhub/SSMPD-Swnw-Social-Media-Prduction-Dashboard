@@ -125,3 +125,9 @@
 .rx-ready.bad{border-inline-start-color:#D0402A}
 .rx-ready header{display:flex;flex-wrap:wrap;gap:8px;align-items:baseline}.rx-ready header span{color:var(--muted,#667085);font-size:12px}.rx-ready header b{margin-inline-start:auto;font-size:12px;color:#2F7D5C}.rx-ready.bad header b{color:#D0402A}
 .rx-ready p{margin:4px 0 0;font-size:12.5px;color:#344054}.rx-ready ul{margin:6px 0 0;padding-inline-start:18px;font-size:12.5px;color:#B42318}
+/* Owner 2026-11-16: weekly doctor schedule + walk-in. */
+.rx-week{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px;margin:8px 0}
+.rx-week-day{display:grid;grid-template-columns:1fr 1fr;gap:4px 8px;padding:8px 10px;border-radius:12px;border:1px solid var(--glass-line,rgba(15,54,157,.12));background:var(--glass-fill,rgba(255,255,255,.7))}
+.rx-week-day legend{font-weight:700;color:#0F369D;padding:0 4px}
+.rx-week-day label{display:grid;gap:2px;font-size:12px;color:var(--muted,#667085)}
+.rx-walkin{display:flex;gap:8px;align-items:center;padding:8px 10px;border-radius:10px;background:#FFF4EE;border:1px solid #F7C3A8;font-weight:700;color:#7A2E0E}

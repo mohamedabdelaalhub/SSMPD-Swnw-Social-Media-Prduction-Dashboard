@@ -18,6 +18,8 @@ const book=(svc,h)=>cmd(live,'book',{patient_id:pat,provider_id:neuro,service_id
 await book(kashf,'09');await book(istishara,'10');await book(followup,'11');
 await assert.rejects(()=>book(service,'12'),e=>/تخصص/.test(e.message),'non-basic service of another department refused');
 // readiness: per doctor, with agreement / availability flags
+// windows tomorrow too, so «next 14 days» holds whatever the clock time of the run
+const tmr=new Date(Date.parse(date+'T00:00Z')+864e5).toISOString().slice(0,10);for(const pv of [neuro,provider])await cmd(live,'availability',{provider_id:pv,starts_at:tmr+'T06:00Z',ends_at:tmr+'T18:00Z'});
 const rd=await call('clinic_reception_booking_readiness',[live]);
 const n=rd.doctors.find(x=>x.id===neuro),derm=rd.doctors.find(x=>x.id===provider);
 assert.equal(+rd.basic_services,3);assert.equal(n.ready,false,'no fee agreement yet');assert.equal(+n.agreements,0);assert(+n.availability_14d>=1);
