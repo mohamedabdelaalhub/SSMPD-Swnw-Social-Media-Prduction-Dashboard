@@ -97,4 +97,4 @@ Sounds: one shared Web Audio library (no files), master gain ≤ 0.22, per-user 
 ## Charts
 
 Use the dataviz skill procedure: pick the form first, validate any categorical/status palette with its validator, thin marks, hover tooltips + table view, time runs left→right (newest on the right) inside an LTR chart box, axis numbers without unit signs (unit in the subtitle).
-Attendance status palette (validated): on time `#1F9D6B`, late `#E08A1E`, absent `#D0402A`, leave `#4F75CF`, not scheduled `#E3E6EC` — always with a legend/label.
+Attendance status palette (validated): on time `#00B0BD`, late `#FF8800` (numbers on these two in grey-80% `#333333`), absent `#FF0000`, leave `#525B6F`, not scheduled `#F1F4F8` (owner's choice, 2026-11-17) — always with a legend/label.

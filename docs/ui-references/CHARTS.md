@@ -28,7 +28,7 @@ Live mockup: `docs/ui-references/mockups/employee-profile.html`. No chart librar
 | Me vs group | Two meters (person vs department average) | مقارنة بالقسم |
 
 ## Palettes
-- Status (validated): on time `#1F9D6B`, late `#E08A1E`, absent `#D0402A`, leave `#4F75CF`, not scheduled `#E3E6EC`.
+- Status (validated): on time `#00B0BD`, late `#FF8800` (numbers on these two in grey-80% `#333333`), absent `#FF0000`, leave `#525B6F`, not scheduled `#F1F4F8` (owner's choice, 2026-11-17).
 - Departments: `assets/js/hr-attendance-core.js` → `KNOWN` (one colour + icon each; unknown departments take the next unused colour).
 - Brand: `#0F369D` primary, `#F15A22` accent/warning (never a department colour), red only for negative/absent.
 
