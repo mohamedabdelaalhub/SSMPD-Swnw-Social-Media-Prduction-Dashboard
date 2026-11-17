@@ -5,7 +5,7 @@ if(window.__SWNWTodayOperationsV1)return;
 window.__SWNWTodayOperationsV1=true;
 
 var css=document.createElement('link');
-css.rel='stylesheet';css.href='assets/css/today-operations.css?v=redesign-20261117-1';css.dataset.todayOperations='1';
+css.rel='stylesheet';css.href='assets/css/today-operations.css?v=collect-btn-20261117-1';css.dataset.todayOperations='1';
 if(!document.querySelector('link[data-today-operations]'))document.head.appendChild(css);
 
 var state={day:null,workspace:null,data:null,loading:false,error:null,refreshTimer:null,context:null,sandbox:null,owner:null,generation:0,query:'',filter:'all',open:null,staff:null};
@@ -97,6 +97,12 @@ function cardActions(a,c){
 /* Owner 2026-11-17: bookings that came from an automated channel are tagged with it. */
 var SOURCES={whatsapp:'واتساب',website:'الموقع',portal:'البوابة',patient_portal:'البوابة',vezeeta:'فيزيتا'};
 function srcTag(a){var s=String(a.booking_source||'').toLowerCase();return SOURCES[s]?'<span class="journey-src journey-src-'+esc(s)+'">'+esc(SOURCES[s])+'</span>':'';}
+/* Owner 2026-11-17: after «أنهى الكشف» a clear orange «التحصيل» button sits next to the patient; once paid it turns green «تم التحصيل». */
+function payPill(a){
+ if(lane(a)!=='done'||!a.visit_id||!a.can_view_finance)return '';
+ if(hasDue(a))return can('collect')&&a.due_invoices&&a.due_invoices.length?'<button type="button" class="journey-pay journey-pay-due" data-journey-action="collect_due" data-id="'+esc(a.id)+'" title="عليه '+esc(money(a.patient_due))+'">التحصيل</button>':'<span class="journey-pay journey-pay-due is-static">عليه '+money(a.patient_due)+'</span>';
+ return Number(a.patient_payable_total)>0?'<span class="journey-pay journey-pay-done" role="status">✓ تم التحصيل</span>':'';
+}
 function card(a,c){
  var s=a.queue_status||'expected',tags='',late=lateMinutes(a);
  if(late>0)tags+='<span class="journey-tag journey-tag-late">متأخر '+num(late)+' د</span>';
@@ -104,7 +110,7 @@ function card(a,c){
  if(a.priority>0)tags+='<span class="journey-tag">'+esc(PRIORITY[String(a.priority)]||('أولوية '+num(a.priority)))+(a.priority_reason?' · '+esc(a.priority_reason):'')+'</span>';
  if(a.can_view_finance&&a.patient_due!=null)tags+=hasDue(a)?'<span class="journey-tag journey-tag-due">عليه '+money(a.patient_due)+'</span>':(a.visit_id&&Number(a.patient_payable_total)>0?'<span class="journey-tag journey-tag-paid">مدفوع</span>':'');
  var open=state.open===a.id,flags=(late>0?' is-late':'')+(hasDue(a)?' is-due':'')+(Number(a.wait_minutes)>waitLimit()?' is-long-wait':'');
- return '<article class="journey-card is-compact'+(open?' is-open':'')+flags+'" data-appointment="'+esc(a.id)+'" data-lane="'+lane(a)+'" data-status="'+esc(s)+'"><button type="button" class="journey-chip" data-journey-open="'+esc(a.id)+'" aria-expanded="'+open+'" title="'+esc(a.patient_name+' — '+time(a.starts_at))+'"><span class="journey-chip-name">'+esc(a.patient_name)+'</span>'+srcTag(a)+'</button><div class="journey-card-detail"'+(open?'':' hidden')+'><header><div><h4>'+esc(a.patient_name)+'</h4><p>'+time(a.starts_at)+' · '+esc(a.provider_name)+'</p></div>'+badge(s)+'</header><p class="journey-card-service">'+esc(a.service_name)+(a.file_no?' · ملف '+esc(a.file_no):'')+'</p>'+(tags?'<div class="journey-card-meta">'+tags+'</div>':'')+'<div class="journey-card-actions">'+cardActions(a,c)+'</div></div></article>';
+ return '<article class="journey-card is-compact'+(open?' is-open':'')+flags+'" data-appointment="'+esc(a.id)+'" data-lane="'+lane(a)+'" data-status="'+esc(s)+'"><button type="button" class="journey-chip" data-journey-open="'+esc(a.id)+'" aria-expanded="'+open+'" title="'+esc(a.patient_name+' — '+time(a.starts_at))+'"><span class="journey-chip-name">'+esc(a.patient_name)+'</span>'+srcTag(a)+'</button>'+payPill(a)+'<div class="journey-card-detail"'+(open?'':' hidden')+'><header><div><h4>'+esc(a.patient_name)+'</h4><p>'+time(a.starts_at)+' · '+esc(a.provider_name)+'</p></div>'+badge(s)+'</header><p class="journey-card-service">'+esc(a.service_name)+(a.file_no?' · ملف '+esc(a.file_no):'')+'</p>'+(tags?'<div class="journey-card-meta">'+tags+'</div>':'')+'<div class="journey-card-actions">'+cardActions(a,c)+'</div></div></article>';
 }
 function column(key,title,items,c){return '<section class="journey-column" data-journey-lane="'+key+'"><header><h3>'+esc(title)+'</h3><span>'+num(items.length)+'</span></header><div class="journey-column-body">'+(items.map(function(a){return card(a,c);}).join('')||'<p class="journey-empty">مفيش حد هنا.</p>')+'</div></section>';}
 function doctorStrip(data){
