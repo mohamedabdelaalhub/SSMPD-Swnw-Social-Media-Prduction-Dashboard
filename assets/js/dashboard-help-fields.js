@@ -2705,8 +2705,7 @@
     {
       "title": "التفاصيل",
       "labels": [
-        "التفاصيل",
-        "ملاحظات"
+        "التفاصيل"
       ],
       "text": "اكتب تفاصيل هذا السجل التي يحتاجها المراجع أو المنفذ ولا تغطيها الحقول الأخرى. تجنب نسخ بيانات حساسة لا تخص الغرض، ولا تستخدم الملاحظة بدل المستند أو القرار.",
       "article": "personal",
@@ -2831,7 +2830,70 @@
       "text": "اختار الجهة صاحبة الاتفاق أو اكتب اسمها عند تعريفها، مع مطابقة المستند وبيانات التواصل. لا تخلط موردًا بجهة تأمين أو جهة تعاقد أخرى.",
       "article": "entities",
       "tabs": [
-        "production"
+        "accounting",
+        "booking_cash",
+        "contracting_entities"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "من",
+      "labels": [
+        "من",
+        "إلى"
+      ],
+      "text": "حدد بداية أو نهاية الفترة أو اليوم وفق عنوان الحقل ونوع الإدخال. في الفلاتر يغير العرض فقط، وفي العقد أو التواجد يحدد السريان. راجع ترتيب البداية والنهاية والمنطقة الزمنية المكتوبة.",
+      "article": "ledger-guide",
+      "tabs": [
+        "accounting",
+        "booking_cash",
+        "contracting_entities"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "بحث في الفواتير",
+      "labels": [
+        "بحث في الفواتير"
+      ],
+      "text": "اكتب رقم فاتورة أو اسم مريض أو خدمة لتصفية فواتير الجهة في الفترة المختارة. البحث مابيغيرش حاجة.",
+      "article": "insurance",
+      "tabs": [
+        "accounting",
+        "booking_cash",
+        "contracting_entities"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "مرجع المطالبة",
+      "labels": [
+        "مرجع المطالبة"
+      ],
+      "text": "رقم يميز المطالبة دي، بيتملى تلقائي بكود CLM. عدله لو الجهة بتطلب ترقيم معين. مايتكررش.",
+      "article": "insurance",
+      "tabs": [
+        "accounting",
+        "booking_cash",
+        "contracting_entities"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "ملاحظات",
+      "labels": [
+        "ملاحظات"
+      ],
+      "text": "اكتب تفاصيل هذا السجل التي يحتاجها المراجع أو المنفذ ولا تغطيها الحقول الأخرى. تجنب نسخ بيانات حساسة لا تخص الغرض، ولا تستخدم الملاحظة بدل المستند أو القرار.",
+      "article": "ledger-guide",
+      "tabs": [
+        "accounting",
+        "booking_cash",
+        "contracting_entities"
       ],
       "forms": [],
       "reviewed": true
@@ -2841,10 +2903,102 @@
       "labels": [
         "الأدوية"
       ],
-      "text": "انقل خطة الطبيب أو قائمة الأدوية الموثقة مع الاسم والتركيز والجرعة والتكرار والمدة في حقولها. لا تقترح جرعة أو تستنتج علاجًا من الشكوى.",
-      "article": "patient-records",
+      "text": "مين بيدفع تمن الأدوية في العقد ده: المريض أو الجهة. لازم يتحدد قبل الفوترة.",
+      "article": "insurance",
       "tabs": [
-        "production"
+        "accounting",
+        "booking_cash",
+        "contracting_entities"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "المستلزمات",
+      "labels": [
+        "المستلزمات"
+      ],
+      "text": "مين بيدفع تمن المستلزمات في العقد ده: المريض أو الجهة. لازم يتحدد قبل الفوترة، وعدم تطبيق الخصم مابيحددش مين بيدفع.",
+      "article": "insurance",
+      "tabs": [
+        "accounting",
+        "booking_cash",
+        "contracting_entities"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "مهلة السداد بعد تقديم المطالبة بالأيام",
+      "labels": [
+        "مهلة السداد بعد تقديم المطالبة بالأيام"
+      ],
+      "text": "عدد الأيام اللي الجهة المفروض تسدد فيها بعد تقديم المطالبة، حسب العقد. بيستخدم في متابعة المتأخرات.",
+      "article": "insurance",
+      "tabs": [
+        "accounting",
+        "booking_cash",
+        "contracting_entities"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "المستندات المطلوبة للمطالبة",
+      "labels": [
+        "المستندات المطلوبة للمطالبة"
+      ],
+      "text": "اكتب المستندات اللي الجهة بتطلبها مع كل مطالبة، زي صورة الكارنيه أو الموافقة أو التقرير، علشان تتجهز قبل التقديم.",
+      "article": "insurance",
+      "tabs": [
+        "accounting",
+        "booking_cash",
+        "contracting_entities"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "نص يطبع على الفاتورة",
+      "labels": [
+        "نص يطبع على الفاتورة"
+      ],
+      "text": "نص ثابت بيتطبع على فواتير الجهة دي، زي اسم العقد أو رقم الاتفاق.",
+      "article": "insurance",
+      "tabs": [
+        "accounting",
+        "booking_cash",
+        "contracting_entities"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "اسم المريض أو الرقم الطبي أو رقم الزيارة",
+      "labels": [
+        "اسم المريض أو الرقم الطبي أو رقم الزيارة"
+      ],
+      "text": "دوّر على زيارة المريض المربوطة بجهة تعاقد علشان تعمل فاتورة الخدمة. لو مش ظاهرة، سجل الزيارة واربط العقد الأول.",
+      "article": "insurance",
+      "tabs": [
+        "accounting",
+        "booking_cash",
+        "contracting_entities"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "بحث عن الخدمة",
+      "labels": [
+        "بحث عن الخدمة"
+      ],
+      "text": "اكتب اسم الخدمة أو كودها علشان تختار الخدمة اللي اتعملت للمريض.",
+      "article": "insurance",
+      "tabs": [
+        "accounting",
+        "booking_cash",
+        "contracting_entities"
       ],
       "forms": [],
       "reviewed": true
@@ -2857,7 +3011,9 @@
       "text": "اختار أو اكتب الخدمة التي يخصها هذا السجل، مع مطابقة كودها وقسمها. في الحجز استخدم الخدمة الجاهزة، وفي الربط اختار تعريفها الأصلي من التسعير.",
       "article": "booking-flow",
       "tabs": [
-        "production"
+        "accounting",
+        "booking_cash",
+        "contracting_entities"
       ],
       "forms": [],
       "reviewed": true
@@ -2867,10 +3023,194 @@
       "labels": [
         "رقم الفاتورة"
       ],
-      "text": "الرقم على مستند الفاتورة المقصود؛ في الاستلام هو رقم فاتورة المورد وليس رقم التشغيلة.",
-      "article": "purchases",
+      "text": "رقم فاتورة الخدمة للجهة، بيتملى تلقائي بكود INV. مايتكررش، ولو عدته بنفس الرقم مش هتتعمل فاتورة تانية.",
+      "article": "insurance",
       "tabs": [
-        "production"
+        "accounting",
+        "booking_cash",
+        "contracting_entities"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "رقم البطاقة / العضوية",
+      "labels": [
+        "رقم البطاقة / العضوية"
+      ],
+      "text": "رقم كارنيه المريض أو عضويته عند الجهة، زي ما مكتوب على الكارت. بيتطبع على الفاتورة والمطالبة.",
+      "article": "insurance",
+      "tabs": [
+        "accounting",
+        "booking_cash",
+        "contracting_entities"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "اسم الصنف أو المخزن",
+      "labels": [
+        "اسم الصنف أو المخزن",
+        "بحث في الأصناف المتاحة"
+      ],
+      "text": "دوّر على الدوا أو المستلزم اللي اتصرف للخدمة دي. سجل بس اللي اتصرف فعلاً ومااتسجلش من شاشة تانية.",
+      "article": "insurance",
+      "tabs": [
+        "accounting",
+        "booking_cash",
+        "contracting_entities"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "طريقة تحصيل المريض",
+      "labels": [
+        "طريقة تحصيل المريض"
+      ],
+      "text": "إزاي المريض دفع نصيبه (التحمل): كاش أو فيزا أو تحويل أو InstaPay أو محفظة.",
+      "article": "insurance",
+      "tabs": [
+        "accounting",
+        "booking_cash",
+        "contracting_entities"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "الوردية المفتوحة",
+      "labels": [
+        "الوردية المفتوحة"
+      ],
+      "text": "اختار الوردية اللي استلمت فلوس المريض لو التحصيل كاش.",
+      "article": "insurance",
+      "tabs": [
+        "accounting",
+        "booking_cash",
+        "contracting_entities"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "مرجع تحصيل المريض",
+      "labels": [
+        "مرجع تحصيل المريض",
+        "رقم الإيصال/العملية"
+      ],
+      "text": "رقم الإيصال أو العملية لتحصيل نصيب المريض، لو الدفع مش كاش.",
+      "article": "insurance",
+      "tabs": [
+        "accounting",
+        "booking_cash",
+        "contracting_entities"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "أؤكد تنفيذ الخدمة وصرف البنود المسجلة لها، وعدم إدخال صرف سبق تسجيله.",
+      "labels": [
+        "أؤكد تنفيذ الخدمة وصرف البنود المسجلة لها، وعدم إدخال صرف سبق تسجيله."
+      ],
+      "text": "علّم عليها بعد ما تتأكد إن الخدمة اتعملت فعلاً، والأدوية والمستلزمات المكتوبة اتصرفت ومش متسجلة قبل كده.",
+      "article": "insurance",
+      "tabs": [
+        "accounting",
+        "booking_cash",
+        "contracting_entities"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "سبب تكرار تنفيذ الخدمة",
+      "labels": [
+        "سبب تكرار تنفيذ الخدمة"
+      ],
+      "text": "الخدمة دي اتفوترت قبل كده لنفس المريض. لو ده تنفيذ تاني فعلاً اكتب السبب، زي جلسة تانية.",
+      "article": "insurance",
+      "tabs": [
+        "accounting",
+        "booking_cash",
+        "contracting_entities"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "راجعت بيان الفواتير ومتطلبات المستندات وأثر هذا الإجراء.",
+      "labels": [
+        "راجعت بيان الفواتير ومتطلبات المستندات وأثر هذا الإجراء."
+      ],
+      "text": "علّم عليها بعد ما تراجع فواتير المطالبة ومستنداتها وتفهم أثر الإجراء. الفواتير وحركات التحصيل بتفضل محفوظة.",
+      "article": "insurance",
+      "tabs": [
+        "accounting",
+        "booking_cash",
+        "contracting_entities"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "اسم المستند",
+      "labels": [
+        "اسم المستند"
+      ],
+      "text": "اسم واضح للمستند المرفق بالمطالبة، زي خطاب التقديم أو إيصال الاستلام.",
+      "article": "insurance",
+      "tabs": [
+        "accounting",
+        "booking_cash",
+        "contracting_entities"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "رابط Google Drive",
+      "labels": [
+        "رابط Google Drive"
+      ],
+      "text": "رابط المستند على درايف المركز. اتأكد إن المشاركة محدودة.",
+      "article": "insurance",
+      "tabs": [
+        "accounting",
+        "booking_cash",
+        "contracting_entities"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "أو رفع مستند للأرشيف",
+      "labels": [
+        "أو رفع مستند للأرشيف"
+      ],
+      "text": "بدل الرابط، ارفع ملف المستند نفسه علشان يتحفظ في أرشيف المطالبة.",
+      "article": "insurance",
+      "tabs": [
+        "accounting",
+        "booking_cash",
+        "contracting_entities"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "مبلغ التحصيل",
+      "labels": [
+        "مبلغ التحصيل"
+      ],
+      "text": "المبلغ اللي الجهة دفعته فعلاً بالجنيه. مايزيدش عن المتبقي على المطالبة.",
+      "article": "insurance",
+      "tabs": [
+        "accounting",
+        "booking_cash",
+        "contracting_entities"
       ],
       "forms": [],
       "reviewed": true
@@ -2883,7 +3223,9 @@
       "text": "اختر الوسيلة المستخدمة فعليًا: النقدي يؤثر في الكاش، والفيزا في وسيط البطاقات حتى التسوية، والبنك/إنستا باي حسب مرجع التحويل.",
       "article": "collections",
       "tabs": [
-        "production"
+        "accounting",
+        "booking_cash",
+        "contracting_entities"
       ],
       "forms": [],
       "reviewed": true
@@ -2896,7 +3238,24 @@
       "text": "اختر وردية مفتوحة مناسبة للخزينة والمستخدم ونوع العملية؛ عدم ظهورها قد يعني عدم فتحها أو نقص الصلاحية.",
       "article": "cash-shifts-guide",
       "tabs": [
-        "production"
+        "accounting",
+        "booking_cash",
+        "contracting_entities"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "رقم التحويل أو الإيصال",
+      "labels": [
+        "رقم التحويل أو الإيصال"
+      ],
+      "text": "رقم التحويل البنكي أو الإيصال من الجهة. بيمنع تسجيل نفس التحصيل مرتين.",
+      "article": "insurance",
+      "tabs": [
+        "accounting",
+        "booking_cash",
+        "contracting_entities"
       ],
       "forms": [],
       "reviewed": true
@@ -2910,7 +3269,9 @@
       "text": "حدد هل المطلوب تصحيح بيانات، تخفيض تعاقدي، أم خسارة ائتمان وفق سبب الرفض وأدلته؛ لكل نوع أثر مختلف.",
       "article": "insurance",
       "tabs": [
-        "production"
+        "accounting",
+        "booking_cash",
+        "contracting_entities"
       ],
       "forms": [],
       "reviewed": true
@@ -2923,7 +3284,24 @@
       "text": "القيمة بالجنيه لهذا الإجراء فقط؛ راجع المستحق أو المعتمد والحدود قبل الحفظ، ولا تدخل إجمالي فاتورة إذا كنت تسدد جزءًا.",
       "article": "collections",
       "tabs": [
-        "production"
+        "accounting",
+        "booking_cash",
+        "contracting_entities"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "مرجع خطاب الجهة",
+      "labels": [
+        "مرجع خطاب الجهة"
+      ],
+      "text": "رقم خطاب الجهة اللي فيه الرفض أو الخصم أو التسوية. المعالجة مابتغيرش المديونية غير بعد اعتماد المراجع.",
+      "article": "insurance",
+      "tabs": [
+        "accounting",
+        "booking_cash",
+        "contracting_entities"
       ],
       "forms": [],
       "reviewed": true
@@ -2936,7 +3314,9 @@
       "text": "اعتماد أو رفض بعد فحص المستند والبيانات. اكتب سبب القرار؛ قد يُشترط حساب آخر مستقل عن منشئ الطلب.",
       "article": "requests",
       "tabs": [
-        "production"
+        "accounting",
+        "booking_cash",
+        "contracting_entities"
       ],
       "forms": [],
       "reviewed": true
@@ -2949,7 +3329,9 @@
       "text": "اكتب نتيجة ما راجعته ولماذا اعتمدت أو رفضت، مع الإشارة للمستند أو الفرق والإجراء التالي. المراجعة تحتاج حسابًا مستقلًا إذا اشترط المسار ذلك.",
       "article": "requests",
       "tabs": [
-        "production"
+        "accounting",
+        "booking_cash",
+        "contracting_entities"
       ],
       "forms": [],
       "reviewed": true
@@ -4394,6 +4776,188 @@
       "reviewed": true
     },
     {
+      "title": "قناة الحجز / المنصة",
+      "labels": [
+        "قناة الحجز / المنصة"
+      ],
+      "text": "اختار القناة اللي المريض حجز منها، زي منصة حجز أو نقابة أو تليفون. النظام بيحفظ نسخة من قاعدتها على الفاتورة.",
+      "article": "invoice",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "قيمة الكشف قبل الخصم",
+      "labels": [
+        "قيمة الكشف قبل الخصم",
+        "قيمة الخدمات الأخرى قبل الخصم"
+      ],
+      "text": "قيمة الكشف والخدمات قبل خصم القناة، علشان النظام يحسب خصم المريض وحصة القناة. الحساب بيظهر تحت.",
+      "article": "invoice",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "الكود (حروف إنجليزية صغيرة وأرقام و _)",
+      "labels": [
+        "الكود (حروف إنجليزية صغيرة وأرقام و _)"
+      ],
+      "text": "كود ثابت للقناة بحروف إنجليزية صغيرة وأرقام، زي vezeeta. مابيتغيرش في الإصدارات الجديدة.",
+      "article": "invoice",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [
+        "إصدار جديد لقناة ",
+        "إضافة قناة أو منصة"
+      ],
+      "reviewed": true
+    },
+    {
+      "title": "اسم القناة كما يظهر للمحاسب",
+      "labels": [
+        "اسم القناة كما يظهر للمحاسب"
+      ],
+      "text": "اسم القناة زي ما هيظهر للكاشير والمحاسب عند الفوترة.",
+      "article": "invoice",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [
+        "إصدار جديد لقناة ",
+        "إضافة قناة أو منصة"
+      ],
+      "reviewed": true
+    },
+    {
+      "title": "نوع القناة",
+      "labels": [
+        "نوع القناة"
+      ],
+      "text": "منصة خارجية أو قناة داخلية للمركز (زي التليفون والواتساب) أو جهة تعاقد.",
+      "article": "invoice",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [
+        "إصدار جديد لقناة ",
+        "إضافة قناة أو منصة"
+      ],
+      "reviewed": true
+    },
+    {
+      "title": "تسري على",
+      "labels": [
+        "تسري على"
+      ],
+      "text": "القاعدة بتتطبق على الكشف بس، ولا على الكشف وكل الخدمات.",
+      "article": "invoice",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [
+        "إصدار جديد لقناة ",
+        "إضافة قناة أو منصة"
+      ],
+      "reviewed": true
+    },
+    {
+      "title": "خصم المريض %",
+      "labels": [
+        "خصم المريض %"
+      ],
+      "text": "نسبة الخصم اللي المريض بياخدها لما يحجز من القناة دي.",
+      "article": "invoice",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [
+        "إصدار جديد لقناة ",
+        "إضافة قناة أو منصة"
+      ],
+      "reviewed": true
+    },
+    {
+      "title": "حصة المنصة أو القناة % (تُخصم من وعاء الطبيب)",
+      "labels": [
+        "حصة المنصة أو القناة % (تُخصم من وعاء الطبيب)"
+      ],
+      "text": "نسبة القناة من القيمة. بتتخصم من وعاء الطبيب قبل حساب نسبته، وبتقل تلقائي مع المرتجعات.",
+      "article": "invoice",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [
+        "إصدار جديد لقناة ",
+        "إضافة قناة أو منصة"
+      ],
+      "reviewed": true
+    },
+    {
+      "title": "تُدفع لمن؟",
+      "labels": [
+        "تُدفع لمن؟"
+      ],
+      "text": "الحصة بتروح فين: تفضل في المركز، أو عمولة للمنصة، أو كاش باك للجهة.",
+      "article": "invoice",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [
+        "إصدار جديد لقناة ",
+        "إضافة قناة أو منصة"
+      ],
+      "reviewed": true
+    },
+    {
+      "title": "متى تُدفع (مثال: آخر الشهر)",
+      "labels": [
+        "متى تُدفع (مثال: آخر الشهر)"
+      ],
+      "text": "ميعاد دفع الحصة حسب الاتفاق، زي آخر الشهر.",
+      "article": "invoice",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [
+        "إصدار جديد لقناة ",
+        "إضافة قناة أو منصة"
+      ],
+      "reviewed": true
+    },
+    {
+      "title": "مصادر الحجز المرتبطة (مفصولة بفاصلة)",
+      "labels": [
+        "مصادر الحجز المرتبطة (مفصولة بفاصلة)"
+      ],
+      "text": "أكواد مصادر الحجز في الاستقبال اللي تخص القناة دي، بينهم فاصلة، علشان القناة تتختار لوحدها.",
+      "article": "invoice",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [
+        "إصدار جديد لقناة ",
+        "إضافة قناة أو منصة"
+      ],
+      "reviewed": true
+    },
+    {
       "title": "ساري من",
       "labels": [
         "ساري من",
@@ -4418,6 +4982,23 @@
       ],
       "text": "اكتب تفاصيل هذا السجل التي يحتاجها المراجع أو المنفذ ولا تغطيها الحقول الأخرى. تجنب نسخ بيانات حساسة لا تخص الغرض، ولا تستخدم الملاحظة بدل المستند أو القرار.",
       "article": "ledger-guide",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [
+        "إصدار جديد لقناة ",
+        "إضافة قناة أو منصة"
+      ],
+      "reviewed": true
+    },
+    {
+      "title": "أؤكد أن النسب مطابقة لاتفاق المركز مع هذه الجهة، وأن القاعدة لن تعمل قبل اعتماد شخص آخر.",
+      "labels": [
+        "أؤكد أن النسب مطابقة لاتفاق المركز مع هذه الجهة، وأن القاعدة لن تعمل قبل اعتماد شخص آخر."
+      ],
+      "text": "علّم عليها بعد ما تراجع النسب مع الاتفاق. القاعدة مش هتشتغل غير بعد اعتماد شخص تاني.",
+      "article": "invoice",
       "tabs": [
         "accounting",
         "booking_cash"
@@ -4457,6 +5038,22 @@
       ],
       "forms": [
         "مراجعة قاعدة قناة"
+      ],
+      "reviewed": true
+    },
+    {
+      "title": "سبب الإنهاء",
+      "labels": [
+        "سبب الإنهاء"
+      ],
+      "text": "اكتب ليه القاعدة بتنتهي. الفواتير القديمة بتحتفظ بنسخة القاعدة، والجديدة مش هتستخدمها.",
+      "article": "invoice",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [
+        "إنهاء قاعدة قناة"
       ],
       "reviewed": true
     },
@@ -4786,6 +5383,146 @@
       "reviewed": true
     },
     {
+      "title": "بحث باسم الدكتور أو كوده",
+      "labels": [
+        "بحث باسم الدكتور أو كوده"
+      ],
+      "text": "اكتب اسم الطبيب أو كوده لتصفية القائمة. البحث مابيغيرش حاجة.",
+      "article": "payroll",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "اختر الطبيب من الموارد البشرية",
+      "labels": [
+        "اختر الطبيب من الموارد البشرية"
+      ],
+      "text": "اختار الطبيب المسجل في الموارد البشرية. الكود والاسم بيتملوا تلقائي من ملفه.",
+      "article": "payroll",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "عرض باقي الموظفين (ممرضين وغيرهم وغير المصنفين)",
+      "labels": [
+        "عرض باقي الموظفين (ممرضين وغيرهم وغير المصنفين)"
+      ],
+      "text": "علّم عليها علشان تختار كمان من الممرضين أو الموظفين اللي نوعهم مش متحدد.",
+      "article": "payroll",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "نسبة الضريبة %",
+      "labels": [
+        "نسبة الضريبة %"
+      ],
+      "text": "نسبة الضريبة اللي بتتخصم من الأتعاب المختارة عند الصرف، حسب وضع الطبيب الضريبي.",
+      "article": "payroll",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "نسبة الاستقطاع %",
+      "labels": [
+        "نسبة الاستقطاع %"
+      ],
+      "text": "نسبة أي استقطاع تاني متفق عليه من الأتعاب عند الصرف، أو صفر.",
+      "article": "payroll",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "خدمة خارجية (مبلغ إضافي يُضاف على فاتورة المريض)",
+      "labels": [
+        "خدمة خارجية (مبلغ إضافي يُضاف على فاتورة المريض)"
+      ],
+      "text": "علّم عليها لو الخدمة ليها مبلغ إضافي المريض بيدفعه فوق سعرها. المبلغ ده مابيدخلش في وعاء أتعاب الطبيب.",
+      "article": "payroll",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "المبلغ الإضافي (جنيه)",
+      "labels": [
+        "المبلغ الإضافي (جنيه)"
+      ],
+      "text": "المبلغ اللي بيتضاف على فاتورة المريض فوق سعر الخدمة، مثلاً خدمة 500 وإضافي 250 يبقى 750.",
+      "article": "payroll",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "منفّذ الخدمة",
+      "labels": [
+        "منفّذ الخدمة"
+      ],
+      "text": "مين بينفذ الخدمة: الطبيب، أو ممرض لوحده، أو ممرض مع طبيب. ده بيحدد مين ياخد الأتعاب.",
+      "article": "payroll",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "الممرض",
+      "labels": [
+        "الممرض"
+      ],
+      "text": "اختار الممرض اللي بينفذ الخدمة لو المنفذ ممرض.",
+      "article": "payroll",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "المبلغ الثابت (جنيه) لكل خدمة تُنفَّذ",
+      "labels": [
+        "المبلغ الثابت (جنيه) لكل خدمة تُنفَّذ"
+      ],
+      "text": "مبلغ ثابت للطبيب عن كل خدمة بيعملها، من غير نسبة. لو الفاتورة اتخفضت أو اتمرتجعت بيقل بنفس النسبة.",
+      "article": "payroll",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "عقد الطبيب لهذه الفاتورة",
       "labels": [
         "عقد الطبيب لهذه الفاتورة"
@@ -4806,6 +5543,48 @@
       ],
       "text": "اختار الطبيب الذي يخصه الإجراء فعلًا. في الحجز يلزم تطابق القسم وعقد مؤهل وتواجد، وفي التنفيذ يسجل الطبيب الذي قدم الخدمة.",
       "article": "doctor-missing",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "كود الخدمة أو اسمها",
+      "labels": [
+        "كود الخدمة أو اسمها"
+      ],
+      "text": "الخدمة اللي العقد أو السطر ده يخصها. اكتب الكود أو الاسم زي ما في الحجز.",
+      "article": "payroll",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "القيمة",
+      "labels": [
+        "القيمة"
+      ],
+      "text": "قيمة السطر ده من الفاتورة. مجموع السطور لازم يساوي قيمة الخدمة من غير المستلزمات.",
+      "article": "payroll",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "كشف",
+      "labels": [
+        "كشف"
+      ],
+      "text": "علّم عليها لو السطر ده كشف، علشان تتطبق عليه نسبة عقد الكشف.",
+      "article": "payroll",
       "tabs": [
         "accounting",
         "booking_cash"
@@ -4846,6 +5625,55 @@
       "reviewed": true
     },
     {
+      "title": "نطاق العقد",
+      "labels": [
+        "نطاق العقد"
+      ],
+      "text": "العقد على خدمة محددة، أو كذا خدمة، أو قسم كامل. عقد الخدمة المحددة بيتقدم على عقد القسم.",
+      "article": "payroll",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [
+        "تسجيل عقد أتعاب طبيب"
+      ],
+      "reviewed": true
+    },
+    {
+      "title": "كود الخدمة أو اسمها",
+      "labels": [
+        "كود الخدمة أو اسمها"
+      ],
+      "text": "الخدمة اللي العقد أو السطر ده يخصها. اكتب الكود أو الاسم زي ما في الحجز.",
+      "article": "payroll",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [
+        "تسجيل عقد أتعاب طبيب"
+      ],
+      "reviewed": true
+    },
+    {
+      "title": "اسم الخدمة أو كودها أو القسم",
+      "labels": [
+        "اسم الخدمة أو كودها أو القسم",
+        "بحث في الخدمات"
+      ],
+      "text": "دوّر على الخدمات اللي العقد هيغطيها وعلّم عليها.",
+      "article": "payroll",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [
+        "تسجيل عقد أتعاب طبيب"
+      ],
+      "reviewed": true
+    },
+    {
       "title": "القسم",
       "labels": [
         "القسم"
@@ -4869,6 +5697,22 @@
       ],
       "text": "التاريخان حسب العقد؛ الخدمة أو الحجز خارج الفترة قد لا يستفيد من العقد ولو كان معتمدًا.",
       "article": "doctor-missing",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [
+        "تسجيل عقد أتعاب طبيب"
+      ],
+      "reviewed": true
+    },
+    {
+      "title": "نوع الأتعاب",
+      "labels": [
+        "نوع الأتعاب"
+      ],
+      "text": "نسبة من وعاء الخدمة، أو مبلغ ثابت لكل خدمة.",
+      "article": "payroll",
       "tabs": [
         "accounting",
         "booking_cash"
@@ -4975,6 +5819,38 @@
       "reviewed": true
     },
     {
+      "title": "آخر يوم يسري فيه العقد",
+      "labels": [
+        "آخر يوم يسري فيه العقد"
+      ],
+      "text": "آخر يوم العقد بيتطبق فيه. الخدمات بعده مش هتحسب أتعاب بالعقد ده.",
+      "article": "payroll",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [
+        "إنهاء عقد — "
+      ],
+      "reviewed": true
+    },
+    {
+      "title": "سبب الإنهاء",
+      "labels": [
+        "سبب الإنهاء"
+      ],
+      "text": "اكتب ليه العقد بينتهي، زي اتفاق جديد أو سيب الطبيب للمركز.",
+      "article": "payroll",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [
+        "إنهاء عقد — "
+      ],
+      "reviewed": true
+    },
+    {
       "title": "القرار",
       "labels": [
         "القرار"
@@ -5007,12 +5883,44 @@
       "reviewed": true
     },
     {
+      "title": "يسري من (بعد النهارده)",
+      "labels": [
+        "يسري من (بعد النهارده)"
+      ],
+      "text": "اليوم اللي التعديل يبدأ منه، ولازم يكون بعد النهارده. الفواتير اللي قبله بتفضل بالعقد القديم.",
+      "article": "payroll",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [
+        "تعديل عقد — "
+      ],
+      "reviewed": true
+    },
+    {
       "title": "ساري حتى",
       "labels": [
         "ساري حتى"
       ],
       "text": "التاريخان حسب العقد؛ الخدمة أو الحجز خارج الفترة قد لا يستفيد من العقد ولو كان معتمدًا.",
       "article": "doctor-missing",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [
+        "تعديل عقد — "
+      ],
+      "reviewed": true
+    },
+    {
+      "title": "نوع الأتعاب",
+      "labels": [
+        "نوع الأتعاب"
+      ],
+      "text": "نسبة من وعاء الخدمة، أو مبلغ ثابت لكل خدمة.",
+      "article": "payroll",
       "tabs": [
         "accounting",
         "booking_cash"
@@ -5087,6 +5995,54 @@
       "reviewed": true
     },
     {
+      "title": "مرجع التعديل",
+      "labels": [
+        "مرجع التعديل"
+      ],
+      "text": "رقم ملحق العقد أو المستند اللي فيه التعديل.",
+      "article": "payroll",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [
+        "تعديل عقد — "
+      ],
+      "reviewed": true
+    },
+    {
+      "title": "سبب التعديل",
+      "labels": [
+        "سبب التعديل"
+      ],
+      "text": "اشرح التعديل وسببه علشان المراجع يعتمده.",
+      "article": "payroll",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [
+        "تعديل عقد — "
+      ],
+      "reviewed": true
+    },
+    {
+      "title": "القرار على كل العقود المعلّقة لهذا الطبيب",
+      "labels": [
+        "القرار على كل العقود المعلّقة لهذا الطبيب"
+      ],
+      "text": "اعتماد أو رفض كل العقود المعلقة مرة واحدة. المراجع لازم يكون غير اللي عمل العقود، واكتب سبب القرار.",
+      "article": "payroll",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [
+        "مراجعة كل العقود المعلّقة ("
+      ],
+      "reviewed": true
+    },
+    {
       "title": "سبب القرار",
       "labels": [
         "سبب القرار"
@@ -5099,6 +6055,22 @@
       ],
       "forms": [
         "مراجعة كل العقود المعلّقة ("
+      ],
+      "reviewed": true
+    },
+    {
+      "title": "القرار على كل عقود المجموعة",
+      "labels": [
+        "القرار على كل عقود المجموعة"
+      ],
+      "text": "اعتماد أو رفض كل العقود المعلقة مرة واحدة. المراجع لازم يكون غير اللي عمل العقود، واكتب سبب القرار.",
+      "article": "payroll",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [
+        "مراجعة مجموعة عقود ("
       ],
       "reviewed": true
     },
@@ -5357,6 +6329,116 @@
       ],
       "forms": [
         "طلب قيد متوازن"
+      ],
+      "reviewed": true
+    },
+    {
+      "title": "الشهر",
+      "labels": [
+        "الشهر"
+      ],
+      "text": "الشهر اللي بتسدد عنه. الأرقام بتتجمع من سجلات الموارد البشرية والمرتبات المعتمدة للشهر ده.",
+      "article": "payroll",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "المبلغ المسدد للجهة",
+      "labels": [
+        "المبلغ المسدد للجهة"
+      ],
+      "text": "المبلغ اللي اتدفع فعلاً للجهة بالجنيه. السداد اللي يزيد عن الرصيد المثبت في الدفاتر مابيتعتمدش.",
+      "article": "payroll",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [
+        "تسجيل سداد تأمينات شهر "
+      ],
+      "reviewed": true
+    },
+    {
+      "title": "رقم إيصال أو مرجع السداد للجهة",
+      "labels": [
+        "رقم إيصال أو مرجع السداد للجهة"
+      ],
+      "text": "رقم إيصال سداد التأمينات من الجهة.",
+      "article": "payroll",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [
+        "تسجيل سداد تأمينات شهر "
+      ],
+      "reviewed": true
+    },
+    {
+      "title": "شرح السداد",
+      "labels": [
+        "شرح السداد"
+      ],
+      "text": "اكتب تفاصيل السداد، زي الفترة وطريقة الدفع.",
+      "article": "payroll",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [
+        "تسجيل سداد تأمينات شهر "
+      ],
+      "reviewed": true
+    },
+    {
+      "title": "المبلغ المسدد للجهة",
+      "labels": [
+        "المبلغ المسدد للجهة"
+      ],
+      "text": "المبلغ اللي اتدفع فعلاً للجهة بالجنيه. السداد اللي يزيد عن الرصيد المثبت في الدفاتر مابيتعتمدش.",
+      "article": "payroll",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [
+        "تسجيل سداد ضريبة مرتبات شهر "
+      ],
+      "reviewed": true
+    },
+    {
+      "title": "رقم إيصال أو مرجع السداد للمصلحة",
+      "labels": [
+        "رقم إيصال أو مرجع السداد للمصلحة"
+      ],
+      "text": "رقم إيصال سداد ضريبة المرتبات من مصلحة الضرايب.",
+      "article": "payroll",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [
+        "تسجيل سداد ضريبة مرتبات شهر "
+      ],
+      "reviewed": true
+    },
+    {
+      "title": "شرح السداد",
+      "labels": [
+        "شرح السداد"
+      ],
+      "text": "اكتب تفاصيل السداد، زي الفترة وطريقة الدفع.",
+      "article": "payroll",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [
+        "تسجيل سداد ضريبة مرتبات شهر "
       ],
       "reviewed": true
     },
@@ -7985,6 +9067,24 @@
       "reviewed": true
     },
     {
+      "title": "اسم المريض / رقم الملف / رقم الزيارة",
+      "labels": [
+        "اسم المريض / رقم الملف / رقم الزيارة",
+        "بحث عن المريض أو الزيارة"
+      ],
+      "text": "دوّر على زيارة المريض المؤمن عليه علشان تعمل فاتورتها.",
+      "article": "insurance",
+      "tabs": [
+        "accounting",
+        "booking_cash",
+        "contracting_entities"
+      ],
+      "forms": [
+        "فوترة زيارة مؤمَّن عليها"
+      ],
+      "reviewed": true
+    },
+    {
       "title": "الخدمة",
       "labels": [
         "الخدمة"
@@ -7992,7 +9092,9 @@
       "text": "اختار أو اكتب الخدمة التي يخصها هذا السجل، مع مطابقة كودها وقسمها. في الحجز استخدم الخدمة الجاهزة، وفي الربط اختار تعريفها الأصلي من التسعير.",
       "article": "booking-flow",
       "tabs": [
-        "production"
+        "accounting",
+        "booking_cash",
+        "contracting_entities"
       ],
       "forms": [
         "فاتورة تأمين — "
@@ -8007,7 +9109,9 @@
       "text": "اكتب مرجع الفاتورة الأصلية التي تمثل الخدمة في نظام المركز كما هو. لا تستخدم رقم إيصال تحصيل أو رقم مريض بدل رقم الفاتورة.",
       "article": "invoice",
       "tabs": [
-        "production"
+        "accounting",
+        "booking_cash",
+        "contracting_entities"
       ],
       "forms": [
         "فاتورة تأمين — "
@@ -12041,6 +13145,20 @@
       ],
       "text": "اختار أو اكتب الخدمة التي يخصها هذا السجل، مع مطابقة كودها وقسمها. في الحجز استخدم الخدمة الجاهزة، وفي الربط اختار تعريفها الأصلي من التسعير.",
       "article": "booking-flow",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "قسم الخدمة في سونو",
+      "labels": [
+        "قسم الخدمة في سونو"
+      ],
+      "text": "القسم اللي الخدمة بتظهر تحته في الحجز والتقارير، زي أشعة أو معمل.",
+      "article": "add-doctor-service-booking",
       "tabs": [
         "accounting",
         "booking_cash"
@@ -17866,6 +18984,6 @@
     "definitions": 1746,
     "labels": 1285,
     "files": 119,
-    "groups": 1187
+    "groups": 1258
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
