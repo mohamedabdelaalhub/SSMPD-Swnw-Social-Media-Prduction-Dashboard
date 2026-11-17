@@ -327,3 +327,49 @@
 .att-hub .cl-wait{color:#7A2E0E;font-weight:700}
 .att-hub .cl-old{margin-top:16px}
 .att-hub .cl-old summary{cursor:pointer;color:#475467;font-weight:700}
+
+/* ===== Owner 2026-11-17: «الدنيا هنا زحمة» — clearer hierarchy on «الآن (مباشر)».
+   Rule: colour only for what needs attention (late / absent / below minimum); everything that is normal stays quiet ink-on-white.
+   Type scale: section 17/800 · department 16/800 · name 14.5/700 · meta 12/400 muted · numbers tabular. ===== */
+.att-hub{--ink:#16212E;--ink-2:#3B4658;--quiet:#7A8496;--hair:rgba(22,33,46,.08)}
+/* KPI tiles: big quiet number, short label, sub-label lighter */
+.att-hub .kpi{box-shadow:none;border-color:var(--hair);padding:12px 14px}
+.att-hub .kpi b{font-size:28px;font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums;letter-spacing:-.5px}
+.att-hub .kpi .l{font-size:13px;font-weight:700;color:var(--ink-2)}
+.att-hub .kpi small{font-size:11.5px;color:var(--quiet);font-weight:400}
+/* Urgent boxes keep their colour but lose the heavy shadow */
+.att-hub .box{box-shadow:none;border-color:var(--hair)}
+.att-hub .box>header h3{font-size:16px;font-weight:800;color:var(--ink)}
+.att-hub .box>header h3 small{font-size:12px;font-weight:400;color:var(--quiet)}
+/* Department cards: white sheet + a colour stripe on the start side instead of a tinted header */
+.att-hub .dept{box-shadow:none;border-color:var(--hair);border-inline-start:4px solid var(--col)}
+.att-hub .dept>header{background:#fff;padding:12px 14px 10px;border-bottom-color:var(--hair)}
+.att-hub .dept h3{font-size:16px;font-weight:800;color:var(--ink);line-height:1.35}
+.att-hub .dept h3 small{display:block;margin-top:2px;font-size:12px;font-weight:400;color:var(--quiet)}
+.att-hub .dept .di{width:30px;height:30px;border-radius:9px;background:color-mix(in srgb,var(--col) 12%,#fff);color:var(--col)}
+.att-hub .dept .di .ic{width:16px;height:16px}
+.att-hub .ring{width:38px;height:38px;--rc:var(--col)}
+.att-hub .ring b{width:30px;height:30px;font-size:14px;font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums}
+.att-hub .ring.low{--rc:#D0402A}
+.att-hub .ring.low b{color:#D0402A}
+/* People rows: name strong, code/title quiet, time as plain tabular text; only late/absent get colour */
+.att-hub .people{padding:4px 8px 8px}
+.att-hub .person{padding:9px 6px;border-radius:0;border-bottom:1px solid var(--hair)}
+.att-hub .person:last-child{border-bottom:0}
+.att-hub .person .nm .t{font-size:14.5px;font-weight:700;color:var(--ink)}
+.att-hub .person .nm small{font-size:11.5px;color:var(--quiet)}
+.att-hub .person .av{width:34px;height:34px;font-size:12px}
+.att-hub .meta{gap:2px;font-size:11.5px;color:var(--quiet);font-variant-numeric:tabular-nums}
+.att-hub .meta .pill.p-in{background:none;color:var(--ink);padding:0;font-size:14px;font-weight:800;font-variant-numeric:tabular-nums}
+.att-hub .meta .pill.p-late{font-size:11.5px}
+.att-hub .bar8{height:3px;opacity:.55}
+.att-hub .dept .more{font-size:12.5px;font-weight:700;color:#0F369D;border-top:1px solid var(--hair)}
+/* Side panels: quieter list, readable time */
+.att-hub .panel{box-shadow:none;border-color:var(--hair)}
+.att-hub .panel h4{font-size:15px;font-weight:800;color:var(--ink)}
+.att-hub .feed li{padding:8px 0;border-bottom-color:var(--hair)}
+.att-hub .feed b{font-size:13.5px;color:var(--ink)}
+.att-hub .feed span{font-size:11.5px;color:var(--quiet)}
+.att-hub .feed time{font-size:13px;font-weight:700;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.att-hub .feed .fi{width:26px;height:26px;opacity:.75}
+@media (prefers-reduced-motion:reduce){.att-hub .kpi{transition:none}}
