@@ -148,3 +148,13 @@ button.journey-metric.is-alert strong{color:#b42318}
 .journey-v3 .journey-section.is-empty{display:none}
 .journey-v3,.journey-v3>*,.journey-v3 [data-journey-root]>*,.journey-v3 .journey-top>*,.journey-v3 [data-journey-chips-host]{min-width:0;max-width:100%}
 .journey-v3 [data-journey-root]{display:grid;gap:10px;min-width:0}
+
+/* Owner 2026-11-17: «التحصيل» (orange) → «تم التحصيل» (green) next to the patient after the visit ends. */
+.journey-card.is-compact:has(.journey-pay){display:inline-flex;flex-wrap:wrap;align-items:center;gap:6px}
+.journey-card.is-compact:has(.journey-pay)>.journey-card-detail{flex-basis:100%}
+.journey-pay{display:inline-flex;align-items:center;justify-content:center;min-height:32px;padding:0 14px;border-radius:999px;font:inherit;font-size:13.5px;font-weight:800;white-space:nowrap;border:0}
+.journey-pay-due{background:#F15A22;color:#fff;cursor:pointer;box-shadow:0 4px 12px rgba(241,90,34,.28)}
+.journey-pay-due:hover{background:#D9481A}
+.journey-pay-due:focus-visible{outline:3px solid #0F369D;outline-offset:2px}
+.journey-pay-due.is-static{cursor:default;box-shadow:none}
+.journey-pay-done{background:#2F7D5C;color:#fff}

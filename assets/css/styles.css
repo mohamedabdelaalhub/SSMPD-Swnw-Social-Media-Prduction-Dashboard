@@ -742,6 +742,36 @@ table.simple.acc-table td.acc-col-num{text-align:left;}
 .file-name-check-badge{display:inline-flex;flex-wrap:wrap;align-items:center;gap:6px;margin:6px 0 0;padding:6px 10px;border-radius:10px;background:#fff4ee;border:1px solid #F15A22;color:#16212E;font-size:12.5px;line-height:1.5}
 .file-name-check-badge b{color:#D0402A}
 
+/* Owner 2026-11-17: «افتح وردية اليوم» popup + floating safe (reception-shift-reminder.js).
+   orange = closed safe whose door keeps opening (open your shift) · green = open safe (shift open) · yellow = open safe whose door keeps closing (close it). */
+.shift-reminder-backdrop{position:fixed;inset:0;z-index:9000;display:grid;place-items:center;padding:16px;background:rgba(22,33,46,.45)}
+.shift-reminder{--safe:#F15A22;--safe-ink:#fff;width:min(420px,100%);padding:24px 22px 20px;border-radius:20px;background:#fff;box-shadow:0 24px 60px rgba(15,54,157,.25);text-align:center;color:#16212E}
+.shift-reminder.is-close_due{--safe:#F2B705;--safe-ink:#16212E}
+.shift-reminder-icon{display:grid;place-items:center;width:72px;height:72px;margin:0 auto 10px;border-radius:50%;background:color-mix(in srgb,var(--safe) 14%,#fff);color:var(--safe)}
+.shift-reminder-icon .safe-ico{width:46px;height:46px}
+.shift-reminder h2{margin:0 0 8px;font-size:22px;font-weight:800;color:#0F369D}
+.shift-reminder p{margin:0 0 18px;font-size:15px;line-height:1.7;color:#3B4658}
+.shift-reminder-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.shift-reminder-actions .btn{min-height:44px;padding:0 22px;font-size:15px;font-weight:700}
+.shift-reminder-actions .btn-primary{background:var(--safe);border-color:var(--safe);color:var(--safe-ink)}
+.shift-fab{--safe:#F15A22;--safe-ink:#fff;position:fixed;left:16px;bottom:140px;z-index:1199;display:grid;place-items:center;width:56px;height:56px;padding:0;border:0;border-radius:50%;background:var(--safe);color:var(--safe-ink);box-shadow:0 10px 26px color-mix(in srgb,var(--safe) 45%,transparent);cursor:pointer;transition:transform .15s}
+.shift-fab:hover{transform:scale(1.06)}.shift-fab:focus-visible{outline:3px solid #0F369D;outline-offset:3px}
+.shift-fab .safe-ico{width:34px;height:34px}
+.shift-fab.is-open{--safe:#2F7D5C}
+.shift-fab.is-close_due{--safe:#F2B705;--safe-ink:#16212E}
+.safe-ico .safe-body{fill:none;stroke:currentColor;stroke-width:2}
+.safe-ico .safe-inside{fill:currentColor;opacity:.18}
+.safe-ico .safe-coin{fill:currentColor;opacity:.85}
+.safe-ico .safe-door{transform-box:view-box;transform-origin:6.5px 15px}
+.safe-ico .safe-door-face{fill:currentColor}
+.safe-ico .safe-dial{fill:none;stroke:var(--safe,#F15A22);stroke-width:1.4;stroke-linecap:round}
+.safe-ico .safe-handle{fill:var(--safe,#F15A22)}
+.is-need_open .safe-door{animation:safe-opening 2.6s ease-in-out infinite}
+.is-open .safe-door{transform:scaleX(.16)}
+.is-close_due .safe-door{animation:safe-closing 2.6s ease-in-out infinite}
+@keyframes safe-opening{0%,30%{transform:scaleX(1)}55%,80%{transform:scaleX(.16)}100%{transform:scaleX(1)}}
+@keyframes safe-closing{0%,30%{transform:scaleX(.16)}55%,80%{transform:scaleX(1)}100%{transform:scaleX(.16)}}
+@media(prefers-reduced-motion:reduce){.is-need_open .safe-door,.is-close_due .safe-door{animation:none}.is-close_due .safe-door{transform:scaleX(.16)}}
 /* Owner 2026-11-17: «صرف حساب الطبيب» (reception-doctor-payout.js). */
 .journey-doctor-pay:empty{display:none}
 .dp-pill{display:inline-flex;align-items:center;min-height:30px;padding:0 12px;border:0;border-radius:999px;font:inherit;font-size:13px;font-weight:800;white-space:nowrap;cursor:pointer}
