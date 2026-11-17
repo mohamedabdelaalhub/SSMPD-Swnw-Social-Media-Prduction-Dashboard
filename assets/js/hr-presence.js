@@ -158,11 +158,11 @@
       var abs = M.list.filter(function (p) { return p.st === 'absent'; }).sort(function (a, b) { return (b.sinceStart || 0) - (a.sinceStart || 0); });
       var late = M.list.filter(function (p) { return p.isLate; }).sort(function (a, b) { return b.late - a.late; });
       var lv = M.list.filter(function (p) { return p.st === 'leave'; });
-      var absRow = function (p) { return '<li class="row abs" data-presence-absent>' + avatar(p) + '<div class="nm"><span class="t">' + esc(p.name) + '</span><small>' + esc(p.dept.name) + (p.start ? ' · وردية ' + esc(clock(p.start)) : '') + '</small><span class="pill p-none">لم يصل منذ ' + esc(dur(p.sinceStart)) + '</span></div><div class="acts-c">' + acts(p) + '</div></li>'; };
+      var absRow = function (p) { return '<li class="row abs" data-presence-absent data-pid="' + esc(p.id) + '" tabindex="0">' + avatar(p) + '<div class="nm"><span class="t">' + esc(p.name) + '</span><small>' + esc(p.dept.name) + (p.start ? ' · وردية ' + esc(clock(p.start)) : '') + '</small><span class="pill p-none">لم يصل منذ ' + esc(dur(p.sinceStart)) + '</span></div><div class="acts-c">' + acts(p) + '</div></li>'; };
       var lateRow = function (p) {
-        return '<li class="row" data-presence-late>' + avatar(p) + '<div class="nm"><span class="t">' + esc(p.name) + '</span><small>' + esc(p.dept.name) + (p.start ? ' · الموعد ' + esc(clock(p.start)) : '') + ' · وصل ' + esc(clock(p.b && p.b.first_in)) + (p.lateWeek >= 2 ? ' · <b style="color:var(--neg)">' + p.lateWeek + ' مرات آخر 6 أيام</b>' : '') + '</small><span class="pill p-late">متأخر ' + esc(dur(p.late)) + '</span></div></li>';
+        return '<li class="row" data-presence-late data-pid="' + esc(p.id) + '" tabindex="0">' + avatar(p) + '<div class="nm"><span class="t">' + esc(p.name) + '</span><small>' + esc(p.dept.name) + (p.start ? ' · الموعد ' + esc(clock(p.start)) : '') + ' · وصل ' + esc(clock(p.b && p.b.first_in)) + (p.lateWeek >= 2 ? ' · <b style="color:var(--neg)">' + p.lateWeek + ' مرات آخر 6 أيام</b>' : '') + '</small><span class="pill p-late">متأخر ' + esc(dur(p.late)) + '</span></div></li>';
       };
-      var lvRow = function (p) { return '<li class="row" data-presence-leave>' + avatar(p) + '<div class="nm"><span class="t">' + esc(p.name) + '</span><small>' + esc(p.dept.name) + (p.start ? ' · وردية ' + esc(clock(p.start)) : '') + '</small></div><div class="meta"><span class="pill p-leave">' + (p.excusedLeave ? 'إذن معتمد' : 'إجازة') + '</span></div></li>'; };
+      var lvRow = function (p) { return '<li class="row" data-presence-leave data-pid="' + esc(p.id) + '" tabindex="0">' + avatar(p) + '<div class="nm"><span class="t">' + esc(p.name) + '</span><small>' + esc(p.dept.name) + (p.start ? ' · وردية ' + esc(clock(p.start)) : '') + '</small></div><div class="meta"><span class="pill p-leave">' + (p.excusedLeave ? 'إذن معتمد' : 'إجازة') + '</span></div></li>'; };
       var box = function (cls, k, t, sub, n, rows, empty) { return '<section class="box ' + cls + '" data-b="' + k + '"><header><h3>' + t + '<span class="cnt">' + n + '</span>' + (sub ? '<small>' + sub + '</small>' : '') + '</h3></header><ul class="rows">' + (rows || '<li class="empty">' + empty + '</li>') + '</ul></section>'; };
       return '<section class="panel pv-follow" data-presence-follow><h4>' + ico('bulb') + 'محتاجين متابعة</h4><div class="seg trio-tabs" role="group" aria-label="المتابعة العاجلة">' + [['abs', 'غايبون', abs.length], ['late', 'متأخرون', late.length], ['leave', 'إجازات', lv.length]].map(function (t) { return '<button type="button" data-bx="' + t[0] + '" aria-pressed="' + (S.trio === t[0]) + '">' + t[1] + ' (' + t[2] + ')</button>'; }).join('') + '</div>' +
         '<div class="trio" data-show="' + S.trio + '">' + box('b-neg', 'abs', 'الغايبون الآن', 'كان المفروض يحضروا ولسه مبصموش', abs.length, abs.map(absRow).join(''), 'لا يوجد غايبون') +
@@ -182,11 +182,11 @@
       var kebab = S.canManage && !p.unmapped ? '<button type="button" class="kebab" data-presence="map" data-id="' + esc(p.r ? key(p.r) : '') + '" aria-label="تغيير الربط" title="تغيير الربط">' + ico('dots') + '</button>' : '';
       var unm = p.unmapped && S.canManage ? '<div class="acts"><button type="button" class="mini solid" data-presence="map" data-id="' + esc(key(p.r)) + '">ربط</button><button type="button" class="mini" data-presence="ignore" data-id="' + esc(key(p.r)) + '">' + ico('eyeoff') + ' تجاهل</button></div>' : '';
       var warn = p.long ? '<span class="pill p-warn" data-presence-warn>' + ico('warn') + ' مدة طويلة جدًا — تحقق من بصمة الخروج</span>' : '';
-      return '<li class="person" data-presence-person>' + avatar(p) + '<div class="nm"><span class="t">' + esc(p.name) + '</span><small>' + esc(p.unmapped ? p.role : p.role || p.code) + '</small>' + warn + unm + '</div><div class="meta">' + meta + '</div>' + kebab + '</li>';
+      return '<li class="person" data-presence-person' + (p.unmapped ? '' : ' data-pid="' + esc(p.id) + '" tabindex="0" title="افتح ملف الأداء"') + '>' + avatar(p) + '<div class="nm"><span class="t">' + esc(p.name) + '</span><small>' + esc(p.unmapped ? p.role : p.role || p.code) + '</small>' + warn + unm + '</div><div class="meta">' + meta + '</div>' + kebab + '</li>';
     }
     // A scheduled person who did not come: shown first inside the department, with call / WhatsApp.
     function absentCell(p) {
-      return '<li class="person abs abs-line" data-presence-absent>' + avatar(p) + '<div class="nm"><span class="t">' + esc(p.name) + '</span><small>' + (p.start ? 'وردية ' + esc(clock(p.start)) : esc(p.role)) + '</small><span class="pill p-none">لم يصل منذ ' + esc(dur(p.sinceStart)) + '</span></div><div class="meta">' + acts(p) + '</div></li>';
+      return '<li class="person abs abs-line" data-presence-absent data-pid="' + esc(p.id) + '" tabindex="0" title="افتح ملف الأداء">' + avatar(p) + '<div class="nm"><span class="t">' + esc(p.name) + '</span><small>' + (p.start ? 'وردية ' + esc(clock(p.start)) : esc(p.role)) + '</small><span class="pill p-none">لم يصل منذ ' + esc(dur(p.sinceStart)) + '</span></div><div class="meta">' + acts(p) + '</div></li>';
     }
     // Departments where nobody is in and nobody is missing (only upcoming / left / on leave) -> one line each in the side column.
     function quietDepts() { return deptList().filter(function (g) { var st = deptStats(g.d); return g.d.id !== 'unmapped' && !st.pres && !st.abs; }); }
@@ -306,6 +306,11 @@
       host.querySelectorAll('.kpi').forEach(function (b) { b.onclick = function () { S.state = S.state === b.dataset.k ? 'all' : b.dataset.k; rerender(); }; });
       host.querySelectorAll('[data-bx]').forEach(function (b) { b.onclick = function () { S.trio = b.dataset.bx; rerender(); }; });
       host.querySelectorAll('.chip,.qd').forEach(function (b) { b.onclick = function () { S.dept = b.dataset.d; rerender(); }; });
+      host.querySelectorAll('[data-pid]').forEach(function (r) {
+        var go = function () { if (ctx.openProfile) { var p = M.list.filter(function (x) { return x.id === r.dataset.pid; })[0] || {}; ctx.openProfile(r.dataset.pid, { name: p.name, department: p.dept && p.dept.name, role: p.role }); } };
+        r.onclick = function (e) { if (e.target.closest('a,button,select,input')) return; go(); };
+        r.onkeydown = function (e) { if ((e.key === 'Enter' || e.key === ' ') && e.target === r) { e.preventDefault(); go(); } };
+      });
       host.querySelectorAll('[data-v]').forEach(function (b) { b.onclick = function () { S.view = b.dataset.v; rerender(); }; });
       host.querySelectorAll('[data-out]').forEach(function (b) { b.onclick = function () { S.openOut[b.dataset.out] = !S.openOut[b.dataset.out]; rerender(); }; });
       host.querySelectorAll('[data-att-tab]').forEach(function (b) { b.onclick = function () { if (ctx.openTab) ctx.openTab(b.dataset.attTab); }; });
