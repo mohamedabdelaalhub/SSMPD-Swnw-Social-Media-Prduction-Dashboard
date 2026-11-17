@@ -5,6 +5,10 @@ p=pathlib.Path('assets/js/dashboard-help-data.js');s=p.read_text();d=json.loads(
 rows=json.loads(subprocess.check_output(['node','scripts/help-field-inventory.cjs','--json'],text=True));rules=[]
 def rule(labels,text,article=None):
  rules.append((set(labels.split('|')),text,article))
+file_rules={}
+def frule(files,labels,text,article):
+ # File-scoped explanation: the same label can mean different things on other screens.
+ for f in files.split('|'):file_rules.setdefault(f,[]).append((set(labels.split('|')),text,article))
 rule('ملاحظات الخزينة','اكتب وصفًا للعهدة أو تعليمات الاستلام. الملاحظة لا تغير صلاحيات الخزينة.','ledger-guide')
 rule('نوع الكشف','اختر كشف ماكينة الفيزا أو البنك أو المحفظة ليقارن النظام الحركات بالحساب المقابل.','ledger-guide')
 rule('البنك أو شركة التحصيل|شركة التحصيل أو البنك','اكتب الجهة التي أصدرت الكشف أو الإيصال، مثل فوري أو اسم البنك.','ledger-guide')
@@ -528,18 +532,77 @@ for alias,target in reviewed_aliases.items():
  else:raise RuntimeError('No authored alias target '+target)
 
 # MORE_RULES
+# --- Human resources and price lists (workforce-prices.js, price-list-governance.js) ---
+W='workforce-prices.js';G='price-list-governance.js'
+frule(W,'شهر المتابعة','اختار الشهر اللي عايز تشوف حضوره وطلباته ووردياته. تصدير متابعة الشهر وتحضير استحقاق المرتب بيستخدموا نفس الشهر. تغيير الشهر لا يعدل أي بيانات.','hr-my-file')
+frule(W,'ابحث عن موظف أو طبيب','اكتب جزء من الاسم أو الكود أو الموبايل لتصفية القائمة. البحث بيعرض بس الملفات المسموح لك تشوفها ولا يغير حاجة.','hr-manage')
+frule(W,'التكرار','اختار يومي أو أسبوعي أو شهري لتكرار المهمة على الموظف. المهمة بتظهر عند المسؤول المختار هو اللي يسجلها ويتابعها.','tasks-guide')
+frule(W,'الاسم الثنائي على الأقل','اكتب اسم الموظف أو الطبيب ثنائي على الأقل زي ما هو في المستندات. قبل الحفظ النظام بيدور على ملف بنفس الاسم أو الموبايل علشان مايتكررش.','hr-manage')
+frule(W,'العلاقة بالمركز','اختار موظف أو طبيب متعاون أو طبيب وموظف. ده بيحدد يظهر في المرتبات ولا في عقود الأطباء ولا الاتنين. «يحتاج استكمال» معناها لسه ماتحددش.','hr-manage')
+frule(W,'حساب الدخول','اختار «ملف فقط» لو الشخص مش هيدخل الداشبورد، أو «ربط مستخدم موجود» لو عنده حساب، أو «إنشاء مستخدم» علشان تتبعت له دعوة دخول على بريده بعد الحفظ.','hr-manage')
+frule(W,'اختر المستخدم الحالي','اختار حساب الدخول الموجود اللي يخص الشخص ده. الربط مايغيرش صلاحيات الحساب، والحساب الواحد مايتربطش بملفين.','hr-manage')
+frule(W,'دور المستخدم الجديد','اختار الدور الوظيفي للحساب الجديد. الحساب بياخد صلاحيات الدور ده بس. الأدوار العليا زي المدير العام والمدير المالي يحددها السوبر أدمن فقط.','access')
+frule(W,'المسمى الوظيفي','اكتب الوظيفة زي ما في العقد أو قرار التعيين، مثل موظف استقبال أو أخصائي. المسمى للعرض والتقارير وما بيديش صلاحيات.','hr-manage')
+frule(W,'المدير المباشر','اختار الشخص اللي بيتابع الموظف ده. ده بيستخدم في متابعة الطلبات والمهام، ومايديش المدير صلاحيات إضافية لوحده.','hr-manage')
+frule(W,'بداية العمل','تاريخ أول يوم شغل فعلي حسب العقد أو قرار التعيين. بيستخدم في حساب المدة ورصيد الإجازات.','hr-manage')
+frule(W,'نهاية العمل','سيبه فاضي طول ما الشخص شغال. اكتب آخر يوم شغل لما العلاقة تنتهي، وغير الحالة لـ«انتهت العلاقة». إنهاء الخدمة الكامل له مسار مستقل.','hr-manage')
+frule(W,'كود الطبيب من عقود الحسابات','اربط الملف بكود الطبيب المسجل في عقود الأطباء بالحسابات علشان مستحقاته تظهر مع ملفه. الكود لازم يكون موجود في العقود الأول.','hr-manage')
+frule(W,'معرف الموظف من عقود المرتبات','اربط الملف بالمعرف المسجل في عقد المرتب بالحسابات. من غير الربط ده مش هتقدر تحضر استحقاق مرتب للموظف.','payroll')
+frule(W,'اسم جهة اتصال الطوارئ','اسم الشخص اللي نكلمه لو حصل طارئ للموظف، مع صلة القرابة لو تحب. بيانات خاصة تظهر للمسؤولين المصرح لهم بس.','hr-manage')
+frule(W,'هاتف الطوارئ','رقم موبايل جهة اتصال الطوارئ. راجعه مع الموظف لأنه بيستخدم في الطوارئ بس.','hr-manage')
+frule(W,'مرجع مستند الاستحقاق','بيتملى تلقائي بكود زي PAY-الشهر-كود الموظف. عدله لو عندك رقم مستند أو كشف حضور معتمد. المرجع بيمنع تكرار نفس الاستحقاق.','payroll')
+frule(W,'البدلات المعتمدة حسب المستند','اكتب إجمالي البدلات المعتمدة للشهر من المستند بالجنيه، أو صفر. النظام مابيحسبش إضافي أو بدلات لوحده.','payroll')
+frule(W,'ضريبة الأجور حسب المستند','اكتب ضريبة كسب العمل المستقطعة الشهر ده كما في المستند المعتمد، أو صفر.','payroll')
+frule(W,'التأمينات حسب المستند','اكتب حصة الموظف في التأمينات المستقطعة الشهر ده كما في المستند، أو صفر.','payroll')
+frule(W,'استرداد سلفة بموافقة موثقة','اكتب المبلغ اللي هيتخصم الشهر ده من سلفة معتمدة، بس لو فيه موافقة مكتوبة. فرق الخزينة مايتخصمش من المرتب تلقائي.','payroll')
+frule(W,'اسم المستند','اكتب نوع المستند بوضوح زي صورة البطاقة أو العقد أو شهادة المؤهل.','hr-manage')
+frule(W,'رابط المستند على HTTPS','الصق رابط الملف على درايف المركز، ولازم يبدأ بـ https. الملف نفسه مابيترفعش من هنا، وتأكد إن مشاركته محدودة.','hr-manage')
+frule(W,'تاريخ انتهاء الصلاحية','اكتب تاريخ انتهاء المستند لو له صلاحية زي ترخيص المزاولة، أو سيبه فاضي. بيساعد تعرف المستندات اللي محتاجة تجديد.','hr-manage')
+frule(W,'نوع الإجازة','اختار سنوية أو عارضة أو مرضية أو ولادة طفل. كل نوع له قواعد إخطار مكتوبة تحت النموذج، والمرضية محتاجة شهادة طبية خلال 48 ساعة.','hr-my-file')
+frule(W,'الكمية — أيام للإجازة، ساعات للإضافي والإذن، مبلغ للسلفة','اكتب عدد الأيام للإجازة، أو الساعات للإضافي والإذن، أو المبلغ بالجنيه للسلفة. راجع إنها متوافقة مع تاريخ «من» و«إلى».','hr-my-file')
+frule(W,'سبب الاستثناء — لو الطلب خارج القواعد','لو الطلب مخالف لقواعد الإخطار أو الحد، اكتب السبب هنا. الطلب بيتقبل للمراجعة، والمراجع هو اللي يقرر.','hr-my-file')
+frule(W,'رابط الشهادة الطبية (صورة أو PDF على درايف)','ارفع صورة الشهادة على درايف المركز والصق الرابط هنا خلال 48 ساعة من الإجازة المرضية، وإلا اليوم ممكن يتحسب غياب.','hr-my-file')
+frule(W,'يوم الوردية','تاريخ اليوم اللي الوردية تخصه.','hr-manage')
+frule(W,'بداية الوردية|نهاية الوردية','الميعاد المخطط للوردية بتوقيت جهازك. العرض بعد الحفظ بتوقيت القاهرة.','hr-manage')
+frule(W,'الحضور الفعلي|الانصراف الفعلي','الوقت الفعلي للحضور أو الانصراف لو معروف. الفرق عن ميعاد الوردية بيظهر كتأخير في ملخص الشهر. السجل محتاج اعتماد شخص تاني.','hr-manage')
+frule(W,'اسم اللائحة','اسم واضح يميز اللائحة، زي «أسعار المركز» أو اسم الجهة المتعاقدة. الاسم بيظهر في سبب السعر عند الحجز.','price-lists')
+frule(W,'رقم الإصدار','رقم نسخة اللائحة. «إنشاء إصدار جديد» بيزود الرقم تلقائي وبيحافظ على النسخة القديمة كما هي.','price-lists')
+frule(W,'النطاق','اختار «لائحة المركز» للأسعار العامة، أو عقد جهة معينة لو اللائحة خاصة بيها.','price-lists')
+frule(W,'طريقة التسعير','أسعار ثابتة: كل بند له سعره. خصم: الخصم بيتطبق على سعر المركز. أسعار وخصومات: الاتنين مع بعض حسب كل بند.','price-lists')
+frule(W,'الخدمات غير المدرجة','بيحدد إيه اللي يحصل لخدمة مش موجودة في البنود: «غير مشمولة» توقف التسعير وتحتاج مراجعة، أو سعر المركز من غير خصم، أو سعر المركز مع خصم اللائحة.','price-lists')
+frule(W,'الجمع مع خصم إضافي داخل الاستقبال','اختار «يسمح» لو مسموح للاستقبال يطلب خصم زيادة على سعر اللائحة، وده بيمشي بإجراءات اعتماد الخصم العادية.','price-lists')
+frule(W,'خصم اللائحة %','نسبة خصم عامة من 0 لـ100 على كل بنود اللائحة. لو للبند خصم نسبة كمان، النسبتين بيتطبقوا ورا بعض مش بيتجمعوا.','price-lists')
+frule(W,'خصم اللائحة مبلغ لكل وحدة خدمة','مبلغ بالجنيه بيتخصم من كل وحدة خدمة بعد الخصم بالنسبة. لو السعر النهائي طلع صفر أو أقل النظام بيرفض.','price-lists')
+frule(W,'سارية من|سارية حتى','فترة تطبيق اللائحة على تاريخ الخدمة. برا الفترة دي اللائحة مابتتطبقش حتى لو معتمدة.','price-lists')
+frule(W,'استيراد Excel أو CSV أو PDF نصي','اختار ملف الأسعار وهو بيتقري على جهازك ويحول السطور لبنود. راجع مطابقة كل سطر بالخدمة الصح قبل الحفظ. PDF المصور مش بيتقري.','price-lists')
+frule(W,'السعر الثابت — اختياري','سعر الخدمة في اللائحة دي بالجنيه. لو سبته فاضي بيتحسب من سعر المركز مع الخصومات.','price-lists')
+frule(W,'خصم البند %','نسبة خصم للخدمة دي بس من 0 لـ100، بتتطبق قبل خصم اللائحة العام.','price-lists')
+frule(W,'خصم البند مبلغ','مبلغ بالجنيه بيتخصم من سعر الخدمة دي بس، بعد خصومات النسبة.','price-lists')
+frule(W,'ملاحظات / اسم السطر المستورد','اسم الخدمة كما ورد في ملف الجهة أو أي ملاحظة على البند، علشان المراجع يتأكد من المطابقة.','price-lists')
+frule(W,'تاريخ التسعير','تاريخ الخدمة اللي عايز تحسب سعرها. النظام بيختار اللائحة المعتمدة السارية في التاريخ ده. الحساب للعرض بس ومابيعملش حجز.','price-lists')
+frule(G,'صلاحية تعديل هذه القائمة','اسمح أو امنع المستخدم المختار من تعديل بنود القائمة. المنع الصريح بيتقدم حتى على منشئ القائمة.','price-lists')
+frule(G,'إنشاء إصدار جديد من هذه القائمة','اسمح للمستخدم ينسخ القائمة لإصدار جديد يعدل فيه. النسخة القديمة بتفضل كما هي.','price-lists')
+frule(G,'سبب الحذف','اكتب سبب إخفاء القائمة، 3 حروف على الأقل. القائمة المعتمدة أو المرتبطة بعقد مابتتحذفش، والبنود والسجل بيتحفظوا.','price-lists')
+frule(G,'العقد','اختار عقد الجهة اللي هتربط بيه مرجع الأسعار. حالة الربط وحالة العقد بيظهروا تحت.','price-lists')
+frule(G,'مرجع الأسعار المتفق عليه','اختار القائمة المتفق عليها مع الجهة. ممكن نفس القائمة تترتبط بأكتر من عقد. الربط محتاج اعتماد من شخص تاني غير اللي ربط.','price-lists')
+frule(G,'نسبة تحمل الجهة لهذه الخدمة — اتركها فارغة لاستخدام العقد','النسبة اللي الجهة بتدفعها من سعر الخدمة دي بس، من 0 لـ100. فاضية يعني نسبة العقد العامة.','price-lists')
+TASKS_ALL='في تكرار المهمة «كل» هو عدد الوحدات بين كل تكرار والتاني، مثل1 مع أسبوع يعني كل أسبوع، وراجع بداية الجدول ونهايته. وفي التعليق «الكل» معناها التعليق يوصل لكل المشاركين في المهمة بدل شخص واحد.'
+frule('render-tasks.js','الكل',TASKS_ALL,'tasks-guide')
+frule(G,'شروط الخدمة','اكتب شرط الجهة على الخدمة دي، زي عدد مرات أو مستند مطلوب. الشرط بيخص العقد المختار بس.','price-lists')
 def norm(v):
  v=re.sub(r'[\u064b-\u065f\u0670\u0640]','',v).lower();v=re.sub('[أإآٱ]','ا',v).replace('ى','ي').replace('ة','ه');v=re.sub(r'[^\w]+',' ',v).strip();return re.sub(r'(^| )ال',r'\1',v)
 def canon(v):
  v=re.sub(r'\s*\([^)]*(?:اختياري|إن وجد|ان وجد)[^)]*\)','',v);v=re.sub(r'\s*(?:إن وجد|إن وجدت|اختياري)$','',v);return norm(v)
 def domain(f):
+ if f=='workforce-prices.js' or f.startswith('hr-'):return 'human_resources'
+ if f=='price-list-governance.js':return 'price_lists'
  if f=='contract-marketing.js':return 'accounting'
  if f in ['render-patients.js','psychology-workspace.js'] or f.startswith('patient-'):return 'patients'
  if f.startswith('reception-') or f=='render-bookings.js':return 'reception_services'
  if f.startswith('inventory-') or f=='render-inventory.js':return 'inventory'
  if f=='accountant-workspace.js' or f.startswith(('finance-','ledger-')) or f=='render-accounting.js':return 'accounting'
  return {'navigation-ui.js':'home','comments.js':'comments','render-comments.js':'comments','app.js':'home','render-admin.js':'admin','render-leads.js':'leads','render-clinic-info.js':'clinic_info','render-contracting-entities.js':'contracting_entities','render-metaads.js':'metaads','render-mediabuyer.js':'mediabuyer','indicator-reports.js':'indicator_reports','render-tasks.js':'tasks','task-work.js':'tasks','render-summary.js':'summary','render-staffkpi.js':'staff_kpi','render-review.js':'review','render-publish.js':'publish'}.get(f,'production')
-def default_article(tab):return {'patients':'patient-records','reception_services':'booking-flow','inventory':'purchases','accounting':'ledger-guide','leads':'leads-guide','tasks':'tasks-guide','admin':'access','home':'personal','clinic_info':'chatbot','contracting_entities':'entities','metaads':'ads-guide','mediabuyer':'ads-guide','indicator_reports':'indicators','summary':'indicators','staff_kpi':'indicators','review':'content','publish':'content','production':'content'}.get(tab,'content')
+def default_article(tab):return {'patients':'patient-records','reception_services':'booking-flow','inventory':'purchases','accounting':'ledger-guide','leads':'leads-guide','tasks':'tasks-guide','admin':'access','home':'personal','clinic_info':'chatbot','contracting_entities':'entities','metaads':'ads-guide','mediabuyer':'ads-guide','indicator_reports':'indicators','summary':'indicators','staff_kpi':'indicators','review':'content','publish':'content','production':'content','human_resources':'hr-my-file','price_lists':'price-lists'}.get(tab,'content')
 contract_help=json.loads(re.search(r"var fieldDescriptions=(.*);",pathlib.Path("assets/js/contract-marketing.js").read_text(encoding="utf-8")).group(1))
 
 def explain(row):
@@ -557,7 +620,9 @@ def explain(row):
  if label=='الوحدة' and tab in ['inventory','accounting','reception_services']:return 'اكتب اسم وحدة الصنف مثل قطعة أو عبوة أو مل، وراجع عدد محتويات العبوة ومعامل التحويل للمخزن.','supply-map'
  if label=='رقم الزيارة' and row['file'] in ['render-accounting.js','reception-services.js']:return 'رقم ترتيب الزيارة داخل تعريف الباكج الذي ستقدم فيه هذه الخدمة، مثل1 للزيارة الأولى. ليس رقم زيارة الأرشيف الدائم.','package'
  if label=='من' and row['file']=='render-patients.js':return 'حدد بداية الفترة أو التوقيت المطلوب في الجزء المعني من التقرير أو جدول الوجبات، مع مراجعة الحقل المقابل «إلى».','patient-records'
- if label=='كل' and tab=='tasks':return 'عدد الوحدات بين تكرارات المهمة، مثل1 مع وحدة أسبوع للتكرار أسبوعيًا. راجع بداية الجدول ونهايته.','tasks-guide'
+ if label=='كل' and tab=='tasks':return TASKS_ALL,'tasks-guide'
+ for aliases,text,art in file_rules.get(row['file'],[]):
+  if any(canon(label)==canon(k) for k in aliases):return text,art
  for aliases,text,art in rules:
   if any(canon(label)==canon(k) for k in aliases):return text,art or default_article(tab)
  for f in d['fields']:
@@ -566,6 +631,7 @@ def explain(row):
  return None
 def tabs_for(tab,file):
  if file=='contract-marketing.js':return ['accounting','contracting_entities']
+ if file=='workforce-prices.js':return ['human_resources','price_lists']
  if file.startswith(('design-','video-','studio-')) or file in ['ai-clips.js','before-after-content.js','carousel-content.js','dina-content.js','doctor-content.js','reel-cover.js','workflow.js','content-ai.js','content-sources.js','content-rating.js','weekly-plan.js']:return ['production','review','design','publish','archive']
  if tab=='inventory':return ['inventory','accounting']
  if tab=='accounting':return ['accounting','booking_cash']
@@ -584,8 +650,11 @@ def compile_guide():
   g=groups.setdefault(key,dict(title=row['label'],labels=[],text=text,article=article,tabs=allowed,forms=list(forms),reviewed=True))
   if row['label'] not in g['labels']:g['labels'].append(row['label'])
   manifest.append(dict(row,tab=tab,article=article,text_sha256=hashlib.sha256(text.encode()).hexdigest()))
- if missing:raise RuntimeError('Fields need reviewed explanations: '+json.dumps(missing,ensure_ascii=False))
- fields=list(groups.values());payload=dict(version='20261021-1',definitions=len(rows),labels=len({r['label'] for r in rows}),files=len({r['file'] for r in rows}),groups=len(fields))
+ # --check fails on any unexplained field. A normal build still writes the reviewed
+ # groups, so explanations can ship area by area; unexplained fields stay out of the registry.
+ if missing and '--check' in sys.argv:raise RuntimeError('Fields need reviewed explanations: '+json.dumps(missing,ensure_ascii=False))
+ if missing:print('WARNING: %d fields still need reviewed explanations (not written to the registry)'%len(missing),file=sys.stderr)
+ fields=list(groups.values());payload=dict(version='20261117-1',definitions=len(rows),labels=len({r['label'] for r in rows}),files=len({r['file'] for r in rows}),groups=len(fields))
  js='/* Reviewed exact field labels from dashboard source. Generated by scripts/build-dashboard-help.py. */\n(function(){var data='+json.dumps(dict(fields=fields,coverage=payload),ensure_ascii=False,indent=2)+';window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();\n'
  report=json.dumps(dict(coverage=payload,fields=manifest),ensure_ascii=False,indent=2)+'\n'
  targets={'assets/js/dashboard-help-fields.js':js,'docs/dashboard-help-fields.json':report}
