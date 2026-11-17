@@ -10,7 +10,7 @@
 @font-face{font-family:"BigVesta Arabic";src:url("../../../assets/fonts/BigVesta-Bold.woff2") format("woff2");font-weight:700}
 @font-face{font-family:"Hiragino Kaku";src:url("../../../assets/fonts/Hiragino-W3.woff2") format("woff2");font-weight:300}
 @font-face{font-family:"Hiragino Kaku";src:url("../../../assets/fonts/Hiragino-W6.woff2") format("woff2");font-weight:600}
-:root{--blue:#0F369D;--orange:#F15A22;--ink:#16212E;--pos:#2F7D5C;--neg:#D0402A;--bg:#F3F4F7;--line:#E6E8EE;--muted:#6B7483;--r:18px;--ease:cubic-bezier(.2,.8,.2,1)}
+:root{--gap:16px;--blue:#0F369D;--orange:#F15A22;--ink:#16212E;--pos:#2F7D5C;--neg:#D0402A;--bg:#F3F4F7;--line:#E6E8EE;--muted:#6B7483;--r:18px;--ease:cubic-bezier(.2,.8,.2,1)}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;font-size:14px;font-variant-numeric:tabular-nums}
 svg{fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
@@ -21,7 +21,7 @@ svg{fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-l
 .ib{width:38px;height:38px;border-radius:12px;border:1px solid var(--line);background:#fff;display:grid;place-items:center;position:relative;cursor:pointer;transition:all .2s var(--ease)}
 .ib svg{width:18px;height:18px}.ib:hover{background:#F3F5FA;transform:translateY(-1px)}
 .badge{position:absolute;top:-6px;left:-6px;background:var(--neg);color:#fff;font-size:10px;border-radius:9px;padding:1px 6px}
-main{max-width:1320px;margin:0 auto;padding:20px 24px 40px}
+main{max-width:1320px;margin:0 auto;padding:24px 24px 48px;display:flex;flex-direction:column;gap:var(--gap)}
 /* welcome */
 .hello{background:linear-gradient(120deg,#0F369D,#1E4FC8);color:#fff;border-radius:22px;padding:22px 26px;display:flex;align-items:center;gap:18px;position:relative;overflow:hidden}
 .hello::after{content:"";position:absolute;inset:auto -60px -90px auto;width:260px;height:260px;border-radius:50%;background:rgba(255,255,255,.07)}
@@ -33,28 +33,34 @@ main{max-width:1320px;margin:0 auto;padding:20px 24px 40px}
 .hb{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:12px;padding:9px 14px;display:flex;gap:6px;align-items:center;font:inherit;cursor:pointer;transition:all .2s var(--ease)}
 .hb svg{width:17px;height:17px}.hb:hover{background:#fff;color:var(--blue)}
 /* top row */
-.row1{display:grid;grid-template-columns:1.15fr 2fr;gap:12px;margin:16px 0}
-.kgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+/* one 3-column system for every row: edges line up from top to bottom */
+.row1,.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--gap)}
+.kgrid{grid-column:span 2;display:grid;grid-template-columns:1fr 1fr;gap:var(--gap)}
 .need{background:linear-gradient(135deg,#F15A22,#F7834F);color:#fff;border-radius:var(--r);padding:16px 18px;grid-row:span 1;display:flex;flex-direction:column;box-shadow:0 10px 24px rgba(241,90,34,.22)}
 .need small{opacity:.9}.need>b{font-size:36px;line-height:1.1;margin:2px 0 8px}
 .need .l{display:flex;flex-direction:column;gap:6px;margin-top:auto}
 .need a{background:rgba(255,255,255,.17);border-radius:10px;padding:7px 10px;display:flex;justify-content:space-between;align-items:center;color:#fff;text-decoration:none;font-size:13px;cursor:pointer;transition:all .2s var(--ease)}
 .need a b{background:#fff;color:#C2410C;border-radius:999px;padding:0 8px;font-size:12px}
 .need a:hover{background:rgba(255,255,255,.3);padding-inline:14px}
-.k{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;display:grid;grid-template-columns:44px 1fr auto;grid-template-rows:auto auto;column-gap:12px;align-items:center;cursor:pointer;transition:transform .22s var(--ease),box-shadow .22s var(--ease),border-color .2s}
+.k{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;display:grid;grid-template-columns:44px 1fr;grid-template-rows:auto auto auto;column-gap:14px;row-gap:2px;align-items:center;cursor:pointer;transition:transform .22s var(--ease),box-shadow .22s var(--ease),border-color .2s}
 .k:hover{transform:translateY(-3px);box-shadow:0 10px 22px rgba(22,33,46,.08);border-color:#C9D4EE}
-.k .ic{grid-row:span 2;width:44px;height:44px;border-radius:11px;display:grid;place-items:center;background:var(--t);color:var(--c)}.k .ic svg{width:19px;height:19px}
-.k small{color:var(--muted);font-size:13px}.k b{font-size:32px;line-height:1.1;grid-row:span 2;grid-column:3}
-.k i{font-style:normal;font-size:11.5px;color:var(--muted);grid-column:2}
+.k .ic{grid-row:1 / span 3;align-self:start;width:44px;height:44px;border-radius:11px;display:grid;place-items:center;background:var(--t);color:var(--c)}.k .ic svg{width:19px;height:19px}
+.k small{color:var(--muted);font-size:13px}.k b{font-size:30px;line-height:1.1;grid-column:2;grid-row:2}
+.k i{font-style:normal;font-size:11.5px;color:var(--muted);grid-column:2;grid-row:3}
+.k small{grid-column:2;grid-row:1}
 /* two columns */
-.grid{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:14px;align-items:stretch}
-.col{display:flex;flex-direction:column;gap:14px;min-width:0}
+.grid{align-items:stretch}
+.col{display:flex;flex-direction:column;gap:var(--gap);min-width:0}
+.col.wide{grid-column:span 2}
+/* the last card of each column grows so both columns end on the same line */
+.col>:last-child{flex:1}
+.col>.two{display:flex;flex-direction:column}.col>.two>:last-child{flex:1}
 .card{background:#fff;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;display:flex;flex-direction:column;transition:transform .22s var(--ease),box-shadow .22s var(--ease)}
 .card:hover{box-shadow:0 12px 26px rgba(22,33,46,.06)}
 .ch{display:flex;align-items:center;gap:10px;padding:16px 18px 8px}
 .ch .ci{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;background:var(--t);color:var(--c);flex:none}.ch .ci svg{width:19px;height:19px}
 .ch h3{margin:0;font-size:16px}.ch h3 small{display:block;font-weight:400;color:var(--muted);font-size:12px;margin-top:2px}
-.ch .cnt{margin-inline-start:auto;background:#EEF0F4;border-radius:999px;padding:1px 10px;font-size:12.5px;color:var(--muted)}
+.ch .cnt{vertical-align:2px;margin-inline-start:4px;font-weight:400;background:#EEF0F4;border-radius:999px;padding:1px 10px;font-size:12.5px;color:var(--muted)}
 .seg{display:flex;gap:6px;padding:0 18px 6px;flex-wrap:wrap}
 .pill{border:1px solid var(--line);background:#fff;border-radius:999px;padding:5px 12px;font-size:12.5px;cursor:pointer;transition:all .2s var(--ease)}
 .pill i{font-style:normal;color:var(--muted);margin-inline-start:4px}
@@ -74,12 +80,12 @@ main{max-width:1320px;margin:0 auto;padding:20px 24px 40px}
 .lnk:hover{background-size:100% 2px}
 .card .ch .lnk{margin-inline-start:auto;font-size:12.5px}
 .foot small{color:var(--muted);font-size:12px}
-.two{display:grid;grid-template-columns:1fr;gap:14px}
+.two{gap:var(--gap)}
 .mini{padding:0 18px 14px;display:grid;grid-template-columns:auto 1fr;column-gap:14px;align-items:center}.mini b.big{font-size:30px;grid-row:span 2}.mini .prog,.mini .stars{grid-column:2}.mini p{margin:2px 0 0;color:var(--muted);font-size:12.5px}
 .prog{height:6px;border-radius:6px;background:#EEF0F4;overflow:hidden;margin-top:10px}.prog i{display:block;height:100%;background:var(--c);border-radius:6px}
 .stars{display:flex;gap:4px;margin-top:8px;color:#F5A524}.stars svg{width:18px;height:18px;fill:#F5A524;stroke:#F5A524}.stars svg.e{fill:none;stroke:#D5D9E2}
 /* quick access */
-.qa{margin-top:14px}
+
 .qa .ch{padding-bottom:4px}
 .qs{margin-inline-start:auto;display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:6px 12px;color:var(--muted);font-size:12.5px;min-width:220px}.qs svg{width:15px;height:15px}
 .tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;padding:8px 18px 18px}
@@ -93,12 +99,13 @@ main{max-width:1320px;margin:0 auto;padding:20px 24px 40px}
 .hello,.need,.k,.card{animation:rise .5s var(--ease) both}
 .k:nth-child(2){animation-delay:.04s}.k:nth-child(3){animation-delay:.08s}.k:nth-child(4){animation-delay:.12s}
 @keyframes rise{from{opacity:0;transform:translateY(12px)}}
-@media (max-width:1100px){.row1{grid-template-columns:1fr}.grid{grid-template-columns:1fr}}
+@media (max-width:1100px){.row1,.grid{grid-template-columns:1fr}.kgrid,.col.wide{grid-column:auto}}
 @media (max-width:640px){
- main{padding:14px 12px 30px}.top{padding:10px 12px}.top .hide-m{display:none}
+ :root{--gap:12px}
+ main{padding:16px 12px 32px}.top{padding:10px 12px}.top .hide-m{display:none}
  .hello{padding:18px;flex-wrap:wrap}.hello h1{font-size:22px}.ph{width:52px;height:52px}
  .hello .acts{margin:0;width:100%}.hb{flex:1;justify-content:center}
- .row1{gap:10px}.kgrid{gap:10px}.k{padding:12px;grid-template-columns:36px 1fr auto;column-gap:8px}.k .ic{width:36px;height:36px}.k b{font-size:24px}.k small{font-size:12px}.k i{display:none}
+ .k{padding:12px;grid-template-columns:36px 1fr;column-gap:10px}.k .ic{width:36px;height:36px}.k b{font-size:24px}.k small{font-size:12px}.k i{display:none}
  .two{grid-template-columns:1fr}.qs{display:none}.tiles{grid-template-columns:repeat(3,1fr);gap:8px;padding:6px 12px 14px}
  .tile{flex-direction:column;text-align:center;padding:10px 6px;gap:6px}.tile b{font-size:12px}
  .it{flex-wrap:wrap;row-gap:6px}.it .tx{flex:1 1 calc(100% - 50px)}.it .chip:first-of-type{margin-inline-start:42px}
@@ -169,9 +176,9 @@ main{max-width:1320px;margin:0 auto;padding:20px 24px 40px}
  </section>
 
  <div class="grid">
-  <div class="col">
+  <div class="col wide">
    <article class="card" style="--c:#0F369D;--t:#E8EEFB">
-    <div class="ch"><span class="ci"><svg><use href="#task"/></svg></span><h3>مهامي<small>المطلوب منك تنفيذه، الأقرب ميعادًا الأول</small></h3><span class="cnt">1</span></div>
+    <div class="ch"><span class="ci"><svg><use href="#task"/></svg></span><h3>مهامي <span class="cnt">1</span><small>المطلوب منك تنفيذه، الأقرب ميعادًا الأول</small></h3></div>
     <div class="seg"><span class="pill on">الكل <i>1</i></span><span class="pill">متأخرة <i>1</i></span><span class="pill">النهارده <i>0</i></span><span class="pill">أُعيدت للتعديل <i>1</i></span></div>
     <ul class="list">
      <li class="it"><span class="dot" style="--c:#D0402A"></span><div class="tx"><b>مهمة مهمة جدًا</b><small>من مدير المركز · كان ميعادها 1 أكتوبر</small></div><span class="chip c-gry">أُعيدت للتعديل</span><span class="chip c-red">متأخرة 47 يوم</span></li>
@@ -180,7 +187,7 @@ main{max-width:1320px;margin:0 auto;padding:20px 24px 40px}
    </article>
 
    <article class="card" style="--c:#0E8A7E;--t:#E6F4F2">
-    <div class="ch"><span class="ci"><svg><use href="#team"/></svg></span><h3>متابعة الفريق<small>المهام اللي محتاجة تدخّل منك</small></h3><span class="cnt">3</span></div>
+    <div class="ch"><span class="ci"><svg><use href="#team"/></svg></span><h3>متابعة الفريق <span class="cnt">3</span><small>المهام اللي محتاجة تدخّل منك</small></h3></div>
     <ul class="list">
      <li class="it"><span class="av"><svg><use href="#user"/></svg></span><div class="tx"><b>تجهيز تقرير الحضور الأسبوعي</b><small>موظفة موارد بشرية · ميعادها امبارح</small></div><span class="chip c-org">متأخرة يوم</span></li>
      <li class="it"><span class="av"><svg><use href="#user"/></svg></span><div class="tx"><b>تحديث أسعار الباقات</b><small>محاسب · ميعادها من 3 أيام</small></div><span class="chip c-org">متأخرة 3 أيام</span></li>
@@ -192,7 +199,7 @@ main{max-width:1320px;margin:0 auto;padding:20px 24px 40px}
 
   <div class="col">
    <article class="card" style="--c:#7A4CE0;--t:#F1ECFC">
-    <div class="ch"><span class="ci"><svg><use href="#ok"/></svg></span><h3>في انتظار اعتمادك<small>مهام ومواد محتاجة مراجعتك</small></h3><span class="cnt">2</span></div>
+    <div class="ch"><span class="ci"><svg><use href="#ok"/></svg></span><h3>في انتظار اعتمادك <span class="cnt">2</span><small>مهام ومواد محتاجة مراجعتك</small></h3></div>
     <ul class="list">
      <li class="it"><span class="dot" style="--c:#7A4CE0"></span><div class="tx"><b>بوست: نصائح العناية بالأسنان</b><small>مرحلة الاعتماد النهائي</small></div><span class="chip c-blu">محتوى</span></li>
      <li class="it"><span class="dot" style="--c:#7A4CE0"></span><div class="tx"><b>طلب صرف مستلزمات</b><small>المخزن · من ساعتين</small></div><span class="chip c-blu">مهمة</span></li>

@@ -55,3 +55,12 @@ if the owner forwards a GitHub link.
 - No React/Tailwind/framer-motion: the dashboard is plain HTML/CSS/JS with no
   build step, so hover lifts and transitions are done in CSS
   (`transform`, `transition`) inside `assets/css/dashboard-theme.css`.
+
+## QA gate before any screenshot is shown to the owner
+
+1. `node docs/ui-references/tools/layout-check.cjs <page> [cardSelector] 1440 1024 390` must print PASS at every width:
+   one gutter value, no near-miss edges between rows, side-by-side columns end on the same line,
+   no clipped text, no horizontal overflow.
+2. Review against the Refactoring UI checklist (hierarchy, spacing scale, grouping, button hierarchy,
+   clutter, shadows, contrast, empty states). Counts sit next to their titles; numbers sit under their labels.
+3. Spacing tokens: 16px gap on desktop, 12px on phones (presence board uses 14/12, matching the attendance hub).
