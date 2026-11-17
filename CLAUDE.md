@@ -242,6 +242,7 @@ SSMPD - Swnw Social Media Prduction Dashboard/   (الفولدر الجذر — 
 - الألوان: الأساسي `#0F369D` · التنبيه `#F15A22` · النص الداكن `#16212E`
   · الإيجابي `#2F7D5C` · السلبي `#D0402A`
 - الاسم بالإنجليزي دايماً `Swnw` — لا `Sono` في أي نص يراه المستخدم
+- **معايير الشكل والحركة والصوت والشارتات (معتمدة من المالك 2026-11-17)**: قبل أي تعديل في الشكل اقرأ `docs/ui-references/README.md` — فيه «ملف الأصوات» (`assets/js/ui-motion.js`)، «ملف الألوان» (`docs/ui-references/color-picker.html`)، «ملف الشارتات» (`docs/ui-references/CHARTS.md`)، وأداة الفحص `docs/ui-references/tools/layout-check.cjs` اللي لازم تعدّي قبل ما تبعت أي صورة للمالك. تصور الأول ومفيش تنفيذ قبل موافقته.
 - **ستايل سونو الزجاجي (Sonu Glass)**: لما المالك يطلب «الاستايل الزجاجي» اشتغل من `docs/SONU-GLASS-STYLE.md`
   (الملفات المرجعية: `dashboard-theme.css` ثم `dashboard-glass.css` بعد CSS الشاشة)
 

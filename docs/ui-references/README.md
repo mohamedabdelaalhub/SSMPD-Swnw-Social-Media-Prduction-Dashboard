@@ -7,6 +7,16 @@ identity: local WOFF2 fonts only, colours `#0F369D` / `#F15A22` / `#16212E` /
 
 Status: **Motion & sound foundations APPROVED by the owner (2026-11-17).** Employee performance profile mockup approved; home mockup to be revised with the motion/sound/chart additions.
 
+## Saved kits (use these first)
+
+| Kit | File | Live page (owner only) |
+|---|---|---|
+| Sounds & motion «ملف الأصوات» | `interaction-kit.html` (spec) → shipped as `assets/js/ui-motion.js` + `assets/css/ui-motion.css` (#544) | https://claude.ai/artifact/RpYG3EJJHNKdi1DJwnfgwu |
+| Colours «ملف الألوان» | `color-picker.html` (department + status colours, live checks) | https://claude.ai/artifact/RWub6YLdDyXQQJ5yovUJjw |
+| Charts «ملف الشارتات» | `CHARTS.md` → reference code `assets/js/employee-profile.js` (#545) | https://claude.ai/artifact/4rzx6VYe8uVPFKavrPb3Fo |
+| Layout QA | `tools/layout-check.cjs` (one gutter, aligned edges, equal column ends, no clipping) | — |
+| Mockups | `mockups/` (presence, home, employee profile) | — |
+
 ## Sources
 
 | Folder | Source | What it is |
