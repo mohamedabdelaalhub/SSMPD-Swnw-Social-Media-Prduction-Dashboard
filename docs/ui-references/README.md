@@ -5,7 +5,7 @@ References inspire layout, density and motion. They never replace the Swnw
 identity: local WOFF2 fonts only, colours `#0F369D` / `#F15A22` / `#16212E` /
 `#2F7D5C` / `#D0402A`, the name «Swnw», Arabic RTL first.
 
-Status: **DRAFT — waiting for the owner's confirmation.**
+Status: **Motion & sound foundations APPROVED by the owner (2026-11-17).** Employee performance profile mockup approved; home mockup to be revised with the motion/sound/chart additions.
 
 ## Sources
 
@@ -64,3 +64,27 @@ if the owner forwards a GitHub link.
 2. Review against the Refactoring UI checklist (hierarchy, spacing scale, grouping, button hierarchy,
    clutter, shadows, contrast, empty states). Counts sit next to their titles; numbers sit under their labels.
 3. Spacing tokens: 16px gap on desktop, 12px on phones (presence board uses 14/12, matching the attendance hub).
+
+## Motion & sound foundations (owner-approved 2026-11-17)
+
+Live reference: `docs/ui-references/interaction-kit.html`. Every screen follows this table.
+
+| Interaction | Motion | Duration | Sound |
+|---|---|---|---|
+| Press any button / card | scale 0.97 + ripple from the press point | 120ms | soft «tick» |
+| Mouse hover on button / card | lift 2–4px + shadow + icon nudge (only on `@media (hover:hover)`) | 180–240ms | none |
+| Pick a filter / tab | colour slides, count bumps | 240–420ms | toggle |
+| Save / finish succeeded | spinner → drawn check → green | 420ms | two rising notes |
+| Field error | shake + red ring + message under the field | 380ms | low tone |
+| New notification | bell rings, badge pops in | 700ms | notification chime |
+| Page opens | cards rise in sequence, numbers count up | 500ms | none |
+| Automatic refresh | no motion | — | none |
+
+Tokens: `--ease-out: cubic-bezier(.22,1,.36,1)`, `--ease-spring: cubic-bezier(.34,1.56,.64,1)`, `--ease-in: cubic-bezier(.55,0,1,.45)`.
+Sounds: one shared Web Audio library (no files), master gain ≤ 0.22, per-user on/off in «إعداداتي». Light haptic tick (8ms) on touch devices that support it.
+`prefers-reduced-motion` disables motion. Never a sound on hover.
+
+## Charts
+
+Use the dataviz skill procedure: pick the form first, validate any categorical/status palette with its validator, thin marks, hover tooltips + table view, time runs left→right (newest on the right) inside an LTR chart box, axis numbers without unit signs (unit in the subtitle).
+Attendance status palette (validated): on time `#1F9D6B`, late `#E08A1E`, absent `#D0402A`, leave `#4F75CF`, not scheduled `#E3E6EC` — always with a legend/label.
