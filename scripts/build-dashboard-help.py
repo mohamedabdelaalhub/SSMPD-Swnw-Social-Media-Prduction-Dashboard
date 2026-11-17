@@ -817,6 +817,88 @@ frule(B,'اسم المريض / رقم الملف / رقم الزيارة|بحث 
 frule(B,'طريقة تحصيل المريض',PAY_METHOD,'insurance')
 frule(B,'رقم الإيصال/العملية|مرجع تحصيل المريض',PAY_REF,'insurance')
 frule('render-accounting.js','قسم الخدمة في سونو','القسم اللي الخدمة بتظهر تحته في الحجز والتقارير، زي أشعة أو معمل.','add-doctor-service-booking')
+# --- Reception, today operations, lab links, patient 360, test records ---
+L='lab-link-review.js'
+frule(L,'العينة','نوع عينة التحليل زي ما في قائمة المعمل، زي دم أو بول. في الفلتر بتعرض تحاليل عينة معينة بس، وفي الخدمة الجديدة بتتسجل معاها.','price-lists')
+frule(L,'الثقة','درجة تطابق اقتراح الربط الآلي: عالية أو متوسطة أو ضعيفة أو مفيش اقتراح. للتصفية بس، ومفيش ربط بيتأكد من غير ما شخص يضغط.','price-lists')
+frule(L,'الإصدار','اختار إصدار قائمة المعمل الشريك اللي عايز تراجعه، لو فيه أكتر من إصدار.','price-lists')
+frule(L,'اسم الخدمة في المركز','اسم التحليل زي ما هيظهر في خدمات المركز والحجز.','price-lists')
+frule(L,'سعر البيع في المركز (جنيه)','السعر اللي المريض هيدفعه في المركز. قارنه بتكلفة المعمل علشان ماتبيعش بأقل من التكلفة.','price-lists')
+frule(L,'إتاحة الخدمة في الحجز بعد الاعتماد','علّم عليها علشان الخدمة تظهر في الحجز أول ما مراجع تاني يعتمد الطلب.','price-lists')
+frule(L,'سبب الإضافة','اشرح ليه التحليل محتاج خدمة جديدة ومش موجود له مقابل في المركز. الطلب بيروح لمراجع تاني.','price-lists')
+frule(L,'ابحث باسم الخدمة','اكتب جزء من اسم الخدمة علشان تختار خدمة المركز المطابقة للتحليل.','price-lists')
+frule(L,'سبب هذا الاختيار','اكتب ليه الخدمة دي هي نفس التحليل، زي نفس العينة ونفس الاسم العلمي. القرار بيتسجل باسمك.','price-lists')
+frule(L,'التكلفة (جنيه)','سعر التحليل اللي المعمل الشريك بياخده من المركز.','price-lists')
+frule(L,'مصدر الرقم','منين جبت التكلفة، زي قائمة أسعار المعمل أو خطاب منه.','price-lists')
+frule(L,'راجعت الصفحة وأتحمل مسؤولية التأكيد باسمي','علّم عليها بس بعد ما تراجع كل الربطات الظاهرة في الصفحة. كل ربط هيتسجل باسمك.','price-lists')
+X='patient360.js'
+frule(X,'اكتب المعلومة، ولا تفترض سببًا غير مؤكد.','اكتب المعلومة اللي عرفتها عن المريض أو العميل زي ما قالها، من غير ما تستنتج سبب مش مؤكد.','leads-guide')
+frule(X,'اكتب الشكوى والمطلوب مراجعته دون استنتاج مسؤولية أو تشخيص.','اكتب الشكوى زي ما وصلت والمطلوب مراجعته، من غير ما تحدد مين الغلطان أو تكتب تشخيص.','leads-guide')
+frule(X,'سبب المتابعة','اكتب ليه محتاجين نتابع مع المريض، زي سؤال عن نتيجة أو موعد ماتحجزش.','leads-guide')
+frule(X,'مسودة رسالة بدون ضغط على العميل','اكتب نص رسالة المتابعة بأسلوب لطيف من غير ضغط. دي مسودة بس ومش بتتبعت تلقائي.','leads-guide')
+frule(X,'موعد مقترح','ميعاد مقترح للمتابعة. الحفظ بيسجل مسودة بس.','leads-guide')
+frule(X,'بحث في المحادثات','اكتب اسم أو رقم أو كلمة علشان تلاقي محادثة أو ملاحظة. البحث مابيبعتش حاجة.','leads-guide')
+frule('reception-patient-documents.js','نوع المستند','اختار نوع المستند اللي بترفعه للمريض، زي بطاقة أو كارنيه أو نتيجة.','reception-patient-documents')
+O='reception-service-orders.js'
+frule(O,'الطلب','اختار طلب الخدمة اللي بتسجل تنفيذه أو مكانه.','today-board')
+frule(O,'جهة التأمين','اسم جهة التأمين زي ما هيتطبع على المطالبة.','insurance')
+frule(O,'رقم العضوية','رقم كارنيه المريض عند جهة التأمين.','insurance')
+frule(O,'نسبة تحمّل المريض %','النسبة اللي المريض بيدفعها من قيمة الخدمات حسب شروط الجهة.','insurance')
+frule(O,'أو تخصص','اختار تخصص بدل طبيب معين لو أي طبيب في التخصص ده ينفع ينفذ الخدمة. لازم تختار واحد بس: طبيب أو تخصص.','today-board')
+frule(O,'تسري من','اليوم اللي النسبة الجديدة تبدأ منه.','today-board')
+frule(O,'نسبة المزوّد % (أشعة خارجية يحاسبها المركز)','النسبة اللي المزود بياخدها لما المركز هو اللي بيحاسب المريض على أشعة بتتعمل عند المزود.','today-board')
+frule(O,'نسبة المركز % (أشعة يحاسبها المزوّد)','النسبة اللي المركز بياخدها لما المزود هو اللي بيحاسب المريض مباشرة.','today-board')
+frule(O,'السنة','السنة اللي سعر تكلفة المعمل ده بيتطبق فيها.','today-board')
+frule(O,'سعر التكلفة','المبلغ اللي المركز بيدفعه للمعمل الخارجي عن الخدمة. المريض بيدفع حسب أسعار المركز.','today-board')
+V='reception-services.js'
+frule(V,'سبب تغيير المواعيد','اكتب ليه تواريخ أقساط الباكج بتتغير، زي طلب المريضة أو تأجيل زيارة.','package')
+frule(V,'المدة بالأيام (اختياري)|المدة بالأيام','عدد الأيام اللي الباكج بيخلص فيها، لو متفق عليها.','package')
+frule(V,'احتساب مقدم ٢٥٪ والأقساط على عدد زيارات الباكج','علّم عليها علشان النظام يحسب مقدم 25٪ ويوزع الباقي أقساط على الزيارات.','package')
+frule(V,'تاريخ المقدم المتفق عليه','اليوم اللي المريض هيدفع فيه المقدم.','package')
+frule(V,'السعر المتفق عليه','السعر النهائي اللي اتفقت عليه مع المريض للباكج.','package')
+frule(V,'الاستحقاق','القسط بيستحق عند الزيارة، ولا في تواريخ ثابتة. الأقساط تذكير لحد ما استحقاقها يتعتمد.','package')
+frule(V,'الخدمة الجديدة','خدمة الليزر اللي الزيارة دي هتتحسب عليها بدل القديمة.','package')
+frule(V,'الكمية المتفق عليها','عدد الوحدات المتفق عليها للزيارة دي، زي عدد المناطق.','package')
+frule(V,'سبب التعديل','اكتب ليه اتفاق الباكج أو الزيارة اتغير. التعديل بيتسجل ويتراجع.','package')
+R='reception-workspace.js'
+frule(R,'اسم المريض أو رقم الملف أو التليفون أو الدكتور','اكتب جزء من اسم المريض أو رقم ملفه أو تليفونه أو اسم الدكتور علشان تلاقي الحجز.','booking-flow')
+frule(R,'الأطباء','اعرض حجوزات طبيب معين بس، أو كل الأطباء.','booking-flow')
+frule(R,'القسم / التخصص','اعرض قسم أو تخصص معين بس.','booking-flow')
+frule(R,'اكتب حرفين من اسم الخدمة','اكتب حرفين على الأقل من اسم الخدمة واختارها من النتايج.','booking-flow')
+frule(R,'خدمة خارجية (مبلغ إضافي يُضاف على فاتورة المريض)','علّم عليها لو الخدمة ليها مبلغ إضافي المريض بيدفعه فوق سعرها. المبلغ ده مش من أتعاب الطبيب.','booking-flow')
+frule(R,'المبلغ الإضافي (جنيه)','المبلغ اللي بيتضاف على فاتورة المريض فوق سعر الخدمة.','booking-flow')
+frule(R,'فترة تانية من','لو الطبيب عنده فترتين في نفس اليوم، اكتب بداية ونهاية الفترة التانية.','weekly-schedule')
+frule(R,'من يوم|لحد يوم (شامل)','أول وآخر يوم للتغيير المؤقت في مواعيد الطبيب، والاتنين داخلين. الحجوزات القديمة مش بتتلغي لوحدها، وهيظهرلك اللي محتاج تكلمه.','schedule-exception')
+frule(R,'نوع التغيير','الطبيب مش موجود (إجازة أو سفر)، ولا موجود بساعات مختلفة.','schedule-exception')
+T='test-records.js'
+frule(T,'نوع السجل','اختار نوع السجل التجريبي اللي بتدور عليه، زي فاتورة أو مريض أو حجز.','access')
+frule(T,'بحث (اسم / رقم / مرجع)','اكتب اسم أو رقم أو مرجع السجل علشان تلاقيه.','access')
+frule(T,'مثال: فاتورة تجربة عملها المحاسب|سبب اعتباره تجريبيًا','اكتب ليه السجل ده تجريبي، زي فاتورة تجربة عملها المحاسب.','access')
+frule(T,'اكتب كلمة «تجريبي» للتأكيد','اكتب كلمة «تجريبي» بالظبط علشان تأكد إنك عايز تعلّم السجل.','access')
+frule(T,'سبب الحذف','اكتب ليه السجل التجريبي هيتحذف.','access')
+frule(T,'اكتب كلمة «حذف» للتأكيد (مفيش رجوع من الشاشة؛ النسخة محفوظة في الأرشيف)','اكتب كلمة «حذف» بالظبط للتأكيد. مفيش رجوع من الشاشة، بس نسخة بتتحفظ في الأرشيف.','access')
+S='today-operations-sandbox.js'
+frule(S,'مريض التجربة|الخدمة التجريبية|طبيب التجربة','بيانات تجريبية للتدريب على الحجز. محفوظة جوه مساحة التجربة بس ومابتأثرش على المرضى أو الحسابات الحقيقية.','today-board')
+frule(S,'التقييم من 1 إلى 5','تقييم تجربة الزيارة من 1 لـ5 في مساحة التجربة.','today-board')
+frule(S,'تعليق اختياري','تعليق على تجربة الزيارة لو حابب.','today-board')
+frule('today-operations-v2.js|today-operations-service-request-v3.js','الخدمة المطلوبة','اختار الخدمة اللي المريض محتاجها. النظام بيصنفها لوحده تحاليل أو أشعة أو علاج طبيعي، والمنفذ بيتحدد وقت التنفيذ.','today-board')
+Q='today-operations-v2.js'
+frule(Q,'مستوى الأولوية','اختار سبب تقديم المريض. الحالات العاجلة والحرجة بتتقدم بقرار التمريض.','today-board')
+frule(Q,'سبب الأولوية','اكتب السبب التشغيلي للأولوية. إجباري لأي مستوى غير العادي.','today-board')
+frule(Q,'اليوم الجديد|الساعة المتاحة','اختار اليوم الجديد، وبعدها هتظهر الساعات الفاضية للطبيب في اليوم ده.','today-board')
+frule(Q,'ملاحظة اختيارية','ملاحظة عن إنهاء الزيارة لو حابب.','today-board')
+Y='today-operations.js'
+frule(Y,'يوم التشغيل','اليوم اللي عايز تشوف حجوزاته ورحلة مرضاه.','today-board')
+frule(Y,'ابحث بالاسم أو التليفون أو رقم الملف','اكتب اسم المريض أو تليفونه أو رقم ملفه علشان تلاقيه في قائمة اليوم.','today-board')
+frule(Y,'خط العرض|خط الطول','إحداثيات المركز على الخريطة. بتستخدم للتأكد إن المريض جوه المركز وقت تسجيل الوصول. ممكن تضغط «استخدم موقعي» وانت في المركز.','today-board')
+frule(Y,'نطاق السماح بالمتر','المسافة المسموحة من المركز بالمتر علشان تسجيل الوصول يتقبل.','today-board')
+frule(Y,'التحقق من الموقع','«مطلوب» معناها المريض لازم يكون جوه النطاق علشان يسجل وصوله.','today-board')
+frule(Y,'QR تسجيل الوصول','تشغيل أو إيقاف تسجيل وصول المريض بكود QR.','today-board')
+frule(Y,'طلب التقييم بعد الزيارة','تشغيل أو إيقاف طلب تقييم من المريض بعد ما الزيارة تخلص.','today-board')
+frule(Y,'حد تنبيه الانتظار بالدقائق','لو المريض استنى أكتر من الدقايق دي، بيظهر تنبيه في لوحة اليوم.','today-board')
+frule(Y,'حد تأخير الطبيب بالدقائق','لو الطبيب اتأخر أكتر من الدقايق دي عن أول ميعاد، بيظهر تنبيه.','today-board')
+frule(Y,'التأخير المتوقع بالدقائق','الوقت المتوقع لتأخير الطبيب. بيظهر للاستقبال علشان يبلغوا المرضى.','today-board')
+frule(Y,'درجة الأولوية','من عادية لأولوية 5. اكتب السبب لأي أولوية.','today-board')
 def norm(v):
  v=re.sub(r'[\u064b-\u065f\u0670\u0640]','',v).lower();v=re.sub('[أإآٱ]','ا',v).replace('ى','ي').replace('ة','ه');v=re.sub(r'[^\w]+',' ',v).strip();return re.sub(r'(^| )ال',r'\1',v)
 def canon(v):
@@ -828,6 +910,10 @@ def domain(f):
  if f in PRICE_FILES:return 'price_lists'
  if f=='insurance-contracts.js':return 'contracting_entities'
  if f in ('entity-claims.js','insurance-billing.js'):return 'accounting'
+ if f.startswith('today-operations'):return 'reception_services'
+ if f=='lab-link-review.js':return 'price_lists'
+ if f=='test-records.js':return 'admin'
+ if f=='patient360.js':return 'leads'
  if f=='contract-marketing.js':return 'accounting'
  if f in ['render-patients.js','psychology-workspace.js'] or f.startswith('patient-'):return 'patients'
  if f.startswith('reception-') or f=='render-bookings.js':return 'reception_services'
@@ -864,6 +950,8 @@ def explain(row):
 def tabs_for(tab,file,label=''):
  if file=='contract-marketing.js':return ['accounting','contracting_entities']
  if file=='workforce-prices.js':return ['human_resources','price_lists']
+ # Patient 360 is an overlay opened from any tab.
+ if file=='patient360.js':return None
  if file in ('entity-claims.js','insurance-billing.js'):return ['accounting','booking_cash','contracting_entities']
  if file in PRICE_FILES or file=='contract-navigation.js':return ['price_lists','contracting_entities']
  # Only the card fields injected into the patient/visit forms also live on those tabs.
@@ -882,7 +970,7 @@ def compile_guide():
   if tab=='patients':article='patient-records'
   if tab=='accounting' and article in ['content','personal','patient-records']:article='ledger-guide'
   if article not in {a['id'] for a in d['articles']}:raise RuntimeError('Missing article '+article)
-  allowed=tabs_for(tab,row['file'],row['label']);forms=tuple(row.get('forms',[]));key=(text,article,tuple(allowed),forms)
+  allowed=tabs_for(tab,row['file'],row['label']);forms=tuple(row.get('forms',[]));key=(text,article,tuple(allowed) if allowed else None,forms)
   g=groups.setdefault(key,dict(title=row['label'],labels=[],text=text,article=article,tabs=allowed,forms=list(forms),reviewed=True))
   if row['label'] not in g['labels']:g['labels'].append(row['label'])
   manifest.append(dict(row,tab=tab,article=article,text_sha256=hashlib.sha256(text.encode()).hexdigest()))

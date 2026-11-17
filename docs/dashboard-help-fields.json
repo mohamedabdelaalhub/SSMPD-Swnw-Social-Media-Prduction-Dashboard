@@ -4,7 +4,7 @@
     "definitions": 1746,
     "labels": 1285,
     "files": 119,
-    "groups": 1258
+    "groups": 1332
   },
   "fields": [
     {
@@ -8817,9 +8817,51 @@
       "name": "",
       "kind": "html",
       "forms": [],
-      "tab": "production",
+      "tab": "price_lists",
       "article": "personal",
       "text_sha256": "fcfcf93d2d0bde74aa0a1934993d34ae9f117562d8c56a3a563761ba68e24990"
+    },
+    {
+      "file": "lab-link-review.js",
+      "label": "العينة",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "7513f56535310f77320f62346c29480d0a8c76d29bbb83bd68ba57c0ef47116b"
+    },
+    {
+      "file": "lab-link-review.js",
+      "label": "الثقة",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "b09290936b9f65d21ce310070593f7e752c51d9ef99303295993ecf87596b2ca"
+    },
+    {
+      "file": "lab-link-review.js",
+      "label": "الإصدار",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "a3946b6581105223edce769d3bf98d08a0a4b9ec3f7c5529446ec72625107ccb"
+    },
+    {
+      "file": "lab-link-review.js",
+      "label": "اسم الخدمة في المركز",
+      "name": "name",
+      "kind": "helper",
+      "forms": [
+        "إضافة خدمة جديدة بالمركز — "
+      ],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "0e8e7b3c3b67342f79295f3231cf39a7b9a10242e9114290c488d201f9faa8f7"
     },
     {
       "file": "lab-link-review.js",
@@ -8829,9 +8871,69 @@
       "forms": [
         "إضافة خدمة جديدة بالمركز — "
       ],
-      "tab": "production",
+      "tab": "price_lists",
       "article": "content",
       "text_sha256": "8781afaef1012c14a5b9f99b05513e1852e02bb6c191b2fc0b339518d671a4a9"
+    },
+    {
+      "file": "lab-link-review.js",
+      "label": "العينة",
+      "name": "sample",
+      "kind": "helper",
+      "forms": [
+        "إضافة خدمة جديدة بالمركز — "
+      ],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "7513f56535310f77320f62346c29480d0a8c76d29bbb83bd68ba57c0ef47116b"
+    },
+    {
+      "file": "lab-link-review.js",
+      "label": "سعر البيع في المركز (جنيه)",
+      "name": "selling_price",
+      "kind": "helper",
+      "forms": [
+        "إضافة خدمة جديدة بالمركز — "
+      ],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "fb8ad91f82a16f6a7ed64a1db469dbccae1118af550658fb4c1fa129acdae8cb"
+    },
+    {
+      "file": "lab-link-review.js",
+      "label": "إتاحة الخدمة في الحجز بعد الاعتماد",
+      "name": "",
+      "kind": "label",
+      "forms": [
+        "إضافة خدمة جديدة بالمركز — "
+      ],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "bc131e4ba266f5ae8ad1a8434607039bb0653882d32177558a71bcf14790a60e"
+    },
+    {
+      "file": "lab-link-review.js",
+      "label": "سبب الإضافة",
+      "name": "note",
+      "kind": "helper",
+      "forms": [
+        "إضافة خدمة جديدة بالمركز — "
+      ],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "987008d518576a60ea907d7f616449c291db65bd736bc239a60c2256c640d00c"
+    },
+    {
+      "file": "lab-link-review.js",
+      "label": "ابحث باسم الخدمة",
+      "name": "q",
+      "kind": "helper",
+      "forms": [
+        "اختيار خدمة من قائمة المركز — "
+      ],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "3fd345b7749d7c4cc83b3425f89f09a6c8f94c56910e5e701726cc57474e08ac"
     },
     {
       "file": "lab-link-review.js",
@@ -8841,9 +8943,57 @@
       "forms": [
         "اختيار خدمة من قائمة المركز — "
       ],
-      "tab": "production",
+      "tab": "price_lists",
       "article": "booking-flow",
       "text_sha256": "9de357e91f68d929da65d3983a861523a19c2d8ad7c1d86737871b762e1c0325"
+    },
+    {
+      "file": "lab-link-review.js",
+      "label": "سبب هذا الاختيار",
+      "name": "note",
+      "kind": "helper",
+      "forms": [
+        "اختيار خدمة من قائمة المركز — "
+      ],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "0f5629a31b677eaf8b62d02f7281978095e9b8a89deaa4be0d910fda637c7f2d"
+    },
+    {
+      "file": "lab-link-review.js",
+      "label": "التكلفة (جنيه)",
+      "name": "cost",
+      "kind": "helper",
+      "forms": [
+        "تسجيل تكلفة المعمل — "
+      ],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "5fa431cb73940ac3895c6216dd00422afb8ea11ca922d2291e570f71e4cd642e"
+    },
+    {
+      "file": "lab-link-review.js",
+      "label": "مصدر الرقم",
+      "name": "note",
+      "kind": "helper",
+      "forms": [
+        "تسجيل تكلفة المعمل — "
+      ],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "ccfd71fe4205605b495fb27157bc21a5668e430b25f57a0ece1b5a3b39a593ee"
+    },
+    {
+      "file": "lab-link-review.js",
+      "label": "راجعت الصفحة وأتحمل مسؤولية التأكيد باسمي",
+      "name": "",
+      "kind": "label",
+      "forms": [
+        "تأكيد جماعي لتطابق عالي الثقة"
+      ],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "d4e58156ff40d8c5aa7149e158c88c7be8b8599379008b22dec9f4d9f20dd953"
     },
     {
       "file": "leads-missing-data-enhancement.js",
@@ -9030,6 +9180,66 @@
       "tab": "home",
       "article": "personal",
       "text_sha256": "cb369dfe4f4d347611d73d597b06cf662eed732794d5ab3c69f3490bdb9b7602"
+    },
+    {
+      "file": "patient360.js",
+      "label": "اكتب المعلومة، ولا تفترض سببًا غير مؤكد.",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "leads",
+      "article": "leads-guide",
+      "text_sha256": "f30eb47b58eff8e974f12e479c5846fc169b6622c0faf145f691493cffceefde"
+    },
+    {
+      "file": "patient360.js",
+      "label": "اكتب الشكوى والمطلوب مراجعته دون استنتاج مسؤولية أو تشخيص.",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "leads",
+      "article": "leads-guide",
+      "text_sha256": "8ab2987d488d98e3e87d8f990c2effccbe93182819b0b756658556d6a074f00c"
+    },
+    {
+      "file": "patient360.js",
+      "label": "سبب المتابعة",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "leads",
+      "article": "leads-guide",
+      "text_sha256": "4bf5210a3bd2e84c0295f93ab2a69b7a515bbdeec6beff32e6e1f2250e181a07"
+    },
+    {
+      "file": "patient360.js",
+      "label": "مسودة رسالة بدون ضغط على العميل",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "leads",
+      "article": "leads-guide",
+      "text_sha256": "68dca11d4ac86a6cc7a39ad85e3723eade72b1357571f41cbba8a664679fff1d"
+    },
+    {
+      "file": "patient360.js",
+      "label": "موعد مقترح",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "leads",
+      "article": "leads-guide",
+      "text_sha256": "e5ad8ebed3aaca7d7dcb2ed0d5f45e345b1d89178c84a2b8532e0ee6f1aa0c37"
+    },
+    {
+      "file": "patient360.js",
+      "label": "بحث في المحادثات",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "leads",
+      "article": "leads-guide",
+      "text_sha256": "be867fbcea5951a6136f6b76fed06343748ccb711991c52eae45b74965bdd4d7"
     },
     {
       "file": "price-list-governance.js",
@@ -9969,6 +10179,16 @@
     },
     {
       "file": "reception-patient-documents.js",
+      "label": "نوع المستند",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-patient-documents",
+      "text_sha256": "4ec72177925a99a3285396e04be7da8e9c99cd642d29ea0f06a266fffe4eb32c"
+    },
+    {
+      "file": "reception-patient-documents.js",
       "label": "الملف",
       "name": "",
       "kind": "aria",
@@ -9976,6 +10196,16 @@
       "tab": "reception_services",
       "article": "patient-records",
       "text_sha256": "b51a2dd066b13876c39df5d1ba5f852738e81aca9c4e66efbb9477e50c88f17f"
+    },
+    {
+      "file": "reception-service-orders.js",
+      "label": "الطلب",
+      "name": "order_id",
+      "kind": "helper",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "today-board",
+      "text_sha256": "6fb99dfbc7c34a1f00e6e4b8a4a31ff879bf87ffb6e9c58211e4b8ff5dcc5dba"
     },
     {
       "file": "reception-service-orders.js",
@@ -9989,6 +10219,26 @@
     },
     {
       "file": "reception-service-orders.js",
+      "label": "جهة التأمين",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "insurance",
+      "text_sha256": "aa56ed6061a11335186eac4ebafaa491d6ed2d810b52df6c10eb04bffc0d8637"
+    },
+    {
+      "file": "reception-service-orders.js",
+      "label": "رقم العضوية",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "insurance",
+      "text_sha256": "e2af59c4c879ceecc0dac42f350c6f9792a61f94041eab06a8b8c21592077b63"
+    },
+    {
+      "file": "reception-service-orders.js",
       "label": "نسبة الخصم %",
       "name": "",
       "kind": "label",
@@ -9996,6 +10246,16 @@
       "tab": "reception_services",
       "article": "invoice",
       "text_sha256": "ea39a04f2d933c5be7f40811637a3ee239a7e73d1b1481ebeb5a5034e4c00575"
+    },
+    {
+      "file": "reception-service-orders.js",
+      "label": "نسبة تحمّل المريض %",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "insurance",
+      "text_sha256": "9f818751c31c606313eedb3825733dfcd33e5fcc12cc307b0366379b699f4ff5"
     },
     {
       "file": "reception-service-orders.js",
@@ -10009,6 +10269,16 @@
     },
     {
       "file": "reception-service-orders.js",
+      "label": "أو تخصص",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "today-board",
+      "text_sha256": "bd88b75dff41d2ebdebae45f3a7628a6284caf66cd7f44f51ca5635536cbce5f"
+    },
+    {
+      "file": "reception-service-orders.js",
       "label": "النسبة %",
       "name": "",
       "kind": "label",
@@ -10016,6 +10286,16 @@
       "tab": "reception_services",
       "article": "doctor-missing",
       "text_sha256": "b09adb5afd6eb35cd519f997730cd20d6f30f187e7e5ae1e75fe938738bb90da"
+    },
+    {
+      "file": "reception-service-orders.js",
+      "label": "تسري من",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "today-board",
+      "text_sha256": "c109070a53cc03d7838c48108ff22114abb40870471fcd68385afeaad84ae94d"
     },
     {
       "file": "reception-service-orders.js",
@@ -10036,6 +10316,46 @@
       "tab": "reception_services",
       "article": "patient",
       "text_sha256": "8a2950b281e7d62a52011cc1b6e43086544f9d96693cf4517d9d32bd36bd4b17"
+    },
+    {
+      "file": "reception-service-orders.js",
+      "label": "نسبة المزوّد % (أشعة خارجية يحاسبها المركز)",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "today-board",
+      "text_sha256": "7fc1c25e5befd42137c005b33e8d245695414af9a2a1b352389f8b328c139838"
+    },
+    {
+      "file": "reception-service-orders.js",
+      "label": "نسبة المركز % (أشعة يحاسبها المزوّد)",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "today-board",
+      "text_sha256": "c785b30c08e3fb61b960b21cfed7c8a5b2bfb2103cba2b7213f1bb5b81c70a22"
+    },
+    {
+      "file": "reception-service-orders.js",
+      "label": "السنة",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "today-board",
+      "text_sha256": "0bb0bae5484598a1a89bbacb62a4821f0d618c5c89f77f2490b623535c4950a8"
+    },
+    {
+      "file": "reception-service-orders.js",
+      "label": "سعر التكلفة",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "today-board",
+      "text_sha256": "4b0475d5aac8c3ebacadc37e0ad84d997948e826a8604553aea5b5e989fd22c5"
     },
     {
       "file": "reception-services.js",
@@ -10066,6 +10386,16 @@
       "tab": "reception_services",
       "article": "requests",
       "text_sha256": "e94fbc6b4acbcb93cd4550a5c0f411b3026a6856a94bfdc920222df26211079d"
+    },
+    {
+      "file": "reception-services.js",
+      "label": "سبب تغيير المواعيد",
+      "name": "reason",
+      "kind": "helper",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "package",
+      "text_sha256": "015dc67f4efbc090e0a1f38c4a271d5fd1117fcc589d43260f9ce4418b509707"
     },
     {
       "file": "reception-services.js",
@@ -10513,6 +10843,78 @@
     },
     {
       "file": "reception-services.js",
+      "label": "المدة بالأيام (اختياري)",
+      "name": "",
+      "kind": "label",
+      "forms": [
+        "تعاقد باكج — الأقساط تذكير حتى اعتماد استحقاقها"
+      ],
+      "tab": "reception_services",
+      "article": "package",
+      "text_sha256": "3cfafac04a3d029875ebe12494e2d18b38b140f3b96720e48c6741648d38891c"
+    },
+    {
+      "file": "reception-services.js",
+      "label": "احتساب مقدم ٢٥٪ والأقساط على عدد زيارات الباكج",
+      "name": "",
+      "kind": "label",
+      "forms": [
+        "تعاقد باكج — الأقساط تذكير حتى اعتماد استحقاقها"
+      ],
+      "tab": "reception_services",
+      "article": "package",
+      "text_sha256": "138a7df28021b1aa5d91359c7dff4d34e0cef37ecfacd8d41e4ba5199a1f6eed"
+    },
+    {
+      "file": "reception-services.js",
+      "label": "تاريخ المقدم المتفق عليه",
+      "name": "",
+      "kind": "label",
+      "forms": [
+        "تعاقد باكج — الأقساط تذكير حتى اعتماد استحقاقها"
+      ],
+      "tab": "reception_services",
+      "article": "package",
+      "text_sha256": "c1cee53ca7e62eb603b7023c336a237bf16fce77f8347b78c8c0502e72d5e362"
+    },
+    {
+      "file": "reception-services.js",
+      "label": "السعر المتفق عليه",
+      "name": "",
+      "kind": "label",
+      "forms": [
+        "تعاقد باكج — الأقساط تذكير حتى اعتماد استحقاقها"
+      ],
+      "tab": "reception_services",
+      "article": "package",
+      "text_sha256": "b246b4f62684ff7e7311dda72be150bbbf8e5e14634207e86ab7535d7114066c"
+    },
+    {
+      "file": "reception-services.js",
+      "label": "المدة بالأيام",
+      "name": "",
+      "kind": "label",
+      "forms": [
+        "تعاقد باكج — الأقساط تذكير حتى اعتماد استحقاقها"
+      ],
+      "tab": "reception_services",
+      "article": "package",
+      "text_sha256": "3cfafac04a3d029875ebe12494e2d18b38b140f3b96720e48c6741648d38891c"
+    },
+    {
+      "file": "reception-services.js",
+      "label": "الاستحقاق",
+      "name": "",
+      "kind": "label",
+      "forms": [
+        "تعاقد باكج — الأقساط تذكير حتى اعتماد استحقاقها"
+      ],
+      "tab": "reception_services",
+      "article": "package",
+      "text_sha256": "bea61d3caf71657692486222659e9e995bb10bad578776c82d6f6a34ba12b5a5"
+    },
+    {
+      "file": "reception-services.js",
       "label": "تاريخ القسط",
       "name": "due_on",
       "kind": "config",
@@ -10835,6 +11237,46 @@
     },
     {
       "file": "reception-services.js",
+      "label": "الخدمة الجديدة",
+      "name": "service_id",
+      "kind": "helper",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "package",
+      "text_sha256": "eb9eb5e7036e83fff66feaff2a9d92ba70da328d28bcced659f9307169e2ec13"
+    },
+    {
+      "file": "reception-services.js",
+      "label": "الكمية المتفق عليها",
+      "name": "quantity",
+      "kind": "helper",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "package",
+      "text_sha256": "44f0deffe5fadcc8e0f717cd140e19c29f20c18a0f691f259f40584785d082b0"
+    },
+    {
+      "file": "reception-services.js",
+      "label": "سبب التعديل",
+      "name": "reason",
+      "kind": "helper",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "package",
+      "text_sha256": "134b3a990d10d5005f83bb9ebb192c14631c4f84ce81abea353fbd9d7a74fc73"
+    },
+    {
+      "file": "reception-services.js",
+      "label": "السعر المتفق عليه",
+      "name": "price",
+      "kind": "helper",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "package",
+      "text_sha256": "b246b4f62684ff7e7311dda72be150bbbf8e5e14634207e86ab7535d7114066c"
+    },
+    {
+      "file": "reception-services.js",
       "label": "عدد الزيارات",
       "name": "visits",
       "kind": "helper",
@@ -10985,6 +11427,16 @@
     },
     {
       "file": "reception-workspace.js",
+      "label": "اسم المريض أو رقم الملف أو التليفون أو الدكتور",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "booking-flow",
+      "text_sha256": "7b8c8896bea57949b6bde77b58a6ea77185a3846daaaa9b85b4e8d8c3fb7d491"
+    },
+    {
+      "file": "reception-workspace.js",
       "label": "بحث",
       "name": "",
       "kind": "html",
@@ -10992,6 +11444,16 @@
       "tab": "reception_services",
       "article": "personal",
       "text_sha256": "fcfcf93d2d0bde74aa0a1934993d34ae9f117562d8c56a3a563761ba68e24990"
+    },
+    {
+      "file": "reception-workspace.js",
+      "label": "الأطباء",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "booking-flow",
+      "text_sha256": "e0e0b8dbe0778c3463b06d4c92fd2ef73fd5b8280dcb56deee759fce53376ab6"
     },
     {
       "file": "reception-workspace.js",
@@ -11042,6 +11504,26 @@
       "tab": "reception_services",
       "article": "patient",
       "text_sha256": "92f2a08af9d3d68c5620d0dbc5f4590e325bf02ba37399ddff2d2dd151f501c6"
+    },
+    {
+      "file": "reception-workspace.js",
+      "label": "القسم / التخصص",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "booking-flow",
+      "text_sha256": "64d0a49c89a00894cb7490f1e66f5d8af155df7895435796a1e595738d22749a"
+    },
+    {
+      "file": "reception-workspace.js",
+      "label": "اكتب حرفين من اسم الخدمة",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "booking-flow",
+      "text_sha256": "71437b4cf74f00464133fc4672c06e67cc111f938d56d453386618aa848c1f72"
     },
     {
       "file": "reception-workspace.js",
@@ -11132,6 +11614,66 @@
       "tab": "reception_services",
       "article": "booking-source",
       "text_sha256": "6bac279aa5aa304ce620904f03038a294ac86abd128cbdd3038748163340cbb4"
+    },
+    {
+      "file": "reception-workspace.js",
+      "label": "خدمة خارجية (مبلغ إضافي يُضاف على فاتورة المريض)",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "booking-flow",
+      "text_sha256": "95b402fe9e9cc0300b73a2534785808416a304eebb2320e57c6b740da4cf1f93"
+    },
+    {
+      "file": "reception-workspace.js",
+      "label": "المبلغ الإضافي (جنيه)",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "booking-flow",
+      "text_sha256": "00205ab5debae31a2b6059daa8311ea9f8ec7acae02974a5d56409393387778d"
+    },
+    {
+      "file": "reception-workspace.js",
+      "label": "فترة تانية من",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "weekly-schedule",
+      "text_sha256": "8b0118b9867fdbb766b6a073a02655992f364b080a15fa0fda0a937f1b8b13f9"
+    },
+    {
+      "file": "reception-workspace.js",
+      "label": "من يوم",
+      "name": "from",
+      "kind": "helper",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "schedule-exception",
+      "text_sha256": "4404fc93c4a17881620eb4bd110c89e71802f097f448a1ddbe5afcd3c9183093"
+    },
+    {
+      "file": "reception-workspace.js",
+      "label": "لحد يوم (شامل)",
+      "name": "to",
+      "kind": "helper",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "schedule-exception",
+      "text_sha256": "4404fc93c4a17881620eb4bd110c89e71802f097f448a1ddbe5afcd3c9183093"
+    },
+    {
+      "file": "reception-workspace.js",
+      "label": "نوع التغيير",
+      "name": "kind",
+      "kind": "helper",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "schedule-exception",
+      "text_sha256": "32d3d69a23834ecd6d939e7882b9d984689a2566887da08f594f8503ae0c7d1b"
     },
     {
       "file": "reception-workspace.js",
@@ -16061,12 +16603,176 @@
       "text_sha256": "3c10fd9b1342e48b8fd97c2633c5978bbf956121d8ab5c365ae493833150b10b"
     },
     {
+      "file": "test-records.js",
+      "label": "نوع السجل",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "admin",
+      "article": "access",
+      "text_sha256": "b2a781f343935f561f8c9c65dec5d5e18ccd8af5a8aae55961cc8e19e0d07f5c"
+    },
+    {
+      "file": "test-records.js",
+      "label": "بحث (اسم / رقم / مرجع)",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "admin",
+      "article": "access",
+      "text_sha256": "5fbe5d845c82c4ba88c5b4eb9bc5847b80498033d54fbb409eadd24a1b312f61"
+    },
+    {
+      "file": "test-records.js",
+      "label": "مثال: فاتورة تجربة عملها المحاسب",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "admin",
+      "article": "access",
+      "text_sha256": "f6a8afc48dcfdf71bf8636d88bfaabfa659dcfc212008de0274f7b9588e8bb4d"
+    },
+    {
+      "file": "test-records.js",
+      "label": "سبب اعتباره تجريبيًا",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "admin",
+      "article": "access",
+      "text_sha256": "f6a8afc48dcfdf71bf8636d88bfaabfa659dcfc212008de0274f7b9588e8bb4d"
+    },
+    {
+      "file": "test-records.js",
+      "label": "اكتب كلمة «تجريبي» للتأكيد",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "admin",
+      "article": "access",
+      "text_sha256": "1c2bd7630aebca0fafb5a2705fdca11f7e215ae222ff0bb2a79f70fdc4328729"
+    },
+    {
+      "file": "test-records.js",
+      "label": "سبب الحذف",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "admin",
+      "article": "access",
+      "text_sha256": "5533b4d31a49b861ed5560da4dc44c7765066f637505f3b970b207a866de65fc"
+    },
+    {
+      "file": "test-records.js",
+      "label": "اكتب كلمة «حذف» للتأكيد (مفيش رجوع من الشاشة؛ النسخة محفوظة في الأرشيف)",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "admin",
+      "article": "access",
+      "text_sha256": "10d0b45c72c5ce0b36bb4b4cd3c21aea9831688e3754cc2c55d650a46ac804a3"
+    },
+    {
+      "file": "today-operations-sandbox.js",
+      "label": "مريض التجربة",
+      "name": "patient_id",
+      "kind": "helper",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "today-board",
+      "text_sha256": "f3c665dcb125998419ff378b1474b49c2ab5e4718472c3dd2365923dce1ffcdd"
+    },
+    {
+      "file": "today-operations-sandbox.js",
+      "label": "الخدمة التجريبية",
+      "name": "service_id",
+      "kind": "helper",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "today-board",
+      "text_sha256": "f3c665dcb125998419ff378b1474b49c2ab5e4718472c3dd2365923dce1ffcdd"
+    },
+    {
+      "file": "today-operations-sandbox.js",
+      "label": "طبيب التجربة",
+      "name": "provider_id",
+      "kind": "helper",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "today-board",
+      "text_sha256": "f3c665dcb125998419ff378b1474b49c2ab5e4718472c3dd2365923dce1ffcdd"
+    },
+    {
+      "file": "today-operations-sandbox.js",
+      "label": "التقييم من 1 إلى 5",
+      "name": "rating",
+      "kind": "helper",
+      "forms": [
+        "تقييم تجربة الزيارة"
+      ],
+      "tab": "reception_services",
+      "article": "today-board",
+      "text_sha256": "760d09451c90336462ef6cf2ed20054b0d2c047f4f58a0cff19a14d321fe1b97"
+    },
+    {
+      "file": "today-operations-sandbox.js",
+      "label": "تعليق اختياري",
+      "name": "comment",
+      "kind": "helper",
+      "forms": [
+        "تقييم تجربة الزيارة"
+      ],
+      "tab": "reception_services",
+      "article": "today-board",
+      "text_sha256": "93468181165eb105f223a6e69b3c341c3d0d1c26dc4fc87d02b2768c1321c2d1"
+    },
+    {
+      "file": "today-operations-service-request-v3.js",
+      "label": "الخدمة المطلوبة",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "today-board",
+      "text_sha256": "e36faaf78bd7d89ea7d18360a6d3aa554c6a1b513a9187a7f98625482c2ffc71"
+    },
+    {
+      "file": "today-operations-v2.js",
+      "label": "الخدمة المطلوبة",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "today-board",
+      "text_sha256": "e36faaf78bd7d89ea7d18360a6d3aa554c6a1b513a9187a7f98625482c2ffc71"
+    },
+    {
+      "file": "today-operations-v2.js",
+      "label": "مستوى الأولوية",
+      "name": "priority",
+      "kind": "helper",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "today-board",
+      "text_sha256": "1fa6e8d0cb499f95a158c6d669b8d547bbe6a2eb4301b7da6522f7c5302abea8"
+    },
+    {
+      "file": "today-operations-v2.js",
+      "label": "سبب الأولوية",
+      "name": "reason",
+      "kind": "helper",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "today-board",
+      "text_sha256": "165cc02b60692e9d5b1b6004ede4e5e0641f6841e65d33d6633ae52680743e0b"
+    },
+    {
       "file": "today-operations-v2.js",
       "label": "نوع الطلب",
       "name": "support_type",
       "kind": "helper",
       "forms": [],
-      "tab": "production",
+      "tab": "reception_services",
       "article": "content",
       "text_sha256": "ae1eebb0ccfb748408bcad7142956aff075cccf7dec15db8241d19d7a923ce05"
     },
@@ -16076,9 +16782,41 @@
       "name": "message",
       "kind": "helper",
       "forms": [],
-      "tab": "production",
+      "tab": "reception_services",
       "article": "personal",
       "text_sha256": "08c204de2685df464bdbc0cd0fde7ec98a5877581bd58cbad31890fc6661df06"
+    },
+    {
+      "file": "today-operations-v2.js",
+      "label": "اليوم الجديد",
+      "name": "day",
+      "kind": "helper",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "today-board",
+      "text_sha256": "5195af5b2397444bd8b713f157efbdeea702b41897f596362ab15a6df58d3fda"
+    },
+    {
+      "file": "today-operations-v2.js",
+      "label": "الساعة المتاحة",
+      "name": "starts_at",
+      "kind": "helper",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "today-board",
+      "text_sha256": "5195af5b2397444bd8b713f157efbdeea702b41897f596362ab15a6df58d3fda"
+    },
+    {
+      "file": "today-operations-v2.js",
+      "label": "ملاحظة اختيارية",
+      "name": "reason",
+      "kind": "helper",
+      "forms": [
+        "إنهاء الزيارة"
+      ],
+      "tab": "reception_services",
+      "article": "today-board",
+      "text_sha256": "d0f59c5f7b245f71f9f31c320f3fd7f8e97bd682dddbaaea481228d4f4070b5b"
     },
     {
       "file": "today-operations.js",
@@ -16086,7 +16824,7 @@
       "name": "",
       "kind": "html",
       "forms": [],
-      "tab": "production",
+      "tab": "reception_services",
       "article": "payroll",
       "text_sha256": "0bebb1d1c5ab3b012283d97c05868f2efdf999e5577aad040d7d7e49bca4524c"
     },
@@ -16096,7 +16834,7 @@
       "name": "",
       "kind": "html",
       "forms": [],
-      "tab": "production",
+      "tab": "reception_services",
       "article": "personal",
       "text_sha256": "5124563f386757810c60ae86fc95904a13532f1a872fcd3579613f304338e13d"
     },
@@ -16106,9 +16844,109 @@
       "name": "",
       "kind": "html",
       "forms": [],
-      "tab": "production",
+      "tab": "reception_services",
       "article": "personal",
       "text_sha256": "5124563f386757810c60ae86fc95904a13532f1a872fcd3579613f304338e13d"
+    },
+    {
+      "file": "today-operations.js",
+      "label": "يوم التشغيل",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "today-board",
+      "text_sha256": "5b9d11709a5da94b3bda9e02f0817a1d20b930933f9aa9df6705fde8d7bb519c"
+    },
+    {
+      "file": "today-operations.js",
+      "label": "ابحث بالاسم أو التليفون أو رقم الملف",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "today-board",
+      "text_sha256": "9c15648212f0968de2df554f6265101f7a16bf02cc8987b2c71ff3fa5c05dc0a"
+    },
+    {
+      "file": "today-operations.js",
+      "label": "خط العرض",
+      "name": "clinic_lat",
+      "kind": "helper",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "today-board",
+      "text_sha256": "82a937be5aa934ed9c8f555480f4e4f4eafe937fe6007bf4552cc16dcfbf62eb"
+    },
+    {
+      "file": "today-operations.js",
+      "label": "خط الطول",
+      "name": "clinic_lng",
+      "kind": "helper",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "today-board",
+      "text_sha256": "82a937be5aa934ed9c8f555480f4e4f4eafe937fe6007bf4552cc16dcfbf62eb"
+    },
+    {
+      "file": "today-operations.js",
+      "label": "نطاق السماح بالمتر",
+      "name": "radius_meters",
+      "kind": "helper",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "today-board",
+      "text_sha256": "7a8e3c01933a9b1c7cea6b70a56313e7b024ee334795d094af1a25235282d324"
+    },
+    {
+      "file": "today-operations.js",
+      "label": "التحقق من الموقع",
+      "name": "location_required",
+      "kind": "helper",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "today-board",
+      "text_sha256": "af3bbe7bd2e6d73638b6b9c3de3d710e1510d9d74f70b0130aff5ddc5847b4cd"
+    },
+    {
+      "file": "today-operations.js",
+      "label": "QR تسجيل الوصول",
+      "name": "qr_enabled",
+      "kind": "helper",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "today-board",
+      "text_sha256": "ed7c529ae130f3f3c9879a69345c3cfc170d112fa4060e0c51c8fe1e4732eb01"
+    },
+    {
+      "file": "today-operations.js",
+      "label": "طلب التقييم بعد الزيارة",
+      "name": "feedback_enabled",
+      "kind": "helper",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "today-board",
+      "text_sha256": "714b37fa1e8a7cba454200f6778901415ae7c741938c0f0bca06675cf5826e09"
+    },
+    {
+      "file": "today-operations.js",
+      "label": "حد تنبيه الانتظار بالدقائق",
+      "name": "max_wait_minutes",
+      "kind": "helper",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "today-board",
+      "text_sha256": "da836df01b106f9c2bbbd215c9a189b5b330caf5162cf056e4809f1ac0515024"
+    },
+    {
+      "file": "today-operations.js",
+      "label": "حد تأخير الطبيب بالدقائق",
+      "name": "doctor_delay_minutes",
+      "kind": "helper",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "today-board",
+      "text_sha256": "a826aa96a1f05db65c93995844953a254678c7980bc4e3a07eab77a245f11e07"
     },
     {
       "file": "today-operations.js",
@@ -16118,7 +16956,7 @@
       "forms": [
         "طلب خدمة أثناء الزيارة"
       ],
-      "tab": "production",
+      "tab": "reception_services",
       "article": "content",
       "text_sha256": "ae1eebb0ccfb748408bcad7142956aff075cccf7dec15db8241d19d7a923ce05"
     },
@@ -16130,7 +16968,7 @@
       "forms": [
         "طلب خدمة أثناء الزيارة"
       ],
-      "tab": "production",
+      "tab": "reception_services",
       "article": "booking-flow",
       "text_sha256": "9de357e91f68d929da65d3983a861523a19c2d8ad7c1d86737871b762e1c0325"
     },
@@ -16142,7 +16980,7 @@
       "forms": [
         "طلب خدمة أثناء الزيارة"
       ],
-      "tab": "production",
+      "tab": "reception_services",
       "article": "doctor-missing",
       "text_sha256": "64e347f73f878509a653299ddc92452e08558753e25b26c2031002afbc7d558a"
     },
@@ -16154,9 +16992,21 @@
       "forms": [
         "طلب خدمة أثناء الزيارة"
       ],
-      "tab": "production",
+      "tab": "reception_services",
       "article": "supply-map",
       "text_sha256": "2e0b4f805a08925026535a1b41a17475c806152215285d42cc2eeb1901a937f5"
+    },
+    {
+      "file": "today-operations.js",
+      "label": "التأخير المتوقع بالدقائق",
+      "name": "eta_minutes",
+      "kind": "helper",
+      "forms": [
+        "تسجيل تأخير الطبيب"
+      ],
+      "tab": "reception_services",
+      "article": "today-board",
+      "text_sha256": "17b014e9a354a48b66dd08473d575e7e477e37fdc11904af8de065a20e43e9e9"
     },
     {
       "file": "today-operations.js",
@@ -16166,9 +17016,21 @@
       "forms": [
         "تسجيل تأخير الطبيب"
       ],
-      "tab": "production",
+      "tab": "reception_services",
       "article": "requests",
       "text_sha256": "80a0c51a0ba10ff7f4fe6f627b68c4e009f932e1abdff544c26e792f5f0e9e49"
+    },
+    {
+      "file": "today-operations.js",
+      "label": "درجة الأولوية",
+      "name": "priority",
+      "kind": "helper",
+      "forms": [
+        "أولوية المريض"
+      ],
+      "tab": "reception_services",
+      "article": "today-board",
+      "text_sha256": "c88f3d25878462f2c084fdef3a78905188c437bde1abd3fb36224495ff4c4208"
     },
     {
       "file": "today-operations.js",
@@ -16178,7 +17040,7 @@
       "forms": [
         "أولوية المريض"
       ],
-      "tab": "production",
+      "tab": "reception_services",
       "article": "requests",
       "text_sha256": "80a0c51a0ba10ff7f4fe6f627b68c4e009f932e1abdff544c26e792f5f0e9e49"
     },
@@ -16190,7 +17052,7 @@
       "forms": [
         "طلب مساعدة"
       ],
-      "tab": "production",
+      "tab": "reception_services",
       "article": "patient-records",
       "text_sha256": "68c593718f9e4a670d874fc33a5fb6254f39083bbe1ac70792f1b87046e5dd54"
     },
@@ -16202,7 +17064,7 @@
       "forms": [
         "طلب مساعدة"
       ],
-      "tab": "production",
+      "tab": "reception_services",
       "article": "personal",
       "text_sha256": "08c204de2685df464bdbc0cd0fde7ec98a5877581bd58cbad31890fc6661df06"
     },
@@ -16214,7 +17076,7 @@
       "forms": [
         "إنهاء الزيارة"
       ],
-      "tab": "production",
+      "tab": "reception_services",
       "article": "personal",
       "text_sha256": "08c204de2685df464bdbc0cd0fde7ec98a5877581bd58cbad31890fc6661df06"
     },
@@ -16226,7 +17088,7 @@
       "forms": [
         "تسجيل عدم الحضور"
       ],
-      "tab": "production",
+      "tab": "reception_services",
       "article": "requests",
       "text_sha256": "80a0c51a0ba10ff7f4fe6f627b68c4e009f932e1abdff544c26e792f5f0e9e49"
     },
@@ -16238,7 +17100,7 @@
       "forms": [
         "إلغاء الحجز"
       ],
-      "tab": "production",
+      "tab": "reception_services",
       "article": "requests",
       "text_sha256": "80a0c51a0ba10ff7f4fe6f627b68c4e009f932e1abdff544c26e792f5f0e9e49"
     },
