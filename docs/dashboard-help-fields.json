@@ -4,7 +4,7 @@
     "definitions": 1746,
     "labels": 1285,
     "files": 119,
-    "groups": 1027
+    "groups": 1100
   },
   "fields": [
     {
@@ -634,7 +634,7 @@
       "forms": [
         "مراجعة مرجع المركز"
       ],
-      "tab": "production",
+      "tab": "price_lists",
       "article": "requests",
       "text_sha256": "e94fbc6b4acbcb93cd4550a5c0f411b3026a6856a94bfdc920222df26211079d"
     },
@@ -646,9 +646,33 @@
       "forms": [
         "مراجعة مرجع المركز"
       ],
-      "tab": "production",
+      "tab": "price_lists",
       "article": "requests",
       "text_sha256": "00135b5d6cd282bea537fb8658c57e3e41f428900b403396c1ff4fef0b2d6095"
+    },
+    {
+      "file": "center-master-review.js",
+      "label": "راجعت فترة التطبيق والأسعار والخدمات",
+      "name": "",
+      "kind": "label",
+      "forms": [
+        "مراجعة مرجع المركز"
+      ],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "0dce16695f4a51a5eb57c8d472c620e1bac06bea3f3afa715fb8ca3fbfed6902"
+    },
+    {
+      "file": "center-master-review.js",
+      "label": "أؤكد أن السطور المتطابقة الموضحة تمثل خدمة واحدة",
+      "name": "",
+      "kind": "label",
+      "forms": [
+        "مراجعة مرجع المركز"
+      ],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "b9218f1e66f677b77999d3ead4fba11368977988dd54ac13873a1e609ad70867"
     },
     {
       "file": "comments.js",
@@ -912,13 +936,63 @@
     },
     {
       "file": "contract-navigation.js",
+      "label": "بحث عن جهة",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "contracting_entities",
+      "article": "entities",
+      "text_sha256": "e5d37f75c93110c41275569ed950815c722547ed15d46194ee395e3b554b76ed"
+    },
+    {
+      "file": "contract-navigation.js",
+      "label": "التصنيف",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "contracting_entities",
+      "article": "entities",
+      "text_sha256": "9a8a9c55a8819c5ee0247c84796bea163df4aa602a922765780ef5cc06bed808"
+    },
+    {
+      "file": "contract-navigation.js",
+      "label": "حالة العقد",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "contracting_entities",
+      "article": "entities",
+      "text_sha256": "4ebf7dd4f44e2f90d0154d46b4006a7384fd5e0a332eb704805cddff88a76f99"
+    },
+    {
+      "file": "contract-navigation.js",
       "label": "الترتيب",
       "name": "",
       "kind": "html",
       "forms": [],
-      "tab": "production",
-      "article": "tasks-guide",
-      "text_sha256": "af53551578410be44807bfc85b20b2bfecc0ad021116b7b8fb107ae65328df8b"
+      "tab": "contracting_entities",
+      "article": "entities",
+      "text_sha256": "34ba48900becbc438cbc1da0137fc7b698d2a8822bd33a3c8fa1766e687afbd8"
+    },
+    {
+      "file": "contract-navigation.js",
+      "label": "التجميع",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "contracting_entities",
+      "article": "entities",
+      "text_sha256": "331838bec9f72632857b69c66a8767d8d34bca5751a877c8bfa48680e3286710"
+    },
+    {
+      "file": "contract-navigation.js",
+      "label": "عروضي المحفوظة",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "contracting_entities",
+      "article": "entities",
+      "text_sha256": "67a8943a30865f44f4c8293025004ded28da7b340c359015f65dc520328a44ff"
     },
     {
       "file": "contract-navigation.js",
@@ -926,9 +1000,149 @@
       "name": "",
       "kind": "label",
       "forms": [],
-      "tab": "production",
-      "article": "chatbot",
-      "text_sha256": "210441e180ac57b34097565ade80654f797a3baf70e15b77f9e72d3ddc4d26d6"
+      "tab": "contracting_entities",
+      "article": "entities",
+      "text_sha256": "b561de1bb4155f645cb6d02cbeee0e9a8a9818a5f495318d202e32449eb17f3c"
+    },
+    {
+      "file": "contract-navigation.js",
+      "label": "اجعله عرض البداية",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "contracting_entities",
+      "article": "entities",
+      "text_sha256": "ce5a768c74951db6efa16dca3765f0794a928e84e5e33eed4a68900ccc437a0b"
+    },
+    {
+      "file": "contract-price-workspace.js",
+      "label": "اسم اللائحة",
+      "name": "name",
+      "kind": "helper",
+      "forms": [
+        "بيانات لائحة الأسعار"
+      ],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "75ad3ecd2f95a8a468fb3a0b960ee9b71647b4914af01341eac845579bc435ca"
+    },
+    {
+      "file": "contract-price-workspace.js",
+      "label": "رقم النسخة",
+      "name": "version",
+      "kind": "helper",
+      "forms": [
+        "بيانات لائحة الأسعار"
+      ],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "dc9c92f093fb8a06e5aee8e2eb512ff78573a817d36571ea6bd88df663bebdb2"
+    },
+    {
+      "file": "contract-price-workspace.js",
+      "label": "سنة إصدار اللائحة",
+      "name": "issue_year",
+      "kind": "helper",
+      "forms": [
+        "بيانات لائحة الأسعار"
+      ],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "f66645434a54e1e7d960be7d4af5a01872edd0c9c984466b358aa653056535fd"
+    },
+    {
+      "file": "contract-price-workspace.js",
+      "label": "سنة التطبيق",
+      "name": "application_year",
+      "kind": "helper",
+      "forms": [
+        "بيانات لائحة الأسعار"
+      ],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "ff4e2032a4bfbe865a3b84efbdbfcf18f7bf719cd5bfa731f16ce3e70165f1ce"
+    },
+    {
+      "file": "contract-price-workspace.js",
+      "label": "خصم عام بالنسبة",
+      "name": "discount_percent",
+      "kind": "helper",
+      "forms": [
+        "بيانات لائحة الأسعار"
+      ],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "a264bc249f92560d4077e4ebed4990b0d611ffc0b0b3b689b8b466b9378ef333"
+    },
+    {
+      "file": "contract-price-workspace.js",
+      "label": "خصم عام لكل وحدة",
+      "name": "discount_amount",
+      "kind": "helper",
+      "forms": [
+        "بيانات لائحة الأسعار"
+      ],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "448c16cf398807bf4f8939f943790f931774ffc9bec4f190855b3299cbd12806"
+    },
+    {
+      "file": "contract-price-workspace.js",
+      "label": "سارية من",
+      "name": "valid_from",
+      "kind": "helper",
+      "forms": [
+        "بيانات لائحة الأسعار"
+      ],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "2cbe9054a62635d9c05759234beeb7275ff17a8ac1ebde2a911de07d49fee6b5"
+    },
+    {
+      "file": "contract-price-workspace.js",
+      "label": "سارية حتى",
+      "name": "valid_to",
+      "kind": "helper",
+      "forms": [
+        "بيانات لائحة الأسعار"
+      ],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "2cbe9054a62635d9c05759234beeb7275ff17a8ac1ebde2a911de07d49fee6b5"
+    },
+    {
+      "file": "contract-price-workspace.js",
+      "label": "شروط اللائحة",
+      "name": "notes",
+      "kind": "helper",
+      "forms": [
+        "بيانات لائحة الأسعار"
+      ],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "de2dac77d1477185789496d9c08b8d8203856b4e7954078c1c4c2de96e07e6e9"
+    },
+    {
+      "file": "contract-price-workspace.js",
+      "label": "تاريخ الخدمة",
+      "name": "date",
+      "kind": "helper",
+      "forms": [
+        "تجربة التسعير من القوائم المعتمدة"
+      ],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "e0aad46448da36653f73863b43aad4b045c628e4ee1ec00fb06e01a01a5b1847"
+    },
+    {
+      "file": "contract-price-workspace.js",
+      "label": "بحث في القوائم",
+      "name": "price_search",
+      "kind": "helper",
+      "forms": [],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "c6ab544b226cd096be5def83ac4fc06bfdbcf303d7cf78f5e17c9ab447677d1f"
     },
     {
       "file": "contract-price-workspace.js",
@@ -938,9 +1152,163 @@
       "forms": [
         "رفع دفعة إلى "
       ],
-      "tab": "production",
-      "article": "patient-records",
-      "text_sha256": "b51a2dd066b13876c39df5d1ba5f852738e81aca9c4e66efbb9477e50c88f17f"
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "1a3cc64bb4dbedd1b3683719ad0b3077cc6e748db87255ab6e05961d26e5c1e8"
+    },
+    {
+      "file": "contract-price-workspace.js",
+      "label": "توزيع الخدمات حسب أقسام الملف وإنشاء الأقسام غير الموجودة",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "c96e9f4bb774a6416a8adb08563bd4b66f5f6890b4a840321f9b279e7a204c80"
+    },
+    {
+      "file": "contract-price-workspace.js",
+      "label": "اسم الإصدار الجديد",
+      "name": "name",
+      "kind": "helper",
+      "forms": [
+        "إعداد إصدار جديد"
+      ],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "8ca8e62b52ef88e48fe2ac99156dc4769e48d8c1bde3c2b5a71bd75c6d8748fa"
+    },
+    {
+      "file": "contract-price-workspace.js",
+      "label": "رقم النسخة",
+      "name": "version",
+      "kind": "helper",
+      "forms": [
+        "إعداد إصدار جديد"
+      ],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "dc9c92f093fb8a06e5aee8e2eb512ff78573a817d36571ea6bd88df663bebdb2"
+    },
+    {
+      "file": "contract-price-workspace.js",
+      "label": "سنة إصدار التعريفة",
+      "name": "issue_year",
+      "kind": "helper",
+      "forms": [
+        "إعداد إصدار جديد"
+      ],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "f66645434a54e1e7d960be7d4af5a01872edd0c9c984466b358aa653056535fd"
+    },
+    {
+      "file": "contract-price-workspace.js",
+      "label": "سنة التطبيق",
+      "name": "application_year",
+      "kind": "helper",
+      "forms": [
+        "إعداد إصدار جديد"
+      ],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "ff4e2032a4bfbe865a3b84efbdbfcf18f7bf719cd5bfa731f16ce3e70165f1ce"
+    },
+    {
+      "file": "contract-price-workspace.js",
+      "label": "ملاحظات وشروط الإصدار",
+      "name": "notes",
+      "kind": "helper",
+      "forms": [
+        "إعداد إصدار جديد"
+      ],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "de2dac77d1477185789496d9c08b8d8203856b4e7954078c1c4c2de96e07e6e9"
+    },
+    {
+      "file": "contract-price-workspace.js",
+      "label": "خصم القائمة بالنسبة",
+      "name": "discount_percent",
+      "kind": "helper",
+      "forms": [
+        "إعداد إصدار جديد"
+      ],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "a264bc249f92560d4077e4ebed4990b0d611ffc0b0b3b689b8b466b9378ef333"
+    },
+    {
+      "file": "contract-price-workspace.js",
+      "label": "خصم القائمة بالمبلغ",
+      "name": "discount_amount",
+      "kind": "helper",
+      "forms": [
+        "إعداد إصدار جديد"
+      ],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "448c16cf398807bf4f8939f943790f931774ffc9bec4f190855b3299cbd12806"
+    },
+    {
+      "file": "contract-price-workspace.js",
+      "label": "بداية سريان القائمة",
+      "name": "valid_from",
+      "kind": "helper",
+      "forms": [
+        "إعداد إصدار جديد"
+      ],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "2cbe9054a62635d9c05759234beeb7275ff17a8ac1ebde2a911de07d49fee6b5"
+    },
+    {
+      "file": "contract-price-workspace.js",
+      "label": "نهاية سريان القائمة",
+      "name": "valid_to",
+      "kind": "helper",
+      "forms": [
+        "إعداد إصدار جديد"
+      ],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "2cbe9054a62635d9c05759234beeb7275ff17a8ac1ebde2a911de07d49fee6b5"
+    },
+    {
+      "file": "contract-price-workspace.js",
+      "label": "نسخ الأقسام",
+      "name": "",
+      "kind": "label",
+      "forms": [
+        "إعداد إصدار جديد"
+      ],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "20d959a14358cea660278ea2e82e95950bad1208d1709131273c5b4107873fbd"
+    },
+    {
+      "file": "contract-price-workspace.js",
+      "label": "اسم الخدمة أو الكود أو القسم",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [
+        "مراجعة دفعة — "
+      ],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "f86e9602e1c6dc0917e077a50310a516fc3a6b401561348ba4f01c5646755af7"
+    },
+    {
+      "file": "contract-price-workspace.js",
+      "label": "بحث داخل سطور الدفعة",
+      "name": "",
+      "kind": "label",
+      "forms": [
+        "مراجعة دفعة — "
+      ],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "f86e9602e1c6dc0917e077a50310a516fc3a6b401561348ba4f01c5646755af7"
     },
     {
       "file": "contract-price-workspace.js",
@@ -948,9 +1316,29 @@
       "name": "name",
       "kind": "helper",
       "forms": [],
-      "tab": "production",
+      "tab": "price_lists",
       "article": "entities",
       "text_sha256": "0c8e704082c2882c4b56cdf9d09ac275fd9c54607c48aa2c20b77bf3d05490d4"
+    },
+    {
+      "file": "contract-price-workspace.js",
+      "label": "كود الجهة",
+      "name": "code",
+      "kind": "helper",
+      "forms": [],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "c76e67e674ce727189fc397ba8bc21d7b854593fc6dd093632e469a1bf255683"
+    },
+    {
+      "file": "contract-price-workspace.js",
+      "label": "السعر",
+      "name": "price",
+      "kind": "helper",
+      "forms": [],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "0ea4fee276b32726560f63f5430ee37592485174696e8bfc307d3cd2e74e59ef"
     },
     {
       "file": "contract-price-workspace.js",
@@ -958,9 +1346,91 @@
       "name": "unit",
       "kind": "helper",
       "forms": [],
-      "tab": "production",
-      "article": "patient-records",
-      "text_sha256": "b6b7ef3304940f5231c6281a0431f4e3513369f3f55fbf8bc0e9499a249a0bbd"
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "f30fe508597fa0191576ef851adb440f62bf7326c8b8d30a5d7f9096b0a4f6a8"
+    },
+    {
+      "file": "contract-price-workspace.js",
+      "label": "القسم في الملف",
+      "name": "category",
+      "kind": "helper",
+      "forms": [],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "d242a55b9c0228554dd7cffb5de3b52493a6e01047285fb97152a1580bfe4fb5"
+    },
+    {
+      "file": "contract-price-workspace.js",
+      "label": "نسبة الزيادة أو التخفيض",
+      "name": "percent",
+      "kind": "helper",
+      "forms": [
+        "تعديل أسعار المسودة"
+      ],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "37cbe035b9c1c107adb6a6406fc7fd24cbcb042cd3e7a4db1911cf83fed81b13"
+    },
+    {
+      "file": "contract-price-workspace.js",
+      "label": "السعر الثابت",
+      "name": "fixed_price",
+      "kind": "helper",
+      "forms": [
+        "إضافة خدمة إلى قائمة الأسعار"
+      ],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "4c29761cb80cd13cd7d0d4e4efddee01f03890efcee40fa557a10c827adbb261"
+    },
+    {
+      "file": "contract-price-workspace.js",
+      "label": "خصم النسبة",
+      "name": "discount_percent",
+      "kind": "helper",
+      "forms": [
+        "إضافة خدمة إلى قائمة الأسعار"
+      ],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "02b4068aed6e51012e61fe1febe4e373183c68c520b1ff88ab784ac58b02f1bd"
+    },
+    {
+      "file": "contract-price-workspace.js",
+      "label": "خصم المبلغ",
+      "name": "discount_amount",
+      "kind": "helper",
+      "forms": [
+        "إضافة خدمة إلى قائمة الأسعار"
+      ],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "774c8b0b8a5b6a510e4497da17e67572e1f331572ff442671299a7bf5a1c0cc1"
+    },
+    {
+      "file": "contract-price-workspace.js",
+      "label": "اسم الخدمة عند الجهة",
+      "name": "external_name",
+      "kind": "helper",
+      "forms": [
+        "إضافة خدمة إلى قائمة الأسعار"
+      ],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "69e5aee1a3239837131d3f4409dfa3c9aae618fa68b55cce84b839d37d4c2068"
+    },
+    {
+      "file": "contract-price-workspace.js",
+      "label": "كود الجهة",
+      "name": "external_code",
+      "kind": "helper",
+      "forms": [
+        "إضافة خدمة إلى قائمة الأسعار"
+      ],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "c76e67e674ce727189fc397ba8bc21d7b854593fc6dd093632e469a1bf255683"
     },
     {
       "file": "contract-price-workspace.js",
@@ -970,9 +1440,9 @@
       "forms": [
         "إضافة خدمة إلى قائمة الأسعار"
       ],
-      "tab": "production",
-      "article": "patient-records",
-      "text_sha256": "b6b7ef3304940f5231c6281a0431f4e3513369f3f55fbf8bc0e9499a249a0bbd"
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "f30fe508597fa0191576ef851adb440f62bf7326c8b8d30a5d7f9096b0a4f6a8"
     },
     {
       "file": "contract-price-workspace.js",
@@ -982,9 +1452,34 @@
       "forms": [
         "إضافة خدمة إلى قائمة الأسعار"
       ],
-      "tab": "production",
+      "tab": "price_lists",
       "article": "personal",
       "text_sha256": "08c204de2685df464bdbc0cd0fde7ec98a5877581bd58cbad31890fc6661df06"
+    },
+    {
+      "file": "contract-price-workspace.js",
+      "label": "اسم القسم",
+      "name": "name",
+      "kind": "helper",
+      "forms": [
+        "إضافة قسم إلى القائمة",
+        "القسم — "
+      ],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "d6b7e2ef83992112698d3f0ada49bed21a1c759569ca285638dff36df724ea6b"
+    },
+    {
+      "file": "contract-price-workspace.js",
+      "label": "اسم الخدمة المعتمد",
+      "name": "name",
+      "kind": "helper",
+      "forms": [
+        "توحيد الخدمات وإضافة خدمة للمركز"
+      ],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "776bbc517adfcfee62f6b396d51db8407fcc555077d4cf222869f04088513ec9"
     },
     {
       "file": "contract-price-workspace.js",
@@ -994,9 +1489,33 @@
       "forms": [
         "توحيد الخدمات وإضافة خدمة للمركز"
       ],
-      "tab": "production",
+      "tab": "price_lists",
       "article": "content",
       "text_sha256": "8781afaef1012c14a5b9f99b05513e1852e02bb6c191b2fc0b339518d671a4a9"
+    },
+    {
+      "file": "contract-price-workspace.js",
+      "label": "وحدة تقديم الخدمة",
+      "name": "unit",
+      "kind": "helper",
+      "forms": [
+        "توحيد الخدمات وإضافة خدمة للمركز"
+      ],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "ff2db613e974e182c705590cfafcf15056fdc7ba1a4ccedb56efd37d6d657e46"
+    },
+    {
+      "file": "contract-price-workspace.js",
+      "label": "سبب الإضافة وتفاصيل تميزها",
+      "name": "note",
+      "kind": "helper",
+      "forms": [
+        "توحيد الخدمات وإضافة خدمة للمركز"
+      ],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "8145eaff280ce76bf796b6c70c1e91d43126db11b5a26dbe8f035da529517980"
     },
     {
       "file": "contract-price-workspace.js",
@@ -1006,9 +1525,21 @@
       "forms": [
         "مراجعة إضافة الخدمة"
       ],
-      "tab": "production",
+      "tab": "price_lists",
       "article": "requests",
       "text_sha256": "00135b5d6cd282bea537fb8658c57e3e41f428900b403396c1ff4fef0b2d6095"
+    },
+    {
+      "file": "contract-price-workspace.js",
+      "label": "سبب الإنهاء",
+      "name": "review_note",
+      "kind": "helper",
+      "forms": [
+        "إنهاء اللائحة"
+      ],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "a61945fdf5857c82e8ab8dc98ca86dcef511bf71d02d71f2cab9232cc9941230"
     },
     {
       "file": "contract-price-workspace.js",
@@ -1018,9 +1549,29 @@
       "forms": [
         "اعتماد اللائحة ومطابقة مسميات الجهة"
       ],
-      "tab": "production",
+      "tab": "price_lists",
       "article": "requests",
       "text_sha256": "00135b5d6cd282bea537fb8658c57e3e41f428900b403396c1ff4fef0b2d6095"
+    },
+    {
+      "file": "contract-service-mapping.js",
+      "label": "اختيار من قائمة سونو",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "e859dba9dd1a082bfe60912d36ee4737384e3a1fb417dfaaccf8b7266b0a981c"
+    },
+    {
+      "file": "contract-service-mapping.js",
+      "label": "اختيار من قائمة الجهة",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "b8f58e112cd4a7a6261a3fc0338af33be8000c9be05a7418a977513654e39a24"
     },
     {
       "file": "contract-service-mapping.js",
@@ -1028,7 +1579,7 @@
       "name": "",
       "kind": "html",
       "forms": [],
-      "tab": "production",
+      "tab": "price_lists",
       "article": "personal",
       "text_sha256": "fcfcf93d2d0bde74aa0a1934993d34ae9f117562d8c56a3a563761ba68e24990"
     },
@@ -1038,9 +1589,39 @@
       "name": "",
       "kind": "html",
       "forms": [],
-      "tab": "production",
+      "tab": "price_lists",
       "article": "content",
       "text_sha256": "8781afaef1012c14a5b9f99b05513e1852e02bb6c191b2fc0b339518d671a4a9"
+    },
+    {
+      "file": "contract-service-mapping.js",
+      "label": "المسمى المعتمد في سونو",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "19281219ca0f02efeec2eb1b1b84a91ad16031b6d18b3f656cfd392804171023"
+    },
+    {
+      "file": "contract-service-mapping.js",
+      "label": "اسم الخدمة في جهة التعاقد",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "f0711343f2fd37fe3bde8e01102e0cca4edb617249204c6fde4444936f48b2d1"
+    },
+    {
+      "file": "contract-service-mapping.js",
+      "label": "كود الجهة",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "c76e67e674ce727189fc397ba8bc21d7b854593fc6dd093632e469a1bf255683"
     },
     {
       "file": "daily-clinics.js",
@@ -3363,6 +3944,16 @@
       "text_sha256": "92518474c189325a2ad4b3b0d9c66321a4bdd4de73fe7cbc53f7115d177fd4c5"
     },
     {
+      "file": "finance-contract-signature.js",
+      "label": "المقدمة",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "accounting",
+      "article": "payroll",
+      "text_sha256": "63bae1cb31e3da8fdbe7bbad1a910ab74efa25e9f910b257e1417c5f7f3e66aa"
+    },
+    {
       "file": "finance-controls.js",
       "label": "مرجع الفاتورة",
       "name": "reference",
@@ -5395,11 +5986,91 @@
     },
     {
       "file": "insurance-contracts.js",
+      "label": "شركة/عقد التأمين",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "contracting_entities",
+      "article": "insurance",
+      "text_sha256": "036905f03e01fc0cd1128a0579346f44947ff5bbde09609bafda1ad7e7d8691e"
+    },
+    {
+      "file": "insurance-contracts.js",
+      "label": "اسم الفئة/الكارنيه",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "contracting_entities",
+      "article": "insurance",
+      "text_sha256": "ffa40f2aa65a17c5be627a84835b940d75f75a31be9a708a7ac7779644dddc25"
+    },
+    {
+      "file": "insurance-contracts.js",
+      "label": "كود الفئة",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "contracting_entities",
+      "article": "insurance",
+      "text_sha256": "74f51f976a0954b37bdc6f516eb2c2194e16bfd51a2b93cd479aea35ea1492fe"
+    },
+    {
+      "file": "insurance-contracts.js",
+      "label": "لائحة الأسعار",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "contracting_entities",
+      "article": "insurance",
+      "text_sha256": "6b5e16b766548341d6cdd335bd2ff3de05481f2d91767d8702afc46d0063a345"
+    },
+    {
+      "file": "insurance-contracts.js",
+      "label": "نوع تحمل المريض",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "contracting_entities",
+      "article": "insurance",
+      "text_sha256": "73e7d00c94eca94f3e5cfeb6ece5ba8ef86bbe226403fbccd1848a215cf5f00c"
+    },
+    {
+      "file": "insurance-contracts.js",
+      "label": "قيمة التحمل",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "contracting_entities",
+      "article": "insurance",
+      "text_sha256": "c8fe940e454239c527cef1a3018805ec5247c7a1f9b2ed96c67d21537ccd46c4"
+    },
+    {
+      "file": "insurance-contracts.js",
+      "label": "سارية من",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "contracting_entities",
+      "article": "insurance",
+      "text_sha256": "18b25cf1ea7b325502119e6454d3d14adb4c8217254b88c4bdfa307cf0cc9cd0"
+    },
+    {
+      "file": "insurance-contracts.js",
+      "label": "سارية حتى",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "contracting_entities",
+      "article": "insurance",
+      "text_sha256": "18b25cf1ea7b325502119e6454d3d14adb4c8217254b88c4bdfa307cf0cc9cd0"
+    },
+    {
+      "file": "insurance-contracts.js",
       "label": "الحالة",
       "name": "",
       "kind": "label",
       "forms": [],
-      "tab": "production",
+      "tab": "contracting_entities",
       "article": "personal",
       "text_sha256": "0a8e1242f7cd5a7893e1222dfd049826b42b66af79a574141ddc063e925fb3f0"
     },
@@ -5409,7 +6080,7 @@
       "name": "",
       "kind": "html",
       "forms": [],
-      "tab": "production",
+      "tab": "contracting_entities",
       "article": "personal",
       "text_sha256": "08c204de2685df464bdbc0cd0fde7ec98a5877581bd58cbad31890fc6661df06"
     },
@@ -5421,9 +6092,33 @@
       "forms": [
         "استثناءات الخدمات — "
       ],
-      "tab": "production",
+      "tab": "contracting_entities",
       "article": "booking-flow",
       "text_sha256": "9de357e91f68d929da65d3983a861523a19c2d8ad7c1d86737871b762e1c0325"
+    },
+    {
+      "file": "insurance-contracts.js",
+      "label": "نوع التحمل",
+      "name": "",
+      "kind": "label",
+      "forms": [
+        "استثناءات الخدمات — "
+      ],
+      "tab": "contracting_entities",
+      "article": "insurance",
+      "text_sha256": "73e7d00c94eca94f3e5cfeb6ece5ba8ef86bbe226403fbccd1848a215cf5f00c"
+    },
+    {
+      "file": "insurance-contracts.js",
+      "label": "القيمة",
+      "name": "",
+      "kind": "label",
+      "forms": [
+        "استثناءات الخدمات — "
+      ],
+      "tab": "contracting_entities",
+      "article": "insurance",
+      "text_sha256": "c8fe940e454239c527cef1a3018805ec5247c7a1f9b2ed96c67d21537ccd46c4"
     },
     {
       "file": "insurance-contracts.js",
@@ -5433,9 +6128,21 @@
       "forms": [
         "استثناءات الخدمات — "
       ],
-      "tab": "production",
+      "tab": "contracting_entities",
       "article": "personal",
       "text_sha256": "08c204de2685df464bdbc0cd0fde7ec98a5877581bd58cbad31890fc6661df06"
+    },
+    {
+      "file": "insurance-contracts.js",
+      "label": "فئة الكارنيه",
+      "name": "",
+      "kind": "html",
+      "forms": [
+        "حاسبة التأمين"
+      ],
+      "tab": "contracting_entities",
+      "article": "insurance",
+      "text_sha256": "13c2d8d056434000a0b1d3b1e3268a39a6f8f5ea27a28d9d09c04095603b33de"
     },
     {
       "file": "insurance-contracts.js",
@@ -5445,7 +6152,7 @@
       "forms": [
         "حاسبة التأمين"
       ],
-      "tab": "production",
+      "tab": "contracting_entities",
       "article": "booking-flow",
       "text_sha256": "9de357e91f68d929da65d3983a861523a19c2d8ad7c1d86737871b762e1c0325"
     },
@@ -5457,7 +6164,7 @@
       "forms": [
         "حاسبة التأمين"
       ],
-      "tab": "production",
+      "tab": "contracting_entities",
       "article": "personal",
       "text_sha256": "5124563f386757810c60ae86fc95904a13532f1a872fcd3579613f304338e13d"
     },
@@ -5469,7 +6176,7 @@
       "forms": [
         "تسجيل تحصيل من شركة التأمين"
       ],
-      "tab": "production",
+      "tab": "contracting_entities",
       "article": "collections",
       "text_sha256": "125776655945829a368efb4a81dbc0efc7321372b5cd97b419805d08b8d6744d"
     },
@@ -5481,9 +6188,75 @@
       "forms": [
         "تسجيل تحصيل من شركة التأمين"
       ],
-      "tab": "production",
+      "tab": "contracting_entities",
       "article": "collections",
       "text_sha256": "1ab8138b1a334822a7f5c1302e62560c0452a695e15cbaf3dadeeeff9ffdbfe0"
+    },
+    {
+      "file": "insurance-contracts.js",
+      "label": "الخزينة/الوردية",
+      "name": "",
+      "kind": "html",
+      "forms": [
+        "تسجيل تحصيل من شركة التأمين"
+      ],
+      "tab": "contracting_entities",
+      "article": "insurance",
+      "text_sha256": "21db89d41a8b3a1b8948f592710a70e844f63af15e0c1156602a30e547941867"
+    },
+    {
+      "file": "insurance-contracts.js",
+      "label": "رقم التحويل/الإيصال",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [
+        "تسجيل تحصيل من شركة التأمين"
+      ],
+      "tab": "contracting_entities",
+      "article": "insurance",
+      "text_sha256": "e9a7148e1cf5d767e8b0e1304d8d10f30b93346e9e4513ccfef4367f775bd478"
+    },
+    {
+      "file": "insurance-contracts.js",
+      "label": "مرجع التحصيل",
+      "name": "",
+      "kind": "label",
+      "forms": [
+        "تسجيل تحصيل من شركة التأمين"
+      ],
+      "tab": "contracting_entities",
+      "article": "insurance",
+      "text_sha256": "e9a7148e1cf5d767e8b0e1304d8d10f30b93346e9e4513ccfef4367f775bd478"
+    },
+    {
+      "file": "insurance-contracts.js",
+      "label": "اختياري",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "contracting_entities",
+      "article": "insurance",
+      "text_sha256": "6853649fe331f48e80f49690b035b7ebb48aba6a019232ee57d3a34219969420"
+    },
+    {
+      "file": "insurance-contracts.js",
+      "label": "فئة الكارنيه",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "contracting_entities",
+      "article": "insurance",
+      "text_sha256": "13c2d8d056434000a0b1d3b1e3268a39a6f8f5ea27a28d9d09c04095603b33de"
+    },
+    {
+      "file": "insurance-contracts.js",
+      "label": "رقم الكارنيه / العضوية",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "contracting_entities",
+      "article": "insurance",
+      "text_sha256": "6853649fe331f48e80f49690b035b7ebb48aba6a019232ee57d3a34219969420"
     },
     {
       "file": "inventory-batch-dates.js",
@@ -13114,11 +13887,21 @@
     },
     {
       "file": "service-mapping-review.js",
+      "label": "قائمة الجهة",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "bc051d6a8d8898e622cae0ef57df5a764ad83c7b4ce9cbfaaaaa26d0fa03176f"
+    },
+    {
+      "file": "service-mapping-review.js",
       "label": "الحالة",
       "name": "",
       "kind": "html",
       "forms": [],
-      "tab": "production",
+      "tab": "price_lists",
       "article": "personal",
       "text_sha256": "0a8e1242f7cd5a7893e1222dfd049826b42b66af79a574141ddc063e925fb3f0"
     },
@@ -13128,7 +13911,7 @@
       "name": "",
       "kind": "html",
       "forms": [],
-      "tab": "production",
+      "tab": "price_lists",
       "article": "content",
       "text_sha256": "8781afaef1012c14a5b9f99b05513e1852e02bb6c191b2fc0b339518d671a4a9"
     },
@@ -13138,7 +13921,7 @@
       "name": "",
       "kind": "html",
       "forms": [],
-      "tab": "production",
+      "tab": "price_lists",
       "article": "personal",
       "text_sha256": "fcfcf93d2d0bde74aa0a1934993d34ae9f117562d8c56a3a563761ba68e24990"
     },
@@ -13148,9 +13931,59 @@
       "name": "",
       "kind": "label",
       "forms": [],
-      "tab": "production",
+      "tab": "price_lists",
       "article": "requests",
       "text_sha256": "00135b5d6cd282bea537fb8658c57e3e41f428900b403396c1ff4fef0b2d6095"
+    },
+    {
+      "file": "service-mapping-review.js",
+      "label": "راجعت العينة والوحدة وعدد الجلسات والمنطقة وشمول المستلزمات",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "cf54048002ae56f32c5206ac6f1accf44bcdcb18090fb26f644af646bd92d170"
+    },
+    {
+      "file": "service-mapping-review.js",
+      "label": "قسم الخدمة المقترحة",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "43d42a5134128f744c9728d7e417c2eba55b7f1452b8b20440d0a713273ca82c"
+    },
+    {
+      "file": "service-search-picker.js",
+      "label": "خدمة المركز",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "b1d1459fd5eeeb8271a40be29c53268a6bc8c27bd1dd5d9189fe29a6b1611077"
+    },
+    {
+      "file": "service-search-picker.js",
+      "label": "اكتب اسمًا أو كلمة أو كودًا",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "b1d1459fd5eeeb8271a40be29c53268a6bc8c27bd1dd5d9189fe29a6b1611077"
+    },
+    {
+      "file": "service-search-picker.js",
+      "label": "ابحث في خدمات سونو",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "b1d1459fd5eeeb8271a40be29c53268a6bc8c27bd1dd5d9189fe29a6b1611077"
     },
     {
       "file": "studio-storyboard.js",

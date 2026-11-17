@@ -589,13 +589,84 @@ frule(G,'نسبة تحمل الجهة لهذه الخدمة — اتركها ف�
 TASKS_ALL='في تكرار المهمة «كل» هو عدد الوحدات بين كل تكرار والتاني، مثل1 مع أسبوع يعني كل أسبوع، وراجع بداية الجدول ونهايته. وفي التعليق «الكل» معناها التعليق يوصل لكل المشاركين في المهمة بدل شخص واحد.'
 frule('render-tasks.js','الكل',TASKS_ALL,'tasks-guide')
 frule(G,'شروط الخدمة','اكتب شرط الجهة على الخدمة دي، زي عدد مرات أو مستند مطلوب. الشرط بيخص العقد المختار بس.','price-lists')
+# --- Contracts, shared tariffs, service mapping and insurance plans ---
+C='contract-price-workspace.js'
+ENTITY_CODE='كود الخدمة زي ما مكتوب في تعريفة أو ملف الجهة. بيساعد في مطابقتها بخدمة المركز الصح وفي المطالبات.'
+frule(C,'اسم اللائحة','اسم واضح للائحة أو التعريفة، زي «أسعار المركز ٢٠٢٧» أو اسم التعريفة المشتركة. الاسم بيظهر في سبب السعر عند الحجز.','price-lists')
+frule(C,'رقم النسخة','رقم نسخة اللائحة. الإصدار الجديد بياخد الرقم اللي بعده، والنسخة القديمة بتفضل محفوظة كما هي.','price-lists')
+frule(C,'سنة إصدار اللائحة|سنة إصدار التعريفة','السنة اللي الجهة أو المركز أصدروا فيها التعريفة، زي ما مكتوبة على ملف الأسعار. ممكن تختلف عن سنة التطبيق.','price-lists')
+frule(C,'سنة التطبيق','السنة اللي الأسعار دي هتتطبق فيها فعلاً على الخدمات. فترة السريان بالتاريخ هي اللي بتحدد التطبيق بالظبط.','price-lists')
+frule(C,'خصم عام بالنسبة|خصم القائمة بالنسبة','نسبة خصم من 0 لـ100 على كل بنود القائمة. لو للبند خصم نسبة كمان، النسبتين بيتطبقوا ورا بعض مش بيتجمعوا.','price-lists')
+frule(C,'خصم عام لكل وحدة|خصم القائمة بالمبلغ','مبلغ بالجنيه بيتخصم من كل وحدة خدمة بعد خصم النسبة. لو السعر النهائي بقى صفر أو أقل النظام بيرفض.','price-lists')
+frule(C,'سارية من|سارية حتى|بداية سريان القائمة|نهاية سريان القائمة','فترة تطبيق القائمة على تاريخ الخدمة. برا الفترة دي القائمة مابتتطبقش حتى لو معتمدة. النهاية لازم تكون بعد البداية.','price-lists')
+frule(C,'شروط اللائحة|ملاحظات وشروط الإصدار','اكتب شروط الجهة العامة على الأسعار، زي مستندات مطلوبة أو حدود. للتوضيح للمراجع والاستقبال، ومابتغيرش السعر.','price-lists')
+frule(C,'تاريخ الخدمة','تاريخ الخدمة اللي عايز تجرب سعرها. التجربة بتقرا الأسعار المعتمدة في التاريخ ده بس، ومابتعملش حجز ولا فاتورة.','price-lists')
+frule(C,'بحث في القوائم','اكتب جزء من اسم القائمة أو الجهة لتصفية القوائم. البحث مابيغيرش حاجة.','price-lists')
+frule(C,'توزيع الخدمات حسب أقسام الملف وإنشاء الأقسام غير الموجودة','علّم عليها لو ملف الجهة مقسم أقسام (زي أشعة ومعمل)، علشان كل خدمة تتحط في قسمها ويتعمل القسم الناقص في القائمة دي بس.','price-lists')
+frule(C,'اسم الإصدار الجديد','اسم الإصدار اللي هيتعمل كنسخة جديدة من القائمة. الإصدار الجديد بيبدأ مسودة، وربط العقود بالقائمة الأصلية بيفضل زي ما هو.','price-lists')
+frule(C,'نسخ الأقسام','علّم عليها علشان الإصدار الجديد ياخد نفس أقسام القائمة الحالية. شيلها لو عايز مسودة فاضية. صلاحيات المستخدمين مابتتنسخش.','price-lists')
+frule(C,'اسم الخدمة أو الكود أو القسم|بحث داخل سطور الدفعة','اكتب اسم خدمة أو كود أو قسم علشان تلاقي سطر معين في دفعة الاستيراد. البحث مابيغيرش السطور.','price-lists')
+frule(C,'كود الجهة',ENTITY_CODE,'price-lists')
+frule(C,'السعر','سعر الخدمة بالجنيه زي ما في ملف الجهة. راجعه مع الأصل قبل تأكيد المطابقة.','price-lists')
+frule(C,'القسم في الملف','القسم اللي الخدمة كانت تحته في ملف الجهة، زي أشعة أو معمل. بيستخدم لتوزيع الخدمات على أقسام القائمة.','price-lists')
+frule(C,'نسبة الزيادة أو التخفيض','نسبة تغيير كل أسعار المسودة أو قسم منها، موجب للزيادة وسالب للتخفيض. راجع المعاينة قبل الحفظ، والتغيير على المسودة بس.','price-lists')
+frule(C,'السعر الثابت','سعر الخدمة في القائمة دي بالجنيه. إجباري في القوائم ذات الأسعار الثابتة. لو فاضي بيتحسب من سعر المركز مع الخصم.','price-lists')
+frule(C,'خصم النسبة','نسبة خصم للخدمة دي بس من 0 لـ100، بتتطبق قبل خصم القائمة العام.','price-lists')
+frule(C,'خصم المبلغ','مبلغ بالجنيه بيتخصم من سعر الخدمة دي بس، بعد خصومات النسبة.','price-lists')
+frule(C,'اسم الخدمة عند الجهة','اسم الخدمة زي ما بتكتبه الجهة في تعريفتها أو مطالباتها. بيفضل مربوط بخدمة المركز المعتمدة.','price-lists')
+frule(C,'اسم القسم','اسم القسم جوه القائمة دي، زي أشعة أو معمل. القسم بيخص القائمة دي بس ومابيعملش قسم في خدمات المركز.','price-lists')
+frule(C,'اسم الخدمة المعتمد','اسم الخدمة الجديدة زي ما هيظهر في خدمات المركز. اتأكد إنها مش موجودة باسم تاني قبل ما تطلب إضافتها، والطلب بيراجعه شخص تاني.','price-lists')
+frule(C,'وحدة تقديم الخدمة','الوحدة اللي الخدمة بتتقدم بيها، زي جلسة أو منطقة أو عينة. بتفرق بين خدمتين بنفس الاسم.','price-lists')
+frule(C,'سبب الإضافة وتفاصيل تميزها','اشرح ليه الخدمة دي محتاجة تتضاف وإيه اللي يميزها عن الخدمات الموجودة، علشان المراجع يقرر.','price-lists')
+frule(C,'سبب الإنهاء','اكتب سبب إنهاء القائمة المعتمدة، زي صدور تعريفة جديدة. بعد الإنهاء القائمة مابتتطبقش على حجوزات جديدة.','price-lists')
+N='contract-navigation.js'
+frule(N,'بحث عن جهة','اكتب جزء من اسم الجهة أو الكود لتصفية الجهات المتعاقدة. البحث مابيغيرش حاجة.','entities')
+frule(N,'التصنيف','اعرض جهات تصنيف معين بس، زي تأمين أو شركات أو نقابات.','entities')
+frule(N,'حالة العقد','اعرض الجهات حسب حالة عقدها، زي ساري أو منتهي، أو الجهات اللي مالهاش عقد.','entities')
+frule(N,'التجميع','جمّع الجهات في القائمة حسب التصنيف أو حالة العقد علشان تقراها أسهل. التجميع للعرض بس.','entities')
+frule(N,'عروضي المحفوظة','اختار عرض حفظته قبل كده بالفلاتر والترتيب بتوعه. العروض بتخصك انت بس.','entities')
+frule(N,'اجعله عرض البداية','علّم عليها علشان العرض ده يفتح تلقائي أول ما تدخل الجهات.','entities')
+frule(N,'الترتيب','رتب الجهات حسب الاسم أو أقرب موعد متابعة أو أقرب نهاية عقد. الترتيب للعرض بس.','entities')
+frule(N,'اسم العرض','اسم قصير للفلاتر والترتيب الحاليين علشان ترجعلهم بسرعة من «عروضي المحفوظة».','entities')
+frule(C,'الملف','اختار ملف أسعار الجهة (Excel أو CSV أو Word أو PDF نصي). الملف بيتقري على جهازك ويتحول لدفعة سطور تراجعها قبل ما تتضم للقائمة.','price-lists')
+frule(C,'الوحدة','وحدة تقديم الخدمة زي جلسة أو منطقة أو عينة، زي ما في ملف الجهة. راجعها قبل تأكيد المطابقة لأنها بتفرق بين خدمتين بنفس الاسم.','price-lists')
+M='contract-service-mapping.js'
+frule(M,'اختيار من قائمة سونو','اختار خدمة من خدمات المركز علشان تشوف مربوطة بأنهي اسم عند الجهة.','price-lists')
+frule(M,'اختيار من قائمة الجهة','اختار خدمة من أسماء الجهة علشان تشوف مربوطة بأنهي خدمة في المركز.','price-lists')
+frule(M,'المسمى المعتمد في سونو','خدمة المركز الأصلية اللي اسم الجهة هيتربط بيها. اختارها بدقة لأن السعر والمطالبة بيمشوا عليها.','price-lists')
+frule(M,'اسم الخدمة في جهة التعاقد','اسم الخدمة زي ما الجهة بتكتبه. المطابقة بتخلي النظام يفهم إن الاسمين نفس الخدمة.','price-lists')
+frule(M,'كود الجهة',ENTITY_CODE,'price-lists')
+R='service-mapping-review.js'
+frule(R,'قائمة الجهة','اختار تعريفة الجهة اللي عايز تراجع مطابقة أسماء خدماتها.','price-lists')
+frule(R,'راجعت العينة والوحدة وعدد الجلسات والمنطقة وشمول المستلزمات','علّم عليها بس بعد ما تتأكد إن سطر الجهة وخدمة المركز متطابقين في نوع العينة والوحدة وعدد الجلسات والمنطقة والمستلزمات. اقتراحات المساعد مش اعتماد.','price-lists')
+frule(R,'قسم الخدمة المقترحة','القسم اللي الخدمة الجديدة المقترحة هتتحط فيه في خدمات المركز لو الطلب اتعتمد.','price-lists')
+P='service-search-picker.js'
+frule(P,'خدمة المركز|ابحث في خدمات سونو|اكتب اسمًا أو كلمة أو كودًا','اكتب جزء من اسم الخدمة أو كودها واختار الخدمة الصح من النتايج. لو مش لاقيها جرب كلمة تانية أو الكود.','price-lists')
+frule('center-master-review.js','راجعت فترة التطبيق والأسعار والخدمات','علّم عليها بعد ما تراجع فترة السريان والأسعار والخدمات الجديدة. المراجعة لازم تكون من حساب تاني غير اللي جهز المطابقات.','price-lists')
+frule('center-master-review.js','أؤكد أن السطور المتطابقة الموضحة تمثل خدمة واحدة','أكّد بس لو السطور المتجمعة فعلاً نفس الخدمة. لو فيه اختلاف في الوحدة أو النوع، ماتأكدش.','price-lists')
+frule('finance-contract-signature.js','المقدمة','نص بداية العقد قبل البنود. ممكن تستخدم المتغيرات المكتوبة تحت زي اسم الطبيب ورقم المرجع، وجدول الشروط المالية بيتضاف تلقائي بعد البنود.','payroll')
+I='insurance-contracts.js'
+frule(I,'شركة/عقد التأمين','اختار عقد شركة التأمين اللي عايز تدير فئاته وتحمله ومطالباته.','insurance')
+frule(I,'اسم الفئة/الكارنيه','اسم فئة الكارنيه زي ما في عقد الشركة، زي فضي أو ذهبي. كل فئة ممكن يبقى لها تحمل ولائحة أسعار مختلفة.','insurance')
+frule(I,'كود الفئة','كود الفئة عند شركة التأمين لو موجود، بيساعد في المطالبات.','insurance')
+frule(I,'لائحة الأسعار','اختار لائحة الأسعار اللي تتطبق على الفئة دي، أو سيبها على لائحة العقد الافتراضية.','insurance')
+frule(I,'نوع تحمل المريض|نوع التحمل','اختار اللي المريض بيدفعه: بدون تحمل، أو نسبة من السعر، أو مبلغ ثابت. في استثناءات الخدمات «حسب الفئة» معناها نفس تحمل الفئة.','insurance')
+frule(I,'قيمة التحمل|القيمة','النسبة أو المبلغ اللي المريض بيدفعه حسب نوع التحمل. الباقي بيبقى مطالبة على شركة التأمين.','insurance')
+frule(I,'سارية من|سارية حتى','فترة سريان الفئة أو الاستثناء. لو النهاية فاضية تبقى مفتوحة.','insurance')
+frule(I,'فئة الكارنيه','اختار فئة الكارنيه بتاعة المريض زي ما مكتوبة على الكارت. الفئة بتحدد التحمل ولائحة الأسعار.','insurance')
+frule(I,'رقم الكارنيه / العضوية|اختياري','رقم كارت التأمين أو العضوية زي ما مكتوب على الكارت. اختياري، بس بيسهل المطالبة.','insurance')
+frule(I,'الخزينة/الوردية','اختار الخزينة أو الوردية اللي استلمت الفلوس لو التحصيل كاش. التحويل البنكي مش محتاج خزينة.','insurance')
+frule(I,'رقم التحويل/الإيصال|مرجع التحصيل','اكتب رقم التحويل أو الإيصال من مستند الشركة. المرجع بيمنع تسجيل نفس التحصيل مرتين.','insurance')
 def norm(v):
  v=re.sub(r'[\u064b-\u065f\u0670\u0640]','',v).lower();v=re.sub('[أإآٱ]','ا',v).replace('ى','ي').replace('ة','ه');v=re.sub(r'[^\w]+',' ',v).strip();return re.sub(r'(^| )ال',r'\1',v)
 def canon(v):
  v=re.sub(r'\s*\([^)]*(?:اختياري|إن وجد|ان وجد)[^)]*\)','',v);v=re.sub(r'\s*(?:إن وجد|إن وجدت|اختياري)$','',v);return norm(v)
+PRICE_FILES={'price-list-governance.js','contract-price-workspace.js','contract-service-mapping.js','service-mapping-review.js','service-search-picker.js','center-master-review.js'}
 def domain(f):
  if f=='workforce-prices.js' or f.startswith('hr-'):return 'human_resources'
- if f=='price-list-governance.js':return 'price_lists'
+ if f=='contract-navigation.js':return 'contracting_entities'
+ if f in PRICE_FILES:return 'price_lists'
+ if f=='insurance-contracts.js':return 'contracting_entities'
  if f=='contract-marketing.js':return 'accounting'
  if f in ['render-patients.js','psychology-workspace.js'] or f.startswith('patient-'):return 'patients'
  if f.startswith('reception-') or f=='render-bookings.js':return 'reception_services'
@@ -629,9 +700,12 @@ def explain(row):
   if f.get('tabs') and tab not in f['tabs']:continue
   if any(norm(label)==norm(k) for k in f['match'].split('|')):return f['text'],f['article']
  return None
-def tabs_for(tab,file):
+def tabs_for(tab,file,label=''):
  if file=='contract-marketing.js':return ['accounting','contracting_entities']
  if file=='workforce-prices.js':return ['human_resources','price_lists']
+ if file in PRICE_FILES or file=='contract-navigation.js':return ['price_lists','contracting_entities']
+ # Only the card fields injected into the patient/visit forms also live on those tabs.
+ if file=='insurance-contracts.js':return ['contracting_entities','patients','reception_services'] if label in ('فئة الكارنيه','رقم الكارنيه / العضوية','اختياري') else ['contracting_entities']
  if file.startswith(('design-','video-','studio-')) or file in ['ai-clips.js','before-after-content.js','carousel-content.js','dina-content.js','doctor-content.js','reel-cover.js','workflow.js','content-ai.js','content-sources.js','content-rating.js','weekly-plan.js']:return ['production','review','design','publish','archive']
  if tab=='inventory':return ['inventory','accounting']
  if tab=='accounting':return ['accounting','booking_cash']
@@ -646,7 +720,7 @@ def compile_guide():
   if tab=='patients':article='patient-records'
   if tab=='accounting' and article in ['content','personal','patient-records']:article='ledger-guide'
   if article not in {a['id'] for a in d['articles']}:raise RuntimeError('Missing article '+article)
-  allowed=tabs_for(tab,row['file']);forms=tuple(row.get('forms',[]));key=(text,article,tuple(allowed),forms)
+  allowed=tabs_for(tab,row['file'],row['label']);forms=tuple(row.get('forms',[]));key=(text,article,tuple(allowed),forms)
   g=groups.setdefault(key,dict(title=row['label'],labels=[],text=text,article=article,tabs=allowed,forms=list(forms),reviewed=True))
   if row['label'] not in g['labels']:g['labels'].append(row['label'])
   manifest.append(dict(row,tab=tab,article=article,text_sha256=hashlib.sha256(text.encode()).hexdigest()))
