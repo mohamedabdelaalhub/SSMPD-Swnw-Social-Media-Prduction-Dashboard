@@ -5,7 +5,7 @@ const {JSDOM}=require('jsdom'),fs=require('node:fs'),assert=require('node:assert
  const past=new Date(Date.now()-40*60000).toISOString(),later=new Date(Date.now()+90*60000).toISOString();
  const ap=(id,name,q,extra)=>Object.assign({id,patient_id:'p'+id,patient_name:name,file_no:'F'+id,phone:'0100'+id,provider_id:'d1',provider_name:'د. سارة',department:'عيادة',service_name:'كشف',starts_at:later,queue_status:q,priority:0,wait_minutes:0,can_view_finance:true,patient_due:0,patient_payable_total:0,due_invoices:[]},extra||{});
  const model={day,settings:{max_wait_minutes:20},can_view_finance:true,doctor_sessions:[{provider_id:'d1',status:'delayed',eta_minutes:15}],help_requests:[],events:[],outbox:[],appointments:[
-  ap('1','أحمد متأخر','expected',{starts_at:past}),ap('2','منى جاية','expected'),ap('3','كريم مستني','waiting',{wait_minutes:35,visit_id:'v3'}),
+  ap('1','أحمد متأخر','expected',{starts_at:past}),ap('2','منى جاية','expected',{booking_source:'whatsapp'}),ap('3','كريم مستني','waiting',{wait_minutes:35,visit_id:'v3'}),
   ap('4','سلمى جوه','in_service',{visit_id:'v4'}),ap('5','يوسف خلص','completed',{visit_id:'v5',patient_due:150,patient_payable_total:300,due_invoices:[{id:'inv5',invoice_no:'INV-5',due:150}]}),
   ap('6','هدى دفعت','completed',{visit_id:'v6',patient_due:0,patient_payable_total:200}),ap('7','لم يحضر','no_show')]};
  const dom=new JSDOM('<main id="host"></main>',{url:'https://board.test/',runScripts:'outside-only'}),w=dom.window,calls=[],errors=[];
@@ -22,7 +22,7 @@ const {JSDOM}=require('jsdom'),fs=require('node:fs'),assert=require('node:assert
  assert.equal(w.document.querySelectorAll('[data-unified-hub]').length,0,'no second board');
  assert.deepEqual(qa('[data-journey-lane]').map(x=>x.dataset.journeyLane),['coming','waiting','inside','done']);
  const lane=k=>qa('[data-journey-lane="'+k+'"] .journey-card').map(x=>x.querySelector('h4').textContent);
- assert.deepEqual(qa('.journey-column h3').map(x=>x.textContent),['الحجوزات','في الانتظار','في غرفة الكشف','أنهى الكشف'],'owner 2026-11-17 lane names');assert.deepEqual(lane('coming'),['أحمد متأخر','منى جاية']);assert.deepEqual(lane('waiting'),['كريم مستني']);assert.deepEqual(lane('inside'),['سلمى جوه']);assert.equal(lane('done').length,3);
+ assert.equal(qa('.journey-src').map(x=>x.textContent).join(),'واتساب','owner 2026-11-17: channel tag');assert.deepEqual(qa('.journey-column h3').map(x=>x.textContent),['الحجوزات','في الانتظار','في غرفة الكشف','أنهى الكشف'],'owner 2026-11-17 lane names');assert.deepEqual(lane('coming'),['أحمد متأخر','منى جاية']);assert.deepEqual(lane('waiting'),['كريم مستني']);assert.deepEqual(lane('inside'),['سلمى جوه']);assert.equal(lane('done').length,3);
  for(const c of qa('.journey-card'))assert(c.querySelectorAll('.journey-card-actions > .btn').length<=1,'at most one main button per card');
  const card=id=>q('.journey-card[data-appointment="'+id+'"]'),main=id=>{const b=card(id).querySelector('.journey-card-actions > .btn');return b?b.dataset.journeyAction:undefined;};
  assert.equal(main('1'),'arrive');assert.equal(main('3'),'call');assert.equal(main('4'),'visit_complete');assert.equal(main('5'),'collect_due');assert.equal(main('6'),undefined);

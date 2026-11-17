@@ -100,3 +100,6 @@ button.journey-metric.is-alert strong{color:#b42318}
 .journey-card-detail .journey-more[open]{flex-basis:100%;order:9}
 .journey-card-detail .journey-more[open]>summary{margin-inline-start:auto}
 .journey-card-detail .journey-more-menu{position:static;inset:auto;margin-top:6px;box-shadow:none;min-width:0;width:100%}
+/* Owner 2026-11-17: channel tag on bookings from واتساب / الموقع / البوابة / فيزيتا. */
+.journey-src{flex:none;margin-inline-start:auto;font-size:10.5px;font-weight:700;padding:1px 7px;border-radius:7px;background:#E8F5EE;color:#2F7D5C}
+.journey-src-website{background:#EEF2FB;color:#0F369D}.journey-src-portal,.journey-src-patient_portal{background:#FFF1EA;color:#B5410F}.journey-src-vezeeta{background:#F2F4F7;color:#344054}
