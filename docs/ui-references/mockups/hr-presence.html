@@ -170,6 +170,51 @@ main{max-width:1320px;margin:0 auto;padding:22px 24px 40px}
 .ab{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid #F0F1F4}
 .ab .av{width:34px;height:34px;background:#FBE9E6;border:1.5px dashed #E8A396}.ab .av svg{stroke:var(--neg);width:17px}.ab .av::after{background:var(--neg)}
 .ab .tx{flex:1;min-width:0}.ab .tx small{display:block;color:var(--muted);font-size:12px}
+
+/* ===== chips fill the full row on desktop (ends line up with the cards) ===== */
+@media (min-width:901px){.chips{overflow:visible;flex-wrap:nowrap}.chip{flex:1 1 auto;justify-content:center}}
+/* ===== interaction & motion ===== */
+:root{--ease:cubic-bezier(.2,.8,.2,1)}
+.chip,.seg span,.call,.ib,.more,.k,.dept,.row,.mv,.ab,.na{transition:all .22s var(--ease)}
+.chip{cursor:pointer;position:relative;overflow:hidden}
+.chip:hover{transform:translateY(-2px);border-color:#9DB0E0;box-shadow:0 6px 14px rgba(15,54,157,.10)}
+.chip:active{transform:scale(.95)}
+.chip.on:hover{box-shadow:0 8px 18px rgba(22,33,46,.25)}
+.chip i{transition:all .22s var(--ease)}
+.chip:hover i{background:#E3E9F7;color:var(--blue)}.chip.on:hover i{background:rgba(255,255,255,.25);color:#fff}
+/* sliding pill for view switcher */
+.seg{position:relative}
+.seg span{position:relative;z-index:1;cursor:pointer;background:transparent!important}
+.seg span.on{color:#fff}
+.seg span:not(.on):hover{color:var(--ink)}
+.seg .ind{position:absolute;top:4px;bottom:4px;border-radius:999px;background:var(--ink);transition:all .35s var(--ease);z-index:0}
+/* buttons */
+.ib{cursor:pointer}.ib:hover{background:#F3F5FA;transform:translateY(-1px)}.ib:active{transform:scale(.92)}
+.ib:hover svg{animation:wig .5s ease}
+@keyframes wig{25%{transform:rotate(-12deg)}75%{transform:rotate(12deg)}}
+.call:hover{background:var(--blue);color:#fff;border-color:var(--blue);transform:translateY(-1px)}
+.call:active{transform:scale(.93)}
+/* links: underline grows from the start */
+.more{cursor:pointer;background-image:linear-gradient(var(--blue),var(--blue));background-size:0 2px;background-repeat:no-repeat;background-position:100% 100%}
+.more:hover{background-size:100% 2px;letter-spacing:.2px}
+/* list rows */
+.row{cursor:pointer}.row:hover{background:#F5F7FC}
+.row:hover .av{transform:scale(1.08)}.av{transition:transform .22s var(--ease)}
+.mv,.ab,.na{cursor:pointer;border-radius:10px}
+.mv:hover,.ab:hover{background:#F7F8FA;padding-inline:8px}
+.mv:hover .ic{transform:translateX(-3px)}.mv .ic{transition:transform .22s var(--ease)}
+.na:hover{border-color:#9DB0E0;background:#F8FAFE}
+.k{cursor:pointer}
+/* click ripple */
+.rip{position:absolute;border-radius:50%;background:currentColor;opacity:.18;transform:scale(0);animation:rip .55s ease-out forwards;pointer-events:none}
+@keyframes rip{to{transform:scale(4);opacity:0}}
+.call,.k,.dept,.mv,.ab{position:relative;overflow:hidden}
+/* entrance: cards rise in one after another */
+.k,.dept,.side,.chip{animation:rise .5s var(--ease) both}
+@keyframes rise{from{opacity:0;transform:translateY(12px)}}
+/* attention pulse on the absent dot */
+.row.abs .av::after,.ab .av::after{animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 5px rgba(208,64,42,.18)}}
 </style>
 </head>
 <body>
@@ -309,5 +354,24 @@ main{max-width:1320px;margin:0 auto;padding:22px 24px 40px}
     </aside>
   </div>
 </main>
+<script>
+// mockup-only interactions
+(function(){
+  var d=document;
+  // stagger entrance
+  [].forEach.call(d.querySelectorAll('.k,.chip,.dept,.side'),function(el,i){el.style.animationDelay=(i*40)+'ms'});
+  // chips select
+  [].forEach.call(d.querySelectorAll('.chip'),function(c){c.addEventListener('click',function(){d.querySelector('.chip.on').classList.remove('on');c.classList.add('on')})});
+  // sliding segmented control
+  var seg=d.querySelector('.seg'),ind=d.createElement('i');ind.className='ind';seg.appendChild(ind);
+  function place(el){ind.style.left=el.offsetLeft+'px';ind.style.width=el.offsetWidth+'px'}
+  [].forEach.call(seg.querySelectorAll('span'),function(sp){sp.addEventListener('click',function(){seg.querySelector('.on').classList.remove('on');sp.classList.add('on');place(sp)})});
+  place(seg.querySelector('.on'));addEventListener('resize',function(){place(seg.querySelector('.on'))});
+  // ripple
+  d.addEventListener('click',function(e){var t=e.target.closest('.chip,.call,.k,.mv,.ab');if(!t)return;var r=t.getBoundingClientRect(),z=Math.max(r.width,r.height),s=d.createElement('span');s.className='rip';s.style.width=s.style.height=z+'px';s.style.left=(e.clientX-r.left-z/2)+'px';s.style.top=(e.clientY-r.top-z/2)+'px';t.appendChild(s);setTimeout(function(){s.remove()},600)});
+  // count-up numbers
+  [].forEach.call(d.querySelectorAll('.k .n'),function(n){var node=n.firstChild,to=parseInt(node.nodeValue,10);if(isNaN(to))return;var t0=performance.now();(function f(t){var p=Math.min(1,(t-t0)/700);node.nodeValue=Math.round(to*(1-Math.pow(1-p,3)))+(node.nodeValue.match(/\s+$/)||[''])[0];if(p<1)requestAnimationFrame(f)})(t0)});
+})();
+</script>
 </body>
 </html>
