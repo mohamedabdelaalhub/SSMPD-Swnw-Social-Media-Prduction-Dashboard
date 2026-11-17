@@ -14,18 +14,18 @@
   function initials(n) { return String(n || '').trim().split(/\s+/).slice(0, 2).map(function (x) { return x.charAt(0); }).join('') || '؟'; }
   // Departments are typed by hand in HR files («تمريض» / «التمريض » / «الادارة»...): group by a normalized key, give each group one clean name, color and icon.
   function deptKey(d) { return String(d || '').replace(/\s+/g, ' ').trim().replace(/[أإآ]/g, 'ا').replace(/ى/g, 'ي').replace(/ة/g, 'ه').replace(/^ال/, ''); }
-  // Every department gets its own colour + icon so no two cards look alike (owner, 2026-11-17).
+  // Every department gets its own colour + icon so no two cards look alike. Colours chosen by the owner (2026-11-17, docs/ui-references/color-picker.html).
   var KNOWN = {
-    nurse: { name: 'التمريض', icon: 'nurse', col: '#0E8A7E', tint: '#E6F4F2', min: 5 },
-    reception: { name: 'الاستقبال', icon: 'desk', col: '#2563EB', tint: '#E9F0FD', min: 3 },
-    cs: { name: 'خدمة العملاء', icon: 'head', col: '#D9780F', tint: '#FDF1E3', min: 2 },
-    admin: { name: 'الإدارة', icon: 'brief', col: '#475569', tint: '#EEF1F5', min: 2 },
-    acc: { name: 'المحاسبة والمالية', icon: 'calc', col: '#0E7490', tint: '#E6F4F8', min: 2 },
-    physio: { name: 'العلاج الطبيعي', icon: 'physio', col: '#9333EA', tint: '#F4EBFD', min: 0 },
-    clean: { name: 'النظافة', icon: 'clean', col: '#65A30D', tint: '#EFF6E5', min: 0 },
-    social: { name: 'السوشيال ميديا', icon: 'mega', col: '#DB2777', tint: '#FCE9F2', min: 0 },
-    beauty: { name: 'التجميل', icon: 'beauty', col: '#0891B2', tint: '#E5F5F9', min: 0 },
-    psych: { name: 'النفسية والتخاطب', icon: 'mind', col: '#A16207', tint: '#FAF2E1', min: 0 }
+    nurse: { name: 'التمريض', icon: 'nurse', col: '#09A0BE', tint: '#E1F4F7', min: 5 },
+    reception: { name: 'الاستقبال', icon: 'desk', col: '#2563EB', tint: '#E5ECFD', min: 3 },
+    cs: { name: 'خدمة العملاء', icon: 'head', col: '#002AFA', tint: '#E0E5FE', min: 2 },
+    admin: { name: 'الإدارة', icon: 'brief', col: '#6600FF', tint: '#EDE0FF', min: 2 },
+    acc: { name: 'المحاسبة والمالية', icon: 'calc', col: '#A87B00', tint: '#F5EFE0', min: 2 },
+    physio: { name: 'العلاج الطبيعي', icon: 'physio', col: '#1AA607', tint: '#E4F4E1', min: 0 },
+    clean: { name: 'النظافة', icon: 'clean', col: '#4D7C0F', tint: '#EAEFE2', min: 0 },
+    social: { name: 'السوشيال ميديا', icon: 'mega', col: '#D4087F', tint: '#FAE1F0', min: 0 },
+    beauty: { name: 'التجميل', icon: 'beauty', col: '#FF00DD', tint: '#FFE0FB', min: 0 },
+    psych: { name: 'النفسية والتخاطب', icon: 'mind', col: '#B400E6', tint: '#F6E0FC', min: 0 }
   };
   var GROUP = { 'تمريض': 'nurse', 'استقبال': 'reception', 'خدمه عملاء': 'cs', 'ادارة': 'admin', 'اداره': 'admin', 'ادارة ماليه': 'acc', 'اداره ماليه': 'acc', 'محاسبه': 'acc', 'محاسبه وماليه': 'acc',
     'علاج الطبيعي': 'physio', 'علاج طبيعي': 'physio', 'نظافه': 'clean', 'سوشيال ميديا': 'social', 'سوشيال': 'social', 'تسويق': 'social', 'تجميل': 'beauty', 'جلديه وتجميل': 'beauty',
