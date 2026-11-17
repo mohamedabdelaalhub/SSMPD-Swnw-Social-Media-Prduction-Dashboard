@@ -139,6 +139,25 @@ main{max-width:1320px;margin:0 auto;padding:22px 24px 40px}
   .user .hide-m{display:none}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* option B: big depts full width, small depts two per row */
+.depts{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-content:start}
+.dept.wide{grid-column:1/-1}
+/* dividers between employees */
+.dept .rows{padding:0 18px 4px;column-gap:0}
+.dept .row{border-radius:0;padding:12px 6px}
+.dept.half .rows{grid-template-columns:1fr}
+.dept.half .row+.row{border-top:1px solid var(--line)}
+.dept.wide .rows{grid-template-columns:repeat(3,1fr)}
+.dept.wide .row{padding-inline:14px}
+.dept.wide .row:not(:nth-child(3n+1)){border-inline-start:1px solid var(--line)}
+.dept.wide .row:nth-child(n+4){border-top:1px solid var(--line)}
+@media (max-width:900px){
+  .depts{grid-template-columns:1fr}
+  .dept.wide .rows{grid-template-columns:1fr}
+  .dept.wide .row{border-inline-start:0!important;border-top:0;padding-inline:6px}
+  .dept.wide .row+.row{border-top:1px solid var(--line)}
+}
 </style>
 </head>
 <body>
@@ -198,7 +217,7 @@ main{max-width:1320px;margin:0 auto;padding:22px 24px 40px}
   <div class="grid">
     <div>
       <div class="depts">
-        <article class="dept short">
+        <article class="dept wide short">
           <div class="dh"><div><b>التمريض</b><small>4 حاضرين من 5 مجدولين · الحد الأدنى 5</small></div><span class="st bad">ناقص 1</span></div>
           <ul class="rows">
             <li class="row"><span class="av" style="--c:#E7F3EE;--cs:#2F7D5C"><svg><use href="#person"/></svg></span><div class="nm"><span class="t">موظفة تمريض 1</span><small>تمريض</small></div><div class="meta"><b>دخل 15:47</b><span>من 6 س 2 د</span></div></li>
@@ -209,14 +228,14 @@ main{max-width:1320px;margin:0 auto;padding:22px 24px 40px}
           <a class="more">القادمون والمنصرفون والإجازات (1)</a>
         </article>
 
-        <article class="dept short">
+        <article class="dept half short">
           <div class="dh"><div><b>الاستقبال</b><small>1 حاضر من 1 مجدول · الحد الأدنى 3</small></div><span class="st bad">ناقص 2</span></div>
           <ul class="rows">
             <li class="row"><span class="av" style="--c:#FDECE4;--cs:#C2410C"><svg><use href="#person"/></svg></span><div class="nm"><span class="t">موظفة استقبال</span><small>استقبال</small></div><div class="meta"><b>دخل 16:51</b><span>من 4 س 58 د</span></div></li>
           </ul>
         </article>
 
-        <article class="dept">
+        <article class="dept half">
           <div class="dh"><div><b>الإدارة</b><small>2 حاضرين من 2 مجدولين</small></div><span class="st ok">مكتمل</span></div>
           <ul class="rows">
             <li class="row"><span class="av"><svg><use href="#person"/></svg></span><div class="nm"><span class="t">مديرة إدارية</span><small>مدير · إداري</small></div><div class="meta"><b>دخل 13:44</b><span>من 8 س 5 د</span></div></li>
@@ -225,14 +244,14 @@ main{max-width:1320px;margin:0 auto;padding:22px 24px 40px}
           <a class="more">القادمون والمنصرفون والإجازات (1)</a>
         </article>
 
-        <article class="dept">
+        <article class="dept half">
           <div class="dh"><div><b>العلاج الطبيعي</b><small>1 حاضر من 1 مجدول</small></div><span class="st ok">مكتمل</span></div>
           <ul class="rows">
             <li class="row"><span class="av"><svg><use href="#person"/></svg></span><div class="nm"><span class="t">مساعد علاج طبيعي</span><small>مساعد</small></div><div class="meta"><span class="pill late">متأخر 3 س 45 د</span><b>دخل 18:45</b></div></li>
           </ul>
         </article>
 
-        <article class="dept">
+        <article class="dept half">
           <div class="dh"><div><b>النظافة</b><small>1 حاضر من 1 مجدول</small></div><span class="st ok">مكتمل</span></div>
           <ul class="rows">
             <li class="row"><span class="av"><svg><use href="#person"/></svg></span><div class="nm"><span class="t">عاملة نظافة — وردية مسائية</span><small>عاملة</small></div><div class="meta"><b>دخل 21:00</b><span>من 48 د</span></div></li>
