@@ -1,0 +1,170 @@
+/* «الحضور الآن» redesign (2026-11-17). Loaded after attendance-hub.css; everything is scoped to the presence board.
+   Reference: docs/ui-references/mockups/hr-presence.html (owner-approved). Swnw colours and local fonts only. */
+.att-hub [data-hr-presence]{--ease:cubic-bezier(.2,.8,.2,1);--line:#E9ECF3}
+
+/* ---------- top: hero + six filter tiles ---------- */
+.att-hub [data-hr-presence] .pv-top{display:grid;grid-template-columns:minmax(260px,1.3fr) 3fr;gap:12px;margin:14px 0}
+.att-hub [data-hr-presence] .pv-hero{background:linear-gradient(135deg,#F15A22,#F7834F);color:#fff;border-radius:18px;padding:18px 20px;display:flex;flex-direction:column;box-shadow:0 10px 24px rgba(241,90,34,.22)}
+.att-hub [data-hr-presence] .pv-hero.ok{background:linear-gradient(135deg,#2F7D5C,#3E9A73);box-shadow:0 10px 24px rgba(47,125,92,.18)}
+.att-hub [data-hr-presence] .pv-hero>small{font-size:13px;opacity:.9}
+.att-hub [data-hr-presence] .pv-hero>b{font-size:40px;line-height:1.1;margin:4px 0 10px}
+.att-hub [data-hr-presence] .pv-hero-l{margin-top:auto;display:flex;flex-wrap:wrap;gap:6px}
+.att-hub [data-hr-presence] .pv-hero-l span{flex:1 1 auto;background:rgba(255,255,255,.18);border-radius:10px;padding:6px 10px;display:flex;justify-content:space-between;gap:10px;font-size:13px;white-space:nowrap}
+.att-hub [data-hr-presence] .kpis{grid-template-columns:repeat(3,1fr);margin:0;gap:12px}
+.att-hub [data-hr-presence] .kpi{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:14px 16px;border-radius:16px;box-shadow:none;cursor:pointer;position:relative;overflow:hidden;transition:transform .22s var(--ease),box-shadow .22s var(--ease),border-color .22s}
+.att-hub [data-hr-presence] .kpi .l{font-size:12.5px;color:var(--muted)}
+.att-hub [data-hr-presence] .kpi b{font-size:28px;line-height:1.15}
+.att-hub [data-hr-presence] .kpi small{font-size:11.5px}
+.att-hub [data-hr-presence] .kbar{display:block;width:100%;height:5px;border-radius:5px;background:#EEF0F4;margin-top:auto;padding-top:0;overflow:hidden;position:relative;top:6px}
+.att-hub [data-hr-presence] .kbar i{display:block;height:100%;border-radius:5px;background:var(--primary);transition:width .6s var(--ease)}
+.att-hub [data-hr-presence] .k-abs b{color:var(--neg)}.att-hub [data-hr-presence] .k-abs .kbar i{background:var(--neg)}
+.att-hub [data-hr-presence] .k-late b{color:#C2410C}.att-hub [data-hr-presence] .k-late .kbar i{background:var(--alert)}
+.att-hub [data-hr-presence] .k-leave .kbar i{background:var(--blue)}.att-hub [data-hr-presence] .k-up .kbar i{background:#7C8BA6}.att-hub [data-hr-presence] .k-out .kbar i{background:var(--out)}
+.att-hub [data-hr-presence] .kpi:hover{transform:translateY(-3px);box-shadow:0 10px 22px rgba(22,33,46,.08);border-color:#C9D4EE}
+.att-hub [data-hr-presence] .kpi:active{transform:scale(.97)}
+.att-hub [data-hr-presence] .kpi[aria-pressed=true]{outline:0;border-color:var(--primary);box-shadow:0 0 0 2px var(--primary) inset}
+
+/* ---------- filter bar: chips fill the row so their ends line up with the cards ---------- */
+.att-hub [data-hr-presence] .chips{flex:1 1 100%;order:3}
+.att-hub [data-hr-presence] .chip{flex:1 1 auto;justify-content:center;cursor:pointer;transition:transform .2s var(--ease),box-shadow .2s var(--ease),border-color .2s,background .2s}
+.att-hub [data-hr-presence] .chip .cdot{width:8px;height:8px;border-radius:50%;background:var(--col);flex:none}
+.att-hub [data-hr-presence] .chip.warn{border-color:#F6BFA6}
+.att-hub [data-hr-presence] .chip:hover{transform:translateY(-2px);border-color:#9DB0E0;box-shadow:0 6px 14px rgba(15,54,157,.10)}
+.att-hub [data-hr-presence] .chip:active{transform:scale(.95)}
+.att-hub [data-hr-presence] .chip[aria-pressed=true]{background:var(--dark);border-color:var(--dark)}
+.att-hub [data-hr-presence] .chip[aria-pressed=true] .cdot{box-shadow:0 0 0 2px rgba(255,255,255,.7)}
+.att-hub [data-hr-presence] .seg button{transition:background .25s var(--ease),color .2s,box-shadow .25s}
+.att-hub [data-hr-presence] .seg button:not([aria-pressed=true]):hover{color:var(--dark);background:rgba(255,255,255,.6)}
+.att-hub [data-hr-presence] .tool{transition:transform .2s var(--ease),background .2s}
+.att-hub [data-hr-presence] .tool:hover{transform:translateY(-1px);background:var(--primary-t)}
+
+/* ---------- two columns, same height: wide department cards (right) + side column (left) ---------- */
+.att-hub [data-hr-presence] .layout{grid-template-columns:minmax(0,1fr) 340px;align-items:stretch}
+.att-hub [data-hr-presence] .layout>main{display:flex;flex-direction:column;min-width:0}
+.att-hub [data-hr-presence] .cards{columns:auto;display:grid;grid-template-columns:1fr 1fr;gap:14px;flex:1;align-content:stretch}
+.att-hub [data-hr-presence] .cards>.dept{margin:0}
+.att-hub [data-hr-presence] .dept{display:flex;flex-direction:column;border-radius:18px;box-shadow:none;border-inline-start:4px solid var(--col);transition:transform .22s var(--ease),box-shadow .22s var(--ease)}
+.att-hub [data-hr-presence] .dept.wide{grid-column:1/-1}
+.att-hub [data-hr-presence] .dept.short{box-shadow:inset 0 0 0 1px #F6BFA6}
+.att-hub [data-hr-presence] .dept:hover{transform:translateY(-3px);box-shadow:0 12px 26px rgba(22,33,46,.07)}
+.att-hub [data-hr-presence] .dept>header{background:none;border-bottom:0;padding:16px 18px 6px}
+.att-hub [data-hr-presence] .dept .di{border-radius:12px;transition:transform .25s var(--ease)}
+.att-hub [data-hr-presence] .dept:hover .di{transform:rotate(-8deg) scale(1.06)}
+.att-hub [data-hr-presence] .dept h3{font-size:17px}
+.att-hub [data-hr-presence] .pv-st{font-size:12px;font-weight:700;border-radius:999px;padding:4px 11px;white-space:nowrap}
+.att-hub [data-hr-presence] .pv-st.ok{background:var(--pos-t);color:var(--pos)}
+.att-hub [data-hr-presence] .pv-st.bad{background:#FDECE4;color:#C2410C}
+.att-hub [data-hr-presence] .pv-st.warn{background:var(--neg-t);color:var(--neg)}
+.att-hub [data-hr-presence] .ring{display:none}
+
+/* people grid with thin dividers between every employee */
+.att-hub [data-hr-presence] .people{padding:2px 18px 6px;gap:0;grid-template-columns:minmax(0,1fr)}
+.att-hub [data-hr-presence] .person{min-width:0}
+.att-hub [data-hr-presence] .dept.wide .people{grid-template-columns:repeat(3,minmax(0,1fr))}
+.att-hub [data-hr-presence] .person{border-radius:0;padding:12px 6px;grid-template-columns:40px minmax(0,1fr) auto;transition:background .2s}
+.att-hub [data-hr-presence] .dept.half .person+.person{border-top:1px solid var(--line)}
+.att-hub [data-hr-presence] .dept.wide .person{padding-inline:14px}
+.att-hub [data-hr-presence] .dept.wide .person:not(:nth-child(3n+1)){border-inline-start:1px solid var(--line)}
+.att-hub [data-hr-presence] .dept.wide .person:nth-child(n+4){border-top:1px solid var(--line)}
+.att-hub [data-hr-presence] .people.rest{border-top:1px dashed var(--border)}
+.att-hub [data-hr-presence] .person:hover{background:#F5F7FC}
+.att-hub [data-hr-presence] .person .nm .t{white-space:normal}
+.att-hub [data-hr-presence] .person .meta{display:flex;flex-direction:column;align-items:flex-end;gap:3px;font-size:12px;color:var(--muted)}
+.att-hub [data-hr-presence] .person .meta .tin{color:var(--dark);font-size:13px}
+.att-hub [data-hr-presence] .person.abs .nm .t{color:var(--neg)}
+.att-hub [data-hr-presence] .person.abs .nm .pill{margin-top:4px}
+.att-hub [data-hr-presence] .people .empty{padding:12px 6px;color:var(--muted)}
+
+/* avatar: person icon in the department colour (a photo can replace it later) */
+.att-hub [data-hr-presence] .av{background:var(--tint,#EEF1F6);color:var(--col,#6B7688);transition:transform .22s var(--ease)}
+.att-hub [data-hr-presence] .av .ic{width:20px;height:20px}
+.att-hub [data-hr-presence] .av.sm .ic{width:17px;height:17px}
+.att-hub [data-hr-presence] .person:hover .av,.att-hub [data-hr-presence] .row:hover .av{transform:scale(1.08)}
+.att-hub [data-hr-presence] .av.st-none{background:var(--neg-t);color:var(--neg);box-shadow:0 0 0 1.5px #E8A396 inset}
+.att-hub [data-hr-presence] .av.st-none::after{animation:pv-pulse 1.6s ease-in-out infinite}
+@keyframes pv-pulse{50%{box-shadow:0 0 0 5px rgba(208,64,42,.18)}}
+
+/* footer: same counters on every card */
+.att-hub [data-hr-presence] .pv-foot{margin-top:auto;display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:10px 18px;border-top:1px solid var(--line);font-size:12.5px}
+.att-hub [data-hr-presence] .fc{background:#F3F5FA;border-radius:999px;padding:3px 10px;color:var(--dark)}
+.att-hub [data-hr-presence] .fc b{color:var(--primary)}
+.att-hub [data-hr-presence] .fc.zero{background:transparent;color:#A3AAB6}.att-hub [data-hr-presence] .fc.zero b{color:#A3AAB6}
+.att-hub [data-hr-presence] .pv-foot .more{width:auto;border:0;padding:3px 6px;margin-inline-start:auto;background-image:linear-gradient(var(--primary),var(--primary));background-size:0 2px;background-repeat:no-repeat;background-position:100% 100%;transition:background-size .25s var(--ease)}
+.att-hub [data-hr-presence] .pv-foot .more:hover{background-size:100% 2px}
+.att-hub [data-hr-presence] .pv-foot .more .ic{width:15px;height:15px;transition:transform .25s var(--ease)}
+.att-hub [data-hr-presence] .pv-foot .more[aria-expanded=true] .ic{transform:rotate(180deg)}
+
+/* ---------- side column ---------- */
+.att-hub [data-hr-presence] .side{display:flex;flex-direction:column;gap:14px;min-height:0}
+.att-hub [data-hr-presence] .side .panel{border-radius:18px;box-shadow:none}
+.att-hub [data-hr-presence] .pv-follow{border-color:#F3C9C1}
+.att-hub [data-hr-presence] .pv-follow .trio{display:block;margin:0}
+.att-hub [data-hr-presence] .pv-follow .box{border:0;border-radius:0;box-shadow:none;background:none}
+.att-hub [data-hr-presence] .pv-follow .box>header{padding:7px 10px;border:0;border-radius:10px;background:#F6F7F9;margin-top:10px}
+.att-hub [data-hr-presence] .pv-follow .box>header h3{font-size:13.5px;display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.att-hub [data-hr-presence] .pv-follow .box>header h3 small{display:inline;margin-inline-start:auto;font-size:11.5px}
+.att-hub [data-hr-presence] .pv-follow .cnt,.att-hub [data-hr-presence] .pv-quiet .cnt{font-size:12px;font-weight:700;border-radius:999px;padding:0 8px;background:#EEF0F4;color:var(--muted)}
+.att-hub [data-hr-presence] .pv-follow .b-neg>header{background:#FCEFEC}.att-hub [data-hr-presence] .pv-follow .b-neg>header h3{color:var(--neg)}.att-hub [data-hr-presence] .pv-follow .b-neg .cnt{background:#F9DCD6;color:var(--neg)}
+.att-hub [data-hr-presence] .pv-follow .b-amber>header{background:#FEF3EC}.att-hub [data-hr-presence] .pv-follow .b-amber>header h3{color:#C2410C}.att-hub [data-hr-presence] .pv-follow .b-amber .cnt{background:#FBE2D3;color:#C2410C}
+.att-hub [data-hr-presence] .pv-follow .rows{padding:0}
+.att-hub [data-hr-presence] .pv-follow .row{border-radius:10px;padding:8px 4px;transition:background .2s,padding .2s}
+.att-hub [data-hr-presence] .pv-follow .row+.row{border-top:1px solid #F0F1F4;border-radius:0}
+.att-hub [data-hr-presence] .pv-follow .row:hover{background:#F7F8FA;padding-inline:8px}
+.att-hub [data-hr-presence] .pv-follow .row .nm .pill{margin-top:3px;display:inline-flex;width:max-content}
+.att-hub [data-hr-presence] .pv-follow .row{grid-template-columns:38px minmax(0,1fr) auto}
+.att-hub [data-hr-presence] .pv-follow .empty{padding:8px 4px;color:var(--muted);font-size:13px}
+.att-hub [data-hr-presence] .pv-quiet .qd{width:100%;display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px dashed #D5D9E2;border-radius:12px;background:#fff;margin-top:8px;font:inherit;text-align:start;cursor:pointer;transition:border-color .2s,background .2s}
+.att-hub [data-hr-presence] .pv-quiet .qd i{width:8px;height:8px;border-radius:50%;background:var(--col);flex:none}
+.att-hub [data-hr-presence] .pv-quiet .qd small{margin-inline-start:auto;color:var(--muted);font-size:12px}
+.att-hub [data-hr-presence] .pv-quiet .qd:hover{border-color:#9DB0E0;background:#F8FAFE}
+/* movements take whatever height is left, so both columns end on the same line */
+.att-hub [data-hr-presence] .pv-moves{flex:1 1 0;min-height:230px;display:flex;flex-direction:column;overflow:hidden}
+.att-hub [data-hr-presence] .pv-moves .feed{flex:1 1 0;min-height:0;overflow:hidden;-webkit-mask-image:linear-gradient(#000 85%,transparent);mask-image:linear-gradient(#000 85%,transparent)}
+.att-hub [data-hr-presence] .feed li{transition:background .2s,padding .2s;border-radius:8px}
+.att-hub [data-hr-presence] .feed li:hover{background:#F7F8FA;padding-inline:6px}
+.att-hub [data-hr-presence] .feed .fi{transition:transform .2s var(--ease)}
+.att-hub [data-hr-presence] .feed li:hover .fi{transform:translateX(-3px)}
+.att-hub [data-hr-presence] .ib{transition:background .2s,color .2s,transform .2s var(--ease)}
+.att-hub [data-hr-presence] .ib:hover{background:var(--primary);color:#fff;transform:translateY(-1px)}
+.att-hub [data-hr-presence] .ib:active{transform:scale(.92)}
+
+/* entrance: only on the first draw (the 15-second refresh does not replay it) */
+.att-hub [data-hr-presence].pv-enter .pv-hero,.att-hub [data-hr-presence].pv-enter .kpi,.att-hub [data-hr-presence].pv-enter .dept,.att-hub [data-hr-presence].pv-enter .side>.panel{animation:pv-rise .5s var(--ease) both}
+.att-hub [data-hr-presence].pv-enter .kpi:nth-child(2),.att-hub [data-hr-presence].pv-enter .dept:nth-child(2),.att-hub [data-hr-presence].pv-enter .side>.panel:nth-child(2){animation-delay:.05s}
+.att-hub [data-hr-presence].pv-enter .kpi:nth-child(3),.att-hub [data-hr-presence].pv-enter .dept:nth-child(3),.att-hub [data-hr-presence].pv-enter .side>.panel:nth-child(3){animation-delay:.1s}
+.att-hub [data-hr-presence].pv-enter .kpi:nth-child(n+4),.att-hub [data-hr-presence].pv-enter .dept:nth-child(n+4),.att-hub [data-hr-presence].pv-enter .side>.panel:nth-child(n+4){animation-delay:.15s}
+@keyframes pv-rise{from{opacity:0;transform:translateY(12px)}}
+
+/* a lone half card at the end of the grid fills the row */
+.att-hub [data-hr-presence] .dept.solo{grid-column:1/-1}
+.att-hub [data-hr-presence] .row .nm .t{white-space:normal}
+/* compact link-health + smart alerts so the side column does not outgrow the cards */
+.att-hub [data-hr-presence] [data-presence-health] .health{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;font-size:12.5px}
+.att-hub [data-hr-presence] [data-presence-health] .health>div{display:flex;flex-direction:column;background:#F7F8FA;border-radius:10px;padding:6px 10px}
+.att-hub [data-hr-presence] [data-presence-health] .health span{color:var(--muted);font-size:11.5px}
+.att-hub [data-hr-presence] .smart{font-size:13px}
+
+/* ---------- smaller screens ---------- */
+@media(max-width:1180px){
+  .att-hub [data-hr-presence] .layout{grid-template-columns:minmax(0,1fr)}
+  .att-hub [data-hr-presence] .side{display:flex}
+  .att-hub [data-hr-presence] .pv-moves{flex:none;min-height:0}
+  .att-hub [data-hr-presence] .pv-moves .feed{flex:none;max-height:420px}
+  .att-hub [data-hr-presence] .pv-top{grid-template-columns:1fr}
+}
+@media(max-width:900px){
+  .att-hub [data-hr-presence] .kpis{grid-template-columns:repeat(3,1fr);gap:8px}
+  .att-hub [data-hr-presence] .kpi{padding:10px 12px}
+  .att-hub [data-hr-presence] .kpi b{font-size:22px}
+  .att-hub [data-hr-presence] .kpi small{display:none}
+  .att-hub [data-hr-presence] .chip{flex:none}
+  .att-hub [data-hr-presence] .cards{grid-template-columns:1fr}
+  .att-hub [data-hr-presence] .dept.wide .people{grid-template-columns:minmax(0,1fr)}
+  .att-hub [data-hr-presence] .people{padding-inline:12px}
+  .att-hub [data-hr-presence] .bar .seg{width:100%;max-width:100%}
+  .att-hub [data-hr-presence] .bar .seg button{flex:1 1 0;min-width:0;padding-inline:6px;justify-content:center}
+  .att-hub [data-hr-presence] .dept.wide .person{border-inline-start:0!important;border-top:0;padding-inline:6px}
+  .att-hub [data-hr-presence] .dept.wide .person+.person{border-top:1px solid var(--line)}
+  .att-hub [data-hr-presence] .pv-follow .trio-tabs{display:flex;margin:4px 0 0}
+}
+@media(prefers-reduced-motion:reduce){.att-hub [data-hr-presence] *{animation:none!important;transition:none!important}}
