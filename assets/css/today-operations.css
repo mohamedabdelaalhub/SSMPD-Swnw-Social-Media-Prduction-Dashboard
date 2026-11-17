@@ -95,3 +95,8 @@ button.journey-metric.is-alert strong{color:#b42318}
 .journey-shell .journey-title{background-image:radial-gradient(120% 160% at 88% -30%,rgba(255,255,255,.26),transparent 55%),linear-gradient(135deg,#0F369D,#1C4FC7);border:0;border-radius:18px;color:#fff;box-shadow:0 12px 32px rgba(15,54,157,.22),inset 0 1px 0 rgba(255,255,255,.35)}
 .journey-shell .journey-title h2{color:#fff}.journey-shell .journey-title p{color:rgba(255,255,255,.86)}
 @media(forced-colors:active){.journey-shell .journey-title{background:Canvas;color:CanvasText;border:1px solid CanvasText}}
+/* Owner 2026-11-17: the «⋯» menu inside a patient card was cut off by the column (overflow:hidden / board scroll). Inside a card it now opens in place, on its own row. */
+.journey-card-detail .journey-card-actions{flex-wrap:wrap;gap:6px}
+.journey-card-detail .journey-more[open]{flex-basis:100%;order:9}
+.journey-card-detail .journey-more[open]>summary{margin-inline-start:auto}
+.journey-card-detail .journey-more-menu{position:static;inset:auto;margin-top:6px;box-shadow:none;min-width:0;width:100%}

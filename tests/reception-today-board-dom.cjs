@@ -22,7 +22,7 @@ const {JSDOM}=require('jsdom'),fs=require('node:fs'),assert=require('node:assert
  assert.equal(w.document.querySelectorAll('[data-unified-hub]').length,0,'no second board');
  assert.deepEqual(qa('[data-journey-lane]').map(x=>x.dataset.journeyLane),['coming','waiting','inside','done']);
  const lane=k=>qa('[data-journey-lane="'+k+'"] .journey-card').map(x=>x.querySelector('h4').textContent);
- assert.deepEqual(lane('coming'),['أحمد متأخر','منى جاية']);assert.deepEqual(lane('waiting'),['كريم مستني']);assert.deepEqual(lane('inside'),['سلمى جوه']);assert.equal(lane('done').length,3);
+ assert.deepEqual(qa('.journey-column h3').map(x=>x.textContent),['الحجوزات','في الانتظار','في غرفة الكشف','أنهى الكشف'],'owner 2026-11-17 lane names');assert.deepEqual(lane('coming'),['أحمد متأخر','منى جاية']);assert.deepEqual(lane('waiting'),['كريم مستني']);assert.deepEqual(lane('inside'),['سلمى جوه']);assert.equal(lane('done').length,3);
  for(const c of qa('.journey-card'))assert(c.querySelectorAll('.journey-card-actions > .btn').length<=1,'at most one main button per card');
  const card=id=>q('.journey-card[data-appointment="'+id+'"]'),main=id=>{const b=card(id).querySelector('.journey-card-actions > .btn');return b?b.dataset.journeyAction:undefined;};
  assert.equal(main('1'),'arrive');assert.equal(main('3'),'call');assert.equal(main('4'),'visit_complete');assert.equal(main('5'),'collect_due');assert.equal(main('6'),undefined);

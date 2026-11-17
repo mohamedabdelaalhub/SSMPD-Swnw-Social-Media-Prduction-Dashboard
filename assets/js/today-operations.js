@@ -5,7 +5,7 @@ if(window.__SWNWTodayOperationsV1)return;
 window.__SWNWTodayOperationsV1=true;
 
 var css=document.createElement('link');
-css.rel='stylesheet';css.href='assets/css/today-operations.css?v=staff-glass-20261115-1';css.dataset.todayOperations='1';
+css.rel='stylesheet';css.href='assets/css/today-operations.css?v=labels-menu-20261117-1';css.dataset.todayOperations='1';
 if(!document.querySelector('link[data-today-operations]'))document.head.appendChild(css);
 
 var state={day:null,workspace:null,data:null,loading:false,error:null,refreshTimer:null,context:null,sandbox:null,owner:null,generation:0,query:'',filter:'all',open:null,staff:null};
@@ -61,7 +61,7 @@ function load(c,force,silent){
 }
 
 /* One board for the reception day: coming -> waiting -> inside -> done. One main button per card, the rest in the "⋯" menu. */
-var LANES=[['coming','جاي'],['waiting','مستني'],['inside','جوه'],['done','خلص']];
+var LANES=[['coming','الحجوزات'],['waiting','في الانتظار'],['inside','في غرفة الكشف'],['done','أنهى الكشف']];
 var PRIORITY={'1':'أولوية إنسانية','2':'مساعدة حركة','3':'ظرف خاص','4':'عاجل','5':'حالة حرجة'};
 function money(v){return Number(v||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})+' ج.م';}
 function lane(a){var s=a.queue_status||'expected';if(s==='expected'||s==='on_the_way')return 'coming';if(s==='waiting'||s==='called')return 'waiting';if(s==='in_service'||s==='on_hold')return 'inside';return 'done';}
@@ -126,7 +126,7 @@ function visibleApps(){
 function metricsHtml(apps){
  var n=function(f){return apps.filter(f).length;},dueSum=apps.filter(hasDue).reduce(function(t,a){return t+Number(a.patient_due||0);},0),finance=apps.some(function(a){return a.can_view_finance;});
  var done=apps.filter(FILTERS.done),noShow=done.filter(function(a){return a.queue_status==='no_show';}).length,cancelled=done.filter(function(a){return a.queue_status==='cancelled';}).length;
- var tiles=[['coming','جاي',n(FILTERS.coming),''],['late','متأخر',n(FILTERS.late),''],['waiting','مستني',n(FILTERS.waiting),''],['inside','جوه',n(FILTERS.inside),''],['done','خلص',done.length-noShow-cancelled,(noShow||cancelled)?'لم يحضر '+num(noShow)+' · ملغي '+num(cancelled):'']];
+ var tiles=[['coming','الحجوزات',n(FILTERS.coming),''],['late','متأخر',n(FILTERS.late),''],['waiting','في الانتظار',n(FILTERS.waiting),''],['inside','في غرفة الكشف',n(FILTERS.inside),''],['done','أنهى الكشف',done.length-noShow-cancelled,(noShow||cancelled)?'لم يحضر '+num(noShow)+' · ملغي '+num(cancelled):'']];
  if(finance)tiles.push(['due','عليه فلوس',n(hasDue),money(dueSum)]);
  return '<div class="journey-metrics">'+tiles.map(function(t){return '<button type="button" class="journey-metric'+(state.filter===t[0]?' is-active':'')+(t[0]==='late'&&t[2]?' is-alert':'')+'" data-journey-filter="'+t[0]+'" aria-pressed="'+(state.filter===t[0])+'"><span>'+esc(t[1])+'</span><strong>'+num(t[2])+'</strong>'+(t[3]?'<small>'+esc(t[3])+'</small>':'')+'</button>';}).join('')+'</div>';
 }
