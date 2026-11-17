@@ -1,10 +1,10 @@
 {
   "coverage": {
-    "version": "20261021-1",
-    "definitions": 1131,
-    "labels": 887,
-    "files": 69,
-    "groups": 837
+    "version": "20261117-1",
+    "definitions": 1746,
+    "labels": 1285,
+    "files": 119,
+    "groups": 1027
   },
   "fields": [
     {
@@ -627,6 +627,30 @@
       "text_sha256": "7403495bb20faa795d05b2175c92fa428a5b238cc29e5c141ab16dbad4a776ce"
     },
     {
+      "file": "center-master-review.js",
+      "label": "القرار",
+      "name": "decision",
+      "kind": "helper",
+      "forms": [
+        "مراجعة مرجع المركز"
+      ],
+      "tab": "production",
+      "article": "requests",
+      "text_sha256": "e94fbc6b4acbcb93cd4550a5c0f411b3026a6856a94bfdc920222df26211079d"
+    },
+    {
+      "file": "center-master-review.js",
+      "label": "سبب القرار",
+      "name": "note",
+      "kind": "helper",
+      "forms": [
+        "مراجعة مرجع المركز"
+      ],
+      "tab": "production",
+      "article": "requests",
+      "text_sha256": "00135b5d6cd282bea537fb8658c57e3e41f428900b403396c1ff4fef0b2d6095"
+    },
+    {
       "file": "comments.js",
       "label": "اكتب كومنت...",
       "name": "",
@@ -725,6 +749,298 @@
       "tab": "production",
       "article": "medical-sources",
       "text_sha256": "91898dcb6dba0dedf9068ecf50f6ffddeaa97ac7b1c0c2ccefbe28676c3f604e"
+    },
+    {
+      "file": "contract-marketing.js",
+      "label": "اللقب",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "accounting",
+      "article": "entities",
+      "text_sha256": "ce4266e305de0a0b41fee0da13f03fecad292d945e2056b80af0b8dc43a1919f"
+    },
+    {
+      "file": "contract-marketing.js",
+      "label": "التايتل والتخصص",
+      "name": "title",
+      "kind": "helper",
+      "forms": [],
+      "tab": "accounting",
+      "article": "design-guide",
+      "text_sha256": "9b26c29f4d332b8058fce01acc8a5dabc64b961d20cc9c2afd498a1f95ed2e4e"
+    },
+    {
+      "file": "contract-marketing.js",
+      "label": "اسم العيادة",
+      "name": "department",
+      "kind": "helper",
+      "forms": [],
+      "tab": "accounting",
+      "article": "entities",
+      "text_sha256": "cf38a8900ddbf79c722a6e5460656a645dea3d68b20cc9a3b79c53d45b72bad9"
+    },
+    {
+      "file": "contract-marketing.js",
+      "label": "أيام العمل",
+      "name": "days",
+      "kind": "helper",
+      "forms": [],
+      "tab": "accounting",
+      "article": "design-guide",
+      "text_sha256": "2b2677a87741ca57d052af1b56d3b28cff530698c356e599a7ca9d4576e1665f"
+    },
+    {
+      "file": "contract-marketing.js",
+      "label": "من الساعة",
+      "name": "time_from",
+      "kind": "helper",
+      "forms": [],
+      "tab": "accounting",
+      "article": "design-guide",
+      "text_sha256": "eec768dae27bf2de3693d2d37ba93ae01c2648aaf8c5e7b69afdb717e662d0c0"
+    },
+    {
+      "file": "contract-marketing.js",
+      "label": "حتى الساعة",
+      "name": "time_to",
+      "kind": "helper",
+      "forms": [],
+      "tab": "accounting",
+      "article": "design-guide",
+      "text_sha256": "eec768dae27bf2de3693d2d37ba93ae01c2648aaf8c5e7b69afdb717e662d0c0"
+    },
+    {
+      "file": "contract-marketing.js",
+      "label": "المؤهلات — اختياري",
+      "name": "qualifications",
+      "kind": "helper",
+      "forms": [],
+      "tab": "accounting",
+      "article": "entities",
+      "text_sha256": "5ec195ca5472aebe59fc30d34886fa7258a29d94e33d9b933ff7e56b68f29a17"
+    },
+    {
+      "file": "contract-marketing.js",
+      "label": "الخبرات — اختياري",
+      "name": "experience",
+      "kind": "helper",
+      "forms": [],
+      "tab": "accounting",
+      "article": "entities",
+      "text_sha256": "d30f14a03b66f95c483a01abe9d3e403f3f88679c3c794ea257ce3a52c131b00"
+    },
+    {
+      "file": "contract-marketing.js",
+      "label": "رابط الجهة — اختياري",
+      "name": "website",
+      "kind": "helper",
+      "forms": [],
+      "tab": "accounting",
+      "article": "entities",
+      "text_sha256": "c3a88e41c8ebb11e6e5ef4688bf6cfdd3352be91ff74f22e9a1ec1eb220ad639"
+    },
+    {
+      "file": "contract-marketing.js",
+      "label": "وصف التعاقد المسموح بإعلانه",
+      "name": "announcement",
+      "kind": "helper",
+      "forms": [],
+      "tab": "accounting",
+      "article": "entities",
+      "text_sha256": "4425e6cce43f018f75d3dd3a5707ca4bd337a93adcdf55606f803530e6454267"
+    },
+    {
+      "file": "contract-marketing.js",
+      "label": "اسم الكارت الحالي بالموقع — إن وُجد",
+      "name": "site_match",
+      "kind": "helper",
+      "forms": [],
+      "tab": "accounting",
+      "article": "entities",
+      "text_sha256": "2fd7cca166daf376e534073e809e802ec7049a79a5be3cda543a26a9aa72fbfa"
+    },
+    {
+      "file": "contract-marketing.js",
+      "label": "حالة الظهور والإعلان",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "accounting",
+      "article": "entities",
+      "text_sha256": "749f5566f3e38ab6deaf1207166e643aa4faf4e2582c2650d557c08346a0b8a1"
+    },
+    {
+      "file": "contract-marketing.js",
+      "label": "إظهار الكارت على الموقع عند سريان العقد",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "accounting",
+      "article": "entities",
+      "text_sha256": "d9117c356b3c376dd734ad31507bdc933e9ab9754a7018afbeed623e69ebfd1e"
+    },
+    {
+      "file": "contract-marketing.js",
+      "label": "إنشاء وتصميم وجدولة الإعلان تلقائيًا عند التفعيل",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "accounting",
+      "article": "entities",
+      "text_sha256": "372a5cf783a33372cf8d5dcf6606c67ee72920b55f560bf98fbcc251211ee1e3"
+    },
+    {
+      "file": "contract-marketing.js",
+      "label": "فيسبوك",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "accounting",
+      "article": "entities",
+      "text_sha256": "fbb4347b08e8d15a9c6cea303d0815d01a4974c011efd259c46490d33acb6e24"
+    },
+    {
+      "file": "contract-marketing.js",
+      "label": "إنستجرام",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "accounting",
+      "article": "entities",
+      "text_sha256": "9a08a1f170058584db19df94eafa18ad1a2aecf3347fc8d9ebd63e29c2e6f954"
+    },
+    {
+      "file": "contract-navigation.js",
+      "label": "الترتيب",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "production",
+      "article": "tasks-guide",
+      "text_sha256": "af53551578410be44807bfc85b20b2bfecc0ad021116b7b8fb107ae65328df8b"
+    },
+    {
+      "file": "contract-navigation.js",
+      "label": "اسم العرض",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "chatbot",
+      "text_sha256": "210441e180ac57b34097565ade80654f797a3baf70e15b77f9e72d3ddc4d26d6"
+    },
+    {
+      "file": "contract-price-workspace.js",
+      "label": "الملف",
+      "name": "",
+      "kind": "label",
+      "forms": [
+        "رفع دفعة إلى "
+      ],
+      "tab": "production",
+      "article": "patient-records",
+      "text_sha256": "b51a2dd066b13876c39df5d1ba5f852738e81aca9c4e66efbb9477e50c88f17f"
+    },
+    {
+      "file": "contract-price-workspace.js",
+      "label": "اسم الجهة",
+      "name": "name",
+      "kind": "helper",
+      "forms": [],
+      "tab": "production",
+      "article": "entities",
+      "text_sha256": "0c8e704082c2882c4b56cdf9d09ac275fd9c54607c48aa2c20b77bf3d05490d4"
+    },
+    {
+      "file": "contract-price-workspace.js",
+      "label": "الوحدة",
+      "name": "unit",
+      "kind": "helper",
+      "forms": [],
+      "tab": "production",
+      "article": "patient-records",
+      "text_sha256": "b6b7ef3304940f5231c6281a0431f4e3513369f3f55fbf8bc0e9499a249a0bbd"
+    },
+    {
+      "file": "contract-price-workspace.js",
+      "label": "الوحدة",
+      "name": "unit",
+      "kind": "helper",
+      "forms": [
+        "إضافة خدمة إلى قائمة الأسعار"
+      ],
+      "tab": "production",
+      "article": "patient-records",
+      "text_sha256": "b6b7ef3304940f5231c6281a0431f4e3513369f3f55fbf8bc0e9499a249a0bbd"
+    },
+    {
+      "file": "contract-price-workspace.js",
+      "label": "ملاحظات",
+      "name": "notes",
+      "kind": "helper",
+      "forms": [
+        "إضافة خدمة إلى قائمة الأسعار"
+      ],
+      "tab": "production",
+      "article": "personal",
+      "text_sha256": "08c204de2685df464bdbc0cd0fde7ec98a5877581bd58cbad31890fc6661df06"
+    },
+    {
+      "file": "contract-price-workspace.js",
+      "label": "القسم",
+      "name": "category",
+      "kind": "helper",
+      "forms": [
+        "توحيد الخدمات وإضافة خدمة للمركز"
+      ],
+      "tab": "production",
+      "article": "content",
+      "text_sha256": "8781afaef1012c14a5b9f99b05513e1852e02bb6c191b2fc0b339518d671a4a9"
+    },
+    {
+      "file": "contract-price-workspace.js",
+      "label": "سبب القرار",
+      "name": "review_note",
+      "kind": "helper",
+      "forms": [
+        "مراجعة إضافة الخدمة"
+      ],
+      "tab": "production",
+      "article": "requests",
+      "text_sha256": "00135b5d6cd282bea537fb8658c57e3e41f428900b403396c1ff4fef0b2d6095"
+    },
+    {
+      "file": "contract-price-workspace.js",
+      "label": "سبب القرار",
+      "name": "review_note",
+      "kind": "helper",
+      "forms": [
+        "اعتماد اللائحة ومطابقة مسميات الجهة"
+      ],
+      "tab": "production",
+      "article": "requests",
+      "text_sha256": "00135b5d6cd282bea537fb8658c57e3e41f428900b403396c1ff4fef0b2d6095"
+    },
+    {
+      "file": "contract-service-mapping.js",
+      "label": "بحث",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "production",
+      "article": "personal",
+      "text_sha256": "fcfcf93d2d0bde74aa0a1934993d34ae9f117562d8c56a3a563761ba68e24990"
+    },
+    {
+      "file": "contract-service-mapping.js",
+      "label": "القسم",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "production",
+      "article": "content",
+      "text_sha256": "8781afaef1012c14a5b9f99b05513e1852e02bb6c191b2fc0b339518d671a4a9"
     },
     {
       "file": "daily-clinics.js",
@@ -1397,6 +1713,76 @@
       "text_sha256": "324f855105a7c1ad5c214077a8bb77d9142d425c77888afb0142e4ca135ce604"
     },
     {
+      "file": "digital-team-server-chat.js",
+      "label": "عنوان المهمة",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "production",
+      "article": "tasks-guide",
+      "text_sha256": "a99b972ef0ce274edffbbebbb7222e5d1699d2af489387edb91d1f35519e1091"
+    },
+    {
+      "file": "digital-team-server-chat.js",
+      "label": "التفاصيل",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "production",
+      "article": "personal",
+      "text_sha256": "08c204de2685df464bdbc0cd0fde7ec98a5877581bd58cbad31890fc6661df06"
+    },
+    {
+      "file": "digital-team-server-chat.js",
+      "label": "النوع",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "patient-records",
+      "text_sha256": "68c593718f9e4a670d874fc33a5fb6254f39083bbe1ac70792f1b87046e5dd54"
+    },
+    {
+      "file": "digital-team-server-chat.js",
+      "label": "إلى",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "personal",
+      "text_sha256": "5124563f386757810c60ae86fc95904a13532f1a872fcd3579613f304338e13d"
+    },
+    {
+      "file": "digital-team-server-chat.js",
+      "label": "نص الرسالة",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "production",
+      "article": "leads-guide",
+      "text_sha256": "647c0cd644239404f326168c51b8318ec26dff44639b1629f1795d190152a7ee"
+    },
+    {
+      "file": "digital-team-server-chat.js",
+      "label": "المستخدم",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "production",
+      "article": "inventory-count",
+      "text_sha256": "3780038927d64b0bf4fe1b6e96498fc2fb5fc2abcdc3429e8ae15c5a13a15385"
+    },
+    {
+      "file": "digital-team-server-chat.js",
+      "label": "من",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "production",
+      "article": "personal",
+      "text_sha256": "5124563f386757810c60ae86fc95904a13532f1a872fcd3579613f304338e13d"
+    },
+    {
       "file": "dina-content.js",
       "label": "أسلوب المحتوى",
       "name": "",
@@ -1495,6 +1881,166 @@
       "tab": "production",
       "article": "design-guide",
       "text_sha256": "eec768dae27bf2de3693d2d37ba93ae01c2648aaf8c5e7b69afdb717e662d0c0"
+    },
+    {
+      "file": "employee-performance.js",
+      "label": "من",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "production",
+      "article": "personal",
+      "text_sha256": "5124563f386757810c60ae86fc95904a13532f1a872fcd3579613f304338e13d"
+    },
+    {
+      "file": "employee-performance.js",
+      "label": "إلى",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "production",
+      "article": "personal",
+      "text_sha256": "5124563f386757810c60ae86fc95904a13532f1a872fcd3579613f304338e13d"
+    },
+    {
+      "file": "entity-claims.js",
+      "label": "الجهة",
+      "name": "entity",
+      "kind": "helper",
+      "forms": [],
+      "tab": "production",
+      "article": "entities",
+      "text_sha256": "0c8e704082c2882c4b56cdf9d09ac275fd9c54607c48aa2c20b77bf3d05490d4"
+    },
+    {
+      "file": "entity-claims.js",
+      "label": "من",
+      "name": "from",
+      "kind": "helper",
+      "forms": [],
+      "tab": "production",
+      "article": "personal",
+      "text_sha256": "5124563f386757810c60ae86fc95904a13532f1a872fcd3579613f304338e13d"
+    },
+    {
+      "file": "entity-claims.js",
+      "label": "إلى",
+      "name": "to",
+      "kind": "helper",
+      "forms": [],
+      "tab": "production",
+      "article": "personal",
+      "text_sha256": "5124563f386757810c60ae86fc95904a13532f1a872fcd3579613f304338e13d"
+    },
+    {
+      "file": "entity-claims.js",
+      "label": "ملاحظات",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "personal",
+      "text_sha256": "08c204de2685df464bdbc0cd0fde7ec98a5877581bd58cbad31890fc6661df06"
+    },
+    {
+      "file": "entity-claims.js",
+      "label": "الأدوية",
+      "name": "medicine_payer",
+      "kind": "helper",
+      "forms": [],
+      "tab": "production",
+      "article": "patient-records",
+      "text_sha256": "db17bea990bbcf8004ee28861423335729c3d5a592769d18d0d44e9160ded178"
+    },
+    {
+      "file": "entity-claims.js",
+      "label": "الخدمة",
+      "name": "service_id",
+      "kind": "helper",
+      "forms": [],
+      "tab": "production",
+      "article": "booking-flow",
+      "text_sha256": "9de357e91f68d929da65d3983a861523a19c2d8ad7c1d86737871b762e1c0325"
+    },
+    {
+      "file": "entity-claims.js",
+      "label": "رقم الفاتورة",
+      "name": "reference",
+      "kind": "helper",
+      "forms": [],
+      "tab": "production",
+      "article": "purchases",
+      "text_sha256": "7dd10d5b1abb40568ff2659ee2296efe3752c6b9ab5ebc154a428acb99e6d0c7"
+    },
+    {
+      "file": "entity-claims.js",
+      "label": "طريقة التحصيل",
+      "name": "method",
+      "kind": "helper",
+      "forms": [],
+      "tab": "production",
+      "article": "collections",
+      "text_sha256": "1ab8138b1a334822a7f5c1302e62560c0452a695e15cbaf3dadeeeff9ffdbfe0"
+    },
+    {
+      "file": "entity-claims.js",
+      "label": "الوردية",
+      "name": "shift",
+      "kind": "helper",
+      "forms": [],
+      "tab": "production",
+      "article": "cash-shifts-guide",
+      "text_sha256": "f95a87b83000d36397e5e1fbf4e414b4a2e1f039aa2d3de77d3b5eb90f11dc52"
+    },
+    {
+      "file": "entity-claims.js",
+      "label": "نوع المعالجة",
+      "name": "kind",
+      "kind": "helper",
+      "forms": [],
+      "tab": "production",
+      "article": "insurance",
+      "text_sha256": "ae18278e0fe92d972f9f22d88162339bad2a5562a10457a6136b06eb0fbdd1e8"
+    },
+    {
+      "file": "entity-claims.js",
+      "label": "المبلغ",
+      "name": "amount",
+      "kind": "helper",
+      "forms": [],
+      "tab": "production",
+      "article": "collections",
+      "text_sha256": "125776655945829a368efb4a81dbc0efc7321372b5cd97b419805d08b8d6744d"
+    },
+    {
+      "file": "entity-claims.js",
+      "label": "سبب المعالجة",
+      "name": "reason",
+      "kind": "helper",
+      "forms": [],
+      "tab": "production",
+      "article": "insurance",
+      "text_sha256": "ae18278e0fe92d972f9f22d88162339bad2a5562a10457a6136b06eb0fbdd1e8"
+    },
+    {
+      "file": "entity-claims.js",
+      "label": "القرار",
+      "name": "approve",
+      "kind": "helper",
+      "forms": [],
+      "tab": "production",
+      "article": "requests",
+      "text_sha256": "e94fbc6b4acbcb93cd4550a5c0f411b3026a6856a94bfdc920222df26211079d"
+    },
+    {
+      "file": "entity-claims.js",
+      "label": "نتيجة فحص المستند",
+      "name": "note",
+      "kind": "helper",
+      "forms": [],
+      "tab": "production",
+      "article": "requests",
+      "text_sha256": "00135b5d6cd282bea537fb8658c57e3e41f428900b403396c1ff4fef0b2d6095"
     },
     {
       "file": "finance-account-statements.js",
@@ -2744,6 +3290,79 @@
       "text_sha256": "5d24d741a8e6d3c3c7ef75ef86579653b8bad7fecd8c4c3bc2dab044ae64fac5"
     },
     {
+      "file": "finance-channels.js",
+      "label": "ساري من",
+      "name": "valid_from",
+      "kind": "helper",
+      "forms": [
+        "إصدار جديد لقناة ",
+        "إضافة قناة أو منصة"
+      ],
+      "tab": "accounting",
+      "article": "doctor-missing",
+      "text_sha256": "7fef1a79f47e742d1105a9982fc0f7d29794c860a7887b57a41adf25233ccb60"
+    },
+    {
+      "file": "finance-channels.js",
+      "label": "ساري حتى",
+      "name": "valid_to",
+      "kind": "helper",
+      "forms": [
+        "إصدار جديد لقناة ",
+        "إضافة قناة أو منصة"
+      ],
+      "tab": "accounting",
+      "article": "doctor-missing",
+      "text_sha256": "7fef1a79f47e742d1105a9982fc0f7d29794c860a7887b57a41adf25233ccb60"
+    },
+    {
+      "file": "finance-channels.js",
+      "label": "ملاحظات",
+      "name": "notes",
+      "kind": "helper",
+      "forms": [
+        "إصدار جديد لقناة ",
+        "إضافة قناة أو منصة"
+      ],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "08c204de2685df464bdbc0cd0fde7ec98a5877581bd58cbad31890fc6661df06"
+    },
+    {
+      "file": "finance-channels.js",
+      "label": "القرار",
+      "name": "approval",
+      "kind": "helper",
+      "forms": [
+        "مراجعة قاعدة قناة"
+      ],
+      "tab": "accounting",
+      "article": "requests",
+      "text_sha256": "e94fbc6b4acbcb93cd4550a5c0f411b3026a6856a94bfdc920222df26211079d"
+    },
+    {
+      "file": "finance-channels.js",
+      "label": "سبب القرار",
+      "name": "note",
+      "kind": "helper",
+      "forms": [
+        "مراجعة قاعدة قناة"
+      ],
+      "tab": "accounting",
+      "article": "requests",
+      "text_sha256": "00135b5d6cd282bea537fb8658c57e3e41f428900b403396c1ff4fef0b2d6095"
+    },
+    {
+      "file": "finance-contract-signature.js",
+      "label": "العنوان",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "92518474c189325a2ad4b3b0d9c66321a4bdd4de73fe7cbc53f7115d177fd4c5"
+    },
+    {
       "file": "finance-controls.js",
       "label": "مرجع الفاتورة",
       "name": "reference",
@@ -2976,6 +3595,36 @@
       "text_sha256": "00135b5d6cd282bea537fb8658c57e3e41f428900b403396c1ff4fef0b2d6095"
     },
     {
+      "file": "finance-doctor-dues.js",
+      "label": "طريقة الصرف",
+      "name": "method",
+      "kind": "helper",
+      "forms": [],
+      "tab": "accounting",
+      "article": "collections",
+      "text_sha256": "1ab8138b1a334822a7f5c1302e62560c0452a695e15cbaf3dadeeeff9ffdbfe0"
+    },
+    {
+      "file": "finance-doctor-dues.js",
+      "label": "الوردية النقدية",
+      "name": "shift_id",
+      "kind": "helper",
+      "forms": [],
+      "tab": "accounting",
+      "article": "cash-shifts-guide",
+      "text_sha256": "c76df59d8ee5761c6003f4cc2fdda7f7adfd10a1bc9a9d51c5bc45558aa57e0b"
+    },
+    {
+      "file": "finance-doctor-dues.js",
+      "label": "مرجع السداد أو التحويل",
+      "name": "reference",
+      "kind": "helper",
+      "forms": [],
+      "tab": "accounting",
+      "article": "collections",
+      "text_sha256": "231cd5ad258db6e02f26a1ab2b46378503fffee62683af0a39f70716adbe60db"
+    },
+    {
       "file": "finance-doctors.js",
       "label": "عقد الطبيب لهذه الفاتورة",
       "name": "doctor_contract",
@@ -2984,6 +3633,16 @@
       "tab": "accounting",
       "article": "doctor-missing",
       "text_sha256": "a02006308ef76c611ced3261314a329373fb514e496791024d79bc6051bdfe9c"
+    },
+    {
+      "file": "finance-doctors.js",
+      "label": "الطبيب",
+      "name": "lines_doctor",
+      "kind": "helper",
+      "forms": [],
+      "tab": "accounting",
+      "article": "doctor-missing",
+      "text_sha256": "64e347f73f878509a653299ddc92452e08558753e25b26c2031002afbc7d558a"
     },
     {
       "file": "finance-doctors.js",
@@ -3011,15 +3670,15 @@
     },
     {
       "file": "finance-doctors.js",
-      "label": "الخدمة أو نطاق العقد",
-      "name": "scope",
+      "label": "القسم",
+      "name": "department",
       "kind": "helper",
       "forms": [
         "تسجيل عقد أتعاب طبيب"
       ],
       "tab": "accounting",
-      "article": "doctor-missing",
-      "text_sha256": "0d4b01e54908d87d93d9b8b8ee9c8d503e5612b670be98e56897344a8be1eff6"
+      "article": "ledger-guide",
+      "text_sha256": "8781afaef1012c14a5b9f99b05513e1852e02bb6c191b2fc0b339518d671a4a9"
     },
     {
       "file": "finance-doctors.js",
@@ -3116,6 +3775,114 @@
       "tab": "accounting",
       "article": "doctor-missing",
       "text_sha256": "66d66d1bbada4f46341fe938c4ce03c962518f3772590bfd688f3800fa668d2e"
+    },
+    {
+      "file": "finance-doctors.js",
+      "label": "القرار",
+      "name": "decision",
+      "kind": "helper",
+      "forms": [
+        "مراجعة طلب إنهاء — "
+      ],
+      "tab": "accounting",
+      "article": "requests",
+      "text_sha256": "e94fbc6b4acbcb93cd4550a5c0f411b3026a6856a94bfdc920222df26211079d"
+    },
+    {
+      "file": "finance-doctors.js",
+      "label": "ملاحظة",
+      "name": "note",
+      "kind": "helper",
+      "forms": [
+        "مراجعة طلب إنهاء — "
+      ],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "08c204de2685df464bdbc0cd0fde7ec98a5877581bd58cbad31890fc6661df06"
+    },
+    {
+      "file": "finance-doctors.js",
+      "label": "ساري حتى",
+      "name": "to",
+      "kind": "helper",
+      "forms": [
+        "تعديل عقد — "
+      ],
+      "tab": "accounting",
+      "article": "doctor-missing",
+      "text_sha256": "7fef1a79f47e742d1105a9982fc0f7d29794c860a7887b57a41adf25233ccb60"
+    },
+    {
+      "file": "finance-doctors.js",
+      "label": "النسبة المئوية",
+      "name": "rate",
+      "kind": "helper",
+      "forms": [
+        "تعديل عقد — "
+      ],
+      "tab": "accounting",
+      "article": "doctor-missing",
+      "text_sha256": "b09adb5afd6eb35cd519f997730cd20d6f30f187e7e5ae1e75fe938738bb90da"
+    },
+    {
+      "file": "finance-doctors.js",
+      "label": "متى تستحق الأتعاب؟",
+      "name": "basis",
+      "kind": "helper",
+      "forms": [
+        "تعديل عقد — "
+      ],
+      "tab": "accounting",
+      "article": "doctor-missing",
+      "text_sha256": "a27c448a1731da92a8bb41acab47b46180a5e9fafd183eebd2465f158ba1c373"
+    },
+    {
+      "file": "finance-doctors.js",
+      "label": "وعاء النسبة بعد خصم المردودات",
+      "name": "base_scope",
+      "kind": "helper",
+      "forms": [
+        "تعديل عقد — "
+      ],
+      "tab": "accounting",
+      "article": "doctor-missing",
+      "text_sha256": "a633996a120c65f60194f362454472cc5459e492163c969b8f7fb424b044a214"
+    },
+    {
+      "file": "finance-doctors.js",
+      "label": "الخصم من الوعاء",
+      "name": "deduction",
+      "kind": "helper",
+      "forms": [
+        "تعديل عقد — "
+      ],
+      "tab": "accounting",
+      "article": "doctor-missing",
+      "text_sha256": "c641e1c7162b9630d495c0bbc25a4dc298472370b418e535c0a97b6d357cff41"
+    },
+    {
+      "file": "finance-doctors.js",
+      "label": "سبب القرار",
+      "name": "note",
+      "kind": "helper",
+      "forms": [
+        "مراجعة كل العقود المعلّقة ("
+      ],
+      "tab": "accounting",
+      "article": "requests",
+      "text_sha256": "00135b5d6cd282bea537fb8658c57e3e41f428900b403396c1ff4fef0b2d6095"
+    },
+    {
+      "file": "finance-doctors.js",
+      "label": "سبب القرار",
+      "name": "note",
+      "kind": "helper",
+      "forms": [
+        "مراجعة مجموعة عقود ("
+      ],
+      "tab": "accounting",
+      "article": "requests",
+      "text_sha256": "00135b5d6cd282bea537fb8658c57e3e41f428900b403396c1ff4fef0b2d6095"
     },
     {
       "file": "finance-doctors.js",
@@ -3344,6 +4111,36 @@
       "tab": "accounting",
       "article": "ledger-guide",
       "text_sha256": "231a38b04b1d5be9ed4794e404aeb409532b132db66efc2beac6d5677c12207c"
+    },
+    {
+      "file": "finance-shift-movements.js",
+      "label": "من",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "5124563f386757810c60ae86fc95904a13532f1a872fcd3579613f304338e13d"
+    },
+    {
+      "file": "finance-shift-movements.js",
+      "label": "إلى",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "5124563f386757810c60ae86fc95904a13532f1a872fcd3579613f304338e13d"
+    },
+    {
+      "file": "finance-shift-movements.js",
+      "label": "الموظف",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "accounting",
+      "article": "payroll",
+      "text_sha256": "0bebb1d1c5ab3b012283d97c05868f2efdf999e5577aad040d7d7e49bca4524c"
     },
     {
       "file": "finance-statement-import.js",
@@ -3992,6 +4789,387 @@
       "text_sha256": "f8459d8304fdf06b3ddc05e6e459fd34abd09d56e226268e0cbdbe494682140d"
     },
     {
+      "file": "hr-attendance-reports.js",
+      "label": "القسم",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "content",
+      "text_sha256": "8781afaef1012c14a5b9f99b05513e1852e02bb6c191b2fc0b339518d671a4a9"
+    },
+    {
+      "file": "hr-attendance-reports.js",
+      "label": "النوع",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "patient-records",
+      "text_sha256": "68c593718f9e4a670d874fc33a5fb6254f39083bbe1ac70792f1b87046e5dd54"
+    },
+    {
+      "file": "hr-closures.js",
+      "label": "ملاحظة (اختياري)",
+      "name": "",
+      "kind": "label",
+      "forms": [
+        "إضافة أجازة رسمية"
+      ],
+      "tab": "human_resources",
+      "article": "personal",
+      "text_sha256": "08c204de2685df464bdbc0cd0fde7ec98a5877581bd58cbad31890fc6661df06"
+    },
+    {
+      "file": "hr-closures.js",
+      "label": "سبب الرفض",
+      "name": "",
+      "kind": "label",
+      "forms": [
+        "رفض «"
+      ],
+      "tab": "human_resources",
+      "article": "patient-records",
+      "text_sha256": "a21ad9d28e2191e6557244226e39fd526699de2cecda568291a4f8dceb372f43"
+    },
+    {
+      "file": "hr-custody.js",
+      "label": "الحالة",
+      "name": "custody_status",
+      "kind": "helper",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "personal",
+      "text_sha256": "0a8e1242f7cd5a7893e1222dfd049826b42b66af79a574141ddc063e925fb3f0"
+    },
+    {
+      "file": "hr-custody.js",
+      "label": "النوع",
+      "name": "category",
+      "kind": "helper",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "patient-records",
+      "text_sha256": "68c593718f9e4a670d874fc33a5fb6254f39083bbe1ac70792f1b87046e5dd54"
+    },
+    {
+      "file": "hr-custody.js",
+      "label": "إلى",
+      "name": "holder_id",
+      "kind": "helper",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "personal",
+      "text_sha256": "5124563f386757810c60ae86fc95904a13532f1a872fcd3579613f304338e13d"
+    },
+    {
+      "file": "hr-custody.js",
+      "label": "ملاحظة (اختياري)",
+      "name": "note",
+      "kind": "helper",
+      "forms": [
+        "إرجاع: "
+      ],
+      "tab": "human_resources",
+      "article": "personal",
+      "text_sha256": "08c204de2685df464bdbc0cd0fde7ec98a5877581bd58cbad31890fc6661df06"
+    },
+    {
+      "file": "hr-custody.js",
+      "label": "السبب",
+      "name": "note",
+      "kind": "helper",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "requests",
+      "text_sha256": "80a0c51a0ba10ff7f4fe6f627b68c4e009f932e1abdff544c26e792f5f0e9e49"
+    },
+    {
+      "file": "hr-insurance.js",
+      "label": "النوع",
+      "name": "ins_type",
+      "kind": "helper",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "patient-records",
+      "text_sha256": "68c593718f9e4a670d874fc33a5fb6254f39083bbe1ac70792f1b87046e5dd54"
+    },
+    {
+      "file": "hr-insurance.js",
+      "label": "الحالة",
+      "name": "ins_status",
+      "kind": "helper",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "personal",
+      "text_sha256": "0a8e1242f7cd5a7893e1222dfd049826b42b66af79a574141ddc063e925fb3f0"
+    },
+    {
+      "file": "hr-insurance.js",
+      "label": "الموظف",
+      "name": "person_id",
+      "kind": "helper",
+      "forms": [
+        "إضافة اشتراك"
+      ],
+      "tab": "human_resources",
+      "article": "payroll",
+      "text_sha256": "0bebb1d1c5ab3b012283d97c05868f2efdf999e5577aad040d7d7e49bca4524c"
+    },
+    {
+      "file": "hr-insurance.js",
+      "label": "النوع",
+      "name": "insurance_type",
+      "kind": "helper",
+      "forms": [
+        "إضافة اشتراك"
+      ],
+      "tab": "human_resources",
+      "article": "patient-records",
+      "text_sha256": "68c593718f9e4a670d874fc33a5fb6254f39083bbe1ac70792f1b87046e5dd54"
+    },
+    {
+      "file": "hr-insurance.js",
+      "label": "ملاحظة",
+      "name": "note",
+      "kind": "helper",
+      "forms": [
+        "إيقاف الاشتراك: "
+      ],
+      "tab": "human_resources",
+      "article": "personal",
+      "text_sha256": "08c204de2685df464bdbc0cd0fde7ec98a5877581bd58cbad31890fc6661df06"
+    },
+    {
+      "file": "hr-offboarding.js",
+      "label": "الموظف",
+      "name": "person_id",
+      "kind": "helper",
+      "forms": [
+        "بدء إنهاء خدمة"
+      ],
+      "tab": "human_resources",
+      "article": "payroll",
+      "text_sha256": "0bebb1d1c5ab3b012283d97c05868f2efdf999e5577aad040d7d7e49bca4524c"
+    },
+    {
+      "file": "hr-offboarding.js",
+      "label": "السبب",
+      "name": "reason",
+      "kind": "helper",
+      "forms": [
+        "بدء إنهاء خدمة"
+      ],
+      "tab": "human_resources",
+      "article": "requests",
+      "text_sha256": "80a0c51a0ba10ff7f4fe6f627b68c4e009f932e1abdff544c26e792f5f0e9e49"
+    },
+    {
+      "file": "hr-offboarding.js",
+      "label": "ملاحظات",
+      "name": "reason_note",
+      "kind": "helper",
+      "forms": [
+        "بدء إنهاء خدمة"
+      ],
+      "tab": "human_resources",
+      "article": "personal",
+      "text_sha256": "08c204de2685df464bdbc0cd0fde7ec98a5877581bd58cbad31890fc6661df06"
+    },
+    {
+      "file": "hr-offboarding.js",
+      "label": "السبب",
+      "name": "note",
+      "kind": "helper",
+      "forms": [
+        "إعادة الكشف للمحاسب"
+      ],
+      "tab": "human_resources",
+      "article": "requests",
+      "text_sha256": "80a0c51a0ba10ff7f4fe6f627b68c4e009f932e1abdff544c26e792f5f0e9e49"
+    },
+    {
+      "file": "hr-offboarding.js",
+      "label": "النوع",
+      "name": "kind",
+      "kind": "helper",
+      "forms": [
+        "إضافة بند للكشف"
+      ],
+      "tab": "human_resources",
+      "article": "patient-records",
+      "text_sha256": "68c593718f9e4a670d874fc33a5fb6254f39083bbe1ac70792f1b87046e5dd54"
+    },
+    {
+      "file": "hr-payroll-workspace.js",
+      "label": "الموظف",
+      "name": "person_id",
+      "kind": "helper",
+      "forms": [
+        "قواعد الأجر حسب العقد واللائحة"
+      ],
+      "tab": "human_resources",
+      "article": "payroll",
+      "text_sha256": "0bebb1d1c5ab3b012283d97c05868f2efdf999e5577aad040d7d7e49bca4524c"
+    },
+    {
+      "file": "hr-payroll-workspace.js",
+      "label": "من",
+      "name": "valid_from",
+      "kind": "helper",
+      "forms": [
+        "قواعد الأجر حسب العقد واللائحة"
+      ],
+      "tab": "human_resources",
+      "article": "personal",
+      "text_sha256": "5124563f386757810c60ae86fc95904a13532f1a872fcd3579613f304338e13d"
+    },
+    {
+      "file": "hr-payroll-workspace.js",
+      "label": "الموظف",
+      "name": "person_id",
+      "kind": "helper",
+      "forms": [
+        "بند مرتب للمراجعة"
+      ],
+      "tab": "human_resources",
+      "article": "payroll",
+      "text_sha256": "0bebb1d1c5ab3b012283d97c05868f2efdf999e5577aad040d7d7e49bca4524c"
+    },
+    {
+      "file": "hr-payroll-workspace.js",
+      "label": "النوع",
+      "name": "kind",
+      "kind": "helper",
+      "forms": [
+        "بند مرتب للمراجعة"
+      ],
+      "tab": "human_resources",
+      "article": "patient-records",
+      "text_sha256": "68c593718f9e4a670d874fc33a5fb6254f39083bbe1ac70792f1b87046e5dd54"
+    },
+    {
+      "file": "hr-payroll-workspace.js",
+      "label": "القرار",
+      "name": "decision",
+      "kind": "helper",
+      "forms": [
+        "قرار مراجعة ورديات الملف"
+      ],
+      "tab": "human_resources",
+      "article": "requests",
+      "text_sha256": "e94fbc6b4acbcb93cd4550a5c0f411b3026a6856a94bfdc920222df26211079d"
+    },
+    {
+      "file": "hr-payroll-workspace.js",
+      "label": "القرار",
+      "name": "decision",
+      "kind": "helper",
+      "forms": [
+        "قرار المراجعة"
+      ],
+      "tab": "human_resources",
+      "article": "requests",
+      "text_sha256": "e94fbc6b4acbcb93cd4550a5c0f411b3026a6856a94bfdc920222df26211079d"
+    },
+    {
+      "file": "hr-payroll-workspace.js",
+      "label": "سبب القرار",
+      "name": "review_note",
+      "kind": "helper",
+      "forms": [
+        "قرار المراجعة"
+      ],
+      "tab": "human_resources",
+      "article": "requests",
+      "text_sha256": "00135b5d6cd282bea537fb8658c57e3e41f428900b403396c1ff4fef0b2d6095"
+    },
+    {
+      "file": "hr-payroll-workspace.js",
+      "label": "الموظف",
+      "name": "person_id",
+      "kind": "helper",
+      "forms": [
+        "حساب مرتب — "
+      ],
+      "tab": "human_resources",
+      "article": "payroll",
+      "text_sha256": "0bebb1d1c5ab3b012283d97c05868f2efdf999e5577aad040d7d7e49bca4524c"
+    },
+    {
+      "file": "hr-payroll-workspace.js",
+      "label": "الفرع",
+      "name": "branch",
+      "kind": "helper",
+      "forms": [
+        "تجهيز ربط الأجهزة"
+      ],
+      "tab": "human_resources",
+      "article": "inventory-count",
+      "text_sha256": "14cfdaf767928f9bc93bd051469bc4360f9c6c34a1aa4ed381628bf5d6de0e0e"
+    },
+    {
+      "file": "hr-presence.js",
+      "label": "الموظف",
+      "name": "person",
+      "kind": "helper",
+      "forms": [
+        "ربط رقم الجهاز "
+      ],
+      "tab": "human_resources",
+      "article": "payroll",
+      "text_sha256": "0bebb1d1c5ab3b012283d97c05868f2efdf999e5577aad040d7d7e49bca4524c"
+    },
+    {
+      "file": "hr-shift-swaps.js",
+      "label": "نوع الطلب",
+      "name": "kind",
+      "kind": "helper",
+      "forms": [
+        "تبديل وردية"
+      ],
+      "tab": "human_resources",
+      "article": "content",
+      "text_sha256": "ae1eebb0ccfb748408bcad7142956aff075cccf7dec15db8241d19d7a923ce05"
+    },
+    {
+      "file": "hr-shift-swaps.js",
+      "label": "السبب",
+      "name": "note",
+      "kind": "helper",
+      "forms": [
+        "تبديل وردية"
+      ],
+      "tab": "human_resources",
+      "article": "requests",
+      "text_sha256": "80a0c51a0ba10ff7f4fe6f627b68c4e009f932e1abdff544c26e792f5f0e9e49"
+    },
+    {
+      "file": "hr-shifts.js",
+      "label": "الحالة",
+      "name": "active",
+      "kind": "helper",
+      "forms": [
+        "تعديل وردية",
+        "إضافة وردية"
+      ],
+      "tab": "human_resources",
+      "article": "personal",
+      "text_sha256": "0a8e1242f7cd5a7893e1222dfd049826b42b66af79a574141ddc063e925fb3f0"
+    },
+    {
+      "file": "hr-tax.js",
+      "label": "الموظف",
+      "name": "person_id",
+      "kind": "helper",
+      "forms": [
+        "تسجيل ضريبة مرتب — "
+      ],
+      "tab": "human_resources",
+      "article": "payroll",
+      "text_sha256": "0bebb1d1c5ab3b012283d97c05868f2efdf999e5577aad040d7d7e49bca4524c"
+    },
+    {
       "file": "indicator-reports.js",
       "label": "الإجراء",
       "name": "",
@@ -4180,6 +5358,132 @@
       "tab": "indicator_reports",
       "article": "tasks-guide",
       "text_sha256": "9cdebb04e65e31491e60f7a341bb8a23fe481498eb3ff1298f06b2e511f480f3"
+    },
+    {
+      "file": "insurance-billing.js",
+      "label": "الخدمة",
+      "name": "",
+      "kind": "html",
+      "forms": [
+        "فاتورة تأمين — "
+      ],
+      "tab": "production",
+      "article": "booking-flow",
+      "text_sha256": "9de357e91f68d929da65d3983a861523a19c2d8ad7c1d86737871b762e1c0325"
+    },
+    {
+      "file": "insurance-billing.js",
+      "label": "مرجع الفاتورة",
+      "name": "",
+      "kind": "html",
+      "forms": [
+        "فاتورة تأمين — "
+      ],
+      "tab": "production",
+      "article": "invoice",
+      "text_sha256": "fce7f81a6833dfe4cbe65d52f2ef8981fe6dec2436154de6d1d6d08fc0df4152"
+    },
+    {
+      "file": "insurance-billing.js",
+      "label": "الوردية",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "production",
+      "article": "cash-shifts-guide",
+      "text_sha256": "f95a87b83000d36397e5e1fbf4e414b4a2e1f039aa2d3de77d3b5eb90f11dc52"
+    },
+    {
+      "file": "insurance-contracts.js",
+      "label": "الحالة",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "personal",
+      "text_sha256": "0a8e1242f7cd5a7893e1222dfd049826b42b66af79a574141ddc063e925fb3f0"
+    },
+    {
+      "file": "insurance-contracts.js",
+      "label": "ملاحظات",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "production",
+      "article": "personal",
+      "text_sha256": "08c204de2685df464bdbc0cd0fde7ec98a5877581bd58cbad31890fc6661df06"
+    },
+    {
+      "file": "insurance-contracts.js",
+      "label": "الخدمة",
+      "name": "",
+      "kind": "html",
+      "forms": [
+        "استثناءات الخدمات — "
+      ],
+      "tab": "production",
+      "article": "booking-flow",
+      "text_sha256": "9de357e91f68d929da65d3983a861523a19c2d8ad7c1d86737871b762e1c0325"
+    },
+    {
+      "file": "insurance-contracts.js",
+      "label": "ملاحظة",
+      "name": "",
+      "kind": "label",
+      "forms": [
+        "استثناءات الخدمات — "
+      ],
+      "tab": "production",
+      "article": "personal",
+      "text_sha256": "08c204de2685df464bdbc0cd0fde7ec98a5877581bd58cbad31890fc6661df06"
+    },
+    {
+      "file": "insurance-contracts.js",
+      "label": "الخدمة",
+      "name": "",
+      "kind": "html",
+      "forms": [
+        "حاسبة التأمين"
+      ],
+      "tab": "production",
+      "article": "booking-flow",
+      "text_sha256": "9de357e91f68d929da65d3983a861523a19c2d8ad7c1d86737871b762e1c0325"
+    },
+    {
+      "file": "insurance-contracts.js",
+      "label": "التاريخ",
+      "name": "",
+      "kind": "html",
+      "forms": [
+        "حاسبة التأمين"
+      ],
+      "tab": "production",
+      "article": "personal",
+      "text_sha256": "5124563f386757810c60ae86fc95904a13532f1a872fcd3579613f304338e13d"
+    },
+    {
+      "file": "insurance-contracts.js",
+      "label": "المبلغ",
+      "name": "",
+      "kind": "html",
+      "forms": [
+        "تسجيل تحصيل من شركة التأمين"
+      ],
+      "tab": "production",
+      "article": "collections",
+      "text_sha256": "125776655945829a368efb4a81dbc0efc7321372b5cd97b419805d08b8d6744d"
+    },
+    {
+      "file": "insurance-contracts.js",
+      "label": "طريقة التحصيل",
+      "name": "",
+      "kind": "label",
+      "forms": [
+        "تسجيل تحصيل من شركة التأمين"
+      ],
+      "tab": "production",
+      "article": "collections",
+      "text_sha256": "1ab8138b1a334822a7f5c1302e62560c0452a695e15cbaf3dadeeeff9ffdbfe0"
     },
     {
       "file": "inventory-batch-dates.js",
@@ -4830,6 +6134,50 @@
       "text_sha256": "be41429224c552586e8122040cb276a530c9f520c39dde4fe414620df89ed7fe"
     },
     {
+      "file": "lab-link-review.js",
+      "label": "بحث",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "production",
+      "article": "personal",
+      "text_sha256": "fcfcf93d2d0bde74aa0a1934993d34ae9f117562d8c56a3a563761ba68e24990"
+    },
+    {
+      "file": "lab-link-review.js",
+      "label": "القسم",
+      "name": "",
+      "kind": "html",
+      "forms": [
+        "إضافة خدمة جديدة بالمركز — "
+      ],
+      "tab": "production",
+      "article": "content",
+      "text_sha256": "8781afaef1012c14a5b9f99b05513e1852e02bb6c191b2fc0b339518d671a4a9"
+    },
+    {
+      "file": "lab-link-review.js",
+      "label": "الخدمة",
+      "name": "",
+      "kind": "label",
+      "forms": [
+        "اختيار خدمة من قائمة المركز — "
+      ],
+      "tab": "production",
+      "article": "booking-flow",
+      "text_sha256": "9de357e91f68d929da65d3983a861523a19c2d8ad7c1d86737871b762e1c0325"
+    },
+    {
+      "file": "leads-missing-data-enhancement.js",
+      "label": "رقم التليفون",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "production",
+      "article": "patient-records",
+      "text_sha256": "57a56cdd50c48e9067e70e528bb4784c853c253c569bc87e0865b68655497d63"
+    },
+    {
       "file": "ledger-editor.js",
       "label": "نوع القيد",
       "name": "kind",
@@ -4976,6 +6324,16 @@
       "text_sha256": "c43487d4c510799195cb3824720ed47dc6ca5b8d540f405a8f3be936c3fa4481"
     },
     {
+      "file": "my-contract.js",
+      "label": "سبب الرفض",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "patient-records",
+      "text_sha256": "a21ad9d28e2191e6557244226e39fd526699de2cecda568291a4f8dceb372f43"
+    },
+    {
       "file": "navigation-ui.js",
       "label": "بحث في القائمة",
       "name": "",
@@ -4996,74 +6354,106 @@
       "text_sha256": "cb369dfe4f4d347611d73d597b06cf662eed732794d5ab3c69f3490bdb9b7602"
     },
     {
-      "file": "patient-height-extension.js",
-      "label": "مثال: 170 سم",
-      "name": "",
-      "kind": "placeholder",
-      "forms": [],
-      "tab": "patients",
-      "article": "patient-records",
-      "text_sha256": "a00a04d38ccff6e7893b3edcdfb0658c67546c3f970562feaea508c20bfa0fd8"
+      "file": "price-list-governance.js",
+      "label": "المستخدم",
+      "name": "admin_id",
+      "kind": "helper",
+      "forms": [
+        "صلاحيات القائمة — "
+      ],
+      "tab": "price_lists",
+      "article": "inventory-count",
+      "text_sha256": "3780038927d64b0bf4fe1b6e96498fc2fb5fc2abcdc3429e8ae15c5a13a15385"
     },
     {
-      "file": "patient-height-extension.js",
-      "label": "الطول",
-      "name": "",
-      "kind": "label",
-      "forms": [],
-      "tab": "patients",
-      "article": "patient-records",
-      "text_sha256": "a00a04d38ccff6e7893b3edcdfb0658c67546c3f970562feaea508c20bfa0fd8"
+      "file": "price-list-governance.js",
+      "label": "صلاحية تعديل هذه القائمة",
+      "name": "can_edit",
+      "kind": "helper",
+      "forms": [
+        "صلاحيات القائمة — "
+      ],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "382598e979b3b97a2d3098fa87127ca2fa5c86af6d0161eb8df8aaf692b4d5eb"
     },
     {
-      "file": "patient-visit-context.js",
-      "label": "نوع الزيارة / الخدمة",
-      "name": "",
-      "kind": "label",
-      "forms": [],
-      "tab": "patients",
-      "article": "patient-records",
-      "text_sha256": "81a75fbc43322340bbdc1f4b937ce716a9df8e69a21160376050fabca8dad27f"
+      "file": "price-list-governance.js",
+      "label": "إنشاء إصدار جديد من هذه القائمة",
+      "name": "can_clone",
+      "kind": "helper",
+      "forms": [
+        "صلاحيات القائمة — "
+      ],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "834c47d99f32933752d058fda67c5c41dd6b4bc427377d3ea2e929bec8221055"
     },
     {
-      "file": "patient-visit-context.js",
-      "label": "مثال: د. دينا حسني",
-      "name": "",
-      "kind": "placeholder",
-      "forms": [],
-      "tab": "patients",
-      "article": "patient-records",
-      "text_sha256": "6058e625caaf9b71bc79ddbf53a676a46eb42adedf98ce7194aad832bf956faa"
+      "file": "price-list-governance.js",
+      "label": "سبب الحذف",
+      "name": "reason",
+      "kind": "helper",
+      "forms": [
+        "حذف القائمة من العرض"
+      ],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "e0a81f4057a85cf7655344c6f6148379695eddddfaf3e4b1e3a2d1698fe8715b"
     },
     {
-      "file": "patient-visit-context.js",
-      "label": "الطبيب / مقدم الخدمة",
-      "name": "",
-      "kind": "label",
-      "forms": [],
-      "tab": "patients",
-      "article": "patient-records",
-      "text_sha256": "64e347f73f878509a653299ddc92452e08558753e25b26c2031002afbc7d558a"
+      "file": "price-list-governance.js",
+      "label": "العقد",
+      "name": "contract_id",
+      "kind": "helper",
+      "forms": [
+        "ربط مرجع أسعار بعقد الجهة"
+      ],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "079a7753ed52bc27ed7bdb056902c2e8951a9687089ccacdc38b4acf03045533"
     },
     {
-      "file": "patient-visit-context.js",
-      "label": "مثال: مخ وأعصاب",
-      "name": "",
-      "kind": "placeholder",
-      "forms": [],
-      "tab": "patients",
-      "article": "patient-records",
-      "text_sha256": "8781afaef1012c14a5b9f99b05513e1852e02bb6c191b2fc0b339518d671a4a9"
+      "file": "price-list-governance.js",
+      "label": "مرجع الأسعار المتفق عليه",
+      "name": "list_id",
+      "kind": "helper",
+      "forms": [
+        "ربط مرجع أسعار بعقد الجهة"
+      ],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "fecc97aaf4890eaca7b3e820270be1858bfcce7d5134e01c61f3e00a887bb86c"
     },
     {
-      "file": "patient-visit-context.js",
-      "label": "التخصص / القسم",
+      "file": "price-list-governance.js",
+      "label": "الخدمة",
       "name": "",
-      "kind": "label",
+      "kind": "html",
       "forms": [],
-      "tab": "patients",
-      "article": "patient-records",
-      "text_sha256": "8781afaef1012c14a5b9f99b05513e1852e02bb6c191b2fc0b339518d671a4a9"
+      "tab": "price_lists",
+      "article": "booking-flow",
+      "text_sha256": "9de357e91f68d929da65d3983a861523a19c2d8ad7c1d86737871b762e1c0325"
+    },
+    {
+      "file": "price-list-governance.js",
+      "label": "نسبة تحمل الجهة لهذه الخدمة — اتركها فارغة لاستخدام العقد",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "dbbe41fd26c1cb9a59fae64d0ce48136c73aa5e57ae38039ce7366e5879b0803"
+    },
+    {
+      "file": "price-list-governance.js",
+      "label": "شروط الخدمة",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "price_lists",
+      "article": "price-lists",
+      "text_sha256": "36d18535f8819df363f4660cb7a5968ad62dc0aae5b0b4ac1c32f77ef3a8c6ff"
     },
     {
       "file": "psychology-workspace.js",
@@ -5900,6 +7290,76 @@
       "text_sha256": "08c204de2685df464bdbc0cd0fde7ec98a5877581bd58cbad31890fc6661df06"
     },
     {
+      "file": "reception-patient-documents.js",
+      "label": "الملف",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "patient-records",
+      "text_sha256": "b51a2dd066b13876c39df5d1ba5f852738e81aca9c4e66efbb9477e50c88f17f"
+    },
+    {
+      "file": "reception-service-orders.js",
+      "label": "الزيارة",
+      "name": "visit_id",
+      "kind": "helper",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "invoice",
+      "text_sha256": "26d12f6165ac4beb30b8449907a9387a7b0179ff322c4b4593ee0701e2c93cb5"
+    },
+    {
+      "file": "reception-service-orders.js",
+      "label": "نسبة الخصم %",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "invoice",
+      "text_sha256": "ea39a04f2d933c5be7f40811637a3ee239a7e73d1b1481ebeb5a5034e4c00575"
+    },
+    {
+      "file": "reception-service-orders.js",
+      "label": "التخصص",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "content",
+      "text_sha256": "8781afaef1012c14a5b9f99b05513e1852e02bb6c191b2fc0b339518d671a4a9"
+    },
+    {
+      "file": "reception-service-orders.js",
+      "label": "النسبة %",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "doctor-missing",
+      "text_sha256": "b09adb5afd6eb35cd519f997730cd20d6f30f187e7e5ae1e75fe938738bb90da"
+    },
+    {
+      "file": "reception-service-orders.js",
+      "label": "الاسم",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "supply-map",
+      "text_sha256": "edc721754fff0d043fe910b92a4627b1c8f15376bcaed30a237bf5e5acc283c7"
+    },
+    {
+      "file": "reception-service-orders.js",
+      "label": "التليفون",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "patient",
+      "text_sha256": "8a2950b281e7d62a52011cc1b6e43086544f9d96693cf4517d9d32bd36bd4b17"
+    },
+    {
       "file": "reception-services.js",
       "label": "رقم الملف — المريض",
       "name": "patient_id",
@@ -6363,6 +7823,18 @@
     },
     {
       "file": "reception-services.js",
+      "label": "عدد الزيارات",
+      "name": "",
+      "kind": "label",
+      "forms": [
+        "تعاقد باكج — الأقساط تذكير حتى اعتماد استحقاقها"
+      ],
+      "tab": "reception_services",
+      "article": "package",
+      "text_sha256": "751cfbd8e85127b2132c9a51ed90b7419a70aea235679dac6225350d529e8cfb"
+    },
+    {
+      "file": "reception-services.js",
       "label": "تاريخ القسط",
       "name": "due_on",
       "kind": "config",
@@ -6675,6 +8147,26 @@
     },
     {
       "file": "reception-services.js",
+      "label": "الزيارة",
+      "name": "entitlement_id",
+      "kind": "helper",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "invoice",
+      "text_sha256": "26d12f6165ac4beb30b8449907a9387a7b0179ff322c4b4593ee0701e2c93cb5"
+    },
+    {
+      "file": "reception-services.js",
+      "label": "عدد الزيارات",
+      "name": "visits",
+      "kind": "helper",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "package",
+      "text_sha256": "751cfbd8e85127b2132c9a51ed90b7419a70aea235679dac6225350d529e8cfb"
+    },
+    {
+      "file": "reception-services.js",
       "label": "المبلغ",
       "name": "amount",
       "kind": "helper",
@@ -6815,6 +8307,26 @@
     },
     {
       "file": "reception-workspace.js",
+      "label": "بحث",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "personal",
+      "text_sha256": "fcfcf93d2d0bde74aa0a1934993d34ae9f117562d8c56a3a563761ba68e24990"
+    },
+    {
+      "file": "reception-workspace.js",
+      "label": "الحالة",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "personal",
+      "text_sha256": "0a8e1242f7cd5a7893e1222dfd049826b42b66af79a574141ddc063e925fb3f0"
+    },
+    {
+      "file": "reception-workspace.js",
       "label": "مساحة العمل",
       "name": "",
       "kind": "html",
@@ -6852,6 +8364,26 @@
       "tab": "reception_services",
       "article": "patient",
       "text_sha256": "92f2a08af9d3d68c5620d0dbc5f4590e325bf02ba37399ddff2d2dd151f501c6"
+    },
+    {
+      "file": "reception-workspace.js",
+      "label": "الخدمة",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "booking-flow",
+      "text_sha256": "9de357e91f68d929da65d3983a861523a19c2d8ad7c1d86737871b762e1c0325"
+    },
+    {
+      "file": "reception-workspace.js",
+      "label": "مدة الجلسة",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "patient-records",
+      "text_sha256": "23e7b27807f740d8126699b428a03adac00fd92133d216beed51d905552bbed6"
     },
     {
       "file": "reception-workspace.js",
@@ -6922,6 +8454,16 @@
       "tab": "reception_services",
       "article": "booking-source",
       "text_sha256": "6bac279aa5aa304ce620904f03038a294ac86abd128cbdd3038748163340cbb4"
+    },
+    {
+      "file": "reception-workspace.js",
+      "label": "السبب",
+      "name": "reason",
+      "kind": "helper",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "requests",
+      "text_sha256": "80a0c51a0ba10ff7f4fe6f627b68c4e009f932e1abdff544c26e792f5f0e9e49"
     },
     {
       "file": "reception-workspace.js",
@@ -8805,6 +10347,16 @@
       "text_sha256": "5124563f386757810c60ae86fc95904a13532f1a872fcd3579613f304338e13d"
     },
     {
+      "file": "render-org-legal.js",
+      "label": "النوع",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "patient-records",
+      "text_sha256": "68c593718f9e4a670d874fc33a5fb6254f39083bbe1ac70792f1b87046e5dd54"
+    },
+    {
       "file": "render-patients.js",
       "label": "بحث بالاسم / الهاتف / كود المريض",
       "name": "",
@@ -10515,6 +12067,36 @@
       "text_sha256": "f9fcc8509279019ca17abc06f9982d715e13284f1525ff6bfe22f3a35077d58c"
     },
     {
+      "file": "render-performance.js",
+      "label": "الصفحة",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "production",
+      "article": "content",
+      "text_sha256": "4e4f815ac6b6ea83cc5a805557e246039b91eb7550059f83b6c18fcfdb1ac53f"
+    },
+    {
+      "file": "render-performance.js",
+      "label": "من تاريخ",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "production",
+      "article": "personal",
+      "text_sha256": "5124563f386757810c60ae86fc95904a13532f1a872fcd3579613f304338e13d"
+    },
+    {
+      "file": "render-performance.js",
+      "label": "إلى تاريخ",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "production",
+      "article": "personal",
+      "text_sha256": "5124563f386757810c60ae86fc95904a13532f1a872fcd3579613f304338e13d"
+    },
+    {
       "file": "render-production.js",
       "label": "الجملة الافتتاحية",
       "name": "",
@@ -10876,7 +12458,7 @@
     },
     {
       "file": "render-publish.js",
-      "label": "رابط المنشور للمنصات اليدوية فقط (تيكتوك/يوتيوب)",
+      "label": "رابط المنشور للمنصات اليدوية فقط",
       "name": "",
       "kind": "html",
       "forms": [],
@@ -10903,16 +12485,6 @@
       "tab": "publish",
       "article": "publishing-guide",
       "text_sha256": "468a114765b8bba43473fffff33b056aea0b6953d48a131132485567af611bcd"
-    },
-    {
-      "file": "render-publish.js",
-      "label": "رابط المنشور للمنصات اليدوية فقط",
-      "name": "",
-      "kind": "label",
-      "forms": [],
-      "tab": "publish",
-      "article": "publishing-guide",
-      "text_sha256": "1d9e0b241010cab36502c4f5bde2a2cba201bced08903104156ccdded75f0e22"
     },
     {
       "file": "render-review.js",
@@ -11112,7 +12684,7 @@
       "forms": [],
       "tab": "tasks",
       "article": "tasks-guide",
-      "text_sha256": "4eb7f0f595fe0999d19a0221101009b5b16048b2f2a3a518d9f6e175a9adb942"
+      "text_sha256": "d6a19aa5cd6518b7406a2e6e9d32923c5c9417d94228d37be3c3c25749c32404"
     },
     {
       "file": "render-tasks.js",
@@ -11183,6 +12755,16 @@
       "tab": "tasks",
       "article": "tasks-guide",
       "text_sha256": "84046e1960f01e5856d71e1c906fbc67fb3f0e8e96cfdc54057a3032ed1fb07c"
+    },
+    {
+      "file": "render-tasks.js",
+      "label": "ملاحظة (اختياري)",
+      "name": "",
+      "kind": "config",
+      "forms": [],
+      "tab": "tasks",
+      "article": "personal",
+      "text_sha256": "08c204de2685df464bdbc0cd0fde7ec98a5877581bd58cbad31890fc6661df06"
     },
     {
       "file": "render-tasks.js",
@@ -11521,6 +13103,56 @@
       "text_sha256": "3c10fd9b1342e48b8fd97c2633c5978bbf956121d8ab5c365ae493833150b10b"
     },
     {
+      "file": "render-tasks.js",
+      "label": "الكل",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "tasks",
+      "article": "tasks-guide",
+      "text_sha256": "d6a19aa5cd6518b7406a2e6e9d32923c5c9417d94228d37be3c3c25749c32404"
+    },
+    {
+      "file": "service-mapping-review.js",
+      "label": "الحالة",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "production",
+      "article": "personal",
+      "text_sha256": "0a8e1242f7cd5a7893e1222dfd049826b42b66af79a574141ddc063e925fb3f0"
+    },
+    {
+      "file": "service-mapping-review.js",
+      "label": "القسم",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "production",
+      "article": "content",
+      "text_sha256": "8781afaef1012c14a5b9f99b05513e1852e02bb6c191b2fc0b339518d671a4a9"
+    },
+    {
+      "file": "service-mapping-review.js",
+      "label": "بحث",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "production",
+      "article": "personal",
+      "text_sha256": "fcfcf93d2d0bde74aa0a1934993d34ae9f117562d8c56a3a563761ba68e24990"
+    },
+    {
+      "file": "service-mapping-review.js",
+      "label": "سبب القرار",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "requests",
+      "text_sha256": "00135b5d6cd282bea537fb8658c57e3e41f428900b403396c1ff4fef0b2d6095"
+    },
+    {
       "file": "studio-storyboard.js",
       "label": "الانتقالات",
       "name": "",
@@ -11679,6 +13311,188 @@
       "tab": "tasks",
       "article": "tasks-guide",
       "text_sha256": "3c10fd9b1342e48b8fd97c2633c5978bbf956121d8ab5c365ae493833150b10b"
+    },
+    {
+      "file": "today-operations-v2.js",
+      "label": "نوع الطلب",
+      "name": "support_type",
+      "kind": "helper",
+      "forms": [],
+      "tab": "production",
+      "article": "content",
+      "text_sha256": "ae1eebb0ccfb748408bcad7142956aff075cccf7dec15db8241d19d7a923ce05"
+    },
+    {
+      "file": "today-operations-v2.js",
+      "label": "التفاصيل",
+      "name": "message",
+      "kind": "helper",
+      "forms": [],
+      "tab": "production",
+      "article": "personal",
+      "text_sha256": "08c204de2685df464bdbc0cd0fde7ec98a5877581bd58cbad31890fc6661df06"
+    },
+    {
+      "file": "today-operations.js",
+      "label": "الموظف",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "production",
+      "article": "payroll",
+      "text_sha256": "0bebb1d1c5ab3b012283d97c05868f2efdf999e5577aad040d7d7e49bca4524c"
+    },
+    {
+      "file": "today-operations.js",
+      "label": "من",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "production",
+      "article": "personal",
+      "text_sha256": "5124563f386757810c60ae86fc95904a13532f1a872fcd3579613f304338e13d"
+    },
+    {
+      "file": "today-operations.js",
+      "label": "إلى",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "production",
+      "article": "personal",
+      "text_sha256": "5124563f386757810c60ae86fc95904a13532f1a872fcd3579613f304338e13d"
+    },
+    {
+      "file": "today-operations.js",
+      "label": "نوع الطلب",
+      "name": "request_kind",
+      "kind": "helper",
+      "forms": [
+        "طلب خدمة أثناء الزيارة"
+      ],
+      "tab": "production",
+      "article": "content",
+      "text_sha256": "ae1eebb0ccfb748408bcad7142956aff075cccf7dec15db8241d19d7a923ce05"
+    },
+    {
+      "file": "today-operations.js",
+      "label": "الخدمة",
+      "name": "service_id",
+      "kind": "helper",
+      "forms": [
+        "طلب خدمة أثناء الزيارة"
+      ],
+      "tab": "production",
+      "article": "booking-flow",
+      "text_sha256": "9de357e91f68d929da65d3983a861523a19c2d8ad7c1d86737871b762e1c0325"
+    },
+    {
+      "file": "today-operations.js",
+      "label": "الطبيب المنفذ",
+      "name": "provider_id",
+      "kind": "helper",
+      "forms": [
+        "طلب خدمة أثناء الزيارة"
+      ],
+      "tab": "production",
+      "article": "doctor-missing",
+      "text_sha256": "64e347f73f878509a653299ddc92452e08558753e25b26c2031002afbc7d558a"
+    },
+    {
+      "file": "today-operations.js",
+      "label": "العدد",
+      "name": "quantity",
+      "kind": "helper",
+      "forms": [
+        "طلب خدمة أثناء الزيارة"
+      ],
+      "tab": "production",
+      "article": "supply-map",
+      "text_sha256": "2e0b4f805a08925026535a1b41a17475c806152215285d42cc2eeb1901a937f5"
+    },
+    {
+      "file": "today-operations.js",
+      "label": "السبب",
+      "name": "delay_reason",
+      "kind": "helper",
+      "forms": [
+        "تسجيل تأخير الطبيب"
+      ],
+      "tab": "production",
+      "article": "requests",
+      "text_sha256": "80a0c51a0ba10ff7f4fe6f627b68c4e009f932e1abdff544c26e792f5f0e9e49"
+    },
+    {
+      "file": "today-operations.js",
+      "label": "السبب",
+      "name": "reason",
+      "kind": "helper",
+      "forms": [
+        "أولوية المريض"
+      ],
+      "tab": "production",
+      "article": "requests",
+      "text_sha256": "80a0c51a0ba10ff7f4fe6f627b68c4e009f932e1abdff544c26e792f5f0e9e49"
+    },
+    {
+      "file": "today-operations.js",
+      "label": "النوع",
+      "name": "kind",
+      "kind": "helper",
+      "forms": [
+        "طلب مساعدة"
+      ],
+      "tab": "production",
+      "article": "patient-records",
+      "text_sha256": "68c593718f9e4a670d874fc33a5fb6254f39083bbe1ac70792f1b87046e5dd54"
+    },
+    {
+      "file": "today-operations.js",
+      "label": "التفاصيل",
+      "name": "message",
+      "kind": "helper",
+      "forms": [
+        "طلب مساعدة"
+      ],
+      "tab": "production",
+      "article": "personal",
+      "text_sha256": "08c204de2685df464bdbc0cd0fde7ec98a5877581bd58cbad31890fc6661df06"
+    },
+    {
+      "file": "today-operations.js",
+      "label": "ملاحظة إن وجدت",
+      "name": "reason",
+      "kind": "helper",
+      "forms": [
+        "إنهاء الزيارة"
+      ],
+      "tab": "production",
+      "article": "personal",
+      "text_sha256": "08c204de2685df464bdbc0cd0fde7ec98a5877581bd58cbad31890fc6661df06"
+    },
+    {
+      "file": "today-operations.js",
+      "label": "السبب",
+      "name": "reason",
+      "kind": "helper",
+      "forms": [
+        "تسجيل عدم الحضور"
+      ],
+      "tab": "production",
+      "article": "requests",
+      "text_sha256": "80a0c51a0ba10ff7f4fe6f627b68c4e009f932e1abdff544c26e792f5f0e9e49"
+    },
+    {
+      "file": "today-operations.js",
+      "label": "السبب",
+      "name": "reason",
+      "kind": "helper",
+      "forms": [
+        "إلغاء الحجز"
+      ],
+      "tab": "production",
+      "article": "requests",
+      "text_sha256": "80a0c51a0ba10ff7f4fe6f627b68c4e009f932e1abdff544c26e792f5f0e9e49"
     },
     {
       "file": "video-storyboard.js",
@@ -11999,6 +13813,827 @@
       "tab": "production",
       "article": "content-brief",
       "text_sha256": "09c8ff18a6b332c9f90fe1251ac121c6d92590eeec63ba549796c0f46c4e281f"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "شهر المتابعة",
+      "name": "month",
+      "kind": "helper",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "hr-my-file",
+      "text_sha256": "2d04e605e0b45fcad17459cdc4a5b14ae11032aaaf38eac1322071655fe1a18e"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "ابحث عن موظف أو طبيب",
+      "name": "search",
+      "kind": "helper",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "hr-manage",
+      "text_sha256": "3fbb09c52b8f24ccc4b7dc5f8a668721d8bf46b0680d22ddaa7aa245ea34ac8a"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "الدور",
+      "name": "role",
+      "kind": "helper",
+      "forms": [
+        "الدور المسؤول عن متابعة "
+      ],
+      "tab": "human_resources",
+      "article": "indicators",
+      "text_sha256": "5c0d8bc6e7d747e6bf4c8af607e98ce79b9c33142c950bec2087672ed840c829"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "المشروع",
+      "name": "project",
+      "kind": "helper",
+      "forms": [
+        "مهمة متكررة — "
+      ],
+      "tab": "human_resources",
+      "article": "tasks-guide",
+      "text_sha256": "0aaf0d827eb183a4ee09e3dab4552ba4723bd9e2e7b591aa22a1004976ff636c"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "عنوان المهمة",
+      "name": "title",
+      "kind": "helper",
+      "forms": [
+        "مهمة متكررة — "
+      ],
+      "tab": "human_resources",
+      "article": "tasks-guide",
+      "text_sha256": "a99b972ef0ce274edffbbebbb7222e5d1699d2af489387edb91d1f35519e1091"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "التكرار",
+      "name": "every",
+      "kind": "helper",
+      "forms": [
+        "مهمة متكررة — "
+      ],
+      "tab": "human_resources",
+      "article": "tasks-guide",
+      "text_sha256": "25911142092322065b8e7cccc3ed94c9128dc2efb63dda20b99028b40882bd3d"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "الاسم الثنائي على الأقل",
+      "name": "full_name",
+      "kind": "helper",
+      "forms": [
+        "تعديل ملف الموظف",
+        "ملف موظف أو طبيب"
+      ],
+      "tab": "human_resources",
+      "article": "hr-manage",
+      "text_sha256": "0b54f919857347e85fd4598f0116a4ee9c027f2d2f3aad831d47aed59fdcf62a"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "العلاقة بالمركز",
+      "name": "kind",
+      "kind": "helper",
+      "forms": [
+        "تعديل ملف الموظف",
+        "ملف موظف أو طبيب"
+      ],
+      "tab": "human_resources",
+      "article": "hr-manage",
+      "text_sha256": "68006ec020d1d63da824a4895257d5bf0c6e1e4bf3a59be3b29aed42847fc285"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "حساب الدخول",
+      "name": "account_mode",
+      "kind": "helper",
+      "forms": [
+        "تعديل ملف الموظف",
+        "ملف موظف أو طبيب"
+      ],
+      "tab": "human_resources",
+      "article": "hr-manage",
+      "text_sha256": "42d835eafc9fb7d82eac5afc6f8b864c2ef7b8460c7a543f3f4abefd6065009a"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "اختر المستخدم الحالي",
+      "name": "admin_id",
+      "kind": "helper",
+      "forms": [
+        "تعديل ملف الموظف",
+        "ملف موظف أو طبيب"
+      ],
+      "tab": "human_resources",
+      "article": "hr-manage",
+      "text_sha256": "08f6a0db5f43c331c2a0095e460386ba17901d9378a195f2c0556353657b81a1"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "دور المستخدم الجديد",
+      "name": "account_role",
+      "kind": "helper",
+      "forms": [
+        "تعديل ملف الموظف",
+        "ملف موظف أو طبيب"
+      ],
+      "tab": "human_resources",
+      "article": "access",
+      "text_sha256": "e87c1b43c5a56a424e3103a3665d418a8f267dd99e6e87370f5ff6b4b7d51262"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "رقم الهاتف",
+      "name": "phone",
+      "kind": "helper",
+      "forms": [
+        "تعديل ملف الموظف",
+        "ملف موظف أو طبيب"
+      ],
+      "tab": "human_resources",
+      "article": "patient",
+      "text_sha256": "0b6bc0aa47bf65fe1a7046763cba6c4b3c72fcfa83c07ac7f13982db564a0a14"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "البريد الإلكتروني",
+      "name": "email",
+      "kind": "helper",
+      "forms": [
+        "تعديل ملف الموظف",
+        "ملف موظف أو طبيب"
+      ],
+      "tab": "human_resources",
+      "article": "access",
+      "text_sha256": "e604ae2973525ce1297f9c8c6f1b79e99700a5e613acdc20abf1d9bfd349e639"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "تاريخ الميلاد",
+      "name": "birth_date",
+      "kind": "helper",
+      "forms": [
+        "تعديل ملف الموظف",
+        "ملف موظف أو طبيب"
+      ],
+      "tab": "human_resources",
+      "article": "patient",
+      "text_sha256": "6dcc3fcbda437e3a78df48f3fdc1e39f6afd5f25d831710927b833e5be568092"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "القسم",
+      "name": "department",
+      "kind": "helper",
+      "forms": [
+        "تعديل ملف الموظف",
+        "ملف موظف أو طبيب"
+      ],
+      "tab": "human_resources",
+      "article": "content",
+      "text_sha256": "8781afaef1012c14a5b9f99b05513e1852e02bb6c191b2fc0b339518d671a4a9"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "المسمى الوظيفي",
+      "name": "job_title",
+      "kind": "helper",
+      "forms": [
+        "تعديل ملف الموظف",
+        "ملف موظف أو طبيب"
+      ],
+      "tab": "human_resources",
+      "article": "hr-manage",
+      "text_sha256": "b816115c215beeb5270d71798708073247479f22b90ad2cc4793f89f7bdcb0b8"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "الفرع",
+      "name": "branch",
+      "kind": "helper",
+      "forms": [
+        "تعديل ملف الموظف",
+        "ملف موظف أو طبيب"
+      ],
+      "tab": "human_resources",
+      "article": "inventory-count",
+      "text_sha256": "14cfdaf767928f9bc93bd051469bc4360f9c6c34a1aa4ed381628bf5d6de0e0e"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "المدير المباشر",
+      "name": "manager_id",
+      "kind": "helper",
+      "forms": [
+        "تعديل ملف الموظف",
+        "ملف موظف أو طبيب"
+      ],
+      "tab": "human_resources",
+      "article": "hr-manage",
+      "text_sha256": "dafe01bd84374299571f7d2f6346f3610ab8767d12591c4fc5ba17e71ea900cd"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "بداية العمل",
+      "name": "start_date",
+      "kind": "helper",
+      "forms": [
+        "تعديل ملف الموظف",
+        "ملف موظف أو طبيب"
+      ],
+      "tab": "human_resources",
+      "article": "hr-manage",
+      "text_sha256": "128d0a7ae4308464fbdc83c4f65d47b0ccedb6178ed6a6f07d3303ac0d9d20e0"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "نهاية العمل",
+      "name": "end_date",
+      "kind": "helper",
+      "forms": [
+        "تعديل ملف الموظف",
+        "ملف موظف أو طبيب"
+      ],
+      "tab": "human_resources",
+      "article": "hr-manage",
+      "text_sha256": "24238f132b4677abf998e992788e60000b77d6a59506fbb2e3f674a8787c7e0b"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "الحالة",
+      "name": "status",
+      "kind": "helper",
+      "forms": [
+        "تعديل ملف الموظف",
+        "ملف موظف أو طبيب"
+      ],
+      "tab": "human_resources",
+      "article": "personal",
+      "text_sha256": "0a8e1242f7cd5a7893e1222dfd049826b42b66af79a574141ddc063e925fb3f0"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "كود الطبيب من عقود الحسابات",
+      "name": "doctor_key",
+      "kind": "helper",
+      "forms": [
+        "تعديل ملف الموظف",
+        "ملف موظف أو طبيب"
+      ],
+      "tab": "human_resources",
+      "article": "hr-manage",
+      "text_sha256": "32860a6940ff01ba3f8fde6bb6007f3c29966b1423cf42962be1479b5011c127"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "معرف الموظف من عقود المرتبات",
+      "name": "finance_subject",
+      "kind": "helper",
+      "forms": [
+        "تعديل ملف الموظف",
+        "ملف موظف أو طبيب"
+      ],
+      "tab": "human_resources",
+      "article": "payroll",
+      "text_sha256": "f3e9c53dd1b621419c76e42309cb0b9c1f1fff68ce5751c49bf41b7a60fb16a0"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "اسم جهة اتصال الطوارئ",
+      "name": "emergency_name",
+      "kind": "helper",
+      "forms": [
+        "تعديل ملف الموظف",
+        "ملف موظف أو طبيب"
+      ],
+      "tab": "human_resources",
+      "article": "hr-manage",
+      "text_sha256": "1776f764b343393beb372db69d7bdeba15afbf64465dbbeaae1cbeb713855b0f"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "هاتف الطوارئ",
+      "name": "emergency_phone",
+      "kind": "helper",
+      "forms": [
+        "تعديل ملف الموظف",
+        "ملف موظف أو طبيب"
+      ],
+      "tab": "human_resources",
+      "article": "hr-manage",
+      "text_sha256": "4cec847a54fc7d36b0cdee5d6ae77a818bbe4130b4ed7d9d7c470134520d5c6f"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "القرار",
+      "name": "decision",
+      "kind": "helper",
+      "forms": [
+        "مراجعة السجل"
+      ],
+      "tab": "human_resources",
+      "article": "requests",
+      "text_sha256": "e94fbc6b4acbcb93cd4550a5c0f411b3026a6856a94bfdc920222df26211079d"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "الموظف",
+      "name": "person",
+      "kind": "helper",
+      "forms": [
+        "تحضير استحقاق مرتب — "
+      ],
+      "tab": "human_resources",
+      "article": "payroll",
+      "text_sha256": "0bebb1d1c5ab3b012283d97c05868f2efdf999e5577aad040d7d7e49bca4524c"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "مرجع مستند الاستحقاق",
+      "name": "reference",
+      "kind": "helper",
+      "forms": [
+        "تحضير استحقاق مرتب — "
+      ],
+      "tab": "human_resources",
+      "article": "payroll",
+      "text_sha256": "4062ae3211ffe9f2c330bb61b2a643eadaa66c9dd1f173bc914767beb01b400b"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "البدلات المعتمدة حسب المستند",
+      "name": "allowance",
+      "kind": "helper",
+      "forms": [
+        "تحضير استحقاق مرتب — "
+      ],
+      "tab": "human_resources",
+      "article": "payroll",
+      "text_sha256": "c05483d25b77ba306471bece83fab22ca4c71d09bfbff6174a05d92d079527db"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "ضريبة الأجور حسب المستند",
+      "name": "tax",
+      "kind": "helper",
+      "forms": [
+        "تحضير استحقاق مرتب — "
+      ],
+      "tab": "human_resources",
+      "article": "payroll",
+      "text_sha256": "58295193eb50186f15a2e2806eb83d15089d651de88426fdae54c7ecd0a97508"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "التأمينات حسب المستند",
+      "name": "insurance",
+      "kind": "helper",
+      "forms": [
+        "تحضير استحقاق مرتب — "
+      ],
+      "tab": "human_resources",
+      "article": "payroll",
+      "text_sha256": "b6200a29e107c990fcd9f0d41c589f7a0dd90c37118b36325705b3e641d69c53"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "استرداد سلفة بموافقة موثقة",
+      "name": "recovery",
+      "kind": "helper",
+      "forms": [
+        "تحضير استحقاق مرتب — "
+      ],
+      "tab": "human_resources",
+      "article": "payroll",
+      "text_sha256": "fab7d00aab3345e2bd928895cb181691173619183a01a231e955d56f5560540a"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "اسم المستند",
+      "name": "title",
+      "kind": "helper",
+      "forms": [
+        "مستند الموظف"
+      ],
+      "tab": "human_resources",
+      "article": "hr-manage",
+      "text_sha256": "09a0c1edbb76b7a3e28ba1eef04c2b4f00aa67597a3c3cf8cb8b0ecdc629a107"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "رابط المستند على HTTPS",
+      "name": "document_url",
+      "kind": "helper",
+      "forms": [
+        "مستند الموظف"
+      ],
+      "tab": "human_resources",
+      "article": "hr-manage",
+      "text_sha256": "5678bb5b28b1cb9b5cabe46e05b5a49eb1e4820e442f7cc0115e3b7f338aca49"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "تاريخ انتهاء الصلاحية",
+      "name": "expires_on",
+      "kind": "helper",
+      "forms": [
+        "مستند الموظف"
+      ],
+      "tab": "human_resources",
+      "article": "hr-manage",
+      "text_sha256": "b7de7785beb7a7ca8572708c50d4bce729af2e69c5712a3c9a6bf3cad6d187ee"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "نوع الطلب",
+      "name": "kind",
+      "kind": "helper",
+      "forms": [
+        "طلب موظف"
+      ],
+      "tab": "human_resources",
+      "article": "content",
+      "text_sha256": "ae1eebb0ccfb748408bcad7142956aff075cccf7dec15db8241d19d7a923ce05"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "نوع الإجازة",
+      "name": "leave_type",
+      "kind": "helper",
+      "forms": [
+        "طلب موظف"
+      ],
+      "tab": "human_resources",
+      "article": "hr-my-file",
+      "text_sha256": "122fefa01805b27c545cf719a3b5a65e4ee3e2de19f2581beefc9b328a8bbddd"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "من",
+      "name": "from_date",
+      "kind": "helper",
+      "forms": [
+        "طلب موظف"
+      ],
+      "tab": "human_resources",
+      "article": "personal",
+      "text_sha256": "5124563f386757810c60ae86fc95904a13532f1a872fcd3579613f304338e13d"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "إلى",
+      "name": "to_date",
+      "kind": "helper",
+      "forms": [
+        "طلب موظف"
+      ],
+      "tab": "human_resources",
+      "article": "personal",
+      "text_sha256": "5124563f386757810c60ae86fc95904a13532f1a872fcd3579613f304338e13d"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "الكمية — أيام للإجازة، ساعات للإضافي والإذن، مبلغ للسلفة",
+      "name": "units",
+      "kind": "helper",
+      "forms": [
+        "طلب موظف"
+      ],
+      "tab": "human_resources",
+      "article": "hr-my-file",
+      "text_sha256": "93ee921a95f1408e583c70e37e5fddd6b098951692f8bc8ae8a23870e112706d"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "سبب الاستثناء — لو الطلب خارج القواعد",
+      "name": "notice_reason",
+      "kind": "helper",
+      "forms": [
+        "طلب موظف"
+      ],
+      "tab": "human_resources",
+      "article": "hr-my-file",
+      "text_sha256": "be060fd61a283da2bbb656fab5890bdf643bf436f27a53c325a59bd8dbdd19ba"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "رابط الشهادة الطبية (صورة أو PDF على درايف)",
+      "name": "certificate_url",
+      "kind": "helper",
+      "forms": [
+        "الشهادة الطبية"
+      ],
+      "tab": "human_resources",
+      "article": "hr-my-file",
+      "text_sha256": "b8204bd2e7899a20b3410cd0147f6fbeaeb4b58d30bf4d4a64d0016fa8a05c8c"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "يوم الوردية",
+      "name": "day",
+      "kind": "helper",
+      "forms": [
+        "وردية وحضور — حسب توقيت جهازك"
+      ],
+      "tab": "human_resources",
+      "article": "hr-manage",
+      "text_sha256": "2a796ae567cd6cda8c45c6779f7f2e8adceef7bdb2334f4fbdde68c19b558584"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "بداية الوردية",
+      "name": "scheduled_start",
+      "kind": "helper",
+      "forms": [
+        "وردية وحضور — حسب توقيت جهازك"
+      ],
+      "tab": "human_resources",
+      "article": "hr-manage",
+      "text_sha256": "5efc0f6d65520c4e64be2c35f6fbb39847dafa301f47036d73e506c763bfbb62"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "نهاية الوردية",
+      "name": "scheduled_end",
+      "kind": "helper",
+      "forms": [
+        "وردية وحضور — حسب توقيت جهازك"
+      ],
+      "tab": "human_resources",
+      "article": "hr-manage",
+      "text_sha256": "5efc0f6d65520c4e64be2c35f6fbb39847dafa301f47036d73e506c763bfbb62"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "الحضور الفعلي",
+      "name": "actual_start",
+      "kind": "helper",
+      "forms": [
+        "وردية وحضور — حسب توقيت جهازك"
+      ],
+      "tab": "human_resources",
+      "article": "hr-manage",
+      "text_sha256": "e4648c5988d108f068491d5317b0b34d3dcdb135846f34b514f398c43fa56630"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "الانصراف الفعلي",
+      "name": "actual_end",
+      "kind": "helper",
+      "forms": [
+        "وردية وحضور — حسب توقيت جهازك"
+      ],
+      "tab": "human_resources",
+      "article": "hr-manage",
+      "text_sha256": "e4648c5988d108f068491d5317b0b34d3dcdb135846f34b514f398c43fa56630"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "اسم اللائحة",
+      "name": "name",
+      "kind": "helper",
+      "forms": [
+        "تعديل مسودة اللائحة",
+        "لائحة أسعار"
+      ],
+      "tab": "human_resources",
+      "article": "price-lists",
+      "text_sha256": "47a853ab980f97fba350a5d4e5d62dd16acc1a3eb54db810d1a56d657a0e1c3a"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "رقم الإصدار",
+      "name": "version",
+      "kind": "helper",
+      "forms": [
+        "تعديل مسودة اللائحة",
+        "لائحة أسعار"
+      ],
+      "tab": "human_resources",
+      "article": "price-lists",
+      "text_sha256": "ca7b1bc834508f87de2cb64ddeb450fd5ef3bd3cd40831c1861352194ad69c34"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "النطاق",
+      "name": "contract_id",
+      "kind": "helper",
+      "forms": [
+        "تعديل مسودة اللائحة",
+        "لائحة أسعار"
+      ],
+      "tab": "human_resources",
+      "article": "price-lists",
+      "text_sha256": "3e6ad1b4cebc90c7d7e6e874b2caded85e1bb85fc93ab349614c53dab2b95b23"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "طريقة التسعير",
+      "name": "mode",
+      "kind": "helper",
+      "forms": [
+        "تعديل مسودة اللائحة",
+        "لائحة أسعار"
+      ],
+      "tab": "human_resources",
+      "article": "price-lists",
+      "text_sha256": "1a2988dcbf7308ca2b11db97abd6265fd59dd9620fc66fb45e4a14c074edcfbb"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "الخدمات غير المدرجة",
+      "name": "fallback",
+      "kind": "helper",
+      "forms": [
+        "تعديل مسودة اللائحة",
+        "لائحة أسعار"
+      ],
+      "tab": "human_resources",
+      "article": "price-lists",
+      "text_sha256": "609e2929ca3b289e23fc091667ab1cd89a2a4b979686b77e298e11fdabe52137"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "الجمع مع خصم إضافي داخل الاستقبال",
+      "name": "allow_extra_discount",
+      "kind": "helper",
+      "forms": [
+        "تعديل مسودة اللائحة",
+        "لائحة أسعار"
+      ],
+      "tab": "human_resources",
+      "article": "price-lists",
+      "text_sha256": "5af1f53f9cc9fc8ce2bc92e7abefa60493dc8bb465d94882b62a592b2496167b"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "خصم اللائحة %",
+      "name": "discount_percent",
+      "kind": "helper",
+      "forms": [
+        "تعديل مسودة اللائحة",
+        "لائحة أسعار"
+      ],
+      "tab": "human_resources",
+      "article": "price-lists",
+      "text_sha256": "85023d9c5f3576cc6f682cd9ba8a1816a538264fa248393bfed7ba23eff54aa1"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "خصم اللائحة مبلغ لكل وحدة خدمة",
+      "name": "discount_amount",
+      "kind": "helper",
+      "forms": [
+        "تعديل مسودة اللائحة",
+        "لائحة أسعار"
+      ],
+      "tab": "human_resources",
+      "article": "price-lists",
+      "text_sha256": "1ff569ddddcbeac42c37c3496a0fdc6663ddc2893147dd7c8942ae84a35d70a9"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "سارية من",
+      "name": "valid_from",
+      "kind": "helper",
+      "forms": [
+        "تعديل مسودة اللائحة",
+        "لائحة أسعار"
+      ],
+      "tab": "human_resources",
+      "article": "price-lists",
+      "text_sha256": "4353bd6e20e1c197e6f607081287fb3f405e4bd13224bd25b3c634b96c78b893"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "سارية حتى",
+      "name": "valid_to",
+      "kind": "helper",
+      "forms": [
+        "تعديل مسودة اللائحة",
+        "لائحة أسعار"
+      ],
+      "tab": "human_resources",
+      "article": "price-lists",
+      "text_sha256": "4353bd6e20e1c197e6f607081287fb3f405e4bd13224bd25b3c634b96c78b893"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "استيراد Excel أو CSV أو PDF نصي",
+      "name": "",
+      "kind": "label",
+      "forms": [
+        "تعديل مسودة اللائحة",
+        "لائحة أسعار"
+      ],
+      "tab": "human_resources",
+      "article": "price-lists",
+      "text_sha256": "42f9598220ddb20819dc7e766771c6df40ac7268609efd7ac0557de8936378d5"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "الخدمة",
+      "name": "item_service",
+      "kind": "helper",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "booking-flow",
+      "text_sha256": "9de357e91f68d929da65d3983a861523a19c2d8ad7c1d86737871b762e1c0325"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "السعر الثابت — اختياري",
+      "name": "item_price",
+      "kind": "helper",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "price-lists",
+      "text_sha256": "f68547d292ed570d525329c945fb03022d6525aab9f02fc2cabb6ff4c8829ca0"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "خصم البند %",
+      "name": "item_percent",
+      "kind": "helper",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "price-lists",
+      "text_sha256": "c7f528a1e61a04a82e41b32eb7ca8c6fb598b9e96c0b5681abc9ebe9111b1935"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "خصم البند مبلغ",
+      "name": "item_amount",
+      "kind": "helper",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "price-lists",
+      "text_sha256": "774c8b0b8a5b6a510e4497da17e67572e1f331572ff442671299a7bf5a1c0cc1"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "ملاحظات / اسم السطر المستورد",
+      "name": "item_notes",
+      "kind": "helper",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "price-lists",
+      "text_sha256": "033b477776776ae62d2d5dc95b12f3e885c3e893182c974524a5875b5de0206c"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "القرار",
+      "name": "decision",
+      "kind": "helper",
+      "forms": [
+        "مراجعة اللائحة",
+        "إنهاء اللائحة"
+      ],
+      "tab": "human_resources",
+      "article": "requests",
+      "text_sha256": "e94fbc6b4acbcb93cd4550a5c0f411b3026a6856a94bfdc920222df26211079d"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "الخدمة",
+      "name": "service",
+      "kind": "helper",
+      "forms": [
+        "حساب السعر من اللوائح المعتمدة"
+      ],
+      "tab": "human_resources",
+      "article": "booking-flow",
+      "text_sha256": "9de357e91f68d929da65d3983a861523a19c2d8ad7c1d86737871b762e1c0325"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "الجهة",
+      "name": "contract",
+      "kind": "helper",
+      "forms": [
+        "حساب السعر من اللوائح المعتمدة"
+      ],
+      "tab": "human_resources",
+      "article": "entities",
+      "text_sha256": "0c8e704082c2882c4b56cdf9d09ac275fd9c54607c48aa2c20b77bf3d05490d4"
+    },
+    {
+      "file": "workforce-prices.js",
+      "label": "تاريخ التسعير",
+      "name": "date",
+      "kind": "helper",
+      "forms": [
+        "حساب السعر من اللوائح المعتمدة"
+      ],
+      "tab": "human_resources",
+      "article": "price-lists",
+      "text_sha256": "d3958962ab13752a2e630d024a47d2e25a9db7eccfe60ca2a58f3b79d0383b76"
     }
   ]
 }
