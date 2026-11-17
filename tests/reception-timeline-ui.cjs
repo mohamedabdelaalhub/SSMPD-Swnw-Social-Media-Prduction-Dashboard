@@ -58,6 +58,7 @@ const cairoDay=(t)=>new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Cairo',yea
  assert.equal(await colour('.rx-tl-name.st-arrived'),'rgb(15, 54, 157)');assert.equal(await colour('.rx-tl-name.st-confirmed'),'rgb(47, 125, 92)');assert.notEqual(await colour('.rx-tl-name.st-booked'),await colour('.rx-tl-name.st-confirmed'));
  // Tap a name → its big card opens in its status colour; tap again closes.
  await page.locator('.rx-tl-name.st-confirmed').click();const card=page.locator('.rx-tl-card:not([hidden])');assert.equal(await card.count(),1);assert.equal(await card.evaluate(e=>getComputedStyle(e).backgroundColor),'rgb(47, 125, 92)');assert.match(await card.innerText(),/مؤكد/);
+ { const more=card.locator('.rx-tl-more');assert.equal(await more.locator('[data-rx-action="edit-patient"]').count(),1,'owner 2026-11-17: تعديل بيانات المريض in the menu');await more.locator('summary').click();const box=await more.locator('[data-rx-action="edit-patient"]').boundingBox();assert(box&&box.x>=0&&box.x+box.width<=width+1,'menu stays on screen at '+width);await more.locator('summary').click(); }
  if(process.env.RECEPTION_QA){await page.locator('.rx-tl-head').evaluate(e=>e.scrollIntoView({block:'start'}));await page.screenshot({path:process.env.RECEPTION_QA+'/timeline-'+width+'.png'});}
  await page.locator('.rx-tl-name.st-confirmed').click();assert.equal(await page.locator('.rx-tl-card:not([hidden])').count(),0);
  // Two dropdowns side by side: الأطباء / الحالة; plus search that keeps focus.
