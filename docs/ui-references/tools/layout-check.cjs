@@ -16,6 +16,8 @@ const widths = process.argv.slice(sel ? 4 : 3).map(Number).filter(Boolean);
   for (const w of widths.length ? widths : [1440, 390]) {
     const p = await b.newPage({ viewport: { width: w, height: 900 } });
     await p.goto(/^https?:|^file:/.test(target) ? target : 'file://' + require('path').resolve(target));
+    if (process.env.LC_CLICK) { await p.waitForSelector(process.env.LC_CLICK, { timeout: 15000 }); await p.click(process.env.LC_CLICK); }
+    if (process.env.LC_WAIT) await p.waitForSelector(process.env.LC_WAIT, { timeout: 15000 });
     await p.addStyleTag({ content: '*{animation:none!important;transition:none!important}' });
     await p.waitForTimeout(400);
     const r = await p.evaluate((sel) => {
@@ -41,7 +43,7 @@ const widths = process.argv.slice(sel ? 4 : 3).map(Number).filter(Boolean);
       // column bottoms: children of a multi-column grid placed side by side in the same last row
       document.querySelectorAll('body *').forEach(g => {
         const s = getComputedStyle(g); if (s.display !== 'grid' || !vis(g)) return;
-        const kids = [...g.children].filter(vis).map(k => ({ k, x: k.getBoundingClientRect() }));
+        const kids = [...g.children].filter(vis).filter(k => cards.some(c => c === k || k.contains(c))).map(k => ({ k, x: k.getBoundingClientRect() }));
         const rows = {}; kids.forEach(o => { const key = Math.round(o.x.top); (rows[key] = rows[key] || []).push(o); });
         Object.values(rows).forEach(row => { if (row.length < 2) return; const bs = row.map(o => o.x.bottom), d = Math.max(...bs) - Math.min(...bs); if (d > 1.5) out.bottoms.push(Math.round(d) + 'px: ' + row.map(o => name(o.k)).join(' | ')); });
       });
