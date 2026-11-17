@@ -56,10 +56,11 @@
 /* calendar */
 .epf-cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
 .epf-cal .dn{font-size:11.5px;color:var(--muted,#6B7688);text-align:center}
-.epf-cal .day{position:relative;aspect-ratio:1.35;border-radius:8px;background:#E3E6EC;padding:5px 7px;font-size:11.5px;color:#fff;opacity:0;transform:scale(.85);animation:epf-pop .4s var(--spring) forwards;transition:transform .15s var(--ease),box-shadow .15s;outline:0}
+.epf-cal .day{position:relative;aspect-ratio:1.35;border-radius:8px;background:#F1F4F8;padding:5px 7px;font-size:11.5px;color:#fff;opacity:0;transform:scale(.85);animation:epf-pop .4s var(--spring) forwards;transition:transform .15s var(--ease),box-shadow .15s;outline:0}
 .epf-cal .day.e{background:transparent;animation:none;opacity:1;transform:none}
 .epf-cal .day.st-off{color:#7A8494}.epf-cal .day.future{opacity:.5!important}
-.epf-cal .day.st-ok{background:#1F9D6B}.epf-cal .day.st-late{background:#E08A1E}.epf-cal .day.st-abs{background:#D0402A}.epf-cal .day.st-leave{background:#4F75CF}
+/* Status colours chosen by the owner (2026-11-17). Light ones get grey-80% text (#333) for contrast ≥4.5. */
+.epf-cal .day.st-ok{background:#00B0BD;color:#333}.epf-cal .day.st-late{background:#FF8800;color:#333}.epf-cal .day.st-abs{background:#FF0000}.epf-cal .day.st-leave{background:#525B6F}
 .epf-cal .day .g{position:absolute;bottom:4px;left:6px;font-size:11px}
 .epf-cal .day[tabindex]:hover,.epf-cal .day[tabindex]:focus-visible{transform:scale(1.08);box-shadow:0 0 0 2px #fff,0 0 0 4px rgba(22,33,46,.25);z-index:2;cursor:pointer}
 @keyframes epf-pop{to{opacity:1;transform:none}}
