@@ -1,0 +1,13 @@
+/* SSMPD — shared motion tokens and press feedback (owner-approved table, docs/ui-references/README.md). */
+:root{--ease-out:cubic-bezier(.22,1,.36,1);--ease-spring:cubic-bezier(.34,1.56,.64,1);--ease-in:cubic-bezier(.55,0,1,.45);--t-press:120ms;--t-fast:180ms;--t-base:240ms;--t-slow:420ms}
+/* Pressed ring: spreads outside the button, so nothing inside it is ever clipped. */
+.fx-pressed{animation:fx-ring 420ms var(--ease-out)}
+@keyframes fx-ring{0%{box-shadow:0 0 0 0 rgba(15,54,157,.28)}100%{box-shadow:0 0 0 8px rgba(15,54,157,0)}}
+/* Opt-in ripple for redesigned screens: the element itself must allow clipping. */
+.fx-ripple{position:relative;overflow:hidden}
+.fx-ripple-dot{position:absolute;border-radius:50%;background:currentColor;opacity:.22;transform:scale(0);pointer-events:none;animation:fx-rip 520ms var(--ease-out) forwards}
+@keyframes fx-rip{to{transform:scale(1);opacity:0}}
+/* Opt-in lift for redesigned cards and tiles (mouse only, never stuck on touch). */
+@media (hover:hover){.fx-lift{transition:transform var(--t-base) var(--ease-out),box-shadow var(--t-base) var(--ease-out)}.fx-lift:hover{transform:translateY(-3px);box-shadow:0 12px 26px rgba(22,33,46,.08)}}
+.fx-lift:active{transform:scale(.98);transition-duration:var(--t-press)}
+@media (prefers-reduced-motion:reduce){.fx-pressed,.fx-ripple-dot{animation:none}.fx-lift,.fx-lift:hover{transform:none;transition:none}}
