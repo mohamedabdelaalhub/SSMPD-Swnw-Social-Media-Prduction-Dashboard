@@ -215,6 +215,44 @@ main{max-width:1320px;margin:0 auto;padding:22px 24px 40px}
 /* attention pulse on the absent dot */
 .row.abs .av::after,.ab .av::after{animation:pulse 1.6s ease-in-out infinite}
 @keyframes pulse{50%{box-shadow:0 0 0 5px rgba(208,64,42,.18)}}
+
+.cnt.org{background:#FDECE4;color:#C2410C}
+.latebox{border-color:#F8D5C5}
+.ab.lt .av{background:#FDECE4;border:0}.ab.lt .av svg{stroke:#C2410C}.ab.lt .av::after{background:var(--orange);animation:none}
+.ab.lv .av{background:#EEF0F4;border:0}.ab.lv .av svg{stroke:var(--muted)}.ab.lv .av::after{background:#B8BFCC;animation:none}
+.pill.lvp{background:#EEF0F4;color:var(--muted)}
+.side h3{margin-bottom:6px}
+
+/* each department has its own colour (identity); status stays in the badge */
+.dept{border-inline-start-color:var(--dc)!important}
+.dt{display:flex;align-items:center;gap:12px}
+.dsq{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;font-weight:700;color:#fff;background:var(--dc);flex:none;transition:transform .25s var(--ease)}
+.dept:hover .dsq{transform:rotate(-8deg) scale(1.06)}
+.dept .row:not(.abs) .av{background:color-mix(in srgb,var(--dc) 13%,#fff)}
+.dept .row:not(.abs) .av svg{stroke:var(--dc)}
+.dept.short{box-shadow:inset 0 0 0 1px #F8C4AE}
+.chip .dot2{width:8px;height:8px;border-radius:50%;background:var(--dc);flex:none}
+.chip.warn::after{content:"!";position:absolute;top:3px;left:8px;font-size:10px;font-weight:700;color:var(--orange)}
+
+.dsq svg{width:20px;height:20px;stroke:#fff}
+.chip.warn::after{content:none}
+.follow{border-color:#F3C9C1}
+.fh{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px;padding:6px 10px;border-radius:10px;background:#F6F7F9}
+.fh b{font-size:13.5px}.fh small{color:var(--muted);font-size:11.5px;margin-inline-start:auto}
+.fh.red{background:#FCEFEC}.fh.red b{color:var(--neg)}
+.fh.org{background:#FEF3EC}.fh.org b{color:#C2410C}
+.follow .ab{padding:8px 4px;border-top:0}
+.follow .ab+.ab{border-top:1px solid #F0F1F4}
+/* movements always keep at least ~5 rows visible; right column cards stretch to match */
+.moves{min-height:430px}
+.depts{align-content:stretch}
+
+/* right column fills the full height of the row; a lone last half-card spans the width */
+.grid>div:first-child{display:flex;flex-direction:column}
+.grid>div:first-child>.depts{flex:1;grid-auto-rows:auto}
+.dept.half:last-child:nth-child(even){grid-column:1/-1}
+.moves{min-height:330px}
+.dept{display:flex!important;flex-direction:column}.dept .more{margin-top:auto}
 </style>
 </head>
 <body>
@@ -224,7 +262,7 @@ main{max-width:1320px;margin:0 auto;padding:22px 24px 40px}
   <symbol id="out" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5V3h4M16 17l5-5-5-5M21 12H9"/></symbol>
   <symbol id="bell" viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M6 16V11a6 6 0 1 1 12 0v5l2 2H4zM10 21h4"/></symbol>
   <symbol id="search" viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></symbol>
-</svg>
+<symbol id="d0" viewBox="0 0 24 24" fill="none" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.5-7 10-7 10z"/><path d="M8 11h2l1-2 2 4 1-2h2"/></symbol><symbol id="d1" viewBox="0 0 24 24" fill="none" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 1 1 12 0v5l2 2H4zM10 21h4"/></symbol><symbol id="d2" viewBox="0 0 24 24" fill="none" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5h6v2M3 13h18"/></symbol><symbol id="d3" viewBox="0 0 24 24" fill="none" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="4.5" r="2"/><path d="M12 7v6l-3 7M12 13l3 7M7 10h10"/></symbol><symbol id="d5" viewBox="0 0 24 24" fill="none" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11v2l11 5V6L3 11zM14 8h3a4 4 0 0 1 0 8h-3M6 14l1 5h3l-1-4"/></symbol><symbol id="d4" viewBox="0 0 24 24" fill="none" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.6L18 9l-4.2 1.4L12 15l-1.8-4.6L6 9l4.2-1.4z"/><path d="M18 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></symbol></svg>
 
 <header class="top">
   <div class="brand"><span class="logo">S</span><div><small>مركز عيادات Swnw التخصصية</small><b>الموارد البشرية</b></div></div>
@@ -262,40 +300,40 @@ main{max-width:1320px;margin:0 auto;padding:22px 24px 40px}
 
   <nav class="chips">
     <span class="chip on">الكل <i>12</i></span>
-    <span class="chip warn"><span class="dot"></span>التمريض <i>4/5</i></span>
-    <span class="chip warn"><span class="dot"></span>الاستقبال <i>1/3</i></span>
-    <span class="chip">الإدارة <i>2</i></span>
-    <span class="chip">العلاج الطبيعي <i>1</i></span>
-    <span class="chip">النظافة <i>1</i></span>
-    <span class="chip">السوشيال ميديا <i>1</i></span>
-    <span class="chip">التجميل <i>0</i></span>
-    <span class="chip">النفسية والتخاطب <i>0</i></span>
+    <span style="--dc:#0E8A7E" class="chip dc warn"><span class="dot2"></span>التمريض <i>4/5</i></span>
+    <span style="--dc:#2563EB" class="chip dc warn"><span class="dot2"></span>الاستقبال <i>1/3</i></span>
+    <span style="--dc:#475569" class="chip dc"><span class="dot2"></span>الإدارة <i>2</i></span>
+    <span style="--dc:#9333EA" class="chip dc"><span class="dot2"></span>العلاج الطبيعي <i>1</i></span>
+    <span style="--dc:#65A30D" class="chip dc"><span class="dot2"></span>النظافة <i>1</i></span>
+    <span style="--dc:#DB2777" class="chip dc"><span class="dot2"></span>السوشيال ميديا <i>1</i></span>
+    <span style="--dc:#0891B2" class="chip dc"><span class="dot2"></span>التجميل <i>0</i></span>
+    <span style="--dc:#A16207" class="chip dc"><span class="dot2"></span>النفسية والتخاطب <i>0</i></span>
   </nav>
 
   <div class="grid">
     <div>
       <div class="depts">
-        <article class="dept wide short">
-          <div class="dh"><div><b>التمريض</b><small>4 حاضرين من 5 مجدولين · الحد الأدنى 5</small></div><span class="st bad">ناقص 1</span></div>
+        <article style="--dc:#0E8A7E" class="dept wide short">
+          <div class="dh"><div class="dt"><span class="dsq"><svg><use href="#d0"/></svg></span><div><b>التمريض</b><small>4 حاضرين من 5 مجدولين · الحد الأدنى 5</small></div></div><span class="st bad">ناقص 1</span></div>
           <ul class="rows">
             <li class="row abs"><span class="av"><svg><use href="#person"/></svg></span><div class="nm"><span class="t">موظفة تمريض 5</span><small>وردية 14:00</small><span class="pill gone" style="display:inline-block;margin-top:4px">لم يصل منذ 7 س 49 د</span></div><div class="meta"><button class="call">اتصال</button></div></li>
-            <li class="row"><span class="av" style="--c:#E7F3EE;--cs:#2F7D5C"><svg><use href="#person"/></svg></span><div class="nm"><span class="t">موظفة تمريض 1</span><small>تمريض</small></div><div class="meta"><b>دخل 15:47</b><span>من 6 س 2 د</span></div></li>
+            <li class="row"><span class="av"><svg><use href="#person"/></svg></span><div class="nm"><span class="t">موظفة تمريض 1</span><small>تمريض</small></div><div class="meta"><b>دخل 15:47</b><span>من 6 س 2 د</span></div></li>
             <li class="row"><span class="av photo"></span><div class="nm"><span class="t">موظفة تمريض 2</span><small>مشرفة تمريض · أسنان</small></div><div class="meta"><b>دخل 15:53</b><span>من 5 س 56 د</span></div></li>
-            <li class="row"><span class="av" style="--c:#E7F3EE;--cs:#2F7D5C"><svg><use href="#person"/></svg></span><div class="nm"><span class="t">موظف تمريض 3</span><small>تمريض</small></div><div class="meta"><b>دخل 16:02</b><span>من 5 س 47 د</span></div></li>
-            <li class="row"><span class="av" style="--c:#E7F3EE;--cs:#2F7D5C"><svg><use href="#person"/></svg></span><div class="nm"><span class="t">موظف تمريض 4</span><small>تمريض</small></div><div class="meta"><b>دخل 16:10</b><span>من 5 س 38 د</span></div></li>
+            <li class="row"><span class="av"><svg><use href="#person"/></svg></span><div class="nm"><span class="t">موظف تمريض 3</span><small>تمريض</small></div><div class="meta"><b>دخل 16:02</b><span>من 5 س 47 د</span></div></li>
+            <li class="row"><span class="av"><svg><use href="#person"/></svg></span><div class="nm"><span class="t">موظف تمريض 4</span><small>تمريض</small></div><div class="meta"><b>دخل 16:10</b><span>من 5 س 38 د</span></div></li>
           </ul>
           <a class="more">القادمون والمنصرفون والإجازات (1)</a>
         </article>
 
-        <article class="dept half short">
-          <div class="dh"><div><b>الاستقبال</b><small>1 حاضر من 1 مجدول · الحد الأدنى 3</small></div><span class="st bad">ناقص 2</span></div>
+        <article style="--dc:#2563EB" class="dept half short">
+          <div class="dh"><div class="dt"><span class="dsq"><svg><use href="#d1"/></svg></span><div><b>الاستقبال</b><small>1 حاضر من 1 مجدول · الحد الأدنى 3</small></div></div><span class="st bad">ناقص 2</span></div>
           <ul class="rows">
-            <li class="row"><span class="av" style="--c:#FDECE4;--cs:#C2410C"><svg><use href="#person"/></svg></span><div class="nm"><span class="t">موظفة استقبال</span><small>استقبال</small></div><div class="meta"><b>دخل 16:51</b><span>من 4 س 58 د</span></div></li>
+            <li class="row"><span class="av"><svg><use href="#person"/></svg></span><div class="nm"><span class="t">موظفة استقبال</span><small>استقبال</small></div><div class="meta"><b>دخل 16:51</b><span>من 4 س 58 د</span></div></li>
           </ul>
         </article>
 
-        <article class="dept half">
-          <div class="dh"><div><b>الإدارة</b><small>2 حاضرين من 2 مجدولين</small></div><span class="st ok">مكتمل</span></div>
+        <article style="--dc:#475569" class="dept half">
+          <div class="dh"><div class="dt"><span class="dsq"><svg><use href="#d2"/></svg></span><div><b>الإدارة</b><small>2 حاضرين من 2 مجدولين</small></div></div><span class="st ok">مكتمل</span></div>
           <ul class="rows">
             <li class="row"><span class="av"><svg><use href="#person"/></svg></span><div class="nm"><span class="t">مديرة إدارية</span><small>مدير · إداري</small></div><div class="meta"><b>دخل 13:44</b><span>من 8 س 5 د</span></div></li>
             <li class="row"><span class="av photo"></span><div class="nm"><span class="t">مدير مالي</span><small>مدير · مالي</small></div><div class="meta"><b>دخل 18:56</b><span>من 2 س 53 د</span></div></li>
@@ -303,33 +341,44 @@ main{max-width:1320px;margin:0 auto;padding:22px 24px 40px}
           <a class="more">القادمون والمنصرفون والإجازات (1)</a>
         </article>
 
-        <article class="dept half">
-          <div class="dh"><div><b>العلاج الطبيعي</b><small>1 حاضر من 1 مجدول</small></div><span class="st ok">مكتمل</span></div>
+        <article style="--dc:#9333EA" class="dept half">
+          <div class="dh"><div class="dt"><span class="dsq"><svg><use href="#d3"/></svg></span><div><b>العلاج الطبيعي</b><small>1 حاضر من 1 مجدول</small></div></div><span class="st ok">مكتمل</span></div>
           <ul class="rows">
             <li class="row"><span class="av"><svg><use href="#person"/></svg></span><div class="nm"><span class="t">مساعد علاج طبيعي</span><small>مساعد</small></div><div class="meta"><span class="pill late">متأخر 3 س 45 د</span><b>دخل 18:45</b></div></li>
           </ul>
         </article>
 
-        <article class="dept half">
-          <div class="dh"><div><b>النظافة</b><small>1 حاضر من 1 مجدول</small></div><span class="st ok">مكتمل</span></div>
+        <article style="--dc:#65A30D" class="dept half">
+          <div class="dh"><div class="dt"><span class="dsq"><svg><use href="#d4"/></svg></span><div><b>النظافة</b><small>1 حاضر من 1 مجدول</small></div></div><span class="st ok">مكتمل</span></div>
           <ul class="rows">
             <li class="row"><span class="av"><svg><use href="#person"/></svg></span><div class="nm"><span class="t">عاملة نظافة — وردية مسائية</span><small>عاملة</small></div><div class="meta"><b>دخل 21:00</b><span>من 48 د</span></div></li>
+          </ul>
+        </article>
+        <article style="--dc:#DB2777" class="dept half">
+          <div class="dh"><div class="dt"><span class="dsq"><svg><use href="#d5"/></svg></span><div><b>السوشيال ميديا</b><small>1 حاضر من 1 مجدول</small></div></div><span class="st ok">مكتمل</span></div>
+          <ul class="rows">
+            <li class="row"><span class="av"><svg><use href="#person"/></svg></span><div class="nm"><span class="t">مصمم جرافيك</span><small>تصميم</small></div><div class="meta"><b>دخل 16:51</b><span>من 4 س 58 د</span></div></li>
           </ul>
         </article>
       </div>
     </div>
 
     <aside class="side-col">
-      <section class="side absent">
-        <h3>الغايبون الآن <span class="cnt red">2</span></h3>
-        <p class="hint">كان المفروض يحضروا ولسه مبصموش</p>
+      <section class="side follow">
+        <h3>محتاجين متابعة</h3>
+        <div class="fh red"><b>الغايبون الآن</b><span class="cnt red">2</span><small>كان المفروض يحضروا ولسه مبصموش</small></div>
         <div class="ab"><span class="av"><svg><use href="#person"/></svg></span><div class="tx"><b>موظفة تمريض 5</b><small>التمريض · وردية 14:00</small></div><span class="pill gone">من 7 س 49 د</span></div>
         <div class="ab"><span class="av"><svg><use href="#person"/></svg></span><div class="tx"><b>أخصائية تخاطب</b><small>النفسية والتخاطب · وردية 16:00</small></div><span class="pill gone">من 5 س 49 د</span></div>
+        <div class="fh org"><b>المتأخرين النهارده</b><span class="cnt org">2</span><small>بعد الميعاد + السماح</small></div>
+        <div class="ab lt"><span class="av"><svg><use href="#person"/></svg></span><div class="tx"><b>مساعد علاج طبيعي</b><small>العلاج الطبيعي · الموعد 15:00 · وصل 18:45</small></div><span class="pill late">3 س 45 د</span></div>
+        <div class="ab lt"><span class="av"><svg><use href="#person"/></svg></span><div class="tx"><b>موظفة استقبال</b><small>الاستقبال · الموعد 16:30 · وصل 16:51</small></div><span class="pill late">21 د</span></div>
+        <div class="fh"><b>الإجازات والأذونات</b><span class="cnt">1</span></div>
+        <div class="ab lv"><span class="av"><svg><use href="#person"/></svg></span><div class="tx"><b>موظف تمريض 6</b><small>التمريض · وردية 14:00</small></div><span class="pill lvp">إجازة</span></div>
       </section>
       <section class="side noatt">
         <h3>أقسام بدون حضور الآن <span class="cnt">2</span></h3>
-        <div class="na"><span class="dotg"></span><b>النفسية والتخاطب</b><small>0 من 1 · غايب 1</small></div>
-        <div class="na"><span class="dotg"></span><b>التجميل</b><small>مفيش حد مجدول دلوقتي</small></div>
+        <div class="na"><span class="dotg" style="background:#A16207"></span><b>النفسية والتخاطب</b><small>0 من 1 · غايب 1</small></div>
+        <div class="na"><span class="dotg" style="background:#0891B2"></span><b>التجميل</b><small>مفيش حد مجدول دلوقتي</small></div>
       </section>
       <section class="side moves">
         <h3>آخر الحركات</h3>
