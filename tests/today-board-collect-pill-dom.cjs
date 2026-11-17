@@ -8,7 +8,7 @@ const {JSDOM}=require('jsdom'),fs=require('node:fs'),assert=require('node:assert
  const model={day,settings:{max_wait_minutes:20},can_view_finance:true,doctor_sessions:[{provider_id:'d1',status:'delayed',eta_minutes:15}],help_requests:[],events:[],outbox:[],appointments:[
   ap('1','أحمد متأخر','expected',{starts_at:past}),ap('2','منى جاية','expected',{booking_source:'whatsapp'}),ap('3','كريم مستني','waiting',{wait_minutes:35,visit_id:'v3'}),
   ap('4','سلمى جوه','in_service',{visit_id:'v4'}),ap('5','يوسف خلص','completed',{visit_id:'v5',patient_due:150,patient_payable_total:300,due_invoices:[{id:'inv5',invoice_no:'INV-5',due:150}]}),
-  ap('6','هدى دفعت','completed',{visit_id:'v6',patient_due:0,patient_payable_total:200}),ap('7','لم يحضر','no_show')]};
+  ap('6','هدى دفعت','completed',{visit_id:'v6',patient_due:0,patient_payable_total:200}),ap('7','لم يحضر','no_show'),ap('8','سامي دفع جزء','completed',{visit_id:'v8',patient_due:100,patient_paid:200,patient_payable_total:300,due_invoices:[{id:'inv8',invoice_no:'INV-8',due:100}]})]};
  const dom=new JSDOM('<main id="host"></main>',{url:'https://board.test/',runScripts:'outside-only'}),w=dom.window,calls=[],errors=[];
  Object.defineProperty(w,'crypto',{value:webcrypto});w.addEventListener('error',e=>errors.push(e.message));
  w.SSMPDAuth={currentAdmin:{id:'u1',role:'reception'}};w.SSMPDRoles={rolesOf:()=>['reception'],hasRole:(a,r)=>r==='reception',hasAnyRole:()=>false};
@@ -27,6 +27,7 @@ const {JSDOM}=require('jsdom'),fs=require('node:fs'),assert=require('node:assert
  const due=card('5').querySelector('.journey-pay');assert(due&&due.matches('button.journey-pay-due'),'orange collect button on the finished patient with money due');
  assert.equal(due.textContent,'التحصيل');assert(!due.closest('.journey-card-detail'),'visible without opening the card');
  assert.equal(card('6').querySelector('.journey-pay').textContent,'✓ تم التحصيل');assert(card('6').querySelector('.journey-pay-done'));
+ assert.equal(card('8').querySelector('.journey-pay-due').textContent,'دفع جزئي','partial payment label');assert(/الباقي/.test(card('8').querySelector('.journey-pay-due').title));
  for(const k of ['1','2','3','4','7'])assert.equal(card(k).querySelector('.journey-pay'),null,'no pay pill before the visit ends ('+k+')');
  due.click();await new Promise(r=>setTimeout(r,20));assert.equal(collected,'inv5','opens the collect screen for that invoice');
  const css=fs.readFileSync('assets/css/today-operations.css','utf8');assert(/\.journey-pay-due\{[^}]*#F15A22/.test(css)&&/\.journey-pay-done\{[^}]*#2F7D5C/.test(css),'orange / green colours');

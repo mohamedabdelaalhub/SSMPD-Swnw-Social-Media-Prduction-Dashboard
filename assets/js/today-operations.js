@@ -97,10 +97,10 @@ function cardActions(a,c){
 /* Owner 2026-11-17: bookings that came from an automated channel are tagged with it. */
 var SOURCES={whatsapp:'واتساب',website:'الموقع',portal:'البوابة',patient_portal:'البوابة',vezeeta:'فيزيتا'};
 function srcTag(a){var s=String(a.booking_source||'').toLowerCase();return SOURCES[s]?'<span class="journey-src journey-src-'+esc(s)+'">'+esc(SOURCES[s])+'</span>':'';}
-/* Owner 2026-11-17: after «أنهى الكشف» a clear orange «التحصيل» button sits next to the patient; once paid it turns green «تم التحصيل». */
+/* Owner 2026-11-17: after «أنهى الكشف» a clear orange «التحصيل» button («دفع جزئي» when part is paid) sits next to the patient; once paid it turns green «تم التحصيل». */
 function payPill(a){
  if(lane(a)!=='done'||!a.visit_id||!a.can_view_finance)return '';
- if(hasDue(a))return can('collect')&&a.due_invoices&&a.due_invoices.length?'<button type="button" class="journey-pay journey-pay-due" data-journey-action="collect_due" data-id="'+esc(a.id)+'" title="عليه '+esc(money(a.patient_due))+'">التحصيل</button>':'<span class="journey-pay journey-pay-due is-static">عليه '+money(a.patient_due)+'</span>';
+ if(hasDue(a))return can('collect')&&a.due_invoices&&a.due_invoices.length?'<button type="button" class="journey-pay journey-pay-due" data-journey-action="collect_due" data-id="'+esc(a.id)+'" title="'+(Number(a.patient_paid)>0?'دفع جزء — الباقي ':'عليه ')+esc(money(a.patient_due))+'">'+(Number(a.patient_paid)>0?'دفع جزئي':'التحصيل')+'</button>':'<span class="journey-pay journey-pay-due is-static">عليه '+money(a.patient_due)+'</span>';
  return Number(a.patient_payable_total)>0?'<span class="journey-pay journey-pay-done" role="status">✓ تم التحصيل</span>':'';
 }
 function card(a,c){
