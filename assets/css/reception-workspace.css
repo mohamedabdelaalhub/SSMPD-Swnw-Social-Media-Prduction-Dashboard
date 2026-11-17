@@ -132,3 +132,17 @@
 .rx-week-day label{display:grid;gap:2px;font-size:12px;color:var(--muted,#667085)}
 .rx-walkin{display:flex;gap:8px;align-items:center;padding:8px 10px;border-radius:10px;background:#FFF4EE;border:1px solid #F7C3A8;font-weight:700;color:#7A2E0E}
 .rx-fallback{border-inline-start-color:#F15A22}.rx-fb-row{border-top:1px solid #d7dff2;padding:10px 0;display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;line-height:1.8}.rx-fb-row small{color:#4b5563}.rx-fb-conflict{background:#fdecea;border-radius:8px;padding:10px}.rx-fb-conflict small{color:#D0402A;font-weight:700}
+/* Owner 2026-11-17: «طلبات الحجز الآلية» — 3 channel buttons with counts. */
+.ab-card{margin:0 0 14px;padding:14px;border-radius:18px;background:var(--glass-fill,rgba(255,255,255,.85));border:1px solid var(--glass-line,rgba(15,54,157,.10));box-shadow:var(--glass-shadow,0 10px 30px rgba(15,54,157,.08))}
+.ab-card>header{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px}.ab-card h3{margin:0;font-size:18px;color:#0F369D}
+.ab-buttons{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.ab-btn{display:grid;gap:2px;justify-items:start;text-align:start;padding:10px 12px;border-radius:14px;border:1px solid rgba(15,54,157,.14);background:#fff;font:inherit;color:#16212E;cursor:pointer;min-height:84px}
+.ab-btn .ab-name{font-weight:700;font-size:14px}.ab-btn .ab-total{font-size:24px;line-height:1.1;color:#0F369D}.ab-btn .ab-sub{font-size:11.5px;color:#667085}
+.ab-btn .ab-need{color:#D0402A}.ab-btn.on{border-color:#0F369D;box-shadow:0 0 0 2px rgba(15,54,157,.18) inset;background:#F4F7FD}
+.ab-whatsapp .ab-name:before,.ab-website .ab-name:before,.ab-portal .ab-name:before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;margin-inline-end:6px;vertical-align:middle}
+.ab-whatsapp .ab-name:before{background:#2F7D5C}.ab-website .ab-name:before{background:#0F369D}.ab-portal .ab-name:before{background:#F15A22}
+.ab-btn:focus-visible{outline:3px solid #F15A22;outline-offset:2px}
+[data-ab-panel]{margin-top:10px}[data-ab-panel] h5{margin:10px 0 6px;font-size:13px;color:#667085}
+.ab-row{padding:8px 10px;border-radius:12px;border:1px solid rgba(15,54,157,.10);background:#fff;margin-bottom:6px;font-size:13px}.ab-row.warn{border-color:#F15A22;background:#FFF6F1}
+.ab-empty{margin:6px 0;color:#667085;font-size:13px}
+@media (max-width:520px){.ab-buttons{gap:6px}.ab-btn{padding:8px;min-height:78px}.ab-btn .ab-total{font-size:20px}.ab-btn .ab-sub{font-size:10.5px}}
