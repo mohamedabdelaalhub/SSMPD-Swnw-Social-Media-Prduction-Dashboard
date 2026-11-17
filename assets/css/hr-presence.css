@@ -1,16 +1,18 @@
 /* «الحضور الآن» redesign (2026-11-17). Loaded after attendance-hub.css; everything is scoped to the presence board.
    Reference: docs/ui-references/mockups/hr-presence.html (owner-approved). Swnw colours and local fonts only. */
-.att-hub [data-hr-presence]{--ease:cubic-bezier(.2,.8,.2,1);--line:#E9ECF3}
+.att-hub [data-hr-presence]{--ease:cubic-bezier(.2,.8,.2,1);--line:#E9ECF3;--pv-gap:14px}
+/* one gap value for every gutter on the board (checked by docs/ui-references/tools/layout-check.cjs) */
+.att-hub [data-hr-presence] .strip{margin-bottom:0}
 
 /* ---------- top: hero + six filter tiles ---------- */
-.att-hub [data-hr-presence] .pv-top{display:grid;grid-template-columns:minmax(260px,1.3fr) 3fr;gap:12px;margin:14px 0}
+.att-hub [data-hr-presence] .pv-top{display:grid;grid-template-columns:minmax(260px,1.3fr) 3fr;gap:var(--pv-gap);margin:var(--pv-gap) 0}
 .att-hub [data-hr-presence] .pv-hero{background:linear-gradient(135deg,#F15A22,#F7834F);color:#fff;border-radius:18px;padding:18px 20px;display:flex;flex-direction:column;box-shadow:0 10px 24px rgba(241,90,34,.22)}
 .att-hub [data-hr-presence] .pv-hero.ok{background:linear-gradient(135deg,#2F7D5C,#3E9A73);box-shadow:0 10px 24px rgba(47,125,92,.18)}
 .att-hub [data-hr-presence] .pv-hero>small{font-size:13px;opacity:.9}
 .att-hub [data-hr-presence] .pv-hero>b{font-size:40px;line-height:1.1;margin:4px 0 10px}
 .att-hub [data-hr-presence] .pv-hero-l{margin-top:auto;display:flex;flex-wrap:wrap;gap:6px}
 .att-hub [data-hr-presence] .pv-hero-l span{flex:1 1 auto;background:rgba(255,255,255,.18);border-radius:10px;padding:6px 10px;display:flex;justify-content:space-between;gap:10px;font-size:13px;white-space:nowrap}
-.att-hub [data-hr-presence] .kpis{grid-template-columns:repeat(3,1fr);margin:0;gap:12px}
+.att-hub [data-hr-presence] .kpis{grid-template-columns:repeat(3,1fr);margin:0;gap:var(--pv-gap)}
 .att-hub [data-hr-presence] .kpi{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:14px 16px;border-radius:16px;box-shadow:none;cursor:pointer;position:relative;overflow:hidden;transition:transform .22s var(--ease),box-shadow .22s var(--ease),border-color .22s}
 .att-hub [data-hr-presence] .kpi .l{font-size:12.5px;color:var(--muted)}
 .att-hub [data-hr-presence] .kpi b{font-size:28px;line-height:1.15}
@@ -39,9 +41,9 @@
 .att-hub [data-hr-presence] .tool:hover{transform:translateY(-1px);background:var(--primary-t)}
 
 /* ---------- two columns, same height: wide department cards (right) + side column (left) ---------- */
-.att-hub [data-hr-presence] .layout{grid-template-columns:minmax(0,1fr) 340px;align-items:stretch}
+.att-hub [data-hr-presence] .layout{grid-template-columns:minmax(0,1fr) 340px;align-items:stretch;gap:var(--pv-gap);margin-top:var(--pv-gap)}
 .att-hub [data-hr-presence] .layout>main{display:flex;flex-direction:column;min-width:0}
-.att-hub [data-hr-presence] .cards{columns:auto;display:grid;grid-template-columns:1fr 1fr;gap:14px;flex:1;align-content:stretch}
+.att-hub [data-hr-presence] .cards{columns:auto;display:grid;grid-template-columns:1fr 1fr;gap:var(--pv-gap);flex:1;align-content:stretch}
 .att-hub [data-hr-presence] .cards>.dept{margin:0}
 .att-hub [data-hr-presence] .dept{display:flex;flex-direction:column;border-radius:18px;box-shadow:none;border-inline-start:4px solid var(--col);transition:transform .22s var(--ease),box-shadow .22s var(--ease)}
 .att-hub [data-hr-presence] .dept.wide{grid-column:1/-1}
@@ -95,7 +97,7 @@
 .att-hub [data-hr-presence] .pv-foot .more[aria-expanded=true] .ic{transform:rotate(180deg)}
 
 /* ---------- side column ---------- */
-.att-hub [data-hr-presence] .side{display:flex;flex-direction:column;gap:14px;min-height:0}
+.att-hub [data-hr-presence] .side{display:flex;flex-direction:column;gap:var(--pv-gap);min-height:0}
 .att-hub [data-hr-presence] .side .panel{border-radius:18px;box-shadow:none}
 .att-hub [data-hr-presence] .pv-follow{border-color:#F3C9C1}
 .att-hub [data-hr-presence] .pv-follow .trio{display:block;margin:0}
@@ -153,7 +155,8 @@
   .att-hub [data-hr-presence] .pv-top{grid-template-columns:1fr}
 }
 @media(max-width:900px){
-  .att-hub [data-hr-presence] .kpis{grid-template-columns:repeat(3,1fr);gap:8px}
+  .att-hub [data-hr-presence]{--pv-gap:12px}
+  .att-hub [data-hr-presence] .kpis{grid-template-columns:repeat(3,1fr)}
   .att-hub [data-hr-presence] .kpi{padding:10px 12px}
   .att-hub [data-hr-presence] .kpi b{font-size:22px}
   .att-hub [data-hr-presence] .kpi small{display:none}
