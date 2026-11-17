@@ -50,7 +50,7 @@ main{max-width:1320px;margin:0 auto;padding:22px 24px 40px}
 @keyframes fill{from{width:0}}
 .k.hero{background:linear-gradient(135deg,#F15A22,#F7834F);color:#fff;border:0}
 .k.hero small{color:rgba(255,255,255,.85)}
-.k.hero .list{margin-top:10px;display:flex;flex-direction:column;gap:6px}
+.k.hero .list{margin-top:auto;display:flex;flex-wrap:wrap;gap:6px}.k.hero .list span{flex:1;gap:10px;white-space:nowrap}
 .k.hero .list span{background:rgba(255,255,255,.18);border-radius:10px;padding:6px 10px;display:flex;justify-content:space-between;font-size:13px}
 /* chips */
 .chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:16px;scrollbar-width:none}
@@ -62,7 +62,11 @@ main{max-width:1320px;margin:0 auto;padding:22px 24px 40px}
 .chip .dot{width:7px;height:7px;border-radius:50%;background:var(--orange)}
 /* layout */
 .grid{display:grid;grid-template-columns:1fr 330px;gap:16px;align-items:start}
-.depts{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px;align-items:start}
+/* masonry: cards stack in columns so short cards never leave holes */
+.depts{columns:2 330px;column-gap:14px}
+.depts>*{break-inside:avoid;margin-bottom:14px;display:block}
+.side{position:sticky;top:16px}
+.k{display:flex;flex-direction:column}.k .bar{margin-top:auto}.k .n{margin-bottom:12px}
 .dept{background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;transition:transform .18s ease,box-shadow .18s ease;border-inline-start:4px solid var(--pos)}
 .dept.short{border-inline-start-color:var(--orange)}
 .dh{display:flex;justify-content:space-between;align-items:center;padding:16px 18px 12px}
@@ -104,7 +108,7 @@ main{max-width:1320px;margin:0 auto;padding:22px 24px 40px}
   .kpis{grid-template-columns:1fr 1fr}
   .k.hero{grid-column:1/-1}
   .grid{grid-template-columns:1fr}
-  .depts{grid-template-columns:1fr}
+  .depts{columns:1}.side{position:static}
   main{padding:16px 14px 32px}
   .top{padding:10px 14px}
   .ph h1{font-size:24px}
@@ -187,6 +191,13 @@ main{max-width:1320px;margin:0 auto;padding:22px 24px 40px}
           <a class="more">القادمون والمنصرفون والإجازات (1)</a>
         </article>
 
+        <article class="dept short">
+          <div class="dh"><div><b>الاستقبال</b><small>1 حاضر من 1 مجدول · الحد الأدنى 3</small></div><span class="st bad">ناقص 2</span></div>
+          <ul class="rows">
+            <li class="row"><span class="av" style="--c:#FDECE4;--cs:#C2410C"><svg><use href="#person"/></svg></span><div class="nm"><span class="t">موظفة استقبال</span><small>استقبال</small></div><div class="meta"><b>دخل 16:51</b><span>من 4 س 58 د</span></div></li>
+          </ul>
+        </article>
+
         <article class="dept">
           <div class="dh"><div><b>الإدارة</b><small>2 حاضرين من 2 مجدولين</small></div><span class="st ok">مكتمل</span></div>
           <ul class="rows">
@@ -194,13 +205,6 @@ main{max-width:1320px;margin:0 auto;padding:22px 24px 40px}
             <li class="row"><span class="av photo"></span><div class="nm"><span class="t">مدير مالي</span><small>مدير · مالي</small></div><div class="meta"><b>دخل 18:56</b><span>من 2 س 53 د</span></div></li>
           </ul>
           <a class="more">القادمون والمنصرفون والإجازات (1)</a>
-        </article>
-
-        <article class="dept short">
-          <div class="dh"><div><b>الاستقبال</b><small>1 حاضر من 1 مجدول · الحد الأدنى 3</small></div><span class="st bad">ناقص 2</span></div>
-          <ul class="rows">
-            <li class="row"><span class="av" style="--c:#FDECE4;--cs:#C2410C"><svg><use href="#person"/></svg></span><div class="nm"><span class="t">موظفة استقبال</span><small>استقبال</small></div><div class="meta"><b>دخل 16:51</b><span>من 4 س 58 د</span></div></li>
-          </ul>
         </article>
 
         <article class="dept">
@@ -216,9 +220,9 @@ main{max-width:1320px;margin:0 auto;padding:22px 24px 40px}
             <li class="row"><span class="av"><svg><use href="#person"/></svg></span><div class="nm"><span class="t">عاملة نظافة — وردية مسائية</span><small>عاملة</small></div><div class="meta"><b>دخل 21:00</b><span>من 48 د</span></div></li>
           </ul>
         </article>
-      </div>
 
-      <div class="empty" style="margin-top:14px"><b>مفيش حد حاضر دلوقتي في:</b><span class="tag">التجميل · 0 من 0</span><span class="tag">النفسية والتخاطب · 0 من 1</span></div>
+      <div class="empty"><b>مفيش حد حاضر دلوقتي في:</b><span class="tag">التجميل · 0 من 0</span><span class="tag">النفسية والتخاطب · 0 من 1</span></div>
+      </div>
     </div>
 
     <aside class="side">
@@ -228,6 +232,10 @@ main{max-width:1320px;margin:0 auto;padding:22px 24px 40px}
       <div class="mv"><span class="ic in"><svg><use href="#in"/></svg></span><div class="tx">مساعد علاج طبيعي<small>دخول · العلاج الطبيعي</small></div><time>18:45</time></div>
       <div class="mv"><span class="ic out"><svg><use href="#out"/></svg></span><div class="tx">ممرض وردية صباحية<small>خروج · التمريض</small></div><time>17:44</time></div>
       <div class="mv"><span class="ic in"><svg><use href="#in"/></svg></span><div class="tx">موظفة استقبال<small>دخول · السوشيال ميديا</small></div><time>16:51</time></div>
+      <div class="mv"><span class="ic in"><svg><use href="#in"/></svg></span><div class="tx">موظف تمريض 4<small>دخول · التمريض</small></div><time>16:10</time></div>
+      <div class="mv"><span class="ic in"><svg><use href="#in"/></svg></span><div class="tx">موظف تمريض 3<small>دخول · التمريض</small></div><time>16:02</time></div>
+      <div class="mv"><span class="ic in"><svg><use href="#in"/></svg></span><div class="tx">موظفة تمريض 2<small>دخول · التمريض</small></div><time>15:53</time></div>
+      <a class="more" style="padding:12px 0 0;border-top:0">كل الحركات اليوم</a>
     </aside>
   </div>
 </main>
