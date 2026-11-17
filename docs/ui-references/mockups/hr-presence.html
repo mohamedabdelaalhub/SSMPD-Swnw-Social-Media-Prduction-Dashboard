@@ -39,7 +39,7 @@ main{max-width:1320px;margin:0 auto;padding:22px 24px 40px}
 .search{background:#fff;border:1px solid var(--line);border-radius:999px;padding:9px 16px;color:var(--muted);min-width:220px;display:flex;gap:8px;align-items:center}
 .search svg{width:16px;height:16px;stroke:var(--muted)}
 /* KPI */
-.kpis{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:14px;margin-bottom:16px}
+.kpis{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr 1fr;gap:14px;margin-bottom:16px}
 .k{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;transition:transform .18s ease,box-shadow .18s ease}
 .k:hover,.dept:hover{transform:translateY(-4px);box-shadow:0 10px 24px rgba(22,33,46,.07)}
 .k small{color:var(--muted);font-size:12px}
@@ -133,7 +133,7 @@ main{max-width:1320px;margin:0 auto;padding:22px 24px 40px}
   .search{min-width:0;width:100%}
   .tools{width:100%;flex-direction:column;align-items:stretch}
   .seg{justify-content:space-between;align-self:stretch;height:auto}.tools .seg{flex:none}.seg span{flex:1;text-align:center}
-  .kpis{grid-template-columns:repeat(3,1fr);gap:10px}
+  .kpis{grid-template-columns:repeat(2,1fr);gap:10px}
   .k{padding:12px}.k .n{font-size:26px}.k .n em{display:block;font-size:12px}
   .k:not(.hero) small{font-size:11px}
   .user .hide-m{display:none}
@@ -158,6 +158,18 @@ main{max-width:1320px;margin:0 auto;padding:22px 24px 40px}
   .dept.wide .row{border-inline-start:0!important;border-top:0;padding-inline:6px}
   .dept.wide .row+.row{border-top:1px solid var(--line)}
 }
+
+/* absentees */
+.row.abs .av{background:#FBE9E6;border:1.5px dashed #E8A396}.row.abs .av svg{stroke:var(--neg)}.row.abs .av::after{background:var(--neg)}
+.row.abs .nm .t{color:var(--neg)}
+.pill.gone{background:#FBE9E6;color:var(--neg);white-space:nowrap}
+.call{border:1px solid var(--line);background:#fff;border-radius:999px;padding:3px 12px;font:inherit;font-size:12px;color:var(--blue);cursor:pointer}
+.absent{border-color:#F3C9C1;background:linear-gradient(#fff,#fff) padding-box}
+.cnt.red{background:#FBE9E6;color:var(--neg)}
+.hint{margin:-4px 0 6px;color:var(--muted);font-size:12px}
+.ab{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid #F0F1F4}
+.ab .av{width:34px;height:34px;background:#FBE9E6;border:1.5px dashed #E8A396}.ab .av svg{stroke:var(--neg);width:17px}.ab .av::after{background:var(--neg)}
+.ab .tx{flex:1;min-width:0}.ab .tx small{display:block;color:var(--muted);font-size:12px}
 </style>
 </head>
 <body>
@@ -183,7 +195,7 @@ main{max-width:1320px;margin:0 auto;padding:22px 24px 40px}
     <div>
       <div class="crumb">الثلاثاء 17 نوفمبر · الموارد البشرية</div>
       <h1>الحضور الآن</h1>
-      <p><b>12</b> حاضر · <b>2</b> متأخر · <b style="color:#C2410C">2 أقسام ناقصة</b></p>
+      <p><b>12</b> حاضر · <b style="color:var(--neg)">2</b> غايب · <b>2</b> متأخر · <b style="color:#C2410C">2 أقسام ناقصة</b></p>
     </div>
     <div class="tools">
       <div class="search"><svg><use href="#search"/></svg>ابحث باسم الموظف أو القسم…</div>
@@ -198,6 +210,7 @@ main{max-width:1320px;margin:0 auto;padding:22px 24px 40px}
       <div class="list"><span>التمريض <b>4 من 5</b></span><span>الاستقبال <b>1 من 3</b></span></div>
     </div>
     <div class="k"><small>حاضر الآن</small><div class="n">12 <em>من 15 مجدول</em></div><div class="bar"><i></i></div></div>
+    <div class="k"><small>غايبين الآن</small><div class="n" style="color:var(--neg)">2</div><div class="bar"><i style="width:13%;background:var(--neg)"></i></div></div>
     <div class="k"><small>متأخرين اليوم</small><div class="n" style="color:#C2410C">2</div><div class="bar"><i style="width:15%;background:var(--orange)"></i></div></div>
     <div class="k"><small>إجازات وأذونات</small><div class="n">1</div><div class="bar"><i style="width:7%;background:var(--muted)"></i></div></div>
   </section>
@@ -220,6 +233,7 @@ main{max-width:1320px;margin:0 auto;padding:22px 24px 40px}
         <article class="dept wide short">
           <div class="dh"><div><b>التمريض</b><small>4 حاضرين من 5 مجدولين · الحد الأدنى 5</small></div><span class="st bad">ناقص 1</span></div>
           <ul class="rows">
+            <li class="row abs"><span class="av"><svg><use href="#person"/></svg></span><div class="nm"><span class="t">موظفة تمريض 5</span><small>وردية 14:00</small><span class="pill gone" style="display:inline-block;margin-top:4px">لم يصل منذ 7 س 49 د</span></div><div class="meta"><button class="call">اتصال</button></div></li>
             <li class="row"><span class="av" style="--c:#E7F3EE;--cs:#2F7D5C"><svg><use href="#person"/></svg></span><div class="nm"><span class="t">موظفة تمريض 1</span><small>تمريض</small></div><div class="meta"><b>دخل 15:47</b><span>من 6 س 2 د</span></div></li>
             <li class="row"><span class="av photo"></span><div class="nm"><span class="t">موظفة تمريض 2</span><small>مشرفة تمريض · أسنان</small></div><div class="meta"><b>دخل 15:53</b><span>من 5 س 56 د</span></div></li>
             <li class="row"><span class="av" style="--c:#E7F3EE;--cs:#2F7D5C"><svg><use href="#person"/></svg></span><div class="nm"><span class="t">موظف تمريض 3</span><small>تمريض</small></div><div class="meta"><b>دخل 16:02</b><span>من 5 س 47 د</span></div></li>
@@ -261,9 +275,15 @@ main{max-width:1320px;margin:0 auto;padding:22px 24px 40px}
     </div>
 
     <aside class="side-col">
+      <section class="side absent">
+        <h3>الغايبون الآن <span class="cnt red">2</span></h3>
+        <p class="hint">كان المفروض يحضروا ولسه مبصموش</p>
+        <div class="ab"><span class="av"><svg><use href="#person"/></svg></span><div class="tx"><b>موظفة تمريض 5</b><small>التمريض · وردية 14:00</small></div><span class="pill gone">من 7 س 49 د</span></div>
+        <div class="ab"><span class="av"><svg><use href="#person"/></svg></span><div class="tx"><b>أخصائية تخاطب</b><small>النفسية والتخاطب · وردية 16:00</small></div><span class="pill gone">من 5 س 49 د</span></div>
+      </section>
       <section class="side noatt">
         <h3>أقسام بدون حضور الآن <span class="cnt">2</span></h3>
-        <div class="na"><span class="dotg"></span><b>النفسية والتخاطب</b><small>0 من 1 مجدول</small></div>
+        <div class="na"><span class="dotg"></span><b>النفسية والتخاطب</b><small>0 من 1 · غايب 1</small></div>
         <div class="na"><span class="dotg"></span><b>التجميل</b><small>مفيش حد مجدول دلوقتي</small></div>
       </section>
       <section class="side moves">
