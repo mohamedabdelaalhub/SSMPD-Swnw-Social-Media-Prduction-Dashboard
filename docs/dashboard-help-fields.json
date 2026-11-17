@@ -4,7 +4,7 @@
     "definitions": 1746,
     "labels": 1285,
     "files": 119,
-    "groups": 1100
+    "groups": 1187
   },
   "fields": [
     {
@@ -5401,6 +5401,42 @@
     },
     {
       "file": "hr-closures.js",
+      "label": "اسم الأجازة (مثلًا عيد الأضحى)",
+      "name": "name",
+      "kind": "helper",
+      "forms": [
+        "إضافة أجازة رسمية"
+      ],
+      "tab": "human_resources",
+      "article": "hr-manage",
+      "text_sha256": "50d3c9f556c24852a1dae24e7bff47c78c3fd83596315fd72527658dcf00839e"
+    },
+    {
+      "file": "hr-closures.js",
+      "label": "من يوم",
+      "name": "from_date",
+      "kind": "helper",
+      "forms": [
+        "إضافة أجازة رسمية"
+      ],
+      "tab": "human_resources",
+      "article": "hr-manage",
+      "text_sha256": "6d7f466f02786830d102dff36c846e0298e2a0ab00876881f1c25201b2971b3d"
+    },
+    {
+      "file": "hr-closures.js",
+      "label": "إلى يوم (سيبه فاضي لو يوم واحد)",
+      "name": "to_date",
+      "kind": "helper",
+      "forms": [
+        "إضافة أجازة رسمية"
+      ],
+      "tab": "human_resources",
+      "article": "hr-manage",
+      "text_sha256": "6d7f466f02786830d102dff36c846e0298e2a0ab00876881f1c25201b2971b3d"
+    },
+    {
+      "file": "hr-closures.js",
       "label": "ملاحظة (اختياري)",
       "name": "",
       "kind": "label",
@@ -5424,6 +5460,18 @@
       "text_sha256": "a21ad9d28e2191e6557244226e39fd526699de2cecda568291a4f8dceb372f43"
     },
     {
+      "file": "hr-closures.js",
+      "label": "سبب الإلغاء",
+      "name": "",
+      "kind": "label",
+      "forms": [
+        "إلغاء أجازة «"
+      ],
+      "tab": "human_resources",
+      "article": "hr-manage",
+      "text_sha256": "cc28a8d840518e62716be93c29d0f4bdd34f7fbd36481f3fd7b8ff27d1aaee14"
+    },
+    {
       "file": "hr-custody.js",
       "label": "الحالة",
       "name": "custody_status",
@@ -5432,6 +5480,26 @@
       "tab": "human_resources",
       "article": "personal",
       "text_sha256": "0a8e1242f7cd5a7893e1222dfd049826b42b66af79a574141ddc063e925fb3f0"
+    },
+    {
+      "file": "hr-custody.js",
+      "label": "بحث بالبند أو الكود أو الشخص",
+      "name": "custody_q",
+      "kind": "helper",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "hr-offboarding",
+      "text_sha256": "6c6642ed1b83429d776a2bcc5a7a5e658d2752cd6a4b40ff07eb3a93b12933b3"
+    },
+    {
+      "file": "hr-custody.js",
+      "label": "اسم البند",
+      "name": "item_name",
+      "kind": "helper",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "hr-offboarding",
+      "text_sha256": "af20094f87d358aa32bbeb7be6e0c72ba04a883c15bc6579555c575078476deb"
     },
     {
       "file": "hr-custody.js",
@@ -5445,6 +5513,72 @@
     },
     {
       "file": "hr-custody.js",
+      "label": "الوصف",
+      "name": "description",
+      "kind": "helper",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "hr-offboarding",
+      "text_sha256": "6e3bbd7d560863a539f6b014bb4cd19ef7e0cd2de59087b6f15c331ad57fa184"
+    },
+    {
+      "file": "hr-custody.js",
+      "label": "الرقم التسلسلي أو المرجع",
+      "name": "serial_ref",
+      "kind": "helper",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "hr-offboarding",
+      "text_sha256": "1ed7cca914be92a85c5be2177f1e53344afc3d0c93dea9fd89235ddc20c841e3"
+    },
+    {
+      "file": "hr-custody.js",
+      "label": "القيمة بالجنيه",
+      "name": "value",
+      "kind": "helper",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "hr-offboarding",
+      "text_sha256": "c67e63b2e17746b020096660110a411b009b284ad1d609abccc3a08a2e8353be"
+    },
+    {
+      "file": "hr-custody.js",
+      "label": "يُسلَّم الآن إلى (اختياري)",
+      "name": "holder_id",
+      "kind": "helper",
+      "forms": [
+        "إضافة بند عهدة"
+      ],
+      "tab": "human_resources",
+      "article": "hr-offboarding",
+      "text_sha256": "554e4a81faf438e741a89d4fdea17da916ddee2180b5bb36f7d4250eeb1a3b11"
+    },
+    {
+      "file": "hr-custody.js",
+      "label": "تاريخ التسليم",
+      "name": "issued_on",
+      "kind": "helper",
+      "forms": [
+        "إضافة بند عهدة"
+      ],
+      "tab": "human_resources",
+      "article": "hr-offboarding",
+      "text_sha256": "fee8f7cfcf6fc568227f2ee29570a90f0c36930de2efc1f0be7c24712ec1efd1"
+    },
+    {
+      "file": "hr-custody.js",
+      "label": "مصدر البند (اختياري)",
+      "name": "came_from_note",
+      "kind": "helper",
+      "forms": [
+        "إضافة بند عهدة"
+      ],
+      "tab": "human_resources",
+      "article": "hr-offboarding",
+      "text_sha256": "247ca1544803db2c2f79cf000c6d280f66b9a812a0964ed83dbe162f69b4bcf9"
+    },
+    {
+      "file": "hr-custody.js",
       "label": "إلى",
       "name": "holder_id",
       "kind": "helper",
@@ -5452,6 +5586,28 @@
       "tab": "human_resources",
       "article": "personal",
       "text_sha256": "5124563f386757810c60ae86fc95904a13532f1a872fcd3579613f304338e13d"
+    },
+    {
+      "file": "hr-custody.js",
+      "label": "تاريخ التسليم",
+      "name": "issued_on",
+      "kind": "helper",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "hr-offboarding",
+      "text_sha256": "fee8f7cfcf6fc568227f2ee29570a90f0c36930de2efc1f0be7c24712ec1efd1"
+    },
+    {
+      "file": "hr-custody.js",
+      "label": "تاريخ الإرجاع",
+      "name": "returned_on",
+      "kind": "helper",
+      "forms": [
+        "إرجاع: "
+      ],
+      "tab": "human_resources",
+      "article": "hr-offboarding",
+      "text_sha256": "226e931a3f4c0a5fbf4659cf6afe861650f0ab8c3cbaab2b823b11338e2755b8"
     },
     {
       "file": "hr-custody.js",
@@ -5476,6 +5632,18 @@
       "text_sha256": "80a0c51a0ba10ff7f4fe6f627b68c4e009f932e1abdff544c26e792f5f0e9e49"
     },
     {
+      "file": "hr-custody.js",
+      "label": "سبب تغيير القيمة (إن تغيّرت)",
+      "name": "note_change",
+      "kind": "helper",
+      "forms": [
+        "تعديل: "
+      ],
+      "tab": "human_resources",
+      "article": "hr-offboarding",
+      "text_sha256": "39af2148422167e26b8ff5bee8a74a897703dcc507cfda86dcc242cc3a4727aa"
+    },
+    {
       "file": "hr-insurance.js",
       "label": "النوع",
       "name": "ins_type",
@@ -5494,6 +5662,46 @@
       "tab": "human_resources",
       "article": "personal",
       "text_sha256": "0a8e1242f7cd5a7893e1222dfd049826b42b66af79a574141ddc063e925fb3f0"
+    },
+    {
+      "file": "hr-insurance.js",
+      "label": "بحث بالاسم أو الكود أو رقم التأمين",
+      "name": "ins_q",
+      "kind": "helper",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "hr-offboarding",
+      "text_sha256": "720a44dd750c49f8aaaf24701ef5dae9aad5c8b4136c8b398a46d086a2530349"
+    },
+    {
+      "file": "hr-insurance.js",
+      "label": "رقم التأمين",
+      "name": "insurance_number",
+      "kind": "helper",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "hr-offboarding",
+      "text_sha256": "db0c224136b2538f1b6eb4e974cf7eb30a018f3b6768ecc4034f5497c42361c1"
+    },
+    {
+      "file": "hr-insurance.js",
+      "label": "استقطاع الموظف شهريًا من الراتب",
+      "name": "employee_deduction",
+      "kind": "helper",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "hr-offboarding",
+      "text_sha256": "1ad431e683a5cf98a494117e3db1790f4a1542434787c3ee718b30da828a47af"
+    },
+    {
+      "file": "hr-insurance.js",
+      "label": "حصة المركز شهريًا (إن وجدت)",
+      "name": "center_share",
+      "kind": "helper",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "hr-offboarding",
+      "text_sha256": "23b99f02f71ee1e53106c50e711b566fe92624500672317c62aa81871e6b2184"
     },
     {
       "file": "hr-insurance.js",
@@ -5521,6 +5729,102 @@
     },
     {
       "file": "hr-insurance.js",
+      "label": "تاريخ بدء الاشتراك",
+      "name": "started_on",
+      "kind": "helper",
+      "forms": [
+        "إضافة اشتراك"
+      ],
+      "tab": "human_resources",
+      "article": "hr-offboarding",
+      "text_sha256": "de3d34a0dd0fc72c4087d1032826e5afa7eff36ad83da075cdcc624fffe2d92f"
+    },
+    {
+      "file": "hr-insurance.js",
+      "label": "سبب تغيير المبلغ (إن تغيّر)",
+      "name": "reason",
+      "kind": "helper",
+      "forms": [
+        "تعديل اشتراك: "
+      ],
+      "tab": "human_resources",
+      "article": "hr-offboarding",
+      "text_sha256": "302a48a47bcf3e1d62b65ee32c8432843312c5ddbb7f4f01618f4c0e718f04fa"
+    },
+    {
+      "file": "hr-insurance.js",
+      "label": "رقم التأمين",
+      "name": "insurance_number",
+      "kind": "helper",
+      "forms": [
+        "بيانات الإخطار: "
+      ],
+      "tab": "human_resources",
+      "article": "hr-offboarding",
+      "text_sha256": "db0c224136b2538f1b6eb4e974cf7eb30a018f3b6768ecc4034f5497c42361c1"
+    },
+    {
+      "file": "hr-insurance.js",
+      "label": "رقم أو مرجع إخطار الإيقاف",
+      "name": "stop_reference",
+      "kind": "helper",
+      "forms": [
+        "بيانات الإخطار: "
+      ],
+      "tab": "human_resources",
+      "article": "hr-offboarding",
+      "text_sha256": "39d0f2cd8452ee910dcd4610c656bff85dfc049b1c293137ab2326e8f51d1ec0"
+    },
+    {
+      "file": "hr-insurance.js",
+      "label": "آخر موعد للإخطار (يكتبه المسؤول يدويًا)",
+      "name": "notification_deadline",
+      "kind": "helper",
+      "forms": [
+        "بيانات الإخطار: "
+      ],
+      "tab": "human_resources",
+      "article": "hr-offboarding",
+      "text_sha256": "30d4bd1edeb09e805de0596f19225497abb95b60a25254fdc90c3698372dbd85"
+    },
+    {
+      "file": "hr-insurance.js",
+      "label": "تاريخ الإيقاف",
+      "name": "stopped_on",
+      "kind": "helper",
+      "forms": [
+        "إيقاف الاشتراك: "
+      ],
+      "tab": "human_resources",
+      "article": "hr-offboarding",
+      "text_sha256": "a1bfe1a012bbbddc71775c109ddb4f982414745e1bba69548070727433fc5a23"
+    },
+    {
+      "file": "hr-insurance.js",
+      "label": "رقم أو مرجع إخطار الإيقاف",
+      "name": "stop_reference",
+      "kind": "helper",
+      "forms": [
+        "إيقاف الاشتراك: "
+      ],
+      "tab": "human_resources",
+      "article": "hr-offboarding",
+      "text_sha256": "39d0f2cd8452ee910dcd4610c656bff85dfc049b1c293137ab2326e8f51d1ec0"
+    },
+    {
+      "file": "hr-insurance.js",
+      "label": "آخر موعد للإخطار (يكتبه المسؤول يدويًا — لا يحسبه النظام)",
+      "name": "notification_deadline",
+      "kind": "helper",
+      "forms": [
+        "إيقاف الاشتراك: "
+      ],
+      "tab": "human_resources",
+      "article": "hr-offboarding",
+      "text_sha256": "30d4bd1edeb09e805de0596f19225497abb95b60a25254fdc90c3698372dbd85"
+    },
+    {
+      "file": "hr-insurance.js",
       "label": "ملاحظة",
       "name": "note",
       "kind": "helper",
@@ -5542,6 +5846,18 @@
       "tab": "human_resources",
       "article": "payroll",
       "text_sha256": "0bebb1d1c5ab3b012283d97c05868f2efdf999e5577aad040d7d7e49bca4524c"
+    },
+    {
+      "file": "hr-offboarding.js",
+      "label": "آخر يوم عمل",
+      "name": "last_day",
+      "kind": "helper",
+      "forms": [
+        "بدء إنهاء خدمة"
+      ],
+      "tab": "human_resources",
+      "article": "hr-offboarding",
+      "text_sha256": "04bf5aae526700db51262e54688cac2bce981cb62ae2ab5b7985488367b3ce3d"
     },
     {
       "file": "hr-offboarding.js",
@@ -5581,6 +5897,30 @@
     },
     {
       "file": "hr-offboarding.js",
+      "label": "سبب الإلغاء",
+      "name": "reason",
+      "kind": "helper",
+      "forms": [
+        "إلغاء إنهاء الخدمة"
+      ],
+      "tab": "human_resources",
+      "article": "hr-offboarding",
+      "text_sha256": "258d59128c63846933b9c550feb47c6f384c8410709e60860724bc7858e40da4"
+    },
+    {
+      "file": "hr-offboarding.js",
+      "label": "آخر يوم عمل",
+      "name": "last_day",
+      "kind": "helper",
+      "forms": [
+        "تغيير آخر يوم"
+      ],
+      "tab": "human_resources",
+      "article": "hr-offboarding",
+      "text_sha256": "04bf5aae526700db51262e54688cac2bce981cb62ae2ab5b7985488367b3ce3d"
+    },
+    {
+      "file": "hr-offboarding.js",
       "label": "النوع",
       "name": "kind",
       "kind": "helper",
@@ -5590,6 +5930,198 @@
       "tab": "human_resources",
       "article": "patient-records",
       "text_sha256": "68c593718f9e4a670d874fc33a5fb6254f39083bbe1ac70792f1b87046e5dd54"
+    },
+    {
+      "file": "hr-offboarding.js",
+      "label": "الوصف",
+      "name": "label",
+      "kind": "helper",
+      "forms": [
+        "إضافة بند للكشف"
+      ],
+      "tab": "human_resources",
+      "article": "hr-offboarding",
+      "text_sha256": "e5c1d2bd4ca5df8964cc470db522261da9efa5745576544a1b3b25cabe8ac963"
+    },
+    {
+      "file": "hr-offboarding.js",
+      "label": "القيمة (للمستند 0)",
+      "name": "amount",
+      "kind": "helper",
+      "forms": [
+        "إضافة بند للكشف"
+      ],
+      "tab": "human_resources",
+      "article": "hr-offboarding",
+      "text_sha256": "4742c8741222f035a249ed62aa835ddcddcf6ffb3d3ef2513c03de456b3c0a02"
+    },
+    {
+      "file": "hr-offboarding.js",
+      "label": "المعالجة",
+      "name": "resolution",
+      "kind": "helper",
+      "forms": [
+        "معالجة: "
+      ],
+      "tab": "human_resources",
+      "article": "hr-offboarding",
+      "text_sha256": "d590064a46ec32269e2bb454720a1bf415db757a3bce73a2783c6d321a888891"
+    },
+    {
+      "file": "hr-offboarding.js",
+      "label": "ملاحظة (إجبارية عند التنازل أو الخصم)",
+      "name": "note",
+      "kind": "helper",
+      "forms": [
+        "معالجة: "
+      ],
+      "tab": "human_resources",
+      "article": "hr-offboarding",
+      "text_sha256": "b1253d45bc82a76b7214121990962f2262d980d6afc36a470c3a42a0723e311f"
+    },
+    {
+      "file": "hr-offboarding.js",
+      "label": "رابط الملف الموقع",
+      "name": "url",
+      "kind": "helper",
+      "forms": [
+        "رفع المخالصة الموقعة"
+      ],
+      "tab": "human_resources",
+      "article": "hr-offboarding",
+      "text_sha256": "f654b5671665bb5f6cf182e4f7680f1a1edb99dfb89c8114b07362df0364e29e"
+    },
+    {
+      "file": "hr-offboarding.js",
+      "label": "مرجع الصرف",
+      "name": "reference",
+      "kind": "helper",
+      "forms": [
+        "تسجيل صرف الصافي"
+      ],
+      "tab": "human_resources",
+      "article": "hr-offboarding",
+      "text_sha256": "826ac1ff09546dfcc25c2e603d39280bb245a8b06e8c9d2a30407d624878ebc6"
+    },
+    {
+      "file": "hr-offboarding.js",
+      "label": "تاريخ الصرف",
+      "name": "paid_on",
+      "kind": "helper",
+      "forms": [
+        "تسجيل صرف الصافي"
+      ],
+      "tab": "human_resources",
+      "article": "hr-offboarding",
+      "text_sha256": "56d24dc87804f4690a27d684ca5db56d9dab301cb68643fa06f7b700c3d7f5fd"
+    },
+    {
+      "file": "hr-offboarding.js",
+      "label": "سبب الاستثناء",
+      "name": "reason",
+      "kind": "helper",
+      "forms": [
+        "استثناء المالك"
+      ],
+      "tab": "human_resources",
+      "article": "hr-offboarding",
+      "text_sha256": "d87e7cd060ae297aecf341b13f39731059eb0e359aa070e5bf88e11340f14047"
+    },
+    {
+      "file": "hr-offboarding.js",
+      "label": "تاريخ الإيقاف",
+      "name": "stopped_on",
+      "kind": "helper",
+      "forms": [
+        "إيقاف التأمينات"
+      ],
+      "tab": "human_resources",
+      "article": "hr-offboarding",
+      "text_sha256": "a1bfe1a012bbbddc71775c109ddb4f982414745e1bba69548070727433fc5a23"
+    },
+    {
+      "file": "hr-offboarding.js",
+      "label": "رقم أو مرجع الإخطار",
+      "name": "reference",
+      "kind": "helper",
+      "forms": [
+        "إيقاف التأمينات"
+      ],
+      "tab": "human_resources",
+      "article": "hr-offboarding",
+      "text_sha256": "39d0f2cd8452ee910dcd4610c656bff85dfc049b1c293137ab2326e8f51d1ec0"
+    },
+    {
+      "file": "hr-offboarding.js",
+      "label": "آخر موعد للإخطار (يكتبه المسؤول يدويًا)",
+      "name": "deadline",
+      "kind": "helper",
+      "forms": [
+        "إيقاف التأمينات"
+      ],
+      "tab": "human_resources",
+      "article": "hr-offboarding",
+      "text_sha256": "30d4bd1edeb09e805de0596f19225497abb95b60a25254fdc90c3698372dbd85"
+    },
+    {
+      "file": "hr-offboarding.js",
+      "label": "النص",
+      "name": "",
+      "kind": "html",
+      "forms": [
+        "نسخة جديدة من نص "
+      ],
+      "tab": "human_resources",
+      "article": "hr-offboarding",
+      "text_sha256": "37bfdb283f793d6695ad855c41da4ea867d6a8e62e4eddaf6a8e27d18a78e14d"
+    },
+    {
+      "file": "hr-offboarding.js",
+      "label": "ملاحظة على النسخة (مثلًا: مراجعة المحامي)",
+      "name": "note",
+      "kind": "helper",
+      "forms": [
+        "نسخة جديدة من نص "
+      ],
+      "tab": "human_resources",
+      "article": "hr-offboarding",
+      "text_sha256": "e4f18f30d37018e1cf38064c92538b71400ae612373fd24cef59e3b8236035cd"
+    },
+    {
+      "file": "hr-payroll-workspace.js",
+      "label": "توقيت الأوقات غير المزودة بمنطقة زمنية",
+      "name": "offset",
+      "kind": "helper",
+      "forms": [
+        "استيراد الحضور والانصراف"
+      ],
+      "tab": "human_resources",
+      "article": "hr-payroll",
+      "text_sha256": "5cb30beba764388669bbe98d38e958340f2d1fd330917d430a741606d0259780"
+    },
+    {
+      "file": "hr-payroll-workspace.js",
+      "label": "Excel أو CSV",
+      "name": "",
+      "kind": "label",
+      "forms": [
+        "استيراد الحضور والانصراف"
+      ],
+      "tab": "human_resources",
+      "article": "hr-payroll",
+      "text_sha256": "b53d8c292e7c7492bf2cd96fc6aa2bd9723730714b25bcb1c65199d7636f166a"
+    },
+    {
+      "file": "hr-payroll-workspace.js",
+      "label": "Excel أو CSV",
+      "name": "",
+      "kind": "label",
+      "forms": [
+        "رفع بنود المرتب للمراجعة"
+      ],
+      "tab": "human_resources",
+      "article": "hr-payroll",
+      "text_sha256": "b53d8c292e7c7492bf2cd96fc6aa2bd9723730714b25bcb1c65199d7636f166a"
     },
     {
       "file": "hr-payroll-workspace.js",
@@ -5602,6 +6134,18 @@
       "tab": "human_resources",
       "article": "payroll",
       "text_sha256": "0bebb1d1c5ab3b012283d97c05868f2efdf999e5577aad040d7d7e49bca4524c"
+    },
+    {
+      "file": "hr-payroll-workspace.js",
+      "label": "تحل محل قاعدة معتمدة (لتعديل قاعدة سابقة)",
+      "name": "supersedes",
+      "kind": "helper",
+      "forms": [
+        "قواعد الأجر حسب العقد واللائحة"
+      ],
+      "tab": "human_resources",
+      "article": "hr-payroll",
+      "text_sha256": "30d765d2eae7a3a8575f70385362aba9ddac69c5bb079a7df6762786e983037b"
     },
     {
       "file": "hr-payroll-workspace.js",
@@ -5617,6 +6161,90 @@
     },
     {
       "file": "hr-payroll-workspace.js",
+      "label": "حتى",
+      "name": "valid_to",
+      "kind": "helper",
+      "forms": [
+        "قواعد الأجر حسب العقد واللائحة"
+      ],
+      "tab": "human_resources",
+      "article": "hr-payroll",
+      "text_sha256": "df510479d6595b3beeb750012fa0118e863150f042c22ee5e413f136d444139c"
+    },
+    {
+      "file": "hr-payroll-workspace.js",
+      "label": "سماح التأخير بالدقائق",
+      "name": "late_grace",
+      "kind": "helper",
+      "forms": [
+        "قواعد الأجر حسب العقد واللائحة"
+      ],
+      "tab": "human_resources",
+      "article": "hr-payroll",
+      "text_sha256": "273c4bb1c81c6b4e6b90a8f0a91d273a58cf0176d3d5c83510b2a4ff514c11df"
+    },
+    {
+      "file": "hr-payroll-workspace.js",
+      "label": "خصم كل دقيقة تأخير بعد السماح",
+      "name": "late_minute",
+      "kind": "helper",
+      "forms": [
+        "قواعد الأجر حسب العقد واللائحة"
+      ],
+      "tab": "human_resources",
+      "article": "hr-payroll",
+      "text_sha256": "395ff4f9c1b0283cc77cf26f4dcb6434088ee86a765806089ce49262ba747e35"
+    },
+    {
+      "file": "hr-payroll-workspace.js",
+      "label": "خصم الوردية المسجلة غيابًا",
+      "name": "absence_day",
+      "kind": "helper",
+      "forms": [
+        "قواعد الأجر حسب العقد واللائحة"
+      ],
+      "tab": "human_resources",
+      "article": "hr-payroll",
+      "text_sha256": "234e367487d369a63a19cd970f05e8bc3353d517aa549c1336bba3dc1e0ae81c"
+    },
+    {
+      "file": "hr-payroll-workspace.js",
+      "label": "مقابل ساعة الإضافي",
+      "name": "overtime_hour",
+      "kind": "helper",
+      "forms": [
+        "قواعد الأجر حسب العقد واللائحة"
+      ],
+      "tab": "human_resources",
+      "article": "hr-payroll",
+      "text_sha256": "af3f7f9cc583c1aea2d5c597c0059defcb0ccc0688e1540bcc49c168d2ffdbb2"
+    },
+    {
+      "file": "hr-payroll-workspace.js",
+      "label": "حد أدنى مضمون",
+      "name": "guaranteed_minimum",
+      "kind": "helper",
+      "forms": [
+        "قواعد الأجر حسب العقد واللائحة"
+      ],
+      "tab": "human_resources",
+      "article": "hr-payroll",
+      "text_sha256": "9b6eb1b49f9c5ffcb58ec29141442c3a3be930d61491a1bf0a75b1d228fd3894"
+    },
+    {
+      "file": "hr-payroll-workspace.js",
+      "label": "مرجع الاتفاق وقواعد الحساب",
+      "name": "note",
+      "kind": "helper",
+      "forms": [
+        "قواعد الأجر حسب العقد واللائحة"
+      ],
+      "tab": "human_resources",
+      "article": "hr-payroll",
+      "text_sha256": "a1186a9f7cae7feeed39ee43fbb8050c3473a542bc227ba58158a89e1e1c8dcd"
+    },
+    {
+      "file": "hr-payroll-workspace.js",
       "label": "الموظف",
       "name": "person_id",
       "kind": "helper",
@@ -5641,6 +6269,90 @@
     },
     {
       "file": "hr-payroll-workspace.js",
+      "label": "شهر الاستحقاق",
+      "name": "month",
+      "kind": "helper",
+      "forms": [
+        "بند مرتب للمراجعة"
+      ],
+      "tab": "human_resources",
+      "article": "hr-payroll",
+      "text_sha256": "5f64db688e736a3e6053bc83054da651dbefdc1abe914dba95d3ddc5cbc1c794"
+    },
+    {
+      "file": "hr-payroll-workspace.js",
+      "label": "المبلغ للمكافأة أو الخصم",
+      "name": "amount",
+      "kind": "helper",
+      "forms": [
+        "بند مرتب للمراجعة"
+      ],
+      "tab": "human_resources",
+      "article": "hr-payroll",
+      "text_sha256": "952a2041b30a50a324c1053afdeac377ef20abe70171b95c41dfd1b7e3ccf9fc"
+    },
+    {
+      "file": "hr-payroll-workspace.js",
+      "label": "الخدمة عند اختيار نسبة",
+      "name": "service_id",
+      "kind": "helper",
+      "forms": [
+        "بند مرتب للمراجعة"
+      ],
+      "tab": "human_resources",
+      "article": "hr-payroll",
+      "text_sha256": "2e73abbaa224a82eff04d604082347a1de571a880741562729d42284dda35da0"
+    },
+    {
+      "file": "hr-payroll-workspace.js",
+      "label": "قيمة الخدمات المثبتة بالمستند",
+      "name": "basis_amount",
+      "kind": "helper",
+      "forms": [
+        "بند مرتب للمراجعة"
+      ],
+      "tab": "human_resources",
+      "article": "hr-payroll",
+      "text_sha256": "051451c3d56b6ca8081e62af818adf500a77d9509cce84a74210c992fbdf7438"
+    },
+    {
+      "file": "hr-payroll-workspace.js",
+      "label": "نسبة استحقاق الموظف",
+      "name": "percent",
+      "kind": "helper",
+      "forms": [
+        "بند مرتب للمراجعة"
+      ],
+      "tab": "human_resources",
+      "article": "hr-payroll",
+      "text_sha256": "65602eafd783729231e030ceb23b39368ca8ba97cdc986b688458a98abf87ea5"
+    },
+    {
+      "file": "hr-payroll-workspace.js",
+      "label": "مرجع مستند لا يتكرر",
+      "name": "reference",
+      "kind": "helper",
+      "forms": [
+        "بند مرتب للمراجعة"
+      ],
+      "tab": "human_resources",
+      "article": "hr-payroll",
+      "text_sha256": "ab29ef276d5c84e45690500cd3909d6b6e9d1191f57258c807307b21d36808e3"
+    },
+    {
+      "file": "hr-payroll-workspace.js",
+      "label": "تفاصيل المستند والخدمات والفترة",
+      "name": "note",
+      "kind": "helper",
+      "forms": [
+        "بند مرتب للمراجعة"
+      ],
+      "tab": "human_resources",
+      "article": "hr-payroll",
+      "text_sha256": "e8fad624490f7dcff94ea9dba65e251d7e6bfbd6dc9fa48f18ae8ee3d4846b86"
+    },
+    {
+      "file": "hr-payroll-workspace.js",
       "label": "القرار",
       "name": "decision",
       "kind": "helper",
@@ -5650,6 +6362,18 @@
       "tab": "human_resources",
       "article": "requests",
       "text_sha256": "e94fbc6b4acbcb93cd4550a5c0f411b3026a6856a94bfdc920222df26211079d"
+    },
+    {
+      "file": "hr-payroll-workspace.js",
+      "label": "سبب القرار بعد مراجعة تفاصيل الحضور",
+      "name": "review_note",
+      "kind": "helper",
+      "forms": [
+        "قرار مراجعة ورديات الملف"
+      ],
+      "tab": "human_resources",
+      "article": "hr-payroll",
+      "text_sha256": "4fbaed8b951bb71dd387b28be2cbd1cf04f7fb75bce97113747b1d06ab8812e4"
     },
     {
       "file": "hr-payroll-workspace.js",
@@ -5689,6 +6413,102 @@
     },
     {
       "file": "hr-payroll-workspace.js",
+      "label": "ضريبة الأجور حسب المستند",
+      "name": "tax",
+      "kind": "helper",
+      "forms": [
+        "حساب مرتب — "
+      ],
+      "tab": "human_resources",
+      "article": "hr-payroll",
+      "text_sha256": "75ceda8f0ea2ebb79b51efe776162829087943745f4d2a4d10d2cf55f83547b8"
+    },
+    {
+      "file": "hr-payroll-workspace.js",
+      "label": "التأمينات حسب المستند",
+      "name": "insurance",
+      "kind": "helper",
+      "forms": [
+        "حساب مرتب — "
+      ],
+      "tab": "human_resources",
+      "article": "hr-payroll",
+      "text_sha256": "378106958ff39756a24a097bf069214401f5674b72b605a3fb65da05094a24e5"
+    },
+    {
+      "file": "hr-payroll-workspace.js",
+      "label": "استرداد السلفة المعتمد",
+      "name": "recovery",
+      "kind": "helper",
+      "forms": [
+        "حساب مرتب — "
+      ],
+      "tab": "human_resources",
+      "article": "hr-payroll",
+      "text_sha256": "9d284bc0156ee3d5717ec1cd404246481484a4cd1b4dfb3d8f887e766befd700"
+    },
+    {
+      "file": "hr-payroll-workspace.js",
+      "label": "مرجع استحقاق الشهر",
+      "name": "reference",
+      "kind": "helper",
+      "forms": [
+        "حساب مرتب — "
+      ],
+      "tab": "human_resources",
+      "article": "hr-payroll",
+      "text_sha256": "cc26675e8562a7e9dcceca73862295bf893c146e6a4bcc5dfb9e5d38519c2ce6"
+    },
+    {
+      "file": "hr-payroll-workspace.js",
+      "label": "تأكيد مراجعة اكتمال ورديات الشهر والمستندات",
+      "name": "note",
+      "kind": "helper",
+      "forms": [
+        "حساب مرتب — "
+      ],
+      "tab": "human_resources",
+      "article": "hr-payroll",
+      "text_sha256": "0b10a9f44d43caf75eb2893d18fcb7296b60814b28429aeaf577b14822112c6f"
+    },
+    {
+      "file": "hr-payroll-workspace.js",
+      "label": "نوع الجهاز",
+      "name": "kind",
+      "kind": "helper",
+      "forms": [
+        "تجهيز ربط الأجهزة"
+      ],
+      "tab": "human_resources",
+      "article": "hr-payroll",
+      "text_sha256": "f0a45008386542275c9df60b9402332bf0b4c03ab1c538e09632da19d1c39a0f"
+    },
+    {
+      "file": "hr-payroll-workspace.js",
+      "label": "اسم الجهاز",
+      "name": "name",
+      "kind": "helper",
+      "forms": [
+        "تجهيز ربط الأجهزة"
+      ],
+      "tab": "human_resources",
+      "article": "hr-payroll",
+      "text_sha256": "b47a47f4ef8f61c2c2e7a75e9b3f09ae00f326d71f8eb6e6891f0d84c9116bfe"
+    },
+    {
+      "file": "hr-payroll-workspace.js",
+      "label": "الموديل",
+      "name": "model",
+      "kind": "helper",
+      "forms": [
+        "تجهيز ربط الأجهزة"
+      ],
+      "tab": "human_resources",
+      "article": "hr-payroll",
+      "text_sha256": "6dcd0cc0b045b6789425af7a1ae323838ca080d6a906e849f283cdf1268bcfa7"
+    },
+    {
+      "file": "hr-payroll-workspace.js",
       "label": "الفرع",
       "name": "branch",
       "kind": "helper",
@@ -5698,6 +6518,28 @@
       "tab": "human_resources",
       "article": "inventory-count",
       "text_sha256": "14cfdaf767928f9bc93bd051469bc4360f9c6c34a1aa4ed381628bf5d6de0e0e"
+    },
+    {
+      "file": "hr-payroll-workspace.js",
+      "label": "البرنامج المستخدم أو تفاصيل الشركة",
+      "name": "note",
+      "kind": "helper",
+      "forms": [
+        "تجهيز ربط الأجهزة"
+      ],
+      "tab": "human_resources",
+      "article": "hr-payroll",
+      "text_sha256": "d52ae50ec92a05eabbee8af7a6fa1b1045a0199a542fd3ada58ebca7bc2e554c"
+    },
+    {
+      "file": "hr-presence.js",
+      "label": "اختر الموظف",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "hr-manage",
+      "text_sha256": "f138f7d8d158c3f3273a04ef813e81e0776abb3a827fb413ab17e3c665ce5389"
     },
     {
       "file": "hr-presence.js",
@@ -5725,6 +6567,54 @@
     },
     {
       "file": "hr-shift-swaps.js",
+      "label": "صاحب الطلب",
+      "name": "requester_id",
+      "kind": "helper",
+      "forms": [
+        "تبديل وردية"
+      ],
+      "tab": "human_resources",
+      "article": "hr-manage",
+      "text_sha256": "f2975f1b60096e1509d58b618ad7a9ba8aa990abebc39ba4d80f0fd793873f60"
+    },
+    {
+      "file": "hr-shift-swaps.js",
+      "label": "الزميل (من نفس القسم)",
+      "name": "partner_id",
+      "kind": "helper",
+      "forms": [
+        "تبديل وردية"
+      ],
+      "tab": "human_resources",
+      "article": "hr-manage",
+      "text_sha256": "9480b732208d150d232cde02e6b0e42bf7ea96922d29aebfc2e28b26cf9d94fa"
+    },
+    {
+      "file": "hr-shift-swaps.js",
+      "label": "اليوم (يوم صاحب الطلب)",
+      "name": "day_a",
+      "kind": "helper",
+      "forms": [
+        "تبديل وردية"
+      ],
+      "tab": "human_resources",
+      "article": "hr-manage",
+      "text_sha256": "8693d58c1aa4b21b53e7541f7f85f4975cdf1bfef0a04353de6a4de8cb3e6054"
+    },
+    {
+      "file": "hr-shift-swaps.js",
+      "label": "يوم الزميل (للتبديل بين يومين فقط)",
+      "name": "day_b",
+      "kind": "helper",
+      "forms": [
+        "تبديل وردية"
+      ],
+      "tab": "human_resources",
+      "article": "hr-manage",
+      "text_sha256": "58f84c11d8759ade5137df9aa32f8d78a757a56d8b037ecc7b0ed80872f17536"
+    },
+    {
+      "file": "hr-shift-swaps.js",
       "label": "السبب",
       "name": "note",
       "kind": "helper",
@@ -5734,6 +6624,83 @@
       "tab": "human_resources",
       "article": "requests",
       "text_sha256": "80a0c51a0ba10ff7f4fe6f627b68c4e009f932e1abdff544c26e792f5f0e9e49"
+    },
+    {
+      "file": "hr-shift-swaps.js",
+      "label": "طلب طارئ (أقل من 24 ساعة)",
+      "name": "emergency",
+      "kind": "helper",
+      "forms": [
+        "تبديل وردية"
+      ],
+      "tab": "human_resources",
+      "article": "hr-manage",
+      "text_sha256": "bc4e30c6fffde267091bf85be40b17a3d6bc36e08eb74d56fefe4f9284477fa0"
+    },
+    {
+      "file": "hr-shifts.js",
+      "label": "اسم الوردية",
+      "name": "name",
+      "kind": "helper",
+      "forms": [
+        "تعديل وردية",
+        "إضافة وردية"
+      ],
+      "tab": "human_resources",
+      "article": "hr-manage",
+      "text_sha256": "97bc3cb0697c95ae9bc1b15ad5d9ec669838613601a1b14887992aeb2f86b3a4"
+    },
+    {
+      "file": "hr-shifts.js",
+      "label": "تبدأ",
+      "name": "start_time",
+      "kind": "helper",
+      "forms": [
+        "تعديل وردية",
+        "إضافة وردية"
+      ],
+      "tab": "human_resources",
+      "article": "hr-manage",
+      "text_sha256": "92c96a014c073937933ad32d51e5814e2a894028ad0230bdc534e0bf942ac39b"
+    },
+    {
+      "file": "hr-shifts.js",
+      "label": "تنتهي",
+      "name": "end_time",
+      "kind": "helper",
+      "forms": [
+        "تعديل وردية",
+        "إضافة وردية"
+      ],
+      "tab": "human_resources",
+      "article": "hr-manage",
+      "text_sha256": "92c96a014c073937933ad32d51e5814e2a894028ad0230bdc534e0bf942ac39b"
+    },
+    {
+      "file": "hr-shifts.js",
+      "label": "دقائق السماح قبل احتساب التأخير",
+      "name": "grace_minutes",
+      "kind": "helper",
+      "forms": [
+        "تعديل وردية",
+        "إضافة وردية"
+      ],
+      "tab": "human_resources",
+      "article": "hr-manage",
+      "text_sha256": "5cea24601508e79899569e65b215f436218e2aecc8e58ea54ab02d2b88d74163"
+    },
+    {
+      "file": "hr-shifts.js",
+      "label": "اللون",
+      "name": "color",
+      "kind": "helper",
+      "forms": [
+        "تعديل وردية",
+        "إضافة وردية"
+      ],
+      "tab": "human_resources",
+      "article": "hr-manage",
+      "text_sha256": "5d8ddf1875531dbf828067ef00728c742ec2ff71eb2919781380f76e7014dc58"
     },
     {
       "file": "hr-shifts.js",
@@ -5749,6 +6716,68 @@
       "text_sha256": "0a8e1242f7cd5a7893e1222dfd049826b42b66af79a574141ddc063e925fb3f0"
     },
     {
+      "file": "hr-shifts.js",
+      "label": "تعبئة سريعة (كل الأيام ما عدا الجمعة)",
+      "name": "fill",
+      "kind": "helper",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "hr-manage",
+      "text_sha256": "f743a113b2804047add744a69f6e2b9299e85bbf0bafe92cb593d351fc7c5718"
+    },
+    {
+      "file": "hr-shifts.js",
+      "label": "يسري من",
+      "name": "valid_from",
+      "kind": "helper",
+      "forms": [
+        "جدول "
+      ],
+      "tab": "human_resources",
+      "article": "hr-manage",
+      "text_sha256": "96ee3adc10d80a1f5c9afab1a8c1531cae7d23b93d16bd9158db8451ce186f61"
+    },
+    {
+      "file": "hr-tax.js",
+      "label": "الشهر",
+      "name": "tax_month",
+      "kind": "helper",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "hr-payroll",
+      "text_sha256": "37c969dafdae51e23c9ef8bcd1c5a8ffd5846d73d5d4b9d527d967f0b46001f4"
+    },
+    {
+      "file": "hr-tax.js",
+      "label": "الضريبة المستقطعة بالجنيه",
+      "name": "amount",
+      "kind": "helper",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "hr-payroll",
+      "text_sha256": "d82fdfb9d6efa51f7f05714d3570cefb792c895cd3d905cf7623546b62ca6128"
+    },
+    {
+      "file": "hr-tax.js",
+      "label": "الوعاء الخاضع للضريبة (اختياري)",
+      "name": "taxable_base",
+      "kind": "helper",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "hr-payroll",
+      "text_sha256": "0f0f7e37a6752d13b23467b6f4994b7bda42d6a6581c8c546f81432395a201cb"
+    },
+    {
+      "file": "hr-tax.js",
+      "label": "مرجع مستند الضريبة",
+      "name": "reference",
+      "kind": "helper",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "hr-payroll",
+      "text_sha256": "293e1752d29b91707dc0be919744214efb57ab95d48985f8938af3b35f838c98"
+    },
+    {
       "file": "hr-tax.js",
       "label": "الموظف",
       "name": "person_id",
@@ -5759,6 +6788,18 @@
       "tab": "human_resources",
       "article": "payroll",
       "text_sha256": "0bebb1d1c5ab3b012283d97c05868f2efdf999e5577aad040d7d7e49bca4524c"
+    },
+    {
+      "file": "hr-tax.js",
+      "label": "سبب تغيير المبلغ (إن تغيّر)",
+      "name": "reason",
+      "kind": "helper",
+      "forms": [
+        "تعديل ضريبة: "
+      ],
+      "tab": "human_resources",
+      "article": "hr-payroll",
+      "text_sha256": "2e37e8875406aa1b2c73c9e83ebeae2bbeb1cf1ffb3bce86f21c6678d2f71c8b"
     },
     {
       "file": "indicator-reports.js",
@@ -14816,8 +15857,8 @@
         "ملف موظف أو طبيب"
       ],
       "tab": "human_resources",
-      "article": "patient",
-      "text_sha256": "6dcc3fcbda437e3a78df48f3fdc1e39f6afd5f25d831710927b833e5be568092"
+      "article": "hr-manage",
+      "text_sha256": "a96230efbded09c7cb0d0c0f2404e099ecdb9fc2b2a5fa8c8f46779e7f96631e"
     },
     {
       "file": "workforce-prices.js",
