@@ -6,13 +6,13 @@
 --                 open shift, or today's shift already closed
 --   need_open   : punched in today or the scheduled start has come (and the shift hasn't ended), no reception cash shift opened today
 --   open        : own reception shift open, opened today, shift time not over and not punched out
---   close_due   : own reception shift still open but the scheduled end passed, the employee punched out, or it was opened on an earlier day
+--   close_due   : own reception shift still open but the scheduled end passed, the employee punched out, or it has been open for more than 16 hours
+--                 (a shift opened at 23:00 is not «stale» just because the date changed at midnight)
 -- show (popup) = state need_open. No writes, no other employees' data. Rollback: supabase/rollbacks/20261117210000_reception_shift_reminder.rollback.sql
 begin;
 create or replace function public.clinic_reception_shift_reminder() returns jsonb
 language plpgsql stable security definer set search_path = pg_catalog, public as $$
 declare me uuid := public.my_admin_id(); pid uuid; d date := (now() at time zone 'Africa/Cairo')::date;
-  day0 timestamptz := ((now() at time zone 'Africa/Cairo')::date)::timestamp at time zone 'Africa/Cairo';
   e record; s record; has_e boolean := false; last_in timestamptz; last_out timestamptz; out_now boolean := false; ended boolean := false;
   closed_today boolean;
 begin
@@ -25,18 +25,18 @@ begin
   if to_regclass('clinic_people.device_punches') is not null then
     execute 'select max(dp.ts) filter (where dp.punch in (0,3,4)), max(dp.ts) filter (where dp.punch in (1,5))
                from clinic_people.device_punches dp join clinic_people.device_user_map m on m.device_id = dp.device_id and m.device_user_id = dp.device_user_id
-              where m.person_id = $1 and dp.ts >= $2' into last_in, last_out using pid, day0;
+              where m.person_id = $1 and dp.ts >= $2' into last_in, last_out using pid, now() - interval '16 hours';
   end if;
   out_now := last_out is not null and (last_in is null or last_out > last_in);
   ended := has_e and e.exp_end is not null and now() >= e.exp_end;
   select sh.opened_at into s from clinic_reception.shifts sh where sh.cashier_id = me and sh.status = 'open' order by sh.opened_at desc limit 1;
   if found then
     return jsonb_build_object('show', false,
-      'state', case when (s.opened_at at time zone 'Africa/Cairo')::date < d or ended or out_now then 'close_due' else 'open' end,
-      'reason', case when (s.opened_at at time zone 'Africa/Cairo')::date < d then 'stale' when out_now then 'punched_out' when ended then 'shift_end' else null end,
+      'state', case when s.opened_at < now() - interval '16 hours' or ended or out_now then 'close_due' else 'open' end,
+      'reason', case when s.opened_at < now() - interval '16 hours' then 'stale' when out_now then 'punched_out' when ended then 'shift_end' else null end,
       'opened_at', s.opened_at, 'exp_end', case when has_e then e.exp_end end);
   end if;
-  closed_today := exists (select 1 from clinic_reception.shifts sh where sh.cashier_id = me and sh.status <> 'open' and sh.opened_at >= day0);
+  closed_today := exists (select 1 from clinic_reception.shifts sh where sh.cashier_id = me and sh.status <> 'open' and sh.opened_at >= now() - interval '16 hours');
   if closed_today or out_now or not has_e or coalesce(e.status, '') = 'leave' or ended
      or not (e.first_in is not null or (e.exp_start is not null and now() >= e.exp_start)) then
     return jsonb_build_object('show', false, 'state', 'hidden',
