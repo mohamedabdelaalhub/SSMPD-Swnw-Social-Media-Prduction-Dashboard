@@ -4,7 +4,7 @@
     "definitions": 1746,
     "labels": 1285,
     "files": 119,
-    "groups": 1332
+    "groups": 1380
   },
   "fields": [
     {
@@ -385,6 +385,26 @@
       "tab": "accounting",
       "article": "ledger-guide",
       "text_sha256": "bd92e293d973907603dd501f77d022e8a83c6918fdc7071624e7cdf073ef8db5"
+    },
+    {
+      "file": "administrative-assistant.js",
+      "label": "مثال: موافق · موافق على صلاحية الحسابات لمحمود",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "home",
+      "article": "digital-team",
+      "text_sha256": "b1e4ac7ea550bd804e7a56b96829c49772f6918a246145aa08f6f0aa7bfa798c"
+    },
+    {
+      "file": "administrative-assistant.js",
+      "label": "مثال: لو كشف المرتبات طبيعي ومطابق للحضور اعتمده، ولو فيه فرق استناني.",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "home",
+      "article": "digital-team",
+      "text_sha256": "e25094fc2b1e696e09c8597ee5676b2e10614ee0f65c49435e4e96e734cdf53f"
     },
     {
       "file": "ai-clips.js",
@@ -1704,6 +1724,26 @@
       "text_sha256": "21bd49806e81de9ff81a8597f5719b8de344ef4ffde97c804b61581be5062677"
     },
     {
+      "file": "design-inputs.js",
+      "label": "Claude يصمم المادة دي على طول (بوست أو كاروسيل)",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "design-guide",
+      "text_sha256": "d55c15d9a910805c1c4add2d367fdb1316d52896c8f12d6825bf86b62f37bc7d"
+    },
+    {
+      "file": "design-inputs.js",
+      "label": "نوع التصميم",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "production",
+      "article": "design-guide",
+      "text_sha256": "d1619dbad2452bb3b277501390c68f0ce23081446946526e6597f91042965e46"
+    },
+    {
       "file": "design-panel-color.js",
       "label": "كود HEX",
       "name": "",
@@ -2294,12 +2334,122 @@
       "text_sha256": "324f855105a7c1ad5c214077a8bb77d9142d425c77888afb0142e4ca135ce604"
     },
     {
+      "file": "digital-team-chat.js",
+      "label": "نوع الرسالة",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "home",
+      "article": "digital-team",
+      "text_sha256": "df5b9d97075ce838b67387c1e2fd5881f9ac27d6854845567c7509996ce2aac5"
+    },
+    {
+      "file": "digital-team-chat.js",
+      "label": "احفظها في تعليمات الوكلاء",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "home",
+      "article": "digital-team",
+      "text_sha256": "4f4d9f977d1a01ee3f0d2b37b21912ada541d96d4b9d6c0db1f7aa0f1b9d94c4"
+    },
+    {
+      "file": "digital-team-chat.js",
+      "label": "متابعة دورية",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "home",
+      "article": "digital-team",
+      "text_sha256": "759f9d08a0f042bbfaf4370b464e65dea491d807b2aca518f4c8c1bf7208b3df"
+    },
+    {
+      "file": "digital-team-chat.js",
+      "label": "موعد المتابعة بتوقيت الإمارات",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "home",
+      "article": "digital-team",
+      "text_sha256": "315fb810388f6a286b81cba23efcd034f5aaa4f2cd16b88a2661345e53d9d8d2"
+    },
+    {
+      "file": "digital-team-chat.js",
+      "label": "اكتب رسالتك هنا...",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "home",
+      "article": "digital-team",
+      "text_sha256": "687ff0318d925abbb578202dc2435ab9a77b77ee9c143f1459cb7bf8c6816f48"
+    },
+    {
+      "file": "digital-team-communications.js",
+      "label": "المرسل إليه",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "home",
+      "article": "digital-team",
+      "text_sha256": "f3e33dbc6dd2a40bdb089e952a8c2a701705aba679b91d28bf6060143467de30"
+    },
+    {
+      "file": "digital-team-communications.js",
+      "label": "نوع الرسالة",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "home",
+      "article": "digital-team",
+      "text_sha256": "df5b9d97075ce838b67387c1e2fd5881f9ac27d6854845567c7509996ce2aac5"
+    },
+    {
+      "file": "digital-team-communications.js",
+      "label": "مثال: يا حور راجع تأخر بداية الكشف وحلل الأسباب واقترح الحلول، واطلب رأي حتب في أثر الانتظار على المرضى.",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "home",
+      "article": "digital-team",
+      "text_sha256": "76df1bbde4861e68dcb1fca0ccf7d6f21ae12519abb86adfd25b02f1b23f3512"
+    },
+    {
+      "file": "digital-team-communications.js",
+      "label": "الرسالة أو وصف المهمة",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "home",
+      "article": "digital-team",
+      "text_sha256": "76df1bbde4861e68dcb1fca0ccf7d6f21ae12519abb86adfd25b02f1b23f3512"
+    },
+    {
+      "file": "digital-team-communications.js",
+      "label": "فلترة حسب الوكيل",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "home",
+      "article": "digital-team",
+      "text_sha256": "52af1cb3945838a8e4f2933178c79563a87cae23139d644875aabed7af2f4481"
+    },
+    {
+      "file": "digital-team-communications.js",
+      "label": "فلترة حسب نوع الرسالة",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "home",
+      "article": "digital-team",
+      "text_sha256": "52af1cb3945838a8e4f2933178c79563a87cae23139d644875aabed7af2f4481"
+    },
+    {
       "file": "digital-team-server-chat.js",
       "label": "عنوان المهمة",
       "name": "",
       "kind": "html",
       "forms": [],
-      "tab": "production",
+      "tab": "home",
       "article": "tasks-guide",
       "text_sha256": "a99b972ef0ce274edffbbebbb7222e5d1699d2af489387edb91d1f35519e1091"
     },
@@ -2309,9 +2459,69 @@
       "name": "",
       "kind": "html",
       "forms": [],
-      "tab": "production",
+      "tab": "home",
       "article": "personal",
       "text_sha256": "08c204de2685df464bdbc0cd0fde7ec98a5877581bd58cbad31890fc6661df06"
+    },
+    {
+      "file": "digital-team-server-chat.js",
+      "label": "مثال: سارة من التسويق",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "home",
+      "article": "digital-team",
+      "text_sha256": "d27face13f37a84d06b76b3bf435852d2bc7ac06c35079ccaca7cd53f080e166"
+    },
+    {
+      "file": "digital-team-server-chat.js",
+      "label": "مين المسؤول أو أي مشروع؟ (اختياري)",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "home",
+      "article": "digital-team",
+      "text_sha256": "d27face13f37a84d06b76b3bf435852d2bc7ac06c35079ccaca7cd53f080e166"
+    },
+    {
+      "file": "digital-team-server-chat.js",
+      "label": "بحث في المحادثات",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "home",
+      "article": "digital-team",
+      "text_sha256": "be867fbcea5951a6136f6b76fed06343748ccb711991c52eae45b74965bdd4d7"
+    },
+    {
+      "file": "digital-team-server-chat.js",
+      "label": "ابحث في المحادثات",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "home",
+      "article": "digital-team",
+      "text_sha256": "be867fbcea5951a6136f6b76fed06343748ccb711991c52eae45b74965bdd4d7"
+    },
+    {
+      "file": "digital-team-server-chat.js",
+      "label": "نوع الرسالة",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "home",
+      "article": "digital-team",
+      "text_sha256": "df5b9d97075ce838b67387c1e2fd5881f9ac27d6854845567c7509996ce2aac5"
+    },
+    {
+      "file": "digital-team-server-chat.js",
+      "label": "الوكيل المطلوب",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "home",
+      "article": "digital-team",
+      "text_sha256": "540e456f29c0c0b61356815baa32aec0e6647b94756f192b74070a998d9ec627"
     },
     {
       "file": "digital-team-server-chat.js",
@@ -2319,7 +2529,7 @@
       "name": "",
       "kind": "label",
       "forms": [],
-      "tab": "production",
+      "tab": "home",
       "article": "patient-records",
       "text_sha256": "68c593718f9e4a670d874fc33a5fb6254f39083bbe1ac70792f1b87046e5dd54"
     },
@@ -2329,7 +2539,7 @@
       "name": "",
       "kind": "label",
       "forms": [],
-      "tab": "production",
+      "tab": "home",
       "article": "personal",
       "text_sha256": "5124563f386757810c60ae86fc95904a13532f1a872fcd3579613f304338e13d"
     },
@@ -2339,9 +2549,79 @@
       "name": "",
       "kind": "aria",
       "forms": [],
-      "tab": "production",
+      "tab": "home",
       "article": "leads-guide",
       "text_sha256": "647c0cd644239404f326168c51b8318ec26dff44639b1629f1795d190152a7ee"
+    },
+    {
+      "file": "digital-team-server-chat.js",
+      "label": "اكتب رسالتك… (@ لاختيار وكيل)",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "home",
+      "article": "digital-team",
+      "text_sha256": "687ff0318d925abbb578202dc2435ab9a77b77ee9c143f1459cb7bf8c6816f48"
+    },
+    {
+      "file": "digital-team-server-chat.js",
+      "label": "سؤالك",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "home",
+      "article": "digital-team",
+      "text_sha256": "9f6eaa0d97849cdd279bee2408d8e0c2795ecc824cabba192afb3bd85c34851d"
+    },
+    {
+      "file": "digital-team-server-chat.js",
+      "label": "اكتب سؤالك عن الداشبورد…",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "home",
+      "article": "digital-team",
+      "text_sha256": "9f6eaa0d97849cdd279bee2408d8e0c2795ecc824cabba192afb3bd85c34851d"
+    },
+    {
+      "file": "digital-team-server-chat.js",
+      "label": "اسم المحادثة",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "home",
+      "article": "digital-team",
+      "text_sha256": "3f3b5283fcb2b5ec3ee7462f81b71ba9c66bbc4ab4d1f903899b1f029b9a4c45"
+    },
+    {
+      "file": "digital-team-server-chat.js",
+      "label": "البحث عن مستخدم",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "home",
+      "article": "digital-team",
+      "text_sha256": "f3074512fcbef22a94ac451f2d361b698ab18644cca66f0a7b18ca8ac85e3874"
+    },
+    {
+      "file": "digital-team-server-chat.js",
+      "label": "ابحث عن مستخدم",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "home",
+      "article": "digital-team",
+      "text_sha256": "f3074512fcbef22a94ac451f2d361b698ab18644cca66f0a7b18ca8ac85e3874"
+    },
+    {
+      "file": "digital-team-server-chat.js",
+      "label": "إتاحة السجل السابق للمشاركين الجدد",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "home",
+      "article": "digital-team",
+      "text_sha256": "e69d0c4556e1b7242b12d08fd20949adcebd04d24f5d8e1e2452e7ed6c3b28f2"
     },
     {
       "file": "digital-team-server-chat.js",
@@ -2349,7 +2629,7 @@
       "name": "",
       "kind": "html",
       "forms": [],
-      "tab": "production",
+      "tab": "home",
       "article": "inventory-count",
       "text_sha256": "3780038927d64b0bf4fe1b6e96498fc2fb5fc2abcdc3429e8ae15c5a13a15385"
     },
@@ -2359,9 +2639,69 @@
       "name": "",
       "kind": "html",
       "forms": [],
-      "tab": "production",
+      "tab": "home",
       "article": "personal",
       "text_sha256": "5124563f386757810c60ae86fc95904a13532f1a872fcd3579613f304338e13d"
+    },
+    {
+      "file": "digital-team-server-chat.js",
+      "label": "المحادثة",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "home",
+      "article": "digital-team",
+      "text_sha256": "5d428c2c35f02e8264f25a501e4ea8b4af96d929ba152541232868edb103ee10"
+    },
+    {
+      "file": "digital-team-server-chat.js",
+      "label": "الصيغة",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "home",
+      "article": "digital-team",
+      "text_sha256": "cbbe547645f6d6d3fda02257d14b8f020eeb788f34ca01be7323b3cce89fa822"
+    },
+    {
+      "file": "digital-team-server-chat.js",
+      "label": "السماح للموظفين بسؤال سونو الذكي (Codex، قراءة فقط)",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "home",
+      "article": "digital-team",
+      "text_sha256": "9af7eb0c8754d804e56b7a2d8eb4850fcc4ba60ed872fe25f68ba2bb32de7e8c"
+    },
+    {
+      "file": "digital-team.js",
+      "label": "نوع الرسالة",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "home",
+      "article": "digital-team",
+      "text_sha256": "df5b9d97075ce838b67387c1e2fd5881f9ac27d6854845567c7509996ce2aac5"
+    },
+    {
+      "file": "digital-team.js",
+      "label": "اكتب المطلوب أو سؤالك بالتفصيل...",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "home",
+      "article": "digital-team",
+      "text_sha256": "8b2afce693f0fb6b3cde8ed33adbc6d16eedc23a34bd765c01e9d4d2fc9a34e1"
+    },
+    {
+      "file": "digital-team.js",
+      "label": "اختر مهمة بها مرفق",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "home",
+      "article": "digital-team",
+      "text_sha256": "511595701ab5562dee7f6b808f67fc1febbfb5354f15a226153ca516c4fa1d9c"
     },
     {
       "file": "dina-content.js",
@@ -2464,12 +2804,32 @@
       "text_sha256": "eec768dae27bf2de3693d2d37ba93ae01c2648aaf8c5e7b69afdb717e662d0c0"
     },
     {
+      "file": "employee-assistant.js",
+      "label": "اكتب اللي مش عارف تعمله…",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "home",
+      "article": "digital-team",
+      "text_sha256": "b9b5a4422cd034c88a121628568f0ec30c825d0c67785efa6f9980f52e4b2037"
+    },
+    {
+      "file": "employee-performance.js",
+      "label": "فترة المتابعة",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "staff_kpi",
+      "article": "indicators",
+      "text_sha256": "04d89f63d3861c3c13bfacdf6494f62af55cd9733be31da239aace776caae6bf"
+    },
+    {
       "file": "employee-performance.js",
       "label": "من",
       "name": "",
       "kind": "html",
       "forms": [],
-      "tab": "production",
+      "tab": "staff_kpi",
       "article": "personal",
       "text_sha256": "5124563f386757810c60ae86fc95904a13532f1a872fcd3579613f304338e13d"
     },
@@ -2479,7 +2839,7 @@
       "name": "",
       "kind": "html",
       "forms": [],
-      "tab": "production",
+      "tab": "staff_kpi",
       "article": "personal",
       "text_sha256": "5124563f386757810c60ae86fc95904a13532f1a872fcd3579613f304338e13d"
     },
@@ -8997,13 +9357,53 @@
     },
     {
       "file": "leads-missing-data-enhancement.js",
+      "label": "فلتر البيانات الناقصة",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "leads",
+      "article": "leads-guide",
+      "text_sha256": "dfb5c0b633628b61c7ec26ce567ccbba0f9d0c98def339b2c666773d3ccb614a"
+    },
+    {
+      "file": "leads-missing-data-enhancement.js",
+      "label": "بحث بالاسم أو رقم التليفون",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "leads",
+      "article": "leads-guide",
+      "text_sha256": "c14b5c60ebe11212ef41100a24dd9e3e2b6bcb7652fcfa51927773371dea610f"
+    },
+    {
+      "file": "leads-missing-data-enhancement.js",
+      "label": "الاسم الثلاثي على الأقل",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "leads",
+      "article": "leads-guide",
+      "text_sha256": "980658b988a1198a56ec1770e7267402aa8480170b90def0ceafefc622db65c4"
+    },
+    {
+      "file": "leads-missing-data-enhancement.js",
       "label": "رقم التليفون",
       "name": "",
       "kind": "html",
       "forms": [],
-      "tab": "production",
+      "tab": "leads",
       "article": "patient-records",
       "text_sha256": "57a56cdd50c48e9067e70e528bb4784c853c253c569bc87e0865b68655497d63"
+    },
+    {
+      "file": "leads-missing-data-enhancement.js",
+      "label": "الخدمة المهتم بها",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "leads",
+      "article": "leads-guide",
+      "text_sha256": "1532ab3f10cdc74ea799c29b327fba20e5de7c6b2637b5d0bf0d6b469b655664"
     },
     {
       "file": "ledger-editor.js",
@@ -9238,7 +9638,7 @@
       "kind": "aria",
       "forms": [],
       "tab": "leads",
-      "article": "leads-guide",
+      "article": "digital-team",
       "text_sha256": "be867fbcea5951a6136f6b76fed06343748ccb711991c52eae45b74965bdd4d7"
     },
     {
@@ -13577,14 +13977,44 @@
       "text_sha256": "5124563f386757810c60ae86fc95904a13532f1a872fcd3579613f304338e13d"
     },
     {
+      "file": "render-metaads.js",
+      "label": "الصق التوكن هنا",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "metaads",
+      "article": "ads-guide",
+      "text_sha256": "df9bc66d250f2df2d81817e3bdd229221315e7a81fd0b78bf7016be88b40c707"
+    },
+    {
+      "file": "render-org-legal.js",
+      "label": "اربطه بحساب البنك في الحسابات (اختياري)",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "org_legal",
+      "article": "org-legal",
+      "text_sha256": "8396ad3fe8c0f17ae281fba28c866d852aef1dbf50f20db36c56213520ec1253"
+    },
+    {
       "file": "render-org-legal.js",
       "label": "النوع",
       "name": "",
       "kind": "label",
       "forms": [],
-      "tab": "production",
+      "tab": "org_legal",
       "article": "patient-records",
       "text_sha256": "68c593718f9e4a670d874fc33a5fb6254f39083bbe1ac70792f1b87046e5dd54"
+    },
+    {
+      "file": "render-org-legal.js",
+      "label": "الملف (PDF أو صورة — لحد 15 ميجا)",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "org_legal",
+      "article": "org-legal",
+      "text_sha256": "da43450cfc937df9ff19fc8c24c0eab9fe459c513bb738d7e5a100f1e5419d79"
     },
     {
       "file": "render-patients.js",
@@ -15302,9 +15732,29 @@
       "name": "",
       "kind": "aria",
       "forms": [],
-      "tab": "production",
+      "tab": "performance",
       "article": "content",
       "text_sha256": "4e4f815ac6b6ea83cc5a805557e246039b91eb7550059f83b6c18fcfdb1ac53f"
+    },
+    {
+      "file": "render-performance.js",
+      "label": "نطاق العرض",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "performance",
+      "article": "indicators",
+      "text_sha256": "8b8e14e67615acbfe106c90108d180b09679fcd6d625a37e76878d3e9d0e886a"
+    },
+    {
+      "file": "render-performance.js",
+      "label": "عدد البوستات",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "performance",
+      "article": "indicators",
+      "text_sha256": "14f7ab096c1d7f325e2fbe88cb753e49d0db9c04dc6e483c850609a5471fa0a0"
     },
     {
       "file": "render-performance.js",
@@ -15312,7 +15762,7 @@
       "name": "",
       "kind": "html",
       "forms": [],
-      "tab": "production",
+      "tab": "performance",
       "article": "personal",
       "text_sha256": "5124563f386757810c60ae86fc95904a13532f1a872fcd3579613f304338e13d"
     },
@@ -15322,7 +15772,7 @@
       "name": "",
       "kind": "html",
       "forms": [],
-      "tab": "production",
+      "tab": "performance",
       "article": "personal",
       "text_sha256": "5124563f386757810c60ae86fc95904a13532f1a872fcd3579613f304338e13d"
     },
@@ -15678,6 +16128,36 @@
     },
     {
       "file": "render-publish.js",
+      "label": "خصوصية فيديو TikTok",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "publish",
+      "article": "publishing-guide",
+      "text_sha256": "69eacf69fc055bf9d0c0471be09c1a13798ce77e78e26c0f23a37c885ed98b14"
+    },
+    {
+      "file": "render-publish.js",
+      "label": "عنوان فيديو يوتيوب (لحد ١٠٠ حرف)",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "publish",
+      "article": "publishing-guide",
+      "text_sha256": "f9f09f7cb5ffad881c2eb99d1ebc3b08b93ca35c4290da9b1b28c0d67a077b27"
+    },
+    {
+      "file": "render-publish.js",
+      "label": "الظهور على يوتيوب",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "publish",
+      "article": "publishing-guide",
+      "text_sha256": "05c7cf903aa59cf7b5c9ef52d4de5fc7b49376ff4bb4cb4ef09d1c4f3fef3d6d"
+    },
+    {
+      "file": "render-publish.js",
       "label": "معاد النشر المجدول",
       "name": "",
       "kind": "label",
@@ -15717,6 +16197,26 @@
       "text_sha256": "468a114765b8bba43473fffff33b056aea0b6953d48a131132485567af611bcd"
     },
     {
+      "file": "render-publish.js",
+      "label": "Client ID",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "publish",
+      "article": "publishing-guide",
+      "text_sha256": "d0a5abc07f349512e1a363ffa1b6d42d5e8d7bec23d6037906f1cdedac64a7c2"
+    },
+    {
+      "file": "render-publish.js",
+      "label": "Client Secret",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "publish",
+      "article": "publishing-guide",
+      "text_sha256": "d0a5abc07f349512e1a363ffa1b6d42d5e8d7bec23d6037906f1cdedac64a7c2"
+    },
+    {
       "file": "render-review.js",
       "label": "صور حقيقية",
       "name": "",
@@ -15735,6 +16235,26 @@
       "tab": "review",
       "article": "design-guide",
       "text_sha256": "9c0b47ccbaf02e8e5b748971fa683e556ffce273ebe08e0d949b82eeb26f3134"
+    },
+    {
+      "file": "render-review.js",
+      "label": "نوع التصميم",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "review",
+      "article": "design-guide",
+      "text_sha256": "d1619dbad2452bb3b277501390c68f0ce23081446946526e6597f91042965e46"
+    },
+    {
+      "file": "render-review.js",
+      "label": "نوع المادة",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "review",
+      "article": "content",
+      "text_sha256": "af50305832e8074eda2a505c15c1d86c51cdb200ed157056ec9290aa61035279"
     },
     {
       "file": "render-review.js",
@@ -15968,6 +16488,16 @@
     },
     {
       "file": "render-tasks.js",
+      "label": "سبب الاعتماد المباشر",
+      "name": "",
+      "kind": "config",
+      "forms": [],
+      "tab": "tasks",
+      "article": "tasks-guide",
+      "text_sha256": "84fdb8c56096c743e9f750b1804507d63bae32e9febf765e793f923b37f922ec"
+    },
+    {
+      "file": "render-tasks.js",
       "label": "ملاحظة الاعتماد (اختياري)",
       "name": "",
       "kind": "config",
@@ -15985,6 +16515,16 @@
       "tab": "tasks",
       "article": "tasks-guide",
       "text_sha256": "84046e1960f01e5856d71e1c906fbc67fb3f0e8e96cfdc54057a3032ed1fb07c"
+    },
+    {
+      "file": "render-tasks.js",
+      "label": "سبب الإلغاء",
+      "name": "",
+      "kind": "config",
+      "forms": [],
+      "tab": "tasks",
+      "article": "tasks-guide",
+      "text_sha256": "e351c52332cb0393449ce62ab2479e71d6e161512b74d2139cbf09591d817e3e"
     },
     {
       "file": "render-tasks.js",
@@ -16343,6 +16883,16 @@
       "text_sha256": "d6a19aa5cd6518b7406a2e6e9d32923c5c9417d94228d37be3c3c25749c32404"
     },
     {
+      "file": "render-tasks.js",
+      "label": "شخص تاني",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "tasks",
+      "article": "tasks-guide",
+      "text_sha256": "d2eea2754a97cb6aed022894d7a712ecefa0457e5a9d6bbe451a8973b2a2d5c2"
+    },
+    {
       "file": "service-mapping-review.js",
       "label": "قائمة الجهة",
       "name": "",
@@ -16441,6 +16991,18 @@
       "tab": "price_lists",
       "article": "price-lists",
       "text_sha256": "b1d1459fd5eeeb8271a40be29c53268a6bc8c27bd1dd5d9189fe29a6b1611077"
+    },
+    {
+      "file": "staff-profile.js",
+      "label": "الصورة",
+      "name": "",
+      "kind": "label",
+      "forms": [
+        "صورتي الشخصية"
+      ],
+      "tab": "home",
+      "article": "personal",
+      "text_sha256": "25dcbb524ea6c74707f78b6cb98f2f91e47357a38e4f9d2db34a7ff9ebcd480d"
     },
     {
       "file": "studio-storyboard.js",

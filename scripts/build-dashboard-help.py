@@ -837,7 +837,6 @@ frule(X,'اكتب الشكوى والمطلوب مراجعته دون استنت
 frule(X,'سبب المتابعة','اكتب ليه محتاجين نتابع مع المريض، زي سؤال عن نتيجة أو موعد ماتحجزش.','leads-guide')
 frule(X,'مسودة رسالة بدون ضغط على العميل','اكتب نص رسالة المتابعة بأسلوب لطيف من غير ضغط. دي مسودة بس ومش بتتبعت تلقائي.','leads-guide')
 frule(X,'موعد مقترح','ميعاد مقترح للمتابعة. الحفظ بيسجل مسودة بس.','leads-guide')
-frule(X,'بحث في المحادثات','اكتب اسم أو رقم أو كلمة علشان تلاقي محادثة أو ملاحظة. البحث مابيبعتش حاجة.','leads-guide')
 frule('reception-patient-documents.js','نوع المستند','اختار نوع المستند اللي بترفعه للمريض، زي بطاقة أو كارنيه أو نتيجة.','reception-patient-documents')
 O='reception-service-orders.js'
 frule(O,'الطلب','اختار طلب الخدمة اللي بتسجل تنفيذه أو مكانه.','today-board')
@@ -899,10 +898,62 @@ frule(Y,'حد تنبيه الانتظار بالدقائق','لو المريض �
 frule(Y,'حد تأخير الطبيب بالدقائق','لو الطبيب اتأخر أكتر من الدقايق دي عن أول ميعاد، بيظهر تنبيه.','today-board')
 frule(Y,'التأخير المتوقع بالدقائق','الوقت المتوقع لتأخير الطبيب. بيظهر للاستقبال علشان يبلغوا المرضى.','today-board')
 frule(Y,'درجة الأولوية','من عادية لأولوية 5. اكتب السبب لأي أولوية.','today-board')
+# --- Digital team, assistants, content, leads, publishing and misc ---
+MSG_KIND='اختار نوع رسالتك للوكيل: رسالة عادية أو سؤال أو تعليمات أو تكليف بمهمة. النوع بيحدد الوكيل هيتعامل معاها إزاي، والرد استشاري ومابينفذش حاجة في الحجز أو الحسابات لوحده.'
+CHAT_SEARCH='اكتب اسم أو رقم أو كلمة علشان تلاقي محادثة أو ملاحظة. البحث مابيبعتش حاجة.'
+DT='digital-team.js|digital-team-chat.js|digital-team-communications.js|digital-team-server-chat.js'
+frule(DT,'نوع الرسالة',MSG_KIND,'digital-team')
+frule('administrative-assistant.js','مثال: موافق · موافق على صلاحية الحسابات لمحمود','اكتب قرارك على الطلب بكلام بسيط، زي «موافق» أو «موافق على صلاحية الحسابات». ده للمالك بس.','digital-team')
+frule('administrative-assistant.js','مثال: لو كشف المرتبات طبيعي ومطابق للحضور اعتمده، ولو فيه فرق استناني.','علّم المساعد قاعدة يمشي عليها بعد كده، زي امتى يعتمد وامتى يستناك. القاعدة بتتحفظ ويتقدر تمسحها.','digital-team')
+frule('design-inputs.js','Claude يصمم المادة دي على طول (بوست أو كاروسيل)','علّم عليها علشان المادة تروح لـ Claude يصممها أول ما تبعتها، والتصميم يظهر في الاعتماد النهائي.','design-guide')
+frule('design-inputs.js|render-review.js','نوع التصميم','عادي بالقوالب المعتمدة، أو عرض وحملة، أو تصميم حر بمثال. النوع بيحدد القالب اللي هيتصمم بيه.','design-guide')
+frule('render-review.js','نوع المادة','اعرض نوع مواد معين بس: فيديو وريل، أو بوست، أو كاروسيل، أو بوست رابط. الفلتر للعرض بس.','content')
+frule('digital-team-chat.js','احفظها في تعليمات الوكلاء','علّم عليها لو الرسالة تعليمات دايمة الوكلاء يفتكروها في كل مرة.','digital-team')
+frule('digital-team-chat.js','متابعة دورية','علّم عليها علشان الوكيل يتابع الموضوع ده بشكل دوري (يومي أو أسبوعي). المتابعة تحليلية بس.','digital-team')
+frule('digital-team-chat.js','موعد المتابعة بتوقيت الإمارات','الساعة اللي المتابعة الدورية بتشتغل فيها، بتوقيت الإمارات.','digital-team')
+frule('digital-team-chat.js|digital-team-server-chat.js','اكتب رسالتك هنا...|اكتب رسالتك… (@ لاختيار وكيل)','اكتب رسالتك للوكيل. اكتب @ علشان تختار وكيل معين. ماتكتبش بيانات مرضى أو كلمات سر.','digital-team')
+frule('digital-team-communications.js','المرسل إليه','الوكيل اللي هتبعتله، أو الفريق كله.','digital-team')
+frule('digital-team-communications.js','مثال: يا حور راجع تأخر بداية الكشف وحلل الأسباب واقترح الحلول، واطلب رأي حتب في أثر الانتظار على المرضى.|الرسالة أو وصف المهمة','اكتب المطلوب بوضوح: إيه اللي يتراجع، وإيه النتيجة اللي عايزها، ومين يتشارك. الرد استشاري ومابينفذش حاجة لوحده.','digital-team')
+frule('digital-team-communications.js','فلترة حسب الوكيل|فلترة حسب نوع الرسالة','اعرض رسايل وكيل معين أو نوع معين بس. الفلتر للعرض بس.','digital-team')
+S='digital-team-server-chat.js'
+frule(S,'مثال: سارة من التسويق|مين المسؤول أو أي مشروع؟ (اختياري)','اكتب مين المسؤول عن المهمة أو المشروع اللي تخصه، لو تعرف.','digital-team')
+frule(S+'|patient360.js','بحث في المحادثات|ابحث في المحادثات',CHAT_SEARCH,'digital-team')
+frule(S,'الوكيل المطلوب','اختار الوكيل اللي عايز يرد على رسالتك.','digital-team')
+frule(S,'سؤالك|اكتب سؤالك عن الداشبورد…','اكتب سؤالك عن استخدام الداشبورد. المساعد بيقرا بس ومابيغيرش أي بيانات.','digital-team')
+frule(S,'اسم المحادثة','اسم يميز المحادثة الجديدة، زي موضوعها.','digital-team')
+frule(S,'البحث عن مستخدم|ابحث عن مستخدم','اكتب اسم الزميل علشان تضيفه للمحادثة.','digital-team')
+frule(S,'إتاحة السجل السابق للمشاركين الجدد','علّم عليها علشان المشاركين الجداد يشوفوا الرسايل القديمة. من غيرها بيشوفوا من الرسالة الجاية بس.','digital-team')
+frule(S,'المحادثة','اختار المحادثة اللي عايز تصدرها، أو كل محادثاتك.','digital-team')
+frule(S,'الصيغة','صيغة ملف التصدير: CSV يتفتح في Excel، أو نص عادي.','digital-team')
+frule(S,'السماح للموظفين بسؤال سونو الذكي (Codex، قراءة فقط)','تشغيل أو إيقاف إمكانية إن الموظفين يسألوا المساعد الذكي. المساعد بيقرا بس، وفيه حد يومي لكل موظف.','digital-team')
+frule('digital-team.js','اكتب المطلوب أو سؤالك بالتفصيل...','اكتب سؤالك أو تعليماتك للوكيل بالتفصيل. الرد استشاري.','digital-team')
+frule('digital-team.js','اختر مهمة بها مرفق','اختار مهمة فيها ملف علشان الوكيل يراجعه. المراجعة قراءة بس ومابتغيرش حالة المهمة.','digital-team')
+frule('employee-assistant.js','اكتب اللي مش عارف تعمله…','اكتب اللي مش عارف تعمله في الداشبورد. الرد بيعتمد على الشاشة اللي انت فيها وصلاحياتك ودليل التشغيل.','digital-team')
+frule('employee-performance.js','فترة المتابعة','الفترة اللي مؤشر الأداء بيتحسب عليها، زي الشهر ده أو آخر 3 شهور.','indicators')
+M='leads-missing-data-enhancement.js'
+frule(M,'فلتر البيانات الناقصة','اعرض العملاء الناقصين بيان معين، زي الاسم أو التليفون أو الخدمة.','leads-guide')
+frule(M,'بحث بالاسم أو رقم التليفون','اكتب جزء من اسم العميل أو رقمه.','leads-guide')
+frule(M,'الاسم الثلاثي على الأقل','اكتب اسم العميل ثلاثي زي ما قاله، علشان يتطابق مع ملفه بعدين.','leads-guide')
+frule(M,'الخدمة المهتم بها','الخدمة اللي العميل سأل عنها أو مهتم بيها.','leads-guide')
+frule('render-metaads.js','الصق التوكن هنا','الصق توكن Meta اللي بصلاحية قراءة الإعلانات بس. بيتحفظ على السيرفر ومابيظهرش تاني لحد.','ads-guide')
+frule('render-org-legal.js','اربطه بحساب البنك في الحسابات (اختياري)','اختار حساب البنك المقابل في شجرة الحسابات، علشان بيانات البنك هنا تتطابق مع الدفاتر.','org-legal')
+frule('render-org-legal.js','الملف (PDF أو صورة — لحد 15 ميجا)','اختار صورة المستند أو PDF لحد 15 ميجا. بيتحفظ في مكان خاص وبيتفتح بلينك مؤقت.','org-legal')
+frule('render-performance.js','نطاق العرض','اعرض كل البوستات، أو آخر عدد معين، أو فترة من تاريخ لتاريخ.','indicators')
+frule('render-performance.js','عدد البوستات','عدد آخر البوستات اللي عايز تشوف أداءها.','indicators')
+P='render-publish.js'
+frule(P,'خصوصية فيديو TikTok','مين يقدر يشوف الفيديو على TikTok. لازم تختار بنفسك قبل النشر.','publishing-guide')
+frule(P,'عنوان فيديو يوتيوب (لحد ١٠٠ حرف)','عنوان الفيديو على يوتيوب، 100 حرف بالكتير.','publishing-guide')
+frule(P,'الظهور على يوتيوب','عام يظهر للكل، أو بالرابط بس (Unlisted) يشوفه اللي معاه الرابط.','publishing-guide')
+frule(P,'Client ID|Client Secret','بيانات تطبيق Google اللي بيربط قناة يوتيوب. بتتحفظ على السيرفر، وماتبعتهاش لحد في رسالة.','publishing-guide')
+frule('render-tasks.js','سبب الاعتماد المباشر','الموظف ماسلمش المهمة رسمي. اكتب ليه بتقفلها، زي إن الشغل اتسلم في التعليقات.','tasks-guide')
+frule('render-tasks.js','سبب الإلغاء','اكتب ليه المهمة اتلغت. الملغاة مابتتحسبش متأخرة ومابيجيش عنها تنبيهات.','tasks-guide')
+frule('render-tasks.js','شخص تاني','اختار زميل معين يوصله التعليق غير المسؤول ومدير المشروع.','tasks-guide')
+frule('staff-profile.js','الصورة','اختار صورتك الشخصية: JPG أو PNG أو WebP لحد 8 ميجا. بتتصغر وتظهر جنب اسمك.','personal')
 def norm(v):
  v=re.sub(r'[\u064b-\u065f\u0670\u0640]','',v).lower();v=re.sub('[أإآٱ]','ا',v).replace('ى','ي').replace('ة','ه');v=re.sub(r'[^\w]+',' ',v).strip();return re.sub(r'(^| )ال',r'\1',v)
 def canon(v):
  v=re.sub(r'\s*\([^)]*(?:اختياري|إن وجد|ان وجد)[^)]*\)','',v);v=re.sub(r'\s*(?:إن وجد|إن وجدت|اختياري)$','',v);return norm(v)
+OVERLAY_FILES={'digital-team.js','digital-team-chat.js','digital-team-communications.js','digital-team-server-chat.js','administrative-assistant.js','employee-assistant.js','staff-profile.js'}
 PRICE_FILES={'price-list-governance.js','contract-price-workspace.js','contract-service-mapping.js','service-mapping-review.js','service-search-picker.js','center-master-review.js'}
 def domain(f):
  if f=='workforce-prices.js' or f.startswith('hr-'):return 'human_resources'
@@ -914,6 +965,11 @@ def domain(f):
  if f=='lab-link-review.js':return 'price_lists'
  if f=='test-records.js':return 'admin'
  if f=='patient360.js':return 'leads'
+ if f in OVERLAY_FILES:return 'home'
+ if f=='render-org-legal.js':return 'org_legal'
+ if f=='leads-missing-data-enhancement.js':return 'leads'
+ if f=='render-performance.js':return 'performance'
+ if f=='employee-performance.js':return 'staff_kpi'
  if f=='contract-marketing.js':return 'accounting'
  if f in ['render-patients.js','psychology-workspace.js'] or f.startswith('patient-'):return 'patients'
  if f.startswith('reception-') or f=='render-bookings.js':return 'reception_services'
@@ -951,7 +1007,8 @@ def tabs_for(tab,file,label=''):
  if file=='contract-marketing.js':return ['accounting','contracting_entities']
  if file=='workforce-prices.js':return ['human_resources','price_lists']
  # Patient 360 is an overlay opened from any tab.
- if file=='patient360.js':return None
+ if file=='patient360.js' or file in OVERLAY_FILES:return None
+ if file=='employee-performance.js':return ['staff_kpi','my_kpi','human_resources']
  if file in ('entity-claims.js','insurance-billing.js'):return ['accounting','booking_cash','contracting_entities']
  if file in PRICE_FILES or file=='contract-navigation.js':return ['price_lists','contracting_entities']
  # Only the card fields injected into the patient/visit forms also live on those tabs.
