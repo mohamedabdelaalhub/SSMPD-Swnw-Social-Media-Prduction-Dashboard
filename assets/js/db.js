@@ -1466,6 +1466,7 @@
     financeSupplierReceive: function(order,lines,reference,token,invoiceDate,documentUrl){if(invoiceDate)return handle(client.rpc('inventory_receive_invoice',{p_order:order,p_lines:lines,p_reference:reference,p_token:token,p_invoice_date:invoiceDate,p_document_url:documentUrl||''}));return handle(client.rpc('clinic_finance_supplier_receive',{p_order:order,p_lines:lines,p_reference:reference,p_token:token}));},
     financeSupplierCommand: function(action,payload,token){return handle(client.rpc('clinic_finance_supplier_command',{p_action:action,p_payload:payload,p_token:token}));},
     financeDoctorCommand: function(action,payload,token){return handle(client.rpc('clinic_finance_doctor_command',{p_action:action,p_payload:payload,p_token:token}));},
+    financeDoctorContractEnd: function(action,payload,token){return handle(client.rpc('clinic_finance_doctor_contract_end',{p_action:action,p_payload:payload,p_token:token}));},
     financeDoctorStatement: function(doctorKey,from,to){return handle(client.rpc('clinic_finance_doctor_statement',{p_doctor_key:doctorKey,p_from:from,p_to:to}));},
     financeDoctorStatementDetail: function(doctorKey,from,to){return handle(client.rpc('clinic_finance_doctor_statement_detail',{p_doctor_key:doctorKey,p_from:from,p_to:to}));},
     financeDoctorDues: function(doctorKey,from,to){return handle(client.rpc('clinic_finance_doctor_dues',{p_doctor_key:doctorKey,p_from:from,p_to:to}));},
