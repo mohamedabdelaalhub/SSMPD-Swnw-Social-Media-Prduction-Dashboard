@@ -37,6 +37,7 @@ const fs = require('fs'), assert = require('node:assert/strict'), boot = require
     r = await ask(4); assert.equal(r.state, 'open'); assert.equal(r.show, false);
     await setEval(ago(500), ago(500), ago(2)); r = await ask(4); assert.equal(r.state, 'close_due'); assert.equal(r.reason, 'shift_end');
     await setEval(ago(30), ago(30), ago(-400)); await punch(30, 0); await punch(1, 1); r = await ask(4); assert.equal(r.state, 'close_due'); assert.equal(r.reason, 'punched_out');
+    await owner("update clinic_reception.shifts set opened_at=now()-interval '10 hours' where cashier_id=$1", [rec]); await owner('delete from clinic_people.device_punches'); await setEval(ago(600), ago(600), ago(-60)); assert.equal(await st(), 'open', 'a 10-hour shift (e.g. across midnight) is not stale');
     await owner("update clinic_reception.shifts set opened_at=now()-interval '30 hours' where cashier_id=$1", [rec]); r = await ask(4); assert.equal(r.reason, 'stale'); assert.equal(r.state, 'close_due');
     // shift closed → gone (even though still inside shift time); punched out with no shift → gone
     await owner("update clinic_reception.shifts set status='submitted',opened_at=now()-interval '20 minutes',closed_at=now() where cashier_id=$1", [rec]);
