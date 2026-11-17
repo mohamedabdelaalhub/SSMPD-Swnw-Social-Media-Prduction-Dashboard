@@ -5,7 +5,7 @@ if(window.__SWNWTodayOperationsV1)return;
 window.__SWNWTodayOperationsV1=true;
 
 var css=document.createElement('link');
-css.rel='stylesheet';css.href='assets/css/today-operations.css?v=auto-bookings-20261117-1';css.dataset.todayOperations='1';
+css.rel='stylesheet';css.href='assets/css/today-operations.css?v=redesign-20261117-1';css.dataset.todayOperations='1';
 if(!document.querySelector('link[data-today-operations]'))document.head.appendChild(css);
 
 var state={day:null,workspace:null,data:null,loading:false,error:null,refreshTimer:null,context:null,sandbox:null,owner:null,generation:0,query:'',filter:'all',open:null,staff:null};
@@ -111,7 +111,7 @@ function doctorStrip(data){
  var by={},sessions={},labels={scheduled:'مجدول',on_the_way:'في الطريق',arrived:'وصل',started:'بدأ العيادة',delayed:'متأخر',ended:'انتهى',cancelled:'ملغي'};(data.doctor_sessions||[]).forEach(function(s){sessions[s.provider_id]=s;});
  (data.appointments||[]).forEach(function(a){if(!by[a.provider_id])by[a.provider_id]={name:a.provider_name,waiting:0,inside:0};if(lane(a)==='waiting')by[a.provider_id].waiting++;if(lane(a)==='inside')by[a.provider_id].inside++;});
  var ids=Object.keys(by);if(!ids.length)return '';
- return '<section class="journey-doctors" aria-label="حالة الأطباء">'+ids.map(function(id){var d=by[id],s=sessions[id]||{},status=s.status||'scheduled',late=status==='delayed'?' '+num(s.eta_minutes||0)+' د':'';return '<article class="journey-doctor journey-doctor-'+esc(status)+'"><div><h4>'+esc(d.name)+'</h4><p><span class="journey-doctor-status">'+esc((labels[status]||status)+late)+'</span> · '+num(d.waiting)+' مستني · '+num(d.inside)+' جوه</p></div>'+more(action('doctor_on_the_way',id,'في الطريق')+action('doctor_arrived',id,'وصل')+action('doctor_started',id,'بدأ')+action('doctor_delayed',id,'تأخير')+action('doctor_ended',id,'انتهى'),'حالة الطبيب')+'</article>';}).join('')+'</section>';
+ return '<section class="journey-doctors" aria-label="حالة الأطباء">'+ids.map(function(id){var d=by[id],s=sessions[id]||{},status=s.status||'scheduled',late=status==='delayed'?' '+num(s.eta_minutes||0)+' د':'';return '<article class="journey-doctor journey-doctor-'+esc(status)+'"><div><h4>'+esc(d.name)+'</h4><p><span class="journey-doctor-status">'+esc((labels[status]||status)+late)+'</span> · '+num(d.waiting)+' في الانتظار · '+num(d.inside)+' في الكشف</p></div>'+more(action('doctor_on_the_way',id,'في الطريق')+action('doctor_arrived',id,'وصل')+action('doctor_started',id,'بدأ')+action('doctor_delayed',id,'تأخير')+action('doctor_ended',id,'انتهى'),'حالة الطبيب')+'</article>';}).join('')+'</section>';
 }
 function actionCenter(data){
  var alerts=[],limit=waitLimit();
@@ -129,9 +129,9 @@ function visibleApps(){
 function metricsHtml(apps){
  var n=function(f){return apps.filter(f).length;},dueSum=apps.filter(hasDue).reduce(function(t,a){return t+Number(a.patient_due||0);},0),finance=apps.some(function(a){return a.can_view_finance;});
  var done=apps.filter(FILTERS.done),noShow=done.filter(function(a){return a.queue_status==='no_show';}).length,cancelled=done.filter(function(a){return a.queue_status==='cancelled';}).length;
- var tiles=[['coming','الحجوزات',n(FILTERS.coming),''],['late','متأخر',n(FILTERS.late),''],['waiting','في الانتظار',n(FILTERS.waiting),''],['inside','في غرفة الكشف',n(FILTERS.inside),''],['done','أنهى الكشف',done.length-noShow-cancelled,(noShow||cancelled)?'لم يحضر '+num(noShow)+' · ملغي '+num(cancelled):'']];
+ var tiles=[['all','الكل',apps.length,''],['coming','الحجوزات',n(FILTERS.coming),''],['late','متأخر',n(FILTERS.late),''],['waiting','في الانتظار',n(FILTERS.waiting),''],['inside','في غرفة الكشف',n(FILTERS.inside),''],['done','أنهى الكشف',done.length-noShow-cancelled,(noShow||cancelled)?'لم يحضر '+num(noShow)+' · ملغي '+num(cancelled):'']];
  if(finance)tiles.push(['due','عليه فلوس',n(hasDue),money(dueSum)]);
- return '<div class="journey-metrics">'+tiles.map(function(t){return '<button type="button" class="journey-metric'+(state.filter===t[0]?' is-active':'')+(t[0]==='late'&&t[2]?' is-alert':'')+'" data-journey-filter="'+t[0]+'" aria-pressed="'+(state.filter===t[0])+'"><span>'+esc(t[1])+'</span><strong>'+num(t[2])+'</strong>'+(t[3]?'<small>'+esc(t[3])+'</small>':'')+'</button>';}).join('')+'</div>';
+ return '<div class="journey-metrics journey-chips" role="toolbar" aria-label="فلترة حسب الحالة">'+tiles.map(function(t){return '<button type="button" class="journey-metric journey-f-'+t[0]+(state.filter===t[0]?' is-active':'')+(t[0]==='late'&&t[2]?' is-alert':'')+(!t[2]?' is-zero':'')+'" data-journey-filter="'+t[0]+'" aria-pressed="'+(state.filter===t[0])+'"><span>'+esc(t[1])+'</span><strong>'+num(t[2])+'</strong>'+(t[3]?'<small>'+esc(t[3])+'</small>':'')+'</button>';}).join('')+'</div>';
 }
 /* Managers: bookings each employee CREATED in a day / another day / a period. Read-only, server-checked. */
 function canStaffReport(){return hasRole(['super_admin','general_manager']);}
@@ -153,22 +153,33 @@ function staffHtml(){
  return '<section class="journey-section journey-staff" data-journey-staff aria-label="حجوزات الموظفين"><div class="journey-section-head"><h3>حجوزات الموظفين</h3><button type="button" class="btn" data-staff-close>إغلاق</button></div><p class="journey-staff-hint">الحجوزات اللي كل موظف عملها (بتاريخ عمل الحجز، مش ميعاد الكشف).</p><div class="journey-staff-filters"><div class="journey-staff-quick">'+quick+'</div>'+dates+who+'</div>'+counts+list+'</section>';
 }
 function paintStaff(c){var root=currentRoot();if(!root)return;var slot=root.querySelector('[data-journey-staff-host]');if(slot)slot.innerHTML=staffHtml();}
+function hourOf(v){var d=new Date(v);if(isNaN(d))return -1;return Number(new Intl.DateTimeFormat('en-GB',{timeZone:'Africa/Cairo',hour:'2-digit',hourCycle:'h23'}).format(d));}
+function hourLabel(h){return h<0?'بدون ميعاد':((h%12)||12)+':00 '+(h<12?'ص':'م');}
 function paintBoard(c){
  var root=currentRoot();if(!root)return;var host=root.querySelector('[data-journey-board-host]');if(!host)return;
- var apps=visibleApps(),filtered=state.filter!=='all'||String(state.query||'').trim();
- host.innerHTML=metricsHtml((state.data||{}).appointments||[])+(filtered?'<p class="journey-filter-note" role="status">بيظهر '+num(apps.length)+' من '+num(((state.data||{}).appointments||[]).length)+' '+action('clear_filter','','عرض الكل')+'</p>':'')+'<div class="journey-board">'+LANES.map(function(l){return column(l[0],l[1],apps.filter(function(a){return lane(a)===l[0];}),c);}).join('')+'</div>';
+ var all=(state.data||{}).appointments||[],apps=visibleApps().slice().sort(function(x,y){return Date.parse(x.starts_at)-Date.parse(y.starts_at)||(Number(y.priority)||0)-(Number(x.priority)||0);}),filtered=state.filter!=='all'||String(state.query||'').trim();
+ var chips=root.querySelector('[data-journey-chips-host]');if(chips)chips.innerHTML=metricsHtml(all);
+ var groups=[],at={};apps.forEach(function(a){var h=hourOf(a.starts_at);if(!(h in at)){at[h]=groups.length;groups.push({h:h,items:[]});}groups[at[h]].items.push(a);});
+ host.innerHTML=(filtered?'<p class="journey-filter-note" role="status">بيظهر '+num(apps.length)+' من '+num(all.length)+' '+action('clear_filter','','عرض الكل')+'</p>':'')+
+  (groups.length?'<div class="journey-board journey-hours">'+groups.map(function(g){return '<section class="journey-hour" data-journey-hour="'+g.h+'"><div class="journey-hour-label">'+esc(hourLabel(g.h))+'</div><div class="journey-hour-names">'+g.items.map(function(a){return card(a,c);}).join('')+'</div></section>';}).join('')+'</div>':'<p class="journey-empty">'+(filtered?'مفيش حد بالفلتر ده.':'مفيش حجوزات في اليوم ده.')+'</p>');
 }
 function paint(c){
  var root=currentRoot();if(!root)return;
  c=effectiveContext(c);root.dataset.journeyMode=c.sandbox?'trial':'live';
  if(state.error){root.innerHTML=sandboxChoice()+'<section class="journey-error"><p>'+esc(state.error.message||'تعذر تحميل تشغيل اليوم')+'</p>'+action('refresh','','إعادة المحاولة','btn-primary')+'</section>';bind(root,c);return;}
  var d=state.data||{},open=root.querySelector('details.journey-tools[open]');
- var tools=c.sandbox?'':more(action('static_qr','','QR الاستقبال')+action('settings','','إعدادات التشغيل')+action('patient_search','','بحث في ملفات المرضى')+(can('collect')?action('quick_collect','','تحصيل سريع'):'')+(can('finance')?action('finance_section','','الخزينة والوردية'):''),'أدوات الاستقبال').replace('class="journey-more"','class="journey-more journey-tools"').replace('class="journey-more-menu"','class="journey-more-menu journey-toolbar-actions"');
  var staffBtn=!c.sandbox&&canStaffReport()?'<button type="button" class="btn'+(state.staff?' is-active':'')+'" data-staff-toggle aria-pressed="'+!!state.staff+'">حجوزات الموظفين</button>':'';
  var book=c.sandbox?action('sandbox_book','','حجز تجريبي جديد','btn-primary'):(can('book')?action('new_booking','','حجز جديد','btn-primary'):'');
- root.innerHTML=sandboxChoice()+'<div class="journey-toolbar"><div class="journey-toolbar-main">'+book+staffBtn+'<input type="search" class="journey-search" data-journey-search aria-label="ابحث بالاسم أو التليفون أو رقم الملف" placeholder="ابحث بالاسم أو التليفون أو رقم الملف" value="'+esc(state.query||'')+'"></div><div class="journey-date-nav">'+action('prev','','‹ السابق')+'<input aria-label="يوم الرحلة" type="date" data-journey-day value="'+esc(state.day)+'">'+action('next','','التالي ›')+(state.day!==cairoDay()?action('today','','اليوم','btn-primary'):'')+action('refresh','','تحديث')+tools+'</div></div>'+
- '<div data-journey-staff-host>'+(c.sandbox?'':staffHtml())+'</div>'+doctorStrip(d)+'<div class="journey-layout"><main data-journey-board-host></main><aside><section class="journey-section journey-action-center"><div class="journey-section-head"><h3>يحتاج تدخل</h3></div>'+actionCenter(d)+'</section><section class="journey-section"><div class="journey-section-head"><h3>اتصال الوكيل</h3></div><p>'+num((d.outbox||[]).filter(function(o){return !o.delivered_at;}).length)+' رسالة رحلة لم تُسلّم بعد.</p><p>'+num((d.outbox||[]).filter(function(o){return !!o.delivered_at;}).length)+' رسالة تم تسليمها.</p></section></aside></div>';
+ var trial=(!c.sandbox&&window.SSMPDAuth&&window.SSMPDAuth.currentAdmin&&['super_admin','general_manager'].includes(window.SSMPDAuth.currentAdmin.role))?action('sandbox_enter','','وضع التجربة'):'';
+ var menuItems=(staffBtn?'<button type="button" class="btn" data-staff-toggle aria-pressed="'+!!state.staff+'">'+(state.staff?'إخفاء حجوزات الموظفين':'حجوزات الموظفين')+'</button>':'')+(c.sandbox?'':action('static_qr','','QR الاستقبال')+action('settings','','إعدادات التشغيل')+action('patient_search','','بحث في ملفات المرضى')+(can('collect')?action('quick_collect','','تحصيل سريع'):'')+(can('finance')?action('finance_section','','الخزينة والوردية'):''))+trial;
+ var menu=more(menuItems,'المزيد').replace('class="journey-more"','class="journey-more journey-tools"').replace('class="journey-more-menu"','class="journey-more-menu journey-toolbar-actions"');
+ var dayLabel=state.day===cairoDay()?'النهارده':'';
+ root.innerHTML=(state.sandbox?sandboxChoice():'')+'<div class="journey-top"><div class="journey-top-row"><h2>تشغيل اليوم</h2><span class="journey-top-gap"></span>'+book+menu+'</div>'+
+ '<div class="journey-date-nav"><button type="button" class="btn journey-icon" data-journey-action="prev" data-id="" aria-label="اليوم اللي فات" title="اليوم اللي فات">→</button><label class="journey-day">'+(dayLabel?'<span>'+dayLabel+'</span>':'')+'<input aria-label="يوم التشغيل" type="date" data-journey-day value="'+esc(state.day)+'"></label><button type="button" class="btn journey-icon" data-journey-action="next" data-id="" aria-label="اليوم اللي جاي" title="اليوم اللي جاي">←</button>'+(state.day!==cairoDay()?action('today','','النهارده','btn-primary'):'')+'<button type="button" class="btn journey-icon" data-journey-action="refresh" data-id="" aria-label="تحديث" title="تحديث">⟳</button></div>'+
+ '<input type="search" class="journey-search" data-journey-search aria-label="ابحث بالاسم أو التليفون أو رقم الملف" placeholder="ابحث بالاسم أو التليفون أو رقم الملف" value="'+esc(state.query||'')+'"><div data-journey-chips-host></div></div>'+
+ '<div data-journey-staff-host>'+(c.sandbox?'':staffHtml())+'</div>'+doctorStrip(d)+'<div class="journey-layout"><main data-journey-board-host></main><aside><section class="journey-section journey-action-center'+(actionCenter(d).indexOf('journey-alert')<0?' is-empty':'')+'"><div class="journey-section-head"><h3>يحتاج تدخل</h3></div>'+actionCenter(d)+'</section><section class="journey-section journey-agent'+((d.outbox||[]).length?'':' is-empty')+'"><div class="journey-section-head"><h3>اتصال الوكيل</h3></div><p>'+num((d.outbox||[]).filter(function(o){return !o.delivered_at;}).length)+' رسالة رحلة لم تُسلّم بعد.</p><p>'+num((d.outbox||[]).filter(function(o){return !!o.delivered_at;}).length)+' رسالة تم تسليمها.</p></section></aside></div>';
  if(open){var t=root.querySelector('details.journey-tools');if(t)t.open=true;}
+ var tb=document.querySelector('.topbar');root.style.setProperty('--journey-sticky-top',(tb?tb.getBoundingClientRect().height:0)+'px');
  paintBoard(c);
  if(c.sandbox){var aside=root.querySelector('aside');aside.lastElementChild.remove();aside.insertAdjacentHTML('beforeend',window.SWNJourneySandbox.messages(state.sandbox));}
  bind(root,c);
@@ -181,7 +192,7 @@ function bind(root,c){
   if(e.target.closest('[data-staff-close]')){e.preventDefault();state.staff=null;paint(state.context||c);return;}
   var sr=e.target.closest('[data-staff-range]');if(sr&&state.staff){e.preventDefault();var rr=staffRange(sr.dataset.staffRange);state.staff.from=rr[0];state.staff.to=rr[1];state.staff.open=null;staffLoad(c);return;}
   var sp=e.target.closest('[data-staff-pick]');if(sp&&state.staff){e.preventDefault();state.staff.who=state.staff.who===sp.dataset.staffPick?'':sp.dataset.staffPick;state.staff.whoName=sp.querySelector('span')?sp.querySelector('span').textContent:'';state.staff.open=null;staffLoad(c);return;}
-  var f=e.target.closest('[data-journey-filter]');if(f){e.preventDefault();state.filter=state.filter===f.dataset.journeyFilter?'all':f.dataset.journeyFilter;paintBoard(c);return;}
+  var f=e.target.closest('[data-journey-filter]');if(f){e.preventDefault();state.filter=(f.dataset.journeyFilter==='all'||state.filter===f.dataset.journeyFilter)?'all':f.dataset.journeyFilter;paintBoard(c);return;}
   var b=e.target.closest('[data-journey-action]');if(!b)return;e.preventDefault();var menu=b.closest('details.journey-more');if(menu)menu.open=false;handle(b.dataset.journeyAction,b.dataset.id,c);
  };
  var input=root.querySelector('[data-journey-day]');if(input)input.onchange=function(){state.day=input.value;load(c,true);};
@@ -265,7 +276,7 @@ function panel(c){
  if(state.owner!==owner){state.owner=owner;state.sandbox=null;state.data=null;state.loading=false;state.error=null;state.generation++;}
  state.context=c;if(state.workspace!==c.workspace){state.workspace=c.workspace;state.data=null;state.day=cairoDay();state.loading=false;state.error=null;state.generation++;}
  setTimeout(function(){if(!state.data&&!state.loading)load(c);else paint(c);},0);
- return '<section class="journey-shell"><header class="journey-title"><div><h2>تشغيل اليوم</h2><p>رحلة المريض والطابور وحالة الأطباء والتدخلات في شاشة واحدة.</p></div></header><div data-journey-root><div class="journey-loading">جاري تحميل تشغيل اليوم…</div></div></section>';
+ return '<section class="journey-shell journey-v3"><div data-journey-root><div class="journey-loading">جاري تحميل تشغيل اليوم…</div></div></section>';
 }
 
 function autoRefresh(){var root=currentRoot();if(!root||!root.isConnected||!state.context||state.loading||document.hidden||document.querySelector('.rx-modal')||root.querySelector('details.journey-more[open]')||(document.activeElement&&document.activeElement.matches&&document.activeElement.matches('[data-journey-search],[data-journey-day],[data-staff-from],[data-staff-to],[data-staff-who]')))return;load(state.context,false,true);}

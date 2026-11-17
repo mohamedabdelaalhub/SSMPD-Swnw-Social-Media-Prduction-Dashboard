@@ -1,4 +1,4 @@
-// Single reception day board (audit item 4, part 2): one board, 4 lanes, one main button per card, finance tags, filters, search.
+// Single reception day board (audit item 4, part 2): one board, patients by hour, chip strip with «الكل», one main button per card, finance tags, filters, search.
 const {JSDOM}=require('jsdom'),fs=require('node:fs'),assert=require('node:assert/strict'),{webcrypto}=require('node:crypto');
 (async()=>{
  const day=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Cairo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
@@ -20,9 +20,13 @@ const {JSDOM}=require('jsdom'),fs=require('node:fs'),assert=require('node:assert
  for(let n=0;n<200&&!q('.journey-board');n++)await new Promise(r=>setTimeout(r,10));
  assert(q('.journey-board'),'board rendered');assert.equal(calls[0],'clinic_reception_journey_hub_snapshot');
  assert.equal(w.document.querySelectorAll('[data-unified-hub]').length,0,'no second board');
- assert.deepEqual(qa('[data-journey-lane]').map(x=>x.dataset.journeyLane),['coming','waiting','inside','done']);
- const lane=k=>qa('[data-journey-lane="'+k+'"] .journey-card').map(x=>x.querySelector('h4').textContent);
- assert.equal(qa('.journey-src').map(x=>x.textContent).join(),'واتساب','owner 2026-11-17: channel tag');assert.deepEqual(qa('.journey-column h3').map(x=>x.textContent),['الحجوزات','في الانتظار','في غرفة الكشف','أنهى الكشف'],'owner 2026-11-17 lane names');assert.deepEqual(lane('coming'),['أحمد متأخر','منى جاية']);assert.deepEqual(lane('waiting'),['كريم مستني']);assert.deepEqual(lane('inside'),['سلمى جوه']);assert.equal(lane('done').length,3);
+ // owner 2026-11-17 redesign: patients grouped by hour (time order), one chip strip with «الكل», compact sticky top
+ assert(qa('.journey-hour').length>=1&&qa('.journey-hour .journey-card').length===7,'all patients sit in hour groups');
+ assert.equal(qa('.journey-card h4')[0].textContent,'أحمد متأخر','earliest first');
+ assert(qa('.journey-hour-label').every(x=>/^\d{1,2}:00 (ص|م)$/.test(x.textContent)),'hour labels like 4:00 م');
+ assert.equal(qa('.journey-src').map(x=>x.textContent).join(),'واتساب','owner 2026-11-17: channel tag');
+ assert.deepEqual(qa('[data-journey-filter]').map(x=>x.querySelector('span').textContent),['الكل','الحجوزات','متأخر','في الانتظار','في غرفة الكشف','أنهى الكشف','عليه فلوس'],'chip strip with the new names');
+ assert(q('.journey-top [data-journey-action="new_booking"]')&&q('.journey-top .journey-tools'),'book + ⋯ in the sticky top');assert(!q('.journey-title'),'no big banner');
  for(const c of qa('.journey-card'))assert(c.querySelectorAll('.journey-card-actions > .btn').length<=1,'at most one main button per card');
  const card=id=>q('.journey-card[data-appointment="'+id+'"]'),main=id=>{const b=card(id).querySelector('.journey-card-actions > .btn');return b?b.dataset.journeyAction:undefined;};
  assert.equal(main('1'),'arrive');assert.equal(main('3'),'call');assert.equal(main('4'),'visit_complete');assert.equal(main('5'),'collect_due');assert.equal(main('6'),undefined);
@@ -32,10 +36,10 @@ const {JSDOM}=require('jsdom'),fs=require('node:fs'),assert=require('node:assert
  const metric=k=>q('[data-journey-filter="'+k+'"] strong').textContent;
  assert.equal(metric('coming'),'2');assert.equal(metric('late'),'1');assert.equal(metric('waiting'),'1');assert.equal(metric('inside'),'1');assert.equal(metric('done'),'2');assert.equal(metric('due'),'1');
  assert(q('.journey-doctor-delayed').textContent.includes('15'));assert(q('[data-journey-action="new_booking"]'),'new booking for reception');
- q('[data-journey-filter="due"]').click();assert.equal(qa('.journey-card').length,1);q('[data-journey-filter="due"]').click();assert.equal(qa('.journey-card').length,7);
+ q('[data-journey-filter="due"]').click();assert.equal(qa('.journey-card').length,1);q('[data-journey-filter="due"]').click();assert.equal(qa('.journey-card').length,7);q('[data-journey-filter="inside"]').click();assert.equal(qa('.journey-card').length,1);q('[data-journey-filter="all"]').click();assert.equal(qa('.journey-card').length,7,'«الكل» resets');
  const s=q('[data-journey-search]');s.value='0100'+'3';s.dispatchEvent(new w.Event('input'));assert.deepEqual(qa('.journey-card h4').map(x=>x.textContent),['كريم مستني']);
  q('[data-journey-action="clear_filter"]').click();assert.equal(qa('.journey-card').length,7);
  card('5').querySelector('[data-journey-action="collect_due"]').click();assert.equal(collected,'inv5');
  assert.deepEqual(errors,[]);dom.window.close();
- console.log('PASS today board: one board, 4 lanes, one main button per card, menu actions, late/wait/due/paid tags, 6 filters, search, collect hand-off.');
+ console.log('PASS today board: one board, patients by hour, chip strip with «الكل», one main button per card, menu actions, late/wait/due/paid tags, 7 filters, search, collect hand-off.');
 })().catch(e=>{console.error(e);process.exit(1);});
