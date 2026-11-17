@@ -253,6 +253,14 @@ main{max-width:1320px;margin:0 auto;padding:22px 24px 40px}
 .dept.half:last-child:nth-child(even){grid-column:1/-1}
 .moves{min-height:330px}
 .dept{display:flex!important;flex-direction:column}.dept .more{margin-top:auto}
+
+.dfoot{margin-top:auto;display:flex;align-items:center;gap:6px;padding:10px 18px;border-top:1px solid var(--line);font-size:12.5px;flex-wrap:wrap}
+.fc{background:#F3F5FA;border-radius:999px;padding:3px 10px;color:var(--ink);cursor:pointer;transition:all .2s var(--ease)}
+.fc b{color:var(--blue)}
+.fc:hover{background:#E3E9F7}
+.fc.zero{background:transparent;color:#A3AAB6;cursor:default}.fc.zero b{color:#A3AAB6}
+.exp{margin-inline-start:auto;color:var(--blue);font-weight:600;cursor:pointer}
+.dept .row .av.photo{background:linear-gradient(160deg,#C9D3E6,#8C9BB8)!important}
 </style>
 </head>
 <body>
@@ -322,7 +330,7 @@ main{max-width:1320px;margin:0 auto;padding:22px 24px 40px}
             <li class="row"><span class="av"><svg><use href="#person"/></svg></span><div class="nm"><span class="t">موظف تمريض 3</span><small>تمريض</small></div><div class="meta"><b>دخل 16:02</b><span>من 5 س 47 د</span></div></li>
             <li class="row"><span class="av"><svg><use href="#person"/></svg></span><div class="nm"><span class="t">موظف تمريض 4</span><small>تمريض</small></div><div class="meta"><b>دخل 16:10</b><span>من 5 س 38 د</span></div></li>
           </ul>
-          <a class="more">القادمون والمنصرفون والإجازات (1)</a>
+          <div class="dfoot"><span class="fc">جاي لسه <b>1</b></span><span class="fc">انصرف <b>1</b></span><span class="fc">إجازة <b>1</b></span><span class="exp">عرض</span></div>
         </article>
 
         <article style="--dc:#2563EB" class="dept half short">
@@ -330,6 +338,7 @@ main{max-width:1320px;margin:0 auto;padding:22px 24px 40px}
           <ul class="rows">
             <li class="row"><span class="av"><svg><use href="#person"/></svg></span><div class="nm"><span class="t">موظفة استقبال</span><small>استقبال</small></div><div class="meta"><b>دخل 16:51</b><span>من 4 س 58 د</span></div></li>
           </ul>
+          <div class="dfoot"><span class="fc zero">جاي لسه <b>0</b></span><span class="fc zero">انصرف <b>0</b></span><span class="fc zero">إجازة <b>0</b></span></div>
         </article>
 
         <article style="--dc:#475569" class="dept half">
@@ -338,7 +347,7 @@ main{max-width:1320px;margin:0 auto;padding:22px 24px 40px}
             <li class="row"><span class="av"><svg><use href="#person"/></svg></span><div class="nm"><span class="t">مديرة إدارية</span><small>مدير · إداري</small></div><div class="meta"><b>دخل 13:44</b><span>من 8 س 5 د</span></div></li>
             <li class="row"><span class="av photo"></span><div class="nm"><span class="t">مدير مالي</span><small>مدير · مالي</small></div><div class="meta"><b>دخل 18:56</b><span>من 2 س 53 د</span></div></li>
           </ul>
-          <a class="more">القادمون والمنصرفون والإجازات (1)</a>
+          <div class="dfoot"><span class="fc zero">جاي لسه <b>0</b></span><span class="fc">انصرف <b>1</b></span><span class="fc zero">إجازة <b>0</b></span><span class="exp">عرض</span></div>
         </article>
 
         <article style="--dc:#9333EA" class="dept half">
@@ -346,6 +355,7 @@ main{max-width:1320px;margin:0 auto;padding:22px 24px 40px}
           <ul class="rows">
             <li class="row"><span class="av"><svg><use href="#person"/></svg></span><div class="nm"><span class="t">مساعد علاج طبيعي</span><small>مساعد</small></div><div class="meta"><span class="pill late">متأخر 3 س 45 د</span><b>دخل 18:45</b></div></li>
           </ul>
+          <div class="dfoot"><span class="fc zero">جاي لسه <b>0</b></span><span class="fc zero">انصرف <b>0</b></span><span class="fc zero">إجازة <b>0</b></span></div>
         </article>
 
         <article style="--dc:#65A30D" class="dept half">
@@ -353,12 +363,14 @@ main{max-width:1320px;margin:0 auto;padding:22px 24px 40px}
           <ul class="rows">
             <li class="row"><span class="av"><svg><use href="#person"/></svg></span><div class="nm"><span class="t">عاملة نظافة — وردية مسائية</span><small>عاملة</small></div><div class="meta"><b>دخل 21:00</b><span>من 48 د</span></div></li>
           </ul>
+          <div class="dfoot"><span class="fc">جاي لسه <b>1</b></span><span class="fc zero">انصرف <b>0</b></span><span class="fc zero">إجازة <b>0</b></span><span class="exp">عرض</span></div>
         </article>
         <article style="--dc:#DB2777" class="dept half">
           <div class="dh"><div class="dt"><span class="dsq"><svg><use href="#d5"/></svg></span><div><b>السوشيال ميديا</b><small>1 حاضر من 1 مجدول</small></div></div><span class="st ok">مكتمل</span></div>
           <ul class="rows">
             <li class="row"><span class="av"><svg><use href="#person"/></svg></span><div class="nm"><span class="t">مصمم جرافيك</span><small>تصميم</small></div><div class="meta"><b>دخل 16:51</b><span>من 4 س 58 د</span></div></li>
           </ul>
+          <div class="dfoot"><span class="fc zero">جاي لسه <b>0</b></span><span class="fc zero">انصرف <b>0</b></span><span class="fc zero">إجازة <b>0</b></span></div>
         </article>
       </div>
     </div>
