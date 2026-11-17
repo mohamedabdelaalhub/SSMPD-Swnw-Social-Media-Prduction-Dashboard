@@ -32,7 +32,7 @@ const { JSDOM } = require('jsdom'), fs = require('fs'), assert = require('node:a
   const search = async (type, q) => submit($('[data-tr-search]'), { type, q });
   await search('invoice', 'TST'); assert.deepEqual(calls.pop(), ['find', 'invoice', 'TST']); assert.equal($$('[data-tr-results] [data-tr-scan]').length, 2);
   $$('[data-tr-scan]')[0].click(); await tick(); await tick();
-  assert.equal(calls.pop().join(), 'scan,invoice,i1'); const box = $('[data-tr-scan-box]'); assert(box.textContent.includes('هيتمسح لو اتحذف') && box.textContent.includes('فاتورة: 1') && box.textContent.includes('سطر قيد: 2'));
+  assert.equal(calls.pop().join(), 'scan,invoice,i1'); const box = $('[data-tr-scan-box]'); { const rs = $('[data-tr-results]'); assert(rs && (box.compareDocumentPosition(rs) & 4), 'owner 2026-11-17: scan result shows above the results list'); assert(box.textContent.includes('مفيش حاجة اتمسحت')); } assert(box.textContent.includes('هيتمسح لو اتحذف') && box.textContent.includes('فاتورة: 1') && box.textContent.includes('سطر قيد: 2'));
   assert.equal($('[data-tr-blockers]'), null); assert(box.querySelector('[data-tr-flag]'), 'flag form for a clean record');
   await submit($('[data-tr-flag]'), { reason: 'فاتورة تجربة', confirm: 'غلط' });
   assert($('[data-tr-error]').textContent.includes('اكتب كلمة «تجريبي»'), 'server refusal shown'); assert.equal(flags.length, 0);
