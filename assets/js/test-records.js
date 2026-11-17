@@ -67,19 +67,20 @@
       h += '<div class="section" data-tr-find><h4 style="margin:0 0 8px;">١) تعليم سجل كتجريبي</h4><form data-tr-search style="display:flex;gap:8px;flex-wrap:wrap;align-items:end;">' +
         '<label class="field" style="flex:1;min-width:150px;">نوع السجل<select name="type">' + TYPES.map(function (t) { return '<option value="' + t[0] + '"' + (t[0] === st.type ? ' selected' : '') + '>' + e(t[1]) + '</option>'; }).join('') + '</select></label>' +
         '<label class="field" style="flex:2;min-width:180px;">بحث (اسم / رقم / مرجع)<input name="q" value="' + e(st.q) + '" autocomplete="off"></label><button class="btn" type="submit"' + (st.busy ? ' disabled' : '') + '>بحث</button></form>';
+      if (st.scan) {
+        var sc = st.scan, can = sc.exists && !sc.flagged && !(sc.blockers || []).length;
+        h += '<div data-tr-scan-box style="margin-top:10px;border:2px solid #0F369D;border-radius:12px;padding:10px 12px;background:#F4F7FD;"><p style="margin:0 0 6px;font-weight:700;color:#0F369D;">نتيجة الفحص — مفيش حاجة اتمسحت؛ ده بس بيوريك إيه اللي هيتمسح لو السجل ده اتحذف بعدين</p>' + scanBlock(sc);
+        if (sc.flagged) h += '<p class="muted">السجل معلَّم تجريبي بالفعل — احذفه من القايمة تحت.</p>';
+        if (can) h += '<form data-tr-flag style="display:grid;gap:8px;"><label class="field">سبب اعتباره تجريبيًا<input name="reason" required minlength="5" maxlength="300" placeholder="مثال: فاتورة تجربة عملها المحاسب"></label>' +
+          '<label class="field">اكتب كلمة «تجريبي» للتأكيد<input name="confirm" required autocomplete="off"></label><button class="btn" type="submit"' + (st.busy ? ' disabled' : '') + '>علّم كتجريبي</button></form>';
+        h += '</div>';
+      }
       if (st.results) {
         h += st.results.length ? '<div data-tr-results style="margin-top:8px;display:grid;gap:6px;">' + st.results.map(function (r) {
           return '<div style="display:flex;gap:8px;align-items:center;justify-content:space-between;border:1px solid #dfe6f2;border-radius:10px;padding:6px 10px;"><div><strong>' + e(r.label) + '</strong><br><small class="muted">' + e(r.sub) + '</small></div>' +
             (r.flagged ? '<span class="badge" data-tr-flagged>معلَّم تجريبي</span>' : '<button class="btn" type="button" data-tr-scan="' + e(r.key) + '">فحص</button>') + '</div>';
         }).join('') + '</div>' : '<p class="muted" data-tr-empty>مفيش نتائج.</p>';
-      }
-      if (st.scan) {
-        var sc = st.scan, can = sc.exists && !sc.flagged && !(sc.blockers || []).length;
-        h += '<div data-tr-scan-box style="margin-top:10px;border-top:1px dashed #dfe6f2;padding-top:8px;">' + scanBlock(sc);
-        if (sc.flagged) h += '<p class="muted">السجل معلَّم تجريبي بالفعل — احذفه من القايمة تحت.</p>';
-        if (can) h += '<form data-tr-flag style="display:grid;gap:8px;"><label class="field">سبب اعتباره تجريبيًا<input name="reason" required minlength="5" maxlength="300" placeholder="مثال: فاتورة تجربة عملها المحاسب"></label>' +
-          '<label class="field">اكتب كلمة «تجريبي» للتأكيد<input name="confirm" required autocomplete="off"></label><button class="btn" type="submit"' + (st.busy ? ' disabled' : '') + '>علّم كتجريبي</button></form>';
-        h += '</div>';
+        if (st.results.length) h += '<p class="muted" data-tr-scan-hint style="margin:6px 0 0;">«فحص» مش بيمسح حاجة: بيوريك السجل مرتبط بإيه، والنتيجة بتظهر فوق القايمة.</p>';
       }
       h += '</div>';
 
@@ -107,6 +108,7 @@
       else h += '<p class="muted">لسه ما اتحذفش حاجة.</p>';
       h += '</div></div>';
       box.innerHTML = h;
+      if (st.showScan) { st.showScan = false; var sb = box.querySelector('[data-tr-scan-box]'); if (sb) { if (sb.scrollIntoView) sb.scrollIntoView({ block: 'start' }); var fi = sb.querySelector('input[name=reason]'); if (fi) fi.focus({ preventScroll: true }); } }
     }
 
     function run(p, ok) {
@@ -119,7 +121,7 @@
       var t = ev.target; if (!t || !t.closest) return;
       if (t.closest('[data-tr-close]')) { bd.remove(); return; }
       var b;
-      if ((b = t.closest('[data-tr-scan]'))) { run(db.financeTestScan(st.type, b.getAttribute('data-tr-scan')), function (sc) { st.scan = sc; st.scan.key = b.getAttribute('data-tr-scan'); }); return; }
+      if ((b = t.closest('[data-tr-scan]'))) { run(db.financeTestScan(st.type, b.getAttribute('data-tr-scan')), function (sc) { st.scan = sc; st.scan.key = b.getAttribute('data-tr-scan'); st.showScan = true; }); return; }
       if ((b = t.closest('[data-tr-del-open]'))) { st.openDelete = b.getAttribute('data-tr-del-open'); render(); return; }
       if ((b = t.closest('[data-tr-unflag]'))) {
         var k = split(b.getAttribute('data-tr-unflag')), why = window.prompt('سبب إلغاء علامة «تجريبي» (٥ حروف على الأقل)');
