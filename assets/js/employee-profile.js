@@ -10,7 +10,7 @@
   // A section the viewer may not read shows a quiet note instead of an error. Aggregation follows hr-attendance-reports.js:
   // leave and excused absences never count against the person; upcoming / unmapped days are skipped.
   var C = w.SSMPDAttCore, esc = function (v) { return C.esc(v); }, ico = function (n) { return C.ico(n); };
-  var ST = { ok: ['في الميعاد', '#1F9D6B'], late: ['متأخر', '#E08A1E'], abs: ['غايب', '#D0402A'], leave: ['إجازة', '#4F75CF'], off: ['مش مجدول', '#E3E6EC'] };
+  var ST = { ok: ['في الميعاد', '#00B0BD'], late: ['متأخر', '#FF8800'], abs: ['غايب', '#FF0000'], leave: ['إجازة', '#525B6F'], off: ['مش مجدول', '#F1F4F8'] };
   var MONTHS = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
   var DAYS = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
   var BANDS = { excellent: ['ممتاز', '#1E7A55', '#E4F3EC'], good: ['جيد', '#1E7A55', '#E4F3EC'], acceptable: ['مقبول', '#B5650F', '#FDF1DC'], poor: ['سيئ', '#B3261E', '#FBE9E5'], provisional: ['نتيجة مبدئية', '#5B6B84', '#EEF1F6'] };
@@ -157,9 +157,9 @@
       h += '<div class="epf-tiles epf-s2">';
       if (A) {
         var c1 = dd(A.commit, AP.commit, false, '٪'), c2 = dd(A.absent, AP.absent, true), c3 = dd(A.late, AP.late, true);
-        h += tile('الالتزام بالمواعيد', A.commit == null ? '—' : A.commit, A.commit == null ? '' : '٪', c1[0] || (A.sched + ' يوم مجدول'), c1[1], mAtt.map(function (m) { return m.commit == null ? 0 : m.commit; }), '#1F9D6B') +
-          tile('أيام الغياب', A.absent, A.absent === 1 ? 'يوم' : 'أيام', c2[0] || ('من ' + A.sched + ' يوم مجدول'), c2[1], mAtt.map(function (m) { return m.absent; }), '#D0402A') +
-          tile('مرات التأخير', A.late, A.lateMin ? '· ' + C.dur(A.lateMin) : '', c3[0] || 'في الفترة دي', c3[1], mAtt.map(function (m) { return m.late; }), '#E08A1E');
+        h += tile('الالتزام بالمواعيد', A.commit == null ? '—' : A.commit, A.commit == null ? '' : '٪', c1[0] || (A.sched + ' يوم مجدول'), c1[1], mAtt.map(function (m) { return m.commit == null ? 0 : m.commit; }), '#00B0BD') +
+          tile('أيام الغياب', A.absent, A.absent === 1 ? 'يوم' : 'أيام', c2[0] || ('من ' + A.sched + ' يوم مجدول'), c2[1], mAtt.map(function (m) { return m.absent; }), '#FF0000') +
+          tile('مرات التأخير', A.late, A.lateMin ? '· ' + C.dur(A.lateMin) : '', c3[0] || 'في الفترة دي', c3[1], mAtt.map(function (m) { return m.late; }), '#FF8800');
       } else h += '<div class="epf-tile epf-wide">' + note(denied(S.att) ? 'بيانات الحضور تظهر لمديري الموارد البشرية بس' : 'تعذر تحميل بيانات الحضور') + '</div>';
       if (task && task.timed) h += tile('المهام في الميعاد', Math.round(task.on_time / task.timed * 100), '٪', task.on_time + ' من ' + task.timed + ' مهمة اتسلمت', '', mTask.map(function (v) { return v == null ? 0 : v; }), '#0F369D');
       else h += tile('المهام في الميعاد', '—', '', task ? 'مفيش مهام اتسلمت في الفترة دي' : denied(S.task) ? 'تظهر للسوبر أدمن والمدير العام' : 'غير متاح', '', null, '');
@@ -176,8 +176,8 @@
           '<div class="epf-legend">' + ['ok', 'late', 'abs', 'leave', 'off'].map(function (k) { return '<span><i style="background:' + ST[k][1] + '"></i>' + ST[k][0] + '</span>'; }).join('') + '</div></article>';
         var dc = deptCommit(cur.from, cur.to), tot = Math.max(1, A.sched + A.leave);
         h += '<article class="epf-card"><div class="epf-ch"><h3>توزيع الأيام<small>' + esc(cur.label) + ' · ' + A.sched + ' يوم مجدول</small></h3></div><div class="epf-meters">' +
-          [['في الميعاد', A.onTime, '#1F9D6B'], ['متأخر', A.late, '#E08A1E'], ['غايب', A.absent, '#D0402A'], ['إجازة', A.leave, '#4F75CF']].map(function (m) { return '<div class="epf-m"><div class="l"><b>' + m[0] + '</b><span>' + m[1] + ' ' + (m[1] === 1 ? 'يوم' : 'أيام') + '</span></div><div class="trk"><i data-w="' + Math.round(m[1] / tot * 100) + '" style="background:' + m[2] + '"></i></div></div>'; }).join('') + '</div>' +
-          (dc != null && A.commit != null ? '<div class="epf-cmp"><small>مقارنة بزمايله في ' + esc(C.dept(opt.department).name) + '</small><div class="epf-m"><div class="l"><b>هو</b><span>' + A.commit + '٪ في الميعاد</span></div><div class="trk"><i data-w="' + A.commit + '" style="background:#1F9D6B"></i></div></div><div class="epf-m"><div class="l"><b>متوسط القسم</b><span>' + dc + '٪</span></div><div class="trk"><i data-w="' + dc + '" style="background:#9AA5B8"></i></div></div></div>' : '') +
+          [['في الميعاد', A.onTime, '#00B0BD'], ['متأخر', A.late, '#FF8800'], ['غايب', A.absent, '#FF0000'], ['إجازة', A.leave, '#525B6F']].map(function (m) { return '<div class="epf-m"><div class="l"><b>' + m[0] + '</b><span>' + m[1] + ' ' + (m[1] === 1 ? 'يوم' : 'أيام') + '</span></div><div class="trk"><i data-w="' + Math.round(m[1] / tot * 100) + '" style="background:' + m[2] + '"></i></div></div>'; }).join('') + '</div>' +
+          (dc != null && A.commit != null ? '<div class="epf-cmp"><small>مقارنة بزمايله في ' + esc(C.dept(opt.department).name) + '</small><div class="epf-m"><div class="l"><b>هو</b><span>' + A.commit + '٪ في الميعاد</span></div><div class="trk"><i data-w="' + A.commit + '" style="background:#00B0BD"></i></div></div><div class="epf-m"><div class="l"><b>متوسط القسم</b><span>' + dc + '٪</span></div><div class="trk"><i data-w="' + dc + '" style="background:#9AA5B8"></i></div></div></div>' : '') +
           '<div class="epf-tstat"><div><small>متوسط وقت الدخول</small><b>' + (A.inN ? C.hhmm(A.inMin / A.inN) : '—') + '</b></div><div><small>خروج بدري</small><b>' + A.early + '</b></div></div></article></div>';
         h += '<div class="epf-g3"><article class="epf-card epf-s2"><div class="epf-ch"><h3>الالتزام الأسبوعي<small>٪ الأيام اللي وصل فيها في الميعاد · آخر 12 أسبوع</small></h3></div><div class="epf-chart" dir="ltr" data-line></div><div class="epf-cap">الأسبوع ← الأحدث</div></article>' +
           '<article class="epf-card"><div class="epf-ch"><h3>دقايق التأخير<small>بالدقيقة · كل أسبوع · آخر 8 أسابيع</small></h3></div><div class="epf-chart" dir="ltr" data-bars></div><div class="epf-cap">الأسبوع ← الأحدث</div></article></div>';
@@ -222,9 +222,9 @@
       if (A && by) { calendar(by); line(by); bars(by); }
       var sb = root.querySelector('[data-segbar]');
       if (sb) {
-        var v = sb.dataset.segbar.split(',').map(Number), tot = v.reduce(function (a, b) { return a + b; }, 0) || 1, lg = root.querySelector('[data-seglegend]'), names = [['في الميعاد', '#1F9D6B'], ['اتسلمت متأخر', '#E08A1E'], ['متأخرة دلوقتي', '#D0402A'], ['لسه في وقتها', '#9AA5B8']];
+        var v = sb.dataset.segbar.split(',').map(Number), tot = v.reduce(function (a, b) { return a + b; }, 0) || 1, lg = root.querySelector('[data-seglegend]'), names = [['في الميعاد', '#00B0BD'], ['اتسلمت متأخر', '#FF8800'], ['متأخرة دلوقتي', '#FF0000'], ['لسه في وقتها', '#9AA5B8']];
         v.forEach(function (n, i) {
-          if (n) { var s = d.createElement('div'); s.style.flex = n; s.style.background = names[i][1]; s.style.animationDelay = (i * 120) + 'ms'; if (n / tot > .12) s.textContent = n; s.tabIndex = 0;
+          if (n) { var s = d.createElement('div'); s.style.flex = n; s.style.background = names[i][1]; if (i === 0 || i === 1 || i === 3) s.style.color = '#333'; s.style.animationDelay = (i * 120) + 'ms'; if (n / tot > .12) s.textContent = n; s.tabIndex = 0;
             var on = function () { var b = s.getBoundingClientRect(); showTip('<b>' + n + ' مهمة</b> · ' + Math.round(n / tot * 100) + '٪<br>' + names[i][0], b.left + b.width / 2, b.top); };
             s.addEventListener('pointerenter', on); s.addEventListener('focus', on); s.addEventListener('pointerleave', hideTip); s.addEventListener('blur', hideTip); sb.appendChild(s); }
           var l = d.createElement('span'); l.innerHTML = '<i style="background:' + names[i][1] + '"></i>'; l.appendChild(d.createTextNode(names[i][0] + ' ' + n)); lg.appendChild(l);
@@ -264,10 +264,10 @@
       v.forEach(function (_, i) { txt(ax, x(i), H - 6, String(i + 1)); });
       var path = '', area = '', started = false, first = null, last = null;
       v.forEach(function (p, i) { if (p == null) return; path += (started ? 'L' : 'M') + x(i) + ',' + y(p); if (!started) first = i; started = true; last = i; });
-      el('path', { d: path + 'L' + x(last) + ',' + y(lo) + 'L' + x(first) + ',' + y(lo) + 'Z', fill: '#1F9D6B', opacity: .1 }, svg);
-      var ln = el('path', { d: path, fill: 'none', stroke: '#1F9D6B', 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }, svg); draw(ln, 1300, 150);
-      el('circle', { cx: x(last), cy: y(v[last]), r: 5, fill: '#1F9D6B', stroke: '#fff', 'stroke-width': 2 }, svg); txt(svg, x(last), y(v[last]) - 12, v[last] + '٪', 'middle', 'font-size:12px;font-weight:700;fill:#16212E');
-      var cross = el('line', { y1: P.t, y2: H - P.b, stroke: '#3B4656', 'stroke-width': 1, opacity: 0 }, svg), dot = el('circle', { r: 5, fill: '#1F9D6B', stroke: '#fff', 'stroke-width': 2, opacity: 0 }, svg);
+      el('path', { d: path + 'L' + x(last) + ',' + y(lo) + 'L' + x(first) + ',' + y(lo) + 'Z', fill: '#00B0BD', opacity: .1 }, svg);
+      var ln = el('path', { d: path, fill: 'none', stroke: '#00B0BD', 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }, svg); draw(ln, 1300, 150);
+      el('circle', { cx: x(last), cy: y(v[last]), r: 5, fill: '#00B0BD', stroke: '#fff', 'stroke-width': 2 }, svg); txt(svg, x(last), y(v[last]) - 12, v[last] + '٪', 'middle', 'font-size:12px;font-weight:700;fill:#16212E');
+      var cross = el('line', { y1: P.t, y2: H - P.b, stroke: '#3B4656', 'stroke-width': 1, opacity: 0 }, svg), dot = el('circle', { r: 5, fill: '#00B0BD', stroke: '#fff', 'stroke-width': 2, opacity: 0 }, svg);
       var hit = el('rect', { x: P.l, y: P.t, width: W - P.l - P.r, height: H - P.t - P.b, fill: 'transparent', tabindex: 0 }, svg);
       function at(i) { var r = svg.getBoundingClientRect(); i = Math.max(0, Math.min(v.length - 1, i)); var p = v[i], wk2 = wk[i]; cross.setAttribute('x1', x(i)); cross.setAttribute('x2', x(i)); cross.setAttribute('opacity', .35);
         if (p != null) { dot.setAttribute('cx', x(i)); dot.setAttribute('cy', y(p)); dot.setAttribute('opacity', 1); } else dot.setAttribute('opacity', 0);
@@ -283,7 +283,7 @@
       var ax = el('g', { class: 'axis' }, svg); [0, mx / 2, mx].forEach(function (t) { el('line', { x1: P.l, x2: W - P.r, y1: y(t), y2: y(t), class: 'gl' }, ax); txt(ax, P.l - 6, y(t) + 4, String(Math.round(t)), 'end'); });
       v.forEach(function (m, i) {
         var cx = P.l + slot * (i + .5), h = y(0) - y(m), g = el('g', { tabindex: 0 }, svg), r4 = Math.min(4, h);
-        var bar = el('path', { d: h > 0 ? 'M' + (cx - bw / 2) + ',' + y(0) + 'v' + (-(h - r4)) + 'q0,' + (-r4) + ' ' + r4 + ',' + (-r4) + 'h' + (bw - 2 * r4) + 'q' + r4 + ',0 ' + r4 + ',' + r4 + 'v' + (h - r4) + 'z' : '', fill: i >= n - 2 ? '#E08A1E' : '#F1C38A' }, g);
+        var bar = el('path', { d: h > 0 ? 'M' + (cx - bw / 2) + ',' + y(0) + 'v' + (-(h - r4)) + 'q0,' + (-r4) + ' ' + r4 + ',' + (-r4) + 'h' + (bw - 2 * r4) + 'q' + r4 + ',0 ' + r4 + ',' + r4 + 'v' + (h - r4) + 'z' : '', fill: i >= n - 2 ? '#FF8800' : '#FFC98C' }, g);
         bar.style.transformOrigin = cx + 'px ' + y(0) + 'px'; bar.style.transform = 'scaleY(0)'; bar.style.transition = 'transform .8s cubic-bezier(.22,1,.36,1) ' + (i * 60) + 'ms'; requestAnimationFrame(function () { requestAnimationFrame(function () { bar.style.transform = 'scaleY(1)'; }); });
         el('rect', { x: cx - slot / 2, y: P.t, width: slot, height: H - P.t - P.b, fill: 'transparent' }, g); txt(g, cx, H - 6, String(i + 1), 'middle', 'font-size:11px;fill:#6B7483');
         if (i === n - 1 && m) txt(g, cx, y(m) - 6, m + ' د', 'middle', 'font-size:12px;font-weight:700;fill:#16212E');
