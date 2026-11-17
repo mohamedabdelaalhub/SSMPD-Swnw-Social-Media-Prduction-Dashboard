@@ -4276,6 +4276,15 @@
     specialistForms:{speechAssessment:openSpeechProfileFormModal,psychologyAssessment:openPsychologyProfileFormModal,speechSession:openSpeechSessionFormModal,psychologySession:openPsychologySessionFormModal},
     render: render, openSearch: openSearch, openCreate: function(onCreated) { openNewPatientModal(null,onCreated); },
     openPatientById: function (id) { openPatientModal(null, null, id); },
+    // Owner 2026-11-17: «تعديل بيانات المريض» from the reception timeline menu, for any patient.
+    openEditById: function (id, onSaved) {
+      var c = window.SSMPDDb && window.SSMPDDb.client;
+      if (!c || !id) { T.show("ملف المريض مش متاح", "error"); return; }
+      Promise.resolve(c.from("patients").select("*").eq("id", id).single()).then(function (r) {
+        if (r.error || !r.data) throw (r.error || new Error("ملف المريض مش متاح"));
+        openEditPatientModal(r.data, onSaved);
+      }).catch(function (e) { T.show("تعذر فتح بيانات المريض: " + (e && e.message || e), "error"); });
+    },
     openExperienceRatingFormModal: openExperienceRatingFormModal,
     experienceRatingAvg: experienceRatingAvg
   };

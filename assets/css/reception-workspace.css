@@ -146,3 +146,7 @@
 .ab-row{padding:8px 10px;border-radius:12px;border:1px solid rgba(15,54,157,.10);background:#fff;margin-bottom:6px;font-size:13px}.ab-row.warn{border-color:#F15A22;background:#FFF6F1}
 .ab-empty{margin:6px 0;color:#667085;font-size:13px}
 @media (max-width:520px){.ab-buttons{gap:6px}.ab-btn{padding:8px;min-height:78px}.ab-btn .ab-total{font-size:20px}.ab-btn .ab-sub{font-size:10.5px}}
+/* Owner 2026-11-17: the timeline «⋯» menu ran off the screen edge on phones; it now opens in place inside the card, on its own row. */
+.rx-tl-card .rx-tl-more[open]{flex-basis:100%;width:100%}
+.rx-tl-card .rx-tl-more[open]>summary{margin-inline-start:auto}
+.rx-tl-card .rx-tl-more[open]>div{position:static;inset:auto;margin-top:6px;min-width:0;width:100%;box-shadow:none}
