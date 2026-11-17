@@ -312,6 +312,11 @@
       userDropdown.classList.remove("open");
       openChangePasswordModal();
     };
+    // Owner 2026-11-17: tapping your name or photo in the header opens «الرئيسية الشخصية».
+    (function(){var acc=root().querySelector(".header-account");if(!acc||tabs.indexOf("home")===-1)return;
+      acc.setAttribute("role","button");acc.tabIndex=0;acc.classList.add("is-home-link");acc.title="الرئيسية الشخصية";acc.setAttribute("aria-label","الرئيسية الشخصية — "+(admin.name||admin.email||""));
+      var go=function(e){var hit=e&&e.target&&e.target.closest&&e.target.closest("button,a,input,select,[data-staff-photo]");if(hit&&hit!==acc&&acc.contains(hit))return;switchTab("home");};
+      acc.addEventListener("click",go);acc.addEventListener("keydown",function(e){if(e.key==="Enter"||e.key===" "){e.preventDefault();go(e);}});})();
     userDropdown.querySelectorAll("[data-goto]").forEach(function (btn) {
       var key=btn.getAttribute("data-goto");
       if(window.SSMPDUITitles&&!(key===mainSuiteTabs[0]&&!R.isControlledFinance(admin)))btn.innerHTML=window.SSMPDI18n.textHtml(window.SSMPDUITitles.label(key,admin));
