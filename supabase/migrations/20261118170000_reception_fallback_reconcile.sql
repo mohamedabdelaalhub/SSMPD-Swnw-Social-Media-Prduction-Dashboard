@@ -27,6 +27,12 @@ alter table public.customer_bookings add column if not exists official_booking_i
 alter table public.customer_bookings add column if not exists masa_doctor_id int;
 create index if not exists customer_bookings_official_idx on public.customer_bookings (official_booking_id);
 create index if not exists customer_bookings_masa_doctor_idx on public.customer_bookings (masa_doctor_id, appointment_date);
+-- Backfill from the agent's id map (WhatsApp-agent chat 2026-11-18; no secrets): «doc_m<N>» → N, hashed ids from the list.
+-- Rows matching neither stay null (rare; agent bookings reach Masa since 2026-11-13) and still reconcile on official_booking_id.
+update public.customer_bookings c set masa_doctor_id = coalesce(
+    case when c.doctor_id ~ '^doc_m[0-9]{1,9}$' then substring(c.doctor_id from 6)::int end,
+    (select v.mid from (values ('doc_01e541ebd2b7',1074),('doc_040e204b98a8',1119),('doc_0d440dd412ad',1066),('doc_1c06a1d0fa08',1061),('doc_1d5445d2abbd',1116),('doc_25aaba18b2e6',1126),('doc_2d9b9aee31e2',1092),('doc_2f8a11dc48a2',1059),('doc_342da23a2627',1095),('doc_37b364f746c9',1096),('doc_383ba58d6bbf',1054),('doc_3ae520f7f46c',1088),('doc_3f828efe0fd8',1105),('doc_480b4a6faf45',1068),('doc_4966e1b8dc64',1102),('doc_4c3ee65d89c8',1114),('doc_7aa9a35d9a9b',1080),('doc_7e2db189b078',1065),('doc_7e61b58027ea',1081),('doc_806b48d90225',1099),('doc_809ef7fd8818',1079),('doc_a02b9c288462',1055),('doc_a519accfec16',1097),('doc_b91f7c4d0665',1122),('doc_c1f124a01579',1062),('doc_d3fd179a74e2',1077),('doc_e8bb6b9c83ae',1075),('doc_fdf688845cd6',1120)) v(aid, mid) where v.aid = c.doctor_id))
+  where c.masa_doctor_id is null and c.doctor_id is not null;
 
 create table if not exists clinic_reception.masa_bookings(
   official_booking_id text primary key check (length(official_booking_id) between 1 and 80),

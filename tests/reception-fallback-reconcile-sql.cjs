@@ -17,6 +17,12 @@ assert.deepEqual(await slots(),['10:00','10:20','10:40','11:00','11:20','11:40']
 assert((await api('book',{booking_request_id:'FB-1',masa_doctor_id:1130,appointment_date:tomorrow,appointment_time:'10:00',customer_name:'مريض احتياطي',phone:'01000000001'})).ok);
 await q('alter table public.customer_bookings disable trigger user');await q("insert into public.customer_bookings(id,booking_request_id,official_booking_id,doctor_id,masa_doctor_id,appointment_date,appointment_time,status,customer_name,phone) values(gen_random_uuid(),'AG-1','M-500','doc_383ba58d6bbf',1132,$1,'10:20','confirmed','مريض واتساب','01000000002')",[tomorrow]);
 assert.deepEqual(await slots(),['10:40','11:00','11:20','11:40'],'agent Masa booking blocks the fallback (masa_doctor_id 1132 = same doctor; doctor_id is the agent id)');
+// backfill rule (same statement as the migration) for rows synced before masa_doctor_id existed
+{const mig=require('fs').readFileSync(${JSON.stringify(path.join(__dirname,'..','supabase','migrations','20261118170000_reception_fallback_reconcile.sql'))},'utf8');
+ const upd=mig.slice(mig.indexOf('update public.customer_bookings c set masa_doctor_id'),mig.indexOf('c.doctor_id is not null;')+'c.doctor_id is not null;'.length);
+ await q("insert into public.customer_bookings(id,booking_request_id,doctor_id,status) values(gen_random_uuid(),'OLD-1','doc_m1130','cancelled'),(gen_random_uuid(),'OLD-2','doc_383ba58d6bbf','cancelled'),(gen_random_uuid(),'OLD-3','doc_unknown','cancelled')");
+ await q(upd);const b=Object.fromEntries((await q("select booking_request_id r,masa_doctor_id m from public.customer_bookings where booking_request_id like 'OLD-%'")).map(x=>[x.r,x.m]));
+ assert.deepEqual(b,{'OLD-1':1130,'OLD-2':1054,'OLD-3':null},'backfill: doc_m<N>, hashed map, unknown stays null');}
 // masa_import: reception's own Masa bookings
 const item={official_booking_id:'M-900',masa_doctor_id:1130,masa_specialization_id:400,appointment_date:tomorrow,appointment_time:'10:40',status:'active',needed_service:'كشف',patient_name:'مريض ماسا',phone:'010 0000 0003'};
 let r=await api('masa_import',{items:[item,{...item,official_booking_id:'M-500'},{...item,official_booking_id:'M-901',masa_doctor_id:9999},{...item,official_booking_id:''}]});
