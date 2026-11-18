@@ -30,7 +30,7 @@ function errText(e){
   var map={
     TERMS_NOT_ACCEPTED:"يجب الموافقة على سياسة الخصوصية وشروط الاستخدام لتفعيل الحساب.",
     DETAILS_NOT_MATCHED:"رقم الملف والبريد الإلكتروني غير متطابقين مع البيانات المسجلة بالمركز.",
-    PENDING_REQUEST_EXISTS:"فيه طلب قيد المراجعة بالفعل لنفس الملف.",
+    PENDING_REQUEST_EXISTS:"يوجد طلب قيد المراجعة بالفعل للملف نفسه.",
     STAFF_EMAIL_NOT_ALLOWED:"بريد الموظفين لا يُستخدم كحساب مستخدم للبوابة.",
     EMAIL_ALREADY_REGISTERED_CONTACT_CENTER:"البريد مسجل في النظام بحساب آخر. تواصل مع المركز.",
     PATIENT_ACCOUNT_DISABLED:"الحساب موقوف. تواصل مع المركز.",
@@ -50,7 +50,7 @@ function errText(e){
     INVALID_LOGIN_CREDENTIALS:"البريد أو كلمة السر غير صحيحة.",
     PATIENT_CODE_REQUIRED:"اكتب رقم الملف الطبي المراد إضافته.",
     PATIENT_FILE_NOT_FOUND:"رقم الملف غير موجود أو غير نشط. راجع الرقم.",
-    ACCESS_ALREADY_EXISTS:"الملف ده مرتبط بالحساب بالفعل."
+    ACCESS_ALREADY_EXISTS:"هذا الملف مرتبط بالحساب بالفعل."
   };
   var key=Object.keys(map).find(function(k){return m.indexOf(k)>=0;});
   if(key)return map[key];
@@ -143,7 +143,7 @@ function requestView(message){
 }
 var PORTAL_TERMS_VERSION="2026-11-18";
 function activationView(message,prefillEmail){
-  root.innerHTML='<div class="auth-page"><div class="auth-wrap">'+authBrand()+'<section class="auth-card"><div class="auth-heading"><h1>تفعيل الحساب</h1><p>اكتب كود الـ8 أرقام اللي وصلك من Swnw بعد اعتماد المستندات، وحدد كلمة سر جديدة.</p></div>'+nav()+(message?'<div class="notice '+(message.type||"")+'">'+esc(message.text)+'</div>':"")+'<div class="field"><label>البريد الإلكتروني</label><input id="activation-email" type="email" autocomplete="email" value="'+esc(prefillEmail||"")+'"></div><div class="field"><label>كود التفعيل</label><input id="activation-code" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="00000000"></div><div class="field"><label>كلمة السر الجديدة</label><input id="new-password" type="password" autocomplete="new-password" placeholder="10 أحرف على الأقل"></div><div class="field"><label>تأكيد كلمة السر</label><input id="confirm-password" type="password" autocomplete="new-password"></div><label class="field terms-consent" style="display:flex;gap:8px;align-items:flex-start;font-size:14px;"><input id="accept-terms" type="checkbox" style="margin-top:5px;"><span>قرأتُ <a href="privacy.html" target="_blank" rel="noopener">سياسة الخصوصية وشروط الاستخدام</a> وأوافق عليها.</span></label><button class="btn block" id="activate-btn">تفعيل الحساب</button></section>'+legalLink()+'</div></div>';
+  root.innerHTML='<div class="auth-page"><div class="auth-wrap">'+authBrand()+'<section class="auth-card"><div class="auth-heading"><h1>تفعيل الحساب</h1><p>أدخل رمز التفعيل المكوّن من 8 أرقام الذي وصلك من Swnw بعد اعتماد المستندات، ثم حدّد كلمة مرور جديدة.</p></div>'+nav()+(message?'<div class="notice '+(message.type||"")+'">'+esc(message.text)+'</div>':"")+'<div class="field"><label>البريد الإلكتروني</label><input id="activation-email" type="email" autocomplete="email" value="'+esc(prefillEmail||"")+'"></div><div class="field"><label>كود التفعيل</label><input id="activation-code" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="00000000"></div><div class="field"><label>كلمة السر الجديدة</label><input id="new-password" type="password" autocomplete="new-password" placeholder="10 أحرف على الأقل"></div><div class="field"><label>تأكيد كلمة السر</label><input id="confirm-password" type="password" autocomplete="new-password"></div><label class="field terms-consent" style="display:flex;gap:8px;align-items:flex-start;font-size:14px;"><input id="accept-terms" type="checkbox" style="margin-top:5px;"><span>قرأتُ <a href="privacy.html" target="_blank" rel="noopener">سياسة الخصوصية وشروط الاستخدام</a> وأوافق عليها.</span></label><button class="btn block" id="activate-btn">تفعيل الحساب</button></section>'+legalLink()+'</div></div>';
   wireNav();
   document.getElementById("activate-btn").onclick=function(){var btn=this,email=document.getElementById("activation-email").value.trim().toLowerCase(),code=document.getElementById("activation-code").value.replace(/\D/g,""),password=document.getElementById("new-password").value,confirmPassword=document.getElementById("confirm-password").value;if(password!==confirmPassword){activationView({type:"error",text:"كلمتا السر غير متطابقتين."},email);return;}if(password.length<10){activationView({type:"error",text:"كلمة السر لازم تكون 10 أحرف على الأقل."},email);return;}if(!document.getElementById("accept-terms").checked){activationView({type:"error",text:"يجب الموافقة على سياسة الخصوصية وشروط الاستخدام لتفعيل الحساب."},email);return;}btn.disabled=true;btn.textContent="جاري التفعيل…";invoke("patient-portal-self-service",{op:"activate",email:email,code:code,new_password:password,terms_version:PORTAL_TERMS_VERSION}).then(function(){return window.SSMPDTurnstile.token().then(function(ct){return client.auth.signInWithPassword({email:email,password:password,options:{captchaToken:ct}});});}).then(function(r){if(r.error)throw r.error;return completeLogin();}).catch(function(e){activationView({type:"error",text:errText(e)},email);});};
 }
