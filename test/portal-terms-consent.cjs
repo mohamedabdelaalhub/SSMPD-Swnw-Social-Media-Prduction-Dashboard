@@ -8,7 +8,7 @@ assert.equal(v1,v2);assert.equal(v2,v3);
 assert.match(app,/id="accept-terms" type="checkbox"/);
 assert.match(app,/terms_version:PORTAL_TERMS_VERSION/);
 assert.match(app,/if\(!document\.getElementById\("accept-terms"\)\.checked\)/);
-for(const h of ['123','151 لسنة 2020','مش للطوارئ','24 ساعة'])assert.ok(page.includes(h),'page mentions '+h);
+for(const h of ['123','151 لسنة 2020','ليست مخصّصة للحالات الطارئة','24 ساعة'])assert.ok(page.includes(h),'page mentions '+h);
 (async()=>{
   const src=stripTypeScriptTypes(fnSrc.replace(/^import .*;\n/gm,''));let handler,touched=[];
   const q=t=>{touched.push(t);const self={select(){return self},eq(){return self},is(){return self},gt(){return self},order(){return self},limit(){return self},update(){return self},insert(){return self},maybeSingle(){return Promise.resolve({data:null,error:null})},then(r){return Promise.resolve({data:[],error:null}).then(r)}};return self;};
