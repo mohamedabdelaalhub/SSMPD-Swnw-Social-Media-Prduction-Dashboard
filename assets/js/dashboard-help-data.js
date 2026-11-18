@@ -1,6 +1,6 @@
 /* Reviewed operational help; no patient records, network calls or generated AI answers. */
 window.SSMPDHelpData={
-  "version": "20261118-20",
+  "version": "20261118-26",
   "articles": [
     {
       "id": "booking-inactive",
