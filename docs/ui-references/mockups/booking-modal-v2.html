@@ -1,0 +1,121 @@
+<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>تصور v2 — نافذة حجز موعد الجديدة</title><style>
+:root{--blue:#0F369D;--orange:#F15A22;--ink:#16212E;--pos:#2F7D5C;--neg:#D0402A;--bg:#EEF0F5;--line:#DDE1EA;--muted:#6B7483;--hl:#FFE9A8}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;font-size:14px;padding:16px}
+.tools{max-width:600px;margin:0 auto 12px;display:flex;gap:8px;flex-wrap:wrap}
+.tools button{height:36px;padding:0 14px;border-radius:10px;border:1px solid var(--line);background:#fff;font:inherit;white-space:nowrap;cursor:pointer}
+.tools button.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+.modal{max-width:600px;margin:0 auto;background:var(--bg);border-radius:22px;box-shadow:0 18px 50px rgba(15,54,157,.2);display:flex;flex-direction:column;max-height:none}
+.mh{background:linear-gradient(90deg,#0F369D,#1d4fd0);color:#fff;padding:14px 18px;border-radius:22px 22px 0 0;font-weight:700;font-size:16px;display:flex;justify-content:space-between;align-items:center}
+.mh .x{width:32px;height:32px;border-radius:10px;background:rgba(255,255,255,.18);display:grid;place-items:center}
+.mb{padding:14px;display:grid;gap:12px}
+.card{background:#fff;border-radius:16px;padding:14px;display:grid;gap:12px;box-shadow:0 1px 0 var(--line)}
+.card h4{margin:0;font-size:13px;color:var(--blue);display:flex;align-items:center;gap:8px}
+.card h4 i{width:22px;height:22px;border-radius:50%;background:var(--blue);color:#fff;display:grid;place-items:center;font-style:normal;font-size:12px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+label.f{display:grid;gap:6px;font-size:13px;color:var(--muted);min-width:0}
+.cb{position:relative}
+.cb-input,.plain{width:100%;height:44px;border:1px solid var(--line);border-radius:12px;padding:0 40px 0 38px;font:inherit;color:var(--ink);background:#fff}
+.plain{padding:0 12px}
+.cb-input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(15,54,157,.15)}
+.cb-ico{position:absolute;right:13px;top:13px;width:18px;height:18px;color:var(--muted);pointer-events:none}
+.cb-clear{position:absolute;left:8px;top:8px;width:28px;height:28px;border:0;border-radius:8px;background:#f1f3f8;color:var(--muted);cursor:pointer;display:none}
+.cb.has .cb-clear{display:block}
+.cb-list{position:absolute;z-index:20;top:50px;inset-inline:0;max-height:250px;overflow:auto;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 14px 34px rgba(22,33,46,.16);padding:6px;display:none}
+.cb.open .cb-list{display:block}
+.cb-opt{display:flex;justify-content:space-between;gap:10px;padding:9px 10px;border-radius:10px;cursor:pointer}
+.cb-opt .t{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cb-opt .s{flex:none;color:var(--muted);font-size:12px;white-space:nowrap}
+.cb-opt.act,.cb-opt:hover{background:#E8EEFC}.cb-opt[aria-selected=true]{font-weight:700;color:var(--blue)}
+mark{background:var(--hl);color:inherit;border-radius:4px;padding:0 1px}
+.cb-empty{padding:14px;color:var(--muted);text-align:center}.cb-count{padding:4px 10px 6px;color:var(--muted);font-size:12px;border-bottom:1px solid var(--line);margin-bottom:4px}
+.sel{margin-top:6px;display:none;align-items:center;background:#EAF5EF;color:var(--pos);border-radius:10px;padding:7px 10px;font-size:13px}.cb.has+.sel{display:flex}
+.sw{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.sw .tx{min-width:0}.sw b{display:block;font-size:13px;color:var(--ink)}.sw small{color:var(--muted)}
+.tg{flex:none;width:46px;height:26px;border-radius:99px;background:#cfd5e2;position:relative;cursor:pointer;border:0;transition:.2s}
+.tg::after{content:"";position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:.2s}
+.tg.on{background:var(--orange)}.tg.on::after{right:23px}
+.warn{background:#FFF3EC;border:1px solid #F7C9B0;border-radius:14px;padding:12px}
+.slots{display:flex;gap:8px;flex-wrap:wrap}
+.slot{height:38px;padding:0 14px;border-radius:10px;border:1px solid var(--line);background:#fff;font:inherit;white-space:nowrap;cursor:pointer}
+.slot.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+.noslot{background:#F6F7FB;border-radius:12px;padding:12px;display:grid;gap:10px;color:var(--muted)}
+.noslot .a{display:flex;gap:8px;flex-wrap:wrap}
+.btn{height:40px;padding:0 16px;border-radius:12px;border:0;background:var(--blue);color:#fff;font:inherit;font-weight:700;white-space:nowrap;cursor:pointer}
+.btn.g{background:#E8EEFC;color:var(--blue)}.btn.l{background:#eef0f5;color:var(--ink)}
+.extra{border:1px dashed var(--line);border-radius:14px;padding:12px;display:grid;gap:10px;position:relative}
+.foot{position:sticky;bottom:0;background:#fff;padding:12px 14px;display:flex;gap:10px;border-radius:0 0 22px 22px;box-shadow:0 -6px 18px rgba(22,33,46,.08)}
+.foot .btn{flex:1}.foot .btn.l{flex:none}
+.err{color:var(--neg);font-size:12px;display:none}
+body.sheet{padding:0;background:rgba(22,33,46,.45);min-height:100vh;display:flex;align-items:flex-end}
+body.sheet .modal{width:100%;max-width:none;border-radius:22px 22px 0 0;max-height:calc(100vh - 110px);overflow:auto}
+body.sheet .tools{position:fixed;top:8px;inset-inline:8px;z-index:50;margin:0}
+body.sheet .mh{border-radius:22px 22px 0 0}
+body.sheet .row2{grid-template-columns:1fr}
+.grab{display:none;width:44px;height:5px;border-radius:9px;background:rgba(255,255,255,.5);margin:0 auto 8px}
+body.sheet .grab{display:block}
+</style></head><body>
+<div class="tools"><button class="on" data-v="desk">ديسكتوب</button><button data-v="mob">موبايل (ورقة من تحت)</button><button data-s="slots" class="on">فيه مواعيد</button><button data-s="none">مفيش مواعيد</button><button data-s="walk">حضور بدون ميعاد</button></div>
+<div class="modal"><div class="mh"><div><div class="grab"></div>حجز موعد</div><span class="x">✕</span></div>
+<div class="mb">
+<section class="card"><h4><i>1</i>مين المريض؟</h4>
+<label class="f">المريض — اكتب الاسم أو رقم الملف أو التليفون<div class="cb" data-cb="patients"></div><div class="sel"></div></label><div class="err" id="e1">اختار المريض الأول</div></section>
+<section class="card"><h4><i>2</i>إيه الخدمة ومع مين؟</h4>
+<div class="row2"><label class="f">القسم / التخصص<div class="cb" data-cb="depts"></div><div class="sel"></div></label><label class="f">الطبيب<div class="cb" data-cb="providers"></div><div class="sel"></div></label></div>
+<label class="f">الخدمة<div class="cb" data-cb="services"></div><div class="sel"></div></label>
+<div class="sw"><div class="tx"><b>خدمة خارجية</b><small>مبلغ إضافي يُضاف على فاتورة المريض</small></div><button class="tg" aria-label="خدمة خارجية"></button></div>
+<div id="extras"></div>
+<button class="btn g" id="addx" style="justify-self:start">+ إضافة خدمة</button></section>
+<section class="card"><h4><i>3</i>امتى؟</h4>
+<label class="f">تاريخ الحجز (بتوقيت القاهرة)<input class="plain" type="date" value="2026-11-18"></label>
+<div id="when"></div></section>
+</div>
+<div class="foot"><button class="btn">تأكيد الحجز</button><button class="btn l">إلغاء</button></div></div>
+<script>
+var DATA={
+ patients:[["P-2026-001892","سارة أيمن مصطفى","01012345678"],["P-2026-001893","عبد الرحمان سامح شعبان","01123456789"],["P-2026-001894","حسام الدين عاطف محمد","01234567890"],["P-2026-001895","محمد عبد الله عبد الحميد","01098765432"],["P-2026-001913","ساره محمد جميل","01011112222"],["P-2026-001914","نور ياسر محمد","01133334444"],["P-2026-001915","ياسين مؤمن احمد","01255556666"],["P-2026-001916","محمد سعيد محى","01077778888"],["P-2026-001917","طلال فهمي محمد","01199990000"],["P-2026-001866","شاكر البدري أحمد","01022223333"],["P-2026-001663","علا عصام","01144445555"],["P-2026-001792","أمل أبو الحمد جابر","01266667777"],["P-2026-001770","ايمان عادل","01088889999"],["P-2026-001831","عبدالعليم عبد القادر","01100001111"],["P-2026-001772","دنيا رفاعي مختار","01211112222"]],
+ depts:[["","الاسنان"],["","الاشعة"],["","التحاليل"],["","التغذية والتخسيس"],["","الجراحة"],["","الجلدية والتجميل"],["","الطوارئ"],["","العظام"],["","العلاج الطبيعي"],["","الكيماوي"],["","المخ والأعصاب"],["","المسالك"],["","النسا والتوليد"],["","النفسية والتخاطب"],["","انف واذن وسمعيات"],["","باقي التحاليل"],["","خدمات الكشف"]],
+ services:[["الجلدية والتجميل","جلسة تنظيف بشرة عادية (شامل المستلزمات)","500.00 ج.م"],["التحاليل","Myoglobin In Serum","950.00 ج.م"],["الجراحة","رفع سلك معدني (غير شامل المستلزمات)","600.00 ج.م"],["الجلدية والتجميل","جلسة فراكشنال (حروق) حجم متوسط","750.00 ج.م"],["انف واذن وسمعيات","فتح خراج خلف الأذن طوارئ","500.00 ج.م"],["التحاليل","HCV RNA PCR (Qualitative)","1,500.00 ج.م"],["الجراحة","فك غرز جراحية","500.00 ج.م"],["الجراحة","فتح خراج صغير بواسطة طبيب","500.00 ج.م"],["انف واذن وسمعيات","غسيل أنف وأذن","800.00 ج.م"],["التحاليل","CD33","1,500.00 ج.م"],["التحاليل","Lead In Blood (Pb)","650.00 ج.م"],["التحاليل","Dopamine- Urine","3,000.00 ج.م"],["الجلدية والتجميل","خياطة جرح تجميل","2,000.00 ج.م"],["العظام","وضع جبس من المرفق إلى الأصابع","800.00 ج.م"],["الجلدية والتجميل","تركيب اللولب الهرموني","2,500.00 ج.م"],["التحاليل","Calprotectin In Stool (Qual.)","800.00 ج.م"],["الاشعة","أشعة سينية على الصدر","350.00 ج.م"],["الاسنان","حشو عصب","1,200.00 ج.م"]]
+};
+function norm(s){return String(s||'').toLowerCase().replace(/[ً-ْـ]/g,'').replace(/[أإآ]/g,'ا').replace(/ى/g,'ي').replace(/ة/g,'ه').replace(/[٠-٩]/g,function(d){return '٠١٢٣٤٥٦٧٨٩'.indexOf(d)}).trim()}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function hl(text,q){if(!q)return esc(text);var n=norm(text),i=n.indexOf(q);if(i<0||n.length!==text.length)return esc(text);return esc(text.slice(0,i))+'<mark>'+esc(text.slice(i,i+q.length))+'</mark>'+esc(text.slice(i+q.length))}
+var state={depts:'',picked:{}};
+var CFG={
+ providers:{ph:'ابحث عن طبيب…',title:function(r){return r[1]},sub:function(r){return r[0]},hay:function(r){return r[1]+' '+r[0]},rows:function(){return [['جلدية','د. منى السيد'],['جلدية','د. هاني فؤاد'],['جراحة','د. أحمد رضا'],['تحاليل','د. نادين كمال'],['عظام','د. طارق منصور']]},empty:'مفيش طبيب بالاسم ده.'},
+ patients:{ph:'ابحث بالاسم أو الرقم…',title:function(r){return r[1]},sub:function(r){return r[0]},hay:function(r){return r[0]+' '+r[1]+' '+r[2]},rows:function(){return DATA.patients},empty:'مفيش مريض بالاسم ده — جرّب جزء تاني من الاسم، أو سجّل مريض جديد.'},
+ depts:{ph:'ابحث عن قسم…',title:function(r){return r[1]},sub:function(){return ''},hay:function(r){return r[1]},rows:function(){return DATA.depts},empty:'مفيش قسم بالاسم ده.'},
+ services:{ph:'ابحث عن خدمة…',title:function(r){return r[1]},sub:function(r){return r[2]},hay:function(r){return r[1]+' '+r[0]},rows:function(){return DATA.services.filter(function(r){return !state.depts||r[0]===state.depts})},empty:'مفيش خدمة بالاسم ده في القسم المختار.'}
+};
+function initCb(box){
+ var key=box.dataset.cb,cfg=CFG[key],act=-1,shown=[];
+ box.innerHTML='<svg class="cb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input class="cb-input" role="combobox" aria-expanded="false" autocomplete="off" placeholder="'+cfg.ph+'"><button type="button" class="cb-clear" aria-label="مسح">✕</button><div class="cb-list" role="listbox"></div>';
+ var inp=box.querySelector('input'),list=box.querySelector('.cb-list'),clr=box.querySelector('.cb-clear'),sel=box.parentNode.querySelector('.sel');
+ function render(){var q=norm(inp.value);var rows=cfg.rows();shown=rows.filter(function(r){return !q||norm(cfg.hay(r)).indexOf(q)>-1});
+  var top=shown.slice(0,50);
+  list.innerHTML=top.length?('<div class="cb-count">'+(q?shown.length+' نتيجة':'كل الخيارات ('+shown.length+')')+'</div>'+top.map(function(r,i){return '<div class="cb-opt'+(i===act?' act':'')+'" role="option" data-i="'+i+'" aria-selected="'+(state.picked[key]===r)+'"><span class="t">'+hl(cfg.title(r),q)+'</span><span class="s">'+esc(cfg.sub(r))+'</span></div>'}).join('')):'<div class="cb-empty">'+cfg.empty+'</div>';
+  shown=top}
+ function open(){box.classList.add('open');inp.setAttribute('aria-expanded','true');render()}
+ function close(){box.classList.remove('open');inp.setAttribute('aria-expanded','false');act=-1}
+ function pick(r){state.picked[key]=r;inp.value=cfg.title(r);box.classList.add('has');sel.textContent='✓ '+cfg.title(r)+(cfg.sub(r)?' — '+cfg.sub(r):'');
+  if(key==='depts'){state.depts=r[1];var s=document.querySelector('[data-cb=services]');if(state.picked.services&&state.picked.services[0]!==r[1]){s.querySelector('.cb-clear').click()}}
+  close()}
+ clr.onclick=function(){state.picked[key]=null;inp.value='';box.classList.remove('has');if(key==='depts')state.depts='';inp.focus();open()};
+ inp.onfocus=open;inp.oninput=function(){act=0;box.classList.remove('has');state.picked[key]=null;if(key==='depts')state.depts='';open()};
+ inp.onkeydown=function(e){if(e.key==='ArrowDown'){e.preventDefault();act=Math.min(shown.length-1,act+1);render()}else if(e.key==='ArrowUp'){e.preventDefault();act=Math.max(0,act-1);render()}else if(e.key==='Enter'){e.preventDefault();if(shown[act>=0?act:0])pick(shown[act>=0?act:0])}else if(e.key==='Escape')close()};
+ list.onmousedown=function(e){var o=e.target.closest('.cb-opt');if(o){e.preventDefault();pick(shown[+o.dataset.i])}};
+ inp.onblur=function(){setTimeout(close,120)};
+}
+document.querySelectorAll('[data-cb]').forEach(initCb);
+
+var when=document.getElementById('when');
+function setS(s){var h='';
+ if(s==='slots')h='<div class="f" style="display:grid;gap:8px;color:var(--muted);font-size:13px">اختار الوقت المتاح<div class="slots"><button class="slot">10:00 ص</button><button class="slot on">10:30 ص</button><button class="slot">11:00 ص</button><button class="slot">12:30 م</button><button class="slot">1:00 م</button></div></div>';
+ if(s==='none')h='<div class="noslot"><div>مفيش مواعيد متاحة النهارده مع الدكتور ده.</div><div class="a"><button class="btn g">أقرب يوم متاح: بكرة</button><button class="btn g">اختيار وقت يدوي</button></div></div>';
+ if(s==='walk')h='<div class="warn"><div class="sw"><div class="tx"><b style="color:#8A3A12">حضور بدون ميعاد</b><small style="color:#8A3A12">المريض موجود دلوقتي — أول وقت فاضي مع الدكتور من دلوقتي</small></div><button class="tg on" aria-label="حضور بدون ميعاد"></button></div></div>';
+ when.innerHTML=h;
+ when.querySelectorAll('.slot').forEach(function(b){b.onclick=function(){when.querySelectorAll('.slot').forEach(function(x){x.classList.remove('on')});b.classList.add('on')}})}
+setS('slots');
+document.querySelectorAll('[data-s]').forEach(function(b){b.onclick=function(){document.querySelectorAll('[data-s]').forEach(function(x){x.classList.remove('on')});b.classList.add('on');setS(b.dataset.s)}});
+document.querySelectorAll('[data-v]').forEach(function(b){b.onclick=function(){document.querySelectorAll('[data-v]').forEach(function(x){x.classList.remove('on')});b.classList.add('on');document.body.classList.toggle('sheet',b.dataset.v==='mob')}});
+document.querySelectorAll('.tg').forEach(function(t){t.onclick=function(){t.classList.toggle('on')}});
+document.getElementById('addx').onclick=function(){var d=document.createElement('div');d.className='extra';d.innerHTML='<label class="f">خدمة إضافية<div class="cb" data-cb="services"></div><div class="sel"></div></label><button class="btn l" style="justify-self:start">حذف الخدمة</button>';d.querySelector('.btn').onclick=function(){d.remove()};document.getElementById('extras').appendChild(d);initCb(d.querySelector('[data-cb]'))};
+</script></body></html>
