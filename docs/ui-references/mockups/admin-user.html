@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>تصور — صلاحيات الموظف</title>
+<!-- Mockup only (2026-11-18). Sample person. Owner screenshot: the user editor in «المستخدمين والصلاحيات» on a phone —
+     mixed checkbox styles, one big card per permission, a long flat role list, actions with no hierarchy.
+     Proposal: header with state switch, extra roles as grouped chips, permissions as one switch list grouped by module
+     (dangerous ones marked), a summary line, actions with a separate «منطقة خطرة». Same handlers, nothing new saved. -->
+<link rel="stylesheet" href="../../../assets/css/ui-motion.css">
+<style>
+@font-face{font-family:"BigVesta Arabic";src:url("../../../assets/fonts/BigVesta-Regular.woff2") format("woff2");font-weight:400}
+@font-face{font-family:"BigVesta Arabic";src:url("../../../assets/fonts/BigVesta-Bold.woff2") format("woff2");font-weight:700}
+@font-face{font-family:"Hiragino Kaku";src:url("../../../assets/fonts/Hiragino-W3.woff2") format("woff2");font-weight:300}
+@font-face{font-family:"Hiragino Kaku";src:url("../../../assets/fonts/Hiragino-W6.woff2") format("woff2");font-weight:600}
+:root{--blue:#0F369D;--ink:#16212E;--pos:#3E8F68;--neg:#D0402A;--warn:#B86200;--bg:#F3F4F7;--line:#E6E8EE;--mute:#6B7483;--ease:cubic-bezier(.22,1,.36,1);--spring:cubic-bezier(.34,1.56,.64,1)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;font-size:14px}
+svg{fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+button,select{font:inherit;color:inherit}
+.page{max-width:1080px;margin:0 auto;padding:16px 16px 90px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;container-type:inline-size;align-items:start}
+#col1{grid-column:1;display:grid;gap:16px;min-width:0}#perms{grid-column:2}
+@media (max-width:760px){.page{grid-template-columns:minmax(0,1fr)}#col1,#perms{grid-column:auto}}
+.span{grid-column:1/-1}
+.crumb{font-size:12px;color:var(--mute);display:flex;align-items:center;gap:6px}.crumb button{border:0;background:none;color:var(--blue);font-weight:600;cursor:pointer;padding:4px 0;white-space:nowrap}
+.card{background:#fff;border:1px solid var(--line);border-radius:18px;min-width:0}
+.ch{display:flex;align-items:center;gap:10px;padding:14px 16px 8px}.ch>div{flex:1;min-width:0}.ch h3{margin:0;font-size:15px;white-space:nowrap}.ch small{display:block;color:var(--mute);font-size:12px;margin-top:2px;line-height:1.6}
+.ch em{font-style:normal;font-size:12px;font-weight:700;color:var(--blue);background:#EEF3FC;border-radius:999px;padding:2px 9px;white-space:nowrap}
+/* person header */
+.who{display:grid;grid-template-columns:52px minmax(0,1fr) auto;gap:12px;align-items:center;padding:16px}
+.av{width:52px;height:52px;border-radius:16px;background:#E8EEFB;color:var(--blue);display:grid;place-items:center;font-weight:700;font-size:18px}
+.who b{display:block;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.who span{display:block;font-size:12.5px;color:var(--mute);direction:ltr;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sum{grid-column:1/-1;display:flex;gap:6px;flex-wrap:wrap}.sum i{font-style:normal;font-size:12px;font-weight:600;border-radius:999px;padding:3px 10px;background:#F1F3F7;color:#3B4658;white-space:nowrap}.sum i.r{background:#E8EEFB;color:var(--blue)}
+.sw{display:inline-flex;align-items:center;gap:8px;white-space:nowrap;font-size:13px;font-weight:700;cursor:pointer;border:0;background:none;padding:4px}
+.sw i{width:40px;height:24px;border-radius:999px;background:#CBD3E1;position:relative;transition:background .2s;flex:none}.sw i::after{content:"";position:absolute;top:3px;right:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:transform .25s var(--spring)}
+.sw[aria-pressed="true"] i{background:#6CC49A}.sw[aria-pressed="true"] i::after{transform:translateX(-16px)}
+.sw[aria-pressed="true"] span{color:var(--pos)}.sw[aria-pressed="false"] span{color:var(--mute)}
+/* primary role */
+.field{padding:4px 16px 16px}
+.sel{width:100%;border:1px solid var(--line);background:#fff;border-radius:12px;padding:11px 12px;font-size:15px;font-weight:600;min-height:46px}
+.hint{font-size:12px;color:var(--mute);margin:8px 0 0;line-height:1.7}
+/* extra roles as chips */
+.grp{padding:2px 16px 12px}.grp+.grp{border-top:1px solid #F0F2F6;padding-top:12px}
+.grp h4{margin:0 0 8px;font-size:12.5px;color:var(--mute);font-weight:600;white-space:nowrap}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 13px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;color:#3B4658;transition:background .18s,border-color .18s,color .18s,transform .12s}
+.chip:active{transform:scale(.96)}
+.chip svg{width:15px;height:15px;display:none}
+.chip[aria-pressed="true"]{background:#EEF3FC;border-color:#9FB4E6;color:var(--blue)}.chip[aria-pressed="true"] svg{display:block}
+/* permission switches */
+.perm{list-style:none;margin:0;padding:0 8px 8px}
+.perm li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 8px;border-radius:12px}
+.perm li+li{border-top:1px solid #F0F2F6}
+.perm b{display:block;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.perm small{display:block;font-size:12px;color:var(--mute);line-height:1.6}
+.perm .danger b{color:var(--neg)}
+.perm .sub{padding:12px 16px 2px;font-size:12.5px;color:var(--mute);font-weight:600;border:0!important}
+.saved{font-size:11.5px;color:var(--pos);font-weight:700;margin-inline-start:6px;display:none}.saved.on{display:inline;animation:svin .3s var(--ease)}@keyframes svin{from{opacity:0}to{opacity:1}}
+/* actions */
+.acts{display:flex;flex-wrap:wrap;gap:8px;padding:4px 16px 16px}
+.btn{white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;gap:7px;border:1px solid var(--line);background:#fff;color:var(--blue);font-weight:600;font-size:13.5px;border-radius:12px;padding:10px 14px;cursor:pointer;min-height:44px;flex:1 1 auto;transition:background .18s,transform .12s}
+.btn:active{transform:scale(.97)}.btn svg{width:17px;height:17px}
+.danger-zone{margin:0 16px 16px;border:1px dashed #F0B9AE;border-radius:14px;padding:12px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;background:#FFF8F6}
+.danger-zone b{font-size:13px;color:var(--neg);white-space:nowrap}.danger-zone small{display:block;font-size:12px;color:var(--mute);line-height:1.6}
+.btn.del{color:var(--neg);border-color:#F0B9AE;flex:0 0 auto}
+.note-mock{grid-column:1/-1;font-size:12px;color:var(--mute);text-align:center}
+.toast{position:fixed;bottom:18px;left:50%;transform:translate(-50%,30px);opacity:0;background:#16212E;color:#fff;border-radius:12px;padding:10px 16px;font-size:13px;transition:all .3s var(--ease);white-space:nowrap}.toast.on{opacity:1;transform:translate(-50%,0)}
+</style>
+</head>
+<body>
+<main class="page">
+ <div class="crumb span"><button>‹ المستخدمين والصلاحيات</button></div>
+
+ <section class="card span">
+  <div class="who">
+   <div class="av">م ج</div>
+   <div><b>مريم جمال</b><span>mariam.g@example.com</span></div>
+   <button class="sw" id="act" aria-pressed="true"><span>مفعّل</span><i></i></button>
+   <div class="sum" id="sum"></div>
+  </div>
+ </section>
+
+ <div id="col1">
+ <section class="card" id="prim">
+  <div class="ch"><div><h3>الدور الأساسي</h3><small>بيحدد التابات اللي بتظهرله</small></div></div>
+  <div class="field"><select class="sel"><option>استقبال</option><option>موظف صفحات</option><option>مصمم</option><option>مسؤول اعتماد</option><option>مدير عام</option><option>سوبر أدمن</option></select>
+  <p class="hint">لو محتاج يشتغل في أكتر من مكان، زوّد دور إضافي من تحت بدل ما تغيّر الأساسي.</p></div>
+ </section>
+
+ <section class="card" id="roles">
+  <div class="ch"><div><h3>أدوار إضافية</h3><small>دوس على الدور يتفعّل أو يتشال</small></div><em id="rc">0</em></div>
+  <div class="grp"><h4>المحتوى والتسويق</h4><div class="chips"><button class="chip" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="m5 12 4 4 10-10"/></svg>مسؤول المحتوى</button><button class="chip" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="m5 12 4 4 10-10"/></svg>مصمم جرافيك</button><button class="chip" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="m5 12 4 4 10-10"/></svg>مسؤول اعتماد</button><button class="chip" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="m5 12 4 4 10-10"/></svg>موظف رقمي</button></div></div>
+  <div class="grp"><h4>المرضى والعيادات</h4><div class="chips"><button class="chip" aria-pressed="true"><svg viewBox="0 0 24 24"><path d="m5 12 4 4 10-10"/></svg>خدمة عملاء</button><button class="chip" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="m5 12 4 4 10-10"/></svg>تمريض</button><button class="chip" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="m5 12 4 4 10-10"/></svg>رئيس التمريض</button><button class="chip" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="m5 12 4 4 10-10"/></svg>طبيب سونو</button><button class="chip" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="m5 12 4 4 10-10"/></svg>أخصائي نفسية</button></div></div>
+  <div class="grp"><h4>الإدارة والمالية</h4><div class="chips"><button class="chip" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="m5 12 4 4 10-10"/></svg>مدير عام</button><button class="chip" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="m5 12 4 4 10-10"/></svg>سوبر أدمن</button><button class="chip" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="m5 12 4 4 10-10"/></svg>مدير مالي</button><button class="chip" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="m5 12 4 4 10-10"/></svg>محاسب</button><button class="chip" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="m5 12 4 4 10-10"/></svg>مسؤول التعاقدات</button></div></div>
+ </section>
+
+ </div>
+
+ <section class="card" id="perms">
+  <div class="ch"><div><h3>صلاحيات خاصة</h3><small>كل مفتاح بيتحفظ لوحده أول ما تدوس عليه</small></div><em id="pc">0</em></div>
+  <ul class="perm">
+   <li class="sub">الإدارة</li>
+   <li><div><b>إدارة الموارد البشرية <span class="saved">✓ اتحفظ</span></b><small>الحضور والورديات والمرتبات</small></div><button class="sw" aria-pressed="false"><i></i></button></li>
+   <li><div><b>إدارة لوائح الأسعار <span class="saved">✓ اتحفظ</span></b><small>تعديل أسعار الخدمات</small></div><button class="sw" aria-pressed="false"><i></i></button></li>
+   <li><div><b>اعتماد صرف حسابات الأطباء <span class="saved">✓ اتحفظ</span></b><small>الموافقة على صرف الأتعاب</small></div><button class="sw" aria-pressed="false"><i></i></button></li>
+   <li class="sub">أرشيف المرضى</li>
+   <li><div><b>أرشيف المرضى <span class="saved">✓ اتحفظ</span></b><small>فتح ملفات المرضى ورفعها</small></div><button class="sw" aria-pressed="true"><i></i></button></li>
+   <li><div><b>معاينة الأرشيف فقط <span class="saved">✓ اتحفظ</span></b><small>يشوف من غير ما يعدّل</small></div><button class="sw" aria-pressed="false"><i></i></button></li>
+   <li><div><b>اعتماد ملفات المرضى <span class="saved">✓ اتحفظ</span></b><small>مراجعة الملفات المرفوعة</small></div><button class="sw" aria-pressed="false"><i></i></button></li>
+   <li><div><b>تحقق هوية المرضى <span class="saved">✓ اتحفظ</span></b><small>اعتماد طلبات بوابة المريض</small></div><button class="sw" aria-pressed="false"><i></i></button></li>
+   <li class="sub">الليدز والتغذية</li>
+   <li><div><b>أرشيف الليدز <span class="saved">✓ اتحفظ</span></b><small>يشوف الليدز القديمة</small></div><button class="sw" aria-pressed="true"><i></i></button></li>
+   <li class="danger"><div><b>حذف الليدز <span class="saved">✓ اتحفظ</span></b><small>حذف نهائي — بحذر</small></div><button class="sw" aria-pressed="false"><i></i></button></li>
+   <li class="danger"><div><b>حذف زيارات التغذية <span class="saved">✓ اتحفظ</span></b><small>حذف نهائي — بحذر</small></div><button class="sw" aria-pressed="false"><i></i></button></li>
+  </ul>
+ </section>
+
+ <section class="card span">
+  <div class="ch"><div><h3>إجراءات الحساب</h3></div></div>
+  <div class="acts">
+   <button class="btn"><svg viewBox="0 0 24 24"><path d="M4 7h16v13H4zM9 7V4h6v3"/></svg>طلب المستلزمات</button>
+   <button class="btn"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>تغيير كلمة السر</button>
+  </div>
+  <div class="danger-zone"><div><b>حذف الحساب</b><small>نهائي ومش بيرجع — لو مؤقت استخدم مفتاح «مفعّل» فوق</small></div><button class="btn del"><svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>حذف</button></div>
+ </section>
+ <p class="note-mock">تصور — الاسم مثال. نفس الحفظ والتأكيدات الحالية، الشكل بس اللي بيتغير. «إيقاف» بقى مفتاح «مفعّل» جنب الاسم.</p>
+</main>
+<div class="toast" id="toast"></div>
+<script>
+(function(){
+var toast=document.getElementById('toast'),tt;function say(m){toast.textContent=m;toast.classList.add('on');clearTimeout(tt);tt=setTimeout(function(){toast.classList.remove('on');},1600);}
+function count(){var r=[].slice.call(document.querySelectorAll('#roles .chip[aria-pressed="true"]')),p=[].slice.call(document.querySelectorAll('#perms .sw[aria-pressed="true"]'));
+ document.getElementById('rc').textContent=r.length;document.getElementById('pc').textContent=p.length;
+ document.getElementById('sum').innerHTML='<i class="r">استقبال</i>'+r.map(function(c){return '<i>'+c.textContent+'</i>';}).join('')+(p.length?'<i>'+p.length+' صلاحيات خاصة</i>':'');}
+document.querySelectorAll('#roles .chip').forEach(function(c){c.onclick=function(){var on=c.getAttribute('aria-pressed')!=='true';c.setAttribute('aria-pressed',on);count();say(on?'اتضاف دور «'+c.textContent+'»':'اتشال دور «'+c.textContent+'»');};});
+document.querySelectorAll('#perms .sw').forEach(function(s){s.onclick=function(){var on=s.getAttribute('aria-pressed')!=='true';s.setAttribute('aria-pressed',on);var m=s.parentNode.querySelector('.saved');m.classList.add('on');setTimeout(function(){m.classList.remove('on');},1400);count();};});
+var act=document.getElementById('act');act.onclick=function(){var on=act.getAttribute('aria-pressed')!=='true';act.setAttribute('aria-pressed',on);act.querySelector('span').textContent=on?'مفعّل':'موقوف';say(on?'الحساب اتفعّل':'الحساب اتوقف');};
+count();
+})();
+</script>
+</body>
+</html>
