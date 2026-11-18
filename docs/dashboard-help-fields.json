@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1746,
-    "labels": 1285,
-    "files": 119,
-    "groups": 1379
+    "definitions": 1749,
+    "labels": 1287,
+    "files": 120,
+    "groups": 1381
   },
   "fields": [
     {
@@ -10576,6 +10576,36 @@
       "tab": "reception_services",
       "article": "personal",
       "text_sha256": "08c204de2685df464bdbc0cd0fde7ec98a5877581bd58cbad31890fc6661df06"
+    },
+    {
+      "file": "reception-doctor-payout.js",
+      "label": "رفع الإيصال الممضي (اختياري)",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "doctor-payout-desk",
+      "text_sha256": "d4aa7ba0b8810c8170a118054cc71176ecb9be037df4cb07ddbdfa996a9a9262"
+    },
+    {
+      "file": "reception-doctor-payout.js",
+      "label": "المبلغ",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "collections",
+      "text_sha256": "125776655945829a368efb4a81dbc0efc7321372b5cd97b419805d08b8d6744d"
+    },
+    {
+      "file": "reception-doctor-payout.js",
+      "label": "ملاحظة / سبب التعديل أو الرفض",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "doctor-payout-approve",
+      "text_sha256": "16acf166859302c040bd994ba6b0461be39ccdfa4ef5c86b2307136d17db4d5f"
     },
     {
       "file": "reception-patient-documents.js",

@@ -12146,6 +12146,45 @@
       "reviewed": true
     },
     {
+      "title": "رفع الإيصال الممضي (اختياري)",
+      "labels": [
+        "رفع الإيصال الممضي (اختياري)"
+      ],
+      "text": "ارفع صورة أو PDF لإيصال استلام النقدية بعد ما الدكتور يمضي عليه (لحد 10 ميجا). اختياري ويتعمل بعدين؛ الصرف نفسه اتسجل خلاص.",
+      "article": "doctor-payout-desk",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "المبلغ",
+      "labels": [
+        "المبلغ"
+      ],
+      "text": "القيمة بالجنيه لهذا الإجراء فقط؛ راجع المستحق أو المعتمد والحدود قبل الحفظ، ولا تدخل إجمالي فاتورة إذا كنت تسدد جزءًا.",
+      "article": "collections",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "ملاحظة / سبب التعديل أو الرفض",
+      "labels": [
+        "ملاحظة / سبب التعديل أو الرفض"
+      ],
+      "text": "للي بيعتمد بس: اكتب سبب تغيير المبلغ أو سبب الرفض (3 حروف على الأقل). الاعتماد بالمبلغ زي ما هو مش محتاج ملاحظة.",
+      "article": "doctor-payout-approve",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "نوع المستند",
       "labels": [
         "نوع المستند"
@@ -13353,19 +13392,6 @@
       ],
       "text": "إجمالي الزيارات المتفق عليها، مع توزيع الخدمات على رقم كل زيارة وشروط الصلاحية.",
       "article": "package",
-      "tabs": [
-        "reception_services"
-      ],
-      "forms": [],
-      "reviewed": true
-    },
-    {
-      "title": "المبلغ",
-      "labels": [
-        "المبلغ"
-      ],
-      "text": "القيمة بالجنيه لهذا الإجراء فقط؛ راجع المستحق أو المعتمد والحدود قبل الحفظ، ولا تدخل إجمالي فاتورة إذا كنت تسدد جزءًا.",
-      "article": "collections",
       "tabs": [
         "reception_services"
       ],
@@ -20555,9 +20581,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1746,
-    "labels": 1285,
-    "files": 119,
-    "groups": 1379
+    "definitions": 1749,
+    "labels": 1287,
+    "files": 120,
+    "groups": 1381
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
