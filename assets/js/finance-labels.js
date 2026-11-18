@@ -31,5 +31,13 @@ function label(code){var c=String(code==null?'':code).trim();if(!c)return '';if(
  return c;}
 /* a cell or line that is *only* a technical code becomes Arabic (code kept in the tooltip) */
 function translate(root){if(!root||!root.querySelectorAll)return;root.querySelectorAll('td,.fc-code').forEach(function(td){if(td.children.length||td.hasAttribute('data-fl'))return;var t=td.textContent.trim();if(!known(t))return;var a=label(t);if(a&&a!==t){td.textContent=a;td.title=t;td.setAttribute('data-fl','');}});}
-window.SSMPDFinanceLabels={label:label,known:known,translate:translate,map:L};
+/* one date format everywhere (owner 2026-11-18): «18 نوفمبر 2026», with time «18 نوفمبر 2026 · 9:05 ص» — Cairo time, Latin digits */
+var MONTHS=['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+function fmtDate(v){if(!v)return '—';var m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(String(v).slice(0,10));if(m&&String(v).length===10)return Number(m[3])+' '+MONTHS[Number(m[2])-1]+' '+m[1];var d=new Date(v);if(isNaN(d))return String(v);var p=parts(d);return Number(p.day)+' '+MONTHS[Number(p.month)-1]+' '+p.year;}
+function parts(d){var o={};new Intl.DateTimeFormat('en-GB',{timeZone:'Africa/Cairo',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}).formatToParts(d).forEach(function(x){o[x.type]=x.value;});return o;}
+function fmtStamp(v){if(!v)return '—';var d=new Date(v);if(isNaN(d))return String(v);var p=parts(d),h=Number(p.hour)%24,ap=h<12?'ص':'م',h12=h%12||12;return Number(p.day)+' '+MONTHS[Number(p.month)-1]+' '+p.year+' · '+h12+':'+p.minute+' '+ap;}
+var NUM=/^[-+\u2212]?[\d,]+(\.\d+)?$/,ISO=/^\d{4}-\d{2}-\d{2}$/;
+/* numbers keep their sign on the left in RTL (no «20.00-»), ISO dates read as Arabic dates */
+function tidy(root){if(!root||!root.querySelectorAll)return;root.querySelectorAll('td,.fc-num').forEach(function(td){if(td.children.length||td.hasAttribute('data-ff'))return;var t=td.textContent.trim();if(NUM.test(t)){td.setAttribute('data-ff','');td.innerHTML='<span class="acs-num" dir="ltr">'+t.replace(/^-/,'\u2212')+'</span>';}else if(ISO.test(t)){td.setAttribute('data-ff','');td.textContent=fmtDate(t);td.title=t;}});}
+window.SSMPDFinanceLabels={label:label,known:known,translate:function(r){translate(r);tidy(r);},map:L,fmtDate:fmtDate,fmtStamp:fmtStamp,tidy:tidy};
 })();
