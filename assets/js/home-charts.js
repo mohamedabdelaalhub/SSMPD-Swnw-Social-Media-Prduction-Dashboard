@@ -65,11 +65,14 @@
     Promise.all(jobs).then(function (r) {
       var perf = r[0], reviews = Array.isArray(r[1]) ? r[1] : [], score = perf && num(perf.score) !== null ? Math.round(perf.score) : null;
       var att = num(my.commitment_pct), tasks = num(my.tasks_on_time_pct), latest = reviews.slice().sort(function (a, c) { return String(c.month).localeCompare(String(a.month)); })[0], rating = latest && num(Number(latest.rating)) !== null ? Number(latest.rating) : null;
-      var meters = (att !== null ? meter('الالتزام بالمواعيد', Math.round(att), '٪', att, ST.ok) : meter('الحضور والانضباط', dim(perf, 'attendance'), ' من 100', dim(perf, 'attendance'), ST.ok)) +
-        (tasks !== null ? meter('المهام في الميعاد', Math.round(tasks), '٪', tasks, '#0F369D') : meter('الالتزام بتنفيذ المهام', dim(perf, 'tasks'), ' من 100', dim(perf, 'tasks'), '#0F369D')) +
+      // Owner 2026-11-18: attendance appears only from real HR data (linked clinic person + schedule); no fallback to dimension
+      // scores. «Tasks on time» needs timed tasks behind it; a bare 0 with nothing timed is treated as absent.
+      var timed = num(my.timed_tasks); if (tasks !== null && timed !== null && timed === 0) tasks = null;
+      if (att === null && tasks === null) { done(null); return; }
+      var meters = (att !== null ? meter('الالتزام بالمواعيد', Math.round(att), '٪', att, ST.ok) : '') +
+        (tasks !== null ? meter('المهام في الميعاد', Math.round(tasks), '٪', tasks, '#0F369D') : '') +
         (rating !== null ? '<div class="ph2-m" style="--c:#F5A524"><div class="ph2-ml"><b>تقييم المدير</b><span>' + rating + ' من 5</span></div><div class="ph2-trk"><i data-w="' + rating * 20 + '"></i></div></div>' : '');
-      var weeks = my.weekly_commitment && my.weekly_commitment.filter(function (x) { return num(x) !== null; }).length >= 2 ? my.weekly_commitment : null;
-      if (score === null && !meters && !weeks) { done(null); return; }
+      var weeks = att !== null && my.weekly_commitment && my.weekly_commitment.filter(function (x) { return num(x) !== null; }).length >= 2 ? my.weekly_commitment : null;
       var card = d.createElement('article'); card.className = 'ph-card ph2-card ph2-perf'; card.style.setProperty('--c', '#2F7D5C'); card.style.setProperty('--t', '#E7F3EE');
       card.innerHTML = '<div class="ph2-head"><span class="ph2-ic" aria-hidden="true">' + ICON.chart + '</span><div><h2>أدائي الشهر ده</h2><small>' + esc(new Date().toLocaleDateString('ar-EG-u-nu-latn', { month: 'long' })) + ' · محسوب لحد النهارده' + (perf && perf.provisional ? ' · مبدئي' : '') + '</small></div>' + (w.SSMPDEmployeeProfile ? '<button type="button" class="ph2-link" data-home-my-profile>ملف أدائي</button>' : '') + '</div>' +
         '<div class="ph2-perf-body">' + (score !== null ? '<div class="ph2-ring" role="img" aria-label="الدرجة الشاملة ' + score + ' من 100"><svg viewBox="0 0 104 104" aria-hidden="true"><circle class="bg" cx="52" cy="52" r="44"/><circle class="fg" cx="52" cy="52" r="44" data-score="' + score + '"/></svg><b data-count="' + score + '">0</b><small>من 100</small></div>' : '') + '<div class="ph2-meters">' + meters + '</div></div>' +

@@ -2,12 +2,12 @@
 const {JSDOM}=require('jsdom'),fs=require('fs'),assert=require('node:assert/strict');
 const tick=()=>new Promise(r=>setTimeout(r,30));
 function snapshot(extra){return Object.assign({generated_at:'2026-11-17T11:00:00Z',tasks:{open:3,late:1,review:1,team_open:19,team_late:3,blocked:1,mine:[{id:'t1',title:'مهمة',status:'todo'}],reviews:[],team:[{id:'t4',title:'مهمة فريق',status:'todo',assignee_name:'محاسب'}]},content:null,supplies:[]},extra||{});}
-async function run({manager,snap,perf,reviews,charts}){
+async function run({manager,snap,perf,reviews,charts,chair}){
  const dom=new JSDOM('<button id="notif-bell-btn"></button><span id="notif-badge"></span><div id="notif-panel" hidden></div><main></main>',{url:'https://test.invalid',runScripts:'outside-only',pretendToBeVisual:true}),w=dom.window,d=w.document;
  w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};w.HTMLDialogElement.prototype.close=function(){this.open=false;};
  w.matchMedia=()=>({matches:false});w.scrollTo=()=>{};
- const admin=manager?{id:'m1',name:'مدير',role:'super_admin'}:{id:'e1',name:'موظف',role:'reception'};
- const calls=[];w.SSMPDAuth={currentAdmin:admin};w.SSMPDRoles={canSeeTab:()=>true,labelAll:()=>'',hasAnyRole:()=>manager};
+ const admin=chair?{id:'o1',name:'المالك',role:'super_admin'}:manager?{id:'m1',name:'مدير',role:'general_manager'}:{id:'e1',name:'موظف',role:'reception'};
+ const calls=[];w.SSMPDAuth={currentAdmin:admin};w.SSMPDRoles={canSeeTab:()=>true,labelAll:()=>'',hasAnyRole:(a,roles)=>roles.includes(admin.role)};
  w.SSMPDDb={unsubscribe(){},staffReviewHistory:async()=>reviews===undefined?[{month:'2026-10-01',rating:4}]:reviews,client:{rpc:async(n,a)=>{calls.push([n,a]);return {data:n==='personal_home_inbox'?{notices:[],unread:0}:n==='personal_home_rating_queue'?[]:n==='staff_comprehensive_performance'?perf:n==='personal_home_charts'?(charts||null):snap};}}};
  w.SSMPDEmployeeProfile={open:o=>{w.__profile=o;}};
  w.SSMPDEmployeePerformance={mount:r=>{r.innerHTML='<section class="ep-card">old widget</section>';}};
@@ -50,5 +50,16 @@ async function run({manager,snap,perf,reviews,charts}){
  assert.equal(d.querySelectorAll('.ph2-kpi [data-spark]').length,2,'recorded days only; one recorded day is not a line');
  assert.equal(d.querySelector('[data-home-section="notices"] [data-spark]').dataset.spark,'2,1','leading unrecorded days are skipped');
  assert.equal(d.querySelectorAll('.ph2-loadlist li').length,1,'team_load from personal_home_charts');
+ // owner 2026-11-18: chairman/super admin is not evaluated; attendance only from real HR data
+ ({d}=await run({manager:true,chair:true,snap:full,perf}));
+ assert.equal(d.querySelector('.ph2-perf'),null,'no my-month card for the chairman');
+ assert(d.querySelector('[data-personal-performance]').hidden,'old self widget hidden for the chairman');
+ assert(d.querySelector('.ph2-load'),'chairman keeps team load');
+ ({d}=await run({manager:false,snap:snapshot({my_month:{tasks_on_time_pct:0,timed_tasks:0}}),perf}));
+ assert.equal(d.querySelector('.ph2-perf'),null,'no HR person + no timed tasks → no card (no fake attendance, no misleading 0%)');
+ ({d}=await run({manager:false,snap:snapshot({my_month:{tasks_on_time_pct:75}}),perf}));
+ assert(d.querySelector('.ph2-perf'),'tasks-only card');
+ assert.doesNotMatch(d.querySelector('.ph2-perf').textContent,/الالتزام بالمواعيد|الحضور/,'no attendance meter without commitment_pct');
+ assert.equal(d.querySelector('.ph2-perf [data-week]'),null,'no weekly attendance line without commitment_pct');
  console.log('PASS home v2 charts «الرئيسية»: KPI sparklines from trend, team load (manager only, on-time = open-late-blocked), my-month card with ring/meters/weekly line + profile link, nothing drawn without data, personal_home_charts merged');process.exit(0);
 })().catch(e=>{console.error(e);process.exit(1);});
