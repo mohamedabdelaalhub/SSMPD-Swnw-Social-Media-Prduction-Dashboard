@@ -148,3 +148,16 @@ body.acs-drawer-open .ssmpd-ea-launch,body.acs-drawer-open .ssmpd-aa-launch,body
  .acs-main .fc-table table[data-acs-cards] td:last-child .btn{white-space:nowrap}
 }
 .acs-num{unicode-bidi:isolate;font-variant-numeric:tabular-nums;white-space:nowrap}
+/* ===== buttons (owner 2026-11-18): one look for every accounting button; one filled primary action per section ===== */
+.acs-main .btn{min-height:38px;border-radius:10px;font-size:13px;font-weight:600;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:background .18s,border-color .18s,transform .12s}
+.acs-main .btn:active{transform:scale(.97)}
+.acs-main .btn.sm{min-height:34px;padding:6px 12px;font-size:12.5px}
+.acs-main .btn:not(.btn-primary):not(.danger):not(.alert):not(.active){color:var(--c-primary,#0F369D);background:#fff;border:1px solid var(--c-border,#E4E9F2)}
+.acs-main .btn:not(.btn-primary):not(.danger):not(.alert):not(.active):hover{background:#F5F8FE;border-color:#B9C8EA}
+.acs-main .btn.btn-primary,.fc-modal .btn.btn-primary{background:#0F369D;border-color:#0F369D;color:#fff;box-shadow:0 4px 12px rgba(15,54,157,.18)}
+.acs-main .btn.btn-primary:hover,.fc-modal .btn.btn-primary:hover{background:#0B2A7C;border-color:#0B2A7C;color:#fff}
+.acs-main .fc-actions{gap:8px}
+.acs-main .fc-actions .btn-primary{order:-1}
+/* row text actions (pricing «تعديل / حذف») were native grey boxes */
+.acs-main button.btn-link,.acs-main .btn-link{font:inherit;font-size:13px;font-weight:700;background:none;border:0;color:#0F369D;padding:6px 8px;border-radius:8px;cursor:pointer;white-space:nowrap}
+.acs-main button.btn-link:hover{background:#EEF3FC}

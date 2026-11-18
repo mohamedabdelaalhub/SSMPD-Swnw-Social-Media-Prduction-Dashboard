@@ -102,7 +102,7 @@
     var e = h.esc, m = h.money, b = h.btn;
     ensure(TAB);
     var html = '<div data-da-tab="' + TAB + '"><details class="fc-explain"><summary>إزاي بتتحسب؟</summary><p>الأطباء اللي ليهم حساب فعلي بس (أتعاب مستحقة أو مصروفات أو رصيد افتتاحي أو رصيد غير صفر). اضغط على اسم الطبيب لفتح كشف حسابه بالتفصيل. «مستحق للصرف الآن» = الرصيد بعد خصم أتعاب الفواتير اللي لسه ماتسددتش بالكامل، وهو نفس الرقم في كشف الدكتور.</p></details><div class="fc-actions">' +
-      b('doctor-accounts-refresh', '', 'تحديث') + (d.can_create ? b('open-disbursement', 'doctor_payment', 'طلب صرف مستحقات') : '') + '</div>';
+      b('doctor-accounts-refresh', '', 'تحديث') + (d.can_create ? b('open-disbursement', 'doctor_payment', 'طلب صرف مستحقات').replace('btn ghost sm', 'btn btn-primary') : '') + '</div>';
     if (!cache) return html + '<p role="status">جاري تحميل حسابات الأطباء…</p></div>';
     if (!cache.acc.ok) {
       var em = String((cache.acc.error && cache.acc.error.message) || ''), denied = /صلاحية|permission|42501/i.test(em);
