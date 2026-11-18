@@ -951,6 +951,12 @@ frule('render-tasks.js','شخص تاني','اختار زميل معين يوصل
 frule('reception-doctor-payout.js','رفع الإيصال الممضي (اختياري)','ارفع صورة أو PDF لإيصال استلام النقدية بعد ما الدكتور يمضي عليه (لحد 10 ميجا). اختياري ويتعمل بعدين؛ الصرف نفسه اتسجل خلاص.','doctor-payout-desk')
 frule('reception-doctor-payout.js','ملاحظة / سبب التعديل أو الرفض','للي بيعتمد بس: اكتب سبب تغيير المبلغ أو سبب الرفض (3 حروف على الأقل). الاعتماد بالمبلغ زي ما هو مش محتاج ملاحظة.','doctor-payout-approve')
 frule('staff-profile.js','الصورة','اختار صورتك الشخصية: JPG أو PNG أو WebP لحد 8 ميجا. بتتصغر وتظهر جنب اسمك.','personal')
+# --- «النوع» on non-patient screens: replace the generic patient-file wording ---
+frule('hr-custody.js|hr-insurance.js|hr-attendance-reports.js','النوع','في الموارد البشرية «النوع» بيصنّف السجل حسب الشاشة: نوع العهدة (جهاز أو مفاتيح أو بطاقة أو أدوات أو مستند)، أو نوع التأمين (اجتماعي أو طبي)، أو حالة الحضور في تقرير الحضور. في الفلاتر بيعرض نوع معين بس.','hr-manage')
+frule('hr-offboarding.js','النوع','نوع البند في المخالصة: مستحق للموظف، أو مستحق عليه، أو عهدة ماتسلمتش، أو مستند أو عقد معاه.','hr-offboarding')
+frule('hr-payroll-workspace.js','النوع','نوع البند: مكافأة، أو خصم، أو نسبة خدمة. في النسبة املا الخدمة والقيمة والنسبة بدل المبلغ.','hr-payroll')
+frule('accountant-workspace.js','النوع','نوع الحساب في الشجرة: أصول أو خصوم أو حقوق ملكية أو إيرادات أو مصروفات. لازم يطابق نوع الحساب الأب.','ledger-guide')
+frule('digital-team-server-chat.js','النوع',MSG_KIND,'digital-team')
 def norm(v):
  v=re.sub(r'[\u064b-\u065f\u0670\u0640]','',v).lower();v=re.sub('[أإآٱ]','ا',v).replace('ى','ي').replace('ة','ه');v=re.sub(r'[^\w]+',' ',v).strip();return re.sub(r'(^| )ال',r'\1',v)
 def canon(v):

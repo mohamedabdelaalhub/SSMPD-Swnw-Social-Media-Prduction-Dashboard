@@ -4,7 +4,7 @@
     "definitions": 1749,
     "labels": 1287,
     "files": 120,
-    "groups": 1382
+    "groups": 1381
   },
   "fields": [
     {
@@ -290,7 +290,7 @@
       "forms": [],
       "tab": "accounting",
       "article": "ledger-guide",
-      "text_sha256": "68c593718f9e4a670d874fc33a5fb6254f39083bbe1ac70792f1b87046e5dd54"
+      "text_sha256": "609175c26c7a477cb08a609b75d5fa9a88d72e49c0e42a9436deb3c63889325e"
     },
     {
       "file": "accountant-workspace.js",
@@ -2530,8 +2530,8 @@
       "kind": "label",
       "forms": [],
       "tab": "home",
-      "article": "patient-records",
-      "text_sha256": "68c593718f9e4a670d874fc33a5fb6254f39083bbe1ac70792f1b87046e5dd54"
+      "article": "digital-team",
+      "text_sha256": "df5b9d97075ce838b67387c1e2fd5881f9ac27d6854845567c7509996ce2aac5"
     },
     {
       "file": "digital-team-server-chat.js",
@@ -6566,8 +6566,8 @@
       "kind": "aria",
       "forms": [],
       "tab": "human_resources",
-      "article": "patient-records",
-      "text_sha256": "68c593718f9e4a670d874fc33a5fb6254f39083bbe1ac70792f1b87046e5dd54"
+      "article": "hr-manage",
+      "text_sha256": "aa2ffb955221ede32e6bb716ad573ea607f8505b182c126cfb4e483e26d9e0a9"
     },
     {
       "file": "hr-closures.js",
@@ -6678,8 +6678,8 @@
       "kind": "helper",
       "forms": [],
       "tab": "human_resources",
-      "article": "patient-records",
-      "text_sha256": "68c593718f9e4a670d874fc33a5fb6254f39083bbe1ac70792f1b87046e5dd54"
+      "article": "hr-manage",
+      "text_sha256": "aa2ffb955221ede32e6bb716ad573ea607f8505b182c126cfb4e483e26d9e0a9"
     },
     {
       "file": "hr-custody.js",
@@ -6820,8 +6820,8 @@
       "kind": "helper",
       "forms": [],
       "tab": "human_resources",
-      "article": "patient-records",
-      "text_sha256": "68c593718f9e4a670d874fc33a5fb6254f39083bbe1ac70792f1b87046e5dd54"
+      "article": "hr-manage",
+      "text_sha256": "aa2ffb955221ede32e6bb716ad573ea607f8505b182c126cfb4e483e26d9e0a9"
     },
     {
       "file": "hr-insurance.js",
@@ -6894,8 +6894,8 @@
         "إضافة اشتراك"
       ],
       "tab": "human_resources",
-      "article": "patient-records",
-      "text_sha256": "68c593718f9e4a670d874fc33a5fb6254f39083bbe1ac70792f1b87046e5dd54"
+      "article": "hr-manage",
+      "text_sha256": "aa2ffb955221ede32e6bb716ad573ea607f8505b182c126cfb4e483e26d9e0a9"
     },
     {
       "file": "hr-insurance.js",
@@ -7098,8 +7098,8 @@
         "إضافة بند للكشف"
       ],
       "tab": "human_resources",
-      "article": "patient-records",
-      "text_sha256": "68c593718f9e4a670d874fc33a5fb6254f39083bbe1ac70792f1b87046e5dd54"
+      "article": "hr-offboarding",
+      "text_sha256": "dae8545d48f6d9ab19307e8fd9dd7ae8c1f86c7272f9db5c4b04eba082627f3b"
     },
     {
       "file": "hr-offboarding.js",
@@ -7434,8 +7434,8 @@
         "بند مرتب للمراجعة"
       ],
       "tab": "human_resources",
-      "article": "patient-records",
-      "text_sha256": "68c593718f9e4a670d874fc33a5fb6254f39083bbe1ac70792f1b87046e5dd54"
+      "article": "hr-payroll",
+      "text_sha256": "7934d9fe611287571bc382ad2e0860714a3dca51662b4e27d61ee845409f348b"
     },
     {
       "file": "hr-payroll-workspace.js",

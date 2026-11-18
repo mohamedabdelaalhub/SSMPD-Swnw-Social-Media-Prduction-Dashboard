@@ -11,6 +11,7 @@
     opts = opts || {};
     var tab = TABS.some(function (t) { return t[0] === opts.tab; }) ? opts.tab : last, badge = 0, liveInfo = null, refreshFn = null;
     var phones = {}; (opts.people || []).forEach(function (p) { if (p && p.id && p.phone) phones[p.id] = p.phone; });
+    var peopleById = {}; (opts.people || []).forEach(function (p) { if (p && p.id) peopleById[p.id] = p; });
     var root = document.createElement('div');
     root.className = 'att-hub'; root.dataset.attHub = '';
     root.innerHTML = C.sprite() + '<header class="hero"><div class="hero-top"><div><h1>' + ico('check', '') + ' الحضور والانصراف</h1><p data-att-today></p></div><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><div class="live" data-att-live></div>' +
@@ -34,6 +35,12 @@
     }
     var ctx = {
       phones: phones,
+      // «ملف أداء الموظف»: one click on an employee anywhere in the hub (employee-profile.js)
+      openProfile: function (pid, fallback) {
+        if (!pid || !w.SSMPDEmployeeProfile) return;
+        var p = peopleById[pid] || {}, f = fallback || {};
+        w.SSMPDEmployeeProfile.open({ personId: pid, adminId: p.admin_id || null, name: p.full_name || f.name || '', department: p.department || f.department || '', role: p.job_title || f.role || '' });
+      },
       onRefresh: function (fn) { refreshFn = fn; },
       setLive: function (info) { liveInfo = info; drawLive(); },
       setBadge: function (n) { if (n !== badge) { badge = n; drawTabs(); } },
