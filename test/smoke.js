@@ -217,17 +217,24 @@ setTimeout(() => {
     const V = () => window.document.getElementById("view-container") || { innerHTML: "" };
     const view = V();
     assert(/الملخص العام/.test(V().innerHTML), "تاب الملخص العام متاح ويرسم بعد الانتقال من الرئيسية الشخصية");
-    assert(/إجمالي المحتوى/.test(V().innerHTML), "مؤشرات إنتاج المحتوى ظاهرة");
+    assert(/رحلة المحتوى/.test(V().innerHTML), "رحلة المحتوى (مراحل المواد) ظاهرة في الملخص العام");
+    assert(/محتاج منك/.test(V().innerHTML), "قسم «محتاج منك» ظاهر في الملخص العام");
+    assert(!!V().querySelector && !!V().querySelector("[data-sv-more]"), "«كل التفاصيل والأرشيف» موجودة كقسم مقفول");
     assert(/الإعلانات المدفوعة/.test(V().innerHTML), "سكشن الإعلانات المدفوعة ظاهر في الملخص العام");
     assert(/New Traffic Campaign/.test(V().innerHTML), "اسم الحملة المستوردة ظاهر في جدول الإعلانات المدفوعة");
-    assert(/إجمالي المبلغ المُنفق/.test(V().innerHTML), "مؤشر إجمالي المبلغ المُنفق ظاهر");
-    assert(!!window.document.getElementById("import-ads-btn"), "زرار استيراد تقرير حملات إعلانات ظاهر للسوبر أدمن");
+    assert(/إنفاق الإعلانات/.test(V().innerHTML), "مربع إنفاق الإعلانات ظاهر");
+    // the original sections (archives + ads import) still render inside «كل التفاصيل والأرشيف»
+    const legacyHost = window.document.createElement("div"); window.document.body.appendChild(legacyHost);
+    window.SSMPDRenderSummaryBase.render(legacyHost);
 
     // اختبار التنقل لتاب الأرشيف
     const archiveBtn = [...rootEl.querySelectorAll(".tab-btn")].find(b => b.getAttribute("data-tab") === "archive");
     archiveBtn.click();
 
     setTimeout(() => {
+      assert(/إجمالي المبلغ المُنفق/.test(legacyHost.innerHTML), "مؤشر إجمالي المبلغ المُنفق ظاهر في التفاصيل");
+      assert(!!legacyHost.querySelector("#import-ads-btn"), "زرار استيراد تقرير حملات إعلانات ظاهر للسوبر أدمن في التفاصيل");
+      legacyHost.remove();
       assert(!!window.document.getElementById("arch-prev") && !!window.document.getElementById("arch-next"), "تاب الأرشيف (الكالندر الشهري) اترسم بعد الضغط");
       assert(/بوست منشور/.test(V().innerHTML), "المادة المنشورة ظاهرة في كالندر الأرشيف");
 

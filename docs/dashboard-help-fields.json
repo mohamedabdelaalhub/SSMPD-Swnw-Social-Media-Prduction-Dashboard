@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1781,
-    "labels": 1308,
-    "files": 123,
-    "groups": 1409
+    "definitions": 1782,
+    "labels": 1309,
+    "files": 124,
+    "groups": 1410
   },
   "fields": [
     {
@@ -16756,13 +16756,13 @@
     },
     {
       "file": "render-summary.js",
-      "label": "الوصول (Reach)",
+      "label": "الوصول",
       "name": "",
       "kind": "label",
       "forms": [],
       "tab": "summary",
       "article": "indicators",
-      "text_sha256": "5cf298a58812ab01e219ce8596c18b233ad845da7f6df1a3397436e6dc5b315f"
+      "text_sha256": "c2aafbbd804158a1b05c658149449818d204febaa16f814c5a48d83c7bf7a58d"
     },
     {
       "file": "render-summary.js",
@@ -17471,6 +17471,16 @@
       "tab": "production",
       "article": "video-guide",
       "text_sha256": "ca7775190a24900125857e90679532e4ee58f57cdc40bff559dcae01fa637b64"
+    },
+    {
+      "file": "summary-v2.js",
+      "label": "اتنشر",
+      "name": "",
+      "kind": "config",
+      "forms": [],
+      "tab": "summary",
+      "article": "summary-overview",
+      "text_sha256": "163103672ce2a0dd02d0cfc2e68d1a73fbd031704c686f438fd793345c44909d"
     },
     {
       "file": "task-work.js",
