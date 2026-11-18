@@ -13,9 +13,10 @@
 --    value was stored). The wrapper is VOLATILE because it writes (PostgREST runs STABLE functions read-only); if it is ever
 --    called inside a read-only transaction the recording is skipped and the inbox is still returned.
 --    personal_home_read() calls personal_home_inbox() by name and keeps working; the client refreshes right after it.
--- 3. personal_home_charts(): identical to 20261118010000 except trend.unread = 7 values aligned to trend.days —
---    past days: the stored value or null when no row exists; today: the live count from the same inbox computation
---    (clinic_finance.home_inbox_before_unread_daily()->'unread'). The key is omitted only when the caller has no inbox.
+-- 3. personal_home_charts(): identical to 20261118010000 except trend.unread = 7 values aligned to trend.days, each the
+--    stored value of that Cairo day (today: today's row as recorded so far) or null when no row exists. It does NOT recompute
+--    the inbox (that costs ~1 s): the KPI tile already shows the live number. Returned to every caller charts serves (an
+--    active account always has an inbox); all-null until the first recording.
 -- 4. Retention: 60 Cairo days (today and the 59 before). Older rows are deleted when a caller's first row of a day is inserted.
 -- Rollback: supabase/rollbacks/20261118020000_personal_home_unread_daily.rollback.sql
 begin;
@@ -107,7 +108,6 @@ declare
   month_counted integer;
   month_on_time integer;
   weekly jsonb;
-  inbox_now jsonb;
   unread_trend jsonb;
 begin
   if me is null or not exists (select 1 from public.admins where id = me and active) then
@@ -219,19 +219,13 @@ begin
     from days d join task_counts tc on tc.d = d.d join content_counts cc on cc.d = d.d;
   if not tasks_ok then trend := trend - 'mine_open'; end if;
   if not can_team then trend := trend - 'team_open'; end if;
-  -- trend.unread: the value recorded by personal_home_inbox() on each past Cairo day (null = no row, no backfill),
-  -- and for today the live count from the very same inbox computation the home tile shows. Omitted when the caller has no inbox.
-  begin
-    inbox_now := clinic_finance.home_inbox_before_unread_daily();
-  exception when raise_exception or insufficient_privilege then inbox_now := null;
-  end;
-  if jsonb_typeof(inbox_now->'unread') = 'number' then
-    select jsonb_agg(case when g::date = today then inbox_now->'unread' else to_jsonb(u.unread) end order by g)
-      into unread_trend
-      from generate_series(today - 6, today, interval '1 day') g
-      left join public.personal_home_unread_daily u on u.admin_id = me and u.day = g::date;
-    trend := trend || jsonb_build_object('unread', unread_trend);
-  end if;
+  -- trend.unread: the value personal_home_inbox() recorded for each Cairo day, today included (null = no row yet, no backfill).
+  -- Read-only and cheap: the live number is already on the KPI tile; the sparkline only shows the recorded series.
+  select jsonb_agg(to_jsonb(u.unread) order by g)
+    into unread_trend
+    from generate_series(today - 6, today, interval '1 day') g
+    left join public.personal_home_unread_daily u on u.admin_id = me and u.day = g::date;
+  trend := trend || jsonb_build_object('unread', unread_trend);
   result := result || jsonb_build_object('trend', trend);
 
   -- 3. my_month (self)

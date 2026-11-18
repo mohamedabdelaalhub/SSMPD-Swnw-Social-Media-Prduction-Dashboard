@@ -102,24 +102,25 @@ grant execute on function personal_home_inbox() to anon,authenticated;`);
 
     // 4. charts: nulls for days without a row, stored value for past days, live value for today
     await setUnread(2, 4); await as(2); r = await charts();
-    assert.deepEqual(r.trend.unread, [null, null, null, null, null, null, 4], 'only today exists: live value, the rest null (no backfill)');
+    assert.deepEqual(r.trend.unread, [null, null, null, null, null, null, 1], "today = today's stored row (1), not a live recompute (4); the rest null (no backfill)");
     x = await rows(); assert.equal(x.find(q => q.admin_id === id(2)).unread, 1, 'charts reads, it does not record');
     await pastRow(2, 1, 6); await pastRow(2, 3, 2); await pastRow(2, 6, 0); await pastRow(2, 7, 99);
     await as(2); r = await charts();
     assert.equal(r.trend.days.length, 7); assert.equal(r.trend.unread.length, 7);
-    assert.deepEqual(r.trend.unread, [0, null, null, 2, null, 6, 4], 'aligned to trend.days; day 7 ago is outside the window; 0 is kept, not null');
+    assert.deepEqual(r.trend.unread, [0, null, null, 2, null, 6, 1], 'aligned to trend.days; day 7 ago is outside the window; 0 is kept, not null');
     await as(2); assert.equal((await inbox()).unread, 4); await as(2); r = await charts();
-    assert.equal(r.trend.unread[6], (await inbox()).unread, "today's point = the inbox tile value");
-    await as(1); r = await charts(); assert.deepEqual(r.trend.unread, [null, null, null, null, null, null, 0], 'other accounts see only their own rows; 0 unread is a value');
-    // the caller has no inbox: key omitted, the rest of the charts unaffected
-    await as(4); r = await charts(); assert(!('unread' in r.trend)); assert(Array.isArray(r.trend.days) && Array.isArray(r.trend.approvals));
+    assert.equal(r.trend.unread[6], 4, "after the inbox is loaded, today's point = the value the tile showed");
+    await as(1); r = await charts(); assert.deepEqual(r.trend.unread, [null, null, null, null, null, null, null], 'no recording yet: all null (the line stays hidden)');
+    await as(1); await inbox(); await as(1); r = await charts(); assert.deepEqual(r.trend.unread, [null, null, null, null, null, null, 0], 'other accounts see only their own rows; 0 unread is a value');
+    // charts never calls the inbox: an account whose inbox fails still gets the recorded series
+    await as(4); r = await charts(); assert.deepEqual(r.trend.unread, [null, null, null, null, null, null, null]); assert(Array.isArray(r.trend.approvals));
     await as(5); await assert.rejects(charts, /سجّل الدخول/);
 
     // 5. retention: 60 Cairo days kept (today and the 59 before), older rows deleted when a day's first row is inserted
     await pastRow(1, 59, 1); await pastRow(1, 60, 1); await pastRow(1, 200, 1); await pastRow(2, 61, 1);
     await as(3); await inbox();
     x = await rows();
-    assert.deepEqual(x.filter(q => q.admin_id === id(1)).map(q => q.ago), [59], '60 and 200 days ago deleted, 59 kept');
+    assert.deepEqual(x.filter(q => q.admin_id === id(1)).map(q => q.ago), [59, 0], '60 and 200 days ago deleted; 59 days ago and today kept');
     assert(!x.some(q => q.ago > 59), 'retention applies to every account');
     assert.deepEqual(x.filter(q => q.admin_id === id(3)).map(q => [q.ago, q.unread]), [[0, 7]]);
 
@@ -146,6 +147,7 @@ grant execute on function personal_home_inbox() to anon,authenticated;`);
     await as(2); assert.equal((await inbox()).unread, 4); r = await charts(); assert(!('unread' in r.trend), 'charts back to the #550 body');
     await su(); await db.exec(mig); await as(2); await inbox(); r = await charts();
     assert.deepEqual(r.trend.unread, [null, null, null, null, null, null, 4], 're-applied after rollback: starts again from today');
-    console.log('PASS home unread daily SQL: requires #550, repeatable, wrapper returns inbox untouched, latest-of-day upsert, no rewrite when unchanged, read-only skip, inactive refused, trend.unread aligned (stored/null/live), key omitted without inbox, 60-day retention, no client access, rollback + re-apply');
+    await su(); assert.doesNotMatch((await db.query("select prosrc s from pg_proc where oid='public.personal_home_charts()'::regprocedure")).rows[0].s, /home_inbox_before_unread_daily|:=\s*public\.personal_home_inbox|perform\s+public\.personal_home_inbox/, 'charts does not recompute the inbox');
+    console.log('PASS home unread daily SQL: requires #550, repeatable, wrapper returns inbox untouched, latest-of-day upsert, no rewrite when unchanged, read-only skip, inactive refused, trend.unread aligned (stored/null, today = stored row, no inbox recompute), 60-day retention, no client access, rollback + re-apply');
   } finally { await db.close(); }
 })().catch(e => { console.error(e); process.exit(1); });
