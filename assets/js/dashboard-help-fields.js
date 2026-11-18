@@ -492,6 +492,21 @@
       "reviewed": true
     },
     {
+      "title": "ابحث في أقسام الحسابات",
+      "labels": [
+        "ابحث في أقسام الحسابات",
+        "ابحث في الحسابات…"
+      ],
+      "text": "اكتب جزء من اسم القسم، زي «الأطباء» أو «التحصيل»، والقايمة الجانبية هتعرض الأقسام اللي فيها الكلمة دي بس. البحث بيصفي القايمة ومش بيغير أي بيانات.",
+      "article": "accounting-shell",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "مثال: موافق · موافق على صلاحية الحسابات لمحمود",
       "labels": [
         "مثال: موافق · موافق على صلاحية الحسابات لمحمود"
@@ -20712,9 +20727,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1761,
-    "labels": 1296,
-    "files": 121,
-    "groups": 1391
+    "definitions": 1763,
+    "labels": 1298,
+    "files": 122,
+    "groups": 1392
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();

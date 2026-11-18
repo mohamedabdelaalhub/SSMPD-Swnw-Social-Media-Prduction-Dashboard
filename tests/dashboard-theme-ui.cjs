@@ -72,7 +72,8 @@ const styles=[...html.matchAll(/<link[^>]+href="([^"]+\.css)[^"]*"/g)].map(m=>m[
   if(process.env.RECEPTION_QA)await page.screenshot({path:path.join(process.env.RECEPTION_QA,'theme-menu-'+width+'.png'),fullPage:true});
   await page.keyboard.press('Escape');assert.equal(await page.locator('#user-dropdown').isVisible(),false);
   await page.evaluate(()=>document.querySelector('#user-dropdown [data-goto="accounting"]').click());
-  await page.waitForSelector('.acc-catalog-nav');await page.waitForSelector('.acc-catalog-grid');
+  await page.waitForSelector('.acs [data-acs-go]');// accounting opens in the unified side-rail shell (owner 2026-11-18)
+  assert.equal(await page.locator('.acc-catalog-nav').count(),0,'no sub-tab bar inside the shell');
   assert(await overflow(),'accounting fits '+width);
   if(process.env.RECEPTION_QA)await page.screenshot({path:path.join(process.env.RECEPTION_QA,'theme-accounting-'+width+'.png'),fullPage:true});
   // Shared screen primitives used by non-social modules and long native form values.
