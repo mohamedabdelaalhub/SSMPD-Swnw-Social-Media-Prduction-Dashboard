@@ -18,7 +18,7 @@ function paymentFields(options){options=options||{};return field('amount','ال�
 function bindPaymentFields(root){var f=root.tagName==='FORM'?root:root.querySelector('form');if(!f||!f.elements.method||!f.elements.shift_id)return;function sync(){var needs=['cash','pos'].includes(f.elements.method.value);f.elements.shift_id.required=needs;f.elements.shift_id.disabled=!needs;f.elements.shift_id.closest('label').hidden=!needs;}f.elements.method.addEventListener('change',sync);sync();}
 /* Owner 2026-11-15: the cashier sees what they collected in their own open shift, per method — never the drawer's expected cash. */
 var MY_METHODS={cash:'نقدي',pos:'فيزا',bank:'تحويل بنكي',instapay:'إنستا باي',wallet:'محفظة'};
-function fillMyShift(body){var box=body.querySelector('[data-fc-my-shift]');if(!box)return;var call;try{call=Promise.resolve(db.client.rpc('clinic_finance_my_shift_collections'));}catch(_){box.remove();return;}
+function fillMyShift(body){var db=window.SSMPDDb;/* was an undefined global (ReferenceError) */var box=body.querySelector('[data-fc-my-shift]');if(!box||!db||!db.client)return;var call;try{call=Promise.resolve(db.client.rpc('clinic_finance_my_shift_collections'));}catch(_){box.remove();return;}
  call.then(function(r){if(!r||r.error)throw (r&&r.error)||Error("no data");if(!box.isConnected)return;var list=r.data||[];
   if(!list.length){box.remove();return;}
   box.innerHTML=list.map(function(sh){var total=(sh.methods||[]).reduce(function(n,m){return n+Number(m.amount||0);},0),count=(sh.methods||[]).reduce(function(n,m){return n+Number(m.receipts||0);},0);
@@ -26,7 +26,7 @@ function fillMyShift(body){var box=body.querySelector('[data-fc-my-shift]');if(!
  }).catch(function(){if(box.isConnected)box.remove();});
 }
 var movementsView=null;
-function mountMovements(body){var host=body.querySelector('[data-fc-movements]');movementsView=null;if(!host||!window.SSMPDShiftMovements||!db.client)return;
+function mountMovements(body){var db=window.SSMPDDb;/* was an undefined global: it threw inside draw(), leaving the shifts screen with dead buttons */var host=body.querySelector('[data-fc-movements]');movementsView=null;if(!host||!window.SSMPDShiftMovements||!db||!db.client)return;
  var staff=[],seen={};(data.shifts||[]).forEach(function(s){if(s.cashier_id&&!seen[s.cashier_id]){seen[s.cashier_id]=1;staff.push({id:s.cashier_id,name:s.cashier_name||'موظف'});}});
  try{movementsView=window.SSMPDShiftMovements.mount(host,{manager:!!data.can_review,staff:staff});}catch(_){host.remove();}}
 function ownShifts(){return (data.active_shifts||data.shifts).filter(function(s){return s.status==='open'&&!s.ended_at&&s.cashier_id===data.me;});}
