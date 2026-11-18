@@ -11,9 +11,9 @@ revoke all on function clinic_reception.fallback_api(text,jsonb) from public, an
 create or replace function clinic_reception.slot_busy(p_provider uuid, p_start timestamptz, p_end timestamptz, p_skip uuid default null)
 returns boolean language sql stable security definer set search_path = pg_catalog, public as $$
   select exists (select 1 from clinic_reception.appointments a where a.provider_id = p_provider
-                   and a.status not in ('cancelled','no_show') and a.starts_at < p_end and a.ends_at > p_start)
+                   and a.status not in ('cancelled','no_show') and a.starts_at < p_end + clinic_reception.provider_gap(p_provider) and a.ends_at + clinic_reception.provider_gap(p_provider) > p_start)
       or exists (select 1 from clinic_reception.fallback_bookings f where f.provider_id = p_provider
-                   and clinic_reception.fallback_holds(f) and f.starts_at < p_end and f.ends_at > p_start and f.id is distinct from p_skip)
+                   and clinic_reception.fallback_holds(f) and f.starts_at < p_end + clinic_reception.provider_gap(p_provider) and f.ends_at + clinic_reception.provider_gap(p_provider) > p_start and f.id is distinct from p_skip)
 $$;
 revoke all on function clinic_reception.slot_busy(uuid,timestamptz,timestamptz,uuid) from public, anon, authenticated;
 drop function if exists clinic_reception.agent_booking_start(date,text);

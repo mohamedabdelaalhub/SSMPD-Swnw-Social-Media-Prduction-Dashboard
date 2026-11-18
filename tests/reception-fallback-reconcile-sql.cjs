@@ -2,7 +2,7 @@
 const fs=require('fs'),path=require('path'),assert=require('node:assert/strict');
 const src=fs.readFileSync(path.join(__dirname,'reception-bridge.cjs'),'utf8');const cut=src.indexOf('// A legacy inventory use');
 assert(cut>0&&src.includes('await boot()'),'reception-bridge.cjs setup markers moved; update this test');
-const prefix=src.slice(0,cut).replace('await boot()',"await boot(['reception_consultation_eligibility','reception_provider_service_scopes','reception_booking_confirm_duration','reception_weekly_schedule_walk_in','reception_basic_services_readiness','reception_masa_links_fallback_booking','reception_fallback_reconcile'])").replace("require('./helpers/reception-bridge.cjs')",'require('+JSON.stringify(path.join(__dirname,'helpers','reception-bridge.cjs'))+')');
+const prefix=src.slice(0,cut).replace('await boot()',"await boot(['reception_consultation_eligibility','reception_provider_service_scopes','reception_booking_confirm_duration','reception_weekly_schedule_walk_in','reception_basic_services_readiness','reception_masa_links_fallback_booking','reception_booking_gap','reception_fallback_reconcile'])").replace("require('./helpers/reception-bridge.cjs')",'require('+JSON.stringify(path.join(__dirname,'helpers','reception-bridge.cjs'))+')');
 const body=`
 {const q=async(sql,a)=>{const r=await owner(sql,a);await as(1);return r;};await as(1);
 const api=async(op,p)=>(await q('select clinic_reception.fallback_api($1,$2::jsonb) v',[op,JSON.stringify(p||{})]))[0].v;
@@ -11,6 +11,9 @@ const dalia=(await cmd(live,'provider',{name:'د/ داليا سعيد',departmen
 await q('select clinic_reception.masa_link_seed($1)',[live]);
 await call('clinic_reception_weekly',[live,'save',{provider_id:dalia,slots:[0,1,2,3,4,5,6].map(d=>({dow:d,starts:'10:00',ends:'12:00'}))}]);
 const tomorrow=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Cairo'}).format(new Date(Date.now()+864e5));
+await q('update clinic_reception.workspaces set booking_gap_minutes=0 where id=$1',[live]); // most checks below without the owner's gap; gap checked at the end
+const gapDef=(await q("select pg_get_functiondef('clinic_reception.slot_busy(uuid,timestamptz,timestamptz,uuid)'::regprocedure) d"))[0].d;
+assert.equal(gapDef.split('provider_gap(p_provider)').length-1,8,'slot_busy keeps the provider gap on all four busy sources (#537)');
 const slots=async()=>(await api('slots',{masa_doctor_id:1130,date_from:tomorrow,days:1})).slots.map(x=>x.appointment_time);
 assert.deepEqual(await slots(),['10:00','10:20','10:40','11:00','11:20','11:40']);
 // a fallback booking and an agent booking already in Masa (mirrored in customer_bookings, doctor_id = Masa id)
@@ -59,6 +62,15 @@ assert.equal((await api('reconcile_flag',{booking_request_id:'FB-1',kind:'missin
 // active imports show to reception
 await api('masa_import',{items:[{...item,official_booking_id:'M-902',appointment_time:'11:40'}]});
 assert.deepEqual((await fb('list')).masa_imports.map(x=>[x.official_booking_id,x.patient_name,x.phone]),[['M-902','مريض ماسا','01000000003']]);
+// the owner's 5-minute gap applies around Masa imports and agent Masa bookings too
+for(const [label,start] of [['masa import','11:40'],['agent Masa booking','10:20']]){
+ const at=(m)=>"(($1::date + time '"+m+"') at time zone 'Africa/Cairo')";
+ const busyWith=async gap=>{await q('update clinic_reception.workspaces set booking_gap_minutes=$2 where id=$1',[live,gap]);
+  const end=start==='11:40'?'11:38':'10:50',beg=start==='11:40'?'11:30':'10:42';
+  return (await q('select clinic_reception.slot_busy($2,'+at(beg)+','+at(end)+') b',[tomorrow,dalia]))[0].b;};
+ assert.equal(await busyWith(0),false,label+': free right next to it without a gap');
+ assert.equal(await busyWith(5),true,label+': the 5-minute gap blocks it');}
+await q('update clinic_reception.workspaces set booking_gap_minutes=0 where id=$1',[live]);
 // the earlier ops still work through the wrapper
 assert.equal((await api('status',{booking_request_id:'FB-1'})).status,'pending');assert.equal((await api('health')).ok,true);
 await assert.rejects(()=>db.query("select clinic_reception.fallback_api('health','{}')"),/permission|denied/);
@@ -66,6 +78,7 @@ await assert.rejects(()=>db.query("select clinic_reception.fallback_api('health'
 await db.exec('reset role');await db.exec(require('fs').readFileSync(${JSON.stringify(path.join(__dirname,'..','supabase','rollbacks','20261118170000_reception_fallback_reconcile.rollback.sql'))},'utf8'));
 assert.equal((await db.query("select to_regclass('clinic_reception.masa_bookings') t")).rows[0].t,null);
 assert.equal((await db.query("select clinic_reception.fallback_api('health','{}') v")).rows[0].v.ok,true,'step-1 API back after rollback');
+assert.equal((await db.query("select pg_get_functiondef('clinic_reception.slot_busy(uuid,timestamptz,timestamptz,uuid)'::regprocedure) d")).rows[0].d.split('provider_gap(p_provider)').length-1,4,'rollback restores the #537 gap version');
 await db.close();console.log('PASS fallback reconcile: agent Masa bookings and Masa imports block fallback slots, import idempotent/move/cancel/skip known & unknown, reception can still book, reconcile_list without names, alerts once per booking and resolvable, old ops intact, service-role only, rollback restores step 1.');})().catch(e=>{console.error(e);process.exit(1);});`;
 const file=path.join(require('os').tmpdir(),'fallback-reconcile-run-'+process.pid+'.cjs');
 fs.writeFileSync(file,prefix+body);try{require(file);}finally{setTimeout(()=>{try{fs.unlinkSync(file);}catch(_){}},0);}
