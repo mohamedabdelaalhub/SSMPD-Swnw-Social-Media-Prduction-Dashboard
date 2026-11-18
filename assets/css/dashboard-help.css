@@ -57,3 +57,8 @@
 .dh-coach-actions .btn{padding:8px 14px;border-radius:12px}
 @media (prefers-reduced-motion:reduce){.dh-coach-bar i{transition:none}}
 @media print{.dh-coach{display:none}}
+
+/* Walkthrough video inside a help article (local demo-data recordings only). */
+.dh-video{margin:12px 0;}
+.dh-video figcaption{font-size:.9em;margin-bottom:6px;color:#16212E;}
+.dh-video video{display:block;width:100%;max-width:640px;height:auto;border-radius:10px;border:1px solid #DCE5F5;background:#0b1220;}
