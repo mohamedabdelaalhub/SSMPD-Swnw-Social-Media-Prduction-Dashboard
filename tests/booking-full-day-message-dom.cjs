@@ -17,7 +17,7 @@ const set=(n,v)=>{const e=q('.rx-modal [name="'+n+'"]');e.value=v;e.dispatchEven
 set('service_id','k2');set('provider_id','as');set('day',tomorrow);await sleep(30);
 const first=()=>q('.rx-modal [name=starts_at]').options[0].textContent,hint=()=>q('.rx-modal [data-rx-slot-hint]');
 // 20-minute service: only 23:20–23:30 (10 min) is left → fully booked, next free day shown
-assert.equal([...q('.rx-modal [name=starts_at]').options].filter(o=>o.value).length,0);assert.equal(first(),'اليوم ده محجوز بالكامل للدكتور');assert(!hint().hidden&&hint().textContent.includes('أول ميعاد فاضي'));
+assert.equal([...q('.rx-modal [name=starts_at]').options].filter(o=>o.value&&o.value!=='__custom__').length,0);assert.equal(first(),'اليوم ده محجوز بالكامل للدكتور');assert(!hint().hidden&&hint().textContent.includes('أول ميعاد فاضي'));
 // half an hour: fully booked, says so and points to the next free day
 const dc=q('.rx-modal [name="duration_choice"]');dc.value='30';dc.dispatchEvent(new w.Event('change',{bubbles:true}));await sleep(20);
 assert.equal(first(),'اليوم ده محجوز بالكامل للدكتور');assert(!hint().hidden&&hint().textContent.includes('أول ميعاد فاضي')&&hint().textContent.includes('02:00'),hint().textContent);

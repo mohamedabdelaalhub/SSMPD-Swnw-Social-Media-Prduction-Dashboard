@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1763,
-    "labels": 1298,
+    "definitions": 1770,
+    "labels": 1300,
     "files": 122,
-    "groups": 1392
+    "groups": 1398
   },
   "fields": [
     {
@@ -12127,6 +12127,54 @@
     },
     {
       "file": "reception-workspace.js",
+      "label": "الاسم بالكامل",
+      "name": "name",
+      "kind": "helper",
+      "forms": [
+        "تعديل بيانات المريض"
+      ],
+      "tab": "reception_services",
+      "article": "patient-records",
+      "text_sha256": "63020fdf117fb40c808842463241f829410837bd3102a2e4fa9a1af1ab064e80"
+    },
+    {
+      "file": "reception-workspace.js",
+      "label": "رقم التليفون",
+      "name": "phone",
+      "kind": "helper",
+      "forms": [
+        "تعديل بيانات المريض"
+      ],
+      "tab": "reception_services",
+      "article": "patient-records",
+      "text_sha256": "57a56cdd50c48e9067e70e528bb4784c853c253c569bc87e0865b68655497d63"
+    },
+    {
+      "file": "reception-workspace.js",
+      "label": "النوع",
+      "name": "",
+      "kind": "html",
+      "forms": [
+        "تعديل بيانات المريض"
+      ],
+      "tab": "reception_services",
+      "article": "patient-records",
+      "text_sha256": "68c593718f9e4a670d874fc33a5fb6254f39083bbe1ac70792f1b87046e5dd54"
+    },
+    {
+      "file": "reception-workspace.js",
+      "label": "السن",
+      "name": "age",
+      "kind": "helper",
+      "forms": [
+        "تعديل بيانات المريض"
+      ],
+      "tab": "reception_services",
+      "article": "patient-records",
+      "text_sha256": "5419839397dbc5f0b82416add0be92d1172e352356c10b6eceff95cb29c839c5"
+    },
+    {
+      "file": "reception-workspace.js",
       "label": "المريض",
       "name": "patient_id",
       "kind": "helper",
@@ -12214,6 +12262,36 @@
       "tab": "reception_services",
       "article": "booking-flow",
       "text_sha256": "00205ab5debae31a2b6059daa8311ea9f8ec7acae02974a5d56409393387778d"
+    },
+    {
+      "file": "reception-workspace.js",
+      "label": "خدمة إضافية",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-booking-extras",
+      "text_sha256": "ffa5a64f91fdefec3a638123ac0af7630abd86c51abc80d9375fa59286d655b3"
+    },
+    {
+      "file": "reception-workspace.js",
+      "label": "الطبيب",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "doctor-missing",
+      "text_sha256": "64e347f73f878509a653299ddc92452e08558753e25b26c2031002afbc7d558a"
+    },
+    {
+      "file": "reception-workspace.js",
+      "label": "الوقت",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-booking-extras",
+      "text_sha256": "d4d98174fb1407e216fd09a842add9e123fb0444057eeb2858c086104713dc7d"
     },
     {
       "file": "reception-workspace.js",
