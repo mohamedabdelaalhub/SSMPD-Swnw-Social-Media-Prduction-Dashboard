@@ -4,7 +4,7 @@
     "definitions": 1782,
     "labels": 1309,
     "files": 124,
-    "groups": 1411
+    "groups": 1410
   },
   "fields": [
     {
@@ -3489,7 +3489,7 @@
       ],
       "tab": "accounting",
       "article": "collections",
-      "text_sha256": "231cd5ad258db6e02f26a1ab2b46378503fffee62683af0a39f70716adbe60db"
+      "text_sha256": "86f699e6a6d037d190585ba6e797e12829620ca904b65369af181b61d25216b9"
     },
     {
       "file": "finance-advances.js",
@@ -4168,8 +4168,8 @@
       "kind": "helper",
       "forms": [],
       "tab": "accounting",
-      "article": "collect-button",
-      "text_sha256": "febb17125dbb24fa0d0a5adac958eb893ffbc1257f68e75e79950f834528835c"
+      "article": "collections",
+      "text_sha256": "86f699e6a6d037d190585ba6e797e12829620ca904b65369af181b61d25216b9"
     },
     {
       "file": "finance-cash.js",
@@ -5045,7 +5045,7 @@
       "forms": [],
       "tab": "accounting",
       "article": "collections",
-      "text_sha256": "231cd5ad258db6e02f26a1ab2b46378503fffee62683af0a39f70716adbe60db"
+      "text_sha256": "86f699e6a6d037d190585ba6e797e12829620ca904b65369af181b61d25216b9"
     },
     {
       "file": "finance-doctor-payout.js",
@@ -5691,7 +5691,7 @@
       ],
       "tab": "accounting",
       "article": "collections",
-      "text_sha256": "231cd5ad258db6e02f26a1ab2b46378503fffee62683af0a39f70716adbe60db"
+      "text_sha256": "86f699e6a6d037d190585ba6e797e12829620ca904b65369af181b61d25216b9"
     },
     {
       "file": "finance-reports.js",
@@ -11963,7 +11963,7 @@
       "forms": [],
       "tab": "reception_services",
       "article": "collections",
-      "text_sha256": "231cd5ad258db6e02f26a1ab2b46378503fffee62683af0a39f70716adbe60db"
+      "text_sha256": "86f699e6a6d037d190585ba6e797e12829620ca904b65369af181b61d25216b9"
     },
     {
       "file": "reception-services.js",
