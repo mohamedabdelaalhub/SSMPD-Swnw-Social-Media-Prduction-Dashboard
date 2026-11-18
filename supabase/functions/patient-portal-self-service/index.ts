@@ -583,12 +583,14 @@ Deno.serve(async (req) => {
     } catch {
       return json({ error: "PORTAL_URL_NOT_CONFIGURED" }, 503);
     }
-    const recover = await fetch(SUPABASE_URL + "/auth/v1/recover", {
+    // GoTrue reads redirect_to from the QUERY STRING only (a body field is ignored and the link falls
+    // back to SITE_URL = the staff dashboard). The URL must also be in GOTRUE_URI_ALLOW_LIST.
+    const recover = await fetch(SUPABASE_URL + "/auth/v1/recover?redirect_to=" + encodeURIComponent(resetUrl), {
       method: "POST",
       headers: { "Content-Type": "application/json", apikey: ANON_KEY },
       // Forward the browser's Turnstile token so GoTrue CAPTCHA (when enabled) still gates
       // this public endpoint; GoTrue ignores it while CAPTCHA is off.
-      body: JSON.stringify({ email, redirect_to: resetUrl, gotrue_meta_security: { captcha_token: captchaToken } }),
+      body: JSON.stringify({ email, gotrue_meta_security: { captcha_token: captchaToken } }),
     });
     if (!recover.ok) return json({ error: "PASSWORD_RESET_EMAIL_FAILED" }, 500);
 
