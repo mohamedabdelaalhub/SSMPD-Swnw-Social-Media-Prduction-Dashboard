@@ -28,6 +28,9 @@ function isPortalVisible(map: Map<string, string>, entityType: string, entityId:
 }
 // --- end portal visibility ---
 
+// Keep in sync with patient-portal/privacy.html (#terms-version) and PORTAL_TERMS_VERSION in patient-portal/app.js.
+const PORTAL_TERMS_VERSION = "2026-11-18";
+
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -468,6 +471,8 @@ Deno.serve(async (req) => {
     const newPassword = String(body.new_password || "");
     if (!validEmail(email) || code.length !== 8) return json({ error: "INVALID_ACTIVATION_CODE" }, 400);
     if (newPassword.length < 10) return json({ error: "PASSWORD_TOO_SHORT" }, 400);
+    // The patient must accept the current privacy policy & terms (patient-portal/privacy.html).
+    if (String(body.terms_version || "") !== PORTAL_TERMS_VERSION) return json({ error: "TERMS_NOT_ACCEPTED" }, 400);
 
     const { data: account, error: accountError } = await admin
       .from("patient_accounts")
@@ -536,7 +541,7 @@ Deno.serve(async (req) => {
       action: "account_activated",
       entity_type: "patient_accounts",
       entity_id: account.id,
-      metadata: { channel: "email_activation_code" },
+      metadata: { channel: "email_activation_code", terms_version: PORTAL_TERMS_VERSION, terms_accepted_at: now },
     });
 
     return json({ ok: true });

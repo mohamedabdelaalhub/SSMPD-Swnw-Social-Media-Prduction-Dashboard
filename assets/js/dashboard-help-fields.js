@@ -492,6 +492,21 @@
       "reviewed": true
     },
     {
+      "title": "ابحث في أقسام الحسابات",
+      "labels": [
+        "ابحث في أقسام الحسابات",
+        "ابحث في الحسابات…"
+      ],
+      "text": "اكتب جزء من اسم القسم، زي «الأطباء» أو «التحصيل»، والقايمة الجانبية هتعرض الأقسام اللي فيها الكلمة دي بس. البحث بيصفي القايمة ومش بيغير أي بيانات.",
+      "article": "accounting-shell",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "مثال: موافق · موافق على صلاحية الحسابات لمحمود",
       "labels": [
         "مثال: موافق · موافق على صلاحية الحسابات لمحمود"
@@ -17820,19 +17835,6 @@
       "reviewed": true
     },
     {
-      "title": "خصوصية فيديو TikTok",
-      "labels": [
-        "خصوصية فيديو TikTok"
-      ],
-      "text": "مين يقدر يشوف الفيديو على TikTok. لازم تختار بنفسك قبل النشر.",
-      "article": "publishing-guide",
-      "tabs": [
-        "publish"
-      ],
-      "forms": [],
-      "reviewed": true
-    },
-    {
       "title": "عنوان فيديو يوتيوب (لحد ١٠٠ حرف)",
       "labels": [
         "عنوان فيديو يوتيوب (لحد ١٠٠ حرف)"
@@ -20725,9 +20727,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1762,
-    "labels": 1297,
-    "files": 121,
+    "definitions": 1763,
+    "labels": 1298,
+    "files": 122,
     "groups": 1392
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();

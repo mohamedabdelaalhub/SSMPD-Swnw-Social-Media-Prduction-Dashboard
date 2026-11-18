@@ -1370,12 +1370,29 @@
         disable_duet:!!payload.disableDuet,disable_stitch:!!payload.disableStitch,
         commercial_content:!!payload.commercialContent,your_brand:!!payload.yourBrand,
         branded_content:!!payload.brandedContent,music_confirmation:!!payload.musicConfirmation,
+        title:payload.title==null?null:String(payload.title).slice(0,2200),is_aigc:!!payload.isAigc,
         created_by:payload.createdBy||null
       }).select().single());
     },
+    queueTikTokInboxDraft: function (contentId) {
+      return handle(client.rpc("queue_tiktok_inbox_draft",{p_content_id:contentId}));
+    },
+    listTikTokDraftCandidates: function () {
+      // Videos with a file, newest first, that never got a TikTok link — the "send as draft" list (super admin).
+      return handle(client.from("content_items").select("id,title,body,caption_text,brand,stage,content_format,design_file_url,published_at,published_urls,created_at")
+        .eq("content_format","video").not("design_file_url","is",null).in("stage",["published","scheduled","ready_to_publish"])
+        .order("created_at",{ascending:false}).limit(60)).then(function(rows){
+          return (rows||[]).filter(function(r){return !(r.published_urls&&r.published_urls.tiktok);});
+        });
+    },
+    listTikTokInboxJobs: function (contentIds) {
+      if(!contentIds.length)return Promise.resolve([]);
+      return handle(client.from("tiktok_publish_jobs").select("id,content_id,status,publish_status,error_message,created_at,mode").eq("mode","inbox").in("content_id",contentIds).order("created_at",{ascending:false}));
+    },
     listTikTokPublishJobsForContent: function (contentIds) {
       if(!contentIds||!contentIds.length)return Promise.resolve([]);
-      return handle(client.from("tiktok_publish_jobs").select("*").in("content_id",contentIds).order("created_at",{ascending:false}));
+      // Inbox drafts are a separate flow (tiktok-drafts.js) and must not show up as the item's auto-publish job.
+      return handle(client.from("tiktok_publish_jobs").select("*").in("content_id",contentIds).order("created_at",{ascending:false})).then(function(rows){return (rows||[]).filter(function(j){return j.mode!=="inbox";});});
     },
     cancelTikTokPublishJob: function (id) {
       return handle(client.from("tiktok_publish_jobs").update({status:"cancelled"}).eq("id",id).select().single());
