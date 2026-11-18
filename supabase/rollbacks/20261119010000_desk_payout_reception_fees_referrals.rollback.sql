@@ -2,7 +2,23 @@
 begin;
 do $$ begin if exists (select 1 from clinic_finance.desk_payout_rx) then raise exception 'فيه صرف اتسجل على فواتير الاستقبال؛ مينفعش الرجوع'; end if; end $$;
 drop trigger if exists post_referral_fee on clinic_reception.orders;
+drop trigger if exists referral_retry_provider on clinic_reception.providers;
+drop trigger if exists referral_follow_credit on clinic_reception.invoices;
+drop trigger if exists referral_follow_contractual on clinic_reception.claims;
 drop function if exists clinic_reception.post_referral_fee();
+drop function if exists clinic_reception.referral_retry_provider();
+drop function if exists clinic_reception.referral_follow_cut();
+drop function if exists clinic_reception.referral_try(uuid);
+drop function if exists clinic_reception.sync_referral(uuid);
+alter table clinic_reception.referral_issues rename to referral_issues_rolled_back;
+do $$
+declare def text;
+begin
+  def := pg_get_functiondef('clinic_reception.post(uuid,text,uuid,text,text,text,numeric,jsonb)'::regprocedure);
+  execute replace(def, $s$elsif p_credit='2120' and p_source in ('doctor_fee','referral_fee') then$s$, $s$elsif p_credit='2120' and p_source='doctor_fee' then$s$);
+  def := pg_get_functiondef('public.clinic_reception_doctor_payout(text,jsonb,uuid)'::regprocedure);
+  execute replace(def, $s$      select coalesce(sum(k.fee), 0) + coalesce((select sum(r.fee) from clinic_finance.desk_payout_rx r where r.payout_id = q.id), 0) into payable from clinic_finance.doctor_payout_invoices k where k.payout_id = q.id;$s$, $s$      select coalesce(sum(k.fee), 0) into payable from clinic_finance.doctor_payout_invoices k where k.payout_id = q.id;$s$);
+end $$;
 do $$
 declare def text;
   new_txt constant text := $s$    insert into clinic_finance.doctor_payout_invoices(payout_id, invoice_id, doctor_key, fee)

@@ -50,7 +50,37 @@ const fs=require('fs'),assert=require('node:assert/strict'),boot=require('./help
   await as(3);q=await c2('approve',{id:q.id});assert.equal(q.status,'approved');
   assert.equal(Number((await owner("select clinic_finance.doctor_balance('DOC-E') b"))[0].b),0,'paid out');
   await as(4);assert.equal(Number((await c2('detail',{provider_id:pE})).payable),0);
+  // ---- review fixes ----
+  await db.exec('reset role');
+  let slot=0;const mkOrder=async(prov,ref,perf,comm,price)=>{slot++;const ap=(await owner("insert into clinic_reception.appointments(workspace_id,patient_id,provider_id,service_id,starts_at,ends_at,status,created_by) values($1,$2,$3,$4,now()+make_interval(hours=>$6::int),now()+make_interval(hours=>$6::int)+interval '15 min','arrived',$5) returning id",[ws,pat,prov,svc,id(1),slot]))[0].id;
+    const vi=(await owner("insert into clinic_reception.visits(workspace_id,appointment_id,patient_id,opened_by) values($1,$2,$3,$4) returning id",[ws,ap,pat,id(1)]))[0].id;
+    const o=(await owner("insert into clinic_reception.orders(workspace_id,visit_id,service_id,provider_id,price,discount,snapshot,created_by) values($1,$2,$3,$4,$5,0,'{}',$6) returning id",[ws,vi,svc,prov,price,id(1)]))[0].id;
+    await owner("insert into clinic_reception.order_ext(order_id,kind,referring_doctor_key,performing_doctor_key,priced) values($1,'radiology',$2,$3,$4)",[o,ref,perf,comm]);
+    const iv=(await owner("insert into clinic_reception.invoices(workspace_id,patient_id,visit_id,order_id,kind,amount,description) values($1,$2,$3,$4,'service',$5,'خدمة') returning id",[ws,pat,vi,o,price]))[0].id;
+    return {o,iv};};
+  const refSum=async o=>Number((await owner("select coalesce(sum(l.credit-l.debit),0) s from clinic_reception.journal j join clinic_reception.journal_lines l on l.entry_id=j.id and l.account='2120' where j.source like 'referral%' and j.source_id=$1",[o]))[0].s);
+  // self-referral earns nothing
+  let x=await mkOrder(pR,'DOC-R',null,{referral_commission:50},500);await owner("update clinic_reception.orders set status='completed' where id=$1",[x.o]);assert.equal(await refSum(x.o),0,'self referral skipped');
+  // missing provider → kept, then posted when the provider appears
+  x=await mkOrder(pR,'DOC-NEW',null,{referral_commission:40},400);await owner("update clinic_reception.orders set status='completed' where id=$1",[x.o]);
+  assert.equal((await owner("select reason from clinic_reception.referral_issues where order_id=$1 and resolved_at is null",[x.o]))[0].reason,'missing_provider');
+  await prov('د. جديد','DOC-NEW');assert.equal(await refSum(x.o),40,'posted when the provider appears');
+  assert((await owner("select resolved_at from clinic_reception.referral_issues where order_id=$1",[x.o]))[0].resolved_at,'issue resolved');
+  // bad data never blocks completing the order
+  x=await mkOrder(pR,'DOC-E',null,{referral_commission:'abc'},300);await owner("update clinic_reception.orders set status='completed' where id=$1",[x.o]);
+  assert.equal((await owner("select status from clinic_reception.orders where id=$1",[x.o]))[0].status,'completed');assert.equal((await owner("select reason from clinic_reception.referral_issues where order_id=$1",[x.o]))[0].reason,'error');
+  // a credit note on half the invoice reverses half the referral, and comes back if the note is removed
+  x=await mkOrder(pR,'DOC-E',null,{referral_commission:100},1000);await owner("update clinic_reception.orders set status='completed' where id=$1",[x.o]);assert.equal(await refSum(x.o),100);
+  await owner("update clinic_reception.invoices set credit_amount=500 where id=$1",[x.iv]);assert.equal(await refSum(x.o),50,'credit note halves the referral');
+  await owner("update clinic_reception.invoices set credit_amount=0 where id=$1",[x.iv]);assert.equal(await refSum(x.o),100,'restored');
+  // accounting already paid part of the balance outside the desk → the desk offers no more than the balance
+  await owner("insert into clinic_reception.allocations(workspace_id,invoice_id,source,amount) values($1,$2,'payment',1000)",[ws,x.iv]);
+  const before=Number((await owner("select coalesce(sum(fee),0) f from clinic_finance.desk_payable('DOC-E')"))[0].f);assert.equal(before,100);
+  await owner("insert into clinic_finance.doctor_payouts(doctor_key,gross,withheld,method,reference,period_from,period_to,payload,created_by,token,status) values('DOC-E',70,0,'cash','ACC-1',current_date,current_date,'{}',$1,gen_random_uuid(),'approved')",[id(3)]);
+  assert.equal(Number((await owner("select coalesce(sum(fee),0) f from clinic_finance.desk_payable('DOC-E')"))[0].f),30,'capped by the remaining balance');
+  // the approver can lower a reception-only payout (cap counts reception lines)
+  await as(4);let q2=await c2('request',{provider_id:pE});assert.equal(Number(q2.gross),30);await as(3);q2=await c2('approve',{id:q2.id,gross:20,note:'متفق على 20'});assert.equal(Number(q2.gross),20);
   await db.exec('reset role');const RB=fs.readFileSync('supabase/rollbacks/20261119010000_desk_payout_reception_fees_referrals.rollback.sql','utf8');
   await assert.rejects(()=>db.exec(RB),/مينفعش الرجوع/,'rollback refuses after reception lines were paid');await db.exec('rollback');
-  console.log('PASS desk + reception fees/referrals: referral posted once on execution (10% after discount), held until the invoice is paid, then payable at «صرف الحساب» for the referring and executing doctor, request/approve with reception lines, balance closes.');
+  console.log('PASS desk + reception fees/referrals: referral posted once on execution (10% after discount), held until the invoice is paid, then payable at «صرف الحساب» for the referring and executing doctor, request/approve with reception lines, balance closes; self-referral skipped, missing provider retried, bad data logged without blocking, credit note reverses/restores, accounting payouts cap the desk, approver adjust on reception lines.');
  }finally{await db.close();}})().catch(e=>{console.error(e);process.exit(1);});
