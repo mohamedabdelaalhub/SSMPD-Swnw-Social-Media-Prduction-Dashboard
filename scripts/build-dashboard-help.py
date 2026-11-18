@@ -816,6 +816,7 @@ B='insurance-billing.js'
 frule(B,'اسم المريض / رقم الملف / رقم الزيارة|بحث عن المريض أو الزيارة','دوّر على زيارة المريض المؤمن عليه علشان تعمل فاتورتها.','insurance')
 frule(B,'طريقة تحصيل المريض',PAY_METHOD,'insurance')
 frule(B,'رقم الإيصال/العملية|مرجع تحصيل المريض',PAY_REF,'insurance')
+frule('accounting-shell.js','ابحث في أقسام الحسابات|ابحث في الحسابات…','اكتب جزء من اسم القسم، زي «الأطباء» أو «التحصيل»، والقايمة الجانبية هتعرض الأقسام اللي فيها الكلمة دي بس. البحث بيصفي القايمة ومش بيغير أي بيانات.','accounting-shell')
 frule('render-accounting.js','قسم الخدمة في سونو','القسم اللي الخدمة بتظهر تحته في الحجز والتقارير، زي أشعة أو معمل.','add-doctor-service-booking')
 # --- Reception, today operations, lab links, patient 360, test records ---
 L='lab-link-review.js'
@@ -991,7 +992,7 @@ def domain(f):
  if f in ['render-patients.js','psychology-workspace.js'] or f.startswith('patient-'):return 'patients'
  if f.startswith('reception-') or f=='render-bookings.js':return 'reception_services'
  if f.startswith('inventory-') or f=='render-inventory.js':return 'inventory'
- if f=='accountant-workspace.js' or f.startswith(('finance-','ledger-')) or f=='render-accounting.js':return 'accounting'
+ if f in ('accountant-workspace.js','accounting-shell.js') or f.startswith(('finance-','ledger-')) or f=='render-accounting.js':return 'accounting'
  return {'navigation-ui.js':'home','comments.js':'comments','render-comments.js':'comments','app.js':'home','render-admin.js':'admin','render-leads.js':'leads','render-clinic-info.js':'clinic_info','render-contracting-entities.js':'contracting_entities','render-metaads.js':'metaads','render-mediabuyer.js':'mediabuyer','indicator-reports.js':'indicator_reports','render-tasks.js':'tasks','task-work.js':'tasks','render-summary.js':'summary','render-staffkpi.js':'staff_kpi','render-review.js':'review','render-publish.js':'publish'}.get(f,'production')
 def default_article(tab):return {'patients':'patient-records','reception_services':'booking-flow','inventory':'purchases','accounting':'ledger-guide','leads':'leads-guide','tasks':'tasks-guide','admin':'access','home':'personal','clinic_info':'chatbot','contracting_entities':'entities','metaads':'ads-guide','mediabuyer':'ads-guide','indicator_reports':'indicators','summary':'indicators','staff_kpi':'indicators','review':'content','publish':'content','production':'content','human_resources':'hr-my-file','price_lists':'price-lists'}.get(tab,'content')
 contract_help=json.loads(re.search(r"var fieldDescriptions=(.*);",pathlib.Path("assets/js/contract-marketing.js").read_text(encoding="utf-8")).group(1))
