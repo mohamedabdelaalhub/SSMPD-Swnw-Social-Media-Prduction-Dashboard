@@ -1,0 +1,24 @@
+// Owner 2026-11-18: reception edits a patient's basic data (name/phone/gender/age) without archive access; audited; gated by 'book'.
+const fs=require('fs'),assert=require('node:assert/strict'),boot=require('./helpers/reception-bridge.cjs');
+(async()=>{const b=await boot(['reception_canonical_catalog']);const {db,as,owner,call,id}=b;
+ try{await db.exec('reset role');await db.exec('alter table patients add column if not exists age int; alter table patients add column if not exists updated_at timestamptz;');
+  const M=fs.readFileSync('supabase/migrations/20261118120000_reception_patient_basic_edit.sql','utf8');await db.exec(M);
+  await assert.rejects(()=>db.exec(M),/تم تطبيق هذا الملف من قبل/);await db.exec('rollback');
+  await owner("insert into admins(id,name,role) values($1,'Rec2','reception'),($2,'Other','reception')",[id(8),id(9)]);
+  const ws=(await owner("insert into clinic_reception.workspaces(name,mode,owner_id) values('live','live',$1) returning id",[id(1)]))[0].id;
+  await owner("insert into clinic_reception.settings(id) values(true) on conflict do nothing");await owner("update clinic_reception.settings set live_enabled=true,cutover_at=now() where id");
+  await owner("insert into clinic_reception.members(workspace_id,admin_id,capabilities) values($1,$2,$3)",[ws,id(8),['book']]);
+  const ap=(await owner("insert into patients(patient_code,full_name,phone,gender,age) values('P-2026-000001','مريضة قديمة','01000000000','female',30) returning id"))[0].id;
+  const rp=(await owner("insert into clinic_reception.patients(workspace_id,patient_id,file_no,name,phone,created_by) values($1,$2,'F1','مريضة قديمة','01000000000',$3) returning id",[ws,ap,id(1)]))[0].id;
+  const fn=(a,p)=>call('clinic_reception_patient_basic',[ws,a,p]);
+  await as(2);await assert.rejects(()=>fn('get',{id:rp}),/./,'accountant outside reception refused');
+  await as(8);let g=await fn('get',{id:rp});assert.equal(g.name,'مريضة قديمة');assert.equal(g.age,30);assert.equal(g.linked,true);
+  await assert.rejects(()=>fn('update',{id:rp,name:'اسم',phone:'01000000000'}),/كلمتين/);
+  await assert.rejects(()=>fn('update',{id:rp,name:'مريضة جديدة',phone:'12'}),/التليفون/);
+  await fn('update',{id:rp,name:'مريضة   جديدة',phone:'01011112222',gender:'female',age:'31'});
+  const a=(await owner('select full_name,phone,age from patients where id=$1',[ap]))[0];assert.deepEqual([a.full_name,a.phone,a.age],['مريضة جديدة','01011112222',31]);
+  const r=(await owner('select name,phone from clinic_reception.patients where id=$1',[rp]))[0];assert.deepEqual([r.name,r.phone],['مريضة جديدة','01011112222']);
+  const au=(await owner("select detail from clinic_reception.audit where action='patient_basic_update' and entity_id=$1",[rp]));assert.equal(au.length,1);assert.equal(au[0].detail.before.name,'مريضة قديمة');
+  await db.exec('reset role');await db.exec(fs.readFileSync('supabase/rollbacks/20261118120000_reception_patient_basic_edit.rollback.sql','utf8'));
+  console.log('PASS reception patient basic edit: member-only, validation, reception + archive basic columns updated, audited, rollback.');
+ }finally{await db.close();}})().catch(e=>{console.error(e);process.exit(1);});
