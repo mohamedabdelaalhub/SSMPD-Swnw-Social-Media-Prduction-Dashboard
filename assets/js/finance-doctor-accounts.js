@@ -102,7 +102,7 @@
     var e = h.esc, m = h.money, b = h.btn;
     ensure(TAB);
     var html = '<div data-da-tab="' + TAB + '"><details class="fc-explain"><summary>إزاي بتتحسب؟</summary><p>الأطباء اللي ليهم حساب فعلي بس (أتعاب مستحقة أو مصروفات أو رصيد افتتاحي أو رصيد غير صفر). اضغط على اسم الطبيب لفتح كشف حسابه بالتفصيل. «مستحق للصرف الآن» = الرصيد بعد خصم أتعاب الفواتير اللي لسه ماتسددتش بالكامل، وهو نفس الرقم في كشف الدكتور.</p></details><div class="fc-actions">' +
-      b('doctor-accounts-refresh', '', 'تحديث') + (d.can_create ? b('open-disbursement', 'doctor_payment', 'طلب صرف مستحقات') : '') + '</div>';
+      b('doctor-accounts-refresh', '', 'تحديث') + (d.can_create ? b('open-disbursement', 'doctor_payment', 'طلب صرف مستحقات').replace('btn ghost sm', 'btn btn-primary') : '') + '</div>';
     if (!cache) return html + '<p role="status">جاري تحميل حسابات الأطباء…</p></div>';
     if (!cache.acc.ok) {
       var em = String((cache.acc.error && cache.acc.error.message) || ''), denied = /صلاحية|permission|42501/i.test(em);
@@ -115,7 +115,9 @@
       return '<button type="button" class="btn ghost sm fc-chip' + (filterKey === c[0] ? ' active' : '') + '" data-da-filter="' + c[0] + '">' + e(c[1]) + '</button>';
     }).join(' ') + '<input type="search" class="fc-name-filter" data-da-name placeholder="بحث باسم الدكتور أو كوده" value="' + e(nameFilter) + '"></div>';
     html += '<div class="fc-da-table">' + (rows.length ? accountsRows(rows, h, d) : '<p>مفيش أطباء ليهم حساب لسه.</p>') + '</div>';
-    html += needsHtml(d, h);
+    /* owner 2026-11-18: the «ملهمش عقد» list lives in «عقود الأطباء» only; here just a one-line pointer to it */
+    if (document.querySelector('.acs') && doctorsNeedingContract().length) html += '<p class="fc-note fc-da-pointer">' + (function (n) { return n === 1 ? 'طبيب واحد مسجل في الموارد البشرية وملوش عقد لسه.' : n === 2 ? 'طبيبين مسجلين في الموارد البشرية وملهمش عقد لسه.' : n + ' أطباء مسجلين في الموارد البشرية وملهمش عقد لسه.'; })(doctorsNeedingContract().length) + ' <button type="button" class="btn-link" data-acs-jump="doctors">افتح «عقود الأطباء»</button></p>';
+    else html += needsHtml(d, h);
     Promise.resolve().then(applyFilter);
     return html + '</div>';
   }

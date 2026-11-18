@@ -57,9 +57,15 @@ function mount(container,opts){
   setBadges:function(map){badges=map||{};draw();},refresh:draw};
  /* phones (owner 2026-11-18): every treasury table turns into one card per row. Each cell gets its column title
     (data-th) so the card can show «الرصيد 1,000» instead of a sideways-scrolling table. */
- function labelTables(){api.view.querySelectorAll('.fc-table table:not([data-acs-cards])').forEach(function(t){var th=[].map.call(t.querySelectorAll('thead th'),function(x){return x.textContent.trim();});if(!th.length)return;t.setAttribute('data-acs-cards','');t.querySelectorAll('tbody tr').forEach(function(tr){[].forEach.call(tr.children,function(td,i){if(th[i]&&!td.hasAttribute('data-th'))td.setAttribute('data-th',th[i]);});});});}
+ /* in-page shortcuts to another section: <button data-acs-jump="doctors"> */
+ root.addEventListener('click',function(e){var j=e.target.closest('[data-acs-jump]');if(!j)return;var id=j.getAttribute('data-acs-jump');if(!opts.allowed(id))return;api.setActive(id);opts.onSelect(id);window.scrollTo(0,0);});
+ function labelTables(){api.view.querySelectorAll('.fc-table table:not([data-acs-cards]),.rx-table table:not([data-acs-cards]),table.acc-table:not([data-acs-cards]),.inv-scroll table:not([data-acs-cards])').forEach(function(t){var th=[].map.call(t.querySelectorAll('thead th'),function(x){return x.textContent.trim();});if(!th.length)return;t.setAttribute('data-acs-cards','');t.querySelectorAll('tbody tr').forEach(function(tr){[].forEach.call(tr.children,function(td,i){if(th[i]&&!td.hasAttribute('data-th'))td.setAttribute('data-th',th[i]);});});});}
  if(window.MutationObserver){var mo=new MutationObserver(function(){if(!root.isConnected){mo.disconnect();return;}labelTables();if(window.SSMPDFinanceLabels)window.SSMPDFinanceLabels.translate(api.view);});mo.observe(api.view,{childList:true,subtree:true});}
  document.body.classList.remove('acs-drawer-open');draw();return api;
 }
+/* floating help / assistant buttons (owner 2026-11-18): on phones they slide away while you scroll down and come
+   back when you scroll up, so they never sit on an amount or a button you are reading */
+var lastY=0;window.addEventListener('scroll',function(){var b=document.body,y=window.scrollY||0;if(!document.querySelector('.acs')){b.classList.remove('acs-fab-hide');lastY=y;return;}
+ if(y>lastY+8&&y>160)b.classList.add('acs-fab-hide');else if(y<lastY-8||y<60)b.classList.remove('acs-fab-hide');if(Math.abs(y-lastY)>8)lastY=y;},{passive:true});
 window.SSMPDAccountingShell={mount:mount,groups:GROUPS,kind:kind,label:label,pricing:PRICING};
 })();

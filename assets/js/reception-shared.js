@@ -2,7 +2,7 @@
 (function(){'use strict';
 function e(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function m(v){return Number(v||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
-function t(v){return v?new Date(v).toLocaleString('ar-EG-u-nu-latn',{timeZone:'Africa/Cairo'}):'—';}
+function t(v){if(window.SSMPDFinanceLabels)return window.SSMPDFinanceLabels.fmtStamp(v);return v?new Date(v).toLocaleString('ar-EG-u-nu-latn',{timeZone:'Africa/Cairo'}):'—';}
 function table(head,rows){return rows.length?'<div class="rx-table"><table><thead><tr>'+head.map(function(x){return '<th>'+e(x)+'</th>';}).join('')+'</tr></thead><tbody>'+rows.map(function(row){return '<tr>'+row.map(function(x){return '<td>'+x+'</td>';}).join('')+'</tr>';}).join('')+'</tbody></table></div>':'<p>لا توجد حركات في الفترة.</p>';}
 var states={booked:'محجوز',arrived:'حضر',completed:'انتهت الزيارة',cancelled:'ملغي',no_show:'لم يحضر'},methods={cash:'نقدي',pos:'فيزا',bank:'بنك',instapay:'إنستا باي',wallet:'محفظة'};
 function append(parent,options){if(!parent||!window.SSMPDDb.receptionSharedRecords)return;var node=document.createElement('section');node.className='rx-shared-records rx-record';parent.appendChild(node);var offset=0,seq=0,from=options.from||'',to=options.to||'';
