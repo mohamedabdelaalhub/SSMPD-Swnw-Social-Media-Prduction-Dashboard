@@ -11255,6 +11255,97 @@
       "reviewed": true
     },
     {
+      "title": "سلّم لـ",
+      "labels": [
+        "سلّم لـ"
+      ],
+      "text": "اختار زميلك اللي فاتح وردية تحصيل دلوقتي. لو مش ظاهر في القايمة يبقى لسه ما فتحش ورديته.",
+      "article": "peer-cash-handover",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "جزء من التحصيل (وأكمّل ورديتي)",
+      "labels": [
+        "جزء من التحصيل (وأكمّل ورديتي)"
+      ],
+      "text": "تسلّم مبلغ من الكاش اللي معاك وتفضل ورديتك مفتوحة. المبلغ مايعدّيش الكاش المتاح في ورديتك.",
+      "article": "peer-cash-handover",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "إنهاء ورديتي وتسليم كل الكاش",
+      "labels": [
+        "إنهاء ورديتي وتسليم كل الكاش"
+      ],
+      "text": "بتعدّ الفلوس فئة فئة وتسلّمها كلها لزميلك، وورديتك بتقف عن التحصيل. بعد ما زميلك يأكد، ورديتك بتتقفل لوحدها، وأي فرق في العد بيروح للمراجعة من غير خصم تلقائي.",
+      "article": "peer-cash-handover",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "المبلغ",
+      "labels": [
+        "المبلغ"
+      ],
+      "text": "القيمة بالجنيه لهذا الإجراء فقط؛ راجع المستحق أو المعتمد والحدود قبل الحفظ، ولا تدخل إجمالي فاتورة إذا كنت تسدد جزءًا.",
+      "article": "collections",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "ملاحظة (اختياري)",
+      "labels": [
+        "ملاحظة (اختياري)"
+      ],
+      "text": "اكتب تفاصيل هذا السجل التي يحتاجها المراجع أو المنفذ ولا تغطيها الحقول الأخرى. تجنب نسخ بيانات حساسة لا تخص الغرض، ولا تستخدم الملاحظة بدل المستند أو القرار.",
+      "article": "personal",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "المبلغ اللي عدّيته",
+      "labels": [
+        "المبلغ اللي عدّيته"
+      ],
+      "text": "عدّ الفلوس اللي زميلك سلّمهالك واكتب المبلغ. لازم يطابق المبلغ اللي هو كتبه بالظبط، ولو فيه فرق دوس «رفض» واكتب السبب.",
+      "article": "peer-cash-handover",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "ملاحظة / سبب الرفض",
+      "labels": [
+        "ملاحظة / سبب الرفض"
+      ],
+      "text": "ملاحظة اختيارية مع الاستلام. لو هترفض لازم تكتب السبب (مثلاً: المبلغ ناقص 50).",
+      "article": "peer-cash-handover",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "المستخدم",
       "labels": [
         "المستخدم"
@@ -20813,9 +20904,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1770,
-    "labels": 1300,
-    "files": 122,
-    "groups": 1398
+    "definitions": 1777,
+    "labels": 1304,
+    "files": 123,
+    "groups": 1405
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();

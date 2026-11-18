@@ -758,6 +758,18 @@ table.simple.acc-table td.acc-col-num{text-align:left;}
 .shift-fab:hover{transform:scale(1.06)}.shift-fab:focus-visible{outline:3px solid #0F369D;outline-offset:3px}
 .shift-fab .safe-ico{width:34px;height:34px}
 .shift-fab.is-open{--safe:#2F7D5C}
+/* owner 2026-11-18 «تسليم تحصيل لزميل» */
+.shift-reminder.is-open,.shift-reminder.is-open_menu{--safe:#2F7D5C}
+.peer-handover .shift-reminder{width:min(480px,100%);max-height:calc(100vh - 32px);overflow:auto;text-align:start}
+.peer-handover .shift-reminder h2{text-align:center}
+.peer-form{display:grid;gap:10px}
+.peer-form label{display:grid;gap:4px;font-size:14px;font-weight:600;color:#16212E}
+.peer-form label.peer-mode{display:flex;align-items:center;gap:8px;font-weight:500}
+.peer-form input,.peer-form select{min-height:40px;padding:6px 10px;border:1px solid #cfd6e4;border-radius:10px;font:inherit}
+.peer-form .fc-counts{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:6px}
+.peer-pending{margin:0 0 12px;padding:8px 10px;border-radius:12px;background:rgba(241,90,34,.08)}
+.peer-pending p{margin:0;display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.peer-status{min-height:1.4em;margin:8px 0 0 !important;color:#D0402A !important;font-size:14px !important;text-align:center}
 .shift-fab.is-close_due{--safe:#F2B705;--safe-ink:#16212E}
 .safe-ico .safe-body{fill:none;stroke:currentColor;stroke-width:2}
 .safe-ico .safe-inside{fill:currentColor;opacity:.18}
