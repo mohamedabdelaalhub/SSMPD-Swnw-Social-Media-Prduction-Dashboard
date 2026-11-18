@@ -231,7 +231,16 @@
 }
 @media (prefers-reduced-motion:reduce){.ph2 .ph-welcome,.ph2-top,.ph2-charts,.ph2 .ph-summary-grid,.ph2 [data-personal-performance],.ph2 .ph-shortcut-card,.ph2 [data-job-duties]{animation:none}.ph2-seg{transform:none;transition:none}.ph2-trk i,.ph2-ring .fg{transition:none}.ph2-kpi,.ph2 .ph-summary-card,.ph2 .ph-tile{transition:none}}
 .ph2 [data-personal-performance][hidden]{display:none}
-/* shortcut tiles: icon sits in a tinted square like the rest of the screen */
-.ph2 .ph-tile{min-height:52px;background:#fff;border:1px solid var(--ph-line);border-radius:14px;padding:8px 10px;gap:10px;font-weight:600}
-.ph2 .ph-tile::before{flex:none;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:#F1F4FA;font-size:16px}
-.ph2 .ph-tile:hover{background:#fff;border-color:#C9D4EE}
+/* shortcut tiles (owner 2026-11-18): one stacked group per row, real line icons tinted by group, labels never squeezed */
+.ph-shortcuts{display:flex;flex-direction:column;gap:18px}
+.ph-sg h3{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ph-ink);font-weight:700;margin:0 0 10px}
+.ph-sg h3 i{width:8px;height:8px;border-radius:50%}.ph-sg h3 span{font-weight:400;color:var(--ph-mute);font-size:12px}
+.ph-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.ph-tile{display:flex;align-items:center;gap:12px;min-height:58px;background:#fff;border:1px solid var(--ph-line);border-radius:14px;padding:9px 12px;font-weight:600;font-size:13.5px;line-height:1.35;text-align:start}
+.ph-tile::before{content:none}
+.ph-tile-ic{flex:none;width:38px;height:38px;border-radius:11px;display:grid;place-items:center;background:var(--t,#EEF1F5);color:var(--c,#475569);transition:transform .2s var(--ease-out,ease)}
+.ph-tile-ic svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.ph-tile-tx{min-width:0;text-wrap:balance}
+.ph-tile:hover{background:#fff;border-color:#C9D4EE}
+@media (hover:hover){.ph-tile:hover .ph-tile-ic{transform:scale(1.08)}}
+@media (max-width:640px){.ph-tiles{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.ph-tile{min-height:52px;padding:8px 10px;gap:9px;font-size:12.5px}.ph-tile-ic{width:32px;height:32px}.ph-tile-ic svg{width:17px;height:17px}}

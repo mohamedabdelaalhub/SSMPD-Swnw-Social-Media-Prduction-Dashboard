@@ -1,6 +1,6 @@
 /* Reviewed operational help; no patient records, network calls or generated AI answers. */
 window.SSMPDHelpData={
-  "version": "20261118-3",
+  "version": "20261118-4",
   "articles": [
     {
       "id": "booking-inactive",
@@ -688,7 +688,11 @@ window.SSMPDHelpData={
       ],
       "reason": "اللي مستنيك بيظهر أول الصفحة علشان ماتفوتكش حاجة متأخرة أو اعتماد مستني، من غير ما تدور في كل تاب.",
       "owner": "كل موظف لصفحته، والمديرين لحِمل الفريق",
-      "fields": []
+      "fields": [],
+      "video": {
+        "src": "docs/ui-references/screens/home-v2/home-real-walkthrough.mp4",
+        "caption": "فيديو قصير (أقل من دقيقة) بيوريك الرئيسية: «محتاج منك دلوقتي»، والمربعات، و«أدائي الشهر ده»، و«حِمل الفريق». البيانات اللي فيه تجريبية."
+      }
     },
     {
       "id": "account-1111",
