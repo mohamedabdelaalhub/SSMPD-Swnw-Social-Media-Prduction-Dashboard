@@ -23,7 +23,8 @@
   var COPY = {
     need_open: { title: "افتح وردية اليوم", fab: "افتح وردية اليوم", btn: "فتح الوردية", form: true },
     open: { fab: "ورديتك مفتوحة — اضغط لعرض الورديات" },
-    close_due: { title: "اقفل ورديتك", fab: "اقفل الوردية", btn: "روح للورديات", form: false }
+    close_due: { title: "اقفل ورديتك", fab: "اقفل الوردية", btn: "روح للورديات", form: false },
+    open_menu: { title: "ورديتك مفتوحة", btn: "عرض الورديات", form: false }
   };
   function text(r) {
     if (r.state === "close_due") {
@@ -31,6 +32,7 @@
       if (r.reason === "punched_out") return "إنت بصمت انصراف وورديتك لسه مفتوحة. اقفل الوردية واكتب الكاش اللي معاك.";
       return "شيفتك خلص الساعة " + time(r.exp_end) + " وورديتك لسه مفتوحة. اقفل الوردية واكتب الكاش اللي معاك.";
     }
+    if (r.state === "open_menu") return "تقدر تشوف ورديتك، أو تسلّم جزء من تحصيلك أو كل الكاش لزميل فاتح ورديته (لو ماشي بدري أو الشيفت خلص).";
     if (r.reason === "punched") return "إنت بصمت حضور الساعة " + time(r.first_in) + ". افتح وردية اليوم علشان تقدر تحصّل فلوس المرضى.";
     return "شيفتك بدأ الساعة " + time(r.exp_start) + ". افتح وردية اليوم علشان تقدر تحصّل فلوس المرضى.";
   }
@@ -56,12 +58,16 @@
     box.className = "shift-reminder-backdrop"; box.setAttribute("data-shift-reminder", "");
     box.innerHTML = '<div class="shift-reminder is-' + r.state + '" role="dialog" aria-modal="true" aria-labelledby="shift-reminder-title">' +
       '<div class="shift-reminder-icon">' + SAFE + '</div><h2 id="shift-reminder-title"></h2><p></p>' +
-      '<div class="shift-reminder-actions"><button type="button" class="btn btn-primary" data-shift-open></button><button type="button" class="btn" data-shift-later>بعدين</button></div></div>';
+      '<div class="shift-reminder-actions"><button type="button" class="btn btn-primary" data-shift-open></button>' +
+      (r.state !== "need_open" && w.SSMPDPeerHandover ? '<button type="button" class="btn" data-shift-peer>تسليم تحصيل لزميل</button>' : '') +
+      '<button type="button" class="btn" data-shift-later>بعدين</button></div></div>';
     box.querySelector("h2").textContent = c.title; box.querySelector("p").textContent = text(r);
     var open = box.querySelector("[data-shift-open]"); open.textContent = c.btn;
     d.body.appendChild(box); open.focus(); fab(a, state.data);
     function later() { if (r.state === "need_open") snooze(a); remove("[data-shift-reminder]"); fab(a, state.data); }
     box.querySelector("[data-shift-later]").onclick = later;
+    var peer = box.querySelector("[data-shift-peer]");   /* owner 2026-11-18: hand the collected cash to a colleague instead */
+    if (peer) peer.onclick = function () { remove("[data-shift-reminder]"); fab(a, state.data); w.SSMPDPeerHandover.openSend(); };
     box.addEventListener("keydown", function (e) { if (e.key === "Escape") later(); });
     open.onclick = function () {
       open.disabled = true;
@@ -75,14 +81,18 @@
     if (!el) { el = d.createElement("button"); el.type = "button"; el.setAttribute("data-shift-fab", ""); el.innerHTML = SAFE; d.body.appendChild(el); }
     el.className = "shift-fab is-" + r.state;
     el.setAttribute("aria-label", COPY[r.state].fab); el.title = COPY[r.state].fab;
-    el.onclick = function () { if (r.state === "open") go(false).catch(function () {}); else popup(a, r); };
+    el.onclick = function () {
+      if (r.state !== "open") { popup(a, r); return; }
+      if (!w.SSMPDPeerHandover) { go(false).catch(function () {}); return; }
+      popup(a, { state: "open_menu" });   /* open safe: «عرض الورديات» or «تسليم تحصيل لزميل» */
+    };
     placeFab(el);
   }
   function apply(a, r) {
     state.data = r;
     if (!r || r.state === "hidden") { remove("[data-shift-reminder]"); fab(a, null); return; }
     var pop = d.querySelector("[data-shift-reminder] .shift-reminder");
-    if (pop && !pop.classList.contains("is-" + r.state)) remove("[data-shift-reminder]");
+    if (pop && !pop.classList.contains("is-" + r.state) && !pop.classList.contains("is-open_menu")) remove("[data-shift-reminder]");
     if (r.state === "need_open" && !snoozed(a)) popup(a, r);
     fab(a, r);
   }
