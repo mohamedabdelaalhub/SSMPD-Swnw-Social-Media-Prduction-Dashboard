@@ -55,3 +55,19 @@ Written so this chat can be closed and continued in a fresh one.
 - **Optional offer, the owner said «لا تمام» for now:** the admin «مفعّل» switch stops an account without asking, exactly like the old «إيقاف» button. A confirmation could be added if the owner asks.
 - **Next screens:** wait for the owner's screenshots. Audit candidates from the 2026-11-18 sweep: none flagged in the content tabs (production, review, design, publish, comments, performance, archive, metaads, mediabuyer). The floating help/bot buttons can overlap content on phones outside accounting; check this per screen.
 - **QA harness:** `/tmp/claude-0/qa/fcnav/boot2.cjs` boots the full app with the smoke-test mocks. It is session-local, so recreate it from `test/smoke.js` if it is missing.
+
+## NEW owner request (2026-11-18, late) — start here
+Screen: HR → «الحضور اللحظي» → «الآن (مباشر)» (`assets/js/hr-presence.js`, `assets/css/hr-presence.css`).
+Owner screenshot: `docs/ui-references/screens/hr-presence-popups/owner-request-before.jpg`. Owner's words, paraphrased:
+
+1. **Total tiles:** every tile that shows a total («موجودون الآن», «غايبون», «متأخرون», «في إجازة», «لم يبدأوا بعد», «انصرفوا») must **open a popup** listing those people. Today a tap filters the list in place («فلتر نشط: المنصرفون» + «إلغاء الفلتر»), which confuses him: "I get lost when one button does two things".
+2. **Department cards must be calmer:**
+   - show fewer details per employee (today each row has the name, the job, a time pill and «عمل 7 س 49 د»);
+   - tapping a department **or** an employee opens a popup with the full details;
+   - the goal is that he never hunts for where a button opened something.
+
+Next steps:
+1. Make a mockup first (`docs/ui-references/mockups/hr-presence-popups.html`) and publish it as an artifact.
+2. Wait for «طبقه».
+3. Implement it while keeping the existing data and handlers. Note `tests/hr-presence-dom.cjs` asserts the current filter behaviour, so update it.
+4. Update the help article `hr-presence-live` in the same PR.
