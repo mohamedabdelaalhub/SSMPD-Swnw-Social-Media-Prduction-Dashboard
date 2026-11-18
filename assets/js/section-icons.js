@@ -10,7 +10,7 @@
     { name: 'الاستقبال والمرضى', col: '#2563EB', tint: '#E5ECFD', tabs: ['reception_services', 'leads', 'patients', 'booking_cash', 'clinic_info'] },
     { name: 'المالية والتعاقدات', col: '#2F7D5C', tint: '#E7F3EE', tabs: ['accounting', 'contracting_entities', 'price_lists', 'inventory', 'org_legal'] },
     { name: 'المحتوى والتسويق', col: '#D4087F', tint: '#FBE6F2', tabs: ['production', 'review', 'design', 'publish', 'comments', 'archive', 'performance', 'metaads', 'mediabuyer'] },
-    { name: 'الفريق والإدارة', col: '#6600FF', tint: '#EFE5FF', tabs: ['tasks', 'human_resources', 'staff_kpi', 'indicator_reports', 'admin'] }
+    { name: 'الفريق والإدارة', col: '#6600FF', tint: '#EFE5FF', tabs: ['tasks', 'human_resources', 'training_evaluation', 'staff_kpi', 'indicator_reports', 'admin'] }
   ];
   var OTHER = { name: 'أخرى', col: '#475569', tint: '#EEF1F5', tabs: [] };
   function groupOf(tab) { for (var i = 0; i < GROUPS.length; i++) if (GROUPS[i].tabs.indexOf(tab) !== -1) return GROUPS[i]; return OTHER; }

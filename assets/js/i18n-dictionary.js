@@ -266,6 +266,7 @@ window.SSMPD_TRANSLATIONS = {
   "اختيار": "Select",
   "تنزيل": "Download",
   "رفع": "Upload",
+  "التدريب والتقييم": "Training and evaluation",
   "إرسال نسخة للاعتماد": "Submit version for approval",
   "استبدال الصورة بتوليد جديد": "Replace image with a new generation",
   "© جميع الحقوق محفوظة لشركة دار النقاهة الطبية": "© Dar Al Naqaha Medical Company. All rights reserved.",

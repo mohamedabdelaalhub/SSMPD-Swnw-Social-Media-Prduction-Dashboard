@@ -1,0 +1,178 @@
+.training-workspace {
+  max-inline-size: 70rem;
+  margin-inline: auto;
+  color: var(--c-text, #16212e);
+}
+.training-header,
+.training-page-section {
+  background: var(--c-card, #fff);
+  border: 1px solid var(--c-border, #dce5f0);
+  border-radius: 16px;
+  padding: clamp(1rem, 3vw, 1.5rem);
+  margin-block-end: 1rem;
+}
+.training-header {
+  border-inline-start: 4px solid var(--c-primary, #0f369d);
+}
+.training-header h1,
+.training-page-section > h2 {
+  color: var(--c-primary, #0f369d);
+  margin: 0 0 .4rem;
+}
+.training-header p,
+.training-row p,
+.training-empty {
+  margin: .3rem 0;
+  color: var(--c-muted, #4d5d73);
+}
+.training-notice:empty {
+  margin: 0;
+}
+.training-notice:not(:empty) {
+  padding: .75rem 1rem;
+  background: var(--c-card, #fff);
+  border: 1px solid var(--c-primary, #0f369d);
+  border-radius: 8px;
+}
+.training-assignment,
+.training-course,
+.training-tool {
+  margin-block-start: .8rem;
+  border: 1px solid var(--c-border, #dce5f0);
+  border-radius: 10px;
+}
+.training-assignment {
+  padding: .8rem;
+}
+.training-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: .65rem;
+  padding: .7rem;
+  border-block-end: 1px solid var(--c-border, #dce5f0);
+}
+.training-row h3,
+.training-row h4 {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.training-status {
+  display: inline-block;
+  flex: none;
+  border-radius: 12px;
+  padding: .18rem .58rem;
+  background: #edf1f8;
+  color: #253e62;
+  font-size: .8rem;
+  font-weight: 700;
+}
+.training-status[data-status="passed"] {
+  color: #1d6044;
+  background: #e5f4ec;
+}
+.training-status[data-status="redo"] {
+  color: #87340c;
+  background: #fff0e4;
+}
+.training-course summary,
+.training-tool summary {
+  cursor: pointer;
+  padding: .75rem;
+  color: var(--c-primary, #0f369d);
+  font-weight: 700;
+}
+.training-course summary span {
+  margin-inline-start: .55rem;
+  font-size: .82rem;
+  font-weight: 400;
+}
+.training-unit,
+.training-tool form {
+  padding: .85rem;
+  border-block-start: 1px solid var(--c-border, #dce5f0);
+}
+.training-unit h4,
+.training-activity h5,
+.training-result h4 {
+  margin: 0 0 .5rem;
+}
+.training-activity,
+.training-review-form,
+.training-result {
+  margin-block: .7rem;
+  padding: .8rem;
+  border-radius: 8px;
+  border: 1px solid var(--c-border, #dce5f0);
+  background: var(--c-bg, #f6f8fc);
+}
+.training-text {
+  margin: .35rem 0 .8rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.training-fields,
+.training-catalog {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .65rem 1rem;
+}
+.training-field {
+  display: grid;
+  gap: .28rem;
+  margin-block-end: .75rem;
+  font-weight: 700;
+}
+.training-field :is(input, select, textarea) {
+  inline-size: 100%;
+  min-inline-size: 0;
+  padding: .6rem;
+  border: 1px solid var(--c-border, #dce5f0);
+  border-radius: 7px;
+  font: inherit;
+  font-weight: 400;
+  color: inherit;
+  background: var(--c-card, #fff);
+}
+.training-field textarea {
+  resize: vertical;
+}
+.training-actions,
+.training-preview-account {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .65rem;
+}
+.training-choice {
+  display: flex;
+  align-items: baseline;
+  gap: .4rem;
+  margin-block: .35rem;
+}
+.training-review-form fieldset {
+  border: 1px solid var(--c-border, #dce5f0);
+  margin-block-end: .75rem;
+}
+.training-review-form [hidden],
+.training-fields [hidden] {
+  display: none;
+}
+.training-preview-account {
+  margin: .7rem auto;
+  max-inline-size: 70rem;
+  padding-inline: 1rem;
+}
+.training-preview-account select {
+  font: inherit;
+  padding: .4rem;
+}
+@media (max-width: 620px) {
+  .training-fields,
+  .training-catalog {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .training-row {
+    flex-wrap: wrap;
+  }
+}

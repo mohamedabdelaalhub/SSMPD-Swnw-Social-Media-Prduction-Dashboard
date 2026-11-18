@@ -19640,6 +19640,123 @@
       "reviewed": true
     },
     {
+      "title": "نوع النشاط",
+      "labels": [
+        "نوع النشاط"
+      ],
+      "text": "اختار مهمة تطبيقية أو اختبار قصير بناءً على طريقة التقييم المطلوبة.",
+      "article": "training-evaluation",
+      "tabs": [
+        "training_evaluation"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "المسار",
+      "labels": [
+        "المسار"
+      ],
+      "text": "اختار المسار اللي الدورة هتظهر ضمنه.",
+      "article": "training-evaluation",
+      "tabs": [
+        "training_evaluation"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "الدورة",
+      "labels": [
+        "الدورة"
+      ],
+      "text": "اختار الدورة اللي هتضيف لها الوحدة الجديدة.",
+      "article": "training-evaluation",
+      "tabs": [
+        "training_evaluation"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "الدورة أو المسار",
+      "labels": [
+        "الدورة أو المسار"
+      ],
+      "text": "اختار دورة واحدة أو مسار بكل دوراته الحالية للتكليف.",
+      "article": "training-evaluation",
+      "tabs": [
+        "training_evaluation"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "نوع الإسناد",
+      "labels": [
+        "نوع الإسناد"
+      ],
+      "text": "اختار فرد لتكليف واحد، أو مجموعة لإنشاء تكليف لكل عضو.",
+      "article": "training-evaluation",
+      "tabs": [
+        "training_evaluation"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "المتدرّب",
+      "labels": [
+        "المتدرّب"
+      ],
+      "text": "اختار الحساب التجريبي النشط اللي هيوصله التكليف.",
+      "article": "training-evaluation",
+      "tabs": [
+        "training_evaluation"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "المجموعة",
+      "labels": [
+        "المجموعة"
+      ],
+      "text": "اختار مجموعة التدريب التجريبية. كل عضو بياخد تكليف مستقل.",
+      "article": "training-evaluation",
+      "tabs": [
+        "training_evaluation"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "المراجع",
+      "labels": [
+        "المراجع"
+      ],
+      "text": "اختار المراجع المكلّف بالتسليمات. المراجع ماينفعش يكون أحد المتدرّبين في التكليف.",
+      "article": "training-evaluation",
+      "tabs": [
+        "training_evaluation"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "نتيجة التقييم",
+      "labels": [
+        "نتيجة التقييم"
+      ],
+      "text": "اختار اجتاز أو يحتاج إعادة. لو اخترت إعادة، حدّد الأنشطة واكتب ملاحظة للمتدرّب قبل الاعتماد.",
+      "article": "training-evaluation",
+      "tabs": [
+        "training_evaluation"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "نص التعليق الصوتي",
       "labels": [
         "نص التعليق الصوتي",
@@ -20969,9 +21086,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1782,
-    "labels": 1309,
-    "files": 124,
-    "groups": 1410
+    "definitions": 1791,
+    "labels": 1318,
+    "files": 125,
+    "groups": 1419
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
