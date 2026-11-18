@@ -73,3 +73,4 @@
 @media(prefers-reduced-motion:reduce){.mv-filters button{transition:none}}
 @media(forced-colors:active){.mv-row,.mv-filters button{border:1px solid CanvasText}}
 @media print{html.mv-printing body *{visibility:hidden!important}html.mv-printing .mv-print-target,html.mv-printing .mv-print-target *{visibility:visible!important}html.mv-printing .mv-print-target{position:absolute;inset:0 0 auto 0;box-shadow:none;border:0;background:#fff;padding:0}html.mv-printing .mv-print-target :is(.mv-filters,.mv-tools,.mv-mgr-filters,.mv-sub){display:none!important}html.mv-printing .mv-print-head{display:block;margin-bottom:10px}html.mv-printing .mv-print-head h2{margin:0 0 4px;font-size:18px}html.mv-printing .mv-print-head p{margin:0;font-size:12px}html.mv-printing .mv-row{break-inside:avoid;border:1px solid #ccc;grid-template-columns:60px 1.6fr 1.3fr 1fr 120px}}
+.fc-hint{grid-column:1/-1;margin:-4px 0 4px;font-size:12.5px;line-height:1.6;color:#5b6577}
