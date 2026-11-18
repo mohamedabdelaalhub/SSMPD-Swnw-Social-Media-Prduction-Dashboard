@@ -3,7 +3,7 @@
   "use strict";
 
   var state = { subTab: "pricing", section: null, serviceFilter: "all", supplies: [], services: [], packages: [], loaded: false, pendingRepair: null };
-  var me = null, navRestored = false;
+  var me = null, navRestored = false, navFromState = false, overviewOff = false, shellInit = false;
   function saveNav(){if(window.SSMPDNavState)window.SSMPDNavState.set('accounting',{sub:state.subTab,section:state.section||''});}
 
   function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
@@ -95,7 +95,7 @@
       { key: "cash", label: "الخزينة والدورة المالية" },
       { key: "inventory", label: "المخازن والجرد" }
     ].filter(function(s) { return s.key === "inventory" ? canInventory : canFinance; });
-    if(!navRestored){navRestored=true;var ns=window.SSMPDNavState&&window.SSMPDNavState.once('accounting');if(ns&&subs.some(function(s){return s.key===ns.sub;})&&!state.pendingRepair){state.subTab=ns.sub;state.section=catalogSections.some(function(s){return s.key===ns.section;})?ns.section:null;}}
+    if(!navRestored){navRestored=true;var ns=window.SSMPDNavState&&window.SSMPDNavState.once('accounting');if(ns&&subs.some(function(s){return s.key===ns.sub;})&&!state.pendingRepair){navFromState=true;state.subTab=ns.sub;state.section=catalogSections.some(function(s){return s.key===ns.section;})?ns.section:null;}}
     saveNav();
     if (window.SSMPDAccountingShell) { renderShell(container, canFinance, canInventory); return; }
     var html = '<div class="tabs acc-catalog-nav" style="margin-bottom:16px;">' +
@@ -124,19 +124,25 @@
 
   /* Owner-approved unified shell (2026-11-18): side rail with every section; no sub-tabs, no section cards, no back buttons. */
   var shellApi = null, shellHost = null;
+  function overviewAllowed(canFinance) { return canFinance && !overviewOff && !!window.SSMPDAccountingOverview; }
   function shellAllowed(id, canFinance, canInventory) {
     var k = window.SSMPDAccountingShell.kind(id);
+    if (k === "overview") return overviewAllowed(canFinance);
     if (k === "inventory") return canInventory && !!window.SSMPDRenderInventory;
     if (!canFinance) return false;
     if (k === "pricing") return true;
     return !!window.SSMPDFinanceCash && (!window.SSMPDFinanceCash.allows || window.SSMPDFinanceCash.allows(id));
   }
   function shellActive() {
+    if (state.subTab === "overview") return "overview";
     if (state.subTab === "pricing") return state.section || "supplies";
     if (state.subTab === "cash") return (window.SSMPDFinanceCash.current && window.SSMPDFinanceCash.current()) || "";
     return "inv:" + ((window.SSMPDRenderInventory.group && window.SSMPDRenderInventory.group()) || "overview");
   }
   function renderShell(container, canFinance, canInventory) {
+    /* owner mockup: accounting opens on «نظرة عامة» unless the person was somewhere else before a refresh */
+    if (!shellInit) { shellInit = true; if (!navFromState && !state.pendingRepair && overviewAllowed(canFinance)) state.subTab = "overview"; }
+    if (state.subTab === "overview" && !overviewAllowed(canFinance)) state.subTab = canFinance ? "pricing" : "inventory";
     if (state.subTab === "pricing" && !state.section) state.section = "supplies";
     shellHost = container;
     shellApi = window.SSMPDAccountingShell.mount(container, {
@@ -153,6 +159,7 @@
     if (k === "inventory" && state.subTab === "inventory" && window.SSMPDRenderInventory.go && view.querySelector(".inv-shell")) { window.SSMPDRenderInventory.go(id.slice(4)); return; }
     state.subTab = k;
     if (k === "pricing") state.section = id;
+    if (k === "overview") state.subTab = "overview";
     if (k === "cash") window.SSMPDFinanceCash.openSection(id);
     if (k === "inventory" && window.SSMPDRenderInventory.go) window.SSMPDRenderInventory.go(id.slice(4), true);
     saveNav();
@@ -161,6 +168,16 @@
   }
   function shellView() {
     var subView = shellApi.view;
+    if (state.subTab === "overview") {
+      var off = function () { overviewOff = true; state.subTab = "pricing"; state.section = "supplies"; saveNav(); shellApi.refresh(); shellApi.setActive("supplies"); shellView(); };
+      window.SSMPDAccountingOverview.render(subView, {
+        go: function (id) { if (!shellApi.view.isConnected) return; shellApi.setActive(id); shellSelect(id); },
+        onUnavailable: off,
+        /* clinic-wide numbers are for reviewers; someone with nothing to see goes straight to their sections */
+        onReady: function (d) { if (d && d.can_review === false && !d.doctor_dues_now) off(); }
+      });
+      return;
+    }
     if (state.subTab === "inventory") { window.SSMPDRenderInventory.render(subView, { embedded: true, shell: true }); return; }
     if (state.subTab === "cash") { window.SSMPDFinanceCash.render(subView); return; }
     if (!state.loaded) {

@@ -68,3 +68,49 @@
  .fc-v2 .fc-filters [data-fc-status]{margin-inline-start:auto;font-size:12px}
 }
 body.acs-drawer-open .ssmpd-ea-launch,body.acs-drawer-open .ssmpd-aa-launch,body.acs-drawer-open .dc-launcher{visibility:hidden}
+/* ===== «نظرة عامة» (accounting-overview.js) — owner mockup v3: tiles 4/2/1 (never 3+1), chart under the number, chart fills its card ===== */
+.acs-g-top{margin:0 0 4px}
+.aco{container-type:inline-size;display:flex;flex-direction:column;gap:16px;padding-bottom:72px}
+.aco .fc-section-head{margin:2px 0 0;align-items:center}
+.aco-reload{margin-inline-start:auto;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.aco-reload svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.aco-loading,.aco-clear{color:#6B7483;margin:4px 16px 14px}
+.aco-kpis{display:grid;gap:16px;grid-template-columns:repeat(4,minmax(0,1fr))}
+.aco-kpis.aco-n3{grid-template-columns:repeat(3,minmax(0,1fr))}.aco-kpis.aco-n2{grid-template-columns:repeat(2,minmax(0,1fr))}.aco-kpis.aco-n1{grid-template-columns:minmax(0,1fr)}
+@container (max-width:980px){.aco-kpis.aco-n4{grid-template-columns:repeat(2,minmax(0,1fr))}.aco-kpis.aco-n3{grid-template-columns:minmax(0,1fr)}}
+@container (max-width:470px){.aco-kpis.aco-n4,.aco-kpis.aco-n2{grid-template-columns:minmax(0,1fr)}.aco-sp-gap{display:none}}
+@container (max-width:980px){.aco-kpis.aco-n3 .aco-sp-gap{display:none}}
+.aco-k{font:inherit;color:#16212E;text-align:start;background:#fff;border:1px solid #E6E8EE;border-radius:18px;padding:14px 16px 12px;display:grid;grid-template-columns:40px minmax(0,1fr);column-gap:12px;row-gap:2px;align-items:center;cursor:pointer;min-width:0;transition:transform .24s cubic-bezier(.22,1,.36,1),box-shadow .24s cubic-bezier(.22,1,.36,1),border-color .2s}
+@media (hover:hover){.aco-k:hover{transform:translateY(-3px);box-shadow:0 10px 22px rgba(22,33,46,.08);border-color:#C9D4EE}}
+.aco-k:active{transform:scale(.97)}.aco-k:focus-visible{outline:3px solid #89a8ed;outline-offset:2px}
+.aco-ic{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;background:var(--t);color:var(--c);flex:none}
+.aco-ic svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.aco-k .aco-ic{grid-row:1/span 3;align-self:start}
+.aco-k small{grid-column:2;color:#6B7483;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.aco-k b{grid-column:2;font-size:clamp(22px,2.2vw,26px);line-height:1.15;white-space:nowrap}
+.aco-k b u{text-decoration:none;font-size:12px;color:#6B7483;font-weight:400;margin-inline-start:4px}
+.aco-k i{grid-column:2;font-style:normal;font-size:12px;color:#6B7483;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:18px}.aco-k i.dn{color:#D0402A}
+.aco-sp,.aco-sp-gap{grid-column:1/-1;grid-row:4;width:100%;height:46px;margin-top:10px;display:block}
+.aco-sp{overflow:visible;direction:ltr}.aco-sp .l{fill:none;stroke:var(--c);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}.aco-sp .a{fill:var(--c);opacity:.1;stroke:none}.aco-sp circle{fill:var(--c);stroke:#fff;stroke-width:2}
+.aco-grid{display:grid;gap:16px;grid-template-columns:repeat(3,minmax(0,1fr))}
+.aco-card{background:#fff;border:1px solid #E6E8EE;border-radius:18px;display:flex;flex-direction:column;min-width:0}
+.aco-wide{grid-column:span 2}.aco-full{grid-column:1/-1}
+@container (max-width:900px){.aco-grid{grid-template-columns:minmax(0,1fr)}.aco-wide{grid-column:auto}}
+.aco-ch{display:flex;align-items:center;gap:10px;padding:14px 16px 6px}.aco-ch>div{flex:1;min-width:0}
+.aco-ch h2{margin:0;font-size:15.5px;white-space:nowrap}.aco-ch small{display:block;color:#6B7483;font-size:12px;margin-top:2px}
+.aco-lnk{white-space:nowrap;border:0;background:transparent;color:#0F369D;font:inherit;font-weight:700;font-size:13px;cursor:pointer;padding:6px 8px;border-radius:8px}.aco-lnk:hover{background:#EEF3FC}
+.aco-chart{padding:4px 16px 12px}.aco-chart svg{width:100%;display:block;overflow:visible;direction:ltr}.aco-chart svg rect,.aco-chart svg text{stroke:none}
+.aco-lg{display:flex;gap:14px;flex-wrap:wrap;padding:0 16px 14px;font-size:12px;color:#6B7483}.aco-lg span{white-space:nowrap}.aco-lg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-inline-end:5px;vertical-align:-1px}
+.aco-need{list-style:none;margin:0;padding:4px 10px 12px;display:flex;flex-direction:column;gap:6px}
+.aco-need button{width:100%;font:inherit;color:#16212E;text-align:start;border:0;background:transparent;display:flex;align-items:center;gap:10px;padding:9px 8px;border-radius:12px;cursor:pointer;transition:background .18s}.aco-need button:hover{background:#F7F9FD}.aco-need button:disabled{cursor:default}
+.aco-need .aco-ic{width:34px;height:34px;border-radius:10px}.aco-need .aco-ic svg{width:17px;height:17px}
+.aco-nt{flex:1;min-width:0}.aco-nt b{display:block;font-size:13.5px}.aco-nt small{color:#6B7483;font-size:12px}
+.aco-need em{white-space:nowrap;font-style:normal;font-weight:700;font-size:12px;border-radius:999px;padding:2px 9px;background:#FDECE4;color:#C2410C}
+.aco-bars{list-style:none;margin:0;padding:6px 16px 14px;display:flex;flex-direction:column;gap:10px}
+.aco-bars li{display:grid;grid-template-columns:minmax(0,170px) minmax(0,1fr) 72px;gap:10px;align-items:center;font-size:13px}
+.aco-bars li>span:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.aco-t{height:12px;background:#EDF0F5;border-radius:99px;overflow:hidden}.aco-t i{display:block;height:100%;width:0;border-radius:99px;background:var(--c);transition:width 1s cubic-bezier(.22,1,.36,1)}
+.aco-bars b{font-size:13px;white-space:nowrap;direction:ltr}
+.aco-tip{position:fixed;z-index:1300;pointer-events:none;background:#16212E;color:#fff;border-radius:10px;padding:7px 10px;font-size:12px;line-height:1.5;white-space:nowrap;opacity:0;transform:translate(-50%,calc(-100% - 8px));transition:opacity .12s}.aco-tip.on{opacity:1}
+@media (prefers-reduced-motion:reduce){.aco *{transition:none!important}}
+@container (max-width:600px){.aco-bars li{grid-template-columns:minmax(0,110px) minmax(0,1fr) 64px}}
