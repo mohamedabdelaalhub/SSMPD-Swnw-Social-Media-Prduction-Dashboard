@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1770,
-    "labels": 1300,
-    "files": 122,
-    "groups": 1398
+    "definitions": 1777,
+    "labels": 1304,
+    "files": 123,
+    "groups": 1405
   },
   "fields": [
     {
@@ -9790,6 +9790,76 @@
       "tab": "leads",
       "article": "digital-team",
       "text_sha256": "be867fbcea5951a6136f6b76fed06343748ccb711991c52eae45b74965bdd4d7"
+    },
+    {
+      "file": "peer-handover.js",
+      "label": "سلّم لـ",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "production",
+      "article": "peer-cash-handover",
+      "text_sha256": "358b7ca7931491f9f23f8a2225f9da9497b3e64783f8b6e858b268cbf2439cb8"
+    },
+    {
+      "file": "peer-handover.js",
+      "label": "جزء من التحصيل (وأكمّل ورديتي)",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "peer-cash-handover",
+      "text_sha256": "1bbfb7204ebf649d464d958b24916004a9c6800d5b42ebbc412cb0eb05fb9fbe"
+    },
+    {
+      "file": "peer-handover.js",
+      "label": "إنهاء ورديتي وتسليم كل الكاش",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "peer-cash-handover",
+      "text_sha256": "124f03c5d35c1ca24a5888208513ed881c60ec3105f68dd226d7b1549c007da1"
+    },
+    {
+      "file": "peer-handover.js",
+      "label": "المبلغ",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "production",
+      "article": "collections",
+      "text_sha256": "125776655945829a368efb4a81dbc0efc7321372b5cd97b419805d08b8d6744d"
+    },
+    {
+      "file": "peer-handover.js",
+      "label": "ملاحظة (اختياري)",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "personal",
+      "text_sha256": "08c204de2685df464bdbc0cd0fde7ec98a5877581bd58cbad31890fc6661df06"
+    },
+    {
+      "file": "peer-handover.js",
+      "label": "المبلغ اللي عدّيته",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "peer-cash-handover",
+      "text_sha256": "2145c5648177b8f4bd9c3973fe7753e5653b5ca5daf36347baf9b06c482d7dad"
+    },
+    {
+      "file": "peer-handover.js",
+      "label": "ملاحظة / سبب الرفض",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "peer-cash-handover",
+      "text_sha256": "aac7964e93fd281716155474d3227097a2907f6e682098d346df401a0fcdbddc"
     },
     {
       "file": "price-list-governance.js",
