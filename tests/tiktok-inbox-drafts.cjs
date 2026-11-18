@@ -54,7 +54,7 @@ const uid = n => '60000000-0000-4000-8000-' + String(n).padStart(12, '0');
 
   // ---------- worker chunk plan ----------
   const worker = fs.readFileSync('supabase/functions/tiktok-publish-process/index.ts', 'utf8');
-  const src = /export function chunkPlan\(size:number,chunk=10_000_000\)\{[\s\S]*?\n\}/.exec(worker)[0].replace('export ', '').replace('(size:number,chunk=10_000_000)', '(size,chunk=10000000)');
+  const src = /export function chunkPlan\(size, chunk = 10_000_000\) \{[\s\S]*?\n\}/.exec(worker)[0].replace('export ', '');
   const chunkPlan = eval('(' + src.replace('function chunkPlan', 'function') + ')');
   assert.deepEqual(chunkPlan(3_000_000), { chunk_size: 3_000_000, total_chunk_count: 1 });
   assert.deepEqual(chunkPlan(21_000_000), { chunk_size: 10_000_000, total_chunk_count: 2 }, 'leftover rides in the last chunk');
@@ -62,6 +62,9 @@ const uid = n => '60000000-0000-4000-8000-' + String(n).padStart(12, '0');
   assert.match(worker, /\/v2\/post\/publish\/inbox\/video\/init\//);
   assert.match(worker, /SEND_TO_USER_INBOX/);
   assert.match(fs.readFileSync('supabase/functions/tiktok-auth/index.ts', 'utf8'), /user\.info\.basic,video\.publish,video\.upload/);
+  assert.match(worker, /mode !== "direct" && mode !== "inbox"/, 'unknown job modes are refused, never posted');
+  assert.ok(worker.indexOf('mode === "inbox"') < worker.indexOf('/v2/post/publish/video/init/'), 'inbox jobs branch off before any direct post');
+  assert.match(worker, /TIKTOK_CLIENT_KEY_\$\{envSuffix\}/, 'multi-brand credentials kept');
 
   // ---------- drafts list (jsdom) ----------
   const dom = new JSDOM('<body><div id="c"></div></body>', { url: 'https://example.com', runScripts: 'outside-only' });
