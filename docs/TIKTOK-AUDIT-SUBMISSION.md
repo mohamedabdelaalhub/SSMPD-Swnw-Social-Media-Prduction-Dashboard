@@ -164,14 +164,14 @@ Approved by the owner on 2026-11-16 ("موافق على زرار المسودة"
 opens the full Direct Post panel (caption, privacy, interactions, disclosure) and posts directly.
 
 **Setup, in order** (the main chat deploys; the owner does the portal step):
-1. TikTok portal → our app → Products → Content Posting API: make sure **Upload** is on and the scope
+1. Apply migration `20261118040000_tiktok_inbox_drafts.sql`. Deploy `tiktok-auth` and `tiktok-publish-process`.
+   - This is safe before the portal step: the current token keeps refreshing with its old scopes.
+2. TikTok portal → our app → Products → Content Posting API: make sure **Upload** is on and the scope
    `video.upload` is added. Press Submit/Save. If TikTok asks for an app review for the new scope, wait for it.
-2. Apply migration `20261118040000_tiktok_inbox_drafts.sql`. Deploy `tiktok-auth` and `tiktok-publish-process`.
-3. The owner reconnects the Sono TikTok account once from the dashboard: Publish → a video → TikTok →
-   "ربط حساب TikTok". That grants `video.upload`.
+3. Only after step 2, the owner reconnects the Sono TikTok account once from the dashboard: Publish → a video →
+   TikTok → "ربط حساب TikTok". That grants `video.upload`.
    - Until then, the button answers "أعد ربط حساب TikTok…".
-   - Do not deploy the new `tiktok-auth` before step 1. Reconnecting with a scope the app doesn't have fails
-     on TikTok's page.
+   - Reconnecting before step 2 fails on TikTok's page.
 
 Rollback: `supabase/rollbacks/20261118040000_tiktok_inbox_drafts.rollback.sql`. It deletes the draft rows.
 
