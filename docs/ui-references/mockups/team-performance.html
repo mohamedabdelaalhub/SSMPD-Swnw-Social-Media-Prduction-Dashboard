@@ -12,7 +12,7 @@
 @font-face{font-family:"BigVesta Arabic";src:url("../../../assets/fonts/BigVesta-Bold.woff2") format("woff2");font-weight:700}
 @font-face{font-family:"Hiragino Kaku";src:url("../../../assets/fonts/Hiragino-W3.woff2") format("woff2");font-weight:300}
 @font-face{font-family:"Hiragino Kaku";src:url("../../../assets/fonts/Hiragino-W6.woff2") format("woff2");font-weight:600}
-:root{--gap:16px;--blue:#0F369D;--ink:#16212E;--pos:#2F7D5C;--neg:#D0402A;--warn:#FF8800;--bg:#F3F4F7;--line:#E6E8EE;--mute:#6B7483;--ease:cubic-bezier(.22,1,.36,1);--spring:cubic-bezier(.34,1.56,.64,1)}
+:root{--gap:16px;--blue:#0F369D;--ink:#16212E;--pos:#3E8F68;--neg:#D0402A;--warn:#FF8800;--bg:#F3F4F7;--line:#E6E8EE;--mute:#6B7483;--ease:cubic-bezier(.22,1,.36,1);--spring:cubic-bezier(.34,1.56,.64,1)}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;font-size:14px;font-variant-numeric:tabular-nums}
 svg{fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
@@ -30,7 +30,7 @@ button,select{font:inherit;color:inherit}
 .btn:hover{background:#F5F8FE;border-color:#B9C8EA}.btn:active{transform:scale(.97)}.btn svg{width:17px;height:17px}
 .sw{display:inline-flex;align-items:center;gap:8px;white-space:nowrap;font-size:13px;font-weight:600;color:var(--ink);cursor:pointer;background:#fff;border:1px solid var(--line);border-radius:11px;padding:7px 12px}
 .sw i{width:34px;height:20px;border-radius:999px;background:#CBD3E1;position:relative;transition:background .2s}.sw i::after{content:"";position:absolute;top:2px;right:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .25s var(--spring)}
-.sw[aria-pressed="true"] i{background:var(--pos)}.sw[aria-pressed="true"] i::after{transform:translateX(-14px)}
+.sw[aria-pressed="true"] i{background:#6CC49A}.sw[aria-pressed="true"] i::after{transform:translateX(-14px)}
 .tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .seg{position:relative;display:inline-flex;background:#E9ECF2;border-radius:12px;padding:3px;overflow-x:auto;max-width:100%;scrollbar-width:none}
 .seg button{position:relative;z-index:1;border:0;background:transparent;padding:7px 13px;border-radius:9px;font-size:13px;font-weight:600;color:#3B4658;cursor:pointer;white-space:nowrap}
@@ -70,7 +70,7 @@ button,select{font:inherit;color:inherit}
 .track .tgt{position:absolute;top:-3px;bottom:-3px;width:2px;background:#16212E;opacity:.35;left:20%}
 .score{display:flex;align-items:center;gap:6px;justify-content:flex-end;white-space:nowrap}.score b{font-size:15px}
 .chip{font-style:normal;font-size:11.5px;font-weight:700;border-radius:999px;padding:1px 7px;white-space:nowrap}
-.chip.up{background:#E7F3EE;color:var(--pos)}.chip.dn{background:#FBE7E4;color:var(--neg)}.chip.eq{background:#EEF1F5;color:#525B6F}
+.chip.up{background:#EAF6F0;color:#3E8F68}.chip.dn{background:#FBE7E4;color:var(--neg)}.chip.eq{background:#EEF1F5;color:#525B6F}
 .lg{display:flex;gap:14px;flex-wrap:wrap;padding:0 18px 14px;font-size:12px;color:var(--mute)}.lg span{white-space:nowrap}.lg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-inline-end:5px;vertical-align:-1px}
 /* needs list */
 .need{list-style:none;margin:0;padding:4px 10px 12px;display:flex;flex-direction:column;gap:6px}
@@ -126,14 +126,14 @@ details.low summary .chev{margin-inline-start:auto;width:16px;height:16px;transi
   <select class="sel" aria-label="الدور"><option>كل الأدوار</option><option>مسؤول المحتوى</option><option>الاستقبال</option><option>مدير عام</option></select></div>
  <div class="kpis">
   <div class="k fx-press" style="--c:#0F369D;--t:#E8EEFB"><span class="ic"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></span><small>متوسط الفريق</small><b data-count="81">0<u>من 100</u></b><i class="up">↑ 4 عن الشهر اللي فات</i><svg class="sp" data-spark="72,74,73,77,76,79,81"></svg></div>
-  <div class="k fx-press" style="--c:#2F7D5C;--t:#E7F3EE"><span class="ic"><svg viewBox="0 0 24 24"><path d="M5 12l4 4L19 6"/></svg></span><small>فوق المستهدف</small><b data-count="3">0<u>من 4 موظفين</u></b><i>اللي ليهم تقييم في الفترة</i><div class="faces"><span style="--c:#2F7D5C;--t:#E7F3EE">ز</span><span style="--c:#2F7D5C;--t:#E7F3EE">ك</span><span style="--c:#2F7D5C;--t:#E7F3EE">ش</span></div></div>
+  <div class="k fx-press" style="--c:#4FA97E;--t:#EAF6F0"><span class="ic"><svg viewBox="0 0 24 24"><path d="M5 12l4 4L19 6"/></svg></span><small>فوق المستهدف</small><b data-count="3">0<u>من 4 موظفين</u></b><i>اللي ليهم تقييم في الفترة</i><div class="faces"><span style="--c:#4FA97E;--t:#EAF6F0">ز</span><span style="--c:#4FA97E;--t:#EAF6F0">ك</span><span style="--c:#4FA97E;--t:#EAF6F0">ش</span></div></div>
   <div class="k fx-press" style="--c:#D0402A;--t:#FBE7E4"><span class="ic"><svg viewBox="0 0 24 24"><path d="M12 3l9 16H3z"/><path d="M12 10v4M12 17h.01"/></svg></span><small>محتاجين متابعة</small><b data-count="2">0<u>موظفين</u></b><i class="dn">مؤشر تحت 60٪</i><div class="faces"><span style="--c:#D0402A;--t:#FBE7E4">ش</span><span style="--c:#D0402A;--t:#FBE7E4">س</span></div></div>
   <div class="k fx-press" style="--c:#525B6F;--t:#EEF1F5"><span class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12h8"/></svg></span><small>نشاط قليل</small><b data-count="2">0<u>موظفين</u></b><i>بيانات مش كفاية للتقييم</i><div class="faces"><span style="--c:#525B6F;--t:#EEF1F5">م</span><span style="--c:#525B6F;--t:#EEF1F5">م</span></div></div>
  </div>
  <div class="grid">
   <article class="card span2"><div class="ch"><div><h2>ترتيب الفريق</h2><small>النقاط من 100 · الخط الرفيع = المستهدف 80</small></div><button class="lnk">كل المؤشرات</button></div>
    <ul class="rank" data-rank></ul>
-   <div class="lg"><span><i style="background:#2F7D5C"></i>80 فأكتر</span><span><i style="background:#FF8800"></i>من 50 لـ 79</span><span><i style="background:#D0402A"></i>أقل من 50</span></div></article>
+   <div class="lg"><span><i style="background:#6CC49A"></i>80 فأكتر</span><span><i style="background:#FF8800"></i>من 50 لـ 79</span><span><i style="background:#D0402A"></i>أقل من 50</span></div></article>
   <article class="card"><div class="ch"><div><h2>محتاج متابعة</h2><small>مرتبة بالأهم</small></div></div>
    <ul class="need">
     <li style="--c:#D0402A;--t:#FBE7E4"><span class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><div><b>سامح عادل</b><small>10 مهام متأخرة · المستهدف 1</small></div><em>10</em></li>
@@ -150,7 +150,7 @@ details.low summary .chev{margin-inline-start:auto;width:16px;height:16px;transi
 <script>
 var M=window.SSMPDMotion,red=matchMedia('(prefers-reduced-motion: reduce)').matches;
 function el(t,a,p){var e=document.createElementNS('http://www.w3.org/2000/svg',t);for(var k in a)e.setAttribute(k,a[k]);p&&p.appendChild(e);return e;}
-function tone(s){return s>=80?'#2F7D5C':s>=50?'#FF8800':'#D0402A';}
+function tone(s){return s>=80?'#6CC49A':s>=50?'#FF8800':'#D0402A';}
 var P=[['زينة بدر','مسؤولة المحتوى',90,4,[['مواد اتعملت','40 مادة',100,'↑ 33٪','up','المستهدف 30'],['اتعتمدت من أول مرة','92.5٪',100,'—','eq','المستهدف 70٪'],['وقت الفكرة لحد الاعتماد','15.2 ساعة',100,'↓ 15٪','up','المستهدف 48 ساعة · أقل أحسن'],['أداء المنشورات','0.98×',96,'↓ 37٪','dn','من متوسط الصفحة · المستهدف 1']]],
 ['كريم سعيد','مسؤول المحتوى',85,-2,[['مواد اتعملت','204 مادة',100,'أكتر من الضعف','up','المستهدف 30'],['اتعتمدت من أول مرة','91.4٪',100,'↓ 6٪','dn','المستهدف 70٪'],['وقت الفكرة لحد الاعتماد','5 ساعات',100,'↓ 33٪','up','المستهدف 48 ساعة · أقل أحسن'],['أداء المنشورات','0.92×',62,'↓ 10٪','dn','من متوسط الصفحة · المستهدف 1']]],
 ['شروق محمد','مديرة عامة',80,1,[['زمن الرد على الاعتماد','0.2 ساعة',100,'↓ 97٪','up','المستهدف 12 ساعة · أقل أحسن'],['قرارات اعتماد','44 قرار',100,'أكتر من الضعف','up','المستهدف 30'],['مهام في ميعادها','40٪',47,'↑ 100٪','up','المستهدف 85٪'],['مهام متأخرة حاليًا','4 مهام',25,'—','eq','المستهدف مهمة واحدة']]],
