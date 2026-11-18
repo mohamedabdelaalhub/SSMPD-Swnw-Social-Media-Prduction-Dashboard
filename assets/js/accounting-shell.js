@@ -55,6 +55,10 @@ function mount(container,opts){
  railEl.addEventListener('keydown',function(e){if(e.key==='Escape'&&document.body.classList.contains('acs-drawer-open')){open(false);root.querySelector('[data-acs-open]').focus();}});
  var api={view:root.querySelector('#acc-sub-view'),setActive:function(id){active=id;rail.querySelectorAll('.acs-i').forEach(function(b){if(b.dataset.acsGo===id)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});var g=rail.querySelector('[data-acs-go="'+id+'"]');g=g&&g.closest('.acs-g');if(g&&g.classList.contains('closed')){g.classList.remove('closed');g.querySelector('.acs-gh').setAttribute('aria-expanded','true');}root.querySelector('[data-acs-current]').textContent=label(id);},
   setBadges:function(map){badges=map||{};draw();},refresh:draw};
+ /* phones (owner 2026-11-18): every treasury table turns into one card per row. Each cell gets its column title
+    (data-th) so the card can show «الرصيد 1,000» instead of a sideways-scrolling table. */
+ function labelTables(){api.view.querySelectorAll('.fc-table table:not([data-acs-cards])').forEach(function(t){var th=[].map.call(t.querySelectorAll('thead th'),function(x){return x.textContent.trim();});if(!th.length)return;t.setAttribute('data-acs-cards','');t.querySelectorAll('tbody tr').forEach(function(tr){[].forEach.call(tr.children,function(td,i){if(th[i]&&!td.hasAttribute('data-th'))td.setAttribute('data-th',th[i]);});});});}
+ if(window.MutationObserver){var mo=new MutationObserver(function(){if(!root.isConnected){mo.disconnect();return;}labelTables();});mo.observe(api.view,{childList:true,subtree:true});}
  document.body.classList.remove('acs-drawer-open');draw();return api;
 }
 window.SSMPDAccountingShell={mount:mount,groups:GROUPS,kind:kind,label:label,pricing:PRICING};
