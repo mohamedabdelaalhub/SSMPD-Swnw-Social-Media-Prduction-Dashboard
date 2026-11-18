@@ -147,3 +147,4 @@ body.acs-drawer-open .ssmpd-ea-launch,body.acs-drawer-open .ssmpd-aa-launch,body
  .acs-main .fc-table table[data-acs-cards] td:first-child{flex-direction:row;flex-wrap:wrap;align-items:center;gap:6px}
  .acs-main .fc-table table[data-acs-cards] td:last-child .btn{white-space:nowrap}
 }
+.acs-num{unicode-bidi:isolate;font-variant-numeric:tabular-nums;white-space:nowrap}
