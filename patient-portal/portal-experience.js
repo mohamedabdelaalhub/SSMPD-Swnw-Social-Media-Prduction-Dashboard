@@ -95,7 +95,7 @@ function openModal(item,button){
     var submit=this,ratings=[];
     for(var i=0;i<questions.length;i++){
       var checked=backdrop.querySelector('input[name="experience-q'+i+'"]:checked');
-      if(!checked){toast("جاوب على كل أسئلة التقييم الأول.","error");return;}
+      if(!checked){toast("يُرجى الإجابة عن جميع أسئلة التقييم أولًا.","error");return;}
       ratings.push(Number(checked.value));
     }
     submit.disabled=true;submit.textContent="جاري حفظ التقييم…";
