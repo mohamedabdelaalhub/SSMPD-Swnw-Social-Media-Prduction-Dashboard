@@ -95,3 +95,66 @@ button.journey-metric.is-alert strong{color:#b42318}
 .journey-shell .journey-title{background-image:radial-gradient(120% 160% at 88% -30%,rgba(255,255,255,.26),transparent 55%),linear-gradient(135deg,#0F369D,#1C4FC7);border:0;border-radius:18px;color:#fff;box-shadow:0 12px 32px rgba(15,54,157,.22),inset 0 1px 0 rgba(255,255,255,.35)}
 .journey-shell .journey-title h2{color:#fff}.journey-shell .journey-title p{color:rgba(255,255,255,.86)}
 @media(forced-colors:active){.journey-shell .journey-title{background:Canvas;color:CanvasText;border:1px solid CanvasText}}
+/* Owner 2026-11-17: the «⋯» menu inside a patient card was cut off by the column (overflow:hidden / board scroll). Inside a card it now opens in place, on its own row. */
+.journey-card-detail .journey-card-actions{flex-wrap:wrap;gap:6px}
+.journey-card-detail .journey-more[open]{flex-basis:100%;order:9}
+.journey-card-detail .journey-more[open]>summary{margin-inline-start:auto}
+.journey-card-detail .journey-more-menu{position:static;inset:auto;margin-top:6px;box-shadow:none;min-width:0;width:100%}
+/* Owner 2026-11-17: channel tag on bookings from واتساب / الموقع / البوابة / فيزيتا. */
+.journey-src{flex:none;margin-inline-start:auto;font-size:10.5px;font-weight:700;padding:1px 7px;border-radius:7px;background:#E8F5EE;color:#2F7D5C}
+.journey-src-website{background:#EEF2FB;color:#0F369D}.journey-src-portal,.journey-src-patient_portal{background:#FFF1EA;color:#B5410F}.journey-src-vezeeta{background:#F2F4F7;color:#344054}
+/* ---- Owner 2026-11-17: calmer «تشغيل اليوم» (approved mockup): compact sticky top, one chip strip, small doctor strip, patients by hour. ---- */
+.journey-v3{gap:10px}
+.journey-v3 .journey-top{position:sticky;top:var(--journey-sticky-top,0);z-index:20;display:grid;gap:8px;margin:0 -4px;padding:8px 4px 6px;background:rgba(247,248,252,.94);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid rgba(15,54,157,.10)}
+.journey-v3 .journey-top-row{display:flex;align-items:center;gap:8px}
+.journey-v3 .journey-top-row h2{margin:0;font-size:19px;color:#0F369D}
+.journey-v3 .journey-top-gap{flex:1}
+.journey-v3 .journey-top-row .btn-primary{min-height:40px;border-radius:14px;padding:0 16px;font-weight:700}
+.journey-v3 .journey-tools>summary{min-width:42px;min-height:40px;border-radius:14px;font-size:18px}
+.journey-v3 .journey-tools .journey-more-menu{min-width:220px}
+.journey-v3 .journey-date-nav{display:flex;align-items:center;gap:6px;flex-wrap:nowrap}
+.journey-v3 .journey-icon{min-width:42px;min-height:40px;border-radius:14px;padding:0;font-size:17px;color:#0F369D;justify-content:center}
+.journey-v3 .journey-day{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:0 10px;border:1px solid rgba(15,54,157,.12);border-radius:14px;background:#fff;font-weight:700;font-size:13px}
+.journey-v3 .journey-day span{color:#0F369D}
+.journey-v3 .journey-day input{border:0;background:none;font:inherit;font-weight:700;min-width:0;max-width:150px;padding:0}
+.journey-v3 .journey-search{width:100%;min-height:38px;border-radius:12px}
+.journey-v3 .journey-chips{display:flex!important;gap:6px;overflow-x:auto;scrollbar-width:none;padding:2px 0;grid-template-columns:none!important}
+.journey-v3 .journey-chips::-webkit-scrollbar{display:none}
+.journey-v3 .journey-chips .journey-metric{flex:none;display:inline-flex;flex-direction:row;align-items:center;gap:6px;min-height:34px;padding:0 12px;border-radius:999px;border:1px solid rgba(15,54,157,.12);background:#fff;font-size:13px;color:#667085;box-shadow:none}
+.journey-v3 .journey-chips .journey-metric strong{font-size:15px;color:#16212E;line-height:1}
+.journey-v3 .journey-chips .journey-metric small{display:none}
+.journey-v3 .journey-chips .journey-metric.is-zero{opacity:.55}
+.journey-v3 .journey-chips .journey-metric.is-active{background:#0F369D;border-color:#0F369D;color:#fff}
+.journey-v3 .journey-chips .journey-metric.is-active strong{color:#fff}
+.journey-v3 .journey-chips .journey-metric.is-alert strong{color:#F15A22}
+.journey-v3 .journey-chips .journey-metric:focus-visible{outline:3px solid #F15A22;outline-offset:2px}
+.journey-v3 .journey-doctors{gap:6px;scrollbar-width:none}
+.journey-v3 .journey-doctors::-webkit-scrollbar{display:none}
+.journey-v3 .journey-doctor{flex:none;min-width:0;padding:6px 10px;border-radius:12px;gap:6px}
+.journey-v3 .journey-doctor h4{font-size:13px;margin:0}
+.journey-v3 .journey-doctor p{font-size:11.5px;margin:0}
+.journey-v3 .journey-doctor .journey-more>summary{min-width:30px;min-height:28px}
+.journey-v3 .journey-hours{display:block!important;overflow:visible;padding:0}
+.journey-v3 .journey-hour{display:grid;grid-template-columns:62px minmax(0,1fr);gap:8px;align-items:start;padding:8px 0;border-bottom:1px dashed rgba(15,54,157,.12)}
+.journey-v3 .journey-hour-label{font-weight:700;color:#0F369D;font-size:14px;padding-top:7px;white-space:nowrap}
+.journey-v3 .journey-hour-names{display:flex;flex-wrap:wrap;gap:6px;min-width:0}
+.journey-v3 .journey-hour .journey-card.is-compact{flex:0 1 auto;max-width:100%}
+.journey-v3 .journey-hour .journey-card.is-compact .journey-chip{width:auto;min-height:32px;border-radius:999px}
+.journey-v3 .journey-hour .journey-card.is-open{flex-basis:100%}
+.journey-v3 .journey-hour .journey-card.is-open .journey-chip{width:auto}
+.journey-v3 .journey-layout{display:grid;gap:12px}
+@media(max-width:520px){.journey-v3 .journey-hour{grid-template-columns:52px minmax(0,1fr)}.journey-v3 .journey-top-row h2{font-size:17px}}
+.journey-v3 .journey-tools>summary::after{content:none}
+.journey-v3 .journey-section.is-empty{display:none}
+.journey-v3,.journey-v3>*,.journey-v3 [data-journey-root]>*,.journey-v3 .journey-top>*,.journey-v3 [data-journey-chips-host]{min-width:0;max-width:100%}
+.journey-v3 [data-journey-root]{display:grid;gap:10px;min-width:0}
+
+/* Owner 2026-11-17: «التحصيل» (orange) → «تم التحصيل» (green) next to the patient after the visit ends. */
+.journey-card.is-compact:has(.journey-pay){display:inline-flex;flex-wrap:wrap;align-items:center;gap:6px}
+.journey-card.is-compact:has(.journey-pay)>.journey-card-detail{flex-basis:100%}
+.journey-pay{display:inline-flex;align-items:center;justify-content:center;min-height:32px;padding:0 14px;border-radius:999px;font:inherit;font-size:13.5px;font-weight:800;white-space:nowrap;border:0}
+.journey-pay-due{background:#F15A22;color:#fff;cursor:pointer;box-shadow:0 4px 12px rgba(241,90,34,.28)}
+.journey-pay-due:hover{background:#D9481A}
+.journey-pay-due:focus-visible{outline:3px solid #0F369D;outline-offset:2px}
+.journey-pay-due.is-static{cursor:default;box-shadow:none}
+.journey-pay-done{background:#2F7D5C;color:#fff}

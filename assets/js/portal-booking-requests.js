@@ -92,6 +92,7 @@
   var lastMount = null;
   function mount() {
     var shell = d.querySelector(".rx-shell");
+    if (w.SSMPDAutoBookings) return; // owner 2026-11-17: shown inside «طلبات الحجز الآلية» instead
     if (!shell || shell === lastMount || !mayReview() || !w.SSMPDDb || !w.SSMPDDb.client) return;
     lastMount = shell;
     var box = d.createElement("div");

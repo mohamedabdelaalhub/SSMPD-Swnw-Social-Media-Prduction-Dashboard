@@ -15,9 +15,9 @@ const uid = n => '60000000-0000-4000-8000-' + String(n).padStart(12, '0');
     create function is_super() returns boolean language sql stable security definer as $$select has_role('super_admin')$$;
     create function can_manage_all_content() returns boolean language sql stable security definer as $$select has_role('super_admin')$$;
     grant usage on schema public to authenticated;`);
-  for (const f of ['20261025143235_tiktok_content_posting_setup', '20261025143259_tiktok_publish_jobs_queue', '20261117040000_tiktok_audit_post_settings'])
+  for (const f of ['20261025143235_tiktok_content_posting_setup', '20261025143259_tiktok_publish_jobs_queue', '20261118030000_tiktok_audit_post_settings'])
     await db.exec(fs.readFileSync('supabase/migrations/' + f + '.sql', 'utf8').replace(/alter table public\.meta_publish_jobs[\s\S]*?;\n\n/, '').replace(/create index if not exists meta_publish_jobs_tiktok_due_idx[\s\S]*$/, ''));
-  const mig = fs.readFileSync('supabase/migrations/20261117050000_tiktok_inbox_drafts.sql', 'utf8');
+  const mig = fs.readFileSync('supabase/migrations/20261118040000_tiktok_inbox_drafts.sql', 'utf8');
   await db.exec(mig); await db.exec(mig);
   await db.exec(`grant select, insert, update on public.tiktok_publish_jobs to authenticated;
     insert into admins values ('${uid(1)}','super_admin'),('${uid(2)}','page_manager');
@@ -48,7 +48,7 @@ const uid = n => '60000000-0000-4000-8000-' + String(n).padStart(12, '0');
   assert.ok((await db.query(`insert into tiktok_publish_jobs(content_id,brand,scheduled_at,privacy_level,music_confirmation,created_by) values($1,'sono',now(),'PUBLIC_TO_EVERYONE',true,$2) returning id`, [uid(10), uid(2)])).rows[0].id);
   await db.exec('reset role');
   assert.equal((await db.query("select count(*)::int n from activity_log where action like '%مسودة%'")).rows[0].n, 3);
-  await db.exec(fs.readFileSync('supabase/rollbacks/20261117050000_tiktok_inbox_drafts.rollback.sql', 'utf8'));
+  await db.exec(fs.readFileSync('supabase/rollbacks/20261118040000_tiktok_inbox_drafts.rollback.sql', 'utf8'));
   assert.equal((await db.query("select count(*)::int n from information_schema.columns where table_name='tiktok_publish_jobs' and column_name='mode'")).rows[0].n, 0);
   assert.equal((await db.query("select count(*)::int n from tiktok_publish_jobs")).rows[0].n, 1, 'direct post kept');
 

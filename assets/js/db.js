@@ -790,7 +790,17 @@
     deleteContractingEntity: function (entityId) {
       return handle(client.rpc("delete_contracting_entity", { p_entity_id: entityId }));
     },
+    // Reception can't read contracts directly (RLS); the registration RPC returns id + entity name only.
     listActiveContracts: function () {
+      var fallback = function () { return handle(client.from("contracting_entity_contracts")
+        .select("id, entity_id, start_date, end_date, status, contracting_entities(name)")
+        .eq("status", "active").order("start_date", { ascending: false })); };
+      return client.rpc("list_active_contracts_for_registration").then(function (r) {
+        if (r.error) { if (/function|schema cache|does not exist|not find/i.test(String(r.error.message || ""))) return fallback(); throw r.error; }
+        return (r.data || []).map(function (c) { return { id: c.contract_id, start_date: c.start_date, end_date: c.end_date, status: "active", contracting_entities: { name: c.entity_name } }; });
+      });
+    },
+    listActiveContractsDirect: function () {
       return handle(client.from("contracting_entity_contracts")
         .select("id, entity_id, start_date, end_date, status, contracting_entities(name)")
         .eq("status", "active").order("start_date", { ascending: false }));
@@ -1473,6 +1483,7 @@
     financeSupplierReceive: function(order,lines,reference,token,invoiceDate,documentUrl){if(invoiceDate)return handle(client.rpc('inventory_receive_invoice',{p_order:order,p_lines:lines,p_reference:reference,p_token:token,p_invoice_date:invoiceDate,p_document_url:documentUrl||''}));return handle(client.rpc('clinic_finance_supplier_receive',{p_order:order,p_lines:lines,p_reference:reference,p_token:token}));},
     financeSupplierCommand: function(action,payload,token){return handle(client.rpc('clinic_finance_supplier_command',{p_action:action,p_payload:payload,p_token:token}));},
     financeDoctorCommand: function(action,payload,token){return handle(client.rpc('clinic_finance_doctor_command',{p_action:action,p_payload:payload,p_token:token}));},
+    financeDoctorContractEnd: function(action,payload,token){return handle(client.rpc('clinic_finance_doctor_contract_end',{p_action:action,p_payload:payload,p_token:token}));},
     financeDoctorStatement: function(doctorKey,from,to){return handle(client.rpc('clinic_finance_doctor_statement',{p_doctor_key:doctorKey,p_from:from,p_to:to}));},
     financeDoctorStatementDetail: function(doctorKey,from,to){return handle(client.rpc('clinic_finance_doctor_statement_detail',{p_doctor_key:doctorKey,p_from:from,p_to:to}));},
     financeDoctorDues: function(doctorKey,from,to){return handle(client.rpc('clinic_finance_doctor_dues',{p_doctor_key:doctorKey,p_from:from,p_to:to}));},

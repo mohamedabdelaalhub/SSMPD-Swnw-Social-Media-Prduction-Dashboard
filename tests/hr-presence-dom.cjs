@@ -51,13 +51,20 @@ const workspace = () => ({ can_manage: true, today: '2026-11-12', templates: [{ 
   const wa = boxes('abs').querySelector('a.wa'); assert(!wa, 'no phone for p4 -> no call buttons'); // p4 is not in the HR people list
 
   // ---- department cards: spelling variants grouped, unmapped numbers in their own last card
-  const depts = [...root().querySelectorAll('[data-presence-dept]')]; assert.deepEqual(depts.map(x => x.dataset.dept), ['التمريض', 'الاستقبال', 'الإدارة', 'أرقام غير مربوطة بموظف'], 'largest first, unmapped last');
+  const depts = [...root().querySelectorAll('[data-presence-dept]')]; assert.deepEqual(depts.map(x => x.dataset.dept), ['التمريض', 'الاستقبال', 'أرقام غير مربوطة بموظف'], 'largest first, unmapped last; a department with nobody in and nobody missing is not a card');
+  const quiet = root().querySelector('[data-presence-quiet]'); assert(quiet && quiet.textContent.includes('أقسام بدون حضور الآن') && quiet.textContent.includes('الإدارة') && quiet.textContent.includes('1 جاي لسه'), 'quiet departments listed in the side column with the reason');
+  assert(!root().querySelector('[data-presence-dept] .person .av').textContent.trim(), 'avatars are an icon, not initials'); assert(root().querySelector('.pv-hero').textContent.includes('التمريض') && root().querySelector('.pv-hero').textContent.includes('0 من 5'), 'hero lists departments under their minimum');
+  assert(root().querySelector('.chip.warn[data-d=nurse]') && !root().querySelector('.chip.warn[data-d=reception]'), 'chip of a short department is marked');
+  assert.deepEqual([...root().querySelector('[data-presence-dept][data-dept="التمريض"] .pv-foot').querySelectorAll('.fc')].map(x => x.textContent), ['جاي لسه 0', 'انصرف 1', 'إجازة 1'], 'every card has the same counters footer');
+  assert(root().querySelector('[data-presence-dept][data-dept="الاستقبال"] .pv-foot'), 'footer even when nothing to expand');
   const rec = depts.find(c => c.dataset.dept === 'الاستقبال'); assert.equal(rec.querySelectorAll('[data-presence-person]').length, 2, 'both spellings land in the same card'); assert(rec.textContent.includes('استراحة') && rec.textContent.includes('الحد الأدنى 3'), 'break pill + coverage minimum for a known department');
   assert(rec.querySelector('.cov.ok'), 'below the minimum but nobody absent there -> not flagged');
   const nur = depts.find(c => c.dataset.dept === 'التمريض'); assert(nur.querySelector('.abs-line').textContent.includes('لم يبصم'), 'absent people are called out inside their department'); assert(nur.querySelector('.cov.low'), 'nursing below its minimum with an absence is flagged');
   const unm = depts.find(c => c.dataset.dept === 'أرقام غير مربوطة بموظف'); assert(unm && unm.textContent.includes('رقم الجهاز 24') && unm.querySelector('[data-presence=map]') && unm.querySelector('[data-presence=ignore]'), 'unmapped card has map + ignore'); assert.equal(depts[depts.length - 1], unm);
   assert(root().querySelector('[data-presence-warn]').textContent.includes('تحقق من بصمة الخروج'), 'very long open shift flagged'); assert(root().querySelector('[data-presence-smart]'), 'smart alerts panel');
-  assert(!depts.find(c => c.dataset.dept === 'الإدارة').querySelector('[data-presence-person]'), 'upcoming person is hidden until expanded'); 
+  assert(!depts.find(c => c.dataset.dept === 'التمريض').querySelector('.people.rest'), 'left / on-leave people are hidden until expanded');
+  depts.find(c => c.dataset.dept === 'التمريض').querySelector('[data-out]').click(); assert(root().querySelector('[data-presence-dept][data-dept="التمريض"] .people.rest').textContent.includes('منصرف'), 'expand shows them'); root().querySelector('[data-presence-dept][data-dept="التمريض"] [data-out]').click();
+  root().querySelector('.qd[data-d=admin]').click(); assert.deepEqual([...root().querySelectorAll('[data-presence-dept]')].map(x => x.dataset.dept), ['الإدارة'], 'clicking a quiet department opens its card'); root().querySelector('.chip[data-d=all]').click();
   assert.equal(w.__xss, undefined); assert(!root().querySelector('img'), 'names are escaped'); assert(root().textContent.includes('<img src=x'), 'escaped markup shown as text');
   assert(root().querySelector('[data-presence-health]').textContent.includes('منذ') && root().querySelector('[data-presence-lastpunch]').textContent.includes('آخر بصمة وصلت'));
   assert.equal(root().querySelectorAll('[data-presence-feed-item]').length, 4, 'recent movements from real last punches (numbers that punched)');

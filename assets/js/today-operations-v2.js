@@ -123,9 +123,10 @@ function trialSlots(model,appointment,day){
   var catalog=target.catalog||{},service=(catalog.services||[]).find(function(s){return s.id===appointment.service_id;});
   var duration=Math.max(5,Math.round((new Date(appointment.ends_at)-new Date(appointment.starts_at))/60000)||Number(service&&service.minutes)||20),rows=[];
   (catalog.availability||[]).filter(function(a){return a.provider_id===appointment.provider_id;}).forEach(function(a){
-   for(var t=Date.parse(a.starts_at);t+duration*60000<=Date.parse(a.ends_at);t+=duration*60000){
+   var gap=Math.max(0,+((target.workspace&&target.workspace.booking_gap_minutes)||(catalog.workspace&&catalog.workspace.booking_gap_minutes))||0)*60000;
+   for(var t=Date.parse(a.starts_at);t+duration*60000<=Date.parse(a.ends_at);t+=duration*60000+gap){
     var end=t+duration*60000;if(dateOf(t)!==day)continue;
-    if((catalog.appointments||[]).some(function(x){return x.id!==appointment.id&&x.provider_id===appointment.provider_id&&!['cancelled','no_show'].includes(x.status)&&Date.parse(x.starts_at)<end&&Date.parse(x.ends_at)>t;}))continue;
+    if((catalog.appointments||[]).some(function(x){return x.id!==appointment.id&&x.provider_id===appointment.provider_id&&!['cancelled','no_show'].includes(x.status)&&Date.parse(x.starts_at)<end+gap&&Date.parse(x.ends_at)+gap>t;}))continue;
     rows.push({starts_at:new Date(t).toISOString()});
    }
   });

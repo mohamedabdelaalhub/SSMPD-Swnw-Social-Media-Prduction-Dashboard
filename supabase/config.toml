@@ -46,6 +46,11 @@ verify_jwt = false
 # BOOKING_SYNC_SECRET header; no dashboard user JWT is involved.
 verify_jwt = false
 
+[functions.booking-fallback]
+# Machine-to-machine fallback booking (WhatsApp agent, later the website) while the Masa bridge is down.
+# Same BOOKING_SYNC_SECRET header as booking-sync-ingest; no dashboard user JWT.
+verify_jwt = false
+
 [functions.patient-portal-documents]
 # Auth is validated with auth.getUser inside the function. Dashboard legacy JWT toggle: OFF.
 verify_jwt = false
