@@ -102,8 +102,8 @@ grant usage on schema public to authenticated,anon;`);
     assert.deepEqual(r.trend.team_open, [8, 7, 7, 6, 5, 5, 5], 'creation, done, cancel, done-without-event and archive time respected');
     assert.deepEqual(r.trend.approvals, [1, 1, 2, 2, 1, 3, 3], 'task reviews + content approval stages per day');
     assert.deepEqual(r.tasks.team_load, [
-      { assignee_id: id(2), assignee_name: 'User 2', department: 'reception', open: 4, late: 2, blocked: 1 },
-      { assignee_id: id(3), assignee_name: 'User 3', department: null, open: 1, late: 0, blocked: 0 }], 'grouped, ordered, archived excluded, blocked not late');
+      { assignee_id: id(2), assignee_name: 'User 2', department: 'reception', open: 4, late: 1, blocked: 1 },
+      { assignee_id: id(3), assignee_name: 'User 3', department: null, open: 1, late: 0, blocked: 0 }], 'grouped, ordered, archived excluded, blocked and review not late');
 
     // reception employee: own work only
     await as(2); r = await charts();

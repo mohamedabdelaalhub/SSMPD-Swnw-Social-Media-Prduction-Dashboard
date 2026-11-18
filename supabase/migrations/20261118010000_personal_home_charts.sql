@@ -5,7 +5,7 @@
 -- or when it cannot be built honestly from stored timestamps (no zero-filled or guessed data).
 --   tasks.team_load   (team managers only) [{assignee_id, assignee_name, department, open, late, blocked}] ≤ 12 rows
 --                     source = the snapshot's team_tasks: task_list_visible() rows with can_manage, project not archived;
---                     open = status not in (done, cancelled); late = open, due_at < now(), status <> blocked; blocked = status blocked.
+--                     open = status not in (done, cancelled); late = open, due_at < now(), status not in (blocked, review) — same as operations_home_snapshot; blocked = status blocked.
 --                     ordered by late+blocked desc, open desc. department = clinic_people.people.department of the assignee.
 --   trend             {days:[7 × 'YYYY-MM-DD', oldest → today, Africa/Cairo], mine_open:[7], approvals:[7], team_open:[7]}
 --                     each value = the home KPI tile as of the end of that Cairo day (today: as of now), using the snapshot's
@@ -88,7 +88,7 @@ begin
                    case when v.assignee_id is null then null else max(v.assignee_name) end as assignee_name,
                    max(pp.department) as department,
                    count(*)::integer as open,
-                   (count(*) filter (where v.due_at < now() and v.status <> 'blocked'))::integer as late,
+                   (count(*) filter (where v.due_at < now() and v.status not in ('blocked','review')))::integer as late,
                    (count(*) filter (where v.status = 'blocked'))::integer as blocked
               from public.task_list_visible() v
               join public.task_projects p on p.id = v.project_id
