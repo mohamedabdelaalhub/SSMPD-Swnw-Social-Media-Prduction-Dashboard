@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1782,
-    "labels": 1309,
-    "files": 124,
-    "groups": 1410
+    "definitions": 1791,
+    "labels": 1318,
+    "files": 125,
+    "groups": 1419
   },
   "fields": [
     {
@@ -18033,6 +18033,96 @@
       "tab": "reception_services",
       "article": "requests",
       "text_sha256": "80a0c51a0ba10ff7f4fe6f627b68c4e009f932e1abdff544c26e792f5f0e9e49"
+    },
+    {
+      "file": "training-evaluation.js",
+      "label": "نوع النشاط",
+      "name": "kind",
+      "kind": "helper",
+      "forms": [],
+      "tab": "training_evaluation",
+      "article": "training-evaluation",
+      "text_sha256": "e06123df5249b33af940965df4fd3afc6d9ef52f8b83c4dcdbad2d64d18366d3"
+    },
+    {
+      "file": "training-evaluation.js",
+      "label": "المسار",
+      "name": "trackId",
+      "kind": "helper",
+      "forms": [],
+      "tab": "training_evaluation",
+      "article": "training-evaluation",
+      "text_sha256": "3cdfbe0727a7e0f7377ab4e2e22d0882b4c624bc95b128b29ae0370a27baae18"
+    },
+    {
+      "file": "training-evaluation.js",
+      "label": "الدورة",
+      "name": "courseId",
+      "kind": "helper",
+      "forms": [],
+      "tab": "training_evaluation",
+      "article": "training-evaluation",
+      "text_sha256": "504666ea349279706f6ce02adaee226a08238ae547ba44d923b9e1c300793a3b"
+    },
+    {
+      "file": "training-evaluation.js",
+      "label": "الدورة أو المسار",
+      "name": "scope",
+      "kind": "helper",
+      "forms": [],
+      "tab": "training_evaluation",
+      "article": "training-evaluation",
+      "text_sha256": "e69c408f7d65b4aca45369315d2ae2ae6ef78e4d4f850c0efdf5a41013b71c39"
+    },
+    {
+      "file": "training-evaluation.js",
+      "label": "نوع الإسناد",
+      "name": "targetType",
+      "kind": "helper",
+      "forms": [],
+      "tab": "training_evaluation",
+      "article": "training-evaluation",
+      "text_sha256": "d4921f3ffc1a33f0607046f5b8935f69c734ee13eefd9c48e748d90460b7ba9c"
+    },
+    {
+      "file": "training-evaluation.js",
+      "label": "المتدرّب",
+      "name": "traineeId",
+      "kind": "helper",
+      "forms": [],
+      "tab": "training_evaluation",
+      "article": "training-evaluation",
+      "text_sha256": "296282998c145e12766d7f72948742c9d9ce5f0bdccd39be537b68187649bd6e"
+    },
+    {
+      "file": "training-evaluation.js",
+      "label": "المجموعة",
+      "name": "groupId",
+      "kind": "helper",
+      "forms": [],
+      "tab": "training_evaluation",
+      "article": "training-evaluation",
+      "text_sha256": "92ec0c92abdc5c0934b6a9dc25d85d24ef74b6f4ea84a054a14ee55b51a87c07"
+    },
+    {
+      "file": "training-evaluation.js",
+      "label": "المراجع",
+      "name": "reviewerId",
+      "kind": "helper",
+      "forms": [],
+      "tab": "training_evaluation",
+      "article": "training-evaluation",
+      "text_sha256": "5e83a3f3086c5af54c2d235d3d4855163f0bb3927bba9eaf8297f22fcf87f352"
+    },
+    {
+      "file": "training-evaluation.js",
+      "label": "نتيجة التقييم",
+      "name": "outcome",
+      "kind": "helper",
+      "forms": [],
+      "tab": "training_evaluation",
+      "article": "training-evaluation",
+      "text_sha256": "c1d66c4352f13d0dfe2349ca1f7bb0dff329eb8d8c693bdd7dc87b8e42bcc07a"
     },
     {
       "file": "video-storyboard.js",

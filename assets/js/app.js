@@ -14,6 +14,7 @@
 
   var RENDERERS = {
     human_resources: window.SSMPDHumanResources,
+    training_evaluation: window.SSMPDTrainingEvaluation,
     price_lists: window.SSMPDPriceLists,
     home: window.SSMPDPersonalHome,
     summary: window.SSMPDRenderSummary,
@@ -43,6 +44,7 @@
   };
   var TAB_LABELS = {
     human_resources: "الموارد البشرية",
+    training_evaluation: "التدريب والتقييم",
     price_lists: "الخدمات ولوائح الأسعار",
     home: "الرئيسية الشخصية",
     summary: "الملخص العام",
@@ -193,13 +195,14 @@
     // القائمة المنسدلة فقط — اتشالوا من شريط التابات العادي (وقائمة الموبايل
     // القديمة) عشان ميبقوش متكررين في مكانين، ويبانوا بس في المكان اللي
     // المستخدم طلبه (جوه القائمة المنسدلة).
-    var mainSuiteTabs = tabs.filter(function (t) { return ["human_resources", "price_lists", "home", "reception_services", "booking_cash", "patients", "leads", "contracting_entities", "clinic_info", "org_legal", "admin", "accounting", "tasks", "inventory", "staff_kpi", "my_kpi", "indicator_reports"].indexOf(t) === -1; });
+    var mainSuiteTabs = tabs.filter(function (t) { return ["human_resources", "training_evaluation", "price_lists", "home", "reception_services", "booking_cash", "patients", "leads", "contracting_entities", "clinic_info", "org_legal", "admin", "accounting", "tasks", "inventory", "staff_kpi", "my_kpi", "indicator_reports"].indexOf(t) === -1; });
 
     function tabButtonsHtml() {
       return mainSuiteTabs.map(function (t) { return '<button class="tab-btn" data-tab="' + t + '">' + window.SSMPDI18n.textHtml(TAB_LABELS[t]) + '</button>'; }).join("");
     }
     var ddItems = '<button class="ud-item" data-goto="home">الرئيسية الشخصية</button>';
     if(tabs.indexOf('human_resources')!==-1)ddItems+='<button class="ud-item" data-goto="human_resources">الموارد البشرية</button>';
+    if(tabs.includes('training_evaluation')) ddItems += '<button class="ud-item" data-goto="training_evaluation">التدريب والتقييم</button>';
     if(tabs.indexOf('price_lists')!==-1&&tabs.indexOf('contracting_entities')===-1)ddItems+='<button class="ud-item" data-goto="price_lists">جهات التعاقد ولوائح الأسعار</button>';
     if (mainSuiteTabs.length) ddItems += '<button class="ud-item" data-goto="'+mainSuiteTabs[0]+'">'+window.SSMPDI18n.textHtml(R.isControlledFinance(admin)?TAB_LABELS[mainSuiteTabs[0]]:'إنتاج المحتوى')+'</button>';
     if (tabs.indexOf("patients") !== -1) ddItems += "<button class=\"ud-item\" data-goto=\"patients\"> <!--ssmpd-i18n:%D8%A3%D8%B1%D8%B4%D9%8A%D9%81%20%D8%A7%D9%84%D9%85%D8%B1%D8%B6%D9%89-->أرشيف المرضى</button>";
@@ -794,7 +797,7 @@
 
     // فصل بصري: تابات السويت الرئيسي (SSMPD) بتتخفي تماماً لما نكون جوه موديول
     // منفصل (أرشيف المرضى / الليدز / لوحة التحكم) عشان ميظهرش هيدر حاجتين مع بعض
-    var isSeparateModule = ["human_resources", "price_lists", "home", "reception_services", "booking_cash", "patients", "leads", "contracting_entities", "clinic_info", "org_legal", "admin", "accounting", "tasks", "inventory", "staff_kpi", "my_kpi", "indicator_reports"].indexOf(tab) !== -1;
+    var isSeparateModule = ["human_resources", "training_evaluation", "price_lists", "home", "reception_services", "booking_cash", "patients", "leads", "contracting_entities", "clinic_info", "org_legal", "admin", "accounting", "tasks", "inventory", "staff_kpi", "my_kpi", "indicator_reports"].indexOf(tab) !== -1;
     var tabsBar = document.getElementById("tabs-bar");
     if (tabsBar) tabsBar.style.display = isSeparateModule ? "none" : "";
     var mmTabs = document.querySelector("#mobile-menu .mm-tabs");

@@ -981,6 +981,15 @@ frule('peer-handover.js','ملاحظة / سبب الرفض','ملاحظة اخت
 frule('reception-workspace.js','خدمة إضافية','خدمة زيادة في نفس الحجز. لو سبت الطبيب «نفس الطبيب» بتتحجز ورا الخدمة اللي قبلها على طول (بعد الـ٥ دقايق). كل خدمة بتتسجل حجز لوحدها بسعرها.','reception-booking-extras')
 frule('reception-workspace.js','الوقت','وقت الخدمة الإضافية مع الطبيب التاني. القايمة فيها أوقاته الفاضية بعد الخدمة اللي قبلها، أو اختار «وقت تاني» واكتبه بإيدك.','reception-booking-extras')
 frule('reception-workspace.js','الوقت اللي تختاره (بتوقيت القاهرة)','اكتب أي وقت بإيدك (مثلاً 8:47). السيستم بيرفض لو الوقت خارج مواعيد الدكتور أو متعارض مع حجز تاني أو داخل الـ٥ دقايق اللي بين الحجوزات.','reception-booking-extras')
+frule('training-evaluation.js','نوع النشاط','اختار مهمة تطبيقية أو اختبار قصير بناءً على طريقة التقييم المطلوبة.','training-evaluation')
+frule('training-evaluation.js','المسار','اختار المسار اللي الدورة هتظهر ضمنه.','training-evaluation')
+frule('training-evaluation.js','الدورة','اختار الدورة اللي هتضيف لها الوحدة الجديدة.','training-evaluation')
+frule('training-evaluation.js','الدورة أو المسار','اختار دورة واحدة أو مسار بكل دوراته الحالية للتكليف.','training-evaluation')
+frule('training-evaluation.js','نوع الإسناد','اختار فرد لتكليف واحد، أو مجموعة لإنشاء تكليف لكل عضو.','training-evaluation')
+frule('training-evaluation.js','المتدرّب','اختار الحساب التجريبي النشط اللي هيوصله التكليف.','training-evaluation')
+frule('training-evaluation.js','المجموعة','اختار مجموعة التدريب التجريبية. كل عضو بياخد تكليف مستقل.','training-evaluation')
+frule('training-evaluation.js','المراجع','اختار المراجع المكلّف بالتسليمات. المراجع ماينفعش يكون أحد المتدرّبين في التكليف.','training-evaluation')
+frule('training-evaluation.js','نتيجة التقييم','اختار اجتاز أو يحتاج إعادة. لو اخترت إعادة، حدّد الأنشطة واكتب ملاحظة للمتدرّب قبل الاعتماد.','training-evaluation')
 def norm(v):
  v=re.sub(r'[\u064b-\u065f\u0670\u0640]','',v).lower();v=re.sub('[أإآٱ]','ا',v).replace('ى','ي').replace('ة','ه');v=re.sub(r'[^\w]+',' ',v).strip();return re.sub(r'(^| )ال',r'\1',v)
 def canon(v):
@@ -988,6 +997,7 @@ def canon(v):
 OVERLAY_FILES={'digital-team.js','digital-team-chat.js','digital-team-communications.js','digital-team-server-chat.js','administrative-assistant.js','employee-assistant.js','staff-profile.js'}
 PRICE_FILES={'price-list-governance.js','contract-price-workspace.js','contract-service-mapping.js','service-mapping-review.js','service-search-picker.js','center-master-review.js'}
 def domain(f):
+ if f=='training-evaluation.js':return 'training_evaluation'
  if f=='workforce-prices.js' or f.startswith('hr-'):return 'human_resources'
  if f=='contract-navigation.js':return 'contracting_entities'
  if f in PRICE_FILES:return 'price_lists'

@@ -121,6 +121,7 @@
     canSeeTab: function (adminOrRole, tab) {
       var admin = normalizeAdmin(adminOrRole);
       if(tab==='reception_services'&&Roles.isNursingDayOnly(admin))return true;
+      if(tab==='training_evaluation')return admin.active === true && window.SSMPDTrainingEvaluation?.canView(admin) === true;
       if(tab==='human_resources')return admin.active!==false&&!!(admin.id||admin.role);
       if(tab==='price_lists')return admin.active!==false&&Roles.canModuleAction(admin,'price_lists','view');
       if(tab==="tasks" && Roles.hasRole(admin,"psychology_specialist"))return true;
