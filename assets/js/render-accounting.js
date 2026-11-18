@@ -97,6 +97,7 @@
     ].filter(function(s) { return s.key === "inventory" ? canInventory : canFinance; });
     if(!navRestored){navRestored=true;var ns=window.SSMPDNavState&&window.SSMPDNavState.once('accounting');if(ns&&subs.some(function(s){return s.key===ns.sub;})&&!state.pendingRepair){state.subTab=ns.sub;state.section=catalogSections.some(function(s){return s.key===ns.section;})?ns.section:null;}}
     saveNav();
+    if (window.SSMPDAccountingShell) { renderShell(container, canFinance, canInventory); return; }
     var html = '<div class="tabs acc-catalog-nav" style="margin-bottom:16px;">' +
       subs.map(function (s) {
         return '<button class="tab-btn ' + (state.subTab === s.key ? "active" : "") + '" data-sub="' + s.key + '">' + s.label + '</button>';
@@ -121,6 +122,60 @@
     }
   }
 
+  /* Owner-approved unified shell (2026-11-18): side rail with every section; no sub-tabs, no section cards, no back buttons. */
+  var shellApi = null, shellHost = null;
+  function shellAllowed(id, canFinance, canInventory) {
+    var k = window.SSMPDAccountingShell.kind(id);
+    if (k === "inventory") return canInventory && !!window.SSMPDRenderInventory;
+    if (!canFinance) return false;
+    if (k === "pricing") return true;
+    return !!window.SSMPDFinanceCash && (!window.SSMPDFinanceCash.allows || window.SSMPDFinanceCash.allows(id));
+  }
+  function shellActive() {
+    if (state.subTab === "pricing") return state.section || "supplies";
+    if (state.subTab === "cash") return (window.SSMPDFinanceCash.current && window.SSMPDFinanceCash.current()) || "";
+    return "inv:" + ((window.SSMPDRenderInventory.group && window.SSMPDRenderInventory.group()) || "overview");
+  }
+  function renderShell(container, canFinance, canInventory) {
+    if (state.subTab === "pricing" && !state.section) state.section = "supplies";
+    shellHost = container;
+    shellApi = window.SSMPDAccountingShell.mount(container, {
+      active: shellActive(),
+      allowed: function (id) { return shellAllowed(id, canFinance, canInventory); },
+      onSelect: function (id) { shellSelect(id); }
+    });
+    shellView();
+  }
+  function shellSelect(id) {
+    var k = window.SSMPDAccountingShell.kind(id), view = shellApi.view;
+    state.pendingRepair = null;
+    if (k === "cash" && state.subTab === "cash" && view.querySelector(".fc-workspace")) { window.SSMPDFinanceCash.navigate(id); return; }
+    if (k === "inventory" && state.subTab === "inventory" && window.SSMPDRenderInventory.go && view.querySelector(".inv-shell")) { window.SSMPDRenderInventory.go(id.slice(4)); return; }
+    state.subTab = k;
+    if (k === "pricing") state.section = id;
+    if (k === "cash") window.SSMPDFinanceCash.openSection(id);
+    if (k === "inventory" && window.SSMPDRenderInventory.go) window.SSMPDRenderInventory.go(id.slice(4), true);
+    saveNav();
+    shellView();
+    window.scrollTo(0, 0);
+  }
+  function shellView() {
+    var subView = shellApi.view;
+    if (state.subTab === "inventory") { window.SSMPDRenderInventory.render(subView, { embedded: true, shell: true }); return; }
+    if (state.subTab === "cash") { window.SSMPDFinanceCash.render(subView); return; }
+    if (!state.loaded) {
+      subView.innerHTML = '<p class="acs-loading">جاري التحميل…</p>';
+      loadAll(function () { if (subView.isConnected && state.subTab === "pricing") renderSub(subView, shellHost); });
+    } else renderSub(subView, shellHost);
+  }
+  /* sections report what they show (treasury auto-opens a section, inventory moves between views) */
+  document.addEventListener("ssmpd:accounting-active", function (e) {
+    if (!shellApi || !shellHost || !shellHost.isConnected) return;
+    var d = e.detail || {};
+    if (d.refresh) shellApi.setBadges(d.badges || {});
+    if (d.id) shellApi.setActive(d.id);
+  });
+
   var catalogSections = [
     { key: "supplies", title: "المستلزمات والإضافات الطبية", description: "تكلفة العبوة والوحدة واستهلاك المستلزمات.", list: "supplies", unit: "مستلزم مسجل" },
     { key: "services", title: "الخدمات والتسعير", description: "تكلفة الخدمة والمستلزمات وهامش الربح والسعر النهائي.", list: "services", unit: "خدمة مسعرة" },
@@ -137,6 +192,8 @@
   }
   function renderSub(subView, container) {
     saveNav();
+    var inShell = !!subView.closest(".acs");
+    if (inShell && !catalogSections.some(function (s) { return s.key === state.section; })) state.section = "supplies";
     var section = catalogSections.filter(function (s) { return s.key === state.section; })[0];
     if (!section) {
       subView.innerHTML = '<div class="fc-group-intro"><h4>التسعير والخدمات والباكجز</h4><p>اختار القسم لعرض التفاصيل وإدارة الأسعار.</p></div><div class="fc-section-grid acc-catalog-grid">' +
@@ -155,7 +212,7 @@
       renderCatalogIssues(subView,container);
       return;
     }
-    subView.innerHTML = '<div class="fc-section-head"><button type="button" class="btn" data-acc-back>رجوع للأقسام</button><h4 tabindex="-1" data-acc-heading>' + section.title + '</h4></div><div data-acc-detail></div>';
+    subView.innerHTML = '<div class="fc-section-head">' + (inShell ? '' : '<button type="button" class="btn" data-acc-back>رجوع للأقسام</button>') + '<h4 tabindex="-1" data-acc-heading>' + section.title + '</h4>' + (inShell ? '<p class="fc-section-hint">' + section.description + '</p>' : '') + '</div><div data-acc-detail></div>';
     var detail = subView.querySelector("[data-acc-detail]");
     if (section.key === "packages") renderPackagesScreen(detail, container);
     else renderPricingScreen(detail, container);
@@ -172,6 +229,7 @@
         else if(section.key==='packages')openPackageModal(matches[0],back);
       }
     }
+    if (inShell) return;
     subView.querySelector("[data-acc-back]").onclick = function () {
       state.section = null;
       renderSub(subView, container);

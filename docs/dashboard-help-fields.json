@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1762,
-    "labels": 1297,
-    "files": 121,
-    "groups": 1392
+    "definitions": 1764,
+    "labels": 1299,
+    "files": 122,
+    "groups": 1393
   },
   "fields": [
     {
@@ -385,6 +385,26 @@
       "tab": "accounting",
       "article": "ledger-guide",
       "text_sha256": "bd92e293d973907603dd501f77d022e8a83c6918fdc7071624e7cdf073ef8db5"
+    },
+    {
+      "file": "accounting-shell.js",
+      "label": "ابحث في أقسام الحسابات",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "accounting",
+      "article": "accounting-shell",
+      "text_sha256": "40cdfe303705f481962e63a2dc3418cbe274e29c2c735e75346c839d78964ad2"
+    },
+    {
+      "file": "accounting-shell.js",
+      "label": "ابحث في الحسابات…",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "accounting",
+      "article": "accounting-shell",
+      "text_sha256": "40cdfe303705f481962e63a2dc3418cbe274e29c2c735e75346c839d78964ad2"
     },
     {
       "file": "administrative-assistant.js",
