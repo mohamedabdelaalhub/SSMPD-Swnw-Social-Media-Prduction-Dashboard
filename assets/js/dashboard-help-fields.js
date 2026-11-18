@@ -18172,6 +18172,58 @@
       "reviewed": true
     },
     {
+      "title": "متوسط الفريق",
+      "labels": [
+        "متوسط الفريق"
+      ],
+      "text": "متوسط نقاط الموظفين اللي ليهم تقييم في الفترة (من 100)، وتحته مقارنة بالفترة اللي قبلها بنفس الطول.",
+      "article": "team-performance",
+      "tabs": [
+        "staff_kpi"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "أداء جيد (80 فأكتر)",
+      "labels": [
+        "أداء جيد (80 فأكتر)"
+      ],
+      "text": "عدد الموظفين اللي نقاطهم 80 أو أكتر من اللي ليهم تقييم في الفترة.",
+      "article": "team-performance",
+      "tabs": [
+        "staff_kpi"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "محتاجين متابعة",
+      "labels": [
+        "محتاجين متابعة"
+      ],
+      "text": "عدد الموظفين اللي عندهم مؤشر واحد على الأقل تحت 60٪ من المستهدف بعينة كفاية.",
+      "article": "team-performance",
+      "tabs": [
+        "staff_kpi"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "نشاط قليل",
+      "labels": [
+        "نشاط قليل"
+      ],
+      "text": "موظفين مفيش لهم بيانات كفاية في الفترة، فمش بيتقيّموا لحد ما يبقى فيه نشاط مسجّل.",
+      "article": "team-performance",
+      "tabs": [
+        "staff_kpi"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "من",
       "labels": [
         "من",
@@ -20904,9 +20956,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1777,
-    "labels": 1304,
+    "definitions": 1781,
+    "labels": 1308,
     "files": 123,
-    "groups": 1405
+    "groups": 1409
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
