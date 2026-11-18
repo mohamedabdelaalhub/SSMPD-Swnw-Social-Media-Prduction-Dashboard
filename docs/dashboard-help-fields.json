@@ -4,7 +4,7 @@
     "definitions": 1782,
     "labels": 1309,
     "files": 124,
-    "groups": 1410
+    "groups": 1411
   },
   "fields": [
     {
@@ -4168,8 +4168,8 @@
       "kind": "helper",
       "forms": [],
       "tab": "accounting",
-      "article": "collections",
-      "text_sha256": "231cd5ad258db6e02f26a1ab2b46378503fffee62683af0a39f70716adbe60db"
+      "article": "collect-button",
+      "text_sha256": "febb17125dbb24fa0d0a5adac958eb893ffbc1257f68e75e79950f834528835c"
     },
     {
       "file": "finance-cash.js",
