@@ -46,8 +46,9 @@ async function run({manager,snap,perf,reviews,charts}){
  assert(d.querySelector('.ph2-need.ph2-good'),'all-clear state');
  assert(!d.querySelector('[data-home-section="team"].ph2-kpi'),'no team KPI for an employee');
  // fields delivered by the separate personal_home_charts() RPC are merged in
- ({d}=await run({manager:true,snap:snapshot(),perf:null,reviews:[],charts:{trend:{mine_open:[1,2,3,4,5,6,7]},tasks:{team_load:[{assignee_name:'a',open:2,late:1,blocked:0}]}}}));
- assert.equal(d.querySelectorAll('.ph2-kpi [data-spark]').length,1,'only the series the server sent');
+ ({d}=await run({manager:true,snap:snapshot(),perf:null,reviews:[],charts:{trend:{mine_open:[1,2,3,4,5,6,7],unread:[null,null,null,null,null,2,1],approvals:[null,null,null,null,null,null,3]},tasks:{team_load:[{assignee_name:'a',open:2,late:1,blocked:0}]}}}));
+ assert.equal(d.querySelectorAll('.ph2-kpi [data-spark]').length,2,'recorded days only; one recorded day is not a line');
+ assert.equal(d.querySelector('[data-home-section="notices"] [data-spark]').dataset.spark,'2,1','leading unrecorded days are skipped');
  assert.equal(d.querySelectorAll('.ph2-loadlist li').length,1,'team_load from personal_home_charts');
  console.log('PASS home v2 charts «الرئيسية»: KPI sparklines from trend, team load (manager only, on-time = open-late-blocked), my-month card with ring/meters/weekly line + profile link, nothing drawn without data, personal_home_charts merged');process.exit(0);
 })().catch(e=>{console.error(e);process.exit(1);});

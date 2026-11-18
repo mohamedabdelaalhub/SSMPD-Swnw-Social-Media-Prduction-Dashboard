@@ -11,7 +11,8 @@
   function reduced() { return !!(w.matchMedia && w.matchMedia('(prefers-reduced-motion: reduce)').matches); }
   function el(n, a, p) { var e = d.createElementNS(NS, n); for (var k in a) e.setAttribute(k, a[k]); if (p) p.appendChild(e); return e; }
   function num(v) { return typeof v === 'number' && isFinite(v) ? v : null; }
-  function series(v) { return Array.isArray(v) && v.length >= 2 && v.every(function (x) { return num(x) !== null; }) ? v : null; }
+  // Days before a series started being recorded may come as leading nulls: draw only the recorded days (at least 2).
+  function series(v) { if (!Array.isArray(v)) return null; var i = 0; while (i < v.length && num(v[i]) === null) i++; v = v.slice(i); return v.length >= 2 && v.every(function (x) { return num(x) !== null; }) ? v : null; }
   function deptColour(name) {
     if (DEPT[name]) return DEPT[name];
     if (w.SSMPDAttendanceCore && w.SSMPDAttendanceCore.dept) { try { return w.SSMPDAttendanceCore.dept(name).col; } catch (e) { /* fall through */ } }
