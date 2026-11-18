@@ -8,7 +8,7 @@ await page.route('https://shell.test/',r=>r.fulfill({contentType:'text/html',bod
 await page.goto('https://shell.test/');for(const f of ['styles','finance-cash','accounting-shell'])await page.addStyleTag({content:fs.readFileSync('assets/css/'+f+'.css','utf8')});
 await page.addScriptTag({content:`window.calls=[];window.fixture={can_create:true,can_review:${reviewer},me:'me',closed_through:'2026-10-31',registers:[],shifts:[{id:'s1',status:'submitted',register_name:'خزينة',cashier_name:'م',opened_at:'2026-11-18T08:00:00Z'}],invoices:[],payments:[],requests:[{id:'r1',kind:'expense',status:'pending',amount:10},{id:'r2',kind:'expense',status:'approved',amount:5}],trial:[],entries:[],audit:[],disbursements:[],suppliers:[],doctor_contracts:[],employment_contracts:[]};
 window.SSMPDAuth={currentAdmin:{id:'me'}};window.SSMPDRoles={canSeeTab:()=>true,canModuleAction:()=>true};
-window.SSMPDDb={financeSnapshot:async function(from,to,offset){calls.push({from,to,offset});return {...fixture,offset};},listPricingSupplies:async()=>({data:[]}),listPricingServices:async()=>({data:[]}),listPricingPackages:async()=>({data:[]})};
+window.SSMPDDb={financeSnapshot:async function(from,to,offset){calls.push({from,to,offset});return {...fixture,offset};},listPricingSupplies:async()=>({data:[]}),listPricingServices:async()=>({data:[{id:'v',name:'خدمة اختبار',base_price:100,profit_margin_percent:20,supplies_used:[]}]}),listPricingPackages:async()=>({data:[]})};
 window.invCalls=[];window.SSMPDRenderInventory={_v:'overview',go(id){invCalls.push(id);this._v=id;},group(){return this._v;},render(el,o){el.innerHTML='<div class="inv-shell" data-inv="'+this._v+'" data-shell="'+!!(o&&o.shell)+'"><h4 data-inv-heading>inv</h4></div>';}};`});
 for(const f of ['finance-controls','finance-doctors','inventory-batch-dates','finance-suppliers','finance-bank','finance-business','finance-reports','finance-advances','finance-treasury','finance-cash','accounting-shell','render-accounting'])await page.addScriptTag({content:fs.readFileSync('assets/js/'+f+'.js','utf8')});
 await page.evaluate(()=>SSMPDRenderAccounting.render(document.querySelector('#root')));
@@ -40,6 +40,7 @@ assert.equal(await page.$eval('table[data-acs-cards] thead',t=>getComputedStyle(
 // inventory and pricing
 await go('inv:stocktakes');await page.waitForSelector('.inv-shell[data-shell="true"]');assert.deepEqual(await page.evaluate(()=>invCalls.slice(-1)),['stocktakes']);
 await go('services');await page.waitForFunction(()=>(document.querySelector('[data-acc-heading]')||{}).textContent==='الخدمات والتسعير');
+await page.waitForSelector('table.acc-table[data-acs-cards] td[data-th]');assert.equal(await page.$eval('table.acc-table[data-acs-cards] thead',t=>getComputedStyle(t).display==='none'),mobile,'pricing tables become cards on phones');
 assert.equal(await page.locator('[data-acs-go="services"][aria-current="page"]').count(),1);
 // in-page shortcut to another section (e.g. doctor accounts → «عقود الأطباء»)
 await page.evaluate(()=>{const b=document.createElement('button');b.setAttribute('data-acs-jump','doctors');b.id='jump';document.querySelector('#acc-sub-view').appendChild(b);b.click();});
