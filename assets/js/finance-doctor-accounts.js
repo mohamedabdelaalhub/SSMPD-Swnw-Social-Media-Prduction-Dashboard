@@ -101,7 +101,7 @@
   function accountsPanel(d, h) {
     var e = h.esc, m = h.money, b = h.btn;
     ensure(TAB);
-    var html = '<div data-da-tab="' + TAB + '"><p>الأطباء اللي ليهم حساب فعلي بس (أتعاب مستحقة أو مصروفات أو رصيد افتتاحي أو رصيد غير صفر). اضغط على اسم الطبيب لفتح كشف حسابه بالتفصيل. «مستحق للصرف الآن» = الرصيد بعد خصم أتعاب الفواتير اللي لسه ماتسددتش بالكامل، وهو نفس الرقم في كشف الدكتور.</p><div class="fc-actions">' +
+    var html = '<div data-da-tab="' + TAB + '"><details class="fc-explain"><summary>إزاي بتتحسب؟</summary><p>الأطباء اللي ليهم حساب فعلي بس (أتعاب مستحقة أو مصروفات أو رصيد افتتاحي أو رصيد غير صفر). اضغط على اسم الطبيب لفتح كشف حسابه بالتفصيل. «مستحق للصرف الآن» = الرصيد بعد خصم أتعاب الفواتير اللي لسه ماتسددتش بالكامل، وهو نفس الرقم في كشف الدكتور.</p></details><div class="fc-actions">' +
       b('doctor-accounts-refresh', '', 'تحديث') + (d.can_create ? b('open-disbursement', 'doctor_payment', 'طلب صرف مستحقات') : '') + '</div>';
     if (!cache) return html + '<p role="status">جاري تحميل حسابات الأطباء…</p></div>';
     if (!cache.acc.ok) {
@@ -110,7 +110,7 @@
     }
     var rows = cache.acc.v.doctors || [], now = rows.reduce(function (s, r) { return s + Number(r.payable_now || 0); }, 0), wait = rows.reduce(function (s, r) { return s + Number(r.waiting || 0); }, 0),
       owed = rows.filter(function (r) { return Number(r.payable_now) > 0; }).length;
-    html += '<div class="fc-st-cards"><div class="fc-st-card"><span>عدد الأطباء اللي ليهم حساب</span><strong>' + rows.length + '</strong></div><div class="fc-st-card ok"><span>مستحق للصرف الآن (' + owed + ' طبيب)</span><strong>' + m(now) + '</strong></div><div class="fc-st-card wait"><span>بانتظار التحصيل</span><strong>' + m(wait) + '</strong></div></div>';
+    html += '<div class="fc-st-cards fc-da-kpis"><div class="fc-st-card"><span>أطباء ليهم حساب</span><strong>' + rows.length + '</strong><small>من غير الأرصدة الصفر</small></div><div class="fc-st-card ok"><span>مستحق للصرف الآن</span><strong>' + m(now) + '</strong><small>' + (owed === 1 ? 'طبيب واحد' : owed + ' أطباء') + '</small></div><div class="fc-st-card wait"><span>بانتظار التحصيل</span><strong>' + m(wait) + '</strong><small>أتعاب فواتير لسه ماتسددتش</small></div></div>';
     html += '<div class="fc-filter-bar">' + [['all', 'الكل (' + rows.length + ')'], ['owed', 'ليهم مستحق الآن (' + owed + ')'], ['waiting', 'عندهم أتعاب بانتظار التحصيل']].map(function (c) {
       return '<button type="button" class="btn ghost sm fc-chip' + (filterKey === c[0] ? ' active' : '') + '" data-da-filter="' + c[0] + '">' + e(c[1]) + '</button>';
     }).join(' ') + '<input type="search" class="fc-name-filter" data-da-name placeholder="بحث باسم الدكتور أو كوده" value="' + e(nameFilter) + '"></div>';

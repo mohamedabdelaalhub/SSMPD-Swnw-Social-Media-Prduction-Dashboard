@@ -34,6 +34,9 @@ assert.equal(await page.locator('[data-acs-go="requests"] em').count(),reviewer?
 if(reviewer){assert.equal((await page.textContent('[data-acs-go="requests"] em')).trim(),'1','one pending request (approved one not counted)');assert.equal((await page.textContent('[data-acs-go="shifts"] em')).trim(),'1','one shift waiting for review');}
 // moving between treasury sections keeps the loaded data (no reload) and the period
 const before=await page.evaluate(()=>calls.length);await go('payments');await page.waitForFunction(()=>document.querySelector('[data-fc-heading]').textContent.trim()==='التحصيل');assert.equal(await page.evaluate(()=>calls.length),before,'switching sections does not refetch');
+// tables become one card per row on phones; every cell knows its column title
+await go('shifts');await page.waitForFunction(()=>document.querySelector('[data-fc-heading]').textContent.trim()==='الخزائن والورديات');await page.waitForSelector('table[data-acs-cards] td[data-th]');
+assert.equal(await page.$eval('table[data-acs-cards] thead',t=>getComputedStyle(t).display==='none'),mobile,'column headers hidden only on phones');
 // inventory and pricing
 await go('inv:stocktakes');await page.waitForSelector('.inv-shell[data-shell="true"]');assert.deepEqual(await page.evaluate(()=>invCalls.slice(-1)),['stocktakes']);
 await go('services');await page.waitForFunction(()=>(document.querySelector('[data-acc-heading]')||{}).textContent==='الخدمات والتسعير');
