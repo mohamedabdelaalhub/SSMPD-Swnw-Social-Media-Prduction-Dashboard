@@ -967,6 +967,9 @@ frule('hr-offboarding.js','النوع','نوع البند في المخالصة:
 frule('hr-payroll-workspace.js','النوع','نوع البند: مكافأة، أو خصم، أو نسبة خدمة. في النسبة املا الخدمة والقيمة والنسبة بدل المبلغ.','hr-payroll')
 frule('accountant-workspace.js','النوع','نوع الحساب في الشجرة: أصول أو خصوم أو حقوق ملكية أو إيرادات أو مصروفات. لازم يطابق نوع الحساب الأب.','ledger-guide')
 frule('digital-team-server-chat.js','النوع',MSG_KIND,'digital-team')
+frule('reception-workspace.js','خدمة إضافية','خدمة زيادة في نفس الحجز. لو سبت الطبيب «نفس الطبيب» بتتحجز ورا الخدمة اللي قبلها على طول (بعد الـ٥ دقايق). كل خدمة بتتسجل حجز لوحدها بسعرها.','reception-booking-extras')
+frule('reception-workspace.js','الوقت','وقت الخدمة الإضافية مع الطبيب التاني. القايمة فيها أوقاته الفاضية بعد الخدمة اللي قبلها، أو اختار «وقت تاني» واكتبه بإيدك.','reception-booking-extras')
+frule('reception-workspace.js','الوقت اللي تختاره (بتوقيت القاهرة)','اكتب أي وقت بإيدك (مثلاً 8:47). السيستم بيرفض لو الوقت خارج مواعيد الدكتور أو متعارض مع حجز تاني أو داخل الـ٥ دقايق اللي بين الحجوزات.','reception-booking-extras')
 def norm(v):
  v=re.sub(r'[\u064b-\u065f\u0670\u0640]','',v).lower();v=re.sub('[أإآٱ]','ا',v).replace('ى','ي').replace('ة','ه');v=re.sub(r'[^\w]+',' ',v).strip();return re.sub(r'(^| )ال',r'\1',v)
 def canon(v):

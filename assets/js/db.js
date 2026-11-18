@@ -1533,6 +1533,7 @@
     receptionCatalogIssues: function(){return handle(client.rpc("clinic_reception_catalog_issues",{}));},
     receptionSnapshot: function(workspace,from,to){return handle(client.rpc("clinic_reception_snapshot",{p_workspace:workspace,p_from:from,p_to:to}));},
     receptionExternalEnabled: function(){return handle(client.rpc('clinic_reception_external_enabled',{}));},
+    receptionPatientBasic: function(workspace,action,payload){return handle(client.rpc("clinic_reception_patient_basic",{p_workspace:workspace,p_action:action,p_payload:payload}));},
     receptionCommand: function(workspace,action,payload,token){return handle(client.rpc("clinic_reception_command",{p_workspace:workspace,p_action:action,p_payload:payload,p_token:token}));},
     serviceOrdersCatalog: function(workspace){return handle(client.rpc("clinic_reception_so_catalog",{p_workspace:workspace}));},
     serviceOrderAttach: function(workspace,order,ext){return handle(client.rpc("clinic_reception_so_attach",{p_workspace:workspace,p_order:order,p_ext:ext}));},

@@ -16,7 +16,7 @@ q('[data-rx-section="appointments"]').click();q('[data-rx-action="book"]').click
 assert.deepEqual(calls[0],[today,today]);
 const set=(n,v)=>{const e=q('.rx-modal [name="'+n+'"]');e.value=v;e.dispatchEvent(new w.Event('change',{bubbles:true}));};
 set('service_id','s1');set('provider_id','p1');
-const slots=()=>[...q('.rx-modal [name=starts_at]').options].filter(o=>o.value).length;
+const slots=()=>[...q('.rx-modal [name=starts_at]').options].filter(o=>o.value&&o.value!=='__custom__').length;
 assert.equal(slots(),0); // today: no availability
 set('day',tomorrow); // outside the loaded period -> must fetch that day
 await wait(()=>slots()>0);

@@ -13753,6 +13753,66 @@
       "reviewed": true
     },
     {
+      "title": "الاسم بالكامل",
+      "labels": [
+        "الاسم بالكامل"
+      ],
+      "text": "اكتب اسم المريض بعد مطابقته مع ملفه ومستنده. راجع تهجئة الاسم قبل حفظ أو طباعة التقرير؛ لا تنشئ ملفًا ثانيًا لتصحيح حرف.",
+      "article": "patient-records",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [
+        "تعديل بيانات المريض"
+      ],
+      "reviewed": true
+    },
+    {
+      "title": "رقم التليفون",
+      "labels": [
+        "رقم التليفون"
+      ],
+      "text": "اكتب رقم الهاتف الذي يمكن التواصل معه وفق الحقل. في ملف المريض راجع مطابقته للملف الحالي ولا تنشئ ملفًا مكررًا.",
+      "article": "patient-records",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [
+        "تعديل بيانات المريض"
+      ],
+      "reviewed": true
+    },
+    {
+      "title": "النوع",
+      "labels": [
+        "النوع"
+      ],
+      "text": "اختار النوع الصحيح للسجل وفق قائمة النموذج. في ملف المريض المقصود بيانات المريض، وفي طلب مالي المقصود نوع العملية.",
+      "article": "patient-records",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [
+        "تعديل بيانات المريض"
+      ],
+      "reviewed": true
+    },
+    {
+      "title": "السن",
+      "labels": [
+        "السن"
+      ],
+      "text": "اكتب عمر المريض بالوحدة المطلوبة في النموذج، ولا تستخدم تاريخ الزيارة أو رقم الملف بدل العمر. راجع توافقه مع تاريخ الميلاد إن كان مسجلًا.",
+      "article": "patient-records",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [
+        "تعديل بيانات المريض"
+      ],
+      "reviewed": true
+    },
+    {
       "title": "تاريخ الحجز بتوقيت القاهرة",
       "labels": [
         "تاريخ الحجز بتوقيت القاهرة",
@@ -13812,6 +13872,32 @@
       ],
       "text": "المبلغ اللي بيتضاف على فاتورة المريض فوق سعر الخدمة.",
       "article": "booking-flow",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "خدمة إضافية",
+      "labels": [
+        "خدمة إضافية"
+      ],
+      "text": "خدمة زيادة في نفس الحجز. لو سبت الطبيب «نفس الطبيب» بتتحجز ورا الخدمة اللي قبلها على طول (بعد الـ٥ دقايق). كل خدمة بتتسجل حجز لوحدها بسعرها.",
+      "article": "reception-booking-extras",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "الوقت",
+      "labels": [
+        "الوقت"
+      ],
+      "text": "وقت الخدمة الإضافية مع الطبيب التاني. القايمة فيها أوقاته الفاضية بعد الخدمة اللي قبلها، أو اختار «وقت تاني» واكتبه بإيدك.",
+      "article": "reception-booking-extras",
       "tabs": [
         "reception_services"
       ],
@@ -20727,9 +20813,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1763,
-    "labels": 1298,
+    "definitions": 1770,
+    "labels": 1300,
     "files": 122,
-    "groups": 1392
+    "groups": 1398
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();

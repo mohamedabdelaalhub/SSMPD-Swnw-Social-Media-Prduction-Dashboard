@@ -165,3 +165,8 @@
 /* Owner 2026-11-17: full weekday names in the week strip; keep them on one line on phones. */
 .rx-tl-wd span{white-space:nowrap}
 @media (max-width:520px){.rx-tl-wd span{font-size:10.5px;letter-spacing:-.2px}}
+/* Owner 2026-11-18: «+ إضافة خدمة» rows in the booking form */
+.rx-extras{grid-column:1/-1;display:grid;gap:8px}
+.rx-extra{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;align-items:end;padding:10px;border:1px dashed rgba(15,54,157,.35);border-radius:12px;background:rgba(15,54,157,.03)}
+.rx-extra [data-x-note]{grid-column:1/-1;margin:0}
+.rx-extra [data-x-remove]{justify-self:start}
