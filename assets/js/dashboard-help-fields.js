@@ -18330,11 +18330,11 @@
       "reviewed": true
     },
     {
-      "title": "الوصول (Reach)",
+      "title": "الوصول",
       "labels": [
-        "الوصول (Reach)"
+        "الوصول"
       ],
-      "text": "عدد الحسابات التي وصل إليها المحتوى حسب التقرير الأصلي والفترة. لا تدخل عدد المشاهدات أو مرات الظهور بدل الوصول إذا اختلف تعريفهما.",
+      "text": "عدد الحسابات اللي وصلها المحتوى في الأسبوع حسب التقرير الأصلي. ماتدخلش مرات الظهور بدل الوصول.",
       "article": "indicators",
       "tabs": [
         "summary"
@@ -19063,6 +19063,19 @@
         "design",
         "publish",
         "archive"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "اتنشر",
+      "labels": [
+        "اتنشر"
+      ],
+      "text": "عدد المواد اللي اتنشرت في الفترة المختارة (اليوم أو الأسبوع أو الشهر)، وتحته المقارنة بالفترة اللي قبلها بنفس الطول.",
+      "article": "summary-overview",
+      "tabs": [
+        "summary"
       ],
       "forms": [],
       "reviewed": true
@@ -20956,9 +20969,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1781,
-    "labels": 1308,
-    "files": 123,
-    "groups": 1409
+    "definitions": 1782,
+    "labels": 1309,
+    "files": 124,
+    "groups": 1410
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();

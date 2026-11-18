@@ -26,7 +26,7 @@ const styles=[...html.matchAll(/<link[^>]+href="([^"]+\.css)[^"]*"/g)].map(m=>m[
   await page.evaluate(()=>document.dispatchEvent(new Event('DOMContentLoaded',{bubbles:true})));
   await page.waitForSelector('#view-container');
   await page.evaluate(()=>document.querySelector('#user-dropdown [data-goto="summary"]').click());
-  await page.waitForSelector('.kpi-card');
+  await page.waitForSelector('.sv-k');// «الملخص العام» v2 (owner 2026-11-18): tiles instead of the old kpi-card grids
   // The theme must not change texts, form state, destinations or hidden controls.
   const snapshot=()=>page.evaluate(()=>({
    text:document.querySelector('#view-container').textContent,
@@ -37,12 +37,12 @@ const styles=[...html.matchAll(/<link[^>]+href="([^"]+\.css)[^"]*"/g)].map(m=>m[
   for(let last='',same=0,i=0;i<80&&same<4;i++){const cur=JSON.stringify(await snapshot());same=cur===last?same+1:0;last=cur;await page.waitForTimeout(300);}
   const before=await snapshot();await page.addStyleTag({url:'https://theme.test/assets/css/dashboard-theme.css'});
   assert.deepEqual(await snapshot(),before,'theme preserves content, form state, targets and visibility');
-  assert(await page.locator('#view-container>h2').evaluate(e=>getComputedStyle(e).backgroundImage.includes('linear-gradient')));
+  assert.equal(await page.locator('#view-container>h2').count(),0,'no hero banner on the summary (owner-approved mockup)');
   const overflow=()=>page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1);
   assert(await overflow(),'summary fits viewport '+width);
   if(process.env.RECEPTION_QA)await page.screenshot({path:path.join(process.env.RECEPTION_QA,'theme-summary-'+width+'.png'),fullPage:true});
-  const summaryColumns=await page.locator('.kpi-grid').nth(1).evaluate(e=>getComputedStyle(e).gridTemplateColumns.split(' ').length);
-  assert.equal(summaryColumns,width>=1000?3:2,'six summary metrics in balanced rows');
+  const tileRows=await page.$$eval('.sv-k',k=>{const r={};k.forEach(x=>{const t=Math.round(x.getBoundingClientRect().top);r[t]=(r[t]||0)+1;});return Object.values(r);});
+  assert.equal(new Set(tileRows).size,1,'summary tiles in balanced rows (never 3+1): '+tileRows);
   await page.evaluate(()=>{SSMPDDb.listMetaAdPerformance=async()=>Array.from({length:110},(_,i)=>({ad_id:'ad-'+i,campaign_id:'campaign-'+(i%93),account_name:'حساب اختبار',campaign_name:'حملة اختبار',spend:i?0:122112.13,reach:i?0:2226133,impressions:i?0:3217179,clicks:i?0:60064,msg_conv:i?0:6917,leads:i?0:90}));SSMPDDb.listMetaSpecialtyPerformance=async()=>[];SSMPDDb.listMetaCreativePerformance=async()=>[];SSMPDDb.listMetaLeadAttribution=async()=>[];SSMPDDb.listContentMetaPerformance=async()=>[];document.querySelector('#tabs-bar [data-tab="metaads"]').click();});
   await page.waitForSelector('#ma-kpis .kpi-card');
   assert.equal(await page.locator('#ma-kpis .kpi-card').count(),10);
