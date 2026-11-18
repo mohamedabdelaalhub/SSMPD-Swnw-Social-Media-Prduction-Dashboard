@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1777,
-    "labels": 1304,
+    "definitions": 1781,
+    "labels": 1308,
     "files": 123,
-    "groups": 1405
+    "groups": 1409
   },
   "fields": [
     {
@@ -16613,6 +16613,46 @@
       "tab": "review",
       "article": "content",
       "text_sha256": "8781afaef1012c14a5b9f99b05513e1852e02bb6c191b2fc0b339518d671a4a9"
+    },
+    {
+      "file": "render-staffkpi.js",
+      "label": "متوسط الفريق",
+      "name": "",
+      "kind": "config",
+      "forms": [],
+      "tab": "staff_kpi",
+      "article": "team-performance",
+      "text_sha256": "dc291d751ddb6e1aa313868f1a520e83df2da1c6b57bd8bd1b13448cbb8685e8"
+    },
+    {
+      "file": "render-staffkpi.js",
+      "label": "أداء جيد (80 فأكتر)",
+      "name": "",
+      "kind": "config",
+      "forms": [],
+      "tab": "staff_kpi",
+      "article": "team-performance",
+      "text_sha256": "11d52240b224df00dfae68bc8464c4af48c713174b1b710f5748eb981cf7ab73"
+    },
+    {
+      "file": "render-staffkpi.js",
+      "label": "محتاجين متابعة",
+      "name": "",
+      "kind": "config",
+      "forms": [],
+      "tab": "staff_kpi",
+      "article": "team-performance",
+      "text_sha256": "0f4bfc24f06daddbe8627695cb72a9004702c232da24d17a1160d27463a23d02"
+    },
+    {
+      "file": "render-staffkpi.js",
+      "label": "نشاط قليل",
+      "name": "",
+      "kind": "config",
+      "forms": [],
+      "tab": "staff_kpi",
+      "article": "team-performance",
+      "text_sha256": "71ea848266f51f02603346a53911bc3ff250ebd2fff1dddce084a909910abb90"
     },
     {
       "file": "render-staffkpi.js",
