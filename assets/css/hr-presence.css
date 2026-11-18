@@ -171,3 +171,7 @@
   .att-hub [data-hr-presence] .pv-follow .trio-tabs{display:flex;margin:4px 0 0}
 }
 @media(prefers-reduced-motion:reduce){.att-hub [data-hr-presence] *{animation:none!important;transition:none!important}}
+
+/* «مابصموش آخر N ساعة»: says it is live presence only (owner 2026-11-18) */
+.dlg-note{margin:0 0 10px;padding:9px 12px;border-radius:12px;background:#F3F6FC;color:#3B4658;font-size:12.5px;line-height:1.7}
+.att-hub [data-presence-dlg] .dtabs{flex-wrap:wrap;overflow:visible}

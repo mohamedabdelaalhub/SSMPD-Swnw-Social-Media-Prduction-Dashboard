@@ -4,7 +4,7 @@
   // Data = hr_presence_snapshot (fingerprint punches, device mapping, heartbeat) + hr_attendance_today (schedule verdicts) + hr_shifts_workspace (shift templates).
   // Mounted by hr-attendance-hub.js into the «الحضور اللحظي» section; loads only while that tab is open and refreshes every 15 seconds.
   var STALE_MINUTES = 5, LONG_IN_MINUTES = 14 * 60, LONG_BREAK_MINUTES = 30, REFRESH_MS = 15000, WIN_PAST = 16 * 60, WIN_FUT = 4 * 60;
-  var C = w.SSMPDAttCore, esc = C.esc, ico = C.ico, clock = C.clock, hhmm = C.hhmm, dur = C.dur, mins = C.minutesBetween, initials = C.initials;
+  var C = w.SSMPDAttCore, esc = C.esc, ico = C.ico, clock = C.clock, day = function (iso) { return new Intl.DateTimeFormat('ar-EG-u-nu-latn', { timeZone: 'Africa/Cairo', day: 'numeric', month: 'long' }).format(new Date(iso)); }, hhmm = C.hhmm, dur = C.dur, mins = C.minutesBetween, initials = C.initials;
   var STATE_LABEL = { in: ['p-in', 'حاضر'], break: ['p-break', 'استراحة'], absent: ['p-none', 'لم يصل'], up: ['p-up', 'لم يبدأ'], out: ['p-out', 'انصرف'], leave: ['p-leave', 'إجازة'], idle: ['p-out', 'لم يبصم'], nolink: ['p-up', 'غير مربوط'] };
   var FILTER_LABEL = { in: 'الموجودون', late: 'المتأخرون', abs: 'الغايبون', leave: 'في إجازة', up: 'لم يبدأوا', out: 'المنصرفون' };
   var UNMAPPED_DEPT = { id: 'unmapped', name: 'أرقام غير مربوطة بموظف', icon: 'link', col: '#6B7688', tint: '#EEF1F6', min: 0 };
@@ -263,7 +263,7 @@
     // ---------- link manager dialog ----------
     function dialogHtml() {
       if (!S.dlg) return '';
-      var tabs = [['unmapped', 'غير مربوطة', M.unmapped.length], ['ignored', 'متجاهلة (غير إدارية)', M.ignored.length], ['none', 'مربوطون ولم يبصموا', M.noPunch.length]], h = '', t = S.dlgTab;
+      var tabs = [['unmapped', 'غير مربوطة', M.unmapped.length], ['ignored', 'متجاهلة (غير إدارية)', M.ignored.length], ['none', 'مابصموش آخر ' + (snap.lookback_hours || 16) + ' ساعة', M.noPunch.length]], h = '', t = S.dlgTab;
       var opts = '<option value="">اختر الموظف…</option>' + (snap.people || []).map(function (p) { return '<option value="' + esc(p.id) + '">' + esc(p.full_name + ' — ' + p.code) + '</option>'; }).join('');
       if (t === 'unmapped') h = M.unmapped.map(function (r) {
         return '<div class="dr" data-presence-unmapped><span class="num">' + esc(r.device_user_id) + '</span><div class="tx"><b>رقم الجهاز ' + esc(r.device_user_id) + '</b><small>' + (r.last_punch_at ? 'آخر بصمة ' + esc(clock(r.last_punch_at)) + ' · منذ ' + esc(dur(mins(r.last_punch_at, M.now))) : 'بدون بصمات حديثة') + '</small></div>' +
@@ -272,9 +272,12 @@
       if (t === 'ignored') h = M.ignored.map(function (r) {
         return '<div class="dr"><span class="num" style="background:var(--out-t);color:var(--out)">' + esc(r.device_user_id) + '</span><div class="tx"><b>رقم الجهاز ' + esc(r.device_user_id) + '</b><small>مخفي من «الحضور»' + (r.last_punch_at ? ' · آخر بصمة ' + esc(clock(r.last_punch_at)) : '') + '</small></div><button type="button" class="mini" data-presence="unignore" data-id="' + esc(key(r)) + '">إلغاء التجاهل</button></div>';
       }).join('');
+      // «none» from hr_presence_snapshot only means «no punch inside the look-back window» — never «never punched» (owner 2026-11-18)
       if (t === 'none') h = M.noPunch.map(function (p) {
-        return '<div class="dr"><span class="num">' + esc(initials(p.name)) + '</span><div class="tx"><b>' + esc(p.name) + '</b><small>' + esc(p.dept.name) + (p.role ? ' · ' + esc(p.role) : '') + '</small></div><button type="button" class="mini" data-presence="map" data-id="' + esc(key(p.r)) + '">تغيير الربط</button></div>';
+        var last = p.r && p.r.last_punch_at ? ' · آخر بصمة ' + esc(day(p.r.last_punch_at)) + ' ' + esc(clock(p.r.last_punch_at)) : '';
+        return '<div class="dr"><span class="num">' + esc(initials(p.name)) + '</span><div class="tx"><b>' + esc(p.name) + '</b><small>' + esc(p.dept.name) + (p.role ? ' · ' + esc(p.role) : '') + last + '</small></div><button type="button" class="mini" data-presence="map" data-id="' + esc(key(p.r)) + '">تغيير الربط</button></div>';
       }).join('');
+      if (t === 'none' && h) h = '<p class="dlg-note" data-presence-none-note>دول موظفين مربوطين بالجهاز بس مفيش ليهم بصمة في آخر ' + esc(snap.lookback_hours || 16) + ' ساعة. ده حضور لحظي بس — بصمات الأيام اللي فاتت موجودة في تقرير الحضور.</p>' + h;
       return '<div class="dlg-ov" data-presence-dlg><section class="dlg" role="dialog" aria-modal="true" aria-label="إدارة ربط أرقام الجهاز"><header><h3>' + ico('link') + 'إدارة ربط أرقام الجهاز</h3><button type="button" class="mini" data-presence="dlg-close" aria-label="إغلاق">' + ico('x') + '</button></header><div class="dtabs" role="tablist">' +
         tabs.map(function (x) { return '<button type="button" role="tab" aria-selected="' + (t === x[0]) + '" data-presence="dlg-tab" data-id="' + x[0] + '">' + x[1] + ' (' + x[2] + ')</button>'; }).join('') + '</div><div class="dlg-body">' + (h || '<div class="empty">لا يوجد شيء هنا.</div>') + '</div></section></div>';
     }

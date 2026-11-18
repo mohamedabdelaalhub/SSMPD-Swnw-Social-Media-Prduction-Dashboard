@@ -86,7 +86,9 @@ const workspace = () => ({ can_manage: true, today: '2026-11-12', templates: [{ 
 
   // ---- link manager dialog: payloads
   assert(root().querySelector('[data-presence=dlg-open] .badge').textContent === '1', 'badge = unmapped numbers'); root().querySelector('[data-presence=dlg-open]').click();
-  const dlg = () => root().querySelector('[data-presence-dlg]'); assert(dlg()); assert.deepEqual([...dlg().querySelectorAll('[role=tab]')].map(b => b.textContent), ['غير مربوطة (1)', 'متجاهلة (غير إدارية) (1)', 'مربوطون ولم يبصموا (3)']);
+  const dlg = () => root().querySelector('[data-presence-dlg]'); assert(dlg()); assert.deepEqual([...dlg().querySelectorAll('[role=tab]')].map(b => b.textContent), ['غير مربوطة (1)', 'متجاهلة (غير إدارية) (1)', 'مابصموش آخر 16 ساعة (3)']);
+  dlg().querySelector('[data-id=none]').click(); assert(dlg().querySelector('[data-presence-none-note]').textContent.includes('آخر 16 ساعة'), 'no-punch tab explains it is the look-back window only'); assert(dlg().querySelector('[data-presence-none-note]').textContent.includes('تقرير الحضور'));
+  dlg().querySelector('[data-id=unmapped]').click();
   const pick = dlg().querySelector('[data-presence-pick]'); assert.deepEqual([...pick.options].map(o => o.value), ['', 'p1', 'p2'], 'people offered');
   const nCalls = t.calls.length; dlg().querySelector('[data-presence=dlg-map]').click(); await t.tick(); assert.equal(t.calls.length, nCalls, 'no person picked -> nothing sent');
   pick.value = 'p2'; dlg().querySelector('[data-presence=dlg-map]').click(); await t.tick(); await t.tick();
