@@ -66,6 +66,11 @@ Deno.serve(async req=>{
     db.from("administrative_assistant_audit").select("at,event_type,detail").in("event_type",["task_review_action","task_overdue_nudge"]).order("at",{ascending:false}).limit(500)
   ]);
   if(rv.error||od.error)return json({error:(rv.error||od.error)?.message},500);
+  // Test accounts (swnwclinics+…@gmail.com, e.g. «Staff Test») are for training videos, not staff:
+  // never review, nudge or notify them (owner 2026-11-18). Same convention as ui_usage_track.
+  const tst=await db.from("admins").select("id").ilike("email","swnwclinics+%@gmail.com");
+  const testIds=new Set((tst.data||[]).map((a:any)=>a.id));
+  if(testIds.size){rv.data=(rv.data||[]).filter((t:any)=>!testIds.has(t.assignee_id));od.data=(od.data||[]).filter((t:any)=>!testIds.has(t.assignee_id))}
   const last=new Map<string,any>();
   for(const x of ah.data||[]){const id=String(x.detail?.task_id||"");if(id&&!last.has(id))last.set(id,x)}
   // A newly verified attachment may justify another owner review even without mutating the original task.
