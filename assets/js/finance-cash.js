@@ -8,7 +8,8 @@ function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){retur
 function money(v){return Number(v||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function stamp(v){return v?new Date(v).toLocaleString('ar-EG-u-nu-latn',{timeZone:'Africa/Cairo'}):'—';}
 function token(){return crypto.randomUUID();}
-function note(e){return (e&&e.message)||'تعذر تنفيذ العملية';}
+/* owner 2026-11-18: never show a raw English/technical error — server messages in Arabic pass through as they are */
+function note(e){var m=(e&&e.message)||'';return /[\u0600-\u06FF]/.test(m)?m:'حصلت مشكلة ومقدرناش نكمل العملية. جرّب تاني، ولو المشكلة فضلت ابعت صورة الشاشة للمسؤول.';}
 var labels={cash:'نقدي',pos:'فيزا / بطاقة',instapay:'إنستا باي',bank:'بنك',wallet:'محفظة',open:'مفتوحة',submitted:'للمراجعة',reviewed:'تمت المراجعة',pending:'قيد المراجعة',approved:'معتمد',rejected:'مرفوض',refund:'استرداد خدمة',expense:'نثريات',fund:'تمويل من البنك',deposit:'توريد للبنك',opening:'رصيد افتتاحي',void:'إلغاء خدمة غير محصلة'};
 function btn(action,id,text){return '<button type="button" class="btn ghost sm" data-fin-action="'+action+'" data-id="'+esc(id||'')+'">'+esc(text)+'</button>';}
 function table(headers,rows){return rows.length?'<div class="fc-table"><table class="simple"><thead><tr>'+headers.map(function(x){return '<th>'+esc(x)+'</th>';}).join('')+'</tr></thead><tbody>'+rows.map(function(row){return '<tr>'+row.map(function(v){return '<td>'+v+'</td>';}).join('')+'</tr>';}).join('')+'</tbody></table></div>':'<p class="fc-empty">لا توجد حركات في هذا العرض.</p>';}
