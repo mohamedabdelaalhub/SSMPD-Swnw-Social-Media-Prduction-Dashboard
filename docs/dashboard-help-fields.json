@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1749,
-    "labels": 1287,
-    "files": 120,
-    "groups": 1381
+    "definitions": 1762,
+    "labels": 1297,
+    "files": 121,
+    "groups": 1392
   },
   "fields": [
     {
@@ -7256,6 +7256,136 @@
       "tab": "human_resources",
       "article": "hr-offboarding",
       "text_sha256": "e4f18f30d37018e1cf38064c92538b71400ae612373fd24cef59e3b8236035cd"
+    },
+    {
+      "file": "hr-overtime.js",
+      "label": "الموظف",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "payroll",
+      "text_sha256": "0bebb1d1c5ab3b012283d97c05868f2efdf999e5577aad040d7d7e49bca4524c"
+    },
+    {
+      "file": "hr-overtime.js",
+      "label": "اليوم",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "personal",
+      "text_sha256": "5124563f386757810c60ae86fc95904a13532f1a872fcd3579613f304338e13d"
+    },
+    {
+      "file": "hr-overtime.js",
+      "label": "المدة بالدقايق",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "hr-overtime",
+      "text_sha256": "287309f765c9510091deb8bcac16403670c20a18709f06771d9f2b028c84e73a"
+    },
+    {
+      "file": "hr-overtime.js",
+      "label": "المهمة (اختياري)",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "tasks-guide",
+      "text_sha256": "0aaf0d827eb183a4ee09e3dab4552ba4723bd9e2e7b591aa22a1004976ff636c"
+    },
+    {
+      "file": "hr-overtime.js",
+      "label": "ليه محتاج تقعد بعد الشيفت؟",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "hr-overtime",
+      "text_sha256": "01c093083e1b9bd0baf3cf35eb8f75dd25c7fad78f77915e2d24cdd3482bf549"
+    },
+    {
+      "file": "hr-overtime.js",
+      "label": "السبب",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "requests",
+      "text_sha256": "80a0c51a0ba10ff7f4fe6f627b68c4e009f932e1abdff544c26e792f5f0e9e49"
+    },
+    {
+      "file": "hr-overtime.js",
+      "label": "الوقت المتوقع للمهمة (دقايق)",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "hr-overtime",
+      "text_sha256": "ff3943f40578085fbd1711ae2e17ae5995767f3b7763ed5f7836e568e6999202"
+    },
+    {
+      "file": "hr-overtime.js",
+      "label": "الدقايق المعتمدة",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "hr-overtime",
+      "text_sha256": "7246e27777e6673ff784d3b58bc0cfdec217fd4f86800850f63652e1436b9111"
+    },
+    {
+      "file": "hr-overtime.js",
+      "label": "ملاحظة / سبب الرفض",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "hr-overtime",
+      "text_sha256": "78e8294f581dd34caa93d1c43e20656fe7fdcdba6a2619a70fa3ab2c6ce1aac3"
+    },
+    {
+      "file": "hr-overtime.js",
+      "label": "شهر التقرير",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "hr-overtime",
+      "text_sha256": "0aa3d9b3ba56e4f334e84cd6ae8cb1062c1bf93a87047e1e972cfe52721aa25e"
+    },
+    {
+      "file": "hr-overtime.js",
+      "label": "سماح المهمة ٪",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "hr-overtime",
+      "text_sha256": "c4e4ec20574944b6510708602ed6c2f2df5184ed118e3c9387a660c2cb4df9cb"
+    },
+    {
+      "file": "hr-overtime.js",
+      "label": "تنبيه لو قعد بدون إذن أكتر من (دقيقة)",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "hr-overtime",
+      "text_sha256": "876e3c0799e6699271ae3398419c7a2b8883d48334d4c877ddf00b236c3a0001"
+    },
+    {
+      "file": "hr-overtime.js",
+      "label": "عدد المرات في الشهر علشان يتعلّم للموارد البشرية",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "hr-overtime",
+      "text_sha256": "48218590b31e480dd9b74fdd88965deeb95d8d79cc2e09379ce0d58f25dfe393"
     },
     {
       "file": "hr-payroll-workspace.js",
