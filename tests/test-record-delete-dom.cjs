@@ -58,9 +58,18 @@ const { JSDOM } = require('jsdom'), fs = require('fs'), assert = require('node:a
   // 6. unflag asks for a reason
   w.prompt = () => 'تراجعت'; row.querySelector('[data-tr-unflag]').click(); await tick(); await tick();
   assert.deepEqual(calls.filter(c => c[0] === 'unflag').pop(), ['unflag', 'invoice', 'i9', 'تراجعت']); assert.equal($$('[data-tr-flag-row]').length, 0);
+  // 6b. type «مقدم حجز» (20261118190000): offered in the picker, sent as 'advance', its badge and tables are named in Arabic
+  assert.deepEqual($$('[data-tr-search] select[name=type] option').map(o => [o.value, o.textContent]).pop(), ['advance', 'مقدم حجز']);
+  await search('advance', '99999'); assert.deepEqual(calls.pop(), ['find', 'advance', '99999']);
+  flags.push({ type: 'advance', key: 'a1', label: 'مقدم حجز 99999', reason: 'تجربة', flagged_at: '2026-11-18', flagged_by: 'المالك' }); blockers = [];
+  dels.unshift({ id: 'd2', type: 'advance', label: 'مقدم حجز 1', reason: 'تنظيف', deleted_at: '2026-11-18T11:00:00Z', deleted_by: 'المالك', counts: { 'clinic_finance.advances': 1, 'clinic_finance.advance_proofs': 1, 'clinic_finance.entries': 2 } });
+  $('[data-tr-close]').click(); card.querySelector('[data-test-records-open]').click(); await tick(); await tick();
+  assert.equal($('[data-tr-flag-row] .badge').textContent, 'مقدم حجز'); assert(!$('[data-tr-flag-row] [data-tr-del-open]').disabled);
+  assert($('[data-tr-history]').textContent.includes('مقدم حجز: 1 — إثبات تحصيل مقدم: 1 — قيد يومية: 2'), 'advance tables named in Arabic');
+  assert(card.textContent.includes('مقدم حجز'), 'the card mentions the new type');
   // 7. close, and the migration not applied yet
   $('[data-tr-close]').click(); assert.equal(m(), null);
   mode = 'missing'; const w2 = await mk('super_admin', db); w2.document.querySelector('[data-test-records-open]').click(); await tick(); await tick();
   assert(w2.document.querySelector('[data-tr-error]').textContent.includes('لم تُفعَّل بعد'), 'clear message when the DB update is not applied');
-  console.log('PASS test-record delete DOM: owner-only card, search/scan, flag + delete with typed confirmations, blockers shown and delete disabled, unflag, history, errors in Arabic, not-applied message');
+  console.log('PASS test-record delete DOM: owner-only card, search/scan, flag + delete with typed confirmations, blockers shown and delete disabled, unflag, history, advance type, errors in Arabic, not-applied message');
 })().catch(e => { console.error(e); process.exitCode = 1; });
