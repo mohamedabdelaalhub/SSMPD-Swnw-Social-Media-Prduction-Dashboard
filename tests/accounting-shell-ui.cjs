@@ -41,6 +41,9 @@ assert.equal(await page.$eval('table[data-acs-cards] thead',t=>getComputedStyle(
 await go('inv:stocktakes');await page.waitForSelector('.inv-shell[data-shell="true"]');assert.deepEqual(await page.evaluate(()=>invCalls.slice(-1)),['stocktakes']);
 await go('services');await page.waitForFunction(()=>(document.querySelector('[data-acc-heading]')||{}).textContent==='الخدمات والتسعير');
 assert.equal(await page.locator('[data-acs-go="services"][aria-current="page"]').count(),1);
+// in-page shortcut to another section (e.g. doctor accounts → «عقود الأطباء»)
+await page.evaluate(()=>{const b=document.createElement('button');b.setAttribute('data-acs-jump','doctors');b.id='jump';document.querySelector('#acc-sub-view').appendChild(b);b.click();});
+await page.waitForFunction(()=>document.querySelector('[data-acs-go="doctors"][aria-current="page"]'));
 // search filters the rail
 if(mobile){await page.click('[data-acs-open]');await page.waitForTimeout(450);}
 await page.fill('[data-acs-q]','الأطباء');assert.equal(await page.locator('[data-acs-go]:visible').count(),2,'search keeps حساب الأطباء + عقود الأطباء');await page.fill('[data-acs-q]','');
