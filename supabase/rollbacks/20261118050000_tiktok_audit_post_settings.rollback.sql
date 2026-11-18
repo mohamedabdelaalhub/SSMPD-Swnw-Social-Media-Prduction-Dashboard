@@ -1,4 +1,4 @@
--- Rollback for 20261118030000_tiktok_audit_post_settings.sql (TikTok audit post settings).
+-- Rollback for 20261118050000_tiktok_audit_post_settings.sql (TikTok audit post settings).
 -- Drops the edited caption and AI flag (the worker falls back to the content caption) and restores the old insert policy.
 begin;
 drop policy if exists "publish roles insert TikTok jobs" on public.tiktok_publish_jobs;
