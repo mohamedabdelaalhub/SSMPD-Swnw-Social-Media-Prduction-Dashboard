@@ -1,13 +1,14 @@
 // Fallback booking for the WhatsApp agent (and later the website) while the Masa bridge is down.
 // Machine-to-machine: authenticates with the existing BOOKING_SYNC_SECRET header, never a dashboard user JWT.
 // All logic lives in clinic_reception.fallback_api (service role only). This function never calls Masa and sends no messages.
-// Ops: health | slots | book | cancel | status | pending_replay | replay_result. Errors return {ok:false,error:<code>}.
+// Ops: health | slots | book | cancel | status | pending_replay | replay_result | reconcile_list | masa_import | reconcile_flag. Errors return {ok:false,error:<code>}.
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SYNC_SECRET = Deno.env.get("BOOKING_SYNC_SECRET");
-const OPS = new Set(["health", "slots", "book", "cancel", "status", "pending_replay", "replay_result"]);
+const OPS = new Set(["health", "slots", "book", "cancel", "status", "pending_replay", "replay_result",
+  "reconcile_list", "masa_import", "reconcile_flag"]);
 
 function getServiceRoleKey(): string | null {
   const raw = Deno.env.get("SUPABASE_SECRET_KEYS");
