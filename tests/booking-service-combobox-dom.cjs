@@ -49,7 +49,7 @@ assert.deepEqual(provs(),['د. منى','د. هالة']); // today's behaviour: d
 type('#rx-svc-q','متابعة حم');assert.equal(q('[name=service_id]').value,'');assert.deepEqual(provs(),[]);assert.equal(q('#rx-svc-q').validity.valid,false);
 // mouse pick, then clear button
 type('#rx-svc-q','جير');q('#rx-svc-list [data-i="0"]').dispatchEvent(new w.MouseEvent('mousedown',{bubbles:true,cancelable:true}));assert.equal(q('[name=service_id]').value,'s4');assert.equal(q('#rx-svc-q').validity.valid,true);
-q('.rx-combo-clear').click();assert.equal(q('[name=service_id]').value,'');assert.equal(q('#rx-svc-q').value,'');assert.equal(q('.rx-combo-clear').hidden,true);
+q('.rx-combo-field .rx-combo-clear').click();assert.equal(q('[name=service_id]').value,'');assert.equal(q('#rx-svc-q').value,'');assert.equal(q('.rx-combo-field .rx-combo-clear').hidden,true);
 // Escape closes the list only; second Escape closes the modal
 type('#rx-svc-q','حشو');assert.equal(q('#rx-svc-list').hidden,false);key('Escape');assert(q('.rx-modal'));assert.equal(q('#rx-svc-list').hidden,true);
 q('#rx-svc-q').dispatchEvent(new w.KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true}));assert.equal(q('.rx-modal'),null);
@@ -68,7 +68,7 @@ dept('');type('#rx-svc-q','كشف عام');key('Enter');assert.equal(q('[name=se
 dept('أسنان');dept('');type('#rx-svc-q','حمل');key('Enter');assert.deepEqual(provs(),['د. منى','د. هالة']); // other services unchanged
 
 // submit requires a chosen service; chosen service is what gets saved
-q('.rx-combo-clear').click();q('.rx-modal [name=patient_id]').value='pt';q('.rx-modal form [type=submit]').click();await new Promise(r=>setTimeout(r,30));assert.equal(submitted,null);assert.equal(q('.rx-modal [name=service_id]').value,'');
+q('.rx-combo-field .rx-combo-clear').click();q('.rx-modal [name=patient_id]').value='pt';q('.rx-modal form [type=submit]').click();await new Promise(r=>setTimeout(r,30));assert.equal(submitted,null);assert.equal(q('.rx-modal [name=service_id]').value,'');
 assert.equal(errors.length,0,errors.join('|'));
 console.log('PASS booking service combobox + department filter: DOM');
 process.exit(0);
