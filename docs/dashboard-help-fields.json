@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1762,
-    "labels": 1297,
+    "definitions": 1761,
+    "labels": 1296,
     "files": 121,
-    "groups": 1392
+    "groups": 1391
   },
   "fields": [
     {
@@ -16285,16 +16285,6 @@
       "tab": "publish",
       "article": "publishing-guide",
       "text_sha256": "c0435ea3e16fdf54969a0cc2c64a02ef2285b36cac1eeb0795f87508229e7c6d"
-    },
-    {
-      "file": "render-publish.js",
-      "label": "خصوصية فيديو TikTok",
-      "name": "",
-      "kind": "label",
-      "forms": [],
-      "tab": "publish",
-      "article": "publishing-guide",
-      "text_sha256": "69eacf69fc055bf9d0c0471be09c1a13798ce77e78e26c0f23a37c885ed98b14"
     },
     {
       "file": "render-publish.js",

@@ -17820,19 +17820,6 @@
       "reviewed": true
     },
     {
-      "title": "خصوصية فيديو TikTok",
-      "labels": [
-        "خصوصية فيديو TikTok"
-      ],
-      "text": "مين يقدر يشوف الفيديو على TikTok. لازم تختار بنفسك قبل النشر.",
-      "article": "publishing-guide",
-      "tabs": [
-        "publish"
-      ],
-      "forms": [],
-      "reviewed": true
-    },
-    {
       "title": "عنوان فيديو يوتيوب (لحد ١٠٠ حرف)",
       "labels": [
         "عنوان فيديو يوتيوب (لحد ١٠٠ حرف)"
@@ -20725,9 +20712,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1762,
-    "labels": 1297,
+    "definitions": 1761,
+    "labels": 1296,
     "files": 121,
-    "groups": 1392
+    "groups": 1391
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
