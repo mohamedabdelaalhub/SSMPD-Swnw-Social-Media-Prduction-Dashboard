@@ -29,7 +29,7 @@ function mount(container,admins){
    var detail=node('section','aw-person-detail');detail.id='aw-person-'+a.id;detail.hidden=true;detail.dataset.adminPerson=a.id;var title=node('header','aw-person-head'),titleText=node('div');titleText.append(node('h3','',a.name||a.email),node('p','aw-email',a.email));var close=node('button','btn ghost','إغلاق التفاصيل');close.type='button';close.onclick=function(){state.selected='';paint();var b=people[a.id].card;b.focus();};title.append(titleText,close);detail.appendChild(title);
    var group=node('div','aw-permission-grid');Array.from(row.cells).forEach(function(cell,j){if(j<2)return;if(j===row.cells.length-1){var actions=node('div','aw-person-actions');while(cell.firstChild)actions.appendChild(cell.firstChild);detail.appendChild(actions);return;}
     var field=node(j===3?'fieldset':'div','aw-permission');if(j===3){field.appendChild(node('legend','',labels[j]||'أدوار إضافية'));while(cell.firstChild)field.appendChild(cell.firstChild);}else {var control=cell.querySelector('input,select');var label=node(control?'label':'div','',labels[j]||'الحالة');while(cell.firstChild)label.appendChild(cell.firstChild);field.appendChild(label);}group.appendChild(field);
-   });detail.insertBefore(group,detail.querySelector('.aw-person-actions'));detail.appendChild(node('p','aw-save-hint','تغييرات الاختيارات تتحفظ مباشرة. الأزرار الحساسة تحتفظ بتأكيداتها الحالية.'));selectedHost.appendChild(detail);
+   });detail.insertBefore(group,detail.querySelector('.aw-person-actions'));detail.appendChild(node('p','aw-save-hint','تغييرات الاختيارات تتحفظ مباشرة. الأزرار الحساسة تحتفظ بتأكيداتها الحالية.'));polish(detail,a);selectedHost.appendChild(detail);
    var card=node('button','aw-person-card');card.type='button';card.dataset.selectPerson=a.id;card.setAttribute('aria-controls',detail.id);var avatar=node('span','aw-avatar',(a.name||a.email||'م').trim().split(/\s+/).slice(0,2).map(function(v){return v[0];}).join(''));var info=node('span','aw-person-info');info.append(node('strong','',a.name||'بدون اسم'),node('span','aw-email',a.email),node('small','',root.SSMPDRoles.label(a.role)));card.append(avatar,info,node('span','aw-person-state '+(a.active?'active':'inactive'),a.active?'مفعّل':'موقوف'));card.onclick=function(){state.selected=state.selected===a.id?'':a.id;paint();if(state.selected){detail.scrollIntoView({behavior:'smooth',block:'start'});titleText.querySelector('h3').tabIndex=-1;titleText.querySelector('h3').focus({preventScroll:true});}};cards.appendChild(card);people[a.id]={admin:a,card:card,detail:detail};
   });if(table)table.remove();
   var empty=node('div','aw-empty');empty.append(node('h3','','لا توجد نتائج مطابقة'),node('p','','جرّب اسمًا آخر أو اعرض كل المستخدمين.'));var reset=node('button','btn ghost','عرض كل المستخدمين');reset.type='button';reset.onclick=function(){state.query='';state.filter='all';input.value='';select.value='all';paint();};empty.appendChild(reset);userSource.insertBefore(empty,selectedHost);
@@ -40,6 +40,52 @@ function mount(container,admins){
  [['كل المستخدمين',admins.length,'all'],['حسابات مفعلة',admins.filter(function(a){return a.active;}).length,'active'],['حسابات موقوفة',admins.filter(function(a){return !a.active;}).length,'inactive'],['بانتظار التسجيل',admins.filter(function(a){return !a.user_id;}).length,'pending']].forEach(function(x){var b=node('button','aw-stat');b.type='button';b.append(node('span','',x[0]),node('strong','',x[1]));b.onclick=function(){state.filter=x[2];state.query='';if(userPanel){select.value=state.filter;input.value='';paint();show('users');}};stats.appendChild(b);});
  function show(view,initial){state.view=view==='home'||panelMap[view]?view:'home';home.hidden=state.view!=='home';Object.keys(panelMap).forEach(function(k){panelMap[k].hidden=k!==state.view;});if(!initial){var focus=state.view==='home'?welcome.querySelector('h1'):headMap[state.view];focus.tabIndex=-1;focus.focus({preventScroll:true});wrap.scrollIntoView({behavior:'smooth',block:'start'});}}
  container.prepend(wrap);show(state.view,true);
+}
+
+/* Employee detail layout (owner-approved mockup docs/ui-references/mockups/admin-user.html, 2026-11-18).
+   Only moves and restyles the controls render-admin.js already built and bound: no new writes, same confirmations. */
+var ROLE_GROUPS=[['المحتوى والتسويق',['page_manager','designer','approver']],['المرضى والعيادات',['reception','customer_service','nursing','head_nursing','sono_doctor','psychology_specialist']],['الإدارة والمالية',['general_manager','super_admin','financial_manager','accountant','contract_manager']]];
+var PERMS=[['الإدارة',[['[data-workforce-key=has_hr_access]','إدارة الموارد البشرية','الحضور والورديات والمرتبات'],['[data-workforce-key=has_price_lists_access]','إدارة لوائح الأسعار','تعديل أسعار الخدمات'],['[data-workforce-key=can_approve_doctor_payouts]','اعتماد صرف حسابات الأطباء','الموافقة على صرف الأتعاب']]],
+ ['أرشيف المرضى',[['[data-archive]','أرشيف المرضى','فتح ملفات المرضى ورفعها'],['[data-archive-view-only]','معاينة الأرشيف فقط','يشوف ويفتح الملفات من غير رفع أو حذف'],['[data-archive-review]','اعتماد ملفات المرضى','مراجعة الملفات المرفوعة'],['[data-verification-access]','تحقق هوية المرضى','اعتماد طلبات بوابة المريض — حساسة']]],
+ ['الليدز والتغذية',[['[data-leads-archive-access]','أرشيف الليدز','يشوف الليدز القديمة ويشتغل عليها'],['[data-delete-leads]','حذف الليدز','حذف نهائي — بحذر',1],['[data-delete-nutrition-visits]','حذف زيارات التغذية','حذف نهائي — بحذر',1]]]];
+var PERM_BY={};PERMS.forEach(function(g){g[1].forEach(function(p){PERM_BY[p[0]]=p;});});
+function card(title,sub,cls){var c=node('section','aw2-card'+(cls?' '+cls:'')),h=node('div','aw2-ch'),t=node('div');t.append(node('h4','',title));if(sub)t.append(node('small','',sub));h.appendChild(t);c.appendChild(h);return c;}
+function permRow(input,def){var row=node('div','aw-permission aw2-row'+(def&&def[3]?' aw2-danger':'')),label=node('label','aw2-sw'),txt=node('span','aw2-t');
+ var title=def?def[1]:((input.closest('label')||input.parentNode).textContent||'').trim(),desc=def?def[2]:'';if(input.disabled&&input.checked)desc='متاحة تلقائيًا من الدور';
+ txt.append(node('b','',title));if(desc)txt.append(node('small','',desc));label.append(txt,input);input.classList.add('aw2-switch');input.setAttribute('role','switch');row.appendChild(label);return row;}
+function normalize(list){Array.from(list.children).forEach(function(f){if(f.classList.contains('aw2-row')||f.classList.contains('aw2-sub'))return;var input=f.querySelector('input[type=checkbox]');if(!input){f.remove();return;}
+ var def=null;Object.keys(PERM_BY).forEach(function(k){if(input.matches(k))def=PERM_BY[k];});f.replaceWith(permRow(input,def));});}
+function polish(detail,a){
+ var grid=detail.querySelector('.aw-permission-grid'),actions=detail.querySelector('.aw-person-actions'),head=detail.querySelector('.aw-person-head');if(!grid||!actions||!head)return;
+ var roleSel=grid.querySelector('select[data-role]'),primaryField=roleSel&&roleSel.closest('.aw-permission'),extraField=grid.querySelector('fieldset'),statusPill=grid.querySelector('.status-pill');
+ // header: active switch (clicks the original «إيقاف/تفعيل» button so its confirmation stays) + summary chips
+ var toggle=actions.querySelector('[data-toggle]'),side=node('div','aw2-head-side');
+ if(toggle){var sw=node('button','aw2-state');sw.type='button';sw.setAttribute('aria-pressed',String(!!a.active));sw.disabled=toggle.disabled;sw.append(node('span','',a.active?'مفعّل':'موقوف'),node('i'));sw.title=a.active?'إيقاف الحساب':'تفعيل الحساب';sw.onclick=function(){toggle.click();};toggle.hidden=true;side.appendChild(sw);}
+ var close=head.querySelector('.btn');if(close)side.appendChild(close);head.appendChild(side);
+ var sum=node('div','aw2-sum');head.appendChild(sum);
+ var col=node('div','aw2-col'),layout=node('div','aw2-layout');
+ // primary role
+ var prim=card('الدور الأساسي','بيحدد التابات اللي بتظهرله');if(roleSel){var pf=node('div','aw2-field');pf.appendChild(roleSel);if(primaryField)Array.from(primaryField.querySelectorAll('p')).forEach(function(p){p.className='aw2-hint';pf.appendChild(p);});pf.appendChild(node('p','aw2-hint','لو محتاج يشتغل في أكتر من مكان، زوّد دور إضافي بدل ما تغيّر الأساسي.'));prim.appendChild(pf);}col.appendChild(prim);
+ // permissions list (keeps the .aw-permission-grid class so late add-ons still find it)
+ var perms=card('صلاحيات خاصة','كل مفتاح بيتحفظ لوحده أول ما تدوس عليه','aw2-perms'),list=node('div','aw-permission-grid aw2-list');perms.appendChild(list);
+ var inputs=[];if(extraField)extraField.querySelectorAll('input[data-workforce-grant]').forEach(function(i){inputs.push(i);});grid.querySelectorAll('input[type=checkbox]').forEach(function(i){if(!i.matches('[data-extra-role],[data-workforce-grant]'))inputs.push(i);});
+ PERMS.forEach(function(g){var rows=[];g[1].forEach(function(p){inputs.forEach(function(i){if(i.matches(p[0]))rows.push(permRow(i,p));});});if(!rows.length)return;list.appendChild(node('div','aw2-sub',g[0]));rows.forEach(function(r){list.appendChild(r);});});
+ inputs.forEach(function(i){if(!list.contains(i))list.appendChild(permRow(i,null));});
+ new MutationObserver(function(){normalize(list);count();}).observe(list,{childList:true});
+ // extra roles as grouped chips (the original checkbox stays inside each chip)
+ var roles=card('أدوار إضافية','دوس على الدور يتفعّل أو يتشال'),rc=node('em','aw2-count');roles.querySelector('.aw2-ch').appendChild(rc);var byKey={};
+ if(extraField)extraField.querySelectorAll('input[data-extra-role]').forEach(function(i){var l=i.closest('label');if(!l)return;l.removeAttribute('style');l.className='aw2-chip';byKey[i.dataset.extraRoleValue]=l;});
+ var used={};ROLE_GROUPS.forEach(function(g){var chips=g[1].filter(function(k){return byKey[k];});if(!chips.length)return;var grp=node('div','aw2-grp'),box=node('div','aw2-chips');grp.append(node('h5','',g[0]),box);chips.forEach(function(k){box.appendChild(byKey[k]);used[k]=1;});roles.appendChild(grp);});
+ var rest=Object.keys(byKey).filter(function(k){return !used[k];});if(rest.length){var grp=node('div','aw2-grp'),box=node('div','aw2-chips');grp.append(node('h5','','أدوار تانية'),box);rest.forEach(function(k){box.appendChild(byKey[k]);});roles.appendChild(grp);}
+ col.appendChild(roles);layout.append(col,perms);
+ // actions + danger zone
+ var acts=card('إجراءات الحساب','','aw2-actions'),row=node('div','aw2-acts'),del=actions.querySelector('[data-del]');Array.from(actions.children).forEach(function(b){if(b!==del&&b!==toggle)row.appendChild(b);});acts.appendChild(row);
+ if(del){var zone=node('div','aw2-danger-zone'),zt=node('div');zt.append(node('b','','حذف الحساب'),node('small','','نهائي ومش بيرجع — لو مؤقت استخدم مفتاح «مفعّل» فوق'));zone.append(zt,del);acts.appendChild(zone);}
+ if(toggle)acts.appendChild(toggle);
+ grid.replaceWith(layout);actions.replaceWith(acts);
+ function count(){var on=Object.keys(byKey).filter(function(k){return byKey[k].querySelector('input').checked;}),p=Array.from(list.querySelectorAll('input[type=checkbox]')).filter(function(i){return i.checked;}).length;rc.textContent=String(on.length);sum.innerHTML='';
+  sum.appendChild(node('i','r',root.SSMPDRoles.label(a.role)));on.forEach(function(k){sum.appendChild(node('i','',root.SSMPDRoles.label(k)));});if(p)sum.appendChild(node('i','',p+(p===1?' صلاحية خاصة':' صلاحيات خاصة')));if(statusPill&&!a.user_id)sum.appendChild(node('i','w','بانتظار إنشاء الحساب'));}
+ detail.addEventListener('change',count);count();
 }
 root.SSMPDAdminWorkspace={mount:mount};
 })(window);
