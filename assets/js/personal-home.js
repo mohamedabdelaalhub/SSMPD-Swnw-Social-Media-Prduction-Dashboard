@@ -184,9 +184,12 @@ function render(root){homeRoot=root;var sequence=0;var admin=window.SSMPDAuth.cu
   if(home)home.classList.add('ph2');
   if(!HC){return;}
   var serial=sequence,load=manager&&t&&t.team_load?HC.loadCard(t.team_load,allowed('staff_kpi')):null;
-  function place(card){if(!root.isConnected||serial!==sequence||!box)return;box.innerHTML='';if(card)box.appendChild(card);if(load)box.appendChild(load);box.hidden=!box.children.length;box.classList.toggle('ph2-solo',box.children.length===1);if(perf)perf.hidden=!!(card&&card.classList.contains('ph2-perf'));box.querySelectorAll('[data-home-tab]').forEach(function(b){b.onclick=function(){onGo('tab',b.dataset.homeTab);};});HC.animate(box);}
+  function place(card){if(!root.isConnected||serial!==sequence||!box)return;box.innerHTML='';if(card)box.appendChild(card);if(load)box.appendChild(load);box.hidden=!box.children.length;box.classList.toggle('ph2-solo',box.children.length===1);if(perf)perf.hidden=!!(card&&card.classList.contains('ph2-perf'))||chair;box.querySelectorAll('[data-home-tab]').forEach(function(b){b.onclick=function(){onGo('tab',b.dataset.homeTab);};});HC.animate(box);}
   place(null);HC.animate(root.querySelector('.ph2-top')||root);
-  HC.perfCard(owner||window.SSMPDAuth.currentAdmin,d,place);
+  // The owner/chairman (super admin) is not evaluated: no «أدائي الشهر ده» and no old self widget (owner 2026-11-18).
+  var me=owner||window.SSMPDAuth.currentAdmin,R=window.SSMPDRoles,chair=!!(R&&R.hasAnyRole&&R.hasAnyRole(me,['super_admin']));
+  if(chair){if(perf)perf.hidden=true;place(null);return;}
+  HC.perfCard(me,d,place);
  }
  function contentRow(x){var names={approval:'في انتظار اعتمادك',revision:'مطلوب تعديل',design:'قيد التصميم',publish:'جاهز / مجدول للنشر',progress:'قيد الإعداد'},cls={approval:'ph-chip-soon',revision:'ph-chip-late',design:'ph-chip-st',publish:'ph-chip-ok',progress:'ph-chip-st'};return '<button type="button" class="ph-row" data-home-content="'+esc(x.id)+'"><b>'+esc(x.title)+'</b><span class="ph-meta"><span class="ph-chip '+(cls[x.bucket]||'')+'">'+esc(names[x.bucket]||x.stage)+'</span></span></button>';}
  homeReload=function(){return load(true);};return load();
