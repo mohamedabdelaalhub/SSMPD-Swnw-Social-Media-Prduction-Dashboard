@@ -5,7 +5,7 @@
 (function(){
   var LABELS={pending:'مستني يتسجل على ماسا',replayed:'اتسجل على ماسا ✓',conflict:'⚠ ماسا رفض الميعاد — راجع ماسا الأول (ممكن يكون اتسجل فعلاً)، وبعدين كلّم المريض',cancel_pending:'اتلغى — مستني يتلغي من ماسا',cancelled:'ملغي'};
   var SOURCES={whatsapp:'واتساب',website:'الموقع'};
-  var ALERTS={missing_in_masa:'حجز مش موجود في ماسا — راجعه',double_booked:'ميعاد محجوز مرتين — راجع ماسا',cancelled_in_masa:'الحجز اتلغى من ماسا — بلّغ المريض لو محتاج'};
+  var ALERTS={missing_in_masa:'حجز مش موجود في ماسا — راجعه',double_booked:'ميعاد محجوز مرتين — راجع ماسا',cancelled_in_masa:'الحجز اتلغى من ماسا — بلّغ المريض لو محتاج',stale_sync:'المواعيد الاحتياطية قديمة — المزامنة مع ماسا متأخرة'};
   function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
   function rpc(ws,action,payload){var c=window.SSMPDDb&&window.SSMPDDb.client;if(!c||typeof c.rpc!=='function')return Promise.reject(new Error('تعذر الاتصال'));
     return Promise.resolve(c.rpc('clinic_reception_fallback',{p_workspace:ws,p_action:action,p_payload:payload||{}})).then(function(r){if(r&&r.error)throw r.error;return r?r.data:null;});}
@@ -18,7 +18,7 @@
       '<br>'+esc(b.doctor_name)+' ('+esc(b.department)+') — '+esc(b.appointment_date)+' الساعة '+esc(b.appointment_time)+' — '+esc(b.needed_service)+
       '<br><small>من '+esc(SOURCES[b.source]||b.source)+' — '+esc(LABELS[b.status]||b.status)+(b.reception_confirmed?' — اتأكد مع المريض':'')+(b.slot_released?' — الحجز المؤقت اتفك':'')+'</small></div>'+
       (actions?'<div class="rx-actions">'+actions+'</div>':'')+'</article>';}
-  function alertRow(a){return '<article class="rx-fb-row rx-fb-conflict"><div><strong>⚠ '+esc(ALERTS[a.kind]||a.kind)+'</strong>'+(a.customer_name?'<br>'+esc(a.customer_name)+(a.doctor_name?' — '+esc(a.doctor_name):'')+(a.appointment_date?' — '+esc(a.appointment_date)+' الساعة '+esc(a.appointment_time):''):'')+'</div><div class="rx-actions"><button type="button" class="btn" data-fb-act="alert_resolve" data-id="'+esc(a.id)+'">راجعته ✓</button></div></article>';}
+  function alertRow(a){return '<article class="rx-fb-row rx-fb-conflict"><div><strong>⚠ '+esc(ALERTS[a.kind]||a.kind)+'</strong>'+(a.kind==='stale_sync'&&a.detail?'<br>'+esc(a.detail):'')+(a.customer_name?'<br>'+esc(a.customer_name)+(a.doctor_name?' — '+esc(a.doctor_name):'')+(a.appointment_date?' — '+esc(a.appointment_date)+' الساعة '+esc(a.appointment_time):''):'')+'</div><div class="rx-actions"><button type="button" class="btn" data-fb-act="alert_resolve" data-id="'+esc(a.id)+'">راجعته ✓</button></div></article>';}
   function importRow(m){return '<article class="rx-fb-row"><div><strong>'+esc(m.patient_name||'مريض')+'</strong>'+(m.phone?' — <span dir="ltr">'+esc(m.phone)+'</span>':'')+'<br>'+esc(m.doctor_name)+' — '+esc(m.appointment_date)+' الساعة '+esc(m.appointment_time)+(m.needed_service?' — '+esc(m.needed_service):'')+'</div></article>';}
   function paint(box,ws,d){var list=(d&&d.bookings)||[],alerts=(d&&d.alerts)||[],imports=(d&&d.masa_imports)||[];
     if(!list.length&&!alerts.length&&!imports.length){box.innerHTML='';box.hidden=true;return;}box.hidden=false;
