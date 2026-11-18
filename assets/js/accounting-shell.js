@@ -57,7 +57,9 @@ function mount(container,opts){
   setBadges:function(map){badges=map||{};draw();},refresh:draw};
  /* phones (owner 2026-11-18): every treasury table turns into one card per row. Each cell gets its column title
     (data-th) so the card can show «الرصيد 1,000» instead of a sideways-scrolling table. */
- function labelTables(){api.view.querySelectorAll('.fc-table table:not([data-acs-cards])').forEach(function(t){var th=[].map.call(t.querySelectorAll('thead th'),function(x){return x.textContent.trim();});if(!th.length)return;t.setAttribute('data-acs-cards','');t.querySelectorAll('tbody tr').forEach(function(tr){[].forEach.call(tr.children,function(td,i){if(th[i]&&!td.hasAttribute('data-th'))td.setAttribute('data-th',th[i]);});});});}
+ /* in-page shortcuts to another section: <button data-acs-jump="doctors"> */
+ root.addEventListener('click',function(e){var j=e.target.closest('[data-acs-jump]');if(!j)return;var id=j.getAttribute('data-acs-jump');if(!opts.allowed(id))return;api.setActive(id);opts.onSelect(id);window.scrollTo(0,0);});
+ function labelTables(){api.view.querySelectorAll('.fc-table table:not([data-acs-cards]),.rx-table table:not([data-acs-cards])').forEach(function(t){var th=[].map.call(t.querySelectorAll('thead th'),function(x){return x.textContent.trim();});if(!th.length)return;t.setAttribute('data-acs-cards','');t.querySelectorAll('tbody tr').forEach(function(tr){[].forEach.call(tr.children,function(td,i){if(th[i]&&!td.hasAttribute('data-th'))td.setAttribute('data-th',th[i]);});});});}
  if(window.MutationObserver){var mo=new MutationObserver(function(){if(!root.isConnected){mo.disconnect();return;}labelTables();if(window.SSMPDFinanceLabels)window.SSMPDFinanceLabels.translate(api.view);});mo.observe(api.view,{childList:true,subtree:true});}
  document.body.classList.remove('acs-drawer-open');draw();return api;
 }

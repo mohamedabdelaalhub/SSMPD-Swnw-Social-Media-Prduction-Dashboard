@@ -115,7 +115,9 @@
       return '<button type="button" class="btn ghost sm fc-chip' + (filterKey === c[0] ? ' active' : '') + '" data-da-filter="' + c[0] + '">' + e(c[1]) + '</button>';
     }).join(' ') + '<input type="search" class="fc-name-filter" data-da-name placeholder="بحث باسم الدكتور أو كوده" value="' + e(nameFilter) + '"></div>';
     html += '<div class="fc-da-table">' + (rows.length ? accountsRows(rows, h, d) : '<p>مفيش أطباء ليهم حساب لسه.</p>') + '</div>';
-    html += needsHtml(d, h);
+    /* owner 2026-11-18: the «ملهمش عقد» list lives in «عقود الأطباء» only; here just a one-line pointer to it */
+    if (document.querySelector('.acs') && doctorsNeedingContract().length) html += '<p class="fc-note fc-da-pointer">' + (function (n) { return n === 1 ? 'طبيب واحد مسجل في الموارد البشرية وملوش عقد لسه.' : n === 2 ? 'طبيبين مسجلين في الموارد البشرية وملهمش عقد لسه.' : n + ' أطباء مسجلين في الموارد البشرية وملهمش عقد لسه.'; })(doctorsNeedingContract().length) + ' <button type="button" class="btn-link" data-acs-jump="doctors">افتح «عقود الأطباء»</button></p>';
+    else html += needsHtml(d, h);
     Promise.resolve().then(applyFilter);
     return html + '</div>';
   }

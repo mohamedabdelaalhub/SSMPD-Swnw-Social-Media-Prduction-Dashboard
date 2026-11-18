@@ -174,3 +174,17 @@ body.acs-drawer-open .ssmpd-ea-launch,body.acs-drawer-open .ssmpd-aa-launch,body
 /* any open dialog: the floating buttons step back instead of covering its fields */
 body:has(.modal-backdrop) :is(.ssmpd-ea-launch,.ssmpd-aa-launch,.shift-fab,.dp-badge){visibility:hidden}
 @media (prefers-reduced-motion:reduce){body.acs-fab-hide :is(.ssmpd-ea-launch,.ssmpd-aa-launch,.shift-fab,.dp-badge){transition:none}}
+/* ===== one period per screen (owner 2026-11-18): the linked reception records follow the treasury period above ===== */
+.acs-main .rx-shared-records .rx-period{display:none}
+.acs-main .fc-da-pointer{display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:#FFF7ED;border:1px solid #FED7AA;border-radius:12px;padding:8px 12px;color:#9A3412}
+@media (max-width:700px){
+ .acs-main .rx-table{overflow:visible}
+ .acs-main .rx-table table[data-acs-cards]{min-width:0!important;width:100%;display:block}
+ .acs-main .rx-table table[data-acs-cards] thead{display:none}
+ .acs-main .rx-table table[data-acs-cards] tbody{display:flex;flex-direction:column;gap:10px}
+ .acs-main .rx-table table[data-acs-cards] tr{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px 14px;background:#fff;border:1px solid #E6E8EE;border-radius:14px;padding:12px 14px}
+ .acs-main .rx-table table[data-acs-cards] td{display:flex;flex-direction:column;align-items:flex-start;gap:1px;padding:0!important;border:0!important;background:none!important;font-size:13.5px;overflow-wrap:anywhere}
+ .acs-main .rx-table table[data-acs-cards] td[data-th]::before{content:attr(data-th);font-size:11.5px;color:#6B7483}
+ .acs-main .rx-table table[data-acs-cards] td:first-child{grid-column:1/-1;font-weight:700}
+ .acs-main .rx-table table[data-acs-cards] td:empty{display:none}
+}
