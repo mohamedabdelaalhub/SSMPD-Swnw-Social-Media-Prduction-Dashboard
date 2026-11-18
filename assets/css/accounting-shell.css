@@ -188,3 +188,20 @@ body:has(.modal-backdrop) :is(.ssmpd-ea-launch,.ssmpd-aa-launch,.shift-fab,.dp-b
  .acs-main .rx-table table[data-acs-cards] td:first-child{grid-column:1/-1;font-weight:700}
  .acs-main .rx-table table[data-acs-cards] td:empty{display:none}
 }
+/* ===== pricing + inventory tables → cards on phones too (owner 2026-11-18) ===== */
+@media (max-width:700px){
+ .acs-main div[style*="overflow-x"]:has(> table[data-acs-cards]),.acs-main .inv-scroll:has(> table[data-acs-cards]){overflow:visible!important;border:0}
+ .acs-main .inv-scroll-hint{display:none}
+ .acs-main table.acc-table[data-acs-cards],.acs-main .inv-scroll table[data-acs-cards]{min-width:0!important;width:100%;display:block;border:0}
+ .acs-main table.acc-table[data-acs-cards] thead,.acs-main .inv-scroll table[data-acs-cards] thead{display:none}
+ .acs-main table.acc-table[data-acs-cards] tbody,.acs-main .inv-scroll table[data-acs-cards] tbody{display:flex;flex-direction:column;gap:10px}
+ .acs-main table.acc-table[data-acs-cards] tr,.acs-main .inv-scroll table[data-acs-cards] tr{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px 14px;background:#fff;border:1px solid #E6E8EE;border-radius:14px;padding:12px 14px}
+ .acs-main table.acc-table[data-acs-cards] td,.acs-main .inv-scroll table[data-acs-cards] td{display:flex;flex-direction:column;align-items:flex-start;gap:1px;padding:0!important;border:0!important;background:none!important;font-size:13.5px;text-align:start;overflow-wrap:anywhere;max-width:none;min-width:0}
+ .acs-main table.acc-table[data-acs-cards] td[data-th]::before,.acs-main .inv-scroll table[data-acs-cards] td[data-th]::before{content:attr(data-th);font-size:11.5px;color:#6B7483;font-weight:400}
+ .acs-main table.acc-table[data-acs-cards] td:first-child,.acs-main .inv-scroll table[data-acs-cards] td:first-child{grid-column:1/-1;font-weight:700;font-size:14.5px;flex-direction:row;flex-wrap:wrap;align-items:center;gap:6px}
+ .acs-main table.acc-table[data-acs-cards] td:first-child::before,.acs-main .inv-scroll table[data-acs-cards] td:first-child::before{display:none}
+ .acs-main table.acc-table[data-acs-cards] td:last-child:not(:first-child),.acs-main .inv-scroll table[data-acs-cards] td:last-child:not(:first-child){grid-column:1/-1;flex-direction:row;flex-wrap:wrap;gap:8px;align-items:center}
+ .acs-main table.acc-table[data-acs-cards] td:last-child:not(:first-child)::before,.acs-main .inv-scroll table[data-acs-cards] td:last-child:not(:first-child)::before{display:none}
+ .acs-main table.acc-table[data-acs-cards] td:empty,.acs-main .inv-scroll table[data-acs-cards] td:empty{display:none}
+ .acs-main .acc-actions,.acs-main .acc-card-head{flex-wrap:wrap;gap:8px}
+}
