@@ -101,7 +101,8 @@
   function accountsPanel(d, h) {
     var e = h.esc, m = h.money, b = h.btn;
     ensure(TAB);
-    var html = '<div data-da-tab="' + TAB + '"><p>الأطباء اللي ليهم حساب فعلي بس (أتعاب مستحقة أو مصروفات أو رصيد افتتاحي أو رصيد غير صفر). اضغط على اسم الطبيب لفتح كشف حسابه بالتفصيل. «مستحق للصرف الآن» = الرصيد بعد خصم أتعاب الفواتير اللي لسه ماتسددتش بالكامل، وهو نفس الرقم في كشف الدكتور.</p><div class="fc-actions">' +
+    /* owner 2026-11-18: the long explanation folds behind «إزاي بتتحسب؟» instead of sitting above the table */
+    var html = '<div data-da-tab="' + TAB + '"><details class="fc-explain"><summary>إزاي بتتحسب؟</summary><p>الأطباء اللي ليهم حساب فعلي بس (أتعاب مستحقة أو مصروفات أو رصيد افتتاحي أو رصيد غير صفر). اضغط على اسم الطبيب لفتح كشف حسابه بالتفصيل. «مستحق للصرف الآن» = الرصيد بعد خصم أتعاب الفواتير اللي لسه ماتسددتش بالكامل، وهو نفس الرقم في كشف الدكتور.</p></details><div class="fc-actions">' +
       b('doctor-accounts-refresh', '', 'تحديث') + (d.can_create ? b('open-disbursement', 'doctor_payment', 'طلب صرف مستحقات') : '') + '</div>';
     if (!cache) return html + '<p role="status">جاري تحميل حسابات الأطباء…</p></div>';
     if (!cache.acc.ok) {

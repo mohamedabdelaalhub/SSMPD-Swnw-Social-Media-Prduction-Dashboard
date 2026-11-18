@@ -36,19 +36,19 @@ const snap=dom=>{const o={};for(let i=0;i<dom.window.sessionStorage.length;i++){
   d.window.SSMPDFinanceCash.render(d.window.document.getElementById('root'));await wait(50);
   const doc=()=>d.window.document;
   doc().querySelector('[data-fc-group="dues"]').click();await wait(10);
-  const firstTab=doc().querySelector('[data-fc-tab]').dataset.fcTab;doc().querySelector('[data-fc-tab="'+firstTab+'"]').click();await wait(50);
-  assert(doc().querySelector('[data-fc-back]'),'inside a section');
+  const tabs=[...doc().querySelectorAll('[data-fc-tab]')],firstTab=(tabs[1]||tabs[0]).dataset.fcTab;doc().querySelector('[data-fc-tab="'+firstTab+'"]').click();await wait(50);
+  assert.equal(doc().querySelector('[data-fc-tab][aria-current="page"]').dataset.fcTab,firstTab,'inside a section');
   s=snap(d);
   d=load(s,'a1',['nav-state.js','finance-cash.js']);
   d.window.SSMPDFinanceCash.render(d.window.document.getElementById('root'));await wait(80);
-  assert(doc().querySelector('[data-fc-back]'),'after F5 still inside the section');
+  assert.equal(doc().querySelector('[data-fc-tab][aria-current="page"]').dataset.fcTab,firstTab,'after F5 still inside the section');
   assert.equal(doc().querySelector('[data-fc-group][aria-pressed="true"]').dataset.fcGroup,'dues');
   assert.equal(doc().querySelector('.fc-modal'),null,'never restores a modal');
   // section not allowed for this role -> falls back safely
   const bad=JSON.parse(s['ssmpd_nav_state_v1']);bad.m.finance_cash={group:'dues',tab:'no-such-section'};
   d=load({ssmpd_nav_state_v1:JSON.stringify(bad)},'a1',['nav-state.js','finance-cash.js']);
   d.window.SSMPDFinanceCash.render(d.window.document.getElementById('root'));await wait(80);
-  assert(!doc().querySelector('[data-fc-back]')&&doc().querySelector('[data-fc-tab]'),'unknown section ignored, group cards shown');
+  assert(doc().querySelector('[data-fc-tab][aria-current="page"]')&&doc().querySelector('[data-fc-tab]'),'unknown section ignored, group opens its first section');
   bad.m.finance_cash={group:'nope',tab:'x'};
   d=load({ssmpd_nav_state_v1:JSON.stringify(bad)},'a1',['nav-state.js','finance-cash.js']);
   d.window.SSMPDFinanceCash.render(d.window.document.getElementById('root'));await wait(80);
