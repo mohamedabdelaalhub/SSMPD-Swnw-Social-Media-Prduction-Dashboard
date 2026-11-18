@@ -61,5 +61,9 @@ function mount(container,opts){
  if(window.MutationObserver){var mo=new MutationObserver(function(){if(!root.isConnected){mo.disconnect();return;}labelTables();if(window.SSMPDFinanceLabels)window.SSMPDFinanceLabels.translate(api.view);});mo.observe(api.view,{childList:true,subtree:true});}
  document.body.classList.remove('acs-drawer-open');draw();return api;
 }
+/* floating help / assistant buttons (owner 2026-11-18): on phones they slide away while you scroll down and come
+   back when you scroll up, so they never sit on an amount or a button you are reading */
+var lastY=0;window.addEventListener('scroll',function(){var b=document.body,y=window.scrollY||0;if(!document.querySelector('.acs')){b.classList.remove('acs-fab-hide');lastY=y;return;}
+ if(y>lastY+8&&y>160)b.classList.add('acs-fab-hide');else if(y<lastY-8||y<60)b.classList.remove('acs-fab-hide');if(Math.abs(y-lastY)>8)lastY=y;},{passive:true});
 window.SSMPDAccountingShell={mount:mount,groups:GROUPS,kind:kind,label:label,pricing:PRICING};
 })();
