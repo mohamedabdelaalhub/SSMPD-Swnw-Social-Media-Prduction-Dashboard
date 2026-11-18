@@ -2,13 +2,13 @@
 const {JSDOM}=require('jsdom'),fs=require('fs'),assert=require('node:assert/strict');
 const tick=()=>new Promise(r=>setTimeout(r,30));
 function snapshot(extra){return Object.assign({generated_at:'2026-11-17T11:00:00Z',tasks:{open:3,late:1,review:1,team_open:19,team_late:3,blocked:1,mine:[{id:'t1',title:'مهمة',status:'todo'}],reviews:[],team:[{id:'t4',title:'مهمة فريق',status:'todo',assignee_name:'محاسب'}]},content:null,supplies:[]},extra||{});}
-async function run({manager,snap,perf,reviews}){
+async function run({manager,snap,perf,reviews,charts}){
  const dom=new JSDOM('<button id="notif-bell-btn"></button><span id="notif-badge"></span><div id="notif-panel" hidden></div><main></main>',{url:'https://test.invalid',runScripts:'outside-only',pretendToBeVisual:true}),w=dom.window,d=w.document;
  w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};w.HTMLDialogElement.prototype.close=function(){this.open=false;};
  w.matchMedia=()=>({matches:false});w.scrollTo=()=>{};
  const admin=manager?{id:'m1',name:'مدير',role:'super_admin'}:{id:'e1',name:'موظف',role:'reception'};
  const calls=[];w.SSMPDAuth={currentAdmin:admin};w.SSMPDRoles={canSeeTab:()=>true,labelAll:()=>'',hasAnyRole:()=>manager};
- w.SSMPDDb={unsubscribe(){},staffReviewHistory:async()=>reviews===undefined?[{month:'2026-10-01',rating:4}]:reviews,client:{rpc:async(n,a)=>{calls.push([n,a]);return {data:n==='personal_home_inbox'?{notices:[],unread:0}:n==='personal_home_rating_queue'?[]:n==='staff_comprehensive_performance'?perf:snap};}}};
+ w.SSMPDDb={unsubscribe(){},staffReviewHistory:async()=>reviews===undefined?[{month:'2026-10-01',rating:4}]:reviews,client:{rpc:async(n,a)=>{calls.push([n,a]);return {data:n==='personal_home_inbox'?{notices:[],unread:0}:n==='personal_home_rating_queue'?[]:n==='staff_comprehensive_performance'?perf:n==='personal_home_charts'?(charts||null):snap};}}};
  w.SSMPDEmployeeProfile={open:o=>{w.__profile=o;}};
  w.SSMPDEmployeePerformance={mount:r=>{r.innerHTML='<section class="ep-card">old widget</section>';}};
  for(const f of ['home-charts','personal-home'])w.eval(fs.readFileSync('assets/js/'+f+'.js','utf8'));
@@ -45,5 +45,9 @@ async function run({manager,snap,perf,reviews}){
  assert.equal(d.querySelector('.ph2-load'),null,'employees never see team load');
  assert(d.querySelector('.ph2-need.ph2-good'),'all-clear state');
  assert(!d.querySelector('[data-home-section="team"].ph2-kpi'),'no team KPI for an employee');
- console.log('PASS home v2 charts «الرئيسية»: KPI sparklines from trend, team load (manager only, on-time = open-late-blocked), my-month card with ring/meters/weekly line + profile link, nothing drawn without data');process.exit(0);
+ // fields delivered by the separate personal_home_charts() RPC are merged in
+ ({d}=await run({manager:true,snap:snapshot(),perf:null,reviews:[],charts:{trend:{mine_open:[1,2,3,4,5,6,7]},tasks:{team_load:[{assignee_name:'a',open:2,late:1,blocked:0}]}}}));
+ assert.equal(d.querySelectorAll('.ph2-kpi [data-spark]').length,1,'only the series the server sent');
+ assert.equal(d.querySelectorAll('.ph2-loadlist li').length,1,'team_load from personal_home_charts');
+ console.log('PASS home v2 charts «الرئيسية»: KPI sparklines from trend, team load (manager only, on-time = open-late-blocked), my-month card with ring/meters/weekly line + profile link, nothing drawn without data, personal_home_charts merged');process.exit(0);
 })().catch(e=>{console.error(e);process.exit(1);});
