@@ -12,4 +12,7 @@ assert(!/fetch\(/.test(src),'never calls Masa or any other host');
 assert(!/console\.(log|error|warn)/.test(src),'no logging');
 assert(!/error\.message/.test(src),'database error text is not echoed');
 const toml=fs.readFileSync('supabase/config.toml','utf8');assert(/\[functions\.booking-fallback\]\s*(#[^\n]*\n)*verify_jwt = false/.test(toml),'config: verify_jwt false');
-console.log('PASS booking-fallback edge: parses, secret-gated, known ops only, one RPC, no outbound calls, no logs, no DB error text.');
+const ing='supabase/functions/booking-sync-ingest/index.ts',isrc=fs.readFileSync(ing,'utf8');
+const iast=ts.createSourceFile(ing,isrc,ts.ScriptTarget.ES2022,true,ts.ScriptKind.TS);assert.equal(iast.parseDiagnostics.length,0,'booking-sync-ingest parses');
+assert(/row\.masa_doctor_id = masaDoctorId/.test(isrc)&&/Number\.isInteger\(masaDoctorId\)/.test(isrc),'ingest stores masa_doctor_id as a positive int');
+console.log('PASS booking-fallback edge: parses, secret-gated, known ops only, one RPC, no outbound calls, no logs, no DB error text; booking-sync-ingest stores masa_doctor_id.');

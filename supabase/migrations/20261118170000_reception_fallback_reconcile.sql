@@ -23,7 +23,10 @@ create table if not exists public.customer_bookings (
 -- No-ops on live (setup.sql has them); keeps older/partial copies of the table compatible.
 alter table public.customer_bookings add column if not exists official_booking_id text, add column if not exists doctor_id text,
   add column if not exists appointment_date date, add column if not exists appointment_time text, add column if not exists status text;
+-- doctor_id is the agent's own opaque id (e.g. doc_383ba58d6bbf); the agent now also sends the Masa doctor id.
+alter table public.customer_bookings add column if not exists masa_doctor_id int;
 create index if not exists customer_bookings_official_idx on public.customer_bookings (official_booking_id);
+create index if not exists customer_bookings_masa_doctor_idx on public.customer_bookings (masa_doctor_id, appointment_date);
 
 create table if not exists clinic_reception.masa_bookings(
   official_booking_id text primary key check (length(official_booking_id) between 1 and 80),
@@ -59,7 +62,7 @@ create table if not exists clinic_reception.fallback_alerts(
 alter table clinic_reception.fallback_alerts enable row level security;
 revoke all on clinic_reception.fallback_alerts from public, anon, authenticated;
 
--- Agent bookings in Masa (mirrored), as busy intervals per provider. doctor_id is the Masa doctor id.
+-- Agent bookings in Masa (mirrored), as busy intervals per provider, by masa_doctor_id.
 create or replace function clinic_reception.agent_booking_start(d date, t text) returns timestamptz language sql immutable as $$
   select case when d is not null and t ~ '^\s*[0-9]{1,2}:[0-9]{2}' then (d + substring(t from '[0-9]{1,2}:[0-9]{2}')::time) at time zone 'Africa/Cairo' end
 $$;
@@ -72,7 +75,7 @@ returns boolean language sql stable security definer set search_path = pg_catalo
                    and clinic_reception.fallback_holds(f) and f.starts_at < p_end and f.ends_at > p_start and f.id is distinct from p_skip)
       or exists (select 1 from clinic_reception.masa_bookings m where m.provider_id = p_provider and m.status = 'active'
                    and m.starts_at < p_end and m.ends_at > p_start)
-      or exists (select 1 from public.customer_bookings c join clinic_reception.masa_doctor_links k on k.masa_doctor_id::text = trim(c.doctor_id)
+      or exists (select 1 from public.customer_bookings c join clinic_reception.masa_doctor_links k on k.masa_doctor_id = c.masa_doctor_id
                   where k.provider_id = p_provider and c.status in ('confirmed','rescheduled')
                     and c.appointment_date between (p_start at time zone 'Africa/Cairo')::date - 1 and (p_end at time zone 'Africa/Cairo')::date
                     and clinic_reception.agent_booking_start(c.appointment_date, c.appointment_time) < p_end
@@ -106,7 +109,7 @@ begin
       select jsonb_build_object('booking_request_id', c.booking_request_id, 'source', 'whatsapp',
                'status', case when c.status = 'cancelled' then 'cancelled' else 'confirmed' end,
                'official_booking_id', c.official_booking_id,
-               'masa_doctor_id', case when trim(c.doctor_id) ~ '^[0-9]{1,9}$' then trim(c.doctor_id)::int end,
+               'masa_doctor_id', c.masa_doctor_id,
                'appointment_date', to_char(c.appointment_date, 'YYYY-MM-DD'),
                'appointment_time', substring(c.appointment_time from '[0-9]{1,2}:[0-9]{2}'))
         from public.customer_bookings c

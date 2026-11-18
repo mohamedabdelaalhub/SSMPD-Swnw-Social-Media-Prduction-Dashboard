@@ -15,8 +15,8 @@ const slots=async()=>(await api('slots',{masa_doctor_id:1130,date_from:tomorrow,
 assert.deepEqual(await slots(),['10:00','10:20','10:40','11:00','11:20','11:40']);
 // a fallback booking and an agent booking already in Masa (mirrored in customer_bookings, doctor_id = Masa id)
 assert((await api('book',{booking_request_id:'FB-1',masa_doctor_id:1130,appointment_date:tomorrow,appointment_time:'10:00',customer_name:'مريض احتياطي',phone:'01000000001'})).ok);
-await q('alter table public.customer_bookings disable trigger user');await q("insert into public.customer_bookings(id,booking_request_id,official_booking_id,doctor_id,appointment_date,appointment_time,status,customer_name,phone) values(gen_random_uuid(),'AG-1','M-500','1132',$1,'10:20','confirmed','مريض واتساب','01000000002')",[tomorrow]);
-assert.deepEqual(await slots(),['10:40','11:00','11:20','11:40'],'agent Masa booking blocks the fallback (1132 = same doctor)');
+await q('alter table public.customer_bookings disable trigger user');await q("insert into public.customer_bookings(id,booking_request_id,official_booking_id,doctor_id,masa_doctor_id,appointment_date,appointment_time,status,customer_name,phone) values(gen_random_uuid(),'AG-1','M-500','doc_383ba58d6bbf',1132,$1,'10:20','confirmed','مريض واتساب','01000000002')",[tomorrow]);
+assert.deepEqual(await slots(),['10:40','11:00','11:20','11:40'],'agent Masa booking blocks the fallback (masa_doctor_id 1132 = same doctor; doctor_id is the agent id)');
 // masa_import: reception's own Masa bookings
 const item={official_booking_id:'M-900',masa_doctor_id:1130,masa_specialization_id:400,appointment_date:tomorrow,appointment_time:'10:40',status:'active',needed_service:'كشف',patient_name:'مريض ماسا',phone:'010 0000 0003'};
 let r=await api('masa_import',{items:[item,{...item,official_booking_id:'M-500'},{...item,official_booking_id:'M-901',masa_doctor_id:9999},{...item,official_booking_id:''}]});

@@ -20,4 +20,7 @@ drop function if exists clinic_reception.agent_booking_start(date,text);
 drop table if exists clinic_reception.fallback_alerts;
 drop table if exists clinic_reception.masa_bookings;
 drop index if exists public.customer_bookings_official_idx;
+drop index if exists public.customer_bookings_masa_doctor_idx;
+-- Redeploy the previous booking-sync-ingest BEFORE dropping the column, or new agent bookings fail to sync:
+alter table public.customer_bookings drop column if exists masa_doctor_id;
 -- public.customer_bookings is kept (it existed before; the migration only guarded its creation).

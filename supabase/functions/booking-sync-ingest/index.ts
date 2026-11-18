@@ -67,6 +67,12 @@ Deno.serve(async (req) => {
   for (const key of fields) {
     if (body[key] !== undefined) row[key] = textValue(body[key]);
   }
+  // Masa doctor id (int) from the agent; doctor_id stays the agent's own opaque id.
+  if (body.masa_doctor_id !== undefined && body.masa_doctor_id !== null && body.masa_doctor_id !== "") {
+    const masaDoctorId = Number(body.masa_doctor_id);
+    if (!Number.isInteger(masaDoctorId) || masaDoctorId <= 0) return json({ ok: false, error: "invalid_masa_doctor_id" }, 400);
+    row.masa_doctor_id = masaDoctorId;
+  }
   if (!row.tenant_id) row.tenant_id = "swnw";
   if (!row.currency) row.currency = "EGP";
 
