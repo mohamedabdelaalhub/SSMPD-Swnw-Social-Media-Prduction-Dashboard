@@ -2,7 +2,7 @@
 const fs=require('fs'),path=require('path'),assert=require('node:assert/strict');
 const src=fs.readFileSync(path.join(__dirname,'reception-bridge.cjs'),'utf8');const cut=src.indexOf('// A legacy inventory use');
 assert(cut>0&&src.includes('await boot()'),'reception-bridge.cjs setup markers moved; update this test');
-const prefix=src.slice(0,cut).replace('await boot()',"await boot(['reception_consultation_eligibility','reception_provider_service_scopes','reception_booking_confirm_duration','reception_weekly_schedule_walk_in','reception_basic_services_readiness','reception_masa_links_fallback_booking','reception_booking_gap','reception_fallback_reconcile','reception_fallback_masa_schedule','reception_fallback_masa_interval'])").replace("require('./helpers/reception-bridge.cjs')",'require('+JSON.stringify(path.join(__dirname,'helpers','reception-bridge.cjs'))+')');
+const prefix=src.slice(0,cut).replace('await boot()',"await boot(['reception_consultation_eligibility','reception_provider_service_scopes','reception_booking_confirm_duration','reception_weekly_schedule_walk_in','reception_basic_services_readiness','reception_masa_links_fallback_booking','reception_booking_gap','reception_fallback_reconcile','reception_fallback_masa_schedule','reception_fallback_masa_interval','reception_fallback_last_slot'])").replace("require('./helpers/reception-bridge.cjs')",'require('+JSON.stringify(path.join(__dirname,'helpers','reception-bridge.cjs'))+')');
 const body=`
 {const q=async(sql,a)=>{const r=await owner(sql,a);await as(1);return r;};await as(1);
 const api=async(op,p)=>(await q('select clinic_reception.fallback_api($1,$2::jsonb) v',[op,JSON.stringify(p||{})]))[0].v;
@@ -19,6 +19,10 @@ assert.deepEqual(await times(1130,d1),['16:00','16:20','16:40'],'Masa grid, 20-m
 assert.deepEqual(await times(1130,d2),[],'1132 open on d2 does not open 1130 (per Masa id)');
 assert.deepEqual(await times(1132,d1),[],'and the other way round');
 assert.deepEqual(await times(1132,d2),['17:00','17:35','18:10'],'35-minute step');
+await api('masa_schedule',{date_from:d1,date_to:d2,days:[{masa_doctor_id:1130,date:d1,start:'16:00',end:'17:00',interval_minutes:20},{masa_doctor_id:1132,date:d2,start:'17:00',end:'18:40',interval_minutes:35}]});
+assert.deepEqual(await times(1132,d2),['17:00','17:35'],'the full interval must fit before the day end (18:10+35 > 18:40)');
+assert.equal((await api('book',{masa_doctor_id:1132,appointment_date:d2,appointment_time:'18:10',booking_request_id:'I-last',customer_name:'مريض',phone:'01000000009'})).error,'slot_unavailable','book refuses it too');
+await api('masa_schedule',{date_from:d1,date_to:d2,days:[{masa_doctor_id:1130,date:d1,start:'16:00',end:'17:00',interval_minutes:20},{masa_doctor_id:1132,date:d2,start:'17:00',end:'18:45',interval_minutes:35}]});
 r=await api('slots',{masa_doctor_id:1130,date_from:d1,days:1});assert.equal(r.step,'masa_interval');assert.equal(r.slots[0].interval_minutes,20);assert('stale' in r,'staleness fields kept');
 // book: on the grid only; lasts interval − gap, so the next Masa time stays free
 const bk={masa_doctor_id:1130,appointment_date:d1,customer_name:'مريض',phone:'01000000001'};
@@ -45,9 +49,11 @@ assert.equal(def.split('provider_gap(p_provider)').length-1,8,'provider gap kept
 assert.equal((await q("select current_setting('swnw.fallback_masa_id', true) s"))[0].s||'','', 'no leaked setting');
 await assert.rejects(()=>db.query("select clinic_reception.fallback_api('health','{}')"),/permission|denied/);
 }
-await db.exec('reset role');await db.exec(require('fs').readFileSync(${JSON.stringify(path.join(__dirname,'..','supabase','rollbacks','20261118190000_reception_fallback_masa_interval.rollback.sql'))},'utf8'));
+await db.exec('reset role');await db.exec(require('fs').readFileSync(${JSON.stringify(path.join(__dirname,'..','supabase','rollbacks','20261118200000_reception_fallback_last_slot.rollback.sql'))},'utf8'));
+assert(!(await db.query("select pg_get_functiondef('clinic_reception.fallback_api(text,jsonb)'::regprocedure) d")).rows[0].d.includes('make_interval(mins => row_.interval_min) <= dend'),'last-slot rollback reverses the patch');
+await db.exec(require('fs').readFileSync(${JSON.stringify(path.join(__dirname,'..','supabase','rollbacks','20261118190000_reception_fallback_masa_interval.rollback.sql'))},'utf8'));
 assert.equal((await db.query("select count(*) n from information_schema.columns where table_name='masa_schedule_days' and column_name='interval_min'")).rows[0].n,0);
 assert((await db.query("select pg_get_functiondef('clinic_reception.slot_busy(uuid,timestamptz,timestamptz,uuid)'::regprocedure) d")).rows[0].d.includes('and m.ends_at + clinic_reception.provider_gap'),'rollback restores the 180000 slot_busy');
-await db.close();console.log('PASS fallback Masa interval: slots per Masa id (Dalia derm/ortho apart), Masa grid 20/35 with 15-minute visits, book refuses off-grid, imports/agent bookings block one Masa step, validation, old behaviour without interval, gap kept ×8, rollback.');})().catch(e=>{console.error(e);process.exit(1);});`;
+await db.close();console.log('PASS fallback Masa interval: slots per Masa id (Dalia derm/ortho apart), Masa grid 20/35 with 15-minute visits, book refuses off-grid, imports/agent bookings block one Masa step, validation, old behaviour without interval, gap kept ×8, full interval fits before day end, rollbacks.');})().catch(e=>{console.error(e);process.exit(1);});`;
 const file=path.join(require('os').tmpdir(),'fallback-interval-run-'+process.pid+'.cjs');
 fs.writeFileSync(file,prefix+body);try{require(file);}finally{setTimeout(()=>{try{fs.unlinkSync(file);}catch(_){}},0);}
