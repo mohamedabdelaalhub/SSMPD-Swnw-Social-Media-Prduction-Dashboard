@@ -29,7 +29,7 @@
     if (s.indexOf("messaging") !== -1) return "محادثات ماسنجر";
     if (s.indexOf("link_click") !== -1) return "نقرات على الرابط";
     if (s.indexOf("purchase") !== -1) return "عمليات شراء";
-    if (s.indexOf("lead") !== -1) return "بيانات تواصل (Leads)";
+    if (s.indexOf("lead") !== -1) return "بيانات تواصل";
     return "نتائج";
   }
 
@@ -320,7 +320,7 @@
         return { delta: (diff > 0 ? "▲ " : "▼ ") + Math.abs(diff), deltaClass: diff > 0 ? "up" : "down" };
       }
 
-      var html = "<h2 style=\"margin-bottom:16px;\"> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D9%84%D8%AE%D8%B5%20%D8%A7%D9%84%D8%B9%D8%A7%D9%85-->الملخص العام</h2>";
+      var html = "<h2 data-sum=\"title\" style=\"margin-bottom:16px;\"> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D9%84%D8%AE%D8%B5%20%D8%A7%D9%84%D8%B9%D8%A7%D9%85-->الملخص العام</h2>";
 
       // نظرة عامة على النظام كله — للمدير العام/السوبر أدمن بس: نبضة واحدة
       // عبر الموديولات التلاتة (محتوى/ليدز/أرشيف مرضى) بدل ما يفتح كل شاشة
@@ -344,7 +344,7 @@
           return i.stage === "initial_approval" || i.stage === "final_approval";
         }).length;
 
-        html += '<div class="section"><h3>نظرة عامة على النظام</h3><div class="kpi-grid">';
+        html += '<div class="section" data-sum="overview"><h3>نظرة عامة على النظام</h3><div class="kpi-grid">';
         html += kpiCard("مواد قيد الاعتماد", awaitingApproval);
         html += kpiCard("ليدز مفتوحة", openLeads);
         if (pendingFiles != null) html += kpiCard("ملفات مرضى قيد المراجعة", pendingFiles);
@@ -362,7 +362,7 @@
         html += '</div>';
       }
 
-      html += "<div class=\"section\"><h3> <!--ssmpd-i18n:%D8%A5%D9%86%D8%AA%D8%A7%D8%AC%20%D8%A7%D9%84%D9%85%D8%AD%D8%AA%D9%88%D9%89-->إنتاج المحتوى</h3><div class=\"kpi-grid\">";
+      html += "<div class=\"section\" data-sum=\"production\"><h3> <!--ssmpd-i18n:%D8%A5%D9%86%D8%AA%D8%A7%D8%AC%20%D8%A7%D9%84%D9%85%D8%AD%D8%AA%D9%88%D9%89-->إنتاج المحتوى</h3><div class=\"kpi-grid\">";
       html += kpiCard("إجمالي المحتوى", total);
       html += kpiCard("مخطط له", planned);
       html += kpiCard("قيد التصميم", inDesign);
@@ -407,7 +407,7 @@
         var dR = deltaHtml(current.reach, prev && prev.reach);
         var dE = deltaHtml(current.engagement_rate, prev && prev.engagement_rate);
         var dF = deltaHtml(current.new_followers, prev && prev.new_followers);
-        html += kpiCard("الوصول (Reach)", current.reach || 0, dR);
+        html += kpiCard("الوصول", current.reach || 0, dR);
         html += kpiCard("نسبة التفاعل", (current.engagement_rate || 0) + "%", dE);
         html += kpiCard("متابعين جدد", current.new_followers || 0, dF);
         html += '</div><p style="font-size:11px;color:var(--c-muted);margin-top:8px;">آخر أسبوع مُدخَل: ' + current.week_start + '</p>';
@@ -495,7 +495,7 @@
         return t;
       }
 
-      html += '<div class="section"><h3>الإعلانات المدفوعة (Meta Ads)</h3>';
+      html += '<div class="section"><h3>الإعلانات المدفوعة</h3>';
       if (!batches.length) {
         html += '<div class="empty-state">لسه مفيش تقرير حملات إعلانات مستورد.</div>';
       } else {
@@ -836,7 +836,7 @@
       })).then(function () {
         window.SSMPDDb.logUsageActivity(me.id, "استيراد تقرير حملات إعلانات", parsedRows.length + " حملة (Meta Ads)").catch(function () {});
         backdrop.remove();
-        render(document.getElementById("view-container"));
+        (window.SSMPDRenderSummary || { render: render }).render(document.getElementById("view-container"));
       }).catch(function (e) { alert("خطأ: " + e.message); saveBtn.disabled = false; });
     };
   }
@@ -853,7 +853,7 @@
       '<div class="field"><label>أو ارفع تقرير CSV (Meta Business Suite / Meta Ads / Google Ads)</label>' +
       '<input type="file" id="wm-csv-file" accept=".csv,text/csv"></div>' +
       '<div id="wm-csv-status" style="font-size:11px;color:var(--c-muted);margin-bottom:10px;"></div>' +
-      '<div class="field"><label>الوصول (Reach)</label><input type="number" id="wm-reach"></div>' +
+      '<div class="field"><label>الوصول</label><input type="number" id="wm-reach"></div>' +
       '<div class="field"><label>نسبة التفاعل %</label><input type="number" step="0.1" id="wm-eng"></div>' +
       '<div class="field"><label>متابعين جدد</label><input type="number" id="wm-followers"></div>' +
       "<div style=\"text-align:left;\"><button class=\"btn\" id=\"wm-save\"> <!--ssmpd-i18n:%D8%AD%D9%81%D8%B8-->حفظ</button></div></div>";
@@ -896,12 +896,14 @@
       }).then(function () {
         window.SSMPDDb.logUsageActivity(me.id, "إدخال/رفع بيانات أسبوع", document.getElementById("wm-week").value).catch(function () {});
         backdrop.remove();
-        render(document.getElementById("view-container"));
+        (window.SSMPDRenderSummary || { render: render }).render(document.getElementById("view-container"));
       }).catch(function (e) { alert("خطأ: " + e.message); });
     };
   }
 
   window.SSMPDRenderSummary = { render: render };
+  // the original sections stay available (folded «كل التفاصيل والأرشيف» in summary-v2.js) and so do their dialogs
+  window.SSMPDRenderSummaryBase = { render: render, openMetricsModal: openMetricsModal, openAdImportModal: openAdImportModal, resultLabel: resultLabel };
 })();
 
 

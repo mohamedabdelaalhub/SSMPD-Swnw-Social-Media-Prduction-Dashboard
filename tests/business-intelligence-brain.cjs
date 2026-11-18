@@ -49,16 +49,16 @@ assert.match(feedbackSql,/'measurement',v::text,'validates','knowledge'/i,'measu
 assert.match(ui,/hasAnyRole\(a,\['general_manager','super_admin'\]\)/i,'owner workspace must be management-only');
 assert.match(ui,/business_content_brief/i,'content AI must receive approved business memory');
 assert(!ui.includes('task_work_results'),'content wrapper must not read raw employee reports');
-assert.match(ui,/Contribution Impact/i);
-assert.match(ui,/Scenario Planning/i);
-assert.match(ui,/Owner Copilot/i);
+assert.match(ui,/أثر الفريق/);
+assert.match(ui,/تخطيط السيناريو/);
+assert.match(ui,/مساعد المالك/);
 new Function(ui); new Function(strategyUi);
 
-for(const label of ['يحتاج قراري','الفرص','التسويق والإعلانات','خلاصة المهام','القياس والنتائج','Knowledge Graph'])assert(strategyUi.includes(label),`missing strategic view ${label}`);
-assert.match(strategyUi,/Revenue Attribution/i);
+for(const label of ['يحتاج قراري','الفرص','التسويق والإعلانات','خلاصة المهام','القياس والنتائج','خريطة المعرفة'])assert(strategyUi.includes(label),`missing strategic view ${label}`);
+assert.match(strategyUi,/ربط الإيراد بالحملة/);
 assert.match(strategyUi,/business_measurement_queue/i);
 assert.match(strategyUi,/business_measurement_save/i);
-assert.match(strategyUi,/Feedback Loop/i);
+assert.match(strategyUi,/دورة القياس/);
 
 assert.match(edge,/business_ai_allow/i,'external calls must pass the AI usage gate');
 assert.match(edge,/business_copilot_context/i);
