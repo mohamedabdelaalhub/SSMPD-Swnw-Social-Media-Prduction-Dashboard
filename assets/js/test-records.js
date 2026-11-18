@@ -1,18 +1,19 @@
 /* «سجلات تجريبية» — OWNER-ONLY panel (super_admin) to flag a record as «تجريبي» and then delete it safely.
    Card in the admin area (above «كل المستخدمين»). Everything is enforced by the database (migration 20261109130000_test_record_delete.sql, not applied until the owner approves):
    only the owner role, only records carrying a «تجريبي» flag, a full archive copy before the delete, refusal when the record is tied to payments/payouts/claims/stock/closed periods.
+   Type «مقدم حجز» (advance) comes from 20261118190000_test_tool_booking_advance.sql: only an unused advance (no use / refund / booking, cash still in its open drawer); its receipt entry goes with it.
    This file only shows the owner what will happen and sends the typed confirmations. If the migration is missing the panel says so and does nothing. */
 (function () {
   'use strict';
   if (window.__SWNWTestRecords) return;
   window.__SWNWTestRecords = true;
 
-  var TYPES = [['invoice', 'فاتورة'], ['doctor_contract', 'عقد دكتور'], ['doctor_key', 'دكتور تجريبي كامل (كل عقوده ومستحقاته)'], ['inventory_item', 'صنف مخزون'], ['pricing_supply', 'مستلزم تسعير']];
-  var TNAME = { invoice: 'فاتورة', doctor_contract: 'عقد دكتور', doctor_key: 'دكتور كامل', inventory_item: 'صنف مخزون', pricing_supply: 'مستلزم تسعير' };
+  var TYPES = [['invoice', 'فاتورة'], ['doctor_contract', 'عقد دكتور'], ['doctor_key', 'دكتور تجريبي كامل (كل عقوده ومستحقاته)'], ['inventory_item', 'صنف مخزون'], ['pricing_supply', 'مستلزم تسعير'], ['advance', 'مقدم حجز']];
+  var TNAME = { invoice: 'فاتورة', doctor_contract: 'عقد دكتور', doctor_key: 'دكتور كامل', inventory_item: 'صنف مخزون', pricing_supply: 'مستلزم تسعير', advance: 'مقدم حجز' };
   var TABLES = { 'clinic_finance.invoices': 'فاتورة', 'clinic_finance.entries': 'قيد يومية', 'clinic_finance.lines': 'سطر قيد', 'clinic_finance.audit': 'سجل مراجعة', 'clinic_finance.doctor_accruals': 'مستحق دكتور',
     'clinic_finance.doctor_allocations': 'توزيع أتعاب', 'clinic_finance.doctor_allocation_lines': 'سطر توزيع أتعاب', 'clinic_finance.doctor_extra_allocations': 'مؤدٍّ إضافي', 'clinic_finance.channel_allocations': 'توزيع قناة',
     'clinic_finance.doctor_contracts': 'عقد دكتور', 'public.inventory_items': 'صنف مخزون', 'clinic_reception.items': 'صنف استقبال', 'public.inventory_alerts': 'تنبيه مخزون', 'public.inventory_price_history': 'سجل أسعار',
-    'clinic_finance.inventory_catalog_prices': 'سعر مرجعي', 'public.pricing_supplies': 'مستلزم تسعير' };
+    'clinic_finance.inventory_catalog_prices': 'سعر مرجعي', 'public.pricing_supplies': 'مستلزم تسعير', 'clinic_finance.advances': 'مقدم حجز', 'clinic_finance.advance_proofs': 'إثبات تحصيل مقدم' };
   var scheduled = false;
 
   function e(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
@@ -151,7 +152,7 @@
     if (!users || document.querySelector('[data-test-records-card]')) return;
     var card = document.createElement('div'); card.className = 'section'; card.setAttribute('data-test-records-card', '1');
     card.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;"><div><h3 style="margin:0 0 5px;">سجلات تجريبية — حذف آمن (للمالك فقط)</h3>' +
-      '<p style="margin:0;color:var(--c-muted);font-size:12px;line-height:1.6;">علّم فاتورة أو عقد أو صنف مخزون كـ«تجريبي» ثم احذفه، مع نسخة كاملة في الأرشيف. مفيش حذف لأي حاجة مش معلَّمة، ولا لأي حاجة عليها دفع أو صرف.</p></div>' +
+      '<p style="margin:0;color:var(--c-muted);font-size:12px;line-height:1.6;">علّم فاتورة أو عقد أو صنف مخزون أو مقدم حجز كـ«تجريبي» ثم احذفه، مع نسخة كاملة في الأرشيف. مفيش حذف لأي حاجة مش معلَّمة، ولا لأي حاجة عليها دفع أو صرف.</p></div>' +
       '<button class="btn" type="button" data-test-records-open>فتح</button></div>';
     users.parentNode.insertBefore(card, users);
     card.querySelector('[data-test-records-open]').onclick = open;

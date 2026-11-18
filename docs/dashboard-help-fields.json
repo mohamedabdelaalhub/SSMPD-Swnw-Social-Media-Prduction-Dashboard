@@ -17539,8 +17539,8 @@
       "kind": "html",
       "forms": [],
       "tab": "admin",
-      "article": "access",
-      "text_sha256": "b2a781f343935f561f8c9c65dec5d5e18ccd8af5a8aae55961cc8e19e0d07f5c"
+      "article": "test-records",
+      "text_sha256": "7a7b81d6d6cb8aa95aa3a8ddf5d3b33eac80302d22d35b75e3134dcfc0b31497"
     },
     {
       "file": "test-records.js",
@@ -17549,7 +17549,7 @@
       "kind": "html",
       "forms": [],
       "tab": "admin",
-      "article": "access",
+      "article": "test-records",
       "text_sha256": "5fbe5d845c82c4ba88c5b4eb9bc5847b80498033d54fbb409eadd24a1b312f61"
     },
     {
@@ -17559,7 +17559,7 @@
       "kind": "placeholder",
       "forms": [],
       "tab": "admin",
-      "article": "access",
+      "article": "test-records",
       "text_sha256": "f6a8afc48dcfdf71bf8636d88bfaabfa659dcfc212008de0274f7b9588e8bb4d"
     },
     {
@@ -17569,7 +17569,7 @@
       "kind": "label",
       "forms": [],
       "tab": "admin",
-      "article": "access",
+      "article": "test-records",
       "text_sha256": "f6a8afc48dcfdf71bf8636d88bfaabfa659dcfc212008de0274f7b9588e8bb4d"
     },
     {
@@ -17579,7 +17579,7 @@
       "kind": "label",
       "forms": [],
       "tab": "admin",
-      "article": "access",
+      "article": "test-records",
       "text_sha256": "1c2bd7630aebca0fafb5a2705fdca11f7e215ae222ff0bb2a79f70fdc4328729"
     },
     {
@@ -17589,7 +17589,7 @@
       "kind": "label",
       "forms": [],
       "tab": "admin",
-      "article": "access",
+      "article": "test-records",
       "text_sha256": "5533b4d31a49b861ed5560da4dc44c7765066f637505f3b970b207a866de65fc"
     },
     {
@@ -17599,7 +17599,7 @@
       "kind": "label",
       "forms": [],
       "tab": "admin",
-      "article": "access",
+      "article": "test-records",
       "text_sha256": "10d0b45c72c5ce0b36bb4b4cd3c21aea9831688e3754cc2c55d650a46ac804a3"
     },
     {
