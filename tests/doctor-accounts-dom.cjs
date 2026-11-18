@@ -46,7 +46,7 @@ const { JSDOM } = require('jsdom'), fs = require('fs'), assert = require('node:a
   assert.equal(rows().length, 3, 'exactly the accounts the server returned');
   const txt = box.textContent;
   for (const s of ['د. أحمد', 'EMP-000038', '800.00', '500.00', '300.00', '(2 فاتورة)', '50.00', 'بدون عقد معتمد']) assert(txt.includes(s), 'shows ' + s);
-  const cards = box.querySelector('.fc-st-cards').textContent; assert(cards.includes('575.00'), 'payable now total 500+0+75'); assert(cards.includes('عدد الأطباء') && cards.includes('3'), 'doctor count'); const cv = [...box.querySelectorAll('.fc-st-card strong')].map(x => x.textContent); assert.deepEqual(cv, ['3', '575.00', '500.00'], 'cards: doctors with an account, payable now total, waiting total');
+  const cards = box.querySelector('.fc-st-cards').textContent; assert(cards.includes('575.00'), 'payable now total 500+0+75'); assert(cards.includes('أطباء ليهم حساب') && cards.includes('3'), 'doctor count'); const cv = [...box.querySelectorAll('.fc-st-card strong')].map(x => x.textContent); assert.deepEqual(cv, ['3', '575.00', '500.00'], 'cards: doctors with an account, payable now total, waiting total');
   assert.equal(accCalls, 1); assert.equal(hrCalls, 1);
   draw('doctor-accounts'); await tick(); assert.equal(accCalls, 1, 'cached for 30s: no new request on every redraw'); assert.equal(navigated.length, 1, 'no re-draw loop');
 
