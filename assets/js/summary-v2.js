@@ -221,7 +221,7 @@
     var k = tiles(D, now, W), j = journeyHtml(D, now, W), so = socialHtml(D), ad = adsHtml(D), ot = otherHtml(D);
     body.innerHTML = needHtml(needs(D, now)) + tilesHtml(k) + '<div class="sv-grid">' + j + so + ad + ot + '</div>';
     var stamp = root.querySelector('[data-sv-stamp]'); if (stamp) stamp.textContent = 'آخر تحديث ' + fmtStamp(new Date(now));
-    requestAnimationFrame(function () { setTimeout(function () { body.querySelectorAll('[data-sv-w]').forEach(function (i) { i.style.width = Math.max(i.dataset.svW > 0 ? 3 : 0, +i.dataset.svW) + '%'; }); body.classList.add('sv-on'); }, 60); });
+    (w.requestAnimationFrame || function (f) { return setTimeout(f, 16); })(function () { setTimeout(function () { body.querySelectorAll('[data-sv-w]').forEach(function (i) { i.style.width = Math.max(i.dataset.svW > 0 ? 3 : 0, +i.dataset.svW) + '%'; }); body.classList.add('sv-on'); }, 60); });
     bindBody(root, D);
   }
   function bindBody(root, D) {
