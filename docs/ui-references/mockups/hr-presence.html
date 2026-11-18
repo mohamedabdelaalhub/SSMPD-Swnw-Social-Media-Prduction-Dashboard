@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>تصور — الحضور الآن</title>
+<!-- Mockup only. Reference: docs/ui-references/code-xr-ember-v29 (layout/motion), Swnw identity (fonts/colours). Sample names are placeholders. -->
+<style>
+@font-face{font-family:"BigVesta Arabic";src:url("../../../assets/fonts/BigVesta-Regular.woff2") format("woff2");font-weight:400}
+@font-face{font-family:"BigVesta Arabic";src:url("../../../assets/fonts/BigVesta-Bold.woff2") format("woff2");font-weight:700}
+@font-face{font-family:"Hiragino Kaku";src:url("../../../assets/fonts/Hiragino-W3.woff2") format("woff2");font-weight:300}
+@font-face{font-family:"Hiragino Kaku";src:url("../../../assets/fonts/Hiragino-W6.woff2") format("woff2");font-weight:600}
+:root{
+  --blue:#0F369D;--orange:#F15A22;--ink:#16212E;--pos:#2F7D5C;--neg:#D0402A;
+  --bg:#F3F4F7;--card:#fff;--line:#E6E8EE;--muted:#6B7483;
+  --r:18px;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;font-size:14px}
+.top{background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:10px 24px;gap:12px}
+.brand{display:flex;align-items:center;gap:10px}
+.brand .logo{width:34px;height:34px;border-radius:10px;background:var(--blue);color:#fff;display:grid;place-items:center;font-weight:700}
+.brand small{display:block;color:var(--muted);font-size:11px}
+.brand b{font-size:14px}
+.user{display:flex;align-items:center;gap:10px}
+.ib{width:38px;height:38px;border-radius:12px;border:1px solid var(--line);background:#fff;display:grid;place-items:center;position:relative}
+.ib svg{width:18px;height:18px;stroke:var(--ink)}
+.badge{position:absolute;top:-6px;left:-6px;background:var(--neg);color:#fff;font-size:10px;border-radius:9px;padding:1px 6px}
+main{max-width:1320px;margin:0 auto;padding:22px 24px 40px}
+.ph{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+.ph .crumb{color:var(--muted);font-size:12px}
+.ph h1{font-size:30px;margin:4px 0 2px;font-weight:700}
+.ph p{margin:0;color:var(--muted)}
+.ph p b{color:var(--ink)}
+.tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.seg{display:flex;background:#fff;border:1px solid var(--line);border-radius:999px;padding:4px}
+.seg span{padding:7px 14px;line-height:1.3;display:flex;align-items:center;justify-content:center;border-radius:999px;color:var(--muted);font-size:13px}
+.seg span.on{background:var(--ink);color:#fff}
+.search{background:#fff;border:1px solid var(--line);border-radius:999px;padding:9px 16px;color:var(--muted);min-width:220px;display:flex;gap:8px;align-items:center}
+.search svg{width:16px;height:16px;stroke:var(--muted)}
+/* KPI */
+.kpis{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr 1fr;gap:14px;margin-bottom:16px}
+.k{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;transition:transform .18s ease,box-shadow .18s ease}
+.k:hover,.dept:hover{transform:translateY(-4px);box-shadow:0 10px 24px rgba(22,33,46,.07)}
+.k small{color:var(--muted);font-size:12px}
+.k .n{font-size:34px;font-weight:700;margin-top:6px;font-variant-numeric:tabular-nums}
+.k .n em{font-style:normal;font-size:16px;color:var(--muted);font-weight:400}
+.bar{height:6px;border-radius:6px;background:#EEF0F4;margin-top:12px;overflow:hidden}
+.bar i{display:block;height:100%;border-radius:6px;background:var(--blue);width:80%;animation:fill 1s ease-out}
+@keyframes fill{from{width:0}}
+.k.hero{background:linear-gradient(135deg,#F15A22,#F7834F);color:#fff;border:0}
+.k.hero small{color:rgba(255,255,255,.85)}
+.k.hero .list{margin-top:auto;display:flex;flex-wrap:wrap;gap:6px}.k.hero .list span{flex:1;gap:10px;white-space:nowrap}
+.k.hero .list span{background:rgba(255,255,255,.18);border-radius:10px;padding:6px 10px;display:flex;justify-content:space-between;font-size:13px}
+/* chips */
+.chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:16px;scrollbar-width:none}
+.chip{white-space:nowrap;background:#fff;border:1px solid var(--line);border-radius:999px;padding:7px 14px;font-size:13px;display:flex;gap:6px;align-items:center}
+.chip i{font-style:normal;background:#EEF0F4;border-radius:999px;padding:0 8px;font-size:12px;color:var(--muted)}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.chip.on i{background:rgba(255,255,255,.2);color:#fff}
+.chip.warn{border-color:#F8C4AE}
+.chip .dot{width:7px;height:7px;border-radius:50%;background:var(--orange)}
+/* layout */
+.grid{display:grid;grid-template-columns:1fr 330px;gap:16px;align-items:start}
+/* masonry: cards stack in columns so short cards never leave holes */
+.depts{columns:2 330px;column-gap:14px}
+.depts>*{break-inside:avoid;margin-bottom:14px;display:block}
+.side{position:sticky;top:16px}
+.k{display:flex;flex-direction:column}.k .bar{margin-top:auto}.k .n{margin-bottom:12px}
+.dept{background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;transition:transform .18s ease,box-shadow .18s ease;border-inline-start:4px solid var(--pos)}
+.dept.short{border-inline-start-color:var(--orange)}
+.dh{display:flex;justify-content:space-between;align-items:center;padding:16px 18px 12px}
+.dh b{font-size:17px}
+.dh small{display:block;color:var(--muted);font-size:12px;margin-top:3px}
+.st{font-size:12px;border-radius:999px;padding:4px 10px;white-space:nowrap}
+.st.ok{background:#E7F3EE;color:var(--pos)}
+.st.bad{background:#FDECE4;color:#C2410C}
+.rows{list-style:none;margin:0;padding:0 8px 8px}
+.row{display:flex;align-items:center;gap:12px;padding:10px;border-radius:12px}
+.row:hover{background:#F7F8FA}
+.av{width:40px;height:40px;border-radius:50%;flex:none;display:grid;place-items:center;background:var(--c,#E8EEFB);position:relative}
+.av svg{width:20px;height:20px;stroke:var(--cs,#0F369D)}
+.av.photo{background:linear-gradient(160deg,#C9D3E6,#8C9BB8)}
+.av::after{content:"";position:absolute;bottom:0;left:0;width:11px;height:11px;border-radius:50%;background:var(--pos);border:2px solid #fff}
+.nm{flex:1;min-width:0}
+.nm .t{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.nm small{color:var(--muted);font-size:12px}
+.meta{text-align:left;display:flex;flex-direction:column;align-items:flex-end;gap:4px;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.meta b{color:var(--ink);font-size:13px}
+.pill{border-radius:999px;padding:2px 9px;font-size:11.5px}
+.pill.late{background:#FDECE4;color:#C2410C}
+.empty{background:#fff;border:1px dashed #D5D9E2;border-radius:var(--r);padding:14px 18px;color:var(--muted);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.empty b{color:var(--ink)}
+.empty span.tag{background:#F3F4F7;border-radius:999px;padding:4px 10px;font-size:12.5px}
+.more{display:block;padding:12px 18px;border-top:1px solid var(--line);color:var(--blue);font-weight:600;font-size:13px}
+/* side */
+.side{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.side h3{margin:0 0 10px;font-size:16px}
+.mv{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #F0F1F4}
+.mv:last-child{border:0}
+.mv .ic{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;flex:none}
+.mv .ic svg{width:16px;height:16px}
+.mv .in{background:#E7F3EE}.mv .in svg{stroke:var(--pos)}
+.mv .out{background:#FDECE4}.mv .out svg{stroke:#C2410C}
+.mv .tx{flex:1;min-width:0}.mv .tx small{color:var(--muted);display:block;font-size:12px}
+.mv time{color:var(--muted);font-variant-numeric:tabular-nums;font-size:13px}
+
+/* split layout: wide dept cards (right) + side column (left), equal heights */
+.grid{grid-template-columns:1fr 360px;align-items:stretch}
+.depts{columns:auto;display:flex;flex-direction:column;gap:14px}
+.depts>*{margin:0}
+.dept .rows{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));column-gap:8px}.dept .nm .t{white-space:normal}
+.side-col{display:flex;flex-direction:column;gap:14px;min-height:0;position:relative}
+.side-col .side{position:static}
+.noatt h3,.moves h3{display:flex;align-items:center;gap:8px}
+.cnt{background:#EEF0F4;color:var(--muted);font-size:12px;border-radius:999px;padding:1px 9px;font-weight:400}
+.na{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px dashed #D5D9E2;border-radius:12px;margin-top:8px}
+.na b{font-size:14px}.na small{color:var(--muted);font-size:12px;margin-inline-start:auto}
+.dotg{width:8px;height:8px;border-radius:50%;background:#B8BFCC;flex:none}
+/* movements fill exactly the remaining height; extra rows are hidden, never stretch the page */
+.moves{flex:1 1 0;min-height:0;display:flex;flex-direction:column}
+.mvlist{flex:1 1 0;min-height:0;overflow:hidden;-webkit-mask-image:linear-gradient(#000 85%,transparent);mask-image:linear-gradient(#000 85%,transparent)}
+.allmv{border-top:1px solid var(--line);padding:12px 0 0;margin-top:6px}
+@media (max-width:900px){.side-col{order:2}.moves{flex:none}.mvlist{max-height:420px;flex:none}}
+@media (max-width:900px){
+  .kpis{grid-template-columns:1fr 1fr}
+  .k.hero{grid-column:1/-1}
+  .grid{grid-template-columns:1fr}
+  .depts{columns:1}.side{position:static}
+  main{padding:16px 14px 32px}
+  .top{padding:10px 14px}
+  .ph h1{font-size:24px}
+  .search{min-width:0;width:100%}
+  .tools{width:100%;flex-direction:column;align-items:stretch}
+  .seg{justify-content:space-between;align-self:stretch;height:auto}.tools .seg{flex:none}.seg span{flex:1;text-align:center}
+  .kpis{grid-template-columns:repeat(2,1fr);gap:10px}
+  .k{padding:12px}.k .n{font-size:26px}.k .n em{display:block;font-size:12px}
+  .k:not(.hero) small{font-size:11px}
+  .user .hide-m{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* option B: big depts full width, small depts two per row */
+.depts{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-content:start}
+.dept.wide{grid-column:1/-1}
+/* dividers between employees */
+.dept .rows{padding:0 18px 4px;column-gap:0}
+.dept .row{border-radius:0;padding:12px 6px}
+.dept.half .rows{grid-template-columns:1fr}
+.dept.half .row+.row{border-top:1px solid var(--line)}
+.dept.wide .rows{grid-template-columns:repeat(3,1fr)}
+.dept.wide .row{padding-inline:14px}
+.dept.wide .row:not(:nth-child(3n+1)){border-inline-start:1px solid var(--line)}
+.dept.wide .row:nth-child(n+4){border-top:1px solid var(--line)}
+@media (max-width:900px){
+  .depts{grid-template-columns:1fr}
+  .dept.wide .rows{grid-template-columns:1fr}
+  .dept.wide .row{border-inline-start:0!important;border-top:0;padding-inline:6px}
+  .dept.wide .row+.row{border-top:1px solid var(--line)}
+}
+
+/* absentees */
+.row.abs .av{background:#FBE9E6;border:1.5px dashed #E8A396}.row.abs .av svg{stroke:var(--neg)}.row.abs .av::after{background:var(--neg)}
+.row.abs .nm .t{color:var(--neg)}
+.pill.gone{background:#FBE9E6;color:var(--neg);white-space:nowrap}
+.call{border:1px solid var(--line);background:#fff;border-radius:999px;padding:3px 12px;font:inherit;font-size:12px;color:var(--blue);cursor:pointer}
+.absent{border-color:#F3C9C1;background:linear-gradient(#fff,#fff) padding-box}
+.cnt.red{background:#FBE9E6;color:var(--neg)}
+.hint{margin:-4px 0 6px;color:var(--muted);font-size:12px}
+.ab{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid #F0F1F4}
+.ab .av{width:34px;height:34px;background:#FBE9E6;border:1.5px dashed #E8A396}.ab .av svg{stroke:var(--neg);width:17px}.ab .av::after{background:var(--neg)}
+.ab .tx{flex:1;min-width:0}.ab .tx small{display:block;color:var(--muted);font-size:12px}
+
+/* ===== chips fill the full row on desktop (ends line up with the cards) ===== */
+@media (min-width:901px){.chips{overflow:visible;flex-wrap:nowrap}.chip{flex:1 1 auto;justify-content:center}}
+/* ===== interaction & motion ===== */
+:root{--ease:cubic-bezier(.2,.8,.2,1)}
+.chip,.seg span,.call,.ib,.more,.k,.dept,.row,.mv,.ab,.na{transition:all .22s var(--ease)}
+.chip{cursor:pointer;position:relative;overflow:hidden}
+.chip:hover{transform:translateY(-2px);border-color:#9DB0E0;box-shadow:0 6px 14px rgba(15,54,157,.10)}
+.chip:active{transform:scale(.95)}
+.chip.on:hover{box-shadow:0 8px 18px rgba(22,33,46,.25)}
+.chip i{transition:all .22s var(--ease)}
+.chip:hover i{background:#E3E9F7;color:var(--blue)}.chip.on:hover i{background:rgba(255,255,255,.25);color:#fff}
+/* sliding pill for view switcher */
+.seg{position:relative}
+.seg span{position:relative;z-index:1;cursor:pointer;background:transparent!important}
+.seg span.on{color:#fff}
+.seg span:not(.on):hover{color:var(--ink)}
+.seg .ind{position:absolute;top:4px;bottom:4px;border-radius:999px;background:var(--ink);transition:all .35s var(--ease);z-index:0}
+/* buttons */
+.ib{cursor:pointer}.ib:hover{background:#F3F5FA;transform:translateY(-1px)}.ib:active{transform:scale(.92)}
+.ib:hover svg{animation:wig .5s ease}
+@keyframes wig{25%{transform:rotate(-12deg)}75%{transform:rotate(12deg)}}
+.call:hover{background:var(--blue);color:#fff;border-color:var(--blue);transform:translateY(-1px)}
+.call:active{transform:scale(.93)}
+/* links: underline grows from the start */
+.more{cursor:pointer;background-image:linear-gradient(var(--blue),var(--blue));background-size:0 2px;background-repeat:no-repeat;background-position:100% 100%}
+.more:hover{background-size:100% 2px;letter-spacing:.2px}
+/* list rows */
+.row{cursor:pointer}.row:hover{background:#F5F7FC}
+.row:hover .av{transform:scale(1.08)}.av{transition:transform .22s var(--ease)}
+.mv,.ab,.na{cursor:pointer;border-radius:10px}
+.mv:hover,.ab:hover{background:#F7F8FA;padding-inline:8px}
+.mv:hover .ic{transform:translateX(-3px)}.mv .ic{transition:transform .22s var(--ease)}
+.na:hover{border-color:#9DB0E0;background:#F8FAFE}
+.k{cursor:pointer}
+/* click ripple */
+.rip{position:absolute;border-radius:50%;background:currentColor;opacity:.18;transform:scale(0);animation:rip .55s ease-out forwards;pointer-events:none}
+@keyframes rip{to{transform:scale(4);opacity:0}}
+.call,.k,.dept,.mv,.ab{position:relative;overflow:hidden}
+/* entrance: cards rise in one after another */
+.k,.dept,.side,.chip{animation:rise .5s var(--ease) both}
+@keyframes rise{from{opacity:0;transform:translateY(12px)}}
+/* attention pulse on the absent dot */
+.row.abs .av::after,.ab .av::after{animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 5px rgba(208,64,42,.18)}}
+
+.cnt.org{background:#FDECE4;color:#C2410C}
+.latebox{border-color:#F8D5C5}
+.ab.lt .av{background:#FDECE4;border:0}.ab.lt .av svg{stroke:#C2410C}.ab.lt .av::after{background:var(--orange);animation:none}
+.ab.lv .av{background:#EEF0F4;border:0}.ab.lv .av svg{stroke:var(--muted)}.ab.lv .av::after{background:#B8BFCC;animation:none}
+.pill.lvp{background:#EEF0F4;color:var(--muted)}
+.side h3{margin-bottom:6px}
+
+/* each department has its own colour (identity); status stays in the badge */
+.dept{border-inline-start-color:var(--dc)!important}
+.dt{display:flex;align-items:center;gap:12px}
+.dsq{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;font-weight:700;color:#fff;background:var(--dc);flex:none;transition:transform .25s var(--ease)}
+.dept:hover .dsq{transform:rotate(-8deg) scale(1.06)}
+.dept .row:not(.abs) .av{background:color-mix(in srgb,var(--dc) 13%,#fff)}
+.dept .row:not(.abs) .av svg{stroke:var(--dc)}
+.dept.short{box-shadow:inset 0 0 0 1px #F8C4AE}
+.chip .dot2{width:8px;height:8px;border-radius:50%;background:var(--dc);flex:none}
+.chip.warn::after{content:"!";position:absolute;top:3px;left:8px;font-size:10px;font-weight:700;color:var(--orange)}
+
+.dsq svg{width:20px;height:20px;stroke:#fff}
+.chip.warn::after{content:none}
+.follow{border-color:#F3C9C1}
+.fh{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px;padding:6px 10px;border-radius:10px;background:#F6F7F9}
+.fh b{font-size:13.5px}.fh small{color:var(--muted);font-size:11.5px;margin-inline-start:auto}
+.fh.red{background:#FCEFEC}.fh.red b{color:var(--neg)}
+.fh.org{background:#FEF3EC}.fh.org b{color:#C2410C}
+.follow .ab{padding:8px 4px;border-top:0}
+.follow .ab+.ab{border-top:1px solid #F0F1F4}
+/* movements always keep at least ~5 rows visible; right column cards stretch to match */
+.moves{min-height:430px}
+.depts{align-content:stretch}
+
+/* right column fills the full height of the row; a lone last half-card spans the width */
+.grid>div:first-child{display:flex;flex-direction:column}
+.grid>div:first-child>.depts{flex:1;grid-auto-rows:auto}
+.dept.half:last-child:nth-child(even){grid-column:1/-1}
+.moves{min-height:330px}
+.dept{display:flex!important;flex-direction:column}.dept .more{margin-top:auto}
+
+.dfoot{margin-top:auto;display:flex;align-items:center;gap:6px;padding:10px 18px;border-top:1px solid var(--line);font-size:12.5px;flex-wrap:wrap}
+.fc{background:#F3F5FA;border-radius:999px;padding:3px 10px;color:var(--ink);cursor:pointer;transition:all .2s var(--ease)}
+.fc b{color:var(--blue)}
+.fc:hover{background:#E3E9F7}
+.fc.zero{background:transparent;color:#A3AAB6;cursor:default}.fc.zero b{color:#A3AAB6}
+.exp{margin-inline-start:auto;color:var(--blue);font-weight:600;cursor:pointer}
+.dept .row .av.photo{background:linear-gradient(160deg,#C9D3E6,#8C9BB8)!important}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="person" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6"/></symbol>
+  <symbol id="in" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4v18h-4M10 17l5-5-5-5M15 12H3"/></symbol>
+  <symbol id="out" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5V3h4M16 17l5-5-5-5M21 12H9"/></symbol>
+  <symbol id="bell" viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M6 16V11a6 6 0 1 1 12 0v5l2 2H4zM10 21h4"/></symbol>
+  <symbol id="search" viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></symbol>
+<symbol id="d0" viewBox="0 0 24 24" fill="none" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.5-7 10-7 10z"/><path d="M8 11h2l1-2 2 4 1-2h2"/></symbol><symbol id="d1" viewBox="0 0 24 24" fill="none" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 1 1 12 0v5l2 2H4zM10 21h4"/></symbol><symbol id="d2" viewBox="0 0 24 24" fill="none" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5h6v2M3 13h18"/></symbol><symbol id="d3" viewBox="0 0 24 24" fill="none" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="4.5" r="2"/><path d="M12 7v6l-3 7M12 13l3 7M7 10h10"/></symbol><symbol id="d5" viewBox="0 0 24 24" fill="none" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11v2l11 5V6L3 11zM14 8h3a4 4 0 0 1 0 8h-3M6 14l1 5h3l-1-4"/></symbol><symbol id="d4" viewBox="0 0 24 24" fill="none" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.6L18 9l-4.2 1.4L12 15l-1.8-4.6L6 9l4.2-1.4z"/><path d="M18 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></symbol></svg>
+
+<header class="top">
+  <div class="brand"><span class="logo">S</span><div><small>مركز عيادات Swnw التخصصية</small><b>الموارد البشرية</b></div></div>
+  <div class="user">
+    <span class="ib hide-m"><svg><use href="#search"/></svg></span>
+    <span class="ib"><svg><use href="#bell"/></svg><span class="badge">62</span></span>
+    <span class="av" style="width:38px;height:38px"><svg><use href="#person"/></svg></span>
+  </div>
+</header>
+
+<main>
+  <div class="ph">
+    <div>
+      <div class="crumb">الثلاثاء 17 نوفمبر · الموارد البشرية</div>
+      <h1>الحضور الآن</h1>
+      <p><b>12</b> حاضر · <b style="color:var(--neg)">2</b> غايب · <b>2</b> متأخر · <b style="color:#C2410C">2 أقسام ناقصة</b></p>
+    </div>
+    <div class="tools">
+      <div class="search"><svg><use href="#search"/></svg>ابحث باسم الموظف أو القسم…</div>
+      <div class="seg"><span class="on">بطاقات</span><span>جدول زمني</span><span>قائمة</span></div>
+    </div>
+  </div>
+
+  <section class="kpis">
+    <div class="k hero">
+      <small>أقسام أقل من الحد الأدنى</small>
+      <div class="n">2</div>
+      <div class="list"><span>التمريض <b>4 من 5</b></span><span>الاستقبال <b>1 من 3</b></span></div>
+    </div>
+    <div class="k"><small>حاضر الآن</small><div class="n">12 <em>من 15 مجدول</em></div><div class="bar"><i></i></div></div>
+    <div class="k"><small>غايبين الآن</small><div class="n" style="color:var(--neg)">2</div><div class="bar"><i style="width:13%;background:var(--neg)"></i></div></div>
+    <div class="k"><small>متأخرين اليوم</small><div class="n" style="color:#C2410C">2</div><div class="bar"><i style="width:15%;background:var(--orange)"></i></div></div>
+    <div class="k"><small>إجازات وأذونات</small><div class="n">1</div><div class="bar"><i style="width:7%;background:var(--muted)"></i></div></div>
+  </section>
+
+  <nav class="chips">
+    <span class="chip on">الكل <i>12</i></span>
+    <span style="--dc:#0E8A7E" class="chip dc warn"><span class="dot2"></span>التمريض <i>4/5</i></span>
+    <span style="--dc:#2563EB" class="chip dc warn"><span class="dot2"></span>الاستقبال <i>1/3</i></span>
+    <span style="--dc:#475569" class="chip dc"><span class="dot2"></span>الإدارة <i>2</i></span>
+    <span style="--dc:#9333EA" class="chip dc"><span class="dot2"></span>العلاج الطبيعي <i>1</i></span>
+    <span style="--dc:#65A30D" class="chip dc"><span class="dot2"></span>النظافة <i>1</i></span>
+    <span style="--dc:#DB2777" class="chip dc"><span class="dot2"></span>السوشيال ميديا <i>1</i></span>
+    <span style="--dc:#0891B2" class="chip dc"><span class="dot2"></span>التجميل <i>0</i></span>
+    <span style="--dc:#A16207" class="chip dc"><span class="dot2"></span>النفسية والتخاطب <i>0</i></span>
+  </nav>
+
+  <div class="grid">
+    <div>
+      <div class="depts">
+        <article style="--dc:#0E8A7E" class="dept wide short">
+          <div class="dh"><div class="dt"><span class="dsq"><svg><use href="#d0"/></svg></span><div><b>التمريض</b><small>4 حاضرين من 5 مجدولين · الحد الأدنى 5</small></div></div><span class="st bad">ناقص 1</span></div>
+          <ul class="rows">
+            <li class="row abs"><span class="av"><svg><use href="#person"/></svg></span><div class="nm"><span class="t">موظفة تمريض 5</span><small>وردية 14:00</small><span class="pill gone" style="display:inline-block;margin-top:4px">لم يصل منذ 7 س 49 د</span></div><div class="meta"><button class="call">اتصال</button></div></li>
+            <li class="row"><span class="av"><svg><use href="#person"/></svg></span><div class="nm"><span class="t">موظفة تمريض 1</span><small>تمريض</small></div><div class="meta"><b>دخل 15:47</b><span>من 6 س 2 د</span></div></li>
+            <li class="row"><span class="av photo"></span><div class="nm"><span class="t">موظفة تمريض 2</span><small>مشرفة تمريض · أسنان</small></div><div class="meta"><b>دخل 15:53</b><span>من 5 س 56 د</span></div></li>
+            <li class="row"><span class="av"><svg><use href="#person"/></svg></span><div class="nm"><span class="t">موظف تمريض 3</span><small>تمريض</small></div><div class="meta"><b>دخل 16:02</b><span>من 5 س 47 د</span></div></li>
+            <li class="row"><span class="av"><svg><use href="#person"/></svg></span><div class="nm"><span class="t">موظف تمريض 4</span><small>تمريض</small></div><div class="meta"><b>دخل 16:10</b><span>من 5 س 38 د</span></div></li>
+          </ul>
+          <div class="dfoot"><span class="fc">جاي لسه <b>1</b></span><span class="fc">انصرف <b>1</b></span><span class="fc">إجازة <b>1</b></span><span class="exp">عرض</span></div>
+        </article>
+
+        <article style="--dc:#2563EB" class="dept half short">
+          <div class="dh"><div class="dt"><span class="dsq"><svg><use href="#d1"/></svg></span><div><b>الاستقبال</b><small>1 حاضر من 1 مجدول · الحد الأدنى 3</small></div></div><span class="st bad">ناقص 2</span></div>
+          <ul class="rows">
+            <li class="row"><span class="av"><svg><use href="#person"/></svg></span><div class="nm"><span class="t">موظفة استقبال</span><small>استقبال</small></div><div class="meta"><b>دخل 16:51</b><span>من 4 س 58 د</span></div></li>
+          </ul>
+          <div class="dfoot"><span class="fc zero">جاي لسه <b>0</b></span><span class="fc zero">انصرف <b>0</b></span><span class="fc zero">إجازة <b>0</b></span></div>
+        </article>
+
+        <article style="--dc:#475569" class="dept half">
+          <div class="dh"><div class="dt"><span class="dsq"><svg><use href="#d2"/></svg></span><div><b>الإدارة</b><small>2 حاضرين من 2 مجدولين</small></div></div><span class="st ok">مكتمل</span></div>
+          <ul class="rows">
+            <li class="row"><span class="av"><svg><use href="#person"/></svg></span><div class="nm"><span class="t">مديرة إدارية</span><small>مدير · إداري</small></div><div class="meta"><b>دخل 13:44</b><span>من 8 س 5 د</span></div></li>
+            <li class="row"><span class="av photo"></span><div class="nm"><span class="t">مدير مالي</span><small>مدير · مالي</small></div><div class="meta"><b>دخل 18:56</b><span>من 2 س 53 د</span></div></li>
+          </ul>
+          <div class="dfoot"><span class="fc zero">جاي لسه <b>0</b></span><span class="fc">انصرف <b>1</b></span><span class="fc zero">إجازة <b>0</b></span><span class="exp">عرض</span></div>
+        </article>
+
+        <article style="--dc:#9333EA" class="dept half">
+          <div class="dh"><div class="dt"><span class="dsq"><svg><use href="#d3"/></svg></span><div><b>العلاج الطبيعي</b><small>1 حاضر من 1 مجدول</small></div></div><span class="st ok">مكتمل</span></div>
+          <ul class="rows">
+            <li class="row"><span class="av"><svg><use href="#person"/></svg></span><div class="nm"><span class="t">مساعد علاج طبيعي</span><small>مساعد</small></div><div class="meta"><span class="pill late">متأخر 3 س 45 د</span><b>دخل 18:45</b></div></li>
+          </ul>
+          <div class="dfoot"><span class="fc zero">جاي لسه <b>0</b></span><span class="fc zero">انصرف <b>0</b></span><span class="fc zero">إجازة <b>0</b></span></div>
+        </article>
+
+        <article style="--dc:#65A30D" class="dept half">
+          <div class="dh"><div class="dt"><span class="dsq"><svg><use href="#d4"/></svg></span><div><b>النظافة</b><small>1 حاضر من 1 مجدول</small></div></div><span class="st ok">مكتمل</span></div>
+          <ul class="rows">
+            <li class="row"><span class="av"><svg><use href="#person"/></svg></span><div class="nm"><span class="t">عاملة نظافة — وردية مسائية</span><small>عاملة</small></div><div class="meta"><b>دخل 21:00</b><span>من 48 د</span></div></li>
+          </ul>
+          <div class="dfoot"><span class="fc">جاي لسه <b>1</b></span><span class="fc zero">انصرف <b>0</b></span><span class="fc zero">إجازة <b>0</b></span><span class="exp">عرض</span></div>
+        </article>
+        <article style="--dc:#DB2777" class="dept half">
+          <div class="dh"><div class="dt"><span class="dsq"><svg><use href="#d5"/></svg></span><div><b>السوشيال ميديا</b><small>1 حاضر من 1 مجدول</small></div></div><span class="st ok">مكتمل</span></div>
+          <ul class="rows">
+            <li class="row"><span class="av"><svg><use href="#person"/></svg></span><div class="nm"><span class="t">مصمم جرافيك</span><small>تصميم</small></div><div class="meta"><b>دخل 16:51</b><span>من 4 س 58 د</span></div></li>
+          </ul>
+          <div class="dfoot"><span class="fc zero">جاي لسه <b>0</b></span><span class="fc zero">انصرف <b>0</b></span><span class="fc zero">إجازة <b>0</b></span></div>
+        </article>
+      </div>
+    </div>
+
+    <aside class="side-col">
+      <section class="side follow">
+        <h3>محتاجين متابعة</h3>
+        <div class="fh red"><b>الغايبون الآن</b><span class="cnt red">2</span><small>كان المفروض يحضروا ولسه مبصموش</small></div>
+        <div class="ab"><span class="av"><svg><use href="#person"/></svg></span><div class="tx"><b>موظفة تمريض 5</b><small>التمريض · وردية 14:00</small></div><span class="pill gone">من 7 س 49 د</span></div>
+        <div class="ab"><span class="av"><svg><use href="#person"/></svg></span><div class="tx"><b>أخصائية تخاطب</b><small>النفسية والتخاطب · وردية 16:00</small></div><span class="pill gone">من 5 س 49 د</span></div>
+        <div class="fh org"><b>المتأخرين النهارده</b><span class="cnt org">2</span><small>بعد الميعاد + السماح</small></div>
+        <div class="ab lt"><span class="av"><svg><use href="#person"/></svg></span><div class="tx"><b>مساعد علاج طبيعي</b><small>العلاج الطبيعي · الموعد 15:00 · وصل 18:45</small></div><span class="pill late">3 س 45 د</span></div>
+        <div class="ab lt"><span class="av"><svg><use href="#person"/></svg></span><div class="tx"><b>موظفة استقبال</b><small>الاستقبال · الموعد 16:30 · وصل 16:51</small></div><span class="pill late">21 د</span></div>
+        <div class="fh"><b>الإجازات والأذونات</b><span class="cnt">1</span></div>
+        <div class="ab lv"><span class="av"><svg><use href="#person"/></svg></span><div class="tx"><b>موظف تمريض 6</b><small>التمريض · وردية 14:00</small></div><span class="pill lvp">إجازة</span></div>
+      </section>
+      <section class="side noatt">
+        <h3>أقسام بدون حضور الآن <span class="cnt">2</span></h3>
+        <div class="na"><span class="dotg" style="background:#A16207"></span><b>النفسية والتخاطب</b><small>0 من 1 · غايب 1</small></div>
+        <div class="na"><span class="dotg" style="background:#0891B2"></span><b>التجميل</b><small>مفيش حد مجدول دلوقتي</small></div>
+      </section>
+      <section class="side moves">
+        <h3>آخر الحركات</h3>
+        <div class="mvlist">
+      <div class="mv"><span class="ic in"><svg><use href="#in"/></svg></span><div class="tx">عاملة نظافة — وردية مسائية<small>دخول · النظافة</small></div><time>21:00</time></div>
+      <div class="mv"><span class="ic in"><svg><use href="#in"/></svg></span><div class="tx">مدير مالي<small>دخول · الإدارة</small></div><time>18:56</time></div>
+      <div class="mv"><span class="ic in"><svg><use href="#in"/></svg></span><div class="tx">مساعد علاج طبيعي<small>دخول · العلاج الطبيعي</small></div><time>18:45</time></div>
+      <div class="mv"><span class="ic out"><svg><use href="#out"/></svg></span><div class="tx">ممرض وردية صباحية<small>خروج · التمريض</small></div><time>17:44</time></div>
+      <div class="mv"><span class="ic in"><svg><use href="#in"/></svg></span><div class="tx">موظفة استقبال<small>دخول · السوشيال ميديا</small></div><time>16:51</time></div>
+      <div class="mv"><span class="ic in"><svg><use href="#in"/></svg></span><div class="tx">موظف تمريض 4<small>دخول · التمريض</small></div><time>16:10</time></div>
+      <div class="mv"><span class="ic in"><svg><use href="#in"/></svg></span><div class="tx">موظف تمريض 3<small>دخول · التمريض</small></div><time>16:02</time></div>
+      <div class="mv"><span class="ic in"><svg><use href="#in"/></svg></span><div class="tx">موظفة تمريض 2<small>دخول · التمريض</small></div><time>15:53</time></div>
+      <div class="mv"><span class="ic in"><svg><use href="#in"/></svg></span><div class="tx">موظف تمريض 1<small>دخول · التمريض</small></div><time>15:47</time></div>
+      <div class="mv"><span class="ic out"><svg><use href="#out"/></svg></span><div class="tx">مدير مالي<small>خروج · الإدارة</small></div><time>15:20</time></div>
+      <div class="mv"><span class="ic out"><svg><use href="#out"/></svg></span><div class="tx">موظفة استقبال<small>خروج · الاستقبال</small></div><time>15:05</time></div>
+      <div class="mv"><span class="ic in"><svg><use href="#in"/></svg></span><div class="tx">مديرة إدارية<small>دخول · الإدارة</small></div><time>13:44</time></div>
+      <div class="mv"><span class="ic in"><svg><use href="#in"/></svg></span><div class="tx">ممرض وردية صباحية<small>دخول · التمريض</small></div><time>09:58</time></div>
+      <div class="mv"><span class="ic out"><svg><use href="#out"/></svg></span><div class="tx">عامل صيانة<small>خروج · الإدارة</small></div><time>09:30</time></div>
+        </div>
+        <a class="more allmv">كل الحركات اليوم</a>
+      </section>
+    </aside>
+  </div>
+</main>
+<script>
+// mockup-only interactions
+(function(){
+  var d=document;
+  // stagger entrance
+  [].forEach.call(d.querySelectorAll('.k,.chip,.dept,.side'),function(el,i){el.style.animationDelay=(i*40)+'ms'});
+  // chips select
+  [].forEach.call(d.querySelectorAll('.chip'),function(c){c.addEventListener('click',function(){d.querySelector('.chip.on').classList.remove('on');c.classList.add('on')})});
+  // sliding segmented control
+  var seg=d.querySelector('.seg'),ind=d.createElement('i');ind.className='ind';seg.appendChild(ind);
+  function place(el){ind.style.left=el.offsetLeft+'px';ind.style.width=el.offsetWidth+'px'}
+  [].forEach.call(seg.querySelectorAll('span'),function(sp){sp.addEventListener('click',function(){seg.querySelector('.on').classList.remove('on');sp.classList.add('on');place(sp)})});
+  place(seg.querySelector('.on'));addEventListener('resize',function(){place(seg.querySelector('.on'))});
+  // ripple
+  d.addEventListener('click',function(e){var t=e.target.closest('.chip,.call,.k,.mv,.ab');if(!t)return;var r=t.getBoundingClientRect(),z=Math.max(r.width,r.height),s=d.createElement('span');s.className='rip';s.style.width=s.style.height=z+'px';s.style.left=(e.clientX-r.left-z/2)+'px';s.style.top=(e.clientY-r.top-z/2)+'px';t.appendChild(s);setTimeout(function(){s.remove()},600)});
+  // count-up numbers
+  [].forEach.call(d.querySelectorAll('.k .n'),function(n){var node=n.firstChild,to=parseInt(node.nodeValue,10);if(isNaN(to))return;var t0=performance.now();(function f(t){var p=Math.min(1,(t-t0)/700);node.nodeValue=Math.round(to*(1-Math.pow(1-p,3)))+(node.nodeValue.match(/\s+$/)||[''])[0];if(p<1)requestAnimationFrame(f)})(t0)});
+})();
+</script>
+</body>
+</html>
