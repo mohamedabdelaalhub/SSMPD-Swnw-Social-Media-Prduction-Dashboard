@@ -1,86 +1,167 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
-
-const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 const SYNC_SECRET = Deno.env.get("BOOKING_SYNC_SECRET");
-
-function getServiceRoleKey(): string | null {
-  const raw = Deno.env.get("SUPABASE_SECRET_KEYS");
-  if (raw) {
-    try {
-      const parsed = JSON.parse(raw);
-      if (parsed && typeof parsed.default === "string" && parsed.default) return parsed.default;
-    } catch {}
-  }
-  return Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || null;
-}
-
-const SERVICE_ROLE_KEY = getServiceRoleKey();
-
-function json(body: unknown, status = 200) {
+function respond(body, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "Content-Type": "application/json" }
+    headers: {
+      "Content-Type": "application/json"
+    }
   });
 }
-
-function textValue(v: unknown): string | null {
-  if (v === undefined || v === null) return null;
-  const s = String(v).trim();
-  return s || null;
+function textValue(value) {
+  if (value === undefined || value === null) return null;
+  const valueAsText = String(value).trim();
+  return valueAsText || null;
 }
-
-Deno.serve(async (req) => {
-  if (req.method !== "POST") return json({ ok: false, error: "POST only" }, 405);
-  if (!SYNC_SECRET || req.headers.get("X-Booking-Sync-Secret") !== SYNC_SECRET) {
-    return json({ ok: false, error: "unauthorized" }, 401);
+Deno.serve(async (request)=>{
+  // الوكيل فقط هو المسموح له بإرسال حجوزات
+  if (request.method !== "POST") {
+    return respond({
+      ok: false,
+      error: "POST only"
+    }, 405);
   }
-  if (!SERVICE_ROLE_KEY) return json({ ok: false, error: "misconfigured" }, 500);
-
-  let body: Record<string, unknown>;
-  try { body = await req.json(); }
-  catch { return json({ ok: false, error: "invalid_json" }, 400); }
-
+  // Secret مستقل للربط بين الوكيل والداشبورد
+  if (!SYNC_SECRET || request.headers.get("X-Booking-Sync-Secret") !== SYNC_SECRET) {
+    return respond({
+      ok: false,
+      error: "unauthorized"
+    }, 401);
+  }
+  if (!SERVICE_ROLE_KEY) {
+    return respond({
+      ok: false,
+      error: "server_misconfigured"
+    }, 500);
+  }
+  let body;
+  try {
+    body = await request.json();
+  } catch  {
+    return respond({
+      ok: false,
+      error: "invalid_json"
+    }, 400);
+  }
+  // المفتاح الأساسي لمنع تكرار نفس الحجز
   const bookingRequestId = textValue(body.booking_request_id);
-  if (!bookingRequestId) return json({ ok: false, error: "booking_request_id_required" }, 400);
-
-  const status = textValue(body.status) || "confirmed";
-  const channel = textValue(body.channel) || "whatsapp";
-  const validStatuses = ["confirmed","rescheduled","cancelled","arrived","completed","no_show"];
-  const validChannels = ["whatsapp","messenger","instagram","facebook","other"];
-  if (!validStatuses.includes(status)) return json({ ok: false, error: "invalid_status" }, 400);
-  if (!validChannels.includes(channel)) return json({ ok: false, error: "invalid_channel" }, 400);
-
-  const row: Record<string, unknown> = {
-    booking_request_id: bookingRequestId,
-    status,
-    channel,
-    last_synced_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  };
-
-  const fields = [
-    "booking_flow_id","official_booking_id","booking_reference","tenant_id","wa_id",
-    "customer_name","phone","specialty_id","specialty_name","doctor_id","doctor_name",
-    "appointment_date","appointment_time","currency","confirmed_at"
-  ];
-  for (const key of fields) {
-    if (body[key] !== undefined) row[key] = textValue(body[key]);
+  if (!bookingRequestId) {
+    return respond({
+      ok: false,
+      error: "booking_request_id_required"
+    }, 400);
   }
-  if (!row.tenant_id) row.tenant_id = "swnw";
-  if (!row.currency) row.currency = "EGP";
-
+  const allowedStatuses = [
+    "confirmed",
+    "rescheduled",
+    "cancelled",
+    "arrived",
+    "completed",
+    "no_show"
+  ];
+  const allowedChannels = [
+    "whatsapp",
+    "messenger",
+    "instagram",
+    "facebook",
+    "other"
+  ];
+  const incomingStatus = textValue(body.status);
+  if (incomingStatus && !allowedStatuses.includes(incomingStatus)) {
+    return respond({
+      ok: false,
+      error: "invalid_status"
+    }, 400);
+  }
+  const incomingChannel = textValue(body.channel);
+  if (incomingChannel && !allowedChannels.includes(incomingChannel)) {
+    return respond({
+      ok: false,
+      error: "invalid_channel"
+    }, 400);
+  }
+  const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+  // هل الحجز اتبعت قبل كده؟
+  const existingResult = await supabase.from("customer_bookings").select("*").eq("booking_request_id", bookingRequestId).maybeSingle();
+  if (existingResult.error) {
+    return respond({
+      ok: false,
+      error: existingResult.error.message
+    }, 500);
+  }
+  const now = new Date().toISOString();
+  const fields = [
+    "booking_flow_id",
+    "official_booking_id",
+    "booking_reference",
+    "tenant_id",
+    "wa_id",
+    "customer_name",
+    "phone",
+    "specialty_id",
+    "specialty_name",
+    "doctor_id",
+    "doctor_name",
+    "appointment_date",
+    "appointment_time",
+    "currency",
+    "confirmed_at"
+  ];
+  const patch = {
+    last_synced_at: now,
+    updated_at: now
+  };
+  // نحدّث فقط الحقول اللي الوكيل بعتها فعلاً
+  // عشان إلغاء/تعديل الحجز مايمسحش باقي البيانات القديمة.
+  for (const field of fields){
+    if (body[field] !== undefined) {
+      patch[field] = textValue(body[field]);
+    }
+  }
+  if (incomingStatus) {
+    patch.status = incomingStatus;
+  }
+  if (incomingChannel) {
+    patch.channel = incomingChannel;
+  }
   if (body.price !== undefined && body.price !== null && body.price !== "") {
     const price = Number(body.price);
-    if (!Number.isFinite(price)) return json({ ok: false, error: "invalid_price" }, 400);
-    row.price = price;
+    if (!Number.isFinite(price)) {
+      return respond({
+        ok: false,
+        error: "invalid_price"
+      }, 400);
+    }
+    patch.price = price;
   }
-
-  const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
-  const result = await admin.from("customer_bookings")
-    .upsert(row, { onConflict: "booking_request_id" })
-    .select("*").single();
-
-  if (result.error) return json({ ok: false, error: result.error.message }, 500);
-  return json({ ok: true, booking: result.data });
+  let result;
+  if (existingResult.data) {
+    // نفس الحجز موجود: تحديث فقط، مفيش Duplicate.
+    result = await supabase.from("customer_bookings").update(patch).eq("booking_request_id", bookingRequestId).select("*").single();
+  } else {
+    // أول مرة الحجز يوصل للداشبورد.
+    const newRow = {
+      booking_request_id: bookingRequestId,
+      tenant_id: "swnw",
+      channel: incomingChannel || "whatsapp",
+      status: incomingStatus || "confirmed",
+      currency: "EGP",
+      created_at: now,
+      ...patch
+    };
+    result = await supabase.from("customer_bookings").insert(newRow).select("*").single();
+  }
+  if (result.error) {
+    return respond({
+      ok: false,
+      error: result.error.message
+    }, 500);
+  }
+  return respond({
+    ok: true,
+    booking: result.data
+  });
 });
