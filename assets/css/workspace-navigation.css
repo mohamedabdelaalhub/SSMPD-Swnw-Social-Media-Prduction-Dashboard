@@ -7,3 +7,70 @@
 .wn-mobile-file{display:none}.wn-file-dialog .modal-head h3{font-size:18px;min-width:0;flex:1;white-space:normal}.wn-file-dialog .modal-head{padding:12px;gap:10px}.wn-file-dialog .wn-fold .kpis{margin-block:12px!important}
 @media(max-width:600px){.wn-mobile-file{display:grid;margin-block:12px}.wn-file-dialog>.wn-tabs{display:none}.wn-file-dialog .modal-head h3{font-size:16px}}
 .wp-modal [hidden],.wp [hidden],.wn-contract-root [hidden],.wn-file-dialog [hidden]{display:none!important}
+/* ===== Main menu v2 (owner-approved mockup docs/ui-references/mockups/main-menu.html, 2026-11-18) =====
+   Full-height drawer from the right, compact head (photo/name/role/close), section icons by group colour,
+   real attention badges, «الأكثر استخدامًا», floating launchers hidden while open. */
+.app-shell .user-dropdown.nav2{position:fixed;top:0;bottom:0;right:0;left:auto;width:min(400px,100vw);max-width:none;height:100dvh;max-height:none;margin:0;padding:0;border:0;border-radius:22px 0 0 22px;background:#fff;box-shadow:-20px 0 50px rgba(15,25,45,.18);z-index:4000;flex-direction:column;gap:0;overflow:hidden}
+.app-shell .user-dropdown.nav2.open{display:flex;animation:nav2-in .42s var(--ease-out,cubic-bezier(.22,1,.36,1))}
+@keyframes nav2-in{from{clip-path:inset(0 0 0 100%);opacity:.6}to{clip-path:inset(0 0 0 0);opacity:1}}
+.app-shell .nav-menu-shade{position:fixed;inset:0;z-index:3999;background:rgba(15,25,45,.38);backdrop-filter:blur(2px);animation:nav2-fade .3s ease}
+@keyframes nav2-fade{from{opacity:0}to{opacity:1}}
+.app-shell .user-dropdown.nav2>.mm-name,.app-shell .user-dropdown.nav2>.mm-role{display:none}
+.app-shell .user-dropdown.nav2 .nav-menu-head{display:flex;align-items:center;gap:12px;padding:18px 18px 12px;margin:0;background:transparent;border-radius:0;color:var(--c-text,#16212E)}
+.nav2 .nav-av{width:48px;height:48px;border-radius:50%;flex:none;display:grid;place-items:center;overflow:hidden;background:linear-gradient(135deg,#0F369D,#2F5FD8);color:#fff;box-shadow:0 0 0 3px #E8EEFB}
+.nav2 .nav-av img{width:100%;height:100%;object-fit:cover}
+.nav2 .nav-who{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:3px}
+.app-shell .nav2 .nav-who strong{font-size:16px;color:#16212E;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.nav2 .nav-who small{font-size:11.5px;color:#0F369D;background:#E8EEFB;border-radius:999px;padding:2px 10px}
+.app-shell .user-dropdown.nav2 .nav-menu-head button{width:40px;height:40px;flex:none;border-radius:12px;border:1px solid #E6E8EE;background:#fff;color:#16212E;display:grid;place-items:center;padding:0;cursor:pointer;transition:transform .3s var(--ease-spring,cubic-bezier(.34,1.56,.64,1)),background .2s}
+.app-shell .user-dropdown.nav2 .nav-menu-head button:hover{background:#F3F5FA;transform:rotate(90deg)}
+.nav2 .nav-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.app-shell .user-dropdown.nav2 .nav-menu-search{position:relative;display:block;margin:4px 18px 12px}
+.nav2 .nav-search-ic{position:absolute;right:13px;top:50%;transform:translateY(-50%);color:#6B7483;pointer-events:none}
+.app-shell .user-dropdown.nav2 .nav-menu-search input{width:100%;font:inherit;font-size:14px;border:1px solid #E6E8EE;background:#F6F8FB;border-radius:12px;padding:11px 40px 11px 14px;outline:0;box-shadow:none;transition:border-color .2s,background .2s,box-shadow .2s}
+.app-shell .user-dropdown.nav2 .nav-menu-search input:focus{background:#fff;border-color:#9DB2E6;box-shadow:0 0 0 4px rgba(15,54,157,.08)}
+.nav2 .nav-recent{padding:0 18px}
+.nav2 .nav-sec{font-size:12px;color:#6B7483;margin:2px 2px 8px}
+.nav2 .nav-recent-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:12px}
+.nav2 .nav-recent-btn{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 4px;border-radius:14px;border:1px solid #E6E8EE;background:#fff;cursor:pointer;font:inherit;font-size:11.5px;line-height:1.3;color:#16212E;text-align:center;transition:transform .2s var(--ease-out,ease),box-shadow .2s,border-color .2s}
+@media (hover:hover){.nav2 .nav-recent-btn:hover{transform:translateY(-2px);box-shadow:0 8px 16px rgba(22,33,46,.07);border-color:#C9D4EE}}
+.nav2 .nav-recent-btn:active{transform:scale(.96)}
+.app-shell .user-dropdown.nav2 .ud-items{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;padding:0 18px 12px;margin:0;display:flex;flex-direction:column;gap:10px;max-height:none;scrollbar-gutter:auto;scrollbar-width:thin}
+.app-shell .user-dropdown.nav2 .ud-group{border:1px solid #E6E8EE;border-radius:16px;background:#fff;overflow:hidden;margin:0;transition:box-shadow .25s,border-color .25s}
+.app-shell .user-dropdown.nav2 .ud-group[open]{border-color:#D6DEEE;box-shadow:0 8px 20px rgba(22,33,46,.05)}
+.app-shell .user-dropdown.nav2 .ud-group>summary{display:flex;align-items:center;gap:10px;padding:12px 14px;background:transparent;font-weight:700;font-size:14.5px;color:#16212E}
+.app-shell .user-dropdown.nav2 .ud-group[open]>summary{background:transparent}
+.nav2 .ud-group>summary .nav-dot{width:9px;height:9px;border-radius:50%;background:var(--nav-c);flex:none}
+.app-shell .user-dropdown.nav2 .ud-group>summary span{flex:1}
+.app-shell .user-dropdown.nav2 .ud-group>summary span::before{content:none}
+.app-shell .user-dropdown.nav2 .ud-group>summary::after{content:"";width:8px;height:8px;border-inline-start:2px solid #6B7483;border-bottom:2px solid #6B7483;transform:rotate(135deg);margin-inline-start:4px;transition:transform .3s var(--ease-out,ease)}
+.app-shell .user-dropdown.nav2 .ud-group[open]>summary::after{transform:rotate(45deg)}
+.app-shell .user-dropdown.nav2 .ud-group>summary em{background:transparent;color:#6B7483;font-weight:400;font-size:12px;padding:0}
+.app-shell .user-dropdown.nav2 .ud-group>summary em::after{content:" أقسام"}
+.nav2 .nav-att{background:#FDECE4;color:#C2410C;font-size:11.5px;border-radius:999px;padding:1px 8px}
+.app-shell .user-dropdown.nav2 .ud-item{display:flex;align-items:center;gap:12px;width:100%;margin:0;padding:8px;border-radius:12px;font-size:14px;color:#16212E;background:transparent;border:0;text-align:start;position:relative;transition:background .18s}
+.app-shell .user-dropdown.nav2 .ud-group>.ud-item{margin:0 8px 2px;width:calc(100% - 16px)}
+.app-shell .user-dropdown.nav2 .ud-group>.ud-item:last-child{margin-bottom:8px}
+.app-shell .user-dropdown.nav2 .ud-group[open]>.ud-item{animation:nav2-item .35s var(--ease-out,ease) both}
+.app-shell .user-dropdown.nav2 .ud-group[open]>.ud-item:nth-of-type(2){animation-delay:.035s}.app-shell .user-dropdown.nav2 .ud-group[open]>.ud-item:nth-of-type(3){animation-delay:.07s}.app-shell .user-dropdown.nav2 .ud-group[open]>.ud-item:nth-of-type(4){animation-delay:.105s}.app-shell .user-dropdown.nav2 .ud-group[open]>.ud-item:nth-of-type(5){animation-delay:.14s}.app-shell .user-dropdown.nav2 .ud-group[open]>.ud-item:nth-of-type(n+6){animation-delay:.175s}
+@keyframes nav2-item{from{opacity:0;transform:translateX(10px)}to{opacity:1;transform:none}}
+.app-shell .user-dropdown.nav2 .ud-item:hover{background:#F5F7FB;color:#16212E}
+.app-shell .user-dropdown.nav2 .ud-item:active{transform:scale(.98)}
+.app-shell .user-dropdown.nav2 .ud-item[aria-current="page"]{background:#EEF3FC;color:#0F369D;font-weight:700}
+.app-shell .user-dropdown.nav2 .ud-item[aria-current="page"]::after{content:"";position:absolute;right:-8px;top:8px;bottom:8px;width:3px;border-radius:3px;background:#0F369D}
+.nav2 .nav-ic{width:34px;height:34px;border-radius:10px;flex:none;display:grid;place-items:center;background:var(--nav-t,#EEF1F5);color:var(--nav-c,#475569)}
+.nav2 .nav-badge{margin-inline-start:auto;font-style:normal;background:#FF8800;color:#333;font-size:11.5px;font-weight:700;border-radius:999px;padding:1px 8px;white-space:nowrap}
+.app-shell .user-dropdown.nav2>.mm-logout{margin:0;border-radius:0;border:0;border-top:1px solid #E6E8EE;padding:14px 18px;width:100%;color:#B2321F;font-weight:700;background:#fff;display:flex;align-items:center;justify-content:center;gap:8px}
+.app-shell .user-dropdown.nav2>.mm-logout:hover{background:#FDECEA}
+.app-shell .user-dropdown.nav2 :focus-visible{outline:2px solid #0F369D;outline-offset:2px}
+/* the menu owns logout now: the duplicate topbar button goes (owner 2026-11-18) */
+.app-shell .topbar #logout-btn{display:none}
+/* floating launchers step aside while the menu is open */
+body.nav-menu-open :is(.ssmpd-ea-launch,.ssmpd-aa-launch,.dc-launcher){opacity:0;transform:translateY(20px);pointer-events:none;transition:opacity .2s,transform .3s var(--ease-out,ease)}
+@media (max-width:640px){.app-shell .user-dropdown.nav2{border-radius:0;width:100vw}}
+@media (prefers-reduced-motion:reduce){.app-shell .user-dropdown.nav2.open,.app-shell .nav-menu-shade,.app-shell .user-dropdown.nav2 .ud-group[open]>.ud-item{animation:none}}
+html[lang="en"] .app-shell .user-dropdown.nav2 .ud-group>summary em::after{content:" sections"}
+.app-shell .user-dropdown.nav2 .ud-items>.ud-item{border:1px solid #E6E8EE;border-radius:16px;padding:10px 14px}
+.app-shell .user-dropdown.nav2>.mm-logout::before{content:"";width:18px;height:18px;background:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10'/%3E%3C/svg%3E") center/contain no-repeat}
+.app-shell .user-dropdown.nav2 a.ud-item{display:flex!important;align-items:center;gap:12px;text-decoration:none}
+.app-shell .user-dropdown.nav2 .ud-items{padding-top:10px}
