@@ -168,6 +168,7 @@ function paintBoard(c){
  var groups=[],at={};apps.forEach(function(a){var h=hourOf(a.starts_at);if(!(h in at)){at[h]=groups.length;groups.push({h:h,items:[]});}groups[at[h]].items.push(a);});
  host.innerHTML=(filtered?'<p class="journey-filter-note" role="status">بيظهر '+num(apps.length)+' من '+num(all.length)+' '+action('clear_filter','','عرض الكل')+'</p>':'')+
   (groups.length?'<div class="journey-board journey-hours">'+groups.map(function(g){return '<section class="journey-hour" data-journey-hour="'+g.h+'"><div class="journey-hour-label">'+esc(hourLabel(g.h))+'</div><div class="journey-hour-names">'+g.items.map(function(a){return card(a,c);}).join('')+'</div></section>';}).join('')+'</div>':'<p class="journey-empty">'+(filtered?'مفيش حد بالفلتر ده.':'مفيش حجوزات في اليوم ده.')+'</p>');
+ if(window.SSMPDReceptionExtras&&c&&!c.sandbox&&c.workspace)window.SSMPDReceptionExtras.decorate(host,c.workspace,apps);
 }
 function paint(c){
  var root=currentRoot();if(!root)return;
