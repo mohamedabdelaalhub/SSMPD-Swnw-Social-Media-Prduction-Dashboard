@@ -19425,6 +19425,32 @@
       "reviewed": true
     },
     {
+      "title": "اسم الغرفة",
+      "labels": [
+        "اسم الغرفة"
+      ],
+      "text": "اسم الغرفة زي ما الموظفين هيشوفوه في الطابور والنداء، مثلاً «عيادة ١» أو «غرفة الأشعة».",
+      "article": "queue-tickets",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "حرف الترقيم (اختياري: L أو R)",
+      "labels": [
+        "حرف الترقيم (اختياري: L أو R)"
+      ],
+      "text": "حرف واحد قبل رقم الدور في غرف الأقسام: L لسحب العينات و R للأشعة. اتركه فاضي للعيادات لأن أرقام الدكاترة أرقام عادية.",
+      "article": "queue-tickets",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "مريض التجربة",
       "labels": [
         "مريض التجربة",
@@ -19951,6 +19977,58 @@
       "forms": [
         "إلغاء التكليف"
       ],
+      "reviewed": true
+    },
+    {
+      "title": "ملاحظة قصيرة (اقتباس من إجابة المرشح)",
+      "labels": [
+        "ملاحظة قصيرة (اقتباس من إجابة المرشح)"
+      ],
+      "text": "جملة قصيرة من إجابة المرشح أو سلوكه تبرر الدرجة. يراها المراجع المسند والإدارة فقط، ولا يراها المتدرب. لا تكتب فيها بيانات مرضى.",
+      "article": "training-center",
+      "tabs": [
+        "training_evaluation"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "القرار النهائي",
+      "labels": [
+        "القرار النهائي"
+      ],
+      "text": "يظهر مختارًا عليه التقدير المقترح المحسوب (40% اختبار، 40% مقابلة، 20% تمثيل). يمكن للإدارة اختيار تقدير آخر بشرط كتابة السبب. بعد الاعتماد تُقفل الدرجات.",
+      "article": "training-center",
+      "tabs": [
+        "training_evaluation"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "سبب التعديل (إلزامي إذا خالف القرار المقترح)",
+      "labels": [
+        "سبب التعديل (إلزامي إذا خالف القرار المقترح)"
+      ],
+      "text": "يُكتب فقط عند اختيار قرار يخالف التقدير المحسوب، ويُحفظ في سجل التدقيق مع القرار. بدونه يرفض الخادم الاعتماد.",
+      "article": "training-center",
+      "tabs": [
+        "training_evaluation"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "رسالة للمتدرب (تظهر له مع النتيجة المعتمدة)",
+      "labels": [
+        "رسالة للمتدرب (تظهر له مع النتيجة المعتمدة)"
+      ],
+      "text": "رسالة توجيهية من الإدارة تظهر للمتدرب مع تقديره بعد الاعتماد. اكتبها بصياغة تعليمية، دون درجات تفصيلية أو ملاحظات المراجع الداخلية.",
+      "article": "training-center",
+      "tabs": [
+        "training_evaluation"
+      ],
+      "forms": [],
       "reviewed": true
     },
     {
@@ -21283,9 +21361,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1808,
-    "labels": 1328,
-    "files": 127,
-    "groups": 1433
+    "definitions": 1814,
+    "labels": 1334,
+    "files": 128,
+    "groups": 1439
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
