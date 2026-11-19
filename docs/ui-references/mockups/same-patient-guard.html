@@ -1,0 +1,35 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>تنبيه حجز نفس المريض + تفاصيل الحجز — تصور</title>
+<link rel="stylesheet" href="../../../assets/css/styles.css"><link rel="stylesheet" href="../../../assets/css/reception-workspace.css">
+<style>
+body{background:#e9edf5;margin:0;padding:24px 12px}.wrap{max-width:560px;margin:0 auto;display:grid;gap:16px}
+.eyebrow{margin:0;font-size:12px!important;color:#8a93a3!important;border-bottom:1px solid #EEF1F6;padding-bottom:8px}.cap{margin:0;color:#3B4658;font-size:13px;line-height:1.8}
+.card{background:#fff;border-radius:16px;border:1px solid #D5DEEE;padding:18px;display:grid;gap:12px;box-shadow:0 12px 30px rgba(15,54,157,.10)}
+.card h3{margin:0;font-size:17px;display:flex;gap:8px;align-items:center}.warn h3{color:#B45309}.stop h3{color:#D0402A}.info h3{color:#0F369D}
+.card p{margin:0;font-size:13px;color:#3B4658;line-height:1.8}
+.bk{display:grid;grid-template-columns:72px 1fr;gap:10px;align-items:center;padding:10px 12px;border-radius:12px;background:#FFF8EC;border:1px solid #F5D9A8}
+.stop .bk{background:#FDEEEB;border-color:#F3C2B8}
+.bk .t{font-weight:700;color:#0F369D;direction:ltr;text-align:center;font-size:18px}.bk .n{font-weight:700}.bk .s{font-size:12px;color:#5b6577}
+.bk .d{grid-column:2;justify-self:start;font-size:12px;color:#0F369D;background:none;border:0;text-decoration:underline;cursor:pointer;padding:0}
+.new{font-size:12px;color:#5b6577;border-top:1px dashed #D5DEEE;padding-top:10px}.new b{color:#16212E}
+.act{display:flex;gap:8px;flex-wrap:wrap}.act .btn{flex:1 1 200px}
+.kv{display:grid;grid-template-columns:110px 1fr;gap:6px 10px;font-size:13px}.kv b{color:#5b6577;font-weight:400}
+.tag{display:inline-block;padding:1px 9px;border-radius:99px;font-size:11px;background:#E6F2EC;color:#2F7D5C}
+</style></head><body><div class="wrap">
+<section class="card warn"><p class="eyebrow">تصور (بيانات تجريبية). ١) لما الموظف يحجز لمريض عنده حجز تاني في نفس اليوم: تنبيه قبل الحفظ.</p><h3>⚠️ المريض ده عنده حجز تاني النهارده</h3>
+ <p>اتأكد إن ده نفس المريض وإنها خدمة تانية قبل ما تكمّل.</p>
+ <div class="bk"><span class="t">05:00</span><div><span class="n">كشف جلدية</span> <span class="tag">متأكد</span><div class="s">د. أخصائي جلدية · اتحجز من ماسا</div></div><button class="d" type="button">التفاصيل</button></div>
+ <p class="new">الحجز الجديد: <b>جلسة ليزر · د. أخصائي ليزر · الساعة 06:00</b></p>
+ <div class="act"><button class="btn btn-primary" type="button">أيوه نفس المريض — كمّل الحجز</button><button class="btn" type="button">ارجع وشوف الحجز الأساسي</button></div>
+</section>
+<section class="card stop"><p class="eyebrow">٢) لو الوقتين متداخلين: الحجز ما بيتسجّلش.</p><h3>⛔ المريض ده محجوز في نفس الوقت</h3>
+ <div class="bk"><span class="t">05:00</span><div><span class="n">كشف جلدية</span><div class="s">د. أخصائي جلدية · <bdi dir="ltr">05:00 – 05:20</bdi></div></div><button class="d" type="button">التفاصيل</button></div>
+ <p>اختار ساعة تانية، أو عدّل الحجز الأساسي.</p>
+ <div class="act"><button class="btn" type="button">رجوع</button></div>
+</section>
+<section class="card info"><p class="eyebrow">٣) زرار «التفاصيل» (من التنبيه أو من حجوزات المريض) بيفتح نافذة صغيرة.</p><h3>تفاصيل الحجز</h3>
+ <div class="kv"><b>المريض</b><span>شهد تجريبية · P-2026-000123</span><b>الخدمة</b><span>كشف جلدية</span><b>الطبيب</b><span>د. أخصائي جلدية</span>
+ <b>الميعاد</b><span>الخميس <bdi dir="ltr">19/11</bdi> · <bdi dir="ltr">05:00 – 05:20</bdi></span><b>الحالة</b><span>محجوز · متأكد</span><b>المصدر</b><span>ماسا (تلقائي)</span>
+ <b>سجّله</b><span>دينا · <bdi dir="ltr">19/11 11:20</bdi></span><b>ملاحظة</b><span>هتيجي مع والدتها</span></div>
+ <div class="act"><button class="btn" type="button">افتح الحجز</button><button class="btn" type="button">إغلاق</button></div>
+</section>
+</div></body></html>
