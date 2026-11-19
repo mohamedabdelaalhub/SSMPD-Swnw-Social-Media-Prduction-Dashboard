@@ -211,7 +211,20 @@ async function handleStaff(op: string, body: any, req: Request) {
   return json({ error: "UNKNOWN_OPERATION" }, 400);
 }
 
+// One log line per call: function, op and HTTP status only (no body, ids or patient data), so failed
+// bookings are visible in the edge logs.
 Deno.serve(async (req) => {
+  let op = "-";
+  try { if (req.method === "POST") op = String((await req.clone().json())?.op || "catalog").slice(0, 32); } catch { op = "invalid_json"; }
+  const started = Date.now();
+  let res: Response;
+  try { res = await handleRequest(req); }
+  catch (e) { console.error(JSON.stringify({ fn: "patient-portal-booking", op, error: String((e as Error)?.name || "Error") })); res = json({ error: "INTERNAL_ERROR" }, 500); }
+  console.log(JSON.stringify({ fn: "patient-portal-booking", op, status: res.status, ms: Date.now() - started }));
+  return res;
+});
+
+async function handleRequest(req: Request): Promise<Response> {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
@@ -338,4 +351,4 @@ Deno.serve(async (req) => {
   }
 
   return json({ error: "UNKNOWN_OPERATION" },400);
-});
+}
