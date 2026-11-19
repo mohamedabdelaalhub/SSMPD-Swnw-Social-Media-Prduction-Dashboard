@@ -40,8 +40,8 @@ const perf = { score: 82, band: 'good', provisional: false, dimensions: [{ key: 
 
   // ---- unmapped device numbers do not open a profile; a mapped person does
   assert(!d.querySelector('[data-presence-dept][data-dept="أرقام غير مربوطة بموظف"] [data-pid]'), 'unmapped number is not clickable');
-  const row = d.querySelector('[data-presence-dept] [data-pid="p1"]'); assert(row, 'employee row carries the clinic person id');
-  row.click(); await wait();
+  const row = d.querySelector('[data-presence-dept] [data-pp="p1"]'); assert(row, 'employee row carries the clinic person id');
+  row.click(); const open = d.querySelector('.pp [data-pop=profile]'); assert(open, 'the details popup offers the performance profile'); open.click(); await wait();
   assert(prof(), 'profile opened'); assert.equal(d.querySelectorAll('[data-employee-profile]').length, 1);
   assert(prof().textContent.includes('موظفة <b>أولى</b>') && !prof().querySelector('h2 b'), 'name escaped');
   const calls = fn => t.calls.filter(c => c[0] === fn);
@@ -85,7 +85,7 @@ const perf = { score: 82, band: 'good', provisional: false, dimensions: [{ key: 
   prof().querySelector('[data-ep-close]').click(); assert(!prof(), 'closed and removed');
 
   // ---- permissions: an HR manager who is not GM / super admin sees attendance and a note instead of the score / tasks
-  deny = true; d.querySelector('[data-presence-dept] [data-pid="p1"]').click(); await wait();
+  deny = true; d.querySelector('[data-presence-dept] [data-pp="p1"]').click(); d.querySelector('.pp [data-pop=profile]').click(); await wait();
   const P3 = prof(); assert(P3.textContent.includes('التقييم الشامل يظهر للسوبر أدمن والمدير العام بس'), 'score note');
   assert(P3.textContent.includes('المهام تظهر للسوبر أدمن والمدير العام بس'), 'tasks note'); assert(P3.querySelector('[data-cal]'), 'attendance still shown');
   P3.querySelector('[data-ep-close]').click(); deny = false;
