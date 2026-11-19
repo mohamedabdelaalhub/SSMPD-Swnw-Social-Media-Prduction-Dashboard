@@ -590,8 +590,9 @@
     adsRoiByCampaign: function (from, to) {
       return handle(client.rpc("ads_roi_by_campaign", { p_from: from || null, p_to: to || null }));
     },
+    // أهداف تكلفة الحجز لكل كود حملة: دالة شات التقارير report_campaign_targets() (معتمدة بس). لسه مش موجودة ← الشاشة بتستخدم قيمها المدمجة.
     adsRoiTargets: function () {
-      return handle(client.from("ads_roi_targets").select("code,target_cost_per_booking"));
+      return handle(client.rpc("report_campaign_targets"));
     },
     adsActualLimitsStatus: function () {
       return handle(client.rpc("ads_actual_limits_status"));

@@ -4,8 +4,8 @@
 (function () {
   "use strict";
 
-  // أهداف تكلفة الحجز: بتتقرا من جدول ads_roi_targets. القيم دي احتياطي لو الجدول لسه مش متطبق على السيرفر
-  // (من الخطة الإعلانية المعتمدة 2026-11-13).
+  // أهداف تكلفة الحجز: بتتقرا من report_campaign_targets() (جدول الأهداف المعتمدة بتاع شات التقارير). القيم دي احتياطي
+  // لحد ما الدالة تتطبق على السيرفر (من الخطة الإعلانية المعتمدة 2026-11-13).
   var DEFAULT_TARGETS = { "PHY1": 120, "LZF1-F": 45, "DEN1": 105 };
   var CODE_RE = /(?:^|[\s|])([A-Z]{2,4}\d(?:-[A-Z])?)(?=$|[\s|])/;
 
@@ -139,7 +139,7 @@
       state.rows = res[0] || []; state.limits = res[1] || []; state.error = "";
       var t = res[2];
       state.targets = Object.assign({}, DEFAULT_TARGETS);
-      if (t && t.length) { state.targets = {}; t.forEach(function (x) { if (x && x.code && Number(x.target_cost_per_booking) > 0) state.targets[x.code] = Number(x.target_cost_per_booking); }); }
+      if (t && t.length) { state.targets = {}; t.forEach(function (x) { if (x && x.code && Number(x.target) > 0) state.targets[x.code] = Number(x.target); }); }
       paint(el);
     }).catch(function (e) {
       var m = String((e && e.message) || e || "");

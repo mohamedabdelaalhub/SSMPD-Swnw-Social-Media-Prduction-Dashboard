@@ -61,14 +61,14 @@ const limits = [{ label: "سونو — يومي", brand: "sono", amount: 200, sp
   ok(api._codeOf("SONO | LZF1-F | ليزر") === "LZF1-F" && api._targetOf("SONO | PHY1 | x") === 120 && api._targetOf("random") === null, "campaign code and target parsing");
 
   // 5b) الأهداف من الداتابيز تغلب الافتراضي، والافتراضي يشتغل لو الجدول مش موجود
-  d = setup({ adsRoiByCampaign: async () => rows.slice(0, 1), adsActualLimitsStatus: async () => [], adsRoiTargets: async () => [{ code: "PHY1", target_cost_per_booking: 100 }] });
+  d = setup({ adsRoiByCampaign: async () => rows.slice(0, 1), adsActualLimitsStatus: async () => [], adsRoiTargets: async () => [{ code: "PHY1", target: 100, approved_by: "owner" }] });
   const e4 = d.window.document.getElementById("ma-roi");
   d.window.SSMPDAdsRoi.mount(e4); await tick();
   ok(e4.querySelector(".roi-tc .roi-chip.bad") && e4.textContent.includes("الهدف 100"), "DB target (100) overrides the default: 103 is now above target");
-  d = setup({ adsRoiByCampaign: async () => rows.slice(0, 1), adsActualLimitsStatus: async () => [], adsRoiTargets: async () => { throw { message: "relation ads_roi_targets does not exist" }; } });
+  d = setup({ adsRoiByCampaign: async () => rows.slice(0, 1), adsActualLimitsStatus: async () => [], adsRoiTargets: async () => { throw { message: "function report_campaign_targets does not exist" }; } });
   const e5 = d.window.document.getElementById("ma-roi");
   d.window.SSMPDAdsRoi.mount(e5); await tick();
-  ok(e5.querySelector(".roi-tc .roi-chip.ok") && e5.textContent.includes("الهدف 120"), "falls back to built-in targets when the table is missing");
+  ok(e5.querySelector(".roi-tc .roi-chip.ok") && e5.textContent.includes("الهدف 120"), "falls back to built-in targets when report_campaign_targets() is not available");
 
   // 6) HTML injection
   d = setup({ adsRoiByCampaign: async () => [row({ campaign_name: '<img src=x onerror=alert(1)>', spend: 10, attributed_leads: 1 })], adsActualLimitsStatus: async () => [] });
