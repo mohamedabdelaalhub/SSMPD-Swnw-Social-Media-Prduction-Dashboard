@@ -18159,6 +18159,73 @@
       "reviewed": true
     },
     {
+      "title": "من",
+      "labels": [
+        "من",
+        "إلى",
+        "اليوم"
+      ],
+      "text": "حدد بداية أو نهاية الفترة أو اليوم وفق عنوان الحقل ونوع الإدخال. في الفلاتر يغير العرض فقط، وفي العقد أو التواجد يحدد السريان. راجع ترتيب البداية والنهاية والمنطقة الزمنية المكتوبة.",
+      "article": "personal",
+      "tabs": [
+        "reports"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "الفرع",
+      "labels": [
+        "الفرع"
+      ],
+      "text": "حدد الفرع الذي يخص السجل أو المخزن أو الطبيب. راجع أن المكان والتكليف تابعان لنفس الفرع عند تنفيذ حركة.",
+      "article": "inventory-count",
+      "tabs": [
+        "reports"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "التخصص",
+      "labels": [
+        "التخصص"
+      ],
+      "text": "اختار التخصص أو القسم الذي تخصه الخدمة أو المادة أو التقرير. في الفلترة يغيّر العرض فقط، وفي الحجز يؤثر على ترشيح الطبيب المطابق للقسم.",
+      "article": "content",
+      "tabs": [
+        "reports"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "الدكتور",
+      "labels": [
+        "الدكتور"
+      ],
+      "text": "فلتر بيقصر تقرير الإيرادات على دكتور واحد. «كل الدكاترة» بيعرض الكل. الفلتر للعرض بس ومبيغيّرش أي بيانات.",
+      "article": "reports-center",
+      "tabs": [
+        "reports"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "الدفع",
+      "labels": [
+        "الدفع"
+      ],
+      "text": "فلتر بيفرّق بين الإيراد الكاش وإيراد التأمين في تقرير الإيرادات. «الكل» بيعرضهم مع بعض. للعرض بس.",
+      "article": "reports-center",
+      "tabs": [
+        "reports"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "صور حقيقية",
       "labels": [
         "صور حقيقية",
@@ -21126,9 +21193,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1795,
-    "labels": 1321,
-    "files": 126,
-    "groups": 1421
+    "definitions": 1802,
+    "labels": 1323,
+    "files": 127,
+    "groups": 1426
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();

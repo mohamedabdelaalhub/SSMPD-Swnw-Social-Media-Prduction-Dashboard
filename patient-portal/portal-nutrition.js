@@ -2,7 +2,7 @@
 "use strict";
 var root=document.getElementById("portal-root"),cfg=window.SSMPD_CONFIG&&window.SSMPD_CONFIG.supabase,ui=window.SwnwNutritionView;
 if(!root||!cfg||!window.supabase||!ui)return;
-var client=window.supabase.createClient(cfg.url,cfg.anonKey,{auth:{persistSession:true,autoRefreshToken:true,storageKey:"swnw-patient-portal-auth"}}),esc=ui.esc;
+var client=((window.SSMPDPortalClient)||window.supabase.createClient(cfg.url,cfg.anonKey,{auth:{persistSession:true,autoRefreshToken:true,storageKey:"swnw-patient-portal-auth"}})),esc=ui.esc;
 function invoke(body){return client.functions.invoke("patient-portal-nutrition",{body:body}).then(function(r){if(r.error||!r.data||r.data.error)throw new Error("request failed");return r.data;});}
 function current(view){return view.isConnected&&!!root.querySelector('[data-nutrition-tab].active');}
 function open(selected){

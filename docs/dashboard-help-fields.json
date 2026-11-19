@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1795,
-    "labels": 1321,
-    "files": 126,
-    "groups": 1421
+    "definitions": 1802,
+    "labels": 1323,
+    "files": 127,
+    "groups": 1426
   },
   "fields": [
     {
@@ -16603,6 +16603,76 @@
       "tab": "publish",
       "article": "publishing-guide",
       "text_sha256": "d0a5abc07f349512e1a363ffa1b6d42d5e8d7bec23d6037906f1cdedac64a7c2"
+    },
+    {
+      "file": "render-reports.js",
+      "label": "من",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reports",
+      "article": "personal",
+      "text_sha256": "5124563f386757810c60ae86fc95904a13532f1a872fcd3579613f304338e13d"
+    },
+    {
+      "file": "render-reports.js",
+      "label": "إلى",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reports",
+      "article": "personal",
+      "text_sha256": "5124563f386757810c60ae86fc95904a13532f1a872fcd3579613f304338e13d"
+    },
+    {
+      "file": "render-reports.js",
+      "label": "اليوم",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reports",
+      "article": "personal",
+      "text_sha256": "5124563f386757810c60ae86fc95904a13532f1a872fcd3579613f304338e13d"
+    },
+    {
+      "file": "render-reports.js",
+      "label": "الفرع",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reports",
+      "article": "inventory-count",
+      "text_sha256": "14cfdaf767928f9bc93bd051469bc4360f9c6c34a1aa4ed381628bf5d6de0e0e"
+    },
+    {
+      "file": "render-reports.js",
+      "label": "التخصص",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reports",
+      "article": "content",
+      "text_sha256": "8781afaef1012c14a5b9f99b05513e1852e02bb6c191b2fc0b339518d671a4a9"
+    },
+    {
+      "file": "render-reports.js",
+      "label": "الدكتور",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reports",
+      "article": "reports-center",
+      "text_sha256": "7bd2bc8c64090481b8262828f95efa6892481f92cc41c0574ed5d13ef83042ae"
+    },
+    {
+      "file": "render-reports.js",
+      "label": "الدفع",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reports",
+      "article": "reports-center",
+      "text_sha256": "a5e0ac4f3f9aae3fb73dc8d318ed09f026356f8c03a7545155203595be11a6fc"
     },
     {
       "file": "render-review.js",
