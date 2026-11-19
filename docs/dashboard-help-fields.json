@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1802,
-    "labels": 1322,
-    "files": 126,
-    "groups": 1429
+    "definitions": 1808,
+    "labels": 1328,
+    "files": 127,
+    "groups": 1433
   },
   "fields": [
     {
@@ -10846,6 +10846,66 @@
       "tab": "reception_services",
       "article": "patient-records",
       "text_sha256": "b51a2dd066b13876c39df5d1ba5f852738e81aca9c4e66efbb9477e50c88f17f"
+    },
+    {
+      "file": "reception-patient-extras.js",
+      "label": "مثلاً: بيحب المواعيد بعد العصر · عليه باقي حساب معمل",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "home-visit-notes",
+      "text_sha256": "a3afc6d68ef8b30a8c65357bd0cc1bee7bcb632e1abf6a82b756e050581ee866"
+    },
+    {
+      "file": "reception-patient-extras.js",
+      "label": "ملاحظة دائمة للمريض (اختياري — بتظهر في كل حجز، ومسحها بعد كده بيحتاج اعتماد المدير)",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "home-visit-notes",
+      "text_sha256": "a3afc6d68ef8b30a8c65357bd0cc1bee7bcb632e1abf6a82b756e050581ee866"
+    },
+    {
+      "file": "reception-patient-extras.js",
+      "label": "الملاحظة الحالية",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "home-visit-notes",
+      "text_sha256": "2ca702d1091da63a4394cde9c97a29601dc79ba3bda24fa153356022544b1a82"
+    },
+    {
+      "file": "reception-patient-extras.js",
+      "label": "الملاحظة الجديدة (سيبها فاضية لو عايز تمسحها)",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "home-visit-notes",
+      "text_sha256": "1c468315bb0e1663ee5d444a3324a6f4d14104bea8232266e2220acdf560906e"
+    },
+    {
+      "file": "reception-patient-extras.js",
+      "label": "مثلاً: الحساب اتدفع",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "home-visit-notes",
+      "text_sha256": "c307479c40668b679bde4ea5be2b8087bdae00ca1e3c59f6520ba5b02cb5a537"
+    },
+    {
+      "file": "reception-patient-extras.js",
+      "label": "السبب *",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "requests",
+      "text_sha256": "80a0c51a0ba10ff7f4fe6f627b68c4e009f932e1abdff544c26e792f5f0e9e49"
     },
     {
       "file": "reception-service-orders.js",
