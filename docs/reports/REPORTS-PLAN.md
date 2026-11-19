@@ -71,3 +71,13 @@ Common filters: date range, branch, (doctor, specialty where relevant). Every ta
 2. Branch source: rows of `public.inventory_branches`, `public.org_branch_details`.
 3. Row counts: clinic_reception.packages/entitlements, clinic_finance.doctor_accruals/doctor_payouts, clinic_finance.requests grouped by kind, clinic_reception.discount_requests, clinic_finance.bill_items, public.kpi_targets.
 4. Distinct roles in `public.admins` and whether a `has_role()` multi-role table exists live.
+
+## Live facts (main chat, 2026-11-19 02:16Z)
+- Branch key = `public.inventory_branches.id` (1 row: الفرع الرئيسي - حدائق الأهرام); details in `org_branch_details`.
+- Live reception workspace: `dc6e99a1-…` (4 trial workspaces must be excluded from all reports).
+- Both cash layers run: clinic_finance (treasury/registers) + clinic_reception (desk shifts linked to finance). Report 1 joins both. Only 2 shifts each in the last 30 days.
+- Empty today: packages/entitlements (→ report 24 empty), clinic_finance.requests + discount_requests (→ report 2 empty), doctor_accruals/payouts, bill_items.
+- Doctor fees live in `clinic_reception.journal` (2120 lines, desk_payout_rx, #590) → report 4 sources there, not doctor_accruals. Report 3 sources reception invoices/orders.
+- kpi_targets has 32 rows → report 21 is closer to ready.
+- Roles: admins.role + public.admin_extra_roles (has_role()). Access rows may target role or admin.
+- Reserved: migration prefix 20261119200000, help version 20261118-54.
