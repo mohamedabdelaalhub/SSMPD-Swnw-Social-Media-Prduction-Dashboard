@@ -4,7 +4,7 @@
 (function () {
   "use strict";
 
-  var AREAS = [["operations", "التشغيل"], ["cash", "الخزنة والإيرادات"], ["doctors", "الدكاترة"], ["insurance", "التأمين والتعاقدات"], ["statements", "القوائم المالية والضرائب"]];
+  var AREAS = [["operations", "التشغيل"], ["cash", "الخزنة والإيرادات"], ["doctors", "الدكاترة"], ["insurance", "التأمين والتعاقدات"], ["statements", "القوائم المالية والضرائب"], ["stock", "المخزن والصيدلية"]];
   var ACCESS_ROLES = ["general_manager", "financial_manager", "accountant", "reception", "customer_service", "page_manager", "nursing", "head_nursing", "sono_doctor"];
   var SHIFT_STATUS = { open: "مفتوحة", submitted: "اتقفلت — مستنية مراجعة", reviewed: "اتراجعت" };
   var REQ_STATUS = { pending: "مستني موافقة", approved: "اتوافق عليه", rejected: "اترفض" };
@@ -341,6 +341,70 @@
           { l: "ضرايب لينا (قابلة للاسترداد)", v: money(t.recoverable) }, { l: "اتدفع في الفترة", v: money(t.settled), sub: "اتحسب: " + money(t.accrued) }];
       }
     },
+    supplies_consumption: {
+      sub: "اللي خرج من كل مخزن: داخل في خدمة، اتباع للمريض، اتصرف، أو هالك — وتكلفة كل إجراء.",
+      range: true,
+      cols: [C("location", "المخزن"), C("item", "الصنف"), C("category", "التصنيف"), C("unit", "الوحدة"), C("included_qty", "داخل في خدمة", "int"),
+        C("sold_qty", "اتباع للمريض", "int"), C("issued_qty", "اتصرف", "int"), C("loss_qty", "هالك/جرد", "int"), C("cost", "التكلفة", "money"), C("sales", "قيمة البيع", "money")],
+      totalKeys: { cost: 1, sales: 1 },
+      load: function (f) { return rpc("report_supplies_consumption", { p_from: f.from, p_to: f.to, p_branch: f.branch || null }); },
+      tiles: function (d) {
+        var t = d.totals || {}, top = (d.by_service || [])[0];
+        return [{ l: "تكلفة اللي خرج", v: money(t.cost), hero: true, sub: fmtNum(t.items) + " صنف" },
+          { l: "داخل في الخدمات", v: money(t.included_cost) }, { l: "هالك وفروق جرد", v: money(t.loss_cost), neg: num(t.loss_cost) > 0 },
+          { l: "أكتر إجراء تكلفة", v: top ? top.service : "—", sub: top ? money(top.cost) + " — " + fmtNum(top.orders) + " مرة" : "" }];
+      },
+      extraHtml: function (d) {
+        var rows = d.by_service || []; if (!rows.length) return "";
+        return '<div class="rc-card"><div class="rc-ch"><h3>تكلفة المستلزمات لكل إجراء<small>من الخدمات المنفذة</small></h3></div><div class="rc-tw"><table><thead><tr><th>الخدمة</th><th>التخصص</th><th class="rc-n">مرات التنفيذ</th><th class="rc-n">التكلفة</th><th class="rc-n">متوسط المرة</th></tr></thead><tbody>' +
+          rows.map(function (r) { return "<tr><td>" + esc(r.service) + "</td><td>" + esc(r.specialty || "—") + '</td><td class="rc-n">' + fmtNum(r.orders) + '</td><td class="rc-n">' + fmtNum(r.cost) + '</td><td class="rc-n">' + fmtNum(num(r.orders) ? num(r.cost) / num(r.orders) : 0) + "</td></tr>"; }).join("") + "</tbody></table></div></div>";
+      }
+    },
+    medicines_consumption: {
+      sub: "الأدوية من الصيدلية: اللي داخل في الخدمة (على حساب المركز) واللي المريض دفع تمنه لوحده.",
+      range: true,
+      cols: [C("location", "المخزن"), C("item", "الدوا"), C("unit", "الوحدة"), C("included_qty", "داخل في الخدمة", "int"), C("included_cost", "تكلفته", "money"),
+        C("sold_qty", "اتباع للمريض", "int"), C("sold_cost", "تكلفة المباع", "money"), C("sales", "قيمة البيع", "money"), C("margin", "الربح", "diff"), C("wasted_qty", "هالك", "int")],
+      totalKeys: { included_cost: 1, sold_cost: 1, sales: 1, margin: 1 },
+      load: function (f) { return rpc("report_medicines_consumption", { p_from: f.from, p_to: f.to, p_branch: f.branch || null }); },
+      tiles: function (d) {
+        var t = d.totals || {};
+        return [{ l: "أدوية داخل الخدمات (تكلفة)", v: money(t.included_cost), hero: true }, { l: "مبيعات أدوية للمرضى", v: money(t.sales) },
+          { l: "تكلفة المباع", v: money(t.sold_cost) }, { l: "ربح البيع", v: money(t.margin), neg: num(t.margin) < 0 }];
+      }
+    },
+    stock_shortage_expiry: {
+      sub: "الأصناف اللي رصيدها تحت حد الطلب، والتشغيلات اللي صلاحيتها خلصت أو هتخلص خلال 60 يوم.",
+      range: false, dayLabel: "لحد يوم", dayDefault: "today",
+      cols: [C("item", "الصنف"), C("category", "التصنيف"), C("unit", "الوحدة"), C("on_hand", "الرصيد", "int"), C("minimum", "حد الطلب", "int"), C("gap", "العجز", "int")],
+      totalKeys: {},
+      load: function (f) { return rpc("report_stock_shortage_expiry", { p_as_of: f.day || null, p_branch: f.branch || null }); },
+      tiles: function (d) {
+        var t = d.totals || {};
+        return [{ l: "أصناف تحت حد الطلب", v: fmtNum(t.short_items), hero: true }, { l: "تشغيلات صلاحيتها خلصت", v: fmtNum(t.expired_lots), neg: num(t.expired_lots) > 0 },
+          { l: "هتخلص خلال 60 يوم", v: fmtNum(t.expiring_lots) }];
+      },
+      extraHtml: function (d) {
+        var rows = d.expiry || [];
+        var body = rows.length ? '<div class="rc-tw"><table><thead><tr><th>الصنف</th><th>التشغيلة</th><th>المخزن</th><th class="rc-n">الكمية</th><th>تنتهي</th><th class="rc-n">أيام متبقية</th></tr></thead><tbody>' +
+          rows.map(function (r) { var dl = num(r.days_left); return "<tr><td>" + esc(r.item) + "</td><td>" + esc(r.lot || "—") + "</td><td>" + esc(r.location) + '</td><td class="rc-n">' + fmtNum(r.quantity) + '</td><td class="rc-ltr">' + esc(fmtDate(r.expiry_date)) + '</td><td class="rc-n' + (dl < 30 ? " rc-negc" : "") + '">' + (dl < 0 ? "خلصت" : fmtNum(dl)) + "</td></tr>"; }).join("") + "</tbody></table></div>"
+          : '<div class="rc-empty">مفيش تشغيلات قربت تخلص</div>';
+        return '<div class="rc-card"><div class="rc-ch"><h3>الصلاحية<small>خلصت أو هتخلص خلال 60 يوم</small></h3></div>' + body + "</div>";
+      }
+    },
+    nursing_variance: {
+      sub: "المفروض الخدمات تستهلك كام (حسب مكونات كل خدمة) قصاد اللي اتصرف فعلاً.",
+      range: true,
+      cols: [C("item", "الصنف"), C("unit", "الوحدة"), C("orders", "خدمات منفذة", "int"), C("expected", "المفروض", "int"), C("in_services", "اتسجل في الخدمات", "int"),
+        C("outside", "اتصرف برّه الخدمات", "int"), C("variance", "الفرق", "diff"), C("variance_value", "قيمة الفرق", "diff")],
+      totalKeys: { variance_value: 1 },
+      load: function (f) { return rpc("report_nursing_variance", { p_from: f.from, p_to: f.to, p_branch: f.branch || null }); },
+      tiles: function (d) {
+        var t = d.totals || {};
+        return [{ l: "قيمة الفرق", v: money(t.variance_value), hero: true, sub: "موجب = اتصرف أكتر من المفروض" },
+          { l: "أصناف اتصرف منها زيادة", v: fmtNum(t.over_items) }, { l: "أصناف اتصرف منها أقل", v: fmtNum(t.under_items) }];
+      }
+    },
     daily_flash: {
       sub: "ملخص يوم واحد: إيراد، تحصيل، مواعيد، ليدز، وتنبيهات.",
       range: false,
@@ -389,7 +453,7 @@
       row[0] = x[0]; vals.forEach(function (v, k) { row[cols.length - vals.length + k] = fmtNum(v); }); return row;
     }) : null;
     foot = cols.map(function (c, i) { return i === 0 ? "الإجمالي" : def.totalKeys[c.k] && tot[c.k] != null ? (fmtNum(tot[c.k]) + (c.t === "pct" ? "%" : "")) : ""; });
-    if (summary) foot = null;
+    if (summary || !Object.keys(def.totalKeys || {}).length) foot = null;
     return { head: head, rows: rows, foot: data.length ? foot : null, summary: data.length ? summary : null, cols: cols, raw: data.length, data: data, totals: tot };
   }
   function csvCell(v) { var s = String(v == null ? "" : v); return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }
@@ -478,6 +542,7 @@
     if (num(d.unposted) > 0) n.push("فيه " + fmtNum(d.unposted) + " قيد في الاستقبال لسه ماتنقلش لدفتر الحسابات (غير مُرحّل) — الأرقام ناقصاه، بلّغ الحسابات.");
     if (d.unallocated && (num(d.unallocated.revenue) || num(d.unallocated.expense)))
       n.push("قيود عامة مش متوزعة على فرع ومش داخلة في الأرقام دي: إيرادات " + money(d.unallocated.revenue) + " ومصروفات " + money(d.unallocated.expense) + ". اختار «كل الفروع» علشان تشوفها.");
+    if (num(d.stock_unposted) > 0) n.push("فيه " + fmtNum(d.stock_unposted) + " حركة مخزن في الاستقبال ماتنقلتش لدفتر المخزن — الأرصدة والاستهلاك ناقصينها، بلّغ أمين المخزن.");
     if (d.scope === "company" && state.f.branch) n.push("التقرير ده على مستوى الشركة كلها، والفرع مش بيغيّر أرقامه.");
     return n.map(function (x) { return '<div class="rc-error rc-notice" role="note">' + esc(x) + "</div>"; }).join("");
   }
@@ -536,7 +601,9 @@
     h += '<div class="rc-card"><div class="rc-ch"><h3>التفاصيل<small>' + esc(branchName()) + " — " + periodText(code) + '</small></h3><div class="rc-acts no-print"><button type="button" class="rc-btn rc-sec" data-act="csv">تصدير Excel</button><button type="button" class="rc-btn rc-sec" data-act="pdf">PDF</button></div></div>';
     h += empty ? '<div class="rc-empty">' + EMPTY + "</div>" : tableHtml(code, t);
     if (code === "doctor_dues" && !empty) h += '<p class="rc-hint no-print">دوس على اسم دكتور علشان تشوف كشف حسابه.</p>';
-    return h + "</div></div>";
+    h += "</div>";
+    if (def.extraHtml) h += def.extraHtml(d);
+    return h + "</div>";
   }
 
   // ── تحميل وربط ─────────────────────────────────────────────────────────────────────────────────
