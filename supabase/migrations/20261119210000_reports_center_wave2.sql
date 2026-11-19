@@ -138,9 +138,9 @@ begin
      where (j.created_at at time zone 'Africa/Cairo')::date <= d and j.dimensions ? 'patient_id'),
   g as (
     select mv.patient_id, max(mv.branch_name) branch, pt.file_no patient_file,
-           round(coalesce(sum(credit - debit) filter (where account = '2150'), 0), 2) credit_held,
-           round(coalesce(sum(debit - credit) filter (where account = '1122'), 0), 2) receivable,
-           (max(created_at) at time zone 'Africa/Cairo')::date last_movement
+           round(coalesce(sum(mv.credit - mv.debit) filter (where mv.account = '2150'), 0), 2) credit_held,
+           round(coalesce(sum(mv.debit - mv.credit) filter (where mv.account = '1122'), 0), 2) receivable,
+           (max(mv.created_at) at time zone 'Africa/Cairo')::date last_movement
       from mv left join clinic_reception.patients pt on pt.id = mv.patient_id
      group by mv.patient_id, pt.file_no),
   f as (select * from g where credit_held <> 0 or receivable <> 0)
