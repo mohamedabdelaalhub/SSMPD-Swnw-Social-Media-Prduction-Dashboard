@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0F369D">
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+<title>اعرف دورك — Swnw</title>
+<style>
+@font-face{font-family:"BigVesta Arabic";src:url("assets/fonts/BigVesta-Regular.woff2") format("woff2");font-weight:400;font-display:swap}
+@font-face{font-family:"BigVesta Arabic";src:url("assets/fonts/BigVesta-Bold.woff2") format("woff2");font-weight:700;font-display:swap}
+@font-face{font-family:"Hiragino Kaku";src:url("assets/fonts/Hiragino-W3.woff2") format("woff2");font-weight:300;font-display:swap}
+@font-face{font-family:"Hiragino Kaku";src:url("assets/fonts/Hiragino-W6.woff2") format("woff2");font-weight:600;font-display:swap}
+:root{font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;color:#16212E;background:#eef2fb}
+*{box-sizing:border-box}body{margin:0;padding:16px;max-width:480px;margin-inline:auto}
+header{text-align:center;margin:8px 0 16px}header h1{margin:0;font-size:22px;color:#0F369D}header p{margin:4px 0 0;color:#5b6676;font-size:14px}
+.card{background:#fff;border:1px solid #d9e1f2;border-radius:20px;padding:22px 18px;text-align:center}
+.state{font-size:18px;font-weight:600;margin:0 0 6px}.cap{color:#5b6676;font-size:14px}
+.num{font-size:96px;font-weight:700;line-height:1.05;color:#0F369D;font-variant-numeric:tabular-nums}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}.cell{background:#eef2fb;border-radius:14px;padding:12px 8px}.cell b{display:block;font-size:30px;color:#0F369D;font-variant-numeric:tabular-nums}.cell span{font-size:13px;color:#5b6676}
+.room{margin-top:14px;font-size:20px;color:#0F369D;font-weight:600}
+.called{background:#F15A22;color:#fff;border-color:#F15A22}.called .num,.called .cap,.called .room{color:#fff}.called .cell{background:rgba(255,255,255,.18)}.called .cell b,.called .cell span{color:#fff}
+.done{border-color:#2F7D5C}.done .state{color:#2F7D5C}.bad .state{color:#D0402A}
+.foot{margin-top:14px;text-align:center;color:#5b6676;font-size:12px}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+</head>
+<body>
+<header><h1>Swnw — اعرف دورك</h1><p>مركز عيادات سونو التخصصية — حدائق الأهرام</p></header>
+<main id="turn" aria-live="polite"><div class="card"><p class="state">جاري التحميل…</p></div></main>
+<div class="foot" data-foot></div>
+<script src="assets/js/my-turn.js?v=my-turn-20261120-1"></script>
+<script>
+(function(){'use strict';
+var db=window.supabase.createClient('https://api.swnwclinics.com','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzk0MzQzMzI1LCJleHAiOjE5NTIwMjMzMjV9.BsprU5Z6n5kZzzLL7XvUQsk57J-t83heDn5DP3zGggc',{auth:{persistSession:false,autoRefreshToken:false}});
+function rpc(n,a){return db.rpc(n,a).then(function(r){if(r.error)throw r.error;return r.data;});}
+window.SWNWMyTurn.init({rpc:rpc,token:new URLSearchParams(location.search).get('t'),root:document});
+})();
+</script>
+</body>
+</html>
