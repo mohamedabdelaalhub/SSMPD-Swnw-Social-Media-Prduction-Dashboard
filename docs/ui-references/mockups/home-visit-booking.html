@@ -1,0 +1,62 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>حجز زيارة منزلية + ملاحظات المريض — تصور</title>
+<link rel="stylesheet" href="../../../assets/css/styles.css"><link rel="stylesheet" href="../../../assets/css/reception-workspace.css">
+<style>
+body{background:#e9edf5;margin:0;padding:24px 12px}.wrap{max-width:760px;margin:0 auto}
+.rx-modal{position:static;background:none;display:block}.rx-modal .modal{max-width:760px;margin:0 auto;max-height:none}
+.note-band{grid-column:1/-1;display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:12px;background:#FFF6E5;border:1px solid #F5C77A;color:#6B4A0E;font-size:13px;line-height:1.7}
+.note-band b{color:#8A5A00;white-space:nowrap}.note-band.tmp{background:#EEF3FF;border-color:#B9C8EE;color:#1E3A7A}.note-band.tmp b{color:#0F369D}
+.note-band small{display:block;color:#8a7a5a}
+.hv{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:12px;border-radius:14px;background:#FFF8F4;border:1px dashed #F7B79A}
+.hv h5{grid-column:1/-1;margin:0;color:#F15A22;font-size:13px;display:flex;gap:8px;align-items:center}
+.hv .w2{grid-column:span 2}.hv .w3{grid-column:1/-1}
+.loc{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.loc .chip{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:99px;background:#E6F2EC;color:#2F7D5C;font-size:12px}
+.hint{grid-column:1/-1;font-size:12px;color:#5b6577;margin:0}
+.board{max-width:760px;margin:22px auto 0;background:#fff;border-radius:16px;padding:14px;border:1px solid #D5DEEE}
+.board h4{margin:0 0 10px;color:#0F369D}.row{display:grid;grid-template-columns:70px 1fr auto;gap:10px;align-items:center;padding:10px;border-radius:12px;border:1px solid #E6E8EE}
+.row .t{font-weight:700;color:#0F369D;direction:ltr;text-align:center}.row .n{font-weight:700}.row .s{font-size:12px;color:#5b6577}
+.tag{display:inline-block;padding:1px 8px;border-radius:99px;font-size:11px;margin-inline-start:6px}.tag.home{background:#FDEEE7;color:#F15A22}.tag.note{background:#FFF6E5;color:#8A5A00}
+.rx-modal .rx-card .rx-walkin{order:5}.rx-modal .rx-card .hv{order:6}.note-band .ed{margin-inline-start:auto;font-size:12px;color:#0F369D;background:none;border:0;text-decoration:underline;cursor:pointer;white-space:nowrap}
+.rx-modal .rx-walkin input.on{background:#F15A22}.rx-modal .rx-walkin input.on::after{inset-inline-start:21px}
+.cap{max-width:760px;margin:0 auto 10px;color:#3B4658;font-size:13px}
+@media(max-width:640px){.hv{grid-template-columns:1fr}.hv .w2{grid-column:auto}}
+</style></head><body><div class="wrap">
+<p class="cap">تصور — نافذة الحجز بعد الإضافة (بيانات تجريبية). الجزء البرتقالي بيظهر بس لما «زيارة منزلية» تتفعّل.</p>
+<div class="modal-backdrop rx-modal"><section class="modal"><header class="modal-head"><h3>حجز جديد</h3><button class="modal-close">×</button></header>
+<form class="rx-form">
+ <div class="rx-card"><p class="rx-card-title"><i>1</i> المريض</p>
+  <label data-wide>المريض<input value="P-2026-000000 — مريضة تجريبية — 010••••••12"></label>
+  <div class="note-band"><b>📌 ملاحظة دائمة:</b><span>بتحب المواعيد بعد العصر بس · عليها باقي حساب معمل 150 ج.م<small>كتبتها دينا — 12/11/2026 · بتظهر في كل حجز للمريضة دي لحد ما تتمسح</small></span><button type="button" class="ed">تعديل</button></div>
+ </div>
+ <div class="rx-card"><p class="rx-card-title"><i>2</i> الخدمة والطبيب</p>
+  <label class="rx-c-dept">القسم<select><option>العلاج الطبيعي</option></select></label>
+  <label class="rx-c-prov">الطبيب<select><option>أخصائي علاج طبيعي</option></select></label>
+  <label class="rx-c-svc">الخدمة<select><option>جلسة علاج طبيعي — منزلية</option></select></label>
+  <label class="rx-walkin" data-wide><input type="checkbox" class="on" checked> زيارة منزلية <small style="color:#5b6577">(بتتفعّل لوحدها لو الخدمة منزلية)</small></label>
+  <div class="hv">
+   <h5>🏠 عنوان الزيارة المنزلية <small style="color:#5b6577;font-weight:400">— بيتحفظ على ملف المريض ويتملا لوحده المرة الجاية</small></h5>
+   <label>المنطقة / الحي<input value="حدائق الأهرام — البوابة التانية"></label>
+   <label class="w2">الشارع<input value="شارع تجريبي متفرع من الشارع الرئيسي"></label>
+   <label>رقم العمارة<input value="45"></label>
+   <label>الدور<input value="3"></label>
+   <label>الشقة<input value="12"></label>
+   <label class="w3">علامة مميزة جنب العمارة<input value="قدام صيدلية — جنب الجامع"></label>
+   <label class="w3">إزاي توصل للشقة<input value="أول باب يمين الأسانسير — الجرس مش شغال، اتصل"></label>
+   <label>رقم تليفون للوصول<input value="010••••••45"></label>
+   <label class="w2">لينك اللوكيشن (Google Maps)<input placeholder="الصق اللينك اللي المريض بعته"></label>
+   <div class="loc"><button type="button" class="btn">📍 اطلب اللوكيشن على واتساب</button><button type="button" class="btn" disabled>🧭 افتح الاتجاهات</button><span class="chip">زرار الاتجاهات بيشتغل لما اللينك يتحط</span></div>
+   <p class="hint">«اطلب اللوكيشن» بيفتح واتساب برسالة جاهزة للمريض، وإنت اللي بتدوس إرسال. أول ما يبعته الصق اللينك هنا.</p>
+  </div>
+ </div>
+ <div class="rx-card"><p class="rx-card-title"><i>3</i> الميعاد</p>
+  <label>اليوم<input value="20/11/2026"></label><label>الوقت<select><option>05:00 م</option></select></label>
+  <label data-wide>ملاحظة للحجز ده بس <small>(مؤقتة — بتظهر مع الميعاد ده وبس)</small><textarea rows="2">هيدفع باقي حساب المعمل مع الزيارة · محتاج كرسي متحرك</textarea></label>
+ </div>
+ <p role="status"></p><footer><button class="btn btn-primary" type="button">حفظ الحجز</button><button class="btn" type="button">إلغاء</button></footer>
+</form></section></div>
+<div class="board"><h4>شغل النهارده — زي ما هيظهر للي في الشيفت</h4>
+ <div class="row"><span class="t">05:00</span><div><span class="n">مريضة تجريبية</span><span class="tag home">🏠 منزلية</span><span class="tag note">📌 ملاحظة</span>
+  <div class="s">جلسة علاج طبيعي — حدائق الأهرام، عمارة 45، دور 3، شقة 12 · قدام صيدلية</div>
+  <div class="s">📌 بتحب المواعيد بعد العصر · عليها باقي معمل 150 — 📝 هيدفع الباقي مع الزيارة · محتاج كرسي متحرك</div></div>
+  <button class="btn" type="button">🧭 الاتجاهات</button></div>
+</div></div></body></html>

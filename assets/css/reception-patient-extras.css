@@ -1,0 +1,17 @@
+/* Home-visit address + patient notes in the booking modal and on the today board (owner 2026-11-19, mockup home-visit-booking.html) */
+.rx-modal .rxe-band{grid-column:1/-1;display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:12px;background:#FFF6E5;border:1px solid #F5C77A;color:#6B4A0E;font-size:13px;line-height:1.7}
+.rx-modal .rxe-band b{color:#8A5A00;white-space:nowrap}.rx-modal .rxe-band small{display:block;color:#8a7a5a}.rx-modal .rxe-band .rxe-pending{color:#F15A22}
+.rx-modal .rxe-ed{margin-inline-start:auto;font-size:12px;color:#0F369D;background:none;border:0;text-decoration:underline;cursor:pointer;white-space:nowrap}
+.rx-modal [data-rxe-note]{grid-column:1/-1}.rx-modal .rxe-switch{order:5}.rx-modal .rx-card .rxe-home{order:6}
+.rx-modal .rxe-home{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:12px;border-radius:14px;background:#FFF8F4;border:1px dashed #F7B79A;min-width:0}
+.rx-modal .rxe-home[hidden]{display:none}
+.rx-modal .rxe-home h5{grid-column:1/-1;margin:0;color:#F15A22;font-size:13px}.rx-modal .rxe-home h5 small{color:#5b6577;font-weight:400}
+.rx-modal .rxe-street,.rx-modal .rxe-maps_url{grid-column:span 2}.rx-modal .rxe-landmark,.rx-modal .rxe-directions{grid-column:1/-1}
+.rx-modal .rxe-loc{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px}.rx-modal .rxe-loc [aria-disabled=true]{opacity:.5;pointer-events:none}
+.rx-modal .rxe-hint{grid-column:1/-1;font-size:12px;color:#5b6577;margin:0}
+.rxe-tag{display:inline-block;margin-inline-start:4px;font-size:12px}
+.rxe-board{display:grid;gap:6px;margin:0 0 8px;padding:8px 10px;border-radius:10px;background:#FFF8F4;border:1px solid #F7D3C2;font-size:13px}
+.rxe-board p{margin:0;line-height:1.6}.rxe-board .rxe-pn{color:#8A5A00}.rxe-board .rxe-tn{color:#1E3A7A}.rxe-board .btn{justify-self:start}
+.rxe-reqs-btn{margin:0 0 10px;background:#FFF6E5;border-color:#F5C77A;color:#8A5A00}
+.rxe-reqs,.rxe-svcs{display:grid;gap:10px;padding:4px 2px}.rxe-req{border:1px solid #D5DEEE;border-radius:12px;padding:10px 12px}.rxe-req h4{margin:0 0 6px;color:#0F369D}.rxe-req p{margin:4px 0}
+@media(max-width:640px){.rx-modal .rxe-home{grid-template-columns:minmax(0,1fr)}.rx-modal .rxe-street,.rx-modal .rxe-maps_url{grid-column:auto}}

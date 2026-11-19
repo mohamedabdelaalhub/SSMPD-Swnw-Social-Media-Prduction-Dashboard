@@ -366,7 +366,7 @@
     function countUp(root){
       if(countUp.done||!window.requestAnimationFrame||(window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches))return;
       var nodes=root.querySelectorAll(".tw-sum [data-count]");if(!nodes.length)return;countUp.done=true;
-      nodes.forEach(function(n){var to=Number(n.dataset.count)||0;if(!to)return;var t0=null;n.textContent="0";(function step(t){if(t0===null)t0=t;var p=Math.min(1,(t-t0)/600);n.textContent=String(Math.round(to*(1-Math.pow(1-p,3))));if(p<1)window.requestAnimationFrame(step);else n.textContent=String(to);})(performance.now());});
+      nodes.forEach(function(n){var to=Number(n.dataset.count)||0;if(!to)return;var t0=null;n.classList.add("tw-counting");n.dataset.now="0";(function step(t){if(t0===null)t0=t;var p=Math.min(1,(t-t0)/600);n.dataset.now=String(Math.round(to*(1-Math.pow(1-p,3))));if(p<1)window.requestAnimationFrame(step);else n.classList.remove("tw-counting");})(performance.now());});
     }
     var SUM_ICON={todo:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>',late:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17v.5"/></svg>',review:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l4 4 10-10"/></svg>'};
     var SUM_TITLE={todo:"مطلوب تنفيذها",late:"المهام المتأخرة",review:"بانتظار المراجعة"};

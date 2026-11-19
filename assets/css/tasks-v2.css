@@ -41,3 +41,5 @@
 .tw-card h2{color:#16212E}.tw-card.s-revision h2{color:#16212E}
 .tw-card .btn.btn-primary{background:#fff;color:#0F369D;border:1px solid #B9C8EA;min-height:44px;transition:background .18s,transform .12s}.tw-card .btn.btn-primary:hover{background:#F5F8FE}.tw-card .btn.btn-primary:active{transform:scale(.97)}
 @media(max-width:700px){.tsk-modal-backdrop:has(>.tw-sum-modal){align-items:flex-end;padding:0}.tsk-modal.tw-sum-modal{width:100%;max-width:none;border-radius:22px 22px 0 0;max-height:88dvh}}
+/* count-up is painted by an overlay so the real number is always in the DOM (screen readers, tests) */
+.tw-sum strong{position:relative}.tw-sum strong.tw-counting{color:transparent!important}.tw-sum strong.tw-counting::after{content:attr(data-now);position:absolute;inset:0;color:var(--tv2-num);text-align:inherit}.tw-summary .tw-summary-late strong.tw-counting::after{color:#C00000}
