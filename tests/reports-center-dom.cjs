@@ -47,7 +47,7 @@ const tick = (ms = 20) => new Promise(r => setTimeout(r, ms));
   const list = { reports: [{ code: 'doctor_dues', title: 'مستحقات الدكاترة', area: 'doctors', sensitive: true, roles: ['general_manager'], admins: [{ id: 'a1', name: 'أحمد' }] }], people: [{ id: 'a1', name: 'أحمد', role: 'accountant' }, { id: 'a2', name: 'هبة', role: 'reception' }] };
   const sets = []; const w4 = mk((n, a) => { if (n === 'report_access_admin') { if (a.p_action === 'set') sets.push(a.p_payload); return { data: list }; } return { data: {} }; });
   const h4 = w4.document.createElement('div'); await w4.SSMPDRenderReports.mountAccess(h4); await tick();
-  assert.equal(h4.querySelectorAll('input[type=checkbox]').length, 9); assert.match(h4.textContent, /مستحقات الدكاترة بتفتح للمدير العام والمدير المالي بس/);
+  assert.equal(h4.querySelectorAll('input[type=checkbox]').length, 9); assert.match(h4.textContent, /بيفتح للمدير العام والمدير المالي بس/);
   const pick = h4.querySelector('[data-pick]'); pick.value = 'a2'; pick.dispatchEvent(new w4.Event('change', { bubbles: true }));
   h4.querySelector('[data-role="accountant"]').checked = true; h4.querySelector('[data-save]').click(); await tick();
   assert.equal(sets[0].code, 'doctor_dues'); assert.equal(JSON.stringify(sets[0].admin_ids), '["a1","a2"]');

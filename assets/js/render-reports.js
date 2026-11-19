@@ -4,7 +4,7 @@
 (function () {
   "use strict";
 
-  var AREAS = [["operations", "التشغيل"], ["cash", "الخزنة والإيرادات"], ["doctors", "الدكاترة"]];
+  var AREAS = [["operations", "التشغيل"], ["cash", "الخزنة والإيرادات"], ["doctors", "الدكاترة"], ["insurance", "التأمين والتعاقدات"]];
   var ACCESS_ROLES = ["general_manager", "financial_manager", "accountant", "reception", "customer_service", "page_manager", "nursing", "head_nursing", "sono_doctor"];
   var SHIFT_STATUS = { open: "مفتوحة", submitted: "اتقفلت — مستنية مراجعة", reviewed: "اتراجعت" };
   var REQ_STATUS = { pending: "مستني موافقة", approved: "اتوافق عليه", rejected: "اترفض" };
@@ -12,6 +12,8 @@
   var KIND_LABELS = { discount: "خصم", refund: "مرتجع", credit_note: "إشعار دائن", service_void: "إلغاء خدمة", package_cancel: "إلغاء باقة",
     method_fix: "تصحيح طريقة دفع", claim_contractual: "تسوية تعاقدية (تأمين)", claim_loss: "خسارة مطالبة", finance_refund: "مرتجع (الحسابات)", finance_void: "إلغاء فاتورة (الحسابات)" };
   var SOURCE_LABELS = { doctor_fee: "استحقاق خدمة", doctor_payout: "صرف", doctor_contractual: "تسوية", doctor_credit_note: "تسوية" };
+  var CLAIM_KIND = { claim_correction: "اترجعت للتصحيح", claim_contractual: "تخفيض تعاقدي", claim_loss: "إعدام (خسارة)", claim_payment: "تحصيل", claim_submit: "تقديم" };
+  var ENTITY_KIND = { insurer: "تأمين / نقابة", discount: "جهة خصم", referral: "جهة تحويل" };
   var EMPTY = "لسه مفيش بيانات في الفترة دي";
   var state = null;
 
@@ -159,7 +161,7 @@
         var t = d.totals || {};
         return [{ l: "قيمة الجلسات الباقية", v: money(t.remaining_value), hero: true, sub: fmtNum(t.packages) + " باقة" },
           { l: "جلسات باقية", v: fmtNum(t.sessions_left) }, { l: "المدفوع في الباقات", v: money(t.funded) },
-          { l: "تنتهي خلال ٣٠ يوم", v: fmtNum(t.expiring_30), u: "باقة" }];
+          { l: "تنتهي خلال 30 يوم", v: fmtNum(t.expiring_30), u: "باقة" }];
       }
     },
     no_show_by_doctor: {
@@ -187,6 +189,67 @@
         var t = d.totals || {};
         return [{ l: "نسبة الإشغال", v: t.occupancy == null ? "—" : fmtNum(t.occupancy) + "%", hero: true },
           { l: "ساعات متاحة", v: fmtNum(t.available_hours) }, { l: "ساعات محجوزة", v: fmtNum(t.booked_hours) }, { l: "مواعيد", v: fmtNum(t.appointments) }];
+      }
+    },
+    claims_monthly: {
+      sub: "المطالبات على كل جهة في الفترة: المقدم والمحصّل والتخفيض والمتبقي.",
+      range: true,
+      cols: [C("entity", "الجهة"), C("entity_kind", "النوع", "status", ENTITY_KIND), C("claims", "مطالبات", "int"), C("amount", "قيمة المطالبات", "money"),
+        C("paid", "اتحصّل", "money"), C("contractual", "تخفيض تعاقدي", "money"), C("outstanding", "المتبقي", "money"),
+        C("ready", "جاهزة", "int"), C("submitted", "اتقدمت", "int"), C("correction", "للتصحيح", "int"), C("settled", "اتقفلت", "int")],
+      totalKeys: { claims: 1, amount: 1, paid: 1, contractual: 1, outstanding: 1, ready: 1, submitted: 1, correction: 1, settled: 1 },
+      load: function (f) { return rpc("report_claims_monthly", { p_from: f.from, p_to: f.to, p_branch: f.branch || null }); },
+      tiles: function (d) {
+        var t = d.totals || {};
+        return [{ l: "قيمة المطالبات", v: money(t.amount), hero: true, sub: fmtNum(t.claims) + " مطالبة" },
+          { l: "اتحصّل", v: money(t.paid) }, { l: "المتبقي على الجهات", v: money(t.outstanding) },
+          { l: "مستنية تتقدم", v: fmtNum(t.ready), u: "مطالبة", sub: fmtNum(t.correction) + " راجعة للتصحيح" }];
+      }
+    },
+    ar_aging: {
+      sub: "الفلوس اللي لسه على الجهات، متقسمة حسب عمر الفاتورة.",
+      range: false, dayLabel: "لحد يوم", dayDefault: "today",
+      cols: [C("entity", "الجهة"), C("entity_kind", "النوع", "status", ENTITY_KIND), C("claims", "مطالبات", "int"), C("b0_30", "0–30 يوم", "money"),
+        C("b31_60", "31–60 يوم", "money"), C("b61_90", "61–90 يوم", "money"), C("b90_plus", "أكتر من 90 يوم", "money"), C("total", "الإجمالي", "money"),
+        C("oldest_days", "أقدم (يوم)", "int")],
+      totalKeys: { claims: 1, b0_30: 1, b31_60: 1, b61_90: 1, b90_plus: 1, total: 1 },
+      load: function (f) { return rpc("report_ar_aging", { p_as_of: f.day || null, p_branch: f.branch || null }); },
+      tiles: function (d) {
+        var t = d.totals || {};
+        return [{ l: "إجمالي المستحق على الجهات", v: money(t.total), hero: true, sub: fmtNum(t.claims) + " مطالبة" },
+          { l: "أقل من 30 يوم", v: money(t.b0_30) }, { l: "من 31 لـ 90 يوم", v: money(num(t.b31_60) + num(t.b61_90)) },
+          { l: "أكتر من 90 يوم", v: money(t.b90_plus), neg: num(t.b90_plus) > 0 }];
+      }
+    },
+    claim_adjustments: {
+      sub: "المطالبات اللي اترجعت للتصحيح، والتخفيضات التعاقدية، والإعدام، والتحصيل.",
+      range: true,
+      cols: [C("day", "اليوم", "date"), C("entity", "الجهة"), C("kind", "النوع", "status", CLAIM_KIND), C("amount", "القيمة", "money"),
+        C("claim_amount", "قيمة المطالبة", "money"), C("reason", "السبب"), C("requested_by", "طلبه"), C("reviewed_by", "راجعه"), C("status", "الحالة", "status", REQ_STATUS)],
+      totalKeys: { amount: 1 },
+      totalOverride: function (d) { var a = 0; (d.rows || []).forEach(function (r) { a += num(r.amount); }); return { amount: a }; },
+      load: function (f) { return rpc("report_claim_adjustments", { p_from: f.from, p_to: f.to, p_branch: f.branch || null }); },
+      tiles: function (d) {
+        var t = d.totals || {};
+        return [{ l: "اترجعت للتصحيح", v: fmtNum(t.returned), u: "مطالبة", hero: true },
+          { l: "تخفيض تعاقدي معتمد", v: money(t.contractual) }, { l: "إعدام معتمد", v: money(t.loss), neg: num(t.loss) > 0 },
+          { l: "اتحصّل", v: money(t.collected), sub: fmtNum(t.pending) + " طلب مستني" }];
+      }
+    },
+    entity_profitability: {
+      sub: "لكل جهة: المرضى والزيارات والإيراد، وبعد التخفيض وحصة الدكتور والمستلزمات — الهامش.",
+      range: true,
+      sensitive: true,
+      cols: [C("entity", "الجهة"), C("entity_kind", "النوع", "status", ENTITY_KIND), C("patients", "مرضى", "int"), C("visits", "زيارات", "int"), C("services", "خدمات", "int"),
+        C("revenue", "الإيراد", "money"), C("contractual", "تخفيض تعاقدي", "money"), C("doctor_fees", "حصة الدكاترة", "money"),
+        C("supplies_cost", "مستلزمات", "money"), C("margin", "الهامش", "diff"), C("margin_pct", "نسبة الهامش", "pct"), C("collected", "اتحصّل", "money")],
+      totalKeys: { patients: 1, visits: 1, services: 1, revenue: 1, contractual: 1, doctor_fees: 1, supplies_cost: 1, margin: 1, margin_pct: 1, collected: 1 },
+      load: function (f) { return rpc("report_entity_profitability", { p_from: f.from, p_to: f.to, p_branch: f.branch || null }); },
+      tiles: function (d) {
+        var t = d.totals || {};
+        return [{ l: "هامش التعاقدات", v: money(t.margin), hero: true, sub: t.margin_pct == null ? "" : fmtNum(t.margin_pct) + "% من الإيراد" },
+          { l: "إيراد التعاقدات", v: money(t.revenue), sub: fmtNum(t.patients) + " مريض" }, { l: "تخفيض تعاقدي", v: money(t.contractual) },
+          { l: "حصة الدكاترة", v: money(t.doctor_fees) }];
       }
     },
     daily_flash: {
@@ -445,7 +508,7 @@
     var h = '<div class="rc-root rc-access"><h3>صلاحيات التقارير</h3><p class="rc-hint">اختار مين يشوف كل تقرير: بالدور، أو بالاسم لأشخاص معينين. التغيير بيتسجّل في سجل مراجعة.</p><div class="rc-tw"><table><thead><tr><th>التقرير</th>' +
       ACCESS_ROLES.map(function (r) { return "<th class=\"rc-c\">" + esc(roleLabel(r)) + "</th>"; }).join("") + "<th>أشخاص بالاسم</th><th></th></tr></thead><tbody>";
     (data.reports || []).forEach(function (r) {
-      h += '<tr data-code="' + esc(r.code) + '"><td><b>' + esc(r.title) + "</b>" + (r.sensitive ? '<div class="rc-note">مستحقات الدكاترة بتفتح للمدير العام والمدير المالي بس حتى لو اديتها لحد تاني</div>' : "") + "</td>" +
+      h += '<tr data-code="' + esc(r.code) + '"><td><b>' + esc(r.title) + "</b>" + (r.sensitive ? '<div class="rc-note">التقرير ده فيه أرقام مستحقات — بيفتح للمدير العام والمدير المالي بس حتى لو اديته لحد تاني</div>' : "") + "</td>" +
         ACCESS_ROLES.map(function (ro) { return '<td class="rc-c"><input type="checkbox" data-role="' + ro + '"' + ((r.roles || []).indexOf(ro) !== -1 ? " checked" : "") + ' aria-label="' + esc(roleLabel(ro)) + '"></td>'; }).join("") +
         '<td><div class="rc-chips" data-chips>' + (r.admins || []).map(function (a) { return chip(a); }).join("") + '</div><select class="rc-pick" data-pick><option value="">+ إضافة شخص</option>' +
         people.map(function (p) { return '<option value="' + esc(p.id) + '">' + esc(p.name) + " — " + esc(roleLabel(p.role)) + "</option>"; }).join("") + '</select></td><td><button type="button" class="rc-btn" data-save>حفظ</button></td></tr>';
