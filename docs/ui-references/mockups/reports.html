@@ -258,7 +258,7 @@ function pageHead(t,s,crumb){return '<div class="ph"><div class="crumb">'+(crumb
 /* table: cols [{h,n(umeric)}], rows arrays of strings, foot array */
 function table(cols,rows,foot,cls){
  return '<div class="tw"><table class="'+(cls||'')+'"><thead><tr>'+cols.map(function(c){return '<th class="'+(c.n?'n':'')+'">'+c.h+'</th>'}).join('')+'</tr></thead><tbody>'
- +rows.map(function(r){var rc='';if(r._c){rc=r._c;r=r.cells}return '<tr class="'+rc+'">'+r.map(function(c,i){return '<td class="'+(cols[i]&&cols[i].n?'n':'')+'">'+c+'</td>'}).join('')+'</tr>'}).join('')
+ +rows.map(function(r){var rc='';if(r&&r.cells){rc=r._c||'';r=r.cells}return '<tr class="'+rc+'">'+r.map(function(c,i){return '<td class="'+(cols[i]&&cols[i].n?'n':'')+'">'+c+'</td>'}).join('')+'</tr>'}).join('')
  +'</tbody>'+(foot?'<tfoot><tr>'+foot.map(function(c,i){return '<td class="'+(cols[i]&&cols[i].n?'n':'')+'">'+c+'</td>'}).join('')+'</tr></tfoot>':'')+'</table></div>';}
 function tcard(title,sub,cols,rows,foot,span,cls){return '<div class="card s'+(span||4)+'">'+head(title,sub)+table(cols,rows,foot,cls)+'</div>';}
 function note(t,k){return '<div class="card note s4 '+(k||'')+'">'+I.info+'<span>'+t+'</span></div>';}
