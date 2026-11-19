@@ -2,7 +2,7 @@
 const fs=require('fs'),path=require('path'),assert=require('node:assert/strict');
 const src=fs.readFileSync(path.join(__dirname,'reception-bridge.cjs'),'utf8');const cut=src.indexOf('// A legacy inventory use');
 assert(cut>0&&src.includes('await boot()'),'reception-bridge.cjs setup markers moved; update this test');
-const prefix=src.slice(0,cut).replace('await boot()',"await boot(['reception_consultation_eligibility','reception_provider_service_scopes','reception_booking_confirm_duration','reception_weekly_schedule_walk_in','reception_basic_services_readiness','reception_masa_links_fallback_booking','reception_booking_gap','reception_fallback_reconcile','reception_fallback_masa_schedule'])").replace("require('./helpers/reception-bridge.cjs')",'require('+JSON.stringify(path.join(__dirname,'helpers','reception-bridge.cjs'))+')');
+const prefix=src.slice(0,cut).replace('await boot()',"await boot(['reception_consultation_eligibility','reception_provider_service_scopes','reception_booking_confirm_duration','reception_weekly_schedule_walk_in','reception_basic_services_readiness','reception_masa_links_fallback_booking','reception_booking_gap','reception_fallback_reconcile','reception_fallback_masa_schedule','reception_fallback_stale_autoresolve'])").replace("require('./helpers/reception-bridge.cjs')",'require('+JSON.stringify(path.join(__dirname,'helpers','reception-bridge.cjs'))+')');
 const body=`
 {const q=async(sql,a)=>{const r=await owner(sql,a);await as(1);return r;};await as(1);
 const api=async(op,p)=>(await q('select clinic_reception.fallback_api($1,$2::jsonb) v',[op,JSON.stringify(p||{})]))[0].v;
@@ -35,6 +35,7 @@ await q("update clinic_reception.fallback_sync_state set synced_at=now()-interva
 r=await slots();assert.equal(r.stale,true);await slots();
 let al=(await fb('list')).alerts.filter(x=>x.kind==='stale_sync');assert.equal(al.length,1,'one stale alert per hour');assert(/آخر مزامنة مع ماسا/.test(al[0].detail));
 await api('reconcile_list',{date_from:d1,date_to:d1});assert.equal((await slots()).stale,false,'reconcile_list counts as a bookings sync');
+assert.equal((await fb('list')).alerts.filter(x=>x.kind==='stale_sync').length,0,'fresh sync closes the stale alert');
 // Masa cancelled OUR bookings → blocks released
 assert((await api('book',{booking_request_id:'S-2',masa_doctor_id:1130,appointment_date:d1,appointment_time:'10:40',customer_name:'مريض',phone:'01000000001'})).ok);
 await q('alter table public.customer_bookings disable trigger user');
