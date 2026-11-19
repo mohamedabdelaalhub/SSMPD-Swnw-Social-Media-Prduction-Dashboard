@@ -126,3 +126,21 @@
 @media (prefers-reduced-motion:reduce){
   .te-page *,.te-overlay,.te-dialog,.te-dialog *{transition:none!important;animation:none!important}
 }
+
+/* PR 3: exam result view (owner / reviewer) */
+.te-page .te-chip[data-grade=strong]{background:#E6F3EC;color:#2F7D5C}
+.te-page .te-chip[data-grade=medium]{background:#FFF3EC;color:#8A3A12}
+.te-page .te-chip[data-grade=weak]{background:#FCEDEA;color:#B23A26}
+.te-page .te-flag{color:#B23A26;font-weight:600}
+.te-page .te-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px}
+.te-page .te-stats>div{display:flex;flex-direction:column;gap:4px;align-items:flex-start}
+.te-page .te-stats b{font-size:22px;color:#16212E}
+.te-page .te-stats span:not(.te-chip){font-size:13px;color:#5B6577}
+.te-page tr.te-weak td{background:#FFF8F5}
+.te-page .te-review{margin:0;padding-inline-start:22px;display:grid;gap:12px}
+.te-page .te-review li{border-bottom:1px solid #E4E9F2;padding-bottom:10px}
+.te-page .te-review li[data-points="0"]{border-inline-start:3px solid #D0402A;padding-inline-start:10px}
+.te-page .te-review li[data-points="1"]{border-inline-start:3px solid #F15A22;padding-inline-start:10px}
+.te-page .te-review p{margin:4px 0}
+.te-page .te-q-small{font-weight:600}
+.te-page .te-pts{display:inline-block;border-radius:99px;padding:0 8px;background:#EEF2FB;color:#0F369D;font-size:12.5px}

@@ -31,6 +31,9 @@ const MOCK = {
   training_people: () => [{ id: 'p1', name: 'موظف تجريبي ١' }, { id: 'p2', name: 'موظف تجريبي ٢' }],
   training_assign: () => 'new-id',
   training_cancel_assignment: () => null,
+  training_exam_result: () => ({ status: 'submitted', trainee_name: evil, track_name: 'مدير فرع', submitted_at: new Date().toISOString(), auto_submitted: false, used_seconds: 1500, blur_count: 2, points: 42, max_points: 60, percent: 70, answered: 29, total: 30, risk_flags: 1, grade: 'medium',
+    by_competency: [{ code: 'OPS', name_ar: 'التشغيل', points: 4, max_points: 10, percent: 40 }, { code: 'HR', name_ar: 'الموارد', points: 8, max_points: 8, percent: 100 }],
+    questions: [{ n: 1, id: 'q1', competency: 'التشغيل', text: 'سؤال', chosen: { text: 'اختيار خاطئ', points: 0, critical: true }, best: ['الأنسب'] }, { n: 2, id: 'q2', competency: 'الموارد', text: 'سؤال ٢', chosen: null, best: ['الأنسب ٢'] }] }),
 };
 w.SSMPDDb = { client: { rpc: async (name, args) => { calls.push([name, args]); try { return { data: MOCK[name](args || {}), error: null }; } catch (e) { return { data: null, error: e }; } } } };
 w.SSMPDAuth = { currentAdmin: { id: 'me', role } };
@@ -109,6 +112,21 @@ const row = (o) => Object.assign({ id: 'A1', track: 'branch_manager', track_name
   $('.te-overlay [name=reason]').value = 'اختبار';
   await click('.te-overlay [data-ok]');
   assert(calls.some((c) => c[0] === 'training_cancel_assignment' && c[1].p_reason === 'اختبار'));
-  console.log('PASS training evaluation UI: course gate, 8 modules, exam order/save/blur/submit, no key or score in trainee DOM, owner assign/cancel validation, escaping.');
+  // PR 3: owner opens the exam result; trainee rows never show a grade
+  state.list = [row({ relation: 'owner', trainee_id: 'p1', trainee_name: 'موظف تجريبي ١', status: 'submitted', exam_status: 'submitted', exam_grade: 'medium', exam_risk_flags: 1 })];
+  await w.SSMPDTrainingEvaluation.render($('#v'));
+  for (let i = 0; i < 4; i++) await tick();
+  assert(/متوسط/.test($('#v').textContent) && /علامات خطر: 1/.test($('#v').textContent));
+  await click('[data-result="A1"]');
+  assert(/70%/.test($('.te-stats').textContent) && /متوسط/.test($('.te-stats').textContent));
+  assert($('tr.te-weak') && /أقل من 60%/.test($('tr.te-weak').textContent), 'weak competency marked');
+  assert(/لم يُجب/.test($('.te-review').textContent) && /علامة خطر/.test($('.te-review').textContent) && /الأنسب ٢/.test($('.te-review').textContent));
+  assert(!w.__xss && !$('#v img'), 'result escapes names');
+  w.SSMPDAuth.currentAdmin = { id: 'me', role: 'reception' };
+  state.list = [row({ status: 'submitted', exam_status: 'submitted' })];
+  await w.SSMPDTrainingEvaluation.render($('#v'));
+  for (let i = 0; i < 4; i++) await tick();
+  assert(!$('[data-result]') && !/قوي|متوسط|ضعيف/.test($('#v').textContent), 'trainee sees no result button or grade');
+  console.log('PASS training evaluation UI: course gate, 8 modules, exam order/save/blur/submit, no key or score in trainee DOM, owner assign/cancel validation, owner result view (grade, weak competencies, choice vs best), trainee sees no grade, escaping.');
   process.exit(0);
 })().catch((e) => { console.error(e); process.exit(1); });

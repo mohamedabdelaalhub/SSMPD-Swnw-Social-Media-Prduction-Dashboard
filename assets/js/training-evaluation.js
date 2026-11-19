@@ -4,6 +4,7 @@
 (function (w) {
   'use strict';
   var STATUS = { assigned: 'مُسنَد', in_progress: 'جارٍ', submitted: 'تم تسليم الاختبار', interviewing: 'مرحلة المقابلة', decided: 'صدر القرار', cancelled: 'ملغى' };
+  var GRADES = { strong: 'قوي', medium: 'متوسط', weak: 'ضعيف' };
   var TRACKS = [['branch_manager', 'مدير فرع'], ['team_manager', 'مدير فريق']];
   var st = { el: null, list: [], view: 'home', asg: null, progress: null, exam: null, idx: 0, offset: 0, timer: null, blurHook: null, busy: false };
 
@@ -28,6 +29,7 @@
   function isOwner() { var a = w.SSMPDAuth && w.SSMPDAuth.currentAdmin; return !!(a && w.SSMPDRoles && w.SSMPDRoles.hasRole(a, 'super_admin')); }
   function date(v) { if (!v) return '—'; var d = new Date(v); return isNaN(d) ? '—' : d.toLocaleDateString('ar-EG-u-nu-latn', { year: 'numeric', month: 'short', day: 'numeric' }); }
   function course() { return w.SSMPDTrainingCourse || { modules: [], sources: [] }; }
+  function gradeChip(g) { return '<span class="te-chip" data-grade="' + e(g) + '">' + e(GRADES[g] || g) + '</span>'; }
   function chip(status) { return '<span class="te-chip" data-status="' + e(status) + '">' + e(STATUS[status] || status) + '</span>'; }
 
   function stopExam() {
@@ -68,9 +70,10 @@
       list.map(function (a) {
         var act = '';
         if (mode === 'trainee' && a.status !== 'cancelled') act = '<button type="button" class="btn btn-primary" data-open="' + e(a.id) + '">' + (a.exam_status ? 'عرض' : 'متابعة التدريب') + '</button>';
-        if (mode === 'owner' && ['decided', 'cancelled'].indexOf(a.status) === -1) act = '<button type="button" class="btn ghost" data-cancel="' + e(a.id) + '">إلغاء التكليف</button>';
+        if (mode !== 'trainee' && a.exam_status === 'submitted') act = '<button type="button" class="btn ghost" data-result="' + e(a.id) + '">نتيجة الاختبار</button>';
+        if (mode === 'owner' && ['decided', 'cancelled'].indexOf(a.status) === -1) act += '<button type="button" class="btn ghost" data-cancel="' + e(a.id) + '">إلغاء التكليف</button>';
         return '<tr><td>' + e(a.track_name) + '</td>' + (mode !== 'trainee' ? '<td>' + e(a.trainee_name) + '</td>' : '') + '<td>' + e(a.reviewer_name) + '</td><td>' + e(date(a.due_at)) +
-          '</td><td>' + e(a.modules_done) + ' من ' + e(a.modules_total) + '</td><td>' + chip(a.status) + (a.exam_auto_submitted ? ' <span class="te-note">سُلِّم تلقائيًا بانتهاء الوقت</span>' : '') + '</td><td>' + act + '</td></tr>';
+          '</td><td>' + e(a.modules_done) + ' من ' + e(a.modules_total) + '</td><td>' + chip(a.status) + (mode !== 'trainee' && a.exam_grade ? ' ' + gradeChip(a.exam_grade) + (a.exam_risk_flags ? ' <span class="te-flag">علامات خطر: ' + e(a.exam_risk_flags) + '</span>' : '') : '') + (a.exam_auto_submitted ? ' <span class="te-note">سُلِّم تلقائيًا بانتهاء الوقت</span>' : '') + '</td><td>' + act + '</td></tr>';
       }).join('') + '</tbody></table></div>';
   }
 
@@ -87,6 +90,7 @@
     st.el.innerHTML = h + '</div>';
     var nb = st.el.querySelector('[data-new]'); if (nb) nb.onclick = newAssignment;
     st.el.querySelectorAll('[data-open]').forEach(function (b) { b.onclick = function () { openAssignment(b.getAttribute('data-open')); }; });
+    st.el.querySelectorAll('[data-result]').forEach(function (b) { b.onclick = function () { resultView(b.getAttribute('data-result')); }; });
     st.el.querySelectorAll('[data-cancel]').forEach(function (b) { b.onclick = function () { cancelAssignment(b.getAttribute('data-cancel')); }; });
     if (owner) rpc('training_bank_summary').then(function (s) {
       var box = st.el.querySelector('[data-bank]'); if (!box) return;
@@ -237,6 +241,35 @@
       stopExam();
       return rpc('training_submit_exam', { p_assignment: st.asg.id }).then(function (p) { toast('تم استلام إجاباتك.'); return examView(p); }, function (x) { examView(st.exam); throw x; });
     });
+  }
+
+
+  // ---------------------------------------------------------------- owner / reviewer: exam result
+  function resultView(id) {
+    stopExam();
+    st.view = 'result';
+    st.el.innerHTML = '<div class="te-page"><p class="te-muted">جارٍ تحميل النتيجة…</p></div>';
+    return rpc('training_exam_result', { p_assignment: id }).then(function (r) {
+      if (!r || r.status !== 'submitted') { st.el.innerHTML = '<div class="te-page"><button type="button" class="btn ghost te-back" data-back>رجوع</button><p class="te-muted">لم يُسلَّم الاختبار بعد.</p></div>'; st.el.querySelector('[data-back]').onclick = load; return; }
+      var mins = Math.floor((r.used_seconds || 0) / 60), secs = (r.used_seconds || 0) % 60;
+      var h = '<div class="te-page"><button type="button" class="btn ghost te-back" data-back>رجوع إلى التكليفات</button>' +
+        '<header class="te-head"><div><h2>نتيجة الاختبار: ' + e(r.trainee_name) + '</h2><p class="te-muted">' + e(r.track_name) + ' · سُلِّم في ' + e(date(r.submitted_at)) + (r.auto_submitted ? ' (تلقائيًا بانتهاء الوقت)' : '') + '</p></div></header>' +
+        '<section class="te-card te-stats"><div><b>' + e(r.percent) + '%</b><span>النسبة</span></div><div>' + gradeChip(r.grade) + '<span>تقدير الاختبار</span></div>' +
+        '<div><b' + (r.risk_flags ? ' class="te-flag"' : '') + '>' + e(r.risk_flags) + '</b><span>علامات الخطر</span></div><div><b>' + e(r.answered) + ' / ' + e(r.total) + '</b><span>أسئلة مُجابة</span></div>' +
+        '<div><b>' + mins + ':' + ('0' + secs).slice(-2) + '</b><span>المدة المستغرقة</span></div><div><b>' + e(r.blur_count) + '</b><span>مرات مغادرة الصفحة</span></div></section>' +
+        (r.risk_flags ? '<p class="te-warn">علامات الخطر تفتح مراجعة بشرية في المقابلة، وليست جزاءً.</p>' : '') +
+        '<section class="te-card"><h3>الكفاءات</h3><div class="te-table"><table><thead><tr><th>الكفاءة</th><th>الدرجة</th><th>النسبة</th></tr></thead><tbody>' +
+        (r.by_competency || []).map(function (c) { return '<tr' + (c.percent < 60 ? ' class="te-weak"' : '') + '><td>' + e(c.name_ar) + '</td><td>' + e(c.points) + ' من ' + e(c.max_points) + '</td><td>' + e(c.percent) + '%' + (c.percent < 60 ? ' <span class="te-note">أقل من 60%</span>' : '') + '</td></tr>'; }).join('') +
+        '</tbody></table></div></section><section class="te-card"><h3>تفاصيل الأسئلة</h3><ol class="te-review">' +
+        (r.questions || []).map(function (q) {
+          var c = q.chosen, pts = c ? c.points : 0;
+          return '<li data-points="' + pts + '"><p class="te-q-small"><span class="te-tag">' + e(q.competency) + '</span> ' + e(q.text) + '</p>' +
+            '<p><b>اختيار المتدرب:</b> ' + (c ? e(c.text) : '<span class="te-muted">لم يُجب</span>') + ' <span class="te-pts">' + pts + ' من 2</span>' + (c && c.critical ? ' <span class="te-flag">علامة خطر</span>' : '') + '</p>' +
+            (pts < 2 ? '<p><b>الأنسب:</b> ' + e((q.best || []).join(' / ')) + '</p>' : '') + '</li>';
+        }).join('') + '</ol></section><p class="te-muted">هذه نتيجة الاختبار وحده. القرار النهائي يُبنى بعد المقابلة وتمثيل المواقف، ولا يرى المتدرب هذه الصفحة.</p></div>';
+      st.el.innerHTML = h;
+      st.el.querySelector('[data-back]').onclick = load;
+    }).catch(function (x) { toast(msg(x), true); load(); });
   }
 
   w.SSMPDTrainingEvaluation = {
