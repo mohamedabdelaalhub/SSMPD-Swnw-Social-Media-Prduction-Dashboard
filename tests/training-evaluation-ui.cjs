@@ -179,6 +179,17 @@ const row = (o) => Object.assign({ id: 'A1', track: 'branch_manager', track_name
   $('[data-decide] [name=reason]').value = 'سبب';
   await click('[data-approve]');
   assert(state.decided && state.decided.p_final === 'not_ready' && state.decided.p_override_reason === 'سبب');
+  // course preview for anyone: 8 modules readable, nothing recorded
+  const before = calls.length;
+  await w.SSMPDTrainingEvaluation.render($('#v'));
+  for (let i = 0; i < 4; i++) await tick();
+  await click('[data-preview]');
+  assert.strictEqual(w.document.querySelectorAll('.te-module').length, 8);
+  await click('[data-mod="2"]');
+  assert(!$('[data-done]') && $('.te-article'), 'preview has no completion button');
+  await click('[data-back]');
+  assert($('[data-preview]') === null && w.document.querySelectorAll('.te-module').length === 8, 'back to preview list');
+  assert(!calls.slice(before).some((c) => c[0] === 'training_complete_module'), 'preview records nothing');
   console.log('PASS training evaluation UI: course gate, 8 modules, exam order/save/blur/submit, no key or score in trainee DOM, owner assign/cancel validation, owner result view (grade, weak competencies, choice vs best), trainee sees no grade, owner-only bank pages, interview scoring (note/blocking/checklist), owner-only decision with override reason, escaping.');
   process.exit(0);
 })().catch((e) => { console.error(e); process.exit(1); });

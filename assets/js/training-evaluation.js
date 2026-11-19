@@ -82,13 +82,15 @@
     var review = st.list.filter(function (a) { return a.relation === 'reviewer'; });
     var owner = isOwner();
     var h = '<div class="te-page"><header class="te-head"><div><h2>التدريب والتقييم</h2><p class="te-muted">مسارات إعداد مديري الفروع ومديري الفرق: دورة من 8 وحدات، ثم اختبار مواقف، ثم مقابلة.</p></div>' +
-      (owner ? '<div class="te-head-actions"><button type="button" class="btn ghost" data-bankview>بنك الأسئلة</button><button type="button" class="btn btn-primary" data-new>تكليف جديد</button></div>' : '') + '</header>';
+      '<div class="te-head-actions"><button type="button" class="btn ghost" data-preview>محتوى الدورة</button>' + (owner ? '<button type="button" class="btn ghost" data-bankview>بنك الأسئلة</button><button type="button" class="btn btn-primary" data-new>تكليف جديد</button>' : '') + '</div></header>';
     if (owner) h += '<section class="te-card" data-bank><h3>بنك الأسئلة</h3><p class="te-muted">جارٍ التحقق…</p></section>';
     h += '<section class="te-card"><h3>تكليفاتي</h3>' + rows(mine, 'trainee') + '</section>';
-    if (review.length) h += '<section class="te-card"><h3>تكليفات أراجعها</h3><p class="te-muted">تظهر هنا التكليفات المسندة إليك بصفتك مراجعًا. ورقة المقابلة تُتاح في مرحلة لاحقة.</p>' + rows(review, 'reviewer') + '</section>';
+    if (owner && !st.list.length) h += '<section class="te-card"><h3>كيف تبدأ</h3><ol class="te-rules"><li>اضغط «تكليف جديد» واختر المتدرب والمراجع.</li><li>يقرأ المتدرب الدورة من «تكليفاتي» ثم يؤدي الاختبار.</li><li>بعد التسليم يظهر هنا زرّا «نتيجة الاختبار» و«ورقة المقابلة»، ثم تعتمد القرار.</li></ol><p class="te-muted">«محتوى الدورة» يعرض الوحدات الثماني للاطلاع، و«بنك الأسئلة» يعرض أسئلة الاختبار بمفتاحها.</p></section>';
+    if (review.length) h += '<section class="te-card"><h3>تكليفات أراجعها</h3><p class="te-muted">تظهر هنا التكليفات المسندة إليك بصفتك مراجعًا. بعد تسليم الاختبار افتح «ورقة المقابلة».</p>' + rows(review, 'reviewer') + '</section>';
     if (owner) h += '<section class="te-card"><h3>كل التكليفات</h3>' + rows(st.list, 'owner') + '</section>';
     st.el.innerHTML = h + '</div>';
     var nb = st.el.querySelector('[data-new]'); if (nb) nb.onclick = newAssignment;
+    st.el.querySelector('[data-preview]').onclick = function () { st.preview = true; st.progress = { completed: {}, exam: { status: 'preview' } }; previewCourse(); };
     var bv = st.el.querySelector('[data-bankview]'); if (bv) bv.onclick = function () { bankView('manager'); };
     st.el.querySelectorAll('[data-open]').forEach(function (b) { b.onclick = function () { openAssignment(b.getAttribute('data-open')); }; });
     st.el.querySelectorAll('[data-interview]').forEach(function (b) { b.onclick = function () { interviewView(b.getAttribute('data-interview')); }; });
@@ -127,9 +129,23 @@
     });
   }
 
+
+  // Read-only course library for everyone (no assignment needed, nothing recorded).
+  function previewCourse() {
+    stopExam();
+    st.view = 'preview';
+    var mods = course().modules;
+    st.el.innerHTML = '<div class="te-page"><button type="button" class="btn ghost te-back" data-back>رجوع إلى التكليفات</button><header class="te-head"><div><h2>محتوى الدورة</h2><p class="te-muted">ثماني وحدات للاطلاع. إتمام الوحدات يُسجَّل فقط من داخل تكليف.</p></div></header>' +
+      '<section class="te-card"><ol class="te-modules">' + mods.map(function (m, i) { return '<li><button type="button" class="te-module" data-mod="' + i + '"><span class="te-num">' + (i + 1) + '</span><span>' + e(m.title) + '</span><span class="te-muted">' + e(m.tag) + '</span></button></li>'; }).join('') + '</ol></section>' +
+      ((course().sources || []).length ? '<section class="te-card"><h3>المراجع</h3><ul>' + course().sources.map(function (x) { return '<li><a href="' + e(x.url) + '" target="_blank" rel="noopener">' + e(x.title) + '</a></li>'; }).join('') + '</ul><p class="te-muted">المراجع للاطلاع والتدريب، ولا تُعد سياسة لـSwnw تلقائيًا.</p></section>' : '') + '</div>';
+    st.el.querySelector('[data-back]').onclick = function () { st.preview = false; load(); };
+    st.el.querySelectorAll('[data-mod]').forEach(function (b) { b.onclick = function () { moduleView(+b.getAttribute('data-mod')); }; });
+  }
+
   // ---------------------------------------------------------------- trainee: course
   function openAssignment(id) {
     stopExam();
+    st.preview = false;
     st.asg = st.list.filter(function (a) { return a.id === id; })[0];
     return rpc('training_course_progress', { p_assignment: id }).then(function (p) { st.progress = p; courseView(); })
       .catch(function (x) { toast(msg(x), true); });
@@ -158,7 +174,7 @@
 
   function moduleView(i) {
     st.view = 'module';
-    var m = course().modules[i], done = !!(st.progress.completed || {})[m.id], open = !st.progress.exam;
+    var m = course().modules[i], done = !st.preview && !!(st.progress.completed || {})[m.id], open = !st.preview && !st.progress.exam;
     var list = function (a) { return '<ul>' + (a || []).map(function (x) { return '<li>' + e(x) + '</li>'; }).join('') + '</ul>'; };
     st.el.innerHTML = '<div class="te-page"><button type="button" class="btn ghost te-back" data-back>رجوع إلى الدورة</button><article class="te-card te-article"><span class="te-tag">الوحدة ' + (i + 1) + ' من ' + course().modules.length + ' · ' + e(m.tag) + '</span><h2>' + e(m.title) + '</h2>' +
       '<h3>الأهداف</h3>' + list(m.goals) + '<h3>الشرح</h3><div class="te-body">' + m.body + '</div>' +
@@ -167,7 +183,7 @@
       '<h3>سؤال للتحقق من الفهم</h3><div class="te-check"><p>' + e(m.check && m.check.q) + '</p><button type="button" class="btn ghost" data-reveal>إظهار الإجابة</button><p class="te-answer" hidden>' + e(m.check && m.check.a) + '</p></div>' +
       '<p class="te-sum"><b>الخلاصة:</b> ' + e(m.summary) + '</p>' +
       (done ? '<p class="te-ok">أنهيت هذه الوحدة.</p>' : open ? '<button type="button" class="btn btn-primary" data-done>أنهيت قراءة الوحدة</button>' : '') + '</article></div>';
-    st.el.querySelector('[data-back]').onclick = courseView;
+    st.el.querySelector('[data-back]').onclick = st.preview ? previewCourse : courseView;
     st.el.querySelector('[data-reveal]').onclick = function () { st.el.querySelector('.te-answer').hidden = false; this.remove(); };
     var d = st.el.querySelector('[data-done]');
     if (d) d.onclick = function () {
