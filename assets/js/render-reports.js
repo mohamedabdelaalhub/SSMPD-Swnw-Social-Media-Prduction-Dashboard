@@ -4,7 +4,7 @@
 (function () {
   "use strict";
 
-  var AREAS = [["operations", "التشغيل"], ["cash", "الخزنة والإيرادات"], ["doctors", "الدكاترة"], ["insurance", "التأمين والتعاقدات"], ["statements", "القوائم المالية والضرائب"], ["stock", "المخزن والصيدلية"], ["people", "الموظفين"], ["marketing", "التسويق والتارجت"]];
+  var AREAS = [["operations", "التشغيل"], ["cash", "الخزنة والإيرادات"], ["doctors", "الدكاترة"], ["insurance", "التأمين والتعاقدات"], ["statements", "القوائم المالية والضرائب"], ["stock", "المخزن والصيدلية"], ["people", "الموظفين"], ["marketing", "التسويق والتارجت"], ["profitability", "الربحية"]];
   var ACCESS_ROLES = ["general_manager", "financial_manager", "accountant", "reception", "customer_service", "page_manager", "nursing", "head_nursing", "sono_doctor"];
   var SHIFT_STATUS = { open: "مفتوحة", submitted: "اتقفلت — مستنية مراجعة", reviewed: "اتراجعت" };
   var REQ_STATUS = { pending: "مستني موافقة", approved: "اتوافق عليه", rejected: "اترفض" };
@@ -502,6 +502,71 @@
           { l: "تارجت اتحقق", v: fmtNum(t.met) + " من " + fmtNum(t.targets) }];
       }
     },
+    service_margin: {
+      sub: "لكل خدمة: الإيراد وبعد التخفيض التعاقدي وحصة الدكتور ونسبة الإحالة والمستلزمات — الهامش. المصروفات العامة مش موزعة هنا.",
+      range: true, sensitive: true,
+      cols: [C("service", "الخدمة"), C("specialty", "التخصص"), C("orders", "مرات التنفيذ", "int"), C("revenue", "الإيراد", "money"), C("contractual", "تخفيض تعاقدي", "money"),
+        C("doctor_fees", "حصة الدكتور", "money"), C("referral_fees", "نسبة الإحالة", "money"), C("supplies", "مستلزمات", "money"), C("margin", "الهامش", "diff"),
+        C("margin_pct", "نسبة الهامش", "pct"), C("margin_per_order", "هامش المرة", "diff")],
+      totalKeys: { orders: 1, revenue: 1, contractual: 1, doctor_fees: 1, referral_fees: 1, supplies: 1, margin: 1, margin_pct: 1 },
+      load: function (f) { return rpc("report_service_margin", { p_from: f.from, p_to: f.to, p_branch: f.branch || null }); },
+      tiles: function (d) {
+        var t = d.totals || {};
+        return [{ l: "هامش الخدمات", v: money(t.margin), hero: true, sub: t.margin_pct == null ? "" : fmtNum(t.margin_pct) + "% من الإيراد" },
+          { l: "الإيراد", v: money(t.revenue), sub: fmtNum(t.orders) + " خدمة" }, { l: "حصص الدكاترة والإحالة", v: money(num(t.doctor_fees) + num(t.referral_fees)) },
+          { l: "خدمات هامشها سالب", v: fmtNum(t.negative_services), neg: num(t.negative_services) > 0 }];
+      },
+      notice: function (d) { var t = d.totals || {}; return num(t.orders) && !num(t.supplies) ? "تكلفة المستلزمات لسه مش بتتسجل على الخدمات، فالهامش هنا قبل المستلزمات." : ""; }
+    },
+    device_roi: {
+      sub: "لكل جهاز: عدد مرات الاستخدام والساعات والعداد، والإيراد اللي جابه بعد التكاليف المباشرة.",
+      range: true, sensitive: true,
+      cols: [C("code", "الكود"), C("device", "الجهاز"), C("uses", "مرات الاستخدام", "int"), C("uses_per_day", "في اليوم", "int"), C("hours", "ساعات", "int"),
+        C("meter", "العداد (طلقات/ساعات)", "int"), C("revenue", "الإيراد", "money"), C("direct_costs", "تكاليف مباشرة", "money"), C("contribution", "المساهمة", "diff")],
+      totalKeys: { uses: 1, hours: 1, revenue: 1, direct_costs: 1, contribution: 1 },
+      load: function (f) { return rpc("report_device_roi", { p_from: f.from, p_to: f.to, p_branch: f.branch || null }); },
+      tiles: function (d) {
+        var t = d.totals || {};
+        return [{ l: "مساهمة الأجهزة", v: money(t.contribution), hero: true, sub: fmtNum(t.devices) + " جهاز" }, { l: "مرات الاستخدام", v: fmtNum(t.uses) },
+          { l: "إيراد الأجهزة", v: money(t.revenue) }, { l: "أجهزة ماشتغلتش", v: fmtNum(t.idle_devices), neg: num(t.idle_devices) > 0 }];
+      },
+      notice: function (d) {
+        var t = d.totals || {}, n = [];
+        if (!num(t.uses)) n.push("استخدام الأجهزة لسه مش بيتسجل من الاستقبال، فالأرقام صفر لحد ما يبدأ التسجيل.");
+        if ((d.rows || []).some(function (r) { return !r.asset_linked; })) n.push("الأجهزة مش مربوطة بسجل الأصول، فالعائد على تكلفة الجهاز مش محسوب — المساهمة بس.");
+        return n.join(" ");
+      }
+    },
+    referral_efficiency: {
+      sub: "كل دكتور حوّل كام مريض لأشعة أو معمل أو إجراء جوه المركز، اتنفذ منهم كام، والإيراد ونسبة الإحالة.",
+      range: true, sensitive: true,
+      cols: [C("doctor", "الدكتور المحوِّل"), C("specialties", "اتحولوا لـ"), C("referred", "تحويلات", "int"), C("patients", "مرضى", "int"), C("executed", "اتنفذ", "int"),
+        C("cancelled", "اتلغى", "int"), C("conversion", "نسبة التنفيذ", "pct"), C("revenue", "الإيراد", "money"), C("referral_fees", "نسبة الإحالة", "money"), C("self_referrals", "لنفسه", "int")],
+      totalKeys: { referred: 1, executed: 1, cancelled: 1, revenue: 1, referral_fees: 1, self_referrals: 1 },
+      load: function (f) { return rpc("report_referral_efficiency", { p_from: f.from, p_to: f.to, p_branch: f.branch || null }); },
+      tiles: function (d) {
+        var t = d.totals || {}, r = num(t.referred);
+        return [{ l: "إيراد التحويلات", v: money(t.revenue), hero: true, sub: fmtNum(r) + " تحويل" },
+          { l: "نسبة التنفيذ", v: r ? (100 * num(t.executed) / r).toFixed(1) + "%" : "—" }, { l: "نسب الإحالة", v: money(t.referral_fees) },
+          { l: "تحويلات فيها مشكلة", v: fmtNum(d.open_issues), neg: num(d.open_issues) > 0 }];
+      },
+      notice: function (d) { return num(d.open_issues) ? "فيه " + fmtNum(d.open_issues) + " تحويل نسبة إحالته ماتسجلتش (الدكتور مش متسجل أو الفاتورة ناقصة) — راجعها مع الحسابات." : ""; }
+    },
+    waiting_time: {
+      sub: "من وصول المريض لحد ما أول خدمة تخلص، لكل دكتور — ومين اتأخر عن ميعاده.",
+      range: true,
+      cols: [C("doctor", "الدكتور"), C("specialty", "التخصص"), C("visits", "زيارات", "int"), C("avg_wait", "متوسط الانتظار (دقيقة)", "int"), C("median_wait", "الوسيط (دقيقة)", "int"),
+        C("over_30", "أكتر من 30 دقيقة", "int"), C("over_60", "أكتر من ساعة", "int"), C("avg_patient_late", "تأخير المريض (دقيقة)", "int"), C("not_finished", "مخلصتش", "int")],
+      totalKeys: { visits: 1, over_30: 1, over_60: 1, not_finished: 1 },
+      load: function (f) { return rpc("report_waiting_time", { p_from: f.from, p_to: f.to, p_branch: f.branch || null }); },
+      tiles: function (d) {
+        var t = d.totals || {};
+        return [{ l: "متوسط الانتظار", v: t.avg_wait == null ? "—" : fmtNum(t.avg_wait), u: "دقيقة", hero: true, sub: fmtNum(t.visits) + " زيارة" },
+          { l: "استنوا أكتر من 30 دقيقة", v: fmtNum(t.over_30), neg: num(t.over_30) > 0 }, { l: "أكتر من ساعة", v: fmtNum(t.over_60), neg: num(t.over_60) > 0 },
+          { l: "زيارات مخلصتش", v: fmtNum(t.not_finished) }];
+      },
+      notice: function (d) { return "الانتظار محسوب من تسجيل الوصول (أو فتح الزيارة) لحد ما أول خدمة تتقفل. لو الخدمة مش بتتقفل في وقتها الأرقام هتطلع أكبر من الحقيقة."; }
+    },
     daily_flash: {
       sub: "ملخص يوم واحد: إيراد، تحصيل، مواعيد، ليدز، وتنبيهات.",
       range: false,
@@ -640,6 +705,7 @@
     if (d.unallocated && (num(d.unallocated.revenue) || num(d.unallocated.expense)))
       n.push("قيود عامة مش متوزعة على فرع ومش داخلة في الأرقام دي: إيرادات " + money(d.unallocated.revenue) + " ومصروفات " + money(d.unallocated.expense) + ". اختار «كل الفروع» علشان تشوفها.");
     if (num(d.stock_unposted) > 0) n.push("فيه " + fmtNum(d.stock_unposted) + " حركة مخزن في الاستقبال ماتنقلتش لدفتر المخزن — الأرصدة والاستهلاك ناقصينها، بلّغ أمين المخزن.");
+    var dn = DEFS[state.code] && DEFS[state.code].notice ? DEFS[state.code].notice(d) : ""; if (dn) n.push(dn);
     if (d.scope === "company" && state.f.branch) n.push("التقرير ده على مستوى الشركة كلها، والفرع مش بيغيّر أرقامه.");
     return n.map(function (x) { return '<div class="rc-error rc-notice" role="note">' + esc(x) + "</div>"; }).join("");
   }
