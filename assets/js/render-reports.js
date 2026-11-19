@@ -4,7 +4,7 @@
 (function () {
   "use strict";
 
-  var AREAS = [["operations", "التشغيل"], ["cash", "الخزنة والإيرادات"], ["doctors", "الدكاترة"], ["insurance", "التأمين والتعاقدات"]];
+  var AREAS = [["operations", "التشغيل"], ["cash", "الخزنة والإيرادات"], ["doctors", "الدكاترة"], ["insurance", "التأمين والتعاقدات"], ["statements", "القوائم المالية والضرائب"]];
   var ACCESS_ROLES = ["general_manager", "financial_manager", "accountant", "reception", "customer_service", "page_manager", "nursing", "head_nursing", "sono_doctor"];
   var SHIFT_STATUS = { open: "مفتوحة", submitted: "اتقفلت — مستنية مراجعة", reviewed: "اتراجعت" };
   var REQ_STATUS = { pending: "مستني موافقة", approved: "اتوافق عليه", rejected: "اترفض" };
@@ -14,6 +14,8 @@
   var SOURCE_LABELS = { doctor_fee: "استحقاق خدمة", doctor_payout: "صرف", doctor_contractual: "تسوية", doctor_credit_note: "تسوية" };
   var CLAIM_KIND = { claim_correction: "اترجعت للتصحيح", claim_contractual: "تخفيض تعاقدي", claim_loss: "إعدام (خسارة)", claim_payment: "تحصيل", claim_submit: "تقديم" };
   var ENTITY_KIND = { insurer: "تأمين / نقابة", discount: "جهة خصم", referral: "جهة تحويل" };
+  var SECTION = { revenue: "الإيرادات", cost_of_services: "تكلفة الخدمات", gna: "مصروفات إدارية وعمومية", other_expense: "مصروفات أخرى",
+    asset: "الأصول", liability: "الالتزامات", equity: "حقوق الملكية", operating: "تشغيلي", investing: "استثماري", financing: "تمويلي" };
   var EMPTY = "لسه مفيش بيانات في الفترة دي";
   var state = null;
 
@@ -252,6 +254,93 @@
           { l: "حصة الدكاترة", v: money(t.doctor_fees) }];
       }
     },
+    branch_pnl: {
+      sub: "الإيرادات وتكلفة الخدمات والمصروفات وصافي الربح، قصاد الفترة اللي قبلها بنفس الطول.",
+      range: true,
+      cols: [C("section", "القسم", "status", SECTION), C("group", "المجموعة"), C("account", "الحساب"), C("name", "اسم الحساب"),
+        C("current", "الفترة", "money"), C("previous", "الفترة السابقة", "money")],
+      totalKeys: {},
+      load: function (f) { return rpc("report_branch_pnl", { p_from: f.from, p_to: f.to, p_branch: f.branch || null }); },
+      tiles: function (d) {
+        var t = d.totals || {};
+        return [{ l: "صافي الربح", v: money(t.net), hero: true, neg: num(t.net) < 0, sub: "الفترة السابقة: " + money(t.net_prev) },
+          { l: "الإيرادات", v: money(t.revenue), sub: "السابقة: " + money(t.revenue_prev) },
+          { l: "مجمل الربح", v: money(t.gross), sub: "بعد تكلفة الخدمات " + money(t.cost) },
+          { l: "المصروفات الإدارية والأخرى", v: money(num(t.gna) + num(t.other)) }];
+      },
+      extraFoot: function (d) { var t = d.totals || {}; return [["إجمالي الإيرادات", t.revenue, t.revenue_prev], ["تكلفة الخدمات", t.cost, t.cost_prev], ["مجمل الربح", t.gross, t.gross_prev],
+        ["مصروفات إدارية وعمومية", t.gna, t.gna_prev], ["مصروفات أخرى", t.other, t.other_prev], ["صافي الربح", t.net, t.net_prev]]; }
+    },
+    balance_sheet: {
+      sub: "الأصول والالتزامات وحقوق الملكية لحد يوم، على مستوى الشركة.",
+      range: false, dayLabel: "لحد يوم", dayDefault: "today",
+      cols: [C("section", "القسم", "status", SECTION), C("group", "المجموعة"), C("account", "الحساب"), C("name", "اسم الحساب"), C("balance", "الرصيد", "money")],
+      totalKeys: {},
+      load: function (f) { return rpc("report_balance_sheet", { p_as_of: f.day || null, p_branch: f.branch || null }); },
+      tiles: function (d) {
+        var t = d.totals || {};
+        return [{ l: "إجمالي الأصول", v: money(t.assets), hero: true }, { l: "الالتزامات", v: money(t.liabilities) },
+          { l: "حقوق الملكية + أرباح الفترة", v: money(num(t.equity) + num(t.earnings)), sub: "أرباح لسه ماتقفلتش: " + money(t.earnings) },
+          { l: "فرق التوازن", v: money(t.difference), neg: num(t.difference) !== 0, sub: num(t.difference) === 0 ? "الميزانية متوازنة" : "راجع القيود" }];
+      },
+      extraFoot: function (d) { var t = d.totals || {}; return [["إجمالي الأصول", t.assets], ["إجمالي الالتزامات", t.liabilities], ["حقوق الملكية", t.equity],
+        ["أرباح الفترة (لسه ماتقفلتش)", t.earnings], ["الالتزامات وحقوق الملكية", t.liabilities_equity]]; }
+    },
+    gna_expenses: {
+      sub: "المصروفات الإدارية والعمومية والأخرى لكل حساب، ونسبة كل واحد، والتغيّر عن الفترة اللي قبلها.",
+      range: true,
+      cols: [C("group", "المجموعة"), C("account", "الحساب"), C("name", "اسم الحساب"), C("current", "الفترة", "money"), C("previous", "الفترة السابقة", "money"),
+        C("change", "التغيّر", "diff"), C("share", "النسبة", "pct")],
+      totalKeys: { current: 1, previous: 1, change: 1 },
+      load: function (f) { return rpc("report_gna_expenses", { p_from: f.from, p_to: f.to, p_branch: f.branch || null }); },
+      tiles: function (d) {
+        var t = d.totals || {}, top = (d.rows || [])[0];
+        return [{ l: "إجمالي المصروفات", v: money(t.current), hero: true, sub: "السابقة: " + money(t.previous) },
+          { l: "التغيّر", v: money(t.change), neg: num(t.change) > 0 }, { l: "أكبر بند", v: top ? top.name : "—", sub: top ? money(top.current) : "" }];
+      }
+    },
+    cash_flow: {
+      sub: "الفلوس اللي دخلت وخرجت من الخزن والبنوك، متقسمة تشغيلي واستثماري وتمويلي.",
+      range: true,
+      cols: [C("activity", "النشاط", "status", SECTION), C("account", "الحساب المقابل"), C("name", "اسم الحساب"), C("inflow", "داخل", "money"),
+        C("outflow", "خارج", "money"), C("net", "الصافي", "diff")],
+      totalKeys: { inflow: 1, outflow: 1, net: 1 },
+      totalOverride: function (d) { var a = { inflow: 0, outflow: 0, net: 0 }; (d.rows || []).forEach(function (r) { a.inflow += num(r.inflow); a.outflow += num(r.outflow); a.net += num(r.net); }); return a; },
+      load: function (f) { return rpc("report_cash_flow", { p_from: f.from, p_to: f.to, p_branch: f.branch || null }); },
+      tiles: function (d) {
+        var t = d.totals || {};
+        return [{ l: "رصيد الخزن والبنوك آخر الفترة", v: money(t.closing), hero: true, sub: "أول الفترة: " + money(t.opening) },
+          { l: "تشغيلي", v: money(t.operating), neg: num(t.operating) < 0 }, { l: "استثماري", v: money(t.investing), neg: num(t.investing) < 0 },
+          { l: "تمويلي", v: money(t.financing), neg: num(t.financing) < 0 }];
+      }
+    },
+    fixed_assets: {
+      sub: "تكلفة الأصول الثابتة ومجمع الإهلاك وصافي القيمة، والإضافات والإهلاك في الفترة.",
+      range: true,
+      cols: [C("account", "الحساب"), C("name", "اسم الحساب"), C("opening", "أول الفترة", "money"), C("additions", "إضافات", "money"),
+        C("reductions", "تخفيضات/إهلاك", "money"), C("closing", "آخر الفترة", "money")],
+      totalKeys: { closing: 1 },
+      totalOverride: function (d) { return { closing: (d.totals || {}).net_book_value }; },
+      load: function (f) { return rpc("report_fixed_assets", { p_from: f.from, p_to: f.to, p_branch: f.branch || null }); },
+      tiles: function (d) {
+        var t = d.totals || {};
+        return [{ l: "صافي قيمة الأصول", v: money(t.net_book_value), hero: true }, { l: "التكلفة", v: money(t.cost) },
+          { l: "مجمع الإهلاك", v: money(t.accumulated) }, { l: "إهلاك الفترة", v: money(t.depreciation), sub: "إضافات: " + money(t.additions) }];
+      }
+    },
+    tax_position: {
+      sub: "كل ضريبة: اللي اتحسب واللي اتدفع والمتبقي — من غير ربط بالفواتير الإلكترونية.",
+      range: true,
+      cols: [C("account", "الحساب"), C("name", "اسم الحساب"), C("tax_types", "أنواع الضريبة"), C("opening", "أول الفترة", "money"),
+        C("accrued", "اتحسب", "money"), C("settled", "اتدفع/اتسوّى", "money"), C("closing", "المتبقي", "money")],
+      totalKeys: {},
+      load: function (f) { return rpc("report_tax_position", { p_from: f.from, p_to: f.to, p_branch: f.branch || null }); },
+      tiles: function (d) {
+        var t = d.totals || {};
+        return [{ l: "صافي المستحق للضرايب", v: money(t.net_due), hero: true }, { l: "ضرايب مستحقة علينا", v: money(t.payable) },
+          { l: "ضرايب لينا (قابلة للاسترداد)", v: money(t.recoverable) }, { l: "اتدفع في الفترة", v: money(t.settled), sub: "اتحسب: " + money(t.accrued) }];
+      }
+    },
     daily_flash: {
       sub: "ملخص يوم واحد: إيراد، تحصيل، مواعيد، ليدز، وتنبيهات.",
       range: false,
@@ -295,14 +384,20 @@
     var data = d.rows || [];
     rows = data.map(function (r) { return cols.map(function (c) { return cellText(c, r); }); });
     var tot = def.totalOverride ? def.totalOverride(d) : (d.totals || {});
+    var summary = def.extraFoot ? def.extraFoot(d).map(function (x) {
+      var vals = x.slice(1), row = cols.map(function () { return ""; });
+      row[0] = x[0]; vals.forEach(function (v, k) { row[cols.length - vals.length + k] = fmtNum(v); }); return row;
+    }) : null;
     foot = cols.map(function (c, i) { return i === 0 ? "الإجمالي" : def.totalKeys[c.k] && tot[c.k] != null ? (fmtNum(tot[c.k]) + (c.t === "pct" ? "%" : "")) : ""; });
-    return { head: head, rows: rows, foot: data.length ? foot : null, cols: cols, raw: data.length, data: data, totals: tot };
+    if (summary) foot = null;
+    return { head: head, rows: rows, foot: data.length ? foot : null, summary: data.length ? summary : null, cols: cols, raw: data.length, data: data, totals: tot };
   }
   function csvCell(v) { var s = String(v == null ? "" : v); return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }
   function buildCsv(t) {
     var lines = [t.head.map(csvCell).join(",")];
     t.rows.forEach(function (r) { lines.push(r.map(function (v) { return csvCell(String(v).replace(/,/g, "")); }).join(",")); });
     if (t.foot) lines.push(t.foot.map(function (v) { return csvCell(String(v).replace(/,/g, "")); }).join(","));
+    (t.summary || []).forEach(function (r) { lines.push(r.map(function (v) { return csvCell(String(v).replace(/,/g, "")); }).join(",")); });
     return "﻿" + lines.join("\r\n");
   }
   function download(name, text) {
@@ -378,6 +473,14 @@
       return '<div class="rc-r"><span>' + esc(r.specialty || "—") + '</span><div class="rc-tr"><i style="width:' + Math.max(2, num(r.net) / max * 100).toFixed(1) + '%"></i></div><span>' + fmtNum(r.net) + "</span></div>";
     }).join("") + "</div></div>";
   }
+  function noticesHtml(d) {
+    var n = [];
+    if (num(d.unposted) > 0) n.push("فيه " + fmtNum(d.unposted) + " قيد في الاستقبال لسه ماتنقلش لدفتر الحسابات (غير مُرحّل) — الأرقام ناقصاه، بلّغ الحسابات.");
+    if (d.unallocated && (num(d.unallocated.revenue) || num(d.unallocated.expense)))
+      n.push("قيود عامة مش متوزعة على فرع ومش داخلة في الأرقام دي: إيرادات " + money(d.unallocated.revenue) + " ومصروفات " + money(d.unallocated.expense) + ". اختار «كل الفروع» علشان تشوفها.");
+    if (d.scope === "company" && state.f.branch) n.push("التقرير ده على مستوى الشركة كلها، والفرع مش بيغيّر أرقامه.");
+    return n.map(function (x) { return '<div class="rc-error rc-notice" role="note">' + esc(x) + "</div>"; }).join("");
+  }
   function tableHtml(code, t) {
     var cols = t.cols, h = '<div class="rc-tw"><table><thead><tr>' + cols.map(function (c) { return '<th class="' + (c.t === "money" || c.t === "diff" || c.t === "int" ? "rc-n" : "") + '">' + esc(c.l) + "</th>"; }).join("") + "</tr></thead><tbody>";
     if (code === "daily_flash") {
@@ -394,6 +497,7 @@
       });
     }
     h += "</tbody>";
+    if (t.summary) h += "<tfoot>" + t.summary.map(function (r) { return "<tr>" + r.map(function (v, j) { return '<td class="' + (j ? "rc-n" : "") + '">' + esc(v) + "</td>"; }).join("") + "</tr>"; }).join("") + "</tfoot>";
     if (t.foot) h += "<tfoot><tr>" + t.foot.map(function (v, j) { var c = cols[j]; return '<td class="' + (c.t === "money" || c.t === "diff" || c.t === "int" ? "rc-n" : "") + (c.t === "diff" && num(t.totals[c.k]) < 0 ? " rc-negc" : "") + '">' + esc(v) + "</td>"; }).join("") + "</tr></tfoot>";
     return h + "</table></div>";
   }
@@ -424,6 +528,7 @@
     var d = state.data;
     if (!d) return "";
     var t = state.table = buildTable(code, d), h = '<div class="rc-printable"><div class="rc-print-head"><b>' + esc(meta.title) + "</b><span>الفرع: " + esc(branchName()) + " — الفترة: " + periodText(code) + "</span></div>";
+    h += noticesHtml(d);
     h += tilesHtml(def.tiles(d));
     if (code === "revenue_by_doctor") h += chartHtml(d);
     if (code === "doctor_dues") h += linesHtml(d);
