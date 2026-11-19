@@ -1,0 +1,20 @@
+// Owner 2026-11-19: «أرشيف — استقبال» opens the patients tab; edit/upload limits in the archive UI and edge functions.
+const {JSDOM}=require('jsdom'),fs=require('fs'),assert=require('node:assert/strict');
+const d=new JSDOM('<body></body>',{runScripts:'outside-only'}),w=d.window;w.eval(fs.readFileSync('assets/js/roles.js','utf8'));
+const R=w.SSMPDRoles,base={id:'a',role:'reception',active:true};
+assert.equal(R.canSeeTab({...base},'patients'),false,'plain reception: no archive tab');
+assert.equal(R.canSeeTab({...base,has_archive_reception_access:true},'patients'),true,'reception scope: archive tab');
+const rp=fs.readFileSync('assets/js/render-patients.js','utf8');
+assert(/function isArchiveReception\(\)\s*\{\s*return !!\(me && me\.has_archive_reception_access && !canUpload\(\)\)/.test(rp));
+assert(/var RECEPTION_DOC_CATS = \["id_document", "insurance"\]/.test(rp));
+assert(/canEditBrowse = canBasicEdit\(\)/.test(rp)&&/\(canBasicEdit\(\) \? "<button class=\\"btn ghost sm\\" data-edit-personal/.test(rp),'basic edit buttons');
+assert(!/data-del-file[^;]*isArchiveReception/.test(rp),'no delete for the reception scope');
+const up=fs.readFileSync('supabase/functions/patient-files-upload/index.ts','utf8');
+assert(/receptionOnly && category !== "id_document" && category !== "insurance"/.test(up),'upload limited to ID / insurance');
+const ls=fs.readFileSync('supabase/functions/patient-files-list/index.ts','utf8');
+assert(/has_archive_reception_access/.test(ls)&&/\|\| reception\) \{/.test(ls),'list allows + logs view');
+const dl=fs.readFileSync('supabase/functions/patient-files-download/index.ts','utf8');
+assert(/isNursing\(caller\) \|\| reception/.test(dl),'download allowed (and logged by the existing download log)');
+assert(!/has_archive_reception_access/.test(fs.readFileSync('supabase/functions/patient-files-delete/index.ts','utf8')),'delete stays full-archive only');
+const ad=fs.readFileSync('assets/js/render-admin.js','utf8');assert(/data-archive-reception=/.test(ad)&&/has_archive_reception_access: cb\.checked/.test(ad),'admin toggle');
+console.log('PASS archive reception scope UI + edge gates.');

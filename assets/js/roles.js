@@ -135,7 +135,7 @@
       if(tab==="inventory" && typeof admin.inventory_assigned==='boolean')return admin.inventory_assigned || admin.inventory_supply_access===true || Roles.hasAnyRole(admin,["super_admin","general_manager"]);
       if (Roles.isControlledFinance(admin) && ["accounting","contracting_entities","tasks"].includes(tab))return Roles.canModuleAction(admin,tab,'view');
       if (tab === "patients") {
-        return Roles.hasRole(admin,"psychology_specialist") || !!admin.has_archive_access || !!admin.has_archive_view_only || !!admin.has_archive_review_access ||
+        return Roles.hasRole(admin,"psychology_specialist") || !!admin.has_archive_access || !!admin.has_archive_reception_access || !!admin.has_archive_view_only || !!admin.has_archive_review_access ||
           Roles.hasAnyRole(admin, ["super_admin","nursing","head_nursing"]);
       }
       var list = TAB_ACCESS[tab];
