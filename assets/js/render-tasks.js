@@ -403,6 +403,19 @@
       var avg=people.length?open.length/people.length:0;
       return '<section class="tv2-overview" aria-label="نظرة على المهام المفتوحة"><div class="tv2-card"><div class="tv2-ch"><h2>توزيع المهام</h2><span>'+open.length+' مهمة مفتوحة</span></div>'+segBar(c,open.length)+'<div class="tv-legend tv2-leg">'+segLegend(c)+'</div></div><div class="tv2-card"><div class="tv2-ch"><h2>حِمل الفريق</h2><span>مهام مفتوحة لكل موظف</span></div><div class="tv2-load">'+people.map(function(p){return '<div class="'+(p.n>avg*1.5&&people.length>2?"over":"")+'"><span>'+esc(p.name)+'</span><span class="tv2-meter"><i style="width:'+Math.max(6,Math.round(p.n*100/max))+'%"></i></span><em>'+p.n+(p.late?' <small>(متأخر '+p.late+')</small>':'')+'</em></div>';}).join("")+'</div></div></section>';
     }
+    var WEEK_AR=["س","ح","ن","ث","ر","خ","ج"];
+    function insightsHtml(own){
+      if(!own.length)return "";
+      var today=dayStart(new Date()),ws=new Date(today.getTime()-((today.getDay()+1)%7)*86400000),days=[];
+      for(var i=0;i<7;i++)days.push(new Date(ws.getTime()+i*86400000));
+      var counts=days.map(function(d){var e=d.getTime()+86400000;return own.filter(function(t){if(closed(t)||!t.due_at)return false;var x=new Date(t.due_at).getTime();return x>=d.getTime()&&x<e;}).length;}),max=Math.max.apply(null,counts.concat([1]));
+      var cols=days.map(function(d,i){var now=d.getTime()===today.getTime();return '<div'+(now?' class="now"':'')+' title="'+esc(WEEK_AR[i])+': '+counts[i]+'"><b>'+counts[i]+'</b><i style="height:'+Math.max(counts[i]?14:4,Math.round(counts[i]*100/max))+'%"></i><span>'+WEEK_AR[i]+'</span></div>';}).join("");
+      var ms=new Date(today.getFullYear(),today.getMonth(),1).getTime(),me=new Date(today.getFullYear(),today.getMonth()+1,1).getTime(),now=Date.now();
+      var timed=own.filter(function(t){if(!t.due_at||t.status==="cancelled")return false;var x=new Date(t.due_at).getTime();return x>=ms&&x<me&&(t.status==="done"||x<now);});
+      var ok=timed.filter(function(t){return t.status==="done"&&new Date(t.completed_at||t.updated_at||0).getTime()<=new Date(t.due_at).getTime();}).length,pct=timed.length?Math.round(ok*100/timed.length):null;
+      var ring=pct===null?'<p class="tv2-empty">لسه مفيش مهام ليها ميعاد اتقفلت الشهر ده.</p>':'<div class="tv2-ring"><svg viewBox="0 0 96 96" role="img" aria-label="الالتزام بالمواعيد '+pct+'%"><circle cx="48" cy="48" r="38" fill="none" stroke="#EEF1F8" stroke-width="9"/><circle class="rg" cx="48" cy="48" r="38" fill="none" stroke="'+(pct>=70?"#00B0BD":"#FF8800")+'" stroke-width="9" stroke-linecap="round" stroke-dasharray="'+(pct*2.3876).toFixed(1)+' 239" transform="rotate(-90 48 48)"/><text x="48" y="54" text-anchor="middle" font-size="20" font-weight="700" fill="#333" stroke="none">'+pct+'%</text></svg><p><strong>'+ok+' من '+timed.length+' مهمة</strong>اتسلّمت في ميعادها أو قبله<br><span class="chip '+(pct>=70?"st-ok":"st-soon")+'">'+(pct>=70?"في الميعاد":"محتاج تحسين")+'</span></p></div>';
+      return '<div class="tv2-insights"><section class="tv2-card"><div class="tv2-ch"><h2>حِمل الأسبوع</h2><span>مهام مستحقة كل يوم</span></div><div class="tv2-week" dir="ltr">'+cols+'</div><div class="tv2-cap">الأسبوع ← الأحدث · اليوم بالأزرق</div></section><section class="tv2-card"><div class="tv2-ch"><h2>الالتزام بالمواعيد</h2><span>الشهر ده</span></div>'+ring+'</section></div>';
+    }
     function mineHtml(){
       var own=sortTasks(baseTasks().filter(function(t){return t.assignee_id===admin.id;}),"manual"),mine=own.filter(function(t){return !closed(t);}),todo=mine.filter(function(t){return t.status!=="review";}),waiting=mine.filter(function(t){return t.status==="review";});
       function hasOpenParent(t){return todo.some(function(p){return p.id===t.parent_task_id&&p.id!==t.id;});}
@@ -416,7 +429,7 @@
       // A malformed cycle must not make an assigned task disappear.
       if(!roots.length&&todo.length)roots=todo;
       var reviewRoots=waiting.filter(function(t){return !hasOpenParent(t);});
-      return '<section class="tv-body"><div class="tw-summary" aria-label="ملخص مهامي">'+sumTile("todo","مطلوب تنفيذها",todo.length,"t-todo",SUM_ICON.todo)+sumTile("late","متأخرة",todo.filter(isOverdue).length,"t-late tw-summary-late",SUM_ICON.late)+sumTile("review","بانتظار المراجعة",waiting.length,"t-review",SUM_ICON.review)+'</div><p class="tw-order">ابدأ من أول مهمة. الترتيب حسب ترتيب المدير ثم موعد التسليم.</p>'+(roots.length?'<div class="tw-cards">'+cards(roots)+'</div>':'<div class="tv-empty"><h3>مفيش شغل مطلوب منك دلوقتي</h3><p>المهام الجديدة هتظهر هنا.</p></div>')+(reviewRoots.length?'<details class="tw-waiting"><summary>بانتظار مراجعة المدير ('+reviewRoots.length+')</summary><div class="tw-cards">'+cards(reviewRoots)+'</div></details>':'')+'</section>';
+      return '<section class="tv-body"><div class="tw-summary" aria-label="ملخص مهامي">'+sumTile("todo","مطلوب تنفيذها",todo.length,"t-todo",SUM_ICON.todo)+sumTile("late","متأخرة",todo.filter(isOverdue).length,"t-late tw-summary-late",SUM_ICON.late)+sumTile("review","بانتظار المراجعة",waiting.length,"t-review",SUM_ICON.review)+'</div>'+insightsHtml(own)+'<p class="tw-order">ابدأ من أول مهمة. الترتيب حسب ترتيب المدير ثم موعد التسليم.</p>'+(roots.length?'<div class="tw-cards">'+cards(roots)+'</div>':'<div class="tv-empty"><h3>مفيش شغل مطلوب منك دلوقتي</h3><p>المهام الجديدة هتظهر هنا.</p></div>')+(reviewRoots.length?'<details class="tw-waiting"><summary>بانتظار مراجعة المدير ('+reviewRoots.length+')</summary><div class="tw-cards">'+cards(reviewRoots)+'</div></details>':'')+'</section>';
     }
     function tabsBar(base,shownCount){
       var open=base.filter(function(t){return !closed(t);}).length,done=base.filter(function(t){return t.status==="done";}).length;

@@ -60,3 +60,15 @@
 .tv2-meter{height:6px;border-radius:6px;background:#EEF1F8;overflow:hidden;display:block}.tv2-meter i{display:block;height:100%;border-radius:6px;background:#0F369D}.tv2-load .over .tv2-meter i{background:var(--tv2-or)}
 @media(max-width:900px){.tv2-overview{grid-template-columns:1fr}}@media(max-width:600px){.tv2-load>div{grid-template-columns:84px minmax(0,1fr) auto}.tv .tv-needs{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.tv .tv-need{min-height:104px;padding:16px}}
 @media(prefers-reduced-motion:reduce){.tv .tv-need{transition:none}}
+/* ---- phase 3: weekly load + on-time ring on «مهامي» ---- */
+.tv2-insights{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px;margin-bottom:16px}
+.tv2-week{display:flex;align-items:flex-end;justify-content:space-between;gap:8px;height:130px;margin-top:10px}
+.tv2-week>div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:6px;height:100%;font-size:12px;color:#6B7483;min-width:0}
+.tv2-week i{display:block;width:100%;max-width:24px;border-radius:4px 4px 0 0;background:#C9D3EC;transform-origin:bottom;animation:tv2-growy .7s var(--tv2-ease) both}.tv2-week .now i{background:#0F369D}.tv2-week b{color:var(--tv2-num);font-size:12.5px}
+@keyframes tv2-growy{from{transform:scaleY(0)}}
+.tv2-cap{font-size:12px;color:#6B7483;margin-top:8px}.tv2-empty{margin:0;color:#6B7483;font-size:13px}
+.tv2-ring{display:flex;gap:18px;align-items:center}.tv2-ring svg{width:96px;height:96px;flex:none}.tv2-ring .rg{animation:tv2-fill 1s var(--tv2-ease) both}@keyframes tv2-fill{from{stroke-dashoffset:239}}
+.tv2-ring p{margin:0;color:#6B7483;font-size:13px;line-height:1.7}.tv2-ring strong{display:block;font-size:20px;color:var(--tv2-num);margin-bottom:6px}
+.tv2-ring .chip{display:inline-block;margin-top:8px;border-radius:999px;padding:4px 14px;font-size:12.5px;color:var(--tv2-num)}.tv2-ring .st-ok{background:var(--tv2-teal)}.tv2-ring .st-soon{background:var(--tv2-or)}
+@media(max-width:900px){.tv2-insights{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){.tv2-week i,.tv2-ring .rg{animation:none}}
