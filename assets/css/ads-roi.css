@@ -1,0 +1,44 @@
+/* العائد على الصرف — داخل شاشة إعلانات Meta. نفس هوية Swnw (ألوان من styles.css). */
+#ma-roi{--roi-g:16px}
+#ma-roi .roi-sub{color:var(--c-muted);font-size:13px;margin:4px 0 14px}
+#ma-roi .roi-bar{display:flex;gap:var(--roi-g);flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:var(--roi-g)}
+#ma-roi .roi-pills{display:flex;flex-wrap:nowrap;overflow-x:auto;max-width:100%;background:var(--c-card);border:1px solid var(--c-border);border-radius:10px;padding:3px}
+#ma-roi .roi-pill{border:0;background:transparent;color:var(--c-dark);border-radius:8px;padding:7px 14px;font:inherit;font-size:12.5px;cursor:pointer;white-space:nowrap}
+#ma-roi .roi-pill.on{background:var(--c-dark);color:#fff}
+#ma-roi .roi-pill:focus-visible{outline:2px solid var(--c-primary);outline-offset:1px}
+#ma-roi .roi-card{background:var(--c-card);border:1px solid var(--c-border);border-radius:18px;padding:20px;margin-bottom:var(--roi-g)}
+#ma-roi .roi-card h4{font-size:15px;font-weight:800;margin:0 0 4px}
+#ma-roi .roi-kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:var(--roi-g);margin-bottom:var(--roi-g)}
+#ma-roi .roi-kpi{background:var(--c-card);border:1px solid var(--c-border);border-radius:18px;padding:18px 20px;display:flex;flex-direction:column;gap:8px;min-height:112px}
+#ma-roi .roi-kpi .l{font-size:12px;color:var(--c-muted)}
+#ma-roi .roi-kpi .v{font-size:28px;font-weight:800;line-height:1.1;font-variant-numeric:tabular-nums}
+#ma-roi .roi-kpi .v small{font-size:13px;font-weight:600;color:var(--c-muted);margin-inline-start:4px}
+#ma-roi .roi-kpi .n{font-size:11.5px;color:var(--c-muted)}
+#ma-roi .roi-kpi.hero{background:linear-gradient(135deg,var(--c-primary),var(--c-primary-d));border-color:transparent;color:#fff}
+#ma-roi .roi-kpi.hero .l,#ma-roi .roi-kpi.hero .n,#ma-roi .roi-kpi.hero .v small{color:rgba(255,255,255,.82)}
+#ma-roi .roi-row2{display:grid;grid-template-columns:1fr 1fr;gap:var(--roi-g);margin-bottom:var(--roi-g)}
+#ma-roi .roi-row2 .roi-card{margin-bottom:0}
+#ma-roi .roi-meter{margin-top:14px}
+#ma-roi .roi-meter .t{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;margin-bottom:6px}
+#ma-roi .roi-track{height:10px;background:#EEF1F8;border-radius:999px;overflow:hidden}
+#ma-roi .roi-fill{height:100%;border-radius:999px;background:var(--c-positive)}
+#ma-roi .roi-fill.warn{background:var(--c-alert)}#ma-roi .roi-fill.bad{background:var(--c-negative)}#ma-roi .roi-fill.mut{background:#C9D1E2}
+#ma-roi .roi-chip{display:inline-block;border-radius:999px;padding:3px 10px;font-size:11.5px;font-weight:600}
+#ma-roi .roi-chip.ok{background:#E6F2EC;color:#1F5A41}#ma-roi .roi-chip.warn{background:#FFF1E6;color:#9A3A12}
+#ma-roi .roi-chip.bad{background:#FBE9E5;color:#9B2C1A}#ma-roi .roi-chip.mut{background:#EEF1F8;color:#4A5568}
+#ma-roi .roi-muted{color:var(--c-muted);font-size:12.5px;line-height:1.8}
+#ma-roi .roi-tbl{overflow-x:auto}
+#ma-roi .roi-tbl table{width:100%;min-width:640px;border-collapse:collapse;margin-top:12px}
+#ma-roi .roi-tbl th{font-size:11.5px;color:var(--c-muted);font-weight:600;text-align:start;padding:8px 10px;border-bottom:1px solid var(--c-border)}
+#ma-roi .roi-tbl td{padding:14px 10px;border-bottom:1px solid #F0F3FA;font-size:13px;vertical-align:middle}
+#ma-roi .roi-tbl tr:last-child td{border-bottom:0}
+#ma-roi .roi-tbl .name{font-weight:600}#ma-roi .roi-tbl .code{font-size:11px;color:var(--c-muted);margin-top:2px}
+#ma-roi .roi-tc{display:flex;flex-direction:column;gap:6px;min-width:150px}
+#ma-roi .roi-tc .top{display:flex;justify-content:space-between;gap:8px;font-size:12.5px}
+#ma-roi .roi-scale{position:relative;height:8px;background:#EEF1F8;border-radius:999px}
+#ma-roi .roi-scale i{position:absolute;inset-block:0;inset-inline-start:0;border-radius:999px;background:var(--c-positive)}
+#ma-roi .roi-scale i.bad{background:var(--c-negative)}
+#ma-roi .roi-scale u{position:absolute;top:-3px;bottom:-3px;inset-inline-start:50%;width:2px;background:var(--c-dark);border-radius:2px}
+#ma-roi .roi-empty{text-align:center;padding:32px 16px}
+#ma-roi .roi-empty p{color:var(--c-muted);max-width:460px;margin:8px auto 0;line-height:1.8}
+@media(max-width:900px){#ma-roi .roi-kpis{grid-template-columns:repeat(2,1fr)}#ma-roi .roi-kpi.hero{grid-column:1/-1;order:-1}#ma-roi .roi-row2{grid-template-columns:1fr}}
