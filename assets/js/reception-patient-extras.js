@@ -7,7 +7,7 @@ var L={area:'المنطقة / الحي',street:'الشارع',building:'رقم �
 function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function rpc(ws,a,p){return Promise.resolve(w.SSMPDDb.client.rpc('clinic_reception_patient_extras',{p_workspace:ws,p_action:a,p_payload:p||{}})).then(function(r){if(r.error)throw r.error;return r.data;});}
 function short(a){a=a||{};return [a.area,a.street,a.building&&('عمارة '+a.building),a.floor&&('دور '+a.floor),a.apartment&&('شقة '+a.apartment)].filter(Boolean).join('، ')+(a.landmark?' · '+a.landmark:'');}
-function mapsOk(u){return /^https:\/\/((www\.)?google\.[a-z.]+\/maps|maps\.google\.[a-z.]+|maps\.app\.goo\.gl|goo\.gl\/maps)(\/|\?|$)/i.test(String(u||''));}
+function mapsOk(u){return /^https:\/\/((w{3}\.)?google\.[a-z.]+\/maps|maps\.google\.[a-z.]+|maps\.app\.goo\.gl|goo\.gl\/maps)(\/|\?|$)/i.test(String(u||''));}
 function waPhone(p){var d=String(p||'').replace(/\D/g,'');if(/^01\d{9}$/.test(d))d='2'+d;return /^\d{10,15}$/.test(d)?d:'';}
 function homeHtml(){return '<div class="rxe-home" data-rxe-home hidden data-wide><h5>🏠 عنوان الزيارة المنزلية <small>— بيتحفظ على ملف المريض ويتملا لوحده المرة الجاية</small></h5>'+
  F.map(function(k){return '<label class="rxe-'+k+'">'+esc(L[k])+(k==='area'||k==='building'?' *':'')+'<input name="x_'+k+'" '+(k==='maps_url'?'type="url" inputmode="url" placeholder="الصق اللينك اللي المريض بعته"':k==='phone'?'type="tel" inputmode="tel"':'type="text"')+' maxlength="300"></label>';}).join('')+
