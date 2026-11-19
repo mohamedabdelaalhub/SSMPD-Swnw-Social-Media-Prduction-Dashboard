@@ -4,6 +4,10 @@ var cfg=window.SSMPD_CONFIG&&window.SSMPD_CONFIG.supabase;
 var root=document.getElementById("portal-root");
 if(!cfg||!cfg.url||!cfg.anonKey){root.innerHTML='<div class="notice error">تعذر تحميل إعدادات بوابة Swnw.</div>';return;}
 var client=window.supabase.createClient(cfg.url,cfg.anonKey,{auth:{persistSession:true,autoRefreshToken:true,storageKey:"swnw-patient-portal-auth"}});
+// One shared auth client for every portal script: separate GoTrueClient instances on the same storage key
+// each replayed the reset link and re-sent PASSWORD_RECOVERY seconds later, reopening the reset screen.
+window.SSMPDPortalClient=client;
+var recoveryShown=false,recoveryDone=false;
 
 function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
 function relationLabel(v){return({self:"نفسي",father:"أب",mother:"أم",legal_guardian:"وصي قانوني",spouse:"زوج/زوجة",other:"أخرى",guardian:"وصاية",authorized:"ممثل معتمد"}[v]||v||"—");}
@@ -113,6 +117,7 @@ function newPasswordView(message){
     btn.disabled=true;btn.textContent="جاري الحفظ…";
     client.auth.updateUser({password:p}).then(function(r){
       if(r.error)throw r.error;
+      recoveryDone=true;
       var returnTarget=window.SSMPDPortalRouting.parse(location.search).returnUrl;
       history.replaceState(null,"",location.pathname+(returnTarget?"?view=login&returnUrl="+encodeURIComponent(returnTarget):""));
       loginView({type:"ok",text:"تم تغيير كلمة السر. سجل دخولك بالكلمة الجديدة."});
@@ -198,11 +203,11 @@ function renderStatus(data,activeTab,fileState){
 function completeLogin(){var target=window.SSMPDPortalRouting.parse(location.search).returnUrl;if(target){location.assign(target);return Promise.resolve();}return loadPortal();}
 function loadPortal(){root.innerHTML='<div class="loading-page"><div class="loading-logo"><img src="../assets/img/logo.svg" alt="Swnw"></div><div class="loading-line"></div><p>جاري تحميل حسابك…</p></div>';return invoke("patient-portal-self-service",{op:"status"}).then(function(data){renderStatus(data,"data",null);}).catch(function(e){client.auth.signOut().finally(function(){loginView({type:"error",text:errText(e)});});});}
 client.auth.onAuthStateChange(function(event){
-  if(event==="PASSWORD_RECOVERY")newPasswordView();
+  if(event==="PASSWORD_RECOVERY"&&!recoveryShown&&!recoveryDone){recoveryShown=true;newPasswordView();}
 });
 var route=window.SSMPDPortalRouting.parse(location.search);
 if(route.recovery){
-  newPasswordView();
+  recoveryShown=true;newPasswordView();
 }else if(route.view==="activate"){activationView();
 }else if(route.view==="reset"){forgotPasswordView();
 }else{
