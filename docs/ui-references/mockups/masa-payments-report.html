@@ -1,0 +1,47 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>تحصيل ماسا — تقرير المالية — تصور</title>
+<link rel="stylesheet" href="../../../assets/css/styles.css">
+<style>
+body{background:#e9edf5;margin:0;padding:24px 12px}.wrap{max-width:900px;margin:0 auto;display:grid;gap:16px}
+.card{background:#fff;border-radius:16px;border:1px solid #D5DEEE;padding:16px;display:grid;gap:10px}
+.eyebrow{margin:0;font-size:12px;color:#8a93a3;border-bottom:1px solid #EEF1F6;padding-bottom:8px}
+h3{margin:0;color:#0F369D;font-size:17px}h4{margin:0;font-size:14px;color:#16212E}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:13px}.bar label{display:flex;gap:6px;align-items:center}
+.bar input,.bar select{padding:6px 8px;border:1px solid #D5DEEE;border-radius:8px;font:inherit}
+.note{font-size:12px;color:#8A5A00;background:#FFF6E5;border-radius:10px;padding:8px 10px;margin:0}
+.kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.k{border-radius:12px;background:#F7F8FB;padding:10px 12px}.k b{display:block;font-size:20px;color:#16212E;font-variant-numeric:tabular-nums}.k span{font-size:12px;color:#5b6577}
+.k.hero{background:#0F369D}.k.hero b,.k.hero span{color:#fff}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;border-bottom:1px solid #EEF1F6;text-align:right}th{color:#5b6577;font-weight:400;font-size:12px}
+td.n{font-variant-numeric:tabular-nums;direction:ltr;text-align:left}
+.tag{display:inline-block;padding:1px 8px;border-radius:99px;font-size:11px;background:#F2F4F7;color:#3B4658}.tag.void{background:#FBE9E6;color:#D0402A}.tag.ins{background:#EEF3FF;color:#0F369D}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.map{font-size:12px;color:#0F369D;background:none;border:0;text-decoration:underline;cursor:pointer;padding:0}
+.tw{overflow-x:auto}@media(max-width:700px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.grid2{grid-template-columns:1fr}}
+</style></head><body><div class="wrap">
+<section class="card"><p class="eyebrow">تصور (بيانات تجريبية) — الحسابات ← تقارير ← «تحصيل ماسا». للمالية بس.</p>
+ <h3>تحصيل ماسا</h3>
+ <div class="bar"><label>من<input type="date" value="2026-11-19"></label><label>إلى<input type="date" value="2026-11-19"></label>
+  <label>الطريقة<select><option>الكل</option><option>نقدي</option><option>فيزا</option><option>انستا باي</option><option>فودافون كاش</option></select></label>
+  <label><input type="checkbox"> اعرض الإيصالات الملغية</label><button class="btn">تصدير Excel</button></div>
+ <p class="note">ده اللي اتحصّل على ماسا، للمتابعة والمطابقة بس. مش بيدخل ورديات الخزنة ولا بيغيّر أي رصيد في الحسابات. آخر تحديث من ماسا من ٣ دقايق.</p>
+ <div class="kpis"><div class="k hero"><span>إجمالي المحصّل</span><b>48,350</b></div><div class="k"><span>نقدي</span><b>31,200</b></div><div class="k"><span>فيزا</span><b>12,450</b></div><div class="k"><span>انستا باي</span><b>3,200</b></div><div class="k"><span>فودافون كاش</span><b>1,500</b></div></div>
+</section>
+<div class="grid2">
+<section class="card"><p class="eyebrow">حسب الكاشير (من ماسا)</p>
+ <div class="tw"><table><tr><th>الكاشير</th><th>الخزنة</th><th>إيصالات</th><th>المبلغ</th></tr>
+ <tr><td>دينا</td><td>خزنة الاستقبال ١</td><td class="n">27</td><td class="n">21,900</td></tr>
+ <tr><td>سارة</td><td>خزنة الاستقبال ٢</td><td class="n">19</td><td class="n">18,250</td></tr>
+ <tr><td>مستخدم ماسا #12 <button class="map">اربطه باسم</button></td><td>خزنة #3</td><td class="n">6</td><td class="n">8,200</td></tr></table></div></section>
+<section class="card"><p class="eyebrow">حسب الدكتور</p>
+ <div class="tw"><table><tr><th>الدكتور</th><th>إيصالات</th><th>منهم تأمين</th><th>المبلغ</th></tr>
+ <tr><td>أخصائي جلدية</td><td class="n">14</td><td class="n">2</td><td class="n">11,200</td></tr>
+ <tr><td>أخصائي أسنان</td><td class="n">9</td><td class="n">0</td><td class="n">15,600</td></tr>
+ <tr><td>بدون حجز مربوط</td><td class="n">4</td><td class="n">—</td><td class="n">2,300</td></tr></table></div></section>
+</div>
+<section class="card"><p class="eyebrow">الإيصالات</p>
+ <div class="tw"><table><tr><th>الوقت</th><th>رقم الإيصال</th><th>المريض / الحجز</th><th>الدكتور</th><th>الطريقة</th><th>الكاشير</th><th>المبلغ</th></tr>
+ <tr><td class="n">10:42</td><td class="n">R-10231</td><td>مريض تجريبي · حجز 5001</td><td>أخصائي جلدية</td><td>نقدي</td><td>دينا</td><td class="n">500</td></tr>
+ <tr><td class="n">11:05</td><td class="n">R-10232</td><td>مريضة تجريبية <span class="tag ins">تأمين</span></td><td>أخصائي جلدية</td><td>فيزا</td><td>سارة</td><td class="n">350</td></tr>
+ <tr><td class="n">12:20</td><td class="n">R-10233</td><td>مريض تالت</td><td>أخصائي أسنان</td><td>نقدي + انستا باي</td><td>دينا</td><td class="n">1,800</td></tr>
+ <tr style="opacity:.55"><td class="n">12:31</td><td class="n">R-10234</td><td>مريض رابع <span class="tag void">ملغي على ماسا</span></td><td>أخصائي أسنان</td><td>نقدي</td><td>سارة</td><td class="n">400</td></tr></table></div></section>
+</div></body></html>
