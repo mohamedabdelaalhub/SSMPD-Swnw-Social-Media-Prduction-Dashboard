@@ -1,7 +1,7 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1796,
+    "definitions": 1795,
     "labels": 1317,
     "files": 126,
     "groups": 1422
@@ -16557,16 +16557,6 @@
     {
       "file": "render-reports.js",
       "label": "إلى",
-      "name": "",
-      "kind": "html",
-      "forms": [],
-      "tab": "reports",
-      "article": "personal",
-      "text_sha256": "5124563f386757810c60ae86fc95904a13532f1a872fcd3579613f304338e13d"
-    },
-    {
-      "file": "render-reports.js",
-      "label": "اليوم",
       "name": "",
       "kind": "html",
       "forms": [],
