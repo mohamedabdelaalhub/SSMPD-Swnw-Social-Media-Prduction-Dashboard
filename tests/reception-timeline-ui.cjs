@@ -31,7 +31,7 @@ const cairoDay=(t)=>new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Cairo',yea
  // Calendar button between the arrows opens a date picker; choosing a date jumps there.
  const navOrder=await page.locator('.rx-tl-nav > *').evaluateAll(l=>l.map(x=>x.matches('.rx-tl-pickwrap')?'cal':x.getAttribute('aria-label')||x.textContent));assert.deepEqual(navOrder.slice(-4),['الأسبوع اللي فات','cal','الأسبوع الجاي','صوت التكة والاهتزاز']);
  await page.locator('[data-tl-pick]').evaluate((i,v)=>{i.value=v;i.dispatchEvent(new Event('change',{bubbles:true}));},tomorrow);await page.waitForFunction(t=>document.querySelector('.rx-tl-wd.on')&&document.querySelector('.rx-tl-wd.on').dataset.id===t,tomorrow);
- await page.locator(`.rx-tl-nav [data-id="${today}"]`).click();await page.waitForFunction(t=>document.querySelector('.rx-tl-wd.on').dataset.id===t,today);
+ await page.locator(`.rx-tl-nav [data-id="${today}"]`).click();await page.waitForFunction(t=>{const o=document.querySelector('.rx-tl-wd.on');return !!o&&o.dataset.id===t;},today);
  // Summary buttons: resting = outline in the status colour; selected/hover = filled with it.
  const look=sel=>page.locator(sel).evaluate(e=>{const c=getComputedStyle(e);return {border:c.borderTopColor,bg:c.backgroundColor,color:c.color};});
  const rest=await look('.rx-tl-stat[data-tl-stat="confirmed"]');assert.equal(rest.border,'rgb(47, 125, 92)');assert.equal(rest.color,'rgb(47, 125, 92)');assert.notEqual(rest.bg,'rgb(47, 125, 92)');
@@ -73,7 +73,7 @@ const cairoDay=(t)=>new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Cairo',yea
  assert.equal(await page.locator(`.rx-tl-wd[data-id="${tomorrow}"]`).getAttribute('class').then(c=>/\boff\b/.test(c)),true,'holiday day greyed in the week strip');assert.equal(await page.locator(`.rx-tl-wd[data-id="${tomorrow}"] em`).textContent(),'أجازة');
  assert.match(await page.locator('.rx-tl-closed').innerText(),/أجازة رسمية: عيد تجريبي[\s\S]*1 حجز محتاج يتغيّر/);
  if(process.env.RECEPTION_QA&&width===390){await page.locator('.rx-tl-head').evaluate(e=>e.scrollIntoView({block:'start'}));await page.screenshot({path:process.env.RECEPTION_QA+'/timeline-holiday-390.png'});}assert.equal(await page.locator('.rx-tl-name').count(),1);
- await page.locator(`.rx-tl-nav [data-id="${today}"]`).click();assert.equal(await page.locator('.rx-tl-wd.on').getAttribute('data-id'),today);
+ await page.locator(`.rx-tl-nav [data-id="${today}"]`).click();await page.waitForFunction(t=>{const o=document.querySelector('.rx-tl-wd.on');return !!o&&o.dataset.id===t;},today);assert.equal(await page.locator('.rx-tl-wd.on').getAttribute('data-id'),today);
  await page.locator('.rx-tl-fab').click();await page.waitForSelector('.rx-modal');assert.match(await page.locator('.rx-modal').innerText(),/حجز موعد/);await page.keyboard.press('Escape');
  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'no overflow '+width);assert.deepEqual(errors,[]);await page.close();await db.close();}
  console.log('PASS reception timeline at 1280/390: day name title, SVG arrows + calendar picker + sound toggle, line centred on dots, summary buttons filter, scroll focus grows hour with tick/vibration, week strip, hours right of the line 9→15, names coloured by status, tap opens card in status colour, الأطباء/الحالة side by side, search keeps focus, actions from card, «بكره», floating +, no overflow/errors.');
