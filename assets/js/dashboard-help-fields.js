@@ -12488,11 +12488,11 @@
       "reviewed": true
     },
     {
-      "title": "جهة التأمين",
+      "title": "جهة التأمين / التعاقد",
       "labels": [
-        "جهة التأمين"
+        "جهة التأمين / التعاقد"
       ],
-      "text": "اسم جهة التأمين زي ما هيتطبع على المطالبة.",
+      "text": "اسم شركة التأمين أو الجهة المتعاقدة زي ما هيتطبع على فاتورة المطالبة.",
       "article": "insurance",
       "tabs": [
         "reception_services"
@@ -12506,6 +12506,19 @@
         "رقم العضوية"
       ],
       "text": "رقم كارنيه المريض عند جهة التأمين.",
+      "article": "insurance",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "رقم الموافقة",
+      "labels": [
+        "رقم الموافقة"
+      ],
+      "text": "رقم موافقة الجهة على الخدمة (لو فيه) — بيتطبع على فاتورة المطالبة، وارفق صورة الموافقة معاها.",
       "article": "insurance",
       "tabs": [
         "reception_services"
@@ -20969,9 +20982,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1782,
-    "labels": 1309,
+    "definitions": 1783,
+    "labels": 1310,
     "files": 124,
-    "groups": 1410
+    "groups": 1411
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();

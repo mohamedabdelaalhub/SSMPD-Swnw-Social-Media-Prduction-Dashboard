@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1782,
-    "labels": 1309,
+    "definitions": 1783,
+    "labels": 1310,
     "files": 124,
-    "groups": 1410
+    "groups": 1411
   },
   "fields": [
     {
@@ -10869,13 +10869,13 @@
     },
     {
       "file": "reception-service-orders.js",
-      "label": "جهة التأمين",
+      "label": "جهة التأمين / التعاقد",
       "name": "",
       "kind": "label",
       "forms": [],
       "tab": "reception_services",
       "article": "insurance",
-      "text_sha256": "aa56ed6061a11335186eac4ebafaa491d6ed2d810b52df6c10eb04bffc0d8637"
+      "text_sha256": "e74f444625fe665c51bee86c392eee6dc86ade50acfdf7ed614ce6e503233446"
     },
     {
       "file": "reception-service-orders.js",
@@ -10886,6 +10886,16 @@
       "tab": "reception_services",
       "article": "insurance",
       "text_sha256": "e2af59c4c879ceecc0dac42f350c6f9792a61f94041eab06a8b8c21592077b63"
+    },
+    {
+      "file": "reception-service-orders.js",
+      "label": "رقم الموافقة",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "insurance",
+      "text_sha256": "6bf7c5ab07e784fa0a6c9aa8e7ce0d413fd5d2b1922c774523f8707b7f4029fe"
     },
     {
       "file": "reception-service-orders.js",
