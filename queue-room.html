@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0F369D">
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+<title>طابور الغرفة — Swnw</title>
+<style>
+@font-face{font-family:"BigVesta Arabic";src:url("assets/fonts/BigVesta-Regular.woff2") format("woff2");font-weight:400;font-display:swap}
+@font-face{font-family:"BigVesta Arabic";src:url("assets/fonts/BigVesta-Bold.woff2") format("woff2");font-weight:700;font-display:swap}
+@font-face{font-family:"Hiragino Kaku";src:url("assets/fonts/Hiragino-W3.woff2") format("woff2");font-weight:300;font-display:swap}
+@font-face{font-family:"Hiragino Kaku";src:url("assets/fonts/Hiragino-W6.woff2") format("woff2");font-weight:600;font-display:swap}
+:root{font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;color:#16212E;background:#eef2fb}
+*{box-sizing:border-box}body{margin:0;padding:12px;max-width:520px;margin-inline:auto}
+header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}header h1{margin:0;font-size:20px;color:#0F369D}
+.card{background:#fff;border-radius:16px;padding:16px;margin-bottom:12px;border:1px solid #d9e1f2}
+.cur{font-size:84px;font-weight:700;color:#F15A22;text-align:center;line-height:1.1}.sub{color:#5b6676;font-size:13px;text-align:center}
+.wait{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:8px 0}.chip{background:#eef2fb;color:#0F369D;border-radius:8px;padding:4px 10px;font-size:16px}
+button{width:100%;min-height:56px;border-radius:12px;border:1px solid #0F369D;background:#fff;color:#0F369D;font:inherit;font-size:18px;margin-top:8px}
+button.main{background:#0F369D;color:#fff;font-size:22px;min-height:64px}button.ok{border-color:#2F7D5C;color:#2F7D5C}button.warn{border-color:#D0402A;color:#D0402A}button:disabled{opacity:.5}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:6px}.tk{border-top:1px dashed #d9e1f2;padding-top:8px;margin-top:8px}
+.msg{text-align:center;padding:24px;color:#D0402A}.msg a{color:#0F369D}
+#toast{position:fixed;bottom:16px;inset-inline:16px;background:#16212E;color:#fff;border-radius:12px;padding:12px;text-align:center;display:none}#toast.err{background:#D0402A}
+.big{position:fixed;inset:0;background:rgba(22,33,46,.6);display:flex;align-items:center;justify-content:center}.big>div{background:#fff;border-radius:16px;padding:24px;text-align:center}.big strong{display:block;font-size:80px;color:#F15A22}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+</head>
+<body>
+<header><h1>Swnw — <span data-room-name>طابور الغرفة</span></h1><span class="sub" data-date></span></header>
+<main id="queue-room-root"><p class="sub">جاري التحميل…</p></main>
+<div id="toast" role="status"></div>
+<script src="config.js"></script>
+<script src="assets/js/queue-room.js?v=queue-rooms-20261120-1"></script>
+</body>
+</html>

@@ -121,5 +121,6 @@ window.SSMPD_CONFIG = {
     loadOnce("__SWNWTodayOperationsDisplayV1","assets/js/today-operations-display.js?v=journey-sandbox-20261031-1","today-operations-display");
     loadOnce("__SWNWTodayOperationsUnifiedV1","assets/js/today-operations-unified.js?v=today-board-20261107-1","today-operations-unified");
     loadOnce("__SWNWTodayOperationsFinalizeV1","assets/js/today-operations-finalize.js?v=today-board-20261107-1","today-operations-finalize");
+    loadOnce("__SWNWTodayOperationsQueueV1","assets/js/today-operations-queue.js?v=queue-rooms-20261120-1","today-operations-queue");
   });
 })();
