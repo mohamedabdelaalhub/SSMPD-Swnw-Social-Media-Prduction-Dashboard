@@ -532,6 +532,14 @@ for alias,target in reviewed_aliases.items():
  else:raise RuntimeError('No authored alias target '+target)
 
 # MORE_RULES
+# --- Training & evaluation center (training-evaluation.js) ---
+TE='training-evaluation.js'
+frule(TE,'المسار','اختر المنصب الذي يُعَدّ له المتدرب: مدير فرع أو مدير فريق. المسار يحدد عنوان التكليف، والاختبار واحد للمسارين في هذه المرحلة.','training-center')
+frule(TE,'المتدرب','اختر الموظف صاحب حساب الدخول الذي سيقرأ الدورة ويؤدي الاختبار. يظهر التكليف له وحده في «تكليفاتي».','training-center')
+frule(TE,'المراجع (يُجري المقابلة)','اختر من سيجري المقابلة ويقيّم المتدرب لاحقًا. لا يجوز أن يكون المراجع هو المتدرب نفسه، ويرى المراجع التكليفات المسندة إليه فقط.','training-center')
+frule(TE,'الموعد النهائي (اختياري)','تاريخ متوقع لإنهاء الدورة والاختبار، للمتابعة فقط. لا يغلق التكليف تلقائيًا، ومدة الاختبار نفسها يحددها بنك الأسئلة.','training-center')
+frule(TE,'ملاحظة للمراجع (لا تظهر للمتدرب)','ملاحظة داخلية تراها الإدارة والمراجع المسند فقط، مثل سبب الترشيح. لا تكتب فيها بيانات مرضى.','training-center')
+frule(TE,'سبب الإلغاء','سبب مكتوب إلزامي لإلغاء تكليف مفتوح. يُحفظ في سجل التدقيق، وبعد الإلغاء لا يستطيع المتدرب متابعة الدورة أو الاختبار.','training-center')
 # --- Human resources and price lists (workforce-prices.js, price-list-governance.js) ---
 W='workforce-prices.js';G='price-list-governance.js'
 frule(W,'شهر المتابعة','اختار الشهر اللي عايز تشوف حضوره وطلباته ووردياته. تصدير متابعة الشهر وتحضير استحقاق المرتب بيستخدموا نفس الشهر. تغيير الشهر لا يعدل أي بيانات.','hr-my-file')
@@ -990,6 +998,7 @@ OVERLAY_FILES={'digital-team.js','digital-team-chat.js','digital-team-communicat
 PRICE_FILES={'price-list-governance.js','contract-price-workspace.js','contract-service-mapping.js','service-mapping-review.js','service-search-picker.js','center-master-review.js'}
 def domain(f):
  if f=='workforce-prices.js' or f.startswith('hr-'):return 'human_resources'
+ if f.startswith('training-'):return 'training_evaluation'
  if f=='contract-navigation.js':return 'contracting_entities'
  if f in PRICE_FILES:return 'price_lists'
  if f=='insurance-contracts.js':return 'contracting_entities'
