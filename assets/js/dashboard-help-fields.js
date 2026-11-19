@@ -20098,6 +20098,51 @@
       "reviewed": true
     },
     {
+      "title": "سبب الطلب",
+      "labels": [
+        "سبب الطلب"
+      ],
+      "text": "اكتب لماذا ترى أن النتيجة تحتاج مراجعة. يُسمح بطلب واحد لكل تكليف، وتردّ عليه الإدارة داخل «نتيجتي».",
+      "article": "training-center",
+      "tabs": [
+        "training_evaluation"
+      ],
+      "forms": [
+        "طلب مراجعة النتيجة"
+      ],
+      "reviewed": true
+    },
+    {
+      "title": "ردّك على المتدرب",
+      "labels": [
+        "ردّك على المتدرب"
+      ],
+      "text": "رد مكتوب إلزامي تراه الإدارة والمتدرب في «نتيجتي»، وبعده يُغلق طلب المراجعة.",
+      "article": "training-center",
+      "tabs": [
+        "training_evaluation"
+      ],
+      "forms": [
+        "الرد على طلب المراجعة"
+      ],
+      "reviewed": true
+    },
+    {
+      "title": "مدة الصلاحية بالأيام",
+      "labels": [
+        "مدة الصلاحية بالأيام"
+      ],
+      "text": "عدد الأيام التي يبقى فيها رابط النتيجة صالحًا للفتح، من يوم إلى 60 يومًا (الافتراضي 14). الرابط يُفتح مرة واحدة فقط، وإنشاء رابط جديد يُلغي السابق.",
+      "article": "training-center",
+      "tabs": [
+        "training_evaluation"
+      ],
+      "forms": [
+        "رابط نتيجة المرشح"
+      ],
+      "reviewed": true
+    },
+    {
       "title": "نص التعليق الصوتي",
       "labels": [
         "نص التعليق الصوتي",
@@ -21427,9 +21472,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1818,
-    "labels": 1334,
-    "files": 129,
-    "groups": 1443
+    "definitions": 1821,
+    "labels": 1336,
+    "files": 130,
+    "groups": 1446
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();

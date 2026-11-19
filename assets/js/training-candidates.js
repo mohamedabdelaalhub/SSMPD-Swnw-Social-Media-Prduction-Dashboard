@@ -95,6 +95,7 @@
       h += '<div class="te-table"><table><thead><tr><th>المرشح</th><th>المسار</th><th>الحالة</th><th>المراجع</th><th></th></tr></thead><tbody>' + list.map(function (c) {
         var act = '';
         if (c.invite_status === 'submitted') act += '<button type="button" class="btn ghost" data-result="' + e(c.assignment_id) + '">نتيجة الاختبار</button> ';
+        if (owner && c.assignment_status === 'decided') act += '<button type="button" class="btn ghost" data-resultlink="' + e(c.assignment_id) + '" data-n="' + e(c.name) + '" data-p="' + e(c.phone || '') + '">رابط النتيجة</button> <button type="button" class="btn ghost" data-report="' + e(c.assignment_id) + '">تقرير نهائي</button> ';
         if (owner && (c.invite_status === 'pending' || c.invite_status === 'opened')) act += '<button type="button" class="btn ghost" data-revoke="' + e(c.assignment_id) + '">إلغاء الرابط</button> ';
         if (owner && !c.minimal) act += '<button type="button" class="btn ghost" data-note="' + e(c.candidate_id) + '" data-text="' + e(c.owner_notes || '') + '">ملاحظة</button> <button type="button" class="btn ghost" data-delete="' + e(c.candidate_id) + '">حذف بيانات المرشح</button>';
         return '<tr><td><b>' + e(c.name) + '</b>' + (c.returning_applicant ? ' <span class="te-chip">تقدّم سابقًا</span>' : '') + '<br><span class="te-muted" dir="ltr">' + e(c.phone || '') + '</span>' +
@@ -104,6 +105,8 @@
       sec.innerHTML = h; wire();
       function reload() { rpc('training_candidates').then(draw).catch(function (x) { toast(msg(x), true); }); }
       sec.querySelectorAll('[data-result]').forEach(function (b) { b.onclick = function () { w.SSMPDTrainingEvaluation.openResult(b.getAttribute('data-result')); }; });
+      sec.querySelectorAll('[data-resultlink]').forEach(function (b) { b.onclick = function () { w.SSMPDTrainingResults && w.SSMPDTrainingResults.issueResultLink(b.getAttribute('data-resultlink'), b.getAttribute('data-n'), b.getAttribute('data-p')); }; });
+      sec.querySelectorAll('[data-report]').forEach(function (b) { b.onclick = function () { w.SSMPDTrainingResults && w.SSMPDTrainingResults.printReport(b.getAttribute('data-report')); }; });
       sec.querySelectorAll('[data-revoke]').forEach(function (b) { b.onclick = function () { reasonDialog('إلغاء رابط المرشح', 'سيتوقف الرابط فورًا ولا يمكن إعادة استخدامه.', function (r) { return rpc('training_revoke_candidate_invite', { p_assignment: b.getAttribute('data-revoke'), p_reason: r }); }, reload); }; });
       sec.querySelectorAll('[data-delete]').forEach(function (b) { b.onclick = function () { reasonDialog('حذف بيانات المرشح', 'يبقى الاسم والهاتف فقط، وتُحذف الخبرة والمؤهلات والبريد والملاحظات. يُسجَّل الإجراء.', function (r) { return rpc('training_delete_candidate_data', { p_candidate: b.getAttribute('data-delete'), p_reason: r }); }, reload); }; });
       sec.querySelectorAll('[data-note]').forEach(function (b) { b.onclick = function () {

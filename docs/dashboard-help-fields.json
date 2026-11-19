@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1818,
-    "labels": 1334,
-    "files": 129,
-    "groups": 1443
+    "definitions": 1821,
+    "labels": 1336,
+    "files": 130,
+    "groups": 1446
   },
   "fields": [
     {
@@ -18419,6 +18419,42 @@
       "tab": "training_evaluation",
       "article": "training-center",
       "text_sha256": "b406810e83127d302c4fcbb04080ddb8d240a62851fdbfaa407873d35c280463"
+    },
+    {
+      "file": "training-results.js",
+      "label": "سبب الطلب",
+      "name": "",
+      "kind": "label",
+      "forms": [
+        "طلب مراجعة النتيجة"
+      ],
+      "tab": "training_evaluation",
+      "article": "training-center",
+      "text_sha256": "11b3f1ad19212661b8fbb48d8b4fe8be5e4d10c0bd815aa8a1d7292ab907205d"
+    },
+    {
+      "file": "training-results.js",
+      "label": "ردّك على المتدرب",
+      "name": "",
+      "kind": "label",
+      "forms": [
+        "الرد على طلب المراجعة"
+      ],
+      "tab": "training_evaluation",
+      "article": "training-center",
+      "text_sha256": "5ecd0b5fb7efff839c54dc93ec8640d134854e15de042e9ef17d0d7e3dda11c1"
+    },
+    {
+      "file": "training-results.js",
+      "label": "مدة الصلاحية بالأيام",
+      "name": "",
+      "kind": "label",
+      "forms": [
+        "رابط نتيجة المرشح"
+      ],
+      "tab": "training_evaluation",
+      "article": "training-center",
+      "text_sha256": "3ea3c0782b80605089ee69b1c433ece2a8242092db7f9f5736b341919418a7e7"
     },
     {
       "file": "video-storyboard.js",

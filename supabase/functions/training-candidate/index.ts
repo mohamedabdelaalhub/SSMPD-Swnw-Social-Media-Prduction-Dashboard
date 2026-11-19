@@ -67,7 +67,8 @@ Deno.serve(async (req) => {
   try { b = await req.json(); } catch { return json(req, { ok: false, error: "invalid_json" }, 400); }
   if (!b || typeof b !== "object" || Array.isArray(b)) return json(req, { ok: false, error: "invalid_json" }, 400);
   const action = str(b.action, 20), token = str(b.token, 200), device = str(b.device, 100);
-  if (token.length < 40 || device.length < 16) return json(req, { ok: false, error: "invalid_link" }, 404);
+  // «result» is the view-once result link (separate token, no device binding); every other action needs a device id.
+  if (token.length < 40 || (action !== "result" && device.length < 16)) return json(req, { ok: false, error: "invalid_link" }, 404);
 
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() || "?";
   if (limited("t:" + token.slice(0, 16), 120) || limited("i:" + ip, 300)) {
@@ -88,6 +89,7 @@ Deno.serve(async (req) => {
       p_token: token, p_device: dev, p_question: str(b.question, 40), p_option: str(b.option, 4) }); break;
     case "blur": res = await admin.rpc("training_candidate_blur", { p_token: token, p_device: dev }); break;
     case "submit": res = await admin.rpc("training_candidate_submit", { p_token: token, p_device: dev }); break;
+    case "result": res = await admin.rpc("training_candidate_result", { p_token: token }); break;
     default: return json(req, { ok: false, error: "unknown_action" }, 400);
   }
   if (res.error) {
