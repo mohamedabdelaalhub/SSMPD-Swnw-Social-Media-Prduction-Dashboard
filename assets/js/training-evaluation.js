@@ -255,7 +255,7 @@
       var h = '<div class="te-page"><button type="button" class="btn ghost te-back" data-back>رجوع إلى التكليفات</button>' +
         '<header class="te-head"><div><h2>نتيجة الاختبار: ' + e(r.trainee_name) + '</h2><p class="te-muted">' + e(r.track_name) + ' · سُلِّم في ' + e(date(r.submitted_at)) + (r.auto_submitted ? ' (تلقائيًا بانتهاء الوقت)' : '') + '</p></div></header>' +
         '<section class="te-card te-stats"><div><b>' + e(r.percent) + '%</b><span>النسبة</span></div><div>' + gradeChip(r.grade) + '<span>تقدير الاختبار</span></div>' +
-        '<div><b' + (r.risk_flags ? ' class="te-flag"' : '') + '>' + e(r.risk_flags) + '</b><span>علامات الخطر</span></div><div><b>' + e(r.answered) + ' / ' + e(r.total) + '</b><span>أسئلة مُجابة</span></div>' +
+        '<div><b' + (r.risk_flags ? ' class="te-flag"' : '') + '>' + e(r.risk_flags) + '</b><span>علامات الخطر</span></div><div><b>' + e(r.answered) + ' من ' + e(r.total) + '</b><span>أسئلة مُجابة</span></div>' +
         '<div><b>' + mins + ':' + ('0' + secs).slice(-2) + '</b><span>المدة المستغرقة</span></div><div><b>' + e(r.blur_count) + '</b><span>مرات مغادرة الصفحة</span></div></section>' +
         (r.risk_flags ? '<p class="te-warn">علامات الخطر تفتح مراجعة بشرية في المقابلة، وليست جزاءً.</p>' : '') +
         '<section class="te-card"><h3>الكفاءات</h3><div class="te-table"><table><thead><tr><th>الكفاءة</th><th>الدرجة</th><th>النسبة</th></tr></thead><tbody>' +
