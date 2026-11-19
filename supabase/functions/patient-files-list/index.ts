@@ -29,7 +29,7 @@ async function getCallerAdmin(req: Request) {
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
   const { data: row } = await admin
     .from("admins")
-    .select("id, role, has_archive_access, has_archive_review_access, has_archive_view_only, active, admin_extra_roles!admin_id(role)")
+    .select("id, role, has_archive_access, has_archive_review_access, has_archive_view_only, has_archive_reception_access, active, admin_extra_roles!admin_id(role)")
     .eq("user_id", user.id)
     .eq("active", true)
     .maybeSingle();
@@ -62,11 +62,13 @@ Deno.serve(async (req) => {
   // فكانت بترجع undefined دايماً — تم تصحيحها هنا كجزء من نفس التعديل (select فوق).
   const canReview = caller.has_archive_review_access || isSuperAdmin(caller) || isHeadNursing(caller);
   const nursing = isNursing(caller);
-  const allowed = caller.has_archive_access || canReview || caller.has_archive_view_only || nursing;
+  // Owner 2026-11-19: reception / customer service archive scope (view the whole file; edits limited elsewhere)
+  const reception = !!caller.has_archive_reception_access;
+  const allowed = caller.has_archive_access || canReview || caller.has_archive_view_only || nursing || reception;
   if (!allowed) return json({ error: "مفيش صلاحية أرشيف المرضى" }, 403);
   // "طبيب سونو" بمعاينة فقط (من غير أرشيف كامل/مراجعة) — يشوف بس المرضى
   // المحالين له (patient_doctor_assignments)، مش الأرشيف كله
-  const doctorOnly = caller.has_archive_view_only && !caller.has_archive_access && !canReview;
+  const doctorOnly = caller.has_archive_view_only && !caller.has_archive_access && !canReview && !reception;
 
   const url = new URL(req.url);
   const patientId = url.searchParams.get("patient_id");
@@ -142,7 +144,7 @@ Deno.serve(async (req) => {
       reviewer: undefined,
     }));
 
-    if (caller.has_archive_access || caller.has_archive_view_only) {
+    if (caller.has_archive_access || caller.has_archive_view_only || reception) {
       await admin.from("archive_access_log").insert({
         patient_id: patientId,
         employee_id: caller.id,

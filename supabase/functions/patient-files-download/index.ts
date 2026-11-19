@@ -68,7 +68,7 @@ async function getAuthenticatedUser(req: Request) {
 async function getCallerAdmin(userId: string, admin: ReturnType<typeof createClient>) {
   const { data: row } = await admin
     .from("admins")
-    .select("id, role, has_archive_access, has_archive_review_access, has_archive_view_only, active, admin_extra_roles!admin_id(role)")
+    .select("id, role, has_archive_access, has_archive_review_access, has_archive_view_only, has_archive_reception_access, active, admin_extra_roles!admin_id(role)")
     .eq("user_id", userId)
     .eq("active", true)
     .maybeSingle();
@@ -259,8 +259,9 @@ Deno.serve(async (req) => {
     if (caller) {
 
       const canReviewOrFull = caller.has_archive_access || caller.has_archive_review_access || isSuperAdmin(caller) || isHeadNursing(caller);
-      const doctorOnly = caller.has_archive_view_only && !canReviewOrFull;
-      const allowed = canReviewOrFull || caller.has_archive_view_only || isNursing(caller);
+      const reception = !!caller.has_archive_reception_access; // Owner 2026-11-19: reception / CS archive scope can open files
+      const doctorOnly = caller.has_archive_view_only && !canReviewOrFull && !reception;
+      const allowed = canReviewOrFull || caller.has_archive_view_only || isNursing(caller) || reception;
       if (!allowed) return json({ error: "مفيش صلاحية أرشيف المرضى" }, 403);
 
       if (doctorOnly) {

@@ -6,17 +6,18 @@ window.__SWNWTodayOperationsDisplayV1=true;
 var context=null,observer=null;
 function toast(msg,kind){if(window.SSMPDToast&&window.SSMPDToast.show)window.SSMPDToast.show(msg,kind||'success');}
 function rpc(name,args){return window.SSMPDDb.client.rpc(name,args).then(function(r){if(r.error)throw r.error;return r.data;});}
-function displayUrl(token){var u=new URL('checkin-display.html',location.href);u.search='';u.hash='';u.searchParams.set('display',token);return u.toString();}
-function openDisplay(){
- if(document.querySelector('[data-journey-mode="trial"]')){toast('شاشة تسجيل الوصول الفعلية غير متاحة داخل التجربة','error');return;}
+function displayUrl(token,page){var u=new URL(page||'checkin-display.html',location.href);u.search='';u.hash='';u.searchParams.set('display',token);return u.toString();}
+function openDisplay(page,label){
+ label=label||'شاشة تسجيل الوصول';
+ if(document.querySelector('[data-journey-mode="trial"]')){toast(label+' الفعلية غير متاحة داخل التجربة','error');return;}
  if(!context||!context.workspace){toast('افتح تشغيل اليوم ثم حاول مرة أخرى','error');return;}
  var popup=window.open('about:blank','swnw-checkin-display');
- if(popup){try{popup.document.write('<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><title>Swnw</title><body style="font-family:Arial;text-align:center;padding:60px">جاري تجهيز شاشة تسجيل الوصول…</body></html>');popup.document.close();}catch(e){}}
+ if(popup){try{popup.document.write('<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><title>Swnw</title><body style="font-family:Arial;text-align:center;padding:60px">جاري تجهيز '+label+'…</body></html>');popup.document.close();}catch(e){}}
  rpc('clinic_reception_display_session',{p_workspace:context.workspace}).then(function(data){
-   var url=displayUrl(data.display_token);
+   var url=displayUrl(data.display_token,page);
    if(popup&&!popup.closed){popup.location.replace(url);return;}
-   return navigator.clipboard.writeText(url).then(function(){toast('تم نسخ رابط شاشة تسجيل الوصول. افتحه على التلفزيون.');});
- }).catch(function(err){if(popup&&!popup.closed)popup.close();toast(err.message||'تعذر فتح شاشة تسجيل الوصول','error');});
+   return navigator.clipboard.writeText(url).then(function(){toast('تم نسخ رابط '+label+'. افتحه على التلفزيون.');});
+ }).catch(function(err){if(popup&&!popup.closed)popup.close();toast(err.message||'تعذر فتح '+label,'error');});
 }
 function inject(){
  if(!window.document)return;
@@ -24,6 +25,11 @@ function inject(){
    if(bar.querySelector('[data-tv-checkin-display]'))return;
    var b=document.createElement('button');b.type='button';b.className='btn btn-primary';b.dataset.tvCheckinDisplay='1';b.textContent='شاشة تسجيل الوصول';b.onclick=function(e){e.preventDefault();openDisplay();};
    bar.insertBefore(b,bar.firstChild);
+ });
+ document.querySelectorAll('.journey-toolbar-actions').forEach(function(bar){
+   if(bar.querySelector('[data-tv-queue-display]'))return;
+   var q=document.createElement('button');q.type='button';q.className='btn';q.dataset.tvQueueDisplay='1';q.textContent='شاشة الانتظار';q.onclick=function(e){e.preventDefault();openDisplay('queue-display.html','شاشة الانتظار');};
+   bar.insertBefore(q,bar.firstChild);
  });
 }
 function refreshReceptionIfOpen(){
