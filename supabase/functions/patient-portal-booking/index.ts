@@ -147,6 +147,57 @@ async function createOfficialBooking(doctor: any, patient: any, date: string, ti
   return { officialId, requestId };
 }
 
+// Owner 2026-11-19: once a request is booked on Masa it also goes to the dashboard's automatic bookings
+// (clinic_reception_auto_book_service_api; the database books it in reception). Best effort: a failure here never undoes
+// the Masa booking, the 5-minute Masa import picks it up anyway.
+async function queueForReception(admin: any, row: any, doctor: any) {
+  try {
+    await admin.rpc("clinic_reception_auto_book_service_api", { p_op: "portal_confirmed", p: {
+      request_id: row.id, official_booking_id: row.official_booking_id, masa_doctor_id: doctor?.official_doctor_id,
+      date: String(row.requested_date), time: row.requested_time, patient_id: row.patient_id } });
+  } catch (_) { /* logged by status only */ }
+}
+
+async function autoConfirmEnabled(admin: any): Promise<{ on: boolean; actor: string | null }> {
+  try {
+    const { data } = await admin.rpc("clinic_reception_auto_book_service_api", { p_op: "config", p: {} });
+    return { on: data?.portal_auto_confirm === true, actor: data?.system_admin_id || null };
+  } catch (_) { return { on: false, actor: null }; }
+}
+
+// pending -> confirming (atomic claim) -> booked on Masa -> confirmed; a failure goes back to pending / slot_unavailable.
+async function confirmRequest(admin: any, requestId: string, actorId: string | null, auditAction: string) {
+  const { data: claimed, error: claimError } = await admin.from("patient_portal_booking_requests")
+    .update({ status: "confirming", reviewed_by: actorId, reviewed_at: new Date().toISOString(), last_error: null })
+    .eq("id", requestId).eq("status", "pending").select("*").maybeSingle();
+  if (claimError) return { error: claimError.message, status: 500 };
+  if (!claimed) return { error: "REQUEST_NOT_PENDING", status: 409 };
+  const doctor = doctorById(claimed.doctor_id);
+  const { data: patient } = await admin.from("patients").select("id,full_name,phone,age,status").eq("id", claimed.patient_id).maybeSingle();
+  try {
+    if (!doctor) throw new Error("DOCTOR_NOT_BOOKING_READY");
+    if (!patient || patient.status !== "active" || !patient.phone) throw new Error("PATIENT_PHONE_REQUIRED");
+    const { officialId, requestId: bridgeRequestId } = await createOfficialBooking(doctor, patient, String(claimed.requested_date), claimed.requested_time);
+    const { data: done, error: doneError } = await admin.from("patient_portal_booking_requests")
+      .update({ status: "confirmed", official_booking_id: officialId, booking_request_id: bridgeRequestId })
+      .eq("id", requestId).select(REQUEST_FIELDS).single();
+    if (doneError) throw new Error("BOOKED_BUT_NOT_SAVED:" + officialId);
+    await admin.from("patient_portal_audit_log").insert({ patient_id: claimed.patient_id, actor_admin_id: actorId,
+      action: auditAction, entity_type: "portal_booking_request", entity_id: requestId,
+      metadata: { official_booking_id: officialId, doctor_id: claimed.doctor_id, date: claimed.requested_date, time: claimed.requested_time } });
+    await queueForReception(admin, done, doctor);
+    return { request: done };
+  } catch (e) {
+    const msg = String((e as Error).message || e);
+    const slotGone = msg === "SLOT_NO_LONGER_AVAILABLE";
+    // A failed booking goes back to pending (or slot_unavailable) so reception can retry or call the patient.
+    await admin.from("patient_portal_booking_requests")
+      .update({ status: slotGone ? "slot_unavailable" : "pending", last_error: msg.slice(0, 200) })
+      .eq("id", requestId).eq("status", "confirming");
+    return { error: msg, status: slotGone ? 409 : 502 };
+  }
+}
+
 async function handleStaff(op: string, body: any, req: Request) {
   const ctx:any = await staffContext(req);
   if (ctx.error) return json({ error: ctx.error }, ctx.status || 500);
@@ -178,35 +229,9 @@ async function handleStaff(op: string, body: any, req: Request) {
   }
 
   if (op === "staff_confirm") {
-    // Atomic claim: only one reception click can move pending -> confirming.
-    const { data: claimed, error: claimError } = await admin.from("patient_portal_booking_requests")
-      .update({ status: "confirming", reviewed_by: ctx.staff.id, reviewed_at: new Date().toISOString(), last_error: null })
-      .eq("id", requestId).eq("status", "pending").select("*").maybeSingle();
-    if (claimError) return json({ error: claimError.message }, 500);
-    if (!claimed) return json({ error: "REQUEST_NOT_PENDING" }, 409);
-    const doctor = doctorById(claimed.doctor_id);
-    const { data: patient } = await admin.from("patients").select("id,full_name,phone,age,status").eq("id", claimed.patient_id).maybeSingle();
-    try {
-      if (!doctor) throw new Error("DOCTOR_NOT_BOOKING_READY");
-      if (!patient || patient.status !== "active" || !patient.phone) throw new Error("PATIENT_PHONE_REQUIRED");
-      const { officialId, requestId: bridgeRequestId } = await createOfficialBooking(doctor, patient, String(claimed.requested_date), claimed.requested_time);
-      const { data: done, error: doneError } = await admin.from("patient_portal_booking_requests")
-        .update({ status: "confirmed", official_booking_id: officialId, booking_request_id: bridgeRequestId })
-        .eq("id", requestId).select(REQUEST_FIELDS).single();
-      if (doneError) throw new Error("BOOKED_BUT_NOT_SAVED:" + officialId);
-      await admin.from("patient_portal_audit_log").insert({ patient_id: claimed.patient_id, actor_admin_id: ctx.staff.id,
-        action: "portal_booking_confirmed", entity_type: "portal_booking_request", entity_id: requestId,
-        metadata: { official_booking_id: officialId, doctor_id: claimed.doctor_id, date: claimed.requested_date, time: claimed.requested_time } });
-      return json({ ok: true, request: done });
-    } catch (e) {
-      const msg = String((e as Error).message || e);
-      const slotGone = msg === "SLOT_NO_LONGER_AVAILABLE";
-      // A failed booking goes back to pending (or slot_unavailable) so reception can retry or call the patient.
-      await admin.from("patient_portal_booking_requests")
-        .update({ status: slotGone ? "slot_unavailable" : "pending", last_error: msg.slice(0, 200) })
-        .eq("id", requestId).eq("status", "confirming");
-      return json({ error: msg }, slotGone ? 409 : 502);
-    }
+    const out: any = await confirmRequest(admin, requestId, ctx.staff.id, "portal_booking_confirmed");
+    if (out.error) return json({ error: out.error }, out.status);
+    return json({ ok: true, request: out.request });
   }
   return json({ error: "UNKNOWN_OPERATION" }, 400);
 }
@@ -341,6 +366,22 @@ async function handleRequest(req: Request): Promise<Response> {
       entity_type: "portal_booking_request", entity_id: request.id,
       metadata: { doctor_id: doctor.doctor_id, specialty_id: doctor.specialty_id, date, time },
     });
+    // Owner 2026-11-19: portal bookings are confirmed automatically when the slot is free (flag in reception settings).
+    const auto = await autoConfirmEnabled(ctx.admin);
+    if (auto.on) {
+      const out: any = await confirmRequest(ctx.admin, request.id, auto.actor, "portal_booking_auto_confirmed");
+      if (out.request) {
+        return json({
+          ok:true, status:"confirmed", request: out.request,
+          patient:{id:patient.id,full_name:patient.full_name,patient_code:patient.patient_code},
+          doctor:{doctor_id:doctor.doctor_id,doctor_name_ar:doctor.doctor_name_ar},
+          specialty:{specialty_id:doctor.specialty_id,specialty_name_ar:doctor.specialty_name_ar},
+          date,time,
+        },201);
+      }
+      if (out.error === "SLOT_NO_LONGER_AVAILABLE") return json({ error: "SLOT_NO_LONGER_AVAILABLE" },409);
+      // any other failure leaves the request pending for reception, as before
+    }
     return json({
       ok:true, status:"pending", request,
       patient:{id:patient.id,full_name:patient.full_name,patient_code:patient.patient_code},

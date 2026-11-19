@@ -4,7 +4,7 @@ const assert=require('node:assert/strict'),fs=require('fs'),vm=require('vm'),{st
 const src=stripTypeScriptTypes(fs.readFileSync('supabase/functions/patient-portal-booking/index.ts','utf8').replace(/^import .*;\n/gm,''));
 const DOC=(/"doctor_id":"(doc_[a-z0-9]+)"/.exec(src)||[])[1];
 const RID='11111111-1111-4111-8111-111111111111';
-function setup({staff=false,limit=false}={}){
+function setup({staff=false,limit=false,auto=false}={}){const rpcs=[];
   const db={
     patient_accounts:[{id:'acc',status:'active',activation_completed_at:'x',auth_user_id:'u1'}],
     patient_account_access:[{account_id:'acc',patient_id:'p1',verification_status:'approved'}],
@@ -32,10 +32,10 @@ function setup({staff=false,limit=false}={}){
     return new Response(JSON.stringify({official_booking_id:'777',doctor_id:JSON.parse(JSON.stringify(src.match(/"official_doctor_id":(\d+)/)[1]))*1,reservation_date:'2099-01-05T10:00:00'}));};
   const ctx={Request,Response,console,Date,Intl,Set,Map,Array,JSON,Number,String,Math,URLSearchParams,AbortController,setTimeout,clearTimeout,crypto,fetch,
     Deno:{env:{get:k=>env[k]},serve:f=>handler=f},
-    createClient:()=>({auth:{getUser:async()=>({data:{user:{id:'u1'}},error:null})},from:q,rpc:async(n)=>({data:n==='can_access_leads'?staff:null,error:null})})};
+    createClient:()=>({auth:{getUser:async()=>({data:{user:{id:'u1'}},error:null})},from:q,rpc:async(n,a)=>{rpcs.push([n,a]);if(n==='clinic_reception_auto_book_service_api'&&a.p_op==='config')return {data:{portal_auto_confirm:auto,system_admin_id:auto?'sys':null},error:null};return {data:n==='can_access_leads'?staff:null,error:null};}})};
   vm.runInNewContext(src,ctx);
   const call=async b=>{const r=await handler(new Request('https://f.test',{method:'POST',headers:{Authorization:'Bearer x'},body:JSON.stringify(b)}));return {status:r.status,body:JSON.parse(JSON.stringify(await r.json()))};};
-  return {db,bridgeCalls,call};
+  return {db,bridgeCalls,call,rpcs};
 }
 (async()=>{
   assert.ok(DOC,'catalog has a doctor');
@@ -64,5 +64,17 @@ function setup({staff=false,limit=false}={}){
   r=await s.call({op:'staff_confirm',request_id:RID});
   assert.equal(r.status,409);assert.equal(s.db.patient_portal_booking_requests[0].status,'slot_unavailable','taken slot is marked, nothing booked');
   assert.ok(!s.bridgeCalls.some(c=>c[0]==='POST'));
+  // owner 2026-11-19: automatic confirmation when enabled, and every confirmed booking goes to reception's auto-booking
+  s=setup({auto:true});
+  r=await s.call({op:'book',patient_id:'p1',doctor_id:DOC,date:'2099-01-05',time:'10:00'});
+  assert.equal(r.status,201,JSON.stringify(r.body));assert.equal(r.body.status,'confirmed');
+  assert.equal(s.db.patient_portal_booking_requests[0].status,'confirmed');assert.equal(s.db.patient_portal_booking_requests[0].reviewed_by,'sys');
+  const q2=s.rpcs.find(x=>x[0]==='clinic_reception_auto_book_service_api'&&x[1].p_op==='portal_confirmed');
+  assert.ok(q2&&q2[1].p.official_booking_id==='777'&&q2[1].p.patient_id==='p1'&&q2[1].p.masa_doctor_id>0,'queued for reception');
+  assert.ok(s.db.patient_portal_audit_log.some(x=>x.action==='portal_booking_auto_confirmed'));
+  s=setup({staff:true});
+  s.db.patient_portal_booking_requests.push({id:RID,patient_id:'p1',doctor_id:DOC,requested_date:'2099-01-05',requested_time:'10:00',status:'pending'});
+  await s.call({op:'staff_confirm',request_id:RID});
+  assert.ok(s.rpcs.some(x=>x[1]&&x[1].p_op==='portal_confirmed'),'staff confirmation is queued for reception too');
   console.log('portal booking requests function: OK');
 })().catch(e=>{console.error(e);process.exit(1);});

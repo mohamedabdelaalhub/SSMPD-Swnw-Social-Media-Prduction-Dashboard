@@ -11619,6 +11619,45 @@
       "reviewed": true
     },
     {
+      "title": "السن",
+      "labels": [
+        "السن"
+      ],
+      "text": "اكتب عمر المريض بالوحدة المطلوبة في النموذج، ولا تستخدم تاريخ الزيارة أو رقم الملف بدل العمر. راجع توافقه مع تاريخ الميلاد إن كان مسجلًا.",
+      "article": "patient-records",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "ساعة تانية",
+      "labels": [
+        "ساعة تانية"
+      ],
+      "text": "لو الميعاد اللي جه من ماسا أو الواتساب مقدرش يتسجّل (متاخد أو برّه مواعيد الدكتور)، اختار ساعة تانية في نفس اليوم واضغط «سجّل في الساعة دي». اتفق مع المريض على الساعة الأول.",
+      "article": "automatic-bookings",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "الساعة",
+      "labels": [
+        "الساعة"
+      ],
+      "text": "هذه خانات تكرار أو توقيت بحسب النموذج. في جدول دواء انقل عدد الفواصل ووحدتها والمدة وبداية الخطة والساعة من تعليمات الطبيب. وفي تكرار مهمة انقل إعداد التكرار المطلوب، ولا تستخدم نفس القيم للسياقين.",
+      "article": "patient-records",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "معرف الملف المختار",
       "labels": [
         "معرف الملف المختار"
@@ -21361,9 +21400,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1814,
-    "labels": 1334,
-    "files": 128,
-    "groups": 1439
+    "definitions": 1817,
+    "labels": 1335,
+    "files": 129,
+    "groups": 1442
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();

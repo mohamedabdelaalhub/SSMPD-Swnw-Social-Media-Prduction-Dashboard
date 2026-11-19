@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1814,
-    "labels": 1334,
-    "files": 128,
-    "groups": 1439
+    "definitions": 1817,
+    "labels": 1335,
+    "files": 129,
+    "groups": 1442
   },
   "fields": [
     {
@@ -10052,6 +10052,36 @@
       "tab": "patients",
       "article": "patient-records",
       "text_sha256": "00135b5d6cd282bea537fb8658c57e3e41f428900b403396c1ff4fef0b2d6095"
+    },
+    {
+      "file": "reception-auto-book.js",
+      "label": "السن",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "patient-records",
+      "text_sha256": "5419839397dbc5f0b82416add0be92d1172e352356c10b6eceff95cb29c839c5"
+    },
+    {
+      "file": "reception-auto-book.js",
+      "label": "ساعة تانية",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "automatic-bookings",
+      "text_sha256": "ab8f652685e53de8cf08addcb1dd84ddcb6269ffb07b85345855e905013883ef"
+    },
+    {
+      "file": "reception-auto-book.js",
+      "label": "الساعة",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "patient-records",
+      "text_sha256": "b6b7ef3304940f5231c6281a0431f4e3513369f3f55fbf8bc0e9499a249a0bbd"
     },
     {
       "file": "reception-bridge.js",

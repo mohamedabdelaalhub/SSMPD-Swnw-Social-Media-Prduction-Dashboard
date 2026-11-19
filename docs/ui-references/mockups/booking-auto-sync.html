@@ -1,0 +1,50 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>الحجوزات التلقائية من ماسا والواتساب والبوابة — تصور</title>
+<link rel="stylesheet" href="../../../assets/css/styles.css"><link rel="stylesheet" href="../../../assets/css/reception-workspace.css">
+<style>
+body{background:#e9edf5;margin:0;padding:24px 12px}.wrap{max-width:820px;margin:0 auto;display:grid;gap:16px}
+.cap{margin:0;color:#3B4658;font-size:13px;line-height:1.8}
+.sync{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:12px 16px;border-radius:16px;background:#fff;border:1px solid #D5DEEE;font-size:13px;color:#3B4658}
+.sync b{color:#2F7D5C}.sync .dot{width:8px;height:8px;border-radius:50%;background:#2F7D5C;display:inline-block}
+.sync .src{margin-inline-start:auto;display:flex;gap:6px;flex-wrap:wrap}
+.board{background:#fff;border-radius:16px;padding:16px;border:1px solid #D5DEEE;display:grid;gap:8px}
+.board h4{margin:0 0 4px;color:#0F369D;display:flex;gap:8px;align-items:center}.board h4 small{color:#5b6577;font-weight:400;font-size:12px}
+.row{display:grid;grid-template-columns:78px 1fr auto;gap:12px;align-items:center;padding:10px 12px;border-radius:12px;border:1px solid #E6E8EE}
+.row .t{font-weight:700;color:#0F369D;direction:ltr;text-align:center}.row .t.none{color:#8A5A00;font-size:12px;direction:rtl;background:#FFF6E5;border-radius:8px;padding:4px 0}
+.row .n{font-weight:700}.row .s{font-size:12px;color:#5b6577;margin-top:2px}
+.tag{display:inline-block;padding:1px 9px;border-radius:99px;font-size:11px;margin-inline-start:6px;vertical-align:middle}
+.tag.masa{background:#EEF3FF;color:#0F369D}.tag.wa{background:#E6F2EC;color:#2F7D5C}.tag.portal{background:#F1ECFB;color:#5B3FA8}.tag.web{background:#FDEEE7;color:#C2410C}.tag.desk{background:#F2F4F7;color:#3B4658}
+.tag.link{background:#E6F2EC;color:#2F7D5C}.tag.new{background:#FDEEE7;color:#F15A22}.tag.cx{background:#FBE9E6;color:#D0402A}
+.row.cancel{opacity:.55}.row.cancel .n{text-decoration:line-through}
+.review{background:#FFF8F4;border:1px dashed #F7B79A;border-radius:16px;padding:16px;display:grid;gap:10px}
+.review h4{margin:0;color:#F15A22}.review p{margin:0;font-size:12px;color:#5b6577;line-height:1.8}
+.cand{background:#fff;border:1px solid #F3D3C2;border-radius:12px;padding:12px;display:grid;gap:8px}
+.cand .who{font-weight:700}.cand .vs{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px}
+.cand .vs div{background:#F7F8FB;border-radius:10px;padding:8px 10px;line-height:1.7}.cand .vs b{display:block;color:#0F369D;font-size:11px}
+.cand .act{display:flex;gap:8px;flex-wrap:wrap}
+@media(max-width:640px){.row{grid-template-columns:64px 1fr}.row>.btn{grid-column:1/-1}.cand .vs{grid-template-columns:1fr}}
+</style></head><body><div class="wrap">
+<p class="cap">تصور (بيانات تجريبية) — شاشة «شغل النهارده» بعد التعديل. كل حجز بيتعمل على ماسا أو الواتساب أو البوابة يظهر هنا لوحده كموعد، ومربوط بملف المريض، والموظف مش بيسجّله تاني.</p>
+
+<div class="sync"><span class="dot"></span> مزامنة ماسا شغالة — <b>آخر تحديث من ٤ دقايق</b> · اتضاف النهارده ١٢ موعد تلقائي
+ <span class="src"><span class="tag masa">ماسا ٧</span><span class="tag wa">واتساب ٣</span><span class="tag portal">البوابة ٢</span></span></div>
+
+<div class="board"><h4>مواعيد النهارده <small>— الدكتور: أخصائي جلدية</small></h4>
+ <div class="row"><span class="t">04:00</span><div><span class="n">مريض تجريبي أول</span><span class="tag masa">من ماسا</span><span class="tag link">✔ ملف موجود P-2026-000412</span>
+  <div class="s">كشف جلدية · اتحجز على ماسا الساعة <bdi dir="ltr">11:20</bdi> ص — اتربط بملفه لوحده</div></div><button class="btn" type="button">فتح الموعد</button></div>
+ <div class="row"><span class="t">04:20</span><div><span class="n">مريضة تجريبية تانية</span><span class="tag wa">من الواتساب</span><span class="tag new">ملف جديد</span>
+  <div class="s">كشف جلدية · اتعمل على ماسا والداشبورد مع بعض — أول زيارة، اتفتحلها ملف</div></div><button class="btn" type="button">فتح الموعد</button></div>
+ <div class="row"><span class="t">04:40</span><div><span class="n">مريض تجريبي تالت</span><span class="tag portal">من البوابة</span><span class="tag link">✔ ملف موجود</span>
+  <div class="s">متابعة · اتأكد لوحده لأن الميعاد كان فاضي</div></div><button class="btn" type="button">فتح الموعد</button></div>
+ <div class="row cancel"><span class="t">05:00</span><div><span class="n">مريضة تجريبية رابعة</span><span class="tag masa">من ماسا</span><span class="tag cx">اتلغى على ماسا</span>
+  <div class="s">الحجز اتلغى على ماسا الساعة <bdi dir="ltr">1:05</bdi> م — اتلغى هنا كمان والميعاد فضي</div></div><span></span></div>
+ <div class="row"><span class="t none">بدون ميعاد</span><div><span class="n">مريض تجريبي خامس</span><span class="tag masa">من ماسا</span><span class="tag link">✔ ملف موجود</span>
+  <div class="s">ماسا مسجّلاه على اليوم من غير ساعة — حط الساعة أو سجّل الحضور لما ييجي</div></div><button class="btn" type="button">حط الساعة</button></div>
+</div>
+
+<div class="review"><h4>⚠️ حجز محتاج تختار المريض (١)</h4>
+ <p>رقم التليفون ده متسجّل لمريض تاني باسم مختلف (ممكن يكون ابن أو زوجة بنفس الرقم). الموعد اتعمل خلاص — اختار بس الملف الصح:</p>
+ <div class="cand"><div class="who">حجز من ماسا · الساعة <bdi dir="ltr">05:20</bdi> · كشف جلدية</div>
+  <div class="vs"><div><b>الاسم في الحجز</b>يوسف أحمد تجريبي · <bdi dir="ltr">010••••••37</bdi></div><div><b>الملف الموجود بنفس الرقم</b>أحمد محمود تجريبي · P-2026-000188 · آخر زيارة 02/11</div></div>
+  <div class="act"><button class="btn btn-primary" type="button">افتح ملف جديد باسم «يوسف»</button><button class="btn" type="button">نفس المريض — اربطه بالملف الموجود</button></div></div>
+</div>
+</div></body></html>
