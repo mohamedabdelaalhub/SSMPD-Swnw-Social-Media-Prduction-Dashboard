@@ -2,7 +2,7 @@
 "use strict";
 var root=document.getElementById("portal-root"),cfg=window.SSMPD_CONFIG&&window.SSMPD_CONFIG.supabase;
 if(!root||!cfg||!window.supabase)return;
-var client=window.supabase.createClient(cfg.url,cfg.anonKey,{auth:{persistSession:true,autoRefreshToken:true,storageKey:"swnw-patient-portal-auth"}});
+var client=((window.SSMPDPortalClient)||window.supabase.createClient(cfg.url,cfg.anonKey,{auth:{persistSession:true,autoRefreshToken:true,storageKey:"swnw-patient-portal-auth"}}));
 function esc(v){return String(v==null?"":v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
 function invoke(body){return client.functions.invoke("patient-portal-medications",{body:body}).then(function(r){if(r.error||!r.data||r.data.error)throw new Error("request failed");return r.data})}
 function time(v){var p=String(v||"").slice(0,5).split(":"),h=Number(p[0]);return p.length===2?(h%12||12)+":"+p[1]+(h>=12?" مساءً":" صباحًا"):""}

@@ -5,9 +5,9 @@ var root=document.getElementById("portal-root");
 var cfg=window.SSMPD_CONFIG&&window.SSMPD_CONFIG.supabase;
 if(!root||!cfg||!cfg.url||!cfg.anonKey||!window.supabase)return;
 
-var client=window.supabase.createClient(cfg.url,cfg.anonKey,{
+var client=((window.SSMPDPortalClient)||window.supabase.createClient(cfg.url,cfg.anonKey,{
   auth:{persistSession:true,autoRefreshToken:true,storageKey:"swnw-patient-portal-auth"}
-});
+}));
 
 
 var CATEGORIES=[

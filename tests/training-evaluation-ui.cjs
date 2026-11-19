@@ -31,6 +31,8 @@ const MOCK = {
   training_people: () => [{ id: 'p1', name: 'موظف تجريبي ١' }, { id: 'p2', name: 'موظف تجريبي ٢' }],
   training_assign: () => 'new-id',
   training_cancel_assignment: () => null,
+  training_bank_view: (a) => a.p_bank === 'jobs' ? { bank: 'jobs', meta: null, groups: [] } : { bank: 'manager', meta: { version: 'TEST', questions_per_attempt: 30, duration_minutes: 40 },
+    groups: [{ code: 'OPS', name: 'التشغيل', quota: 5, questions: [{ id: 'q1', text: evil, options: [{ id: 'a', text: 'أنسب', points: 2, critical: false }, { id: 'b', text: 'خطر', points: 0, critical: true }] }] }] },
   training_exam_result: () => ({ status: 'submitted', trainee_name: evil, track_name: 'مدير فرع', submitted_at: new Date().toISOString(), auto_submitted: false, used_seconds: 1500, blur_count: 2, points: 42, max_points: 60, percent: 70, answered: 29, total: 30, risk_flags: 1, grade: 'medium',
     by_competency: [{ code: 'OPS', name_ar: 'التشغيل', points: 4, max_points: 10, percent: 40 }, { code: 'HR', name_ar: 'الموارد', points: 8, max_points: 8, percent: 100 }],
     questions: [{ n: 1, id: 'q1', competency: 'التشغيل', text: 'سؤال', chosen: { text: 'اختيار خاطئ', points: 0, critical: true }, best: ['الأنسب'] }, { n: 2, id: 'q2', competency: 'الموارد', text: 'سؤال ٢', chosen: null, best: ['الأنسب ٢'] }] }),
@@ -127,6 +129,20 @@ const row = (o) => Object.assign({ id: 'A1', track: 'branch_manager', track_name
   await w.SSMPDTrainingEvaluation.render($('#v'));
   for (let i = 0; i < 4; i++) await tick();
   assert(!$('[data-result]') && !/قوي|متوسط|ضعيف/.test($('#v').textContent), 'trainee sees no result button or grade');
-  console.log('PASS training evaluation UI: course gate, 8 modules, exam order/save/blur/submit, no key or score in trainee DOM, owner assign/cancel validation, owner result view (grade, weak competencies, choice vs best), trainee sees no grade, escaping.');
+  // owner bank page: key shown to owner only, jobs bank not loaded message
+  w.SSMPDAuth.currentAdmin = { id: 'own', role: 'super_admin' };
+  state.list = [];
+  await w.SSMPDTrainingEvaluation.render($('#v'));
+  for (let i = 0; i < 4; i++) await tick();
+  await click('[data-bankview]');
+  assert(/الأنسب/.test($('.te-bank').textContent) && /علامة خطر/.test($('.te-bank').textContent));
+  assert(!w.__xss && !$('#v img'), 'bank text escaped');
+  await click('[data-bank="jobs"]');
+  assert(/لم يُحمَّل بنك مسارات الوظائف/.test($('#v').textContent));
+  w.SSMPDAuth.currentAdmin = { id: 'me', role: 'reception' };
+  await w.SSMPDTrainingEvaluation.render($('#v'));
+  for (let i = 0; i < 4; i++) await tick();
+  assert(!$('[data-bankview]'), 'non-owner has no bank button');
+  console.log('PASS training evaluation UI: course gate, 8 modules, exam order/save/blur/submit, no key or score in trainee DOM, owner assign/cancel validation, owner result view (grade, weak competencies, choice vs best), trainee sees no grade, owner-only bank pages, escaping.');
   process.exit(0);
 })().catch((e) => { console.error(e); process.exit(1); });

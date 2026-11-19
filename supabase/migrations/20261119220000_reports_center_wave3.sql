@@ -94,7 +94,7 @@ begin
   perform public.report_check_period(p_from, p_to);
   with x as (
     select (r.created_at at time zone 'Africa/Cairo')::date as day, c.entity, r.kind, r.amount, r.reason, r.status,
-           ad.full_name requested_by, rv.full_name reviewed_by, c.amount claim_amount
+           ad.name requested_by, rv.name reviewed_by, c.amount claim_amount
       from clinic_reception.requests r
       join public.report_claims(p_branch) c on c.claim_id = r.subject_id and c.workspace_id = r.workspace_id
       left join public.admins ad on ad.id = r.created_by
