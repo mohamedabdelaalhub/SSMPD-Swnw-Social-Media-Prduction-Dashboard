@@ -18225,6 +18225,97 @@
       "reviewed": true
     },
     {
+      "title": "الشهر",
+      "labels": [
+        "الشهر"
+      ],
+      "text": "الشهر اللي التارجت بيتحط له (في لوحة التحكم) أو بيتعرض له (في تقرير التارجت). التارجت بيبقى لشهر كامل.",
+      "article": "reports-center",
+      "tabs": [
+        "reports"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "المؤشر",
+      "labels": [
+        "المؤشر"
+      ],
+      "text": "المؤشر اللي بيتقاس عليه التارجت: إيراد الفرع، الزيارات، الليدز الجديدة، تكلفة الليد، الحجوزات، محاولات التواصل، الليدز اللي اتحولت لحجز، أو متوسط أول رد. الفعلي بيتحسب لوحده من السيستم.",
+      "article": "reports-center",
+      "tabs": [
+        "reports"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "صاحبه",
+      "labels": [
+        "صاحبه"
+      ],
+      "text": "مين التارجت ده عليه: الفرع كله، أو دور كامل (مدير، سوشيال ميديا، كول سنتر، استقبال)، أو شخص بالاسم. التارجت بيستنى موافقة المالك قبل ما يتحسب.",
+      "article": "reports-center",
+      "tabs": [
+        "reports"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "PHY1",
+      "labels": [
+        "PHY1"
+      ],
+      "text": "مثال لكود حملة إعلانية (علاج طبيعي). اكتب كود الحملة زي ما هو في خطة الإعلانات.",
+      "article": "reports-center",
+      "tabs": [
+        "reports"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "كود الحملة",
+      "labels": [
+        "كود الحملة"
+      ],
+      "text": "كود الحملة الإعلانية زي PHY1 أو LZF1-F، بيظهر لما تختار مؤشر «تكلفة الحجز للحملة». التارجت هنا ثابت للحملة لحد ما يتغيّر، مش لشهر واحد.",
+      "article": "reports-center",
+      "tabs": [
+        "reports"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "التارجت",
+      "labels": [
+        "التارجت"
+      ],
+      "text": "الرقم المطلوب للشهر. في المؤشرات اللي الأقل فيها أحسن (تكلفة الليد ووقت الرد) التحقيق بيتحسب بالعكس.",
+      "article": "reports-center",
+      "tabs": [
+        "reports"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "ملاحظة",
+      "labels": [
+        "ملاحظة"
+      ],
+      "text": "اكتب تفاصيل هذا السجل التي يحتاجها المراجع أو المنفذ ولا تغطيها الحقول الأخرى. تجنب نسخ بيانات حساسة لا تخص الغرض، ولا تستخدم الملاحظة بدل المستند أو القرار.",
+      "article": "personal",
+      "tabs": [
+        "reports"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "صور حقيقية",
       "labels": [
         "صور حقيقية",
@@ -21280,7 +21371,9 @@
     "groups": 1430
     "definitions": 1801,
     "labels": 1323,
+    "definitions": 1808,
+    "labels": 1328,
     "files": 127,
-    "groups": 1426
+    "groups": 1433
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
