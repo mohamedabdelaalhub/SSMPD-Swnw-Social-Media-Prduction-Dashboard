@@ -165,6 +165,19 @@ const fs=require('fs'),assert=require('node:assert/strict'),{PGlite}=require('@e
  await assert.rejects(()=>q("select clinic_reception_auto_book($1,'dismiss',$2)",[ws,{id:e.id}]),/اكتب السبب/);
  assert.equal((await one("select clinic_reception_auto_book($1,'dismiss',$2) r",[ws,{id:e.id,reason:'المريض لغى بالتليفون'}])).r.state,'skipped');
  await as('');assert.equal((await one("select has_table_privilege('authenticated','clinic_reception.external_bookings','select') x")).x,false);
+ // owner «٢ أ» (20261120150000): one file on the phone + same first two names -> linked; different first name -> review
+ const NM=fs.readdirSync('supabase/migrations').find(x=>x.includes('_auto_book_name_match.sql'));
+ if(NM){const M2=fs.readFileSync('supabase/migrations/'+NM,'utf8');await db.exec(M2);await assert.rejects(()=>db.exec(M2),/تم تطبيق هذا الملف من قبل/);await db.exec('rollback');
+  await q("insert into clinic_reception.auto_book_services(provider_id,service_code) values($1,'DENT1')",[prov2]);
+  const mona=(await one("select id from patients where phone='01555555555'")).id;
+  await q("insert into clinic_reception.masa_bookings values('N1',$1,1200,$2,$3,$4,'active','حشو','منى سمير','01555555555',false)",[ws,prov2,at('11:00'),at('11:30')]);
+  await q("insert into clinic_reception.masa_bookings values('N2',$1,1200,$2,$3,$4,'active','حشو','سلمى سمير تجريبية','01555555555',false)",[ws,prov2,at('13:00'),at('13:30')]);
+  await one("select clinic_reception.auto_book_run()");
+  let n=await one("select * from clinic_reception.external_bookings where external_id='N1'");assert.equal(n.state,'booked',n.reason);assert.equal(n.public_patient_id,mona);
+  n=await one("select * from clinic_reception.external_bookings where external_id='N2'");assert.equal(n.review_kind,'patient');
+  assert.equal((await one("select clinic_reception.name_first_two('أحمد  محمد علي') v")).v,'احمد محمد');assert.equal((await one("select clinic_reception.name_first_two('أحمد') v")).v,null);
+  await db.exec(fs.readFileSync('supabase/rollbacks/'+NM.replace('.sql','.rollback.sql'),'utf8'));
+  assert.equal((await one("select position('name_first_two' in pg_get_functiondef('clinic_reception.auto_book_one(uuid)'::regprocedure)) p")).p,0,'branch removed');}
  // rollback
  await db.exec(fs.readFileSync('supabase/rollbacks/'+fs.readdirSync('supabase/rollbacks').find(x=>x.includes('_reception_auto_book.')),'utf8'));
  await q("insert into clinic_reception.masa_bookings values('M9',$1,1130,$2,$3,$4,'active','كشف','أحمد محمود تجريبي','01012345637',false)",[ws,prov,at('10:00'),at('10:20')]);
