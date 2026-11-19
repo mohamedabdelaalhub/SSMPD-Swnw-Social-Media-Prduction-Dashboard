@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1802,
-    "labels": 1323,
-    "files": 127,
-    "groups": 1426
+    "definitions": 1804,
+    "labels": 1325,
+    "files": 128,
+    "groups": 1428
   },
   "fields": [
     {
@@ -17741,6 +17741,26 @@
       "tab": "admin",
       "article": "test-records",
       "text_sha256": "10d0b45c72c5ce0b36bb4b4cd3c21aea9831688e3754cc2c55d650a46ac804a3"
+    },
+    {
+      "file": "today-operations-queue.js",
+      "label": "اسم الغرفة",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "queue-tickets",
+      "text_sha256": "08d8505649456da087753ece0cfc250fc0c1df763d56039f7b68c5b519e8df9e"
+    },
+    {
+      "file": "today-operations-queue.js",
+      "label": "حرف الترقيم (اختياري: L أو R)",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "queue-tickets",
+      "text_sha256": "a8be314c453e7ff7ad63ea11eb4b81cdef5cf961459ded491c24b87636a6a33d"
     },
     {
       "file": "today-operations-sandbox.js",

@@ -19335,6 +19335,32 @@
       "reviewed": true
     },
     {
+      "title": "اسم الغرفة",
+      "labels": [
+        "اسم الغرفة"
+      ],
+      "text": "اسم الغرفة زي ما الموظفين هيشوفوه في الطابور والنداء، مثلاً «عيادة ١» أو «غرفة الأشعة».",
+      "article": "queue-tickets",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "حرف الترقيم (اختياري: L أو R)",
+      "labels": [
+        "حرف الترقيم (اختياري: L أو R)"
+      ],
+      "text": "حرف واحد قبل رقم الدور في غرف الأقسام: L لسحب العينات و R للأشعة. اتركه فاضي للعيادات لأن أرقام الدكاترة أرقام عادية.",
+      "article": "queue-tickets",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "مريض التجربة",
       "labels": [
         "مريض التجربة",
@@ -21193,9 +21219,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1802,
-    "labels": 1323,
-    "files": 127,
-    "groups": 1426
+    "definitions": 1804,
+    "labels": 1325,
+    "files": 128,
+    "groups": 1428
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
