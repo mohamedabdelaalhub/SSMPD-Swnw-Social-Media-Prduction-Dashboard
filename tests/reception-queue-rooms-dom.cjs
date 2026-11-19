@@ -10,9 +10,10 @@ const STATE={date:'2026-11-20',
   {id:'rl',label:'غرفة سحب العينات',kind:'lab',ticket_prefix:'L',active:true,sort_order:3,staff:[],mine:false,assignment:null},
   {id:'rr',label:'غرفة الأشعة',kind:'radiology',ticket_prefix:'R',active:true,sort_order:4,staff:[],mine:false,assignment:null}],
  tickets:[],dept_tickets:[{id:'t2',room_id:'rl',label:'L2',status:'called',appointment_id:null,created_at:null}]};
+const AG=[{id:'b1',booking_reference:'R1',customer_name:'عميل ١',phone:'01011112222',doctor_name:'د. اختبار ١',provider_id:'p1',appointment_time:'14:30:00',status:'confirmed',registered:false},{id:'b2',customer_name:'عميل ٢',phone:'01033334444',doctor_name:'د. ماسا',provider_id:null,appointment_time:'15:00:00',status:'confirmed',registered:false},{id:'b3',customer_name:'عميل ٣',phone:'01055556666',doctor_name:'د. اختبار ١',provider_id:'p1',appointment_time:'16:00:00',status:'arrived',registered:true}];
 function mk(html,url){const d=new JSDOM(html,{url:url||'https://reception.test/',runScripts:'outside-only',pretendToBeVisual:true}),w=d.window,calls=[];
  w.SSMPDToast={show:(m,k)=>{w.__toasts=(w.__toasts||[]).concat([[m,k]]);}};w.confirm=()=>true;w.__toasts=[];
- const rpc=async(name,args)=>{calls.push(JSON.parse(JSON.stringify([name,args.p_action,args.p_payload])));if(args.p_action==='state')return {data:STATE,error:null};if(args.p_action==='call_next')return {data:{ok:true,label:'3',room_label:'عيادة ١'},error:null};if(args.p_action==='dept_ticket')return {data:{ok:true,label:'L9',room_label:'غرفة سحب العينات'},error:null};return {data:{ok:true},error:null};};
+ const rpc=async(name,args)=>{if(name==='clinic_reception_directory'){calls.push([name,args.p_term]);return {data:[{id:'arch1',full_name:'مريض اختبار',phone:'01000000000',patient_code:'P-2026-000001'}],error:null};}calls.push(JSON.parse(JSON.stringify([name,args.p_action,args.p_payload])));if(args.p_action==='state')return {data:STATE,error:null};if(args.p_action==='agent_bookings')return {data:{bookings:AG},error:null};if(args.p_action==='agent_booking_register')return {data:{ok:true,appointment_id:'ap1',token:'tk',ticket_no:7},error:null};if(args.p_action==='call_next')return {data:{ok:true,label:'3',room_label:'عيادة ١'},error:null};if(args.p_action==='dept_ticket')return {data:{ok:true,label:'L9',room_label:'غرفة سحب العينات'},error:null};return {data:{ok:true},error:null};};
  w.SSMPDDb={client:{rpc,auth:{getSession:async()=>({data:{session:{}}})}},listAdmins:async()=>[{id:'u1',name:'فني',active:true}]};return {w,calls};}
 (async()=>{
  // 1) dashboard layer
@@ -20,7 +21,7 @@ function mk(html,url){const d=new JSDOM(html,{url:url||'https://reception.test/'
  const {w,calls}=mk('<body>'+live+'</body>');
  w.SSMPDReceptionModules={sections:()=>[],panel:()=>'<p>x</p>'};
  w.eval(fs.readFileSync('assets/js/today-operations-queue.js','utf8'));
- w.SSMPDReceptionModules.panel('journey',{workspace:'w1',data:{can_manage:true,providers:[{id:'p1',name:'د. اختبار ١'},{id:'p9',name:'د. بدون أرقام'}]}});
+ w.SSMPDReceptionModules.panel('journey',{workspace:'w1',data:{can_manage:true,providers:[{id:'p1',name:'د. اختبار ١'},{id:'p9',name:'د. بدون أرقام'}],services:[{id:'s1',code:'C1',name:'كشف',active:true},{id:'s2',code:'C2',name:'استشارة',active:true}],provider_service_scopes:{p1:['C1']}}});
  const q=s=>w.document.querySelector(s),qa=s=>[...w.document.querySelectorAll(s)];
  for(let i=0;i<100&&!q('[data-qr-doctor]');i++)await sleep(10);
  const sec=q('[data-journey-queue]');assert(sec,'section rendered');
@@ -46,6 +47,18 @@ function mk(html,url){const d=new JSDOM(html,{url:url||'https://reception.test/'
  // end clinic
  q('[data-qr-room="c1r"] [data-qa=end_assignment]').click();await sleep(60);
  assert.deepEqual(calls.find(c=>c[1]==='end_assignment')[2],{room_id:'c1r'});
+ // agent bookings section
+ await sleep(50);
+ assert.equal(qa('[data-qr-ag]').length,3);assert(sec.textContent.includes('دكتور غير مربوط'));assert.equal(qa('.qr-badge').length,1);assert.equal(qa('[data-qa=ag_open]').length,2);assert(sec.textContent.includes('14:30'));
+ q('[data-qr-ag="b1"] [data-qa=ag_open]').click();await sleep(20);
+ const mod=q('[data-qr-agmodal]');assert(mod);assert.equal(q('[data-qr-term]').value,'01011112222');assert.deepEqual([...qa('[data-qr-svc] option')].map(o=>o.value),['','s1'],'services scoped to provider');
+ assert(q('[data-qr-confirm]').disabled);q('[data-qr-search]').click();await sleep(30);
+ assert.deepEqual(calls.find(c=>c[0]==='clinic_reception_directory'),['clinic_reception_directory','01011112222']);
+ q('[data-qr-pat]').click();const sv=q('[data-qr-svc]');sv.value='s1';sv.dispatchEvent(new w.Event('change'));assert(!q('[data-qr-confirm]').disabled);
+ q('[data-qr-confirm]').click();q('[data-qr-confirm]')&&q('[data-qr-confirm]').click();await sleep(80);
+ assert.equal(calls.filter(c=>c[1]==='agent_booking_register').length,1,'double click safe');assert.deepEqual(calls.find(c=>c[1]==='agent_booking_register')[2],{booking_id:'b1',patient_id:'arch1',service_id:'s1'});
+ assert(!q('[data-qr-agmodal]'));assert.equal(q('[data-qr-label]').textContent,'7');assert(w.__toasts.some(x=>x[0].includes('رقمه 7')));q('.qr-big button').click();
+ q('[data-qr-ag="b2"] [data-qa=ag_open]').click();await sleep(20);assert(q('[data-qr-hint]').textContent.includes('اربط الدكتور من ربط أطباء ماسا الأول'));assert(q('[data-qr-confirm]').disabled);q('[data-qr-close]').click();
  // 2) trial mode renders nothing
  const t=mk('<body><div data-journey-root data-journey-mode="trial"><div class="journey-layout"><aside></aside></div></div></body>');
  t.w.SSMPDReceptionModules={sections:()=>[],panel:()=>''};t.w.eval(fs.readFileSync('assets/js/today-operations-queue.js','utf8'));
