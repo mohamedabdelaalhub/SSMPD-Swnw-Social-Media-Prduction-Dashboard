@@ -1,0 +1,11 @@
+/* حجز نفس المريض مرتين + تفاصيل الحجز (تصور same-patient-guard، موافقة المالك 2026-11-19) */
+.rx-sp-backdrop{position:fixed;inset:0;z-index:1200;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(22,33,46,.45)}
+.rx-sp{max-width:520px;width:100%;max-height:90vh;overflow:auto;display:grid;gap:12px;padding:18px}
+.rx-sp .modal-head h3{margin:0;font-size:17px;color:#B45309}
+.rx-sp-p,.rx-sp-new{margin:0;font-size:13px;color:#3B4658;line-height:1.8}.rx-sp-new{border-top:1px dashed #D5DEEE;padding-top:10px}
+.rx-sp-bk{display:grid;grid-template-columns:64px 1fr;gap:4px 10px;align-items:center;padding:10px 12px;border-radius:12px;background:#FFF8EC;border:1px solid #F5D9A8}
+.rx-sp-t{font-weight:700;color:#0F369D;text-align:center;font-size:17px}.rx-sp-s{font-size:12px;color:#5b6577}
+.rx-sp-d{grid-column:2;justify-self:start;font-size:12px;color:#0F369D;background:none;border:0;text-decoration:underline;cursor:pointer;padding:0}
+.rx-sp-tag{display:inline-block;padding:1px 9px;border-radius:99px;font-size:11px;background:#E6F2EC;color:#2F7D5C}
+.rx-sp-kv{display:grid;grid-template-columns:96px 1fr;gap:6px 10px;font-size:13px}.rx-sp-kv b{color:#5b6577;font-weight:400}
+.rx-sp-act{display:flex;gap:8px;flex-wrap:wrap}.rx-sp-act .btn{flex:1 1 200px}
