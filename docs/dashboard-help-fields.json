@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1790,
-    "labels": 1312,
-    "files": 125,
-    "groups": 1416
+    "definitions": 1796,
+    "labels": 1317,
+    "files": 126,
+    "groups": 1422
   },
   "fields": [
     {
@@ -18113,6 +18113,78 @@
       "tab": "reception_services",
       "article": "requests",
       "text_sha256": "80a0c51a0ba10ff7f4fe6f627b68c4e009f932e1abdff544c26e792f5f0e9e49"
+    },
+    {
+      "file": "training-evaluation.js",
+      "label": "المسار",
+      "name": "",
+      "kind": "html",
+      "forms": [
+        "تكليف جديد"
+      ],
+      "tab": "training_evaluation",
+      "article": "training-center",
+      "text_sha256": "fa0b84f85b3c0fdeedc41a83426c4164fa9eead23251ed0b25c3b374cd52f2ff"
+    },
+    {
+      "file": "training-evaluation.js",
+      "label": "المتدرب",
+      "name": "",
+      "kind": "html",
+      "forms": [
+        "تكليف جديد"
+      ],
+      "tab": "training_evaluation",
+      "article": "training-center",
+      "text_sha256": "f38fa01699d96822374cee857a228896b6418166fa7ed293023327ecd718d6d3"
+    },
+    {
+      "file": "training-evaluation.js",
+      "label": "المراجع (يُجري المقابلة)",
+      "name": "",
+      "kind": "html",
+      "forms": [
+        "تكليف جديد"
+      ],
+      "tab": "training_evaluation",
+      "article": "training-center",
+      "text_sha256": "dcef49c01461081883c01a5def683ff2e6a5456d2493498d4afab1c40e3f6f83"
+    },
+    {
+      "file": "training-evaluation.js",
+      "label": "الموعد النهائي (اختياري)",
+      "name": "",
+      "kind": "label",
+      "forms": [
+        "تكليف جديد"
+      ],
+      "tab": "training_evaluation",
+      "article": "training-center",
+      "text_sha256": "040d1cccee5117e05689e81bbc94e03f6b2ff92bc8df0bd39979fb79a9232856"
+    },
+    {
+      "file": "training-evaluation.js",
+      "label": "ملاحظة للمراجع (لا تظهر للمتدرب)",
+      "name": "",
+      "kind": "label",
+      "forms": [
+        "تكليف جديد"
+      ],
+      "tab": "training_evaluation",
+      "article": "training-center",
+      "text_sha256": "4f36066b3472ca365e48876a4574b721f5af5c8a742ed9ba44724f178ad0881d"
+    },
+    {
+      "file": "training-evaluation.js",
+      "label": "سبب الإلغاء",
+      "name": "",
+      "kind": "label",
+      "forms": [
+        "إلغاء التكليف"
+      ],
+      "tab": "training_evaluation",
+      "article": "training-center",
+      "text_sha256": "eade58d2f2041dc66225eae98e37c13ed42f5bb05c15bc8c3e431c23f8e92f4a"
     },
     {
       "file": "video-storyboard.js",

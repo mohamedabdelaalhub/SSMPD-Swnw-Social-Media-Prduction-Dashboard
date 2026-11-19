@@ -19720,6 +19720,96 @@
       "reviewed": true
     },
     {
+      "title": "المسار",
+      "labels": [
+        "المسار"
+      ],
+      "text": "اختر المنصب الذي يُعَدّ له المتدرب: مدير فرع أو مدير فريق. المسار يحدد عنوان التكليف، والاختبار واحد للمسارين في هذه المرحلة.",
+      "article": "training-center",
+      "tabs": [
+        "training_evaluation"
+      ],
+      "forms": [
+        "تكليف جديد"
+      ],
+      "reviewed": true
+    },
+    {
+      "title": "المتدرب",
+      "labels": [
+        "المتدرب"
+      ],
+      "text": "اختر الموظف صاحب حساب الدخول الذي سيقرأ الدورة ويؤدي الاختبار. يظهر التكليف له وحده في «تكليفاتي».",
+      "article": "training-center",
+      "tabs": [
+        "training_evaluation"
+      ],
+      "forms": [
+        "تكليف جديد"
+      ],
+      "reviewed": true
+    },
+    {
+      "title": "المراجع (يُجري المقابلة)",
+      "labels": [
+        "المراجع (يُجري المقابلة)"
+      ],
+      "text": "اختر من سيجري المقابلة ويقيّم المتدرب لاحقًا. لا يجوز أن يكون المراجع هو المتدرب نفسه، ويرى المراجع التكليفات المسندة إليه فقط.",
+      "article": "training-center",
+      "tabs": [
+        "training_evaluation"
+      ],
+      "forms": [
+        "تكليف جديد"
+      ],
+      "reviewed": true
+    },
+    {
+      "title": "الموعد النهائي (اختياري)",
+      "labels": [
+        "الموعد النهائي (اختياري)"
+      ],
+      "text": "تاريخ متوقع لإنهاء الدورة والاختبار، للمتابعة فقط. لا يغلق التكليف تلقائيًا، ومدة الاختبار نفسها يحددها بنك الأسئلة.",
+      "article": "training-center",
+      "tabs": [
+        "training_evaluation"
+      ],
+      "forms": [
+        "تكليف جديد"
+      ],
+      "reviewed": true
+    },
+    {
+      "title": "ملاحظة للمراجع (لا تظهر للمتدرب)",
+      "labels": [
+        "ملاحظة للمراجع (لا تظهر للمتدرب)"
+      ],
+      "text": "ملاحظة داخلية تراها الإدارة والمراجع المسند فقط، مثل سبب الترشيح. لا تكتب فيها بيانات مرضى.",
+      "article": "training-center",
+      "tabs": [
+        "training_evaluation"
+      ],
+      "forms": [
+        "تكليف جديد"
+      ],
+      "reviewed": true
+    },
+    {
+      "title": "سبب الإلغاء",
+      "labels": [
+        "سبب الإلغاء"
+      ],
+      "text": "سبب مكتوب إلزامي لإلغاء تكليف مفتوح. يُحفظ في سجل التدقيق، وبعد الإلغاء لا يستطيع المتدرب متابعة الدورة أو الاختبار.",
+      "article": "training-center",
+      "tabs": [
+        "training_evaluation"
+      ],
+      "forms": [
+        "إلغاء التكليف"
+      ],
+      "reviewed": true
+    },
+    {
       "title": "نص التعليق الصوتي",
       "labels": [
         "نص التعليق الصوتي",
@@ -21049,9 +21139,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1790,
-    "labels": 1312,
-    "files": 125,
-    "groups": 1416
+    "definitions": 1796,
+    "labels": 1317,
+    "files": 126,
+    "groups": 1422
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();

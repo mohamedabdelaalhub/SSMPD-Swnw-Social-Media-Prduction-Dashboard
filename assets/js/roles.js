@@ -25,6 +25,7 @@
   // (أو سوبر أدمن) بيشوفه، فمتحط لوش هنا وبيتفحص بشكل خاص في canSeeTab
   var TAB_ACCESS = {
     human_resources: Object.keys(ROLES),
+    training_evaluation: Object.keys(ROLES),
     price_lists: ["super_admin","general_manager"],
     summary: ["page_manager", "designer", "approver", "general_manager", "super_admin"],
     production: ["page_manager", "general_manager", "super_admin"],
@@ -124,6 +125,7 @@
       var admin = normalizeAdmin(adminOrRole);
       if(tab==='reception_services'&&Roles.isNursingDayOnly(admin))return true;
       if(tab==='human_resources')return admin.active!==false&&!!(admin.id||admin.role);
+      if(tab==='training_evaluation')return admin.active!==false&&!!(admin.id||admin.role);
       if(tab==='price_lists')return admin.active!==false&&Roles.canModuleAction(admin,'price_lists','view');
       if(tab==="tasks" && Roles.hasRole(admin,"psychology_specialist"))return true;
       if(tab==="accounting")return Roles.canModuleAction(admin,"accounting","view") || Roles.canSeeTab(admin,"inventory") && !(admin.inventory_assigned===false && admin.inventory_supply_access===true);

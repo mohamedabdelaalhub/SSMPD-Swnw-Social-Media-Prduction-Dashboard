@@ -29,7 +29,7 @@ const tick=ms=>new Promise(r=>setTimeout(r,ms||30));
   return {data:null,error:{message:'?'}};},
   storage:{from:b=>({upload:async(path)=>{uploaded.push(b+':'+path);return {data:{},error:null};},createSignedUrl:async()=>({data:{signedUrl:'about:blank'},error:null})})}}};
  w.SSMPDReceptionModules={sections:()=>[],panel:()=>'',act:()=>false,bookingFields:()=>'',bookingWire:()=>{}};
- for(const f of ['today-operations','today-operations-unified','reception-doctor-payout'])w.eval(fs.readFileSync('assets/js/'+f+'.js','utf8'));
+ for(const f of ['swnw-print','today-operations','today-operations-unified','reception-doctor-payout'])w.eval(fs.readFileSync('assets/js/'+f+'.js','utf8'));
  const host=w.document.querySelector('#host'),ctx={host,workspace:'ws1',data:{},modal:()=>null,field:()=>'',select:()=>''};
  host.innerHTML=w.SSMPDReceptionModules.panel('journey',ctx);
  const q=s=>w.document.querySelector(s);
@@ -59,7 +59,7 @@ const tick=ms=>new Promise(r=>setTimeout(r,ms||30));
  assert.equal(pill('d1').textContent,'سلّم الحساب');
  // reception: print the receipt, hand over → «تم الصرف», optional receipt upload later
  pill('d1').click();await tick(40);
- q('[data-dp-modal] [data-dp-print]').click();assert(/إيصال استلام نقدية/.test(printed)&&/450/.test(printed)&&/توقيع الطبيب/.test(printed),'printable receipt');
+ q('[data-dp-modal] [data-dp-print]').click();assert(/إيصال استلام مستحقات طبيب/.test(printed)&&/450/.test(printed)&&/توقيع الطبيب/.test(printed)&&/swnw-official-letterhead/.test(printed),'printable receipt on the letterhead (owner 2026-11-19)');
  q('[data-dp-hand]').click();await tick(60);
  assert.equal(pill('d1').textContent,'✓ تم الصرف');assert(pill('d1').classList.contains('is-paid'),'green');
  const file=new w.File(['x'],'r.jpg',{type:'image/jpeg'}),inp=q('[data-dp-upload]');assert(inp,'upload offered after handover');
