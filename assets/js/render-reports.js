@@ -1,4 +1,4 @@
-/* SSMPD — تاب «التقارير» (الموجة الأولى): خمس تقارير قراءة فقط من دوال القاعدة report_*.
+/* SSMPD — تاب «التقارير» (الموجة الأولى والتانية): تقارير قراءة فقط من دوال القاعدة report_*.
    الصلاحية بتتقرر من السيرفر (report_catalog) — الواجهة بس بتعرض. المرضى بيظهروا برقم الملف بس.
    جزء «صلاحيات التقارير» (للمالك) بيتركّب في لوحة التحكم عن طريق mountAccess. */
 (function () {
@@ -7,6 +7,10 @@
   var AREAS = [["operations", "التشغيل"], ["cash", "الخزنة والإيرادات"], ["doctors", "الدكاترة"]];
   var ACCESS_ROLES = ["general_manager", "financial_manager", "accountant", "reception", "customer_service", "page_manager", "nursing", "head_nursing", "sono_doctor"];
   var SHIFT_STATUS = { open: "مفتوحة", submitted: "اتقفلت — مستنية مراجعة", reviewed: "اتراجعت" };
+  var REQ_STATUS = { pending: "مستني موافقة", approved: "اتوافق عليه", rejected: "اترفض" };
+  var PKG_STATUS = { active: "شغالة", frozen: "متجمدة", closed: "مقفولة" };
+  var KIND_LABELS = { discount: "خصم", refund: "مرتجع", credit_note: "إشعار دائن", service_void: "إلغاء خدمة", package_cancel: "إلغاء باقة",
+    method_fix: "تصحيح طريقة دفع", claim_contractual: "تسوية تعاقدية (تأمين)", claim_loss: "خسارة مطالبة", finance_refund: "مرتجع (الحسابات)", finance_void: "إلغاء فاتورة (الحسابات)" };
   var SOURCE_LABELS = { doctor_fee: "استحقاق خدمة", doctor_payout: "صرف", doctor_contractual: "تسوية", doctor_credit_note: "تسوية" };
   var EMPTY = "لسه مفيش بيانات في الفترة دي";
   var state = null;
@@ -35,7 +39,7 @@
   function errMsg(e) { return (e && e.message) || "حصل خطأ، جرّب تاني"; }
 
   // ── تعريف التقارير ────────────────────────────────────────────────────────────────────────────
-  var C = function (k, l, t) { return { k: k, l: l, t: t || "text" }; };
+  var C = function (k, l, t, map) { return { k: k, l: l, t: t || "text", map: map }; };
   var DEFS = {
     cash_closing: {
       sub: "الورديات اللي اتقفلت على خزنة الاستقبال، وفرق العد عن المتوقع.",
@@ -99,6 +103,92 @@
           { l: "التسويات", v: money(t.adjustments) }, { l: "المصروف", v: money(t.paid) }];
       }
     },
+    cashier_variance: {
+      sub: "فرق العد لكل كاشير: العجز والزيادة وعدد الورديات.",
+      range: true,
+      cols: [C("cashier", "الكاشير"), C("shifts", "ورديات", "int"), C("expected", "المتوقع", "money"), C("counted", "المعدود", "money"),
+        C("short_total", "إجمالي العجز", "diff"), C("over_total", "إجمالي الزيادة", "money"), C("net_difference", "صافي الفرق", "diff"),
+        C("short_count", "ورديات فيها عجز", "int"), C("worst_short", "أكبر عجز", "diff")],
+      totalKeys: { shifts: 1, expected: 1, counted: 1, short_total: 1, over_total: 1, net_difference: 1, short_count: 1 },
+      load: function (f) { return rpc("report_cashier_variance", { p_from: f.from, p_to: f.to, p_branch: f.branch || null }); },
+      tiles: function (d) {
+        var t = d.totals || {};
+        return [{ l: "صافي الفرق", v: money(t.net_difference), hero: true, sub: fmtNum(t.shifts) + " وردية" },
+          { l: "إجمالي العجز", v: money(t.short_total), neg: num(t.short_total) < 0, sub: fmtNum(t.short_count) + " وردية" },
+          { l: "إجمالي الزيادة", v: money(t.over_total) }, { l: "المعدود", v: money(t.counted) }];
+      }
+    },
+    adjustments_log: {
+      sub: "كل خصم ومرتجع وإلغاء وتسوية: مين طلبه ومين وافق عليه.",
+      range: true,
+      cols: [C("day", "اليوم", "date"), C("branch", "الفرع"), C("kind", "النوع", "status", KIND_LABELS), C("amount", "القيمة", "money"), C("reason", "السبب"),
+        C("requested_by", "طلبه"), C("reviewed_by", "راجعه"), C("status", "الحالة", "status", REQ_STATUS)],
+      totalKeys: { amount: 1 },
+      load: function (f) { return rpc("report_adjustments_log", { p_from: f.from, p_to: f.to, p_branch: f.branch || null, p_kind: null }); },
+      tiles: function (d) {
+        var t = d.totals || {}, k = (d.by_kind || [])[0];
+        return [{ l: "إجمالي التعديلات", v: money(t.amount), hero: true, sub: fmtNum(t.count) + " عملية" },
+          { l: "اللي اتوافق عليه", v: money(t.approved) }, { l: "مستني موافقة", v: fmtNum(t.pending), u: "طلب" },
+          { l: "أكبر نوع", v: k ? (KIND_LABELS[k.kind] || k.kind) : "—", sub: k ? money(k.amount) : "" }];
+      }
+    },
+    patient_balances: {
+      sub: "فلوس محفوظة للمرضى (مقدمات وعرابين) وفلوس على المرضى لسه متحصلتش.",
+      range: false, dayLabel: "لحد يوم", dayDefault: "today",
+      cols: [C("branch", "الفرع"), C("patient_file", "رقم الملف"), C("credit_held", "مقدم محفوظ له", "money"), C("receivable", "مديونية عليه", "money"),
+        C("last_movement", "آخر حركة", "date"), C("age_days", "من (يوم)", "int")],
+      totalKeys: { credit_held: 1, receivable: 1 },
+      load: function (f) { return rpc("report_patient_balances", { p_as_of: f.day || null, p_branch: f.branch || null }); },
+      tiles: function (d) {
+        var t = d.totals || {};
+        return [{ l: "مقدمات محفوظة للمرضى", v: money(t.credit_held), hero: true, sub: fmtNum(t.patients) + " مريض" },
+          { l: "مديونيات على المرضى", v: money(t.receivable) }];
+      }
+    },
+    deferred_revenue: {
+      sub: "الباقات الشغالة: الجلسات اللي لسه ماتنفذتش وقيمتها (إيراد مؤجل).",
+      range: false, dayLabel: "لحد يوم", dayDefault: "today",
+      cols: [C("branch", "الفرع"), C("patient_file", "رقم الملف"), C("package", "الباقة"), C("purchased", "اشتراها", "date"), C("expires_on", "تنتهي", "date"),
+        C("status", "الحالة", "status", PKG_STATUS), C("contract_price", "قيمة العقد", "money"), C("funded", "المدفوع", "money"),
+        C("sessions_total", "الجلسات", "int"), C("sessions_used", "اتنفذ", "int"), C("sessions_left", "باقي", "int"), C("remaining_value", "قيمة الباقي", "money"),
+        C("days_to_expiry", "أيام للانتهاء", "int")],
+      totalKeys: { contract_price: 1, funded: 1, sessions_left: 1, remaining_value: 1 },
+      totalOverride: function (d) { var t = d.totals || {}; return { contract_price: t.contract, funded: t.funded, sessions_left: t.sessions_left, remaining_value: t.remaining_value }; },
+      load: function (f) { return rpc("report_deferred_revenue", { p_as_of: f.day || null, p_branch: f.branch || null }); },
+      tiles: function (d) {
+        var t = d.totals || {};
+        return [{ l: "قيمة الجلسات الباقية", v: money(t.remaining_value), hero: true, sub: fmtNum(t.packages) + " باقة" },
+          { l: "جلسات باقية", v: fmtNum(t.sessions_left) }, { l: "المدفوع في الباقات", v: money(t.funded) },
+          { l: "تنتهي خلال ٣٠ يوم", v: fmtNum(t.expiring_30), u: "باقة" }];
+      }
+    },
+    no_show_by_doctor: {
+      sub: "المواعيد لكل دكتور: حضر، ماجاش، اتلغى — وأكتر أسباب الإلغاء.",
+      range: true,
+      cols: [C("doctor", "الدكتور"), C("specialty", "التخصص"), C("booked", "المواعيد", "int"), C("attended", "حضر", "int"), C("no_show", "ماجاش", "int"),
+        C("cancelled", "اتلغى", "int"), C("no_show_rate", "نسبة الغياب", "pct"), C("cancel_rate", "نسبة الإلغاء", "pct")],
+      totalKeys: { booked: 1, attended: 1, no_show: 1, cancelled: 1 },
+      load: function (f) { return rpc("report_no_show_by_doctor", { p_from: f.from, p_to: f.to, p_branch: f.branch || null }); },
+      tiles: function (d) {
+        var t = d.totals || {}, b = num(t.booked), r = (d.reasons || [])[0];
+        return [{ l: "ماجوش", v: fmtNum(t.no_show), hero: true, sub: b ? (100 * num(t.no_show) / b).toFixed(1) + "% من المواعيد" : "" },
+          { l: "اتلغوا", v: fmtNum(t.cancelled) }, { l: "حضروا", v: fmtNum(t.attended), sub: fmtNum(b) + " موعد" },
+          { l: "أكتر سبب إلغاء", v: r ? r.reason : "—", sub: r ? fmtNum(r.count) + " مرة" : "" }];
+      }
+    },
+    slot_occupancy: {
+      sub: "ساعات الدكتور المتاحة قصاد الساعات المحجوزة.",
+      range: true,
+      cols: [C("doctor", "الدكتور"), C("specialty", "التخصص"), C("available_hours", "ساعات متاحة", "int"), C("booked_hours", "ساعات محجوزة", "int"),
+        C("appointments", "مواعيد", "int"), C("occupancy", "الإشغال", "pct")],
+      totalKeys: { available_hours: 1, booked_hours: 1, appointments: 1, occupancy: 1 },
+      load: function (f) { return rpc("report_slot_occupancy", { p_from: f.from, p_to: f.to, p_branch: f.branch || null }); },
+      tiles: function (d) {
+        var t = d.totals || {};
+        return [{ l: "نسبة الإشغال", v: t.occupancy == null ? "—" : fmtNum(t.occupancy) + "%", hero: true },
+          { l: "ساعات متاحة", v: fmtNum(t.available_hours) }, { l: "ساعات محجوزة", v: fmtNum(t.booked_hours) }, { l: "مواعيد", v: fmtNum(t.appointments) }];
+      }
+    },
     daily_flash: {
       sub: "ملخص يوم واحد: إيراد، تحصيل، مواعيد، ليدز، وتنبيهات.",
       range: false,
@@ -128,7 +218,8 @@
       case "int": return fmtNum(v);
       case "dt": return fmtDT(v);
       case "date": return fmtDate(v);
-      case "status": return SHIFT_STATUS[v] || (v == null ? "—" : String(v));
+      case "status": return (col.map || SHIFT_STATUS)[v] || (v == null ? "—" : String(v));
+      case "pct": return v == null ? "—" : fmtNum(v) + "%";
       default: return v == null || v === "" ? "—" : String(v);
     }
   }
@@ -141,7 +232,7 @@
     var data = d.rows || [];
     rows = data.map(function (r) { return cols.map(function (c) { return cellText(c, r); }); });
     var tot = def.totalOverride ? def.totalOverride(d) : (d.totals || {});
-    foot = cols.map(function (c, i) { return i === 0 ? "الإجمالي" : def.totalKeys[c.k] && tot[c.k] != null ? fmtNum(tot[c.k]) : ""; });
+    foot = cols.map(function (c, i) { return i === 0 ? "الإجمالي" : def.totalKeys[c.k] && tot[c.k] != null ? (fmtNum(tot[c.k]) + (c.t === "pct" ? "%" : "")) : ""; });
     return { head: head, rows: rows, foot: data.length ? foot : null, cols: cols, raw: data.length, data: data, totals: tot };
   }
   function csvCell(v) { var s = String(v == null ? "" : v); return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }
@@ -189,7 +280,7 @@
     if (def.range) {
       h += '<label class="rc-f"><span>من</span><input type="date" data-f="from" value="' + esc(f.from) + '"></label><label class="rc-f"><span>إلى</span><input type="date" data-f="to" value="' + esc(f.to) + '"></label>';
     } else {
-      h += '<label class="rc-f"><span>اليوم</span><input type="date" data-f="day" value="' + esc(f.day) + '"></label>';
+      h += '<label class="rc-f"><span>' + esc(def.dayLabel || "اليوم") + '</span><input type="date" data-f="day" value="' + esc(f.day) + '"></label>';
     }
     var br = '<option value="">كل الفروع</option>' + (state.catalog.branches || []).map(function (b) { return '<option value="' + esc(b.id) + '"' + (f.branch === b.id ? " selected" : "") + ">" + esc(b.name) + "</option>"; }).join("");
     h += '<label class="rc-f"><span>الفرع</span><select data-f="branch">' + br + '</select></label>';
@@ -310,7 +401,7 @@
   function openReport(root, code) {
     var firstBranch = (state.catalog.branches || [])[0];
     state.code = code; state.data = null; state.error = ""; state.optsPainted = false; state.provName = "";
-    state.f = { from: monthStart(), to: iso(today()), day: yesterday(), branch: firstBranch ? firstBranch.id : "", specialty: "", provider: "", payer: "" };
+    state.f = { from: monthStart(), to: iso(today()), day: DEFS[code].dayDefault === "today" ? iso(today()) : yesterday(), branch: firstBranch ? firstBranch.id : "", specialty: "", provider: "", payer: "" };
     root.innerHTML = reportHtml(code); bindFilters(root, code); wire(root); load(root, code);
   }
   function showHome(root) {
