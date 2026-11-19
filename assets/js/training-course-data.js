@@ -355,10 +355,10 @@
       }
     ],
     sources: [
-      { title: 'GAHAR Handbook for Ambulatory Healthcare Accreditation Standards, Second Edition 2026', url: 'https://admin.gahar.gov.eg/upload/amb-final-2.pdf' },
+      { title: 'GAHAR — معايير اعتماد منشآت الرعاية الصحية الخارجية (يُرجع إلى الإصدار الساري على موقع الهيئة)', url: 'https://www.gahar.gov.eg/' },
       { title: 'WHO Patient Safety Curriculum Guide: Multi-professional Edition', url: 'https://www.who.int/publications/i/item/9789241501958' },
       { title: 'AHRQ TeamSTEPPS 3.0 Curriculum Materials', url: 'https://www.ahrq.gov/teamstepps-program/curriculum/index.html' },
-      { title: 'CDC Guide to Infection Prevention for Outpatient Settings: Minimum Expectations for Safe Care', url: 'https://www.cdc.gov/healthcare-associated-infections/hcp/prevention-healthcare/outpatient-expectations.html' },
+      { title: 'CDC Guide to Infection Prevention for Outpatient Settings: Minimum Expectations for Safe Care (version 2.3, 2016)', url: 'https://stacks.cdc.gov/view/cdc/257020' },
       { title: 'IHI Model for Improvement', url: 'https://www.ihi.org/library/model-for-improvement' },
       { title: 'CIPD People manager guide: Effective performance management', url: 'https://www.cipd.org/en/knowledge/guides/manager-guide-effective-performance-management/' },
       { title: 'قانون العمل المصري رقم 14 لسنة 2025 (سجل ILO NATLEX)', url: 'https://natlex.ilo.org/dyn/natlex2/r/natlex/fe/details?p3_isn=118430' }
