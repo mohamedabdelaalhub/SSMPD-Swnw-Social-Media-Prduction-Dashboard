@@ -1,4 +1,4 @@
--- Rollback of 20261119130000 (data kept in renamed tables, never dropped).
+-- Rollback of 20261120020000 (data kept in renamed tables, never dropped).
 begin;
 drop function if exists public.clinic_reception_patient_extras(uuid, text, jsonb);
 drop function if exists clinic_reception.can_manage(uuid);

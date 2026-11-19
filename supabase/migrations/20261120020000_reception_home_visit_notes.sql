@@ -6,7 +6,7 @@
 --     one booking. Any reception employee can write the permanent note when empty; changing or deleting an existing one is a
 --     REQUEST that the workspace manager approves (owner: «أي موظف استقبال يطلب المسح ومديره يعتمد الحذف»).
 -- Everything goes through public.clinic_reception_patient_extras(workspace, action, payload); no direct table access.
--- Rollback: supabase/rollbacks/20261119130000_reception_home_visit_notes.rollback.sql
+-- Rollback: supabase/rollbacks/20261120020000_reception_home_visit_notes.rollback.sql
 begin;
 
 do $$ begin

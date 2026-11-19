@@ -1,9 +1,9 @@
-// Home-visit address + permanent/temporary patient notes; changing/deleting a permanent note needs the manager (20261119130000).
+// Home-visit address + permanent/temporary patient notes; changing/deleting a permanent note needs the manager (20261120020000).
 const fs=require('fs'),assert=require('node:assert/strict'),boot=require('./helpers/reception-bridge.cjs');
 (async()=>{const b=await boot([]);const {db,as,owner,call,id}=b;
  const mig=n=>fs.readFileSync('supabase/migrations/'+fs.readdirSync('supabase/migrations').find(x=>x.startsWith(n)),'utf8');
  try{await db.exec('reset role');
-  const M=mig('20261119130000');await db.exec(M);await assert.rejects(()=>db.exec(M),/تم تطبيق هذا الملف من قبل/);await db.exec('rollback');
+  const M=mig('20261120020000');await db.exec(M);await assert.rejects(()=>db.exec(M),/تم تطبيق هذا الملف من قبل/);await db.exec('rollback');
   const ws=(await owner("insert into clinic_reception.workspaces(name,mode,owner_id) values('live','live',$1) returning id",[id(1)]))[0].id;
   await owner("insert into clinic_reception.settings(id) values(true) on conflict do nothing");await owner("update clinic_reception.settings set live_enabled=true,cutover_at=now() where id");
   await owner("insert into admins(id,name,role) values($1,'Mgr','reception')",[id(8)]);
@@ -42,7 +42,7 @@ const fs=require('fs'),assert=require('node:assert/strict'),boot=require('./help
   await x('save_booking',{patient_id:pat,appointment_id:app,home:false});bd=await x('board',{ids:[app]});assert.equal(bd.extras[app].home,false);assert.equal(bd.extras[app].patient_note,'ملاحظة جديدة');
   // another workspace's patient is refused
   await assert.rejects(()=>x('get',{patient_id:'40000000-0000-4000-8000-000000000999'}),/خارج المساحة/);
-  await db.exec('reset role');await db.exec(fs.readFileSync('supabase/rollbacks/20261119130000_reception_home_visit_notes.rollback.sql','utf8'));
+  await db.exec('reset role');await db.exec(fs.readFileSync('supabase/rollbacks/20261120020000_reception_home_visit_notes.rollback.sql','utf8'));
   console.log('reception home visit + patient notes: ok');
  }catch(e){console.error(e);process.exitCode=1;}finally{await db.close();}
 })();
