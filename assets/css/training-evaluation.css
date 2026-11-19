@@ -158,3 +158,28 @@
 .te-page .te-bank-opts li[data-points="1"]{background:#FFF8F2;border-inline-start-color:#F15A22}
 .te-page .te-lesson{border-top:1px dashed #E4E9F2;padding-top:10px;margin-top:10px}
 .te-page .te-lesson h4{margin:0 0 4px}
+
+/* PR 5: interview sheet, role-plays, decision */
+.te-page .te-chip[data-decision=ready]{background:#E6F3EC;color:#2F7D5C}
+.te-page .te-chip[data-decision=ready_after_training]{background:#FFF3EC;color:#8A3A12}
+.te-page .te-chip[data-decision=not_ready]{background:#FCEDEA;color:#B23A26}
+.te-page .te-iv{margin:0;padding-inline-start:22px;display:grid;gap:16px}
+.te-page .te-iv>li{border-bottom:1px solid #E4E9F2;padding-bottom:12px}
+.te-page details>summary{cursor:pointer;color:#0F369D}
+.te-page .te-score{display:grid;gap:8px;margin-top:8px}
+.te-page .te-score-btns{display:flex;gap:6px}
+.te-page .te-score-btns button{width:44px;height:44px;border-radius:10px;border:1px solid #E4E9F2;background:#fff;font:inherit;font-weight:700;cursor:pointer;color:#16212E}
+.te-page .te-score-btns button.sel{background:#0F369D;border-color:#0F369D;color:#fff}
+.te-page .te-score-btns button:disabled{opacity:.55;cursor:not-allowed}
+.te-page .te-score label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:#5B6577}
+.te-page .te-score input[type=text]{padding:9px 11px;border-radius:10px;border:1px solid #E4E9F2;font:inherit;width:100%}
+.te-page .te-score label.te-block{flex-direction:row;align-items:flex-start;gap:8px;color:#B23A26}
+.te-page .te-rp{border-top:1px dashed #E4E9F2;padding-top:12px;margin-top:12px}
+.te-page .te-rp:first-of-type{border-top:0;margin-top:0;padding-top:0}
+.te-page .te-pre{white-space:pre-line}
+.te-page .te-check-list{list-style:none;padding:0;display:grid;gap:4px}
+.te-page .te-check-list label{display:flex;gap:8px;align-items:flex-start}
+.te-page .te-scale{padding-inline-start:0;list-style:none;display:grid;gap:6px}
+.te-page [data-decide] label{display:flex;flex-direction:column;gap:4px;margin-bottom:10px;font-size:13px;color:#5B6577}
+.te-page [data-decide] select,.te-page [data-decide] textarea{padding:9px 11px;border-radius:10px;border:1px solid #E4E9F2;font:inherit}
+@media (max-width:420px){.te-page .te-score-btns button{width:40px;height:40px}}
