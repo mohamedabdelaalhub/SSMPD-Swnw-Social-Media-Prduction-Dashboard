@@ -144,3 +144,17 @@
 .te-page .te-review p{margin:4px 0}
 .te-page .te-q-small{font-weight:600}
 .te-page .te-pts{display:inline-block;border-radius:99px;padding:0 8px;background:#EEF2FB;color:#0F369D;font-size:12.5px}
+
+/* Owner-only question bank pages */
+.te-page .te-head-actions{display:flex;gap:8px;flex-wrap:wrap}
+.te-page .te-switch{display:inline-flex;gap:4px;background:#EEF2FB;border-radius:12px;padding:4px;margin-bottom:12px}
+.te-page .te-switch button{border:0;background:transparent;border-radius:9px;padding:8px 16px;font:inherit;color:#0F369D;cursor:pointer;min-height:40px}
+.te-page .te-switch button[aria-selected=true]{background:#0F369D;color:#fff}
+.te-page .te-bank-group>summary{cursor:pointer;list-style-position:inside;font-size:17px;padding:2px 0}
+.te-page .te-bank{margin:10px 0 0;padding-inline-start:22px;display:grid;gap:14px}
+.te-page .te-bank-opts{list-style:none;margin:6px 0;padding:0;display:grid;gap:4px}
+.te-page .te-bank-opts li{border-radius:8px;padding:6px 10px;background:#F8FAFC;border-inline-start:3px solid #E4E9F2}
+.te-page .te-bank-opts li[data-points="2"]{background:#E6F3EC;border-inline-start-color:#2F7D5C}
+.te-page .te-bank-opts li[data-points="1"]{background:#FFF8F2;border-inline-start-color:#F15A22}
+.te-page .te-lesson{border-top:1px dashed #E4E9F2;padding-top:10px;margin-top:10px}
+.te-page .te-lesson h4{margin:0 0 4px}
