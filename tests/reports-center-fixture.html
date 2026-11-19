@@ -51,6 +51,18 @@ w2.report_service_margin={rows:[{service:'جلسة ليزر',specialty:'جلدي
 w2.report_device_roi={days:19,rows:[{code:'LZ1',device:'جهاز ليزر تجريبي',meter_kind:'shots',uses:38,uses_per_day:2,hours:19,meter:41800,revenue:45600,direct_costs:15200,contribution:30400,asset_linked:false},{code:'US1',device:'سونار تجريبي',meter_kind:'none',uses:60,uses_per_day:3.16,hours:15,meter:0,revenue:24000,direct_costs:12900,contribution:11100,asset_linked:false},{code:'XR1',device:'أشعة تجريبي',meter_kind:'none',uses:0,uses_per_day:0,hours:0,meter:0,revenue:0,direct_costs:0,contribution:0,asset_linked:false}],totals:{devices:3,uses:98,hours:34,revenue:69600,direct_costs:28100,contribution:41500,idle_devices:1}};
 w2.report_referral_efficiency={rows:[{doctor:'د. تجريبي — باطنة',specialties:'أشعة، معمل',referred:46,patients:40,executed:41,cancelled:5,conversion:89.1,revenue:18450,referral_fees:1845,self_referrals:0},{doctor:'د. تجريبي — نساء',specialties:'أشعة',referred:20,patients:19,executed:14,cancelled:6,conversion:70,revenue:5600,referral_fees:560,self_referrals:2}],open_issues:1,totals:{referred:66,executed:55,cancelled:11,revenue:24050,referral_fees:2405,self_referrals:2}};
 w2.report_waiting_time={rows:[{doctor:'د. تجريبي — أسنان',specialty:'أسنان',visits:96,avg_wait:34.5,median_wait:28,over_30:41,over_60:9,avg_patient_late:8,not_finished:2},{doctor:'د. تجريبي — جلدية',specialty:'جلدية',visits:88,avg_wait:18.2,median_wait:15,over_30:12,over_60:1,avg_patient_late:11,not_finished:0}],by_hour:[],totals:{visits:184,avg_wait:26.7,over_30:53,over_60:10,not_finished:2}};
+cat.reports=cat.reports.concat([{code:'doctor_day',title:'مرضاي النهارده',area:'doctors',sensitive:false,allowed:true}]);
+if(screen==='doctor'){cat.reports=cat.reports.map(function(r){return Object.assign({},r,{allowed:r.code==='doctor_day'});});}
+var ddRows=[{time:'09:30',patient:'مريض تجريبي ز',file_no:'F-0612',service:'كشف جلدية',doctor:'د. تجريبي',state:'no_show',arrived:null,wait_min:null},
+ {time:'10:00',patient:'مريض تجريبي أ',file_no:'F-1021',service:'كشف جلدية',doctor:'د. تجريبي',state:'done',arrived:'09:52',wait_min:12},
+ {time:'10:20',patient:'مريض تجريبي ب',file_no:'F-0877',service:'متابعة',doctor:'د. تجريبي',state:'in_visit',arrived:'10:15',wait_min:9},
+ {time:'10:40',patient:'مريض تجريبي ج',file_no:'F-1102',service:'جلسة ليزر',doctor:'د. تجريبي',state:'waiting',arrived:'10:31',wait_min:22},
+ {time:'11:00',patient:'مريض تجريبي د',file_no:'F-0450',service:'كشف جلدية',doctor:'د. تجريبي',state:'waiting',arrived:'10:58',wait_min:6},
+ {time:'11:30',patient:'مريض تجريبي هـ',file_no:'F-1150',service:'كشف جلدية',doctor:'د. تجريبي',state:'booked',arrived:null,wait_min:null},
+ {time:'12:00',patient:'مريض تجريبي و',file_no:'F-0999',service:'متابعة',doctor:'د. تجريبي',state:'booked',arrived:null,wait_min:null}];
+if(screen==='doctor')w2.report_target_can_propose=false;
+w2.report_doctor_day={day:'2026-11-20',mode:screen==='doctor'?'doctor':'preview',linked:true,rows:ddRows,
+ totals:{patients:7,waiting:2,in_visit:1,done:1,booked:2,no_show:1},options:screen==='doctor'?{}:{doctors:[{key:'EMP-1',name:'د. تجريبي'},{key:'EMP-2',name:'د. تجريبي ب'}]}};
 window.SSMPDRoles={label:function(r){return{general_manager:'المدير العام',financial_manager:'المدير المالي',accountant:'محاسب',reception:'استقبال',customer_service:'خدمة عملاء',page_manager:'مسؤول صفحات',nursing:'تمريض',head_nursing:'رئيسة تمريض',sono_doctor:'دكتور'}[r]||r;}};
 window.SSMPDDb={client:{rpc:function(n,a){return new Promise(function(ok){setTimeout(function(){var d={report_catalog:cat,report_cash_closing:cash,report_revenue_by_doctor:rev,report_doctor_dues:dues,report_daily_flash:flash,report_access_admin:access,report_unbilled_services:{rows:[],totals:{count:0,value:0}}}[n]||w2[n];ok({data:d});},20);});}}};
 </script><script src="../assets/js/render-reports.js"></script>
@@ -58,5 +70,5 @@ window.SSMPDDb={client:{rpc:function(n,a){return new Promise(function(ok){setTim
 var host=document.getElementById('v');
 if(screen==='targets'){host.innerHTML='<div class="section" style="background:#fff;border:1px solid #E6E8EE;border-radius:18px;padding:20px"></div>';SSMPDRenderReports.mountTargets(host.firstChild);}
 else if(screen==='access'){host.innerHTML='<div class="section" style="background:#fff;border:1px solid #E6E8EE;border-radius:18px;padding:20px"></div>';SSMPDRenderReports.mountAccess(host.firstChild);}
-else{SSMPDRenderReports.render(host);if(screen!=='home')setTimeout(function(){var b=host.querySelector('[data-code="'+screen+'"]');if(b)b.click();},200);}
+else{SSMPDRenderReports.render(host);if(screen!=='home'&&screen!=='doctor')setTimeout(function(){var b=host.querySelector('[data-code="'+screen+'"]');if(b)b.click();},200);}
 </script></body></html>

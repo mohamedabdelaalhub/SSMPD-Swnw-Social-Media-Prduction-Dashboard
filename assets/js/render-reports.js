@@ -13,6 +13,7 @@
     method_fix: "تصحيح طريقة دفع", claim_contractual: "تسوية تعاقدية (تأمين)", claim_loss: "خسارة مطالبة", finance_refund: "مرتجع (الحسابات)", finance_void: "إلغاء فاتورة (الحسابات)" };
   var SOURCE_LABELS = { doctor_fee: "استحقاق خدمة", doctor_payout: "صرف", doctor_contractual: "تسوية", doctor_credit_note: "تسوية" };
   var CLAIM_KIND = { claim_correction: "اترجعت للتصحيح", claim_contractual: "تخفيض تعاقدي", claim_loss: "إعدام (خسارة)", claim_payment: "تحصيل", claim_submit: "تقديم" };
+  var DAY_STATE = { booked: "محجوز", waiting: "وصل ومستني", in_visit: "جوه الكشف", done: "خلص", no_show: "ماجاش" };
   var ENTITY_KIND = { insurer: "تأمين / نقابة", discount: "جهة خصم", referral: "جهة تحويل" };
   var SECTION = { revenue: "الإيرادات", cost_of_services: "تكلفة الخدمات", gna: "مصروفات إدارية وعمومية", other_expense: "مصروفات أخرى",
     asset: "الأصول", liability: "الالتزامات", equity: "حقوق الملكية", operating: "تشغيلي", investing: "استثماري", financing: "تمويلي" };
@@ -567,6 +568,25 @@
       },
       notice: function (d) { return "الانتظار محسوب من تسجيل الوصول (أو فتح الزيارة) لحد ما أول خدمة تتقفل. لو الخدمة مش بتتقفل في وقتها الأرقام هتطلع أكبر من الحقيقة."; }
     },
+    doctor_day: {
+      sub: "مرضاك المحجوزين النهارده وحالة كل واحد دلوقتي: مين وصل ومستني، ومين جوه، ومين خلص. من غير أي مبالغ.",
+      range: false, dayLabel: "اليوم", dayDefault: "today", doctorDay: true,
+      cols: [C("time", "الميعاد"), C("patient", "المريض"), C("state", "الحالة", "status", DAY_STATE), C("service", "الخدمة"), C("file_no", "رقم الملف"),
+        C("arrived", "وصل الساعة"), C("wait_min", "مستني من (دقيقة)")],
+      totalKeys: {},
+      load: function (f) { return rpc("report_doctor_day", { p_day: f.day || null, p_doctor_key: f.dockey || null }); },
+      tiles: function (d) {
+        var t = d.totals || {};
+        return [{ l: "مرضى النهارده", v: fmtNum(t.patients), hero: true, sub: fmtNum(t.booked) + " لسه ماوصلوش" },
+          { l: "وصلوا ومستنيين", v: fmtNum(t.waiting), neg: num(t.waiting) > 0 }, { l: "جوه الكشف", v: fmtNum(t.in_visit) },
+          { l: "خلصوا", v: fmtNum(t.done) }, { l: "ماجوش", v: fmtNum(t.no_show) }];
+      },
+      notice: function (d) {
+        if (d.mode === "doctor" && !d.linked) return "حسابك لسه مش متربط باسمك كدكتور في الاستقبال. كلّم الإدارة تربطه من «الموارد البشرية» (كود الدكتور)، وبعدها هتلاقي مرضاك هنا.";
+        if (d.mode === "preview") return "إنت شايف الشاشة زي ما الدكتور بيشوفها. الدكتور نفسه بيشوف مرضاه هو بس، ليوم النهارده بس.";
+        return "";
+      }
+    },
     daily_flash: {
       sub: "ملخص يوم واحد: إيراد، تحصيل، مواعيد، ليدز، وتنبيهات.",
       range: false,
@@ -661,6 +681,13 @@
 
   function filterHtml(code) {
     var def = DEFS[code], f = state.f, h = '<div class="rc-card rc-filters">';
+    if (def.doctorDay) {
+      var dd = state.data || {};
+      if (dd.mode !== "preview") return h + '<div class="rc-f"><span>اليوم</span><b>النهارده — ' + esc(f.day) + "</b></div></div>";
+      h += '<label class="rc-f"><span>اليوم</span><input type="date" data-f="day" value="' + esc(f.day) + '"></label>';
+      h += '<label class="rc-f"><span>الدكتور</span><select data-f="dockey"><option value="">اختار دكتور</option>' + (((dd.options || {}).doctors) || []).map(function (x) { return '<option value="' + esc(x.key) + '"' + (f.dockey === x.key ? " selected" : "") + ">" + esc(x.name) + "</option>"; }).join("") + "</select></label>";
+      return h + "</div>";
+    }
     if (def.range) {
       h += '<label class="rc-f"><span>من</span><input type="date" data-f="from" value="' + esc(f.from) + '"></label><label class="rc-f"><span>إلى</span><input type="date" data-f="to" value="' + esc(f.to) + '"></label>';
     } else {
@@ -775,7 +802,7 @@
     host.innerHTML = bodyHtml(code);
     // الفلاتر المعتمدة على بيانات التقرير (تخصصات/دكاترة) بتتحدّث بعد أول تحميل
     var o = (state.data && state.data.options) || {};
-    if (code === "revenue_by_doctor" && state.data && !state.optsPainted) {
+    if ((code === "revenue_by_doctor" || DEFS[code].doctorDay) && state.data && !state.optsPainted) {
       state.optsPainted = true; var fcard = q(root, ".rc-filters"); if (fcard) { fcard.outerHTML = filterHtml(code); bindFilters(root, code); }
     }
     if (code === "doctor_dues" && o.doctors && state.f.provider) { var m = o.doctors.filter(function (x) { return x.id === state.f.provider; })[0]; state.provName = m ? m.name : state.provName; }
@@ -799,7 +826,7 @@
   function openReport(root, code) {
     var firstBranch = (state.catalog.branches || [])[0];
     state.code = code; state.data = null; state.error = ""; state.optsPainted = false; state.provName = "";
-    state.f = { from: monthStart(), to: iso(today()), day: DEFS[code].dayDefault === "today" ? iso(today()) : yesterday(), branch: firstBranch ? firstBranch.id : "", specialty: "", provider: "", payer: "" };
+    state.f = { from: monthStart(), to: iso(today()), day: DEFS[code].dayDefault === "today" ? iso(today()) : yesterday(), branch: firstBranch ? firstBranch.id : "", specialty: "", provider: "", payer: "", dockey: "" };
     root.innerHTML = reportHtml(code); bindFilters(root, code); wire(root); load(root, code);
   }
   function showHome(root) {
@@ -838,7 +865,10 @@
     var root = q(container, ".rc-root");
     rpc("report_catalog").then(function (cat) {
       state.catalog = cat && cat.reports ? cat : { reports: [], branches: [] };
-      return rpc("report_target_can_propose").catch(function () { return false; }).then(function (ok) { state.canTargets = ok === true; showHome(root); wire(root); });
+      return rpc("report_target_can_propose").catch(function () { return false; }).then(function (ok) { state.canTargets = ok === true; wire(root);
+        // A doctor whose only report is «مرضاي النهارده» lands on it straight away.
+        var open = state.catalog.reports.filter(function (r) { return r.allowed; });
+        if (open.length === 1 && open[0].code === "doctor_day" && !state.canTargets) openReport(root, "doctor_day"); else showHome(root); });
     }).catch(function (e) { root.innerHTML = '<div class="rc-error" role="alert">' + esc(errMsg(e)) + "</div>"; });
   }
 
