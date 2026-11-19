@@ -10,7 +10,8 @@ const tick = (ms = 30) => new Promise(r => setTimeout(r, ms));
     { code: 'ar_aging', title: 'أعمار ديون الجهات', area: 'insurance', sensitive: false, allowed: true },
     { code: 'branch_pnl', title: 'قائمة الدخل', area: 'statements', sensitive: false, allowed: true },
     { code: 'stock_shortage_expiry', title: 'النواقص', area: 'stock', sensitive: false, allowed: true },
-    { code: 'targets_vs_actual', title: 'التارجت', area: 'marketing', sensitive: false, allowed: true }],
+    { code: 'targets_vs_actual', title: 'التارجت', area: 'marketing', sensitive: false, allowed: true },
+    { code: 'device_roi', title: 'الأجهزة', area: 'profitability', sensitive: true, allowed: true }],
     branches: [{ id: 'b1', name: 'حدائق الأهرام' }], is_owner: false };
   const data = {
     report_catalog: catalog,
@@ -24,6 +25,7 @@ const tick = (ms = 30) => new Promise(r => setTimeout(r, ms));
     report_targets_vs_actual: { month: '2026-11-01', rows: [{ owner: 'الفرع', label: 'صافي إيراد الفرع', unit: 'money', target: 1000, actual: 800, achievement: 80 }], totals: { targets: 1, met: 0, avg_achievement: 80 } },
     report_target_can_propose: true,
     report_targets_admin: { month: '2026-11-01', is_approver: false, editors: [], targets: [], metrics: [{ key: 'bookings', meta: { label: 'حجوزات', scope: 'person' } }], people: [{ id: 'p1', name: 'س', role: 'reception' }], branches: [{ id: 'b1', name: 'ف' }] },
+    report_device_roi: { days: 19, rows: [{ code: 'LZ1', device: 'ليزر', meter_kind: 'shots', uses: 0, uses_per_day: 0, hours: 0, meter: 0, revenue: 0, direct_costs: 0, contribution: 0, asset_linked: false }], totals: { devices: 1, uses: 0, hours: 0, revenue: 0, direct_costs: 0, contribution: 0, idle_devices: 1 } },
     report_slot_occupancy: { rows: [{ doctor: 'د', specialty: 'س', available_hours: 10, booked_hours: 5, appointments: 6, occupancy: 50 }], totals: { available_hours: 10, booked_hours: 5, appointments: 6, occupancy: 50 } } };
   const dom = new JSDOM('<body><div id="v"></div></body>', { runScripts: 'outside-only', pretendToBeVisual: true });
   const w = dom.window; w.SSMPDDb = { client: { rpc: (n, a) => { calls.push([n, a]); return Promise.resolve({ data: data[n] }); } } };
@@ -83,5 +85,9 @@ const tick = (ms = 30) => new Promise(r => setTimeout(r, ms));
   assert.equal(th.querySelectorAll('[data-appr]').length, 0, 'no approve buttons for proposers');
   w.SSMPDRenderReports.render(host); await tick(60);
   assert.ok(host.querySelector('.rc-open-targets'), 'targets entry on reports home for proposers');
+  w.SSMPDRenderReports.render(host); await tick(60);
+  await open('device_roi');
+  assert.match(host.textContent, /لسه مش بيتسجل/, 'not-recorded-yet note');
+  assert.match(host.textContent, /للإدارة والمدير المالي فقط/, 'sensitive badge');
   console.log('PASS reports-center-wave2-dom');
 })().catch(e => { console.error(e); process.exit(1); });
