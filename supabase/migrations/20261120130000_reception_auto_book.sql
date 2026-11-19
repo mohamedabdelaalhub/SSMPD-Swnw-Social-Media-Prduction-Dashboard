@@ -15,16 +15,20 @@
 --                                       acting as one dedicated system account (auto_book_settings.system_admin_id).
 --   public.clinic_reception_auto_book() reception list + resolutions (choose patient / age / service / time / retry / dismiss),
 --                                       run as the staff member who clicks.
+-- Agent (WhatsApp) bookings and the queue (20261120120000, owner «الاستقبال يسجّله عند الوصول»): live patient files are never
+--   created from agent data (whatsapp / website / social go to staff review when no file matches); an agent booking booked here is
+--   written to clinic_reception.agent_booking_links, and «تسجيل الوصول» for it arrives that appointment instead of a second walk-in.
 -- Nothing is enabled until auto_book_settings.enabled is set (after a dry run). Nothing here calls Masa or sends messages.
 -- New patient files are created only from a valid two-word name, phone and age (psychcare.check_basics); without an age the
--- booking waits for staff to type it. Rollback: supabase/rollbacks/20261120080000_reception_auto_book.rollback.sql
+-- booking waits for staff to type it. Rollback: supabase/rollbacks/20261120130000_reception_auto_book.rollback.sql
 begin;
 
 do $$ begin
   if to_regclass('clinic_reception.masa_bookings') is null or to_regclass('clinic_reception.fallback_bookings') is null
      or to_regclass('public.customer_bookings') is null or to_regclass('clinic_reception.masa_doctor_links') is null
      or to_regprocedure('public.clinic_reception_command(uuid,text,jsonb,uuid)') is null
-     or to_regprocedure('psychcare.phone(text)') is null or to_regprocedure('psychcare.check_basics(text,text,integer)') is null then
+     or to_regprocedure('psychcare.phone(text)') is null or to_regprocedure('psychcare.check_basics(text,text,integer)') is null
+     or to_regclass('clinic_reception.agent_booking_links') is null or to_regprocedure('public.clinic_reception_queue(uuid,text,jsonb)') is null then
     raise exception 'مكونات الحجز غير موجودة';
   end if;
   if to_regclass('clinic_reception.external_bookings') is not null then raise exception 'تم تطبيق هذا الملف من قبل'; end if;
@@ -226,7 +230,7 @@ create function clinic_reception.auto_book_one(p_id uuid) returns text
 language plpgsql security definer set search_path = pg_catalog, public as $$
 declare cfg clinic_reception.auto_book_settings%rowtype; b clinic_reception.external_bookings%rowtype; ws uuid; prov uuid; svc uuid;
   pid uuid; rp uuid; ph text; n_same int; n_phone int; cand uuid; appt clinic_reception.appointments%rowtype; r jsonb; mins int;
-  src text; created boolean := false;
+  src text; created boolean := false; cb uuid; lk uuid;
 begin
   select * into cfg from clinic_reception.auto_book_settings where id;
   ws := cfg.workspace_id;
@@ -274,6 +278,10 @@ begin
         return clinic_reception.auto_book_review(b.id, 'patient', case when n_same > 1 then 'فيه أكتر من ملف بنفس الاسم والرقم — اختار الملف الصح'
           else 'الرقم ده متسجّل لمريض تاني باسم مختلف — اختار الملف الصح أو افتح ملف جديد' end, cand);
       else
+        if b.source <> 'masa' then   -- owner: live patient files are never created from agent data
+          return clinic_reception.auto_book_review(b.id, 'age', 'مريض جديد من ' || case b.source when 'website' then 'الموقع' when 'social' then 'السوشيال' else 'الواتساب' end
+            || ' — اتأكد من اسمه وسنه وافتحله ملف، أو اختار ملفه لو موجود');
+        end if;
         if b.age is null then
           return clinic_reception.auto_book_review(b.id, 'age', 'مريض جديد — اكتب سنه عشان يتفتح ملفه والموعد يتسجّل');
         end if;
@@ -300,6 +308,19 @@ begin
     return 'needs_time';
   end if;
 
+  -- agent booking already registered by reception at arrival (queue «تسجيل الوصول»): that is its appointment
+  if b.source in ('whatsapp', 'website', 'social') then
+    select c.id into cb from public.customer_bookings c where c.booking_request_id = b.external_id;
+    if cb is not null and b.appointment_id is null then
+      select l.appointment_id into lk from clinic_reception.agent_booking_links l where l.customer_booking_id = cb;
+      if lk is not null then
+        update clinic_reception.external_bookings set appointment_id = lk, state = 'merged', review_kind = null, reason = null, updated_at = now()
+          where id = b.id;
+        return 'merged';
+      end if;
+    end if;
+  end if;
+
   -- already on reception's book (staff entered it, or booked earlier): link, do not book twice
   if b.appointment_id is not null then
     select * into appt from clinic_reception.appointments where id = b.appointment_id;
@@ -315,6 +336,10 @@ begin
     if found then
       update clinic_reception.external_bookings set appointment_id = appt.id, state = 'merged', review_kind = null, reason = null, updated_at = now()
         where id = b.id;
+      if cb is not null then
+        insert into clinic_reception.agent_booking_links(customer_booking_id, workspace_id, appointment_id, linked_by)
+          values (cb, ws, appt.id, public.my_admin_id()) on conflict do nothing;
+      end if;
       return 'merged';
     end if;
   end if;
@@ -347,6 +372,10 @@ begin
   end;
   update clinic_reception.external_bookings set appointment_id = (r->>'id')::uuid, state = 'booked', review_kind = null, reason = null,
     updated_at = now() where id = b.id;
+  if cb is not null then   -- so the queue's «تسجيل الوصول» arrives this appointment instead of booking a walk-in
+    insert into clinic_reception.agent_booking_links(customer_booking_id, workspace_id, appointment_id, linked_by)
+      values (cb, ws, (r->>'id')::uuid, public.my_admin_id()) on conflict do nothing;
+  end if;
   return 'booked';
 end $$;
 revoke all on function clinic_reception.cairo_day(timestamptz), clinic_reception.auto_book_service(uuid, uuid),
@@ -509,6 +538,43 @@ do $$ begin
     grant execute on function public.clinic_reception_auto_book_service_api(text, jsonb) to service_role;
   end if;
 end $$;
+
+-- Queue «تسجيل الوصول» for an agent booking that was already booked here: arrive that appointment (same steps as the queue's own
+-- register path: attach the archive patient chosen by reception, arrive, check-in token) instead of a second walk-in.
+do $$ begin
+  if to_regprocedure('clinic_reception.queue_rpc_before_auto_book(uuid,text,jsonb)') is null then
+    alter function public.clinic_reception_queue(uuid, text, jsonb) rename to queue_rpc_before_auto_book;
+    alter function public.queue_rpc_before_auto_book(uuid, text, jsonb) set schema clinic_reception;
+  end if;
+end $$;
+revoke all on function clinic_reception.queue_rpc_before_auto_book(uuid, text, jsonb) from public, anon, authenticated;
+create function public.clinic_reception_queue(p_workspace uuid, p_action text, p_payload jsonb default '{}')
+returns jsonb language plpgsql security definer set search_path = pg_catalog, public as $$
+declare p jsonb := coalesce(p_payload, '{}'); l clinic_reception.agent_booking_links%rowtype; a clinic_reception.appointments%rowtype;
+  rp clinic_reception.patients%rowtype; out jsonb; tok text;
+begin
+  if p_action = 'agent_booking_register' then
+    perform clinic_reception.access(p_workspace, 'book');
+    select * into l from clinic_reception.agent_booking_links where customer_booking_id = nullif(p->>'booking_id', '')::uuid and workspace_id = p_workspace;
+    if found then
+      select * into a from clinic_reception.appointments where id = l.appointment_id for update;
+      if a.status = 'booked' then
+        select * into rp from clinic_reception.patients where id = a.patient_id;
+        if nullif(p->>'patient_id', '') is not null and rp.patient_id is distinct from (p->>'patient_id')::uuid then
+          raise exception 'الحجز ده متسجّل تلقائي على ملف مريض تاني — راجع «الحجز التلقائي» في المواعيد';
+        end if;
+        perform public.clinic_reception_journey_command(p_workspace, 'arrive', jsonb_build_object('appointment_id', a.id, 'method', 'reception'), gen_random_uuid());
+        out := public.clinic_reception_journey_command(p_workspace, 'checkin_token', jsonb_build_object('appointment_id', a.id), gen_random_uuid());
+        tok := out->>'token';
+        return jsonb_build_object('ok', true, 'appointment_id', a.id, 'token', tok,
+          'ticket_no', (select ticket_no from clinic_reception.queue_entries where appointment_id = a.id));
+      end if;
+    end if;
+  end if;
+  return clinic_reception.queue_rpc_before_auto_book(p_workspace, p_action, p_payload);
+end $$;
+revoke all on function public.clinic_reception_queue(uuid, text, jsonb) from public, anon;
+grant execute on function public.clinic_reception_queue(uuid, text, jsonb) to authenticated;
 
 -- Today and later: queue what is already known (it is booked only once the settings are enabled).
 insert into clinic_reception.external_bookings(source, external_id, official_booking_id, masa_doctor_id, provider_id, day, starts_at, ends_at,

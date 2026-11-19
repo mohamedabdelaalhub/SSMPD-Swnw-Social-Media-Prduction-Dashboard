@@ -40,7 +40,16 @@ const fs=require('fs'),assert=require('node:assert/strict'),{PGlite}=require('@e
    else update clinic_reception.appointments set starts_at=t,ends_at=e,provider_id=(p_payload->>'provider_id')::uuid where id=(p_payload->>'id')::uuid returning id into v;end if;
   elsif p_action='cancel' then update clinic_reception.appointments set status='cancelled',cancel_reason=p_payload->>'reason' where id=(p_payload->>'id')::uuid and status='booked' returning id into v;if v is null then raise exception 'الحجز غير متاح';end if;
   else raise exception 'unknown';end if;return jsonb_build_object('id',v);end $$;
- create function clinic_reception_command_dummy() returns void language sql as $$select$$;`);
+ create table clinic_reception.agent_booking_links(customer_booking_id uuid primary key references customer_bookings(id),workspace_id uuid,appointment_id uuid unique,linked_by uuid,linked_at timestamptz default now());
+ create table clinic_reception.queue_entries(appointment_id uuid primary key,ticket_no int);
+ create table journey_calls(action text,appointment_id uuid);
+ create function clinic_reception_journey_command(p_workspace uuid,p_action text,p_payload jsonb,p_token uuid) returns jsonb language plpgsql security definer as $$begin
+  insert into journey_calls values(p_action,(p_payload->>'appointment_id')::uuid);
+  if p_action='arrive' then update clinic_reception.appointments set status='arrived' where id=(p_payload->>'appointment_id')::uuid;insert into clinic_reception.queue_entries values((p_payload->>'appointment_id')::uuid,7);end if;
+  return jsonb_build_object('token','tok-1');end $$;
+ -- stand-in for the queue RPC as left by 20261120120000 (its own register path books a walk-in)
+ create function clinic_reception_queue(p_workspace uuid,p_action text,p_payload jsonb default '{}') returns jsonb language plpgsql security definer as $$begin
+  return jsonb_build_object('inner',p_action);end $$;`);
  await q("insert into admins(id,user_id,name,role) values($1,$2,'الحجز التلقائي','reception'),($3,$4,'موظفة استقبال','reception')",[sysA,sysU,staffA,staffU]);
  await q("insert into clinic_reception.workspaces values($1,'live')",[ws]);
  await q("insert into clinic_reception.providers values($1,$3,'أخصائي جلدية','جلدية',true),($2,$3,'أخصائي أسنان','أسنان',true)",[prov,prov2,ws]);
@@ -83,14 +92,28 @@ const fs=require('fs'),assert=require('node:assert/strict'),{PGlite}=require('@e
  await q("insert into clinic_reception.fallback_bookings(booking_request_id,source,masa_doctor_id,provider_id,starts_at,ends_at,customer_name,phone,customer_age) values('BR1','whatsapp',1130,$1,$2,$3,'سارة علي تجريبية','01222222222',31)",[prov,at('19:00'),at('19:20')]);
  await one("select clinic_reception.auto_book_run()");
  assert.equal((await one("select review_kind from clinic_reception.external_bookings where external_id='M3'")).review_kind,'age');
- e=await one("select * from clinic_reception.external_bookings where external_id='BR1'");assert.equal(e.state,'booked');assert.equal(e.patient_created,true);
- assert.ok((await one("select slot_released_at from clinic_reception.fallback_bookings where booking_request_id='BR1'")).slot_released_at);
- assert.equal((await one("select source from clinic_reception.appointments where id=$1",[e.appointment_id])).source,'whatsapp');
+ // owner (queue 4b): live patient files are never created from agent data -> staff review even with an age
+ e=await one("select * from clinic_reception.external_bookings where external_id='BR1'");assert.equal(e.review_kind,'age');assert.match(e.reason,/الواتساب/);
+ assert.equal((await one("select slot_released_at from clinic_reception.fallback_bookings where booking_request_id='BR1'")).slot_released_at,null,'hold kept until booked');
  // the agent mirror of the same booking (same BookingRequestId) is the same row, not a second appointment
  await q("insert into customer_bookings(booking_request_id,official_booking_id,customer_name,phone,masa_doctor_id,appointment_date,appointment_time) values('BR1','9001','سارة علي تجريبية','01222222222',1130,$1,'19:00')",[tomorrow]);
  await one("select clinic_reception.auto_book_run()");
  assert.equal((await one("select count(*)::int n from clinic_reception.external_bookings where external_id='BR1'")).n,1);
- assert.equal((await one("select count(*)::int n from clinic_reception.appointments where status='booked'")).n,3);
+ await as(staffU);r=(await one("select clinic_reception_auto_book($1,'resolve_patient',$2) r",[ws,{id:e.id,choice:'new',age:31}])).r;assert.equal(r.state,'booked');await as('');
+ e=await one("select * from clinic_reception.external_bookings where external_id='BR1'");assert.equal(e.patient_created,true);
+ assert.ok((await one("select slot_released_at from clinic_reception.fallback_bookings where booking_request_id='BR1'")).slot_released_at);
+ assert.equal((await one("select source from clinic_reception.appointments where id=$1",[e.appointment_id])).source,'whatsapp');
+ const cbBR1=(await one("select id from customer_bookings where booking_request_id='BR1'")).id;
+ assert.equal((await one("select appointment_id from clinic_reception.agent_booking_links where customer_booking_id=$1",[cbBR1])).appointment_id,e.appointment_id,'linked for the queue');
+ // queue «تسجيل الوصول» on that booking arrives the booked appointment (no second walk-in); other actions pass through
+ await as(staffU);
+ r=(await one("select clinic_reception_queue($1,'agent_booking_register',$2) r",[ws,{booking_id:cbBR1,patient_id:e.public_patient_id,service_id:svc}])).r;
+ assert.equal(r.appointment_id,e.appointment_id);assert.equal(r.token,'tok-1');assert.equal(r.ticket_no,7);
+ assert.equal((await one("select status from clinic_reception.appointments where id=$1",[e.appointment_id])).status,'arrived');
+ await assert.rejects(()=>q("select clinic_reception_queue($1,'agent_booking_register',$2)",[ws,{booking_id:cbBR1,patient_id:old}]).then(()=>{throw new Error('x');}),/x/,'already arrived -> passes through');
+ assert.equal((await one("select clinic_reception_queue($1,'list',$2) r",[ws,{}])).r.inner,'list');
+ await as('');
+ assert.equal((await one("select count(*)::int n from clinic_reception.appointments where status in ('booked','arrived')")).n,3);
  // a Masa import of that official id is not queued twice
  await q("insert into clinic_reception.masa_bookings values('9001',$1,1130,$2,$3,$4,'active','كشف','سارة علي تجريبية','01222222222',false)",[ws,prov,at('19:00'),at('19:20')]);
  assert.equal((await one("select count(*)::int n from clinic_reception.external_bookings where official_booking_id='9001'")).n,1);
@@ -146,5 +169,6 @@ const fs=require('fs'),assert=require('node:assert/strict'),{PGlite}=require('@e
  await db.exec(fs.readFileSync('supabase/rollbacks/'+fs.readdirSync('supabase/rollbacks').find(x=>x.includes('_reception_auto_book.')),'utf8'));
  await q("insert into clinic_reception.masa_bookings values('M9',$1,1130,$2,$3,$4,'active','كشف','أحمد محمود تجريبي','01012345637',false)",[ws,prov,at('10:00'),at('10:20')]);
  assert.equal((await one("select to_regclass('clinic_reception.external_bookings') r")).r,null);
+ await as(staffU);assert.equal((await one("select clinic_reception_queue($1,'agent_booking_register',$2) r",[ws,{booking_id:id()}])).r.inner,'agent_booking_register','queue RPC restored');await as('');
  console.log('reception auto-book: ok');
  }catch(e){console.error(e);process.exitCode=1;}finally{await db.close();}})();
