@@ -15,7 +15,8 @@ Status: **Motion & sound foundations APPROVED by the owner (2026-11-17).** Emplo
 | Colours «ملف الألوان» | `color-picker.html` (department + status colours, live checks) | https://claude.ai/artifact/RWub6YLdDyXQQJ5yovUJjw |
 | Charts «ملف الشارتات» | `CHARTS.md` → reference code `assets/js/employee-profile.js` (#545) | https://claude.ai/artifact/4rzx6VYe8uVPFKavrPb3Fo |
 | Layout QA | `tools/layout-check.cjs` (one gutter, aligned edges, equal column ends, no clipping) | — |
-| Mockups | `mockups/` (presence, home, employee profile) | — |
+| Printed invoices & receipts «شكل الفواتير والإيصالات» | `PRINT-DOCUMENTS.md` → `assets/js/swnw-print.js` (owner rule 2026-11-19) | — |
+| Mockups | `mockups/` (presence, home, employee profile, invoices, receipts) | — |
 
 ## Sources
 
