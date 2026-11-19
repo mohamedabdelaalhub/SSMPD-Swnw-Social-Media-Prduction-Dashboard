@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1789,
-    "labels": 1315,
+    "definitions": 1793,
+    "labels": 1319,
     "files": 125,
-    "groups": 1417
+    "groups": 1421
   },
   "fields": [
     {
@@ -18115,6 +18115,46 @@
       "tab": "training_evaluation",
       "article": "training-center",
       "text_sha256": "eade58d2f2041dc66225eae98e37c13ed42f5bb05c15bc8c3e431c23f8e92f4a"
+    },
+    {
+      "file": "training-evaluation.js",
+      "label": "ملاحظة قصيرة (اقتباس من إجابة المرشح)",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "training_evaluation",
+      "article": "training-center",
+      "text_sha256": "c495be0f9238cd30f1074501983d344a00805ed74973afa63b1e9e48284b14e0"
+    },
+    {
+      "file": "training-evaluation.js",
+      "label": "القرار النهائي",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "training_evaluation",
+      "article": "training-center",
+      "text_sha256": "0b48aaa9257d4eea3084292a388c4ad6c6c6bebe35464161c2fc1dbd6ff1f969"
+    },
+    {
+      "file": "training-evaluation.js",
+      "label": "سبب التعديل (إلزامي إذا خالف القرار المقترح)",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "training_evaluation",
+      "article": "training-center",
+      "text_sha256": "03b449f3fd5f13e22176835d1169283f80e28f9f3c19d6d2303e9a88dbbb53e4"
+    },
+    {
+      "file": "training-evaluation.js",
+      "label": "رسالة للمتدرب (تظهر له مع النتيجة المعتمدة)",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "training_evaluation",
+      "article": "training-center",
+      "text_sha256": "b406810e83127d302c4fcbb04080ddb8d240a62851fdbfaa407873d35c280463"
     },
     {
       "file": "video-storyboard.js",
