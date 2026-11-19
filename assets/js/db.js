@@ -586,6 +586,16 @@
     listMetaCreativePerformance: function () {
       return handle(client.from("vw_meta_creative_performance").select("*").order("spend", { ascending: false, nullsFirst: false }));
     },
+    // العائد على الصرف (دالة قراءة فقط ads_roi_by_campaign + حالة الحدود بالصرف الفعلي + أهداف تكلفة الحجز)
+    adsRoiByCampaign: function (from, to) {
+      return handle(client.rpc("ads_roi_by_campaign", { p_from: from || null, p_to: to || null }));
+    },
+    adsRoiTargets: function () {
+      return handle(client.from("ads_roi_targets").select("code,target_cost_per_booking"));
+    },
+    adsActualLimitsStatus: function () {
+      return handle(client.rpc("ads_actual_limits_status"));
+    },
     getLeadAdInfo: function (leadId) {
       return handle(client.from("vw_lead_meta_attribution").select("meta_ad_id,meta_campaign_id,matched_ad_name,matched_campaign_name,matched_brand").eq("lead_id", leadId).maybeSingle());
     },
