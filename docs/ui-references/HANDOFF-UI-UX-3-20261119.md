@@ -15,7 +15,7 @@ Summary, Home, Team performance, HR live presence, Employee profile, Accounting 
 ## Backlog of crowded screens (ranked by control count, NOT yet verified with real screenshots — verify first)
 | # | Screen | File(s) | Controls | Status |
 |---|---|---|---|---|
-| 1 | Tasks | `render-tasks.js` | 104 | OPEN — next: screenshot, mockup, wait «طبقه» |
+| 1 | Tasks | `render-tasks.js` | 104 | CHECKED (partly): employee view «مهامي» with mock data (`tests/task-assignment-fixture.html`, Playwright 1280/390) is already calm — no redesign needed there. Manager views («كل المهام», «المشاريع», «المناقشة») NOT verified: need real-volume screenshot from the owner |
 | 2 | Patient archive | `render-patients.js` (343k, split into phases) | 361 | OPEN |
 | 3 | Inventory | `render-inventory.js`, `inventory-workspace.js` | 105 / 54 | OPEN |
 | 4 | Leads | `render-leads.js` | 77 | OPEN |
@@ -26,6 +26,9 @@ Summary, Home, Team performance, HR live presence, Employee profile, Accounting 
 | 9 | Printed internal reports on the letterhead (statements, financial statements, accounting, indicators, leads report, HR offboarding) | see PRINT-DOCUMENTS.md | — | MOCKUP APPROVED, waits for #600 |
 
 Status values: OPEN · MOCKUP SENT · APPROVED («طبقه») · PR #N · DONE (merged).
+
+## Lesson
+Control count (grep of `<button|<select|<input`) is a weak proxy: Tasks scored 104 but its employee view is fine. Ask the owner for screenshots of the screens that bother him, or build fixtures with realistic volume, before mockups.
 
 ## Open PR queue (see main chat for merges)
 #593 (help -53) and #595 (-50) are being resolved by the main chat — do not push to them. #596 not owner-approved. #597 main chat merges.
