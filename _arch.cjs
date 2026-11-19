@@ -1,0 +1,15 @@
+const fs=require('node:fs'),path=require('path');const {JSDOM}=require('jsdom');
+process.chdir('/home/user/SSMPD-Swnw-Social-Media-Prduction-Dashboard');
+const dom=new JSDOM('<div id="view-container"></div>',{url:'https://example.test/',runScripts:'outside-only',pretendToBeVisual:true});const w=dom.window,root=w.document.querySelector('#view-container');w.scrollTo=()=>{};
+const patient={id:'patient-1',full_name:'مريض تجريبي',age:6,patient_code:'P-2026-000001',phone:'01000000000',created_at:new Date().toISOString()},date='2026-10-17';
+const visit={id:'v1',visit_date:date,complaint:'متابعة',session_number:1};const generic={id:'r1',report_date:date,visit_date:date,session_at:date,session_number:1};
+const file={id:'f1',file_name:'تقرير.pdf',category:'physical_therapy',uploaded_at:date,review_status:'approved'};
+const many=Array.from({length:8},(_,i)=>({...patient,id:'p'+i,full_name:['سارة أحمد','محمد علي','ليلى حسن','عمر خالد','نور إبراهيم','يوسف سامي','هدى مصطفى','كريم عادل'][i],patient_code:'P-2026-00000'+(i+1),age:5+i,file_count:i%4+1}));
+w.SSMPDToast={show(){}};w.SSMPDAuth={currentAdmin:{id:'admin-1',role:'super_admin'}};w.SSMPDRoles={hasRole:(a,r)=>a.role===r,canReviewArchive:()=>true};
+w.SSMPDDb=new Proxy({listPatientsArchive:async()=>many,getPatientArchiveStats:async()=>({patients:8,files:21,pending:3}),getPatientFiles:async()=>({patient,files:[file]}),getPatientMedicalProfile:async()=>({chronic_conditions:[],surgeries:[],family_history:[]}),listPatientVisits:async()=>[visit],listNutritionVisits:async()=>[{...generic,meals:[]}],listMedicalReports:async()=>[generic],listEchoReports:async()=>[generic],listDentalReports:async()=>[generic],listPhysioReports:async()=>[generic],listPrescriptions:async()=>[generic],listLabRequests:async()=>[generic],listRadiologyRequests:async()=>[generic],getPatientSpeechProfile:async()=>({}),listPatientSpeechSessions:async()=>[generic],getPatientPsychologyProfile:async()=>({}),listPatientPsychologySessions:async()=>[generic],listDevelopmentAssessments:async()=>[]},{get:(o,k)=>o[k]||(()=>Promise.resolve([]))});
+for(const f of ['nutrition-view','patient-profile-ui','child-assessment-forms','render-patients'])w.eval(fs.readFileSync('assets/js/'+f+'.js','utf8'));
+const tick=async()=>{for(let i=0;i<6;i++)await new Promise(r=>setImmediate(r));};
+(async()=>{const css=fs.readdirSync('assets/css').map(f=>'<link rel="stylesheet" href="file://'+path.resolve('assets/css',f)+'">').join('');
+ const out=(n)=>fs.writeFileSync('/tmp/claude-0/s/'+n+'.html','<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'+css+'</head><body>'+root.outerHTML+'</body></html>');
+ w.SSMPDRenderPatients.render(root);await tick();out('arch-list');
+ w.SSMPDRenderPatients.openPatientById(patient.id);await tick();out('arch-profile');console.log('done',root.innerHTML.length);})();

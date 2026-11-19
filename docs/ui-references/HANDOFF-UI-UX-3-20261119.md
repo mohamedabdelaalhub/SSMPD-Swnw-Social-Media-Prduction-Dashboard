@@ -31,8 +31,8 @@ Owner on 2026-11-19: the Tasks employee view looked bad to him («شكله مش 
 ## Backlog of crowded screens (ranked by control count, NOT yet verified with real screenshots — verify first)
 | # | Screen | File(s) | Controls | Status |
 |---|---|---|---|---|
-| 1 | Tasks | `render-tasks.js` | 104 | OWNER REJECTS current look of the employee view «مهامي» (fixture: `tests/task-assignment-fixture.html`). Redesign needed; first confirm which view bothers him. Manager views («كل المهام», «المشاريع», «المناقشة») NOT verified: need real-volume screenshot from the owner |
-| 2 | Patient archive | `render-patients.js` (343k, split into phases) | 361 | OPEN |
+| 1 | Tasks | `render-tasks.js` | 104 | DONE in 6 phases: phase 1 = #613 (merged), phase 2 = #617 (inside integration PR #626); phases 3-6 are on branches `claude/tasks-phase3-20261119` … `claude/tasks-phase6-20261119` (stacked, NO PR yet: wait for #626, then merge main, ask the main chat for ONE help number, open ONE PR). Owner approved the mockup; he has not seen phases 3-6 as PR yet. Screens in `docs/ui-references/screens/tasks-v2/` |
+| 2 | Patient archive | `render-patients.js` (343k, split into phases) | 361 | AUDITED (2026-11-19, jsdom dump → Chromium, stub data): the archive list and the patient profile (header, 5 tabs, KPI row, personal data) are already calm. NOT checked: the «التخصصات والخطط» and «الفحوصات والروشتات» tabs with real volume. Ask the owner for a screenshot of what bothers him before any mockup |
 | 3 | Inventory | `render-inventory.js`, `inventory-workspace.js` | 105 / 54 | OPEN |
 | 4 | Leads | `render-leads.js` | 77 | OPEN |
 | 5 | Contracting & partnerships | `contracting-partnerships.js` | 70 | OPEN |
@@ -52,3 +52,6 @@ Control count (grep of `<button|<select|<input`) is a weak proxy: Tasks scored 1
 ## Owner preferences learned
 - Arabic Egyptian only to the owner. Short replies. Show images, not paths.
 - «Always tell me what is finished and what remains; leave the rest in the handoff» (2026-11-19).
+
+## How to screenshot a screen without a browser app (works)
+Build a jsdom page with the test's stubs (see `tests/patient-profile-ui.cjs`), dump `root.outerHTML` into an HTML file with `<link>`s to every `assets/css/*.css`, then screenshot it with Playwright from `/tmp` (the repo's own Playwright wants another Chromium build). Block http requests with `page.route(/^https?:/, r=>r.abort())` or the page can hang.
