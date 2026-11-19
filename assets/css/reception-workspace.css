@@ -185,3 +185,15 @@
 .rx-modal .rx-walkin input[type=checkbox]:focus-visible,.rx-modal .rx-external .rx-check input[type=checkbox]:focus-visible{outline:3px solid rgba(15,54,157,.35);outline-offset:2px}
 .rx-modal .rx-form>footer{grid-column:1/-1;position:sticky;bottom:-22px;z-index:6;display:flex;gap:10px;margin-bottom:-22px;padding:12px 0 22px;background:#fff;border-top:1px solid var(--c-border,#E6E8EE)}
 @media(max-width:640px){.rx-modal .rx-card{grid-template-columns:minmax(0,1fr)}.rx-modal .rx-c-dept,.rx-modal .rx-c-prov{grid-column:1/-1}}
+/* booking/reception modals on phones: bottom sheet */
+@media(max-width:640px){
+.modal-backdrop.rx-modal{align-items:flex-end;padding:0}
+.rx-modal .modal{max-width:none;width:100%;max-height:92vh;max-height:92dvh;border-radius:22px 22px 0 0;padding:14px 16px 0;animation:rx-sheet-up .22s ease-out}
+.rx-modal .modal::before{content:"";display:block;width:44px;height:5px;border-radius:9px;background:#D5DEEE;margin:0 auto 10px}
+.rx-modal .modal-close{min-width:44px;min-height:44px}
+.rx-modal .rx-form input:not([type=checkbox]):not([type=radio]),.rx-modal .rx-form select,.rx-modal .rx-form textarea{font-size:16px;min-height:44px}
+.rx-modal .rx-form>footer{bottom:0;margin-bottom:0;padding:12px 0 calc(12px + env(safe-area-inset-bottom,0px))}
+.rx-modal .rx-form>footer .btn{flex:1;min-height:44px}
+}
+@keyframes rx-sheet-up{from{transform:translateY(36px);opacity:.7}to{transform:none;opacity:1}}
+@media(prefers-reduced-motion:reduce){.rx-modal .modal{animation:none!important}}
