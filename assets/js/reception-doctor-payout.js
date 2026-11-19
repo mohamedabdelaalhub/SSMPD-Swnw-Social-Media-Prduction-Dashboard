@@ -126,15 +126,18 @@
     var c = db(); Promise.resolve(c.storage.from(BUCKET).createSignedUrl(path, 120)).then(function (r) { if (r.error) throw Error(r.error.message); w.open(r.data.signedUrl, "_blank", "noopener"); }).catch(function (e) { toast(e.message, true); });
   }
   function printReceipt(p, r) {
-    var win = w.open("", "_blank", "width=720,height=900"); if (!win) { toast("اسمح بفتح النوافذ علشان تطبع", true); return; }
-    var rows = (p.invoices || []).map(function (i) { return "<tr><td>" + esc(i.description) + "</td><td>" + esc(i.reference) + "</td><td>" + money(i.fee) + "</td></tr>"; }).join("");
-    win.document.write('<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>إيصال استلام نقدية</title><style>body{font-family:"Hiragino Kaku","BigVesta Arabic",Tahoma,sans-serif;color:#16212E;padding:28px;max-width:640px;margin:auto}h1{color:#0F369D;font-size:22px;margin:0 0 4px}.sub{color:#555;margin:0 0 18px}.amt{font-size:30px;font-weight:800;color:#0F369D;margin:14px 0}table{width:100%;border-collapse:collapse;font-size:13px;margin:12px 0}td,th{border:1px solid #ccd;padding:6px;text-align:start}.sig{display:flex;gap:40px;margin-top:48px}.sig div{flex:1;border-top:1px solid #16212E;padding-top:6px;text-align:center}small{color:#666}</style></head><body>' +
-      "<h1>إيصال استلام نقدية</h1><p class=\"sub\">مركز عيادات Swnw التخصصية — فرع حدائق الأهرام</p>" +
-      "<p>استلمت أنا <b>" + esc(r.name || p.doctor_name || "") + "</b> مبلغًا نقديًا قدره:</p><div class=\"amt\">" + money(p.gross) + "</div>" +
-      "<p>وذلك قيمة أتعابي عن الحالات الموضحة أدناه.</p><table><thead><tr><th>الحالة</th><th>الفاتورة</th><th>الأتعاب</th></tr></thead><tbody>" + rows + "</tbody></table>" +
-      "<p><small>المرجع: " + esc(p.reference) + " · تاريخ الاعتماد: " + esc(when(p.reviewed_at)) + " · اعتمده: " + esc(p.reviewed_by || "") + "</small></p>" +
-      '<div class="sig"><div>توقيع الطبيب</div><div>توقيع موظف الاستقبال</div></div><script>window.onload=function(){window.print();}<\/script></body></html>');
-    win.document.close();
+    /* owner 2026-11-19: letterhead look (docs/ui-references/PRINT-DOCUMENTS.md, mockup doctor-payout-receipt.html) */
+    var win = w.open("", "_blank"); if (!win) { toast("اسمح بفتح النوافذ علشان تطبع", true); return; }
+    var P = w.SSMPDPrint, list = p.invoices || [];
+    var rows = list.map(function (i, n) { return "<tr><td>" + (n + 1) + '</td><td class="ltr">' + esc(i.reference) + '</td><td class="n">' + esc(i.description) + "</td><td>" + esc(i.basis || i.kind || "") + "</td><td>" + P.money(i.fee) + "</td></tr>"; });
+    var body = P.title("إيصال استلام مستحقات طبيب", "رقم الصرف", p.reference) +
+      P.meta([["الطبيب", r.name || p.doctor_name], ["القسم", r.department || p.department], ["التاريخ", P.stamp(p.reviewed_at || p.created_at), 1], ["طلبه", p.requested_by || p.created_by_name], ["اعتمده", p.reviewed_by], ["الخزينة", p.register_name]]) +
+      P.table(["م", "الفاتورة", "الحالة / الخدمة", "البند", "المستحق"], rows, '<tr class="tot"><td colspan="4">إجمالي المصروف</td><td>' + P.money(p.gross) + "</td></tr>") +
+      '<div class="sum"><div class="box"><h4>الصرف</h4>' + P.kv("المبلغ المستلم نقدًا", P.money(p.gross) + " ج.م", "big") + P.kv("المبلغ بالحروف", esc(P.words(p.gross))) + "</div>" +
+      '<div class="box"><h4>إقرار</h4><p>استلمت أنا ' + esc(r.name || p.doctor_name || "") + " المبلغ ده قيمة أتعابي عن الحالات الموضحة.</p></div></div>" +
+      P.sig([["توقيع الطبيب (المستلم)", "الاسم والتوقيع"], ["توقيع موظف الاستقبال", p.requested_by || ""], ["ختم المركز", ""]]) +
+      '<div class="note">الأسعار بالجنيه المصري. كل بند مربوط بفاتورة الزيارة.</div>';
+    P.open(P.documentHtml("إيصال صرف " + (p.reference || ""), list.length > 12 ? P.flow(body) : P.page(body)), win);
   }
 
   /* ---------- approvers ---------- */
