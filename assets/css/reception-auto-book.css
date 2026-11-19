@@ -1,0 +1,21 @@
+/* الحجوزات التلقائية — قسم المواعيد (تصور docs/ui-references/mockups/booking-auto-sync.html، موافقة المالك 2026-11-19) */
+[data-rx-auto-book]{display:grid;gap:12px;margin:12px 0}
+.rx-ab-sync{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 14px;border-radius:14px;background:#fff;border:1px solid #D5DEEE;font-size:13px;color:#3B4658}
+.rx-ab-sync b{color:#2F7D5C}.rx-ab-dot{width:8px;height:8px;border-radius:50%;background:#2F7D5C;display:inline-block}
+.rx-ab-src{margin-inline-start:auto;display:flex;gap:6px;flex-wrap:wrap}
+.rx-ab-tag{display:inline-block;padding:1px 9px;border-radius:99px;font-size:11px;font-weight:400;vertical-align:middle;white-space:nowrap;background:#F2F4F7;color:#3B4658}
+.rx-ab-masa{background:#EEF3FF;color:#0F369D}.rx-ab-whatsapp{background:#E6F2EC;color:#2F7D5C}.rx-ab-portal{background:#F1ECFB;color:#5B3FA8}
+.rx-ab-website{background:#FDEEE7;color:#C2410C}.rx-ab-new{background:#FDEEE7;color:#F15A22}
+.rx-ab-review{border-inline-start-color:#F15A22;background:#FFF8F4}.rx-ab-review h4{color:#F15A22;margin:0 0 4px}.rx-ab-card h4{margin:0 0 4px}
+.rx-ab-review>p{margin:0 0 6px;font-size:12px;color:#5b6577}
+.rx-ab-item{border-top:1px solid #E6E8EE;padding:10px 0;display:grid;gap:8px}
+.rx-ab-meta{font-size:12px;color:#5b6577}.rx-ab-why{margin:0;font-size:12px;color:#8A5A00}
+.rx-ab-none{display:inline-block;padding:1px 9px;border-radius:8px;background:#FFF6E5;color:#8A5A00;font-size:12px;font-weight:700}
+.rx-ab-vs{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px}.rx-ab-vs div{background:#F7F8FB;border-radius:10px;padding:8px 10px;line-height:1.7}
+.rx-ab-vs b{display:block;color:#0F369D;font-size:11px}
+.rx-ab-item .rx-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.rx-ab-age{display:inline-flex;gap:6px;align-items:center;font-size:12px}.rx-ab-age input{width:7em}
+.rx-ab-dismiss{color:#D0402A}
+@media(max-width:640px){.rx-ab-vs{grid-template-columns:1fr}.rx-ab-src{margin-inline-start:0}}
+/* Masa imports are booked automatically now: the old «سجّل المريض هنا لما ييجي» list is redundant */
+.rx-ab-on .rx-fb-imports{display:none}
