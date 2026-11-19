@@ -306,14 +306,14 @@ begin
   perform public.report_check_period(p_from, p_to);
   with l as (
     select l.id, l.source, l.assigned_to, l.current_status, l.received_at,
-           (select min(attempt_date) from public.lead_attempts la where la.lead_id = l.id) first_at
+           (select min(la.attempt_date) from public.lead_attempts la where la.lead_id = l.id) first_at
       from public.leads l where (l.received_at at time zone 'Africa/Cairo')::date between p_from and p_to),
-  x as (select *, extract(epoch from first_at - received_at) / 60 mins from l),
+  x as (select l.*, extract(epoch from l.first_at - l.received_at) / 60 mins from l),
   g as (
-    select coalesce(ad.name, 'مش متوزع') employee, count(*) leads, count(first_at) contacted, count(*) filter (where first_at is null) untouched,
-           round(avg(mins)::numeric, 1) avg_first_response, round((percentile_cont(0.5) within group (order by mins))::numeric, 1) median_first_response,
-           count(*) filter (where mins <= 15) within_15,
-           count(*) filter (where current_status in ('booked', 'booked_on_system', 'service_done')) booked
+    select coalesce(ad.name, 'مش متوزع') employee, count(*) leads, count(x.first_at) contacted, count(*) filter (where x.first_at is null) untouched,
+           round(avg(x.mins)::numeric, 1) avg_first_response, round((percentile_cont(0.5) within group (order by x.mins))::numeric, 1) median_first_response,
+           count(*) filter (where x.mins <= 15) within_15,
+           count(*) filter (where x.current_status in ('booked', 'booked_on_system', 'service_done')) booked
       from x left join public.admins ad on ad.id = x.assigned_to group by ad.name)
   select jsonb_build_object(
     'rows', coalesce((select jsonb_agg(to_jsonb(g) || jsonb_build_object('conversion', case when leads > 0 then round(100.0 * booked / leads, 1) end)
