@@ -32,7 +32,7 @@ assert.equal((await q("select day_only d from clinic_reception.masa_bookings whe
 const def=(await q("select pg_get_functiondef('clinic_reception.slot_busy(uuid,timestamptz,timestamptz,uuid)'::regprocedure) d"))[0].d;
 assert.equal(def.split('provider_gap(p_provider)').length-1,8,'gap kept');
 }
-await db.exec('reset role');await db.exec(require('fs').readFileSync(${JSON.stringify(path.join(__dirname,'..','supabase','rollbacks','20261119010000_reception_masa_import_day_only.rollback.sql'))},'utf8'));
+await db.exec('reset role');await db.exec(require('fs').readFileSync(${JSON.stringify(path.join(__dirname,'..','supabase','rollbacks','20261119020000_reception_masa_import_day_only.rollback.sql'))},'utf8'));
 assert.equal((await db.query("select count(*)::int n from information_schema.columns where table_name='masa_bookings' and column_name='day_only'")).rows[0].n,0);
 assert(!(await db.query("select pg_get_functiondef('clinic_reception.slot_busy(uuid,timestamptz,timestamptz,uuid)'::regprocedure) d")).rows[0].d.includes('day_only'),'rollback restores slot_busy');
 await db.close();console.log('PASS Masa day-only bookings: 00:00 = no time, never blocks a slot, listed by Cairo day as «بدون ميعاد», moving it to a time clears the flag, gap kept, rollback.');})().catch(e=>{console.error(e);process.exit(1);});`;

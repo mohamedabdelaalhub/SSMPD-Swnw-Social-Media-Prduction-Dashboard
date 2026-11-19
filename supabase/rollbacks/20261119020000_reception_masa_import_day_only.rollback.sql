@@ -1,4 +1,4 @@
--- Rollback for 20261119010000_reception_masa_import_day_only.sql: reverse text patches, then drop the column.
+-- Rollback for 20261119020000_reception_masa_import_day_only.sql: reverse text patches, then drop the column.
 begin;
 do $$
 declare src text; n int;
