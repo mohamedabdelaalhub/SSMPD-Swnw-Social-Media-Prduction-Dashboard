@@ -19889,6 +19889,58 @@
       "reviewed": true
     },
     {
+      "title": "ملاحظة قصيرة (اقتباس من إجابة المرشح)",
+      "labels": [
+        "ملاحظة قصيرة (اقتباس من إجابة المرشح)"
+      ],
+      "text": "جملة قصيرة من إجابة المرشح أو سلوكه تبرر الدرجة. يراها المراجع المسند والإدارة فقط، ولا يراها المتدرب. لا تكتب فيها بيانات مرضى.",
+      "article": "training-center",
+      "tabs": [
+        "training_evaluation"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "القرار النهائي",
+      "labels": [
+        "القرار النهائي"
+      ],
+      "text": "يظهر مختارًا عليه التقدير المقترح المحسوب (40% اختبار، 40% مقابلة، 20% تمثيل). يمكن للإدارة اختيار تقدير آخر بشرط كتابة السبب. بعد الاعتماد تُقفل الدرجات.",
+      "article": "training-center",
+      "tabs": [
+        "training_evaluation"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "سبب التعديل (إلزامي إذا خالف القرار المقترح)",
+      "labels": [
+        "سبب التعديل (إلزامي إذا خالف القرار المقترح)"
+      ],
+      "text": "يُكتب فقط عند اختيار قرار يخالف التقدير المحسوب، ويُحفظ في سجل التدقيق مع القرار. بدونه يرفض الخادم الاعتماد.",
+      "article": "training-center",
+      "tabs": [
+        "training_evaluation"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "رسالة للمتدرب (تظهر له مع النتيجة المعتمدة)",
+      "labels": [
+        "رسالة للمتدرب (تظهر له مع النتيجة المعتمدة)"
+      ],
+      "text": "رسالة توجيهية من الإدارة تظهر للمتدرب مع تقديره بعد الاعتماد. اكتبها بصياغة تعليمية، دون درجات تفصيلية أو ملاحظات المراجع الداخلية.",
+      "article": "training-center",
+      "tabs": [
+        "training_evaluation"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "نص التعليق الصوتي",
       "labels": [
         "نص التعليق الصوتي",
@@ -21222,5 +21274,9 @@
     "labels": 1325,
     "files": 128,
     "groups": 1428
+    "definitions": 1805,
+    "labels": 1327,
+    "files": 127,
+    "groups": 1430
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
