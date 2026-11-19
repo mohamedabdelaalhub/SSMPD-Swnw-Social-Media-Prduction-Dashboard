@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>تصور — العائد على الصرف (إعلانات Meta)</title>
+<style>
+@font-face{font-family:"BigVesta Arabic";src:url("../../../assets/fonts/BigVesta-Regular.woff2") format("woff2");font-weight:400}
+@font-face{font-family:"BigVesta Arabic";src:url("../../../assets/fonts/BigVesta-Bold.woff2") format("woff2");font-weight:700}
+@font-face{font-family:"Hiragino Kaku";src:url("../../../assets/fonts/Hiragino-W3.woff2") format("woff2");font-weight:300}
+@font-face{font-family:"Hiragino Kaku";src:url("../../../assets/fonts/Hiragino-W6.woff2") format("woff2");font-weight:600}
+@font-face{font-family:"Hiragino Kaku";src:url("../../../assets/fonts/Hiragino-W8.woff2") format("woff2");font-weight:800}
+:root{--p:#0F369D;--pd:#0B2A7A;--a:#F15A22;--d:#16212E;--pos:#2F7D5C;--neg:#D0402A;--bg:#F4F6FB;--card:#fff;--bd:#E3E8F2;--mut:#6B7688;--g:16px}
+*{box-sizing:border-box;margin:0}
+body{font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;background:var(--bg);color:var(--d);padding:28px;font-size:14px;font-variant-numeric:tabular-nums}
+.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:var(--g)}
+.crumb{color:var(--mut);font-size:12px}
+h1{font-size:26px;font-weight:800;margin-top:4px}
+.sub{color:var(--mut);font-size:13px;margin-top:4px}
+.banner{background:#FFF4EC;border:1px solid rgba(241,90,34,.35);color:#9A3A12;border-radius:12px;padding:10px 14px;font-size:12.5px}
+.bar{display:flex;gap:var(--g);flex-wrap:wrap;align-items:center;justify-content:space-between}
+.pills{display:flex;gap:0;flex-wrap:wrap;background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:3px}
+.pill{border-radius:8px;padding:7px 14px;font-size:12.5px;color:var(--d)}
+.pill.on{background:var(--d);color:#fff}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:18px;padding:20px}
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:var(--g)}
+.kpi{background:var(--card);border:1px solid var(--bd);border-radius:18px;padding:18px 20px;display:flex;flex-direction:column;gap:8px;min-height:112px}
+.kpi .l{font-size:12px;color:var(--mut)}
+.kpi .v{font-size:28px;font-weight:800;line-height:1.1}
+.kpi .v small{font-size:13px;font-weight:600;color:var(--mut);margin-inline-start:4px}
+.kpi .n{font-size:11.5px;color:var(--mut)}
+.kpi.hero{background:linear-gradient(135deg,var(--p),var(--pd));border-color:transparent;color:#fff}
+.kpi.hero .l,.kpi.hero .n{color:rgba(255,255,255,.8)}
+.kpi.hero .v small{color:rgba(255,255,255,.8)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:var(--g)}
+h2{font-size:15px;font-weight:800}
+.meter{margin-top:14px}
+.meter .t{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:6px;gap:8px}
+.meter .t b{font-weight:800}
+.track{height:10px;background:#EEF1F8;border-radius:999px;overflow:hidden}
+.fill{height:100%;border-radius:999px}
+.chip{display:inline-block;border-radius:999px;padding:3px 10px;font-size:11.5px;font-weight:600}
+.chip.ok{background:#E6F2EC;color:#1F5A41}.chip.warn{background:#FFF1E6;color:#9A3A12}.chip.bad{background:#FBE9E5;color:#9B2C1A}.chip.mut{background:#EEF1F8;color:#4A5568}
+table{width:100%;border-collapse:collapse;margin-top:12px}
+th{font-size:11.5px;color:var(--mut);font-weight:600;text-align:start;padding:8px 10px;border-bottom:1px solid var(--bd)}
+td{padding:14px 10px;border-bottom:1px solid #F0F3FA;font-size:13px;vertical-align:middle}
+tr:last-child td{border-bottom:0}
+.name{font-weight:600}.code{font-size:11px;color:var(--mut);margin-top:2px}
+.tc{display:flex;flex-direction:column;gap:6px;min-width:150px}
+.tc .top{display:flex;justify-content:space-between;gap:8px;font-size:12.5px}
+.scale{position:relative;height:8px;background:#EEF1F8;border-radius:999px}
+.scale i{position:absolute;inset-block:0;inset-inline-start:0;border-radius:999px}
+.scale u{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--d);border-radius:2px}
+.empty{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;padding:36px 16px}
+.empty .ic{width:56px;height:56px;border-radius:50%;background:#EEF1F8;display:grid;place-items:center;font-size:24px}
+.empty p{color:var(--mut);max-width:460px;line-height:1.8}
+.demo,.emp{display:none}
+body[data-s=demo] .demo{display:revert}body[data-s=demo] .demo.flex{display:flex}
+body[data-s=empty] .emp{display:revert}body[data-s=empty] .row2.emp{display:grid}
+body[data-s=demo] .kpis.demo{display:grid}body[data-s=demo] .row2.demo{display:grid}
+@media(max-width:900px){.kpis{grid-template-columns:repeat(2,1fr)}.row2{grid-template-columns:1fr}.kpi.hero{grid-column:1/-1;order:-1}body{padding:16px}.tbl{overflow-x:auto}.tbl table{min-width:640px}.pills{flex-wrap:nowrap;overflow-x:auto;max-width:100%}.pill{white-space:nowrap;padding:7px 11px}}
+</style>
+</head>
+<body data-s="demo">
+<script>document.body.dataset.s=(location.hash.replace('#','')||'demo')</script>
+<div class="wrap">
+  <div>
+    <div class="crumb">إعلانات Meta ‹ العائد على الصرف</div>
+    <h1>العائد على الصرف</h1>
+    <div class="sub">كل جنيه اتصرف على الإعلانات رجع كام ليد وكام حجز وكام إيراد</div>
+  </div>
+
+
+  <div class="bar">
+    <div class="pills"><span class="pill on">آخر 7 أيام</span><span class="pill">آخر 28 يوم</span><span class="pill">الشهر الحالي</span><span class="pill">من البداية</span></div>
+    <div class="pills"><span class="pill on">الكل</span><span class="pill">سونو</span><span class="pill">د. دينا</span></div>
+  </div>
+
+  <div class="banner demo">⚠️ تصور فقط — الأرقام دي تجريبية للتوضيح ومش حقيقية. الأرقام الحقيقية هتظهر بعد أول حملة.</div>
+
+  <!-- حالة فاضية (الوضع الحالي) -->
+  <div class="card emp">
+    <div class="empty"><div class="ic">📊</div><h2>لسه مفيش صرف على الإعلانات</h2>
+      <p>الحملتين الجاهزتين (علاج طبيعي وليزر كانديلا) متوقفتين على Meta. أول ما تفعّلهم بإيدك وتبدأ تصرف، الأرقام هتظهر هنا لوحدها كل يوم الساعة 6 الصبح.</p>
+      <span class="chip mut">آخر مزامنة: النهارده 6:00 ص — مفيش بيانات</span></div>
+  </div>
+  <div class="row2 emp">
+    <div class="card"><h2>حدود الصرف</h2>
+      <div class="meter"><div class="t"><span>سونو — اليوم</span><b>0 من 200 ج</b></div><div class="track"><div class="fill" style="width:0"></div></div></div>
+      <div class="meter"><div class="t"><span>سونو — الشهر</span><b>0 من 6,000 ج</b></div><div class="track"><div class="fill" style="width:0"></div></div></div></div>
+    <div class="card"><h2>الأهداف المعتمدة في الخطة</h2>
+      <table><thead><tr><th>الحملة</th><th>هدف تكلفة الحجز</th><th>الميزانية</th></tr></thead><tbody>
+      <tr><td><div class="name">علاج طبيعي ماسنجر</div><div class="code">PHY1</div></td><td>120 ج</td><td>100 ج/يوم</td></tr>
+      <tr><td><div class="name">ليزر نسائي فورم فيسبوك</div><div class="code">LZF1-F</div></td><td>45 ج</td><td>100 ج/يوم</td></tr></tbody></table></div>
+  </div>
+
+  <!-- حالة فيها أرقام (تجريبية) -->
+  <div class="kpis demo">
+    <div class="kpi"><span class="l">الصرف</span><span class="v">1,240<small>ج</small></span><span class="n">من 1,400 ميزانية الأسبوع</span></div>
+    <div class="kpi"><span class="l">الليدز</span><span class="v">30</span><span class="n">9 ماسنجر · 21 فورم</span></div>
+    <div class="kpi"><span class="l">الحجوزات</span><span class="v">14</span><span class="n">47% من الليدز</span></div>
+    <div class="kpi hero"><span class="l">تكلفة الحجز</span><span class="v">89<small>ج</small></span><span class="n">من الخطتين مجتمعتين</span></div>
+    <div class="kpi"><span class="l">العائد على الصرف</span><span class="v"><bdi dir="ltr">2.5<small>×</small></bdi></span><span class="n">إيراد 3,050 ج</span></div>
+  </div>
+
+  <div class="row2 demo">
+    <div class="card"><h2>حدود الصرف</h2>
+      <div class="meter"><div class="t"><span>سونو — اليوم</span><span><b>188 من 200 ج</b> <span class="chip warn">قرّب يوصل</span></span></div><div class="track"><div class="fill" style="width:94%;background:var(--a)"></div></div></div>
+      <div class="meter"><div class="t"><span>سونو — الشهر</span><span><b>1,240 من 6,000 ج</b> <span class="chip ok">آمن</span></span></div><div class="track"><div class="fill" style="width:21%;background:var(--pos)"></div></div></div>
+      <div class="meter"><div class="t"><span>د. دينا — الشهر</span><span><b>0 من 3,000 ج</b> <span class="chip mut">مفيش صرف</span></span></div><div class="track"><div class="fill" style="width:0"></div></div></div></div>
+    <div class="card"><h2>ملخص الحالة</h2>
+      <div class="meter"><div class="t"><span>علاج طبيعي</span><span class="chip ok">داخل الهدف</span></div><div class="sub">تكلفة الحجز 103 ج والهدف 120 ج — وفّرت 17 ج لكل حجز</div></div>
+      <div class="meter"><div class="t"><span>ليزر نسائي</span><span class="chip bad">فوق الهدف</span></div><div class="sub">تكلفة الحجز 78 ج والهدف 45 ج — محتاجة مراجعة (الفورم أو الإعلان)</div></div></div>
+  </div>
+
+  <div class="card demo">
+    <h2>الحملات</h2>
+    <div class="tbl"><table>
+      <thead><tr><th>الحملة</th><th>الصرف</th><th>ليدز</th><th>حجوزات</th><th>تكلفة الحجز مقابل الهدف</th><th>العائد</th></tr></thead>
+      <tbody>
+      <tr><td><div class="name">علاج طبيعي ماسنجر</div><div class="code">PHY1 · موجة 1</div></td><td>620 ج</td><td>9</td><td>6</td>
+        <td><div class="tc"><div class="top"><b>103 ج</b><span class="chip ok">الهدف 120</span></div><div class="scale"><i style="width:43%;background:var(--pos)"></i><u style="inset-inline-start:50%"></u></div></div></td><td><b><bdi dir="ltr">3.1×</bdi></b></td></tr>
+      <tr><td><div class="name">ليزر نسائي كانديلا فورم</div><div class="code">LZF1-F · موجة 1</div></td><td>620 ج</td><td>21</td><td>8</td>
+        <td><div class="tc"><div class="top"><b>78 ج</b><span class="chip bad">الهدف 45</span></div><div class="scale"><i style="width:80%;background:var(--neg)"></i><u style="inset-inline-start:46%"></u></div></div></td><td><b><bdi dir="ltr">1.9×</bdi></b></td></tr>
+      </tbody></table></div>
+  </div>
+</div>
+</body>
+</html>

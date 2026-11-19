@@ -70,7 +70,7 @@
       list.map(function (a) {
         var act = '';
         if (mode === 'trainee' && a.status !== 'cancelled') act = '<button type="button" class="btn btn-primary" data-open="' + e(a.id) + '">' + (a.exam_status ? 'عرض' : 'متابعة التدريب') + '</button>';
-        if (mode !== 'trainee' && a.exam_status === 'submitted') act = '<button type="button" class="btn ghost" data-result="' + e(a.id) + '">نتيجة الاختبار</button>';
+        if (mode !== 'trainee' && a.exam_status === 'submitted') act = '<button type="button" class="btn ghost" data-result="' + e(a.id) + '">نتيجة الاختبار</button><button type="button" class="btn ghost" data-interview="' + e(a.id) + '">' + (a.status === 'decided' ? 'المقابلة والقرار' : 'ورقة المقابلة') + '</button>';
         if (mode === 'owner' && ['decided', 'cancelled'].indexOf(a.status) === -1) act += '<button type="button" class="btn ghost" data-cancel="' + e(a.id) + '">إلغاء التكليف</button>';
         return '<tr><td>' + e(a.track_name) + '</td>' + (mode !== 'trainee' ? '<td>' + e(a.trainee_name) + '</td>' : '') + '<td>' + e(a.reviewer_name) + '</td><td>' + e(date(a.due_at)) +
           '</td><td>' + e(a.modules_done) + ' من ' + e(a.modules_total) + '</td><td>' + chip(a.status) + (mode !== 'trainee' && a.exam_grade ? ' ' + gradeChip(a.exam_grade) + (a.exam_risk_flags ? ' <span class="te-flag">علامات خطر: ' + e(a.exam_risk_flags) + '</span>' : '') : '') + (a.exam_auto_submitted ? ' <span class="te-note">سُلِّم تلقائيًا بانتهاء الوقت</span>' : '') + '</td><td>' + act + '</td></tr>';
@@ -82,15 +82,18 @@
     var review = st.list.filter(function (a) { return a.relation === 'reviewer'; });
     var owner = isOwner();
     var h = '<div class="te-page"><header class="te-head"><div><h2>التدريب والتقييم</h2><p class="te-muted">مسارات إعداد مديري الفروع ومديري الفرق: دورة من 8 وحدات، ثم اختبار مواقف، ثم مقابلة.</p></div>' +
-      (owner ? '<div class="te-head-actions"><button type="button" class="btn ghost" data-bankview>بنك الأسئلة</button><button type="button" class="btn btn-primary" data-new>تكليف جديد</button></div>' : '') + '</header>';
+      '<div class="te-head-actions"><button type="button" class="btn ghost" data-preview>محتوى الدورة</button>' + (owner ? '<button type="button" class="btn ghost" data-bankview>بنك الأسئلة</button><button type="button" class="btn btn-primary" data-new>تكليف جديد</button>' : '') + '</div></header>';
     if (owner) h += '<section class="te-card" data-bank><h3>بنك الأسئلة</h3><p class="te-muted">جارٍ التحقق…</p></section>';
     h += '<section class="te-card"><h3>تكليفاتي</h3>' + rows(mine, 'trainee') + '</section>';
-    if (review.length) h += '<section class="te-card"><h3>تكليفات أراجعها</h3><p class="te-muted">تظهر هنا التكليفات المسندة إليك بصفتك مراجعًا. ورقة المقابلة تُتاح في مرحلة لاحقة.</p>' + rows(review, 'reviewer') + '</section>';
+    if (owner && !st.list.length) h += '<section class="te-card"><h3>كيف تبدأ</h3><ol class="te-rules"><li>اضغط «تكليف جديد» واختر المتدرب والمراجع.</li><li>يقرأ المتدرب الدورة من «تكليفاتي» ثم يؤدي الاختبار.</li><li>بعد التسليم يظهر هنا زرّا «نتيجة الاختبار» و«ورقة المقابلة»، ثم تعتمد القرار.</li></ol><p class="te-muted">«محتوى الدورة» يعرض الوحدات الثماني للاطلاع، و«بنك الأسئلة» يعرض أسئلة الاختبار بمفتاحها.</p></section>';
+    if (review.length) h += '<section class="te-card"><h3>تكليفات أراجعها</h3><p class="te-muted">تظهر هنا التكليفات المسندة إليك بصفتك مراجعًا. بعد تسليم الاختبار افتح «ورقة المقابلة».</p>' + rows(review, 'reviewer') + '</section>';
     if (owner) h += '<section class="te-card"><h3>كل التكليفات</h3>' + rows(st.list, 'owner') + '</section>';
     st.el.innerHTML = h + '</div>';
     var nb = st.el.querySelector('[data-new]'); if (nb) nb.onclick = newAssignment;
+    st.el.querySelector('[data-preview]').onclick = function () { st.preview = true; st.progress = { completed: {}, exam: { status: 'preview' } }; previewCourse(); };
     var bv = st.el.querySelector('[data-bankview]'); if (bv) bv.onclick = function () { bankView('manager'); };
     st.el.querySelectorAll('[data-open]').forEach(function (b) { b.onclick = function () { openAssignment(b.getAttribute('data-open')); }; });
+    st.el.querySelectorAll('[data-interview]').forEach(function (b) { b.onclick = function () { interviewView(b.getAttribute('data-interview')); }; });
     st.el.querySelectorAll('[data-result]').forEach(function (b) { b.onclick = function () { resultView(b.getAttribute('data-result')); }; });
     st.el.querySelectorAll('[data-cancel]').forEach(function (b) { b.onclick = function () { cancelAssignment(b.getAttribute('data-cancel')); }; });
     if (owner) rpc('training_bank_summary').then(function (s) {
@@ -126,9 +129,23 @@
     });
   }
 
+
+  // Read-only course library for everyone (no assignment needed, nothing recorded).
+  function previewCourse() {
+    stopExam();
+    st.view = 'preview';
+    var mods = course().modules;
+    st.el.innerHTML = '<div class="te-page"><button type="button" class="btn ghost te-back" data-back>رجوع إلى التكليفات</button><header class="te-head"><div><h2>محتوى الدورة</h2><p class="te-muted">ثماني وحدات للاطلاع. إتمام الوحدات يُسجَّل فقط من داخل تكليف.</p></div></header>' +
+      '<section class="te-card"><ol class="te-modules">' + mods.map(function (m, i) { return '<li><button type="button" class="te-module" data-mod="' + i + '"><span class="te-num">' + (i + 1) + '</span><span>' + e(m.title) + '</span><span class="te-muted">' + e(m.tag) + '</span></button></li>'; }).join('') + '</ol></section>' +
+      ((course().sources || []).length ? '<section class="te-card"><h3>المراجع</h3><ul>' + course().sources.map(function (x) { return '<li><a href="' + e(x.url) + '" target="_blank" rel="noopener">' + e(x.title) + '</a></li>'; }).join('') + '</ul><p class="te-muted">المراجع للاطلاع والتدريب، ولا تُعد سياسة لـSwnw تلقائيًا.</p></section>' : '') + '</div>';
+    st.el.querySelector('[data-back]').onclick = function () { st.preview = false; load(); };
+    st.el.querySelectorAll('[data-mod]').forEach(function (b) { b.onclick = function () { moduleView(+b.getAttribute('data-mod')); }; });
+  }
+
   // ---------------------------------------------------------------- trainee: course
   function openAssignment(id) {
     stopExam();
+    st.preview = false;
     st.asg = st.list.filter(function (a) { return a.id === id; })[0];
     return rpc('training_course_progress', { p_assignment: id }).then(function (p) { st.progress = p; courseView(); })
       .catch(function (x) { toast(msg(x), true); });
@@ -157,7 +174,7 @@
 
   function moduleView(i) {
     st.view = 'module';
-    var m = course().modules[i], done = !!(st.progress.completed || {})[m.id], open = !st.progress.exam;
+    var m = course().modules[i], done = !st.preview && !!(st.progress.completed || {})[m.id], open = !st.preview && !st.progress.exam;
     var list = function (a) { return '<ul>' + (a || []).map(function (x) { return '<li>' + e(x) + '</li>'; }).join('') + '</ul>'; };
     st.el.innerHTML = '<div class="te-page"><button type="button" class="btn ghost te-back" data-back>رجوع إلى الدورة</button><article class="te-card te-article"><span class="te-tag">الوحدة ' + (i + 1) + ' من ' + course().modules.length + ' · ' + e(m.tag) + '</span><h2>' + e(m.title) + '</h2>' +
       '<h3>الأهداف</h3>' + list(m.goals) + '<h3>الشرح</h3><div class="te-body">' + m.body + '</div>' +
@@ -166,7 +183,7 @@
       '<h3>سؤال للتحقق من الفهم</h3><div class="te-check"><p>' + e(m.check && m.check.q) + '</p><button type="button" class="btn ghost" data-reveal>إظهار الإجابة</button><p class="te-answer" hidden>' + e(m.check && m.check.a) + '</p></div>' +
       '<p class="te-sum"><b>الخلاصة:</b> ' + e(m.summary) + '</p>' +
       (done ? '<p class="te-ok">أنهيت هذه الوحدة.</p>' : open ? '<button type="button" class="btn btn-primary" data-done>أنهيت قراءة الوحدة</button>' : '') + '</article></div>';
-    st.el.querySelector('[data-back]').onclick = courseView;
+    st.el.querySelector('[data-back]').onclick = st.preview ? previewCourse : courseView;
     st.el.querySelector('[data-reveal]').onclick = function () { st.el.querySelector('.te-answer').hidden = false; this.remove(); };
     var d = st.el.querySelector('[data-done]');
     if (d) d.onclick = function () {
@@ -310,6 +327,87 @@
       st.el.innerHTML = h + '</div>';
       st.el.querySelector('[data-back]').onclick = load;
       st.el.querySelectorAll('[data-bank]').forEach(function (t) { t.onclick = function () { if (t.getAttribute('data-bank') !== which) bankView(t.getAttribute('data-bank')); }; });
+    }).catch(function (x) { toast(msg(x), true); load(); });
+  }
+
+
+  // ---------------------------------------------------------------- reviewer / owner: interview, role-plays, decision
+  var DECISIONS = { ready: 'جاهز', ready_after_training: 'جاهز بعد تدريب', not_ready: 'غير جاهز حاليًا' };
+  function decisionChip(d) { return d ? '<span class="te-chip" data-decision="' + e(d) + '">' + e(DECISIONS[d] || d) + '</span>' : '—'; }
+  function interviewView(id, keepScroll) {
+    stopExam();
+    st.view = 'interview';
+    var y = keepScroll ? w.scrollY : 0;
+    return rpc('training_interview_sheet', { p_assignment: id }).then(function (sh) {
+      var c = sh.content, sc = {}, sum = sh.summary || {}, owner = isOwner(), can = sh.can_score;
+      (sh.scores || []).forEach(function (x) { sc[x.item_type + ':' + x.item_id] = x; });
+      var lst = function (a) { return '<ul>' + (a || []).map(function (x) { return '<li>' + e(x) + '</li>'; }).join('') + '</ul>'; };
+      var scoreBox = function (type, it) {
+        var cur = sc[type + ':' + it.id] || {}, dis = can ? '' : ' disabled';
+        return '<div class="te-score" data-type="' + type + '" data-item="' + e(it.id) + '"><div class="te-score-btns" role="radiogroup" aria-label="الدرجة من 1 إلى 5">' +
+          [1, 2, 3, 4, 5].map(function (n) { return '<button type="button" role="radio" aria-checked="' + (cur.score === n) + '" class="' + (cur.score === n ? 'sel' : '') + '" data-score="' + n + '"' + dis + '>' + n + '</button>'; }).join('') +
+          '</div><label>ملاحظة قصيرة (اقتباس من إجابة المرشح)<input type="text" maxlength="1000" data-note value="' + e(cur.note || '') + '"' + dis + '></label>' +
+          '<label class="te-block"><input type="checkbox" data-blocking' + (cur.blocking ? ' checked' : '') + dis + '> علامة مانعة (تستّر على خطر سلامة، أو كشف سرية، أو تلاعب مالي، أو تزوير سجل)</label></div>';
+      };
+      var h = '<div class="te-page"><button type="button" class="btn ghost te-back" data-back>رجوع إلى التكليفات</button>' +
+        '<header class="te-head"><div><h2>المقابلة وتمثيل المواقف: ' + e(sh.trainee_name) + '</h2><p class="te-muted">' + e(sh.track_name) + ' · هذه الصفحة للمراجع المسند والإدارة فقط، ولا يراها المتدرب.</p></div></header>';
+      if (!c) { st.el.innerHTML = h + '<section class="te-card"><p class="te-warn">لم تُحمَّل ورقة المقابلة بعد. تحمّلها الإدارة من النسخة المعتمدة.</p></section></div>'; st.el.querySelector('[data-back]').onclick = load; return; }
+      h += '<section class="te-card te-stats"><div><b>' + e(sum.exam_percent != null ? sum.exam_percent + '%' : '—') + '</b><span>الاختبار (40%)</span></div>' +
+        '<div><b>' + e(sum.interview_avg != null ? sum.interview_avg : '—') + '</b><span>متوسط المقابلة (40%) · ' + e(sum.interview_scored) + ' من ' + e(sum.interview_total) + '</span></div>' +
+        '<div><b>' + e(sum.roleplay_avg != null ? sum.roleplay_avg : '—') + '</b><span>متوسط التمثيل (20%) · ' + e(sum.roleplay_scored) + ' من ' + e(sum.roleplay_total) + '</span></div>' +
+        '<div><b>' + e(sum.result != null ? sum.result + '%' : '—') + '</b><span>النتيجة المحسوبة</span></div><div>' + decisionChip(sum.suggested) + '<span>التقدير المقترح</span></div>' +
+        '<div><b' + (sum.exam_risk_flags ? ' class="te-flag"' : '') + '>' + e(sum.exam_risk_flags || 0) + '</b><span>علامات خطر الاختبار</span></div></section>' +
+        (sum.blocking_flags ? '<p class="te-warn">توجد علامة مانعة: النتيجة المقترحة «غير جاهز حاليًا» حتى تراجعها الإدارة بنفسها.</p>' : '') +
+        ((sum.weaknesses || []).length ? '<section class="te-card"><h3>نقاط الضعف</h3><ul>' + sum.weaknesses.map(function (x) { return '<li>' + e(x.name_ar) + (x.oral_avg != null ? ' · المقابلة والتمثيل ' + e(x.oral_avg) + ' من 5' : '') + (x.exam_percent != null ? ' · الاختبار ' + e(x.exam_percent) + '%' : '') + '</li>'; }).join('') + '</ul></section>' : '') +
+        '<details class="te-card"><summary><b>مقياس الدرجات من 1 إلى 5</b></summary><ol class="te-scale">' + (c.scale || []).map(function (x) { return '<li><b>' + e(x.score) + '</b> ' + e(x.description) + '</li>'; }).join('') + '</ol>' +
+        ((c.competency_levels || []).length ? '<div class="te-table"><table><thead><tr><th>الكفاءة</th>' + [1, 2, 3, 4, 5].map(function (n) { return '<th>' + n + '</th>'; }).join('') + '</tr></thead><tbody>' + c.competency_levels.map(function (r) { return '<tr><td>' + e(r.competency) + '</td>' + [1, 2, 3, 4, 5].map(function (n) { return '<td>' + e((r.levels || {})[n]) + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div>' : '') + '</details>' +
+        (can ? '' : '<p class="te-muted">' + (sh.status === 'decided' ? 'صدر القرار، والدرجات للاطلاع فقط.' : 'تُفتح الورقة للتقييم بعد تسليم الاختبار.') + '</p>') +
+        '<section class="te-card"><h3>أسئلة المقابلة</h3><ol class="te-iv">' + (c.questions || []).map(function (q) {
+          return '<li><p class="te-q-small"><span class="te-tag">' + e(q.axis) + '</span> ' + e(q.text) + '</p><details><summary>ماذا تسمع، وعلامات الخطر، وسؤال المتابعة</summary><p><b>ماذا تسمع:</b></p>' + lst(q.listen_for) + '<p><b>علامات خطر:</b></p>' + lst(q.red_flags) + (q.follow_up ? '<p><b>سؤال متابعة:</b> ' + e(q.follow_up) + '</p>' : '') + '</details>' + scoreBox('question', q) + '</li>';
+        }).join('') + '</ol></section>' +
+        '<section class="te-card"><h3>تمثيل المواقف</h3>' + (c.roleplays || []).map(function (r) {
+          var cur = sc['roleplay:' + r.id] || {}, done = cur.checklist || [];
+          return '<div class="te-rp"><h4>' + e(r.title) + '</h4><div class="te-case"><p><b>بطاقة الموقف للمرشح:</b> ' + e(r.candidate_card) + '</p></div><details><summary>نص دور المراجع</summary><p class="te-pre">' + e(r.reviewer_script) + '</p></details>' +
+            '<p><b>السلوكيات المطلوبة:</b></p><ul class="te-check-list">' + (r.checklist || []).map(function (x, i) { return '<li><label><input type="checkbox" data-check="' + i + '"' + (done.indexOf(i) > -1 ? ' checked' : '') + (can ? '' : ' disabled') + '> ' + e(x) + '</label></li>'; }).join('') + '</ul>' +
+            '<p><b>علامات خطر:</b></p>' + lst(r.red_flags) + scoreBox('roleplay', r) + '</div>';
+        }).join('') + '</section>';
+      if (owner) {
+        if (sh.decision) h += '<section class="te-card"><h3>القرار النهائي</h3><p>' + decisionChip(sh.decision.final) + (sh.decision.final !== sh.decision.suggested ? ' <span class="te-muted">(المقترح كان ' + e(DECISIONS[sh.decision.suggested]) + ')</span>' : '') + '</p>' + (sh.decision.override_reason ? '<p><b>سبب التعديل:</b> ' + e(sh.decision.override_reason) + '</p>' : '') + (sh.decision.message ? '<p><b>الرسالة للمتدرب:</b> ' + e(sh.decision.message) + '</p>' : '') + '</section>';
+        else if (sum.complete) h += '<section class="te-card" data-decide><h3>اعتماد القرار</h3><p>التقدير المقترح: ' + decisionChip(sum.suggested) + ' · النتيجة ' + e(sum.result) + '%</p>' +
+          '<label>القرار النهائي<select name="final">' + ['ready', 'ready_after_training', 'not_ready'].map(function (k) { return '<option value="' + k + '"' + (k === sum.suggested ? ' selected' : '') + '>' + DECISIONS[k] + '</option>'; }).join('') + '</select></label>' +
+          '<label>سبب التعديل (إلزامي إذا خالف القرار المقترح)<textarea name="reason" rows="2" maxlength="1000"></textarea></label>' +
+          '<label>رسالة للمتدرب (تظهر له مع النتيجة المعتمدة)<textarea name="message" rows="3" maxlength="2000"></textarea></label>' +
+          '<p class="te-err" role="alert" hidden></p><button type="button" class="btn btn-primary" data-approve>اعتماد القرار</button></section>';
+        else h += '<section class="te-card"><p class="te-muted">يُتاح اعتماد القرار بعد تقييم كل أسئلة المقابلة وكل مواقف التمثيل.</p></section>';
+      }
+      st.el.innerHTML = h + '</div>';
+      if (keepScroll && w.scrollTo) w.scrollTo(0, y);
+      st.el.querySelector('[data-back]').onclick = load;
+      function save(box, score) {
+        var rp = box.getAttribute('data-type') === 'roleplay', host = rp ? box.closest('.te-rp') : null;
+        var checks = host ? [].slice.call(host.querySelectorAll('[data-check]:checked')).map(function (x) { return +x.getAttribute('data-check'); }) : [];
+        return rpc('training_save_interview_score', { p_assignment: id, p_item_type: box.getAttribute('data-type'), p_item_id: box.getAttribute('data-item'), p_score: score,
+          p_note: box.querySelector('[data-note]').value || null, p_blocking: box.querySelector('[data-blocking]').checked, p_checklist: checks })
+          .then(function () { return interviewView(id, true); }).catch(function (x) { toast(msg(x), true); });
+      }
+      function current(box) { var b = box.querySelector('.sel'); return b ? +b.getAttribute('data-score') : null; }
+      st.el.querySelectorAll('.te-score').forEach(function (box) {
+        box.querySelectorAll('[data-score]').forEach(function (b) { b.onclick = function () { save(box, +b.getAttribute('data-score')); }; });
+        var later = function () { var v = current(box); if (v) save(box, v); else toast('اختر الدرجة أولًا ليُحفظ التقييم.', true); };
+        box.querySelector('[data-note]').onchange = later;
+        box.querySelector('[data-blocking]').onchange = later;
+      });
+      st.el.querySelectorAll('.te-rp [data-check]').forEach(function (cb) { cb.onchange = function () { var box = cb.closest('.te-rp').querySelector('.te-score'), v = current(box); if (v) save(box, v); }; });
+      var ap = st.el.querySelector('[data-approve]');
+      if (ap) ap.onclick = function () {
+        var sec = st.el.querySelector('[data-decide]'), err = sec.querySelector('.te-err'), fin = sec.querySelector('[name=final]').value, reason = sec.querySelector('[name=reason]').value.trim();
+        err.hidden = true;
+        if (fin !== sum.suggested && !reason) { err.textContent = 'اكتب سبب تعديل القرار المقترح.'; err.hidden = false; return; }
+        ap.disabled = true;
+        rpc('training_decide', { p_assignment: id, p_final: fin, p_override_reason: reason || null, p_message: sec.querySelector('[name=message]').value.trim() || null })
+          .then(function () { toast('تم اعتماد القرار.'); return interviewView(id); })
+          .catch(function (x) { ap.disabled = false; err.textContent = /written reason/.test(String(x && x.message)) ? 'اكتب سبب تعديل القرار المقترح.' : /score every/.test(String(x && x.message)) ? 'قيّم كل الأسئلة والمواقف أولًا.' : msg(x); err.hidden = false; });
+      };
     }).catch(function (x) { toast(msg(x), true); load(); });
   }
 
