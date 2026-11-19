@@ -60,6 +60,12 @@ alter table public.report_target_approvers enable row level security;
 alter table public.report_target_editors enable row level security;
 revoke all on public.report_targets, public.report_target_approvers, public.report_target_editors from anon, authenticated;
 
+-- Campaign cost-per-booking targets from the ads plan the owner approved on 2026-11-13 (moved here from PR #606).
+insert into public.report_targets(metric, campaign_code, target, note, status, proposed_by, proposed_at, approved_by, approved_at)
+select 'campaign_cost_per_booking', v.code, v.target, 'خطة الإعلانات المعتمدة 2026-11-13', 'approved', o.id, now(), o.id, '2026-11-13 12:00+02'
+  from (values ('PHY1', 120), ('LZF1-F', 45), ('DEN1', 105)) v(code, target)
+  cross join (select id from public.admins where id = 'bd5a528f-af8d-4ada-afe9-ce64e68b1d92') o;
+
 create function public.report_target_is_approver() returns boolean language sql stable security definer set search_path = pg_catalog, public as $$
   select exists (select 1 from public.report_target_approvers where admin_id = public.my_admin_id())
 $$;
