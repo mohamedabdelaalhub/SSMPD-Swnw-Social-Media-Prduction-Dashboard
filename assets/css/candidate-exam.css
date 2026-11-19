@@ -1,0 +1,26 @@
+@font-face{font-family:"BigVesta Arabic";src:url("../fonts/BigVesta-Regular.woff2") format("woff2");font-weight:400;font-display:swap}
+@font-face{font-family:"BigVesta Arabic";src:url("../fonts/BigVesta-Bold.woff2") format("woff2");font-weight:700;font-display:swap}
+*{box-sizing:border-box}
+body{margin:0;background:#F4F7FD;color:#16212E;font:16px/1.9 "Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif}
+.ce-wrap{max-width:760px;margin:0 auto;padding:16px}
+.ce-card{background:#fff;border:1px solid #E4E9F2;border-radius:16px;padding:20px;margin-bottom:14px}
+.ce-brand{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.ce-brand img{height:34px}
+h1,h2{margin:0 0 8px;color:#0F369D}
+h1{font-size:22px}h2{font-size:18px}
+.ce-muted{color:#5B6577}
+.ce-err{color:#D0402A;font-weight:700}
+label{display:block;font-weight:700;margin:12px 0 4px}
+input,textarea{width:100%;border:1px solid #CBD5E6;border-radius:10px;padding:10px;font:inherit;color:inherit;background:#fff}
+textarea{min-height:90px}
+.ce-btn{background:#0F369D;color:#fff;border:0;border-radius:10px;padding:10px 20px;font:inherit;font-weight:700;cursor:pointer;margin-top:14px}
+.ce-btn[disabled]{opacity:.5;cursor:default}
+.ce-btn.ghost{background:#fff;color:#0F369D;border:1px solid #0F369D}
+.ce-consent{max-height:260px;overflow:auto;border:1px solid #E4E9F2;border-radius:10px;padding:12px;background:#FAFBFE}
+.ce-timer{position:sticky;top:0;z-index:2;background:#0F369D;color:#fff;border-radius:12px;padding:8px 14px;margin-bottom:12px;display:flex;justify-content:space-between;font-weight:700}
+.ce-q{border-top:1px dashed #E4E9F2;padding-top:14px;margin-top:14px}
+.ce-q:first-of-type{border-top:0;margin-top:0;padding-top:0}
+.ce-opt{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border:1px solid #E4E9F2;border-radius:10px;margin:6px 0;cursor:pointer;font-weight:400}
+.ce-opt input{width:auto;margin-top:7px}
+.ce-opt.on{border-color:#0F369D;background:#EEF3FF}
+.ce-note{font-size:14px;color:#5B6577}

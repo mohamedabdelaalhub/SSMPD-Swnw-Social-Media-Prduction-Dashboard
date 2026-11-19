@@ -828,6 +828,71 @@
       "reviewed": true
     },
     {
+      "title": "قرأتُ ما سبق وأوافق على جمع بياناتي واستخدامها لهذا الغرض.",
+      "labels": [
+        "قرأتُ ما سبق وأوافق على جمع بياناتي واستخدامها لهذا الغرض."
+      ],
+      "text": "موافقة المرشح على جمع بياناته للتقييم فقط. لا يبدأ الاختبار قبلها، ويُحفظ إصدار نص الموافقة ووقتها مع بيانات المرشح.",
+      "article": "training-center",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "رقم الهاتف",
+      "labels": [
+        "رقم الهاتف"
+      ],
+      "text": "اكتب رقم التواصل الصحيح مع كود الدولة إذا طلبه النموذج. راجع صاحب الرقم والغرض منه، فقد تستخدم الأسرة رقمًا واحدًا لأكثر من مريض.",
+      "article": "patient",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "البريد الإلكتروني (اختياري)",
+      "labels": [
+        "البريد الإلكتروني (اختياري)"
+      ],
+      "text": "اكتب عنوان البريد بصيغته مثل name@example.com حسب صاحب السجل. راجع صحته قبل الحفظ لأنه قد يستخدم للتواصل أو الدخول.",
+      "article": "access",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "خبرتك العملية",
+      "labels": [
+        "خبرتك العملية"
+      ],
+      "text": "يكتب المرشح خبرته العملية باختصار. حقل إلزامي، ويراه الإدارة والمراجع المسند فقط.",
+      "article": "training-center",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "مؤهلاتك الدراسية والمهنية",
+      "labels": [
+        "مؤهلاتك الدراسية والمهنية"
+      ],
+      "text": "يكتب المرشح مؤهلاته الدراسية والمهنية. حقل إلزامي، ويراه الإدارة والمراجع المسند فقط.",
+      "article": "training-center",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "عدد الشرايح",
       "labels": [
         "عدد الشرايح"
@@ -19773,6 +19838,124 @@
       "reviewed": true
     },
     {
+      "title": "اسم المرشح",
+      "labels": [
+        "اسم المرشح"
+      ],
+      "text": "اكتب اسم المرشح كما سيظهر في قائمة «المرشحون». المرشح ليس مستخدمًا في اللوحة، ويفتح اختباره من رابط شخصي فقط.",
+      "article": "training-center",
+      "tabs": [
+        "training_evaluation"
+      ],
+      "forms": [
+        "دعوة مرشح"
+      ],
+      "reviewed": true
+    },
+    {
+      "title": "رقم الهاتف",
+      "labels": [
+        "رقم الهاتف"
+      ],
+      "text": "رقم المرشح، يُستخدم لتجهيز رسالة واتساب ولمعرفة من تقدّم سابقًا. لا يُرسل النظام أي رسالة بنفسه.",
+      "article": "training-center",
+      "tabs": [
+        "training_evaluation"
+      ],
+      "forms": [
+        "دعوة مرشح"
+      ],
+      "reviewed": true
+    },
+    {
+      "title": "البريد الإلكتروني (اختياري)",
+      "labels": [
+        "البريد الإلكتروني (اختياري)"
+      ],
+      "text": "بريد المرشح إن وُجد، للإدارة والمراجع المسند فقط، ويُحذف عند حذف بيانات المرشح.",
+      "article": "training-center",
+      "tabs": [
+        "training_evaluation"
+      ],
+      "forms": [
+        "دعوة مرشح"
+      ],
+      "reviewed": true
+    },
+    {
+      "title": "المسار",
+      "labels": [
+        "المسار"
+      ],
+      "text": "اختر المنصب الذي يتقدّم له المرشح: مدير فرع أو مدير فريق. الاختبار واحد للمسارين في هذه المرحلة.",
+      "article": "training-center",
+      "tabs": [
+        "training_evaluation"
+      ],
+      "forms": [
+        "دعوة مرشح"
+      ],
+      "reviewed": true
+    },
+    {
+      "title": "المراجع (يُجري المقابلة)",
+      "labels": [
+        "المراجع (يُجري المقابلة)"
+      ],
+      "text": "اختر من سيجري المقابلة بعد تسليم الاختبار. يرى هذا المراجع المرشحين المسندين إليه فقط.",
+      "article": "training-center",
+      "tabs": [
+        "training_evaluation"
+      ],
+      "forms": [
+        "دعوة مرشح"
+      ],
+      "reviewed": true
+    },
+    {
+      "title": "مدة صلاحية الرابط بالأيام",
+      "labels": [
+        "مدة صلاحية الرابط بالأيام"
+      ],
+      "text": "عدد الأيام التي يبقى فيها رابط الاختبار صالحًا للفتح لأول مرة، من يوم إلى 60 يومًا (الافتراضي 7). بعد بدء الاختبار تحكمه مدة الاختبار نفسها.",
+      "article": "training-center",
+      "tabs": [
+        "training_evaluation"
+      ],
+      "forms": [
+        "دعوة مرشح"
+      ],
+      "reviewed": true
+    },
+    {
+      "title": "السبب",
+      "labels": [
+        "السبب"
+      ],
+      "text": "سبب مكتوب إلزامي يُحفظ في سجل التدقيق عند إلغاء رابط المرشح أو حذف بياناته.",
+      "article": "training-center",
+      "tabs": [
+        "training_evaluation"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "الملاحظة (لا يراها المرشح ولا المراجع)",
+      "labels": [
+        "الملاحظة (لا يراها المرشح ولا المراجع)"
+      ],
+      "text": "ملاحظة داخلية للإدارة وحدها عن المرشح، وتُحذف عند حذف بيانات المرشح.",
+      "article": "training-center",
+      "tabs": [
+        "training_evaluation"
+      ],
+      "forms": [
+        "ملاحظة عن المرشح"
+      ],
+      "reviewed": true
+    },
+    {
       "title": "المسار",
       "labels": [
         "المسار"
@@ -21244,9 +21427,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1805,
-    "labels": 1327,
-    "files": 127,
-    "groups": 1430
+    "definitions": 1818,
+    "labels": 1334,
+    "files": 129,
+    "groups": 1443
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
