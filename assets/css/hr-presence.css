@@ -175,3 +175,31 @@
 /* «مابصموش آخر N ساعة»: says it is live presence only (owner 2026-11-18) */
 .dlg-note{margin:0 0 10px;padding:9px 12px;border-radius:12px;background:#F3F6FC;color:#3B4658;font-size:12.5px;line-height:1.7}
 .att-hub [data-presence-dlg] .dtabs{flex-wrap:wrap;overflow:visible}
+/* calm department cards + popups (tap a total, a department or a person) */
+.pv .person.calm{display:flex;align-items:center;gap:10px;min-height:48px;cursor:pointer}
+.pv .person.calm .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pv .person.calm .pill{flex:none;white-space:nowrap}
+.pv .person.calm:hover,.pv .person.calm:focus-visible{background:#F6F8FD;outline:none}
+.pv .dept>header[data-pd]{cursor:pointer}.pv .dept>header[data-pd]:hover,.pv .dept>header[data-pd]:focus-visible{background:#F6F8FD;outline:none}
+.pv .kpi{cursor:pointer}
+.pp-ov{position:fixed;inset:0;z-index:120;background:rgba(22,33,46,.5);display:flex;align-items:center;justify-content:center;padding:14px}
+.pp{background:#fff;border-radius:22px;width:100%;max-width:460px;max-height:86vh;max-height:86dvh;overflow:auto;padding:16px;animation:pp-up .2s ease-out}
+.pp>header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.pp h3{margin:0;font-size:17px;min-width:0;overflow-wrap:anywhere}
+.pp-x{flex:none;width:44px;height:44px;border-radius:12px;border:1px solid var(--line,#E1E5EE);background:#fff;cursor:pointer;display:grid;place-items:center}
+.pp-back{border:0;background:none;color:#0F369D;font:inherit;cursor:pointer;padding:6px 0;min-height:44px}
+.pp-list{list-style:none;margin:0;padding:0}
+.pp-row{display:flex;align-items:center;gap:10px;width:100%;padding:10px 4px;border:0;border-bottom:1px solid var(--line,#E1E5EE);background:none;font:inherit;text-align:start;cursor:pointer;min-height:56px}
+.pp-list li:last-child .pp-row{border-bottom:0}.pp-row:hover,.pp-row:focus-visible{background:#F6F8FD;outline:none}
+.pp-row .nm{flex:1;min-width:0}.pp-row .nm b,.pp-row .nm small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pp-row small{color:var(--muted,#6B7483)}
+.pp-row .pill{flex:none;white-space:nowrap}
+.pp-empty{text-align:center;color:var(--muted,#6B7483);padding:18px 0}
+.pp-sum{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}.pp-sum div{background:#F6F8FD;border-radius:12px;padding:8px;text-align:center}.pp-sum b{display:block;font-size:20px}.pp-sum small{color:var(--muted,#6B7483)}
+.pp-dl{display:grid;grid-template-columns:auto 1fr;gap:8px 16px;margin:6px 0}.pp-dl dt{color:var(--muted,#6B7483)}.pp-dl dd{margin:0;font-weight:700}
+.pp-meta{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}.pp-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.pp-acts .mini{min-height:44px}
+@keyframes pp-up{from{transform:translateY(24px);opacity:.6}to{transform:none;opacity:1}}
+@media(max-width:640px){.pp-ov{align-items:flex-end;padding:0}.pp{max-width:none;border-radius:22px 22px 0 0;max-height:90vh;max-height:90dvh}}
+@media(prefers-reduced-motion:reduce){.pp{animation:none}}
+.pv .person.calm .warn-ic{flex:none;color:#B45309;display:grid;place-items:center}
+.pv .person.calm .warn-ic{flex:none;color:#B45309;display:grid;place-items:center}

@@ -76,9 +76,16 @@ const workspace = () => ({ can_manage: true, today: '2026-11-12', templates: [{ 
   root().querySelector('[data-v=cards]').click();
 
   // ---- filters + empty state
-  root().querySelector('.kpi[data-k=abs]').click(); assert.equal(root().querySelectorAll('[data-presence-person]').length, 0, 'absent filter shows only the abs-line, no present people'); assert(root().textContent.includes('فلتر نشط'));
-  root().querySelector('[data-presence=clear]').click(); assert(root().querySelectorAll('[data-presence-person]').length > 0 && !root().textContent.includes('فلتر نشط'));
-  root().querySelector('.kpi[data-k=late]').click(); assert.equal(root().querySelectorAll('[data-presence-person]').length, 1, 'late filter'); root().querySelector('.kpi[data-k=late]').click();
+  // totals open a popup (they no longer filter the page in place)
+  const cardsBefore = root().querySelectorAll('[data-presence-person]').length;
+  root().querySelector('.kpi[data-k=abs]').click(); assert(root().querySelector('.pp[role=dialog]'), 'tile opens a dialog'); assert(!root().textContent.includes('فلتر نشط') && !root().querySelector('[data-presence=clear]'), 'no filter banner any more');
+  assert.equal(root().querySelectorAll('.pp .pp-row').length, 1, 'absent popup lists the one absent person'); assert.equal(root().querySelectorAll('[data-presence-person]').length, cardsBefore, 'cards behind the popup are untouched');
+  root().querySelector('.pp [data-pop=close]').click(); assert(!root().querySelector('.pp'), 'close button closes it');
+  root().querySelector('.kpi[data-k=late]').click(); assert.equal(root().querySelectorAll('.pp .pp-row').length, 1, 'late popup'); root().querySelector('.pp-ov').click(); assert(!root().querySelector('.pp'), 'backdrop closes it');
+  // person row in the popup -> details popup with a back button; a card row opens the same details
+  root().querySelector('.kpi[data-k=in]').click(); root().querySelector('.pp .pp-row').click(); assert(root().querySelector('.pp .pp-dl') && root().querySelector('.pp [data-pop=back]'), 'person details with back'); root().querySelector('.pp [data-pop=back]').click(); assert(root().querySelector('.pp .pp-list'), 'back returns to the list'); root().querySelector('.pp [data-pop=close]').click();
+  root().querySelector('[data-presence-dept] [data-pd]').click(); assert(root().querySelector('.pp .pp-sum'), 'department header opens the department popup'); root().querySelector('.pp [data-pop=close]').click();
+  root().querySelector('[data-presence-dept] [data-pp]').click(); assert(root().querySelector('.pp .pp-dl') && !root().querySelector('.pp [data-pop=back]'), 'card person opens details'); root().querySelector('.pp [data-pop=close]').click();
   [...root().querySelectorAll('.chip')].find(c => c.dataset.d === 'nurse').click(); assert.deepEqual([...root().querySelectorAll('[data-presence-dept]')].map(x => x.dataset.dept), ['التمريض'], 'department chip filters the cards'); root().querySelector('.chip[data-d=all]').click();
   const q = root().querySelector('[data-presence-q]'); q.value = 'zzz'; q.dispatchEvent(new w.Event('input')); assert(root().querySelector('[data-presence-empty]'), 'no match -> empty state'); 
   root().querySelector('[data-presence-q]').value = 'منصرف'; root().querySelector('[data-presence-q]').dispatchEvent(new w.Event('input')); assert.equal(root().querySelectorAll('[data-presence-dept]').length, 1, 'search by name'); root().querySelector('[data-presence-q]').value = ''; root().querySelector('[data-presence-q]').dispatchEvent(new w.Event('input'));
@@ -98,7 +105,7 @@ const workspace = () => ({ can_manage: true, today: '2026-11-12', templates: [{ 
   dlg().querySelector('[data-id=none]').click(); assert(dlg().textContent.includes('لم يبصم') && dlg().textContent.includes('في إجازة'), 'mapped people with no punch'); dlg().querySelector('[data-presence=dlg-close]').click(); assert(!dlg());
   w.confirm = () => false; const before = t.calls.length; root().querySelector('[data-presence=ignore]').click(); await t.tick(); assert.equal(t.calls.length, before, 'declining the confirmation sends nothing'); w.confirm = () => true;
   // kebab on a mapped person: change / remove mapping
-  const kb = [...root().querySelectorAll('.kebab[data-presence=map]')].find(b => b.dataset.id.startsWith('3|')); kb.click(); let f = d.querySelector('.wp-modal form'); assert(f && f.elements.person.value === 'p1', 'current person preselected'); f.elements.person.value = '';
+  root().querySelector('[data-pp=p1]').click(); const kb = root().querySelector('.pp [data-pop=map]'); assert(kb && kb.dataset.id.startsWith('3|'), 'mapping button lives in the person popup'); kb.click(); let f = d.querySelector('.wp-modal form'); assert(f && f.elements.person.value === 'p1', 'current person preselected'); f.elements.person.value = '';
   f.dispatchEvent(new w.Event('submit', { cancelable: true })); await t.tick(); await t.tick(); assert.deepEqual(t.calls.filter(c => c[0] === 'hr_presence_map').pop()[1], { p_device_id: 'k14', p_device_user_id: 3, p_person_id: null });
 
   // ---- phone / WhatsApp actions come from the HR people list
