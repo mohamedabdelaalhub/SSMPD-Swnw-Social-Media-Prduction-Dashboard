@@ -310,3 +310,20 @@
 .att-hub .sg .ltr{font-size:11px;font-weight:500;opacity:.85}
 @media print{.att-hub{background:#fff;padding:0}.att-hub .hero,.att-hub .tool,.att-hub .seg,.att-hub .chips{display:none}}
 [data-hr-section=presence]>h2{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+/* «أجازات المركز» (2026-11-15) */
+.att-hub .cl-list{display:grid;gap:12px;margin-top:14px}
+.att-hub .cl-card{border:1px solid var(--glass-line,rgba(15,54,157,.10));border-inline-start:5px solid var(--cl,#64748B);border-radius:16px;padding:14px 16px;background:var(--glass-fill,rgba(255,255,255,.66));box-shadow:var(--glass-shadow,0 10px 30px rgba(15,54,157,.09)),inset 0 1px 0 var(--glass-edge,rgba(255,255,255,.85));display:grid;gap:8px}
+.att-hub .cl-card.cl-pending{--cl:#F15A22}.att-hub .cl-card.cl-approved{--cl:#2F7D5C}.att-hub .cl-card.cl-rejected{--cl:#D0402A}.att-hub .cl-card.cl-cancelled{--cl:#98A2B3}
+.att-hub .cl-card header{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}
+.att-hub .cl-card h3{margin:0;display:flex;align-items:center;gap:8px;font-size:17px;color:#16212E}
+.att-hub .cl-card header p{margin:4px 0 0;color:#475467;font-size:14px}
+.att-hub .cl-pill{border-radius:999px;padding:4px 12px;font-size:12.5px;font-weight:700;color:#fff;background:var(--cl);white-space:nowrap}
+.att-hub .cl-card.cl-pending .cl-pill{color:#16212E}
+.att-hub .cl-note{margin:0;color:#344054}
+.att-hub .cl-meta{margin:0;color:#667085;font-size:13px}
+.att-hub .cl-bookings{display:flex;gap:8px;align-items:center;padding:8px 10px;border-radius:12px;background:#FFF4ED;color:#7A2E0E;font-size:13.5px}
+.att-hub .cl-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.att-hub .cl-wait{color:#7A2E0E;font-weight:700}
+.att-hub .cl-old{margin-top:16px}
+.att-hub .cl-old summary{cursor:pointer;color:#475467;font-weight:700}

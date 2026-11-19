@@ -584,16 +584,20 @@
   }
 
   // شارة كبيرة أعلى كارت المادة حتى يميّز فريق المحتوى الفيديو من البوست بسرعة.
-  function contentFormatBadgeHtml(item) {
+  // نوع المادة الموحّد (video / image_post / carousel / link_post) أو "" لو مش محدد — نفس منطق الشارة، ويستخدمه فلتر «النوع».
+  function contentFormatKey(item) {
     item = item || {};
     var key = item.content_format || "";
-    if (!Object.prototype.hasOwnProperty.call(CONTENT_FORMATS, key)) {
-      var raw = String(item.format || item.content_type || "").toLowerCase();
-      if (/video|reel|فيديو/.test(raw)) key = "video";
-      else if (/carousel|كاروسيل/.test(raw)) key = "carousel";
-      else if (/link|رابط/.test(raw)) key = "link_post";
-      else if (/image|post|بوست|صورة/.test(raw)) key = "image_post";
-    }
+    if (Object.prototype.hasOwnProperty.call(CONTENT_FORMATS, key)) return key;
+    var raw = String(item.format || item.content_type || "").toLowerCase();
+    if (/video|reel|فيديو/.test(raw)) return "video";
+    if (/carousel|كاروسيل/.test(raw)) return "carousel";
+    if (/link|رابط/.test(raw)) return "link_post";
+    if (/image|post|بوست|صورة/.test(raw)) return "image_post";
+    return "";
+  }
+  function contentFormatBadgeHtml(item) {
+    var key = contentFormatKey(item);
     var format = CONTENT_FORMATS[key];
     if (!format) return '<span class="content-format-badge unknown">نوع غير محدد</span>';
     var icon = key === "video" ? "فيديو" : (key === "carousel" ? "كاروسيل" : "بوست");
@@ -733,6 +737,9 @@
 
   // مؤهل كـ"Pattern محتوى" (وليس مجرد رقم أداء) لو عنده أي إشارة إبداعية مفيدة —
   // Hook أو Angle أو CTA أو Format، أو (للإعلانات) عنوان/نص كرييتف حقيقي (بند ٣)
+  // content_angle = "character_reel" is a system marker for the cartoon-character reels (owner 2026-11-14: show it as «ريل شخصيات كارتونية»)
+  function angleLabel(v) { return v === "character_reel" ? "ريل شخصيات كارتونية" : v; }
+
   function ciIsActionable(p, kind) {
     var hasHook = ciIsMeaningful(p.hook_type);
     var hasAngle = ciIsMeaningful(p.content_angle);
@@ -749,7 +756,7 @@
     if (status.key === "weak") return "لا تكرر نفس التنفيذ. لو هتختبر الفكرة، غيّر الـHook أو الـAngle.";
     var parts = [];
     if (ciIsMeaningful(p.hook_type)) parts.push("ابدأ بـ" + p.hook_type);
-    if (ciIsMeaningful(p.content_angle)) parts.push("عن " + p.content_angle);
+    if (ciIsMeaningful(p.content_angle)) parts.push("عن " + angleLabel(p.content_angle));
     var lead = parts.length ? parts.join(" ") + "، بعدين قدّم معلومة قصيرة" : "قدّم معلومة قصيرة ومباشرة تخص المشكلة/الخدمة";
     var cta = ciIsMeaningful(p.cta_type) ? "، وقفل بـCTA " + p.cta_type + "." : "، وقفل بدعوة واضحة للتواصل.";
     return lead + cta;
@@ -891,7 +898,7 @@
       if (p.creative_title) html += "<div><b> <!--ssmpd-i18n:%D8%A7%D9%84%D8%B9%D9%86%D9%88%D8%A7%D9%86%3A-->العنوان:</b> " + escapeHtml(p.creative_title) + '</div>';
       if (p.creative_body) html += "<div><b> <!--ssmpd-i18n:%D8%A7%D9%84%D9%86%D8%B5%3A-->النص:</b> " + escapeHtml(String(p.creative_body).slice(0, 140)) + (String(p.creative_body).length > 140 ? "…" : "") + '</div>';
     }
-    html += '<div><b>Hook:</b> ' + escapeHtml(p.hook_type || "—") + ' &nbsp; <b>Angle:</b> ' + escapeHtml(p.content_angle || "—") + '</div>';
+    html += '<div><b>Hook:</b> ' + escapeHtml(p.hook_type || "—") + ' &nbsp; <b>Angle:</b> ' + escapeHtml(angleLabel(p.content_angle) || "—") + '</div>';
     html += '<div><b>Format:</b> ' + escapeHtml(p.creative_type || "—") + ' &nbsp; <b>CTA:</b> ' + escapeHtml(p.cta_type || "—") + '</div>';
     if (kind === "ad") {
       html += '<div>إنفاق: ' + fmtMoneyW(p.spend) + ' | محادثات: ' + fmtNumW(p.msg_conv) + ' | تكلفة/محادثة: ' + fmtMoneyW(p.cost_per_msg_conv) +
@@ -1060,7 +1067,7 @@ function ciCopyFallbackBrief(ctx, returnOnly) {
         var p = x.raw || {};
         lines.push("GENERAL ACCOUNT PATTERN #" + (idx + 1) + " — TESTING HYPOTHESIS");
         if (ciIsMeaningful(p.hook_type)) lines.push("Hook: " + p.hook_type);
-        if (ciIsMeaningful(p.content_angle)) lines.push("Angle: " + p.content_angle);
+        if (ciIsMeaningful(p.content_angle)) lines.push("Angle: " + angleLabel(p.content_angle));
         if (ciIsMeaningful(p.creative_type)) lines.push("Format: " + p.creative_type);
         if (ciIsMeaningful(p.cta_type)) lines.push("CTA: " + p.cta_type);
         if (x.metric != null) lines.push(ciMetricLabel(ctx.objKey) + ": " + fmtMoneyW(x.metric));
@@ -1217,12 +1224,12 @@ function ciCopyFallbackBrief(ctx, returnOnly) {
         '<div><b>📊 أفضل أداء تاريخي:</b> ' + fmtMoneyW(bestPerf.x.metric) + ' (' + ciMetricLabel(objKey) + ')</div>' +
         (perfIncomplete
           ? '<div style="color:var(--c-negative);">⚠️ بيانات التنفيذ الإبداعي غير مكتملة لهذا الإعلان — Performance benchmark only.</div>'
-          : '<div>' + escapeHtml(ciMeaningfulJoin([bestPerf.x.raw.hook_type, bestPerf.x.raw.content_angle, bestPerf.x.raw.cta_type]) || "—") + '</div>') +
+          : '<div>' + escapeHtml(ciMeaningfulJoin([bestPerf.x.raw.hook_type, angleLabel(bestPerf.x.raw.content_angle), bestPerf.x.raw.cta_type]) || "—") + '</div>') +
         '</div>';
     }
     if (bestActionable) {
       html += '<div style="background:var(--c-bg-alt,#f6f6f6);border-radius:6px;padding:8px 10px;margin-bottom:8px;font-size:12px;">' +
-        '<div><b>✨ أفضل اتجاه قابل للاستخدام في المحتوى حاليًا:</b> ' + escapeHtml(ciMeaningfulJoin([bestActionable.x.raw.hook_type, bestActionable.x.raw.content_angle, bestActionable.x.raw.cta_type]) || "—") + '</div>' +
+        '<div><b>✨ أفضل اتجاه قابل للاستخدام في المحتوى حاليًا:</b> ' + escapeHtml(ciMeaningfulJoin([bestActionable.x.raw.hook_type, angleLabel(bestActionable.x.raw.content_angle), bestActionable.x.raw.cta_type]) || "—") + '</div>' +
         '<div>' + ciMetricLabel(objKey) + ': ' + fmtMoneyW(bestActionable.x.metric) + '</div>' +
         '<div>Confidence: ' + ciItemConfidenceLabel(bestActionable.x, bestActionable.conf).label + '</div>' +
         '<div>Reason: ' + escapeHtml(ciWhyText(bestActionable.x.aStatus, bestActionable.x.aRatio, bestActionable.x.runs, ciMetricLabel(objKey))) + '</div>' +
@@ -1291,7 +1298,7 @@ function ciCopyFallbackBrief(ctx, returnOnly) {
       if (p.creative_body && String(p.creative_body).trim().length > 15) lines.push("Body excerpt: " + String(p.creative_body).slice(0, 140));
     }
     if (ciIsMeaningful(p.hook_type)) lines.push("Hook: " + p.hook_type);
-    if (ciIsMeaningful(p.content_angle)) lines.push("Angle: " + p.content_angle);
+    if (ciIsMeaningful(p.content_angle)) lines.push("Angle: " + angleLabel(p.content_angle));
     if (ciIsMeaningful(p.creative_type)) lines.push("Format: " + p.creative_type);
     if (ciIsMeaningful(p.cta_type)) lines.push("CTA: " + p.cta_type);
     if (kind === "ad") {
@@ -1473,6 +1480,7 @@ function ciCopyFallbackBrief(ctx, returnOnly) {
     specialtyBadgeHtml: specialtyBadgeHtml,
     contentFormatDetailsHtml: contentFormatDetailsHtml,
     contentFormatBadgeHtml: contentFormatBadgeHtml,
+    contentFormatKey: contentFormatKey,
     specialtySelectHtml: specialtySelectHtml,
     platformSelectHtml: platformSelectHtml,
     platformCheckboxesHtml: platformCheckboxesHtml,

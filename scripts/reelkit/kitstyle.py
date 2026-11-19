@@ -59,7 +59,9 @@ def kit_actor(p, name):
         key = {"normal": "neutral", "blink": "blink", "happy": "happy", "ouch": "ouch", "scared": "scared", "thinking": "think", "surprised": "scared", "angry": "angry"}.get(kind, "neutral")
     hid = c["heads"][key]
     hv, _ = part(kit, hid)
-    top_y = yb - bvb[3] * ppu          # top of the body sprite
+    if c.get("static_head") and str(kind).startswith("talk"): yb_head_off = -min(1.0, mo) * 7 * s  # heads without mouth shapes: a small bob while speaking
+    else: yb_head_off = 0
+    top_y = yb - bvb[3] * ppu + yb_head_off          # top of the body sprite
     dx = c.get("head_dx", 0) * ppu; dy = c.get("head_dy", 0) * ppu
     o += _draw(kit, hid, p["x"] + dx, top_y + dy, ppu, anchor="top")
     return o

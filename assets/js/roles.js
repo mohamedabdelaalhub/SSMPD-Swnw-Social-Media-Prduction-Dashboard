@@ -25,6 +25,7 @@
   // (أو سوبر أدمن) بيشوفه، فمتحط لوش هنا وبيتفحص بشكل خاص في canSeeTab
   var TAB_ACCESS = {
     human_resources: Object.keys(ROLES),
+    training_evaluation: Object.keys(ROLES),
     price_lists: ["super_admin","general_manager"],
     summary: ["page_manager", "designer", "approver", "general_manager", "super_admin"],
     production: ["page_manager", "general_manager", "super_admin"],
@@ -33,6 +34,10 @@
     publish: ["page_manager", "approver", "general_manager", "super_admin"],
     comments: ["page_manager", "approver", "general_manager", "super_admin"],
     clinic_info: ["page_manager", "customer_service", "general_manager", "super_admin"],
+    // بيانات الشركة والفروع (سجل تجاري/ضريبي/بنك/تراخيص) — السوبر أدمن بس (قرار المالك 2026-11-16)
+    org_legal: ["super_admin"],
+    // التقارير: كل الأدوار تدخل التاب، والسيرفر (report_catalog) هو اللي يقرر كل شخص يشوف أنهي تقرير
+    reports: Object.keys(ROLES),
     performance: ["page_manager", "approver", "general_manager", "super_admin"],
     indicator_reports: ["general_manager", "super_admin"],
     staff_kpi: ["general_manager", "super_admin"],
@@ -120,6 +125,7 @@
       var admin = normalizeAdmin(adminOrRole);
       if(tab==='reception_services'&&Roles.isNursingDayOnly(admin))return true;
       if(tab==='human_resources')return admin.active!==false&&!!(admin.id||admin.role);
+      if(tab==='training_evaluation')return admin.active!==false&&!!(admin.id||admin.role);
       if(tab==='price_lists')return admin.active!==false&&Roles.canModuleAction(admin,'price_lists','view');
       if(tab==="tasks" && Roles.hasRole(admin,"psychology_specialist"))return true;
       if(tab==="accounting")return Roles.canModuleAction(admin,"accounting","view") || Roles.canSeeTab(admin,"inventory") && !(admin.inventory_assigned===false && admin.inventory_supply_access===true);

@@ -32,7 +32,7 @@ const { JSDOM } = require('jsdom'), fs = require('fs'), assert = require('node:a
   const search = async (type, q) => submit($('[data-tr-search]'), { type, q });
   await search('invoice', 'TST'); assert.deepEqual(calls.pop(), ['find', 'invoice', 'TST']); assert.equal($$('[data-tr-results] [data-tr-scan]').length, 2);
   $$('[data-tr-scan]')[0].click(); await tick(); await tick();
-  assert.equal(calls.pop().join(), 'scan,invoice,i1'); const box = $('[data-tr-scan-box]'); assert(box.textContent.includes('هيتمسح لو اتحذف') && box.textContent.includes('فاتورة: 1') && box.textContent.includes('سطر قيد: 2'));
+  assert.equal(calls.pop().join(), 'scan,invoice,i1'); const box = $('[data-tr-scan-box]'); { const rs = $('[data-tr-results]'); assert(rs && (box.compareDocumentPosition(rs) & 4), 'owner 2026-11-17: scan result shows above the results list'); assert(box.textContent.includes('مفيش حاجة اتمسحت')); } assert(box.textContent.includes('هيتمسح لو اتحذف') && box.textContent.includes('فاتورة: 1') && box.textContent.includes('سطر قيد: 2'));
   assert.equal($('[data-tr-blockers]'), null); assert(box.querySelector('[data-tr-flag]'), 'flag form for a clean record');
   await submit($('[data-tr-flag]'), { reason: 'فاتورة تجربة', confirm: 'غلط' });
   assert($('[data-tr-error]').textContent.includes('اكتب كلمة «تجريبي»'), 'server refusal shown'); assert.equal(flags.length, 0);
@@ -58,9 +58,26 @@ const { JSDOM } = require('jsdom'), fs = require('fs'), assert = require('node:a
   // 6. unflag asks for a reason
   w.prompt = () => 'تراجعت'; row.querySelector('[data-tr-unflag]').click(); await tick(); await tick();
   assert.deepEqual(calls.filter(c => c[0] === 'unflag').pop(), ['unflag', 'invoice', 'i9', 'تراجعت']); assert.equal($$('[data-tr-flag-row]').length, 0);
+  // 6b. type «مقدم حجز» (20261118190000): offered in the picker, sent as 'advance', its badge and tables are named in Arabic
+  assert.deepEqual($$('[data-tr-search] select[name=type] option').map(o => [o.value, o.textContent]).slice(-2), [['advance', 'مقدم حجز'], ['register', 'خزينة']]);
+  await search('advance', '99999'); assert.deepEqual(calls.pop(), ['find', 'advance', '99999']);
+  flags.push({ type: 'advance', key: 'a1', label: 'مقدم حجز 99999', reason: 'تجربة', flagged_at: '2026-11-18', flagged_by: 'المالك' }); blockers = [];
+  dels.unshift({ id: 'd2', type: 'advance', label: 'مقدم حجز 1', reason: 'تنظيف', deleted_at: '2026-11-18T11:00:00Z', deleted_by: 'المالك', counts: { 'clinic_finance.advances': 1, 'clinic_finance.advance_proofs': 1, 'clinic_finance.entries': 2 } });
+  $('[data-tr-close]').click(); card.querySelector('[data-test-records-open]').click(); await tick(); await tick();
+  assert.equal($('[data-tr-flag-row] .badge').textContent, 'مقدم حجز'); assert(!$('[data-tr-flag-row] [data-tr-del-open]').disabled);
+  assert($('[data-tr-history]').textContent.includes('مقدم حجز: 1 — إثبات تحصيل مقدم: 1 — قيد يومية: 2'), 'advance tables named in Arabic');
+  assert(card.textContent.includes('مقدم حجز'), 'the card mentions the new type');
+  // 6c. type «خزينة» (20261118210000): sent as 'register', its badge and the register tables are named in Arabic
+  await search('register', 'dina'); assert.deepEqual(calls.pop(), ['find', 'register', 'dina']);
+  flags.push({ type: 'register', key: 'r1', label: 'خزينة dina', reason: 'تجربة', flagged_at: '2026-11-18', flagged_by: 'المالك' });
+  dels.unshift({ id: 'd3', type: 'register', label: 'خزينة mahmoud', reason: 'تنظيف', deleted_at: '2026-11-18T12:00:00Z', deleted_by: 'المالك', counts: { 'clinic_finance.registers': 1, 'clinic_finance.shifts': 1, 'clinic_finance.treasury_transfers': 1, 'clinic_reception.registers': 1, 'clinic_reception.shifts': 1, 'clinic_finance.cash_accounts': 1, 'clinic_finance.account_config': 1, 'clinic_finance.accounts': 1 } });
+  $('[data-tr-close]').click(); card.querySelector('[data-test-records-open]').click(); await tick(); await tick();
+  assert.deepEqual($$('[data-tr-flag-row] .badge').map(b => b.textContent).slice(-1), ['خزينة']);
+  assert($('[data-tr-history]').textContent.includes('خزينة: 1 — وردية: 1 — طلب تسليم نقدية: 1 — خزينة استقبال: 1 — وردية استقبال: 1 — تعريف حساب نقدية: 1 — إعداد حساب: 1 — حساب في الدليل: 1'), 'register tables named in Arabic');
+  assert(card.textContent.includes('خزينة'), 'the card mentions the register type');
   // 7. close, and the migration not applied yet
   $('[data-tr-close]').click(); assert.equal(m(), null);
   mode = 'missing'; const w2 = await mk('super_admin', db); w2.document.querySelector('[data-test-records-open]').click(); await tick(); await tick();
   assert(w2.document.querySelector('[data-tr-error]').textContent.includes('لم تُفعَّل بعد'), 'clear message when the DB update is not applied');
-  console.log('PASS test-record delete DOM: owner-only card, search/scan, flag + delete with typed confirmations, blockers shown and delete disabled, unflag, history, errors in Arabic, not-applied message');
+  console.log('PASS test-record delete DOM: owner-only card, search/scan, flag + delete with typed confirmations, blockers shown and delete disabled, unflag, history, advance type, errors in Arabic, not-applied message');
 })().catch(e => { console.error(e); process.exitCode = 1; });

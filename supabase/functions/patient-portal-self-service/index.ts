@@ -5,6 +5,32 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 
+// --- portal visibility (keep identical in every patient-portal function; checked by test/portal-visibility.cjs) ---
+// A record reaches the patient portal 24h after it was created, unless a doctor/staff member
+// approved it earlier ("approved") or hid it ("hidden"). Fails closed if the lookup fails.
+const PORTAL_VISIBILITY_DELAY_MS = 24 * 60 * 60 * 1000;
+// deno-lint-ignore no-explicit-any
+async function loadPortalVisibility(admin: any, patientIds: string[]): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
+  if (!patientIds.length) return map;
+  const { data, error } = await admin.from("patient_portal_visibility")
+    .select("entity_type, entity_id, portal_status").in("patient_id", patientIds);
+  if (error) throw new Error("PORTAL_VISIBILITY_UNAVAILABLE");
+  for (const r of data || []) map.set(r.entity_type + ":" + r.entity_id, r.portal_status);
+  return map;
+}
+function isPortalVisible(map: Map<string, string>, entityType: string, entityId: string, createdAt: unknown, now = Date.now()): boolean {
+  const status = map.get(entityType + ":" + entityId);
+  if (status === "approved") return true;
+  if (status === "hidden" || status === "internal") return false;
+  const t = new Date(String(createdAt || "")).getTime();
+  return Number.isFinite(t) && t > 0 && now - t >= PORTAL_VISIBILITY_DELAY_MS;
+}
+// --- end portal visibility ---
+
+// Keep in sync with patient-portal/privacy.html (#terms-version) and PORTAL_TERMS_VERSION in patient-portal/app.js.
+const PORTAL_TERMS_VERSION = "2026-11-18";
+
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -215,7 +241,10 @@ async function portalFilesPayload(
   const patientsById = Object.fromEntries((patientRows || []).map((p: any) => [p.id, p]));
   const accessByPatient = Object.fromEntries(activeAccess.map((a: any) => [a.patient_id, a]));
 
-  const files = (fileRows || []).map((f: any) => {
+  const visibility = await loadPortalVisibility(admin, patientIds);
+  const files = (fileRows || [])
+    .filter((f: any) => isPortalVisible(visibility, "patient_file", f.id, f.uploaded_at))
+    .map((f: any) => {
     const p = patientsById[f.patient_id] || null;
     const a = accessByPatient[f.patient_id] || null;
     return {
@@ -442,6 +471,8 @@ Deno.serve(async (req) => {
     const newPassword = String(body.new_password || "");
     if (!validEmail(email) || code.length !== 8) return json({ error: "INVALID_ACTIVATION_CODE" }, 400);
     if (newPassword.length < 10) return json({ error: "PASSWORD_TOO_SHORT" }, 400);
+    // The patient must accept the current privacy policy & terms (patient-portal/privacy.html).
+    if (String(body.terms_version || "") !== PORTAL_TERMS_VERSION) return json({ error: "TERMS_NOT_ACCEPTED" }, 400);
 
     const { data: account, error: accountError } = await admin
       .from("patient_accounts")
@@ -463,15 +494,17 @@ Deno.serve(async (req) => {
       .limit(5);
     if (codesError) return json({ error: codesError.message }, 500);
 
+    // Every guess counts against every live code of the account, so exhausting the newest
+    // code cannot leave older codes open to unlimited guessing.
+    const liveCodes = (codes || []).filter((r: any) => Number(r.attempts || 0) < Number(r.max_attempts || 0));
+    if (!liveCodes.length) return json({ error: "INVALID_ACTIVATION_CODE" }, 400);
     const inputHash = await sha256(code);
-    const matched = (codes || []).find((r: any) => r.code_hash === inputHash && r.attempts < r.max_attempts);
+    const matched = liveCodes.find((r: any) => r.code_hash === inputHash);
     if (!matched) {
-      const newest = (codes || [])[0];
-      if (newest) {
-        await admin.from("patient_activation_codes")
-          .update({ attempts: Number(newest.attempts || 0) + 1 })
-          .eq("id", newest.id);
-      }
+      await Promise.all(liveCodes.map((r: any) =>
+        admin.from("patient_activation_codes")
+          .update({ attempts: Number(r.attempts || 0) + 1 })
+          .eq("id", r.id)));
       return json({ error: "INVALID_ACTIVATION_CODE" }, 400);
     }
 
@@ -508,13 +541,14 @@ Deno.serve(async (req) => {
       action: "account_activated",
       entity_type: "patient_accounts",
       entity_id: account.id,
-      metadata: { channel: "email_activation_code" },
+      metadata: { channel: "email_activation_code", terms_version: PORTAL_TERMS_VERSION, terms_accepted_at: now },
     });
 
     return json({ ok: true });
   }
 
   if (op === "request_password_reset") {
+    const captchaToken = typeof body.captcha_token === "string" ? body.captcha_token.slice(0, 4096) : undefined;
     const email = normalizeEmail(body.email);
     // رسالة موحّدة تمنع كشف ما إذا كان البريد مسجلاً أم لا.
     const accepted = () => json({ ok: true });
@@ -554,10 +588,14 @@ Deno.serve(async (req) => {
     } catch {
       return json({ error: "PORTAL_URL_NOT_CONFIGURED" }, 503);
     }
-    const recover = await fetch(SUPABASE_URL + "/auth/v1/recover", {
+    // GoTrue reads redirect_to from the QUERY STRING only (a body field is ignored and the link falls
+    // back to SITE_URL = the staff dashboard). The URL must also be in GOTRUE_URI_ALLOW_LIST.
+    const recover = await fetch(SUPABASE_URL + "/auth/v1/recover?redirect_to=" + encodeURIComponent(resetUrl), {
       method: "POST",
       headers: { "Content-Type": "application/json", apikey: ANON_KEY },
-      body: JSON.stringify({ email, redirect_to: resetUrl }),
+      // Forward the browser's Turnstile token so GoTrue CAPTCHA (when enabled) still gates
+      // this public endpoint; GoTrue ignores it while CAPTCHA is off.
+      body: JSON.stringify({ email, gotrue_meta_security: { captcha_token: captchaToken } }),
     });
     if (!recover.ok) return json({ error: "PASSWORD_RESET_EMAIL_FAILED" }, 500);
 

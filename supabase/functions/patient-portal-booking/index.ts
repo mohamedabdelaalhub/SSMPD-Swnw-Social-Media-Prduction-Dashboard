@@ -100,16 +100,164 @@ function cleanTime(v: unknown) {
   return /^\d{1,2}:\d{2}$/.test(s) ? s.padStart(5,"0") : "";
 }
 
+
+// ---- reception (staff) side: confirm / cancel portal booking requests ----
+async function staffContext(req: Request) {
+  const auth = req.headers.get("Authorization") || "";
+  const user = await getUser(req);
+  if (!user) return { error: "UNAUTHORIZED", status: 401 };
+  const userClient = createClient(SUPABASE_URL, ANON_KEY, { global: { headers: { Authorization: auth } } });
+  const { data: allowed, error } = await userClient.rpc("can_access_leads");
+  if (error) return { error: error.message, status: 500 };
+  if (allowed !== true) return { error: "NOT_ALLOWED", status: 403 };
+  const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+  const { data: staff } = await admin.from("admins").select("id,name").eq("user_id", user.id).eq("active", true).maybeSingle();
+  if (!staff) return { error: "NOT_ALLOWED", status: 403 };
+  return { admin, staff };
+}
+
+const OPEN_STATUSES = ["pending", "confirming", "confirmed"];
+const REQUEST_FIELDS = "id,patient_id,doctor_id,doctor_name,specialty_id,specialty_name,requested_date,requested_time,status,official_booking_id,last_error,staff_note,reviewed_at,created_at";
+
+async function createOfficialBooking(doctor: any, patient: any, date: string, time: string) {
+  const qs = new URLSearchParams({
+    hospital:String(doctor.hospital_id), branch:String(doctor.branch_id),
+    specialty:String(doctor.official_specialization_id), doctor:String(doctor.official_doctor_id), date,
+  });
+  const live = await bridge("/availability?" + qs.toString());
+  const times = Array.isArray(live?.Times) ? live.Times.map((x:any)=>String(x).padStart(5,"0")) : [];
+  if (!times.includes(time)) throw new Error("SLOT_NO_LONGER_AVAILABLE");
+  const requestId = crypto.randomUUID().replace(/-/g,"");
+  const payload:any = {
+    BookingRequestId: requestId, HospitalId: doctor.hospital_id, BranchId: doctor.branch_id,
+    SpecializationId: doctor.official_specialization_id, DoctorId: doctor.official_doctor_id,
+    Date: date, Time: time, Patient: { Name: patient.full_name, Phone: patient.phone },
+  };
+  if (patient.age != null && Number.isFinite(Number(patient.age))) payload.Patient.Age = Number(patient.age);
+  const created = await bridge("/bookings", { method:"POST", body:JSON.stringify(payload) });
+  const officialId = String(created?.OfficialBookingId || created?.official_booking_id || "").trim();
+  if (!/^\d+$/.test(officialId)) throw new Error("BOOKING_CONFIRMATION_INVALID");
+  const check = await bridge("/bookings/" + encodeURIComponent(officialId));
+  const reservation = String(check?.reservation_date || "");
+  if (String(check?.official_booking_id || officialId) !== officialId ||
+      Number(check?.doctor_id) !== Number(doctor.official_doctor_id) ||
+      !reservation.startsWith(date) || reservation.slice(11,16) !== time) {
+    throw new Error("BOOKING_READBACK_MISMATCH");
+  }
+  return { officialId, requestId };
+}
+
+async function handleStaff(op: string, body: any, req: Request) {
+  const ctx:any = await staffContext(req);
+  if (ctx.error) return json({ error: ctx.error }, ctx.status || 500);
+  const admin = ctx.admin;
+
+  if (op === "staff_list") {
+    const since = new Date(Date.now() - 30 * 86400000).toISOString();
+    const { data, error } = await admin.from("patient_portal_booking_requests")
+      .select(REQUEST_FIELDS + ",patients(full_name,patient_code,phone)")
+      .or("status.in.(pending,confirming),created_at.gte." + since)
+      .order("created_at", { ascending: false }).limit(300);
+    if (error) return json({ error: error.message }, 500);
+    return json({ requests: data || [], bridge_ready: !!(BRIDGE_URL && BRIDGE_TOKEN) });
+  }
+
+  const requestId = String(body.request_id || "");
+  if (!/^[0-9a-f-]{36}$/i.test(requestId)) return json({ error: "INVALID_REQUEST_ID" }, 400);
+
+  if (op === "staff_cancel") {
+    const note = String(body.note || "").slice(0, 300) || null;
+    const { data, error } = await admin.from("patient_portal_booking_requests")
+      .update({ status: "cancelled_by_staff", staff_note: note, reviewed_by: ctx.staff.id, reviewed_at: new Date().toISOString() })
+      .eq("id", requestId).eq("status", "pending").select(REQUEST_FIELDS).maybeSingle();
+    if (error) return json({ error: error.message }, 500);
+    if (!data) return json({ error: "REQUEST_NOT_PENDING" }, 409);
+    await admin.from("patient_portal_audit_log").insert({ patient_id: data.patient_id, actor_admin_id: ctx.staff.id,
+      action: "portal_booking_request_cancelled_by_staff", entity_type: "portal_booking_request", entity_id: requestId, metadata: {} });
+    return json({ ok: true, request: data });
+  }
+
+  if (op === "staff_confirm") {
+    // Atomic claim: only one reception click can move pending -> confirming.
+    const { data: claimed, error: claimError } = await admin.from("patient_portal_booking_requests")
+      .update({ status: "confirming", reviewed_by: ctx.staff.id, reviewed_at: new Date().toISOString(), last_error: null })
+      .eq("id", requestId).eq("status", "pending").select("*").maybeSingle();
+    if (claimError) return json({ error: claimError.message }, 500);
+    if (!claimed) return json({ error: "REQUEST_NOT_PENDING" }, 409);
+    const doctor = doctorById(claimed.doctor_id);
+    const { data: patient } = await admin.from("patients").select("id,full_name,phone,age,status").eq("id", claimed.patient_id).maybeSingle();
+    try {
+      if (!doctor) throw new Error("DOCTOR_NOT_BOOKING_READY");
+      if (!patient || patient.status !== "active" || !patient.phone) throw new Error("PATIENT_PHONE_REQUIRED");
+      const { officialId, requestId: bridgeRequestId } = await createOfficialBooking(doctor, patient, String(claimed.requested_date), claimed.requested_time);
+      const { data: done, error: doneError } = await admin.from("patient_portal_booking_requests")
+        .update({ status: "confirmed", official_booking_id: officialId, booking_request_id: bridgeRequestId })
+        .eq("id", requestId).select(REQUEST_FIELDS).single();
+      if (doneError) throw new Error("BOOKED_BUT_NOT_SAVED:" + officialId);
+      await admin.from("patient_portal_audit_log").insert({ patient_id: claimed.patient_id, actor_admin_id: ctx.staff.id,
+        action: "portal_booking_confirmed", entity_type: "portal_booking_request", entity_id: requestId,
+        metadata: { official_booking_id: officialId, doctor_id: claimed.doctor_id, date: claimed.requested_date, time: claimed.requested_time } });
+      return json({ ok: true, request: done });
+    } catch (e) {
+      const msg = String((e as Error).message || e);
+      const slotGone = msg === "SLOT_NO_LONGER_AVAILABLE";
+      // A failed booking goes back to pending (or slot_unavailable) so reception can retry or call the patient.
+      await admin.from("patient_portal_booking_requests")
+        .update({ status: slotGone ? "slot_unavailable" : "pending", last_error: msg.slice(0, 200) })
+        .eq("id", requestId).eq("status", "confirming");
+      return json({ error: msg }, slotGone ? 409 : 502);
+    }
+  }
+  return json({ error: "UNKNOWN_OPERATION" }, 400);
+}
+
+// One log line per call: function, op and HTTP status only (no body, ids or patient data), so failed
+// bookings are visible in the edge logs.
 Deno.serve(async (req) => {
+  let op = "-";
+  try { if (req.method === "POST") op = String((await req.clone().json())?.op || "catalog").slice(0, 32); } catch { op = "invalid_json"; }
+  const started = Date.now();
+  let res: Response;
+  try { res = await handleRequest(req); }
+  catch (e) { console.error(JSON.stringify({ fn: "patient-portal-booking", op, error: String((e as Error)?.name || "Error") })); res = json({ error: "INTERNAL_ERROR" }, 500); }
+  console.log(JSON.stringify({ fn: "patient-portal-booking", op, status: res.status, ms: Date.now() - started }));
+  return res;
+});
+
+async function handleRequest(req: Request): Promise<Response> {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
   let body:any = {};
   try { body = await req.json(); } catch { return json({ error: "INVALID_JSON" },400); }
 
+  const op = String(body.op || "catalog");
+  if (op.startsWith("staff_")) return handleStaff(op, body, req);
+
   const ctx:any = await portalContext(req);
   if (ctx.error) return json({ error: ctx.error }, ctx.status || 500);
-  const op = String(body.op || "catalog");
+
+  if (op === "my_requests") {
+    if (!ctx.patientIds.length) return json({ requests: [] });
+    const { data, error } = await ctx.admin.from("patient_portal_booking_requests")
+      .select(REQUEST_FIELDS).in("patient_id", ctx.patientIds)
+      .order("created_at", { ascending: false }).limit(20);
+    if (error) return json({ error: error.message }, 500);
+    return json({ requests: (data || []).map((r:any)=>({ ...r, last_error: undefined, staff_note: r.status === "cancelled_by_staff" ? r.staff_note : null })) });
+  }
+
+  if (op === "cancel_request") {
+    const requestId = String(body.request_id || "");
+    if (!/^[0-9a-f-]{36}$/i.test(requestId) || !ctx.patientIds.length) return json({ error: "INVALID_REQUEST_ID" }, 400);
+    const { data, error } = await ctx.admin.from("patient_portal_booking_requests")
+      .update({ status: "cancelled_by_patient" })
+      .eq("id", requestId).eq("status", "pending").in("patient_id", ctx.patientIds).select("id,patient_id").maybeSingle();
+    if (error) return json({ error: error.message }, 500);
+    if (!data) return json({ error: "REQUEST_NOT_PENDING" }, 409);
+    await ctx.admin.from("patient_portal_audit_log").insert({ account_id: ctx.account.id, patient_id: data.patient_id,
+      action: "portal_booking_request_cancelled_by_patient", entity_type: "portal_booking_request", entity_id: requestId, metadata: {} });
+    return json({ ok: true });
+  }
 
   if (op === "catalog") {
     const specsMap = new Map<string, any>();
@@ -158,76 +306,49 @@ Deno.serve(async (req) => {
   }
 
   if (op === "book") {
+    // The portal stores a REQUEST; reception confirms it (staff_confirm) before anything is booked officially.
     const date = cleanDate(body.date);
     const time = cleanTime(body.time);
     if (!date || !time) return json({ error: "INVALID_SLOT" },400);
     if (!patient.phone) return json({ error: "PATIENT_PHONE_REQUIRED" },400);
-
-    const qs = new URLSearchParams({
-      hospital:String(doctor.hospital_id),
-      branch:String(doctor.branch_id),
-      specialty:String(doctor.official_specialization_id),
-      doctor:String(doctor.official_doctor_id),
-      date,
-    });
+    const today = new Intl.DateTimeFormat("en-CA",{timeZone:"Africa/Cairo",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+    if (date < today) return json({ error: "INVALID_SLOT" },400);
     try {
+      const qs = new URLSearchParams({
+        hospital:String(doctor.hospital_id), branch:String(doctor.branch_id),
+        specialty:String(doctor.official_specialization_id), doctor:String(doctor.official_doctor_id), date,
+      });
       const live = await bridge("/availability?" + qs.toString());
       const times = Array.isArray(live?.Times) ? live.Times.map((x:any)=>String(x).padStart(5,"0")) : [];
       if (!times.includes(time)) return json({ error: "SLOT_NO_LONGER_AVAILABLE" },409);
-
-      const requestId = crypto.randomUUID().replace(/-/g,"");
-      const payload:any = {
-        BookingRequestId: requestId,
-        HospitalId: doctor.hospital_id,
-        BranchId: doctor.branch_id,
-        SpecializationId: doctor.official_specialization_id,
-        DoctorId: doctor.official_doctor_id,
-        Date: date,
-        Time: time,
-        Patient: { Name: patient.full_name, Phone: patient.phone },
-      };
-      if (patient.age != null && Number.isFinite(Number(patient.age))) payload.Patient.Age = Number(patient.age);
-
-      const created = await bridge("/bookings", { method:"POST", body:JSON.stringify(payload) });
-      const officialId = String(created?.OfficialBookingId || created?.official_booking_id || "").trim();
-      if (!/^\d+$/.test(officialId)) throw new Error("BOOKING_CONFIRMATION_INVALID");
-
-      const check = await bridge("/bookings/" + encodeURIComponent(officialId));
-      const reservation = String(check?.reservation_date || "");
-      if (String(check?.official_booking_id || officialId) !== officialId ||
-          Number(check?.doctor_id) !== Number(doctor.official_doctor_id) ||
-          !reservation.startsWith(date) ||
-          reservation.slice(11,16) !== time) {
-        throw new Error("BOOKING_READBACK_MISMATCH");
-      }
-
-      await ctx.admin.from("patient_portal_audit_log").insert({
-        account_id: ctx.account.id,
-        patient_id: patientId,
-        action: "portal_booking_created",
-        entity_type: "official_booking",
-        metadata: {
-          official_booking_id: officialId,
-          doctor_id: doctor.doctor_id,
-          specialty_id: doctor.specialty_id,
-          date, time
-        }
-      });
-
-      return json({
-        ok:true,
-        official_booking_id:officialId,
-        booking_request_id:requestId,
-        patient:{id:patient.id,full_name:patient.full_name,patient_code:patient.patient_code},
-        doctor:{doctor_id:doctor.doctor_id,doctor_name_ar:doctor.doctor_name_ar},
-        specialty:{specialty_id:doctor.specialty_id,specialty_name_ar:doctor.specialty_name_ar},
-        date,time,
-      },201);
     } catch (e) {
-      const msg = String((e as Error).message || e);
-      return json({ error: msg }, msg==="SLOT_NO_LONGER_AVAILABLE"?409:502);
+      return json({ error: String((e as Error).message || e) },502);
     }
+    const { data: request, error } = await ctx.admin.from("patient_portal_booking_requests").insert({
+      account_id: ctx.account.id, patient_id: patientId,
+      doctor_id: doctor.doctor_id, doctor_name: doctor.doctor_name_ar,
+      specialty_id: doctor.specialty_id, specialty_name: doctor.specialty_name_ar,
+      requested_date: date, requested_time: time, status: "pending",
+    }).select(REQUEST_FIELDS).single();
+    if (error) {
+      const m = String(error.message || "");
+      if (m.includes("PORTAL_BOOKING_LIMIT")) return json({ error: "PORTAL_BOOKING_LIMIT" },409);
+      if ((error as any).code === "23505") return json({ error: "DUPLICATE_REQUEST" },409);
+      return json({ error: m },500);
+    }
+    await ctx.admin.from("patient_portal_audit_log").insert({
+      account_id: ctx.account.id, patient_id: patientId, action: "portal_booking_requested",
+      entity_type: "portal_booking_request", entity_id: request.id,
+      metadata: { doctor_id: doctor.doctor_id, specialty_id: doctor.specialty_id, date, time },
+    });
+    return json({
+      ok:true, status:"pending", request,
+      patient:{id:patient.id,full_name:patient.full_name,patient_code:patient.patient_code},
+      doctor:{doctor_id:doctor.doctor_id,doctor_name_ar:doctor.doctor_name_ar},
+      specialty:{specialty_id:doctor.specialty_id,specialty_name_ar:doctor.specialty_name_ar},
+      date,time,
+    },201);
   }
 
   return json({ error: "UNKNOWN_OPERATION" },400);
-});
+}

@@ -8,13 +8,13 @@ const fixtures = {
  patient_accounts: [{id:'account',status:'active',activation_completed_at:'2026-01-01'}],
  patient_account_access: [{account_id:'account',patient_id:'p1',verification_status:'approved'}],
  patients: [{id:'p1',patient_code:'TEST',full_name:'Test patient'}],
- patient_medical_reports:[{id:'m1',patient_id:'p1',body_text:longText}],
- patient_echo_reports:[{id:'e1',patient_id:'p1',dimensions:{ef:'60',lvedd:'4.2'},summary_text:'Echo summary',conclusion_text:'Echo conclusion'}],
- patient_dental_reports:[{id:'d1',patient_id:'p1',treatment_plan:'Plan',sessions:[{date:'2026-09-01',tooth:'12',service:'Treatment',notes:'Dental session'}]}],
- patient_physio_reports:[{id:'ph1',patient_id:'p1',diagnosis:'Physio diagnosis',sessions:[{date:'2026-09-02',treatments:['Cryo'],vitals:{pulse:'75',weight:'0'},notes:'Physio session'}],pain_points:[{x:0,y:20,note:'Pain'}]}],
- patient_prescriptions:[{id:'rx1',patient_id:'p1',rx_text:'Prescription'}],
- patient_lab_requests:[{id:'l1',patient_id:'p1',tests:['CBC','TSH']}],
- patient_radiology_requests:[{id:'r1',patient_id:'p1',items:['MRI Brain']}],
+ patient_medical_reports:[{id:'m1',patient_id:'p1',created_at:'2026-01-01T00:00:00Z',body_text:longText}],
+ patient_echo_reports:[{id:'e1',patient_id:'p1',created_at:'2026-01-01T00:00:00Z',dimensions:{ef:'60',lvedd:'4.2'},summary_text:'Echo summary',conclusion_text:'Echo conclusion'}],
+ patient_dental_reports:[{id:'d1',patient_id:'p1',created_at:'2026-01-01T00:00:00Z',treatment_plan:'Plan',sessions:[{date:'2026-09-01',tooth:'12',service:'Treatment',notes:'Dental session'}]}],
+ patient_physio_reports:[{id:'ph1',patient_id:'p1',created_at:'2026-01-01T00:00:00Z',diagnosis:'Physio diagnosis',sessions:[{date:'2026-09-02',treatments:['Cryo'],vitals:{pulse:'75',weight:'0'},notes:'Physio session'}],pain_points:[{x:0,y:20,note:'Pain'}]}],
+ patient_prescriptions:[{id:'rx1',patient_id:'p1',created_at:'2026-01-01T00:00:00Z',rx_text:'Prescription'}],
+ patient_lab_requests:[{id:'l1',patient_id:'p1',created_at:'2026-01-01T00:00:00Z',tests:['CBC','TSH']}],
+ patient_radiology_requests:[{id:'r1',patient_id:'p1',created_at:'2026-01-01T00:00:00Z',items:['MRI Brain']}],
  patient_physio_report_images:[{physio_report_id:'ph1',patient_files:{id:'f1',patient_id:'p1',category:'radiology',file_name:'scan.pdf'}},{physio_report_id:'ph1',patient_files:{id:'wrong',patient_id:'p2',category:'radiology'}},{physio_report_id:'ph1',patient_files:{id:'private',patient_id:'p1',category:'id_document'}}],
 };
 async function run({authenticated=true,access,failed,rows}={}) {
@@ -35,6 +35,19 @@ async function run({authenticated=true,access,failed,rows}={}) {
 }
 (async()=>{
  const result=await run();assert.equal(result.status,200);assert.equal(result.body.documents.length,7);
+ { // Phase 2: new records wait 24h; approved shows at once; hidden never shows.
+  const fresh=new Date().toISOString();
+  const r=await run({rows:{
+   patient_medical_reports:[{id:'m1',patient_id:'p1',created_at:fresh,body_text:'x'}],
+   patient_prescriptions:[{id:'rx1',patient_id:'p1',created_at:fresh,rx_text:'x'}],
+   patient_lab_requests:[{id:'l1',patient_id:'p1',created_at:'2026-01-01T00:00:00Z',tests:['CBC']}],
+   patient_portal_visibility:[{patient_id:'p1',entity_type:'prescription',entity_id:'rx1',portal_status:'approved'},{patient_id:'p1',entity_type:'lab_request',entity_id:'l1',portal_status:'hidden'}]}});
+  const src=r.body.documents.map(d=>d.source);
+  assert.ok(!src.includes('medical_report'),'fresh report waits 24h');
+  assert.ok(src.includes('prescription'),'approved shows at once');
+  assert.ok(!src.includes('lab_request'),'hidden never shows');
+  assert.equal((await run({failed:'patient_portal_visibility'})).status,500,'visibility lookup failure fails closed');
+ }
  const docs=Object.fromEntries(result.body.documents.map(d=>[d.source,d]));
  for(const d of Object.values(docs))assert.ok(d.details.length,d.source);
  assert.equal(docs.medical_report.details[0].value,longText.trim());
@@ -47,6 +60,6 @@ async function run({authenticated=true,access,failed,rows}={}) {
   const denied=await run({access:[{...fixtures.patient_account_access[0],...change}]});assert.equal(denied.body.documents.length,0);assert.ok(!denied.queries.includes('patient_physio_reports'));
  }
  const failed=await run({failed:'patient_echo_reports'});assert.ok(failed.body.unavailable_sources.includes('patient_echo_reports'));
- const many=await run({rows:{patient_medical_reports:Array.from({length:501},(_,i)=>({id:'m'+i,patient_id:'p1',body_text:'Report'}))}});assert.equal(many.body.documents.filter(d=>d.source==='medical_report').length,501);
+ const many=await run({rows:{patient_medical_reports:Array.from({length:501},(_,i)=>({id:'m'+i,patient_id:'p1',created_at:'2026-01-01T00:00:00Z',body_text:'Report'}))}});assert.equal(many.body.documents.filter(d=>d.source==='medical_report').length,501);
  console.log('PASS: seven document types, full text, sessions/vitals, attachment isolation, auth/access expiry/revocation, partial failure, pagination');
 })().catch(e=>{console.error(e);process.exitCode=1});

@@ -3,7 +3,7 @@
   "use strict";
 
   var state = { subTab: "pricing", section: null, serviceFilter: "all", supplies: [], services: [], packages: [], loaded: false, pendingRepair: null };
-  var me = null, navRestored = false;
+  var me = null, navRestored = false, navFromState = false, overviewOff = false, shellInit = false;
   function saveNav(){if(window.SSMPDNavState)window.SSMPDNavState.set('accounting',{sub:state.subTab,section:state.section||''});}
 
   function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
@@ -95,8 +95,9 @@
       { key: "cash", label: "الخزينة والدورة المالية" },
       { key: "inventory", label: "المخازن والجرد" }
     ].filter(function(s) { return s.key === "inventory" ? canInventory : canFinance; });
-    if(!navRestored){navRestored=true;var ns=window.SSMPDNavState&&window.SSMPDNavState.once('accounting');if(ns&&subs.some(function(s){return s.key===ns.sub;})&&!state.pendingRepair){state.subTab=ns.sub;state.section=catalogSections.some(function(s){return s.key===ns.section;})?ns.section:null;}}
+    if(!navRestored){navRestored=true;var ns=window.SSMPDNavState&&window.SSMPDNavState.once('accounting');if(ns&&subs.some(function(s){return s.key===ns.sub;})&&!state.pendingRepair){navFromState=true;state.subTab=ns.sub;state.section=catalogSections.some(function(s){return s.key===ns.section;})?ns.section:null;}}
     saveNav();
+    if (window.SSMPDAccountingShell) { renderShell(container, canFinance, canInventory); return; }
     var html = '<div class="tabs acc-catalog-nav" style="margin-bottom:16px;">' +
       subs.map(function (s) {
         return '<button class="tab-btn ' + (state.subTab === s.key ? "active" : "") + '" data-sub="' + s.key + '">' + s.label + '</button>';
@@ -121,6 +122,77 @@
     }
   }
 
+  /* Owner-approved unified shell (2026-11-18): side rail with every section; no sub-tabs, no section cards, no back buttons. */
+  var shellApi = null, shellHost = null;
+  function overviewAllowed(canFinance) { return canFinance && !overviewOff && !!window.SSMPDAccountingOverview; }
+  function shellAllowed(id, canFinance, canInventory) {
+    var k = window.SSMPDAccountingShell.kind(id);
+    if (k === "overview") return overviewAllowed(canFinance);
+    if (k === "inventory") return canInventory && !!window.SSMPDRenderInventory;
+    if (!canFinance) return false;
+    if (k === "pricing") return true;
+    return !!window.SSMPDFinanceCash && (!window.SSMPDFinanceCash.allows || window.SSMPDFinanceCash.allows(id));
+  }
+  function shellActive() {
+    if (state.subTab === "overview") return "overview";
+    if (state.subTab === "pricing") return state.section || "supplies";
+    if (state.subTab === "cash") return (window.SSMPDFinanceCash.current && window.SSMPDFinanceCash.current()) || "";
+    return "inv:" + ((window.SSMPDRenderInventory.group && window.SSMPDRenderInventory.group()) || "overview");
+  }
+  function renderShell(container, canFinance, canInventory) {
+    /* owner mockup: accounting opens on «نظرة عامة» unless the person was somewhere else before a refresh */
+    if (!shellInit) { shellInit = true; if (!navFromState && !state.pendingRepair && overviewAllowed(canFinance)) state.subTab = "overview"; }
+    if (state.subTab === "overview" && !overviewAllowed(canFinance)) state.subTab = canFinance ? "pricing" : "inventory";
+    if (state.subTab === "pricing" && !state.section) state.section = "supplies";
+    shellHost = container;
+    shellApi = window.SSMPDAccountingShell.mount(container, {
+      active: shellActive(),
+      allowed: function (id) { return shellAllowed(id, canFinance, canInventory); },
+      onSelect: function (id) { shellSelect(id); }
+    });
+    shellView();
+  }
+  function shellSelect(id) {
+    var k = window.SSMPDAccountingShell.kind(id), view = shellApi.view;
+    state.pendingRepair = null;
+    if (k === "cash" && state.subTab === "cash" && view.querySelector(".fc-workspace")) { window.SSMPDFinanceCash.navigate(id); return; }
+    if (k === "inventory" && state.subTab === "inventory" && window.SSMPDRenderInventory.go && view.querySelector(".inv-shell")) { window.SSMPDRenderInventory.go(id.slice(4)); return; }
+    state.subTab = k;
+    if (k === "pricing") state.section = id;
+    if (k === "overview") state.subTab = "overview";
+    if (k === "cash") window.SSMPDFinanceCash.openSection(id);
+    if (k === "inventory" && window.SSMPDRenderInventory.go) window.SSMPDRenderInventory.go(id.slice(4), true);
+    saveNav();
+    shellView();
+    window.scrollTo(0, 0);
+  }
+  function shellView() {
+    var subView = shellApi.view;
+    if (state.subTab === "overview") {
+      var off = function () { overviewOff = true; state.subTab = "pricing"; state.section = "supplies"; saveNav(); shellApi.refresh(); shellApi.setActive("supplies"); shellView(); };
+      window.SSMPDAccountingOverview.render(subView, {
+        go: function (id) { if (!shellApi.view.isConnected) return; shellApi.setActive(id); shellSelect(id); },
+        onUnavailable: off,
+        /* clinic-wide numbers are for reviewers; someone with nothing to see goes straight to their sections */
+        onReady: function (d) { if (d && d.can_review === false && !d.doctor_dues_now) off(); }
+      });
+      return;
+    }
+    if (state.subTab === "inventory") { window.SSMPDRenderInventory.render(subView, { embedded: true, shell: true }); return; }
+    if (state.subTab === "cash") { window.SSMPDFinanceCash.render(subView); return; }
+    if (!state.loaded) {
+      subView.innerHTML = '<p class="acs-loading">جاري التحميل…</p>';
+      loadAll(function () { if (subView.isConnected && state.subTab === "pricing") renderSub(subView, shellHost); });
+    } else renderSub(subView, shellHost);
+  }
+  /* sections report what they show (treasury auto-opens a section, inventory moves between views) */
+  document.addEventListener("ssmpd:accounting-active", function (e) {
+    if (!shellApi || !shellHost || !shellHost.isConnected) return;
+    var d = e.detail || {};
+    if (d.refresh) shellApi.setBadges(d.badges || {});
+    if (d.id) shellApi.setActive(d.id);
+  });
+
   var catalogSections = [
     { key: "supplies", title: "المستلزمات والإضافات الطبية", description: "تكلفة العبوة والوحدة واستهلاك المستلزمات.", list: "supplies", unit: "مستلزم مسجل" },
     { key: "services", title: "الخدمات والتسعير", description: "تكلفة الخدمة والمستلزمات وهامش الربح والسعر النهائي.", list: "services", unit: "خدمة مسعرة" },
@@ -137,6 +209,8 @@
   }
   function renderSub(subView, container) {
     saveNav();
+    var inShell = !!subView.closest(".acs");
+    if (inShell && !catalogSections.some(function (s) { return s.key === state.section; })) state.section = "supplies";
     var section = catalogSections.filter(function (s) { return s.key === state.section; })[0];
     if (!section) {
       subView.innerHTML = '<div class="fc-group-intro"><h4>التسعير والخدمات والباكجز</h4><p>اختار القسم لعرض التفاصيل وإدارة الأسعار.</p></div><div class="fc-section-grid acc-catalog-grid">' +
@@ -155,7 +229,7 @@
       renderCatalogIssues(subView,container);
       return;
     }
-    subView.innerHTML = '<div class="fc-section-head"><button type="button" class="btn" data-acc-back>رجوع للأقسام</button><h4 tabindex="-1" data-acc-heading>' + section.title + '</h4></div><div data-acc-detail></div>';
+    subView.innerHTML = '<div class="fc-section-head">' + (inShell ? '' : '<button type="button" class="btn" data-acc-back>رجوع للأقسام</button>') + '<h4 tabindex="-1" data-acc-heading>' + section.title + '</h4>' + (inShell ? '<p class="fc-section-hint">' + section.description + '</p>' : '') + '</div><div data-acc-detail></div>';
     var detail = subView.querySelector("[data-acc-detail]");
     if (section.key === "packages") renderPackagesScreen(detail, container);
     else renderPricingScreen(detail, container);
@@ -172,6 +246,7 @@
         else if(section.key==='packages')openPackageModal(matches[0],back);
       }
     }
+    if (inShell) return;
     subView.querySelector("[data-acc-back]").onclick = function () {
       state.section = null;
       renderSub(subView, container);
@@ -575,7 +650,7 @@
       '<h3>' + (pkg.id ? "تعديل باكج" : "إضافة باكج") + '</h3>' +
       '<div class="field"><label>اسم الباكج</label><input id="pk-name" value="' + (pkg.name || "") + '"></div>' +
       '<div class="field"><label>نسبة الربح % (على إجمالي الباكج)</label><input id="pk-margin" type="number" step="any" value="' + (pkg.profit_margin_percent != null ? pkg.profit_margin_percent : "") + '"></div>' +
-      '<fieldset><legend>زيارات الباكج</legend><label><input id="pk-booking" type="checkbox" '+(pkg.booking_enabled?'checked':'')+'> متاح للتعاقد من الحجز</label><div class="field"><label>عدد الزيارات</label><input id="pk-visits" type="number" min="1" max="365" value="'+esc(pkg.booking_visits||1)+'"></div><div class="field"><label>الصلاحية بالأيام</label><input id="pk-validity" type="number" min="1" max="3650" value="'+esc(pkg.booking_validity_days||30)+'"></div><div class="field"><label>شروط التعاقد والمشمولات</label><textarea id="pk-terms">'+esc(pkg.booking_terms)+'</textarea></div></fieldset>' +
+      '<fieldset><legend>زيارات الباكج</legend><label><input id="pk-booking" type="checkbox" '+(pkg.booking_enabled?'checked':'')+'> متاح للتعاقد من الحجز</label><label><input id="pk-variable" type="checkbox" '+(pkg.booking_variable_visits?'checked':'')+'> عدد الزيارات تحدده المريضة عند التعاقد (الباكج يمثّل زيارة واحدة والسعر للزيارة)</label><label><input id="pk-conditional" type="checkbox" '+(pkg.conditional_offer?'checked':'')+'> عرض مشروط — الخصم بشرط إكمال الباكدج (عند الإلغاء الجلسات المستخدمة تتحسب بسعرها المنفرد، والشرط بيتطبع في عقد المريض)</label><div class="field"><label>عدد الزيارات</label><input id="pk-visits" type="number" min="1" max="365" value="'+esc(pkg.booking_visits||1)+'"></div><div class="field"><label>الصلاحية بالأيام</label><input id="pk-validity" type="number" min="1" max="3650" value="'+esc(pkg.booking_validity_days||30)+'"></div><div class="field"><label>شروط التعاقد والمشمولات</label><textarea id="pk-terms">'+esc(pkg.booking_terms)+'</textarea></div></fieldset>' +
       '<h4>الخدمات المضمومة (غير محدودة)</h4>' +
       '<div id="pk-lines"></div>' +
       '<button class="btn" id="pk-add-line" type="button">+ إضافة خدمة للباكج</button>' +
@@ -616,6 +691,11 @@
         '<span class="acc-final-line">الإجمالي النهائي: ' + numSpan(t.finalTotal) + '</span></div>';
     }
     document.getElementById("pk-add-line").onclick = function () { lines.push({ service_id: "", quantity: 1 }); renderLines(); };
+    (function () {
+      var variable = document.getElementById("pk-variable"), visits = document.getElementById("pk-visits");
+      function sync() { if (variable.checked) visits.value = 1; visits.disabled = variable.checked; }
+      variable.onchange = sync; sync();
+    })();
     document.getElementById("pk-margin").oninput = updateTotals;
     renderLines();
 
@@ -630,7 +710,9 @@
         profit_margin_percent: num(document.getElementById("pk-margin").value),
         services_included: cleanLines.map(function(l){return Object.assign({},l,{visit_no:l.visit_no||1});}),
         booking_enabled: backdrop.querySelector('#pk-booking').checked,
-        booking_visits: Number(backdrop.querySelector('#pk-visits').value)||null,
+        booking_visits: backdrop.querySelector('#pk-variable').checked?1:(Number(backdrop.querySelector('#pk-visits').value)||null),
+        booking_variable_visits: backdrop.querySelector('#pk-variable').checked,
+        conditional_offer: backdrop.querySelector('#pk-conditional').checked,
         booking_validity_days: Number(backdrop.querySelector('#pk-validity').value)||null,
         booking_terms: backdrop.querySelector('#pk-terms').value.trim()
       };

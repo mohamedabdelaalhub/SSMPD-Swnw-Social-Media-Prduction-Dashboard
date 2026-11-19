@@ -5,6 +5,29 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 
+// --- portal visibility (keep identical in every patient-portal function; checked by test/portal-visibility.cjs) ---
+// A record reaches the patient portal 24h after it was created, unless a doctor/staff member
+// approved it earlier ("approved") or hid it ("hidden"). Fails closed if the lookup fails.
+const PORTAL_VISIBILITY_DELAY_MS = 24 * 60 * 60 * 1000;
+// deno-lint-ignore no-explicit-any
+async function loadPortalVisibility(admin: any, patientIds: string[]): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
+  if (!patientIds.length) return map;
+  const { data, error } = await admin.from("patient_portal_visibility")
+    .select("entity_type, entity_id, portal_status").in("patient_id", patientIds);
+  if (error) throw new Error("PORTAL_VISIBILITY_UNAVAILABLE");
+  for (const r of data || []) map.set(r.entity_type + ":" + r.entity_id, r.portal_status);
+  return map;
+}
+function isPortalVisible(map: Map<string, string>, entityType: string, entityId: string, createdAt: unknown, now = Date.now()): boolean {
+  const status = map.get(entityType + ":" + entityId);
+  if (status === "approved") return true;
+  if (status === "hidden" || status === "internal") return false;
+  const t = new Date(String(createdAt || "")).getTime();
+  return Number.isFinite(t) && t > 0 && now - t >= PORTAL_VISIBILITY_DELAY_MS;
+}
+// --- end portal visibility ---
+
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -141,6 +164,29 @@ async function hasEffectivePortalAccess(
   );
 }
 
+// A file is downloadable from the portal when it is visible itself, or when it is an image
+// attached to a report that is visible (so approving a report early also releases its images).
+// deno-lint-ignore no-explicit-any
+async function fileVisibleInPortal(admin: any, fileRow: any): Promise<boolean> {
+  const visibility = await loadPortalVisibility(admin, [fileRow.patient_id]);
+  if (visibility.get("patient_file:" + fileRow.id) === "hidden" || visibility.get("patient_file:" + fileRow.id) === "internal") return false;
+  if (isPortalVisible(visibility, "patient_file", fileRow.id, fileRow.uploaded_at)) return true;
+  for (const [entityType, linkTable, reportTable, key] of [
+    ["echo_report", "patient_echo_report_images", "patient_echo_reports", "echo_report_id"],
+    ["dental_report", "patient_dental_report_images", "patient_dental_reports", "dental_report_id"],
+    ["physio_report", "patient_physio_report_images", "patient_physio_reports", "physio_report_id"],
+  ]) {
+    const { data: links, error } = await admin.from(linkTable).select(key).eq("patient_file_id", fileRow.id);
+    if (error) throw new Error("PORTAL_VISIBILITY_UNAVAILABLE");
+    const ids = (links || []).map((l: any) => l[key]).filter(Boolean);
+    if (!ids.length) continue;
+    const { data: reports, error: rErr } = await admin.from(reportTable).select("id, patient_id, created_at").in("id", ids);
+    if (rErr) throw new Error("PORTAL_VISIBILITY_UNAVAILABLE");
+    if ((reports || []).some((r: any) => r.patient_id === fileRow.patient_id && isPortalVisible(visibility, entityType, r.id, r.created_at))) return true;
+  }
+  return false;
+}
+
 async function authorizePortalAccess(
   admin: ReturnType<typeof createClient>,
   userId: string,
@@ -166,6 +212,11 @@ async function authorizePortalAccess(
     return { error: String((e as Error).message || e), status: 500 };
   }
   if (!allowed) return { error: "NO_APPROVED_MEDICAL_ACCESS", status: 403 };
+  try {
+    if (!(await fileVisibleInPortal(admin, fileRow))) return { error: "FILE_NOT_YET_AVAILABLE_IN_PORTAL", status: 403 };
+  } catch (e) {
+    return { error: String((e as Error).message || e), status: 500 };
+  }
   return { account };
 }
 
@@ -186,7 +237,7 @@ Deno.serve(async (req) => {
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
   const { data: fileRow, error } = await admin
     .from("patient_files")
-    .select("id, patient_id, category, drive_file_id, file_name, mime_type")
+    .select("id, patient_id, category, drive_file_id, file_name, mime_type, uploaded_at")
     .eq("id", fileId)
     .maybeSingle();
   if (error || !fileRow) return json({ error: "الملف غير موجود" }, 404);

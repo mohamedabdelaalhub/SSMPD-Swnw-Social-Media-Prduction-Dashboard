@@ -2,6 +2,8 @@
 // and answer the latest customer message within Meta's 24-hour window (autopilot), using the same
 // reply rules as comments. Complaints raise a red alert in the dashboard.
 import { decideReply, clinicInfo } from "./ai.ts";
+import { advance, serviceLabel } from "./flow.mjs";
+import { reviewHandoffs } from "./review.ts";
 
 const GRAPH = "https://graph.facebook.com/v26.0/";
 const WINDOW_MS = 23.5 * 3600e3; // stay inside Meta's 24h standard messaging window
@@ -74,20 +76,51 @@ export async function syncMessages(db: any, brand: string, cfg: any, token: stri
       const { data: cur } = await db.from("social_messages").select("status").eq("id", `${plat}:${latest.id}`).maybeSingle();
       if (cur && cur.status !== "new") continue;
 
-      const decision = await decideReply({
-        brand, channel: "message", text: waiting.map((m: any) => m.message || "").join("\n"),
-        history: msgs.slice(Math.max(0, lastPage - 3), lastPage + 1).map((m: any) => `${selfIds.has(m.from?.id) ? "الصفحة" : "العميل"}: ${m.message || ""}`),
-        clinicInfo: await clinicInfo()
-      });
+      const waitingText = waiting.map((m: any) => m.message || "").join("\n");
       const now = new Date().toISOString();
+      const recipient = latest.from?.id;
+      // Booking flow first (state per conversation); general info questions fall back to decideReply.
+      const { data: st } = await db.from("messenger_flow_state").select("*").eq("conversation_id", conv.id).maybeSingle();
+      const hist = msgs.slice(Math.max(0, lastPage - 3), lastPage + 1).map((m: any) => `${selfIds.has(m.from?.id) ? "الصفحة" : "العميل"}: ${m.message || ""}`);
+      let decision = await decideReply({ brand, channel: "message", text: waitingText, history: hist, clinicInfo: await clinicInfo() });
       if (!decision.ok) { report.errors.push(`${brand} message reply: ${decision.error}`); break; }
-      if (decision.category === "spam" || !decision.reply) {
+      if (decision.category === "spam" && !st) {
         await db.from("social_messages").update({ status: "skipped", category: decision.category, updated_at: now }).in("id", ids);
         continue;
       }
-      const recipient = latest.from?.id;
+      const flow = advance(st, waitingText, { category: decision.category, firstContact: !st && lastPage < 0 });
+      if (flow.silent) { await db.from("social_messages").update({ status: "skipped", category: "handoff", updated_at: now }).in("id", ids); continue; }
+      if (flow.passthrough) { /* thanks: keep decideReply's text, no state change */ }
+      else {
+        let reply = flow.reply;
+        if (flow.infoReply && decision.reply) reply = decision.reply + "\n\n" + flow.reply;
+        else if (flow.alert && !reply) reply = decision.reply; // approved emergency/complaint template from ai.ts
+        decision = { ...decision, category: flow.handoff === "emergency" ? "emergency" : flow.handoff === "complaint" ? "complaint" : decision.category, reply };
+        const s = flow.state;
+        const row = { conversation_id: conv.id, platform: plat, brand, sender_id: recipient, stage: s.stage, name: s.name, phone: s.phone, service: s.service,
+          preferred_time: s.preferred_time, expect: s.expect, unclear: s.unclear, handoff_reason: s.handoff_reason, updated_at: now,
+          ...((flow.handoff || flow.ready) && !st?.handoff_at ? { handoff_at: now } : {}) };
+        let leadId = st?.lead_id || null;
+        if (flow.ready) {
+          // Ad attribution from the webhook referral (if the webhook is live); campaign/adset come from the synced ad rows.
+          const { data: ref } = await db.from("messenger_referrals").select("ad_id").eq("sender_id", recipient).eq("page_id", pageId).maybeSingle();
+          const { data: adRow } = ref?.ad_id ? await db.from("meta_ads_daily").select("adset_id,campaign_id").eq("ad_id", ref.ad_id).limit(1).maybeSingle() : { data: null };
+          const { data: lead, error: le } = await db.rpc("ingest_lead", { p_event_id: `${plat}:flow:${conv.id}`, p_source: platform, p_name: s.name, p_phone: s.phone,
+            p_message: `حجز ${serviceLabel(s.service)} — الوقت المفضل: ${s.preferred_time}`, p_ad_id: ref?.ad_id || null, p_adset_id: adRow?.adset_id || null, p_campaign_id: adRow?.campaign_id || null });
+          if (le) { report.errors.push(`${brand} ingest_lead: ${le.message}`); continue; }
+          leadId = Array.isArray(lead) ? lead[0]?.lead_id : lead?.lead_id;
+          await db.rpc("messenger_flow_notify", { p_message: `حجز جديد من ${platform === "messenger" ? "ماسنجر" : "انستجرام"}: ${s.name} — ${serviceLabel(s.service)} — ${s.phone} — ${s.preferred_time}` });
+        } else if (flow.handoff) {
+          await db.rpc("messenger_flow_notify", { p_message: `محادثة محتاجة موظف (${flow.handoff}) على ${platform === "messenger" ? "ماسنجر" : "انستجرام"} — ${brand}` });
+        }
+        await db.from("messenger_flow_state").upsert({ ...row, lead_id: leadId }, { onConflict: "conversation_id" });
+      }
+      if (!decision.reply) {
+        await db.from("social_messages").update({ status: "skipped", category: decision.category, alert: flow.alert, updated_at: now }).in("id", ids);
+        continue;
+      }
       const sent = await gpostJson(`${pageId}/messages`, token, { recipient: { id: recipient }, messaging_type: "RESPONSE", message: { text: decision.reply } });
-      const alert = decision.category === "complaint" || decision.category === "emergency";
+      const alert = flow.alert || decision.category === "complaint" || decision.category === "emergency";
       if (sent.ok) {
         await db.from("social_messages").update({ status: "replied", category: decision.category, alert, reply_text: decision.reply, replied_at: now, reply_platform_id: sent.data.message_id || null, updated_at: now }).in("id", ids);
         report.messagesReplied = (report.messagesReplied || 0) + 1;
@@ -97,4 +130,5 @@ export async function syncMessages(db: any, brand: string, cfg: any, token: stri
       }
     }
   }
+  await reviewHandoffs(db, brand, token, new Set([pageId, igId].filter(Boolean)), report).catch((e) => report.errors.push(`${brand} flow review: ${e?.message}`));
 }

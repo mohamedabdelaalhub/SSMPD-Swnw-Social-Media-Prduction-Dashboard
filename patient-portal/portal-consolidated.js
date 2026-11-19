@@ -5,9 +5,9 @@ var cfg=window.SSMPD_CONFIG&&window.SSMPD_CONFIG.supabase;
 var root=document.getElementById("portal-root");
 if(!cfg||!cfg.url||!cfg.anonKey||!root||!window.supabase)return;
 
-var client=window.supabase.createClient(cfg.url,cfg.anonKey,{
+var client=((window.SSMPDPortalClient)||window.supabase.createClient(cfg.url,cfg.anonKey,{
   auth:{persistSession:true,autoRefreshToken:true,storageKey:"swnw-patient-portal-auth"}
-});
+}));
 var medicalCache=null,medicalCacheAt=0,renderToken=0;
 
 var encounterTypes=[
@@ -114,7 +114,7 @@ function openVisits(){var token=++renderToken;loading("visits","جاري تحم�
 
 function openBookingChooser(){
   ++renderToken;setActiveMain("visits");var c=content();if(!c)return;
-  c.innerHTML='<div class="portal-medical-view encounter-booking-view"><div class="unified-page-head"><div><span>حجز جديد</span><h2>اختر نوع الزيارة</h2><p>هنعرض لك الخطوات المناسبة حسب نوع الزيارة أو الخدمة.</p></div><button class="booking-back" id="back-to-unified-visits">'+icon("back")+'<span>الرجوع للزيارات</span></button></div><div class="encounter-type-grid">'+encounterTypes.map(function(t){return '<button class="encounter-type-card" data-book-encounter="'+esc(t.id)+'"><span class="encounter-type-icon">'+esc(t.icon)+'</span><b>'+esc(t.label)+'</b><small>'+encounterHelp(t.id)+'</small></button>';}).join("")+'</div></div>';
+  c.innerHTML='<div class="portal-medical-view encounter-booking-view"><div class="unified-page-head"><div><span>حجز جديد</span><h2>اختر نوع الزيارة</h2><p>سنعرض لك الخطوات المناسبة بحسب نوع الزيارة أو الخدمة.</p></div><button class="booking-back" id="back-to-unified-visits">'+icon("back")+'<span>الرجوع للزيارات</span></button></div><div class="encounter-type-grid">'+encounterTypes.map(function(t){return '<button class="encounter-type-card" data-book-encounter="'+esc(t.id)+'"><span class="encounter-type-icon">'+esc(t.icon)+'</span><b>'+esc(t.label)+'</b><small>'+encounterHelp(t.id)+'</small></button>';}).join("")+'</div></div>';
   document.getElementById("back-to-unified-visits").onclick=openVisits;
   root.querySelectorAll("[data-book-encounter]").forEach(function(b){b.onclick=function(){selectBookingType(b.getAttribute("data-book-encounter"));};});
 }
@@ -126,7 +126,7 @@ function selectBookingType(typeId){
     if(oldBooking){oldBooking.click();return;}
   }
   setActiveMain("visits");var c=content();if(!c)return;
-  c.innerHTML='<div class="portal-medical-view encounter-booking-view"><div class="unified-page-head"><div><span>نوع الزيارة</span><h2>'+esc(t.label)+'</h2><p>تم تجهيز النوع داخل مسار الحجز الجديد.</p></div><button class="booking-back" id="back-to-booking-types">'+icon("back")+'<span>تغيير نوع الزيارة</span></button></div><div class="booking-panel deferred-booking"><div class="encounter-selected"><span>'+esc(t.icon)+'</span><div><small>النوع المختار</small><b>'+esc(t.label)+'</b></div></div><div class="booking-note">الحجز الفعلي لهذا النوع هيتفعل مع الربط المباشر بنظام المركز، بحيث نستخدم خطواته الصحيحة بدل فرض مسار الكشف العادي عليه.</div></div></div>';
+  c.innerHTML='<div class="portal-medical-view encounter-booking-view"><div class="unified-page-head"><div><span>نوع الزيارة</span><h2>'+esc(t.label)+'</h2><p>تم تجهيز النوع داخل مسار الحجز الجديد.</p></div><button class="booking-back" id="back-to-booking-types">'+icon("back")+'<span>تغيير نوع الزيارة</span></button></div><div class="booking-panel deferred-booking"><div class="encounter-selected"><span>'+esc(t.icon)+'</span><div><small>النوع المختار</small><b>'+esc(t.label)+'</b></div></div><div class="booking-note">سيُتاح الحجز الفعلي لهذا النوع عند تفعيل الربط المباشر بنظام المركز، حتى تُتَّبع خطواته الصحيحة بدلًا من مسار الكشف المعتاد.</div></div></div>';
   document.getElementById("back-to-booking-types").onclick=openBookingChooser;
 }
 

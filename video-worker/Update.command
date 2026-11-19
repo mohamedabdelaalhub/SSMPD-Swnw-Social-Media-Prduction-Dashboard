@@ -23,11 +23,18 @@ for file in worker.py cover_candidates.py eleven_tts.py drive_archive.py brand_i
   curl -fsSL "$SOURCE/$file" -o "$STAGING/$file"
 done
 
+mkdir -p "$STAGING/fonts"
+for font in BigVesta-Regular.woff2 BigVesta-Bold.woff2; do
+  curl -fsSL "$SOURCE/fonts/$font" -o "$STAGING/fonts/$font"
+done
+
 python3 -m py_compile "$STAGING/worker.py" "$STAGING/cover_candidates.py" "$STAGING/eleven_tts.py" "$STAGING/drive_archive.py" "$STAGING/brand_identity.py" "$STAGING/image_storyboard.py" "$STAGING/studio_storyboard.py" "$STAGING/studio_generation.py"
 launchctl bootout "gui/$(id -u)" "$AGENT_FILE" >/dev/null 2>&1 || true
 for file in worker.py cover_candidates.py eleven_tts.py drive_archive.py brand_identity.py image_storyboard.py studio_storyboard.py studio_generation.py; do
   mv "$STAGING/$file" "$WORKER_DIR/$file"
 done
+mkdir -p "$WORKER_DIR/fonts"
+mv "$STAGING/fonts/"*.woff2 "$WORKER_DIR/fonts/"
 
 PYTHON_BIN="$(command -v python3)"
 cat > "$AGENT_FILE" <<EOF

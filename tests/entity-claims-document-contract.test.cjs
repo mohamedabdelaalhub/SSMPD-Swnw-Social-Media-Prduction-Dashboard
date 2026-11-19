@@ -5,7 +5,7 @@ const fs=require('node:fs');
 const vm=require('node:vm');
 const source=fs.readFileSync(require('node:path').join(__dirname,'../assets/js/entity-claims-print.js'),'utf8');
 const w={location:{href:'https://example.test/'}};
-vm.runInNewContext(source,{window:w,URL},{filename:'entity-claims-print.js'});
+const ctx={window:w,URL,Intl};vm.createContext(ctx);vm.runInContext(fs.readFileSync(require('node:path').join(__dirname,'../assets/js/swnw-print.js'),'utf8'),ctx,{filename:'swnw-print.js'});vm.runInContext(source,ctx,{filename:'entity-claims-print.js'});
 const D=w.SSMPDEntityDocuments;
 const invoice={reference:'INV-TEST',patient_name:'مريض اختبار',medical_record_no:'MR-001',entity_name:'جهة اختبار',member_reference:'CARD-001',service_date:'2026-11-05',doctor_name:'طبيب اختبار',specialty:'باطنة',service_category:'كشف',service_name:'كشف باطنة',total:260,patient_total:44,entity_total:216,lines:[{name:'كشف باطنة',kind:'service',quantity:1,unit:'خدمة',gross:300,discount:60,net:240,patient:24,entity:216},{name:'مستلزم',kind:'supply',quantity:1,unit:'قطعة',gross:20,discount:0,net:20,patient:20,entity:0}]};
 const markup=D.html('invoice',invoice);
@@ -22,4 +22,7 @@ assert.equal(batchSheets[1].rows.length,3);
 assert.equal(batchSheets[0].rows[1][3],'CARD-001');
 assert.equal(batchSheets[0].rows[1][14],216);
 assert.ok(!markup.includes('undefined'));
+// owner 2026-11-19: claims use the letterhead look, no brand name in titles
+assert.ok(markup.includes('swnw-official-letterhead.png')&&claimMarkup.includes('swnw-official-letterhead.png'),'letterhead');
+assert.ok(!/سونو|Sono/.test(markup+claimMarkup),'no brand name in the document text');
 console.log('Existing invoice and insurer claim document contract passed');

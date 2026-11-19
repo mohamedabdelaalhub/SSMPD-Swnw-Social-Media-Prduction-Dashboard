@@ -365,6 +365,23 @@
       items=items.filter(function(i){return i[2]||i[0]==="review"||i[0]==="overdue";});
       return '<div class="tv-needs" role="group" aria-label="محتاج منك دلوقتي">'+items.map(function(i){return '<button type="button" class="tv-need n-'+i[0]+(i[2]?" has":"")+'" data-action="stat" data-id="'+i[0]+'"><b>'+i[2]+'</b><span>'+i[1]+'</span></button>';}).join("")+'</div>';
     }
+    function countUp(root){
+      if(countUp.done||!window.requestAnimationFrame||(window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches))return;
+      var nodes=root.querySelectorAll(".tw-sum [data-count]");if(!nodes.length)return;countUp.done=true;
+      nodes.forEach(function(n){var to=Number(n.dataset.count)||0;if(!to)return;var t0=null;n.classList.add("tw-counting");n.dataset.now="0";(function step(t){if(t0===null)t0=t;var p=Math.min(1,(t-t0)/600);n.dataset.now=String(Math.round(to*(1-Math.pow(1-p,3))));if(p<1)window.requestAnimationFrame(step);else n.classList.remove("tw-counting");})(performance.now());});
+    }
+    var SUM_ICON={todo:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>',late:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17v.5"/></svg>',review:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l4 4 10-10"/></svg>'};
+    var SUM_TITLE={todo:"مطلوب تنفيذها",late:"المهام المتأخرة",review:"بانتظار المراجعة"};
+    function sumTile(kind,label,n,cls,icon){return '<button type="button" class="tw-sum '+cls+' fx-ripple" data-action="sum" data-id="'+kind+'" aria-label="'+label+': '+n+' - عرض القائمة"><span class="tw-sum-ico">'+icon+'</span><span class="tw-sum-label">'+label+'</span><strong data-count="'+n+'">'+n+'</strong><span class="tw-sum-hint">اضغط لعرضها</span></button>';}
+    function sumItems(kind){
+      var mine=baseTasks().filter(function(t){return t.assignee_id===admin.id&&!closed(t);}),todo=mine.filter(function(t){return t.status!=="review";});
+      return kind==="late"?todo.filter(isOverdue):kind==="review"?mine.filter(function(t){return t.status==="review";}):todo;
+    }
+    function sumListHtml(kind){
+      var list=sortTasks(sumItems(kind),"manual");
+      if(!list.length)return '<div class="tv-empty"><p>مفيش مهام هنا دلوقتي.</p></div>';
+      return '<div class="tw-sumlist">'+list.map(function(t){return '<button type="button" class="tw-sumrow fx-ripple" data-action="open-task" data-id="'+t.id+'"><i class="tw-dot g-'+seg(t)+'"></i><span class="tw-sumrow-t"><b>'+esc(t.title)+'</b><small>'+esc(t.parent_title||t.project_title||projectOf(t).title||"مهمة")+'</small></span><span class="tv-pill g-'+seg(t)+'">'+esc(isOverdue(t)?"متأخرة":STATUS[t.status])+'</span><span class="tw-sumrow-d'+(isOverdue(t)?' late':'')+'">'+esc(t.due_at?date(t.due_at):"بدون موعد")+'</span></button>';}).join("")+'</div>';
+    }
     function mineHtml(){
       var own=sortTasks(baseTasks().filter(function(t){return t.assignee_id===admin.id;}),"manual"),mine=own.filter(function(t){return !closed(t);}),todo=mine.filter(function(t){return t.status!=="review";}),waiting=mine.filter(function(t){return t.status==="review";});
       function hasOpenParent(t){return todo.some(function(p){return p.id===t.parent_task_id&&p.id!==t.id;});}
@@ -378,7 +395,7 @@
       // A malformed cycle must not make an assigned task disappear.
       if(!roots.length&&todo.length)roots=todo;
       var reviewRoots=waiting.filter(function(t){return !hasOpenParent(t);});
-      return '<section class="tv-body"><div class="tw-summary" aria-label="ملخص مهامي"><div><strong>'+todo.length+'</strong><span>مطلوب تنفيذها</span></div><div class="tw-summary-late"><strong>'+todo.filter(isOverdue).length+'</strong><span>متأخرة</span></div><div><strong>'+waiting.length+'</strong><span>بانتظار المراجعة</span></div></div><p class="tw-order">ابدأ من أول مهمة. الترتيب حسب ترتيب المدير ثم موعد التسليم.</p>'+(roots.length?'<div class="tw-cards">'+cards(roots)+'</div>':'<div class="tv-empty"><h3>مفيش شغل مطلوب منك دلوقتي</h3><p>المهام الجديدة هتظهر هنا.</p></div>')+(reviewRoots.length?'<details class="tw-waiting"><summary>بانتظار مراجعة المدير ('+reviewRoots.length+')</summary><div class="tw-cards">'+cards(reviewRoots)+'</div></details>':'')+'</section>';
+      return '<section class="tv-body"><div class="tw-summary" aria-label="ملخص مهامي">'+sumTile("todo","مطلوب تنفيذها",todo.length,"t-todo",SUM_ICON.todo)+sumTile("late","متأخرة",todo.filter(isOverdue).length,"t-late tw-summary-late",SUM_ICON.late)+sumTile("review","بانتظار المراجعة",waiting.length,"t-review",SUM_ICON.review)+'</div><p class="tw-order">ابدأ من أول مهمة. الترتيب حسب ترتيب المدير ثم موعد التسليم.</p>'+(roots.length?'<div class="tw-cards">'+cards(roots)+'</div>':'<div class="tv-empty"><h3>مفيش شغل مطلوب منك دلوقتي</h3><p>المهام الجديدة هتظهر هنا.</p></div>')+(reviewRoots.length?'<details class="tw-waiting"><summary>بانتظار مراجعة المدير ('+reviewRoots.length+')</summary><div class="tw-cards">'+cards(reviewRoots)+'</div></details>':'')+'</section>';
     }
     function tabsBar(base,shownCount){
       var open=base.filter(function(t){return !closed(t);}).length,done=base.filter(function(t){return t.status==="done";}).length;
@@ -455,6 +472,7 @@
         var editPriorityOpts=Object.keys(PRIORITY).map(function(k){return '<option value="'+k+'" '+(et.priority===k?"selected":"")+'>'+PRIORITY[k]+'</option>';}).join("");
         html+=modal("تعديل المهمة",'<form data-form="task-edit"><input type="hidden" name="task_id" value="'+esc(et.id)+'"><label>عنوان المهمة<input name="title" required maxlength="180" value="'+esc(et.title)+'"></label><label>وصف المطلوب<textarea name="description" rows="3">'+esc(et.description)+'</textarea></label><label>النتيجة المتوقعة<textarea name="expected_output" rows="2">'+esc(et.expected_output)+'</textarea></label><label>المسؤول<select name="assignee_id" required>'+editPersonOpts+'</select></label><div class="tsk-form-row"><label>موعد التسليم<input type="date" name="due_at" value="'+dateValue(et.due_at)+'"></label><label>الأولوية<select name="priority">'+editPriorityOpts+'</select></label></div>'+repeatFields(et)+(et.recurrence_id?'<label class="tsk-repeat-toggle"><input type="checkbox" name="update_future" checked><span>تطبيق التعديلات على التكرارات القادمة</span></label>':"")+'<footer><button class="btn btn-primary">حفظ التعديلات</button><button type="button" class="btn" data-action="close-modal">إلغاء</button></footer></form>');
       }
+      if(state.modal==="sum-list"&&SUM_TITLE[state.sumKind])html+=modal(SUM_TITLE[state.sumKind]+" ("+sumItems(state.sumKind).length+")",sumListHtml(state.sumKind),"tw-sum-modal");
       if(state.modal==="task-view"){var vt=state.tasks.find(function(x){return x.id===state.viewId;});if(vt)html+=modal("تفاصيل المهمة",taskDetail(vt),"tv-wide");}
       if(state.modal==="note"&&state.note){
         var nc=NOTE[state.note.action]||NOTE.progress,nTitle=state.note.action==="progress"&&state.note.starting?nc.start:nc.title;
@@ -477,6 +495,7 @@
           '<div class="tsk-history">'+((state.history||[]).map(function(u){var toName=u.addressed_to?personName(u.addressed_to):"";return '<article><div class="tsk-update-meta"><b>'+esc(u.author_name||"عضو الفريق")+'</b>'+(toName?'<span class="tsk-to-tag'+(u.author_id===CLAUDE_ID?" reply":"")+'">'+esc((u.author_id===CLAUDE_ID?"رد على ":"إلى: ")+toName)+'</span>':"")+'<small>'+esc(stamp(u.created_at))+'</small>'+(u.status_to?'<span class="tsk-hist-status">'+esc((STATUS[u.status_from]||"")+(u.status_from?" ← ":"")+(STATUS[u.status_to]||u.status_to))+'</span>':"")+'</div>'+bodyHtml(u.body)+attsHtml(u.id)+'</article>';}).join("")||'<p class="tsk-empty">لا توجد تعليقات أو تحديثات بعد.</p>')+'</div>');
       }
       el.innerHTML=html;
+      countUp(el);
       el.querySelectorAll(".tw-subtasks").forEach(function(group){group.ontoggle=function(){if(group.isConnected)state.expanded["mine:"+group.dataset.taskGroup]=group.open;};});
       el.querySelectorAll('form[data-form="task"],form[data-form="task-edit"]').forEach(syncRepeat);
       var timingHost=el.querySelector('.tv-detail');
@@ -639,6 +658,7 @@
         b.disabled=true;call.then(function(){var gone=target.id;state.deleteTarget=null;if(state.backView===gone){state.backView=state.viewStack.length?state.viewStack.pop():"";}state.viewStack=state.viewStack.filter(function(x){return x!==gone;});returnAfterSave("","delete");return refreshAndShow();}).catch(function(e){b.disabled=false;state.error=e.message||"تعذر الحذف";draw();});return;
       }
       if(action==="filter"){state.filter=id;drawList();return;}
+      if(action==="sum"){state.sumKind=id;state.modal="sum-list";draw();return;}
       if(action==="stat"){
         if(id==="notices"){state.modal="notifications";draw();return;}
         state.tab="tasks";store("tab","tasks");state.view="list";state.q="";state.fProject="";state.fAssignee="";state.filter=id;

@@ -4,8 +4,7 @@ import json, os, subprocess, base64, tempfile, math
 
 VOICES = {  # name -> ElevenLabs voice id (see docs/character-library/voices.json)
     "narrator": "VXERCtS1keFWRMOi7czu", "doctor_male": "DWMVT5WflKt0P8OPpIrY", "male_2": "LXrTqFIgiubkrMkwvOUr",
-    "woman_1": "I3u6waC588j43py1kDN2", "woman_2": "xPcC3nehhziQaOrIeAwv", "elder_man": "Jez3JdhBInQTvlAvDOWR",
-    "elder_woman": "mS4cERRqrNy5Kmlx8Udf"}
+    "woman_1": "L10lEremDiJfPicq5CPh", "woman_2": "L10lEremDiJfPicq5CPh", "elder_man": "Jez3JdhBInQTvlAvDOWR"}
 SETTINGS = {"stability": 0.5, "similarity_boost": 0.75, "style": 0, "speed": 1.0, "use_speaker_boost": True}
 
 def quota():
@@ -22,7 +21,7 @@ def speak_gateway(voice, text, out_mp3):
     Needs the gateway version that accepts voice + timestamps (supabase/functions/claude-automation)."""
     try:
         tok = open(os.path.expanduser("~/.swnw-run-token")).read().strip()
-        body = json.dumps({"text": text, "voice": voice if voice in VOICES else "narrator", "timestamps": True}, ensure_ascii=False)
+        body = json.dumps({"text": text, "voice": voice if voice in VOICES else "narrator", "timestamps": True, "stability": SETTINGS["stability"], "style": SETTINGS["style"], "speed": SETTINGS["speed"]}, ensure_ascii=False)
         r = subprocess.run(["curl", "-s", "-m", "180", "-A", "claude-task", "-X", "POST", GATEWAY + "?op=tts", "-H", "X-Run-Token: " + tok,
                             "-H", "Content-Type: application/json", "--data-binary", body], capture_output=True, text=True)
         d = json.loads(r.stdout)

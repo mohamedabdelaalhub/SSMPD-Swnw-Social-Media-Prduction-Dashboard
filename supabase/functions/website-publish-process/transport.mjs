@@ -43,3 +43,24 @@ export function privateKey(fileUrl, origin, bucket, contentId) {
   return key;
  }catch{return null;}
 }
+// Video poster for the website card: the dashboard cover, scaled down to at most 720 px wide (area average, flattened on
+// white so transparent PNGs don't turn black), then encoded as a small JPEG by the caller. Studio only accepts a poster
+// as `image` (base64) — and a video publish without it clears the stored poster.
+export function posterSize(width, height, max=720) {
+ if(!(width>0&&height>0))throw Error('INVALID_FILE');
+ if(width<=max)return [width,height];
+ return [max,Math.max(1,Math.round(height*max/width))];
+}
+export function downscaleOnWhite(src, sw, sh, tw, th) {
+ const out=new Uint8ClampedArray(tw*th*4);
+ for(let y=0;y<th;y++){
+  const y0=Math.floor(y*sh/th),y1=Math.max(y0+1,Math.floor((y+1)*sh/th));
+  for(let x=0;x<tw;x++){
+   const x0=Math.floor(x*sw/tw),x1=Math.max(x0+1,Math.floor((x+1)*sw/tw));
+   let r=0,g=0,b=0,n=0;
+   for(let yy=y0;yy<y1;yy++){let i=(yy*sw+x0)*4;for(let xx=x0;xx<x1;xx++,i+=4){const a=src[i+3]/255;r+=src[i]*a+255*(1-a);g+=src[i+1]*a+255*(1-a);b+=src[i+2]*a+255*(1-a);n++;}}
+   const o=(y*tw+x)*4;out[o]=r/n;out[o+1]=g/n;out[o+2]=b/n;out[o+3]=255;
+  }
+ }
+ return out;
+}

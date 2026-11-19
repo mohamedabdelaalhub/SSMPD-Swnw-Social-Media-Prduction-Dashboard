@@ -735,3 +735,107 @@ table.simple.acc-table td.acc-col-num{text-align:left;}
 .pf-table .pf-sort span{font-size:11px;color:var(--c-muted,#6B7688)}
 .pf-table th[aria-sort] .pf-sort span{color:var(--c-primary,#0F369D)}
 .pf-table .pf-sort:focus-visible{outline:2px solid var(--c-primary,#0F369D);outline-offset:2px;border-radius:6px}
+
+/* Patient-portal visibility control (portal-visibility-controls.js) */
+.portal-visibility-select{font:inherit;font-size:12px;padding:3px 6px;margin-inline-start:6px;border:1px solid #c9d3ea;border-radius:8px;background:#fff;color:#0F369D;max-width:190px;vertical-align:middle}
+.portal-visibility-select:disabled{opacity:.6}
+.file-name-check-badge{display:inline-flex;flex-wrap:wrap;align-items:center;gap:6px;margin:6px 0 0;padding:6px 10px;border-radius:10px;background:#fff4ee;border:1px solid #F15A22;color:#16212E;font-size:12.5px;line-height:1.5}
+.file-name-check-badge b{color:#D0402A}
+
+/* Owner 2026-11-17: «افتح وردية اليوم» popup + floating safe (reception-shift-reminder.js).
+   orange = closed safe whose door keeps opening (open your shift) · green = open safe (shift open) · yellow = open safe whose door keeps closing (close it). */
+.shift-reminder-backdrop{position:fixed;inset:0;z-index:9000;display:grid;place-items:center;padding:16px;background:rgba(22,33,46,.45)}
+.shift-reminder{--safe:#F15A22;--safe-ink:#fff;width:min(420px,100%);padding:24px 22px 20px;border-radius:20px;background:#fff;box-shadow:0 24px 60px rgba(15,54,157,.25);text-align:center;color:#16212E}
+.shift-reminder.is-close_due{--safe:#F2B705;--safe-ink:#16212E}
+.shift-reminder-icon{display:grid;place-items:center;width:72px;height:72px;margin:0 auto 10px;border-radius:50%;background:color-mix(in srgb,var(--safe) 14%,#fff);color:var(--safe)}
+.shift-reminder-icon .safe-ico{width:46px;height:46px}
+.shift-reminder h2{margin:0 0 8px;font-size:22px;font-weight:800;color:#0F369D}
+.shift-reminder p{margin:0 0 18px;font-size:15px;line-height:1.7;color:#3B4658}
+.shift-reminder-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.shift-reminder-actions .btn{min-height:44px;padding:0 22px;font-size:15px;font-weight:700}
+.shift-reminder-actions .btn-primary{background:var(--safe);border-color:var(--safe);color:var(--safe-ink)}
+.shift-fab{--safe:#F15A22;--safe-ink:#fff;position:fixed;left:16px;bottom:140px;z-index:1199;display:grid;place-items:center;width:56px;height:56px;padding:0;border:0;border-radius:50%;background:var(--safe);color:var(--safe-ink);box-shadow:0 10px 26px color-mix(in srgb,var(--safe) 45%,transparent);cursor:pointer;transition:transform .15s}
+.shift-fab:hover{transform:scale(1.06)}.shift-fab:focus-visible{outline:3px solid #0F369D;outline-offset:3px}
+.shift-fab .safe-ico{width:34px;height:34px}
+.shift-fab.is-open{--safe:#2F7D5C}
+/* owner 2026-11-18 «تسليم تحصيل لزميل» */
+.shift-reminder.is-open,.shift-reminder.is-open_menu{--safe:#2F7D5C}
+.peer-handover .shift-reminder{width:min(480px,100%);max-height:calc(100vh - 32px);overflow:auto;text-align:start}
+.peer-handover .shift-reminder h2{text-align:center}
+.peer-form{display:grid;gap:10px}
+.peer-form label{display:grid;gap:4px;font-size:14px;font-weight:600;color:#16212E}
+.peer-form label.peer-mode{display:flex;align-items:center;gap:8px;font-weight:500}
+.peer-form input,.peer-form select{min-height:40px;padding:6px 10px;border:1px solid #cfd6e4;border-radius:10px;font:inherit}
+.peer-form .fc-counts{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:6px}
+.peer-pending{margin:0 0 12px;padding:8px 10px;border-radius:12px;background:rgba(241,90,34,.08)}
+.peer-pending p{margin:0;display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.peer-status{min-height:1.4em;margin:8px 0 0 !important;color:#D0402A !important;font-size:14px !important;text-align:center}
+.shift-fab.is-close_due{--safe:#F2B705;--safe-ink:#16212E}
+.safe-ico .safe-body{fill:none;stroke:currentColor;stroke-width:2}
+.safe-ico .safe-inside{fill:currentColor;opacity:.18}
+.safe-ico .safe-coin{fill:currentColor;opacity:.85}
+.safe-ico .safe-door{transform-box:view-box;transform-origin:6.5px 15px}
+.safe-ico .safe-door-face{fill:currentColor}
+.safe-ico .safe-dial{fill:none;stroke:var(--safe,#F15A22);stroke-width:1.4;stroke-linecap:round}
+.safe-ico .safe-handle{fill:var(--safe,#F15A22)}
+.is-need_open .safe-door{animation:safe-opening 2.6s ease-in-out infinite}
+.is-open .safe-door{transform:scaleX(.16)}
+.is-close_due .safe-door{animation:safe-closing 2.6s ease-in-out infinite}
+@keyframes safe-opening{0%,30%{transform:scaleX(1)}55%,80%{transform:scaleX(.16)}100%{transform:scaleX(1)}}
+@keyframes safe-closing{0%,30%{transform:scaleX(.16)}55%,80%{transform:scaleX(1)}100%{transform:scaleX(.16)}}
+@media(prefers-reduced-motion:reduce){.is-need_open .safe-door,.is-close_due .safe-door{animation:none}.is-close_due .safe-door{transform:scaleX(.16)}}
+/* Owner 2026-11-17: «صرف حساب الطبيب» (reception-doctor-payout.js). */
+.journey-doctor-pay:empty{display:none}
+.dp-pill{display:inline-flex;align-items:center;min-height:30px;padding:0 12px;border:0;border-radius:999px;font:inherit;font-size:13px;font-weight:800;white-space:nowrap;cursor:pointer}
+.dp-pill.is-due{background:#F15A22;color:#fff;box-shadow:0 4px 12px rgba(241,90,34,.28)}
+.dp-pill.is-paid{background:#2F7D5C;color:#fff}
+.dp-pill.is-pending{background:#FDE7DE;color:#B4400F;border:1px dashed #F15A22}
+.dp-pill:focus-visible,.dp-badge:focus-visible{outline:3px solid #0F369D;outline-offset:2px}
+.dp-backdrop{position:fixed;inset:0;z-index:9100;display:grid;place-items:center;padding:12px;background:rgba(22,33,46,.45)}
+.dp-modal{width:min(640px,100%);max-height:92vh;overflow:auto;background:#fff;border-radius:18px;box-shadow:0 24px 60px rgba(15,54,157,.25);color:#16212E}
+.dp-modal>header{position:sticky;top:0;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:14px 18px;background:#fff;border-bottom:1px solid rgba(22,33,46,.08)}
+.dp-modal h2{margin:0;font-size:18px;font-weight:800;color:#0F369D}
+.dp-x{border:0;background:none;font-size:26px;line-height:1;cursor:pointer;color:#3B4658}
+.dp-body{padding:16px 18px 20px;display:grid;gap:12px}
+.dp-total{display:grid;gap:2px;padding:16px;border-radius:14px;background:#F4F6FB;text-align:center}
+.dp-total span{font-size:13px;color:#3B4658}.dp-total strong{font-size:32px;font-weight:800;color:#0F369D;font-variant-numeric:tabular-nums}.dp-total small{font-size:13px;color:#3B4658}
+.dp-total.is-paid{background:#E6F2EC}.dp-total.is-paid strong{color:#2F7D5C}.dp-total.is-pending,.dp-total.is-approved,.dp-total.is-partial{background:#FEF0EA}
+.dp-facts{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:13.5px;color:#3B4658}
+.dp-details summary{cursor:pointer;font-weight:700;color:#0F369D;padding:6px 0}
+.dp-table{width:100%;border-collapse:collapse;font-size:13px}.dp-table th,.dp-table td{padding:7px 6px;border-bottom:1px solid rgba(22,33,46,.08);text-align:start}.dp-table th{color:#7A8496;font-weight:700}
+.dp-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.dp-actions .dp-go,.dp-ok-btn{background:#F15A22;border-color:#F15A22;color:#fff;min-height:44px;padding:0 20px;font-weight:800}
+.dp-ok-btn{background:#2F7D5C;border-color:#2F7D5C}.dp-reject{color:#D0402A;border-color:#D0402A}
+.dp-note{margin:0;font-size:14px}.dp-muted{margin:0;color:#7A8496;font-size:13px}.dp-error{color:#D0402A}
+.dp-h{margin:6px 0 0;font-size:15px}.dp-list{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.dp-list li{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;padding:10px;border:1px solid rgba(22,33,46,.08);border-radius:12px}
+.dp-row-actions{display:flex;flex-wrap:wrap;gap:6px}.dp-ok{color:#2F7D5C;font-weight:700}.dp-warn{color:#F15A22;font-weight:700}.dp-upload{cursor:pointer}
+.dp-card{padding:14px;border:1px solid rgba(22,33,46,.1);border-radius:14px;display:grid;gap:8px}
+.dp-card>header{display:flex;justify-content:space-between;align-items:baseline;gap:8px}.dp-card h3{margin:0;font-size:16px}.dp-card>header strong{font-size:20px;color:#0F369D}
+.dp-approve{display:grid;grid-template-columns:140px 1fr;gap:8px}.dp-approve label{display:grid;gap:4px;font-size:12.5px;color:#3B4658}
+.dp-approve input{min-height:38px;padding:0 10px;border:1px solid rgba(22,33,46,.18);border-radius:10px;font:inherit}
+@media(max-width:520px){.dp-approve{grid-template-columns:1fr}}
+.dp-badge{position:fixed;left:16px;bottom:200px;z-index:1198;display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 16px;border:0;border-radius:999px;background:#0F369D;color:#fff;font:inherit;font-weight:800;box-shadow:0 10px 26px rgba(15,54,157,.35);cursor:pointer}
+.dp-badge b{display:inline-grid;place-items:center;min-width:24px;height:24px;border-radius:12px;background:#F15A22;color:#fff;font-size:13px}
+.dp-toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9200;padding:10px 18px;border-radius:12px;background:#2F7D5C;color:#fff;font-weight:700}.dp-toast.is-bad{background:#D0402A}
+/* Owner 2026-11-18: «الساعات الإضافية» (hr-overtime.js). */
+.ot{display:grid;gap:14px}
+.ot-lead{margin:0;font-size:14px;line-height:1.8;color:#3B4658}.ot-on{color:#2F7D5C}.ot-off{color:#D0402A}
+.ot-card{padding:16px;border:1px solid rgba(22,33,46,.1);border-radius:14px;background:#fff;display:grid;gap:10px}
+.ot-card h3{margin:0;font-size:16px;font-weight:800;color:#16212E}
+.ot-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:end;gap:8px}
+.ot-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;align-items:end}
+.ot-form label{display:grid;gap:4px;font-size:12.5px;color:#3B4658}.ot-form .ot-wide{grid-column:1/-1}
+.ot-form input,.ot-form select,.ot-head input{min-height:40px;padding:0 10px;border:1px solid rgba(22,33,46,.18);border-radius:10px;font:inherit;background:#fff}
+.ot-switch{display:flex!important;align-items:center;gap:8px;font-size:14px!important;font-weight:700;color:#16212E!important}
+.ot-table{width:100%;border-collapse:collapse;font-size:13px}.ot-table th,.ot-table td{padding:8px 6px;border-bottom:1px solid rgba(22,33,46,.08);text-align:start;vertical-align:top}
+.ot-table th{color:#7A8496;font-weight:700}.ot-table tr.is-flag td{background:#FEF3EE}
+.ot-st{display:inline-block;padding:1px 8px;border-radius:999px;font-size:12px;font-weight:700;background:#EEF1F7;color:#3B4658}
+.ot-st.is-approved{background:#E6F2EC;color:#2F7D5C}.ot-st.is-pending{background:#FDE7DE;color:#B4400F}.ot-st.is-rejected{background:#FBE5E1;color:#D0402A}
+.ot-flag{display:inline-block;padding:1px 8px;border-radius:999px;background:#F15A22;color:#fff;font-size:12px;font-weight:800}
+.ot-alert{margin:0;padding:10px 12px;border-radius:12px;background:#FEF0EA;color:#16212E;font-size:13.5px}
+.ot-item{padding:12px;border:1px solid rgba(22,33,46,.1);border-radius:12px;display:grid;gap:8px}.ot-item p{margin:0}.ot-task{font-size:13px;color:#3B4658}
+.ot-actions{display:flex;gap:8px;flex-wrap:wrap}.ot-reject{color:#D0402A;border-color:#D0402A}
+.ot-msg{margin:0;padding:8px 12px;border-radius:10px;font-weight:700}.ot-msg.is-ok{background:#E6F2EC;color:#2F7D5C}.ot-msg.is-bad{background:#FBE5E1;color:#D0402A}
+.ot-muted{margin:0;color:#7A8496;font-size:13px}.ot-details summary{cursor:pointer;font-weight:700;color:#0F369D;padding:4px 0}
+@media(max-width:640px){.ot-table{display:block;overflow-x:auto}}

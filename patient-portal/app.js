@@ -4,6 +4,10 @@ var cfg=window.SSMPD_CONFIG&&window.SSMPD_CONFIG.supabase;
 var root=document.getElementById("portal-root");
 if(!cfg||!cfg.url||!cfg.anonKey){root.innerHTML='<div class="notice error">تعذر تحميل إعدادات بوابة Swnw.</div>';return;}
 var client=window.supabase.createClient(cfg.url,cfg.anonKey,{auth:{persistSession:true,autoRefreshToken:true,storageKey:"swnw-patient-portal-auth"}});
+// One shared auth client for every portal script: separate GoTrueClient instances on the same storage key
+// each replayed the reset link and re-sent PASSWORD_RECOVERY seconds later, reopening the reset screen.
+window.SSMPDPortalClient=client;
+var recoveryShown=false,recoveryDone=false;
 
 function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
 function relationLabel(v){return({self:"نفسي",father:"أب",mother:"أم",legal_guardian:"وصي قانوني",spouse:"زوج/زوجة",other:"أخرى",guardian:"وصاية",authorized:"ممثل معتمد"}[v]||v||"—");}
@@ -28,8 +32,9 @@ function icon(name){
 function errText(e){
   var m=String(e&&e.message||e||"");
   var map={
+    TERMS_NOT_ACCEPTED:"يجب الموافقة على سياسة الخصوصية وشروط الاستخدام لتفعيل الحساب.",
     DETAILS_NOT_MATCHED:"رقم الملف والبريد الإلكتروني غير متطابقين مع البيانات المسجلة بالمركز.",
-    PENDING_REQUEST_EXISTS:"فيه طلب قيد المراجعة بالفعل لنفس الملف.",
+    PENDING_REQUEST_EXISTS:"يوجد طلب قيد المراجعة بالفعل للملف نفسه.",
     STAFF_EMAIL_NOT_ALLOWED:"بريد الموظفين لا يُستخدم كحساب مستخدم للبوابة.",
     EMAIL_ALREADY_REGISTERED_CONTACT_CENTER:"البريد مسجل في النظام بحساب آخر. تواصل مع المركز.",
     PATIENT_ACCOUNT_DISABLED:"الحساب موقوف. تواصل مع المركز.",
@@ -49,7 +54,7 @@ function errText(e){
     INVALID_LOGIN_CREDENTIALS:"البريد أو كلمة السر غير صحيحة.",
     PATIENT_CODE_REQUIRED:"اكتب رقم الملف الطبي المراد إضافته.",
     PATIENT_FILE_NOT_FOUND:"رقم الملف غير موجود أو غير نشط. راجع الرقم.",
-    ACCESS_ALREADY_EXISTS:"الملف ده مرتبط بالحساب بالفعل."
+    ACCESS_ALREADY_EXISTS:"هذا الملف مرتبط بالحساب بالفعل."
   };
   var key=Object.keys(map).find(function(k){return m.indexOf(k)>=0;});
   if(key)return map[key];
@@ -77,6 +82,7 @@ function invoke(name,body){
 }
 function authBrand(){return '<div class="auth-brand"><img src="../assets/img/logo.svg" alt="Swnw"><div><b>Swnw</b><span>بوابة المستخدم</span></div></div>';}
 function nav(){return '<div class="portal-nav"><button class="auth-nav-btn" data-view="login">تسجيل الدخول</button><button class="auth-nav-btn" data-view="request">طلب تفعيل حساب</button><button class="auth-nav-btn" data-view="activate">عندي كود تفعيل</button></div>';}
+function legalLink(){return '<p class="auth-legal" style="text-align:center;font-size:13px;margin-top:14px;"><a href="privacy.html" target="_blank" rel="noopener">سياسة الخصوصية وشروط الاستخدام</a></p>';}
 function wireNav(){root.querySelectorAll("[data-view]").forEach(function(b){b.onclick=function(){var v=b.getAttribute("data-view");if(v==="login")loginView();else if(v==="request")requestView();else activationView();};});}
 
 function loginView(message){
@@ -91,19 +97,19 @@ function loginView(message){
   };
 }
 function forgotPasswordView(message){
-  root.innerHTML='<div class="auth-page"><div class="auth-wrap"><div class="auth-brand"><img src="../assets/img/logo.svg" alt="Swnw"><div><b>Swnw</b><span>بوابة المستخدم</span></div></div><section class="auth-card"><div class="auth-heading"><h1>استعادة كلمة السر</h1><p>اكتب بريدك المسجل في بوابة المريض. سنرسل لك رابطًا آمنًا لتعيين كلمة سر جديدة.</p></div>'+(message?'<div class="notice '+(message.type||"")+'">'+esc(message.text)+'</div>':"")+'<div class="field"><label>البريد الإلكتروني</label><input id="forgot-email" type="email" autocomplete="email"></div><button class="btn block" id="forgot-submit">إرسال رابط التغيير</button><button class="auth-nav-btn" id="forgot-back" style="margin-top:10px;">رجوع لتسجيل الدخول</button></section></div></div>';
+  root.innerHTML='<div class="auth-page"><div class="auth-wrap"><div class="auth-brand"><img src="../assets/img/logo.svg" alt="Swnw"><div><b>Swnw</b><span>بوابة المستخدم</span></div></div><section class="auth-card"><div class="auth-heading"><h1>استعادة كلمة السر</h1><p>اكتب بريدك المسجل في بوابة المريض. سنرسل لك رابطًا آمنًا لتعيين كلمة سر جديدة.</p></div>'+(message?'<div class="notice '+(message.type||"")+'">'+esc(message.text)+'</div>':"")+'<div class="field"><label>البريد الإلكتروني</label><input id="forgot-email" type="email" autocomplete="email"></div><button class="btn block" id="forgot-submit">إرسال رابط التغيير</button><button class="auth-nav-btn" id="forgot-back" style="margin-top:10px;">رجوع لتسجيل الدخول</button></section>'+legalLink()+'</div></div>';
   document.getElementById("forgot-back").onclick=function(){loginView();};
   document.getElementById("forgot-submit").onclick=function(){
     var btn=this,email=document.getElementById("forgot-email").value.trim().toLowerCase();
     if(!email){forgotPasswordView({type:"error",text:"اكتب البريد الإلكتروني."});return;}
     btn.disabled=true;btn.textContent="جاري الإرسال…";
-    invoke("patient-portal-self-service",{op:"request_password_reset",email:email}).then(function(){
+    window.SSMPDTurnstile.token().then(function(ct){return invoke("patient-portal-self-service",{op:"request_password_reset",email:email,captcha_token:ct});}).then(function(){
       forgotPasswordView({type:"ok",text:"إذا كان البريد مرتبطًا بحساب مريض مفعل، أرسلنا رابط تغيير كلمة السر إليه."});
     }).catch(function(e){forgotPasswordView({type:"error",text:errText(e)});});
   };
 }
 function newPasswordView(message){
-  root.innerHTML='<div class="auth-page"><div class="auth-wrap"><div class="auth-brand"><img src="../assets/img/logo.svg" alt="Swnw"><div><b>Swnw</b><span>بوابة المستخدم</span></div></div><section class="auth-card"><div class="auth-heading"><h1>تعيين كلمة سر جديدة</h1><p>اختر كلمة سر جديدة للحساب.</p></div>'+(message?'<div class="notice '+(message.type||"")+'">'+esc(message.text)+'</div>':"")+'<div class="field"><label>كلمة السر الجديدة</label><input id="new-password" type="password" autocomplete="new-password"></div><div class="field"><label>تأكيد كلمة السر</label><input id="confirm-password" type="password" autocomplete="new-password"></div><button class="btn block" id="new-password-submit">حفظ كلمة السر</button></section></div></div>';
+  root.innerHTML='<div class="auth-page"><div class="auth-wrap"><div class="auth-brand"><img src="../assets/img/logo.svg" alt="Swnw"><div><b>Swnw</b><span>بوابة المستخدم</span></div></div><section class="auth-card"><div class="auth-heading"><h1>تعيين كلمة سر جديدة</h1><p>اختر كلمة سر جديدة للحساب.</p></div>'+(message?'<div class="notice '+(message.type||"")+'">'+esc(message.text)+'</div>':"")+'<div class="field"><label>كلمة السر الجديدة</label><input id="new-password" type="password" autocomplete="new-password"></div><div class="field"><label>تأكيد كلمة السر</label><input id="confirm-password" type="password" autocomplete="new-password"></div><button class="btn block" id="new-password-submit">حفظ كلمة السر</button></section>'+legalLink()+'</div></div>';
   document.getElementById("new-password-submit").onclick=function(){
     var btn=this,p=document.getElementById("new-password").value,c=document.getElementById("confirm-password").value;
     if(p.length<8){newPasswordView({type:"error",text:"كلمة السر يجب أن تكون 8 أحرف على الأقل."});return;}
@@ -111,6 +117,7 @@ function newPasswordView(message){
     btn.disabled=true;btn.textContent="جاري الحفظ…";
     client.auth.updateUser({password:p}).then(function(r){
       if(r.error)throw r.error;
+      recoveryDone=true;
       var returnTarget=window.SSMPDPortalRouting.parse(location.search).returnUrl;
       history.replaceState(null,"",location.pathname+(returnTarget?"?view=login&returnUrl="+encodeURIComponent(returnTarget):""));
       loginView({type:"ok",text:"تم تغيير كلمة السر. سجل دخولك بالكلمة الجديدة."});
@@ -130,7 +137,7 @@ function uploadVerificationDocuments(res,docType,files){
   return files.reduce(function(p,file){return p.then(function(){var fd=new FormData();fd.append("verification_id",id);fd.append("submission_token",token);fd.append("document_type",docType);fd.append("file",file);return invoke("patient-verification-upload",fd);});},Promise.resolve());
 }
 function requestView(message){
-  root.innerHTML='<div class="auth-page"><div class="auth-wrap wide">'+authBrand()+'<section class="auth-card"><div class="auth-heading"><h1>طلب تفعيل حساب Swnw</h1><p>استخدم البريد المسجل بالفعل داخل الملف الطبي. بعد مراجعة المستندات واعتماد الطلب، هيوصلك كود التفعيل على نفس البريد.</p></div>'+nav()+(message?'<div class="notice '+(message.type||"")+'">'+esc(message.text)+'</div>':"")+requestFormHtml()+'<button class="btn block" id="submit-request">إرسال الطلب والمستندات</button><div id="request-msg"></div></section></div></div>';
+  root.innerHTML='<div class="auth-page"><div class="auth-wrap wide">'+authBrand()+'<section class="auth-card"><div class="auth-heading"><h1>طلب تفعيل حساب Swnw</h1><p>استخدم البريد المسجل بالفعل داخل الملف الطبي. بعد مراجعة المستندات واعتماد الطلب، هيوصلك كود التفعيل على نفس البريد.</p></div>'+nav()+(message?'<div class="notice '+(message.type||"")+'">'+esc(message.text)+'</div>':"")+requestFormHtml()+'<button class="btn block" id="submit-request">إرسال الطلب والمستندات</button><div id="request-msg"></div></section>'+legalLink()+'</div></div>';
   wireNav();wireVerificationFields();
   document.getElementById("submit-request").onclick=function(){
     var btn=this,msg=document.getElementById("request-msg"),code=document.getElementById("patient-code").value.trim(),email=document.getElementById("request-email").value.trim().toLowerCase(),docType=document.getElementById("document-type").value.trim(),files=Array.prototype.slice.call(document.getElementById("documents").files||[]),t=document.getElementById("verification-type"),rel=document.getElementById("relationship");
@@ -139,15 +146,16 @@ function requestView(message){
     invoke("patient-portal-self-service",{op:"submit_request",patient_code:code,email:email,verification_type:t.value,relationship:rel.value}).then(function(res){return uploadVerificationDocuments(res,docType,files);}).then(function(){requestView({type:"ok",text:"تم إرسال الطلب والمستندات للمراجعة. عند الاعتماد هيوصلك كود تفعيل على البريد المسجل بالمركز."});}).catch(function(e){msg.innerHTML='<div class="notice error">'+esc(errText(e))+'</div>';btn.disabled=false;btn.textContent="إرسال الطلب والمستندات";});
   };
 }
+var PORTAL_TERMS_VERSION="2026-11-18";
 function activationView(message,prefillEmail){
-  root.innerHTML='<div class="auth-page"><div class="auth-wrap">'+authBrand()+'<section class="auth-card"><div class="auth-heading"><h1>تفعيل الحساب</h1><p>اكتب كود الـ8 أرقام اللي وصلك من Swnw بعد اعتماد المستندات، وحدد كلمة سر جديدة.</p></div>'+nav()+(message?'<div class="notice '+(message.type||"")+'">'+esc(message.text)+'</div>':"")+'<div class="field"><label>البريد الإلكتروني</label><input id="activation-email" type="email" autocomplete="email" value="'+esc(prefillEmail||"")+'"></div><div class="field"><label>كود التفعيل</label><input id="activation-code" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="00000000"></div><div class="field"><label>كلمة السر الجديدة</label><input id="new-password" type="password" autocomplete="new-password" placeholder="10 أحرف على الأقل"></div><div class="field"><label>تأكيد كلمة السر</label><input id="confirm-password" type="password" autocomplete="new-password"></div><button class="btn block" id="activate-btn">تفعيل الحساب</button></section></div></div>';
+  root.innerHTML='<div class="auth-page"><div class="auth-wrap">'+authBrand()+'<section class="auth-card"><div class="auth-heading"><h1>تفعيل الحساب</h1><p>أدخل رمز التفعيل المكوّن من 8 أرقام الذي وصلك من Swnw بعد اعتماد المستندات، ثم حدّد كلمة مرور جديدة.</p></div>'+nav()+(message?'<div class="notice '+(message.type||"")+'">'+esc(message.text)+'</div>':"")+'<div class="field"><label>البريد الإلكتروني</label><input id="activation-email" type="email" autocomplete="email" value="'+esc(prefillEmail||"")+'"></div><div class="field"><label>كود التفعيل</label><input id="activation-code" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="00000000"></div><div class="field"><label>كلمة السر الجديدة</label><input id="new-password" type="password" autocomplete="new-password" placeholder="10 أحرف على الأقل"></div><div class="field"><label>تأكيد كلمة السر</label><input id="confirm-password" type="password" autocomplete="new-password"></div><label class="field terms-consent" style="display:flex;gap:8px;align-items:flex-start;font-size:14px;"><input id="accept-terms" type="checkbox" style="margin-top:5px;"><span>قرأتُ <a href="privacy.html" target="_blank" rel="noopener">سياسة الخصوصية وشروط الاستخدام</a> وأوافق عليها.</span></label><button class="btn block" id="activate-btn">تفعيل الحساب</button></section>'+legalLink()+'</div></div>';
   wireNav();
-  document.getElementById("activate-btn").onclick=function(){var btn=this,email=document.getElementById("activation-email").value.trim().toLowerCase(),code=document.getElementById("activation-code").value.replace(/\D/g,""),password=document.getElementById("new-password").value,confirmPassword=document.getElementById("confirm-password").value;if(password!==confirmPassword){activationView({type:"error",text:"كلمتا السر غير متطابقتين."},email);return;}if(password.length<10){activationView({type:"error",text:"كلمة السر لازم تكون 10 أحرف على الأقل."},email);return;}btn.disabled=true;btn.textContent="جاري التفعيل…";invoke("patient-portal-self-service",{op:"activate",email:email,code:code,new_password:password}).then(function(){return window.SSMPDTurnstile.token().then(function(ct){return client.auth.signInWithPassword({email:email,password:password,options:{captchaToken:ct}});});}).then(function(r){if(r.error)throw r.error;return completeLogin();}).catch(function(e){activationView({type:"error",text:errText(e)},email);});};
+  document.getElementById("activate-btn").onclick=function(){var btn=this,email=document.getElementById("activation-email").value.trim().toLowerCase(),code=document.getElementById("activation-code").value.replace(/\D/g,""),password=document.getElementById("new-password").value,confirmPassword=document.getElementById("confirm-password").value;if(password!==confirmPassword){activationView({type:"error",text:"كلمتا السر غير متطابقتين."},email);return;}if(password.length<10){activationView({type:"error",text:"كلمة السر لازم تكون 10 أحرف على الأقل."},email);return;}if(!document.getElementById("accept-terms").checked){activationView({type:"error",text:"يجب الموافقة على سياسة الخصوصية وشروط الاستخدام لتفعيل الحساب."},email);return;}btn.disabled=true;btn.textContent="جاري التفعيل…";invoke("patient-portal-self-service",{op:"activate",email:email,code:code,new_password:password,terms_version:PORTAL_TERMS_VERSION}).then(function(){return window.SSMPDTurnstile.token().then(function(ct){return client.auth.signInWithPassword({email:email,password:password,options:{captchaToken:ct}});});}).then(function(r){if(r.error)throw r.error;return completeLogin();}).catch(function(e){activationView({type:"error",text:errText(e)},email);});};
 }
 
 function linkedFileRequestView(data,message){
   var email=data&&data.account&&data.account.login_email||"";
-  root.innerHTML='<div class="auth-page logged-subpage"><div class="auth-wrap wide"><div class="subpage-bar"><div class="subpage-brand"><img src="../assets/img/logo.svg" alt="Swnw"><span>ملف المستخدم</span></div><button class="back-btn" id="back-to-files">'+icon("back")+'<span>عودة</span></button></div><section class="auth-card"><div class="auth-heading"><h1>طلب إضافة ملف</h1><p>استخدم رقم الملف المراد ربطه بحسابك وارفع المستند الذي يثبت صفتك أو علاقتك بصاحب الملف. يتم اعتماد فتح الملف مرة واحدة فقط.</p></div><div class="account-note">الحساب: <b class="ltr">'+esc(email)+'</b></div>'+(message?'<div class="notice '+(message.type||"")+'">'+esc(message.text)+'</div>':"")+'<div class="grid"><div class="field full"><label>رقم الملف الطبي المراد إضافته</label><input id="patient-code" placeholder="P-YYYY-000001"></div><div class="field"><label>نوع الوصول</label><select id="verification-type"><option value="self_identity">ملف آخر يخصني</option><option value="guardian_relationship" selected>ابن/تابع تحت الوصاية</option><option value="authorized_representative">ممثل معتمد</option></select></div><div class="field"><label>الصفة</label><select id="relationship"><option value="self">نفسي</option><option value="father" selected>أب</option><option value="mother">أم</option><option value="legal_guardian">وصي قانوني</option><option value="spouse">زوج/زوجة</option><option value="other">أخرى</option></select></div><div class="field"><label>نوع المستند</label><input id="document-type" placeholder="شهادة ميلاد / مستند وصاية / تفويض..."></div><div class="field full"><label>مستند إثبات الصفة أو العلاقة</label><input id="documents" type="file" accept=".pdf,image/jpeg,image/png,image/webp" multiple></div></div><button class="btn block" id="submit-add-file">إرسال طلب إضافة الملف</button><div id="request-msg"></div></section></div></div>';
+  root.innerHTML='<div class="auth-page logged-subpage"><div class="auth-wrap wide"><div class="subpage-bar"><div class="subpage-brand"><img src="../assets/img/logo.svg" alt="Swnw"><span>ملف المستخدم</span></div><button class="back-btn" id="back-to-files">'+icon("back")+'<span>عودة</span></button></div><section class="auth-card"><div class="auth-heading"><h1>طلب إضافة ملف</h1><p>استخدم رقم الملف المراد ربطه بحسابك وارفع المستند الذي يثبت صفتك أو علاقتك بصاحب الملف. يتم اعتماد فتح الملف مرة واحدة فقط.</p></div><div class="account-note">الحساب: <b class="ltr">'+esc(email)+'</b></div>'+(message?'<div class="notice '+(message.type||"")+'">'+esc(message.text)+'</div>':"")+'<div class="grid"><div class="field full"><label>رقم الملف الطبي المراد إضافته</label><input id="patient-code" placeholder="P-YYYY-000001"></div><div class="field"><label>نوع الوصول</label><select id="verification-type"><option value="self_identity">ملف آخر يخصني</option><option value="guardian_relationship" selected>ابن/تابع تحت الوصاية</option><option value="authorized_representative">ممثل معتمد</option></select></div><div class="field"><label>الصفة</label><select id="relationship"><option value="self">نفسي</option><option value="father" selected>أب</option><option value="mother">أم</option><option value="legal_guardian">وصي قانوني</option><option value="spouse">زوج/زوجة</option><option value="other">أخرى</option></select></div><div class="field"><label>نوع المستند</label><input id="document-type" placeholder="شهادة ميلاد / مستند وصاية / تفويض..."></div><div class="field full"><label>مستند إثبات الصفة أو العلاقة</label><input id="documents" type="file" accept=".pdf,image/jpeg,image/png,image/webp" multiple></div></div><button class="btn block" id="submit-add-file">إرسال طلب إضافة الملف</button><div id="request-msg"></div></section>'+legalLink()+'</div></div>';
   document.getElementById("back-to-files").onclick=function(){openPortalTab(data,"files");};
   wireVerificationFields();
   document.getElementById("submit-add-file").onclick=function(){
@@ -195,11 +203,11 @@ function renderStatus(data,activeTab,fileState){
 function completeLogin(){var target=window.SSMPDPortalRouting.parse(location.search).returnUrl;if(target){location.assign(target);return Promise.resolve();}return loadPortal();}
 function loadPortal(){root.innerHTML='<div class="loading-page"><div class="loading-logo"><img src="../assets/img/logo.svg" alt="Swnw"></div><div class="loading-line"></div><p>جاري تحميل حسابك…</p></div>';return invoke("patient-portal-self-service",{op:"status"}).then(function(data){renderStatus(data,"data",null);}).catch(function(e){client.auth.signOut().finally(function(){loginView({type:"error",text:errText(e)});});});}
 client.auth.onAuthStateChange(function(event){
-  if(event==="PASSWORD_RECOVERY")newPasswordView();
+  if(event==="PASSWORD_RECOVERY"&&!recoveryShown&&!recoveryDone){recoveryShown=true;newPasswordView();}
 });
 var route=window.SSMPDPortalRouting.parse(location.search);
 if(route.recovery){
-  newPasswordView();
+  recoveryShown=true;newPasswordView();
 }else if(route.view==="activate"){activationView();
 }else if(route.view==="reset"){forgotPasswordView();
 }else{

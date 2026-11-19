@@ -5,6 +5,29 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 
+// --- portal visibility (keep identical in every patient-portal function; checked by test/portal-visibility.cjs) ---
+// A record reaches the patient portal 24h after it was created, unless a doctor/staff member
+// approved it earlier ("approved") or hid it ("hidden"). Fails closed if the lookup fails.
+const PORTAL_VISIBILITY_DELAY_MS = 24 * 60 * 60 * 1000;
+// deno-lint-ignore no-explicit-any
+async function loadPortalVisibility(admin: any, patientIds: string[]): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
+  if (!patientIds.length) return map;
+  const { data, error } = await admin.from("patient_portal_visibility")
+    .select("entity_type, entity_id, portal_status").in("patient_id", patientIds);
+  if (error) throw new Error("PORTAL_VISIBILITY_UNAVAILABLE");
+  for (const r of data || []) map.set(r.entity_type + ":" + r.entity_id, r.portal_status);
+  return map;
+}
+function isPortalVisible(map: Map<string, string>, entityType: string, entityId: string, createdAt: unknown, now = Date.now()): boolean {
+  const status = map.get(entityType + ":" + entityId);
+  if (status === "approved") return true;
+  if (status === "hidden" || status === "internal") return false;
+  const t = new Date(String(createdAt || "")).getTime();
+  return Number.isFinite(t) && t > 0 && now - t >= PORTAL_VISIBILITY_DELAY_MS;
+}
+// --- end portal visibility ---
+
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -98,13 +121,26 @@ Deno.serve(async (req) => {
   const profilesByPatient = Object.fromEntries((profilesRes.data || []).map((r: any) => [r.patient_id, r]));
   const accessByPatient = Object.fromEntries(activeAccess.map((r: any) => [r.patient_id, r]));
 
+  let visibility: Map<string, string>;
+  try { visibility = await loadPortalVisibility(admin, patientIds); }
+  catch (e) { return json({ error: String((e as Error).message || e) }, 500); }
+
   const visitsByPatient: Record<string, any[]> = {};
+  // The next follow-up appointment is shown right away (date/time/doctor only) unless the
+  // visit was explicitly hidden; the visit's clinical content waits for portal visibility.
+  const followUpSourcesByPatient: Record<string, any[]> = {};
   for (const visit of visitsRes.data || []) {
-    (visitsByPatient[visit.patient_id] ||= []).push(visit);
+    if (isPortalVisible(visibility, "visit", visit.id, visit.created_at)) {
+      (visitsByPatient[visit.patient_id] ||= []).push(visit);
+    }
+    if (visibility.get("visit:" + visit.id) !== "hidden" && visibility.get("visit:" + visit.id) !== "internal") {
+      (followUpSourcesByPatient[visit.patient_id] ||= []).push(visit);
+    }
   }
 
   const prescriptionsByPatient: Record<string, any[]> = {};
   for (const rx of prescriptionsRes.data || []) {
+    if (!isPortalVisible(visibility, "prescription", rx.id, rx.created_at)) continue;
     (prescriptionsByPatient[rx.patient_id] ||= []).push(rx);
   }
 
@@ -114,7 +150,13 @@ Deno.serve(async (req) => {
     const visits = visitsByPatient[patient.id] || [];
     const prescriptions = prescriptionsByPatient[patient.id] || [];
     const latestVisit = visits[0] || null;
-    const upcomingFollowUps = visits
+    const upcomingFollowUps = (followUpSourcesByPatient[patient.id] || [])
+      .map((v: any) => ({
+        id: v.id, visit_date: v.visit_date, doctor_name: v.doctor_name, specialty: v.specialty,
+        follow_up_date: v.follow_up_date, follow_up_time: v.follow_up_time, follow_up_status: v.follow_up_status,
+        follow_up_status_at: v.follow_up_status_at, follow_up_reschedule_reason: v.follow_up_reschedule_reason,
+        follow_up_patient_message: v.follow_up_patient_message, follow_up_rescheduled_at: v.follow_up_rescheduled_at,
+      }))
       .filter((v: any) => v.follow_up_date && (v.follow_up_status === "pending" || v.follow_up_status === "rescheduled" || v.follow_up_date >= today))
       .sort((a: any, b: any) => String(a.follow_up_date).localeCompare(String(b.follow_up_date)));
 

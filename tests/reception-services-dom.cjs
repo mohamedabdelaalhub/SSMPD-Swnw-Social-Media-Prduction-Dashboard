@@ -1,5 +1,5 @@
 const {JSDOM}=require('jsdom'),fs=require('fs'),assert=require('node:assert/strict'),boot=require('./helpers/reception.cjs'),{webcrypto,randomUUID}=require('crypto');
-(async()=>{const {db,rpc,id,as}=await boot(['reception_services_packages','reception_contracts_controls']);const ws=await rpc('clinic_reception_bootstrap'),day=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Cairo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());const cmd=(p_action,p_payload)=>rpc('clinic_reception_command',{p_workspace:ws,p_action,p_payload,p_token:randomUUID()}),snapshot=()=>rpc('clinic_reception_snapshot',{p_workspace:ws,p_from:day,p_to:day});let data=await snapshot();const provider=data.providers[0].id,service=data.services.find(x=>x.code==='CONSULT').id,patient=data.patients[0].id;
+(async()=>{const {db,rpc,id,as}=await boot(['reception_services_packages','reception_contracts_controls']);const ws=await rpc('clinic_reception_bootstrap'),day=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Cairo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());const cmd=(p_action,p_payload,p_token=randomUUID())=>rpc('clinic_reception_command',{p_workspace:ws,p_action,p_payload,p_token}),snapshot=()=>rpc('clinic_reception_snapshot',{p_workspace:ws,p_from:day,p_to:day});let data=await snapshot();const provider=data.providers[0].id,service=data.services.find(x=>x.code==='CONSULT').id,patient=data.patients[0].id;
 await cmd('member',{admin_id:id(2),capabilities:['manage','view','review']});const agreement=(await cmd('agreement',{provider_id:provider,service_code:'CONSULT',rate:20,from:new Date(Date.parse(day)-86400000).toISOString().slice(0,10),to:'2030-01-01',reference:'AGDOM'})).id;await as(2);await cmd('agreement_review',{id:agreement,approve:true});await as(1);await cmd('availability',{provider_id:provider,starts_at:day+'T06:00Z',ends_at:day+'T15:00Z'});const app=(await cmd('book',{patient_id:patient,provider_id:provider,service_id:service,starts_at:day+'T08:00Z'})).id;await cmd('arrive',{id:app});
 const dom=new JSDOM('<main id="root"></main>',{url:'https://trial.test',runScripts:'outside-only'}),w=dom.window,errors=[];Object.defineProperty(w,'crypto',{value:webcrypto});w.addEventListener('error',e=>errors.push(e.message));w.SSMPDAuth={currentAdmin:{id:id(1),role:'super_admin'}};w.SSMPDRoles={canSeeTab:()=>true};w.SSMPDDb={receptionWorkspaces:()=>rpc('clinic_reception_workspaces'),receptionBootstrap:()=>rpc('clinic_reception_bootstrap'),receptionSnapshot:(p_workspace,p_from,p_to)=>rpc('clinic_reception_snapshot',{p_workspace,p_from,p_to}),receptionReport:(p_workspace,p_from,p_to)=>rpc('clinic_reception_report',{p_workspace,p_from,p_to}),receptionCommand:(p_workspace,p_action,p_payload,p_token)=>rpc('clinic_reception_command',{p_workspace,p_action,p_payload,p_token})};for(const file of ['reception-controls','reception-services','reception-workspace'])w.eval(fs.readFileSync('assets/js/'+file+'.js','utf8'));
 const q=s=>w.document.querySelector(s),click=s=>{assert(q(s),'missing '+s);q(s).click();},set=(n,v)=>{const el=q('.rx-modal [name="'+n+'"]');assert(el,n);el.value=v;el.dispatchEvent(new w.Event('change',{bubbles:true}));},wait=async f=>{for(let n=0;n<150;n++){if(f())return;await new Promise(r=>setTimeout(r,10));}throw Error(w.document.body.textContent);},save=async()=>{click('.rx-modal [type="submit"]');await wait(()=>!q('.rx-modal'));};
@@ -7,4 +7,134 @@ w.SSMPDReception.render(q('#root'));await wait(()=>q('[data-rx-section="operatio
 click('[data-rx-action="back"]');click('[data-rx-section="operations"]');click('[data-rx-action="collect-invoice"]');set('amount','550');set('method','instapay');set('reference','UI001');await save();data=await snapshot();assert.equal(+data.invoices[0].due,0);assert.equal(+data.patients.find(x=>x.id===patient).credit,50);
 click('[data-rx-action="operations-tab"][data-id="controls"]');await wait(()=>q('[data-rx-action="operations-tab"][data-id="catalog"]'));click('[data-rx-action="operations-tab"][data-id="catalog"]');await wait(()=>q('[data-rx-action="item"]'));click('[data-rx-action="item"]');set('code','TEST');set('name','صنف UI');set('unit','عبوة');set('markup','25');set('track_expiry','true');await save();data=await snapshot();assert.equal(data.items.length,1);
 click('[data-rx-action="back"]');click('[data-rx-section="settings"]');click('[data-rx-action="service"]');set('code','TESTSERVICE');set('name','خدمة جديدة');set('department','عيادة تجربة');set('price','150');set('minutes','20');set('requires_device','false');click('[data-rx-add]');const fields=q('[data-rx-lines]');fields.querySelector('[data-field="item_id"]').value=data.items[0].id;fields.querySelector('[data-field="quantity"]').value='1';fields.querySelector('[data-field="included"]').value='true';await save();data=await snapshot();assert.equal(data.services.find(x=>x.code==='TESTSERVICE').bom[0].included,true);
-click('[data-rx-action="back"]');click('[data-rx-section="packages"]');click('[data-rx-action="template"]');set('code','UIT');set('name','باكج من النموذج');set('price','900');set('visits','1');set('validity_days','30');set('terms','زيارة واحدة والمستلزم مشمول');q('[data-field="visit_no"]').value='1';q('[data-field="service_id"]').value=service;q('[data-field="quantity"]').value='1';await save();click('[data-rx-action="package_sell"]');set('patient_id',patient);data=await snapshot();set('template_id',data.templates[0].id);assert.equal(w.document.querySelectorAll('[data-rx-lines]>*').length,0);await save();data=await snapshot();assert.equal(data.packages.length,1);click('[data-rx-action="back"]');click('[data-rx-section="operations"]');click('[data-rx-action="operations-tab"][data-id="controls"]');await wait(()=>q('[data-rx-action="entity"]'));click('[data-rx-action="entity"]');set('name','جهة اختبار من الواجهة');set('kind','insurer');await save();data=await snapshot();assert.equal(data.entities.length,1);click('[data-rx-action="operations-tab"][data-id="reports"]');await wait(()=>q('[data-rx-action="report"]'));click('[data-rx-action="report"]');await wait(()=>q('[data-rx-report]').textContent.includes('صافي الإيرادات'));assert(q('[data-rx-report]').textContent.includes('500.00'));assert.deepEqual(errors,[]);w.close();await db.close();console.log('PASS extended DOM + SQL: six cards, executed service, invoice payment and overpayment, catalog, BOM booleans, package template/sale, empty optional schedules.');})().catch(e=>{console.error(e);process.exitCode=1;});
+click('[data-rx-action="back"]');click('[data-rx-section="packages"]');click('[data-rx-action="template"]');set('code','UIT');set('name','باكج من النموذج');set('price','900');set('visits','1');set('validity_days','30');set('terms','زيارة واحدة والمستلزم مشمول');q('[data-field="visit_no"]').value='1';q('[data-field="service_id"]').value=service;q('[data-field="quantity"]').value='1';await save();click('[data-rx-action="package_sell"]');set('patient_id',patient);data=await snapshot();set('template_id',data.templates[0].id);assert.equal(w.document.querySelectorAll('[data-rx-lines]>*').length,0);await save();data=await snapshot();assert.equal(data.packages.length,1);
+click('[data-rx-action="package_sell"]');
+set('patient_id',patient);
+set('template_id',data.templates[0].id);
+click('[data-rx-orthodontic]');
+const start=q('[data-rx-start]');
+start.value='2026-01-31';
+start.dispatchEvent(new w.Event('change',{bubbles:true}));
+q('[data-rx-start]').closest('fieldset').querySelector('button').click();
+const dates=Array.from(w.document.querySelectorAll('[data-field="due_on"]'),el=>el.value);
+const amounts=Array.from(w.document.querySelectorAll('[data-field="amount"]'),el=>el.value);
+assert.deepEqual(dates,['2026-01-31','2026-02-28']);
+assert.deepEqual(amounts,['225.00','675.00']);
+await save();
+data=await snapshot();
+assert.equal(data.packages.length,2);
+const scheduledPackage=data.packages.find(pkg=>pkg.installments.length===2);
+click('[data-rx-action="collect-package"][data-id="'+scheduledPackage.id+'"]');
+assert.equal(Number(q('.rx-modal [name="amount"]').value),225);
+assert(q('[data-rx-package-balance]').textContent.includes('900'));
+set('amount','125');
+set('method','instapay');
+set('reference','ORTHO001');
+await save();
+data=await snapshot();
+assert.equal(Number(data.packages.find(pkg=>pkg.id===scheduledPackage.id).paid),125);
+click('[data-rx-action="collect-package"][data-id="'+scheduledPackage.id+'"]');
+assert.equal(Number(q('.rx-modal [name="amount"]').value),100);
+assert(q('[data-rx-package-balance]').textContent.includes('775'));
+click('.rx-modal [data-rx-cancel]');
+
+click('[data-rx-action="back"]');click('[data-rx-section="operations"]');click('[data-rx-action="operations-tab"][data-id="controls"]');await wait(()=>q('[data-rx-action="entity"]'));click('[data-rx-action="entity"]');set('name','جهة اختبار من الواجهة');set('kind','insurer');await save();data=await snapshot();assert.equal(data.entities.length,1);click('[data-rx-action="operations-tab"][data-id="reports"]');await wait(()=>q('[data-rx-action="report"]'));click('[data-rx-action="report"]');await wait(()=>q('[data-rx-report]').textContent.includes('صافي الإيرادات'));assert(q('[data-rx-report]').textContent.includes('500.00'));assert.deepEqual(errors,[]);w.close();await db.exec('reset role');
+await db.exec(fs.readFileSync('supabase/migrations/20261114170000_reception_orthodontic_terms.sql','utf8'));
+const templateId=data.templates.find(item=>item.code==='UIT').id;
+await db.query('update clinic_reception.package_templates set orthodontic=true where id=$1',[templateId]);
+await as(1);
+const terms={price:'20000',visits:'20',days:'730',schedule:'visit'};
+const installmentLines=[{due_on:day,amount:'5000'},...Array.from({length:20},()=>({due_on:day,amount:'750'}))];
+const adapted=await cmd('package_sell',{patient_id:patient,template_id:templateId,orthodontic_terms:terms,installments:installmentLines});
+const adaptedSnapshot=await snapshot();
+const savedPlan=adaptedSnapshot.packages.find(item=>item.id===adapted.id);
+assert.equal(Number(savedPlan.contract_price),20000);
+assert.equal(savedPlan.visits,20);
+assert.equal(savedPlan.lines.length,20);
+assert.equal(savedPlan.payment_schedule,'visit');
+assert.deepEqual(savedPlan.installments.map(row=>row.plan_visit_no).sort((a,b)=>a-b),Array.from({length:21},(_,i)=>i));
+assert.equal(savedPlan.lines.reduce((sum,row)=>sum+Number(row.allocated_value),0),20000);
+await db.exec('reset role');
+await db.exec(fs.readFileSync('supabase/migrations/20261114171500_reception_split_receipt.sql','utf8'));
+await as(1);
+const splitToken=randomUUID();
+const splitRegister=(await cmd('register',{name:'وردية التحصيل المقسم',direction:'both'})).id;
+const splitShift=(await cmd('shift_open',{register_id:splitRegister})).id;
+const splitPayload={patient_id:patient,package_id:adapted.id,parts:[
+ {amount:'600',method:'cash',reference:'SPLIT001',shift_id:splitShift},
+ {amount:'400',method:'pos',reference:'SPLIT002',shift_id:splitShift}
+]};
+const receipt=await cmd('collect_split',splitPayload,splitToken);
+assert.equal(Number(receipt.total),1000);
+assert((await snapshot()).split_receipts.some(row=>row.id===receipt.id&&row.package_id===adapted.id));
+assert.equal(receipt.payment_ids.length,2);
+assert.deepEqual(await cmd('collect_split',splitPayload,splitToken),receipt);
+const invalidSplit={...splitPayload,parts:[
+ {amount:'100',method:'instapay',reference:'ROLLBACK001'},
+ {amount:'100',method:'invalid',reference:'ROLLBACK002'}
+]};
+await assert.rejects(()=>cmd('collect_split',invalidSplit,randomUUID()));
+const afterSplit=(await snapshot()).packages.find(pkg=>pkg.id===adapted.id);
+assert.equal(Number(afterSplit.paid),1000);
+await cmd('shift_close',{id:splitShift,counted:600});
+const closedSplitShift=(await snapshot()).shifts.find(row=>row.id===splitShift);
+assert.equal(Number(closedSplitShift.expected),600);
+const fixedPlan=await cmd('package_sell',{
+ patient_id:patient,template_id:templateId,
+ orthodontic_terms:{price:'900',visits:'1',days:'365',schedule:'fixed'},
+ installments:[{due_on:day,amount:'225'},{due_on:'2090-02-28',amount:'675'}]
+});
+const future=(await snapshot()).packages.find(pkg=>pkg.id===fixedPlan.id).installments.find(line=>line.plan_visit_no===1);
+const revision={package_id:fixedPlan.id,reason:'اتفاق على موعد جديد',dates:[{id:future.id,due_on:'2090-03-31'}]};
+const revisionToken=randomUUID();
+await cmd('revise_plan_schedule',revision,revisionToken);
+await cmd('revise_plan_schedule',revision,revisionToken);
+await assert.rejects(()=>cmd('revise_plan_schedule',{...revision,reason:'سبب مختلف'},revisionToken));
+const revised=(await snapshot()).packages.find(pkg=>pkg.id===fixedPlan.id).installments.find(line=>line.id===future.id);
+assert.equal(revised.due_on,'2090-03-31');
+assert.equal(Number(revised.amount),675);
+await db.exec('reset role');
+assert.equal((await db.query('select count(*)::int n from clinic_reception.plan_schedule_revisions')).rows[0].n,1);
+await db.exec(fs.readFileSync('supabase/migrations/20261114173000_reception_laser_meter.sql','utf8'));
+await db.exec(fs.readFileSync('supabase/migrations/20261114174500_reception_plan_amendments.sql','utf8'));
+await as(1);
+const amendToken=randomUUID();
+const amendment={package_id:adapted.id,price:'18000',visits:'10',reason:'تعديل الاتفاق قبل أول زيارة'};
+const amended=await cmd('amend_plan',amendment,amendToken);
+assert.deepEqual(await cmd('amend_plan',amendment,amendToken),amended);
+const planAfter=(await snapshot()).packages.find(pkg=>pkg.id===adapted.id);
+assert.equal(Number(planAfter.contract_price),18000);
+assert.equal(planAfter.visits,10);
+assert.equal(Number(planAfter.paid),1000);
+assert.equal(planAfter.installments.reduce((sum,line)=>sum+Number(line.amount),0),18000);
+await db.exec('reset role');
+assert.equal((await db.query('select count(*)::int n from clinic_reception.plan_amendments')).rows[0].n,1);
+await db.query("insert into clinic_reception.laser_pulse_services values('QA-PULSE')");
+await as(1);
+const areaService=(await cmd('service',{code:'QA-AREA',name:'ليزر منطقة',department:'عيادة تجربة',price:900,minutes:20,bom:[]})).id;
+const pulseService=(await cmd('service',{code:'QA-PULSE',name:'ليزر بالنبضات',department:'عيادة تجربة',price:2,minutes:20,bom:[]})).id;
+const laserTemplate=(await cmd('template',{code:'QA-LASER',name:'خطة الليزر',price:900,visits:1,validity_days:90,terms:'خطة ليزر تجريبية',lines:[{visit_no:1,service_id:areaService,quantity:1}]})).id;
+const laserPlan=(await cmd('package_sell',{patient_id:patient,template_id:laserTemplate})).id;
+await cmd('collect',{patient_id:patient,package_id:laserPlan,amount:300,method:'instapay',reference:'QA-LASER-300'});
+const originalLine=(await snapshot()).packages.find(pkg=>pkg.id===laserPlan).lines[0];
+const laserChange={entitlement_id:originalLine.id,service_id:pulseService,quantity:'450',reason:'اتفاق على احتساب النبضات'};
+await assert.rejects(()=>cmd('amend_laser_visit',{...laserChange,service_id:areaService}));
+await cmd('amend_laser_visit',laserChange);
+const changedPlan=(await snapshot()).packages.find(pkg=>pkg.id===laserPlan);
+assert.equal(changedPlan.lines[0].service_id,pulseService);
+assert.equal(Number(changedPlan.lines[0].quantity),450);
+assert.equal(Number(changedPlan.lines[0].allocated_value),900);
+assert.equal(Number(changedPlan.paid),300);
+await cmd('availability',{provider_id:provider,starts_at:day+'T18:00Z',ends_at:day+'T23:00Z'});
+const appointment=(await cmd('book',{patient_id:patient,provider_id:provider,service_id:service,
+ starts_at:day+'T20:00Z',package_id:adapted.id,package_visit_no:1})).id;
+const attended=(await cmd('arrive',{id:appointment})).id;
+const lockedLine=(await snapshot()).packages.find(pkg=>pkg.id===adapted.id).lines.find(line=>line.visit_no===1);
+await cmd('amend_plan',{...amendment,price:'19000',visits:'12',reason:'اتفاق جديد بعد تسجيل الحضور'});
+const ongoing=(await snapshot()).packages.find(pkg=>pkg.id===adapted.id);
+assert.equal(ongoing.visits,12);
+assert.equal(Number(ongoing.paid),1000);
+assert.equal(ongoing.lines.find(line=>line.visit_no===1).id,lockedLine.id);
+assert.equal(ongoing.installments.reduce((sum,line)=>sum+Number(line.amount),0),19000);
+assert((await snapshot()).orders.some(order=>order.visit_id===attended&&order.entitlement_id===lockedLine.id));
+await db.close();console.log('PASS extended DOM + SQL: six cards, executed service, invoice payment and overpayment, catalog, BOM booleans, package template/sale, empty optional schedules.');})().catch(e=>{console.error(e);process.exitCode=1;});

@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>تصور — ملف أداء الموظف</title>
+<!-- Mockup only. Data is generated placeholder data shaped like the real RPCs:
+     hr_attendance_range (daily rows), staff_comprehensive_performance (score, band, dimensions),
+     employee_task_performance (task totals), staff_reviews (monthly 1-5 stars). -->
+<style>
+@font-face{font-family:"Hiragino Kaku";src:url("../../../assets/fonts/Hiragino-W3.woff2") format("woff2");font-weight:300}
+@font-face{font-family:"Hiragino Kaku";src:url("../../../assets/fonts/Hiragino-W6.woff2") format("woff2");font-weight:600}
+@font-face{font-family:"BigVesta Arabic";src:url("../../../assets/fonts/BigVesta-Regular.woff2") format("woff2");font-weight:400}
+@font-face{font-family:"BigVesta Arabic";src:url("../../../assets/fonts/BigVesta-Bold.woff2") format("woff2");font-weight:700}
+
+:root{--gap:16px;--blue:#0F369D;--blue-2:#1E4FC8;--blue-t:#E8EEFB;--orange:#F15A22;--ink:#16212E;--ink-2:#3B4656;--muted:#6B7483;--line:#E6E8EE;--grid:#EEF0F4;--bg:#F3F4F7;--r:18px;
+  --ok:#1F9D6B;--late:#E08A1E;--abs:#D0402A;--leave:#4F75CF;--off:#E3E6EC;
+  --ease:cubic-bezier(.22,1,.36,1);--spring:cubic-bezier(.34,1.56,.64,1)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;font-size:14px;font-variant-numeric:tabular-nums}
+svg{overflow:visible}
+.ic{fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+main{max-width:1240px;margin:0 auto;padding:24px 20px 48px;display:flex;flex-direction:column;gap:var(--gap)}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--gap)}
+.s2{grid-column:span 2}
+.card{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:18px;display:flex;flex-direction:column;min-width:0;transition:box-shadow .25s var(--ease),transform .25s var(--ease)}
+.card:hover{box-shadow:0 12px 26px rgba(22,33,46,.06)}
+.ch{display:flex;align-items:flex-start;gap:10px;margin-bottom:12px}
+.ch h3{margin:0;font-size:15.5px}.ch h3 small{display:block;font-weight:400;color:var(--muted);font-size:12px;margin-top:2px}
+.ch .act{margin-inline-start:auto;color:var(--blue);font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap}
+/* header */
+.who{background:linear-gradient(120deg,#0F369D,#1E4FC8);color:#fff;border-radius:22px;padding:20px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.ph{width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,.18);border:2px solid rgba(255,255,255,.5);display:grid;place-items:center;flex:none}
+.ph svg{width:30px;height:30px}
+.who h1{margin:0;font-size:24px}.who small{opacity:.85;font-size:13px}
+.who .chips{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}.who .chips span{background:rgba(255,255,255,.16);border-radius:999px;padding:2px 10px;font-size:12px}
+.seg{position:relative;display:inline-flex;background:rgba(255,255,255,.14);border-radius:12px;padding:4px;margin-inline-start:auto}
+.seg button{position:relative;z-index:1;border:0;background:none;color:rgba(255,255,255,.85);font:inherit;font-size:13px;padding:7px 14px;border-radius:9px;cursor:pointer;transition:color .2s}
+.seg button[aria-pressed=true]{color:var(--blue);font-weight:700}
+.seg .ind{position:absolute;top:4px;bottom:4px;border-radius:9px;background:#fff;transition:left .42s var(--ease),width .42s var(--ease)}
+/* score */
+.score{flex-direction:row;align-items:center;gap:18px}
+.ring{position:relative;width:132px;height:132px;flex:none}
+.ring svg{width:132px;height:132px;transform:rotate(-90deg)}
+.ring .v{position:absolute;inset:0;display:grid;place-items:center;text-align:center}
+.ring .v b{font-size:34px;line-height:1}.ring .v small{display:block;color:var(--muted);font-size:11.5px;margin-top:2px}
+.band{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:3px 12px;font-weight:700;font-size:13px;background:#E7F3EE;color:#1E7A55}
+.delta{font-size:12.5px;color:#1E7A55;margin-top:8px;display:flex;align-items:center;gap:4px}
+.score .txt p{margin:8px 0 0;color:var(--muted);font-size:12.5px;line-height:1.6}
+.stars{display:flex;gap:2px;margin-top:10px}.stars svg{width:18px;height:18px}
+/* stat tiles */
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap)}
+.tile{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;display:grid;grid-template-columns:1fr auto;grid-template-rows:auto auto auto;column-gap:10px;cursor:pointer;transition:transform .22s var(--ease),box-shadow .22s var(--ease),border-color .2s}
+.tile:hover{transform:translateY(-3px);box-shadow:0 10px 22px rgba(22,33,46,.08);border-color:#C9D4EE}
+.tile small{color:var(--muted);font-size:12.5px}.tile b{font-size:28px;line-height:1.15}.tile b em{font-style:normal;font-size:14px;color:var(--muted);font-weight:400}
+.tile i{font-style:normal;font-size:11.5px;color:var(--muted)}
+.tile .spark{grid-row:1 / span 3;grid-column:2;align-self:center;width:92px;height:40px}
+.up{color:#1E7A55}.down{color:var(--abs)}
+/* calendar */
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.cal .dn{font-size:11.5px;color:var(--muted);text-align:center;padding-bottom:2px}
+.day{position:relative;aspect-ratio:1.35;border-radius:8px;background:var(--off);display:flex;align-items:flex-start;justify-content:flex-start;padding:5px 7px;font-size:11.5px;color:#fff;cursor:default;opacity:0;transform:scale(.85);animation:pop .4s var(--spring) forwards;transition:transform .15s var(--ease),box-shadow .15s}
+.day.e{background:transparent;animation:none;opacity:1;transform:none}
+.day.st-off{color:var(--muted)}
+.day.st-ok{background:var(--ok)}.day.st-late{background:var(--late)}.day.st-abs{background:var(--abs)}.day.st-leave{background:var(--leave)}
+.day .g{position:absolute;bottom:4px;left:6px;font-size:11px;opacity:.95}
+.day:not(.e):hover{transform:scale(1.08);box-shadow:0 0 0 2px #fff,0 0 0 4px rgba(22,33,46,.25);z-index:2}
+@keyframes pop{to{opacity:1;transform:none}}
+.legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;font-size:12.5px;color:var(--ink-2)}
+.legend span{display:inline-flex;align-items:center;gap:6px}.legend i{width:12px;height:12px;border-radius:3px;display:inline-block}
+/* meter list */
+.meters{display:flex;flex-direction:column;gap:12px}
+.m .l{display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px}.m .l b{font-size:13px}.m .l span{color:var(--muted)}
+.track{height:10px;border-radius:5px;background:var(--grid);overflow:hidden}
+.track i{display:block;height:100%;border-radius:5px;width:0;transition:width 1s var(--ease)}
+/* charts */
+.chart{position:relative;width:100%}
+.chart svg{display:block;width:100%;height:auto}
+.axis text{font-size:11px;fill:var(--muted);font-family:inherit}
+.gridl{stroke:var(--grid);stroke-width:1}
+.cap{font-size:11.5px;color:var(--muted);text-align:center;margin-top:4px}
+.tip{direction:rtl;position:absolute;pointer-events:none;background:var(--ink);color:#fff;border-radius:10px;padding:8px 10px;font-size:12px;line-height:1.5;white-space:nowrap;opacity:0;transform:translateY(4px);transition:opacity .15s,transform .15s;z-index:5}
+.tip.on{opacity:1;transform:none}.tip b{font-size:14px}
+.tip .k{display:inline-block;width:12px;height:2px;border-radius:1px;vertical-align:middle;margin-inline-end:6px}
+/* segmented bar */
+.segbar{display:flex;height:34px;gap:2px;border-radius:8px;overflow:hidden}
+.segbar div{height:100%;display:grid;place-items:center;color:#fff;font-size:12px;font-weight:700;transform-origin:right;transform:scaleX(0);animation:grow .8s var(--ease) forwards;cursor:default;transition:filter .15s}
+.segbar div:hover{filter:brightness(1.08)}
+@keyframes grow{to{transform:none}}
+.tstat{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:auto;padding-top:14px}
+.tstat div{background:#F7F8FA;border-radius:12px;padding:8px 12px}.tstat small{display:block;color:var(--muted);font-size:11.5px}.tstat b{font-size:18px}
+/* notes */
+.cmp{margin-top:18px;padding-top:14px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:10px}.cmp>small{color:var(--muted);font-size:12px}
+.notes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--gap)}
+.note{border-radius:14px;padding:14px;background:#F7F8FA}
+.note h4{margin:0 0 6px;font-size:13.5px;display:flex;gap:6px;align-items:center}.note h4 svg{width:16px;height:16px}
+.note ul{margin:0;padding-inline-start:18px;color:var(--ink-2);font-size:13px;line-height:1.8}
+.n-good h4{color:#1E7A55}.n-imp h4{color:#B5650F}.n-step h4{color:var(--blue)}
+/* table toggle */
+.tbl{display:none;width:100%;border-collapse:collapse;font-size:12.5px;margin-top:10px}.tbl th,.tbl td{border-top:1px solid var(--line);padding:6px;text-align:start}.tbl th{color:var(--muted);font-weight:600}
+.showtbl .tbl{display:table}.showtbl .cal{display:none}
+.card,.who,.tile{animation:rise .5s var(--ease) both}
+@keyframes rise{from{opacity:0;transform:translateY(12px)}}
+@media (max-width:980px){.grid3,.notes{grid-template-columns:1fr}.s2{grid-column:auto}.seg{margin-inline-start:0;width:100%}.seg button{flex:1}}
+@media (max-width:640px){:root{--gap:12px}main{padding:16px 12px 32px}.who{padding:18px}.who h1{font-size:20px}.score{flex-direction:column;align-items:flex-start}.tile{grid-template-columns:1fr;padding:12px}.tile .spark{grid-row:4;grid-column:1;width:100%;height:30px;margin-top:6px}.tile small{font-size:12px}.tile i{font-size:11px}.tile b em{font-size:12px}.tile b{font-size:24px}.cal{gap:4px}.day{font-size:10px;padding:3px 4px}.day .g{display:none}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.day{opacity:1;transform:none}.segbar div{transform:none}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+ <symbol id="user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></symbol>
+ <symbol id="star" viewBox="0 0 24 24"><path d="M12 3l2.6 5.6 6 .8-4.4 4.2 1.1 6L12 16.8 6.7 19.6l1.1-6L3.4 9.4l6-.8z"/></symbol>
+ <symbol id="upa" viewBox="0 0 24 24"><path d="M7 14l5-5 5 5"/></symbol>
+ <symbol id="thumb" viewBox="0 0 24 24"><path d="M7 11v9H4v-9zM7 11l4-7a2 2 0 0 1 3 2l-1 4h5a2 2 0 0 1 2 2.3l-1.2 6A2 2 0 0 1 16.8 20H7"/></symbol>
+ <symbol id="warn" viewBox="0 0 24 24"><path d="M12 4l9 16H3zM12 10v4M12 17h.01"/></symbol>
+ <symbol id="flag" viewBox="0 0 24 24"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></symbol>
+</svg>
+
+<main>
+ <section class="who">
+  <span class="ph"><svg class="ic"><use href="#user"/></svg></span>
+  <div><small>ملف أداء الموظف</small><h1>موظفة تمريض 1</h1><div class="chips"><span>التمريض</span><span>وردية مسائية</span><span>منذ مارس 2025</span></div></div>
+  <div class="seg" data-seg><span class="ind"></span><button aria-pressed="false">آخر 30 يوم</button><button aria-pressed="true">نوفمبر</button><button aria-pressed="false">آخر 3 شهور</button></div>
+ </section>
+
+ <div class="grid3">
+  <article class="card score">
+   <div class="ring" data-ring="81"><svg viewBox="0 0 132 132"><circle cx="66" cy="66" r="56" fill="none" stroke="var(--grid)" stroke-width="12"/><circle class="arc" cx="66" cy="66" r="56" fill="none" stroke="var(--ok)" stroke-width="12" stroke-linecap="round" stroke-dasharray="351.9" stroke-dashoffset="351.9" style="transition:stroke-dashoffset 1.2s var(--ease)"/></svg><div class="v"><div><b data-count="81">0</b><small>من 100</small></div></div></div>
+   <div class="txt"><span class="band">جيد</span><div class="delta up"><svg class="ic" width="16" height="16"><use href="#upa"/></svg>+4 عن أكتوبر</div>
+    <div class="stars" aria-label="تقييم المدير 4 من 5"><svg style="fill:#F5A524;stroke:#F5A524"><use href="#star"/></svg><svg style="fill:#F5A524;stroke:#F5A524"><use href="#star"/></svg><svg style="fill:#F5A524;stroke:#F5A524"><use href="#star"/></svg><svg style="fill:#F5A524;stroke:#F5A524"><use href="#star"/></svg><svg class="ic" style="stroke:#D5D9E2"><use href="#star"/></svg></div>
+    <p>تقييم المدير لشهر أكتوبر: 4 من 5<br>«ملتزمة ومتعاونة، محتاجة تظبط مواعيد الوصول»</p></div>
+  </article>
+  <div class="tiles s2">
+   <div class="tile"><small>الالتزام بالمواعيد</small><b>86<em>٪</em></b><i class="up">+3٪ عن الشهر اللي فات</i><svg class="spark" data-spark="78,80,79,84,83,86" data-c="var(--ok)"></svg></div>
+   <div class="tile"><small>أيام الغياب</small><b>1 <em>يوم</em></b><i>من 22 يوم مجدول</i><svg class="spark" data-spark="2,1,3,1,2,1" data-c="var(--abs)"></svg></div>
+   <div class="tile"><small>مرات التأخير</small><b>4 <em>· 1 س 35 د</em></b><i class="down">+1 عن الشهر اللي فات</i><svg class="spark" data-spark="2,3,2,4,3,4" data-c="var(--late)"></svg></div>
+   <div class="tile"><small>المهام في الميعاد</small><b>78<em>٪</em></b><i>14 من 18 مهمة</i><svg class="spark" data-spark="70,72,75,71,76,78" data-c="var(--blue)"></svg></div>
+  </div>
+ </div>
+
+ <div class="grid3">
+  <article class="card s2" data-calcard>
+   <div class="ch"><h3>الحضور يوم بيوم<small>نوفمبر 2026 · اقف على أي يوم تشوف تفاصيله</small></h3><span class="act" data-tbl>عرض كجدول</span></div>
+   <div class="cal" data-cal></div>
+   <table class="tbl" data-caltbl><thead><tr><th>اليوم</th><th>الحالة</th><th>دخول</th><th>خروج</th><th>تأخير</th></tr></thead><tbody></tbody></table>
+   <div class="legend"><span><i style="background:var(--ok)"></i>في الميعاد</span><span><i style="background:var(--late)"></i>متأخر</span><span><i style="background:var(--abs)"></i>غايب</span><span><i style="background:var(--leave)"></i>إجازة</span><span><i style="background:var(--off)"></i>مش مجدول</span></div>
+  </article>
+  <article class="card">
+   <div class="ch"><h3>توزيع أيام الشهر<small>22 يوم مجدول</small></h3></div>
+   <div class="meters" data-meters></div>
+   <div class="cmp"><small>مقارنة بزمايلها في التمريض</small><div class="m"><div class="l"><b>هي</b><span>86٪ في الميعاد</span></div><div class="track"><i data-w="86" style="background:var(--ok)"></i></div></div><div class="m"><div class="l"><b>متوسط القسم</b><span>79٪</span></div><div class="track"><i data-w="79" style="background:#9AA5B8"></i></div></div></div>
+   <div class="tstat"><div><small>متوسط وقت الدخول</small><b>13:58</b></div><div><small>خروج بدري</small><b>2 <span style="font-size:12px;color:var(--muted)">مرة</span></b></div></div>
+  </article>
+ </div>
+
+ <div class="grid3">
+  <article class="card s2">
+   <div class="ch"><h3>الالتزام الأسبوعي<small>٪ الأيام اللي وصلت فيها في الميعاد · آخر 12 أسبوع</small></h3></div>
+   <div class="chart" data-line dir="ltr"></div><div class="cap">الأسبوع ← الأحدث</div>
+  </article>
+  <article class="card">
+   <div class="ch"><h3>دقايق التأخير<small>بالدقيقة · كل أسبوع · آخر 8 أسابيع</small></h3></div>
+   <div class="chart" data-bars dir="ltr"></div><div class="cap">الأسبوع ← الأحدث</div>
+  </article>
+ </div>
+
+ <div class="grid3">
+  <article class="card">
+   <div class="ch"><h3>المهام<small>نوفمبر · 18 مهمة</small></h3><span class="act">فتح المهام</span></div>
+   <div class="segbar" data-segbar></div>
+   <div class="legend" data-seglegend></div>
+   <div class="tstat"><div><small>متأخرة دلوقتي</small><b>1</b></div><div><small>أُعيدت للتعديل</small><b>2</b></div></div>
+  </article>
+  <article class="card s2">
+   <div class="ch"><h3>تفاصيل التقييم<small>الدرجة الشاملة = مجموع الأجزاء دي حسب وزن كل جزء</small></h3></div>
+   <div class="meters" data-dims></div>
+  </article>
+ </div>
+
+ <article class="card">
+  <div class="ch"><h3>ملاحظات الشهر</h3></div>
+  <div class="notes">
+   <div class="note n-good"><h4><svg class="ic"><use href="#thumb"/></svg>نقاط قوة</h4><ul><li>مفيش غياب من غير إذن</li><li>تقييم المرضى 4.6 من 5</li></ul></div>
+   <div class="note n-imp"><h4><svg class="ic"><use href="#warn"/></svg>محتاج تحسين</h4><ul><li>التأخير زاد في آخر أسبوعين</li><li>مهمة متأخرة 3 أيام</li></ul></div>
+   <div class="note n-step"><h4><svg class="ic"><use href="#flag"/></svg>الخطوة الجاية</h4><ul><li>متابعة مواعيد الوصول أسبوعيًا</li><li>إنهاء المهام المتأخرة قبل الخميس</li></ul></div>
+  </div>
+ </article>
+</main>
+<div class="tip" data-tip></div>
+
+<script>
+(function(){
+'use strict';
+var d=document,tip=d.querySelector('[data-tip]');
+function showTip(html,x,y){tip.innerHTML=html;tip.classList.add('on');var w=tip.offsetWidth,h=tip.offsetHeight,L=Math.min(Math.max(8,x-w/2),innerWidth-w-8);tip.style.left=L+'px';tip.style.top=(y-h-12+scrollY)+'px';}
+function hideTip(){tip.classList.remove('on');}
+var NS='http://www.w3.org/2000/svg';function el(n,a,p){var e=d.createElementNS(NS,n);for(var k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e;}
+
+// ---- placeholder daily attendance for November (shaped like hr_attendance_range rows) ----
+var ST={ok:['في الميعاد','var(--ok)'],late:['متأخر','var(--late)'],abs:['غايب','var(--abs)'],leave:['إجازة','var(--leave)'],off:['مش مجدول','var(--off)']};
+var plan={1:'off',2:'ok',3:'ok',4:'late',5:'ok',6:'ok',7:'off',8:'off',9:'ok',10:'ok',11:'ok',12:'late',13:'ok',14:'off',15:'off',16:'ok',17:'abs',18:'ok',19:'late',20:'ok',21:'off',22:'off',23:'ok',24:'leave',25:'ok',26:'late',27:'ok',28:'off',29:'off',30:'ok'};
+var lateMin={4:12,12:18,19:40,26:25};
+var days=[];for(var i=1;i<=30;i++){var s=plan[i];days.push({d:i,s:s,inT:s==='ok'?'13:5'+(i%9):s==='late'?'14:'+String(lateMin[i]).padStart(2,'0'):'—',out:s==='ok'||s==='late'?'22:0'+(i%6):'—',late:lateMin[i]||0});}
+var cal=d.querySelector('[data-cal]'),first=0; // Nov 1 2026 = Sunday
+['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'].forEach(function(n){var x=d.createElement('div');x.className='dn';x.textContent=n;cal.appendChild(x);});
+for(var e=0;e<first;e++){var b=d.createElement('div');b.className='day e';cal.appendChild(b);}
+days.forEach(function(o,i){var c=d.createElement('div');c.className='day st-'+o.s;c.style.animationDelay=(i*18)+'ms';c.textContent=o.d;
+  if(o.s==='abs'){var g=d.createElement('span');g.className='g';g.textContent='✕';c.appendChild(g);}if(o.s==='late'){var g2=d.createElement('span');g2.className='g';g2.textContent=o.late+' د';g2.dir='rtl';c.appendChild(g2);}
+  c.tabIndex=o.s==='off'?-1:0;
+  var t='<b>'+o.d+' نوفمبر</b><br><span class="k" style="background:'+ST[o.s][1]+'"></span>'+ST[o.s][0]+(o.inT!=='—'?'<br>دخول '+o.inT+' · خروج '+o.out:'')+(o.late?'<br>تأخير '+o.late+' د':'');
+  function on(){var r=c.getBoundingClientRect();showTip(t,r.left+r.width/2,r.top);}
+  c.addEventListener('pointerenter',on);c.addEventListener('focus',on);c.addEventListener('pointerleave',hideTip);c.addEventListener('blur',hideTip);cal.appendChild(c);});
+var tb=d.querySelector('[data-caltbl] tbody');days.filter(function(o){return o.s!=='off';}).forEach(function(o){var tr=d.createElement('tr');[o.d+' نوفمبر',ST[o.s][0],o.inT,o.out,o.late?o.late+' د':'—'].forEach(function(v){var td=d.createElement('td');td.textContent=v;tr.appendChild(td);});tb.appendChild(tr);});
+d.querySelector('[data-tbl]').addEventListener('click',function(){var c=d.querySelector('[data-calcard]');c.classList.toggle('showtbl');this.textContent=c.classList.contains('showtbl')?'عرض كتقويم':'عرض كجدول';});
+
+// ---- meter lists ----
+function meters(host,rows){rows.forEach(function(r){var m=d.createElement('div');m.className='m';m.innerHTML='<div class="l"><b></b><span></span></div><div class="track"><i></i></div>';m.querySelector('b').textContent=r[0];m.querySelector('span').textContent=r[1];var i=m.querySelector('i');i.style.background=r[3];host.appendChild(m);setTimeout(function(){i.style.width=r[2]+'%';},200);});}
+meters(d.querySelector('[data-meters]'),[['في الميعاد','16 يوم',73,'var(--ok)'],['متأخر','4 أيام',18,'var(--late)'],['غايب','1 يوم',5,'var(--abs)'],['إجازة','1 يوم',5,'var(--leave)']]);
+meters(d.querySelector('[data-dims]'),[['نتائج الدور · وزن 30٪','84 من 100',84,'var(--blue)'],['الجودة · وزن 25٪','88 من 100',88,'var(--blue)'],['الالتزام بتنفيذ المهام · وزن 20٪','74 من 100',74,'var(--blue)'],['الحضور والانضباط · وزن 15٪','71 من 100',71,'var(--blue)'],['تجربة المرضى · وزن 10٪','92 من 100',92,'var(--blue)']]);
+
+setTimeout(function(){d.querySelectorAll('.cmp [data-w]').forEach(function(i){i.style.width=i.dataset.w+'%';});},250);
+// ---- sparklines ----
+d.querySelectorAll('[data-spark]').forEach(function(s){var v=s.dataset.spark.split(',').map(Number),W=92,H=40,mn=Math.min.apply(0,v),mx=Math.max.apply(0,v),sp=mx-mn||1;s.setAttribute('viewBox','0 0 '+W+' '+H);
+  var pts=v.map(function(y,i){return [(i/(v.length-1))*W,H-4-((y-mn)/sp)*(H-8)];});
+  var p=el('polyline',{points:pts.map(function(q){return q.join(',');}).join(' '),fill:'none',stroke:s.dataset.c,'stroke-width':2,'stroke-linecap':'round','stroke-linejoin':'round'},s);var L=p.getTotalLength?300:0;p.style.strokeDasharray=L;p.style.strokeDashoffset=L;p.style.transition='stroke-dashoffset 1s var(--ease) .3s';requestAnimationFrame(function(){requestAnimationFrame(function(){p.style.strokeDashoffset=0;});});
+  var last=pts[pts.length-1];el('circle',{cx:last[0],cy:last[1],r:4,fill:s.dataset.c,stroke:'#fff','stroke-width':2},s);});
+
+// ---- weekly commitment line (crosshair + tooltip) ----
+(function(){var host=d.querySelector('[data-line]'),v=[72,75,70,78,80,76,82,79,84,83,85,86],labs=v.map(function(_,i){return 'أسبوع '+(i+1);}),short=v.map(function(_,i){return String(i+1);}),W=720,H=230,P={t:16,r:12,b:28,l:36};
+ var svg=el('svg',{viewBox:'0 0 '+W+' '+H,role:'img','aria-label':'الالتزام الأسبوعي'},host),x=function(i){return P.l+(i/(v.length-1))*(W-P.r-P.l);},y=function(p){return P.t+(1-(p-60)/40)*(H-P.t-P.b);};
+ var ax=el('g',{class:'axis'},svg);[60,70,80,90,100].forEach(function(t){el('line',{x1:P.l,x2:W-P.r,y1:y(t),y2:y(t),class:'gridl'},ax);var tx=el('text',{x:P.l-8,y:y(t)+4,'text-anchor':'end'},ax);tx.textContent=t;});
+ v.forEach(function(_,i){var tx=el('text',{x:x(i),y:H-6,'text-anchor':'middle'},ax);tx.textContent=short[i];});
+ var path=v.map(function(p,i){return (i?'L':'M')+x(i)+','+y(p);}).join(' ');
+ el('path',{d:path+' L'+x(v.length-1)+','+y(60)+' L'+x(0)+','+y(60)+' Z',fill:'var(--ok)',opacity:.1},svg);
+ var ln=el('path',{d:path,fill:'none',stroke:'var(--ok)','stroke-width':2,'stroke-linejoin':'round','stroke-linecap':'round'},svg);var L=ln.getTotalLength();ln.style.strokeDasharray=L;ln.style.strokeDashoffset=L;ln.style.transition='stroke-dashoffset 1.4s var(--ease) .2s';requestAnimationFrame(function(){requestAnimationFrame(function(){ln.style.strokeDashoffset=0;});});
+ el('line',{x1:P.l,x2:W-P.r,y1:y(80),y2:y(80),stroke:'var(--muted)','stroke-width':1,'stroke-dasharray':'0'},svg).style.opacity=.0;
+ var endc=el('circle',{cx:x(v.length-1),cy:y(v[v.length-1]),r:5,fill:'var(--ok)',stroke:'#fff','stroke-width':2},svg);var et=el('text',{x:x(v.length-1),y:y(v[v.length-1])-12,'text-anchor':'middle',direction:'rtl',style:'font-size:12px;font-weight:700;fill:var(--ink)'},svg);et.textContent=v[v.length-1]+'٪';
+ var cross=el('line',{y1:P.t,y2:H-P.b,stroke:'var(--ink-2)','stroke-width':1,opacity:0},svg),dot=el('circle',{r:5,fill:'var(--ok)',stroke:'#fff','stroke-width':2,opacity:0},svg);
+ var hit=el('rect',{x:P.l,y:P.t,width:W-P.l-P.r,height:H-P.t-P.b,fill:'transparent'},svg);
+ hit.addEventListener('pointermove',function(ev){var r=svg.getBoundingClientRect(),px=(ev.clientX-r.left)/r.width*W,i=Math.round((px-P.l)/(W-P.r-P.l)*(v.length-1));i=Math.max(0,Math.min(v.length-1,i));cross.setAttribute('x1',x(i));cross.setAttribute('x2',x(i));cross.setAttribute('opacity',.35);dot.setAttribute('cx',x(i));dot.setAttribute('cy',y(v[i]));dot.setAttribute('opacity',1);showTip('<b>'+v[i]+'٪</b><br><span class="k" style="background:var(--ok)"></span>'+labs[i],r.left+x(i)/W*r.width,r.top+y(v[i])/H*r.height);});
+ hit.addEventListener('pointerleave',function(){cross.setAttribute('opacity',0);dot.setAttribute('opacity',0);hideTip();});
+})();
+
+// ---- weekly late minutes columns ----
+(function(){var host=d.querySelector('[data-bars]'),v=[10,0,25,12,30,18,45,65],W=340,H=230,P={t:22,r:8,b:28,l:30},n=v.length,bw=22,mx=80;
+ var svg=el('svg',{viewBox:'0 0 '+W+' '+H,role:'img','aria-label':'دقايق التأخير كل أسبوع'},host),slot=(W-P.l-P.r)/n,y=function(m){return P.t+(1-m/mx)*(H-P.t-P.b);};
+ var ax=el('g',{class:'axis'},svg);[0,40,80].forEach(function(t){el('line',{x1:P.l,x2:W-P.r,y1:y(t),y2:y(t),class:'gridl'},ax);var tx=el('text',{x:P.l-6,y:y(t)+4,'text-anchor':'end'},ax);tx.textContent=t;});
+ v.forEach(function(m,i){var cx=P.l+slot*(i+.5),h=Math.max(0,y(0)-y(m)),g=el('g',{tabindex:0},svg);
+  var bar=el('path',{d:'M'+(cx-bw/2)+','+y(0)+' v'+(-Math.max(h-4,0))+' q0,-4 4,-4 h'+(bw-8)+' q4,0 4,4 v'+Math.max(h-4,0)+' z',fill:i>=n-2?'var(--late)':'#F1C38A'},g);
+  bar.style.transformOrigin=cx+'px '+y(0)+'px';bar.style.transform='scaleY(0)';bar.style.transition='transform .8s var(--ease) '+(i*60)+'ms, opacity .15s';requestAnimationFrame(function(){requestAnimationFrame(function(){bar.style.transform='scaleY(1)';});});
+  el('rect',{x:cx-slot/2,y:P.t,width:slot,height:H-P.t-P.b,fill:'transparent'},g);
+  var tl=el('text',{x:cx,y:H-6,'text-anchor':'middle',class:'axis',style:'font-size:11px;fill:var(--muted)'},g);tl.textContent=String(i+1);
+  if(i>=n-1){var vt=el('text',{x:cx,y:y(m)-6,'text-anchor':'middle',direction:'rtl',style:'font-size:12px;font-weight:700;fill:var(--ink)'},g);vt.textContent=m+' د';}
+  function on(){var r=svg.getBoundingClientRect();bar.style.opacity=.85;showTip('<b>'+m+' دقيقة</b><br><span class="k" style="background:var(--late)"></span>أسبوع '+(i+1),r.left+cx/W*r.width,r.top+y(m)/H*r.height);}
+  g.addEventListener('pointerenter',on);g.addEventListener('focus',on);g.addEventListener('pointerleave',function(){bar.style.opacity=1;hideTip();});g.addEventListener('blur',function(){bar.style.opacity=1;hideTip();});});
+})();
+
+// ---- tasks segmented bar ----
+(function(){var rows=[['في الميعاد',12,'var(--ok)'],['اتسلمت متأخر',3,'var(--late)'],['متأخرة دلوقتي',1,'var(--abs)'],['لسه في وقتها',2,'#9AA5B8']],tot=18,host=d.querySelector('[data-segbar]'),lg=d.querySelector('[data-seglegend]');
+ rows.forEach(function(r,i){var s=d.createElement('div');s.style.flex=r[1];s.style.background=r[2];s.style.animationDelay=(i*120)+'ms';if(r[1]/tot>.12)s.textContent=r[1];s.addEventListener('pointerenter',function(){var b=s.getBoundingClientRect();showTip('<b>'+r[1]+' مهمة</b> · '+Math.round(r[1]/tot*100)+'٪<br><span class="k" style="background:'+r[2]+'"></span>'+r[0],b.left+b.width/2,b.top);});s.addEventListener('pointerleave',hideTip);host.appendChild(s);
+  var l=d.createElement('span');l.innerHTML='<i style="background:'+r[2]+'"></i>';l.appendChild(d.createTextNode(r[0]+' '+r[1]));lg.appendChild(l);});
+})();
+
+// ---- score ring + counters ----
+d.querySelectorAll('[data-ring]').forEach(function(r){var a=r.querySelector('.arc');setTimeout(function(){a.style.strokeDashoffset=351.9*(1-r.dataset.ring/100);},150);});
+d.querySelectorAll('[data-count]').forEach(function(e){var to=+e.dataset.count,t0=performance.now();(function f(t){var p=Math.min(1,(t-t0)/1100);e.textContent=Math.round(to*(1-Math.pow(1-p,3)));if(p<1)requestAnimationFrame(f);})(t0);});
+
+// ---- period switch ----
+var seg=d.querySelector('[data-seg]'),ind=seg.querySelector('.ind');function place(b){ind.style.left=b.offsetLeft+'px';ind.style.width=b.offsetWidth+'px';}
+seg.querySelectorAll('button').forEach(function(b){b.addEventListener('click',function(){seg.querySelectorAll('button').forEach(function(x){x.setAttribute('aria-pressed','false');});b.setAttribute('aria-pressed','true');place(b);});});
+requestAnimationFrame(function(){place(seg.querySelector('[aria-pressed=true]'));});addEventListener('resize',function(){place(seg.querySelector('[aria-pressed=true]'));});
+})();
+</script>
+</body>
+</html>

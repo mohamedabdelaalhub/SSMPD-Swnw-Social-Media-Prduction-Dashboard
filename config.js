@@ -32,7 +32,7 @@ window.SSMPD_CONFIG = {
 (function loadSystemErrorMonitor(){
   if(window.__SWNWSystemErrorMonitor || document.querySelector('script[data-system-error-monitor]')) return;
   var script=document.createElement('script');
-  script.src='assets/js/system-error-monitor.js?v=system-errors-20261114-1';
+  script.src='assets/js/system-error-monitor.js?v=system-errors-20261115-1';
   script.async=false;
   script.dataset.systemErrorMonitor='1';
   document.head.appendChild(script);
@@ -116,8 +116,8 @@ window.SSMPD_CONFIG = {
     loadOnce("__SWNWContractServiceMapping","assets/js/contract-service-mapping.js?v=shared-tariffs-20261029-1","contract-service-mapping");
     loadOnce("__SWNWHRAccountLinkingFix","assets/js/hr-account-linking-fix.js?v=hr-account-link-20261102-1","hr-account-linking-fix");
     loadOnce("SWNJourneySandbox","assets/js/today-operations-sandbox.js?v=journey-sandbox-20261031-1","journey-sandbox");
-    loadOnce("__SWNWTodayOperationsV1","assets/js/today-operations.js?v=today-board-20261107-1","today-operations");
-    loadOnce("__SWNWTodayOperationsConsistency","assets/js/today-operations-consistency.js?v=observer-fix-20261109-1","today-operations-consistency");
+    loadOnce("__SWNWTodayOperationsV1","assets/js/today-operations.js?v=home-visit-20261119-1","today-operations");
+    loadOnce("__SWNWTodayOperationsConsistency","assets/js/today-operations-consistency.js?v=booking-gap-20261117-1","today-operations-consistency");
     loadOnce("__SWNWTodayOperationsDisplayV1","assets/js/today-operations-display.js?v=journey-sandbox-20261031-1","today-operations-display");
     loadOnce("__SWNWTodayOperationsUnifiedV1","assets/js/today-operations-unified.js?v=today-board-20261107-1","today-operations-unified");
     loadOnce("__SWNWTodayOperationsFinalizeV1","assets/js/today-operations-finalize.js?v=today-board-20261107-1","today-operations-finalize");

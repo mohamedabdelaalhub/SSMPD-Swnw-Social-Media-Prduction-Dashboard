@@ -1,0 +1,10 @@
+[Unit]
+Description=Swnw patient-file name check (local OCR, one pass)
+After=network-online.target docker.service
+
+[Service]
+Type=oneshot
+Nice=15
+IOSchedulingClass=idle
+ExecStart=/usr/bin/sg docker -c %h/claude-work/file-name-check/run-once.sh
+TimeoutStartSec=20min

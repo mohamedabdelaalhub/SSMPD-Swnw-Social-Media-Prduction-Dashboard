@@ -37,7 +37,7 @@ const workspace = () => ({ can_manage: true, today: '2026-11-12', templates: [{ 
   assert.equal(t.count('hr_presence_snapshot'), 0, 'nothing loads until opened');
   tab.click(); await t.tick(); await t.tick();
   assert(d.querySelector('.att-hub'), 'hub mounted, scoped under .att-hub'); assert.equal(t.count('hr_presence_snapshot'), 1); assert.equal(t.count('hr_attendance_today'), 1); assert.equal(t.count('hr_shifts_workspace'), 1);
-  assert.deepEqual([...d.querySelectorAll('[data-att-tabs] button')].map(b => b.textContent.replace(/\d+$/, '')), ['الآن (مباشر)', 'الورديات', 'التقارير']);
+  assert.deepEqual([...d.querySelectorAll('[data-att-tabs] button')].map(b => b.textContent.replace(/\d+$/, '')), ['الآن (مباشر)', 'الورديات', 'التقارير', 'أجازات المركز']);
   assert.equal(d.querySelector('[data-att-badge]').textContent, '1', 'badge = absent count on the «الآن» tab');
   assert(d.querySelector('[data-att-live]').textContent.includes('متصل'), 'header shows a live link');
 
@@ -51,13 +51,20 @@ const workspace = () => ({ can_manage: true, today: '2026-11-12', templates: [{ 
   const wa = boxes('abs').querySelector('a.wa'); assert(!wa, 'no phone for p4 -> no call buttons'); // p4 is not in the HR people list
 
   // ---- department cards: spelling variants grouped, unmapped numbers in their own last card
-  const depts = [...root().querySelectorAll('[data-presence-dept]')]; assert.deepEqual(depts.map(x => x.dataset.dept), ['التمريض', 'الاستقبال', 'الإدارة', 'أرقام غير مربوطة بموظف'], 'largest first, unmapped last');
+  const depts = [...root().querySelectorAll('[data-presence-dept]')]; assert.deepEqual(depts.map(x => x.dataset.dept), ['التمريض', 'الاستقبال', 'أرقام غير مربوطة بموظف'], 'largest first, unmapped last; a department with nobody in and nobody missing is not a card');
+  const quiet = root().querySelector('[data-presence-quiet]'); assert(quiet && quiet.textContent.includes('أقسام بدون حضور الآن') && quiet.textContent.includes('الإدارة') && quiet.textContent.includes('1 جاي لسه'), 'quiet departments listed in the side column with the reason');
+  assert(!root().querySelector('[data-presence-dept] .person .av').textContent.trim(), 'avatars are an icon, not initials'); assert(root().querySelector('.pv-hero').textContent.includes('التمريض') && root().querySelector('.pv-hero').textContent.includes('0 من 5'), 'hero lists departments under their minimum');
+  assert(root().querySelector('.chip.warn[data-d=nurse]') && !root().querySelector('.chip.warn[data-d=reception]'), 'chip of a short department is marked');
+  assert.deepEqual([...root().querySelector('[data-presence-dept][data-dept="التمريض"] .pv-foot').querySelectorAll('.fc')].map(x => x.textContent), ['جاي لسه 0', 'انصرف 1', 'إجازة 1'], 'every card has the same counters footer');
+  assert(root().querySelector('[data-presence-dept][data-dept="الاستقبال"] .pv-foot'), 'footer even when nothing to expand');
   const rec = depts.find(c => c.dataset.dept === 'الاستقبال'); assert.equal(rec.querySelectorAll('[data-presence-person]').length, 2, 'both spellings land in the same card'); assert(rec.textContent.includes('استراحة') && rec.textContent.includes('الحد الأدنى 3'), 'break pill + coverage minimum for a known department');
   assert(rec.querySelector('.cov.ok'), 'below the minimum but nobody absent there -> not flagged');
   const nur = depts.find(c => c.dataset.dept === 'التمريض'); assert(nur.querySelector('.abs-line').textContent.includes('لم يبصم'), 'absent people are called out inside their department'); assert(nur.querySelector('.cov.low'), 'nursing below its minimum with an absence is flagged');
   const unm = depts.find(c => c.dataset.dept === 'أرقام غير مربوطة بموظف'); assert(unm && unm.textContent.includes('رقم الجهاز 24') && unm.querySelector('[data-presence=map]') && unm.querySelector('[data-presence=ignore]'), 'unmapped card has map + ignore'); assert.equal(depts[depts.length - 1], unm);
   assert(root().querySelector('[data-presence-warn]').textContent.includes('تحقق من بصمة الخروج'), 'very long open shift flagged'); assert(root().querySelector('[data-presence-smart]'), 'smart alerts panel');
-  assert(!depts.find(c => c.dataset.dept === 'الإدارة').querySelector('[data-presence-person]'), 'upcoming person is hidden until expanded'); 
+  assert(!depts.find(c => c.dataset.dept === 'التمريض').querySelector('.people.rest'), 'left / on-leave people are hidden until expanded');
+  depts.find(c => c.dataset.dept === 'التمريض').querySelector('[data-out]').click(); assert(root().querySelector('[data-presence-dept][data-dept="التمريض"] .people.rest').textContent.includes('منصرف'), 'expand shows them'); root().querySelector('[data-presence-dept][data-dept="التمريض"] [data-out]').click();
+  root().querySelector('.qd[data-d=admin]').click(); assert.deepEqual([...root().querySelectorAll('[data-presence-dept]')].map(x => x.dataset.dept), ['الإدارة'], 'clicking a quiet department opens its card'); root().querySelector('.chip[data-d=all]').click();
   assert.equal(w.__xss, undefined); assert(!root().querySelector('img'), 'names are escaped'); assert(root().textContent.includes('<img src=x'), 'escaped markup shown as text');
   assert(root().querySelector('[data-presence-health]').textContent.includes('منذ') && root().querySelector('[data-presence-lastpunch]').textContent.includes('آخر بصمة وصلت'));
   assert.equal(root().querySelectorAll('[data-presence-feed-item]').length, 4, 'recent movements from real last punches (numbers that punched)');
@@ -69,9 +76,16 @@ const workspace = () => ({ can_manage: true, today: '2026-11-12', templates: [{ 
   root().querySelector('[data-v=cards]').click();
 
   // ---- filters + empty state
-  root().querySelector('.kpi[data-k=abs]').click(); assert.equal(root().querySelectorAll('[data-presence-person]').length, 0, 'absent filter shows only the abs-line, no present people'); assert(root().textContent.includes('فلتر نشط'));
-  root().querySelector('[data-presence=clear]').click(); assert(root().querySelectorAll('[data-presence-person]').length > 0 && !root().textContent.includes('فلتر نشط'));
-  root().querySelector('.kpi[data-k=late]').click(); assert.equal(root().querySelectorAll('[data-presence-person]').length, 1, 'late filter'); root().querySelector('.kpi[data-k=late]').click();
+  // totals open a popup (they no longer filter the page in place)
+  const cardsBefore = root().querySelectorAll('[data-presence-person]').length;
+  root().querySelector('.kpi[data-k=abs]').click(); assert(root().querySelector('.pp[role=dialog]'), 'tile opens a dialog'); assert(!root().textContent.includes('فلتر نشط') && !root().querySelector('[data-presence=clear]'), 'no filter banner any more');
+  assert.equal(root().querySelectorAll('.pp .pp-row').length, 1, 'absent popup lists the one absent person'); assert.equal(root().querySelectorAll('[data-presence-person]').length, cardsBefore, 'cards behind the popup are untouched');
+  root().querySelector('.pp [data-pop=close]').click(); assert(!root().querySelector('.pp'), 'close button closes it');
+  root().querySelector('.kpi[data-k=late]').click(); assert.equal(root().querySelectorAll('.pp .pp-row').length, 1, 'late popup'); root().querySelector('.pp-ov').click(); assert(!root().querySelector('.pp'), 'backdrop closes it');
+  // person row in the popup -> details popup with a back button; a card row opens the same details
+  root().querySelector('.kpi[data-k=in]').click(); root().querySelector('.pp .pp-row').click(); assert(root().querySelector('.pp .pp-dl') && root().querySelector('.pp [data-pop=back]'), 'person details with back'); root().querySelector('.pp [data-pop=back]').click(); assert(root().querySelector('.pp .pp-list'), 'back returns to the list'); root().querySelector('.pp [data-pop=close]').click();
+  root().querySelector('[data-presence-dept] [data-pd]').click(); assert(root().querySelector('.pp .pp-sum'), 'department header opens the department popup'); root().querySelector('.pp [data-pop=close]').click();
+  root().querySelector('[data-presence-dept] [data-pp]').click(); assert(root().querySelector('.pp .pp-dl') && !root().querySelector('.pp [data-pop=back]'), 'card person opens details'); root().querySelector('.pp [data-pop=close]').click();
   [...root().querySelectorAll('.chip')].find(c => c.dataset.d === 'nurse').click(); assert.deepEqual([...root().querySelectorAll('[data-presence-dept]')].map(x => x.dataset.dept), ['التمريض'], 'department chip filters the cards'); root().querySelector('.chip[data-d=all]').click();
   const q = root().querySelector('[data-presence-q]'); q.value = 'zzz'; q.dispatchEvent(new w.Event('input')); assert(root().querySelector('[data-presence-empty]'), 'no match -> empty state'); 
   root().querySelector('[data-presence-q]').value = 'منصرف'; root().querySelector('[data-presence-q]').dispatchEvent(new w.Event('input')); assert.equal(root().querySelectorAll('[data-presence-dept]').length, 1, 'search by name'); root().querySelector('[data-presence-q]').value = ''; root().querySelector('[data-presence-q]').dispatchEvent(new w.Event('input'));
@@ -79,7 +93,9 @@ const workspace = () => ({ can_manage: true, today: '2026-11-12', templates: [{ 
 
   // ---- link manager dialog: payloads
   assert(root().querySelector('[data-presence=dlg-open] .badge').textContent === '1', 'badge = unmapped numbers'); root().querySelector('[data-presence=dlg-open]').click();
-  const dlg = () => root().querySelector('[data-presence-dlg]'); assert(dlg()); assert.deepEqual([...dlg().querySelectorAll('[role=tab]')].map(b => b.textContent), ['غير مربوطة (1)', 'متجاهلة (غير إدارية) (1)', 'مربوطون ولم يبصموا (3)']);
+  const dlg = () => root().querySelector('[data-presence-dlg]'); assert(dlg()); assert.deepEqual([...dlg().querySelectorAll('[role=tab]')].map(b => b.textContent), ['غير مربوطة (1)', 'متجاهلة (غير إدارية) (1)', 'مابصموش آخر 16 ساعة (3)']);
+  dlg().querySelector('[data-id=none]').click(); assert(dlg().querySelector('[data-presence-none-note]').textContent.includes('آخر 16 ساعة'), 'no-punch tab explains it is the look-back window only'); assert(dlg().querySelector('[data-presence-none-note]').textContent.includes('تقرير الحضور'));
+  dlg().querySelector('[data-id=unmapped]').click();
   const pick = dlg().querySelector('[data-presence-pick]'); assert.deepEqual([...pick.options].map(o => o.value), ['', 'p1', 'p2'], 'people offered');
   const nCalls = t.calls.length; dlg().querySelector('[data-presence=dlg-map]').click(); await t.tick(); assert.equal(t.calls.length, nCalls, 'no person picked -> nothing sent');
   pick.value = 'p2'; dlg().querySelector('[data-presence=dlg-map]').click(); await t.tick(); await t.tick();
@@ -89,7 +105,7 @@ const workspace = () => ({ can_manage: true, today: '2026-11-12', templates: [{ 
   dlg().querySelector('[data-id=none]').click(); assert(dlg().textContent.includes('لم يبصم') && dlg().textContent.includes('في إجازة'), 'mapped people with no punch'); dlg().querySelector('[data-presence=dlg-close]').click(); assert(!dlg());
   w.confirm = () => false; const before = t.calls.length; root().querySelector('[data-presence=ignore]').click(); await t.tick(); assert.equal(t.calls.length, before, 'declining the confirmation sends nothing'); w.confirm = () => true;
   // kebab on a mapped person: change / remove mapping
-  const kb = [...root().querySelectorAll('.kebab[data-presence=map]')].find(b => b.dataset.id.startsWith('3|')); kb.click(); let f = d.querySelector('.wp-modal form'); assert(f && f.elements.person.value === 'p1', 'current person preselected'); f.elements.person.value = '';
+  root().querySelector('[data-pp=p1]').click(); const kb = root().querySelector('.pp [data-pop=map]'); assert(kb && kb.dataset.id.startsWith('3|'), 'mapping button lives in the person popup'); kb.click(); let f = d.querySelector('.wp-modal form'); assert(f && f.elements.person.value === 'p1', 'current person preselected'); f.elements.person.value = '';
   f.dispatchEvent(new w.Event('submit', { cancelable: true })); await t.tick(); await t.tick(); assert.deepEqual(t.calls.filter(c => c[0] === 'hr_presence_map').pop()[1], { p_device_id: 'k14', p_device_user_id: 3, p_person_id: null });
 
   // ---- phone / WhatsApp actions come from the HR people list

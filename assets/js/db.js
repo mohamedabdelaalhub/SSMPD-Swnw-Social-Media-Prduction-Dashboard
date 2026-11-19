@@ -586,6 +586,9 @@
     listMetaCreativePerformance: function () {
       return handle(client.from("vw_meta_creative_performance").select("*").order("spend", { ascending: false, nullsFirst: false }));
     },
+    getLeadAdInfo: function (leadId) {
+      return handle(client.from("vw_lead_meta_attribution").select("meta_ad_id,meta_campaign_id,matched_ad_name,matched_campaign_name,matched_brand").eq("lead_id", leadId).maybeSingle());
+    },
     listMetaLeadAttribution: function () {
       return handle(client.from("vw_lead_meta_attribution").select("*").order("received_at", { ascending: false }));
     },
@@ -787,7 +790,17 @@
     deleteContractingEntity: function (entityId) {
       return handle(client.rpc("delete_contracting_entity", { p_entity_id: entityId }));
     },
+    // Reception can't read contracts directly (RLS); the registration RPC returns id + entity name only.
     listActiveContracts: function () {
+      var fallback = function () { return handle(client.from("contracting_entity_contracts")
+        .select("id, entity_id, start_date, end_date, status, contracting_entities(name)")
+        .eq("status", "active").order("start_date", { ascending: false })); };
+      return client.rpc("list_active_contracts_for_registration").then(function (r) {
+        if (r.error) { if (/function|schema cache|does not exist|not find/i.test(String(r.error.message || ""))) return fallback(); throw r.error; }
+        return (r.data || []).map(function (c) { return { id: c.contract_id, start_date: c.start_date, end_date: c.end_date, status: "active", contracting_entities: { name: c.entity_name } }; });
+      });
+    },
+    listActiveContractsDirect: function () {
       return handle(client.from("contracting_entity_contracts")
         .select("id, entity_id, start_date, end_date, status, contracting_entities(name)")
         .eq("status", "active").order("start_date", { ascending: false }));
@@ -1131,6 +1144,16 @@
     staffReviewHistory: function (adminId) { return handle(client.from("staff_reviews").select("month,rating,note").eq("admin_id", adminId).order("month", { ascending: false }).limit(12)); },
     saveStaffReview: function (adminId, month, rating, note) { return handle(client.from("staff_reviews").upsert({ admin_id: adminId, month: month, rating: rating, note: String(note || "").slice(0, 1000), reviewed_by: window.SSMPDAuth.currentAdmin.id, updated_at: new Date().toISOString() }, { onConflict: "admin_id,month" })); },
     // تقييم الموظف لأداء مادة منشورة (strong/ok/weak + سبب) — بيغذّي ذاكرة التعلّم
+    // «اللي اتعلمته من تعليقاتك» — دروس من تعليقات التعديل (content_comment_lessons)
+    listCommentLessons: function () {
+      return handle(client.from("content_comment_lessons").select("id,brand,content_format,category,lesson,example_comment,hits,status,updated_at").order("status").order("hits", { ascending: false }).limit(300));
+    },
+    listActiveCommentLessons: function (brand) {
+      return handle(client.from("content_comment_lessons").select("brand,content_format,category,lesson,hits").eq("status", "active").or("brand.is.null,brand.eq." + brand).order("hits", { ascending: false }).limit(40));
+    },
+    setCommentLessonStatus: function (id, status) {
+      return handle(client.rpc("content_comment_lesson_set_status", { p_id: id, p_status: status }));
+    },
     getContentLearningBrief: function (brand) {
       return handle(client.rpc("content_learning_brief_staff", { p_brand: brand }));
     },
@@ -1347,12 +1370,29 @@
         disable_duet:!!payload.disableDuet,disable_stitch:!!payload.disableStitch,
         commercial_content:!!payload.commercialContent,your_brand:!!payload.yourBrand,
         branded_content:!!payload.brandedContent,music_confirmation:!!payload.musicConfirmation,
+        title:payload.title==null?null:String(payload.title).slice(0,2200),is_aigc:!!payload.isAigc,
         created_by:payload.createdBy||null
       }).select().single());
     },
+    queueTikTokInboxDraft: function (contentId) {
+      return handle(client.rpc("queue_tiktok_inbox_draft",{p_content_id:contentId}));
+    },
+    listTikTokDraftCandidates: function () {
+      // Videos with a file, newest first, that never got a TikTok link — the "send as draft" list (super admin).
+      return handle(client.from("content_items").select("id,title,body,caption_text,brand,stage,content_format,design_file_url,published_at,published_urls,created_at")
+        .eq("content_format","video").not("design_file_url","is",null).in("stage",["published","scheduled","ready_to_publish"])
+        .order("created_at",{ascending:false}).limit(60)).then(function(rows){
+          return (rows||[]).filter(function(r){return !(r.published_urls&&r.published_urls.tiktok);});
+        });
+    },
+    listTikTokInboxJobs: function (contentIds) {
+      if(!contentIds.length)return Promise.resolve([]);
+      return handle(client.from("tiktok_publish_jobs").select("id,content_id,status,publish_status,error_message,created_at,mode").eq("mode","inbox").in("content_id",contentIds).order("created_at",{ascending:false}));
+    },
     listTikTokPublishJobsForContent: function (contentIds) {
       if(!contentIds||!contentIds.length)return Promise.resolve([]);
-      return handle(client.from("tiktok_publish_jobs").select("*").in("content_id",contentIds).order("created_at",{ascending:false}));
+      // Inbox drafts are a separate flow (tiktok-drafts.js) and must not show up as the item's auto-publish job.
+      return handle(client.from("tiktok_publish_jobs").select("*").in("content_id",contentIds).order("created_at",{ascending:false})).then(function(rows){return (rows||[]).filter(function(j){return j.mode!=="inbox";});});
     },
     cancelTikTokPublishJob: function (id) {
       return handle(client.from("tiktok_publish_jobs").update({status:"cancelled"}).eq("id",id).select().single());
@@ -1443,6 +1483,7 @@
     financeSupplierReceive: function(order,lines,reference,token,invoiceDate,documentUrl){if(invoiceDate)return handle(client.rpc('inventory_receive_invoice',{p_order:order,p_lines:lines,p_reference:reference,p_token:token,p_invoice_date:invoiceDate,p_document_url:documentUrl||''}));return handle(client.rpc('clinic_finance_supplier_receive',{p_order:order,p_lines:lines,p_reference:reference,p_token:token}));},
     financeSupplierCommand: function(action,payload,token){return handle(client.rpc('clinic_finance_supplier_command',{p_action:action,p_payload:payload,p_token:token}));},
     financeDoctorCommand: function(action,payload,token){return handle(client.rpc('clinic_finance_doctor_command',{p_action:action,p_payload:payload,p_token:token}));},
+    financeDoctorContractEnd: function(action,payload,token){return handle(client.rpc('clinic_finance_doctor_contract_end',{p_action:action,p_payload:payload,p_token:token}));},
     financeDoctorStatement: function(doctorKey,from,to){return handle(client.rpc('clinic_finance_doctor_statement',{p_doctor_key:doctorKey,p_from:from,p_to:to}));},
     financeDoctorStatementDetail: function(doctorKey,from,to){return handle(client.rpc('clinic_finance_doctor_statement_detail',{p_doctor_key:doctorKey,p_from:from,p_to:to}));},
     financeDoctorDues: function(doctorKey,from,to){return handle(client.rpc('clinic_finance_doctor_dues',{p_doctor_key:doctorKey,p_from:from,p_to:to}));},
@@ -1492,6 +1533,7 @@
     receptionCatalogIssues: function(){return handle(client.rpc("clinic_reception_catalog_issues",{}));},
     receptionSnapshot: function(workspace,from,to){return handle(client.rpc("clinic_reception_snapshot",{p_workspace:workspace,p_from:from,p_to:to}));},
     receptionExternalEnabled: function(){return handle(client.rpc('clinic_reception_external_enabled',{}));},
+    receptionPatientBasic: function(workspace,action,payload){return handle(client.rpc("clinic_reception_patient_basic",{p_workspace:workspace,p_action:action,p_payload:payload}));},
     receptionCommand: function(workspace,action,payload,token){return handle(client.rpc("clinic_reception_command",{p_workspace:workspace,p_action:action,p_payload:payload,p_token:token}));},
     serviceOrdersCatalog: function(workspace){return handle(client.rpc("clinic_reception_so_catalog",{p_workspace:workspace}));},
     serviceOrderAttach: function(workspace,order,ext){return handle(client.rpc("clinic_reception_so_attach",{p_workspace:workspace,p_order:order,p_ext:ext}));},

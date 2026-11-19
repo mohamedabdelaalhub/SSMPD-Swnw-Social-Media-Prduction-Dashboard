@@ -18,13 +18,15 @@ const styles=[...html.matchAll(/<link[^>]+href="([^"]+\.css)[^"]*"/g)].map(m=>m[
   await page.goto('https://theme.test/');
   await page.setContent('<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><div id="app-root"></div></body></html>');
   await page.addScriptTag({content:mocks+`;window.supabase={createClient:()=>fakeClient};window.__fixture={TABLES,ME};TABLES.content_items[0].title="تمارين لتخفيف آلام الرقبة والظهر في المنزل";TABLES.content_items[0].content_format="video";`});
+  // The one-time «ملحوظة عن استخدام الداشبورد» notice (usage-heatmap.js) is a modal that would cover the clicks below; acknowledge it like a returning user.
+  await page.evaluate(()=>{const me=window.__fixture&&window.__fixture.ME;if(me&&me.id)localStorage.setItem('ssmpd_usage_notice_v1_'+me.id,'test');});
   // Load the production cascade, including the new theme; retain the late psychology sheet.
   for(const f of styles)if(!f.endsWith('dashboard-theme.css'))await page.addStyleTag({url:'https://theme.test/'+f});
   for(const f of scripts)await page.addScriptTag({url:'https://theme.test/'+f});
   await page.evaluate(()=>document.dispatchEvent(new Event('DOMContentLoaded',{bubbles:true})));
   await page.waitForSelector('#view-container');
   await page.evaluate(()=>document.querySelector('#user-dropdown [data-goto="summary"]').click());
-  await page.waitForSelector('.kpi-card');
+  await page.waitForSelector('.sv-k');// «الملخص العام» v2 (owner 2026-11-18): tiles instead of the old kpi-card grids
   // The theme must not change texts, form state, destinations or hidden controls.
   const snapshot=()=>page.evaluate(()=>({
    text:document.querySelector('#view-container').textContent,
@@ -35,12 +37,12 @@ const styles=[...html.matchAll(/<link[^>]+href="([^"]+\.css)[^"]*"/g)].map(m=>m[
   for(let last='',same=0,i=0;i<80&&same<4;i++){const cur=JSON.stringify(await snapshot());same=cur===last?same+1:0;last=cur;await page.waitForTimeout(300);}
   const before=await snapshot();await page.addStyleTag({url:'https://theme.test/assets/css/dashboard-theme.css'});
   assert.deepEqual(await snapshot(),before,'theme preserves content, form state, targets and visibility');
-  assert(await page.locator('#view-container>h2').evaluate(e=>getComputedStyle(e).backgroundImage.includes('linear-gradient')));
+  assert.equal(await page.locator('#view-container>h2').count(),0,'no hero banner on the summary (owner-approved mockup)');
   const overflow=()=>page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1);
   assert(await overflow(),'summary fits viewport '+width);
   if(process.env.RECEPTION_QA)await page.screenshot({path:path.join(process.env.RECEPTION_QA,'theme-summary-'+width+'.png'),fullPage:true});
-  const summaryColumns=await page.locator('.kpi-grid').nth(1).evaluate(e=>getComputedStyle(e).gridTemplateColumns.split(' ').length);
-  assert.equal(summaryColumns,width>=1000?3:2,'six summary metrics in balanced rows');
+  const tileRows=await page.$$eval('.sv-k',k=>{const r={};k.forEach(x=>{const t=Math.round(x.getBoundingClientRect().top);r[t]=(r[t]||0)+1;});return Object.values(r);});
+  assert.equal(new Set(tileRows).size,1,'summary tiles in balanced rows (never 3+1): '+tileRows);
   await page.evaluate(()=>{SSMPDDb.listMetaAdPerformance=async()=>Array.from({length:110},(_,i)=>({ad_id:'ad-'+i,campaign_id:'campaign-'+(i%93),account_name:'حساب اختبار',campaign_name:'حملة اختبار',spend:i?0:122112.13,reach:i?0:2226133,impressions:i?0:3217179,clicks:i?0:60064,msg_conv:i?0:6917,leads:i?0:90}));SSMPDDb.listMetaSpecialtyPerformance=async()=>[];SSMPDDb.listMetaCreativePerformance=async()=>[];SSMPDDb.listMetaLeadAttribution=async()=>[];SSMPDDb.listContentMetaPerformance=async()=>[];document.querySelector('#tabs-bar [data-tab="metaads"]').click();});
   await page.waitForSelector('#ma-kpis .kpi-card');
   assert.equal(await page.locator('#ma-kpis .kpi-card').count(),10);
@@ -70,7 +72,8 @@ const styles=[...html.matchAll(/<link[^>]+href="([^"]+\.css)[^"]*"/g)].map(m=>m[
   if(process.env.RECEPTION_QA)await page.screenshot({path:path.join(process.env.RECEPTION_QA,'theme-menu-'+width+'.png'),fullPage:true});
   await page.keyboard.press('Escape');assert.equal(await page.locator('#user-dropdown').isVisible(),false);
   await page.evaluate(()=>document.querySelector('#user-dropdown [data-goto="accounting"]').click());
-  await page.waitForSelector('.acc-catalog-nav');await page.waitForSelector('.acc-catalog-grid');
+  await page.waitForSelector('.acs [data-acs-go]');// accounting opens in the unified side-rail shell (owner 2026-11-18)
+  assert.equal(await page.locator('.acc-catalog-nav').count(),0,'no sub-tab bar inside the shell');
   assert(await overflow(),'accounting fits '+width);
   if(process.env.RECEPTION_QA)await page.screenshot({path:path.join(process.env.RECEPTION_QA,'theme-accounting-'+width+'.png'),fullPage:true});
   // Shared screen primitives used by non-social modules and long native form values.

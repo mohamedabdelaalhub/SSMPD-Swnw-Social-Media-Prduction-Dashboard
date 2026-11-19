@@ -1,0 +1,323 @@
+{
+ "meta": {
+  "brand": true,
+  "title": "إعلان ريل LZF1-F — موجة 1",
+  "music": "upbeat",
+  "seed": 21,
+  "file": "lzf1f.mp4",
+  "cover_t": 1.5,
+  "voice_settings": {
+   "stability": 0.5,
+   "style": 0.15,
+   "speed": 0.98
+  },
+  "voice_continuous": true,
+  "music_from": 0.0
+ },
+ "cast": {
+  "v": {
+   "look": "narr",
+   "voice": "woman_1"
+  }
+ },
+ "scenes": [
+  {
+   "set": "clear",
+   "bg": {
+    "video": "/root/.claude/uploads/d4cfeb82-593e-5033-90e6-dc2f0a1d367c/2c52d99c-WhatsApp_Video_2026-11-15_at_6.04.54_AM.mp4",
+    "start": 0.2,
+    "speed": 0.8,
+    "fit": "blur"
+   },
+   "cam": {},
+   "trans": "cut",
+   "tail": 0.0,
+   "actors": {},
+   "beats": [
+    {
+     "badge": {
+      "text": "ليزر كانديلا في سونو • خصم 20%",
+      "kind": "label",
+      "y": 340,
+      "dur": 3.0
+     }
+    },
+    {
+     "badge": {
+      "text": "3 حاجات تفرق",
+      "kind": "label",
+      "y": 1190,
+      "dur": 2.8
+     }
+    },
+    {
+     "say": {
+      "who": "v",
+      "text": "تلات حاجات هتفرق معاكي في جلسة الليزر.",
+      "hl": [
+       "تلات"
+      ],
+      "silent": false,
+      "pad": 0.0
+     }
+    },
+    {
+     "wait": 0.0
+    }
+   ]
+  },
+  {
+   "set": "clear",
+   "bg": {
+    "video": "/root/.claude/uploads/d4cfeb82-593e-5033-90e6-dc2f0a1d367c/2c52d99c-WhatsApp_Video_2026-11-15_at_6.04.54_AM.mp4",
+    "start": 7.6,
+    "speed": 0.7,
+    "fit": "blur"
+   },
+   "cam": {},
+   "trans": "cut",
+   "tail": 0.0,
+   "actors": {},
+   "beats": [
+    {
+     "badge": {
+      "text": "1 • إشراف طبي متخصص فقط",
+      "kind": "label",
+      "y": 1190,
+      "dur": 2.2
+     }
+    },
+    {
+     "say": {
+      "who": "v",
+      "text": "واحد: الإشراف طبي ومتخصص فقط.",
+      "hl": [
+       "الإشراف"
+      ],
+      "silent": false,
+      "pad": 0.0
+     }
+    },
+    {
+     "wait": 0.0
+    }
+   ]
+  },
+  {
+   "set": "clear",
+   "bg": {
+    "video": "/root/.claude/uploads/d4cfeb82-593e-5033-90e6-dc2f0a1d367c/6974b84b-WhatsApp_Video_2026-11-15_at_6.03.47_AM.mp4",
+    "start": 2.0,
+    "speed": 0.6,
+    "fit": "blur"
+   },
+   "cam": {},
+   "trans": "cut",
+   "tail": 0.0,
+   "actors": {},
+   "beats": [
+    {
+     "badge": {
+      "text": "2 • مكان نضيف ومجهز",
+      "kind": "label",
+      "y": 1190,
+      "dur": 2.2
+     }
+    },
+    {
+     "say": {
+      "who": "v",
+      "text": "اتنين: المكان نضيف ومجهز،",
+      "hl": [
+       "نضيف"
+      ],
+      "silent": false,
+      "pad": 0.0
+     }
+    },
+    {
+     "wait": 0.0
+    }
+   ]
+  },
+  {
+   "set": "clear",
+   "bg": {
+    "video": "/root/.claude/uploads/d4cfeb82-593e-5033-90e6-dc2f0a1d367c/f353714c-WhatsApp_Video_2026-11-15_at_6.05.22_AM.mp4",
+    "start": 0.1,
+    "speed": 0.5,
+    "fit": "blur"
+   },
+   "cam": {},
+   "trans": "cut",
+   "tail": 0.0,
+   "actors": {},
+   "beats": [
+    {
+     "badge": {
+      "text": "2 • أي سؤال له إجابة واضحة",
+      "kind": "label",
+      "y": 1190,
+      "dur": 3.2
+     }
+    },
+    {
+     "say": {
+      "who": "v",
+      "text": "وأي سؤال بتسأليه بتلاقي عليه إجابة واضحة.",
+      "hl": [
+       "إجابة"
+      ],
+      "silent": false,
+      "pad": 0.0
+     }
+    },
+    {
+     "wait": 0.0
+    }
+   ]
+  },
+  {
+   "set": "clear",
+   "bg": {
+    "video": "/root/.claude/uploads/d4cfeb82-593e-5033-90e6-dc2f0a1d367c/2c52d99c-WhatsApp_Video_2026-11-15_at_6.04.54_AM.mp4",
+    "start": 6.0,
+    "speed": 0.6,
+    "fit": "blur"
+   },
+   "cam": {},
+   "trans": "cut",
+   "tail": 0.0,
+   "actors": {},
+   "beats": [
+    {
+     "badge": {
+      "text": "3 • باقة تناسبك",
+      "kind": "label",
+      "y": 1190,
+      "dur": 2.6
+     }
+    },
+    {
+     "say": {
+      "who": "v",
+      "text": "تلاتة: بتختاري الباقة اللي تناسبك،",
+      "hl": [
+       "الباقة"
+      ],
+      "silent": false,
+      "pad": 0.0
+     }
+    },
+    {
+     "wait": 0.0
+    }
+   ]
+  },
+  {
+   "set": "clear",
+   "bg": {
+    "video": "/root/.claude/uploads/d4cfeb82-593e-5033-90e6-dc2f0a1d367c/2c52d99c-WhatsApp_Video_2026-11-15_at_6.04.54_AM.mp4",
+    "start": 2.4,
+    "speed": 0.8,
+    "fit": "blur"
+   },
+   "cam": {},
+   "trans": "cut",
+   "tail": 0.0,
+   "actors": {},
+   "beats": [
+    {
+     "badge": {
+      "text": "خصم 20%",
+      "sub": "على باقات الليزر حتى آخر ديسمبر",
+      "kind": "offer",
+      "y": 1200,
+      "dur": 4.6
+     }
+    },
+    {
+     "say": {
+      "who": "v",
+      "text": "وفيه دلوقتي خصم عشرين في المية على باقات الليزر لحد آخر ديسمبر.",
+      "hl": [
+       "عشرين",
+       "ديسمبر"
+      ],
+      "silent": false,
+      "pad": 0.0
+     }
+    },
+    {
+     "wait": 0.0
+    }
+   ]
+  },
+  {
+   "set": "clear",
+   "bg": {
+    "video": "/root/.claude/uploads/d4cfeb82-593e-5033-90e6-dc2f0a1d367c/6974b84b-WhatsApp_Video_2026-11-15_at_6.03.47_AM.mp4",
+    "start": 5.6,
+    "speed": 0.8,
+    "fit": "blur"
+   },
+   "cam": {},
+   "trans": "cut",
+   "tail": 0.0,
+   "actors": {},
+   "beats": [
+    {
+     "say": {
+      "who": "v",
+      "text": "ليزر كانديلا في عيادات سونو.",
+      "hl": [
+       "كانديلا"
+      ],
+      "silent": false,
+      "pad": 0.0
+     }
+    },
+    {
+     "wait": 0.0
+    }
+   ]
+  },
+  {
+   "set": "clear",
+   "bg": {
+    "video": "/root/.claude/uploads/d4cfeb82-593e-5033-90e6-dc2f0a1d367c/2c52d99c-WhatsApp_Video_2026-11-15_at_6.04.54_AM.mp4",
+    "start": 0.2,
+    "speed": 0.6,
+    "fit": "blur"
+   },
+   "cam": {},
+   "trans": "cut",
+   "tail": 0.0,
+   "actors": {},
+   "beats": [
+    {
+     "badge": {
+      "text": "سجّلي بياناتك",
+      "kind": "button",
+      "y": 1290,
+      "dur": 3.0
+     }
+    },
+    {
+     "say": {
+      "who": "v",
+      "text": "سجّلي بياناتك، وفريقنا يكلمك.",
+      "hl": [
+       "سجّلي"
+      ],
+      "silent": false,
+      "pad": 0.0
+     }
+    },
+    {
+     "wait": 0.0
+    }
+   ]
+  }
+ ]
+}

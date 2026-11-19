@@ -14,6 +14,7 @@
 
   var RENDERERS = {
     human_resources: window.SSMPDHumanResources,
+    training_evaluation: window.SSMPDTrainingEvaluation,
     price_lists: window.SSMPDPriceLists,
     home: window.SSMPDPersonalHome,
     summary: window.SSMPDRenderSummary,
@@ -23,6 +24,8 @@
     publish: window.SSMPDRenderPublish,
     comments: window.SSMPDRenderComments,
     clinic_info: window.SSMPDRenderClinicInfo,
+    org_legal: window.SSMPDRenderOrgLegal,
+    reports: window.SSMPDRenderReports,
     performance: window.SSMPDRenderPerformance,
     indicator_reports: window.SSMPDIndicatorReports,
     staff_kpi: window.SSMPDRenderStaffKpi,
@@ -42,6 +45,7 @@
   };
   var TAB_LABELS = {
     human_resources: "الموارد البشرية",
+    training_evaluation: "التدريب والتقييم",
     price_lists: "الخدمات ولوائح الأسعار",
     home: "الرئيسية الشخصية",
     summary: "الملخص العام",
@@ -51,6 +55,8 @@
     publish: "النشر",
     comments: "التعليقات",
     clinic_info: "تحديث بيانات الشات بوت",
+    org_legal: "بيانات الشركة والفروع",
+    reports: "التقارير",
     performance: "أداء البوستات",
     indicator_reports: "تقارير المؤشرات والإجراءات",
     staff_kpi: "أداء الفريق",
@@ -141,6 +147,9 @@
     return m;
   }
 
+  // supabase-js reports PASSWORD_RECOVERY only after getSession() has already resolved, so detect a
+  // reset link from the URL itself while the scripts load (the hash is still present at this point).
+  var recoveryMode = /(^|[#&?])type=recovery(&|$)/.test(String(window.location.hash || "") + "&" + String(window.location.search || ""));
   function bootAfterAuth() {
     return window.SSMPDAuth.getSession().then(function (session) {
       if (!session) { showAuthScreen("login"); return; }
@@ -150,6 +159,8 @@
         startUsageSession();
       });
     }).catch(function (err) {
+      if (window.console) console.error("dashboard boot failed", err);
+      if (recoveryMode) return; // never drop a recovery session before the new password is saved
       window.SSMPDAuth.signOut();
       showAuthScreen("login", translateAuthError(err));
     });
@@ -186,13 +197,14 @@
     // القائمة المنسدلة فقط — اتشالوا من شريط التابات العادي (وقائمة الموبايل
     // القديمة) عشان ميبقوش متكررين في مكانين، ويبانوا بس في المكان اللي
     // المستخدم طلبه (جوه القائمة المنسدلة).
-    var mainSuiteTabs = tabs.filter(function (t) { return ["human_resources", "price_lists", "home", "reception_services", "booking_cash", "patients", "leads", "contracting_entities", "clinic_info", "admin", "accounting", "tasks", "inventory", "staff_kpi", "my_kpi", "indicator_reports"].indexOf(t) === -1; });
+    var mainSuiteTabs = tabs.filter(function (t) { return ["human_resources", "training_evaluation", "price_lists", "home", "reception_services", "booking_cash", "patients", "leads", "contracting_entities", "clinic_info", "org_legal", "reports", "admin", "accounting", "tasks", "inventory", "staff_kpi", "my_kpi", "indicator_reports"].indexOf(t) === -1; });
 
     function tabButtonsHtml() {
       return mainSuiteTabs.map(function (t) { return '<button class="tab-btn" data-tab="' + t + '">' + window.SSMPDI18n.textHtml(TAB_LABELS[t]) + '</button>'; }).join("");
     }
     var ddItems = '<button class="ud-item" data-goto="home">الرئيسية الشخصية</button>';
     if(tabs.indexOf('human_resources')!==-1)ddItems+='<button class="ud-item" data-goto="human_resources">الموارد البشرية</button>';
+    if(tabs.indexOf('training_evaluation')!==-1)ddItems+='<button class="ud-item" data-goto="training_evaluation">التدريب والتقييم</button>';
     if(tabs.indexOf('price_lists')!==-1&&tabs.indexOf('contracting_entities')===-1)ddItems+='<button class="ud-item" data-goto="price_lists">جهات التعاقد ولوائح الأسعار</button>';
     if (mainSuiteTabs.length) ddItems += '<button class="ud-item" data-goto="'+mainSuiteTabs[0]+'">'+window.SSMPDI18n.textHtml(R.isControlledFinance(admin)?TAB_LABELS[mainSuiteTabs[0]]:'إنتاج المحتوى')+'</button>';
     if (tabs.indexOf("patients") !== -1) ddItems += "<button class=\"ud-item\" data-goto=\"patients\"> <!--ssmpd-i18n:%D8%A3%D8%B1%D8%B4%D9%8A%D9%81%20%D8%A7%D9%84%D9%85%D8%B1%D8%B6%D9%89-->أرشيف المرضى</button>";
@@ -204,6 +216,8 @@
     if (tabs.indexOf("inventory") !== -1 && admin.inventory_assigned===false && admin.inventory_supply_access) ddItems += '<button class="ud-item" data-goto="inventory">'+(admin.inventory_assigned===false&&admin.inventory_supply_access?'طلب مستلزمات':'المخزن والجرد')+'</button>';
     if (tabs.indexOf("contracting_entities") !== -1) ddItems += "<button class=\"ud-item\" data-goto=\"contracting_entities\"> <!--ssmpd-i18n:%D8%AC%D9%87%D8%A7%D8%AA%20%D8%A7%D9%84%D8%AA%D8%B9%D8%A7%D9%82%D8%AF-->جهات التعاقد</button>";
     if (tabs.indexOf("clinic_info") !== -1) ddItems += '<button class="ud-item" data-goto="clinic_info">' + window.SSMPDI18n.textHtml(TAB_LABELS.clinic_info) + "</button>";
+    if (tabs.indexOf("org_legal") !== -1) ddItems += '<button class="ud-item" data-goto="org_legal">' + window.SSMPDI18n.textHtml(TAB_LABELS.org_legal) + "</button>";
+    if (tabs.indexOf("reports") !== -1) ddItems += '<button class="ud-item" data-goto="reports">' + window.SSMPDI18n.textHtml(TAB_LABELS.reports) + "</button>";
     if (tabs.indexOf("accounting") !== -1) ddItems += "<button class=\"ud-item\" data-goto=\"accounting\"> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AD%D8%B3%D8%A7%D8%A8%D8%A7%D8%AA-->الحسابات</button>";
     if (tabs.indexOf("reception_services") !== -1) ddItems += '<button class="ud-item" data-goto="reception_services">الاستقبال والخدمات</button>';
     if (tabs.indexOf("booking_cash") !== -1) ddItems += '<button class="ud-item" data-goto="booking_cash">خزينة الاستقبال والحجوزات</button>';
@@ -304,6 +318,11 @@
       userDropdown.classList.remove("open");
       openChangePasswordModal();
     };
+    // Owner 2026-11-17: tapping your name or photo in the header opens «الرئيسية الشخصية».
+    (function(){var acc=root().querySelector(".header-account");if(!acc||tabs.indexOf("home")===-1)return;
+      acc.setAttribute("role","button");acc.tabIndex=0;acc.classList.add("is-home-link");acc.title="الرئيسية الشخصية";acc.setAttribute("aria-label","الرئيسية الشخصية — "+(admin.name||admin.email||""));
+      var go=function(e){var hit=e&&e.target&&e.target.closest&&e.target.closest("button,a,input,select,[data-staff-photo]");if(hit&&hit!==acc&&acc.contains(hit))return;switchTab("home");};
+      acc.addEventListener("click",go);acc.addEventListener("keydown",function(e){if(e.key==="Enter"||e.key===" "){e.preventDefault();go(e);}});})();
     userDropdown.querySelectorAll("[data-goto]").forEach(function (btn) {
       var key=btn.getAttribute("data-goto");
       if(window.SSMPDUITitles&&!(key===mainSuiteTabs[0]&&!R.isControlledFinance(admin)))btn.innerHTML=window.SSMPDI18n.textHtml(window.SSMPDUITitles.label(key,admin));
@@ -743,8 +762,17 @@
       window.SSMPDAuth.changePassword(p1).then(function () {
         window.SSMPDToast.show("اتغيّرت كلمة السر بنجاح");
         close();
+        if (recoveryMode) { recoveryMode = false; bootAfterAuth(); }
       }).catch(function (err) {
-        window.SSMPDToast.show("خطأ: " + (err && err.message ? err.message : err), "error");
+        var m = String(err && err.message ? err.message : err);
+        if (/session missing|session_not_found|not authenticated|JWT/i.test(m)) {
+          // Expired/used reset link: no recovery session exists. Say so in Arabic and offer a new link.
+          window.SSMPDToast.show("رابط تغيير كلمة السر انتهى أو اتستخدم قبل كده. اطلب رابط جديد من «نسيت كلمة السر؟» وافتحه خلال ساعة.", "error");
+          close();
+          if (typeof showAuthScreen === "function") showAuthScreen("login");
+          return;
+        }
+        window.SSMPDToast.show("خطأ: " + m, "error");
       });
     };
   }
@@ -772,7 +800,7 @@
 
     // فصل بصري: تابات السويت الرئيسي (SSMPD) بتتخفي تماماً لما نكون جوه موديول
     // منفصل (أرشيف المرضى / الليدز / لوحة التحكم) عشان ميظهرش هيدر حاجتين مع بعض
-    var isSeparateModule = ["human_resources", "price_lists", "home", "reception_services", "booking_cash", "patients", "leads", "contracting_entities", "clinic_info", "admin", "accounting", "tasks", "inventory", "staff_kpi", "my_kpi", "indicator_reports"].indexOf(tab) !== -1;
+    var isSeparateModule = ["human_resources", "training_evaluation", "price_lists", "home", "reception_services", "booking_cash", "patients", "leads", "contracting_entities", "clinic_info", "org_legal", "reports", "admin", "accounting", "tasks", "inventory", "staff_kpi", "my_kpi", "indicator_reports"].indexOf(tab) !== -1;
     var tabsBar = document.getElementById("tabs-bar");
     if (tabsBar) tabsBar.style.display = isSeparateModule ? "none" : "";
     var mmTabs = document.querySelector("#mobile-menu .mm-tabs");
@@ -1000,9 +1028,13 @@
     // لينك "نسيت كلمة السر" بيرجّع المستخدم هنا بجلسة مؤقتة تلقائية —
     // Supabase بيطلق الحدث ده، فبنفتحله مودال "تغيير كلمة السر" مباشرة
     window.SSMPDAuth.onAuthChange(function (event) {
-      if (event === "PASSWORD_RECOVERY") openChangePasswordModal();
+      if (event === "PASSWORD_RECOVERY") { recoveryMode = true; openChangePasswordModal(); }
     });
     window.SSMPDAuth.getSession().then(function (session) {
+      // A reset link gives a short recovery session: keep it for the password change only and do not
+      // boot the dashboard yet (a boot failure there used to sign the session out ~3 s later, so
+      // saving the new password failed with "Auth session missing!"). Boot after the password is saved.
+      if (session && recoveryMode) { showAuthScreen("login"); return; }
       if (session) return bootAfterAuth().then(function(){
         var welcome=new URL(window.location.href);if(welcome.searchParams.get('staff_welcome')==='1'){welcome.searchParams.delete('staff_welcome');history.replaceState(null,'',welcome.pathname+welcome.search+welcome.hash);if(window.SSMPDAuth.currentAdmin&&!document.getElementById('cp-save'))openChangePasswordModal();}
       });

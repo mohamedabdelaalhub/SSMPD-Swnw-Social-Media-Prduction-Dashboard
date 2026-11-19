@@ -15,6 +15,7 @@
     var U = w.SSMPDWorkforceUtils, owner = w.SSMPDAuth && w.SSMPDAuth.currentAdmin && w.SSMPDAuth.currentAdmin.id;
     var ws = null, serial = 0, host = document.createElement('div');
     host.dataset.hrShifts = ''; shell.append(host);
+    if (w.SSMPDHRShiftSwaps) { var swapHost = document.createElement('div'); shell.append(swapHost); w.SSMPDHRShiftSwaps.mount(swapHost); }
     function live() { return host.isConnected && w.SSMPDAuth.currentAdmin && w.SSMPDAuth.currentAdmin.id === owner; }
     function btn(action, label, id, cls) { return '<button type="button" class="' + (cls || 'btn ghost') + '" data-shifts="' + action + '" data-id="' + esc(id || '') + '">' + esc(label) + '</button>'; }
 

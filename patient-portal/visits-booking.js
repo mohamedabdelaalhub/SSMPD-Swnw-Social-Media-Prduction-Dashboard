@@ -5,9 +5,9 @@ var cfg=window.SSMPD_CONFIG&&window.SSMPD_CONFIG.supabase;
 var root=document.getElementById("portal-root");
 if(!cfg||!cfg.url||!cfg.anonKey||!root||!window.supabase)return;
 
-var client=window.supabase.createClient(cfg.url,cfg.anonKey,{
+var client=((window.SSMPDPortalClient)||window.supabase.createClient(cfg.url,cfg.anonKey,{
   auth:{persistSession:true,autoRefreshToken:true,storageKey:"swnw-patient-portal-auth"}
-});
+}));
 var medicalCache=null,medicalCacheAt=0;
 var bookingState={catalog:null,patientId:"",specialtyId:"",doctorId:"",date:"",time:""};
 
@@ -173,23 +173,44 @@ function resetAfter(level){
 function option(value,label,selected){return '<option value="'+esc(value)+'"'+(selected?' selected':'')+'>'+esc(label)+'</option>';}
 function bookingShell(inner){
   var c=content();if(!c)return;
-  c.innerHTML='<div class="portal-medical-view booking-view"><div class="booking-head"><div><span class="booking-kicker">حجز مباشر من نظام المركز</span><h2>حجز زيارة جديدة</h2><p>اختار التخصص والطبيب، وبعدها هنظهر لك الأيام والمواعيد المتاحة فقط.</p></div></div>'+inner+'</div>';
+  c.innerHTML='<div class="portal-medical-view booking-view"><div class="booking-head"><div><span class="booking-kicker">طلب حجز — يؤكده الاستقبال</span><h2>حجز زيارة جديدة</h2><p>اختر التخصص والطبيب والموعد، وسيؤكد الاستقبال الحجز ويبلغك.</p></div></div>'+inner+'<div id="my-booking-requests"></div></div>';loadMyRequests();
 }
 function bookingErrorText(e){
   var m=String(e&&e.message||e||"");
   var map={
-    BOOKING_BRIDGE_NOT_CONFIGURED:"الربط المباشر مع نظام الحجز الرسمي لسه محتاج تفعيل.",
+    BOOKING_BRIDGE_NOT_CONFIGURED:"الربط المباشر مع نظام الحجز الرسمي لم يُفعَّل بعد.",
     NO_APPROVED_MEDICAL_ACCESS:"الحساب لا يملك صلاحية معتمدة لهذا الملف.",
     DOCTOR_NOT_BOOKING_READY:"الطبيب غير متاح للحجز الإلكتروني حاليًا.",
-    PATIENT_PHONE_REQUIRED:"رقم الهاتف غير مسجل في الملف. راجع بياناتك مع الاستقبال أولًا.",
-    SLOT_NO_LONGER_AVAILABLE:"الموعد اتاخد قبل التأكيد. اختار موعدًا آخر.",
+    PATIENT_PHONE_REQUIRED:"رقم الهاتف غير مسجل في الملف. يُرجى مراجعة بياناتك مع الاستقبال أولًا.",
+    SLOT_NO_LONGER_AVAILABLE:"حُجز هذا الموعد قبل التأكيد. يُرجى اختيار موعد آخر.",
     BOOKING_CONFIRMATION_INVALID:"تعذر تأكيد الحجز من النظام الرسمي.",
-    BOOKING_READBACK_MISMATCH:"تعذر التحقق من الحجز بعد إنشائه."
+    BOOKING_READBACK_MISMATCH:"تعذر التحقق من الحجز بعد إنشائه.",
+    PORTAL_BOOKING_LIMIT:"لديك طلبا حجز مفتوحان بالفعل. يُرجى انتظار تأكيدهما أو إلغاء أحدهما أولًا.",
+    DUPLICATE_REQUEST:"سبق إرسال طلب للموعد نفسه.",
+    REQUEST_NOT_PENDING:"سبقت مراجعة هذا الطلب من الاستقبال."
   };
   var key=Object.keys(map).find(function(k){return m.indexOf(k)>=0;});
   return key?map[key]:"تعذر تنفيذ الحجز الآن. حاول مرة أخرى.";
 }
 
+var REQUEST_STATUS={pending:"بانتظار تأكيد الاستقبال",confirming:"جارٍ التأكيد",confirmed:"تم التأكيد",cancelled_by_patient:"ألغيتَ الطلب",cancelled_by_staff:"ألغاه الاستقبال",slot_unavailable:"الموعد لم يعد متاحًا — سيتواصل معك الاستقبال"};
+function loadMyRequests(){
+  var box=document.getElementById("my-booking-requests");if(!box)return;
+  invokeBooking({op:"my_requests"}).then(function(r){
+    var rows=(r&&r.requests)||[];box=document.getElementById("my-booking-requests");if(!box)return;
+    if(!rows.length){box.innerHTML="";return;}
+    box.innerHTML='<div class="booking-panel booking-requests"><div class="booking-step-title"><span>طلبات الحجز</span><h3>حالة طلباتك</h3></div>'+rows.map(function(x){
+      return '<div class="booking-review compact" data-request-row="'+esc(x.id)+'"><div><label>الطبيب</label><b>د/ '+esc(x.doctor_name||"")+'</b></div><div><label>الموعد</label><b>'+fmtDate(x.requested_date)+' • '+esc(x.requested_time||"")+'</b></div><div><label>الحالة</label><b>'+esc(REQUEST_STATUS[x.status]||x.status)+'</b></div>'+
+        (x.status==="confirmed"&&x.official_booking_id?'<div><label>رقم الحجز</label><b class="ltr">'+esc(x.official_booking_id)+'</b></div>':'')+
+        (x.status==="cancelled_by_staff"&&x.staff_note?'<div><label>ملاحظة الاستقبال</label><b>'+esc(x.staff_note)+'</b></div>':'')+
+        (x.status==="pending"?'<button class="btn ghost sm" data-cancel-request="'+esc(x.id)+'">إلغاء الطلب</button>':'')+'</div>';
+    }).join("")+'</div>';
+    box.querySelectorAll("[data-cancel-request]").forEach(function(b){b.onclick=function(){
+      if(!window.confirm("هل تريد إلغاء طلب الحجز هذا؟"))return;
+      b.disabled=true;invokeBooking({op:"cancel_request",request_id:b.getAttribute("data-cancel-request")}).then(loadMyRequests).catch(function(e){b.disabled=false;window.alert(bookingErrorText(e));});
+    };});
+  }).catch(function(){});
+}
 function renderBookingStart(cat){
   var patients=cat.patients||[],specs=cat.specialties||[];
   if(!patients.length){bookingShell('<div class="medical-empty">لا يوجد ملف طبي معتمد للحجز.</div>');return;}
@@ -201,7 +222,7 @@ function renderBookingStart(cat){
   bookingShell('<div class="booking-panel">'+patientSelect+
     '<div class="booking-field"><label>التخصص</label><select id="book-specialty"><option value="">اختر التخصص</option>'+specs.map(function(s){return option(s.specialty_id,s.specialty_name_ar,s.specialty_id===bookingState.specialtyId);}).join("")+'</select></div>'+
     '<button class="btn block" id="booking-next-specialty"'+(!bookingState.specialtyId?' disabled':'')+'>اختيار الطبيب</button>'+
-    (!cat.bridge_ready?'<div class="booking-note">يمكنك تصفح التخصصات والأطباء الآن، والحجز المباشر سيتفعل بعد ربط الـBooking Bridge.</div>':'')+
+    (!cat.bridge_ready?'<div class="booking-note">يمكنك تصفح التخصصات والأطباء الآن، وسيُتاح الحجز المباشر بعد تفعيل الربط مع نظام الحجز.</div>':'')+
     '</div>');
 
   var ps=document.getElementById("book-patient");
@@ -237,7 +258,7 @@ function loadDates(cat){
 }
 function renderDates(cat,dates){
   var doctor=(cat.doctors||[]).find(function(d){return d.doctor_id===bookingState.doctorId;});
-  bookingShell('<div class="booking-panel"><button class="booking-back" id="back-doctors">'+icon("back")+'<span>رجوع للأطباء</span></button><div class="booking-step-title"><span>اختار اليوم المتاح</span><h3>د/ '+esc(doctor?doctor.doctor_name_ar:"")+'</h3></div>'+
+  bookingShell('<div class="booking-panel"><button class="booking-back" id="back-doctors">'+icon("back")+'<span>رجوع للأطباء</span></button><div class="booking-step-title"><span>اختر اليوم المتاح</span><h3>د/ '+esc(doctor?doctor.doctor_name_ar:"")+'</h3></div>'+
     (dates.length?'<div class="slot-grid dates">'+dates.map(function(d){return '<button class="slot-choice" data-date="'+esc(d)+'"><b>'+fmtDate(d)+'</b></button>';}).join("")+'</div>':'<div class="medical-empty">لا توجد أيام متاحة حاليًا لهذا الطبيب.</div>')+
     '</div>');
   document.getElementById("back-doctors").onclick=function(){renderDoctors(cat);};
@@ -261,16 +282,16 @@ function renderTimes(cat,times){
 function renderReview(cat){
   var patient=(cat.patients||[]).find(function(x){return x.id===bookingState.patientId;});
   var doctor=(cat.doctors||[]).find(function(x){return x.doctor_id===bookingState.doctorId;});
-  bookingShell('<div class="booking-panel"><button class="booking-back" id="back-times">'+icon("back")+'<span>رجوع للمواعيد</span></button><div class="booking-step-title"><span>مراجعة الحجز</span><h3>تأكد من البيانات قبل التأكيد</h3></div>'+
+  bookingShell('<div class="booking-panel"><button class="booking-back" id="back-times">'+icon("back")+'<span>رجوع للمواعيد</span></button><div class="booking-step-title"><span>مراجعة الطلب</span><h3>راجع البيانات قبل إرسال الطلب</h3></div>'+
     '<div class="booking-review"><div><label>المستخدم</label><b>'+esc(patient?patient.full_name:"")+'</b></div><div><label>التخصص</label><b>'+esc(doctor?doctor.specialty_name_ar:"")+'</b></div><div><label>الطبيب</label><b>د/ '+esc(doctor?doctor.doctor_name_ar:"")+'</b></div><div><label>اليوم</label><b>'+fmtDate(bookingState.date)+'</b></div><div><label>الوقت</label><b>'+esc(bookingState.time)+'</b></div><div><label>سعر الكشف</label><b>'+(doctor&&doctor.consultation_price!=null?esc(doctor.consultation_price)+" "+esc(doctor.currency||"EGP"):"—")+'</b></div></div>'+
-    '<button class="btn block" id="confirm-booking">تأكيد الحجز</button><div id="booking-message"></div></div>');
+    '<button class="btn block" id="confirm-booking">إرسال طلب الحجز</button><div id="booking-message"></div></div>');
   document.getElementById("back-times").onclick=function(){loadTimes(cat);};
   document.getElementById("confirm-booking").onclick=function(){
-    var btn=this,msg=document.getElementById("booking-message");btn.disabled=true;btn.textContent="جاري تأكيد الحجز…";
+    var btn=this,msg=document.getElementById("booking-message");btn.disabled=true;btn.textContent="جاري إرسال الطلب…";
     invokeBooking({op:"book",patient_id:bookingState.patientId,doctor_id:bookingState.doctorId,date:bookingState.date,time:bookingState.time}).then(function(res){
-      bookingShell('<div class="booking-panel booking-success"><span class="success-icon">'+icon("check")+'</span><h3>تم تأكيد الحجز</h3><p>رقم الحجز الرسمي: <b class="ltr">'+esc(res.official_booking_id||"—")+'</b></p><div class="booking-review compact"><div><label>الطبيب</label><b>د/ '+esc(res.doctor&&res.doctor.doctor_name_ar||"")+'</b></div><div><label>التخصص</label><b>'+esc(res.specialty&&res.specialty.specialty_name_ar||"")+'</b></div><div><label>الموعد</label><b>'+fmtDate(res.date)+' • '+esc(res.time||"")+'</b></div></div><button class="btn block secondary" id="new-booking">حجز زيارة أخرى</button></div>');
+      bookingShell('<div class="booking-panel booking-success"><span class="success-icon">'+icon("check")+'</span><h3>تم إرسال طلب الحجز</h3><p>سيراجع الاستقبال الموعد ويؤكده. ستجد حالة الطلب أدناه في «طلبات الحجز».</p><div class="booking-review compact"><div><label>الطبيب</label><b>د/ '+esc(res.doctor&&res.doctor.doctor_name_ar||"")+'</b></div><div><label>التخصص</label><b>'+esc(res.specialty&&res.specialty.specialty_name_ar||"")+'</b></div><div><label>الموعد المطلوب</label><b>'+fmtDate(res.date)+' • '+esc(res.time||"")+'</b></div></div><button class="btn block" id="new-booking">طلب حجز آخر</button></div>');
       document.getElementById("new-booking").onclick=function(){bookingState.specialtyId="";bookingState.doctorId="";bookingState.date="";bookingState.time="";renderBookingStart(cat);};
-    }).catch(function(e){msg.innerHTML='<div class="notice error">'+esc(bookingErrorText(e))+'</div>';btn.disabled=false;btn.textContent="تأكيد الحجز";});
+    }).catch(function(e){msg.innerHTML='<div class="notice error">'+esc(bookingErrorText(e))+'</div>';btn.disabled=false;btn.textContent="إرسال طلب الحجز";});
   };
 }
 function openBooking(){

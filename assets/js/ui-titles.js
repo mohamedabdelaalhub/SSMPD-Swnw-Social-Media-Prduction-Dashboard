@@ -1,6 +1,6 @@
 /* Display labels only. Role keys, assignments and authorization stay in roles.js. */
 (function(root){'use strict';
-var tabs={human_resources:'الموارد البشرية',price_lists:'الخدمات ولوائح الأسعار',home:'الرئيسية الشخصية',summary:'الملخص العام',production:'إنتاج المحتوى',review:'إدارة المحتوى',design:'شاشة التصميم',publish:'النشر',comments:'التعليقات',clinic_info:'تحديث بيانات الشات بوت',performance:'أداء البوستات',indicator_reports:'تقارير المؤشرات والإجراءات',staff_kpi:'أداء الفريق',my_kpi:'أدائي',archive:'الأرشيف',patients:'أرشيف المرضى',leads:'إدارة الليدز والتواصل',contracting_entities:'جهات التعاقد',admin:'لوحة التحكم',metaads:'إعلانات Meta Ads',mediabuyer:'وكيل الإعلانات',reception_services:'الاستقبال والخدمات',booking_cash:'خزينة الاستقبال والحجوزات',accounting:'الحسابات',tasks:'المهام',inventory:'المخزن والجرد'};
+var tabs={reports:'التقارير',human_resources:'الموارد البشرية',training_evaluation:'التدريب والتقييم',price_lists:'الخدمات ولوائح الأسعار',home:'الرئيسية الشخصية',summary:'الملخص العام',production:'إنتاج المحتوى',review:'إدارة المحتوى',design:'شاشة التصميم',publish:'النشر',comments:'التعليقات',clinic_info:'تحديث بيانات الشات بوت',org_legal:'بيانات الشركة والفروع',performance:'أداء البوستات',indicator_reports:'تقارير المؤشرات والإجراءات',staff_kpi:'أداء الفريق',my_kpi:'أدائي',archive:'الأرشيف',patients:'أرشيف المرضى',leads:'إدارة الليدز والتواصل',contracting_entities:'جهات التعاقد',admin:'لوحة التحكم',metaads:'إعلانات Meta Ads',mediabuyer:'وكيل الإعلانات',reception_services:'الاستقبال والخدمات',booking_cash:'خزينة الاستقبال والحجوزات',accounting:'الحسابات',tasks:'المهام',inventory:'المخزن والجرد'};
 function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function localized(value,cls){return '<span'+(cls?' class="'+cls+'"':'')+' data-i18n-text="'+encodeURIComponent(value)+'">'+esc(root.SSMPDI18n.t(value))+'</span>';}
 function roles(admin){var all=[admin.role].concat(root.SSMPDRoles.rolesOf(admin)||[]),seen={};return all.filter(function(k){if(!k||seen[k])return false;seen[k]=true;return true;});}
@@ -13,7 +13,7 @@ root.SSMPDUITitles={tabs:tabs,roles:roles,chips:chips,identity:identity,label:la
 (function loadAdministrativeAssistant(){
   if(root.__SSMPD_ADMIN_ASSISTANT_ASSETS_REQUESTED__)return;
   root.__SSMPD_ADMIN_ASSISTANT_ASSETS_REQUESTED__=true;
-  var version='codex-server-chat-20261106-1';
+  var version='digital-team-login-20261115-1';
   ['assets/css/administrative-assistant.css','assets/css/administrative-assistant-center.css','assets/css/digital-team.css','assets/css/digital-team-chat.css','assets/css/digital-team-server-chat.css','assets/css/patient360.css'].forEach(function(href){var link=document.createElement('link');link.rel='stylesheet';link.href=href+'?v='+version;document.head.appendChild(link);});
   function addScript(src,onload){var s=document.createElement('script');s.src=src+'?v='+version;s.async=false;if(onload)s.onload=onload;document.head.appendChild(s);}
   addScript('assets/js/administrative-assistant.js',function(){

@@ -8,16 +8,159 @@ function form(c,title,html,action,transform){return c.modal(title,html,function(
 function listEditor(c,title,html,action,base,columns,initial){var serial=0,root,editor;
 var r=form(c,title,html+'<fieldset><legend>البنود</legend><div data-rx-lines></div><button type="button" class="btn" data-rx-add>إضافة بند</button></fieldset>',action,function(v){var out=base?base(v):v;out.lines=Array.from(editor.children).map(function(row){var x={};row.querySelectorAll('[data-field]').forEach(function(el){x[el.dataset.field]=el.dataset.field==='included'?el.value==='true':el.type==='checkbox'?el.checked:el.value;});return x;});if(action==='service'){out.bom=out.lines;delete out.lines;}if(action==='execute'){out.materials=out.lines;delete out.lines;}if(action==='package_sell'){if(out.lines.length)out.installments=out.lines;delete out.lines;}Object.keys(out).forEach(function(k){if(k.startsWith('line_'))delete out[k];});return out;});root=r;editor=r.querySelector('[data-rx-lines]');
 function add(value){var div=document.createElement('div');div.className='rx-line-editor';div.innerHTML=columns.map(function(col){var n='line_'+(++serial),v=value&&value[col.key];return col.options?c.select(n,col.label,col.options,v).replace('<select ', '<select data-field="'+col.key+'" '):c.field(n,col.label,col.type||'text',v,col.extra||'required').replace('<input ','<input data-field="'+col.key+'" ');}).join('')+'<button class="btn" type="button" aria-label="إزالة البند">إزالة</button>';div.querySelector('button').onclick=function(){div.remove();};editor.appendChild(div);}
-r.querySelector('[data-rx-add]').onclick=function(){add({});};(initial===undefined?[{}]:initial).forEach(add);return root;}
+r.querySelector('[data-rx-add]').onclick=function(){add({});};r.replaceInstallmentLines=function(lines){editor.replaceChildren();lines.forEach(add);};(initial===undefined?[{}]:initial).forEach(add);return root;}
+// Packages whose number of visits the patient chooses at sale (laser: one package per device). The template price is ONE visit.
+function attachVariableVisits(root,templates,money){
+ var fieldset=root.querySelector('[data-rx-variable]'),template=root.querySelector('[name="template_id"]');
+ var visits=fieldset.querySelector('[name="var_visits"]'),days=fieldset.querySelector('[name="var_days"]'),total=fieldset.querySelector('output');
+ function selected(){return templates.find(function(item){return item.id===template.value;});}
+ function refresh(){
+  var item=selected(),on=!!(item&&item.variable_visits),count=Number(visits.value);
+  fieldset.hidden=!on;visits.disabled=!on;days.disabled=!on;visits.required=on;
+  total.textContent=on&&Number.isInteger(count)&&count>=1&&count<=365?'الإجمالي '+money(Number(item.price)*count)+' ('+count+' × '+money(item.price)+')':'';
+ }
+ root.visitTerms=function(){
+  var item=selected();
+  if(!item||!item.variable_visits)return null;
+  var terms={visits:visits.value.trim()};
+  if(days.value.trim())terms.days=days.value.trim();
+  return terms;
+ };
+ template.addEventListener('change',refresh);
+ ['input','change'].forEach(function(name){visits.addEventListener(name,refresh);days.addEventListener(name,refresh);});
+ refresh();
+}
+function attachOrthodonticSchedule(root, templates, money){
+ var toggle=root.querySelector('[data-rx-orthodontic]');
+ var fieldset=toggle.closest('fieldset');
+ var date=fieldset.querySelector('[data-rx-start]');
+ var preview=fieldset.querySelector('output');
+ var button=fieldset.querySelector('button');
+ var template=root.querySelector('[name="template_id"]');
+ var price=fieldset.querySelector('[name="ortho_price"]');
+ var visitsField=fieldset.querySelector('[name="ortho_visits"]');
+ var days=fieldset.querySelector('[name="ortho_days"]');
+ var mode=fieldset.querySelector('[name="ortho_schedule"]');
+ function defaults(){
+  var selected=templates.find(function(item){return item.id===template.value;});
+  price.value=selected&&selected.price||'';
+  visitsField.value=selected&&selected.visits||'';
+  days.value=selected&&selected.validity_days||'';
+  refresh();
+ }
+ root.orthodonticTerms=function(){
+  var selected=templates.find(function(item){return item.id===template.value;});
+  return toggle.checked&&selected&&selected.orthodontic?{
+   price:price.value,visits:visitsField.value,days:days.value,schedule:mode.value
+  }:null;
+ };
+ function schedule(){
+  var selected=templates.find(function(item){return item.id===template.value;});
+  if(!selected||!date.value)return null;
+  var terms=root.orthodonticTerms();
+  var total=Math.round(Number(terms?terms.price:selected.price)*100);
+  var visits=Number(terms?terms.visits:selected.visits);
+  if(!Number.isSafeInteger(total)||total<1||!Number.isInteger(visits)||visits<1||visits>365)return null;
+  var deposit=Math.round(total/4);
+  var balance=total-deposit;
+  var amount=Math.floor(balance/visits);
+  var remainder=balance%visits;
+  var first=new Date(date.value+'T00:00:00Z');
+  if(Number.isNaN(first.valueOf()))return null;
+  var lines=[{due_on:date.value,amount:(deposit/100).toFixed(2)}];
+  for(var index=1;index<=visits;index++){
+   var month=new Date(Date.UTC(first.getUTCFullYear(),first.getUTCMonth()+index,1));
+   var last=new Date(Date.UTC(month.getUTCFullYear(),month.getUTCMonth()+1,0)).getUTCDate();
+   month.setUTCDate(Math.min(last,first.getUTCDate()));
+   var installment=amount+Number(index<=remainder);
+   if(installment>0)lines.push({due_on:month.toISOString().slice(0,10),amount:(installment/100).toFixed(2)});
+  }
+  return {deposit:deposit,amount:amount,visits:visits,lines:lines};
+ }
+ function refresh(){
+  var plan=toggle.checked?schedule():null;
+  button.disabled=!plan;
+  [price,visitsField,days,mode].forEach(function(field){field.disabled=!root.orthodonticTerms();});
+  preview.textContent=plan?'المقدم '+money(plan.deposit/100)+'، والقسط حسب '+plan.visits+' زيارة حوالي '+money(plan.amount/100):'';
+ }
+ toggle.addEventListener('change',refresh);
+ date.addEventListener('change',refresh);
+ template.addEventListener('change',defaults);
+ [price,visitsField,days,mode].forEach(function(field){field.addEventListener('input',refresh);});
+ button.onclick=function(){
+  var plan=schedule();
+  if(!toggle.checked||!plan)return;
+  if(root.querySelector('[data-rx-lines]').children.length&&!window.confirm('استبدال جدول الدفعات الحالي؟'))return;
+  root.replaceInstallmentLines(plan.lines);
+ };
+ refresh();
+}
+function packagePaymentPosition(pkg, today, attended){
+ var planned=(pkg.installments||[]).slice().sort(function(a,b){return pkg.payment_schedule==='visit'?a.plan_visit_no-b.plan_visit_no:a.due_on.localeCompare(b.due_on);});
+ if(!planned.length)return null;
+ var total=Math.round(Number(pkg.contract_price)*100);
+ var paid=Math.round(Number(pkg.paid||0)*100);
+ var remaining=Math.max(0,total-paid);
+ var scheduled=0,due=0,suggested=0;
+ planned.forEach(function(line){
+  var amount=Math.round(Number(line.amount)*100);
+  var before=scheduled;
+  scheduled+=amount;
+  if(pkg.payment_schedule==='visit'?line.plan_visit_no===0||attended.includes(line.plan_visit_no):line.due_on<=today)due+=amount;
+  if(!suggested&&scheduled>paid)suggested=Math.min(amount,scheduled-Math.max(before,paid));
+ });
+ var overdue=Math.max(0,due-paid);
+ if(pkg.payment_schedule==='visit')suggested=Math.min(overdue,suggested);
+ return {remaining:remaining/100,overdue:overdue/100,suggested:Math.min(remaining,suggested)/100};
+}
+function cairoDate(){
+ var parts=new Intl.DateTimeFormat('en-GB',{timeZone:'Africa/Cairo',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
+ var value={};
+ parts.forEach(function(part){value[part.type]=part.value;});
+ return value.year+'-'+value.month+'-'+value.day;
+}
 function patient(c){return c.select('patient_id','رقم الملف — المريض',rows(c,'patients',function(p){return p.file_no+' — '+p.name;}));}
 function reason(c){return c.field('reason','السبب');}
 function review(c,title,action,id){return form(c,title,c.select('approve','القرار',[['true','اعتماد'],['false','رفض']]),action,function(v){return {id:id,approve:v.approve==='true'};});}
+function reviseSchedule(c,pkg){
+ var rows=(pkg.installments||[]).filter(function(line){return line.plan_visit_no>0&&!line.invoice_id&&line.due_on>cairoDate();});
+ var body=c.field('reason','سبب تغيير المواعيد');
+ rows.forEach(function(line,index){
+  body+=c.field('due_'+index,'زيارة '+line.plan_visit_no+' · '+c.money(line.amount),'date',line.due_on);
+ });
+ c.modal('تعديل تواريخ الأقساط',body,function(values,token){
+  var dates=rows.map(function(line,index){return {id:line.id,due_on:values['due_'+index]};})
+   .filter(function(line,index){return line.due_on!==rows[index].due_on;});
+  return c.command('revise_plan_schedule',{package_id:pkg.id,reason:values.reason,dates:dates},token);
+ });
+}
+function splitReceipt(c,pkg){
+ var fields=c.field,select=c.select,format=c.money;
+ var methods=[['cash','نقدي'],['pos','بطاقة'],['instapay','إنستا باي'],['bank','تحويل بنكي'],['wallet','محفظة إلكترونية']];
+ var shifts=[['','بدون وردية']].concat(rows(c,'shifts',function(x){return c.lookup('registers',x.register_id)+' — '+x.status;}));
+ var body='';
+ for(var part=1;part<=2;part++){
+  body+='<fieldset><legend>جزء '+part+'</legend>'+
+   fields('amount_'+part,'المبلغ','number','','required min="0.01" step="0.01"')+
+   select('method_'+part,'طريقة السداد',methods)+
+   fields('reference_'+part,'مرجع العملية')+(window.SSMPDPaymentProof?window.SSMPDPaymentProof.field(part):'')+select('shift_'+part,'الوردية',shifts)+'</fieldset>';
+ }
+ var splitRoot=c.modal('تحصيل باكج بطريقتين',body,function(v,key){
+  var proof=window.SSMPDPaymentProof;
+  return Promise.all([1,2].map(function(n){return (proof?proof.upload(c.workspace,v['method_'+n],v['reference_'+n],v['proof_file_'+n]):Promise.resolve(v['reference_'+n])).then(function(ref){
+   return {amount:v['amount_'+n],method:v['method_'+n],reference:ref,shift_id:v['shift_'+n]||null};});})).then(function(parts){
+  return c.command('collect_split',{patient_id:pkg.patient_id,package_id:pkg.id,parts:parts},key);});
+ },function(receipt){
+  info(c,'إيصال التحصيل','<p>رقم الإيصال '+c.esc(receipt.id)+'</p><p>الإجمالي '+format(receipt.total)+'</p>');
+ });
+ if(splitRoot&&window.SSMPDPaymentProof)[1,2].forEach(function(n){window.SSMPDPaymentProof.bind(splitRoot,n);});
+}
 function panel(section,c){var d=c.data,e=c.esc,m=c.money,b=c.btn;if(section==='packages')return '<div class="rx-actions">'+b('package_sell','','تعاقد على باكج')+(d.can_manage?b('template','','تعريف باكج'):'')+'</div>'+table(c,['الباكج والمريض','الرصيد المالي','الزيارات','الإجراء'],(d.packages||[]).map(function(p){var done=Array.from(new Set(p.lines.map(function(l){return l.visit_no;}))).filter(function(n){return p.lines.filter(function(l){return l.visit_no===n;}).every(function(l){return +l.used>=+l.quantity;});}).length;return [e(p.name)+'<br>'+e(c.lookup('patients',p.patient_id)), 'قيمة التعاقد '+m(p.contract_price)+'<br>محصل ومخصص '+m(p.paid)+'<br>مطلوب حاليًا '+m(p.due)+'<br>باقي قيمة العقد '+m(Math.max(0,p.contract_price-p.funded)),'مكتمل الخدمات '+done+' / '+p.visits+'<br>الصلاحية '+e(p.expires_on),b('package-detail',p.id,'كشف الباكج')+b('collect-package',p.id,'تحصيل')];}));
 if(section!=='operations')return '';
 var tabs=[['summary','الحساب والفواتير'],['stock','المستلزمات والمخزون'],['shifts','الخزن والورديات'],['controls','التعاقدات والتصحيحات'],['followup','المتابعة والتواصل'],['reports','التقارير والتحليل']];if(d.can_review&&!d.can_manage)tabs.push(['review','المراجعة والاعتماد']);if(d.can_manage)tabs.push(['catalog','الإعدادات والعقود'],['review','المراجعة والاعتماد'],['journal','سجل القيود']);
 if(!tabs.some(function(t){return t[0]===active;}))active='summary';var html='<nav class="rx-subnav" aria-label="أقسام العمليات">'+tabs.filter(function(t){return !['catalog','review','journal'].includes(t[0]);}).map(function(t){return '<button type="button" class="btn '+((['catalog','review'].includes(active)?'controls':active==='journal'?'reports':active)===t[0]?'btn-primary':'')+'" data-rx-action="operations-tab" data-id="'+t[0]+'">'+t[1]+'</button>';}).join('')+'</nav>';
 if(window.SSMPDReceptionControls&&['controls','followup','reports'].includes(active))html+=window.SSMPDReceptionControls.panel(active,c);
-if(active==='summary'){html+='<div class="rx-actions">'+b('collect','','تسجيل تحصيل')+b('credit_apply','','استخدام رصيد المريض')+'</div>'+table(c,['ملف المريض','عليه الآن','له رصيد'],d.patients.map(function(p){return [e(p.file_no)+' — '+e(p.name),m(p.due),m(p.credit)];}));html+=table(c,['الفاتورة والزيارة','المريض','القيمة','الباقي','إجراء'],(d.invoices||[]).map(function(i){var visit=d.visits.find(function(v){return v.id===i.visit_id;});return [e(i.description)+'<br>'+(visit?'زيارة '+visit.visit_no:'قسط تعاقدي'),e(c.lookup('patients',i.patient_id)),m(i.amount),m(i.due),b('invoice-detail',i.id,'عرض البيان')+(+i.due>0?b('collect-invoice',i.id,'تحصيل'):'مسددة')];}));html+=table(c,['إيصال التحصيل','الطريقة','المبلغ','التاريخ','الإجراء'],(d.payments||[]).map(function(p){return [e(p.reference),e(method(p.method)),m(p.amount),c.stamp(p.created_at),b('receipt-detail',p.id,'عرض الإيصال')];}));}
+if(active==='summary'){html+='<div class="rx-actions">'+b('collect','','تسجيل تحصيل')+b('credit_apply','','استخدام رصيد المريض')+'</div>'+table(c,['ملف المريض','عليه الآن','له رصيد'],d.patients.map(function(p){return [e(p.file_no)+' — '+e(p.name),m(p.due),m(p.credit)];}));html+=table(c,['الفاتورة والزيارة','المريض','القيمة','الباقي','إجراء'],(d.invoices||[]).map(function(i){var visit=d.visits.find(function(v){return v.id===i.visit_id;});return [e(i.description)+'<br>'+(visit?'زيارة '+visit.visit_no:'قسط تعاقدي'),e(c.lookup('patients',i.patient_id)),m(i.amount),m(i.due),b('invoice-detail',i.id,'عرض البيان')+(i.visit_id&&window.SSMPDPatientInvoicePrint?b('visit-invoice-print',i.visit_id,'طباعة فاتورة الزيارة'):'')+(+i.due>0?b('collect-invoice',i.id,'تحصيل'):'مسددة')];}));html+=table(c,['إيصال التحصيل','الطريقة','المبلغ','التاريخ','الإجراء'],(d.payments||[]).map(function(p){return [(p.receipt_no?'<span dir="ltr">'+e(p.receipt_no)+'</span>'+(p.method!=='cash'?'<br><small>رقم العملية '+e(p.reference)+'</small>':''):e(p.reference)),e(method(p.method)),m(p.amount),c.stamp(p.created_at),b('receipt-detail',p.id,'عرض الإيصال')+(p.proof_path&&window.SSMPDPaymentProof?b('payment-proof',p.id,'صورة الإيصال'):'')];}));}
 if(active==='stock'){html+='<div class="rx-actions">'+b('transfer_request','','طلب تحويل مخزن')+b('count','','تسجيل جرد')+(d.can_manage?b('purchase','','إذن شراء'):'')+'</div>'+table(c,['المستلزم','سعر البيع للجمهور','التشغيلة / الصلاحية','المخزن','المتاح'],(d.stock||[]).map(function(s){var i=d.items.find(function(i){return i.id===s.item_id;});return [e(i&&i.name),m(i&&i.sale_price),e(s.number||'—')+' / '+e(s.expiry_date||'بدون صلاحية'),e(c.lookup('locations',s.location_id)),e(s.quantity)];}));html+=table(c,['إذن الشراء','الحالة','الإجراء'],(d.purchases||[]).map(function(p){return [e(p.reference)+' — '+e(c.lookup('suppliers',p.supplier_id)),e(p.status),p.status==='approved'&&p.lines.some(function(l){return +l.received<+l.quantity;})?b('receive_purchase',p.id,'استلام فعلي'):''];}));}
 if(active==='shifts'){html+='<div class="rx-actions">'+b('shift_open','','فتح وردية')+'</div>'+table(c,['الخزينة','الحالة','النتيجة','الإجراء'],(d.shifts||[]).map(function(s){return [e(c.lookup('registers',s.register_id)),e(s.status),s.status==='open'?'العد عند الإغلاق':('الفعلي '+m(s.counted)+' — الفرق '+m(s.difference)),s.status==='open'?b('shift_close',s.id,'إغلاق وعد النقدية'):s.status==='submitted'&&d.can_manage?b('shift_review',s.id,'مراجعة مستقلة'):''];}));}
 if(active==='catalog'){html+='<div class="rx-actions">'+[['item','مستلزم'],['location','مخزن'],['supplier','مورد'],['register','خزينة'],['device','جهاز'],['agreement','عقد أتعاب طبيب'],['member','صلاحيات التجربة']].map(function(x){return b(x[0],'','إضافة '+x[1]);}).join('')+'</div>';html+=table(c,['المستلزم','مرجع الشراء الأعلى','هامش على التكلفة','سعر البيع'],d.items.map(function(i){return [e(i.name),m(i.highest_cost),e(i.markup)+'%',m(i.sale_price)];}));html+=table(c,['الطبيب والخدمة','النسبة','الأساس','الحالة'],d.agreements.map(function(a){return [e(c.lookup('providers',a.provider_id))+' / '+e(a.service_code),e(a.rate)+'%',a.deduct_material_cost?'صافي الخدمة بعد تكلفة المشمول':'صافي الخدمة المنفذة',e(a.status)];}));}
@@ -29,7 +172,9 @@ function act(a,id,c){var d=c.data,e=c.esc,b=c.btn,m=c.money,f=c.field,s=c.select
 if(a==='operations-tab'){active=id;c.load();return true;}
 if(a==='patient-detail'){var pat=d.patients.find(function(p){return p.id===id;});info(c,'كشف ملف التجربة','<p>'+e(pat.file_no)+' — '+e(pat.name)+'</p>'+(pat.archive_patient_id?b('archive-open',pat.archive_patient_id,'فتح الملف الطبي بالأرشيف'):'')+'<p>عليه الآن '+m(pat.due)+' — له رصيد '+m(pat.credit)+'</p>'+table(c,['الزيارة','الحالة'],d.visits.filter(function(v){return v.patient_id===id;}).map(function(v){return [b('visit-detail',v.id,'زيارة '+v.visit_no),e(v.status)];})));return true;}
 if(a==='visit-detail'){var v=d.visits.find(function(x){return x.id===id;});info(c,'زيارة '+v.visit_no+' — '+c.lookup('patients',v.patient_id),'<p>ملف '+e(c.lookup('patients',v.patient_id,'file_no'))+'</p>'+table(c,['الخدمة','المبلغ','الحالة','الإجراء'],d.orders.filter(function(o){return o.visit_id===id;}).map(function(o){return [e(o.snapshot.name),m(o.price*o.quantity),e(o.status),o.status==='ordered'?b('execute',o.id,'تنفيذ وتسجيل الاستهلاك')+b('discount',o.id,'خصم')+b('order_cancel',o.id,'إلغاء الطلب')+b('quote',o.id,'تطبيق عقد جهة'):'تم التنفيذ'];}))+(v.status==='open'?b('order_add',id,'إضافة خدمة للزيارة')+b('visit_close',id,'إنهاء الزيارة'):''));return true;}
-if(a==='package-detail'){var p=d.packages.find(function(x){return x.id===id;});info(c,p.name,'<p>'+e(c.lookup('patients',p.patient_id))+' — '+e(p.terms)+'</p><p>قيمة العقد '+m(p.contract_price)+' · المحصل المخصص '+m(p.paid)+' · المستحق الآن '+m(p.due)+' · خدمات منفذة '+m(p.recognized)+'</p><p>رصيد المريض العام '+m((d.patients.find(function(x){return x.id===p.patient_id;})||{}).credit)+'؛ قد يشمل مبالغ لا تخص هذا الباكج.</p>'+table(c,['زيارة الباكج','الخدمة','المتاح','القيمة المخصصة'],p.lines.map(function(l){return [e(l.visit_no),e(l.snapshot.name),e(l.quantity-l.used)+' / '+e(l.quantity),m(l.allocated_value)];}))+b('collect-package',id,'تحصيل للباكج'));return true;}
+if(a==='visit-invoice-print'){window.SSMPDPatientInvoicePrint.print(c.workspace,id).catch(function(err){alert((err&&err.message)||'تعذر تجهيز الفاتورة');});return true;}
+if(a==='payment-proof'){var pp=(d.payments||[]).find(function(x){return x.id===id;});if(pp&&pp.proof_path)window.SSMPDPaymentProof.open(pp.proof_path).catch(function(){alert('تعذر فتح الصورة');});return true;}
+if(a==='package-detail'){var p=d.packages.find(function(x){return x.id===id;});info(c,p.name,'<p>'+e(c.lookup('patients',p.patient_id))+' — '+e(p.terms)+'</p><p>قيمة العقد '+m(p.contract_price)+' · المحصل المخصص '+m(p.paid)+' · المستحق الآن '+m(p.due)+' · خدمات منفذة '+m(p.recognized)+'</p><p>رصيد المريض العام '+m((d.patients.find(function(x){return x.id===p.patient_id;})||{}).credit)+'؛ قد يشمل مبالغ لا تخص هذا الباكج.</p>'+table(c,['زيارة الباكج','الخدمة','المتاح','القيمة المخصصة'],p.lines.map(function(l){return [e(l.visit_no),e(l.snapshot.name),e(l.quantity-l.used)+' / '+e(l.quantity),m(l.allocated_value)];}))+(d.split_receipts||[]).filter(function(receipt){return receipt.package_id===id;}).map(function(receipt){return b('split-receipt',receipt.id,'إيصال '+m(receipt.total));}).join('')+b('collect-package',id,'تحصيل للباكج')+(p.status==='active'&&window.SSMPDReceptionControls?b('request-package-cancel',id,'طلب إيقاف وتسوية'):'')+(d.split_receipts_enabled?b('collect-split',id,'تحصيل بطريقتين'):'')+(d.split_receipts_enabled&&d.can_manage&&p.status==='active'&&p.payment_schedule==='fixed'&&(p.installments||[]).some(function(line){return line.plan_visit_no>0&&!line.invoice_id&&line.due_on>cairoDate();})?b('revise-schedule',id,'تعديل تواريخ الأقساط'):'')+(d.plan_amendments_enabled&&d.can_manage&&p.status==='active'&&p.payment_schedule==='visit'?b('amend-plan',id,'تعديل السعر والزيارات'):'')+(d.plan_amendments_enabled&&d.can_manage&&p.status==='active'&&(p.lines||[]).some(function(line){return line.snapshot.name.includes('ليزر')&&!Number(line.used);})?b('amend-laser',id,'تعديل طريقة حساب زيارة ليزر'):''));return true;}
 if(a==='item')form(c,'تعريف مستلزم',f('code','كود المستلزم')+f('name','الاسم')+f('unit','الوحدة')+f('markup','نسبة الزيادة على تكلفة الشراء %','number','0','required min="0" step="0.0001"')+s('track_expiry','له صلاحية',[['true','نعم'],['false','لا']]),a,function(v){v.track_expiry=v.track_expiry==='true';return v;});
 else if(['location','supplier'].includes(a))form(c,a==='location'?'تعريف مخزن':'تعريف مورد',f('name','الاسم'),a);
 else if(a==='register')form(c,'إعداد خزينة',f('name','اسم الخزينة')+s('direction','نوع الحركة',[['receive','استلام فقط'],['pay','صرف فقط'],['both','صرف واستلام']]),a);
@@ -40,7 +185,7 @@ else if(['agreement_review','purchase_review','discount_review'].includes(a))rev
 else if(a==='purchase')listEditor(c,'إذن شراء',s('supplier_id','المورد',rows(c,'suppliers'))+f('reference','رقم فاتورة / إيصال المورد')+f('note','ملاحظات','text','',' '),a,null,[{key:'item_id',label:'المستلزم',options:rows(c,'items')},{key:'quantity',label:'الكمية',type:'number',extra:'required min="0.001" step="0.001"'},{key:'unit_cost',label:'سعر شراء الوحدة',type:'number',extra:'required min="0" step="0.0001"'}]);
 else if(a==='receive_purchase'){var purchase=d.purchases.find(function(p){return p.id===id;});listEditor(c,'استلام فعلي — '+purchase.reference,s('location_id','مخزن الاستلام',rows(c,'locations')),a,function(v){return {id:id,location_id:v.location_id};},[{key:'line_id',label:'البند',options:purchase.lines.filter(function(l){return +l.received<+l.quantity;}).map(function(l){return [l.id,c.lookup('items',l.item_id)+' — متبقٍ '+(l.quantity-l.received)];})},{key:'quantity',label:'الكمية المستلمة',type:'number',extra:'required min="0.001" step="0.001"'},{key:'lot_number',label:'رقم التشغيلة',extra:' '},{key:'expiry_date',label:'الصلاحية إن وجدت',type:'date',extra:' '}]);}
 else if(a==='template')listEditor(c,'تعريف باكج بعدد زيارات وخدمات محددة',f('code','الكود')+f('name','اسم الباكج')+f('price','إجمالي سعر الباكج','number','','required min="0.01" step="0.01"')+f('visits','عدد الزيارات','number','2','required min="1" max="365" step="1"')+f('validity_days','الصلاحية بالأيام','number','90','required min="1" max="3650" step="1"')+f('terms','شروط المشمول والإلغاء'),a,null,[{key:'visit_no',label:'رقم الزيارة',type:'number',extra:'required min="1" step="1"'},{key:'service_id',label:'الخدمة',options:rows(c,'services')},{key:'quantity',label:'العدد في الزيارة',type:'number',extra:'required min="0.001" step="0.001"'}]);
-else if(a==='package_sell')listEditor(c,'تعاقد باكج — الأقساط تذكير حتى اعتماد استحقاقها',patient(c)+s('template_id','الباكج',rows(c,'templates',function(p){return p.name+' — '+m(p.price);})),a,function(v){return {patient_id:v.patient_id,template_id:v.template_id};},[{key:'due_on',label:'تاريخ القسط',type:'date'},{key:'amount',label:'المبلغ',type:'number',extra:'required min="0.01" step="0.01"'}],[]);
+else if(a==='package_sell'){var packageForm=listEditor(c,'تعاقد باكج — الأقساط تذكير حتى اعتماد استحقاقها',patient(c)+s('template_id','الباكج',rows(c,'templates',function(p){return p.name+' — '+m(p.price)+(p.variable_visits?' للزيارة الواحدة':'');}))+'<fieldset data-rx-variable hidden><legend>زيارات تحددها المريضة</legend><label>عدد الزيارات<input type="number" min="1" max="365" step="1" name="var_visits"></label><label>المدة بالأيام (اختياري)<input type="number" min="1" max="3650" step="1" name="var_days"></label><output data-rx-variable-total></output></fieldset>'+'<fieldset><legend>جدول التقويم بتواريخ ثابتة</legend><label><input type="checkbox" data-rx-orthodontic> احتساب مقدم ٢٥٪ والأقساط على عدد زيارات الباكج</label><label>تاريخ المقدم المتفق عليه<input type="date" data-rx-start></label><label>السعر المتفق عليه<input type="number" min="1" step="0.01" name="ortho_price"></label><label>عدد الزيارات<input type="number" min="1" max="365" name="ortho_visits"></label><label>المدة بالأيام<input type="number" min="1" max="3650" name="ortho_days"></label><label>الاستحقاق<select name="ortho_schedule"><option value="visit">عند الزيارة</option><option value="fixed">بتواريخ ثابتة</option></select></label><output></output><button type="button" class="btn">إنشاء جدول الدفعات</button></fieldset>',a,function(v){var terms=packageForm.orthodonticTerms(),visitTerms=packageForm.visitTerms();return {patient_id:v.patient_id,template_id:v.template_id,...(terms?{orthodontic_terms:terms}:{}),...(visitTerms?{visit_terms:visitTerms}:{})};},[{key:'due_on',label:'تاريخ القسط',type:'date'},{key:'amount',label:'المبلغ',type:'number',extra:'required min="0.01" step="0.01"'}],[]);attachOrthodonticSchedule(packageForm,d.templates||[],m);attachVariableVisits(packageForm,d.templates||[],m);}
 else if(a==='installment_bill')form(c,'إثبات قسط مستحق دون شرط',f('evidence','مرجع النص التعاقدي المؤيد لحق التحصيل')+s('unconditional','راجع طبيعة الحق',[['true','حق غير مشروط ومعتمد']]),a,function(v){return {id:id,evidence:v.evidence,unconditional:true};});
 else if(a==='order_add')form(c,'إضافة خدمة إلى الزيارة',s('service_id','الخدمة',rows(c,'services'))+s('provider_id','الطبيب',rows(c,'providers'))+f('quantity','العدد','number','1','required min="0.001" step="0.001"'),a,function(v){return {...v,visit_id:id};});
 else if(a==='visit_close')form(c,'إنهاء الزيارة','<p>راجع تنفيذ أو إلغاء كل الخدمات المطلوبة أولًا. يحتفظ حساب المريض بأي مبلغ غير مسدد بعد إنهاء الزيارة.</p>'+f('reason','سبب إنهاء الزيارة دون خدمة منفذة إن وجد','text','',' '),a,function(v){return {...v,id:id};});
@@ -48,7 +193,41 @@ else if(a==='order_cancel')form(c,'إلغاء خدمة لم تنفذ',reason(c),
 else if(a==='discount')form(c,'خصم على خدمة منفردة',f('percent','نسبة الخصم %','number','0','required min="0" max="100" step="0.01"')+reason(c),a,function(v){return {...v,id:id};});
 else if(a==='service'){listEditor(c,'خدمة ونسخة سعر ومكونات',f('code','كود الخدمة')+f('name','الاسم')+f('department','القسم')+f('price','سعر الخدمة','number','','required min="0" step="0.01"')+f('minutes','الدقائق','number','30','required min="5" max="480" step="1"')+s('requires_device','يتطلب جهازًا',[['false','لا'],['true','نعم']]),a,function(v){return {code:v.code,name:v.name,department:v.department,price:v.price,minutes:v.minutes,requires_device:v.requires_device==='true'};},[{key:'item_id',label:'المستلزم',options:rows(c,'items')},{key:'quantity',label:'كمية لكل وحدة خدمة',type:'number',extra:'required min="0.001" step="0.001"'},{key:'included',label:'المستلزم',options:[['true','مشمول — لا يضاف للفاتورة'],['false','إضافي بسعر البيع']]}],[]);}
 else if(a==='execute'){var o=d.orders.find(function(x){return x.id===id;});r=listEditor(c,'تنفيذ '+o.snapshot.name+' وتأكيد الاستهلاك الفعلي','<p>السعر المحفوظ '+m(o.price*o.quantity)+'؛ المشمول لا يضاف لسعر الخدمة مرة أخرى. أي إضافة تسعّر بسعر البيع الحالي قبل التأكيد.</p>'+s('provider_id','الطبيب المنفذ',rows(c,'providers'))+s('location_id','مخزن الصرف',rows(c,'locations'))+f('material_note','سبب اختلاف الاستهلاك عن المكونات إن وجد','text','',' ')+s('additional_confirmed','الموافقة على الإضافات',[['false','لا توجد موافقة على إضافات'],['true','وافق المريض على الكميات وأسعار البيع المبينة']])+'<label>الجهاز إن استخدم<select name="device_id"><option value="">بدون جهاز</option>'+rows(c,'devices').map(function(x){return '<option value="'+x[0]+'">'+e(x[1])+'</option>';}).join('')+'</select></label>'+f('minutes','دقائق تشغيل الجهاز إن استخدم','number',o.snapshot.minutes,'min="1" step="1"')+f('meter_before','قراءة قبل','number','','min="0" step="0.001"')+f('meter_after','قراءة بعد','number','','min="0" step="0.001"'),a,function(v){var out={...v,id:id,additional_confirmed:v.additional_confirmed==='true'};if(!out.device_id){delete out.device_id;delete out.meter_before;delete out.meter_after;}return out;},[{key:'item_id',label:'المستلزم — سعر بيع الوحدة',options:rows(c,'items',function(i){return i.name+' — '+m(i.sale_price);})},{key:'quantity',label:'الكمية الفعلية',type:'number',extra:'required min="0" step="0.001"'}],(o.snapshot.bom||[]).map(function(x){return {...x,quantity:x.quantity*o.quantity};}));r.querySelector('[name="provider_id"]').value=o.provider_id;r.querySelector('[name="location_id"]').required=false;}
-else if(['collect','collect-invoice','collect-package'].includes(a)){var fixed=a==='collect-invoice'?d.invoices.find(function(x){return x.id===id;}):a==='collect-package'?d.packages.find(function(x){return x.id===id;}):null;form(c,'تسجيل تحصيل',fixed?'<p>ملف '+e(c.lookup('patients',fixed.patient_id,'file_no'))+' — '+e(c.lookup('patients',fixed.patient_id))+'</p>':patient(c), 'collect',function(v){return v;});r=document.querySelector('.rx-modal');var fields=r.querySelector('form');var sharedPayments=window.SSMPDFinanceCash&&window.SSMPDFinanceCash.helpers;fields.insertAdjacentHTML('afterbegin',sharedPayments?sharedPayments.paymentFields({amount:fixed&&fixed.due>0?fixed.due:'',shifts:rows(c,'shifts',function(x){return c.lookup('registers',x.register_id)+' — '+x.status;})}):(f('amount','المبلغ','number',fixed&&fixed.due>0?fixed.due:'','required min="0.01" step="0.01"')+s('method','طريقة السداد',[['cash','نقدي'],['pos','فيزا'],['instapay','إنستا باي'],['bank','تحويل بنكي'],['wallet','محفظة إلكترونية']])+f('reference','رقم الإيصال / مرجع العملية')+'<label>وردية الكاش أو الفيزا<select name="shift_id"><option value="">اختر عند الكاش أو الفيزا</option>'+rows(c,'shifts',function(x){return c.lookup('registers',x.register_id)+' — '+x.status;}).map(function(x){return '<option value="'+x[0]+'">'+e(x[1])+'</option>';}).join('')+'</select></label>'));if(sharedPayments)sharedPayments.bindPaymentFields(fields);if(fixed){[['patient_id',fixed.patient_id],[a==='collect-invoice'?'invoice_id':'package_id',fixed.id]].forEach(function(x){var input=document.createElement('input');input.type='hidden';input.name=x[0];input.value=x[1];fields.appendChild(input);});}else fields.insertAdjacentHTML('afterbegin','<p>التحصيل العام يضيف رصيدًا للمريض؛ لتحصيل فاتورة أو باكج افتحهما أولًا.</p>');}
+else if(a==='request-package-cancel'&&window.SSMPDReceptionControls){
+ return window.SSMPDReceptionControls.act(a,id,c);
+}
+else if(a==='amend-laser'){
+ var laserPlan=d.packages.find(function(item){return item.id===id;});
+ if(!laserPlan||!d.can_manage)return false;
+ var unused=laserPlan.lines.filter(function(line){return line.snapshot.name.includes('ليزر')&&!Number(line.used);});
+ var services=d.services.filter(function(service){return service.name.includes('ليزر');});
+ form(c,'تعديل طريقة حساب زيارة ليزر',
+  s('entitlement_id','الزيارة',unused.map(function(line){return [line.id,line.visit_no+' — '+line.snapshot.name];}))+
+  s('service_id','الخدمة الجديدة',services.map(function(service){return [service.id,service.name];}))+
+  f('quantity','الكمية المتفق عليها','number',1,'required min="1" step="1"')+
+  f('reason','سبب التعديل'),'amend_laser_visit');
+}
+else if(a==='amend-plan'){
+ var amendable=d.packages.find(function(item){return item.id===id;});
+ if(!amendable||!d.can_manage)return false;
+ form(c,'تعديل اتفاق التقويم والزيارات المتبقية',
+  f('price','السعر المتفق عليه','number',amendable.contract_price,'required min="1" step="0.01"')+
+  f('visits','عدد الزيارات','number',amendable.visits,'required min="1" max="365" step="1"')+
+  f('reason','سبب التعديل'),'amend_plan',function(values){return {...values,package_id:id};});
+}
+else if(a==='revise-schedule'){
+ var plan=d.packages.find(function(item){return item.id===id;});
+ if(plan&&d.can_manage&&plan.payment_schedule==='fixed')reviseSchedule(c,plan);
+}
+else if(a==='split-receipt'){
+ var receipt=(d.split_receipts||[]).find(function(row){return row.id===id;});
+ if(receipt)info(c,'إيصال التحصيل','<p>رقم الإيصال '+e(receipt.id)+'</p><p>الإجمالي '+m(receipt.total)+'</p>');
+}
+else if(a==='collect-split'){
+ var splitPackage=d.packages.find(function(item){return item.id===id;});
+ if(splitPackage&&d.split_receipts_enabled)splitReceipt(c,splitPackage);
+}
+else if(['collect','collect-invoice','collect-package'].includes(a)){var fixed=a==='collect-invoice'?d.invoices.find(function(x){return x.id===id;}):a==='collect-package'?d.packages.find(function(x){return x.id===id;}):null;var position=a==='collect-package'&&fixed?packagePaymentPosition(fixed,cairoDate(),(d.attended_package_visits||{})[fixed.id]||[]):null;var suggested=position?position.suggested:fixed&&fixed.due>0?fixed.due:'';var balance=position?'<p data-rx-package-balance>المتبقي من الخطة '+m(position.remaining)+' · المتأخر حسب الجدول '+m(position.overdue)+'</p>':'';var proof=window.SSMPDPaymentProof;c.modal('تسجيل تحصيل',fixed?'<p>ملف '+e(c.lookup('patients',fixed.patient_id,'file_no'))+' — '+e(c.lookup('patients',fixed.patient_id))+'</p>'+balance:patient(c),function(v,k){return (proof?proof.attach(c.workspace,v):Promise.resolve(v)).then(function(x){delete x.proof_file;return c.command('collect',x,k);});});r=document.querySelector('.rx-modal');var fields=r.querySelector('form');var sharedPayments=window.SSMPDFinanceCash&&window.SSMPDFinanceCash.helpers;fields.insertAdjacentHTML('afterbegin',sharedPayments?sharedPayments.paymentFields({amount:suggested||'',shifts:rows(c,'shifts',function(x){return c.lookup('registers',x.register_id)+' — '+x.status;})}):(f('amount','المبلغ','number',suggested||'','required min="0.01" step="0.01"')+s('method','طريقة السداد',[['cash','نقدي'],['pos','فيزا'],['instapay','إنستا باي'],['bank','تحويل بنكي'],['wallet','محفظة إلكترونية']])+f('reference','رقم الإيصال / مرجع العملية')+'<label>وردية الكاش أو الفيزا<select name="shift_id"><option value="">اختر عند الكاش أو الفيزا</option>'+rows(c,'shifts',function(x){return c.lookup('registers',x.register_id)+' — '+x.status;}).map(function(x){return '<option value="'+x[0]+'">'+e(x[1])+'</option>';}).join('')+'</select></label>'));if(sharedPayments)sharedPayments.bindPaymentFields(fields);if(proof&&fields.elements.method){fields.elements.method.closest('label').insertAdjacentHTML('afterend',proof.field());proof.bind(fields);}if(fixed){[['patient_id',fixed.patient_id],[a==='collect-invoice'?'invoice_id':'package_id',fixed.id]].forEach(function(x){var input=document.createElement('input');input.type='hidden';input.name=x[0];input.value=x[1];fields.appendChild(input);});}else fields.insertAdjacentHTML('afterbegin','<p>التحصيل العام يضيف رصيدًا للمريض؛ لتحصيل فاتورة أو باكج افتحهما أولًا.</p>');}
 else if(a==='credit_apply')form(c,'استخدام رصيد سابق للمريض',s('invoice_id','الفاتورة',rows(c,'invoices',function(i){return c.lookup('patients',i.patient_id)+' — '+i.description+' — باقي '+m(i.due);}))+f('amount','المبلغ','number','','required min="0.01" step="0.01"'),a);
 else if(a==='shift_open')form(c,'فتح وردية',s('register_id','الخزينة',rows(c,'registers')),a);
 else if(a==='shift_close')form(c,'إغلاق الوردية وعد النقدية الفعلية',f('counted','الكاش المعدود فعليًا','number','','required min="0" step="0.01"'),a,function(v){return {...v,id:id};});
