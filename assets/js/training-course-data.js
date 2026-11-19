@@ -355,7 +355,7 @@
       }
     ],
     sources: [
-      { title: 'GAHAR — معايير اعتماد منشآت الرعاية الصحية الخارجية (يُرجع إلى الإصدار الساري على موقع الهيئة)', url: 'https://www.gahar.gov.eg/' },
+      { title: 'معايير GAHAR للعيادات الخارجية، إصدار 2022 (ساري من أبريل 2022)', url: 'https://admin.gahar.gov.eg/upload/amb-final-2.pdf' },
       { title: 'WHO Patient Safety Curriculum Guide: Multi-professional Edition', url: 'https://www.who.int/publications/i/item/9789241501958' },
       { title: 'AHRQ TeamSTEPPS 3.0 Curriculum Materials', url: 'https://www.ahrq.gov/teamstepps-program/curriculum/index.html' },
       { title: 'CDC Guide to Infection Prevention for Outpatient Settings: Minimum Expectations for Safe Care (version 2.3, 2016)', url: 'https://stacks.cdc.gov/view/cdc/257020' },

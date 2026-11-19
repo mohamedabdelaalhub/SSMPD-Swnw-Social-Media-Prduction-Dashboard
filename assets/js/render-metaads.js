@@ -240,7 +240,7 @@
 
   function renderAll(el) {
     var filtered = applyFilters(adRows);
-    var html = "<div class=\"section\"><h3> <!--ssmpd-i18n:%D8%A5%D8%B9%D9%84%D8%A7%D9%86%D8%A7%D8%AA%20Meta%20Ads-->إعلانات Meta Ads</h3>" + filterBarHtml() +
+    var html = '<div class="section" id="ma-roi"></div>' + "<div class=\"section\"><h3> <!--ssmpd-i18n:%D8%A5%D8%B9%D9%84%D8%A7%D9%86%D8%A7%D8%AA%20Meta%20Ads-->إعلانات Meta Ads</h3>" + filterBarHtml() +
       '<div id="ma-kpis">' + kpiSectionHtml(computeKpis(filtered)) + '</div></div>' +
       '<div class="section"><h3>الأداء حسب التخصص</h3>' + specialtyTableHtml() + '</div>' +
       '<div class="section"><h3>أداء الكرييتف (حسب Creative Group)</h3>' + creativeTableHtml() + '</div>' +
@@ -251,6 +251,7 @@
       '<p style="font-size:12px;color:var(--c-muted);">الربط بيتم يدويًا من مودال المادة نفسها (تابات إنتاج المحتوى/إدارة المحتوى/التصميم — قسم «أداء إعلانات Meta»). ' +
       'لما مادة تبقى مرتبطة، اسمها بيظهر في عمود «المحتوى المرتبط» بجداول الكرييتف والإعلانات فوق — دوس عليه للفتح.</p></div>';
     el.innerHTML = html;
+    if (window.SSMPDAdsRoi) window.SSMPDAdsRoi.mount(document.getElementById("ma-roi"));
     wireFilters();
     wireTokenBox();
     wireGotoContentButtons(el);

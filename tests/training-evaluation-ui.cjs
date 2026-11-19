@@ -11,7 +11,7 @@ const w = dom.window;
 const calls = [];
 const evil = '<img src=x onerror="window.__xss=1">';
 let role = 'reception';
-const state = { completed: {}, attempt: null, list: [] };
+const state = { completed: {}, attempt: null, list: [], saves: [], sheet: null, decided: null };
 function questions() {
   return Array.from({ length: 30 }, (_, i) => ({ id: 'q' + i, text: 'سؤال تجريبي ' + (i + 1), options: ['c', 'a', 'd', 'b'].map((id) => ({ id, text: 'اختيار ' + id })) }));
 }
@@ -31,6 +31,9 @@ const MOCK = {
   training_people: () => [{ id: 'p1', name: 'موظف تجريبي ١' }, { id: 'p2', name: 'موظف تجريبي ٢' }],
   training_assign: () => 'new-id',
   training_cancel_assignment: () => null,
+  training_interview_sheet: () => state.sheet,
+  training_save_interview_score: (a) => { state.saves.push(a); return {}; },
+  training_decide: (a) => { if (a.p_final !== 'ready' && !a.p_override_reason) throw { message: 'training: a written reason is required to change the suggested decision' }; state.decided = a; return {}; },
   training_bank_view: (a) => a.p_bank === 'jobs' ? { bank: 'jobs', meta: null, groups: [] } : { bank: 'manager', meta: { version: 'TEST', questions_per_attempt: 30, duration_minutes: 40 },
     groups: [{ code: 'OPS', name: 'التشغيل', quota: 5, questions: [{ id: 'q1', text: evil, options: [{ id: 'a', text: 'أنسب', points: 2, critical: false }, { id: 'b', text: 'خطر', points: 0, critical: true }] }] }] },
   training_exam_result: () => ({ status: 'submitted', trainee_name: evil, track_name: 'مدير فرع', submitted_at: new Date().toISOString(), auto_submitted: false, used_seconds: 1500, blur_count: 2, points: 42, max_points: 60, percent: 70, answered: 29, total: 30, risk_flags: 1, grade: 'medium',
@@ -143,6 +146,50 @@ const row = (o) => Object.assign({ id: 'A1', track: 'branch_manager', track_name
   await w.SSMPDTrainingEvaluation.render($('#v'));
   for (let i = 0; i < 4; i++) await tick();
   assert(!$('[data-bankview]'), 'non-owner has no bank button');
-  console.log('PASS training evaluation UI: course gate, 8 modules, exam order/save/blur/submit, no key or score in trainee DOM, owner assign/cancel validation, owner result view (grade, weak competencies, choice vs best), trainee sees no grade, owner-only bank pages, escaping.');
+  // PR 5: reviewer scores, owner decision needs reason when overriding
+  state.sheet = { status: 'interviewing', trainee_name: evil, track_name: 'مدير فرع', can_score: true,
+    content: { version: 'T', scale: [{ score: 1, description: 'خطر' }], competency_levels: [],
+      questions: [{ id: 'iq1', axis: 'الدور', competency_code: 'ROLE', text: 'سؤال مقابلة', listen_for: ['أ'], red_flags: ['ب'], follow_up: 'ج' }],
+      roleplays: [{ id: 'rp1', title: 'موقف', competency_code: 'LEAD', candidate_card: 'بطاقة', reviewer_script: 'نص', checklist: ['سلوك ١', 'سلوك ٢'], red_flags: [] }] },
+    scores: [{ item_type: 'roleplay', item_id: 'rp1', score: 4, note: '', blocking: false, checklist: [1] }],
+    summary: { complete: true, exam_percent: 90, interview_avg: 5, roleplay_avg: 4, interview_scored: 1, interview_total: 1, roleplay_scored: 1, roleplay_total: 1, result: 92, suggested: 'ready', exam_risk_flags: 0, blocking_flags: 0, weaknesses: [] } };
+  w.SSMPDAuth.currentAdmin = { id: 'r', role: 'reception' };
+  state.list = [row({ relation: 'reviewer', status: 'interviewing', exam_status: 'submitted', trainee_name: 'موظف' })];
+  await w.SSMPDTrainingEvaluation.render($('#v'));
+  for (let i = 0; i < 4; i++) await tick();
+  await click('[data-interview="A1"]');
+  assert(!w.__xss && !$('#v img'), 'sheet escapes');
+  assert(!$('[data-approve]'), 'reviewer cannot approve');
+  $('.te-score[data-item="iq1"] [data-note]').value = 'اقتباس';
+  await click('.te-score[data-item="iq1"] [data-score="3"]');
+  let sv = state.saves.pop();
+  assert(sv.p_item_type === 'question' && sv.p_item_id === 'iq1' && sv.p_score === 3 && sv.p_note === 'اقتباس' && sv.p_blocking === false);
+  const cb = $('.te-rp [data-check="0"]'); cb.checked = true; cb.dispatchEvent(new w.Event('change'));
+  for (let i = 0; i < 6; i++) await tick();
+  sv = state.saves.pop();
+  assert(sv.p_item_type === 'roleplay' && sv.p_score === 4 && JSON.stringify(sv.p_checklist) === '[0,1]', 'role-play checklist saved with current score');
+  w.SSMPDAuth.currentAdmin = { id: 'own', role: 'super_admin' };
+  state.list = [row({ relation: 'owner', status: 'interviewing', exam_status: 'submitted', trainee_name: 'موظف' })];
+  await w.SSMPDTrainingEvaluation.render($('#v'));
+  for (let i = 0; i < 4; i++) await tick();
+  await click('[data-interview="A1"]');
+  $('[data-decide] [name=final]').value = 'not_ready';
+  await click('[data-approve]');
+  assert(/سبب تعديل/.test($('[data-decide] .te-err').textContent) && !state.decided, 'override needs a reason');
+  $('[data-decide] [name=reason]').value = 'سبب';
+  await click('[data-approve]');
+  assert(state.decided && state.decided.p_final === 'not_ready' && state.decided.p_override_reason === 'سبب');
+  // course preview for anyone: 8 modules readable, nothing recorded
+  const before = calls.length;
+  await w.SSMPDTrainingEvaluation.render($('#v'));
+  for (let i = 0; i < 4; i++) await tick();
+  await click('[data-preview]');
+  assert.strictEqual(w.document.querySelectorAll('.te-module').length, 8);
+  await click('[data-mod="2"]');
+  assert(!$('[data-done]') && $('.te-article'), 'preview has no completion button');
+  await click('[data-back]');
+  assert($('[data-preview]') === null && w.document.querySelectorAll('.te-module').length === 8, 'back to preview list');
+  assert(!calls.slice(before).some((c) => c[0] === 'training_complete_module'), 'preview records nothing');
+  console.log('PASS training evaluation UI: course gate, 8 modules, exam order/save/blur/submit, no key or score in trainee DOM, owner assign/cancel validation, owner result view (grade, weak competencies, choice vs best), trainee sees no grade, owner-only bank pages, interview scoring (note/blocking/checklist), owner-only decision with override reason, escaping.');
   process.exit(0);
 })().catch((e) => { console.error(e); process.exit(1); });

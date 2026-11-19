@@ -1,13 +1,23 @@
-/* SSMPD — تاب «التقارير» (الموجة الأولى): خمس تقارير قراءة فقط من دوال القاعدة report_*.
+/* SSMPD — تاب «التقارير» (الموجة الأولى والتانية): تقارير قراءة فقط من دوال القاعدة report_*.
    الصلاحية بتتقرر من السيرفر (report_catalog) — الواجهة بس بتعرض. المرضى بيظهروا برقم الملف بس.
    جزء «صلاحيات التقارير» (للمالك) بيتركّب في لوحة التحكم عن طريق mountAccess. */
 (function () {
   "use strict";
 
-  var AREAS = [["operations", "التشغيل"], ["cash", "الخزنة والإيرادات"], ["doctors", "الدكاترة"]];
+  var AREAS = [["operations", "التشغيل"], ["cash", "الخزنة والإيرادات"], ["doctors", "الدكاترة"], ["insurance", "التأمين والتعاقدات"], ["statements", "القوائم المالية والضرائب"], ["stock", "المخزن والصيدلية"], ["people", "الموظفين"], ["marketing", "التسويق والتارجت"]];
   var ACCESS_ROLES = ["general_manager", "financial_manager", "accountant", "reception", "customer_service", "page_manager", "nursing", "head_nursing", "sono_doctor"];
   var SHIFT_STATUS = { open: "مفتوحة", submitted: "اتقفلت — مستنية مراجعة", reviewed: "اتراجعت" };
+  var REQ_STATUS = { pending: "مستني موافقة", approved: "اتوافق عليه", rejected: "اترفض" };
+  var PKG_STATUS = { active: "شغالة", frozen: "متجمدة", closed: "مقفولة" };
+  var KIND_LABELS = { discount: "خصم", refund: "مرتجع", credit_note: "إشعار دائن", service_void: "إلغاء خدمة", package_cancel: "إلغاء باقة",
+    method_fix: "تصحيح طريقة دفع", claim_contractual: "تسوية تعاقدية (تأمين)", claim_loss: "خسارة مطالبة", finance_refund: "مرتجع (الحسابات)", finance_void: "إلغاء فاتورة (الحسابات)" };
   var SOURCE_LABELS = { doctor_fee: "استحقاق خدمة", doctor_payout: "صرف", doctor_contractual: "تسوية", doctor_credit_note: "تسوية" };
+  var CLAIM_KIND = { claim_correction: "اترجعت للتصحيح", claim_contractual: "تخفيض تعاقدي", claim_loss: "إعدام (خسارة)", claim_payment: "تحصيل", claim_submit: "تقديم" };
+  var ENTITY_KIND = { insurer: "تأمين / نقابة", discount: "جهة خصم", referral: "جهة تحويل" };
+  var SECTION = { revenue: "الإيرادات", cost_of_services: "تكلفة الخدمات", gna: "مصروفات إدارية وعمومية", other_expense: "مصروفات أخرى",
+    asset: "الأصول", liability: "الالتزامات", equity: "حقوق الملكية", operating: "تشغيلي", investing: "استثماري", financing: "تمويلي" };
+  var SOURCE_NAMES = { whatsapp: "واتساب", messenger: "ماسنجر", instagram: "إنستجرام", facebook_form: "فورم فيسبوك", phone: "تليفون", clinic: "في العيادة",
+    doctor_referral: "تحويل دكتور", unknown: "مش معروف", walk_in: "حضور مباشر" };
   var EMPTY = "لسه مفيش بيانات في الفترة دي";
   var state = null;
 
@@ -35,7 +45,7 @@
   function errMsg(e) { return (e && e.message) || "حصل خطأ، جرّب تاني"; }
 
   // ── تعريف التقارير ────────────────────────────────────────────────────────────────────────────
-  var C = function (k, l, t) { return { k: k, l: l, t: t || "text" }; };
+  var C = function (k, l, t, map) { return { k: k, l: l, t: t || "text", map: map }; };
   var DEFS = {
     cash_closing: {
       sub: "الورديات اللي اتقفلت على خزنة الاستقبال، وفرق العد عن المتوقع.",
@@ -99,6 +109,399 @@
           { l: "التسويات", v: money(t.adjustments) }, { l: "المصروف", v: money(t.paid) }];
       }
     },
+    cashier_variance: {
+      sub: "فرق العد لكل كاشير: العجز والزيادة وعدد الورديات.",
+      range: true,
+      cols: [C("cashier", "الكاشير"), C("shifts", "ورديات", "int"), C("expected", "المتوقع", "money"), C("counted", "المعدود", "money"),
+        C("short_total", "إجمالي العجز", "diff"), C("over_total", "إجمالي الزيادة", "money"), C("net_difference", "صافي الفرق", "diff"),
+        C("short_count", "ورديات فيها عجز", "int"), C("worst_short", "أكبر عجز", "diff")],
+      totalKeys: { shifts: 1, expected: 1, counted: 1, short_total: 1, over_total: 1, net_difference: 1, short_count: 1 },
+      load: function (f) { return rpc("report_cashier_variance", { p_from: f.from, p_to: f.to, p_branch: f.branch || null }); },
+      tiles: function (d) {
+        var t = d.totals || {};
+        return [{ l: "صافي الفرق", v: money(t.net_difference), hero: true, sub: fmtNum(t.shifts) + " وردية" },
+          { l: "إجمالي العجز", v: money(t.short_total), neg: num(t.short_total) < 0, sub: fmtNum(t.short_count) + " وردية" },
+          { l: "إجمالي الزيادة", v: money(t.over_total) }, { l: "المعدود", v: money(t.counted) }];
+      }
+    },
+    adjustments_log: {
+      sub: "كل خصم ومرتجع وإلغاء وتسوية: مين طلبه ومين وافق عليه.",
+      range: true,
+      cols: [C("day", "اليوم", "date"), C("branch", "الفرع"), C("kind", "النوع", "status", KIND_LABELS), C("amount", "القيمة", "money"), C("reason", "السبب"),
+        C("requested_by", "طلبه"), C("reviewed_by", "راجعه"), C("status", "الحالة", "status", REQ_STATUS)],
+      totalKeys: { amount: 1 },
+      load: function (f) { return rpc("report_adjustments_log", { p_from: f.from, p_to: f.to, p_branch: f.branch || null, p_kind: null }); },
+      tiles: function (d) {
+        var t = d.totals || {}, k = (d.by_kind || [])[0];
+        return [{ l: "إجمالي التعديلات", v: money(t.amount), hero: true, sub: fmtNum(t.count) + " عملية" },
+          { l: "اللي اتوافق عليه", v: money(t.approved) }, { l: "مستني موافقة", v: fmtNum(t.pending), u: "طلب" },
+          { l: "أكبر نوع", v: k ? (KIND_LABELS[k.kind] || k.kind) : "—", sub: k ? money(k.amount) : "" }];
+      }
+    },
+    patient_balances: {
+      sub: "فلوس محفوظة للمرضى (مقدمات وعرابين) وفلوس على المرضى لسه متحصلتش.",
+      range: false, dayLabel: "لحد يوم", dayDefault: "today",
+      cols: [C("branch", "الفرع"), C("patient_file", "رقم الملف"), C("credit_held", "مقدم محفوظ له", "money"), C("receivable", "مديونية عليه", "money"),
+        C("last_movement", "آخر حركة", "date"), C("age_days", "من (يوم)", "int")],
+      totalKeys: { credit_held: 1, receivable: 1 },
+      load: function (f) { return rpc("report_patient_balances", { p_as_of: f.day || null, p_branch: f.branch || null }); },
+      tiles: function (d) {
+        var t = d.totals || {};
+        return [{ l: "مقدمات محفوظة للمرضى", v: money(t.credit_held), hero: true, sub: fmtNum(t.patients) + " مريض" },
+          { l: "مديونيات على المرضى", v: money(t.receivable) }];
+      }
+    },
+    deferred_revenue: {
+      sub: "الباقات الشغالة: الجلسات اللي لسه ماتنفذتش وقيمتها (إيراد مؤجل).",
+      range: false, dayLabel: "لحد يوم", dayDefault: "today",
+      cols: [C("branch", "الفرع"), C("patient_file", "رقم الملف"), C("package", "الباقة"), C("purchased", "اشتراها", "date"), C("expires_on", "تنتهي", "date"),
+        C("status", "الحالة", "status", PKG_STATUS), C("contract_price", "قيمة العقد", "money"), C("funded", "المدفوع", "money"),
+        C("sessions_total", "الجلسات", "int"), C("sessions_used", "اتنفذ", "int"), C("sessions_left", "باقي", "int"), C("remaining_value", "قيمة الباقي", "money"),
+        C("days_to_expiry", "أيام للانتهاء", "int")],
+      totalKeys: { contract_price: 1, funded: 1, sessions_left: 1, remaining_value: 1 },
+      totalOverride: function (d) { var t = d.totals || {}; return { contract_price: t.contract, funded: t.funded, sessions_left: t.sessions_left, remaining_value: t.remaining_value }; },
+      load: function (f) { return rpc("report_deferred_revenue", { p_as_of: f.day || null, p_branch: f.branch || null }); },
+      tiles: function (d) {
+        var t = d.totals || {};
+        return [{ l: "قيمة الجلسات الباقية", v: money(t.remaining_value), hero: true, sub: fmtNum(t.packages) + " باقة" },
+          { l: "جلسات باقية", v: fmtNum(t.sessions_left) }, { l: "المدفوع في الباقات", v: money(t.funded) },
+          { l: "تنتهي خلال 30 يوم", v: fmtNum(t.expiring_30), u: "باقة" }];
+      }
+    },
+    no_show_by_doctor: {
+      sub: "المواعيد لكل دكتور: حضر، ماجاش، اتلغى — وأكتر أسباب الإلغاء.",
+      range: true,
+      cols: [C("doctor", "الدكتور"), C("specialty", "التخصص"), C("booked", "المواعيد", "int"), C("attended", "حضر", "int"), C("no_show", "ماجاش", "int"),
+        C("cancelled", "اتلغى", "int"), C("no_show_rate", "نسبة الغياب", "pct"), C("cancel_rate", "نسبة الإلغاء", "pct")],
+      totalKeys: { booked: 1, attended: 1, no_show: 1, cancelled: 1 },
+      load: function (f) { return rpc("report_no_show_by_doctor", { p_from: f.from, p_to: f.to, p_branch: f.branch || null }); },
+      tiles: function (d) {
+        var t = d.totals || {}, b = num(t.booked), r = (d.reasons || [])[0];
+        return [{ l: "ماجوش", v: fmtNum(t.no_show), hero: true, sub: b ? (100 * num(t.no_show) / b).toFixed(1) + "% من المواعيد" : "" },
+          { l: "اتلغوا", v: fmtNum(t.cancelled) }, { l: "حضروا", v: fmtNum(t.attended), sub: fmtNum(b) + " موعد" },
+          { l: "أكتر سبب إلغاء", v: r ? r.reason : "—", sub: r ? fmtNum(r.count) + " مرة" : "" }];
+      }
+    },
+    slot_occupancy: {
+      sub: "ساعات الدكتور المتاحة قصاد الساعات المحجوزة.",
+      range: true,
+      cols: [C("doctor", "الدكتور"), C("specialty", "التخصص"), C("available_hours", "ساعات متاحة", "int"), C("booked_hours", "ساعات محجوزة", "int"),
+        C("appointments", "مواعيد", "int"), C("occupancy", "الإشغال", "pct")],
+      totalKeys: { available_hours: 1, booked_hours: 1, appointments: 1, occupancy: 1 },
+      load: function (f) { return rpc("report_slot_occupancy", { p_from: f.from, p_to: f.to, p_branch: f.branch || null }); },
+      tiles: function (d) {
+        var t = d.totals || {};
+        return [{ l: "نسبة الإشغال", v: t.occupancy == null ? "—" : fmtNum(t.occupancy) + "%", hero: true },
+          { l: "ساعات متاحة", v: fmtNum(t.available_hours) }, { l: "ساعات محجوزة", v: fmtNum(t.booked_hours) }, { l: "مواعيد", v: fmtNum(t.appointments) }];
+      }
+    },
+    claims_monthly: {
+      sub: "المطالبات على كل جهة في الفترة: المقدم والمحصّل والتخفيض والمتبقي.",
+      range: true,
+      cols: [C("entity", "الجهة"), C("entity_kind", "النوع", "status", ENTITY_KIND), C("claims", "مطالبات", "int"), C("amount", "قيمة المطالبات", "money"),
+        C("paid", "اتحصّل", "money"), C("contractual", "تخفيض تعاقدي", "money"), C("outstanding", "المتبقي", "money"),
+        C("ready", "جاهزة", "int"), C("submitted", "اتقدمت", "int"), C("correction", "للتصحيح", "int"), C("settled", "اتقفلت", "int")],
+      totalKeys: { claims: 1, amount: 1, paid: 1, contractual: 1, outstanding: 1, ready: 1, submitted: 1, correction: 1, settled: 1 },
+      load: function (f) { return rpc("report_claims_monthly", { p_from: f.from, p_to: f.to, p_branch: f.branch || null }); },
+      tiles: function (d) {
+        var t = d.totals || {};
+        return [{ l: "قيمة المطالبات", v: money(t.amount), hero: true, sub: fmtNum(t.claims) + " مطالبة" },
+          { l: "اتحصّل", v: money(t.paid) }, { l: "المتبقي على الجهات", v: money(t.outstanding) },
+          { l: "مستنية تتقدم", v: fmtNum(t.ready), u: "مطالبة", sub: fmtNum(t.correction) + " راجعة للتصحيح" }];
+      }
+    },
+    ar_aging: {
+      sub: "الفلوس اللي لسه على الجهات، متقسمة حسب عمر الفاتورة.",
+      range: false, dayLabel: "لحد يوم", dayDefault: "today",
+      cols: [C("entity", "الجهة"), C("entity_kind", "النوع", "status", ENTITY_KIND), C("claims", "مطالبات", "int"), C("b0_30", "0–30 يوم", "money"),
+        C("b31_60", "31–60 يوم", "money"), C("b61_90", "61–90 يوم", "money"), C("b90_plus", "أكتر من 90 يوم", "money"), C("total", "الإجمالي", "money"),
+        C("oldest_days", "أقدم (يوم)", "int")],
+      totalKeys: { claims: 1, b0_30: 1, b31_60: 1, b61_90: 1, b90_plus: 1, total: 1 },
+      load: function (f) { return rpc("report_ar_aging", { p_as_of: f.day || null, p_branch: f.branch || null }); },
+      tiles: function (d) {
+        var t = d.totals || {};
+        return [{ l: "إجمالي المستحق على الجهات", v: money(t.total), hero: true, sub: fmtNum(t.claims) + " مطالبة" },
+          { l: "أقل من 30 يوم", v: money(t.b0_30) }, { l: "من 31 لـ 90 يوم", v: money(num(t.b31_60) + num(t.b61_90)) },
+          { l: "أكتر من 90 يوم", v: money(t.b90_plus), neg: num(t.b90_plus) > 0 }];
+      }
+    },
+    claim_adjustments: {
+      sub: "المطالبات اللي اترجعت للتصحيح، والتخفيضات التعاقدية، والإعدام، والتحصيل.",
+      range: true,
+      cols: [C("day", "اليوم", "date"), C("entity", "الجهة"), C("kind", "النوع", "status", CLAIM_KIND), C("amount", "القيمة", "money"),
+        C("claim_amount", "قيمة المطالبة", "money"), C("reason", "السبب"), C("requested_by", "طلبه"), C("reviewed_by", "راجعه"), C("status", "الحالة", "status", REQ_STATUS)],
+      totalKeys: { amount: 1 },
+      totalOverride: function (d) { var a = 0; (d.rows || []).forEach(function (r) { a += num(r.amount); }); return { amount: a }; },
+      load: function (f) { return rpc("report_claim_adjustments", { p_from: f.from, p_to: f.to, p_branch: f.branch || null }); },
+      tiles: function (d) {
+        var t = d.totals || {};
+        return [{ l: "اترجعت للتصحيح", v: fmtNum(t.returned), u: "مطالبة", hero: true },
+          { l: "تخفيض تعاقدي معتمد", v: money(t.contractual) }, { l: "إعدام معتمد", v: money(t.loss), neg: num(t.loss) > 0 },
+          { l: "اتحصّل", v: money(t.collected), sub: fmtNum(t.pending) + " طلب مستني" }];
+      }
+    },
+    entity_profitability: {
+      sub: "لكل جهة: المرضى والزيارات والإيراد، وبعد التخفيض وحصة الدكتور والمستلزمات — الهامش.",
+      range: true,
+      sensitive: true,
+      cols: [C("entity", "الجهة"), C("entity_kind", "النوع", "status", ENTITY_KIND), C("patients", "مرضى", "int"), C("visits", "زيارات", "int"), C("services", "خدمات", "int"),
+        C("revenue", "الإيراد", "money"), C("contractual", "تخفيض تعاقدي", "money"), C("doctor_fees", "حصة الدكاترة", "money"),
+        C("supplies_cost", "مستلزمات", "money"), C("margin", "الهامش", "diff"), C("margin_pct", "نسبة الهامش", "pct"), C("collected", "اتحصّل", "money")],
+      totalKeys: { patients: 1, visits: 1, services: 1, revenue: 1, contractual: 1, doctor_fees: 1, supplies_cost: 1, margin: 1, margin_pct: 1, collected: 1 },
+      load: function (f) { return rpc("report_entity_profitability", { p_from: f.from, p_to: f.to, p_branch: f.branch || null }); },
+      tiles: function (d) {
+        var t = d.totals || {};
+        return [{ l: "هامش التعاقدات", v: money(t.margin), hero: true, sub: t.margin_pct == null ? "" : fmtNum(t.margin_pct) + "% من الإيراد" },
+          { l: "إيراد التعاقدات", v: money(t.revenue), sub: fmtNum(t.patients) + " مريض" }, { l: "تخفيض تعاقدي", v: money(t.contractual) },
+          { l: "حصة الدكاترة", v: money(t.doctor_fees) }];
+      }
+    },
+    branch_pnl: {
+      sub: "الإيرادات وتكلفة الخدمات والمصروفات وصافي الربح، قصاد الفترة اللي قبلها بنفس الطول.",
+      range: true,
+      cols: [C("section", "القسم", "status", SECTION), C("group", "المجموعة"), C("account", "الحساب"), C("name", "اسم الحساب"),
+        C("current", "الفترة", "money"), C("previous", "الفترة السابقة", "money")],
+      totalKeys: {},
+      load: function (f) { return rpc("report_branch_pnl", { p_from: f.from, p_to: f.to, p_branch: f.branch || null }); },
+      tiles: function (d) {
+        var t = d.totals || {};
+        return [{ l: "صافي الربح", v: money(t.net), hero: true, neg: num(t.net) < 0, sub: "الفترة السابقة: " + money(t.net_prev) },
+          { l: "الإيرادات", v: money(t.revenue), sub: "السابقة: " + money(t.revenue_prev) },
+          { l: "مجمل الربح", v: money(t.gross), sub: "بعد تكلفة الخدمات " + money(t.cost) },
+          { l: "المصروفات الإدارية والأخرى", v: money(num(t.gna) + num(t.other)) }];
+      },
+      extraFoot: function (d) { var t = d.totals || {}; return [["إجمالي الإيرادات", t.revenue, t.revenue_prev], ["تكلفة الخدمات", t.cost, t.cost_prev], ["مجمل الربح", t.gross, t.gross_prev],
+        ["مصروفات إدارية وعمومية", t.gna, t.gna_prev], ["مصروفات أخرى", t.other, t.other_prev], ["صافي الربح", t.net, t.net_prev]]; }
+    },
+    balance_sheet: {
+      sub: "الأصول والالتزامات وحقوق الملكية لحد يوم، على مستوى الشركة.",
+      range: false, dayLabel: "لحد يوم", dayDefault: "today",
+      cols: [C("section", "القسم", "status", SECTION), C("group", "المجموعة"), C("account", "الحساب"), C("name", "اسم الحساب"), C("balance", "الرصيد", "money")],
+      totalKeys: {},
+      load: function (f) { return rpc("report_balance_sheet", { p_as_of: f.day || null, p_branch: f.branch || null }); },
+      tiles: function (d) {
+        var t = d.totals || {};
+        return [{ l: "إجمالي الأصول", v: money(t.assets), hero: true }, { l: "الالتزامات", v: money(t.liabilities) },
+          { l: "حقوق الملكية + أرباح الفترة", v: money(num(t.equity) + num(t.earnings)), sub: "أرباح لسه ماتقفلتش: " + money(t.earnings) },
+          { l: "فرق التوازن", v: money(t.difference), neg: num(t.difference) !== 0, sub: num(t.difference) === 0 ? "الميزانية متوازنة" : "راجع القيود" }];
+      },
+      extraFoot: function (d) { var t = d.totals || {}; return [["إجمالي الأصول", t.assets], ["إجمالي الالتزامات", t.liabilities], ["حقوق الملكية", t.equity],
+        ["أرباح الفترة (لسه ماتقفلتش)", t.earnings], ["الالتزامات وحقوق الملكية", t.liabilities_equity]]; }
+    },
+    gna_expenses: {
+      sub: "المصروفات الإدارية والعمومية والأخرى لكل حساب، ونسبة كل واحد، والتغيّر عن الفترة اللي قبلها.",
+      range: true,
+      cols: [C("group", "المجموعة"), C("account", "الحساب"), C("name", "اسم الحساب"), C("current", "الفترة", "money"), C("previous", "الفترة السابقة", "money"),
+        C("change", "التغيّر", "diff"), C("share", "النسبة", "pct")],
+      totalKeys: { current: 1, previous: 1, change: 1 },
+      load: function (f) { return rpc("report_gna_expenses", { p_from: f.from, p_to: f.to, p_branch: f.branch || null }); },
+      tiles: function (d) {
+        var t = d.totals || {}, top = (d.rows || [])[0];
+        return [{ l: "إجمالي المصروفات", v: money(t.current), hero: true, sub: "السابقة: " + money(t.previous) },
+          { l: "التغيّر", v: money(t.change), neg: num(t.change) > 0 }, { l: "أكبر بند", v: top ? top.name : "—", sub: top ? money(top.current) : "" }];
+      }
+    },
+    cash_flow: {
+      sub: "الفلوس اللي دخلت وخرجت من الخزن والبنوك، متقسمة تشغيلي واستثماري وتمويلي.",
+      range: true,
+      cols: [C("activity", "النشاط", "status", SECTION), C("account", "الحساب المقابل"), C("name", "اسم الحساب"), C("inflow", "داخل", "money"),
+        C("outflow", "خارج", "money"), C("net", "الصافي", "diff")],
+      totalKeys: { inflow: 1, outflow: 1, net: 1 },
+      totalOverride: function (d) { var a = { inflow: 0, outflow: 0, net: 0 }; (d.rows || []).forEach(function (r) { a.inflow += num(r.inflow); a.outflow += num(r.outflow); a.net += num(r.net); }); return a; },
+      load: function (f) { return rpc("report_cash_flow", { p_from: f.from, p_to: f.to, p_branch: f.branch || null }); },
+      tiles: function (d) {
+        var t = d.totals || {};
+        return [{ l: "رصيد الخزن والبنوك آخر الفترة", v: money(t.closing), hero: true, sub: "أول الفترة: " + money(t.opening) },
+          { l: "تشغيلي", v: money(t.operating), neg: num(t.operating) < 0 }, { l: "استثماري", v: money(t.investing), neg: num(t.investing) < 0 },
+          { l: "تمويلي", v: money(t.financing), neg: num(t.financing) < 0 }];
+      }
+    },
+    fixed_assets: {
+      sub: "تكلفة الأصول الثابتة ومجمع الإهلاك وصافي القيمة، والإضافات والإهلاك في الفترة.",
+      range: true,
+      cols: [C("account", "الحساب"), C("name", "اسم الحساب"), C("opening", "أول الفترة", "money"), C("additions", "إضافات", "money"),
+        C("reductions", "تخفيضات/إهلاك", "money"), C("closing", "آخر الفترة", "money")],
+      totalKeys: { closing: 1 },
+      totalOverride: function (d) { return { closing: (d.totals || {}).net_book_value }; },
+      load: function (f) { return rpc("report_fixed_assets", { p_from: f.from, p_to: f.to, p_branch: f.branch || null }); },
+      tiles: function (d) {
+        var t = d.totals || {};
+        return [{ l: "صافي قيمة الأصول", v: money(t.net_book_value), hero: true }, { l: "التكلفة", v: money(t.cost) },
+          { l: "مجمع الإهلاك", v: money(t.accumulated) }, { l: "إهلاك الفترة", v: money(t.depreciation), sub: "إضافات: " + money(t.additions) }];
+      }
+    },
+    tax_position: {
+      sub: "كل ضريبة: اللي اتحسب واللي اتدفع والمتبقي — من غير ربط بالفواتير الإلكترونية.",
+      range: true,
+      cols: [C("account", "الحساب"), C("name", "اسم الحساب"), C("tax_types", "أنواع الضريبة"), C("opening", "أول الفترة", "money"),
+        C("accrued", "اتحسب", "money"), C("settled", "اتدفع/اتسوّى", "money"), C("closing", "المتبقي", "money")],
+      totalKeys: {},
+      load: function (f) { return rpc("report_tax_position", { p_from: f.from, p_to: f.to, p_branch: f.branch || null }); },
+      tiles: function (d) {
+        var t = d.totals || {};
+        return [{ l: "صافي المستحق للضرايب", v: money(t.net_due), hero: true }, { l: "ضرايب مستحقة علينا", v: money(t.payable) },
+          { l: "ضرايب لينا (قابلة للاسترداد)", v: money(t.recoverable) }, { l: "اتدفع في الفترة", v: money(t.settled), sub: "اتحسب: " + money(t.accrued) }];
+      }
+    },
+    supplies_consumption: {
+      sub: "اللي خرج من كل مخزن: داخل في خدمة، اتباع للمريض، اتصرف، أو هالك — وتكلفة كل إجراء.",
+      range: true,
+      cols: [C("location", "المخزن"), C("item", "الصنف"), C("category", "التصنيف"), C("unit", "الوحدة"), C("included_qty", "داخل في خدمة", "int"),
+        C("sold_qty", "اتباع للمريض", "int"), C("issued_qty", "اتصرف", "int"), C("loss_qty", "هالك/جرد", "int"), C("cost", "التكلفة", "money"), C("sales", "قيمة البيع", "money")],
+      totalKeys: { cost: 1, sales: 1 },
+      load: function (f) { return rpc("report_supplies_consumption", { p_from: f.from, p_to: f.to, p_branch: f.branch || null }); },
+      tiles: function (d) {
+        var t = d.totals || {}, top = (d.by_service || [])[0];
+        return [{ l: "تكلفة اللي خرج", v: money(t.cost), hero: true, sub: fmtNum(t.items) + " صنف" },
+          { l: "داخل في الخدمات", v: money(t.included_cost) }, { l: "هالك وفروق جرد", v: money(t.loss_cost), neg: num(t.loss_cost) > 0 },
+          { l: "أكتر إجراء تكلفة", v: top ? top.service : "—", sub: top ? money(top.cost) + " — " + fmtNum(top.orders) + " مرة" : "" }];
+      },
+      extraHtml: function (d) {
+        var rows = d.by_service || []; if (!rows.length) return "";
+        return '<div class="rc-card"><div class="rc-ch"><h3>تكلفة المستلزمات لكل إجراء<small>من الخدمات المنفذة</small></h3></div><div class="rc-tw"><table><thead><tr><th>الخدمة</th><th>التخصص</th><th class="rc-n">مرات التنفيذ</th><th class="rc-n">التكلفة</th><th class="rc-n">متوسط المرة</th></tr></thead><tbody>' +
+          rows.map(function (r) { return "<tr><td>" + esc(r.service) + "</td><td>" + esc(r.specialty || "—") + '</td><td class="rc-n">' + fmtNum(r.orders) + '</td><td class="rc-n">' + fmtNum(r.cost) + '</td><td class="rc-n">' + fmtNum(num(r.orders) ? num(r.cost) / num(r.orders) : 0) + "</td></tr>"; }).join("") + "</tbody></table></div></div>";
+      }
+    },
+    medicines_consumption: {
+      sub: "الأدوية من الصيدلية: اللي داخل في الخدمة (على حساب المركز) واللي المريض دفع تمنه لوحده.",
+      range: true,
+      cols: [C("location", "المخزن"), C("item", "الدوا"), C("unit", "الوحدة"), C("included_qty", "داخل في الخدمة", "int"), C("included_cost", "تكلفته", "money"),
+        C("sold_qty", "اتباع للمريض", "int"), C("sold_cost", "تكلفة المباع", "money"), C("sales", "قيمة البيع", "money"), C("margin", "الربح", "diff"), C("wasted_qty", "هالك", "int")],
+      totalKeys: { included_cost: 1, sold_cost: 1, sales: 1, margin: 1 },
+      load: function (f) { return rpc("report_medicines_consumption", { p_from: f.from, p_to: f.to, p_branch: f.branch || null }); },
+      tiles: function (d) {
+        var t = d.totals || {};
+        return [{ l: "أدوية داخل الخدمات (تكلفة)", v: money(t.included_cost), hero: true }, { l: "مبيعات أدوية للمرضى", v: money(t.sales) },
+          { l: "تكلفة المباع", v: money(t.sold_cost) }, { l: "ربح البيع", v: money(t.margin), neg: num(t.margin) < 0 }];
+      }
+    },
+    stock_shortage_expiry: {
+      sub: "الأصناف اللي رصيدها تحت حد الطلب، والتشغيلات اللي صلاحيتها خلصت أو هتخلص خلال 60 يوم.",
+      range: false, dayLabel: "لحد يوم", dayDefault: "today",
+      cols: [C("item", "الصنف"), C("category", "التصنيف"), C("unit", "الوحدة"), C("on_hand", "الرصيد", "int"), C("minimum", "حد الطلب", "int"), C("gap", "العجز", "int")],
+      totalKeys: {},
+      load: function (f) { return rpc("report_stock_shortage_expiry", { p_as_of: f.day || null, p_branch: f.branch || null }); },
+      tiles: function (d) {
+        var t = d.totals || {};
+        return [{ l: "أصناف تحت حد الطلب", v: fmtNum(t.short_items), hero: true }, { l: "تشغيلات صلاحيتها خلصت", v: fmtNum(t.expired_lots), neg: num(t.expired_lots) > 0 },
+          { l: "هتخلص خلال 60 يوم", v: fmtNum(t.expiring_lots) }];
+      },
+      extraHtml: function (d) {
+        var rows = d.expiry || [];
+        var body = rows.length ? '<div class="rc-tw"><table><thead><tr><th>الصنف</th><th>التشغيلة</th><th>المخزن</th><th class="rc-n">الكمية</th><th>تنتهي</th><th class="rc-n">أيام متبقية</th></tr></thead><tbody>' +
+          rows.map(function (r) { var dl = num(r.days_left); return "<tr><td>" + esc(r.item) + "</td><td>" + esc(r.lot || "—") + "</td><td>" + esc(r.location) + '</td><td class="rc-n">' + fmtNum(r.quantity) + '</td><td class="rc-ltr">' + esc(fmtDate(r.expiry_date)) + '</td><td class="rc-n' + (dl < 30 ? " rc-negc" : "") + '">' + (dl < 0 ? "خلصت" : fmtNum(dl)) + "</td></tr>"; }).join("") + "</tbody></table></div>"
+          : '<div class="rc-empty">مفيش تشغيلات قربت تخلص</div>';
+        return '<div class="rc-card"><div class="rc-ch"><h3>الصلاحية<small>خلصت أو هتخلص خلال 60 يوم</small></h3></div>' + body + "</div>";
+      }
+    },
+    nursing_variance: {
+      sub: "المفروض الخدمات تستهلك كام (حسب مكونات كل خدمة) قصاد اللي اتصرف فعلاً.",
+      range: true,
+      cols: [C("item", "الصنف"), C("unit", "الوحدة"), C("orders", "خدمات منفذة", "int"), C("expected", "المفروض", "int"), C("in_services", "اتسجل في الخدمات", "int"),
+        C("outside", "اتصرف برّه الخدمات", "int"), C("variance", "الفرق", "diff"), C("variance_value", "قيمة الفرق", "diff")],
+      totalKeys: { variance_value: 1 },
+      load: function (f) { return rpc("report_nursing_variance", { p_from: f.from, p_to: f.to, p_branch: f.branch || null }); },
+      tiles: function (d) {
+        var t = d.totals || {};
+        return [{ l: "قيمة الفرق", v: money(t.variance_value), hero: true, sub: "موجب = اتصرف أكتر من المفروض" },
+          { l: "أصناف اتصرف منها زيادة", v: fmtNum(t.over_items) }, { l: "أصناف اتصرف منها أقل", v: fmtNum(t.under_items) }];
+      }
+    },
+    attendance_summary: {
+      sub: "لكل موظف: أيام الشيفت والحضور والغياب والتأخير والانصراف بدري والأوفر تايم والخصومات.",
+      range: true,
+      cols: [C("full_name", "الموظف"), C("department", "القسم"), C("scheduled_days", "أيام شيفت", "int"), C("attended_days", "حضر", "int"), C("absent_days", "غياب", "int"),
+        C("late_days", "أيام تأخير", "int"), C("late_minutes", "دقايق تأخير", "int"), C("early_minutes", "انصراف بدري (دقيقة)", "int"),
+        C("overtime_minutes", "أوفر تايم معتمد (دقيقة)", "int"), C("deductions", "خصومات", "money")],
+      totalKeys: { scheduled_days: 1, attended_days: 1, absent_days: 1, late_days: 1, late_minutes: 1, early_minutes: 1, overtime_minutes: 1, deductions: 1 },
+      load: function (f) { return rpc("report_attendance_summary", { p_from: f.from, p_to: f.to, p_branch: f.branch || null }); },
+      tiles: function (d) {
+        var t = d.totals || {}, s = num(t.scheduled_days);
+        return [{ l: "نسبة الحضور", v: s ? (100 * num(t.attended_days) / s).toFixed(1) + "%" : "—", hero: true, sub: fmtNum(t.people) + " موظف" },
+          { l: "أيام غياب", v: fmtNum(t.absent_days), neg: num(t.absent_days) > 0 }, { l: "دقايق تأخير", v: fmtNum(t.late_minutes), sub: fmtNum(t.late_days) + " يوم" },
+          { l: "خصومات", v: money(t.deductions) }];
+      }
+    },
+    staff_productivity: {
+      sub: "لكل موظف استقبال وكول سنتر: الحجوزات والزيارات والتحصيل ومحاولات التواصل وتحويل الليدز.",
+      range: true,
+      cols: [C("employee", "الموظف"), C("bookings", "حجوزات", "int"), C("bookings_attended", "منها حضر", "int"), C("visits_opened", "زيارات فتحها", "int"),
+        C("payments", "عمليات تحصيل", "int"), C("collected", "حصّل", "money"), C("lead_attempts", "محاولات تواصل", "int"), C("answered_calls", "اترد عليه", "int"),
+        C("leads_assigned", "ليدز عنده", "int"), C("leads_booked", "اتحجزت", "int"), C("conversion", "التحويل", "pct")],
+      totalKeys: { bookings: 1, visits_opened: 1, payments: 1, collected: 1, lead_attempts: 1, leads_assigned: 1, leads_booked: 1 },
+      load: function (f) { return rpc("report_staff_productivity", { p_from: f.from, p_to: f.to, p_branch: f.branch || null }); },
+      tiles: function (d) {
+        var t = d.totals || {}, a = num(t.leads_assigned);
+        return [{ l: "حجوزات", v: fmtNum(t.bookings), hero: true }, { l: "محاولات تواصل", v: fmtNum(t.lead_attempts) },
+          { l: "تحويل الليدز لحجز", v: a ? (100 * num(t.leads_booked) / a).toFixed(1) + "%" : "—", sub: fmtNum(t.leads_booked) + " من " + fmtNum(a) },
+          { l: "التحصيل", v: money(t.collected) }];
+      }
+    },
+    lead_response: {
+      sub: "الليد بياخد قد إيه لحد أول رد، وكام واحد اتساب من غير رد، وكام اتحول لحجز.",
+      range: true,
+      cols: [C("employee", "المسؤول"), C("leads", "ليدز", "int"), C("contacted", "اتكلم معاهم", "int"), C("untouched", "من غير رد", "int"),
+        C("avg_first_response", "متوسط أول رد (دقيقة)", "int"), C("median_first_response", "الوسيط (دقيقة)", "int"), C("within_15", "اترد خلال 15 دقيقة", "int"),
+        C("booked", "اتحجزوا", "int"), C("conversion", "التحويل", "pct")],
+      totalKeys: { leads: 1, contacted: 1, untouched: 1, within_15: 1, booked: 1 },
+      load: function (f) { return rpc("report_lead_response", { p_from: f.from, p_to: f.to, p_branch: f.branch || null }); },
+      tiles: function (d) {
+        var t = d.totals || {}, n = num(t.leads);
+        return [{ l: "متوسط أول رد", v: t.avg_first_response == null ? "—" : fmtNum(t.avg_first_response), u: "دقيقة", hero: true, sub: fmtNum(n) + " ليد" },
+          { l: "من غير رد لحد دلوقتي", v: fmtNum(t.untouched), neg: num(t.untouched) > 0 },
+          { l: "اترد خلال 15 دقيقة", v: n ? (100 * num(t.within_15) / n).toFixed(1) + "%" : "—" },
+          { l: "اتحولوا لحجز", v: n ? (100 * num(t.booked) / n).toFixed(1) + "%" : "—", sub: fmtNum(t.booked) + " حجز" }];
+      }
+    },
+    patient_sources: {
+      sub: "المرضى جايين منين: المواعيد والحضور والإيراد لكل مصدر.",
+      range: true,
+      cols: [C("source", "المصدر", "status", SOURCE_NAMES), C("appointments", "مواعيد", "int"), C("share", "النسبة", "pct"), C("patients", "مرضى", "int"),
+        C("attended", "حضروا", "int"), C("attendance_rate", "نسبة الحضور", "pct"), C("no_show", "ماجوش", "int"), C("revenue", "الإيراد", "money")],
+      totalKeys: { appointments: 1, patients: 1, attended: 1, revenue: 1 },
+      load: function (f) { return rpc("report_patient_sources", { p_from: f.from, p_to: f.to, p_branch: f.branch || null }); },
+      tiles: function (d) {
+        var t = d.totals || {}, top = (d.rows || [])[0];
+        return [{ l: "أكبر مصدر", v: top ? (SOURCE_NAMES[top.source] || top.source) : "—", hero: true, sub: top ? fmtNum(top.appointments) + " موعد" : "" },
+          { l: "المواعيد", v: fmtNum(t.appointments) }, { l: "الإيراد", v: money(t.revenue) },
+          { l: "مصدر مش معروف", v: fmtNum(t.unknown), neg: num(t.unknown) > 0, sub: "سجّل المصدر وقت الحجز" }];
+      }
+    },
+    ad_funnel: {
+      sub: "لكل حملة: الصرف ← الليدز ← الحجوزات ← الحضور ← الإيراد، وتكلفة الحجز والعائد.",
+      range: true,
+      cols: [C("campaign", "الحملة"), C("spend", "الصرف", "money"), C("impressions", "ظهور", "int"), C("clicks", "ضغطات", "int"), C("messages", "رسايل", "int"),
+        C("leads", "ليدز", "int"), C("bookings", "حجوزات", "int"), C("attended", "حضروا", "int"), C("revenue", "الإيراد", "money"),
+        C("cost_per_lead", "تكلفة الليد", "money"), C("cost_per_booking", "تكلفة الحجز", "money"), C("roas", "العائد على الصرف", "int")],
+      totalKeys: { spend: 1, impressions: 1, clicks: 1, messages: 1, leads: 1, bookings: 1, attended: 1, revenue: 1, cost_per_booking: 1, roas: 1 },
+      load: function (f) { return rpc("report_ad_funnel", { p_from: f.from, p_to: f.to, p_branch: f.branch || null }); },
+      tiles: function (d) {
+        var t = d.totals || {};
+        return [{ l: "تكلفة الحجز", v: t.cost_per_booking == null ? "—" : money(t.cost_per_booking), hero: true, sub: fmtNum(t.bookings) + " حجز من " + fmtNum(t.leads) + " ليد" },
+          { l: "الصرف", v: money(t.spend) }, { l: "الإيراد من الحملات", v: money(t.revenue) },
+          { l: "العائد على الصرف", v: t.roas == null ? "—" : fmtNum(t.roas) + "×" }];
+      },
+      extraHtml: function (d) {
+        var t = d.totals || {}, steps = [["الصرف", money(t.spend), null], ["ليدز", fmtNum(t.leads), num(t.leads)], ["حجوزات", fmtNum(t.bookings), num(t.bookings)], ["حضروا", fmtNum(t.attended), num(t.attended)]];
+        var max = Math.max(num(t.leads), 1);
+        return '<div class="rc-card"><div class="rc-ch"><h3>المسار<small>من الليد للحضور</small></h3></div><div class="rc-hb">' + steps.slice(1).map(function (s, i) {
+          var prev = i ? steps[i][2] : null, conv = prev ? " (" + (100 * s[2] / prev).toFixed(1) + "%)" : "";
+          return '<div class="rc-r"><span>' + esc(s[0]) + '</span><div class="rc-tr"><i style="width:' + Math.max(2, s[2] / max * 100).toFixed(1) + '%"></i></div><span>' + esc(s[1] + conv) + "</span></div>";
+        }).join("") + "</div></div>";
+      }
+    },
+    targets_vs_actual: {
+      sub: "التارجت اللي حطه المالك للشهر قصاد الفعلي، ونسبة التحقيق.",
+      range: false, dayLabel: "الشهر", dayDefault: "today",
+      cols: [C("owner", "المسؤول"), C("label", "المؤشر"), C("target", "التارجت", "money"), C("actual", "الفعلي", "money"), C("achievement", "التحقيق", "pct")],
+      totalKeys: {},
+      load: function (f) { return rpc("report_targets_vs_actual", { p_month: f.day || null, p_branch: f.branch || null }); },
+      tiles: function (d) {
+        var t = d.totals || {};
+        return [{ l: "متوسط التحقيق", v: t.avg_achievement == null ? "—" : fmtNum(t.avg_achievement) + "%", hero: true, sub: d.month ? "شهر " + String(d.month).slice(0, 7) : "" },
+          { l: "تارجت اتحقق", v: fmtNum(t.met) + " من " + fmtNum(t.targets) }];
+      }
+    },
     daily_flash: {
       sub: "ملخص يوم واحد: إيراد، تحصيل، مواعيد، ليدز، وتنبيهات.",
       range: false,
@@ -128,7 +531,8 @@
       case "int": return fmtNum(v);
       case "dt": return fmtDT(v);
       case "date": return fmtDate(v);
-      case "status": return SHIFT_STATUS[v] || (v == null ? "—" : String(v));
+      case "status": return (col.map || SHIFT_STATUS)[v] || (v == null ? "—" : String(v));
+      case "pct": return v == null ? "—" : fmtNum(v) + "%";
       default: return v == null || v === "" ? "—" : String(v);
     }
   }
@@ -141,14 +545,20 @@
     var data = d.rows || [];
     rows = data.map(function (r) { return cols.map(function (c) { return cellText(c, r); }); });
     var tot = def.totalOverride ? def.totalOverride(d) : (d.totals || {});
-    foot = cols.map(function (c, i) { return i === 0 ? "الإجمالي" : def.totalKeys[c.k] && tot[c.k] != null ? fmtNum(tot[c.k]) : ""; });
-    return { head: head, rows: rows, foot: data.length ? foot : null, cols: cols, raw: data.length, data: data, totals: tot };
+    var summary = def.extraFoot ? def.extraFoot(d).map(function (x) {
+      var vals = x.slice(1), row = cols.map(function () { return ""; });
+      row[0] = x[0]; vals.forEach(function (v, k) { row[cols.length - vals.length + k] = fmtNum(v); }); return row;
+    }) : null;
+    foot = cols.map(function (c, i) { return i === 0 ? "الإجمالي" : def.totalKeys[c.k] && tot[c.k] != null ? (fmtNum(tot[c.k]) + (c.t === "pct" ? "%" : "")) : ""; });
+    if (summary || !Object.keys(def.totalKeys || {}).length) foot = null;
+    return { head: head, rows: rows, foot: data.length ? foot : null, summary: data.length ? summary : null, cols: cols, raw: data.length, data: data, totals: tot };
   }
   function csvCell(v) { var s = String(v == null ? "" : v); return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }
   function buildCsv(t) {
     var lines = [t.head.map(csvCell).join(",")];
     t.rows.forEach(function (r) { lines.push(r.map(function (v) { return csvCell(String(v).replace(/,/g, "")); }).join(",")); });
     if (t.foot) lines.push(t.foot.map(function (v) { return csvCell(String(v).replace(/,/g, "")); }).join(","));
+    (t.summary || []).forEach(function (r) { lines.push(r.map(function (v) { return csvCell(String(v).replace(/,/g, "")); }).join(",")); });
     return "﻿" + lines.join("\r\n");
   }
   function download(name, text) {
@@ -189,7 +599,7 @@
     if (def.range) {
       h += '<label class="rc-f"><span>من</span><input type="date" data-f="from" value="' + esc(f.from) + '"></label><label class="rc-f"><span>إلى</span><input type="date" data-f="to" value="' + esc(f.to) + '"></label>';
     } else {
-      h += '<label class="rc-f"><span>اليوم</span><input type="date" data-f="day" value="' + esc(f.day) + '"></label>';
+      h += '<label class="rc-f"><span>' + esc(def.dayLabel || "اليوم") + '</span><input type="date" data-f="day" value="' + esc(f.day) + '"></label>';
     }
     var br = '<option value="">كل الفروع</option>' + (state.catalog.branches || []).map(function (b) { return '<option value="' + esc(b.id) + '"' + (f.branch === b.id ? " selected" : "") + ">" + esc(b.name) + "</option>"; }).join("");
     h += '<label class="rc-f"><span>الفرع</span><select data-f="branch">' + br + '</select></label>';
@@ -224,6 +634,15 @@
       return '<div class="rc-r"><span>' + esc(r.specialty || "—") + '</span><div class="rc-tr"><i style="width:' + Math.max(2, num(r.net) / max * 100).toFixed(1) + '%"></i></div><span>' + fmtNum(r.net) + "</span></div>";
     }).join("") + "</div></div>";
   }
+  function noticesHtml(d) {
+    var n = [];
+    if (num(d.unposted) > 0) n.push("فيه " + fmtNum(d.unposted) + " قيد في الاستقبال لسه ماتنقلش لدفتر الحسابات (غير مُرحّل) — الأرقام ناقصاه، بلّغ الحسابات.");
+    if (d.unallocated && (num(d.unallocated.revenue) || num(d.unallocated.expense)))
+      n.push("قيود عامة مش متوزعة على فرع ومش داخلة في الأرقام دي: إيرادات " + money(d.unallocated.revenue) + " ومصروفات " + money(d.unallocated.expense) + ". اختار «كل الفروع» علشان تشوفها.");
+    if (num(d.stock_unposted) > 0) n.push("فيه " + fmtNum(d.stock_unposted) + " حركة مخزن في الاستقبال ماتنقلتش لدفتر المخزن — الأرصدة والاستهلاك ناقصينها، بلّغ أمين المخزن.");
+    if (d.scope === "company" && state.f.branch) n.push("التقرير ده على مستوى الشركة كلها، والفرع مش بيغيّر أرقامه.");
+    return n.map(function (x) { return '<div class="rc-error rc-notice" role="note">' + esc(x) + "</div>"; }).join("");
+  }
   function tableHtml(code, t) {
     var cols = t.cols, h = '<div class="rc-tw"><table><thead><tr>' + cols.map(function (c) { return '<th class="' + (c.t === "money" || c.t === "diff" || c.t === "int" ? "rc-n" : "") + '">' + esc(c.l) + "</th>"; }).join("") + "</tr></thead><tbody>";
     if (code === "daily_flash") {
@@ -240,6 +659,7 @@
       });
     }
     h += "</tbody>";
+    if (t.summary) h += "<tfoot>" + t.summary.map(function (r) { return "<tr>" + r.map(function (v, j) { return '<td class="' + (j ? "rc-n" : "") + '">' + esc(v) + "</td>"; }).join("") + "</tr>"; }).join("") + "</tfoot>";
     if (t.foot) h += "<tfoot><tr>" + t.foot.map(function (v, j) { var c = cols[j]; return '<td class="' + (c.t === "money" || c.t === "diff" || c.t === "int" ? "rc-n" : "") + (c.t === "diff" && num(t.totals[c.k]) < 0 ? " rc-negc" : "") + '">' + esc(v) + "</td>"; }).join("") + "</tr></tfoot>";
     return h + "</table></div>";
   }
@@ -270,6 +690,7 @@
     var d = state.data;
     if (!d) return "";
     var t = state.table = buildTable(code, d), h = '<div class="rc-printable"><div class="rc-print-head"><b>' + esc(meta.title) + "</b><span>الفرع: " + esc(branchName()) + " — الفترة: " + periodText(code) + "</span></div>";
+    h += noticesHtml(d);
     h += tilesHtml(def.tiles(d));
     if (code === "revenue_by_doctor") h += chartHtml(d);
     if (code === "doctor_dues") h += linesHtml(d);
@@ -277,7 +698,9 @@
     h += '<div class="rc-card"><div class="rc-ch"><h3>التفاصيل<small>' + esc(branchName()) + " — " + periodText(code) + '</small></h3><div class="rc-acts no-print"><button type="button" class="rc-btn rc-sec" data-act="csv">تصدير Excel</button><button type="button" class="rc-btn rc-sec" data-act="pdf">PDF</button></div></div>';
     h += empty ? '<div class="rc-empty">' + EMPTY + "</div>" : tableHtml(code, t);
     if (code === "doctor_dues" && !empty) h += '<p class="rc-hint no-print">دوس على اسم دكتور علشان تشوف كشف حسابه.</p>';
-    return h + "</div></div>";
+    h += "</div>";
+    if (def.extraHtml) h += def.extraHtml(d);
+    return h + "</div>";
   }
 
   // ── تحميل وربط ─────────────────────────────────────────────────────────────────────────────────
@@ -310,13 +733,19 @@
   function openReport(root, code) {
     var firstBranch = (state.catalog.branches || [])[0];
     state.code = code; state.data = null; state.error = ""; state.optsPainted = false; state.provName = "";
-    state.f = { from: monthStart(), to: iso(today()), day: yesterday(), branch: firstBranch ? firstBranch.id : "", specialty: "", provider: "", payer: "" };
+    state.f = { from: monthStart(), to: iso(today()), day: DEFS[code].dayDefault === "today" ? iso(today()) : yesterday(), branch: firstBranch ? firstBranch.id : "", specialty: "", provider: "", payer: "" };
     root.innerHTML = reportHtml(code); bindFilters(root, code); wire(root); load(root, code);
   }
   function showHome(root) {
     state.code = null; state.seq++;
-    root.innerHTML = homeHtml();
+    root.innerHTML = homeHtml() + (state.canTargets ? '<div class="rc-gh"><h2>التارجت</h2></div><div class="rc-grid"><button type="button" class="rc-card rc-open-targets"><div class="rc-card-ic">' + ICON.bars +
+      '</div><div class="rc-card-t"><b>إدارة التارجت الشهري</b><span>اقترح التارجت أو وافق عليه (الموافقة للمالك بس).</span></div>' + ICON.chev + "</button></div>" : "");
     qa(root, ".rc-open").forEach(function (b) { b.onclick = function () { openReport(root, b.getAttribute("data-code")); }; });
+    var ot = q(root, ".rc-open-targets"); if (ot) ot.onclick = function () {
+      state.code = null; root.innerHTML = '<button type="button" class="rc-btn rc-sec rc-tback">→ كل التقارير</button><div class="rc-card" style="margin-top:12px"></div>';
+      q(root, ".rc-tback").onclick = function () { showHome(root); };
+      mountTargets(q(root, ".rc-card"));
+    };
   }
   function wire(root) {
     root.onclick = function (ev) {
@@ -343,7 +772,7 @@
     var root = q(container, ".rc-root");
     rpc("report_catalog").then(function (cat) {
       state.catalog = cat && cat.reports ? cat : { reports: [], branches: [] };
-      showHome(root); wire(root);
+      return rpc("report_target_can_propose").catch(function () { return false; }).then(function (ok) { state.canTargets = ok === true; showHome(root); wire(root); });
     }).catch(function (e) { root.innerHTML = '<div class="rc-error" role="alert">' + esc(errMsg(e)) + "</div>"; });
   }
 
@@ -354,7 +783,7 @@
     var h = '<div class="rc-root rc-access"><h3>صلاحيات التقارير</h3><p class="rc-hint">اختار مين يشوف كل تقرير: بالدور، أو بالاسم لأشخاص معينين. التغيير بيتسجّل في سجل مراجعة.</p><div class="rc-tw"><table><thead><tr><th>التقرير</th>' +
       ACCESS_ROLES.map(function (r) { return "<th class=\"rc-c\">" + esc(roleLabel(r)) + "</th>"; }).join("") + "<th>أشخاص بالاسم</th><th></th></tr></thead><tbody>";
     (data.reports || []).forEach(function (r) {
-      h += '<tr data-code="' + esc(r.code) + '"><td><b>' + esc(r.title) + "</b>" + (r.sensitive ? '<div class="rc-note">مستحقات الدكاترة بتفتح للمدير العام والمدير المالي بس حتى لو اديتها لحد تاني</div>' : "") + "</td>" +
+      h += '<tr data-code="' + esc(r.code) + '"><td><b>' + esc(r.title) + "</b>" + (r.sensitive ? '<div class="rc-note">التقرير ده فيه أرقام مستحقات — بيفتح للمدير العام والمدير المالي بس حتى لو اديته لحد تاني</div>' : "") + "</td>" +
         ACCESS_ROLES.map(function (ro) { return '<td class="rc-c"><input type="checkbox" data-role="' + ro + '"' + ((r.roles || []).indexOf(ro) !== -1 ? " checked" : "") + ' aria-label="' + esc(roleLabel(ro)) + '"></td>'; }).join("") +
         '<td><div class="rc-chips" data-chips>' + (r.admins || []).map(function (a) { return chip(a); }).join("") + '</div><select class="rc-pick" data-pick><option value="">+ إضافة شخص</option>' +
         people.map(function (p) { return '<option value="' + esc(p.id) + '">' + esc(p.name) + " — " + esc(roleLabel(p.role)) + "</option>"; }).join("") + '</select></td><td><button type="button" class="rc-btn" data-save>حفظ</button></td></tr>';
@@ -394,5 +823,64 @@
     }).catch(function () { host.innerHTML = ""; });
   }
 
-  window.SSMPDRenderReports = { render: render, mountAccess: mountAccess, buildCsv: buildCsv, _defs: DEFS };
+
+  // ── «التارجت الشهري» في لوحة التحكم (للمالك بس) ─────────────────────────────────────────────────────
+  var ROLE_TARGETS = ["general_manager", "page_manager", "customer_service", "reception"];
+  var T_STATUS = { pending: "مستني موافقة المالك", approved: "معتمد", rejected: "مرفوض" };
+  function targetsHtml(data) {
+    var metrics = data.metrics || [], people = data.people || [], branches = data.branches || [], appr = !!data.is_approver;
+    var h = '<div class="rc-root rc-access"><h3>التارجت الشهري</h3><p class="rc-hint">' + (appr ? "إنت اللي بتوافق على التارجت. اللي بتحطه إنت بيتعتمد على طول، واللي بيقترحه غيرك بيستنى موافقتك." :
+      "اقترح التارجت والمالك هيوافق عليه. التارجت مش بيتحسب في التقرير غير بعد الموافقة.") + " أي تغيير بيتسجّل.</p>" +
+      '<div class="rc-filters rc-card"><label class="rc-f"><span>الشهر</span><input type="month" data-t="month" value="' + esc(String(data.month || "").slice(0, 7)) + '"></label></div>';
+    var rows = data.targets || [];
+    h += rows.length ? '<div class="rc-tw"><table><thead><tr><th>المؤشر</th><th>صاحبه</th><th class="rc-n">التارجت</th><th>الحالة</th><th>اقترحه</th><th>ملاحظة</th><th></th></tr></thead><tbody>' + rows.map(function (t) {
+      var who = t.campaign_code ? "حملة " + t.campaign_code : t.admin ? t.admin : t.role ? "دور: " + roleLabel(t.role) : "الفرع";
+      var acts = "";
+      if (appr && t.status === "pending") acts += '<button type="button" class="rc-btn" data-appr="' + esc(t.id) + '">موافقة</button> <button type="button" class="rc-btn rc-sec" data-rej="' + esc(t.id) + '">رفض</button> ';
+      if (appr || (t.mine && t.status === "pending")) acts += '<button type="button" class="rc-btn rc-sec" data-del="' + esc(t.id) + '">مسح</button>';
+      return "<tr><td>" + esc((t.meta || {}).label || t.metric) + "</td><td>" + esc(who) + '</td><td class="rc-n">' + fmtNum(t.target) + '</td><td><span class="rc-chip' + (t.status === "pending" ? " rc-warn" : "") + '">' + esc(T_STATUS[t.status] || t.status) + "</span></td><td>" + esc(t.proposed_by || "—") + "</td><td>" + esc(t.note || "") + "</td><td>" + acts + "</td></tr>";
+    }).join("") + "</tbody></table></div>" : '<div class="rc-empty">مفيش تارجت للشهر ده لسه</div>';
+    h += '<div class="rc-card rc-filters" style="margin-top:12px"><label class="rc-f"><span>المؤشر</span><select data-t="metric">' + metrics.map(function (m) { return '<option value="' + esc(m.key) + '">' + esc((m.meta || {}).label || m.key) + "</option>"; }).join("") + "</select></label>" +
+      '<label class="rc-f"><span>صاحبه</span><select data-t="who"><option value="branch:' + esc((branches[0] || {}).id || "") + '">الفرع</option>' +
+      ROLE_TARGETS.map(function (r) { return '<option value="role:' + r + '">دور: ' + esc(roleLabel(r)) + "</option>"; }).join("") +
+      people.map(function (p) { return '<option value="admin:' + esc(p.id) + '">' + esc(p.name) + "</option>"; }).join("") + "</select></label>" +
+      '<label class="rc-f" data-camp hidden><span>كود الحملة</span><input type="text" maxlength="30" data-t="campaign" placeholder="PHY1"></label>' +
+      '<label class="rc-f"><span>التارجت</span><input type="number" min="0" step="any" data-t="target"></label><label class="rc-f"><span>ملاحظة</span><input type="text" maxlength="300" data-t="note"></label>' +
+      '<button type="button" class="rc-btn" data-t-save>' + (appr ? "حفظ التارجت" : "اقتراح التارجت") + '</button></div><div class="rc-msg" role="status"></div>';
+    if (appr) {
+      var eds = data.editors || [];
+      h += '<div class="rc-card" style="margin-top:12px"><div class="rc-ch"><h3>مين يقدر يقترح التارجت<small>غير المدير العام والمدير المالي</small></h3></div><div class="rc-chips">' +
+        eds.map(function (e) { return '<span class="rc-chip">' + esc(e.name) + ' <button type="button" class="rc-x" data-ed-rm="' + esc(e.id) + '" aria-label="شيل">×</button></span>'; }).join("") +
+        '</div><select class="rc-pick" data-ed-add><option value="">+ إضافة شخص</option>' + people.filter(function (p) { return !eds.some(function (e) { return e.id === p.id; }); })
+          .map(function (p) { return '<option value="' + esc(p.id) + '">' + esc(p.name) + "</option>"; }).join("") + "</select></div>";
+    }
+    return h + "</div>";
+  }
+  function mountTargets(host, month) {
+    if (!host) return Promise.resolve();
+    var payload = month ? { month: month + "-01" } : {};
+    return rpc("report_targets_admin", { p_action: "list", p_payload: payload }).then(function (data) {
+      host.innerHTML = targetsHtml(data);
+      var cur = String(data.month || "").slice(0, 7), msg = q(host, ".rc-msg");
+      var act = function (action, p) { return rpc("report_targets_admin", { p_action: action, p_payload: p }).then(function () { mountTargets(host, cur); }).catch(function (e) { msg.textContent = errMsg(e); }); };
+      var m = q(host, '[data-t="month"]'); if (m) m.onchange = function () { mountTargets(host, m.value); };
+      var met = q(host, '[data-t="metric"]'), camp = q(host, "[data-camp]");
+      if (met && camp) met.onchange = function () { camp.hidden = met.value !== "campaign_cost_per_booking"; };
+      qa(host, "[data-del]").forEach(function (b) { b.onclick = function () { act("delete", { id: b.getAttribute("data-del") }); }; });
+      qa(host, "[data-appr]").forEach(function (b) { b.onclick = function () { act("approve", { id: b.getAttribute("data-appr") }); }; });
+      qa(host, "[data-rej]").forEach(function (b) { b.onclick = function () { act("reject", { id: b.getAttribute("data-rej") }); }; });
+      var ids = (data.editors || []).map(function (e) { return e.id; });
+      qa(host, "[data-ed-rm]").forEach(function (b) { b.onclick = function () { act("editors_set", { admin_ids: ids.filter(function (x) { return x !== b.getAttribute("data-ed-rm"); }) }); }; });
+      var add = q(host, "[data-ed-add]"); if (add) add.onchange = function () { if (add.value) act("editors_set", { admin_ids: ids.concat([add.value]) }); };
+      var save = q(host, "[data-t-save]"); if (save) save.onclick = function () {
+        var who = q(host, '[data-t="who"]').value.split(":"), p = { month: cur + "-01", metric: met.value,
+          target: q(host, '[data-t="target"]').value, note: q(host, '[data-t="note"]').value };
+        if (p.metric === "campaign_cost_per_booking") { p.campaign_code = q(host, '[data-t="campaign"]').value.trim(); if (!p.campaign_code) { msg.textContent = "اكتب كود الحملة"; return; } }
+        else if (who[0] === "branch") p.branch_id = who[1]; else if (who[0] === "role") p.role = who[1]; else p.admin_id = who[1];
+        if (p.target === "" || num(p.target) < 0) { msg.textContent = "اكتب رقم التارجت"; return; }
+        save.disabled = true; act("set", p);
+      };
+    }).catch(function (e) { host.innerHTML = '<div class="rc-error" role="alert">' + esc(errMsg(e)) + "</div>"; });
+  }
+  window.SSMPDRenderReports = { render: render, mountAccess: mountAccess, mountTargets: mountTargets, buildCsv: buildCsv, _defs: DEFS };
 })();
