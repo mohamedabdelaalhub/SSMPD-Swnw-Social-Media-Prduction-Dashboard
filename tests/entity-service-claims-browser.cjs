@@ -20,7 +20,7 @@ window.SSMPDDb={client:{rpc:async(name,args={})=>{TEST.calls.push({name,args});l
  return {data,error:null};}}};
 window.SSMPDFinanceControls={panel:()=>'<p>الفواتير الحالية</p>',act:()=>false,due:x=>x.amount};
 window.SSMPDDrive={};window.XLSX={utils:{book_new:()=>({}),aoa_to_sheet:rows=>({rows}),book_append_sheet:()=>{}},writeFile:()=>TEST.exported=true};
-</script><script src="/assets/js/entity-claims-print.js"></script><script src="/assets/js/entity-claims.js"></script></body></html>`;
+</script><script src="/assets/js/swnw-print.js"></script><script src="/assets/js/entity-claims-print.js"></script><script src="/assets/js/entity-claims.js"></script></body></html>`;
 (async()=>{const server=http.createServer((req,res)=>{if(req.url==='/fixture'){res.setHeader('Content-Type','text/html;charset=utf-8');res.end(fixture);return;}const file=path.join(root,decodeURIComponent(req.url.split('?')[0]));if(!file.startsWith(root+path.sep)||!fs.existsSync(file)){res.writeHead(404);res.end();return;}const ext=path.extname(file);res.setHeader('Content-Type',({'.js':'application/javascript','.css':'text/css','.woff2':'font/woff2','.svg':'image/svg+xml'})[ext]||'application/octet-stream');fs.createReadStream(file).pipe(res);});await new Promise(r=>server.listen(0,'127.0.0.1',r));let browser;try{
  browser=await chromium.launch({headless:true,args:['--no-sandbox']});const page=await browser.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto('http://127.0.0.1:'+server.address().port+'/fixture');await page.evaluate(()=>SSMPDEntityClaims.open());await page.waitForSelector('[data-ec="bill"]');
