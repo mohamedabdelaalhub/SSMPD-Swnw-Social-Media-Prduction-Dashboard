@@ -9,7 +9,7 @@
 --   * public.patients UPDATE: can_access_leads() lets reception update any column directly, so a guard now limits DIRECT client
 --     updates (role authenticated) by anyone without full archive / content-management rights to the basic columns, and logs 'edit'.
 --     Server-side SECURITY DEFINER paths (e.g. clinic_reception_patient_basic) are not affected.
--- Rollback: supabase/rollbacks/20261120900000_archive_reception_scope.rollback.sql
+-- Rollback: supabase/rollbacks/20261120070000_archive_reception_scope.rollback.sql
 begin;
 
 do $$ begin

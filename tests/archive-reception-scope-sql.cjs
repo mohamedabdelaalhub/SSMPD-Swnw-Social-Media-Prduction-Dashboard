@@ -1,4 +1,4 @@
-// Owner 2026-11-19: reception / customer service archive scope (20261120900000).
+// Owner 2026-11-19: reception / customer service archive scope (20261120070000).
 const fs=require('fs'),assert=require('node:assert/strict'),{PGlite}=require('@electric-sql/pglite'),{randomUUID}=require('crypto');
 (async()=>{const db=new PGlite(),id=()=>randomUUID(),rec=id(),full=id(),sup=id(),p=id();
  try{await db.exec(`create role authenticated;create role anon;create schema auth;
@@ -46,7 +46,7 @@ const fs=require('fs'),assert=require('node:assert/strict'),{PGlite}=require('@e
  // server-side definer paths are not limited
  await as(rec);await db.query("select srv_touch($1)",[p]);await db.exec('reset role');assert.equal((await db.query("select status from patients where id=$1",[p])).rows[0].status,'archived');
  // rollback applies
- await db.exec(fs.readFileSync('supabase/rollbacks/20261120900000_archive_reception_scope.rollback.sql','utf8'));
+ await db.exec(fs.readFileSync('supabase/rollbacks/20261120070000_archive_reception_scope.rollback.sql','utf8'));
  await as(rec);await db.query("update patients set status='active' where id=$1",[p]);
  console.log('archive reception scope: ok');
  }catch(e){console.error(e);process.exitCode=1;}finally{await db.close();}
