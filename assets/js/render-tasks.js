@@ -176,8 +176,8 @@
     function newCommentsIn(list){return list.reduce(function(a,t){return a+newComments(t.id);},0);}
     function commentsTabHtml(){
       var rows=state.notifications.filter(function(n){return n.kind==="comment";});
-      if(!rows.length)return '<section class="tv-body"><div class="tsk-empty tsk-empty-rich"><div class="tsk-empty-icon">💬</div><h3>مفيش تعليقات لسه</h3><p>التعليقات الجديدة على مهامك هتظهر هنا، وتقدر تفتح المهمة من نفس المكان.</p></div></section>';
-      return '<section class="tv-body"><div class="tv-comments">'+rows.map(function(n){var t=state.tasks.find(function(x){return x.id===n.task_id;});return '<button type="button" class="tv-comment'+(n.read_at?"":" new")+'" data-action="read-notice" data-id="'+n.id+'"><span class="tv-comment-ic">💬</span><span class="tv-comment-tx"><b>'+esc(t?t.title:String(n.message||"").replace(/^تعليق جديد على المهمة: /,""))+'</b><small>'+esc(t&&t.project_title?t.project_title+" · ":"")+esc(stamp(n.created_at))+'</small></span>'+(n.read_at?"":'<em class="tv-new">جديد</em>')+'</button>';}).join("")+'</div></section>';
+      if(!rows.length)return '<section class="tv-body"><div class="tsk-empty tsk-empty-rich">'+emptyIco('comment')+'<h3>مفيش تعليقات لسه</h3><p>التعليقات الجديدة على مهامك هتظهر هنا، وتقدر تفتح المهمة من نفس المكان.</p></div></section>';
+      return '<section class="tv-body"><div class="tv-comments">'+rows.map(function(n){var t=state.tasks.find(function(x){return x.id===n.task_id;});return '<button type="button" class="tv-comment'+(n.read_at?"":" new")+'" data-action="read-notice" data-id="'+n.id+'"><span class="tv-comment-ic">'+EMPTY_ICON.comment+'</span><span class="tv-comment-tx"><b>'+esc(t?t.title:String(n.message||"").replace(/^تعليق جديد على المهمة: /,""))+'</b><small>'+esc(t&&t.project_title?t.project_title+" · ":"")+esc(stamp(n.created_at))+'</small></span>'+(n.read_at?"":'<em class="tv-new">جديد</em>')+'</button>';}).join("")+'</div></section>';
     }
     function taskRow(t,sub,opts){
       opts=opts||{};
@@ -188,7 +188,7 @@
       if(t.status==="done")meta.push('<span class="tv-chip ok">✓ '+esc(relTime(t.completed_at||t.updated_at))+'</span>');
       if(t.priority==="urgent"||t.priority==="high")meta.push('<span class="tv-chip prio p-'+t.priority+'">'+PRIORITY[t.priority]+'</span>');
       if(cc&&cc.total)meta.push('<span class="tv-chip">☑ '+cc.done+'/'+cc.total+'</span>');
-      if(newComments(t.id))meta.push('<span class="tv-chip new">💬 تعليق جديد</span>');
+      if(newComments(t.id))meta.push('<span class="tv-chip new">تعليق جديد</span>');
       return '<div class="tv-row g-'+k+(t.parent_task_id?" is-sub":"")+'" data-task-id="'+t.id+'"><button type="button" class="tv-row-main" data-action="open-task" data-id="'+t.id+'"><span class="tv-dot"></span><span class="tv-row-title">'+esc(t.title)+'</span><span class="tv-row-meta">'+meta.join("")+'</span><span class="tv-pill g-'+k+'">'+esc(late?(note||"متأخرة"):(STATUS[t.status]||t.status))+'</span></button>'+quickReview(t)+(sub?'<button type="button" class="tv-sub" data-action="toggle-sub" data-id="'+t.id+'" aria-expanded="'+(sub.open?"true":"false")+'">'+(sub.open?"▾":"▸")+' '+sub.done+'/'+sub.total+' فرعية</button>':"")+'</div>';
     }
     // اعتماد/إرجاع سريع من القايمة نفسها لأي مهمة «بانتظار المراجعة» (المدير بس)
@@ -235,7 +235,7 @@
         '<span class="tsk-mini-foot"><span class="tsk-prio p-'+esc(t.priority||"normal")+'">'+esc(PRIORITY[t.priority]||"عادية")+'</span>'+(t.parent_task_id?'<span class="tsk-sub-badge">فرعية</span>':"")+'</span></button>';
     }
     function emptyHtml(kind,canCreate){
-      if(kind==="none")return '<div class="tsk-empty tsk-empty-rich"><div class="tsk-empty-icon">✅</div><h3>مفيش مهام لسه</h3><p>ابدأ بإضافة أول مهمة وحدّد مسؤول وموعد، وهتظهر هنا ويتابعها الفريق.</p>'+(canCreate?'<button class="btn btn-primary" data-action="new-task" data-project="'+(state.projects.find(function(p){return p.can_manage&&!state.archived[p.id];})||{}).id+'">+ إضافة مهمة</button>':"")+'</div>';
+      if(kind==="none")return '<div class="tsk-empty tsk-empty-rich">'+emptyIco('check')+'<h3>مفيش مهام لسه</h3><p>ابدأ بإضافة أول مهمة وحدّد مسؤول وموعد، وهتظهر هنا ويتابعها الفريق.</p>'+(canCreate?'<button class="btn btn-primary" data-action="new-task" data-project="'+(state.projects.find(function(p){return p.can_manage&&!state.archived[p.id];})||{}).id+'">+ إضافة مهمة</button>':"")+'</div>';
       return '<div class="tsk-empty tsk-empty-rich"><div class="tsk-empty-icon">🔎</div><h3>مفيش نتائج مطابقة</h3><p>جرّب تغيّر البحث أو الفلاتر.</p><button class="btn" data-action="clear-filters">مسح الفلاتر</button></div>';
     }
     var FILTER_LABEL={all:"الكل",mine:"مهامي",overdue:"متأخرة",soon:"تنتهي قريباً"};
@@ -250,7 +250,7 @@
     function doneListHtml(){
       var base=baseTasks(),pool=base.filter(matches).filter(function(t){return t.status==="done";});
       pool.sort(function(a,b){return new Date(b.completed_at||b.updated_at||0)-new Date(a.completed_at||a.updated_at||0);});
-      if(!pool.length)return '<div class="tv-empty"><div>✅</div><h3>'+(base.some(function(t){return t.status==="done";})?"مفيش نتائج مطابقة":"لسه مفيش مهام منجزة")+'</h3><p>أول ما حد يخلّص مهمة وتتعتمد هتظهر هنا مجمّعة بالأسبوع.</p></div>';
+      if(!pool.length)return '<div class="tv-empty">'+emptyIco('check')+'<h3>'+(base.some(function(t){return t.status==="done";})?"مفيش نتائج مطابقة":"لسه مفيش مهام منجزة")+'</h3><p>أول ما حد يخلّص مهمة وتتعتمد هتظهر هنا مجمّعة بالأسبوع.</p></div>';
       var groups=[],idx={},today=dayStart(new Date());
       pool.forEach(function(t){var d=dayStart(new Date(t.completed_at||t.updated_at)),diff=Math.round((today-d)/86400000),label=diff<=0?"النهارده":(diff===1?"أمس":(diff<7?"آخر 7 أيام":(diff<14?"الأسبوع اللي فات":d.toLocaleDateString("ar-EG-u-nu-latn",{month:"long",year:"numeric"}))));if(idx[label]===undefined){idx[label]=groups.length;groups.push({label:label,items:[]});}groups[idx[label]].items.push(t);});
       return '<div class="tv-groups">'+groups.map(function(g){return '<section class="tv-group"><h3>'+esc(g.label)+' <span>'+g.items.length+'</span></h3>'+g.items.map(function(t){return taskRow(t,null,{showProject:true});}).join("")+'</section>';}).join("")+'</div>';
@@ -311,7 +311,7 @@
       var last=mine.reduce(function(mx,t){return Math.max(mx,new Date(t.updated_at||0).getTime());},0);
       var health=!total?["none","بدون مهام"]:(c.late?["late",c.late+" متأخرة"]:(done===total?["done","مكتمل"]:(c.review?["review","بانتظار مراجعة"]:(c.active?["active","شغّال"]:["idle","لم يبدأ"]))));
       var members=(p.members||[]).slice(0,4).map(function(x){return '<span class="tv-av" title="'+esc(x.name)+'" aria-label="'+esc(x.name)+'">'+PERSON_ICON+'</span>';}).join("")+((p.members||[]).length>4?'<span class="tv-av more">+'+((p.members||[]).length-4)+'</span>':"");
-      return '<article class="tv-proj'+(archived?" is-archived":"")+'" role="button" tabindex="0" data-action="open-project" data-project="'+p.id+'" data-project-id="'+p.id+'"><div class="tv-proj-top"><span class="tv-logo">'+esc(String(p.title||"م").trim().charAt(0))+'</span><div class="tv-proj-name"><b>'+esc(p.title)+(archived?' <em class="tv-arch">مؤرشف</em>':"")+'</b><small>'+esc(m?m.name:"—")+'</small></div><span class="tv-health h-'+health[0]+'">'+esc(health[1])+'</span></div>'+(newCommentsIn(mine)?'<div class="tv-newline">💬 '+newCommentsIn(mine)+' تعليق جديد</div>':"")+
+      return '<article class="tv-proj'+(archived?" is-archived":"")+'" role="button" tabindex="0" data-action="open-project" data-project="'+p.id+'" data-project-id="'+p.id+'"><div class="tv-proj-top"><span class="tv-logo">'+esc(String(p.title||"م").trim().charAt(0))+'</span><div class="tv-proj-name"><b>'+esc(p.title)+(archived?' <em class="tv-arch">مؤرشف</em>':"")+'</b><small>'+esc(m?m.name:"—")+'</small></div><span class="tv-health h-'+health[0]+'">'+esc(health[1])+'</span></div>'+(newCommentsIn(mine)?'<div class="tv-newline">'+newCommentsIn(mine)+' تعليق جديد</div>':"")+
         (p.description?'<p class="tv-proj-desc">'+esc(p.description)+'</p>':"")+
         '<div class="tv-proj-num"><b>'+done+'</b><span>من '+total+' مهمة تمت</span><em>'+(total?Math.round(done*100/total):0)+'%</em></div>'+segBar(c,total)+'<div class="tv-legend">'+segLegend(c)+'</div>'+
         '<div class="tv-proj-next">'+(!total?"أضف أول مهمة للمشروع":(left?'المتبقي <b>'+left+'</b>'+(open?' · الأقرب: '+esc(open.title)+' <em class="'+(isOverdue(open)?"late":"")+'">'+esc(dueNote(open).replace(/^ · /,""))+'</em>':""):"كل المهام تمت ✓"))+'</div>'+
@@ -325,7 +325,7 @@
       function rowWithKids(t){var kids=kidsOf(t),sub=kids.length?{total:kids.filter(function(x){return x.status!=="cancelled";}).length,done:kids.filter(function(x){return x.status==="done";}).length,open:!!state.expanded[t.id]}:null;return taskRow(t,sub,{})+(sub&&sub.open?'<div class="tv-kids">'+sortTasks(kids,"manual").map(function(k){return taskRow(k,null,{});}).join("")+'</div>':"");}
       function rootSeg(t){return seg(t);}
       var body="";
-      if(!mine.length)body='<div class="tv-empty"><div>🗂️</div><h3>المشروع لسه فاضي</h3><p>ابدأ بإضافة أول مهمة وحدّد مسؤول وموعد.</p>'+(p.can_manage&&canAdd&&!archived?'<button class="btn btn-primary" data-action="new-task" data-project="'+p.id+'">+ مهمة</button>':"")+'</div>';
+      if(!mine.length)body='<div class="tv-empty">'+emptyIco('folder')+'<h3>المشروع لسه فاضي</h3><p>ابدأ بإضافة أول مهمة وحدّد مسؤول وموعد.</p>'+(p.can_manage&&canAdd&&!archived?'<button class="btn btn-primary" data-action="new-task" data-project="'+p.id+'">+ مهمة</button>':"")+'</div>';
       else if(f!=="all"){
         var list=roots.filter(function(t){return rootSeg(t)===f||kidsOf(t).some(function(k){return seg(k)===f;});});
         body=list.length?'<div class="tv-list">'+list.map(rowWithKids).join("")+'</div>':'<div class="tv-empty"><h3>مفيش مهام بالحالة دي</h3></div>';
@@ -347,9 +347,9 @@
       var archivedCount=state.projects.filter(function(p){return state.archived[p.id];}).length;
       var shown=state.projects.filter(function(p){return state.showArchived||!state.archived[p.id];});
       var canCreate=window.SSMPDRoles.canModuleAction(admin,"tasks","create")&&(isAdmin||window.SSMPDRoles.isControlledFinance(admin));
-      if(!state.projects.length)return '<div class="tv-empty"><div>🗂️</div><h3>مفيش مشاريع لسه</h3><p>المشروع أو خطة العمل هي اللي بتتجمّع تحتها المهام ويتابعها فريق محدد.</p>'+(canCreate?'<button class="btn btn-primary" data-action="new-project">+ مشروع / خطة عمل</button>':"")+'</div>';
+      if(!state.projects.length)return '<div class="tv-empty">'+emptyIco('folder')+'<h3>مفيش مشاريع لسه</h3><p>المشروع أو خطة العمل هي اللي بتتجمّع تحتها المهام ويتابعها فريق محدد.</p>'+(canCreate?'<button class="btn btn-primary" data-action="new-project">+ مشروع / خطة عمل</button>':"")+'</div>';
       var sorted=shown.slice().sort(function(a,b){var la=Math.max.apply(null,[0].concat(projTasks(a).map(function(t){return new Date(t.updated_at||0).getTime();}))),lb=Math.max.apply(null,[0].concat(projTasks(b).map(function(t){return new Date(t.updated_at||0).getTime();})));return lb-la;});
-      return (archivedCount?'<div class="tv-sub-actions"><button class="btn btn-quiet" data-action="toggle-archived">'+(state.showArchived?"إخفاء المؤرشفة":"عرض المؤرشفة ("+archivedCount+")")+'</button></div>':"")+'<div class="tv-grid">'+(sorted.map(projectTile).join("")||'<div class="tv-empty"><div>🗂️</div><h3>كل المشاريع مؤرشفة</h3><p>اضغط "عرض المؤرشفة" لو عايز تشوفها.</p></div>')+'</div>';
+      return (archivedCount?'<div class="tv-sub-actions"><button class="btn btn-quiet" data-action="toggle-archived">'+(state.showArchived?"إخفاء المؤرشفة":"عرض المؤرشفة ("+archivedCount+")")+'</button></div>':"")+'<div class="tv-grid">'+(sorted.map(projectTile).join("")||'<div class="tv-empty">'+emptyIco('folder')+'<h3>كل المشاريع مؤرشفة</h3><p>اضغط "عرض المؤرشفة" لو عايز تشوفها.</p></div>')+'</div>';
     }
     function needsStrip(base,unread){
       var mgr=isAdmin||base.some(function(t){return t.can_manage;});
@@ -403,6 +403,8 @@
       var avg=people.length?open.length/people.length:0;
       return '<section class="tv2-overview" aria-label="نظرة على المهام المفتوحة"><div class="tv2-card"><div class="tv2-ch"><h2>توزيع المهام</h2><span>'+open.length+' مهمة مفتوحة</span></div>'+segBar(c,open.length)+'<div class="tv-legend tv2-leg">'+segLegend(c)+'</div></div><div class="tv2-card"><div class="tv2-ch"><h2>حِمل الفريق</h2><span>مهام مفتوحة لكل موظف</span></div><div class="tv2-load">'+people.map(function(p){return '<div class="'+(p.n>avg*1.5&&people.length>2?"over":"")+'"><span>'+esc(p.name)+'</span><span class="tv2-meter"><i style="width:'+Math.max(6,Math.round(p.n*100/max))+'%"></i></span><em>'+p.n+(p.late?' <small>(متأخر '+p.late+')</small>':'')+'</em></div>';}).join("")+'</div></div></section>';
     }
+    var EMPTY_ICON={folder:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h6l2 2h10v10H3z"/></svg>',check:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg>',comment:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg>'};
+    function emptyIco(k){return '<span class="tv-empty-ico">'+EMPTY_ICON[k]+'</span>';}
     var PERSON_ICON='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c1-4 4-6 8-6s7 2 8 6"/></svg>';
     var WEEK_AR=["س","ح","ن","ث","ر","خ","ج"];
     function insightsHtml(own){
