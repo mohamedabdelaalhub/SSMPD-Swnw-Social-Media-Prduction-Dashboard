@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>تصور — التقارير</title>
+<!-- Mockup only. All names, codes and figures are synthetic placeholders (no real patients, doctors or money).
+     Open with ?screen=N (0..13) to land on a screen. -->
+<style>
+@font-face{font-family:"Hiragino Kaku";src:url("../../../assets/fonts/Hiragino-W3.woff2") format("woff2");font-weight:300}
+@font-face{font-family:"Hiragino Kaku";src:url("../../../assets/fonts/Hiragino-W6.woff2") format("woff2");font-weight:600}
+@font-face{font-family:"BigVesta Arabic";src:url("../../../assets/fonts/BigVesta-Regular.woff2") format("woff2");font-weight:400}
+@font-face{font-family:"BigVesta Arabic";src:url("../../../assets/fonts/BigVesta-Bold.woff2") format("woff2");font-weight:700}
+:root{--gap:16px;--blue:#0F369D;--blue-2:#1E4FC8;--blue-t:#E8EEFB;--orange:#F15A22;--ink:#16212E;--ink-2:#3B4656;--muted:#6B7483;--line:#E6E8EE;--bg:#F3F4F7;--r:18px;--pos:#2F7D5C;--neg:#D0402A;--pos-t:#E5F2EC;--neg-t:#FBE9E5;--warn-t:#FDEBE2;
+  --ease:cubic-bezier(.22,1,.36,1)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;font-size:14px;font-variant-numeric:tabular-nums;line-height:1.5}
+svg{overflow:visible}
+a{color:inherit;text-decoration:none}
+button,select{font:inherit;color:inherit}
+.ic{fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;width:16px;height:16px;flex:none}
+main{max-width:1240px;margin:0 auto;padding:20px 20px 56px}
+
+/* top bar + switcher */
+.top{display:flex;align-items:center;gap:12px;margin-bottom:var(--gap)}
+.brand{display:flex;align-items:center;gap:8px;font-weight:700;color:var(--blue);white-space:nowrap}
+.brand img{width:28px;height:28px}
+.who{margin-inline-start:auto;color:var(--muted);font-size:12.5px;white-space:nowrap}
+.sw{display:flex;gap:6px;overflow-x:auto;padding:2px 0 12px;margin-bottom:4px;scrollbar-width:thin}
+.sw button{flex:none;border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 14px;font-size:13px;cursor:pointer;color:var(--ink-2);white-space:nowrap;transition:background .2s var(--ease),color .2s,transform .12s}
+.sw button:active{transform:scale(.97)}
+.sw button[aria-pressed=true]{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:600}
+.sw button i{font-style:normal;opacity:.55;margin-inline-end:6px;font-size:11.5px}
+
+/* header */
+.ph{margin:8px 0 var(--gap)}
+.ph .crumb{font-size:12px;color:var(--muted)}
+.ph h1{margin:2px 0 2px;font-size:28px;line-height:1.25}
+.ph p{margin:0;color:var(--muted);font-size:13.5px}
+
+/* grid + cards */
+.g{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--gap);align-items:stretch}
+.s1{grid-column:span 1}.s2{grid-column:span 2}.s3{grid-column:span 3}.s4{grid-column:span 4}
+.gh{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.gh{margin-top:0}
+.gh h2{margin:0;font-size:16px}.gh span{color:var(--muted);font-size:12.5px}
+.card{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:20px;min-width:0;display:flex;flex-direction:column;transition:box-shadow .25s var(--ease),transform .25s var(--ease)}
+@media (hover:hover){.card:hover{box-shadow:0 12px 26px rgba(22,33,46,.06)}a.card:hover{transform:translateY(-3px)}}
+.ch{display:flex;align-items:flex-start;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.ch h3{margin:0;font-size:15.5px}.ch h3 small{display:block;font-weight:400;color:var(--muted);font-size:12px;margin-top:2px}
+.ch .acts{margin-inline-start:auto;display:flex;gap:8px;flex-wrap:wrap}
+
+/* filters */
+.fb{flex-direction:row;flex-wrap:wrap;gap:12px 14px;align-items:flex-end}
+.f{display:flex;flex-direction:column;gap:4px;min-width:150px;flex:1 1 150px}
+.f>span{font-size:11.5px;color:var(--muted)}
+.f select{appearance:none;-webkit-appearance:none;border:1px solid var(--line);border-radius:12px;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236B7483' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat left 12px center;padding:9px 14px 9px 34px;font-size:13.5px;cursor:pointer;min-height:40px;width:100%}
+.f select:focus{outline:2px solid var(--blue-t);border-color:var(--blue)}
+.pills{display:flex;gap:6px;flex-wrap:wrap}
+.pill{border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 14px;font-size:13px;cursor:pointer;white-space:nowrap;min-height:40px;display:inline-flex;align-items:center;gap:6px}
+.pill b{font-weight:600;color:var(--muted);font-size:12px}
+.pill[aria-pressed=true]{background:var(--ink);border-color:var(--ink);color:#fff}.pill[aria-pressed=true] b{color:#cfd5df}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;gap:6px;border-radius:12px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid var(--blue);background:var(--blue);color:#fff;min-height:38px;white-space:nowrap;transition:transform .12s,box-shadow .2s var(--ease)}
+.btn.sec{background:#fff;color:var(--blue)}
+.btn:active{transform:scale(.97)}
+@media (hover:hover){.btn:hover{transform:translateY(-2px);box-shadow:0 6px 14px rgba(15,54,157,.18)}}
+
+/* tiles */
+.tile{gap:2px;justify-content:flex-start;position:relative}
+.tile .l{font-size:12.5px;color:var(--muted)}
+.tile .v{font-size:28px;font-weight:700;line-height:1.25;margin-top:4px;white-space:nowrap}
+.tile .v small{font-size:13px;font-weight:400;color:var(--muted);margin-inline-start:4px}
+.tile .sub{font-size:12px;color:var(--muted);margin-top:2px}
+.tile .sp{margin-top:auto;padding-top:10px;direction:ltr;height:38px}
+.tile .sp svg{width:100%;height:28px;display:block}
+.tile.neg .v{color:var(--neg)}
+.hero{background:linear-gradient(135deg,#F15A22,#FF8247);border-color:transparent;color:#fff}
+.hero .l,.hero .sub,.hero .v small{color:rgba(255,255,255,.9)}
+.hero .sp svg *{stroke:#fff}.hero .sp svg circle{fill:#fff}
+
+/* chips */
+.chip{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:600;white-space:nowrap;background:#EEF0F4;color:var(--ink-2)}
+.chip.ok{background:var(--pos-t);color:var(--pos)}.chip.bad{background:var(--neg-t);color:var(--neg)}.chip.warn{background:var(--warn-t);color:#B8400F}.chip.blue{background:var(--blue-t);color:var(--blue)}
+.chip .ic{width:12px;height:12px}
+.neg{color:var(--neg)}.pos{color:var(--pos)}
+.badge{display:inline-flex;align-items:center;gap:6px;background:var(--neg-t);color:var(--neg);border-radius:10px;padding:4px 12px;font-size:12.5px;font-weight:600}
+.note{background:var(--blue-t);color:var(--blue);border-color:#D3DEF6;flex-direction:row;align-items:center;gap:10px;padding:14px 20px;font-size:13.5px}
+.note.warn{background:var(--warn-t);color:#B8400F;border-color:#F8D5C4}
+.note.red{background:var(--neg-t);color:var(--neg);border-color:#F3CFC8}
+
+/* tables */
+.tw{overflow-x:auto;margin:0 -4px;padding:0 4px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{font-weight:600;color:var(--muted);font-size:12px;text-align:start;padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap;background:#FAFBFC}
+td{padding:11px 12px;border-bottom:1px solid #F0F1F5;white-space:nowrap}
+tbody tr:hover td{background:#FAFBFE}
+td.n,th.n{text-align:end}
+tfoot td{font-weight:700;background:#F4F6FB;border-top:2px solid var(--line);border-bottom:0}
+tr.sub td{font-weight:700;background:#F7F8FB}
+tr.grp td{font-weight:700;color:var(--blue);background:#fff;padding-top:16px}
+td.in{padding-inline-start:28px;color:var(--ink-2)}
+.tw::-webkit-scrollbar{height:6px}.tw::-webkit-scrollbar-thumb{background:#D8DCE5;border-radius:3px}
+
+/* charts */
+.hb{display:flex;flex-direction:column;gap:10px}
+.hb .r{display:grid;grid-template-columns:130px 1fr 96px;gap:12px;align-items:center;font-size:13px}
+.hb .tr{height:14px;background:#EEF0F4;border-radius:0 7px 7px 0;border-radius:7px;overflow:hidden;display:flex;direction:ltr;justify-content:flex-start}
+.hb .tr i{display:block;height:100%;background:var(--blue);border-radius:0 7px 7px 0}
+.hb .r span:last-child{text-align:end;font-weight:600}
+.seg{display:flex;direction:ltr;gap:2px;height:20px}
+.seg i{display:block;height:100%;min-width:3px}
+.seg i:first-child{border-radius:7px 0 0 7px}.seg i:last-child{border-radius:0 7px 7px 0}
+.lg{display:flex;gap:6px 16px;flex-wrap:wrap;font-size:12.5px;color:var(--ink-2);margin-top:12px}
+.lg span{display:inline-flex;align-items:center;gap:6px}.lg i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.stk{display:flex;flex-direction:column;gap:12px}
+.stk .r{display:grid;grid-template-columns:170px 1fr 100px;gap:12px;align-items:center;font-size:13px}
+.stk .r span:last-child{text-align:end;font-weight:600}
+.fn{display:flex;flex-direction:column;gap:6px}
+.fn .st{display:grid;grid-template-columns:130px 1fr;gap:12px;align-items:center}
+.fn .nm{font-size:13px}
+.fn .bar{height:34px;border-radius:9px;background:var(--blue);color:#fff;display:flex;align-items:center;padding:0 12px;font-weight:700;font-size:13.5px;white-space:nowrap;margin-inline-end:auto;min-width:56px}
+.fn .bar.sp{background:#16212E}
+.fn .cv{display:grid;grid-template-columns:130px 1fr;gap:12px}
+.fn .cv span{grid-column:2;font-size:12px;color:var(--muted);padding-inline-start:12px}
+.fn .cv b{color:var(--pos)}
+.mt{height:8px;background:#EEF0F4;border-radius:4px;overflow:hidden;direction:ltr}
+.mt i{display:block;height:100%;border-radius:4px;background:var(--blue)}
+.mt.ok i{background:var(--pos)}.mt.mid i{background:var(--blue)}.mt.low i{background:var(--neg)}
+
+/* targets */
+.tg{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,1.3fr) 76px;gap:10px;align-items:center;padding:12px 0;border-bottom:1px solid #F0F1F5;font-size:13px}
+.tg.h{font-size:11.5px;color:var(--muted);padding-top:0}
+.tg:last-child{border-bottom:0}
+.tg .pc{display:flex;flex-direction:column;gap:4px}.tg .pc b{font-size:12.5px}
+.tg .sp{direction:ltr}.tg .sp svg{width:100%;height:24px;display:block}
+.tg .nm small{display:block;color:var(--muted);font-size:11.5px}
+
+/* permissions */
+.perm td,.perm th{text-align:center}
+.perm td:first-child,.perm th:first-child{text-align:start;position:sticky;inset-inline-start:0;background:#fff;z-index:1;box-shadow:-1px 0 0 var(--line)}
+.perm th:first-child{background:#FAFBFC}
+.perm input{width:18px;height:18px;accent-color:var(--blue);cursor:pointer}
+.perm input:disabled{opacity:.35;cursor:not-allowed}
+.perm td:last-child,.perm th:last-child{text-align:start;min-width:210px}
+.pp{display:inline-flex;align-items:center;gap:4px;background:var(--blue-t);color:var(--blue);border-radius:999px;padding:2px 10px;font-size:12px;margin-inline-end:4px}
+.pp.add{background:#fff;border:1px dashed #AEBBDD}
+
+/* home cards */
+a.rc{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:14px;padding:16px;gap:6px;min-height:118px;transition:transform .25s var(--ease),box-shadow .25s var(--ease)}
+@media (hover:hover){a.rc:hover{transform:translateY(-3px);box-shadow:0 10px 22px rgba(22,33,46,.07)}}
+.grpc .gh{grid-column:auto;margin:0 0 12px}
+.rg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+a.rc .n{font-weight:700;font-size:15px;display:flex;align-items:center;gap:8px}
+a.rc .n .ic{color:var(--blue);width:18px;height:18px}
+a.rc p{margin:0;color:var(--muted);font-size:12.5px;line-height:1.55}
+a.rc .ft{margin-top:auto;padding-top:8px;display:flex;gap:6px}
+a.rc.lk{background:#FAFAFB}
+a.rc.lk .n,a.rc.lk p{opacity:.65}
+a.rc.soon{cursor:default}
+
+.doc{flex-direction:row;align-items:center;gap:16px;flex-wrap:wrap}
+.av{width:56px;height:56px;border-radius:50%;background:var(--blue-t);color:var(--blue);display:grid;place-items:center;flex:none}
+.av svg{width:28px;height:28px}
+.doc h2{margin:0;font-size:19px}.doc small{color:var(--muted);font-size:12.5px}
+.doc .rt{margin-inline-start:auto;display:flex;gap:8px;flex-wrap:wrap}
+.dt{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.dt div{font-size:12.5px;color:var(--muted)}.dt b{display:block;color:var(--ink);font-size:15px}
+.cap{font-size:12px;color:var(--muted);margin-top:10px}
+.cap{margin-top:12px}
+
+@media (max-width:1100px){.stk .r{grid-template-columns:140px 1fr 90px}}
+@media (max-width:900px){
+ .g{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .s3,.s4{grid-column:span 2}
+ .rg{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .hb .r{grid-template-columns:96px 1fr 84px}
+}
+@media (max-width:600px){
+ :root{--gap:12px}
+ main{padding:14px 12px 40px}
+ .ph h1{font-size:23px}
+ .card{padding:16px;border-radius:16px}
+ .tile .v{font-size:23px}
+ .who{display:none}
+ .f{flex:1 1 100%}
+ .stk .r{grid-template-columns:1fr 84px;gap:6px 10px}.stk .r .tr,.stk .r .seg{grid-column:1/-1;order:3}
+ .hb .r{grid-template-columns:84px 1fr 78px;gap:8px}
+ .fn .st,.fn .cv{grid-template-columns:76px 1fr;gap:8px}
+ .fn .bar{font-size:12px;padding:0 8px}
+ .rg{grid-template-columns:1fr}
+ .tg{grid-template-columns:1fr 1fr;gap:6px 10px}
+ .tg.h{display:none}
+ .tg .nm{grid-column:1/-1}
+ .tg .pc{grid-column:1/-1}
+ .tg .sp{grid-column:1/-1}
+ .doc .rt{margin-inline-start:0}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <div class="brand"><img src="../../../assets/img/mark.svg" alt=""><span>Swnw</span></div>
+    <div class="who" id="who">تصور — بيانات تجريبية فقط</div>
+  </div>
+  <nav class="sw" id="sw" aria-label="شاشات التصور"></nav>
+  <div id="app"></div>
+</main>
+
+<script>
+(function(){
+'use strict';
+var BR='حدائق الأهرام (الرئيسي)';
+var $=function(s){return document.querySelector(s)};
+var fmt=function(x){return Math.round(x).toLocaleString('en-US')};
+var sgn=function(x){return (x>0?'+':'')+fmt(x)};
+var sum=function(a,f){return a.reduce(function(t,r){return t+(f?f(r):r)},0)};
+
+/* icons */
+var I={
+ lock:'<svg class="ic" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
+ file:'<svg class="ic" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>',
+ dl:'<svg class="ic" viewBox="0 0 24 24"><path d="M12 4v11m0 0-4-4m4 4 4-4M5 20h14"/></svg>',
+ user:'<svg viewBox="0 0 24 24" class="ic" style="stroke-width:1.6"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>',
+ plus:'<svg class="ic" viewBox="0 0 24 24" style="width:12px;height:12px"><path d="M12 5v14M5 12h14"/></svg>',
+ info:'<svg class="ic" viewBox="0 0 24 24" style="width:18px;height:18px"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>',
+ cash:'<svg class="ic" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/></svg>',
+ chart:'<svg class="ic" viewBox="0 0 24 24"><path d="M4 20V10m6 10V4m6 16v-7m4 7H3"/></svg>',
+ box:'<svg class="ic" viewBox="0 0 24 24"><path d="m21 8-9-5-9 5 9 5zM3 8v8l9 5 9-5V8M12 13v8"/></svg>',
+ pulse:'<svg class="ic" viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg>'
+};
+
+/* shared pieces */
+function spark(a,w){w=w||100;var mn=Math.min.apply(0,a),mx=Math.max.apply(0,a),h=26,p=4;
+ var pts=a.map(function(v,i){return [(i/(a.length-1))*(w-2*p)+p, h-p-((v-mn)/((mx-mn)||1))*(h-2*p)]});
+ var e=pts[pts.length-1];
+ return '<svg viewBox="0 0 '+w+' '+h+'" preserveAspectRatio="none" aria-hidden="true"><polyline points="'+pts.map(function(q){return q[0].toFixed(1)+','+q[1].toFixed(1)}).join(' ')+'" fill="none" stroke="#0F369D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>';}
+function sparkDot(a){/* sparkline with end dot, fixed aspect */
+ var mn=Math.min.apply(0,a),mx=Math.max.apply(0,a),w=120,h=28,p=5;
+ var pts=a.map(function(v,i){return [(i/(a.length-1))*(w-2*p)+p, h-p-((v-mn)/((mx-mn)||1))*(h-2*p)]});
+ var e=pts[pts.length-1];
+ return '<svg viewBox="0 0 '+w+' '+h+'" style="width:100%;height:28px" aria-hidden="true"><polyline points="'+pts.map(function(q){return q[0].toFixed(1)+','+q[1].toFixed(1)}).join(' ')+'" fill="none" stroke="#0F369D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="'+e[0].toFixed(1)+'" cy="'+e[1].toFixed(1)+'" r="4" fill="#0F369D" stroke="#fff" stroke-width="2"/></svg>';}
+function tile(o){return '<div class="card tile s'+(o.span||1)+(o.hero?' hero':'')+(o.neg?' neg':'')+'"><div class="l">'+o.l+'</div><div class="v">'+o.v+(o.u?'<small>'+o.u+'</small>':'')+'</div>'+(o.sub?'<div class="sub">'+o.sub+'</div>':'')+(o.sp?'<div class="sp">'+sparkDot(o.sp)+'</div>':'')+'</div>';}
+function chip(t,k){return '<span class="chip '+(k||'')+'">'+t+'</span>';}
+function sel(label,opts,val){return '<label class="f"><span>'+label+'</span><select>'+opts.map(function(o){return '<option'+(o===val?' selected':'')+'>'+o+'</option>'}).join('')+'</select></label>';}
+function filters(extra,opt){opt=opt||{};
+ var h=sel('الفترة',opt.periods||['أكتوبر ٢٠٢٦','نوفمبر ٢٠٢٦ (حتى اليوم)','آخر ٣٠ يوم','الربع الثالث ٢٠٢٦','فترة مخصصة…'],opt.period)
+  +sel('الفرع',[BR,'كل الفروع'],BR);
+ (extra||[]).forEach(function(e){h+=e.html||sel(e[0],e[1],e[2])});
+ return '<div class="card fb s4">'+h+'</div>';}
+function acts(){return '<div class="acts"><button class="btn">'+I.dl+'تصدير Excel</button><button class="btn sec">'+I.file+'PDF</button></div>';}
+function head(t,s,a){return '<div class="ch"><h3>'+t+(s?'<small>'+s+'</small>':'')+'</h3>'+(a===false?'':acts())+'</div>';}
+function pageHead(t,s,crumb){return '<div class="ph"><div class="crumb">'+(crumb||'التقارير')+'</div><h1>'+t+'</h1><p>'+s+'</p></div>';}
+/* table: cols [{h,n(umeric)}], rows arrays of strings, foot array */
+function table(cols,rows,foot,cls){
+ return '<div class="tw"><table class="'+(cls||'')+'"><thead><tr>'+cols.map(function(c){return '<th class="'+(c.n?'n':'')+'">'+c.h+'</th>'}).join('')+'</tr></thead><tbody>'
+ +rows.map(function(r){var rc='';if(r&&r.cells){rc=r._c||'';r=r.cells}return '<tr class="'+rc+'">'+r.map(function(c,i){return '<td class="'+(cols[i]&&cols[i].n?'n':'')+'">'+c+'</td>'}).join('')+'</tr>'}).join('')
+ +'</tbody>'+(foot?'<tfoot><tr>'+foot.map(function(c,i){return '<td class="'+(cols[i]&&cols[i].n?'n':'')+'">'+c+'</td>'}).join('')+'</tr></tfoot>':'')+'</table></div>';}
+function tcard(title,sub,cols,rows,foot,span,cls){return '<div class="card s'+(span||4)+'">'+head(title,sub)+table(cols,rows,foot,cls)+'</div>';}
+function note(t,k){return '<div class="card note s4 '+(k||'')+'">'+I.info+'<span>'+t+'</span></div>';}
+function red(x){return x<0?'<span class="neg">'+fmt(x)+'</span>':(x>0?'<span class="pos">+'+fmt(x)+'</span>':'0');}
+
+/* ---------- screens ---------- */
+var S=[];
+
+/* 0 home */
+S[0]=function(){
+ var G=[
+  ['الخزنة والإيرادات','تحصيل اليوم وحركة الخزن',[['الإقفال اليومي للخزنة','مطابقة المتوقع بالمعدود لكل شيفت وكاشير.',2,0,I.cash],['التعديلات والإلغاءات والخصومات','كل تعديل على فاتورة: مين طلبه ومين اعتمده.',3,0,I.file],['إيرادات التخصصات والدكاترة','الإيراد والصافي حسب التخصص والدكتور وجهة الدفع.',4,0,I.chart]]],
+  ['الدكاترة','متابعة الدكاترة',[['كشف مستحقات دكتور','حصة الدكتور شهرياً وما اتصرف والمتبقي.',5,1,I.cash],['يومي — مرضى الدكتور','مرضى الدكتور النهارده بس، بدون أي أرقام مالية.',6,0,I.user]]],
+  ['التأمين والتعاقدات','المطالبات والجهات',[['أعمار الديون','المستحق على كل جهة موزّع على شرائح الأيام.',8,0,I.chart]]],
+  ['المخزن والصيدلية','الأصناف والصلاحية',[['نواقص وصلاحية','الأصناف تحت حد الطلب وقرب انتهاء الصلاحية.',9,0,I.box],['صرف الأدوية','شامل الخدمة مقابل المباع للمريض.',9,0,I.box]]],
+  ['القوائم المالية والضرائب','للإدارة والمالية',[['قائمة الدخل للفرع','إيرادات وتكاليف وصافي الربح مقارنة بالشهر السابق.',10,1,I.chart],['الموقف الضريبي','المستحق والمسدد والمتبقي لكل ضريبة.',11,1,I.file]]],
+  ['الموظفين','الحضور والأداء',[['الحضور والانصراف','التأخير والغياب حسب القسم (تصور منفصل).',-1,0,I.user],['أداء الموظفين','التقييم الشهري ومؤشرات الالتزام (تصور منفصل).',-1,0,I.pulse]]],
+  ['التسويق والتارجت','المستهدف والإعلانات',[['التارجت مقابل الفعلي','مؤشرات كل مسؤول مقابل المستهدف الشهري.',12,0,I.chart],['مسار الحملة الإعلانية','من صرف الإعلان لحد الدفع، وتكلفة الحجز.',13,0,I.chart]]],
+  ['التشغيل','تشغيل اليوم',[['التقرير الصباحي','ملخص أمس في شاشة واحدة قبل فتح العيادة.',7,0,I.pulse],['الزيارات والغياب','عدد الزيارات وماجوش حسب التخصص (قريباً).',-1,0,I.user]]]
+ ];
+ var h=pageHead('التقارير','كل تقارير المركز في مكان واحد — اللي مقفول عليك بعلامة القفل.')
+  +'<div class="g"><div class="card note s4">'+I.info+'<span>أنت داخل بدور <b>المحاسب</b> — بتشوف التقارير المسموحة لدورك بس.</span></div>';
+ G.forEach(function(g){h+='<div class="card grpc s4"><div class="gh"><h2>'+g[0]+'</h2><span>'+g[1]+'</span></div><div class="rg">';
+  g[2].forEach(function(r){var lk=r[3],href=r[2]>=0?'?screen='+r[2]:'#';
+   h+='<a class="rc'+(lk?' lk':'')+(r[2]<0?' soon':'')+'" href="'+href+'" data-go="'+r[2]+'"><div class="n">'+r[4]+r[0]+'</div><p>'+r[1]+'</p><div class="ft">'+(lk?'<span class="chip">'+I.lock+'مقفول عليك</span>':r[2]<0?'<span class="chip">قريباً</span>':'<span class="chip blue">متاح</span>')+'</div></a>';});
+  h+='</div></div>';});
+ return h+'</div>';
+};
+
+/* 1 permissions */
+S[1]=function(){
+ var roles=['المدير العام','المدير المالي','المحاسب','مدير الفرع','الاستقبال','الكول سنتر','السوشيال ميديا','الدكتور'];
+ var R=[
+  ['الإقفال اليومي للخزنة',[1,1,1,1,0,0,0,0],['مراجع تجريبي ١']],
+  ['التعديلات والإلغاءات والخصومات',[1,1,1,1,0,0,0,0],[]],
+  ['إيرادات التخصصات والدكاترة',[1,1,1,1,0,0,0,0],['مستخدم تجريبي ٢']],
+  ['كشف مستحقات دكتور',[1,1,0,0,0,0,0,0],[],true],
+  ['يومي — مرضى الدكتور',[1,0,0,1,0,0,0,1],[]],
+  ['التقرير الصباحي',[1,1,1,1,0,0,0,0],['مستخدم تجريبي ٣']],
+  ['أعمار الديون',[1,1,1,0,0,0,0,0],[]],
+  ['نواقص وصلاحية المخزن',[1,1,1,1,0,0,0,0],['أمين مخزن تجريبي']],
+  ['قائمة الدخل للفرع',[1,1,0,0,0,0,0,0],[]],
+  ['الموقف الضريبي',[1,1,1,0,0,0,0,0],[]],
+  ['التارجت مقابل الفعلي',[1,1,0,1,1,1,1,0],[]],
+  ['مسار الحملة الإعلانية',[1,1,0,1,0,1,1,0],['مستخدم تجريبي ٤']]
+ ];
+ var rows=R.map(function(r){var locked=!!r[3];
+  return {_c:'',cells:['<b>'+r[0]+'</b>'+(locked?' <span class="chip bad">'+I.lock+'إدارة + مالي فقط</span>':'')].concat(r[1].map(function(v,i){var dis=locked&&i>1;return '<input type="checkbox"'+(v?' checked':'')+(dis?' disabled':'')+' aria-label="'+roles[i]+'">'}),
+   [r[2].map(function(p){return '<span class="pp">'+p+'</span>'}).join('')+(locked?'':'<span class="pp add">'+I.plus+'إضافة</span>')])};});
+ var cols=[{h:'التقرير'}].concat(roles.map(function(x){return {h:x}})).concat([{h:'أشخاص بالاسم'}]);
+ return pageHead('صلاحيات التقارير','مين يفتح أي تقرير — بالدور أو بالاسم. يظهر لمالك النظام بس.','لوحة التحكم')
+  +'<div class="g">'+note('مستحقات الدكاترة للإدارة والمدير المالي فقط.','warn')
+  +'<div class="card s4">'+head('مصفوفة الصلاحيات','صف لكل تقرير · عمود لكل دور · صلاحية إضافية لأشخاص بالاسم',false)
+  +'<div style="margin:-4px 0 14px;display:flex;gap:8px;justify-content:flex-start"><button class="btn">حفظ التغييرات</button><button class="btn sec">تراجع</button></div>'
+  +table(cols,rows.map(function(r){return r}),null,'perm')+'<div class="cap">أي تغيير بيتسجّل في سجل التدقيق باسم من عدّله.</div></div></div>';
+};
+
+/* 2 cash close */
+S[2]=function(){
+ var sh=[['صباحي ١','كاشير تجريبي ١','08:00 → 16:00',2000,41500,6200,0,'ok'],['مسائي ١','كاشير تجريبي ٢','16:00 → 23:30',1500,38200,4100,-150,'diff'],['صباحي ٢','كاشير تجريبي ٣','08:00 → 16:05',2000,29800,3000,0,'ok'],['مسائي ٢','كاشير تجريبي ١','16:00 → 23:40',1500,33400,2500,50,'pend'],['صباحي ٣','كاشير تجريبي ٢','08:00 → 15:55',2000,47100,5200,0,'ok'],['مسائي ٣','كاشير تجريبي ٣','16:00 → —',1500,12600,800,-300,'open']];
+ var st={ok:['تمت المراجعة','ok'],diff:['فرق مفتوح','bad'],pend:['بانتظار المراجعة','warn'],open:['شيفت مفتوح','blue']};
+ var rv=['مراجع تجريبي ١','—','مراجع تجريبي ١','—','مراجع تجريبي ٢','—'];
+ var T={o:0,i:0,x:0,e:0,c:0,d:0,v:0,ip:0,b:0};
+ var rows=sh.map(function(s,k){var e=s[3]+s[4]-s[5],c=e+s[6],v=Math.round(s[4]*.35),ip=Math.round(s[4]*.12),b=Math.round(s[4]*.06);
+  T.o+=s[3];T.i+=s[4];T.x+=s[5];T.e+=e;T.c+=c;T.d+=s[6];T.v+=v;T.ip+=ip;T.b+=b;
+  return ['<b>'+s[0]+'</b>',s[1],s[2],fmt(s[3]),fmt(s[4]),fmt(s[5]),fmt(e),fmt(c),red(s[6]),fmt(v),fmt(ip),fmt(b),chip(st[s[7]][0],st[s[7]][1]),rv[k]];});
+ var cols=[{h:'الشيفت'},{h:'الكاشير'},{h:'فتح / قفل'},{h:'رصيد افتتاحي',n:1},{h:'كاش داخل',n:1},{h:'كاش خارج',n:1},{h:'المتوقع',n:1},{h:'المعدود',n:1},{h:'الفرق',n:1},{h:'فيزا',n:1},{h:'إنستاباي',n:1},{h:'تحويل بنكي',n:1},{h:'الحالة'},{h:'المراجع'}];
+ var foot=['الإجمالي','','',fmt(T.o),fmt(T.i),fmt(T.x),fmt(T.e),fmt(T.c),red(T.d),fmt(T.v),fmt(T.ip),fmt(T.b),'',''];
+ return pageHead('الإقفال اليومي للخزنة','مطابقة المتوقع بالمعدود لكل شيفت — الأحد ١٥ نوفمبر ٢٠٢٦.')
+ +'<div class="g">'+filters([['الكاشير',['كل الكاشير','كاشير تجريبي ١','كاشير تجريبي ٢','كاشير تجريبي ٣'],'كل الكاشير'],['الخزنة',['كل الخزن','خزنة الاستقبال','خزنة الصيدلية'],'كل الخزن']],{periods:['اليوم — ١٥ نوفمبر','أمس','آخر ٧ أيام','أكتوبر ٢٠٢٦','فترة مخصصة…']})
+ +tile({l:'المتوقع في الخزنة',v:fmt(T.e),u:'ج.م',sub:'حسب حركة الشيفتات',sp:[28,31,30,34,33,36]})
+ +tile({l:'المعدود فعلياً',v:fmt(T.c),u:'ج.م',sub:'بعد جرد الكاشير',sp:[27,31,29,33,34,35]})
+ +tile({l:'الفرق',v:fmt(T.d),u:'ج.م',sub:'٣ شيفتات فيها فرق',neg:T.d<0,hero:false})
+ +tile({l:'عدد الشيفتات',v:String(sh.length),sub:'٤ اتراجعت · ٢ منتظرة / مفتوحة'})
+ +tcard('تفاصيل الشيفتات','المبالغ بالجنيه المصري (ج.م)',cols,rows,foot)+'</div>';
+};
+
+/* 3 adjustments */
+S[3]=function(){
+ var K={'خصم':'blue','إلغاء':'bad','مرتجع':'warn','تعديل':''};
+ var r=[['١٥/١١','INV-26-04112','خصم',850,-85,'خصم مجاملة لحالة متابعة','موظف استقبال تجريبي ١','مدير الفرع (تجريبي)','ok'],['١٥/١١','INV-26-04118','إلغاء',1200,-1200,'تكرار إدخال الخدمة','موظف استقبال تجريبي ٢','مدير الفرع (تجريبي)','ok'],['١٤/١١','INV-26-04071','مرتجع',640,-640,'المريض ألغى الإجراء','موظف استقبال تجريبي ١','مدير مالي (تجريبي)','ok'],['١٤/١١','INV-26-04066','تعديل',1500,-200,'تغيير الخدمة من استشارة لكشف','موظف استقبال تجريبي ٣','—','pend'],['١٣/١١','INV-26-03990','خصم',2400,-480,'خصم تعاقد مؤسسة','موظف استقبال تجريبي ٢','مدير مالي (تجريبي)','ok'],['١٣/١١','INV-26-03984','خصم',500,-250,'خصم غير مبرر في الطلب','موظف استقبال تجريبي ٣','—','rej'],['١٢/١١','INV-26-03911','إلغاء',900,-900,'خطأ في اسم المريض','موظف استقبال تجريبي ١','مدير الفرع (تجريبي)','ok'],['١٢/١١','INV-26-03902','تعديل',3200,150,'إضافة خدمة نسيت','موظف استقبال تجريبي ٢','مدير الفرع (تجريبي)','ok'],['١١/١١','INV-26-03840','مرتجع',420,-420,'استرداد دواء غير مصروف','موظف استقبال تجريبي ٣','مدير الفرع (تجريبي)','ok']];
+ var st={ok:['معتمد','ok'],pend:['بانتظار الاعتماد','warn'],rej:['مرفوض','bad']};
+ var by={};r.forEach(function(x){by[x[2]]=by[x[2]]||[0,0];by[x[2]][0]++;by[x[2]][1]+=x[4]});
+ var rows=r.map(function(x){return [x[0],'<b>'+x[1]+'</b>',chip(x[2],K[x[2]]),fmt(x[3]),red(x[4]),x[5],x[6],x[7],chip(st[x[8]][0],st[x[8]][1])]});
+ var cols=[{h:'التاريخ'},{h:'رقم الفاتورة'},{h:'النوع'},{h:'المبلغ الأصلي',n:1},{h:'قيمة التعديل',n:1},{h:'السبب'},{h:'طلبه'},{h:'اعتمده'},{h:'الحالة'}];
+ var foot=['الإجمالي','',r.length+' حركة',fmt(sum(r,function(x){return x[3]})),red(sum(r,function(x){return x[4]})),'','','',''];
+ return pageHead('التعديلات والإلغاءات والخصومات','كل تعديل على فاتورة بعد إصدارها: مين طلبه ومين اعتمده.')
+ +'<div class="g">'+filters([['النوع',['كل الأنواع','خصم','إلغاء','مرتجع','تعديل'],'كل الأنواع'],['الموظف',['كل الموظفين','موظف استقبال تجريبي ١','موظف استقبال تجريبي ٢','موظف استقبال تجريبي ٣'],'كل الموظفين'],['المعتمِد',['الكل','مدير الفرع (تجريبي)','مدير مالي (تجريبي)'],'الكل']])
+ +['خصم','إلغاء','مرتجع','تعديل'].map(function(k,i){var b=by[k];return tile({l:k,v:b[0]+' <small style="font-size:13px">حركة</small>',sub:'بقيمة '+fmt(b[1])+' ج.م',hero:i===1,neg:false})}).join('')
+ +tcard('سجل الحركات','المبالغ بالجنيه المصري (ج.م)',cols,rows,foot)+'</div>';
+};
+
+/* 4 revenue */
+S[4]=function(){
+ var d=[['باطنة','د. تجريبي — باطنة',182,148000,6200,61000],['أطفال','د. تجريبي — أطفال',204,132000,4100,48000],['نساء وتوليد','د. تجريبي — نساء',141,196000,9800,72000],['أسنان','د. تجريبي — أسنان',96,254000,11500,118000],['عظام','د. تجريبي — عظام',77,98000,3000,19000],['جلدية','د. تجريبي — جلدية',88,76000,2500,37000],['علاج طبيعي','د. تجريبي — علاج طبيعي',63,41000,900,6000]];
+ var tot=sum(d,function(x){return x[3]}),net=sum(d,function(x){return x[3]-x[4]}),cash=sum(d,function(x){return x[3]-x[4]-x[5]}),ins=sum(d,function(x){return x[5]});
+ var rows=d.map(function(x){var n=x[3]-x[4];return ['<b>'+x[0]+'</b>',x[1],fmt(x[2]),fmt(x[3]),fmt(x[4]),'<b>'+fmt(n)+'</b>',fmt(n-x[5]),fmt(x[5]),(x[3]/tot*100).toFixed(1)+'%']});
+ var cols=[{h:'التخصص'},{h:'الدكتور'},{h:'عدد الزيارات',n:1},{h:'الإجمالي',n:1},{h:'الخصومات',n:1},{h:'الصافي',n:1},{h:'كاش',n:1},{h:'تأمين / تعاقد',n:1},{h:'النسبة من الإجمالي',n:1}];
+ var foot=['الإجمالي','',fmt(sum(d,function(x){return x[2]})),fmt(tot),fmt(tot-net),fmt(net),fmt(cash),fmt(ins),'100%'];
+ var mx=Math.max.apply(0,d.map(function(x){return x[3]-x[4]}));
+ var bars='<div class="hb">'+d.slice().sort(function(a,b){return (b[3]-b[4])-(a[3]-a[4])}).map(function(x){var n=x[3]-x[4];return '<div class="r"><span>'+x[0]+'</span><div class="tr"><i style="width:'+(n/mx*100).toFixed(1)+'%"></i></div><span>'+fmt(n)+'</span></div>'}).join('')+'</div>';
+ var syn=Math.round(ins*.18),ins2=ins-syn,pt=cash+ins;
+ var seg='<div class="seg"><i style="width:'+(cash/pt*100)+'%;background:#0F369D"></i><i style="width:'+(ins2/pt*100)+'%;background:#4F75CF"></i><i style="width:'+(syn/pt*100)+'%;background:#9DB6EA"></i></div><div class="lg"><span><i style="background:#0F369D"></i>كاش '+fmt(cash)+'</span><span><i style="background:#4F75CF"></i>تأمين '+fmt(ins2)+'</span><span><i style="background:#9DB6EA"></i>نقابة '+fmt(syn)+'</span></div>';
+ return pageHead('إيرادات التخصصات والدكاترة','الإيراد والصافي حسب التخصص وجهة الدفع — أكتوبر ٢٠٢٦.')
+ +'<div class="g">'+filters([['التخصص',['كل التخصصات'].concat(d.map(function(x){return x[0]})),'كل التخصصات'],['الدكتور',['كل الدكاترة'].concat(d.map(function(x){return x[1]})),'كل الدكاترة'],{html:'<div class="f" style="flex:2 1 260px"><span>جهة الدفع</span><div class="pills"><button class="pill" aria-pressed="true">الكل</button><button class="pill">كاش</button><button class="pill">تأمين</button><button class="pill">نقابة</button></div></div>'}])
+ +tile({l:'إجمالي الإيراد',v:fmt(tot),u:'ج.م',sp:[610,640,672,655,710,731]})
+ +tile({l:'الصافي بعد الخصومات',v:fmt(net),u:'ج.م',hero:true,sub:'خصومات '+fmt(tot-net)+' ج.م',sp:[580,600,645,630,690,700]})
+ +tile({l:'عدد الزيارات',v:fmt(sum(d,function(x){return x[2]})),sub:'متوسط الفاتورة '+fmt(tot/sum(d,function(x){return x[2]}))+' ج.م'})
+ +tile({l:'حصة التأمين والتعاقد',v:(ins/net*100).toFixed(0)+'%',sub:fmt(ins)+' ج.م من الصافي'})
+ +'<div class="card s2">'+head('الصافي حسب التخصص','ج.م — الأعلى أولاً',false)+bars+'</div>'
+ +'<div class="card s2">'+head('الصافي حسب جهة الدفع','نسبة كل جهة من صافي الشهر',false)+seg+'<div class="cap">الكاش '+(cash/pt*100).toFixed(0)+'% · التأمين والتعاقد '+(ins/pt*100).toFixed(0)+'% من الصافي.</div></div>'
+ +tcard('التفصيل حسب التخصص والدكتور','المبالغ بالجنيه المصري (ج.م)',cols,rows,foot)+'</div>';
+};
+
+/* 5 doctor dues */
+S[5]=function(){
+ var r=[['٢٨/١٠','INV-26-03702','كشف باطنة',450,'نسبة ٤٠٪',0,0,0,0],['٢٨/١٠','INV-26-03705','متابعة',250,'نسبة ٤٠٪',0,0,0,0],['٢٧/١٠','INV-26-03650','سونار بطن',600,'نسبة ٤٠٪',0,0,0,0],['٢٦/١٠','INV-26-03611','استشارة تليفون',300,'ثابت ٨٠ ج.م',0,0,0,0],['٢٥/١٠','INV-26-03590','كشف باطنة',450,'نسبة ٤٠٪',0,0,0,0],['٢٤/١٠','INV-26-03550','منظار تشخيصي',2800,'نسبة ٥٠٪',0,0,0,0],['—','تسوية','بدل انتظار نوبتجية',0,'إضافة',400,0,0,0],['—','تسوية','خصم تأخير',0,'خصم',0,150,0,0],['١٥/١٠','سلفة','دفعة من الحساب',0,'مصروف',0,0,1500,0]];
+ r.forEach(function(x){var share=x[4].indexOf('٤٠')>0?x[3]*.4:x[4].indexOf('٥٠')>0?x[3]*.5:x[4].indexOf('ثابت')===0?80:0;x[9]=share});
+ var rows=r.map(function(x){var rem=x[9]+x[5]-x[6]-x[7];return [x[0],x[1],x[2],fmt(x[3]),x[4],fmt(x[9]),fmt(x[5]),fmt(x[6]),fmt(x[7]),'<b>'+fmt(rem)+'</b>']});
+ var T=function(f){return sum(r,f)},share=T(function(x){return x[9]}),add=T(function(x){return x[5]}),ded=T(function(x){return x[6]}),paid=T(function(x){return x[7]}),rem=share+add-ded-paid;
+ var cols=[{h:'التاريخ'},{h:'الفاتورة'},{h:'الخدمة'},{h:'صافي الإيراد',n:1},{h:'نظام الحساب'},{h:'حصة الدكتور',n:1},{h:'إضافات',n:1},{h:'خصومات',n:1},{h:'المصروف',n:1},{h:'المتبقي',n:1}];
+ var foot=['الإجمالي','','',fmt(T(function(x){return x[3]})),'',fmt(share),fmt(add),fmt(ded),fmt(paid),fmt(rem)];
+ return pageHead('كشف مستحقات دكتور','حصة الدكتور من إيراده شهرياً، وما اتصرف له، والمتبقي.')
+ +'<div class="g">'+filters([['الشهر',['أكتوبر ٢٠٢٦','سبتمبر ٢٠٢٦','أغسطس ٢٠٢٦'],'أكتوبر ٢٠٢٦'],['الدكتور',['د. تجريبي — باطنة','د. تجريبي — أطفال','د. تجريبي — أسنان'],'د. تجريبي — باطنة']],{periods:['أكتوبر ٢٠٢٦']})
+ +'<div class="card doc s4"><div class="av">'+I.user+'</div><div><h2>د. تجريبي — باطنة</h2><small>عقد: نسبة ٤٠٪ من الصافي + ثابت للاستشارات · بدأ ٠١/٠١/٢٠٢٥</small></div><div class="rt"><span class="chip blue">نسبة + ثابت</span><span class="badge">'+I.lock+'للإدارة والمدير المالي فقط</span></div></div>'
+ +tile({l:'صافي إيراد الدكتور',v:fmt(T(function(x){return x[3]})),u:'ج.م',sub:'٦ فواتير'})
+ +tile({l:'حصة الدكتور',v:fmt(share),u:'ج.م',sub:'قبل الإضافات والخصومات'})
+ +tile({l:'إضافات − خصومات − مصروف',v:sgn(add-ded-paid),u:'ج.م',sub:'سلفة ١٥٠٠ مصروفة',neg:(add-ded-paid)<0})
+ +tile({l:'المتبقي للدكتور',v:fmt(rem),u:'ج.م',hero:true,sub:'مستحق الصرف'})
+ +tcard('بنود الكشف','المبالغ بالجنيه المصري (ج.م)',cols,rows,foot)+'</div>';
+};
+
+/* 6 doctor day */
+S[6]=function(){
+ var p=[['09:00','P-2026-000101','مريض تجريبي ١','كشف','خلص'],['09:20','P-2026-000102','مريض تجريبي ٢','متابعة','خلص'],['09:40','P-2026-000103','مريض تجريبي ٣','كشف','خلص'],['10:00','P-2026-000104','مريض تجريبي ٤','استشارة','ماجاش'],['10:20','P-2026-000105','مريض تجريبي ٥','كشف','دخل'],['10:40','P-2026-000106','مريض تجريبي ٦','متابعة','منتظر'],['11:00','P-2026-000107','مريض تجريبي ٧','كشف','منتظر'],['11:20','P-2026-000108','مريض تجريبي ٨','سونار بطن','منتظر'],['11:40','P-2026-000109','مريض تجريبي ٩','كشف','منتظر'],['12:00','P-2026-000110','مريض تجريبي ١٠','متابعة','منتظر']];
+ var k={'منتظر':'warn','دخل':'blue','خلص':'ok','ماجاش':'bad'};var c={};p.forEach(function(x){c[x[4]]=(c[x[4]]||0)+1});
+ var rows=p.map(function(x){return [x[0],'<b>'+x[1]+'</b>',x[2],x[3],chip(x[4],k[x[4]])]});
+ var cols=[{h:'الوقت'},{h:'كود المريض'},{h:'الاسم'},{h:'الخدمة'},{h:'الحالة'}];
+ return pageHead('يومي','مرضاك النهارده — الأحد ١٥ نوفمبر ٢٠٢٦.','التقارير · عرض الدكتور')
+ +'<div class="g">'+note('الدكتور يشوف مرضاه النهارده بس.')
+ +'<div class="card fb s4"><label class="f"><span>الدكتور</span><select><option>د. تجريبي — باطنة</option></select></label>'+sel('الفرع',[BR,'كل الفروع'],BR)+'<label class="f"><span>الفترة</span><select><option>اليوم</option></select></label></div>'
+ +['منتظر','دخل','خلص','ماجاش'].map(function(s,i){return tile({l:s,v:String(c[s]||0),sub:s==='منتظر'?'لسه ما دخلوش':s==='ماجاش'?'مواعيد فاتت':'',hero:i===0})}).join('')
+ +tcard('مرضى النهارده','مرتبين بالوقت — بدون أي أرقام مالية',cols,rows,['الإجمالي','','',p.length+' مريض',''])+'</div>';
+};
+
+/* 7 flash */
+S[7]=function(){
+ return pageHead('التقرير الصباحي','ملخص أمس في شاشة واحدة — بيجهز تلقائياً الساعة ٧ الصبح.','التقارير · التشغيل')
+ +'<div class="g">'+filters([],{periods:['أمس — السبت ١٤ نوفمبر','أول أمس','آخر ٧ أيام']})
+ +tile({span:2,hero:true,l:'إيراد أمس',v:fmt(61300),u:'ج.م',sub:'+٨٪ عن نفس اليوم الأسبوع الماضي',sp:[48,52,50,57,55,59,61]})
+ +tile({l:'كاش في الخزنة',v:fmt(84200),u:'ج.م',sub:'بعد إقفال أمس',sp:[70,74,72,79,80,83,84]})
+ +tile({l:'الزيارات',v:'142',sub:'٤٠ كشف جديد',sp:[120,131,128,139,135,140,142]})
+ +tile({l:'ماجوش',v:'17',sub:'١٢٪ من المواعيد',sp:[14,16,19,15,18,16,17]})
+ +tile({l:'ليدز جديدة → حجز',v:'38 → 16',sub:'تحويل ٤٢٪',sp:[30,33,29,35,36,34,38]})
+ +tile({l:'نواقص مخزن',v:'9',u:'صنف',sub:'٣ منها حرجة',sp:[5,6,7,6,8,8,9]})
+ +tile({l:'خدمات اتنفذت ومتفوترتش',v:'6',u:'خدمة',sub:'قيمة تقديرية 3,150 ج.م',neg:true,sp:[2,3,1,4,3,5,6]})
+ +tcard('خدمات اتنفذت ومتفوترتش','محتاجة فاتورة اليوم',[{h:'الخدمة'},{h:'المريض'},{h:'الدكتور'},{h:'القيمة التقديرية',n:1},{h:'الحالة'}],[['سونار بطن','مريض تجريبي ١١','د. تجريبي — باطنة','600',chip('بدون فاتورة','bad')],['حشو تجميلي','مريض تجريبي ١٢','د. تجريبي — أسنان','850',chip('بدون فاتورة','bad')],['جلسة علاج طبيعي','مريض تجريبي ١٣','د. تجريبي — علاج طبيعي','300',chip('بدون فاتورة','bad')],['كشف نساء','مريض تجريبي ١٤','د. تجريبي — نساء','450',chip('قيد المراجعة','warn')],['تحليل سكر','مريض تجريبي ١٥','معمل تجريبي','150',chip('بدون فاتورة','bad')],['استشارة أطفال','مريض تجريبي ١٦','د. تجريبي — أطفال','800',chip('قيد المراجعة','warn')]],['الإجمالي','','','3,150',''])+'</div>';
+};
+
+/* 8 aging */
+S[8]=function(){
+ var C=['#CFE0FA','#8FB0EE','#4F75CF','#D0402A'],L=['٠–٣٠','٣١–٦٠','٦١–٩٠','+٩٠'];
+ var e=[['شركة تأمين تجريبية ١',[182000,96000,41000,12000],'٠٩/١١','١٢/١١'],['شركة تأمين تجريبية ٢',[121000,70000,38000,52000],'٠٢/١١','١٠/١١'],['نقابة تجريبية ١',[88000,44000,10000,0],'١٢/١١','١٣/١١'],['جهة تعاقد تجريبية ١',[64000,31000,26000,38000],'٢٥/١٠','٠٥/١١'],['جهة تعاقد تجريبية ٢',[40000,12000,0,0],'١٠/١١','١٤/١١'],['شركة تأمين تجريبية ٣',[22000,34000,29000,61000],'١٨/٠٩','٢٠/١٠']];
+ var tb=[0,0,0,0];e.forEach(function(x){x[1].forEach(function(v,i){tb[i]+=v})});var tot=sum(tb);
+ var mx=Math.max.apply(0,e.map(function(x){return sum(x[1])}));
+ var stk='<div class="stk">'+e.map(function(x){var t=sum(x[1]);return '<div class="r"><span>'+x[0]+'</span><div class="seg" style="width:'+(t/mx*100)+'%">'+x[1].map(function(v,i){return v?'<i style="width:'+(v/t*100)+'%;background:'+C[i]+'"></i>':''}).join('')+'</div><span>'+fmt(t)+'</span></div>'}).join('')+'</div><div class="lg">'+L.map(function(l,i){return '<span><i style="background:'+C[i]+'"></i>'+l+' يوم</span>'}).join('')+'</div>';
+ var rows=e.map(function(x){var t=sum(x[1]);return ['<b>'+x[0]+'</b>','<b>'+fmt(t)+'</b>',fmt(x[1][0]),fmt(x[1][1]),fmt(x[1][2]),x[1][3]?'<span class="neg">'+fmt(x[1][3])+'</span>':'0',x[2]+'/٢٠٢٦',x[3]+'/٢٠٢٦']});
+ var cols=[{h:'الجهة'},{h:'إجمالي المستحق',n:1},{h:'٠–٣٠ يوم',n:1},{h:'٣١–٦٠',n:1},{h:'٦١–٩٠',n:1},{h:'+٩٠',n:1},{h:'آخر تحصيل'},{h:'آخر متابعة'}];
+ return pageHead('أعمار الديون','المستحق على جهات التأمين والتعاقد موزّع حسب عمر المطالبة.','التقارير · التأمين والتعاقدات')
+ +'<div class="g">'+filters([['الجهة',['كل الجهات'].concat(e.map(function(x){return x[0]})),'كل الجهات'],['نوع الجهة',['الكل','تأمين','نقابة','تعاقد'],'الكل']])
+ +tile({l:'إجمالي المستحق',v:fmt(tot),u:'ج.م',hero:true,sub:e.length+' جهات'})
+ +tile({l:'٠–٣٠ يوم',v:fmt(tb[0]),u:'ج.م',sub:(tb[0]/tot*100).toFixed(0)+'% من الإجمالي'})
+ +tile({l:'٦١–٩٠ يوم',v:fmt(tb[2]),u:'ج.م',sub:(tb[2]/tot*100).toFixed(0)+'% من الإجمالي'})
+ +tile({l:'أكتر من ٩٠ يوم',v:fmt(tb[3]),u:'ج.م',neg:true,sub:'محتاج تصعيد'})
+ +'<div class="card s4">'+head('توزيع الأعمار لكل جهة','ج.م — الشريحة الأخيرة بالأحمر',false)+stk+'</div>'
+ +tcard('تفصيل الجهات','المبالغ بالجنيه المصري (ج.م)',cols,rows,['الإجمالي',fmt(tot),fmt(tb[0]),fmt(tb[1]),fmt(tb[2]),'<span class="neg">'+fmt(tb[3])+'</span>','',''])+'</div>';
+};
+
+/* 9 inventory */
+S[9]=function(){
+ var sh=[['مضاد حيوي ٥٠٠ مجم','الصيدلية',12,40],['محلول ملح ٠.٩٪','مخزن رئيسي',20,60],['قفازات معقمة (علبة)','مخزن رئيسي',6,25],['حشو ضوئي','عيادة الأسنان',3,10],['خافض حرارة أطفال','الصيدلية',8,30],['جل سونار','مخزن رئيسي',2,12]];
+ var ex=[['مرهم موضعي','ت-٢٦٠٤',24,'٢٨/١١/٢٠٢٦',9,0],['حقن مضاد','ت-٢٦٠٨',60,'٠٥/١٢/٢٠٢٦',16,0],['قطرة عين','ت-٢٦٠٣',18,'١٣/١٢/٢٠٢٦',24,0],['فيتامين د','ت-٢٦١١',90,'٣١/١٢/٢٠٢٦',42,0],['شراب كحة','ت-٢٦٠٧',35,'١٥/٠١/٢٠٢٧',57,0],['مادة تخدير موضعي','ت-٢٦١٥',14,'٢٠/٠١/٢٠٢٧',62,0]];
+ var r1=sh.map(function(x){return ['<b>'+x[0]+'</b>',x[1],fmt(x[2]),fmt(x[3]),'<span class="neg">'+fmt(x[3]-x[2])+'</span>']});
+ var r2=ex.map(function(x){return ['<b>'+x[0]+'</b>',x[1],fmt(x[2]),x[3],chip(x[4]+' يوم',x[4]<30?'bad':x[4]<60?'warn':'')]});
+ return pageHead('نواقص وصلاحية المخزن','الأصناف تحت حد الطلب وقرب انتهاء الصلاحية — لكل مخزن.','التقارير · المخزن والصيدلية')
+ +'<div class="g">'+filters([{html:'<div class="f" style="flex:3 1 380px"><span>المخزن</span><div class="pills"><button class="pill" aria-pressed="true">كل المخازن <b>٦</b></button><button class="pill">الصيدلية <b>٢</b></button><button class="pill">مخزن رئيسي <b>٣</b></button><button class="pill">عيادة الأسنان <b>١</b></button></div></div>'}],{periods:['اليوم']})
+ +tile({l:'أصناف تحت حد الطلب',v:'6',u:'صنف',neg:true,sub:'إجمالي العجز '+fmt(sum(sh,function(x){return x[3]-x[2]}))+' وحدة'})
+ +tile({l:'تنتهي خلال ٣٠ يوم',v:'2',u:'صنف',sub:'٣ أصناف خلال ٦٠ يوم'})
+ +'<div class="card s2">'+head('صرف أدوية','شامل الخدمة مقابل مباع للمريض — الشهر الحالي',false)
+  +'<div class="seg"><i style="width:64%;background:#0F369D"></i><i style="width:36%;background:#9DB6EA"></i></div><div class="lg"><span><i style="background:#0F369D"></i>شامل الخدمة ١٬٢٨٠ وحدة</span><span><i style="background:#9DB6EA"></i>مباع للمريض ٧٢٠ وحدة</span></div></div>'
+ +tcard('نواقص','أقل من حد الطلب',[{h:'الصنف'},{h:'المخزن'},{h:'الرصيد',n:1},{h:'حد الطلب',n:1},{h:'العجز',n:1}],r1,['الإجمالي','',fmt(sum(sh,function(x){return x[2]})),fmt(sum(sh,function(x){return x[3]})),'<span class="neg">'+fmt(sum(sh,function(x){return x[3]-x[2]}))+'</span>'],2)
+ +tcard('قرب انتهاء الصلاحية','مرتبة بالأقرب',[{h:'الصنف'},{h:'التشغيلة'},{h:'الكمية',n:1},{h:'تاريخ الانتهاء'},{h:'أيام متبقية'}],r2,['الإجمالي','',fmt(sum(ex,function(x){return x[2]})),'',''],2)+'</div>';
+};
+
+/* 10 P&L */
+S[10]=function(){
+ var rev=[['باطنة',210000,195000],['أطفال',165000,170000],['نساء وتوليد',240000,228000],['أسنان',310000,290000],['عظام',120000,110000],['جلدية',95000,90000]];
+ var cost=[['حصص الدكاترة',410000,390000],['مستلزمات',85000,80000],['أدوية',120000,118000],['معامل خارجية',46000,40000]];
+ var ga=[['رواتب إدارية',150000,150000],['إيجار',60000,60000],['مرافق',28000,26000],['تسويق',40000,35000]];
+ var dep=[32000,32000];
+ var s=function(a,i){return sum(a,function(x){return x[i]})};
+ var R=[s(rev,1),s(rev,2)],C=[s(cost,1),s(cost,2)],GP=[R[0]-C[0],R[1]-C[1]],G=[s(ga,1),s(ga,2)],N=[GP[0]-G[0]-dep[0],GP[1]-G[1]-dep[1]];
+ var pc=function(a,b){return b?((a-b)/Math.abs(b)*100):0};
+ function dr(a,b,costLike){var d=a-b,p=pc(a,b),good=costLike?d<=0:d>=0;return ['<span class="'+(d===0?'':good?'pos':'neg')+'">'+sgn(d)+'</span>','<span class="'+(d===0?'':good?'pos':'neg')+'">'+(p>0?'+':'')+p.toFixed(1)+'%</span>'];}
+ var rows=[];
+ function grp(t){rows.push({_c:'grp',cells:[t,'','','','']})}
+ function line(n,a,b,cl){var x=dr(a,b,cl);rows.push({_c:'',cells:['<span style="padding-inline-start:16px">'+n+'</span>',fmt(a),fmt(b),x[0],x[1]]})}
+ function subr(n,a,b,cl){var x=dr(a,b,cl);rows.push({_c:'sub',cells:[n,fmt(a),fmt(b),x[0],x[1]]})}
+ grp('الإيرادات');rev.forEach(function(x){line(x[0],x[1],x[2])});subr('إجمالي الإيرادات',R[0],R[1]);
+ grp('تكلفة الخدمات');cost.forEach(function(x){line(x[0],x[1],x[2],1)});subr('إجمالي تكلفة الخدمات',C[0],C[1],1);
+ subr('مجمل الربح',GP[0],GP[1]);
+ grp('مصروفات إدارية وعمومية');ga.forEach(function(x){line(x[0],x[1],x[2],1)});subr('إجمالي المصروفات الإدارية والعمومية',G[0],G[1],1);
+ line('الإهلاك',dep[0],dep[1],1);
+ var nd=dr(N[0],N[1]);
+ var cols=[{h:'البند'},{h:'الشهر (أكتوبر)',n:1},{h:'الشهر السابق (سبتمبر)',n:1},{h:'الفرق ج.م',n:1},{h:'الفرق %',n:1}];
+ return pageHead('قائمة الدخل للفرع','الإيرادات والتكاليف وصافي الربح مقارنة بالشهر السابق.','التقارير · القوائم المالية والضرائب')
+ +'<div class="g">'+filters([['المقارنة',['بالشهر السابق','بنفس الشهر السنة الماضية'],'بالشهر السابق']],{periods:['أكتوبر ٢٠٢٦','سبتمبر ٢٠٢٦','الربع الثالث ٢٠٢٦']})
+ +tile({l:'الإيرادات',v:fmt(R[0]),u:'ج.م',sub:(pc(R[0],R[1])>0?'+':'')+pc(R[0],R[1]).toFixed(1)+'% عن الشهر السابق',sp:[890,930,1000,1040,1083,1140]})
+ +tile({l:'مجمل الربح',v:fmt(GP[0]),u:'ج.م',sub:(GP[0]/R[0]*100).toFixed(0)+'% هامش',sp:[310,360,395,430,455,479]})
+ +tile({l:'المصروفات والإهلاك',v:fmt(G[0]+dep[0]),u:'ج.م',sub:(pc(G[0]+dep[0],G[1]+dep[1])>0?'+':'')+pc(G[0]+dep[0],G[1]+dep[1]).toFixed(1)+'% عن الشهر السابق'})
+ +tile({hero:true,l:'صافي الربح',v:fmt(N[0]),u:'ج.م',sub:(pc(N[0],N[1])>0?'+':'')+pc(N[0],N[1]).toFixed(1)+'% عن الشهر السابق',sp:[100,118,130,141,152,169]})
+ +tcard('قائمة الدخل','المبالغ بالجنيه المصري (ج.م)',cols,rows,['صافي الربح',fmt(N[0]),fmt(N[1]),nd[0],nd[1]])+'</div>';
+};
+
+/* 11 tax */
+S[11]=function(){
+ var t=[['ضريبة القيمة المضافة',48000,30000,'١٠/١١/٢٠٢٦','١٥/١٢/٢٠٢٦'],['ضريبة كسب العمل (مرتبات)',36500,36500,'٠٥/١١/٢٠٢٦','٠٥/١٢/٢٠٢٦'],['ضريبة الدمغة',9200,6000,'٢٨/١٠/٢٠٢٦','٣٠/١١/٢٠٢٦'],['ضريبة الخصم والإضافة',14800,0,'٢٠/٠٩/٢٠٢٦','٢٥/١١/٢٠٢٦'],['الضريبة على الأرباح التجارية (تقديرية)',64000,32000,'٣٠/٠٩/٢٠٢٦','٣١/١٢/٢٠٢٦'],['التأمينات الاجتماعية',41000,41000,'١٥/١١/٢٠٢٦','١٥/١٢/٢٠٢٦']];
+ var due=sum(t,function(x){return x[1]}),paid=sum(t,function(x){return x[2]});
+ var rows=t.map(function(x){var rem=x[1]-x[2],days={'٣٠/١١/٢٠٢٦':11,'٢٥/١١/٢٠٢٦':6}[x[4]];return ['<b>'+x[0]+'</b>',fmt(x[1]),fmt(x[2]),rem>0?'<span class="neg">'+fmt(rem)+'</span>':chip('مسدّد','ok'),x[3],x[4]+(days?' '+chip(days+' يوم',days<10?'bad':'warn'):'')]});
+ var cols=[{h:'نوع الضريبة'},{h:'المستحق',n:1},{h:'المسدد',n:1},{h:'المتبقي',n:1},{h:'آخر سداد'},{h:'الاستحقاق القادم'}];
+ return pageHead('الموقف الضريبي','المستحق والمسدد والمتبقي لكل نوع ضريبة — الربع الرابع ٢٠٢٦.','التقارير · القوائم المالية والضرائب')
+ +'<div class="g">'+note('الأرقام من الدفاتر المحاسبية — بدون ربط بالفواتير الإلكترونية.')
+ +filters([['نوع الضريبة',['كل الأنواع'].concat(t.map(function(x){return x[0]})),'كل الأنواع']],{periods:['الربع الرابع ٢٠٢٦','الربع الثالث ٢٠٢٦','السنة المالية ٢٠٢٦']})
+ +tile({l:'إجمالي المستحق',v:fmt(due),u:'ج.م'})
+ +tile({l:'المسدد',v:fmt(paid),u:'ج.م',sub:(paid/due*100).toFixed(0)+'% من المستحق'})
+ +tile({l:'المتبقي',v:fmt(due-paid),u:'ج.م',neg:true,sub:'٤ ضرائب عليها رصيد'})
+ +tile({hero:true,l:'الاستحقاق القادم',v:'٢٥/١١',sub:'الخصم والإضافة — بعد ٦ أيام'})
+ +tcard('الضرائب حسب النوع','المبالغ بالجنيه المصري (ج.م)',cols,rows,['الإجمالي',fmt(due),fmt(paid),'<span class="neg">'+fmt(due-paid)+'</span>','',''])+'</div>';
+};
+
+/* 12 targets */
+S[12]=function(){
+ var G=[['مدير الفرع','المسؤول: مدير الفرع (تجريبي)',[['إيراد الشهر','ج.م',1200000,1140000,[880,930,1010,1050,1100,1140]],['نسبة التحصيل','%',95,92,[88,90,91,93,92,92]],['نسبة الحضور للمواعيد','%',88,84,[80,82,85,83,84,84]],['خدمات بدون فاتورة','خدمة',0,6,[2,3,1,4,3,6],1]]],
+  ['السوشيال ميديا','المسؤول: موظف سوشيال تجريبي',[['ليدز الشهر','ليد',800,844,[600,650,720,760,800,844]],['تكلفة الليد','ج.م',70,63,[80,76,72,69,66,63],1],['منشورات منشورة','منشور',30,27,[20,22,24,25,26,27]],['تفاعل الصفحة','تفاعل',20000,17400,[14,15,16,17,17,17]]]],
+  ['الكول سنتر','المسؤول: موظف كول سنتر تجريبي',[['تحويل الليد لحجز','%',45,42,[38,40,41,43,42,42]],['زمن أول رد','دقيقة',5,7,[9,8,8,7,7,7],1],['مكالمات متابعة','مكالمة',600,655,[500,540,590,620,640,655]],['حجوزات الشهر','حجز',380,355,[300,320,335,340,350,355]]]],
+  ['الاستقبال','المسؤول: موظف استقبال تجريبي',[['فواتير بدون أخطاء','%',98,96,[94,95,95,96,96,96]],['تعديلات بعد الفاتورة','حركة',10,14,[8,9,12,11,13,14],1],['تقييم المرضى','/5',4.5,4.6,[44,45,45,46,46,46]],['متوسط وقت الانتظار','دقيقة',15,12,[18,17,15,14,13,12],1]]]];
+ var out='';
+ G.forEach(function(g){var b='<div class="card s2">'+head(g[0],g[1],false)+'<div class="tg h"><span>المؤشر</span><span>التارجت</span><span>الفعلي</span><span>التحقيق</span><span>الاتجاه</span></div>';
+  g[2].forEach(function(k){var low=k[5],pct=low?Math.min(100,k[2]===0?(k[3]===0?100:0):k[2]/k[3]*100):k[3]/k[2]*100,cls=pct>=95?'ok':pct>=80?'mid':'low';var nf=function(v){return v%1?v.toFixed(1):fmt(v)};
+   b+='<div class="tg"><span class="nm"><b>'+k[0]+'</b><small>'+k[1]+(low?' · الأقل أفضل':'')+'</small></span><span>'+nf(k[2])+'</span><span><b>'+nf(k[3])+'</b></span><span class="pc"><b>'+pct.toFixed(0)+'%</b><span class="mt '+cls+'"><i style="width:'+Math.min(100,pct)+'%"></i></span></span><span class="sp">'+sparkDot(k[4])+'</span></div>'});
+  out+=b+'</div>'});
+ return pageHead('التارجت مقابل الفعلي','مؤشرات كل مسؤول مقابل المستهدف الشهري — نوفمبر ٢٠٢٦ (حتى اليوم).','التقارير · التسويق والتارجت')
+ +'<div class="g">'+filters([],{periods:['نوفمبر ٢٠٢٦ (حتى اليوم)','أكتوبر ٢٠٢٦','الربع الثالث ٢٠٢٦']})
+ +note('التارجت يحطه: محمد إبراهيم.')+out
+ +'<div class="card s4" style="flex-direction:row;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between"><div class="lg" style="margin:0"><span><i style="background:#2F7D5C"></i>تحقق ٩٥٪ أو أكتر</span><span><i style="background:#0F369D"></i>٨٠–٩٤٪</span><span><i style="background:#D0402A"></i>أقل من ٨٠٪</span></div>'+acts()+'</div></div>';
+};
+
+/* 13 funnel */
+S[13]=function(){
+ var st=[['صرف الإعلان',48000,'ج.م'],['ليدز',640],['تم التواصل',520],['حجز',210],['حضر',168],['دفع',151]];
+ var f='<div class="fn">';
+ st.forEach(function(s,i){var w=i===0?100:Math.max(14,s[1]/640*92);
+  f+='<div class="st"><span class="nm">'+s[0]+'</span><div class="bar'+(i===0?' sp':'')+'" style="width:'+w+'%">'+fmt(s[1])+(s[2]?' '+s[2]:'')+'</div></div>';
+  if(i>=1&&i<st.length-1){var nx=st[i+1];f+='<div class="cv"><span>↓ <b>'+(nx[1]/s[1]*100).toFixed(0)+'%</b> وصلوا لـ«'+nx[0]+'»</span></div>'}
+  if(i===0)f+='<div class="cv"><span>↓ كل ليد بتكلفة <b style="color:var(--ink)">'+fmt(48000/640)+' ج.م</b></span></div>';});
+ f+='</div>';
+ var c=[['حملة تجريبية — الباطنة',14000,190,160,64,50,44],['حملة تجريبية — الأسنان',17500,210,170,78,64,60],['حملة تجريبية — النساء',9800,120,98,41,32,29],['حملة تجريبية — الأطفال',4200,70,55,16,13,12],['حملة تجريبية — فحص شامل',2500,50,37,11,9,6]];
+ var T=function(i){return sum(c,function(x){return x[i]})};
+ var rows=c.map(function(x){return ['<b>'+x[0]+'</b>',fmt(x[1]),fmt(x[2]),fmt(x[3]),fmt(x[4]),fmt(x[5]),fmt(x[6]),'<b>'+fmt(x[1]/x[4])+'</b>',(x[6]/x[2]*100).toFixed(0)+'%']});
+ var cols=[{h:'الحملة'},{h:'الصرف ج.م',n:1},{h:'ليدز',n:1},{h:'تم التواصل',n:1},{h:'حجز',n:1},{h:'حضر',n:1},{h:'دفع',n:1},{h:'تكلفة الحجز ج.م',n:1},{h:'ليد ← دفع',n:1}];
+ return pageHead('مسار الحملة الإعلانية','من صرف الإعلان لحد دفع المريض — وكل خطوة بتخسر كام.','التقارير · التسويق والتارجت')
+ +'<div class="g">'+filters([['الحملة',['كل الحملات'].concat(c.map(function(x){return x[0]})),'كل الحملات'],['المنصة',['كل المنصات','Meta Ads','Google Ads'],'كل المنصات']])
+ +tile({l:'صرف الإعلان',v:fmt(48000),u:'ج.م'})
+ +tile({l:'ليدز',v:fmt(640),sub:'متوسط الليد '+fmt(48000/640)+' ج.م'})
+ +tile({l:'حجوزات',v:fmt(210),sub:'٣٣٪ من الليدز'})
+ +tile({hero:true,l:'تكلفة المريض المحجوز',v:fmt(48000/210),u:'ج.م',sub:'تكلفة الدفع الفعلي '+fmt(48000/151)+' ج.م'})
+ +'<div class="card s4">'+head('قمع الحملات','عدد المرضى في كل خطوة',false)+f+'</div>'
+ +tcard('الحملات','المبالغ بالجنيه المصري (ج.م)',cols,rows,['الإجمالي',fmt(T(1)),fmt(T(2)),fmt(T(3)),fmt(T(4)),fmt(T(5)),fmt(T(6)),fmt(T(1)/T(4)),(T(6)/T(2)*100).toFixed(0)+'%'])+'</div>';
+};
+
+/* ---------- shell ---------- */
+var NAMES=['الرئيسية','الصلاحيات','الإقفال اليومي','التعديلات','الإيرادات','المستحقات','يومي','الصباحي','أعمار الديون','المخزن','قائمة الدخل','الضرائب','التارجت','الحملة'];
+function show(n){n=Math.max(0,Math.min(S.length-1,n|0));
+ $('#app').innerHTML=S[n]();
+ $('#sw').innerHTML=NAMES.map(function(x,i){return '<button data-n="'+i+'" aria-pressed="'+(i===n)+'"><i>'+i+'</i>'+x+'</button>'}).join('');
+ document.body.dataset.screen=n;
+ if(history.replaceState)history.replaceState(null,'','?screen='+n);
+ window.scrollTo(0,0);}
+document.addEventListener('click',function(e){
+ var b=e.target.closest('#sw button');if(b){show(+b.dataset.n);return}
+ var a=e.target.closest('a[data-go]');if(a){e.preventDefault();if(+a.dataset.go>=0)show(+a.dataset.go);return}
+ var p=e.target.closest('.pill');if(p){var sib=p.parentNode.querySelectorAll('.pill');sib.forEach(function(x){x.setAttribute('aria-pressed',x===p)})}});
+var q=/[?&]screen=(\d+)/.exec(location.search);show(q?+q[1]:0);
+})();
+</script>
+</body>
+</html>

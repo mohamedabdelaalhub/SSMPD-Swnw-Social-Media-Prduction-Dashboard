@@ -953,6 +953,8 @@ frule(M,'الاسم الثلاثي على الأقل','اكتب اسم العم�
 frule(M,'الخدمة المهتم بها','الخدمة اللي العميل سأل عنها أو مهتم بيها.','leads-guide')
 frule('render-metaads.js','الصق التوكن هنا','الصق توكن Meta اللي بصلاحية قراءة الإعلانات بس. بيتحفظ على السيرفر ومابيظهرش تاني لحد.','ads-guide')
 frule('render-org-legal.js','اربطه بحساب البنك في الحسابات (اختياري)','اختار حساب البنك المقابل في شجرة الحسابات، علشان بيانات البنك هنا تتطابق مع الدفاتر.','org-legal')
+frule('render-reports.js','الدكتور','فلتر بيقصر تقرير الإيرادات على دكتور واحد. «كل الدكاترة» بيعرض الكل. الفلتر للعرض بس ومبيغيّرش أي بيانات.','reports-center')
+frule('render-reports.js','الدفع','فلتر بيفرّق بين الإيراد الكاش وإيراد التأمين في تقرير الإيرادات. «الكل» بيعرضهم مع بعض. للعرض بس.','reports-center')
 frule('render-org-legal.js','الملف (PDF أو صورة — لحد 15 ميجا)','اختار صورة المستند أو PDF لحد 15 ميجا. بيتحفظ في مكان خاص وبيتفتح بلينك مؤقت.','org-legal')
 frule('render-performance.js','نطاق العرض','اعرض كل البوستات، أو آخر عدد معين، أو فترة من تاريخ لتاريخ.','indicators')
 frule('render-performance.js','عدد البوستات','عدد آخر البوستات اللي عايز تشوف أداءها.','indicators')
@@ -1009,6 +1011,7 @@ def domain(f):
  if f=='patient360.js':return 'leads'
  if f in OVERLAY_FILES:return 'home'
  if f=='render-org-legal.js':return 'org_legal'
+ if f=='render-reports.js':return 'reports'
  if f=='leads-missing-data-enhancement.js':return 'leads'
  if f=='render-performance.js':return 'performance'
  if f=='employee-performance.js':return 'staff_kpi'
