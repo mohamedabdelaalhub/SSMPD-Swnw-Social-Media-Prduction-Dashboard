@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1801,
-    "labels": 1323,
-    "files": 127,
-    "groups": 1426
+    "definitions": 1814,
+    "labels": 1330,
+    "files": 129,
+    "groups": 1439
   },
   "fields": [
     {
@@ -625,6 +625,56 @@
       "tab": "production",
       "article": "design-guide",
       "text_sha256": "9c0b47ccbaf02e8e5b748971fa683e556ffce273ebe08e0d949b82eeb26f3134"
+    },
+    {
+      "file": "candidate-exam.js",
+      "label": "قرأتُ ما سبق وأوافق على جمع بياناتي واستخدامها لهذا الغرض.",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "training-center",
+      "text_sha256": "307a785a814fcc0f00a662a1cb9c24e2f2fa47de8607af7c35cfb09678770bdc"
+    },
+    {
+      "file": "candidate-exam.js",
+      "label": "رقم الهاتف",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "patient",
+      "text_sha256": "0b6bc0aa47bf65fe1a7046763cba6c4b3c72fcfa83c07ac7f13982db564a0a14"
+    },
+    {
+      "file": "candidate-exam.js",
+      "label": "البريد الإلكتروني (اختياري)",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "access",
+      "text_sha256": "e604ae2973525ce1297f9c8c6f1b79e99700a5e613acdc20abf1d9bfd349e639"
+    },
+    {
+      "file": "candidate-exam.js",
+      "label": "خبرتك العملية",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "training-center",
+      "text_sha256": "448639586a19cf8cac514d5794311e0716d77f3493bf114240dfe9e7c2346b3f"
+    },
+    {
+      "file": "candidate-exam.js",
+      "label": "مؤهلاتك الدراسية والمهنية",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "training-center",
+      "text_sha256": "a6e6f945e09bf8f6b2bd05b450bbee204464c09a16b0a1074fa7abf782650ab8"
     },
     {
       "file": "carousel-content.js",
@@ -18163,6 +18213,100 @@
       "tab": "reception_services",
       "article": "requests",
       "text_sha256": "80a0c51a0ba10ff7f4fe6f627b68c4e009f932e1abdff544c26e792f5f0e9e49"
+    },
+    {
+      "file": "training-candidates.js",
+      "label": "اسم المرشح",
+      "name": "",
+      "kind": "label",
+      "forms": [
+        "دعوة مرشح"
+      ],
+      "tab": "training_evaluation",
+      "article": "training-center",
+      "text_sha256": "caae07d7ed8f600f32ba2a1a442778a067cad138ef0951718d1fef64241c7b61"
+    },
+    {
+      "file": "training-candidates.js",
+      "label": "رقم الهاتف",
+      "name": "",
+      "kind": "label",
+      "forms": [
+        "دعوة مرشح"
+      ],
+      "tab": "training_evaluation",
+      "article": "training-center",
+      "text_sha256": "bf6cc35dc1a06fc2ed825b68eda7f86df23198fa0ad453ed6c336f5537d230f8"
+    },
+    {
+      "file": "training-candidates.js",
+      "label": "البريد الإلكتروني (اختياري)",
+      "name": "",
+      "kind": "label",
+      "forms": [
+        "دعوة مرشح"
+      ],
+      "tab": "training_evaluation",
+      "article": "training-center",
+      "text_sha256": "da7b661969455a6c1ea1d51b6f33ac9a0d3b7f30b8a6d1870b36d1fae8e8195f"
+    },
+    {
+      "file": "training-candidates.js",
+      "label": "المسار",
+      "name": "",
+      "kind": "html",
+      "forms": [
+        "دعوة مرشح"
+      ],
+      "tab": "training_evaluation",
+      "article": "training-center",
+      "text_sha256": "443a01b0a60d3aea277d8c86f3c92f89642849891ba1dba20e36aa4c3c8f1716"
+    },
+    {
+      "file": "training-candidates.js",
+      "label": "المراجع (يُجري المقابلة)",
+      "name": "",
+      "kind": "html",
+      "forms": [
+        "دعوة مرشح"
+      ],
+      "tab": "training_evaluation",
+      "article": "training-center",
+      "text_sha256": "d9f078650f80934b7052284cdfd8e9a9fc56c3c1e6837d3c05897dfec16f5c83"
+    },
+    {
+      "file": "training-candidates.js",
+      "label": "مدة صلاحية الرابط بالأيام",
+      "name": "",
+      "kind": "label",
+      "forms": [
+        "دعوة مرشح"
+      ],
+      "tab": "training_evaluation",
+      "article": "training-center",
+      "text_sha256": "fb17b5c030ddd0bb97f55e4cbab04ab6c033daa377ee9c6ba28227d3e6d45e4c"
+    },
+    {
+      "file": "training-candidates.js",
+      "label": "السبب",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "training_evaluation",
+      "article": "training-center",
+      "text_sha256": "cb3b5eede6596c4a3a0c8b7275eaa230e154210a97b2c94e995bfafde3a7a4a6"
+    },
+    {
+      "file": "training-candidates.js",
+      "label": "الملاحظة (لا يراها المرشح ولا المراجع)",
+      "name": "",
+      "kind": "html",
+      "forms": [
+        "ملاحظة عن المرشح"
+      ],
+      "tab": "training_evaluation",
+      "article": "training-center",
+      "text_sha256": "09ca3939d0b9499e8e47feddfb5463bb0e953ebf1d27e5c15b78b686e226d215"
     },
     {
       "file": "training-evaluation.js",

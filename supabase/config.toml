@@ -110,3 +110,8 @@ verify_jwt = false
 [functions.meta-messenger-webhook]
 # Meta calls this directly (no Supabase JWT). Authenticated by X-Hub-Signature-256 (HMAC with META_APP_SECRET) inside the function.
 verify_jwt = false
+
+[functions.training-candidate]
+# Public candidate exam link (training center PR 4). The only credential is the one-time token in the request body;
+# the function calls token-scoped RPCs that are granted to service_role only and never return a score or answer key.
+verify_jwt = false
