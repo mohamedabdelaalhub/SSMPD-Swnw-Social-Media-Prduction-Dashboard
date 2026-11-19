@@ -3,7 +3,7 @@
 -- (fin_register_active / fin_cashier_active: one shift per register and per cashier until finance reviews it),
 -- and the screen only shows Arabic errors. This trigger checks the same two rules first and says, in Arabic,
 -- which shift blocks the new one and what to do. No rule changes: the unique indexes stay the source of truth.
--- Rollback: supabase/rollbacks/20261120090000_shift_open_clear_message.rollback.sql
+-- Rollback: supabase/rollbacks/20261120110000_shift_open_clear_message.rollback.sql
 begin;
 
 do $$ begin
