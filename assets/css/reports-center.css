@@ -54,7 +54,7 @@ button.rc-card{font:inherit;color:inherit;text-align:start;cursor:pointer;displa
 .rc-root td{padding:11px 12px;border-bottom:1px solid #F0F1F5;white-space:nowrap}
 .rc-root tbody tr:hover td{background:#FAFBFE}
 .rc-root tr.rc-click{cursor:pointer}
-.rc-n{text-align:end}.rc-c{text-align:center}
+.rc-n,.rc-root th.rc-n,.rc-root td.rc-n{text-align:end}.rc-c,.rc-root th.rc-c{text-align:center}
 .rc-root tfoot td{font-weight:700;background:#F4F6FB;border-top:2px solid var(--rc-line);border-bottom:0}
 .rc-negc{color:var(--rc-neg);font-weight:600}
 .rc-hb{display:flex;flex-direction:column;gap:10px}

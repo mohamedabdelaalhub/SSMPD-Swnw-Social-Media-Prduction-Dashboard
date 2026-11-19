@@ -161,7 +161,7 @@
 
       html += '<div class="section" id="brand-logo-settings"></div>';
       html += '<div class="section" id="admin-legal-docs"></div>';
-      if (window.SSMPDRoles && window.SSMPDRoles.isSuperAdmin(window.SSMPDAuth.currentAdmin)) html += '<div class="section" id="admin-report-access"></div>';
+      if (window.SSMPDRenderReports && window.SSMPDRoles && typeof window.SSMPDRoles.hasRole === 'function' && window.SSMPDRoles.hasRole(window.SSMPDAuth.currentAdmin, 'super_admin')) html += '<div class="section" id="admin-report-access"></div>';
       container.innerHTML = html;
       if(window.SSMPDDesignBudget)window.SSMPDDesignBudget.mount(container.querySelector('#admin-design-budget'));
       if(window.SSMPDClaudeControls)window.SSMPDClaudeControls.mount(container.querySelector('#admin-claude-controls'));

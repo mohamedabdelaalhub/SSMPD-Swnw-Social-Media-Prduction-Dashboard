@@ -6,7 +6,7 @@
 
   var AREAS = [["operations", "التشغيل"], ["cash", "الخزنة والإيرادات"], ["doctors", "الدكاترة"]];
   var ACCESS_ROLES = ["general_manager", "financial_manager", "accountant", "reception", "customer_service", "page_manager", "nursing", "head_nursing", "sono_doctor"];
-  var SHIFT_STATUS = { open: "مفتوحة", closed: "مقفولة", reviewed: "اتراجعت", approved: "اتراجعت" };
+  var SHIFT_STATUS = { open: "مفتوحة", submitted: "اتقفلت — مستنية مراجعة", reviewed: "اتراجعت" };
   var SOURCE_LABELS = { doctor_fee: "استحقاق خدمة", doctor_payout: "صرف", doctor_contractual: "تسوية", doctor_credit_note: "تسوية" };
   var EMPTY = "لسه مفيش بيانات في الفترة دي";
   var state = null;

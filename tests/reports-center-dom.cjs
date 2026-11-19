@@ -54,6 +54,6 @@ const tick = (ms = 20) => new Promise(r => setTimeout(r, ms));
   assert.ok(sets[0].roles.includes('accountant') && sets[0].roles.includes('general_manager'));
   // wiring
   const app = fs.readFileSync('assets/js/app.js', 'utf8'), html = fs.readFileSync('index.html', 'utf8');
-  assert.match(app, /reports: window\.SSMPDRenderReports/); assert.match(html, /render-reports\.js\?v=reports-wave1-20261119-1/); assert.match(html, /reports-center\.css\?v=reports-wave1-20261119-1/);
+  assert.match(app, /reports: window\.SSMPDRenderReports/); assert.match(html, /render-reports\.js\?v=reports-wave1-20261119-\d/); assert.match(html, /reports-center\.css\?v=reports-wave1-20261119-\d/);
   console.log('PASS reports center DOM: grouped cards + locks, cash closing rows/totals/red difference, CSV (BOM/header/totals), empty/error states, owner-only access matrix + save payload, wiring.');
 })().catch(e => { console.error(e); process.exit(1); });
