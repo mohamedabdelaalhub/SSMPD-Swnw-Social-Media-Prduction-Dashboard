@@ -1,0 +1,24 @@
+// Owner 2026-11-19: opening a shift that is blocked by another non-reviewed shift says why, in Arabic.
+const fs=require('fs'),assert=require('node:assert/strict'),{PGlite}=require('@electric-sql/pglite'),{randomUUID}=require('crypto');
+(async()=>{const db=new PGlite(),id=()=>randomUUID(),q=(s,p)=>db.query(s,p);const dina=id(),sara=id(),r1=id(),r2=id();
+ try{await db.exec(`create role authenticated;create role anon;create schema clinic_finance;
+  create table admins(id uuid primary key,name text);
+  create table clinic_finance.registers(id uuid primary key,name text);
+  create table clinic_finance.shifts(id uuid primary key default gen_random_uuid(),register_id uuid not null,cashier_id uuid not null,token uuid not null default gen_random_uuid(),opened_at timestamptz not null default now(),status text not null default 'open');
+  create unique index fin_register_active on clinic_finance.shifts(register_id) where status<>'reviewed';
+  create unique index fin_cashier_active on clinic_finance.shifts(cashier_id) where status<>'reviewed';`);
+  await q("insert into admins values($1,'دينا'),($2,'سارة')",[dina,sara]);await q("insert into clinic_finance.registers values($1,'خزينة دينا (تجريبية)'),($2,'خزينة الاستقبال')",[r1,r2]);
+  const M=fs.readFileSync('supabase/migrations/'+fs.readdirSync('supabase/migrations').find(x=>x.includes('_shift_open_clear_message.sql')),'utf8');
+  await db.exec(M);await assert.rejects(()=>db.exec(M),/تم تطبيق هذا الملف من قبل/);await db.exec('rollback');
+  await q("insert into clinic_finance.shifts(register_id,cashier_id) values($1,$2)",[r1,dina]);
+  await assert.rejects(()=>q("insert into clinic_finance.shifts(register_id,cashier_id) values($1,$2)",[r1,sara]),/الخزينة دي عليها وردية لسه مفتوحة \(باسم دينا،.*جرد وتسليم/);
+  await assert.rejects(()=>q("insert into clinic_finance.shifts(register_id,cashier_id) values($1,$2)",[r2,dina]),/عندك وردية تانية لسه مفتوحة على «خزينة دينا \(تجريبية\)»/);
+  await q("update clinic_finance.shifts set status='submitted'");
+  await assert.rejects(()=>q("insert into clinic_finance.shifts(register_id,cashier_id) values($1,$2)",[r1,dina]),/مستنية المراجعة المالية.*المالية تراجعها/);
+  await q("update clinic_finance.shifts set status='reviewed'");
+  await q("insert into clinic_finance.shifts(register_id,cashier_id) values($1,$2)",[r1,dina]);
+  await q("insert into clinic_finance.shifts(register_id,cashier_id) values($1,$2)",[r2,sara]);
+  await db.exec(fs.readFileSync('supabase/rollbacks/'+fs.readdirSync('supabase/rollbacks').find(x=>x.includes('_shift_open_clear_message.')),'utf8'));
+  await assert.rejects(()=>q("insert into clinic_finance.shifts(register_id,cashier_id) values($1,$2)",[r1,sara]),/fin_register_active/);
+  console.log('shift open clear message: ok');
+ }catch(e){console.error(e);process.exitCode=1;}finally{await db.close();}})();
