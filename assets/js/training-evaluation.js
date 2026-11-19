@@ -82,13 +82,14 @@
     var review = st.list.filter(function (a) { return a.relation === 'reviewer'; });
     var owner = isOwner();
     var h = '<div class="te-page"><header class="te-head"><div><h2>التدريب والتقييم</h2><p class="te-muted">مسارات إعداد مديري الفروع ومديري الفرق: دورة من 8 وحدات، ثم اختبار مواقف، ثم مقابلة.</p></div>' +
-      (owner ? '<button type="button" class="btn btn-primary" data-new>تكليف جديد</button>' : '') + '</header>';
+      (owner ? '<div class="te-head-actions"><button type="button" class="btn ghost" data-bankview>بنك الأسئلة</button><button type="button" class="btn btn-primary" data-new>تكليف جديد</button></div>' : '') + '</header>';
     if (owner) h += '<section class="te-card" data-bank><h3>بنك الأسئلة</h3><p class="te-muted">جارٍ التحقق…</p></section>';
     h += '<section class="te-card"><h3>تكليفاتي</h3>' + rows(mine, 'trainee') + '</section>';
     if (review.length) h += '<section class="te-card"><h3>تكليفات أراجعها</h3><p class="te-muted">تظهر هنا التكليفات المسندة إليك بصفتك مراجعًا. ورقة المقابلة تُتاح في مرحلة لاحقة.</p>' + rows(review, 'reviewer') + '</section>';
     if (owner) h += '<section class="te-card"><h3>كل التكليفات</h3>' + rows(st.list, 'owner') + '</section>';
     st.el.innerHTML = h + '</div>';
     var nb = st.el.querySelector('[data-new]'); if (nb) nb.onclick = newAssignment;
+    var bv = st.el.querySelector('[data-bankview]'); if (bv) bv.onclick = function () { bankView('manager'); };
     st.el.querySelectorAll('[data-open]').forEach(function (b) { b.onclick = function () { openAssignment(b.getAttribute('data-open')); }; });
     st.el.querySelectorAll('[data-result]').forEach(function (b) { b.onclick = function () { resultView(b.getAttribute('data-result')); }; });
     st.el.querySelectorAll('[data-cancel]').forEach(function (b) { b.onclick = function () { cancelAssignment(b.getAttribute('data-cancel')); }; });
@@ -269,6 +270,46 @@
         }).join('') + '</ol></section><p class="te-muted">هذه نتيجة الاختبار وحده. القرار النهائي يُبنى بعد المقابلة وتمثيل المواقف، ولا يرى المتدرب هذه الصفحة.</p></div>';
       st.el.innerHTML = h;
       st.el.querySelector('[data-back]').onclick = load;
+    }).catch(function (x) { toast(msg(x), true); load(); });
+  }
+
+
+  // ---------------------------------------------------------------- owner: question banks (with the key)
+  var PTS = { 2: 'الأنسب', 1: 'مقبول جزئيًا', 0: 'غير مناسب' };
+  var DIFF = { easy: 'سهل', medium: 'متوسط', hard: 'صعب' };
+  function bankView(which) {
+    stopExam();
+    st.view = 'bank';
+    st.el.innerHTML = '<div class="te-page"><p class="te-muted">جارٍ تحميل بنك الأسئلة…</p></div>';
+    return rpc('training_bank_view', { p_bank: which }).then(function (b) {
+      var list = function (a) { return '<ul>' + (a || []).map(function (x) { return '<li>' + e(x) + '</li>'; }).join('') + '</ul>'; };
+      var meta = b.meta, groups = b.groups || [], total = groups.reduce(function (n, g) { return n + (g.questions || []).length; }, 0);
+      var h = '<div class="te-page"><button type="button" class="btn ghost te-back" data-back>رجوع إلى التكليفات</button>' +
+        '<header class="te-head"><div><h2>بنك الأسئلة</h2><p class="te-muted">هذه الصفحة للإدارة فقط، وتعرض مفتاح الإجابات. كل فتح لها يُسجَّل.</p></div></header>' +
+        '<div class="te-switch" role="tablist"><button type="button" role="tab" data-bank="manager" aria-selected="' + (which === 'manager') + '">اختبار المديرين</button><button type="button" role="tab" data-bank="jobs" aria-selected="' + (which === 'jobs') + '">مسارات الوظائف</button></div>';
+      if (!meta) {
+        h += '<section class="te-card"><p class="te-warn">' + (which === 'jobs' ? 'لم يُحمَّل بنك مسارات الوظائف في القاعدة بعد. تحمّله الإدارة التقنية من النسخة المعتمدة.' : 'لم يُحمَّل بنك اختبار المديرين بعد.') + '</p></section>';
+      } else {
+        h += '<section class="te-card"><p>الإصدار <b>' + e(meta.version) + '</b> · ' + total + ' سؤالًا' + (which === 'manager' ? ' · ' + e(meta.questions_per_attempt) + ' سؤالًا في كل اختبار · ' + e(meta.duration_minutes) + ' دقيقة' : '') + '</p>' +
+          '<p class="te-muted">الدرجات: 2 الأنسب، 1 مقبول جزئيًا (آمن لكنه ناقص)، 0 غير مناسب. «علامة خطر» تفتح مراجعة بشرية ولا تعني جزاءً.</p></section>';
+        groups.forEach(function (g) {
+          h += '<details class="te-card te-bank-group"><summary><b>' + e(g.name) + '</b> <span class="te-muted">' + (g.questions || []).length + ' سؤالًا' + (g.quota != null ? ' · ' + e(g.quota) + ' في كل اختبار' : '') + ((g.lessons || []).length ? ' · ' + g.lessons.length + ' دروس' : '') + '</span></summary>' +
+            (g.description ? '<p class="te-muted">' + e(g.description) + '</p>' : '') + '<ol class="te-bank">' +
+            (g.questions || []).map(function (q) {
+              return '<li><p class="te-q-small">' + (q.difficulty ? '<span class="te-tag">' + e(DIFF[q.difficulty] || q.difficulty) + '</span> ' : '') + e(q.text) + '</p><ul class="te-bank-opts">' +
+                (q.options || []).map(function (o) { return '<li data-points="' + e(o.points) + '"><span class="te-pts">' + e(PTS[o.points]) + '</span> ' + e(o.text) + (o.critical ? ' <span class="te-flag">علامة خطر</span>' : '') + '</li>'; }).join('') + '</ul>' +
+                (q.rationale ? '<p class="te-muted"><b>الشرح:</b> ' + e(q.rationale) + '</p>' : '') + '</li>';
+            }).join('') + '</ol>' +
+            ((g.lessons || []).length ? '<h3>الدروس المصغّرة</h3>' + g.lessons.map(function (l) {
+              return '<div class="te-lesson"><h4>' + e(l.title) + (l.duration_minutes ? ' <span class="te-muted">(' + e(l.duration_minutes) + ' دقائق)</span>' : '') + '</h4><p><b>الهدف:</b> ' + e(l.objective) + '</p><p>' + e(l.explanation) + '</p>' +
+                '<div class="te-case"><p>' + e(l.scenario) + '</p></div><div class="te-dd"><div class="te-do"><h4>افعل</h4>' + list([l.do]) + '</div><div class="te-dont"><h4>لا تفعل</h4>' + list([l.dont]) + '</div></div>' +
+                '<p><b>سؤال للتحقق:</b> ' + e(l.check_question) + '</p><p class="te-muted"><b>الإجابة:</b> ' + e(l.answer) + '</p></div>';
+            }).join('') : '') + '</details>';
+        });
+      }
+      st.el.innerHTML = h + '</div>';
+      st.el.querySelector('[data-back]').onclick = load;
+      st.el.querySelectorAll('[data-bank]').forEach(function (t) { t.onclick = function () { if (t.getAttribute('data-bank') !== which) bankView(t.getAttribute('data-bank')); }; });
     }).catch(function (x) { toast(msg(x), true); load(); });
   }
 

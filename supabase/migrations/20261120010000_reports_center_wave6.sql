@@ -179,17 +179,17 @@ begin
   elsif p_action <> 'list' then raise exception 'إجراء غير معروف';
   end if;
   return jsonb_build_object('month', v_month, 'is_approver', v_appr,
-    'targets', coalesce((select jsonb_agg(jsonb_build_object('id', t.id, 'branch_id', t.branch_id, 'admin_id', t.admin_id, 'admin', a.full_name, 'role', t.role,
+    'targets', coalesce((select jsonb_agg(jsonb_build_object('id', t.id, 'branch_id', t.branch_id, 'admin_id', t.admin_id, 'admin', a.name, 'role', t.role,
                  'metric', t.metric, 'campaign_code', t.campaign_code, 'meta', public.report_metric_meta(t.metric), 'target', t.target, 'note', t.note,
-                 'status', t.status, 'proposed_by', pb.full_name, 'approved_by', ab.full_name, 'mine', t.proposed_by = v_me)
-                 order by t.status desc, t.metric, a.full_name)
+                 'status', t.status, 'proposed_by', pb.name, 'approved_by', ab.name, 'mine', t.proposed_by = v_me)
+                 order by t.status desc, t.metric, a.name)
                  from public.report_targets t left join public.admins a on a.id = t.admin_id left join public.admins pb on pb.id = t.proposed_by
                  left join public.admins ab on ab.id = t.approved_by
                 where (t.month = v_month or t.month is null) and t.status <> 'rejected'), '[]'::jsonb),
     'metrics', (select jsonb_agg(jsonb_build_object('key', m, 'meta', public.report_metric_meta(m))) from unnest(array['branch_revenue', 'branch_visits', 'new_leads',
                  'cost_per_lead', 'bookings', 'lead_attempts', 'leads_booked', 'lead_first_response_minutes', 'campaign_cost_per_booking']) m),
-    'people', (select coalesce(jsonb_agg(jsonb_build_object('id', id, 'name', full_name, 'role', role) order by full_name), '[]'::jsonb) from public.admins where active),
-    'editors', (select coalesce(jsonb_agg(jsonb_build_object('id', a.id, 'name', a.full_name) order by a.full_name), '[]'::jsonb)
+    'people', (select coalesce(jsonb_agg(jsonb_build_object('id', id, 'name', name, 'role', role) order by name), '[]'::jsonb) from public.admins where active),
+    'editors', (select coalesce(jsonb_agg(jsonb_build_object('id', a.id, 'name', a.name) order by a.name), '[]'::jsonb)
                   from public.report_target_editors e join public.admins a on a.id = e.admin_id),
     'branches', (select coalesce(jsonb_agg(jsonb_build_object('id', id, 'name', name)), '[]'::jsonb) from public.inventory_branches where active));
 end $$;
@@ -197,7 +197,7 @@ end $$;
 -- Approved campaign cost-per-booking targets for the Meta Ads screen (ads chat, PR #606).
 create function public.report_campaign_targets() returns table(code text, target numeric, approved_by text, approved_at timestamptz)
 language sql stable security definer set search_path = pg_catalog, public as $$
-  select t.campaign_code, t.target, a.full_name, t.approved_at
+  select t.campaign_code, t.target, a.name, t.approved_at
     from public.report_targets t left join public.admins a on a.id = t.approved_by
    where t.metric = 'campaign_cost_per_booking' and t.status = 'approved'
      and (public.is_super() or coalesce((select public.can_manage_all_content()), false))
@@ -210,12 +210,12 @@ declare m date := date_trunc('month', coalesce(p_month, (now() at time zone 'Afr
 begin
   perform public.report_require('targets_vs_actual');
   with t as (
-    select t.*, a.full_name, public.report_metric_meta(t.metric) meta,
+    select t.*, a.name admin_name, public.report_metric_meta(t.metric) meta,
            public.report_metric_actual(t.metric, m, coalesce(t.branch_id, p_branch), t.admin_id, t.role, t.campaign_code) actual
       from public.report_targets t left join public.admins a on a.id = t.admin_id
      where t.status = 'approved' and (t.month = m or t.month is null) and (p_branch is null or t.branch_id is null or t.branch_id = p_branch)),
   r as (
-    select coalesce(full_name, case when campaign_code is not null then 'حملة ' || campaign_code when role is not null then 'دور: ' || role else 'الفرع' end) owner,
+    select coalesce(admin_name, case when campaign_code is not null then 'حملة ' || campaign_code when role is not null then 'دور: ' || role else 'الفرع' end) owner,
            role, metric, meta->>'label' label, meta->>'unit' unit, (meta->>'lower_better')::boolean lower_better, target, actual,
            case when target > 0 and actual is not null then
              round(case when (meta->>'lower_better')::boolean then 100 * target / nullif(actual, 0) else 100 * actual / target end, 1) end achievement
@@ -282,7 +282,7 @@ begin
            from public.leads where (received_at at time zone 'Africa/Cairo')::date between p_from and p_to group by assigned_to),
   ids as (select id from bk union select id from vi union select id from py union select id from la union select id from lb),
   r as (
-    select ad.full_name employee, ad.role, coalesce(bk.n, 0) bookings, coalesce(bk.attended, 0) bookings_attended, coalesce(vi.n, 0) visits_opened,
+    select ad.name employee, ad.role, coalesce(bk.n, 0) bookings, coalesce(bk.attended, 0) bookings_attended, coalesce(vi.n, 0) visits_opened,
            coalesce(py.n, 0) payments, coalesce(py.amount, 0) collected, coalesce(la.n, 0) lead_attempts, coalesce(la.answered, 0) answered_calls,
            coalesce(lb.assigned, 0) leads_assigned, coalesce(lb.booked, 0) leads_booked,
            case when coalesce(lb.assigned, 0) > 0 then round(100.0 * lb.booked / lb.assigned, 1) end conversion
@@ -310,11 +310,11 @@ begin
       from public.leads l where (l.received_at at time zone 'Africa/Cairo')::date between p_from and p_to),
   x as (select *, extract(epoch from first_at - received_at) / 60 mins from l),
   g as (
-    select coalesce(ad.full_name, 'مش متوزع') employee, count(*) leads, count(first_at) contacted, count(*) filter (where first_at is null) untouched,
+    select coalesce(ad.name, 'مش متوزع') employee, count(*) leads, count(first_at) contacted, count(*) filter (where first_at is null) untouched,
            round(avg(mins)::numeric, 1) avg_first_response, round((percentile_cont(0.5) within group (order by mins))::numeric, 1) median_first_response,
            count(*) filter (where mins <= 15) within_15,
            count(*) filter (where current_status in ('booked', 'booked_on_system', 'service_done')) booked
-      from x left join public.admins ad on ad.id = x.assigned_to group by ad.full_name)
+      from x left join public.admins ad on ad.id = x.assigned_to group by ad.name)
   select jsonb_build_object(
     'rows', coalesce((select jsonb_agg(to_jsonb(g) || jsonb_build_object('conversion', case when leads > 0 then round(100.0 * booked / leads, 1) end)
               order by leads desc, employee) from g), '[]'::jsonb),

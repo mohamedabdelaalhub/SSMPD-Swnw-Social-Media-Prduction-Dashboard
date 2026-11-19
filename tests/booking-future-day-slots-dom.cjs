@@ -22,7 +22,9 @@ set('day',tomorrow); // outside the loaded period -> must fetch that day
 await wait(()=>slots()>0);
 assert.equal(slots(),4); // 21:00-23:00 / 30 min
 assert(calls.some(c=>c[0]<=tomorrow&&c[1]>=tomorrow),'tomorrow was fetched'); // its own day, or the timeline's week
-const n=calls.length;set('day',today);set('day',tomorrow);await new Promise(r=>setTimeout(r,40));assert.equal(calls.length,n); // fetched once per day
+// The timeline reloads its own week once (Sat-Fri) and forgets the per-day cache, so when tomorrow lies in the NEXT week it is fetched once more. That depends on the weekday the test runs on; warm up once, then assert no more fetches.
+set('day',today);set('day',tomorrow);await new Promise(r=>setTimeout(r,60));
+const n=calls.length;set('day',today);set('day',tomorrow);await new Promise(r=>setTimeout(r,40));assert.equal(calls.length,n); // then fetched once per day
 assert.equal(slots(),4);
 // a booking already made that evening is excluded after the fetch (d2 lies beyond the timeline's loaded week)
 apps=[{id:'x1',provider_id:'p1',status:'booked',starts_at:h.cairoISO(tomorrow+'T21:00'),ends_at:h.cairoISO(tomorrow+'T21:30')}];
