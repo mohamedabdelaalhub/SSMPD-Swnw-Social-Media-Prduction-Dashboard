@@ -121,10 +121,10 @@ function printClaim(c){
   var d=c.data,R=w.SWNWServiceOrderRules,PR=w.SSMPDServiceInvoicePrint;
   var visits=(d.visits||[]).map(function(v){return [v.id,c.lookup('patients',v.patient_id)+' — زيارة '+(v.visit_no||'')];});
   var body='<p>تُحسب المطالبة من الخدمات المسجلة في الزيارة. أدخل شروط جهة التأمين.</p>'+c.select('visit_id','الزيارة',visits,'')+
-    '<label>جهة التأمين<input name="insurer" type="text" required></label><label>رقم العضوية<input name="member" type="text"></label>'+
+    '<label>جهة التأمين / التعاقد<input name="insurer" type="text" required></label><label>رقم العضوية<input name="member" type="text"></label><label>رقم الموافقة<input name="approval" type="text"></label>'+
     '<label>نسبة الخصم %<input name="discount" type="number" min="0" max="100" step="0.01" value="0" required></label>'+
     '<label>نسبة تحمّل المريض %<input name="copay" type="number" min="0" max="100" step="0.01" value="0" required></label>';
-  var root=c.modal('طباعة مطالبة تأمينية',body,function(v){
+  var root=c.modal('طباعة فاتورة مطالبة',body,function(v){
     if(!R||!PR)return Promise.reject(Error('وحدة الطباعة غير محمّلة'));
     if(!v.visit_id)return Promise.reject(Error('اختر الزيارة'));
     var list=claimOrders(d.orders,d.services,v.visit_id,{discount:Number(v.discount),copay:Number(v.copay)});
@@ -132,8 +132,13 @@ function printClaim(c){
     var visit=(d.visits||[]).find(function(x){return x.id===v.visit_id;})||{};
     var inv=R.buildInvoices(list).invoices;
     if(!inv.length)return Promise.reject(Error('لا توجد بنود قابلة للفوترة'));
-    try{PR.openPrint(inv,{patientName:c.lookup('patients',visit.patient_id),insurerName:v.insurer,memberNo:v.member,invoiceNo:'',date:new Date().toISOString().slice(0,10)});}catch(e){return Promise.reject(e);}
-    return Promise.resolve();});
+    var win=w.open('','_blank');if(!win)return Promise.reject(Error('المتصفح منع نافذة الطباعة — اسمح بالنوافذ المنبثقة'));
+    win.document.write('<p dir="rtl" style="font-family:Tahoma">جاري تجهيز الفاتورة…</p>');
+    var ctx={patientName:c.lookup('patients',visit.patient_id),fileNo:c.lookup('patients',visit.patient_id,'file_no'),insurerName:v.insurer,memberNo:v.member,approvalNo:v.approval,invoiceNo:'',date:new Date().toISOString().slice(0,10),payments:[]};
+    /* the visit's ONE invoice number + the receipts of the patient's share (assigned at the first print) */
+    var fetchNo=w.SSMPDDb&&w.SSMPDDb.client?Promise.resolve(w.SSMPDDb.client.rpc('clinic_reception_invoice_print',{p_workspace:c.workspace,p_visit:v.visit_id})).then(function(r){if(r&&r.error)throw r.error;return r&&r.data;}):Promise.resolve(null);
+    return fetchNo.then(function(x){if(x){ctx.invoiceNo=x.invoice_no;ctx.payments=x.payments||[];if(x.service_date)ctx.date=x.service_date;}},function(){/* no executed invoice yet: print without a number */}).then(function(){
+      try{PR.openPrint(inv,ctx,win);}catch(e){win.close();throw e;}});});
   if(root){var sb=root.querySelector('[type="submit"]');if(sb)sb.textContent='طباعة';}
   return root;
 }

@@ -170,3 +170,18 @@
 .rx-extra{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;align-items:end;padding:10px;border:1px dashed rgba(15,54,157,.35);border-radius:12px;background:rgba(15,54,157,.03)}
 .rx-extra [data-x-note]{grid-column:1/-1;margin:0}
 .rx-extra [data-x-remove]{justify-self:start}
+
+/* booking modal cards, switches and sticky save bar */
+.rx-modal .rx-card{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;padding:14px;border:1px solid var(--c-border,#D5DEEE);border-radius:16px;background:#fff;min-width:0}
+.rx-modal .rx-card-title{grid-column:1/-1;margin:0;display:flex;align-items:center;gap:8px;font-size:13px;color:#0F369D}
+.rx-modal .rx-card-title i{width:22px;height:22px;border-radius:50%;background:#0F369D;color:#fff;display:grid;place-items:center;font-style:normal;font-size:12px}
+.rx-modal .rx-card [data-wide],.rx-modal .rx-card-one>label,.rx-modal .rx-card .rx-extras,.rx-modal .rx-card .rx-external{grid-column:1/-1}
+.rx-modal .rx-c-dept{order:1}.rx-modal .rx-c-prov{order:2}.rx-modal .rx-c-svc{order:3;grid-column:1/-1}.rx-modal .rx-card .rx-external{order:4}
+.rx-modal .rx-walkin,.rx-modal .rx-external>.rx-check{display:flex;align-items:center;gap:10px}
+.rx-modal .rx-walkin input[type=checkbox],.rx-modal .rx-external .rx-check input[type=checkbox]{-webkit-appearance:none;appearance:none;flex:none;width:44px;height:26px;margin:0;border-radius:99px;background:#CFD5E2;position:relative;cursor:pointer;transition:background .2s}
+.rx-modal .rx-walkin input[type=checkbox]::after,.rx-modal .rx-external .rx-check input[type=checkbox]::after{content:"";position:absolute;top:3px;inset-inline-start:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(22,33,46,.3);transition:inset-inline-start .2s}
+.rx-modal .rx-walkin input[type=checkbox]:checked,.rx-modal .rx-external .rx-check input[type=checkbox]:checked{background:#F15A22}
+.rx-modal .rx-walkin input[type=checkbox]:checked::after,.rx-modal .rx-external .rx-check input[type=checkbox]:checked::after{inset-inline-start:21px}
+.rx-modal .rx-walkin input[type=checkbox]:focus-visible,.rx-modal .rx-external .rx-check input[type=checkbox]:focus-visible{outline:3px solid rgba(15,54,157,.35);outline-offset:2px}
+.rx-modal .rx-form>footer{grid-column:1/-1;position:sticky;bottom:-22px;z-index:6;display:flex;gap:10px;margin-bottom:-22px;padding:12px 0 22px;background:#fff;border-top:1px solid var(--c-border,#E6E8EE)}
+@media(max-width:640px){.rx-modal .rx-card{grid-template-columns:minmax(0,1fr)}.rx-modal .rx-c-dept,.rx-modal .rx-c-prov{grid-column:1/-1}}
