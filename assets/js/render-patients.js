@@ -86,6 +86,11 @@
   function canUpload() { return !!(me && (me.has_archive_access || window.SSMPDRoles.hasRole(me, "super_admin"))); }
   // "طبيب سونو" (معاينة محالة فقط): عنده has_archive_view_only بس، من غير أرشيف كامل
   // ولا مراجعة — بيشوف شاشة مختلفة تماماً (طابور الإحالات) بدل الأرشيف العادي
+  // Owner 2026-11-19: reception / customer service archive scope — view the whole file, edit basic data, upload ID/insurance
+  // documents only; never delete, never touch medical records (enforced again in the database and the edge functions).
+  function isArchiveReception() { return !!(me && me.has_archive_reception_access && !canUpload()); }
+  function canBasicEdit() { return canUpload() || isArchiveReception(); }
+  var RECEPTION_DOC_CATS = ["id_document", "insurance"];
   function isDoctorOnly() { return !!(me && me.has_archive_view_only && !canUpload() && !canReview()); }
   // مين يقدر يحيل مريض لطبيب سونو: التمريض، أو أي حد عنده أرشيف كامل، أو سوبر أدمن
   function canAssignDoctor() {
@@ -3006,7 +3011,7 @@
           html += "<p style=\"color:var(--c-muted);font-size:13px;\"> <!--ssmpd-i18n:%D9%85%D9%81%D9%8A%D8%B4%20%D9%85%D8%B1%D8%B6%D9%89%20%D9%85%D8%B7%D8%A7%D8%A8%D9%82%D9%8A%D9%86.-->مفيش مرضى مطابقين.</p>";
         } else {
           var canAssign = canAssignDoctor();
-          var canEditBrowse = canUpload();
+          var canEditBrowse = canBasicEdit();
           var canDeleteBrowse = window.SSMPDRoles.hasRole(me, "super_admin");
           html += "<table class=\"simple\"><thead><tr><th> <!--ssmpd-i18n:%D9%83%D9%88%D8%AF%20%D8%A7%D9%84%D9%85%D8%B1%D9%8A%D8%B6-->كود المريض</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%A7%D8%B3%D9%85-->الاسم</th><th>أضاف المريض</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%87%D8%A7%D8%AA%D9%81-->الهاتف</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%B3%D9%86-->السن</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%86%D9%88%D8%B9-->النوع</th><th>الرقم الطبي</th><th>آخر زيارة</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AD%D8%A7%D9%84%D8%A9-->الحالة</th><th></th></tr></thead><tbody>";
           patients.forEach(function (p) {
@@ -3472,7 +3477,7 @@
     html += '<div class="section" style="padding:12px 14px;">' +
       '<h3 style="font-size:13px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
       '<span>البيانات الشخصية</span>' +
-      (canUp ? "<button class=\"btn ghost sm\" data-edit-personal=\"1\"> <!--ssmpd-i18n:%D8%AA%D8%B9%D8%AF%D9%8A%D9%84-->تعديل</button>" : '') +
+      (canBasicEdit() ? "<button class=\"btn ghost sm\" data-edit-personal=\"1\"> <!--ssmpd-i18n:%D8%AA%D8%B9%D8%AF%D9%8A%D9%84-->تعديل</button>" : '') +
       '</h3>' +
       '<p style="font-size:12px;color:var(--c-muted);line-height:1.9;">' +
       'الهاتف: ' + escapeHtml(patient.phone || "—") + '<br>' +
@@ -3579,7 +3584,7 @@
       html += '<div class="section" style="padding:12px 14px;">' +
         '<h3 style="font-size:13px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
         '<span>' + c.label + ' (' + list.length + ')</span>' +
-        (canUp ? '<span><button class="btn ghost sm" data-upload-cat="' + c.key + '">+ رفع</button>' +
+        ((canUp || (isArchiveReception() && RECEPTION_DOC_CATS.indexOf(c.key) >= 0)) ? '<span><button class="btn ghost sm" data-upload-cat="' + c.key + '">+ رفع</button>' +
           (c.key === "medical_report" ? " <button class=\"btn ghost sm\" data-new-medical-report=\"1\"> <!--ssmpd-i18n:%2B%20%D8%A5%D9%86%D8%B4%D8%A7%D8%A1%20%D8%AC%D8%AF%D9%8A%D8%AF-->+ إنشاء جديد</button>" : '') +
           '<input type="file" accept="image/*,application/pdf" data-file-input-cat="' + c.key + '" style="display:none;"></span>' : '') +
         '</h3>';
