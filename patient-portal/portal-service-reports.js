@@ -10,7 +10,7 @@ function cardHtml(rows){
 if(typeof document==="undefined"||!w.supabase)return (w.SSMPDPortalServiceReports={_pure:{cardHtml:cardHtml,esc:esc}});
 var cfg=w.SSMPD_CONFIG&&w.SSMPD_CONFIG.supabase,root=document.getElementById("portal-root");
 if(!cfg||!cfg.url||!cfg.anonKey||!root)return;
-var client=w.supabase.createClient(cfg.url,cfg.anonKey,{auth:{persistSession:true,autoRefreshToken:true,storageKey:"swnw-patient-portal-auth"}});
+var client=((window.SSMPDPortalClient)||w.supabase.createClient(cfg.url,cfg.anonKey,{auth:{persistSession:true,autoRefreshToken:true,storageKey:"swnw-patient-portal-auth"}}));
 var loadedFor="",loading=false;
 function mount(){
   var shell=root.querySelector(".app-shell");if(!shell||!root.querySelector(".profile-tabs"))return;

@@ -2,7 +2,7 @@
 "use strict";
 var cfg=window.SSMPD_CONFIG&&window.SSMPD_CONFIG.supabase;
 if(!cfg||!cfg.url||!cfg.anonKey||!window.supabase)return;
-var client=window.supabase.createClient(cfg.url,cfg.anonKey,{auth:{persistSession:true,autoRefreshToken:true,storageKey:"swnw-patient-portal-auth"}});
+var client=((window.SSMPDPortalClient)||window.supabase.createClient(cfg.url,cfg.anonKey,{auth:{persistSession:true,autoRefreshToken:true,storageKey:"swnw-patient-portal-auth"}}));
 
 function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
 function categoryLabel(v){return({insurance:"تأمين",radiology:"أشعة",lab_result:"تحاليل",prescription:"وصفة طبية",physical_therapy:"علاج طبيعي",medical_report:"تقرير طبي",eeg:"رسم مخ",invoice:"فاتورة / إيصال",other:"ملف آخر"}[v]||"ملف");}
