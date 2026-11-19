@@ -35,6 +35,8 @@
     clinic_info: ["page_manager", "customer_service", "general_manager", "super_admin"],
     // بيانات الشركة والفروع (سجل تجاري/ضريبي/بنك/تراخيص) — السوبر أدمن بس (قرار المالك 2026-11-16)
     org_legal: ["super_admin"],
+    // التقارير: كل الأدوار تدخل التاب، والسيرفر (report_catalog) هو اللي يقرر كل شخص يشوف أنهي تقرير
+    reports: Object.keys(ROLES),
     performance: ["page_manager", "approver", "general_manager", "super_admin"],
     indicator_reports: ["general_manager", "super_admin"],
     staff_kpi: ["general_manager", "super_admin"],

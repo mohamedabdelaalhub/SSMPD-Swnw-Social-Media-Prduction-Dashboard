@@ -1,0 +1,23 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>التقارير — بيانات محاكاة</title>
+<link rel="stylesheet" href="../assets/css/styles.css"><link rel="stylesheet" href="../assets/css/dashboard-theme.css"><link rel="stylesheet" href="../assets/css/reports-center.css">
+<style>body{margin:0;background:#F3F4F7}main{max-width:1280px;margin:0 auto;padding:16px 20px}</style></head><body><main id="v"></main>
+<script>
+/* بيانات محاكاة بالكامل — مفيش اتصال بقاعدة البيانات. ?screen=home|cash_closing|revenue_by_doctor|doctor_dues|daily_flash|access */
+var screen=new URLSearchParams(location.search).get('screen')||'home';
+var fmtD=function(n){var d=new Date(2026,10,18-n);return d.toISOString().slice(0,10);};
+var cat={reports:[{code:'daily_flash',title:'التقرير الصباحي',area:'operations',sensitive:false,allowed:true},{code:'cash_closing',title:'الإقفال اليومي للخزنة',area:'cash',sensitive:false,allowed:true},{code:'revenue_by_doctor',title:'إيرادات التخصصات والدكاترة',area:'cash',sensitive:false,allowed:true},{code:'unbilled_services',title:'خدمات اتنفذت ومتفوترتش',area:'cash',sensitive:false,allowed:screen!=='home'},{code:'doctor_dues',title:'مستحقات الدكاترة',area:'doctors',sensitive:true,allowed:screen!=='home'}],branches:[{id:'b1',name:'حدائق الأهرام'},{id:'b2',name:'فرع تجريبي'}],is_owner:true};
+var cash={rows:[['سارة','خزنة 1',1850,420,0,0,2270,2270,0],['منى','خزنة 1',2100,640,300,0,3040,2990,-50],['هدى','خزنة 2',980,0,0,500,1480,1480,0]].map(function(r,i){return{branch:'حدائق الأهرام',register:r[1],cashier:r[0],opened_at:'2026-11-1'+(5+i)+'T08:00:00',closed_at:'2026-11-1'+(5+i)+'T16:10:00',status:'closed',cash:r[2],pos:r[3],instapay:r[4],bank:r[5],expected:r[6],counted:r[7],difference:r[8],reviewer:'مراجع'};}),totals:{shifts:3,cash:4930,pos:1060,instapay:300,bank:500,expected:6790,counted:6740,difference:-50,short_shifts:1}};
+var specs=[['أسنان',48200],['جلدية',31500],['علاج طبيعي',22800],['باطنة',15400]];
+var rev={rows:[],by_specialty:specs.map(function(s){return{specialty:s[0],net:s[1]};}),totals:{visits:412,services:538,gross:124300,discount:6400,net:117900,insurance:21000},options:{specialties:specs.map(function(s){return s[0];}),doctors:[{id:'d1',name:'د. تجريبي أ'},{id:'d2',name:'د. تجريبي ب'}]}};
+specs.forEach(function(s,i){rev.rows.push({specialty:s[0],provider_id:'d'+(i%2+1),doctor:'د. تجريبي '+'أب'[i%2],visits:100+i*7,services:130+i*9,gross:s[1]*1.05,discount:s[1]*.05,net:s[1],insurance:s[1]*.2,patient:s[1]*.8});});
+var dues={rows:[{provider_id:'d1',doctor:'د. تجريبي أ',accrued:18400,adjustments:-500,paid:10000,balance:7900},{provider_id:'d2',doctor:'د. تجريبي ب',accrued:12100,adjustments:0,paid:12000,balance:100}],lines:[],totals:{accrued:30500,adjustments:-500,paid:22000,balance:8000},options:{doctors:[]}};
+var flash={day:'2026-11-18',revenue:17900,revenue_week:[12000,15500,9800,14200,16100,13900,17900].map(function(n,i){return{day:fmtD(6-i),net:n};}),collections:16400,visits:63,appointments:71,no_show:5,cancelled:3,leads_new:14,leads_booked:6,low_stock:4,unbilled:{count:7,value:3150},cash_difference:-50};
+var access={reports:cat.reports.map(function(r){return{code:r.code,title:r.title,area:r.area,sensitive:r.sensitive,roles:r.sensitive?['general_manager','financial_manager']:['general_manager','financial_manager','accountant'],admins:r.code==='daily_flash'?[{id:'p1',name:'هبة (تجريبي)'}]:[]};}),people:[{id:'p1',name:'هبة (تجريبي)',role:'reception'},{id:'p2',name:'أحمد (تجريبي)',role:'accountant'}]};
+window.SSMPDRoles={label:function(r){return{general_manager:'المدير العام',financial_manager:'المدير المالي',accountant:'محاسب',reception:'استقبال',customer_service:'خدمة عملاء',page_manager:'مسؤول صفحات',nursing:'تمريض',head_nursing:'رئيسة تمريض',sono_doctor:'دكتور'}[r]||r;}};
+window.SSMPDDb={client:{rpc:function(n,a){return new Promise(function(ok){setTimeout(function(){var d={report_catalog:cat,report_cash_closing:cash,report_revenue_by_doctor:rev,report_doctor_dues:dues,report_daily_flash:flash,report_access_admin:access,report_unbilled_services:{rows:[],totals:{count:0,value:0}}}[n];ok({data:d});},20);});}}};
+</script><script src="../assets/js/render-reports.js"></script>
+<script>
+var host=document.getElementById('v');
+if(screen==='access'){host.innerHTML='<div class="section" style="background:#fff;border:1px solid #E6E8EE;border-radius:18px;padding:20px"></div>';SSMPDRenderReports.mountAccess(host.firstChild);}
+else{SSMPDRenderReports.render(host);if(screen!=='home')setTimeout(function(){var b=host.querySelector('[data-code="'+screen+'"]');if(b)b.click();},200);}
+</script></body></html>
