@@ -1,68 +1,111 @@
-<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>المهام — تصور v2</title>
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>تصور — المهام (v3)</title>
+<!-- Mockup only (2026-11-19). Sample data. Same language as approved home v2 / team performance: no hero banner, icon-chip KPI tiles,
+     one-line meters, soft chips with dark #333 text, popups for every total and every task, 16px gutter, nothing wraps inside chips/buttons. -->
 <style>
-@font-face{font-family:'BigVesta Arabic';src:url('../../../assets/fonts/BigVesta-Regular.woff2') format('woff2')}
-@font-face{font-family:'BigVesta Arabic';font-weight:700;src:url('../../../assets/fonts/BigVesta-Bold.woff2') format('woff2')}
-:root{--b:#0F369D;--o:#F15A22;--ink:#16212E;--g:#2F7D5C;--r:#D0402A;--bg:#F4F6FB;--line:#E3E8F2;--mut:#6B7686;--num:#333333}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:'BigVesta Arabic','Hiragino Kaku',system-ui,Tahoma,sans-serif;direction:rtl}
-.wrap{max-width:1180px;margin:0 auto;padding:24px 16px 60px}
-.head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin-bottom:16px}
-.head h1{margin:0;font-size:28px}.head p{margin:4px 0 0;color:var(--mut);font-size:14px}
-.bell{width:44px;height:44px;border-radius:14px;border:1px solid var(--line);background:#fff;display:grid;place-items:center;font-size:18px}
-.pills{display:flex;gap:8px;overflow-x:auto;padding:2px 0 14px;scrollbar-width:none}.pills::-webkit-scrollbar{display:none}
-.pill{flex:none;border:1px solid var(--line);background:#fff;border-radius:999px;padding:9px 16px;font:inherit;font-size:14px;cursor:pointer;display:flex;gap:8px;align-items:center;white-space:nowrap;transition:.24s}
-.pill b{background:#EEF1F8;color:var(--num);border-radius:999px;padding:0 8px;font-size:12px;min-width:22px;text-align:center}
-.pill.on{background:var(--ink);color:#fff;border-color:var(--ink)}.pill.on b{background:#fff}
-.top{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:16px;margin-bottom:16px}.card.k,.card.hero{min-height:132px}
-.card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:20px;transition:transform .2s,box-shadow .2s}
-@media(hover:hover){.card.tap:hover{transform:translateY(-3px);box-shadow:0 10px 24px rgba(15,54,157,.08)}}
-.card.tap{cursor:pointer;text-align:right;font:inherit;color:inherit;width:100%}
-.hero{background:linear-gradient(135deg,#F15A22,#F58A4E);color:#fff;border:0;display:flex;flex-direction:column;justify-content:space-between;min-height:132px}
-.hero small{opacity:.9;font-size:13px}.hero .big{font-size:44px;font-weight:700;line-height:1}.hero .nx{font-size:14px;background:rgba(255,255,255,.2);border-radius:12px;padding:8px 12px}
-.k small{color:var(--mut);font-size:13px;display:block;margin-bottom:8px}.k .n{font-size:34px;font-weight:700;color:var(--num)}.k .n.red{color:var(--r)}
-.k .sub{font-size:12px;color:var(--mut);margin-top:6px;display:block}
-.bar{height:6px;border-radius:6px;background:#EEF1F8;margin-top:10px;overflow:hidden}.bar i{display:block;height:100%;background:var(--g);width:64%}
-h2.sec{font-size:15px;margin:0;display:flex;gap:8px;align-items:center}h2.sec b{background:#EEF1F8;color:var(--num);border-radius:999px;padding:0 9px;font-size:12px}
-.stack{display:grid;gap:16px}.grp{padding:8px 8px 4px}.grp .card-h{margin:10px 14px 4px}.list{display:grid}
-.row{display:grid;grid-template-columns:12px 1fr auto auto 28px;gap:14px;align-items:center;background:transparent;border:0;border-bottom:1px solid var(--line);border-radius:12px;padding:14px;min-height:64px;cursor:pointer;transition:.2s;text-align:right;font:inherit;color:inherit;width:100%}.row:last-child{border-bottom:0}@media(hover:hover){.row:hover{background:var(--bg)}}
-.dot{width:10px;height:10px;border-radius:50%;background:#B8C2D6}.dot.go{background:var(--b)}.dot.late{background:var(--r)}.dot.rev{background:var(--o)}
-.t{font-weight:700;font-size:15px}.t small{display:block;font-weight:400;color:var(--mut);font-size:12.5px;margin-top:2px}
-.chip{border-radius:999px;padding:4px 12px;font-size:12.5px;white-space:nowrap;color:var(--num)}
-.c-late{background:#FBE5E0}.c-today{background:#FFF0E6}.c-week{background:#EEF1F8}.c-go{background:#E4ECFB}.c-rev{background:#FFF0E6}.c-ok{background:#E3F2EA}
-.av{width:28px;height:28px;border-radius:50%;background:#DDE5F6;display:grid;place-items:center;font-size:12px;color:var(--num)}
+@font-face{font-family:"BigVesta Arabic";src:url("../../../assets/fonts/BigVesta-Regular.woff2") format("woff2");font-weight:400}
+@font-face{font-family:"BigVesta Arabic";src:url("../../../assets/fonts/BigVesta-Bold.woff2") format("woff2");font-weight:700}
+@font-face{font-family:"Hiragino Kaku";src:url("../../../assets/fonts/Hiragino-W3.woff2") format("woff2");font-weight:300}
+@font-face{font-family:"Hiragino Kaku";src:url("../../../assets/fonts/Hiragino-W6.woff2") format("woff2");font-weight:600}
+:root{--gap:16px;--blue:#0F369D;--ink:#16212E;--pos:#2F7D5C;--neg:#D0402A;--or:#F15A22;--bg:#F3F4F7;--line:#E6E8EE;--mute:#6B7483;--num:#333333;--ease:cubic-bezier(.22,1,.36,1)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;font-size:14px;line-height:1.6;font-variant-numeric:tabular-nums}
+svg{fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+button{font:inherit;color:inherit}
+.top{background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:10px 20px}
+.brand{display:flex;align-items:center;gap:12px}.logo{width:36px;height:36px;border-radius:11px;background:var(--blue);color:#fff;display:grid;place-items:center;font-weight:700}
+.brand small{display:block;color:var(--mute);font-size:11.5px;line-height:1.3}.brand b{font-size:15px;line-height:1.3}
+.ib{width:40px;height:40px;border-radius:12px;border:1px solid var(--line);background:#fff;display:grid;place-items:center;color:var(--blue);cursor:pointer;transition:transform .2s var(--ease),background .2s}
+.ib:hover{background:#F3F5FA}.ib:active{transform:scale(.94)}.ib svg{width:19px;height:19px}
+.tb{display:flex;gap:8px}
+.page{max-width:1280px;margin:0 auto;padding:var(--gap) 20px 80px;display:flex;flex-direction:column;gap:var(--gap)}
+.ph{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-top:8px}
+.crumb{font-size:12.5px;color:var(--mute)}.ph h1{margin:4px 0 6px;font-size:26px;line-height:1.3}.sub{font-size:13px;color:var(--mute);white-space:nowrap}
+.acts{margin-inline-start:auto;display:flex;gap:10px;align-items:center}
+.btn{white-space:nowrap;display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:#fff;color:var(--blue);font-weight:600;font-size:13px;border-radius:12px;padding:10px 16px;min-height:42px;cursor:pointer;transition:background .18s,border-color .18s,transform .12s}
+.btn:hover{background:#F5F8FE;border-color:#B9C8EA}.btn:active{transform:scale(.97)}.btn svg{width:17px;height:17px}
+.btn.p{background:var(--blue);border-color:var(--blue);color:#fff}.btn.p:hover{background:#0c2d85}
+.seg{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:2px 0}.seg::-webkit-scrollbar{display:none}
+.sg{flex:none;white-space:nowrap;border:1px solid var(--line);background:#fff;border-radius:999px;padding:9px 18px;display:flex;gap:10px;align-items:center;cursor:pointer;font-size:13.5px;transition:.22s}
+.sg b{background:#EEF1F8;color:var(--num);border-radius:999px;padding:0 9px;font-size:12px;min-width:24px;text-align:center;line-height:1.7}
+.sg.on{background:var(--ink);color:#fff;border-color:var(--ink)}.sg.on b{background:#fff}
+.card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:20px;min-width:0}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--gap)}
+.kpi{display:grid;grid-template-columns:1fr auto;gap:6px 12px;align-content:start;cursor:pointer;text-align:right;transition:transform .2s var(--ease),box-shadow .2s;min-height:150px}
+@media(hover:hover){.kpi:hover{transform:translateY(-3px);box-shadow:0 10px 24px rgba(15,54,157,.08)}}
+.ico{grid-row:1/3;grid-column:2;width:40px;height:40px;border-radius:12px;display:grid;place-items:center}.ico svg{width:20px;height:20px}
+.i-b{background:#E4ECFB;color:var(--blue)}.i-r{background:#FBE5E0;color:var(--neg)}.i-o{background:#FFF0E6;color:#C2410C}.i-g{background:#E3F2EA;color:var(--pos)}
+.kpi small{color:var(--mute);font-size:13px;grid-column:1}.kpi b{font-size:32px;line-height:1.1;color:var(--num);grid-column:1}.kpi b u{font-size:13px;text-decoration:none;color:var(--mute);font-weight:400;margin-inline-start:6px}
+.kpi .ft{grid-column:1/-1;display:flex;align-items:center;gap:10px;margin-top:8px;font-size:12.5px;color:var(--mute);min-height:30px}
+.neg{color:var(--neg)}.pos{color:var(--pos)}
+.avs{display:flex}.avs i{width:28px;height:28px;border-radius:50%;background:#E4ECFB;border:2px solid #fff;display:grid;place-items:center;font-style:normal;font-size:12px;color:var(--num);margin-inline-start:-6px}.avs i:first-child{margin-inline-start:0}
+.meter{height:6px;border-radius:6px;background:#EEF1F8;flex:1;overflow:hidden}.meter i{display:block;height:100%;border-radius:6px;background:var(--pos)}
+.cols{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:var(--gap);align-items:stretch}.stack .card:last-child{flex:1}
+.ch{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}.ch h2{margin:0;font-size:16px}.ch span{color:var(--mute);font-size:12.5px}
+.grp h3{margin:18px 0 6px;font-size:13px;color:var(--mute);font-weight:600;display:flex;gap:8px;align-items:center}.grp h3:first-of-type{margin-top:8px}
+.grp h3 b{background:#EEF1F8;color:var(--num);border-radius:999px;padding:0 9px;font-size:12px}
+.row{display:grid;grid-template-columns:10px minmax(0,1fr) auto auto 24px;gap:16px;align-items:center;padding:14px 12px;border-bottom:1px solid var(--line);border-radius:12px;cursor:pointer;background:transparent;border-inline:0;border-top:0;width:100%;text-align:right;transition:background .18s}
+.row:last-child{border-bottom:0}@media(hover:hover){.row:hover{background:var(--bg)}}
+.dot{width:10px;height:10px;border-radius:50%;background:#B8C2D6}.d-late{background:var(--neg)}.d-go{background:var(--blue)}.d-rev{background:var(--or)}
+.t b{display:block;font-size:15px;line-height:1.5;margin-bottom:4px}.t span{display:flex;gap:10px;align-items:center;color:var(--mute);font-size:12.5px}.t .meter{max-width:110px;flex:none;width:110px}
+.chip{border-radius:999px;padding:4px 14px;font-size:12.5px;white-space:nowrap;color:var(--num);line-height:1.6}
+.c-late{background:#FBE5E0}.c-today{background:#FFF0E6}.c-week{background:#EEF1F8}.c-go{background:#E4ECFB}.c-ok{background:#E3F2EA}
+.av{width:30px;height:30px;border-radius:50%;background:#E4ECFB;display:grid;place-items:center;font-size:12.5px;color:var(--num)}
 .arr{color:#9AA5B8;font-size:18px}
-.ov{position:fixed;inset:0;background:rgba(22,33,46,.45);display:none;align-items:center;justify-content:center;padding:16px;z-index:5}.ov.open{display:flex}
-.sheet{background:#fff;border-radius:24px;width:min(560px,100%);max-height:88vh;overflow:auto;padding:24px;animation:up .26s ease}
+.week{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-top:12px;align-items:end;height:120px}
+.week div{display:flex;flex-direction:column;align-items:center;gap:6px;justify-content:flex-end;height:100%;font-size:12px;color:var(--mute)}
+.week i{width:100%;max-width:30px;border-radius:8px;background:#DDE5F6;display:block}.week .now i{background:var(--or)}.week b{color:var(--num);font-size:13px}
+.ring{display:flex;gap:18px;align-items:center;margin-top:8px;flex:1}.stack .card:last-child{display:flex;flex-direction:column}.ring svg{width:92px;height:92px;flex:none}.ring p{margin:0;color:var(--mute);font-size:13px}.ring strong{display:block;font-size:20px;color:var(--num);margin-bottom:4px}
+.stack{display:flex;flex-direction:column;gap:var(--gap)}
+.ov{position:fixed;inset:0;background:rgba(22,33,46,.45);display:none;align-items:center;justify-content:center;padding:16px;z-index:9}.ov.open{display:flex}
+.sheet{background:#fff;border-radius:22px;width:min(560px,100%);max-height:88vh;overflow:auto;padding:24px;animation:up .26s var(--ease)}
 @keyframes up{from{transform:translateY(24px);opacity:0}to{transform:none;opacity:1}}
-.sheet h3{margin:0 0 4px;font-size:20px}.sheet .m{color:var(--mut);font-size:13px;margin-bottom:16px}
-.f{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}.f div{background:var(--bg);border-radius:12px;padding:10px 12px;font-size:13px}.f span{display:block;color:var(--mut);font-size:12px;margin-bottom:2px}
-.desc{font-size:14px;line-height:1.7;margin-bottom:16px}
-.btns{display:flex;gap:10px}.btn{flex:1;border-radius:14px;border:1px solid var(--line);background:#fff;padding:12px;font:inherit;min-height:44px;cursor:pointer}.btn.p{background:var(--b);border-color:var(--b);color:#fff;font-weight:700}
-.pr{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px dashed var(--line);font-size:14px}.pr:last-child{border:0}
-@media(max-width:820px){.top{grid-template-columns:1fr 1fr}.hero{grid-column:1/-1}.row{grid-template-columns:10px 1fr auto 20px}.row .av{display:none}.head h1{font-size:24px}.ov{align-items:flex-end;padding:0}.sheet{border-radius:24px 24px 0 0}}
-</style></head><body><div class="wrap">
-<div class="head"><div><h1>المهام</h1><p>6 مطلوبة منك · 1 متأخرة · 2 بانتظار المراجعة</p></div><div class="bell">🔔</div></div>
-<div class="pills"><button class="pill on">مهامي <b>6</b></button><button class="pill">المشاريع <b>3</b></button><button class="pill">كل المهام <b>14</b></button><button class="pill">المنجزة <b>9</b></button><button class="pill">المناقشة <b>2</b></button></div>
-<div class="top">
- <button class="card tap hero" data-pop="today"><small>مطلوب منك النهارده</small><span class="big">3</span><span class="nx">الأقرب: تحديد الجمهور المستهدف — 4:00 م</span></button>
- <button class="card tap k" data-pop="late"><small>متأخرة</small><span class="n red">1</span><span class="sub">اضغط لعرضها</span></button>
- <button class="card tap k" data-pop="review"><small>بانتظار المراجعة</small><span class="n">2</span><span class="sub">اضغط لعرضها</span></button>
- <div class="card k"><small>منجزة الشهر ده</small><span class="n">9 <span style="font-size:15px;color:var(--mut)">من 14</span></span><div class="bar"><i></i></div></div>
-</div>
-<div class="stack"><section class="card grp"><div class="card-h"><h2 class="sec">متأخرة <b>1</b></h2></div><div class="list"><button class="row" data-pop="task"><i class="dot late"></i><span class="t">جدول محتوى الأسبوع<small>خطة السوشيال ميديا</small></span><span class="chip c-late">متأخرة يومين</span><span class="av">م</span><span class="arr">‹</span></button></div></section><section class="card grp"><div class="card-h"><h2 class="sec">النهارده <b>3</b></h2></div><div class="list">
- <button class="row" data-pop="task"><i class="dot go"></i><span class="t">تحديد الجمهور المستهدف<small>خطة السوشيال ميديا</small></span><span class="chip c-today">النهارده 4:00 م</span><span class="av">أ</span><span class="arr">‹</span></button>
- <button class="row" data-pop="task"><i class="dot rev"></i><span class="t">تعديل صور العرض<small>حملة الليزر</small></span><span class="chip c-rev">مرتجعة للتعديل</span><span class="av">س</span><span class="arr">‹</span></button>
- <button class="row" data-pop="task"><i class="dot"></i><span class="t">مراجعة نص الإعلان<small>حملة الليزر</small></span><span class="chip c-today">النهارده 6:00 م</span><span class="av">أ</span><span class="arr">‹</span></button></div></section><section class="card grp"><div class="card-h"><h2 class="sec">الأسبوع ده <b>2</b></h2></div><div class="list">
- <button class="row" data-pop="task"><i class="dot"></i><span class="t">تقرير الأداء الأسبوعي<small>التقارير</small></span><span class="chip c-week">الخميس</span><span class="av">م</span><span class="arr">‹</span></button>
- <button class="row" data-pop="task"><i class="dot"></i><span class="t">ترتيب ملفات الأرشيف<small>الأرشيف</small></span><span class="chip c-week">الجمعة</span><span class="av">ن</span><span class="arr">‹</span></button></div></section></div>
+.sheet h3{margin:0 0 4px;font-size:20px}.sheet .m{color:var(--mute);font-size:13px;margin-bottom:18px}
+.f{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}.f div{background:var(--bg);border-radius:12px;padding:12px 14px;font-size:13.5px}.f span.l{display:block;color:var(--mute);font-size:12px;margin-bottom:4px}
+.desc{font-size:14px;line-height:1.8;margin-bottom:18px}
+.btns{display:flex;gap:10px;margin-top:18px}.btns .btn{flex:1;justify-content:center}
+.pr{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px dashed var(--line);font-size:14px}.pr:last-of-type{border:0}
+@media(max-width:900px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.cols{grid-template-columns:1fr}}
+@media(max-width:600px){.page{padding:12px 12px 80px}.row{grid-template-columns:10px minmax(0,1fr) auto 20px}.row .av{display:none}.acts .btn.sec{display:none}.sub{white-space:normal}.kpi{min-height:140px}.kpi b{font-size:28px}.ov{align-items:flex-end;padding:0}.sheet{border-radius:22px 22px 0 0}.t .meter{display:none}}
+</style></head><body>
+<div class="top"><div class="brand"><div class="logo">S</div><div><small>مركز عيادات Swnw التخصصية</small><b>المهام</b></div></div><div class="tb"><button class="ib" aria-label="بحث"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg></button><button class="ib" aria-label="القائمة"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button></div></div>
+<div class="page">
+ <div class="ph"><div><div class="crumb">العمل اليومي · المتابعة</div><h1>المهام</h1><div class="sub">6 مطلوبة منك · 1 متأخرة · 2 بانتظار المراجعة</div></div>
+  <div class="acts"><button class="btn sec"><svg viewBox="0 0 24 24"><path d="M3 6h18M7 12h10M10 18h4"/></svg>ترتيب</button><button class="btn p"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>مهمة جديدة</button></div></div>
+ <div class="seg"><button class="sg on">مهامي <b>6</b></button><button class="sg">المشاريع <b>3</b></button><button class="sg">كل المهام <b>14</b></button><button class="sg">المنجزة <b>9</b></button><button class="sg">المناقشة <b>2</b></button></div>
+ <div class="kpis">
+  <button class="card kpi" data-pop="today"><span class="ico i-o"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg></span><small>مطلوب منك النهارده</small><b>3</b><div class="ft"><span>خلصت 1 من 4</span><span class="meter"><i style="width:25%"></i></span></div></button>
+  <button class="card kpi" data-pop="late"><span class="ico i-r"><svg viewBox="0 0 24 24"><path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17v.5"/></svg></span><small>متأخرة</small><b class="neg">1</b><div class="ft"><span class="neg">متأخرة يومين</span><span class="avs"><i>م</i></span></div></button>
+  <button class="card kpi" data-pop="review"><span class="ico i-b"><svg viewBox="0 0 24 24"><path d="M5 12l4 4 10-10"/></svg></span><small>بانتظار المراجعة</small><b>2</b><div class="ft"><span>عند المراجعين</span><span class="avs"><i>أ</i><i>س</i></span></div></button>
+  <div class="card kpi" style="cursor:default"><span class="ico i-g"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></span><small>الالتزام بالمواعيد</small><b>82<u>%</u></b><div class="ft"><span class="pos">↑ 6 عن الشهر اللي فات</span><svg viewBox="0 0 120 30" style="width:96px;height:28px;color:var(--pos)"><path d="M2 24l20-4 20 2 20-9 20 3 20-8 16-4"/></svg></div></div>
+ </div>
+ <div class="cols">
+  <section class="card grp"><div class="ch"><h2>مهامي</h2><span>اضغط على أي مهمة لتفاصيلها</span></div>
+   <h3>متأخرة <b>1</b></h3>
+   <button class="row" data-pop="task"><i class="dot d-late"></i><span class="t"><b>جدول محتوى الأسبوع</b><span>خطة السوشيال ميديا</span></span><span class="chip c-late">متأخرة يومين</span><span class="av">م</span><span class="arr">‹</span></button>
+   <h3>النهارده <b>3</b></h3>
+   <button class="row" data-pop="task"><i class="dot d-go"></i><span class="t"><b>تحديد الجمهور المستهدف</b><span>خطة السوشيال ميديا <i class="meter"><i style="width:60%"></i></i> 3/5</span></span><span class="chip c-today">4:00 م</span><span class="av">أ</span><span class="arr">‹</span></button>
+   <button class="row" data-pop="task"><i class="dot d-rev"></i><span class="t"><b>تعديل صور العرض</b><span>حملة الليزر · مرتجعة للتعديل</span></span><span class="chip c-today">5:00 م</span><span class="av">س</span><span class="arr">‹</span></button>
+   <button class="row" data-pop="task"><i class="dot"></i><span class="t"><b>مراجعة نص الإعلان</b><span>حملة الليزر</span></span><span class="chip c-today">6:00 م</span><span class="av">أ</span><span class="arr">‹</span></button>
+   <h3>الأسبوع ده <b>2</b></h3>
+   <button class="row" data-pop="task"><i class="dot"></i><span class="t"><b>تقرير الأداء الأسبوعي</b><span>التقارير</span></span><span class="chip c-week">الخميس</span><span class="av">م</span><span class="arr">‹</span></button>
+   <button class="row" data-pop="task"><i class="dot"></i><span class="t"><b>ترتيب ملفات الأرشيف</b><span>الأرشيف</span></span><span class="chip c-week">الجمعة</span><span class="av">ن</span><span class="arr">‹</span></button>
+  </section>
+  <div class="stack">
+   <section class="card"><div class="ch"><h2>حِمل الأسبوع</h2><span>مهام مستحقة كل يوم</span></div>
+    <div class="week"><div><b>1</b><i style="height:28%"></i>س</div><div><b>3</b><i style="height:70%"></i>ح</div><div class="now"><b>4</b><i style="height:90%"></i>ن</div><div><b>2</b><i style="height:48%"></i>ث</div><div><b>1</b><i style="height:28%"></i>ر</div><div><b>2</b><i style="height:48%"></i>خ</div><div><b>1</b><i style="height:28%"></i>ج</div></div></section>
+   <section class="card"><div class="ch"><h2>إنجاز الشهر</h2></div>
+    <div class="ring"><svg viewBox="0 0 92 92"><circle cx="46" cy="46" r="38" stroke="#EEF1F8" stroke-width="9"/><circle cx="46" cy="46" r="38" stroke="#2F7D5C" stroke-width="9" stroke-dasharray="153 239" transform="rotate(-90 46 46)"/><text x="46" y="52" text-anchor="middle" font-size="20" font-weight="700" fill="#333" stroke="none">64%</text></svg><p><strong>9 من 14 مهمة</strong>اتسلّمت في ميعادها أو قبله</p></div></section>
+  </div>
+ </div>
 </div>
 <div class="ov" id="ov"><div class="sheet" id="sh"></div></div>
 <script>
-const T={task:'<h3>تحديد الجمهور المستهدف</h3><div class="m">خطة السوشيال ميديا · أسندها: مدير المشروع</div><div class="f"><div><span>الموعد</span>النهارده 4:00 م</div><div><span>الحالة</span><span class="chip c-go" style="display:inline-block">جاري العمل</span></div></div><div class="desc">حدّد الفئات العمرية والاهتمامات لحملة الليزر، وسلّم جدول Word واحد.</div><div class="btns"><button class="btn" data-x>إغلاق</button><button class="btn p">فتح المهمة</button></div>',
-today:'<h3>مطلوب النهارده</h3><div class="m">3 مهام</div><div class="pr"><span>تحديد الجمهور المستهدف</span><span class="chip c-today">4:00 م</span></div><div class="pr"><span>تعديل صور العرض</span><span class="chip c-rev">مرتجعة</span></div><div class="pr"><span>مراجعة نص الإعلان</span><span class="chip c-today">6:00 م</span></div><div class="btns" style="margin-top:14px"><button class="btn" data-x>إغلاق</button></div>',
-late:'<h3>المتأخرة</h3><div class="m">1 مهمة</div><div class="pr"><span>جدول محتوى الأسبوع</span><span class="chip c-late">متأخرة يومين</span></div><div class="btns" style="margin-top:14px"><button class="btn" data-x>إغلاق</button><button class="btn p">ابدأ بيها</button></div>',
-review:'<h3>بانتظار المراجعة</h3><div class="m">2 مهام عند المراجع</div><div class="pr"><span>خطة المحتوى الشهرية</span><span class="chip c-rev">عند المدير</span></div><div class="pr"><span>تصميم البانر</span><span class="chip c-rev">عند المدير</span></div><div class="btns" style="margin-top:14px"><button class="btn" data-x>إغلاق</button></div>'};
+const T={task:'<h3>تحديد الجمهور المستهدف</h3><div class="m">خطة السوشيال ميديا · أسندها: مدير المشروع</div><div class="f"><div><span class="l">الموعد</span>النهارده 4:00 م</div><div><span class="l">الحالة</span><span class="chip c-go">جاري العمل</span></div></div><div class="desc">حدّد الفئات العمرية والاهتمامات لحملة الليزر، وسلّم جدول Word واحد.</div><div class="btns"><button class="btn" data-x>إغلاق</button><button class="btn p">فتح المهمة</button></div>',
+today:'<h3>مطلوب النهارده</h3><div class="m">3 مهام</div><div class="pr"><span>تحديد الجمهور المستهدف</span><span class="chip c-today">4:00 م</span></div><div class="pr"><span>تعديل صور العرض</span><span class="chip c-today">5:00 م</span></div><div class="pr"><span>مراجعة نص الإعلان</span><span class="chip c-today">6:00 م</span></div><div class="btns"><button class="btn" data-x>إغلاق</button></div>',
+late:'<h3>المتأخرة</h3><div class="m">1 مهمة</div><div class="pr"><span>جدول محتوى الأسبوع</span><span class="chip c-late">متأخرة يومين</span></div><div class="btns"><button class="btn" data-x>إغلاق</button><button class="btn p">ابدأ بيها</button></div>',
+review:'<h3>بانتظار المراجعة</h3><div class="m">2 مهام عند المراجعين</div><div class="pr"><span>خطة المحتوى الشهرية</span><span class="chip c-go">عند المدير</span></div><div class="pr"><span>تصميم البانر</span><span class="chip c-go">عند المدير</span></div><div class="btns"><button class="btn" data-x>إغلاق</button></div>'};
 const ov=document.getElementById('ov'),sh=document.getElementById('sh');
 document.querySelectorAll('[data-pop]').forEach(b=>b.onclick=()=>{sh.innerHTML=T[b.dataset.pop];ov.classList.add('open');sh.querySelectorAll('[data-x]').forEach(x=>x.onclick=()=>ov.classList.remove('open'))});
 ov.onclick=e=>{if(e.target===ov)ov.classList.remove('open')};
-if(location.hash==='#pop'){document.querySelector('[data-pop=task]').click()}
+if(location.hash==='#pop')document.querySelector('[data-pop=task]').click();
 </script></body></html>
