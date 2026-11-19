@@ -10,6 +10,8 @@
 --     net_amount, paid_amount, remaining_amount, is_paid, is_deleted, is_insured, insurance_id, insurance_name?, cashier_user_id, patient?}],
 --     payment_types:[{id, name, code, is_cash, is_credit_account, is_installment, is_active}] }
 --   patient (optional): {masa_patient_id, name, phone, gender, birth_date, age_at_payment}. No raw national id is accepted.
+--   Live bridge notes: Masa keeps TotalPaid = 0 (amounts are summed from the lines); receipts may have no booking/invoice;
+--   gender may arrive raw (0/1, meaning unconfirmed) and is stored as sent, never labelled.
 -- Rules: upsert by Masa ids; a void/deletion is is_deleted = true (update, never delete); a receipt's lines are replaced as a set;
 -- a receipt missing from a later payload is left alone; unknown or null official_booking_id is fine.
 -- Finance only (clinic_finance.allowed('view') to read, 'update' to name a Masa cashier / safe). Rollback in supabase/rollbacks.
@@ -164,6 +166,9 @@ begin
           clinic_finance.masa_num(l->'net_amount'), clinic_finance.masa_num(l->'exchange_rate'), clinic_finance.masa_int(l->'safe_id'),
           clinic_finance.masa_local_ts(l->>'paid_at'));
     end loop;
+    -- Masa leaves GlTakingReceipt.TotalPaid = 0; the money is in the lines
+    update clinic_finance.masa_receipts set total_paid = coalesce((select sum(amount) from clinic_finance.masa_receipt_lines where masa_receipt_id = rid), 0)
+      where masa_receipt_id = rid and coalesce(total_paid, 0) = 0;
     nr := nr + 1;
   end loop;
 
@@ -217,7 +222,8 @@ begin
         coalesce(pr.name, ml.masa_name) as doctor_name,
         coalesce(ca.label, ad.name) as cashier_name,
         (select string_agg(distinct ln.method_name, ' + ') from ln where ln.masa_receipt_id = rc.masa_receipt_id) as methods,
-        (select min(ln.safe_id) from ln where ln.masa_receipt_id = rc.masa_receipt_id) as safe_id
+        (select min(ln.safe_id) from ln where ln.masa_receipt_id = rc.masa_receipt_id) as safe_id,
+        coalesce((select sum(ln.amount) from ln where ln.masa_receipt_id = rc.masa_receipt_id), rc.total_paid) as amount
       from rc
       left join clinic_reception.masa_bookings mb on mb.official_booking_id = rc.bid
       left join clinic_reception.masa_doctor_links ml on ml.masa_doctor_id = coalesce(rc.inv_doctor, mb.masa_doctor_id)
@@ -233,15 +239,15 @@ begin
           where not rx.is_deleted group by ln.method) q), '{}')),
       'by_cashier', coalesce((select jsonb_agg(jsonb_build_object('cashier_user_id', cashier_user_id, 'name', cashier_name, 'safe_id', safe_id,
           'safe', (select label from clinic_finance.masa_safes s where s.safe_id = q.safe_id), 'receipts', n, 'amount', a) order by a desc)
-        from (select cashier_user_id, max(cashier_name) cashier_name, min(safe_id) safe_id, count(*) n, sum(total_paid) a from rx where not is_deleted
+        from (select cashier_user_id, max(cashier_name) cashier_name, min(safe_id) safe_id, count(*) n, sum(amount) a from rx where not is_deleted
           group by cashier_user_id) q), '[]'),
       'by_doctor', coalesce((select jsonb_agg(jsonb_build_object('doctor', coalesce(doctor_name, 'بدون حجز مربوط'), 'receipts', n, 'insured', ins,
           'amount', a) order by a desc)
-        from (select doctor_name, count(*) n, count(*) filter (where is_insured) ins, sum(total_paid) a from rx where not is_deleted group by doctor_name) q), '[]'),
+        from (select doctor_name, count(*) n, count(*) filter (where is_insured) ins, sum(amount) a from rx where not is_deleted group by doctor_name) q), '[]'),
       'receipts', coalesce((select jsonb_agg(jsonb_build_object('id', masa_receipt_id, 'receipt_no', receipt_no, 'paid_at', paid_at,
           'patient', coalesce(patient_name, booking_patient), 'phone', coalesce(phone, booking_phone), 'booking', bid, 'doctor', doctor_name,
           'methods', methods, 'cashier', coalesce(cashier_name, case when cashier_user_id is not null then 'مستخدم ماسا #' || cashier_user_id end),
-          'amount', total_paid, 'deleted', is_deleted, 'insured', coalesce(is_insured, false), 'insurance', insurance_name) order by paid_at)
+          'amount', amount, 'deleted', is_deleted, 'insured', coalesce(is_insured, false), 'insurance', insurance_name) order by paid_at)
         from (select * from rx order by paid_at limit 2000) z), '[]'),
       'admins', case when clinic_finance.allowed('update') then coalesce((select jsonb_agg(jsonb_build_object('id', id, 'name', name) order by name)
         from public.admins where active), '[]') end) into res

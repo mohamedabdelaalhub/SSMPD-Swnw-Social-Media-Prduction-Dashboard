@@ -22,8 +22,8 @@ const fs=require('fs'),assert=require('node:assert/strict'),{PGlite}=require('@e
    invoices:[{masa_invoice_id:'77',invoice_no:'I-77',invoice_at:'2026-11-19T10:40:00',official_booking_id:'5001',masa_doctor_id:1130,net_amount:500,paid_amount:500,is_paid:true,is_deleted:false,is_insured:true,insurance_id:3,insurance_name:'شركة تأمين تجريبية',cashier_user_id:4,patient:{masa_patient_id:'P9',name:'مريض الفاتورة',phone:'01000000002',gender:'male',birth_date:'1990-01-01'}}],
    receipts:[
     {masa_receipt_id:'9',receipt_no:'R-9',paid_at:'2026-11-19T10:42:00',total_paid:500,official_booking_id:'5001',masa_invoice_id:'77',cashier_user_id:4,is_deleted:false,lines:[{payment_type_id:147,amount:300,safe_id:1},{payment_type_id:150,amount:200,safe_id:1}]},
-    {masa_receipt_id:'10',receipt_no:'R-10',paid_at:'2026-11-19T12:00:00',total_paid:350,official_booking_id:null,cashier_user_id:12,is_deleted:false,patient:{name:'مريض مباشر',phone:'01000000003',age_at_payment:41},lines:[{payment_type_id:148,amount:350,safe_id:3}]},
-    {masa_receipt_id:'11',receipt_no:'R-11',paid_at:'2026-11-19T12:31:00',total_paid:400,official_booking_id:'unknown-id',cashier_user_id:4,is_deleted:false,lines:[{payment_type_id:147,amount:400}]},
+    {masa_receipt_id:'10',receipt_no:'R-10',paid_at:'2026-11-19T12:00:00',total_paid:0,official_booking_id:null,cashier_user_id:12,is_deleted:false,patient:{name:'مريض مباشر',phone:'01000000003',gender:'1',age_at_payment:41},lines:[{payment_type_id:148,amount:350,safe_id:3}]},
+    {masa_receipt_id:'11',receipt_no:'R-11',paid_at:'2026-11-19T12:31:00',total_paid:0,official_booking_id:'unknown-id',cashier_user_id:4,is_deleted:false,lines:[{payment_type_id:147,amount:400}]},
     {masa_receipt_id:'',lines:[]}]};
   let r=await api('masa_payments_import',day);assert.deepEqual(r,{ok:true,receipts_upserted:3,invoices_upserted:1,skipped:1});
   // idempotent; lines replaced as a set; void is an update; missing receipt left alone
@@ -32,6 +32,7 @@ const fs=require('fs'),assert=require('node:assert/strict'),{PGlite}=require('@e
   assert.equal((await one("select count(*)::int n from clinic_finance.masa_receipt_lines where masa_receipt_id='9'")).n,1);
   assert.equal((await one("select is_deleted from clinic_finance.masa_receipts where masa_receipt_id='11'")).is_deleted,true);
   assert.equal((await one("select count(*)::int n from clinic_finance.masa_receipts")).n,3,'R-10 kept although missing');
+  assert.equal(Number((await one("select total_paid from clinic_finance.masa_receipts where masa_receipt_id='11'")).total_paid),400,'TotalPaid 0 on Masa -> sum of lines');
   // Cairo local time → right day, patient kept, no raw national id column
   assert.equal((await one("select day::text d from clinic_finance.masa_receipts where masa_receipt_id='9'")).d,'2026-11-19');
   assert.equal((await one("select patient_name from clinic_finance.masa_invoices where masa_invoice_id='77'")).patient_name,'مريض الفاتورة');
@@ -48,7 +49,9 @@ const fs=require('fs'),assert=require('node:assert/strict'),{PGlite}=require('@e
   assert.equal(rep.receipts.length,2,'voided hidden by default');
   const r9=rep.receipts.find(x=>x.id==='9');assert.equal(r9.doctor,'أخصائي جلدية');assert.equal(r9.patient,'مريض من الحجز');assert.equal(r9.insured,true);assert.equal(r9.insurance,'شركة تأمين تجريبية');
   assert.equal(rep.receipts.find(x=>x.id==='10').patient,'مريض مباشر');assert.equal(rep.receipts.find(x=>x.id==='10').cashier,'مستخدم ماسا #12');
-  assert.ok(rep.by_doctor.some(x=>x.doctor==='بدون حجز مربوط'));
+  assert.ok(rep.by_doctor.some(x=>x.doctor==='بدون حجز مربوط'));assert.equal(Number(rep.receipts.find(x=>x.id==='10').amount),350,'amount from the lines');
+  assert.equal(Number(rep.by_cashier.find(x=>x.cashier_user_id===12).amount),350);
+  assert.equal((await one("select gender from clinic_finance.masa_receipts where masa_receipt_id='10'")).gender,'1','raw gender kept');
   rep=(await one("select clinic_finance_masa_payments('list',$1) r",[{from:'2026-11-19',include_deleted:true}])).r;assert.equal(rep.receipts.length,3);
   rep=(await one("select clinic_finance_masa_payments('list',$1) r",[{from:'2026-11-19',method:'card'}])).r;assert.deepEqual(rep.receipts.map(x=>x.id),['10']);
   // naming
