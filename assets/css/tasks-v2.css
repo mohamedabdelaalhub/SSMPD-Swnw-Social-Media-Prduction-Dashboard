@@ -72,3 +72,17 @@
 .tv2-ring .chip{display:inline-block;margin-top:8px;border-radius:999px;padding:4px 14px;font-size:12.5px;color:var(--tv2-num)}.tv2-ring .st-ok{background:var(--tv2-teal)}.tv2-ring .st-soon{background:var(--tv2-or)}
 @media(max-width:900px){.tv2-insights{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){.tv2-week i,.tv2-ring .rg{animation:none}}
+/* ---- phase 4: «المشاريع» tiles ---- */
+.tv-grid{gap:16px}
+.tv-proj{border-color:var(--tv2-line);border-radius:18px;padding:20px;gap:14px;line-height:1.6;transition:transform .2s var(--tv2-ease),box-shadow .2s;position:relative;overflow:hidden}
+.tv-proj:active{transform:scale(.98)}@media(hover:hover){.tv-proj:hover{transform:translateY(-3px);box-shadow:0 10px 24px rgba(15,54,157,.1);border-color:var(--tv2-line)}}
+.tv-proj:focus-visible{outline:2px solid #0F369D;outline-offset:2px}
+.tv-proj-name b{font-size:16px;line-height:1.5}.tv-proj-name small{color:#6B7483}
+.tv-proj-num b{color:var(--tv2-num);font-variant-numeric:tabular-nums}.tv-proj-num em{color:var(--tv2-num)}
+.tv-health{font-weight:600;color:var(--tv2-num);background:#F1F4F8}.tv-health.h-done{background:var(--tv2-teal);color:var(--tv2-num)}.tv-health.h-review{background:var(--tv2-or);color:var(--tv2-num)}.tv-health.h-late{background:var(--tv2-red);color:#fff}.tv-health.h-active{background:#E4ECFB;color:var(--tv2-num)}
+.tv-proj .tv-bar{height:10px;border-radius:5px}.tv-proj .tv-bar i.g-done{background:var(--tv2-teal)}.tv-proj .tv-bar i.g-active{background:#0F369D}.tv-proj .tv-bar i.g-review{background:var(--tv2-or)}.tv-proj .tv-bar i.g-late{background:var(--tv2-red)}.tv-proj .tv-bar i.g-blocked{background:var(--tv2-grey)}.tv-proj .tv-bar i.g-todo{background:#C9D3EC}
+.tv-proj .tv-leg i{width:10px;height:10px;border-radius:3px}.tv-proj .tv-leg.g-done i{background:var(--tv2-teal)}.tv-proj .tv-leg.g-active i{background:#0F369D}.tv-proj .tv-leg.g-review i{background:var(--tv2-or)}.tv-proj .tv-leg.g-late i{background:var(--tv2-red)}.tv-proj .tv-leg.g-blocked i{background:var(--tv2-grey)}.tv-proj .tv-leg.g-todo i{background:#C9D3EC}.tv-proj .tv-leg b{color:var(--tv2-num)}
+.tv-av{background:#E4ECFB;color:#0F369D;border:2px solid #fff}.tv-av svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}.tv-av.more{font-size:11px}
+.tv-proj .tv-bar i{transform-origin:right;animation:tv2-grow .8s var(--tv2-ease) both}@keyframes tv2-grow{from{transform:scaleX(0)}}
+.tv-grid>.tv-proj{animation:tv2-rise .5s var(--tv2-ease) both}.tv-grid>.tv-proj:nth-child(2){animation-delay:.07s}.tv-grid>.tv-proj:nth-child(3){animation-delay:.14s}
+@media(prefers-reduced-motion:reduce){.tv-proj,.tv-proj .tv-bar i,.tv-grid>.tv-proj{animation:none;transition:none}}

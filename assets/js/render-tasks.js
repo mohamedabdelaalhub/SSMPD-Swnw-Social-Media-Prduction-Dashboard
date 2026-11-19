@@ -310,7 +310,7 @@
       var open=mine.filter(function(t){return !closed(t)&&t.due_at;}).sort(function(a,b){return dueTime(a)-dueTime(b);})[0];
       var last=mine.reduce(function(mx,t){return Math.max(mx,new Date(t.updated_at||0).getTime());},0);
       var health=!total?["none","بدون مهام"]:(c.late?["late",c.late+" متأخرة"]:(done===total?["done","مكتمل"]:(c.review?["review","بانتظار مراجعة"]:(c.active?["active","شغّال"]:["idle","لم يبدأ"]))));
-      var members=(p.members||[]).slice(0,4).map(function(x){return '<span class="tv-av" title="'+esc(x.name)+'">'+esc(initials(x.name))+'</span>';}).join("")+((p.members||[]).length>4?'<span class="tv-av more">+'+((p.members||[]).length-4)+'</span>':"");
+      var members=(p.members||[]).slice(0,4).map(function(x){return '<span class="tv-av" title="'+esc(x.name)+'" aria-label="'+esc(x.name)+'">'+PERSON_ICON+'</span>';}).join("")+((p.members||[]).length>4?'<span class="tv-av more">+'+((p.members||[]).length-4)+'</span>':"");
       return '<article class="tv-proj'+(archived?" is-archived":"")+'" role="button" tabindex="0" data-action="open-project" data-project="'+p.id+'" data-project-id="'+p.id+'"><div class="tv-proj-top"><span class="tv-logo">'+esc(String(p.title||"م").trim().charAt(0))+'</span><div class="tv-proj-name"><b>'+esc(p.title)+(archived?' <em class="tv-arch">مؤرشف</em>':"")+'</b><small>'+esc(m?m.name:"—")+'</small></div><span class="tv-health h-'+health[0]+'">'+esc(health[1])+'</span></div>'+(newCommentsIn(mine)?'<div class="tv-newline">💬 '+newCommentsIn(mine)+' تعليق جديد</div>':"")+
         (p.description?'<p class="tv-proj-desc">'+esc(p.description)+'</p>':"")+
         '<div class="tv-proj-num"><b>'+done+'</b><span>من '+total+' مهمة تمت</span><em>'+(total?Math.round(done*100/total):0)+'%</em></div>'+segBar(c,total)+'<div class="tv-legend">'+segLegend(c)+'</div>'+
@@ -403,6 +403,7 @@
       var avg=people.length?open.length/people.length:0;
       return '<section class="tv2-overview" aria-label="نظرة على المهام المفتوحة"><div class="tv2-card"><div class="tv2-ch"><h2>توزيع المهام</h2><span>'+open.length+' مهمة مفتوحة</span></div>'+segBar(c,open.length)+'<div class="tv-legend tv2-leg">'+segLegend(c)+'</div></div><div class="tv2-card"><div class="tv2-ch"><h2>حِمل الفريق</h2><span>مهام مفتوحة لكل موظف</span></div><div class="tv2-load">'+people.map(function(p){return '<div class="'+(p.n>avg*1.5&&people.length>2?"over":"")+'"><span>'+esc(p.name)+'</span><span class="tv2-meter"><i style="width:'+Math.max(6,Math.round(p.n*100/max))+'%"></i></span><em>'+p.n+(p.late?' <small>(متأخر '+p.late+')</small>':'')+'</em></div>';}).join("")+'</div></div></section>';
     }
+    var PERSON_ICON='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c1-4 4-6 8-6s7 2 8 6"/></svg>';
     var WEEK_AR=["س","ح","ن","ث","ر","خ","ج"];
     function insightsHtml(own){
       if(!own.length)return "";
