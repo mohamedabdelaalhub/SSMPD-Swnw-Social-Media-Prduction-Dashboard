@@ -315,6 +315,7 @@
 
   w.SSMPDTrainingEvaluation = {
     render: function (el) { st.el = el; st.idx = 0; return load(); },
+    openResult: function (id) { return resultView(id); },
     _state: st
   };
 })(window);
