@@ -83,7 +83,6 @@
     var owner = isOwner();
     var h = '<div class="te-page"><header class="te-head"><div><h2>التدريب والتقييم</h2><p class="te-muted">مسارات إعداد مديري الفروع ومديري الفرق: دورة من 8 وحدات، ثم اختبار مواقف، ثم مقابلة.</p></div>' +
       '<div class="te-head-actions"><button type="button" class="btn ghost" data-preview>محتوى الدورة</button>' + (owner ? '<button type="button" class="btn ghost" data-bankview>بنك الأسئلة</button><button type="button" class="btn btn-primary" data-new>تكليف جديد</button>' : '') + '</div></header>';
-      (owner ? '<div class="te-head-actions"><button type="button" class="btn ghost" data-bankview>بنك الأسئلة</button><button type="button" class="btn btn-primary" data-new>تكليف جديد</button></div>' : '') + '</header>';
     if (owner) h += '<section class="te-card" data-bank><h3>بنك الأسئلة</h3><p class="te-muted">جارٍ التحقق…</p></section>';
     h += '<section class="te-card"><h3>تكليفاتي</h3>' + rows(mine, 'trainee') + '</section>';
     if (owner && !st.list.length) h += '<section class="te-card"><h3>كيف تبدأ</h3><ol class="te-rules"><li>اضغط «تكليف جديد» واختر المتدرب والمراجع.</li><li>يقرأ المتدرب الدورة من «تكليفاتي» ثم يؤدي الاختبار.</li><li>بعد التسليم يظهر هنا زرّا «نتيجة الاختبار» و«ورقة المقابلة»، ثم تعتمد القرار.</li></ol><p class="te-muted">«محتوى الدورة» يعرض الوحدات الثماني للاطلاع، و«بنك الأسئلة» يعرض أسئلة الاختبار بمفتاحها.</p></section>';

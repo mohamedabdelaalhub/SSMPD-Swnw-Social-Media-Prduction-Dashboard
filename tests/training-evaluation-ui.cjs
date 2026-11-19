@@ -191,6 +191,5 @@ const row = (o) => Object.assign({ id: 'A1', track: 'branch_manager', track_name
   assert($('[data-preview]') === null && w.document.querySelectorAll('.te-module').length === 8, 'back to preview list');
   assert(!calls.slice(before).some((c) => c[0] === 'training_complete_module'), 'preview records nothing');
   console.log('PASS training evaluation UI: course gate, 8 modules, exam order/save/blur/submit, no key or score in trainee DOM, owner assign/cancel validation, owner result view (grade, weak competencies, choice vs best), trainee sees no grade, owner-only bank pages, interview scoring (note/blocking/checklist), owner-only decision with override reason, escaping.');
-  console.log('PASS training evaluation UI: course gate, 8 modules, exam order/save/blur/submit, no key or score in trainee DOM, owner assign/cancel validation, owner result view (grade, weak competencies, choice vs best), trainee sees no grade, owner-only bank pages, escaping.');
   process.exit(0);
 })().catch((e) => { console.error(e); process.exit(1); });
