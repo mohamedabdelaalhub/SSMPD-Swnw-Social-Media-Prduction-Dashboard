@@ -46,7 +46,7 @@ function page(body){return '<section class="pg"><img class="bg" crossorigin="ano
 function flow(body){return '<img class="bgf" crossorigin="anonymous" src="'+BASE+'assets/img/swnw-official-letterhead.png" alt=""><table class="flow"><thead><tr><td><div class="sp-top"></div></td></tr></thead><tfoot><tr><td><div class="sp-bot"></div></td></tr></tfoot><tbody><tr><td><div class="fb">'+body+'</div></td></tr></tbody></table>';}
 function documentHtml(docTitle,inner){return '<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>'+esc(docTitle)+'</title><style>'+css()+'</style></head><body>'+inner+'</body></html>';}
 function open(html,win){win=win||w.open('','_blank');if(!win)throw Error('المتصفح منع نافذة الطباعة — اسمح بالنوافذ المنبثقة');
- win.document.open();win.document.write(html);win.document.close();var done=false,go=function(){if(done)return;done=true;try{win.focus();win.print();}catch(e){}};
+ var d=win.document;if(d.open)d.open();d.write(html);if(d.close)d.close();var done=false,go=function(){if(done)return;done=true;try{win.focus();win.print();}catch(e){}};
  var imgs=Array.prototype.slice.call(win.document.images||[]),left=imgs.filter(function(i){return !i.complete;}).length;
  if(!left)setTimeout(go,300);else imgs.forEach(function(i){if(!i.complete)i.onload=i.onerror=function(){if(!--left)setTimeout(go,150);};});setTimeout(go,4000);return win;}
 function blank(){var win=w.open('','_blank');if(!win)throw Error('المتصفح منع نافذة الطباعة — اسمح بالنوافذ المنبثقة');win.document.write('<p dir="rtl" style="font-family:Tahoma">جاري تجهيز المستند…</p>');return win;}
