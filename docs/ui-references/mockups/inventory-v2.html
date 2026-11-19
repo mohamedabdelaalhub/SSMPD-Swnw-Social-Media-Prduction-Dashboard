@@ -1,0 +1,84 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>تصور — المخزون (v2)</title>
+<!-- Mockup only (2026-11-19). Sample data. Same language as the approved Tasks v2: pill tabs with counts, icon-chip KPI tiles that open a POPUP (no in-place filter),
+     status palette (ok #00B0BD, low/soon #FF8800 with #333 text, expired/out #FF0000), calm table card with row separators, icon action buttons instead of underlined links, 16px gutter. -->
+<link rel="stylesheet" href="../../../assets/css/ui-motion.css">
+<style>
+@font-face{font-family:"BigVesta Arabic";src:url("../../../assets/fonts/BigVesta-Regular.woff2") format("woff2");font-weight:400}
+@font-face{font-family:"BigVesta Arabic";src:url("../../../assets/fonts/BigVesta-Bold.woff2") format("woff2");font-weight:700}
+@font-face{font-family:"Hiragino Kaku";src:url("../../../assets/fonts/Hiragino-W3.woff2") format("woff2");font-weight:300}
+@font-face{font-family:"Hiragino Kaku";src:url("../../../assets/fonts/Hiragino-W6.woff2") format("woff2");font-weight:600}
+:root{--gap:16px;--blue:#0F369D;--ink:#16212E;--teal:#00B0BD;--or:#FF8800;--red:#FF0000;--bg:#F3F4F7;--line:#E6E8EE;--mute:#6B7483;--num:#333;--ease:cubic-bezier(.22,1,.36,1);--spring:cubic-bezier(.34,1.56,.64,1)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;font-size:14px;line-height:1.6;font-variant-numeric:tabular-nums}
+svg{fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}button{font:inherit;color:inherit}
+.top{background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:10px 20px}.brand{display:flex;align-items:center;gap:12px}.logo{width:36px;height:36px;border-radius:11px;background:var(--blue);color:#fff;display:grid;place-items:center;font-weight:700}.brand small{display:block;color:var(--mute);font-size:11.5px;line-height:1.3}.brand b{font-size:15px;line-height:1.3}
+.page{max-width:1280px;margin:0 auto;padding:var(--gap) 20px 80px;display:flex;flex-direction:column;gap:var(--gap)}
+.ph{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-top:8px}.crumb{font-size:12.5px;color:var(--mute)}.ph h1{margin:4px 0 6px;font-size:26px;line-height:1.3}.sub{font-size:13px;color:var(--mute)}.acts{margin-inline-start:auto;display:flex;gap:10px}
+.btn{position:relative;overflow:hidden;white-space:nowrap;display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:#fff;color:var(--blue);font-weight:600;font-size:13px;border-radius:12px;padding:10px 16px;min-height:44px;cursor:pointer;transition:background .18s,transform .12s}.btn:hover{background:#F5F8FE}.btn:active{transform:scale(.97)}.btn svg{width:17px;height:17px}.btn.p{background:var(--blue);border-color:var(--blue);color:#fff}
+.seg{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:2px 0}.seg::-webkit-scrollbar{display:none}
+.sg{flex:none;white-space:nowrap;border:1px solid var(--line);background:#fff;border-radius:999px;padding:9px 18px;min-height:44px;display:flex;gap:10px;align-items:center;cursor:pointer;font-size:13.5px;transition:background .24s var(--ease),color .24s}.sg b{background:#EEF1F8;color:var(--num);border-radius:999px;padding:0 9px;font-size:12px;min-width:24px;text-align:center;line-height:1.7}.sg.on{background:var(--ink);color:#fff;border-color:var(--ink)}.sg.on b{background:#fff}
+.card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:20px;min-width:0}
+.kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:var(--gap)}
+.kpi{display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-content:start;text-align:right;min-height:128px;cursor:pointer;position:relative;overflow:hidden;transition:transform .2s var(--ease),box-shadow .2s}@media(hover:hover){.kpi:hover{transform:translateY(-3px);box-shadow:0 10px 24px rgba(15,54,157,.1)}}.kpi:active{transform:scale(.97)}
+.ico{grid-row:1/3;grid-column:2;width:40px;height:40px;border-radius:12px;display:grid;place-items:center}.ico svg{width:20px;height:20px}.i-b{background:#E4ECFB;color:var(--blue)}.i-r{background:#FFE5E5;color:#C00000}.i-o{background:#FFF0DB;color:#B35F00}.i-t{background:#DDF3F5;color:#00747D}
+.kpi small{color:var(--mute);font-size:13px;grid-column:1}.kpi b{font-size:28px;line-height:1.15;color:var(--num);grid-column:1}.kpi b u{font-size:12px;text-decoration:none;color:var(--mute);font-weight:400;margin-inline-start:4px}.kpi .h{grid-column:1/-1;margin-top:8px;font-size:12px;color:var(--mute)}.neg{color:#C00000!important}.warn{color:#B35F00!important}
+.ch{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}.ch h2{margin:0;font-size:16px}.ch span{color:var(--mute);font-size:12.5px}
+.tools{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.fld{flex:1 1 220px;min-height:44px;border:1px solid var(--line);background:#fff;border-radius:12px;padding:0 14px;font:inherit;color:var(--ink)}
+.tbl{width:100%;border-collapse:collapse}.tbl th{color:var(--mute);font-weight:600;font-size:12.5px;padding:12px 10px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}.tbl td{padding:14px 10px;border-bottom:1px solid var(--line);color:var(--num);white-space:nowrap}.tbl tr:last-child td{border-bottom:0}@media(hover:hover){.tbl tbody tr:hover td{background:#F3F4F7}}
+.nm{color:var(--ink);font-weight:600}.sk{color:var(--mute);font-size:12px;display:block;font-weight:400}
+.chip{border-radius:999px;padding:3px 12px;font-size:12.5px;white-space:nowrap;color:var(--num);line-height:1.6;display:inline-block}.c-ok{background:var(--teal)}.c-low{background:var(--or)}.c-out{background:var(--red);color:#fff}.c-soon{background:#FFF0DB}.c-grey{background:#F1F4F8}
+.ib{width:44px;height:44px;border-radius:12px;border:1px solid var(--line);background:#fff;display:inline-grid;place-items:center;color:var(--blue);cursor:pointer;transition:background .18s,transform .12s}.ib:hover{background:#F5F8FE}.ib:active{transform:scale(.94)}.ib svg{width:18px;height:18px}
+.acts2{display:flex;gap:8px;justify-content:flex-end}.pg{display:flex;gap:12px;align-items:center;justify-content:center;padding-top:16px;color:var(--mute);font-size:13px}
+.ov{position:fixed;inset:0;background:rgba(22,33,46,.45);display:none;align-items:center;justify-content:center;padding:16px;z-index:9}.ov.open{display:flex}.sheet{background:#fff;border-radius:22px;width:min(560px,100%);max-height:88vh;overflow:auto;padding:24px;animation:up .26s var(--ease)}@keyframes up{from{transform:translateY(24px);opacity:0}to{transform:none;opacity:1}}
+.sheet h3{margin:0 0 4px;font-size:20px}.sheet .m{color:var(--mute);font-size:13px;margin-bottom:14px}.pr{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 0;border-bottom:1px dashed var(--line)}.pr:last-of-type{border:0}.btns{display:flex;gap:10px;margin-top:16px}.btns .btn{flex:1;justify-content:center}
+.panel{display:none}.panel.on{display:flex;flex-direction:column;gap:var(--gap)}
+@media(max-width:1100px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:700px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.page{padding:12px 12px 80px}.ov{align-items:flex-end;padding:0}.sheet{border-radius:22px 22px 0 0}.hide-m{display:none}.tbl{display:block;overflow-x:auto}}
+</style></head><body>
+<div class="top"><div class="brand"><div class="logo">S</div><div><small>مركز عيادات Swnw التخصصية</small><b>المخزون</b></div></div></div>
+<div class="page">
+ <div class="ph"><div><div class="crumb">العمل اليومي · المخزون</div><h1>المخزون</h1><div class="sub">30 صنف نشط · 1 تحت الحد الأدنى · 2 قربت تنتهي صلاحيتها</div></div><div class="acts"><button class="btn fx-ripple"><svg viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>تصدير Excel</button><button class="btn p fx-ripple"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>إضافة صنف</button></div></div>
+ <div class="seg" id="tabs"><button class="sg on" data-tab="ov">الرئيسية</button><button class="sg" data-tab="items">المخزون <b>30</b></button><button class="sg">العمليات <b>1</b></button><button class="sg">الجرد</button><button class="sg">التقارير</button></div>
+
+ <div class="panel on" id="p-ov">
+  <div class="kpis">
+   <button class="card kpi fx-ripple" data-pop="items"><span class="ico i-b"><svg viewBox="0 0 24 24"><path d="M4 7l8-4 8 4v10l-8 4-8-4z"/></svg></span><small>أصناف نشطة</small><b>30</b><span class="h">اضغط لعرضها</span></button>
+   <button class="card kpi fx-ripple" data-pop="low"><span class="ico i-o"><svg viewBox="0 0 24 24"><path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17v.5"/></svg></span><small>عند الحد الأدنى</small><b class="warn">1</b><span class="h">اضغط لعرضها</span></button>
+   <button class="card kpi fx-ripple" data-pop="exp"><span class="ico i-r"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg></span><small>قرب الانتهاء</small><b class="neg">2</b><span class="h">اضغط لعرضها</span></button>
+   <button class="card kpi fx-ripple" data-pop="req"><span class="ico i-b"><svg viewBox="0 0 24 24"><path d="M5 12l4 4 10-10"/></svg></span><small>طلبات معلقة</small><b>1</b><span class="h">اضغط لعرضها</span></button>
+   <div class="card kpi" style="cursor:default"><span class="ico i-t"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></span><small>قيمة المخزون</small><b>2,906<u>ج.م</u></b><span class="h">بالتكلفة</span></div>
+   <div class="card kpi" style="cursor:default"><span class="ico i-t"><svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/></svg></span><small>ربح المبيعات</small><b>14<u>ج.م</u></b><span class="h">الشهر ده</span></div>
+  </div>
+  <section class="card"><div class="ch"><h2>ملخص المخزون</h2><span>الأصناف اللي تحتاج متابعة أول</span></div>
+   <table class="tbl"><thead><tr><th>الصنف</th><th>الرصيد</th><th class="hide-m">الحد الأدنى</th><th class="hide-m">سعر البيع</th><th>الحالة</th></tr></thead><tbody>
+    <tr><td><span class="nm">صنف 1</span><span class="sk">S1</span></td><td>3 قطعة</td><td class="hide-m">5</td><td class="hide-m">3 ج.م</td><td><span class="chip c-low">عند الحد الأدنى</span></td></tr>
+    <tr><td><span class="nm">صنف 5</span><span class="sk">S5</span></td><td>50 قطعة</td><td class="hide-m">5</td><td class="hide-m">3 ج.م</td><td><span class="chip c-out">منتهي منذ 2 يوم</span></td></tr>
+    <tr><td><span class="nm">صنف 4</span><span class="sk">S4</span></td><td>50 قطعة</td><td class="hide-m">5</td><td class="hide-m">3 ج.م</td><td><span class="chip c-soon">ينتهي خلال 10 يوم</span></td></tr>
+    <tr><td><span class="nm">صنف 2</span><span class="sk">S2</span></td><td>50 قطعة</td><td class="hide-m">5</td><td class="hide-m">3 ج.م</td><td><span class="chip c-ok">متوفر</span></td></tr>
+    <tr><td><span class="nm">صنف 3</span><span class="sk">S3</span></td><td>50 قطعة</td><td class="hide-m">5</td><td class="hide-m">3 ج.م</td><td><span class="chip c-ok">متوفر</span></td></tr>
+   </tbody></table></section>
+ </div>
+
+ <div class="panel" id="p-items">
+  <div class="tools"><input class="fld" placeholder="بحث بالاسم أو الكود…"><select class="fld"><option>كل الفئات</option></select><select class="fld"><option>كل الحالات</option></select><button class="btn fx-ripple"><svg viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>رفع أصناف Excel</button></div>
+  <section class="card"><div class="ch"><h2>الأصناف والأسعار</h2><span>30 صنف</span></div>
+   <table class="tbl"><thead><tr><th>الصنف</th><th>الفئة</th><th>الرصيد</th><th class="hide-m">متوسط التكلفة</th><th class="hide-m">سعر البيع</th><th class="hide-m">هامش الربح</th><th>الحالة</th><th></th></tr></thead><tbody>
+    <tr><td><span class="nm">صنف 1</span><span class="sk">S1</span></td><td>مستلزمات</td><td>3</td><td class="hide-m">2 ج.م</td><td class="hide-m">3 ج.م</td><td class="hide-m">50%</td><td><span class="chip c-low">منخفض</span></td><td><div class="acts2"><button class="ib fx-ripple" aria-label="تعديل"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg></button><button class="ib fx-ripple" aria-label="تسجيل هالك"><svg viewBox="0 0 24 24"><path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13"/></svg></button></div></td></tr>
+    <tr><td><span class="nm">صنف 2</span><span class="sk">S2</span></td><td>أدوية</td><td>50</td><td class="hide-m">2 ج.م</td><td class="hide-m">3 ج.م</td><td class="hide-m">50%</td><td><span class="chip c-grey">تشغيلات</span></td><td><div class="acts2"><button class="ib fx-ripple" aria-label="تعديل"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg></button><button class="ib fx-ripple" aria-label="تسجيل هالك"><svg viewBox="0 0 24 24"><path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13"/></svg></button></div></td></tr>
+    <tr><td><span class="nm">صنف 3</span><span class="sk">S3</span></td><td>مستلزمات</td><td>50</td><td class="hide-m">2 ج.م</td><td class="hide-m">3 ج.م</td><td class="hide-m">50%</td><td><span class="chip c-ok">متوفر</span></td><td><div class="acts2"><button class="ib fx-ripple" aria-label="تعديل"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg></button><button class="ib fx-ripple" aria-label="تسجيل هالك"><svg viewBox="0 0 24 24"><path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13"/></svg></button></div></td></tr>
+    <tr><td><span class="nm">صنف 4</span><span class="sk">S4</span></td><td>أدوية</td><td>50</td><td class="hide-m">2 ج.م</td><td class="hide-m">3 ج.م</td><td class="hide-m">50%</td><td><span class="chip c-soon">ينتهي خلال 10 يوم</span></td><td><div class="acts2"><button class="ib fx-ripple" aria-label="تعديل"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg></button><button class="ib fx-ripple" aria-label="تسجيل هالك"><svg viewBox="0 0 24 24"><path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13"/></svg></button></div></td></tr>
+   </tbody></table><div class="pg"><button class="btn" disabled>السابق</button>صفحة 1 من 2 (30 صنف)<button class="btn">التالي</button></div></section>
+ </div>
+</div>
+<div class="ov" id="ov"><div class="sheet" id="sh"></div></div>
+<script src="../../../assets/js/ui-motion.js"></script>
+<script>
+const T={items:'<h3>الأصناف النشطة</h3><div class="m">30 صنف</div><div class="pr"><span>صنف 1</span><span class="chip c-low">3 قطعة</span></div><div class="pr"><span>صنف 2</span><span class="chip c-ok">50 قطعة</span></div><div class="btns"><button class="btn" data-x>إغلاق</button><button class="btn p" data-go="items">فتح المخزون</button></div>',
+low:'<h3>عند الحد الأدنى</h3><div class="m">1 صنف</div><div class="pr"><span>صنف 1 · الحد الأدنى 5</span><span class="chip c-low">3 قطعة</span></div><div class="btns"><button class="btn" data-x>إغلاق</button><button class="btn p">طلب شراء</button></div>',
+exp:'<h3>قرب انتهاء الصلاحية</h3><div class="m">2 صنف</div><div class="pr"><span>صنف 5 · تشغيلة B1</span><span class="chip c-out">منتهي منذ 2 يوم</span></div><div class="pr"><span>صنف 4 · تشغيلة A1</span><span class="chip c-soon">ينتهي خلال 10 يوم</span></div><div class="btns"><button class="btn" data-x>إغلاق</button></div>',
+req:'<h3>الطلبات المعلقة</h3><div class="m">1 طلب</div><div class="pr"><span>طلب صرف · صنف 3 × 2</span><span class="chip c-low">بانتظار الاعتماد</span></div><div class="btns"><button class="btn" data-x>إغلاق</button></div>'};
+const ov=document.getElementById('ov'),sh=document.getElementById('sh');
+function bind(){document.querySelectorAll('[data-pop]').forEach(b=>b.onclick=()=>{sh.innerHTML=T[b.dataset.pop];ov.classList.add('open');sh.querySelectorAll('[data-x]').forEach(x=>x.onclick=()=>ov.classList.remove('open'))})}
+bind();ov.onclick=e=>{if(e.target===ov)ov.classList.remove('open')};
+document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{document.querySelectorAll('.sg').forEach(x=>x.classList.remove('on'));b.classList.add('on');document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));document.getElementById('p-'+b.dataset.tab).classList.add('on')});
+if(location.hash==='#items')document.querySelector('[data-tab=items]').click();
+if(location.hash==='#pop')document.querySelector('[data-pop=low]').click();
+</script></body></html>
