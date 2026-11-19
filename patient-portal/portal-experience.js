@@ -5,9 +5,9 @@ var cfg=window.SSMPD_CONFIG&&window.SSMPD_CONFIG.supabase;
 var root=document.getElementById("portal-root");
 if(!cfg||!cfg.url||!cfg.anonKey||!root||!window.supabase)return;
 
-var client=window.supabase.createClient(cfg.url,cfg.anonKey,{
+var client=((window.SSMPDPortalClient)||window.supabase.createClient(cfg.url,cfg.anonKey,{
   auth:{persistSession:true,autoRefreshToken:true,storageKey:"swnw-patient-portal-auth"}
-});
+}));
 var medicalCache=null,medicalCacheAt=0,statusCache=null,statusCacheAt=0,enhancing=false;
 
 var TYPE_LABELS={
