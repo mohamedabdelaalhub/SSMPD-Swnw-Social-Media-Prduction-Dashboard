@@ -48,6 +48,11 @@ q('[data-rx-add-extra]').click();
 const xs=q('[data-x-service]'),xIn=xs.closest('label').querySelector('.rx-combo input');
 type(xIn,'ultra');assert.equal(opts(xIn).length,1);xIn.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}));assert.equal(xs.value,'s5');
 assert(q('[data-x-provider]').closest('label').querySelector('.rx-combo input'),'extra doctor search exists');
+// layout: three numbered cards, save bar stays outside them
+await new Promise(r=>setTimeout(r,20));
+const cards=[...form.querySelectorAll('.rx-card')];assert.equal(cards.length,3);
+assert(cards[0].contains(pSel)&&cards[1].contains(form.elements.service_id)&&cards[1].contains(form.elements.provider_id)&&cards[2].contains(form.elements.day)&&cards[2].contains(form.elements.starts_at),'fields grouped into their cards');
+assert.equal(form.querySelector('footer').closest('.rx-card'),null);
 assert.deepEqual(errors,[]);
 console.log('PASS booking selects are searchable: patient, department, doctor, extra service');
 })().catch(e=>{console.error(e);process.exit(1);});
