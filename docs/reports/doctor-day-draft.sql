@@ -1,11 +1,11 @@
--- Reports: «مرضاي النهارده» — a doctor's own patients for today. Read-only.
+-- Reports: «حالاتي النهارده» — a doctor's own cases for today. Read-only.
 -- Shows only appointments of the doctor linked to the caller (clinic_people.people.admin_id → doctor_key → providers.doctor_key),
 -- today (Cairo) only, live workspaces only, sandbox excluded. No amounts, no phone, no medical data.
 -- Super admin / general manager may preview any doctor and any day (to check the screen); nobody else can widen it.
 begin;
 
 insert into public.report_registry(code, title, area, sort, sensitive) values
-  ('doctor_day', 'مرضاي النهارده', 'doctors', 5, false);
+  ('doctor_day', 'حالاتي النهارده', 'doctors', 5, false);
 
 -- Doctor keys linked to the caller. Internal helper (not granted).
 create function public.report_my_doctor_keys() returns setof text
