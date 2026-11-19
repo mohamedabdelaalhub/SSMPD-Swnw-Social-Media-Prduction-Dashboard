@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1795,
-    "labels": 1317,
+    "definitions": 1802,
+    "labels": 1322,
     "files": 126,
-    "groups": 1422
+    "groups": 1429
   },
   "fields": [
     {
@@ -16603,6 +16603,76 @@
       "tab": "reports",
       "article": "reports-center",
       "text_sha256": "a5e0ac4f3f9aae3fb73dc8d318ed09f026356f8c03a7545155203595be11a6fc"
+    },
+    {
+      "file": "render-reports.js",
+      "label": "الشهر",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reports",
+      "article": "reports-center",
+      "text_sha256": "978a6c1839983cba723fb85d60f13678296ba3ca660cc1e54875b9be1070a763"
+    },
+    {
+      "file": "render-reports.js",
+      "label": "المؤشر",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reports",
+      "article": "reports-center",
+      "text_sha256": "1fd3329cae572ad11be3818de2ade5fb6338c8818e02ef34dfe433d9c5a8b94e"
+    },
+    {
+      "file": "render-reports.js",
+      "label": "صاحبه",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reports",
+      "article": "reports-center",
+      "text_sha256": "cdd06f3711be1a1ee7ca406aa1e983ad492d1396a7bf344222344a7be1000891"
+    },
+    {
+      "file": "render-reports.js",
+      "label": "PHY1",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "reports",
+      "article": "reports-center",
+      "text_sha256": "ae2bb6421fd491ce08a499805f5543a2531f64b2ca5fd0c6797b1ce2963d2c78"
+    },
+    {
+      "file": "render-reports.js",
+      "label": "كود الحملة",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reports",
+      "article": "reports-center",
+      "text_sha256": "6ac10f1fe4cb339d35ac56c3be1260463988fc1d46d51c055673c258782d6d02"
+    },
+    {
+      "file": "render-reports.js",
+      "label": "التارجت",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reports",
+      "article": "reports-center",
+      "text_sha256": "f4d256f619f5e98fa95c64617a242a5aee5df4e40b0c24797e48125fb79aec56"
+    },
+    {
+      "file": "render-reports.js",
+      "label": "ملاحظة",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reports",
+      "article": "personal",
+      "text_sha256": "08c204de2685df464bdbc0cd0fde7ec98a5877581bd58cbad31890fc6661df06"
     },
     {
       "file": "render-review.js",

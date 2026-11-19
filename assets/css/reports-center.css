@@ -91,3 +91,4 @@ button.rc-card{font:inherit;color:inherit;text-align:start;cursor:pointer;displa
 .rc-ltr{direction:ltr;unicode-bidi:isolate;text-align:right}
 .rc-chips-col{display:flex;flex-direction:column;gap:4px;align-items:flex-start;flex:none}
 .rc-card-t{min-width:120px}
+.rc-f[hidden]{display:none}

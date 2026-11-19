@@ -4,7 +4,7 @@
 (function () {
   "use strict";
 
-  var AREAS = [["operations", "التشغيل"], ["cash", "الخزنة والإيرادات"], ["doctors", "الدكاترة"], ["insurance", "التأمين والتعاقدات"], ["statements", "القوائم المالية والضرائب"], ["stock", "المخزن والصيدلية"]];
+  var AREAS = [["operations", "التشغيل"], ["cash", "الخزنة والإيرادات"], ["doctors", "الدكاترة"], ["insurance", "التأمين والتعاقدات"], ["statements", "القوائم المالية والضرائب"], ["stock", "المخزن والصيدلية"], ["people", "الموظفين"], ["marketing", "التسويق والتارجت"]];
   var ACCESS_ROLES = ["general_manager", "financial_manager", "accountant", "reception", "customer_service", "page_manager", "nursing", "head_nursing", "sono_doctor"];
   var SHIFT_STATUS = { open: "مفتوحة", submitted: "اتقفلت — مستنية مراجعة", reviewed: "اتراجعت" };
   var REQ_STATUS = { pending: "مستني موافقة", approved: "اتوافق عليه", rejected: "اترفض" };
@@ -16,6 +16,8 @@
   var ENTITY_KIND = { insurer: "تأمين / نقابة", discount: "جهة خصم", referral: "جهة تحويل" };
   var SECTION = { revenue: "الإيرادات", cost_of_services: "تكلفة الخدمات", gna: "مصروفات إدارية وعمومية", other_expense: "مصروفات أخرى",
     asset: "الأصول", liability: "الالتزامات", equity: "حقوق الملكية", operating: "تشغيلي", investing: "استثماري", financing: "تمويلي" };
+  var SOURCE_NAMES = { whatsapp: "واتساب", messenger: "ماسنجر", instagram: "إنستجرام", facebook_form: "فورم فيسبوك", phone: "تليفون", clinic: "في العيادة",
+    doctor_referral: "تحويل دكتور", unknown: "مش معروف", walk_in: "حضور مباشر" };
   var EMPTY = "لسه مفيش بيانات في الفترة دي";
   var state = null;
 
@@ -405,6 +407,101 @@
           { l: "أصناف اتصرف منها زيادة", v: fmtNum(t.over_items) }, { l: "أصناف اتصرف منها أقل", v: fmtNum(t.under_items) }];
       }
     },
+    attendance_summary: {
+      sub: "لكل موظف: أيام الشيفت والحضور والغياب والتأخير والانصراف بدري والأوفر تايم والخصومات.",
+      range: true,
+      cols: [C("full_name", "الموظف"), C("department", "القسم"), C("scheduled_days", "أيام شيفت", "int"), C("attended_days", "حضر", "int"), C("absent_days", "غياب", "int"),
+        C("late_days", "أيام تأخير", "int"), C("late_minutes", "دقايق تأخير", "int"), C("early_minutes", "انصراف بدري (دقيقة)", "int"),
+        C("overtime_minutes", "أوفر تايم معتمد (دقيقة)", "int"), C("deductions", "خصومات", "money")],
+      totalKeys: { scheduled_days: 1, attended_days: 1, absent_days: 1, late_days: 1, late_minutes: 1, early_minutes: 1, overtime_minutes: 1, deductions: 1 },
+      load: function (f) { return rpc("report_attendance_summary", { p_from: f.from, p_to: f.to, p_branch: f.branch || null }); },
+      tiles: function (d) {
+        var t = d.totals || {}, s = num(t.scheduled_days);
+        return [{ l: "نسبة الحضور", v: s ? (100 * num(t.attended_days) / s).toFixed(1) + "%" : "—", hero: true, sub: fmtNum(t.people) + " موظف" },
+          { l: "أيام غياب", v: fmtNum(t.absent_days), neg: num(t.absent_days) > 0 }, { l: "دقايق تأخير", v: fmtNum(t.late_minutes), sub: fmtNum(t.late_days) + " يوم" },
+          { l: "خصومات", v: money(t.deductions) }];
+      }
+    },
+    staff_productivity: {
+      sub: "لكل موظف استقبال وكول سنتر: الحجوزات والزيارات والتحصيل ومحاولات التواصل وتحويل الليدز.",
+      range: true,
+      cols: [C("employee", "الموظف"), C("bookings", "حجوزات", "int"), C("bookings_attended", "منها حضر", "int"), C("visits_opened", "زيارات فتحها", "int"),
+        C("payments", "عمليات تحصيل", "int"), C("collected", "حصّل", "money"), C("lead_attempts", "محاولات تواصل", "int"), C("answered_calls", "اترد عليه", "int"),
+        C("leads_assigned", "ليدز عنده", "int"), C("leads_booked", "اتحجزت", "int"), C("conversion", "التحويل", "pct")],
+      totalKeys: { bookings: 1, visits_opened: 1, payments: 1, collected: 1, lead_attempts: 1, leads_assigned: 1, leads_booked: 1 },
+      load: function (f) { return rpc("report_staff_productivity", { p_from: f.from, p_to: f.to, p_branch: f.branch || null }); },
+      tiles: function (d) {
+        var t = d.totals || {}, a = num(t.leads_assigned);
+        return [{ l: "حجوزات", v: fmtNum(t.bookings), hero: true }, { l: "محاولات تواصل", v: fmtNum(t.lead_attempts) },
+          { l: "تحويل الليدز لحجز", v: a ? (100 * num(t.leads_booked) / a).toFixed(1) + "%" : "—", sub: fmtNum(t.leads_booked) + " من " + fmtNum(a) },
+          { l: "التحصيل", v: money(t.collected) }];
+      }
+    },
+    lead_response: {
+      sub: "الليد بياخد قد إيه لحد أول رد، وكام واحد اتساب من غير رد، وكام اتحول لحجز.",
+      range: true,
+      cols: [C("employee", "المسؤول"), C("leads", "ليدز", "int"), C("contacted", "اتكلم معاهم", "int"), C("untouched", "من غير رد", "int"),
+        C("avg_first_response", "متوسط أول رد (دقيقة)", "int"), C("median_first_response", "الوسيط (دقيقة)", "int"), C("within_15", "اترد خلال 15 دقيقة", "int"),
+        C("booked", "اتحجزوا", "int"), C("conversion", "التحويل", "pct")],
+      totalKeys: { leads: 1, contacted: 1, untouched: 1, within_15: 1, booked: 1 },
+      load: function (f) { return rpc("report_lead_response", { p_from: f.from, p_to: f.to, p_branch: f.branch || null }); },
+      tiles: function (d) {
+        var t = d.totals || {}, n = num(t.leads);
+        return [{ l: "متوسط أول رد", v: t.avg_first_response == null ? "—" : fmtNum(t.avg_first_response), u: "دقيقة", hero: true, sub: fmtNum(n) + " ليد" },
+          { l: "من غير رد لحد دلوقتي", v: fmtNum(t.untouched), neg: num(t.untouched) > 0 },
+          { l: "اترد خلال 15 دقيقة", v: n ? (100 * num(t.within_15) / n).toFixed(1) + "%" : "—" },
+          { l: "اتحولوا لحجز", v: n ? (100 * num(t.booked) / n).toFixed(1) + "%" : "—", sub: fmtNum(t.booked) + " حجز" }];
+      }
+    },
+    patient_sources: {
+      sub: "المرضى جايين منين: المواعيد والحضور والإيراد لكل مصدر.",
+      range: true,
+      cols: [C("source", "المصدر", "status", SOURCE_NAMES), C("appointments", "مواعيد", "int"), C("share", "النسبة", "pct"), C("patients", "مرضى", "int"),
+        C("attended", "حضروا", "int"), C("attendance_rate", "نسبة الحضور", "pct"), C("no_show", "ماجوش", "int"), C("revenue", "الإيراد", "money")],
+      totalKeys: { appointments: 1, patients: 1, attended: 1, revenue: 1 },
+      load: function (f) { return rpc("report_patient_sources", { p_from: f.from, p_to: f.to, p_branch: f.branch || null }); },
+      tiles: function (d) {
+        var t = d.totals || {}, top = (d.rows || [])[0];
+        return [{ l: "أكبر مصدر", v: top ? (SOURCE_NAMES[top.source] || top.source) : "—", hero: true, sub: top ? fmtNum(top.appointments) + " موعد" : "" },
+          { l: "المواعيد", v: fmtNum(t.appointments) }, { l: "الإيراد", v: money(t.revenue) },
+          { l: "مصدر مش معروف", v: fmtNum(t.unknown), neg: num(t.unknown) > 0, sub: "سجّل المصدر وقت الحجز" }];
+      }
+    },
+    ad_funnel: {
+      sub: "لكل حملة: الصرف ← الليدز ← الحجوزات ← الحضور ← الإيراد، وتكلفة الحجز والعائد.",
+      range: true,
+      cols: [C("campaign", "الحملة"), C("spend", "الصرف", "money"), C("impressions", "ظهور", "int"), C("clicks", "ضغطات", "int"), C("messages", "رسايل", "int"),
+        C("leads", "ليدز", "int"), C("bookings", "حجوزات", "int"), C("attended", "حضروا", "int"), C("revenue", "الإيراد", "money"),
+        C("cost_per_lead", "تكلفة الليد", "money"), C("cost_per_booking", "تكلفة الحجز", "money"), C("roas", "العائد على الصرف", "int")],
+      totalKeys: { spend: 1, impressions: 1, clicks: 1, messages: 1, leads: 1, bookings: 1, attended: 1, revenue: 1, cost_per_booking: 1, roas: 1 },
+      load: function (f) { return rpc("report_ad_funnel", { p_from: f.from, p_to: f.to, p_branch: f.branch || null }); },
+      tiles: function (d) {
+        var t = d.totals || {};
+        return [{ l: "تكلفة الحجز", v: t.cost_per_booking == null ? "—" : money(t.cost_per_booking), hero: true, sub: fmtNum(t.bookings) + " حجز من " + fmtNum(t.leads) + " ليد" },
+          { l: "الصرف", v: money(t.spend) }, { l: "الإيراد من الحملات", v: money(t.revenue) },
+          { l: "العائد على الصرف", v: t.roas == null ? "—" : fmtNum(t.roas) + "×" }];
+      },
+      extraHtml: function (d) {
+        var t = d.totals || {}, steps = [["الصرف", money(t.spend), null], ["ليدز", fmtNum(t.leads), num(t.leads)], ["حجوزات", fmtNum(t.bookings), num(t.bookings)], ["حضروا", fmtNum(t.attended), num(t.attended)]];
+        var max = Math.max(num(t.leads), 1);
+        return '<div class="rc-card"><div class="rc-ch"><h3>المسار<small>من الليد للحضور</small></h3></div><div class="rc-hb">' + steps.slice(1).map(function (s, i) {
+          var prev = i ? steps[i][2] : null, conv = prev ? " (" + (100 * s[2] / prev).toFixed(1) + "%)" : "";
+          return '<div class="rc-r"><span>' + esc(s[0]) + '</span><div class="rc-tr"><i style="width:' + Math.max(2, s[2] / max * 100).toFixed(1) + '%"></i></div><span>' + esc(s[1] + conv) + "</span></div>";
+        }).join("") + "</div></div>";
+      }
+    },
+    targets_vs_actual: {
+      sub: "التارجت اللي حطه المالك للشهر قصاد الفعلي، ونسبة التحقيق.",
+      range: false, dayLabel: "الشهر", dayDefault: "today",
+      cols: [C("owner", "المسؤول"), C("label", "المؤشر"), C("target", "التارجت", "money"), C("actual", "الفعلي", "money"), C("achievement", "التحقيق", "pct")],
+      totalKeys: {},
+      load: function (f) { return rpc("report_targets_vs_actual", { p_month: f.day || null, p_branch: f.branch || null }); },
+      tiles: function (d) {
+        var t = d.totals || {};
+        return [{ l: "متوسط التحقيق", v: t.avg_achievement == null ? "—" : fmtNum(t.avg_achievement) + "%", hero: true, sub: d.month ? "شهر " + String(d.month).slice(0, 7) : "" },
+          { l: "تارجت اتحقق", v: fmtNum(t.met) + " من " + fmtNum(t.targets) }];
+      }
+    },
     daily_flash: {
       sub: "ملخص يوم واحد: إيراد، تحصيل، مواعيد، ليدز، وتنبيهات.",
       range: false,
@@ -641,8 +738,14 @@
   }
   function showHome(root) {
     state.code = null; state.seq++;
-    root.innerHTML = homeHtml();
+    root.innerHTML = homeHtml() + (state.canTargets ? '<div class="rc-gh"><h2>التارجت</h2></div><div class="rc-grid"><button type="button" class="rc-card rc-open-targets"><div class="rc-card-ic">' + ICON.bars +
+      '</div><div class="rc-card-t"><b>إدارة التارجت الشهري</b><span>اقترح التارجت أو وافق عليه (الموافقة للمالك بس).</span></div>' + ICON.chev + "</button></div>" : "");
     qa(root, ".rc-open").forEach(function (b) { b.onclick = function () { openReport(root, b.getAttribute("data-code")); }; });
+    var ot = q(root, ".rc-open-targets"); if (ot) ot.onclick = function () {
+      state.code = null; root.innerHTML = '<button type="button" class="rc-btn rc-sec rc-tback">→ كل التقارير</button><div class="rc-card" style="margin-top:12px"></div>';
+      q(root, ".rc-tback").onclick = function () { showHome(root); };
+      mountTargets(q(root, ".rc-card"));
+    };
   }
   function wire(root) {
     root.onclick = function (ev) {
@@ -669,7 +772,7 @@
     var root = q(container, ".rc-root");
     rpc("report_catalog").then(function (cat) {
       state.catalog = cat && cat.reports ? cat : { reports: [], branches: [] };
-      showHome(root); wire(root);
+      return rpc("report_target_can_propose").catch(function () { return false; }).then(function (ok) { state.canTargets = ok === true; showHome(root); wire(root); });
     }).catch(function (e) { root.innerHTML = '<div class="rc-error" role="alert">' + esc(errMsg(e)) + "</div>"; });
   }
 
@@ -720,5 +823,64 @@
     }).catch(function () { host.innerHTML = ""; });
   }
 
-  window.SSMPDRenderReports = { render: render, mountAccess: mountAccess, buildCsv: buildCsv, _defs: DEFS };
+
+  // ── «التارجت الشهري» في لوحة التحكم (للمالك بس) ─────────────────────────────────────────────────────
+  var ROLE_TARGETS = ["general_manager", "page_manager", "customer_service", "reception"];
+  var T_STATUS = { pending: "مستني موافقة المالك", approved: "معتمد", rejected: "مرفوض" };
+  function targetsHtml(data) {
+    var metrics = data.metrics || [], people = data.people || [], branches = data.branches || [], appr = !!data.is_approver;
+    var h = '<div class="rc-root rc-access"><h3>التارجت الشهري</h3><p class="rc-hint">' + (appr ? "إنت اللي بتوافق على التارجت. اللي بتحطه إنت بيتعتمد على طول، واللي بيقترحه غيرك بيستنى موافقتك." :
+      "اقترح التارجت والمالك هيوافق عليه. التارجت مش بيتحسب في التقرير غير بعد الموافقة.") + " أي تغيير بيتسجّل.</p>" +
+      '<div class="rc-filters rc-card"><label class="rc-f"><span>الشهر</span><input type="month" data-t="month" value="' + esc(String(data.month || "").slice(0, 7)) + '"></label></div>';
+    var rows = data.targets || [];
+    h += rows.length ? '<div class="rc-tw"><table><thead><tr><th>المؤشر</th><th>صاحبه</th><th class="rc-n">التارجت</th><th>الحالة</th><th>اقترحه</th><th>ملاحظة</th><th></th></tr></thead><tbody>' + rows.map(function (t) {
+      var who = t.campaign_code ? "حملة " + t.campaign_code : t.admin ? t.admin : t.role ? "دور: " + roleLabel(t.role) : "الفرع";
+      var acts = "";
+      if (appr && t.status === "pending") acts += '<button type="button" class="rc-btn" data-appr="' + esc(t.id) + '">موافقة</button> <button type="button" class="rc-btn rc-sec" data-rej="' + esc(t.id) + '">رفض</button> ';
+      if (appr || (t.mine && t.status === "pending")) acts += '<button type="button" class="rc-btn rc-sec" data-del="' + esc(t.id) + '">مسح</button>';
+      return "<tr><td>" + esc((t.meta || {}).label || t.metric) + "</td><td>" + esc(who) + '</td><td class="rc-n">' + fmtNum(t.target) + '</td><td><span class="rc-chip' + (t.status === "pending" ? " rc-warn" : "") + '">' + esc(T_STATUS[t.status] || t.status) + "</span></td><td>" + esc(t.proposed_by || "—") + "</td><td>" + esc(t.note || "") + "</td><td>" + acts + "</td></tr>";
+    }).join("") + "</tbody></table></div>" : '<div class="rc-empty">مفيش تارجت للشهر ده لسه</div>';
+    h += '<div class="rc-card rc-filters" style="margin-top:12px"><label class="rc-f"><span>المؤشر</span><select data-t="metric">' + metrics.map(function (m) { return '<option value="' + esc(m.key) + '">' + esc((m.meta || {}).label || m.key) + "</option>"; }).join("") + "</select></label>" +
+      '<label class="rc-f"><span>صاحبه</span><select data-t="who"><option value="branch:' + esc((branches[0] || {}).id || "") + '">الفرع</option>' +
+      ROLE_TARGETS.map(function (r) { return '<option value="role:' + r + '">دور: ' + esc(roleLabel(r)) + "</option>"; }).join("") +
+      people.map(function (p) { return '<option value="admin:' + esc(p.id) + '">' + esc(p.name) + "</option>"; }).join("") + "</select></label>" +
+      '<label class="rc-f" data-camp hidden><span>كود الحملة</span><input type="text" maxlength="30" data-t="campaign" placeholder="PHY1"></label>' +
+      '<label class="rc-f"><span>التارجت</span><input type="number" min="0" step="any" data-t="target"></label><label class="rc-f"><span>ملاحظة</span><input type="text" maxlength="300" data-t="note"></label>' +
+      '<button type="button" class="rc-btn" data-t-save>' + (appr ? "حفظ التارجت" : "اقتراح التارجت") + '</button></div><div class="rc-msg" role="status"></div>';
+    if (appr) {
+      var eds = data.editors || [];
+      h += '<div class="rc-card" style="margin-top:12px"><div class="rc-ch"><h3>مين يقدر يقترح التارجت<small>غير المدير العام والمدير المالي</small></h3></div><div class="rc-chips">' +
+        eds.map(function (e) { return '<span class="rc-chip">' + esc(e.name) + ' <button type="button" class="rc-x" data-ed-rm="' + esc(e.id) + '" aria-label="شيل">×</button></span>'; }).join("") +
+        '</div><select class="rc-pick" data-ed-add><option value="">+ إضافة شخص</option>' + people.filter(function (p) { return !eds.some(function (e) { return e.id === p.id; }); })
+          .map(function (p) { return '<option value="' + esc(p.id) + '">' + esc(p.name) + "</option>"; }).join("") + "</select></div>";
+    }
+    return h + "</div>";
+  }
+  function mountTargets(host, month) {
+    if (!host) return Promise.resolve();
+    var payload = month ? { month: month + "-01" } : {};
+    return rpc("report_targets_admin", { p_action: "list", p_payload: payload }).then(function (data) {
+      host.innerHTML = targetsHtml(data);
+      var cur = String(data.month || "").slice(0, 7), msg = q(host, ".rc-msg");
+      var act = function (action, p) { return rpc("report_targets_admin", { p_action: action, p_payload: p }).then(function () { mountTargets(host, cur); }).catch(function (e) { msg.textContent = errMsg(e); }); };
+      var m = q(host, '[data-t="month"]'); if (m) m.onchange = function () { mountTargets(host, m.value); };
+      var met = q(host, '[data-t="metric"]'), camp = q(host, "[data-camp]");
+      if (met && camp) met.onchange = function () { camp.hidden = met.value !== "campaign_cost_per_booking"; };
+      qa(host, "[data-del]").forEach(function (b) { b.onclick = function () { act("delete", { id: b.getAttribute("data-del") }); }; });
+      qa(host, "[data-appr]").forEach(function (b) { b.onclick = function () { act("approve", { id: b.getAttribute("data-appr") }); }; });
+      qa(host, "[data-rej]").forEach(function (b) { b.onclick = function () { act("reject", { id: b.getAttribute("data-rej") }); }; });
+      var ids = (data.editors || []).map(function (e) { return e.id; });
+      qa(host, "[data-ed-rm]").forEach(function (b) { b.onclick = function () { act("editors_set", { admin_ids: ids.filter(function (x) { return x !== b.getAttribute("data-ed-rm"); }) }); }; });
+      var add = q(host, "[data-ed-add]"); if (add) add.onchange = function () { if (add.value) act("editors_set", { admin_ids: ids.concat([add.value]) }); };
+      var save = q(host, "[data-t-save]"); if (save) save.onclick = function () {
+        var who = q(host, '[data-t="who"]').value.split(":"), p = { month: cur + "-01", metric: met.value,
+          target: q(host, '[data-t="target"]').value, note: q(host, '[data-t="note"]').value };
+        if (p.metric === "campaign_cost_per_booking") { p.campaign_code = q(host, '[data-t="campaign"]').value.trim(); if (!p.campaign_code) { msg.textContent = "اكتب كود الحملة"; return; } }
+        else if (who[0] === "branch") p.branch_id = who[1]; else if (who[0] === "role") p.role = who[1]; else p.admin_id = who[1];
+        if (p.target === "" || num(p.target) < 0) { msg.textContent = "اكتب رقم التارجت"; return; }
+        save.disabled = true; act("set", p);
+      };
+    }).catch(function (e) { host.innerHTML = '<div class="rc-error" role="alert">' + esc(errMsg(e)) + "</div>"; });
+  }
+  window.SSMPDRenderReports = { render: render, mountAccess: mountAccess, mountTargets: mountTargets, buildCsv: buildCsv, _defs: DEFS };
 })();
