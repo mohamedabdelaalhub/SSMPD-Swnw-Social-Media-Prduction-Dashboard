@@ -1,6 +1,7 @@
 -- Reports center — wave 2 (owner request 2026-11-19). Builds on wave 1 (report_registry / report_allowed / report_workspaces).
 -- Six read-only reports: cashier variance, patient balances (credit 2150 / receivable 1122), adjustments log,
 -- deferred revenue (remaining package sessions), no-show & cancellations per doctor, doctor slot occupancy.
+-- Appointments with source 'sandbox' (test bookings in the live workspace) are excluded.
 -- Same rules as wave 1: SECURITY DEFINER, pinned search_path, gate first, live workspaces only, patients by file number only.
 begin;
 
@@ -175,7 +176,7 @@ begin
       from clinic_reception.appointments ap
       join public.report_workspaces(p_branch) ws on ws.workspace_id = ap.workspace_id
       join clinic_reception.providers pr on pr.id = ap.provider_id
-     where (ap.starts_at at time zone 'Africa/Cairo')::date between p_from and p_to),
+     where (ap.starts_at at time zone 'Africa/Cairo')::date between p_from and p_to and coalesce(ap.source, '') <> 'sandbox'),
   g as (
     select provider_id, doctor, specialty, count(*) booked,
            count(*) filter (where status in ('arrived', 'completed')) attended,
@@ -212,7 +213,7 @@ begin
     select ap.provider_id, count(*) appointments, sum(extract(epoch from ap.ends_at - ap.starts_at) / 60) minutes
       from clinic_reception.appointments ap
       join public.report_workspaces(p_branch) ws on ws.workspace_id = ap.workspace_id
-     where ap.status <> 'cancelled' and (ap.starts_at at time zone 'Africa/Cairo')::date between p_from and p_to
+     where ap.status <> 'cancelled' and coalesce(ap.source, '') <> 'sandbox' and (ap.starts_at at time zone 'Africa/Cairo')::date between p_from and p_to
      group by ap.provider_id),
   g as (
     select pr.name doctor, pr.department specialty, round(coalesce(av.minutes, 0)) available_minutes,
