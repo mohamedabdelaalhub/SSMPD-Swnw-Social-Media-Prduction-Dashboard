@@ -1,0 +1,68 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>المهام — تصور v2</title>
+<style>
+@font-face{font-family:'BigVesta Arabic';src:url('../../../assets/fonts/BigVesta-Regular.woff2') format('woff2')}
+@font-face{font-family:'BigVesta Arabic';font-weight:700;src:url('../../../assets/fonts/BigVesta-Bold.woff2') format('woff2')}
+:root{--b:#0F369D;--o:#F15A22;--ink:#16212E;--g:#2F7D5C;--r:#D0402A;--bg:#F4F6FB;--line:#E3E8F2;--mut:#6B7686;--num:#333333}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:'BigVesta Arabic','Hiragino Kaku',system-ui,Tahoma,sans-serif;direction:rtl}
+.wrap{max-width:1180px;margin:0 auto;padding:24px 16px 60px}
+.head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin-bottom:16px}
+.head h1{margin:0;font-size:28px}.head p{margin:4px 0 0;color:var(--mut);font-size:14px}
+.bell{width:44px;height:44px;border-radius:14px;border:1px solid var(--line);background:#fff;display:grid;place-items:center;font-size:18px}
+.pills{display:flex;gap:8px;overflow-x:auto;padding:2px 0 14px;scrollbar-width:none}.pills::-webkit-scrollbar{display:none}
+.pill{flex:none;border:1px solid var(--line);background:#fff;border-radius:999px;padding:9px 16px;font:inherit;font-size:14px;cursor:pointer;display:flex;gap:8px;align-items:center;white-space:nowrap;transition:.24s}
+.pill b{background:#EEF1F8;color:var(--num);border-radius:999px;padding:0 8px;font-size:12px;min-width:22px;text-align:center}
+.pill.on{background:var(--ink);color:#fff;border-color:var(--ink)}.pill.on b{background:#fff}
+.top{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:16px;margin-bottom:16px}.card.k,.card.hero{min-height:132px}
+.card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:20px;transition:transform .2s,box-shadow .2s}
+@media(hover:hover){.card.tap:hover{transform:translateY(-3px);box-shadow:0 10px 24px rgba(15,54,157,.08)}}
+.card.tap{cursor:pointer;text-align:right;font:inherit;color:inherit;width:100%}
+.hero{background:linear-gradient(135deg,#F15A22,#F58A4E);color:#fff;border:0;display:flex;flex-direction:column;justify-content:space-between;min-height:132px}
+.hero small{opacity:.9;font-size:13px}.hero .big{font-size:44px;font-weight:700;line-height:1}.hero .nx{font-size:14px;background:rgba(255,255,255,.2);border-radius:12px;padding:8px 12px}
+.k small{color:var(--mut);font-size:13px;display:block;margin-bottom:8px}.k .n{font-size:34px;font-weight:700;color:var(--num)}.k .n.red{color:var(--r)}
+.k .sub{font-size:12px;color:var(--mut);margin-top:6px;display:block}
+.bar{height:6px;border-radius:6px;background:#EEF1F8;margin-top:10px;overflow:hidden}.bar i{display:block;height:100%;background:var(--g);width:64%}
+h2.sec{font-size:15px;margin:0;display:flex;gap:8px;align-items:center}h2.sec b{background:#EEF1F8;color:var(--num);border-radius:999px;padding:0 9px;font-size:12px}
+.stack{display:grid;gap:16px}.grp{padding:8px 8px 4px}.grp .card-h{margin:10px 14px 4px}.list{display:grid}
+.row{display:grid;grid-template-columns:12px 1fr auto auto 28px;gap:14px;align-items:center;background:transparent;border:0;border-bottom:1px solid var(--line);border-radius:12px;padding:14px;min-height:64px;cursor:pointer;transition:.2s;text-align:right;font:inherit;color:inherit;width:100%}.row:last-child{border-bottom:0}@media(hover:hover){.row:hover{background:var(--bg)}}
+.dot{width:10px;height:10px;border-radius:50%;background:#B8C2D6}.dot.go{background:var(--b)}.dot.late{background:var(--r)}.dot.rev{background:var(--o)}
+.t{font-weight:700;font-size:15px}.t small{display:block;font-weight:400;color:var(--mut);font-size:12.5px;margin-top:2px}
+.chip{border-radius:999px;padding:4px 12px;font-size:12.5px;white-space:nowrap;color:var(--num)}
+.c-late{background:#FBE5E0}.c-today{background:#FFF0E6}.c-week{background:#EEF1F8}.c-go{background:#E4ECFB}.c-rev{background:#FFF0E6}.c-ok{background:#E3F2EA}
+.av{width:28px;height:28px;border-radius:50%;background:#DDE5F6;display:grid;place-items:center;font-size:12px;color:var(--num)}
+.arr{color:#9AA5B8;font-size:18px}
+.ov{position:fixed;inset:0;background:rgba(22,33,46,.45);display:none;align-items:center;justify-content:center;padding:16px;z-index:5}.ov.open{display:flex}
+.sheet{background:#fff;border-radius:24px;width:min(560px,100%);max-height:88vh;overflow:auto;padding:24px;animation:up .26s ease}
+@keyframes up{from{transform:translateY(24px);opacity:0}to{transform:none;opacity:1}}
+.sheet h3{margin:0 0 4px;font-size:20px}.sheet .m{color:var(--mut);font-size:13px;margin-bottom:16px}
+.f{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}.f div{background:var(--bg);border-radius:12px;padding:10px 12px;font-size:13px}.f span{display:block;color:var(--mut);font-size:12px;margin-bottom:2px}
+.desc{font-size:14px;line-height:1.7;margin-bottom:16px}
+.btns{display:flex;gap:10px}.btn{flex:1;border-radius:14px;border:1px solid var(--line);background:#fff;padding:12px;font:inherit;min-height:44px;cursor:pointer}.btn.p{background:var(--b);border-color:var(--b);color:#fff;font-weight:700}
+.pr{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px dashed var(--line);font-size:14px}.pr:last-child{border:0}
+@media(max-width:820px){.top{grid-template-columns:1fr 1fr}.hero{grid-column:1/-1}.row{grid-template-columns:10px 1fr auto 20px}.row .av{display:none}.head h1{font-size:24px}.ov{align-items:flex-end;padding:0}.sheet{border-radius:24px 24px 0 0}}
+</style></head><body><div class="wrap">
+<div class="head"><div><h1>المهام</h1><p>6 مطلوبة منك · 1 متأخرة · 2 بانتظار المراجعة</p></div><div class="bell">🔔</div></div>
+<div class="pills"><button class="pill on">مهامي <b>6</b></button><button class="pill">المشاريع <b>3</b></button><button class="pill">كل المهام <b>14</b></button><button class="pill">المنجزة <b>9</b></button><button class="pill">المناقشة <b>2</b></button></div>
+<div class="top">
+ <button class="card tap hero" data-pop="today"><small>مطلوب منك النهارده</small><span class="big">3</span><span class="nx">الأقرب: تحديد الجمهور المستهدف — 4:00 م</span></button>
+ <button class="card tap k" data-pop="late"><small>متأخرة</small><span class="n red">1</span><span class="sub">اضغط لعرضها</span></button>
+ <button class="card tap k" data-pop="review"><small>بانتظار المراجعة</small><span class="n">2</span><span class="sub">اضغط لعرضها</span></button>
+ <div class="card k"><small>منجزة الشهر ده</small><span class="n">9 <span style="font-size:15px;color:var(--mut)">من 14</span></span><div class="bar"><i></i></div></div>
+</div>
+<div class="stack"><section class="card grp"><div class="card-h"><h2 class="sec">متأخرة <b>1</b></h2></div><div class="list"><button class="row" data-pop="task"><i class="dot late"></i><span class="t">جدول محتوى الأسبوع<small>خطة السوشيال ميديا</small></span><span class="chip c-late">متأخرة يومين</span><span class="av">م</span><span class="arr">‹</span></button></div></section><section class="card grp"><div class="card-h"><h2 class="sec">النهارده <b>3</b></h2></div><div class="list">
+ <button class="row" data-pop="task"><i class="dot go"></i><span class="t">تحديد الجمهور المستهدف<small>خطة السوشيال ميديا</small></span><span class="chip c-today">النهارده 4:00 م</span><span class="av">أ</span><span class="arr">‹</span></button>
+ <button class="row" data-pop="task"><i class="dot rev"></i><span class="t">تعديل صور العرض<small>حملة الليزر</small></span><span class="chip c-rev">مرتجعة للتعديل</span><span class="av">س</span><span class="arr">‹</span></button>
+ <button class="row" data-pop="task"><i class="dot"></i><span class="t">مراجعة نص الإعلان<small>حملة الليزر</small></span><span class="chip c-today">النهارده 6:00 م</span><span class="av">أ</span><span class="arr">‹</span></button></div></section><section class="card grp"><div class="card-h"><h2 class="sec">الأسبوع ده <b>2</b></h2></div><div class="list">
+ <button class="row" data-pop="task"><i class="dot"></i><span class="t">تقرير الأداء الأسبوعي<small>التقارير</small></span><span class="chip c-week">الخميس</span><span class="av">م</span><span class="arr">‹</span></button>
+ <button class="row" data-pop="task"><i class="dot"></i><span class="t">ترتيب ملفات الأرشيف<small>الأرشيف</small></span><span class="chip c-week">الجمعة</span><span class="av">ن</span><span class="arr">‹</span></button></div></section></div>
+</div>
+<div class="ov" id="ov"><div class="sheet" id="sh"></div></div>
+<script>
+const T={task:'<h3>تحديد الجمهور المستهدف</h3><div class="m">خطة السوشيال ميديا · أسندها: مدير المشروع</div><div class="f"><div><span>الموعد</span>النهارده 4:00 م</div><div><span>الحالة</span><span class="chip c-go" style="display:inline-block">جاري العمل</span></div></div><div class="desc">حدّد الفئات العمرية والاهتمامات لحملة الليزر، وسلّم جدول Word واحد.</div><div class="btns"><button class="btn" data-x>إغلاق</button><button class="btn p">فتح المهمة</button></div>',
+today:'<h3>مطلوب النهارده</h3><div class="m">3 مهام</div><div class="pr"><span>تحديد الجمهور المستهدف</span><span class="chip c-today">4:00 م</span></div><div class="pr"><span>تعديل صور العرض</span><span class="chip c-rev">مرتجعة</span></div><div class="pr"><span>مراجعة نص الإعلان</span><span class="chip c-today">6:00 م</span></div><div class="btns" style="margin-top:14px"><button class="btn" data-x>إغلاق</button></div>',
+late:'<h3>المتأخرة</h3><div class="m">1 مهمة</div><div class="pr"><span>جدول محتوى الأسبوع</span><span class="chip c-late">متأخرة يومين</span></div><div class="btns" style="margin-top:14px"><button class="btn" data-x>إغلاق</button><button class="btn p">ابدأ بيها</button></div>',
+review:'<h3>بانتظار المراجعة</h3><div class="m">2 مهام عند المراجع</div><div class="pr"><span>خطة المحتوى الشهرية</span><span class="chip c-rev">عند المدير</span></div><div class="pr"><span>تصميم البانر</span><span class="chip c-rev">عند المدير</span></div><div class="btns" style="margin-top:14px"><button class="btn" data-x>إغلاق</button></div>'};
+const ov=document.getElementById('ov'),sh=document.getElementById('sh');
+document.querySelectorAll('[data-pop]').forEach(b=>b.onclick=()=>{sh.innerHTML=T[b.dataset.pop];ov.classList.add('open');sh.querySelectorAll('[data-x]').forEach(x=>x.onclick=()=>ov.classList.remove('open'))});
+ov.onclick=e=>{if(e.target===ov)ov.classList.remove('open')};
+if(location.hash==='#pop'){document.querySelector('[data-pop=task]').click()}
+</script></body></html>
