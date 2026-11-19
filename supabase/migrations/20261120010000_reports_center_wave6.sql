@@ -29,11 +29,11 @@ select r, x from (values
 create table public.report_target_approvers (admin_id uuid primary key references public.admins(id) on delete cascade, added_at timestamptz not null default now());
 create table public.report_target_editors (admin_id uuid primary key references public.admins(id) on delete cascade, added_by uuid references public.admins(id),
   added_at timestamptz not null default now());
--- Approver: the owner «محمد عبدالعال» only. Editor seeded: Claude Creative (the owner adds others, e.g. the human assistant, from the UI).
+-- Approver: the owner «محمد عبدالعال» only. Editors seeded: Claude Creative and «سيا المساعدة» (the owner adds others from the UI).
 insert into public.report_target_approvers(admin_id) select id from public.admins where id = 'bd5a528f-af8d-4ada-afe9-ce64e68b1d92';
 insert into public.report_target_editors(admin_id, added_by)
 select a.id, (select id from public.admins where id = 'bd5a528f-af8d-4ada-afe9-ce64e68b1d92') from public.admins a
- where a.id = 'a0fbdfee-d147-4282-b988-186a9ae3e88c';
+ where a.id in ('a0fbdfee-d147-4282-b988-186a9ae3e88c', 'f153c808-ffd8-44d7-9fc2-2a270fa95b15');
 
 create table public.report_targets (
   id uuid primary key default gen_random_uuid(),
