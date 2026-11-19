@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0F369D">
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+<title>شاشة الانتظار — Swnw</title>
+<style>
+@font-face{font-family:"BigVesta Arabic";src:url("assets/fonts/BigVesta-Regular.woff2") format("woff2");font-weight:400;font-display:swap}
+@font-face{font-family:"BigVesta Arabic";src:url("assets/fonts/BigVesta-Bold.woff2") format("woff2");font-weight:700;font-display:swap}
+@font-face{font-family:"Hiragino Kaku";src:url("assets/fonts/Hiragino-W3.woff2") format("woff2");font-weight:300;font-display:swap}
+@font-face{font-family:"Hiragino Kaku";src:url("assets/fonts/Hiragino-W6.woff2") format("woff2");font-weight:600;font-display:swap}
+:root{font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;color:#16212E;background:#eef2fb}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%}body{display:flex;flex-direction:column;min-height:100vh;padding:clamp(10px,1.6vw,24px);gap:clamp(8px,1.2vw,16px)}
+.top{display:flex;justify-content:space-between;align-items:center}.top h1{margin:0;font-size:clamp(22px,3vw,40px);color:#0F369D}.top p{margin:0;color:#5b6676;font-size:clamp(12px,1.2vw,18px)}
+.clock{font-size:clamp(24px,3vw,44px);font-weight:700;color:#0F369D;font-variant-numeric:tabular-nums}
+.grid{flex:1;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:clamp(8px,1.2vw,16px);align-content:start}
+.card{background:#fff;border:1px solid #d9e1f2;border-radius:18px;padding:clamp(12px,1.4vw,20px);text-align:center}
+.card header{display:flex;justify-content:space-between;align-items:baseline;gap:8px}.card h2{margin:0;font-size:clamp(18px,1.8vw,26px);color:#16212E}.card header span{color:#5b6676;font-size:clamp(12px,1.1vw,16px)}
+.room{margin-top:6px;font-size:clamp(16px,1.6vw,24px);color:#0F369D;font-weight:600}.room em{color:#9aa4b4;font-style:normal;font-weight:400}
+.cur{font-size:clamp(64px,8vw,132px);font-weight:700;line-height:1.05;color:#9aa4b4;margin-top:4px;font-variant-numeric:tabular-nums}.card.live .cur{color:#F15A22}
+.cap{color:#5b6676;font-size:clamp(11px,1vw,14px)}
+.wait{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:10px;min-height:34px}.wait em{color:#9aa4b4;font-style:normal;font-size:clamp(12px,1.1vw,16px)}
+.chip{background:#eef2fb;color:#0F369D;border-radius:10px;padding:2px 12px;font-size:clamp(18px,1.9vw,28px);font-weight:600;font-variant-numeric:tabular-nums}.chip.more{background:#fff;border:1px solid #d9e1f2}
+.empty{grid-column:1/-1;text-align:center;color:#5b6676;font-size:clamp(18px,2vw,28px);padding:40px}
+.recent{display:flex;gap:10px;flex-wrap:wrap;align-items:center;min-height:36px;color:#5b6676}.rc{background:#fff;border:1px solid #d9e1f2;border-radius:999px;padding:4px 14px;font-size:clamp(14px,1.4vw,20px)}.rc strong{color:#F15A22;font-size:1.2em}
+.foot{display:flex;justify-content:space-between;align-items:center;gap:8px;color:#5b6676;font-size:14px}.status.bad{color:#D0402A}.status:not(.bad):before{content:"";display:inline-block;width:9px;height:9px;border-radius:50%;background:#2F7D5C;margin-inline-end:6px}
+.foot button{border:1px solid #0F369D;background:#fff;color:#0F369D;border-radius:10px;padding:8px 16px;font:inherit;font-size:14px;cursor:pointer}
+.banner{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#0F369D;color:#fff;z-index:10;text-align:center}.banner[hidden]{display:none}
+.banner>div{display:flex;flex-direction:column;gap:clamp(6px,1.4vw,18px);align-items:center}.banner span{font-size:clamp(28px,4vw,64px)}.banner strong{font-size:clamp(140px,26vw,420px);line-height:1;font-weight:700;color:#fff;font-variant-numeric:tabular-nums}.banner b{font-size:clamp(40px,7vw,120px);color:#ffd9c9}
+@media(prefers-reduced-motion:no-preference){.banner.on{animation:pulse 1.2s ease-in-out infinite}@keyframes pulse{50%{background:#c9460f}}}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+</head>
+<body>
+<header class="top"><div><h1>Swnw — دورك</h1><p>مركز عيادات سونو التخصصية — حدائق الأهرام</p></div><div class="clock" data-clock>--:--</div></header>
+<main class="grid" data-board><p class="empty">جاري التحميل…</p></main>
+<section class="recent" data-recent aria-label="آخر النداءات"></section>
+<footer class="foot"><span class="status" data-status>جاري الاتصال…</span><span><button type="button" data-sound>تشغيل الصوت</button> <button type="button" data-fullscreen>ملء الشاشة</button></span></footer>
+<div class="banner" data-banner hidden role="alert" aria-live="assertive"></div>
+<script src="assets/js/queue-display.js?v=queue-display-20261120-1"></script>
+<script>
+(function(){'use strict';
+var db=window.supabase.createClient('https://api.swnwclinics.com','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzk0MzQzMzI1LCJleHAiOjE5NTIwMjMzMjV9.BsprU5Z6n5kZzzLL7XvUQsk57J-t83heDn5DP3zGggc',{auth:{persistSession:false,autoRefreshToken:false}});
+function rpc(n,a){return db.rpc(n,a).then(function(r){if(r.error)throw r.error;return r.data;});}
+function clock(){document.querySelector('[data-clock]').textContent=new Date().toLocaleTimeString('ar-EG-u-nu-latn',{timeZone:'Africa/Cairo',hour:'2-digit',minute:'2-digit'});}
+clock();setInterval(clock,15000);
+document.querySelector('[data-fullscreen]').onclick=function(){var el=document.documentElement;if(!document.fullscreenElement&&el.requestFullscreen)el.requestFullscreen().catch(function(){});};
+window.SWNWQueueDisplay.init({rpc:rpc,token:new URLSearchParams(location.search).get('display'),root:document});
+})();
+</script>
+</body>
+</html>
