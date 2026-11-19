@@ -29,8 +29,11 @@ select r, x from (values
 create table public.report_target_approvers (admin_id uuid primary key references public.admins(id) on delete cascade, added_at timestamptz not null default now());
 create table public.report_target_editors (admin_id uuid primary key references public.admins(id) on delete cascade, added_by uuid references public.admins(id),
   added_at timestamptz not null default now());
-insert into public.report_target_approvers(admin_id)
-select id from public.admins where id::text like 'bd5a528f%' and role = 'super_admin' and (select count(*) from public.admins where id::text like 'bd5a528f%') = 1;
+-- Approver: the owner «محمد عبدالعال» only. Editors seeded: Claude Creative, and the owner's assistant «سيا» (no login yet).
+insert into public.report_target_approvers(admin_id) select id from public.admins where id = 'bd5a528f-af8d-4ada-afe9-ce64e68b1d92';
+insert into public.report_target_editors(admin_id, added_by)
+select a.id, (select id from public.admins where id = 'bd5a528f-af8d-4ada-afe9-ce64e68b1d92') from public.admins a
+ where a.id in ('a0fbdfee-d147-4282-b988-186a9ae3e88c', '4201b0ac-7aea-4214-beca-1ab41d50c16e');
 
 create table public.report_targets (
   id uuid primary key default gen_random_uuid(),
@@ -377,6 +380,39 @@ begin
               'revenue', coalesce(sum(revenue), 0),
               'cost_per_booking', case when sum(bookings) > 0 then round(sum(spend) / sum(bookings), 2) end,
               'roas', case when sum(spend) > 0 then round(sum(revenue) / sum(spend), 2) end) from r))
+    into v;
+  return v;
+end $$;
+
+-- ── Daily flash (wave 1): same output, now without sandbox appointments ──────────────────────────────────
+create or replace function public.report_daily_flash(p_day date default null, p_branch uuid default null) returns jsonb
+language plpgsql stable security definer set search_path = pg_catalog, public as $$
+declare d date := coalesce(p_day, (now() at time zone 'Africa/Cairo')::date - 1); v jsonb;
+begin
+  perform public.report_require('daily_flash');
+  with o as (select * from public.report_orders(d - 6, d, p_branch)),
+  ap as (select a.* from clinic_reception.appointments a join public.report_workspaces(p_branch) w on w.workspace_id = a.workspace_id
+          where (a.starts_at at time zone 'Africa/Cairo')::date = d and coalesce(a.source, '') <> 'sandbox')
+  select jsonb_build_object(
+    'day', d,
+    'revenue', (select coalesce(sum(net), 0) from o where day = d),
+    'revenue_week', coalesce((select jsonb_agg(jsonb_build_object('day', g.day, 'net', coalesce((select sum(net) from o where o.day = g.day), 0)) order by g.day)
+                                from (select gs::date as day from generate_series(d - 6, d, interval '1 day') gs) g), '[]'::jsonb),
+    'collections', (select coalesce(sum(p.amount), 0) from clinic_reception.payments p join public.report_workspaces(p_branch) w on w.workspace_id = p.workspace_id
+                     where (p.created_at at time zone 'Africa/Cairo')::date = d),
+    'visits', (select count(*) from clinic_reception.visits vi join public.report_workspaces(p_branch) w on w.workspace_id = vi.workspace_id
+                where (vi.opened_at at time zone 'Africa/Cairo')::date = d),
+    'appointments', (select count(*) from ap),
+    'no_show', (select count(*) from ap where status = 'no_show'),
+    'cancelled', (select count(*) from ap where status = 'cancelled'),
+    'leads_new', (select count(*) from public.leads l where (l.received_at at time zone 'Africa/Cairo')::date = d),
+    'leads_booked', (select count(*) from clinic_reception.attributions t join clinic_reception.appointments a on a.id = t.appointment_id
+                       join public.report_workspaces(p_branch) w on w.workspace_id = a.workspace_id
+                      where t.lead_id is not null and coalesce(a.source, '') <> 'sandbox' and (a.created_at at time zone 'Africa/Cairo')::date = d),
+    'low_stock', (select count(*) from public.inventory_alerts where alert_type = 'low_stock' and resolved_at is null),
+    'unbilled', (select jsonb_build_object('count', count(*), 'value', coalesce(sum(net), 0)) from public.report_orders(d - 29, d, p_branch) where not invoiced and not package_covered),
+    'cash_difference', (select coalesce(sum(sh.difference), 0) from clinic_reception.shifts sh join public.report_workspaces(p_branch) w on w.workspace_id = sh.workspace_id
+                         where (sh.opened_at at time zone 'Africa/Cairo')::date = d))
     into v;
   return v;
 end $$;
