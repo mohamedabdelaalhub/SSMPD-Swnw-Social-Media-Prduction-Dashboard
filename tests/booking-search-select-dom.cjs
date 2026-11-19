@@ -9,7 +9,7 @@ const services=[
  {id:'s6',code:'X1',name:'خدمة بلا قسم',department:'',price:100,minutes:10},
  {id:'s7',code:'K1',name:'كشف عام',department:'خدمات الكشف',price:150,minutes:10}];
 const providers=[{id:'p5',name:'د. كشف',department:'خدمات الكشف'},{id:'p1',name:'د. منى',department:'نساء'},{id:'p2',name:'د. هالة',department:'نساء'},{id:'p3',name:'د. أحمد',department:'أسنان'},{id:'p4',name:'د. سامي',department:'أشعة'}];
-const snap={workspace:{id:'w',mode:'trial'},patients:[{id:'pt',file_no:'1001',name:'سارة أيمن مصطفى'},{id:'pt2',file_no:'1002',name:'ساره محمد جميل'},{id:'pt3',file_no:'1003',name:'نور ياسر'}],services,providers,availability:[],appointments:[],visits:[],orders:[],packages:[],catalog_unavailable:[{kind:'services',name:'خدمة غير جاهزة'}],can_manage:true};
+const snap={workspace:{id:'w',mode:'trial'},patients:[{id:'pt',file_no:'1001',name:'سارة أيمن مصطفى',phone:'01012345678'},{id:'pt2',file_no:'1002',name:'ساره محمد جميل'},{id:'pt3',file_no:'1003',name:'نور ياسر',phone:'01199887766'}],services,providers,availability:[],appointments:[],visits:[],orders:[],packages:[],catalog_unavailable:[{kind:'services',name:'خدمة غير جاهزة'}],can_manage:true};
 const d=new JSDOM('<main id="root"></main>',{url:'https://reception.test/',runScripts:'outside-only'}),w=d.window,errors=[];
 Object.defineProperty(w,'crypto',{value:webcrypto});w.addEventListener('error',e=>errors.push(e.message));
 w.SSMPDAuth={currentAdmin:{id:'me',role:'super_admin'}};w.SSMPDRoles={canSeeTab:()=>true};
@@ -27,6 +27,7 @@ assert(pIn,'patient search box exists');assert.equal(pSel.required,false,'native
 pIn.focus();assert.equal(opts(pIn).length,3);
 type(pIn,'ساره');assert.deepEqual(opts(pIn).length,2);
 type(pIn,'1003');assert.equal(opts(pIn).length,1);
+type(pIn,'0119988');assert.equal(opts(pIn).length,1);assert(pIn.closest('.rx-combo').textContent.includes('01199887766'),'phone shown and searchable');
 type(pIn,'zzz');assert(pIn.closest('.rx-combo').textContent.includes('مفيش مريض'));
 // required: empty patient is invalid until chosen
 pIn.value='';pIn.dispatchEvent(new w.Event('input',{bubbles:true}));assert.equal(pIn.validity.valid,false);
