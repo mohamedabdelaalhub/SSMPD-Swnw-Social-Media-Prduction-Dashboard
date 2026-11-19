@@ -81,3 +81,33 @@ Common filters: date range, branch, (doctor, specialty where relevant). Every ta
 - kpi_targets has 32 rows → report 21 is closer to ready.
 - Roles: admins.role + public.admin_extra_roles (has_role()). Access rows may target role or admin.
 - Reserved: migration prefix 20261119200000, help version 20261118-54.
+
+## Relations map (from migrations + live-capture snapshot; owner decisions 2026-11-19)
+Owner decisions: tax report yes, no e-invoice link (ETA postponed) · targets for branch manager / social media / call center / reception, set by «محمد ابراهيم» (admin 7e608973…, role reception — owner to confirm) · pharmacy = an inventory store (live: substore «الادوية - تمريض») · doctor sees only patients examined/scheduled today, no money · payouts = management + financial manager only.
+
+| Report | Join path | Date · Amount · Doctor · Specialty · Branch |
+|---|---|---|
+|1 Cash closing|reception.shifts.finance_shift_id → finance.shifts → registers; finance.payments(shift_id, method); cash_cases(shift_id) = variance case|closed_at · counted/expected/difference · – · – · register→workspace|
+|2 Adjustments|finance.requests(kind refund/void) + finance.invoices.voided + journal_corrections; reception.requests(kind refund/credit_note/service_void/package_cancel/method_fix) + discount_requests(order_id, percent)|created_at · amount · via order.provider_id · – · workspace|
+|3 Revenue|orders(visit_id, service_id, provider_id, price, discount%, qty, status, completed_at) → invoices(order_id) ; providers(doctor_key, department, branch); service_specialties (live-only)|completed_at · net · provider · service_specialties/department · providers.branch|
+|4 Doctor statement|reception.journal(dimensions doctor_key/provider_id/order_id) + journal_lines account 2120; finance.doctor_payouts/desk_payouts/desk_payout_rx; doctor_agreements/doctor_contracts(fee_kind)|journal date · 2120 credit/debit · doctor_key · – · dimensions.branch|
+|Doctor day view|admins.id ← clinic_people.people.admin_id → people.doctor_key → providers.doctor_key → appointments/orders.provider_id|today only, no amounts|
+|24 Deferred revenue|packages → entitlements(quantity, used, allocated_value, recognized) + installments|as-of · allocated_value×remaining · – · service · workspace|
+|No-show/occupancy/wait|appointments(status booked/arrived/completed/cancelled/no_show, cancel_reason, starts_at) vs weekly_slots/availability/schedule_exceptions; visits.opened_at − starts_at; order_status_log (live-only)|
+|6/7/8 Claims & AR|reception.claims(entity_id, amount, paid, contractual, status) + entities; finance.insurance_claims/insurance_actions(kind correction/resubmit/contractual/credit_loss/payment), claim_followups, entity_claim_batches(+lines)|
+|9/10/11 Stock & pharmacy|inventory_movements(type issue/sale/waste/expired…, location_id, lot_id, reference_type/id); patient_supplies (= drug/supply sold to patient); inventory_items(category text, minimum_quantity); inventory_lots(expiry_date); inventory_alerts|
+|12–15 Statements|finance.accounts(kind) + account_config(parent_code); entries(business_date)/lines|
+|16 Tax|tax_types(liability_account 2141/2142/2143), tax_payments, clinic_people.tax_entries|
+|17 Assets|business_requests(kind asset/depreciation) + legacy_assets|
+|18 HR|clinic_people.attendance(scheduled vs actual), person_shifts, pay_adjustments(kind deduction), overtime_requests|
+|19/26 Leads & funnel|meta_ads_daily(spend, leads) → leads(received_at, source, patient_id) → lead_attempts (first contact = min attempt − received_at) → attributions(appointment_id, lead_id, campaign_id) → visit → invoice|
+|21 Targets|kpi_targets(role, kpi, target, weight) = role KPIs only, super_admin write|
+|23 Devices|devices(meter_kind, asset_key text) ← device_uses(order_id, minutes, meters)|
+
+### Gaps to close inside report waves (no new modules)
+1. **Branch**: reception tables have no branch_id (providers.branch is text). Add `branch_id` on clinic_reception.workspaces (live workspace → inventory_branches main) — one tiny migration in wave 1.
+2. **Targets**: new `public.report_targets(branch_id, owner_admin_id|role, metric, period, target)` + grant `targets_setter` (Mohamed Ibrahim) — wave 6.
+3. **Drug flag**: inventory_items.category is free text → use location «الادوية» + optional `is_medicine` flag later; "included in service" = issue movements, "sold to patient" = patient_supplies.
+4. **Penalties**: no penalty kind → show pay_adjustments kind=deduction with note.
+5. **Device ↔ asset**: asset_key text only → match by text; ROI partial until linked.
+6. **Specialty**: service_specialties exists live only (not in migrations) → main chat to confirm before wave 1.
