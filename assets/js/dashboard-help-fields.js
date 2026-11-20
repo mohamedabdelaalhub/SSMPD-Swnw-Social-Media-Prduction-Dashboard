@@ -12528,6 +12528,58 @@
       "reviewed": true
     },
     {
+      "title": "الطبيب",
+      "labels": [
+        "الطبيب"
+      ],
+      "text": "اختار الطبيب الذي يخصه الإجراء فعلًا. في الحجز يلزم تطابق القسم وعقد مؤهل وتواجد، وفي التنفيذ يسجل الطبيب الذي قدم الخدمة.",
+      "article": "doctor-missing",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "التاريخ (بتوقيت القاهرة)",
+      "labels": [
+        "التاريخ (بتوقيت القاهرة)"
+      ],
+      "text": "يوم الموعد الإضافي. الافتراضي النهارده.",
+      "article": "reception-overbook",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "الوقت (بتوقيت القاهرة)",
+      "labels": [
+        "الوقت (بتوقيت القاهرة)"
+      ],
+      "text": "وقت الموعد الإضافي، حتى لو الدكتور محجوز فيه. لازم يكون جوه مواعيد تواجد الدكتور في اليوم ده.",
+      "article": "reception-overbook",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "تفاصيل السبب (إجباري لو «سبب تاني»)",
+      "labels": [
+        "تفاصيل السبب (إجباري لو «سبب تاني»)"
+      ],
+      "text": "اكتب ليه الموعد اتسجل فوق الجدول. إجباري لما تختار «سبب تاني»، واختياري مع باقي الأسباب.",
+      "article": "reception-overbook",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "نوع المستند",
       "labels": [
         "نوع المستند"
@@ -12966,19 +13018,6 @@
       ],
       "text": "اختر حساب الموظف الذي تخصه المسؤولية أو الوردية أو الجرد. راجع تكليفه وصلاحيته بدل اختيار منشئ الطلب تلقائيًا.",
       "article": "inventory-count",
-      "tabs": [
-        "reception_services"
-      ],
-      "forms": [],
-      "reviewed": true
-    },
-    {
-      "title": "الطبيب",
-      "labels": [
-        "الطبيب"
-      ],
-      "text": "اختار الطبيب الذي يخصه الإجراء فعلًا. في الحجز يلزم تطابق القسم وعقد مؤهل وتواجد، وفي التنفيذ يسجل الطبيب الذي قدم الخدمة.",
-      "article": "doctor-missing",
       "tabs": [
         "reception_services"
       ],
@@ -13886,6 +13925,84 @@
       "reviewed": true
     },
     {
+      "title": "المبلغ (جنيه)",
+      "labels": [
+        "المبلغ (جنيه)"
+      ],
+      "text": "المبلغ اللي اتصرف فعلاً من فلوس الوردية. مينفعش يزيد عن حد المصروف الواحد ولا الباقي من الهامش ولا نقدية الوردية.",
+      "article": "shift-expenses",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "اشتريت من مين / المورد",
+      "labels": [
+        "اشتريت من مين / المورد"
+      ],
+      "text": "اسم المحل أو الشركة اللي اتدفعلها (اختياري) — بيساعد الحسابات في المراجعة.",
+      "article": "shift-expenses",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "مثلاً: ٢ كرتونة مناديل + صابون للحمام",
+      "labels": [
+        "مثلاً: ٢ كرتونة مناديل + صابون للحمام"
+      ],
+      "text": "اكتب اتصرف على إيه بالظبط.",
+      "article": "shift-expenses",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "السبب / التفاصيل",
+      "labels": [
+        "السبب / التفاصيل"
+      ],
+      "text": "اتصرف على إيه وليه (إجباري). بيظهر للحسابات جنب الإيصال.",
+      "article": "shift-expenses",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "📷 صورة الفاتورة أو الإيصال (إجباري)",
+      "labels": [
+        "📷 صورة الفاتورة أو الإيصال (إجباري)"
+      ],
+      "text": "صوّر الفاتورة أو الإيصال بالموبايل أو ارفع صورتها. من غيرها المصروف مش هيتسجل.",
+      "article": "shift-expenses",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "الحالة",
+      "labels": [
+        "الحالة"
+      ],
+      "text": "اختار الحالة الفعلية أو فلتر العرض حسب هذه الشاشة. تغيير الفلتر لا ينقل المستند لمرحلة جديدة، والحالة التنفيذية لها إجراء وصلاحية مستقلان.",
+      "article": "personal",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "اسم المريض أو رقم الملف أو التليفون أو الدكتور",
       "labels": [
         "اسم المريض أو رقم الملف أو التليفون أو الدكتور"
@@ -13918,19 +14035,6 @@
       ],
       "text": "اعرض حجوزات طبيب معين بس، أو كل الأطباء.",
       "article": "booking-flow",
-      "tabs": [
-        "reception_services"
-      ],
-      "forms": [],
-      "reviewed": true
-    },
-    {
-      "title": "الحالة",
-      "labels": [
-        "الحالة"
-      ],
-      "text": "اختار الحالة الفعلية أو فلتر العرض حسب هذه الشاشة. تغيير الفلتر لا ينقل المستند لمرحلة جديدة، والحالة التنفيذية لها إجراء وصلاحية مستقلان.",
-      "article": "personal",
       "tabs": [
         "reception_services"
       ],
@@ -21454,9 +21558,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1824,
-    "labels": 1339,
-    "files": 131,
-    "groups": 1446
+    "definitions": 1838,
+    "labels": 1347,
+    "files": 133,
+    "groups": 1454
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
