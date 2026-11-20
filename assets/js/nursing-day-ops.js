@@ -148,7 +148,7 @@ function mount(){var r=root();if(!r||trial())return;css();if(!r.__ndWired){r.__n
  if(!r.firstChild||!r.querySelector('.nd'))paint();
  if(!settingsTried){settingsTried=true;loadSettings();}
  refresh(true);if(!timer)timer=setInterval(function(){if(!root()){clearInterval(timer);timer=null;return;}refresh(false);},15000);}
-function isNurseUser(){var R=window.SSMPDRoles,A=window.SSMPDAuth;if(!R||!A||!A.currentAdmin||!R.hasAnyRole)return false;return R.hasAnyRole(A.currentAdmin,['nursing','head_nursing','super_admin','general_manager']);}
+function isNurseUser(){var R=window.SSMPDRoles,A=window.SSMPDAuth;if(!R||!A||!A.currentAdmin||!R.hasAnyRole)return false;return R.hasAnyRole(A.currentAdmin,['nursing','head_nursing','doctor_assistant','super_admin','general_manager']);}
 function install(){var base=window.SSMPDReceptionModules;if(!base){setTimeout(install,120);return;}if(base.__swnwNursingWrapped)return;
  var wrapped={};Object.keys(base).forEach(function(k){wrapped[k]=base[k];});
  wrapped.sections=function(c){var rows=base.sections?base.sections(c):[];var t=c&&c.data&&c.data.workspace&&c.data.workspace.mode==='trial';if(!t&&isNurseUser()&&!rows.some(function(x){return x[0]==='nursing';}))rows=rows.concat([['nursing','تشغيل اليوم — التمريض','مرضى قسمك لليوم، الفحص قبل الكشف، وتجهيز الحجز']]);return rows;};
