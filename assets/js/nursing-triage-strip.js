@@ -10,7 +10,7 @@ function tm(v){return v?new Date(v).toLocaleTimeString('ar-EG-u-nu-latn',{timeZo
 function toast(m,k){if(window.SSMPDToast&&window.SSMPDToast.show)window.SSMPDToast.show(m,k||'success');}
 function ws(){return ctx&&ctx.workspace;}
 function trial(){return !!(ctx&&ctx.data&&ctx.data.workspace&&ctx.data.workspace.mode==='trial');}
-function allowed(){var R=window.SSMPDRoles,A=window.SSMPDAuth;if(!R||!A||!A.currentAdmin||!R.hasAnyRole)return false;return R.hasAnyRole(A.currentAdmin,['sono_doctor','nursing','head_nursing','super_admin','general_manager']);}
+function allowed(){var R=window.SSMPDRoles,A=window.SSMPDAuth;if(!R||!A||!A.currentAdmin||!R.hasAnyRole)return false;return R.hasAnyRole(A.currentAdmin,['sono_doctor','nursing','head_nursing','doctor_assistant','super_admin','general_manager']);}
 function canConfirm(){var R=window.SSMPDRoles,A=window.SSMPDAuth;return !!(R&&A&&A.currentAdmin&&R.hasAnyRole(A.currentAdmin,['sono_doctor','super_admin','general_manager']));}
 function q(action,payload){return window.SSMPDDb.client.rpc('clinic_reception_nursing',{p_workspace:ws(),p_action:action,p_payload:payload||{}}).then(function(r){if(r.error)throw r.error;return r.data;});}
 function css(){if(document.getElementById('nts-style'))return;var s=document.createElement('style');s.id='nts-style';s.textContent=
