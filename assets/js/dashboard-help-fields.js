@@ -11672,6 +11672,19 @@
       "reviewed": true
     },
     {
+      "title": "الممرض/ة",
+      "labels": [
+        "الممرض/ة"
+      ],
+      "text": "الممرض أو الممرضة اللي هينفّذ الخدمة. القايمة فيها موظفين التمريض بس، والحجز بياخد وقته/وقتها فمينفعش زيارتين متداخلين.",
+      "article": "reception-booking-nurse",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "عدد الخدمة",
       "labels": [
         "عدد الخدمة"
@@ -21441,9 +21454,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1823,
-    "labels": 1338,
+    "definitions": 1824,
+    "labels": 1339,
     "files": 131,
-    "groups": 1445
+    "groups": 1446
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();

@@ -26,3 +26,16 @@
 .rbp-cont-tag{display:inline-block;padding:1px 9px;border-radius:99px;font-size:11px;background:#E6F2EC;color:#2F7D5C;vertical-align:middle}
 .rx-actions [data-rx-action="no_answer"]{color:#B4400F}
 @media(max-width:640px){.rbp-row{grid-template-columns:1fr}}
+/* «مين اللي هينفّذ؟» + nurse (home nursing phase 1) */
+.rx-modal .rbp-perf{order:4;grid-column:1/-1;display:grid;gap:8px}
+.rbp-lbl{font-size:13px}
+.rbp-seg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border:1px solid #D5DEEE;border-radius:12px;overflow:hidden}
+.rbp-seg button{border:0;border-inline-start:1px solid #D5DEEE;background:#fff;padding:10px 6px;font:inherit;font-size:13px;cursor:pointer;color:#16212E;min-height:44px}
+.rbp-seg button:first-child{border-inline-start:0}
+.rbp-seg button[aria-checked="true"]{background:#0F369D;color:#fff;font-weight:700}
+.rbp-seg button:focus-visible{outline:2px solid #F15A22;outline-offset:-2px}
+.rbp-nurse{display:grid;gap:6px}
+.rbp-nurse-tag{display:inline-block;padding:1px 9px;border-radius:99px;font-size:11px;background:#EEF3FF;color:#0F369D;vertical-align:middle}
+@media(max-width:640px){.rbp-seg{grid-template-columns:1fr}.rbp-seg button{border-inline-start:0;border-top:1px solid #D5DEEE}.rbp-seg button:first-child{border-top:0}}
+.rbp-cont-sw>span{min-width:0;line-height:1.6}
+.rbp-cont-sw small{display:block;font-weight:400}
