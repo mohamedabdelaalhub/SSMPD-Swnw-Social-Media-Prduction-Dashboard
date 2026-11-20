@@ -1,7 +1,7 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1817,
+    "definitions": 1818,
     "labels": 1335,
     "files": 129,
     "groups": 1442
@@ -16636,6 +16636,26 @@
     },
     {
       "file": "render-reports.js",
+      "label": "اليوم",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reports",
+      "article": "personal",
+      "text_sha256": "5124563f386757810c60ae86fc95904a13532f1a872fcd3579613f304338e13d"
+    },
+    {
+      "file": "render-reports.js",
+      "label": "الدكتور",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reports",
+      "article": "reports-center",
+      "text_sha256": "7bd2bc8c64090481b8262828f95efa6892481f92cc41c0574ed5d13ef83042ae"
+    },
+    {
+      "file": "render-reports.js",
       "label": "من",
       "name": "",
       "kind": "html",
@@ -16673,16 +16693,6 @@
       "tab": "reports",
       "article": "content",
       "text_sha256": "8781afaef1012c14a5b9f99b05513e1852e02bb6c191b2fc0b339518d671a4a9"
-    },
-    {
-      "file": "render-reports.js",
-      "label": "الدكتور",
-      "name": "",
-      "kind": "html",
-      "forms": [],
-      "tab": "reports",
-      "article": "reports-center",
-      "text_sha256": "7bd2bc8c64090481b8262828f95efa6892481f92cc41c0574ed5d13ef83042ae"
     },
     {
       "file": "render-reports.js",
