@@ -26,6 +26,17 @@ function normalizePhone(raw: string): string {
   return s;
 }
 
+// Names pasted from WhatsApp / typed on some Arabic keyboards carry invisible marks (RLM/LRM, ZWNJ/ZWJ, bidi embeds,
+// BOM), tatweel and harakat. The database guard (psychcare.check_basics) only accepts letters, spaces, «.» and «-», so
+// such a name was refused as «اسم المريض مطلوب من كلمتين على الأقل» although it has two words. Clean it first.
+function cleanName(raw: string): string {
+  return raw
+    .replace(/[\u200B-\u200F\u202A-\u202E\u2066-\u2069\uFEFF\u061C\u0640]/g, "")
+    .replace(/[\u064B-\u065F\u0670]/g, "")
+    .replace(/[\s\u00A0]+/g, " ")
+    .trim();
+}
+
 async function hashNationalId(id: string): Promise<string> {
   const enc = new TextEncoder();
   const data = enc.encode(id + PEPPER);
@@ -63,7 +74,7 @@ Deno.serve(async (req) => {
   let body: any;
   try { body = await req.json(); } catch { return json({ error: "بيانات غير صالحة" }, 400); }
 
-  const fullName = (body.full_name ?? "").toString().trim();
+  const fullName = cleanName((body.full_name ?? "").toString());
   const phoneRaw = (body.phone ?? "").toString().trim();
   const email = (body.email ?? "").toString().trim().toLowerCase() || null;
   const nationalId = (body.national_id ?? "").toString().trim();
