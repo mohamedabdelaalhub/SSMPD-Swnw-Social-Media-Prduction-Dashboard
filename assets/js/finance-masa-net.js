@@ -98,11 +98,11 @@
   document.addEventListener('keydown',function(e){if(e.key!=='Enter'&&e.key!==' ')return;var r=e.target.closest&&e.target.closest('tr[data-mn-month]');if(r){e.preventDefault();drill(box(),r.dataset.mnMonth);}});
   document.addEventListener('change',function(e){var b=box();if(!b||!b.contains(e.target))return;if(e.target.matches('[data-mn-from],[data-mn-to]')){var f=b.querySelector('[data-mn-from]').value,t=b.querySelector('[data-mn-to]').value;if(f&&t&&f<=t){state.from=f;state.to=t;state.preset='';state.month='';load(b);}}});
   function drill(b,m){var y=+m.slice(0,4),mo=+m.slice(5,7),last=new Date(Date.UTC(y,mo,0)).getUTCDate();state.month=m;state.group='day';state.from=m+'-01';state.to=m+'-'+pad(last);state.preset='';load(b);}
-  function panel(tab,d,h){var p=prior.panel(tab,d,h);if(tab!=='masa-payments')return p;
+  function panel(tab,d,h){if(tab==='masa-net'){state.view='net';tab='masa-payments';}var p=prior.panel(tab,d,h);if(tab!=='masa-payments')return p;
     return '<div class="mn-switch" role="tablist"><button type="button" class="btn'+(state.view==='pay'?' on':'')+'" role="tab" data-mn-view="pay">دفعات التحصيل</button><button type="button" class="btn'+(state.view==='net'?' on':'')+'" role="tab" data-mn-view="net">تقرير الصافي</button></div>'+
       '<div data-mn-pane="pay"'+(state.view==='pay'?'':' hidden')+'>'+p+'</div><div data-mn-pane="net"'+(state.view==='net'?'':' hidden')+'><div class="mn" data-masa-net><p class="mn-sub">جاري التحميل…</p></div></div>';}
   function autoload(){var b=box();if(b&&state.view==='net'&&!b.hasAttribute('data-ready')){b.setAttribute('data-ready','');load(b);}}
-  var panelOrig=panel;panel=function(tab,d,h){var r=panelOrig(tab,d,h);if(tab==='masa-payments')setTimeout(autoload,0);return r;};
+  var panelOrig=panel;panel=function(tab,d,h){var r=panelOrig(tab,d,h);if(tab==='masa-payments'||tab==='masa-net')setTimeout(autoload,0);return r;};
   window.SSMPDFinanceControls={panel:panel,act:prior.act,due:prior.due,ledger:prior.ledger};
   window.SSMPDMasaNet={load:load,state:state};
 })();
