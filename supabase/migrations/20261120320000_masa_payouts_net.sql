@@ -7,8 +7,10 @@
 --       is is_deleted = true. The expense account is the DEBIT line; the credit line is the safe.
 --   * clinic_finance.masa_account_kinds: finance classifies each Masa account name as operating | advance | partner_draw | transfer | ignore.
 --       Default when not classified: names starting «جارى/جاري شريك» = partner_draw, names starting «خزين/الخزين» = transfer (money moved
---       between safes, not spent), names containing «سلف» = advance, everything else = operating.
---   * public.clinic_finance_masa_net('report'|'classify'): income (copied receipts) minus payouts by kind, per month or day.
+--       between safes, not spent), names containing «سلف» = advance, everything else = 'unclassified' until finance sets it (counted in both
+--       nets as an expense, and listed in the report's unclassified_accounts so finance can classify it).
+--   * public.clinic_finance_masa_net('report'|'classify'): income (copied receipts) minus payouts by kind, per month or day. Optional p.source
+--       'old' | 'current' (null = all) filters both receipts (old ids carry the 'old:' prefix) and payouts.
 --       net_cash   = income - everything paid out except transfers/ignored.
 --       net_operating = income - operating expenses only (partner draws, advances and transfers excluded).
 -- Finance only (clinic_finance.allowed('view') to read, 'update' to classify). Rollback in supabase/rollbacks.
@@ -56,7 +58,7 @@ create function clinic_finance.masa_account_kind(p_name text) returns text langu
     case when coalesce(p_name, '') ~ '^جار[يى] +شريك' then 'partner_draw'
          when coalesce(p_name, '') ~ '^(ال)?خزين' then 'transfer'
          when coalesce(p_name, '') like '%سلف%' then 'advance'
-         else 'operating' end)
+         else 'unclassified' end)
 $$;
 
 create function clinic_finance.masa_payouts_import(p jsonb) returns jsonb
@@ -118,7 +120,7 @@ end $$;
 
 create function public.clinic_finance_masa_net(p_action text, p jsonb default '{}') returns jsonb
 language plpgsql security definer set search_path = pg_catalog, public as $$
-declare f date; t date; grp text; res jsonb; me uuid;
+declare f date; t date; grp text; res jsonb; me uuid; src text;
 begin
   if p_action = 'report' then
     if not clinic_finance.allowed('view') then raise exception 'تقرير صافي ماسا للمالية بس' using errcode = '42501'; end if;
@@ -126,16 +128,18 @@ begin
     f := coalesce(nullif(p->>'from', '')::date, date_trunc('month', t)::date);
     if t < f or t - f > 1100 then raise exception 'اختر فترة حتى ٣ سنين'; end if;
     grp := case when p->>'group_by' = 'day' then 'day' else 'month' end;
+    src := nullif(p->>'source', '');
+    if src is not null and src not in ('old', 'current') then raise exception 'المصدر old أو current'; end if;
     with inc as (
       select r.day, sum(l.amount) as amt from clinic_finance.masa_receipts r join clinic_finance.masa_receipt_lines l using (masa_receipt_id)
-      where r.day between f and t and not r.is_deleted group by r.day),
+      where r.day between f and t and not r.is_deleted and (src is null or (src = 'old') = (r.masa_receipt_id like 'old:%')) group by r.day),
     ex as (
-      select p2.day, a.debit as amt, clinic_finance.masa_account_kind(a.account_name) as kind, a.account_name
+      select p2.day, a.debit as amt, clinic_finance.masa_account_kind(a.account_name) as kind, a.account_name, a.account_code
       from clinic_finance.masa_payouts p2 join clinic_finance.masa_payout_accounts a on a.masa_payout_id = p2.masa_payout_id and a.debit > 0
-      where p2.day between f and t and not p2.is_deleted
+      where p2.day between f and t and not p2.is_deleted and (src is null or p2.source = case when src = 'old' then 'old' else 'masa' end)
       union all
-      select p2.day, p2.total, 'unclassified', null from clinic_finance.masa_payouts p2
-      where p2.day between f and t and not p2.is_deleted and p2.total > 0
+      select p2.day, p2.total, 'unclassified', null, null from clinic_finance.masa_payouts p2
+      where p2.day between f and t and not p2.is_deleted and p2.total > 0 and (src is null or p2.source = case when src = 'old' then 'old' else 'masa' end)
         and not exists (select 1 from clinic_finance.masa_payout_accounts a where a.masa_payout_id = p2.masa_payout_id and a.debit > 0)),
     bydate as (
       select to_char(d.day, case when grp = 'day' then 'YYYY-MM-DD' else 'YYYY-MM' end) as period,
@@ -149,7 +153,7 @@ begin
         sum(amt) filter (where kind = 'ignore') as ignored, sum(amt) filter (where kind = 'unclassified') as unclassified
       from ex group by 1),
     periods as (select period from income_p union select period from exp_p)
-    select jsonb_build_object('from', f, 'to', t, 'group_by', grp,
+    select jsonb_build_object('from', f, 'to', t, 'group_by', grp, 'source', src,
       'synced_at', (select max(synced_at) from clinic_finance.masa_payouts),
       'totals', (select jsonb_build_object(
           'income', coalesce((select sum(amt) from inc), 0),
@@ -167,6 +171,9 @@ begin
           'net_cash', coalesce(ip.income, 0) - coalesce(ep.operating, 0) - coalesce(ep.unclassified, 0) - coalesce(ep.advance, 0) - coalesce(ep.partner_draw, 0),
           'net_operating', coalesce(ip.income, 0) - coalesce(ep.operating, 0) - coalesce(ep.unclassified, 0)) order by pr.period)
         from periods pr left join income_p ip on ip.period = pr.period left join exp_p ep on ep.period = pr.period), '[]'),
+      'unclassified_accounts', coalesce((select jsonb_agg(jsonb_build_object('account', account_name, 'code', account_code, 'amount', a, 'payouts', n) order by a desc)
+        from (select account_name, max(account_code) account_code, sum(amt) a, count(*) n from ex where kind = 'unclassified' and account_name is not null
+              group by account_name order by sum(amt) desc limit 200) q), '[]'),
       'top_accounts', coalesce((select jsonb_agg(jsonb_build_object('account', account_name, 'kind', kind, 'amount', a, 'payouts', n) order by a desc)
         from (select account_name, kind, sum(amt) a, count(*) n from ex where account_name is not null group by account_name, kind order by sum(amt) desc limit 60) q), '[]')
     ) into res;
