@@ -9,7 +9,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SYNC_SECRET = Deno.env.get("BOOKING_SYNC_SECRET");
 const OPS = new Set(["health", "slots", "book", "cancel", "status", "pending_replay", "replay_result",
-  "reconcile_list", "masa_import", "reconcile_flag", "masa_schedule", "queue_board", "my_turn", "checkin_link"]);
+  "reconcile_list", "masa_import", "reconcile_flag", "masa_schedule", "queue_board", "my_turn", "checkin_link", "masa_payments_import"]);
 
 function getServiceRoleKey(): string | null {
   const raw = Deno.env.get("SUPABASE_SECRET_KEYS");

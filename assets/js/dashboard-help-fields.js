@@ -6520,6 +6520,20 @@
       "reviewed": true
     },
     {
+      "title": "الطريقة",
+      "labels": [
+        "الطريقة"
+      ],
+      "text": "اختار طريقة الدفع اللي عايز تشوف إيصالاتها: نقدي، أو فيزا، أو المحافظ (انستا باي وفودافون كاش). «الكل» بيعرض كل الطرق.",
+      "article": "masa-payments",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "القرار",
       "labels": [
         "القرار"
@@ -21401,9 +21415,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1818,
-    "labels": 1335,
-    "files": 129,
-    "groups": 1442
+    "definitions": 1821,
+    "labels": 1336,
+    "files": 130,
+    "groups": 1443
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
