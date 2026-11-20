@@ -12528,6 +12528,58 @@
       "reviewed": true
     },
     {
+      "title": "الطبيب",
+      "labels": [
+        "الطبيب"
+      ],
+      "text": "اختار الطبيب الذي يخصه الإجراء فعلًا. في الحجز يلزم تطابق القسم وعقد مؤهل وتواجد، وفي التنفيذ يسجل الطبيب الذي قدم الخدمة.",
+      "article": "doctor-missing",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "التاريخ (بتوقيت القاهرة)",
+      "labels": [
+        "التاريخ (بتوقيت القاهرة)"
+      ],
+      "text": "يوم الموعد الإضافي. الافتراضي النهارده.",
+      "article": "reception-overbook",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "الوقت (بتوقيت القاهرة)",
+      "labels": [
+        "الوقت (بتوقيت القاهرة)"
+      ],
+      "text": "وقت الموعد الإضافي، حتى لو الدكتور محجوز فيه. لازم يكون جوه مواعيد تواجد الدكتور في اليوم ده.",
+      "article": "reception-overbook",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "تفاصيل السبب (إجباري لو «سبب تاني»)",
+      "labels": [
+        "تفاصيل السبب (إجباري لو «سبب تاني»)"
+      ],
+      "text": "اكتب ليه الموعد اتسجل فوق الجدول. إجباري لما تختار «سبب تاني»، واختياري مع باقي الأسباب.",
+      "article": "reception-overbook",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "نوع المستند",
       "labels": [
         "نوع المستند"
@@ -12966,19 +13018,6 @@
       ],
       "text": "اختر حساب الموظف الذي تخصه المسؤولية أو الوردية أو الجرد. راجع تكليفه وصلاحيته بدل اختيار منشئ الطلب تلقائيًا.",
       "article": "inventory-count",
-      "tabs": [
-        "reception_services"
-      ],
-      "forms": [],
-      "reviewed": true
-    },
-    {
-      "title": "الطبيب",
-      "labels": [
-        "الطبيب"
-      ],
-      "text": "اختار الطبيب الذي يخصه الإجراء فعلًا. في الحجز يلزم تطابق القسم وعقد مؤهل وتواجد، وفي التنفيذ يسجل الطبيب الذي قدم الخدمة.",
-      "article": "doctor-missing",
       "tabs": [
         "reception_services"
       ],
@@ -21519,9 +21558,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1832,
-    "labels": 1344,
-    "files": 132,
-    "groups": 1451
+    "definitions": 1838,
+    "labels": 1347,
+    "files": 133,
+    "groups": 1454
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
