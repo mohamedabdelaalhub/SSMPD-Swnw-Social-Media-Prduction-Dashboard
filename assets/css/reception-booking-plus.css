@@ -1,0 +1,28 @@
+/* «العدد» / «جلسة استكمال» / «لم يرد» — reception-booking-plus.js */
+.rbp-row{display:grid;grid-template-columns:1fr 132px;gap:12px;align-items:end}
+.rbp-row>.rx-combo-field{min-width:0}
+.rx-modal .rbp-row{order:3;grid-column:1/-1}
+.rx-modal .rbp-row>.rx-c-svc{order:0;grid-column:auto}
+.rx-modal .rbp-total{order:3;grid-column:1/-1;color:#0F369D}
+.rx-modal .rbp-cont{order:4;grid-column:1/-1}
+.rbp-qty label{display:block;margin-bottom:6px}
+.rbp-step{display:grid;grid-template-columns:38px 1fr 38px;border:1px solid #D5DEEE;border-radius:12px;overflow:hidden;align-items:stretch;background:#fff}
+.rbp-step button{border:0;background:#F2F4F7;color:#0F369D;font-size:18px;font-weight:700;cursor:pointer;min-height:44px}
+.rbp-step button:focus-visible,.rbp-pick button:focus-visible{outline:2px solid #0F369D;outline-offset:-2px}
+.rbp-step input{border:0;text-align:center;font-weight:700;font-size:16px;width:100%;min-width:0;-moz-appearance:textfield;background:transparent}
+.rbp-step input::-webkit-inner-spin-button,.rbp-step input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.rbp-total{display:flex;justify-content:space-between;gap:8px;background:#EEF3FF;border-radius:12px;padding:10px 14px;margin:0;font-size:13px;color:#0F369D}
+.rbp-total b{font-size:15px}
+.rbp-cont{display:grid;gap:8px}
+.rbp-pick{display:grid;gap:6px}
+.rbp-pick button{display:flex;gap:8px;align-items:center;text-align:start;background:#fff;border:1px solid #D5DEEE;border-radius:10px;padding:8px 10px;font:inherit;font-size:12px;cursor:pointer;color:#16212E}
+.rbp-pick button i{width:14px;height:14px;border-radius:50%;border:2px solid #9DB2E8;flex:none}
+.rbp-pick button[aria-pressed="true"]{border-color:#0F369D;box-shadow:inset 0 0 0 1px #0F369D}
+.rbp-pick button[aria-pressed="true"] i{border:4px solid #0F369D}
+.rbp-hint{font-size:12px;color:#3B4658;margin:0}
+.rbp-warn{font-size:12px;color:#8A5A00;background:#FFF6E5;border-radius:10px;padding:8px 12px;margin:0;line-height:1.7}
+.rbp-na{display:inline-block;padding:2px 10px;border-radius:99px;font-size:12px;font-weight:700;background:#FFE9DE;color:#B4400F;vertical-align:middle}
+.rbp-x{font-weight:700}
+.rbp-cont-tag{display:inline-block;padding:1px 9px;border-radius:99px;font-size:11px;background:#E6F2EC;color:#2F7D5C;vertical-align:middle}
+.rx-actions [data-rx-action="no_answer"]{color:#B4400F}
+@media(max-width:640px){.rbp-row{grid-template-columns:1fr}}

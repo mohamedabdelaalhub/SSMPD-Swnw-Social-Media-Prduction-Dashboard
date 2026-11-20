@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1821,
-    "labels": 1336,
-    "files": 130,
-    "groups": 1443
+    "definitions": 1823,
+    "labels": 1338,
+    "files": 131,
+    "groups": 1445
   },
   "fields": [
     {
@@ -10112,6 +10112,26 @@
       "tab": "reception_services",
       "article": "patient-records",
       "text_sha256": "b6b7ef3304940f5231c6281a0431f4e3513369f3f55fbf8bc0e9499a249a0bbd"
+    },
+    {
+      "file": "reception-booking-plus.js",
+      "label": "عدد الخدمة",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-booking-qty",
+      "text_sha256": "ee26f62a24e327bb4f70de834d2ff05c063e219b6e14d7e8989a7a2e96866e3a"
+    },
+    {
+      "file": "reception-booking-plus.js",
+      "label": "جلسة استكمال لعلاج اتعمل قبل كده (بتحجز وقت الدكتور من غير فاتورة جديدة — الخدمة اتحاسب عليها في الجلسة الأولى)",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-booking-qty",
+      "text_sha256": "fd4ba14f6bd3dddd9d47a04b273087869ccc3d58e43fa70240f311fc24b4bf74"
     },
     {
       "file": "reception-bridge.js",
