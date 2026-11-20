@@ -11214,6 +11214,85 @@
       "reviewed": true
     },
     {
+      "title": "القسم",
+      "labels": [
+        "القسم",
+        "التخصص"
+      ],
+      "text": "اختار التخصص أو القسم الذي تخصه الخدمة أو المادة أو التقرير. في الفلترة يغيّر العرض فقط، وفي الحجز يؤثر على ترشيح الطبيب المطابق للقسم.",
+      "article": "content",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "ضغط الدم",
+      "labels": [
+        "ضغط الدم"
+      ],
+      "text": "سجل قراءة ضغط الدم التي قاسها المختص كما هي بوحدة النموذج، مع الانقباضي والانبساطي عند طلبهما. لا تدخل قراءة تقديرية أو قيمة لتجاوز الحقل.",
+      "article": "patient-records",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "ملاحظات التمريض",
+      "labels": [
+        "ملاحظات التمريض"
+      ],
+      "text": "ملاحظة حرة من التمريض للدكتور عن حالة المريض النهارده (مثلاً دواء أخده الصبح أو شكوى جانبية). بتظهر في شريط الفحص قبل الكشف.",
+      "article": "nursing-triage",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "لو أخرى، اكتب هنا",
+      "labels": [
+        "لو أخرى، اكتب هنا"
+      ],
+      "text": "لو المرض المزمن مش من الأزرار (سكر، ضغط، قلب، ربو، غدة) اكتب اسمه هنا. الدكتور هو اللي يقرر لاحقًا يضيفه للملف الطبي أو لا.",
+      "article": "nursing-triage",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "حساسية",
+      "labels": [
+        "حساسية"
+      ],
+      "text": "اكتب أي حساسية يقولها المريض (دواء أو أكل أو مادة). بتظهر للدكتور بلون أحمر. سيبها فاضية لو مفيش.",
+      "article": "nursing-triage",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "الشكوى الرئيسية",
+      "labels": [
+        "الشكوى الرئيسية"
+      ],
+      "text": "اكتب بكلام المريض سبب الزيارة النهارده. بتظهر للدكتور بين علامتي تنصيص في شريط الفحص قبل الكشف.",
+      "article": "nursing-triage",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "اكتب المعلومة، ولا تفترض سببًا غير مؤكد.",
       "labels": [
         "اكتب المعلومة، ولا تفترض سببًا غير مؤكد."
@@ -18222,19 +18301,6 @@
       "reviewed": true
     },
     {
-      "title": "التخصص",
-      "labels": [
-        "التخصص"
-      ],
-      "text": "اختار التخصص أو القسم الذي تخصه الخدمة أو المادة أو التقرير. في الفلترة يغيّر العرض فقط، وفي الحجز يؤثر على ترشيح الطبيب المطابق للقسم.",
-      "article": "content",
-      "tabs": [
-        "production"
-      ],
-      "forms": [],
-      "reviewed": true
-    },
-    {
       "title": "اكتب الفكرة والنص...",
       "labels": [
         "اكتب الفكرة والنص...",
@@ -21558,9 +21624,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1838,
-    "labels": 1347,
-    "files": 133,
-    "groups": 1454
+    "definitions": 1844,
+    "labels": 1351,
+    "files": 134,
+    "groups": 1459
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();

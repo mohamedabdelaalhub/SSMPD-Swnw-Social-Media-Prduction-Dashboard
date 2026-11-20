@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1838,
-    "labels": 1347,
-    "files": 133,
-    "groups": 1454
+    "definitions": 1844,
+    "labels": 1351,
+    "files": 134,
+    "groups": 1459
   },
   "fields": [
     {
@@ -9760,6 +9760,66 @@
       "tab": "home",
       "article": "personal",
       "text_sha256": "cb369dfe4f4d347611d73d597b06cf662eed732794d5ab3c69f3490bdb9b7602"
+    },
+    {
+      "file": "nursing-day-ops.js",
+      "label": "القسم",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "production",
+      "article": "content",
+      "text_sha256": "8781afaef1012c14a5b9f99b05513e1852e02bb6c191b2fc0b339518d671a4a9"
+    },
+    {
+      "file": "nursing-day-ops.js",
+      "label": "ضغط الدم",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "patient-records",
+      "text_sha256": "0fbb82c4d121167a30c556660ad80ab4ad5e0f27a66f4d6ee6ceba496e8290a5"
+    },
+    {
+      "file": "nursing-day-ops.js",
+      "label": "ملاحظات التمريض",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "production",
+      "article": "nursing-triage",
+      "text_sha256": "2f5484611e5f45f0aa08e0184477b8ff327dda450bff9535c2147af8ba43dbd7"
+    },
+    {
+      "file": "nursing-day-ops.js",
+      "label": "لو أخرى، اكتب هنا",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "nursing-triage",
+      "text_sha256": "87520ff18cb9891a44ac389aa4b4a43a8d66263e0a9b54ebbeb051a41a52c3b3"
+    },
+    {
+      "file": "nursing-day-ops.js",
+      "label": "حساسية",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "nursing-triage",
+      "text_sha256": "f002d99f7e2bc62cb1b740e1d4f7c8e56d2312b3e15f8fd2e4156b8e7fddfef4"
+    },
+    {
+      "file": "nursing-day-ops.js",
+      "label": "الشكوى الرئيسية",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "production",
+      "article": "nursing-triage",
+      "text_sha256": "4e478ffd5542800f0b62bc21cc9c46fb1297efdb58b2c7f069d70643ede38950"
     },
     {
       "file": "patient360.js",

@@ -112,7 +112,7 @@ function togglePrep(box){var a=appt(box.dataset.id);if(!a)return;var item=box.da
 /* ---------------- open patient file */
 function goPatient(pid){var nav=document.querySelector('[data-goto="patients"]');if(nav)nav.click();var R=window.SSMPDRenderPatients;if(R&&R.openPatientById)setTimeout(function(){R.openPatientById(pid);},nav?60:0);}
 function openFile(id){var a=appt(id);if(!a||!a.archive_patient_id){toast('الملف مش مربوط بالأرشيف','error');return;}if(busy)return;busy=true;
- q('open_file',{patient_id:a.archive_patient_id,appointment_id:a.id}).then(function(){closeModal();goPatient(a.archive_patient_id);}).catch(function(e){toast((e&&e.message)||'تعذر فتح الملف','error');}).then(function(){busy=false;});}
+ q('open_file',{patient_id:a.archive_patient_id,appointment_id:a.id}).then(function(){window.__SWNWNursingOpenLogged=String(a.archive_patient_id);closeModal();goPatient(a.archive_patient_id);}).catch(function(e){toast((e&&e.message)||'تعذر فتح الملف','error');}).then(function(){busy=false;});}
 /* ---------------- notifications */
 function openNote(b){var id=b.dataset.id,aid=b.dataset.appt;q('notifications_read',{ids:[id]}).catch(function(){}).then(function(){if(notes){(notes.items||[]).forEach(function(n){if(n.id===id&&!n.read){n.read=true;notes.unread=Math.max(0,(notes.unread||1)-1);}});}paint();});
  var title=((notes&&notes.items)||[]).filter(function(n){return n.id===id;})[0];openDetails(aid,title&&title.title);}
