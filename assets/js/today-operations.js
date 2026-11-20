@@ -227,7 +227,9 @@ function accountModal(c,id){
 }
 function findAppointment(id){return ((state.data||{}).appointments||[]).find(function(a){return a.id===id;});}
 function refresh(c){return load(c,true);}
-function run(c,name,payload,key){var request=c.sandbox?window.SWNJourneySandbox.command(state.sandbox,name,payload,key):rpc('clinic_reception_journey_command',{p_workspace:c.workspace,p_action:name,p_payload:payload||{},p_token:key||token()});return request.then(function(r){return Promise.resolve(refresh(c)).then(function(){return r;});});}
+function run(c,name,payload,key){var request=c.sandbox?window.SWNJourneySandbox.command(state.sandbox,name,payload,key):rpc('clinic_reception_journey_command',{p_workspace:c.workspace,p_action:name,p_payload:payload||{},p_token:key||token()});return request.then(function(r){return Promise.resolve(refresh(c)).then(function(){return r;});},function(e){toast(errText(e),'error');e.toasted=true;throw e;});}
+function errText(e){var m=String((e&&e.message)||'');if(/permission|42501|صلاحية/i.test(m)&&!/[\u0600-\u06FF]/.test(m))return 'ليس لديك صلاحية هذا الإجراء';return m&&/[\u0600-\u06FF]/.test(m)?m:'تعذر تنفيذ الإجراء، حاول مرة أخرى';}
+function quiet(p){return Promise.resolve(p).catch(function(){});}
 function simpleConfirm(c,title,text,actionName,appointmentId,payload){c.modal(title,'<p>'+esc(text)+'</p>',function(){return run(c,actionName,Object.assign({appointment_id:appointmentId},payload||{}));});}
 function infoModal(c,title,html){var m=c.modal(title,html,function(){return Promise.resolve();});m.querySelector('[type="submit"]').hidden=true;m.querySelector('[data-rx-cancel]').textContent='إغلاق';return m;}
 function loadQrLib(){return new Promise(function(resolve,reject){if(window.QRCode){resolve();return;}var s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';s.onload=resolve;s.onerror=function(){reject(Error('تعذر تحميل مولد QR'));};document.head.appendChild(s);});}
@@ -267,11 +269,11 @@ function handle(name,id,c){
   if(name==='qr'){run(c,'checkin_token',{appointment_id:id}).then(function(r){showQr(c,'QR خاص بالحجز',checkinUrl(r.token),'هذا الكود خاص بهذا الحجز ويعمل خلال الفترة المحددة.');});return;}
   if(name.indexOf('doctor_')===0){doctorStatus(c,id,name.replace('doctor_',''));return;}
   if(name==='arrive'){simpleConfirm(c,'تسجيل وصول المريض','سيتم فتح الزيارة ووضع المريض في قائمة الانتظار.','arrive',id,{method:'reception'});return;}
-  if(name==='on_the_way'){run(c,'on_the_way',{appointment_id:id});return;}
-  if(name==='call'){run(c,'call',{appointment_id:id});return;}
-  if(name==='consultation_start'){run(c,'consultation_start',{appointment_id:id});return;}
-  if(name==='hold'){run(c,'hold',{appointment_id:id});return;}
-  if(name==='resume'){run(c,'resume',{appointment_id:id});return;}
+  if(name==='on_the_way'){quiet(run(c,'on_the_way',{appointment_id:id}));return;}
+  if(name==='call'){quiet(run(c,'call',{appointment_id:id}));return;}
+  if(name==='consultation_start'){quiet(run(c,'consultation_start',{appointment_id:id}));return;}
+  if(name==='hold'){quiet(run(c,'hold',{appointment_id:id}));return;}
+  if(name==='resume'){quiet(run(c,'resume',{appointment_id:id}));return;}
   if(name==='visit_complete'){c.modal('إنهاء الزيارة','<p>يلزم تنفيذ أو إلغاء كل الخدمات المفتوحة قبل إغلاق الزيارة.</p>'+c.field('reason','ملاحظة إن وجدت','text','',' '),function(v){return run(c,'visit_complete',{appointment_id:id,reason:v.reason});});return;}
   if(name==='no_show'){c.modal('تسجيل عدم الحضور',c.field('reason','السبب','text','لم يحضر المريض','required'),function(v){return run(c,'no_show',{appointment_id:id,reason:v.reason});});return;}
   if(name==='cancel'){c.modal('إلغاء الحجز',c.field('reason','السبب','text','','required'),function(v){return run(c,'cancel',{appointment_id:id,reason:v.reason});});return;}

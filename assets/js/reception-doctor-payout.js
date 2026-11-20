@@ -32,7 +32,7 @@
     if (s === "approved") return '<button type="button" class="dp-pill is-due" data-dp-open>سلّم الحساب</button>';
     if (s === "paid") return '<button type="button" class="dp-pill is-paid" data-dp-open>✓ تم الصرف</button>';
     if (s === "partial") return '<button type="button" class="dp-pill is-due" data-dp-open>صرف جزئي</button>';
-    if (s === "ready" && finished) return '<button type="button" class="dp-pill is-due" data-dp-open>صرف الحساب</button>';
+    if (s === "ready") return '<button type="button" class="dp-pill is-due" data-dp-open>صرف الحساب</button>';
     return "";
   }
   function board(ws, day, force) {
