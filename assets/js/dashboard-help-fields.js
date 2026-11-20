@@ -11672,6 +11672,32 @@
       "reviewed": true
     },
     {
+      "title": "عدد الخدمة",
+      "labels": [
+        "عدد الخدمة"
+      ],
+      "text": "عدد مرات الخدمة في الحجز ده (مثلاً ٣ طرابيش). بيوصل للفاتورة لما المريض يحضر: السعر × العدد. من ١ لـ ٩٩.",
+      "article": "reception-booking-qty",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "جلسة استكمال لعلاج اتعمل قبل كده (بتحجز وقت الدكتور من غير فاتورة جديدة — الخدمة اتحاسب عليها في الجلسة الأولى)",
+      "labels": [
+        "جلسة استكمال لعلاج اتعمل قبل كده (بتحجز وقت الدكتور من غير فاتورة جديدة — الخدمة اتحاسب عليها في الجلسة الأولى)"
+      ],
+      "text": "فعّلها لما المريض جاي يكمّل علاج اتحاسب عليه قبل كده (زي حشو بياخد جلستين). هيظهر جلساته السابقة للخدمة دي في آخر ٦ شهور، تختار منها، والجلسة بتتسجل بصفر جنيه مربوطة بالأولى.",
+      "article": "reception-booking-qty",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "معرف الملف المختار",
       "labels": [
         "معرف الملف المختار"
@@ -21415,9 +21441,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1821,
-    "labels": 1336,
-    "files": 130,
-    "groups": 1443
+    "definitions": 1823,
+    "labels": 1338,
+    "files": 131,
+    "groups": 1445
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
