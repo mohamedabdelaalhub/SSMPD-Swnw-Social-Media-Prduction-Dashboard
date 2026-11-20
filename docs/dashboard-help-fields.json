@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1824,
-    "labels": 1339,
-    "files": 131,
-    "groups": 1446
+    "definitions": 1832,
+    "labels": 1344,
+    "files": 132,
+    "groups": 1451
   },
   "fields": [
     {
@@ -12234,6 +12234,86 @@
       "tab": "reception_services",
       "article": "personal",
       "text_sha256": "5124563f386757810c60ae86fc95904a13532f1a872fcd3579613f304338e13d"
+    },
+    {
+      "file": "reception-shift-expenses.js",
+      "label": "المبلغ (جنيه)",
+      "name": "amount",
+      "kind": "helper",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "shift-expenses",
+      "text_sha256": "cda7127c1028f16aaef682928bf2f1aaac7d2b5eb7f6cd4079bb6e292543e4a4"
+    },
+    {
+      "file": "reception-shift-expenses.js",
+      "label": "اشتريت من مين / المورد",
+      "name": "vendor",
+      "kind": "helper",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "shift-expenses",
+      "text_sha256": "defc501aa6199f0207c1cfe6a57f954967d008e80b38bdb6cc5a7bed14dcb8af"
+    },
+    {
+      "file": "reception-shift-expenses.js",
+      "label": "مثلاً: ٢ كرتونة مناديل + صابون للحمام",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "shift-expenses",
+      "text_sha256": "49525cbd257c703e3ed9437abd1d8a3047164092bcd67666bd6101820dd2d8f0"
+    },
+    {
+      "file": "reception-shift-expenses.js",
+      "label": "السبب / التفاصيل",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "shift-expenses",
+      "text_sha256": "a394750a13ca14ec9f56b12d6941bc7216639c12c2b6be6b90ab87d2a19a7649"
+    },
+    {
+      "file": "reception-shift-expenses.js",
+      "label": "📷 صورة الفاتورة أو الإيصال (إجباري)",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "shift-expenses",
+      "text_sha256": "68fe6145c8bf3c6e9bac078fcea890fe558fb9a7aa4e5f91677384b668af04ca"
+    },
+    {
+      "file": "reception-shift-expenses.js",
+      "label": "من",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "personal",
+      "text_sha256": "5124563f386757810c60ae86fc95904a13532f1a872fcd3579613f304338e13d"
+    },
+    {
+      "file": "reception-shift-expenses.js",
+      "label": "إلى",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "personal",
+      "text_sha256": "5124563f386757810c60ae86fc95904a13532f1a872fcd3579613f304338e13d"
+    },
+    {
+      "file": "reception-shift-expenses.js",
+      "label": "الحالة",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "personal",
+      "text_sha256": "0a8e1242f7cd5a7893e1222dfd049826b42b66af79a574141ddc063e925fb3f0"
     },
     {
       "file": "reception-workspace.js",
