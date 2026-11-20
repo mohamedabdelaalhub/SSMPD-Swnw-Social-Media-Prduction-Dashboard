@@ -4,6 +4,14 @@
 (function () {
   "use strict";
   var T = window.SSMPDToast;
+  /* Names pasted from WhatsApp / typed on some Arabic keyboards carry invisible marks (RLM/LRM, ZWNJ, bidi embeds, BOM),
+     tatweel and harakat; the database accepts letters and spaces only and refused them as «اسم المريض مطلوب من كلمتين». */
+  function cleanPatientName(v) {
+    return String(v == null ? "" : v)
+      .replace(/[\u200B-\u200F\u202A-\u202E\u2066-\u2069\uFEFF\u061C\u0640]/g, "")
+      .replace(/[\u064B-\u065F\u0670]/g, "")
+      .replace(/[\s\u00A0]+/g, " ").trim();
+  }
 
   var CATEGORIES = [
     { key: "id_document", label: "تحقيق شخصية" },
@@ -377,7 +385,7 @@
     }).catch(function () { /* المريض يبقى مباشرًا لو الموديول لم يُفعّل بعد */ });
 
     document.getElementById("np-save").onclick = function () {
-      var full_name = document.getElementById("np-name").value.trim();
+      var full_name = cleanPatientName(document.getElementById("np-name").value);
       var phone = document.getElementById("np-phone").value.trim();
       var email = document.getElementById("np-email").value.trim().toLowerCase();
       var national_id = document.getElementById("np-nid").value.trim();
@@ -424,7 +432,7 @@
     backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
 
     document.getElementById("ep-save").onclick = function () {
-      var full_name = document.getElementById("ep-name").value.trim();
+      var full_name = cleanPatientName(document.getElementById("ep-name").value);
       var phone = document.getElementById("ep-phone").value.trim();
       var email = document.getElementById("ep-email").value.trim().toLowerCase();
       var age = document.getElementById("ep-age").value.trim();
@@ -4278,6 +4286,7 @@
   }
 
   window.SSMPDRenderPatients = {
+    _cleanName: cleanPatientName,
     specialistForms:{speechAssessment:openSpeechProfileFormModal,psychologyAssessment:openPsychologyProfileFormModal,speechSession:openSpeechSessionFormModal,psychologySession:openPsychologySessionFormModal},
     render: render, openSearch: openSearch, openCreate: function(onCreated) { openNewPatientModal(null,onCreated); },
     openPatientById: function (id) { openPatientModal(null, null, id); },
