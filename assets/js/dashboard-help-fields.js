@@ -13886,6 +13886,84 @@
       "reviewed": true
     },
     {
+      "title": "المبلغ (جنيه)",
+      "labels": [
+        "المبلغ (جنيه)"
+      ],
+      "text": "المبلغ اللي اتصرف فعلاً من فلوس الوردية. مينفعش يزيد عن حد المصروف الواحد ولا الباقي من الهامش ولا نقدية الوردية.",
+      "article": "shift-expenses",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "اشتريت من مين / المورد",
+      "labels": [
+        "اشتريت من مين / المورد"
+      ],
+      "text": "اسم المحل أو الشركة اللي اتدفعلها (اختياري) — بيساعد الحسابات في المراجعة.",
+      "article": "shift-expenses",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "مثلاً: ٢ كرتونة مناديل + صابون للحمام",
+      "labels": [
+        "مثلاً: ٢ كرتونة مناديل + صابون للحمام"
+      ],
+      "text": "اكتب اتصرف على إيه بالظبط.",
+      "article": "shift-expenses",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "السبب / التفاصيل",
+      "labels": [
+        "السبب / التفاصيل"
+      ],
+      "text": "اتصرف على إيه وليه (إجباري). بيظهر للحسابات جنب الإيصال.",
+      "article": "shift-expenses",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "📷 صورة الفاتورة أو الإيصال (إجباري)",
+      "labels": [
+        "📷 صورة الفاتورة أو الإيصال (إجباري)"
+      ],
+      "text": "صوّر الفاتورة أو الإيصال بالموبايل أو ارفع صورتها. من غيرها المصروف مش هيتسجل.",
+      "article": "shift-expenses",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "الحالة",
+      "labels": [
+        "الحالة"
+      ],
+      "text": "اختار الحالة الفعلية أو فلتر العرض حسب هذه الشاشة. تغيير الفلتر لا ينقل المستند لمرحلة جديدة، والحالة التنفيذية لها إجراء وصلاحية مستقلان.",
+      "article": "personal",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "اسم المريض أو رقم الملف أو التليفون أو الدكتور",
       "labels": [
         "اسم المريض أو رقم الملف أو التليفون أو الدكتور"
@@ -13918,19 +13996,6 @@
       ],
       "text": "اعرض حجوزات طبيب معين بس، أو كل الأطباء.",
       "article": "booking-flow",
-      "tabs": [
-        "reception_services"
-      ],
-      "forms": [],
-      "reviewed": true
-    },
-    {
-      "title": "الحالة",
-      "labels": [
-        "الحالة"
-      ],
-      "text": "اختار الحالة الفعلية أو فلتر العرض حسب هذه الشاشة. تغيير الفلتر لا ينقل المستند لمرحلة جديدة، والحالة التنفيذية لها إجراء وصلاحية مستقلان.",
-      "article": "personal",
       "tabs": [
         "reception_services"
       ],
@@ -21454,9 +21519,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1824,
-    "labels": 1339,
-    "files": 131,
-    "groups": 1446
+    "definitions": 1832,
+    "labels": 1344,
+    "files": 132,
+    "groups": 1451
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
