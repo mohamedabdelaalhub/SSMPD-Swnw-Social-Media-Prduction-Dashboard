@@ -52,11 +52,11 @@ do $$ begin
 end $$;
 revoke all on function clinic_reception.command_before_overbook(uuid, text, jsonb, uuid) from public, anon, authenticated;
 
-create function clinic_reception.can_manage(p_workspace uuid) returns boolean
+create function clinic_reception.overbook_can_manage(p_workspace uuid) returns boolean
 language plpgsql security definer set search_path = pg_catalog, public as $$
 begin perform clinic_reception.access(p_workspace, 'manage'); return true;
 exception when others then return false; end $$;
-revoke all on function clinic_reception.can_manage(uuid) from public, anon, authenticated;
+revoke all on function clinic_reception.overbook_can_manage(uuid) from public, anon, authenticated;
 
 create function public.clinic_reception_command(p_workspace uuid, p_action text, p_payload jsonb, p_token uuid)
 returns jsonb language plpgsql security definer set search_path = pg_catalog, public as $$
@@ -89,7 +89,7 @@ begin
          count(*) into nh, nd
     from clinic_reception.appointments x
     where x.provider_id = prv and x.overbook and x.status not in ('cancelled', 'no_show') and (x.starts_at at time zone 'Africa/Cairo')::date = day;
-  if (nh >= 2 or nd >= 6) and not clinic_reception.can_manage(p_workspace) then
+  if (nh >= 2 or nd >= 6) and not clinic_reception.overbook_can_manage(p_workspace) then
     raise exception 'وصلت لحد المواعيد الإضافية للدكتور ده (٢ في الساعة و٦ في اليوم) — كلّم مدير الاستقبال' using hint = 'overbook_limit';
   end if;
   insert into clinic_reception.appointments(workspace_id, patient_id, provider_id, service_id, starts_at, ends_at, source, source_evidence,

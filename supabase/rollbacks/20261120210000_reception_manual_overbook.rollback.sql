@@ -5,7 +5,7 @@ alter function clinic_reception.command_before_overbook(uuid, text, jsonb, uuid)
 alter function public.command_before_overbook(uuid, text, jsonb, uuid) rename to clinic_reception_command;
 revoke all on function public.clinic_reception_command(uuid, text, jsonb, uuid) from public, anon;
 grant execute on function public.clinic_reception_command(uuid, text, jsonb, uuid) to authenticated;
-drop function if exists clinic_reception.can_manage(uuid);
+drop function if exists clinic_reception.overbook_can_manage(uuid);
 do $$ declare r record; begin
   for r in select * from clinic_reception.overbook_saved_defs loop execute r.def; end loop;
 end $$;

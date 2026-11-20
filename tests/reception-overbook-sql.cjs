@@ -18,6 +18,7 @@ const between=(f,a,b)=>{const s=fs.readFileSync(f,'utf8');return s.slice(s.index
   create function clinic_reception.slot_lock(uuid) returns void language sql as $$select$$;
   create table clinic_reception.workspaces(id uuid primary key,booking_gap_minutes int default 5);
   create function clinic_reception.provider_gap(p uuid) returns interval language sql as $$select interval '5 minutes'$$;
+  create function clinic_reception.can_manage(uuid) returns boolean language sql as $$select false$$; -- exists on live (name clash once)
   create table clinic_reception.audit(id serial,workspace_id uuid,actor_id uuid,action text,entity_id uuid,detail jsonb);
   create table clinic_reception.commands(workspace_id uuid,actor_id uuid,token uuid,action text,payload jsonb,response jsonb,primary key(workspace_id,actor_id,token));
   create function clinic_reception.access(w uuid,a text) returns uuid language plpgsql security definer as $$begin if my_admin_id() is null then raise exception 'سجل الدخول';end if;
