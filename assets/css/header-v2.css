@@ -50,3 +50,4 @@
  .app-shell .topbar .user-menu-icon .um-chev{display:none}
 }
 @media(min-width:861px){.user-dropdown .hdr-help-row{display:none}}
+.app-shell .topbar>.header-account.is-home-link{margin:0}
