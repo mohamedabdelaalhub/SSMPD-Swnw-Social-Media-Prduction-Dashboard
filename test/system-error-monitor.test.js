@@ -56,5 +56,10 @@ function boot(role, responses) {
   await w.fetch("https://dashboard.example/api/digital-team/bootstrap");
   assert.equal(w.SWNWErrorMonitor.getRecent().length, 0);
   assert.equal(w.document.getElementById("swnw-error-diagnostic-hint"), null);
+  // 7) تسخين HEAD/OPTIONS على دالة: رفضه مايتسجلش
+  w = boot("super_admin", [405, 405]);
+  await w.fetch("https://api.example/functions/v1/patient-files-list", { method: "HEAD" });
+  await w.fetch("https://api.example/functions/v1/patient-files-list", { method: "OPTIONS" });
+  assert.equal(w.SWNWErrorMonitor.getRecent().length, 0);
   console.log("system-error-monitor tests: ok");
 })().catch((err) => { console.error(err); process.exit(1); });
