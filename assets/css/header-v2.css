@@ -1,0 +1,53 @@
+/* Header v2 — صف واحد: لوجو+عنوان | بحث | جرس | مساعدة | حساب | قائمة (معتمد من المالك 2026-11-20) */
+.app-shell .topbar{display:flex;align-items:center;flex-wrap:nowrap;gap:12px;padding:10px 22px;min-height:64px;border-bottom:1px solid #E3E9F4}
+.app-shell .topbar>.brand{order:1;flex:0 1 auto;min-width:0;gap:12px}
+.app-shell .topbar>.brand img{height:34px}
+.app-shell .topbar #brand-section-name .brand-center{font-size:11px;color:#65748a}
+.app-shell .topbar #brand-section-name .brand-section{font-size:18px;font-weight:800;color:#16212E;white-space:nowrap}
+.app-shell .topbar>.topbar-tools{display:contents}
+.app-shell .topbar .global-search{order:2;flex:1 1 auto;max-width:420px;margin-inline:auto;position:relative;min-width:0}
+.app-shell .topbar #global-search-toggle{width:100%;height:42px;min-height:42px;padding:0 14px;justify-content:flex-start;gap:10px;border-radius:14px;background:#F1F4F8;border:1px solid transparent;color:#65748a;font-size:13px;font-weight:400}
+.app-shell .topbar #global-search-toggle svg{color:#0F369D;flex-shrink:0}
+.app-shell .topbar #global-search-toggle:hover{background:#EDF2FF}
+.app-shell .topbar .gs-label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.app-shell .topbar>.topbar-tools>div[style*="relative"]{order:3}
+.app-shell .topbar #dashboard-help-toggle{order:4}
+.app-shell .topbar #kudos-send-btn,.app-shell .topbar>.topbar-tools .language-switch,.app-shell .topbar #logout-btn{display:none!important}
+.app-shell .topbar>.header-account{order:5;flex:0 1 auto;max-width:240px;padding:5px 12px 5px 6px;border:1px solid #E3E9F4;border-radius:16px;background:#fff}
+.app-shell .topbar>.topbar-tools .who{order:6;margin-inline-start:-10px}
+.app-shell .topbar>.menu-toggle{display:none}
+.app-shell .topbar .header-icon{width:42px;height:42px;min-height:42px;padding:0;border-radius:14px;border:1px solid #E3E9F4;background:#fff;color:#0F369D;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform .18s,background .18s}
+.app-shell .topbar .header-icon:hover{background:#EDF2FF;transform:translateY(-2px)}
+.app-shell .topbar .header-icon svg{width:21px;height:21px}
+.app-shell .topbar #global-search-toggle{width:100%}
+.app-shell .topbar #notif-badge{top:-7px!important;left:auto!important;inset-inline-start:-7px;min-width:20px;height:20px;border-radius:10px!important;background:#F15A22!important;color:#333!important;font:700 11px system-ui!important;display:grid;place-items:center;padding:0 5px!important;border:2px solid #fff;line-height:1!important}
+.app-shell .topbar #notif-badge[hidden]{display:none}
+/* زرار القائمة: سهم جنب كارت الحساب (ديسكتوب) / أيقونة المستخدم (موبايل) */
+.app-shell .topbar .user-menu-icon{width:36px;height:42px;min-width:36px;border:0;background:transparent;color:#65748a;padding:0;display:inline-flex;align-items:center;justify-content:center}
+.app-shell .topbar .user-menu-icon .um-user{display:none}
+.app-shell .topbar .user-menu-icon .um-chev{transition:transform .18s}
+.app-shell .topbar .user-menu-icon[aria-expanded="true"] .um-chev{transform:rotate(180deg)}
+/* صفوف إضافية داخل القائمة */
+.user-dropdown .hdr-extra{display:grid;gap:2px;padding:8px 0;border-top:1px solid #EDF0F5}
+.user-dropdown .hdr-extra-row{display:flex;align-items:center;gap:12px;width:100%;min-height:44px;padding:8px 10px;border:0;border-radius:12px;background:transparent;font:inherit;font-size:14px;font-weight:700;color:#16212E;cursor:pointer;text-align:start}
+.user-dropdown .hdr-extra-row:hover{background:#EDF2FF}
+.user-dropdown .hdr-extra-row[hidden]{display:none}
+.user-dropdown .hdr-extra-row svg{color:#0F369D;flex-shrink:0}
+.user-dropdown .hdr-extra-row em{margin-inline-start:auto;font:700 12px system-ui;font-style:normal;color:#0F369D;background:#EDF2FF;border-radius:9px;padding:4px 10px;white-space:nowrap}
+@media(max-width:860px){
+ .app-shell .topbar{gap:8px;padding:8px 12px;min-height:56px}
+ .app-shell .topbar>.brand img{height:28px}
+ .app-shell .topbar #brand-section-name .brand-section{font-size:15px}
+ .app-shell .topbar>.brand{flex:1 1 auto}
+ .app-shell .topbar .global-search{flex:0 0 auto;max-width:none;margin:0;order:2}
+ .app-shell .topbar #global-search-toggle{width:40px;height:40px;min-height:40px;padding:0;justify-content:center;border-radius:12px;background:#fff;border:1px solid #E3E9F4}
+ .app-shell .topbar .gs-label{display:none}
+ .app-shell .topbar .header-icon{width:40px;height:40px;min-height:40px;border-radius:12px}
+ .app-shell .topbar #dashboard-help-toggle,.app-shell .topbar>.header-account{display:none}
+ .app-shell .topbar>.topbar-tools .who{margin:0}
+ .app-shell .topbar .user-menu-icon{width:40px;height:40px;min-width:40px;border:1px solid #E3E9F4;border-radius:12px;background:#EDF2FF;color:#0F369D}
+ .app-shell .topbar .user-menu-icon .um-user{display:block}
+ .app-shell .topbar .user-menu-icon .um-chev{display:none}
+}
+@media(min-width:861px){.user-dropdown .hdr-help-row{display:none}}
+.app-shell .topbar>.header-account.is-home-link{margin:0}
