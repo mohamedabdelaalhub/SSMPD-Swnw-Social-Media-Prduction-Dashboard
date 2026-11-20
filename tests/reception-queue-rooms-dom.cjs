@@ -58,7 +58,7 @@ function mk(html,url){const d=new JSDOM(html,{url:url||'https://reception.test/'
  q('[data-qr-confirm]').click();q('[data-qr-confirm]')&&q('[data-qr-confirm]').click();await sleep(80);
  assert.equal(calls.filter(c=>c[1]==='agent_booking_register').length,1,'double click safe');assert.deepEqual(calls.find(c=>c[1]==='agent_booking_register')[2],{booking_id:'b1',patient_id:'arch1',service_id:'s1'});
  assert(!q('[data-qr-agmodal]'));assert.equal(q('[data-qr-label]').textContent,'7');assert(w.__toasts.some(x=>x[0].includes('رقمه 7')));q('.qr-big button').click();
- q('[data-qr-ag="b2"] [data-qa=ag_open]').click();await sleep(20);assert(q('[data-qr-hint]').textContent.includes('اربط الدكتور من ربط أطباء ماسا الأول'));assert(q('[data-qr-confirm]').disabled);q('[data-qr-close]').click();
+ q('[data-qr-ag="b2"] [data-qa=ag_open]').click();await sleep(20);assert(q('[data-qr-hint]').textContent.includes('الدكتور ده غير مربوط أو موقوف؛ اطلب من المسؤول يربطه'));assert(q('[data-qr-confirm]').disabled);q('[data-qr-close]').click();
  // 2) trial mode renders nothing
  const t=mk('<body><div data-journey-root data-journey-mode="trial"><div class="journey-layout"><aside></aside></div></div></body>');
  t.w.SSMPDReceptionModules={sections:()=>[],panel:()=>''};t.w.eval(fs.readFileSync('assets/js/today-operations-queue.js','utf8'));
