@@ -12,6 +12,10 @@
 -- «ممرض/ة مع طبيب» (fixed amount on top of the doctor) is NOT covered by this — the doctor stays the provider; P3.
 -- In the booking: pick the nurse as «الطبيب» (her schedule) + «مين اللي هينفّذ؟ = ممرض/ة لوحده» + the same nurse (#641).
 
+-- v2 (main chat preview 15:05Z): clinic_hours row is «المركز بالكامل», days English abbrevs, close 00:00 → handled below.
+-- Live preview: 7 nurses with HR codes (one is general_manager with an extra nursing role — owner to confirm), 19 nursing
+-- codes (17 الطوارئ, 2 الكيماوي), 0 nursing contracts → nurses are not bookable until the accountant enters contracts.
+
 -- ===================== 0. PREVIEW (read-only) =====================
 select a.id, coalesce(p.full_name, a.name) nurse, p.code hr_code, a.role, a.active
   from public.admins a left join clinic_people.people p on p.admin_id = a.id
@@ -42,11 +46,14 @@ select p.id, s.code from clinic_reception.providers p
 where p.department = 'التمريض المنزلي' and p.doctor_key is not null
 on conflict do nothing;
 
--- schedule = center hours (row 'المركز'; days int[] or Arabic names)
-with h as (select open_time::time o, close_time::time c, d::text d from public.clinic_hours, unnest(days::text[]) d where department = 'المركز'),
-     dw as (select o, c, case when d ~ '^[0-6]$' then d::int else case btrim(d) when 'الأحد' then 0 when 'الاحد' then 0 when 'الإثنين' then 1
-              when 'الاثنين' then 1 when 'الثلاثاء' then 2 when 'الأربعاء' then 3 when 'الاربعاء' then 3 when 'الخميس' then 4
-              when 'الجمعة' then 5 when 'الجمعه' then 5 when 'السبت' then 6 end end dow from h)
+-- schedule = center hours (live row «المركز بالكامل», days {sat,…,fri} English abbrevs; also int / Arabic names; close 00:00 → 23:59)
+with h as (select open_time::time o, case when close_time::time = '00:00' then time '23:59' else close_time::time end c, lower(btrim(d::text)) d
+           from public.clinic_hours, unnest(days::text[]) d where department ~ '^المركز'),
+     dw as (select o, c, case when d ~ '^[0-6]$' then d::int
+              when d in ('sun','sunday') then 0 when d in ('mon','monday') then 1 when d in ('tue','tuesday') then 2 when d in ('wed','wednesday') then 3
+              when d in ('thu','thursday') then 4 when d in ('fri','friday') then 5 when d in ('sat','saturday') then 6
+              else case d when 'الأحد' then 0 when 'الاحد' then 0 when 'الإثنين' then 1 when 'الاثنين' then 1 when 'الثلاثاء' then 2
+              when 'الأربعاء' then 3 when 'الاربعاء' then 3 when 'الخميس' then 4 when 'الجمعة' then 5 when 'الجمعه' then 5 when 'السبت' then 6 end end dow from h)
 insert into clinic_reception.weekly_slots(workspace_id, provider_id, dow, starts, ends)
 select p.workspace_id, p.id, dw.dow, dw.o, dw.c from dw
   join clinic_reception.providers p on p.department = 'التمريض المنزلي' and p.doctor_key is not null
