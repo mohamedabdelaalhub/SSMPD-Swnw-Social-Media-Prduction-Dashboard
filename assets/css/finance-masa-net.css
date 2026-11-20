@@ -61,3 +61,6 @@
 .mn-li .nm{flex:1;min-width:0}.mn-li .nm b{display:block;font-size:14px;overflow-wrap:anywhere}.mn-li .nm small{font-size:12px;color:#65748a}.mn-li .amt{font-weight:800}
 @media(max-width:860px){.mn-tiles{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.mn-cols{grid-template-columns:minmax(0,1fr)}.mn-tile b{font-size:20px}.mn-card{padding:14px;border-radius:16px}}
 @media(max-width:560px){.mn-seg{display:flex;flex-wrap:wrap;width:100%}.mn-seg .btn{flex:1 1 auto;padding:0 10px}.mn-tile .mn-go{display:none}.mn-t th:nth-child(n+3):nth-child(-n+6),.mn-t td:nth-child(n+3):nth-child(-n+6),.mn-t th:nth-child(8),.mn-t td:nth-child(8){display:none}.mn-t .n{padding-inline:6px}.mn-backdrop{align-items:end;padding:0}.mn-modal{border-radius:22px 22px 0 0;width:100%;max-height:88dvh}.mn-dt{flex:1 1 140px}.mn-filters{gap:8px}}
+
+/* صفوف التاريخ الخارجية (من/إلى/عرض الفترة) مالهاش لازمة هنا — كل عرض له فلتر فترته */
+.fc-workspace:has([data-mn-switch]) .fc-filters label.fc-field,.fc-workspace:has([data-mn-switch]) .fc-filters button[type=submit]{display:none}
