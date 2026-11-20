@@ -44,7 +44,7 @@ function mount(container,admins){
 
 /* Employee detail layout (owner-approved mockup docs/ui-references/mockups/admin-user.html, 2026-11-18).
    Only moves and restyles the controls render-admin.js already built and bound: no new writes, same confirmations. */
-var ROLE_GROUPS=[['المحتوى والتسويق',['page_manager','designer','approver']],['المرضى والعيادات',['reception','customer_service','nursing','head_nursing','sono_doctor','psychology_specialist']],['الإدارة والمالية',['general_manager','super_admin','financial_manager','accountant','contract_manager']]];
+var ROLE_GROUPS=[['المحتوى والتسويق',['page_manager','designer','approver']],['المرضى والعيادات',['reception','customer_service','nursing','head_nursing','doctor_assistant','sono_doctor','psychology_specialist']],['الإدارة والمالية',['general_manager','super_admin','financial_manager','accountant','contract_manager']]];
 var PERMS=[['الإدارة',[['[data-workforce-key=has_hr_access]','إدارة الموارد البشرية','الحضور والورديات والمرتبات'],['[data-workforce-key=has_price_lists_access]','إدارة لوائح الأسعار','تعديل أسعار الخدمات'],['[data-workforce-key=can_approve_doctor_payouts]','اعتماد صرف حسابات الأطباء','الموافقة على صرف الأتعاب']]],
  ['أرشيف المرضى',[['[data-archive]','أرشيف المرضى','فتح ملفات المرضى ورفعها'],['[data-archive-view-only]','معاينة الأرشيف فقط','يشوف ويفتح الملفات من غير رفع أو حذف'],['[data-archive-review]','اعتماد ملفات المرضى','مراجعة الملفات المرفوعة'],['[data-verification-access]','تحقق هوية المرضى','اعتماد طلبات بوابة المريض — حساسة']]],
  ['الليدز والتغذية',[['[data-leads-archive-access]','أرشيف الليدز','يشوف الليدز القديمة ويشتغل عليها'],['[data-delete-leads]','حذف الليدز','حذف نهائي — بحذر',1],['[data-delete-nutrition-visits]','حذف زيارات التغذية','حذف نهائي — بحذر',1]]]];

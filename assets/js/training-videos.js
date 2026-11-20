@@ -5,8 +5,8 @@ var V='?v=training-20261109-2';
 var ALL=['super_admin','general_manager'];
 var LIST=[
  {f:'01-booking-arrival.mp4',t:'حجز موعد وتسجيل وصول',g:'الاستقبال: «تشغيل اليوم»',r:['reception','customer_service']},
- {f:'02-call-start.mp4',t:'نداء المريض وبدء الكشف',g:'الاستقبال: «تشغيل اليوم»',r:['reception','nursing','head_nursing']},
- {f:'03-service-finish.mp4',t:'طلب خدمة وإنهاء الزيارة',g:'الاستقبال: «تشغيل اليوم»',r:['reception','nursing','head_nursing']},
+ {f:'02-call-start.mp4',t:'نداء المريض وبدء الكشف',g:'الاستقبال: «تشغيل اليوم»',r:['reception','nursing','head_nursing','doctor_assistant']},
+ {f:'03-service-finish.mp4',t:'طلب خدمة وإنهاء الزيارة',g:'الاستقبال: «تشغيل اليوم»',r:['reception','nursing','head_nursing','doctor_assistant']},
  {f:'04-noshow-reschedule-search.mp4',t:'لم يحضر، تغيير الميعاد، والبحث',g:'الاستقبال: «تشغيل اليوم»',r:['reception','customer_service']},
  {f:'09-leads.mp4',t:'الليدز: تسجيل رسالة عميل جديد',g:'الاستقبال وخدمة العملاء',r:['reception','customer_service']},
  {f:'05-my-tasks.mp4',t:'مهامي: إزاي تشتغل على مهمة وتسلّمها',g:'لكل الموظفين',r:['*']},

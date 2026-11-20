@@ -7,7 +7,7 @@ window.__SWNWTodayOperationsFinalizeV1=true;
 var firstEntryAttempted=false;
 function roles(){return window.SSMPDRoles&&window.SSMPDAuth?window.SSMPDRoles.rolesOf(window.SSMPDAuth.currentAdmin):[];}
 function has(role){return roles().indexOf(role)!==-1;}
-function clinical(){return has('super_admin')||has('general_manager')||has('sono_doctor')||has('nursing')||has('head_nursing');}
+function clinical(){return has('super_admin')||has('general_manager')||has('sono_doctor')||has('nursing')||has('head_nursing')||has('doctor_assistant');}
 function hideLegacyCash(){document.querySelectorAll('[data-goto="booking_cash"]').forEach(function(node){node.hidden=true;node.setAttribute('aria-hidden','true');});}
 function autoOpenJourney(){
  var admin=window.SSMPDAuth&&window.SSMPDAuth.currentAdmin;if(!admin||!window.SSMPDRoles)return;

@@ -12,6 +12,7 @@
     customer_service: "خدمة عملاء",
     nursing: "تمريض",
     head_nursing: "رئيس التمريض",
+    doctor_assistant: "مساعد طبيب",
     sono_doctor: "طبيب سونو",
     psychology_specialist: "أخصائي نفسية",
     contract_manager: "مسؤول التعاقدات",
@@ -41,16 +42,16 @@
     performance: ["page_manager", "approver", "general_manager", "super_admin"],
     indicator_reports: ["general_manager", "super_admin"],
     staff_kpi: ["general_manager", "super_admin"],
-    my_kpi: ["page_manager", "designer", "approver", "reception", "customer_service", "general_manager", "nursing", "head_nursing", "sono_doctor"],
+    my_kpi: ["page_manager", "designer", "approver", "reception", "customer_service", "general_manager", "nursing", "head_nursing", "sono_doctor", "doctor_assistant"],
     archive: ["page_manager", "designer", "approver", "general_manager", "super_admin"],
     leads: ["reception", "customer_service", "general_manager", "super_admin"],
     admin: ["super_admin"],
     metaads: ["page_manager", "approver", "general_manager", "super_admin"],
     mediabuyer: ["page_manager", "approver", "general_manager", "super_admin"],
-    reception_services: ["general_manager", "super_admin", "reception", "customer_service", "nursing", "sono_doctor", "accountant", "financial_manager"],
+    reception_services: ["general_manager", "super_admin", "reception", "customer_service", "nursing", "sono_doctor", "accountant", "financial_manager", "doctor_assistant"],
     booking_cash: ["reception", "general_manager", "super_admin"],
     accounting: ["general_manager", "super_admin"],
-    tasks: ["page_manager", "designer", "approver", "general_manager", "super_admin", "reception", "customer_service", "nursing", "head_nursing", "sono_doctor", "contract_manager"],
+    tasks: ["page_manager", "designer", "approver", "general_manager", "super_admin", "reception", "customer_service", "nursing", "head_nursing", "sono_doctor", "contract_manager", "doctor_assistant"],
     contracting_entities: ["contract_manager", "general_manager", "super_admin"],
     inventory: ["general_manager", "super_admin", "nursing", "reception", "sono_doctor"]
   };
@@ -118,7 +119,7 @@
     // المالك وافق وعمّمها 2026-11-08 (بعد معاينة على حساب التجربة).
     isNursingDayOnly: function (a) {
       a = normalizeAdmin(a);
-      return Roles.hasAnyRole(a, ["nursing", "head_nursing"]) && !Roles.hasAnyRole(a, ["super_admin", "general_manager", "reception", "customer_service", "accountant", "financial_manager", "sono_doctor"]);
+      return Roles.hasAnyRole(a, ["nursing", "head_nursing", "doctor_assistant"]) && !Roles.hasAnyRole(a, ["super_admin", "general_manager", "reception", "customer_service", "accountant", "financial_manager", "sono_doctor"]);
     },
 
     canSeeTab: function (adminOrRole, tab) {
@@ -130,7 +131,7 @@
       if(tab==="tasks" && Roles.hasRole(admin,"psychology_specialist"))return true;
       if(tab==="accounting")return Roles.canModuleAction(admin,"accounting","view") || Roles.canSeeTab(admin,"inventory") && !(admin.inventory_assigned===false && admin.inventory_supply_access===true);
       if(tab==="booking_cash" && Roles.isControlledFinance(admin))return Roles.canModuleAction(admin,"accounting","view");
-      if(tab==='reception_services'&&Roles.isControlledFinance(admin)&&!Roles.hasAnyRole(admin,['super_admin','general_manager','reception','customer_service','nursing','sono_doctor']))return Roles.canModuleAction(admin,'accounting','view');
+      if(tab==='reception_services'&&Roles.isControlledFinance(admin)&&!Roles.hasAnyRole(admin,['super_admin','general_manager','reception','customer_service','nursing','doctor_assistant','sono_doctor']))return Roles.canModuleAction(admin,'accounting','view');
       if(tab==="home")return admin.active!==false && !!(admin.id||admin.role);
       if(tab==="inventory" && typeof admin.inventory_assigned==='boolean')return admin.inventory_assigned || admin.inventory_supply_access===true || Roles.hasAnyRole(admin,["super_admin","general_manager"]);
       if (Roles.isControlledFinance(admin) && ["accounting","contracting_entities","tasks"].includes(tab))return Roles.canModuleAction(admin,tab,'view');
@@ -154,6 +155,7 @@
       if (Roles.hasRole(admin, "contract_manager")) return "contracting_entities";
       if (Roles.hasRole(admin, "reception") || Roles.hasRole(admin, "customer_service")) return "leads";
       if (Roles.hasAnyRole(admin, ["nursing","head_nursing"])) return "patients";
+      if (Roles.hasRole(admin, "doctor_assistant")) return "reception_services";
       if (Roles.hasRole(admin, "sono_doctor")) return "patients";
       if (Roles.hasRole(admin, "approver")) return "review";
       if (Roles.hasRole(admin, "designer")) return "design";
