@@ -9,13 +9,26 @@ function day(t){try{return new Date(t).toLocaleDateString('ar-EG-u-nu-latn',{tim
 function times(n){n=+n||0;return n===1?'مرة':n===2?'مرتين':n+' مرات';}
 function candidates(ws,patient,service){var c=w.SSMPDDb&&w.SSMPDDb.client;if(!c)return Promise.resolve([]);
  return Promise.resolve(c.rpc('clinic_reception_continuation_candidates',{p_workspace:ws,p_patient:patient,p_service:service})).then(function(r){if(r.error)throw r.error;return r.data||[];});}
+var nurseCache={},nurseNames={};
+function nurses(ws){var c=w.SSMPDDb&&w.SSMPDDb.client;if(!c)return Promise.resolve([]);if(!nurseCache[ws])nurseCache[ws]=Promise.resolve(c.rpc('clinic_reception_nurses',{p_workspace:ws})).then(function(r){if(r.error)throw r.error;(r.data||[]).forEach(function(n){nurseNames[n.id]=n.name;});return r.data||[];}).catch(function(e){delete nurseCache[ws];throw e;});return nurseCache[ws];}
+var MODES=[['doctor','الطبيب'],['nurse_alone','ممرض/ة لوحده'],['nurse_with_doctor','ممرض/ة مع طبيب']];
+function performer(form,ctx,after){var ap=ctx.appointment||null,box=document.createElement('div');box.className='rbp-perf';box.setAttribute('data-wide','');box.setAttribute('data-rbp-perf','');
+ box.innerHTML='<span class="rbp-lbl" id="rbp-perf-l">مين اللي هينفّذ؟</span><div class="rbp-seg" role="radiogroup" aria-labelledby="rbp-perf-l">'+MODES.map(function(m){return '<button type="button" role="radio" data-rbp-mode="'+m[0]+'" aria-checked="false">'+m[1]+'</button>';}).join('')+'</div><input type="hidden" name="performer_mode" value="doctor">'+
+  '<label class="rbp-nurse" data-rbp-nurse hidden>الممرض/ة<select name="nurse_admin_id"><option value="">اختار الممرض/ة</option></select></label><p class="rbp-hint" data-rbp-nurse-hint hidden></p>';
+ after.after(box);var hid=form.elements.performer_mode,sel=form.elements.nurse_admin_id,lab=box.querySelector('[data-rbp-nurse]'),hint=box.querySelector('[data-rbp-nurse-hint]'),want=ap&&ap.nurse_admin_id||'';
+ function set(m){hid.value=m;box.querySelectorAll('[data-rbp-mode]').forEach(function(b){b.setAttribute('aria-checked',String(b.getAttribute('data-rbp-mode')===m));});var on=m!=='doctor';lab.hidden=!on;sel.required=on;if(!on)sel.value='';
+  hint.hidden=m!=='nurse_alone';hint.textContent='الممرض/ة لوحده: اختار في «الطبيب» جدول «التمريض المنزلي» (أو جدول الزيارة)، والممرض/ة من هنا. الحجز بياخد وقت الممرض/ة فمينفعش يتحجز في زيارتين في نفس الوقت.';
+  if(on&&sel.options.length<2)load();}
+ function load(){sel.disabled=true;nurses(ctx.workspace).then(function(list){if(!form.isConnected)return;sel.innerHTML='<option value="">'+(list.length?'اختار الممرض/ة':'مفيش موظفين تمريض متسجلين')+'</option>'+list.map(function(n){return '<option value="'+esc(n.id)+'">'+esc(n.name)+(n.code?' — '+esc(n.code):'')+'</option>';}).join('');sel.disabled=false;if(want){sel.value=want;want='';}},function(e){sel.disabled=false;hint.hidden=false;hint.textContent=e&&e.message||'تعذر تحميل موظفين التمريض';});}
+ box.querySelectorAll('[data-rbp-mode]').forEach(function(b){b.onclick=function(){set(b.getAttribute('data-rbp-mode'));};});
+ set(ap&&ap.performer_mode&&ap.performer_mode!=='doctor'?ap.performer_mode:'doctor');}
 function enhance(form,ctx){if(!form||form.querySelector('[data-rbp]'))return;var field=form.querySelector('.rx-combo-field');if(!field||!form.elements.service_id)return;
  var data=ctx.data||{},ap=ctx.appointment||null,live=ctx.mode!=='trial';
  var row=document.createElement('div');row.className='rbp-row';row.setAttribute('data-rbp','');row.setAttribute('data-wide','');field.parentNode.insertBefore(row,field);row.appendChild(field);
  var q=document.createElement('div');q.className='rbp-qty';q.innerHTML='<label for="rbp-q">عدد الخدمة</label><div class="rbp-step"><button type="button" data-rbp-step="1" aria-label="زوّد العدد">+</button><input id="rbp-q" name="quantity" type="number" inputmode="numeric" min="1" max="99" step="1" value="'+(ap&&ap.quantity>1?+ap.quantity:1)+'" required><button type="button" data-rbp-step="-1" aria-label="قلّل العدد">−</button></div>';row.appendChild(q);
  var total=document.createElement('p');total.className='rbp-total';total.setAttribute('data-wide','');total.setAttribute('role','status');total.hidden=true;row.after(total);
  var box=document.createElement('div');box.className='rbp-cont';box.setAttribute('data-wide','');
- box.innerHTML='<label class="rx-check rx-walkin"><input type="checkbox" data-rbp-cont> جلسة استكمال لعلاج اتعمل قبل كده <small>(بتحجز وقت الدكتور من غير فاتورة جديدة — الخدمة اتحاسب عليها في الجلسة الأولى)</small></label><input type="hidden" name="continuation_of" value=""><div class="rbp-pick" data-rbp-pick hidden></div>';
+ box.innerHTML='<label class="rx-check rx-walkin rbp-cont-sw"><input type="checkbox" data-rbp-cont><span>جلسة استكمال لعلاج اتعمل قبل كده <small>(بتحجز وقت الدكتور من غير فاتورة جديدة — الخدمة اتحاسب عليها في الجلسة الأولى)</small></span></label><input type="hidden" name="continuation_of" value=""><div class="rbp-pick" data-rbp-pick hidden></div>';
  total.after(box);
  var input=q.querySelector('input'),cb=box.querySelector('[data-rbp-cont]'),hid=form.elements.continuation_of,pick=box.querySelector('[data-rbp-pick]'),want=ap&&ap.continuation_of||'',ver=0;
  if(!live){cb.disabled=true;box.hidden=true;}
@@ -41,12 +54,14 @@ function enhance(form,ctx){if(!form||form.querySelector('[data-rbp]'))return;var
  if(form.elements.patient_id)form.elements.patient_id.addEventListener('change',function(){if(cb.checked)load();});
  if(form.elements.package_id)form.elements.package_id.addEventListener('change',paint);
  form.addEventListener('submit',function(e){if(cb.checked&&!hid.value){e.preventDefault();e.stopImmediatePropagation();pick.hidden=false;if(!pick.querySelector('.rbp-warn'))pick.insertAdjacentHTML('afterbegin','<p class="rbp-warn">اختار الجلسة الأولى اللي بتستكملها، أو اقفل «جلسة استكمال».</p>');}},true);
+ if(live)performer(form,ctx,box);
  if(want){cb.checked=true;load();}paint();}
 /* timeline card bits */
 function cardBits(a,tlTime){a=a||{};var name='',line='';
  if(a.status==='booked'&&!a.confirmed_at&&+a.no_answer_count>0)name=' <span class="rbp-na">لم يرد · '+esc(times(a.no_answer_count))+(a.last_no_answer_at?' · آخر مرة '+esc(tlTime?tlTime(a.last_no_answer_at):''):'')+'</span>';
  if(+a.quantity>1)line+=' <b class="rbp-x">× '+(+a.quantity)+'</b>';
  if(a.continuation_of)line+=' <span class="rbp-cont-tag">استكمال</span>';
+ if(a.nurse_admin_id&&a.performer_mode&&a.performer_mode!=='doctor')line+=' <span class="rbp-nurse-tag">🩺 '+(a.performer_mode==='nurse_alone'?'ممرض/ة':'مع ممرض/ة')+(nurseNames[a.nurse_admin_id]?': '+esc(nurseNames[a.nurse_admin_id]):'')+'</span>';
  return {name:name,line:line};}
-w.SSMPDReceptionBookingPlus={enhance:enhance,cardBits:cardBits,_t:{times:times}};
+w.SSMPDReceptionBookingPlus={enhance:enhance,cardBits:cardBits,nurses:nurses,_t:{times:times}};
 })(window);

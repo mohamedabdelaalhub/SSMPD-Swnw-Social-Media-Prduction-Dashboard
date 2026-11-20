@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1823,
-    "labels": 1338,
+    "definitions": 1824,
+    "labels": 1339,
     "files": 131,
-    "groups": 1445
+    "groups": 1446
   },
   "fields": [
     {
@@ -10112,6 +10112,16 @@
       "tab": "reception_services",
       "article": "patient-records",
       "text_sha256": "b6b7ef3304940f5231c6281a0431f4e3513369f3f55fbf8bc0e9499a249a0bbd"
+    },
+    {
+      "file": "reception-booking-plus.js",
+      "label": "الممرض/ة",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-booking-nurse",
+      "text_sha256": "70372b079ea97284ce204cae9b71eec3fa2de7bef1e75e669fae4a6d89f1b8fc"
     },
     {
       "file": "reception-booking-plus.js",

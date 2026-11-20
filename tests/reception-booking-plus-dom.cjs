@@ -6,7 +6,7 @@ const fs=require('fs'),assert=require('node:assert/strict'),{JSDOM}=require('jsd
   <div class="rx-card"><div class="rx-combo-field"><label>الخدمة</label></div><select name="service_id"><option value="">-</option><option value="crown">طربوش</option><option value="fill">حشو</option></select></div></form></body>`,{runScripts:'outside-only'});
  const w=dom.window,d=w.document,calls=[],tick=()=>new Promise(r=>setTimeout(r,0));
  const cand={p1:[{id:'o1',service:'طربوش زيركون',at:'2026-11-12T10:00:00Z',doctor:'د. أسنان',amount:4000},{id:'o2',service:'طربوش زيركون',at:'2026-11-02T10:00:00Z',doctor:'د. أسنان',amount:4000}],p2:[]};
- w.SSMPDDb={client:{rpc:async(n,a)=>{calls.push([n,JSON.parse(JSON.stringify(a))]);return {data:cand[a.p_patient]||[]};}}};
+ w.SSMPDDb={client:{rpc:async(n,a)=>{calls.push([n,JSON.parse(JSON.stringify(a))]);if(n==='clinic_reception_nurses')return {data:[{id:'n1',name:'ممرضة أولى',code:'EMP-1'},{id:'n2',name:'<b>x</b>',code:null}]};return {data:cand[a.p_patient]||[]};}}};
  w.eval(fs.readFileSync('assets/js/reception-booking-plus.js','utf8'));const P=w.SSMPDReceptionBookingPlus;
  const f=d.getElementById('f'),data={services:[{id:'crown',price:4000},{id:'fill',price:1500}]};
  P.enhance(f,{data,workspace:'ws1',mode:'live'});P.enhance(f,{data,workspace:'ws1',mode:'live'});
@@ -35,15 +35,26 @@ const fs=require('fs'),assert=require('node:assert/strict'),{JSDOM}=require('jsd
  cb.checked=true;f.elements.continuation_of.value='';let reached=false;f.addEventListener('submit',e=>{reached=true;e.preventDefault();});
  f.dispatchEvent(new w.Event('submit',{cancelable:true}));assert.equal(reached,false);
  // trial mode: no continuation
- const f2=f.cloneNode(true);f2.querySelectorAll('[data-rbp]').forEach(x=>x.replaceWith(x.querySelector('.rx-combo-field')));f2.querySelectorAll('.rbp-total,.rbp-cont').forEach(x=>x.remove());d.body.appendChild(f2);
+ const f2=f.cloneNode(true);f2.querySelectorAll('[data-rbp]').forEach(x=>x.replaceWith(x.querySelector('.rx-combo-field')));f2.querySelectorAll('.rbp-total,.rbp-cont,[data-rbp-perf]').forEach(x=>x.remove());f2.id='f2';d.body.appendChild(f2);
  P.enhance(f2,{data,workspace:'ws1',mode:'trial'});assert.equal(f2.querySelector('.rbp-cont').hidden,true);
  // editing a booking keeps its quantity
- const f3=f2.cloneNode(true);f3.querySelectorAll('[data-rbp]').forEach(x=>x.replaceWith(x.querySelector('.rx-combo-field')));f3.querySelectorAll('.rbp-total,.rbp-cont').forEach(x=>x.remove());d.body.appendChild(f3);
+ const f3=f2.cloneNode(true);f3.querySelectorAll('[data-rbp]').forEach(x=>x.replaceWith(x.querySelector('.rx-combo-field')));f3.querySelectorAll('.rbp-total,.rbp-cont,[data-rbp-perf]').forEach(x=>x.remove());f3.id='f3';d.body.appendChild(f3);
  P.enhance(f3,{data,workspace:'ws1',mode:'live',appointment:{quantity:4}});assert.equal(f3.elements.quantity.value,'4');
+ // performer: doctor by default, nurse modes need a nurse (escaped list, loaded once)
+ const seg=d.querySelectorAll('#f [data-rbp-mode]');assert.equal(seg.length,3);assert.equal(f.elements.performer_mode.value,'doctor');assert.equal(d.querySelector('#f [data-rbp-nurse]').hidden,true);
+ d.querySelector('#f [data-rbp-mode="nurse_alone"]').click();await tick();assert.equal(f.elements.performer_mode.value,'nurse_alone');assert.equal(f.elements.nurse_admin_id.required,true);
+ assert.equal(f.elements.nurse_admin_id.options.length,3);assert.ok(!d.querySelector('#f [data-rbp-nurse] b'),'escaped');assert.match(f.elements.nurse_admin_id.textContent,/ممرضة أولى — EMP-1/);
+ assert.equal(d.querySelector('#f [data-rbp-nurse-hint]').hidden,false);
+ d.querySelector('#f [data-rbp-mode="nurse_with_doctor"]').click();assert.equal(d.querySelector('#f [data-rbp-nurse-hint]').hidden,true);
+ f.elements.nurse_admin_id.value='n1';d.querySelector('#f [data-rbp-mode="doctor"]').click();assert.equal(f.elements.nurse_admin_id.value,'');assert.equal(f.elements.nurse_admin_id.required,false);
+ assert.equal(calls.filter(c=>c[0]==='clinic_reception_nurses').length,1,'nurse list fetched once');
+ // trial forms have no performer part
+ assert.equal(f2.querySelector('[data-rbp-perf]'),null);
  // card bits
  let b=P.cardBits({status:'booked',no_answer_count:2,last_no_answer_at:'2030-01-01T09:40:00Z',quantity:3,continuation_of:'o1'},()=>'11:40 ص');
  assert.match(b.name,/لم يرد · مرتين · آخر مرة 11:40 ص/);assert.match(b.line,/× 3/);assert.match(b.line,/استكمال/);
  assert.equal(P.cardBits({status:'booked',confirmed_at:'x',no_answer_count:2}).name,'','hidden once confirmed');
+ assert.match(P.cardBits({status:'booked',performer_mode:'nurse_alone',nurse_admin_id:'n1'}).line,/🩺 ممرض\/ة: ممرضة أولى/);assert.equal(P.cardBits({status:'booked',performer_mode:'doctor'}).line,'');
  assert.equal(P._t.times(1),'مرة');assert.equal(P._t.times(5),'5 مرات');
  // wiring
  const src=fs.readFileSync('assets/js/reception-workspace.js','utf8');
