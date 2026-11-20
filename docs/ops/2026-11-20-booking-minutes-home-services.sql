@@ -1,23 +1,25 @@
--- Owner 2026-11-20 (Egyptian Arabic, this chat): dental, physio, laser and cosmetics stay 20 min; every other specialty 5 min;
--- gap stays 5 (workspace booking_gap_minutes unchanged). Home services: الكشف, التحاليل, الأشعة and the nursing services.
--- Minutes live in public.pricing_services.booking_minutes → clinic_reception.sync_catalog(live) makes new service versions.
--- is_home lives on clinic_reception.services (20261120020000), so it is set AFTER the sync, on the active rows.
+-- v2 (main chat preview 13:07Z: physio regex missed «العلاج الطبيعي»; «other → 5» hit chemo/therapy/surgery/labs; derm procedures).
+-- Owner 2026-11-20: CONSULTATION length is 5 min, except dental, physio, laser and cosmetics, which are 20. Gap stays 5.
+-- Rule (only active + booking_enabled pricing_services; everything not matched keeps its current minutes):
+--   R20  department ~ 'سنان' (dental) or ~ 'طبيعي' (physio)                          → 20
+--   R20  department ~ 'جلد|تجميل|ليزر' and NOT a consult (all derm procedures/laser)   → 20
+--   R5   consult = department 'خدمات الكشف' or name ~ 'كشف|استشار|متابعة', outside the R20 departments → 5
+--        (derm consults are R5 too: «مش كل الجلدية»)
+-- Home: is_home on active live rows of خدمات الكشف / التحاليل / باقي التحاليل / الاشعة + name ~ 'تمريض' (after the sync).
 
 -- ===================== 0. PREVIEW (read-only) =====================
-with r as (
-  select s.id, s.name, s.booking_department d, s.booking_minutes m,
-    case
-      when s.booking_department ~ '(اسنان|أسنان)' then 'dental'
-      when s.booking_department ~ 'علاج طبيعي' then 'physio'
-      when s.booking_department ~ 'جلد' and s.name ~* '(ليزر|laser|تجميل|فيلر|filler|بوتوكس|botox|بلازما|prp|ميزو|meso|هيدرا|hydra|تقشير|peel|كاربون|carbon|ديرما|derma ?pen|خيوط|نضارة|تنظيف بشرة|نحت|تفتيح|حقن)' then 'cosmetic'
-      else 'other' end k
-  from public.pricing_services s where s.active and s.booking_enabled)
-select k, case when k = 'other' then 5 else 20 end as new_minutes, count(*) n, count(*) filter (where m <> case when k = 'other' then 5 else 20 end) changes
-from r group by k order by k;
--- dermatology split, to check by eye (cosmetic → 20, plain → 5):
-select case when s.name ~* '(ليزر|laser|تجميل|فيلر|filler|بوتوكس|botox|بلازما|prp|ميزو|meso|هيدرا|hydra|تقشير|peel|كاربون|carbon|ديرما|derma ?pen|خيوط|نضارة|تنظيف بشرة|نحت|تفتيح|حقن)' then 'cosmetic 20' else 'plain 5' end k, s.name, s.booking_minutes
-from public.pricing_services s where s.active and s.booking_enabled and s.booking_department ~ 'جلد' order by 1, 2;
--- home services that would be switched on:
+create temp view _plan as
+select s.id, s.name, s.booking_department d, s.booking_minutes old,
+  case
+    when s.booking_department ~ '(سنان|طبيعي)' then 20
+    when s.booking_department ~ '(جلد|تجميل|ليزر)' and not s.name ~ '(كشف|استشار|متابعة)' then 20
+    when s.booking_department = 'خدمات الكشف' or s.name ~ '(كشف|استشار|متابعة)' then 5
+    else s.booking_minutes end as new
+from public.pricing_services s where s.active and s.booking_enabled;
+select d, old, new, count(*) n from _plan where new is distinct from old group by 1,2,3 order by 1,2,3;   -- what changes
+select d, count(*) total, count(*) filter (where new is distinct from old) changing from _plan group by 1 order by 1;
+select d, name, old, new from _plan where new = 5 and old is distinct from 5 order by 1,2;               -- every service going to 5, by eye
+select d, name, old, new from _plan where d ~ '(جلد|تجميل|ليزر)' order by new, name;                     -- derm split, by eye
 select rs.department, count(*) n from clinic_reception.services rs join clinic_reception.workspaces w on w.id = rs.workspace_id and w.mode = 'live'
 where rs.active and (rs.department in ('خدمات الكشف', 'التحاليل', 'باقي التحاليل', 'الاشعة') or rs.name ~ 'تمريض') group by 1 order by 1;
 
@@ -28,26 +30,17 @@ create table if not exists public.ops_backup_20261120_minutes as
 create table if not exists public.ops_backup_20261120_home as
   select rs.code, rs.is_home, now() as saved_at from clinic_reception.services rs
   join clinic_reception.workspaces w on w.id = rs.workspace_id and w.mode = 'live' where rs.active;
-update public.pricing_services s set booking_minutes = case
-    when s.booking_department ~ '(اسنان|أسنان)' or s.booking_department ~ 'علاج طبيعي'
-      or (s.booking_department ~ 'جلد' and s.name ~* '(ليزر|laser|تجميل|فيلر|filler|بوتوكس|botox|بلازما|prp|ميزو|meso|هيدرا|hydra|تقشير|peel|كاربون|carbon|ديرما|derma ?pen|خيوط|نضارة|تنظيف بشرة|نحت|تفتيح|حقن)')
-    then 20 else 5 end
-  where s.active and s.booking_enabled
-    and s.booking_minutes is distinct from case
-    when s.booking_department ~ '(اسنان|أسنان)' or s.booking_department ~ 'علاج طبيعي'
-      or (s.booking_department ~ 'جلد' and s.name ~* '(ليزر|laser|تجميل|فيلر|filler|بوتوكس|botox|بلازما|prp|ميزو|meso|هيدرا|hydra|تقشير|peel|كاربون|carbon|ديرما|derma ?pen|خيوط|نضارة|تنظيف بشرة|نحت|تفتيح|حقن)')
-    then 20 else 5 end;
+update public.pricing_services s set booking_minutes = p.new from _plan p where p.id = s.id and p.new is distinct from p.old;
 select clinic_reception.sync_catalog(id) from clinic_reception.workspaces where mode = 'live';
--- home flags on the (new) active versions; keep any that were already on
 update clinic_reception.services rs set is_home = true
   from clinic_reception.workspaces w
   where w.id = rs.workspace_id and w.mode = 'live' and rs.active and not rs.is_home
     and (rs.department in ('خدمات الكشف', 'التحاليل', 'باقي التحاليل', 'الاشعة') or rs.name ~ 'تمريض'
          or rs.code in (select code from public.ops_backup_20261120_home where is_home));
--- check: minutes and home counts per department on the live catalog
 select department, minutes, count(*) n, count(*) filter (where is_home) home from clinic_reception.services rs
   join clinic_reception.workspaces w on w.id = rs.workspace_id and w.mode = 'live' where rs.active group by 1, 2 order by 1, 2;
 commit;
+-- (_plan is a temp view: run PREVIEW's create temp view in the same session before APPLY.)
 
 -- ===================== 2. ROLLBACK =====================
 -- begin;
