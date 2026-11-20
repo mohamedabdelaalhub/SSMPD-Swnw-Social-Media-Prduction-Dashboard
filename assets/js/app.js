@@ -236,18 +236,18 @@
     var html = '<div class="app-shell"><div class="topbar">' +
       "<div class=\"brand\"><img src=\"assets/img/mark.svg\" alt=\"\"><span id=\"brand-section-name\"> <!--ssmpd-i18n:%D9%85%D8%B1%D9%83%D8%B2%20%D8%B9%D9%8A%D8%A7%D8%AF%D8%A7%D8%AA%20%D8%B3%D9%88%D9%86%D9%88%20%D8%A7%D9%84%D8%AA%D8%AE%D8%B5%D8%B5%D9%8A%D8%A9-->مركز عيادات سونو التخصصية</span></div>" +
       '<div class="topbar-tools"><button id="dashboard-help-toggle" class="btn ghost sm header-icon" type="button" aria-label="مساعدة الداشبورد" title="مساعدة الداشبورد" aria-expanded="false"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 2-2.5 2-2.5 4"></path><path d="M12 16h.01"></path></svg></button><div class="global-search">' +
-      '<button id="global-search-toggle" class="btn ghost sm header-icon" type="button" aria-label="بحث" data-i18n-aria-label="%D8%A8%D8%AD%D8%AB" title="بحث" data-i18n-title="%D8%A8%D8%AD%D8%AB" aria-expanded="false" aria-controls="global-search-panel"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m16 16 4.5 4.5"></path></svg></button>' +
+      '<button id="global-search-toggle" class="btn ghost sm header-icon" type="button" aria-label="بحث" data-i18n-aria-label="%D8%A8%D8%AD%D8%AB" title="بحث" data-i18n-title="%D8%A8%D8%AD%D8%AB" aria-expanded="false" aria-controls="global-search-panel"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m16 16 4.5 4.5"></path></svg><span class="gs-label">ابحث في الأقسام…</span></button>' +
       '<div id="global-search-panel" class="global-search-panel" role="search" hidden><label for="global-search-input" data-i18n-text="%D8%A8%D8%AD%D8%AB%20%D9%81%D9%8A%20%D8%A7%D9%84%D8%A3%D9%82%D8%B3%D8%A7%D9%85%20%D8%A7%D9%84%D9%85%D8%AA%D8%A7%D8%AD%D8%A9%20%D9%84%D9%83">بحث في الأقسام المتاحة لك</label>' +
       '<input id="global-search-input" type="search" placeholder="اكتب حرفين على الأقل…" data-i18n-placeholder="%D8%A7%D9%83%D8%AA%D8%A8%20%D8%AD%D8%B1%D9%81%D9%8A%D9%86%20%D8%B9%D9%84%D9%89%20%D8%A7%D9%84%D8%A3%D9%82%D9%84%E2%80%A6" aria-label="البحث في الداشبورد" data-i18n-aria-label="%D8%A7%D9%84%D8%A8%D8%AD%D8%AB%20%D9%81%D9%8A%20%D8%A7%D9%84%D8%AF%D8%A7%D8%B4%D8%A8%D9%88%D8%B1%D8%AF" autocomplete="off" aria-controls="global-search-results">' +
       '<div id="global-search-results" aria-live="polite" hidden></div></div></div>' +
-      '<button class="btn ghost sm header-icon" id="kudos-send-btn" type="button" title="ابعت شكر" data-i18n-title="%D8%A7%D8%A8%D8%B9%D8%AA%20%D8%B4%D9%83%D8%B1" aria-label="ابعت شكر" data-i18n-aria-label="%D8%A7%D8%A8%D8%B9%D8%AA%20%D8%B4%D9%83%D8%B1" hidden><span aria-hidden="true">🎉</span></button>' +
+      '<button class="btn ghost sm header-icon" id="kudos-send-btn" type="button" title="ابعت شكر" data-i18n-title="%D8%A7%D8%A8%D8%B9%D8%AA%20%D8%B4%D9%83%D8%B1" aria-label="ابعت شكر" data-i18n-aria-label="%D8%A7%D8%A8%D8%B9%D8%AA%20%D8%B4%D9%83%D8%B1" hidden><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.5-7 10-7 10z"></path></svg></button>' +
       '<div style="position:relative;">' +
-      "<button class=\"btn ghost sm\" id=\"notif-bell-btn\" type=\"button\" title=\"الإشعارات\" data-i18n-title=\"%D8%A7%D9%84%D8%A5%D8%B4%D8%B9%D8%A7%D8%B1%D8%A7%D8%AA\" data-i18n-title=\"%D8%A7%D9%84%D8%A5%D8%B4%D8%B9%D8%A7%D8%B1%D8%A7%D8%AA\" hidden style=\"position:relative;\">🔔" +
+      "<button class=\"btn ghost sm header-icon\" id=\"notif-bell-btn\" type=\"button\" title=\"الإشعارات\" data-i18n-title=\"%D8%A7%D9%84%D8%A5%D8%B4%D8%B9%D8%A7%D8%B1%D8%A7%D8%AA\" data-i18n-title=\"%D8%A7%D9%84%D8%A5%D8%B4%D8%B9%D8%A7%D8%B1%D8%A7%D8%AA\" hidden style=\"position:relative;\"><svg viewBox='0 0 24 24' width='22' height='22' fill='none' stroke='currentColor' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><path d='M6 17V11a6 6 0 0 1 12 0v6l1.5 2h-15z'></path><path d='M10 21h4'></path></svg>" +
       '<span id="notif-badge" hidden style="position:absolute;top:-6px;left:-6px;background:#D0402A;color:#fff;border-radius:10px;font-size:10px;padding:1px 5px;line-height:1.4;">0</span></button>' +
       '<div id="notif-panel" hidden style="position:absolute;top:100%;left:0;width:300px;background:var(--c-card);border:1px solid var(--c-border);border-radius:10px;margin-top:4px;max-height:360px;overflow:auto;z-index:60;box-shadow:0 6px 18px rgba(0,0,0,.12);"></div>' +
       '</div>' +
       window.SSMPDI18n.buttonHtml() + '<div class="who">' +
-      "<button class=\"user-menu-icon\" id=\"user-menu-btn\" type=\"button\" title=\"القائمة\" data-i18n-title=\"%D8%A7%D9%84%D9%82%D8%A7%D8%A6%D9%85%D8%A9\" data-i18n-title=\"%D8%A7%D9%84%D9%82%D8%A7%D8%A6%D9%85%D8%A9\" aria-label=\"القائمة\" data-i18n-aria-label=\"%D8%A7%D9%84%D9%82%D8%A7%D8%A6%D9%85%D8%A9\" data-i18n-aria-label=\"%D8%A7%D9%84%D9%82%D8%A7%D8%A6%D9%85%D8%A9\">☰</button>" +
+      "<button class=\"user-menu-icon\" id=\"user-menu-btn\" type=\"button\" title=\"القائمة\" data-i18n-title=\"%D8%A7%D9%84%D9%82%D8%A7%D8%A6%D9%85%D8%A9\" data-i18n-title=\"%D8%A7%D9%84%D9%82%D8%A7%D8%A6%D9%85%D8%A9\" aria-label=\"القائمة\" data-i18n-aria-label=\"%D8%A7%D9%84%D9%82%D8%A7%D8%A6%D9%85%D8%A9\" data-i18n-aria-label=\"%D8%A7%D9%84%D9%82%D8%A7%D8%A6%D9%85%D8%A9\"><svg class='um-user' viewBox='0 0 24 24' width='22' height='22' fill='none' stroke='currentColor' stroke-width='1.8' stroke-linecap='round' aria-hidden='true'><circle cx='12' cy='8' r='4'></circle><path d='M4.5 20a7.5 7.5 0 0 1 15 0'></path></svg><svg class='um-chev' viewBox='0 0 24 24' width='20' height='20' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><path d='m6 9 6 6 6-6'></path></svg></button>" +
       " <button class=\"btn ghost sm\" id=\"logout-btn\"> <!--ssmpd-i18n:%D8%AE%D8%B1%D9%88%D8%AC-->خروج</button></div>" +
       '</div>'+accountHtml+'<button class="menu-toggle" id="menu-toggle-btn" type="button"><b>' + displayName + '</b><span class="mt-arrow">▾</span></button>' +
       '</div>' +
@@ -255,7 +255,8 @@
       '<div class="mm-name">' + displayName + '</div>' +
       '<div class="mm-role">' + roleLabel + '</div>' +
       '<div class="ud-items">' + ddItems + '</div>' +
-      "<button class=\"btn ghost sm mm-logout\" id=\"logout-btn-dropdown\"> <!--ssmpd-i18n:%D8%AE%D8%B1%D9%88%D8%AC-->خروج</button>" +
+      '<div class="hdr-extra"><button type="button" class="hdr-extra-row hdr-help-row" id="hdr-help-row"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 2-2.5 2-2.5 4"></path><path d="M12 16h.01"></path></svg><span>مساعدة الداشبورد</span></button><button type="button" class="hdr-extra-row" id="hdr-kudos-row" hidden><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.5-7 10-7 10z"></path></svg><span>ابعت شكر لزميل</span></button><button type="button" class="hdr-extra-row" id="hdr-lang-row"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"></path></svg><span class="hdr-lang-label">اللغة</span><em data-language-switch dir="auto">EN</em></button></div>' +
+            "<button class=\"btn ghost sm mm-logout\" id=\"logout-btn-dropdown\"> <!--ssmpd-i18n:%D8%AE%D8%B1%D9%88%D8%AC-->خروج</button>" +
       '</div>' +
       '<div class="tabs" id="tabs-bar">' + tabButtonsHtml() + '</div>' +
       '<div id="inventory-navigation" hidden></div>' +
@@ -288,6 +289,10 @@
     document.getElementById("logout-btn").onclick = doLogout;
     document.getElementById("logout-btn-mobile").onclick = doLogout;
     document.getElementById("logout-btn-dropdown").onclick = doLogout;
+    var helpRow = document.getElementById("hdr-help-row");
+    if (helpRow) helpRow.onclick = function () { var m = document.getElementById("user-dropdown"); if (m) m.classList.remove("open"); document.body.classList.remove("nav-menu-open"); var hb = document.getElementById("dashboard-help-toggle"); if (hb) hb.click(); };
+    var langRow = document.getElementById("hdr-lang-row");
+    if (langRow) langRow.onclick = function (e) { if (e.target.closest("[data-language-switch]")) return; var sw = document.querySelector(".topbar [data-language-switch]"); if (sw) sw.click(); };
 
     menuToggleBtn.onclick = function (e) {
       e.stopPropagation();
@@ -923,6 +928,8 @@
     if (!canSendKudos(admin)) return;
     btn.hidden = false;
     btn.onclick = openSendKudosModal;
+    var kr = document.getElementById("hdr-kudos-row");
+    if (kr) { kr.hidden = false; kr.onclick = function () { var m = document.getElementById("user-dropdown"); if (m) m.classList.remove("open"); document.body.classList.remove("nav-menu-open"); openSendKudosModal(); }; }
   }
   function openSendKudosModal() {
     var admin = window.SSMPDAuth.currentAdmin;
