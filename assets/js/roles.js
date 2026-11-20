@@ -153,7 +153,7 @@
       }
       if (Roles.hasRole(admin, "contract_manager")) return "contracting_entities";
       if (Roles.hasRole(admin, "reception") || Roles.hasRole(admin, "customer_service")) return "leads";
-      if (Roles.hasAnyRole(admin, ["nursing","head_nursing"])) return "patients";
+      if (Roles.hasAnyRole(admin, ["nursing","head_nursing"])) return Roles.isNursingDayOnly(admin) ? "reception_services" : "patients";
       if (Roles.hasRole(admin, "sono_doctor")) return "patients";
       if (Roles.hasRole(admin, "approver")) return "review";
       if (Roles.hasRole(admin, "designer")) return "design";

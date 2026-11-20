@@ -3353,6 +3353,8 @@
     var currentPage = document.querySelector('.pp-page');
     if (currentPage && currentPage.dataset.ppPatientId === String(patientId)) return;
     if (currentPage && window.SSMPDPatientUI) window.SSMPDPatientUI.closePage(currentPage, false);
+    if (window.__SWNWNursingOpenLogged === String(patientId)) { window.__SWNWNursingOpenLogged = null; }
+    else if (window.SSMPDDb && window.SSMPDDb.client) { try { Promise.resolve(window.SSMPDDb.client.rpc('log_patient_file_open', { p_patient: patientId, p_source: 'archive' })).catch(function () {}); } catch (e) {} }
     var backdrop = document.createElement("div");
     backdrop.className = "modal-backdrop";
     backdrop.dataset.ppLoadingPatient = String(patientId);

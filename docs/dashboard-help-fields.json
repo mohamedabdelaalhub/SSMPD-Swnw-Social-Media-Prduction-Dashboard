@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1838,
-    "labels": 1347,
-    "files": 133,
-    "groups": 1454
+    "definitions": 1857,
+    "labels": 1361,
+    "files": 135,
+    "groups": 1468
   },
   "fields": [
     {
@@ -713,6 +713,136 @@
       "tab": "price_lists",
       "article": "price-lists",
       "text_sha256": "b9218f1e66f677b77999d3ead4fba11368977988dd54ac13873a1e609ad70867"
+    },
+    {
+      "file": "clinical-drafts.js",
+      "label": "مكان العلاج",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "clinical-drafts",
+      "text_sha256": "f78acae993cd6251b55ea406ab9c08cf78e2ac62ba706b135ce7eaff5da1becf"
+    },
+    {
+      "file": "clinical-drafts.js",
+      "label": "المدة (بالدقائق)",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "clinical-drafts",
+      "text_sha256": "bcf74e130ef17dc94e3a663d9664b808cb6583e27981b970714e2b8aab6d79aa"
+    },
+    {
+      "file": "clinical-drafts.js",
+      "label": "ملاحظات الجلسة",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "clinical-drafts",
+      "text_sha256": "7ad584e010a6676b16205d13871b67ec166beba10ba6422117b13774f679694a"
+    },
+    {
+      "file": "clinical-drafts.js",
+      "label": "36 — سفلي أيمن",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "production",
+      "article": "clinical-drafts",
+      "text_sha256": "c4fbf61ffc4c5724cfbc83830dc3a8491768422f9e7a26d54687449ebf5f90a4"
+    },
+    {
+      "file": "clinical-drafts.js",
+      "label": "السن",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "clinical-drafts",
+      "text_sha256": "c4fbf61ffc4c5724cfbc83830dc3a8491768422f9e7a26d54687449ebf5f90a4"
+    },
+    {
+      "file": "clinical-drafts.js",
+      "label": "الإجراء",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "clinical-drafts",
+      "text_sha256": "dac6e3f8e4ea852f8e3fb16be5fbe76152443da714497600f189633f6a5989eb"
+    },
+    {
+      "file": "clinical-drafts.js",
+      "label": "مثال: MTA — بتختلف من حالة لحالة",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "production",
+      "article": "clinical-drafts",
+      "text_sha256": "88693a7a554ec195ab96c6455fadf8c2b1951fceb517208a63fd6df34451b932"
+    },
+    {
+      "file": "clinical-drafts.js",
+      "label": "الماتريال / الخامة",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "clinical-drafts",
+      "text_sha256": "88693a7a554ec195ab96c6455fadf8c2b1951fceb517208a63fd6df34451b932"
+    },
+    {
+      "file": "clinical-drafts.js",
+      "label": "اكتب مكان السن",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "production",
+      "article": "clinical-drafts",
+      "text_sha256": "df2b29e23e4c0231e90b88b22465e9fd2afb22a2b58d088770b01569c8fe2689"
+    },
+    {
+      "file": "clinical-drafts.js",
+      "label": "مكان السن المخلوع",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "clinical-drafts",
+      "text_sha256": "df2b29e23e4c0231e90b88b22465e9fd2afb22a2b58d088770b01569c8fe2689"
+    },
+    {
+      "file": "clinical-drafts.js",
+      "label": "الخطة",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "clinical-drafts",
+      "text_sha256": "a01f6ef1c1544f6b84962e7aa5b27833a7ed684a1ed81509dedb1956d4d7d302"
+    },
+    {
+      "file": "clinical-drafts.js",
+      "label": "اكتب اللي محتاج يتعدّل",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "production",
+      "article": "clinical-drafts",
+      "text_sha256": "77987c732b8e4f86b7e468cb3cfe396fcb0ef896ac95a01acddead82aea657ac"
+    },
+    {
+      "file": "clinical-drafts.js",
+      "label": "سبب الرجوع للتعديل (إجباري لو هترجّعه)",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "clinical-drafts",
+      "text_sha256": "77987c732b8e4f86b7e468cb3cfe396fcb0ef896ac95a01acddead82aea657ac"
     },
     {
       "file": "comments.js",
@@ -9760,6 +9890,66 @@
       "tab": "home",
       "article": "personal",
       "text_sha256": "cb369dfe4f4d347611d73d597b06cf662eed732794d5ab3c69f3490bdb9b7602"
+    },
+    {
+      "file": "nursing-day-ops.js",
+      "label": "القسم",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "production",
+      "article": "content",
+      "text_sha256": "8781afaef1012c14a5b9f99b05513e1852e02bb6c191b2fc0b339518d671a4a9"
+    },
+    {
+      "file": "nursing-day-ops.js",
+      "label": "ضغط الدم",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "patient-records",
+      "text_sha256": "0fbb82c4d121167a30c556660ad80ab4ad5e0f27a66f4d6ee6ceba496e8290a5"
+    },
+    {
+      "file": "nursing-day-ops.js",
+      "label": "ملاحظات التمريض",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "production",
+      "article": "nursing-triage",
+      "text_sha256": "2f5484611e5f45f0aa08e0184477b8ff327dda450bff9535c2147af8ba43dbd7"
+    },
+    {
+      "file": "nursing-day-ops.js",
+      "label": "لو أخرى، اكتب هنا",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "nursing-triage",
+      "text_sha256": "87520ff18cb9891a44ac389aa4b4a43a8d66263e0a9b54ebbeb051a41a52c3b3"
+    },
+    {
+      "file": "nursing-day-ops.js",
+      "label": "حساسية",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "nursing-triage",
+      "text_sha256": "f002d99f7e2bc62cb1b740e1d4f7c8e56d2312b3e15f8fd2e4156b8e7fddfef4"
+    },
+    {
+      "file": "nursing-day-ops.js",
+      "label": "الشكوى الرئيسية",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "production",
+      "article": "nursing-triage",
+      "text_sha256": "4e478ffd5542800f0b62bc21cc9c46fb1297efdb58b2c7f069d70643ede38950"
     },
     {
       "file": "patient360.js",
