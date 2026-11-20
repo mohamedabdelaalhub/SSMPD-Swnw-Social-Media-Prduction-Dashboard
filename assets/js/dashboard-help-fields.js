@@ -6641,6 +6641,22 @@
       "reviewed": true
     },
     {
+      "title": "فئة (اختياري)",
+      "labels": [
+        "فئة (اختياري)"
+      ],
+      "text": "اختار تصنيف السجل حسب الشاشة. في رفع مستند مريض مثل أشعة أو تحاليل أو تقرير، وفي المخزن تصنيف الصنف. التصنيف يساعد الفلترة ولا يغير محتوى الملف.",
+      "article": "ledger-guide",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [
+        "تصنيف حساب"
+      ],
+      "reviewed": true
+    },
+    {
       "title": "الطريقة",
       "labels": [
         "الطريقة"
@@ -21745,9 +21761,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1857,
-    "labels": 1361,
-    "files": 135,
-    "groups": 1468
+    "definitions": 1860,
+    "labels": 1362,
+    "files": 136,
+    "groups": 1469
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
