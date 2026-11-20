@@ -1,0 +1,242 @@
+<!doctype html><html dir="rtl" lang="ar"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>تقرير ماسا: التحصيل والمصروفات والصافي — تصور</title>
+<style>
+@font-face{font-family:"BigVesta Arabic";src:url("../../../assets/fonts/BigVesta-Regular.woff2")}
+@font-face{font-family:"BigVesta Arabic";font-weight:700;src:url("../../../assets/fonts/BigVesta-Bold.woff2")}
+*{box-sizing:border-box;margin:0}
+:root{--ink:#16212E;--mut:#65748a;--line:#E3E9F4;--blue:#0F369D;--acc:#F15A22;
+--k-op:#0F369D;--k-adv:#00B0BD;--k-par:#8A5CF6;--k-tr:#9AA7BD;--k-ig:#D5DBE6;--k-un:#FF8800}
+body{font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,sans-serif;background:#F4F7FD;color:var(--ink);padding:16px 0 50px;font-variant-numeric:tabular-nums}
+.lbl{font:700 12px system-ui;color:var(--mut);direction:ltr;text-align:left;max-width:1280px;margin:18px auto 6px;padding:0 16px}
+.page{max-width:1280px;margin:0 auto;padding:0 16px;display:grid;gap:14px}
+.card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:18px;display:grid;gap:12px;min-width:0}
+h2{font-size:20px;font-weight:800}h3{font-size:16px;font-weight:800}.sub{font-size:12px;color:var(--mut)}
+.top{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.seg{display:inline-flex;background:#F1F4F8;border-radius:12px;padding:3px;gap:2px}
+.seg span{padding:8px 14px;border-radius:9px;font-size:13px;font-weight:700;color:var(--mut);white-space:nowrap}
+.seg .on{background:#fff;color:var(--blue);box-shadow:0 1px 3px rgba(15,54,157,.12)}
+.filters{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.dt{display:flex;align-items:center;gap:8px;height:40px;padding:0 12px;border:1px solid var(--line);border-radius:12px;font-size:13px;background:#fff;white-space:nowrap}
+.dt b{color:var(--mut);font-weight:400;font-size:12px}
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.tile{display:grid;gap:6px;padding:14px 16px;border:1px solid var(--line);border-radius:16px;background:#fff;position:relative}
+.tile .ic{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;background:#EDF2FF;color:var(--blue)}
+.tile .ic svg{width:19px;height:19px}
+.tile small{font-size:12px;color:var(--mut)}.tile b{font-size:24px;font-weight:800;direction:ltr;text-align:start}
+.tile em{font-style:normal;font-size:11px;color:var(--mut)}
+.tile.hero{background:var(--blue);border-color:var(--blue);color:#fff}.tile.hero small,.tile.hero em{color:#ffffffcc}.tile.hero .ic{background:#ffffff22;color:#fff}
+.tile .go{position:absolute;inset-inline-end:12px;top:14px;font-size:11px;color:var(--blue);font-weight:700}.tile.hero .go{color:#fff}
+.warn{display:flex;gap:10px;align-items:center;background:#FFF3E0;border:1px solid #FFD9A8;border-radius:14px;padding:10px 14px;font-size:13px}
+.warn b{background:var(--k-un);color:#333;border-radius:9px;padding:2px 9px;font-size:12px}
+.warn .btn{margin-inline-start:auto}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:38px;padding:0 16px;border-radius:12px;background:var(--blue);color:#fff;font-weight:700;font-size:13px;white-space:nowrap;border:0}
+.btn.ghost{background:#fff;color:var(--blue);border:1px solid #C9D6F2}
+.cols{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:14px}
+.chart{direction:ltr}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--mut)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-inline-end:6px;vertical-align:-1px}
+.segbar{display:flex;gap:2px;height:16px;border-radius:8px;overflow:hidden;direction:ltr}
+.segbar i{display:block}
+.kl{display:grid;gap:0}
+.kl div{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #EDF0F5;font-size:13.5px}
+.kl div:last-child{border:0}.card .kl{align-content:start}
+.kl i{width:10px;height:10px;border-radius:3px;flex:none}
+.kl b{margin-inline-start:auto;direction:ltr}.kl span{color:var(--mut);font-size:12px;min-width:44px;text-align:end}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{font-size:12px;color:var(--mut);font-weight:700;text-align:start;padding:10px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:11px 10px;border-bottom:1px solid #EDF0F5;white-space:nowrap}
+td.n,th.n{text-align:end;direction:ltr}
+tr.row:hover td{background:#F7F9FE}
+.crumb{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--mut)}.crumb b{color:var(--blue)}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:9px;font-size:12px;font-weight:700;color:#333;white-space:nowrap}
+.c-op{background:#DCE6FF}.c-adv{background:#CDF0F3}.c-par{background:#E8DDFD}.c-tr{background:#E6EAF1}.c-ig{background:#F1F4F8}.c-un{background:#FFE2BD}
+.neg{color:#D0402A}.pos{color:#1F7A55}
+.acc{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid #EDF0F5}
+.acc:last-child{border:0}.acc .nm{flex:1;min-width:0}.acc .nm b{display:block;font-size:14px}.acc .nm small{font-size:12px;color:var(--mut)}
+.acc .amt{font-weight:800;direction:ltr;font-size:14px}
+.edit{width:36px;height:36px;border-radius:11px;border:1px solid var(--line);display:grid;place-items:center;color:var(--blue);background:#fff;flex:none}
+.edit svg{width:18px;height:18px}
+/* popup */
+.modal{background:#fff;border-radius:20px;border:1px solid var(--line);box-shadow:0 24px 60px rgba(15,54,157,.22);padding:20px;display:grid;gap:14px;max-width:560px;margin:0 auto}
+.modal .hd{display:flex;align-items:center;justify-content:space-between}
+.x{width:36px;height:36px;border-radius:11px;border:1px solid var(--line);display:grid;place-items:center}
+.kinds{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.kind{display:flex;align-items:center;gap:10px;padding:12px;border:1.5px solid var(--line);border-radius:14px;font-size:13.5px;font-weight:700}
+.kind i{width:12px;height:12px;border-radius:4px}
+.kind.on{border-color:var(--blue);background:#EDF2FF}
+.field{display:grid;gap:6px;font-size:12px;color:var(--mut)}
+.field div{height:42px;border:1px solid var(--line);border-radius:12px;display:flex;align-items:center;padding:0 12px;font-size:14px;color:var(--ink)}
+.phones{display:flex;gap:28px;justify-content:center;flex-wrap:wrap}
+.ph{width:390px;background:#F4F7FD;border:1px solid var(--line);border-radius:22px;overflow:hidden;display:grid;gap:12px;padding:12px;align-content:start}
+.ph .tiles{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.ph .tile b{font-size:20px}
+.ph .filters{gap:8px}.ph .seg span{padding:7px 10px;font-size:12px}
+.ph .card{padding:14px;border-radius:16px}
+.prow{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid #EDF0F5}.prow:last-child{border:0}
+.prow .p{font-weight:800;font-size:14px}.prow .l{flex:1}.prow small{font-size:12px;color:var(--mut);display:block}
+.sheet{background:#fff;border-radius:22px 22px 0 0;padding:16px;display:grid;gap:12px;box-shadow:0 -10px 40px rgba(15,54,157,.2);margin:0 -12px -12px}
+.grab{width:44px;height:5px;border-radius:3px;background:#D5DBE6;margin:0 auto}
+</style>
+<body>
+<svg width="0" height="0" style="position:absolute"><defs>
+<symbol id="in" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v14M7 12l5 5 5-5M5 21h14"/></symbol>
+<symbol id="out" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V7M7 12l5-5 5 5M5 3h14"/></symbol>
+<symbol id="net" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M16 14.5h2"/></symbol>
+<symbol id="gear" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8"/></symbol>
+<symbol id="pen" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4"/></symbol>
+<symbol id="cal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M8 3v4M16 3v4M3.5 10h17"/></symbol>
+<symbol id="close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+</defs></svg>
+
+<div class="lbl">DESKTOP 1280 — الشاشة الرئيسية (مالية فقط · تاب الحسابات ← تقرير ماسا)</div>
+<div class="page">
+ <div class="card">
+  <div class="top"><div><h2>تقرير ماسا: التحصيل والمصروفات والصافي</h2><div class="sub">من إيصالات ماسا المنسوخة · الأرقام بالجنيه</div></div>
+   <div class="seg"><span class="on">الشهور</span><span>الأيام</span></div></div>
+  <div class="filters">
+   <div class="seg"><span class="on">الكل</span><span>ماسا الحالية</span><span>الفرع القديم (2024 – مارس 2026)</span></div>
+   <div class="dt"><svg width="18" height="18" style="color:#0F369D"><use href="#cal"/></svg><b>من</b>2026-01-01</div>
+   <div class="dt"><svg width="18" height="18" style="color:#0F369D"><use href="#cal"/></svg><b>إلى</b>2026-11-20</div>
+   <div class="seg"><span>الشهر ده</span><span>٣ شهور</span><span class="on">السنة</span></div>
+  </div>
+ </div>
+
+ <div class="warn"><b>12</b>حساب مصروفات لسه ماتصنفش — بيتحسبوا «تشغيلي» لحد ما تصنّفهم<span class="btn">صنّف الحسابات</span></div>
+
+ <div class="tiles">
+  <div class="tile"><div class="ic"><svg><use href="#in"/></svg></div><small>التحصيل</small><b data-t="inc">4,862,300</b><em>من 18,420 إيصال</em><span class="go">التفاصيل ›</span></div>
+  <div class="tile"><div class="ic"><svg><use href="#out"/></svg></div><small>المصروفات (بدون تحويلات وتجاهل)</small><b data-t="out">3,114,850</b><em>تشغيلي + سلف + مسحوبات</em><span class="go">التفاصيل ›</span></div>
+  <div class="tile hero"><div class="ic"><svg><use href="#net"/></svg></div><small>صافي النقد</small><b data-t="net">1,747,450</b><em>التحصيل − كل المصروفات</em><span class="go">التفاصيل ›</span></div>
+  <div class="tile"><div class="ic"><svg><use href="#net"/></svg></div><small>صافي التشغيل</small><b data-t="op">2,203,100</b><em>التحصيل − التشغيلي فقط</em><span class="go">التفاصيل ›</span></div>
+ </div>
+
+ <div class="cols">
+  <div class="card">
+   <div class="top"><h3>التحصيل مقابل المصروفات — شهرياً</h3>
+    <div class="legend"><span><i style="background:#0F369D"></i>التحصيل</span><span><i style="background:#9AA7BD"></i>المصروفات</span><span><i style="background:#00B0BD"></i>صافي النقد</span></div></div>
+   <div class="chart"><svg id="chart" viewBox="0 0 760 250" width="100%" role="img" aria-label="التحصيل مقابل المصروفات شهرياً"></svg></div>
+   <div class="sub">الأقدم ← الأحدث · الأرقام بالألف جنيه · دوس على أي شهر يفتح أيامه</div>
+  </div>
+  <div class="card">
+   <h3>المصروفات حسب النوع</h3>
+   <div class="segbar"><i style="flex:46;background:var(--k-op)"></i><i style="flex:19;background:var(--k-adv)"></i><i style="flex:17;background:var(--k-par)"></i><i style="flex:9;background:var(--k-tr)"></i><i style="flex:5;background:var(--k-ig)"></i><i style="flex:4;background:repeating-linear-gradient(45deg,#FF8800,#FF8800 3px,#FFD9A8 3px,#FFD9A8 6px)"></i></div>
+   <div class="kl">
+    <div><i style="background:var(--k-op)"></i>تشغيلي<span>46%</span><b>1,432,830</b></div>
+    <div><i style="background:var(--k-adv)"></i>سلف<span>19%</span><b>591,822</b></div>
+    <div><i style="background:var(--k-par)"></i>مسحوبات شركاء<span>17%</span><b>529,525</b></div>
+    <div><i style="background:var(--k-tr)"></i>تحويلات بين خزن<span>9%</span><b>280,336</b></div>
+    <div><i style="background:var(--k-ig)"></i>تجاهل<span>5%</span><b>155,742</b></div>
+    <div><i style="background:#FF8800"></i>غير مصنّف<span>4%</span><b>124,594</b></div>
+   </div>
+   <div class="sub">التحويلات والتجاهل مش داخلين في صافي النقد.</div>
+  </div>
+ </div>
+
+ <div class="card">
+  <div class="top"><div class="crumb"><b>2026</b> ← <span class="sub">دوس على أي شهر يفتح أيامه</span></div></div>
+  <table>
+   <thead><tr><th>الشهر</th><th class="n">التحصيل</th><th class="n">تشغيلي</th><th class="n">سلف</th><th class="n">مسحوبات</th><th class="n">تحويلات</th><th class="n">صافي النقد</th><th class="n">صافي التشغيل</th></tr></thead>
+   <tbody id="rows"></tbody>
+  </table>
+ </div>
+
+ <div class="cols">
+  <div class="card">
+   <div class="top"><h3>أعلى الحسابات صرفاً</h3><span class="btn ghost"><svg width="18" height="18" style="margin-inline-end:6px"><use href="#gear"/></svg>تصنيف الحسابات</span></div>
+   <div>
+    <div class="acc"><div class="nm"><b>رواتب موظفين</b><small>212 إذن صرف</small></div><span class="chip c-op">تشغيلي</span><span class="amt">642,000</span><span class="edit"><svg><use href="#pen"/></svg></span></div>
+    <div class="acc"><div class="nm"><b>د. أحمد — مسحوبات</b><small>38 إذن صرف</small></div><span class="chip c-par">مسحوبات شركاء</span><span class="amt">388,500</span><span class="edit"><svg><use href="#pen"/></svg></span></div>
+    <div class="acc"><div class="nm"><b>سلف العاملين</b><small>97 إذن صرف</small></div><span class="chip c-adv">سلف</span><span class="amt">311,200</span><span class="edit"><svg><use href="#pen"/></svg></span></div>
+    <div class="acc"><div class="nm"><b>خزنة الاستقبال ← الخزنة الرئيسية</b><small>64 إذن صرف</small></div><span class="chip c-tr">تحويلات</span><span class="amt">280,336</span><span class="edit"><svg><use href="#pen"/></svg></span></div>
+    <div class="acc"><div class="nm"><b>مستلزمات طبية متنوعة</b><small>51 إذن صرف</small></div><span class="chip c-un">غير مصنّف</span><span class="amt">124,594</span><span class="edit"><svg><use href="#pen"/></svg></span></div>
+   </div>
+  </div>
+  <div class="card" style="align-content:start">
+   <h3>إزاي بنقرأ الأرقام؟</h3>
+   <div class="kl">
+    <div><i style="background:#0F369D"></i>صافي النقد: اللي دخل − كل اللي خرج (تشغيلي وسلف ومسحوبات)</div>
+    <div><i style="background:#00B0BD"></i>صافي التشغيل: اللي دخل − مصاريف التشغيل بس</div>
+    <div><i style="background:#9AA7BD"></i>التحويلات بين الخزن والتجاهل: مابتأثرش في الصافي</div>
+   </div>
+  </div>
+ </div>
+</div>
+
+<div class="lbl">DESKTOP — نافذة «تصنيف الحساب» (من زرار القلم)</div>
+<div class="page"><div class="modal">
+ <div class="hd"><h3>تصنيف حساب</h3><span class="x"><svg width="18" height="18"><use href="#close"/></svg></span></div>
+ <div class="field">الحساب<div>مستلزمات طبية متنوعة</div></div>
+ <div class="field">نوع الحساب</div>
+ <div class="kinds">
+  <div class="kind on"><i style="background:var(--k-op)"></i>تشغيلي</div>
+  <div class="kind"><i style="background:var(--k-adv)"></i>سلف</div>
+  <div class="kind"><i style="background:var(--k-par)"></i>مسحوبات شركاء</div>
+  <div class="kind"><i style="background:var(--k-tr)"></i>تحويلات بين خزن</div>
+  <div class="kind"><i style="background:var(--k-ig)"></i>تجاهل</div>
+ </div>
+ <div class="field">فئة (اختياري)<div>مستلزمات</div></div>
+ <div class="sub">التغيير بيطبق على كل صرف الحساب ده، قديم وجديد، وأرقام التقرير بتتحدث فوراً.</div>
+ <div style="display:flex;gap:10px"><span class="btn">حفظ</span><span class="btn ghost">إلغاء</span></div>
+</div></div>
+
+<div class="lbl">MOBILE 390 — الرئيسية، ونافذة التصنيف</div>
+<div class="phones">
+ <div class="ph">
+  <div class="card"><h2 style="font-size:17px">تقرير ماسا: التحصيل والمصروفات والصافي</h2>
+   <div class="filters"><div class="seg"><span class="on">الكل</span><span>ماسا</span><span>القديم</span></div></div>
+   <div class="filters"><div class="seg"><span>الشهر ده</span><span>٣ شهور</span><span class="on">السنة</span></div><div class="seg"><span class="on">شهور</span><span>أيام</span></div></div></div>
+  <div class="warn" style="font-size:12.5px"><b>12</b>حساب لسه ماتصنفش<span class="btn" style="min-height:34px;padding:0 12px">صنّف</span></div>
+  <div class="tiles">
+   <div class="tile"><small>التحصيل</small><b data-t="inc">4,862,300</b></div>
+   <div class="tile"><small>المصروفات</small><b data-t="out">3,114,850</b></div>
+   <div class="tile hero"><small>صافي النقد</small><b data-t="net">1,747,450</b></div>
+   <div class="tile"><small>صافي التشغيل</small><b data-t="op">2,203,100</b></div>
+  </div>
+  <div class="card"><h3>المصروفات حسب النوع</h3>
+   <div class="segbar"><i style="flex:46;background:var(--k-op)"></i><i style="flex:19;background:var(--k-adv)"></i><i style="flex:17;background:var(--k-par)"></i><i style="flex:9;background:var(--k-tr)"></i><i style="flex:5;background:var(--k-ig)"></i><i style="flex:4;background:#FF8800"></i></div>
+   <div class="kl"><div><i style="background:var(--k-op)"></i>تشغيلي<span>46%</span><b>1,432,830</b></div><div><i style="background:var(--k-adv)"></i>سلف<span>19%</span><b>591,822</b></div><div><i style="background:var(--k-par)"></i>مسحوبات شركاء<span>17%</span><b>529,525</b></div></div></div>
+  <div class="card"><h3>شهرياً</h3>
+   <div class="prow"><div class="l"><div class="p">2026-11</div><small>التحصيل 612,400</small></div><div style="text-align:end"><b class="pos">+214,300</b><small>صافي النقد</small></div></div>
+   <div class="prow"><div class="l"><div class="p">2026-10</div><small>التحصيل 598,100</small></div><div style="text-align:end"><b class="pos">+201,850</b><small>صافي النقد</small></div></div>
+   <div class="prow"><div class="l"><div class="p">2026-09</div><small>التحصيل 544,900</small></div><div style="text-align:end"><b class="neg">−12,300</b><small>صافي النقد</small></div></div>
+  </div>
+ </div>
+ <div class="ph" style="min-height:560px;align-content:end">
+  <div class="sheet">
+   <div class="grab"></div>
+   <div class="top"><h3>تصنيف حساب</h3><span class="x"><svg width="18" height="18"><use href="#close"/></svg></span></div>
+   <div class="field">الحساب<div>مستلزمات طبية متنوعة</div></div>
+   <div class="kinds">
+    <div class="kind on"><i style="background:var(--k-op)"></i>تشغيلي</div>
+    <div class="kind"><i style="background:var(--k-adv)"></i>سلف</div>
+    <div class="kind"><i style="background:var(--k-par)"></i>مسحوبات</div>
+    <div class="kind"><i style="background:var(--k-tr)"></i>تحويلات</div>
+    <div class="kind"><i style="background:var(--k-ig)"></i>تجاهل</div>
+   </div>
+   <div class="field">فئة (اختياري)<div>مستلزمات</div></div>
+   <div style="display:flex;gap:10px"><span class="btn" style="flex:1">حفظ</span><span class="btn ghost">إلغاء</span></div>
+  </div>
+ </div>
+</div>
+
+<script>
+const M=[['يناير',402,205,60,40,40],['فبراير',388,198,58,36,32],['مارس',441,214,66,44,48],['أبريل',455,222,70,46,44],['مايو',470,230,72,50,51],['يونيو',498,244,76,52,55],['يوليو',512,250,80,54,50],['أغسطس',530,258,82,58,60],['سبتمبر',545,264,86,60,62],['أكتوبر',598,280,90,64,58],['نوفمبر',612,286,94,68,56]];
+// M: month, income(k), operating, advance, partner, transfer(k)
+const f=n=>n.toLocaleString('en-US');
+let rows='';M.slice().reverse().forEach(([m,i,o,a,p,t])=>{const nc=i-o-a-p,no=i-o;rows+=`<tr class="row"><td><b>${m}</b></td><td class="n">${f(i*1000)}</td><td class="n">${f(o*1000)}</td><td class="n">${f(a*1000)}</td><td class="n">${f(p*1000)}</td><td class="n">${f(t*1000)}</td><td class="n ${nc<0?'neg':'pos'}"><b>${f(nc*1000)}</b></td><td class="n"><b>${f(no*1000)}</b></td></tr>`});
+document.getElementById('rows').innerHTML=rows;
+const T=M.reduce((a,[m,i,o,ad,p])=>({i:a.i+i,o:a.o+o,ad:a.ad+ad,p:a.p+p}),{i:0,o:0,ad:0,p:0});
+const tv={inc:T.i,out:T.o+T.ad+T.p,net:T.i-T.o-T.ad-T.p,op:T.i-T.o};
+document.querySelectorAll('[data-t]').forEach(e=>e.textContent=f(tv[e.dataset.t]*1000));
+// chart
+const W=760,H=250,L=40,B=30,T=10,n=M.length,gw=(W-L)/n,max=700;const y=v=>T+(H-T-B)*(1-v/max);
+let s='';[0,200,400,600].forEach(v=>{s+=`<line x1="${L}" x2="${W}" y1="${y(v)}" y2="${y(v)}" stroke="#E3E9F4"/><text x="${L-8}" y="${y(v)+4}" font-size="11" fill="#65748a" text-anchor="end">${v}</text>`});
+M.forEach(([m,i,o,a,p],k)=>{const x=L+k*gw+gw/2,out=o+a+p,last=k>=n-2;
+ s+=`<rect x="${x-17}" y="${y(i)}" width="14" height="${H-B-y(i)}" rx="4" fill="#0F369D" opacity="${last?1:.78}"/>`;
+ s+=`<rect x="${x+3}" y="${y(out)}" width="14" height="${H-B-y(out)}" rx="4" fill="#9AA7BD" opacity="${last?1:.78}"/>`;
+ s+=`<text x="${x}" y="${H-10}" font-size="11" fill="#65748a" text-anchor="middle">${m}</text>`});
+let pts=M.map(([m,i,o,a,p],k)=>[L+k*gw+gw/2,y(i-o-a-p)]);
+s+=`<polyline points="${pts.map(p=>p.join(',')).join(' ')}" fill="none" stroke="#00B0BD" stroke-width="2"/>`;
+pts.slice(-1).forEach(p=>{s+=`<circle cx="${p[0]}" cy="${p[1]}" r="4.5" fill="#00B0BD" stroke="#fff" stroke-width="2"/>`});
+document.getElementById('chart').innerHTML=s;
+</script>
+</body></html>
