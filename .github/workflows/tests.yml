@@ -41,6 +41,7 @@ jobs:
           node tests/specialist-agent-reviews.cjs
           node tests/digital-agent-conversations.cjs
           node tests/digital-agent-edge-syntax.cjs
+          node tests/auto-book-masa-age-requeue-sql.cjs
           node tests/sia-task-evidence-review.cjs
           node tests/management-navigation.cjs
           node tests/digital-team-communications.cjs
