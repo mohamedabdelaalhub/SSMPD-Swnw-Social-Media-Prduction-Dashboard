@@ -23,7 +23,7 @@ const fs=require('fs'),assert=require('node:assert/strict'),{JSDOM}=require('jsd
  assert.match(box.textContent,/الحجز التلقائي شغال/);assert.match(box.textContent,/من 4 دقيقة/);assert.match(box.textContent,/اتضاف النهارده 2 موعد/);
  assert.ok(host.querySelector('[data-tl-card="ap1"] h4 .rx-ab-masa'),'chip on the appointment card');assert.ok(host.querySelector('[data-tl-open="ap1"] .rx-ab-tag'));
  assert.ok(host.classList.contains('rx-ab-on'),'old Masa import list hidden when automatic booking is on');
- assert.match(box.textContent,/حجوزات من غير ساعة \(1\)/);assert.match(box.textContent,/حجز محتاج اختيار منك \(3\)/);
+ assert.match(box.textContent,/حجوزات من غير ساعة \(1\)/);assert.match(box.textContent,/حجوزات تحتاج استكمال \(3\)/);
  assert.match(box.textContent,/P-2026-000188/);assert.match(box.textContent,/افتح ملف جديد باسم «يوسف»/);
  // «new file» needs an age
  const item=[...box.querySelectorAll('.rx-ab-item')].find(x=>x.textContent.includes('P-2026-000188'));

@@ -1,6 +1,6 @@
 // الحجوزات التلقائية (المالك 2026-11-19 «موافق، ابدأ المرحلة الأولى»): أي حجز على ماسا أو من الواتساب أو بوابة المرضى
 // بيتسجّل موعد في الاستقبال لوحده ومربوط بملف المريض. هنا في قسم المواعيد:
-//   شريط المزامنة + علامة المصدر على كل موعد اتعمل لوحده + «حجوزات من غير ساعة» + «حجز محتاج تختار المريض/السن/الخدمة/ميعاد تاني».
+//   شريط المزامنة + علامة المصدر على كل موعد اتعمل لوحده + «حجوزات من غير ساعة» + «حجوزات تحتاج استكمال» (المريض/السن/الخدمة/ميعاد تاني».
 // كل اختيار بيتنفّذ باسم الموظف اللي ضغط (public.clinic_reception_auto_book). مفيش هنا أي اتصال بماسا ولا رسايل.
 (function(){
   var SRC={masa:'من ماسا',whatsapp:'من الواتساب',website:'من الموقع',social:'من السوشيال',portal:'من البوابة'};
@@ -52,7 +52,7 @@
     var html='<div class="rx-ab-sync"><span class="rx-ab-dot"></span> الحجز التلقائي شغال'+(d.synced_at?' — <b>آخر مزامنة مع ماسا '+esc(ago(d.synced_at))+'</b>':'')+' · اتضاف النهارده '+todays.length+' موعد لوحده'+
       '<span class="rx-ab-src">'+Object.keys(by).map(function(k){return '<span class="rx-ab-tag rx-ab-'+esc(k)+'">'+esc(SRC_SHORT[k]||k)+' '+by[k]+'</span>';}).join('')+'</span></div>';
     if(times.length)html+='<section class="rx-mode-card rx-ab-card"><h4>حجوزات من غير ساعة ('+times.length+')</h4>'+times.map(timeRow).join('')+'</section>';
-    if(review.length)html+='<section class="rx-mode-card rx-ab-review"><h4>⚠️ حجز محتاج اختيار منك ('+review.length+')</h4><p>الحجوزات دي جت من ماسا أو الواتساب أو البوابة ومقدرتش تتسجّل لوحدها. اختار المطلوب وهتتسجّل على طول.</p>'+review.map(function(r){return reviewRow(r,d);}).join('')+'</section>';
+    if(review.length)html+='<section class="rx-mode-card rx-ab-review"><h4>⚠️ حجوزات تحتاج استكمال ('+review.length+')</h4><p>الحجوزات دي جت من ماسا أو الواتساب أو البوابة ومقدرتش تتسجّل لوحدها. اختار المطلوب وهتتسجّل على طول.</p>'+review.map(function(r){return reviewRow(r,d);}).join('')+'</section>';
     box.innerHTML=html;box.hidden=false;c.host.classList.add('rx-ab-on');chips(c.host,rows);
     box.querySelectorAll('[data-ab]').forEach(function(b){b.onclick=function(){var a=b.getAttribute('data-ab'),item=b.closest('.rx-ab-item'),p={id:b.getAttribute('data-id')},act;
       try{
