@@ -26,7 +26,7 @@
     var raw=max/4,mag=Math.pow(10,Math.floor(Math.log10(raw))),nz=raw/mag,st=(nz<=1?1:nz<=2?2:nz<=2.5?2.5:nz<=5?5:10)*mag;max=st*4;
     function y(v){return T+(H-T-B)*(1-v/max);}
     var s='';[0,.25,.5,.75,1].forEach(function(f){var v=max*f;s+='<line x1="'+L+'" x2="'+W+'" y1="'+y(v)+'" y2="'+y(v)+'" stroke="#E3E9F4"/><text x="'+(L-8)+'" y="'+(y(v)+4)+'" font-size="11" fill="#65748a" text-anchor="end">'+Math.round(v/1000)+'</text>';});
-    var pts=[];rows.forEach(function(r,k){var x=L+k*gw+gw/2,out=(+r.operating||0)+(+r.advance||0)+(+r.partner_draw||0),last=k>=n-2,bw=Math.min(16,gw/2-4),op=last?1:.78;
+    var pts=[];rows.forEach(function(r,k){var x=L+k*gw+gw/2,out=(+r.operating||0)+(+r.advance||0)+(+r.partner_draw||0),last=k>=n-2,bw=Math.min(16,gw/2-4),op=1;
       var tip=periodLabel(r.period)+' — التحصيل '+money(r.income)+' · المصروفات '+money(out)+' · صافي النقد '+signed(r.net_cash);
       s+='<g tabindex="0" role="img" aria-label="'+esc(tip)+'"><title>'+esc(tip)+'</title><rect x="'+(x-bw-1)+'" y="'+y(+r.income||0)+'" width="'+bw+'" height="'+Math.max(0,H-B-y(+r.income||0))+'" rx="4" fill="#00B0BD" opacity="'+op+'"/><rect x="'+(x+1)+'" y="'+y(out)+'" width="'+bw+'" height="'+Math.max(0,H-B-y(out))+'" rx="4" fill="#FF8800" opacity="'+op+'"/></g>';
       var lab=r.period.length===7?MONTHS[+r.period.slice(5)-1]:r.period.slice(8);if(n<=16||k%Math.ceil(n/16)===0)s+='<text x="'+x+'" y="'+(H-10)+'" font-size="11" fill="#65748a" text-anchor="middle">'+esc(lab)+'</text>';
