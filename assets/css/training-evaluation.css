@@ -43,7 +43,9 @@
 .te-progress{height:8px;border-radius:999px;background:#E9EEF8;overflow:hidden;margin:6px 0 10px}
 .te-progress>i{display:block;height:100%;background:var(--te-blue);border-radius:999px;transition:width .4s cubic-bezier(.22,1,.36,1)}
 
-.te-modules{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.te-modules{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:minmax(0,1fr);gap:8px}
+.te-page .te-modules{margin:0;padding:0}
+.te-modules>li{display:block;min-width:0}
 .te-module{display:flex;align-items:center;gap:12px;width:100%;text-align:start;font:inherit;color:var(--te-ink);background:#FAFBFD;border:1px solid var(--te-line);border-radius:12px;padding:12px 14px;min-height:52px;cursor:pointer;transition:border-color .15s,background .15s,transform .15s}
 .te-module>span:nth-child(2){flex:1;min-width:0;font-weight:600;overflow-wrap:anywhere}
 .te-module:hover{border-color:var(--te-blue);background:rgba(15,54,157,.04)}
@@ -116,6 +118,8 @@
   .te-dd{grid-template-columns:1fr;gap:12px}
   .te-head .btn{width:100%}
   .te-module{padding:10px 12px;gap:10px;flex-wrap:wrap}
+  .te-module>span:nth-child(2){flex:1 1 calc(100% - 52px);overflow-wrap:break-word;word-break:normal}
+  .te-module>span:nth-child(3){flex:1 1 100%;min-width:0}
   .te-exam-bar{padding:8px 12px;font-size:13.5px}
   .te-q{font-size:17px}
   .te-nav .btn{flex:1 1 30%;padding-inline:8px}
