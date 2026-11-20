@@ -4,7 +4,7 @@
 'use strict';
 if(window.__SWNWNursingDayOpsV1)return;
 window.__SWNWNursingDayOpsV1=true;
-var ctx=null,data=null,notes=null,settings=null,settingsTried=false,sel=null,view=null,form=null,loading=false,busy=false,timer=null,modalId=null;
+var unlinked=null,ctx=null,data=null,notes=null,settings=null,settingsTried=false,sel=null,view=null,form=null,loading=false,busy=false,timer=null,modalId=null;
 var SEC=[['physio','علاج طبيعي'],['dental','أسنان'],['general','تمريض عام']];
 var PREP={dental:['كرسي الأسنان جاهز','أدوات التعقيم جاهزة','الأشعة السابقة على الشاشة'],physio:['سرير الجلسة جاهز','الأجهزة جاهزة','شرح الجلسة للمريض'],general:['جهاز الضغط والميزان جاهزين','ملف المريض مفتوح']};
 var CHRONIC=['سكر','ضغط','قلب','ربو','غدة'];
@@ -48,17 +48,20 @@ function header(){var mine=data.my_section;return '<div class="nd-card nd-hd"><d
 function count(k){return ((data&&data.appointments)||[]).filter(function(a){return a.section===k;}).length;}
 function card(a){var st=statusOf(a);return '<article class="nd-card nd-pc" data-nd-card="'+esc(a.id)+'"><div class="nd-tm"><b>'+tm(a.starts_at)+'</b>'+(a.ticket_no!=null?'<span class="nd-tk">رقم '+esc(a.ticket_no)+'</span>':'')+'</div>'+
  '<div><div class="nd-nm">'+esc(a.patient_name)+'<small dir="ltr">'+esc(a.file_no||'')+'</small></div><div class="nd-sv">'+esc(a.service||'')+(a.doctor?' · '+esc(a.doctor):'')+'</div></div>'+
- '<div class="nd-act"><div class="nd-btns"><span class="nd-chip '+st[1]+'">'+st[0]+'</span>'+triageChip(a)+'</div><div class="nd-btns"><button type="button" class="nd-btn" data-nd="open_file" data-id="'+esc(a.id)+'">افتح الملف</button><button type="button" class="nd-btn p" data-nd="triage" data-id="'+esc(a.id)+'">الفحص قبل الكشف</button><button type="button" class="nd-btn gh" data-nd="details" data-id="'+esc(a.id)+'">تفاصيل</button></div></div></article>';}
+ '<div class="nd-act"><div class="nd-btns"><span class="nd-chip '+st[1]+'">'+st[0]+'</span>'+triageChip(a)+'</div><div class="nd-btns"><button type="button" class="nd-btn" data-nd="open_file" data-id="'+esc(a.id)+'">افتح الملف</button><button type="button" class="nd-btn p" data-nd="triage" data-id="'+esc(a.id)+'">الفحص قبل الكشف</button><button type="button" class="nd-btn gh" data-nd="details" data-id="'+esc(a.id)+'">تفاصيل</button>'+draftBtn(a)+'</div></div></article>';}
+function draftBtn(a){if(a.section!=='dental'&&a.section!=='physio')return '';return '<button type="button" class="nd-btn" data-nd="draft" data-id="'+esc(a.id)+'">'+(a.section==='dental'?'مسودة جلسة الأسنان':'مسودة جلسة العلاج الطبيعي')+'</button>';}
+function openDraftFor(a){var D=window.SWNWClinicalDrafts;if(!D){toast('تعذر فتح المسودة','error');return;}if(!a||(a.section!=='dental'&&a.section!=='physio'))return;D.open({kind:a.section,appointmentId:a.id,patientId:a.archive_patient_id,patientLabel:a.patient_name+(a.service?' — '+a.service:'')});}
 function notesHtml(){var items=(notes&&notes.items)||[];var h='<aside class="nd-card" data-nd-notes><h4>محتاج تجهزه <span class="nd-sub">'+esc((notes&&notes.unread)||0)+' تنبيهات جديدة</span></h4>';
  if(!items.length)return h+'<p class="nd-empty">مفيش تنبيهات</p></aside>';
- return h+items.slice(0,30).map(function(n){return '<button type="button" class="nd-nt'+(n.read?'':' hot')+'" data-nd="note" data-id="'+esc(n.id)+'" data-appt="'+esc(n.appointment_id||'')+'"><span class="ic"></span><span><b>'+esc(n.title)+'</b><span class="nd-sub">من الاستقبال · '+esc(ago(n.created_at))+'</span>'+(n.read?'':'<span class="nd-tap"> اضغط يفتح ملف المريض</span>')+'</span></button>';}).join('')+'</aside>';}
+ return h+items.slice(0,30).map(function(n){return '<button type="button" class="nd-nt'+(n.read?'':' hot')+'" data-nd="note" data-id="'+esc(n.id)+'" data-appt="'+esc(n.appointment_id||'')+'" data-kind="'+esc(n.kind||'')+'"><span class="ic"></span><span><b>'+esc(n.title)+'</b><span class="nd-sub">من الاستقبال · '+esc(ago(n.created_at))+'</span>'+(n.read?'':'<span class="nd-tap"> اضغط يفتح ملف المريض</span>')+'</span></button>';}).join('')+'</aside>';}
 function listHtml(){var secs=data.sections||[];if(!sel||secs.indexOf(sel)<0)sel=secs[0]||null;
  var tabs='<div class="nd-card nd-tabs" role="tablist">'+secs.map(function(k){return '<button type="button" role="tab" class="nd-tab'+(k===sel?' on':'')+'" data-nd="tab" data-sec="'+k+'">'+esc(secLabel(k))+' <em>'+count(k)+'</em></button>';}).join('')+'</div>';
  var rows=((data.appointments)||[]).filter(function(a){return a.section===sel;});
  return header()+'<div class="nd-card nd-banner"><i></i>بتشوف مرضى قسمك لليوم بس. كل ملف بتفتحه بيتسجل</div>'+tabs+
  '<div class="nd-cols"><div class="nd-list" data-nd-list>'+(rows.length?rows.map(card).join(''):'<p class="nd-card nd-empty">مفيش مرضى في القسم ده النهارده</p>')+'</div>'+notesHtml()+'</div>'+settingsHtml();}
 function settingsHtml(){if(!settings||!settings.nurses)return '';
- return '<section class="nd-card" data-nd-settings><h4>توزيع التمريض على الأقسام</h4><p class="nd-sub">لو ممرضة القسم مش موجودة النهارده، التمريض العام بيشوف حجوزات القسم ده</p>'+
+ var warn=(unlinked&&unlinked.length)?'<div class="nd-card" data-nd-unlinked style="background:#FFF6E5;border-color:#F0D9A5;color:#8A5A00;font-weight:600;margin-top:10px">دكاترة أسنان وعلاج طبيعي من غير حساب مربوط: الاعتماد بيروح لدكتور القسم أو الإدارة<div class="nd-sub" style="color:#8A5A00">'+unlinked.map(function(d){return esc(d.name);}).join('، ')+'</div></div>':'';
+ return '<section class="nd-card" data-nd-settings><h4>توزيع التمريض على الأقسام</h4>'+warn+'<p class="nd-sub">لو ممرضة القسم مش موجودة النهارده، التمريض العام بيشوف حجوزات القسم ده</p>'+
  settings.nurses.map(function(n){var ov=n.override||'';return '<div class="nd-tr" data-nd-nurse="'+esc(n.admin_id)+'"><b>'+esc(n.name)+'</b><span class="nd-chip b">من الموارد البشرية: '+esc(secLabel(n.default_section))+'</span>'+
  '<select data-nd-ov aria-label="القسم"><option value="">من الموارد البشرية</option>'+SEC.map(function(s){return '<option value="'+s[0]+'"'+(ov===s[0]?' selected':'')+'>'+s[1]+'</option>';}).join('')+'</select>'+
  '<label><input type="checkbox" data-nd-abs'+(n.absent_today?' checked':'')+'> غايبة النهارده</label><button type="button" class="nd-btn" data-nd="save_nurse" data-id="'+esc(n.admin_id)+'">حفظ</button></div>';}).join('')+'</section>';}
@@ -114,12 +117,13 @@ function goPatient(pid){var nav=document.querySelector('[data-goto="patients"]')
 function openFile(id){var a=appt(id);if(!a||!a.archive_patient_id){toast('الملف مش مربوط بالأرشيف','error');return;}if(busy)return;busy=true;
  q('open_file',{patient_id:a.archive_patient_id,appointment_id:a.id}).then(function(){window.__SWNWNursingOpenLogged=String(a.archive_patient_id);closeModal();goPatient(a.archive_patient_id);}).catch(function(e){toast((e&&e.message)||'تعذر فتح الملف','error');}).then(function(){busy=false;});}
 /* ---------------- notifications */
-function openNote(b){var id=b.dataset.id,aid=b.dataset.appt;q('notifications_read',{ids:[id]}).catch(function(){}).then(function(){if(notes){(notes.items||[]).forEach(function(n){if(n.id===id&&!n.read){n.read=true;notes.unread=Math.max(0,(notes.unread||1)-1);}});}paint();});
+function openNote(b){var id=b.dataset.id,aid=b.dataset.appt,dr=b.dataset.kind==='draft_returned'&&appt(aid);q('notifications_read',{ids:[id]}).catch(function(){}).then(function(){if(notes){(notes.items||[]).forEach(function(n){if(n.id===id&&!n.read){n.read=true;notes.unread=Math.max(0,(notes.unread||1)-1);}});}paint();});
+ if(dr&&(dr.section==='dental'||dr.section==='physio')){openDraftFor(dr);return;}
  var title=((notes&&notes.items)||[]).filter(function(n){return n.id===id;})[0];openDetails(aid,title&&title.title);}
 /* ---------------- settings */
 function saveNurse(btn){var row=btn.closest('[data-nd-nurse]');if(!row||busy)return;busy=true;btn.disabled=true;var ov=row.querySelector('[data-nd-ov]').value||null,ab=row.querySelector('[data-nd-abs]').checked;
  q('settings_save',{admin_id:row.dataset.ndNurse,section_override:ov,absent_today:ab}).then(function(){toast('اتحفظ');busy=false;return Promise.all([loadSettings(),load()]);}).catch(function(e){busy=false;btn.disabled=false;toast((e&&e.message)||'تعذر الحفظ','error');});}
-function loadSettings(){return q('settings_get').then(function(r){settings=r&&r.nurses?r:null;paintIfIdle();}).catch(function(){settings=null;});}
+function loadSettings(){return q('settings_get').then(function(r){settings=r&&r.nurses?r:null;if(!settings)return;return q('unlinked_doctors').then(function(u){unlinked=(u&&u.doctors)||[];}).catch(function(){unlinked=null;}).then(function(){paintIfIdle();});}).catch(function(){settings=null;});}
 /* ---------------- loading */
 function paintIfIdle(){var r=root();if(!r)return;if(view==='triage')return;var a=document.activeElement;if(a&&r.contains(a)&&a.matches&&a.matches('select,input'))return;paint();}
 function load(){return q('day',{}).then(function(d){data=d;paintIfIdle();});}
@@ -131,6 +135,7 @@ function onClick(e){var b=e.target.closest('[data-nd]');if(!b||busy&&!/^(tab|chr
  else if(k==='open_file')openFile(b.dataset.id);
  else if(k==='triage')openTriage(b.dataset.id);
  else if(k==='details')openDetails(b.dataset.id);
+ else if(k==='draft')openDraftFor(appt(b.dataset.id));
  else if(k==='note')openNote(b);
  else if(k==='back'){view=null;form=null;paint();}
  else if(k==='save_draft')saveTriage('draft');

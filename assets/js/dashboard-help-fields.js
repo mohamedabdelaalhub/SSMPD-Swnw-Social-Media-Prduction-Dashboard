@@ -944,6 +944,127 @@
       "reviewed": true
     },
     {
+      "title": "مكان العلاج",
+      "labels": [
+        "مكان العلاج"
+      ],
+      "text": "اكتب مكان الجسم اللي اتعالج في الجلسة (مثلاً الركبة اليمين أو أسفل الضهر). بيظهر للدكتور في المراجعة.",
+      "article": "clinical-drafts",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "المدة (بالدقائق)",
+      "labels": [
+        "المدة (بالدقائق)"
+      ],
+      "text": "اكتب مدة الجلسة بالدقايق، رقم بس. بتتسجل مع المسودة وبتدخل التقرير بعد اعتماد الدكتور.",
+      "article": "clinical-drafts",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "ملاحظات الجلسة",
+      "labels": [
+        "ملاحظات الجلسة"
+      ],
+      "text": "اكتب اللي حصل في الجلسة بكلامك. ده مسودة بس ومش بيدخل الملف الرسمي لحد ما الدكتور يعتمد.",
+      "article": "clinical-drafts",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "36 — سفلي أيمن",
+      "labels": [
+        "36 — سفلي أيمن",
+        "السن"
+      ],
+      "text": "اكتب رقم السن ومكانه، مثلاً «36 — سفلي أيمن». الدكتور بيراجعه قبل الاعتماد.",
+      "article": "clinical-drafts",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "الإجراء",
+      "labels": [
+        "الإجراء"
+      ],
+      "text": "اختار الإجراء اللي اتعمل من القايمة (أسنان كبار أو أسنان أطفال). اختيار إجراء أطفال بيفعّل «أسنان أطفال» لوحده، واختيار «أشعة مطلوبة» بيفعّل خانة الأشعة.",
+      "article": "clinical-drafts",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "مثال: MTA — بتختلف من حالة لحالة",
+      "labels": [
+        "مثال: MTA — بتختلف من حالة لحالة",
+        "الماتريال / الخامة"
+      ],
+      "text": "اكتب الخامة المستخدمة في الإجراء (زي MTA). بتظهر مع حشو العصب والتاج والكراون وحشو عصب الأطفال، وبتختلف من حالة لحالة.",
+      "article": "clinical-drafts",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "اكتب مكان السن",
+      "labels": [
+        "اكتب مكان السن",
+        "مكان السن المخلوع"
+      ],
+      "text": "بتظهر مع «حافظ مسافات» بس: اكتب مكان السن اللي اتخلع واتحط مكانه الحافظ.",
+      "article": "clinical-drafts",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "الخطة",
+      "labels": [
+        "الخطة"
+      ],
+      "text": "اكتب خطة العلاج للزيارة الجاية. بتتضاف لخطة العلاج في الملف بعد اعتماد الدكتور.",
+      "article": "clinical-drafts",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "اكتب اللي محتاج يتعدّل",
+      "labels": [
+        "اكتب اللي محتاج يتعدّل",
+        "سبب الرجوع للتعديل (إجباري لو هترجّعه)"
+      ],
+      "text": "السبب إجباري لو هترجّع المسودة. بيوصل للممرضة أو المساعدة في شريط أحمر وفي تنبيه، وبيتسجل في سجل المراجعة.",
+      "article": "clinical-drafts",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "اكتب كومنت...",
       "labels": [
         "اكتب كومنت...",
@@ -21624,9 +21745,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1844,
-    "labels": 1351,
-    "files": 134,
-    "groups": 1459
+    "definitions": 1857,
+    "labels": 1361,
+    "files": 135,
+    "groups": 1468
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
