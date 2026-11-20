@@ -20,8 +20,8 @@ $$;
 -- departments of one admin's own provider record(s) (same rule as public.clinic_reception_my_departments, for any admin)
 create or replace function clinic_reception.admin_departments(p_admin uuid, p_workspace uuid)
 returns text[] language sql stable security definer set search_path = pg_catalog, public as $$
-  with me as (select p.doctor_key from clinic_people.people p where p.admin_id = p_admin and p.doctor_key is not null),
-       pr as (select x.id, x.department from clinic_reception.providers x join me on me.doctor_key = x.doctor_key
+  with me as (select k from clinic_people.people p, unnest(array[p.doctor_key, p.code]) k where p.admin_id = p_admin and k is not null),
+       pr as (select x.id, x.department from clinic_reception.providers x join me on me.k = x.doctor_key
                where x.workspace_id = p_workspace and x.active)
   select coalesce(array_agg(distinct d order by d), '{}') from (
     select department d from pr where department is not null
@@ -31,8 +31,8 @@ returns text[] language sql stable security definer set search_path = pg_catalog
 $$;
 revoke all on function clinic_reception.is_doctor_assistant(uuid), clinic_reception.admin_departments(uuid, uuid) from public, anon, authenticated;
 
--- fix: 20261120290000's helper joined clinic_people.people.code (the EMP-… employee code) to providers.doctor_key, so it always returned
--- {}. The link between a person and a provider is people.doctor_key = providers.doctor_key (same as is_case_doctor).
+-- same rule as 20261120290000's helper (a provider belongs to a person when providers.doctor_key equals the person's doctor_key OR employee code,
+-- as live data has employees with code only), now for any admin; my_departments delegates to it.
 create or replace function public.clinic_reception_my_departments(p_workspace uuid) returns text[]
 language sql stable security definer set search_path = pg_catalog, public as $$
   select clinic_reception.admin_departments(public.my_admin_id(), p_workspace)

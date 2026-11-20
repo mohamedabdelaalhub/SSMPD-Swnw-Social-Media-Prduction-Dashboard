@@ -25,10 +25,10 @@ const dental=(await cmd(live,'provider',{name:'د. أسنان أ',department:'ا
 const dental2=(await cmd(live,'provider',{name:'د. أسنان مساعد',department:'الاسنان',branch:'حدائق الأهرام'})).id;
 const derm=(await cmd(live,'provider',{name:'د. جلدية أ',department:'جلدية',branch:'حدائق الأهرام'})).id;
 await q("update clinic_reception.providers set doctor_key='DK-A' where id=$1",[dental]);
-await q("update clinic_reception.providers set doctor_key='DK-A2' where id=$1",[dental2]);
+await q("update clinic_reception.providers set doctor_key='EMP-000031' where id=$1",[dental2]);
 for(const [k,ro,nn] of [[31,'doctor_assistant','مساعد أسنان'],[32,'nursing','ممرضة'],[33,'sono_doctor','د. أسنان حساب']])await q("insert into public.admins(id,email,name,role,active) values($1,$2,$3,$4,true) on conflict (id) do update set role=$4,active=true,name=$3",[id(k),'u'+k+'@test',nn,ro]);
 for(const k of [31,32,33])await q("insert into clinic_reception.members(workspace_id,admin_id,capabilities) values($1,$2,array['view','execute']) on conflict do nothing",[live,id(k)]).catch(()=>{});
-await q("insert into clinic_people.people(admin_id,department,job_title,doctor_key) values($1,'الأسنان','مساعد طبيب','DK-A2'),($2,'التمريض','ممرضة',null),($3,'الأطباء','طبيب','DK-A')",[id(31),id(32),id(33)]);
+await q("insert into clinic_people.people(code,admin_id,department,job_title,doctor_key) values('EMP-000031',$1,'الأسنان','مساعد طبيب',null),('EMP-000032',$2,'التمريض','ممرضة',null),('EMP-000033',$3,'الأطباء','طبيب','DK-A')",[id(31),id(32),id(33)]);
 const mk=async(prov,m)=>(await q("insert into clinic_reception.appointments(workspace_id,patient_id,provider_id,service_id,starts_at,ends_at,status,created_by) values($1,$2,$3,$4,now()+($5||' minutes')::interval,now()+($5||' minutes')::interval+interval '20 minutes','booked',$6) returning id",[live,pat,prov,svc,String(m),id(1)]))[0].id;
 await as(31);const mine=await call('clinic_reception_my_departments',[live]);await as(1);
 assert.deepEqual(mine,['الاسنان'],'assistant departments come from his provider record (doctor_key)');
