@@ -1,6 +1,6 @@
 /* Reviewed operational help; no patient records, network calls or generated AI answers. */
 window.SSMPDHelpData={
-  "version": "20261118-115",
+  "version": "20261118-116",
   "articles": [
     {
       "id": "queue-rooms",
