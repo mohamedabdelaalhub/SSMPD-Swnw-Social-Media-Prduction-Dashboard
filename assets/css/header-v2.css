@@ -52,6 +52,6 @@
 @media(min-width:861px){.user-dropdown .hdr-help-row{display:none}}
 .app-shell .topbar>.header-account.is-home-link{margin:0}
 
-/* قايمة طويلة: شريط تمرير واضح + ظل أعلى/أسفل يبيّن إن فيه كمان تحت */
-.app-shell .user-dropdown.nav2 .ud-items{scrollbar-width:thin;scrollbar-color:#B8C4E0 transparent;background:linear-gradient(#fff 30%,rgba(255,255,255,0)) top/100% 28px no-repeat local,linear-gradient(rgba(255,255,255,0),#fff 70%) bottom/100% 28px no-repeat local,radial-gradient(farthest-side at 50% 0,rgba(15,54,157,.2),rgba(15,54,157,0)) top/100% 12px no-repeat scroll,radial-gradient(farthest-side at 50% 100%,rgba(15,54,157,.2),rgba(15,54,157,0)) bottom/100% 12px no-repeat scroll}
+/* قايمة طويلة: شريط تمرير واضح + تلاشي أسفل القايمة يبيّن إن فيه كمان تحت */
+.app-shell .user-dropdown.nav2 .ud-items{scrollbar-width:thin;scrollbar-color:#B8C4E0 transparent;padding-bottom:6px}
 .app-shell .user-dropdown.nav2 .ud-items::-webkit-scrollbar{width:8px}.app-shell .user-dropdown.nav2 .ud-items::-webkit-scrollbar-thumb{background:#B8C4E0;border-radius:8px}
