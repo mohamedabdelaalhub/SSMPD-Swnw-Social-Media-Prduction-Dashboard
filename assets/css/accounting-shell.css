@@ -166,9 +166,8 @@ body.acs-drawer-open .ssmpd-ea-launch,body.acs-drawer-open .ssmpd-aa-launch,body
 @media (max-width:860px){
  .acs-main{padding-bottom:150px}
  body:has(.acs) :is(.ssmpd-ea-launch,.ssmpd-aa-launch,.shift-fab,.dp-badge){transition:transform .3s cubic-bezier(.22,1,.36,1),opacity .25s}
- /* at rest they tuck into the screen edge (half visible, still tappable) so they don't sit on cards */
- body:has(.acs) :is(.ssmpd-ea-launch,.ssmpd-aa-launch){transform:translateX(-34px);opacity:.92}
- body:has(.acs) :is(.ssmpd-ea-launch,.ssmpd-aa-launch):is(:hover,:focus-visible,:active){transform:none;opacity:1}
+ /* owner 2026-11-20: tucking them half-way off the screen made them look cut off. They stay fully on screen; the bottom padding of .acs-main keeps them off the cards and they slide away while scrolling down */
+ body:has(.acs) :is(.ssmpd-ea-launch,.ssmpd-aa-launch){left:max(12px,env(safe-area-inset-left));transform:none;opacity:1}
  body.acs-fab-hide :is(.ssmpd-ea-launch,.ssmpd-aa-launch,.shift-fab,.dp-badge){transform:translateX(-90px);opacity:0;pointer-events:none}
 }
 /* any open dialog: the floating buttons step back instead of covering its fields */
