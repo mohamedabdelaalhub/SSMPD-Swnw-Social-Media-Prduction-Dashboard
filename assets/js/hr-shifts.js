@@ -10,6 +10,31 @@
   function shortTime(t) { return t.slice(0, 2) + (t.slice(3, 5) === '00' ? '' : ':' + t.slice(3, 5)); }
   function span(t) { var s = mins(t.start_time), e = mins(t.end_time); return (e <= s ? e + 1440 : e) - s; }
 
+  // The weekly schedule dialog, shared by the grid (below) and by the entry points elsewhere in HR (profile button, attendance cards).
+  var OFF = 'إجازة أسبوعية';
+  function scheduleModal(U, p, ws, onSaved) {
+    var opts = [['', OFF]].concat(ws.templates.filter(function (t) { return t.active; }).map(function (t) { return [t.id, t.name + ' (' + t.start_time + ' → ' + t.end_time + ')']; }));
+    var fill = U.select('fill', 'تعبئة سريعة (كل الأيام ما عدا الجمعة)', [['', '— اختر —']].concat(opts.slice(1)), '');
+    var days = DAYS.map(function (d) { return U.select('d' + d[0], d[1], opts, p.days && p.days[d[0]] || ''); }).join('');
+    U.modal('جدول ' + p.full_name, fill + days + U.field('valid_from', 'يسري من', 'date', ws.today, 'required') +
+      '<p class="wp-wide">اختار «' + OFF + '» في اليوم اللي الموظف مش بيشتغل فيه. الراحة الأسبوعية مش بتتحسب غياب ولا بتتخصم من رصيد الأجازات.</p><p class="wp-wide">الجدول الجديد يسري من هذا التاريخ ولا يغيّر حضور الأيام السابقة.</p>',
+      function (v) {
+        var map = {}; DAYS.forEach(function (d) { map[String(d[0])] = v['d' + d[0]] || null; });
+        return U.rpc('hr_shifts_command', { p_action: 'schedule_save', p_payload: { person_id: p.id, days: map, valid_from: v.valid_from } }).then(function () { return onSaved && onSaved(); });
+      });
+    var f = document.querySelector('.wp-overlay [name=fill]');
+    if (f) f.onchange = function () { if (!f.value) return; DAYS.forEach(function (d) { var s = document.querySelector('.wp-overlay [name=d' + d[0] + ']'); if (s) s.value = d[0] === 5 ? '' : f.value; }); };
+  }
+  // Entry point for the HR profile button and the attendance cards: loads the workspace itself, then opens the same dialog.
+  function editPerson(pid, onSaved) {
+    var U = w.SSMPDWorkforceUtils;
+    return U.rpc('hr_shifts_workspace').then(function (ws) {
+      var p = (ws.people || []).filter(function (x) { return x.id === pid; })[0];
+      if (!p) throw Error('الإجازة الأسبوعية بتتحدد للموظفين الإداريين المستمرين بس (مش الأطباء)');
+      scheduleModal(U, p, ws, function () { if (w.SSMPDToast) w.SSMPDToast.show('تم حفظ جدول ' + p.full_name); return onSaved && onSaved(); });
+    });
+  }
+
   function mount(shell, active, ctx) {
     if (!shell || !active) return;
     var U = w.SSMPDWorkforceUtils, owner = w.SSMPDAuth && w.SSMPDAuth.currentAdmin && w.SSMPDAuth.currentAdmin.id;
@@ -67,7 +92,7 @@
               var has = p.days && Object.prototype.hasOwnProperty.call(p.days, dy[0]), t = has ? tpl(p.days[dy[0]]) : null;
               if (t) hours += span(t) / 60;
               var b = t ? '<button type="button" class="sc" style="' + chipStyle(t) + '" data-shifts="sched" data-id="' + esc(p.id) + '" title="' + esc(t.name) + '">' + esc(t.name) + ' <span class="ltr">' + esc(shortTime(t.start_time) + '–' + shortTime(t.end_time)) + '</span></button>'
-                : '<button type="button" class="sc sc-off" data-shifts="sched" data-id="' + esc(p.id) + '">' + (has ? 'راحة' : '—') + '</button>';
+                : '<button type="button" class="sc sc-off" data-shifts="sched" data-id="' + esc(p.id) + '">' + (has ? OFF : '—') + '</button>';
               return '<td class="' + (i === tIdx ? 'today' : '') + '">' + b + '</td>';
             }).join('');
             return '<tr data-shifts-person><td class="n"><button type="button" data-shifts="sched" data-id="' + esc(p.id) + '" style="border:0;background:none;padding:0;text-align:start"><b>' + esc(p.full_name) + '</b></button> <small style="color:var(--muted)">' + esc([p.code, p.job_title].filter(Boolean).join(' · ')) + '</small></td>' + cells +
@@ -92,7 +117,7 @@
     function draw() {
       var legend = ws.templates.filter(function (t) { return t.active; }).map(function (t) { return '<span class="pill" style="' + chipStyle(t) + '">' + esc(t.name) + ' <span class="ltr">' + esc(shortTime(t.start_time) + '–' + shortTime(t.end_time)) + '</span></span>'; }).join('');
       host.innerHTML = bannerHtml() + '<div class="strip" style="margin:0 0 14px">' + warnChips() + '</div>' +
-        '<div class="bar" style="margin-bottom:14px"><div class="legend" style="margin:0">' + legend + '<span class="pill p-out">راحة</span></div><span style="margin-inline-start:auto;color:var(--muted);font-size:13px">اضغط على أي خانة أو اسم لتعديل جدول الموظف</span></div>' + gridHtml() + templatesHtml();
+        '<div class="bar" style="margin-bottom:14px"><div class="legend" style="margin:0">' + legend + '<span class="pill p-out">' + OFF + '</span></div><span style="margin-inline-start:auto;color:var(--muted);font-size:13px">اضغط على أي خانة أو اسم لتعديل جدول الموظف</span></div>' + gridHtml() + templatesHtml();
       bind();
     }
     function bind() {
@@ -122,21 +147,12 @@
 
     function openSchedule(pid) {
       var p = ws.people.filter(function (x) { return x.id === pid; })[0]; if (!p) return;
-      var opts = [['', 'راحة']].concat(ws.templates.filter(function (t) { return t.active; }).map(function (t) { return [t.id, t.name + ' (' + t.start_time + ' → ' + t.end_time + ')']; }));
-      var fill = U.select('fill', 'تعبئة سريعة (كل الأيام ما عدا الجمعة)', [['', '— اختر —']].concat(opts.slice(1)), '');
-      var days = DAYS.map(function (d) { return U.select('d' + d[0], d[1], opts, p.days && p.days[d[0]] || ''); }).join('');
-      U.modal('جدول ' + p.full_name, fill + days + U.field('valid_from', 'يسري من', 'date', ws.today, 'required') + '<p class="wp-wide">الجدول الجديد يسري من هذا التاريخ ولا يغيّر حضور الأيام السابقة.</p>',
-        function (v) {
-          var map = {}; DAYS.forEach(function (d) { map[String(d[0])] = v['d' + d[0]] || null; });
-          return U.rpc('hr_shifts_command', { p_action: 'schedule_save', p_payload: { person_id: p.id, days: map, valid_from: v.valid_from } }).then(function () { return load(true); });
-        });
-      var f = document.querySelector('.wp-overlay [name=fill]');
-      if (f) f.onchange = function () { if (!f.value) return; DAYS.forEach(function (d) { var s = document.querySelector('.wp-overlay [name=d' + d[0] + ']'); if (s) s.value = d[0] === 5 ? '' : f.value; }); };
+      scheduleModal(U, p, ws, function () { return load(true); });
     }
 
     if (ctx && ctx.onRefresh) ctx.onRefresh(function () { return load(); });
     load();
   }
 
-  w.SSMPDHRShifts = { mount: mount };
+  w.SSMPDHRShifts = { mount: mount, editPerson: editPerson };
 })(window);

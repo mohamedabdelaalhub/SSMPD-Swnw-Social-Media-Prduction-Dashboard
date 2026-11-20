@@ -31,7 +31,7 @@ const ws = () => ({ can_manage: true, today: '2026-11-12', templates: [
   assert.deepEqual([...root().querySelectorAll('[data-shifts-dept]')].map(x => x.textContent.trim()).length, 3, 'grouped by department (reception, nursing, none)');
   const row = id => [...root().querySelectorAll('[data-shifts-person]')].find(r => r.querySelector('[data-id=' + id + ']'));
   const cells = id => [...row(id).querySelectorAll('td')].slice(1, 8).map(x => x.textContent.trim());
-  assert.equal(cells('p1')[0], 'صباحي 09–17'); assert.equal(cells('p1')[6], 'راحة', 'Friday is the last column (Saturday first)'); assert.deepEqual(cells('p2'), ['—', '—', '—', '—', '—', '—', '—'], 'person without a pattern shows dashes');
+  assert.equal(cells('p1')[0], 'صباحي 09–17'); assert.equal(cells('p1')[6], 'إجازة أسبوعية', 'Friday is the last column (Saturday first)'); assert.deepEqual(cells('p2'), ['—', '—', '—', '—', '—', '—', '—'], 'person without a pattern shows dashes');
   assert(cells('p3')[0].includes('صباحي'), 'Saturday column holds dow 6');
   assert.equal([...row('p3').querySelectorAll('td')][2].textContent.includes('ليلي'), true, 'Sunday = night shift');
   assert(!row('p1').outerHTML.includes('evil'), 'unsafe template color never reaches markup'); assert(root().innerHTML.includes('#0F369D1f') || root().innerHTML.includes('#0f369d1f'));
