@@ -2,7 +2,7 @@
   "coverage": {
     "version": "20261117-1",
     "definitions": 1823,
-    "labels": 1337,
+    "labels": 1338,
     "files": 131,
     "groups": 1445
   },
@@ -10115,7 +10115,7 @@
     },
     {
       "file": "reception-booking-plus.js",
-      "label": "العدد",
+      "label": "عدد الخدمة",
       "name": "",
       "kind": "label",
       "forms": [],
