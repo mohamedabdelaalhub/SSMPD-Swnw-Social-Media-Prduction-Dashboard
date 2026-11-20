@@ -1,0 +1,130 @@
+<!doctype html><html dir="rtl" lang="ar"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Header v2 mockup</title>
+<style>
+@font-face{font-family:"BigVesta Arabic";src:url("../../../assets/fonts/BigVesta-Regular.woff2")}
+@font-face{font-family:"BigVesta Arabic";font-weight:700;src:url("../../../assets/fonts/BigVesta-Bold.woff2")}
+*{box-sizing:border-box;margin:0}
+body{font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,sans-serif;background:#F4F7FD;color:#16212E;padding:18px 0 40px}
+.lbl{font:700 12px system-ui;color:#65748a;padding:14px 18px 6px;direction:ltr;text-align:left}
+.wrap{max-width:1280px;margin:0 auto;position:relative}
+.hd{background:#fff;border-bottom:1px solid #E3E9F4;display:flex;align-items:center;gap:16px;padding:10px 22px;min-height:64px;position:relative}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.brand img{height:34px;flex-shrink:0}
+.ttl{display:grid;gap:2px;min-width:0}
+.ttl small{font-size:11px;color:#65748a}
+.ttl b{font-size:18px;font-weight:800;color:#16212E;white-space:nowrap}
+.search{flex:1;max-width:420px;margin-inline:auto;display:flex;align-items:center;gap:10px;height:42px;padding:0 14px;border-radius:14px;background:#F1F4F8;color:#65748a;font-size:13px;border:1px solid transparent}
+.search svg{flex-shrink:0;color:#0F369D}
+.search kbd{margin-inline-start:auto;font:11px system-ui;background:#fff;border:1px solid #E3E9F4;border-radius:7px;padding:2px 7px;color:#65748a;direction:ltr}
+.ic{position:relative;width:42px;height:42px;border-radius:14px;display:grid;place-items:center;background:#fff;border:1px solid #E3E9F4;color:#0F369D;flex-shrink:0;transition:transform .18s,background .18s}
+.ic:hover{background:#EDF2FF;transform:translateY(-2px)}
+.ic svg{width:21px;height:21px}
+.dot{position:absolute;top:-6px;inset-inline-start:-6px;min-width:20px;height:20px;border-radius:10px;background:#F15A22;color:#333;font:700 11px system-ui;display:grid;place-items:center;padding:0 5px;border:2px solid #fff}
+.me{display:flex;align-items:center;gap:10px;padding:5px 6px 5px 12px;border-radius:16px;border:1px solid #E3E9F4;background:#fff;flex-shrink:0}
+.av{width:38px;height:38px;border-radius:12px;background:#EDF2FF;color:#0F369D;display:grid;place-items:center}
+.me .t{display:grid;gap:1px;text-align:start}
+.me .t b{font-size:14px;white-space:nowrap}
+.me .t span{font-size:11px;color:#65748a;white-space:nowrap}
+.me .chev{color:#65748a;width:18px;height:18px}
+.tabs{background:#fff;border-bottom:1px solid #E3E9F4;display:flex;gap:6px;padding:8px 22px;font-weight:700;font-size:14px;color:#65748a;overflow:hidden}
+.tabs span{padding:10px 16px;border-radius:12px;white-space:nowrap}
+.tabs .on{background:#0F369D;color:#fff}
+/* dropdown */
+.dd{position:absolute;top:70px;inset-inline-start:22px;width:300px;background:#fff;border:1px solid #E3E9F4;border-radius:18px;box-shadow:0 14px 36px rgba(15,54,157,.16);padding:14px;z-index:5}
+.dd .top{display:flex;gap:10px;align-items:center;padding-bottom:12px;border-bottom:1px solid #EDF0F5}
+.dd .top .av{width:44px;height:44px}
+.dd .top b{display:block;font-size:15px}.dd .top span{font-size:12px;color:#65748a}
+.chips{display:flex;flex-wrap:wrap;gap:6px;padding:12px 0;border-bottom:1px solid #EDF0F5}
+.chip{font-size:12px;padding:5px 10px;border-radius:9px;background:#F1F4F8;color:#525B6F;white-space:nowrap}
+.chip.p{background:#EDF2FF;color:#0F369D}
+.row{display:flex;align-items:center;gap:12px;padding:11px 6px;border-bottom:1px solid #EDF0F5;font-size:14px;font-weight:700}
+.row:last-child{border:0}
+.row svg{width:20px;height:20px;color:#0F369D}
+.row em{margin-inline-start:auto;font:700 12px system-ui;color:#0F369D;font-style:normal}
+.row.out{color:#D0402A}.row.out svg{color:#D0402A}
+/* mobile */
+.ph{width:390px;margin:0 auto 24px;background:#fff;border-radius:18px;overflow:hidden;border:1px solid #E3E9F4;position:relative}
+.ph .hd{padding:8px 12px;min-height:56px;gap:8px}
+.ph .brand img{height:28px}.ph .ttl b{font-size:15px}.ph .ttl small{font-size:10px}
+.ph .ic{width:40px;height:40px;border-radius:12px}
+.ph .av{width:40px;height:40px;border-radius:12px;border:1px solid #E3E9F4;background:#EDF2FF}
+.ph .tabs{padding:6px 12px}
+.ph .tabs span{padding:8px 12px;font-size:13px}
+.ph .body{height:70px;background:#F4F7FD}
+.ph .dd{top:60px;inset-inline-start:10px;inset-inline-end:10px;width:auto}
+.sp{flex:1}
+</style>
+<body>
+<svg width="0" height="0" style="position:absolute"><defs>
+<symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4.5 4.5"/></symbol>
+<symbol id="i-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 17V11a6 6 0 0 1 12 0v6l1.5 2h-15z"/><path d="M10 21h4"/></symbol>
+<symbol id="i-help" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 2-2.5 2-2.5 4"/><path d="M12 16h.01"/></symbol>
+<symbol id="i-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></symbol>
+<symbol id="i-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></symbol>
+<symbol id="i-heart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.5-7 10-7 10z"/></symbol>
+<symbol id="i-globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></symbol>
+<symbol id="i-out" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4H5v16h5M15 8l4 4-4 4M19 12H9"/></symbol>
+<symbol id="i-roles" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.2 7.6-8 9-4.8-1.4-8-4.5-8-9V6z"/></symbol>
+</defs></svg>
+
+<div class="lbl">DESKTOP — الهيدر الجديد (صف واحد)</div>
+<div class="wrap">
+ <div class="hd">
+  <div class="brand"><img src="../../../assets/img/mark.svg" alt=""><div class="ttl"><small>مركز عيادات Swnw التخصصية</small><b>الملخص العام</b></div></div>
+  <div class="search"><svg width="20" height="20"><use href="#i-search"/></svg>ابحث في الأقسام…<kbd>Ctrl K</kbd></div>
+  <div class="ic" title="الإشعارات"><svg><use href="#i-bell"/></svg><span class="dot">3</span></div>
+  <div class="ic" title="مساعدة"><svg><use href="#i-help"/></svg></div>
+  <div class="me"><div class="av"><svg width="22" height="22"><use href="#i-user"/></svg></div><div class="t"><b>اسم الموظف</b><span>مدير مالي · +5</span></div><svg class="chev"><use href="#i-chev"/></svg></div>
+ </div>
+ <div class="tabs"><span class="on">الملخص العام</span><span>إنتاج المحتوى</span><span>إدارة المحتوى</span><span>شاشة التصميم</span><span>النشر</span><span>التعليقات</span><span>الأرشيف</span></div>
+</div>
+
+<div class="lbl">DESKTOP — بعد الضغط على كارت المستخدم</div>
+<div class="wrap" style="height:330px;background:#F4F7FD">
+ <div class="hd">
+  <div class="brand"><img src="../../../assets/img/mark.svg" alt=""><div class="ttl"><small>مركز عيادات Swnw التخصصية</small><b>الملخص العام</b></div></div>
+  <div class="search"><svg width="20" height="20"><use href="#i-search"/></svg>ابحث في الأقسام…<kbd>Ctrl K</kbd></div>
+  <div class="ic"><svg><use href="#i-bell"/></svg><span class="dot">3</span></div>
+  <div class="ic"><svg><use href="#i-help"/></svg></div>
+  <div class="me" style="border-color:#0F369D"><div class="av"><svg width="22" height="22"><use href="#i-user"/></svg></div><div class="t"><b>اسم الموظف</b><span>مدير مالي · +5</span></div><svg class="chev" style="transform:rotate(180deg)"><use href="#i-chev"/></svg></div>
+ </div>
+ <div class="dd">
+  <div class="top"><div class="av"><svg width="24" height="24"><use href="#i-user"/></svg></div><div><b>اسم الموظف</b><span>صلاحياتك: 6</span></div></div>
+  <div class="chips"><span class="chip p">مدير مالي</span><span class="chip">محاسب</span><span class="chip">استقبال</span><span class="chip">مدير عام</span><span class="chip">+2</span></div>
+  <div class="row"><svg><use href="#i-heart"/></svg>ابعت شكر لزميل</div>
+  <div class="row"><svg><use href="#i-globe"/></svg>اللغة<em>EN</em></div>
+  <div class="row out"><svg><use href="#i-out"/></svg>خروج</div>
+ </div>
+</div>
+
+<div class="lbl">MOBILE — صف واحد</div>
+<div class="ph">
+ <div class="hd">
+  <div class="brand"><img src="../../../assets/img/mark.svg" alt=""><div class="ttl"><small>مركز عيادات Swnw</small><b>الملخص العام</b></div></div>
+  <span class="sp"></span>
+  <div class="ic"><svg><use href="#i-search"/></svg></div>
+  <div class="ic"><svg><use href="#i-bell"/></svg><span class="dot">3</span></div>
+  <div class="av"><svg width="22" height="22"><use href="#i-user"/></svg></div>
+ </div>
+ <div class="tabs"><span class="on">الملخص العام</span><span>إنتاج المحتوى</span><span>إدارة المحتوى</span></div>
+ <div class="body"></div>
+</div>
+<div class="lbl">MOBILE — قائمة المستخدم (فيها المساعدة واللغة والشكر والخروج)</div>
+<div class="ph" style="height:420px">
+ <div class="hd">
+  <div class="brand"><img src="../../../assets/img/mark.svg" alt=""><div class="ttl"><small>مركز عيادات Swnw</small><b>الملخص العام</b></div></div>
+  <span class="sp"></span>
+  <div class="ic"><svg><use href="#i-search"/></svg></div>
+  <div class="ic"><svg><use href="#i-bell"/></svg><span class="dot">3</span></div>
+  <div class="av" style="border-color:#0F369D"><svg width="22" height="22"><use href="#i-user"/></svg></div>
+ </div>
+ <div class="dd">
+  <div class="top"><div class="av"><svg width="24" height="24"><use href="#i-user"/></svg></div><div><b>اسم الموظف</b><span>مدير مالي · +5</span></div></div>
+  <div class="row"><svg><use href="#i-help"/></svg>مساعدة الداشبورد</div>
+  <div class="row"><svg><use href="#i-heart"/></svg>ابعت شكر لزميل</div>
+  <div class="row"><svg><use href="#i-roles"/></svg>كل صلاحياتي<em>6</em></div>
+  <div class="row"><svg><use href="#i-globe"/></svg>اللغة<em>EN</em></div>
+  <div class="row out"><svg><use href="#i-out"/></svg>خروج</div>
+ </div>
+</div>
+</body></html>
