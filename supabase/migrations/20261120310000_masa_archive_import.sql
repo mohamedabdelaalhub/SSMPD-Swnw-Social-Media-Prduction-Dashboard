@@ -10,7 +10,7 @@
 --       public.patients here (matching by phone + name needs review first; 353 phones are shared by families). The national id
 --       arrives only as a salted hash and the raw number is never accepted. Gender is not accepted (unfilled in Masa).
 --   * op masa_archive_import {source, items:[{official_booking_id, masa_doctor_id, masa_specialization_id, appointment_date,
---       appointment_time, status, needed_service, patient_name, phone, patient_birth_date, source_db}]}
+--       appointment_time, status, booking_state_id, needed_service, patient_name, phone, patient_birth_date}]}
 --       -> clinic_reception.masa_archive_bookings, key (source, official_booking_id): history only (no notification, no queue,
 --       no fallback slot, no automatic booking).
 --   * Old finance rows reuse masa_payments_import unchanged: the agent prefixes old ids with 'old:' (receipt, invoice and booking
@@ -54,7 +54,7 @@ create table clinic_reception.masa_archive_bookings(
   official_booking_id text not null check (length(official_booking_id) between 1 and 80),
   masa_doctor_id int, masa_specialization_id int, appointment_date date not null, appointment_time text,
   status text not null default 'active' check (status in ('active', 'cancelled')), needed_service text,
-  patient_name text, phone text, phone_normalized text, patient_birth_date date,
+  booking_state_id int, patient_name text, phone text, phone_normalized text, patient_birth_date date,
   first_seen_at timestamptz not null default now(), synced_at timestamptz not null default now(),
   primary key (source, official_booking_id));
 create index on clinic_reception.masa_archive_bookings(appointment_date);
@@ -125,13 +125,13 @@ begin
     d := clinic_reception.masa_d(it->>'appointment_date');
     if oid is null or d is null then sk := sk + 1; continue; end if;
     insert into clinic_reception.masa_archive_bookings as x(source, official_booking_id, masa_doctor_id, masa_specialization_id, appointment_date, appointment_time,
-        status, needed_service, patient_name, phone, phone_normalized, patient_birth_date)
+        status, booking_state_id, needed_service, patient_name, phone, phone_normalized, patient_birth_date)
       values (src, oid, clinic_finance.masa_int(it->'masa_doctor_id'), clinic_finance.masa_int(it->'masa_specialization_id'), d,
-        left(nullif(trim(it->>'appointment_time'), ''), 8), case when lower(coalesce(it->>'status', '')) = 'cancelled' then 'cancelled' else 'active' end,
+        left(nullif(trim(it->>'appointment_time'), ''), 8), case when lower(coalesce(it->>'status', '')) = 'cancelled' then 'cancelled' else 'active' end, clinic_finance.masa_int(it->'booking_state_id'),
         left(nullif(trim(it->>'needed_service'), ''), 200), left(nullif(trim(it->>'patient_name'), ''), 180), left(nullif(trim(it->>'phone'), ''), 40),
         clinic_reception.masa_phone_norm(it->>'phone'), clinic_reception.masa_d(it->>'patient_birth_date'))
       on conflict (source, official_booking_id) do update set masa_doctor_id = excluded.masa_doctor_id, masa_specialization_id = excluded.masa_specialization_id,
-        appointment_date = excluded.appointment_date, appointment_time = excluded.appointment_time, status = excluded.status,
+        appointment_date = excluded.appointment_date, appointment_time = excluded.appointment_time, status = excluded.status, booking_state_id = excluded.booking_state_id,
         needed_service = excluded.needed_service, patient_name = excluded.patient_name, phone = excluded.phone, phone_normalized = excluded.phone_normalized,
         patient_birth_date = excluded.patient_birth_date, synced_at = now();
     n := n + 1;

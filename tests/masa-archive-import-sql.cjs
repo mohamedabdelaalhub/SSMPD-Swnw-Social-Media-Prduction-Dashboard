@@ -30,11 +30,11 @@ const fs=require('fs'),assert=require('node:assert/strict'),{PGlite}=require('@e
  await api('masa_patients_import',{source:'old',items:[{masa_patient_id:'1',name:'مريض أ معدل',phone:'01000000001'}]});
  const a2=await one("select name,national_id_hash from clinic_reception.masa_patients where source='old' and masa_patient_id='1'");
  assert.equal(a2.name,'مريض أ معدل');assert.equal(a2.national_id_hash,hash,'hash kept when a later row omits it');
- const bk={source:'old',items:[{official_booking_id:'old:7',masa_doctor_id:5,appointment_date:'2025-01-02',appointment_time:'00:00',status:'cancelled',patient_name:'س',phone:'0100',patient_birth_date:'2001-01-01'},{official_booking_id:'8',appointment_date:'not a date'}]};
+ const bk={source:'old',items:[{official_booking_id:'old:7',masa_doctor_id:5,appointment_date:'2025-01-02',appointment_time:'00:00',status:'cancelled',booking_state_id:4,patient_name:'س',phone:'0100',patient_birth_date:'2001-01-01'},{official_booking_id:'8',appointment_date:'not a date'}]};
  assert.deepEqual(await api('masa_archive_import',bk),{ok:true,upserted:1,skipped:1});
  await api('masa_archive_import',bk);
  assert.equal((await one("select count(*)::int n from clinic_reception.masa_archive_bookings")).n,1);
- assert.equal((await one("select status from clinic_reception.masa_archive_bookings")).status,'cancelled');
+ const ab=await one("select status,booking_state_id from clinic_reception.masa_archive_bookings");assert.equal(ab.status,'cancelled');assert.equal(ab.booking_state_id,4);
  assert.equal((await one("select count(*)::int n from clinic_reception.masa_bookings")).n,0,'live masa_bookings untouched');
  await assert.rejects(()=>db.exec("set role authenticated;select * from clinic_reception.masa_patients"),/permission denied/);
  console.log('masa archive import ok');process.exit(0);
