@@ -8119,6 +8119,28 @@
     },
     {
       "file": "hr-shifts.js",
+      "label": "تعبئة سريعة (كل الأيام ما عدا الجمعة)",
+      "name": "fill",
+      "kind": "helper",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "hr-manage",
+      "text_sha256": "f743a113b2804047add744a69f6e2b9299e85bbf0bafe92cb593d351fc7c5718"
+    },
+    {
+      "file": "hr-shifts.js",
+      "label": "يسري من",
+      "name": "valid_from",
+      "kind": "helper",
+      "forms": [
+        "جدول "
+      ],
+      "tab": "human_resources",
+      "article": "hr-manage",
+      "text_sha256": "96ee3adc10d80a1f5c9afab1a8c1531cae7d23b93d16bd9158db8451ce186f61"
+    },
+    {
+      "file": "hr-shifts.js",
       "label": "اسم الوردية",
       "name": "name",
       "kind": "helper",
@@ -8194,28 +8216,6 @@
       "tab": "human_resources",
       "article": "personal",
       "text_sha256": "0a8e1242f7cd5a7893e1222dfd049826b42b66af79a574141ddc063e925fb3f0"
-    },
-    {
-      "file": "hr-shifts.js",
-      "label": "تعبئة سريعة (كل الأيام ما عدا الجمعة)",
-      "name": "fill",
-      "kind": "helper",
-      "forms": [],
-      "tab": "human_resources",
-      "article": "hr-manage",
-      "text_sha256": "f743a113b2804047add744a69f6e2b9299e85bbf0bafe92cb593d351fc7c5718"
-    },
-    {
-      "file": "hr-shifts.js",
-      "label": "يسري من",
-      "name": "valid_from",
-      "kind": "helper",
-      "forms": [
-        "جدول "
-      ],
-      "tab": "human_resources",
-      "article": "hr-manage",
-      "text_sha256": "96ee3adc10d80a1f5c9afab1a8c1531cae7d23b93d16bd9158db8451ce186f61"
     },
     {
       "file": "hr-tax.js",
