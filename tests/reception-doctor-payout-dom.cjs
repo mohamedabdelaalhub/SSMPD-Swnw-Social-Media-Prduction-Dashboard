@@ -36,7 +36,7 @@ const tick=ms=>new Promise(r=>setTimeout(r,ms||30));
  for(let n=0;n<200&&!q('[data-doctor-pay="d1"] .dp-pill');n++)await tick(10);
  const pill=id=>q('[data-doctor-pay="'+id+'"] .dp-pill');
  assert(pill('d1'),'button next to the finished doctor');assert.equal(pill('d1').textContent,'صرف الحساب');assert(pill('d1').classList.contains('is-due'),'orange');
- assert.equal(pill('d2'),null,'doctor with a patient left: no button yet');
+ assert(pill('d2'),'doctor with a patient left still gets «صرف الحساب» when the server says ready (owner 2026-11-20)');
  assert.equal(q('[data-doctor-pay-workspace]').getAttribute('data-doctor-pay-workspace'),'ws1');
  // «حساب الطبيب»: total + details + request (no amount input for reception)
  pill('d1').click();await tick(40);
