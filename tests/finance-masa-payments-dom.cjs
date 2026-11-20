@@ -17,6 +17,8 @@ const fs=require('fs'),assert=require('node:assert/strict'),{JSDOM}=require('jsd
  assert.match(box.textContent,/مش بيدخل ورديات الخزنة ولا بيغيّر أي رصيد/);assert.match(box.textContent,/من 3 دقيقة/);
  assert.match(box.querySelector('.mp-k.hero').textContent,/850/);assert.match(box.textContent,/مستخدم ماسا #12/);
  assert.ok(!box.querySelector('img'),'escaped');assert.ok(box.querySelector('.mp-void'));assert.match(box.textContent,/ملغي على ماسا/);assert.match(box.textContent,/شركة تأمين/);
+ // default range: this month so far (Cairo)
+ const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Cairo'}).format(new Date());assert.equal(calls[0][1].p.to,today);assert.equal(calls[0][1].p.from,today.slice(0,8)+'01');
  // filters
  box.querySelector('[data-mp="method"]').value='card';box.querySelector('[data-mp="method"]').dispatchEvent(new w.Event('change'));await new Promise(r=>setTimeout(r,10));
  assert.equal(calls.at(-1)[1].p.method,'card');
@@ -26,6 +28,10 @@ const fs=require('fs'),assert=require('node:assert/strict'),{JSDOM}=require('jsd
  assert.deepEqual(calls.find(c=>c[1].p_action==='name_cashier')[1].p,{cashier_user_id:12,admin_id:'a2'});
  w.prompt=()=>'خزنة الاستقبال ٢';d.querySelector('[data-mp-safe="3"]').click();await new Promise(r=>setTimeout(r,10));
  assert.deepEqual(calls.find(c=>c[1].p_action==='name_safe')[1].p,{safe_id:3,label:'خزنة الاستقبال ٢'});
+ // an error is shown inside the panel with a retry, an empty period says so
+ let fail=true;w.SSMPDDb.client.rpc=async(n,a)=>{calls.push([n,JSON.parse(JSON.stringify(a))]);return fail?{data:null,error:{message:'Could not find the function'}}:{data:{totals:{all:0,by_method:{}},receipts:[]},error:null};};
+ await w.SSMPDMasaPayments.load(box);assert.match(box.querySelector('.mp-err').textContent,/ما اتحمّلش/);assert.match(box.textContent,/Could not find the function/);
+ fail=false;box.querySelector('[data-mp-retry]').click();await new Promise(r=>setTimeout(r,10));assert.ok(!box.querySelector('.mp-err'));assert.match(box.querySelector('.mp-empty').textContent,/مفيش إيصالات من ماسا/);
  // tab wired into the finance screen + loaded before it
  const fc=fs.readFileSync('assets/js/finance-cash.js','utf8');assert.match(fc,/\['masa-payments','تحصيل ماسا'\]/);assert.match(fc,/items:\['reports','masa-payments','audit'\]/);
  const html=fs.readFileSync('index.html','utf8');assert.ok(html.indexOf('finance-masa-payments.js')<html.indexOf('finance-cash.js?v='));
