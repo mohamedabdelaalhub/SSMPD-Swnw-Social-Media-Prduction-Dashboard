@@ -23,7 +23,7 @@ const svc=(await snap(live)).services.find(x=>x.code==='DERM').id;
 const dental=(await cmd(live,'provider',{name:'د. أسنان ٢',department:'الاسنان',branch:'حدائق الأهرام'})).id;
 await q("update clinic_reception.providers set doctor_key='DK-D2' where id=$1",[dental]);
 for(const [k,ro,nn] of [[22,'nursing','ممرضة أسنان'],[9,'sono_doctor','د. صاحب الحجز'],[10,'sono_doctor','د. تاني']])await q("insert into public.admins(id,email,name,role,active) values($1,$2,$3,$4,true) on conflict (id) do update set role=$4,active=true,name=$3",[id(k),'u'+k+'@test',nn,ro]);
-await q("insert into clinic_people.people(admin_id,department,job_title,doctor_key) values($1,'الأطباء','طبيب','DK-D2')",[id(9)]);
+await q("insert into clinic_people.people(admin_id,department,job_title,doctor_key) values($1,'الأطباء','طبيب','DK-D2'),($2,'العلاج الطبيعي','طبيب علاج طبيعي',null)",[id(9),id(10)]);
 const arch=(await q("insert into patients(patient_code,full_name,phone) values('DR-1','مريض مسودة','01077777777') returning id"))[0].id;
 const ap=(await q("insert into clinic_reception.appointments(workspace_id,patient_id,provider_id,service_id,starts_at,ends_at,status,created_by) values($1,$2,$3,$4,now()+interval '5 minutes',now()+interval '25 minutes','booked',$5) returning id",[live,pat,dental,svc,id(1)]))[0].id;
 const content={tooth:'36 — سفلي أيمن',procedure:'root_canal',procedure_label:'حشو عصب',material:'MTA',pediatric:false,radiograph_needed:true,notes:'تم فتح القناة',plan:'جلسة تانية بعد أسبوع'};
@@ -59,9 +59,15 @@ await assert.rejects(()=>R(9,'approve',{id:draft}),/مش مستنية/,'approve 
 // a second approved draft appends to the same report (no duplicate report rows)
 r=await R(22,'save',{kind:'dental',patient_id:arch,appointment_id:ap,content:{...content,procedure_label:'خلع جراحي',tooth:'18'},submit:true});await R(9,'approve',{id:r.id});
 const rep2=await q('select jsonb_array_length(sessions) n from public.patient_dental_reports where patient_id=$1',[arch]);assert.equal(rep2.length,1);assert.equal(rep2[0].n,2);
-// physio draft with no appointment: no case doctor → any doctor may approve; creates the physio report
+// physio draft with no appointment (no linked case doctor): only a doctor of the same section (or a manager) may approve; creates the physio report
 r=await R(22,'save',{kind:'physio',patient_id:arch,content:{treatments:['Laser','Manual'],duration:'30',area:'أسفل الظهر',notes:'تحسن'},submit:true});
-assert.equal((await R(10,'list_review')).drafts.length,1,'no case doctor → doctors see it');await R(10,'approve',{id:r.id});
+assert.equal((await R(10,'list_review')).drafts.length,1,'the physio-section doctor sees it');assert.equal((await R(9,'list_review')).drafts.length,0,'a doctor of another department does not');
+assert.equal((await R(10,'get',{id:r.id})).draft.no_case_doctor,true);await assert.rejects(()=>R(9,'approve',{id:r.id}),/صاحب الحجز/,'another department cannot approve');await R(10,'approve',{id:r.id});
+// a dental draft with no linked case doctor and no dental doctor account: managers only, and they are the ones told
+const nd=await R(22,'save',{kind:'dental',patient_id:arch,content:{procedure_label:'كشف عادي',notes:'x'},submit:true});
+assert.equal((await R(9,'list_review')).drafts.length,0);assert.equal((await R(10,'list_review')).drafts.length,0);assert.equal((await R(1,'list_review')).drafts.length,1);
+assert.equal(+(await q("select count(*) n from public.staff_notifications where kind='draft_submitted' and recipient_admin_id=$1 and created_at>now()-interval '1 minute'",[id(1)]))[0].n>=1,true,'managers are notified');
+await assert.rejects(()=>R(9,'approve',{id:nd.id}),/صاحب الحجز/);await R(1,'approve',{id:nd.id});
 const ph=await q('select sessions from public.patient_physio_reports where patient_id=$1',[arch]);assert.equal(ph.length,1);assert.deepEqual(ph[0].sessions[0].treatments,['Laser','Manual']);
 // a non-nurse, non-manager cannot write drafts; no direct table access
 await assert.rejects(()=>R(10,'save',{kind:'dental',patient_id:arch,content}),/للتمريض/);

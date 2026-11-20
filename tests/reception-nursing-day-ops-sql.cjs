@@ -57,6 +57,7 @@ await N('settings_save',{admin_id:id(26),section_override:''});assert.deepEqual(
 const st=(await N('settings_get')).nurses;assert.equal(st.find(x=>x.admin_id===id(22)).default_section,'physio');assert.equal(st.find(x=>x.admin_id===id(25)).section,'dental');
 await assert.rejects(()=>asN(22,'settings_get'),/للسوبر أدمن/);await assert.rejects(()=>asN(22,'settings_save',{admin_id:id(22),section_override:'dental'}),/للسوبر أدمن/);
 await assert.rejects(()=>N('settings_save',{admin_id:id(9),section_override:'dental'}),/مش من التمريض/);
+const ud=(await N('unlinked_doctors')).doctors;assert.deepEqual(ud.map(x=>x.name),['د. علاج طبيعي'],'only unlinked dental/physio doctors are listed (the dental one is linked)');await assert.rejects(()=>asN(22,'unlinked_doctors'),/للسوبر أدمن/);
 // prep checklist
 await asN(25,'prep_set',{appointment_id:ap2,item:'كرسي الأسنان جاهز'});assert.deepEqual((await asN(25,'day')).appointments.find(x=>x.id===ap2).prep,['كرسي الأسنان جاهز']);
 await asN(25,'prep_set',{appointment_id:ap2,item:'كرسي الأسنان جاهز',done:false});assert.deepEqual((await asN(25,'day')).appointments.find(x=>x.id===ap2).prep,[]);

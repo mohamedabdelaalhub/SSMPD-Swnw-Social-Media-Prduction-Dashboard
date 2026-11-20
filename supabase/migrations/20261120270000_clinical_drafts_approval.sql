@@ -7,7 +7,9 @@
 --   * Approval appends one session entry to patient_dental_reports.sessions or patient_physio_reports.sessions (same shape the
 --     archive screens already use) and, for dental, may set the treatment plan. The official report row is created if none exists.
 --   * The case doctor = the appointment's provider doctor_key matched to clinic_people.people.doctor_key → admin. Managers
---     (super admin / general manager) can act on any draft. If the provider has no doctor account, any sono_doctor can approve.
+--     (super admin / general manager) can act on any draft. If the provider has no linked doctor account (live: 2 of 50), a
+--     sono_doctor whose HR department is the same section (dental / physio) can approve; if there is none, managers only
+--     (they are the ones notified). The draft carries no_case_doctor so the screen can say so.
 --   * Fixed-text staff notices: the doctor is told «مسودة … جاهزة لمراجعتك», the nurse «مسودتك رجعت للتعديل».
 -- Nothing in the existing report tables or their policies changes.
 
@@ -53,6 +55,16 @@ create table if not exists public.patient_clinical_draft_log(
 create index if not exists patient_clinical_draft_log_idx on public.patient_clinical_draft_log(draft_id, at);
 alter table public.patient_clinical_draft_log enable row level security;
 revoke all on public.patient_clinical_draft_log from public, anon, authenticated;
+
+create or replace function clinic_reception.doctor_in_section(p_admin uuid, p_kind text)
+returns boolean language plpgsql stable security definer set search_path = pg_catalog, public as $$
+begin
+  if to_regclass('clinic_people.people') is null then return false; end if;
+  return exists(select 1 from clinic_people.people pe join public.admins a on a.id = pe.admin_id and a.active
+     where pe.admin_id = p_admin and (a.role = 'sono_doctor' or exists (select 1 from public.admin_extra_roles r where r.admin_id = a.id and r.role = 'sono_doctor'))
+       and clinic_reception.section_of_text(coalesce(pe.department, '') || ' ' || coalesce(pe.job_title, '')) = case p_kind when 'dental' then 'dental' else 'physio' end);
+end $$;
+revoke all on function clinic_reception.doctor_in_section(uuid, text) from public, anon, authenticated;
 
 create or replace function public.clinical_drafts(p_action text, p_payload jsonb default '{}')
 returns jsonb language plpgsql security definer set search_path = pg_catalog, public as $$
@@ -103,13 +115,16 @@ begin
         select a.id, 'draft_submitted', d.appointment_id, d.patient_id, 'مسودة ' || label || ' جاهزة لمراجعتك'
           from public.admins a where a.active and (
             (d.case_doctor_admin_id is not null and a.id = d.case_doctor_admin_id)
-            or (d.case_doctor_admin_id is null and (a.role = 'sono_doctor' or exists (select 1 from public.admin_extra_roles r where r.admin_id = a.id and r.role = 'sono_doctor'))));
+            or (d.case_doctor_admin_id is null and (
+                  clinic_reception.doctor_in_section(a.id, d.kind)
+                  or (not exists (select 1 from public.admins a2 where a2.active and clinic_reception.doctor_in_section(a2.id, d.kind))
+                      and (a.role in ('general_manager','super_admin') or exists (select 1 from public.admin_extra_roles r where r.admin_id = a.id and r.role in ('general_manager','super_admin')))))));
     end if;
     return jsonb_build_object('ok', true, 'id', d.id, 'status', d.status, 'revision', d.revision);
 
   elsif p_action = 'list_mine' then
     return jsonb_build_object('drafts', coalesce((select jsonb_agg(jsonb_build_object('id', x.id, 'kind', x.kind, 'status', x.status, 'patient_id', x.patient_id,
-        'appointment_id', x.appointment_id, 'content', x.content, 'return_reason', x.return_reason, 'updated_at', x.updated_at) order by x.updated_at desc)
+        'appointment_id', x.appointment_id, 'content', x.content, 'return_reason', x.return_reason, 'updated_at', x.updated_at, 'no_case_doctor', x.case_doctor_admin_id is null) order by x.updated_at desc)
       from (select * from public.patient_clinical_drafts where author_id = me and (p->>'appointment_id' is null or appointment_id = (p->>'appointment_id')::uuid)
               order by updated_at desc limit 50) x), '[]'));
 
@@ -119,15 +134,15 @@ begin
         'patient_name', x.pname, 'appointment_id', x.appointment_id, 'content', x.content, 'author', x.author, 'submitted_at', x.submitted_at) order by x.submitted_at)
       from (select d2.*, (select full_name from public.patients where id = d2.patient_id) pname, (select coalesce(nullif(name, ''), email) from public.admins where id = d2.author_id) author
               from public.patient_clinical_drafts d2
-             where d2.status = 'pending_review' and (mgr or d2.case_doctor_admin_id = me or (d2.case_doctor_admin_id is null and doc))
+             where d2.status = 'pending_review' and (mgr or coalesce(d2.case_doctor_admin_id = me, false) or (d2.case_doctor_admin_id is null and doc and clinic_reception.doctor_in_section(me, d2.kind)))
              order by d2.submitted_at limit 100) x), '[]'));
 
   elsif p_action = 'get' then
     select * into d from public.patient_clinical_drafts where id = (p->>'id')::uuid;
     if not found then raise exception 'المسودة غير موجودة'; end if;
-    can_review := mgr or d.case_doctor_admin_id = me or (d.case_doctor_admin_id is null and doc);
+    can_review := mgr or coalesce(d.case_doctor_admin_id = me, false) or (d.case_doctor_admin_id is null and doc and clinic_reception.doctor_in_section(me, d.kind));
     if not (d.author_id = me or can_review) then raise exception 'مش مسموح'; end if;
-    return jsonb_build_object('draft', to_jsonb(d) || jsonb_build_object('can_review', can_review,
+    return jsonb_build_object('draft', to_jsonb(d) || jsonb_build_object('can_review', can_review, 'no_case_doctor', d.case_doctor_admin_id is null,
         'patient_name', (select full_name from public.patients where id = d.patient_id),
         'author', (select coalesce(nullif(name, ''), email) from public.admins where id = d.author_id)),
       'log', coalesce((select jsonb_agg(jsonb_build_object('action', l.action, 'actor', (select coalesce(nullif(name, ''), email) from public.admins where id = l.actor_id),
@@ -136,7 +151,7 @@ begin
   elsif p_action in ('return', 'approve') then
     select * into d from public.patient_clinical_drafts where id = (p->>'id')::uuid for update;
     if not found then raise exception 'المسودة غير موجودة'; end if;
-    can_review := mgr or d.case_doctor_admin_id = me or (d.case_doctor_admin_id is null and doc);
+    can_review := mgr or coalesce(d.case_doctor_admin_id = me, false) or (d.case_doctor_admin_id is null and doc and clinic_reception.doctor_in_section(me, d.kind));
     if not can_review then raise exception 'الدكتور صاحب الحجز بس يراجع'; end if;
     if d.status <> 'pending_review' then raise exception 'المسودة دي مش مستنية مراجعة'; end if;
     if p_action = 'return' then

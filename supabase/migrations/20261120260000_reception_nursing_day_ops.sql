@@ -375,6 +375,14 @@ begin
         'absent_today', clinic_reception.nurse_absent(a3.id, clinic_reception.today())) order by coalesce(nullif(a3.name, ''), a3.email))
       from public.admins a3 where clinic_reception.is_nurse(a3.id)), '[]'));
 
+  elsif p_action = 'unlinked_doctors' then
+    if not (mgr or public.has_role('head_nursing')) then raise exception 'للسوبر أدمن ورئيس التمريض'; end if;
+    return jsonb_build_object('doctors', coalesce((select jsonb_agg(jsonb_build_object('provider_id', pr.id, 'name', pr.name, 'department', pr.department,
+          'section', clinic_reception.section_of_text(pr.department)) order by pr.department, pr.name)
+        from clinic_reception.providers pr
+       where pr.workspace_id = p_workspace and pr.active and clinic_reception.section_of_text(pr.department) in ('dental','physio')
+         and not exists (select 1 from clinic_people.people pe where pr.doctor_key is not null and pe.doctor_key = pr.doctor_key and pe.admin_id is not null)), '[]'));
+
   elsif p_action = 'settings_save' then
     if not (mgr or public.has_role('head_nursing')) then raise exception 'للسوبر أدمن ورئيس التمريض'; end if;
     target := (p->>'admin_id')::uuid;
