@@ -20,7 +20,7 @@
 .app-shell .topbar .header-icon:hover{background:#EDF2FF;transform:translateY(-2px)}
 .app-shell .topbar .header-icon svg{width:21px;height:21px}
 .app-shell .topbar #global-search-toggle{width:100%}
-.app-shell .topbar #notif-badge{top:-7px!important;left:auto!important;inset-inline-start:-7px;min-width:20px;height:20px;border-radius:10px!important;background:#F15A22!important;color:#333!important;font:700 11px system-ui!important;display:grid;place-items:center;padding:0 5px!important;border:2px solid #fff;line-height:1!important}
+.app-shell .topbar #notif-badge{top:-5px!important;left:auto!important;inset-inline-start:-5px;min-width:18px;height:18px;border-radius:9px!important;background:#F15A22!important;color:#fff!important;font:700 10.5px system-ui!important;display:grid;place-items:center;padding:0 5px!important;border:2px solid #fff;line-height:1!important}
 .app-shell .topbar #notif-badge[hidden]{display:none}
 /* زرار القائمة: سهم جنب كارت الحساب (ديسكتوب) / أيقونة المستخدم (موبايل) */
 .app-shell .topbar .user-menu-icon{width:36px;height:42px;min-width:36px;border:0;background:transparent;color:#65748a;padding:0;display:inline-flex;align-items:center;justify-content:center}
