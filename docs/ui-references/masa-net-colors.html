@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>اختيار ألوان تقرير ماسا</title>
+<style>
+*{box-sizing:border-box;margin:0}body{font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;background:#F4F7FD;color:#16212E;padding:14px;font-size:14px}
+.wrap{max-width:980px;margin:0 auto;display:grid;gap:14px}.card{background:#fff;border:1px solid #E3E9F4;border-radius:18px;padding:16px;display:grid;gap:12px}
+h1{font-size:18px}h2{font-size:15px}p{font-size:12.5px;color:#65748a;line-height:1.7}
+.row{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid #EDF0F5}.row:first-of-type{border-top:0}
+.sw{position:relative;width:46px;height:46px;border-radius:12px;flex:none;box-shadow:inset 0 0 0 1px rgba(22,33,46,.15);overflow:hidden}.sw input{position:absolute;inset:-8px;width:70px;height:70px;opacity:0;cursor:pointer}
+.nm{flex:1;min-width:0}.nm b{display:block}.nm small{color:#65748a;font-size:12px}
+.hex{width:94px;font:inherit;font-size:13px;direction:ltr;text-align:center;border:1px solid #E3E9F4;border-radius:10px;padding:8px 6px;text-transform:uppercase}
+.btn{border:0;border-radius:12px;padding:12px 16px;font:inherit;font-weight:700;cursor:pointer;background:#0F369D;color:#fff}.btn.sec{background:#fff;color:#0F369D;box-shadow:inset 0 0 0 1px #C9D4EE}
+.acts{display:flex;gap:8px;flex-wrap:wrap}.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:#65748a}.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-inline-end:6px}
+.segbar{display:flex;gap:2px;height:16px;border-radius:8px;overflow:hidden}.kl div{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #EDF0F5;font-size:13px}.kl i{width:10px;height:10px;border-radius:3px}
+.chip{display:inline-flex;padding:4px 10px;border-radius:9px;font-size:12px;font-weight:700;color:#333}
+.out{display:none;width:100%;min-height:120px;direction:ltr;font:inherit;font-size:12.5px;border:1px solid #E3E9F4;border-radius:12px;padding:10px}
+.toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#16212E;color:#fff;border-radius:12px;padding:10px 16px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none}.toast.on{opacity:1}
+@media(min-width:860px){.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}}
+</style></head><body><div class="wrap">
+<div class="card"><h1>اختيار ألوان تقرير ماسا</h1><p>دوس على أي مربع لون واختار — المعاينة بتتغير فوراً. لما تخلص دوس «انسخ اختياراتي» وابعتها في الشات (أو صوّر الشاشة).</p><div class="acts"><button class="btn" data-copy>انسخ اختياراتي</button><button class="btn sec" data-reset>رجّع الألوان الحالية</button></div><textarea class="out" data-out readonly></textarea></div>
+<div class="two">
+<div class="card"><h2>الشارت</h2><div data-list="chart"></div></div>
+<div class="card"><h2>أنواع المصروفات</h2><div data-list="kinds"></div></div></div>
+<div class="card"><h2>معاينة</h2><div class="legend" data-pv-legend></div><svg viewBox="0 0 760 230" width="100%" data-pv-chart dir="ltr"></svg>
+<div class="segbar" dir="ltr" data-pv-seg></div><div class="kl" data-pv-kl></div><div data-pv-chips style="display:flex;gap:8px;flex-wrap:wrap"></div></div>
+</div><div class="toast" data-toast></div>
+<script>
+(function(){'use strict';
+var DEF={chart:[['التحصيل (الأعمدة)','#2F7D5C'],['المصروفات (الأعمدة)','#F15A22'],['صافي النقد (الخط)','#0F369D']],
+kinds:[['تشغيلي','#0F369D'],['سلف','#00B0BD'],['مسحوبات شركاء','#8A5CF6'],['تحويلات بين خزن','#9AA7BD'],['تجاهل','#D5DBE6'],['غير مصنّف','#FF8800']]};
+var S={chart:DEF.chart.map(function(x){return x[1];}),kinds:DEF.kinds.map(function(x){return x[1];})};
+function valid(h){return /^#[0-9a-f]{6}$/i.test(h);}
+function list(kind){var host=document.querySelector('[data-list='+kind+']');host.innerHTML='';
+ DEF[kind].forEach(function(x,i){var r=document.createElement('div');r.className='row';
+  r.innerHTML='<label class="sw" style="background:'+S[kind][i]+'"><input type="color" value="'+S[kind][i]+'" aria-label="لون '+x[0]+'"></label><div class="nm"><b></b><small>الحالي '+x[1]+'</small></div><input class="hex" maxlength="7" value="'+S[kind][i].toUpperCase()+'" aria-label="كود اللون">';
+  r.querySelector('b').textContent=x[0];host.appendChild(r);
+  var inp=r.querySelector('input[type=color]'),hx=r.querySelector('.hex'),sw=r.querySelector('.sw');
+  inp.addEventListener('input',function(){S[kind][i]=inp.value;sw.style.background=inp.value;hx.value=inp.value.toUpperCase();preview();});
+  hx.addEventListener('change',function(){var v=hx.value.trim();if(v[0]!=='#')v='#'+v;if(!valid(v))return;S[kind][i]=v.toLowerCase();sw.style.background=v;inp.value=v;preview();});});}
+function preview(){var c=S.chart,k=S.kinds,M=[400,425,450,475,500,525,550,600,612],n=M.length,W=760,H=230,L=36,B=26,T=8,gw=(W-L)/n,max=800;function y(v){return T+(H-T-B)*(1-v/max);}
+ var s='';[0,200,400,600,800].forEach(function(v){s+='<line x1="'+L+'" x2="'+W+'" y1="'+y(v)+'" y2="'+y(v)+'" stroke="#E3E9F4"/><text x="'+(L-6)+'" y="'+(y(v)+4)+'" font-size="11" fill="#65748a" text-anchor="end">'+v+'</text>';});
+ var pts=[];M.forEach(function(v,i){var x=L+i*gw+gw/2,out=v*0.55,net=v*0.28;s+='<rect x="'+(x-17)+'" y="'+y(v)+'" width="15" height="'+(H-B-y(v))+'" rx="4" fill="'+c[0]+'"/><rect x="'+(x+2)+'" y="'+y(out)+'" width="15" height="'+(H-B-y(out))+'" rx="4" fill="'+c[1]+'"/>';pts.push((x)+','+y(net));});
+ s+='<polyline points="'+pts.join(' ')+'" fill="none" stroke="'+c[2]+'" stroke-width="2.5"/>';document.querySelector('[data-pv-chart]').innerHTML=s;
+ document.querySelector('[data-pv-legend]').innerHTML=DEF.chart.map(function(x,i){return '<span><i style="background:'+c[i]+'"></i>'+x[0]+'</span>';}).join('');
+ var fl=[46,19,17,9,5,4];document.querySelector('[data-pv-seg]').innerHTML=fl.map(function(f,i){return '<i style="flex:'+f+';background:'+k[i]+'"></i>';}).join('');
+ document.querySelector('[data-pv-kl]').innerHTML=DEF.kinds.map(function(x,i){return '<div><i style="background:'+k[i]+'"></i>'+x[0]+'</div>';}).join('');
+ document.querySelector('[data-pv-chips]').innerHTML=DEF.kinds.map(function(x,i){return '<span class="chip" style="background:'+k[i]+'33">'+x[0]+'</span>';}).join('');}
+function toast(t){var e=document.querySelector('[data-toast]');e.textContent=t;e.classList.add('on');setTimeout(function(){e.classList.remove('on');},2200);}
+list('chart');list('kinds');preview();
+document.querySelector('[data-reset]').onclick=function(){S={chart:DEF.chart.map(function(x){return x[1];}),kinds:DEF.kinds.map(function(x){return x[1];})};list('chart');list('kinds');preview();toast('رجعت الألوان الحالية');};
+document.querySelector('[data-copy]').onclick=function(){var t=['ألوان الشارت:'].concat(DEF.chart.map(function(x,i){return x[0]+': '+S.chart[i].toUpperCase();})).concat(['','ألوان أنواع المصروفات:']).concat(DEF.kinds.map(function(x,i){return x[0]+': '+S.kinds[i].toUpperCase();})).join('\n'),o=document.querySelector('[data-out]');o.value=t;
+ var fail=function(){o.style.display='block';o.focus();o.select();toast('انسخ الكلام اللي ظهر فوق');};try{navigator.clipboard.writeText(t).then(function(){toast('اتنسخت — الصقها في الشات');},fail);}catch(e){fail();}};
+})();
+</script></body></html>

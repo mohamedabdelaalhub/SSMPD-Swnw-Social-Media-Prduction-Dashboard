@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1857,
-    "labels": 1361,
-    "files": 135,
-    "groups": 1468
+    "definitions": 1860,
+    "labels": 1362,
+    "files": 136,
+    "groups": 1469
   },
   "fields": [
     {
@@ -5822,6 +5822,38 @@
       "tab": "accounting",
       "article": "collections",
       "text_sha256": "86f699e6a6d037d190585ba6e797e12829620ca904b65369af181b61d25216b9"
+    },
+    {
+      "file": "finance-masa-net.js",
+      "label": "من",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "5124563f386757810c60ae86fc95904a13532f1a872fcd3579613f304338e13d"
+    },
+    {
+      "file": "finance-masa-net.js",
+      "label": "إلى",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "5124563f386757810c60ae86fc95904a13532f1a872fcd3579613f304338e13d"
+    },
+    {
+      "file": "finance-masa-net.js",
+      "label": "فئة (اختياري)",
+      "name": "",
+      "kind": "label",
+      "forms": [
+        "تصنيف حساب"
+      ],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "3dce4d0dd494ef5537979c2a256a481651e3b1ede47f1594d19c47f3df8ea7fa"
     },
     {
       "file": "finance-masa-payments.js",
