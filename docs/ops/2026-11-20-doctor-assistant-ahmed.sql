@@ -1,6 +1,7 @@
 -- Switch EMP-000005 (first «مساعد طبيب») to role doctor_assistant — owner «موافق على دور مساعد طبيب» (main chat 4, 2026-11-20).
 -- Needs migration 20261120290000_doctor_assistant_role.sql applied first.
--- * admins.role → doctor_assistant; extra roles nursing / head_nursing removed (so he leaves the nurse picker and nursing
+-- * Role: the OWNER sets «مساعد طبيب» in المستخدمين والصلاحيات (guard_admin_changes blocks it from SQL); this file removes
+--   extra roles nursing / head_nursing (so he leaves the nurse picker and nursing
 --   lists). Other extra roles stay.
 -- * His provider record (doctor_key EMP-000005) stays as is: home-nursing scopes + 19 ACTIVE contracts kept (owner: «هو ممكن
 --   يعمل خدمات منزلي»). One provider record, several departments = provider_service_scopes (the existing model).
@@ -29,8 +30,8 @@ do $$ begin
     raise exception 'apply migration 20261120290000_doctor_assistant_role.sql first';
   end if;
 end $$;
-update public.admins a set role = 'doctor_assistant' from clinic_people.people p
-  where p.admin_id = a.id and p.code = 'EMP-000005' and a.role in ('nursing', 'head_nursing');
+-- admins.role is NOT changed here: guard_admin_changes refuses it from SQL («غير مسموح بتغيير الدور أو الحالة»). The owner sets
+-- «مساعد طبيب» as Ahmed's main role from المستخدمين والصلاحيات after the migration is live.
 delete from public.admin_extra_roles x using clinic_people.people p
   where p.admin_id = x.admin_id and p.code = 'EMP-000005' and x.role in ('nursing', 'head_nursing');
 insert into clinic_reception.provider_service_scopes(provider_id, service_code)
@@ -74,7 +75,6 @@ commit;
 -- ===================== 2. ROLLBACK =====================
 -- begin;
 -- delete from clinic_finance.doctor_contracts where status = 'pending' and payload->>'source' = 'ops 2026-11-20 doctor assistant eeg';
--- update public.admins a set role = 'nursing' from clinic_people.people p where p.admin_id = a.id and p.code = 'EMP-000005' and a.role = 'doctor_assistant';
 -- delete from clinic_reception.provider_service_scopes sc using clinic_reception.providers pr, clinic_reception.services s
 --   where sc.provider_id = pr.id and pr.doctor_key = 'EMP-000005' and s.workspace_id = pr.workspace_id and s.code = sc.service_code
 --     and (s.department ~ 'العلاج الطبيعي' or s.code in ('0000011','0000012','0000013'));
