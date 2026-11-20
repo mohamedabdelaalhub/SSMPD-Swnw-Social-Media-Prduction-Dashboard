@@ -1,4 +1,4 @@
-// Prewarm: one HEAD to patient-files-list when a patient list appears; throttled; never sends auth.
+// Prewarm: one OPTIONS to patient-files-list when a patient list appears; throttled; never sends auth.
 const {JSDOM}=require('jsdom'),fs=require('fs'),path=require('path'),assert=require('node:assert/strict');
 const dom=new JSDOM('<div id="list"></div>',{runScripts:'outside-only'}),w=dom.window,calls=[];
 w.SSMPD_CONFIG={supabase:{url:'https://api.example.test/',anonKey:'pk_test'}};
@@ -12,7 +12,7 @@ const tick=ms=>new Promise(r=>setTimeout(r,ms));
   w.document.getElementById('list').innerHTML='<button data-open="p1">x</button>';await tick(400);
   assert.equal(calls.length,1);
   const [u,o]=calls[0];assert.equal(u,'https://api.example.test/functions/v1/patient-files-list');
-  assert.equal(o.method,'HEAD');assert.equal(JSON.stringify(o.headers),JSON.stringify({apikey:'pk_test',Authorization:'Bearer jwt-staff'}),'staff JWT, no patient id');
+  assert.equal(o.method,'OPTIONS');assert.equal(JSON.stringify(o.headers),JSON.stringify({apikey:'pk_test',Authorization:'Bearer jwt-staff'}),'staff JWT, no patient id');
   w.document.querySelector('[data-open]').dispatchEvent(new w.Event('pointerover',{bubbles:true}));
   w.document.getElementById('list').innerHTML+='<button data-open="p2">y</button>';await tick(400);
   assert.equal(calls.length,1,'throttled');

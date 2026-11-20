@@ -32,7 +32,7 @@ window.SSMPD_CONFIG = {
 (function loadSystemErrorMonitor(){
   if(window.__SWNWSystemErrorMonitor || document.querySelector('script[data-system-error-monitor]')) return;
   var script=document.createElement('script');
-  script.src='assets/js/system-error-monitor.js?v=system-errors-20261115-1';
+  script.src='assets/js/system-error-monitor.js?v=system-errors-20261120-2';
   script.async=false;
   script.dataset.systemErrorMonitor='1';
   document.head.appendChild(script);
