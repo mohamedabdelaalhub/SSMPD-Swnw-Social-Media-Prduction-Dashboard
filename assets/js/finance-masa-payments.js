@@ -20,7 +20,7 @@
       '<label>الطريقة<select data-mp="method">'+METHODS.map(function(m){return '<option value="'+m[0]+'"'+(m[0]===state.method?' selected':'')+'>'+m[1]+'</option>';}).join('')+'</select></label>'+
       '<label><input type="checkbox" data-mp="deleted"'+(state.deleted?' checked':'')+'> اعرض الإيصالات الملغية</label><button type="button" class="btn" data-mp-csv>تصدير Excel</button></div>'+
       '<p class="mp-note">ده اللي اتحصّل على ماسا، للمتابعة والمطابقة بس. مش بيدخل ورديات الخزنة ولا بيغيّر أي رصيد في الحسابات. '+esc(ago(d.synced_at))+'.</p>'+
-      '<div class="mp-kpis">'+k('إجمالي المحصّل',tt.all,true)+k('نقدي',bm.cash)+k('فيزا',bm.card)+k('محافظ',bm.wallet)+(Number(bm.other)?k('طرق تانية',bm.other):'')+'</div>'+
+      (!(d.receipts||[]).length?'<p class="mp-empty">مفيش إيصالات من ماسا من '+esc(state.from)+' لـ '+esc(state.to)+'. غيّر التاريخ من فوق.</p>':'')+'<div class="mp-kpis">'+k('إجمالي المحصّل',tt.all,true)+k('نقدي',bm.cash)+k('فيزا',bm.card)+k('محافظ',bm.wallet)+(Number(bm.other)?k('طرق تانية',bm.other):'')+'</div>'+
       '<div class="mp-grid"><section><h4>حسب الكاشير (من ماسا)</h4>'+table(['الكاشير','الخزنة','إيصالات','المبلغ'],(d.by_cashier||[]).map(function(c){
         var nm=c.name?esc(c.name):'مستخدم ماسا #'+esc(c.cashier_user_id)+(canName&&c.cashier_user_id!=null?' <button type="button" class="mp-link" data-mp-name="'+esc(c.cashier_user_id)+'">اربطه باسم</button>':'');
         var sf=c.safe?esc(c.safe):(c.safe_id!=null?'خزنة #'+esc(c.safe_id)+(canName?' <button type="button" class="mp-link" data-mp-safe="'+esc(c.safe_id)+'">سمّيها</button>':''):'—');
@@ -42,9 +42,9 @@
       rpc('name_cashier',a&&String(n)===ans.trim()?{cashier_user_id:+uid,admin_id:a.id}:{cashier_user_id:+uid,label:ans.trim()}).then(function(){toast('اتربط الاسم');load(box);}).catch(function(e){toast(e.message||'تعذر الحفظ','error');});};});
     box.querySelectorAll('[data-mp-safe]').forEach(function(b){b.onclick=function(){var sid=b.getAttribute('data-mp-safe'),ans=window.prompt('اسم خزنة ماسا #'+sid+'؟');if(!ans||ans.trim().length<2)return;
       rpc('name_safe',{safe_id:+sid,label:ans.trim()}).then(function(){toast('اتسمّت الخزنة');load(box);}).catch(function(e){toast(e.message||'تعذر الحفظ','error');});};});}
-  function load(box){if(!state.from){state.from=today();state.to=state.from;}box.setAttribute('aria-busy','true');
+  function load(box){if(!state.from){state.to=today();state.from=state.to.slice(0,8)+'01';}box.setAttribute('aria-busy','true');
     return rpc('list',{from:state.from,to:state.to||state.from,method:state.method,include_deleted:state.deleted}).then(function(d){box.removeAttribute('aria-busy');paint(box,d||{});})
-      .catch(function(e){box.removeAttribute('aria-busy');box.innerHTML='<p class="mp-note">'+esc(e&&e.message||'تعذر تحميل تحصيل ماسا')+'</p>';});}
+      .catch(function(e){box.removeAttribute('aria-busy');box.innerHTML='<div class="mp-err" role="alert"><b>تقرير تحصيل ماسا ما اتحمّلش.</b><p>'+esc(e&&e.message||'تعذر تحميل تحصيل ماسا')+'</p><button type="button" class="btn" data-mp-retry>حاول تاني</button></div>';var rb=box.querySelector('[data-mp-retry]');if(rb)rb.onclick=function(){load(box);};});}
   function fill(){document.querySelectorAll('[data-masa-payments]:not([data-ready])').forEach(function(box){box.setAttribute('data-ready','');load(box);});}
   function panel(tab,d,h){if(tab!=='masa-payments')return prior.panel(tab,d,h);setTimeout(fill,0);return '<div class="mp" data-masa-payments><p class="mp-note">جاري التحميل…</p></div>';}
   window.SSMPDFinanceControls={panel:panel,act:prior.act,due:prior.due,ledger:prior.ledger};
