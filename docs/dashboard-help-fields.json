@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1832,
-    "labels": 1344,
-    "files": 132,
-    "groups": 1451
+    "definitions": 1838,
+    "labels": 1347,
+    "files": 133,
+    "groups": 1454
   },
   "fields": [
     {
@@ -10916,6 +10916,66 @@
       "tab": "reception_services",
       "article": "doctor-payout-approve",
       "text_sha256": "16acf166859302c040bd994ba6b0461be39ccdfa4ef5c86b2307136d17db4d5f"
+    },
+    {
+      "file": "reception-overbook.js",
+      "label": "المريض",
+      "name": "patient_id",
+      "kind": "helper",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "patient",
+      "text_sha256": "34ae74f68692afd35d96b169b7ea58bda8c755399f80e852141385483719cffa"
+    },
+    {
+      "file": "reception-overbook.js",
+      "label": "الطبيب",
+      "name": "provider_id",
+      "kind": "helper",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "doctor-missing",
+      "text_sha256": "64e347f73f878509a653299ddc92452e08558753e25b26c2031002afbc7d558a"
+    },
+    {
+      "file": "reception-overbook.js",
+      "label": "الخدمة",
+      "name": "service_id",
+      "kind": "helper",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "booking-flow",
+      "text_sha256": "9de357e91f68d929da65d3983a861523a19c2d8ad7c1d86737871b762e1c0325"
+    },
+    {
+      "file": "reception-overbook.js",
+      "label": "التاريخ (بتوقيت القاهرة)",
+      "name": "day",
+      "kind": "helper",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-overbook",
+      "text_sha256": "7259c4b7012e1a040938b4f12c4d737eae901d6827ff25db4fb81c3c53999bf7"
+    },
+    {
+      "file": "reception-overbook.js",
+      "label": "الوقت (بتوقيت القاهرة)",
+      "name": "time",
+      "kind": "helper",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-overbook",
+      "text_sha256": "7a8ac352b85870eb65445d9d95e0ebcfd7201a01a508541531fd13f1c90764d7"
+    },
+    {
+      "file": "reception-overbook.js",
+      "label": "تفاصيل السبب (إجباري لو «سبب تاني»)",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-overbook",
+      "text_sha256": "dd36b8fc72e6721ec8fa129269bf0af2d401e7eae0c7c78b74185a9b2ecc6018"
     },
     {
       "file": "reception-patient-documents.js",
