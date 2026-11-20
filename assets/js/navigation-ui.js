@@ -48,7 +48,7 @@ function setAttention(map){var menu=document.getElementById('user-dropdown');if(
 root.addEventListener('ssmpd:home-attention',function(e){setAttention(e.detail);});
 function mount(){
  var menu=document.getElementById('user-dropdown');if(menu&&menu===liveMenu)return;cleanup();liveMenu=menu;var toggle=document.getElementById('user-menu-btn'),mobile=document.getElementById('menu-toggle-btn'),roleToggle=document.getElementById('header-roles-btn'),legacy=document.getElementById('mobile-menu');if(!menu||!toggle)return;
- var items=menu.querySelector('.ud-items'),origin=toggle;groupItems(items);tidy(items);watchTidy(items);
+ var items=menu.querySelector('.ud-items'),origin=toggle;groupItems(items);tidy(items);watchTidy(items);items.addEventListener('toggle',function(e){var g=e.target;if(g&&g.tagName==='DETAILS'&&g.open&&g.scrollIntoView)g.scrollIntoView({block:'nearest',behavior:'smooth'});},true);
  menu.classList.add('nav2');decorate(items);
  var nm=menu.querySelector('.mm-name'),rl=menu.querySelector('.mm-role');
  var top=document.createElement('div');top.className='nav-menu-head';top.innerHTML='<span class="nav-av" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg></span><div class="nav-who"><strong></strong><small></small></div><button type="button" aria-label="إغلاق القائمة"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button>';
