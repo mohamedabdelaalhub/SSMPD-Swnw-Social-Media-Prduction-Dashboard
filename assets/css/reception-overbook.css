@@ -1,0 +1,18 @@
+/* «تسجيل موعد يدوي» — reception-overbook.js */
+.rob-intro,.rob-note{grid-column:1/-1;margin:0;font-size:13px;color:#3B4658;line-height:1.8}
+.rob-note{font-size:12px;color:#5b6577}
+.rob-warn{grid-column:1/-1;margin:0;font-size:13px;color:#8A5A00;background:#FFF6E5;border-radius:10px;padding:10px 12px;line-height:1.8}
+.rob-reasons{grid-column:1/-1;border:0;padding:0;margin:0;display:flex;flex-wrap:wrap;gap:6px}
+.rob-reasons legend{font-size:13px;margin-bottom:6px;padding:0}
+.rob-chip{display:inline-flex;align-items:center;gap:6px;border:1px solid #D5DEEE;border-radius:99px;padding:6px 12px;font-size:13px;cursor:pointer;min-height:36px}
+.rob-chip:has(input:checked){background:#0F369D;color:#fff;border-color:#0F369D}
+.rob-chip input{accent-color:#F15A22;margin:0}
+.rob-tag{display:inline-block;padding:1px 10px;border-radius:99px;font-size:11px;font-weight:700;background:#FFE9DE;color:#B4400F;vertical-align:middle}
+.rx-tl-card:has(.rob-tag){outline:2px dashed #F15A22;outline-offset:-2px}
+[data-rx-action="overbook"]{border-color:#F7B79A;color:#B4400F;background:#FFF8F4;font-weight:700}
+.rx-modal .rx-form .rob-warn{color:#8A5A00}
+.rx-modal .rx-form .rob-reasons{border:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.rx-modal .rx-form .rob-reasons legend{float:inline-start;width:100%;margin:0 0 6px}
+.rx-modal .rx-form .rob-chip{display:inline-flex;flex-direction:row;align-items:center;gap:6px;width:auto;margin:0}
+.rx-modal .rx-form .rob-chip input{width:auto;min-width:0;height:auto;flex:none;padding:0}
+.rx-modal .rx-form .rob-chip{white-space:nowrap;padding:6px 12px}
