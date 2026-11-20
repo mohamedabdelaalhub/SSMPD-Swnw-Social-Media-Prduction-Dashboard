@@ -17,6 +17,22 @@ function groupItems(items){if(!items||items.dataset.grouped)return;items.dataset
  var frag=document.createDocumentFragment();buckets.forEach(function(list,i){if(!list.length)return;if(list.length===1){frag.appendChild(list[0]);return;}var d=document.createElement('details');d.className='ud-group';d.setAttribute('name','ud-group');var sm=document.createElement('summary');sm.innerHTML='<i class="nav-dot" aria-hidden="true"></i><span></span><em></em><b class="nav-att" hidden></b>';sm.style.setProperty('--nav-c',GROUPS[i][2]||'#0F369D');sm.querySelector('span').textContent=GROUPS[i][0];sm.querySelector('em').textContent=String(list.length);d.appendChild(sm);list.forEach(function(n){d.appendChild(n);});d.addEventListener('toggle',function(){if(d.open)items.querySelectorAll('.ud-group[open]').forEach(function(o){if(o!==d)o.open=false;});});frag.appendChild(d);});
  rest.forEach(function(n){frag.appendChild(n);});items.insertBefore(frag,items.firstChild);}
 
+
+/* Loose extras (explainer videos, investment dashboard, verification requests, change password, management pages) are folded into two groups
+   so the end of the menu isn't a pile of loose buttons (owner 2026-11-21). Idempotent; late-injected items are folded on the next DOM change. */
+function foldGroup(items,id,title,color,nodes){var d=items.querySelector('details[data-fold="'+id+'"]');
+ if(!d){if(!nodes.length)return;d=document.createElement('details');d.className='ud-group';d.setAttribute('name','ud-group');d.dataset.fold=id;var sm=document.createElement('summary');sm.innerHTML='<i class="nav-dot" aria-hidden="true"></i><span></span><em></em><b class="nav-att" hidden></b>';sm.style.setProperty('--nav-c',color);sm.querySelector('span').textContent=title;d.appendChild(sm);d.addEventListener('toggle',function(){if(d.open)items.querySelectorAll('.ud-group[open]').forEach(function(o){if(o!==d)o.open=false;});});items.appendChild(d);}
+ nodes.forEach(function(n){if(n.parentNode!==d)d.appendChild(n);});
+ var c=d.querySelectorAll('.ud-item').length;d.hidden=!c;var em=d.querySelector('summary em');if(em&&em.textContent!==String(c))em.textContent=String(c);}
+var tidying=false;
+function tidy(items){if(!items||tidying)return;tidying=true;try{decorate(items);
+ var loose=Array.from(items.children).filter(function(n){return n.classList&&n.classList.contains('ud-item')&&!n.dataset.goto;});
+ foldGroup(items,'tools','أدوات وإعدادات','#525B6F',loose);
+ var mg=items.querySelector('[data-management-nav]');
+ if(mg){var t=mg.querySelector('.sw-management-title');if(t)t.hidden=true;foldGroup(items,'mgmt','الإدارة والتشغيل','#0F369D',[mg]);}
+ else{var old=items.querySelector('details[data-fold="mgmt"]');if(old&&!old.querySelector('.ud-item'))old.hidden=true;}
+ }finally{tidying=false;}}
+function watchTidy(items){if(!items||items.__tidyWatch||!root.MutationObserver)return;items.__tidyWatch=true;var t=null;new root.MutationObserver(function(){if(tidying)return;clearTimeout(t);t=setTimeout(function(){tidy(items);},40);}).observe(items,{childList:true,subtree:true});}
 /* Menu v2 (owner-approved mockup docs/ui-references/mockups/main-menu.html, 2026-11-18): icons, attention badges, recent sections. */
 function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 var EXTRA={pass:'<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',link:'<path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>'};
@@ -32,7 +48,7 @@ function setAttention(map){var menu=document.getElementById('user-dropdown');if(
 root.addEventListener('ssmpd:home-attention',function(e){setAttention(e.detail);});
 function mount(){
  var menu=document.getElementById('user-dropdown');if(menu&&menu===liveMenu)return;cleanup();liveMenu=menu;var toggle=document.getElementById('user-menu-btn'),mobile=document.getElementById('menu-toggle-btn'),roleToggle=document.getElementById('header-roles-btn'),legacy=document.getElementById('mobile-menu');if(!menu||!toggle)return;
- var items=menu.querySelector('.ud-items'),origin=toggle;groupItems(items);
+ var items=menu.querySelector('.ud-items'),origin=toggle;groupItems(items);tidy(items);watchTidy(items);
  menu.classList.add('nav2');decorate(items);
  var nm=menu.querySelector('.mm-name'),rl=menu.querySelector('.mm-role');
  var top=document.createElement('div');top.className='nav-menu-head';top.innerHTML='<span class="nav-av" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg></span><div class="nav-who"><strong></strong><small></small></div><button type="button" aria-label="إغلاق القائمة"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button>';
