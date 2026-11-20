@@ -157,7 +157,7 @@
     (employees || []).forEach(function (e) { if (!ids.includes(e.id)) ids.push(e.id); if (!byId[e.id]) byId[e.id] = e; });
     var rows = ids.map(function (id) {
       var profile = byId[id], count = counts[id] || 0;
-      return { employee_id: id === '__unrecorded__' ? null : id, employee_name: id === '__unrecorded__' ? 'بدون مسجل' : profile ? profile.name : 'حساب غير متاح (' + id.slice(0, 8) + ')', active: profile ? profile.active !== false : false, count: count, percentage: seen.size ? count * 100 / seen.size : 0, last_registered_at: last[id] || null };
+      return { employee_id: id === '__unrecorded__' ? null : id, employee_name: id === '__unrecorded__' ? 'تسجيل آلي / بدون مسجل' : profile ? profile.name : 'حساب غير متاح (' + id.slice(0, 8) + ')', active: profile ? profile.active !== false : false, count: count, percentage: seen.size ? count * 100 / seen.size : 0, last_registered_at: last[id] || null };
     }).sort(function (a, b) { return b.count - a.count || a.employee_name.localeCompare(b.employee_name, 'ar'); });
     var data = { total: seen.size, employees: rows, registrars: (names || []).filter(function (e) { return counts[e.id] || (employees || []).some(function (x) { return x.id === e.id; }); }) };
     if (revision === registrationRevision) registrationCache = { key: key, at: Date.now(), data: data };

@@ -674,8 +674,10 @@
     }).catch(function (e) { view.innerHTML = '<div class="err-msg">خطأ: ' + e.message + '</div>'; });
   }
 
-  function registrarName(id) {
-    if (!id) return 'بدون مسجل';
+  // ليدز بتتسجل لوحدها (واتساب/ماسنجر/انستجرام/فورم فيسبوك) مالهاش موظف مسجّل: نكتب «تسجيل آلي» بدل «بدون مسجل».
+  var AUTO_SOURCES = { whatsapp: 1, messenger: 1, instagram: 1, facebook_form: 1 };
+  function registrarName(id, source) {
+    if (!id) return AUTO_SOURCES[source] ? 'تسجيل آلي' : 'بدون مسجل';
     var person = (state.archiveRegistrars || state.employees).filter(function (e) { return e.id === id; })[0];
     return person ? person.name : 'حساب غير متاح (' + String(id).slice(0, 8) + ')';
   }
@@ -689,10 +691,10 @@
         select.innerHTML = "<option value=\"\"> <!--ssmpd-i18n:%D9%83%D9%84%20%D8%A7%D9%84%D9%85%D9%88%D8%B8%D9%81%D9%8A%D9%86%20(%D9%85%D8%B3%D8%AC%D9%84%20%D8%A7%D9%84%D9%84%D9%8A%D8%AF)-->كل الموظفين (مسجل الليد)</option>" + stats.employees.map(function (e) {
           var id = e.employee_id || '__unrecorded__';
           return '<option value="' + escapeHtml(id) + '">' + escapeHtml(e.employee_name) + ' (' + fmtNum(e.count) + ')</option>';
-        }).join('') + (stats.employees.some(function (e) { return !e.employee_id; }) ? '' : '<option value="__unrecorded__">بدون مسجل (0)</option>');
+        }).join('') + (stats.employees.some(function (e) { return !e.employee_id; }) ? '' : '<option value="__unrecorded__">تسجيل آلي / بدون مسجل (0)</option>');
         select.value = s.bookedBy;
       }
-      view.querySelectorAll('[data-registrar]').forEach(function (cell) { cell.textContent = registrarName(cell.getAttribute('data-registrar')); });
+      view.querySelectorAll('[data-registrar]').forEach(function (cell) { cell.textContent = registrarName(cell.getAttribute('data-registrar'), cell.getAttribute('data-source')); });
       var period = s.dateFrom || s.dateTo ? 'الفترة ' + (s.dateFrom || 'البداية') + ' — ' + (s.dateTo || 'اليوم') : 'كل الفترات';
       var html = "<div style=\"display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:8px;\"><div><h3 style=\"margin:0;\"> <!--ssmpd-i18n:%D8%AA%D8%B3%D8%AC%D9%8A%D9%84%20%D8%A7%D9%84%D9%84%D9%8A%D8%AF%D8%B2%20%D8%AD%D8%B3%D8%A8%20%D8%A7%D9%84%D9%85%D9%88%D8%B8%D9%81-->تسجيل الليدز حسب الموظف</h3><p style=\"font-size:12px;color:var(--c-muted);margin:4px 0;\">" + escapeHtml(period) + ' · إجمالي التسجيلات ' + fmtNum(stats.total) + "</p></div><button class=\"btn ghost sm\" id=\"ar-refresh-stats\"> <!--ssmpd-i18n:%D8%AA%D8%AD%D8%AF%D9%8A%D8%AB-->تحديث</button></div>";
       html += '<p style="font-size:12px;color:var(--c-muted);">كل ليد يُحسب مرة واحدة لمسجله، سواء إدخال يدوي أو رفع إكسيل. المؤشرات تشمل كل الحالات؛ فلتر الموظف والبحث يغيّران القائمة فقط.</p>';
@@ -736,7 +738,7 @@
         '</select>' +
         "<select id=\"ar-employee\"><option value=\"\"> <!--ssmpd-i18n:%D9%83%D9%84%20%D8%A7%D9%84%D9%85%D9%88%D8%B8%D9%81%D9%8A%D9%86%20(%D9%85%D8%B3%D8%AC%D9%84%20%D8%A7%D9%84%D9%84%D9%8A%D8%AF)-->كل الموظفين (مسجل الليد)</option>" +
         (state.archiveRegistrars || state.employees).map(function (e) { return '<option value="' + e.id + '" ' + (s.bookedBy === e.id ? "selected" : "") + '>' + escapeHtml(e.name) + '</option>'; }).join("") +
-        '<option value="__unrecorded__" ' + (s.bookedBy === '__unrecorded__' ? 'selected' : '') + '>بدون مسجل</option></select>' +
+        '<option value="__unrecorded__" ' + (s.bookedBy === '__unrecorded__' ? 'selected' : '') + '>تسجيل آلي / بدون مسجل</option></select>' +
         "<label style=\"font-size:11px;color:var(--c-muted);\"> <!--ssmpd-i18n:%D9%85%D9%86-->من <input type=\"date\" id=\"ar-date-from\" value=\"" + escapeHtml(s.dateFrom || "") + '" style="padding:6px 8px;border-radius:8px;border:1px solid var(--c-border);"></label>' +
         "<label style=\"font-size:11px;color:var(--c-muted);\"> <!--ssmpd-i18n:%D8%A5%D9%84%D9%89-->إلى <input type=\"date\" id=\"ar-date-to\" value=\"" + escapeHtml(s.dateTo || "") + '" style="padding:6px 8px;border-radius:8px;border:1px solid var(--c-border);"></label>' +
         "<button class=\"btn ghost sm\" id=\"ar-search-btn\"> <!--ssmpd-i18n:%D8%A8%D8%AD%D8%AB-->بحث</button>" +
@@ -751,7 +753,7 @@
           html += '<tr><td>' + escapeHtml(l.customer_name) + '</td><td>' + escapeHtml(l.phone_raw || l.phone_normalized || "—") + '</td>' +
             '<td>' + (SOURCE_LABELS[l.source] || l.source) + '</td>' +
             '<td><span class="status-pill ' + (STATUS_PILL_CLASS[l.current_status] || "draft") + '">' + (STATUS_LABELS[l.current_status] || l.current_status) + '</span></td>' +
-            '<td data-registrar="' + escapeHtml(l.received_by || '') + '">' + escapeHtml(registrarName(l.received_by)) + '</td>' +
+            '<td data-registrar="' + escapeHtml(l.received_by || '') + '" data-source="' + escapeHtml(l.source || '') + '">' + escapeHtml(registrarName(l.received_by, l.source)) + '</td>' +
             '<td style="font-size:11px;color:var(--c-muted);">' + fmtDate(l.created_at) + '</td>' +
             '<td><button class="btn ghost sm" data-open="' + l.id + "\"> <!--ssmpd-i18n:%D9%81%D8%AA%D8%AD-->فتح</button></td></tr>";
         });
@@ -809,7 +811,7 @@
       allLeads.forEach(function (l) {
         rows.push([
           l.customer_name, l.phone_raw || l.phone_normalized || "", (SOURCE_LABELS[l.source] || l.source),
-          (STATUS_LABELS[l.current_status] || l.current_status), registrarName(l.received_by), fmtDate(l.created_at), l.booking_reference || ""
+          (STATUS_LABELS[l.current_status] || l.current_status), registrarName(l.received_by, l.source), fmtDate(l.created_at), l.booking_reference || ""
         ]);
       });
       var wb = XLSX.utils.book_new();
