@@ -2,11 +2,11 @@
 -- For staff who assist a doctor but are not nurses (no cannula / wound care). First user: set by docs/ops SQL, not here.
 -- * admins.role and admin_extra_roles.role accept 'doctor_assistant' (both checks rebuilt from their LIVE value lists, so no
 --   live role is dropped).
--- * Today's operations: the same reception access as nursing / head nursing. Every reception function (schema
---   clinic_reception or name clinic_reception_*) that grants public.has_role('head_nursing') now also grants
---   public.has_role('doctor_assistant') — in-place text patch, old bodies saved for rollback. Archive / review / nursing
---   functions are NOT touched: the nurse picker (clinic_reception_nurses, is_nurse) and nursing reports test role in
---   ('nursing','head_nursing') directly, so an assistant never appears as a nurse.
+-- * Today's operations: the same reception access as NURSING (not head nursing — head nursing is a manager role in the
+--   nursing screens). Every reception function (schema clinic_reception or name clinic_reception_*) that grants
+--   public.has_role('nursing') now also grants public.has_role('doctor_assistant') — in-place text patch, old bodies saved
+--   for rollback. Archive / review functions are not touched; the nurse picker, nursing day screen and nursing reports test
+--   role in ('nursing','head_nursing') directly, so an assistant never appears as a nurse.
 -- * public.clinic_reception_my_departments(workspace): the departments of the caller's own provider record(s) (provider
 --   department + departments of the services in its provider scopes), so the today's-operations board can show a doctor
 --   assistant only his departments. Display filter only; access is unchanged.
@@ -37,10 +37,10 @@ begin
   end loop;
 end $$;
 
--- 2. reception access: wherever head nursing is granted in a reception function, the doctor assistant is too
+-- 2. reception access: wherever nursing is granted in a reception function, the doctor assistant is too
 do $$
-declare r record; d text; a constant text := $a$public.has_role('head_nursing')$a$;
-  b constant text := $b$(public.has_role('head_nursing') or public.has_role('doctor_assistant'))$b$; n int := 0;
+declare r record; d text; a constant text := $a$public.has_role('nursing')$a$;
+  b constant text := $b$(public.has_role('nursing') or public.has_role('doctor_assistant'))$b$; n int := 0;
 begin
   for r in select p.oid, n.nspname || '.' || p.proname || '(' || pg_get_function_identity_arguments(p.oid) || ')' sig
              from pg_proc p join pg_namespace n on n.oid = p.pronamespace
@@ -51,7 +51,7 @@ begin
     execute replace(d, a, b);
     n := n + 1;
   end loop;
-  if n = 0 then raise exception 'no reception function grants head_nursing — check the live definitions'; end if;
+  if n = 0 then raise exception 'no reception function grants nursing — check the live definitions'; end if;
   raise notice 'doctor_assistant: % reception functions patched', n;
 end $$;
 

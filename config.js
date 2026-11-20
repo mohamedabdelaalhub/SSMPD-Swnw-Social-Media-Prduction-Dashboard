@@ -122,5 +122,8 @@ window.SSMPD_CONFIG = {
     loadOnce("__SWNWTodayOperationsUnifiedV1","assets/js/today-operations-unified.js?v=today-board-20261107-1","today-operations-unified");
     loadOnce("__SWNWTodayOperationsFinalizeV1","assets/js/today-operations-finalize.js?v=doctor-assistant-20261120-1","today-operations-finalize");
     loadOnce("__SWNWTodayOperationsQueueV1","assets/js/today-operations-queue.js?v=masa-hint-20261120-1","today-operations-queue");
+    loadOnce("__SWNWNursingDayOpsV1","assets/js/nursing-day-ops.js?v=clinical-drafts-20261120-1","nursing-day-ops");
+    loadOnce("__SWNWNursingTriageStripV1","assets/js/nursing-triage-strip.js?v=nursing-day-20261120-1","nursing-triage-strip");
+    loadOnce("__SWNWClinicalDraftsV1","assets/js/clinical-drafts.js?v=clinical-drafts-20261120-1","clinical-drafts");
   });
 })();

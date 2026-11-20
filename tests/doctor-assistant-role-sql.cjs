@@ -1,4 +1,4 @@
-// 20261120290000: role «مساعد طبيب» (doctor_assistant): accepted by both role checks (live list kept), gets head-nursing parity
+// 20261120290000: role «مساعد طبيب» (doctor_assistant): accepted by both role checks (live list kept), gets nursing parity
 // in reception functions only (archive/nurse-list untouched), my_departments helper, rollback restores everything.
 const fs=require('fs'),assert=require('node:assert/strict'),{PGlite}=require('@electric-sql/pglite');
 (async()=>{const db=new PGlite(),q=(s,p)=>db.query(s,p),one=async(s,p)=>(await q(s,p)).rows[0];
@@ -9,7 +9,8 @@ const fs=require('fs'),assert=require('node:assert/strict'),{PGlite}=require('@e
   create function public.my_admin_id() returns uuid language sql as $$select id from cur$$;
   create function public.has_role(r text) returns boolean language sql as $$select exists(select 1 from public.admins a where a.id=public.my_admin_id() and a.role=r) or exists(select 1 from public.admin_extra_roles x where x.admin_id=public.my_admin_id() and x.role=r)$$;
   create function clinic_reception.access_x(p text) returns boolean language plpgsql as $$begin return case when p='view' then public.has_role('nursing') or public.has_role('head_nursing') else public.has_role('reception') end;end$$;
-  create function public.clinic_reception_journey_x() returns boolean language sql as $$select public.has_role('head_nursing')$$;
+  create function public.clinic_reception_journey_x() returns boolean language sql as $$select public.has_role('nursing')$$;
+  create function public.clinic_reception_nursing_mgr() returns boolean language sql as $$select public.has_role('super_admin') or public.has_role('head_nursing')$$;
   create function public.has_archive_review_access() returns boolean language sql as $$select public.has_role('head_nursing')$$;
   create function public.clinic_reception_nurses() returns setof uuid language sql as $$select id from public.admins where role in ('nursing','head_nursing')$$;
   create table clinic_people.people(id uuid default gen_random_uuid(),admin_id uuid,code text);
@@ -27,6 +28,7 @@ const fs=require('fs'),assert=require('node:assert/strict'),{PGlite}=require('@e
   assert.equal((await one("select clinic_reception.access_x('book') x")).x,false,'no booking');
   assert.equal((await one("select public.clinic_reception_journey_x() x")).x,true);
   assert.equal((await one("select public.has_archive_review_access() x")).x,false,'archive review untouched');
+  assert.equal((await one("select public.clinic_reception_nursing_mgr() x")).x,false,'no head-nursing manager powers');
   assert.equal((await one("select count(*)::int n from public.clinic_reception_nurses() x where x=$1",[A])).n,0,'not a nurse');
   // departments
   await q("insert into clinic_people.people(admin_id,code) values($1,'EMP-000005')",[A]);
