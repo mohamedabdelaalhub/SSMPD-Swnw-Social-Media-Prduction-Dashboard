@@ -8,11 +8,11 @@
 @media(max-width:600px){.wn-mobile-file{display:grid;margin-block:12px}.wn-file-dialog>.wn-tabs{display:none}.wn-file-dialog .modal-head h3{font-size:16px}}
 .wp-modal [hidden],.wp [hidden],.wn-contract-root [hidden],.wn-file-dialog [hidden]{display:none!important}
 /* ===== Main menu v2 (owner-approved mockup docs/ui-references/mockups/main-menu.html, 2026-11-18) =====
-   Full-height drawer from the right, compact head (photo/name/role/close), section icons by group colour,
+   Full-height drawer from the left (owner 2026-11-21), compact head (photo/name/role/close), section icons by group colour,
    real attention badges, «الأكثر استخدامًا», floating launchers hidden while open. */
-.app-shell .user-dropdown.nav2{position:fixed;top:0;bottom:0;right:0;left:auto;width:min(400px,100vw);max-width:none;height:100dvh;max-height:none;margin:0;padding:0;border:0;border-radius:22px 0 0 22px;background:#fff;box-shadow:-20px 0 50px rgba(15,25,45,.18);z-index:4000;flex-direction:column;gap:0;overflow:hidden}
+.app-shell .user-dropdown.nav2{position:fixed;top:0;bottom:0;left:0;right:auto;width:min(400px,100vw);max-width:none;height:100dvh;max-height:none;margin:0;padding:0;border:0;border-radius:0 22px 22px 0;background:#fff;box-shadow:20px 0 50px rgba(15,25,45,.18);z-index:4000;flex-direction:column;gap:0;overflow:hidden}
 .app-shell .user-dropdown.nav2.open{display:flex;animation:nav2-in .42s var(--ease-out,cubic-bezier(.22,1,.36,1))}
-@keyframes nav2-in{from{clip-path:inset(0 0 0 100%);opacity:.6}to{clip-path:inset(0 0 0 0);opacity:1}}
+@keyframes nav2-in{from{clip-path:inset(0 100% 0 0);opacity:.6}to{clip-path:inset(0 0 0 0);opacity:1}}
 .app-shell .nav-menu-shade{position:fixed;inset:0;z-index:3999;background:rgba(15,25,45,.38);backdrop-filter:blur(2px);animation:nav2-fade .3s ease}
 @keyframes nav2-fade{from{opacity:0}to{opacity:1}}
 .app-shell .user-dropdown.nav2>.mm-name,.app-shell .user-dropdown.nav2>.mm-role{display:none}
@@ -53,7 +53,7 @@
 .app-shell .user-dropdown.nav2 .ud-group>.ud-item:last-child{margin-bottom:8px}
 .app-shell .user-dropdown.nav2 .ud-group[open]>.ud-item{animation:nav2-item .35s var(--ease-out,ease) both}
 .app-shell .user-dropdown.nav2 .ud-group[open]>.ud-item:nth-of-type(2){animation-delay:.035s}.app-shell .user-dropdown.nav2 .ud-group[open]>.ud-item:nth-of-type(3){animation-delay:.07s}.app-shell .user-dropdown.nav2 .ud-group[open]>.ud-item:nth-of-type(4){animation-delay:.105s}.app-shell .user-dropdown.nav2 .ud-group[open]>.ud-item:nth-of-type(5){animation-delay:.14s}.app-shell .user-dropdown.nav2 .ud-group[open]>.ud-item:nth-of-type(n+6){animation-delay:.175s}
-@keyframes nav2-item{from{opacity:0;transform:translateX(10px)}to{opacity:1;transform:none}}
+@keyframes nav2-item{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:none}}
 .app-shell .user-dropdown.nav2 .ud-item:hover{background:#F5F7FB;color:#16212E}
 .app-shell .user-dropdown.nav2 .ud-item:active{transform:scale(.98)}
 .app-shell .user-dropdown.nav2 .ud-item[aria-current="page"]{background:#EEF3FC;color:#0F369D;font-weight:700}
