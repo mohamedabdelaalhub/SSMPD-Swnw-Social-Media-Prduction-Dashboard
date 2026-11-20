@@ -1,3 +1,6 @@
+-- v3 = APPLIED on live 2026-11-20 13:24Z by main chat 4 after the owner's decisions (252 pricing rows, sync_catalog OK,
+--      is_home on 963 live rows: كشف 23, تحاليل 439, باقي التحاليل 444, اشعة 38, تمريض 19). Backups: public.ops_backup_20261120_minutes / _home.
+--      v3 adds: dental/physio consults inside «خدمات الكشف» (كشف الأسنان، تقويم الأسنان، أخصائي/استشاري العلاج الطبيعي) → 20.
 -- v2 (main chat preview 13:07Z: physio regex missed «العلاج الطبيعي»; «other → 5» hit chemo/therapy/surgery/labs; derm procedures).
 -- Owner 2026-11-20: CONSULTATION length is 5 min, except dental, physio, laser and cosmetics, which are 20. Gap stays 5.
 -- Rule (only active + booking_enabled pricing_services; everything not matched keeps its current minutes):
@@ -12,6 +15,7 @@ create temp view _plan as
 select s.id, s.name, s.booking_department d, s.booking_minutes old,
   case
     when s.booking_department ~ '(سنان|طبيعي)' then 20
+    when s.booking_department = 'خدمات الكشف' and s.name ~ '(أسنان|اسنان|علاج طبيعي|العلاج الطبيعي)' then 20   -- v3
     when s.booking_department ~ '(جلد|تجميل|ليزر)' and not s.name ~ '(كشف|استشار|متابعة)' then 20
     when s.booking_department = 'خدمات الكشف' or s.name ~ '(كشف|استشار|متابعة)' then 5
     else s.booking_minutes end as new
