@@ -1,0 +1,94 @@
+<!doctype html><html dir="rtl" lang="ar"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>القوائم الطويلة — تصور</title>
+<style>
+@font-face{font-family:"BigVesta Arabic";src:url("../../../assets/fonts/BigVesta-Regular.woff2")}
+@font-face{font-family:"BigVesta Arabic";font-weight:700;src:url("../../../assets/fonts/BigVesta-Bold.woff2")}
+*{box-sizing:border-box;margin:0}
+:root{--ink:#16212E;--mut:#65748a;--line:#E3E9F4;--blue:#0F369D;--teal:#00B0BD;--org:#FF8800}
+body{font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,sans-serif;background:#F4F7FD;color:var(--ink);padding:16px 0 50px;font-size:14px;font-variant-numeric:tabular-nums}
+.lbl{font:700 12px system-ui;color:var(--mut);direction:ltr;text-align:left;max-width:1280px;margin:18px auto 6px;padding:0 16px}
+.page{max-width:1280px;margin:0 auto;padding:0 16px;display:grid;gap:14px}
+.card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:18px;display:grid;gap:12px;min-width:0}
+h2{font-size:20px;font-weight:800}h3{font-size:16px;font-weight:800}.sub{font-size:12px;color:var(--mut);line-height:1.7}
+.hero{background:linear-gradient(135deg,#0F369D,#2552C9);color:#fff;border-radius:18px;padding:18px;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}.hero p{font-size:13px;color:#E3EBFF;margin-top:4px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:42px;padding:0 18px;border-radius:12px;background:var(--blue);color:#fff;font-weight:700;font-size:13.5px;white-space:nowrap}
+.btn.ghost{background:#fff;color:var(--blue);box-shadow:inset 0 0 0 1px #C9D6F2}.btn.sm{min-height:36px;padding:0 14px;font-size:13px}.btn.org{background:#FFF3E0;color:#8A5A00;box-shadow:none}
+.hero .btn{background:#ffffff22;box-shadow:inset 0 0 0 1px #ffffff55}
+.sync{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:13px;padding:12px 16px;border-radius:14px;background:#fff;border:1px solid var(--line)}.sync b{color:#2F7D5C}.dot{width:8px;height:8px;border-radius:50%;background:#2F7D5C}
+.sum{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.tile{display:flex;align-items:center;gap:14px;padding:16px 18px;border:1px solid var(--line);border-radius:16px;background:#fff}
+.tile .n{font-size:30px;font-weight:800;min-width:54px}.tile .t{flex:1;min-width:0}.tile .t b{display:block;font-size:15px}.tile .t small{font-size:12px;color:var(--mut)}
+.tile.warn{background:#FFF8F0;border-color:#FFD9A8}.tile.warn .n{color:#B35F00}
+.go{font-size:12px;color:var(--blue);font-weight:700;white-space:nowrap}
+.backdrop{background:rgba(22,33,46,.45);border-radius:18px;padding:30px 16px;display:grid;place-items:center}
+.modal{background:#fff;border-radius:20px;box-shadow:0 24px 60px rgba(15,54,157,.25);width:min(860px,100%);display:grid;gap:12px;padding:18px}
+.mh{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.x{width:38px;height:38px;border-radius:11px;border:1px solid var(--line);display:grid;place-items:center}
+.tools{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.inp{flex:1 1 260px;display:flex;align-items:center;gap:10px;height:44px;padding:0 14px;border:1.5px solid #C9D6F2;border-radius:12px;color:var(--mut);min-width:0}
+.seg{display:inline-flex;background:#F1F4F8;border-radius:12px;padding:3px;gap:2px}.seg span{padding:8px 14px;border-radius:9px;font-size:13px;font-weight:700;color:var(--mut);white-space:nowrap}.seg .on{background:#fff;color:var(--blue);box-shadow:0 1px 3px rgba(15,54,157,.12)}
+.rows{display:grid}
+.row{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) auto;gap:12px;align-items:center;padding:11px 4px;border-bottom:1px solid #EDF0F5}.row:last-child{border:0}
+.row .who b{display:block;font-size:14.5px;overflow-wrap:anywhere}.row .who small{font-size:12px;color:var(--mut);direction:ltr;display:inline-block}
+.row .doc{font-size:13px}.row .doc small{display:block;font-size:12px;color:var(--mut)}
+.acts{display:flex;gap:8px}
+.chip{display:inline-flex;padding:3px 10px;border-radius:9px;font-size:11.5px;font-weight:700;color:#333;background:#F1F4F8}.chip.masa{background:#E4EAF8;color:var(--blue)}.chip.wa{background:#D7F0E2;color:#1F6B49}
+.pg{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding-top:6px}.pg .pn{display:flex;gap:6px;align-items:center}
+.pg .pn span{min-width:36px;height:36px;border-radius:10px;border:1px solid var(--line);display:grid;place-items:center;font-weight:700;font-size:13px}.pg .pn .on{background:var(--blue);color:#fff;border-color:var(--blue)}
+.phones{display:flex;gap:26px;justify-content:center;flex-wrap:wrap;max-width:1280px;margin:0 auto;padding:0 16px}
+.ph{width:390px;background:#F4F7FD;border:1px solid var(--line);border-radius:22px;padding:12px;display:grid;gap:12px;align-content:start}
+.ph .sum{grid-template-columns:minmax(0,1fr)}.ph .card{padding:14px;border-radius:16px}
+.ph .row{grid-template-columns:minmax(0,1fr) auto}.ph .row .doc{grid-column:1/-1;order:3}.ph .row .acts{order:2}
+.sheet{background:#fff;border-radius:22px 22px 0 0;padding:14px;display:grid;gap:10px;margin:0 -12px -12px;box-shadow:0 -10px 40px rgba(15,54,157,.2)}.grab{width:44px;height:5px;border-radius:3px;background:#D5DBE6;margin:0 auto}
+</style>
+<body>
+<div class="lbl">DESKTOP — شاشة الحجز والاستقبال (بدل القايمة الطويلة المفتوحة)</div>
+<div class="page">
+ <div class="hero"><div><h2 style="color:#fff">الحجز والاستقبال</h2><p>المواعيد والحضور وبدء الزيارة.</p></div><div style="display:flex;gap:8px"><span class="btn">شرح الاستخدام</span><span class="btn">تحديث</span></div></div>
+ <div class="sync"><span class="dot"></span>الحجز التلقائي شغال — <b>آخر مزامنة مع ماسا من 2 دقيقة</b> · اتضاف النهارده 4 موعد لوحده <span class="chip masa" style="margin-inline-start:auto">ماسا 4</span></div>
+ <div class="sum">
+  <div class="tile"><span class="n">83</span><span class="t"><b>حجوزات من غير ساعة</b><small>ماسا مسجّلاها على اليوم من غير ساعة — محتاجة تحط الساعة</small></span><span class="go">افتح القايمة ›</span></div>
+  <div class="tile warn"><span class="n">7</span><span class="t"><b>حجوزات تحتاج استكمال</b><small>مقدرتش تتسجّل لوحدها — اختار المطلوب</small></span><span class="go">افتح القايمة ›</span></div>
+ </div>
+ <div class="card"><h3>مواعيد النهارده</h3><p class="sub">(باقي الشاشة زي ما هي: الأيام، الأطباء، الجدول…)</p></div>
+</div>
+
+<div class="lbl">DESKTOP — بعد الضغط على «حجوزات من غير ساعة»: نافذة فيها بحث وتقسيم صفحات</div>
+<div class="page"><div class="backdrop"><div class="modal">
+ <div class="mh"><h3>حجوزات من غير ساعة (83)</h3><span class="x">✕</span></div>
+ <div class="tools"><div class="inp">🔍 ابحث بالاسم أو التليفون أو الدكتور…</div><div class="seg"><span class="on">الكل</span><span>ماسا</span><span>واتساب</span><span>البوابة</span></div></div>
+ <div class="rows">
+  <div class="row"><div class="who"><b>أسيا احمد صالح</b><small>01119663476</small> <span class="chip masa">من ماسا</span></div><div class="doc">د. أحمد علي<small>السبت 11/21 · بدون ميعاد</small></div><div class="acts"><span class="btn sm">حط الساعة</span><span class="btn sm ghost">تجاهل</span></div></div>
+  <div class="row"><div class="who"><b>محمد عبدالله المراسي</b><small>01055394039</small> <span class="chip masa">من ماسا</span></div><div class="doc">د. أحمد سمير<small>السبت 11/21 · بدون ميعاد</small></div><div class="acts"><span class="btn sm">حط الساعة</span><span class="btn sm ghost">تجاهل</span></div></div>
+  <div class="row"><div class="who"><b>ديانا طارق محمد</b><small>01023726270</small> <span class="chip masa">من ماسا</span></div><div class="doc">د. أحمد سمير<small>السبت 11/21 · بدون ميعاد</small></div><div class="acts"><span class="btn sm">حط الساعة</span><span class="btn sm ghost">تجاهل</span></div></div>
+  <div class="row"><div class="who"><b>ام سلمى بابكر احمد</b><small>01552208706</small> <span class="chip wa">واتساب</span></div><div class="doc">د. أمل علي<small>السبت 11/21 · بدون ميعاد</small></div><div class="acts"><span class="btn sm">حط الساعة</span><span class="btn sm ghost">تجاهل</span></div></div>
+ </div>
+ <div class="pg"><span class="sub">1–15 من 83</span><div class="pn"><span>‹</span><span class="on">1</span><span>2</span><span>3</span><span>…</span><span>6</span><span>›</span></div></div>
+</div></div></div>
+
+<div class="lbl">MOBILE 390 — الملخص، ثم القايمة كورقة من تحت</div>
+<div class="phones">
+ <div class="ph">
+  <div class="hero" style="padding:14px"><div><h2 style="color:#fff;font-size:18px">الحجز والاستقبال</h2></div><span class="btn" style="min-height:36px">تحديث</span></div>
+  <div class="sync" style="font-size:12.5px"><span class="dot"></span>الحجز التلقائي شغال — آخر مزامنة من 2 دقيقة</div>
+  <div class="sum">
+   <div class="tile"><span class="n">83</span><span class="t"><b>حجوزات من غير ساعة</b><small>محتاجة تحط الساعة</small></span><span class="go">افتح ›</span></div>
+   <div class="tile warn"><span class="n">7</span><span class="t"><b>تحتاج استكمال</b><small>مقدرتش تتسجّل لوحدها</small></span><span class="go">افتح ›</span></div>
+  </div>
+  <div class="card"><h3>مواعيد النهارده</h3><p class="sub">(باقي الشاشة زي ما هي)</p></div>
+ </div>
+ <div class="ph" style="min-height:640px;align-content:end">
+  <div class="sheet"><div class="grab"></div>
+   <div class="mh"><h3>حجوزات من غير ساعة (83)</h3><span class="x">✕</span></div>
+   <div class="inp" style="flex:none">🔍 بحث بالاسم أو التليفون</div>
+   <div class="seg" style="display:flex"><span class="on" style="flex:1;text-align:center">الكل</span><span style="flex:1;text-align:center">ماسا</span><span style="flex:1;text-align:center">واتساب</span></div>
+   <div class="rows">
+    <div class="row"><div class="who"><b>أسيا احمد صالح</b><small>01119663476</small> <span class="chip masa">ماسا</span></div><div class="acts"><span class="btn sm">حط الساعة</span><span class="btn sm ghost">تجاهل</span></div><div class="doc">د. أحمد علي<small>السبت 11/21</small></div></div>
+    <div class="row"><div class="who"><b>محمد عبدالله المراسي</b><small>01055394039</small> <span class="chip masa">ماسا</span></div><div class="acts"><span class="btn sm">حط الساعة</span><span class="btn sm ghost">تجاهل</span></div><div class="doc">د. أحمد سمير<small>السبت 11/21</small></div></div>
+    <div class="row"><div class="who"><b>ديانا طارق محمد</b><small>01023726270</small> <span class="chip masa">ماسا</span></div><div class="acts"><span class="btn sm">حط الساعة</span><span class="btn sm ghost">تجاهل</span></div><div class="doc">د. أحمد سمير<small>السبت 11/21</small></div></div>
+   </div>
+   <div class="pg"><span class="sub">1–15 من 83</span><div class="pn"><span>‹</span><span class="on">1</span><span>2</span><span>3</span><span>›</span></div></div>
+  </div>
+ </div>
+</div>
+</body></html>
