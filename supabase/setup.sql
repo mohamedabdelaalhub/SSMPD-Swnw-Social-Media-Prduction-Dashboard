@@ -3919,7 +3919,7 @@ returns integer
 language plpgsql
 security definer
 set search_path = public
-as $
+as $$
 declare
   changed_count integer;
 begin
@@ -3933,7 +3933,7 @@ begin
   get diagnostics changed_count = row_count;
   return changed_count;
 end;
-$;
+$$;
 
 revoke all on function public.refresh_overdue_followups() from public;
 grant execute on function public.refresh_overdue_followups() to authenticated;
