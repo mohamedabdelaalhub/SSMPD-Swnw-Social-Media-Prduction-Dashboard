@@ -70,7 +70,7 @@
   function load(box,c){return rpc(c.workspace,'list',{from:c.from||today(),to:c.to||c.from||today()}).then(function(d){paint(box,c,d||{});}).catch(function(){box.hidden=true;box.innerHTML='';});}
   function decorate(c,section){if(section!=='appointments'||!c||!c.host||!c.data||!c.data.workspace||c.data.workspace.mode!=='live')return;
     var box=c.host.querySelector('[data-rx-auto-book]');if(!box){box=document.createElement('div');box.setAttribute('data-rx-auto-book','');box.hidden=true;
-      var anchor=c.host.querySelector('.rx-actions');if(anchor&&anchor.parentNode)anchor.parentNode.insertBefore(box,anchor.nextSibling);else c.host.insertBefore(box,c.host.firstChild);}
+      var anchor=Array.prototype.find.call(c.host.querySelectorAll('.rx-actions'),function(x){return !x.closest('.rx-header');});if(anchor&&anchor.parentNode)anchor.parentNode.insertBefore(box,anchor.nextSibling);else c.host.insertBefore(box,c.host.firstChild);}
     return load(box,c);}
   window.SSMPDReceptionAutoBook={decorate:decorate,cairoISO:cairoISO,labels:SRC};
 })();

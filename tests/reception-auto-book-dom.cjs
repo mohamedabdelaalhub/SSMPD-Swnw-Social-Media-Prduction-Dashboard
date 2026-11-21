@@ -1,7 +1,7 @@
 // Owner 2026-11-19: automatic bookings — reception screen (sync bar, source chips, «بدون ميعاد», review actions).
 const fs=require('fs'),assert=require('node:assert/strict'),{JSDOM}=require('jsdom');
 (async()=>{
- const dom=new JSDOM('<!doctype html><body><div id="host"><div class="rx-actions"></div><ol><li><button data-tl-open="ap1">مريض</button><article data-tl-card="ap1"><header><h4>مريض تجريبي</h4></header></article></li></ol><details class="rx-fb-imports"></details></div></body>',{runScripts:'outside-only'});
+ const dom=new JSDOM('<!doctype html><body><div id="host"><header class="rx-header"><div class="rx-actions"></div></header><div class="rx-actions" data-section-actions></div><ol><li><button data-tl-open="ap1">مريض</button><article data-tl-card="ap1"><header><h4>مريض تجريبي</h4></header></article></li></ol><details class="rx-fb-imports"></details></div></body>',{runScripts:'outside-only'});
  const w=dom.window,calls=[],toasts=[];
  const T=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Cairo'}).format(new Date());
  const rows=[
@@ -18,7 +18,7 @@ const fs=require('fs'),assert=require('node:assert/strict'),{JSDOM}=require('jsd
  const host=w.document.getElementById('host');let loads=0;
  const c={host,workspace:'ws1',from:T,to:T,data:{workspace:{mode:'live'}},load:()=>{loads++;return Promise.resolve();}};
  await w.SSMPDReceptionAutoBook.decorate(c,'appointments');
- const box=host.querySelector('[data-rx-auto-book]');assert.ok(box&&!box.hidden);
+ const box=host.querySelector('[data-rx-auto-book]');assert.ok(box&&!box.hidden);assert.equal(box.closest('.rx-header'),null,'auto-book box must sit outside the blue hero header');assert.equal(box.previousElementSibling&&box.previousElementSibling.hasAttribute('data-section-actions'),true,'placed after the section actions');
  assert.equal(calls[0][0],'clinic_reception_auto_book');assert.equal(calls[0][1].p_action,'list');assert.equal(calls[0][1].p_payload.from,T);
  assert.match(box.textContent,/الحجز التلقائي شغال/);assert.match(box.textContent,/من 4 دقيقة/);assert.match(box.textContent,/اتضاف النهارده 2 موعد/);
  assert.ok(host.querySelector('[data-tl-card="ap1"] h4 .rx-ab-masa'),'chip on the appointment card');assert.ok(host.querySelector('[data-tl-open="ap1"] .rx-ab-tag'));
