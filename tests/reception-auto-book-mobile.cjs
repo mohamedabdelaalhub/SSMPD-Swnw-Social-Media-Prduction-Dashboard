@@ -18,7 +18,7 @@ const ORDER=['roles','ui-titles','reception-shared','reception-bridge','receptio
  await page.evaluate(()=>{SSMPDReception.render(document.querySelector('#root'));});
  await page.waitForTimeout(3500);
  try{await page.locator('[data-guide-skip]').click({timeout:1500});}catch(e){}
- try{await page.locator('[data-ab-open="times"]').click({timeout:3000});await page.waitForTimeout(300);}catch(e){}
+ try{await page.locator('[data-ab-open="times-new"]').click({timeout:3000});await page.waitForTimeout(300);}catch(e){}
  const r=await page.evaluate(()=>{const vw=document.documentElement.clientWidth,out=[];document.querySelectorAll('body *').forEach(e=>{const b=e.getBoundingClientRect();if(b.width&&(b.right>vw+2||b.left<-2)&&getComputedStyle(e).position!=='fixed')out.push([e.tagName+'.'+String(e.className).slice(0,40),Math.round(b.left),Math.round(b.right),Math.round(b.width)]);});return {vw,sw:document.documentElement.scrollWidth,autob:!!document.querySelector('.rx-ab-modal .rx-ab-time'),over:out.slice(0,12)};});
  assert.ok(r.autob,'auto-book rows rendered');assert.equal(r.sw,r.vw,'no horizontal overflow at '+W+(STRESS?' (stress)':'')+': '+JSON.stringify(r.over.slice(0,3)));assert.deepEqual(errors.filter(e=>!/Unexpected token/.test(e)),[]);await page.close();}
  console.log('PASS reception auto-book on phones (390/360): long unbroken names, doctor names and phones wrap and never widen the page.');}finally{await browser.close();}})().catch(e=>{console.error(e);process.exit(1);});

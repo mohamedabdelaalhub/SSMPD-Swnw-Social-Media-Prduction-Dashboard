@@ -81,6 +81,7 @@ const fs=require('fs'),assert=require('node:assert/strict'),{PGlite}=require('@e
  assert.equal(e.state,'review');assert.equal(e.review_kind,'patient');assert.equal(e.candidate_patient_id,old);
  await as(staffU);
  const lst=(await one("select clinic_reception_auto_book($1,'list','{}') r",[ws])).r;
+ assert.ok(!('needed_service' in lst.rows[0]),'before the migration list has no needed_service');
  assert.ok(lst.rows.some(x=>x.id===e.id&&x.candidate&&x.candidate.patient_code==='P-2026-000188'),'list shows the candidate');
  await assert.rejects(()=>q("select clinic_reception_auto_book($1,'resolve_patient',$2)",[ws,{id:e.id,choice:'new'}]),/سن المريض مطلوب/);
  r=(await one("select clinic_reception_auto_book($1,'resolve_patient',$2) r",[ws,{id:e.id,choice:'new',age:9}])).r;assert.equal(r.state,'booked');
@@ -178,6 +179,13 @@ const fs=require('fs'),assert=require('node:assert/strict'),{PGlite}=require('@e
   assert.equal((await one("select clinic_reception.name_first_two('أحمد  محمد علي') v")).v,'احمد محمد');assert.equal((await one("select clinic_reception.name_first_two('أحمد') v")).v,null);
   await db.exec(fs.readFileSync('supabase/rollbacks/'+NM.replace('.sql','.rollback.sql'),'utf8'));
   assert.equal((await one("select position('name_first_two' in pg_get_functiondef('clinic_reception.auto_book_one(uuid)'::regprocedure)) p")).p,0,'branch removed');}
+  // 20261122000000: list rows also carry needed_service (new/old split on the no-time list)
+  await as(staffU);
+ await db.exec(fs.readFileSync('supabase/migrations/20261122000000_auto_book_list_needed_service.sql','utf8'));
+ const lst2=(await one("select clinic_reception_auto_book($1,'list',$2) r",[ws,{from:'2020-01-01',to:'2020-01-30'}])).r;
+ assert.ok(lst2.rows.every(x=>'needed_service' in x),'list rows carry needed_service after the migration');
+ 
+
  // rollback
  await db.exec(fs.readFileSync('supabase/rollbacks/'+fs.readdirSync('supabase/rollbacks').find(x=>x.includes('_reception_auto_book.')),'utf8'));
  await q("insert into clinic_reception.masa_bookings values('M9',$1,1130,$2,$3,$4,'active','كشف','أحمد محمود تجريبي','01012345637',false)",[ws,prov,at('10:00'),at('10:20')]);
