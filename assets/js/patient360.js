@@ -93,7 +93,7 @@
     document.querySelectorAll('[data-p360-nav]').forEach(function(b){b.classList.add('active');});
     var tab=document.getElementById('tabs-bar');if(tab)tab.style.display='';
     var mm=document.querySelector('#mobile-menu .mm-tabs');if(mm)mm.style.display='';
-    var b=document.getElementById('brand-section-name');if(b)b.textContent='مركز عيادات سونو التخصصية · Patient 360';
+    var b=document.getElementById('brand-section-name');if(b)b.textContent='Swnw للعيادات التخصصية · Patient 360';
     var menu=document.getElementById('mobile-menu');if(menu)menu.classList.remove('open');
     var dropdown=document.getElementById('user-dropdown');if(dropdown)dropdown.classList.remove('open');
     v.innerHTML='<section class="p360-root" data-p360-root dir="rtl">'+heading()+'<div class="p360-status" data-p360-status></div><div class="p360-layout"><aside class="p360-sidebar"><input type="search" data-p360-search placeholder="بحث في المحادثات" aria-label="بحث في المحادثات"><div data-p360-list></div></aside><main class="p360-main" data-p360-details></main></div></section>';
