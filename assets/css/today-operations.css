@@ -24,7 +24,7 @@ button.journey-metric.is-alert strong{color:#b42318}
 .journey-more-menu .btn{width:100%;justify-content:flex-start;text-align:right}
 .journey-tools>summary{font-size:13px;font-weight:600}
 .journey-tools>summary::after{content:" أدوات"}
-.journey-doctors{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px}
+.journey-doctors{display:flex;flex-wrap:wrap;gap:8px;overflow:visible;padding-bottom:2px}.journey-doctor:has(.journey-more[open]){position:relative;z-index:40}
 .journey-doctor{display:flex;align-items:center;gap:10px;flex:0 0 auto;padding:8px 12px;background:var(--card,#fff)}
 .journey-doctor p{margin-top:2px}
 .journey-doctor .journey-doctor-status{margin:0}
