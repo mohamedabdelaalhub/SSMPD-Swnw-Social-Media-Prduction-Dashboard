@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1879,
-    "labels": 1378,
-    "files": 139,
-    "groups": 1483
+    "definitions": 1890,
+    "labels": 1387,
+    "files": 140,
+    "groups": 1491
   },
   "fields": [
     {
@@ -7218,6 +7218,133 @@
       "text_sha256": "08c204de2685df464bdbc0cd0fde7ec98a5877581bd58cbad31890fc6661df06"
     },
     {
+      "file": "hr-job-catalog.js",
+      "label": "اسم الوظيفة",
+      "name": "title_ar",
+      "kind": "helper",
+      "forms": [
+        "وظيفة جديدة",
+        "تعديل "
+      ],
+      "tab": "human_resources",
+      "article": "job-catalog",
+      "text_sha256": "5be5ff6de8c6f0db68907510794b54122235eb47aa40f665d7432683a934bdb5"
+    },
+    {
+      "file": "hr-job-catalog.js",
+      "label": "الاسم بالإنجليزي",
+      "name": "title_en",
+      "kind": "helper",
+      "forms": [
+        "وظيفة جديدة",
+        "تعديل "
+      ],
+      "tab": "human_resources",
+      "article": "job-catalog",
+      "text_sha256": "fb0ec6f529cb77e6dbbe8ef09d429bab714448ef4c51a87411fa537b3ab05764"
+    },
+    {
+      "file": "hr-job-catalog.js",
+      "label": "القسم",
+      "name": "department",
+      "kind": "helper",
+      "forms": [
+        "وظيفة جديدة",
+        "تعديل "
+      ],
+      "tab": "human_resources",
+      "article": "content",
+      "text_sha256": "8781afaef1012c14a5b9f99b05513e1852e02bb6c191b2fc0b339518d671a4a9"
+    },
+    {
+      "file": "hr-job-catalog.js",
+      "label": "الخبرة المطلوبة",
+      "name": "experience",
+      "kind": "helper",
+      "forms": [
+        "وظيفة جديدة",
+        "تعديل "
+      ],
+      "tab": "human_resources",
+      "article": "job-catalog",
+      "text_sha256": "d14a3bee8e43b79c4e80797ccde75e60268d58f6d905ec1594c432135f414ff1"
+    },
+    {
+      "file": "hr-job-catalog.js",
+      "label": "الحافز (وصف)",
+      "name": "incentive",
+      "kind": "helper",
+      "forms": [
+        "وظيفة جديدة",
+        "تعديل "
+      ],
+      "tab": "human_resources",
+      "article": "job-catalog",
+      "text_sha256": "24c4c6c67fc9af1ae48f09074209dfb390ea6da97854b02aba8271a8c60267cf"
+    },
+    {
+      "file": "hr-job-catalog.js",
+      "label": "أقل راتب في النطاق",
+      "name": "salary_min",
+      "kind": "helper",
+      "forms": [
+        "وظيفة جديدة",
+        "تعديل "
+      ],
+      "tab": "human_resources",
+      "article": "job-catalog",
+      "text_sha256": "abcf28e9a0d8d7d3f14189d742d0f67c8cb0d141e598c93e2ad04ecb95b90ee8"
+    },
+    {
+      "file": "hr-job-catalog.js",
+      "label": "أعلى راتب في النطاق",
+      "name": "salary_max",
+      "kind": "helper",
+      "forms": [
+        "وظيفة جديدة",
+        "تعديل "
+      ],
+      "tab": "human_resources",
+      "article": "job-catalog",
+      "text_sha256": "e4d7dfec5aaf2b7ca69cb81c2655133dbbcfec1f3e17b0e7a1dddae275797ef7"
+    },
+    {
+      "file": "hr-job-catalog.js",
+      "label": "الراتب المعتمد (لو متحدد)",
+      "name": "salary_approved",
+      "kind": "helper",
+      "forms": [
+        "وظيفة جديدة",
+        "تعديل "
+      ],
+      "tab": "human_resources",
+      "article": "job-catalog",
+      "text_sha256": "67a2202910fd50f60b7cd2405cf25a0ceadeb8ad3bebc213b4f07e0c2e2f207e"
+    },
+    {
+      "file": "hr-job-catalog.js",
+      "label": "ملاحظة على الراتب",
+      "name": "salary_note",
+      "kind": "helper",
+      "forms": [
+        "وظيفة جديدة",
+        "تعديل "
+      ],
+      "tab": "human_resources",
+      "article": "job-catalog",
+      "text_sha256": "bf8b89b347e1c079582575c9312b61b1b8d8d5abc589cc56d311172bb146f7d0"
+    },
+    {
+      "file": "hr-job-catalog.js",
+      "label": "الوظيفة (منفصلة عن دور الدخول)",
+      "name": "jc_job",
+      "kind": "helper",
+      "forms": [],
+      "tab": "human_resources",
+      "article": "job-catalog",
+      "text_sha256": "4fc2fd9821d9aebd776f0340a9ed8d3c75c6d6c7c762deb3e20664c9c037f42b"
+    },
+    {
       "file": "hr-offboarding.js",
       "label": "الموظف",
       "name": "person_id",
@@ -10354,6 +10481,26 @@
       "tab": "reception_services",
       "article": "patient-records",
       "text_sha256": "b6b7ef3304940f5231c6281a0431f4e3513369f3f55fbf8bc0e9499a249a0bbd"
+    },
+    {
+      "file": "reception-auto-book.js",
+      "label": "بحث",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "personal",
+      "text_sha256": "fcfcf93d2d0bde74aa0a1934993d34ae9f117562d8c56a3a563761ba68e24990"
+    },
+    {
+      "file": "reception-auto-book.js",
+      "label": "ابحث بالاسم أو التليفون أو الدكتور…",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "automatic-bookings",
+      "text_sha256": "9ef669d8bb3ba4e1a525395a1c4fd3fcb78a909b718de99c59b75def15f1ac87"
     },
     {
       "file": "reception-booking-discount.js",
@@ -18614,7 +18761,7 @@
       "name": "reason",
       "kind": "helper",
       "forms": [
-        "إنهاء الزيارة"
+        "تأكيد: إنهاء الزيارة"
       ],
       "tab": "reception_services",
       "article": "today-board",
@@ -18872,36 +19019,20 @@
     },
     {
       "file": "today-operations.js",
-      "label": "ملاحظة إن وجدت",
+      "label": "ملاحظة (اختياري)",
       "name": "reason",
       "kind": "helper",
-      "forms": [
-        "إنهاء الزيارة"
-      ],
+      "forms": [],
       "tab": "reception_services",
       "article": "personal",
       "text_sha256": "08c204de2685df464bdbc0cd0fde7ec98a5877581bd58cbad31890fc6661df06"
     },
     {
       "file": "today-operations.js",
-      "label": "السبب",
+      "label": "السبب (مطلوب)",
       "name": "reason",
       "kind": "helper",
-      "forms": [
-        "تسجيل عدم الحضور"
-      ],
-      "tab": "reception_services",
-      "article": "requests",
-      "text_sha256": "80a0c51a0ba10ff7f4fe6f627b68c4e009f932e1abdff544c26e792f5f0e9e49"
-    },
-    {
-      "file": "today-operations.js",
-      "label": "السبب",
-      "name": "reason",
-      "kind": "helper",
-      "forms": [
-        "إلغاء الحجز"
-      ],
+      "forms": [],
       "tab": "reception_services",
       "article": "requests",
       "text_sha256": "80a0c51a0ba10ff7f4fe6f627b68c4e009f932e1abdff544c26e792f5f0e9e49"
