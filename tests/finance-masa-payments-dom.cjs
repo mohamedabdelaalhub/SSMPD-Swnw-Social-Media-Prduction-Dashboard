@@ -33,7 +33,7 @@ const fs=require('fs'),assert=require('node:assert/strict'),{JSDOM}=require('jsd
  await w.SSMPDMasaPayments.load(box);assert.match(box.querySelector('.mp-err').textContent,/ما اتحمّلش/);assert.match(box.textContent,/Could not find the function/);
  fail=false;box.querySelector('[data-mp-retry]').click();await new Promise(r=>setTimeout(r,10));assert.ok(!box.querySelector('.mp-err'));assert.match(box.querySelector('.mp-empty').textContent,/مفيش إيصالات من ماسا/);
  // tab wired into the finance screen + loaded before it
- const fc=fs.readFileSync('assets/js/finance-cash.js','utf8');assert.match(fc,/\['masa-payments','تحصيل ماسا'\]/);assert.match(fc,/items:\['reports','masa-payments','audit'\]/);
+ const fc=fs.readFileSync('assets/js/finance-cash.js','utf8');assert.match(fc,/\['masa-payments','تحصيل ماسا'\]/);assert.match(fc,/items:\['reports','masa-payments','masa-net','audit'\]/);
  const html=fs.readFileSync('index.html','utf8');assert.ok(html.indexOf('finance-masa-payments.js')<html.indexOf('finance-cash.js?v='));
  console.log('PASS finance «تحصيل ماسا» screen.');
 })().catch(e=>{console.error(e);process.exit(1);});
