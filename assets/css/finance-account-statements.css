@@ -3,3 +3,7 @@
 @media screen{.fas-modal [data-fas-output]>.fc-table{max-height:min(48vh,480px);overflow:auto}.fas-modal [data-fas-output]>.fc-table thead{position:sticky;top:0;z-index:1}.fas-modal .fc-table{scrollbar-gutter:stable}}
 
 @media screen{.fas-tax [data-fas-net]{display:grid;gap:8px}.fas-tax [data-fas-net]>span{display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap}.fas-tax bdi{font-variant-numeric:tabular-nums;color:#0F369D;font-weight:700;white-space:nowrap}}
+
+/* long internal refs never overlap the next column (owner screenshot 2026-11-22) */
+.fas-modal .fc-table td .fas-ref,.fas-modal .fc-table td .fas-desc{display:inline-block;max-width:220px;white-space:normal;overflow-wrap:anywhere;word-break:break-word}
+@media print{.fas-ref,.fas-desc{white-space:normal;overflow-wrap:anywhere;word-break:break-word}}
