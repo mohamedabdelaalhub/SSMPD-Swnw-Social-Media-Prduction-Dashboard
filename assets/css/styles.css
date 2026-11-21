@@ -839,3 +839,12 @@ table.simple.acc-table td.acc-col-num{text-align:left;}
 .ot-msg{margin:0;padding:8px 12px;border-radius:10px;font-weight:700}.ot-msg.is-ok{background:#E6F2EC;color:#2F7D5C}.ot-msg.is-bad{background:#FBE5E1;color:#D0402A}
 .ot-muted{margin:0;color:#7A8496;font-size:13px}.ot-details summary{cursor:pointer;font-weight:700;color:#0F369D;padding:4px 0}
 @media(max-width:640px){.ot-table{display:block;overflow-x:auto}}
+
+/* «صاحب الرقم» (owner 2026-11-21) — chips next to the patient phone + tag in the file */
+.po-chips{display:flex;flex-wrap:wrap;gap:6px}
+.po-chip{font:inherit;font-size:13px;padding:6px 12px;border-radius:99px;border:1px solid #CBD5E1;background:#fff;color:#16212E;cursor:pointer}
+.po-chip.on{background:#0F369D;border-color:#0F369D;color:#fff}
+.po-chip:focus-visible{outline:2px solid #F15A22;outline-offset:2px}
+.po-note{margin-top:6px}
+.po-hint{display:block;margin-top:4px;color:#D0402A}
+.po-tag{display:inline-block;padding:1px 9px;border-radius:99px;font-size:11px;background:#E8EEFB;color:#0F369D;margin-inline-start:6px;vertical-align:middle}
