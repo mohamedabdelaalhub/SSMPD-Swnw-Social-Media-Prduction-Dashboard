@@ -1,0 +1,19 @@
+/* «خصم على الحجز ده» — booking modal (owner 2026-11-21, mockup booking-discount.html) */
+.rbd{display:grid;gap:10px;border:1px solid #D5DEEE;border-radius:14px;padding:12px 14px;background:#fff}
+.rbd-sw{display:flex;align-items:center;gap:8px;font-weight:700;color:#16212E;cursor:pointer}.rbd-sw small{font-weight:400;color:#5b6577}
+.rbd-body{border:0;margin:0;padding:0;display:grid;gap:10px;min-width:0}
+.rbd-row{display:grid;gap:6px}.rbd-l{font-size:13px;color:#3B4658;font-weight:700}
+.rbd-two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.rbd-chips{display:flex;gap:6px;flex-wrap:wrap}
+.rbd-chip input{position:absolute;opacity:0;pointer-events:none}
+.rbd-chip span{display:inline-block;font-size:13px;padding:6px 12px;border-radius:99px;border:1px solid #D5DEEE;background:#fff;color:#16212E;cursor:pointer}
+.rbd-chip input:checked+span{background:#0F369D;border-color:#0F369D;color:#fff}
+.rbd-chip input:focus-visible+span{outline:2px solid #F15A22;outline-offset:2px}
+.rbd-pctin{display:flex;align-items:center;gap:6px}.rbd-pctin input{max-width:110px}
+.rbd-up{color:#5b6577}
+.rbd-sum{display:grid;grid-template-columns:1fr auto;gap:4px 12px;font-size:13px;background:#F4F7FC;border-radius:12px;padding:10px 12px}
+.rbd-sum b{color:#2F7D5C}.rbd-sum s{color:#8a93a3}
+.rbd-warn{font-size:12px;color:#B45309;background:#FFF3E9;border-radius:10px;padding:8px 10px;margin:0}
+.rbd-note{font-size:12px;color:#5b6577;margin:0;line-height:1.8}
+.rx-disc-tag{display:inline-block;white-space:nowrap;font-size:11px;padding:0 6px;border-radius:99px;background:#E8EEFB;color:#0F369D;margin-inline-start:4px}
+@media (max-width:480px){.rbd-two{grid-template-columns:1fr}}

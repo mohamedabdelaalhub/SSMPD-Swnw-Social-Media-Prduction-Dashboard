@@ -1045,6 +1045,11 @@ frule('reception-workspace.js','المناطق (اختياري)','لما الم�
 frule('reception-workspace.js','مثلاً: الوش + الإبط','اكتب المناطق اللي هتتعمل في الزيارة دي.','reception-booking-qty')
 frule('clinical-drafts.js','الخطة','اكتب خطة العلاج للزيارة الجاية. بتتضاف لخطة العلاج في الملف بعد اعتماد الدكتور.','clinical-drafts')
 frule('clinical-drafts.js','اكتب اللي محتاج يتعدّل|سبب الرجوع للتعديل (إجباري لو هترجّعه)','السبب إجباري لو هترجّع المسودة. بيوصل للممرضة أو المساعدة في شريط أحمر وفي تنبيه، وبيتسجل في سجل المراجعة.','clinical-drafts')
+frule('reception-booking-discount.js','خصم على الحجز ده (اختياري)','علّمها لو المريض له خصم نقابة أو نادي أو خصم خاص. لو مش متعلمة الحجز بيتعمل بسعره العادي.','reception-booking-discount')
+frule('reception-booking-discount.js','اسم النقابة|مثلاً نقابة المهندسين','اسم الجهة اللي المريض جاي بخصمها (نقابة أو نادي أو جهة تانية). بيظهر على كارت الموعد والفاتورة.','reception-booking-discount')
+frule('reception-booking-discount.js','رقم الكارنيه','رقم كارنيه النقابة أو النادي — إجباري.','reception-booking-discount')
+frule('reception-booking-discount.js','الكارنيه ساري لحد','آخر يوم الكارنيه ساري فيه. لازم يكون يوم الزيارة أو بعده، ولو خلص قبل الحضور تسجيل الحضور بيقف.','reception-booking-discount')
+frule('reception-booking-discount.js','سبب الخصم|مثلاً قريب موظف','سبب الخصم الخاص — إجباري.','reception-booking-discount')
 def norm(v):
  v=re.sub(r'[\u064b-\u065f\u0670\u0640]','',v).lower();v=re.sub('[أإآٱ]','ا',v).replace('ى','ي').replace('ة','ه');v=re.sub(r'[^\w]+',' ',v).strip();return re.sub(r'(^| )ال',r'\1',v)
 def canon(v):
