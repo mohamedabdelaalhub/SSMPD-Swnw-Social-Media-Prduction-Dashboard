@@ -12,7 +12,7 @@ var GROUPS=[
  {id:'dues',name:'الصرف والمستحقات',c:'#D4087F',t:'#FBE6F2',items:[['requests','طلبات الصرف'],['doctor-accounts','حساب الأطباء'],['doctors','عقود الأطباء'],['suppliers','الموردين'],['payroll','المرتبات والسلف'],['staff-insurance','سداد التأمينات'],['staff-tax','ضريبة المرتبات'],['staff-settlement','مخالصات الموظفين']]},
  {id:'review',name:'المراجعة والتسويات',c:'#09A0BE',t:'#E1F4F7',items:[['bank','البنك والبطاقات'],['insurance','التأمين'],['cases','فروق الخزينة'],['shift-expenses','مصروفات الورديات']]},
  {id:'accounting',name:'المحاسبة',c:'#6600FF',t:'#EFE5FF',items:[['ledger','القيود وميزان المراجعة'],['manual','الأرصدة والتصحيحات'],['chart','الشجرة المحاسبية'],['assets','الأصول والإهلاك'],['taxes','الضرائب']]},
- {id:'reports',name:'التقارير',c:'#2F7D5C',t:'#E7F3EE',items:[['reports','القوائم المالية'],['masa-payments','تحصيل ماسا'],['masa-net','صافي ماسا'],['audit','سجل المراجعة']]},
+ {id:'reports',name:'التقارير',c:'#2F7D5C',t:'#E7F3EE',items:[['reports','القوائم المالية'],['masa-payments','تحصيل ماسا'],['masa-net','صافي القديم (ماسا)'],['audit','سجل المراجعة']]},
  {id:'pricing',name:'التسعير',c:'#A87B00',t:'#F5EFE0',items:[['supplies','المستلزمات'],['services','الخدمات'],['packages','الباكدجات']]},
  {id:'inventory',name:'المخازن',c:'#4D7C0F',t:'#EAEFE2',items:[['inv:overview','نظرة على المخزن'],['inv:stock','المخزون'],['inv:operations','العمليات'],['inv:stocktakes','الجرد'],['inv:reporting','تقارير المخزن']]},
  {id:'settings',name:'الإعدادات',c:'#475569',t:'#EEF1F5',items:[['settings','الخزن والإقفال']]}

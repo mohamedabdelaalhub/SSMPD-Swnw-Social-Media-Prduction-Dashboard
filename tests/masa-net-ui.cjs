@@ -33,5 +33,9 @@ const report={from:'2026-01-01',to:'2026-11-20',group_by:'month',source:null,tot
  d.querySelector('[data-mn-classify]').click();assert.ok(d.querySelector('[data-mn-un="0"]'));
  // تاب «صافي ماسا» في القايمة يفتح تقرير الصافي مباشرة
  d.getElementById('host').innerHTML=w.SSMPDFinanceControls.panel('masa-net');assert.ok(d.querySelector('[data-mn-pane="net"]:not([hidden])'),'masa-net tab opens net view');
+ // فتح «تحصيل ماسا» من القايمة يرجع لدفعات التحصيل، وفتح «صافي القديم» تاني يفتح الصافي حتى لو ماسا مفتوح
+ d.getElementById('host').innerHTML=w.SSMPDFinanceControls.panel('masa-payments');assert.ok(d.querySelector('[data-mn-pane="pay"]:not([hidden])'),'masa-payments opens pay view');
+ d.getElementById('host').innerHTML=w.SSMPDFinanceControls.panel('masa-net');assert.ok(d.querySelector('[data-mn-pane="net"]:not([hidden])'),'masa-net reopens net view');
+ const fc=fs.readFileSync(__dirname+'/../assets/js/finance-cash.js','utf8');assert.ok(/id:'reports'[^}]*items:\['reports','masa-payments','masa-net','audit'\]/.test(fc),'masa-net is in the reports group so the nav can open it');
  console.log('PASS masa net report UI: tabs, tiles, source filter, popups, day drill, classify.');w.close();
 })().catch(e=>{console.error(e);process.exit(1);});

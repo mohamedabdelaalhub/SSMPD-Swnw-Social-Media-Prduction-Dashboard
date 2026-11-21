@@ -39,7 +39,7 @@
   function totalsOut(t){return (+t.operating||0)+(+t.advance||0)+(+t.partner_draw||0)+(+t.unclassified||0);}
   function paint(box,d){var t=d.totals||{},rows=d.by_period||[],un=d.unclassified_accounts||[],top=d.top_accounts||[],all=totalsOut(t)+(+t.transfer||0)+(+t.ignored||0)||1;
     state.data=d;var kindsList=[['operating',(+t.operating||0)+(+t.unclassified||0)-(+t.unclassified||0)],['advance',t.advance],['partner_draw',t.partner_draw],['transfer',t.transfer],['ignore',t.ignored],['unclassified',t.unclassified]];
-    var h='<div class="mn-card"><div class="mn-top"><div><h3>تقرير ماسا: التحصيل والمصروفات والصافي</h3><p class="mn-sub">من إيصالات ماسا المنسوخة · الأرقام بالجنيه</p></div>'+
+    var h='<div class="mn-card"><div class="mn-top"><div><h3>صافي القديم (ماسا)</h3><p class="mn-sub">التحصيل والمصروفات والصافي من إيصالات ماسا المنسوخة · الأرقام بالجنيه</p></div>'+
       '<div class="mn-seg" role="group" aria-label="التجميع"><button type="button" class="btn'+(state.group==='month'?' on':'')+'" data-mn-group="month">شهور</button><button type="button" class="btn'+(state.group==='day'?' on':'')+'" data-mn-group="day">أيام</button></div></div>'+
       '<div class="mn-filters"><div class="mn-seg" role="group" aria-label="المصدر">'+[['','الكل'],['current','ماسا الحالية'],['old','الفرع القديم (2024 – مارس 2026)']].map(function(s){return '<button type="button" class="btn'+(state.source===s[0]?' on':'')+'" data-mn-source="'+s[0]+'">'+s[1]+'</button>';}).join('')+'</div>'+
       '<label class="mn-dt"><b>من</b><input type="date" data-mn-from value="'+esc(state.from)+'"></label><label class="mn-dt"><b>إلى</b><input type="date" data-mn-to value="'+esc(state.to)+'"></label>'+
@@ -98,8 +98,9 @@
   document.addEventListener('keydown',function(e){if(e.key!=='Enter'&&e.key!==' ')return;var r=e.target.closest&&e.target.closest('tr[data-mn-month]');if(r){e.preventDefault();drill(box(),r.dataset.mnMonth);}});
   document.addEventListener('change',function(e){var b=box();if(!b||!b.contains(e.target))return;if(e.target.matches('[data-mn-from],[data-mn-to]')){var f=b.querySelector('[data-mn-from]').value,t=b.querySelector('[data-mn-to]').value;if(f&&t&&f<=t){state.from=f;state.to=t;state.preset='';state.month='';load(b);}}});
   function drill(b,m){var y=+m.slice(0,4),mo=+m.slice(5,7),last=new Date(Date.UTC(y,mo,0)).getUTCDate();state.month=m;state.group='day';state.from=m+'-01';state.to=m+'-'+pad(last);state.preset='';load(b);}
-  function panel(tab,d,h){if(tab==='masa-net'){state.view='net';tab='masa-payments';}var p=prior.panel(tab,d,h);if(tab!=='masa-payments')return p;
-    return '<div class="mn-switch" role="tablist"><button type="button" class="btn'+(state.view==='pay'?' on':'')+'" role="tab" data-mn-view="pay">دفعات التحصيل</button><button type="button" class="btn'+(state.view==='net'?' on':'')+'" role="tab" data-mn-view="net">تقرير الصافي</button></div>'+
+  var lastTab='';
+  function panel(tab,d,h){if(tab!==lastTab&&(tab==='masa-net'||tab==='masa-payments'))state.view=tab==='masa-net'?'net':'pay';if(tab==='masa-net'||tab==='masa-payments')lastTab=tab;else lastTab='';if(tab==='masa-net')tab='masa-payments';var p=prior.panel(tab,d,h);if(tab!=='masa-payments')return p;
+    return '<div class="mn-switch" role="tablist" data-mn-switch><button type="button" class="btn'+(state.view==='pay'?' on':'')+'" role="tab" data-mn-view="pay">دفعات التحصيل</button><button type="button" class="btn'+(state.view==='net'?' on':'')+'" role="tab" data-mn-view="net">صافي القديم (ماسا)</button></div>'+
       '<div data-mn-pane="pay"'+(state.view==='pay'?'':' hidden')+'>'+p+'</div><div data-mn-pane="net"'+(state.view==='net'?'':' hidden')+'><div class="mn" data-masa-net><p class="mn-sub">جاري التحميل…</p></div></div>';}
   function autoload(){var b=box();if(b&&state.view==='net'&&!b.hasAttribute('data-ready')){b.setAttribute('data-ready','');load(b);}}
   var panelOrig=panel;panel=function(tab,d,h){var r=panelOrig(tab,d,h);if(tab==='masa-payments'||tab==='masa-net')setTimeout(autoload,0);return r;};
