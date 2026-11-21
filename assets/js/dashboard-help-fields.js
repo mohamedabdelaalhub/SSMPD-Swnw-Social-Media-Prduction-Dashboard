@@ -12744,12 +12744,51 @@
       "reviewed": true
     },
     {
+      "title": "من مواعيد النهارده (اختياري)",
+      "labels": [
+        "من مواعيد النهارده (اختياري)"
+      ],
+      "text": "اختار زيارة من مواعيد النهارده عشان المريض والدكتور يتملوا لوحدهم — أو سيبها واختارهم بنفسك.",
+      "article": "follow-ups",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "الطبيب",
       "labels": [
         "الطبيب"
       ],
       "text": "اختار الطبيب الذي يخصه الإجراء فعلًا. في الحجز يلزم تطابق القسم وعقد مؤهل وتواجد، وفي التنفيذ يسجل الطبيب الذي قدم الخدمة.",
       "article": "doctor-missing",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "مثلاً: إعادة تحليل سكر تراكمي قبل الكشف",
+      "labels": [
+        "مثلاً: إعادة تحليل سكر تراكمي قبل الكشف"
+      ],
+      "text": "اكتب سبب المتابعة أو المطلوب قبلها.",
+      "article": "follow-ups",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "ملاحظة للمتابعة (اختياري)",
+      "labels": [
+        "ملاحظة للمتابعة (اختياري)"
+      ],
+      "text": "اللي محتاج يتعمل في المتابعة (مثلاً: إعادة تحليل قبل الكشف). بتظهر للريسبشن في قايمة المتابعات وفي الحجز.",
+      "article": "follow-ups",
       "tabs": [
         "reception_services"
       ],
@@ -21761,9 +21800,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1860,
-    "labels": 1362,
-    "files": 136,
-    "groups": 1469
+    "definitions": 1865,
+    "labels": 1365,
+    "files": 137,
+    "groups": 1472
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
