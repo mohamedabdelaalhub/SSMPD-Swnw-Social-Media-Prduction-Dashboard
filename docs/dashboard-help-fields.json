@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1860,
-    "labels": 1362,
+    "definitions": 1862,
+    "labels": 1364,
     "files": 136,
-    "groups": 1469
+    "groups": 1471
   },
   "fields": [
     {
@@ -12706,6 +12706,26 @@
       "tab": "reception_services",
       "article": "booking-flow",
       "text_sha256": "9de357e91f68d929da65d3983a861523a19c2d8ad7c1d86737871b762e1c0325"
+    },
+    {
+      "file": "reception-workspace.js",
+      "label": "مثلاً: الوش + الإبط",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-booking-qty",
+      "text_sha256": "0c6c0bb567cbeeaffa6c8c94ef6c0414186ce8fe1792a4e9df859bc4d2f16b7d"
+    },
+    {
+      "file": "reception-workspace.js",
+      "label": "المناطق (اختياري)",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-booking-qty",
+      "text_sha256": "f5cec8bc95ba5f8619ec450192b37b4f1b2730b67e71587c8928db97723cfbc2"
     },
     {
       "file": "reception-workspace.js",
