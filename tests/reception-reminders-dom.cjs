@@ -29,7 +29,7 @@ const {JSDOM}=require('jsdom'),fs=require('fs'),assert=require('node:assert/stri
  w.SSMPDReminders.decorate(ctx,'operations');await tick();await tick();
  const card=()=>d.querySelector('[data-rtr-card]');assert.ok(card(),'card mounted');
  assert.equal(d.querySelector('[data-rfu]').nextElementSibling,card(),'placed right after «متابعات مطلوبة»');
- assert.match(card().querySelector('h4').textContent,/تذكيرات بكرة — الأحد 22\/11/);
+ assert.match(card().querySelector('h4').textContent,/تذكيرات غداً — الأحد 22\/11/);
  assert.match(card().querySelector('.rtr-count').textContent,/2 لسه · 1 اتبعت · 1 مردش/);
  assert.deepEqual([...card().querySelectorAll('.rtr-tab')].map(t=>t.textContent),['لسه ماتبعتش (2)','اتبعت (1)','مردش (1)','الكل (4)']);
  assert.deepEqual([...card().querySelectorAll('.rtr-row')].map(r=>r.dataset.ref),['masa:M-2','masa:M-3'],'default tab = لسه ماتبعتش');
