@@ -90,6 +90,8 @@ function cardActions(a,c){
  else if(s==='on_hold'){main=action('resume',a.id,'عودة للطبيب','btn-primary');rest=action('request_service',a.id,'طلب خدمة')+detail+v2('finish',a.id,'إنهاء الزيارة وانتظار النتيجة')+action('help',a.id,'طلب دعم');}
  if(hasDue(a)&&can('collect')&&a.due_invoices&&a.due_invoices.length){if(!main)main=action('collect_due',a.id,'حصّل','btn-primary');else rest=action('collect_due',a.id,'تحصيل '+money(a.patient_due))+rest;}
  if(c.sandbox&&s==='completed')rest+=action('sandbox_feedback',a.id,'تقييم التجربة');
+ /* «الزيارة اتسجلت غلط» (20261122040000): files the existing «إلغاء خدمة اتدخلت بالغلط» for the whole visit; finance approves */
+ if(!c.sandbox&&s==='completed'&&a.visit_id&&can('collect'))rest+=action('visit_void',a.id,'الزيارة اتسجلت غلط');
  if(c.sandbox&&['expected','on_the_way'].includes(s))rest+=action('cancel',a.id,'إلغاء الحجز');
  rest+=action('account',a.id,'التفاصيل والحساب')+action('timeline',a.id,'الخط الزمني');
  return main+more(rest);
@@ -294,6 +296,7 @@ function handle(name,id,c){
   if(name==='hold'){confirmRun(c,id,'انتظار تحليل/إجراء','هتتحط الزيارة على «انتظار تحليل/إجراء» والمريض هيخرج من الكشف. تقدر ترجّعه بزرار «عودة للطبيب».',{action:'hold'});return;}
   if(name==='resume'){confirmRun(c,id,'عودة للطبيب','المريض هيرجع للطبيب تاني.',{action:'resume'});return;}
   if(name==='visit_complete'){confirmRun(c,id,'إنهاء الزيارة','الزيارة هتتقفل ومش هتقدر تفتحها تاني. يلزم تنفيذ أو إلغاء كل الخدمات المفتوحة الأول.',{danger:true,ok:'تأكيد الإنهاء',warnDue:true,field:c.field('reason','ملاحظة (اختياري)','text','',' '),run:function(v){return run(c,'visit_complete',{appointment_id:id,reason:v.reason});}});return;}
+  if(name==='visit_void'){confirmRun(c,id,'الزيارة اتسجلت غلط','هيتبعت طلب «إلغاء خدمة اتدخلت بالغلط» لكل خدمات الزيارة للحسابات. بعد ما المدير المالي يعتمد: الخدمة والفاتورة وأتعاب الدكتور بيتعكسوا بقيود، والحجز بيتعلّم «لم يحضر». مفيش حاجة بتتغيّر قبل الاعتماد.',{danger:true,ok:'ابعت الطلب',field:c.field('reason','السبب (مطلوب)','text','المريض ما جاش والزيارة اتسجلت بالغلط','required minlength="5"'),run:function(v){return rpc('clinic_reception_visit_void_request',{p_workspace:c.workspace,p_appointment:id,p_reason:v.reason,p_token:token()}).then(function(r){toast(r&&r.replayed?'الطلب متبعت قبل كده ومستني الحسابات':'اتبعت للحسابات — مستني الاعتماد');return refresh(c);},function(e){toast(errText(e),'error');e.toasted=true;throw e;});}});return;}
   if(name==='no_show'){confirmRun(c,id,'لم يحضر','هيتسجّل إن المريض ما حضرش ومش بيترجّع من الشاشة.',{danger:true,field:c.field('reason','السبب (مطلوب)','text','لم يحضر المريض','required'),run:function(v){return run(c,'no_show',{appointment_id:id,reason:v.reason});}});return;}
   if(name==='cancel'){confirmRun(c,id,'إلغاء الحجز','الحجز هيتلغي ومش بيترجّع من الشاشة.',{danger:true,field:c.field('reason','السبب (مطلوب)','text','','required'),run:function(v){return run(c,'cancel',{appointment_id:id,reason:v.reason});}});return;}
  }catch(err){toast(err.message||'تعذر تنفيذ الإجراء','error');}

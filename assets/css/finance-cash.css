@@ -74,3 +74,12 @@
 @media(forced-colors:active){.mv-row,.mv-filters button{border:1px solid CanvasText}}
 @media print{html.mv-printing body *{visibility:hidden!important}html.mv-printing .mv-print-target,html.mv-printing .mv-print-target *{visibility:visible!important}html.mv-printing .mv-print-target{position:absolute;inset:0 0 auto 0;box-shadow:none;border:0;background:#fff;padding:0}html.mv-printing .mv-print-target :is(.mv-filters,.mv-tools,.mv-mgr-filters,.mv-sub){display:none!important}html.mv-printing .mv-print-head{display:block;margin-bottom:10px}html.mv-printing .mv-print-head h2{margin:0 0 4px;font-size:18px}html.mv-printing .mv-print-head p{margin:0;font-size:12px}html.mv-printing .mv-row{break-inside:avoid;border:1px solid #ccc;grid-template-columns:60px 1.6fr 1.3fr 1fr 120px}}
 .fc-hint{grid-column:1/-1;margin:-4px 0 4px;font-size:12.5px;line-height:1.6;color:#5b6577}
+/* «خزن التحصيل المفتوحة» (20261122010000) */
+.fc-drawers{display:grid;gap:10px;margin:10px 0 14px}.fc-drawers h4{margin:0;font-size:15px;color:#16212E}
+.fc-drawers-main,.fc-drawers-empty{margin:0;padding:10px 14px;border-radius:12px;background:#F4F7FC;font-size:13px;color:#16212E;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.fc-ok{color:#2F7D5C}
+.fc-drawer{display:grid;grid-template-columns:1fr auto;gap:8px 16px;align-items:center;border:1px solid #E3E8F2;border-radius:12px;padding:12px 14px;background:#fff}
+.fc-drawer b{font-size:15px;color:#16212E}.fc-drawer small{display:block;font-size:12px;color:#5b6577;margin-top:2px}
+.fc-drawer-cash{font-size:17px;font-weight:700;color:#0F369D;text-align:left}.fc-drawer-act{grid-column:1/-1}
+.fc-chip{display:inline-block;font-size:12px;border-radius:999px;padding:2px 10px;margin-top:6px}
+.fc-chip.is-open{background:#EAF0FB;color:#0F369D}.fc-chip.is-wait{background:#FDEDE5;color:#B8461A}.fc-chip.is-bad{background:#FBE9E6;color:#D0402A}
