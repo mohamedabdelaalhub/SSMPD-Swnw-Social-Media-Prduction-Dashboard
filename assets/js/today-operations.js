@@ -27,7 +27,7 @@ function currentRoot(){return state.context&&state.context.host&&state.context.h
 function effectiveContext(c){
  if(!state.sandbox)return c;
  var model=state.sandbox,out=Object.assign({},c,{workspace:model.workspace,data:model.catalog,sandbox:true});
- out.modal=function(title,body,save){return c.modal(title,body,save,function(){});};
+ out.modal=function(title,body,save,saved,opts){return c.modal(title,body,save,saved||function(){},opts);};
  return out;
 }
 function sandboxChoice(){var allowed=window.SSMPDAuth&&window.SSMPDAuth.currentAdmin&&['super_admin','general_manager'].includes(window.SSMPDAuth.currentAdmin.role);return state.sandbox?'<section class="journey-sandbox-banner" role="status"><strong>وضع التجربة</strong><p>بيانات تدريب منفصلة ومحفوظة في حسابك. الحجوزات والخدمات والرسائل هنا لا تغيّر سيستم المركز أو الحسابات أو المخزون الفعلي.</p>'+action('sandbox_exit','','العودة للتشغيل الحالي')+'</section>':allowed?'<div class="journey-mode-choice">'+action('sandbox_enter','','وضع التجربة')+'<span>جرّب الرحلة كاملة ببيانات منفصلة.</span></div>':'';}
@@ -231,6 +231,11 @@ function run(c,name,payload,key){var request=c.sandbox?window.SWNJourneySandbox.
 function errText(e){var m=String((e&&e.message)||'');if(/permission|42501|صلاحية/i.test(m)&&!/[\u0600-\u06FF]/.test(m))return 'ليس لديك صلاحية هذا الإجراء';return m&&/[\u0600-\u06FF]/.test(m)?m:'تعذر تنفيذ الإجراء، حاول مرة أخرى';}
 function quiet(p){return Promise.resolve(p).catch(function(){});}
 function simpleConfirm(c,title,text,actionName,appointmentId,payload){c.modal(title,'<p>'+esc(text)+'</p>',function(){return run(c,actionName,Object.assign({appointment_id:appointmentId},payload||{}));});}
+/* Owner 2026-11-22: every state-changing card action asks «تأكيد / تراجع» first (docs/ui-references/mockups/confirm-action.html). */
+function whoBox(id){var a=findAppointment(id)||{};return '<div class="rx-cf-who"><span class="rx-cf-av" aria-hidden="true">'+esc(String(a.patient_name||'؟').trim().charAt(0))+'</span><span><b>'+esc(a.patient_name||'المريض')+'</b><small>'+esc([a.file_no,a.doctor_name].filter(Boolean).join(' · '))+'</small></span></div>';}
+function confirmRun(c,id,title,effect,o){o=o||{};var a=findAppointment(id)||{};
+  var due=o.warnDue&&hasDue(a)?'<p class="rx-cf-note">لسه عليه '+esc(money(a.patient_due))+' — هيفضل في حسابه بعد الإنهاء.</p>':'';
+  c.modal('تأكيد: '+title,whoBox(id)+'<p class="rx-cf-text">'+esc(effect)+'</p>'+due+(o.field||''),function(v){return o.run?o.run(v):run(c,o.action,Object.assign({appointment_id:id},o.payload||{}));},null,{ok:o.ok||'تأكيد',cancel:'تراجع',danger:!!o.danger});}
 function infoModal(c,title,html){var m=c.modal(title,html,function(){return Promise.resolve();});m.querySelector('[type="submit"]').hidden=true;m.querySelector('[data-rx-cancel]').textContent='إغلاق';return m;}
 function loadQrLib(){return new Promise(function(resolve,reject){if(window.QRCode){resolve();return;}var s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';s.onload=resolve;s.onerror=function(){reject(Error('تعذر تحميل مولد QR'));};document.head.appendChild(s);});}
 function checkinUrl(tokenValue){var base=new URL('patient-checkin.html',location.href);base.search='';base.hash='';if(tokenValue)base.searchParams.set('token',tokenValue);return base.toString();}
@@ -268,15 +273,15 @@ function handle(name,id,c){
   if(name==='refresh'){refresh(c);return;}if(name==='prev'){state.day=shiftDay(state.day,-1);refresh(c);return;}if(name==='next'){state.day=shiftDay(state.day,1);refresh(c);return;}if(name==='today'){state.day=cairoDay();refresh(c);return;}if(name==='settings'){settingsModal(c);return;}if(name==='static_qr'){showQr(c,'QR تسجيل الوصول العام',checkinUrl(),'ضع هذا الكود على كاونتر الاستقبال أو منطقة الانتظار. المريض يدخل رقم هاتف الحجز ويؤكد موقعه.');return;}if(name==='timeline'){timelineModal(c,id);return;}if(name==='visit_detail'){if(id&&base.act)base.act('visit-detail',id,c);return;}if(name==='priority'){priorityModal(c,id);return;}if(name==='help'){helpModal(c,id);return;}if(name==='request_service'){serviceModal(c,id);return;}if(name==='resolve_help'){run(c,'resolve_help',{id:id,status:'resolved'});return;}
   if(name==='qr'){run(c,'checkin_token',{appointment_id:id}).then(function(r){showQr(c,'QR خاص بالحجز',checkinUrl(r.token),'هذا الكود خاص بهذا الحجز ويعمل خلال الفترة المحددة.');});return;}
   if(name.indexOf('doctor_')===0){doctorStatus(c,id,name.replace('doctor_',''));return;}
-  if(name==='arrive'){simpleConfirm(c,'تسجيل وصول المريض','سيتم فتح الزيارة ووضع المريض في قائمة الانتظار.','arrive',id,{method:'reception'});return;}
-  if(name==='on_the_way'){quiet(run(c,'on_the_way',{appointment_id:id}));return;}
-  if(name==='call'){quiet(run(c,'call',{appointment_id:id}));return;}
-  if(name==='consultation_start'){quiet(run(c,'consultation_start',{appointment_id:id}));return;}
-  if(name==='hold'){quiet(run(c,'hold',{appointment_id:id}));return;}
-  if(name==='resume'){quiet(run(c,'resume',{appointment_id:id}));return;}
-  if(name==='visit_complete'){c.modal('إنهاء الزيارة','<p>يلزم تنفيذ أو إلغاء كل الخدمات المفتوحة قبل إغلاق الزيارة.</p>'+c.field('reason','ملاحظة إن وجدت','text','',' '),function(v){return run(c,'visit_complete',{appointment_id:id,reason:v.reason});});return;}
-  if(name==='no_show'){c.modal('تسجيل عدم الحضور',c.field('reason','السبب','text','لم يحضر المريض','required'),function(v){return run(c,'no_show',{appointment_id:id,reason:v.reason});});return;}
-  if(name==='cancel'){c.modal('إلغاء الحجز',c.field('reason','السبب','text','','required'),function(v){return run(c,'cancel',{appointment_id:id,reason:v.reason});});return;}
+  if(name==='arrive'){confirmRun(c,id,'وصل','هتتفتح الزيارة والمريض هيتحط في قايمة الانتظار.',{action:'arrive',payload:{method:'reception'}});return;}
+  if(name==='on_the_way'){confirmRun(c,id,'في الطريق','هيتسجّل إن المريض في الطريق. لما يوصل اضغط «وصل».',{action:'on_the_way'});return;}
+  if(name==='call'){confirmRun(c,id,'نداء المريض','هيتنادى على المريض دلوقتي (شاشة الانتظار والنداء).',{action:'call'});return;}
+  if(name==='consultation_start'){confirmRun(c,id,'بدأ الكشف','هيتسجّل بدء الكشف ووقته. مش بيترجّع من الشاشة.',{action:'consultation_start',danger:true});return;}
+  if(name==='hold'){confirmRun(c,id,'انتظار تحليل/إجراء','هتتحط الزيارة على «انتظار تحليل/إجراء» والمريض هيخرج من الكشف. تقدر ترجّعه بزرار «عودة للطبيب».',{action:'hold'});return;}
+  if(name==='resume'){confirmRun(c,id,'عودة للطبيب','المريض هيرجع للطبيب تاني.',{action:'resume'});return;}
+  if(name==='visit_complete'){confirmRun(c,id,'إنهاء الزيارة','الزيارة هتتقفل ومش هتقدر تفتحها تاني. يلزم تنفيذ أو إلغاء كل الخدمات المفتوحة الأول.',{danger:true,ok:'تأكيد الإنهاء',warnDue:true,field:c.field('reason','ملاحظة (اختياري)','text','',' '),run:function(v){return run(c,'visit_complete',{appointment_id:id,reason:v.reason});}});return;}
+  if(name==='no_show'){confirmRun(c,id,'لم يحضر','هيتسجّل إن المريض ما حضرش ومش بيترجّع من الشاشة.',{danger:true,field:c.field('reason','السبب (مطلوب)','text','لم يحضر المريض','required'),run:function(v){return run(c,'no_show',{appointment_id:id,reason:v.reason});}});return;}
+  if(name==='cancel'){confirmRun(c,id,'إلغاء الحجز','الحجز هيتلغي ومش بيترجّع من الشاشة.',{danger:true,field:c.field('reason','السبب (مطلوب)','text','','required'),run:function(v){return run(c,'cancel',{appointment_id:id,reason:v.reason});}});return;}
  }catch(err){toast(err.message||'تعذر تنفيذ الإجراء','error');}
 }
 
