@@ -114,8 +114,10 @@
         toast(s==='booked'||s==='merged'||s==='rescheduled'||s==='unchanged'?'اتسجّل الموعد ✓':s==='skipped'?(a==='archive'?'اتنقلت للأرشيف':'اتشال من القايمة'):s==='needs_time'?'اتربط بالمريض — حط الساعة':'لسه محتاج مراجعة — شوف السبب', s==='review'?'error':'success');
         return c.load?c.load():load(box,c);}).catch(function(e){b.disabled=false;toast(e&&e.message||'تعذر الحفظ','error');});};});}
   function addDays(d,n){var t=new Date(d+'T12:00:00Z');t.setUTCDate(t.getUTCDate()+n);return t.toISOString().slice(0,10);}
-  /* the no-time list spans past days still waiting and every future day, not just the selected range */
-  function load(box,c){var t=today();return Promise.all([rpc(c.workspace,'list',{from:c.from||t,to:c.to||c.from||t}),rpc(c.workspace,'list',{from:addDays(t,-30),to:addDays(t,60)}).catch(function(){return null;})]).then(function(r){var d=r[0]||{};if(r[1]&&r[1].rows)d.wide=r[1].rows;paint(box,c,d);}).catch(function(){box.hidden=true;box.innerHTML='';});}
+  /* the no-time list spans past days still waiting and the coming weeks, not just the selected range */
+  function load(box,c){var t=today();var soft=function(f,to){return rpc(c.workspace,'list',{from:addDays(t,f),to:addDays(t,to)}).catch(function(){return null;});};
+    /* the server caps a list at 31 days, so the wide view is two windows: -14…+16 and +17…+47 */
+    return Promise.all([rpc(c.workspace,'list',{from:c.from||t,to:c.to||c.from||t}),soft(-14,16),soft(17,47)]).then(function(r){var d=r[0]||{};if(r[1]&&r[1].rows)var seen={};d.wide=r[1].rows.concat((r[2]&&r[2].rows)||[]).concat(d.rows||[]).filter(function(x){if(seen[x.id])return false;seen[x.id]=1;return true;});paint(box,c,d);}).catch(function(){box.hidden=true;box.innerHTML='';});}
   function decorate(c,section){if(section!=='appointments'||!c||!c.host||!c.data||!c.data.workspace||c.data.workspace.mode!=='live')return;
     var box=c.host.querySelector('[data-rx-auto-book]');if(!box){box=document.createElement('div');box.setAttribute('data-rx-auto-book','');box.hidden=true;
       var anchor=Array.prototype.find.call(c.host.querySelectorAll('.rx-actions'),function(x){return !x.closest('.rx-header');});if(anchor&&anchor.parentNode)anchor.parentNode.insertBefore(box,anchor.nextSibling);else c.host.insertBefore(box,c.host.firstChild);}

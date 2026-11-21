@@ -21,7 +21,7 @@ const fs=require('fs'),assert=require('node:assert/strict'),{JSDOM}=require('jsd
  const box=host.querySelector('[data-rx-auto-book]'),doc=w.document;
  assert.deepEqual([...box.querySelectorAll('.rx-ab-tile')].map(t=>t.getAttribute('data-ab-open')),['times-new','times-old'],'two summary tiles: new and old');
  assert.match(box.querySelector('[data-ab-open="times-new"]').textContent,/3/);assert.match(box.querySelector('[data-ab-open="times-old"]').textContent,/2/);
- assert(calls.some(c=>c[1].p_action==='list'&&c[1].p_payload.to>c[1].p_payload.from&&c[1].p_payload.to>addD(30)),'wide range list call for future days');
+ assert(calls.some(c=>c[1].p_action==='list'&&c[1].p_payload.to>c[1].p_payload.from&&c[1].p_payload.to>=addD(40)&&Date.parse(c[1].p_payload.to)-Date.parse(c[1].p_payload.from)<=31*86400000),'wide range list call for future days');
  box.querySelector('[data-ab-open="times-old"]').click();let m=doc.querySelector('.rx-ab-modal');
  assert.equal(m.querySelectorAll('.rx-ab-time').length,2);assert(!m.querySelector('[data-ab-time]'),'old rows have no time input');
  assert.deepEqual([...m.querySelectorAll('.rx-ab-day b')].map(x=>x.textContent),['النهارده','بعد بكرة'],'grouped by day');
