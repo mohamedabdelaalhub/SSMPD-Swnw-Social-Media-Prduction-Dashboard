@@ -30,11 +30,23 @@ await q('update clinic_reception.providers set booking_gap=true where id=$1',[la
 await assert.rejects(()=>book(lab,cbc,465),/لازم/,'gap back on');
 await book(doc,derm,420);await assert.rejects(()=>book(doc,derm,425),/يتداخل|لازم/,'doctor unchanged');
 await assert.rejects(()=>q('update clinic_reception.providers set capacity=0 where id=$1',[lab]));
-const s=await snap(live);assert(s.provider_service_scopes[lab].includes('LAB2'),'snapshot scope lists extra-department codes');
+// unit provider (no doctor_key): scope rows alone, no contract; doctor services of the same department stay out
+const nur=(await cmd(live,'provider',{name:'التمريض',department:'التمريض',branch:'حدائق الأهرام'})).id;
+for(const [c,n] of [['ER1','حقنة عضل'],['ER2','خياطة جرح']])await cmd(live,'service',{code:c,name:n,department:'الطوارئ',price:50,minutes:10,bom:[]});
+await q("insert into clinic_reception.availability(workspace_id,provider_id,starts_at,ends_at) values($1,$2,"+base+"+interval '6 hours',"+base+"+interval '12 hours')",[live,nur]);
+const sv2=(await snap(live)).services,inj=sv2.find(x=>x.code==='ER1').id,sut=sv2.find(x=>x.code==='ER2').id;
+await assert.rejects(()=>book(nur,inj,420),/خارج|تخصص|الطبيب/,'not before its scope row');
+await q("insert into clinic_reception.provider_service_scopes(provider_id,service_code) values($1,'ER1')",[nur]);
+await book(nur,inj,420);
+await assert.rejects(()=>book(nur,sut,440),/خارج|تخصص|الطبيب/,'doctor service of الطوارئ not offered to the nurse unit');
+await q("update clinic_reception.providers set doctor_key='EMP-X' where id=$1",[nur]);
+await assert.rejects(()=>book(nur,inj,460),/خارج|تخصص|الطبيب/,'a doctor (doctor_key) still needs a contract for a scope');
+await q("update clinic_reception.providers set doctor_key=null where id=$1",[nur]);
+const s=await snap(live);assert.deepEqual(JSON.parse(JSON.stringify(s.provider_service_scopes[nur])),['ER1'],'snapshot lists the unit scope');assert(s.provider_service_scopes[lab].includes('LAB2'),'snapshot scope lists extra-department codes');
 assert.deepEqual(JSON.parse(JSON.stringify(s.provider_departments[lab])),['باقي التحاليل']);assert.equal(s.providers.find(x=>x.id===lab).capacity,1);assert.equal(s.providers.find(x=>x.id===lab).booking_gap,true);
 await db.exec('reset role');await db.exec(require('fs').readFileSync(${JSON.stringify(path.join(__dirname,'..','supabase','rollbacks','20261121170000_reception_lab_units.rollback.sql'))},'utf8'));
 assert.equal((await db.query("select count(*)::int n from pg_proc where proname in ('snapshot_before_lab_units','has_provider_service_scope_base')")).rows[0].n,0,'rollback');
 assert.equal((await db.query("select count(*)::int n from information_schema.columns where table_name='providers' and column_name='capacity'")).rows[0].n,0);
-await db.close();console.log('PASS lab units: extra department without contract, capacity overlap, no gap above 1 or with booking_gap off, doctors unchanged, snapshot, rollback.');}})().catch(e=>{console.error(e);process.exit(1);});`;
+await db.close();console.log('PASS lab units: extra department without contract, unit scope rows without contract, capacity overlap, no gap above 1 or with booking_gap off, doctors unchanged, snapshot, rollback.');}})().catch(e=>{console.error(e);process.exit(1);});`;
 const file=path.join(__dirname,'.lab-units-run-'+process.pid+'.cjs');
 fs.writeFileSync(file,prefix+body);try{require(file);}finally{setTimeout(()=>{try{fs.unlinkSync(file);}catch(_){}},0);}

@@ -8,7 +8,9 @@
 --   * clinic_reception.provider_departments: extra departments a provider serves as its own (the lab row sits in
 --     «التحاليل» and also serves «باقي التحاليل»). This is the department rule, not the doctor-scope rule, so no
 --     doctor contract is needed. has_provider_service_scope() (used by the booking, order and execution gates) also
---     answers true for an active service of an extra department; the snapshot lists those codes in
+--     answers true for an active service of an extra department, and for a unit provider (doctor_key NULL, so no
+--     contract) its provider_service_scopes rows alone (in-center «التمريض»: the nurse services of «الطوارئ» only,
+--     not the doctor ones). The snapshot lists those codes in
 --     provider_service_scopes so the booking modal offers the provider.
 -- The «المعمل» row, its departments, capacity and weekly hours are data: docs/ops/2026-11-21-lab-provider.sql.
 -- In-place patch uses an exact text anchor (must occur exactly once). Rollback: supabase/rollbacks/20261121170000_reception_lab_units.rollback.sql
@@ -41,6 +43,10 @@ alter function clinic_reception.has_provider_service_scope(uuid,text,date) renam
 create function clinic_reception.has_provider_service_scope(p_provider uuid, p_code text, p_day date)
 returns boolean language sql stable set search_path = pg_catalog, public as $$
   select clinic_reception.has_provider_service_scope_base(p_provider, p_code, p_day)
+      -- a unit (no doctor_key: «المعمل», «التمريض») has no contract; its scope rows alone allow the service
+      or exists (select 1 from clinic_reception.provider_service_scopes sc
+                   join clinic_reception.providers p on p.id = sc.provider_id and p.active and p.doctor_key is null
+                  where sc.provider_id = p_provider and sc.service_code = p_code)
       or exists (select 1 from clinic_reception.provider_departments pd
                    join clinic_reception.providers p on p.id = pd.provider_id and p.active
                    join clinic_reception.services s on s.workspace_id = p.workspace_id and s.active and s.code = p_code and s.department = pd.department

@@ -6,7 +6,7 @@
 begin;
 do $$
 declare
-  ws uuid; me uuid; home uuid; lab uuid; nur uuid; nur_dept text; n int;
+  ws uuid; me uuid; home uuid; lab uuid; nur uuid; n int;
   lab_minutes int := 5;          -- owner: «كل ٥ دقايق»
   nurse_capacity int := 1;       -- ← owner: nurses on shift who can work at the same time (1 = one patient at a time)
 begin
@@ -34,24 +34,30 @@ begin
     (select count(*) from clinic_reception.services where workspace_id = ws and active and department = 'التحاليل'),
     (select count(*) from clinic_reception.services where workspace_id = ws and active and department = 'باقي التحاليل'), lab_minutes, n;
 
-  -- in-center «التمريض»: the department in-center nursing services already use
-  select department into nur_dept from clinic_reception.services
-   where workspace_id = ws and active and department is not null and department <> 'التمريض المنزلي'
-     and name ~ '(حقن|كانيولا|كانولا|غيار|جرح|جروح|محلول|قياس|نيبولايزر|جلسة بخار)' and name !~ 'منزل'
-   group by department order by count(*) desc limit 1;
-  if nur_dept is null then raise exception 'no in-center nursing services found (حقن/كانيولا/غيار…) — check names'; end if;
-  raise notice 'in-center nursing department: «%» (% active services); other departments with such names: %', nur_dept,
-    (select count(*) from clinic_reception.services where workspace_id = ws and active and department = nur_dept),
-    (select string_agg(department || ' ' || c, ', ') from (select department, count(*) c from clinic_reception.services
-       where workspace_id = ws and active and department is distinct from nur_dept and department <> 'التمريض المنزلي'
-         and name ~ '(حقن|كانيولا|كانولا|غيار|جرح|جروح|محلول)' and name !~ 'منزل' group by department) q);
+  -- in-center «التمريض»: its own department «التمريض» + scope rows for the NURSE services of «الطوارئ» only
+  -- (main chat 4 2026-11-21: حقنة عضل/وريد، تركيب كانيولا، تعليق محلول، غيار جرح بواسطة التمريض، حقنة شرجية بواسطة تمريض، تطعيم).
+  -- Doctor services («خياطة جرح»، «غيار جرح بواسطة الطبيب»…) stay with the الطوارئ doctors. Unit scope rows need no contract.
   select id into nur from clinic_reception.providers where workspace_id = ws and name = 'التمريض';
   if nur is null then
     insert into clinic_reception.providers(workspace_id, name, doctor_key, department, branch, active, capacity)
-      values (ws, 'التمريض', null, nur_dept, 'حدائق الأهرام', true, nurse_capacity) returning id into nur;
+      values (ws, 'التمريض', null, 'التمريض', 'حدائق الأهرام', true, nurse_capacity) returning id into nur;
   else
-    update clinic_reception.providers set department = nur_dept, active = true, capacity = nurse_capacity where id = nur;
+    update clinic_reception.providers set doctor_key = null, department = 'التمريض', active = true, capacity = nurse_capacity where id = nur;
   end if;
+  delete from clinic_reception.provider_service_scopes where provider_id = nur;
+  insert into clinic_reception.provider_service_scopes(provider_id, service_code)
+    select distinct nur, s.code from clinic_reception.services s
+     where s.workspace_id = ws and s.active and s.department = 'الطوارئ'
+       and s.name ~ '(حقن|كانيولا|كانولا|محلول|تمريض|تطعيم)'
+       and s.name !~ '(طبيب|دكتور|خياط)';
+  raise notice 'nursing %: scoped services: %', nur,
+    (select string_agg(s.name, ' | ' order by s.name) from clinic_reception.services s
+      join clinic_reception.provider_service_scopes sc on sc.service_code = s.code and sc.provider_id = nur
+     where s.workspace_id = ws and s.active);
+  raise notice 'الطوارئ services NOT given to nursing (stay with doctors): %',
+    (select string_agg(s.name, ' | ' order by s.name) from clinic_reception.services s
+     where s.workspace_id = ws and s.active and s.department = 'الطوارئ'
+       and not exists (select 1 from clinic_reception.provider_service_scopes sc where sc.provider_id = nur and sc.service_code = s.code));
 
   -- center hours for both, copied from «التمريض المنزلي» (fallback 08:00–23:59 every day)
   delete from clinic_reception.weekly_slots where provider_id in (lab, nur);
