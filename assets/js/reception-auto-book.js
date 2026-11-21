@@ -65,7 +65,7 @@
   function openList(type){if(!cur)return;closeList();modal.type=type;modal.q='';modal.src='';modal.page=0;modal.focus=document.activeElement;
     var el=document.createElement('div');el.className='rx-ab-backdrop';var title=type==='times'?'حجوزات من غير ساعة':'حجوزات تحتاج استكمال';
     el.innerHTML='<div class="rx-ab-modal" role="dialog" aria-modal="true" aria-label="'+esc(title)+'"><div class="rx-ab-mh"><h3 data-ab-title></h3><button type="button" class="btn rx-ab-x" data-ab-close aria-label="إغلاق">✕</button></div>'+
-      '<div class="rx-ab-tools"><label class="rx-ab-inp"><span aria-hidden="true">🔍</span><input type="search" data-ab-q placeholder="ابحث بالاسم أو التليفون أو الدكتور…" aria-label="بحث"></label><div class="rx-ab-seg" data-ab-srcs role="group" aria-label="المصدر"></div></div>'+
+      '<div class="rx-ab-tools"><label class="rx-ab-inp"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m16 16 4.5 4.5"></path></svg><input type="search" data-ab-q placeholder="ابحث بالاسم أو التليفون أو الدكتور…" aria-label="بحث"></label><div class="rx-ab-seg" data-ab-srcs role="group" aria-label="المصدر"></div></div>'+
       (type==='review'?'<p class="rx-ab-note">الحجوزات دي جت من ماسا أو الواتساب أو البوابة ومقدرتش تتسجّل لوحدها. اختار المطلوب وهتتسجّل على طول.</p>':'')+'<div class="rx-ab-list" data-ab-list></div><div class="rx-ab-pg" data-ab-pg></div></div>';
     el.addEventListener('click',function(e){if(e.target===el||e.target.closest('[data-ab-close]'))closeList();});
     el.querySelector('[data-ab-q]').addEventListener('input',function(e){modal.q=e.target.value;modal.page=0;renderList(true);});

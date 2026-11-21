@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1874,
-    "labels": 1372,
+    "definitions": 1873,
+    "labels": 1371,
     "files": 138,
-    "groups": 1478
+    "groups": 1479
   },
   "fields": [
     {
@@ -10364,6 +10364,16 @@
       "tab": "reception_services",
       "article": "personal",
       "text_sha256": "fcfcf93d2d0bde74aa0a1934993d34ae9f117562d8c56a3a563761ba68e24990"
+    },
+    {
+      "file": "reception-auto-book.js",
+      "label": "ابحث بالاسم أو التليفون أو الدكتور…",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "automatic-bookings",
+      "text_sha256": "9ef669d8bb3ba4e1a525395a1c4fd3fcb78a909b718de99c59b75def15f1ac87"
     },
     {
       "file": "reception-booking-plus.js",

@@ -11927,6 +11927,19 @@
       "reviewed": true
     },
     {
+      "title": "ابحث بالاسم أو التليفون أو الدكتور…",
+      "labels": [
+        "ابحث بالاسم أو التليفون أو الدكتور…"
+      ],
+      "text": "اكتب جزء من اسم المريض أو تليفونه أو اسم الدكتور علشان تضيّق قايمة الحجوزات. النتايج بتتغير وانت بتكتب.",
+      "article": "automatic-bookings",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "الممرض/ة",
       "labels": [
         "الممرض/ة"
@@ -21882,9 +21895,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1874,
-    "labels": 1372,
+    "definitions": 1873,
+    "labels": 1371,
     "files": 138,
-    "groups": 1478
+    "groups": 1479
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
