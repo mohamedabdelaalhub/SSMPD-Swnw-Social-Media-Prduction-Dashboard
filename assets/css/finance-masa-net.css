@@ -64,3 +64,15 @@
 
 /* صفوف التاريخ الخارجية (من/إلى/عرض الفترة) مالهاش لازمة هنا — كل عرض له فلتر فترته */
 .fc-workspace:has([data-mn-switch]) .fc-filters label.fc-field,.fc-workspace:has([data-mn-switch]) .fc-filters button[type=submit]{display:none}
+
+/* tiles are <button class="btn">: .btn is nowrap, which pushed the tile text past the card and widened the whole page on phones (owner 2026-11-21) */
+.mn-tile,.mn-tile *{white-space:normal;overflow-wrap:anywhere;min-width:0}
+.mn-tile{overflow:hidden;max-width:100%}
+.mn-seg .btn{max-width:100%}
+.mn-chip,.mn-acc .nm,.mn-acc .nm *{min-width:0}
+.mn-tile.btn{display:grid;justify-items:start;align-content:start;text-align:start;height:auto;min-height:0;line-height:1.5}
+.mn-tile b{white-space:nowrap;overflow-wrap:normal;max-width:100%}
+@media(max-width:560px){.mn-tile b{font-size:18px}.mn-tile small{font-size:11.5px}}
+.mn-tile.hero.btn{background:#0F369D;border-color:#0F369D;color:#fff}.mn-tile.hero.btn b{color:#fff}.mn-tile.hero.btn small,.mn-tile.hero.btn em{color:#ffffffcc}.mn-tile.hero.btn .mn-ic{background:#ffffff22;color:#fff}.mn-tile.hero.btn .mn-go{color:#fff}
+.mn-tile.btn:not(.hero){background:#fff;color:#16212E}
+.mn .mn-tile.hero.btn{background:#0F369D!important;border-color:#0F369D!important;color:#fff!important}
