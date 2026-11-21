@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1878,
-    "labels": 1377,
-    "files": 138,
-    "groups": 1482
+    "definitions": 1879,
+    "labels": 1378,
+    "files": 139,
+    "groups": 1483
   },
   "fields": [
     {
@@ -9892,6 +9892,16 @@
       "tab": "accounting",
       "article": "ledger-guide",
       "text_sha256": "c43487d4c510799195cb3824720ed47dc6ca5b8d540f405a8f3be936c3fa4481"
+    },
+    {
+      "file": "masa-archive.js",
+      "label": "رقم التليفون أو الاسم",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "production",
+      "article": "masa-archive",
+      "text_sha256": "432d09b8f8db43420c05e78e7328e37a570f94a3a05a5ff2640b95bc89e83d5c"
     },
     {
       "file": "my-contract.js",
