@@ -12,5 +12,5 @@ drop function clinic_reception.has_provider_service_scope(uuid,text,date);
 alter function clinic_reception.has_provider_service_scope_base(uuid,text,date) rename to has_provider_service_scope;
 drop table clinic_reception.lab_units_saved_defs;
 drop table clinic_reception.provider_departments;
-alter table clinic_reception.providers drop column if exists capacity;
+alter table clinic_reception.providers drop column if exists capacity, drop column if exists booking_gap;
 commit;

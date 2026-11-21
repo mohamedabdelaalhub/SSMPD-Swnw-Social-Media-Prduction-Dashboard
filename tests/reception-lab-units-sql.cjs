@@ -23,13 +23,18 @@ await q('update clinic_reception.providers set capacity=3 where id=$1',[lab]);
 await book(lab,cbc,420);await book(lab,cbc,425);
 await assert.rejects(()=>book(lab,cbc,425),/يتداخل/,'4th overlapping lab booking refused');
 await book(lab,cbc,435);                                     // back-to-back: no gap rule above capacity 1
+await q('update clinic_reception.providers set capacity=1,booking_gap=false where id=$1',[lab]);
+await book(lab,cbc,450);                                     // capacity 1 + booking_gap off: right after the previous one
+await assert.rejects(()=>book(lab,cbc,455),/يتداخل/,'capacity 1 → no overlap');
+await q('update clinic_reception.providers set booking_gap=true where id=$1',[lab]);
+await assert.rejects(()=>book(lab,cbc,465),/لازم/,'gap back on');
 await book(doc,derm,420);await assert.rejects(()=>book(doc,derm,425),/يتداخل|لازم/,'doctor unchanged');
 await assert.rejects(()=>q('update clinic_reception.providers set capacity=0 where id=$1',[lab]));
 const s=await snap(live);assert(s.provider_service_scopes[lab].includes('LAB2'),'snapshot scope lists extra-department codes');
-assert.deepEqual(JSON.parse(JSON.stringify(s.provider_departments[lab])),['باقي التحاليل']);assert.equal(s.providers.find(x=>x.id===lab).capacity,3);
+assert.deepEqual(JSON.parse(JSON.stringify(s.provider_departments[lab])),['باقي التحاليل']);assert.equal(s.providers.find(x=>x.id===lab).capacity,1);assert.equal(s.providers.find(x=>x.id===lab).booking_gap,true);
 await db.exec('reset role');await db.exec(require('fs').readFileSync(${JSON.stringify(path.join(__dirname,'..','supabase','rollbacks','20261121170000_reception_lab_units.rollback.sql'))},'utf8'));
 assert.equal((await db.query("select count(*)::int n from pg_proc where proname in ('snapshot_before_lab_units','has_provider_service_scope_base')")).rows[0].n,0,'rollback');
 assert.equal((await db.query("select count(*)::int n from information_schema.columns where table_name='providers' and column_name='capacity'")).rows[0].n,0);
-await db.close();console.log('PASS lab units: extra department without contract, capacity overlap, no gap above 1, doctors unchanged, snapshot, rollback.');}})().catch(e=>{console.error(e);process.exit(1);});`;
+await db.close();console.log('PASS lab units: extra department without contract, capacity overlap, no gap above 1 or with booking_gap off, doctors unchanged, snapshot, rollback.');}})().catch(e=>{console.error(e);process.exit(1);});`;
 const file=path.join(__dirname,'.lab-units-run-'+process.pid+'.cjs');
 fs.writeFileSync(file,prefix+body);try{require(file);}finally{setTimeout(()=>{try{fs.unlinkSync(file);}catch(_){}},0);}

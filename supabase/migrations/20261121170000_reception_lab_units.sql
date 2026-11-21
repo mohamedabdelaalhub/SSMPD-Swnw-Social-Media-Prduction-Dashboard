@@ -3,6 +3,8 @@
 --   * providers.capacity (default 1 = today's behaviour): how many patients the provider takes at the same time.
 --     The booking overlap check allows overlap while fewer than `capacity` live bookings overlap; the gap rule
 --     (minutes between bookings of the same doctor) applies only to capacity 1.
+--   * providers.booking_gap (default true): false = no gap between this provider's bookings (the lab takes a sample
+--     every 5 minutes: capacity 1, 5-minute lab services, no gap).
 --   * clinic_reception.provider_departments: extra departments a provider serves as its own (the lab row sits in
 --     «التحاليل» and also serves «باقي التحاليل»). This is the department rule, not the doctor-scope rule, so no
 --     doctor contract is needed. has_provider_service_scope() (used by the booking, order and execution gates) also
@@ -20,7 +22,8 @@ do $$ begin
   if to_regclass('clinic_reception.provider_departments') is not null then raise exception 'تم تطبيق هذا الملف من قبل'; end if;
 end $$;
 
-alter table clinic_reception.providers add column if not exists capacity integer not null default 1 check (capacity between 1 and 50);
+alter table clinic_reception.providers add column if not exists capacity integer not null default 1 check (capacity between 1 and 50),
+  add column if not exists booking_gap boolean not null default true;
 
 create table clinic_reception.provider_departments (
   provider_id uuid not null references clinic_reception.providers(id) on delete cascade,
@@ -62,7 +65,7 @@ begin
   if n <> 1 then raise exception 'نقطة الربط (التداخل) موجودة في % دالة بدل ١', n; end if;
 end $$;
 
--- gap rule (minutes between two bookings of the same doctor) only for capacity 1
+-- gap rule (minutes between two bookings of the same doctor) only for capacity 1 with booking_gap on
 do $$
 declare d text; a text := $a$if new.overbook then return new; end if;$a$;
 begin
@@ -70,7 +73,7 @@ begin
   d := pg_get_functiondef('clinic_reception.appointments_respect_gap()'::regprocedure);
   if (length(d) - length(replace(d, a, ''))) / length(a) <> 1 then raise exception 'نقطة الربط (الفاصل) مش موجودة مرة واحدة'; end if;
   insert into clinic_reception.lab_units_saved_defs values ('clinic_reception.appointments_respect_gap()', d);
-  execute replace(d, a, a || ' if coalesce((select capacity from clinic_reception.providers where id = new.provider_id), 1) > 1 then return new; end if;');
+  execute replace(d, a, a || ' if exists (select 1 from clinic_reception.providers where id = new.provider_id and (capacity > 1 or not booking_gap)) then return new; end if;');
 end $$;
 
 -- snapshot: extra-department services count as the provider's scope; provider_departments listed for the UI
