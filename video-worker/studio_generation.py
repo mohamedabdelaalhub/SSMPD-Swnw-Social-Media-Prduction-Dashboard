@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import copy
 import getpass
+from secret_source import env_or_file
 import json
 import os
 from pathlib import Path
@@ -17,7 +18,7 @@ API = 'https://api.openai.com/v1'
 
 
 def config():
-    key = os.environ.get('SSMPD_SCENE_API_KEY', '').strip()
+    key = env_or_file('SSMPD_SCENE_API_KEY')
     if not key and sys.platform == 'darwin':
         result = subprocess.run(['/usr/bin/security', 'find-generic-password', '-s', 'SSMPD_SCENE_API_KEY', '-a', getpass.getuser(), '-w'], capture_output=True, text=True)
         if result.returncode == 0:
