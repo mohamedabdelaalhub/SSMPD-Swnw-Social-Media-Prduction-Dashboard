@@ -59,7 +59,7 @@ const { JSDOM } = require('jsdom'), fs = require('fs'), assert = require('node:a
   w.prompt = () => 'تراجعت'; row.querySelector('[data-tr-unflag]').click(); await tick(); await tick();
   assert.deepEqual(calls.filter(c => c[0] === 'unflag').pop(), ['unflag', 'invoice', 'i9', 'تراجعت']); assert.equal($$('[data-tr-flag-row]').length, 0);
   // 6b. type «مقدم حجز» (20261118190000): offered in the picker, sent as 'advance', its badge and tables are named in Arabic
-  assert.deepEqual($$('[data-tr-search] select[name=type] option').map(o => [o.value, o.textContent]).slice(-2), [['advance', 'مقدم حجز'], ['register', 'خزينة']]);
+  assert.deepEqual($$('[data-tr-search] select[name=type] option').map(o => [o.value, o.textContent]).slice(-3), [['advance', 'مقدم حجز'], ['register', 'خزينة'], ['patient_credit', 'رصيد لصالح مريض (تحصيل استقبال)']]);
   await search('advance', '99999'); assert.deepEqual(calls.pop(), ['find', 'advance', '99999']);
   flags.push({ type: 'advance', key: 'a1', label: 'مقدم حجز 99999', reason: 'تجربة', flagged_at: '2026-11-18', flagged_by: 'المالك' }); blockers = [];
   dels.unshift({ id: 'd2', type: 'advance', label: 'مقدم حجز 1', reason: 'تنظيف', deleted_at: '2026-11-18T11:00:00Z', deleted_by: 'المالك', counts: { 'clinic_finance.advances': 1, 'clinic_finance.advance_proofs': 1, 'clinic_finance.entries': 2 } });
@@ -75,6 +75,14 @@ const { JSDOM } = require('jsdom'), fs = require('fs'), assert = require('node:a
   assert.deepEqual($$('[data-tr-flag-row] .badge').map(b => b.textContent).slice(-1), ['خزينة']);
   assert($('[data-tr-history]').textContent.includes('خزينة: 1 — وردية: 1 — طلب تسليم نقدية: 1 — خزينة استقبال: 1 — وردية استقبال: 1 — تعريف حساب نقدية: 1 — إعداد حساب: 1 — حساب في الدليل: 1'), 'register tables named in Arabic');
   assert(card.textContent.includes('خزينة'), 'the card mentions the register type');
+  // 6d. type «رصيد لصالح مريض» (20261121210000): sent as 'patient_credit', its badge and the reception tables are named in Arabic
+  await search('patient_credit', 'F-77'); assert.deepEqual(calls.pop(), ['find', 'patient_credit', 'F-77']);
+  flags.push({ type: 'patient_credit', key: 'c1', label: 'رصيد لصالح المريض مريض تجربة — 1000', reason: 'تجربة', flagged_at: '2026-11-21', flagged_by: 'المالك' });
+  dels.unshift({ id: 'd4', type: 'patient_credit', label: 'رصيد لصالح المريض 1', reason: 'تنظيف', deleted_at: '2026-11-21T12:00:00Z', deleted_by: 'المالك', counts: { 'clinic_finance.lines': 2, 'clinic_finance.entries': 1, 'clinic_reception.journal_lines': 2, 'clinic_reception.journal': 1, 'clinic_reception.payments': 1 } });
+  $('[data-tr-close]').click(); card.querySelector('[data-test-records-open]').click(); await tick(); await tick();
+  assert.deepEqual($$('[data-tr-flag-row] .badge').map(b => b.textContent).slice(-1), ['رصيد لصالح مريض']);
+  assert($('[data-tr-history]').textContent.includes('سطر قيد: 2 — قيد يومية: 1 — سطر حركة استقبال: 2 — حركة استقبال: 1 — دفعة استقبال: 1'), 'patient credit tables named in Arabic');
+  assert(card.textContent.includes('رصيد لصالح مريض'), 'the card mentions the patient credit type');
   // 7. close, and the migration not applied yet
   $('[data-tr-close]').click(); assert.equal(m(), null);
   mode = 'missing'; const w2 = await mk('super_admin', db); w2.document.querySelector('[data-test-records-open]').click(); await tick(); await tick();
