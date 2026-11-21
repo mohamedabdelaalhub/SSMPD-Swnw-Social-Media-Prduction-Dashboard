@@ -11849,6 +11849,19 @@
       "reviewed": true
     },
     {
+      "title": "مثلاً: الأخ، الجدة",
+      "labels": [
+        "مثلاً: الأخ، الجدة"
+      ],
+      "text": "لما تختار «أخرى» في صاحب الرقم للملف الجديد: اكتب صلته بالمريض.",
+      "article": "automatic-bookings",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "السن",
       "labels": [
         "السن"
@@ -16735,6 +16748,36 @@
         "جهة التعاقد لهذه الزيارة"
       ],
       "text": "اختار الجهة التي ينطبق عقدها على المريض أو الزيارة المعنية، وراجع سريان العقد وأهلية الخدمة قبل استخدام سعر التعاقد.",
+      "article": "patient-records",
+      "tabs": [
+        "patients",
+        "leads",
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "صاحب الرقم",
+      "labels": [
+        "صاحب الرقم"
+      ],
+      "text": "الرقم ده بتاع مين: المريض نفسه ولا الزوج/الزوجة/الأم/الأب ولا حد تاني. لازم تختاره لما الرقم يكون متسجّل على ملف تاني — بيظهر جنب الرقم في الملف («رقم الأم»).",
+      "article": "patient-records",
+      "tabs": [
+        "patients",
+        "leads",
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "مثلاً: الأخ، الجدة",
+      "labels": [
+        "مثلاً: الأخ، الجدة"
+      ],
+      "text": "لما تختار «أخرى» في صاحب الرقم: اكتب صلته بالمريض (مثلاً: الأخ، الجدة).",
       "article": "patient-records",
       "tabs": [
         "patients",
@@ -21761,9 +21804,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1860,
-    "labels": 1362,
+    "definitions": 1863,
+    "labels": 1364,
     "files": 136,
-    "groups": 1469
+    "groups": 1472
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();

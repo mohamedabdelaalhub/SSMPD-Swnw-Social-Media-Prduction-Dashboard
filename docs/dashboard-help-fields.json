@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1860,
-    "labels": 1362,
+    "definitions": 1863,
+    "labels": 1364,
     "files": 136,
-    "groups": 1469
+    "groups": 1472
   },
   "fields": [
     {
@@ -10307,6 +10307,16 @@
     },
     {
       "file": "reception-auto-book.js",
+      "label": "مثلاً: الأخ، الجدة",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "automatic-bookings",
+      "text_sha256": "b8de4068b1d1b6caa81a6a3418d8a8756e1308e66f4a844efbdabfc8bf8d18a0"
+    },
+    {
+      "file": "reception-auto-book.js",
       "label": "السن",
       "name": "",
       "kind": "label",
@@ -15025,6 +15035,26 @@
       "tab": "patients",
       "article": "patient-records",
       "text_sha256": "2577b007e34615e08fed26aafd26e17cc74832d05344a31191630df81100628e"
+    },
+    {
+      "file": "render-patients.js",
+      "label": "صاحب الرقم",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "patients",
+      "article": "patient-records",
+      "text_sha256": "d69e7b3a7e22668e60954e95c6cdc48aa490c0aa21c885750f9ec7057e233644"
+    },
+    {
+      "file": "render-patients.js",
+      "label": "مثلاً: الأخ، الجدة",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "patients",
+      "article": "patient-records",
+      "text_sha256": "0eb407a08e39f41cda70a1c5088dd06deece46fb2f0f72f487720d1fdfdf9cd9"
     },
     {
       "file": "render-patients.js",
