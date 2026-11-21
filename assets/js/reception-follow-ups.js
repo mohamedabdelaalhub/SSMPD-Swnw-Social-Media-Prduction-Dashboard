@@ -25,6 +25,11 @@ function cardHtml(){var c=state.counts||{},tabs=[['due','المستحقة وال
   '<div class="rfu-list">'+(state.rows.length?state.rows.map(rowHtml).join(''):'<p class="rfu-empty">'+(state.scope==='due'?'مفيش متابعات مستحقة خلال أسبوعين.':'مفيش متابعات هنا.')+'</p>')+'</div></section>';}
 function load(){return rpc(state.ws,'list',{scope:state.scope}).then(function(r){state.rows=(r&&r.rows)||[];state.counts=(r&&r.counts)||{};render();}).catch(function(e){state.rows=[];render(e);});}
 function render(err){var host=state.ctx&&state.ctx.host;if(!host||!host.isConnected)return;var old=host.querySelector('[data-rfu]');var box=d.createElement('div');box.innerHTML=cardHtml();var card=box.firstChild;if(err){card.querySelector('.rfu-list').innerHTML='<p class="rfu-empty">تعذر تحميل المتابعات — <button type="button" class="btn" data-fu-retry>حاول تاني</button></p>';}
+ /* owner 2026-11-21: a small card next to «تذكيرات غداً»; the full list opens in a sheet */
+ var M=w.SSMPDMiniCards;if(M){var c=state.counts||{},el=M.slot(host,'rfu',1);el.setAttribute('aria-label','متابعات مطلوبة — افتح التفاصيل');
+  el.innerHTML='<h4>متابعات مطلوبة</h4><span class="go">افتح ‹</span><span class="nums"><span class="n late"><b>'+(+c.late||0)+'</b> متأخرة</span><span class="n wait"><b>'+(+c.today||0)+'</b> النهارده</span><span class="n"><b>'+(+c.soon||0)+'</b> خلال أسبوعين</span></span>';
+  el.onclick=function(){state.open=true;render();};if(old)old.remove();
+  if(state.open){M.sheet('rfu','متابعات مطلوبة',card,function(){state.open=false;});wire(card);}else M.sheet('rfu',null,null);return;}
  if(old)old.replaceWith(card);else{var anchor=host.querySelector('[data-rse]')||host.querySelector('.rx-section,.rx-mode-card');if(anchor&&anchor.parentNode)anchor.parentNode.insertBefore(card,anchor.nextSibling);else host.prepend(card);}wire(card);}
 function find(id){return state.rows.find(function(r){return r.id===id;});}
 function act(a,p){return rpc(state.ws,a,p).then(function(){return load();});}
@@ -32,6 +37,7 @@ function wire(card){card.addEventListener('click',function(e){var t=e.target.clo
  if(t.hasAttribute('data-fu-retry'))return load();
  if(t.hasAttribute('data-fu-scope')){state.scope=t.getAttribute('data-fu-scope');return load();}
  var a=t.getAttribute('data-fu'),id=t.getAttribute('data-id'),r=find(id);if(a==='wa')return;
+ if((a==='new'||a==='book')&&w.SSMPDMiniCards){state.open=false;w.SSMPDMiniCards.sheet('rfu',null,null);}
  if(a==='new')return newModal();
  if(a==='attempt')return act('attempt',{id:id,note:'مردش'}).then(function(){toast('اتسجّلت المحاولة');}).catch(function(x){toast(x.message,'error');});
  if(a==='postpone'){var v=w.prompt('التاريخ الجديد (YYYY-MM-DD)',r&&r.due_date);if(!v)return;return act('postpone',{id:id,due_date:v.trim()}).then(function(){toast('اتأجلت المتابعة');}).catch(function(x){toast(x.message,'error');});}
