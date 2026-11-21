@@ -19,3 +19,4 @@
 @media(max-width:640px){.rx-ab-vs{grid-template-columns:1fr}.rx-ab-src{margin-inline-start:0}}
 /* Masa imports are booked automatically now: the old «سجّل المريض هنا لما ييجي» list is redundant */
 .rx-ab-on .rx-fb-imports{display:none}
+.rx-ab-po{display:grid;gap:6px;grid-column:1/-1;font-size:12px}.rx-ab-po b{color:#0F369D;font-size:11px}

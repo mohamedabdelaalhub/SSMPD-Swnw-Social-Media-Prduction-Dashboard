@@ -86,6 +86,10 @@ Deno.serve(async (req) => {
   const contractId = (body.contract_id ?? "").toString().trim() || null;
   const insurancePlanId = (body.insurance_plan_id ?? "").toString().trim() || null;
   const memberReference = (body.member_reference ?? "").toString().trim() || null;
+  const OWNERS = ["self", "husband", "wife", "mother", "father", "other"];
+  const phoneOwnerRaw = (body.phone_owner ?? "").toString().trim();
+  const phoneOwner = phoneOwnerRaw || null;
+  const phoneOwnerNote = (body.phone_owner_note ?? "").toString().trim().slice(0, 60) || null;
 
   if (fullName.split(/\s+/).filter(Boolean).length < 2) return json({ error: "اسم المريض مطلوب من كلمتين على الأقل" }, 400);
   if (!phoneRaw || normalizePhone(phoneRaw).replace(/[^0-9]/g, "").length < 8) return json({ error: "رقم تليفون المريض مطلوب ويجب أن يكون صحيحًا" }, 400);
@@ -95,6 +99,13 @@ Deno.serve(async (req) => {
   const phoneNormalized = phoneRaw ? normalizePhone(phoneRaw) : null;
   const nationalIdHash = nationalId ? await hashNationalId(nationalId) : null;
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+
+  // «صاحب الرقم» (owner 2026-11-21): a phone already used by another active file needs the relationship.
+  if (phoneOwner && !OWNERS.includes(phoneOwner)) return json({ error: "صاحب الرقم غير معروف" }, 400);
+  if (!phoneOwner && phoneNormalized) {
+    const { data: peers } = await admin.from("patients").select("id").eq("phone_normalized", phoneNormalized).eq("status", "active").limit(1);
+    if (peers && peers.length) return json({ error: "الرقم ده متسجّل على ملف تاني — اختار صاحب الرقم (نفس المريض / الزوج / الزوجة / الأم / الأب / أخرى)", code: "phone_owner_required" }, 400);
+  }
 
   const { data: patient, error } = await admin.from("patients").insert({
     full_name: fullName,
@@ -107,6 +118,8 @@ Deno.serve(async (req) => {
     medical_record_no: medicalRecordNo,
     last_visit_date: new Date().toISOString().slice(0, 10),
     created_by: caller.id,
+    phone_owner: phoneOwner,
+    phone_owner_note: phoneOwner === "other" ? phoneOwnerNote : null,
   }).select("id, patient_code, full_name, phone, email, status, gender, age, medical_record_no, last_visit_date, created_at").single();
 
   if (error) return json({ error: error.message }, 500);
