@@ -166,10 +166,10 @@ function openFinish(id){
     c.modal('لا يمكن إنهاء الزيارة الآن','<p data-wide>يوجد طلب خدمة لم يُنفذ أو يُلغ بعد'+(names?' — '+esc(names):'')+'. افتح تفاصيل الزيارة وأنهِ الطلب أولًا.</p>',function(){return Promise.resolve();});
     return;
    }
-   c.modal('إنهاء الزيارة','<p data-wide>يمكن إنهاء الزيارة الآن بدون طلب خدمة إضافية. إذا كان الكشف الأساسي هو الخدمة الوحيدة البسيطة فسيتم تثبيت تنفيذه تلقائيًا قبل الإغلاق.</p>'+c.field('reason','ملاحظة اختيارية','text','',' '),function(v){
+   c.modal('تأكيد: إنهاء الزيارة','<p data-wide>الزيارة هتتقفل ومش بترجّع من الشاشة. يمكن إنهاؤها الآن بدون طلب خدمة إضافية. إذا كان الكشف الأساسي هو الخدمة الوحيدة البسيطة فسيتم تثبيت تنفيذه تلقائيًا قبل الإغلاق.</p>'+c.field('reason','ملاحظة اختيارية','text','',' '),function(v){
     var payload={appointment_id:id,reason:String(v.reason||'').trim()||'انتهت الزيارة بعد الكشف دون خدمات إضافية'};
     return afterCommand(modeCommand(model,'visit_complete',payload));
-   });
+   },null,{ok:'تأكيد الإنهاء',cancel:'تراجع',danger:true});
   });
  }).catch(function(e){toast(e.message||'تعذر إنهاء الزيارة','error');});
 }
