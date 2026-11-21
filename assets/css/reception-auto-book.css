@@ -1,5 +1,8 @@
 /* الحجوزات التلقائية — قسم المواعيد (تصور docs/ui-references/mockups/booking-auto-sync.html، موافقة المالك 2026-11-19) */
-[data-rx-auto-book]{display:grid;gap:12px;margin:12px 0}
+[data-rx-auto-book]{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;margin:12px 0;min-width:0;max-width:100%}
+/* long unbroken names/phones must wrap, never widen the page (owner phone bug 2026-11-21) */
+[data-rx-auto-book] *{min-width:0;max-width:100%;overflow-wrap:anywhere}
+[data-rx-auto-book] .rx-actions .btn{max-width:100%;white-space:normal}
 .rx-ab-sync{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 14px;border-radius:14px;background:#fff;border:1px solid #D5DEEE;font-size:13px;color:#3B4658}
 .rx-ab-sync b{color:#2F7D5C}.rx-ab-dot{width:8px;height:8px;border-radius:50%;background:#2F7D5C;display:inline-block}
 .rx-ab-src{margin-inline-start:auto;display:flex;gap:6px;flex-wrap:wrap}
