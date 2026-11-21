@@ -16,7 +16,7 @@ function css(){return "@font-face{font-family:'BigVesta Arabic';src:url('"+BASE+
 ".ttl{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #0F369D;padding-bottom:6px;margin-bottom:8px}.ttl h2{margin:0;color:#0F369D;font-size:22px}"+
 ".no{font-size:12px;color:#3B4658;text-align:left}.no b{display:block;font-size:17px;color:#F15A22;direction:ltr}"+
 ".meta{display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px 14px;margin:0 0 10px;padding:8px 10px;background:#f4f6fb;border-radius:8px}.meta span.k{color:#5b6577}"+
-"table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:8px}th,td{border:1px solid #c7d0e6;padding:4px 6px;text-align:center}th{background:#0F369D;color:#fff;font-weight:700}td.n{text-align:right}"+
+"table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:8px}th,td{border:1px solid #c7d0e6;padding:4px 6px;text-align:center}th{background:#0F369D;color:#fff;font-weight:700}td.n{text-align:right}td.doc .dn{display:block;font-weight:700}td.doc .ds{display:block;font-size:10.5px;color:#5b6577}"+
 ".tot td{font-weight:700;background:#f4f6fb}.sum{display:grid;grid-template-columns:1.3fr 1fr;gap:12px;align-items:start}.box{border:1px solid #c7d0e6;border-radius:8px;padding:6px 10px}.box h4{margin:0 0 4px;color:#0F369D;font-size:13px}"+
 ".kv{display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px dashed #dde3f0}.kv:last-child{border-bottom:0}.kv.big{font-size:15px;font-weight:700;color:#0F369D}.kv.due{font-weight:700;color:#D0402A}.kv.due.ok{color:#2F7D5C}"+
 ".ltr{direction:ltr;unicode-bidi:isolate}.sig{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:18px;font-size:12.5px}"+
@@ -26,13 +26,13 @@ function uniq(a){return a.filter(function(x,i){return x&&a.indexOf(x)===i;});}
 function pageHtml(d,lines,first,last,no,of){
  var t=d.totals||{},all=d.lines||[],pt=d.patient||{};
  var before=all.reduce(function(s,l){return s+Number(l.price||0);},0),disc=all.reduce(function(s,l){return s+Number(l.discount||0);},0),ins=Number(t.insurer||0);
- var depts=uniq(all.map(function(l){return l.department;})),docs=uniq(all.map(function(l){return l.doctor;}));
+ var depts=uniq(all.map(function(l){return l.specialty||l.department;})),docs=uniq(all.map(function(l){return l.doctor;}));
  var head='<div class="ttl"><h2>فاتورة / إيصال سداد</h2><div class="no">رقم الفاتورة<b>'+esc(d.invoice_no)+'</b>'+(of>1?'<span class="pgno">صفحة '+no+' / '+of+'</span>':'')+'</div></div>'+
   '<div class="meta"><div><span class="k">المريض:</span> '+esc(pt.name)+'</div><div><span class="k">رقم الملف:</span> <span class="ltr">'+esc(pt.file_no)+'</span></div><div><span class="k">التليفون:</span> <span class="ltr">'+esc(phone(pt.phone))+'</span></div>'+
-  '<div><span class="k">تاريخ الخدمة:</span> <span class="ltr">'+esc(day(d.service_date))+'</span></div><div><span class="k">القسم:</span> '+esc(depts.join('، ')||'—')+'</div><div><span class="k">الطبيب:</span> '+esc(docs.length===1?docs[0]:docs.length?'أكثر من طبيب':'—')+'</div></div>';
- var rows=lines.map(function(l){return '<tr><td>'+esc(l.no)+'</td><td class="n">'+esc(l.service)+'</td><td>'+esc(l.doctor||'—')+'</td><td>'+money(l.price)+'</td><td>'+money(l.discount)+'</td><td>'+money(l.net)+'</td></tr>';}).join('');
+  '<div><span class="k">تاريخ الخدمة:</span> <span class="ltr">'+esc(day(d.service_date))+'</span></div><div><span class="k">التخصص:</span> '+esc(depts.join('، ')||'—')+'</div><div><span class="k">الطبيب:</span> '+esc(docs.length===1?docs[0]:docs.length?'أكثر من طبيب':'—')+'</div></div>';
+ var rows=lines.map(function(l){return '<tr><td>'+esc(l.no)+'</td><td class="n">'+esc(l.service)+'</td><td class="doc">'+(l.doctor?'<b class="dn">'+esc(l.doctor)+'</b>'+(l.specialty?'<small class="ds">'+esc(l.specialty)+'</small>':''):'—')+'</td><td>'+money(l.price)+'</td><td>'+money(l.discount)+'</td><td>'+money(l.net)+'</td></tr>';}).join('');
  var tot=last?'<tr class="tot"><td colspan="3">الإجمالي</td><td>'+money(before)+'</td><td>'+money(disc)+'</td><td>'+money(t.net)+'</td></tr>':'';
- var body='<table><tr><th>م</th><th>الخدمة</th><th>الطبيب</th><th>السعر</th><th>الخصم</th><th>الصافي</th></tr>'+rows+tot+'</table>';
+ var body='<table><tr><th>م</th><th>الخدمة</th><th>الطبيب / التخصص</th><th>السعر</th><th>الخصم</th><th>الصافي</th></tr>'+rows+tot+'</table>';
  if(last){var pays=(d.payments||[]),due=Number(t.due||0);
   body+='<div class="sum"><div class="box"><h4>المدفوعات</h4>'+(pays.length?'<table><tr><th>رقم الإيصال</th><th>الطريقة</th><th>رقم العملية</th><th>المبلغ</th></tr>'+pays.map(function(p){return '<tr><td class="ltr">'+esc(p.receipt_no||'—')+'</td><td>'+esc(METHOD[p.method]||p.method)+'</td><td class="ltr">'+esc(p.reference||'—')+'</td><td>'+money(p.amount)+'</td></tr>';}).join('')+'</table>':'<p>لسه مفيش مدفوعات على الفاتورة دي.</p>')+'</div>'+
    '<div class="box"><h4>الحساب</h4><div class="kv"><span>إجمالي الخدمات</span><span>'+money(before)+'</span></div><div class="kv"><span>الخصم</span><span class="ltr">−'+money(disc)+'</span></div>'+

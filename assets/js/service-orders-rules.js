@@ -127,6 +127,7 @@
       const lines=byDept[dept].map(({o,p},i)=>({serial:i+1,serviceId:o.service.id,name:o.service.name||null,
         performingDoctorId:(o.performingDoctor&&o.performingDoctor.id)||null,
         performingSpecialtyId:(o.performingDoctor&&o.performingDoctor.specialty_id)||null,
+        doctorName:(o.performingDoctor&&o.performingDoctor.name)||null,doctorSpecialty:(o.performingDoctor&&o.performingDoctor.specialty)||null,
         before:p.before,discount:p.discount,after:p.after,patientShare:p.patientShare,insurerShare:p.insurerShare}));
       const sum=k=>m(lines.reduce((n,l)=>n+c(l[k]),0));
       return {department:dept,claimServiceType:dept,claimOwner:'center',lines,
