@@ -11495,6 +11495,19 @@
       "reviewed": true
     },
     {
+      "title": "رقم التليفون أو الاسم",
+      "labels": [
+        "رقم التليفون أو الاسم"
+      ],
+      "text": "اكتب رقم التليفون (6 أرقام على الأقل) أو كلمة أو اتنين من اسم المريض (3 حروف على الأقل) للبحث في سجلات ماسا القديمة والجديدة. البحث للقراءة بس.",
+      "article": "masa-archive",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "سبب الرفض",
       "labels": [
         "سبب الرفض"
@@ -22026,9 +22039,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1880,
-    "labels": 1378,
-    "files": 138,
-    "groups": 1487
+    "definitions": 1881,
+    "labels": 1379,
+    "files": 139,
+    "groups": 1488
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
