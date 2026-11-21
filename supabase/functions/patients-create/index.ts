@@ -103,7 +103,7 @@ Deno.serve(async (req) => {
   // «صاحب الرقم» (owner 2026-11-21): a phone already used by another active file needs the relationship.
   if (phoneOwner && !OWNERS.includes(phoneOwner)) return json({ error: "صاحب الرقم غير معروف" }, 400);
   if (!phoneOwner && phoneNormalized) {
-    const { data: peers } = await admin.from("patients").select("id").eq("phone_normalized", phoneNormalized).eq("status", "active").limit(1);
+    const { data: peers } = await admin.from("patients").select("id").eq("phone_normalized", phoneNormalized).eq("status", "active");
     if (peers && peers.length) return json({ error: "الرقم ده متسجّل على ملف تاني — اختار صاحب الرقم (نفس المريض / الزوج / الزوجة / الأم / الأب / أخرى)", code: "phone_owner_required" }, 400);
   }
 

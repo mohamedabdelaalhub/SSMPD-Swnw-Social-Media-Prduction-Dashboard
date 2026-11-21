@@ -41,7 +41,7 @@ ${ins}
   assert.ok(!(await one("select prosrc from pg_proc where proname='clinic_reception_auto_book'")).prosrc.includes('phone_owner'),'rollback restores');
   // edge function + UI wiring
   const ed=fs.readFileSync('supabase/functions/patients-create/index.ts','utf8');
-  assert(/phone_owner_required/.test(ed)&&/\.eq\("phone_normalized", phoneNormalized\)\.eq\("status", "active"\)/.test(ed)&&/phone_owner: phoneOwner/.test(ed),'patients-create requires + stores');
+  assert(/phone_owner_required/.test(ed)&&/\.eq\("phone_normalized", phoneNormalized\)\.eq\("status", "active"\);/.test(ed)&&/phone_owner: phoneOwner/.test(ed),'patients-create requires + stores');
   assert.equal((fs.readFileSync('supabase/functions/patient-files-list/index.ts','utf8').match(/phone_owner, phone_owner_note/g)||[]).length,2,'list returns it');
   const rp=fs.readFileSync('assets/js/render-patients.js','utf8');
   const helpers=rp.slice(rp.indexOf('  var PHONE_OWNERS ='),rp.indexOf('  function openEditPatientModal('));
