@@ -23,3 +23,24 @@
 /* Masa imports are booked automatically now: the old «سجّل المريض هنا لما ييجي» list is redundant */
 .rx-ab-on .rx-fb-imports{display:none}
 .rx-ab-po{display:grid;gap:6px;grid-column:1/-1;font-size:12px}.rx-ab-po b{color:#0F369D;font-size:11px}
+
+/* ملخص + نافذة القايمة الطويلة (تصور docs/ui-references/mockups/long-lists.html — موافقة المالك 2026-11-22) */
+.rx-ab-sum{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.rx-ab-tile.btn{display:flex;align-items:center;gap:14px;padding:16px 18px;border:1px solid #E3E9F4;border-radius:16px;background:#fff;color:#16212E;text-align:start;height:auto;min-height:0;white-space:normal;font-weight:400}
+.rx-ab-tile .rx-ab-n{font-size:30px;font-weight:800;min-width:54px}.rx-ab-tile .rx-ab-t{flex:1;min-width:0}.rx-ab-tile .rx-ab-t b{display:block;font-size:15px}.rx-ab-tile .rx-ab-t small{font-size:12px;color:#65748a;display:block;line-height:1.6}
+.rx-ab-tile .rx-ab-go{font-size:12px;color:#0F369D;font-weight:700;white-space:nowrap}
+.rx-ab-tile.warn{background:#FFF8F0;border-color:#FFD9A8}.rx-ab-tile.warn .rx-ab-n{color:#B35F00}
+.rx-ab-backdrop{position:fixed;inset:0;background:rgba(22,33,46,.45);z-index:2000;display:grid;place-items:center;padding:16px}
+.rx-ab-modal{background:#fff;border-radius:20px;box-shadow:0 24px 60px rgba(15,54,157,.25);width:min(900px,100%);max-height:calc(100dvh - 32px);overflow:auto;padding:18px;display:grid;gap:12px;align-content:start}
+.rx-ab-mh{display:flex;align-items:center;justify-content:space-between;gap:10px}.rx-ab-mh h3{margin:0;font-size:16px;font-weight:800}
+.rx-ab-x.btn{width:38px;height:38px;min-height:38px;padding:0;border-radius:11px;border:1px solid #E3E9F4;background:#fff;color:#16212E;display:grid;place-items:center}
+.rx-ab-tools{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.rx-ab-inp{flex:1 1 260px;display:flex;align-items:center;gap:10px;height:44px;padding:0 14px;border:1.5px solid #C9D6F2;border-radius:12px;min-width:0}.rx-ab-inp input{flex:1;min-width:0;border:0;outline:0;font:inherit;background:transparent;direction:rtl}
+.rx-ab-seg{display:inline-flex;background:#F1F4F8;border-radius:12px;padding:3px;gap:2px;max-width:100%;overflow-x:auto}.rx-ab-seg .btn{border:0;background:transparent;color:#65748a;font-weight:700;min-height:36px;padding:0 14px;border-radius:9px;white-space:nowrap;box-shadow:none}.rx-ab-seg .btn.on{background:#fff;color:#0F369D;box-shadow:0 1px 3px rgba(15,54,157,.12)}
+.rx-ab-note{margin:0;font-size:12px;color:#5b6577}.rx-ab-empty{margin:0;padding:18px;text-align:center;color:#65748a;background:#F7F9FE;border-radius:12px}
+.rx-ab-modal .rx-ab-time{grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px}
+.rx-ab-pg{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}.rx-ab-cnt{font-size:12px;color:#65748a}
+.rx-ab-pn{display:flex;gap:6px;align-items:center}.rx-ab-pn .btn{min-width:36px;height:36px;min-height:36px;padding:0 8px;border-radius:10px;border:1px solid #E3E9F4;background:#fff;color:#16212E;font-weight:700}.rx-ab-pn .btn.on{background:#0F369D;color:#fff;border-color:#0F369D}.rx-ab-pn .btn:disabled{opacity:.4}
+@media(max-width:700px){.rx-ab-sum{grid-template-columns:minmax(0,1fr)}.rx-ab-modal .rx-ab-time{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:560px){.rx-ab-backdrop{align-items:end;padding:0}.rx-ab-modal{border-radius:22px 22px 0 0;width:100%;max-height:90dvh}.rx-ab-tile .rx-ab-go{display:none}}
+.rx-ab-time .rx-ab-nm{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.rx-ab-time .rx-ab-nm strong{font-size:14.5px}.rx-ab-time .rx-ab-sub{font-size:12px;color:#65748a;margin-top:2px}
