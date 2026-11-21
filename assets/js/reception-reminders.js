@@ -34,13 +34,18 @@ function rowHtml(r){var link=waLink(r,state.day),ref=esc(r.ref),acts='';
  return '<div class="rtr-row '+esc(r.status)+'" data-ref="'+ref+'"><div class="rtr-t'+(r.time?'':' none')+'">'+(r.time?esc(r.time):'بدون ساعة محددة')+'</div>'+
   '<div class="rtr-body"><span class="rtr-n">'+esc(r.name||'')+'</span><span class="rtr-tag">'+esc(SOURCES[r.source]||r.source||'')+'</span> '+chip(r)+'<div class="rtr-s">'+meta+'</div>'+(acts?'<div class="rtr-act">'+acts+'</div>':'')+'</div></div>';}
 function cardHtml(){var c=state.counts||{},rows=state.rows.filter(function(r){return state.tab==='all'||r.status===state.tab;});
- return '<section class="rtr-card" data-rtr-card aria-label="تذكيرات بكرة"><header class="rtr-head"><h4>تذكيرات بكرة'+(state.day?' — '+esc(dayLabel(state.day)):'')+'</h4><span class="rtr-count">'+(+c.pending||0)+' لسه · '+(+c.sent||0)+' اتبعت · '+(+c.no_answer||0)+' مردش</span></header>'+
+ return '<section class="rtr-card" data-rtr-card aria-label="تذكيرات غداً"><header class="rtr-head"><h4>تذكيرات غداً'+(state.day?' — '+esc(dayLabel(state.day)):'')+'</h4><span class="rtr-count">'+(+c.pending||0)+' لسه · '+(+c.sent||0)+' اتبعت · '+(+c.no_answer||0)+' مردش</span></header>'+
   '<div class="rtr-tabs" role="tablist">'+TABS.map(function(t){return '<button type="button" role="tab" class="rtr-tab'+(state.tab===t[0]?' on':'')+'" aria-selected="'+(state.tab===t[0])+'" data-rtr-tab="'+t[0]+'">'+t[1]+' ('+(+c[t[0]]||0)+')</button>';}).join('')+'</div>'+
   '<div class="rtr-list">'+(rows.length?rows.map(rowHtml).join(''):'<p class="rtr-empty">'+(state.counts&&!c.all?'مفيش حجوزات بكرة.':'مفيش حجوزات هنا.')+'</p>')+'</div>'+
   '<p class="rtr-note">'+NOTE+'</p></section>';}
 function load(){return rpc(state.ws,'list',{}).then(function(r){state.rows=(r&&r.rows)||[];state.counts=(r&&r.counts)||{};state.day=(r&&r.day)||state.day;render();}).catch(function(e){state.rows=[];render(e);});}
 function render(err){var host=state.ctx&&state.ctx.host;if(!host||!host.isConnected)return;var old=host.querySelector('[data-rtr-card]');var box=d.createElement('div');box.innerHTML=cardHtml();var card=box.firstChild;
- if(err)card.querySelector('.rtr-list').innerHTML='<p class="rtr-empty">تعذر تحميل تذكيرات بكرة — <button type="button" class="btn" data-rtr-retry>حاول تاني</button></p>';
+ if(err)card.querySelector('.rtr-list').innerHTML='<p class="rtr-empty">تعذر تحميل تذكيرات غداً — <button type="button" class="btn" data-rtr-retry>حاول تاني</button></p>';
+ /* owner 2026-11-21: a small card next to «متابعات مطلوبة»; the full list opens in a sheet */
+ var M=w.SSMPDMiniCards;if(M){var c=state.counts||{},title='تذكيرات غداً'+(state.day?' — '+dayLabel(state.day):''),el=M.slot(host,'rtr',2);el.setAttribute('aria-label',title+' — افتح التفاصيل');
+  el.innerHTML='<h4>'+esc(title)+'</h4><span class="go">افتح ‹</span><span class="nums"><span class="n wait"><b>'+(+c.pending||0)+'</b> لسه</span><span class="n ok"><b>'+(+c.sent||0)+'</b> اتبعت</span><span class="n"><b>'+(+c.no_answer||0)+'</b> مردش</span></span>';
+  el.onclick=function(){state.open=true;render();};if(old)old.remove();
+  if(state.open){M.sheet('rtr',title,card,function(){state.open=false;});wire(card);}else M.sheet('rtr',null,null);return;}
  if(old)old.replaceWith(card);else{var anchor=host.querySelector('[data-rfu]')||host.querySelector('[data-rse]')||host.querySelector('.rx-section,.rx-mode-card');if(anchor&&anchor.parentNode)anchor.parentNode.insertBefore(card,anchor.nextSibling);else host.prepend(card);}wire(card);}
 function mark(ref,status){if(state.busy)return Promise.resolve();state.busy=true;
  return rpc(state.ws,'mark',{ref:ref,day:state.day,status:status}).then(function(){toast(status==='sent'?'اتسجّل «اتبعت» باسمك':status==='no_answer'?'اتسجّل «مردش»':'اترجع «لسه ماتبعتش»');return load();})
