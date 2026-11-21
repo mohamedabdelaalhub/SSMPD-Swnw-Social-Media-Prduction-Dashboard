@@ -1,0 +1,15 @@
+/* «شغلي النهارده» (owner «طبقه» 2026-11-21) — mockup docs/ui-references/mockups/finance-simple-roles.html */
+.ft{display:grid;gap:12px;margin:0 0 16px;padding:16px;border-radius:16px;background:#fff;border:1px solid #D5DEEE;box-shadow:0 10px 26px rgba(15,54,157,.08)}
+.ft-head{background:#0F369D;color:#fff;border-radius:12px;padding:12px 16px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center}
+.ft-head b{font-size:16px}.ft-head small{font-size:12px;opacity:.88}
+.ft-tasks{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.ft-task{border:1px solid #D5DEEE;border-radius:14px;padding:14px;display:grid;gap:8px;align-content:start;background:#fff}
+.ft-task.is-hot{border-color:#F15A22;box-shadow:0 0 0 2px rgba(241,90,34,.12)}
+.ft-n{width:28px;height:28px;border-radius:50%;background:#EAF0FB;color:#0F369D;display:grid;place-items:center;font-weight:700;font-size:14px}
+.ft-task b{font-size:15px;color:#16212E;line-height:1.5}.ft-sub{font-size:12px;color:#5b6577;line-height:1.7}
+.ft-task .btn{justify-self:start}
+.ft-badge{display:inline-block;background:#F15A22;color:#fff;border-radius:999px;font-size:11px;padding:1px 8px;margin-inline-start:4px;vertical-align:middle}
+.ft-loading{margin:0;padding:14px;color:#5b6577;font-size:13px}
+.ft-more{margin:0 0 16px;border:1px dashed #CBD5E1;border-radius:14px;padding:10px 14px;background:#fff}
+.ft-more>summary{cursor:pointer;font-weight:700;color:#0F369D;font-size:14px;padding:4px 0}
+.ft-more[open]>summary{margin-bottom:10px}

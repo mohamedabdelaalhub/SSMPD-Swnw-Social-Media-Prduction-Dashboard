@@ -123,7 +123,7 @@
   }
 
   /* Owner-approved unified shell (2026-11-18): side rail with every section; no sub-tabs, no section cards, no back buttons. */
-  var shellApi = null, shellHost = null;
+  var shellApi = null, shellHost = null, shellCaps = { f: false, i: false };
   function overviewAllowed(canFinance) { return canFinance && !overviewOff && !!window.SSMPDAccountingOverview; }
   function shellAllowed(id, canFinance, canInventory) {
     var k = window.SSMPDAccountingShell.kind(id);
@@ -144,7 +144,7 @@
     if (!shellInit) { shellInit = true; if (!navFromState && !state.pendingRepair && overviewAllowed(canFinance)) state.subTab = "overview"; }
     if (state.subTab === "overview" && !overviewAllowed(canFinance)) state.subTab = canFinance ? "pricing" : "inventory";
     if (state.subTab === "pricing" && !state.section) state.section = "supplies";
-    shellHost = container;
+    shellHost = container; shellCaps = { f: canFinance, i: canInventory };
     shellApi = window.SSMPDAccountingShell.mount(container, {
       active: shellActive(),
       allowed: function (id) { return shellAllowed(id, canFinance, canInventory); },
@@ -170,6 +170,13 @@
     var subView = shellApi.view;
     if (state.subTab === "overview") {
       var off = function () { overviewOff = true; state.subTab = "pricing"; state.section = "supplies"; saveNav(); shellApi.refresh(); shellApi.setActive("supplies"); shellView(); };
+      /* «شغلي النهارده» (owner «طبقه» 2026-11-21): role tasks on top, the overview numbers under «تفاصيل أكتر» */
+      if (window.SSMPDFinanceToday) {
+        var goTo = function (id) { if (!shellApi.view.isConnected) return; shellApi.setActive(id); shellSelect(id); };
+        window.SSMPDFinanceToday.mountAccounting(subView, { go: goTo, allowed: function (id) { return shellAllowed(id, shellCaps.f, shellCaps.i); } })
+          .then(function (d) { if (!d) off(); }, function () { off(); });
+        return;
+      }
       window.SSMPDAccountingOverview.render(subView, {
         go: function (id) { if (!shellApi.view.isConnected) return; shellApi.setActive(id); shellSelect(id); },
         onUnavailable: off,
