@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1870,
-    "labels": 1369,
-    "files": 137,
-    "groups": 1477
+    "definitions": 1879,
+    "labels": 1378,
+    "files": 138,
+    "groups": 1482
   },
   "fields": [
     {
@@ -10344,6 +10344,96 @@
       "tab": "reception_services",
       "article": "patient-records",
       "text_sha256": "b6b7ef3304940f5231c6281a0431f4e3513369f3f55fbf8bc0e9499a249a0bbd"
+    },
+    {
+      "file": "reception-booking-discount.js",
+      "label": "خصم على الحجز ده (اختياري)",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-booking-discount",
+      "text_sha256": "b0d38c7798b6e6eb8ef38cc817ffffb304919a5325d575936d4e9432d2c12162"
+    },
+    {
+      "file": "reception-booking-discount.js",
+      "label": "مثلاً نقابة المهندسين",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-booking-discount",
+      "text_sha256": "2560db611b72613b0560d6d043bd9c1419b506ee2a98e18ef7805f57923e6b1a"
+    },
+    {
+      "file": "reception-booking-discount.js",
+      "label": "اسم النقابة",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-booking-discount",
+      "text_sha256": "2560db611b72613b0560d6d043bd9c1419b506ee2a98e18ef7805f57923e6b1a"
+    },
+    {
+      "file": "reception-booking-discount.js",
+      "label": "رقم الكارنيه",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-booking-discount",
+      "text_sha256": "7a0be09f7b3d9383a6547ea599713649b7088400b45ab5fabd60cbc172624fe7"
+    },
+    {
+      "file": "reception-booking-discount.js",
+      "label": "الكارنيه ساري لحد",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-booking-discount",
+      "text_sha256": "9470e36ce7220ba744494e5d5b87e4015e64e0dad57cbd065a72347430fb5fe4"
+    },
+    {
+      "file": "reception-booking-discount.js",
+      "label": "مثلاً قريب موظف",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-booking-discount",
+      "text_sha256": "37337956dfb3ba7fe52bd67b0739a7938b9f1cd41b18816fc8e026e4eb0692ff"
+    },
+    {
+      "file": "reception-booking-discount.js",
+      "label": "سبب الخصم",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-booking-discount",
+      "text_sha256": "37337956dfb3ba7fe52bd67b0739a7938b9f1cd41b18816fc8e026e4eb0692ff"
+    },
+    {
+      "file": "reception-booking-discount.js",
+      "label": "نسبة الخصم ٪",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "invoice",
+      "text_sha256": "ea39a04f2d933c5be7f40811637a3ee239a7e73d1b1481ebeb5a5034e4c00575"
+    },
+    {
+      "file": "reception-booking-discount.js",
+      "label": "نسبة الخصم",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "invoice",
+      "text_sha256": "ea39a04f2d933c5be7f40811637a3ee239a7e73d1b1481ebeb5a5034e4c00575"
     },
     {
       "file": "reception-booking-plus.js",
