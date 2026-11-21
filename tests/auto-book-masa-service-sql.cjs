@@ -1,0 +1,40 @@
+// 20261121100000: the Masa service text («كشف جديد») picks the doctor's matching service; old rules stay as fallback.
+const fs=require('fs'),assert=require('node:assert/strict'),{PGlite}=require('@electric-sql/pglite');
+(async()=>{const db=new PGlite(),q=(s,p)=>db.query(s,p),one=async(s,p)=>(await q(s,p)).rows[0];
+ const W='00000000-0000-0000-0000-0000000000f1',P='00000000-0000-0000-0000-0000000000b1',P2='00000000-0000-0000-0000-0000000000b2';
+ const S=n=>'00000000-0000-0000-0000-00000000000'+n;
+ try{await db.exec(`create role authenticated;create role anon;create schema clinic_reception;
+  create table clinic_reception.providers(id uuid primary key,department text,active boolean default true);
+  create table clinic_reception.services(id uuid primary key,workspace_id uuid,code text,name text,department text,active boolean default true);
+  create table clinic_reception.provider_service_scopes(provider_id uuid,service_code text);
+  create table clinic_reception.auto_book_services(provider_id uuid primary key,service_code text);
+  create table clinic_reception.external_bookings(id uuid primary key default gen_random_uuid(),provider_id uuid,needed_service text,state text,review_kind text,reason text,day date,updated_at timestamptz);
+  ${fs.readFileSync('supabase/migrations/20261120130000_reception_auto_book.sql','utf8').match(/create function clinic_reception\.auto_book_service\(p_workspace[\s\S]*?\n\$\$;/)[0]}
+  create function clinic_reception.auto_book_one(p_id uuid) returns text language plpgsql as $f$
+  declare b clinic_reception.external_bookings%rowtype; ws uuid := '${W}'; svc uuid;
+  begin select * into b from clinic_reception.external_bookings where id=p_id;
+    svc := clinic_reception.auto_book_service(ws, b.provider_id);
+    return coalesce(svc::text,'review'); end $f$;`);
+  await q(`insert into clinic_reception.providers values($1,'الأطفال'),($2,'الجلدية')`,[P,P2]);
+  await q(`insert into clinic_reception.services values($1,$5,'C1','كشف جديد','الأطفال'),($2,$5,'C2','كشف متابعة','الأطفال'),($3,$5,'C3','كشف جديد','الجلدية'),($4,$5,'X1','رسم قلب','الاشعة')`,[S(1),S(2),S(3),S(4),W]);
+  await q(`insert into clinic_reception.provider_service_scopes values($1,'X1')`,[P]);
+  const book=async(prov,need)=>(await one("insert into clinic_reception.external_bookings(provider_id,needed_service,state,day) values($1,$2,'pending',current_date) returning id",[prov,need])).id;
+  const run=async id=>(await one('select clinic_reception.auto_book_one($1) r',[id])).r;
+  const before=await book(P,'كشف جديد');assert.equal(await run(before),'review','before: two «كشف» services → staff review');
+  await q(`insert into clinic_reception.external_bookings(provider_id,needed_service,state,review_kind,day) values($1,'كشف جديد','review','service',current_date)`,[P]);
+  const M=fs.readFileSync('supabase/migrations/20261121100000_auto_book_masa_service_name.sql','utf8');
+  await db.exec(M);await assert.rejects(()=>db.exec(M),/تم تطبيق هذا الملف من قبل/);await db.exec('rollback');
+  assert.equal((await one("select count(*)::int n from clinic_reception.external_bookings where review_kind='service'")).n,0,'service reviews re-queued');
+  assert.equal(await run(await book(P,'كشف جديد')),S(1),'exact name in his department');
+  assert.equal(await run(await book(P,'  كشف  جديد ')),S(1),'normalised spaces');
+  assert.equal(await run(await book(P,'كشف متا')),S(2),'unique prefix');
+  assert.equal(await run(await book(P,'رسم قلب')),S(4),'scoped service of another department');
+  assert.equal(await run(await book(P2,'كشف جديد')),S(3),'other doctor → his own department');
+  assert.equal(await run(await book(P,'كشف')),'review','ambiguous prefix → old rules → review');
+  await q("insert into clinic_reception.auto_book_services values($1,'C2')",[P]);
+  assert.equal(await run(await book(P,'غير معروف')),S(2),'unknown text → saved per-doctor service');
+  assert.equal(await run(await book(P,null)),S(2),'no text → saved service');
+  await db.exec(fs.readFileSync('supabase/rollbacks/20261121100000_auto_book_masa_service_name.rollback.sql','utf8'));
+  assert.ok(!(await one("select prosrc from pg_proc where proname='auto_book_one'")).prosrc.includes('auto_book_service_for'),'rollback restores');
+  console.log('auto-book masa service name: ok');
+ }catch(e){console.error(e);process.exitCode=1;}finally{await db.close();}})();
