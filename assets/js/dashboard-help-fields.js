@@ -14362,6 +14362,32 @@
       "reviewed": true
     },
     {
+      "title": "مثلاً: الوش + الإبط",
+      "labels": [
+        "مثلاً: الوش + الإبط"
+      ],
+      "text": "اكتب المناطق اللي هتتعمل في الزيارة دي.",
+      "article": "reception-booking-qty",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "المناطق (اختياري)",
+      "labels": [
+        "المناطق (اختياري)"
+      ],
+      "text": "لما المريض يعمل أكتر من منطقة في نفس الزيارة: اكتب المناطق (مثلاً: الوش + الإبط). بتتسجّل مع الطلب.",
+      "article": "reception-booking-qty",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "مدة الجلسة",
       "labels": [
         "مدة الجلسة"
@@ -21843,9 +21869,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1868,
-    "labels": 1367,
+    "definitions": 1870,
+    "labels": 1369,
     "files": 137,
-    "groups": 1475
+    "groups": 1477
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
