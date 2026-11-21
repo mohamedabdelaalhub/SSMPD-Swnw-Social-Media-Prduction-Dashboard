@@ -1,7 +1,7 @@
 (function (w) {
   'use strict';
   // Job catalog («دليل الوظائف»): HR tab + job block in the employee file + «وظيفتي» + contract annex print.
-  // Server: hr_jobs / hr_job_save / hr_job_assign / hr_job_band / hr_my_job / hr_job_annex (migration 20261121160000).
+  // Server: hr_jobs / hr_job_save / hr_job_assign / hr_job_band / hr_my_job / hr_job_annex (migration 20261121190000).
   // Salary figures arrive only for super_admin / finance (server-side); doctors are outside the catalog.
   var cat = null;
   function U() { return w.SSMPDWorkforceUtils; }
