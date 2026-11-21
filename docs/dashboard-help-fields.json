@@ -1,8 +1,8 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1879,
-    "labels": 1378,
+    "definitions": 1878,
+    "labels": 1377,
     "files": 138,
     "groups": 1482
   },
@@ -10414,16 +10414,6 @@
       "tab": "reception_services",
       "article": "reception-booking-discount",
       "text_sha256": "37337956dfb3ba7fe52bd67b0739a7938b9f1cd41b18816fc8e026e4eb0692ff"
-    },
-    {
-      "file": "reception-booking-discount.js",
-      "label": "نسبة الخصم ٪",
-      "name": "",
-      "kind": "label",
-      "forms": [],
-      "tab": "reception_services",
-      "article": "invoice",
-      "text_sha256": "ea39a04f2d933c5be7f40811637a3ee239a7e73d1b1481ebeb5a5034e4c00575"
     },
     {
       "file": "reception-booking-discount.js",

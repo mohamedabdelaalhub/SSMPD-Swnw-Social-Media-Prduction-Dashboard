@@ -11,6 +11,8 @@ alter function public.command_before_booking_discount(uuid, text, jsonb, uuid) r
 revoke all on function public.clinic_reception_command(uuid, text, jsonb, uuid) from public, anon;
 grant execute on function public.clinic_reception_command(uuid, text, jsonb, uuid) to authenticated;
 drop function if exists clinic_reception.set_booking_discount(uuid, uuid, jsonb, uuid);
+drop function if exists clinic_reception.booking_discount_max();
+drop function if exists clinic_reception.booking_discount_auto();
 do $$ begin if to_regclass('storage.objects') is not null then
   execute 'drop policy if exists booking_discount_cards_insert on storage.objects';
   execute 'drop policy if exists booking_discount_cards_read on storage.objects';

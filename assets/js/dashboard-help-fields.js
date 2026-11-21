@@ -11968,9 +11968,8 @@
       "reviewed": true
     },
     {
-      "title": "نسبة الخصم ٪",
+      "title": "نسبة الخصم",
       "labels": [
-        "نسبة الخصم ٪",
         "نسبة الخصم",
         "نسبة الخصم %"
       ],
@@ -21938,8 +21937,8 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1879,
-    "labels": 1378,
+    "definitions": 1878,
+    "labels": 1377,
     "files": 138,
     "groups": 1482
   }

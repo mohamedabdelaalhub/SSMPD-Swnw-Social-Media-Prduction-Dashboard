@@ -1,8 +1,9 @@
 -- Optional discount on a booking (owner 2026-11-21, mockup docs/ui-references/mockups/booking-discount.html «موافق»):
 --   * «خصم نقابة / نادي»: الجهة نقابة / نادي / أخرى + name, card number (required), card valid until (required, ≥ visit
 --     day) and a card photo (required, private bucket 'booking-discount-cards'); or «خصم خاص» with a reason.
---   * Owner «خليه ٣٠٪»: up to 30% is applied at arrival; above 30% it waits in «مراجعة الخصومات» (existing review: a
---     different person; > 15% also needs finance_review).
+--   * Owner «خليه ٣٠٪» (main chat 4 2026-11-21: the safer reading, a hard maximum): 1–30%, applied at arrival. The
+--     limit is one constant, clinic_reception.booking_discount_max(); if the owner later means «auto-approve up to 30%»,
+--     raise the max and anything above 30% already goes to the existing review (a different person).
 --   * Owner «يوقف اي خصومات تانية»: a visit whose booking has this discount takes no other discount and no contract
 --     price (quote) on any of its services.
 -- Stored on the appointment at 'book' (flat payload keys discount_*); applied at arrival on the arrival order through the
@@ -66,6 +67,11 @@ do $$ begin
     using (bucket_id = 'booking-discount-cards' and public.booking_discount_card_allowed(name))$p$;
 end $$;
 
+create function clinic_reception.booking_discount_max() returns numeric language sql immutable as $$ select 30::numeric $$;
+create function clinic_reception.booking_discount_auto() returns numeric language sql immutable as $$ select 30::numeric $$;
+revoke all on function clinic_reception.booking_discount_max() from public, anon, authenticated;
+revoke all on function clinic_reception.booking_discount_auto() from public, anon, authenticated;
+
 -- validate + store the discount on a booked appointment (null kind clears it)
 create function clinic_reception.set_booking_discount(p_workspace uuid, p_appointment uuid, p jsonb, p_me uuid) returns void
 language plpgsql security definer set search_path = pg_catalog, public as $$
@@ -83,7 +89,8 @@ begin
   if kind not in ('syndicate','special') then raise exception 'اختار نوع الخصم'; end if;
   if ap.package_id is not null then raise exception 'حجز الباكج بسعره المتعاقد عليه — مينفعش عليه خصم'; end if;
   begin pct := nullif(btrim(coalesce(p->>'discount_percent', '')), '')::numeric; exception when others then pct := null; end;
-  if pct is null or pct <= 0 or pct > 100 then raise exception 'اكتب نسبة الخصم (من ١ لـ ١٠٠)'; end if;
+  if pct is null or pct <= 0 then raise exception 'اكتب نسبة الخصم'; end if;
+  if pct > clinic_reception.booking_discount_max() then raise exception 'أقصى خصم على الحجز % ٪', clinic_reception.booking_discount_max(); end if;
   d := (ap.starts_at at time zone 'Africa/Cairo')::date;
   if kind = 'syndicate' then
     if coalesce(p->>'discount_org_type', '') not in ('syndicate','club','other') then raise exception 'اختار الجهة: نقابة أو نادي أو أخرى'; end if;
@@ -146,7 +153,7 @@ end $$;
 revoke all on function public.clinic_reception_command(uuid, text, jsonb, uuid) from public, anon;
 grant execute on function public.clinic_reception_command(uuid, text, jsonb, uuid) to authenticated;
 
--- arrival: the arrival order gets the booking discount (≤ 30% applied, above waits for review); card re-checked
+-- arrival: the arrival order gets the booking discount (≤ booking_discount_auto() applied, above waits for review); card re-checked
 create function clinic_reception.booking_discount_apply() returns trigger
 language plpgsql security definer set search_path = pg_catalog, public as $$
 declare ap record; why text; ok boolean;
@@ -162,7 +169,7 @@ begin
            then case ap.discount_org_type when 'syndicate' then 'نقابة' when 'club' then 'نادي' else 'جهة' end
                 || ' — ' || ap.discount_org_name || ' — كارنيه ' || ap.discount_card_no
            else 'خصم خاص — ' || ap.discount_reason end;
-  ok := ap.discount_percent <= 30;
+  ok := ap.discount_percent <= clinic_reception.booking_discount_auto();
   insert into clinic_reception.discount_requests(workspace_id, order_id, percent, reason, created_by, status)
     values (new.workspace_id, new.id, ap.discount_percent, why, coalesce(ap.discount_by, ap.created_by), case when ok then 'approved' else 'pending' end);
   if ok then update clinic_reception.orders set discount = ap.discount_percent where id = new.id; end if;

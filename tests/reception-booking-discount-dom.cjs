@@ -1,5 +1,5 @@
 // Owner 2026-11-21: «خصم على الحجز ده» in «حجز موعد» — off by default (nothing sent), نقابة/نادي/أخرى fields required,
-// «خصم خاص» needs a reason, price preview, > 30% review warning, hidden for package bookings, card photo uploaded first.
+// «خصم خاص» needs a reason, price preview, 30% maximum, hidden for package bookings, card photo uploaded first.
 const {JSDOM}=require('jsdom'),fs=require('fs'),assert=require('node:assert/strict');
 const dom=new JSDOM('<form><div class="rx-combo-field"></div><select name="service_id"><option value="s1" selected>كشف</option></select><input name="day" value="2026-11-22"><select name="package_id"><option value="" selected></option><option value="p1">باكج</option></select></form>',{runScripts:'outside-only'}),w=dom.window,d=w.document;
 let uploaded=null;w.SSMPDDb={client:{auth:{getUser:()=>Promise.resolve({data:{user:{id:'u1'}}})},storage:{from:b=>({upload:(p,f)=>{uploaded=[b,p];return Promise.resolve({data:{}});}})}}};
@@ -16,7 +16,7 @@ assert.equal(form.querySelector('[data-rbd-orgl]').textContent,'اسم النا�
 form.elements.discount_org_name.value='نادي الصيد';form.elements.discount_percent.value='10';fire(form.elements.discount_percent,'input');
 const sum=form.querySelector('[data-rbd-sum]');assert.equal(sum.hidden,false);assert.match(sum.textContent,/360/);assert.match(sum.textContent,/نادي الصيد/);
 assert.equal(form.querySelector('[data-rbd-warn]').hidden,true);
-form.elements.discount_percent.value='40';fire(form.elements.discount_percent,'input');assert.equal(form.querySelector('[data-rbd-warn]').hidden,false,'> 30% → review warning');
+form.elements.discount_percent.value='40';fire(form.elements.discount_percent,'input');assert.equal(form.querySelector('[data-rbd-warn]').hidden,false,'> 30% → max warning');assert.match(form.querySelector('[data-rbd-warn]').textContent,/أقصى خصم/);assert.equal(form.elements.discount_percent.max,'30');
 // special
 const sp=form.querySelector('input[name="discount_kind"][value="special"]');sp.checked=true;fire(sp);v=fd();
 assert(!('discount_card_no' in v),'card fields not sent for خاص');assert('discount_reason' in v);assert.equal(form.elements.discount_reason.required,true);

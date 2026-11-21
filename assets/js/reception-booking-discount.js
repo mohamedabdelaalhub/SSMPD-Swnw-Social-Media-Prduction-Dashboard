@@ -2,10 +2,10 @@
    «خصم نقابة / نادي»: الجهة نقابة / نادي / أخرى + name, card number, card valid-until and a card photo — all required.
    «خصم خاص»: a reason. Fields ride the booking payload as discount_*; the photo is uploaded first to the private bucket
    'booking-discount-cards' (path <auth uid>/<workspace>/<random>) and only its path is sent. The server
-   (clinic_reception_command, 20261121180000) validates, applies it at arrival (≤ 30% directly, above → review) and
+   (clinic_reception_command, 20261121180000) validates, applies it at arrival (maximum 30%) and
    refuses any other discount on that visit. Hook: SSMPDReceptionBookingDiscount.enhance(form, {data, workspace}). */
 (function(w){'use strict';
-var AUTO_MAX=30;
+var MAX=30;   /* owner «خليه ٣٠٪» — the maximum; server: clinic_reception.booking_discount_max() */
 function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function money(n){return Number(n||0).toLocaleString('en-US',{maximumFractionDigits:2})+' ج.م';}
 function chips(name,opts,val){return '<div class="rbd-chips" role="radiogroup">'+opts.map(function(o){return '<label class="rbd-chip"><input type="radio" name="'+name+'" value="'+o[0]+'"'+(o[0]===val?' checked':'')+'><span>'+esc(o[1])+'</span></label>';}).join('')+'</div>';}
@@ -31,9 +31,9 @@ function enhance(form,ctx){if(!form||form.querySelector('[data-rbd]')||!form.ele
     '<div class="rbd-row"><span class="rbd-l">صورة الكارنيه</span><input type="file" accept="image/*,application/pdf" capture="environment" data-rbd-file><input type="hidden" name="discount_card_path" required><small class="rbd-up" data-rbd-up role="status"></small></div>'+
    '</div>'+
    '<label class="rbd-row" data-rbd-reason hidden><span class="rbd-l">سبب الخصم</span><input name="discount_reason" maxlength="300" placeholder="مثلاً قريب موظف"></label>'+
-   '<label class="rbd-row rbd-pct"><span class="rbd-l">نسبة الخصم</span><span class="rbd-pctin"><input name="discount_percent" type="number" min="1" max="100" step="0.5" inputmode="decimal" required dir="ltr"> ٪</span></label>'+
+   '<label class="rbd-row rbd-pct"><span class="rbd-l">نسبة الخصم</span><span class="rbd-pctin"><input name="discount_percent" type="number" min="1" max="'+MAX+'" step="0.5" inputmode="decimal" required dir="ltr"> ٪</span></label>'+
    '<div class="rbd-sum" data-rbd-sum hidden></div><p class="rbd-warn" data-rbd-warn hidden></p>'+
-   '<p class="rbd-note">الخصم بيتطبّق على الخدمة لما المريض يوصل. لحد ٣٠٪ بيتعتمد على طول، وأكتر من كده محتاج موافقة شخص تاني. الحجز اللي عليه الخصم ده مايتعملوش أي خصم تاني ولا سعر تعاقد.</p>'+
+   '<p class="rbd-note">الخصم بيتطبّق على الخدمة لما المريض يوصل. أقصى خصم ٣٠٪. الحجز اللي عليه الخصم ده مايتعملوش أي خصم تاني ولا سعر تعاقد.</p>'+
   '</fieldset>';
  var anchor=form.querySelector('.rbp-cont')||form.querySelector('[data-rbp]')||form.querySelector('.rx-combo-field');
  if(anchor&&anchor.parentNode)anchor.after(box);else form.appendChild(box);
@@ -52,10 +52,10 @@ function enhance(form,ctx){if(!form||form.querySelector('[data-rbd]')||!form.ele
   var s=svc(),q=Math.max(1,+(form.elements.quantity&&form.elements.quantity.value)||1),pr=preview(s&&s.price*q,pct.value);
   sum.hidden=!(on.checked&&pr);if(pr){var who=isSyn?(form.elements.discount_org_name.value.trim()||''):'خصم خاص';
    sum.innerHTML='<span>السعر</span><s>'+money(pr.price)+'</s><span>الخصم ('+esc(+pct.value)+'٪'+(who?' — '+esc(who):'')+')</span><span>− '+money(pr.off)+'</span><span>المريض يدفع</span><b>'+money(pr.net)+'</b>';}
-  var big=on.checked&&+pct.value>AUTO_MAX;warn.hidden=!big;if(big)warn.textContent='الخصم أكبر من ٣٠٪ — هيروح «مراجعة الخصومات» ويتعتمد من حد تاني قبل التحصيل. لحد ما يتعتمد الخدمة مش هتتنفّذ.';}
+  var big=on.checked&&+pct.value>MAX;warn.hidden=!big;if(big)warn.textContent='أقصى خصم على الحجز ٣٠٪ — قلّل النسبة.';}
  file.addEventListener('change',function(){var f=file.files&&file.files[0];path.value='';if(!f)return;if(f.size>8*1024*1024){up.textContent='الصورة أكبر من ٨ ميجا — صوّرها تاني';file.value='';return;}
   up.textContent='جاري رفع الصورة…';uploadCard(ws,f).then(function(p){path.value=p;up.textContent='اترفعت ✓';}).catch(function(e){up.textContent='الرفع ما نجحش: '+((e&&e.message)||'حاول تاني');file.value='';});});
  path.addEventListener('invalid',function(){up.textContent='ارفع صورة الكارنيه';});
  form.addEventListener('input',paint);form.addEventListener('change',paint);on.addEventListener('change',paint);paint();}
-w.SSMPDReceptionBookingDiscount={enhance:enhance,preview:preview,AUTO_MAX:AUTO_MAX};
+w.SSMPDReceptionBookingDiscount={enhance:enhance,preview:preview,MAX:MAX};
 })(window);
