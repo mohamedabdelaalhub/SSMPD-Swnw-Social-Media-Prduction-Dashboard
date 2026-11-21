@@ -8,7 +8,7 @@
  *   ('end_shift' with the count, or 'transfer_request' for a part). The main custodian approves from «الخزائن والورديات». */
 (function (w, d) {
   "use strict";
-  var POLL_MS = 60000, DEN = ["200", "100", "50", "20", "10", "5", "1", "0.5", "0.25"], state = { busy: false, last: 0, seen: {} };
+  var POLL_MS = 60000, DEN = ["200", "100", "50", "20", "10", "5", "1", "0.5", "0.25"], state = { busy: false, last: 0, seen: {}, nudged: {} };
   function rpc(action, payload, token) {
     var c = w.SSMPDDb && w.SSMPDDb.client; if (!c) return Promise.reject(Error("الاتصال مش جاهز"));
     return Promise.resolve(c.rpc("clinic_finance_peer_handover", { p_action: action, p_payload: payload || {}, p_token: token || null })).then(function (r) {
@@ -29,7 +29,8 @@
   }
   function status(box, m) { box.querySelector(".peer-status").textContent = m || ""; }
 
-  function openSend() {
+  function openSend(opts) {
+    opts = opts || {};
     if (d.querySelector("[data-peer-send]")) return Promise.resolve();
     return Promise.all([rpc("options"), rpc("inbox")]).then(function (r) {
       var o = r[0] || {}, mine = (r[1] && r[1].outgoing) || [];
@@ -60,6 +61,7 @@
         f.elements.amount.required = !end; f.querySelector("[data-peer-total]").textContent = "الإجمالي: " + money(total());
         f.querySelector("[data-peer-main-hint]").hidden = f.elements.to.value !== "main";
       }
+      if (opts.to === "main" && main) f.elements.to.value = "main";   // opened from a «سلّم الكاش» nudge
       f.addEventListener("change", sync); f.addEventListener("input", sync); sync();
       var token = uuid();
       f.onsubmit = function (e) {
@@ -106,7 +108,23 @@
     state.last = Date.now();
     rpc("inbox", {}, null).then(function (r) {
       var list = (r && r.incoming) || [], next = list.find(function (h) { return !state.seen[h.id] || Date.now() - state.seen[h.id] > 5 * 60000; });
-      if (next) incoming(next);
+      if (next) incoming(next); else nudges();
+    }).catch(function () {});
+  }
+  /* «سلّم الكاش» (20261122050000): the finance reviewer asked me to hand over; «سلّم دلوقتي» opens the handover with the main treasury chosen */
+  function nudges() {
+    if (d.querySelector("[data-peer-send],[data-peer-in],[data-peer-nudge]")) return;
+    Promise.resolve(w.SSMPDDb.client.rpc("clinic_finance_my_handover_nudges", {})).then(function (r) {
+      var list = (r && !r.error && r.data) || [], n = list.find(function (x) { return !state.nudged[x.id] || Date.now() - state.nudged[x.id] > 10 * 60000; });
+      if (!n || d.querySelector("[data-peer-send],[data-peer-in],[data-peer-nudge]")) return;
+      var box = shell("مطلوب منك تسلّم الكاش", '<p><b>' + esc(n.from_name) + '</b> طالب منك تسلّم كاش وردية «' + esc(n.register) + '» للخزينة الرئيسية.' + (n.note ? ' ملاحظته: ' + esc(n.note) : '') + '</p>' +
+        '<div class="shift-reminder-actions"><button type="button" class="btn btn-primary" data-nudge-go>سلّم دلوقتي</button><button type="button" class="btn" data-nudge-later>بعدين</button></div>', "data-peer-nudge");
+      box.querySelector("[data-nudge-later]").onclick = function () { state.nudged[n.id] = Date.now(); close(box); };
+      box.querySelector("[data-nudge-go]").onclick = function () {
+        close(box); state.nudged[n.id] = Date.now();
+        Promise.resolve(w.SSMPDDb.client.rpc("clinic_finance_handover_nudge_seen", { p_id: n.id })).catch(function () {});
+        openSend({ to: "main" });
+      };
     }).catch(function () {});
   }
   w.SSMPDPeerHandover = { openSend: openSend, poll: function () { poll(true); } };

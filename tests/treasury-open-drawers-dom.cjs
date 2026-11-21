@@ -3,7 +3,7 @@
 const {JSDOM}=require('jsdom'),fs=require('fs'),assert=require('node:assert/strict');
 (async()=>{
 const d=new JSDOM('<body></body>',{runScripts:'outside-only'}),w=d.window;
-let data;w.SSMPDAuth={currentAdmin:{id:'acc'}};w.SSMPDDb={client:{rpc:async fn=>{assert.equal(fn,'clinic_finance_open_drawers');return data instanceof Error?{error:data}:{data};}}};
+let data;w.SSMPDAuth={currentAdmin:{id:'acc'}};const nudges=[];w.SSMPDToast={show:()=>{}};w.SSMPDDb={client:{rpc:async (fn,args)=>{if(fn==='clinic_finance_handover_nudge'){nudges.push(args);return {data:{id:'n1',replayed:false}};}assert.equal(fn,'clinic_finance_open_drawers');return data instanceof Error?{error:data}:{data};}}};
 try{w.eval(fs.readFileSync('assets/js/finance-cash.js','utf8'));}catch(e){}
 const h=w.SSMPDFinanceCash.helpers;assert(h.fillDrawers,'exported');
 const tick=()=>new Promise(r=>setTimeout(r,20));
@@ -17,7 +17,8 @@ assert.match(t,/خزن التحصيل المفتوحة/);assert.match(t,/باس�
 const rows=[...b.querySelectorAll('.fc-drawer')];assert.equal(rows.length,3);
 assert.match(rows[0].textContent,/خزينة منار.*منار.*مستني استلامك.*1,800\.00 ج\.م.*المعدود عند الجرد/s);
 assert.equal(rows[0].querySelector('[data-fin-action]').dataset.finAction,'treasury-review');assert.equal(rows[0].querySelector('[data-fin-action]').dataset.id,'t1');
-assert.match(rows[1].textContent,/لسه ماجردش.*1,200\.00 ج\.م.*النقدي المسجل في العهدة.*اطلب من مازن يضغط «إنهاء الوردية وتسليم النقد»/s);assert(!rows[1].querySelector('button'));
+assert.match(rows[1].textContent,/لسه ماجردش.*1,200\.00 ج\.م.*النقدي المسجل في العهدة.*اطلب منه يسلّم/s);assert.equal(rows[1].querySelector('[data-fc-nudge]').dataset.fcNudge,'s2');
+rows[1].querySelector('[data-fc-nudge]').click();await tick();assert.equal(JSON.stringify(nudges),JSON.stringify([{p_shift:'s2',p_note:''}]));assert.match(rows[1].textContent,/اتبعتله التنبيه/);
 assert.match(rows[2].textContent,/التسليم اترفض.*إعادة الجرد/s);assert(!rows[2].querySelector('button'));
 // main shift not open: no receive button, an «افتح وردية» action instead
 b=await show(Object.assign({},base,{my_main_shift:null}));assert.match(b.textContent,/مش مفتوحة باسمك/);assert.equal(b.querySelector('.fc-drawers-main [data-fin-action]').dataset.finAction,'open');

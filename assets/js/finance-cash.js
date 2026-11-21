@@ -34,10 +34,13 @@ function fillDrawers(body){var db=window.SSMPDDb,box=body.querySelector('[data-f
    if(p){state='<span class="fc-chip is-wait">خلّص الجرد وطلب التسليم — مستني استلامك</span>';amount=p.amount;
     action=p.created_by===me?'<small>إنت اللي طلبت التسليم؛ لازم حد تاني يستلم.</small>':v.my_main_shift?btn('treasury-review',p.id,'استلم النقدية / رفض'):'<small>افتح وردية الرئيسية الأول علشان تستلم.</small>';}
    else if(x.rejected){state='<span class="fc-chip is-bad">التسليم اترفض — مستني إعادة الجرد</span>';action='<small>اطلب من '+esc(x.cashier)+' يضغط «إعادة الجرد بعد رفض التسليم».</small>';}
-   else{state='<span class="fc-chip is-open">الوردية شغالة — لسه ماجردش</span>';action='<small>اطلب من '+esc(x.cashier)+' يضغط «إنهاء الوردية وتسليم النقد» أو يختار «الخزينة الرئيسية» في «تسليم تحصيل لزميل».</small>';}
+   else{state='<span class="fc-chip is-open">الوردية شغالة — لسه ماجردش</span>';action=x.cashier_id===me?'':'<button type="button" class="btn ghost sm" data-fc-nudge="'+esc(x.shift_id)+'">اطلب منه يسلّم</button><small>بيوصله تنبيه، ولما يدوس عليه بيفتحله التسليم للخزينة الرئيسية على طول.</small>';}
    return '<div class="fc-drawer"><div><b>'+esc(x.register)+'</b><small>'+esc(x.cashier)+' — من '+stamp(x.opened_at)+'</small>'+state+'</div><div class="fc-drawer-cash">'+money(amount)+' ج.م<small>'+(p||x.ended_at?'المعدود عند الجرد':'النقدي المسجل في العهدة')+'</small></div><div class="fc-drawer-act">'+action+'</div></div>';}).join('');wire(box);})
  .catch(function(){if(box.isConnected)box.remove();});
- function wire(el){el.querySelectorAll('[data-fin-action]').forEach(function(b){b.onclick=function(){act(b.dataset.finAction,b.dataset.id);};});}}
+ function wire(el){el.querySelectorAll('[data-fin-action]').forEach(function(b){b.onclick=function(){act(b.dataset.finAction,b.dataset.id);};});
+  el.querySelectorAll('[data-fc-nudge]').forEach(function(b){b.onclick=function(){b.disabled=true;Promise.resolve(db.client.rpc('clinic_finance_handover_nudge',{p_shift:b.dataset.fcNudge,p_note:''})).then(function(r){if(r&&r.error)throw r.error;
+   var s=document.createElement('small');s.className='fc-nudged';s.textContent=r&&r.data&&r.data.replayed?'التنبيه متبعت قبل كده — مستني يسلّم.':'اتبعتله التنبيه ✓';b.replaceWith(s);if(window.SSMPDToast)window.SSMPDToast.show('اتبعت التنبيه');})
+   .catch(function(e){b.disabled=false;if(window.SSMPDToast)window.SSMPDToast.show((e&&e.message)||'تعذر إرسال التنبيه','error');});};});}}
 function fillMyShift(body){var db=window.SSMPDDb;/* was an undefined global (ReferenceError) */var box=body.querySelector('[data-fc-my-shift]');if(!box||!db||!db.client)return;var call;try{call=Promise.resolve(db.client.rpc('clinic_finance_my_shift_collections'));}catch(_){box.remove();return;}
  call.then(function(r){if(!r||r.error)throw (r&&r.error)||Error("no data");if(!box.isConnected)return;var list=r.data||[];
   if(!list.length){box.remove();return;}
