@@ -37,6 +37,12 @@ const {JSDOM}=require('jsdom'),fs=require('node:fs'),assert=require('node:assert
  assert.equal(metric('coming'),'2');assert.equal(metric('late'),'1');assert.equal(metric('waiting'),'1');assert.equal(metric('inside'),'1');assert.equal(metric('done'),'2');assert.equal(metric('due'),'1');
  assert(q('.journey-doctor-delayed').textContent.includes('15'));assert(q('[data-journey-action="new_booking"]'),'new booking for reception');
  q('[data-journey-filter="due"]').click();assert.equal(qa('.journey-card').length,1);q('[data-journey-filter="due"]').click();assert.equal(qa('.journey-card').length,7);q('[data-journey-filter="inside"]').click();assert.equal(qa('.journey-card').length,1);q('[data-journey-filter="all"]').click();assert.equal(qa('.journey-card').length,7,'«الكل» resets');
+  const sx=q('[data-journey-search]');
+  {const dsel=q('[data-journey-doctor]'),ssel=q('[data-journey-status]');assert(dsel&&ssel,'doctor + status filters exist');assert.deepEqual([...dsel.options].map(o=>o.textContent),['كل الأطباء','د. سارة']);assert.equal(ssel.options[0].textContent,'كل الحالات');
+  sx.value='سارة';sx.dispatchEvent(new w.Event('input'));assert.equal(qa('.journey-card').length,7,'search also matches the doctor name');sx.value='';sx.dispatchEvent(new w.Event('input'));
+  ssel.value='waiting';ssel.dispatchEvent(new w.Event('change'));assert.deepEqual(qa('.journey-card h4').map(x=>x.textContent),['كريم مستني'],'status filter');
+  assert.equal(q('.journey-f-all strong').textContent.trim().replace(/[^0-9]/g,''),'1','chips count the filtered set');
+  ssel.value='';ssel.dispatchEvent(new w.Event('change'));assert.equal(qa('.journey-card').length,7);}
  const s=q('[data-journey-search]');s.value='0100'+'3';s.dispatchEvent(new w.Event('input'));assert.deepEqual(qa('.journey-card h4').map(x=>x.textContent),['كريم مستني']);
  q('[data-journey-action="clear_filter"]').click();assert.equal(qa('.journey-card').length,7);
  card('5').querySelector('[data-journey-action="collect_due"]').click();assert.equal(collected,'inv5');

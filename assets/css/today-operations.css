@@ -24,7 +24,7 @@ button.journey-metric.is-alert strong{color:#b42318}
 .journey-more-menu .btn{width:100%;justify-content:flex-start;text-align:right}
 .journey-tools>summary{font-size:13px;font-weight:600}
 .journey-tools>summary::after{content:" أدوات"}
-.journey-doctors{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px}
+.journey-doctors{display:flex;flex-wrap:wrap;gap:8px;overflow:visible;padding-bottom:2px}.journey-doctor:has(.journey-more[open]){position:relative;z-index:40}
 .journey-doctor{display:flex;align-items:center;gap:10px;flex:0 0 auto;padding:8px 12px;background:var(--card,#fff)}
 .journey-doctor p{margin-top:2px}
 .journey-doctor .journey-doctor-status{margin:0}
@@ -158,3 +158,8 @@ button.journey-metric.is-alert strong{color:#b42318}
 .journey-pay-due:focus-visible{outline:3px solid #0F369D;outline-offset:2px}
 .journey-pay-due.is-static{cursor:default;box-shadow:none}
 .journey-pay-done{background:#2F7D5C;color:#fff}
+/* doctor + status filters (owner 2026-11-22) — same markup as the booking list */
+.journey-tools-filters{gap:6px}.journey-tools-filters label{font-size:12px;gap:2px;min-width:0}
+.journey-tools-filters input,.journey-tools-filters select{min-height:38px;font-size:14px;padding:4px 10px}
+.journey-tools-filters .rx-tl-pair{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media(min-width:900px){.journey-tools-filters{grid-template-columns:minmax(0,2fr) minmax(0,2fr);align-items:end}}

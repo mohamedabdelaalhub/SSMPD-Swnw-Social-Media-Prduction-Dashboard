@@ -23,7 +23,7 @@ function loadServiceRequestV3(){
 function loadV2(){
  if(window.__SWNWTodayOperationsUXV2||document.querySelector('script[data-today-operations-v2]'))return;
  var s=document.createElement('script');
- s.src='assets/js/today-operations-v2.js?v=booking-gap-20261117-1';
+ s.src='assets/js/today-operations-v2.js?v=confirm-20261122-1';
  s.async=false;
  s.dataset.todayOperationsV2='1';
  document.head.appendChild(s);
