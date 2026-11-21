@@ -1,0 +1,37 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>تسليم التحصيل للخزينة الرئيسية — قايمة الخزن المفتوحة (تصور)</title>
+<link rel="stylesheet" href="../../../assets/css/styles.css">
+<style>
+body{background:#e9edf5;margin:0;padding:24px 12px}.wrap{max-width:760px;margin:0 auto;display:grid;gap:16px}
+.eyebrow{margin:0;font-size:12px!important;color:#8a93a3!important;border-bottom:1px solid #EEF1F6;padding-bottom:8px}
+.card{background:#fff;border-radius:16px;border:1px solid #D5DEEE;padding:18px;display:grid;gap:12px;box-shadow:0 12px 30px rgba(15,54,157,.10)}
+.head{background:#0F369D;color:#fff;border-radius:12px;padding:12px 16px;font-weight:700}
+.card p{margin:0;font-size:13px;color:#3B4658;line-height:1.8}
+.main{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;background:#F4F7FC;border-radius:12px;padding:10px 14px;font-size:13px;color:#16212E}
+.ok{color:#2F7D5C;font-weight:700}
+.row{display:grid;grid-template-columns:1fr auto;gap:10px 16px;align-items:center;border:1px solid #E3E8F2;border-radius:12px;padding:12px 14px}
+.row b{font-size:15px;color:#16212E}.row small{display:block;font-size:12px;color:#5b6577;margin-top:2px}
+.cash{font-size:18px;font-weight:700;color:#0F369D;text-align:left}
+.chip{display:inline-block;font-size:12px;border-radius:999px;padding:2px 10px;margin-top:6px}
+.c-open{background:#EAF0FB;color:#0F369D}.c-wait{background:#FDEDE5;color:#B8461A}.c-rej{background:#FBE9E6;color:#D0402A}
+.acts{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap}
+.note{font-size:12px!important;color:#5b6577!important}
+</style></head><body><div class="wrap">
+<section class="card"><p class="eyebrow">تصور (بيانات تجريبية). شاشة «الخزائن والورديات» عند المحاسب / المدير المالي: بدل زرار «طلب تسليم للرئيسية» لوحده، تظهر قايمة بكل خزن التحصيل المفتوحة اللي فيها فلوس.</p>
+ <div class="head">تسليم التحصيل للخزينة الرئيسية</div>
+ <div class="main"><span>وردية الخزينة الرئيسية باسمك: <span class="ok">مفتوحة ✓</span></span><span>لو مقفولة يظهر هنا زرار «افتح وردية الرئيسية»</span></div>
+
+ <div class="row"><div><b>خزينة الاستقبال 1</b><small>الموظفة: موظفة استقبال (مثال) — الوردية من 9:00 ص</small><span class="chip c-wait">خلّصت الجرد وطلبت التسليم — مستني استلامك</span></div>
+  <div class="cash">3,450 ج.م<small>المعدود عند الجرد</small></div>
+  <div class="acts"><button class="btn btn-primary" type="button">استلم النقدية</button><button class="btn" type="button">رفض التسليم</button></div></div>
+
+ <div class="row"><div><b>خزينة الاستقبال 2</b><small>الموظف: موظف استقبال (مثال) — الوردية من 2:00 م</small><span class="chip c-open">الوردية شغالة — لسه ماجردش</span></div>
+  <div class="cash">1,200 ج.م<small>النقدي المسجل في العهدة</small></div>
+  <div class="acts"><button class="btn" type="button">اطلب منه يجرد ويسلّم</button></div></div>
+
+ <div class="row"><div><b>خزينة الحجوزات</b><small>الموظفة: موظفة حجوزات (مثال) — الوردية من 10:00 ص</small><span class="chip c-rej">التسليم اترفض — مستني إعادة الجرد</span></div>
+  <div class="cash">800 ج.م<small>المعدود عند الجرد</small></div>
+  <div class="acts"><button class="btn" type="button">اطلب إعادة الجرد</button></div></div>
+
+ <p class="note">«استلم النقدية» بيفتح نفس نافذة الاعتماد الحالية: «استلمت النقد فعليًا — اعتماد» + ملاحظة. «اطلب منه يجرد ويسلّم» بيبعت للموظف تنبيه بس، ومابيعملش الجرد بداله: العدّ والتسليم من حق صاحب العهدة نفسه. الخزن اللي ماعليهاش فلوس مابتظهرش.</p>
+</section>
+</div></body></html>
