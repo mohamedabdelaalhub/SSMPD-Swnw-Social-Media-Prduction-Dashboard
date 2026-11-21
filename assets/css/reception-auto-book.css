@@ -44,3 +44,11 @@
 @media(max-width:700px){.rx-ab-sum{grid-template-columns:minmax(0,1fr)}.rx-ab-modal .rx-ab-time{grid-template-columns:minmax(0,1fr)}}
 @media(max-width:560px){.rx-ab-backdrop{align-items:end;padding:0}.rx-ab-modal{border-radius:22px 22px 0 0;width:100%;max-height:90dvh}.rx-ab-tile .rx-ab-go{display:none}}
 .rx-ab-time .rx-ab-nm{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.rx-ab-time .rx-ab-nm strong{font-size:14.5px}.rx-ab-time .rx-ab-sub{font-size:12px;color:#65748a;margin-top:2px}
+/* new / old split of «حجوزات من غير ساعة» (owner 2026-11-22; colours from the approved palette) */
+.rx-ab-kind{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;white-space:nowrap}
+.rx-ab-kn{background:#00B0BD;color:#fff}.rx-ab-ko{background:#525B6F;color:#fff}
+.rx-ab-tile.rx-ab-tn{border-color:#00B0BD}.rx-ab-tile.rx-ab-to{border-color:#525B6F}
+.rx-ab-day{display:flex;align-items:baseline;gap:8px;margin:10px 0 2px;color:#0F369D;min-width:0}.rx-ab-day b{font-size:15px}.rx-ab-day small{color:#5b6b82;font-size:12px}
+.rx-ab-seg .rx-ab-kold.on{background:#525B6F;border-color:#525B6F;color:#fff}
+.rx-ab-tools+.rx-ab-seg{margin-top:2px}
+.rx-ab-seg:empty{display:none}

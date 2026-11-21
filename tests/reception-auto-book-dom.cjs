@@ -25,7 +25,7 @@ const fs=require('fs'),assert=require('node:assert/strict'),{JSDOM}=require('jsd
  assert.ok(host.classList.contains('rx-ab-on'),'old Masa import list hidden when automatic booking is on');
  // long lists: the screen shows two summary tiles only; rows live in a searchable, paged popup (owner 2026-11-22)
  assert.equal(box.querySelectorAll('.rx-ab-item').length,0,'no rows inline');
- assert.equal(box.querySelectorAll('.rx-ab-tile').length,2);assert.match(box.querySelector('[data-ab-open="times"]').textContent,/1.*حجوزات من غير ساعة/);assert.match(box.querySelector('[data-ab-open="review"]').textContent,/3.*حجوزات تحتاج استكمال/);
+ assert.equal(box.querySelectorAll('.rx-ab-tile').length,2);assert.match(box.querySelector('[data-ab-open="times-new"]').textContent,/1.*حجوزات من غير ساعة/);assert.match(box.querySelector('[data-ab-open="review"]').textContent,/3.*حجوزات تحتاج استكمال/);
  const doc=w.document,open=t=>{box.querySelector('[data-ab-open="'+t+'"]').click();return doc.querySelector('.rx-ab-modal');};
  let m=open('review');assert.match(m.textContent,/حجوزات تحتاج استكمال \(3\)/);assert.match(m.textContent,/P-2026-000188/);assert.match(m.textContent,/افتح ملف جديد باسم «يوسف»/);
  // «new file» needs an age
@@ -39,7 +39,7 @@ const fs=require('fs'),assert=require('node:assert/strict'),{JSDOM}=require('jsd
  m=doc.querySelector('.rx-ab-modal');const sv=[...m.querySelectorAll('.rx-ab-item')].find(x=>x.querySelector('[data-ab-svc]'));sv.querySelector('[data-ab-svc]').value='s1';sv.querySelector('[data-ab="service"]').click();await new Promise(r=>setTimeout(r,0));
  assert.deepEqual(calls.at(-1)[1].p_payload,{id:'e5',service_id:'s1'});
  doc.querySelector('[data-ab-close]').click();assert.equal(doc.querySelector('.rx-ab-modal'),null,'popup closes');
- m=open('times');const tm=m.querySelector('.rx-ab-time');tm.querySelector('[data-ab-time]').value='16:20';tm.querySelector('[data-ab="time"]').click();await new Promise(r=>setTimeout(r,0));
+ m=open('times-new');const tm=m.querySelector('.rx-ab-time');tm.querySelector('[data-ab-time]').value='16:20';tm.querySelector('[data-ab="time"]').click();await new Promise(r=>setTimeout(r,0));
  assert.equal(calls.at(-1)[1].p_action,'set_time');assert.equal(new Date(calls.at(-1)[1].p_payload.starts_at).toISOString(),w.SSMPDReceptionAutoBook.cairoISO(T,'16:20'));
  // Cairo offset (winter +02:00, summer +03:00)
  assert.equal(w.SSMPDReceptionAutoBook.cairoISO('2026-01-15','10:00'),'2026-01-15T08:00:00.000Z');
@@ -50,7 +50,7 @@ const fs=require('fs'),assert=require('node:assert/strict'),{JSDOM}=require('jsd
 // search, source filter and paging (15 per page)
  for(let i=0;i<40;i++)rows.push({id:'p'+i,source:i%2?'whatsapp':'masa',state:'needs_time',day:T,customer_name:'مريض '+i,phone:'0100000'+String(1000+i),doctor_name:'د. تجربة'});
  await w.SSMPDReceptionAutoBook.decorate(c,'appointments');
- m=doc.querySelector('.rx-ab-modal')||open('times');assert.equal(m.querySelectorAll('.rx-ab-time').length,15,'15 per page');assert.match(m.querySelector('.rx-ab-cnt').textContent,/1–15 من 41/);
+ m=doc.querySelector('.rx-ab-modal')||open('times-new');assert.equal(m.querySelectorAll('.rx-ab-time').length,15,'15 per page');assert.match(m.querySelector('.rx-ab-cnt').textContent,/1–15 من 41/);
  m.querySelector('[data-ab-page="1"]').click();assert.match(doc.querySelector('.rx-ab-cnt').textContent,/16–30 من 41/);
  const q=doc.querySelector('[data-ab-q]');q.value='102';q.dispatchEvent(new w.Event('input',{bubbles:true}));assert.equal(doc.querySelectorAll('.rx-ab-modal .rx-ab-time').length,10,'phone search');
  q.value='';q.dispatchEvent(new w.Event('input',{bubbles:true}));doc.querySelector('[data-ab-src="whatsapp"]').click();assert.ok([...doc.querySelectorAll('.rx-ab-modal .rx-ab-time')].every(x=>x.textContent.includes('من الواتساب')),'source filter');
