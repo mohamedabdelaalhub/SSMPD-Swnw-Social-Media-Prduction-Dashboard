@@ -70,12 +70,13 @@ function boardTable(rows){
     return '<tr><td>'+esc(r.patient_name)+'</td><td dir="ltr">'+esc(r.phone)+'</td><td>'+esc(r.service)+'</td><td>'+esc(r.provider)+'</td><td>'+esc(STATUS[r.status]||r.status)+'</td><td>'+acts+'</td></tr>';
   }).join('')+'</tbody></table></div>';
 }
+function toolsBox(shell){var box=shell.querySelector(':scope > details.rx-more-tools');if(!box){box=document.createElement('details');box.className='rx-more-tools';box.innerHTML='<summary>أدوات إضافية</summary><div class="rx-more-body"></div>';shell.appendChild(box);}return box.querySelector('.rx-more-body');}
 function decorate(c,section){
   if(section!=='operations'||!c.host)return;
   var shell=c.host.querySelector('.rx-shell');if(!shell)return;
   var node=document.createElement('section');
   node.innerHTML='<div class="rx-actions">'+c.btn('so-order','','تفاصيل طلب الخدمة (إحالة / تنفيذ / مزوّد)')+c.btn('so-board','','لوحة المزوّدين الخارجيين')+c.btn('so-list','','حالة كل طلبات الخدمة')+c.btn('so-print','','طباعة مطالبة تأمينية')+(c.data.can_manage?c.btn('so-setup','','إعداد طلبات الخدمة'):'')+'</div>';
-  shell.appendChild(node);
+  toolsBox(shell).appendChild(node);
 }
 function act(a,id,c){
   if(a==='so-order'){orderForm(c);return true;}
@@ -245,5 +246,5 @@ function setup(c){
   },true);
   reload().catch(function(e){root.querySelector('[data-so-body]').textContent=(e&&e.message)||'تعذر التحميل';});
 }
-w.SSMPDReceptionServiceOrders={decorate:decorate,act:act,_pure:{claimOrders:claimOrders,externalAllowed:externalAllowed,needsBillingParty:needsBillingParty,providersFor:providersFor,performersFor:performersFor,referrers:referrers,nextStatuses:nextStatuses,buildExt:buildExt,boardTable:boardTable,validateReportFile:validateReportFile,notifyMessage:notifyMessage,safeFileName:safeFileName,reportPath:reportPath,buildSetup:buildSetup,setupTab:setupTab}};
+w.SSMPDReceptionServiceOrders={toolsBox:toolsBox,decorate:decorate,act:act,_pure:{claimOrders:claimOrders,externalAllowed:externalAllowed,needsBillingParty:needsBillingParty,providersFor:providersFor,performersFor:performersFor,referrers:referrers,nextStatuses:nextStatuses,buildExt:buildExt,boardTable:boardTable,validateReportFile:validateReportFile,notifyMessage:notifyMessage,safeFileName:safeFileName,reportPath:reportPath,buildSetup:buildSetup,setupTab:setupTab}};
 })(typeof window!=='undefined'?window:globalThis);
