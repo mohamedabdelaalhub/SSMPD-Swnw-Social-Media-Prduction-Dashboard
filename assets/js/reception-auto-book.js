@@ -27,7 +27,7 @@
   function reviewRow(r,d){var a='',body='';
     if(r.review_kind==='patient'&&r.candidate){
       body='<div class="rx-ab-vs"><div><b>الاسم في الحجز</b>'+who(r)+'</div><div><b>الملف الموجود بنفس الرقم</b>'+esc(r.candidate.full_name)+' · <bdi dir="ltr">'+esc(r.candidate.patient_code)+'</bdi>'+(r.candidate.last_visit_date?' · آخر زيارة '+esc(r.candidate.last_visit_date):'')+'</div></div>';
-      a='<label class="rx-ab-age">السن <input type="number" min="0" max="130" inputmode="numeric" data-ab-age></label><button type="button" class="btn btn-primary" data-ab="new" data-id="'+esc(r.id)+'">افتح ملف جديد باسم «'+esc((r.customer_name||'').split(/\s+/)[0])+'»</button><button type="button" class="btn" data-ab="existing" data-id="'+esc(r.id)+'">نفس المريض — اربطه بالملف الموجود</button>';
+      a='<div class="rx-ab-po" data-ab-po><b>صاحب الرقم للملف الجديد</b><div class="po-chips">'+[['husband','الزوج'],['wife','الزوجة'],['mother','الأم'],['father','الأب'],['self','نفس المريض'],['other','أخرى']].map(function(o){return '<button type="button" class="po-chip" data-po="'+o[0]+'" aria-pressed="false">'+o[1]+'</button>';}).join('')+'</div><input class="po-note" data-po-note maxlength="60" placeholder="مثلاً: الأخ، الجدة" hidden></div>'+'<label class="rx-ab-age">السن <input type="number" min="0" max="130" inputmode="numeric" data-ab-age></label><button type="button" class="btn btn-primary" data-ab="new" data-id="'+esc(r.id)+'">افتح ملف جديد باسم «'+esc((r.customer_name||'').split(/\s+/)[0])+'»</button><button type="button" class="btn" data-ab="existing" data-id="'+esc(r.id)+'">نفس المريض — اربطه بالملف الموجود</button>';
     }else if(r.review_kind==='patient'||r.review_kind==='age'){
       a='<label class="rx-ab-age">السن <input type="number" min="0" max="130" inputmode="numeric" data-ab-age></label><button type="button" class="btn btn-primary" data-ab="new" data-id="'+esc(r.id)+'">افتح الملف وسجّل الموعد</button>';
     }else if(r.review_kind==='service'){
@@ -54,10 +54,11 @@
     if(times.length)html+='<section class="rx-mode-card rx-ab-card"><h4>حجوزات من غير ساعة ('+times.length+')</h4>'+times.map(timeRow).join('')+'</section>';
     if(review.length)html+='<section class="rx-mode-card rx-ab-review"><h4>⚠️ حجوزات تحتاج استكمال ('+review.length+')</h4><p>الحجوزات دي جت من ماسا أو الواتساب أو البوابة ومقدرتش تتسجّل لوحدها. اختار المطلوب وهتتسجّل على طول.</p>'+review.map(function(r){return reviewRow(r,d);}).join('')+'</section>';
     box.innerHTML=html;box.hidden=false;c.host.classList.add('rx-ab-on');chips(c.host,rows);
+    box.querySelectorAll('[data-ab-po]').forEach(function(pb){pb.addEventListener('click',function(e){var c=e.target.closest&&e.target.closest('[data-po]');if(!c)return;pb.querySelectorAll('[data-po]').forEach(function(x){x.classList.toggle('on',x===c);x.setAttribute('aria-pressed',String(x===c));});pb.querySelector('[data-po-note]').hidden=c.getAttribute('data-po')!=='other';});});
     box.querySelectorAll('[data-ab]').forEach(function(b){b.onclick=function(){var a=b.getAttribute('data-ab'),item=b.closest('.rx-ab-item'),p={id:b.getAttribute('data-id')},act;
       try{
         if(a==='existing'){act='resolve_patient';p.choice='existing';}
-        else if(a==='new'){act='resolve_patient';p.choice='new';var ag=item.querySelector('[data-ab-age]');if(!ag||ag.value==='')throw new Error('اكتب سن المريض الأول');p.age=+ag.value;}
+        else if(a==='new'){act='resolve_patient';p.choice='new';var ag=item.querySelector('[data-ab-age]');if(!ag||ag.value==='')throw new Error('اكتب سن المريض الأول');p.age=+ag.value;var pob=item.querySelector('[data-ab-po]');if(pob){var po=pob.querySelector('[data-po].on');if(!po)throw new Error('الرقم ده عليه ملف تاني — اختار صاحب الرقم للملف الجديد');p.phone_owner=po.getAttribute('data-po');if(p.phone_owner==='other'){p.phone_owner_note=(pob.querySelector('[data-po-note]').value||'').trim();if(!p.phone_owner_note)throw new Error('اكتب صاحب الرقم مين (مثلاً: الأخ)');}}}
         else if(a==='service'){act='set_service';p.service_id=item.querySelector('[data-ab-svc]').value;if(!p.service_id)throw new Error('اختار الخدمة');}
         else if(a==='time'){act='set_time';p.starts_at=cairoISO(b.getAttribute('data-day'),item.querySelector('[data-ab-time]').value);}
         else if(a==='retry'){act='retry';}

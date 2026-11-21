@@ -359,7 +359,7 @@
     backdrop.className = "modal-backdrop";
     backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>مريض جديد</h3><button class="modal-close">×</button></div>' +
       '<div class="field"><label>الاسم بالكامل</label><input id="np-name"></div>' +
-      "<div class=\"field\"><label> <!--ssmpd-i18n:%D8%B1%D9%82%D9%85%20%D8%A7%D9%84%D9%87%D8%A7%D8%AA%D9%81-->رقم الهاتف</label><input id=\"np-phone\" placeholder=\"01xxxxxxxxx\"></div>" +
+      "<div class=\"field\"><label> <!--ssmpd-i18n:%D8%B1%D9%82%D9%85%20%D8%A7%D9%84%D9%87%D8%A7%D8%AA%D9%81-->رقم الهاتف</label><input id=\"np-phone\" placeholder=\"01xxxxxxxxx\"></div>" + phoneOwnerField("np", "", "") +
       "<div class=\"field\"><label> <!--ssmpd-i18n:%D8%A7%D9%84%D8%A8%D8%B1%D9%8A%D8%AF%20%D8%A7%D9%84%D8%A5%D9%84%D9%83%D8%AA%D8%B1%D9%88%D9%86%D9%8A-->البريد الإلكتروني</label><input id=\"np-email\" type=\"email\" placeholder=\"name@example.com\"></div>" +
       '<div class="field"><label>الرقم القومي (اختياري)</label><input id="np-nid" maxlength="14"></div>' +
       "<div class=\"field\"><label> <!--ssmpd-i18n:%D8%A7%D9%84%D8%B3%D9%86-->السن</label><input id=\"np-age\" type=\"number\" min=\"0\"></div>" +
@@ -371,8 +371,8 @@
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
     backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
 
-    var known=document.createElement('div'),lookupVersion=0;known.setAttribute('data-known-patients','');backdrop.querySelector('#np-phone').closest('.field').after(known);
-    backdrop.querySelector('#np-phone').onchange=function(){var phone=this.value,n=++lookupVersion;known.replaceChildren();if(!window.SSMPDDb.psychologyLookup||phone.replace(/[^0-9٠-٩]/g,'').length<8)return;window.SSMPDDb.psychologyLookup(phone).then(function(rows){if(n!==lookupVersion||!backdrop.isConnected)return;known.innerHTML=(rows.length?'<p>ملفات مسجلة بنفس التليفون — اختر المريض الحالي بدل إنشاء ملف آخر</p>':'')+rows.map(function(p,i){return '<button class="btn ghost" type="button" data-known="'+i+'">'+escapeHtml(p.full_name)+' — '+escapeHtml(p.patient_code)+'</button>';}).join('');known.querySelectorAll('[data-known]').forEach(function(b){b.onclick=function(){var p=rows[+b.dataset.known];backdrop.remove();if(onCreated)onCreated(p);else window.SSMPDRenderPatients.openPatientById(p.id);};});}).catch(function(){known.textContent='تعذر فحص الملفات الحالية. نراجع التكرار أيضًا عند الحفظ.';});};
+    var known=document.createElement('div'),lookupVersion=0;known.setAttribute('data-known-patients','');backdrop.querySelector('[data-phone-owner]').after(known);wirePhoneOwner(backdrop);
+    backdrop.querySelector('#np-phone').onchange=function(){var phone=this.value,n=++lookupVersion;known.replaceChildren();if(!window.SSMPDDb.psychologyLookup||phone.replace(/[^0-9٠-٩]/g,'').length<8)return;window.SSMPDDb.psychologyLookup(phone).then(function(rows){if(n!==lookupVersion||!backdrop.isConnected)return;markPhoneOwnerRequired(backdrop,rows.length>0);known.innerHTML=(rows.length?'<p>ملفات مسجلة بنفس التليفون — لو ده نفس المريض افتح ملفه، ولو شخص تاني اختار «صاحب الرقم» فوق</p>':'')+rows.map(function(p,i){return '<button class="btn ghost" type="button" data-known="'+i+'">'+escapeHtml(p.full_name)+' — '+escapeHtml(p.patient_code)+'</button>';}).join('');known.querySelectorAll('[data-known]').forEach(function(b){b.onclick=function(){var p=rows[+b.dataset.known];backdrop.remove();if(onCreated)onCreated(p);else window.SSMPDRenderPatients.openPatientById(p.id);};});}).catch(function(){known.textContent='تعذر فحص الملفات الحالية. نراجع التكرار أيضًا عند الحفظ.';});};
 
     // عقود نشطة فقط: المريض الجديد لا يُنسب لجهة منتهية أو تحت تفاوض.
     window.SSMPDDb.listActiveContracts().then(function (contracts) {
@@ -396,7 +396,11 @@
       if(full_name.split(/\s+/).filter(Boolean).length<2){T.show("اكتب اسم المريض من كلمتين على الأقل","error");return;}
       if(!phone||phone.replace(/[^0-9٠-٩]/g,"").length<8){T.show("اكتب رقم تليفون المريض","error");return;}
       if(age===""||!Number.isInteger(Number(age))||Number(age)<0||Number(age)>130){T.show("اكتب السن من صفر إلى130 سنة","error");return;}
+      var po=readPhoneOwner(backdrop),poBox=backdrop.querySelector('[data-phone-owner]');
+      if(poBox&&poBox.dataset.required&&!po.phone_owner){markPhoneOwnerRequired(backdrop,true);T.show("الرقم ده عليه ملف تاني — اختار صاحب الرقم","error");return;}
+      if(po.phone_owner==="other"&&!po.phone_owner_note){T.show("اكتب صاحب الرقم مين (مثلاً: الأخ)","error");return;}
       window.SSMPDDb.createPatientArchive({
+        phone_owner: po.phone_owner || undefined, phone_owner_note: po.phone_owner_note || undefined,
         full_name: full_name, phone: phone, email: email || undefined, national_id: national_id || undefined,
         age: age || undefined, gender: gender || undefined, medical_record_no: medical_record_no || undefined,
         contract_id: contract_id
@@ -411,12 +415,48 @@
     };
   }
 
+  // «صاحب الرقم» (owner 2026-11-21): who the phone belongs to — required when the phone is already on another file.
+  var PHONE_OWNERS = [["self","نفس المريض"],["husband","الزوج"],["wife","الزوجة"],["mother","الأم"],["father","الأب"],["other","أخرى"]];
+  var PHONE_OWNER_TAG = { husband: "رقم الزوج", wife: "رقم الزوجة", mother: "رقم الأم", father: "رقم الأب" };
+  function phoneOwnerTag(p) {
+    if (!p || !p.phone_owner || p.phone_owner === "self") return "";
+    var t = p.phone_owner === "other" ? ("رقم " + (p.phone_owner_note || "قريب")) : PHONE_OWNER_TAG[p.phone_owner];
+    return ' <span class="po-tag" data-phone-owner-tag>' + escapeHtml(t || "") + "</span>";
+  }
+  function phoneOwnerField(prefix, current, note) {
+    return '<div class="field" data-phone-owner="' + prefix + '"><label>صاحب الرقم</label><div class="po-chips">' +
+      PHONE_OWNERS.map(function (o) { return '<button type="button" class="po-chip' + (current === o[0] ? " on" : "") + '" data-po="' + o[0] + '" aria-pressed="' + (current === o[0]) + '">' + o[1] + "</button>"; }).join("") +
+      '</div><input class="po-note" data-po-note maxlength="60" placeholder="مثلاً: الأخ، الجدة" value="' + escapeHtml(note || "") + '"' + (current === "other" ? "" : " hidden") + '>' +
+      '<small class="po-hint" data-po-hint hidden>الرقم ده عليه ملف تاني — لازم تختار صاحب الرقم.</small></div>';
+  }
+  function wirePhoneOwner(root) {
+    var box = root.querySelector("[data-phone-owner]"); if (!box) return;
+    box.addEventListener("click", function (e) {
+      var b = e.target.closest && e.target.closest("[data-po]"); if (!b) return;
+      var on = !b.classList.contains("on");
+      box.querySelectorAll("[data-po]").forEach(function (x) { x.classList.remove("on"); x.setAttribute("aria-pressed", "false"); });
+      if (on) { b.classList.add("on"); b.setAttribute("aria-pressed", "true"); }
+      box.querySelector("[data-po-note]").hidden = !(on && b.dataset.po === "other");
+      box.querySelector("[data-po-hint]").hidden = true;
+    });
+  }
+  function readPhoneOwner(root) {
+    var box = root.querySelector("[data-phone-owner]"), on = box && box.querySelector("[data-po].on");
+    var v = on ? on.dataset.po : "", note = v === "other" ? box.querySelector("[data-po-note]").value.trim() : "";
+    return { phone_owner: v || null, phone_owner_note: note || null };
+  }
+  function markPhoneOwnerRequired(root, required) {
+    var box = root.querySelector("[data-phone-owner]"); if (!box) return;
+    box.dataset.required = required ? "1" : "";
+    box.querySelector("[data-po-hint]").hidden = !required || !!box.querySelector("[data-po].on");
+  }
+
   function openEditPatientModal(patient, onSaved) {
     var backdrop = document.createElement("div");
     backdrop.className = "modal-backdrop";
     backdrop.innerHTML = '<div class="modal"><div class="modal-head"><h3>تعديل بيانات المريض</h3><button class="modal-close">×</button></div>' +
       '<div class="field"><label>الاسم بالكامل</label><input id="ep-name" value="' + escapeHtml(patient.full_name || "") + '"></div>' +
-      "<div class=\"field\"><label> <!--ssmpd-i18n:%D8%B1%D9%82%D9%85%20%D8%A7%D9%84%D9%87%D8%A7%D8%AA%D9%81-->رقم الهاتف</label><input id=\"ep-phone\" value=\"" + escapeHtml(patient.phone || "") + '"></div>' +
+      "<div class=\"field\"><label> <!--ssmpd-i18n:%D8%B1%D9%82%D9%85%20%D8%A7%D9%84%D9%87%D8%A7%D8%AA%D9%81-->رقم الهاتف</label><input id=\"ep-phone\" value=\"" + escapeHtml(patient.phone || "") + '"></div>' + phoneOwnerField("ep", patient.phone_owner || "", patient.phone_owner_note || "") +
       "<div class=\"field\"><label> <!--ssmpd-i18n:%D8%A7%D9%84%D8%A8%D8%B1%D9%8A%D8%AF%20%D8%A7%D9%84%D8%A5%D9%84%D9%83%D8%AA%D8%B1%D9%88%D9%86%D9%8A-->البريد الإلكتروني</label><input id=\"ep-email\" type=\"email\" value=\"" + escapeHtml(patient.email || "") + '"></div>' +
       "<div class=\"field\"><label> <!--ssmpd-i18n:%D8%A7%D9%84%D8%B3%D9%86-->السن</label><input id=\"ep-age\" type=\"number\" min=\"0\" value=\"" + escapeHtml(patient.age != null ? String(patient.age) : "") + '"></div>' +
       "<div class=\"field\"><label> <!--ssmpd-i18n:%D8%A7%D9%84%D9%86%D9%88%D8%B9-->النوع</label><select id=\"ep-gender\">" +
@@ -431,6 +471,7 @@
     backdrop.querySelector(".modal-close").onclick = function () { backdrop.remove(); };
     backdrop.onclick = function (e) { if (e.target === backdrop) backdrop.remove(); };
 
+    wirePhoneOwner(backdrop);
     document.getElementById("ep-save").onclick = function () {
       var full_name = cleanPatientName(document.getElementById("ep-name").value);
       var phone = document.getElementById("ep-phone").value.trim();
@@ -449,6 +490,9 @@
         medical_record_no: medical_record_no || null,
         last_visit_date: last_visit_date || null
       };
+      var epo = readPhoneOwner(backdrop);
+      if (epo.phone_owner === "other" && !epo.phone_owner_note) { T.show("اكتب صاحب الرقم مين (مثلاً: الأخ)", "error"); return; }
+      patch.phone_owner = epo.phone_owner; patch.phone_owner_note = epo.phone_owner_note;
       window.SSMPDDb.updatePatientRecord(patient.id, patch)
         .then(function () {
           T.show("اتحدثت بيانات المريض");
@@ -2624,7 +2668,7 @@
       ' (' + escapeHtml(patient.patient_code || "") + ')</h2>';
 
     html += '<h3 style="font-size:14px;border-bottom:1px solid #ccc;padding-bottom:4px;">البيانات الشخصية</h3>';
-    html += '<p>الهاتف: ' + escapeHtml(patient.phone || "—") + '<br>' +
+    html += '<p>الهاتف: ' + escapeHtml(patient.phone || "—") + phoneOwnerTag(patient) + '<br>' +
       'السن: ' + escapeHtml(patient.age != null ? String(patient.age) : "—") + '<br>' +
       'النوع: ' + (patient.gender === "male" ? "ذكر" : patient.gender === "female" ? "أنثى" : "—") + '<br>' +
       'الرقم الطبي: ' + escapeHtml(patient.medical_record_no || "—") + '<br>' +
@@ -3490,7 +3534,7 @@
       (canBasicEdit() ? "<button class=\"btn ghost sm\" data-edit-personal=\"1\"> <!--ssmpd-i18n:%D8%AA%D8%B9%D8%AF%D9%8A%D9%84-->تعديل</button>" : '') +
       '</h3>' +
       '<p style="font-size:12px;color:var(--c-muted);line-height:1.9;">' +
-      'الهاتف: ' + escapeHtml(patient.phone || "—") + '<br>' +
+      'الهاتف: ' + escapeHtml(patient.phone || "—") + phoneOwnerTag(patient) + '<br>' +
       'السن: ' + escapeHtml(patient.age != null ? String(patient.age) : "—") + '<br>' +
       'النوع: ' + (patient.gender === "male" ? "ذكر" : patient.gender === "female" ? "أنثى" : "—") + '<br>' +
       'الرقم الطبي: ' + escapeHtml(patient.medical_record_no || "—") + '<br>' +
@@ -4289,6 +4333,7 @@
 
   window.SSMPDRenderPatients = {
     _cleanName: cleanPatientName,
+    _phoneOwnerTag: phoneOwnerTag,
     specialistForms:{speechAssessment:openSpeechProfileFormModal,psychologyAssessment:openPsychologyProfileFormModal,speechSession:openSpeechSessionFormModal,psychologySession:openPsychologySessionFormModal},
     render: render, openSearch: openSearch, openCreate: function(onCreated) { openNewPatientModal(null,onCreated); },
     openPatientById: function (id) { openPatientModal(null, null, id); },

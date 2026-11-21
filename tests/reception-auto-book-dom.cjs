@@ -28,8 +28,9 @@ const fs=require('fs'),assert=require('node:assert/strict'),{JSDOM}=require('jsd
  // «new file» needs an age
  const item=[...box.querySelectorAll('.rx-ab-item')].find(x=>x.textContent.includes('P-2026-000188'));
  item.querySelector('[data-ab="new"]').click();assert.equal(toasts.pop()[0],'اكتب سن المريض الأول');
- item.querySelector('[data-ab-age]').value='9';item.querySelector('[data-ab="new"]').click();await new Promise(r=>setTimeout(r,0));
- assert.deepEqual(calls.at(-1)[1],{p_workspace:'ws1',p_action:'resolve_patient',p_payload:{id:'e4',choice:'new',age:9}});assert.equal(loads,1);
+ item.querySelector('[data-ab-age]').value='9';item.querySelector('[data-ab="new"]').click();assert.match(toasts.pop()[0],/اختار صاحب الرقم/,'shared phone: relationship required (owner 2026-11-21)');
+ item.querySelector('[data-po="mother"]').click();item.querySelector('[data-ab="new"]').click();await new Promise(r=>setTimeout(r,0));
+ assert.deepEqual(calls.at(-1)[1],{p_workspace:'ws1',p_action:'resolve_patient',p_payload:{id:'e4',choice:'new',age:9,phone_owner:'mother'}});assert.equal(loads,1);
  item.querySelector('[data-ab="existing"]').click();await new Promise(r=>setTimeout(r,0));assert.equal(calls.at(-1)[1].p_payload.choice,'existing');
  // service + time
  const sv=[...box.querySelectorAll('.rx-ab-item')].find(x=>x.querySelector('[data-ab-svc]'));sv.querySelector('[data-ab-svc]').value='s1';sv.querySelector('[data-ab="service"]').click();await new Promise(r=>setTimeout(r,0));

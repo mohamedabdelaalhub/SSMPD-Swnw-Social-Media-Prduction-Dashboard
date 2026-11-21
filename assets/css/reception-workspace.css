@@ -185,3 +185,11 @@
 .rx-modal .rx-walkin input[type=checkbox]:focus-visible,.rx-modal .rx-external .rx-check input[type=checkbox]:focus-visible{outline:3px solid rgba(15,54,157,.35);outline-offset:2px}
 .rx-modal .rx-form>footer{grid-column:1/-1;position:sticky;bottom:-22px;z-index:6;display:flex;gap:10px;margin-bottom:-22px;padding:12px 0 22px;background:#fff;border-top:1px solid var(--c-border,#E6E8EE)}
 @media(max-width:640px){.rx-modal .rx-card{grid-template-columns:minmax(0,1fr)}.rx-modal .rx-c-dept,.rx-modal .rx-c-prov{grid-column:1/-1}}
+
+/* «تسجيل حضور المريض»: sessions / areas in one visit (owner 2026-11-21) */
+.rx-arrival-qty{display:grid;gap:8px}
+.rx-aq-label{font-size:13px}
+.rx-aq-step{display:flex;align-items:center;gap:8px}
+.rx-aq-step .btn{width:40px;height:40px;padding:0;font-size:20px}
+.rx-aq-step input{width:72px;text-align:center;font-size:18px;font-weight:700;color:#0F369D}
+.rx-aq-sum{margin:0;font-size:13px;background:#F4F7FC;border-radius:10px;padding:8px 10px;color:#16212E}
