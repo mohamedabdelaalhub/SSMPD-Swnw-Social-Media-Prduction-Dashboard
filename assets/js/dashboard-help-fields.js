@@ -11901,6 +11901,88 @@
       "reviewed": true
     },
     {
+      "title": "خصم على الحجز ده (اختياري)",
+      "labels": [
+        "خصم على الحجز ده (اختياري)"
+      ],
+      "text": "علّمها لو المريض له خصم نقابة أو نادي أو خصم خاص. لو مش متعلمة الحجز بيتعمل بسعره العادي.",
+      "article": "reception-booking-discount",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "مثلاً نقابة المهندسين",
+      "labels": [
+        "مثلاً نقابة المهندسين",
+        "اسم النقابة"
+      ],
+      "text": "اسم الجهة اللي المريض جاي بخصمها (نقابة أو نادي أو جهة تانية). بيظهر على كارت الموعد والفاتورة.",
+      "article": "reception-booking-discount",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "رقم الكارنيه",
+      "labels": [
+        "رقم الكارنيه"
+      ],
+      "text": "رقم كارنيه النقابة أو النادي — إجباري.",
+      "article": "reception-booking-discount",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "الكارنيه ساري لحد",
+      "labels": [
+        "الكارنيه ساري لحد"
+      ],
+      "text": "آخر يوم الكارنيه ساري فيه. لازم يكون يوم الزيارة أو بعده، ولو خلص قبل الحضور تسجيل الحضور بيقف.",
+      "article": "reception-booking-discount",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "مثلاً قريب موظف",
+      "labels": [
+        "مثلاً قريب موظف",
+        "سبب الخصم"
+      ],
+      "text": "سبب الخصم الخاص — إجباري.",
+      "article": "reception-booking-discount",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "نسبة الخصم ٪",
+      "labels": [
+        "نسبة الخصم ٪",
+        "نسبة الخصم",
+        "نسبة الخصم %"
+      ],
+      "text": "اكتب نسبة الخصم المعتمدة فقط، مثل10، وراجع أساس تطبيقها وصلاحية منحها. النسبة تختلف عن قيمة المبلغ بعد الخصم.",
+      "article": "invoice",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "الممرض/ة",
       "labels": [
         "الممرض/ة"
@@ -12986,19 +13068,6 @@
       ],
       "text": "رقم موافقة الجهة على الخدمة (لو فيه) — بيتطبع على فاتورة المطالبة، وارفق صورة الموافقة معاها.",
       "article": "insurance",
-      "tabs": [
-        "reception_services"
-      ],
-      "forms": [],
-      "reviewed": true
-    },
-    {
-      "title": "نسبة الخصم %",
-      "labels": [
-        "نسبة الخصم %"
-      ],
-      "text": "اكتب نسبة الخصم المعتمدة فقط، مثل10، وراجع أساس تطبيقها وصلاحية منحها. النسبة تختلف عن قيمة المبلغ بعد الخصم.",
-      "article": "invoice",
       "tabs": [
         "reception_services"
       ],
@@ -21869,9 +21938,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1870,
-    "labels": 1369,
-    "files": 137,
-    "groups": 1477
+    "definitions": 1879,
+    "labels": 1378,
+    "files": 138,
+    "groups": 1482
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
