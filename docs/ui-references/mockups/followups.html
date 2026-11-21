@@ -1,0 +1,39 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>متابعة مطلوبة — بدل الحجوزات الوهمية</title>
+<link rel="stylesheet" href="../../../assets/css/styles.css"><link rel="stylesheet" href="../../../assets/css/reception-workspace.css">
+<style>
+body{background:#e9edf5;margin:0;padding:24px 12px}.wrap{max-width:560px;margin:0 auto;display:grid;gap:16px}
+.eyebrow{margin:0;font-size:12px!important;color:#8a93a3!important;border-bottom:1px solid #EEF1F6;padding-bottom:8px}
+.card{background:#fff;border-radius:16px;border:1px solid #D5DEEE;padding:18px;display:grid;gap:12px;box-shadow:0 12px 30px rgba(15,54,157,.10)}
+.card h3{margin:0;font-size:17px;color:#0F369D;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.card p{margin:0;font-size:13px;color:#3B4658;line-height:1.8}
+.chips{display:flex;flex-wrap:wrap;gap:6px}.chip{font:inherit;font-size:13px;padding:6px 12px;border-radius:99px;border:1px solid #CBD5E1;background:#fff;color:#16212E}
+.chip.on{background:#0F369D;border-color:#0F369D;color:#fff}
+.f{display:grid;gap:6px;font-size:13px}.f input{font:inherit;padding:10px 12px;border:1px solid #CBD5E1;border-radius:10px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}.tab{font-size:12px;padding:4px 10px;border-radius:99px;background:#F4F7FC;color:#3B4658}.tab.on{background:#16212E;color:#fff}
+.fu{display:grid;grid-template-columns:76px 1fr;gap:10px;align-items:start;padding:10px 12px;border-radius:12px;border:1px solid #E3E8F2}
+.fu .due{font-size:12px;text-align:center;border-radius:10px;padding:6px 4px;font-weight:700}
+.late .due{background:#FDEEEB;color:#D0402A}.today .due{background:#FFF3E9;color:#F15A22}.soon .due{background:#E6F2EC;color:#2F7D5C}
+.fu .n{font-weight:700;color:#16212E}.fu .s{font-size:12px;color:#5b6577}
+.fu .act{grid-column:2;display:flex;gap:6px;flex-wrap:wrap}.fu .act .btn{font-size:12px;padding:6px 10px}
+.count{font-size:12px;font-weight:400;color:#5b6577}
+</style></head><body><div class="wrap">
+<section class="card"><p class="eyebrow">تصور (بيانات تجريبية). ١) آخر الكشف (الدكتور أو الاستقبال): «متابعة بعد…» بدل حجز وهمي من غير ساعة.</p>
+ <h3>متابعة مطلوبة</h3>
+ <div class="chips"><button class="chip" type="button">أسبوعين</button><button class="chip" type="button">شهر</button><button class="chip on" type="button">٣ شهور</button><button class="chip" type="button">٦ شهور</button><button class="chip" type="button">سنة</button><button class="chip" type="button">تاريخ…</button></div>
+ <label class="f">ملاحظة للمتابعة (اختياري)<input value="إعادة تحليل سكر تراكمي قبل الكشف"></label>
+ <p>المستحق: <b>فبراير ٢٠٢٧</b> مع <b>د. أخصائي باطنة</b>. مفيش ميعاد بيتحجز دلوقتي ومفيش مكان بيتشغل في جدول الدكتور.</p>
+</section>
+<section class="card"><p class="eyebrow">٢) في الاستقبال: قايمة «متابعات مطلوبة» — التذكير بيظهر قبل الميعاد بأسبوعين.</p>
+ <h3>متابعات مطلوبة <span class="count">٣ مستحقة · ٥ خلال أسبوعين</span></h3>
+ <div class="tabs"><span class="tab on">المستحقة والقريبة</span><span class="tab">متأخرة</span><span class="tab">كلها</span><span class="tab">اتحجزت</span></div>
+ <div class="fu late"><div class="due">متأخرة<br>٥ أيام</div><div><span class="n">سارة تجريبية</span><div class="s">د. أخصائي جلدية · كانت مستحقة 16/11 · «جلسة مراجعة بعد العلاج»</div></div>
+  <div class="act"><button class="btn btn-primary" type="button">احجز دلوقتي</button><button class="btn" type="button">اتصلت — مردتش</button><button class="btn" type="button">أجّل</button><button class="btn" type="button">مش محتاجة</button></div></div>
+ <div class="fu today"><div class="due">النهارده</div><div><span class="n">محمود تجريبي</span><div class="s">د. أخصائي باطنة · «إعادة تحليل سكر تراكمي»</div></div>
+  <div class="act"><button class="btn btn-primary" type="button">احجز دلوقتي</button><button class="btn" type="button">اتصلت — مردتش</button><button class="btn" type="button">أجّل</button></div></div>
+ <div class="fu soon"><div class="due">بعد<br>٩ أيام</div><div><span class="n">يوسف تجريبي</span><div class="s">د. أخصائي أطفال · «متابعة وزن»</div></div>
+  <div class="act"><button class="btn btn-primary" type="button">احجز دلوقتي</button><button class="btn" type="button">ابعت تذكير واتساب</button></div></div>
+</section>
+<section class="card"><p class="eyebrow">٣) «احجز دلوقتي» بيفتح «حجز موعد» جاهز (المريض + الدكتور + الخدمة) — تختار الساعة وبس، والمتابعة بتتقفل «اتحجزت» ومربوطة بالحجز.</p>
+ <p>«اتصلت — مردتش» بيسجّل المحاولة وبيفضل في القايمة. «أجّل» بيختار تاريخ جديد. «مش محتاجة» بيقفلها بسبب. كل ده بيتسجّل باسم الموظف ووقته.</p>
+</section>
+</div></body></html>
