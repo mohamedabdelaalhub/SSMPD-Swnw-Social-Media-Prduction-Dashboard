@@ -3,20 +3,22 @@
    only the owner role, only records carrying a «تجريبي» flag, a full archive copy before the delete, refusal when the record is tied to payments/payouts/claims/stock/closed periods.
    Type «مقدم حجز» (advance) comes from 20261118190000_test_tool_booking_advance.sql: only an unused advance (no use / refund / booking, cash still in its open drawer); its receipt entry goes with it.
    Type «خزينة» (register) comes from 20261118210000_test_tool_register.sql: only a test drawer that never held real money; its shifts, reception bridge rows, pending handovers and empty cash account go with it (its audit history stays).
+   Type «رصيد لصالح مريض» (patient_credit) comes from 20261121210000_test_tool_patient_credit.sql: only a cash reception payment that became credit, never used and still in its drawer; its entry, reception journal and payment go with it (the patient file stays).
    This file only shows the owner what will happen and sends the typed confirmations. If the migration is missing the panel says so and does nothing. */
 (function () {
   'use strict';
   if (window.__SWNWTestRecords) return;
   window.__SWNWTestRecords = true;
 
-  var TYPES = [['invoice', 'فاتورة'], ['doctor_contract', 'عقد دكتور'], ['doctor_key', 'دكتور تجريبي كامل (كل عقوده ومستحقاته)'], ['inventory_item', 'صنف مخزون'], ['pricing_supply', 'مستلزم تسعير'], ['advance', 'مقدم حجز'], ['register', 'خزينة']];
-  var TNAME = { invoice: 'فاتورة', doctor_contract: 'عقد دكتور', doctor_key: 'دكتور كامل', inventory_item: 'صنف مخزون', pricing_supply: 'مستلزم تسعير', advance: 'مقدم حجز', register: 'خزينة' };
+  var TYPES = [['invoice', 'فاتورة'], ['doctor_contract', 'عقد دكتور'], ['doctor_key', 'دكتور تجريبي كامل (كل عقوده ومستحقاته)'], ['inventory_item', 'صنف مخزون'], ['pricing_supply', 'مستلزم تسعير'], ['advance', 'مقدم حجز'], ['register', 'خزينة'], ['patient_credit', 'رصيد لصالح مريض (تحصيل استقبال)']];
+  var TNAME = { invoice: 'فاتورة', doctor_contract: 'عقد دكتور', doctor_key: 'دكتور كامل', inventory_item: 'صنف مخزون', pricing_supply: 'مستلزم تسعير', advance: 'مقدم حجز', register: 'خزينة', patient_credit: 'رصيد لصالح مريض' };
   var TABLES = { 'clinic_finance.invoices': 'فاتورة', 'clinic_finance.entries': 'قيد يومية', 'clinic_finance.lines': 'سطر قيد', 'clinic_finance.audit': 'سجل مراجعة', 'clinic_finance.doctor_accruals': 'مستحق دكتور',
     'clinic_finance.doctor_allocations': 'توزيع أتعاب', 'clinic_finance.doctor_allocation_lines': 'سطر توزيع أتعاب', 'clinic_finance.doctor_extra_allocations': 'مؤدٍّ إضافي', 'clinic_finance.channel_allocations': 'توزيع قناة',
     'clinic_finance.doctor_contracts': 'عقد دكتور', 'public.inventory_items': 'صنف مخزون', 'clinic_reception.items': 'صنف استقبال', 'public.inventory_alerts': 'تنبيه مخزون', 'public.inventory_price_history': 'سجل أسعار',
     'clinic_finance.inventory_catalog_prices': 'سعر مرجعي', 'public.pricing_supplies': 'مستلزم تسعير', 'clinic_finance.advances': 'مقدم حجز', 'clinic_finance.advance_proofs': 'إثبات تحصيل مقدم',
     'clinic_finance.registers': 'خزينة', 'clinic_finance.shifts': 'وردية', 'clinic_finance.treasury_transfers': 'طلب تسليم نقدية', 'clinic_finance.cash_accounts': 'تعريف حساب نقدية',
-    'clinic_finance.account_config': 'إعداد حساب', 'clinic_finance.accounts': 'حساب في الدليل', 'clinic_reception.registers': 'خزينة استقبال', 'clinic_reception.shifts': 'وردية استقبال' };
+    'clinic_finance.account_config': 'إعداد حساب', 'clinic_finance.accounts': 'حساب في الدليل', 'clinic_reception.registers': 'خزينة استقبال', 'clinic_reception.shifts': 'وردية استقبال',
+    'clinic_reception.journal': 'حركة استقبال', 'clinic_reception.journal_lines': 'سطر حركة استقبال', 'clinic_reception.payments': 'دفعة استقبال', 'clinic_reception.payment_proofs': 'إثبات دفعة' };
   var scheduled = false;
 
   function e(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
@@ -155,7 +157,7 @@
     if (!users || document.querySelector('[data-test-records-card]')) return;
     var card = document.createElement('div'); card.className = 'section'; card.setAttribute('data-test-records-card', '1');
     card.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;"><div><h3 style="margin:0 0 5px;">سجلات تجريبية — حذف آمن (للمالك فقط)</h3>' +
-      '<p style="margin:0;color:var(--c-muted);font-size:12px;line-height:1.6;">علّم فاتورة أو عقد أو صنف مخزون أو مقدم حجز أو خزينة كـ«تجريبي» ثم احذفه، مع نسخة كاملة في الأرشيف. مفيش حذف لأي حاجة مش معلَّمة، ولا لأي حاجة عليها دفع أو صرف.</p></div>' +
+      '<p style="margin:0;color:var(--c-muted);font-size:12px;line-height:1.6;">علّم فاتورة أو عقد أو صنف مخزون أو مقدم حجز أو خزينة أو رصيد لصالح مريض كـ«تجريبي» ثم احذفه، مع نسخة كاملة في الأرشيف. مفيش حذف لأي حاجة مش معلَّمة، ولا لأي حاجة عليها دفع أو صرف.</p></div>' +
       '<button class="btn" type="button" data-test-records-open>فتح</button></div>';
     users.parentNode.insertBefore(card, users);
     card.querySelector('[data-test-records-open]').onclick = open;
