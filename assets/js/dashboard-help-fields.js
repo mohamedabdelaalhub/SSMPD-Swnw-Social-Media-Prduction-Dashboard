@@ -11914,6 +11914,19 @@
       "reviewed": true
     },
     {
+      "title": "بحث",
+      "labels": [
+        "بحث"
+      ],
+      "text": "اكتب اسم القسم أو جزءًا من اسم السجل المطلوب. النتائج تعتمد على صلاحية حسابك والبيانات المتاحة، والبحث لا يغير السجلات.",
+      "article": "personal",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "الممرض/ة",
       "labels": [
         "الممرض/ة"
@@ -14290,19 +14303,6 @@
       ],
       "text": "اكتب جزء من اسم المريض أو رقم ملفه أو تليفونه أو اسم الدكتور علشان تلاقي الحجز.",
       "article": "booking-flow",
-      "tabs": [
-        "reception_services"
-      ],
-      "forms": [],
-      "reviewed": true
-    },
-    {
-      "title": "بحث",
-      "labels": [
-        "بحث"
-      ],
-      "text": "اكتب اسم القسم أو جزءًا من اسم السجل المطلوب. النتائج تعتمد على صلاحية حسابك والبيانات المتاحة، والبحث لا يغير السجلات.",
-      "article": "personal",
       "tabs": [
         "reception_services"
       ],
@@ -21882,8 +21882,8 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1871,
-    "labels": 1370,
+    "definitions": 1874,
+    "labels": 1372,
     "files": 138,
     "groups": 1478
   }

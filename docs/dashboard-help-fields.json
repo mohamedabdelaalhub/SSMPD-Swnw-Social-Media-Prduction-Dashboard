@@ -1,8 +1,8 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1871,
-    "labels": 1370,
+    "definitions": 1874,
+    "labels": 1372,
     "files": 138,
     "groups": 1478
   },
@@ -10354,6 +10354,16 @@
       "tab": "reception_services",
       "article": "patient-records",
       "text_sha256": "b6b7ef3304940f5231c6281a0431f4e3513369f3f55fbf8bc0e9499a249a0bbd"
+    },
+    {
+      "file": "reception-auto-book.js",
+      "label": "بحث",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "personal",
+      "text_sha256": "fcfcf93d2d0bde74aa0a1934993d34ae9f117562d8c56a3a563761ba68e24990"
     },
     {
       "file": "reception-booking-plus.js",
