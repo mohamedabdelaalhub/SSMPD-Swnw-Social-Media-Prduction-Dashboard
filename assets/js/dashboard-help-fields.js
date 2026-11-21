@@ -20111,19 +20111,6 @@
       "reviewed": true
     },
     {
-      "title": "ابحث بالاسم أو التليفون أو رقم الملف",
-      "labels": [
-        "ابحث بالاسم أو التليفون أو رقم الملف"
-      ],
-      "text": "اكتب اسم المريض أو تليفونه أو رقم ملفه علشان تلاقيه في قائمة اليوم.",
-      "article": "today-board",
-      "tabs": [
-        "reception_services"
-      ],
-      "forms": [],
-      "reviewed": true
-    },
-    {
       "title": "خط العرض",
       "labels": [
         "خط العرض",
@@ -21882,9 +21869,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1871,
-    "labels": 1370,
+    "definitions": 1874,
+    "labels": 1369,
     "files": 138,
-    "groups": 1478
+    "groups": 1477
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();

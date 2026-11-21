@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1871,
-    "labels": 1370,
+    "definitions": 1874,
+    "labels": 1369,
     "files": 138,
-    "groups": 1478
+    "groups": 1477
   },
   "fields": [
     {
@@ -18542,6 +18542,46 @@
     },
     {
       "file": "today-operations.js",
+      "label": "بحث",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "personal",
+      "text_sha256": "fcfcf93d2d0bde74aa0a1934993d34ae9f117562d8c56a3a563761ba68e24990"
+    },
+    {
+      "file": "today-operations.js",
+      "label": "اسم المريض أو رقم الملف أو التليفون أو الدكتور",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "booking-flow",
+      "text_sha256": "7b8c8896bea57949b6bde77b58a6ea77185a3846daaaa9b85b4e8d8c3fb7d491"
+    },
+    {
+      "file": "today-operations.js",
+      "label": "الأطباء",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "booking-flow",
+      "text_sha256": "e0e0b8dbe0778c3463b06d4c92fd2ef73fd5b8280dcb56deee759fce53376ab6"
+    },
+    {
+      "file": "today-operations.js",
+      "label": "الحالة",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "personal",
+      "text_sha256": "0a8e1242f7cd5a7893e1222dfd049826b42b66af79a574141ddc063e925fb3f0"
+    },
+    {
+      "file": "today-operations.js",
       "label": "الموظف",
       "name": "",
       "kind": "html",
@@ -18579,16 +18619,6 @@
       "tab": "reception_services",
       "article": "today-board",
       "text_sha256": "5b9d11709a5da94b3bda9e02f0817a1d20b930933f9aa9df6705fde8d7bb519c"
-    },
-    {
-      "file": "today-operations.js",
-      "label": "ابحث بالاسم أو التليفون أو رقم الملف",
-      "name": "",
-      "kind": "aria",
-      "forms": [],
-      "tab": "reception_services",
-      "article": "today-board",
-      "text_sha256": "9c15648212f0968de2df554f6265101f7a16bf02cc8987b2c71ff3fa5c05dc0a"
     },
     {
       "file": "today-operations.js",
