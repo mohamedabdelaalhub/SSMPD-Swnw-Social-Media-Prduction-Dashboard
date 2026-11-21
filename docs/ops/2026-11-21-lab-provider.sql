@@ -8,7 +8,7 @@ do $$
 declare
   ws uuid; me uuid; home uuid; lab uuid; nur uuid; n int;
   lab_minutes int := 5;          -- owner: «كل ٥ دقايق»
-  nurse_capacity int := 1;       -- ← owner: nurses on shift who can work at the same time (1 = one patient at a time)
+  nurse_capacity int := 2;       -- owner 2026-11-21: «ممرضتين في نفس الوقت»
 begin
   select id into ws from clinic_reception.workspaces where mode = 'live' order by created_at limit 1;
   if ws is null then raise exception 'no live reception workspace'; end if;
