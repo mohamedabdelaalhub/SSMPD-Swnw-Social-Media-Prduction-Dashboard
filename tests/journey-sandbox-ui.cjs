@@ -15,9 +15,9 @@ const {JSDOM}=require('jsdom'),fs=require('node:fs'),assert=require('node:assert
  assert(!q('[data-tv-checkin-display]'));assert(!q('[data-journey-action="static_qr"]'));
  const trialStart=requests.length;await new Promise(r=>setTimeout(r,3100));assert(!requests.slice(trialStart).some(r=>r.name.includes('calls_snapshot_live')));
  click('[data-journey-action="sandbox_book"]');const times=q('.rx-modal [name="starts_at"]');times.value=times.options[1].value;click('.rx-modal [type=submit]');await wait(()=>!q('.rx-modal')&&q('[data-journey-action="on_the_way"]'));
- click('[data-journey-action="on_the_way"]');await wait(()=>q('.journey-badge-on_the_way'));
+ click('[data-journey-action="on_the_way"]');assert(q('.rx-modal .modal-head').textContent.includes('تأكيد: في الطريق')&&q('.rx-modal [type=submit]').textContent==='تأكيد'&&q('.rx-modal [data-rx-cancel]').textContent==='تراجع','confirm step');assert(!q('.journey-badge-on_the_way'),'nothing changes before confirm');click('.rx-modal [type=submit]');await wait(()=>q('.journey-badge-on_the_way'));
  click('[data-journey-action="arrive"]');click('.rx-modal [type=submit]');await wait(()=>!q('.rx-modal')&&q('[data-journey-action="call"]'));
- click('[data-journey-action="call"]');await wait(()=>q('[data-journey-action="consultation_start"]'));click('[data-journey-action="consultation_start"]');await wait(()=>q('[data-journey-action="visit_detail"]'));
+ click('[data-journey-action="call"]');click('.rx-modal [type=submit]');await wait(()=>q('[data-journey-action="consultation_start"]'));click('[data-journey-action="consultation_start"]');assert(q('.rx-modal .btn-danger'));click('.rx-modal [type=submit]');await wait(()=>q('[data-journey-action="visit_detail"]'));
  click('[data-journey-action="visit_detail"]');click('[data-sandbox-order="execute"]');await wait(()=>q('[data-sandbox-orders]').textContent.includes('تم التنفيذ'));click('[data-rx-cancel]');
  click('[data-journey-action="visit_complete"]');click('.rx-modal [type=submit]');await wait(()=>!q('.rx-modal')&&q('[data-journey-action="sandbox_feedback"]'));
  click('[data-journey-action="sandbox_feedback"]');q('[name="comment"]').value='تقييم من الواجهة';click('.rx-modal [type=submit]');await wait(()=>!q('.rx-modal'));

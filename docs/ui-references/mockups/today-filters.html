@@ -1,0 +1,19 @@
+<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>تصور: فلاتر تشغيل اليوم</title>
+<style>body{margin:0;padding:16px;background:#f4f7fc;font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;color:#16212E}
+.top{background:#fff;border:1px solid #D5DEEE;border-radius:16px;padding:14px;display:grid;gap:12px;max-width:980px;margin:auto}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}h2{margin:0;font-size:20px}.sp{flex:1}
+.btn{border:1px solid #D5DEEE;background:#fff;border-radius:10px;padding:8px 14px;font:inherit}.pri{background:#0F369D;color:#fff;border-color:#0F369D}
+.tools{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,1fr);gap:10px}
+label{display:grid;gap:4px;font-size:12px;color:#5b6b82;min-width:0}input,select{font:inherit;padding:10px;border:1px solid #D5DEEE;border-radius:10px;background:#fff;min-width:0;width:100%;color:#16212E}
+.chips{display:flex;gap:8px;flex-wrap:wrap}.chip{padding:6px 12px;border-radius:999px;background:#F1F4F8;font-size:13px}.chip.on{background:#0F369D;color:#fff}
+.docs{display:flex;gap:8px;flex-wrap:wrap}.doc{border:1px solid #D5DEEE;border-radius:12px;padding:8px 12px;background:#fff;font-size:13px}.doc small{color:#5b6b82;display:block}
+.note{font-size:12px;color:#8a4b00;background:#FFF3E0;border-radius:8px;padding:6px 10px}
+@media(max-width:600px){.tools{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.tools label:first-child{grid-column:1/-1}}</style>
+<div class="top"><div class="row"><h2>تشغيل اليوم</h2><span class="sp"></span><button class="btn pri">حجز جديد</button><button class="btn">⋯</button></div>
+<div class="row"><button class="btn">→</button><button class="btn">النهارده 2026-11-22</button><button class="btn">←</button></div>
+<div class="tools"><label>بحث<input type="search" placeholder="اسم المريض أو رقم الملف أو التليفون أو الدكتور"></label>
+<label>الأطباء<select><option>كل الأطباء</option><option>د. أحمد سمير</option></select></label>
+<label>الحالة<select><option>كل الحالات</option><option>قادم</option><option>في الطريق</option><option>في الانتظار</option><option>اتنادى عليه</option><option>في الكشف</option><option>انتظار تحليل/إجراء</option><option>انتهى</option><option>لم يحضر</option><option>ملغي</option></select></label></div>
+<div class="chips"><span class="chip on">الكل 12</span><span class="chip">الحجوزات 4</span><span class="chip">متأخر 1</span><span class="chip">في الانتظار 2</span><span class="chip">في غرفة الكشف 1</span><span class="chip">أنهى الكشف 4</span></div>
+<div class="note">الأطباء والبحث والحالة بيشتغلوا مع بعض ومع الأزرار اللي فوق. العدّادات والبطايق وشريط الأطباء كلها بتتبع الدكتور المختار. «كل الأطباء» بيرجّع الكل.</div>
+<div class="docs"><div class="doc"><b>د. أحمد سمير</b><small>مجدول · 2 في الانتظار · 0 في الكشف</small></div></div></div>
