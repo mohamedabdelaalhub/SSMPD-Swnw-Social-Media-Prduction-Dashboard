@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>تصور — دليل الوظائف</title>
+<!-- Mockup only (owner approval needed before any build). Source: the owner's SOP «الدليل القياسي للتوصيف الوظيفي والرواتب ومؤشرات الأداء». Names and the sample salary are placeholders. -->
+<style>
+@font-face{font-family:"BigVesta Arabic";src:url("../../../assets/fonts/BigVesta-Regular.woff2") format("woff2");font-weight:400}
+@font-face{font-family:"BigVesta Arabic";src:url("../../../assets/fonts/BigVesta-Bold.woff2") format("woff2");font-weight:700}
+@font-face{font-family:"Hiragino Kaku";src:url("../../../assets/fonts/Hiragino-W3.woff2") format("woff2");font-weight:300}
+@font-face{font-family:"Hiragino Kaku";src:url("../../../assets/fonts/Hiragino-W6.woff2") format("woff2");font-weight:600}
+:root{--blue:#0F369D;--orange:#F15A22;--ink:#16212E;--pos:#2F7D5C;--neg:#D0402A;--bg:#F3F4F7;--card:#fff;--line:#E6E8EE;--muted:#6B7483;--r:18px;--gap:16px}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;font-size:14px;line-height:1.6}
+main{max-width:1320px;margin:0 auto;padding:22px 24px 48px;display:grid;grid-template-columns:minmax(0,1fr);gap:36px}
+.frame{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--gap)}.frame>*{min-width:0}
+.tag{display:block;justify-self:start;max-width:100%;background:var(--ink);color:#fff;border-radius:14px;padding:4px 14px;font-size:12px}
+.ph .crumb{color:var(--muted);font-size:12px}
+.ph h1{font-size:28px;margin:4px 0 2px;font-weight:700}
+.ph p{margin:0;color:var(--muted)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:20px}
+.card h3{margin:0 0 12px;font-size:16px;font-weight:700}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--gap)}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px 20px}
+.kpi small{color:var(--muted);display:block}.kpi b{font-size:28px;display:block;font-variant-numeric:tabular-nums}
+.kpi.hero{background:linear-gradient(135deg,#F15A22,#F58B54);border:0;color:#fff}.kpi.hero small{color:#FFE9DD}
+.pills{display:flex;gap:8px;flex-wrap:wrap}
+.pill{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 14px;color:var(--muted)}
+.pill.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--gap)}
+.job{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;display:grid;gap:10px;transition:transform .2s}
+@media (hover:hover){.job:hover{transform:translateY(-3px)}}
+.job .top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.job h4{margin:0;font-size:16px}
+.chip{display:inline-block;border-radius:999px;padding:2px 10px;font-size:12px;background:#EEF2FB;color:var(--blue)}
+.chip.green{background:#E4F3EC;color:var(--pos)}.chip.warn{background:#FDE9E4;color:var(--neg)}.chip.grey{background:#EEF1F6;color:var(--muted)}
+.band{display:flex;align-items:center;gap:8px;font-variant-numeric:tabular-nums}
+.band b{font-size:15px}.lock{color:var(--muted);font-size:12px}
+.job .inc{color:var(--muted);font-size:13px}
+.job .emp{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:13px}
+.av{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;background:#DDE6F8;color:var(--blue);font-size:11px;font-weight:700;margin-inline-end:-8px;border:2px solid #fff}
+.two{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:var(--gap)}.two>*{min-width:0}.two.eq{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+ul.clean{margin:0;padding:0;list-style:none;display:grid;gap:10px}
+ul.clean li{display:flex;gap:10px;align-items:flex-start}
+ul.clean li:before{content:"";width:8px;height:8px;border-radius:50%;background:var(--blue);margin-top:8px;flex:none}
+.kpirow{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.kpirow:first-of-type{border-top:0}
+.btns{display:flex;gap:10px;flex-wrap:wrap}
+.btn{border:1px solid var(--line);background:#fff;border-radius:12px;padding:9px 16px;font:inherit;color:var(--ink)}
+.btn.main{background:var(--orange);border-color:var(--orange);color:#fff}
+.btn.dark{background:var(--ink);border-color:var(--ink);color:#fff}
+.field{display:grid;gap:6px;margin-bottom:12px}.field label{color:var(--muted);font-size:12px}
+.sel{border:1px solid var(--line);border-radius:12px;padding:10px 14px;background:#fff}
+.bar{position:relative;direction:ltr;height:12px;background:#EEF1F6;border-radius:999px;margin:28px 0 8px}
+.bar .rng{position:absolute;top:0;height:12px;background:#CFE8DB;border-radius:999px}
+.bar .dot{position:absolute;top:-5px;width:22px;height:22px;border-radius:50%;background:var(--neg);border:3px solid #fff;box-shadow:0 0 0 1px var(--neg)}
+.bar .lbl{position:absolute;top:-26px;font-size:12px;transform:translateX(50%);white-space:nowrap}
+.scale{display:flex;justify-content:space-between;color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums;direction:ltr}
+.note{background:#FFF6E5;border:1px solid #F5DDA6;border-radius:12px;padding:10px 14px;color:#7A5A00;font-size:13px}
+.paper{background:#fff;border:1px solid var(--line);border-radius:6px;padding:28px 32px;min-height:420px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.paper .head{display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid var(--blue);padding-bottom:10px;margin-bottom:14px}
+.paper .logo{width:36px;height:36px;border-radius:10px;background:var(--blue);color:#fff;display:grid;place-items:center;font-weight:700}
+.paper h5{margin:0;font-size:17px}.paper .sign{display:flex;justify-content:space-between;margin-top:40px;color:var(--muted)}
+@media (max-width:1024px){.two.eq{grid-template-columns:minmax(0,1fr)}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.two{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:640px){main{padding:16px 12px 40px;gap:28px}.grid{grid-template-columns:minmax(0,1fr)}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}:root{--gap:12px}.ph h1{font-size:22px}.kpirow{grid-template-columns:1fr auto}.kpirow .chip:last-child{grid-column:1/-1;width:max-content}}
+</style>
+</head>
+<body>
+<main>
+
+<section class="frame" data-frame="catalog">
+  <span class="tag">الشاشة ١ — «دليل الوظائف» (الموارد البشرية)</span>
+  <div class="ph"><div class="crumb">الموارد البشرية / دليل الوظائف</div><h1>دليل الوظائف</h1><p>14 وظيفة · 13 موظف مربوطين · 4 ملفات خارج الدليل مؤقتًا</p></div>
+  <div class="pills"><span class="pill on">الكل 14</span><span class="pill">الإدارة العليا 2</span><span class="pill">الإدارة المالية 2</span><span class="pill">التعاقدات والمبيعات 1</span><span class="pill">التشغيل وخدمة العملاء 1</span><span class="pill">الطاقم التمريضي 3</span><span class="pill">الخدمات المعاونة 1</span><span class="pill">الأقسام التخصصية 4</span></div>
+  <div class="kpis">
+    <div class="kpi hero"><small>وظائف مفيش حد عليها لسه</small><b>6</b></div>
+    <div class="kpi"><small>وظائف في الدليل</small><b>14</b></div>
+    <div class="kpi"><small>موظفون مربوطون بوظيفة</small><b>13</b></div>
+    <div class="kpi"><small>ملفات خارج الدليل</small><b>4</b></div>
+  </div>
+  <div class="grid">
+    <div class="job"><div class="top"><h4>المدير الطبي</h4><span class="chip">الإدارة العليا</span></div><div class="band"><b>18,000 – 25,000</b><span class="lock">🔒 للسوبر أدمن والحسابات</span></div><div class="inc">مكافأة جودة طبية وتشغيل فروع</div><div class="emp"><span class="chip grey">مفيش حد عليها لسه</span></div></div>
+    <div class="job"><div class="top"><h4>المدير الإداري (التشغيل)</h4><span class="chip">الإدارة العليا</span></div><div class="band"><b>14,000 – 20,000</b><span class="lock">🔒</span></div><div class="inc">حافز تحقيق تارجت إيرادات الفرع</div><div class="emp"><span class="av">أ</span>&nbsp;&nbsp;1 موظف</div></div>
+    <div class="job"><div class="top"><h4>المدير المالي</h4><span class="chip">الإدارة المالية</span></div><div class="band"><b>15,000 – 22,000</b><span class="lock">🔒</span></div><div class="inc">مكافأة دقة الإقفال وتحصيل التعاقدات</div><div class="emp"><span class="av">م</span>&nbsp;&nbsp;1 موظف</div></div>
+    <div class="job"><div class="top"><h4>محاسب فرع / حسابات عامة</h4><span class="chip">الإدارة المالية</span></div><div class="band"><b>9,000 – 12,000</b><span class="lock">🔒</span></div><div class="inc">حافز انضباط الدورات المستندية والجرد</div><div class="emp"><span class="chip grey">مفيش حد عليها لسه</span></div></div>
+    <div class="job"><div class="top"><h4>موظف تعاقدات وتأمين طبي</h4><span class="chip">التعاقدات والمبيعات</span></div><div class="band"><b>8,000 – 11,000 + عمولة</b><span class="lock">🔒</span></div><div class="inc">عمولة جلب تعاقدات جديدة + تفعيل موافقات</div><div class="emp"><span class="chip grey">مفيش حد عليها لسه</span></div></div>
+    <div class="job"><div class="top"><h4>موظف استقبال</h4><span class="chip">التشغيل وخدمة العملاء</span></div><div class="band"><b>7,000 – 8,000</b><span class="chip green">المعتمد 7,500</span><span class="lock">🔒</span></div><div class="inc">بونص شهري على تحقيق تارجت الحجوزات</div><div class="emp"><span class="av">س</span><span class="av">ع</span><span class="av">ن</span>&nbsp;&nbsp;3 موظفين</div></div>
+    <div class="job"><div class="top"><h4>عامل / عاملة نظافة</h4><span class="chip">الخدمات المعاونة</span></div><div class="band"><b>5,500 – 6,500</b><span class="chip green">المعتمد 6,000</span><span class="lock">🔒</span></div><div class="inc">حافز انتظام ونظافة يومية</div><div class="emp"><span class="av">ه</span>&nbsp;&nbsp;1 موظف</div></div>
+    <div class="job"><div class="top"><h4>سنيور تمريض (مشرف)</h4><span class="chip">الطاقم التمريضي</span></div><div class="band"><b>9,500 – 12,000</b><span class="lock">🔒</span></div><div class="inc">حافز ضبط المخزون ومكافحة العدوى</div><div class="emp"><span class="chip grey">مفيش حد عليها لسه</span></div></div>
+    <div class="job"><div class="top"><h4>ممرض / ممرضة</h4><span class="chip">الطاقم التمريضي</span></div><div class="band"><b>7,000 – 8,000</b><span class="chip green">المعتمد 7,500</span><span class="lock">🔒</span></div><div class="inc">حافز التزام وانضباط</div><div class="emp"><span class="av">و</span><span class="av">ش</span><span class="av">أ</span><span class="av">م</span>&nbsp;&nbsp;4 موظفين</div></div>
+    <div class="job"><div class="top"><h4>تمريض أسنان</h4><span class="chip">الطاقم التمريضي</span></div><div class="band"><b>7,500 – 9,000</b><span class="lock">🔒</span></div><div class="inc">حافز إنتاجية عيادة الأسنان</div><div class="emp"><span class="av">ر</span>&nbsp;&nbsp;1 موظف</div></div>
+    <div class="job"><div class="top"><h4>أخصائي تجميل وليزر</h4><span class="chip">الأقسام التخصصية</span></div><div class="band"><b>8,000 – 10,000</b><span class="lock">🔒 أساسي + عمولة</span></div><div class="inc">عمولة على الباقات والبيع الإضافي — بيشتغل بنفسه على الحالات</div><div class="emp"><span class="av">ت</span>&nbsp;&nbsp;1 موظف</div></div>
+    <div class="job"><div class="top"><h4>مسئول تجميل وليزر</h4><span class="chip">الأقسام التخصصية</span></div><div class="band"><b>8,000 – 10,000</b><span class="chip warn">نفس نطاق الأخصائي لحد ما تحدد</span></div><div class="inc">تنسيق وترتيب وتواصل لحالات القسم</div><div class="emp"><span class="chip grey">مفيش حد عليها لسه</span></div></div>
+    <div class="job"><div class="top"><h4>أخصائي علاج طبيعي</h4><span class="chip">الأقسام التخصصية</span></div><div class="band"><b>8,500 – 11,000</b><span class="lock">🔒 أو 6,500 أساسي + نسبة الجلسات</span></div><div class="inc">نسبة أو عمولة على الجلسات المنفذة</div><div class="emp"><span class="chip grey">مفيش حد عليها لسه</span></div></div>
+    <div class="job"><div class="top"><h4>مسئول علاج طبيعي</h4><span class="chip">الأقسام التخصصية</span></div><div class="band"><b>8,500 – 11,000</b><span class="chip warn">نفس نطاق الأخصائي لحد ما تحدد</span></div><div class="inc">تنسيق وترتيب وتواصل لحالات القسم</div><div class="emp"><span class="av">ب</span>&nbsp;&nbsp;1 موظف</div></div>
+  </div>
+  <div class="note">الأطباء بره الدليل في المرحلة دي. وبيانات الأسماء والأرقام في الصور رموز تجريبية. نطاق الراتب بيظهر للسوبر أدمن والحسابات بس، ولباقي الموارد البشرية بيظهر بدله «مخفي».</div>
+</section>
+
+<section class="frame" data-frame="detail">
+  <span class="tag">الشاشة ٢ — تفاصيل وظيفة: «موظف استقبال»</span>
+  <div class="ph"><div class="crumb">دليل الوظائف / التشغيل وخدمة العملاء</div><h1>موظف استقبال</h1><p>3 موظفين على الوظيفة دي</p></div>
+  <div class="btns"><button class="btn main">ربط موظف بالوظيفة</button><button class="btn">تعديل الوصف</button><button class="btn dark">تصدير ملحق العقد (PDF)</button></div>
+  <div class="two">
+    <div style="display:grid;gap:var(--gap)">
+      <div class="card"><h3>المهام</h3><ul class="clean"><li>استقبال المرضى وتسجيل بياناتهم على النظام، وتأكيد الحجوزات الهاتفية وحجوزات الواتساب.</li><li>تحصيل رسوم الكشوفات والجلسات (كاش / فيزا) وإصدار الإيصالات، وتفعيل موافقات التأمين والنقابات.</li><li>توجيه المرضى للعيادات وتنظيم دور الدخول بالتنسيق مع التمريض، وإغلاق العهدة اليومية.</li></ul></div>
+      <div class="card"><h3>المؤهلات المطلوبة</h3><ul class="clean"><li>مؤهل عالٍ، مظهر لائق، لباقة عالية ومهارات تواصل وحل مشكلات.</li><li>إجادة الكمبيوتر وبرامج الأوفيس والأنظمة الطبية، وخبرة سنة في خدمة العملاء أو العيادات.</li></ul></div>
+      <div class="card"><h3>مؤشرات الأداء <small style="color:var(--muted);font-weight:400">— التارجت يحدده السوبر أدمن والمدير الإداري</small></h3>
+        <div class="kpirow"><span>نسبة تحويل الاستفسارات (هاتف وواتساب) إلى حجوزات فعلية</span><span class="chip green">تلقائي</span><span class="chip grey">التارجت: يتحدد</span></div>
+        <div class="kpirow"><span>دقة إدخال البيانات ومطابقة الخزينة اليومية (عجز صفر)</span><span class="chip green">تلقائي</span><span class="chip grey">التارجت: صفر</span></div>
+        <div class="kpirow"><span>تقييم المرضى لتجربة الاستقبال وسرعة إنهاء الإجراءات</span><span class="chip warn">يدوي — يقيّمه المدير المباشر ويعتمده السوبر أدمن</span><span class="chip grey">التارجت: يتحدد</span></div>
+      </div>
+    </div>
+    <div style="display:grid;gap:var(--gap);align-content:start">
+      <div class="card"><h3>الراتب والحافز</h3><div class="band"><b>7,000 – 8,000</b></div><div style="margin-top:8px"><span class="chip green">المعتمد 7,500 + حوافز تارجت</span></div><p class="lock" style="margin:10px 0 0">🔒 ظاهر للسوبر أدمن والحسابات بس</p><p style="margin:10px 0 0">الحافز: بونص شهري على تحقيق تارجت الحجوزات.</p></div>
+      <div class="card"><h3>الموظفون على الوظيفة</h3><ul class="clean"><li>موظف أ — يعمل</li><li>موظف ب — يعمل</li><li>موظف ج — يعمل</li></ul></div>
+    </div>
+  </div>
+  <div class="note">تصنيف المؤشرات «تلقائي / يدوي» مقترح مني وبياخد موافقتك. المؤشر التلقائي بيتحسب من بيانات الداشبورد، واليدوي بيقيّمه المدير المباشر ويعتمده السوبر أدمن (التخزين هنا، والتقييم نفسه في مرحلة بعدين).</div>
+</section>
+
+<section class="frame" data-frame="profile">
+  <span class="tag">الشاشة ٣ — ملف الموظف في الموارد البشرية: الوظيفة في الدليل + تنبيه خارج النطاق</span>
+  <div class="ph"><div class="crumb">الموظفون والأطباء / ممرضة اختبار</div><h1>ممرضة اختبار</h1><p>EMP-000099 · التمريض · يعمل</p></div>
+  <div class="two eq">
+    <div class="card"><h3>الوظيفة في الدليل</h3>
+      <div class="field"><label>الوظيفة (منفصلة عن دور الدخول)</label><div class="sel">ممرض / ممرضة — الطاقم التمريضي</div></div>
+      <div class="btns"><button class="btn">فتح وصف الوظيفة</button><button class="btn">تغيير الوظيفة</button></div>
+    </div>
+    <div class="card"><h3>الراتب مقابل نطاق الوظيفة <small style="color:var(--muted);font-weight:400">🔒 للسوبر أدمن والحسابات</small></h3>
+      <div class="bar"><div class="rng" style="left:33.3%;width:33.4%"></div><div class="dot" style="left:calc(16.7% - 11px)"></div></div>
+      <div class="scale"><span>6,000</span><span>7,000</span><span>8,000</span><span>9,000</span></div>
+      <p style="margin:14px 0 8px"><span class="chip warn">الراتب المسجل 6,500 أقل من نطاق الوظيفة بـ 500</span></p>
+      <p class="lock" style="margin:0">التنبيه بيظهر للسوبر أدمن والحسابات بس. ومش بيمنع حفظ الراتب، هو تنبيه بس. الأرقام تجريبية.</p>
+    </div>
+  </div>
+</section>
+
+<section class="frame" data-frame="mine">
+  <span class="tag">الشاشة ٤ — «وظيفتي» للموظف + ملحق العقد (مثال: ممرض / ممرضة)</span>
+  <div class="two">
+    <div style="display:grid;gap:var(--gap);align-content:start">
+      <div class="ph"><div class="crumb">ملفي الوظيفي</div><h1>وظيفتي: ممرض / ممرضة</h1><p>الطاقم التمريضي — من غير الراتب (الراتب مش بيظهر للموظف هنا)</p></div>
+      <div class="card"><h3>مهامي</h3><ul class="clean"><li>تجهيز غرف الكشف قبل حضور الطبيب، وقياس العلامات الحيوية للمرضى ومساعدة الطبيب أثناء الكشف والإجراءات.</li><li>تعقيم الآلات الطبية وتنظيف الأسطح بين كل مريض وآخر، وتسجيل استهلاك المستلزمات لكل حالة.</li></ul></div>
+      <div class="card"><h3>إزاي بيتقيّم أدائي</h3>
+        <div class="kpirow"><span>سرعة تجهيز الغرفة بين المرضى (أقل من 5 دقايق)</span><span class="chip warn">يدوي</span></div>
+        <div class="kpirow"><span>دقة تسجيل المستلزمات المستهلكة لكل مريض</span><span class="chip green">تلقائي</span></div>
+        <div class="kpirow"><span>الالتزام بالواقيات الشخصية ومعايير التعقيم</span><span class="chip warn">يدوي</span></div>
+      </div>
+    </div>
+    <div style="display:grid;gap:var(--gap);align-content:start"><div class="paper">
+      <div class="head"><div class="logo">S</div><div style="color:var(--muted);font-size:12px">ورق المركز الرسمي — الشعار بس من غير اسم المركز في العنوان</div></div>
+      <h5>ملحق عقد العمل — الوصف الوظيفي</h5>
+      <p style="color:var(--muted);margin:6px 0 14px">الوظيفة: ممرض / ممرضة · الطاقم التمريضي</p>
+      <p style="margin:0 0 6px"><b>المهام</b></p>
+      <ul class="clean"><li>تجهيز غرف الكشف وقياس العلامات الحيوية ومساعدة الطبيب أثناء الكشف.</li><li>تعقيم الآلات الطبية وتنظيف الأسطح بين المرضى وتسجيل المستلزمات.</li></ul>
+      <p style="margin:14px 0 6px"><b>المؤهلات</b></p>
+      <ul class="clean"><li>دبلوم تمريض أو معهد فني تمريض + ترخيص مزاولة المهنة، وخبرة سنة على الأقل.</li></ul>
+      <div class="sign"><span>توقيع الموظف</span><span>توقيع الإدارة</span></div>
+    </div>
+    <div class="btns"><button class="btn dark">تحميل ملحق العقد (PDF)</button></div></div>
+  </div>
+</section>
+
+</main>
+</body>
+</html>
