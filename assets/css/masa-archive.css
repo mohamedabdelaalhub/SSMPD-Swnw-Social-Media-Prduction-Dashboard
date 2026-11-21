@@ -1,0 +1,69 @@
+/* أرشيف ماسا — معتمد من المالك 2026-11-20 */
+.ma,.ma *{box-sizing:border-box}
+.ma{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;min-width:0;max-width:100%;font-variant-numeric:tabular-nums}
+.ma>*{min-width:0}
+.ma-card{background:#fff;border:1px solid #E3E9F4;border-radius:18px;padding:18px;display:grid;gap:12px;min-width:0}
+.ma-card h3,.ma-modal h3{margin:0;font-size:16px;font-weight:800;color:#16212E}
+.ma-title{font-size:20px!important}.ma-sub{margin:0;font-size:12px;color:#65748a;line-height:1.7}
+.ma-err{margin:0;padding:10px 14px;border-radius:12px;background:#FBE9E6;color:#B02A18;font-size:13px}
+.ma-empty{margin:0;padding:18px;text-align:center;color:#65748a;background:#F7F9FE;border-radius:12px;font-size:13px}
+.ma-search{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.ma-inp{flex:1 1 320px;display:flex;align-items:center;gap:10px;height:46px;padding:0 14px;border:1.5px solid #C9D6F2;border-radius:14px;background:#fff;color:#0F369D;min-width:0}
+.ma-inp input{flex:1;min-width:0;border:0;outline:0;font:inherit;font-size:14px;color:#16212E;background:transparent;direction:rtl}
+.ma-inp:focus-within{border-color:#0F369D;box-shadow:0 0 0 3px rgba(15,54,157,.12)}
+.ma-seg{display:inline-flex;background:#F1F4F8;border-radius:12px;padding:3px;gap:2px;max-width:100%}
+.ma-seg .btn{border:0;background:transparent;color:#65748a;font-weight:700;font-size:13px;min-height:38px;padding:0 14px;border-radius:9px;white-space:nowrap;box-shadow:none}
+.ma-seg .btn.on{background:#fff;color:#0F369D;box-shadow:0 1px 3px rgba(15,54,157,.12)}
+.ma .ma-btn{min-height:44px;padding:0 20px;border-radius:12px;background:#0F369D;color:#fff;font-weight:700;border:0;white-space:nowrap}
+.ma .ma-btn:disabled{opacity:.6}
+.ma-split{display:grid;grid-template-columns:minmax(0,420px) minmax(0,1fr);gap:14px;align-items:stretch}
+.ma:not(.is-open) .ma-split{grid-template-columns:minmax(0,1fr)}
+.ma-split>.ma-card{align-content:start}
+.ma-col{display:grid;gap:14px;min-width:0;align-content:start}
+.ma-res{display:grid;gap:10px}
+.ma-rc{display:grid;gap:8px;text-align:start;padding:14px;border:1.5px solid #E3E9F4;border-radius:16px;background:#fff;color:#16212E;font:inherit;width:100%;height:auto;min-height:0;font-weight:400;transition:transform .18s,border-color .18s}
+.ma-rc:hover{transform:translateY(-2px);border-color:#C9D6F2}.ma-rc.sel{border-color:#0F369D;background:#EDF2FF}
+.ma-t{display:flex;align-items:center;gap:10px}.ma-av{width:40px;height:40px;border-radius:12px;background:#EDF2FF;color:#0F369D;display:grid;place-items:center;flex:none}.ma-av.big{width:56px;height:56px;border-radius:16px}
+.ma-nm{flex:1;min-width:0}.ma-nm b{display:block;font-size:15px;overflow-wrap:anywhere}.ma-nm small{font-size:12px;color:#65748a}.ma-go{color:#65748a}
+.ma-chips{display:flex;gap:6px;flex-wrap:wrap}
+.ma-chip{display:inline-flex;align-items:center;padding:4px 10px;border-radius:9px;font-size:12px;font-weight:700;white-space:nowrap;color:#333;background:#F1F4F8}
+.ma-chip.old{background:#E4EAF8;color:#0F369D}.ma-chip.cur{background:#CDF0F3}.ma-chip.ins{background:#E8DDFD}.ma-chip.bad{background:#FBE0DC;color:#B02A18}.ma-chip.ok{background:#D7F0E2;color:#1F6B49}.ma-chip.dash{background:#EDF2FF;color:#0F369D}
+.ma-hd{display:flex;gap:14px;align-items:center;flex-wrap:wrap}.ma-hn{flex:1;min-width:200px;display:grid;gap:6px}.ma-hn h3{font-size:20px}
+.ma-info{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.ma-i{display:grid;gap:3px;padding:10px 12px;background:#F7F9FE;border-radius:12px;min-width:0}.ma-i small{font-size:11.5px;color:#65748a}.ma-i b{font-size:14px;overflow-wrap:anywhere}
+.ma-flag{margin:0}
+.ma-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.ma .ma-tile{display:grid;gap:4px;justify-items:start;text-align:start;padding:12px 14px;border:1px solid #E3E9F4;border-radius:14px;background:#fff;color:#16212E;position:relative;height:auto;min-height:0;font-weight:400}
+.ma-tile small{font-size:12px;color:#65748a}.ma-tile b{font-size:22px;font-weight:800}.ma-gomore{position:absolute;inset-inline-end:12px;bottom:14px;font-size:11px;color:#0F369D;font-weight:700}
+.ma-note{display:flex;gap:10px;align-items:center;background:#FFF3E0;border:1px solid #FFD9A8;border-radius:14px;padding:10px 14px;font-size:13px;color:#16212E}.ma-note b{background:#FF8800;color:#333;border-radius:9px;padding:2px 9px;font-size:12px}
+.ma-hd2{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.ma-states{display:flex;gap:10px;flex-wrap:wrap}.ma-states>span{display:inline-flex;gap:8px;align-items:center;font-size:12.5px;color:#65748a}.ma-states b{color:#16212E}
+.ma-tl{display:grid}.ma-ev{display:grid;grid-template-columns:96px minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid #EDF0F5}.ma-ev:last-child{border:0}
+.ma-d{font-weight:800;font-size:13px;white-space:nowrap}.ma-d small{display:block;font-weight:400;color:#65748a;font-size:12px}
+.ma-m b{display:block;font-size:14px}.ma-m small{font-size:12px;color:#65748a}
+.ma-st{display:inline-flex;justify-self:start;padding:5px 12px;border-radius:9px;font-size:12px;font-weight:700;white-space:nowrap}
+.s-ok{background:#00B0BD;color:#333}.s-mv{background:#FF8800;color:#333}.s-no{background:#FF0000;color:#fff}.s-cn{background:#525B6F;color:#fff}.s-wt{background:#F1F4F8;color:#333}
+.ma-tw{overflow-x:auto;max-width:100%}.ma-t2{width:100%;border-collapse:collapse;font-size:13.5px}
+.ma-t2 th{font-size:12px;color:#65748a;text-align:start;font-weight:700;padding:9px 10px;border-bottom:1px solid #E3E9F4;white-space:nowrap}.ma-t2 td{padding:11px 10px;border-bottom:1px solid #EDF0F5;white-space:nowrap}.ma-t2 .n{text-align:end;direction:ltr}
+.ma .neg,.ma-modal .neg{color:#D0402A;font-weight:700}
+.ma .ma-back{display:none}
+.ma-backdrop{position:fixed;inset:0;background:rgba(22,33,46,.45);z-index:2000;display:grid;place-items:center;padding:16px}
+.ma-modal{background:#fff;border-radius:20px;box-shadow:0 24px 60px rgba(15,54,157,.25);width:min(860px,100%);max-height:calc(100dvh - 32px);overflow:auto;padding:20px;display:grid;gap:14px}
+.ma-mh{display:flex;align-items:center;justify-content:space-between;gap:10px}.ma-mb{display:grid;gap:12px;min-width:0}
+.ma-x{width:38px;height:38px;min-height:38px;padding:0;border-radius:11px;border:1px solid #E3E9F4;background:#fff;color:#16212E;display:grid;place-items:center}
+@media(max-width:860px){
+ .ma-split{grid-template-columns:minmax(0,1fr)!important}
+ .ma.is-open .ma-resbox{display:none}
+ .ma.is-open .ma-back{display:inline-flex}
+ .ma-info{grid-template-columns:repeat(2,minmax(0,1fr))}.ma-tiles{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+ .ma-ev{grid-template-columns:88px minmax(0,1fr)}.ma-ev .ma-st{grid-column:2}
+ .ma-card{padding:14px;border-radius:16px}.ma-seg{display:flex;width:100%}.ma-seg .btn{flex:1;padding:0 8px}.ma .ma-btn{width:100%}.ma-hd .ma-btn,.ma-hd .ma-back{width:100%}
+}
+@media(max-width:560px){.ma-backdrop{align-items:end;padding:0}.ma-modal{border-radius:22px 22px 0 0;width:100%;max-height:88dvh}}
+
+/* tiles/cards are <button class="btn"> (nowrap + inline-flex): keep them inside the card and never wider than the phone */
+.ma-tile,.ma-tile *,.ma-rc,.ma-rc *{white-space:normal;overflow-wrap:anywhere;min-width:0}
+.ma-tile,.ma-rc{overflow:hidden;max-width:100%}
+.ma .ma-tile.btn{display:grid;justify-items:start;align-content:start;text-align:start;height:auto;min-height:0;line-height:1.5}
+.ma .ma-rc.btn,.ma .ma-rc{display:grid;text-align:start;height:auto;min-height:0}
+.ma-tile b{white-space:nowrap;overflow-wrap:normal}
