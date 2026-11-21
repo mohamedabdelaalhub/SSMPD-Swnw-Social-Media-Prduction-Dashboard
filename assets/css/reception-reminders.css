@@ -1,0 +1,20 @@
+/* «تذكيرات بكرة» (owner approved mockup docs/ui-references/mockups/tomorrow-reminders.*) */
+.rtr-card{background:#fff;border:1px solid #D5DEEE;border-radius:16px;padding:16px;display:grid;gap:12px;margin:0 0 16px}
+.rtr-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px}.rtr-head h4{margin:0;color:#0F369D;font-size:16px}
+.rtr-count{font-size:12px;color:#5b6577}
+.rtr-tabs{display:flex;flex-wrap:wrap;gap:6px}
+.rtr-tab{font:inherit;font-size:12px;padding:4px 10px;border-radius:99px;border:0;background:#F4F7FC;color:#3B4658;cursor:pointer}
+.rtr-tab.on{background:#16212E;color:#fff}.rtr-tab:focus-visible{outline:2px solid #F15A22;outline-offset:2px}
+.rtr-list{display:grid;gap:10px}
+.rtr-row{display:grid;grid-template-columns:64px 1fr;gap:10px;align-items:start;padding:10px 12px;border-radius:12px;border:1px solid #E3E8F2}
+.rtr-t{font-weight:700;color:#0F369D;text-align:center;direction:ltr;font-size:15px;padding-top:2px}
+.rtr-t.none{font-size:11px;color:#B45309;direction:rtl;line-height:1.6}
+.rtr-n{font-weight:700;color:#16212E}.rtr-s{font-size:12px;color:#5b6577;line-height:1.7}
+.rtr-tag{display:inline-block;padding:1px 8px;border-radius:99px;font-size:11px;background:#E8EEFB;color:#0F369D;margin-inline-start:4px}
+.rtr-st{display:inline-block;padding:1px 8px;border-radius:99px;font-size:11px}
+.rtr-st.wait{background:#FFF3E9;color:#F15A22}.rtr-st.ok{background:#E6F2EC;color:#2F7D5C}.rtr-st.no{background:#FDEEEB;color:#D0402A}
+.rtr-act{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:6px}.rtr-act .btn{font-size:12px;padding:6px 10px}
+.rtr-undo{font:inherit;font-size:11px;color:#5b6577;background:none;border:0;padding:2px 4px;text-decoration:underline;cursor:pointer}
+.rtr-nophone{font-size:12px;color:#B45309}
+.rtr-empty{margin:0;font-size:13px;color:#5b6577}
+.rtr-note{font-size:12px;color:#5b6577;margin:0;line-height:1.8}
