@@ -216,3 +216,8 @@
 .rx-fb-backdrop{position:fixed;inset:0;z-index:1200;background:rgba(15,54,157,.35);display:flex;align-items:flex-end;justify-content:center}
 .rx-fb-sheet{background:#fff;width:min(560px,100%);max-height:85vh;overflow:auto;border-radius:18px 18px 0 0;padding:14px;display:grid;gap:8px;color:#16212E}
 @media(min-width:700px){.rx-fb-backdrop{align-items:center}.rx-fb-sheet{border-radius:18px}}
+/* accounts summary: lists collapsed to the latest 5, extra tools folded away (owner 2026-11-22) */
+.rx-more-tools{border:1px dashed var(--c-border,#D5DEEE);border-radius:14px;background:#fff;padding:0}
+.rx-more-tools>summary{cursor:pointer;list-style:none;padding:12px 16px;font-weight:700;white-space:nowrap}.rx-more-tools>summary::-webkit-details-marker{display:none}
+.rx-more-tools>summary::after{content:"▾";margin-inline-start:8px;color:#5b6b82}.rx-more-tools[open]>summary::after{content:"▴"}
+.rx-more-tools .rx-more-body{display:grid;gap:10px;padding:0 16px 14px}
