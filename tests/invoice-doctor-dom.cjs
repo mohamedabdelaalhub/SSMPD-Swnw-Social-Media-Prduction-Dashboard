@@ -22,3 +22,14 @@ w.eval(fn+';window.idoc=invoiceDoctor;');const e=v=>String(v);
 assert.equal(w.idoc({orders:[{id:'o',provider_id:'p'}],providers:[{id:'p',name:'د. أ',department:'الجلدية'}]},{order_id:'o'},e),'<b>د. أ</b><br><small>الجلدية</small>');
 assert.equal(w.idoc({orders:[],providers:[]},{order_id:null},e),'—');assert(/'المريض','الطبيب \/ التخصص','القيمة'/.test(rs));
 console.log('PASS invoice doctor name + specialty (patient invoice, claim invoice, invoices table)');
+// receipt + service statement: الطبيب / التخصص in the facts band
+{const w2=new JSDOM('',{runScripts:'outside-only'}).window;w2.eval(fs.readFileSync('assets/js/swnw-print.js','utf8'));
+ const r=w2.SSMPDPrint.receiptHtml({receipt_no:'RC-1',amount:100,method:'cash',patient_name:'م',file_no:'P-1',created_at:'2026-11-21T19:00:00Z',doctor:'د. أ',specialty:'الجلدية'});
+ assert.match(r,/الطبيب/);assert.match(r,/د\. أ/);assert.match(r,/التخصص/);assert.match(r,/الجلدية/);
+ const r0=w2.SSMPDPrint.receiptHtml({receipt_no:'RC-1',amount:100,method:'cash',patient_name:'م',file_no:'P-1',created_at:'2026-11-21T19:00:00Z'});assert(!/التخصص/.test(r0),'no doctor → no extra rows');
+ const br=fs.readFileSync('assets/js/reception-bridge.js','utf8'),vf=br.slice(br.indexOf('function visitDoctors('),br.indexOf('\n',br.indexOf('function visitDoctors(')));w2.eval(vf+';window.vd=visitDoctors;');
+ const dd={providers:[{id:'p',name:'د. أ',department:'الجلدية'},{id:'q',name:'د. ب',department:'العظام'}]};
+ assert.deepEqual(JSON.parse(JSON.stringify(w2.vd(dd,[{provider_id:'p'},{provider_id:'p'}]))),[['الطبيب','د. أ'],['التخصص','الجلدية']]);
+ assert.deepEqual(JSON.parse(JSON.stringify(w2.vd(dd,[{provider_id:'p'},{provider_id:'q'}]))),[['الطبيب','أكثر من طبيب'],['التخصص','الجلدية، العظام']]);
+ assert.deepEqual(JSON.parse(JSON.stringify(w2.vd(dd,[]))),[]);
+ console.log('PASS receipt + service statement show الطبيب / التخصص');}
