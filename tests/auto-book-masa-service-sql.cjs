@@ -1,4 +1,5 @@
 // 20261121100000: the Masa service text («كشف جديد») picks the doctor's matching service; old rules stay as fallback.
+// Dates use Cairo's calendar day (like the migration), so the test also passes between 22:00 and 24:00 UTC.
 const fs=require('fs'),assert=require('node:assert/strict'),{PGlite}=require('@electric-sql/pglite');
 (async()=>{const db=new PGlite(),q=(s,p)=>db.query(s,p),one=async(s,p)=>(await q(s,p)).rows[0];
  const W='00000000-0000-0000-0000-0000000000f1',P='00000000-0000-0000-0000-0000000000b1',P2='00000000-0000-0000-0000-0000000000b2';
@@ -18,10 +19,10 @@ const fs=require('fs'),assert=require('node:assert/strict'),{PGlite}=require('@e
   await q(`insert into clinic_reception.providers values($1,'الأطفال'),($2,'الجلدية')`,[P,P2]);
   await q(`insert into clinic_reception.services values($1,$5,'C1','كشف جديد','الأطفال'),($2,$5,'C2','كشف متابعة','الأطفال'),($3,$5,'C3','كشف جديد','الجلدية'),($4,$5,'X1','رسم قلب','الاشعة')`,[S(1),S(2),S(3),S(4),W]);
   await q(`insert into clinic_reception.provider_service_scopes values($1,'X1')`,[P]);
-  const book=async(prov,need)=>(await one("insert into clinic_reception.external_bookings(provider_id,needed_service,state,day) values($1,$2,'pending',current_date) returning id",[prov,need])).id;
+  const book=async(prov,need)=>(await one("insert into clinic_reception.external_bookings(provider_id,needed_service,state,day) values($1,$2,'pending',(now() at time zone 'Africa/Cairo')::date) returning id",[prov,need])).id;
   const run=async id=>(await one('select clinic_reception.auto_book_one($1) r',[id])).r;
   const before=await book(P,'كشف جديد');assert.equal(await run(before),'review','before: two «كشف» services → staff review');
-  await q(`insert into clinic_reception.external_bookings(provider_id,needed_service,state,review_kind,day) values($1,'كشف جديد','review','service',current_date)`,[P]);
+  await q(`insert into clinic_reception.external_bookings(provider_id,needed_service,state,review_kind,day) values($1,'كشف جديد','review','service',(now() at time zone 'Africa/Cairo')::date)`,[P]);
   const M=fs.readFileSync('supabase/migrations/20261121100000_auto_book_masa_service_name.sql','utf8');
   await db.exec(M);await assert.rejects(()=>db.exec(M),/تم تطبيق هذا الملف من قبل/);await db.exec('rollback');
   assert.equal((await one("select count(*)::int n from clinic_reception.external_bookings where review_kind='service'")).n,0,'service reviews re-queued');
