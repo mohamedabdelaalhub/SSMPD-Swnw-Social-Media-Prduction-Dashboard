@@ -163,3 +163,4 @@ button.journey-metric.is-alert strong{color:#b42318}
 .journey-tools-filters input,.journey-tools-filters select{min-height:38px;font-size:14px;padding:4px 10px}
 .journey-tools-filters .rx-tl-pair{grid-template-columns:repeat(2,minmax(0,1fr))}
 @media(min-width:900px){.journey-tools-filters{grid-template-columns:minmax(0,2fr) minmax(0,2fr);align-items:end}}
+.journey-mistaken{display:inline-block;margin-inline-start:8px;padding:1px 8px;border-radius:999px;background:#525B6F;color:#fff;font-size:11px;white-space:nowrap}
