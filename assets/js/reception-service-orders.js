@@ -109,12 +109,13 @@ function orderForm(c){
     ['order_id','kind','mode'].forEach(function(n){root.querySelector('[name="'+n+'"]').addEventListener('change',sync);});sync();
   }).catch(function(e){c.modal('تعذر تحميل البيانات','<p>'+esc(e&&e.message||e)+'</p>',function(){return Promise.resolve();});});
 }
-function claimOrders(orders,services,visitId,pct){
+function claimOrders(orders,services,visitId,pct,providers){
   return (orders||[]).filter(function(o){return o.visit_id===visitId&&o.status!=='cancelled';}).map(function(o){
     var sv=(services||[]).find(function(x){return x.id===o.service_id;})||{};
-    var price=Number(sv.price!=null?sv.price:(o.snapshot&&o.snapshot.price));
+    var price=Number(sv.price!=null?sv.price:(o.snapshot&&o.snapshot.price)),pr=o.provider_id&&(providers||[]).find(function(x){return x.id===o.provider_id;});
     return {id:o.id,kind:'service',service:{id:String(o.service_id||o.id),name:(o.snapshot&&o.snapshot.name)||sv.name||'خدمة',price:Number.isFinite(price)?price:0},
-      quantity:Number(o.quantity)>0?Math.floor(Number(o.quantity)):1,contract:{discountPercent:pct.discount,copayPercent:pct.copay}};
+      quantity:Number(o.quantity)>0?Math.floor(Number(o.quantity)):1,contract:{discountPercent:pct.discount,copayPercent:pct.copay},
+      performingDoctor:pr?{id:pr.id,name:pr.name,specialty:pr.department||null}:null};
   });
 }
 function printClaim(c){
@@ -127,7 +128,7 @@ function printClaim(c){
   var root=c.modal('طباعة فاتورة مطالبة',body,function(v){
     if(!R||!PR)return Promise.reject(Error('وحدة الطباعة غير محمّلة'));
     if(!v.visit_id)return Promise.reject(Error('اختر الزيارة'));
-    var list=claimOrders(d.orders,d.services,v.visit_id,{discount:Number(v.discount),copay:Number(v.copay)});
+    var list=claimOrders(d.orders,d.services,v.visit_id,{discount:Number(v.discount),copay:Number(v.copay)},d.providers);
     if(!list.length)return Promise.reject(Error('لا توجد خدمات في هذه الزيارة'));
     var visit=(d.visits||[]).find(function(x){return x.id===v.visit_id;})||{};
     var inv=R.buildInvoices(list).invoices;

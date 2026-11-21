@@ -1,0 +1,55 @@
+<!doctype html><html dir="rtl" lang="ar"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>تأكيد قبل الإجراء — تصور</title>
+<style>
+@font-face{font-family:"BigVesta Arabic";src:url("../../../assets/fonts/BigVesta-Regular.woff2")}
+@font-face{font-family:"BigVesta Arabic";font-weight:700;src:url("../../../assets/fonts/BigVesta-Bold.woff2")}
+*{box-sizing:border-box;margin:0}
+:root{--ink:#16212E;--mut:#65748a;--line:#E3E9F4;--blue:#0F369D}
+body{font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,sans-serif;background:#F4F7FD;color:var(--ink);padding:16px 0 50px;font-size:14px}
+.lbl{font:700 12px system-ui;color:var(--mut);direction:ltr;text-align:left;max-width:1280px;margin:18px auto 6px;padding:0 16px}
+.wrap{max-width:1280px;margin:0 auto;padding:0 16px;display:flex;gap:18px;flex-wrap:wrap}
+.card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:16px;display:grid;gap:10px;flex:1 1 360px;min-width:0}
+.vc{display:grid;gap:8px}.vc .hd{display:flex;gap:10px;align-items:center}.av{width:40px;height:40px;border-radius:12px;background:#EDF2FF;color:var(--blue);display:grid;place-items:center;font-weight:800}
+.vc b{font-size:15px}.vc small{color:var(--mut);font-size:12px}.chip{display:inline-flex;padding:3px 10px;border-radius:9px;font-size:12px;font-weight:700;color:#333;background:#FFE2BD}
+.row{display:flex;gap:8px;align-items:center}.btn{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:0 18px;border-radius:12px;background:var(--blue);color:#fff;font-weight:700;font-size:13.5px;white-space:nowrap}
+.btn.ghost{background:#fff;color:var(--blue);box-shadow:inset 0 0 0 1px #C9D6F2}.btn.more{background:#fff;color:var(--ink);box-shadow:inset 0 0 0 1px var(--line);width:42px;padding:0}
+.menu{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 26px rgba(15,54,157,.14);padding:6px;display:grid;width:230px}.menu span{padding:10px 12px;border-radius:9px;font-size:13.5px}.menu .hot{background:#FFF3E0;font-weight:700}
+.back{background:rgba(22,33,46,.45);border-radius:18px;padding:26px 14px;display:grid;place-items:center;flex:1 1 360px}
+.modal{background:#fff;border-radius:20px;box-shadow:0 24px 60px rgba(15,54,157,.25);width:min(440px,100%);padding:20px;display:grid;gap:14px}
+.modal h3{font-size:17px;font-weight:800}.who{display:flex;gap:10px;align-items:center;padding:10px 12px;border-radius:12px;background:#F7F9FE}.who .av{width:34px;height:34px;font-size:13px}.who small{display:block;color:var(--mut);font-size:12px}
+.modal p{font-size:13.5px;line-height:1.8;color:#3B4658}.note{font-size:12px;color:#8A5A00;background:#FFF6E5;border-radius:10px;padding:8px 10px}
+.field{display:grid;gap:6px;font-size:12px;color:var(--mut)}.field div{height:42px;border:1px solid var(--line);border-radius:12px;display:flex;align-items:center;padding:0 12px;font-size:14px;color:#98A2B3}
+.acts{display:flex;gap:10px}.acts .btn{flex:1}.btn.red{background:#D0402A}.btn.org{background:#F15A22}
+.ph{width:390px;background:#F4F7FD;border:1px solid var(--line);border-radius:22px;padding:12px;display:grid;align-content:end;min-height:520px}
+.sheet{background:#fff;border-radius:22px 22px 0 0;padding:18px;display:grid;gap:14px;margin:0 -12px -12px;box-shadow:0 -10px 40px rgba(15,54,157,.2)}.grab{width:44px;height:5px;border-radius:3px;background:#D5DBE6;margin:0 auto}
+.sheet h3{font-size:17px;font-weight:800}.sheet .acts{flex-direction:column-reverse}
+</style>
+<body>
+<div class="lbl">1 — قبل: ضغطة واحدة تنفّذ فوراً (الزرار من قايمة ⋯)</div>
+<div class="wrap">
+ <div class="card"><div class="vc"><div class="hd"><span class="av">م</span><div><b>محمد أحمد علي</b><small>P-2026-001987 · د. هبة · داخل الكشف</small></div><span class="chip" style="margin-inline-start:auto">عليه 500 ج.م</span></div>
+  <div class="row"><span class="btn">إنهاء الزيارة</span><span class="btn more">⋯</span></div></div>
+  <div class="menu"><span>تحصيل 500</span><span class="hot">انتظار تحليل/إجراء</span><span>طلب خدمة</span><span>تفاصيل الزيارة</span><span>التفاصيل والحساب</span><span>الخط الزمني</span></div></div>
+</div>
+
+<div class="lbl">2 — بعد: أي إجراء بيغيّر حالة المريض بيطلّع تأكيد (ديسكتوب)</div>
+<div class="wrap">
+ <div class="back"><div class="modal"><h3>تأكيد: انتظار تحليل/إجراء</h3>
+  <div class="who"><span class="av">م</span><div><b>محمد أحمد علي</b><small>P-2026-001987 · د. هبة</small></div></div>
+  <p>هتتحط الزيارة على «انتظار تحليل/إجراء» والمريض هيخرج من غرفة الكشف. تقدر ترجّعه بزرار «عودة للطبيب».</p>
+  <div class="acts"><span class="btn ghost">تراجع</span><span class="btn">تأكيد</span></div></div></div>
+ <div class="back"><div class="modal"><h3>تأكيد: إنهاء الزيارة</h3>
+  <div class="who"><span class="av">م</span><div><b>محمد أحمد علي</b><small>P-2026-001987 · عليه 500 ج.م</small></div></div>
+  <p>الزيارة هتتقفل ومش هتقدر تفتحها تاني.</p><div class="note">لسه عليه 500 ج.م — هيفضل في حسابه بعد الإنهاء.</div>
+  <div class="field">ملاحظة (اختياري)<div>ملاحظة إن وجدت</div></div>
+  <div class="acts"><span class="btn ghost">تراجع</span><span class="btn red">تأكيد الإنهاء</span></div></div></div>
+</div>
+
+<div class="lbl">3 — الموبايل: نفس التأكيد كورقة من تحت، زرار «تأكيد» فوق و«تراجع» تحته</div>
+<div class="wrap" style="justify-content:center">
+ <div class="ph"><div class="sheet"><div class="grab"></div><h3>تأكيد: لم يحضر</h3>
+  <div class="who"><span class="av">م</span><div><b>محمد أحمد علي</b><small>حجز 2:30 م · د. هبة</small></div></div>
+  <div class="field">السبب (مطلوب)<div>لم يحضر المريض</div></div>
+  <div class="acts"><span class="btn red">تأكيد</span><span class="btn ghost">تراجع</span></div></div></div>
+</div>
+</body></html>

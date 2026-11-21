@@ -53,7 +53,7 @@ function blank(){var win=w.open('','_blank');if(!win)throw Error('المتصفح
 /* single-payment receipt (approved mockup docs/ui-references/mockups/payment-receipt.html) */
 function receiptHtml(r){var inv=r.invoice||null,rest=inv?Math.max(0,Number(inv.due||0)):null;
  var body=title('إيصال سداد','رقم الإيصال',r.receipt_no||r.reference||'—')+
-  meta([['المريض',r.patient_name],['رقم الملف',r.file_no,1],['التاريخ',stamp(r.created_at),1],['على فاتورة',inv&&inv.no,1],['الزيارة',r.visit],['الوردية',r.shift]])+
+  meta([['المريض',r.patient_name],['رقم الملف',r.file_no,1],['التاريخ',stamp(r.created_at),1],['على فاتورة',inv&&inv.no,1],['الزيارة',r.visit],['الوردية',r.shift]].concat(r.doctor?[['الطبيب',r.doctor],['التخصص',r.specialty||'—']]:[]))+
   '<div class="sum"><div class="box"><h4>بيانات الدفعة</h4>'+kv('المبلغ المستلم',money(r.amount)+' ج.م','big')+kv('المبلغ بالحروف',esc(words(r.amount)))+kv('طريقة الدفع',esc(METHOD[r.method]||r.method||'—'))+
    (r.method&&r.method!=='cash'?kv('رقم العملية','<span class="ltr">'+esc(r.reference||'—')+'</span>')+kv('صورة إيصال الماكينة / التحويل',r.has_proof?'<span class="tag">مرفقة في السيستم</span>':'—'):'')+
    (Number(r.credit_amount)>0?kv('اتضاف لرصيد المريض',money(r.credit_amount)):'')+'</div>'+
