@@ -11862,6 +11862,19 @@
       "reviewed": true
     },
     {
+      "title": "مثلاً: الأخ، الجدة",
+      "labels": [
+        "مثلاً: الأخ، الجدة"
+      ],
+      "text": "لما تختار «أخرى» في صاحب الرقم للملف الجديد: اكتب صلته بالمريض.",
+      "article": "automatic-bookings",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "السن",
       "labels": [
         "السن"
@@ -12757,12 +12770,51 @@
       "reviewed": true
     },
     {
+      "title": "من مواعيد النهارده (اختياري)",
+      "labels": [
+        "من مواعيد النهارده (اختياري)"
+      ],
+      "text": "اختار زيارة من مواعيد النهارده عشان المريض والدكتور يتملوا لوحدهم — أو سيبها واختارهم بنفسك.",
+      "article": "follow-ups",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "الطبيب",
       "labels": [
         "الطبيب"
       ],
       "text": "اختار الطبيب الذي يخصه الإجراء فعلًا. في الحجز يلزم تطابق القسم وعقد مؤهل وتواجد، وفي التنفيذ يسجل الطبيب الذي قدم الخدمة.",
       "article": "doctor-missing",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "مثلاً: إعادة تحليل سكر تراكمي قبل الكشف",
+      "labels": [
+        "مثلاً: إعادة تحليل سكر تراكمي قبل الكشف"
+      ],
+      "text": "اكتب سبب المتابعة أو المطلوب قبلها.",
+      "article": "follow-ups",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "ملاحظة للمتابعة (اختياري)",
+      "labels": [
+        "ملاحظة للمتابعة (اختياري)"
+      ],
+      "text": "اللي محتاج يتعمل في المتابعة (مثلاً: إعادة تحليل قبل الكشف). بتظهر للريسبشن في قايمة المتابعات وفي الحجز.",
+      "article": "follow-ups",
       "tabs": [
         "reception_services"
       ],
@@ -14316,6 +14368,32 @@
       ],
       "text": "اكتب حرفين على الأقل من اسم الخدمة واختارها من النتايج.",
       "article": "booking-flow",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "مثلاً: الوش + الإبط",
+      "labels": [
+        "مثلاً: الوش + الإبط"
+      ],
+      "text": "اكتب المناطق اللي هتتعمل في الزيارة دي.",
+      "article": "reception-booking-qty",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "المناطق (اختياري)",
+      "labels": [
+        "المناطق (اختياري)"
+      ],
+      "text": "لما المريض يعمل أكتر من منطقة في نفس الزيارة: اكتب المناطق (مثلاً: الوش + الإبط). بتتسجّل مع الطلب.",
+      "article": "reception-booking-qty",
       "tabs": [
         "reception_services"
       ],
@@ -16748,6 +16826,36 @@
         "جهة التعاقد لهذه الزيارة"
       ],
       "text": "اختار الجهة التي ينطبق عقدها على المريض أو الزيارة المعنية، وراجع سريان العقد وأهلية الخدمة قبل استخدام سعر التعاقد.",
+      "article": "patient-records",
+      "tabs": [
+        "patients",
+        "leads",
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "صاحب الرقم",
+      "labels": [
+        "صاحب الرقم"
+      ],
+      "text": "الرقم ده بتاع مين: المريض نفسه ولا الزوج/الزوجة/الأم/الأب ولا حد تاني. لازم تختاره لما الرقم يكون متسجّل على ملف تاني — بيظهر جنب الرقم في الملف («رقم الأم»).",
+      "article": "patient-records",
+      "tabs": [
+        "patients",
+        "leads",
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "مثلاً: الأخ، الجدة",
+      "labels": [
+        "مثلاً: الأخ، الجدة"
+      ],
+      "text": "لما تختار «أخرى» في صاحب الرقم: اكتب صلته بالمريض (مثلاً: الأخ، الجدة).",
       "article": "patient-records",
       "tabs": [
         "patients",
@@ -21774,9 +21882,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1861,
-    "labels": 1363,
-    "files": 137,
-    "groups": 1470
+    "definitions": 1871,
+    "labels": 1370,
+    "files": 138,
+    "groups": 1478
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
