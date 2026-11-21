@@ -1,0 +1,18 @@
+/* «متابعة مطلوبة» (owner 2026-11-21) */
+.rfu-card{background:#fff;border:1px solid #D5DEEE;border-radius:16px;padding:16px;display:grid;gap:12px;margin:0 0 16px}
+.rfu-head{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}.rfu-head h4{margin:0;color:#0F369D;font-size:16px}
+.rfu-count{font-size:12px;color:#5b6577;flex:1 1 auto}
+.rfu-tabs{display:flex;flex-wrap:wrap;gap:6px}
+.rfu-tab{font:inherit;font-size:12px;padding:4px 10px;border-radius:99px;border:0;background:#F4F7FC;color:#3B4658;cursor:pointer}
+.rfu-tab.on{background:#16212E;color:#fff}.rfu-tab:focus-visible{outline:2px solid #F15A22;outline-offset:2px}
+.rfu-list{display:grid;gap:10px}
+.rfu-row{display:grid;grid-template-columns:76px 1fr;gap:10px;align-items:start;padding:10px 12px;border-radius:12px;border:1px solid #E3E8F2}
+.rfu-due{font-size:12px;text-align:center;border-radius:10px;padding:6px 4px;font-weight:700;line-height:1.5}
+.rfu-row.late .rfu-due{background:#FDEEEB;color:#D0402A}.rfu-row.today .rfu-due{background:#FFF3E9;color:#F15A22}.rfu-row.soon .rfu-due{background:#E6F2EC;color:#2F7D5C}
+.rfu-row.done{grid-template-columns:1fr}.rfu-row.done .rfu-due{display:none}
+.rfu-name{font-weight:700;color:#16212E}.rfu-meta{font-size:12px;color:#5b6577;line-height:1.7}
+.rfu-act{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.rfu-act .btn{font-size:12px;padding:6px 10px}
+.rfu-done{font-size:12px;color:#2F7D5C}.rfu-empty{margin:0;font-size:13px;color:#5b6577}
+.rfu-after{border:0;padding:0;margin:0;display:grid;gap:6px}.rfu-after legend{font-size:13px;padding:0;margin-bottom:6px}
+.rfu-hint{font-size:12px;color:#5b6577;background:#F4F7FC;border-radius:10px;padding:8px 10px;margin:0}
+@media (max-width:520px){.rfu-row{grid-template-columns:64px 1fr}}
