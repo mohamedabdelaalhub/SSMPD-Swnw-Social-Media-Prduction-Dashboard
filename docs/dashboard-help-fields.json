@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1894,
-    "labels": 1387,
-    "files": 141,
-    "groups": 1491
+    "definitions": 1897,
+    "labels": 1390,
+    "files": 142,
+    "groups": 1493
   },
   "fields": [
     {
@@ -11435,6 +11435,36 @@
       "tab": "reception_services",
       "article": "follow-ups",
       "text_sha256": "c0edd5c53ed9c7c4bf2e18f784f76fe4c74a7aa96666563f1a27453b2f028ece"
+    },
+    {
+      "file": "reception-manual-time.js",
+      "label": "حجز بميعاد يدوي (متفق عليه مع الدكتور) لو الميعاد مش في القايمة: اكتب الساعة بإيدك.",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-booking-manual-time",
+      "text_sha256": "f29f3943ae4cc40f2ca494f041fd811f353ae5ce3b108ced2605fc1932d528a7"
+    },
+    {
+      "file": "reception-manual-time.js",
+      "label": "مثلاً: الدكتورة قالت هتيجي 7 ونص",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-booking-manual-time",
+      "text_sha256": "9354853a0c7a6fc124574638ea46afeacce3249322816b439faa8e7d384e00a3"
+    },
+    {
+      "file": "reception-manual-time.js",
+      "label": "ملاحظة الاتفاق (اختياري)",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-booking-manual-time",
+      "text_sha256": "9354853a0c7a6fc124574638ea46afeacce3249322816b439faa8e7d384e00a3"
     },
     {
       "file": "reception-overbook.js",
