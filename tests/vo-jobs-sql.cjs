@@ -5,6 +5,7 @@ const { PGlite } = require('@electric-sql/pglite'), fs = require('fs'), assert =
   const db = new PGlite();
   await db.exec('create role authenticated; create role anon; create role service_role;');
   await db.exec(fs.readFileSync('supabase/migrations/20261122100000_vo_jobs.sql', 'utf8'));
+  await db.exec(fs.readFileSync('supabase/migrations/20261122101000_vo_jobs_clips.sql', 'utf8'));
   const one = async (sql, args = []) => (await db.query(sql, args)).rows[0];
   const submit = (script, voice = 'auto', energy = 'moderate', notes = null) =>
     one('select public.vo_job_submit($1,$2,$3,$4) id', [script, voice, energy, notes]).then((r) => r.id);
@@ -99,5 +100,22 @@ const { PGlite } = require('@electric-sql/pglite'), fs = require('fs'), assert =
   assert.equal((await one('select audio is null gone from ops_private.vo_jobs where id = $1', [id])).gone, true);
 
   console.log('PASS vo_jobs: guards, lease/sent/done/fail, timeout, requeue, rate limit, permissions, retention');
+  await db.close();
+})().catch((e) => { console.error(e); process.exit(1); });
+
+// The clips delta rolls back cleanly onto 20261122100000 and applies again.
+(async () => {
+  const db = new PGlite();
+  await db.exec('create role authenticated; create role anon; create role service_role;');
+  await db.exec(fs.readFileSync('supabase/migrations/20261122100000_vo_jobs.sql', 'utf8'));
+  const id = (await db.query("select public.vo_job_submit('قبل الدلتا.') id")).rows[0].id;
+  await db.exec(fs.readFileSync('supabase/migrations/20261122101000_vo_jobs_clips.sql', 'utf8'));
+  assert.deepEqual((await db.query('select public.vo_job_get($1) r', [id])).rows[0].r.clips, [], 'old rows get an empty list');
+  await db.exec(fs.readFileSync('supabase/rollbacks/20261122101000_vo_jobs_clips.rollback.sql', 'utf8'));
+  assert.equal((await db.query('select public.vo_job_get($1) r', [id])).rows[0].r.clips, undefined);
+  assert.equal((await db.query("select public.vo_worker_api('clips', $1::jsonb) r", [JSON.stringify({ id })])).rows[0].r.reason, 'action');
+  await db.exec(fs.readFileSync('supabase/migrations/20261122101000_vo_jobs_clips.sql', 'utf8'));
+  await db.exec(fs.readFileSync('supabase/migrations/20261122101000_vo_jobs_clips.sql', 'utf8'));
+  console.log('PASS vo_jobs_clips delta: apply on live shape, rollback, re-apply (idempotent)');
   await db.close();
 })().catch((e) => { console.error(e); process.exit(1); });

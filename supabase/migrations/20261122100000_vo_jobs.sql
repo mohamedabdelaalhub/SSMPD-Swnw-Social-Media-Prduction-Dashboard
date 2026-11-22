@@ -6,8 +6,6 @@
 --   number or national ID (8+ digits in a row, the center's own two numbers excepted). Never patient data.
 -- * Every function is SECURITY DEFINER, EXECUTE for service_role only (the two edge functions); no table access for
 --   anon/authenticated. Nothing here is visible in the dashboard.
--- * Instinct also sends suggested shot links for each script (owner 2026-11-22): the worker stores them in clips
---   (https only, up to 20, ≤500 chars each). They are optional suggestions for the reel task, never required.
 -- * A job not done 30 minutes after it was asked for becomes «timeout» (the reel task has already fallen back by then).
 --   Audio older than 7 days is dropped.
 -- Rollback: supabase/rollbacks/20261122100000_vo_jobs.rollback.sql
@@ -29,7 +27,6 @@ create table if not exists ops_private.vo_jobs (
   message_id text,
   audio bytea,
   audio_bytes int,
-  clips jsonb not null default '[]'::jsonb,
   error text,
   created_at timestamptz not null default now(),
   leased_at timestamptz,
@@ -47,19 +44,6 @@ language sql immutable set search_path = pg_catalog as $$
            replace(replace(translate(coalesce(p, ''), '٠١٢٣٤٥٦٧٨٩۰۱۲۳۴۵۶۷۸۹', '01234567890123456789'),
                            '01010686264', ''), '0236230005', ''),  -- the center's own landline and mobile are fine in a CTA
            '([0-9])[[:space:].-]+(?=[0-9])', '\1', 'g') ~ '[0-9]{8,}'
-$$;
-
--- Suggested shot links from Instinct: keep https strings only, ≤500 chars, no duplicates, at most 20 (old ones first).
-create or replace function ops_private.vo_clean_clips(p_old jsonb, p_new jsonb) returns jsonb
-language sql immutable set search_path = pg_catalog as $$
-  select coalesce(jsonb_agg(u order by o), '[]'::jsonb) from (
-    select u, min(o) o from (
-      select e.value #>> '{}' u, e.ordinality o
-        from jsonb_array_elements(case when jsonb_typeof(p_old) = 'array' then p_old else '[]' end) with ordinality e
-      union all
-      select e.value #>> '{}', 1000 + e.ordinality
-        from jsonb_array_elements(case when jsonb_typeof(p_new) = 'array' then p_new else '[]' end) with ordinality e
-    ) x where u ~ '^https://[^[:space:]<>"'']+$' and char_length(u) <= 500 group by u order by min(o) limit 20) y
 $$;
 
 -- Lazy clean-up, run by every call below: 30-minute timeout, stale leases back to the queue, old audio dropped.
@@ -107,11 +91,11 @@ begin
   perform ops_private.vo_sweep();
   select * into j from ops_private.vo_jobs where id = p_id;
   if not found then return jsonb_build_object('status', 'not_found'); end if;
-  return jsonb_strip_nulls(jsonb_build_object('status', j.status, 'voice', j.voice, 'energy', j.energy, 'error', j.error, 'clips', j.clips,
+  return jsonb_strip_nulls(jsonb_build_object('status', j.status, 'voice', j.voice, 'energy', j.energy, 'error', j.error,
     'audio_base64', case when j.status = 'done' and j.audio is not null then encode(j.audio, 'base64') end));
 end $$;
 
--- Worker (vo-worker edge function): lease | sent | done | fail | clips.
+-- Worker (vo-worker edge function): lease | sent | done | fail.
 create or replace function public.vo_worker_api(p_action text, p_payload jsonb default '{}'::jsonb) returns jsonb
 language plpgsql security definer set search_path = pg_catalog, ops_private as $$
 declare v_id uuid; v_audio bytea; v_n int; v_out jsonb;
@@ -150,16 +134,12 @@ begin
       return jsonb_build_object('ok', false, 'reason', 'not mp3');
     end if;
     update ops_private.vo_jobs set status = 'done', audio = v_audio, audio_bytes = length(v_audio), error = null,
-           clips = ops_private.vo_clean_clips(clips, p_payload->'clips'),
            done_at = now(), updated_at = now()
      where id = v_id and status in ('leased', 'sent');
   elsif p_action = 'fail' then
     update ops_private.vo_jobs set status = case when p_payload->>'reason' = 'timeout' then 'timeout' else 'failed' end,
            error = left(coalesce(p_payload->>'error', 'worker error'), 400), updated_at = now()
      where id = v_id and status in ('queued', 'leased', 'sent');
-  elsif p_action = 'clips' then  -- links can come before, with or after the mp3 (also after a timeout: still useful)
-    update ops_private.vo_jobs set clips = ops_private.vo_clean_clips(clips, p_payload->'clips'), updated_at = now()
-     where id = v_id and created_at > now() - interval '1 day';
   else
     return jsonb_build_object('ok', false, 'reason', 'action');
   end if;
@@ -167,7 +147,7 @@ begin
   return jsonb_build_object('ok', v_n = 1, 'reason', case when v_n = 1 then null else 'not active' end);
 end $$;
 
-revoke all on function ops_private.vo_looks_personal(text), ops_private.vo_sweep(), ops_private.vo_clean_clips(jsonb, jsonb) from public, anon, authenticated;
+revoke all on function ops_private.vo_looks_personal(text), ops_private.vo_sweep() from public, anon, authenticated;
 revoke all on function public.vo_job_submit(text, text, text, text), public.vo_job_get(uuid), public.vo_worker_api(text, jsonb)
   from public, anon, authenticated;
 grant usage on schema ops_private to service_role;
