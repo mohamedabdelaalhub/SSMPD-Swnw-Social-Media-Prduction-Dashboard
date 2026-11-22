@@ -17,7 +17,7 @@ function dayLabel(iso){var m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso||''));if
 // digits only; Egyptian mobile 01xxxxxxxxx → 201xxxxxxxxx; 20… stays; anything else → '' (no button)
 function waPhone(v){var p=String(v||'').replace(/[^0-9]/g,'');if(p.indexOf('00')===0)p=p.slice(2);if(/^01[0-9]{9}$/.test(p))p='2'+p;return /^201[0-9]{9}$/.test(p)?p:'';}
 function firstName(n){return String(n||'').trim().split(/\s+/)[0]||'';}
-function message(r,day){var lines=['أهلاً '+firstName(r.name)+' 👋','تذكير من Swnw للعيادات التخصصية بموعدك:','مع: '+(r.doctor||'الدكتور'),
+function message(r,day){var lines=['أهلاً '+firstName(r.name)+' 👋','تذكير من مركز عيادات سونو التخصصية بموعدك:','مع: '+(r.doctor||'الدكتور'),
   'الموعد: '+dayLabel(day)+(r.time?' الساعة '+r.time:' — بدون ساعة محددة')];
  if(r.booking_ref)lines.push('رقم الحجز: '+r.booking_ref);
  lines.push('نتشرف بزيارتك. لو مش هتقدر تيجي ابعتلنا هنا نغيّر الميعاد.');return lines.join('\n');}

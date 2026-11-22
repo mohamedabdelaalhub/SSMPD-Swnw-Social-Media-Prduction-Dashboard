@@ -248,7 +248,7 @@ function activationEmailHtml(name: string, code: string) {
     '<div dir="ltr" style="font-size:30px;font-weight:700;letter-spacing:5px;padding:14px;background:#f3f6fb;border-radius:12px;display:inline-block">' + esc(code) + '</div>' +
     '<p>الكود صالح لمدة <b>15 دقيقة</b> ويُستخدم مرة واحدة فقط. بعد إدخاله ستحدد كلمة سر جديدة للحساب.</p>' +
     link +
-    '<p style="font-size:12px;color:#687386">إذا لم تطلب تفعيل الحساب، تواصل مع مركز Swnw ولا تشارك الكود مع أي شخص.</p>' +
+    '<p style="font-size:12px;color:#687386">إذا لم تطلب تفعيل الحساب، تواصل مع مركز عيادات سونو التخصصية ولا تشارك الكود مع أي شخص.</p>' +
     '</div>';
 }
 
