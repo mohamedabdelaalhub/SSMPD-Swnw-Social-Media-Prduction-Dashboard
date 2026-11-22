@@ -11534,6 +11534,49 @@
       "reviewed": true
     },
     {
+      "title": "مثلاً: جرد آخر اليوم",
+      "labels": [
+        "مثلاً: جرد آخر اليوم"
+      ],
+      "text": "ملاحظة اختيارية على جرد الخزينة الرئيسية، زي سبب الجرد أو أي حاجة لاحظتها. الملاحظة مبتغيّرش المبلغ المعدود.",
+      "article": "main-treasury-count",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "ملاحظة (اختياري)",
+      "labels": [
+        "ملاحظة (اختياري)"
+      ],
+      "text": "اكتب تفاصيل هذا السجل التي يحتاجها المراجع أو المنفذ ولا تغطيها الحقول الأخرى. تجنب نسخ بيانات حساسة لا تخص الغرض، ولا تستخدم الملاحظة بدل المستند أو القرار.",
+      "article": "ledger-guide",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "مثلاً: مطابقة بدون فرق",
+      "labels": [
+        "مثلاً: مطابقة بدون فرق",
+        "نتيجة المراجعة"
+      ],
+      "text": "اكتب نتيجة مراجعتك لجرد الخزينة الرئيسية (مطابق أو فيه فرق واتحوّل لفروق الخزينة). المراجعة من شخص غير اللي عدّ، ومبتخصمش حاجة من حد.",
+      "article": "main-treasury-count",
+      "tabs": [
+        "accounting",
+        "booking_cash"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "رقم التليفون أو الاسم",
       "labels": [
         "رقم التليفون أو الاسم"
@@ -22195,9 +22238,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1905,
-    "labels": 1396,
-    "files": 143,
-    "groups": 1500
+    "definitions": 1909,
+    "labels": 1399,
+    "files": 144,
+    "groups": 1503
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
