@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1900,
-    "labels": 1392,
+    "definitions": 1901,
+    "labels": 1393,
     "files": 143,
-    "groups": 1496
+    "groups": 1497
   },
   "fields": [
     {
@@ -14185,6 +14185,16 @@
       "tab": "clinic_info",
       "article": "chatbot",
       "text_sha256": "deed4a173b73bd6da1e59c8390c474dc0ca53679b99f62fccf11f888dc07eb79"
+    },
+    {
+      "file": "render-comments.js",
+      "label": "دوّر باسم أو كلمة",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "comments",
+      "article": "social-chat-inbox",
+      "text_sha256": "06ffca44d5b1f9d993f1181ddb36bdcc5576b8ada89f23b759b3c8c1ba6d9aa9"
     },
     {
       "file": "render-comments.js",
