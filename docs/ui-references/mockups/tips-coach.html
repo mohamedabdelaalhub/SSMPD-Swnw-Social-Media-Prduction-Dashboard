@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>تصور: نصايح الشغل (Tips) للاستقبال والحسابات</title>
+<style>
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W3.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W6.woff2) format("woff2");font-weight:600 800}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Regular.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Bold.woff2) format("woff2");font-weight:600 800}
+:root{--brand:#0F369D;--accent:#F15A22;--ink:#16212E;--muted:#667085;--line:#E6EBF3;--soft:#F3F6FB;--tint:#EAF0FF;--teal:#00B0BD;--pos:#2F7D5C;--neg:#D0402A;--gap:16px}
+*{box-sizing:border-box}html,body{margin:0}
+body{font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;color:var(--ink);background:#EEF2F8;font-size:14px}
+button{font:inherit;color:inherit;cursor:pointer}
+svg{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.note{max-width:1180px;margin:16px auto 0;padding:0 16px;color:var(--muted);font-size:12px}.note b{color:var(--brand)}
+.wrap{max-width:1180px;margin:12px auto 24px;padding:0 16px;display:grid;gap:var(--gap)}
+.card{background:#fff;border-radius:24px;box-shadow:0 6px 24px rgba(15,54,157,.06);padding:20px}
+.seg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;background:#fff;border-radius:18px;padding:6px;box-shadow:0 6px 24px rgba(15,54,157,.06)}
+.seg button{min-height:44px;border:0;border-radius:14px;background:none;color:var(--muted);font-weight:600;white-space:nowrap}
+.seg button.on{background:var(--brand);color:#fff}
+.view{display:none;gap:var(--gap)}.view.on{display:grid}
+.roles{display:flex;gap:6px;flex-wrap:wrap}
+.roles button{min-height:36px;border-radius:12px;border:1px solid var(--line);background:#fff;padding:0 14px;font-size:13px;white-space:nowrap;color:var(--muted)}
+.roles button.on{background:var(--tint);border-color:#CFDCF8;color:var(--brand);font-weight:600}
+/* fake screen behind the tip */
+.fake{position:relative;min-height:780px;overflow:hidden;background:linear-gradient(#F7F9FD,#EEF2F8)}
+.fk-top{display:flex;align-items:center;gap:8px;margin-bottom:12px}.fk-top h2{margin:0;font-size:18px;color:var(--brand);flex:1}
+.fk-btn{min-height:36px;border-radius:12px;padding:0 12px;border:1px solid var(--line);background:#fff;font-size:13px;white-space:nowrap}
+.fk-btn.main{background:var(--brand);color:#fff;border-color:var(--brand)}
+.fk-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0}
+.fk-pill{display:inline-flex;align-items:center;gap:8px;min-height:34px;padding:0 12px;border-radius:999px;border:1px solid #DDE6F6;background:#fff;font-weight:700;font-size:13px}
+.fk-pill i{width:8px;height:8px;border-radius:50%;background:var(--teal)}
+.fk-doc{display:flex;gap:8px;align-items:center;padding:8px 12px;border-radius:14px;background:#fff;border:1px solid #DDE6F6;font-size:13px;flex-wrap:wrap}
+.fk-doc b{color:var(--ink)}.fk-doc .warn{color:#B4540A;font-weight:700}
+/* tip popup */
+.tip{position:absolute;bottom:16px;inset-inline-end:16px;width:380px;max-width:calc(100% - 32px);background:#fff;border-radius:24px;box-shadow:0 20px 60px rgba(15,54,157,.25);padding:16px;display:grid;gap:12px;animation:pop .35s ease-out}
+@keyframes pop{from{transform:translateY(16px);opacity:0}to{transform:none;opacity:1}}
+.tip-h{display:flex;align-items:flex-start;gap:10px}
+.tip-ic{width:40px;height:40px;border-radius:12px;background:#FFF1E6;color:var(--accent);display:grid;place-items:center;flex:none}
+.tip-t{flex:1;min-width:0;display:grid;gap:2px}.tip-t small{color:var(--muted);font-size:12px}.tip-t b{font-size:15px;line-height:1.6}
+.tip-why{font-size:12px;background:#FFF6EF;color:#9A4E00;border-radius:12px;padding:8px 10px;line-height:1.7}
+.x{width:40px;height:40px;border:0;border-radius:12px;background:var(--soft);flex:none}
+/* slides */
+.slides{position:relative;border-radius:18px;background:var(--soft);padding:12px;display:grid;gap:8px}
+.stage{position:relative;height:170px;border-radius:14px;background:#fff;border:1px solid var(--line);overflow:hidden;padding:10px}
+.cap{font-size:13px;font-weight:600;line-height:1.7;min-height:44px}
+.cap span{color:var(--brand)}
+.dots{display:flex;gap:6px;justify-content:center;align-items:center}
+.dots i{width:8px;height:8px;border-radius:999px;background:#CFDCF8;transition:.3s}.dots i.on{width:22px;background:var(--brand)}
+.nav{display:flex;justify-content:space-between;gap:8px}
+.nav button{min-height:36px;border:0;border-radius:10px;background:#fff;padding:0 12px;font-size:12px;color:var(--brand);font-weight:600}
+/* mini ui inside stage */
+.m-row{display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:wrap}
+.m-b{height:28px;border-radius:9px;border:1px solid var(--line);background:#fff;padding:0 10px;font-size:11px;display:inline-flex;align-items:center;white-space:nowrap}
+.m-b.main{background:var(--brand);color:#fff;border-color:var(--brand)}.m-b.or{background:var(--accent);color:#fff;border-color:var(--accent)}.m-b.ok{background:#E6F4EC;color:var(--pos);border-color:#CBE7D6}
+.m-card{border:1px solid var(--line);border-radius:12px;padding:8px;font-size:11px;display:grid;gap:6px;background:#FBFCFE}
+.m-card b{font-size:12px}
+.m-sel{height:28px;border-radius:9px;border:1px solid var(--line);background:#fff;padding:0 10px;font-size:11px;display:inline-flex;align-items:center;gap:6px;min-width:120px;justify-content:space-between}
+.m-scr{border-radius:12px;background:#0F369D;color:#fff;padding:10px;text-align:center;font-size:12px;display:grid;gap:4px}.m-scr b{font-size:22px}
+.hl{position:relative;outline:3px solid var(--accent);outline-offset:2px;border-radius:9px;animation:glow 1.2s ease-in-out infinite}
+@keyframes glow{50%{outline-color:#FFC7AE}}
+.cursor{position:absolute;width:26px;height:26px;pointer-events:none;transition:top .7s ease,left .7s ease;z-index:3}
+.cursor:before{content:"";position:absolute;inset:0;border-radius:50%;background:rgba(241,90,34,.25);animation:tap 1.2s ease-out infinite}
+.cursor:after{content:"";position:absolute;inset:8px;border-radius:50%;background:var(--accent)}
+@keyframes tap{0%{transform:scale(.6);opacity:1}100%{transform:scale(1.6);opacity:0}}
+.acts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.btn{min-height:44px;border-radius:14px;border:1px solid var(--line);background:#fff;padding:0 12px;display:inline-flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap;font-weight:600;color:var(--brand)}
+.btn.main{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.vid{background:var(--tint);border-color:#CFDCF8}
+.btn.vid.missing{color:var(--muted);background:var(--soft);border-style:dashed}
+.later{display:flex;gap:4px;justify-content:space-between;flex-wrap:wrap}
+.later button{border:0;background:none;color:var(--muted);font-size:12px;min-height:36px;padding:0 6px}
+/* lists */
+.tl{display:grid;gap:8px}
+.trow{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 14px;border-radius:16px;border:1px solid var(--line)}
+.trow .n{display:grid;gap:3px;min-width:0}.trow .n b{font-size:14px}.trow .n small{color:var(--muted);font-size:12px;line-height:1.6}
+.num{width:32px;height:32px;border-radius:10px;background:var(--soft);display:grid;place-items:center;font-weight:700;color:var(--brand);font-size:13px}
+.chip{display:inline-flex;align-items:center;min-height:26px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+.chip.vid{background:#E6F4EC;color:var(--pos)}.chip.gap{background:#FFF1E0;color:#9A4E00}.chip.ctx{background:#E3F7F8;color:#00747C}
+.tags{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.h2{margin:0 0 12px;font-size:17px}
+.rules{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.rule{background:var(--soft);border-radius:16px;padding:12px 14px;display:grid;gap:4px}.rule b{font-size:13px}.rule span{font-size:12px;color:var(--muted);line-height:1.7}
+table{width:100%;border-collapse:separate;border-spacing:0 6px;font-size:13px}
+th{color:var(--muted);font-weight:600;text-align:start;padding:0 10px;font-size:12px}
+td{background:var(--soft);padding:10px;white-space:nowrap}td:first-child{border-radius:0 12px 12px 0}td:last-child{border-radius:12px 0 0 12px}
+.bar{height:8px;border-radius:999px;background:#E6EBF3;overflow:hidden;min-width:80px}.bar i{display:block;height:100%;background:var(--pos);border-radius:999px}
+.tscroll{overflow:visible}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:14px;padding:10px 16px;font-size:13px;opacity:0;pointer-events:none;transition:.2s;z-index:40}.toast.on{opacity:1}
+@media (max-width:640px){
+ :root{--gap:12px}.wrap{padding:0 12px}.note{padding:0 12px}.card{padding:16px;border-radius:20px}
+ .seg button{font-size:12px}
+ .fake{min-height:720px}
+ .tip{inset-inline:0;bottom:0;width:auto;max-width:none;border-radius:24px 24px 0 0}
+ .rules{grid-template-columns:minmax(0,1fr)}
+ .trow{grid-template-columns:auto minmax(0,1fr);}.trow .tags{grid-column:1/-1;justify-content:flex-start}
+ table,thead,tbody,tr,td,th{display:block}thead{display:none}tr{background:var(--soft);border-radius:14px;padding:10px;margin-bottom:8px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px}td{background:none;padding:0;white-space:normal}td:first-child{grid-column:1/-1;font-weight:700}
+}
+</style>
+</head>
+<body>
+<div class="note"><b>تصور تفاعلي — نصايح الشغل (Tips)</b> · بيانات تجربة، مفيش حاجة بتتحفظ. جرّب الشرايح والزراير، وغيّر الدور من فوق.</div>
+<div class="wrap">
+ <nav class="seg" id="seg"><button class="on" data-v="pop">شكل النصيحة</button><button data-v="list">قايمة النصايح</button><button data-v="mgr">متابعة المدير</button></nav>
+
+ <section class="view on" id="v-pop">
+  <div class="roles" id="roles"><button class="on" data-r="reception">الاستقبال</button><button data-r="finance">الحسابات</button></div>
+  <div class="card fake" id="fake"></div>
+ </section>
+
+ <section class="view" id="v-list">
+  <div class="card">
+   <h2 class="h2">إمتى النصيحة بتظهر؟</h2>
+   <div class="rules">
+    <div class="rule"><b>3 نصايح بالكتير في الوردية</b><span>وبين كل نصيحة والتانية 20 دقيقة على الأقل. مش بتظهر وإنت فاتح نموذج أو بتحصّل.</span></div>
+    <div class="rule"><b>حسب اللي بيحصل قدامك الأول</b><span>مثلاً: دكتور «وصل» ومش مربوط بعيادة ← تظهر «اربط الدكتور بالعيادة». مريض حضر وعليه فلوس ← «حصّل قبل ما يمشي».</span></div>
+    <div class="rule"><b>«فهمت» / «فكّرني بعدين» / «ما تورينيش دي تاني»</b><span>«فهمت» بتعلّمها اتعلّمت. «بعدين» بترجع بعد ساعتين. «تاني لأ» بتخفيها خالص.</span></div>
+    <div class="rule"><b>«جرّبها دلوقتي» و«كمّل اتعلّم ▶»</b><span>الأول بيفتحلك الشاشة الحقيقية، والتاني بيشغّل الفيديو بتاعها لو موجود. ولو لسه معملناهوش بيتكتب «الفيديو جاي قريب».</span></div>
+   </div>
+  </div>
+  <div class="card"><div class="roles" id="lroles"><button class="on" data-l="reception">الاستقبال (<span id="cr"></span>)</button><button data-l="finance">الحسابات (<span id="cf"></span>)</button><button data-l="gap">الفيديوهات الناقصة (<span id="cg"></span>)</button></div><div class="tl" id="tlist" style="margin-top:14px"></div></div>
+ </section>
+
+ <section class="view" id="v-mgr">
+  <div class="card"><h2 class="h2">مين اتعلّم إيه؟</h2>
+   <table><thead><tr><th>الموظف</th><th>الدور</th><th>شاف</th><th>اتعلّم</th><th>التقدّم</th></tr></thead><tbody id="mgr"></tbody></table>
+  </div>
+ </section>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),2000);}
+// frames: html of the mini screen + cursor position [top,left %] + caption
+const T={
+ reception:[
+  {id:'room',t:'اربط الدكتور بالعيادة',why:'د. سارة علي «وصلت» من 5 دقايق ومش مربوطة بعيادة — المرضى مش هيعرفوا يدخلوا فين.',vid:null,ctx:true,frames:[
+   ['افتح <span>«الغرف والطابور»</span> من «⋯» فوق',`<div class="m-row"><span class="m-b main">حجز جديد</span><span class="m-b hl">⋯</span></div><div class="m-card"><b>الغرف والطابور</b><span>العيادات · طوابير الأطباء</span></div>`,[14,8]],
+   ['في كارت العيادة اختار <span>الدكتور</span>',`<div class="m-card"><b>عيادة 3</b><span>فاضية</span><div class="m-row"><span class="m-sel hl">د. سارة علي ▾</span><span class="m-b">ربط</span></div></div>`,[62,38]],
+   ['دوس <span>«ربط»</span>',`<div class="m-card"><b>عيادة 3</b><span>فاضية</span><div class="m-row"><span class="m-sel">د. سارة علي ▾</span><span class="m-b main hl">ربط</span></div></div>`,[62,62]],
+   ['خلاص — رقم العيادة <span>بيظهر للمرضى لوحده</span> على الشاشة وفي «دوري»',`<div class="m-scr"><span>رقم</span><b>A-12</b><span>اتفضل على عيادة 3</span></div>`,[45,48]]]},
+  {id:'doc_arrive',t:'سجّل وصول الدكتور',why:'معاد عيادة د. أحمد سمير 6:00 م ولسه حالته «مجدول».',vid:null,ctx:true,frames:[
+   ['في سطر <span>«الأطباء»</span> دوس «تفاصيل»',`<div class="fk-doc" style="font-size:11px"><b>الأطباء:</b> د. أحمد سمير مجدول <span class="m-b hl">تفاصيل ⌄</span></div>`,[22,10]],
+   ['جنب الدكتور افتح <span>«⋯» ← حالة الطبيب</span>',`<div class="m-card"><b>د. أحمد سمير</b><span>مجدول</span><div class="m-row"><span class="m-b hl">⋯</span></div></div>`,[64,10]],
+   ['اختار <span>«وصل»</span> (أو «تأخير» واكتب الدقايق)',`<div class="m-card"><div class="m-row"><span class="m-b">في الطريق</span><span class="m-b main hl">وصل</span><span class="m-b">تأخير</span></div></div>`,[22,48]],
+   ['بعدها <span>اربطه بعيادة</span> عشان المرضى يعرفوا يدخلوا فين',`<div class="m-card"><b>د. أحمد سمير</b><span class="chip ctx">وصل</span><span class="m-b or">اربط بعيادة</span></div>`,[60,20]]]},
+  {id:'arrive',t:'سجّل وصول المريض',why:'',vid:'01-booking-arrival.mp4',frames:[
+   ['دوس على <span>اسم المريض</span> في الساعة بتاعته',`<div class="fk-pill hl"><i></i>6:30 منى سعيد</div>`,[18,40]],
+   ['دوس <span>«وصل»</span>',`<div class="m-card"><b>منى سعيد · 6:30</b><div class="m-row"><span class="m-b main hl">وصل</span><span class="m-b">⋯</span></div></div>`,[52,74]],
+   ['أكّد — المريض <span>بيدخل «في الانتظار»</span> والزيارة بتتفتح',`<div class="m-card"><b>تأكيد: وصل</b><div class="m-row"><span class="m-b main hl">تأكيد</span><span class="m-b">رجوع</span></div></div>`,[52,70]]]},
+  {id:'call',t:'نادِ على المريض',why:'',vid:'02-call-start.mp4',frames:[
+   ['المريض «في الانتظار» — دوس على اسمه',`<div class="fk-pill hl"><i></i>كريم حسن · مستني 12 د</div>`,[18,40]],
+   ['دوس <span>«نادي»</span> — الشاشة بتنادي برقمه',`<div class="m-card"><b>كريم حسن</b><div class="m-row"><span class="m-b main hl">نادي</span></div></div>`,[52,78]],
+   ['لما يدخل دوس <span>«بدأ الكشف»</span> — يتنقل «في غرفة الكشف»',`<div class="m-card"><b>كريم حسن</b><div class="m-row"><span class="m-b main hl">بدأ الكشف</span></div></div>`,[52,70]]]},
+  {id:'collect',t:'حصّل قبل ما المريض يمشي',why:'يحيى أحمد كمال خلّص الكشف وعليه 500 ج.م.',vid:null,ctx:true,frames:[
+   ['جنب المريض هتلاقي <span>«التحصيل»</span> بالبرتقاني',`<div class="m-row"><span class="fk-pill"><i></i>يحيى أحمد كمال · متبقي 500</span><span class="m-b or hl">التحصيل</span></div>`,[16,10]],
+   ['اختار <span>طريقة الدفع</span> واكتب المبلغ',`<div class="m-card"><b>تسجيل تحصيل</b><div class="m-row"><span class="m-sel hl">كاش ▾</span><span class="m-b">500</span></div></div>`,[54,46]],
+   ['لو عليه أكتر من زيارة <span>علّم عليهم</span> وادفعهم مرة واحدة',`<div class="m-card"><div class="m-row"><span class="m-b hl">☑ زيارة 12 نوفمبر · 150</span></div><span class="m-b main">حفظ</span></div>`,[36,40]],
+   ['اتسجل — يظهر <span>«تم التحصيل ✓»</span> بالأخضر',`<div class="m-row"><span class="fk-pill"><i></i>يحيى أحمد كمال</span><span class="m-b ok">تم التحصيل ✓</span></div>`,[16,10]]]},
+  {id:'service',t:'طلب خدمة وإنهاء الزيارة',vid:'03-service-finish.mp4',frames:[['افتح المريض ← «⋯» ← <span>«طلب خدمة»</span>',`<div class="m-card"><b>سلمى إبراهيم</b><span class="m-b hl">طلب خدمة</span></div>`,[52,60]],['في الآخر <span>«إنهاء الزيارة»</span>',`<div class="m-card"><span class="m-b main hl">إنهاء الزيارة</span></div>`,[40,60]]]},
+  {id:'noshow',t:'لم يحضر / تغيير الميعاد',vid:'04-noshow-reschedule-search.mp4',frames:[['افتح المريض ← «⋯»',`<div class="m-card"><b>عمر خالد · متأخر 40 د</b><span class="m-b hl">⋯</span></div>`,[52,10]],['<span>«لم يحضر»</span> واكتب السبب، أو <span>«تغيير الميعاد»</span>',`<div class="m-card"><div class="m-row"><span class="m-b hl">لم يحضر</span><span class="m-b">تغيير الميعاد</span></div></div>`,[22,70]]]},
+  {id:'delay',t:'الدكتور هيتأخر؟ عرّف المرضى',vid:null,frames:[['«⋯» جنب الدكتور ← <span>«تأخير»</span>',`<div class="m-card"><div class="m-row"><span class="m-b hl">تأخير</span></div></div>`,[22,60]],['اكتب <span>الدقايق والسبب</span>',`<div class="m-card"><div class="m-row"><span class="m-b hl">20 دقيقة</span><span class="m-b">زحمة</span></div></div>`,[22,60]]]},
+  {id:'expenses',t:'مصروفات الوردية',vid:null,frames:[['«الخزينة والوردية» ← <span>«صرف من مصروفات الوردية»</span>',`<div class="m-card"><b>مصروفات الوردية</b><span class="m-b hl">− صرف</span></div>`,[52,60]]]},
+  {id:'peer',t:'سلّم تحصيلك لزميل',vid:null,frames:[['<span>«تسليم تحصيل لزميل»</span> واختار الزميل',`<div class="m-card"><span class="m-sel hl">منى ▾</span></div>`,[40,50]],['الزميل لازم يدوس <span>«استلمت»</span>',`<div class="m-card"><span class="m-b ok hl">استلمت</span></div>`,[40,60]]]},
+  {id:'close_shift',t:'اقفل ورديتك وسلّم الكاش',vid:null,frames:[['«شغلي النهارده» ← <span>«اقفل ورديتي وسلّم الكاش»</span>',`<div class="m-card"><span class="m-b main hl">اقفل ورديتي</span></div>`,[40,60]],['<span>عِد الكاش</span> واكتبه — أي فرق بيتراجع',`<div class="m-card"><div class="m-row"><span class="m-b hl">الفعلي 4,350</span></div></div>`,[40,60]]]},
+  {id:'help',t:'طلب دعم أو أولوية',vid:null,frames:[['«⋯» على المريض ← <span>«طلب دعم»</span> أو «تحديد الأولوية»',`<div class="m-card"><div class="m-row"><span class="m-b hl">طلب دعم</span><span class="m-b">الأولوية</span></div></div>`,[22,70]]]},
+  {id:'book',t:'حجز جديد',vid:'01-booking-arrival.mp4',frames:[['دوس <span>«حجز جديد»</span> فوق',`<div class="m-row"><span class="m-b main hl">حجز جديد</span></div>`,[14,60]]]},
+  {id:'leads',t:'سجّل رسالة عميل جديد (ليد)',vid:'09-leads.mp4',frames:[['الليدز ← <span>«ليد جديد»</span>',`<div class="m-card"><span class="m-b main hl">ليد جديد</span></div>`,[40,60]]]}],
+ finance:[
+  {id:'receive_cash',t:'استلم الكاش من الخزن',why:'منى قفلت ورديتها وسلّمت 4,350 ج.م — مستنياك تستلم.',vid:null,ctx:true,frames:[
+   ['من <span>«شغلي النهارده»</span> هتلاقي «استلم كاش من الخزن»',`<div class="m-card"><b>استلم كاش من الخزن</b><span>منى · 4,350 ج.م</span><span class="m-b main hl">استلم</span></div>`,[66,62]],
+   ['<span>عِد المبلغ</span> وقارنه باللي مكتوب',`<div class="m-card"><div class="m-row"><span class="m-b">المسلّم 4,350</span><span class="m-b hl">الفعلي 4,350</span></div></div>`,[22,40]],
+   ['دوس <span>«استلم النقدية»</span> — أو «رفض» واكتب السبب',`<div class="m-card"><div class="m-row"><span class="m-b main hl">استلم النقدية</span><span class="m-b">رفض</span></div></div>`,[22,62]]]},
+  {id:'approve',t:'اعتمادات مستنياك',vid:null,ctx:true,frames:[['«اعتمادات مستنياك» ← <span>«اعتمد»</span>',`<div class="m-card"><b>طلب صرف · 1,200</b><span class="m-b main hl">اعتمد</span></div>`,[66,62]]]},
+  {id:'voucher_in',t:'سند قبض',vid:null,frames:[['«السندات» ← <span>«سند قبض»</span>',`<div class="m-row"><span class="m-b main hl">سند قبض</span><span class="m-b">سند صرف</span></div>`,[14,60]]]},
+  {id:'voucher_out',t:'سند صرف',vid:null,frames:[['«السندات» ← <span>«سند صرف»</span>',`<div class="m-row"><span class="m-b">سند قبض</span><span class="m-b main hl">سند صرف</span></div>`,[14,40]]]},
+  {id:'main_count',t:'جرد الخزينة الرئيسية',vid:null,frames:[['<span>«جرد الخزينة الرئيسية»</span>',`<div class="m-card"><span class="m-b main hl">جرد الخزينة الرئيسية</span></div>`,[40,50]],['اكتب <span>الفعلي</span> ← «حفظ الجرد» — الخزينة بتفضل مفتوحة',`<div class="m-card"><span class="m-b hl">حفظ الجرد</span></div>`,[40,60]]]},
+  {id:'review_shift',t:'مراجعة الوردية',vid:null,frames:[['«الخزائن والورديات» ← <span>«مراجعة الوردية»</span>',`<div class="m-card"><span class="m-b hl">مراجعة الوردية</span></div>`,[40,60]]]},
+  {id:'cases',t:'فروق الخزينة',vid:null,frames:[['«فروق الخزينة» ← <span>«راجع الفروق»</span> ← «استكمال المسار»',`<div class="m-card"><b>فرق −50</b><span class="m-b hl">راجع الفروق</span></div>`,[60,60]]]},
+  {id:'statement',t:'كشف الخزينة',vid:null,frames:[['«كشف الخزينة» واختار <span>الفترة</span>',`<div class="m-card"><span class="m-b hl">كشف الخزينة</span></div>`,[40,60]]]},
+  {id:'advance',t:'مقدمات الحجز',vid:null,frames:[['«مقدمات الحجز» ← <span>«تسجيل مقدم»</span> ثم «استخدام على فاتورة»',`<div class="m-card"><span class="m-b main hl">تسجيل مقدم</span></div>`,[40,60]]]},
+  {id:'doctor_pay',t:'مستحقات دكتور',vid:null,frames:[['«الأطباء والأتعاب» ← <span>«حساب الدكتور»</span> ← «طلب صرف مستحقات»',`<div class="m-card"><span class="m-b hl">طلب صرف مستحقات</span></div>`,[40,60]]]},
+  {id:'supplier',t:'سداد مورد',vid:null,frames:[['«الموردون» ← <span>«طلب سداد مورد»</span>',`<div class="m-card"><span class="m-b hl">طلب سداد مورد</span></div>`,[40,60]]]},
+  {id:'bank',t:'رفع كشف البنك ومطابقته',vid:null,frames:[['«البنك والبطاقات» ← <span>«رفع PDF أو Excel»</span> ← «مطابقة»',`<div class="m-card"><span class="m-b hl">رفع كشف</span><span class="m-b">مطابقة</span></div>`,[40,60]]]},
+  {id:'multi',t:'تحصيل أكتر من زيارة مرة واحدة',vid:null,frames:[['في «تسجيل تحصيل» <span>علّم على الزيارات</span>',`<div class="m-card"><span class="m-b hl">☑ زيارة 12 نوفمبر</span></div>`,[40,60]]]},
+  {id:'payroll',t:'صرف راتب',vid:null,frames:[['«المرتبات والسلف» ← <span>«طلب صرف راتب»</span>',`<div class="m-card"><span class="m-b hl">طلب صرف راتب</span></div>`,[40,60]]]}]};
+const FAKE={reception:`<div class="fk-top"><h2>تشغيل اليوم</h2><span class="fk-btn main">حجز جديد</span><span class="fk-btn">⋯</span></div>
+ <div class="fk-doc"><b>الأطباء:</b> د. سارة علي <span class="warn">وصلت · مش مربوطة بعيادة</span> · د. أحمد سمير مجدول</div>
+ <div class="fk-row"><span class="fk-pill"><i></i>6:00 كريم حسن</span><span class="fk-pill"><i></i>6:15 منى سعيد</span><span class="fk-pill"><i></i>6:30 يحيى أحمد كمال</span></div>`,
+ finance:`<div class="fk-top"><h2>شغلي النهارده</h2></div><div class="fk-doc"><b>استلم كاش من الخزن</b> منى · 4,350 ج.م <span class="warn">مستني</span></div><div class="fk-row"><span class="fk-pill"><i></i>اعتمادات مستنياك 2</span><span class="fk-pill"><i></i>فروق الخزينة 1</span></div>`};
+let role='reception',tip=0,fr=0,timer=null;
+function frame(){const t=T[role][tip],f=t.frames[fr];
+ const st=$('#stage');st.innerHTML=f[1]+'<span class="cursor"></span>';const h=st.querySelector('.hl'),c=st.querySelector('.cursor');if(h){const a=st.getBoundingClientRect(),r=h.getBoundingClientRect();c.style.top=(r.top-a.top+r.height/2-4)+'px';c.style.left=(r.left-a.left+r.width/2-4)+'px';}else{c.style.top=f[2][0]+'%';c.style.left=f[2][1]+'%';}$('#cap').innerHTML=(fr+1)+'. '+f[0];
+ $('#dots').innerHTML=t.frames.map((_,i)=>`<i class="${i===fr?'on':''}"></i>`).join('');
+ clearTimeout(timer);timer=setTimeout(()=>{fr=(fr+1)%t.frames.length;frame();},2600);}
+function show(){const t=T[role][tip];fr=0;
+ $('#fake').innerHTML=FAKE[role]+`<div class="tip" role="dialog" aria-label="نصيحة"><div class="tip-h"><span class="tip-ic"><svg viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.8.8 1 1.5 1 2.5h6c0-1 .2-1.7 1-2.5A6 6 0 0 0 12 3z"/></svg></span>
+ <div class="tip-t"><small>نصيحة ${tip+1} من ${T[role].length} · ${role==='reception'?'الاستقبال':'الحسابات'}</small><b>${t.t}</b></div><button class="x" data-later aria-label="إغلاق">✕</button></div>
+ ${t.why?`<div class="tip-why">${t.why}</div>`:''}
+ <div class="slides"><div class="stage" id="stage"></div><div class="cap" id="cap"></div><div class="nav"><button data-prev>‹ السابق</button><div class="dots" id="dots"></div><button data-next>التالي ›</button></div></div>
+ <div class="acts"><button class="btn main" data-try>جرّبها دلوقتي</button><button class="btn vid ${t.vid?'':'missing'}" data-vid>${t.vid?'▶ كمّل اتعلّم':'الفيديو جاي قريب'}</button></div>
+ <div class="later"><button data-done>✓ فهمت</button><button data-later>فكّرني بعدين</button><button data-never>ما تورينيش دي تاني</button><button data-nexttip>النصيحة اللي بعدها ←</button></div></div>`;frame();}
+function list(k){const rows=k==='gap'?[...T.reception,...T.finance].filter(t=>!t.vid):T[k];
+ $('#tlist').innerHTML=rows.map((t,i)=>`<div class="trow"><span class="num">${i+1}</span><div class="n"><b>${t.t}</b><small>${t.frames.map(f=>f[0].replace(/<[^>]+>/g,'')).join(' ← ')}</small></div><div class="tags">${t.ctx?'<span class="chip ctx">بتظهر حسب الموقف</span>':''}${t.vid?'<span class="chip vid">فيه فيديو</span>':'<span class="chip gap">محتاج فيديو</span>'}${k==='gap'?`<span class="chip" style="background:var(--soft)">${T.reception.includes(t)?'استقبال':'حسابات'}</span>`:''}</div></div>`).join('');}
+const M=[['منى','الاستقبال',12,9,14],['سارة','الاستقبال',10,5,14],['علي','الاستقبال',4,1,14],['رحاب','الحسابات',13,11,14],['أحمد','الحسابات',6,2,14]];
+$('#mgr').innerHTML=M.map(m=>`<tr><td>${m[0]}</td><td>${m[1]}</td><td>${m[2]} من ${m[4]}</td><td>${m[3]} من ${m[4]}</td><td><div class="bar"><i style="width:${Math.round(m[3]/m[4]*100)}%"></i></div></td></tr>`).join('');
+$('#cr').textContent=T.reception.length;$('#cf').textContent=T.finance.length;$('#cg').textContent=[...T.reception,...T.finance].filter(t=>!t.vid).length;
+document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+ if(b.dataset.v){$$('#seg button').forEach(x=>x.classList.toggle('on',x===b));$$('.view').forEach(v=>v.classList.toggle('on',v.id==='v-'+b.dataset.v));return;}
+ if(b.dataset.r){role=b.dataset.r;tip=0;$$('#roles button').forEach(x=>x.classList.toggle('on',x===b));show();return;}
+ if(b.dataset.l){$$('#lroles button').forEach(x=>x.classList.toggle('on',x===b));list(b.dataset.l);return;}
+ if('next' in b.dataset){const n=T[role][tip].frames.length;fr=(fr+1)%n;frame();return;}
+ if('prev' in b.dataset){const n=T[role][tip].frames.length;fr=(fr-1+n)%n;frame();return;}
+ if('nexttip' in b.dataset){tip=(tip+1)%T[role].length;show();return;}
+ if('done' in b.dataset){toast('اتسجلت إنك اتعلّمتها ✓');tip=(tip+1)%T[role].length;show();return;}
+ if('later' in b.dataset){toast('هتظهر تاني بعد ساعتين');tip=(tip+1)%T[role].length;show();return;}
+ if('never' in b.dataset){toast('مش هتظهرلك تاني (تقدر ترجعها من «نصايح الشغل» في المساعدة)');tip=(tip+1)%T[role].length;show();return;}
+ if('try' in b.dataset){toast('هيفتح الشاشة الحقيقية ويعلّم على الزرار');return;}
+ if('vid' in b.dataset){toast(T[role][tip].vid?'هيفتح «فيديوهات الشرح» على الفيديو ده':'الفيديو لسه في قايمة الفيديوهات الناقصة');return;}});
+show();list('reception');
+</script>
+</body>
+</html>
