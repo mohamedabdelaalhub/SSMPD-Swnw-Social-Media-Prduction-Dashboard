@@ -11260,6 +11260,19 @@
       "reviewed": true
     },
     {
+      "title": "حسب",
+      "labels": [
+        "حسب"
+      ],
+      "text": "اختار تقسيم المؤشرات: حسب الموظف، أو المصدر (واتساب / ماسنجر / فيسبوك…)، أو الحملة. الحجز بيتحسب على مصدر الليد وقت الحجز.",
+      "article": "leads-booking",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "من",
       "labels": [
         "من"
@@ -22143,9 +22156,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1900,
-    "labels": 1392,
+    "definitions": 1901,
+    "labels": 1393,
     "files": 143,
-    "groups": 1496
+    "groups": 1497
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();

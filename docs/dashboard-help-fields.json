@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1900,
-    "labels": 1392,
+    "definitions": 1901,
+    "labels": 1393,
     "files": 143,
-    "groups": 1496
+    "groups": 1497
   },
   "fields": [
     {
@@ -9823,6 +9823,16 @@
       "tab": "price_lists",
       "article": "price-lists",
       "text_sha256": "d4e58156ff40d8c5aa7149e158c88c7be8b8599379008b22dec9f4d9f20dd953"
+    },
+    {
+      "file": "leads-booking-funnel.js",
+      "label": "حسب",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "leads-booking",
+      "text_sha256": "131be3ca125b7633a665ada3de98cc91f10be88bc1c38e242bd80155284d97c8"
     },
     {
       "file": "leads-booking-funnel.js",
