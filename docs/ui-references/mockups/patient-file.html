@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>تصور: ملف المريض — الشكل الجديد</title>
+<style>
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W3.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W6.woff2) format("woff2");font-weight:600 800}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Regular.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Bold.woff2) format("woff2");font-weight:600 800}
+:root{--brand:#0F369D;--accent:#F15A22;--ink:#16212E;--muted:#667085;--line:#E6EBF3;--soft:#F3F6FB;--tint:#EAF0FF;--teal:#00B0BD;--orange:#FF8800;--old:#525B6F;--pos:#2F7D5C;--neg:#D0402A}
+*{box-sizing:border-box}html,body{margin:0}
+body{font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;color:var(--ink);background:#EEF2F8;font-size:14px}
+button,input,select,textarea{font:inherit;color:inherit}button{cursor:pointer}
+svg{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.note{max-width:1180px;margin:16px auto 0;padding:0 16px;color:var(--muted);font-size:12px}.note b{color:var(--brand)}
+.wrap{max-width:1180px;margin:12px auto 24px;padding:0 16px;display:grid;gap:16px}
+.card{background:#fff;border-radius:24px;box-shadow:0 6px 24px rgba(15,54,157,.06);padding:20px}
+/* header */
+.head{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.back{width:44px;height:44px;border-radius:14px;border:0;background:var(--soft);color:var(--brand);display:grid;place-items:center}
+.av{width:64px;height:64px;border-radius:50%;background:var(--tint);color:var(--brand);display:grid;place-items:center;flex:none}.av svg{width:30px;height:30px}
+.who{flex:1;min-width:220px;display:grid;gap:8px}
+.who h1{margin:0;font-size:22px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 11px;border-radius:999px;background:var(--soft);font-size:12px;white-space:nowrap;color:var(--ink)}
+.chip svg{width:14px;height:14px;color:var(--muted)}
+.chip.code{background:var(--tint);color:var(--brand);font-weight:600}
+.chip.alert{background:#FDECEA;color:var(--neg);font-weight:600}
+.hacts{display:flex;gap:8px;align-items:center}
+.btn{height:44px;border-radius:14px;border:1px solid var(--line);background:#fff;padding:0 16px;display:inline-flex;align-items:center;gap:8px;white-space:nowrap;font-weight:600;color:var(--brand)}
+.btn.main{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.icon{width:44px;padding:0;justify-content:center}
+.menu{position:relative}
+.pop{position:absolute;top:50px;inset-inline-end:0;background:#fff;border-radius:16px;box-shadow:0 12px 40px rgba(15,54,157,.18);padding:6px;display:none;z-index:5;min-width:200px}
+.pop.on{display:grid}
+.pop button{border:0;background:none;text-align:start;padding:10px 12px;border-radius:10px;display:flex;gap:10px;align-items:center;white-space:nowrap}
+.pop button:hover{background:var(--soft)}
+/* tabs */
+.tabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;background:#fff;border-radius:18px;padding:6px;box-shadow:0 6px 24px rgba(15,54,157,.06)}
+.tabs button{height:44px;border:0;border-radius:14px;background:none;color:var(--muted);font-weight:600;white-space:nowrap;display:flex;align-items:center;justify-content:center;gap:6px;min-width:0}
+.tabs button.on{background:var(--brand);color:#fff}
+.tabs i{font-style:normal;font-size:11px;background:var(--soft);color:var(--muted);border-radius:999px;padding:1px 7px}
+.tabs button.on i{background:rgba(255,255,255,.2);color:#fff}
+.panel{display:none;gap:16px}.panel.on{display:grid}
+/* tiles */
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.tile{border:0;text-align:start;background:#fff;border-radius:20px;padding:16px;box-shadow:0 6px 24px rgba(15,54,157,.06);display:grid;gap:6px}
+.tile small{color:var(--muted);font-size:12px}.tile b{font-size:18px;color:var(--brand);white-space:nowrap}.tile span{font-size:12px;color:var(--muted)}
+.tile:hover{outline:2px solid var(--tint)}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+.ctitle{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:14px}
+.ctitle h2{margin:0;font-size:16px}
+.link{border:0;background:none;color:var(--brand);font-weight:600;font-size:13px;display:inline-flex;gap:6px;align-items:center;white-space:nowrap;padding:6px}
+dl.kv{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 20px;margin:0}
+dl.kv div{display:grid;gap:3px;min-width:0}dl.kv dt{color:var(--muted);font-size:12px}dl.kv dd{margin:0;font-weight:600;overflow-wrap:anywhere}
+.missing{display:inline-flex;gap:6px;align-items:center;color:#9A4E00;background:#FFF1E0;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:600}
+.hist{display:grid;gap:10px}
+.hrow{display:flex;justify-content:space-between;gap:12px;padding:12px 14px;border-radius:14px;background:var(--soft);align-items:center}
+.hrow b{font-size:13px}.hrow span{font-size:13px;color:var(--muted);text-align:end}
+.hrow.flag{background:#FDECEA}.hrow.flag span{color:var(--neg);font-weight:600}
+/* visits */
+.tl{display:grid;gap:12px}
+.visit{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;align-items:start;border:1px solid var(--line);border-radius:18px;padding:14px 16px;background:#fff}
+.visit .date{display:grid;justify-items:center;background:var(--soft);border-radius:14px;padding:8px 12px;min-width:64px}
+.visit .date b{font-size:20px;color:var(--brand)}.visit .date small{font-size:11px;color:var(--muted)}
+.visit .mid{display:grid;gap:6px;min-width:0}
+.visit .mid .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.visit .mid p{margin:0;font-size:13px;color:var(--ink);line-height:1.8}
+.visit .mid p small{color:var(--muted)}
+.st{display:inline-flex;height:24px;align-items:center;padding:0 10px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+.st.new{background:var(--teal);color:#fff}.st.fu{background:var(--tint);color:var(--brand)}.st.soon{background:#FFF1E0;color:#9A4E00}.st.ok{background:#E6F4EC;color:var(--pos)}.st.miss{background:#FDECEA;color:var(--neg)}
+.more{display:none}.visit.open .more{display:grid;gap:6px}
+.vacts{display:flex;gap:6px}
+.ib{width:40px;height:40px;border-radius:12px;border:0;background:var(--soft);color:var(--brand);display:grid;place-items:center}
+.showall{justify-self:center}
+/* specialties */
+.specs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.spec{border:0;text-align:start;background:#fff;border-radius:20px;padding:16px;box-shadow:0 6px 24px rgba(15,54,157,.06);display:grid;gap:8px;border-inline-start:4px solid var(--brand)}
+.spec .top{display:flex;justify-content:space-between;gap:8px;align-items:center}.spec b{font-size:15px}
+.spec small{color:var(--muted);font-size:12px}
+.spec.empty{border-inline-start-color:var(--line);background:#FAFBFD;box-shadow:none;border:1px dashed var(--line)}
+.spec.empty b{color:var(--muted)}
+/* docs */
+.dbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.fchips{display:flex;gap:6px;flex-wrap:wrap}
+.fchips button{height:36px;border-radius:12px;border:1px solid var(--line);background:#fff;padding:0 12px;font-size:12px;white-space:nowrap;color:var(--muted);display:inline-flex;gap:6px;align-items:center}
+.fchips button.on{background:var(--tint);border-color:#CFDCF8;color:var(--brand);font-weight:600}
+.fchips button i{font-style:normal;font-size:11px}
+.fchips button.zero{opacity:.55}
+.docs{display:grid;gap:8px;margin-top:14px}
+.doc{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px 12px;border-radius:16px;border:1px solid var(--line)}
+.doc .ic{width:44px;height:44px;border-radius:12px;display:grid;place-items:center}
+.ic.rx{background:#EAF0FF;color:var(--brand)}.ic.lab{background:#E3F7F8;color:#00747C}.ic.rad{background:#F3ECFB;color:#6B3FA0}.ic.rep{background:#E6F4EC;color:var(--pos)}.ic.ins{background:#FFF1E0;color:#9A4E00}.ic.id{background:var(--soft);color:var(--old)}
+.doc .t{display:grid;gap:3px;min-width:0}.doc .t b{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.doc .t small{color:var(--muted);font-size:12px}
+.src{font-size:11px;border-radius:999px;padding:1px 8px;background:var(--soft);color:var(--muted);margin-inline-start:6px}
+.empty-msg{text-align:center;color:var(--muted);padding:24px}
+/* modal */
+.back-drop{position:fixed;inset:0;background:rgba(22,33,46,.45);display:none;align-items:center;justify-content:center;z-index:20;padding:16px}
+.back-drop.on{display:flex}
+.modal{background:#fff;border-radius:24px;max-width:520px;width:100%;padding:20px;display:grid;gap:14px;max-height:85vh;overflow:auto}
+.modal h3{margin:0;font-size:17px;display:flex;justify-content:space-between;align-items:center}
+.modal .x{width:40px;height:40px;border:0;border-radius:12px;background:var(--soft)}
+.cats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.cats button{border:1px solid var(--line);background:#fff;border-radius:14px;padding:12px;display:flex;gap:10px;align-items:center;text-align:start}
+.cats button.on{border-color:var(--brand);background:var(--tint)}
+.drop{border:2px dashed #CFDCF8;border-radius:18px;padding:20px;text-align:center;color:var(--muted)}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:14px;padding:10px 16px;font-size:13px;opacity:0;pointer-events:none;transition:.2s;z-index:30}.toast.on{opacity:1}
+@media (max-width:900px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.specs{grid-template-columns:repeat(2,minmax(0,1fr))}.grid2{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:640px){
+ .wrap{padding:0 12px;gap:12px}.panel,.grid2{gap:12px}.note{padding:0 12px}.card{padding:16px;border-radius:20px}
+ .head{gap:12px}.av{width:52px;height:52px}.who h1{font-size:19px}.who{min-width:0;flex-basis:calc(100% - 120px)}
+ .hacts{width:100%}.hacts .btn.main{flex:1;justify-content:center}
+ .tabs{grid-template-columns:repeat(3,minmax(0,1fr))}.tabs button{font-size:12px;height:42px}
+ .tabs button .lg{display:none}
+ .tiles{gap:12px}.tile b{font-size:16px}
+ dl.kv{grid-template-columns:minmax(0,1fr)}
+ .visit{grid-template-columns:auto minmax(0,1fr);gap:10px;padding:12px}.vacts{grid-column:1/-1;justify-content:flex-end}
+ .specs{grid-template-columns:minmax(0,1fr);gap:12px}
+ .cats{grid-template-columns:minmax(0,1fr)}
+}
+</style>
+</head>
+<body>
+<div class="note"><b>تصور تفاعلي — ملف المريض</b> · بيانات تجربة، مفيش حاجة بتتحفظ. دوس على التابات والكروت والزراير.</div>
+<div class="wrap">
+ <section class="card head">
+  <button class="back" title="رجوع للأرشيف" data-toast="هيرجع لأرشيف المرضى"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+  <span class="av"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></span>
+  <div class="who">
+   <h1>يوسف أحمد محمود</h1>
+   <div class="chips">
+    <span class="chip code">رقم الملف P-2026-000123</span>
+    <span class="chip">6 سنين · ذكر</span>
+    <span class="chip"><svg viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a1 1 0 0 1-1 1A16 16 0 0 1 4 5a1 1 0 0 1 1-1"/></svg><span dir="ltr">01000000000</span></span>
+    <span class="chip alert">حساسية: بنسلين</span>
+   </div>
+  </div>
+  <div class="hacts">
+   <button class="btn main" data-open="visit"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>زيارة جديدة</button>
+   <div class="menu"><button class="btn icon" data-menu aria-label="أدوات أكتر">⋯</button>
+    <div class="pop" id="pop">
+     <button data-toast="اتحدّثت البيانات"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 14-5l2 2M20 12a8 8 0 0 1-14 5l-2-2M20 4v5h-5M4 20v-5h5"/></svg>تحديث الملف</button>
+     <button data-toast="اتنسخ رابط الملف"><svg viewBox="0 0 24 24"><path d="M9 15l6-6M10 6l1-1a4 4 0 0 1 6 6l-1 1M14 18l-1 1a4 4 0 0 1-6-6l1-1"/></svg>نسخ رابط الملف</button>
+     <button data-toast="هيفتح الطباعة (الملف كامل أو جزء منه)"><svg viewBox="0 0 24 24"><path d="M7 9V3h10v6M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2M7 14h10v7H7z"/></svg>طباعة الملف</button>
+     <button data-open="edit"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>تعديل البيانات</button>
+    </div></div>
+  </div>
+ </section>
+
+ <nav class="tabs" id="tabs">
+  <button class="on" data-tab="sum">الملخص</button>
+  <button data-tab="vis">الزيارات <span class="lg">والمتابعات</span> <i>6</i></button>
+  <button data-tab="spec">التخصصات <i>3</i></button>
+  <button data-tab="tests">الفحوصات <span class="lg">والروشتات</span> <i>4</i></button>
+  <button data-tab="docs">المستندات <i>3</i></button>
+ </nav>
+
+ <!-- summary -->
+ <section class="panel on" id="p-sum">
+  <div class="tiles">
+   <button class="tile" data-goto="vis"><small>آخر زيارة</small><b>الجمعة 17 أكتوبر</b><span>متابعة · د. سارة علي</span></button>
+   <button class="tile" data-goto="vis"><small>المتابعة الجاية</small><b>السبت 29 نوفمبر</b><span>5:30 م · لسه متأكدتش</span></button>
+   <button class="tile" data-open="visits-all"><small>الزيارات</small><b>6 زيارات</b><span>من 12 يونيو</span></button>
+   <button class="tile" data-goto="docs"><small>المستندات والفحوصات</small><b>7 ملفات</b><span>آخر رفع 17 أكتوبر</span></button>
+  </div>
+  <div class="grid2">
+   <div class="card">
+    <div class="ctitle"><h2>البيانات الشخصية</h2><button class="link" data-open="edit">تعديل</button></div>
+    <dl class="kv">
+     <div><dt>التليفون</dt><dd dir="ltr" style="text-align:end">01000000000</dd></div>
+     <div><dt>السن</dt><dd>6 سنين</dd></div>
+     <div><dt>النوع</dt><dd>ذكر</dd></div>
+     <div><dt>الرقم الطبي</dt><dd><span class="missing">ناقص · <button class="link" style="padding:0" data-open="edit">كمّله</button></span></dd></div>
+     <div><dt>اتفتح الملف</dt><dd>12 يونيو 2026</dd></div>
+     <div><dt>فتحه</dt><dd>منى (الاستقبال)</dd></div>
+    </dl>
+   </div>
+   <div class="card">
+    <div class="ctitle"><h2>التاريخ الصحي</h2><button class="link" data-open="edit">تعديل</button></div>
+    <div class="hist">
+     <div class="hrow flag"><b>حساسية من الأدوية</b><span>بنسلين</span></div>
+     <div class="hrow"><b>أمراض مزمنة</b><span>مفيش</span></div>
+     <div class="hrow"><b>عمليات جراحية</b><span>مفيش</span></div>
+     <div class="hrow"><b>أمراض في العيلة</b><span>سكر (الجد)</span></div>
+    </div>
+   </div>
+  </div>
+ </section>
+
+ <!-- visits -->
+ <section class="panel" id="p-vis">
+  <div class="card">
+   <div class="ctitle"><h2>الزيارات والمتابعات</h2><button class="btn main" data-open="visit"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>زيارة جديدة</button></div>
+   <div class="tl" id="tl"></div>
+  </div>
+  <div class="card"><div class="ctitle"><h2>تقييم تجربة المريض</h2><button class="link" data-toast="هيفتح تقييم جديد">+ تقييم جديد</button></div><p class="empty-msg" style="padding:8px">لسه مفيش تقييمات.</p></div>
+ </section>
+
+ <!-- specialties -->
+ <section class="panel" id="p-spec">
+  <div class="specs">
+   <button class="spec" data-toast="هيفتح ملف العلاج الطبيعي"><span class="top"><b>العلاج الطبيعي</b><span class="st fu">8 جلسات</span></span><small>آخر جلسة الخميس 16 أكتوبر · خطة 12 جلسة</small></button>
+   <button class="spec" data-toast="هيفتح ملف التخاطب"><span class="top"><b>التخاطب</b><span class="st fu">3 جلسات</span></span><small>آخر جلسة 2 أكتوبر</small></button>
+   <button class="spec" data-toast="هيفتح ملف التغذية"><span class="top"><b>التغذية</b><span class="st fu">زيارة واحدة</span></span><small>نظام غذائي من 20 سبتمبر</small></button>
+   <button class="spec empty" data-toast="هيبدأ ملف جديد للأسنان"><span class="top"><b>الأسنان</b><span class="st" style="background:var(--soft);color:var(--muted)">مفيش</span></span><small>+ ابدأ ملف</small></button>
+   <button class="spec empty" data-toast="هيبدأ ملف جديد للصحة النفسية"><span class="top"><b>الصحة النفسية</b><span class="st" style="background:var(--soft);color:var(--muted)">مفيش</span></span><small>+ ابدأ ملف</small></button>
+  </div>
+ </section>
+
+ <!-- tests -->
+ <section class="panel" id="p-tests">
+  <div class="card">
+   <div class="dbar"><div class="fchips" data-list="tests"></div>
+    <div style="display:flex;gap:8px"><button class="btn" data-open="create">+ اكتب جديد</button><button class="btn main" data-open="upload">رفع</button></div></div>
+   <div class="docs" id="l-tests"></div>
+  </div>
+ </section>
+
+ <!-- docs -->
+ <section class="panel" id="p-docs">
+  <div class="card">
+   <div class="dbar"><div class="fchips" data-list="docs"></div><button class="btn main" data-open="upload">رفع مستند</button></div>
+   <div class="docs" id="l-docs"></div>
+  </div>
+ </section>
+</div>
+
+<div class="back-drop" id="md"><div class="modal" id="mbody"></div></div>
+<div class="toast" id="toast"></div>
+<script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),1900);}
+const I={rx:'<svg viewBox="0 0 24 24"><path d="M6 3h8a4 4 0 0 1 0 8H6zM6 11v10M11 14l7 7M18 14l-7 7"/></svg>',lab:'<svg viewBox="0 0 24 24"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3"/></svg>',
+rad:'<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M12 8v8M9 10h6M9 14h6"/></svg>',rep:'<svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6zM9 12h7M9 16h7M9 8h3"/></svg>',
+ins:'<svg viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></svg>',id:'<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="9" cy="12" r="2"/><path d="M14 10h4M14 14h3"/></svg>',
+print:'<svg viewBox="0 0 24 24"><path d="M7 9V3h10v6M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2M7 14h10v7H7z"/></svg>',
+eye:'<svg viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>',more:'<svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>',
+chev:'<svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>'};
+const VIS=[
+ {d:'17',m:'أكتوبر',day:'الجمعة',t:'12:00 م',type:'متابعة',dr:'د. سارة علي',comp:'متابعة بعد جلسات العلاج الطبيعي — تحسن في الحركة',plan:'استكمال 4 جلسات + تمارين في البيت',fu:['soon','متابعة السبت 29 نوفمبر · 5:30 م']},
+ {d:'2',m:'أكتوبر',day:'الخميس',t:'4:15 م',type:'كشف',dr:'د. أحمد سمير',comp:'ألم في الركبة اليمين بعد اللعب',plan:'أشعة على الركبة + علاج طبيعي 12 جلسة',fu:['ok','اتعملت المتابعة']},
+ {d:'20',m:'سبتمبر',day:'السبت',t:'6:00 م',type:'تغذية',dr:'أ. منة',comp:'وزن أقل من المعدل',plan:'نظام غذائي 4 أسابيع',fu:['miss','مجاش المتابعة']},
+ {d:'5',m:'سبتمبر',day:'الجمعة',t:'1:00 م',type:'تخاطب',dr:'أ. ريهام',comp:'تقييم نطق',plan:'جلسة أسبوعياً',fu:['ok','اتعملت المتابعة']},
+ {d:'2',m:'يوليو',day:'الأربعاء',t:'11:30 ص',type:'كشف',dr:'د. سارة علي',comp:'كحة وسخونية',plan:'روشتة 5 أيام',fu:['ok','مفيش متابعة']},
+ {d:'12',m:'يونيو',day:'الخميس',t:'7:00 م',type:'كشف',dr:'د. أحمد سمير',comp:'أول زيارة — كشف عام',plan:'تحاليل دم',fu:['ok','مفيش متابعة']}];
+let showAll=false;
+function drawVisits(){const list=showAll?VIS:VIS.slice(0,5);
+ $('#tl').innerHTML=list.map((v,i)=>`<div class="visit" data-v="${i}"><div class="date"><b>${v.d}</b><small>${v.m}</small></div>
+ <div class="mid"><div class="row"><b>${v.day} ${v.d} ${v.m} · ${v.t}</b><span class="st ${v.type==='كشف'?'new':'fu'}">${v.type}</span><span class="st ${v.fu[0]}">${v.fu[1]}</span></div>
+ <p><small>${v.dr} — </small>${v.comp}</p><div class="more"><p><small>خطة العلاج: </small>${v.plan}</p><p><small>رقم الزيارة: </small>V-${2026}${String(100+i)}</p></div></div>
+ <div class="vacts"><button class="ib" data-exp aria-label="التفاصيل">${I.chev}</button><button class="ib" data-toast="هيفتح تعديل/حذف الزيارة" aria-label="أدوات">${I.more}</button></div></div>`).join('')+
+ (VIS.length>5?`<button class="link showall" data-all>${showAll?'إظهار آخر 5 بس':'عرض الكل ('+VIS.length+')'}</button>`:'');}
+const TESTS=[{c:'rx',k:'روشتات',n:'روشتة — مضاد حيوي 5 أيام',dt:'الأربعاء 2 يوليو',src:'اتكتبت من الداشبورد'},{c:'lab',k:'تحاليل',n:'طلب تحاليل — صورة دم كاملة',dt:'الخميس 12 يونيو',src:'اتكتبت من الداشبورد'},{c:'lab',k:'تحاليل',n:'نتيجة تحاليل الدم.pdf',dt:'السبت 14 يونيو',src:'مرفوع'},{c:'rad',k:'أشعة',n:'أشعة الركبة اليمين.jpg',dt:'الخميس 2 أكتوبر',src:'مرفوع'}];
+const DOCS=[{c:'rep',k:'تقارير طبية',n:'تقرير علاج طبيعي — منتصف الخطة',dt:'الجمعة 17 أكتوبر',src:'اتكتب من الداشبورد'},{c:'ins',k:'تأمين',n:'كارنيه التأمين.jpg',dt:'الخميس 12 يونيو',src:'مرفوع'},{c:'id',k:'تحقيق شخصية',n:'شهادة الميلاد.pdf',dt:'الخميس 12 يونيو',src:'مرفوع'}];
+const CATS={tests:['روشتات','تحاليل','أشعة','رسم مخ'],docs:['تقارير طبية','تأمين','تحقيق شخصية','أخرى']};
+const flt={tests:'الكل',docs:'الكل'};
+function drawList(k){const data=k==='tests'?TESTS:DOCS;const cats=['الكل',...CATS[k]];
+ $(`[data-list="${k}"]`).innerHTML=cats.map(c=>{const n=c==='الكل'?data.length:data.filter(x=>x.k===c).length;return `<button class="${flt[k]===c?'on':''} ${n?'':'zero'}" data-f="${k}|${c}">${c} <i>${n}</i></button>`}).join('');
+ const rows=data.filter(x=>flt[k]==='الكل'||x.k===flt[k]);
+ $('#l-'+k).innerHTML=rows.length?rows.map(x=>`<div class="doc"><span class="ic ${x.c}">${I[x.c]}</span><span class="t"><b>${x.n}</b><small>${x.dt}<span class="src">${x.src}</span></small></span>
+ <span class="vacts"><button class="ib" data-toast="هيفتح الملف" aria-label="عرض">${I.eye}</button><button class="ib" data-toast="هيطبع" aria-label="طباعة">${I.print}</button><button class="ib" data-toast="تعديل / حذف" aria-label="أدوات">${I.more}</button></span></div>`).join('')
+ :`<p class="empty-msg">مفيش ${flt[k]} لسه — <button class="link" data-open="upload">ارفع</button></p>`;}
+function modal(kind){let h='';
+ if(kind==='upload')h=`<h3>رفع مستند <button class="x" data-close>✕</button></h3><p style="margin:0;color:var(--muted);font-size:13px">اختار النوع وبعدين الملف.</p><div class="cats">${['روشتة','تحاليل','أشعة','رسم مخ','تقرير طبي','تأمين','تحقيق شخصية','أخرى'].map((c,i)=>`<button class="${i===0?'on':''}" data-cat>${c}</button>`).join('')}</div><div class="drop">اسحب الملف هنا أو دوس للاختيار<br><small>صورة أو PDF</small></div><button class="btn main" data-close data-toast2="اترفع (تجربة)">رفع</button>`;
+ else if(kind==='create')h=`<h3>اكتب جديد <button class="x" data-close>✕</button></h3><div class="cats">${['روشتة','طلب تحاليل','طلب أشعة','تقرير طبي'].map(c=>`<button data-close data-toast2="هيفتح نموذج ${c}">${c}</button>`).join('')}</div>`;
+ else if(kind==='visit')h=`<h3>زيارة جديدة <button class="x" data-close>✕</button></h3><p style="margin:0;color:var(--muted)">هيفتح نفس نموذج الزيارة الحالي (التاريخ، الطبيب، الشكوى، الخطة، المتابعة).</p><button class="btn main" data-close>تمام</button>`;
+ else if(kind==='edit')h=`<h3>تعديل البيانات <button class="x" data-close>✕</button></h3><p style="margin:0;color:var(--muted)">هيفتح نفس نموذج التعديل الحالي.</p><button class="btn main" data-close>تمام</button>`;
+ else if(kind==='visits-all')h=`<h3>كل الزيارات (6) <button class="x" data-close>✕</button></h3>${VIS.map(v=>`<div class="hrow"><b>${v.day} ${v.d} ${v.m}</b><span>${v.type} · ${v.dr}</span></div>`).join('')}<button class="btn" data-close data-goto2="vis">افتح تاب الزيارات</button>`;
+ $('#mbody').innerHTML=h;$('#md').classList.add('on');}
+document.addEventListener('click',e=>{const t=e.target.closest('button,[data-close]');if(!t){$('#pop').classList.remove('on');return;}
+ if(t.dataset.tab){$$('#tabs button').forEach(b=>b.classList.toggle('on',b===t));$$('.panel').forEach(p=>p.classList.toggle('on',p.id==='p-'+t.dataset.tab));return;}
+ if(t.dataset.goto){$(`#tabs [data-tab="${t.dataset.goto}"]`).click();return;}
+ if('menu' in t.dataset){$('#pop').classList.toggle('on');return;}
+ $('#pop').classList.remove('on');
+ if(t.dataset.open){modal(t.dataset.open);return;}
+ if('close' in t.dataset){$('#md').classList.remove('on');if(t.dataset.toast2)toast(t.dataset.toast2);if(t.dataset.goto2)$(`#tabs [data-tab="${t.dataset.goto2}"]`).click();return;}
+ if('cat' in t.dataset){$$('[data-cat]').forEach(b=>b.classList.toggle('on',b===t));return;}
+ if('exp' in t.dataset){t.closest('.visit').classList.toggle('open');return;}
+ if('all' in t.dataset){showAll=!showAll;drawVisits();return;}
+ if(t.dataset.f){const [k,c]=t.dataset.f.split('|');flt[k]=c;drawList(k);return;}
+ if(t.dataset.toast)toast(t.dataset.toast);});
+$('#md').addEventListener('click',e=>{if(e.target.id==='md')$('#md').classList.remove('on');});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){$('#md').classList.remove('on');$('#pop').classList.remove('on');}});
+drawVisits();drawList('tests');drawList('docs');
+</script>
+</body>
+</html>

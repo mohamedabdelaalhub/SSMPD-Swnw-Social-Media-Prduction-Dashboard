@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1905,
-    "labels": 1396,
-    "files": 143,
-    "groups": 1500
+    "definitions": 1909,
+    "labels": 1399,
+    "files": 144,
+    "groups": 1503
   },
   "fields": [
     {
@@ -10049,6 +10049,46 @@
       "tab": "accounting",
       "article": "ledger-guide",
       "text_sha256": "c43487d4c510799195cb3824720ed47dc6ca5b8d540f405a8f3be936c3fa4481"
+    },
+    {
+      "file": "main-treasury-count.js",
+      "label": "مثلاً: جرد آخر اليوم",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "accounting",
+      "article": "main-treasury-count",
+      "text_sha256": "c216113783264cab45c52c1ccf5f860067b5d1c22220676ea3170264ec2a579c"
+    },
+    {
+      "file": "main-treasury-count.js",
+      "label": "ملاحظة (اختياري)",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "accounting",
+      "article": "ledger-guide",
+      "text_sha256": "08c204de2685df464bdbc0cd0fde7ec98a5877581bd58cbad31890fc6661df06"
+    },
+    {
+      "file": "main-treasury-count.js",
+      "label": "مثلاً: مطابقة بدون فرق",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "accounting",
+      "article": "main-treasury-count",
+      "text_sha256": "539484bf949b68a63a254e1b32371f4832050afffb6f39f326ea5d1b79078e04"
+    },
+    {
+      "file": "main-treasury-count.js",
+      "label": "نتيجة المراجعة",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "accounting",
+      "article": "main-treasury-count",
+      "text_sha256": "539484bf949b68a63a254e1b32371f4832050afffb6f39f326ea5d1b79078e04"
     },
     {
       "file": "masa-archive.js",

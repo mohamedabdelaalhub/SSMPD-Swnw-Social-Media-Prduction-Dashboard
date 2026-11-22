@@ -42,10 +42,14 @@ function mountAccounting(host,o){
  more.addEventListener('toggle',function(){try{localStorage.setItem(key,more.open?'1':'0');}catch(_){}if(more.open)draw();});
  return Promise.resolve(db.client.rpc('clinic_finance_overview')).then(function(r){
   if(!r||r.error)throw (r&&r.error)||Error('no data');if(!host.isConnected)return r.data;var dd=r.data||{};
-  host.querySelector('[data-ft-band]').innerHTML=band('شغلي النهارده',dd.can_review?'المهام اللي مستنياك دلوقتي — الرقم البرتقالي يعني فيه حاجة مستنياك':'اختصارات شغلك اليومي',financeTasks(dd,o.allowed));
+  var paint=function(extra){host.querySelector('[data-ft-band]').innerHTML=band('شغلي النهارده',dd.can_review?'المهام اللي مستنياك دلوقتي — الرقم البرتقالي يعني فيه حاجة مستنياك':'اختصارات شغلك اليومي',(extra||[]).concat(financeTasks(dd,o.allowed)));
+   host.querySelectorAll('[data-ft-go]').forEach(function(b){b.onclick=function(){if(o.go)o.go(b.getAttribute('data-ft-go'));};});
+   host.querySelectorAll('[data-ft-main-count]').forEach(function(b){b.onclick=function(){if(w.SSMPDMainCount)w.SSMPDMainCount.autoOpen=true;if(o.go)o.go('shifts');};});
+   var mo=host.querySelector('[data-ft-more-open]');if(mo)mo.onclick=function(){more.open=true;draw();more.scrollIntoView({behavior:'smooth',block:'start'});};};
+  paint([]);
+  /* «جرد الخزينة الرئيسية» (20261122200000): the custodian's count task first; reviewers get a hot task for counts waiting > 24h */
+  if(w.SSMPDMainCount&&(!o.allowed||o.allowed('shifts')))w.SSMPDMainCount.status().then(function(v){var t=w.SSMPDMainCount.tasks(v);if(t.length&&host.isConnected)paint(t);}).catch(function(){});
   if(!dd.can_review)more.remove();else{var keep=null;try{keep=localStorage.getItem(key);}catch(_){}if(keep==='1'){more.open=true;draw();}}
-  host.querySelectorAll('[data-ft-go]').forEach(function(b){b.onclick=function(){if(o.go)o.go(b.getAttribute('data-ft-go'));};});
-  var mo=host.querySelector('[data-ft-more-open]');if(mo)mo.onclick=function(){more.open=true;draw();more.scrollIntoView({behavior:'smooth',block:'start'});};
   return dd;});
 }
 

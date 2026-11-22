@@ -3,11 +3,11 @@ const source=fs.readFileSync('tests/patient-profile-ui.cjs','utf8');const fixtur
 (async()=>{const browser=await chromium.launch({args:['--no-sandbox']});try{
  for(const width of [1280,390,360]){const page=await browser.newPage({viewport:{width,height:900}}),errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.setContent('<!doctype html><html lang="ar" dir="rtl"><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><body><main id="view-container" style="padding:16px"></main></body></html>');
- for(const name of ['styles','child-assessment-forms','patient-profile-ui'])await page.addStyleTag({content:fs.readFileSync('assets/css/'+name+'.css','utf8')});
+ for(const name of ['styles','child-assessment-forms','patient-profile-ui','patient-file-look'])await page.addStyleTag({content:fs.readFileSync('assets/css/'+name+'.css','utf8')});
  await page.addScriptTag({content:fixture});
  // A real same-origin route is unnecessary for this offline fixture; setContent starts on about:blank.
  await page.addScriptTag({content:"history.replaceState = function(){}; history.pushState=function(){};"});
- for(const name of ['nutrition-view','patient-profile-ui','child-assessment-forms','render-patients'])await page.addScriptTag({content:fs.readFileSync('assets/js/'+name+'.js','utf8')});
+ for(const name of ['nutrition-view','patient-file-look','patient-profile-ui','child-assessment-forms','render-patients'])await page.addScriptTag({content:fs.readFileSync('assets/js/'+name+'.js','utf8')});
  await page.evaluate(()=>{SSMPDRenderPatients.render(document.getElementById('view-container'));SSMPDRenderPatients.openPatientById(patient.id)});
  await page.waitForSelector('.pp-page');assert.equal(await page.locator('.pp-tab').count(),5);assert.equal(await page.locator('.pp-panel:not([hidden])').count(),1);
  assert.equal(await page.locator('.pp-header [data-pp-icon="print"]').count(),1);await page.locator('[data-pp-print]').click();await page.waitForSelector('.pp-print-dialog[open]');assert(await page.locator('[data-pp-print-full]').isVisible());assert(await page.locator('[data-pp-print-text]').isVisible());await page.keyboard.press('Escape');assert.equal(await page.locator('.pp-print-dialog').count(),0);assert(await page.locator('[data-pp-print]').evaluate(el=>el===document.activeElement));
