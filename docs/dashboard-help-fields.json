@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1897,
-    "labels": 1390,
+    "definitions": 1898,
+    "labels": 1391,
     "files": 142,
-    "groups": 1493
+    "groups": 1494
   },
   "fields": [
     {
@@ -10581,6 +10581,16 @@
       "tab": "reception_services",
       "article": "invoice",
       "text_sha256": "ea39a04f2d933c5be7f40811637a3ee239a7e73d1b1481ebeb5a5034e4c00575"
+    },
+    {
+      "file": "reception-booking-discount.js",
+      "label": "القريب",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-booking-discount",
+      "text_sha256": "4b70bc45a899abf71656228cc7d3b888ccf6900569117fbc2659417a292465bd"
     },
     {
       "file": "reception-booking-plus.js",
