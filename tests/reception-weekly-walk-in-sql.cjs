@@ -15,7 +15,8 @@ assert(rows.every(x=>x.source==='weekly'));assert(rows.some(x=>+x.d===5&&x.s==='
 // re-saving with new hours replaces future generated windows (no duplicates)
 r=await wk('save',{provider_id:doc2,slots:[{dow:0,starts:'09:00',ends:'11:00'}]});
 rows=await q("select to_char(starts_at at time zone 'Africa/Cairo','HH24:MI') s,source from clinic_reception.availability where provider_id=$1 and starts_at>now()",[doc2]);await as(1);
-assert(rows.length>=4&&rows.every(x=>x.s==='09:00'),'old generated windows replaced');
+// 28 days ahead hold 3 or 4 future Sundays (3 when the run is on a Sunday after that day's window started)
+assert(rows.length>=3&&rows.every(x=>x.s==='09:00'),'old generated windows replaced');
 await assert.rejects(()=>wk('save',{provider_id:doc2,slots:[{dow:9,starts:'25:00',ends:'10:00'}]}),e=>/راجع/.test(e.message));
 assert.equal((await wk('list')).slots.filter(x=>x.provider_id===doc2).length,1);
 // propose: the setup doctor (manual availability, no week) gets a week from his coming availability; idempotent generation
