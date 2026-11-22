@@ -1,0 +1,37 @@
+/* «استهلاك أمس» sheet (owner 2026-11-22, mockup docs/ui-references/mockups/inventory-supplies-flow.html) */
+.rx-sheet-back[data-rx-sheet="rvu"] .rx-sheet{width:min(1180px,100%)}
+.rvu{display:grid;gap:16px;font-size:13px;color:#16212E}
+.rvu-top{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.rvu-date{display:flex;gap:8px;align-items:center}.rvu-date input{font:inherit;padding:8px 12px;border:1px solid #CBD5E1;border-radius:10px}
+.rvu-tabs{display:flex;gap:6px;flex-wrap:wrap}.rvu-tab{font:inherit;font-size:12px;padding:6px 12px;border-radius:999px;border:0;background:#EEF1F6;color:#3B4658;cursor:pointer}.rvu-tab.on{background:#16212E;color:#fff}
+.rvu-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.rvu-kpi{border-radius:14px;border:1px solid #E3E9F4;padding:12px 16px;display:grid;gap:4px}.rvu-kpi small{font-size:12px;color:#8a93a3}.rvu-kpi b{font-size:22px;font-variant-numeric:tabular-nums}
+.rvu-kpi b.ok{color:#2F7D5C}.rvu-kpi b.bad{color:#D0402A}.rvu-kpi.hero{background:linear-gradient(135deg,#0F369D,#2a55c9);color:#fff;border-color:transparent}.rvu-kpi.hero small{color:#dbe4fb}
+.rvu-cols{display:grid;grid-template-columns:300px 1fr;gap:16px;align-items:start}
+.rvu-list{display:grid;gap:8px;align-content:start;max-height:65vh;overflow:auto}
+.rvu-v{display:grid;gap:6px;padding:10px 12px;border:1px solid #E3E9F4;border-radius:12px;background:#fff;font:inherit;text-align:right;cursor:pointer;color:inherit}
+.rvu-v.sel{border-color:#0F369D;box-shadow:inset -3px 0 0 #0F369D}.rvu-v:focus-visible{outline:2px solid #F15A22}
+.rvu-r{display:flex;justify-content:space-between;gap:8px;align-items:center}.rvu-svcs{justify-content:flex-start;flex-wrap:wrap;gap:6px}.rvu-m{font-size:12px;color:#5b6577}
+.rvu-chip{font-size:11px;padding:3px 8px;border-radius:999px;background:#EEF1F6;color:#3B4658;white-space:nowrap}.rvu-chip.ok{background:#E3F1EA;color:#2F7D5C}.rvu-chip.bad{background:#FDE8E2;color:#D0402A}
+.rvu-detail{display:grid;gap:12px;align-content:start}
+.rvu-pat{background:#F4F7FC;border-radius:12px;padding:10px 14px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px}
+.rvu-svc{border:1px solid #E3E9F4;border-radius:12px;padding:12px;display:grid;gap:8px}.rvu-svc.done{background:#FAFCFB}
+.rvu-svc-h{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}.rvu-svc-h b{font-size:15px}
+.rvu-t{width:100%;border-collapse:collapse}.rvu-t th{font-weight:400;color:#8a93a3;font-size:12px;text-align:right;padding:4px 6px;border-bottom:1px solid #EEF1F6}.rvu-t td{padding:6px;border-bottom:1px solid #F3F5F9;font-variant-numeric:tabular-nums}
+.rvu-q{font:inherit;width:72px;padding:5px 8px;border:1px solid #CBD5E1;border-radius:8px}
+.rvu-x{border:0;background:none;color:#D0402A;cursor:pointer;font:inherit}
+.rvu-add{display:grid;grid-template-columns:1fr 180px 90px auto;gap:8px}.rvu-add select{font:inherit;padding:7px 8px;border:1px solid #CBD5E1;border-radius:10px;min-width:0}
+.rvu-avail{margin:0;font-size:12px;color:#5b6577;min-height:1em}
+.rvu-foot{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;border-top:1px solid #EEF1F6;padding-top:10px}.rvu-foot b{color:#0F369D;font-size:16px}
+.rvu-acts{display:flex;gap:8px}.rvu-sum{margin:0}.rvu-sum b{color:#0F369D}
+.rvu-note{margin:0;font-size:12px;color:#5b6577;background:#FFF7EE;border:1px solid #FBD9C3;border-radius:10px;padding:8px 12px;line-height:1.8}
+.rvu-empty{margin:0;color:#5b6577}
+@media(max-width:820px){.rvu-kpis{grid-template-columns:repeat(2,1fr)}.rvu-cols{grid-template-columns:1fr}.rvu-add{grid-template-columns:1fr 1fr}.rvu-list{max-height:none}}
+/* direct supplier invoice modal (inventory) */
+.idi-form{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.idi-form label{display:grid;gap:4px;font-size:12px;color:#5b6577}
+.idi-form input,.idi-form select,.idi-add select,.idi-add input,.idi-t input{font:inherit;padding:8px 10px;border:1px solid #CBD5E1;border-radius:10px;min-width:0}
+.idi-add{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr auto;gap:8px;margin-top:12px}
+.idi-t{width:100%;border-collapse:collapse;margin-top:10px;font-size:13px}.idi-t th{font-weight:400;color:#8a93a3;font-size:12px;text-align:right;padding:4px 6px;border-bottom:1px solid #EEF1F6}.idi-t td{padding:6px;border-bottom:1px solid #F3F5F9}
+.idi-total{display:flex;justify-content:space-between;margin-top:10px}.idi-total b{color:#0F369D;font-size:16px}
+.idi-note{font-size:12px;color:#5b6577;margin:8px 0 0}
+@media(max-width:820px){.idi-form,.idi-add{grid-template-columns:1fr 1fr}}
