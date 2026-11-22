@@ -10,7 +10,8 @@
 --   أحمد علاء EMP-000011: Sat off · Sun-Thu 10-24 · Fri off
 -- Clinic provider «التمريض» (capacity 2) and «المعمل»: every day 10:00-23:59 (capacity unchanged).
 -- public.clinic_hours «المركز بالكامل» 08:00-00:00 → 10:00-00:00 (the agent / website «مواعيد العمل»).
--- Home nurses not in the sheet (EMP-000005/7/8): set other_nurses at the top of PART A (default 'keep').
+-- Home nurses not in the sheet (EMP-000005/7/8): other_nurses at the top of PART A — owner: 'keep'.
+-- Dr. محمد أحمد فتحي EMP-000019 (owner: starts at 10:00): Thu/Fri/Sat 08:00-23:59 → 10:00-23:59, other days kept.
 -- Sheet 2 (front staff → HR shifts only; they are not booking providers):
 --   مازن: Sat 10-18 · Sun off · Mon 16-24 · Tue 16-24 · Wed 10-18 · Thu 16-24 · Fri 10-24
 --   مريم: Sat-Thu 16-24 · Fri off
@@ -73,7 +74,7 @@ select pp.code, pp.full_name, pp.kind, pp.department, pp.job_title, pp.status,
     or pp.full_name ~ '^(مازن|مريم|زين[ةه]|منار)( |$)')
  order by pp.full_name;
 
--- R9 Dr. EMP-000019 (report only — owner decides): week + future windows before 10:00
+-- R9 Dr. EMP-000019 (A2c moves Thu/Fri/Sat 08:00 → 10:00): week + future windows before 10:00
 select p.name, p.department,
        (select string_agg(w.dow || ' ' || to_char(w.starts, 'HH24:MI') || '-' || to_char(w.ends, 'HH24:MI'), ' · ' order by w.dow, w.starts)
           from clinic_reception.weekly_slots w where w.provider_id = p.id) week,
@@ -90,7 +91,7 @@ begin;
 do $$
 declare ws uuid; actor uuid; prov uuid; k text; n int; g int; pid uuid; tid uuid; d int; cell text; st time; en time;
   -- PARAMETER (owner): the 3 home nurses not in the sheet — 'keep' | 'all_day' (10:00-23:59 every day) | 'deactivate'
-  other_nurses text := 'keep';
+  other_nurses text := 'keep';  -- owner 2026-11-22: keep
   from_d date := greatest((now() at time zone 'Africa/Cairo')::date + 1, date '2026-11-23');
   -- 7 cells per person, index = dow (0 Sun … 6 Sat); 'off' = day off
   nurse jsonb := jsonb_build_object(
@@ -169,6 +170,26 @@ begin
   get diagnostics n = row_count;
   if n <> 1 then raise exception 'expected 1 clinic_hours row «المركز بالكامل» 08:00-00:00, updated %', n; end if;
 
+  -- A2c Dr. EMP-000019 (owner: starts at 10:00): Thu/Fri/Sat 08:00-23:59 → 10:00-23:59, other days kept (weekly save path)
+  select count(*) into n from clinic_reception.providers where workspace_id = ws and active and doctor_key = 'EMP-000019';
+  if n <> 1 then raise exception 'expected 1 active provider EMP-000019, found %', n; end if;
+  select id into prov from clinic_reception.providers where workspace_id = ws and active and doctor_key = 'EMP-000019';
+  update clinic_reception.weekly_slots set starts = time '10:00'
+   where provider_id = prov and dow in (4, 5, 6) and starts = time '08:00' and ends = time '23:59';
+  get diagnostics n = row_count;
+  if n <> 3 then raise exception 'EMP-000019: expected 3 slots Thu/Fri/Sat 08:00-23:59, updated %', n; end if;
+  if exists (select 1 from clinic_reception.weekly_slots where provider_id = prov and starts < time '10:00') then
+    raise exception 'EMP-000019 still has a weekly slot before 10:00 — check R9'; end if;
+  delete from clinic_reception.availability a where a.provider_id = prov and a.source = 'weekly' and a.starts_at > now()
+    and not exists (select 1 from clinic_reception.appointments ap where ap.provider_id = prov and ap.status not in ('cancelled','no_show')
+                      and ap.starts_at < a.ends_at and ap.ends_at > a.starts_at);
+  g := clinic_reception.weekly_generate(ws, prov, 28);
+  insert into clinic_reception.audit(workspace_id, actor_id, action, entity_id) values (ws, actor, 'weekly_save', prov);
+  select count(*) into n from clinic_reception.availability a where a.provider_id = prov and a.starts_at > now()
+     and (a.starts_at at time zone 'Africa/Cairo')::time < time '10:00';
+  if n > 0 then raise notice 'EMP-000019: % future windows before 10:00 kept (a booking sits inside them — see A7)', n; end if;
+  raise notice 'EMP-000019 → Thu/Fri/Sat 10:00-23:59, % windows generated', g;
+
   -- A3 HR shift templates: reuse an active one with the same times, else create «HH-HH»
   for cell in select unnest(array['10-24','10-18','10-16','16-24','12-20']) loop
     st := (split_part(cell, '-', 1) || ':00')::time;
@@ -222,7 +243,7 @@ select p.name, a.id, to_char(a.starts_at at time zone 'Africa/Cairo', 'YYYY-MM-D
        to_char(a.ends_at at time zone 'Africa/Cairo', 'HH24:MI') local_end, a.status
   from clinic_reception.appointments a join clinic_reception.providers p on p.id = a.provider_id
   join clinic_reception.workspaces ws on ws.id = a.workspace_id and ws.mode = 'live'
- where (p.doctor_key in ('EMP-000001','EMP-000003','EMP-000011','EMP-000005','EMP-000007','EMP-000008') or p.name in ('التمريض', 'المعمل')) and p.active
+ where (p.doctor_key in ('EMP-000001','EMP-000003','EMP-000011','EMP-000005','EMP-000007','EMP-000008','EMP-000019') or p.name in ('التمريض', 'المعمل')) and p.active
    and a.starts_at > now() and a.status not in ('cancelled','no_show')
    and not exists (select 1 from clinic_reception.weekly_slots w where w.provider_id = p.id
                     and w.dow = extract(dow from a.starts_at at time zone 'Africa/Cairo')
@@ -234,7 +255,7 @@ select p.name, a.id, to_char(a.starts_at at time zone 'Africa/Cairo', 'YYYY-MM-D
 select p.name, to_char(v.starts_at at time zone 'Africa/Cairo', 'YYYY-MM-DD Dy HH24:MI') from_local, to_char(v.ends_at at time zone 'Africa/Cairo', 'HH24:MI') to_local, v.source
   from clinic_reception.availability v join clinic_reception.providers p on p.id = v.provider_id
   join clinic_reception.workspaces ws on ws.id = v.workspace_id and ws.mode = 'live'
- where (p.doctor_key in ('EMP-000001','EMP-000003','EMP-000011','EMP-000005','EMP-000007','EMP-000008') or p.name in ('التمريض', 'المعمل')) and p.active and v.starts_at > now()
+ where (p.doctor_key in ('EMP-000001','EMP-000003','EMP-000011','EMP-000005','EMP-000007','EMP-000008','EMP-000019') or p.name in ('التمريض', 'المعمل')) and p.active and v.starts_at > now()
    and not exists (select 1 from clinic_reception.weekly_slots w where w.provider_id = p.id
                     and w.dow = extract(dow from v.starts_at at time zone 'Africa/Cairo')
                     and (v.starts_at at time zone 'Africa/Cairo')::time = w.starts)
