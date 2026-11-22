@@ -63,7 +63,14 @@
   }
   function fmtDate(iso) {
     if (!iso) return "—";
-    try { return new Date(iso).toLocaleString("en-US", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }); }
+    // «17 أكتوبر 2026 · 4:15 م» — Arabic month names, English digits (owner rules 2026-11-21/22); no «12:00 ص» for date-only values
+    try {
+      var d = new Date(/^\d{4}-\d{2}-\d{2}$/.test(String(iso)) ? iso + "T00:00:00" : iso);
+      if (isNaN(d)) return iso;
+      var dayPart = d.toLocaleDateString("ar-EG-u-nu-latn", { day: "numeric", month: "long", year: "numeric" });
+      if (/^\d{4}-\d{2}-\d{2}$/.test(String(iso)) || (d.getHours() === 0 && d.getMinutes() === 0)) return dayPart;
+      return dayPart + " · " + d.toLocaleTimeString("ar-EG-u-nu-latn", { hour: "numeric", minute: "2-digit" });
+    }
     catch (e) { return iso; }
   }
   function fmtFollowUpTime(value) {
