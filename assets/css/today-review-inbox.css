@@ -32,3 +32,6 @@
 .tri-note{font-size:12px;background:#FFF3E9;color:#8A3A12;border-radius:10px;padding:8px 12px;margin:0;line-height:1.7}
 .tri-err{color:#D0402A;font-size:13px;margin:0}
 @media (prefers-reduced-motion:no-preference){.tri-item{transition:opacity .2s}}
+/* owner 2026-11-22: opening the tab with something waiting scrolls here and flashes the inbox once */
+.tri.tri-flash{box-shadow:0 0 0 3px #F15A22;border-radius:16px}
+@media (prefers-reduced-motion:no-preference){.tri{transition:box-shadow .4s}}

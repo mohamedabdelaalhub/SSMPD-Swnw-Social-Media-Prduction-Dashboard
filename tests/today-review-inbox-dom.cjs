@@ -37,6 +37,9 @@ async function submit(t,note){const f=t.d.querySelector('.tri-modal form');f.ele
  const mine=reqs.querySelector('[data-tri-item="rx_request:q4"]');assert(!mine.querySelector('[data-tri-do="approve"]')&&mine.textContent.includes('لازم حد تاني'),'own item has no approve');
  assert.equal(d.querySelector('[data-tri-badge]').textContent,'4','badge = 3 requests + 1 shift');
  assert(!/[٠-٩]/.test(box.textContent),'English digits only');
+ // owner 2026-11-22: opening the tab while something waits jumps to the inbox (scroll + one flash)
+ {let scrolled=null;t.w.scrollTo=o=>{scrolled=o;};d.querySelector('#tabs-bar [data-tab="reception_services"]').click();for(let i=0;i<40&&!scrolled;i++)await tick(20);
+  assert(scrolled&&typeof scrolled.top==='number','scrolled to «اللي مستنيك»');assert(box.classList.contains('tri-flash'),'inbox flashes once');}
  // approve the reception request: the note is mandatory, then the existing RPC is called and the item disappears
  d.querySelector('[data-tri-key="rx_request:q1"][data-tri-do="approve"]').click();
  assert(d.querySelector('.tri-modal').textContent.includes('اللي هيحصل'),'dialog explains the effect');

@@ -182,6 +182,26 @@
     if (b.textContent !== String(n)) { b.textContent = String(n); b.title = n + ' حاجة مستنية موافقتك'; }
   }
 
+  /* Owner 2026-11-22 («لما يفتح التاب يروح علي المكان اللي عنه الإشعارات أوتوماتيك، لغاية ما نظبط الشكل»): a reviewer who opens
+     «الاستقبال والخدمات» while something waits lands on «تشغيل اليوم» and the page scrolls to «اللي مستنيك». */
+  var jump = 0;
+  function reduced() { try { return w.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (_) { return false; } }
+  function goInbox() {
+    if (!jump || Date.now() - jump > 15000) { jump = 0; return; }
+    var r = root();
+    if (!r) { var s = d.querySelector('[data-rx-section="journey"]'); if (s && !s.__triJump) { s.__triJump = true; s.click(); } setTimeout(goInbox, 200); return; }
+    var h = r.querySelector('[data-review-inbox]'); if (!h || h.hidden || !h.innerHTML) { setTimeout(goInbox, 200); return; }
+    jump = 0;
+    var top = r.querySelector('.journey-top'), bar = d.querySelector('.topbar'), off = (top ? top.getBoundingClientRect().height : 0) + (bar ? bar.getBoundingClientRect().height : 0) + 8;
+    try { w.scrollTo({ top: Math.max(0, h.getBoundingClientRect().top + (w.pageYOffset || 0) - off), behavior: reduced() ? 'auto' : 'smooth' }); } catch (_) { h.scrollIntoView(); }
+    h.classList.add('tri-flash'); setTimeout(function () { h.classList.remove('tri-flash'); }, 2200);
+  }
+  d.addEventListener('click', function (e) {
+    var t = e.target && e.target.closest && e.target.closest('#tabs-bar [data-tab="reception_services"], .tab-btn[data-tab="reception_services"]');
+    if (!t || !eligible() || !total()) return;
+    jump = Date.now(); d.querySelectorAll('[data-rx-section="journey"]').forEach(function (s) { s.__triJump = false; }); setTimeout(goInbox, 60);
+  }, true);
+
   /* ---------- actions ---------- */
   function wire(h) {
     h.querySelectorAll('[data-tri-details]').forEach(function (b) { b.onclick = function () { var k = b.getAttribute('data-tri-details'); state.open[k] = !state.open[k]; h.__tri = null; paint(); }; });
@@ -244,6 +264,6 @@
     d.addEventListener('visibilitychange', function () { if (!d.hidden) load(true); });
     load(true);
   }
-  w.SSMPDReviewInbox = { load: load, paint: paint, _state: state, _decide: decide, stop: function () { if (observer) observer.disconnect(); if (timer) clearInterval(timer); observer = null; } };
+  w.SSMPDReviewInbox = { load: load, paint: paint, goInbox: function () { jump = Date.now(); goInbox(); }, _state: state, _decide: decide, stop: function () { if (observer) observer.disconnect(); if (timer) clearInterval(timer); observer = null; } };
   if (d.readyState === 'loading') d.addEventListener('DOMContentLoaded', start); else start();
 })(window, document);
