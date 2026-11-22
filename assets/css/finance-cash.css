@@ -93,3 +93,15 @@
 .fc-mb-mini{border:1px solid #E3E8F2;border-radius:12px;padding:12px 14px;font-size:13px;color:#3B4658;display:grid;gap:4px;background:#fff}.fc-mb-mini b{font-size:18px;color:#16212E}
 .fc-mb-mini.is-in b{color:#2F7D5C}.fc-mb-mini.is-out b{color:#D0402A}
 @media (max-width:640px){.fc-mb-row{grid-template-columns:1fr}.fc-mb-tile b{font-size:24px}}
+/* «جرد الخزينة الرئيسية» box (20261122200000) */
+.mc{border:2px solid #0F369D;border-radius:16px;padding:16px 18px;background:#F5F8FF;display:grid;gap:12px;margin:0 0 12px}
+.mc-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.mc-head b{display:block;font-size:20px;color:#0F369D}.mc-head small{color:#3B4658;font-size:13px}
+.mc-big{font-size:18px;padding:14px 26px;border-radius:12px;min-height:52px}
+.mc-facts{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.mc-fact{background:#fff;border:1px solid #E3E8F2;border-radius:12px;padding:12px 14px;display:grid;gap:4px;font-size:13px;color:#3B4658}
+.mc-fact b{font-size:20px;color:#16212E}.mc-fact.is-wait b{color:#F15A22}.mc-fact.is-late{border-color:#F15A22;background:#FFF4EE}.mc-diff{color:#D0402A;font-weight:700}
+.mc-hint{margin:0;font-size:13px;color:#3B4658}.mc-pending{display:grid;gap:8px;background:#fff;border:1px solid #E3E8F2;border-radius:12px;padding:12px 14px}
+.mc-p{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;font-size:13px}.mc-p.is-late span{color:#D0402A;font-weight:700}
+.mc-form{background:#fff;border:1px solid #E3E8F2;border-radius:12px;padding:14px}.mc-form form{display:grid;gap:10px}
+.mc-den{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.mc-den label,.mc-form label{display:grid;gap:4px;font-size:13px}.mc-den input,.mc-form input{min-height:40px}
+.mc-total b{font-size:20px;color:#0F369D}.mc-actions{display:flex;gap:8px;flex-wrap:wrap}.mc-status{margin:0;font-size:13px;color:#2F7D5C}.mc-status:empty{display:none}
+@media (max-width:640px){.mc-facts{grid-template-columns:1fr}.mc-den{grid-template-columns:repeat(2,1fr)}.mc-big{width:100%}}
