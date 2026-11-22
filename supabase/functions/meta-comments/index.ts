@@ -2,6 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { decideReply, clinicInfo, withContact } from "./ai.ts";
 import { syncMessages, sendManualMessage, suggestMessage } from "./messages.ts";
+import { isWhatsApp, queueText, queueTemplate, queueReturn, listTemplates, outboxStatus } from "./whatsapp.ts";
 
 // Meta Comments & Messages — inbox + autopilot replies.
 //
@@ -11,6 +12,7 @@ import { syncMessages, sendManualMessage, suggestMessage } from "./messages.ts";
 // fixed templates for sensitive medical / emergency / complaint (which also raise a red dashboard alert).
 // Every reply ends with the booking contact block. Staff may call it to sync, suggest or send — including a manual
 // Messenger / Instagram Direct reply inside Meta's 24h window (action send_message, logged with sent_by).
+// WhatsApp (send_message / send_template / return_to_bot / list_templates / outbox_status) is queued for the swnw-agent (whatsapp.ts).
 // Page tokens stay in Edge Function secrets; nothing token-related is logged or returned.
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -373,8 +375,24 @@ Deno.serve(async (req) => {
     // Manual Messenger / Instagram Direct reply (same roles as approving comment replies; 24h window enforced in messages.ts).
     if (body.action === "send_message") {
       if (typeof body.conversation_id !== "string" || typeof body.text !== "string") return reply({ ok: false, error: "conversation_id + text required" }, 400);
+      // WhatsApp: queued for the swnw-agent (whatsapp.ts); Messenger/Instagram: sent here.
+      if (isWhatsApp(body.conversation_id)) return reply(await queueText(db, { conversationId: body.conversation_id, text: body.text, adminId: admin!.id }));
       const r = await sendManualMessage(db, { conversationId: body.conversation_id, text: body.text, adminId: admin!.id, token: pageToken });
       return reply(r);
+    }
+    // WhatsApp only (see whatsapp.ts): approved templates outside the 24h window, «رجّع للبوت», and the queued command's result.
+    if (body.action === "list_templates") return reply(await listTemplates(db));
+    if (body.action === "send_template") {
+      if (!isWhatsApp(body.conversation_id) || typeof body.name !== "string" || typeof body.language !== "string") return reply({ ok: false, error: "conversation_id + name + language required" }, 400);
+      return reply(await queueTemplate(db, { conversationId: body.conversation_id, name: body.name, language: body.language, adminId: admin!.id }));
+    }
+    if (body.action === "return_to_bot") {
+      if (!isWhatsApp(body.conversation_id)) return reply({ ok: false, error: "conversation_id required" }, 400);
+      return reply(await queueReturn(db, { conversationId: body.conversation_id, adminId: admin!.id }));
+    }
+    if (body.action === "outbox_status") {
+      if (typeof body.id !== "string" || !/^[0-9a-f-]{36}$/i.test(body.id)) return reply({ ok: false, error: "id required" }, 400);
+      return reply(await outboxStatus(db, body.id));
     }
     if (body.action === "suggest_message") {
       if (typeof body.conversation_id !== "string") return reply({ ok: false, error: "conversation_id required" }, 400);
