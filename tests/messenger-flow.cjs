@@ -24,7 +24,16 @@ const assert = require("node:assert/strict");
   assert.equal(r.handoff, "unclear"); assert(r.reply.includes("زميل"));
   // medical question -> human agent message, nothing else
   r = f.advance(null, "عندي وجع في ضهري من اسبوع ايه العلاج", { category: "medical_sensitive", firstContact: true });
-  assert.equal(r.handoff, "medical"); assert(r.reply.includes("وكيل بشري") && !/علاج\b.*(خد|تناول)/.test(r.reply));
+  assert.equal(r.handoff, "medical"); assert(!r.reply.includes("وكيل بشري") && !/علاج\b.*(خد|تناول)/.test(r.reply));
+  // hand-off wording: owner-approved variants, stable per conversation, after-hours wording outside 08:00-24:00 Cairo
+  const noon = new Date("2026-11-22T10:00:00Z"), night = new Date("2026-11-22T02:00:00Z"); // 12:00 and 04:00 Cairo (UTC+2)
+  assert(f.clinicOpen(noon) && !f.clinicOpen(night));
+  const seen = new Set();
+  for (let i = 0; i < 40; i++) seen.add(f.handoffReply({ seed: "conv-" + i, now: noon }));
+  assert.deepEqual([...seen].sort(), [...f.HANDOFF_VARIANTS].sort(), "all three variants get used");
+  assert.equal(f.handoffReply({ seed: "a", now: noon }), f.handoffReply({ seed: "a", now: noon }), "same conversation, same wording");
+  assert.equal(f.handoffReply({ seed: "a", now: night }), f.HANDOFF_AFTER_HOURS);
+  assert.equal(f.advance(null, "عندي وجع", { category: "medical_sensitive", seed: "z", now: night }).reply, f.HANDOFF_AFTER_HOURS);
   // emergency / complaint -> handoff with alert, caller supplies the approved template
   r = f.advance(null, "في ضيق نفس شديد", { category: "emergency" }); assert(r.handoff === "emergency" && r.alert && r.reply === null);
   r = f.advance(null, "الخدمة وحشة", { category: "complaint" }); assert(r.handoff === "complaint" && r.alert);

@@ -88,7 +88,7 @@ export async function syncMessages(db: any, brand: string, cfg: any, token: stri
         await db.from("social_messages").update({ status: "skipped", category: decision.category, updated_at: now }).in("id", ids);
         continue;
       }
-      const flow = advance(st, waitingText, { category: decision.category, firstContact: !st && lastPage < 0 });
+      const flow = advance(st, waitingText, { category: decision.category, firstContact: !st && lastPage < 0, seed: conv.id });
       if (flow.silent) { await db.from("social_messages").update({ status: "skipped", category: "handoff", updated_at: now }).in("id", ids); continue; }
       if (flow.passthrough) { /* thanks: keep decideReply's text, no state change */ }
       else {
