@@ -275,3 +275,12 @@ Items marked **[NEW]** are not in any handoff or README.
   - tax number conflict on the letterhead (758-688-423 vs the owner's 423-688-758);
   - the Hiragino web licence is unverified.
 - The owner was told «من هنا ورايح هشغّل الفحص ده وأراجع الألوان والتقطيع قبل أي صورة أبعتها». Keep that promise.
+
+## 6. Role merge (main chat 4, 2026-11-22)
+
+- The UX audit role is now part of «UI & UX»: review a screen per role → one short Egyptian-Arabic verdict + interactive mockup → build only after «طبقه».
+- Checklist skill: branch `claude/ux-role-review-skill` → `.claude/skills/ux-role-review/SKILL.md` (approved by the owner, no PR yet; open one only if asked).
+- Finance screens are out of scope: the finance chat (`session_01UqVZHWa751JciR5NzZebwW`) reviews and builds its own. Ask it whether «التحصيل والمستلزمات» counts as finance before touching it.
+- Open audit queue: confirm-dialog coverage on the remaining destructive buttons; nursing / doctor_assistant views of «تشغيل اليوم»; ملفات المرضى، الزيارات والخدمات، الباكجز وأرصدة المرضى، booking modal، visit card; consistency with the finance chat's «شغلي النهارده» (help -150).
+- «وصل» exists in both reception screens; the owner has not decided to remove it.
+- Next question for the owner after SPEC A/B: which screen to audit next.
