@@ -53,9 +53,31 @@ var TRACKING_HEADERS = {
             "إجمالي رحلة الفكرة للنشر", "وقت مرحلة الاعتماد الأولي", "وقت مرحلة التصميم", "وقت مرحلة الاعتماد النهائي", "وقت مرحلة الجاهزية للنشر"]
 };
 
+// طلبات السيرفر فقط (Edge Functions) لازم تبعت ?token=<BRIDGE_TOKEN> المحفوظ في Script properties.
+// لو الخاصية BRIDGE_TOKEN مش متسجلة، الفحص بيتخطّى (توافق مع النسخة القديمة) - سجّلها قبل ما تعتمد النشر.
+var SERVER_ONLY_ACTIONS = { content_archive: true, material_library: true };
+var SERVER_ONLY_CATEGORIES = { patient_archive: true, leads_invoice: true, contracting_entity_contract: true };
+
+function isServerOnly_(payload) {
+  var action = payload.action || "upload";
+  if (SERVER_ONLY_ACTIONS[action]) return true;
+  return action === "upload" && !!SERVER_ONLY_CATEGORIES[payload.category || "design"];
+}
+
+function tokenOk_(e) {
+  var expected = PropertiesService.getScriptProperties().getProperty("BRIDGE_TOKEN");
+  if (!expected) return true;
+  var given = (e.parameter && e.parameter.token) || "";
+  if (given.length !== expected.length) return false;
+  var diff = 0;
+  for (var i = 0; i < expected.length; i++) diff |= given.charCodeAt(i) ^ expected.charCodeAt(i);
+  return diff === 0;
+}
+
 function doPost(e) {
   try {
     var payload = JSON.parse(e.postData.contents);
+    if (isServerOnly_(payload) && !tokenOk_(e)) return jsonOut({ ok: false, error: "unauthorized" });
     var action = payload.action || "upload";
     if (action === "video_archive") return handleVideoArchive_(payload);
     if (action === "content_archive") return handleContentArchive_(payload);
