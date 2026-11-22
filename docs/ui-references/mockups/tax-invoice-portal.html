@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>تصور — الفواتير الضريبية والإلكترونية وبوابة الضرائب</title>
+<style>
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Regular.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Bold.woff2) format("woff2");font-weight:700}
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W3.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W6.woff2) format("woff2");font-weight:700}
+*{box-sizing:border-box}body{margin:0;background:#F3F5F9;color:#16212E;font:14px/1.6 "Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif}
+.wrap{max-width:1200px;margin:0 auto;padding:24px;display:grid;gap:16px}
+h1{margin:0;font-size:24px}.sub{color:#5B6676;margin:0}
+.tag{display:inline-block;background:#FFF4EE;color:#F15A22;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.card{background:#fff;border:1px solid #E3E8F2;border-radius:16px;padding:20px;display:grid;gap:12px;align-content:start}
+.card h2{margin:0;font-size:17px}.card h2 small{display:block;color:#5B6676;font-weight:400;font-size:12px}
+.row{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
+.chk{display:flex;gap:8px;align-items:center;font-weight:700}.chk i{width:20px;height:20px;border-radius:6px;background:#0F369D;display:inline-block;position:relative}.chk i:after{content:"✓";color:#fff;position:absolute;inset:0;text-align:center;font-style:normal;font-size:14px;line-height:20px}
+.chk.off i{background:#fff;border:2px solid #C5CDDB}.chk.off i:after{content:""}
+.portal{border:2px solid #2F7D5C;border-radius:14px;padding:14px;display:grid;gap:10px;background:#F2FAF6}
+.portal.no{border-color:#F15A22;background:#FFF7F2}
+.seg{display:inline-flex;border:1px solid #C5CDDB;border-radius:999px;overflow:hidden}.seg b{padding:6px 16px;font-size:13px}.seg b.on{background:#2F7D5C;color:#fff}.seg b.on.no{background:#F15A22}
+.kv{display:grid;grid-template-columns:150px 1fr;gap:6px 12px;font-size:13px}.kv span:nth-child(odd){color:#5B6676}
+.ltr{direction:ltr;unicode-bidi:isolate;font-family:ui-monospace,Menlo,monospace;font-size:12px}
+.btn{border:0;border-radius:10px;padding:10px 18px;font:inherit;font-weight:700;background:#0F369D;color:#fff}.btn.ghost{background:#fff;color:#0F369D;border:1px solid #0F369D}
+.pills{display:flex;gap:8px;flex-wrap:wrap}.pills b{border-radius:999px;padding:6px 14px;background:#fff;border:1px solid #E3E8F2;font-size:13px}.pills b.on{background:#16212E;color:#fff;border-color:#16212E}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.kpi{border:1px solid #E3E8F2;border-radius:12px;padding:12px;display:grid;gap:2px}.kpi span{color:#5B6676;font-size:12px}.kpi b{font-size:20px}.kpi.ok b{color:#2F7D5C}.kpi.wait b{color:#F15A22}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:right;padding:9px 8px;border-bottom:1px solid #EEF1F6;white-space:nowrap}th{color:#5B6676;font-weight:400}
+.st{border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700}.st.ok{background:#E6F4EC;color:#2F7D5C}.st.wait{background:#FFF1E8;color:#F15A22}
+.hero{background:linear-gradient(135deg,#0F369D,#1E4FC7);color:#fff;border-radius:16px;padding:18px 20px;display:grid;gap:8px}.hero .kv span:nth-child(odd){color:#C9D6FF}.hero b.big{font-size:26px}
+.note{font-size:12px;color:#5B6676;margin:0}.q{background:#FFF;border:1px dashed #F15A22;border-radius:12px;padding:12px 14px;font-size:13px}
+@media (max-width:760px){.grid{grid-template-columns:1fr}.kpis{grid-template-columns:1fr}.kv{grid-template-columns:120px 1fr}.wrap{padding:14px}table{display:block;overflow-x:auto}}
+</style></head><body><div class="wrap">
+<div><span class="tag">تصور — مش متنفذ</span><h1>الفواتير الضريبية والإلكترونية وبوابة الضرائب</h1><p class="sub">خانة واضحة على كل فاتورة: نوعها، واترفعت على بوابة الضرائب ولا لأ — وتقرير بيفصل المرفوع من اللي لسه.</p></div>
+
+<div class="grid">
+ <section class="card">
+  <h2>1) جوه الفاتورة<small>فاتورة زيارة RX-1042 — منار أحمد — 1,000.00 ج.م</small></h2>
+  <div class="row"><span class="chk"><i></i>فاتورة ضريبية</span><span class="chk"><i></i>فاتورة إلكترونية</span></div>
+  <div class="portal"><div class="row"><b>اترفعت على بوابة الضرائب؟</b><span class="seg"><b class="on">أيوه</b><b>لأ</b></span></div>
+   <div class="kv"><span>تاريخ الرفع</span><span>22/11/2026 03:40 م</span><span>رقم البوابة (UUID)</span><span class="ltr">7F3K9Q2M…X8C1</span><span>رقم الفاتورة على البوابة</span><span class="ltr">RX-1042</span><span>سجّلها</span><span>المحاسب — أحمد</span></div></div>
+  <div class="portal no"><div class="row"><b>مثال فاتورة لسه ما اترفعتش</b><span class="seg"><b>أيوه</b><b class="on no">لأ</b></span></div>
+   <p class="note">لما تختار «أيوه» لازم تكتب رقم البوابة (UUID) — السيستم بيحفظ مين سجّل وامتى، وأي رجوع لـ«لأ» محتاج سبب.</p></div>
+  <div class="row"><button class="btn">حفظ</button><span class="note">الخانة دي بيانات بس — مبتغيّرش مبلغ الفاتورة ولا القيود.</span></div>
+ </section>
+
+ <section class="card">
+  <h2>2) تقرير الضرائب<small>نوفمبر 2026 — فواتير المرضى وفواتير المشتريات</small></h2>
+  <div class="pills"><b class="on">الكل 142</b><b>اترفعت 97</b><b>لسه 45</b><b>إلكترونية 120</b><b>مشتريات 31</b></div>
+  <div class="kpis"><div class="kpi"><span>إجمالي الفواتير الضريبية</span><b>486,200.00</b></div><div class="kpi ok"><span>اترفعت على البوابة</span><b>331,900.00</b></div><div class="kpi wait"><span>لسه ما اترفعتش</span><b>154,300.00</b></div></div>
+  <table><thead><tr><th>الفاتورة</th><th>النوع</th><th>المبلغ</th><th>البوابة</th><th>تاريخ الرفع</th></tr></thead><tbody>
+   <tr><td>RX-1042</td><td>مريض · إلكترونية</td><td>1,000.00</td><td><span class="st ok">اترفعت</span></td><td>22/11</td></tr>
+   <tr><td>RX-1043</td><td>مريض · إلكترونية</td><td>650.00</td><td><span class="st wait">لسه</span></td><td>—</td></tr>
+   <tr><td>PO-0318</td><td>مشتريات · ضريبية</td><td>12,400.00</td><td><span class="st ok">اترفعت</span></td><td>20/11</td></tr>
+   <tr><td>RX-1051</td><td>مريض · ضريبية</td><td>400.00</td><td><span class="st wait">لسه</span></td><td>—</td></tr>
+  </tbody></table>
+  <div class="row"><button class="btn ghost">تصدير Excel</button><span class="note">الفلتر بيفصل المرفوع من اللي لسه علشان حساب الضريبة يبقى صح.</span></div>
+ </section>
+</div>
+
+<section class="card">
+ <h2>3) ضريبة الطبيب (خصم من المنبع) مع الفاتورة الإلكترونية<small>بتتحسب لوحدها لما تصرف للطبيب — نفس شاشة «صرف مستحقات طبيب» الموجودة</small></h2>
+ <div class="hero"><div class="row"><b>د. إلهام — صرف مستحقات نوفمبر</b><b class="big">8,550.00 ج.م صافي</b></div>
+  <div class="kv"><span>إجمالي المستحق</span><span>9,000.00</span><span>منه على فواتير إلكترونية مرفوعة</span><span>6,000.00 (12 فاتورة)</span><span>نسبة الخصم للطبيب</span><span>5% (من إعدادات الطبيب)</span><span>ضريبة مستقطعة</span><span>300.00 — اتحسبت لوحدها</span><span>على فواتير لسه ما اترفعتش</span><span>3,000.00 — ضريبتها بتتحسب أول ما تترفع</span></div></div>
+ <p class="note">الضريبة بتتسجل بنفس القيد الموجود النهارده (من حساب الطبيب لحساب «ضرايب مستقطعة مستحقة»)، والمحاسب يقدر يعدّل الرقم بسبب مكتوب.</p>
+</section>
+
+<div class="q"><b>محتاجين قرارك في 3 حاجات:</b> (1) كل الفواتير من تاريخ معيّن تبقى «ضريبية» تلقائي ولا الموظف يختار؟ (2) نسبة خصم الطبيب: نسبة واحدة لكل الأطباء ولا لكل طبيب نسبته؟ (المحاسب يأكد النسبة القانونية) (3) مين يسجّل «اترفعت»: المحاسب بس ولا المدير المالي كمان؟</div>
+</div></body></html>
