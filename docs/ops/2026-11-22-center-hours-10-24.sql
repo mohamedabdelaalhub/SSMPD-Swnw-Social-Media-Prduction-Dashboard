@@ -8,7 +8,9 @@
 --   وضاحة EMP-000001: Sat 10-24 · Sun off · Mon 10-18 · Tue 10-16 · Wed 10-24 · Thu 10-16 · Fri 10-24
 --   شهد   EMP-000003: Sat 10-24 · Sun 10-24 · Mon 16-24 · Tue 16-24 · Wed off · Thu 10-24 · Fri 16-24
 --   أحمد علاء EMP-000011: Sat off · Sun-Thu 10-24 · Fri off
--- Clinic provider «التمريض» (capacity 2): every day 10:00-23:59, capacity stays 2.
+-- Clinic provider «التمريض» (capacity 2) and «المعمل»: every day 10:00-23:59 (capacity unchanged).
+-- public.clinic_hours «المركز بالكامل» 08:00-00:00 → 10:00-00:00 (the agent / website «مواعيد العمل»).
+-- Home nurses not in the sheet (EMP-000005/7/8): set other_nurses at the top of PART A (default 'keep').
 -- Sheet 2 (front staff → HR shifts only; they are not booking providers):
 --   مازن: Sat 10-18 · Sun off · Mon 16-24 · Tue 16-24 · Wed 10-18 · Thu 16-24 · Fri 10-24
 --   مريم: Sat-Thu 16-24 · Fri off
@@ -24,7 +26,7 @@ select p.doctor_key, p.name, p.department, p.capacity, p.active,
        (select string_agg(w.dow || ' ' || to_char(w.starts, 'HH24:MI') || '-' || to_char(w.ends, 'HH24:MI'), ' · ' order by w.dow, w.starts)
           from clinic_reception.weekly_slots w where w.provider_id = p.id) week
   from clinic_reception.providers p join clinic_reception.workspaces ws on ws.id = p.workspace_id and ws.mode = 'live'
- where p.doctor_key in ('EMP-000001','EMP-000003','EMP-000011') or p.name = 'التمريض'
+ where p.doctor_key in ('EMP-000001','EMP-000003','EMP-000011') or p.name in ('التمريض', 'المعمل')
  order by p.name;
 
 -- R2 the 3 home nurses NOT in the sheet (owner to decide)
@@ -71,6 +73,15 @@ select pp.code, pp.full_name, pp.kind, pp.department, pp.job_title, pp.status,
     or pp.full_name ~ '^(مازن|مريم|زين[ةه]|منار)( |$)')
  order by pp.full_name;
 
+-- R9 Dr. EMP-000019 (report only — owner decides): week + future windows before 10:00
+select p.name, p.department,
+       (select string_agg(w.dow || ' ' || to_char(w.starts, 'HH24:MI') || '-' || to_char(w.ends, 'HH24:MI'), ' · ' order by w.dow, w.starts)
+          from clinic_reception.weekly_slots w where w.provider_id = p.id) week,
+       (select count(*) from clinic_reception.availability a where a.provider_id = p.id and a.starts_at > now()
+           and (a.starts_at at time zone 'Africa/Cairo')::time < time '10:00') windows_before_10
+  from clinic_reception.providers p join clinic_reception.workspaces ws on ws.id = p.workspace_id and ws.mode = 'live'
+ where p.doctor_key = 'EMP-000019';
+
 -- R8 existing HR shift templates
 select name, to_char(start_time, 'HH24:MI') st, to_char(end_time, 'HH24:MI') en, grace_minutes, active from clinic_people.shift_templates order by start_time, end_time;
 
@@ -78,6 +89,8 @@ select name, to_char(start_time, 'HH24:MI') st, to_char(end_time, 'HH24:MI') en,
 begin;
 do $$
 declare ws uuid; actor uuid; prov uuid; k text; n int; g int; pid uuid; tid uuid; d int; cell text; st time; en time;
+  -- PARAMETER (owner): the 3 home nurses not in the sheet — 'keep' | 'all_day' (10:00-23:59 every day) | 'deactivate'
+  other_nurses text := 'keep';
   from_d date := greatest((now() at time zone 'Africa/Cairo')::date + 1, date '2026-11-23');
   -- 7 cells per person, index = dow (0 Sun … 6 Sat); 'off' = day off
   nurse jsonb := jsonb_build_object(
@@ -116,20 +129,45 @@ begin
     raise notice 'nurse % → % windows generated', k, g;
   end loop;
 
-  -- A2 clinic «التمريض»: every day 10:00-23:59, capacity unchanged (2)
+  -- A2 every day 10:00-23:59: clinic «التمريض» (capacity stays 2), «المعمل», and — only when other_nurses = 'all_day' —
+  --    the 3 home nurses not in the sheet. other_nurses = 'deactivate' turns those 3 providers off (refused if they have a
+  --    future booking); 'keep' leaves them as they are.
   select count(*) into n from clinic_reception.providers where workspace_id = ws and active and name = 'التمريض';
   if n <> 1 then raise exception 'expected 1 active provider «التمريض», found %', n; end if;
-  select id into prov from clinic_reception.providers where workspace_id = ws and active and name = 'التمريض';
-  if (select capacity from clinic_reception.providers where id = prov) is distinct from 2 then raise exception '«التمريض» capacity is not 2 — check first'; end if;
-  delete from clinic_reception.weekly_slots where provider_id = prov;
-  insert into clinic_reception.weekly_slots(workspace_id, provider_id, dow, starts, ends, created_by)
-    select ws, prov, d0, time '10:00', time '23:59', actor from generate_series(0, 6) d0;
-  delete from clinic_reception.availability a where a.provider_id = prov and a.source = 'weekly' and a.starts_at > now()
-    and not exists (select 1 from clinic_reception.appointments ap where ap.provider_id = prov and ap.status not in ('cancelled','no_show')
-                      and ap.starts_at < a.ends_at and ap.ends_at > a.starts_at);
-  g := clinic_reception.weekly_generate(ws, prov, 28);
-  insert into clinic_reception.audit(workspace_id, actor_id, action, entity_id) values (ws, actor, 'weekly_save', prov);
-  raise notice '«التمريض» → % windows generated', g;
+  if (select capacity from clinic_reception.providers where workspace_id = ws and active and name = 'التمريض') is distinct from 2 then
+    raise exception '«التمريض» capacity is not 2 — check first'; end if;
+  select count(*) into n from clinic_reception.providers where workspace_id = ws and active and name = 'المعمل';
+  if n <> 1 then raise exception 'expected 1 active provider «المعمل», found %', n; end if;
+  if other_nurses not in ('keep', 'all_day', 'deactivate') then raise exception 'other_nurses must be keep | all_day | deactivate'; end if;
+  select count(*) into n from clinic_reception.providers where workspace_id = ws and active and doctor_key in ('EMP-000005','EMP-000007','EMP-000008');
+  if other_nurses <> 'keep' and n <> 3 then raise exception 'expected 3 active providers EMP-000005/7/8, found %', n; end if;
+  if other_nurses = 'deactivate' then
+    select count(*) into n from clinic_reception.appointments a join clinic_reception.providers p on p.id = a.provider_id
+     where p.workspace_id = ws and p.doctor_key in ('EMP-000005','EMP-000007','EMP-000008') and a.starts_at > now() and a.status not in ('cancelled','no_show');
+    if n > 0 then raise exception 'other_nurses = deactivate refused: % future bookings (see R2)', n; end if;
+    update clinic_reception.providers set active = false where workspace_id = ws and active and doctor_key in ('EMP-000005','EMP-000007','EMP-000008');
+    insert into clinic_reception.audit(workspace_id, actor_id, action, entity_id)
+      select ws, actor, 'provider_deactivate', id from clinic_reception.providers where workspace_id = ws and doctor_key in ('EMP-000005','EMP-000007','EMP-000008');
+    raise notice 'home nurses EMP-000005/7/8 deactivated';
+  end if;
+  for prov in select id from clinic_reception.providers where workspace_id = ws and active
+                and (name in ('التمريض', 'المعمل') or (other_nurses = 'all_day' and doctor_key in ('EMP-000005','EMP-000007','EMP-000008'))) loop
+    delete from clinic_reception.weekly_slots where provider_id = prov;
+    insert into clinic_reception.weekly_slots(workspace_id, provider_id, dow, starts, ends, created_by)
+      select ws, prov, d0, time '10:00', time '23:59', actor from generate_series(0, 6) d0;
+    delete from clinic_reception.availability a where a.provider_id = prov and a.source = 'weekly' and a.starts_at > now()
+      and not exists (select 1 from clinic_reception.appointments ap where ap.provider_id = prov and ap.status not in ('cancelled','no_show')
+                        and ap.starts_at < a.ends_at and ap.ends_at > a.starts_at);
+    g := clinic_reception.weekly_generate(ws, prov, 28);
+    insert into clinic_reception.audit(workspace_id, actor_id, action, entity_id) values (ws, actor, 'weekly_save', prov);
+    raise notice '% → % windows generated', (select name from clinic_reception.providers where id = prov), g;
+  end loop;
+
+  -- A2b agent / website «مواعيد العمل»: «المركز بالكامل» 08:00-00:00 → 10:00-00:00
+  update public.clinic_hours set open_time = time '10:00'
+   where department = 'المركز بالكامل' and open_time = time '08:00' and close_time = time '00:00';
+  get diagnostics n = row_count;
+  if n <> 1 then raise exception 'expected 1 clinic_hours row «المركز بالكامل» 08:00-00:00, updated %', n; end if;
 
   -- A3 HR shift templates: reuse an active one with the same times, else create «HH-HH»
   for cell in select unnest(array['10-24','10-18','10-16','16-24','12-20']) loop
@@ -171,20 +209,20 @@ begin
 
   -- A5 checks
   select count(*) into n from clinic_reception.weekly_slots w join clinic_reception.providers p on p.id = w.provider_id
-   where p.workspace_id = ws and p.active and (p.doctor_key in ('EMP-000001','EMP-000003','EMP-000011') or p.name = 'التمريض');
-  if n <> 6 + 6 + 5 + 7 then raise exception 'expected 24 weekly rows (6+6+5+7), found %', n; end if;
+   where p.workspace_id = ws and p.active and (p.doctor_key in ('EMP-000001','EMP-000003','EMP-000011') or p.name in ('التمريض', 'المعمل'));
+  if n <> 6 + 6 + 5 + 7 + 7 then raise exception 'expected 31 weekly rows (6+6+5+7+7), found %', n; end if;
   select count(*) into n from clinic_people.person_shifts where valid_from = from_d and created_by = actor
      and person_id in (select id from clinic_people.people where status <> 'ended' and (code in ('EMP-000001','EMP-000003','EMP-000011') or full_name ~ '^(مازن|مريم|زين[ةه]|منار)( |$)'));
   if n <> 49 then raise exception 'expected 49 HR shift rows (7 people × 7 days), found %', n; end if;
-  raise notice 'OK: reception weeks set for 3 nurses + «التمريض»; HR shifts from % for 7 people', from_d;
+  raise notice 'OK: reception weeks set for 3 nurses + «التمريض» + «المعمل» (other nurses: %); «المركز بالكامل» 10:00-00:00; HR shifts from % for 7 people', other_nurses, from_d;
 end $$;
 
--- A6 after-state: future bookings of the 4 providers that are outside the new week (NOT moved — list for reception)
+-- A6 after-state: future bookings of the changed providers that are outside the new week (NOT moved — list for reception)
 select p.name, a.id, to_char(a.starts_at at time zone 'Africa/Cairo', 'YYYY-MM-DD Dy HH24:MI') local_start,
        to_char(a.ends_at at time zone 'Africa/Cairo', 'HH24:MI') local_end, a.status
   from clinic_reception.appointments a join clinic_reception.providers p on p.id = a.provider_id
   join clinic_reception.workspaces ws on ws.id = a.workspace_id and ws.mode = 'live'
- where (p.doctor_key in ('EMP-000001','EMP-000003','EMP-000011') or p.name = 'التمريض') and p.active
+ where (p.doctor_key in ('EMP-000001','EMP-000003','EMP-000011','EMP-000005','EMP-000007','EMP-000008') or p.name in ('التمريض', 'المعمل')) and p.active
    and a.starts_at > now() and a.status not in ('cancelled','no_show')
    and not exists (select 1 from clinic_reception.weekly_slots w where w.provider_id = p.id
                     and w.dow = extract(dow from a.starts_at at time zone 'Africa/Cairo')
@@ -196,7 +234,7 @@ select p.name, a.id, to_char(a.starts_at at time zone 'Africa/Cairo', 'YYYY-MM-D
 select p.name, to_char(v.starts_at at time zone 'Africa/Cairo', 'YYYY-MM-DD Dy HH24:MI') from_local, to_char(v.ends_at at time zone 'Africa/Cairo', 'HH24:MI') to_local, v.source
   from clinic_reception.availability v join clinic_reception.providers p on p.id = v.provider_id
   join clinic_reception.workspaces ws on ws.id = v.workspace_id and ws.mode = 'live'
- where (p.doctor_key in ('EMP-000001','EMP-000003','EMP-000011') or p.name = 'التمريض') and p.active and v.starts_at > now()
+ where (p.doctor_key in ('EMP-000001','EMP-000003','EMP-000011','EMP-000005','EMP-000007','EMP-000008') or p.name in ('التمريض', 'المعمل')) and p.active and v.starts_at > now()
    and not exists (select 1 from clinic_reception.weekly_slots w where w.provider_id = p.id
                     and w.dow = extract(dow from v.starts_at at time zone 'Africa/Cairo')
                     and (v.starts_at at time zone 'Africa/Cairo')::time = w.starts)
