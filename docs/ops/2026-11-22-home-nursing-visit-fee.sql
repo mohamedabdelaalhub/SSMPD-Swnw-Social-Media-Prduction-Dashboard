@@ -1,6 +1,6 @@
 -- Home-nursing visit fee bookable (owner 2026-11-22 «موافق على رسوم الزيارة المنزلية 200»). APPLY script (ends in COMMIT;
 -- dry-run it with the last line changed to ROLLBACK). Only this one service. English digits.
--- 1) pricing row «خدمة تمريض منزلي - رسوم الزيارة» → booking enabled, dept «التمريض المنزلي», code NUR-F61284, 5 min
+-- 1) pricing row «خدمة تمريض منزلي - رسوم الزيارة (يضاف لها سعر الخدمة المطلوبة)» → booking enabled, dept «التمريض المنزلي», code NUR-F61284, 5 min
 -- 2) clinic_reception.sync_catalog(live workspace)  → reception service created / refreshed from pricing (price from pricing)
 -- 3) is_home = true (same column the 'service_home' action sets)
 -- 4) scope rows for the 6 home-nursing staff providers (doctor_key EMP-000001/3/5/7/8/11)
@@ -9,9 +9,9 @@ begin;
 do $$
 declare ps record; n int; ws uuid; sv record; k int;
 begin
-  select count(*) into n from public.pricing_services where name = 'خدمة تمريض منزلي - رسوم الزيارة';
-  if n <> 1 then raise exception 'expected exactly 1 pricing row named «خدمة تمريض منزلي - رسوم الزيارة», found %', n; end if;
-  select * into ps from public.pricing_services where name = 'خدمة تمريض منزلي - رسوم الزيارة';
+  select count(*) into n from public.pricing_services where name = 'خدمة تمريض منزلي - رسوم الزيارة (يضاف لها سعر الخدمة المطلوبة)';
+  if n <> 1 then raise exception 'expected exactly 1 pricing row named «خدمة تمريض منزلي - رسوم الزيارة (يضاف لها سعر الخدمة المطلوبة)», found %', n; end if;
+  select * into ps from public.pricing_services where name = 'خدمة تمريض منزلي - رسوم الزيارة (يضاف لها سعر الخدمة المطلوبة)';
   if not ps.active then raise exception 'pricing row is inactive'; end if;
   if exists (select 1 from public.pricing_services where booking_code = 'NUR-F61284' and id <> ps.id) then raise exception 'code NUR-F61284 already used by another pricing row'; end if;
   update public.pricing_services set booking_enabled = true, booking_department = 'التمريض المنزلي', booking_code = 'NUR-F61284', booking_minutes = 5
