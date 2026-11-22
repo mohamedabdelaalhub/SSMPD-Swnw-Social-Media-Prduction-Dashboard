@@ -56,9 +56,10 @@ function receiptHtml(r){var inv=r.invoice||null,rest=inv?Math.max(0,Number(inv.d
   meta([['المريض',r.patient_name],['رقم الملف',r.file_no,1],['التاريخ',stamp(r.created_at),1],['على فاتورة',inv&&inv.no,1],['الزيارة',r.visit],['الوردية',r.shift]].concat(r.doctor?[['الطبيب',r.doctor],['التخصص',r.specialty||'—']]:[]))+
   '<div class="sum"><div class="box"><h4>بيانات الدفعة</h4>'+kv('المبلغ المستلم',money(r.amount)+' ج.م','big')+kv('المبلغ بالحروف',esc(words(r.amount)))+kv('طريقة الدفع',esc(METHOD[r.method]||r.method||'—'))+
    (r.method&&r.method!=='cash'?kv('رقم العملية','<span class="ltr">'+esc(r.reference||'—')+'</span>')+kv('صورة إيصال الماكينة / التحويل',r.has_proof?'<span class="tag">مرفقة في السيستم</span>':'—'):'')+
-   (Number(r.credit_amount)>0?kv('اتضاف لرصيد المريض',money(r.credit_amount)):'')+'</div>'+
+   (Number(r.credit_amount)>0?kv('اتضاف لرصيد المريض',money(r.credit_amount)):'')+(r.note&&(inv||r.lines)?kv('ملاحظة',esc(r.note)):'')+'</div>'+
+  (r.lines&&r.lines.length?'<div class="box"><h4>الدفعة دي غطّت '+r.lines.length+' زيارات</h4>'+r.lines.map(function(l){var left=Math.max(0,Number(l.due||0));return kv((l.patient||'—')+(l.no?' — '+l.no:''),money(l.applied)+(left>0?' · الباقي '+money(left):' <span class="tag">مسدّدة</span>'));}).join('')+'</div>':
   (inv?'<div class="box"><h4>حساب الفاتورة بعد الدفعة</h4>'+kv('إجمالي الفاتورة',money(inv.total))+kv('المدفوع قبل كده',money(Math.max(0,Number(inv.total)-Number(inv.due||0)-Number(r.applied||0))))+kv('الدفعة دي',money(r.applied!=null?r.applied:r.amount))+
-   '<div class="kv due'+(rest<=0?' ok':'')+'"><span>المتبقي</span><span>'+money(rest)+(rest<=0?' <span class="tag">مسدّدة بالكامل</span>':'')+'</span></div></div>':'<div class="box"><h4>ملاحظة</h4><p>'+esc(r.note||'دفعة على حساب المريض.')+'</p></div>')+'</div>'+
+   '<div class="kv due'+(rest<=0?' ok':'')+'"><span>المتبقي</span><span>'+money(rest)+(rest<=0?' <span class="tag">مسدّدة بالكامل</span>':'')+'</span></div></div>':'<div class="box"><h4>ملاحظة</h4><p>'+esc(r.note||'دفعة على حساب المريض.')+'</p></div>'))+'</div>'+
   sig([['توقيع الموظف',r.cashier],['توقيع المريض','الاسم والتوقيع'],['ختم المركز','']])+
   '<div class="note">ده إيصال بدفعة واحدة. الفاتورة الكاملة بكل الدفعات بتطلع من «طباعة فاتورة الزيارة». اتطبع من الداشبورد يوم <span class="ltr">'+esc(day(new Date()))+'</span> الساعة '+esc(time(new Date()))+'.</div>';
  return documentHtml('إيصال '+(r.receipt_no||r.reference||''),page(body));}
