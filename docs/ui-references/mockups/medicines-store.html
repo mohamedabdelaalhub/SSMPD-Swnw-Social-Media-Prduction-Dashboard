@@ -7,7 +7,7 @@ body{background:#e9edf5;margin:0;padding:24px 16px;color:#16212E}
 .eyebrow{margin:0;font-size:12px;color:#8a93a3;border-bottom:1px solid #EEF1F6;padding-bottom:8px}
 h2{margin:0;font-size:20px;color:#0F369D}h3{margin:0;font-size:15px}
 p{margin:0;font-size:13px;color:#3B4658;line-height:1.8}
-.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}.three{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
 .opt{border:1px solid #E3E9F4;border-radius:14px;padding:14px;display:grid;gap:8px;font-size:13px}
 .opt.on{border-color:#0F369D;box-shadow:inset -4px 0 0 #0F369D}
 .opt .h{display:flex;align-items:center;gap:8px}.dot{width:16px;height:16px;border-radius:50%;border:2px solid #9fb3e6;display:inline-block}.on .dot{background:#0F369D;border-color:#0F369D}
@@ -26,13 +26,19 @@ td{padding:7px 6px;border-bottom:1px solid #F3F5F9;font-variant-numeric:tabular-
 .note{font-size:12px;color:#5b6577;background:#FFF7EE;border:1px solid #FBD9C3;border-radius:10px;padding:8px 12px;line-height:1.8}
 .entry{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 .acc{border:1px dashed #CBD5E1;border-radius:12px;padding:12px;font-size:13px;display:grid;gap:6px}
-@media(max-width:820px){.two,.form,.entry{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:820px){.three,.two,.form,.entry{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}}
 </style></head><body><div class="wrap">
 
 <section class="card">
- <p class="eyebrow">تصور ١ ببيانات تجريبية: نوع الدواء في كارت الصنف. كل صنف في «رئيسي أدوية» بيبقى واحد من نوعين.</p>
- <h2>نوع الدواء</h2>
- <div class="two">
+ <p class="eyebrow">تصور ١ ببيانات تجريبية: طريقة تسعير كل صنف للمريض. بتتحدد في كارت الصنف.</p>
+ <h2>تسعير الأصناف</h2>
+ <div class="three">
+  <div class="opt"><div class="h"><span class="dot"></span><h3>مستلزمات — سعر الشراء + 35%</h3></div>
+   <p>أي مستلزم بيدفعه المريض بيتباع بسعر الشراء + 35% تلقائياً. ولو صنف محتاج نسبة تانية، تتكتب له لوحده.</p>
+   <div class="row"><span>جلافز — سعر الشراء</span><b>1.80 ج</b></div>
+   <div class="row"><span>النسبة (الافتراضي 35%)</span><b>35%</b></div>
+   <div class="row"><span>سعر البيع للمريض</span><b>2.43 ج</b></div>
+   <span class="chip">نسبة خاصة للصنف؟ تتكتب في كارته</span></div>
   <div class="opt on"><div class="h"><span class="dot"></span><h3>دواء عادي — بسعر الجمهور</h3></div>
    <p>فاتورة المورد بتيجي بسعر الجمهور. سعر الشراء = سعر الجمهور = سعر البيع للمريض. مفيش نسبة ربح عليه (الـ35% مش بتتطبق على الأدوية).</p>
    <div class="row"><span>كيتولاك أمبول — سعر الجمهور</span><b>24.00 ج</b></div>
