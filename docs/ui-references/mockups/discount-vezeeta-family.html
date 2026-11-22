@@ -22,23 +22,34 @@ body{background:#e9edf5;margin:0;padding:24px 12px}.wrap{max-width:560px;margin:
   <p class="rbd-note">نسبة فيزيتا شامل ثابتة ٤٠٪. مفيش خصم تاني على نفس الزيارة.</p></div>
 </section>
 
-<section class="card"><p class="eyebrow">«كارت العيلة» — العيلة = الملفات اللي ليها نفس رقم التليفون</p>
+<section class="card"><p class="eyebrow">«كارت العيلة» — العيلة = الملفات المربوطة ببعض في «أفراد العيلة» (حتى لو أرقامهم مختلفة) + الملفات اللي على نفس الرقم</p>
  <div class="rbd"><div class="rbd-row"><span class="rbd-l">نوع الخصم</span>
    <div class="rbd-chips"><label class="rbd-chip"><input type="radio" name="k2"><span>خصم نقابة / نادي</span></label><label class="rbd-chip"><input type="radio" name="k2"><span>فيزيتا شامل</span></label><label class="rbd-chip"><input type="radio" name="k2" checked><span>كارت العيلة</span></label><label class="rbd-chip"><input type="radio" name="k2"><span>خصم خاص</span></label></div></div>
-  <div class="fam"><div>عيلة رقم <b dir="ltr">01000000000</b> — الزيارة دي رقم <b>٣</b> بخصم كارت العيلة</div>
+  <div class="fam"><div>عيلة <b>محمد تجريبي</b> (٣ ملفات) — الزيارة دي رقم <b>٣</b> بخصم كارت العيلة</div>
    <div class="steps"><span class="st done">١٠٪</span><span class="st done">٢٠٪</span><span class="st now">٣٠٪</span><span class="st">٤٠٪</span><span class="st">٥٠٪</span></div>
    <ul class="list"><li>٢/١١ — أحمد تجريبي (الابن) — ١٠٪</li><li>١٥/١١ — سارة تجريبية (الأم) — ٢٠٪</li></ul></div>
-  <div class="rbd-row"><span class="rbd-l">صلة القرابة</span><div class="rbd-chips"><label class="rbd-chip"><input type="radio" name="r"><span>صاحب الكارت</span></label><label class="rbd-chip"><input type="radio" name="r" checked><span>زوج / زوجة</span></label><label class="rbd-chip"><input type="radio" name="r"><span>ابن / بنت</span></label><label class="rbd-chip"><input type="radio" name="r"><span>أب / أم</span></label><label class="rbd-chip"><input type="radio" name="r"><span>أخ / أخت</span></label></div></div>
-  <div class="rbd-row"><span class="rbd-l">مستند إثبات القرابة (إجباري)</span><div class="in off">📷 صوّر / اختار (قسيمة جواز، شهادة ميلاد، بطاقة…)</div></div>
+  <p class="rbd-note" style="color:#2F7D5C">✓ المريض ده مربوط بالعيلة (زوجة محمد تجريبي) ومستند القرابة متسجّل — مش محتاج ترفعه تاني.</p>
+  <p class="rbd-warn" style="background:#FFF3E9">لو المريض مش مربوط بحد: «اربطه بالعيلة» — تختار قريبه وصلة القرابة وترفع المستند مرة واحدة.</p>
   <div class="rbd-sum"><span>سعر الخدمة</span><s>600 ج.م</s><span>كارت العيلة ٣٠٪ (الزيارة ٣)</span><span>− 180 ج.م</span><span>المريض يدفع</span><b>420 ج.م</b></div>
   <p class="rbd-note">النسبة بيحسبها السيستم: ١٠٪ أول زيارة وتزيد ١٠٪ كل زيارة للمريض أو أي حد من العيلة لحد ٥٠٪، والزيارة اللي بعد الـ٥٠٪ ترجع ١٠٪. الزيارة بتتحسب لما المريض يوصل فعلاً (مش وقت الحجز).</p></div>
+</section>
+
+<section class="card"><p class="eyebrow">جديد: «أفراد العيلة» في ملف المريض (بيتعمل مرة واحدة)</p>
+ <div class="fam"><div><b>أفراد العيلة</b> — سارة تجريبية</div>
+  <ul class="list"><li>محمد تجريبي — زوج — <span dir="ltr">01000000000</span> — مستند ✓</li><li>أحمد تجريبي — ابن — <span dir="ltr">01000000001</span> — مستند ✓</li></ul></div>
+ <div class="rbd"><span class="rbd-l">+ ربط قريب</span>
+  <div class="rbd-row"><span class="rbd-l">القريب</span><div class="in off">ابحث بالاسم أو رقم الملف أو التليفون</div></div>
+  <div class="rbd-row"><span class="rbd-l">صلة القرابة</span><div class="rbd-chips"><label class="rbd-chip"><input type="radio" name="r3" checked><span>زوج / زوجة</span></label><label class="rbd-chip"><input type="radio" name="r3"><span>ابن / بنت</span></label><label class="rbd-chip"><input type="radio" name="r3"><span>أب / أم</span></label><label class="rbd-chip"><input type="radio" name="r3"><span>أخ / أخت</span></label></div></div>
+  <div class="rbd-row"><span class="rbd-l">مستند إثبات القرابة (إجباري)</span><div class="in off">📷 قسيمة جواز، شهادة ميلاد، بطاقة…</div></div>
+  <button class="btn btn-primary" type="button">اربط</button></div>
+ <p class="note">• الربط بيتسجّل مين عمله وإمتى، والمستند بيتحفظ على ملف المريض.<br>• الملفات اللي على نفس رقم التليفون (بعلاقة «صاحب الرقم») بتتحسب عيلة لوحدها.</p>
 </section>
 
 <section class="card"><p class="eyebrow">ملخص أنواع الخصم بعد التعديل</p>
  <table class="tbl"><tr><th>النوع</th><th>النسبة</th><th>المطلوب</th></tr>
   <tr><td>خصم نقابة / نادي</td><td>لحد ٣٠٪</td><td>اسم الجهة + رقم الكارنيه + ساري لحد + صورة</td></tr>
   <tr><td>فيزيتا شامل</td><td>٤٠٪ ثابت</td><td>رقم الكارت + ساري لحد + صورة</td></tr>
-  <tr><td>كارت العيلة</td><td>١٠٪ ← ٥٠٪ تلقائي</td><td>صلة القرابة + مستند إثبات</td></tr>
+  <tr><td>كارت العيلة</td><td>١٠٪ ← ٥٠٪ تلقائي</td><td>المريض مربوط بالعيلة + مستند إثبات (مرة واحدة)</td></tr>
   <tr><td>خصم خاص</td><td>لحد ٣٠٪</td><td>السبب</td></tr></table>
  <p class="note">• كل الأنواع: خصم واحد بس على الزيارة، ومفيش خصم على حجز الباكج.<br>• على كارت الموعد: «فيزيتا شامل ٤٠٪» أو «كارت العيلة ٣٠٪».</p>
 </section>
