@@ -252,3 +252,26 @@
  .cm-cbar .cm-sug span{display:none}
  .cm-hint{order:0}
 }
+/* «الليد» card in the contact pane (owner 2026-11-22): the lead behind the chat, its status, opens it in the leads module */
+@media screen {
+ .cm-lead-box{display:grid}
+ .cm-lead{display:grid;gap:10px;width:100%;text-align:start;font:inherit;color:#16212E;background:#F7F9FD;border:1px solid #E6EBF3;border-radius:18px;padding:14px;box-sizing:border-box;min-width:0}
+ .cm-lead>b,.cm-lead-head b{font-size:14px}
+ .cm-lead-wait span,.cm-lead-note{color:#667085;font-size:12px;line-height:1.8}
+ .cm-lead-none .btn{justify-self:start}
+ .cm-lead-open{cursor:pointer;border-inline-start:4px solid #0F369D}
+ .cm-lead-open:hover{background:#EEF3FF;border-color:#C9D6F2}
+ .cm-lead-open:focus-visible{outline:3px solid #F15A22;outline-offset:2px}
+ .cm-lead-head{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}
+ .cm-lead-st{flex:none;white-space:nowrap;font-size:12px;font-weight:600;border-radius:999px;padding:3px 10px}
+ .cm-lead-st.st-new{background:#00B0BD;color:#fff}
+ .cm-lead-st.st-soon{background:#FFF1E0;color:#9A4E00}
+ .cm-lead-st.st-ok{background:#E6F4EC;color:#2F7D5C}
+ .cm-lead-st.st-late{background:#FDECEA;color:#D0402A}
+ .cm-lead-st.st-old{background:#525B6F;color:#fff}
+ .cm-lead-facts{display:grid;gap:8px;margin:0}
+ .cm-lead-facts div{display:flex;justify-content:space-between;gap:10px;min-width:0}
+ .cm-lead-facts dt{color:#667085;font-size:12px;flex:none}
+ .cm-lead-facts dd{margin:0;font-size:13px;font-weight:600;text-align:end;min-width:0;overflow-wrap:anywhere}
+ .cm-lead-go{color:#0F369D;font-size:12px;font-weight:700}
+}
