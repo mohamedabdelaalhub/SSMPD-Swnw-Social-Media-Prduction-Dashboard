@@ -99,6 +99,7 @@ function cardActions(a,c){
 }
 /* Owner 2026-11-17: bookings that came from an automated channel are tagged with it. */
 var SOURCES={whatsapp:'واتساب',website:'الموقع',portal:'البوابة',patient_portal:'البوابة',vezeeta:'فيزيتا'};
+function leadTag(a){var m=((state.data&&state.data.lead_bookings)||{})[a.id];return m?'<span class="rx-lead-tag journey-lead">من الليدز · '+esc(m.agent||'')+'</span>':'';}
 function srcTag(a){var s=String(a.booking_source||'').toLowerCase();return SOURCES[s]?'<span class="journey-src journey-src-'+esc(s)+'">'+esc(SOURCES[s])+'</span>':'';}
 /* Owner 2026-11-17: after «أنهى الكشف» a clear orange «التحصيل» button («دفع جزئي» when part is paid) sits next to the patient; once paid it turns green «تم التحصيل». */
 function payPill(a){
@@ -127,7 +128,7 @@ function card(a,c){
  if(a.can_view_finance&&hasDue(a))tags+='<span class="journey-tag journey-tag-due">عليه '+money(a.patient_due)+'</span>';
  var open=state.open===a.id,flags=(late>0?' is-late':'')+(hasDue(a)?' is-due':'')+(Number(a.wait_minutes)>waitLimit()?' is-long-wait':'');
  var st=chipStatus(a),when=shortTime(a.starts_at),line=[time(a.starts_at),a.provider_name,a.service_name,a.file_no?'رقم الملف '+a.file_no:''].filter(function(x){return x&&x!=='—';}).map(esc).join(' · ');
- return '<article class="journey-card is-compact'+(open?' is-open':'')+flags+'" data-appointment="'+esc(a.id)+'" data-lane="'+lane(a)+'" data-status="'+esc(s)+'"><button type="button" class="journey-chip" data-journey-open="'+esc(a.id)+'" aria-expanded="'+open+'" title="'+esc(a.patient_name+' — '+time(a.starts_at))+'">'+(when?'<span class="journey-chip-time">'+esc(when)+'</span>':'')+'<span class="journey-chip-name">'+esc(a.patient_name)+'</span>'+srcTag(a)+(st?'<span class="journey-chip-sub'+(st[0]?' is-'+st[0]:'')+'">'+esc(st[1])+'</span>':'')+'</button>'+payPill(a)+'<div class="journey-card-detail"'+(open?'':' hidden')+'><header>'+badge(s)+'<p class="journey-card-line">'+line+'</p></header>'+(tags?'<div class="journey-card-meta">'+tags+'</div>':'')+'<div class="journey-card-actions">'+cardActions(a,c)+'</div></div></article>';
+ return '<article class="journey-card is-compact'+(open?' is-open':'')+flags+'" data-appointment="'+esc(a.id)+'" data-lane="'+lane(a)+'" data-status="'+esc(s)+'"><button type="button" class="journey-chip" data-journey-open="'+esc(a.id)+'" aria-expanded="'+open+'" title="'+esc(a.patient_name+' — '+time(a.starts_at))+'">'+(when?'<span class="journey-chip-time">'+esc(when)+'</span>':'')+'<span class="journey-chip-name">'+esc(a.patient_name)+'</span>'+srcTag(a)+leadTag(a)+(st?'<span class="journey-chip-sub'+(st[0]?' is-'+st[0]:'')+'">'+esc(st[1])+'</span>':'')+'</button>'+payPill(a)+'<div class="journey-card-detail"'+(open?'':' hidden')+'><header>'+badge(s)+'<p class="journey-card-line">'+line+'</p></header>'+(tags?'<div class="journey-card-meta">'+tags+'</div>':'')+'<div class="journey-card-actions">'+cardActions(a,c)+'</div></div></article>';
 }
 function column(key,title,items,c){return '<section class="journey-column" data-journey-lane="'+key+'"><header><h3>'+esc(title)+'</h3><span>'+num(items.length)+'</span></header><div class="journey-column-body">'+(items.map(function(a){return card(a,c);}).join('')||'<p class="journey-empty">مفيش حد هنا.</p>')+'</div></section>';}
 function doctorStrip(data,c){

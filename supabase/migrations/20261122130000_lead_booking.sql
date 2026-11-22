@@ -4,7 +4,9 @@
 --   * every 'book' carrying a lead_id also logs a lead attempt «حجز: <doctor> — <YYYY-MM-DD HH:MI>» by the booking
 --     employee (answered), so the lead history shows who booked and when;
 --   * snapshot 'lead_bookings': for the shown appointments booked from a lead → {lead_id, agent (booking employee),
---     source} so الاستقبال / تشغيل اليوم tag the card «من الليدز · <agent>»;
+--     source} so الاستقبال tags the card «من الليدز · <agent>»; the «تشغيل اليوم» board RPC
+--     (clinic_reception_journey_hub_snapshot, wrapped → clinic_reception.journey_hub_before_lead_booking) returns the same
+--     'lead_bookings' for its day;
 --   * public.lead_booking_funnel(from, to): per agent (lead owner, else the booking employee) leads → booked → attended
 --     (arrived / completed) → paid (the visit invoice has any allocation). Managers see everyone; a customer-service /
 --     reception employee sees only their own row.
@@ -66,6 +68,29 @@ begin
 end $$;
 revoke all on function public.clinic_reception_snapshot(uuid, date, date) from public, anon;
 grant execute on function public.clinic_reception_snapshot(uuid, date, date) to authenticated;
+
+-- «تشغيل اليوم» board: same lead tag data for that day (only where the board RPC exists)
+do $hub$ begin
+  if to_regprocedure('public.clinic_reception_journey_hub_snapshot(uuid,date)') is null then return; end if;
+  alter function public.clinic_reception_journey_hub_snapshot(uuid, date) rename to journey_hub_before_lead_booking;
+  alter function public.journey_hub_before_lead_booking(uuid, date) set schema clinic_reception;
+  revoke all on function clinic_reception.journey_hub_before_lead_booking(uuid, date) from public, anon, authenticated;
+  execute $f$create function public.clinic_reception_journey_hub_snapshot(p_workspace uuid, p_day date default null)
+returns jsonb language plpgsql security definer set search_path = pg_catalog, public as $$
+declare result jsonb; d date := coalesce(p_day, (now() at time zone 'Africa/Cairo')::date);
+begin
+  result := clinic_reception.journey_hub_before_lead_booking(p_workspace, p_day);
+  if jsonb_typeof(result) <> 'object' then return result; end if;
+  return result || jsonb_build_object('lead_bookings', coalesce((
+    select jsonb_object_agg(a.id, jsonb_build_object('lead_id', t.lead_id, 'agent', coalesce(ad.name, ad.email), 'source', t.source))
+      from clinic_reception.appointments a
+      join clinic_reception.attributions t on t.appointment_id = a.id and t.lead_id is not null
+      left join public.admins ad on ad.id = a.created_by
+     where a.workspace_id = p_workspace and (a.starts_at at time zone 'Africa/Cairo')::date = d), '{}'::jsonb));
+end $$;$f$;
+  revoke all on function public.clinic_reception_journey_hub_snapshot(uuid, date) from public, anon;
+  grant execute on function public.clinic_reception_journey_hub_snapshot(uuid, date) to authenticated;
+end $hub$;
 
 create function public.lead_booking_funnel(p_from date, p_to date) returns jsonb
 language plpgsql stable security definer set search_path = pg_catalog, public as $$

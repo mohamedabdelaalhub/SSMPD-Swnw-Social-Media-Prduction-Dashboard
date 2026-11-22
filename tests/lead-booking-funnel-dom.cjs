@@ -14,5 +14,6 @@ setTimeout(()=>{const box=d.getElementById('ld-funnel');assert(box&&box.previous
  w.SSMPDLeadFunnel.mount(d.getElementById('ld-sub-view'));assert.equal(d.querySelectorAll('#ld-funnel').length,1,'no duplicates');w.SSMPDLeadFunnel.unmount();assert(!d.getElementById('ld-funnel'));
  const leads=fs.readFileSync('assets/js/render-leads.js','utf8');assert(/textContent='احجز للمريض'/.test(leads)&&/SSMPDLeadFunnel\.mount\(subView\)/.test(leads));
  const ws=fs.readFileSync('assets/js/reception-workspace.js','utf8');assert(ws.includes("rx-lead-tag")&&ws.includes("من الليدز · "));
+ const to=fs.readFileSync('assets/js/today-operations.js','utf8');assert(to.includes('function leadTag(a)')&&to.includes('srcTag(a)+leadTag(a)')&&to.includes('من الليدز · '),'تشغيل اليوم tag');assert(/today-operations\.js\?v=lead-booking-20261122-1/.test(fs.readFileSync('config.js','utf8')));
  const html=fs.readFileSync('index.html','utf8');assert(html.indexOf('leads-booking-funnel.js')<html.indexOf('render-leads.js'));
  w.close();console.log('PASS lead booking funnel UI: table + step %, English digits, mount once, lead button, reception tag');},20);
