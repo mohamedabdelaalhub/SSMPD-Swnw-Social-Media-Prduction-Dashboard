@@ -8,8 +8,8 @@
 *{box-sizing:border-box}
 body{margin:0;background:#E9EDF5;font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;color:#16212E;font-size:14px}
 .cap{margin:0 0 8px;font-size:12px;color:#5b6577}
-.stage{display:grid;gap:24px;padding:20px 12px;max-width:1400px;margin:0 auto}
-.phones{display:grid;grid-template-columns:repeat(3,390px);gap:24px;justify-content:center}
+.stage{display:grid;gap:24px;padding:20px 12px;max-width:1720px;margin:0 auto}
+.phones{display:grid;grid-template-columns:repeat(4,390px);gap:24px;justify-content:center}
 .phone{width:390px;background:#F4F7FC;border-radius:28px;border:1px solid #D5DEEE;overflow:hidden;position:relative;height:844px;box-shadow:0 12px 30px rgba(15,54,157,.10)}
 .pad{padding:14px}
 .head{display:flex;align-items:center;gap:8px}.head h2{margin:0;font-size:20px;color:#0F369D;flex:1}
@@ -62,6 +62,13 @@ body{margin:0;background:#E9EDF5;font-family:"Hiragino Kaku","BigVesta Arabic",s
 .note{font-size:12px;background:#FFF3E9;color:#8A3A12;border-radius:10px;padding:8px 12px;margin:0;line-height:1.7}
 .ok{font-size:12px;background:#E6F4EC;color:#2F7D5C;border-radius:10px;padding:8px 12px;margin:0;line-height:1.7}
 .foot{display:flex;gap:8px}.foot .btn{flex:1}
+.docg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.doc{border:1px solid #E3E8F2;border-radius:14px;padding:10px;display:grid;gap:4px;background:#fff}
+.doc b{font-size:14px}.doc .sp{font-size:12px;color:#5b6577}.doc .hr{font-size:12px;color:#3B4658;direction:ltr;text-align:right}
+.doc .ft{display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px;margin-top:2px}.doc .cnt{font-size:12px;color:#3B4658;white-space:nowrap}
+.ds{font-size:11px;border-radius:99px;padding:2px 8px;font-weight:700;white-space:nowrap}
+.ds.s{background:#F1F4F8;color:#3B4658}.ds.a{background:#E6F4EC;color:#2F7D5C}.ds.k{background:#E8EEFB;color:#0F369D}.ds.f{background:#EEF0F3;color:#8a93a3}.ds.l{background:#FFF3E9;color:#8A3A12}
+.doc.off{opacity:.6}
 /* desktop */
 .desk{width:1360px;margin:0 auto;background:#F4F7FC;border:1px solid #D5DEEE;border-radius:20px;overflow:hidden;position:relative;height:760px}
 .desk .wrap{padding:18px 22px;display:grid;gap:12px;width:880px}
@@ -154,6 +161,29 @@ body.m .desk-sec,body.m .legend{display:none}body.d .phones{display:none}
  <p class="cap" style="margin:0">نفس شاشة تعديل الميعاد العادية (المواعيد المتاحة + «حجز بميعاد يدوي»).</p>
 </div>
 </div></section>
+
+<!-- 4: doctors sheet -->
+<section><p class="cap">٤ — دوست «الأطباء»: كروت مرتبة بدل الأسماء فوق بعض</p>
+<div class="phone"><div class="pad dim">
+ <div class="head"><h2>تشغيل اليوم</h2><button class="btn pri">حجز جديد</button></div>
+ <div class="sc"><div class="tile on"><span class="n">7</span></div><div class="tile"><span class="n">4</span></div><div class="tile"><span class="n">3</span></div></div>
+</div><div class="veil"></div>
+<div class="sheet">
+ <div class="grab"></div>
+ <div class="sh"><h3>الأطباء النهارده <span style="color:#8a93a3;font-size:13px">(7)</span></h3><button class="x">✕</button></div>
+ <div class="tabs"><span class="tab on">الكل 7</span><span class="tab">وصل 3</span><span class="tab">لسه 3</span><span class="tab">خلص 1</span></div>
+ <div class="docg">
+  <div class="doc"><b>د. جلدية تجريبية</b><span class="sp">جلدية</span><span class="hr">16:00 - 22:00</span><div class="ft"><span class="ds k">في الكشف</span><span class="cnt">2 منتظر · 9 حجز</span></div></div>
+  <div class="doc"><b>د. أسنان تجريبي</b><span class="sp">أسنان</span><span class="hr">12:00 - 20:00</span><div class="ft"><span class="ds a">وصل</span><span class="cnt">1 منتظر · 6 حجز</span></div></div>
+  <div class="doc"><b>د. باطنة تجريبي</b><span class="sp">باطنة</span><span class="hr">18:00 - 23:00</span><div class="ft"><span class="ds l">متأخر 20 د</span><span class="cnt">3 منتظر · 7 حجز</span></div></div>
+  <div class="doc"><b>د. أطفال تجريبية</b><span class="sp">أطفال</span><span class="hr">19:00 - 23:00</span><div class="ft"><span class="ds s">مجدول</span><span class="cnt">0 منتظر · 5 حجز</span></div></div>
+  <div class="doc"><b>د. عظام تجريبي</b><span class="sp">عظام</span><span class="hr">20:00 - 23:59</span><div class="ft"><span class="ds s">مجدول</span><span class="cnt">0 منتظر · 4 حجز</span></div></div>
+  <div class="doc"><b>د. نسا تجريبية</b><span class="sp">نسا وتوليد</span><span class="hr">14:00 - 18:00</span><div class="ft"><span class="ds a">وصل</span><span class="cnt">0 منتظر · 3 حجز</span></div></div>
+  <div class="doc off"><b>د. أنف وأذن تجريبي</b><span class="sp">أنف وأذن</span><span class="hr">10:00 - 13:00</span><div class="ft"><span class="ds f">خلص</span><span class="cnt">6 حجز</span></div></div>
+ </div>
+ <p class="cap" style="margin:0">الضغط على كارت الدكتور يفلتر الجدول عليه، ومنه «سجّل تأخير» و«وصل» زي دلوقتي.</p>
+</div>
+</div></section>
 </div>
 
 <!-- desktop -->
@@ -199,7 +229,7 @@ body.m .desk-sec,body.m .legend{display:none}body.d .phones{display:none}
 </aside></div></section>
 
 <div class="legend">
-<b>المربعات فوق:</b> الأطباء · الغرف والطابور (مع «نادِ التالي») · حجوزات الوكيل والموقع والبوابة · مكالمات تحتاج متابعة · اتصال الوكيل · إدارة الغرف (للمسؤول بس). كل مربع عليه عدد، والبرتقالي يعني فيه حاجة مستنياك. الأقسام دي بتتشال من آخر الصفحة.<br>
+<b>الأطباء:</b> كروت في عمودين (موبايل) أو 3 (كمبيوتر): الاسم، التخصص، مواعيد النهارده، الحالة (مجدول / وصل / في الكشف / متأخر / خلص)، وعدد المنتظرين والحجوزات.<br><b>المربعات فوق:</b> الأطباء · الغرف والطابور (مع «نادِ التالي») · حجوزات الوكيل والموقع والبوابة · مكالمات تحتاج متابعة · اتصال الوكيل · إدارة الغرف (للمسؤول بس). كل مربع عليه عدد، والبرتقالي يعني فيه حاجة مستنياك. الأقسام دي بتتشال من آخر الصفحة.<br>
 <b>أزرار كل حجز:</b> سجّل وصوله · مردّش (بيتسجّل محاولة اتصال بالوقت واسم الموظف، وبيبان «مردّش ×2») · تعديل الميعاد · لم يحضر · إلغاء الحجز (سبب إجباري). كله بنفس حالات وسجل الحجوزات العادية، وعلى كل حجز مصدره: واتساب / الموقع / البوابة.<br>
 <b>الحجوزات التجريبية:</b> اللي فيها «تجربة/تجريبي/اختبار» أو الرقم 01000000000 بيظهر عليها «شكله حجز تجريبي» وزرار «احذف الحجز التجريبي» للمديرين بس (بيتسجّل مين حذفه)، أو «مش تجريبي» لو الاسم حقيقي.
 </div>
