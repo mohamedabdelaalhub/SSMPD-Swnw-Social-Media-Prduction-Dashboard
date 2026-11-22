@@ -267,7 +267,7 @@
     }).catch(function(){draftStatus.textContent='التصميم محفوظ على الحساب. تعذر إنشاء نسخة Drive الأرشيفية.';});
    }catch(e){status.textContent=e.message;}finally{working=false;buttons();}
   };
-  function addVersion(row){var a=document.createElement('a');a.href=row.output_file_url;a.target='_blank';a.rel='noopener';a.style.display='block';a.textContent='نسخة '+new Date(row.created_at).toLocaleString('ar-EG');root.querySelector('[data-versions]').prepend(a);}
+  function addVersion(row){var a=document.createElement('a');a.href=row.output_file_url;a.target='_blank';a.rel='noopener';a.style.display='block';a.textContent='نسخة '+new Date(row.created_at).toLocaleString('ar-EG-u-nu-latn');root.querySelector('[data-versions]').prepend(a);}
   window.SSMPDDb.client.from('design_versions').select('output_file_url,created_at').eq('content_id',item.id).order('created_at',{ascending:false}).limit(20).then(function(res){(res.data||[]).slice().reverse().forEach(addVersion);});
   buttons();root.querySelectorAll('input,textarea,select,button').forEach(function(el){el.disabled=true;});
   (async function(){

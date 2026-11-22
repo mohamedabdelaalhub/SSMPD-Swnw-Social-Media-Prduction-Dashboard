@@ -6,7 +6,7 @@ var PER_PAGE=12,METHOD={cash:'نقدي',pos:'فيزا',bank:'تحويل بنكي
 function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function money(n){return Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function day(v){var d=new Date(v);if(isNaN(d))return String(v||'');var p=new Intl.DateTimeFormat('en-GB',{timeZone:'Africa/Cairo',day:'2-digit',month:'2-digit',year:'numeric'}).format(d);return p;}
-function time(v){var d=new Date(v);return isNaN(d)?'':new Intl.DateTimeFormat('ar-EG',{timeZone:'Africa/Cairo',hour:'numeric',minute:'2-digit'}).format(d);}
+function time(v){var d=new Date(v);return isNaN(d)?'':new Intl.DateTimeFormat('ar-EG-u-nu-latn',{timeZone:'Africa/Cairo',hour:'numeric',minute:'2-digit'}).format(d);}
 function phone(p){p=String(p||'');return p.length>5?p.slice(0,3)+'••••••'+p.slice(-2):p;}
 function css(){return "@font-face{font-family:'BigVesta Arabic';src:url('"+BASE+"assets/fonts/BigVesta-Regular.woff2') format('woff2')}"+
 "@font-face{font-family:'BigVesta Arabic';font-weight:700;src:url('"+BASE+"assets/fonts/BigVesta-Bold.woff2') format('woff2')}"+

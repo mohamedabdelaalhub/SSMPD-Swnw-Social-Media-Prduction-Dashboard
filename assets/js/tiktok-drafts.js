@@ -30,7 +30,7 @@
     return '<div class="card" style="padding:10px;margin-bottom:8px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">' +
       '<div style="flex:1;min-width:200px;"><b dir="auto">' + esc(item.title || "—") + "</b>" +
       '<div style="color:var(--c-muted);font-size:12px;">' + t(BRANDS[item.brand] || "بدون صفحة") +
-      (item.published_at ? " · " + esc(new Date(item.published_at).toLocaleDateString("ar-EG")) : "") + (status ? " · " + status : "") + "</div></div>" +
+      (item.published_at ? " · " + esc(new Date(item.published_at).toLocaleDateString("ar-EG-u-nu-latn")) : "") + (status ? " · " + status : "") + "</div></div>" +
       '<button type="button" class="btn ghost sm" data-tt-copy="' + item.id + '">' + t("انسخ الكابشن") + "</button>" +
       '<button type="button" class="btn sm" data-tt-draft="' + item.id + '"' + (sent && !audited() ? " disabled" : "") + ">" + t(sent && !audited() ? "اتبعتت كمسودة" : label) + "</button></div>";
   }

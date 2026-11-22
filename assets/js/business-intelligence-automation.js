@@ -35,7 +35,7 @@
       var groups={}; overdue.forEach(function(x){var k=x.parent_task_id||x.project_id||'other';if(!groups[k])groups[k]={parent:pm[x.parent_task_id],project:jm[x.project_id],items:[]};groups[k].items.push(x);});
       var blockers=Object.keys(groups).map(function(k){return groups[k];}).sort(function(a,b){return b.items.length-a.items.length;}).slice(0,4);
       var box=document.createElement('section');box.className='bi-panel';box.dataset.biReturnBrief='1';
-      box.innerHTML='<div class="bi-panel-head"><div><h3>منذ آخر زيارة لك</h3><p>'+esc(previous?'من '+new Date(since).toLocaleString('ar-EG'):'أول تشغيل يعرض آخر 24 ساعة')+'</p></div></div>'+
+      box.innerHTML='<div class="bi-panel-head"><div><h3>منذ آخر زيارة لك</h3><p>'+esc(previous?'من '+new Date(since).toLocaleString('ar-EG-u-nu-latn'):'أول تشغيل يعرض آخر 24 ساعة')+'</p></div></div>'+
         '<div class="bi-grid bi-kpis"><div class="bi-kpi"><small>مهام اكتملت</small><b>'+n(res[0].count)+'</b></div><div class="bi-kpi"><small>معرفة جديدة</small><b>'+n(res[1].count)+'</b></div><div class="bi-kpi"><small>توصيات جديدة</small><b>'+n(res[2].count)+'</b></div><div class="bi-kpi"><small>نتائج تم قياسها</small><b>'+n(res[3].count)+'</b></div></div>'+
         (blockers.length?'<div class="bi-alert high"><b>تعطيل هرمي يحتاج انتباه</b><p>'+blockers.map(function(g){var label=g.parent&&g.parent.title||g.project&&g.project.title||'مجموعة مهام';return esc(label)+' فيها '+n(g.items.length)+' مهمة فرعية متأخرة';}).join(' · ')+'</p></div>':'');
       var head=shell.querySelector('.bi-head'); if(head&&head.parentNode)head.parentNode.insertBefore(box,head.nextSibling); else shell.insertBefore(box,shell.firstChild);

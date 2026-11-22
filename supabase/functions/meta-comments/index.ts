@@ -1,7 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { decideReply, clinicInfo, withContact } from "./ai.ts";
-import { syncMessages } from "./messages.ts";
+import { syncMessages, sendManualMessage, suggestMessage } from "./messages.ts";
 
 // Meta Comments & Messages — inbox + autopilot replies.
 //
@@ -9,7 +9,8 @@ import { syncMessages } from "./messages.ts";
 // messages (social_messages, messages.ts). With autopilot on (social_settings.autopilot, the owner's
 // choice) waiting comments/messages are answered directly: AI reply for general questions, the owner's
 // fixed templates for sensitive medical / emergency / complaint (which also raise a red dashboard alert).
-// Every reply ends with the booking contact block. Staff may call it to sync, suggest or send.
+// Every reply ends with the booking contact block. Staff may call it to sync, suggest or send — including a manual
+// Messenger / Instagram Direct reply inside Meta's 24h window (action send_message, logged with sent_by).
 // Page tokens stay in Edge Function secrets; nothing token-related is logged or returned.
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -368,6 +369,16 @@ Deno.serve(async (req) => {
       if (typeof body.id !== "string") return reply({ ok: false, error: "id required" }, 400);
       const r = await suggestReply(db, body.id);
       return reply(r);
+    }
+    // Manual Messenger / Instagram Direct reply (same roles as approving comment replies; 24h window enforced in messages.ts).
+    if (body.action === "send_message") {
+      if (typeof body.conversation_id !== "string" || typeof body.text !== "string") return reply({ ok: false, error: "conversation_id + text required" }, 400);
+      const r = await sendManualMessage(db, { conversationId: body.conversation_id, text: body.text, adminId: admin!.id, token: pageToken });
+      return reply(r);
+    }
+    if (body.action === "suggest_message") {
+      if (typeof body.conversation_id !== "string") return reply({ ok: false, error: "conversation_id required" }, 400);
+      return reply(await suggestMessage(db, body.conversation_id));
     }
     if (body.action === "sync") {
       const report = { seen: 0, sent: 0, errors: [] as string[] };

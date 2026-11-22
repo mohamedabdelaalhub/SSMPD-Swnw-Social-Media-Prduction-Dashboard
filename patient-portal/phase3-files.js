@@ -6,7 +6,7 @@ var client=((window.SSMPDPortalClient)||window.supabase.createClient(cfg.url,cfg
 
 function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
 function categoryLabel(v){return({insurance:"تأمين",radiology:"أشعة",lab_result:"تحاليل",prescription:"وصفة طبية",physical_therapy:"علاج طبيعي",medical_report:"تقرير طبي",eeg:"رسم مخ",invoice:"فاتورة / إيصال",other:"ملف آخر"}[v]||"ملف");}
-function fmtDate(v){if(!v)return "—";try{return new Intl.DateTimeFormat("ar-EG",{year:"numeric",month:"short",day:"numeric"}).format(new Date(v));}catch(_){return v;}}
+function fmtDate(v){if(!v)return "—";try{return new Intl.DateTimeFormat("ar-EG-u-nu-latn",{year:"numeric",month:"short",day:"numeric"}).format(new Date(v));}catch(_){return v;}}
 function fmtSize(n){n=Number(n||0);if(!n)return "—";if(n<1024)return n+" B";if(n<1048576)return (n/1024).toFixed(1)+" KB";return (n/1048576).toFixed(1)+" MB";}
 function fileIcon(){return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v5h5"/></svg>';}
 function invokeFiles(){

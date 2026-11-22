@@ -12,6 +12,8 @@ assert(hit('الاشعة','سونار'));assert(hit('الأشعة','أشعة'));
 assert(hit('النساء والتوليد','حمل'));assert(hit('النفسية والتخاطب','نفسي'));
 assert(!hit('الباطنة','معمل'),'no alias leaks to other departments');
 assert.equal(w.da('خدمات بدون اسم'),'');
+// owner 2026-11-22: «خدمات» typed in القسم also finds the nursing departments
+assert(hit('التمريض','خدمات'));assert(hit('التمريض المنزلي','خدمات'));assert(hit('التمريض','خدمات التمريض'));assert(hit('التمريض','تطعيم'));assert(!hit('الباطنة','خدمات'),'no leak');
 assert(/alias:function\(o\)\{return deptAlias\(o\.text\);\}/.test(src),'department combo uses the aliases');
 assert(/\(cfg\.alias\?' '\+cfg\.alias\(o\):''\)/.test(src),'aliases are searched, not rendered');
-console.log('PASS department search aliases (معمل → التحاليل)');
+console.log('PASS department search aliases (معمل → التحاليل, خدمات → التمريض)');

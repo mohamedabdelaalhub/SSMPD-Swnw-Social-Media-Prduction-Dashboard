@@ -11,7 +11,7 @@
   var openGroups = {};
 
   function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;"); }
-  function date(v) { return v ? new Date(v).toLocaleDateString("ar-EG", { year: "numeric", month: "short", day: "numeric" }) : "—"; }
+  function date(v) { return v ? new Date(v).toLocaleDateString("ar-EG-u-nu-latn", { year: "numeric", month: "short", day: "numeric" }) : "—"; }
   function money(v) { return Number(v || 0).toLocaleString("en-US", { maximumFractionDigits: 2 }) + " ج.م"; }
   function today() { return new Date().toISOString().slice(0, 10); }
   function statusPill(s) { var c = s === "active" ? "approved" : s === "negotiating" ? "approval" : s === "rejected" ? "revision" : "draft"; return '<span class="status-pill ' + c + '">' + (STATUSES[s] || s || "بدون عقد") + "</span>"; }

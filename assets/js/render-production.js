@@ -569,7 +569,7 @@ function openAgentImportModal(parentBackdrop) {
       if (latestWorker) {
         html += '<div style="border:1px solid ' + (workerOnline ? '#9fd5b1' : 'var(--c-border)') + ';border-radius:10px;padding:9px 10px;margin-bottom:12px;font-size:12px;">' +
           '<b>عامل الفيديو:</b> ' + (workerOnline ? 'متصل' : 'غير متصل') +
-          ' <span style="color:var(--c-muted);">آخر نشاط: ' + escapeHtml(workerSeenAt.toLocaleString("ar-EG")) + '</span>' +
+          ' <span style="color:var(--c-muted);">آخر نشاط: ' + escapeHtml(workerSeenAt.toLocaleString("ar-EG-u-nu-latn")) + '</span>' +
           (latestWorker.status ? ' <span style="color:var(--c-muted);">(' + escapeHtml(latestWorker.status === "working" ? "ينتج فيديو" : latestWorker.status === "error" ? "تحتاج مراجعة" : "في الانتظار") + ')</span>' : '') +
           '</div>';
       } else {
@@ -650,7 +650,7 @@ function openAgentImportModal(parentBackdrop) {
           " &nbsp; <b> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%AF%D8%A9%3A-->المدة:</b> " + escapeHtml((latest.duration_min_seconds == null ? "—" : latest.duration_min_seconds) + "–" +
           (latest.duration_max_seconds == null ? "—" : latest.duration_max_seconds) + " ث") + '</div>' +
           '<div style="font-size:11px;color:var(--c-muted);margin-bottom:8px;">تم إنشاء الـJob: ' +
-          escapeHtml(new Date(latest.created_at).toLocaleString("ar-EG")) + '</div>';
+          escapeHtml(new Date(latest.created_at).toLocaleString("ar-EG-u-nu-latn")) + '</div>';
 
         if (latest.status === "ready" && (latest.drive_video_url || latest.output_video_url)) {
           html += '<a class="btn sm" target="_blank" href="' + escapeHtml(latest.drive_video_url || latest.output_video_url) + '">▶️ فتح الفيديو النهائي</a>';
@@ -889,7 +889,7 @@ function openAgentImportModal(parentBackdrop) {
           var titleOpenAttr = i.stage === "published" ? 'data-published-open="' + i.id + '"' : 'data-open="' + i.id + '"';
           html += '<tr><td>' + W.contentFormatBadgeHtml(i) + '<span class="link-open" ' + titleOpenAttr + '>' + escapeHtml(i.title) + '</span>' + W.brandBadgeHtml(i.brand) + W.specialtyBadgeHtml(i.specialty) + '</td>' +
             '<td><span class="status-pill ' + stagePillClass(i.stage) + '">' + W.stageLabel(i.stage) + '</span></td>' +
-            '<td>' + new Date(i.updated_at).toLocaleDateString("ar-EG") + '</td>' +
+            '<td>' + new Date(i.updated_at).toLocaleDateString("ar-EG-u-nu-latn") + '</td>' +
             '<td><button class="btn ghost sm" data-open="' + i.id + "\"> <!--ssmpd-i18n:%D9%81%D8%AA%D8%AD-->فتح</button> " + C.commentButtonHtml(i.id, stats) + '</td></tr>';
         });
         html += '</tbody></table>';

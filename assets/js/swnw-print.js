@@ -8,7 +8,7 @@ var METHOD={cash:'نقدي',pos:'فيزا',bank:'تحويل بنكي',instapay:'
 function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function money(n){return Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function day(v){var d=new Date(v);return isNaN(d)?String(v||''):new Intl.DateTimeFormat('en-GB',{timeZone:'Africa/Cairo',day:'2-digit',month:'2-digit',year:'numeric'}).format(d);}
-function time(v){var d=new Date(v);return isNaN(d)?'':new Intl.DateTimeFormat('ar-EG',{timeZone:'Africa/Cairo',hour:'numeric',minute:'2-digit'}).format(d);}
+function time(v){var d=new Date(v);return isNaN(d)?'':new Intl.DateTimeFormat('ar-EG-u-nu-latn',{timeZone:'Africa/Cairo',hour:'numeric',minute:'2-digit'}).format(d);}
 function stamp(v){var t=time(v);return day(v)+(t?' — '+t:'');}
 /* Arabic amount in words (pounds + piastres), e.g. 750 → «سبعمائة وخمسون جنيهًا فقط لا غير» */
 var ONES=['','واحد','اثنان','ثلاثة','أربعة','خمسة','ستة','سبعة','ثمانية','تسعة','عشرة','أحد عشر','اثنا عشر','ثلاثة عشر','أربعة عشر','خمسة عشر','ستة عشر','سبعة عشر','ثمانية عشر','تسعة عشر'];

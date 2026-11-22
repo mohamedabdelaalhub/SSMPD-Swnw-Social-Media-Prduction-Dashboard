@@ -124,7 +124,7 @@
         var today = k === todayKey;
         var tag = today ? '<span class="pbd-tag today">النهارده</span>' : (k === yesterdayKey ? '<span class="pbd-tag">أمس</span>' : "");
         html += '<div class="pbd-card' + (today ? " today" : "") + '"><div class="pbd-head"><div class="pbd-daynum">' + first.getDate() + '</div>' +
-          '<div class="pbd-day"><div class="pbd-dayname">' + esc(first.toLocaleDateString("ar-EG", { weekday: "long" })) + '</div>' +
+          '<div class="pbd-day"><div class="pbd-dayname">' + esc(first.toLocaleDateString("ar-EG-u-nu-latn", { weekday: "long" })) + '</div>' +
           '<div class="pbd-daymonth">' + esc(first.toLocaleDateString(LATN, { month: "long", year: "numeric" })) + '</div></div>' +
           tag + '<span class="pbd-count" title="عدد المواد">' + rows.length + '</span></div><div class="pbd-list">';
         var groups = BRANDS.map(function (g) {

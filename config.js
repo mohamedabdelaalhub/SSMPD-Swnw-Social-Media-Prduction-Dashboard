@@ -7,7 +7,7 @@ window.SSMPD_CONFIG = {
 
   updateNoticeTrial: true,
 
-  centerName: "مركز عيادات Swnw التخصصية — فرع حدائق الأهرام",
+  centerName: "مركز عيادات سونو التخصصية — فرع حدائق الأهرام",
 
   // مفاتيح Supabase — تُملأ بعد إنشاء المشروع (خطوة البنية التحتية)
   supabase: {
@@ -112,7 +112,7 @@ window.SSMPD_CONFIG = {
     loadOnce("__SSMPDInsuranceContractsV1","assets/js/insurance-contracts.js?v=entity-claims-20261029-1","insurance");
     loadOnce("__SWNWTaskStageNavigation","assets/js/task-stage-navigation.js?v=task-stage-nav-20261108-1","task-stage-navigation");
     loadOnce("__SWNWLeadsArchiveGrantRuntimeV3","assets/js/leads-archive-permission-column.js?v=leads-archive-permission-20261028-1","leads-archive-permission");
-    loadOnce("__SWNWLeadsMissingDataEnhancement","assets/js/leads-missing-data-enhancement.js?v=leads-missing-data-20261028-2","leads-missing-data");
+    loadOnce("__SWNWLeadsMissingDataEnhancement","assets/js/leads-missing-data-enhancement.js?v=english-digits-20261122-1","leads-missing-data");
     loadOnce("__SWNWContractServiceMapping","assets/js/contract-service-mapping.js?v=shared-tariffs-20261029-1","contract-service-mapping");
     loadOnce("__SWNWHRAccountLinkingFix","assets/js/hr-account-linking-fix.js?v=hr-account-link-20261102-1","hr-account-linking-fix");
     loadOnce("SWNJourneySandbox","assets/js/today-operations-sandbox.js?v=journey-sandbox-20261031-1","journey-sandbox");

@@ -6,7 +6,7 @@ const root = path.join(__dirname, '..');
 const filters = fs.readFileSync(path.join(root, 'assets/js/comments-post-filters.js'), 'utf8');
 const bootstrap = fs.readFileSync(path.join(root, 'assets/js/comments.js'), 'utf8');
 
-assert.match(bootstrap, /comments-post-filters\.js\?v=comments-post-filters-20261021-1/, 'global comments bootstrap must load the social inbox filter enhancement');
+assert.match(bootstrap, /comments-post-filters\.js\?v=[\w.-]+/, 'global comments bootstrap must load the social inbox filter enhancement');
 assert.match(filters, /cm-category/, 'comments inbox must expose a classification filter');
 assert.match(filters, /cm-post-ref/, 'comments inbox must expose a post filter');
 assert.match(filters, /post_ref/, 'post filtering must use the platform post reference');

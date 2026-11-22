@@ -27,7 +27,7 @@
     var items=loadErrors().filter(function(x){var age=now-(x.ts?new Date(x.ts).getTime():now);return (x.resolved||x.transient)?age<60*60*1000:age<24*60*60*1000;}).slice(0,12);
     if(!items.length){E.errors.innerHTML='<div class="empty">لا توجد أخطاء مسجلة على هذا الجهاز حاليًا.</div>';return;}
     E.errors.innerHTML=items.map(function(x){
-      var t='';try{t=new Date(x.ts).toLocaleString('ar-EG');}catch(_){}
+      var t='';try{t=new Date(x.ts).toLocaleString('ar-EG-u-nu-latn');}catch(_){}
       var cls=x.resolved?'green':(x.severity==='red'?'red':'orange');
       return '<article class="error-card '+(x.resolved?'resolved':'')+'"><div class="error-head"><div class="error-title '+cls+'">'+(x.resolved?'✓ تم الحل — ':'')+esc(x.title||'خطأ')+'</div><span class="error-time">'+esc(t)+'</span></div>'+
         (x.action?'<div class="line"><b>أثناء:</b> '+esc(x.action)+'</div>':'')+
@@ -102,7 +102,7 @@
   }
 
   async function run(){
-    document.getElementById('when').textContent=new Date().toLocaleString('ar-EG');
+    document.getElementById('when').textContent=new Date().toLocaleString('ar-EG-u-nu-latn');
     E.overall.className='health-badge';E.overall.textContent='جاري الفحص…';results={};storageTest();
     await Promise.all([
       httpTest('pages','./?diag='+Date.now(),{ok:'GitHub Pages متاح.'}),
