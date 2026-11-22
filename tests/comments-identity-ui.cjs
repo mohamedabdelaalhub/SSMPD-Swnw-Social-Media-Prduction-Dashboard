@@ -30,9 +30,9 @@ const fs=require('fs'),path=require('path'),assert=require('node:assert/strict')
  await page.locator('[data-section="messages"]').click();await page.waitForSelector('.cm-conv');assert.equal(await page.locator('.cm-conv').count(),4);assert.equal(await page.locator('.cm-conv img,.cm-chat-pane img').count(),0,'customer content escaped');
  assert.equal(await page.locator('.cm-conv').first().locator('b').innerText(),'سارة محمود','newest first');assert.equal(await page.locator('.cm-conv').first().locator('.cm-conv-unread').innerText(),'1','unread count');
  const open=async name=>{await page.locator('.cm-conv',{hasText:name}).click();await page.waitForSelector('.cm-chat-head');};
- // WhatsApp: full chronology + stored reply, no composer, «open» link
+ // WhatsApp older than 24h: full chronology + stored reply, no composer, template picker (flow in tests/whatsapp-dashboard-reply.cjs)
  await open('عميل اختبار');assert.equal(await page.locator('.cm-chat-pane .cm-b').count(),9,'all customer messages + stored reply');assert.equal(await page.locator('.cm-chat-pane .cm-b p').first().innerText(),'رسالة العميل رقم 0');
- assert.equal(await page.locator('.cm-chat-pane .cm-b.me p').innerText(),'ردنا محفوظ\nبالكامل باللغة العربية.');assert.equal(await page.locator('.cm-chat-pane [data-msend]').count(),0);assert.match(await page.locator('.cm-chat-pane .cm-closed').innerText(),/واتساب/);
+ assert.equal(await page.locator('.cm-chat-pane .cm-b.me p').innerText(),'ردنا محفوظ\nبالكامل باللغة العربية.');assert.equal(await page.locator('.cm-chat-pane [data-msend]').count(),0);assert.match(await page.locator('.cm-chat-pane .cm-closed').innerText(),/إلا بقالب معتمد/);assert.equal(await page.locator('.cm-chat-pane [data-wa-load-tpl]').count(),1,'WhatsApp after 24h: approved template picker');
  const r1=await page.locator('.cm-chat-pane .cm-b.them').first().evaluate(e=>e.getBoundingClientRect().right),r2=await page.locator('.cm-chat-pane .cm-b.me').evaluate(e=>e.getBoundingClientRect().right);assert(r1>r2,'customer on the right, page on the left');
  assert.equal(await page.locator('.cm-chat-pane .cm-day').count(),1,'one day separator');if(phone)await page.locator('[data-cm-back]').click();
  // Facebook older than 24h: page reply once, system note, window note instead of a composer
@@ -57,5 +57,5 @@ const fs=require('fs'),path=require('path'),assert=require('node:assert/strict')
  await page.waitForSelector('button[data-section="alerts"]');await page.locator('button[data-section="alerts"]').click();assert.equal(await page.locator('[data-resolve]').count(),1);
  assert.deepEqual(await page.evaluate(()=>apiCalls.map(x=>x.name)),['meta-comments','meta-comments','meta-comments','social_reply_template_set']);
  await page.emulateMedia({media:'print'});assert.equal(await page.locator('.cm-wrap').evaluate(e=>getComputedStyle(e).maxWidth),'900px','new stylesheet screen-only');assert.deepEqual(errors,[]);await page.close();}
- console.log('PASS comments + messages chat inbox 1280/390/320: cards, side chat with bubbles/day separator/system note, stored-reply rules, escaping, WhatsApp + 24h notes, manual suggest/send calls, staff name, filters/search/page, templates/alerts, phone list↔chat, no overflow.');
+ console.log('PASS comments + messages chat inbox 1280/390/320: cards, side chat with bubbles/day separator/system note, stored-reply rules, escaping, WhatsApp template picker + 24h notes, manual suggest/send calls, staff name, filters/search/page, templates/alerts, phone list↔chat, no overflow.');
 }finally{await browser.close();}})().catch(e=>{console.error(e);process.exitCode=1});

@@ -88,7 +88,7 @@ export async function syncMessages(db: any, brand: string, cfg: any, token: stri
         await db.from("social_messages").update({ status: "skipped", category: decision.category, updated_at: now }).in("id", ids);
         continue;
       }
-      const flow = advance(st, waitingText, { category: decision.category, firstContact: !st && lastPage < 0 });
+      const flow = advance(st, waitingText, { category: decision.category, firstContact: !st && lastPage < 0, seed: conv.id });
       if (flow.silent) { await db.from("social_messages").update({ status: "skipped", category: "handoff", updated_at: now }).in("id", ids); continue; }
       if (flow.passthrough) { /* thanks: keep decideReply's text, no state change */ }
       else {
@@ -135,7 +135,8 @@ export async function syncMessages(db: any, brand: string, cfg: any, token: stri
 
 // ---------- Manual replies from the dashboard (owner 2026-11-22: «ايوة عايز الموظف يقدر يرد من الداشبورد») ----------
 // Only Messenger / Instagram Direct, only inside Meta's 24h standard messaging window (messaging_type RESPONSE),
-// sent with the same page token the autopilot uses. The caller's role is checked in index.ts before this runs.
+// sent with the same page token the autopilot uses. message.metadata "swnw-dashboard:<admin>" comes back on the echo, so the
+// swnw-agent treats the thread as taken over by a human (no bot double reply). The caller's role is checked in index.ts before this runs.
 export const MANUAL_WINDOW_MS = 24 * 3600e3;
 export const WINDOW_CLOSED_AR = "عدّى 24 ساعة من آخر رسالة للعميل — ميتا مش بتسمح بالرد";
 
@@ -175,7 +176,7 @@ export async function sendManualMessage(db: any, opts: { conversationId: string;
   const token = opts.token(brand);
   const { data: cfg } = await db.from("meta_brand_config").select("facebook_page_id").eq("brand", brand).maybeSingle();
   if (!token || !cfg?.facebook_page_id) return { ok: false, error: "الصفحة مش متوصلة بميتا (التوكن أو رقم الصفحة ناقص)" };
-  const sent = await gpostJson(`${cfg.facebook_page_id}/messages`, token, { recipient: { id: lastCustomer.sender_id }, messaging_type: "RESPONSE", message: { text } });
+  const sent = await gpostJson(`${cfg.facebook_page_id}/messages`, token, { recipient: { id: lastCustomer.sender_id }, messaging_type: "RESPONSE", message: { text, metadata: `swnw-dashboard:${opts.adminId}` } });
   if (!sent.ok) return { ok: false, error: "ميتا رفضت الإرسال: " + String(sent.error || "خطأ غير معروف").slice(0, 200) };
   const at = new Date(now).toISOString(), mid = sent.data?.message_id || `manual-${now}`;
   const ins = await db.from("social_messages").upsert({

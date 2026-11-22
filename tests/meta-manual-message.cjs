@@ -21,7 +21,7 @@ const conv=(plat,lastH)=>[{id:plat+':a',conversation_id:'C',platform:plat,brand:
  let m=load(okFetch),f=fakeDb(conv('facebook',2));
  let r=await m.sendManualMessage(f.db,{conversationId:'C',text:'  الكشف 400 جنيه  ',adminId:'ADM1',token:b=>b==='sono'?'TOKEN':null,now:NOW});
  assert.equal(r.ok,true,JSON.stringify(r));assert.equal(calls.length,1);
- assert.match(calls[0].url,/\/v26\.0\/PAGE1\/messages\?access_token=TOKEN$/);assert.deepEqual(JSON.parse(JSON.stringify(calls[0].body)),{recipient:{id:'U9'},messaging_type:'RESPONSE',message:{text:'الكشف 400 جنيه'}});
+ assert.match(calls[0].url,/\/v26\.0\/PAGE1\/messages\?access_token=TOKEN$/);assert.deepEqual(JSON.parse(JSON.stringify(calls[0].body)),{recipient:{id:'U9'},messaging_type:'RESPONSE',message:{text:'الكشف 400 جنيه',metadata:'swnw-dashboard:ADM1'}});
  const up=f.writes.find(w=>w.op==='upsert');assert.equal(up.row.id,'facebook:m_77');assert.equal(up.row.is_page,true);assert.equal(up.row.sent_by,'ADM1');assert.equal(up.row.message,'الكشف 400 جنيه');
  const upd=f.writes.find(w=>w.op==='update');assert.deepEqual(JSON.parse(JSON.stringify(upd.in)),['id',['facebook:c']],'only the waiting customer message');assert.equal(upd.row.status,'replied');assert.equal(upd.row.sent_by,'ADM1');
  // 2) Instagram works the same way

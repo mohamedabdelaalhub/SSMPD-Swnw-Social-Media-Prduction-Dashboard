@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1902,
-    "labels": 1394,
+    "definitions": 1905,
+    "labels": 1396,
     "files": 143,
-    "groups": 1498
+    "groups": 1500
   },
   "fields": [
     {
@@ -11868,6 +11868,16 @@
     },
     {
       "file": "reception-services.js",
+      "label": "الدفعة دي لأكتر من زيارة (نفس التحويل أو نفس الإيصال)",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-collect-multi",
+      "text_sha256": "aa6b9958935c5267ed63578005c459cf4e1f1d446087436b2095b3f60670b4e6"
+    },
+    {
+      "file": "reception-services.js",
       "label": "كود المستلزم",
       "name": "code",
       "kind": "helper",
@@ -12793,6 +12803,26 @@
       "tab": "reception_services",
       "article": "cash-shifts-guide",
       "text_sha256": "c76df59d8ee5761c6003f4cc2fdda7f7adfd10a1bc9a9d51c5bc45558aa57e0b"
+    },
+    {
+      "file": "reception-services.js",
+      "label": "مثلًا: تحويل واحد لزيارتين — منار وابنها",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-collect-multi",
+      "text_sha256": "e1af7d6dbdbe02ecb4d7451c9d472a3d9f58c79842bd25b2e75fc38ef065b043"
+    },
+    {
+      "file": "reception-services.js",
+      "label": "ملاحظة (اختياري)",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "personal",
+      "text_sha256": "08c204de2685df464bdbc0cd0fde7ec98a5877581bd58cbad31890fc6661df06"
     },
     {
       "file": "reception-services.js",

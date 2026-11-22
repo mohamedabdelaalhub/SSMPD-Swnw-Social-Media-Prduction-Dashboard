@@ -1101,6 +1101,8 @@ def domain(f):
 def default_article(tab):return {'patients':'patient-records','reception_services':'booking-flow','inventory':'purchases','accounting':'ledger-guide','leads':'leads-guide','tasks':'tasks-guide','admin':'access','home':'personal','clinic_info':'chatbot','contracting_entities':'entities','metaads':'ads-guide','mediabuyer':'ads-guide','indicator_reports':'indicators','summary':'indicators','staff_kpi':'indicators','review':'content','publish':'content','production':'content','human_resources':'hr-my-file','price_lists':'price-lists'}.get(tab,'content')
 contract_help=json.loads(re.search(r"var fieldDescriptions=(.*);",pathlib.Path("assets/js/contract-marketing.js").read_text(encoding="utf-8")).group(1))
 
+frule('reception-services.js','الدفعة دي لأكتر من زيارة (نفس التحويل أو نفس الإيصال)','علّمها لو المبلغ ده (تحويل واحد أو إيصال واحد) دفع أكتر من زيارة للمريض أو لحد من عيلته. اختار الزيارات التانية؛ هيطلع إيصال واحد برقم عملية واحد وكل زيارة تتسجل لوحدها.','reception-collect-multi')
+frule('reception-services.js','مثلًا: تحويل واحد لزيارتين — منار وابنها','ملاحظة اختيارية بتظهر على الإيصال، زي مين دفع أو إن التحويل كان لأكتر من زيارة. الملاحظة مبتغيّرش المبلغ.','reception-collect-multi')
 def explain(row):
  label=row['label'];tab=domain(row['file'])
  if row['file']=='contract-marketing.js' and label in contract_help:return contract_help[label],'entities'

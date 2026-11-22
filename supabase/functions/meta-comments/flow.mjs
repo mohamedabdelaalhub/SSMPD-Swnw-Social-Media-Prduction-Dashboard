@@ -47,8 +47,32 @@ const MSG = {
   unclear: "محتاج توضيح أكتر علشان أفهم حضرتك 🙏",
   unclear2: "هنحوّل حضرتك لزميل من فريقنا يكمل معاك 🙏",
   human: "تمام، زميل من فريقنا هيكمل معاك في أقرب وقت 🙏",
-  medical: "شكراً لسؤال حضرتك 🌿 وكيل بشري من فريقنا هيكمل معاك في أقرب وقت.",
+  medical: "وصلتنا رسالتك 🌿 فريقنا هيتواصل معاك في أقرب وقت يا فندم.",
 };
+
+// Hand-off wording (owner 2026-11-22: «ممكن نخليهم بدايل بدل رسالة واحدة»). The old single sentence was
+// «شكراً لسؤال حضرتك 🌿 وكيل بشري من فريقنا هيكمل معاك في أقرب وقت.». These four were chosen by the owner; the variant is picked
+// per conversation (stable for the same seed) so one person never sees two different wordings. Outside opening hours
+// (08:00-24:00 Cairo) the owner's «بيرد من الساعة 8» wording is used instead.
+export const HANDOFF_VARIANTS = [
+  "وصلتنا رسالتك 🌿 فريقنا هيتواصل معاك في أقرب وقت يا فندم.",
+  "حضرتك في أمان معانا 🌿 فريق الاستقبال هيراجع رسالتك ويرد عليك بنفسه.",
+  "شكراً لتواصلك معانا 🌿 حد من فريق الاستقبال هيكمّل معاك في أقرب وقت.",
+];
+export const HANDOFF_AFTER_HOURS = "شكراً لتواصلك 🌿 فريق الاستقبال بيرد من الساعة 8 الصبح، وهيكلّمك أول ما نبدأ إن شاء الله.";
+
+export function clinicOpen(now = new Date()) {
+  const hour = Number(new Intl.DateTimeFormat("en-GB", { hour: "2-digit", hourCycle: "h23", timeZone: "Africa/Cairo" }).format(now));
+  return hour >= 8;  // open 08:00 until midnight
+}
+
+export function handoffReply(ctx = {}) {
+  if (!clinicOpen(ctx.now || new Date())) return HANDOFF_AFTER_HOURS;
+  const seed = String(ctx.seed ?? Math.random());
+  let h = 0;
+  for (const ch of seed) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return HANDOFF_VARIANTS[h % HANDOFF_VARIANTS.length];
+}
 export const MESSAGES = MSG;
 
 const DEFAULT = { stage: "collecting", name: null, phone: null, service: null, preferred_time: null, expect: null, unclear: 0, handoff_reason: null };
@@ -73,7 +97,7 @@ export function advance(prev, text, ctx = {}) {
   const toHandoff = (reason, reply, alert = false) => { s.stage = "handoff"; s.handoff_reason = reason; return out({ handoff: reason, reply, alert }); };
 
   if (humanRequested(t)) return toHandoff("human", MSG.human);
-  if (cat === "medical_sensitive") return toHandoff("medical", MSG.medical);
+  if (cat === "medical_sensitive") return toHandoff("medical", handoffReply(ctx));
   if (cat === "emergency") return toHandoff("emergency", null, true);   // caller sends the approved emergency template + red alert
   if (cat === "complaint") return toHandoff("complaint", null, true);   // caller sends the approved complaint template + red alert
   if (cat === "thanks" || cat === "spam") return out({ passthrough: true });
