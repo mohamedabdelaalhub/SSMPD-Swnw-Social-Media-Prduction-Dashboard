@@ -53,17 +53,17 @@ const MSG = {
 // Hand-off wording (owner 2026-11-22: «ممكن نخليهم بدايل بدل رسالة واحدة»). The old single sentence was
 // «شكراً لسؤال حضرتك 🌿 وكيل بشري من فريقنا هيكمل معاك في أقرب وقت.». These four were chosen by the owner; the variant is picked
 // per conversation (stable for the same seed) so one person never sees two different wordings. Outside opening hours
-// (08:00-24:00 Cairo) the owner's «بيرد من الساعة 8» wording is used instead.
+// (10:00-24:00 Cairo since the owner's 2026-11-22 change) the owner's «بيرد من الساعة 10» wording is used instead.
 export const HANDOFF_VARIANTS = [
   "وصلتنا رسالتك 🌿 فريقنا هيتواصل معاك في أقرب وقت يا فندم.",
   "حضرتك في أمان معانا 🌿 فريق الاستقبال هيراجع رسالتك ويرد عليك بنفسه.",
   "شكراً لتواصلك معانا 🌿 حد من فريق الاستقبال هيكمّل معاك في أقرب وقت.",
 ];
-export const HANDOFF_AFTER_HOURS = "شكراً لتواصلك 🌿 فريق الاستقبال بيرد من الساعة 8 الصبح، وهيكلّمك أول ما نبدأ إن شاء الله.";
+export const HANDOFF_AFTER_HOURS = "شكراً لتواصلك 🌿 فريق الاستقبال بيرد من الساعة 10 الصبح، وهيكلّمك أول ما نبدأ إن شاء الله.";
 
 export function clinicOpen(now = new Date()) {
   const hour = Number(new Intl.DateTimeFormat("en-GB", { hour: "2-digit", hourCycle: "h23", timeZone: "Africa/Cairo" }).format(now));
-  return hour >= 8;  // open 08:00 until midnight
+  return hour >= 10;  // open 10:00 until midnight
 }
 
 export function handoffReply(ctx = {}) {
