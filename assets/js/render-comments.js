@@ -2,7 +2,7 @@
 (function () {
   "use strict";
 
-  var state = { filter: "pending", brand: "", platform: "", section: "inbox", mfilter: "all", q: "", category: "", postRef: "", open: { inbox: "", messages: "" }, info: true, sheet: false, drafts: {}, waTemplates: null };
+  var state = { filter: "pending", brand: "", platform: "", section: "inbox", mfilter: "all", q: "", category: "", postRef: "", open: { inbox: "", messages: "" }, info: true, sheet: false, drafts: {}, waTemplates: null, leads: {} };
   var BRANDS = { sono: "سونو", dr_dina: "د. دينا" };
   var STATUS = {
     "new": "محتاج رد", drafted: "رد مقترح", approved: "في الطريق", sending: "بيتنشر",
@@ -341,6 +341,35 @@
       '<button type="button" class="btn sm cm-send" data-msend="' + esc(c.id) + '">إرسال' + ICON.send + "</button>", "ميتا بتسمح بالرد خلال 24 ساعة من آخر رسالة من العميل.");
     return '<div class="cm-msgs pl-' + esc(it.platform) + '" data-cm-msgs>' + withDays(items) + "</div>" + foot;
   }
+  // The lead behind a chat (owner 2026-11-22: «يظهرلي علي الشمال انه اتعمله ليد وتفاصيل الليد وحالته ولما ادوس عليه يفتحلي الليد»).
+  // RPC social_conversation_lead (migration 20261122180000): limited summary for inbox staff; can_open = the leads module would open it.
+  var LEAD_STATUS = { new: "جديد", in_progress: "قيد المتابعة", booked: "تم الحجز", booked_on_system: "تم الحجز على سيستم المركز", service_done: "تم إجراء الخدمة",
+    interested_undecided: "مهتم لسه مقررش", rejected: "مرفوض", no_response: "لا يوجد رد", invalid_number: "رقم غير صحيح", missing_data: "ناقص بيانات" };
+  var LEAD_TONE = { new: "new", in_progress: "soon", missing_data: "soon", interested_undecided: "soon", booked: "ok", booked_on_system: "ok", service_done: "ok", rejected: "old", no_response: "old", invalid_number: "late" };
+  var LEAD_SOURCE = { whatsapp: "واتساب", messenger: "ماسنجر", instagram: "انستجرام", facebook_form: "فورم فيسبوك", phone: "تليفون", clinic: "المركز", doctor_referral: "تحويل دكتور" };
+  var ATTEMPT = { answered: "رد", no_answer: "مردش", busy: "مشغول", call_back_later: "يتكلم بعدين", other: "أخرى" };
+  function shortDate(v) { if (!v) return ""; var d = new Date(v); return isNaN(d) ? "" : d.toLocaleDateString("ar-EG-u-nu-latn", { day: "numeric", month: "long" }); }
+  function leadCard(convId) {
+    var st = state.leads[convId];
+    if (!st || st.loading && !st.lead) return '<div class="cm-lead cm-lead-wait"><b>الليد</b><span>بيدوّر على الليد…</span></div>';
+    if (st.error) return '<div class="cm-lead"><b>الليد</b><span class="cm-lead-note">' + esc(st.error) + "</span></div>";
+    var l = st.lead;
+    if (!l) return '<div class="cm-lead cm-lead-none"><b>الليد</b><span class="cm-lead-note">مفيش ليد للمحادثة دي لسه.</span>' +
+      '<button type="button" class="btn sm cm-send" data-lead-create="' + esc(convId) + '"' + (st.busy ? " disabled" : "") + ">" + (st.busy ? "بيتعمل…" : "اعمل ليد") + "</button></div>";
+    var rows = [["الاسم", l.name], ["التليفون", l.phone ? '<span dir="ltr">' + esc(l.phone) + "</span>" : "", true], ["المصدر", (LEAD_SOURCE[l.source] || l.source || "") + (l.campaign ? " · حملة " + l.campaign : l.acquisition === "ad" ? " · إعلان" : "")],
+      ["المسؤول", l.assigned || "لسه متوزعش"], ["اتعمل", shortDate(l.created_at)],
+      ["آخر محاولة", l.last_attempt ? shortDate(l.last_attempt.at) + " · " + (ATTEMPT[l.last_attempt.result] || l.last_attempt.result || "") : "لسه محدش كلّمه"]];
+    var body = '<span class="cm-lead-head"><b>الليد</b><span class="cm-lead-st st-' + esc(LEAD_TONE[l.status] || "old") + '">' + esc(LEAD_STATUS[l.status] || l.status || "") + "</span></span>" +
+      '<dl class="cm-lead-facts">' + rows.filter(function (r) { return r[1]; }).map(function (r) { return "<div><dt>" + r[0] + "</dt><dd>" + (r[2] ? r[1] : esc(r[1])) + "</dd></div>"; }).join("") + "</dl>";
+    return l.can_open ? '<button type="button" class="cm-lead cm-lead-open" data-lead-open="' + esc(l.id) + '" aria-label="افتح الليد">' + body + '<span class="cm-lead-go">افتح الليد ←</span></button>'
+      : '<div class="cm-lead">' + body + '<span class="cm-lead-note">تفاصيل الليد بتتفتح لخدمة العملاء والإدارة.</span></div>';
+  }
+  function stopLeadWatch() {
+    var w = state.leadWatch; if (!w) return;
+    clearInterval(w.timer);
+    if (w.ch) { try { db().removeChannel(w.ch); } catch (e) {} }
+    state.leadWatch = null;
+  }
   function infoHtml(it, data) {
     var isC = it.kind === "comment", stLabel = isC ? (STATUS[it.status] || it.status) : (MSTATUS[it.status] || it.status), cat = isC ? it.c.category : it.lastCust.category;
     var first = isC ? it.c.commented_at : (it.conv.list[0] || {}).sent_at;
@@ -350,6 +379,7 @@
     var wa = !isC && it.platform === "whatsapp" ? String(it.conv.id).replace(/^whatsapp:/, "") : "";
     if (/^\d{8,15}$/.test(wa)) acts += '<a class="cm-act" href="tel:+' + esc(wa) + '"><span>' + ICON.phone + "</span>اتصال</a>";
     if (acts) h += '<div class="cm-acts">' + acts + "</div>";
+    if (!isC) h += '<div class="cm-lead-box" data-cm-lead="' + esc(it.conv.id) + '">' + leadCard(it.conv.id) + "</div>";
     if (it.sensitive) h += '<span class="cm-badge danger">' + esc(CATEGORY[cat] || "تنبيه") + '</span><button type="button" class="btn sm cm-send" data-resolve="' + (isC ? "comment|" + esc(it.c.id) : "message|" + esc(it.lastCust.id)) + '">تم التعامل</button>';
     h += '<dl class="cm-facts"><div><dt>الحالة</dt><dd><span class="cm-badge st-' + esc(it.status) + '">' + esc(stLabel) + "</span></dd></div>" +
       (cat ? "<div><dt>التصنيف</dt><dd>" + esc(CATEGORY[cat] || cat) + "</dd></div>" : "") +
@@ -569,6 +599,62 @@
         waCmd(b, { action: "return_to_bot", conversation_id: b.dataset.waReturn }, "بيرجّع البوت…");
       };
     });
+    // «الليد» card: load (and keep fresh) the lead behind the open conversation, create one, open it in the leads module.
+    var leadBox = container.querySelector("[data-cm-lead]");
+    function paintLead(conv) {
+      var box = container.querySelector('[data-cm-lead="' + (window.CSS && CSS.escape ? CSS.escape(conv) : conv) + '"]');
+      if (!box) return;
+      box.innerHTML = leadCard(conv);
+      var o = box.querySelector("[data-lead-open]");
+      if (o) o.onclick = function () {
+        if (window.SSMPDRenderLeads && window.SSMPDRenderLeads.openLeadById) window.SSMPDRenderLeads.openLeadById(o.dataset.leadOpen);
+        else alert("قسم الليدز مش متاح لحسابك");
+      };
+      var c = box.querySelector("[data-lead-create]");
+      if (c) c.onclick = function () {
+        var it = (state.leads[conv] || {}), wa = /^whatsapp:/.test(conv), phone = null;
+        var name = (container.querySelector(".cm-info h3") || {}).textContent || "العميل";
+        if (wa) { if (!confirm("تأكيد: اعمل ليد لـ «" + name + "» برقم الواتساب بتاعه؟")) return; }
+        else { phone = prompt("تأكيد: اعمل ليد لـ «" + name + "»\nاكتب رقم تليفونه لو بعته في الشات (اختياري — من غيره الليد هيبقى «ناقص بيانات»):", ""); if (phone === null) return; }
+        state.leads[conv] = { lead: null, busy: true }; paintLead(conv);
+        db().rpc("social_conversation_lead_create", { p_conversation_id: conv, p_phone: phone || null, p_service: null }).then(function (r) {
+          var d = r.data || {};
+          if (r.error || !d.ok) throw new Error(d.error || (r.error && r.error.message) || "تعذر عمل الليد");
+          state.leads[conv] = { lead: d.lead, at: Date.now() }; paintLead(conv); watchLead(conv);
+          toast(d.existing ? "المحادثة اتربطت بليد مفتوح بنفس الرقم" : "اتعمل ليد واتوزع على خدمة العملاء");
+        }).catch(function (e) { state.leads[conv] = it.lead !== undefined ? { lead: it.lead } : { lead: null }; paintLead(conv); fail(e); });
+      };
+    }
+    function loadLead(conv) {
+      var cur = state.leads[conv];
+      state.leads[conv] = { lead: cur ? cur.lead : undefined, loading: true };
+      if (!cur) paintLead(conv);
+      return db().rpc("social_conversation_lead", { p_conversation_id: conv }).then(function (r) {
+        if (r.error) throw r.error;
+        state.leads[conv] = { lead: (r.data || {}).lead || null, at: Date.now() };
+      }).catch(function () { state.leads[conv] = cur && cur.lead ? { lead: cur.lead } : { error: "ما قدرناش نجيب الليد دلوقتي" }; }).then(function () { paintLead(conv); watchLead(conv); });
+    }
+    // Live: realtime on the lead (roles that may read it) + a 30s refresh while the chat is open (inbox-only roles).
+    function watchLead(conv) {
+      var l = (state.leads[conv] || {}).lead, key = conv + "|" + (l ? l.id : "");
+      if (state.leadWatch && state.leadWatch.key === key) return;
+      stopLeadWatch();
+      var w = state.leadWatch = { key: key, timer: setInterval(function () { if (container.querySelector('[data-cm-lead]')) loadLead(conv); else stopLeadWatch(); }, 30000) };
+      var c = db();
+      if (l && l.can_open && c.channel) {
+        try {
+          w.ch = c.channel("cm-lead-" + l.id)
+            .on("postgres_changes", { event: "*", schema: "public", table: "leads", filter: "id=eq." + l.id }, function () { loadLead(conv); })
+            .on("postgres_changes", { event: "*", schema: "public", table: "lead_attempts", filter: "lead_id=eq." + l.id }, function () { loadLead(conv); })
+            .subscribe();
+        } catch (e) { w.ch = null; }
+      }
+    }
+    if (leadBox) {
+      var lc = leadBox.dataset.cmLead, ls = state.leads[lc];
+      paintLead(lc);
+      if (ls && ls.at && Date.now() - ls.at < 15000) watchLead(lc); else loadLead(lc);
+    } else stopLeadWatch();
     q("[data-ignore]").forEach(function (b) {
       b.onclick = function () { db().rpc("social_comment_ignore", { p_id: b.dataset.ignore }).then(function (r) { if (r.error) throw r.error; again(); }).catch(fail); };
     });
