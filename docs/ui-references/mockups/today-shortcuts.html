@@ -8,8 +8,8 @@
 *{box-sizing:border-box}
 body{margin:0;background:#E9EDF5;font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;color:#16212E;font-size:14px}
 .cap{margin:0 0 8px;font-size:12px;color:#5b6577}
-.stage{display:grid;gap:24px;padding:20px 12px;max-width:1720px;margin:0 auto}
-.phones{display:grid;grid-template-columns:repeat(4,390px);gap:24px;justify-content:center}
+.stage{display:grid;gap:24px;padding:20px 12px;max-width:2100px;margin:0 auto}
+.phones{display:grid;grid-template-columns:repeat(5,390px);gap:24px;justify-content:center}
 .phone{width:390px;background:#F4F7FC;border-radius:28px;border:1px solid #D5DEEE;overflow:hidden;position:relative;height:844px;box-shadow:0 12px 30px rgba(15,54,157,.10)}
 .pad{padding:14px}
 .head{display:flex;align-items:center;gap:8px}.head h2{margin:0;font-size:20px;color:#0F369D;flex:1}
@@ -69,6 +69,15 @@ body{margin:0;background:#E9EDF5;font-family:"Hiragino Kaku","BigVesta Arabic",s
 .ds{font-size:11px;border-radius:99px;padding:2px 8px;font-weight:700;white-space:nowrap}
 .ds.s{background:#F1F4F8;color:#3B4658}.ds.a{background:#E6F4EC;color:#2F7D5C}.ds.k{background:#E8EEFB;color:#0F369D}.ds.f{background:#EEF0F3;color:#8a93a3}.ds.l{background:#FFF3E9;color:#8A3A12}
 .doc.off{opacity:.6}
+.srcg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.sct{font:inherit;text-align:start;background:#fff;border:1px solid #D5DEEE;border-radius:14px;padding:10px 12px;display:grid;grid-template-columns:auto 1fr;grid-template-areas:"ic n" "l l" "sub sub";gap:2px 8px;align-items:center;color:#16212E}
+.sct .ic{grid-area:ic;width:30px;height:30px;border-radius:10px;display:grid;place-items:center;font-weight:700;font-size:14px}
+.sct .n{grid-area:n;font-size:22px;font-weight:700;color:#0F369D;text-align:end}.sct .l{grid-area:l;font-weight:700}.sct .sub{grid-area:sub;font-size:12px;color:#5b6577}
+.sct.att{border-color:#F15A22;background:#FFF6F1}
+.ic.wa{background:#E6F4EC;color:#2F7D5C}.ic.fb{background:#E8EEFB;color:#0F369D}.ic.ig{background:#FBEDE6;color:#B4471A}.ic.web{background:#EEF1F6;color:#16212E}.ic.pt{background:#F1ECFA;color:#5B3FA0}
+.lbl{font-size:12px;color:#5b6577}
+.seg{display:flex;border:1px solid #D5DEEE;border-radius:12px;overflow:hidden}.seg span{flex:1;text-align:center;font-size:12px;padding:7px 2px;border-inline-start:1px solid #E3E8F2;white-space:nowrap}.seg span:first-child{border-inline-start:0}
+.seg span.on{background:#0F369D;color:#fff;font-weight:700}.seg span.r{color:#D0402A}
 /* desktop */
 .desk{width:1360px;margin:0 auto;background:#F4F7FC;border:1px solid #D5DEEE;border-radius:20px;overflow:hidden;position:relative;height:760px}
 .desk .wrap{padding:18px 22px;display:grid;gap:12px;width:880px}
@@ -92,7 +101,7 @@ body.m .desk-sec,body.m .legend{display:none}body.d .phones{display:none}
  <div class="sc">
   <button class="tile"><span class="n">7</span><span class="l">الأطباء النهارده</span></button>
   <button class="tile"><span class="n">4</span><span class="l">الغرف والطابور<br>منتظرين</span></button>
-  <button class="tile att"><i class="dot"></i><span class="n">3</span><span class="l">حجوزات الوكيل والموقع والبوابة</span></button>
+  <button class="tile att"><i class="dot"></i><span class="n">9</span><span class="l">حجوزات آلية</span></button>
   <button class="tile"><span class="n">0</span><span class="l">مكالمات تحتاج متابعة</span></button>
   <button class="tile att"><span class="n">183</span><span class="l">اتصال الوكيل<br>رسالة لم تُسلّم</span></button>
   <button class="tile"><span class="n">2</span><span class="l">إدارة الغرف<br>غرفة</span></button>
@@ -106,37 +115,54 @@ body.m .desk-sec,body.m .legend{display:none}body.d .phones{display:none}
  <p class="note" style="margin-top:10px">المربع البرتقالي = فيه حاجة محتاجة تتعمل (حجز لسه ماتسجلش وصوله، أو رسايل ماوصلتش). الأقسام دي مش هتبقى تحت الصفحة خالص تاني — كل مربع بيفتح تفاصيله فوق الصفحة.</p>
 </div></div></section>
 
-<!-- 2: sheet for agent / website / portal bookings -->
-<section><p class="cap">٢ — دوست «حجوزات الوكيل والموقع والبوابة»: تفتح من تحت، وكل حجز ليه أزراره</p>
+<!-- 2: «حجوزات آلية» sheet: one card per source -->
+<section><p class="cap">٢ — دوست «حجوزات آلية»: كارت لكل مصدر وعليه عدد حجوزاته النهارده</p>
 <div class="phone"><div class="pad dim">
  <div class="head"><h2>تشغيل اليوم</h2><button class="btn pri">حجز جديد</button></div>
- <div class="sc"><div class="tile"><span class="n">7</span></div><div class="tile"><span class="n">4</span></div><div class="tile on"><span class="n">3</span></div></div>
+ <div class="sc"><div class="tile"><span class="n">7</span></div><div class="tile"><span class="n">4</span></div><div class="tile on"><span class="n">9</span></div></div>
 </div><div class="veil"></div>
 <div class="sheet">
  <div class="grab"></div>
- <div class="sh"><h3>حجوزات الوكيل والموقع والبوابة <span style="color:#8a93a3;font-size:13px">(3)</span></h3><button class="x">✕</button></div>
- <div class="tabs"><span class="tab on">الكل 3</span><span class="tab">محتاج تسجيل 2</span><span class="tab">اتسجّل 1</span></div>
+ <div class="sh"><h3>حجوزات آلية — النهارده <span style="color:#8a93a3;font-size:13px">(9)</span></h3><button class="x">✕</button></div>
+ <div class="srcg">
+  <button class="sct"><span class="ic wa">و</span><span class="n">4</span><span class="l">واتساب</span><span class="sub">2 محتاج تسجيل وصول</span></button>
+  <button class="sct"><span class="ic fb">ف</span><span class="n">2</span><span class="l">فيسبوك</span><span class="sub">1 مردّش</span></button>
+  <button class="sct"><span class="ic ig">ا</span><span class="n">1</span><span class="l">انستجرام</span><span class="sub">مؤكد</span></button>
+  <button class="sct"><span class="ic web">م</span><span class="n">1</span><span class="l">الموقع</span><span class="sub">اتسجّل ✓</span></button>
+  <button class="sct att"><span class="ic pt">ب</span><span class="n">1</span><span class="l">بوابة المرضى</span><span class="sub">شكله حجز تجريبي</span></button>
+ </div>
+ <p class="cap" style="margin:0">العدد = حجوزات النهارده من المصدر ده (مش ملغية). الأيام التانية من سهم التاريخ فوق.</p>
+</div>
+</div></section>
+
+<!-- 2b: one source opened (WhatsApp) with full actions -->
+<section><p class="cap">٢ب — دوست «واتساب»: حجوزاته بالتفاصيل، وتغيير الحالة والتعديل كاملين</p>
+<div class="phone"><div class="pad dim">
+ <div class="head"><h2>تشغيل اليوم</h2></div>
+</div><div class="veil"></div>
+<div class="sheet">
+ <div class="grab"></div>
+ <div class="sh"><button class="x">→</button><h3><span class="src wa">واتساب</span> حجوزات النهارده <span style="color:#8a93a3;font-size:13px">(4)</span></h3><button class="x">✕</button></div>
  <div class="bk">
-  <div class="top"><span class="tm">10:00</span><span class="src wa">واتساب</span><span class="stc no">مردّش ×1</span></div>
-  <div class="who"><b>هبة تجريبية</b><span>د. جلدية تجريبية · <bdi dir="ltr">01000000000</bdi></span></div>
+  <div class="top"><span class="tm">10:00</span><span class="stc no">مردّش ×1</span></div>
+  <div class="who"><b>هبة تجريبية</b><span>د. جلدية تجريبية · كشف جلدية · <bdi dir="ltr">01000000000</bdi></span></div>
   <div class="tries">آخر محاولة اتصال: 10:15 — منار</div>
-  <div class="acts"><button class="btn pri sm">سجّل وصوله</button><button class="btn sm">مردّش</button><button class="btn sm">تعديل الميعاد</button><button class="btn sm">⋯ المزيد</button></div>
+  <div class="lbl">الحالة</div>
+  <div class="seg"><span>مؤكد</span><span class="on">مردّش</span><span>وصل</span><span>لم يحضر</span><span class="r">ملغي</span></div>
+  <div class="acts"><button class="btn pri sm">سجّل وصوله</button><button class="btn sm">تعديل الميعاد</button><button class="btn sm">تعديل البيانات</button></div>
  </div>
  <div class="bk">
-  <div class="top"><span class="tm">12:30</span><span class="src web">الموقع</span><span class="stc">مؤكد</span></div>
-  <div class="who"><b>كريم تجريبي</b><span>د. أسنان تجريبي · <bdi dir="ltr">01000000000</bdi></span></div>
-  <div class="acts"><button class="btn pri sm">سجّل وصوله</button><button class="btn sm">مردّش</button><button class="btn sm">تعديل الميعاد</button><button class="btn sm">⋯ المزيد</button></div>
+  <div class="top"><span class="tm">12:30</span><span class="stc">مؤكد</span></div>
+  <div class="who"><b>كريم تجريبي</b><span>د. أسنان تجريبي · كشف أسنان · <bdi dir="ltr">01000000000</bdi></span></div>
+  <div class="lbl">الحالة</div>
+  <div class="seg"><span class="on">مؤكد</span><span>مردّش</span><span>وصل</span><span>لم يحضر</span><span class="r">ملغي</span></div>
+  <div class="acts"><button class="btn pri sm">سجّل وصوله</button><button class="btn sm">تعديل الميعاد</button><button class="btn sm">تعديل البيانات</button></div>
  </div>
  <div class="bk test">
-  <div class="top"><span class="tm">23:00</span><span class="src pt">البوابة</span><span class="testtag">شكله حجز تجريبي</span></div>
-  <div class="who"><b>حجز تجريبي</b><span>د. باطنة تجريبي · <bdi dir="ltr">01000000000</bdi></span></div>
+  <div class="top"><span class="tm">23:00</span><span class="testtag">شكله حجز تجريبي</span></div>
+  <div class="who"><b>مريض اختبار</b><span>د. باطنة تجريبي · <bdi dir="ltr">01000000000</bdi></span></div>
   <div class="acts"><button class="btn warn sm">احذف الحجز التجريبي</button><button class="btn sm">مش تجريبي</button></div>
  </div>
-</div>
-<div class="menu" style="bottom:150px">
- <button>لم يحضر<small>بيتسجّل «لم يحضر» ويطلع من الطابور</small></button>
- <button class="r">إلغاء الحجز…<small>لازم سبب</small></button>
- <hr><button class="r">حجز تجريبي – احذف<small>للمديرين بس · بيتسجّل مين حذفه</small></button>
 </div>
 </div></section>
 
@@ -195,7 +221,7 @@ body.m .desk-sec,body.m .legend{display:none}body.d .phones{display:none}
  <div class="sc">
   <button class="tile"><span class="n">7</span><span class="l">الأطباء النهارده</span></button>
   <button class="tile"><span class="n">4</span><span class="l">الغرف والطابور · منتظرين</span></button>
-  <button class="tile att on"><i class="dot"></i><span class="n">3</span><span class="l">حجوزات الوكيل والموقع والبوابة</span></button>
+  <button class="tile att on"><i class="dot"></i><span class="n">9</span><span class="l">حجوزات آلية</span></button>
   <button class="tile"><span class="n">0</span><span class="l">مكالمات تحتاج متابعة</span></button>
   <button class="tile att"><span class="n">183</span><span class="l">اتصال الوكيل · رسالة متأخرة</span></button>
   <button class="tile"><span class="n">2</span><span class="l">إدارة الغرف · غرفة</span></button>
@@ -209,8 +235,8 @@ body.m .desk-sec,body.m .legend{display:none}body.d .phones{display:none}
  </div>
 </div>
 <aside class="drawer">
- <div class="sh"><h3>حجوزات الوكيل والموقع والبوابة <span style="color:#8a93a3;font-size:13px">(3)</span></h3><button class="x">✕</button></div>
- <div class="tabs"><span class="tab on">الكل 3</span><span class="tab">محتاج تسجيل 2</span><span class="tab">اتسجّل 1</span></div>
+ <div class="sh"><h3>حجوزات آلية — النهارده <span style="color:#8a93a3;font-size:13px">(9)</span></h3><button class="x">✕</button></div>
+ <div class="tabs" style="flex-wrap:wrap"><span class="tab on">واتساب 4</span><span class="tab">فيسبوك 2</span><span class="tab">انستجرام 1</span><span class="tab">الموقع 1</span><span class="tab">بوابة المرضى 1</span></div>
  <div class="bk">
   <div class="top"><span class="tm">10:00</span><span class="src wa">واتساب</span><span class="stc no">مردّش ×1</span></div>
   <div class="who"><b>هبة تجريبية</b><span>د. جلدية تجريبية · <bdi dir="ltr">01000000000</bdi></span></div>
@@ -230,7 +256,7 @@ body.m .desk-sec,body.m .legend{display:none}body.d .phones{display:none}
 
 <div class="legend">
 <b>الأطباء:</b> كروت في عمودين (موبايل) أو 3 (كمبيوتر): الاسم، التخصص، مواعيد النهارده، الحالة (مجدول / وصل / في الكشف / متأخر / خلص)، وعدد المنتظرين والحجوزات.<br><b>المربعات فوق:</b> الأطباء · الغرف والطابور (مع «نادِ التالي») · حجوزات الوكيل والموقع والبوابة · مكالمات تحتاج متابعة · اتصال الوكيل · إدارة الغرف (للمسؤول بس). كل مربع عليه عدد، والبرتقالي يعني فيه حاجة مستنياك. الأقسام دي بتتشال من آخر الصفحة.<br>
-<b>أزرار كل حجز:</b> سجّل وصوله · مردّش (بيتسجّل محاولة اتصال بالوقت واسم الموظف، وبيبان «مردّش ×2») · تعديل الميعاد · لم يحضر · إلغاء الحجز (سبب إجباري). كله بنفس حالات وسجل الحجوزات العادية، وعلى كل حجز مصدره: واتساب / الموقع / البوابة.<br>
+<b>حجوزات آلية:</b> كارت واحد فوق، جواه كارت لكل مصدر (واتساب · فيسبوك · انستجرام · الموقع · بوابة المرضى) عليه عدده؛ الضغط عليه يفتح حجوزاته.<br><b>أزرار كل حجز:</b> سجّل وصوله · مردّش (بيتسجّل محاولة اتصال بالوقت واسم الموظف، وبيبان «مردّش ×2») · تعديل الميعاد · لم يحضر · إلغاء الحجز (سبب إجباري). كله بنفس حالات وسجل الحجوزات العادية، وعلى كل حجز مصدره: واتساب / الموقع / البوابة.<br>
 <b>الحجوزات التجريبية:</b> اللي فيها «تجربة/تجريبي/اختبار» أو الرقم 01000000000 بيظهر عليها «شكله حجز تجريبي» وزرار «احذف الحجز التجريبي» للمديرين بس (بيتسجّل مين حذفه)، أو «مش تجريبي» لو الاسم حقيقي.
 </div>
 </div></body></html>
