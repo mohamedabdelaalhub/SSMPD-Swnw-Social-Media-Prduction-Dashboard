@@ -12,9 +12,14 @@ const q=s=>w.document.querySelector(s),qa=s=>[...w.document.querySelectorAll(s)]
 w.SSMPDReception.render(q('#root'));await sleep(80);const sk=q('[data-guide-skip]');if(sk)sk.click();
 q('[data-rx-section="appointments"]').click();await sleep(60);
 const box=q('[data-rx-fallback]');assert(box&&!box.hidden,'panel shown even with no fallback bookings');
-assert(/تنبيهات المقارنة مع ماسا \(3\)/.test(box.textContent));assert(/حجز مش موجود في ماسا/.test(box.textContent)&&/ميعاد محجوز مرتين/.test(box.textContent));
-assert(!box.innerHTML.includes('<i>x'),'escaped');assert(/المزامنة مع ماسا متأخرة/.test(box.textContent)&&/2026-11-18 10:00/.test(box.textContent),'stale alert with time');assert(!/حجوزات احتياطية/.test(box.textContent),'no empty fallback section');
+assert(/تنبيهات المقارنة مع ماسا\s*3/.test(box.textContent),'count chip');assert.equal(box.closest('.rx-header'),null,'box is outside the hero header');assert(box.querySelector('.rx-fb-alerts .rx-fb-alert .btn-primary[data-fb-act="open_booking"]'),'«افتح الحجز» on rows with a patient');assert(/حجز مش موجود في ماسا/.test(box.textContent)&&/ميعاد محجوز مرتين/.test(box.textContent));
+assert(!box.querySelector('i'),'escaped (no injected element)');assert(/المزامنة مع ماسا متأخرة/.test(box.textContent)&&/2026-11-18 10:00/.test(box.textContent),'stale alert with time');assert(!/حجوزات احتياطية/.test(box.textContent),'no empty fallback section');
 const det=q('.rx-fb-imports');assert(det&&/على ماسا مباشرة/.test(det.textContent)&&/مريض ماسا/.test(det.textContent)&&/11:00/.test(det.textContent));assert(/مريض يوم[^]*بدون ميعاد/.test(det.textContent)&&!/null/.test(det.textContent),'day-only shown as «بدون ميعاد»');
+{const saved=data;data={bookings:[],masa_imports:[],alerts:[1,2,3,4,5].map(i=>({id:'z'+i,kind:'missing_in_masa',customer_name:'مريض '+i,doctor_name:'د. سارة',appointment_date:'2026-11-2'+i,appointment_time:'10:0'+i}))};
+ q('[data-rx-action="back"]').click();await sleep(30);q('[data-rx-section="appointments"]').click();await sleep(60);
+ assert.equal(q('[data-rx-fallback]').querySelectorAll('.rx-fb-alert').length,3,'only 3 rows inline');const all=q('[data-fb-act="all_alerts"]');assert(all&&/\(5\)/.test(all.textContent),'«عرض كل التنبيهات (5)»');
+ all.click();await sleep(20);const sh=w.document.querySelector('.rx-fb-sheet');assert(sh&&sh.querySelectorAll('.rx-fb-alert').length===5,'sheet lists all 5');sh.querySelector('[data-fb-close]').click();assert(!w.document.querySelector('.rx-fb-sheet'));
+ data=saved;q('[data-rx-action="back"]').click();await sleep(30);q('[data-rx-section="appointments"]').click();await sleep(60);}
 q('[data-fb-act="alert_resolve"][data-id="a1"]').click();await sleep(30);
 assert(rpcs.some(r=>r.p_action==='alert_resolve'&&r.p_payload.id==='a1'));
 data={bookings:[],alerts:[],masa_imports:[]};q('[data-rx-action="back"]').click();await sleep(30);q('[data-rx-section="appointments"]').click();await sleep(60);
