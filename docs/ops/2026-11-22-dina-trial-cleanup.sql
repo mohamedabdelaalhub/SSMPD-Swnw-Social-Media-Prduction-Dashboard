@@ -20,6 +20,8 @@ select 'register' what, id::text, name, treasury_kind, account_code from clinic_
 select 'shift' what, id::text, status, opened_at, ended_at, end_counted from clinic_finance.shifts where register_id = 'a57dbbdf-f7a2-4a87-894d-20afef506b87';
 select 'reception register' what, id::text, name from clinic_reception.registers where finance_register_id = 'a57dbbdf-f7a2-4a87-894d-20afef506b87';
 select 'credit journal' what, id::text, source, source_id::text from clinic_reception.journal where id = 'ca8cb7a7-8f28-4a2d-8b5d-0687319a27b2';
+select 'earlier test deletions' what, record_type, record_key, deleted_at::text from clinic_finance.test_deletions where record_key in ('ca8cb7a7-8f28-4a2d-8b5d-0687319a27b2', 'a57dbbdf-f7a2-4a87-894d-20afef506b87');
+select 'reception shift' what, id::text, status from clinic_reception.shifts where register_id::text like '0208ed0d%' or finance_shift_id::text like '0f8e62ca%';
 select 'lines on 0102010107' what, count(*)::text n, coalesce(sum(debit - credit), 0)::text balance from clinic_finance.lines where account = '0102010107';
 
 -- ===================== act as the OWNER (the super_admin who used this tool on 2026-11-19) =====================
@@ -34,15 +36,27 @@ select public.my_admin_id() as acting_admin;   -- must be the owner; the tool re
 select public.clinic_finance_test_scan('patient_credit', 'ca8cb7a7-8f28-4a2d-8b5d-0687319a27b2') as credit_scan;   -- expect deletable=true, blockers=[]
 
 -- ===================== 2. flag + delete it (archive first, audited) =====================
-select public.clinic_finance_test_flag('patient_credit', 'ca8cb7a7-8f28-4a2d-8b5d-0687319a27b2', 'رصيد تجريبي على خزينة دينا التجريبية — قرار المالك', 'تجريبي') as credit_flag;
-select public.clinic_finance_test_delete('patient_credit', 'ca8cb7a7-8f28-4a2d-8b5d-0687319a27b2', 'حذف رصيد التجربة قبل حذف خزينة دينا التجريبية', 'حذف') as credit_deletion_id;
+-- skipped automatically when the credit is already gone (exists=false) or already flagged
+select case when (public.clinic_finance_test_scan('patient_credit', 'ca8cb7a7-8f28-4a2d-8b5d-0687319a27b2')->>'exists')::boolean
+             and not (public.clinic_finance_test_scan('patient_credit', 'ca8cb7a7-8f28-4a2d-8b5d-0687319a27b2')->>'flagged')::boolean
+            then public.clinic_finance_test_flag('patient_credit', 'ca8cb7a7-8f28-4a2d-8b5d-0687319a27b2', 'رصيد تجريبي على خزينة دينا التجريبية — قرار المالك', 'تجريبي')::text
+            else 'skipped (already gone or already flagged)' end as credit_flag;
+select case when (public.clinic_finance_test_scan('patient_credit', 'ca8cb7a7-8f28-4a2d-8b5d-0687319a27b2')->>'exists')::boolean
+            then public.clinic_finance_test_delete('patient_credit', 'ca8cb7a7-8f28-4a2d-8b5d-0687319a27b2', 'حذف رصيد التجربة قبل حذف خزينة دينا التجريبية', 'حذف')::text
+            else 'skipped (credit already gone)' end as credit_deletion_id;
 
 -- ===================== 3. the trial register: scan =====================
 select public.clinic_finance_test_scan('register', 'a57dbbdf-f7a2-4a87-894d-20afef506b87') as register_scan;        -- expect deletable=true; takes its shift, reception register/shift, rejected handover, empty account
 
 -- ===================== 4. flag + delete it =====================
-select public.clinic_finance_test_flag('register', 'a57dbbdf-f7a2-4a87-894d-20afef506b87', 'خزينة تجريبية — قرار المالك «احنا لغينا خزينة دينا ورصيدها»', 'تجريبي') as register_flag;
-select public.clinic_finance_test_delete('register', 'a57dbbdf-f7a2-4a87-894d-20afef506b87', 'حذف خزينة دينا التجريبية ورصيدها', 'حذف') as register_deletion_id;
+-- flag only when not flagged yet; both steps skipped when the register is already gone
+select case when (public.clinic_finance_test_scan('register', 'a57dbbdf-f7a2-4a87-894d-20afef506b87')->>'exists')::boolean
+             and not (public.clinic_finance_test_scan('register', 'a57dbbdf-f7a2-4a87-894d-20afef506b87')->>'flagged')::boolean
+            then public.clinic_finance_test_flag('register', 'a57dbbdf-f7a2-4a87-894d-20afef506b87', 'خزينة تجريبية — قرار المالك «احنا لغينا خزينة دينا ورصيدها»', 'تجريبي')::text
+            else 'skipped (already gone or already flagged)' end as register_flag;
+select case when (public.clinic_finance_test_scan('register', 'a57dbbdf-f7a2-4a87-894d-20afef506b87')->>'exists')::boolean
+            then public.clinic_finance_test_delete('register', 'a57dbbdf-f7a2-4a87-894d-20afef506b87', 'حذف خزينة دينا التجريبية ورصيدها', 'حذف')::text
+            else 'skipped (register already gone)' end as register_deletion_id;
 
 reset role;
 
