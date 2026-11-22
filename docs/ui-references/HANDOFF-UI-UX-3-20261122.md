@@ -43,3 +43,17 @@ Help articles for both screens + version + stamps; update `tests/reception-today
 - Old/new Masa split (#697 shipped) needs the DB `needed_service` (applied). «نقل للأرشيف» only dismisses the booking row (patient file stays).
 - Mistaken hold→resume (≤120 s) live; toast + timeline mark shipped in #708.
 - Handoff index: this file; earlier: `docs/ui-references/HANDOFF-UI-UX-3-20261119.md`.
+
+## Extra details from the UX audit chat (arrived after the spec)
+FILES / SELECTORS
+- «تشغيل اليوم»: `today-operations.js` — `paint()` (header/top/date nav/tools), `toolsHtml()`, `metricsHtml()` (chips, keep), `doctorStrip()` (+ `data-doctor-pay-workspace/-day` on `section.journey-doctors`; `reception-doctor-payout.js` scan() decorates it — keep the attribute on the EXPANDED cards), `actionCenter()` («يحتاج تدخل»), `paintBoard()` (`.journey-hour/.journey-hour-label`), `card()/cardActions()`, `payPill()`. CSS `assets/css/today-operations.css`. Tests: `reception-today-board-dom.cjs`, `today-board-collect-pill-dom.cjs`, `today-board-staff-dom.cjs`.
+- «الحجز والاستقبال»: `reception-workspace.js` `timeline()` (~line 66; `rx-tl-head`, `rx-tl-nav`, `rx-tl-week/.rx-tl-wd`, `rx-tl-sum/.rx-tl-stat` (4 tiles → small chips, keep `data-tl-stat` filtering), `rx-tl-tools` (keep `data-tl-doctor-filter` / `data-tl-status-filter`), `rx-tl-hr`, `rx-tl-fab` (remove)). Test `tests/reception-timeline-ui.cjs` (`RECEPTION_QA=<dir>` dumps screenshots; needs `@electric-sql/pglite` via NODE_PATH).
+BEHAVIOUR
+- Main button per status in «تشغيل اليوم» (logic unchanged from `cardActions`): expected/on_the_way→وصل; waiting→نادي; called→بدأ الكشف; in_service→إنهاء الزيارة; on_hold→عودة للطبيب; done with due && can('collect')→«التحصيل» (orange; amount only inside the opened card). The alert line's «نادي» = the same `call` action for the longest waiter (wait_minutes > max_wait_minutes).
+- «الحجز والاستقبال»: booked/confirmed→تسجيل حضور; arrived/no_show/cancelled→no main button.
+- «رقم الملف N»: print `رقم الملف ` + the real file_no AS IS (replace the «ملف F3»/bare-code wording only). No data change.
+- Empty-hour collapse: after filters, take hours from the first to the last visible appointment; each run of consecutive empty hours → ONE muted row «من H1 لـ H2 · فاضي» (single hour → «فاضي»). Cancelled-only hours count as empty only if the filters hide them.
+- Doctor strip: collapsed by default (memory only); one-line summary with red «متأخرة N د» when delayed; «تفاصيل ⌄/⌃» toggles the full doctor cards (⋯ menu + «صرف حساب الطبيب»). Keep the ⋯ clipping fix from 77435b7.
+- «يحتاج تدخل»: keep `help_requests` (resolve_help) alerts; only the wait-too-long + doctor-delayed duplicates collapse.
+- Date row: keep the hidden date input/`data-journey-day`; reachable from «⋯» → «تغيير اليوم» or tapping the date. Arabic date: `toLocaleDateString('ar-EG-u-nu-latn',{weekday:'long',day:'numeric',month:'long',timeZone:'Africa/Cairo'})`.
+- Visual reference = the mockup HTML; where data differ (file_no values) follow the real data.
