@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1910,
-    "labels": 1400,
-    "files": 145,
-    "groups": 1504
+    "definitions": 1919,
+    "labels": 1402,
+    "files": 146,
+    "groups": 1513
   },
   "fields": [
     {
@@ -18760,6 +18760,114 @@
       "tab": "admin",
       "article": "test-records",
       "text_sha256": "10d0b45c72c5ce0b36bb4b4cd3c21aea9831688e3754cc2c55d650a46ac804a3"
+    },
+    {
+      "file": "today-auto-bookings.js",
+      "label": "مثلاً: هيكلمنا الأسبوع الجاي",
+      "name": "",
+      "kind": "placeholder",
+      "forms": [
+        "إلغاء الحجز — "
+      ],
+      "tab": "production",
+      "article": "today-board",
+      "text_sha256": "3301c4589813227b88da792d1289e1f092371d3f29d96f8e3d113b161b221585"
+    },
+    {
+      "file": "today-auto-bookings.js",
+      "label": "ملاحظة (اختياري)",
+      "name": "",
+      "kind": "label",
+      "forms": [
+        "إلغاء الحجز — "
+      ],
+      "tab": "production",
+      "article": "personal",
+      "text_sha256": "08c204de2685df464bdbc0cd0fde7ec98a5877581bd58cbad31890fc6661df06"
+    },
+    {
+      "file": "today-auto-bookings.js",
+      "label": "ملاحظة (اختياري)",
+      "name": "",
+      "kind": "label",
+      "forms": [
+        "لم يحضر — "
+      ],
+      "tab": "production",
+      "article": "personal",
+      "text_sha256": "08c204de2685df464bdbc0cd0fde7ec98a5877581bd58cbad31890fc6661df06"
+    },
+    {
+      "file": "today-auto-bookings.js",
+      "label": "اليوم",
+      "name": "",
+      "kind": "html",
+      "forms": [
+        "تعديل الميعاد — "
+      ],
+      "tab": "production",
+      "article": "personal",
+      "text_sha256": "5124563f386757810c60ae86fc95904a13532f1a872fcd3579613f304338e13d"
+    },
+    {
+      "file": "today-auto-bookings.js",
+      "label": "الساعة",
+      "name": "",
+      "kind": "html",
+      "forms": [
+        "تعديل الميعاد — "
+      ],
+      "tab": "production",
+      "article": "patient-records",
+      "text_sha256": "b6b7ef3304940f5231c6281a0431f4e3513369f3f55fbf8bc0e9499a249a0bbd"
+    },
+    {
+      "file": "today-auto-bookings.js",
+      "label": "ملاحظة (اختياري)",
+      "name": "",
+      "kind": "label",
+      "forms": [
+        "تعديل الميعاد — "
+      ],
+      "tab": "production",
+      "article": "personal",
+      "text_sha256": "08c204de2685df464bdbc0cd0fde7ec98a5877581bd58cbad31890fc6661df06"
+    },
+    {
+      "file": "today-auto-bookings.js",
+      "label": "الاسم",
+      "name": "",
+      "kind": "html",
+      "forms": [
+        "تعديل البيانات"
+      ],
+      "tab": "production",
+      "article": "supply-map",
+      "text_sha256": "edc721754fff0d043fe910b92a4627b1c8f15376bcaed30a237bf5e5acc283c7"
+    },
+    {
+      "file": "today-auto-bookings.js",
+      "label": "الموبايل",
+      "name": "",
+      "kind": "html",
+      "forms": [
+        "تعديل البيانات"
+      ],
+      "tab": "production",
+      "article": "today-board",
+      "text_sha256": "f7b164f9d786f2d12dff8c4365329fc4ddab3d9d175371bbdd98c1dad8fcc3a8"
+    },
+    {
+      "file": "today-auto-bookings.js",
+      "label": "ملاحظة (اختياري)",
+      "name": "",
+      "kind": "label",
+      "forms": [
+        "احذف الحجز التجريبي"
+      ],
+      "tab": "production",
+      "article": "personal",
+      "text_sha256": "08c204de2685df464bdbc0cd0fde7ec98a5877581bd58cbad31890fc6661df06"
     },
     {
       "file": "today-operations-queue.js",
