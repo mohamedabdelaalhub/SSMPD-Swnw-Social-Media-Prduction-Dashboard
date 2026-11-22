@@ -89,7 +89,7 @@ async function uploadViaBridge(
     mimeType: mimeType || "application/octet-stream",
     base64: bytesToBase64(bytes),
   };
-  const res = await fetch(DRIVE_BRIDGE_URL, {
+  const res = await fetch(bridgeUrl(DRIVE_BRIDGE_URL), {
     method: "POST",
     headers: { "Content-Type": "text/plain;charset=utf-8" }, // يتفادى preflight CORS مع Apps Script
     body: JSON.stringify(payload),
@@ -190,3 +190,9 @@ Deno.serve(async (req) => {
     return json({ error: (e as Error).message }, 502);
   }
 });
+
+// Server-to-bridge auth: token is read from the DRIVE_BRIDGE_TOKEN secret (optional until set on both sides).
+function bridgeUrl(base: string): string {
+  const t = Deno.env.get("DRIVE_BRIDGE_TOKEN");
+  return t ? `${base}${base.includes("?") ? "&" : "?"}token=${encodeURIComponent(t)}` : base;
+}
