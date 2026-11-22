@@ -198,6 +198,23 @@ The narrator of every reel is now a human voice-over from Instinct; ElevenLabs `
   «ElevenLabs — Instinct ماردّش») — reelkit prints it.
 - Switch Instinct off for one run: `RK_NARRATOR=elevenlabs`.
 
+### Instinct suggested shots (owner 2026-11-22)
+With the voice, Instinct also sends links to shots that fit the script. They are **suggestions, not required**. Their job is to make
+the footage search easier: people who look Egyptian, and fewer repeated shots.
+- **Order of work**: write the storyboard text first, then `python3 scripts/reelkit/build.py story.json OUT --vo-submit` (asks
+  Instinct now, saves the job in OUT/vo_jobs.json), then `python3 scripts/reelkit/vo_job.py status OUT` until `clips` appear or the
+  voice is done (links usually come with the mp3, ~2–5 min). Choose the footage, add it to the storyboard **without changing the
+  spoken text** (a changed text = a new Instinct job), then run the normal build: it reuses the same job.
+  Without reelkit: `POST ?op=vo_status&job_id=<id>` → `clips`.
+- Each clip: `{url, source, kind?, id?}`. **Pixabay** links have `kind` + `id`: `POST ?op=stock {"id": <id>, "type": "video"|"photo",
+  "brand": ..., "content_id": ...}` returns that one hit (empty if this page used it recently) → download it with `op=fetch_media`
+  as usual. The no-repeat rule still applies to suggested shots.
+- **Other sites** (Pexels, YouTube, …) cannot be downloaded through the gateway: use them only as ideas for the search words and the
+  look (who, place, action, angle), then find a Pixabay equivalent.
+- Every shot still has to pass the usual checks: people who look Egyptian/Arab, no other brands, no bare skin, fits the scene, not
+  used in the page's last 20 items. Skip a suggestion that fails any of them. When no clips came, search as before.
+- In the run report, say how many suggested shots were used per reel.
+
 ## Reel voice-over pronunciation (Mohamed, 2026-10-11)
 - Before writing a reel's voice, call the gateway `POST ?op=tts_quota` (→ left, limit, resets_at). (If tts_quota itself answers an error, the API key can't read the balance: just go ahead with op=tts.) If `left` is less than the script length, don't call op=tts: make the posts/carousels, leave the reel, and tell Mohamed how many characters are left and the reset date.
 - New words to fix: write them with tashkeel in the script, and list them in your report for Mohamed (Claude in the main chat adds them to the permanent list). Don't try kit_put for tts/pronunciations.json from scheduled runs.

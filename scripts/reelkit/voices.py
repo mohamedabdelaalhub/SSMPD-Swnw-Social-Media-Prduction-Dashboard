@@ -55,6 +55,30 @@ def speak(voice, text, out_mp3):
 VO = {"engine": os.environ.get("RK_NARRATOR", "instinct"), "voice": "auto", "energy": "moderate", "notes": "",
       "timeout": 30 * 60, "interval": 20}
 _instinct_tried = set()
+JOBS = {}  # sha1(narrator text) -> Instinct job id (OUT/vo_jobs.json: `build.py --vo-submit` asks early, the build reuses it)
+JOBS_FILE = None
+def _key(text): return __import__("hashlib").sha1(text.encode()).hexdigest()
+def load_jobs(path):
+    global JOBS_FILE; JOBS_FILE = path
+    try: JOBS.update(json.load(open(path)))
+    except Exception: pass
+def _save_jobs():
+    if JOBS_FILE: json.dump(JOBS, open(JOBS_FILE, "w"), indent=1)
+
+def submit_instinct(text, http=None):
+    """-> job id (reused if this exact text was already asked for), or None."""
+    http = http or _gw
+    if JOBS.get(_key(text)): return JOBS[_key(text)]
+    code, _, d = http("vo_submit", "", {"script": text, "voice": VO["voice"], "energy": VO["energy"], "notes": VO["notes"] or None})
+    if code != 200 or not d or not d.get("ok"):
+        print("Instinct vo_submit refused:", (d or {}).get("error") or code); return None
+    JOBS[_key(text)] = d["job_id"]; _save_jobs(); return d["job_id"]
+
+def vo_status(job, http=None):
+    """-> {status, voice, clips:[{url, source, kind?, id?}]} — clips = Instinct's suggested shots (optional ideas)."""
+    code, _, d = (http or _gw)("vo_status", "&job_id=" + job, {})
+    return d if code == 200 and d else {"status": "error", "code": code}
+
 LAST_VO = {}  # what Instinct answered for the last take: {"job_id", "voice", "energy"} (for the run report)
 
 def _gw(op, query="", body=None, out_path=None):
@@ -82,10 +106,9 @@ def speak_instinct(text, out_mp3, http=None, sleep=None, clock=None):
     """Instinct take for the narrator -> timing dict, or None (timeout 30 min / refused / error) so the caller falls back."""
     http = http or _gw; sleep = sleep or __import__("time").sleep; clock = clock or __import__("time").time
     try:
-        code, _, d = http("vo_submit", "", {"script": text, "voice": VO["voice"], "energy": VO["energy"], "notes": VO["notes"] or None})
-        if code != 200 or not d or not d.get("ok"):
-            print("Instinct vo_submit refused:", (d or {}).get("error") or code); return None
-        job, t0 = d["job_id"], clock(); print("Instinct job", job, "voice", VO["voice"], "energy", VO["energy"])
+        job = submit_instinct(text, http)
+        if not job: return None
+        t0 = clock(); print("Instinct job", job, "voice", VO["voice"], "energy", VO["energy"])
         while clock() - t0 < VO["timeout"]:
             sleep(VO["interval"])
             code, ctype, d = http("vo_fetch", "&job_id=" + job, {}, out_mp3)
@@ -95,7 +118,9 @@ def speak_instinct(text, out_mp3, http=None, sleep=None, clock=None):
                 return instinct_timing(text, out_mp3)
             st = (d or {}).get("status")
             if st in ("timeout", "failed") or code in (401, 404):
-                print("Instinct job", job, st or code, (d or {}).get("error") or ""); return None
+                print("Instinct job", job, st or code, (d or {}).get("error") or "")
+                if st == "timeout": JOBS.pop(_key(text), None); _save_jobs()  # a later run asks again
+                return None
         print("Instinct job", job, "no voice within", VO["timeout"] // 60, "min"); return None
     except Exception as e:
         print("Instinct error:", type(e).__name__); return None

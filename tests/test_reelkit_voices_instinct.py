@@ -1,5 +1,5 @@
 """scripts/reelkit/voices.py: Instinct narrator with ElevenLabs fallback (mocked gateway, no network)."""
-import os, sys, unittest
+import json, os, sys, unittest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts", "reelkit"))
 import voices as V
 
@@ -26,7 +26,7 @@ def gateway(answers):
 
 class InstinctTests(unittest.TestCase):
     def setUp(self):
-        V._instinct_tried.clear(); V.VO.update(engine="instinct", voice="auto", energy="moderate", notes="", timeout=1800, interval=20)
+        V._instinct_tried.clear(); V.JOBS.clear(); V.JOBS_FILE = None; V.VO.update(engine="instinct", voice="auto", energy="moderate", notes="", timeout=1800, interval=20)
         self.el = []
         V.speak_direct = lambda voice, text, out: (self.el.append(("direct", voice)) or None)
         V.speak_gateway = lambda voice, text, out: (self.el.append(("gateway", voice)) or {"chars": list(text), "start": [0] * len(text), "end": [0] * len(text), "source": "el"})
@@ -83,6 +83,22 @@ class InstinctTests(unittest.TestCase):
         V.VO["engine"] = "elevenlabs"
         r, calls, _ = self.run_speak([])
         self.assertEqual(calls, []); self.assertEqual(r["source"], "el")
+
+    def test_early_submit_is_reused_by_the_build(self):
+        import tempfile
+        d = tempfile.mkdtemp(); V.load_jobs(os.path.join(d, "vo_jobs.json"))
+        http, calls = gateway([])
+        job = V.submit_instinct("سُونُو معاك.", http)
+        self.assertEqual(json.load(open(os.path.join(d, "vo_jobs.json"))), {V._key("سُونُو معاك."): job})
+        self.assertEqual(V.submit_instinct("سُونُو معاك.", http), job); self.assertEqual(len(calls), 1, "asked once")
+        r, calls2, _ = self.run_speak([(200, "audio/mpeg", None)])
+        self.assertEqual([c[0] for c in calls2], ["vo_fetch"], "the build fetches the early job, no second submit")
+
+    def test_status_shows_suggested_shots(self):
+        clips = [{"url": "https://pixabay.com/videos/a-111/", "source": "pixabay", "kind": "video", "id": "111"}]
+        st = V.vo_status("j", http=lambda op, q="", b=None, o=None: (200, "application/json", {"ok": True, "status": "sent", "clips": clips}))
+        self.assertEqual(st["clips"], clips)
+        self.assertEqual(V.vo_status("j", http=lambda *a, **k: (502, "", None))["status"], "error")
 
     def test_align_pins_lines_between_pauses(self):
         text = "سطر أول.\n\nسطر تاني طويل شوية."

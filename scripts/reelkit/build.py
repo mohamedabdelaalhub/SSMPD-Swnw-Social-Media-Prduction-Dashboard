@@ -9,6 +9,7 @@ import numpy as np
 ap = argparse.ArgumentParser(); ap.add_argument("story"); ap.add_argument("out")
 ap.add_argument("--kit", default=os.environ.get("KIT", ".")); ap.add_argument("--repo", default=os.environ.get("SSMPD_REPO", os.path.abspath(os.path.join(HERE, "..", ".."))))
 ap.add_argument("--dry", action="store_true"); ap.add_argument("--no-end", action="store_true"); ap.add_argument("--max-sec", type=float, default=0)
+ap.add_argument("--vo-submit", action="store_true", help="only ask Instinct for the narrator take(s) now (job ids in OUT/vo_jobs.json), then stop")
 ap.add_argument("--fps", type=int, default=24); ap.add_argument("--workers", type=int, default=4); ap.add_argument("--frames-only", action="store_true")
 args = ap.parse_args()
 os.environ["KIT"] = args.kit; os.environ["SSMPD_REPO"] = args.repo
@@ -75,6 +76,12 @@ def speech_ok(path, expected, threshold=0.85):
 V.SETTINGS.update((sb.get("meta") or {}).get("voice_settings") or {})
 V.VO.update((sb.get("meta") or {}).get("vo") or {})  # Instinct narrator: {"energy": "calm|moderate|energetic", "voice": "auto|female|male", "notes": "..."}  # e.g. a livelier ad read: {"stability":0.4,"style":0.35,"speed":1.03}
 lines = E.collect_lines(sb); line_timing = {}; envs = {}; audio_src = {}
+V.load_jobs(os.path.join(args.out, "vo_jobs.json"))
+if args.vo_submit:  # ask early: Instinct's suggested shots come back with the job (scripts/reelkit/vo_job.py status OUT)
+    for spk, lst in lines.items():
+        if spk.split(chr(35))[0] == "narrator" and V.VO["engine"] == "instinct":
+            print("Instinct job", spk, V.submit_instinct("\n\n".join(voice_text(x[2], PRON) for x in lst)))
+    sys.exit(0)
 hl_of = {(si, bi): sb["scenes"][si]["beats"][bi]["say"].get("hl") for lst in lines.values() for si, bi, _ in lst}
 for spk, lst in lines.items():
     joined = "\n\n".join(voice_text(x[2], PRON) for x in lst); mp3 = os.path.join(args.out, f"voice_{spk.replace(chr(35), chr(95))}.mp3"); al = None

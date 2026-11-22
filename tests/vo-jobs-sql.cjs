@@ -40,6 +40,17 @@ const { PGlite } = require('@electric-sql/pglite'), fs = require('fs'), assert =
   assert.ok(Buffer.from(done.audio_base64, 'base64').equals(mp3));
   assert.equal((await api('fail', { id, error: 'x' })).ok, false, 'a done job cannot be failed');
 
+  // suggested shot links (Instinct): https only, deduped, max 20, can arrive before/with/after the mp3
+  const c = await submit('نص بلقطات.'); await api('lease', { worker: 'vps' }); await api('sent', { id: c, voice: 'male' });
+  assert.equal((await api('clips', { id: c, clips: ['https://pixabay.com/videos/doctor-egypt-12345/', 'http://x.com/a', 'javascript:alert(1)', 'https://a.b/c d', 5] })).ok, true);
+  assert.deepEqual((await get(c)).clips, ['https://pixabay.com/videos/doctor-egypt-12345/']);
+  await api('done', { id: c, audio_base64: mp3.toString('base64'), clips: ['https://pixabay.com/videos/doctor-egypt-12345/', 'https://www.pexels.com/video/x-678/'] });
+  assert.deepEqual((await get(c)).clips, ['https://pixabay.com/videos/doctor-egypt-12345/', 'https://www.pexels.com/video/x-678/']);
+  await api('clips', { id: c, clips: Array.from({ length: 30 }, (_, i) => 'https://pixabay.com/photos/p-' + i + '/') });
+  const cl = (await get(c)).clips; assert.equal(cl.length, 20); assert.equal(cl[0], 'https://pixabay.com/videos/doctor-egypt-12345/');
+  assert.equal((await api('clips', { id: c, clips: 'nope' })).ok, true); assert.equal((await get(c)).clips.length, 20);
+  await db.query("update ops_private.vo_jobs set status = 'done' where id = $1", [c]);
+
   // 30-minute timeout; a late mp3 is refused
   const late = await submit('نص تاني قصير.');
   await api('lease', { worker: 'vps' }); await api('sent', { id: late, voice: 'male' });
