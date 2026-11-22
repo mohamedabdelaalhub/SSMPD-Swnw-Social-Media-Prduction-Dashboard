@@ -72,7 +72,8 @@ def speech_ok(path, expected, threshold=0.85):
     return sc >= threshold, round(sc, 2)
 
 # ---------------------------------------------------------------- voices
-V.SETTINGS.update((sb.get("meta") or {}).get("voice_settings") or {})  # e.g. a livelier ad read: {"stability":0.4,"style":0.35,"speed":1.03}
+V.SETTINGS.update((sb.get("meta") or {}).get("voice_settings") or {})
+V.VO.update((sb.get("meta") or {}).get("vo") or {})  # Instinct narrator: {"energy": "calm|moderate|energetic", "voice": "auto|female|male", "notes": "..."}  # e.g. a livelier ad read: {"stability":0.4,"style":0.35,"speed":1.03}
 lines = E.collect_lines(sb); line_timing = {}; envs = {}; audio_src = {}
 hl_of = {(si, bi): sb["scenes"][si]["beats"][bi]["say"].get("hl") for lst in lines.values() for si, bi, _ in lst}
 for spk, lst in lines.items():
@@ -82,7 +83,8 @@ for spk, lst in lines.items():
         import shutil as _sh; _sh.copy(os.path.join(reuse, f"voice_{spk.replace(chr(35), chr(95))}.mp3"), mp3); al = json.load(open(rj)); print("reusing voice take", spk)
     elif not args.dry:
         left = V.quota()
-        if left is not None and left < len(joined) + 50: print("WARNING: ElevenLabs quota too low, using dry timing for", spk)
+        instinct = spk.split(chr(35))[0] == "narrator" and V.VO["engine"] == "instinct"  # the Instinct narrator does not use ElevenLabs characters
+        if left is not None and left < len(joined) + 50 and not instinct: print("WARNING: ElevenLabs quota too low, using dry timing for", spk)
         else:
             al = V.speak(spk.split(chr(35))[0], joined, mp3); shown = " ".join(TASHKEEL.sub("", x[2]) for x in lst)
             for attempt in range(7):
