@@ -12178,6 +12178,19 @@
       "reviewed": true
     },
     {
+      "title": "القريب",
+      "labels": [
+        "القريب"
+      ],
+      "text": "اختار ملف القريب اللي هيتربط بالمريض في «كارت العيلة». الربط بيتعمل مرة واحدة بمستند إثبات القرابة.",
+      "article": "reception-booking-discount",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "الممرض/ة",
       "labels": [
         "الممرض/ة"
@@ -22104,9 +22117,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1897,
-    "labels": 1390,
+    "definitions": 1898,
+    "labels": 1391,
     "files": 142,
-    "groups": 1493
+    "groups": 1494
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
