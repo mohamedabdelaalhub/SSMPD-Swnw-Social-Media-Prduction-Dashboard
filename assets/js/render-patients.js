@@ -2662,8 +2662,8 @@
       profile.family_history.filter(function (f) { return f.has; }) : [];
 
     var html = '<div style="page-break-after:always;padding:28px;direction:rtl;font-size:13px;line-height:1.9;">';
-    html += '<div style="text-align:center;margin-bottom:10px;"><img src="' + PRINT_LOGO_URL + '" alt="مركز عيادات Swnw" style="height:64px;"></div>';
-    html += '<h1 style="font-size:19px;margin-bottom:2px;text-align:center;">مركز عيادات Swnw التخصصية</h1>';
+    html += '<div style="text-align:center;margin-bottom:10px;"><img src="' + PRINT_LOGO_URL + '" alt="مركز عيادات سونو التخصصية" style="height:64px;"></div>';
+    html += '<h1 style="font-size:19px;margin-bottom:2px;text-align:center;">مركز عيادات سونو التخصصية</h1>';
     html += '<h2 style="font-size:15px;color:#444;margin-top:0;text-align:center;">ملف المريض — ' + escapeHtml(patient.full_name) +
       ' (' + escapeHtml(patient.patient_code || "") + ')</h2>';
 

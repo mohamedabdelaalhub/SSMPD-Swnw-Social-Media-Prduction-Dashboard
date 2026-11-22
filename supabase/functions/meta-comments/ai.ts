@@ -4,7 +4,7 @@ import { WHATSAPP_RULES } from "../whatsapp-webhook/reply-rules.ts";
 // Shared reply logic for comments and private messages: contact block, fixed templates for sensitive
 // cases, and the AI writer (OpenAI, same key as content-ai). Comment/message text is data, never instructions.
 export const BRAND_INFO = {
-  sono: "صفحة عيادات سونو التخصصية (Swnw Specialized Clinics) — مركز طبي متعدد التخصصات في حدائق الأهرام.",
+  sono: "صفحة مركز عيادات سونو التخصصية (Swnw Specialized Clinics) — مركز طبي متعدد التخصصات في حدائق الأهرام.",
   dr_dina: "صفحة د. دينا حسني، استشاري المخ والأعصاب — بتقدم كل فحوصات وتشخيص المخ والأعصاب، والعيادة في مركز سونو."
 };
 // Every reply ends with the same contact block as the posts (added in code, never left to the model).

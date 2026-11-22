@@ -17,7 +17,7 @@ function rowHtml(r){var b=dueBadge(r),open=r.status==='open';
   :'<span class="rfu-done">'+(r.status==='booked'?'اتحجزت ✓':'اتقفلت — '+esc(r.close_reason||''))+'</span>';
  return '<div class="rfu-row '+(open?b[0]:'done')+'"><div class="rfu-due">'+(open?b[1]:'')+'</div><div class="rfu-body"><span class="rfu-name">'+esc(r.patient_name)+(r.file_no?' <bdi dir="ltr">'+esc(r.file_no)+'</bdi>':'')+'</span><div class="rfu-meta">'+meta+'</div><div class="rfu-act">'+acts+'</div></div></div>';}
 function waLink(r){var ph=String(r.phone||'').replace(/[^0-9]/g,'');if(/^01[0125][0-9]{8}$/.test(ph))ph='2'+ph;
- var t='أهلاً '+(r.patient_name||'').split(/\s+/)[0]+'، معاد متابعتك مع '+(r.doctor_name||'الدكتور')+' في مركز Swnw قرب ('+dayText(r.due_date)+'). تحب نحجزلك ميعاد؟';
+ var t='أهلاً '+(r.patient_name||'').split(/\s+/)[0]+'، معاد متابعتك مع '+(r.doctor_name||'الدكتور')+' في مركز عيادات سونو التخصصية قرب ('+dayText(r.due_date)+'). تحب نحجزلك ميعاد؟';
  return 'https://wa.me/'+ph+'?text='+encodeURIComponent(t);}
 function cardHtml(){var c=state.counts||{},tabs=[['due','المستحقة والقريبة'],['late','متأخرة'],['all','كلها'],['booked','اتحجزت']];
  return '<section class="rfu-card" data-rfu aria-label="متابعات مطلوبة"><header class="rfu-head"><h4>متابعات مطلوبة</h4><span class="rfu-count">'+(+c.late||0)+' متأخرة · '+(+c.today||0)+' النهارده · '+(+c.soon||0)+' خلال أسبوعين</span><button type="button" class="btn" data-fu="new">+ متابعة جديدة</button></header>'+
