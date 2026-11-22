@@ -17,3 +17,11 @@
 .rbd-note{font-size:12px;color:#5b6577;margin:0;line-height:1.8}
 .rx-disc-tag{display:inline-block;white-space:nowrap;font-size:11px;padding:0 6px;border-radius:99px;background:#E8EEFB;color:#0F369D;margin-inline-start:4px}
 @media (max-width:480px){.rbd-two{grid-template-columns:1fr}}
+/* «فيزيتا شامل» / «كارت العيلة» (owner 2026-11-22, mockup discount-vezeeta-family.html) */
+.rbd-fam{display:grid;gap:8px;background:#F4F7FC;border-radius:12px;padding:10px 12px;font-size:13px;min-width:0}
+.rbd-famhead b{color:#0F369D}
+.rbd-steps{display:flex;gap:4px}.rbd-st{flex:1;text-align:center;font-size:12px;padding:4px 0;border-radius:8px;background:#fff;border:1px solid #D5DEEE;color:#5b6577}
+.rbd-st.done{background:#E6F2EC;border-color:#CBE5D8;color:#2F7D5C}.rbd-st.now{background:#0F369D;border-color:#0F369D;color:#fff;font-weight:700}
+.rbd-list{margin:0;padding-inline-start:18px;font-size:12px;color:#3B4658;line-height:1.9}.rbd-muted{color:#5b6577}
+.rbd-ok{margin:0;font-size:12px;color:#2F7D5C}
+.rbd-linkbox{display:grid;gap:8px;border-top:1px solid #E3E8F2;padding-top:8px}
