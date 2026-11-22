@@ -24,7 +24,7 @@ const tick=()=>new Promise(r=>setTimeout(r,20));
 (async()=>{
  let {w,q,qa,calls,errors,day,close}=await boot('super_admin');
  // compact: only names visible, details hidden
- assert.deepEqual(qa('.journey-board .journey-chip').map(b=>b.textContent),['شهاب الدين','معتز','كريم']);
+ assert.deepEqual(qa('.journey-board .journey-chip-name').map(b=>b.textContent),['شهاب الدين','معتز','كريم']);
  assert(qa('.journey-board .journey-card-detail').every(d=>d.hidden),'details collapsed');
  assert(q('.journey-card[data-appointment="1"]').classList.contains('is-late'),'late marked by colour, no text');
  assert(q('.journey-card[data-appointment="3"]').classList.contains('is-long-wait'));

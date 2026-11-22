@@ -22,12 +22,12 @@ function openDisplay(page,label){
 function inject(){
  if(!window.document)return;
  document.querySelectorAll('.journey-toolbar-actions').forEach(function(bar){
-   if(bar.querySelector('[data-tv-checkin-display]'))return;
+   if(bar.querySelector('[data-tv-checkin-display]')||bar.closest('[data-journey-mode="trial"]'))return;
    var b=document.createElement('button');b.type='button';b.className='btn btn-primary';b.dataset.tvCheckinDisplay='1';b.textContent='شاشة تسجيل الوصول';b.onclick=function(e){e.preventDefault();openDisplay();};
    bar.insertBefore(b,bar.firstChild);
  });
  document.querySelectorAll('.journey-toolbar-actions').forEach(function(bar){
-   if(bar.querySelector('[data-tv-queue-display]'))return;
+   if(bar.querySelector('[data-tv-queue-display]')||bar.closest('[data-journey-mode="trial"]'))return;
    var q=document.createElement('button');q.type='button';q.className='btn';q.dataset.tvQueueDisplay='1';q.textContent='شاشة الانتظار';q.onclick=function(e){e.preventDefault();openDisplay('queue-display.html','شاشة الانتظار');};
    bar.insertBefore(q,bar.firstChild);
  });

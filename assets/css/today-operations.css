@@ -164,3 +164,51 @@ button.journey-metric.is-alert strong{color:#b42318}
 .journey-tools-filters .rx-tl-pair{grid-template-columns:repeat(2,minmax(0,1fr))}
 @media(min-width:900px){.journey-tools-filters{grid-template-columns:minmax(0,2fr) minmax(0,2fr);align-items:end}}
 .journey-mistaken{display:inline-block;margin-inline-start:8px;padding:1px 8px;border-radius:999px;background:#525B6F;color:#fff;font-size:11px;white-space:nowrap}
+/* ---- Owner 2026-11-22 (SPEC A «تشغيل اليوم» — docs/ui-references/mockups/today-board-simplify.html) ---- */
+.journey-v3 .journey-day{position:relative;cursor:pointer;white-space:nowrap;overflow:hidden}
+.journey-v3 .journey-day-text{color:#16212E;overflow:hidden;text-overflow:ellipsis}
+.journey-v3 .journey-day-input{position:absolute;inset:0;width:100%;height:100%;max-width:none!important;opacity:0;pointer-events:none}
+.journey-docs-wrap{display:grid;gap:8px;min-width:0}
+.journey-docline{display:flex;align-items:center;gap:8px;min-width:0;padding:6px;padding-inline-start:12px;border:1px solid rgba(15,54,157,.12);border-radius:14px;background:#fff;font-size:13px;color:#667085}
+.journey-docline-title{flex:none;font-weight:700;color:#16212E}
+.journey-docline-list{flex:1;min-width:0;display:flex;flex-wrap:wrap;align-items:center;gap:4px 14px}
+.journey-docline-item{white-space:nowrap}.journey-docline-item b{color:#16212E}
+.journey-docline-late{color:#D0402A;font-weight:700}
+.journey-v3 .journey-docline-toggle{flex:none;min-height:32px;padding:0 12px;border-radius:10px;font-size:12.5px;white-space:nowrap}
+.journey-doctors[hidden]{display:none!important}
+.journey-alerts{display:grid;gap:6px;min-width:0}
+.journey-v3 .journey-alert{display:flex;align-items:center;gap:8px;min-width:0;padding:8px;padding-inline-start:12px;border:1px solid #F5D9A8;border-radius:14px;background:#FFF6E6;box-shadow:none}
+.journey-v3 .journey-alert p{flex:1;min-width:0;margin:0;font-size:13px;font-weight:700;color:#7a4b00}
+.journey-v3 .journey-alert .btn{flex:none;min-height:34px;padding:0 14px;border-radius:10px;white-space:nowrap}
+/* hour rail */
+.journey-v3 .journey-rail{position:relative}
+.journey-v3 .journey-rail .journey-hour{border-bottom:0;padding:0;gap:14px}
+.journey-v3 .journey-rail .journey-hour-label{padding-top:5px;text-align:end;font-size:13px}
+.journey-v3 .journey-rail .journey-hour-names{position:relative;padding:0 0 14px;padding-inline-start:16px;border-inline-start:2px solid #D5DEF0}
+.journey-v3 .journey-rail .journey-hour-names:before{content:"";position:absolute;inset-inline-start:-7px;top:9px;width:12px;height:12px;border-radius:50%;background:#fff;border:3px solid #0F369D;box-sizing:border-box}
+.journey-v3 .journey-rail .journey-hour.is-past .journey-hour-label{color:#8A94A6}
+.journey-v3 .journey-rail .journey-hour.is-past .journey-hour-names:before{border-color:#B9C6DE;background:#EDF1F8}
+.journey-v3 .journey-rail .journey-hour:last-child .journey-hour-names{padding-bottom:0}
+.journey-now{display:grid;grid-template-columns:62px minmax(0,1fr);gap:14px;align-items:center;margin:0 0 10px}
+.journey-now-line{position:relative;display:flex;align-items:center;gap:8px;min-height:22px;padding-inline-start:12px;border-inline-start:2px solid #D5DEF0}
+.journey-now-line:before{content:"";position:absolute;inset-inline-start:-6px;top:50%;margin-top:-5px;width:10px;height:10px;border-radius:50%;background:#F15A22}
+.journey-now-line:after{content:"";flex:1;min-width:12px;border-top:2px dashed #F15A22}
+.journey-now-label{flex:none;font-size:12px;font-weight:800;color:#F15A22;white-space:nowrap}
+@media(max-width:520px){.journey-now{grid-template-columns:52px minmax(0,1fr)}}
+/* chip: time + name + channel + short status */
+.journey-chip-time{flex:none;font-size:12px;font-weight:400;color:#667085}
+.journey-chip-sub{flex:none;font-size:12px;font-weight:400;color:#667085;white-space:nowrap}
+.journey-chip-sub.is-late,.journey-chip-sub.is-long{color:#D0402A;font-weight:700}
+.journey-chip-sub.is-due{color:#B5410F;font-weight:700}
+.journey-card.is-open .journey-chip-time,.journey-card.is-open .journey-chip-sub{color:rgba(255,255,255,.85)}
+.journey-v3 .journey-hour .journey-chip .journey-src{margin-inline-start:0}
+/* opened card */
+.journey-card-detail>header{flex-direction:column;align-items:flex-start;gap:4px}
+.journey-card-line{font-size:12.5px!important;color:#475467!important}
+.journey-card-detail .journey-card-actions>.btn-primary{flex:1 1 auto}
+.journey-card-detail .journey-main-collect{background:#F15A22!important;border-color:#F15A22!important;color:#fff!important}
+.journey-card.is-due .journey-chip:has(.journey-chip-sub):after{content:none}
+@media(max-width:520px){.journey-v3 .journey-rail .journey-hour,.journey-now{grid-template-columns:60px minmax(0,1fr);gap:12px}.journey-v3 .journey-rail .journey-hour-label{font-size:12.5px}}
+.journey-v3 .journey-top{margin:0 0 -4px;padding:8px 0 4px;gap:10px;border-bottom:0;box-shadow:0 1px 0 rgba(15,54,157,.10)}
+.journey-v3 [data-journey-root]{gap:10px}
+.journey-v3 [data-journey-staff-host]:empty{display:none}
