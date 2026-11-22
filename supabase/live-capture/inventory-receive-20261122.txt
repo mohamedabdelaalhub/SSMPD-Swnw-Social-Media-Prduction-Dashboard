@@ -1,0 +1,565 @@
+# request qinvcap-1795389535 on swnw-vps at 2026-11-22T23:19:06Z
+### public.inventory_* functions: inventory_allocate(p_item uuid, p_qty numeric), inventory_allocate_at(p_location uuid, p_item uuid, p_quantity numeric, p_include_expired boolean, p_lot uuid), inventory_approve_count(p_session_id uuid), inventory_approve_import(p_id uuid, p_approve boolean), inventory_assign_location(p_location uuid, p_admin uuid, p_responsibility text, p_enabled boolean), inventory_available(p_item uuid), inventory_average_cost(p_item_id uuid), inventory_can_manage(), inventory_can_view(), inventory_consume_at(p_location uuid, p_item uuid, p_quantity numeric, p_kind text, p_note text, p_invoice text, p_payment text, p_lot uuid), inventory_create_request(p_type text, p_note text, p_supplier_name text, p_lines jsonb), inventory_create_transfer(p_source uuid, p_destination uuid, p_receiver uuid, p_lines jsonb, p_note text), inventory_dispatch_transfer(p_id uuid), inventory_dispense_patient(p_payload jsonb, p_token uuid), inventory_fulfill_issue(p_id uuid, p_lines jsonb, p_note text), inventory_fulfill_issue_legacy_supply(p_id uuid, p_lines jsonb, p_note text), inventory_generate_due_counts(), inventory_import_catalog(p_location uuid, p_rows jsonb, p_token uuid, p_pricing boolean), inventory_is_manager(), inventory_location_balance(p_location uuid, p_item uuid, p_lot uuid, p_all_lots boolean), inventory_location_can(p_location uuid, p_action text), inventory_location_cost(p_location uuid, p_item uuid, p_lot uuid, p_all_lots boolean), inventory_lot_remaining(p_lot uuid), inventory_maintenance(), inventory_monthly_schedule(p_location uuid, p_assigned_to uuid, p_first_start timestamp with time zone, p_due_days integer), inventory_my_access(), inventory_on_hand(p_item_id uuid), inventory_open_count(p_title text, p_assigned_to uuid, p_due_at timestamp with time zone, p_note text), inventory_open_count_at(p_location uuid, p_title text, p_assigned_to uuid, p_starts_at timestamp with time zone, p_due_at timestamp with time zone, p_note text), inventory_patient_supply_context(p_location uuid, p_item uuid, p_term text, p_patient uuid), inventory_people(), inventory_prepare_count(p_session_id uuid), inventory_receive_document(p_order uuid, p_lines jsonb, p_reference text, p_token uuid), inventory_receive_invoice(p_order uuid, p_lines jsonb, p_reference text, p_invoice_date date, p_document_url text, p_token uuid), inventory_receive_request(p_id uuid, p_lines jsonb, p_note text), inventory_receive_transfer(p_id uuid, p_lines jsonb, p_note text), inventory_record_sale(p_item_id uuid, p_quantity numeric, p_patient_invoice_ref text, p_payment_method text, p_note text), inventory_refresh_alerts(), inventory_rename_structure(p_id uuid, p_name text, p_kind text), inventory_request_detail(p_id uuid), inventory_resolve_alert(p_id uuid), inventory_review_request(p_id uuid, p_approve boolean, p_note text), inventory_review_request_legacy_supply(p_id uuid, p_approve boolean, p_note text), inventory_review_transfer(p_id uuid, p_lane text, p_approve boolean, p_note text), inventory_revise_import(p_previous uuid, p_location uuid, p_mode text, p_as_of timestamp with time zone, p_filename text, p_rows jsonb), inventory_save_catalog(p_location uuid, p_action text, p_payload jsonb), inventory_save_count_draft(p_session_id uuid, p_lines jsonb, p_submit boolean), inventory_save_count_schedule(p_id uuid, p_title text, p_cadence_days integer, p_assigned_to uuid, p_next_due_at timestamp with time zone), inventory_save_item(p_id uuid, p_sku text, p_name text, p_category text, p_base_unit text, p_units_per_pack numeric, p_minimum numeric, p_markup numeric, p_sale_price numeric), inventory_save_structure(p_name text, p_branch uuid, p_copy_branch uuid, p_new_branch boolean), inventory_save_supplier(p_id uuid, p_name text, p_phone text, p_notes text, p_active boolean), inventory_set_opening_balance(p_item_id uuid, p_quantity numeric, p_unit_cost numeric, p_note text), inventory_set_standard_markup(p_markup numeric, p_apply_all boolean), inventory_set_track_lots(p_item_id uuid, p_track boolean), inventory_snapshot(), inventory_stage_import(p_location uuid, p_mode text, p_as_of timestamp with time zone, p_filename text, p_rows jsonb), inventory_submit_count(p_session_id uuid, p_lines jsonb), inventory_supply_can_manage(p_location uuid), inventory_supply_can_read(p_id uuid), inventory_supply_can_request(p_location uuid), inventory_supply_confirm(p_id uuid), inventory_supply_create(p_location uuid, p_lines jsonb, p_note text, p_token uuid), inventory_supply_my_access(), inventory_supply_permissions(p_admin uuid), inventory_supply_process(p_id uuid, p_action text, p_note text), inventory_supply_set_permissions(p_admin uuid, p_locations uuid[]), inventory_supply_snapshot(), inventory_tracking_codes(p_location uuid, p_query text, p_offset integer), inventory_transfer_can_view(p_id uuid), inventory_workspace_snapshot(p_location uuid), inventory_write_off(p_item_id uuid, p_quantity numeric, p_kind text, p_lot_id uuid, p_note text)
+### reception functions matching complete/execute/consume/sync: consume(p_workspace uuid, p_item uuid, p_location uuid, p_quantity numeric, p_kind text, p_source uuid), sync_native_links(p_workspace uuid), sync_stock(p_workspace uuid)
+
+
+######## clinic_finance.inventory_document_before_header(p_order uuid, p_lines jsonb, p_reference text, p_token uuid)
+CREATE OR REPLACE FUNCTION clinic_finance.inventory_document_before_header(p_order uuid, p_lines jsonb, p_reference text, p_token uuid)
+ RETURNS uuid
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'public'
+AS $function$
+declare me uuid:=public.my_admin_id();r clinic_finance.supplier_receipts%rowtype;sup uuid;v uuid;
+ payload jsonb:=jsonb_build_object('order',p_order,'lines',p_lines,'reference',trim(p_reference));line jsonb;c numeric;q numeric;
+begin
+ if not public.inventory_location_can('00000000-0000-4000-8000-000000000001','manage') then raise exception 'الاستلام لمسؤول الرئيسي';end if;
+ perform clinic_finance.lock_day();
+ -- Serialize retries, including simultaneous retries from the same modal.
+ perform pg_advisory_xact_lock(hashtextextended(me::text||coalesce(p_token::text,''),0));
+ select * into r from clinic_finance.supplier_receipts where created_by=me and token=p_token;
+ if found then if r.payload is distinct from payload then raise exception 'مفتاح طلب مختلف';end if;return r.id;end if;
+ if p_token is null or length(trim(coalesce(p_reference,''))) not between 2 and 120 or jsonb_typeof(p_lines) is distinct from 'array' or jsonb_array_length(p_lines)=0 then raise exception 'راجع مرجع فاتورة المورد وبنود الاستلام';end if;
+ for line in select * from jsonb_array_elements(p_lines) loop
+  c:=nullif(line->>'package_cost','')::numeric;q:=(line->>'quantity')::numeric;
+  if c is null or c<0 or c::text in ('NaN','Infinity','-Infinity') or q is null or q<=0 or q::text in ('NaN','Infinity','-Infinity') then raise exception 'راجع كمية وسعر الاستلام';end if;
+  if nullif(line->>'expiry_date','')::date<current_date then raise exception 'التوريد منتهي الصلاحية';end if;
+ end loop;
+ select s.id into sup from public.inventory_suppliers s join public.inventory_requests x on trim(x.supplier_name)=s.name where x.id=p_order and s.active;
+ if sup is null then raise exception 'راجع مورد أمر الشراء';end if;
+ insert into clinic_finance.supplier_receipts(supplier_id,order_id,reference,payload,created_by,token)
+ values(sup,p_order,trim(p_reference),payload,me,p_token) returning id into v;
+ perform public.inventory_receive_request(p_order,p_lines,'فاتورة مورد '||trim(p_reference));
+ insert into clinic_finance.audit(actor,action,entity_id) values(me,'supplier_receipt',v);
+ return v;
+end $function$
+
+
+
+######## clinic_finance.inventory_receive_before_dates(p_id uuid, p_lines jsonb, p_note text)
+CREATE OR REPLACE FUNCTION clinic_finance.inventory_receive_before_dates(p_id uuid, p_lines jsonb, p_note text)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'public'
+AS $function$
+declare line jsonb;c numeric;q numeric;expected numeric;units numeric;
+begin
+ perform clinic_finance.lock_day();
+ if jsonb_typeof(p_lines) is distinct from 'array' or jsonb_array_length(p_lines)=0 then raise exception 'أدخل بنود الاستلام';end if;
+ for line in select * from jsonb_array_elements(p_lines) loop
+  c:=nullif(line->>'package_cost','')::numeric;q:=(line->>'quantity')::numeric;
+  if c is not null and (c<0 or c::text in ('NaN','Infinity','-Infinity')) or q is null or q<=0 or q::text in ('NaN','Infinity','-Infinity') then raise exception 'راجع السعر والكمية';end if;
+  if nullif(line->>'expiry_date','')::date<current_date then raise exception 'التوريد منتهي الصلاحية';end if;
+  select l.requested_unit_cost,i.units_per_pack into expected,units from public.inventory_request_lines l join public.inventory_items i on i.id=l.item_id where l.request_id=p_id and l.item_id=(line->>'item_id')::uuid;
+  if expected is not null and c is not null and round(c/units,4)<>expected then raise exception 'السعر يختلف عن الطلب المعتمد؛ أنشئ طلبا بالسعر الجديد للمراجعة';end if;
+ end loop;
+ perform clinic_finance.supplier_receive_base(p_id,p_lines,p_note);
+end $function$
+
+
+
+######## clinic_finance.inventory_request_before_dates(p_type text, p_note text, p_supplier_name text, p_lines jsonb)
+CREATE OR REPLACE FUNCTION clinic_finance.inventory_request_before_dates(p_type text, p_note text, p_supplier_name text, p_lines jsonb)
+ RETURNS uuid
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'public'
+AS $function$
+declare v uuid;r jsonb;i public.inventory_items%rowtype;q numeric;c numeric;lid uuid;exp date;ln text;
+begin
+ if not public.inventory_can_view() then raise exception 'غير مسموح بطلب مستلزمات';end if;
+ if p_type is null or p_type not in ('purchase','issue') or jsonb_typeof(p_lines) is distinct from 'array' or jsonb_array_length(p_lines) not between 1 and 30 then raise exception 'راجع نوع الطلب والأصناف';end if;
+ if (select count(distinct x->>'item_id') from jsonb_array_elements(p_lines) x)<>jsonb_array_length(p_lines) then raise exception 'لا تكرر الصنف في نفس الطلب';end if;
+ if p_type='purchase' and not exists(select 1 from public.inventory_suppliers where active and name=trim(p_supplier_name)) then raise exception 'اختر موردا مسجلا ونشطا';end if;
+ insert into public.inventory_requests(request_type,requester_id,note,supplier_name) values(p_type,public.my_admin_id(),coalesce(p_note,''),case when p_type='purchase' then trim(p_supplier_name) else '' end) returning id into v;
+ for r in select * from jsonb_array_elements(p_lines) loop
+  select * into i from public.inventory_items where id=(r->>'item_id')::uuid and active for share;
+  if not found then raise exception 'الصنف غير موجود';end if;
+  q:=(r->>'quantity')::numeric;lid:=nullif(r->>'lot_id','')::uuid;exp:=nullif(r->>'expiry_date','')::date;ln:=trim(coalesce(r->>'lot_number',''));
+  if q is null or q<=0 or q::text in ('NaN','Infinity','-Infinity') or q<>round(q,3) then raise exception 'الكمية غير صالحة';end if;
+  if p_type='purchase' then
+   c:=coalesce(nullif(r->>'unit_cost','')::numeric,nullif(r->>'package_cost','')::numeric/i.units_per_pack);
+   if c is null or c<0 or c::text in ('NaN','Infinity','-Infinity') or c<>round(c,4) then raise exception 'أدخل تكلفة وحدة الصرف، والصفر يحتاج إدخالا صريحا';end if;
+   if exp<current_date then raise exception 'لا تطلب توريدا منتهي الصلاحية';end if;
+   lid:=null;
+  else
+   if lid is not null then
+    select expiry_date,lot_number into exp,ln from public.inventory_lots where id=lid and item_id=i.id and (expiry_date is null or expiry_date>=current_date);
+    if not found or public.inventory_location_balance('00000000-0000-4000-8000-000000000001',i.id,lid,false)<=0 then raise exception 'التشغيلة غير متاحة للصرف من الرئيسي';end if;
+   else exp:=null;ln:='';end if;
+   c:=public.inventory_location_cost('00000000-0000-4000-8000-000000000001',i.id,lid,lid is null);
+  end if;
+  insert into public.inventory_request_lines(request_id,item_id,quantity,package_cost,requested_unit_cost,expiry_date,lot_number,lot_id)
+   values(v,i.id,q,round(c*i.units_per_pack,2),c,exp,ln,lid);
+ end loop;
+ return v;
+end $function$
+
+
+
+######## clinic_finance.stock_consume_base(p_location uuid, p_item uuid, p_quantity numeric, p_kind text, p_note text, p_invoice text, p_payment text, p_lot uuid)
+CREATE OR REPLACE FUNCTION clinic_finance.stock_consume_base(p_location uuid, p_item uuid, p_quantity numeric, p_kind text, p_note text DEFAULT ''::text, p_invoice text DEFAULT ''::text, p_payment text DEFAULT ''::text, p_lot uuid DEFAULT NULL::uuid)
+ RETURNS uuid
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+declare i public.inventory_items%rowtype; a record; v_id uuid;
+begin
+ if not public.inventory_location_can(p_location,'receive') and not public.inventory_location_can(p_location,'manage') then raise exception 'غير مسموح بالصرف من هذا المخزن'; end if;
+ if p_kind not in ('issue','sale','waste','expired') then raise exception 'نوع حركة غير صحيح'; end if;
+ if p_kind in ('waste','expired') and (not public.inventory_location_can(p_location,'manage') or length(trim(coalesce(p_note,'')))<2) then raise exception 'الهالك يحتاج مسؤولاً وسبباً'; end if;
+ select * into i from public.inventory_items where id=p_item and active for update;
+ for a in select * from public.inventory_allocate_at(p_location,p_item,p_quantity,p_kind in ('waste','expired'),p_lot) loop
+  insert into public.inventory_movements(item_id,location_id,lot_id,movement_type,quantity_delta,unit_cost,unit_sale_price,margin_percent,profit_amount,patient_invoice_ref,payment_method,note,created_by)
+   values(p_item,p_location,a.lot_id,p_kind,-a.qty,a.unit_cost,case when p_kind='sale' then i.current_sale_price else 0 end,i.markup_percent,
+   case when p_kind='sale' then round((i.current_sale_price-a.unit_cost)*a.qty,2) when p_kind in ('waste','expired') then -round(a.unit_cost*a.qty,2) else 0 end,
+   coalesce(p_invoice,''),coalesce(p_payment,''),coalesce(p_note,''),public.my_admin_id()) returning id into v_id;
+ end loop;
+ return v_id;
+end $function$
+
+
+
+######## clinic_finance.supplier_receive_base(p_id uuid, p_lines jsonb, p_note text)
+CREATE OR REPLACE FUNCTION clinic_finance.supplier_receive_base(p_id uuid, p_lines jsonb, p_note text)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+declare req public.inventory_requests%rowtype; r jsonb; ln public.inventory_request_lines%rowtype; i public.inventory_items%rowtype; q numeric; cost numeric; price numeric; lid uuid;
+begin
+ if not public.inventory_location_can('00000000-0000-4000-8000-000000000001','manage') then raise exception 'التوريد لمسؤول المخزن الرئيسي'; end if;
+ select * into req from public.inventory_requests where id=p_id for update;
+ if not found or req.request_type<>'purchase' or req.status not in ('approved','partial') then raise exception 'طلب التوريد يحتاج موافقة'; end if;
+ if jsonb_array_length(coalesce(p_lines,'[]'))=0 then raise exception 'أدخل الكميات'; end if;
+ for r in select * from jsonb_array_elements(p_lines) order by value->>'item_id' loop
+  select * into ln from public.inventory_request_lines where request_id=p_id and item_id=(r->>'item_id')::uuid for update;
+  if not found then raise exception 'صنف خارج الطلب'; end if;
+  q:=(r->>'quantity')::numeric;
+  if q is null or q<=0 or ln.received_quantity+q>ln.quantity then raise exception 'الكمية تتجاوز المتبقي'; end if;
+  select * into i from public.inventory_items where id=ln.item_id for update;
+  cost:=coalesce((r->>'package_cost')::numeric,ln.package_cost)/i.units_per_pack;
+  if cost is null or cost<0 then raise exception 'راجع تكلفة العبوة'; end if;
+  if i.track_lots and (nullif(r->>'expiry_date','') is null or nullif(r->>'lot_number','') is null) then raise exception 'رقم التشغيلة والصلاحية مطلوبان'; end if;
+  lid:=null;
+  if i.track_lots or nullif(r->>'lot_number','') is not null or nullif(r->>'expiry_date','') is not null or nullif(r->>'production_date','') is not null then
+   insert into public.inventory_lots(item_id,lot_number,expiry_date,received_quantity,unit_cost,supplier_name,created_by,production_date,shelf_life_months,lot_code_missing)
+    values(i.id,coalesce(r->>'lot_number',''),nullif(r->>'expiry_date','')::date,q,cost,req.supplier_name,public.my_admin_id(),nullif(r->>'production_date','')::date,nullif(r->>'shelf_life_months','')::integer,coalesce((r->>'lot_code_missing')::boolean,false)) returning id into lid;
+  end if;
+  price:=round(greatest(cost,coalesce(clinic_finance.inventory_highest_purchase(i.id),0))*(1+i.markup_percent/100),2);
+  if price<>i.current_sale_price then insert into public.inventory_price_history(item_id,previous_price,new_price,previous_markup,new_markup,changed_by) values(i.id,i.current_sale_price,price,i.markup_percent,i.markup_percent,public.my_admin_id()); end if;
+  update public.inventory_items set current_sale_price=price,updated_at=now() where id=i.id;
+  insert into public.inventory_movements(item_id,lot_id,movement_type,quantity_delta,unit_cost,unit_sale_price,margin_percent,reference_type,reference_id,note,created_by)
+   values(i.id,lid,'receipt',q,cost,price,i.markup_percent,'purchase',p_id,coalesce(p_note,''),public.my_admin_id());
+  update public.inventory_request_lines set received_quantity=received_quantity+q where id=ln.id;
+ end loop;
+ update public.inventory_requests set status=case when exists(select 1 from public.inventory_request_lines where request_id=p_id and received_quantity<quantity) then 'partial' else 'completed' end,completed_at=now() where id=p_id;
+end $function$
+
+
+
+######## clinic_reception.consume(p_workspace uuid, p_item uuid, p_location uuid, p_quantity numeric, p_kind text, p_source uuid)
+CREATE OR REPLACE FUNCTION clinic_reception.consume(p_workspace uuid, p_item uuid, p_location uuid, p_quantity numeric, p_kind text, p_source uuid)
+ RETURNS numeric
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'public'
+AS $function$
+declare l record;remaining numeric:=p_quantity;q numeric;total numeric:=0;v uuid;price numeric;dims jsonb;
+begin
+ perform clinic_reception.number(p_quantity::text,3);
+ if not exists(select 1 from clinic_reception.items where id=p_item and workspace_id=p_workspace) or not exists(select 1 from clinic_reception.locations where id=p_location and workspace_id=p_workspace) then raise exception 'الصنف أو المخزن خارج المساحة';end if;
+ select sale_price into price from clinic_reception.items where id=p_item;
+ for l in select lot.id,lot.unit_cost,sum(m.quantity) quantity from clinic_reception.lots lot join clinic_reception.movements m on m.lot_id=lot.id where lot.workspace_id=p_workspace and lot.item_id=p_item and m.location_id=p_location and (p_kind='waste' or lot.expiry_date is null or lot.expiry_date>=clinic_reception.today()) group by lot.id having sum(m.quantity)>0 order by lot.expiry_date nulls last,lot.received_at,lot.id loop
+  q:=least(remaining,l.quantity);insert into clinic_reception.movements(workspace_id,item_id,location_id,lot_id,kind,quantity,unit_cost,sale_price,source_id,actor_id) values(p_workspace,p_item,p_location,l.id,p_kind,-q,l.unit_cost,case when p_kind='sale' then price else 0 end,p_source,public.my_admin_id()) returning id into v;
+  dims:=jsonb_build_object('order_id',p_source,'item_id',p_item,'location_id',p_location);
+  if p_kind in ('included','sale','waste') then perform clinic_reception.post(p_workspace,'stock_cost',v,'تكلفة صرف مستلزمات',case p_kind when 'included' then '5123' when 'sale' then '5121' else '5217' end,'1131',round(q*l.unit_cost,2),dims);end if;
+  total:=total+round(q*l.unit_cost,2);remaining:=remaining-q;exit when remaining=0;
+ end loop;
+ if remaining>0 then raise exception 'المخزون المتاح غير كاف أو منتهي الصلاحية';end if;return total;
+end $function$
+
+
+
+######## clinic_reception.sync_native_links(p_workspace uuid)
+CREATE OR REPLACE FUNCTION clinic_reception.sync_native_links(p_workspace uuid)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'public'
+AS $function$begin
+ if not exists(select 1 from clinic_reception.workspaces where id=p_workspace and mode='live') then return;end if;
+ perform 1 from clinic_reception.workspaces where id=p_workspace for update;
+ update clinic_reception.patients r set file_no=p.patient_code,name=p.full_name,phone=coalesce(p.phone,''),gender=p.gender from public.patients p where r.workspace_id=p_workspace and r.patient_id=p.id;
+ update clinic_reception.items r set name=i.name,unit=i.base_unit,markup=i.markup_percent,track_expiry=i.track_lots from public.inventory_items i where r.workspace_id=p_workspace and r.inventory_item_id=i.id;
+ -- Shared native identities. No name matching, no opening quantities, no financial posting.
+ insert into clinic_reception.items(workspace_id,code,name,unit,markup,inventory_item_id,track_expiry)
+ select p_workspace,'INV-'||i.id,i.name,i.base_unit,i.markup_percent,i.id,i.track_lots from public.inventory_items i where i.active and not exists(select 1 from clinic_reception.items mapped where mapped.workspace_id=p_workspace and mapped.inventory_item_id=i.id)
+ on conflict(workspace_id,code) do update set name=excluded.name,unit=excluded.unit,markup=excluded.markup,track_expiry=excluded.track_expiry;
+ insert into clinic_reception.locations(workspace_id,name,inventory_location_id) select p_workspace,l.name,l.id from public.inventory_locations l where l.active and not exists(select 1 from clinic_reception.locations r where r.workspace_id=p_workspace and r.inventory_location_id=l.id);
+ insert into clinic_reception.suppliers(workspace_id,name,inventory_supplier_id) select p_workspace,s.name,s.id from public.inventory_suppliers s where s.active and not exists(select 1 from clinic_reception.suppliers r where r.workspace_id=p_workspace and r.inventory_supplier_id=s.id);
+ insert into clinic_reception.registers(workspace_id,name,direction,finance_register_id) select p_workspace,r.name,r.operation_mode,r.id from clinic_finance.registers r where not exists(select 1 from clinic_reception.registers mapped where mapped.workspace_id=p_workspace and mapped.finance_register_id=r.id);
+ update clinic_reception.registers mapped set name=r.name,direction=r.operation_mode from clinic_finance.registers r where mapped.workspace_id=p_workspace and mapped.finance_register_id=r.id;
+ update clinic_reception.shifts mapped set status=f.status,closed_at=f.closed_at,counted=f.counted,reviewed_by=f.reviewed_by,review_note=f.review_note,
+ expected=clinic_finance.shift_cash(f.id),
+ difference=f.counted-clinic_finance.shift_cash(f.id)
+ from clinic_finance.shifts f where mapped.workspace_id=p_workspace and mapped.finance_shift_id=f.id;
+ insert into clinic_reception.shifts(id,workspace_id,register_id,cashier_id,status,opened_at,closed_at,counted,finance_shift_id)
+ select f.id,p_workspace,r.id,f.cashier_id,f.status,f.opened_at,f.closed_at,f.counted,f.id from clinic_finance.shifts f join clinic_reception.registers r on r.finance_register_id=f.register_id and r.workspace_id=p_workspace
+ where not exists(select 1 from clinic_reception.shifts mapped where mapped.workspace_id=p_workspace and mapped.finance_shift_id=f.id)
+ on conflict(id) do nothing;
+end $function$
+
+
+
+######## clinic_reception.sync_stock(p_workspace uuid)
+CREATE OR REPLACE FUNCTION clinic_reception.sync_stock(p_workspace uuid)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'public'
+AS $function$
+declare x record;l uuid;current_qty numeric;highest numeric;
+begin
+ if not exists(select 1 from clinic_reception.workspaces where id=p_workspace and mode='live') then return;end if;
+ -- Match by immutable IDs only. Never infer a mapping from a name or phone.
+ perform i.id from public.inventory_items i join clinic_reception.items rx on rx.inventory_item_id=i.id where rx.workspace_id=p_workspace order by i.id for update of i;
+ for x in select rx.id item_id,loc.id location_id,l.id inventory_lot_id,l.lot_number,l.expiry_date,l.unit_cost,l.received_at,coalesce(sum(m.quantity_delta),0) quantity from clinic_reception.items rx join public.inventory_lots l on l.item_id=rx.inventory_item_id cross join clinic_reception.locations loc left join public.inventory_movements m on m.lot_id=l.id and m.location_id=loc.inventory_location_id where rx.workspace_id=p_workspace and loc.workspace_id=p_workspace and loc.inventory_location_id is not null group by rx.id,loc.id,l.id loop
+  select id into l from clinic_reception.lots where workspace_id=p_workspace and inventory_lot_id=x.inventory_lot_id;
+  if l is null then insert into clinic_reception.lots(id,workspace_id,item_id,number,expiry_date,unit_cost,inventory_lot_id,received_at) values(x.inventory_lot_id,p_workspace,x.item_id,x.lot_number,x.expiry_date,x.unit_cost,x.inventory_lot_id,x.received_at) returning id into l;end if;
+  select coalesce(sum(quantity),0) into current_qty from clinic_reception.movements where workspace_id=p_workspace and lot_id=l and location_id=x.location_id;
+  if current_qty<>x.quantity then insert into clinic_reception.movements(workspace_id,item_id,location_id,lot_id,kind,quantity,unit_cost,source_id,actor_id) values(p_workspace,x.item_id,x.location_id,l,'count',x.quantity-current_qty,x.unit_cost,null,public.my_admin_id());end if;
+ end loop;
+ -- Highest purchase cost is a pricing reference, not a retrospective cost revaluation.
+ update clinic_reception.items rx set highest_cost=greatest(rx.highest_cost,coalesce((select max(unit_cost) from public.inventory_lots where item_id=rx.inventory_item_id),0)),sale_price=round(greatest(rx.highest_cost,coalesce((select max(unit_cost) from public.inventory_lots where item_id=rx.inventory_item_id),0))*(1+rx.markup/100),2) where rx.workspace_id=p_workspace and rx.inventory_item_id is not null;
+end $function$
+
+
+
+######## public.inventory_consume_at(p_location uuid, p_item uuid, p_quantity numeric, p_kind text, p_note text, p_invoice text, p_payment text, p_lot uuid)
+CREATE OR REPLACE FUNCTION public.inventory_consume_at(p_location uuid, p_item uuid, p_quantity numeric, p_kind text, p_note text DEFAULT ''::text, p_invoice text DEFAULT ''::text, p_payment text DEFAULT ''::text, p_lot uuid DEFAULT NULL::uuid)
+ RETURNS uuid
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'public'
+AS $function$begin
+ if p_kind='issue' then
+  if length(trim(coalesce(p_note,''))) not between 3 and 500 then raise exception 'وضح سبب الاستهلاك الداخلي من 3 إلى 500 حرف';end if;
+  if nullif(trim(p_invoice),'') is not null then raise exception 'صرف المريض يتم من زر صرف مستلزم إضافي لمريض وربطه بالزيارة والفاتورة';end if;
+ end if;
+ perform clinic_finance.lock_day();return clinic_finance.stock_consume_base(p_location,p_item,p_quantity,p_kind,p_note,p_invoice,p_payment,p_lot);
+end $function$
+
+
+
+######## public.inventory_create_request(p_type text, p_note text, p_supplier_name text, p_lines jsonb)
+CREATE OR REPLACE FUNCTION public.inventory_create_request(p_type text, p_note text, p_supplier_name text, p_lines jsonb)
+ RETURNS uuid
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'public'
+AS $function$declare v uuid;r jsonb;lines jsonb:=p_lines;begin
+ if p_type='purchase' then lines:=clinic_finance.inventory_batch_dates(p_lines);end if;
+ v:=clinic_finance.inventory_request_before_dates(p_type,p_note,p_supplier_name,lines);
+ if p_type='purchase' then for r in select * from jsonb_array_elements(lines) loop update public.inventory_request_lines set lot_code_missing=coalesce((r->>'lot_code_missing')::boolean,false),production_date=(r->>'production_date')::date,shelf_life_months=(r->>'shelf_life_months')::integer where request_id=v and item_id=(r->>'item_id')::uuid;end loop;end if;return v;
+end $function$
+
+
+
+######## public.inventory_create_transfer(p_source uuid, p_destination uuid, p_receiver uuid, p_lines jsonb, p_note text)
+CREATE OR REPLACE FUNCTION public.inventory_create_transfer(p_source uuid, p_destination uuid, p_receiver uuid, p_lines jsonb, p_note text DEFAULT ''::text)
+ RETURNS uuid
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+declare v_id uuid; r jsonb;
+begin
+ if not (public.inventory_location_can(p_source,'request') or public.inventory_location_can(p_destination,'request')) then raise exception 'إنشاء التحويل لسينيور التمريض والإدارة'; end if;
+ if (select count(*) from public.inventory_locations where id in (p_source,p_destination) and active)<>2 then raise exception 'المصدر والوجهة يجب أن يكونا مخزنين نشطين مختلفين'; end if;
+ if not exists(select 1 from public.admins a join public.inventory_location_staff s on s.admin_id=a.id where a.id=p_receiver and a.active and s.location_id=p_destination and s.responsibility in ('receiver','senior_nursing','storekeeper')) then raise exception 'عيّن مستلماً للمخزن الوجهة أولاً'; end if;
+ if p_lines is null or jsonb_typeof(p_lines)<>'array' or jsonb_array_length(p_lines) not between 1 and 500 then raise exception 'أضف الأصناف والكميات'; end if;
+ insert into public.inventory_transfers(source_id,destination_id,requested_by,receiver_id,note) values(p_source,p_destination,public.my_admin_id(),p_receiver,coalesce(p_note,'')) returning id into v_id;
+ for r in select * from jsonb_array_elements(p_lines) loop
+  if (r->>'quantity')::numeric is null or (r->>'quantity')::numeric<=0 then raise exception 'الكمية مطلوبة'; end if;
+  insert into public.inventory_transfer_lines(transfer_id,item_id,quantity) values(v_id,(r->>'item_id')::uuid,(r->>'quantity')::numeric);
+ end loop;
+ insert into public.inventory_audit_events(entity_id,kind,actor_id) values(v_id,'transfer_requested',public.my_admin_id());
+ return v_id;
+end $function$
+
+
+
+######## public.inventory_dispense_patient(p_payload jsonb, p_token uuid)
+CREATE OR REPLACE FUNCTION public.inventory_dispense_patient(p_payload jsonb, p_token uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'public'
+AS $function$
+declare w uuid;me uuid;prev clinic_reception.commands%rowtype;vis clinic_reception.visits%rowtype;
+ patient clinic_reception.patients%rowtype;inv clinic_reception.invoices%rowtype;it public.inventory_items%rowtype;
+ rx uuid;loc uuid;q numeric;price numeric;total numeric;v_cost numeric;v uuid;outcome jsonb;dims jsonb;ord uuid;repeat_ok boolean;why text;begin
+ if p_token is null or jsonb_typeof(p_payload) is distinct from 'object' or octet_length(p_payload::text)>6000 then raise exception 'طلب غير صالح';end if;
+ w:=nullif(p_payload->>'workspace_id','')::uuid;
+ me:=clinic_reception.patient_supply_access(w,nullif(p_payload->>'location_id','')::uuid);
+ perform 1 from clinic_reception.workspaces where id=w for update;
+ select * into prev from clinic_reception.commands where workspace_id=w and actor_id=me and token=p_token;
+ if found then if prev.action<>'patient_supply' or prev.payload is distinct from p_payload then raise exception 'مفتاح إعادة المحاولة مرتبط بطلب آخر';end if;return prev.response;end if;
+ perform clinic_finance.lock_day();
+ select * into vis from clinic_reception.visits where id=nullif(p_payload->>'visit_id','')::uuid and workspace_id=w and status='open' for update;
+ if not found then raise exception 'اختر زيارة مفتوحة للمريض؛ الزيارة المغلقة لا تستقبل صرفًا جديدًا';end if;
+ select * into patient from clinic_reception.patients where id=vis.patient_id and workspace_id=w and patient_id=nullif(p_payload->>'patient_id','')::uuid;
+ if not found then raise exception 'الزيارة لا تخص ملف المريض المختار';end if;
+ q:=clinic_reception.number(p_payload->>'quantity',3);price:=clinic_reception.number(p_payload->>'sale_price');why:=trim(coalesce(p_payload->>'note',''));repeat_ok:=coalesce((p_payload->>'repeat_confirmed')::boolean,false);
+ if length(why) not between 3 and 500 or coalesce((p_payload->>'patient_confirmed')::boolean,false) is not true then raise exception 'وضح سبب الصرف وأكد موافقة المريض على القيمة';end if;
+ perform clinic_reception.sync_native_links(w);
+ -- Same lock order as the service execution stock synchronizer.
+ perform clinic_reception.sync_stock(w);
+ select * into it from public.inventory_items where id=nullif(p_payload->>'item_id','')::uuid and active for update;
+ if not found or it.current_sale_price<>price then raise exception 'سعر بيع الصنف تغير أو غير متاح؛ راجع السعر قبل التأكيد';end if;
+ total:=round(q*price,2);if total<=0 then raise exception 'قيمة الصرف أقل من أصغر وحدة نقدية';end if;
+ select id into rx from clinic_reception.items where workspace_id=w and inventory_item_id=it.id;
+ select id into loc from clinic_reception.locations where workspace_id=w and inventory_location_id=(p_payload->>'location_id')::uuid;
+ if rx is null or loc is null then raise exception 'تعذر قراءة ربط الصنف أو المخزن المعتمد';end if;
+ if exists(select 1 from clinic_reception.orders o cross join lateral jsonb_array_elements(coalesce(o.snapshot->'bom','[]')) bom where o.workspace_id=w and o.visit_id=vis.id and o.status='ordered' and bom->>'item_id'=rx::text) then raise exception 'المستلزم موجود ضمن خدمة لم تنفذ؛ سجله من تنفيذ الخدمة حتى لا يصرف مرتين';end if;
+ if not repeat_ok and (exists(select 1 from clinic_reception.patient_supplies where workspace_id=w and visit_id=vis.id and item_id=it.id) or exists(select 1 from clinic_reception.movements m join clinic_reception.orders o on o.id=m.source_id where o.workspace_id=w and o.visit_id=vis.id and m.item_id=rx and m.kind in ('included','sale'))) then raise exception 'سبق صرف الصنف في الزيارة؛ راجع السجل وأكد أنها كمية إضافية جديدة';end if;
+ if nullif(p_payload->>'invoice_id','') is not null then
+  select * into inv from clinic_reception.invoices where id=(p_payload->>'invoice_id')::uuid and workspace_id=w and patient_id=patient.id and visit_id=vis.id and kind='service' for update;
+  if not found then raise exception 'الفاتورة لا تخص نفس المريض والزيارة';end if;
+ else
+  -- A single, ordinary reception invoice for supplies before the first service invoice exists.
+  if exists(select 1 from clinic_reception.invoices where workspace_id=w and visit_id=vis.id and kind='service') then raise exception 'اختر فاتورة الزيارة الموجودة بدل إنشاء بيان جديد';end if;
+  insert into clinic_reception.invoices(workspace_id,patient_id,visit_id,kind,amount,description) values(w,patient.id,vis.id,'service',0,'مستلزمات إضافية للزيارة') returning * into inv;
+ end if;
+ ord:=inv.order_id;
+ if ord is null then select id into ord from clinic_reception.orders where workspace_id=w and visit_id=vis.id and status in ('ordered','completed') order by created_at,id limit 1;end if;
+ dims:=jsonb_build_object('patient_id',patient.id,'visit_id',vis.id,'invoice_id',inv.id,'order_id',ord,'item_id',rx,'location_id',loc);
+ insert into clinic_reception.patient_supplies(workspace_id,patient_id,visit_id,invoice_id,order_id,item_id,location_id,quantity,sale_price,amount,note,repeat_confirmed,created_by)
+ values(w,patient.id,vis.id,inv.id,ord,it.id,(p_payload->>'location_id')::uuid,q,price,total,why,repeat_ok,me) returning id into v;
+ v_cost:=clinic_reception.consume(w,rx,loc,q,'sale',v);
+ update clinic_reception.patient_supplies set cost=v_cost where id=v;
+ -- Consume already posts the actual FEFO cost and mirrors stock once. Supply dimensions replace its order placeholder.
+ update clinic_reception.journal set dimensions=dims||jsonb_build_object('patient_supply_id',v) where workspace_id=w and source='stock_cost' and source_id in(select id from clinic_reception.movements where workspace_id=w and source_id=v);
+ update public.inventory_movements set patient_invoice_ref='RX-'||inv.invoice_no,note='مستلزم إضافي — ملف '||patient.file_no||' / زيارة '||vis.visit_no||' — '||why where id in(select inventory_movement_id from clinic_reception.movements where workspace_id=w and source_id=v);
+ perform clinic_reception.post(w,'extra_material',v,'صرف مستلزم إضافي لمريض — '||it.name,'1122','4116',total,dims||jsonb_build_object('patient_supply_id',v));
+ update clinic_reception.invoices set amount=amount+total where id=inv.id;
+ outcome:=jsonb_build_object('id',v,'invoice_id',inv.id,'invoice_no',inv.invoice_no,'visit_no',vis.visit_no,'amount',total,'due',clinic_reception.due(inv.id));
+ insert into clinic_reception.audit(workspace_id,actor_id,action,entity_id,detail) values(w,me,'patient_supply',v,p_payload||outcome);
+ insert into clinic_reception.commands values(w,me,p_token,'patient_supply',p_payload,outcome);
+ return outcome;
+end $function$
+
+
+
+######## public.inventory_location_can(p_location uuid, p_action text)
+CREATE OR REPLACE FUNCTION public.inventory_location_can(p_location uuid, p_action text)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+ select exists(select 1 from public.admins a where a.id=public.my_admin_id() and a.active)
+ and exists(select 1 from public.inventory_locations l where l.id=p_location and l.active)
+ and case when p_action='storekeeper' then exists(select 1 from public.inventory_location_staff where location_id=p_location and admin_id=public.my_admin_id() and responsibility='storekeeper')
+ when public.inventory_is_manager() then p_action in ('view','manage','request','receive','count','manager')
+ else exists(select 1 from public.inventory_location_staff s where s.location_id=p_location and s.admin_id=public.my_admin_id() and
+  case p_action when 'view' then true when 'manage' then s.responsibility in ('storekeeper','manager')
+   when 'request' then s.responsibility='senior_nursing' when 'receive' then s.responsibility in ('receiver','senior_nursing','storekeeper')
+   when 'count' then s.responsibility in ('counter','senior_nursing','storekeeper','manager')
+   when 'manager' then s.responsibility='manager' else false end) end;
+$function$
+
+
+
+######## public.inventory_receive_document(p_order uuid, p_lines jsonb, p_reference text, p_token uuid)
+CREATE OR REPLACE FUNCTION public.inventory_receive_document(p_order uuid, p_lines jsonb, p_reference text, p_token uuid)
+ RETURNS uuid
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'public'
+AS $function$declare d date;begin
+ select coalesce(invoice_date,(created_at at time zone 'Africa/Cairo')::date) into d from clinic_finance.supplier_receipts where created_by=public.my_admin_id() and token=p_token;
+ return public.inventory_receive_invoice(p_order,p_lines,p_reference,coalesce(d,(now() at time zone 'Africa/Cairo')::date),'',p_token);
+end $function$
+
+
+
+######## public.inventory_receive_invoice(p_order uuid, p_lines jsonb, p_reference text, p_invoice_date date, p_document_url text, p_token uuid)
+CREATE OR REPLACE FUNCTION public.inventory_receive_invoice(p_order uuid, p_lines jsonb, p_reference text, p_invoice_date date, p_document_url text, p_token uuid)
+ RETURNS uuid
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'public'
+AS $function$declare r clinic_finance.supplier_receipts%rowtype;v uuid;total numeric;url text:=trim(coalesce(p_document_url,''));begin
+ if not public.inventory_location_can('00000000-0000-4000-8000-000000000001','manage') then raise exception 'فاتورة التوريد لمسؤول المخزن الرئيسي';end if;
+ if p_invoice_date is null or p_invoice_date>(now() at time zone 'Africa/Cairo')::date or length(url)>2000 or (url<>'' and url!~* '^https?://[^[:space:]]+$') then raise exception 'راجع تاريخ الفاتورة ورابط المستند';end if;
+ perform pg_advisory_xact_lock(hashtextextended(public.my_admin_id()::text||coalesce(p_token::text,''),0));
+ select * into r from clinic_finance.supplier_receipts where created_by=public.my_admin_id() and token=p_token;
+ if found and ((r.invoice_date is not null and r.invoice_date<>p_invoice_date) or r.document_url<>url) then raise exception 'مفتاح طلب مختلف لبيانات فاتورة المورد';end if;
+ select round(sum((j->>'quantity')::numeric*(j->>'package_cost')::numeric/i.units_per_pack),2) into total from jsonb_array_elements(p_lines) j join public.inventory_items i on i.id=(j->>'item_id')::uuid;
+ v:=clinic_finance.inventory_document_before_header(p_order,p_lines,p_reference,p_token);
+ update clinic_finance.supplier_receipts set invoice_date=coalesce(invoice_date,p_invoice_date),document_url=url,invoice_total=coalesce(invoice_total,total) where id=v;return v;
+end $function$
+
+
+
+######## public.inventory_receive_transfer(p_id uuid, p_lines jsonb, p_note text)
+CREATE OR REPLACE FUNCTION public.inventory_receive_transfer(p_id uuid, p_lines jsonb, p_note text DEFAULT ''::text)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+declare t public.inventory_transfers%rowtype; r record; q numeric; mismatch boolean:=false;
+begin
+ select * into t from public.inventory_transfers where id=p_id for update;
+ if not found or t.status<>'in_transit' then raise exception 'التحويل غير متاح للاستلام'; end if;
+ if t.receiver_id<>public.my_admin_id() or not public.inventory_location_can(t.destination_id,'receive') then raise exception 'تأكيد الاستلام للمستلم المحدد'; end if;
+ if jsonb_typeof(p_lines)<>'array' or jsonb_array_length(p_lines)<>(select count(*) from public.inventory_transfer_allocations a join public.inventory_transfer_lines l on l.id=a.line_id where l.transfer_id=p_id) or (select count(distinct x->>'allocation_id') from jsonb_array_elements(p_lines) x)<>jsonb_array_length(p_lines) then raise exception 'أدخل كل كميات التشغيلات المستلمة دون تكرار'; end if;
+ for r in select a.*,l.item_id from public.inventory_transfer_allocations a join public.inventory_transfer_lines l on l.id=a.line_id where l.transfer_id=p_id order by l.item_id,a.id loop
+  select (x->>'quantity')::numeric into q from jsonb_array_elements(p_lines) x where (x->>'allocation_id')::uuid=r.id;
+  if q is null or q<0 or q>r.quantity then raise exception 'كمية استلام غير صحيحة'; end if;
+  perform 1 from public.inventory_items where id=r.item_id for update;
+  update public.inventory_transfer_allocations set received_quantity=q where id=r.id;
+  if q>0 then insert into public.inventory_movements(item_id,location_id,lot_id,movement_type,quantity_delta,unit_cost,reference_type,reference_id,created_by,note)
+   values(r.item_id,t.destination_id,r.lot_id,'transfer_in',q,r.unit_cost,'transfer',p_id,public.my_admin_id(),coalesce(p_note,'')); end if;
+  mismatch:=mismatch or q<>r.quantity;
+ end loop;
+ if mismatch and length(trim(coalesce(p_note,'')))<2 then raise exception 'اكتب ملاحظة لفروق الاستلام'; end if;
+ update public.inventory_transfers set status=case when mismatch then 'discrepancy' else 'received' end,received_by=public.my_admin_id(),received_at=now() where id=p_id;
+ insert into public.inventory_audit_events(entity_id,kind,actor_id,detail) values(p_id,'transfer_received',public.my_admin_id(),coalesce(p_note,''));
+end $function$
+
+
+
+######## public.inventory_review_request(p_id uuid, p_approve boolean, p_note text)
+CREATE OR REPLACE FUNCTION public.inventory_review_request(p_id uuid, p_approve boolean, p_note text)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'public'
+AS $function$begin perform clinic_finance.lock_day();if p_approve and exists(select 1 from public.inventory_requests where id=p_id and request_type='purchase' and requester_id=public.my_admin_id()) then raise exception 'أمر الشراء يحتاج اعتماد شخص آخر';end if;perform clinic_finance.supplier_review_base(p_id,p_approve,p_note);end $function$
+
+
+######## \d clinic_reception.items
+                        Table "clinic_reception.items"
+      Column       |     Type      | Collation | Nullable |      Default      
+-------------------+---------------+-----------+----------+-------------------
+ id                | uuid          |           | not null | gen_random_uuid()
+ workspace_id      | uuid          |           | not null | 
+ code              | text          |           | not null | 
+ name              | text          |           | not null | 
+ unit              | text          |           | not null | 
+ markup            | numeric(8,4)  |           | not null | 
+ sale_price        | numeric(14,2) |           | not null | 0
+ highest_cost      | numeric(14,4) |           | not null | 0
+ track_expiry      | boolean       |           | not null | false
+ inventory_item_id | uuid          |           |          | 
+Indexes:
+    "items_pkey" PRIMARY KEY, btree (id)
+    "items_workspace_id_code_key" UNIQUE CONSTRAINT, btree (workspace_id, code)
+    "reception_live_item_map" UNIQUE, btree (workspace_id, inventory_item_id) WHERE inventory_item_id IS NOT NULL
+Check constraints:
+    "items_markup_check" CHECK (markup >= 0::numeric AND (markup::text <> ALL (ARRAY['NaN'::text, 'Infinity'::text, '-Infinity'::text])))
+Foreign-key constraints:
+    "items_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES clinic_reception.workspaces(id)
+Referenced by:
+    TABLE "clinic_reception.lots" CONSTRAINT "lots_item_id_fkey" FOREIGN KEY (item_id) REFERENCES clinic_reception.items(id)
+    TABLE "clinic_reception.movements" CONSTRAINT "movements_item_id_fkey" FOREIGN KEY (item_id) REFERENCES clinic_reception.items(id)
+    TABLE "clinic_reception.purchase_lines" CONSTRAINT "purchase_lines_item_id_fkey" FOREIGN KEY (item_id) REFERENCES clinic_reception.items(id)
+    TABLE "clinic_reception.transfers" CONSTRAINT "transfers_item_id_fkey" FOREIGN KEY (item_id) REFERENCES clinic_reception.items(id)
+Policies (row security enabled): (none)
+Triggers:
+    reception_item_price_bridge AFTER UPDATE ON clinic_reception.items FOR EACH ROW EXECUTE FUNCTION clinic_reception.mirror_item_price()
+
+
+######## \d clinic_reception.locations
+                   Table "clinic_reception.locations"
+        Column         | Type | Collation | Nullable |      Default      
+-----------------------+------+-----------+----------+-------------------
+ id                    | uuid |           | not null | gen_random_uuid()
+ workspace_id          | uuid |           | not null | 
+ name                  | text |           | not null | 
+ inventory_location_id | uuid |           |          | 
+Indexes:
+    "locations_pkey" PRIMARY KEY, btree (id)
+    "locations_workspace_id_name_key" UNIQUE CONSTRAINT, btree (workspace_id, name)
+    "reception_live_location_map" UNIQUE, btree (workspace_id, inventory_location_id) WHERE inventory_location_id IS NOT NULL
+Foreign-key constraints:
+    "locations_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES clinic_reception.workspaces(id)
+Referenced by:
+    TABLE "clinic_reception.counts" CONSTRAINT "counts_location_id_fkey" FOREIGN KEY (location_id) REFERENCES clinic_reception.locations(id)
+    TABLE "clinic_reception.movements" CONSTRAINT "movements_location_id_fkey" FOREIGN KEY (location_id) REFERENCES clinic_reception.locations(id)
+    TABLE "clinic_reception.transfers" CONSTRAINT "transfers_destination_id_fkey" FOREIGN KEY (destination_id) REFERENCES clinic_reception.locations(id)
+    TABLE "clinic_reception.transfers" CONSTRAINT "transfers_source_id_fkey" FOREIGN KEY (source_id) REFERENCES clinic_reception.locations(id)
+Policies (row security enabled): (none)
+
+
+######## \d clinic_reception.movements
+                             Table "clinic_reception.movements"
+        Column         |           Type           | Collation | Nullable |      Default      
+-----------------------+--------------------------+-----------+----------+-------------------
+ id                    | uuid                     |           | not null | gen_random_uuid()
+ workspace_id          | uuid                     |           | not null | 
+ item_id               | uuid                     |           | not null | 
+ location_id           | uuid                     |           | not null | 
+ lot_id                | uuid                     |           | not null | 
+ kind                  | text                     |           | not null | 
+ quantity              | numeric(14,3)            |           | not null | 
+ unit_cost             | numeric(14,4)            |           | not null | 
+ sale_price            | numeric(14,2)            |           | not null | 0
+ source_id             | uuid                     |           |          | 
+ actor_id              | uuid                     |           | not null | 
+ created_at            | timestamp with time zone |           | not null | now()
+ inventory_movement_id | uuid                     |           |          | 
+Indexes:
+    "movements_pkey" PRIMARY KEY, btree (id)
+    "movements_workspace_id_item_id_location_id_lot_id_idx" btree (workspace_id, item_id, location_id, lot_id)
+    "reception_lot_location" btree (workspace_id, lot_id, location_id)
+Check constraints:
+    "movements_kind_check" CHECK (kind = ANY (ARRAY['receipt'::text, 'transfer_out'::text, 'transfer_in'::text, 'included'::text, 'sale'::text, 'waste'::text, 'count'::text]))
+    "movements_quantity_check" CHECK (quantity <> 0::numeric)
+Foreign-key constraints:
+    "movements_actor_id_fkey" FOREIGN KEY (actor_id) REFERENCES admins(id)
+    "movements_inventory_movement_id_fkey" FOREIGN KEY (inventory_movement_id) REFERENCES inventory_movements(id)
+    "movements_item_id_fkey" FOREIGN KEY (item_id) REFERENCES clinic_reception.items(id)
+    "movements_location_id_fkey" FOREIGN KEY (location_id) REFERENCES clinic_reception.locations(id)
+    "movements_lot_id_fkey" FOREIGN KEY (lot_id) REFERENCES clinic_reception.lots(id)
+    "movements_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES clinic_reception.workspaces(id)
+Policies (row security enabled): (none)
+Triggers:
+    reception_stock_bridge AFTER INSERT ON clinic_reception.movements FOR EACH ROW EXECUTE FUNCTION clinic_reception.mirror_stock()
+
+
+######## \d clinic_reception.lots
+                             Table "clinic_reception.lots"
+      Column      |           Type           | Collation | Nullable |      Default      
+------------------+--------------------------+-----------+----------+-------------------
+ id               | uuid                     |           | not null | gen_random_uuid()
+ workspace_id     | uuid                     |           | not null | 
+ item_id          | uuid                     |           | not null | 
+ purchase_line_id | uuid                     |           |          | 
+ number           | text                     |           | not null | ''::text
+ expiry_date      | date                     |           |          | 
+ unit_cost        | numeric(14,4)            |           | not null | 
+ inventory_lot_id | uuid                     |           |          | 
+ received_at      | timestamp with time zone |           | not null | now()
+Indexes:
+    "lots_pkey" PRIMARY KEY, btree (id)
+    "reception_live_lot_map" UNIQUE, btree (workspace_id, inventory_lot_id) WHERE inventory_lot_id IS NOT NULL
+Check constraints:
+    "lots_unit_cost_check" CHECK (unit_cost >= 0::numeric)
+Foreign-key constraints:
+    "lots_item_id_fkey" FOREIGN KEY (item_id) REFERENCES clinic_reception.items(id)
+    "lots_purchase_line_id_fkey" FOREIGN KEY (purchase_line_id) REFERENCES clinic_reception.purchase_lines(id)
+    "lots_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES clinic_reception.workspaces(id)
+Referenced by:
+    TABLE "clinic_reception.counts" CONSTRAINT "counts_lot_id_fkey" FOREIGN KEY (lot_id) REFERENCES clinic_reception.lots(id)
+    TABLE "clinic_reception.movements" CONSTRAINT "movements_lot_id_fkey" FOREIGN KEY (lot_id) REFERENCES clinic_reception.lots(id)
+Policies (row security enabled): (none)
+
+# exit 0 at 2026-11-22T23:19:07Z
