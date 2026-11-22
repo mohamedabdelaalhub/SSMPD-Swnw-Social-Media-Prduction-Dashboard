@@ -28,6 +28,9 @@ const assert = require("node:assert/strict");
   // hand-off wording: owner-approved variants, stable per conversation, after-hours wording outside 08:00-24:00 Cairo
   const noon = new Date("2026-11-22T10:00:00Z"), night = new Date("2026-11-22T02:00:00Z"); // 12:00 and 04:00 Cairo (UTC+2)
   assert(f.clinicOpen(noon) && !f.clinicOpen(night));
+  const nine = new Date("2026-11-22T07:00:00Z"), ten = new Date("2026-11-22T08:00:00Z"), lateNight = new Date("2026-11-22T21:59:00Z"); // 09:00, 10:00, 23:59 Cairo
+  assert(!f.clinicOpen(nine) && f.clinicOpen(ten) && f.clinicOpen(lateNight), "opening hours are 10:00-24:00 Cairo");
+  assert(f.HANDOFF_AFTER_HOURS.includes("الساعة 10"));
   const seen = new Set();
   for (let i = 0; i < 40; i++) seen.add(f.handoffReply({ seed: "conv-" + i, now: noon }));
   assert.deepEqual([...seen].sort(), [...f.HANDOFF_VARIANTS].sort(), "all three variants get used");
