@@ -30,7 +30,7 @@
   function errText(e) { var m = String((e && e.message) || e); var k = Object.keys(ERR).filter(function (x) { return m.indexOf(x) >= 0; })[0]; return k ? ERR[k] : "حصل خطأ: " + m; }
   function when(r) {
     var dt = new Date(r.requested_date + "T00:00:00");
-    return (isNaN(dt.getTime()) ? r.requested_date : dt.toLocaleDateString("ar-EG", { weekday: "long", day: "numeric", month: "long" })) + " · " + (r.requested_time || "");
+    return (isNaN(dt.getTime()) ? r.requested_date : dt.toLocaleDateString("ar-EG-u-nu-latn", { weekday: "long", day: "numeric", month: "long" })) + " · " + (r.requested_time || "");
   }
 
   function render(box) {

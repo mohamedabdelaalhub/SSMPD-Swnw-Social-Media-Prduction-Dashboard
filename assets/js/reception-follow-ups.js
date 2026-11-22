@@ -8,7 +8,7 @@ function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){retur
 function client(){return w.SSMPDDb&&w.SSMPDDb.client;}
 function rpc(ws,a,p){var c=client();if(!c)return Promise.reject(new Error('تعذر الاتصال'));return Promise.resolve(c.rpc('clinic_reception_follow_ups',{p_workspace:ws,p_action:a,p_payload:p||{}})).then(function(r){if(r&&r.error)throw r.error;return r.data;});}
 function toast(m,k){if(w.SSMPDToast&&w.SSMPDToast.show)w.SSMPDToast.show(m,k||'success');}
-function dayText(iso){try{return new Date(iso+'T12:00:00Z').toLocaleDateString('ar-EG',{day:'numeric',month:'numeric',year:'numeric',timeZone:'UTC'});}catch(_){return iso;}}
+function dayText(iso){try{return new Date(iso+'T12:00:00Z').toLocaleDateString('ar-EG-u-nu-latn',{day:'numeric',month:'numeric',year:'numeric',timeZone:'UTC'});}catch(_){return iso;}}
 function dueBadge(r){var n=+r.days;if(n<0)return ['late','متأخرة<br>'+(-n)+' '+(-n===1?'يوم':'أيام')];if(n===0)return ['today','النهارده'];return ['soon','بعد<br>'+n+' '+(n===1?'يوم':'أيام')];}
 var state={scope:'due',rows:[],counts:null,ws:null,ctx:null};
 function rowHtml(r){var b=dueBadge(r),open=r.status==='open';

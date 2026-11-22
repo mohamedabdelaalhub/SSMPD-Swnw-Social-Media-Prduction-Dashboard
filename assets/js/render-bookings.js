@@ -25,7 +25,7 @@
   function dateText(r) {
     if (!r.appointment_date) return "—";
     var d = new Date(r.appointment_date + "T00:00:00");
-    var ds = isNaN(d.getTime()) ? r.appointment_date : d.toLocaleDateString("ar-EG");
+    var ds = isNaN(d.getTime()) ? r.appointment_date : d.toLocaleDateString("ar-EG-u-nu-latn");
     return ds + (r.appointment_time ? " · " + r.appointment_time : "");
   }
 
@@ -134,7 +134,7 @@
       '<tr><th>مرجع الحجز</th><td>' + esc(b.booking_reference || b.official_booking_id || "—") + '</td></tr>' +
       '<tr><th>Booking Request ID</th><td style="direction:ltr;text-align:left;">' + esc(b.booking_request_id) + '</td></tr>' +
       "<tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%82%D9%86%D8%A7%D8%A9-->القناة</th><td>" + esc(b.channel || "—") + '</td></tr>' +
-      '<tr><th>آخر مزامنة</th><td>' + (b.last_synced_at ? new Date(b.last_synced_at).toLocaleString("ar-EG") : "—") + '</td></tr>' +
+      '<tr><th>آخر مزامنة</th><td>' + (b.last_synced_at ? new Date(b.last_synced_at).toLocaleString("ar-EG-u-nu-latn") : "—") + '</td></tr>' +
       '</table></div>';
     document.body.appendChild(modal);
     modal.querySelector(".modal-close").onclick = function () { modal.remove(); };

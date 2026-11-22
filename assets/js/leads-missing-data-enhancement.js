@@ -22,7 +22,7 @@
   }
   function fmtDate(iso) {
     if (!iso) return "—";
-    try { return new Date(iso).toLocaleDateString("ar-EG", { day: "2-digit", month: "2-digit", year: "numeric" }); }
+    try { return new Date(iso).toLocaleDateString("ar-EG-u-nu-latn", { day: "2-digit", month: "2-digit", year: "numeric" }); }
     catch (_) { return iso; }
   }
   function active() {

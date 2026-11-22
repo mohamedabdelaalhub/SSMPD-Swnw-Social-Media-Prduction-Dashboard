@@ -51,7 +51,7 @@ function avatar(m){
 }
 function dayLabel(sec){
  var d=new Date(sec*1000),now=new Date(),y=new Date(now.getTime()-864e5),same=function(a,b){return a.toDateString()===b.toDateString();};
- return same(d,now)?'اليوم':same(d,y)?'أمس':d.toLocaleDateString('ar-EG',{year:'numeric',month:'long',day:'numeric'});
+ return same(d,now)?'اليوم':same(d,y)?'أمس':d.toLocaleDateString('ar-EG-u-nu-latn',{year:'numeric',month:'long',day:'numeric'});
 }
 function rateRow(m){
  var src=(m.sources&&m.sources.length)?'<span class="sc-sources">المصدر: '+m.sources.map(function(x){return esc(x.title);}).join('، ')+'</span>':'';
@@ -60,7 +60,7 @@ function rateRow(m){
 function messageHtml(m,mine,prev){
  texts[m.id]=m.body;var agent=String(m.author||'').indexOf('agent:')===0;
  var sep=(!prev||new Date(prev.created*1000).toDateString()!==new Date(m.created*1000).toDateString())?'<div class="sc-day" role="separator">'+esc(dayLabel(m.created))+'</div>':'';
- return sep+'<article class="sc-message '+(mine?'mine':'')+(agent?' agent':'')+'">'+avatar(m)+'<div class="sc-msg-body"><div class="sc-msg-head"><b>'+esc(m.name)+'</b>'+copyButton(m.id)+'</div><p>'+(agent?md(m.body):esc(m.body))+'</p>'+chips(m.attachments)+(agent?rateRow(m):'')+'<small>'+esc(new Date(m.created*1000).toLocaleString('ar-EG'))+'</small></div></article>';
+ return sep+'<article class="sc-message '+(mine?'mine':'')+(agent?' agent':'')+'">'+avatar(m)+'<div class="sc-msg-body"><div class="sc-msg-head"><b>'+esc(m.name)+'</b>'+copyButton(m.id)+'</div><p>'+(agent?md(m.body):esc(m.body))+'</p>'+chips(m.attachments)+(agent?rateRow(m):'')+'<small>'+esc(new Date(m.created*1000).toLocaleString('ar-EG-u-nu-latn'))+'</small></div></article>';
 }
 async function rate(btn){
  var want=Number(btn.dataset.value),on=btn.getAttribute('aria-pressed')==='true';
@@ -342,7 +342,7 @@ async function loadBar(){
  }catch(_){bar.hidden=true;}
 }
 function table(head,rows){return '<div class="sc-table-scroll"><table><thead><tr>'+head.map(function(h){return '<th>'+esc(h)+'</th>';}).join('')+'</tr></thead><tbody>'+(rows.length?rows.map(function(r){return '<tr>'+r.map(function(c){return '<td>'+esc(c)+'</td>';}).join('')+'</tr>';}).join(''):'<tr><td colspan="'+head.length+'">لا بيانات</td></tr>')+'</tbody></table></div>';}
-function when(sec){return new Date(sec*1000).toLocaleString('ar-EG');}
+function when(sec){return new Date(sec*1000).toLocaleString('ar-EG-u-nu-latn');}
 async function ownerPanel(tab){
  tab=tab||'usage';
  try{

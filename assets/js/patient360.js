@@ -8,7 +8,7 @@
   var admin=function(){return w.SSMPDAuth&&w.SSMPDAuth.currentAdmin;};
   var manager=function(){return roles(admin()).some(function(r){return r==='super_admin'||r==='general_manager';});};
   var client=function(){if(db)return db;var c=w.SSMPD_CONFIG&&w.SSMPD_CONFIG.supabase;if(!c||!w.supabase)return null;db=w.supabase.createClient(c.url,c.anonKey,{auth:{persistSession:true,autoRefreshToken:true}});return db;};
-  var textDate=function(v){return v?new Date(v).toLocaleString('ar-EG',{year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):'غير مسجل';};
+  var textDate=function(v){return v?new Date(v).toLocaleString('ar-EG-u-nu-latn',{year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):'غير مسجل';};
   var categoryLabels={wait_time:'تأخير',communication:'تواصل',service:'خدمة',billing:'حسابات',clinical:'مخاوف صحية',other:'أخرى'};
   var typeLabels={interest:'اهتمام',unanswered_question:'سؤال دون إجابة',possible_blocker:'سبب محتمل',preference:'تفضيل',confirmed_fact:'معلومة مؤكدة',service_feedback:'ملاحظة عن الخدمة'};
   function currentView(){var v=document.getElementById('view-container');return v&&v.querySelector('[data-p360-root]')?v:null;}
