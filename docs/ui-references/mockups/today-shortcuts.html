@@ -1,0 +1,206 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>تصور: اختصارات «تشغيل اليوم» + أزرار حجوزات الوكيل</title>
+<style>
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Regular.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Bold.woff2) format("woff2");font-weight:700}
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W3.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W6.woff2) format("woff2");font-weight:700}
+*{box-sizing:border-box}
+body{margin:0;background:#E9EDF5;font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;color:#16212E;font-size:14px}
+.cap{margin:0 0 8px;font-size:12px;color:#5b6577}
+.stage{display:grid;gap:24px;padding:20px 12px;max-width:1400px;margin:0 auto}
+.phones{display:grid;grid-template-columns:repeat(3,390px);gap:24px;justify-content:center}
+.phone{width:390px;background:#F4F7FC;border-radius:28px;border:1px solid #D5DEEE;overflow:hidden;position:relative;height:844px;box-shadow:0 12px 30px rgba(15,54,157,.10)}
+.pad{padding:14px}
+.head{display:flex;align-items:center;gap:8px}.head h2{margin:0;font-size:20px;color:#0F369D;flex:1}
+.btn{font:inherit;border:1px solid #D5DEEE;background:#fff;border-radius:12px;padding:8px 14px;color:#16212E}
+.btn.pri{background:#0F369D;border-color:#0F369D;color:#fff;font-weight:700}
+.btn.sm{padding:6px 10px;font-size:13px}
+.btn.warn{color:#D0402A;border-color:#F3C7BF}
+.date{display:flex;gap:8px;margin-top:10px}.date .btn{flex:0 0 44px;text-align:center}.date .d{flex:1;text-align:center;font-weight:700;color:#0F369D}
+.in{border:1px solid #D5DEEE;background:#fff;border-radius:12px;padding:10px 12px;color:#8a93a3;margin-top:10px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.chips{display:flex;gap:6px;margin-top:10px;overflow:hidden}
+.chip{white-space:nowrap;border:1px solid #D5DEEE;border-radius:99px;padding:6px 12px;background:#fff;font-size:13px}
+.chip b{font-size:16px;margin-inline-start:4px}.chip.on{background:#0F369D;color:#fff;border-color:#0F369D}.chip .o{color:#F15A22}
+/* NEW: shortcuts */
+.sc{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}
+.tile{position:relative;background:#fff;border:1px solid #D5DEEE;border-radius:14px;padding:9px 10px;display:grid;gap:2px;text-align:start;font:inherit;color:#16212E;min-height:64px}
+.tile .n{font-size:20px;font-weight:700;color:#0F369D;line-height:1.1}
+.tile .l{font-size:12px;color:#3B4658;line-height:1.35}
+.tile.att{border-color:#F15A22;background:#FFF6F1}.tile.att .n{color:#F15A22}
+.tile.on{border-color:#0F369D;box-shadow:0 0 0 2px #0F369D inset}
+.dot{position:absolute;top:8px;left:8px;width:8px;height:8px;border-radius:99px;background:#F15A22}
+.new{display:inline-block;font-size:10px;background:#0F369D;color:#fff;border-radius:6px;padding:1px 6px;margin-inline-start:4px;vertical-align:middle}
+.board{margin-top:12px;display:grid;gap:8px}
+.row{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #E3E8F2;border-radius:14px;padding:10px 12px}
+.row .t{direction:ltr;font-weight:700;color:#0F369D;width:44px;text-align:center}.row .nm{flex:1;font-weight:700}.row .st{font-size:12px;color:#5b6577}
+.dim{opacity:.35}
+/* sheet */
+.veil{position:absolute;inset:0;background:rgba(22,33,46,.38)}
+.sheet{position:absolute;inset-inline:0;bottom:0;background:#fff;border-radius:22px 22px 0 0;padding:10px 14px 14px;display:grid;gap:10px;max-height:88%;overflow:hidden}
+.grab{width:44px;height:5px;border-radius:9px;background:#D5DEEE;margin:0 auto}
+.sh{display:flex;align-items:center;gap:8px}.sh h3{margin:0;font-size:17px;flex:1}.x{width:32px;height:32px;border-radius:99px;border:1px solid #D5DEEE;background:#fff;font:inherit}
+.tabs{display:flex;gap:6px}.tab{font-size:12px;border:1px solid #D5DEEE;border-radius:99px;padding:5px 10px;background:#fff}.tab.on{background:#16212E;color:#fff;border-color:#16212E}
+.bk{border:1px solid #E3E8F2;border-radius:14px;padding:10px 12px;display:grid;gap:8px}
+.bk .top{display:flex;align-items:center;gap:8px}.bk .tm{direction:ltr;font-weight:700;font-size:18px;color:#0F369D}
+.src{font-size:11px;border-radius:99px;padding:2px 8px;font-weight:700}
+.src.wa{background:#E6F4EC;color:#2F7D5C}.src.web{background:#E8EEFB;color:#0F369D}.src.pt{background:#F1ECFA;color:#5B3FA0}
+.stc{font-size:11px;border-radius:99px;padding:2px 8px;background:#F1F4F8;color:#3B4658;margin-inline-start:auto}
+.stc.no{background:#FFF3E9;color:#8A3A12}
+.who{display:grid;gap:2px}.who b{font-size:15px}.who span{font-size:12px;color:#5b6577}
+.acts{display:flex;gap:6px;flex-wrap:wrap}.acts .btn{flex:0 0 auto}
+.tries{font-size:12px;color:#8A3A12;background:#FFF3E9;border-radius:8px;padding:4px 8px}
+.test{border-style:dashed;border-color:#F3C7BF;background:#FFFBFA}
+.testtag{font-size:11px;background:#FDE7E3;color:#D0402A;border-radius:99px;padding:2px 8px;font-weight:700}
+.menu{position:absolute;inset-inline-start:24px;bottom:150px;width:236px;background:#fff;border:1px solid #D5DEEE;border-radius:14px;box-shadow:0 16px 40px rgba(22,33,46,.22);padding:6px;display:grid}
+.menu button{font:inherit;text-align:start;background:none;border:0;padding:10px 12px;border-radius:10px;color:#16212E}
+.menu button.r{color:#D0402A}.menu hr{border:0;border-top:1px solid #EEF1F6;margin:4px 0}
+.menu small{display:block;font-size:11px;color:#8a93a3}
+.reasons{display:flex;flex-wrap:wrap;gap:6px}.reason{font-size:13px;border:1px solid #D5DEEE;border-radius:99px;padding:6px 12px}.reason.on{background:#0F369D;color:#fff;border-color:#0F369D}
+.ta{border:1px solid #D5DEEE;border-radius:12px;padding:10px 12px;color:#8a93a3;min-height:56px}
+.note{font-size:12px;background:#FFF3E9;color:#8A3A12;border-radius:10px;padding:8px 12px;margin:0;line-height:1.7}
+.ok{font-size:12px;background:#E6F4EC;color:#2F7D5C;border-radius:10px;padding:8px 12px;margin:0;line-height:1.7}
+.foot{display:flex;gap:8px}.foot .btn{flex:1}
+/* desktop */
+.desk{width:1360px;margin:0 auto;background:#F4F7FC;border:1px solid #D5DEEE;border-radius:20px;overflow:hidden;position:relative;height:760px}
+.desk .wrap{padding:18px 22px;display:grid;gap:12px;width:880px}
+.desk .tools{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px}
+.desk .sc{grid-template-columns:repeat(6,minmax(0,1fr));margin-top:0}
+.drawer{position:absolute;top:0;bottom:0;left:0;width:460px;background:#fff;border-inline-start:1px solid #D5DEEE;box-shadow:-12px 0 30px rgba(15,54,157,.08);padding:16px;display:grid;gap:10px;align-content:start}
+body.m .desk-sec,body.m .legend{display:none}body.d .phones{display:none}
+.legend{max-width:1240px;margin:0 auto;font-size:13px;color:#3B4658;line-height:1.9;background:#fff;border:1px solid #D5DEEE;border-radius:16px;padding:14px 18px}
+.legend b{color:#0F369D}
+</style></head><body><script>document.body.className=(location.hash||"").slice(1)</script><div class="stage">
+
+<div class="phones">
+<!-- 1: top of page with the new shortcut tiles -->
+<section><p class="cap">١ — أول الصفحة: مربعات جديدة تحت الفلاتر على طول (بيانات تجريبية)</p>
+<div class="phone"><div class="pad">
+ <div class="head"><h2>تشغيل اليوم</h2><button class="btn pri">حجز جديد</button><button class="btn">⋯</button></div>
+ <div class="date"><button class="btn">→</button><div class="btn d">النهارده · الأحد 22 نوفمبر</div><button class="btn">←</button></div>
+ <div class="in">اسم المريض أو رقم الملف أو التليفون أو الدكتور</div>
+ <div class="two"><div class="in" style="color:#16212E">كل الأطباء ⌄</div><div class="in" style="color:#16212E">كل الحالات ⌄</div></div>
+ <div class="chips"><span class="chip on">الكل<b>31</b></span><span class="chip">الحجوزات<b>13</b></span><span class="chip">متأخر<b class="o">12</b></span><span class="chip">في الانتظار<b>4</b></span></div>
+ <div class="sc">
+  <button class="tile"><span class="n">7</span><span class="l">الأطباء النهارده</span></button>
+  <button class="tile"><span class="n">4</span><span class="l">الغرف والطابور<br>منتظرين</span></button>
+  <button class="tile att"><i class="dot"></i><span class="n">3</span><span class="l">حجوزات الوكيل والموقع والبوابة</span></button>
+  <button class="tile"><span class="n">0</span><span class="l">مكالمات تحتاج متابعة</span></button>
+  <button class="tile att"><span class="n">183</span><span class="l">اتصال الوكيل<br>رسالة لم تُسلّم</span></button>
+  <button class="tile"><span class="n">2</span><span class="l">إدارة الغرف<br>غرفة</span></button>
+ </div>
+ <div class="board">
+  <div class="row"><span class="t">6:25</span><span class="nm">سارة تجريبية</span><span class="st">متأخر 276 د</span></div>
+  <div class="row"><span class="t">7:00</span><span class="nm">منى تجريبية</span><span class="st">متبقي 150</span></div>
+  <div class="row"><span class="t">7:20</span><span class="nm">أحمد تجريبي</span><span class="st">تم التحصيل ✓</span></div>
+  <div class="row"><span class="t">7:30</span><span class="nm">ليلى تجريبية</span><span class="st">ملغي</span></div>
+ </div>
+ <p class="note" style="margin-top:10px">المربع البرتقالي = فيه حاجة محتاجة تتعمل (حجز لسه ماتسجلش وصوله، أو رسايل ماوصلتش). الأقسام دي مش هتبقى تحت الصفحة خالص تاني — كل مربع بيفتح تفاصيله فوق الصفحة.</p>
+</div></div></section>
+
+<!-- 2: sheet for agent / website / portal bookings -->
+<section><p class="cap">٢ — دوست «حجوزات الوكيل والموقع والبوابة»: تفتح من تحت، وكل حجز ليه أزراره</p>
+<div class="phone"><div class="pad dim">
+ <div class="head"><h2>تشغيل اليوم</h2><button class="btn pri">حجز جديد</button></div>
+ <div class="sc"><div class="tile"><span class="n">7</span></div><div class="tile"><span class="n">4</span></div><div class="tile on"><span class="n">3</span></div></div>
+</div><div class="veil"></div>
+<div class="sheet">
+ <div class="grab"></div>
+ <div class="sh"><h3>حجوزات الوكيل والموقع والبوابة <span style="color:#8a93a3;font-size:13px">(3)</span></h3><button class="x">✕</button></div>
+ <div class="tabs"><span class="tab on">الكل 3</span><span class="tab">محتاج تسجيل 2</span><span class="tab">اتسجّل 1</span></div>
+ <div class="bk">
+  <div class="top"><span class="tm">10:00</span><span class="src wa">واتساب</span><span class="stc no">مردّش ×1</span></div>
+  <div class="who"><b>هبة تجريبية</b><span>د. جلدية تجريبية · <bdi dir="ltr">01000000000</bdi></span></div>
+  <div class="tries">آخر محاولة اتصال: 10:15 — منار</div>
+  <div class="acts"><button class="btn pri sm">سجّل وصوله</button><button class="btn sm">مردّش</button><button class="btn sm">تعديل الميعاد</button><button class="btn sm">⋯ المزيد</button></div>
+ </div>
+ <div class="bk">
+  <div class="top"><span class="tm">12:30</span><span class="src web">الموقع</span><span class="stc">مؤكد</span></div>
+  <div class="who"><b>كريم تجريبي</b><span>د. أسنان تجريبي · <bdi dir="ltr">01000000000</bdi></span></div>
+  <div class="acts"><button class="btn pri sm">سجّل وصوله</button><button class="btn sm">مردّش</button><button class="btn sm">تعديل الميعاد</button><button class="btn sm">⋯ المزيد</button></div>
+ </div>
+ <div class="bk test">
+  <div class="top"><span class="tm">23:00</span><span class="src pt">البوابة</span><span class="testtag">شكله حجز تجريبي</span></div>
+  <div class="who"><b>حجز تجريبي</b><span>د. باطنة تجريبي · <bdi dir="ltr">01000000000</bdi></span></div>
+  <div class="acts"><button class="btn warn sm">احذف الحجز التجريبي</button><button class="btn sm">مش تجريبي</button></div>
+ </div>
+</div>
+<div class="menu" style="bottom:150px">
+ <button>لم يحضر<small>بيتسجّل «لم يحضر» ويطلع من الطابور</small></button>
+ <button class="r">إلغاء الحجز…<small>لازم سبب</small></button>
+ <hr><button class="r">حجز تجريبي – احذف<small>للمديرين بس · بيتسجّل مين حذفه</small></button>
+</div>
+</div></section>
+
+<!-- 3: cancel with reason -->
+<section><p class="cap">٣ — «إلغاء الحجز»: سبب إجباري، ونفس سجل الحجوزات العادية</p>
+<div class="phone"><div class="pad dim">
+ <div class="head"><h2>تشغيل اليوم</h2></div>
+</div><div class="veil"></div>
+<div class="sheet">
+ <div class="grab"></div>
+ <div class="sh"><h3>إلغاء الحجز — هبة تجريبية</h3><button class="x">✕</button></div>
+ <p style="margin:0;font-size:13px;color:#5b6577"><span class="src wa">واتساب</span> الأحد 22 نوفمبر · <bdi dir="ltr">10:00</bdi> · د. جلدية تجريبية</p>
+ <div style="font-size:13px;color:#3B4658">السبب</div>
+ <div class="reasons"><span class="reason on">المريض اعتذر</span><span class="reason">مردّش أكتر من مرة</span><span class="reason">الدكتور مش موجود</span><span class="reason">حجز مكرر</span><span class="reason">أخرى</span></div>
+ <div class="ta">ملاحظة (اختياري) — مثلاً: هيكلمنا الأسبوع الجاي</div>
+ <p class="note">الحجز ده جاي من مسا عن طريق الوكيل. الإلغاء هنا بيتسجّل في الداشبورد وبيشيله من «تشغيل اليوم» — ولازم يتلغي على مسا كمان (هيظهر تنبيه «اتلغى عندنا ولسه شغال على مسا» لحد ما يتلغي هناك).</p>
+ <p class="ok">بيتسجّل: مين لغاه، امتى، والسبب — زي أي حجز عادي.</p>
+ <div class="foot"><button class="btn pri" style="background:#D0402A;border-color:#D0402A">إلغاء الحجز</button><button class="btn">رجوع</button></div>
+ <div style="height:6px"></div>
+ <div class="sh"><h3 style="font-size:15px">تعديل الميعاد</h3></div>
+ <div class="two"><div class="in" style="color:#16212E;direction:ltr;text-align:right;margin:0">2026-11-23</div><div class="in" style="color:#16212E;margin:0">أول ميعاد فاضي: 12:20 ⌄</div></div>
+ <p class="cap" style="margin:0">نفس شاشة تعديل الميعاد العادية (المواعيد المتاحة + «حجز بميعاد يدوي»).</p>
+</div>
+</div></section>
+</div>
+
+<!-- desktop -->
+<section class="desk-sec"><p class="cap" style="text-align:center">كمبيوتر — نفس المربعات في سطر واحد، والتفاصيل تفتح في لوحة جانبية والجدول باين جنبها</p>
+<div class="desk"><div class="wrap">
+ <div class="head"><h2>تشغيل اليوم</h2><button class="btn">→</button><div class="btn" style="font-weight:700;color:#0F369D">النهارده · الأحد 22 نوفمبر</div><button class="btn">←</button><button class="btn pri">حجز جديد</button><button class="btn">⋯</button></div>
+ <div class="tools"><div class="in" style="margin:0">اسم المريض أو رقم الملف أو التليفون أو الدكتور</div><div class="in" style="margin:0;color:#16212E">كل الأطباء ⌄</div><div class="in" style="margin:0;color:#16212E">كل الحالات ⌄</div></div>
+ <div class="chips" style="margin:0"><span class="chip on">الكل<b>31</b></span><span class="chip">الحجوزات<b>13</b></span><span class="chip">متأخر<b class="o">12</b></span><span class="chip">في الانتظار<b>4</b></span><span class="chip">بيتكشف<b>2</b></span><span class="chip">خلص<b>9</b></span></div>
+ <div class="sc">
+  <button class="tile"><span class="n">7</span><span class="l">الأطباء النهارده</span></button>
+  <button class="tile"><span class="n">4</span><span class="l">الغرف والطابور · منتظرين</span></button>
+  <button class="tile att on"><i class="dot"></i><span class="n">3</span><span class="l">حجوزات الوكيل والموقع والبوابة</span></button>
+  <button class="tile"><span class="n">0</span><span class="l">مكالمات تحتاج متابعة</span></button>
+  <button class="tile att"><span class="n">183</span><span class="l">اتصال الوكيل · رسالة متأخرة</span></button>
+  <button class="tile"><span class="n">2</span><span class="l">إدارة الغرف · غرفة</span></button>
+ </div>
+ <div class="board" style="margin:0">
+  <div class="row"><span class="t">6:25</span><span class="nm">سارة تجريبية</span><span class="st">د. جلدية تجريبية · متأخر 276 د</span></div>
+  <div class="row"><span class="t">7:00</span><span class="nm">منى تجريبية</span><span class="st">د. أسنان تجريبي · متبقي 150</span></div>
+  <div class="row"><span class="t">7:20</span><span class="nm">أحمد تجريبي</span><span class="st">د. باطنة تجريبي · تم التحصيل ✓</span></div>
+  <div class="row"><span class="t">7:30</span><span class="nm">ليلى تجريبية</span><span class="st">د. جلدية تجريبية · ملغي</span></div>
+  <div class="row"><span class="t">8:00</span><span class="nm">يوسف تجريبي</span><span class="st">د. أسنان تجريبي · قادم</span></div>
+ </div>
+</div>
+<aside class="drawer">
+ <div class="sh"><h3>حجوزات الوكيل والموقع والبوابة <span style="color:#8a93a3;font-size:13px">(3)</span></h3><button class="x">✕</button></div>
+ <div class="tabs"><span class="tab on">الكل 3</span><span class="tab">محتاج تسجيل 2</span><span class="tab">اتسجّل 1</span></div>
+ <div class="bk">
+  <div class="top"><span class="tm">10:00</span><span class="src wa">واتساب</span><span class="stc no">مردّش ×1</span></div>
+  <div class="who"><b>هبة تجريبية</b><span>د. جلدية تجريبية · <bdi dir="ltr">01000000000</bdi></span></div>
+  <div class="acts"><button class="btn pri sm">سجّل وصوله</button><button class="btn sm">مردّش</button><button class="btn sm">تعديل الميعاد</button><button class="btn sm">لم يحضر</button><button class="btn warn sm">إلغاء…</button></div>
+ </div>
+ <div class="bk">
+  <div class="top"><span class="tm">12:30</span><span class="src web">الموقع</span><span class="stc">اتسجّل ✓ · رقم 14</span></div>
+  <div class="who"><b>كريم تجريبي</b><span>د. أسنان تجريبي · <bdi dir="ltr">01000000000</bdi></span></div>
+  <div class="acts"><button class="btn sm">افتح الحجز</button></div>
+ </div>
+ <div class="bk test">
+  <div class="top"><span class="tm">23:00</span><span class="src pt">البوابة</span><span class="testtag">شكله حجز تجريبي</span></div>
+  <div class="who"><b>حجز تجريبي</b><span>د. باطنة تجريبي · <bdi dir="ltr">01000000000</bdi></span></div>
+  <div class="acts"><button class="btn warn sm">احذف الحجز التجريبي</button><button class="btn sm">مش تجريبي</button></div>
+ </div>
+</aside></div></section>
+
+<div class="legend">
+<b>المربعات فوق:</b> الأطباء · الغرف والطابور (مع «نادِ التالي») · حجوزات الوكيل والموقع والبوابة · مكالمات تحتاج متابعة · اتصال الوكيل · إدارة الغرف (للمسؤول بس). كل مربع عليه عدد، والبرتقالي يعني فيه حاجة مستنياك. الأقسام دي بتتشال من آخر الصفحة.<br>
+<b>أزرار كل حجز:</b> سجّل وصوله · مردّش (بيتسجّل محاولة اتصال بالوقت واسم الموظف، وبيبان «مردّش ×2») · تعديل الميعاد · لم يحضر · إلغاء الحجز (سبب إجباري). كله بنفس حالات وسجل الحجوزات العادية، وعلى كل حجز مصدره: واتساب / الموقع / البوابة.<br>
+<b>الحجوزات التجريبية:</b> اللي فيها «تجربة/تجريبي/اختبار» أو الرقم 01000000000 بيظهر عليها «شكله حجز تجريبي» وزرار «احذف الحجز التجريبي» للمديرين بس (بيتسجّل مين حذفه)، أو «مش تجريبي» لو الاسم حقيقي.
+</div>
+</div></body></html>
