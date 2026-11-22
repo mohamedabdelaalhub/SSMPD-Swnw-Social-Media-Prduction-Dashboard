@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1893,
-    "labels": 1386,
-    "files": 140,
-    "groups": 1490
+    "definitions": 1894,
+    "labels": 1387,
+    "files": 141,
+    "groups": 1491
   },
   "fields": [
     {
@@ -11575,6 +11575,16 @@
       "tab": "reception_services",
       "article": "requests",
       "text_sha256": "80a0c51a0ba10ff7f4fe6f627b68c4e009f932e1abdff544c26e792f5f0e9e49"
+    },
+    {
+      "file": "reception-service-later.js",
+      "label": "الخدمة (إجباري)",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "reception-booking-service-later",
+      "text_sha256": "47edac847c3c7464f6ef534867908968dbb79e7fb3e04586415c8586959bda4f"
     },
     {
       "file": "reception-service-orders.js",

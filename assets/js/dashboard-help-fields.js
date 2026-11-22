@@ -13206,6 +13206,19 @@
       "reviewed": true
     },
     {
+      "title": "الخدمة (إجباري)",
+      "labels": [
+        "الخدمة (إجباري)"
+      ],
+      "text": "الحجز ده من غير خدمة — اختار الخدمة اللي المريض قررها من خدمات قسم الدكتور. الحضور مش بيتسجل غير بعد الاختيار.",
+      "article": "reception-booking-service-later",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "الطلب",
       "labels": [
         "الطلب"
@@ -22064,9 +22077,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1893,
-    "labels": 1386,
-    "files": 140,
-    "groups": 1490
+    "definitions": 1894,
+    "labels": 1387,
+    "files": 141,
+    "groups": 1491
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
