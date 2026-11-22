@@ -26,7 +26,7 @@ import { makeKitStore } from "./kit-store.ts";
 //        Instinct human voice-over (narrator). The voice-over worker on swnw-vps e-mails it and stores the MP3;
 //        voice "auto" alternates male/female job by job. Scripts only: 8+ digits in a row (phone / ID) is refused.
 //   POST ?op=vo_fetch&job_id=<uuid>                              -> MP3 bytes when done (X-VO-Voice header), else
-//        {ok, status: queued|leased|sent|timeout|failed, error?}. Not done 15 min after vo_submit = "timeout":
+//        {ok, status: queued|leased|sent|timeout|failed, error?}. Not done 30 min after vo_submit = "timeout":
 //        then use op=tts as before.
 //   POST ?op=download&bucket=video-inputs|content-designs&path=<p>  -> file bytes
 //   POST ?op=stock                            {q,type?,orientation?,brand,content_id?} -> Pixabay hits

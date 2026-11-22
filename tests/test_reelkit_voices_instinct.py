@@ -26,7 +26,7 @@ def gateway(answers):
 
 class InstinctTests(unittest.TestCase):
     def setUp(self):
-        V._instinct_tried.clear(); V.VO.update(engine="instinct", voice="auto", energy="moderate", notes="", timeout=900, interval=20)
+        V._instinct_tried.clear(); V.VO.update(engine="instinct", voice="auto", energy="moderate", notes="", timeout=1800, interval=20)
         self.el = []
         V.speak_direct = lambda voice, text, out: (self.el.append(("direct", voice)) or None)
         V.speak_gateway = lambda voice, text, out: (self.el.append(("gateway", voice)) or {"chars": list(text), "start": [0] * len(text), "end": [0] * len(text), "source": "el"})
@@ -54,8 +54,8 @@ class InstinctTests(unittest.TestCase):
     def test_timeout_falls_back_to_elevenlabs(self):
         r, calls, c = self.run_speak([])  # always "sent"
         self.assertEqual(r["source"], "el"); self.assertEqual(self.el, [("direct", "narrator"), ("gateway", "narrator")])
-        self.assertGreaterEqual(c.t, 900); self.assertLessEqual(c.t, 920)
-        self.assertEqual(len([x for x in calls if x[0] == "vo_fetch"]), 45)
+        self.assertGreaterEqual(c.t, 1800); self.assertLessEqual(c.t, 1820)
+        self.assertEqual(len([x for x in calls if x[0] == "vo_fetch"]), 90)
 
     def test_server_timeout_or_failure_falls_back_at_once(self):
         for st in ("timeout", "failed"):

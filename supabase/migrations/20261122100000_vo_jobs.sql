@@ -6,7 +6,7 @@
 --   number or national ID (8+ digits in a row, the center's own two numbers excepted). Never patient data.
 -- * Every function is SECURITY DEFINER, EXECUTE for service_role only (the two edge functions); no table access for
 --   anon/authenticated. Nothing here is visible in the dashboard.
--- * A job not done 15 minutes after it was asked for becomes «timeout» (the reel task has already fallen back by then).
+-- * A job not done 30 minutes after it was asked for becomes «timeout» (the reel task has already fallen back by then).
 --   Audio older than 7 days is dropped.
 -- Rollback: supabase/rollbacks/20261122100000_vo_jobs.rollback.sql
 begin;
@@ -46,12 +46,12 @@ language sql immutable set search_path = pg_catalog as $$
            '([0-9])[[:space:].-]+(?=[0-9])', '\1', 'g') ~ '[0-9]{8,}'
 $$;
 
--- Lazy clean-up, run by every call below: 15-minute timeout, stale leases back to the queue, old audio dropped.
+-- Lazy clean-up, run by every call below: 30-minute timeout, stale leases back to the queue, old audio dropped.
 create or replace function ops_private.vo_sweep() returns void
 language plpgsql security definer set search_path = pg_catalog, ops_private as $$
 begin
-  update ops_private.vo_jobs set status = 'timeout', error = coalesce(error, 'no voice within 15 minutes'), updated_at = now()
-   where status in ('queued', 'leased', 'sent') and created_at < now() - interval '15 minutes';
+  update ops_private.vo_jobs set status = 'timeout', error = coalesce(error, 'no voice within 30 minutes'), updated_at = now()
+   where status in ('queued', 'leased', 'sent') and created_at < now() - interval '30 minutes';
   update ops_private.vo_jobs set status = case when attempts >= 3 then 'failed' else 'queued' end,
          error = case when attempts >= 3 then 'worker lease expired 3 times' else error end, worker = null, updated_at = now()
    where status = 'leased' and leased_at < now() - interval '5 minutes';

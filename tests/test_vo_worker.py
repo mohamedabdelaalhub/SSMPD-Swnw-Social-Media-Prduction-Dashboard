@@ -45,7 +45,7 @@ class WorkerTests(unittest.TestCase):
     def test_db_job_times_out_after_15_minutes(self):
         self.vo.pull_db(); self.vo.send_new()
         p = os.path.join(self.base, "queue", "db-11111111-1111-4111-8111-111111111111.json")
-        j = json.load(open(p)); j["taken_at"] -= 16 * 60; self.vo.save(p, j)
+        j = json.load(open(p)); j["taken_at"] -= 31 * 60; self.vo.save(p, j)
         self.vo.report_db()
         self.assertEqual([x for x in self.calls if x[0] == "fail"][0][1]["reason"], "timeout")
         self.assertTrue(os.path.exists(os.path.join(self.base, "done", os.path.basename(p))))

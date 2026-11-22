@@ -1,5 +1,5 @@
 // Instinct voice-over job queue (supabase/migrations/20261122100000_vo_jobs.sql): submit guards, worker lease/sent/done/fail,
-// 15-minute timeout, stale-lease requeue, permissions (service_role only).
+// 30-minute timeout, stale-lease requeue, permissions (service_role only).
 const { PGlite } = require('@electric-sql/pglite'), fs = require('fs'), assert = require('assert/strict');
 (async () => {
   const db = new PGlite();
@@ -40,10 +40,10 @@ const { PGlite } = require('@electric-sql/pglite'), fs = require('fs'), assert =
   assert.ok(Buffer.from(done.audio_base64, 'base64').equals(mp3));
   assert.equal((await api('fail', { id, error: 'x' })).ok, false, 'a done job cannot be failed');
 
-  // 15-minute timeout; a late mp3 is refused
+  // 30-minute timeout; a late mp3 is refused
   const late = await submit('نص تاني قصير.');
   await api('lease', { worker: 'vps' }); await api('sent', { id: late, voice: 'male' });
-  await db.query("update ops_private.vo_jobs set created_at = now() - interval '16 minutes' where id = $1", [late]);
+  await db.query("update ops_private.vo_jobs set created_at = now() - interval '31 minutes' where id = $1", [late]);
   assert.equal((await get(late)).status, 'timeout');
   assert.equal((await api('done', { id: late, audio_base64: mp3.toString('base64') })).reason, 'not active');
 

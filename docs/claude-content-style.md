@@ -182,7 +182,7 @@ The narrator of every reel is now a human voice-over from Instinct; ElevenLabs `
 - `scripts/reelkit/build.py` does it for you: narrator lines go to the gateway `POST ?op=vo_submit {script, voice, energy, notes?}`
   (→ `job_id`), then `POST ?op=vo_fetch&job_id=<id>` every 20 s until the MP3 comes back (usually 2–5 min). Character voices
   (doctor_male, woman_1, …) stay on ElevenLabs as documented in docs/claude-character-videos.md.
-- Building a reel without reelkit: call the same two ops yourself (same X-Run-Token), one job per reel, poll every 20 s, max 15 min.
+- Building a reel without reelkit: call the same two ops yourself (same X-Run-Token), one job per reel, poll every 20 s, max 30 min.
 - **Voice**: always `auto` — the worker alternates male / female reel by reel (owner request). Don't pick one yourself unless
   Mohamed asks for a specific reel.
 - **Energy** per reel type (storyboard `meta.vo.energy`): `calm` = medical awareness, sensitive topics, kids/elderly stories,
@@ -192,9 +192,9 @@ The narrator of every reel is now a human voice-over from Instinct; ElevenLabs `
   only the center's own 0236230005 / 01010686264 are allowed in a CTA). Brand and foreign names written in Arabic WITH the
   tashkeel to pronounce (سُونُو، دكتورة دِينَا، لِيزَر). Punctuation sets the pauses: short sentences, «،» for a small pause,
   «.» for a full stop, a new line between scenes. The gateway applies the same pronunciation list as op=tts before sending.
-- **Fallback**: if Instinct has no MP3 after 15 minutes, refuses the script, or errors, reelkit uses ElevenLabs `op=tts` for the
+- **Fallback**: if Instinct has no MP3 after 30 minutes, refuses the script, or errors, reelkit uses ElevenLabs `op=tts` for the
   narrator exactly as before (check `op=tts_quota` first, rule above). A regenerate after a failed speech check also goes to
-  ElevenLabs (we never wait 15 min twice). Say in the run report which voice each reel got («Instinct رجالي/حريمي» or
+  ElevenLabs (we never wait 30 min twice). Say in the run report which voice each reel got («Instinct رجالي/حريمي» or
   «ElevenLabs — Instinct ماردّش») — reelkit prints it.
 - Switch Instinct off for one run: `RK_NARRATOR=elevenlabs`.
 

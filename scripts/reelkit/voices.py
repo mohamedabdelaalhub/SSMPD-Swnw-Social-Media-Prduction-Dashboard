@@ -41,7 +41,7 @@ def speak(voice, text, out_mp3):
     Narrator: Instinct human voice-over first (VO below), once per text; then ElevenLabs as before.
     Others: direct ElevenLabs first (secret injected by the proxy); if that fails, the gateway."""
     if voice == "narrator" and VO["engine"] == "instinct" and text not in _instinct_tried:
-        _instinct_tried.add(text)  # a regenerate (speech check) of the same text goes to ElevenLabs: never wait 15 min twice
+        _instinct_tried.add(text)  # a regenerate (speech check) of the same text goes to ElevenLabs: never wait 30 min twice
         r = speak_instinct(text, out_mp3)
         if r: return r
         print("Instinct narrator unavailable -> ElevenLabs op=tts fallback")
@@ -53,7 +53,7 @@ def speak(voice, text, out_mp3):
 # the MP3 (?op=vo_fetch). voice "auto" alternates male/female reel by reel. Storyboard meta.vo overrides these
 # (e.g. {"energy": "energetic"}); RK_NARRATOR=elevenlabs switches Instinct off for a run.
 VO = {"engine": os.environ.get("RK_NARRATOR", "instinct"), "voice": "auto", "energy": "moderate", "notes": "",
-      "timeout": 15 * 60, "interval": 20}
+      "timeout": 30 * 60, "interval": 20}
 _instinct_tried = set()
 LAST_VO = {}  # what Instinct answered for the last take: {"job_id", "voice", "energy"} (for the run report)
 
@@ -79,7 +79,7 @@ def _gw(op, query="", body=None, out_path=None):
             if os.path.exists(f): os.remove(f)
 
 def speak_instinct(text, out_mp3, http=None, sleep=None, clock=None):
-    """Instinct take for the narrator -> timing dict, or None (timeout 15 min / refused / error) so the caller falls back."""
+    """Instinct take for the narrator -> timing dict, or None (timeout 30 min / refused / error) so the caller falls back."""
     http = http or _gw; sleep = sleep or __import__("time").sleep; clock = clock or __import__("time").time
     try:
         code, _, d = http("vo_submit", "", {"script": text, "voice": VO["voice"], "energy": VO["energy"], "notes": VO["notes"] or None})

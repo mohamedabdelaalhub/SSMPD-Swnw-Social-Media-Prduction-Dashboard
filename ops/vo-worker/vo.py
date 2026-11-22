@@ -7,13 +7,13 @@ Scripts only - never patient data.
 Database jobs (2026-11-22, migration 20261122100000_vo_jobs.sql): the reel task asks through the gateway (?op=vo_submit);
 with ~/vo-worker/.vo-worker-secret present (mode 600, = Edge secret VO_WORKER_SECRET) every tick leases them from the
 vo-worker edge function, writes them here as queue/db-<uuid>.json and reports them back: sent (voice + Message-ID),
-done (the mp3, base64) or fail. A database job with no mp3 15 minutes after it was taken is reported "timeout"
+done (the mp3, base64) or fail. A database job with no mp3 30 minutes after it was taken is reported "timeout"
 (the reel task has already fallen back to ElevenLabs by then). No secret file = folder jobs only, exactly as before."""
 import base64, email, email.utils, imaplib, json, os, smtplib, subprocess, sys, time, glob, urllib.request
 from email.message import EmailMessage
 BASE = os.path.expanduser("~/vo-worker"); ADDR = "swnw.voiceover@gmail.com"; TO = "ryxq6r@mail.instinct.com"
 API = os.environ.get("VO_API", "https://api.swnwclinics.com/functions/v1/vo-worker")
-DB_TIMEOUT = 15 * 60
+DB_TIMEOUT = 30 * 60  # owner 2026-11-22: wait 30 min before the fallback
 def log(*a): print(time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), *a, flush=True)
 def jobs(): return sorted(glob.glob(os.path.join(BASE, "queue", "*.json")))
 def save(p, j):
@@ -45,7 +45,7 @@ def pull_db():
                  "notes": dj.get("notes") or "", "taken_at": time.time()})
         log("db job", name)
 def report_db():
-    """Retry reports that did not reach the database, and time out database jobs with no mp3 after 15 minutes."""
+    """Retry reports that did not reach the database, and time out database jobs with no mp3 after 30 minutes."""
     if not secret(): return
     for p in jobs():
         j = json.load(open(p))
@@ -58,7 +58,7 @@ def report_db():
             r = api("sent", {"id": j["db_id"], "voice": j["voice"], "message_id": j["message_id"]})
             if r is not None: j["db_sent_reported"] = True; save(p, j)
         if time.time() - j.get("taken_at", time.time()) > DB_TIMEOUT:
-            r = api("fail", {"id": j["db_id"], "reason": "timeout", "error": "no mp3 from Instinct within 15 minutes"})
+            r = api("fail", {"id": j["db_id"], "reason": "timeout", "error": "no mp3 from Instinct within 30 minutes"})
             if r is not None: j["timeout"] = True; finish(p, j); log("db timeout", os.path.basename(p))
 
 def send_new():
