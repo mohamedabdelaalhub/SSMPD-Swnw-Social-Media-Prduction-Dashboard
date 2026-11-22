@@ -35,3 +35,6 @@
 .idi-total{display:flex;justify-content:space-between;margin-top:10px}.idi-total b{color:#0F369D;font-size:16px}
 .idi-note{font-size:12px;color:#5b6577;margin:8px 0 0}
 @media(max-width:820px){.idi-form,.idi-add{grid-template-columns:1fr 1fr}}
+.rx-sheet-back[data-rx-sheet="rvu"] .rx-sheet,.rx-sheet-back[data-rx-sheet="idi"] .rx-sheet{grid-template-columns:minmax(0,1fr)}
+.rvu,.rvu-cols>*,.rvu-detail,.rvu-svc,.idi{min-width:0}.rvu-svc,.idi{overflow-x:auto}
+.rx-sheet-back[data-rx-sheet="idi"] .rx-sheet{width:min(1000px,100%)}

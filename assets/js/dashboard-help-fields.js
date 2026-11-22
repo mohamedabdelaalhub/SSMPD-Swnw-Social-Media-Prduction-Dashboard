@@ -10345,12 +10345,138 @@
       "reviewed": true
     },
     {
+      "title": "المورد",
+      "labels": [
+        "المورد"
+      ],
+      "text": "اختر المورد المسجل صاحب الفاتورة ليرتبط الالتزام بحسابه. لا تكتب اسم مورد جديد بدل اختيار الموجود.",
+      "article": "purchases",
+      "tabs": [
+        "inventory",
+        "accounting"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "رقم فاتورة المورد",
+      "labels": [
+        "رقم فاتورة المورد"
+      ],
+      "text": "انقل رقم فاتورة أو إيصال المورد كما هو على المستند. هذا الرقم يربط تكلفة التوريد وحساب المورد ويختلف عن كود التشغيلة.",
+      "article": "purchases",
+      "tabs": [
+        "inventory",
+        "accounting"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "تاريخ الفاتورة",
+      "labels": [
+        "تاريخ الفاتورة"
+      ],
+      "text": "تاريخ فاتورة المورد زي ما هو مكتوب عليها. مينفعش يكون بعد النهارده.",
+      "article": "inventory-direct-invoice",
+      "tabs": [
+        "inventory",
+        "accounting"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "يدخل على مخزن",
+      "labels": [
+        "يدخل على مخزن"
+      ],
+      "text": "المخزن الرئيسي اللي البضاعة هتدخله (رئيسي أسنان أو رئيسي مستلزمات أو رئيسي أدوية). رصيده هو اللي بيزيد.",
+      "article": "inventory-direct-invoice",
+      "tabs": [
+        "inventory",
+        "accounting"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "رابط صورة الفاتورة (اختياري)",
+      "labels": [
+        "رابط صورة الفاتورة (اختياري)"
+      ],
+      "text": "رابط صورة أو ملف فاتورة المورد للرجوع ليه. اختياري، ومبيغيّرش المبلغ.",
+      "article": "inventory-direct-invoice",
+      "tabs": [
+        "inventory",
+        "accounting"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "الصنف",
       "labels": [
         "الصنف"
       ],
       "text": "اختر الصنف أو تعريف المستلزم المقصود من القائمة، وطابق الاسم والكود ووحدة الصرف. وجود اسم مشابه لا يعني أنه نفس الصنف أو أن ربط التسعير اكتمل.",
       "article": "supply-map",
+      "tabs": [
+        "inventory",
+        "accounting"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "عدد العبوات",
+      "labels": [
+        "عدد العبوات"
+      ],
+      "text": "عدد العلب أو الأكياس زي الفاتورة. الرصيد بيزيد بعدد العبوات × عدد القطع في العبوة.",
+      "article": "inventory-direct-invoice",
+      "tabs": [
+        "inventory",
+        "accounting"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "سعر العبوة",
+      "labels": [
+        "سعر العبوة"
+      ],
+      "text": "تكلفة العبوة الكاملة؛ يقسمها تعريف التسعير على عدد الوحدات لحساب تكلفة الوحدة. لا تضع سعر البيع هنا.",
+      "article": "supply-map",
+      "tabs": [
+        "inventory",
+        "accounting"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "رقم التشغيلة",
+      "labels": [
+        "رقم التشغيلة"
+      ],
+      "text": "انقل الكود المكتوب على العبوة إن توفر. إذا غير متاح استخدم مسار التتبع الداخلي؛ ليس رقم فاتورة المورد.",
+      "article": "batch",
+      "tabs": [
+        "inventory",
+        "accounting"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "الصلاحية",
+      "labels": [
+        "الصلاحية"
+      ],
+      "text": "حدد هل الصنف يحتاج تتبع صلاحية، أو أدخل تاريخ انتهاء الدفعة إذا كان الحقل تاريخًا. إعداد الصنف لا يغني عن بيانات انتهاء كل دفعة استلام.",
+      "article": "batch",
       "tabs": [
         "inventory",
         "accounting"
@@ -10670,34 +10796,6 @@
         "التشغيلة (اختياري)"
       ],
       "text": "اختر الدفعة الفعلية التي تخص العد أو الصرف، وراجع تاريخ انتهائها والكمية المتاحة في المكان. الاختيار التلقائي قد يستخدم الأقرب انتهاء حسب المسار.",
-      "article": "batch",
-      "tabs": [
-        "inventory",
-        "accounting"
-      ],
-      "forms": [],
-      "reviewed": true
-    },
-    {
-      "title": "رقم التشغيلة",
-      "labels": [
-        "رقم التشغيلة"
-      ],
-      "text": "انقل الكود المكتوب على العبوة إن توفر. إذا غير متاح استخدم مسار التتبع الداخلي؛ ليس رقم فاتورة المورد.",
-      "article": "batch",
-      "tabs": [
-        "inventory",
-        "accounting"
-      ],
-      "forms": [],
-      "reviewed": true
-    },
-    {
-      "title": "الصلاحية",
-      "labels": [
-        "الصلاحية"
-      ],
-      "text": "حدد هل الصنف يحتاج تتبع صلاحية، أو أدخل تاريخ انتهاء الدفعة إذا كان الحقل تاريخًا. إعداد الصنف لا يغني عن بيانات انتهاء كل دفعة استلام.",
       "article": "batch",
       "tabs": [
         "inventory",
@@ -14691,6 +14789,32 @@
       ],
       "text": "اختار الحالة الفعلية أو فلتر العرض حسب هذه الشاشة. تغيير الفلتر لا ينقل المستند لمرحلة جديدة، والحالة التنفيذية لها إجراء وصلاحية مستقلان.",
       "article": "personal",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "من مخزن",
+      "labels": [
+        "من مخزن"
+      ],
+      "text": "المخزن اللي المستلزم اتصرف منه. الأسنان من رئيسي أسنان، والبشرة والعلاج الطبيعي والكشف من فرعي مستلزمات تمريض.",
+      "article": "visit-usage-yesterday",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "تاريخ الزيارات",
+      "labels": [
+        "تاريخ الزيارات"
+      ],
+      "text": "يوم الزيارات اللي هتسجل استهلاكها. بيبقى امبارح تلقائياً، وتقدر تختار أي يوم من آخر 14 يوم.",
+      "article": "visit-usage-yesterday",
       "tabs": [
         "reception_services"
       ],
@@ -22373,9 +22497,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1918,
-    "labels": 1401,
-    "files": 145,
-    "groups": 1512
+    "definitions": 1932,
+    "labels": 1407,
+    "files": 147,
+    "groups": 1521
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();

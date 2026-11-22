@@ -1108,6 +1108,12 @@ frule('reception-services.js','الدفعة دي لأكتر من زيارة (ن�
 frule('reception-services.js','مثلًا: تحويل واحد لزيارتين — منار وابنها','ملاحظة اختيارية بتظهر على الإيصال، زي مين دفع أو إن التحويل كان لأكتر من زيارة. الملاحظة مبتغيّرش المبلغ.','reception-collect-multi')
 frule('main-treasury-count.js','مثلاً: جرد آخر اليوم','ملاحظة اختيارية على جرد الخزينة الرئيسية، زي سبب الجرد أو أي حاجة لاحظتها. الملاحظة مبتغيّرش المبلغ المعدود.','main-treasury-count')
 frule('main-treasury-count.js','نتيجة المراجعة|مثلاً: مطابقة بدون فرق','اكتب نتيجة مراجعتك لجرد الخزينة الرئيسية (مطابق أو فيه فرق واتحوّل لفروق الخزينة). المراجعة من شخص غير اللي عدّ، ومبتخصمش حاجة من حد.','main-treasury-count')
+frule('inventory-direct-invoice.js','تاريخ الفاتورة','تاريخ فاتورة المورد زي ما هو مكتوب عليها. مينفعش يكون بعد النهارده.','inventory-direct-invoice')
+frule('inventory-direct-invoice.js','يدخل على مخزن','المخزن الرئيسي اللي البضاعة هتدخله (رئيسي أسنان أو رئيسي مستلزمات أو رئيسي أدوية). رصيده هو اللي بيزيد.','inventory-direct-invoice')
+frule('inventory-direct-invoice.js','رابط صورة الفاتورة (اختياري)','رابط صورة أو ملف فاتورة المورد للرجوع ليه. اختياري، ومبيغيّرش المبلغ.','inventory-direct-invoice')
+frule('inventory-direct-invoice.js','عدد العبوات','عدد العلب أو الأكياس زي الفاتورة. الرصيد بيزيد بعدد العبوات × عدد القطع في العبوة.','inventory-direct-invoice')
+frule('reception-visit-usage.js','من مخزن','المخزن اللي المستلزم اتصرف منه. الأسنان من رئيسي أسنان، والبشرة والعلاج الطبيعي والكشف من فرعي مستلزمات تمريض.','visit-usage-yesterday')
+frule('reception-visit-usage.js','تاريخ الزيارات','يوم الزيارات اللي هتسجل استهلاكها. بيبقى امبارح تلقائياً، وتقدر تختار أي يوم من آخر 14 يوم.','visit-usage-yesterday')
 def explain(row):
  label=row['label'];tab=domain(row['file'])
  if row['file']=='contract-marketing.js' and label in contract_help:return contract_help[label],'entities'

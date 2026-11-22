@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1918,
-    "labels": 1401,
-    "files": 145,
-    "groups": 1512
+    "definitions": 1932,
+    "labels": 1407,
+    "files": 147,
+    "groups": 1521
   },
   "fields": [
     {
@@ -9093,6 +9093,106 @@
       "text_sha256": "5b59481e9c3756a057cd0b51b70a7e7944d725cf28ec160b9e78ee79d50a893d"
     },
     {
+      "file": "inventory-direct-invoice.js",
+      "label": "المورد",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "inventory",
+      "article": "purchases",
+      "text_sha256": "7d645560abaee108b2cf80de96e5c58ef6836cf210d74a26e87729a1f2b14814"
+    },
+    {
+      "file": "inventory-direct-invoice.js",
+      "label": "رقم فاتورة المورد",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "inventory",
+      "article": "purchases",
+      "text_sha256": "2a2c2692cdcd1a329e2a0c89c9d7c0f862d55beb2cff144a8a55df6956c8094d"
+    },
+    {
+      "file": "inventory-direct-invoice.js",
+      "label": "تاريخ الفاتورة",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "inventory",
+      "article": "inventory-direct-invoice",
+      "text_sha256": "6030e56e2f9942fca3c5b1cc4546245cb961e66881edb7f33727291f357eb25d"
+    },
+    {
+      "file": "inventory-direct-invoice.js",
+      "label": "يدخل على مخزن",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "inventory",
+      "article": "inventory-direct-invoice",
+      "text_sha256": "e885fea1190571014100980c52f5a1f19b8e6d983940ac2f73da834febe39f02"
+    },
+    {
+      "file": "inventory-direct-invoice.js",
+      "label": "رابط صورة الفاتورة (اختياري)",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "inventory",
+      "article": "inventory-direct-invoice",
+      "text_sha256": "219721694913ce1f033ff7e6e9623928ce0731e36466c1b7ee18ce40916c6ba6"
+    },
+    {
+      "file": "inventory-direct-invoice.js",
+      "label": "الصنف",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "inventory",
+      "article": "supply-map",
+      "text_sha256": "d7b62ce064f4fcb4219c9bddd102e417c99dc29b286530815f1f199a6d7fd314"
+    },
+    {
+      "file": "inventory-direct-invoice.js",
+      "label": "عدد العبوات",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "inventory",
+      "article": "inventory-direct-invoice",
+      "text_sha256": "5ac74e3acede4ccb2f21f7d70005f05cdff36adfc7a0652f7bc2ddd0bf5e2fb9"
+    },
+    {
+      "file": "inventory-direct-invoice.js",
+      "label": "سعر العبوة",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "inventory",
+      "article": "supply-map",
+      "text_sha256": "3785178a940de8550614d8768d3c2b1e84250b60f23434cda0b71a3ed7ae8285"
+    },
+    {
+      "file": "inventory-direct-invoice.js",
+      "label": "رقم التشغيلة",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "inventory",
+      "article": "batch",
+      "text_sha256": "08061a915329ba1536b02796d6a39d7277e7e53f51f5fea337f96d01fa79b7a3"
+    },
+    {
+      "file": "inventory-direct-invoice.js",
+      "label": "الصلاحية",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "inventory",
+      "article": "batch",
+      "text_sha256": "cf82373c06f9353b1f3a856bf642827abe5ad8f9693f7034f21f5a1966f3e179"
+    },
+    {
       "file": "inventory-patient-supplies.js",
       "label": "الصنف",
       "name": "",
@@ -13043,6 +13143,46 @@
       "tab": "reception_services",
       "article": "personal",
       "text_sha256": "0a8e1242f7cd5a7893e1222dfd049826b42b66af79a574141ddc063e925fb3f0"
+    },
+    {
+      "file": "reception-visit-usage.js",
+      "label": "المستلزم",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "supply-map",
+      "text_sha256": "d7b62ce064f4fcb4219c9bddd102e417c99dc29b286530815f1f199a6d7fd314"
+    },
+    {
+      "file": "reception-visit-usage.js",
+      "label": "من مخزن",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "visit-usage-yesterday",
+      "text_sha256": "588ce190a799f2730976f0ddabe535d06cae35ac450a4f5bcf55bdfe2eb5076c"
+    },
+    {
+      "file": "reception-visit-usage.js",
+      "label": "الكمية",
+      "name": "",
+      "kind": "aria",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "supply-map",
+      "text_sha256": "89a26556e80b2cc158b89ad8264d242d3351b45abac7977572e474c92dff7499"
+    },
+    {
+      "file": "reception-visit-usage.js",
+      "label": "تاريخ الزيارات",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "reception_services",
+      "article": "visit-usage-yesterday",
+      "text_sha256": "8aed9b80e2c94ddbda9862e69a9aef8731b16d395e8698d6a590fe8cd59bcb4f"
     },
     {
       "file": "reception-workspace.js",
