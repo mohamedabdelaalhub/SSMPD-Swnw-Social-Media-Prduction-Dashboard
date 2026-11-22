@@ -2,7 +2,7 @@
 (function () {
   "use strict";
 
-  var state = { filter: "pending", brand: "", platform: "", section: "inbox", mfilter: "all", q: "", category: "", postRef: "", open: { inbox: "", messages: "" }, info: true, sheet: false, drafts: {} };
+  var state = { filter: "pending", brand: "", platform: "", section: "inbox", mfilter: "all", q: "", category: "", postRef: "", open: { inbox: "", messages: "" }, info: true, sheet: false, drafts: {}, waTemplates: null };
   var BRANDS = { sono: "سونو", dr_dina: "د. دينا" };
   var STATUS = {
     "new": "محتاج رد", drafted: "رد مقترح", approved: "في الطريق", sending: "بيتنشر",
@@ -223,6 +223,7 @@
         pending: waiting > 0, unread: waiting, status: lastCust.status, at: c.last.sent_at, preview: (lastShown.is_page ? "أنت: " : "") + (lastShown.message || ""),
         sensitive: !!(lastCust.alert && !lastCust.alert_resolved_at), url: c.last.conversation_url,
         open24: !!lastCust.sent_at && Date.now() - new Date(lastCust.sent_at).getTime() <= WINDOW_MS,
+        bot: (c.list.filter(function (m) { return m.bot_state; }).slice(-1)[0] || {}).bot_state || "",
         search: [lastCust.sender_name].concat(c.list.map(function (m) { return m.message; })).join(" ").toLowerCase() };
     }).filter(function (it) {
       var q = state.q.trim().toLowerCase();
@@ -269,18 +270,53 @@
     else if (c.status === "ignored") foot += '<div class="cm-closed">التعليق ده اتجاهل.</div>';
     return '<div class="cm-msgs" data-cm-msgs><div class="cm-post-ref"><span class="cm-post-thumb" aria-hidden="true"></span><span><small>تعليق على بوست</small><b>' + esc(it.post) + "</b></span></div>" + withDays(items) + "</div>" + foot;
   }
+  // WhatsApp (owner 2026-11-22): the swnw-agent answers the number; staff sends are queued for it (meta-comments → outbox).
+  function botChip(it) {
+    if (it.kind !== "message" || it.platform !== "whatsapp" || !it.bot) return "";
+    return it.bot === "human" ? '<span class="cm-bot human">موظف ماسك المحادثة</span>' : '<span class="cm-bot ai">البوت شغّال</span>';
+  }
+  function whatsappFoot(it) {
+    var id = it.conv.id, back = it.bot === "human" ? '<button type="button" class="btn ghost sm" data-wa-return="' + esc(id) + '">رجّع للبوت</button>' : "";
+    if (!it.open24) {
+      var t = state.waTemplates;
+      var list = !t ? '<button type="button" class="btn sm" data-wa-load-tpl>اختار قالب معتمد</button>'
+        : t === "loading" ? '<span class="cm-hint">بيجيب القوالب…</span>'
+        : !t.length ? '<span class="cm-hint">مفيش قوالب معتمدة من غير بيانات لسه.</span>'
+        : t.map(function (x) { return '<button type="button" class="cm-tpl" data-wa-tpl="' + esc(x.name) + '" data-wa-lang="' + esc(x.language) + '"><b>' + esc(x.name) + "</b>" + (x.text ? "<span>" + esc(x.text) + "</span>" : "") + "</button>"; }).join("");
+      return '<div class="cm-closed cm-wa-closed" data-window-closed data-wa-conv="' + esc(id) + '"><p>عدّى 24 ساعة من آخر رسالة للعميل — ميتا مش بتسمح بالرد إلا بقالب معتمد.</p><div class="cm-tpls">' + list + "</div>" + (back ? '<div class="cm-composer-row">' + back + "</div>" : "") + "</div>";
+    }
+    return '<div class="cm-composer"><textarea class="cm-input" rows="2" data-draft="' + esc(it.key) + '" placeholder="اكتب رسالة واتساب…">' + esc(state.drafts[it.key] || "") + "</textarea>" +
+      '<div class="cm-composer-row"><span class="cm-hint">' + (it.bot === "human" ? "البوت ساكت في المحادثة دي — بيرجع لوحده بعد فترة من غير رد من الفريق." : "أول ما تبعت، البوت بيسكت في المحادثة دي لحد ما ترجّعه.") + "</span>" + back +
+      '<button type="button" class="btn ghost sm" data-msuggest="' + esc(id) + '">✨ اقترح رد</button>' +
+      '<button type="button" class="btn sm cm-send" data-msend="' + esc(id) + '">إرسال</button></div></div>';
+  }
+  // A queued WhatsApp command: wait (up to ~60s) for the agent to send it, then tell the person what happened.
+  function waitOutbox(id) {
+    var tries = 0;
+    return new Promise(function (resolve) {
+      (function tick() {
+        db().functions.invoke("meta-comments", { body: { action: "outbox_status", id: id } }).then(function (r) {
+          var d = r.data || {};
+          if (d.ok && ["sent", "failed", "window_closed"].indexOf(d.status) !== -1) return resolve(d);
+          if (++tries >= 20) return resolve({ status: "queued" });
+          setTimeout(tick, 3000);
+        }).catch(function () { if (++tries >= 20) resolve({ status: "queued" }); else setTimeout(tick, 3000); });
+      })();
+    });
+  }
   function messageChat(it, data) {
     var c = it.conv, items = [];
     c.list.forEach(function (m) {
       var sys = m.is_page && sysText(m.message);
       if (sys) { items.push({ at: m.sent_at, html: '<div class="cm-sys">' + esc(sys) + " · " + esc(tm(m.sent_at)) + "</div>" }); return; }
-      items.push({ at: m.sent_at, html: m.is_page ? bubble("me", m.message, m.sent_at, m.sent_by ? staffName(m.sent_by, data) : "الصفحة") : bubble("them", m.message, m.sent_at) });
+      items.push({ at: m.sent_at, html: m.is_page ? bubble("me", m.message, m.sent_at, m.sent_by ? staffName(m.sent_by, data) : it.platform === "whatsapp" ? "البوت" : "الصفحة", !m.sent_by && it.platform === "whatsapp" ? "auto" : "") : bubble("them", m.message, m.sent_at) });
     });
     var lc = it.lastCust;
     if (lc.status === "replied" && lc.reply_text && !c.list.some(function (m) { return m.is_page && new Date(m.sent_at) >= new Date(lc.sent_at); }))
       items.push({ at: lc.replied_at, html: bubble("me", lc.reply_text, lc.replied_at, lc.sent_by ? staffName(lc.sent_by, data) : "رد تلقائي", lc.sent_by ? "" : "auto") });
     var foot = lc.status === "failed" && lc.last_error ? '<div class="err-msg">' + esc(lc.last_error) + "</div>" : "";
-    if (it.platform !== "facebook" && it.platform !== "instagram") foot += '<div class="cm-closed">الرد على ' + esc(PLAT[it.platform] || it.platform) + " بيكون من التطبيق نفسه" + (it.url ? ' — <a href="' + esc(it.url) + '" target="_blank" rel="noopener">افتح المحادثة ↗</a>' : "") + ".</div>";
+    if (it.platform === "whatsapp") foot += whatsappFoot(it);
+    else if (it.platform !== "facebook" && it.platform !== "instagram") foot += '<div class="cm-closed">الرد على ' + esc(PLAT[it.platform] || it.platform) + " بيكون من التطبيق نفسه" + (it.url ? ' — <a href="' + esc(it.url) + '" target="_blank" rel="noopener">افتح المحادثة ↗</a>' : "") + ".</div>";
     else if (!it.open24) foot += '<div class="cm-closed" data-window-closed>' + WINDOW_NOTE + (it.url ? ' — <a href="' + esc(it.url) + '" target="_blank" rel="noopener">افتح المحادثة على ميتا ↗</a>' : "") + "</div>";
     else foot += '<div class="cm-composer"><textarea class="cm-input" rows="2" data-draft="' + esc(it.key) + '" placeholder="اكتب رسالة…">' + esc(state.drafts[it.key] || "") + "</textarea>" +
       '<div class="cm-composer-row"><span class="cm-hint">ميتا بتسمح بالرد خلال 24 ساعة من آخر رسالة من العميل.</span>' +
@@ -317,12 +353,12 @@
     var list = '<div class="cm-convs">' + (items.length ? items.map(function (x) { return convCard(x, x.key === openKey); }).join("") : '<p class="empty">' + (isC ? "مفيش تعليقات بالفلتر ده." : "مفيش رسايل بالفلتر ده.") + "</p>") + "</div>";
     var chat = it ? '<div class="cm-chat-head"><button type="button" class="cm-ibtn cm-back" data-cm-back aria-label="رجوع للقايمة">→</button>' + avatar(it) +
       '<span class="cm-chat-title"><b>' + esc(it.name) + "</b><small>" + esc(platLabel(it.kind, it.platform)) + " · " + esc(BRANDS[it.brand] || it.brand || "") + "</small></span>" +
-      '<span class="cm-badge st-' + esc(it.status) + '">' + esc(isC ? (STATUS[it.status] || it.status) : (MSTATUS[it.status] || it.status)) + "</span>" +
+      '<span class="cm-badge st-' + esc(it.status) + '">' + esc(isC ? (STATUS[it.status] || it.status) : (MSTATUS[it.status] || it.status)) + "</span>" + botChip(it) +
       (it.url ? '<a class="cm-ibtn" href="' + esc(it.url) + '" target="_blank" rel="noopener" title="افتح على ميتا" aria-label="افتح على ميتا">↗</a>' : "") +
       '<button type="button" class="cm-ibtn" data-cm-info aria-label="بيانات العميل" aria-pressed="' + state.info + '">ⓘ</button></div>' + (isC ? commentChat(it, data) : messageChat(it, data))
       : '<div class="cm-chat-empty"><b>اختار ' + (isC ? "تعليق" : "محادثة") + " من القايمة</b><p>هتفتح هنا زي شات واتساب.</p></div>";
     var showInfo = it && (state.info || state.sheet);
-    return (isC ? "" : '<p class="muted cm-messages-intro">رسايل ماسنجر وانستجرام دايركت. تقدر ترد من هنا خلال 24 ساعة من آخر رسالة من العميل.</p>') +
+    return (isC ? "" : '<p class="muted cm-messages-intro">رسايل ماسنجر وانستجرام دايركت وواتساب. تقدر ترد من هنا خلال 24 ساعة من آخر رسالة من العميل — وعلى واتساب بعد كده بقالب معتمد.</p>') +
       '<div class="cm-inbox' + (showInfo ? "" : " no-info") + (openKey ? " open" : "") + (state.sheet ? " sheet" : "") + '" data-cm-inbox="' + section + '">' +
       '<section class="cm-pane cm-list-pane" aria-label="المحادثات">' + head + list + "</section>" +
       '<section class="cm-pane cm-chat-pane" aria-label="المحادثة">' + chat + "</section>" +
@@ -464,9 +500,52 @@
           var d = r.data || {};
           if (r.error || !d.ok) throw new Error(d.message || d.error || "تعذر إرسال الرسالة");
           state.drafts["m:" + b.dataset.msend] = "";
+          if (d.queued) return waOutcome(d.id, b);
           if (window.SSMPDToast && window.SSMPDToast.show) window.SSMPDToast.show("اتبعتت الرسالة");
           again();
         }).catch(function (e) { b.disabled = false; b.textContent = "إرسال"; fail(e); });
+      };
+    });
+    // WhatsApp: the agent sends queued commands; wait for its answer, then redraw (realtime brings the message row).
+    var toast = function (m) { if (window.SSMPDToast && window.SSMPDToast.show) window.SSMPDToast.show(m); };
+    function waOutcome(id, b) {
+      if (b) b.textContent = "بيتبعت عن طريق الواتساب…";
+      return waitOutbox(id).then(function (d) {
+        if (d.status === "sent") toast("اتبعتت على واتساب");
+        else if (d.status === "queued") toast("الرسالة لسه في الطابور — هتظهر أول ما الوكيل يبعتها");
+        else alert(d.error || "الرسالة ما اتبعتتش");
+        again();
+      });
+    }
+    var waCmd = function (b, body, label) {
+      b.disabled = true; var old = b.textContent; b.textContent = label;
+      db().functions.invoke("meta-comments", { body: body }).then(function (r) {
+        var d = r.data || {};
+        if (r.error || !d.ok) throw new Error(d.message || d.error || "تعذر التنفيذ");
+        return waOutcome(d.id, b);
+      }).catch(function (e) { b.disabled = false; b.textContent = old; fail(e); });
+    };
+    q("[data-wa-load-tpl]").forEach(function (b) {
+      b.onclick = function () {
+        state.waTemplates = "loading"; redraw();
+        db().functions.invoke("meta-comments", { body: { action: "list_templates" } }).then(function (r) {
+          var d = r.data || {};
+          if (r.error || !d.ok) throw new Error(d.error || "تعذر جلب القوالب");
+          state.waTemplates = d.templates || [];
+        }).catch(function (e) { state.waTemplates = null; fail(e); }).then(redraw);
+      };
+    });
+    q("[data-wa-tpl]").forEach(function (b) {
+      b.onclick = function () {
+        var conv = b.closest("[data-wa-conv]").dataset.waConv;
+        if (!confirm("تأكيد: إرسال القالب «" + b.dataset.waTpl + "» للعميل على واتساب؟")) return;
+        waCmd(b, { action: "send_template", conversation_id: conv, name: b.dataset.waTpl, language: b.dataset.waLang }, "بيتبعت…");
+      };
+    });
+    q("[data-wa-return]").forEach(function (b) {
+      b.onclick = function () {
+        if (!confirm("تأكيد: رجّع البوت يرد على العميل ده؟")) return;
+        waCmd(b, { action: "return_to_bot", conversation_id: b.dataset.waReturn }, "بيرجّع البوت…");
       };
     });
     q("[data-ignore]").forEach(function (b) {

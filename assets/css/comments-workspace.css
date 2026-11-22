@@ -155,3 +155,14 @@
  .cm-wrap .cm-composer .cm-input,.cm-search input{font-size:16px}
 }
 @media (prefers-reduced-motion:reduce){.cm-conv{transition:none}}
+/* WhatsApp replies from the dashboard (owner 2026-11-22): who answers now + approved templates outside 24h */
+.cm-bot{flex:none;display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 11px;border-radius:999px;font-size:12px;white-space:nowrap}
+.cm-bot::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.cm-bot.ai{background:#E3F7F8;color:#00747C}
+.cm-bot.human{background:#FFF1E6;color:#B4540A}
+.cm-wa-closed{display:grid;gap:10px}
+.cm-wa-closed p{margin:0;font-weight:600}
+.cm-tpls{display:flex;flex-wrap:wrap;gap:8px}
+.cm-tpl{display:grid;gap:4px;text-align:start;max-width:100%;min-width:0;border:1px solid #F4D3BD;background:#fff;border-radius:12px;padding:8px 12px;font:inherit;font-size:12px;color:#16212E;cursor:pointer}
+.cm-tpl span{color:#667085;overflow-wrap:anywhere;line-height:1.7}
+@media (max-width:760px){.cm-chat-head .cm-bot{display:none}}
