@@ -284,3 +284,9 @@ Items marked **[NEW]** are not in any handoff or README.
 - Open audit queue: confirm-dialog coverage on the remaining destructive buttons; nursing / doctor_assistant views of «تشغيل اليوم»; ملفات المرضى، الزيارات والخدمات، الباكجز وأرصدة المرضى، booking modal، visit card; consistency with the finance chat's «شغلي النهارده» (help -150).
 - «وصل» exists in both reception screens; the owner has not decided to remove it.
 - Next question for the owner after SPEC A/B: which screen to audit next.
+
+## 7. Main button colour (owner, 2026-11-22) **[NEW]**
+- «ماتخلي الاورنج دا الرمادي الغامق بتاعنا ولما يهوفر عليه يديله الاورنج أشيك» (said about the reception patients-list mockup).
+- In mockups, the main row button (e.g. «حجز موعد», «افتح الزيارة», «تنفيذ») is dark grey `#525B6F` with white text.
+- On hover or keyboard focus it turns orange `#F15A22` with a soft orange shadow.
+- Whether this also applies to buttons already live (e.g. «زيارة جديدة» in the patient file) is not decided. Ask the owner before changing live screens.
