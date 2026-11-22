@@ -23,7 +23,7 @@ root.SSMPDUITitles={tabs:tabs,roles:roles,chips:chips,identity:identity,label:la
     addScript('assets/js/digital-team-chat.js');
     addScript('assets/js/digital-team-server-chat.js');
     addScript('assets/js/task-file-scan-summary.js');
-    addScript('assets/js/patient360.js');
+    addScript('assets/js/patient360.js?v=center-name-20261122-2');
     addScript('assets/js/management-navigation.js');
   });
 })();

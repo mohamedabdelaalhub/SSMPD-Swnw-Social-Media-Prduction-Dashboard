@@ -7,7 +7,7 @@ window.SSMPD_CONFIG = {
 
   updateNoticeTrial: true,
 
-  centerName: "مركز عيادات Swnw التخصصية — فرع حدائق الأهرام",
+  centerName: "مركز عيادات سونو التخصصية — فرع حدائق الأهرام",
 
   // مفاتيح Supabase — تُملأ بعد إنشاء المشروع (خطوة البنية التحتية)
   supabase: {

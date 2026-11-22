@@ -49,7 +49,7 @@
   }
   function formHtml(kind,data,patient,readOnly) {
     data=data||{};var schema=schemas[kind],prefix='ca-'+(++uid),values=Object.assign({child_name:patient.full_name,age_birth:patient.age!=null?String(patient.age):''},data);
-    var html='<div class="ca-form" data-ca-kind="'+kind+'"><h4>عيادات سونو التخصصية</h4><p>'+esc(schema.intro)+' | الأخصائية: د/ لينا الحسين</p>';
+    var html='<div class="ca-form" data-ca-kind="'+kind+'"><h4>مركز عيادات سونو التخصصية</h4><p>'+esc(schema.intro)+' | الأخصائية: د/ لينا الحسين</p>';
     if(kind==='behavior')html+='<p class="ca-hint">تُملأ بواسطة ولي الأمر/الأخصائية. ضعي علامة عند الحاجة.</p>';
     schema.groups.forEach(function(group,index){
       html+='<fieldset><legend>'+esc(group[0])+'</legend><div class="ca-fields">'+group[1].map(function(def){return field(def,values[def[0]],prefix,readOnly);}).join('')+'</div></fieldset>';
