@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>تصور: الزيارات والخدمات + ملفات المرضى</title>
+<style>
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W3.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W6.woff2) format("woff2");font-weight:600 800}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Regular.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Bold.woff2) format("woff2");font-weight:600 800}
+:root{--brand:#0F369D;--accent:#F15A22;--ink:#16212E;--muted:#667085;--line:#E6EBF3;--soft:#F3F6FB;--tint:#EAF0FF;--teal:#00B0BD;--pos:#2F7D5C;--neg:#D0402A;--gap:16px}
+*{box-sizing:border-box}html,body{margin:0}
+body{font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;color:var(--ink);background:#EEF2F8;font-size:14px}
+button,input,select{font:inherit;color:inherit}button{cursor:pointer}
+svg{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.note{max-width:1180px;margin:16px auto 0;padding:0 16px;color:var(--muted);font-size:12px}.note b{color:var(--brand)}
+.wrap{max-width:1180px;margin:12px auto 24px;padding:0 16px;display:grid;gap:var(--gap)}
+.card{background:#fff;border-radius:24px;box-shadow:0 6px 24px rgba(15,54,157,.06);padding:20px}
+.seg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;background:#fff;border-radius:18px;padding:6px;box-shadow:0 6px 24px rgba(15,54,157,.06)}
+.seg button{min-height:44px;border:0;border-radius:14px;background:none;color:var(--muted);font-weight:600;white-space:nowrap}
+.seg button.on{background:var(--brand);color:#fff}
+.view{display:none;gap:var(--gap)}.view.on{display:grid}
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--gap)}
+.tile{border:0;text-align:start;background:#fff;border-radius:20px;padding:16px;box-shadow:0 6px 24px rgba(15,54,157,.06);display:grid;gap:6px;min-width:0}
+.tile small{color:var(--muted);font-size:12px}.tile b{font-size:22px;color:var(--brand)}.tile span{font-size:12px;color:var(--muted)}
+.tile.warn b{color:#B4540A}.tile.ok b{color:var(--pos)}
+.tile:hover{outline:2px solid var(--tint)}
+.bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.search{flex:1;min-width:220px;display:flex;align-items:center;gap:8px;background:var(--soft);border-radius:14px;padding:0 12px;height:44px;color:var(--muted)}
+.search input{border:0;background:none;outline:0;flex:1;min-width:0}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chips button{min-height:36px;border-radius:12px;border:1px solid var(--line);background:#fff;padding:0 12px;font-size:12px;white-space:nowrap;color:var(--muted);display:inline-flex;gap:6px;align-items:center}
+.chips button.on{background:var(--tint);border-color:#CFDCF8;color:var(--brand);font-weight:600}
+.chips i{font-style:normal;font-size:11px}
+.period{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.period .chips button{min-height:36px}
+.btn{min-height:44px;border-radius:14px;border:1px solid var(--line);background:#fff;padding:0 16px;display:inline-flex;align-items:center;gap:8px;white-space:nowrap;font-weight:600;color:var(--brand);justify-content:center}
+.btn.main{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.sm{min-height:40px;padding:0 12px;font-size:13px}
+.btn.icon{width:44px;padding:0}
+.list{display:grid;gap:12px}
+.vcard{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;align-items:center;border:1px solid var(--line);border-radius:20px;padding:14px 16px;background:#fff;border-inline-start:4px solid var(--line)}
+.vcard.open{border-inline-start-color:var(--teal)}.vcard.wait{border-inline-start-color:#FF8800}.vcard.done{border-inline-start-color:var(--pos)}.vcard.closed{border-inline-start-color:#525B6F}
+.av{width:46px;height:46px;border-radius:50%;background:var(--tint);color:var(--brand);display:grid;place-items:center;flex:none}.av svg{width:22px;height:22px}
+.mid{display:grid;gap:6px;min-width:0}
+.top{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.top b{font-size:15px}
+.sub{font-size:12px;color:var(--muted)}
+.svc{display:flex;gap:6px;flex-wrap:wrap}
+.pill{display:inline-flex;align-items:center;gap:6px;min-height:26px;padding:0 10px;border-radius:999px;font-size:12px;white-space:nowrap}
+.pill.wait{background:#FFF1E0;color:#9A4E00}.pill.done{background:#E6F4EC;color:var(--pos)}.pill.cancel{background:var(--soft);color:var(--muted);text-decoration:line-through}
+.st{display:inline-flex;min-height:24px;align-items:center;padding:0 10px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+.st.open{background:var(--teal);color:#fff}.st.closed{background:#525B6F;color:#fff}
+.end{display:grid;justify-items:end;gap:8px}
+.amt{font-weight:700;white-space:nowrap}.amt small{font-weight:400;color:var(--muted)}
+.due{font-size:12px;color:#B4540A;font-weight:600;white-space:nowrap}
+.empty{text-align:center;color:var(--muted);padding:24px}
+.prow{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;align-items:center;border:1px solid var(--line);border-radius:20px;padding:12px 16px}
+.pacts{display:flex;gap:8px;align-items:center}
+.menu{position:relative}
+.pop{position:absolute;top:50px;inset-inline-end:0;background:#fff;border-radius:16px;box-shadow:0 12px 40px rgba(15,54,157,.18);padding:6px;display:none;z-index:5;min-width:200px}
+.pop.on{display:grid}
+.pop button{border:0;background:none;text-align:start;padding:10px 12px;border-radius:10px;white-space:nowrap;min-height:44px}
+.pop button:hover{background:var(--soft)}
+.pop button.danger{color:var(--neg)}
+/* modal */
+.bd{position:fixed;inset:0;background:rgba(22,33,46,.45);display:none;align-items:center;justify-content:center;z-index:20;padding:16px}
+.bd.on{display:flex}
+.modal{background:#fff;border-radius:24px;max-width:640px;width:100%;padding:20px;display:grid;gap:14px;max-height:88vh;overflow:auto}
+.mh{display:flex;align-items:flex-start;gap:12px}
+.mh .t{flex:1;min-width:0;display:grid;gap:6px}.mh h3{margin:0;font-size:18px}
+.x{width:44px;height:44px;border:0;border-radius:12px;background:var(--soft);flex:none}
+.orow{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:12px 14px;border-radius:16px;background:var(--soft)}
+.orow .n{display:grid;gap:4px;min-width:0}.orow .n b{font-size:14px}.orow .n small{color:var(--muted);font-size:12px}
+.orow.cancel .n b{text-decoration:line-through;color:var(--muted)}
+.tot{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.tot div{background:var(--soft);border-radius:14px;padding:10px 12px;display:grid;gap:2px}.tot small{font-size:12px;color:var(--muted)}.tot b{font-size:16px}
+.tot .rest b{color:#B4540A}
+.mf{display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap}
+.conf{display:grid;gap:10px}.conf h3{margin:0}.conf p{margin:0;color:var(--muted);line-height:1.8}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:14px;padding:10px 16px;font-size:13px;opacity:0;pointer-events:none;transition:.2s;z-index:40}.toast.on{opacity:1}
+@media (max-width:900px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:640px){
+ :root{--gap:12px}.wrap{padding:0 12px}.bd{padding:12px}.note{padding:0 12px}.card{padding:16px;border-radius:20px}
+ .tile b{font-size:19px}
+ .vcard{grid-template-columns:auto minmax(0,1fr);gap:10px;padding:12px}
+ .vcard .end{grid-column:1/-1;grid-template-columns:minmax(0,1fr) auto;align-items:center;justify-items:stretch}
+ .prow{grid-template-columns:auto minmax(0,1fr);gap:10px;padding:12px}
+ .prow .pacts{grid-column:1/-1}.prow .pacts .btn.main{flex:1}
+ .orow{grid-template-columns:minmax(0,1fr) auto;}.orow .amt{grid-column:2;grid-row:1}.orow .oa{grid-column:1/-1;display:flex;gap:8px}.orow .oa .btn.main{flex:1}
+ .tot b{font-size:14px}
+ .mf .btn{flex:1}
+ .search input{font-size:16px}
+}
+</style>
+</head>
+<body>
+<div class="note"><b>تصور تفاعلي — الاستقبال: ملفات المرضى + الزيارات والخدمات</b> · بيانات تجربة، مفيش حاجة بتتحفظ.</div>
+<div class="wrap">
+ <nav class="seg" id="seg"><button data-v="visits" class="on">الزيارات والخدمات</button><button data-v="patients">ملفات المرضى</button></nav>
+
+ <section class="view on" id="v-visits">
+  <div class="tiles">
+   <button class="tile" data-pop="open"><small>زيارات مفتوحة</small><b>4</b><span>المريض لسه في المركز</span></button>
+   <button class="tile warn" data-pop="wait"><small>خدمات مستنية تنفيذ</small><b>5</b><span>أقدمها من ساعة و 20 دقيقة</span></button>
+   <button class="tile ok" data-pop="done"><small>اتنفذ النهارده</small><b>11</b><span>خدمة</span></button>
+   <button class="tile" data-pop="due"><small>مستحق على المرضى</small><b>1,250</b><span>ج.م · 3 مرضى</span></button>
+  </div>
+  <div class="card" style="display:grid;gap:14px">
+   <div class="bar">
+    <label class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="vq" placeholder="دوّر باسم المريض أو رقم الملف أو الزيارة"></label>
+    <div class="period"><div class="chips" id="vper"><button class="on" data-p="today">النهارده</button><button data-p="week">الأسبوع ده</button><button data-p="custom">فترة…</button></div></div>
+   </div>
+   <div class="chips" id="vst"></div>
+   <div class="list" id="vlist"></div>
+  </div>
+ </section>
+
+ <section class="view" id="v-patients">
+  <div class="card" style="display:grid;gap:14px">
+   <div class="bar">
+    <label class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="pq" placeholder="دوّر بالاسم أو التليفون أو رقم الملف"></label>
+    <button class="btn" data-t="هيفتح البحث في الأرشيف عشان تربط ملف">+ ربط ملف من الأرشيف</button>
+   </div>
+   <div class="list" id="plist"></div>
+  </div>
+ </section>
+</div>
+
+<div class="bd" id="bd"><div class="modal" id="mb"></div></div>
+<div class="toast" id="toast"></div>
+<script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),1900);}
+const U='<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>',M='<svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>';
+const money=n=>n.toLocaleString('en-US')+' ج.م';
+const V=[
+ {id:1,no:'V-231',name:'يوسف أحمد محمود',file:'P-2026-000123',at:'9:40 ص',dr:'د. سارة علي',state:'open',paid:300,orders:[{n:'كشف أطفال',p:300,s:'done'},{n:'جلسة علاج طبيعي',p:250,s:'wait'}]},
+ {id:2,no:'V-232',name:'منى سعيد',file:'P-2026-000210',at:'10:15 ص',dr:'د. أحمد سمير',state:'open',paid:0,orders:[{n:'كشف عظام',p:400,s:'wait'},{n:'أشعة ركبة',p:350,s:'wait'}]},
+ {id:3,no:'V-233',name:'كريم حسن',file:'P-2026-000088',at:'10:50 ص',dr:'د. سارة علي',state:'open',paid:500,orders:[{n:'كشف باطنة',p:350,s:'done'},{n:'رسم قلب',p:150,s:'done'}]},
+ {id:4,no:'V-234',name:'سلمى إبراهيم',file:'P-2026-000301',at:'11:30 ص',dr:'أ. ريهام',state:'open',paid:0,orders:[{n:'جلسة تخاطب',p:300,s:'wait'},{n:'تقييم نطق',p:200,s:'cancel'}]},
+ {id:5,no:'V-229',name:'عمر خالد',file:'P-2026-000045',at:'8:30 ص',dr:'د. أحمد سمير',state:'closed',paid:600,orders:[{n:'كشف عظام',p:400,s:'done'},{n:'جبيرة',p:200,s:'done'}]}];
+const P=[{name:'يوسف أحمد محمود',file:'P-2026-000123',ph:'01000000000',last:'النهارده',due:250},{name:'منى سعيد',file:'P-2026-000210',ph:'01100000000',last:'النهارده',due:750},{name:'نادية فؤاد',file:'P-2026-000150',ph:'',last:'12 نوفمبر',due:0,credit:200},{name:'عمر خالد',file:'P-2026-000045',ph:'01200000000',last:'النهارده',due:0}];
+let vf='all',vq='',pq='';
+const SL={wait:'مستنية تنفيذ',done:'اتنفذت',cancel:'اتلغت'};
+function vstate(v){if(v.state==='closed')return 'closed';if(v.orders.some(o=>o.s==='wait'))return 'wait';return 'done';}
+function total(v){return v.orders.filter(o=>o.s!=='cancel').reduce((a,o)=>a+o.p,0);}
+function drawV(){const cnt={all:V.length,wait:V.filter(v=>vstate(v)==='wait').length,done:V.filter(v=>vstate(v)==='done').length,closed:V.filter(v=>v.state==='closed').length};
+ $('#vst').innerHTML=[['all','الكل'],['wait','فيها خدمة مستنية'],['done','اتنفذت ولسه مفتوحة'],['closed','اتقفلت']].map(([k,l])=>`<button class="${vf===k?'on':''}" data-f="${k}">${l} <i>${cnt[k]}</i></button>`).join('');
+ const rows=V.filter(v=>(vf==='all'||vstate(v)===vf||(vf==='closed'&&v.state==='closed'))&&(!vq||(v.name+v.file+v.no).includes(vq)));
+ $('#vlist').innerHTML=rows.length?rows.map(v=>{const st=vstate(v),rest=total(v)-v.paid;return `<article class="vcard ${st}"><span class="av">${U}</span><div class="mid"><div class="top"><b>${v.name}</b><span class="st ${v.state==='closed'?'closed':'open'}">${v.state==='closed'?'اتقفلت':'مفتوحة'}</span></div>
+ <div class="sub">زيارة ${v.no} · ${v.file} · <span style="white-space:nowrap">حضر ${v.at}</span> · ${v.dr}</div><div class="svc">${v.orders.map(o=>`<span class="pill ${o.s}">${o.n}</span>`).join('')}</div></div>
+ <div class="end"><span class="amt">${money(total(v))}</span>${rest>0?`<span class="due">باقي ${money(rest)}</span>`:`<span class="sub">مدفوع بالكامل</span>`}<button class="btn sm ${st==='wait'?'main':''}" data-open="${v.id}">افتح الزيارة</button></div></article>`}).join(''):'<p class="empty">مفيش زيارات بالفلتر ده.</p>';}
+function drawP(){const rows=P.filter(p=>!pq||(p.name+p.file+p.ph).includes(pq));
+ $('#plist').innerHTML=rows.length?rows.map((p,i)=>`<article class="prow"><span class="av">${U}</span><div class="mid"><div class="top"><b>${p.name}</b>${p.due?`<span class="pill wait">عليه ${money(p.due)}</span>`:''}${p.credit?`<span class="pill done">له ${money(p.credit)}</span>`:''}</div>
+ <div class="sub">${p.file} · ${p.ph?`<span dir="ltr">${p.ph}</span>`:'<span>من غير تليفون</span>'} · آخر زيارة ${p.last}</div></div>
+ <div class="pacts"><button class="btn sm main" data-t="هيفتح الحجز للمريض ده">حجز موعد</button><div class="menu"><button class="btn sm icon" data-menu aria-label="أدوات أكتر">${M}</button><div class="pop"><button data-pd="${i}">التفاصيل والحساب</button><button data-t="هيفتح ملف المريض الكامل">فتح ملف المريض</button></div></div></div></article>`).join(''):'<p class="empty">مفيش ملفات مطابقة — جرّب الاسم بطريقة تانية أو اربط ملف من الأرشيف.</p>';}
+function modal(h){$('#mb').innerHTML=h;$('#bd').classList.add('on');}
+function close(){$('#bd').classList.remove('on');}
+function visitModal(id){const v=V.find(x=>x.id===id),rest=total(v)-v.paid;
+ modal(`<div class="mh"><span class="av">${U}</span><div class="t"><h3>${v.name}</h3><div class="svc"><span class="pill" style="background:var(--tint);color:var(--brand)">زيارة ${v.no}</span><span class="pill" style="background:var(--soft)">${v.file}</span><span class="pill" style="background:var(--soft)">حضر ${v.at}</span></div></div><button class="x" data-close aria-label="إغلاق">✕</button></div>
+ <div style="display:grid;gap:8px">${v.orders.map((o,i)=>`<div class="orow ${o.s}"><div class="n"><b>${o.n}</b><small>${SL[o.s]}${o.s==='done'?' · سجّلها منى 10:05 ص':''}</small></div><span class="amt">${money(o.p)}</span>
+ <div class="oa">${o.s==='wait'?`<button class="btn sm main" data-exec="${v.id}|${i}">تنفيذ</button><div class="menu"><button class="btn sm icon" data-menu aria-label="أدوات الخدمة">${M}</button><div class="pop"><button data-ask="خصم|${o.n}">خصم</button><button data-ask="تطبيق عقد جهة|${o.n}">تطبيق عقد جهة</button><button class="danger" data-ask="إلغاء الطلب|${o.n}">إلغاء الطلب</button></div></div>`:o.s==='done'?'<span class="pill done">✓</span>':''}</div></div>`).join('')}</div>
+ <div class="tot"><div><small>الإجمالي</small><b>${money(total(v))}</b></div><div><small>اتدفع</small><b>${money(v.paid)}</b></div><div class="rest"><small>الباقي</small><b>${money(Math.max(rest,0))}</b></div></div>
+ ${v.state==='open'?`<div class="mf"><button class="btn" data-t="هيفتح إضافة خدمة للزيارة">+ إضافة خدمة</button><button class="btn" data-ask="إنهاء الزيارة|${v.name}">إنهاء الزيارة</button></div>`:'<p class="sub" style="margin:0">الزيارة اتقفلت.</p>'}`);}
+function ask(what,who){modal(`<div class="conf"><h3>تأكيد: ${what}</h3><p>${who}</p><div class="mf"><button class="btn" data-close>رجوع</button><button class="btn main" data-close data-t="${what} — اتسجل (تجربة)">تأكيد</button></div></div>`);}
+document.addEventListener('click',e=>{const t=e.target.closest('button');$$('.pop.on').forEach(p=>{if(!t||!p.parentElement.contains(t))p.classList.remove('on');});if(!t)return;
+ if(t.dataset.v){$$('#seg button').forEach(b=>b.classList.toggle('on',b===t));$$('.view').forEach(v=>v.classList.toggle('on',v.id==='v-'+t.dataset.v));return;}
+ if(t.dataset.f){vf=t.dataset.f;drawV();return;}
+ if(t.dataset.p){$$('#vper button').forEach(b=>b.classList.toggle('on',b===t));toast(t.dataset.p==='custom'?'هيفتح اختيار من/إلى':'هيعرض '+t.textContent);return;}
+ if('menu' in t.dataset){t.nextElementSibling.classList.toggle('on');return;}
+ if(t.dataset.open){visitModal(+t.dataset.open);return;}
+ if(t.dataset.exec){const [id,i]=t.dataset.exec.split('|').map(Number);const v=V.find(x=>x.id===id);ask('تنفيذ «'+v.orders[i].n+'» وتسجيل الاستهلاك',v.name);return;}
+ if(t.dataset.ask){const [w,who]=t.dataset.ask.split('|');ask(w,who);return;}
+ if(t.dataset.pd){const p=P[+t.dataset.pd];modal(`<div class="mh"><span class="av">${U}</span><div class="t"><h3>${p.name}</h3><div class="sub">${p.file}</div></div><button class="x" data-close aria-label="إغلاق">✕</button></div><div class="tot"><div class="rest"><small>عليه</small><b>${money(p.due)}</b></div><div><small>له رصيد</small><b>${money(p.credit||0)}</b></div><div><small>آخر زيارة</small><b style="font-size:14px">${p.last}</b></div></div>${V.filter(v=>v.name===p.name).map(v=>`<div class="orow"><div class="n"><b>زيارة ${v.no}</b><small>${v.at} · ${v.dr}</small></div><span class="st ${v.state==='closed'?'closed':'open'}">${v.state==='closed'?'اتقفلت':'مفتوحة'}</span><span></span></div>`).join('')||'<p class="sub">مفيش زيارات في الفترة دي.</p>'}`);return;}
+ if(t.dataset.pop){const m={open:['زيارات مفتوحة',V.filter(v=>v.state==='open')],wait:['خدمات مستنية تنفيذ',V.filter(v=>vstate(v)==='wait')],done:['اتنفذ النهارده',V],due:['مستحق على المرضى',V.filter(v=>total(v)-v.paid>0)]}[t.dataset.pop];
+  modal(`<div class="mh"><div class="t"><h3>${m[0]}</h3></div><button class="x" data-close aria-label="إغلاق">✕</button></div>${m[1].map(v=>`<div class="orow"><div class="n"><b>${v.name}</b><small>زيارة ${v.no} · ${v.at}</small></div><span class="amt">${money(total(v)-v.paid>0&&t.dataset.pop==='due'?total(v)-v.paid:total(v))}</span><button class="btn sm" data-open="${v.id}">افتح</button></div>`).join('')}`);return;}
+ if('close' in t.dataset){close();if(t.dataset.t)toast(t.dataset.t);return;}
+ if(t.dataset.t)toast(t.dataset.t);});
+$('#bd').addEventListener('click',e=>{if(e.target.id==='bd')close();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')close();});
+$('#vq').oninput=e=>{vq=e.target.value.trim();drawV();};$('#pq').oninput=e=>{pq=e.target.value.trim();drawP();};
+drawV();drawP();
+</script>
+</body>
+</html>
