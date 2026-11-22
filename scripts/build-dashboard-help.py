@@ -1051,6 +1051,8 @@ frule('reception-booking-discount.js','اسم النقابة|مثلاً نقاب
 frule('reception-booking-discount.js','رقم الكارنيه','رقم كارنيه النقابة أو النادي — إجباري.','reception-booking-discount')
 frule('reception-booking-discount.js','الكارنيه ساري لحد','آخر يوم الكارنيه ساري فيه. لازم يكون يوم الزيارة أو بعده، ولو خلص قبل الحضور تسجيل الحضور بيقف.','reception-booking-discount')
 frule('reception-booking-discount.js','سبب الخصم|مثلاً قريب موظف','سبب الخصم الخاص — إجباري.','reception-booking-discount')
+frule('reception-service-later.js','الخدمة تتحدد عند الحضور','علّمها لو المريض لسه ماقررش الخدمة: بنحجز وقت الدكتور بس (٣٠ دقيقة مبدئياً)، والخدمة والسعر يتحددوا في «تسجيل حضور».','reception-booking-service-later')
+frule('reception-service-later.js','الخدمة (إجباري)','الحجز ده من غير خدمة — اختار الخدمة اللي المريض قررها من خدمات قسم الدكتور. الحضور مش بيتسجل غير بعد الاختيار.','reception-booking-service-later')
 frule('hr-job-catalog.js','اسم الوظيفة','اكتب اسم الوظيفة زي ما هو في العقود، مثل «ممرض / ممرضة». الاسم بيظهر في الدليل وفي ملحق العقد.','job-catalog')
 frule('hr-job-catalog.js','الاسم بالإنجليزي','اختياري. اكتب اسم الوظيفة بالإنجليزي لو محتاجه في مستندات رسمية.','job-catalog')
 frule('hr-job-catalog.js','الخبرة المطلوبة','اكتب سنين الخبرة المطلوبة نصًا، مثل «3–5 سنوات». بتظهر في وصف الوظيفة.','job-catalog')

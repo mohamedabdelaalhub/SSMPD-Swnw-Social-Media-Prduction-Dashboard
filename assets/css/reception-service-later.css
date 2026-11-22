@@ -1,0 +1,12 @@
+/* «الخدمة تتحدد عند الحضور» — booking switch, card tag, arrival service (owner 2026-11-22, mockup booking-service-later.html) */
+.rx-sl{display:grid;gap:6px;min-width:0}
+.rx-sl-sw,.rx-modal .rx-form .rx-sl .rx-sl-sw{display:flex;flex-direction:row;text-align:start;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:12px;border:1px solid #D5DEEE;background:#fff;cursor:pointer}
+.rx-sl-sw:has(input:checked){border:1.5px solid #0F369D;background:#F2F5FD}
+.rx-sl-sw input,.rx-modal .rx-form .rx-sl .rx-sl-sw input{flex:none;width:18px;height:18px;min-height:0;margin:2px 0 0;padding:0;accent-color:#0F369D;-webkit-appearance:auto;appearance:auto}
+.rx-sl-sw b{display:block;color:#0F369D;font-size:14px}.rx-sl-sw small{display:block;font-size:12px;color:#5b6577;margin-top:2px;line-height:1.7}
+.rx-sl-note{margin:0;font-size:12px;color:#3B4658;background:#F4F7FC;border-radius:10px;padding:8px 12px}
+.rx-later-tag{display:inline-block;white-space:nowrap;font-size:11px;padding:1px 8px;border-radius:99px;background:#FFF3E9;color:#B4410F}
+.rx-sl-arrive{display:grid;gap:8px;min-width:0}
+.rx-sl-warn{margin:0;font-size:12px;background:#FFF3E9;color:#8A3A12;border-radius:10px;padding:8px 12px}
+.rx-sl-arrive select:invalid{border-color:#D0402A}
+.rx-sl-err{margin:0;font-size:12px;color:#D0402A}
