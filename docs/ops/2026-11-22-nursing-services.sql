@@ -30,7 +30,7 @@ select p.name, w.dow, w.starts, w.ends from clinic_reception.weekly_slots w join
  where p.department in ('التمريض','التمريض المنزلي') order by p.name, w.dow;
 
 -- ============================ 2) PROPOSED ACTIVATION (dry-run; ends in ROLLBACK) ============================
--- A. In-center nursing: keep the نurse services under «الطوارئ» in pricing (one price list, same codes the doctors use)
+-- A. In-center nursing: keep the nurse services under «الطوارئ» in pricing (one price list, same codes the doctors use)
 --    and give them to the «التمريض» provider by scope rows — re-run of 2026-11-21 step, idempotent. If 1a shows nursing
 --    services that are NOT booking-enabled, enable them under «التمريض» with a short code and duration:
 --      حقنة عضل / وريد 5 min · تركيب كانيولا 10 · تعليق محلول 60 · غيار جرح (تمريض) 15 · قياس ضغط / سكر 5 · تطعيم 10
