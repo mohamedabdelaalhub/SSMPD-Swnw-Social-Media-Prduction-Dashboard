@@ -2,7 +2,8 @@
  * واتساب / الموقع / بوابة المرضى. Each shows «محتاج إجراء» and today's total, and opens that channel's list.
  * Sources (read-only here; nothing is booked or sent from this card):
  *   واتساب  : clinic_reception_fallback list (source whatsapp, when Masa was down) + public.customer_bookings (channel whatsapp, mirror of Masa bookings)
- *   الموقع  : clinic_reception_fallback list (source website)
+ *   الموقع  : clinic_reception_fallback list (source website) + public.customer_bookings of the website form (2026-11-22):
+ *             channel 'website', or channel 'other' with a wa_id starting «web:» (the ingest has no 'website' channel, the agent sends 'other')
  *   البوابة : patient-portal-booking edge op staff_list (the existing confirm/cancel screen is reused inside the panel)
  * Actions on fallback bookings stay in المواعيد ← الحجوزات الاحتياطية (button below jumps there). */
 (function (w, d) {
@@ -19,10 +20,17 @@
     return Promise.resolve(c.rpc("clinic_reception_fallback", { p_workspace: ws, p_action: "list", p_payload: {} }))
       .then(function (r) { return r && !r.error && r.data && r.data.bookings || []; }, function () { return []; });
   }
+  // Which card a customer_bookings mirror row belongs to. The website form's rows come as channel 'other' + wa_id 'web:…'.
+  function mirrorChannel(b) {
+    var ch = b && b.channel || "whatsapp";
+    if (ch === "website" || (ch === "other" && /^web:/.test(String(b.wa_id || "")))) return "website";
+    return ch;
+  }
+  function mirrorOf(data, key) { return (data.mirror || []).filter(function (b) { return mirrorChannel(b) === key && b.status !== "cancelled"; }); }
   function mirror() {
     var c = client(); if (!c || typeof c.from !== "function") return Promise.resolve([]);
     try {
-      return Promise.resolve(c.from("customer_bookings").select("id,channel,customer_name,phone,doctor_name,specialty_name,appointment_date,appointment_time,status,booking_reference")
+      return Promise.resolve(c.from("customer_bookings").select("id,channel,wa_id,customer_name,phone,doctor_name,specialty_name,appointment_date,appointment_time,status,booking_reference")
         .gte("appointment_date", today()).order("appointment_date", { ascending: true }).order("appointment_time", { ascending: true }).limit(200))
         .then(function (r) { return r && !r.error && r.data || []; }, function () { return []; });
     } catch (e) { return Promise.resolve([]); }
@@ -35,12 +43,12 @@
   function counts(data) {
     var t = today(), live = function (b) { return b.status !== "cancelled"; };
     var fb = function (src) { return data.fallback.filter(function (b) { return b.source === src && live(b); }); };
-    var wf = fb("whatsapp"), sf = fb("website"), wm = data.mirror.filter(function (b) { return (b.channel || "whatsapp") === "whatsapp" && b.status !== "cancelled"; });
+    var wf = fb("whatsapp"), sf = fb("website"), wm = mirrorOf(data, "whatsapp"), sm = mirrorOf(data, "website");
     var need = function (list) { return list.filter(function (b) { return b.status === "conflict" || (!b.reception_confirmed && b.status !== "cancel_pending"); }).length; };
     var p = data.portal || [];
     return {
       whatsapp: { need: need(wf), today: wf.filter(function (b) { return b.appointment_date === t; }).length + wm.filter(function (b) { return b.appointment_date === t; }).length, total: wf.length + wm.length },
-      website: { need: need(sf), today: sf.filter(function (b) { return b.appointment_date === t; }).length, total: sf.length },
+      website: { need: need(sf), today: sf.filter(function (b) { return b.appointment_date === t; }).length + sm.filter(function (b) { return b.appointment_date === t; }).length, total: sf.length + sm.length },
       portal: { need: p.filter(function (r) { return r.status === "pending" || r.status === "slot_unavailable"; }).length, today: p.filter(function (r) { return r.requested_date === t && r.status !== "cancelled_by_patient" && r.status !== "cancelled_by_staff"; }).length, total: p.length, off: data.portal === null }
     };
   }
@@ -65,7 +73,7 @@
     }
     var data = state.data || { fallback: [], mirror: [] };
     var fb = data.fallback.filter(function (b) { return b.source === key && b.status !== "cancelled"; });
-    var cb = key === "whatsapp" ? data.mirror.filter(function (b) { return (b.channel || "whatsapp") === "whatsapp" && b.status !== "cancelled"; }) : [];
+    var cb = key === "whatsapp" || key === "website" ? mirrorOf(data, key) : [];
     var html = "";
     if (fb.length) html += '<h5>حجوزات احتياطية (اتعملت من الداشبورد لما ماسا كان واقف)</h5>' + fb.map(fbRow).join("") +
       '<button type="button" class="btn" data-ab-goto="appointments">التعامل معاها: المواعيد ← الحجوزات الاحتياطية</button>';
@@ -114,5 +122,5 @@
     state.ws = ctx.workspace;
     if (fresh) refresh(box); else if (created) paint(box);
   }
-  w.SSMPDAutoBookings = { decorate: decorate, counts: counts, refresh: refresh, state: state };
+  w.SSMPDAutoBookings = { decorate: decorate, counts: counts, refresh: refresh, state: state, mirrorChannel: mirrorChannel };
 })(window, document);
