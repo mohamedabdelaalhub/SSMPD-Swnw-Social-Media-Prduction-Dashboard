@@ -9826,6 +9826,16 @@
     },
     {
       "file": "leads-booking-funnel.js",
+      "label": "حسب",
+      "name": "",
+      "kind": "label",
+      "forms": [],
+      "tab": "production",
+      "article": "leads-booking",
+      "text_sha256": "131be3ca125b7633a665ada3de98cc91f10be88bc1c38e242bd80155284d97c8"
+    },
+    {
+      "file": "leads-booking-funnel.js",
       "label": "من",
       "name": "",
       "kind": "html",
