@@ -9,7 +9,7 @@
   function esc(value) { return String(value == null ? "" : value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
   function fmt(iso) {
     var d = new Date(iso);
-    return isNaN(d) ? "—" : d.toLocaleString("ar-EG", { timeZone: ZONE, weekday: "long", day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
+    return isNaN(d) ? "—" : d.toLocaleString("ar-EG-u-nu-latn", { timeZone: ZONE, weekday: "long", day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
   }
   function nameOf(adminsById, id) {
     var a = adminsById && adminsById[id];

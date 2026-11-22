@@ -11260,6 +11260,19 @@
       "reviewed": true
     },
     {
+      "title": "حسب",
+      "labels": [
+        "حسب"
+      ],
+      "text": "اختار تقسيم المؤشرات: حسب الموظف، أو المصدر (واتساب / ماسنجر / فيسبوك…)، أو الحملة. الحجز بيتحسب على مصدر الليد وقت الحجز.",
+      "article": "leads-booking",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "من",
       "labels": [
         "من"
@@ -15863,6 +15876,19 @@
       "article": "chatbot",
       "tabs": [
         "clinic_info"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "دوّر باسم أو كلمة",
+      "labels": [
+        "دوّر باسم أو كلمة"
+      ],
+      "text": "اكتب اسم الشخص أو كلمة من الرسالة أو التعليق، والقايمة بتفلتر وانت بتكتب.",
+      "article": "social-chat-inbox",
+      "tabs": [
+        "comments"
       ],
       "forms": [],
       "reviewed": true
@@ -22143,9 +22169,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1900,
-    "labels": 1392,
+    "definitions": 1902,
+    "labels": 1394,
     "files": 143,
-    "groups": 1496
+    "groups": 1498
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();

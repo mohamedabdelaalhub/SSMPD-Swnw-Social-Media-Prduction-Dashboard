@@ -10,7 +10,7 @@ function host(){return document.querySelector('.digital-team');}
 function panel(){return host()?.querySelector('[data-chat-window]');}
 function textStatus(msg){var e=panel()?.querySelector('[data-chat-status]');if(e)e.textContent=msg||'';}
 function name(k){return agents[k]||k||'سونو';}
-function date(v){if(!v)return '';return new Date(v).toLocaleString('ar-EG',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});}
+function date(v){if(!v)return '';return new Date(v).toLocaleString('ar-EG-u-nu-latn',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});}
 function human(){return w.SSMPDAuth?.currentAdmin?.name||'الإدارة';}
 function make(){
  var h=host();if(!h||!w.SSMPDDigitalTeam?.isOwner?.()||h.querySelector('[data-chat-launcher]'))return;

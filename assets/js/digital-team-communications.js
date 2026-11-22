@@ -15,7 +15,7 @@
  function client(){if(db)return db;var c=w.SSMPD_CONFIG?.supabase;if(!c||!w.supabase)return null;
   return db=w.supabase.createClient(c.url,c.anonKey,{auth:{persistSession:true,autoRefreshToken:true}});}
  function name(id){return id?roles[id]||members[id]||id:'الإدارة';}
- function fmt(v){return v?new Date(v).toLocaleString('ar-EG',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';}
+ function fmt(v){return v?new Date(v).toLocaleString('ar-EG-u-nu-latn',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';}
  function root(){return document.querySelector('.digital-team');}
  function pane(){var r=root();return r&&r.querySelector('[data-dtc-panel]');}
  function status(s){var x=pane()?.querySelector('[data-dtc-status]');if(x)x.textContent=s;}

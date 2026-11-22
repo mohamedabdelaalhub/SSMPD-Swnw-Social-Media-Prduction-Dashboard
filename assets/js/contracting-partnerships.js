@@ -20,7 +20,7 @@
 
   function esc(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
   function money(v){return Number(v||0).toLocaleString('en-US',{maximumFractionDigits:2})+' ج.م';}
-  function dt(v){return v?new Date(v).toLocaleDateString('ar-EG',{year:'numeric',month:'short',day:'numeric'}):'—';}
+  function dt(v){return v?new Date(v).toLocaleDateString('ar-EG-u-nu-latn',{year:'numeric',month:'short',day:'numeric'}):'—';}
   function nowDate(){return new Date().toISOString().slice(0,10);}
   function toast(msg,type){if(Toast&&Toast.show)Toast.show(msg,type);else alert(msg);}
   function currentAdmin(){return window.SSMPDAuth&&window.SSMPDAuth.currentAdmin||{};}
@@ -97,7 +97,7 @@
       loadScript('https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js','QRCode').then(function(){if(box.querySelector('#ceh-qr'))new window.QRCode(box.querySelector('#ceh-qr'),{text:portalUrl,width:156,height:156});}).catch(function(){});
     }
     if(tab==='timeline'){
-      box.innerHTML='<div class="ce-hub-timeline">'+(h.activity.length?h.activity.map(function(a){return '<div class="ce-hub-timeline-item"><b>'+esc(a.summary)+'</b><div class="ce-hub-muted">'+new Date(a.created_at).toLocaleString('ar-EG')+'</div></div>';}).join(''):'<p>لا يوجد نشاط مسجل بعد.</p>')+'</div>';
+      box.innerHTML='<div class="ce-hub-timeline">'+(h.activity.length?h.activity.map(function(a){return '<div class="ce-hub-timeline-item"><b>'+esc(a.summary)+'</b><div class="ce-hub-muted">'+new Date(a.created_at).toLocaleString('ar-EG-u-nu-latn')+'</div></div>';}).join(''):'<p>لا يوجد نشاط مسجل بعد.</p>')+'</div>';
     }
   }
 

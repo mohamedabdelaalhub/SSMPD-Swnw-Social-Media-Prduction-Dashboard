@@ -22,7 +22,7 @@ var encounterTypes=[
 
 function esc(v){return String(v==null?"":v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
 function val(v){return v===null||typeof v==="undefined"||String(v).trim()===""?"—":esc(v);}
-function fmtDate(v){if(!v)return "—";var d=new Date(String(v).length===10?v+"T00:00:00":v);if(isNaN(d.getTime()))return esc(v);return new Intl.DateTimeFormat("ar-EG",{year:"numeric",month:"short",day:"numeric"}).format(d);}
+function fmtDate(v){if(!v)return "—";var d=new Date(String(v).length===10?v+"T00:00:00":v);if(isNaN(d.getTime()))return esc(v);return new Intl.DateTimeFormat("ar-EG-u-nu-latn",{year:"numeric",month:"short",day:"numeric"}).format(d);}
 function fmtTime(v){if(!v)return "";var p=String(v).slice(0,5).split(":"),h=Number(p[0]);if(p.length!==2||isNaN(h))return esc(v);return (h%12||12)+":"+p[1]+(h>=12?" مساءً":" صباحًا");}
 function followupHtml(v){if(!v.follow_up_date)return "";var status=v.follow_up_status||"pending",when=fmtDate(v.follow_up_date)+(v.follow_up_time?" — "+fmtTime(v.follow_up_time):"");var cls=status==="no_show"?"visit-followup-no-show":status==="attended"?"visit-followup-attended":status==="rescheduled"?"visit-followup-rescheduled":"";var title=status==="no_show"?"لم يتم الحضور":status==="attended"?"تم الحضور":status==="rescheduled"?"تم تأجيل موعد المتابعة":"المتابعة القادمة";var detail=status==="no_show"?"":status==="attended"?"تم تأكيد الحضور":when;return '<div class="visit-followup '+cls+'"><div><b>'+title+'</b><span>'+detail+'</span></div>'+(status==="rescheduled"&&v.follow_up_patient_message?'<p class="visit-followup-message">'+esc(v.follow_up_patient_message)+'</p>':'')+'</div>';}
 function gender(v){return v==="male"?"ذكر":v==="female"?"أنثى":"—";}

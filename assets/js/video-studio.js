@@ -21,7 +21,7 @@
     children.forEach(function(el){if(el!==children[0]&&el!==worker&&el!==materials&&el!==covers&&el!==scenes)resultBody.appendChild(el);});
     Array.from(slot.children).forEach(function(el){if(el!==main)resultBody.appendChild(el);});
     var histories=document.createElement('details');histories.className='vs-panel';histories.innerHTML='<summary>النسخ السابقة ('+Math.max(0,jobs.length-1)+')</summary><div class="vs-panel-body"></div>';
-    jobs.slice(1).forEach(function(job){var row=document.createElement('div');row.className='vs-row';row.innerHTML='<span>'+esc(new Date(job.created_at).toLocaleString('ar-EG'))+' · '+esc(job.status)+'</span>';var url=job.drive_video_url||job.output_video_url;if(url){var a=document.createElement('a');a.className='btn ghost sm';a.textContent='فتح النسخة';a.href=url;a.target='_blank';a.rel='noopener';row.appendChild(a);}histories.querySelector('div').appendChild(row);});
+    jobs.slice(1).forEach(function(job){var row=document.createElement('div');row.className='vs-row';row.innerHTML='<span>'+esc(new Date(job.created_at).toLocaleString('ar-EG-u-nu-latn'))+' · '+esc(job.status)+'</span>';var url=job.drive_video_url||job.output_video_url;if(url){var a=document.createElement('a');a.className='btn ghost sm';a.textContent='فتح النسخة';a.href=url;a.target='_blank';a.rel='noopener';row.appendChild(a);}histories.querySelector('div').appendChild(row);});
     if(jobs.length>1)resultBody.appendChild(histories);
     root.append(script,media,identity,result);main.replaceWith(root);
     var dirty=false,saving=false,button=scriptBody.querySelector('[data-save-script]'),feedback=scriptBody.querySelector('[data-script-feedback]');

@@ -20,7 +20,7 @@ function fmtDate(v){
   if(!v)return "—";
   var d=new Date(String(v).length===10?v+"T00:00:00":v);
   if(isNaN(d.getTime()))return esc(v);
-  return new Intl.DateTimeFormat("ar-EG",{year:"numeric",month:"long",day:"numeric"}).format(d);
+  return new Intl.DateTimeFormat("ar-EG-u-nu-latn",{year:"numeric",month:"long",day:"numeric"}).format(d);
 }
 function invoke(name,body){
   return client.functions.invoke(name,{body:body}).then(function(r){

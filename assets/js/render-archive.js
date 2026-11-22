@@ -35,7 +35,7 @@
 
     var cursor = state.cursor;
     var year = cursor.getFullYear(), month = cursor.getMonth();
-    var monthLabel = cursor.toLocaleDateString("ar-EG", { month: "long", year: "numeric" });
+    var monthLabel = cursor.toLocaleDateString("ar-EG-u-nu-latn", { month: "long", year: "numeric" });
 
     var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">' +
       '<h2>' + monthLabel + '</h2>' +
@@ -122,7 +122,7 @@
       (window.SSMPDSources ? window.SSMPDSources.sectionHtml(item) : '') +
       (item.published_url ? '<p><a href="' + item.published_url + '" target="_blank" class="btn ghost sm">رابط المنشور</a></p>' : '') +
       "<table class=\"simple\" style=\"margin-top:12px;\"><tr><th> <!--ssmpd-i18n:%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE%20%D8%A7%D9%84%D9%86%D8%B4%D8%B1-->تاريخ النشر</th><td>" +
-      (item.published_at ? new Date(item.published_at).toLocaleString("ar-EG") : "—") + '</td></tr>' +
+      (item.published_at ? new Date(item.published_at).toLocaleString("ar-EG-u-nu-latn") : "—") + '</td></tr>' +
       '<tr><th>نُشر بواسطة</th><td>' + escapeHtml(publisher) + '</td></tr>' +
       (item.scheduled_by ? '<tr><th>جدولها</th><td>' + escapeHtml(scheduler) + '</td></tr>' : '') +
       "<tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D9%86%D8%B5%D8%A9-->المنصة</th><td>" + W.platformsLabel(item.publish_platforms && item.publish_platforms.length ? item.publish_platforms : item.publish_platform) + '</td></tr></table>' +

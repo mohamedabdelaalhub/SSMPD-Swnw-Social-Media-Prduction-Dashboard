@@ -370,7 +370,7 @@
   function fmtDateTime(iso) {
     if (!iso) return "—";
     var d = new Date(iso);
-    return d.toLocaleDateString("ar-EG") + " " + d.toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" });
+    return d.toLocaleDateString("ar-EG-u-nu-latn") + " " + d.toLocaleTimeString("ar-EG-u-nu-latn", { hour: "2-digit", minute: "2-digit" });
   }
 
   function fmtDurationMins(startIso, endIso) {

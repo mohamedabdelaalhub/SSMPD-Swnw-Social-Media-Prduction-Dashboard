@@ -6,7 +6,7 @@
 
   function fmtTime(iso) {
     var d = new Date(iso);
-    return d.toLocaleString("ar-EG", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" });
+    return d.toLocaleString("ar-EG-u-nu-latn", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" });
   }
 
   function escapeHtml(s) {
@@ -127,7 +127,7 @@
 (function () {
   if (document.querySelector('script[data-social-comment-filters]')) return;
   var s = document.createElement('script');
-  s.src = 'assets/js/comments-post-filters.js?v=comments-post-filters-20261021-1';
+  s.src = 'assets/js/comments-post-filters.js?v=english-digits-20261122-1';
   s.async = false;
   s.setAttribute('data-social-comment-filters', '1');
   document.head.appendChild(s);

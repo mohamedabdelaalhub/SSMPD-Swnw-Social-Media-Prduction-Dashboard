@@ -16,7 +16,7 @@ function icon(){return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16
 function fmtDate(v){
   if(!v)return "";
   var d=new Date(v);if(isNaN(d.getTime()))return "";
-  return new Intl.DateTimeFormat("ar-EG",{year:"numeric",month:"short",day:"numeric"}).format(d);
+  return new Intl.DateTimeFormat("ar-EG-u-nu-latn",{year:"numeric",month:"short",day:"numeric"}).format(d);
 }
 function setActive(){
   var tabs=root.querySelector(".profile-tabs");if(!tabs)return;
