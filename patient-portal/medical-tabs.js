@@ -8,7 +8,7 @@ var cache=null,cacheAt=0,loading=null;
 
 function esc(v){return String(v==null?"":v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
 function val(v){return v===null||typeof v==="undefined"||String(v).trim()===""?"—":esc(v);}
-function fmtDate(v){if(!v)return "—";var d=new Date(String(v).length===10?v+"T00:00:00":v);if(isNaN(d.getTime()))return esc(v);return new Intl.DateTimeFormat("ar-EG",{year:"numeric",month:"short",day:"numeric"}).format(d);}
+function fmtDate(v){if(!v)return "—";var d=new Date(String(v).length===10?v+"T00:00:00":v);if(isNaN(d.getTime()))return esc(v);return new Intl.DateTimeFormat("ar-EG-u-nu-latn",{year:"numeric",month:"short",day:"numeric"}).format(d);}
 function gender(v){return v==="male"?"ذكر":v==="female"?"أنثى":"—";}
 function chronicLabel(v){return({smoking:"التدخين",blood_pressure:"الضغط",diabetes:"السكر",thyroid:"الغدة الدرقية",kidney_disease:"أمراض الكلى",tumors:"أورام",drug_allergies:"حساسية أدوية"}[v]||v||"حالة مزمنة");}
 function icon(name){var p={health:'<path d="M12 21s-7-4.6-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 5.4-7 10-7 10Z"/><path d="M9 13h2l1-3 2 6 1-3h2"/>',rx:'<path d="M6 4h8a4 4 0 0 1 0 8H6z"/><path d="m11 12 7 8M18 12l-7 8"/>',follow:'<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/>'};return '<svg viewBox="0 0 24 24" aria-hidden="true">'+p[name]+'</svg>';}

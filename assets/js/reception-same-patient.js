@@ -8,7 +8,7 @@
   var SOURCE={unknown:'غير معروف',whatsapp:'واتساب',facebook:'فيسبوك',instagram:'إنستجرام',phone:'تليفون',walk_in:'حضور مباشر',website:'الموقع',referral:'ترشيح'};
   function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
   function hm(iso){try{return new Intl.DateTimeFormat('en-GB',{timeZone:'Africa/Cairo',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date(iso));}catch(e){return '';}}
-  function day(iso){try{return new Date(iso).toLocaleDateString('ar-EG',{timeZone:'Africa/Cairo',weekday:'long',day:'numeric',month:'numeric'});}catch(e){return '';}}
+  function day(iso){try{return new Date(iso).toLocaleDateString('ar-EG-u-nu-latn',{timeZone:'Africa/Cairo',weekday:'long',day:'numeric',month:'numeric'});}catch(e){return '';}}
   function stamp(iso){try{return new Intl.DateTimeFormat('en-GB',{timeZone:'Africa/Cairo',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date(iso)).replace(',','');}catch(e){return '';}}
   function isSameDay(e){return !!(e&&e.hint==='same_patient_same_day');}
   function list(e){try{var v=JSON.parse(e.details||e.detail||'[]');return Array.isArray(v)?v:[];}catch(x){return [];}}

@@ -12,7 +12,7 @@ var recoveryShown=false,recoveryDone=false;
 function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
 function relationLabel(v){return({self:"نفسي",father:"أب",mother:"أم",legal_guardian:"وصي قانوني",spouse:"زوج/زوجة",other:"أخرى",guardian:"وصاية",authorized:"ممثل معتمد"}[v]||v||"—");}
 function categoryLabel(v){return({insurance:"تأمين",radiology:"أشعة",lab_result:"تحاليل",prescription:"وصفة طبية",physical_therapy:"علاج طبيعي",medical_report:"تقرير طبي",eeg:"رسم مخ",invoice:"فاتورة / إيصال",other:"ملف آخر"}[v]||v||"ملف");}
-function fmtDate(v){if(!v)return "—";var d=new Date(v);if(isNaN(d.getTime()))return "—";return new Intl.DateTimeFormat("ar-EG",{year:"numeric",month:"short",day:"numeric"}).format(d);}
+function fmtDate(v){if(!v)return "—";var d=new Date(v);if(isNaN(d.getTime()))return "—";return new Intl.DateTimeFormat("ar-EG-u-nu-latn",{year:"numeric",month:"short",day:"numeric"}).format(d);}
 function fmtSize(n){n=Number(n||0);if(!n)return "";if(n<1024*1024)return Math.max(1,Math.round(n/1024))+" KB";return (n/1024/1024).toFixed(1)+" MB";}
 function icon(name){
   var paths={

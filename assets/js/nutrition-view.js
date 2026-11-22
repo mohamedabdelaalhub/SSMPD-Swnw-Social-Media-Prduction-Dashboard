@@ -3,10 +3,10 @@
 function esc(v){return String(v==null?"":v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
 function cairoDay(v){var d=v instanceof Date?v:new Date(v);if(isNaN(d))return '';var parts=new Intl.DateTimeFormat('en-US',{timeZone:'Africa/Cairo',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(d),out={};parts.forEach(function(p){out[p.type]=p.value;});return out.year+'-'+out.month+'-'+out.day;}
 function today(){return cairoDay(new Date());}
-function date(v){if(!/^\d{4}-\d{2}-\d{2}$/.test(v||''))return 'تاريخ غير مسجل';return new Intl.DateTimeFormat('ar-EG',{year:'numeric',month:'long',day:'numeric',timeZone:'UTC'}).format(new Date(v+'T12:00:00Z'));}
-function dayDate(v){if(!/^\d{4}-\d{2}-\d{2}$/.test(v||''))return 'تاريخ غير مسجل';return new Intl.DateTimeFormat('ar-EG',{weekday:'long',year:'numeric',month:'long',day:'numeric',timeZone:'UTC'}).format(new Date(v+'T12:00:00Z'));}
+function date(v){if(!/^\d{4}-\d{2}-\d{2}$/.test(v||''))return 'تاريخ غير مسجل';return new Intl.DateTimeFormat('ar-EG-u-nu-latn',{year:'numeric',month:'long',day:'numeric',timeZone:'UTC'}).format(new Date(v+'T12:00:00Z'));}
+function dayDate(v){if(!/^\d{4}-\d{2}-\d{2}$/.test(v||''))return 'تاريخ غير مسجل';return new Intl.DateTimeFormat('ar-EG-u-nu-latn',{weekday:'long',year:'numeric',month:'long',day:'numeric',timeZone:'UTC'}).format(new Date(v+'T12:00:00Z'));}
 function shiftDay(v,amount){var d=new Date(v+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+amount);return d.toISOString().slice(0,10);}
-function confirmed(v){if(!v||isNaN(Date.parse(v)))return '';return new Intl.DateTimeFormat('ar-EG',{timeZone:'Africa/Cairo',day:'numeric',month:'short',hour:'numeric',minute:'2-digit'}).format(new Date(v));}
+function confirmed(v){if(!v||isNaN(Date.parse(v)))return '';return new Intl.DateTimeFormat('ar-EG-u-nu-latn',{timeZone:'Africa/Cairo',day:'numeric',month:'short',hour:'numeric',minute:'2-digit'}).format(new Date(v));}
 function status(meals,rows){
  meals=Array.isArray(meals)?meals:[];
  if(!meals.length)return '<p class="nutrition-empty">لم تُضف وجبات لهذه الزيارة.</p>';

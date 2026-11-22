@@ -38,7 +38,7 @@
   function arabicDate(value) {
     if (!value) return "";
     try {
-      return new Date(value).toLocaleDateString("ar-EG", { day: "numeric", month: "short" });
+      return new Date(value).toLocaleDateString("ar-EG-u-nu-latn", { day: "numeric", month: "short" });
     } catch (e) {
       return "";
     }

@@ -14,7 +14,7 @@
   }
   function when(d) {
     if (!d) return "";
-    try { return new Date(d).toLocaleString("ar-EG", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }); } catch (e) { return ""; }
+    try { return new Date(d).toLocaleString("ar-EG-u-nu-latn", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }); } catch (e) { return ""; }
   }
   function db() { return window.SSMPDDb.client; }
   var OVERDUE_MIN = 60; // تعليق مستني رد أكتر من ساعة = متأخر

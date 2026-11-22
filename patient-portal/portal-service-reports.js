@@ -1,7 +1,7 @@
 /* Patient portal: service reports (lab/radiology) uploaded by the center. Shows nothing unless the patient has reports. */
 (function(w){"use strict";
 function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
-function fmtDate(v){if(!v)return "—";try{var d=new Date(v);if(isNaN(d.getTime()))return "—";return new Intl.DateTimeFormat("ar-EG",{year:"numeric",month:"short",day:"numeric"}).format(d);}catch(e){return "—";}}
+function fmtDate(v){if(!v)return "—";try{var d=new Date(v);if(isNaN(d.getTime()))return "—";return new Intl.DateTimeFormat("ar-EG-u-nu-latn",{year:"numeric",month:"short",day:"numeric"}).format(d);}catch(e){return "—";}}
 function cardHtml(rows){
   if(!Array.isArray(rows)||!rows.length)return "";
   return '<div class="files-head"><div class="section-heading"><div><h2>تقارير الخدمات</h2><p>تقارير التحاليل والأشعة التي رفعها المركز لك.</p></div></div></div><div class="files-list">'+

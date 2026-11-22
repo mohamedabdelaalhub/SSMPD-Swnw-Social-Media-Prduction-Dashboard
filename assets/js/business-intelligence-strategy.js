@@ -11,7 +11,7 @@
   };
   function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
   function num(v){return Number(v||0).toLocaleString('en-US',{maximumFractionDigits:2});}
-  function dt(v){if(!v)return '—';try{return new Date(v).toLocaleDateString('ar-EG');}catch(e){return String(v);}}
+  function dt(v){if(!v)return '—';try{return new Date(v).toLocaleDateString('ar-EG-u-nu-latn');}catch(e){return String(v);}}
   function client(){return root.SSMPDDb&&root.SSMPDDb.client;}
   function manager(){var a=root.SSMPDAuth&&root.SSMPDAuth.currentAdmin;return !!(a&&root.SSMPDRoles&&root.SSMPDRoles.hasAnyRole(a,['general_manager','super_admin']));}
   function rpc(name,args){return client().rpc(name,args||{}).then(function(r){if(r.error)throw r.error;return r.data;});}

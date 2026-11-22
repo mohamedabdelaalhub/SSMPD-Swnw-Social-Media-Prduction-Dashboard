@@ -44,7 +44,7 @@ return '<div class="section" style="margin-bottom:10px;"><div style="display:fle
 '<div style="font-size:12px;color:var(--c-muted);margin-top:4px;">رقم الملف: '+esc(p.patient_code||"—")+' · '+esc(labelType(x.verification_type))+' · '+esc(labelRel(x.requested_relationship))+'</div>'+
 '<div style="font-size:11px;color:var(--c-muted);margin-top:3px;">بريد ملف المريض: '+esc(p.email||"غير مسجل")+' · بريد طلب التفعيل: '+esc(acc.login_email||x.requested_email||"—")+'</div>'+
 '<div style="font-size:11px;margin-top:3px;color:'+(emailMatch?"#2F7D5C":"#D0402A")+';">'+(emailMatch?"✓ البريد مطابق للملف":"⚠ البريد غير موجود أو غير مطابق — الاعتماد مقفول")+'</div>'+
-'<div style="font-size:11px;color:var(--c-muted);margin-top:3px;">'+new Date(x.submitted_at).toLocaleString("ar-EG")+(acc.activation_completed_at?" · الحساب متفعل":"")+'</div></div>'+
+'<div style="font-size:11px;color:var(--c-muted);margin-top:3px;">'+new Date(x.submitted_at).toLocaleString("ar-EG-u-nu-latn")+(acc.activation_completed_at?" · الحساب متفعل":"")+'</div></div>'+
 '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">'+buttons+'</div></div>'+
 (x.rejection_reason?'<div style="margin-top:8px;color:#D0402A;font-size:12px;">سبب الرفض: '+esc(x.rejection_reason)+'</div>':"")+'</div>';
 }).join("");

@@ -163,7 +163,7 @@
 
     var cursor = viewState.cursor;
     var year = cursor.getFullYear(), month = cursor.getMonth();
-    var monthLabel = cursor.toLocaleDateString("ar-EG", { month: "long", year: "numeric" });
+    var monthLabel = cursor.toLocaleDateString("ar-EG-u-nu-latn", { month: "long", year: "numeric" });
 
     var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">' +
       "<h2 style=\"margin:0;\"> <!--ssmpd-i18n:%D8%A7%D9%84%D9%86%D8%B4%D8%B1-->النشر</h2>" + viewToggleHtml() + '</div>';
@@ -212,7 +212,7 @@
       var isToday = k === todayKey;
       html += '<div class="calendar-cell"' + (isToday ? ' style="border-color:var(--c-primary);"' : '') + '><div class="day-num">' + d.getDate() + '</div>';
       dayItems.forEach(function (it) {
-        var timeLabel = new Date(it.scheduled_publish_at).toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" });
+        var timeLabel = new Date(it.scheduled_publish_at).toLocaleTimeString("ar-EG-u-nu-latn", { hour: "2-digit", minute: "2-digit" });
         html += '<div class="item" data-open-pub="' + it.id + '" title="' + escapeHtml(it.title) + '">' + timeLabel + ' — ' + escapeHtml(it.title) + W.brandBadgeHtml(it.brand) + '</div>';
       });
       html += '</div>';
@@ -428,7 +428,7 @@
         var tag = today ? '<span class="pbd-tag today">النهارده</span>' : (k === tomorrowKey ? '<span class="pbd-tag">بكره</span>' : (late ? '<span class="pbd-tag late">متأخرة</span>' : ""));
         html += '<div class="pbd-card' + (today ? " today" : "") + (late ? " late" : "") + '"><div class="pbd-head">' +
           '<div class="pbd-daynum">' + first.getDate() + '</div>' +
-          '<div class="pbd-day"><div class="pbd-dayname">' + escapeHtml(first.toLocaleDateString("ar-EG", { weekday: "long" })) + '</div>' +
+          '<div class="pbd-day"><div class="pbd-dayname">' + escapeHtml(first.toLocaleDateString("ar-EG-u-nu-latn", { weekday: "long" })) + '</div>' +
           '<div class="pbd-daymonth">' + escapeHtml(first.toLocaleDateString(LATN, { month: "long", year: "numeric" })) + '</div></div>' +
           tag + '<span class="pbd-count" title="عدد المواد">' + items.length + '</span></div><div class="pbd-list">';
         // سونو فوق ودينا تحتها (وأي مادة بدون صفحة في الآخر) — فاصل خفيف باسم الصفحة بينهم لو اليوم فيه أكتر من صفحة
@@ -495,7 +495,7 @@
     var st = JOB_STATUS_LABELS[job.status] || { label: job.status, cls: "draft" };
     var html = '<div style="margin-top:8px;padding:8px 10px;border:1px solid var(--c-border);border-radius:8px;font-size:12px;">' +
       '<div><b>حالة النشر التلقائي:</b> <span class="status-pill ' + st.cls + '">' + escapeHtml(st.label) + '</span>' +
-      (job.last_attempt_at ? ' <span style="color:var(--c-muted);">— آخر محاولة: ' + new Date(job.last_attempt_at).toLocaleString("ar-EG") + '</span>' : '') + '</div>';
+      (job.last_attempt_at ? ' <span style="color:var(--c-muted);">— آخر محاولة: ' + new Date(job.last_attempt_at).toLocaleString("ar-EG-u-nu-latn") + '</span>' : '') + '</div>';
     if (job.publish_facebook && (job.facebook_permalink || !job.story_facebook_id)) {
       html += '<div>فيسبوك: ' + (job.facebook_permalink
         ? '<a href="' + job.facebook_permalink + '" target="_blank" rel="noopener noreferrer">فتح المنشور ↗</a>'
@@ -578,7 +578,7 @@
     var ownerName = (adminsById[i.created_by] || {}).name || "—";
     var designerName = i.assigned_designer ? ((adminsById[i.assigned_designer] || {}).name || "—") : "—";
     var scheduledLine = (mode === "scheduled" && i.scheduled_publish_at)
-      ? '<span style="color:var(--c-muted);font-size:12px;">ميعاد النشر: <b>' + new Date(i.scheduled_publish_at).toLocaleString("ar-EG") + '</b></span>'
+      ? '<span style="color:var(--c-muted);font-size:12px;">ميعاد النشر: <b>' + new Date(i.scheduled_publish_at).toLocaleString("ar-EG-u-nu-latn") + '</b></span>'
       : "";
     var platformsNow = itemPlatforms(i);
     var manualScheduled = nonMetaPlatforms(platformsNow);
@@ -958,7 +958,7 @@
     window.SSMPDDb.client.rpc("reschedule_content_publish", { p_id: id, p_when: whenDate.toISOString() })
       .then(function (r) {
         if (r.error) throw r.error;
-        notify("اتغيّر ميعاد النشر لـ " + whenDate.toLocaleString("ar-EG"));
+        notify("اتغيّر ميعاد النشر لـ " + whenDate.toLocaleString("ar-EG-u-nu-latn"));
         closePublishModal(); render(document.getElementById("view-container"));
       })
       .catch(function (e) { if (btn) btn.disabled = false; notify("خطأ: " + e.message, "error"); });

@@ -432,7 +432,7 @@
       '<style>body{font-family:sans-serif;padding:24px;direction:rtl;}table{width:100%;border-collapse:collapse;margin:12px 0 24px;}' +
       'td,th{border:1px solid #ccc;padding:6px 10px;text-align:right;font-size:12px;}h1{font-size:20px;}</style></head><body>';
     html += '<h1>تقييمات تجربة المريض — مركز عيادات Swnw</h1>';
-    html += '<p>تاريخ التقرير: ' + new Date().toLocaleDateString("ar-EG") + ' — إجمالي التقييمات: ' + rows.length + '</p>';
+    html += '<p>تاريخ التقرير: ' + new Date().toLocaleDateString("ar-EG-u-nu-latn") + ' — إجمالي التقييمات: ' + rows.length + '</p>';
     html += "<table><tr><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%85%D8%B1%D9%8A%D8%B6-->المريض</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D9%87%D8%A7%D8%AA%D9%81-->الهاتف</th><th> <!--ssmpd-i18n:%D8%A7%D9%84%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE-->التاريخ</th><th>المتوسط</th><th> <!--ssmpd-i18n:%D9%85%D9%84%D8%A7%D8%AD%D8%B8%D8%A7%D8%AA-->ملاحظات</th></tr>";
     rows.forEach(function (r) {
       var p = r.patients || {};
@@ -599,7 +599,7 @@
       '<style>body{font-family:sans-serif;padding:24px;direction:rtl;}table{width:100%;border-collapse:collapse;margin:12px 0 24px;}' +
       'td,th{border:1px solid #ccc;padding:6px 10px;text-align:right;font-size:13px;}h1{font-size:20px;}h2{font-size:15px;margin-top:20px;}</style></head><body>';
     html += '<h1>تقرير داشبورد الليدز — مركز عيادات Swnw</h1>';
-    html += '<p>تاريخ التقرير: ' + new Date().toLocaleDateString("ar-EG") + (d.from || d.to ? ' — الفترة: ' + (d.from || "—") + ' إلى ' + (d.to || "—") : '') + '</p>';
+    html += '<p>تاريخ التقرير: ' + new Date().toLocaleDateString("ar-EG-u-nu-latn") + (d.from || d.to ? ' — الفترة: ' + (d.from || "—") + ' إلى ' + (d.to || "—") : '') + '</p>';
     html += "<table><tr><td> <!--ssmpd-i18n:%D9%84%D9%8A%D8%AF%D8%B2%20%D9%85%D9%81%D8%AA%D9%88%D8%AD%D8%A9-->ليدز مفتوحة</td><td>" + (res.open || 0) + '</td></tr>' +
       "<tr><td> <!--ssmpd-i18n:%D9%84%D9%8A%D8%AF%D8%B2%20%D9%85%D8%BA%D9%84%D9%82%D8%A9-->ليدز مغلقة</td><td>" + (res.closed || 0) + '</td></tr>' +
       "<tr><td> <!--ssmpd-i18n:%D8%AA%D9%85%20%D8%A7%D9%84%D8%AD%D8%AC%D8%B2-->تم الحجز</td><td>" + (res.booked || 0) + '</td></tr>' +
