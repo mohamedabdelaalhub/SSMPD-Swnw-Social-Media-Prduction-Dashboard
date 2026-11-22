@@ -71,11 +71,14 @@ function agentModal(b){if(document.querySelector('[data-qr-agmodal]'))return;var
    if(r&&r.already){toast('الحجز ده اتسجّل قبل كده');}else{toast('اتسجّل وصوله، رقمه '+((r&&r.ticket_no)!=null?r.ticket_no:''));if(r&&r.ticket_no!=null)bigDialog(String(r.ticket_no),'','رقم المريض');}
    regBusy=false;return refresh(true);}).catch(function(e){regBusy=false;toast((e&&e.message)||'تعذر تسجيل الوصول','error');upd();});};
  upd();}
-function html(){return '<div class="journey-section-head"><h3>الغرف والطابور</h3><span>'+esc(st.date||'')+'</span></div><h4>العيادات</h4>'+clinicRooms()+'<h4>طوابير الأطباء</h4>'+doctorQueues()+'<h4>غرف الأقسام</h4>'+deptQueues()+agentSection()+'<h4>آخر النداءات</h4>'+callsList()+manager();}
+/* Owner 2026-11-22 (today-shortcuts): the section opens from the «الغرف والطابور» / «إدارة الغرف» tiles; agent bookings moved to «حجوزات آلية». */
+function html(){return '<div class="journey-section-head"><h3>الغرف والطابور</h3><span>'+esc(st.date||'')+'</span></div><div data-qr-part="rooms"><h4>العيادات</h4>'+clinicRooms()+'<h4>طوابير الأطباء</h4>'+doctorQueues()+'<h4>غرف الأقسام</h4>'+deptQueues()+'<h4>آخر النداءات</h4>'+callsList()+'</div><div data-qr-part="agent">'+agentSection()+'</div><div data-qr-part="admin">'+manager()+'</div>';}
+function waitingCount(){var n=0;(st.doctors||[]).forEach(function(d){n+=(d.waiting_nos||[]).length;});(st.dept_tickets||[]).forEach(function(t){if(t.status==='waiting')n++;});return n;}
+window.SSMPDTodayQueue={bookings:function(){return ag||[];},register:function(b){agentModal(b);},refresh:function(){return refresh(true);}};
 function typing(sec){var a=document.activeElement;return !!(a&&sec&&sec.contains(a)&&a.matches&&a.matches('input,select'));}
 function paint(force){var host=target();if(!host)return;var sec=host.querySelector('[data-journey-queue]');if(!st){if(!sec){sec=document.createElement('section');sec.className='journey-section qr-sec';sec.dataset.journeyQueue='1';sec.innerHTML='<div class="journey-section-head"><h3>الغرف والطابور</h3></div><p class="journey-loading">جاري التحميل…</p>';host.appendChild(sec);}return;}
  if(sec&&!force&&typing(sec))return;var created=!sec;if(!sec){sec=document.createElement('section');sec.className='journey-section qr-sec';sec.dataset.journeyQueue='1';host.appendChild(sec);}
- var m=sec.querySelector('[data-qr-mgr]');if(m)mgrOpen=m.open;sec.innerHTML=html();wire(sec);}
+ var m=sec.querySelector('[data-qr-mgr]');if(m)mgrOpen=m.open;sec.innerHTML=html();sec.classList.add('tds-panel');sec.dataset.tdsPanel='rooms admin';sec.dataset.tdsCount=String(waitingCount());sec.dataset.tdsRooms=String(((st&&st.rooms)||[]).length);wire(sec);}
 function wire(sec){
  sec.querySelectorAll('[data-qr-pick]').forEach(function(s){s.onchange=function(){picks[s.dataset.qrPick]=s.value;};});
  var m=sec.querySelector('[data-qr-mgr]');if(m)m.ontoggle=function(){mgrOpen=m.open;};
