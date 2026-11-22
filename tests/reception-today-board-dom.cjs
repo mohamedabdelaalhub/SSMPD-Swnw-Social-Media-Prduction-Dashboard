@@ -22,7 +22,7 @@ const {JSDOM}=require('jsdom'),fs=require('node:fs'),assert=require('node:assert
  assert.equal(w.document.querySelectorAll('[data-unified-hub]').length,0,'no second board');
  // owner 2026-11-17 redesign: patients grouped by hour (time order), one chip strip with «الكل», compact sticky top
  assert(qa('.journey-hour').length>=1&&qa('.journey-hour .journey-card').length===7,'all patients sit in hour groups');
- assert.equal(qa('.journey-card h4')[0].textContent,'أحمد متأخر','earliest first');
+ assert.equal(qa('.journey-chip-name')[0].textContent,'أحمد متأخر','earliest first');
  assert(qa('.journey-hour-label').every(x=>/^\d{1,2}:00 (ص|م)$/.test(x.textContent)),'hour labels like 4:00 م');
  assert.equal(qa('.journey-src').map(x=>x.textContent).join(),'واتساب','owner 2026-11-17: channel tag');
  assert.deepEqual(qa('[data-journey-filter]').map(x=>x.querySelector('span').textContent),['الكل','الحجوزات','متأخر','في الانتظار','في غرفة الكشف','أنهى الكشف','عليه فلوس'],'chip strip with the new names');
@@ -32,7 +32,27 @@ const {JSDOM}=require('jsdom'),fs=require('node:fs'),assert=require('node:assert
  assert.equal(main('1'),'arrive');assert.equal(main('3'),'call');assert.equal(main('4'),'visit_complete');assert.equal(main('5'),'collect_due');assert.equal(main('6'),undefined);
  assert(card('1').querySelector('.journey-more [data-journey-action="no_show"]'),'no-show in menu');assert(card('1').querySelector('.journey-more [data-journey-v2-action="reschedule"]'),'reschedule in menu');
  assert(card('3').querySelector('.journey-more [data-journey-action="priority"]'),'priority in menu');
- assert(card('1').textContent.includes('متأخر'));assert(card('3').querySelector('.journey-wait.late'));assert(card('5').textContent.includes('عليه 150.00'));assert(card('6').textContent.includes('مدفوع'));
+ assert(card('1').textContent.includes('متأخر'));assert(card('3').querySelector('.journey-wait.late'));assert(card('5').textContent.includes('عليه 150.00'));assert(card('6').textContent.includes('تم التحصيل'));assert(!host.textContent.includes('مدفوع'),'SPEC A: no «مدفوع» tag');
+ // SPEC A (owner 2026-11-22): simpler «تشغيل اليوم»
+ assert(/^النهارده · /.test(q('.journey-day-text').textContent)&&/نوفمبر|ديسمبر|يناير|فبراير|مارس|أبريل|مايو|يونيو|يوليو|أغسطس|سبتمبر|أكتوبر/.test(q('.journey-day-text').textContent),'one Arabic date line: '+q('.journey-day-text').textContent);
+ assert(!/[٠-٩]/.test(q('.journey-day-text').textContent),'English digits in the date');
+ assert(q('.journey-date-nav [data-journey-day]'),'hidden date input still there');assert(!q('.journey-date-nav [data-journey-action="refresh"]'),'⟳ left the date row');
+ assert(q('.journey-tools [data-journey-action="refresh"]')&&q('.journey-tools [data-journey-action="pick_day"]'),'«تحديث» + «تغيير اليوم» in ⋯');
+ assert(q('.journey-docline').textContent.includes('د. سارة')&&q('.journey-docline-late').textContent==='متأخر 15 د','doctors summary line');
+ assert(q('section.journey-doctors').hidden,'doctor cards collapsed by default');assert.equal(q('section.journey-doctors').getAttribute('data-doctor-pay-workspace'),'ws1','payout hook stays on the cards');
+ q('[data-journey-docs-toggle]').click();assert(!q('section.journey-doctors').hidden&&q('[data-journey-docs-toggle]').textContent.includes('⌃'),'«تفاصيل» opens the cards');assert(q('.journey-doctor [data-doctor-pay="d1"]'),'payout slot inside the cards');
+ q('[data-journey-docs-toggle]').click();assert(q('section.journey-doctors').hidden);
+ assert.equal(qa('.journey-alert').length,1,'one alert line (delayed doctor only in the doctors line)');
+ assert(q('.journey-alert').textContent.includes('كريم مستني مستني 35 دقيقة — د. سارة'));assert.equal(q('.journey-alert [data-journey-action]').dataset.journeyAction,'call');assert.equal(q('.journey-alert .btn').textContent,'نادي');
+ assert(!q('.journey-action-center'),'no «يحتاج تدخل» side box');
+ assert(q('.journey-rail .journey-now')&&/^الآن · /.test(q('.journey-now-label').textContent),'orange «الآن» marker');
+ assert(q('.journey-card[data-appointment="1"] .journey-chip-sub.is-late').textContent==='متأخر 40 د'||/متأخر \d+ د/.test(q('.journey-card[data-appointment="1"] .journey-chip-sub').textContent),'late chip status');
+ assert.equal(q('.journey-card[data-appointment="3"] .journey-chip-sub').textContent,'35 د');assert.equal(q('.journey-card[data-appointment="4"] .journey-chip-sub').textContent,'جوه');assert.equal(q('.journey-card[data-appointment="5"] .journey-chip-sub').textContent,'متبقي 150');
+ assert(q('.journey-card[data-appointment="3"] .journey-chip-time'),'time on the chip');
+ assert(q('.journey-card[data-appointment="3"] .journey-card-line').textContent.includes('رقم الملف F3')&&!host.textContent.includes('ملف F3 ')&&!/ · ملف /.test(host.textContent),'«رقم الملف N»');
+ assert.equal(q('.journey-card[data-appointment="3"] .journey-card-detail h4'),null,'name only once');
+ assert.equal(q('.journey-card[data-appointment="5"] .journey-card-actions > .btn').textContent,'حصّل 150.00 ج.م','collect main button shows the amount');
+ assert(q('.journey-card[data-appointment="3"] [data-journey-action="account"]').textContent==='الحساب والخط الزمني'&&!q('[data-journey-action="timeline"]'),'one «الحساب والخط الزمني» item');
  const metric=k=>q('[data-journey-filter="'+k+'"] strong').textContent;
  assert.equal(metric('coming'),'2');assert.equal(metric('late'),'1');assert.equal(metric('waiting'),'1');assert.equal(metric('inside'),'1');assert.equal(metric('done'),'2');assert.equal(metric('due'),'1');
  assert(q('.journey-doctor-delayed').textContent.includes('15'));assert(q('[data-journey-action="new_booking"]'),'new booking for reception');
@@ -40,10 +60,10 @@ const {JSDOM}=require('jsdom'),fs=require('node:fs'),assert=require('node:assert
   const sx=q('[data-journey-search]');
   {const dsel=q('[data-journey-doctor]'),ssel=q('[data-journey-status]');assert(dsel&&ssel,'doctor + status filters exist');assert.deepEqual([...dsel.options].map(o=>o.textContent),['كل الأطباء','د. سارة']);assert.equal(ssel.options[0].textContent,'كل الحالات');
   sx.value='سارة';sx.dispatchEvent(new w.Event('input'));assert.equal(qa('.journey-card').length,7,'search also matches the doctor name');sx.value='';sx.dispatchEvent(new w.Event('input'));
-  ssel.value='waiting';ssel.dispatchEvent(new w.Event('change'));assert.deepEqual(qa('.journey-card h4').map(x=>x.textContent),['كريم مستني'],'status filter');
+  ssel.value='waiting';ssel.dispatchEvent(new w.Event('change'));assert.deepEqual(qa('.journey-chip-name').map(x=>x.textContent),['كريم مستني'],'status filter');
   assert.equal(q('.journey-f-all strong').textContent.trim().replace(/[^0-9]/g,''),'1','chips count the filtered set');
   ssel.value='';ssel.dispatchEvent(new w.Event('change'));assert.equal(qa('.journey-card').length,7);}
- const s=q('[data-journey-search]');s.value='0100'+'3';s.dispatchEvent(new w.Event('input'));assert.deepEqual(qa('.journey-card h4').map(x=>x.textContent),['كريم مستني']);
+ const s=q('[data-journey-search]');s.value='0100'+'3';s.dispatchEvent(new w.Event('input'));assert.deepEqual(qa('.journey-chip-name').map(x=>x.textContent),['كريم مستني']);
  q('[data-journey-action="clear_filter"]').click();assert.equal(qa('.journey-card').length,7);
  card('5').querySelector('[data-journey-action="collect_due"]').click();assert.equal(collected,'inv5');
  assert.deepEqual(errors,[]);dom.window.close();

@@ -18,7 +18,7 @@ const {JSDOM}=require('jsdom'),fs=require('node:fs'),assert=require('node:assert
  assert(host.querySelector('.journey-board'),'board rendered');
  host.querySelector('[data-journey-action="resume"]').click();for(let n=0;n<100&&!toasts.length;n++)await new Promise(r=>setTimeout(r,10));
  assert(toasts.includes('اتشال بالغلط — مش هيتحسب في المؤشرات'),'toast when the RPC marks it mistaken');
- host.querySelector('[data-journey-action="timeline"]').click();
+ host.querySelector('[data-journey-action="account"]').click();
  assert.equal(w.document.querySelectorAll('.journey-timeline .journey-mistaken').length,2,'both events carry the mistaken mark');
  console.log('PASS mistaken action: toast «اتشال بالغلط» + marked in the timeline.');process.exit(0);
 })().catch(e=>{console.error(e);process.exit(1);});
