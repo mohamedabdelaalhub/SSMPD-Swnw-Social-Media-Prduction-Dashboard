@@ -5,7 +5,7 @@ Trusted instructions (repository file). Owner request, Mohamed 2026-11-17. The i
 ## 1. How the style reaches you
 - The style is a marker at the start of the item's `angle`: `[curiosity_loop]`, `[health_story]`, `[health_twist]`, `[egyptian_catchphrase]` or `[numbered_content]`. A combination of two markers is allowed (for example `[health_story][curiosity_loop]`). No marker = normal production. `video_template` stays as usual (normally `medical_educational` for voice-over + b-roll).
 - Brand (`sono` / `dr_dina`) decides voice and identity. `dr_dina` = brain and nerves content. Use the page's approved voice and look.
-- `script` is the full text sent to ElevenLabs (one `op=tts` call, as always). `hook` is the opening sentence of `script` and `cta_text` is already inside it when spoken: never add either of them a second time.
+- `script` is the full text sent to the narrator voice (Instinct `op=vo_submit`, fallback ElevenLabs `op=tts` — docs/claude-content-style.md «Reel narrator voice»). `hook` is the opening sentence of `script` and `cta_text` is already inside it when spoken: never add either of them a second time.
 - If a style was asked for but the item holds only `script`, find the cut phrases yourself from the script (only when they are clear). If they are not, produce the normal edit and write the reason in the delivery notes.
 
 ## 2. `[curiosity_loop]` — graded suspense
@@ -17,7 +17,7 @@ The edit points are two lines after the marker in `angle`:
 النقلة | <exact phrase from script> | <stock shot description>
 الإجابة | <exact phrase from script> | <stock shot description>
 ```
-1. Make the voice first. Find the start time of each phrase from the voice alignment (`op=tts` with `timestamps`), or by checking the audio. Cut the shot at exactly that time.
+1. Make the voice first. Find the start time of each phrase from the voice alignment (`op=tts` with `timestamps`), or by checking the audio (an Instinct take has no timestamps: reelkit fits the timing to its pauses, so put each phrase on its own line). Cut the shot at exactly that time.
 2. Open with a shot that places the viewer in the situation quickly. At each phrase pick a shot that shows the new action or object. Search stock in English (`op=stock`); if the exact shot is not available use a generic one with the same meaning. Note the substitute in the delivery notes.
 3. People in stock are illustrative only: never present them as real patients or as Dr. Dina.
 4. Check that the spoken words and the synced captions match, and that every question raised has its answer in the script. Keep the medical information in the order of the script. Emergency content: open with the urgent action directly (no suspense).

@@ -22,8 +22,17 @@ import { makeKitStore } from "./kit-store.ts";
 //        timestamps:true -> JSON {ok, audio_base64, alignment{characters,start,end}} (one request, no chunking) for lip-sync/captions.
 //        The text first goes through the pronunciation list (kit file tts/pronunciations.json,
 //        plus the built-in defaults below): words Mohamed flagged are rewritten before speaking.
+//   POST ?op=vo_submit                         {script, voice?:auto|female|male, energy?:calm|moderate|energetic, notes?} -> {job_id}
+//        Instinct human voice-over (narrator). The voice-over worker on swnw-vps e-mails it and stores the MP3;
+//        voice "auto" alternates male/female job by job. Scripts only: 8+ digits in a row (phone / ID) is refused.
+//   POST ?op=vo_fetch&job_id=<uuid>                              -> MP3 bytes when done (X-VO-Voice header), else
+//        {ok, status: queued|leased|sent|timeout|failed, error?}. Not done 30 min after vo_submit = "timeout":
+//        then use op=tts as before.
+//   POST ?op=vo_status&job_id=<uuid>                             -> {ok, status, voice, clips:[{url, source, kind?, id?}]}
+//        clips = suggested shot links Instinct sent with the take (optional ideas, never required). Pixabay links carry
+//        kind+id: get the file with op=stock {id, type} then op=fetch_media (no-repeat rule as always).
 //   POST ?op=download&bucket=video-inputs|content-designs&path=<p>  -> file bytes
-//   POST ?op=stock                            {q,type?,orientation?,brand,content_id?} -> Pixabay hits
+//   POST ?op=stock                            {q | id, type?,orientation?,brand,content_id?} -> Pixabay hits (id = one hit by its Pixabay id)
 //        NO-REPEAT RULE (Mohamed, 2026-10-25): with brand, hits already used in that page's last
 //        20 items are removed (excluded_recent tells how many). allow_repeat:true skips the filter.
 //   POST ?op=fetch_media&url=<pixabay url>&brand=<sono|dr_dina>&id=<pixabay hit id>&kind=<photo|video>[&content_id=&q=]
@@ -101,6 +110,21 @@ async function sha256(text: string): Promise<string> {
 async function logMedia(admin: any, row: Record<string, unknown>) {
   const { error } = await admin.from("automation_media_usage").insert(row);
   if (error) console.error("media log", error.message);
+}
+
+// Instinct's suggested shot links -> {url, source, kind?, id?}. Pixabay page links (…/videos/<slug>-<id>/, …/photos/…)
+// get kind + id so op=stock {id} can find the downloadable file. Other sites are ideas only (no download through here).
+export function describeClips(raw: unknown): { url: string; source: string; kind?: string; id?: string }[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((u): u is string => typeof u === "string").slice(0, 20).map((url) => {
+    let host = ""; try { host = new URL(url).hostname.replace(/^www\./, ""); } catch { /* skip */ }
+    if (/(^|\.)pixabay\.com$/.test(host)) {
+      const m = url.match(/pixabay\.com\/(?:[a-z]{2}\/)?(videos|photos|illustrations|vectors)\/(?:[^/?#]*-)?(\d{3,15})\/?/);
+      if (m) return { url, source: "pixabay", kind: m[1] === "videos" ? "video" : "photo", id: m[2] };
+      return { url, source: "pixabay" };
+    }
+    return { url, source: host || "unknown" };
+  });
 }
 
 function serviceKey(): string | null {
@@ -235,10 +259,11 @@ Deno.serve(async (req) => {
     if (!key) return json({ ok: false, error: "PIXABAY_API_KEY missing" }, 500);
     const b = await req.json().catch(() => ({}));
     const query = String(b?.q || "").trim().slice(0, 100);
-    if (!query) return json({ ok: false, error: "q required" }, 400);
+    const hitId = /^\d{1,15}$/.test(String(b?.id ?? "")) ? String(b.id) : "";  // e.g. a Pixabay link Instinct suggested
+    if (!query && !hitId) return json({ ok: false, error: "q or id required" }, 400);
     const video = b?.type === "video";
     const u = new URL(video ? "https://pixabay.com/api/videos/" : "https://pixabay.com/api/");
-    u.searchParams.set("key", key); u.searchParams.set("q", query); u.searchParams.set("safesearch", "true");
+    u.searchParams.set("key", key); u.searchParams.set(hitId ? "id" : "q", hitId || query); u.searchParams.set("safesearch", "true");
     u.searchParams.set("per_page", String(Math.min(Math.max(Number(b?.per_page || 20), 3), 50)));
     if (!video) { u.searchParams.set("image_type", "photo"); if (b?.orientation) u.searchParams.set("orientation", String(b.orientation)); }
     const r = await fetch(u);
@@ -317,6 +342,40 @@ Deno.serve(async (req) => {
     if (!r.ok || !b64) return json({ ok: false, error: "openai " + r.status + " " + JSON.stringify(d?.error?.message || "").slice(0, 200) }, 502);
     await logMedia(admin, { brand, content_id: UUID.test(cid) ? cid : null, provider: "openai", media_kind: "photo", media_key: key, prompt: prompt.slice(0, 1000) });
     return new Response(Uint8Array.from(atob(b64), (c) => c.charCodeAt(0)), { headers: { "Content-Type": "image/png" } });
+  }
+
+  // Instinct voice-over queue (ops_private.vo_jobs; migration 20261122100000). The database checks length, voice/energy,
+  // the phone/ID guard and the rate limit (20/hour, 6 open); errors come back as 400/429 with the database message.
+  if (op === "vo_submit") {
+    const b = await req.json().catch(() => null);
+    const { data, error } = await admin.rpc("vo_job_submit", {
+      // same pronunciation list as op=tts (tashkeel on words that were read wrong)
+      p_script: applyPronunciations(String(b?.script || "").trim(), await pronunciations(admin)), p_voice: String(b?.voice || "auto"), p_energy: String(b?.energy || "moderate"),
+      p_notes: b?.notes == null ? null : String(b.notes),
+    });
+    if (error) return json({ ok: false, error: String(error.message || "vo_submit").slice(0, 200) }, error.code === "54000" ? 429 : 400);
+    return json({ ok: true, job_id: data });
+  }
+  if (op === "vo_fetch") {
+    const id = q.get("job_id") || "";
+    if (!UUID.test(id)) return json({ ok: false, error: "job_id" }, 400);
+    const { data, error } = await admin.rpc("vo_job_get", { p_id: id });
+    if (error || !data) return json({ ok: false, error: "vo_fetch" }, 502);
+    if (data.status === "not_found") return json({ ok: false, error: "not found" }, 404);
+    if (data.status === "done" && data.audio_base64) {
+      const bin = atob(String(data.audio_base64).replace(/\s+/g, ""));
+      const bytes = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      return new Response(bytes, { headers: { "Content-Type": "audio/mpeg", "X-VO-Voice": String(data.voice || ""), "X-VO-Energy": String(data.energy || "") } });
+    }
+    return json({ ok: true, status: data.status, voice: data.voice ?? null, error: data.error ?? null, clips: describeClips(data.clips) });
+  }
+  if (op === "vo_status") {
+    const id = q.get("job_id") || "";
+    if (!UUID.test(id)) return json({ ok: false, error: "job_id" }, 400);
+    const { data, error } = await admin.rpc("vo_job_get", { p_id: id });
+    if (error || !data) return json({ ok: false, error: "vo_status" }, 502);
+    if (data.status === "not_found") return json({ ok: false, error: "not found" }, 404);
+    return json({ ok: true, status: data.status, voice: data.voice ?? null, energy: data.energy ?? null, error: data.error ?? null, clips: describeClips(data.clips) });
   }
 
   // How many ElevenLabs characters are left this month (check before writing a reel's voice).

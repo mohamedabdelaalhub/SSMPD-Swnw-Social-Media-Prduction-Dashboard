@@ -110,3 +110,8 @@ verify_jwt = false
 [functions.meta-messenger-webhook]
 # Meta calls this directly (no Supabase JWT). Authenticated by X-Hub-Signature-256 (HMAC with META_APP_SECRET) inside the function.
 verify_jwt = false
+
+[functions.vo-worker]
+# Called machine-to-machine by the voice-over worker on swnw-vps (ops/vo-worker/vo.py), no Supabase Auth session.
+# The function rejects every request whose X-VO-Worker-Secret header doesn't match VO_WORKER_SECRET.
+verify_jwt = false

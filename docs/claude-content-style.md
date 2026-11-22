@@ -177,6 +177,44 @@ Every reel ends: content → contact card → outro. The outro is ALWAYS the ver
 - Outro (≈4 s, keep its own sound): Swnw `sono/outro.mp4` (blue, circular Swnw logo); Swnw cosmetics/aesthetics videos (تجميل، بشرة، ليزر، فيلر، بوتوكس…) use `sono/outro_cosmetics.mp4` instead; Dr. Dina `dina/outro.mp4`. The old burgundy outro (`sono/outro_old_burgundy.mp4`) is retired.
 - Keep the voice exactly as it is (one op=tts call per script, current model). Mohamed tried other models and sentence-by-sentence voice and rejected them (2026-10-11).
 
+## Reel narrator voice — Instinct human voice-over (owner 2026-11-22)
+The narrator of every reel is now a human voice-over from Instinct; ElevenLabs `op=tts` is the automatic fallback.
+- `scripts/reelkit/build.py` does it for you: narrator lines go to the gateway `POST ?op=vo_submit {script, voice, energy, notes?}`
+  (→ `job_id`), then `POST ?op=vo_fetch&job_id=<id>` every 20 s until the MP3 comes back (usually 2–5 min). Character voices
+  (doctor_male, woman_1, …) stay on ElevenLabs as documented in docs/claude-character-videos.md.
+- Building a reel without reelkit: call the same two ops yourself (same X-Run-Token), one job per reel, poll every 20 s, max 30 min.
+- **Voice**: always `auto` — the worker alternates male / female reel by reel (owner request). Don't pick one yourself unless
+  Mohamed asks for a specific reel.
+- **Energy** per reel type (storyboard `meta.vo.energy`): `calm` = medical awareness, sensitive topics, kids/elderly stories,
+  nutrition advice; `moderate` = default, tips/explainers, doctor introductions; `energetic` = offers, ads, openings, events.
+  Optional `meta.vo.notes` (≤300 chars, one short line of direction, e.g. «ابتسامة في الصوت في الآخر»).
+- **Script rules for Instinct**: scripts only — never a patient name, phone number or ID (the database refuses 8+ digits in a row;
+  only the center's own 0236230005 / 01010686264 are allowed in a CTA). Brand and foreign names written in Arabic WITH the
+  tashkeel to pronounce (سُونُو، دكتورة دِينَا، لِيزَر). Punctuation sets the pauses: short sentences, «،» for a small pause,
+  «.» for a full stop, a new line between scenes. The gateway applies the same pronunciation list as op=tts before sending.
+- **Fallback**: if Instinct has no MP3 after 30 minutes, refuses the script, or errors, reelkit uses ElevenLabs `op=tts` for the
+  narrator exactly as before (check `op=tts_quota` first, rule above). A regenerate after a failed speech check also goes to
+  ElevenLabs (we never wait 30 min twice). Say in the run report which voice each reel got («Instinct رجالي/حريمي» or
+  «ElevenLabs — Instinct ماردّش») — reelkit prints it.
+- Switch Instinct off for one run: `RK_NARRATOR=elevenlabs`.
+
+### Instinct suggested shots (owner 2026-11-22)
+With the voice, Instinct also sends links to shots that fit the script. They are **suggestions, not required**. Their job is to make
+the footage search easier: people who look Egyptian, and fewer repeated shots.
+- **Order of work**: write the storyboard text first, then `python3 scripts/reelkit/build.py story.json OUT --vo-submit` (asks
+  Instinct now, saves the job in OUT/vo_jobs.json), then `python3 scripts/reelkit/vo_job.py status OUT` until `clips` appear or the
+  voice is done (links usually come with the mp3, ~2–5 min). Choose the footage, add it to the storyboard **without changing the
+  spoken text** (a changed text = a new Instinct job), then run the normal build: it reuses the same job.
+  Without reelkit: `POST ?op=vo_status&job_id=<id>` → `clips`.
+- Each clip: `{url, source, kind?, id?}`. **Pixabay** links have `kind` + `id`: `POST ?op=stock {"id": <id>, "type": "video"|"photo",
+  "brand": ..., "content_id": ...}` returns that one hit (empty if this page used it recently) → download it with `op=fetch_media`
+  as usual. The no-repeat rule still applies to suggested shots.
+- **Other sites** (Pexels, YouTube, …) cannot be downloaded through the gateway: use them only as ideas for the search words and the
+  look (who, place, action, angle), then find a Pixabay equivalent.
+- Every shot still has to pass the usual checks: people who look Egyptian/Arab, no other brands, no bare skin, fits the scene, not
+  used in the page's last 20 items. Skip a suggestion that fails any of them. When no clips came, search as before.
+- In the run report, say how many suggested shots were used per reel.
+
 ## Reel voice-over pronunciation (Mohamed, 2026-10-11)
 - Before writing a reel's voice, call the gateway `POST ?op=tts_quota` (→ left, limit, resets_at). (If tts_quota itself answers an error, the API key can't read the balance: just go ahead with op=tts.) If `left` is less than the script length, don't call op=tts: make the posts/carousels, leave the reel, and tell Mohamed how many characters are left and the reset date.
 - New words to fix: write them with tashkeel in the script, and list them in your report for Mohamed (Claude in the main chat adds them to the permanent list). Don't try kit_put for tts/pronunciations.json from scheduled runs.
@@ -185,7 +223,7 @@ Every reel ends: content → contact card → outro. The outro is ALWAYS the ver
 
 ## Video items with NO uploaded footage
 - Follow the request style (claude_design_requests.style, chosen by staff for videos too): `photo` = licensed real stock footage/photos; `illustration` = brand-palette illustrations/motion graphics, no real people footage.
-- If the item has no uploaded clips in video-inputs, build the reel yourself: Pixabay stock videos (op=stock type=video, vertical, people who look Egyptian/Arab, no other brands) and/or photos with slow zoom, plus ElevenLabs voice-over of the item's script (op=tts), page music low under the voice, burned-in Arabic captions, and the page outro (kit outro.mp4) at the end. 1080×1920, 20–45 s.
+- If the item has no uploaded clips in video-inputs, build the reel yourself: Pixabay stock videos (op=stock type=video, vertical, people who look Egyptian/Arab, no other brands) and/or photos with slow zoom, plus the narrator voice-over of the item's script (Instinct via reelkit / op=vo_submit, ElevenLabs op=tts as fallback — see «Reel narrator voice» above), page music low under the voice, burned-in Arabic captions, and the page outro (kit outro.mp4) at the end. 1080×1920, 20–45 s.
 - Never show a fake doctor or fake patient testimonial; stock people are illustrative only.
 
 

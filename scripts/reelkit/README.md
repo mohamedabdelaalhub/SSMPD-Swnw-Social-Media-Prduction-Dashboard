@@ -8,6 +8,8 @@ python3 scripts/reelkit/build.py story.json OUTDIR --kit BRANDKIT [--dry] [--no-
 - `BRANDKIT`: فولدر فيه `sono_logo_web.png`, `sono_music_<calm|upbeat|serious>.mp3`, `sono_contact_video.jpg`, `sono_outro.mp4` (من البوابة `op=kit_get&name=sono/...`).
 - `--dry`: من غير ElevenLabs (توقيت تقديري، مفيش تكلفة) — للتجربة.
 - متطلبات: python3 + numpy، node + playwright (Chromium)، ffmpeg. الفونتات من `assets/fonts` في المستودع (`SSMPD_REPO` لو مختلف).
+- صوت الراوي (narrator): Instinct (صوت بشري) عن طريق البوابة `op=vo_submit` ثم `op=vo_fetch` كل ٢٠ ثانية لحد ٣٠ دقيقة، والصوت `auto` بيتبدّل رجالي/حريمي ريل بريل؛ الطاقة من `meta.vo.energy` (calm/moderate/energetic). لو مجاش في ٣٠ دقيقة أو حصل خطأ → ElevenLabs زي الأول. التوقيت بيتظبط على وقفات الصوت (سطر لكل جملة). `RK_NARRATOR=elevenlabs` يقفل Instinct.
+- لقطات Instinct المقترحة (اختيارية): `build.py story.json OUT --vo-submit` يطلب الصوت بدري، و`vo_job.py status OUT` بيعرض `clips`. لينكات Pixabay ليها `id` تتجاب بـ`op=stock {id,type,brand}` ثم `op=fetch_media`، والباقي أفكار للبحث بس. بعدها البيلد العادي بيستخدم نفس الجوب (متغيّرش النص المنطوق).
 - صوت ElevenLabs: لو البيئة فيها Network secret بيتكلّم مباشرة، ولو لأ (المهام المجدولة) بيروح تلقائي على البوابة `op=tts {voice,timestamps}` بتوكن التشغيل. Network secret بهيدر `xi-api-key` (البروكسي بيحطه). الأصوات في `voices.py` (doctor_male, male_2, woman_1, woman_2, elder_man, elder_woman, narrator). أصوات الأطفال مش متاحة بعد.
 
 ## أسلوبين بصريين (بدّل بينهم للتنويع، أو اخلطهم)
