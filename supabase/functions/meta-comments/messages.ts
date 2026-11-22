@@ -132,3 +132,61 @@ export async function syncMessages(db: any, brand: string, cfg: any, token: stri
   }
   await reviewHandoffs(db, brand, token, new Set([pageId, igId].filter(Boolean)), report).catch((e) => report.errors.push(`${brand} flow review: ${e?.message}`));
 }
+
+// ---------- Manual replies from the dashboard (owner 2026-11-22: «ايوة عايز الموظف يقدر يرد من الداشبورد») ----------
+// Only Messenger / Instagram Direct, only inside Meta's 24h standard messaging window (messaging_type RESPONSE),
+// sent with the same page token the autopilot uses. The caller's role is checked in index.ts before this runs.
+export const MANUAL_WINDOW_MS = 24 * 3600e3;
+export const WINDOW_CLOSED_AR = "عدّى 24 ساعة من آخر رسالة للعميل — ميتا مش بتسمح بالرد";
+
+async function conversationRows(db: any, conversationId: string) {
+  const { data, error } = await db.from("social_messages").select("*").eq("conversation_id", conversationId)
+    .order("sent_at", { ascending: false }).limit(60);
+  if (error) throw new Error(error.message);
+  return (data || []) as any[];
+}
+
+export async function suggestMessage(db: any, conversationId: string) {
+  const rows = await conversationRows(db, conversationId);
+  if (!rows.length) return { ok: false, error: "المحادثة مش موجودة" };
+  const chrono = rows.slice().reverse();
+  let lastPage = -1;
+  chrono.forEach((m, i) => { if (m.is_page) lastPage = i; });
+  const waiting = chrono.slice(lastPage + 1).filter((m) => !m.is_page);
+  if (!waiting.length) return { ok: false, error: "مفيش رسالة من العميل مستنية رد" };
+  const hist = chrono.slice(Math.max(0, lastPage - 3), lastPage + 1).map((m) => `${m.is_page ? "الصفحة" : "العميل"}: ${m.message || ""}`);
+  const d = await decideReply({ brand: rows[0].brand, channel: "message", text: waiting.map((m) => m.message || "").join("\n"), history: hist, clinicInfo: await clinicInfo() });
+  if (!d.ok) return { ok: false, error: d.error || "تعذر اقتراح رد" };
+  return { ok: true, text: d.reply || "" };
+}
+
+export async function sendManualMessage(db: any, opts: { conversationId: string; text: string; adminId: string; token: (brand: string) => string | null; now?: number }) {
+  const text = String(opts.text || "").trim();
+  if (!text) return { ok: false, error: "اكتب الرسالة الأول" };
+  if (text.length > 2000) return { ok: false, error: "الرسالة طويلة — الحد 2000 حرف" };
+  const rows = await conversationRows(db, opts.conversationId);
+  if (!rows.length) return { ok: false, error: "المحادثة مش موجودة" };
+  const { brand, platform } = rows[0];
+  if (platform !== "facebook" && platform !== "instagram") return { ok: false, error: "الرد من الداشبورد على ماسنجر وانستجرام بس" };
+  const lastCustomer = rows.find((m) => !m.is_page);
+  if (!lastCustomer || !lastCustomer.sender_id) return { ok: false, error: "مفيش رسالة من العميل نرد عليها" };
+  const now = opts.now ?? Date.now();
+  if (!lastCustomer.sent_at || now - Date.parse(lastCustomer.sent_at) > MANUAL_WINDOW_MS) return { ok: false, error: "WINDOW_CLOSED", message: WINDOW_CLOSED_AR };
+  const token = opts.token(brand);
+  const { data: cfg } = await db.from("meta_brand_config").select("facebook_page_id").eq("brand", brand).maybeSingle();
+  if (!token || !cfg?.facebook_page_id) return { ok: false, error: "الصفحة مش متوصلة بميتا (التوكن أو رقم الصفحة ناقص)" };
+  const sent = await gpostJson(`${cfg.facebook_page_id}/messages`, token, { recipient: { id: lastCustomer.sender_id }, messaging_type: "RESPONSE", message: { text } });
+  if (!sent.ok) return { ok: false, error: "ميتا رفضت الإرسال: " + String(sent.error || "خطأ غير معروف").slice(0, 200) };
+  const at = new Date(now).toISOString(), mid = sent.data?.message_id || `manual-${now}`;
+  const ins = await db.from("social_messages").upsert({
+    id: `${platform}:${mid}`, platform, brand, conversation_id: opts.conversationId, conversation_url: lastCustomer.conversation_url || null,
+    sender_id: cfg.facebook_page_id, sender_name: null, is_page: true, message: text, sent_at: at, status: "replied", sent_by: opts.adminId, updated_at: at
+  }, { onConflict: "id" });
+  // Customer messages after the page's previous reply are now answered (by this person).
+  const chrono = rows.slice().reverse();
+  let lastPage = -1;
+  chrono.forEach((m, i) => { if (m.is_page) lastPage = i; });
+  const ids = chrono.slice(lastPage + 1).filter((m) => !m.is_page && ["new", "failed", "expired"].includes(m.status)).map((m) => m.id);
+  if (ids.length) await db.from("social_messages").update({ status: "replied", reply_text: text, replied_at: at, reply_platform_id: mid, sent_by: opts.adminId, last_error: null, updated_at: at }).in("id", ids);
+  return { ok: true, id: `${platform}:${mid}`, saved: !ins.error };
+}
