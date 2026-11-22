@@ -20767,6 +20767,21 @@
       "reviewed": true
     },
     {
+      "title": "مثلاً: راجعت الفاتورة",
+      "labels": [
+        "مثلاً: راجعت الفاتورة"
+      ],
+      "text": "اكتب سبب قرارك (3 حروف على الأقل) قبل اعتماد أو رفض الطلب أو استلام الوردية. السبب بيتسجل مع اسمك على الطلب، والطلب اللي إنت عامله لازم حد تاني يعتمده.",
+      "article": "today-review-inbox",
+      "tabs": [
+        "production"
+      ],
+      "forms": [
+        "<h3>"
+      ],
+      "reviewed": true
+    },
+    {
       "title": "المسار",
       "labels": [
         "المسار"
@@ -22238,9 +22253,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1909,
-    "labels": 1399,
-    "files": 144,
-    "groups": 1503
+    "definitions": 1910,
+    "labels": 1400,
+    "files": 145,
+    "groups": 1504
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();

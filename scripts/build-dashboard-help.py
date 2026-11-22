@@ -1105,6 +1105,7 @@ frule('reception-services.js','الدفعة دي لأكتر من زيارة (ن�
 frule('reception-services.js','مثلًا: تحويل واحد لزيارتين — منار وابنها','ملاحظة اختيارية بتظهر على الإيصال، زي مين دفع أو إن التحويل كان لأكتر من زيارة. الملاحظة مبتغيّرش المبلغ.','reception-collect-multi')
 frule('main-treasury-count.js','مثلاً: جرد آخر اليوم','ملاحظة اختيارية على جرد الخزينة الرئيسية، زي سبب الجرد أو أي حاجة لاحظتها. الملاحظة مبتغيّرش المبلغ المعدود.','main-treasury-count')
 frule('main-treasury-count.js','نتيجة المراجعة|مثلاً: مطابقة بدون فرق','اكتب نتيجة مراجعتك لجرد الخزينة الرئيسية (مطابق أو فيه فرق واتحوّل لفروق الخزينة). المراجعة من شخص غير اللي عدّ، ومبتخصمش حاجة من حد.','main-treasury-count')
+frule('today-review-inbox.js','سبب القرار (إجباري)|سبب الرفض (إجباري)|مثلاً: راجعت الفاتورة','اكتب سبب قرارك (3 حروف على الأقل) قبل اعتماد أو رفض الطلب أو استلام الوردية. السبب بيتسجل مع اسمك على الطلب، والطلب اللي إنت عامله لازم حد تاني يعتمده.','today-review-inbox')
 def explain(row):
  label=row['label'];tab=domain(row['file'])
  if row['file']=='contract-marketing.js' and label in contract_help:return contract_help[label],'entities'
