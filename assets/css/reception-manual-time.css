@@ -1,0 +1,15 @@
+/* «حجز بميعاد يدوي» — booking modal step «امتى؟» (owner 2026-11-22, mockup booking-manual-time.html) */
+.rx-mt{display:grid;gap:8px;min-width:0}
+.rx-mt-sw,.rx-modal .rx-form .rx-mt .rx-mt-sw{display:flex;flex-direction:row;text-align:start;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:12px;border:1px solid #D5DEEE;background:#fff;cursor:pointer}
+.rx-mt.is-suggest .rx-mt-sw,.rx-mt-sw:has(input:checked){border:1.5px solid #0F369D;background:#F2F5FD}
+.rx-mt-sw input,.rx-modal .rx-form .rx-mt .rx-mt-sw input{flex:none;width:18px;height:18px;min-height:0;margin:2px 0 0;padding:0;accent-color:#0F369D;-webkit-appearance:auto;appearance:auto}
+.rx-mt-sw b{display:block;color:#0F369D;font-size:14px}.rx-mt-sw small{display:block;font-size:12px;color:#5b6577;margin-top:2px}
+.rx-mt-body{border:0;margin:0;padding:0;display:grid;gap:8px;min-width:0}
+.rx-mt-l{font-size:13px;color:#3B4658;font-weight:700}
+.rx-mt-chips{display:flex;gap:6px;flex-wrap:wrap}
+.rx-mt-chip input{position:absolute;opacity:0;pointer-events:none}
+.rx-mt-chip span{display:inline-block;font-size:13px;padding:6px 12px;border-radius:99px;border:1px solid #D5DEEE;background:#fff;color:#16212E;cursor:pointer}
+.rx-mt-chip input:checked+span{background:#0F369D;border-color:#0F369D;color:#fff}
+.rx-mt-chip input:focus-visible+span{outline:2px solid #F15A22;outline-offset:2px}
+.rx-mt-warn{margin:0;font-size:12px;background:#FFF3E9;color:#8A3A12;border-radius:10px;padding:8px 12px;line-height:1.8}
+.rx-manual-tag{display:inline-block;white-space:nowrap;font-size:11px;padding:0 6px;border-radius:99px;background:#E8EEFB;color:#0F369D;margin-inline-start:4px}

@@ -13088,6 +13088,33 @@
       "reviewed": true
     },
     {
+      "title": "حجز بميعاد يدوي (متفق عليه مع الدكتور) لو الميعاد مش في القايمة: اكتب الساعة بإيدك.",
+      "labels": [
+        "حجز بميعاد يدوي (متفق عليه مع الدكتور) لو الميعاد مش في القايمة: اكتب الساعة بإيدك."
+      ],
+      "text": "علّمها لما الميعاد مش في القايمة (مثلاً «لا توجد مواعيد متاحة»): اكتب الساعة بإيدك واختار السبب. لو برّه مواعيد الدكتور بيتضاف الوقت ده لليوم ده بس.",
+      "article": "reception-booking-manual-time",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "مثلاً: الدكتورة قالت هتيجي 7 ونص",
+      "labels": [
+        "مثلاً: الدكتورة قالت هتيجي 7 ونص",
+        "ملاحظة الاتفاق (اختياري)"
+      ],
+      "text": "اكتب تفاصيل الاتفاق مع الدكتور. إجبارية لو السبب «أخرى».",
+      "article": "reception-booking-manual-time",
+      "tabs": [
+        "reception_services"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "التاريخ (بتوقيت القاهرة)",
       "labels": [
         "التاريخ (بتوقيت القاهرة)"
@@ -22077,9 +22104,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1894,
-    "labels": 1387,
-    "files": 141,
-    "groups": 1491
+    "definitions": 1897,
+    "labels": 1390,
+    "files": 142,
+    "groups": 1493
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();
