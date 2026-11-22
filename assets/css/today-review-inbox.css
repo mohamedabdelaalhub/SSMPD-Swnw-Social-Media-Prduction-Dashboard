@@ -1,0 +1,37 @@
+/* «تشغيل اليوم» reviewer inbox — mockup docs/ui-references/mockups/today-reviewer-inbox.* (Swnw colours, local fonts). */
+.tri{display:grid;gap:12px;margin:12px 0}
+.tri[hidden]{display:none}
+.tri-card{background:#fff;border:1px solid #D5DEEE;border-radius:16px;padding:12px;display:grid;gap:10px}
+.tri-ch{display:flex;align-items:center;gap:8px}.tri-ch h3{margin:0;font-size:16px;flex:1;color:#16212E}
+.tri-cnt{font-size:12px;font-weight:700;background:#FFF3E9;color:#8A3A12;border-radius:99px;padding:2px 9px}
+.tri-muted{font-size:12px;color:#5b6577}
+.tri-tre{display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center}
+.tri-big{font-size:26px;font-weight:700;color:#0F369D;direction:ltr;text-align:right}
+.tri-item{border:1px solid #E3E8F2;border-radius:14px;padding:10px;display:grid;gap:6px}
+.tri-it{display:flex;align-items:center;gap:8px;min-width:0}.tri-it b{flex:1;min-width:0;overflow-wrap:anywhere}
+.tri-amt{font-weight:700;direction:ltr;white-space:nowrap}
+.tri-kind{font-size:11px;font-weight:700;border-radius:99px;padding:2px 8px;background:#E8EEFB;color:#0F369D;white-space:nowrap}
+.tri-kind.v{background:#FDE7E3;color:#D0402A}.tri-kind.p{background:#E6F4EC;color:#2F7D5C}.tri-kind.d{background:#F1ECFA;color:#5B3FA0}.tri-kind.s{background:#FFF3E9;color:#8A3A12}
+.tri-sub{font-size:12px;color:#5b6577}
+.tri-neg{color:#D0402A;font-weight:700}.tri-pos{color:#2F7D5C;font-weight:700}
+.tri-why{font-size:12px;color:#3B4658;background:#F4F7FC;border-radius:8px;padding:6px 8px}
+.tri-details{font-size:12px;color:#8A3A12;background:#FFF3E9;border-radius:8px;padding:6px 8px}
+.tri-acts{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.tri-acts .btn{padding:6px 12px;font-size:13px}
+.btn.tri-ok{background:#2F7D5C;border-color:#2F7D5C;color:#fff;font-weight:700}
+.btn.tri-no{color:#D0402A;border-color:#F3C7BF;background:#fff}
+.tri-mine{font-size:12px;color:#8a93a3}
+.tri-ro{opacity:.75}
+.tri-empty{background:#fff;border:1px dashed #D5DEEE;border-radius:16px;padding:14px;text-align:center;color:#2F7D5C;font-weight:700}
+.tri-badge{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 5px;margin-inline-start:6px;border-radius:99px;background:#F15A22;color:#fff;font-size:11px;font-weight:700;vertical-align:middle}
+.tri-modal{position:fixed;inset:0;background:rgba(22,33,46,.45);display:grid;place-items:center;padding:16px;z-index:9999}
+.tri-box{background:#fff;border-radius:18px;padding:16px;width:min(520px,100%);max-height:90vh;overflow:auto;display:grid;gap:10px}
+.tri-box h3{margin:0;font-size:17px}
+.tri-box label{display:grid;gap:4px;font-size:13px;color:#3B4658}
+.tri-box input{font:inherit;border:1px solid #D5DEEE;border-radius:12px;padding:10px 12px}
+.tri-note{font-size:12px;background:#FFF3E9;color:#8A3A12;border-radius:10px;padding:8px 12px;margin:0;line-height:1.7}
+.tri-err{color:#D0402A;font-size:13px;margin:0}
+@media (prefers-reduced-motion:no-preference){.tri-item{transition:opacity .2s}}
+/* owner 2026-11-22: opening the tab with something waiting scrolls here and flashes the inbox once */
+.tri.tri-flash{box-shadow:0 0 0 3px #F15A22;border-radius:16px}
+@media (prefers-reduced-motion:no-preference){.tri{transition:box-shadow .4s}}
