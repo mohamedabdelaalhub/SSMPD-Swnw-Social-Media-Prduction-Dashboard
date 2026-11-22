@@ -1052,6 +1052,8 @@ frule('reception-booking-discount.js','رقم الكارنيه','رقم كارن
 frule('reception-booking-discount.js','الكارنيه ساري لحد','آخر يوم الكارنيه ساري فيه. لازم يكون يوم الزيارة أو بعده، ولو خلص قبل الحضور تسجيل الحضور بيقف.','reception-booking-discount')
 frule('reception-booking-discount.js','سبب الخصم|مثلاً قريب موظف','سبب الخصم الخاص — إجباري.','reception-booking-discount')
 frule('reception-booking-discount.js','القريب','اختار ملف القريب اللي هيتربط بالمريض في «كارت العيلة». الربط بيتعمل مرة واحدة بمستند إثبات القرابة.','reception-booking-discount')
+frule('leads-booking-funnel.js','لحد','آخر يوم في فترة «مؤشرات الحجز من الليدز». الليدز بتتحسب بتاريخ دخولها.','leads-booking')
+frule('leads-booking-funnel.js','من','أول يوم في فترة «مؤشرات الحجز من الليدز» (الافتراضي أول الشهر).','leads-booking')
 frule('reception-service-later.js','الخدمة تتحدد عند الحضور','علّمها لو المريض لسه ماقررش الخدمة: بنحجز وقت الدكتور بس (٣٠ دقيقة مبدئياً)، والخدمة والسعر يتحددوا في «تسجيل حضور».','reception-booking-service-later')
 frule('reception-service-later.js','الخدمة (إجباري)','الحجز ده من غير خدمة — اختار الخدمة اللي المريض قررها من خدمات قسم الدكتور. الحضور مش بيتسجل غير بعد الاختيار.','reception-booking-service-later')
 frule('reception-manual-time.js','حجز بميعاد يدوي (متفق عليه مع الدكتور)|حجز بميعاد يدوي (متفق عليه مع الدكتور) لو الميعاد مش في القايمة: اكتب الساعة بإيدك.','علّمها لما الميعاد مش في القايمة (مثلاً «لا توجد مواعيد متاحة»): اكتب الساعة بإيدك واختار السبب. لو برّه مواعيد الدكتور بيتضاف الوقت ده لليوم ده بس.','reception-booking-manual-time')
