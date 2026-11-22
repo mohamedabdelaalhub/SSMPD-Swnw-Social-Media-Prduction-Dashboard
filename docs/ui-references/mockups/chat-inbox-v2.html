@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>تصور: شات الرسايل — الشكل الجديد</title>
+<style>
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W3.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W6.woff2) format("woff2");font-weight:600 800}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Regular.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Bold.woff2) format("woff2");font-weight:600 800}
+:root{--brand:#0F369D;--accent:#F15A22;--ink:#16212E;--muted:#667085;--line:#E6EBF3;--soft:#F3F6FB;--tint:#EAF0FF;--teal:#00B0BD;--old:#525B6F;--pos:#2F7D5C;--neg:#D0402A}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;color:var(--ink);background:#EEF2F8;font-size:14px}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+svg{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.note{max-width:1400px;margin:16px auto 0;padding:0 16px;color:var(--muted);font-size:12px;display:flex;gap:8px;align-items:center}
+.note b{color:var(--brand)}
+.inbox{max-width:1400px;margin:12px auto 16px;padding:0 16px;display:grid;grid-template-columns:340px minmax(0,1fr) 300px;gap:16px;height:calc(100vh - 70px);min-height:560px}
+.inbox.noinfo{grid-template-columns:340px minmax(0,1fr)}
+.inbox.noinfo .info{display:none}
+.pane{background:#fff;border-radius:24px;box-shadow:0 6px 24px rgba(15,54,157,.06);display:flex;flex-direction:column;min-height:0;overflow:hidden}
+/* list */
+.lhead{padding:18px 18px 12px;display:grid;gap:12px}
+.lhead h2{margin:0;font-size:20px;display:flex;align-items:center;gap:8px}
+.lhead h2 .count{font-size:12px;font-weight:600;color:#fff;background:var(--accent);border-radius:999px;padding:2px 9px}
+.search{display:flex;align-items:center;gap:8px;background:var(--soft);border-radius:14px;padding:0 12px;height:44px;color:var(--muted)}
+.search input{border:0;background:none;outline:0;flex:1;min-width:0;font-size:14px}
+.tabs{display:flex;gap:18px;border-bottom:1px solid var(--line)}
+.tabs button{border:0;background:none;padding:6px 0 10px;color:var(--muted);font-size:14px;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.tabs button.on{color:var(--ink);font-weight:600;border-color:var(--accent)}
+.tabs button i{font-style:normal;font-size:11px;background:var(--soft);border-radius:999px;padding:1px 7px;margin-inline-start:4px}
+.chans{display:flex;gap:6px}
+.chans button{flex:1;min-width:0;height:36px;border:1px solid var(--line);background:#fff;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:5px;font-size:12px;color:var(--muted);white-space:nowrap}
+.chans button.on{background:var(--tint);border-color:#CFDCF8;color:var(--brand);font-weight:600}
+.chans svg{width:15px;height:15px}
+.list{overflow:auto;padding:4px 10px 12px;flex:1}
+.conv{display:flex;gap:12px;align-items:center;width:100%;border:0;background:none;text-align:start;padding:12px 10px;border-radius:16px;margin:2px 0}
+.conv:hover{background:var(--soft)}
+.conv.on{background:var(--tint)}
+.av{position:relative;width:46px;height:46px;border-radius:50%;background:var(--soft);color:var(--brand);display:grid;place-items:center;flex:none}
+.av svg{width:22px;height:22px}
+.av .ch{position:absolute;bottom:-2px;inset-inline-start:-2px;width:19px;height:19px;border-radius:50%;border:2px solid #fff;display:grid;place-items:center;color:#fff}
+.av .ch svg{width:10px;height:10px;stroke-width:2.4}
+.ch.fb{background:#1877F2}.ch.ig{background:#D62976}.ch.wa{background:#25D366}
+.cbody{flex:1;min-width:0;display:grid;gap:3px}
+.crow{display:flex;align-items:center;gap:8px;min-width:0}
+.crow b{font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
+.crow time{font-size:11px;color:var(--muted);flex:none}
+.crow span.prev{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
+.conv.unread .crow b{color:var(--ink)}
+.conv.unread .prev{color:var(--ink)!important;font-weight:600}
+.dot{min-width:20px;height:20px;border-radius:999px;background:var(--teal);color:#fff;font-size:11px;display:grid;place-items:center;padding:0 6px;flex:none}
+.empty-list{color:var(--muted);text-align:center;padding:40px 10px}
+/* chat */
+.chead{display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--line)}
+.chead .back{display:none}
+.ctitle{flex:1;min-width:0;display:grid;gap:2px}
+.ctitle b{font-size:17px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ctitle small{color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.icon-btn{width:44px;height:44px;border-radius:14px;border:0;background:var(--soft);color:var(--brand);display:grid;place-items:center;flex:none}
+.icon-btn:hover{background:var(--tint)}
+.chip{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 12px;border-radius:999px;font-size:12px;white-space:nowrap;flex:none}
+.chip.bot{background:#E3F7F8;color:#00747C}
+.chip.human{background:#FFF1E6;color:#B4540A}
+.chip.win{background:var(--soft);color:var(--muted)}
+.chip.win.late{background:#FDECEA;color:var(--neg)}
+.chip i{width:7px;height:7px;border-radius:50%;background:currentColor}
+.msgs{flex:1;overflow:auto;padding:20px 24px;display:flex;flex-direction:column;gap:4px;background:linear-gradient(#fff,#FBFCFE)}
+.sep{align-self:center;margin:12px 0;font-size:11px;color:var(--muted);background:var(--soft);border-radius:999px;padding:4px 14px}
+.m{max-width:min(72%,560px);display:grid;gap:4px;margin-top:6px}
+.m .b{padding:11px 16px;border-radius:20px;line-height:1.9;white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px}
+.m.in{align-self:flex-start}
+.m.in .b{background:#fff;border:1px solid var(--line);border-start-start-radius:6px}
+.m.out{align-self:flex-end}
+.m.out .b{background:var(--tint);color:var(--ink);border-start-end-radius:6px}
+.m.out.human .b{background:var(--brand);color:#fff}
+.m .meta{font-size:11px;color:var(--muted);display:flex;gap:6px;align-items:center;padding:0 6px}
+.m.out .meta{justify-content:flex-end}
+.m .meta svg{width:13px;height:13px}
+.m.grp{margin-top:0}
+.typing{align-self:flex-start;font-size:12px;color:var(--muted);padding:6px}
+.composer{grid-template-columns:minmax(0,1fr);padding:12px 16px 16px;border-top:1px solid var(--line);display:grid;gap:8px}
+.cbar{display:flex;align-items:flex-end;gap:8px;background:var(--soft);border-radius:20px;padding:6px}
+.cbar textarea{flex:1;min-width:0;width:0;border:0;background:none;outline:0;resize:none;min-height:40px;max-height:140px;padding:10px 8px;line-height:1.7;font-size:14px}
+.ghost{height:40px;border:0;border-radius:14px;background:#fff;color:var(--brand);display:flex;align-items:center;gap:6px;padding:0 12px;white-space:nowrap;font-size:13px}
+.send{height:40px;border:0;border-radius:14px;background:var(--accent);color:#fff;display:flex;align-items:center;gap:8px;padding:0 18px;font-weight:600;white-space:nowrap}
+.send:disabled{opacity:.45;cursor:default}
+.send svg{transform:scaleX(-1)}
+.hint{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:6px;padding:0 6px}
+.closed{margin:12px 16px 16px;border-radius:18px;background:#FFF6EF;padding:14px 16px;display:grid;gap:10px}
+.closed b{color:#B4540A}
+.closed .tpls{display:flex;gap:8px;flex-wrap:wrap}
+.closed .tpls button{border:1px solid #F4D3BD;background:#fff;border-radius:12px;padding:8px 12px;font-size:12px;white-space:nowrap}
+/* info */
+.info{padding:24px 20px;overflow:auto;align-items:stretch}
+.info .big{width:84px;height:84px;margin:0 auto;border-radius:50%;background:var(--tint);color:var(--brand);display:grid;place-items:center;position:relative}
+.info .big svg{width:38px;height:38px}
+.info .big .ch{position:absolute;bottom:2px;inset-inline-start:2px;width:24px;height:24px;border-radius:50%;border:3px solid #fff;display:grid;place-items:center;color:#fff}
+.info .big .ch svg{width:11px;height:11px;stroke-width:2.4}
+.info h3{text-align:center;margin:12px 0 2px;font-size:18px}
+.info .sub{text-align:center;color:var(--muted);font-size:12px}
+.acts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:18px 0}
+.acts button{border:0;background:none;display:grid;justify-items:center;gap:6px;font-size:12px;color:var(--ink);white-space:nowrap}
+.acts button span{width:46px;height:46px;border-radius:50%;background:var(--soft);color:var(--brand);display:grid;place-items:center}
+.acts button:hover span{background:var(--tint)}
+.kv{border-top:1px solid var(--line);padding-top:14px;display:grid;gap:14px}
+.kv div{display:grid;gap:3px}
+.kv small{color:var(--muted);font-size:12px}
+.kv b{font-size:14px;font-weight:600}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:14px;padding:10px 16px;font-size:13px;opacity:0;pointer-events:none;transition:.2s}
+.toast.on{opacity:1}
+@media (max-width:1180px){.inbox,.inbox.noinfo{grid-template-columns:300px minmax(0,1fr)}.info{display:none!important}.inbox.sheet .info{display:flex!important;position:fixed;inset:auto 0 0 0;max-height:80vh;border-radius:24px 24px 0 0;z-index:9;box-shadow:0 -12px 40px rgba(15,54,157,.2)}}
+@media (max-width:760px){
+ .note{padding:0 12px}
+ .inbox,.inbox.noinfo{grid-template-columns:minmax(0,1fr);padding:0 12px;gap:12px;height:calc(100vh - 64px);min-height:480px}
+ .inbox.open .lpane{display:none}.inbox:not(.open) .cpane{display:none}
+ .chead{padding:10px 12px;gap:8px}.chead .back{display:grid}
+ .chead .chip{display:none}
+ .msgs{padding:14px 12px}.m{max-width:86%}
+ .composer{padding:10px}.cbar textarea{font-size:16px}.search input{font-size:16px}
+ .ghost .lbl{display:none}
+}
+</style>
+</head>
+<body>
+<div class="note"><b>تصور تفاعلي</b> · مفيش حاجة بتتحفظ — دوس على أي محادثة، جرّب الفلاتر، اكتب وابعت.</div>
+<div class="inbox" id="ib">
+ <section class="pane lpane">
+  <div class="lhead">
+   <h2>الرسايل <span class="count" id="cnt"></span></h2>
+   <label class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="q" placeholder="دوّر باسم أو كلمة"></label>
+   <div class="tabs" id="tabs"><button data-t="all" class="on">الكل</button><button data-t="wait">محتاج رد <i id="wc"></i></button><button data-t="done">تم الرد</button></div>
+   <div class="chans" id="chans">
+    <button data-c="all" class="on">الكل</button>
+    <button data-c="fb"><svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 0 0-7.8 13.5L3 21l4.6-1.2A9 9 0 1 0 12 3z"/></svg>ماسنجر</button>
+    <button data-c="ig"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/></svg>انستجرام</button>
+    <button data-c="wa"><svg viewBox="0 0 24 24"><path d="M5 19l1.2-3.8A8 8 0 1 1 9 18.3z"/></svg>واتساب</button>
+   </div>
+  </div>
+  <div class="list" id="list"></div>
+ </section>
+ <section class="pane cpane" id="chat"></section>
+ <aside class="pane info" id="info"></aside>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const I={user:'<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>',
+fb:'<svg viewBox="0 0 24 24"><path d="M4 20 8 8l5 6 3-4"/></svg>',ig:'<svg viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="4"/></svg>',wa:'<svg viewBox="0 0 24 24"><path d="M6 18l1-3a6 6 0 1 1 2 2z"/></svg>',
+info:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>',ext:'<svg viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>',
+send:'<svg viewBox="0 0 24 24"><path d="M4 12h15M13 6l6 6-6 6"/></svg>',spark:'<svg viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6"/></svg>',
+back:'<svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>',bot:'<svg viewBox="0 0 24 24"><rect x="5" y="8" width="14" height="11" rx="3"/><path d="M12 4v4M9 13h.01M15 13h.01"/></svg>',
+lead:'<svg viewBox="0 0 24 24"><path d="M4 5h16v14H4zM8 9h8M8 13h5"/></svg>',phone:'<svg viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a1 1 0 0 1-1 1A16 16 0 0 1 4 5a1 1 0 0 1 1-1"/></svg>',
+check:'<svg viewBox="0 0 24 24"><path d="M5 12l4 4L19 7"/></svg>',clock:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>'};
+const CH={fb:'ماسنجر',ig:'انستجرام',wa:'واتساب'};
+const C=[
+ {id:1,name:'Om Gofran',ch:'fb',left:'باقي 21 ساعة للرد',bot:'bot',unread:0,msgs:[
+  {d:'in',t:'السلام عليكم، عايزة أحجز علاج طبيعي لابني',at:'7:12 م',day:'اليوم'},
+  {d:'out',by:'bot',t:'وعليكم السلام 🌿 أهلاً بحضرتك في سونو. إيه اليوم أو الوقت المناسب لحضرتك؟',at:'7:20 م'},
+  {d:'in',t:'اليوم متاح',at:'7:20 م'},
+  {d:'out',by:'bot',t:'تمام يا ام محمد 🌿 سجّلنا طلبك لعلاج طبيعي. زميلنا من الاستقبال هيتواصل مع حضرتك على رقمك لتأكيد الميعاد.',at:'7:25 م'}]},
+ {id:2,name:'عيادات سونو التخصصية',ch:'fb',left:'باقي 23 ساعة للرد',bot:'bot',unread:2,wait:1,msgs:[
+  {d:'in',t:'سعر الكشف بكام؟',at:'8:50 م',day:'اليوم'},{d:'out',by:'bot',t:'سعر الكشف بيختلف حسب التخصص. حضرتك محتاج أنهي تخصص؟',at:'8:59 م'},{d:'in',t:'عظام',at:'9:02 م'},{d:'in',t:'ولو فيه أشعة ينفع أعملها نفس اليوم؟',at:'9:03 م'}]},
+ {id:3,name:'Hamada Refat',ch:'ig',left:'باقي 20 ساعة للرد',bot:'human',unread:1,wait:1,msgs:[
+  {d:'in',t:'عايز أعرف مواعيد دكتور الأسنان',at:'8:00 م',day:'اليوم'},{d:'out',by:'human',who:'محمد',t:'أهلاً بحضرتك، دكتور الأسنان متاح السبت والتلات من 5 لـ 9.',at:'8:04 م'},{d:'in',t:'تمام ينفع السبت الساعة 6؟',at:'8:10 م'}]},
+ {id:4,name:'Nabila Ebeed',ch:'wa',left:'باقي 4 ساعات للرد',late:1,bot:'human',unread:0,msgs:[
+  {d:'in',t:'نستأذنك في وسيلة تواصل',at:'4:00 م',day:'اليوم'},{d:'out',by:'human',who:'سارة',t:'أكيد، رقم الاستقبال 01000000000',at:'4:05 م'}]},
+ {id:5,name:'Mido Abdo',ch:'wa',closed:1,bot:'bot',unread:0,msgs:[
+  {d:'in',t:'شكراً جداً',at:'6:30 م',day:'أمس'},{d:'out',by:'bot',t:'العفو، نورتنا 🌿',at:'6:31 م'}]}];
+let st={t:'all',c:'all',q:'',open:1,info:true,drafts:{}};
+const $=s=>document.querySelector(s),ib=$('#ib');
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),1800);}
+function last(c){return c.msgs[c.msgs.length-1];}
+function vis(){return C.filter(c=>(st.c==='all'||c.ch===st.c)&&(st.t==='all'||(st.t==='wait'?c.wait:!c.wait))&&(!st.q||(c.name+c.msgs.map(m=>m.t).join(' ')).toLowerCase().includes(st.q.toLowerCase())));}
+function renderList(){
+ const w=C.filter(c=>c.wait).length;$('#wc').textContent=w;$('#cnt').textContent=C.reduce((a,c)=>a+c.unread,0)+' جديد';
+ const v=vis();
+ $('#list').innerHTML=v.length?v.map(c=>{const l=last(c);return `<button class="conv ${c.id===st.open?'on':''} ${c.unread?'unread':''}" data-id="${c.id}">
+  <span class="av">${I.user}<span class="ch ${c.ch}">${I[c.ch]}</span></span>
+  <span class="cbody"><span class="crow"><b>${c.name}</b><time>${l.at}</time></span>
+  <span class="crow"><span class="prev">${l.d==='out'?(l.by==='bot'?'البوت: ':'أنت: '):''}${l.t}</span>${c.unread?`<span class="dot">${c.unread}</span>`:''}</span></span></button>`}).join(''):'<div class="empty-list">مفيش محادثات بالفلتر ده</div>';
+}
+function bubbles(c){let out='',prevDir='';c.msgs.forEach(m=>{if(m.day){out+=`<div class="sep">${m.day}</div>`;prevDir='';}
+ const who=m.d==='in'?'':(m.by==='bot'?I.bot+'البوت':(m.who||'أنت'));
+ out+=`<div class="m ${m.d} ${m.by==='human'?'human':''} ${prevDir===m.d+m.by?'grp':''}"><div class="b">${m.t}</div><div class="meta">${who?`<span>${who}</span>·`:''}<span>${m.at}</span>${m.d==='out'?I.check:''}</div></div>`;prevDir=m.d+m.by;});return out;}
+function renderChat(){const c=C.find(x=>x.id===st.open);
+ if(!c){$('#chat').innerHTML='<div class="empty-list" style="margin:auto">اختار محادثة من القايمة</div>';return;}
+ const botChip=c.bot==='bot'?`<span class="chip bot"><i></i>البوت شغّال</span>`:`<span class="chip human"><i></i>موظف ماسك المحادثة</span>`;
+ const win=c.closed?`<span class="chip win late">${I.clock}عدّت الـ 24 ساعة</span>`:`<span class="chip win ${c.late?'late':''}">${I.clock}${c.left}</span>`;
+ $('#chat').innerHTML=`<div class="chead"><button class="icon-btn back" data-a="back" aria-label="رجوع">${I.back}</button>
+  <span class="av">${I.user}<span class="ch ${c.ch}">${I[c.ch]}</span></span>
+  <div class="ctitle"><b>${c.name}</b><small>${CH[c.ch]} · سونو</small></div>${botChip}${win}
+  <button class="icon-btn" data-a="meta" aria-label="افتح في ميتا">${I.ext}</button><button class="icon-btn" data-a="info" aria-label="بيانات العميل">${I.info}</button></div>
+  <div class="msgs" id="msgs">${bubbles(c)}</div>
+  ${c.closed?`<div class="closed"><b>عدّى 24 ساعة من آخر رسالة للعميل — ميتا مش بتسمح بالرد إلا بقالب معتمد</b><div class="tpls"><button data-tpl="متابعة بعد الزيارة">قالب: متابعة بعد الزيارة</button><button data-tpl="تذكير بالميعاد">قالب: تذكير بالميعاد</button></div></div>`:
+  `<div class="composer"><div class="cbar"><textarea id="ta" rows="1" placeholder="اكتب رسالة…">${st.drafts[c.id]||''}</textarea>
+  <button class="ghost" data-a="suggest">${I.spark}<span class="lbl">اقترح رد</span></button><button class="send" data-a="send" id="sb">إرسال ${I.send}</button></div>
+  <div class="hint">${c.bot==='bot'?'أول ما تبعت، البوت هيسكت في المحادثة دي لحد ما ترجّعه':'البوت ساكت — المحادثة معاك'}${c.bot==='human'&&c.ch==='wa'?' · <a href="#" data-a="return">رجّع للبوت</a>':''}</div></div>`}`;
+ const ms=$('#msgs');ms.scrollTop=ms.scrollHeight;const ta=$('#ta');if(ta){fit(ta);$('#sb').disabled=!ta.value.trim();}
+}
+function renderInfo(){const c=C.find(x=>x.id===st.open);if(!c){$('#info').innerHTML='';return;}
+ $('#info').innerHTML=`<div class="big">${I.user}<span class="ch ${c.ch}">${I[c.ch]}</span></div><h3>${c.name}</h3><div class="sub">${CH[c.ch]} · صفحة سونو</div>
+ <div class="acts"><button data-a="lead"><span>${I.lead}</span>ملف الليد</button><button data-a="call"><span>${I.phone}</span>اتصال</button><button data-a="meta"><span>${I.ext}</span>فتح في ميتا</button></div>
+ <div class="kv"><div><small>الحالة</small><b>${c.wait?'محتاج رد':'تم الرد'}</b></div><div><small>مين بيرد</small><b>${c.bot==='bot'?'البوت':'موظف'}</b></div><div><small>أول رسالة</small><b>الأحد 22 نوفمبر · ${c.msgs[0].at}</b></div><div><small>عدد الرسايل</small><b>${c.msgs.length}</b></div></div>`;}
+function fit(ta){ta.style.height='auto';ta.style.height=Math.min(ta.scrollHeight,140)+'px';}
+function all(){ib.classList.toggle('noinfo',!st.info);renderList();renderChat();renderInfo();}
+document.addEventListener('click',e=>{
+ const cv=e.target.closest('.conv');if(cv){st.open=+cv.dataset.id;const c=C.find(x=>x.id===st.open);c.unread=0;ib.classList.add('open');ib.classList.remove('sheet');all();return;}
+ const tb=e.target.closest('#tabs button');if(tb){st.t=tb.dataset.t;document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b===tb));renderList();return;}
+ const cb=e.target.closest('#chans button');if(cb){st.c=cb.dataset.c;document.querySelectorAll('#chans button').forEach(b=>b.classList.toggle('on',b===cb));renderList();return;}
+ const tp=e.target.closest('[data-tpl]');if(tp){const c=C.find(x=>x.id===st.open);c.msgs.push({d:'out',by:'human',who:'أنت',t:'[قالب: '+tp.dataset.tpl+']',at:'9:36 م'});all();toast('اتبعت القالب (تجربة)');return;}
+ const a=e.target.closest('[data-a]');if(!a)return;e.preventDefault();const c=C.find(x=>x.id===st.open);
+ switch(a.dataset.a){
+  case 'back':ib.classList.remove('open');break;
+  case 'info':if(innerWidth<=1180)ib.classList.toggle('sheet');else{st.info=!st.info;all();}break;
+  case 'meta':toast('هيفتح المحادثة في ميتا');break;
+  case 'lead':toast('هيفتح ملف الليد');break;
+  case 'call':toast('هيفتح رقم العميل');break;
+  case 'suggest':{const ta=$('#ta');ta.value='أهلاً بحضرتك 🌿 الكشف عظام 300 جنيه، والأشعة متاحة نفس اليوم. تحب نحجزلك ميعاد؟';fit(ta);$('#sb').disabled=false;st.drafts[c.id]=ta.value;break;}
+  case 'send':{const ta=$('#ta'),v=ta.value.trim();if(!v)return;c.msgs.push({d:'out',by:'human',who:'أنت',t:v,at:'9:36 م'});c.bot='human';c.wait=0;st.drafts[c.id]='';all();toast('اتبعت (تجربة — مفيش حاجة بتتحفظ)');break;}
+  case 'return':c.bot='bot';all();toast('البوت رجع يرد في المحادثة دي');break;}
+});
+document.addEventListener('input',e=>{if(e.target.id==='q'){st.q=e.target.value;renderList();}if(e.target.id==='ta'){fit(e.target);st.drafts[st.open]=e.target.value;$('#sb').disabled=!e.target.value.trim();}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')ib.classList.remove('sheet');if(e.target.id==='ta'&&e.key==='Enter'&&!e.shiftKey){e.preventDefault();$('[data-a=send]').click();}});
+all();
+</script>
+</body>
+</html>

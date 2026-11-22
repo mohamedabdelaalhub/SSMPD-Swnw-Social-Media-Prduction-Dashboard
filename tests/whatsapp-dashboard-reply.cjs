@@ -110,6 +110,7 @@ async function ui(){
  if(width>760)assert.equal(await page.locator('.cm-chat-head .cm-bot.human').innerText(),'موظف ماسك المحادثة');
  assert.deepEqual(await page.locator('.cm-chat-pane .cm-b.me .cm-b-who').allInnerTexts(),['البوت','منى'],'bot vs staff on bubbles');
  assert.match(await page.locator('.cm-chat-pane .cm-hint').innerText(),/البوت ساكت/);
+ assert.equal(await page.locator('.cm-b.me.staff p').evaluate(e=>getComputedStyle(e).backgroundColor),'rgb(14, 122, 110)','staff reply WhatsApp green (owner: colour follows the platform)');assert.equal(await page.locator('.cm-b.me.auto p').evaluate(e=>getComputedStyle(e).backgroundColor),'rgb(220, 245, 227)','bot reply light green');
  await page.locator('.cm-chat-pane .cm-input').fill('تمام، هنأكد مع حضرتك');await page.locator('[data-msend]').click();
  await page.waitForFunction(()=>toasts.includes('اتبعتت على واتساب'));
  assert.deepEqual(await page.evaluate(()=>calls.slice(0,2)),[{action:'send_message',conversation_id:'whatsapp:201000000001',text:'تمام، هنأكد مع حضرتك'},{action:'outbox_status',id:'q-ok'}]);
