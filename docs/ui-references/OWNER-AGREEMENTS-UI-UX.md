@@ -287,6 +287,6 @@ Items marked **[NEW]** are not in any handoff or README.
 
 ## 7. Main button colour (owner, 2026-11-22) **[NEW]**
 - «ماتخلي الاورنج دا الرمادي الغامق بتاعنا ولما يهوفر عليه يديله الاورنج أشيك» (said about the reception patients-list mockup).
-- In mockups, the main row button (e.g. «حجز موعد», «افتح الزيارة», «تنفيذ») is dark grey `#525B6F` with white text.
+- In mockups, the main row button (e.g. «حجز موعد», «افتح الزيارة», «تنفيذ») is our darkest colour `#16212E` (the identity's dark ink) with white text. The owner corrected `#525B6F` with «فيه لون أغمق بنستخدمه».
 - On hover or keyboard focus it turns orange `#F15A22` with a soft orange shadow.
 - Whether this also applies to buttons already live (e.g. «زيارة جديدة» in the patient file) is not decided. Ask the owner before changing live screens.
