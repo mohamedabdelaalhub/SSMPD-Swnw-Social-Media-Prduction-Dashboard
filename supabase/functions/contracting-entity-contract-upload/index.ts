@@ -44,7 +44,7 @@ async function getCaller(req: Request) {
 }
 
 async function uploadViaBridge(entityName: string, contractId: string, file: File, bytes: Uint8Array) {
-  const res = await fetch(DRIVE_BRIDGE_URL, {
+  const res = await fetch(bridgeUrl(DRIVE_BRIDGE_URL), {
     method: "POST",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
     body: JSON.stringify({
@@ -102,3 +102,9 @@ Deno.serve(async (req) => {
   }
 });
 
+
+// Server-to-bridge auth: token is read from the DRIVE_BRIDGE_TOKEN secret (optional until set on both sides).
+function bridgeUrl(base: string): string {
+  const t = Deno.env.get("DRIVE_BRIDGE_TOKEN");
+  return t ? `${base}${base.includes("?") ? "&" : "?"}token=${encodeURIComponent(t)}` : base;
+}
