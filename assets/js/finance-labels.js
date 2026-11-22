@@ -39,5 +39,12 @@ function fmtStamp(v){if(!v)return '—';var d=new Date(v);if(isNaN(d))return Str
 var NUM=/^[-+\u2212]?[\d,]+(\.\d+)?$/,ISO=/^\d{4}-\d{2}-\d{2}$/;
 /* numbers keep their sign on the left in RTL (no «20.00-»), ISO dates read as Arabic dates */
 function tidy(root){if(!root||!root.querySelectorAll)return;root.querySelectorAll('td,.fc-num').forEach(function(td){if(td.children.length||td.hasAttribute('data-ff'))return;var t=td.textContent.trim();if(NUM.test(t)){td.setAttribute('data-ff','');td.innerHTML='<span class="acs-num" dir="ltr">'+t.replace(/^-/,'\u2212')+'</span>';}else if(ISO.test(t)){td.setAttribute('data-ff','');td.textContent=fmtDate(t);td.title=t;}});}
-window.SSMPDFinanceLabels={label:label,known:known,translate:function(r){translate(r);tidy(r);},map:L,fmtDate:fmtDate,fmtStamp:fmtStamp,tidy:tidy};
+/* «code — Arabic account name» everywhere an entry line is shown (owner 2026-11-22: «محتاج القيود تظهر باسم الحساب مش رقم الحساب فقط»).
+   Names come from the data the screen already has (line.account_name, finance_accounts, trial balance); every name seen is remembered
+   for the session so screens without names (the reception journal) can still label the same codes. Unknown code → the code alone. */
+var ACC={};try{ACC=JSON.parse(sessionStorage.getItem('ssmpd_acc_names')||'{}')||{};}catch(_){ACC={};}
+function rememberAccounts(list){var n=0;(list||[]).forEach(function(a){var c=a&&(a.code||a.account),nm=a&&(a.name||a.account_name);if(c&&nm&&ACC[c]!==nm){ACC[c]=nm;n++;}});if(n){try{sessionStorage.setItem('ssmpd_acc_names',JSON.stringify(ACC));}catch(_){}}}
+function rememberSnapshot(d){if(!d)return;rememberAccounts(d.finance_accounts);rememberAccounts(d.trial);(d.entries||[]).forEach(function(e){rememberAccounts(e.lines);});}
+function accountLabel(code,name){var c=code==null?'':String(code),nm=name||ACC[c];return nm?c+' — '+nm:c;}
+window.SSMPDFinanceLabels={label:label,known:known,accountLabel:accountLabel,rememberAccounts:rememberAccounts,rememberSnapshot:rememberSnapshot,translate:function(r){translate(r);tidy(r);},map:L,fmtDate:fmtDate,fmtStamp:fmtStamp,tidy:tidy};
 })();
