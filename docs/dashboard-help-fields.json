@@ -1,10 +1,10 @@
 {
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1898,
-    "labels": 1391,
-    "files": 142,
-    "groups": 1494
+    "definitions": 1900,
+    "labels": 1392,
+    "files": 143,
+    "groups": 1496
   },
   "fields": [
     {
@@ -9823,6 +9823,26 @@
       "tab": "price_lists",
       "article": "price-lists",
       "text_sha256": "d4e58156ff40d8c5aa7149e158c88c7be8b8599379008b22dec9f4d9f20dd953"
+    },
+    {
+      "file": "leads-booking-funnel.js",
+      "label": "من",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "production",
+      "article": "leads-booking",
+      "text_sha256": "c09ba73acddddf5f93261e18b75e26040376a05f5320c461a75d687b7cf5b389"
+    },
+    {
+      "file": "leads-booking-funnel.js",
+      "label": "لحد",
+      "name": "",
+      "kind": "html",
+      "forms": [],
+      "tab": "production",
+      "article": "leads-booking",
+      "text_sha256": "42857ea53322e864c4c5c8266d1b538b5d9960435321962742b25d4240070fde"
     },
     {
       "file": "leads-missing-data-enhancement.js",
