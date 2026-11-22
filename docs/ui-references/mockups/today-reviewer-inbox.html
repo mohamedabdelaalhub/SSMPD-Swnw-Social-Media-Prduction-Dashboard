@@ -1,0 +1,128 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>تصور: «تشغيل اليوم» للمحاسب / المدير — صندوق المهام</title>
+<style>
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Regular.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"BigVesta Arabic";src:url(../../../assets/fonts/BigVesta-Bold.woff2) format("woff2");font-weight:700}
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W3.woff2) format("woff2");font-weight:400}
+@font-face{font-family:"Hiragino Kaku";src:url(../../../assets/fonts/Hiragino-W6.woff2) format("woff2");font-weight:700}
+*{box-sizing:border-box}
+body{margin:0;background:#E9EDF5;font-family:"Hiragino Kaku","BigVesta Arabic",system-ui,Tahoma,sans-serif;color:#16212E;font-size:14px}
+.stage{display:grid;gap:24px;padding:20px 12px;max-width:1300px;margin:0 auto}
+.cap{margin:0 0 8px;font-size:12px;color:#5b6577}
+.phones{display:grid;grid-template-columns:repeat(3,390px);gap:24px;justify-content:center}
+.phone{width:390px;background:#F4F7FC;border-radius:28px;border:1px solid #D5DEEE;overflow:hidden;min-height:844px;box-shadow:0 12px 30px rgba(15,54,157,.10)}
+.pad{padding:14px;display:grid;gap:12px}
+.head{display:flex;align-items:center;gap:8px}.head h2{margin:0;font-size:20px;color:#0F369D;flex:1}
+.btn{font:inherit;border:1px solid #D5DEEE;background:#fff;border-radius:12px;padding:8px 14px;color:#16212E;white-space:nowrap}
+.btn.pri{background:#0F369D;border-color:#0F369D;color:#fff;font-weight:700}.btn.sm{padding:6px 10px;font-size:13px}
+.btn.ok{background:#2F7D5C;border-color:#2F7D5C;color:#fff;font-weight:700}.btn.no{color:#D0402A;border-color:#F3C7BF}
+.tabbar{display:flex;gap:6px;overflow:hidden}.tb{position:relative;font-size:13px;border:1px solid #D5DEEE;border-radius:99px;padding:6px 12px;background:#fff;white-space:nowrap}
+.tb.on{background:#0F369D;color:#fff;border-color:#0F369D}.badge{position:absolute;top:-7px;left:-6px;min-width:20px;height:20px;border-radius:99px;background:#F15A22;color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center;padding:0 5px}
+.card{background:#fff;border:1px solid #D5DEEE;border-radius:16px;padding:12px;display:grid;gap:10px}
+.ch{display:flex;align-items:center;gap:8px}.ch h3{margin:0;font-size:16px;flex:1}.cnt{font-size:12px;font-weight:700;background:#FFF3E9;color:#8A3A12;border-radius:99px;padding:2px 9px}
+.tre{display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center}
+.big{font-size:26px;font-weight:700;color:#0F369D;direction:ltr;text-align:right}.muted{font-size:12px;color:#5b6577}
+.item{border:1px solid #E3E8F2;border-radius:14px;padding:10px;display:grid;gap:6px}
+.it{display:flex;align-items:center;gap:8px}.it b{flex:1}.amt{font-weight:700;direction:ltr}
+.kind{font-size:11px;font-weight:700;border-radius:99px;padding:2px 8px;background:#E8EEFB;color:#0F369D}
+.kind.v{background:#FDE7E3;color:#D0402A}.kind.p{background:#E6F4EC;color:#2F7D5C}.kind.d{background:#F1ECFA;color:#5B3FA0}.kind.s{background:#FFF3E9;color:#8A3A12}
+.why{font-size:12px;color:#3B4658;background:#F4F7FC;border-radius:8px;padding:6px 8px}
+.acts{display:flex;gap:6px;flex-wrap:wrap}
+.warn{font-size:11px;color:#8A3A12}
+.done{opacity:.45;text-decoration:line-through}
+.empty{background:#fff;border:1px dashed #D5DEEE;border-radius:16px;padding:16px;text-align:center;color:#2F7D5C;font-weight:700}
+.toast{background:#16212E;color:#fff;border-radius:12px;padding:10px 12px;font-size:13px}
+.tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.tile{background:#fff;border:1px solid #D5DEEE;border-radius:14px;padding:9px 10px;display:grid;gap:2px;min-height:58px}.tile .n{font-size:18px;font-weight:700;color:#0F369D}.tile .l{font-size:12px;color:#3B4658}
+.note{font-size:12px;background:#FFF3E9;color:#8A3A12;border-radius:10px;padding:8px 12px;margin:0;line-height:1.7}
+.legend{max-width:1218px;margin:0 auto;font-size:13px;color:#3B4658;line-height:1.9;background:#fff;border:1px solid #D5DEEE;border-radius:16px;padding:14px 18px}.legend b{color:#0F369D}
+</style></head><body><div class="stage"><div class="phones">
+
+<!-- 1: reviewer inbox -->
+<section><p class="cap">١ — المحاسب / المدير يفتح «تشغيل اليوم»: اللي مستنيه فوق (بيانات تجريبية)</p>
+<div class="phone"><div class="pad">
+ <div class="head"><h2>تشغيل اليوم</h2><button class="btn">⋯</button></div>
+ <div class="tabbar"><span class="tb on">تشغيل اليوم<span class="badge">6</span></span><span class="tb">الحسابات</span><span class="tb">التقارير</span></div>
+
+ <div class="card">
+  <div class="ch"><h3>الخزينة الرئيسية</h3><span class="muted">مع: محمود</span></div>
+  <div class="tre"><div><div class="big">48,250</div><div class="muted">الرصيد المتوقع دلوقتي (جنيه)</div></div><button class="btn pri sm">جرد الخزينة الرئيسية</button></div>
+  <div class="muted">آخر جرد: امبارح 23:10 — مظبوط ✓</div>
+ </div>
+
+ <div class="card">
+  <div class="ch"><h3>ورديات مستنية استلام</h3><span class="cnt">2</span></div>
+  <div class="item"><div class="it"><span class="kind s">خزنة الاستقبال</span><b>وردية منار</b><span class="amt">6,400</span></div>
+   <div class="muted">قفلت 21:30 · المعدود 6,400 · المتوقع 6,450 · <span style="color:#D0402A">عجز 50</span></div>
+   <div class="acts"><button class="btn ok sm">استلام</button><button class="btn sm">تفاصيل</button></div></div>
+  <div class="item"><div class="it"><span class="kind s">خزنة الاستقبال</span><b>وردية مازن</b><span class="amt">3,120</span></div>
+   <div class="muted">مفتوحة من 16:00 · لسه ما اتسلمتش</div>
+   <div class="acts"><button class="btn sm">تفاصيل</button></div></div>
+ </div>
+
+ <div class="card">
+  <div class="ch"><h3>طلبات مستنية موافقة</h3><span class="cnt">4</span></div>
+  <div class="item"><div class="it"><span class="kind v">إلغاء خدمة</span><b>زيارة 49 · سارة تجريبية</b><span class="amt">7,000</span></div>
+   <div class="why">«الخدمة اتسجلت غلط» — منار · 21:27</div>
+   <div class="acts"><button class="btn ok sm">اعتماد</button><button class="btn no sm">رفض</button><button class="btn sm">تفاصيل</button></div></div>
+  <div class="item"><div class="it"><span class="kind v">الزيارة اتسجلت غلط</span><b>زيارة 46 · منى تجريبية</b><span class="amt">1,000</span></div>
+   <div class="why">«المريض ما جاش» — منار · 21:28</div>
+   <div class="acts"><button class="btn ok sm">اعتماد</button><button class="btn no sm">رفض</button><button class="btn sm">تفاصيل</button></div></div>
+  <div class="item"><div class="it"><span class="kind d">مستحقات دكتور</span><b>د. جلدية تجريبية</b><span class="amt">2,300</span></div>
+   <div class="why">صرف من الديسك — أحمد · 20:40</div>
+   <div class="acts"><button class="btn ok sm">اعتماد</button><button class="btn no sm">رفض</button><button class="btn sm">تفاصيل</button></div></div>
+  <div class="item"><div class="it"><span class="kind p">سلفة</span><b>زينة تجريبية</b><span class="amt">500</span></div>
+   <div class="why">«ظروف عائلية» — زينة · 18:05</div>
+   <div class="acts"><button class="btn ok sm">اعتماد</button><button class="btn no sm">رفض</button><button class="btn sm">تفاصيل</button></div></div>
+ </div>
+
+ <div class="tiles"><div class="tile"><span class="n">7</span><span class="l">الأطباء</span></div><div class="tile"><span class="n">4</span><span class="l">الغرف والطابور</span></div><div class="tile"><span class="n">9</span><span class="l">حجوزات آلية</span></div></div>
+ <p class="muted" style="margin:0">↓ وبعدها جدول اليوم زي ما هو</p>
+</div></div></section>
+
+<!-- 2: approve / reject dialog -->
+<section><p class="cap">٢ — «اعتماد» أو «رفض»: سبب قصير، وبعدها الطلب يختفي على طول</p>
+<div class="phone"><div class="pad">
+ <div class="head"><h2>تشغيل اليوم</h2></div>
+ <div class="card">
+  <div class="ch"><h3>اعتماد — إلغاء خدمة</h3></div>
+  <div class="muted">زيارة 49 · سارة تجريبية · كشف جلدية · 7,000 · طلب منار 21:27</div>
+  <div class="why">السبب: «الخدمة اتسجلت غلط»</div>
+  <div class="note">اللي هيحصل: الخدمة تتلغي، والمدفوع يرجع رصيد للمريض، وأتعاب الدكتور تتعكس. مفيش حاجة بتتمسح — كله بقيود عكسية.</div>
+  <label class="muted">سبب القرار (إجباري)</label>
+  <div class="btn" style="text-align:start;color:#8a93a3">مثلاً: راجعت الفاتورة مع منار</div>
+  <div class="acts"><button class="btn ok">اعتماد</button><button class="btn">رجوع</button></div>
+ </div>
+ <div class="card">
+  <div class="ch"><h3>طلبات مستنية موافقة</h3><span class="cnt">3</span></div>
+  <div class="item done"><div class="it"><span class="kind v">إلغاء خدمة</span><b>زيارة 49 · سارة تجريبية</b><span class="amt">7,000</span></div></div>
+  <div class="item"><div class="it"><span class="kind v">الزيارة اتسجلت غلط</span><b>زيارة 46 · منى تجريبية</b><span class="amt">1,000</span></div>
+   <div class="acts"><button class="btn ok sm">اعتماد</button><button class="btn no sm">رفض</button><button class="btn sm">تفاصيل</button></div></div>
+ </div>
+ <div class="toast">اتعتمد ✓ — الطلب اتشال من القايمة</div>
+ <p class="note">الطلب اللي إنت قدمته بنفسك بيظهر بس من غير «اعتماد» — لازم حد تاني يراجعه.</p>
+</div></div></section>
+
+<!-- 3: all clear -->
+<section><p class="cap">٣ — لما يخلص كل حاجة: الأقسام الفاضية تختفي</p>
+<div class="phone"><div class="pad">
+ <div class="head"><h2>تشغيل اليوم</h2><button class="btn">⋯</button></div>
+ <div class="tabbar"><span class="tb on">تشغيل اليوم</span><span class="tb">الحسابات</span><span class="tb">التقارير</span></div>
+ <div class="card">
+  <div class="ch"><h3>الخزينة الرئيسية</h3><span class="muted">مع: محمود</span></div>
+  <div class="tre"><div><div class="big">54,650</div><div class="muted">الرصيد المتوقع دلوقتي (جنيه)</div></div><button class="btn pri sm">جرد الخزينة الرئيسية</button></div>
+ </div>
+ <div class="empty">مفيش حاجة مستنياك ✓</div>
+ <div class="tiles"><div class="tile"><span class="n">7</span><span class="l">الأطباء</span></div><div class="tile"><span class="n">4</span><span class="l">الغرف والطابور</span></div><div class="tile"><span class="n">9</span><span class="l">حجوزات آلية</span></div></div>
+ <p class="note">أول ما يتعمل طلب جديد أو وردية تتقفل: يظهر هنا لوحده، والرقم البرتقالي على التاب يزيد، وييجي إشعار في الجرس.</p>
+</div></div></section>
+</div>
+
+<div class="legend">
+<b>مين يشوف ده:</b> المحاسب / المدير المالي، المدير العام، والسوبر أدمن بس — كل واحد يشوف اللي عنده صلاحية يعتمده (الاستقبال مايشوفش الجزء ده).<br>
+<b>الخزينة الرئيسية:</b> الرصيد المتوقع + زرار «جرد الخزينة الرئيسية» (نفس الجرد الموجود).<br>
+<b>ورديات مستنية استلام:</b> الورديات المقفولة اللي مستنية المحاسب يستلمها (بالعجز أو الزيادة)، والمفتوحة عشان يبقى عارفها.<br>
+<b>طلبات مستنية موافقة:</b> كل الطلبات في قايمة واحدة — إلغاء خدمة / الزيارة اتسجلت غلط / تصحيح طريقة دفع / استرداد / خصم كبير / مستحقات دكاترة / صرف من الديسك / سلف — وكل واحد عليه «اعتماد» و«رفض». اللي يتعمل يختفي، والجديد يظهر لوحده.<br>
+<b>في «التعاقدات والتصحيحات»:</b> الطلبات المستنية بتطلع أول حاجة فوق الصفحة بدل ما تبقى في الآخر.
+</div>
+</div></body></html>
