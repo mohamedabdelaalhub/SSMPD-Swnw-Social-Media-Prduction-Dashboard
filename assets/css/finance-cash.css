@@ -83,3 +83,13 @@
 .fc-drawer-cash{font-size:17px;font-weight:700;color:#0F369D;text-align:left}.fc-drawer-act{grid-column:1/-1}
 .fc-chip{display:inline-block;font-size:12px;border-radius:999px;padding:2px 10px;margin-top:6px}
 .fc-chip.is-open{background:#EAF0FB;color:#0F369D}.fc-chip.is-wait{background:#FDEDE5;color:#B8461A}.fc-chip.is-bad{background:#FBE9E6;color:#D0402A}
+
+/* «رصيد الخزينة الرئيسية الآن» (20261122120000) */
+.fc-main-bal{display:grid;gap:12px;margin:0 0 14px}.fc-main-bal:empty{display:none}
+.fc-mb-tile{border-radius:14px;padding:16px 18px;background:linear-gradient(135deg,#0F369D,#1E4FC7);color:#fff;display:grid;grid-template-columns:1fr auto;gap:6px 16px;align-items:center}
+.fc-mb-tile small{opacity:.85;font-size:12px}.fc-mb-tile b{display:block;font-size:28px}.fc-mb-live{background:rgba(255,255,255,.16);border-radius:999px;padding:3px 10px;font-size:12px}
+.fc-mb-meta{grid-column:1/-1;display:flex;gap:16px;flex-wrap:wrap;font-size:12px;opacity:.92}
+.fc-mb-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.fc-mb-mini{border:1px solid #E3E8F2;border-radius:12px;padding:12px 14px;font-size:13px;color:#3B4658;display:grid;gap:4px;background:#fff}.fc-mb-mini b{font-size:18px;color:#16212E}
+.fc-mb-mini.is-in b{color:#2F7D5C}.fc-mb-mini.is-out b{color:#D0402A}
+@media (max-width:640px){.fc-mb-row{grid-template-columns:1fr}.fc-mb-tile b{font-size:24px}}

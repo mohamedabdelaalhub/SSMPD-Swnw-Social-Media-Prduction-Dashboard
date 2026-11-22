@@ -11260,6 +11260,32 @@
       "reviewed": true
     },
     {
+      "title": "من",
+      "labels": [
+        "من"
+      ],
+      "text": "أول يوم في فترة «مؤشرات الحجز من الليدز» (الافتراضي أول الشهر).",
+      "article": "leads-booking",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
+      "title": "لحد",
+      "labels": [
+        "لحد"
+      ],
+      "text": "آخر يوم في فترة «مؤشرات الحجز من الليدز». الليدز بتتحسب بتاريخ دخولها.",
+      "article": "leads-booking",
+      "tabs": [
+        "production"
+      ],
+      "forms": [],
+      "reviewed": true
+    },
+    {
       "title": "فلتر البيانات الناقصة",
       "labels": [
         "فلتر البيانات الناقصة"
@@ -22130,9 +22156,9 @@
   ],
   "coverage": {
     "version": "20261117-1",
-    "definitions": 1899,
-    "labels": 1392,
-    "files": 142,
-    "groups": 1495
+    "definitions": 1901,
+    "labels": 1393,
+    "files": 143,
+    "groups": 1497
   }
 };window.SSMPDHelpData.fields=window.SSMPDHelpData.fields.concat(data.fields);window.SSMPDHelpData.fieldCoverage=data.coverage;})();

@@ -1,0 +1,10 @@
+/* «مؤشرات الحجز من الليدز» + «من الليدز» tag (owner 2026-11-22, mockup lead-booking.html) */
+.ld-funnel{background:#fff;border:1px solid #D5DEEE;border-radius:16px;padding:16px;display:grid;gap:10px;margin-top:16px}
+.ld-funnel-h{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}.ld-funnel-h h3{margin:0;font-size:16px;color:#0F369D}
+.ld-funnel-f{display:flex;gap:8px;flex-wrap:wrap;font-size:13px;color:#3B4658}.ld-funnel-f input{direction:ltr}
+.ld-funnel-t{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+.ld-funnel-t th,.ld-funnel-t td{border-bottom:1px solid #EEF1F6;padding:7px 4px;text-align:center}.ld-funnel-t th{color:#5b6577;font-weight:400}
+.ld-funnel-t td:first-child,.ld-funnel-t th:first-child{text-align:start}.ld-funnel-t td span{display:block;font-size:11px;color:#2F7D5C}
+.ld-funnel-t tr.tot td{font-weight:700}
+.ld-funnel-note{margin:0;font-size:12px;color:#5b6577;line-height:1.8}.ld-funnel-err{margin:0;font-size:12px;color:#D0402A}
+.rx-lead-tag{display:inline-block;white-space:nowrap;font-size:11px;padding:0 6px;border-radius:99px;background:#F3E8FF;color:#6B21A8;margin-inline-start:4px}
