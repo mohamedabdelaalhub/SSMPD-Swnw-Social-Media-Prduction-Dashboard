@@ -61,7 +61,9 @@ begin
     r := public.clinic_reception_command(w, 'reschedule', jsonb_build_object('id', ap.id, 'patient_id', ap.patient_id, 'provider_id', ap.provider_id,
            'service_id', ap.service_id, 'starts_at', ap.starts_at, 'same_day_ok', true, 'payer_kind', 'cash'), gen_random_uuid());
     aid := coalesce(nullif(r->>'id', '')::uuid, ap.id);
+    execute 'reset role';
     select * into a2 from clinic_reception.appointments where id = aid;
+    execute 'set local role authenticated';
     r := public.clinic_reception_command(w, 'reschedule', jsonb_build_object('id', aid, 'patient_id', a2.patient_id, 'provider_id', a2.provider_id,
            'service_id', a2.service_id, 'starts_at', a2.starts_at, 'same_day_ok', true, 'payer_kind', 'union', 'payer_union', 'نقابة المهندسين',
            'payer_card_no', 'RB-1', 'payer_card_expiry', (d + 365)::text, 'payer_card_path', card), gen_random_uuid());
@@ -110,12 +112,15 @@ begin
 
   -- (d2) arrival path: a walk-in today (contract) for a patient with no booking today, then arrive → order at list price + quote 80
   begin
-    select av.provider_id into prov from clinic_reception.availability av where av.workspace_id = w and now() between av.starts_at and av.ends_at order by av.starts_at limit 1;
+    -- a provider available now that has a priced, non-home service in its own department
+    select av.provider_id, s.id into prov, svc from clinic_reception.availability av join clinic_reception.providers pr on pr.id = av.provider_id
+      join clinic_reception.services s on s.workspace_id = w and s.department = pr.department and s.active and to_jsonb(s)->>'pricing_service_id' is not null
+        and coalesce((to_jsonb(s)->>'is_home')::boolean, false) = false
+     where av.workspace_id = w and now() between av.starts_at and av.ends_at and pr.active
+     order by av.starts_at, s.price limit 1;
     select p.id into pat from clinic_reception.patients p where p.workspace_id = w and p.patient_id is not null
        and not exists (select 1 from clinic_reception.appointments x where x.patient_id = p.id and (x.starts_at at time zone 'Africa/Cairo')::date = d)
      order by p.created_at desc limit 1;
-    select a.service_id into svc from clinic_reception.appointments a join clinic_reception.services s on s.id = a.service_id
-     where a.provider_id = prov and a.package_id is null and to_jsonb(s)->>'pricing_service_id' is not null order by a.starts_at desc limit 1;
     if prov is null or pat is null or svc is null then raise exception 'no provider working now / patient / service (provider %, patient %, service %)', prov, pat, svc; end if;
     insert into clinic_prices.items(list_id, service_id, fixed_price)
       select lst, (to_jsonb(s)->>'pricing_service_id')::uuid, 300 from clinic_reception.services s where s.id = svc on conflict (list_id, service_id) do update set fixed_price = 300;
